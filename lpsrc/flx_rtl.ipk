@@ -329,7 +329,19 @@ private:
 @h = tangler("rtl/flx_dynlink.cpp")
 @select(h)
 #include "flx_dynlink.hpp"
+#ifndef FLX_STATIC_LINK
 #include <dlfcn.h>
+#define dlsym(x,y) dlsym(x,#y)
+#else
+#define dlsym(x,y) y
+extern void *create_global_frame;
+extern void *create_process_frame;
+extern void *create_thread_frame;
+extern void *destroy_global_frame;
+extern void *destroy_process_frame;
+extern void *destroy_thread_frame;
+extern void *start;
+#endif
 
 namespace flx { namespace rtl {
 
@@ -341,41 +353,48 @@ flx_link_failure_t::flx_link_failure_t(string f, string o, string w) :
 
 void flx_dynlink_t::link(char const *filename) throw(flx_link_failure_t)
 {
+
+#ifndef FLX_STATIC_LINK
   library = dlopen(filename,RTLD_NOW);
   if(!library) throw flx_link_failure_t(filename,"dlopen",dlerror());
+#endif
 
   global_frame_creator = (global_frame_creator_t)
-    dlsym(library,"create_global_frame");
+    dlsym(library,create_global_frame);
   if(!global_frame_creator) 
     throw(filename,"dlsym","create_global_frame");
 
   process_frame_creator = (process_frame_creator_t)
-    dlsym(library,"create_process_frame");
+    dlsym(library,create_process_frame);
   if(!process_frame_creator)
     throw flx_link_failure_t(filename,"dlsym","create_process_frame");
 
   thread_frame_creator = (thread_frame_creator_t)
-    dlsym(library,"create_thread_frame");
+    dlsym(library,create_thread_frame);
   if(!thread_frame_creator) 
     throw flx_link_failure_t(filename,"dlsym","create_thread_frame");
 
   global_frame_destructor = (global_frame_destructor_t)
-    dlsym(library,"destroy_global_frame");
+    dlsym(library,destroy_global_frame);
   if(!global_frame_destructor) 
     throw flx_link_failure_t(filename,"dlsym","destroy_global_frame");
 
   process_frame_destructor = (process_frame_destructor_t)
-    dlsym(library,"destroy_process_frame");
+    dlsym(library,destroy_process_frame);
   if(!process_frame_destructor) 
     throw flx_link_failure_t(filename,"dlsym","destroy_process_frame");
 
   thread_frame_destructor = (thread_frame_destructor_t)
-    dlsym(library,"destroy_thread_frame");
+    dlsym(library,destroy_thread_frame);
   if(!thread_frame_destructor) 
     throw flx_link_failure_t(filename,"dlsym","destroy_thread_frame");
 
   start = (start_t)
-    dlsym(library,"start");
+#ifndef FLX_STATIC_LINK
+    dlsym(library,start);
+#else
+  ::start;
+#endif
   if(!start) 
     throw flx_link_failure_t(filename,"dlsym","start");
 
@@ -393,7 +412,9 @@ void flx_dynlink_t::link(char const *filename) throw(flx_link_failure_t)
 
 void flx_dynlink_t::unlink()
 {
+#ifndef FLX_STATIC_LINK
   dlclose(library);
+#endif
 }
   
 void flx_dynlink_t::usr_link(){}
@@ -405,14 +426,27 @@ void flx_libinit_t::create
 )
 {
   lib = lib_a;
+#ifdef FLX_STATIC_LINK
+  printf("Building frames now ..\n");
+  printf("Global frame creator is %p\n",lib->global_frame_creator);
+#endif
   global_frame = lib->global_frame_creator();
+#ifdef FLX_STATIC_LINK
+  printf("Built global frame %p\n",global_frame);
+#endif
   process_frame = lib->process_frame_creator(global_frame);
   thread_frame = lib->thread_frame_creator(
     global_frame, 
     process_frame, 
     collector 
   );
+#ifdef FLX_STATIC_LINK
+  printf("Built frames, creating init continuation ..\n");
+#endif
   start = lib->start(global_frame, process_frame, thread_frame);
+#ifdef FLX_STATIC_LINK
+  printf("Init continuation created %p\n",start);
+#endif
   usr_create();
 }
 
@@ -456,25 +490,34 @@ using namespace flx::rtl;
 
 int main(int argc, char* argv[])
 {
- 
+#ifndef FLX_STATIC_LINK  
   if (argc<2) 
   {
     printf("usage: flx_run <shared library (may need ./ prefix)>\n");
     return 1;
   }
+  char *filename = argv[1];
+#else
+  char *filename = "static";
+  printf("Statically linked Felix program running\n");
+#endif
   try 
   {
     //printf("flx_run driver begins\n");
     flx_dynlink_t library;
     flx_libinit_t instance;
 
-    library.link(argv[1]);
-    //printf("Linked %s\n",argv[1]);
-
+    library.link(filename);
+#ifdef FLX_STATIC_LINK
+    printf("Linked %s\n",filename);
+#endif
     flx::gc::collector::malloc_free allocator;
     flx::gc::collector::flx_collector_t collector(&allocator);
     instance.create(&library, &collector);
-    
+#ifdef FLX_STATIC_LINK
+    printf("Created instance %s\n",filename);
+#endif
+ 
     collector.add_root(instance.start);
     int gc_counter = 0;
     con_t *top = instance.start;

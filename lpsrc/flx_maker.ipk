@@ -209,60 +209,18 @@ def runISCR(a):
   xqt(ISCR + ' ' + a)
 
 if "compiler" in options or "bytecode" in options:
-  # invoke ocaml interface compiler
-  OCAML_OBJDIR='src'
-  try:
-    xqt('ocamlopt.opt')
-    OCAMLCC = 'ocamlopt.opt '
-    OCAMLLEX = 'ocamllex.opt '
-    OCAMLYACC = 'ocamlyacc '
-    BYTECODE = 0
-  except:
-    try:
-      xqt('ocamlopt')
-      OCAMLCC = 'ocamlopt '
-      OCAMLLEX = 'ocamllex '
-      OCAMLYACC = 'ocamlyacc '
-      BYTECODE = 0
-    except:
-      try:
-        xqt('ocamlc')
-        OCAMLCC = 'ocamlc '
-        if "debug" in options:
-          OCAMLCC = 'ocamlc -g '
-        OCAMLLEX = 'ocamllex '
-        BYTECODE = 1
-        OCAMLYACC = 'ocamlyacc '
-      except:
-        BYTECODE = -1
-        OCAMLCC = '#ocamlc '
-        OCAMLLEX = '#ocamllex '
-        OCAMLYACC = '#ocamlyacc '
-
-  try:
-    xqt('ocamlc.opt')
-    OCAMLB = 'ocamlc.opt '
-  except:
-    try:
-      xqt('ocamlc')
-      OCAMLB = 'ocamlc '
-    except:
-      OCAMLB = '#ocamlc '
-
+  OCAML_OBJDIR = "src"
+  BYTECODE = not NATIVE_CODE_COMPILER or "bytecode" in options
+  if BYTECODE: OCAMLOPT = OCAMLB
+  else: OCAMLOPT = OCAMLC
+  OCAMLOPT = OCAMLOPT + " -I " + OCAML_OBJDIR
+  OCAMLC = OCAMLC + " -I " + OCAML_OBJDIR
+  
   if "debug" in options:
-    OCAMLB = OCAMLB + "-g "
-
-  if "bytecode" in options:
-    OCAMLOPT= OCAMLB + ' -I '+OCAML_OBJDIR+' '
-    if BYTECODE <> -1: BYTECODE = 1
-  else:
-    OCAMLOPT= OCAMLCC + ' -I '+OCAML_OBJDIR+' '
+    OCAMLOPT = OCAMLOPT + '-g '
 
   if "optimise" in options:
     OCAMLOPT = OCAMLOPT + "-unsafe -noassert -inline 5 "
-
-  #OCAMLC=OCAMLB + ' -I '+OCAML_OBJDIR+' -rectypes '
-  OCAMLC=OCAMLB + ' -I '+OCAML_OBJDIR+' '
 
   if BYTECODE == 0:
     OCAML_OBJECT_EXTENSION = '.cmx'
@@ -270,17 +228,36 @@ if "compiler" in options or "bytecode" in options:
   else:
     OCAML_OBJECT_EXTENSION = '.cmo'
     OCAML_LIB_EXTENSION = '.cma'
-  
-  # where the ocaml is installed
-  result,x = get_stdout(OCAMLC + " -where")
-  OCAML_INCLUDE_DIRECTORY= x[0][0:-1]
-  print "OCAML at",OCAML_INCLUDE_DIRECTORY
-
+    
 # where gnu readline header files are
 #READLINE_INCLUDE_DIRECTORY='/usr/include/readline'
 
+#determine linkage model
+
+LINK_MODEL = DEFAULT_LINK_MODEL
+if "static" in options:
+  LINK_MODEL = "static"
+if "dynamic" in options:
+  LINK_MODEL == "dynamic"
+
+if LINK_MODEL == "dynamic" and not SUPPORT_DYNAMIC_LOADING:
+  print "dynamic linkage not supported"
+  sys.exit(1)
+
+if LINK_MODEL == "static" and not SUPPORT_STATIC_LINKAGE:
+  print "dynamic linkage not supported"
+  sys.exit(1)
+
+if LINK_MODEL == "dynamic":
+  FLX_CPP_DYNLINK = CCLINK_DLLIB
+  FLX_CPP_LINK = CCLINK_DLMAIN
+  SHLX = ".so"
+else:
+  FLX_CPP_DYNLINK = CCOBJ_STATIC_LIB + "-DFLX_STATIC_LINK "
+  FLX_CPP_LINK = CCLINK_STATIC + "-DFLX_STATIC_LINK "
+  SHLX = ""
+
 # for compiling mainlines
-FLX_CPP_LINK = "g++ -w -ansi -rdynamic -ldl "
 if "optimise" in options:
   FLX_CPP_LINK = FLX_CPP_LINK + "-O "
 
@@ -288,13 +265,12 @@ if "refcnt" in options:
   FLX_CPP_LINK = FLX_CPP_LINK + " -DFLX_REFCNT "
 
 if "debug" in options:
- pass
+  pass
 else:
-  FLX_CPP_LINK = FLX_CPP_LINK + " -DNDEBUG "
+  pass
+  #FLX_CPP_LINK = FLX_CPP_LINK + " -DNDEBUG "
 
 # for building shared libraries
-#FLX_CPP_DYNLINK = "g++ -fomit-frame-pointer -Wno-long-long -D_GNU_SOURCE -ansi -shared -I."
-FLX_CPP_DYNLINK = "g++ -w -ansi -shared -I."
 if "optimise" in options:
   FLX_CPP_DYNLINK = FLX_CPP_DYNLINK + "-O "
 
@@ -304,7 +280,8 @@ if "refcnt" in options:
 if "debug" in options:
   pass
 else:
-  FLX_CPP_DYNLINK = FLX_CPP_DYNLINK + " -DNDEBUG "
+  pass
+  #FLX_CPP_DYNLINK = FLX_CPP_DYNLINK + " -DNDEBUG "
 
 
 
@@ -397,6 +374,15 @@ INTERFACES = [
 ] + MODULES
 
 IMPLEMENTATIONS = MODULES
+
+RTL_CPPS = [
+  "rtl/flx_gc",
+  "rtl/flx_collector",
+  "rtl/flx_rtl",
+  "rtl/flx_dynlink",
+  "rtl/flx_i18n",
+  "rtl/flx_ioutil"
+]
 
 DRIVERS = [
   ('rtl/flx_run','bin/flx_run'),
@@ -599,8 +585,20 @@ try:
 
   # COMPILER DRIVER PROGRAMS
   if "drivers" in options:
-    for testfile,outbin in DRIVERS:
-        print 'Compiling driver program ',testfile
+    if LINK_MODEL == "static":
+      ars = ""
+      for x in RTL_CPPS:
+        print 'Compiling rtl object',x
+        ars = ars + x + "_static.o "
+        xqt(FLX_CPP_DYNLINK + " -I. " + x + ".cpp -o " +x+"_static.o")
+      print "Building static archive"
+      xqt(AR + " rtl/flx_static.a " + ars)
+      for i,j in DRIVERS:
+        print 'Compiling driver object',i,'-->',j
+        xqt(FLX_CPP_DYNLINK + " -I. " + i + ".cpp -o " +j+"_static.o")
+    else:
+      for testfile,outbin in DRIVERS:
+        print 'Compiling driver program ',testfile,'-->',outbin
         try:
           xqt(FLX_CPP_LINK + " -I. " +
             "rtl/flx_gc.cpp " +
@@ -630,7 +628,6 @@ try:
       if buildall or \
         filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
         filetime('bin/flxg')> filetime(basename+'.cpp') or \
-        filetime('lib/std.flx') > filetime(basename+'.cpp') or \
         filetime('lib/std.flx') > filetime(basename+'.cpp'):
         try:
           flxg('-Ilib ' +FLXFLAGS + basename,basename)
@@ -640,7 +637,7 @@ try:
           print 'TESTFILE -- ERROR!',basename
           erasefile(basename+'.cpp')
           erasefile(basename+'.hpp')
-          erasefile(basename+'.so')
+          erasefile(basename+SHLX)
           if stop_on_error: raise MakeError
           results.append(("flxg",basename,'ERROR'))
 
@@ -660,16 +657,17 @@ try:
             results.append(("flxg",basename,'OK'))
             erasefile(basename+'.cpp')
             erasefile(basename+'.hpp')
-            erasefile(basename+'.so')
+            erasefile(basename+SHLX)
           except MakeError:
             print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
             erasefile(basename+'.cpp')
             erasefile(basename+'.hpp')
-            erasefile(basename+'.so')
+            erasefile(basename+SHLX)
             if stop_on_error: raise MakeError
             results.append(("flxg",basename,'ERROR'))
 
-    # C++ COMPILE SHARED LIBRARIES
+    # C++ COMPILE and static link tests
+    # produces shared library or executable
     EXTRA = []
     if "performance" in options:
       for driver,testfile,moreargs in SPECIAL_TESTS: 
@@ -678,21 +676,30 @@ try:
       #print 'Compiling generated code of ',testfile
       basename = string.split(testfile,'.')[0]
       cppfilename = basename + ".cpp"
-      if buildall or filetime(basename+ '.cpp') > filetime(basename+'.so'):
+      if buildall or filetime(basename+ '.cpp') > filetime(basename+SHLX):
         try:
-          xqt(FLX_CPP_DYNLINK+" "+cppfilename + " -o " + basename + ".so" )
+          if LINK_MODEL == "dynamic":
+            xqt(FLX_CPP_DYNLINK+" -I. "+cppfilename + " -o " + basename + SHLX )
+          else:
+            xqt(FLX_CPP_DYNLINK+" -I. "+cppfilename + " -o " + basename + "_static.o" )
+            xqt(FLX_CPP_LINK+" -I. ./bin/flx_run_static.o "+basename+ "_static.o ./rtl/flx_static.a -o " + basename + SHLX )
           #print 'TESTFILE -- OK!',basename
           results.append(("g++",basename,'OK'))
         except MakeError:
           print 'TESTFILE -- ERROR!',basename
-          erasefile(basename+'.so')
+          erasefile(basename+SHLX)
           if stop_on_error: raise MakeError
           results.append(("g++",basename,'ERROR'))
 
 
+    # run the tests
     for testfile in TESTS:
       basename = string.split(testfile,'.')[0]
-      testscript = "./bin/flx_run ./"+basename+".so"
+      if LINK_MODEL == "dynamic":
+        testscript = "./bin/flx_run ./"+basename+SHLX
+      else:
+        testscript = "./"+basename+SHLX
+
       if "log_output" in options:
         testscript = testscript + " >" + basename + ".output"
       #print 'Executing ',testscript
@@ -709,7 +716,10 @@ try:
       for driver,testfile,moreargs in SPECIAL_TESTS:
         test_basename = string.split(testfile,'.')[0]
         drv_basename = string.split(driver,'.')[0]
-        testscript = "time ./"+drv_basename+ " ./"+test_basename+".so " + moreargs
+        if LINK_MODEL == "dynamic":
+          testscript = "time ./"+drv_basename+ " ./"+test_basename+SHLX+" " + moreargs
+        else:
+          testscript = "time ./"+test_basename+SHLX+" " + moreargs
         #print 'Executing ',testscript
         try:
           run(testscript)
@@ -801,6 +811,9 @@ We have no idea if it continues copying.
 @tangle('test: dummy')
 @tangle('\tpython script/maker test stop_on_error')
 @tangle('')
+@tangle('test.static: dummy')
+@tangle('\tpython script/maker test static stop_on_error')
+@tangle('')
 @tangle('test.refcnt: dummy')
 @tangle('\tpython script/maker refcnt test stop_on_error')
 @tangle('')
@@ -812,6 +825,9 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('tests: dummy')
 @tangle('\tpython script/maker test log_output')
+@tangle('')
+@tangle('tests.static: dummy')
+@tangle('\tpython script/maker test static log_output')
 @tangle('')
 @tangle('tests.refcnt: dummy')
 @tangle('\tpython script/maker refcnt test log_output')
@@ -827,6 +843,9 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('drivers: dummy')
 @tangle('\tpython script/maker drivers')
+@tangle('')
+@tangle('drivers.static: dummy')
+@tangle('\tpython script/maker drivers static')
 @tangle('')
 @tangle('drivers.refcnt: dummy')
 @tangle('\tpython script/maker refcnt drivers')
@@ -1006,8 +1025,13 @@ We have no idea if it continues copying.
 @tangle('\t)')
 @tangle('')
 
+@tangle('config: dummy')
+@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_config.pak')
+@tangle('')
+
 @tangle('boot: dummy')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_config.pak')
+@tangle('\tpython -O script/make_config.py quiet')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx.pak')
 @tangle('')
 

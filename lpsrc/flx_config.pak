@@ -1,4 +1,20 @@
 @head(1,'Configure')
+@h = tangler("tmp/dummy_lib.cxx",'c++')
+@select(h)
+extern "C" int fred(int,char*[]) { return 0; }
+
+@h = tangler("tmp/dummy_main.cxx",'c++')
+@select(h)
+#include <dlfcn.h>
+#include <stdlib.h>
+
+int main(int,char*[]) { 
+   void *lib = dlopen("tmp/dummy_lib.so",RTLD_NOW);
+   if(!lib) exit(1);
+   void *fred = dlsym(lib,"fred");
+   if(!fred) exit(1);
+   exit(0);   
+}
 
 @h = tangler("script/make_config.py")
 @select(h)
@@ -8,6 +24,8 @@
 
 import sys
 import os
+class Error: pass
+this = sys.modules[__name__]
 
 def file_exists(f):
   try:
@@ -29,21 +47,190 @@ if file_exists("config/config.py"):
     print "To recreate the default configuration"
     print "you must delete config/config.py and rerun this"
     print "script/make_config.py script"
-  sys.exit(1)
+  sys.exit(0)
+
+# We're screwed if popen doesn't work ..
+def get_stdout(x):
+  f = os.popen(x,"r")
+  output = f.readlines()
+  result = f.close()
+  return result,output
+
+
+# we cannot do anything fancy here like redirect
+# stdout/stderr because we don't know what OS we're on
+
+def xqt(x):
+  print x
+  result = os.system(x)
+  if result != 0: raise Error
+
+# discover which ocaml compilers are available
+
+try: # check if the client bootstrapped the native code compiler
+  xqt('ocamlopt.opt')
+  OCAMLCC = 'ocamlopt.opt '
+  OCAMLLEX = 'ocamllex.opt '
+  OCAMLYACC = 'ocamlyacc '
+  NATIVE_CODE_COMPILER = 1
+except:
+  try: # check if the client has unbootstrapped native code compiler
+    xqt('ocamlopt')
+    OCAMLCC = 'ocamlopt '
+    OCAMLLEX = 'ocamllex '
+    OCAMLYACC = 'ocamlyacc '
+    NATIVE_CODE_COMPILER = 1
+  except:
+    NATIVE_CODE_COMPILER = 0
+    try: # check if the client has ocaml at all ..
+      xqt('ocamlc')
+      OCAMLCC = 'ocamlc '
+      OCAMLLEX = 'ocamllex '
+      OCAMLYACC = 'ocamlyacc '
+      OCAMLDOC = 'ocamldoc '
+    except:
+      OCAMLCC = '#ocamlc '
+      OCAMLLEX = '#ocamllex '
+      OCAMLYACC = '#ocamlyacc '
+
+try: # check if there is a native code version of the bytecode compiler
+  xqt('ocamlc.opt')
+  OCAMLB = 'ocamlc.opt '
+except:
+  try: # check if the client has ocaml at all
+    xqt('ocamlc')
+    OCAMLB = 'ocamlc '
+  except:
+    OCAMLB = '#ocamlc '
+
+try:
+  xqt('ocamldoc.opt')
+  OCAMLDOC = 'ocamldoc.opt '
+except:
+  try:
+    xqt('ocamldoc')
+    OCAMLDOC = 'ocamldoc '
+  except:
+    OCAMLDOC = '#ocamldoc '
+
+# set the default ocaml compiler
+if OCAMLCC[0] != '#':
+  OCAMLC = OCAMLCC
+else:
+  OCAMLC = OCAMLB
+
+# where the ocaml is installed
+result,x = get_stdout(OCAMLC + " -where")
+OCAML_INCLUDE_DIRECTORY= x[0][0:-1]
+
+# find if we have g++
+try:
+  xqt("g++ -w -c tmp/dummy_lib.cxx -o tmp/dummy.o")
+  CC = "g++ -w " 
+except:
+  # just call the g++ compiler CC if we don't have g++
+  CC = "CC "
+
+CCOBJ_DLLIB = CC + "-ansi -fPIC -c "
+CCOBJ_DLMAIN = CC + "-ansi -rdynamic -c "
+CCLINK_DLLIB = CC + "-ansi -shared "
+CCLINK_DLMAIN = CC + "-ansi -rdynamic -ldl "
+
+CCOBJ_STATIC_LIB = CC + "-ansi -c "
+CCOBJ_STATIC_MAIN = CC + "-ansi -c "
+
+# NOTE: static link means the driver is linked
+# with the library to produce an executable.
+# .. as opposed to making a DLL which is loaded
+# at run time by the driver.
+
+# It does NOT mean that executable is fully statically
+# linked, C libraries including the C and C++ run time
+# are still linked at load time by the default method.
+# 
+# Perhaps we need an option for a full static link:
+# however that's very platform dependent (impossible
+# on Windows for example, where the system is intrinsically
+# represented by DLLs)
+
+CCLINK_STATIC = CC + "-ansi "
+
+#find if -rdynamic and -shared supported
+try:
+  xqt(CCOBJ_DLLIB+"tmp/dummy_lib.cxx -o tmp/dummy_lib.o")
+  xqt(CCOBJ_DLMAIN+"tmp/dummy_main.cxx -o tmp/dummy_main.o")
+  xqt(CCLINK_DLLIB+"tmp/dummy_lib.o -o tmp/dummy_lib.so")
+  xqt(CCLINK_DLMAIN+"tmp/dummy_main.o -o tmp/dlmain")
+  xqt("tmp/dlmain tmp/dummy_lib.so")
+  SUPPORT_DYNAMIC_LOADING = 1
+except:
+  SUPPORT_DYNAMIC_LOADING = 0
+
+# see if we have strip
+try:
+  xqt("strip tmp/dummy.o")
+  STRIP="strip"
+except:
+  STRIP="#strip"
+
+# see if we have ar
+try:
+  xqt("ar -rc tmp/dummy.a tmp/dummy.o")
+  AR="ar -rc "
+except:
+  AR="#ar -rc "
+
+DEBUG_SYMBOLS = "-g "
+CCOPT1 = "-O1 -DNDEBUG "
+CCOPT2 = "-O3 --inline -DNDEBUG "
+
+if SUPPORT_DYNAMIC_LOADING:
+  DEFAULT_LINK_MODEL="dynamic"
+else:
+  DEFAULT_LINK_MODEL="static"
+
+
+def pr(f,x):
+  print x
+  f.write(x+"\n")
+
+def p(f,s):
+  x = s + "=" + repr(getattr(this,s))
+  pr(f,x)
 
 try:
   f = open("config/config.py","w")
-  f.write("SUPPORT_DYNAMIC_LOADING = 1\n")
-  f.write("SUPPORT_STATIC_LINKAGE = 1\n")
-  f.write('PREFIX = "/usr/local/"\n')
-  f.write("ISCR='env PYTHONPATH=. python -O interscript/bin/iscr.py'\n")
+  p(f,"OCAMLC")
+  p(f,"OCAMLB")
+  p(f,"OCAMLLEX")
+  p(f,"OCAMLYACC")
+  p(f,"OCAMLDOC")
+  p(f,"NATIVE_CODE_COMPILER")
+  p(f,"STRIP")
+  p(f,"AR")
+  p(f,"CCOBJ_DLLIB")
+  p(f,"CCOBJ_DLMAIN")
+  p(f,"CCLINK_DLLIB")
+  p(f,"CCLINK_DLMAIN")
+  p(f,"CCOBJ_STATIC_LIB")
+  p(f,"CCOBJ_STATIC_MAIN")
+  p(f,"CCLINK_STATIC")
+  p(f,"DEBUG_SYMBOLS")
+  p(f,"CCOPT1")
+  p(f,"CCOPT2")
+  p(f,"OCAML_INCLUDE_DIRECTORY")
+
+  p(f,"SUPPORT_DYNAMIC_LOADING")
+  pr(f,"SUPPORT_STATIC_LINKAGE = 1")
+  p(f,"DEFAULT_LINK_MODEL")
+  pr(f,'PREFIX = "/usr/local/"')
+  pr(f,"ISCR='env PYTHONPATH=. python -O interscript/bin/iscr.py'")
   f.close()
 except:
   print "Unable to create config/config.py"
+  sys.exit(1)
 
 print "Created config/config.py"
 print "Edit this file to set your preferences"
 print "This file will not be clobbered by the Felix build process"
 
-@del h
-@os.system("python script/make_config.py quiet")

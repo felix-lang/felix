@@ -763,6 +763,11 @@ unsigned long flx_collector_t::sweep()
 
 void flx_collector_t::add_root(void *memory)
 {
+  if(!memory)
+  {
+    fprintf(stderr, "GC ERROR: ADD NULL ROOT\n");
+    abort();
+  }
   frame_t *p =  CLIENT_TO_FRAME(memory);
   rootmap_t::iterator iter = roots.find(p);
   if(iter == roots.end())
