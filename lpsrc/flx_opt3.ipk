@@ -92,32 +92,36 @@ let mk_remap counter d =
   ;
   m
 
+(* replace callee type variables with callers *)
+let vsplice caller_vars callee_vs_len ts = 
+  if not (callee_vs_len <= length ts)
+  then failwith 
+  (
+    "Callee_vs_len = " ^ 
+    si callee_vs_len ^ 
+    ", len vs/ts= " ^ 
+    si (length ts) ^
+    ", length caller_vars = " ^
+    si (length caller_vars)
+  )
+  ;
+  let rec aux lst n =  (* elide first n elements *)
+    if n = 0 then lst 
+    else aux (tl lst) (n-1) 
+  in
+  caller_vars @ aux ts callee_vs_len 
+
+
 (* varmap is the *typevariable* remapper, 
  revariable remaps indices
 *)
 let remap_expr syms varmap revariable caller_vars callee_vs_len e = 
-  let splice ts = (* replace callee type variables with callers *)
-    let rec aux lst n =  (* elide first n elements *)
-      if n = 0 then lst 
-      else aux (tl lst) (n-1) 
-    in
-    (*
-    print_endline ("SPLICING ts=" ^ catmap "," (sbt syms.dfns) ts);
-    print_endline ("Strip off first Callee_vs_len = " ^ si callee_vs_len);
-    print_endline ("Prepend caller vs: " ^ catmap "," (sbt syms.dfns) caller_vars);
-    *)
-    caller_vars @ aux ts callee_vs_len 
-  in
-
-  (*
-  print_endline ("REMAP expr = " ^ sbe syms.dfns e);
-  *)
   let auxt t = varmap_subst varmap t in
   let fixup i ts = 
     let ts = map auxt ts in
     try 
       let j= Hashtbl.find revariable i in 
-      j, splice ts
+      j, vsplice caller_vars callee_vs_len ts
     with Not_found -> i,ts
   in
   let rec aux e = match map_tbexpr aux auxt e with
@@ -153,27 +157,21 @@ let remap_expr syms varmap revariable caller_vars callee_vs_len e =
     *)
     a
 
-
 let remap_exe syms relabel varmap revariable caller_vars callee_vs_len exe =
+  (*
+  print_endline ("remap_exe " ^ string_of_bexe syms.dfns 0 exe);
+  *)
   let ge e = remap_expr syms varmap revariable caller_vars callee_vs_len e in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let relab s = try Hashtbl.find relabel s with Not_found -> s in
   match exe with 
   | `BEXE_call_prim (sr,i,ts,e2)  -> 
     let fixup i ts = 
-      let splice ts = (* replace callee type variables with callers *)
-        let rec aux lst n =  (* elide first n elements *)
-          if n = 0 then lst 
-          else aux (tl lst) (n-1) 
-        in
-        caller_vars @ aux ts callee_vs_len 
-      in
-
       let auxt t = varmap_subst varmap t in
       let ts = map auxt ts in
       try 
         let j= Hashtbl.find revariable i in 
-        j, splice ts
+        j, vsplice caller_vars callee_vs_len ts
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
@@ -181,19 +179,11 @@ let remap_exe syms relabel varmap revariable caller_vars callee_vs_len exe =
 
   | `BEXE_call_direct (sr,i,ts,e2)  -> 
     let fixup i ts = 
-      let splice ts = (* replace callee type variables with callers *)
-        let rec aux lst n =  (* elide first n elements *)
-          if n = 0 then lst 
-          else aux (tl lst) (n-1) 
-        in
-        caller_vars @ aux ts callee_vs_len 
-      in
-
       let auxt t = varmap_subst varmap t in
       let ts = map auxt ts in
       try 
         let j= Hashtbl.find revariable i in 
-        j, splice ts
+        j, vsplice caller_vars callee_vs_len ts
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
@@ -201,19 +191,11 @@ let remap_exe syms relabel varmap revariable caller_vars callee_vs_len exe =
 
   | `BEXE_call_stack (sr,i,ts,e2)  -> 
     let fixup i ts = 
-      let splice ts = (* replace callee type variables with callers *)
-        let rec aux lst n =  (* elide first n elements *)
-          if n = 0 then lst 
-          else aux (tl lst) (n-1) 
-        in
-        caller_vars @ aux ts callee_vs_len 
-      in
-
       let auxt t = varmap_subst varmap t in
       let ts = map auxt ts in
       try 
         let j= Hashtbl.find revariable i in 
-        j, splice ts
+        j, vsplice caller_vars callee_vs_len ts
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
@@ -260,11 +242,7 @@ let reparent1 syms (child_map,bbdfns )
   vs' callee_vs_len index parent
 =
   let splice vs = (* replace callee type variables with callers *)
-    let rec aux lst n =  (* elide first n elements *)
-      if n = 0 then lst 
-      else aux (tl lst) (n-1) 
-    in
-    vs' @ aux vs callee_vs_len
+    vsplice vs' callee_vs_len vs 
   in
   let sop = function
     | None -> "NONE?" 
@@ -408,7 +386,7 @@ let mk_tvar_map vs ts =
   varmap
 
 (* NOTE: result is in reversed order *)
-let gen_body syms bbdfns id 
+let gen_body syms (child_map,bbdfns) id 
   varmap ps relabel revariable exes argument 
   sr caller callee vs callee_vs_len
 =
@@ -453,22 +431,15 @@ let gen_body syms bbdfns id
     incr syms.counter;
     "loop_" ^ si n 
   in
-  let remap: bexe_t -> bexe_t list =  function
+  let remap: bexe_t -> bexe_t list =  fun exe ->
+  match exe with
   | `BEXE_call_prim (sr,i,ts,e2)  -> 
     let fixup i ts = 
-      let splice ts = (* replace callee type variables with callers *)
-        let rec aux lst n =  (* elide first n elements *)
-          if n = 0 then lst 
-          else aux (tl lst) (n-1) 
-        in
-        caller_vars @ aux ts callee_vs_len 
-      in
-
       let auxt t = varmap_subst varmap t in
       let ts = map auxt ts in
       try 
         let j= Hashtbl.find revariable i in 
-        j, splice ts
+        j, vsplice caller_vars callee_vs_len ts
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
@@ -476,19 +447,11 @@ let gen_body syms bbdfns id
   
   | `BEXE_call_direct (sr,i,ts,e2)  -> 
     let fixup i ts = 
-      let splice ts = (* replace callee type variables with callers *)
-        let rec aux lst n =  (* elide first n elements *)
-          if n = 0 then lst 
-          else aux (tl lst) (n-1) 
-        in
-        caller_vars @ aux ts callee_vs_len 
-      in
-
       let auxt t = varmap_subst varmap t in
       let ts = map auxt ts in
       try 
         let j= Hashtbl.find revariable i in 
-        j, splice ts
+        j, vsplice caller_vars callee_vs_len ts
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
@@ -582,6 +545,11 @@ let gen_body syms bbdfns id
         if length ps > 1
         then begin
           let entry = `BBDCL_var (vs,paramtype) in
+          let kids = 
+            try Hashtbl.find child_map caller
+            with Not_found -> [] 
+          in
+          Hashtbl.replace child_map caller (parameter::kids);
           Hashtbl.add bbdfns parameter (id,Some caller,sr,entry);
           `BEXE_init (sr,parameter,argument)
         end
@@ -594,7 +562,8 @@ let gen_body syms bbdfns id
      
       (* unpack argument *)
       if length ps > 1 then
-      let p = `BEXPR_name (parameter,[]),paramtype in  
+      let ts = map (fun (_,i) -> `BTYP_var i) vs in
+      let p = `BEXPR_name (parameter,ts),paramtype in  
       let n = ref 0 in
       iter 
       (fun (vid,(ix,prjt)) ->
@@ -629,7 +598,8 @@ let gen_body syms bbdfns id
     ;
     (*
     print_endline ("INLINING " ^ id ^ " into " ^ si caller ^ " .. OUTPUT:");
-    iter (fun x -> print_endline (string_of_bexe syms.dfns 0 x)) !b;
+    iter (fun x -> print_endline (string_of_bexe syms.dfns 0 x)) (rev !b);
+    print_endline ("END OUTPUT for " ^ id);
     *)
     !b
 
@@ -678,7 +648,7 @@ let call_lifting syms (child_map,bbdfns) caller vs' callee ts a argument =
 
     (* use the inliner to handle the heavy work *)
     let body =
-      gen_body syms bbdfns id varmap ps relabel revariable 
+      gen_body syms (child_map,bbdfns) id varmap ps relabel revariable 
       exes a sr caller callee vs' callee_vs_len
     in
 
@@ -715,8 +685,166 @@ let call_lifting syms (child_map,bbdfns) caller vs' callee ts a argument =
 
   | _ -> assert false
 
+let inline_function syms (child_map,bbdfns) caller vs' callee ts a varindex =
+  let id,parent,sr,entry = Hashtbl.find bbdfns callee in
+  match entry with 
+  | `BBDCL_function (props,vs,ps,ret,exes) ->
+    print_endline ("Inlining function "^id^", var="^ si varindex);
+    flush stdout;
+    let relabel = mk_label_map syms exes in
+    let varmap = mk_tvar_map vs ts in
+    let callee_vs_len = length vs in
+
+    let revariable = reparent_children 
+      syms (child_map,bbdfns) 
+      vs' callee_vs_len callee (Some caller) relabel varmap
+    in
+
+    (* use the inliner to handle the heavy work *)
+    let body =
+      gen_body syms (child_map,bbdfns) id varmap ps relabel revariable 
+      exes a sr caller callee vs' callee_vs_len
+    in
+
+    (* replace all function returns with variable initialisations *)
+    let body2 = ref [] in
+    let n = !(syms.counter) in incr (syms.counter);
+    let end_label = "_end_inline_" ^ id ^ "_"^ si n in
+    body2 := `BEXE_label (sr,end_label) :: !body2;
+    let t = ref None in
+    iter
+      (function 
+      | `BEXE_fun_return (sr,((_,t') as e)) ->
+        t := Some t';
+        let call_instr = `BEXE_init (sr,varindex,e) in
+        body2 := `BEXE_goto (sr,end_label) :: !body2;
+        body2 := call_instr :: !body2;
+      | x -> body2 := x::!body2
+      )
+      body
+    ;
+    (*
+    print_endline (
+     catmap "\n" (string_of_bexe syms.dfns 0) !body2
+    )
+    ;
+    *)
+
+    (* reverse, eliminating trailing "goto x; x:>" *)
+    begin 
+      match !body2 with
+      | `BEXE_label (_,lab1) :: `BEXE_goto (_,lab2) :: t 
+        when lab1=lab2 -> rev t
+      | b -> rev b
+    end
+
+  | _ -> assert false
+
+let ident x = x 
+
+let bunravel syms ts e = 
+  let counter = syms.counter in 
+  let vars = ref [] in
+  let rec urv e = 
+    match map_tbexpr urv ident e with
+    | (`BEXPR_apply_direct _,t) as x ->
+      let n = !counter in incr counter;
+      vars := (n,x) :: !vars ;
+      `BEXPR_name (n,ts),t
+    | x -> x
+  in
+    let x = urv e in
+    x,!vars
+
+(* output in reverse order *)
+let xmap_bexe syms (child_map,bbdfns) caller vs exe : bexe_t list = 
+  let ts = map (fun (_,i)-> `BTYP_var i) vs in
+  let u sr e = 
+    let x,xs = bunravel syms ts e in
+    iter 
+    (fun (i,((x,t) as e)) -> 
+      let id = "_urv_" ^ si i  in
+      let entry = `BBDCL_val (vs,t) in
+      Hashtbl.add bbdfns i (id,Some caller,sr,entry);
+      let kids = 
+        try Hashtbl.find child_map caller
+        with Not_found -> [] 
+      in
+      Hashtbl.replace child_map caller (i::kids)
+    )
+    xs
+    ;
+    let inits = map (fun (i,e)->`BEXE_init (sr,i,e)) xs in
+    x,inits
+  in
+  let x = 
+    match exe with
+    | `BEXE_call_prim (sr,i,ts,e2) ->
+      let e,xs = u sr e2 in
+      `BEXE_call_prim (sr,i,ts,e) :: xs
+
+    | `BEXE_call_stack (sr,i,ts,e2) -> assert false
+
+    | `BEXE_call_direct (sr,i,ts,e2) ->
+      let e,xs = u sr e2 in
+      `BEXE_call_direct (sr,i,ts,e) :: xs
+   
+    | `BEXE_assign (sr,e1,e2) ->
+      let e,xs = u sr e2 in
+      `BEXE_assign (sr,e1,e) :: xs
+
+    | `BEXE_call (sr,e1,e2) ->
+      (* DUBIOUS...screws up call lifting?? *)
+      let e1,xs1 = u sr e1 in
+      let e2,xs2 = u sr e2 in
+      `BEXE_call (sr,e1,e2) :: xs2 @ xs1
+
+    | `BEXE_jump (sr,e1,e2) -> assert false
+   
+    | `BEXE_loop (sr,i,e) ->
+      let e,xs = u sr e in
+      `BEXE_loop (sr,i,e) :: xs
+   
+    | `BEXE_ifgoto (sr,e,lab) ->
+      let e,xs = u sr e in
+      `BEXE_ifgoto (sr,e,lab) :: xs
+
+    | `BEXE_ifnotgoto (sr,e,lab) ->
+      let e,xs = u sr e in
+      `BEXE_ifnotgoto (sr,e,lab) :: xs
+   
+   
+    | `BEXE_fun_return (sr,e) ->
+      let e,xs = u sr e in
+      `BEXE_fun_return (sr,e) :: xs
+   
+    | `BEXE_init (sr,i,e) ->
+      (* NOTE: will generate gratuitous variable .. *)
+      let e,xs = u sr e in
+      `BEXE_init (sr,i,e) :: xs
+    
+    | `BEXE_regmatch (sr,e,(a,sc,h,tr)) ->
+      let e,xs = u sr e in
+      `BEXE_regmatch (sr,e,(a,sc,h,tr)) :: xs
+   
+    | `BEXE_reglex (sr,p1,p2,(a,sc,h,tr)) ->
+      let p1,xs1 = u sr p1 in
+      let p2,xs2 = u sr p2 in
+      `BEXE_reglex(sr,p1,p2,(a,sc,h,tr)) :: xs1 @ xs2
+    
+    | `BEXE_read _
+    | `BEXE_label _
+    | `BEXE_goto _
+    | `BEXE_code _
+    | `BEXE_proc_return _
+    | `BEXE_comment _
+    | `BEXE_nop _
+      -> [exe]
+  in
+    rev x
+
 let heavy_inline_call syms (child_map,bbdfns) 
-  caller vs' callee ts argument id parent sr (props, vs, ps, exes)
+  caller vs' callee ts argument id sr (props, vs, ps, exes)
 =
   (*
   print_endline ("Examining call to " ^ si callee);
@@ -745,11 +873,14 @@ let heavy_inline_call syms (child_map,bbdfns)
     syms (child_map,bbdfns) 
     vs' callee_vs_len callee (Some caller) relabel varmap
   in
-  gen_body syms bbdfns id 
+  gen_body syms (child_map,bbdfns) id 
     varmap ps relabel revariable exes 
     argument sr caller callee vs' callee_vs_len
 
-let rec heavy_inline_calls syms (child_map,bbdfns) vs' caller excludes exes =
+let rec heavy_inline_calls
+  syms (child_map,bbdfns)
+  vs' caller excludes exes 
+=
   let hic callee exes = 
     heavy_inline_calls syms (child_map,bbdfns) 
     vs' caller (callee::excludes) (rev exes) 
@@ -764,14 +895,19 @@ let rec heavy_inline_calls syms (child_map,bbdfns) vs' caller excludes exes =
       let id,parent,sr,entry = Hashtbl.find bbdfns callee in
       begin match entry with
       | `BBDCL_procedure (props,vs,ps,exes) ->
-        if length exes <= syms.compiler_options.max_inline_length
+        if 
+          not (mem `NoInline props) &&
+          (
+            mem `Inline props ||
+            length exes <= syms.compiler_options.max_inline_length
+          )
         then begin
           (*
           print_endline "INLINE CANDIDATE DETECTED - CALL";
           *)
           let xs = 
             heavy_inline_call syms (child_map,bbdfns) 
-            caller vs' callee ts argument id parent sr (props,vs,ps,exes)
+            caller vs' callee ts argument id sr (props,vs,ps,exes)
           in 
             exes' := hic callee xs @ !exes'
         end
@@ -793,33 +929,106 @@ let rec heavy_inline_calls syms (child_map,bbdfns) vs' caller excludes exes =
       print_endline (string_of_bexe syms.dfns 0 exe);
       print_endline ("Callee is " ^ si callee ^ " with ts = " ^ catmap "," (sbt syms.dfns) ts);
       *)
-      let xs = 
-         call_lifting syms (child_map,bbdfns) caller vs' callee ts a argument
-      in 
-        exes' := hic callee xs @ !exes'
+      let id,parent,sr,entry = Hashtbl.find bbdfns callee in
+      begin match entry with
+      | `BBDCL_function (props,vs,ps,ret,exes) ->
+        if 
+          not (mem `NoInline props) &&
+          (
+            mem `Inline props ||
+            length exes <= syms.compiler_options.max_inline_length
+          )
+        then 
+          let xs = 
+             call_lifting syms (child_map,bbdfns) caller vs' callee ts a argument
+          in 
+            exes' := hic callee xs @ !exes'
+        else
+          exes' := exe :: !exes'
+      | _ -> exes' := exe :: !exes'
+      end
 
-    | x -> exes' := x :: !exes'
+    | `BEXE_init (sr,i,(`BEXPR_apply_direct (callee,ts,a),_)) 
+      when not (mem callee excludes)  ->
+      let id,parent,sr,entry = Hashtbl.find bbdfns callee in
+      begin match entry with
+      | `BBDCL_function (props,vs,ps,ret,exes) ->
+        if 
+          not (mem `NoInline props) &&
+          (
+            mem `Inline props ||
+            length exes <= syms.compiler_options.max_inline_length
+          )
+        then 
+          let xs = 
+             inline_function syms (child_map,bbdfns) caller vs' callee ts a i
+          in 
+            exes' := hic callee xs @ !exes'
+        else
+          exes' := exe :: !exes'
+      | _ -> exes' := exe :: !exes'
+      end
+
+    | _ -> exes' := exe :: !exes'
   )
   exes
   ;
   !exes'
-    
+   
 let heavily_inline_bbdcl syms (child_map,bbdfns) i =
   match Hashtbl.find bbdfns i with
   | id,parent,sr,`BBDCL_procedure (props,vs,p,exes) ->
     (*
-    print_endline ("Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
+    print_endline ("HIB: Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
+    print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
     *)
     let exes = heavy_inline_calls syms (child_map,bbdfns) vs i [i] exes in
-    let data = id,parent,sr,`BBDCL_procedure (props,vs,p,rev exes) in
+    let exes = rev exes in
+    (*
+    print_endline ("Output:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+    *)
+    let data = id,parent,sr,`BBDCL_procedure (props,vs,p,exes) in
     Hashtbl.replace bbdfns i data
 
   | id,parent,sr,`BBDCL_function (props,vs,p,ret,exes) ->
     (*
-    print_endline ("Examining function " ^ id ^"<" ^ si i ^ "> for inlinable calls");
+    print_endline ("HIB:Examining function " ^ id ^"<" ^ si i ^ "> for inlinable calls");
+    print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
     *)
     let exes = heavy_inline_calls syms (child_map,bbdfns) vs i [i] exes in
-    let data = id,parent,sr,`BBDCL_function (props,vs,p,ret,rev exes) in
+    let exes = rev exes in
+    (*
+    print_endline ("Output:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+    *)
+    let data = id,parent,sr,`BBDCL_function (props,vs,p,ret,exes) in
+    Hashtbl.replace bbdfns i data
+
+  | _ -> ()
+
+let unravel_bbdcl syms (child_map,bbdfns) i =
+  match Hashtbl.find bbdfns i with
+  | id,parent,sr,`BBDCL_procedure (props,vs,p,exes) ->
+    (*
+    print_endline ("UNRAVEL:Examining procedure " ^ id ^ "<"^ si i ^ "> for unravelling");
+    print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+    *)
+    let exes = concat ( map (xmap_bexe syms (child_map,bbdfns) i vs) exes) in
+    (*
+    print_endline ("Output:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+    *)
+    let data = id,parent,sr,`BBDCL_procedure (props,vs,p,exes) in
+    Hashtbl.replace bbdfns i data
+
+  | id,parent,sr,`BBDCL_function (props,vs,p,ret,exes) ->
+    (*
+    print_endline ("UNRAVEL:Examining function " ^ id ^"<" ^ si i ^ "> for unravelling");
+    print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+    *)
+    let exes = concat ( map (xmap_bexe syms (child_map,bbdfns) i vs) exes) in
+    (*
+    print_endline ("Output:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+    *)
+    let data = id,parent,sr,`BBDCL_function (props,vs,p,ret,exes) in
     Hashtbl.replace bbdfns i data
 
   | _ -> ()
@@ -834,6 +1043,18 @@ let heavy_inlining syms
   (fun i _ -> used := BidSet.add i !used)
   bbdfns
   ;
-  BidSet.iter (heavily_inline_bbdcl syms (child_map,bbdfns)) !used
-
-
+  (*
+  print_endline "Inlining heavy pass1";
+  *)
+  BidSet.iter (heavily_inline_bbdcl syms (child_map,bbdfns)) !used;
+  (*
+  print_endline "Unravelling";
+  *)
+  BidSet.iter (unravel_bbdcl syms (child_map,bbdfns)) !used;
+  (*
+  print_endline "Inlining heavy pass2";
+  *)
+  BidSet.iter (heavily_inline_bbdcl syms (child_map,bbdfns)) !used;
+  (*
+  print_endline "Inlining done"
+  *)

@@ -193,10 +193,12 @@ let mkcurry seq sr name vs args return_type kind body =
     match args with 
     | [] -> 
         (match kind with
+        | `NoInlineFunction
         | `InlineFunction
         | `Function ->
           let props = match kind with
           | `InlineFunction -> [`Inline]
+          | `NoInlineFunction -> [`NoInline]
           | _ -> []
           in
           begin match return_type with
@@ -212,10 +214,12 @@ let mkcurry seq sr name vs args return_type kind body =
 
     | h :: [] -> (* bottom level *)
         (match kind with
+        | `NoInlineFunction
         | `InlineFunction
         | `Function ->
           let props = match kind with
           | `InlineFunction -> [`Inline]
+          | `NoInlineFunction -> [`NoInline]
           | _ -> []
           in
           `AST_function (sr, name n, vs, h, return_type, props, body)
@@ -454,7 +458,9 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let fname = "regmatch" ^ string_of_int n in
     let l,x = rex e in
     let exes = [Exe(sr,`EXE_regmatch (x,!cls))] in
-    let rfun = Dcl(sr,fname,`Private,[],`DCL_function([],`TYP_none,[],exes)) in
+    let rfun = Dcl(sr,fname,`Private,[],
+      `DCL_function([],`TYP_none,[`NoInline],exes)) 
+    in
     rfun :: l @ !dcls,
     `AST_apply(sr,(`AST_name(sr,fname,[]),`AST_tuple(sr,[])))
    
@@ -520,7 +526,9 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let l1,x1 = rex p1 in
     let l2,x2 = rex p2 in
     let exes = [Exe(sr,`EXE_reglex (x1,x2,!cls))] in
-    let rfun = Dcl(sr,fname,`Private,[],`DCL_function([],`TYP_none,[],exes)) in
+    let rfun = Dcl(sr,fname,`Private,[],
+      `DCL_function([],`TYP_none,[`NoInline],exes)) 
+    in
     rfun :: l1 @ l2 @ !dcls,
     `AST_apply(sr,(`AST_name(sr,fname,[]),`AST_tuple(sr,[])))
      
