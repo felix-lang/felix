@@ -129,15 +129,17 @@ let can_stack_func (child_map,bbdfns) i =
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
   | `BBDCL_function (_,_,_,ret,_) -> not (has_ptr_fn bbdfns children ret)
+  | `BBDCL_fun _
   | `BBDCL_struct _
   | `BBDCL_cstruct _ -> false (* hack *)
   | _ -> failwith ("Unexpected non-function " ^ id)
 
+let ident x = x 
 let tident t = t 
 
 let rec enstack_applies syms (child_map, bbdfns) x = 
   let ea e = enstack_applies syms (child_map, bbdfns) e in
-  match map_tbexpr ea tident x with
+  match map_tbexpr ident ea tident x with
   | `BEXPR_apply_direct (i,ts,b),t  ->
     if can_stack_func (child_map, bbdfns) i
     then `BEXPR_apply_stack (i,ts,b),t

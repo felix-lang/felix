@@ -787,6 +787,8 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
       let name = tn (`BTYP_inst (index,ts)) in
       name ^ "(" ^ ge a ^ ")"
 
+    | `BBDCL_fun _ ->
+      ge (`BEXPR_apply_prim (index,ts,a),t)
     | _ -> 
       failwith 
       (
@@ -1036,6 +1038,7 @@ let gen_exe syms (child_map,bbdfns) (label_map,label_usage_map) counter this vs 
   let rec gexe exe = 
     match exe with
     | `BEXE_code (_,s) -> s
+    | `BEXE_nonreturn_code (_,s) -> s
     | `BEXE_comment (_,s) -> "\n/*" ^ s ^ "*/\n"
     | `BEXE_label (_,s) -> 
       let local_labels = 

@@ -76,6 +76,7 @@ let rec isuseless bbdfns exes =
       | `BEXE_call _ (* assume useful if not call to named useful proc *)
       | `BEXE_read _ (* useful even if local, due to side effect *)
       | `BEXE_code _ 
+      | `BEXE_nonreturn_code _ 
       | `BEXE_ifgoto _ (* assume a non-local goto here *)
       | `BEXE_ifnotgoto _ (* assume a non-local goto here *)
       | `BEXE_goto _ (* assume a non-local goto here *)
@@ -131,7 +132,9 @@ Replacement should work also in a case like:
 where we have T2-> int
 *)
 
-let param_subst id syms sr vs b ps ts b' =
+let ident x = x
+
+let param_subst bbdfns id syms sr vs b ps ts b' =
   if length vs <> length ts
   then syserr sr
   (
@@ -171,7 +174,7 @@ let param_subst id syms sr vs b ps ts b' =
   vs ts
   ;
   let auxt t = varmap_subst varmap t in
-  let rec aux e = match map_tbexpr aux auxt e with
+  let rec aux e = match map_tbexpr ident aux auxt e with
   | (`BEXPR_name (i,ts) as x,t) ->
     begin 
       try 
@@ -229,9 +232,12 @@ let tident t = t
 let rec inline_applies syms (child_map, bbdfns) exclude x = 
   let iai i x = inline_applies syms (child_map,bbdfns) (i::exclude) x in
   let ia x = inline_applies syms (child_map,bbdfns) exclude x in
-  let x = map_tbexpr ia tident x in
+  let x = map_tbexpr ident ia tident x in
+  let x = reduce_tbexpr bbdfns x in
   match x with
   | `BEXPR_apply ((`BEXPR_closure (i,ts),_),b'),t -> 
+    assert false
+    (*
     begin match Hashtbl.find bbdfns i with
     | _,_,_,`BBDCL_fun _ ->
       `BEXPR_apply_prim (i,ts, b'),t
@@ -240,7 +246,7 @@ let rec inline_applies syms (child_map, bbdfns) exclude x =
     | _ -> (* needed temporarily for constructors .. *)
       `BEXPR_apply_direct (i,ts, b'),t
     end
- 
+    *) 
 
   | `BEXPR_apply_stack (i,ts,b'),t 
   | `BEXPR_apply_direct (i,ts,b'),t 
@@ -257,7 +263,7 @@ let rec inline_applies syms (child_map, bbdfns) exclude x =
               check_can_inline (child_map, bbdfns) i;
               (* POSSIBLE INFINITE RECURSE .. *)
               let b = iai i b in
-              let a = param_subst id syms sr3 vs b ps ts b' in
+              let a = param_subst bbdfns id syms sr3 vs b ps ts b' in
               a
             with Cannot_inline -> 
               x
@@ -323,8 +329,8 @@ let rec useless_call_elim syms used (child_map,bbdfns) vs' exes index =
               begin 
                 try
                   check_can_inline (child_map,bbdfns) i;
-                  let b = param_subst id syms sr3 vs b ps ts b' in
-                  let a = param_subst id syms sr3 vs a ps ts b' in
+                  let b = param_subst bbdfns id syms sr3 vs b ps ts b' in
+                  let a = param_subst bbdfns id syms sr3 vs a ps ts b' in
                   let a = ia a in
                   let b = ia b in
                   match a with
@@ -343,7 +349,7 @@ let rec useless_call_elim syms used (child_map,bbdfns) vs' exes index =
               begin 
                 try
                   check_can_inline (child_map,bbdfns) i;
-                  let b = param_subst id syms sr3 vs b ps ts b' in
+                  let b = param_subst bbdfns id syms sr3 vs b ps ts b' in
                   let b = ia b in
                   let varmap = Hashtbl.create 97 in
                   iter2
@@ -364,7 +370,7 @@ let rec useless_call_elim syms used (child_map,bbdfns) vs' exes index =
               begin 
                 try
                   check_can_inline (child_map,bbdfns) i;
-                  let b = param_subst id syms sr3 vs b ps ts b' in
+                  let b = param_subst bbdfns id syms sr3 vs b ps ts b' in
                   let b = ia b in
                   let varmap = Hashtbl.create 97 in
                   iter2
@@ -451,6 +457,7 @@ let rec useless_call_elim syms used (child_map,bbdfns) vs' exes index =
   | `BEXE_goto _
   | `BEXE_proc_return _
   | `BEXE_code _
+  | `BEXE_nonreturn_code _
   | `BEXE_read _
     -> exes' := x :: !exes' 
   )

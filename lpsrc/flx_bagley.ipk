@@ -2,13 +2,13 @@
 Temporary script to check the tests work, and also
 to get some times.
 @select(tangler('bagley/run.sh'))
-time for i in 1 2 3 4 5 6 7 8; do bin/flx --test --optimise bagley/felix/ack $i; done
-time for i in 1 2 3 4 5 6 7 8; do bin/flx --test --optimise bagley/felix/fib $i; done
-time for i in 1 2 3 4; do bin/flx --test --optimise bagley/felix/nested_loops $i; done
-time for i in 1 2 3 4; do bin/flx --test --optimise bagley/felix/phone_numbers $i; done
+time bin/flx --test --optimise bagley/felix/ack 8
+time bin/flx --test --optimise bagley/felix/fib 8
+time bin/flx --test --optimise bagley/felix/nested_loops 8
+time bin/flx --test --optimise bagley/felix/phone_numbers 8 
 time bin/flx --test --optimise bagley/felix/random 1000
-time bin/flx --test --optimise bagley/felix/hello_world $i
-time bin/flx --test --optimise bagley/felix/revfile $i < bagley/data/phone_numbers.data
+time bin/flx --test --optimise bagley/felix/hello_world 1
+time bin/flx --test --optimise bagley/felix/revfile 1 < bagley/data/phone_numbers.data
 
 @head(2,'Hello World')
 @select(tangler('bagley/felix/hello_world.flx'))
@@ -52,7 +52,7 @@ print "Fib("; print n; print "): "; print v; endl;
 include "std";
 
 val n = String::atoi(System::argv 1);
-print "nested_loops "; print n;
+print "nested_loops "; print n; endl;
 
 var a:int;
 var b:int;
@@ -128,8 +128,8 @@ fun check_context(start: iterator, finish: iterator): string =
   prior :=  ord(deref(start-1));
   next := ord(deref(finish));
   return 
-    if prior >= zero and prior <= nine 
-    or next >= zero and next <= nine 
+    if zero <= prior &<= nine 
+    or zero <= next &<= nine 
     then ""
     else string_between(start, finish)
     endif
@@ -162,7 +162,7 @@ proc print_phone(x:string, j:int) {
   s := "";
   var i = 0;
   while {i<n} {
-    if ord(x.[i]) >= zero and ord(x.[i]) <= nine 
+    if zero <= ord(x.[i]) &<= nine 
     then { s = s + ord(x.[i]); }
     else {}
     endif;
@@ -224,6 +224,8 @@ foo 214) 222 2222 bar
   tangle(str(i))
 @doc()
 
+@head(2,'Random Numbers')
+Copied from the Ocaml code.
 @select(tangler('bagley/felix/random.flx'))
 include "std";
 val n = String::atoi(System::argv 1);
@@ -244,6 +246,7 @@ fun gen_random (max:double, last:int, i:int):double =>
 
 print (gen_random (100.0, first_last, n)); endl;
 
+@head(2,'Reverse a File')
 @select(tangler('bagley/felix/revfile.flx'))
 include "std";
 val n = String::atoi(System::argv 1);

@@ -298,6 +298,7 @@ and expr_t =
   | `AST_literal of range_srcref * literal_t
   | `AST_deref of range_srcref * expr_t
   | `AST_ref of range_srcref * expr_t
+  | `AST_lvalue of range_srcref * expr_t
   | `AST_method_apply of range_srcref * (id_t * expr_t)
   | `AST_dot of range_srcref * (expr_t * id_t)
   | `AST_lambda of range_srcref * (parameter_t list list * typecode_t * statement_t list)
@@ -594,7 +595,6 @@ and iface_t =
 (** value typing *)
 type 't b0typecode_t' = 
   [
-(*  | `BTYP_name of bid_t *)
   | `BTYP_inst of bid_t * 't list 
   | `BTYP_tuple of 't list         
   | `BTYP_sum of 't list            
@@ -656,6 +656,7 @@ and bexe_t =
   | `BEXE_proc_return of range_srcref   
   | `BEXE_nop of range_srcref * string
   | `BEXE_code of range_srcref * string
+  | `BEXE_nonreturn_code of range_srcref * string
   | `BEXE_assign of range_srcref * tbexpr_t * tbexpr_t 
   | `BEXE_init of range_srcref * bid_t * tbexpr_t 
   | `BEXE_regmatch of range_srcref * tbexpr_t * regular_args_t
@@ -778,6 +779,7 @@ val iter_btype:
   (btypecode_t -> unit) -> btypecode_t -> unit
   
 val map_tbexpr:
+  (bid_t -> bid_t) ->
   (tbexpr_t -> tbexpr_t) -> 
   (btypecode_t -> btypecode_t) ->
   tbexpr_t -> tbexpr_t
@@ -789,6 +791,22 @@ val iter_bexe:
   (string -> unit) ->
   (string -> unit) ->
   bexe_t -> unit
+
+val map_bexe:
+  (bid_t -> bid_t) ->
+  (tbexpr_t -> tbexpr_t) ->
+  (btypecode_t -> btypecode_t) ->
+  (string -> string) ->
+  (string -> string) ->
+  bexe_t -> bexe_t
+
+val reduce_tbexpr:
+  fully_bound_symbol_table_t ->
+  tbexpr_t -> tbexpr_t
+
+val reduce_bexe:
+  fully_bound_symbol_table_t ->
+  bexe_t -> bexe_t
 
 @h = tangler('src/flx_maps.ml')
 @select(h)
@@ -864,19 +882,22 @@ let iter_btype f = function
 
 (* type invariant mapping *)
 
-let map_tbexpr fe ft = function
+let map_tbexpr fi fe ft e = match e with 
   | `BEXPR_deref e,t -> `BEXPR_deref (fe e),ft t
-  | `BEXPR_apply (e1,e2),t -> `BEXPR_apply (fe e1, fe e2),ft t
-  | `BEXPR_apply_prim (i,ts,e2),t -> `BEXPR_apply_prim (i, map ft ts, fe e2),ft t
-  | `BEXPR_apply_direct (i,ts,e2),t -> `BEXPR_apply_direct (i, map ft ts, fe e2),ft t
-  | `BEXPR_apply_stack (i,ts,e2),t -> `BEXPR_apply_stack (i, map ft ts, fe e2),ft t
+  | `BEXPR_ref (i,ts),t -> `BEXPR_ref (i, map ft ts), ft t
+
+  | `BEXPR_apply (e1,e2),t -> `BEXPR_apply (fe e1, fe e2), ft t
+
+  | `BEXPR_apply_prim (i,ts,e2),t -> `BEXPR_apply_prim (fi i, map ft ts, fe e2),ft t
+  | `BEXPR_apply_direct (i,ts,e2),t -> `BEXPR_apply_direct (fi i, map ft ts, fe e2),ft t
+  | `BEXPR_apply_stack (i,ts,e2),t -> `BEXPR_apply_stack (fi i, map ft ts, fe e2),ft t
   | `BEXPR_tuple  es,t -> `BEXPR_tuple (map fe es),ft t
+
   | `BEXPR_get_n (i,e),t -> `BEXPR_get_n (i, fe e),ft t
   | `BEXPR_coercion (e,t'),t -> `BEXPR_coercion (fe e,ft t'),ft t
 
-  | `BEXPR_ref (i,ts),t -> `BEXPR_ref (i, map ft ts), ft t
-  | `BEXPR_closure (i,ts),t -> `BEXPR_closure (i, map ft ts),ft t
-  | `BEXPR_name (i,ts),t -> `BEXPR_name (i, map ft ts), ft t
+  | `BEXPR_closure (i,ts),t -> `BEXPR_closure (fi i, map ft ts),ft t
+  | `BEXPR_name (i,ts),t -> `BEXPR_name (fi i, map ft ts), ft t
   | `BEXPR_case (i,t'),t -> `BEXPR_case (i, ft t'),ft t
   | `BEXPR_match_case (i,e),t -> `BEXPR_match_case (i, fe e),ft t
   | `BEXPR_case_arg (i,e),t -> `BEXPR_case_arg (i, fe e),ft t
@@ -934,12 +955,97 @@ let iter_bexe fi fe ft fl fldef exe =
     h
     
   | `BEXE_code _
+  | `BEXE_nonreturn_code _
   | `BEXE_proc_return _
   | `BEXE_comment _
   | `BEXE_nop _
     -> ()
 
 
+let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
+  match exe with 
+  | `BEXE_call_prim (sr,i,ts,e2)  ->
+    `BEXE_call_prim (sr,fi i,map ft ts, fe e2)
+
+  | `BEXE_call_stack (sr,i,ts,e2) ->
+    `BEXE_call_stack (sr,fi i, map ft ts, fe e2)  
+
+  | `BEXE_call_direct (sr,i,ts,e2) ->
+    `BEXE_call_direct (sr,fi i,map ft ts,fe e2)  
+
+  | `BEXE_assign (sr,e1,e2) ->
+    `BEXE_assign (sr,fe e1,fe e2) 
+   
+  | `BEXE_call (sr,e1,e2) -> 
+    `BEXE_call (sr,fe e1, fe e2)
+
+  | `BEXE_jump (sr,e1,e2) ->
+    `BEXE_jump (sr,fe e1, fe e2) 
+
+  | `BEXE_loop (sr,i,e) ->
+    `BEXE_loop (sr,fi i,fe e) 
+    
+  | `BEXE_ifgoto (sr,e,lab)  ->
+    `BEXE_ifgoto (sr,fe e,fl lab)
+
+  | `BEXE_ifnotgoto (sr,e,lab) ->
+    `BEXE_ifnotgoto (sr,fe e,fl lab) 
+
+  | `BEXE_label (sr,lab) ->
+    `BEXE_label (sr,fldef lab) 
+    
+  | `BEXE_goto (sr,lab) ->
+    `BEXE_goto (sr,fl lab)
+
+  | `BEXE_fun_return (sr,e) ->
+    `BEXE_fun_return (sr,fe e) 
+
+  | `BEXE_init (sr,i,e) ->
+    `BEXE_init (sr,fi i,fe e) 
+    
+  | `BEXE_read (sr,i) ->
+    `BEXE_read (sr,fi i)  
+    
+  | `BEXE_regmatch (sr,e,(a,sc,h,tr)) 
+    -> 
+    let h' = Hashtbl.create 97 in
+    Hashtbl.iter
+    (fun k v -> Hashtbl.add h' k (fe v))
+    h
+    ;
+    `BEXE_regmatch (sr,fe e,(a,sc,h',tr)) 
+    
+  | `BEXE_reglex (sr,p1,p2,(a,sc,h,tr)) 
+    ->
+    let h' = Hashtbl.create 97 in
+    Hashtbl.iter
+    (fun k v -> Hashtbl.add h' k (fe v))
+    h
+    ;
+    `BEXE_reglex (sr,fe p1,fe p2,(a,sc,h',tr)) 
+  
+  | `BEXE_code _
+  | `BEXE_nonreturn_code _
+  | `BEXE_proc_return _
+  | `BEXE_comment _
+  | `BEXE_nop _
+    -> exe
+
+let ident x = x
+let reduce_tbexpr bbdfns e =
+  let rec aux e =
+    match map_tbexpr ident aux ident e with
+    | `BEXPR_apply((`BEXPR_closure (i,ts),_),a),t ->
+      `BEXPR_apply_direct (i,ts,a),t
+
+    | x -> x
+  in aux e
+    
+let reduce_bexe bbdfns exe =
+  match map_bexe ident (reduce_tbexpr bbdfns) ident ident ident exe with
+  | `BEXE_call (sr,(`BEXPR_closure (i,ts),_),a) ->
+    `BEXE_call_direct (sr,i,ts,a)
+  | x -> x
 
 @head(1,'Routines to extract source reference from terms')
 Source reference manipulators.
@@ -1019,6 +1125,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_apply  (s,_) 
   | `AST_deref (s,_) 
   | `AST_ref  (s,_) 
+  | `AST_lvalue (s,_) 
   | `AST_literal  (s,_) 
   | `AST_method_apply  (s,_) 
   | `AST_tuple  (s,_) 
@@ -1390,6 +1497,7 @@ and string_of_expr (e:expr_t) =
   | `AST_get_n (_,(n,e)) -> "get (" ^ si n ^ ", " ^se e^")"
   | `AST_map (_,f,e) -> "map (" ^ se f ^ ") (" ^ se e ^ ")"
   | `AST_deref (_,e) -> "*(" ^ se e ^ ")"
+  | `AST_lvalue (_,e) -> "lvalue" ^ "(" ^ se e ^ ")"
   | `AST_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
   | `AST_literal (_,e) -> string_of_literal e
   | `AST_apply  (_,(fn, arg)) -> "(" ^ 
@@ -1654,14 +1762,6 @@ and sb dfns depth fixlist counter prec tc =
       "[" ^cat ", " (List.map (sbt 9) ts) ^ "]"
       )
 
-(*    
-    | `BTYP_name n -> 
-      let name = 
-        try qualified_name_of_index dfns n
-        with Not_found -> "<N" ^ si n^ ">"
-      in
-      0,name
-*)
     | `BTYP_tuple ls -> 
       begin match ls with 
       | [] -> 0,"unit" 
@@ -2575,6 +2675,9 @@ and string_of_bexe dfns level s =
 
   | `BEXE_code (_,s) -> spc ^ 
     "code " ^ string_of_string s 
+
+  | `BEXE_nonreturn_code (_,s) -> spc ^ 
+    "non_return_code " ^ string_of_string s 
 
   | `BEXE_assign (_,l,r) -> spc ^ 
     se l ^ " = " ^ se r ^ ";"
@@ -3530,6 +3633,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | `AST_product (_,ts) -> `TYP_tuple (List.map te ts)
   | `AST_arrow (_,(a,b)) -> `TYP_function (te a, te b)
   | `AST_superscript (_,(a,b)) -> `TYP_array (te a, te b)
+  | `AST_lvalue (sr,e) -> te e
   | `AST_ref (sr,e) -> `TYP_pointer (te e)
   | `AST_sum (_,ts) -> 
     `TYP_sum (List.map te ts)

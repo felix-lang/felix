@@ -75,6 +75,7 @@ let bind_reqs syms env sr reqs : bid_t list =
   reqs
   
 let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;dirs=dirs;symdef=bdcl} =
+  let qname = qualified_name_of_index syms.dfns i in
   let true_parent = find_true_parent syms.dfns name parent in
   let bexes env exes rt i tvars = bind_exes syms env sr exes rt name i tvars in
   (*
@@ -124,7 +125,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
         if syms.compiler_options.print_flag then
         print_endline 
         (
-          "//bound function " ^ name ^ "<"^si i^">" ^
+          "//bound function " ^ qname ^ "<"^si i^">" ^
            print_vs vs ^":" ^
            sbt syms.dfns (`BTYP_function (atyp,brt'))
         )

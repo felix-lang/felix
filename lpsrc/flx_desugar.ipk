@@ -261,7 +261,7 @@ let assign sr op l r =
     (
       sr, 
       [ 
-        `AST_ref (src_of_expr l,l); 
+        `AST_lvalue (src_of_expr l,l); 
         r
       ]
     )
@@ -357,6 +357,10 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_ref (sr,e) ->
     let l1,x1 = rex e in
     l1, `AST_ref (sr,x1)
+
+  | `AST_lvalue (sr,e) ->
+    let l1,x1 = rex e in
+    l1, `AST_lvalue (sr,x1)
 
   | `AST_suffix _ -> [],e  (* ?? *)
 

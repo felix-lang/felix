@@ -119,6 +119,7 @@ and process_exe (h:usage_t) k exe =
   | `BEXE_label _
   | `BEXE_goto _
   | `BEXE_code _
+  | `BEXE_nonreturn_code _
   | `BEXE_comment _
   | `BEXE_nop _
   | `BEXE_proc_return _

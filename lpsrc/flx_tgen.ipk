@@ -180,64 +180,6 @@ let gen_type_name syms bbdfns (index,typ) =
       )
     end
 
-(*
-  | `BTYP_name index ->
-    failwith
-    (
-      "[gen_type_name] non generic type shouldn't happen now <" ^ si index ^ ">"
-    );
-    (*
-    let name = cn typ in
-    let id,parent,sr,entry = 
-      try Hashtbl.find bbdfns index
-      with _ -> failwith ("[gen_type_name] can't find type" ^ si index)
-    in
-    begin match entry with
-    | `BBDCL_cstruct (vs,cs) -> ""
-    
-    | `BBDCL_struct (vs,cs) ->
-      descr ^
-      "struct " ^ name ^ ";\n"
-
-    | `BBDCL_union (vs,ls) -> 
-      (* 
-        all unions have the same type, 
-        we cast on use to get the right type 
-      *)
-      if all_voids (map snd ls)
-      then
-        descr ^
-        "typedef int " ^ tn typ ^ ";\n"
-      else
-        descr ^
-        "typedef _uctor_ " ^ tn typ ^ ";\n"
-    
-    | `BBDCL_abs (vs,complete,ct,_) -> 
-      begin match vs with
-      | [] -> descr ^ "typedef " ^ ct ^ " " ^ tn typ ^ ";\n" 
-      | _ -> 
-        let descr = 
-          "\n//"^(if complete then "" else "INCOMPLETE ")^
-          "GENERIC PRIMITIVE TYPE " ^ 
-          si index^": " ^ 
-          sbt syms.dfns typ ^ 
-          "\n" 
-        in
-        let vs = map fst vs in
-        let prim = csubst sr sr ct [] [] "Error" "Error" vs in
-        descr ^ "  struct " ^ name ^ " {\n" ^
-        "    typedef "^prim^" t;\n" ^
-        "  };\n"
-      end
-    | _ -> 
-      failwith 
-      (
-        "[gen_type_name] expected type declaration, got " ^
-        string_of_bbdcl syms.dfns entry index
-      )
-    end
-    *)
-*)
   | _ -> failwith "Unexpected metatype in gen_type_name"
 
 (* This routine generates complete types when needed *)
@@ -408,70 +350,6 @@ let gen_type syms bbdfns (index,typ) =
         "]"
       )
     end
-
-
-(*
-  | `BTYP_name index ->
-    failwith ("[gen_type] Deprecated BTYP_name " ^ si index);
-    (*
-    print_endline ("[gen_type] Deprecated BTYP_name " ^ si index);
-    let name = tn typ in
-    let id,parent,sr,entry = 
-      try Hashtbl.find bbdfns index 
-      with _ -> failwith ("[gen_type] can't find index " ^ si index)
-    in
-    begin match entry with
-    | `BBDCL_struct (vs,cs) ->
-      descr ^
-      let ctor = 
-        let equiv_tuple_type = typeoflist (map snd cs) in
-        match length cs with
-        | 0 -> "" (* just use default ctor *)
-        | 1 -> 
-          "  " ^ name ^ "(" ^ tn equiv_tuple_type ^ " const &_arg): " ^
-          fst (hd cs) ^ "(_arg) {}\n" 
-        | _ ->
-          let ctor_inits = ref [] in 
-          let counter = ref 0 in
-         iter 
-          (fun (name,typ) -> 
-            let n = !counter in incr counter; 
-            ctor_inits :=
-              (name ^ "(_arg.mem_"^si n ^")")
-              :: !ctor_inits
-          )
-          cs
-          ;
-          "  " ^ name ^ "(" ^ tn equiv_tuple_type ^ " const &_arg) :\n" ^
-          "    " ^ String.concat ",\n    " (rev !ctor_inits) ^
-          "\n  {}\n" 
-      in
-      "struct " ^ name ^ "{\n" ^
-      "  "^ name ^ "(){}\n" ^
-      ctor ^
-      String.concat "" 
-      (
-       map 
-        (
-          fun (name,typ) -> "  " ^ tn typ ^ 
-          " " ^
-          name ^ ";\n"
-        )
-        cs
-      ) ^
-      "};\n"
-
-    | `BBDCL_union _ -> "" (* covered by prior typedef of _uctor_ or int *)
-    | `BBDCL_abs (vs,complete,ct,_) -> ""
-    | _ -> 
-      failwith 
-      (
-        "[gen_typ] expected type declaration, got " ^
-        string_of_bbdcl syms.dfns entry index
-      )
-    end
-    *)
-*)
 
   | _ -> failwith "Unexpected metatype in gen_type"
 

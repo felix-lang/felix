@@ -216,12 +216,11 @@ header cstdlib "#include <cstdlib>";
   tangle('type '+t+' = "'+tmap[t]+'";')
 
 @def gen_asgn(t):
-  #tangle('  proc _set: &'+t+' * '+t+' = "*('+tmap[t]+'*)($1.data)=$2;";')
-  tangle('  proc swap: &'+t+' * &'+t+' ="""')
+  tangle('  proc swap: lvalue['+t+'] * lvalue['+t+'] ="""')
   tangle('  {')
-  tangle('    '+ tmap[t] + ' tmp=*('+tmap[t]+'*)($1.data);')
-  tangle('    *('+tmap[t]+'*)($1.data)=*('+tmap[t]+'*)($2.data);')
-  tangle('    *('+tmap[t]+'*)($2.data)=tmp;')
+  tangle('    '+ tmap[t] + ' tmp=$1;')
+  tangle('    $1=$2;')
+  tangle('    $2=tmp;')
   tangle('  }""";')
   tangle('  fun eq: '+t+' * '+t+' -> bool = "$1==$2";')
   tangle('  fun ne: '+t+' * '+t+' -> bool = "$1!=$2";')
@@ -253,6 +252,9 @@ publish "Universal type 'x as x'"
 
 publish "Array type"
   typedef array[t,n] = t ^ n;
+
+publish "Lvalue hack"
+  typedef lvalue[t] = t;
 
 publish "Array access: works on LHS of assignment too"
 fun subscript[t,n]: array[t, n] * int -> t = "$1.data[$2]";
@@ -303,7 +305,7 @@ module Bool
     ("muleq","*="),
     ("diveq","/=")
   ]:
-    tangle('  proc '+opname+': &'+t+' * '+t+' = "*('+tmap[t]+'*)($1.data)'+op+'$2;";')
+    tangle('  proc '+opname+': lvalue['+t+'] * '+t+' = "$1'+op+'$2;";')
 
 @def gen_uint_assign(t):
   for opname,op in [
@@ -311,7 +313,7 @@ module Bool
     ("vbareq","|="),
     ("ampereq","&=")
   ]:
-    tangle('  proc '+opname+': &'+t+' * '+t+' = "*('+tmap[t]+'*)($1.data)'+op+'$2;";')
+    tangle('  proc '+opname+': lvalue['+t+'] * '+t+' = "$1'+op+'$2;";')
 
 @def gen_mod(t):
   for opname,op in [
@@ -354,10 +356,10 @@ module Bool
     tangle('  fun isnan: '+t+' -> bool = "!($1==$1)" requires cmath;')
 
 @def gen_inc(t):
-  tangle('  proc pre_incr:  &'+t+' = "++*('+tmap[t]+'*)($1.data);";')
-  tangle('  proc pre_decr:  &'+t+' = "--*('+tmap[t]+'*)($1.data);";')
-  tangle('  proc post_incr: &'+t+' = "++*('+tmap[t]+'*)($1.data);";')
-  tangle('  proc post_decr: &'+t+' = "--*('+tmap[t]+'*)($1.data);";')
+  tangle('  proc pre_incr:  lvalue['+t+'] = "++$1;";')
+  tangle('  proc pre_decr:  lvalue['+t+'] = "--$1;";')
+  tangle('  proc post_incr: lvalue['+t+'] = "$1++;";')
+  tangle('  proc post_decr: lvalue['+t+'] = "$1--;";')
   
 @#------------- TYPING ---------------------------
 module Typing
@@ -592,7 +594,7 @@ module String
   open Bool;
   open Char;
   open Int;
-  proc pluseq: &string * string = "((std::string*)($1.data))->append($2);";
+  proc pluseq: lvalue[string] * string = "$1.append($2);";
   proc make_string: charp -> string = 'std::string($1)';
   proc make_string: charcp -> string =' std::string($1)';
 
@@ -632,8 +634,7 @@ module Ustring
   open Bool;
   open Char;
   open Int;
-@#  proc _set: &ustring * ustring = "(basic_string<uint32_t>*)($1.data)->assign($1);";
-  proc pluseq: &ustring * ustring = "(basic_string<uint32_t>*)($1.data)->append($2);";
+  proc pluseq: lvalue[ustring] * ustring = "$1.append($2);";
 
   fun len: ustring -> int = "$1.size()";
   fun add: ustring * ustring -> ustring = "$1+$2";
@@ -928,10 +929,9 @@ module Lexer
   fun add: iterator * int -> iterator = "$1 + $2";
   fun sub: iterator * int -> iterator = "$1 - $2";
   fun sub: iterator * iterator -> int = "$1 - $2";
-  proc incr: &iterator -> iterator = "++*$1.data;";
+  proc incr: lvalue[iterator] = "++$1;";
   fun deref: iterator -> char = "*$1";
 
-@#  proc _set: &iterator * iterator = "*(char const**)$1.data = $2;";
 }
 
 // ------ Open common modules -------------

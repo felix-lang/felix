@@ -250,7 +250,6 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
 
     | `BTYP_var _ -> t (* can't reduce it yet *)
 
-(*    | `BTYP_name i -> failwith "Betareduce unexpected BTYP_name" *)
     | _ -> failwith 
       (
         "[beta-reduce] Expected type function or variable, got " ^ 

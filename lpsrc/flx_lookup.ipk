@@ -2463,7 +2463,48 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     lookup sr (f:>expr_t) sign
 
   | `AST_ref (_,(`AST_deref (sr,e))) -> be e
-  
+
+  | `AST_lvalue (srr,e) ->
+    let (e',t') as et' = be e in 
+    begin match e' with
+    | `BEXPR_name (index,ts) ->
+      begin match get_data syms.dfns index with
+      {id=id; sr=sr; symdef=entry} ->
+      begin match entry with
+      | `SYMDEF_inherit _ -> clierr srr "Woops, bindexpr yielded inherit"
+      | `SYMDEF_inherit_fun _ -> clierr srr "Woops, bindexpr yielded inherit fun"
+      | `SYMDEF_var _ -> et'
+
+      | `SYMDEF_parameter _ -> 
+         clierr2 srr sr
+        (
+          "[bind_expression] " ^
+          "Use parameter " ^ id ^ " as lvalue " 
+        )
+      | `SYMDEF_const _
+      | `SYMDEF_val _ ->
+        clierr2 srr sr
+        (
+          "[bind_expression] " ^
+          "Use value or const " ^ id ^ " as lvalue " 
+        )
+      | _ -> 
+         clierr2 srr sr
+        (
+          "[bind_expression] " ^
+          "Use non variable " ^ id ^ " as lvalue "
+        )
+      end
+      end
+    | _ ->
+       clierr srr 
+        (
+          "[bind_expression] " ^
+          "Address non variable"
+        )
+    end
+
+ 
   | `AST_ref (sr,(`AST_dot (_,(e,id)))) ->
     let ref_name = "ref_" ^ id in
     be 
@@ -2499,29 +2540,23 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
         )
 
       | `SYMDEF_parameter _ -> 
-         clierr srr 
+         clierr2 srr sr
         (
           "[bind_expression] " ^
-          short_string_of_src srr ^
-          ": Address value parameter " ^ id ^ " defined at " ^
-          short_string_of_src sr
+          "Address value parameter " ^ id 
         )
       | `SYMDEF_const _
       | `SYMDEF_val _ ->
-        clierr srr 
+        clierr2 srr sr
         (
           "[bind_expression] " ^
-          short_string_of_src srr ^
-          "Can't address a value or const " ^ id ^ " defined at " ^
-          short_string_of_src sr
+          "Can't address a value or const " ^ id
         )
       | _ -> 
-         clierr srr 
+         clierr2 srr sr
         (
           "[bind_expression] " ^
-          short_string_of_src srr ^
-          "Address non variable " ^ id ^ " defined at " ^
-          short_string_of_src sr
+          "Address non variable " ^ id 
         )
       end
       end
@@ -2529,9 +2564,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
        clierr srr 
         (
           "[bind_expression] " ^
-          short_string_of_src srr ^
-          "Address non variable in\n" ^
-          short_string_of_src srr
+          "Address non variable"
         )
     end
 
@@ -2900,7 +2933,6 @@ and build_env syms parent : env_t =
 and rebind_btype syms env sr ts t: btypecode_t =
   let rbt t = rebind_btype syms env sr ts t in
   match t with
-(*  | `BTYP_name i *)
   | `BTYP_inst (i,_) ->
     begin match get_data syms.dfns i with
     | {symdef=`SYMDEF_type_alias t'} ->

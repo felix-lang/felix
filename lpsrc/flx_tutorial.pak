@@ -256,22 +256,22 @@ var v: uint;
 i = 1;         // assignment, intrinsic
 
 // integral
-i +=  1;       pluseq       (&i,1);
-i -=  1;       minuseq      (&i,1);
-i *=  1;       muleq        (&i,1);
-i /=  1;       diveq        (&i,1);
+i +=  1;       pluseq       (i,1);
+i -=  1;       minuseq      (i,1);
+i *=  1;       muleq        (i,1);
+i /=  1;       diveq        (i,1);
 
 // bitwise: unsigned only
-u ^=  1u;       careteq      (&u,1u);
-u |=  1u;       vbareq       (&u,1u);
-u &=  1u;       ampereq      (&u,1u);
+u ^=  1u;       careteq      (u,1u);
+u |=  1u;       vbareq       (u,1u);
+u &=  1u;       ampereq      (u,1u);
 
 
 // counting
-++i;           pre_incr (&i);
-i++;           post_incr (&i);
---i;           pre_decr (&i);
-i--;           post_decr (&i);
+++i;           pre_incr (i);
+i++;           post_incr (i);
+--i;           pre_decr (i);
+i--;           post_decr (i);
 
 @head(2,'Functions')
 Felix allows you to define functions,

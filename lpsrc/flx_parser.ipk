@@ -92,7 +92,10 @@ let call1 (op:string) (sr:range_srcref) (sri:srcref) l =
   (
     sr,
     `AST_name (slift sri, op,[]),
-    `AST_ref (src_of_expr l,l)
+    `AST_lvalue (src_of_expr l,l)
+    (* CHANGED TO LVALUE
+    `AST_ref (src_of_expr l,l) 
+    *)
   )
 
 (* model unary operator as procedure call *)
@@ -102,8 +105,12 @@ let call2 (op:string) (sr:range_srcref) (sri:srcref) l r =
     sr,
     `AST_name (slift sri, op,[]),
     `AST_tuple(sr,[
+    `AST_lvalue (src_of_expr l,l);
+    `AST_lvalue (src_of_expr l,l)
+    (*
     `AST_ref (src_of_expr l,l);
     `AST_ref (src_of_expr l,l)
+    *)
     ])
   )
 

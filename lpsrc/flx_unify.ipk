@@ -338,7 +338,6 @@ let fix i t =
     | `BTYP_pointer a -> `BTYP_pointer (aux a)
     | `BTYP_array (a,b) -> `BTYP_array (aux a, aux b)
 
-(*    | `BTYP_name _ *)
     | `BTYP_void
     | `BTYP_fix _
     | `BTYP_apply _
@@ -424,7 +423,6 @@ let rec unification dfns eqns (dvars: IntSet.t) : (int * btypecode_t) list =
       | `BTYP_fix 0,_
       | _,`BTYP_fix 0 -> ()
         
-(*      | `BTYP_name i, `BTYP_name j *)
       | `BTYP_fix i,`BTYP_fix j ->
         if i <> j then raise Not_found
 
@@ -608,10 +606,6 @@ let rec type_eq' trail depth t1 t2 =
     (fun tr a b -> tr && te a b) 
     true ts1 ts2
  
-(*  | `BTYP_name i,`BTYP_name j 
-    -> i = j 
-*)
-
   | `BTYP_sum ts1, `BTYP_sum ts2
   | `BTYP_tuple ts1,`BTYP_tuple ts2 ->
     if length ts1 = length ts2
@@ -667,7 +661,6 @@ let unfold t =
     failwith ("[unfold] Fix point outside term, depth="^string_of_int i)
 
   | `BTYP_inst (i,ts) -> `BTYP_inst (i,map uf ts)
-(*  | `BTYP_name i -> `BTYP_name i *)
   | _ -> t'
   in aux 0 t
 
@@ -688,7 +681,6 @@ let fold t =
     | `BTYP_pointer a  -> ax a
 
     | `BTYP_void
-(*    | `BTYP_name _  *)
 
     | `BTYP_var _ 
     | `BTYP_fix 0 -> ()
@@ -723,7 +715,6 @@ let var_occurs t =
     | `BTYP_pointer a  -> aux a
 
     | `BTYP_void
-(*    | `BTYP_name _  *)
     | `BTYP_fix _ -> ()
 
     | `BTYP_var _ -> raise Not_found

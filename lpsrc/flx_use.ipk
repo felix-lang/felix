@@ -49,9 +49,6 @@ let nop x = ()
 let rec uses_type syms used bbdfns (t:btypecode_t) = 
   let ut t = uses_type syms used bbdfns t in
   match t with
-(*  | `BTYP_name i 
-    -> uses syms used bbdfns i
-*)
   | `BTYP_inst (i,ts)
     -> 
       uses syms used bbdfns i;
@@ -72,7 +69,7 @@ and uses_exe syms used bbdfns (exe:bexe_t) =
   let ut t = uses_type syms used bbdfns t in
   match exe with
   | `BEXE_init (_,i,e) -> 
-    (* uses syms used bbdfns i; *) ue e
+    uses syms used bbdfns i; ue e
 
   | _ -> iter_bexe ui ue ut nop nop exe
 

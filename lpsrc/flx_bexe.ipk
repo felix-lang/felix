@@ -326,7 +326,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
 
     | `EXE_nop s ->           tack (`BEXE_nop (sr,s))
     | `EXE_code s ->          tack (`BEXE_code (sr,s))
-    | `EXE_noreturn_code s ->  reachable := false; tack (`BEXE_code (sr,s))
+    | `EXE_noreturn_code s ->  reachable := false; tack (`BEXE_nonreturn_code (sr,s))
 
     | `EXE_init (s,e) -> 
       begin match lun sr s with
