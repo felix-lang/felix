@@ -488,26 +488,26 @@ module List
 {
   union list[T] = | Empty | Cons of T * list[T];
 
-  fun rev_map[T,U] (f:T->U) (x:list[T]): list[U] = {
+  fun map[T,U] (f:T->U) (x:list[T]): list[U] = {
     return
       match x with
       | Empty => Empty[U]
-      | Cons (?h, ?t) => Cons (f(h), rev_map f t)
+      | Cons (?h, ?t) => Cons (f(h), map f t)
       endmatch
     ;
   }
 
   fun rev[T] (x:list[T]):list[T]= {
-    return 
-      match x with
-      | Empty => Empty
-      | Cons (?h, ?t) => Cons (h, rev t)
-      endmatch
-    ;
-  }
-
-  fun map[T,U] (f:T->U) (x:list[T]): list[U] = {
-    return rev (rev_map f x);
+    fun aux (x:list[T]) (y:list[T]) : list[T] =
+    {
+      return 
+        match x with
+        | Empty => y
+        | Cons (?h, ?t) => aux t (Cons (h, y))
+        endmatch
+      ;
+    }
+    return aux x Empty[T];
   }
 
   proc iter[T] (f:T->void) (x:list[T]) {

@@ -114,9 +114,13 @@ let mkcurry sr name vs args return_type body =
   in 
   let mkret arg ret = mkfuntyp (typeoflist (List.map snd arg)) ret in
   let arity = List.length args in
-  let rettype args = List.fold_right mkret args return_type in
+  let rettype args = 
+    match return_type with
+    | `TYP_none -> `TYP_none
+    | _ -> List.fold_right mkret args return_type 
+  in
 
-  let rec aux args =  
+  let rec aux args vs =  
     let n = List.length args in
     let name n = 
       if n = arity
@@ -126,19 +130,12 @@ let mkcurry sr name vs args return_type body =
     match args with 
     | [] -> assert false
     | h :: [] -> (* bottom level *)
-      (match return_type with
-      (*
-      | `AST_void _ -> 
-        `AST_procedure (sr, name n, vs, h, body) 
-      *)
-      | _ -> 
         `AST_function (sr, name n, vs, h, return_type, body)
-      )
     | h :: t ->
       let m = List.length args in
       let body = 
         [
-          aux t;
+          aux t [];
           `AST_fun_return 
           (
             sr,
@@ -154,7 +151,7 @@ let mkcurry sr name vs args return_type body =
         ] 
       in
         `AST_function (sr, name m, vs, h, rettype t, body)
-   in aux args
+   in aux args vs
 
 (* handle curried type functions *)
 let mktypefun sr name vs args return_type body =

@@ -1975,6 +1975,16 @@ It is necessary even for currified functions
 if you want to fix the second argument, but
 leave the first free.
 
+@head(2,'List functions')
+@select(tangler(tdir+'tut140a.flx'))
+include "std";
+open List;
+val x : list[int] = 
+  Cons (1, Cons (2, Cons (3, Empty[int])));
+val y = rev x;
+iter (proc (x:int) { print x; print ", "; }) x; endl;
+iter (proc (x:int) { print x; print ", "; }) y; endl;
+
 
 @head(2,'Modules')
 Most modern languages support packaging of related
@@ -2935,7 +2945,7 @@ interface list_req
   proc print_element: element;
 }
 
-functor List (req:list_req)
+functor MyList (req:list_req)
 {
   union list =
     | Empty
@@ -2963,7 +2973,7 @@ module Integer
 
 module Int_req = Integer : list_req;
 
-module int_list = List Int_req;
+module int_list = MyList Int_req;
 
 val t0 = int_list::Empty;
 val nxt = (100 : Int_req::element, t0);
@@ -3026,7 +3036,7 @@ exact match is required.
 Finally, we instantiate the functor:
 
 @begin_displayed_code()
-module int_list = List Int_req;
+module int_list = MyList Int_req;
 @end_displayed_code()
 
 and the result is a module. Note that to use the module,

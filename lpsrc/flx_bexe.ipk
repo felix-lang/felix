@@ -70,6 +70,9 @@ let cal_loop dfns (p,pt) e this =
 
 exception Found of int
 
+let print_vs vs =
+  catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs
+
 let bind_exes syms env sr exes ret_type id index parent_vs = 
   (*
   print_endline ("bind_exes.. env depth="^ string_of_int (List.length env));
@@ -239,11 +242,14 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         then tack (`BEXE_init (index, (e',rhst)))
         else clierr sr
         (
-          "[bind_exe] LHS["^s^"]("^string_of_btypecode syms.dfns lhst^
-          ") of initialisation must have same type as RHS("^
+          "[bind_exe] LHS["^s^"<"^si index^">:"^string_of_btypecode syms.dfns lhst^
+          " of initialisation must have same type as RHS("^
           string_of_btypecode syms.dfns rhst^
           ")" ^
-          " unfolded LHS = " ^ sbt syms.dfns (unfold lhst)
+          " unfolded LHS = " ^ sbt syms.dfns (unfold lhst) ^ 
+          "\nenvironment type variables are " ^
+          print_vs parent_vs
+          
         )
       | NonFunctionEntry _ -> failwith "Not expecting bound entry"
       end

@@ -47,12 +47,13 @@ let find_param name_map s =
   | NonFunctionEntry (Simple i) -> i
   | _ -> failwith ("[find_param] Can't find parameter " ^ s )
 
+let print_vs vs =
+  if length vs = 0 then "" else
+  "[" ^ catmap "," (fun (s,i) -> s ^ "<"^si i^">") vs^ "]"
 let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
   let bexes env exes rt i tvars = bind_exes syms env sr exes rt name i tvars in
-  if syms.compiler_options.print_flag then
-  print_endline ("//binding  " ^ name ^ "<"^string_of_int i^">");
   (*
-  print_endline ("Parent is " ^ (match parent with | None -> "none" | Some i -> string_of_int i));
+  print_endline ("Parent is " ^ (match parent with | None -> "none" | Some i -> si i));
   *) 
   if proper_descendant syms.dfns parent
   then begin
@@ -75,11 +76,6 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
     | `SYMDEF_if_type  -> ()
 
     | `SYMDEF_function (ps,rt,exes) -> 
-      (*
-      print_endline ("//Binding function " ^ string_of_int i ^ " --> " ^ name); 
-      print_endline ("given type is " ^ string_of_typecode rt);
-      print_endline ("exes are: " ^ (String.concat "\n  " (List.map (string_of_exe 1) exes)));
-      *)
       let bps : (string * (int * btypecode_t)) list = 
         List.map (fun (s,t) -> 
         let i = find_param name_map s in
@@ -88,13 +84,7 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
       in
       let env' = build_env syms [] (Some i) in
       let brt = bt rt in
-      (*
-      print_endline ("return type is stated as " ^ string_of_btypecode syms.dfns brt);
-      *)
       let brt',bbexes = bexes env' exes brt i vs in
-      (*
-      print_endline ("return type is " ^ string_of_btypecode syms.dfns brt');
-      *)
       let bbdcl = 
         match brt' with
         | `BTYP_void ->
@@ -102,45 +92,38 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
         | _ ->
           `BBDCL_function (vs,bps,brt',bbexes,name_map)
       in
-        (*
-        print_endline "binding done";
-        *)
         Hashtbl.add bbdfns i (name,parent,bbdcl);
-        (* the types of parameters must use the same type variables
-           as the function, so we have to add them here
-        *)
-        List.iter
-        (fun (s,(k,t)) ->
-          (*
-          print_endline (" .. binding parameter " ^ s ^ "<"^ string_of_int k ^ ">");
-          *)
-          Hashtbl.add bbdfns k (s,Some i,`BBDCL_val (vs,t))
+
+        let atyp = typeoflist (map (fun (s,(i,t)) -> t) bps) in
+        if syms.compiler_options.print_flag then
+        print_endline 
+        (
+          "//bound function " ^ name ^ "<"^si i^">" ^
+           print_vs vs ^":" ^
+           sbt syms.dfns (`BTYP_function (atyp,brt'))
         )
-        bps 
-    (* this case is messy: function bind their own parameters,
-      but functors do not, we have to do it for them,
-      temporarily (this will obviously fail when there are
-      type variables around .. we need to get em from the
-      functor sig, but they're not parameterised yet
-    *)
+
     | `SYMDEF_parameter (t) -> 
       begin match parent with 
       | None -> failwith "[bbind_sym] expected parameter to have a parent" 
       | Some ip ->
-        let id2,sr,parent2,vs,_,_,entry2 = Hashtbl.find syms.dfns ip in
+        let id2,sr,parent2,_,_,_,entry2 = Hashtbl.find syms.dfns ip in
         match entry2 with
-        | `SYMDEF_function _ -> ()
+        | `SYMDEF_function _
         | `SYMDEF_typed_functor _
         | `SYMDEF_untyped_functor _ ->
-           let t = bt t in
-           Hashtbl.add bbdfns i (name,parent,`BBDCL_val (vs,t))
+          let t = bt t in
+          Hashtbl.add bbdfns i (name,parent,`BBDCL_val (vs,t));
+
+          if syms.compiler_options.print_flag then
+          print_endline ("//bound val " ^ name ^ "<"^si i^">" ^
+          print_vs vs ^ ":" ^
+          sbt syms.dfns t)
+
         | _ -> failwith "[bbind_sym] expected parameter to have function or functor parent"
       end
 
     | `SYMDEF_match_check (pat,mvindex) ->
-      (*
-      print_endline ("//Binding match checker " ^ string_of_int i ^ " --> " ^ name); 
-      *)
       let t = typeofindex syms [] [] 0 [] mvindex in
       let name_map = Hashtbl.create 97 in
       let arg,sr = match Hashtbl.find syms.dfns mvindex with id,sr,_,_,_,_,_ -> id,sr in
@@ -159,33 +142,35 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
         )
       ;
       Hashtbl.add bbdfns i (name,parent,
-        `BBDCL_function (vs,[],flx_bbool,bbexes,name_map));
+        `BBDCL_function (vs,[],flx_bbool,bbexes,name_map)
+      );
+      if syms.compiler_options.print_flag then
+      print_endline ("//bound match check " ^ name ^ "<"^si i^">" ^
+      print_vs vs ^ ":" ^
+        sbt syms.dfns (`BTYP_function (`BTYP_tuple[],flx_bbool))
+      )
     
     | `SYMDEF_val (t) -> 
-      (*
-      print_endline ("//Binding value " ^ string_of_int i ^ " --> " ^ name); 
-      *)
       let t = bt t in
-      (*
-      print_endline ("bound type is " ^ sbt syms.dfns t);
-      *)
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_val (vs,t))
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_val (vs,t));
+
+      if syms.compiler_options.print_flag then
+      print_endline ("//bound val " ^ name ^ "<"^si i^">" ^
+      print_vs vs ^ ":" ^
+      sbt syms.dfns t)
 
     | `SYMDEF_var (t) ->
-      (*
-      print_endline ("//Binding variable " ^ string_of_int i ^ " --> " ^ name); 
-      *)
       let t = bt t in
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_var (vs,t))
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_var (vs,t));
+
+      if syms.compiler_options.print_flag then
+      print_endline ("//bound var " ^ name ^ "<"^si i^">" ^
+      print_vs vs ^ ":" ^
+      sbt syms.dfns t)
+
 
     | `SYMDEF_fun (ts,ret,ct) ->
-      (*
-      print_endline ("//Binding primitive function " ^ string_of_int i ^ " --> " ^ name);
-      *)
       let params : btypecode_t list = List.map bt ts in
-      (*
-      print_endline "got params";
-      *)
       let bret = bt ret in
       let bbdcl = match bret with
         | `BTYP_void ->
@@ -193,24 +178,34 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
         | _ ->
           `BBDCL_fun (vs, params,bret,ct)
       in
-      Hashtbl.add bbdfns i (name,parent,bbdcl)
+      Hashtbl.add bbdfns i (name,parent,bbdcl);
+
+      let atyp = typeoflist params in
+      if syms.compiler_options.print_flag then
+      print_endline ("//bound fun " ^ name ^ "<"^si i^">"^
+      print_vs vs ^ ":" ^
+      sbt syms.dfns (`BTYP_function (atyp,bret)))
+
 
     | `SYMDEF_union (cs) ->
-      (* print_endline ("//Binding union " ^ string_of_int i ^ " --> " ^ name); 
+      (* print_endline ("//Binding union " ^ si i ^ " --> " ^ name); 
       *)
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
       Hashtbl.add bbdfns i (name,parent,`BBDCL_union (vs,cs'))
 
     | `SYMDEF_struct (cs) ->
-      (* print_endline ("//Binding struct " ^ string_of_int i ^ " --> " ^ name); 
+      (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name); 
       *)
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
       Hashtbl.add bbdfns i (name,parent,`BBDCL_struct (vs,cs'))
 
     | `SYMDEF_const (t,ct) ->
-      (* print_endline ("//Binding constant " ^ string_of_int i ^ " --> " ^ name); 
-      *)
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_const (vs,bt t,ct))
+      let t = bt t in
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_const (vs,t,ct));
+      if syms.compiler_options.print_flag then
+      print_endline ("//bound const " ^ name ^ "<"^si i^">:" ^
+      sbt syms.dfns t);
+
 
     | `SYMDEF_regdef _ -> ()
     | `SYMDEF_type_alias _ -> ()
@@ -219,17 +214,17 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
 
     | `SYMDEF_abs ct->
       (*
-      print_endline ("//Binding abstract type " ^ string_of_int i ^ " --> " ^ name); 
+      print_endline ("//Binding abstract type " ^ si i ^ " --> " ^ name); 
       *)
       Hashtbl.add bbdfns i (name,parent,`BBDCL_abs (vs,ct))
 
     | `SYMDEF_header ct ->
-      (* print_endline ("//Binding header string " ^ string_of_int i ^ " --> " ^ name); 
+      (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name); 
       *)
       Hashtbl.add bbdfns i (name,parent,`BBDCL_header ct)
 
     | `SYMDEF_body ct ->
-      (* print_endline ("//Binding body string " ^ string_of_int i ^ " --> " ^ name); 
+      (* print_endline ("//Binding body string " ^ si i ^ " --> " ^ name); 
       *)
       Hashtbl.add bbdfns i (name,parent,`BBDCL_body ct)
 
@@ -243,7 +238,7 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
     end
     (*
     ;
-    print_endline ("BINDING " ^ name ^ "<" ^ string_of_int i ^ "> COMPLETE");
+    print_endline ("BINDING " ^ name ^ "<" ^ si i ^ "> COMPLETE");
     flush stdout
     *)
 
@@ -409,7 +404,7 @@ try
     Hashtbl.iter
     (fun index (name,parent,entry) -> print_endline
       (
-        string_of_int index ^ " --> " ^
+        si index ^ " --> " ^
         string_of_bbdcl syms.dfns entry index
       )
     )
