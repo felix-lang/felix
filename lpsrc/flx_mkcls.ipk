@@ -1,0 +1,193 @@
+@head(1,"Elide unused entries")
+Name binding pass 2.
+
+@h = tangler("src/flx_mkcls.mli")
+@select(h)
+open Flx_ast
+open Flx_types
+open Flx_typing
+open Flx_mtypes1
+open Flx_mtypes2
+
+val make_closures:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  IntSet.t
+
+@h = tangler("src/flx_mkcls.ml")
+@select(h)
+open Flx_util
+open Flx_ast
+open Flx_types
+open Flx_mtypes1
+open Flx_mtypes2
+open Flx_print
+open Flx_typing
+open Flx_mbind
+open Flx_srcref
+open List
+open Flx_unify
+open Flx_treg
+open Flx_exceptions
+
+let gen_closure syms bbdfns i =
+  let j = !(syms.counter) in incr syms.counter;
+  let id,parent,sr,entry = Hashtbl.find bbdfns i in
+  match entry with
+  | `BBDCL_proc (vs,ps,c,reqs) ->
+    let arg_t = 
+      match ps with | [t] -> t | ps -> `BTYP_tuple ps
+    in
+    let ts = map (fun (_,i) -> `BTYP_var i) vs in
+    let ps,a = 
+      let n = !(syms.counter) in incr syms.counter;
+      let name = "_a" ^ si n in
+      let ventry = `BBDCL_val (vs,arg_t) in
+      Hashtbl.add bbdfns n (name,Some j,sr,ventry);
+      [name,(n,arg_t)],(`BEXPR_name (n,ts),arg_t)
+    in
+    
+    let exes : bexe_t list = 
+      [
+        `BEXE_call_prim (sr,i,ts,a); 
+        `BEXE_proc_return sr
+      ] 
+    in
+    let entry = `BBDCL_procedure ([],vs,ps,exes) in
+    Hashtbl.add bbdfns j (id,parent,sr,entry);
+    j
+
+  | `BBDCL_fun (vs,ps,ret,c,reqs) ->
+    let ts = map (fun (_,i) -> `BTYP_var i) vs in
+    let arg_t = 
+      match ps with | [t] -> t | ps -> `BTYP_tuple ps
+    in
+    let ps,a = 
+      let n = !(syms.counter) in incr syms.counter;
+      let name = "_a" ^ si n in
+      let ventry = `BBDCL_val (vs,arg_t) in
+      Hashtbl.add bbdfns n (name,Some j,sr,ventry);
+      [name,(n,arg_t)],(`BEXPR_name (n,ts),arg_t)
+    in
+    let e = `BEXPR_apply_prim (i,ts,a),ret in
+    let exes : bexe_t list = [`BEXE_fun_return (sr,e)] in
+    let entry = `BBDCL_function ([],vs,ps,ret,exes) in
+    Hashtbl.add bbdfns j (id,parent,sr,entry);
+    j
+
+  | _ -> assert false
+
+  
+let mkcls syms bbdfns all_closures i ts =
+  let j =
+    try Hashtbl.find syms.wrappers i 
+    with Not_found -> gen_closure syms bbdfns i
+  in 
+    all_closures := IntSet.add j !all_closures;
+    `BEXPR_closure (j,ts)
+
+let check_prim syms bbdfns all_closures i ts =
+  let _,_,_,entry = Hashtbl.find bbdfns i in
+  match entry with
+  | `BBDCL_proc _ 
+  | `BBDCL_fun _ -> 
+    mkcls syms bbdfns all_closures i ts
+  | _ -> 
+    all_closures := IntSet.add i !all_closures;
+    `BEXPR_closure (i,ts)
+  
+let idt t = t 
+
+let ident x = x 
+
+let rec adj_cls syms bbdfns all_closures e = 
+  let adj e = adj_cls syms bbdfns all_closures e in
+  match Flx_maps.map_tbexpr ident adj idt e with
+  | `BEXPR_closure (i,ts),t -> 
+    check_prim syms bbdfns all_closures i ts,t
+
+  | `BEXPR_apply_direct (i,ts,a),t as x -> 
+    all_closures := IntSet.add i !all_closures;
+    x
+
+  | x -> x
+
+
+let process_exe syms bbdfns all_closures (exe : bexe_t) : bexe_t =
+  let ue e = adj_cls syms bbdfns all_closures e in 
+  match exe with
+  | `BEXE_call_prim (sr,i,ts,e2)  -> `BEXE_call_prim (sr,i,ts, ue e2)
+
+  | `BEXE_call_direct (sr,i,ts,e2)  -> 
+    all_closures := IntSet.add i !all_closures;
+    `BEXE_call_direct (sr,i,ts, ue e2)
+
+  | `BEXE_call_stack (sr,i,ts,e2)  -> 
+    (* stack calls do use closures -- but not heap allocated ones *)
+    `BEXE_call_stack (sr,i,ts, ue e2)
+
+  | `BEXE_call (sr,e1,e2)  -> `BEXE_call (sr,ue e1, ue e2)
+  | `BEXE_jump (sr,e1,e2)  -> `BEXE_jump (sr,ue e1, ue e2)
+    
+  | `BEXE_loop (sr,i,e) -> `BEXE_loop (sr,i, ue e)
+  | `BEXE_ifgoto (sr,e,l) -> `BEXE_ifgoto (sr, ue e,l)
+  | `BEXE_ifnotgoto (sr,e,l) -> `BEXE_ifnotgoto (sr, ue e,l)
+  | `BEXE_fun_return (sr,e) -> `BEXE_fun_return (sr,ue e)
+
+  | `BEXE_init (sr,i,e) -> `BEXE_init (sr,i,ue e)
+  | `BEXE_assign (sr,e1,e2) -> `BEXE_assign (sr, ue e1, ue e2)
+
+  | `BEXE_read (sr,i) -> exe
+
+  | `BEXE_regmatch (sr,e,(a,b,h,d)) -> 
+    let h' = Hashtbl.create 97 in
+    Hashtbl.iter
+    (fun k e -> Hashtbl.add h' k (ue e))
+    h
+    ;
+    `BEXE_regmatch (sr, ue e, (a,b,h',d))
+
+  | `BEXE_reglex (sr,p1,p2,(a,b,h,d)) -> 
+    let h' = Hashtbl.create 97 in
+    Hashtbl.iter
+    (fun k e -> Hashtbl.add h' k (ue e))
+    h
+    ;
+    `BEXE_reglex (sr, ue p1, ue p2, (a,b,h',d))
+
+  | `BEXE_label _
+  | `BEXE_goto _
+  | `BEXE_code _
+  | `BEXE_nonreturn_code _
+  | `BEXE_comment _
+  | `BEXE_nop _
+  | `BEXE_proc_return _
+    -> exe
+
+let process_exes syms bbdfns all_closures exes = 
+  map (process_exe syms bbdfns all_closures) exes
+
+let process_entry syms bbdfns all_closures i =
+  let id,parent,sr,entry = Hashtbl.find bbdfns i in
+  match entry with
+  | `BBDCL_function (props,vs,ps,ret,exes) ->
+    let exes = process_exes syms bbdfns all_closures exes in
+    let entry = `BBDCL_function (props,vs,ps,ret,exes) in
+    Hashtbl.replace bbdfns i (id,parent,sr,entry)
+    
+  | `BBDCL_procedure (props,vs,ps,exes) ->
+    let exes = process_exes syms bbdfns all_closures exes in
+    let entry = `BBDCL_procedure (props,vs,ps,exes) in
+    Hashtbl.replace bbdfns i (id,parent,sr,entry)
+
+  | _ -> ()
+
+let make_closures syms bbdfns =
+  let used = ref IntSet.empty in
+  let all_closures = ref IntSet.empty in
+  let uses i = Flx_use.uses syms used bbdfns i in
+  IntSet.iter uses !(syms.roots);
+  IntSet.iter (process_entry syms bbdfns all_closures) !used;
+  !all_closures
+
+
