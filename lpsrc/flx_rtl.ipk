@@ -1,0 +1,344 @@
+@head(1,"Run time driver support library")
+This package contains core types and routines
+to facilitate construction of drivers for
+felix shared libraries. A felix driver is the top
+level interface between the embedding application
+and the felix generated shared libraries.
+@p()
+The code we give is platform independent, except as noted.
+@p()
+The code all lives in directory rtl, the run time
+library support directory. The symbols are defined
+in namespace flx::rtl, except as noted.
+
+@head(2,"Procedure Continuation Abstraction")
+The heart of the driver/library interface
+is the continuation class. Note the message pointer
+is an abstract address and must be cast to the
+right type by client drivers.
+
+@h = tangler("rtl/flx_rtl.hpp")
+@select(h)
+#ifndef FLX_RTL
+#define FLX_RTL
+
+namespace flx { namespace rtl {
+struct continuation_t // abstract base for mutable continuations
+{
+  int pc;              // program counter
+  enum action_t        // what the dispatch should do
+  {                    // when the resume callback returns
+    yield_action,      // cooperative yield (resume after housekeeping)
+    wait_action        // resume with new message
+  } action;
+
+  void *p_message;   // where the next message is put
+
+  continuation_t();
+  virtual continuation_t *resume()=0;
+  virtual ~continuation_t();
+};
+
+//REFERENCE TEMPLATE
+template<class T> struct _ref_
+{
+  _ref_(){}
+  _ref_(void *f, T *d): frame(f), data(d) {}
+  void *frame;
+  T *data;
+};
+
+template<class T> _ref_<T> _make_ref_(void *f, T *d)
+{
+  return _ref_<T>(f,d);
+}
+
+//VARIANTS
+struct _uctor_
+{
+  int variant;
+  void *data;
+  _uctor_() : variant(-1), data(0) {}
+
+  _uctor_(int i, void *d) : variant(i), data(d) {}
+};
+
+struct unit {};
+
+}} // namespaces
+#endif
+
+@h = tangler("rtl/flx_rtl.cpp")
+@select(h)
+#include "flx_rtl.hpp"
+
+namespace flx { namespace rtl {
+continuation_t::continuation_t() : pc(0), action(yield_action) {}
+continuation_t::~continuation_t(){}
+}}
+
+@head(2,"Unix Dynamic linker")
+This is a Unix specific module, which uses dlopen
+and friends to dynamically attach a shared file
+representing a felix top level module to an 
+application, and extract the standard 
+symbols from it.
+@p()
+The link routine links the following symbols,
+which must be present in all felix libraries.
+
+@begin_displayed_code()
+  create_global_frame
+  create_process_frame
+  create_thread_frame
+  start
+  destroy_thread_frame
+  destroy_process_frame
+  destroy_global_frame
+@end_displayed_code()
+
+The unlink routine is called to unlink the library.
+@p()
+Note that felix never generates variables of static,
+storage class, however felix has no control over
+used C/C++ code embedded in Felix library modules.
+DO NOT use static storage class for variables,
+or even constants which require dynamic initialisation.
+
+@h = tangler("rtl/flx_dynlink.hpp")
+@select(h)
+#ifndef FLX_DYNLINK
+#define FLX_DYNLINK
+#include "flx_rtl.hpp"
+#include "flx_gc.hpp"
+#include <string>
+
+namespace flx { namespace rtl {
+
+struct flx_link_failure_t {
+  string filename;
+  string operation;
+  string what;
+  flx_link_failure_t(string f, string o, string w);
+};
+
+// frame types are incomplete
+typedef void global_frame_t;
+typedef void process_frame_t;
+typedef void thread_frame_t;
+
+// frame creators
+typedef global_frame_t *(*global_frame_creator_t)(void);
+typedef process_frame_t *(*process_frame_creator_t)(global_frame_t*);
+typedef thread_frame_t *(*thread_frame_creator_t)
+(
+  global_frame_t*,
+  process_frame_t*, 
+  flx::gc::generic::collector_t*
+);
+
+// frame destructors
+typedef void (*global_frame_destructor_t)(global_frame_t*);
+typedef void (*process_frame_destructor_t)(process_frame_t*);
+typedef thread_frame_t *(*thread_frame_destructor_t) (thread_frame_t*);
+
+
+// library initialisation routine
+typedef continuation_t *(*start_t)
+(
+  global_frame_t*, 
+  process_frame_t*, 
+  thread_frame_t*
+);
+
+struct flx_dynlink_t
+{
+  // data
+  void *library;
+  global_frame_creator_t global_frame_creator;
+  process_frame_creator_t process_frame_creator;
+  thread_frame_creator_t thread_frame_creator;
+  global_frame_destructor_t global_frame_destructor;
+  process_frame_destructor_t process_frame_destructor;
+  thread_frame_destructor_t thread_frame_destructor;
+  start_t start;
+
+  // routines
+  void link(char const *filename) throw(flx_link_failure_t);
+  void unlink();
+};
+
+}} // namespaces
+#endif
+
+@h = tangler("rtl/flx_dynlink.cpp")
+@select(h)
+#include "flx_dynlink.hpp"
+#include <dlfcn.h>
+
+namespace flx { namespace rtl {
+
+flx_link_failure_t::flx_link_failure_t(string f, string o, string w) : 
+  filename(f), 
+  operation(o), 
+  what(w) 
+{}
+
+void flx_dynlink_t::link(char const *filename) throw(flx_link_failure_t)
+{
+  library = dlopen(filename,RTLD_NOW);
+  if(!library) throw flx_link_failure_t(filename,"dlopen",dlerror());
+
+  global_frame_creator = (global_frame_creator_t)
+    dlsym(library,"create_global_frame");
+  if(!global_frame_creator) 
+    throw(filename,"dlsym","create_global_frame");
+
+  process_frame_creator = (process_frame_creator_t)
+    dlsym(library,"create_process_frame");
+  if(!process_frame_creator)
+    throw flx_link_failure_t(filename,"dlsym","create_process_frame");
+
+  thread_frame_creator = (thread_frame_creator_t)
+    dlsym(library,"create_thread_frame");
+  if(!thread_frame_creator) 
+    throw flx_link_failure_t(filename,"dlsym","create_thread_frame");
+
+  global_frame_destructor = (global_frame_destructor_t)
+    dlsym(library,"destroy_global_frame");
+  if(!global_frame_destructor) 
+    throw flx_link_failure_t(filename,"dlsym","destroy_global_frame");
+
+  process_frame_destructor = (process_frame_destructor_t)
+    dlsym(library,"destroy_process_frame");
+  if(!process_frame_destructor) 
+    throw flx_link_failure_t(filename,"dlsym","destroy_process_frame");
+
+  thread_frame_destructor = (thread_frame_destructor_t)
+    dlsym(library,"destroy_thread_frame");
+  if(!thread_frame_destructor) 
+    throw flx_link_failure_t(filename,"dlsym","destroy_thread_frame");
+
+  start = (start_t)
+    dlsym(library,"start");
+  if(!start) 
+    throw flx_link_failure_t(filename,"dlsym","start");
+}
+
+void flx_dynlink_t::unlink()
+{
+  dlclose(library);
+}
+
+}} // namespaces
+
+
+@head(2,'Universal Program Driver')
+This driver runs stand alone Felix programs.
+It invokes the library routine 'start'.
+No messages are dispatched, the Felix
+program must not read any messages.
+
+@h = tangler('rtl/flx_run.cpp')
+@select(h)
+#include <stdio.h>
+#include <vector>
+#include <list>
+#include <map>
+#include <string.h>
+#include <assert.h>
+
+#include <string>
+#include <unistd.h>
+#include "flx_collector.hpp"
+#include "flx_dynlink.hpp"
+
+using namespace std;
+using namespace flx::rtl;
+
+struct library_init_t 
+{
+  global_frame_t *global_frame;
+  process_frame_t *process_frame;
+  thread_frame_t *thread_frame;
+  continuation_t *start;
+  flx_dynlink_t *lib;
+
+  void create
+  (
+    flx_dynlink_t *lib_a, 
+    flx::gc::generic::collector_t *collector
+  )
+  {
+    lib = lib_a;
+    global_frame = lib->global_frame_creator();
+    process_frame = lib->process_frame_creator(global_frame);
+    thread_frame = lib->thread_frame_creator(
+      global_frame, 
+      process_frame, 
+      collector 
+    );
+    start = lib->start(global_frame, process_frame, thread_frame);
+  }
+
+  void destroy () {
+    lib->thread_frame_destructor(thread_frame);
+    lib->process_frame_destructor(process_frame);
+    lib->global_frame_destructor(global_frame);
+  }
+};
+
+int main(int argc, char* argv[])
+{
+ 
+  if (argc<2) 
+  {
+    printf("usage: flx_run <shared library (may need ./ prefix)>\n");
+    exit(1);
+  }
+  try 
+  {
+    //printf("flx_run driver begins\n");
+    flx_dynlink_t library;
+    library_init_t instance;
+
+    library.link(argv[1]);
+    //printf("Linked %s\n",argv[1]);
+
+    flx::gc::generic::malloc_free allocator;
+    flx::gc::collector::flx_collector_t collector(&allocator);
+    instance.create(&library, &collector);
+    
+    collector.add_root(instance.start);
+    int gc_counter = 0;
+    continuation_t *top = instance.start;
+
+    while( top && top->action == continuation_t::yield_action)
+    {
+      continuation_t *new_top = top->resume();
+      if(new_top != top) {
+        if(new_top) collector.add_root(new_top);
+        collector.remove_root(top);
+        top = new_top;
+      }
+    }
+
+    instance.destroy();
+    //printf("flx_run driver ends normally\n");
+  }
+  catch (flx_link_failure_t x)
+  {
+    printf("Dynamic linkage error\n");
+    printf("filename: %s\n",x.filename.data());
+    printf("operation: %s\n",x.operation.data());
+    printf("what: %s\n",x.what.data());
+  }
+  catch (...)
+  {
+    printf("flx_run driver ends with unknown EXCEPTION\n");
+    exit(1);
+  }
+  return 0;
+}
+
+

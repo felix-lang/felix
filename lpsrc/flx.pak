@@ -40,6 +40,7 @@ C/C++ programmers, together with control inversion.
 @pop_head()
 
 @head(2,'The Felix Run time')
+@include_file ('flx_rtl.ipk')
 @include_file ('flx_gc.ipk')
 @include_file ('flx_boost.ipk')
 @include_file ('flx_lib.ipk')

@@ -28,6 +28,14 @@ val build_tables:
     dir_t list
   )
 
+val copy_table:
+  symbol_table_t ->
+  int ref ->
+  int option ->
+  (string * (bid_t * bid_t * index_map_t)) list ->
+  name_map_t ->
+  name_map_t
+
 @h = tangler("src/flx_symtab.ml")
 @select(h)
 open Flx_util
@@ -510,4 +518,97 @@ let rec build_tables print_flag dfns counter name level parent asms =
   end
   ;
   name_map,exes,!interfaces, dirs
+
+
+
+@head(2,"Symbol Table copy auxilliary")
+Utility to copy the body of a functor for purpose of
+instantiation: this copies the functor body (and the full
+functor copy routine tacks on bindings of the arguments
+to the parameters, which instantiates the functor).
+@p()
+Note that expressions in the table entries are NOT copied,
+the expression terms are shared between the functor definition
+and instances: saves memory, saves coding the expr copy,
+but prevents caching lookups and typing information 
+in the expression terms.
+
+@select(h)
+type kind_t = Parameter | Other
+
+let rec copy_entry dfns counter parent binding_list index =
+  let index' = !counter in incr counter;
+  let id,sr,_,entry = Hashtbl.find dfns index in
+  let kind,symdef = 
+    match entry with
+    | `SYMDEF_function (ps,t,es,table,dirs) ->
+      let table' = copy_table dfns counter (Some index') [] table in
+      Other,`SYMDEF_function (ps,t,es,table',dirs)
+      
+    | `SYMDEF_procedure (ps,es,table,dirs) ->
+      let table' = copy_table dfns counter (Some index') [] table in
+      Other,`SYMDEF_procedure (ps,es,table',dirs)
+
+    | `SYMDEF_typed_functor (ps,t,es,table,dirs) ->
+      let table' = copy_table dfns counter (Some index') [] table in
+      Other,`SYMDEF_typed_functor (ps,t,es,table',dirs)
+
+    | `SYMDEF_untyped_functor (ps,es,table,dirs) ->
+      let table' = copy_table dfns counter (Some index') [] table in
+      Other,`SYMDEF_untyped_functor (ps,es,table',dirs)
+
+    | `SYMDEF_parameter _ ->
+      begin try
+        let iidx,midx,binding = List.assoc id binding_list in
+        Parameter,`SYMDEF_module_binding 
+        (
+          `AST_bound_module (sr,(iidx,midx,binding))
+        ) 
+      with Not_found -> Other,entry
+      end
+    | _ -> Other,entry
+  in
+    (*
+    print_endline 
+    (
+      "//   " ^ string_of_int index' ^ 
+      " -> " ^
+      (match kind with 
+        | Other -> "copyof " 
+        | Parameter -> "binding "
+      )^ 
+      id ^ "["^string_of_int index^"]: " ^ 
+      short_string_of_src sr
+    );
+    *)
+    Hashtbl.add dfns index' (id,sr,parent,symdef)
+    ;
+    index'
+
+and copy_table (dfns:symbol_table_t) counter parent binding_list name_map =
+  let name_map' = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun k v -> match v with
+    | NonFunctionEntry (Simple i) ->
+      let i' = copy_entry dfns counter parent binding_list i in
+      Hashtbl.add name_map' k (NonFunctionEntry (Simple i'))
+      
+    | NonFunctionEntry _ -> 
+      failwith "instantiate not expecting bound entry"
+    | FunctionEntry ls ->
+      let fs = 
+        List.map
+        (fun e -> match e with
+          | Simple i ->
+            Simple (copy_entry dfns counter parent binding_list i)
+          | _ -> 
+            failwith "instantiate not expecting bound entry"
+        )
+        ls
+      in
+        Hashtbl.add name_map' k (FunctionEntry fs)
+  )
+  name_map
+  ;
+  name_map'
 

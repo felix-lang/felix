@@ -1,7 +1,7 @@
 @head(1,'Boost config')
 Files for configuration control taken 
 from the boost (http://www.boost.org) system.
-@h = tangler("boost/config.hpp")
+@h = tangler("rtl/boost_config.hpp")
 @select(h)
 //  Boost config.hpp configuration header file  ------------------------------//
 
@@ -655,7 +655,7 @@ namespace std {
 #endif  // BOOST_CONFIG_HPP
 
 
-@h = tangler("boost/cstdint.hpp")
+@h = tangler("rtl/boost_cstdint.hpp")
 @select(h)
 //  boost cstdint.hpp header file  ------------------------------------------//
 
@@ -680,7 +680,7 @@ namespace std {
 #ifndef BOOST_CSTDINT_HPP
 #define BOOST_CSTDINT_HPP
 
-#include <boost/config.hpp>
+#include <rtl/boost_config.hpp>
 
 
 #ifdef BOOST_SYSTEM_HAS_STDINT_H

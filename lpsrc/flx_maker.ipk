@@ -1,5 +1,5 @@
 @head(1,'Maker')
-@flx_version = '1.0a3'
+@flx_version = '1.0a4'
 @h = tangler('script/maker','python')
 @select(h)
 #!/usr/bin/env python
@@ -22,7 +22,7 @@ options = sys.argv[1:]
 if options:
   print "OPTIONS: ", options
 if "clean" in options:
-    os.system("rm -f tmp/* src/* test/* lpsrc/*.cache")
+    os.system("rm -f tmp/* src/* test/* rtl/* lpsrc/*.cache")
 do_tests = "test" in options or "tut" in options or "rt" in options or "bt" in options
 use_interscript = "noiscr" not in options
 
@@ -44,14 +44,14 @@ OCAMLC=OCAMLBINPREFIX+'ocamlc.opt -I '+OCAML_OBJDIR+' '
 # where gnu readline header files are
 #READLINE_INCLUDE_DIRECTORY='/usr/include/readline'
 
-# the boost directory
-BOOST_DIRECTORY = 'boost'
+# for building .o files
+FLX_CPP_OBJ = "g++ -Wno-long-long -D_GNU_SOURCE -ansi -c "
 
 # for compiling mainlines
 FLX_CPP_LINK = "g++ -Wno-long-long -D_GNU_SOURCE -ansi -rdynamic -ldl "
 
 # for building shared libraries
-FLX_CPP_DYNLINK = "g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared -I"+BOOST_DIRECTORY+" "
+FLX_CPP_DYNLINK = "g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared "
 
 # ------------------------------------------------
 # END USER CONFIGURABLE SECTION
@@ -71,10 +71,6 @@ WEAVER_DIRECTORY='doc/'
 TUTORIAL_DIRECTORY='tut/'
 TUTORIAL_DOC=TUTORIAL_DIRECTORY+'doc/'
 TUTORIAL_EXAMPLES=TUTORIAL_DIRECTORY+'examples/'
-
-# where the garbage collector sources are
-# (the collector is now a separate package)
-FLX_GC_SRC='src/'
 
 # -------------------------------------------------
 # BEGIN IMPLEMENTOR CONFIGURABLE SECTION
@@ -144,10 +140,9 @@ IMPLEMENTATIONS = [
 ]
 
 CPPTESTS = [
-  'test/flx_run.cpp',
 ]
 
-# C files that we need to compile, with options required to build them
+# C files that we need to compile, with options, to make compiler
 COBJECTS = {
 }
 # *.so/.a libraries
@@ -164,6 +159,18 @@ EXES = [
   'flxd',
   'flxb',
   'flxg',
+]
+
+# C files for run time library
+RTLOBJS = [
+  'flx_dynlink',
+  'flx_gc',
+  'flx_collector',
+  'flx_rtl'
+]
+
+RTLPRGS = [
+  'flx_run'
 ]
 
 if 1:
@@ -242,8 +249,8 @@ try:
   # STEP 0: run interscript
   if "noiscr" not in options:
     if "doc" in options:
-      xqt('iscr --language=en --weaver=web --weaver=latex --passes=200 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
-      xqt('iscr --language=en --weaver=web --weaver=latex --passes=200 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
+      xqt('iscr --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
+      xqt('iscr --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
     else:
       xqt('iscr lpsrc/flx.pak')
       xqt('iscr lpsrc/flx_tutorial.pak')
@@ -324,6 +331,35 @@ try:
     if buildall or filetime(exe + '.cmx') > filetime(exe):
       xqt(OCAMLOPT + LDFLAGS + ' -o bin/'+exe + x + OBJECT_FILES + ' ' + exe + '.cmx')
 
+  # COMPILE RUN TIME LIBRARY OBJECTS
+
+  for file in RTLOBJS:
+    if buildall or filetime("rtl/"+file+ '.cpp') > filetime("rtl/"+file+'.o'):
+      print 'Compiling RTL file ',file
+      try:
+        xqt(FLX_CPP_OBJ + " -I. -Itest -Irtl " +
+          "rtl/"+file + ".cpp -o " + "rtl/"+file+".o")
+        #print 'TESTFILE -- OK!',file
+      except MakeError:
+        print 'TESTFILE -- ERROR!',file
+        if stop_on_error: raise MakeError
+
+  # COMPILE STANDARD PROGRAMS
+
+  for basename in RTLPRGS:
+    if buildall or filetime("rtl/"+basename+ '.cpp') > filetime("bin/"+basename):
+      print 'Compiling standard driver program ',basename
+      try:
+        xqt(FLX_CPP_LINK + " -I. -Irtl " +
+          "rtl/flx_dynlink.o " +
+          "rtl/flx_rtl.o " +
+          "rtl/flx_gc.o " +
+          "rtl/flx_collector.o " +
+          "rtl/"+basename + ".cpp -o bin/" + basename)
+      except MakeError:
+        print 'TESTFILE -- ERROR!',basename
+        if stop_on_error: raise MakeError
+
   w = 50
   # run tests
   if do_tests:
@@ -402,7 +438,7 @@ try:
         cppfilename = basename + ".cpp"
         if buildall or filetime(basename+ '.cpp') > filetime(basename+'.so'):
           try:
-            xqt(FLX_CPP_DYNLINK+" -I. -Isrc "+cppfilename + " -o " + basename + ".so" )
+            xqt(FLX_CPP_DYNLINK+" -I. "+cppfilename + " -o " + basename + ".so" )
             #print 'TESTFILE -- OK!',basename
             results.append("g++  " + (basename + ' ' * w)[:w]+ ' OK')
           except MakeError:
@@ -412,17 +448,18 @@ try:
             results.append("g++  " + (basename + ' '*w)[:w] + ' ERROR')
 
 
-      # COMPILER DRIVER PROGRAMS
+      # COMPILE DRIVER PROGRAMS
 
       for testfile in CPPTESTS:
         print 'Compiling driver program ',testfile
         basename = string.split(testfile,'.')[0]
         if buildall or filetime(basename+ '.cpp') > filetime(basename):
           try:
-            xqt(FLX_CPP_LINK + " -I. -Itest -Isrc " +
-              "-I"+BOOST_DIRECTORY + " " +
-              "src/flx_gc.cpp " +
-              "src/flx_collector.cpp " +
+            xqt(FLX_CPP_LINK + " -I. -Itest " +
+              "rtl/flx_dynlink.o " +
+              "rtl/flx_gc.o " +
+              "rtl/flx_rtl.o " +
+              "rtl/flx_collector.o " +
               basename + ".cpp -o " + basename)
             #print 'TESTFILE -- OK!',basename
             results.append("link " + (basename + ' ' * w)[:w]+ ' OK')
@@ -433,7 +470,7 @@ try:
 
       for testfile in TESTS:
         basename = string.split(testfile,'.')[0]
-        testscript = "./test/flx_run ./"+basename+".so"
+        testscript = "./bin/flx_run ./"+basename+".so"
         #print 'Executing ',testscript
         try:
           run(testscript, quiet)
@@ -841,33 +878,36 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 
 @head(1,'Makefile')
 @select(tangler('makefile'))
-@tangle('all: dummy')
+@tangle('PREFIX=/usr/local')
+@tangle('all: FORCE')
 @tangle('\tpython script/maker')
 @tangle('')
-@tangle('doc: dummy')
+@tangle('doc: FORCE')
 @tangle('\tpython script/maker doc')
 @tangle('\tcp doc/*.css tut/doc')
 @tangle('')
-@tangle('test: dummy')
+@tangle('test: FORCE')
 @tangle('\tpython script/maker test stop_on_error')
 @tangle('')
-@tangle('test_all: dummy')
+@tangle('test_all: FORCE')
 @tangle('\tpython script/maker test')
 @tangle('')
-@tangle('test_all_no_output: dummy')
+@tangle('test_all_no_output: FORCE')
 @tangle('\tpython script/maker test no_output')
 @tangle('')
-@tangle('tarball: dummy')
+@tangle('tarball: FORCE')
 @tangle('\tstrip bin/flxg')
 @tangle('\ttar -zcvf flx_'+flx_version+'_bin_linux.tgz\\')
 @tangle('\t\tbin/flxg \\')
-@tangle('\t\ttest/flx_run \\')
+@tangle('\t\tbin/flx_run \\')
 @tangle('')
 @tangle('\ttar -zcvf flx_'+flx_version+'_src.tgz\\')
 @tangle('\t\tmakefile README CONTENTS INSTALL VERSION  \\')
 @tangle('\t\tlpsrc/*.ipk \\')
 @tangle('\t\tlpsrc/*.pak \\')
 @tangle('\t\tscript/maker \\')
+@tangle('\t\trtl/*.cpp \\')
+@tangle('\t\trtl/*.hpp \\')
 @tangle('\t\tsrc/*.ml \\')
 @tangle('\t\tsrc/*.mli \\')
 @tangle('\t\tsrc/*.mly \\')
@@ -878,7 +918,6 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('\t\ttest/*.flx \\')
 @tangle('\t\ttest/*.cpp \\')
 @tangle('\t\ttest/*.hpp \\')
-@tangle('\t\tboost/*.hpp \\')
 @tangle('\t\ttut/examples/*.flx \\')
 @tangle('\t\ttut/doc/*.html \\')
 @tangle('\t\ttut/doc/*.css \\')
@@ -891,29 +930,43 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('\t\tman/* \\')
 @tangle('\t\twww/* \\')
 @tangle('')
-@tangle('www: dummy')
+@tangle('www: FORCE')
 @tangle('\tiscr lpsrc/flx_sourceforge.pak')
 @tangle('')
-@tangle('upload_www: dummy')
+@tangle('upload_www: FORCE')
 @tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
 @tangle('')
-@tangle('upload: dummy')
+@tangle('upload: FORCE')
 @tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
 @tangle('\tscp flx_'+flx_version+'_bin_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('')
-@tangle('test_clean: dummy')
+@tangle('test_clean: FORCE')
 @tangle('\trm -rf tut/examples/*')
 @tangle('\trm -rf test/*')
 @tangle('')
-@tangle('really_clean: dummy')
-@tangle('\trm -rf tut test www src misc man script boost bin doc lib tmp.tmp lpsrc/*.cache')
+@tangle('really_clean: FORCE')
+@tangle('\trm -rf tut test www src misc man script bin doc lib tmp.tmp lpsrc/*.cache')
 @tangle('')
-@tangle('boot: dummy')
+@tangle('install: FORCE')
+@for dir in [
+  "man",
+  "man/man1",
+  "lib",
+  "lib/felix",
+  "lib/felix/lib",
+  "lib/felix/rtl",
+  "bin"
+  ]:
+  tangle('\tif test -d "$(PREFIX)/'+dir+'"; then : ; else mkdir "$(PREFIX)/'+dir+'"; fi')
+@tangle('\tinstall -m 644 man/* $(PREFIX)/man/man1')
+@tangle('\tinstall -m 644 lib/* $(PREFIX)/lib/felix/lib')
+@tangle('\tinstall -m 644 rtl/* $(PREFIX)/lib/felix/rtl')
+@tangle('\tinstall -m 755 bin/* $(PREFIX)/bin')
+@tangle('')
+@tangle('boot: FORCE')
 @tangle('\tiscr lpsrc/flx.pak')
-@tangle('')
-@tangle('dummy:')
-@tangle('\t')
+@tangle('FORCE:')
 @tangle('')
 
 @head(1,'README')
@@ -945,18 +998,19 @@ The directories are:
              if you have the full tool chain installed
   src     -- ocaml source code for the compiler
   test    -- regression tests and driver programs
-  doc     -- the complete documented source of the compiler,
-          -- the tutorial .. and everything else
+  doc     -- the reference manual, programmers guide, etc
+          -- program listing goes here too 
+             (but may be omitted from tarball to save space)
   tut/doc -- the tutorial
   tut/examples  -- examples from the tutorial
   www    -- the top level of the sourceforge web site
   script -- python build script
   misc   -- misc files including vim syntax colouring file
-  boost  -- contains the files config.hpp and cstdint.hpp
-            used to ensure ISO C99 int64_t is available
   lib    -- felix standard library
+  rtl    -- C++ runtime support 
   man    -- man pages for tools and some language features
   bin    -- compiler tools directory
+
 
 @head(1,'VERSION')
 @select(tangler('VERSION'))
@@ -1081,6 +1135,36 @@ work. You will need:
   make boot          -- use this to rebuild after a make very_clean,
                         but you need iscr lpsrc/flx.pak to re-extract
                         the makefile :-)
+
+
+INSTALL
+-------
+  
+  typing 'make install'
+  
+installs felix to the PREFIX specified in the
+makefile, this defaults to 
+
+   /usr/local
+
+and uses directories
+
+   bin             -- binaries and run scripts
+   man/man1        -- man pages
+   lib/felix/rtl   -- run time C/C++
+   lib/felix/lib   -- felix standard library
+
+The script harness flx is a shell script that
+needs to know the PREFIX. 
+
+To change the PREFIX edit:
+
+   makefile
+   bin/flx
+
+by hand if /usr/local isn't good for you.
+(some kind of configure script may be
+added in the future).
 
 @head(1,'W3C Cascading Style Sheets')
 Needed to view interscript generated documentation.
@@ -1366,21 +1450,121 @@ DIV.DIFF_SECTION_HEAD EM, DIV.DIFF_SECTION_FOOT EM {
 // dummy: to be replaced by the user (but needed for some browsers)
 
 @head(1,'Run script')
-@select(tangler('bin/flx'))
-#/bin/env sh
-#edit this file to set the boost directory for your installation
-# you need to change the file in two places
-#
-rm -f $1.cpp $1.hpp $1.so
-if 
-  ./bin/flxg -q -Ilib $1
+@select(tangler('bin/flx',"sh"))
+#!/bin/sh
+# flx - felix script harness
+# check for test mode: this argument must come first
+
+if [ "x$1" = "x--test" ]
+then 
+  TESTMODE=1
+  shift
+else 
+  TESTMODE=0 
+fi
+
+# check for forced recompile
+if [ "x$1" = "x--force" ]
+then 
+  RECOMPILE=1
+  shift
+else 
+  RECOMPILE=0 
+fi
+
+if [ "$TESTMODE" = "1" ]
 then
-  if 
-    g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared  \
-      -I. -Iboost -Isrc $1.cpp \
-      -o $1.so
+  echo "TESTMODE: running felix from current directory"
+fi
+
+# Strip trailing .flx or .so
+# users should type 'flx file' without extension,
+# but #! interpreter always passes extension ..
+
+case "$1" in
+  *.flx)
+    arg="`echo $1 | sed 's/\.flx$//'`"
+    is_flx=1
+    ;;
+  *.so)
+    arg="`echo $1 | sed 's/\.so$//'`"
+    is_so=1
+    ;;
+  *)
+    arg="$1"
+esac
+
+# Find absolute pathname
+
+base=""
+
+case "$arg" in
+  /*)
+    base="$arg"
+    ;;
+  [^/]*/*)
+    base="`pwd`/$arg"
+    ;;
+  *)
+    for dir in `echo .:$PATH | sed 's/:/ /g'`
+    do
+      dir=$dir
+      if [ -r "$dir/$arg.so" -o -r "$dir/$arg.flx" ]
+      then
+        base="$dir/$arg"
+        break
+      fi
+    done
+    ;;
+esac
+
+if [ "x$base" = "x" ]
+then
+  echo "No such felix program: $arg" >&2
+  exit 1
+fi
+
+# No need to compile, just run it
+
+if [ ! $RECOMPILE -a -r "$base.so" -a "(" ! -r "$base.flx" -o "$base.so" -nt "$base.flx" ")" ]
+then
+  flx_run "$base.so"
+  exit $?
+fi
+
+# Need to compile, then run it
+
+if flxg -q -Ilib "$base"
+then
+
+  if [ "$TESTMODE" = "1" ]
   then
-    ./test/flx_run ./$1.so
+    include_dir="."
+  else
+    # Locate the felix installation
+    prefix=""
+    for dir in `echo $PATH | sed 's/:/ /g'`
+    do
+      dir=$dir
+      if [ -x "$dir/flxg" ]
+      then
+        prefix="$dir/flxg"
+        break
+      fi
+    done
+    include_dir="$prefix/lib/felix"
+  fi
+
+  prefix="`echo $prefix | sed 's/\/bin\/flxg$//'`"
+
+  if g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared  \
+      -I"$include_dir" "$base.cpp" -o "$base.so"
+  then
+    # rm -f "$base.cpp"
+    flx_run "$base.so"
+    exit $?
+  else
+    exit $?
   fi
 fi
 

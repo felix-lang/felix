@@ -485,6 +485,8 @@ and functor_arg_binding_t =
   ) list
 
 type env_t = (name_map_t * name_map_t list) list 
+type env_cache_t = (int,env_t) Hashtbl.t
+
 type symbol_definition_t =
   [
   | `SYMDEF_parameter of typecode_t
@@ -541,6 +543,15 @@ type symbol_data3_t = string * int option * bbdcl_t
 type fully_bound_symbol_table_t = (int, symbol_data3_t) Hashtbl.t
 
 type type_registry_t = (btypecode_t,int) Hashtbl.t
+
+(* this is a state record for use by lookup routines *)
+type sym_state_t = {
+  dfns:symbol_table_t; (* this table never changes *)
+  env_cache:env_cache_t; (* cache env building *)
+  counter: int ref;  (* mutable fresh name counter *)
+  freg:instantiation_registry_t (* functor instantiation registry *)
+}
+
 
 @doc()
 The whole of a compilation unit, this is the data structure

@@ -969,6 +969,21 @@ and pre_flx_lex = parse
     end
   }
 
+| "#!" not_newline * newline { 
+  fun state ->
+    if state#is_at_line_start
+    then 
+      begin
+        state#newline lexbuf;
+        [NEWLINE]
+      end 
+    else [
+      ERRORTOKEN 
+      (state#get_srcref lexbuf,
+       "#!")
+     ]
+}
+
 | "#" {
   fun state ->
     if state#is_at_line_start

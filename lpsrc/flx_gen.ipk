@@ -1768,18 +1768,28 @@ try
     then print_endline ("//Top level module ''"^module_name^" has index " ^ string_of_int top_level_index);
     let freg = Hashtbl.create 97 in
     if !print_flag then print_endline "//BINDING ";
-    let bbdfns = bbind dfns counter freg in
+    let sym_state = 
+      { 
+        env_cache = Hashtbl.create 97;
+        dfns = dfns; 
+        freg = freg; 
+        counter = counter; 
+      }
+    in
+    let bbdfns = bbind sym_state in
     (*
     print_endline "BINDING IS DONE"; flush stdout;
     *)
     
     Gc.full_major();
     
-    let bifaces = bind_ifaces dfns counter freg ifaces in
+    let bifaces = bind_ifaces sym_state ifaces in
 
     if !print_flag then print_endline "//GENERATING C++: user headers";
     plh "//COLLECTOR";
-    plh "#include \"flx_collector.hpp\"";
+    plh "#include <rtl/flx_collector.hpp>";
+    plh "#include <rtl/flx_rtl.hpp>";
+    plh "using namespace flx::rtl;";
     plh "";
 
     plh "//USER HEADERS";
@@ -1802,25 +1812,6 @@ try
 
     List.iter plh [
     "//FELIX SYSTEM";
-    "//CONTINUATION BASE";
-    "struct continuation_t // abstract base for mutable continuations";
-    "{";
-    "  int pc;              // program counter";
-    "  enum action_t        // what the dispatch should do";
-    "  {                    // when the resume callback returns";
-    "    yield_action,      // cooperative yield (resume after housekeeping)";
-    "    wait_action        // resume with new message";
-    "  }  action;";
-    "";
-    "  void *p_message;   // where the next message is put";
-    "";
-    "  continuation_t();";
-    "  virtual continuation_t *resume()=0;";
-    "  virtual ~continuation_t();";
-    "};";
-    "";
-
-    (* COLLECTOR *)
 
     (* GLOBAL FRAME *)
     "struct global_frame_t {";
@@ -1859,33 +1850,10 @@ try
     types
     ;
     *)
-    plh "//REFERENCE TEMPLATE";
-    plh "template<class T> struct _ref_";
-    plh "{";
-    plh "  _ref_(){}";
-    plh "  _ref_(void *f, T *d): frame(f), data(d) {}";
-    plh "  void *frame;";
-    plh "  T *data;";
-    plh "};";
-    plh "template<class T> _ref_<T> _make_ref_(void *f, T *d)";
-    plh "{";
-    plh "  return _ref_<T>(f,d);";
-    plh "}";
-
-    plh "//VARIANTS";
-    plh "struct _uctor_";
-    plh "{";
-    plh "  int variant;";
-    plh "  void *data;";
-    plh "  _uctor_() : variant(-1), data(0) {}\n";
-    plh "  _uctor_(int i, void *d) : variant(i), data(d) {}";
-    plh "};";
 
     plh "//TYPE CLASS NAMES";
-    plh  "struct unit;";
     plh  (gen_type_names registry dfns bbdfns types);
     plh  "//TYPE CLASS DEFINITIONS";
-    plh  "struct unit {};";
     plh  (gen_types registry dfns bbdfns types);
 
     if !print_flag then print_endline "//GENERATING C++: function and procedure classes";
@@ -1920,8 +1888,7 @@ try
     (* BODY *)
     if !print_flag then print_endline "//GENERATING C++: GC ptr maps & offsets";
     plb ("#include \"" ^ header_file_name ^ "\"");
-    plb "//continuation_t::continuation_t() : pc(0), action(yield_action) {}";
-    plb "//continuation_t::~continuation_t(){}";
+    plb "using namespace flx::rtl;";
     plb "";
     plb "//OFFSET tables for GC";
     plb "static size_t _uctor_offsets[1]= { offsetof(_uctor_,data) };";

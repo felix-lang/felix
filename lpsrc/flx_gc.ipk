@@ -1,7 +1,7 @@
 @head(1,'Garbage collector')
 [The original LP source was lost including test code .. ]
 
-@select(tangler('src/flx_collector.hpp'))
+@select(tangler('rtl/flx_collector.hpp'))
 #ifndef FLX_COLLECTOR
 #define FLX_COLLECTOR
 #include "flx_gc.hpp"
@@ -67,7 +67,7 @@ private:
 }}} // end namespaces
 #endif
 
-@select(tangler('src/flx_collector.cpp'))
+@select(tangler('rtl/flx_collector.cpp'))
 #include <stdlib.h>
 #include <map>
 #include <limits.h>
@@ -324,7 +324,7 @@ flx_collector_t::~flx_collector_t()
 
 }}} // end namespaces
 
-@select(tangler('src/flx_gc.hpp'))
+@select(tangler('rtl/flx_gc.hpp'))
 #ifndef FLX_GC
 #define FLX_GC
 
@@ -513,7 +513,7 @@ extern size_t handle_offsets[1];
 }}} // end namespaces
 #endif
 
-@select(tangler('src/flx_gc.cpp'))
+@select(tangler('rtl/flx_gc.cpp'))
 
 #include "flx_gc.hpp"
 namespace flx {

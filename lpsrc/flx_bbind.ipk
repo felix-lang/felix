@@ -1,19 +1,14 @@
 @head(1,"Name Binding")
-Name binding pass 2.
 
 @h = tangler("src/flx_bbind.mli")
 @select(h)
 open Flx_types
 val bbind:
-  symbol_table_t ->
-  int ref ->
-  instantiation_registry_t ->
+  sym_state_t ->
   fully_bound_symbol_table_t
 
 val bind_ifaces:
-  symbol_table_t ->
-  int ref ->
-  instantiation_registry_t ->
+  sym_state_t ->
   (iface_t * int option) list ->
   biface_t list 
 
@@ -75,7 +70,7 @@ let bool_t = `BTYP_sum [`BTYP_tuple[]; `BTYP_tuple []]
 
 *)
 
-let bind_exes dfns counter freg env id sr index exes in_ret = 
+let bind_exes sym_state env id sr index exes in_ret = 
   (*
   print_endline ("Binding exes of " ^ id ^ "<"^string_of_int index^">");
   print_endline ("bind_exes.. env depth="^ string_of_int (List.length env));
@@ -97,10 +92,10 @@ let bind_exes dfns counter freg env id sr index exes in_ret =
      we haven't seen any return statements yet
   *)
   let cal_ret = ref `BTYP_none in
-  let be e = bind_expression dfns counter freg env [] [] e in
+  let be e = bind_expression sym_state env [] [] e in
   let lun sr n = lookup_name_in_env env sr n in
-  let luqn n = lookup_qn_in_env dfns counter freg env [] n in
-  let bt sr t = bind_type dfns counter freg env [] sr t in
+  let luqn n = lookup_qn_in_env sym_state env [] n in
+  let bt sr t = bind_type sym_state env [] sr t in
 
   (* this routine isn't really recursive, just a hack
      to make EXE_set easier to code ..
@@ -129,7 +124,7 @@ let bind_exes dfns counter freg env id sr index exes in_ret =
         failwith 
         (
           "[bind_exes:ifgoto] Conditional requires bool argument, got " ^
-          string_of_btypecode dfns t
+          string_of_btypecode sym_state.dfns t
         )
 
     | `EXE_ifnotgoto (e,s) -> 
@@ -140,7 +135,7 @@ let bind_exes dfns counter freg env id sr index exes in_ret =
         failwith 
         (
           "[bind_exes:ifnotgoto] Conditional requires bool argument, got " ^
-          string_of_btypecode dfns t
+          string_of_btypecode sym_state.dfns t
         )
 
     | `EXE_call (#suffixed_name_t as sn, e2) -> (* OVERLOADING *)
@@ -157,8 +152,7 @@ let bind_exes dfns counter freg env id sr index exes in_ret =
       let tbe1 =
          match sn with
          | #qualified_name_t as qn ->
-           lookup_qn_with_sig 
-           dfns counter freg 
+           lookup_qn_with_sig sym_state
            sr sr 
            env [] [] 
            qn t2 
@@ -168,11 +162,11 @@ let bind_exes dfns counter freg env id sr index exes in_ret =
         print_endline "Applying call now";
         flush stdout;
         *)
-        cal_call dfns tbe1 (be2,t2)
+        cal_call sym_state.dfns tbe1 (be2,t2)
 
     | `EXE_call (p,e) ->
       let p',pt' = be p and e',et' = be e in
-      cal_call dfns (p', pt') (e', et')
+      cal_call sym_state.dfns (p', pt') (e', et')
 
     | `EXE_read s ->          
       begin match lun sr s with
@@ -199,9 +193,9 @@ let bind_exes dfns counter freg env id sr index exes in_ret =
               (
                 "In " ^ short_string_of_src sr ^ "\n" ^
                 "Function "^id^" has wrong return type,\nexpected : " ^ 
-                string_of_btypecode dfns in_ret ^
+                string_of_btypecode sym_state.dfns in_ret ^
                 "\nbut we got " ^
-                string_of_btypecode dfns t'
+                string_of_btypecode sym_state.dfns t'
               )
           end 
         else 
@@ -212,9 +206,9 @@ let bind_exes dfns counter freg env id sr index exes in_ret =
                 (
                   "In " ^ short_string_of_src sr ^ "\n" ^
                   "Function "^id^" has inconsistent return type,\nexpected : " ^ 
-                  string_of_btypecode dfns !cal_ret ^
+                  string_of_btypecode sym_state.dfns !cal_ret ^
                   "\nbut we got " ^
-                  string_of_btypecode dfns t'
+                  string_of_btypecode sym_state.dfns t'
                 )
           end
       ;
@@ -236,15 +230,15 @@ let bind_exes dfns counter freg env id sr index exes in_ret =
       | FunctionEntry _ -> failwith "Can't init function constant"
       | NonFunctionEntry (Simple index) -> 
         let e',rhst = be e in
-        let lhst = typeofindex dfns counter freg [] [] index in
+        let lhst = typeofindex sym_state [] [] index in
 
         (* EQUI RECURSIVE COMPARISON NOW .. *)
         if type_eq lhst rhst
         then `BEXE_init (index, (e',rhst))
         else failwith (
-          "LHS["^s^"]("^string_of_btypecode dfns lhst^
+          "LHS["^s^"]("^string_of_btypecode sym_state.dfns lhst^
           ") of initialisation must have same type as RHS("^
-          string_of_btypecode dfns rhst^")"
+          string_of_btypecode sym_state.dfns rhst^")"
         )
       | NonFunctionEntry _ -> failwith "Not expecting bound entry"
       end
@@ -268,7 +262,7 @@ let bind_exes dfns counter freg env id sr index exes in_ret =
   print_endline ""
   ;
   List.iter 
-    (fun x -> print_endline (string_of_bexe dfns 1 x)) 
+    (fun x -> print_endline (string_of_bexe sym_state.dfns 1 x)) 
     bound_exes
   ;
   print_endline ""
@@ -357,8 +351,8 @@ let rec proper_descendant dfns parent =
     end
   | None -> true
 
-let check_type_asserts dfns counter freg env dirs =
-  let bt sr t = bind_type dfns counter freg env [] sr t in
+let check_type_asserts sym_state env dirs =
+  let bt sr t = bind_type sym_state env [] sr t in
   let ctas (e:expr_t) = 
     print_endline ("Type assert " ^ string_of_expr e);
     match e with
@@ -396,31 +390,21 @@ let check_type_asserts dfns counter freg env dirs =
   )
   dirs
 
-let bbind dfns counter freg = 
+let bbind sym_state =
   let bbdfns = Hashtbl.create 97 in
-  let bexes env id sr exes rt = bind_exes dfns counter freg env id sr exes rt in
+  let bexes env id sr exes rt = bind_exes sym_state env id sr exes rt in
   let dummy_sr = ("Generated dummy",0,0,0,0) in
-  let cta env dirs = check_type_asserts dfns counter freg env dirs in
-  (* added a cache to speed up processing .. didn't
-    make much difference ..
-  *)
-  let env_cache = Hashtbl.create 97 in
-  let get_env parent =
-    try Hashtbl.find env_cache parent
-    with Not_found ->
-      let env = build_env dfns counter freg [] parent in 
-      Hashtbl.add env_cache parent env;
-      env
-  in
+  let cta env dirs = check_type_asserts sym_state env dirs in
+  let get_env parent = build_env sym_state [] parent in
   Hashtbl.iter
   (fun i (name, sr,parent, bdcl) -> 
     (*
     print_endline ("binding " ^ name ^ "<" ^ string_of_int i ^ ">");
     *)
-  if proper_descendant dfns parent
+  if proper_descendant sym_state.dfns parent
   then begin
     let env = get_env parent in
-    let bt t = bind_type dfns counter freg env [] sr t in
+    let bt t = bind_type sym_state env [] sr t in
     begin match bdcl with
 
     (* Pure declarations of functions, modules, and type
@@ -465,7 +449,7 @@ let bbind dfns counter freg =
       Hashtbl.add bbdfns i (name,parent,`BBDCL_val (bt t))
 
     | `SYMDEF_lazy (e) ->
-      let e',rt' = bind_expression dfns counter freg env [] [] e in
+      let e',rt' = bind_expression sym_state env [] [] e in
       let bbexes = [`BEXE_return (e',rt')] in
       Hashtbl.add bbdfns i 
       (name,parent,`BBDCL_function ([],rt',bbexes,Hashtbl.create 97))
@@ -510,61 +494,6 @@ let bbind dfns counter freg =
       let _,bbexes = bexes env name sr i exes bool_t in
       Hashtbl.add bbdfns i (name,parent,
         `BBDCL_function ([],bool_t,bbexes,name_map));
-    
-    (*
-    | `SYMDEF_match_handler (pat,mvname,exes,name_map,dirs) ->
-      print_endline ("//Binding match handler " ^ string_of_int i ^ " --> " ^ name); 
-      let env = get_env (Some i) in 
-
-      (* INSERT MATCH VARIABLE ASSIGNMENTS HERE *)
-      let vars = Hashtbl.create 97 in
-      Flx_mbind.get_pattern_vars vars pat [];
-      print_endline ("PATTERN IS " ^ string_of_pattern pat ^ ", VARIABLE=" ^ mvname);
-      print_endline "VARIABLES ARE";
-      Hashtbl.iter (fun vname (sr,extractor) ->
-        let component = 
-          Flx_mbind.gen_extractor extractor (`AST_name (sr,mvname)) 
-        in
-        print_endline ("  " ^ vname ^ " := " ^ string_of_expr component);
-      ) vars;
-      (* Now, add the variables to the environment
-       and initialise them 
-      *)
-      let exes = ref exes in
-      Hashtbl.iter
-      (fun vname (sr,extractor) ->
-        let component = 
-          Flx_mbind.gen_extractor extractor 
-          (`AST_name (sr,mvname)) 
-        in
-        let vid = !counter in
-        incr counter;
-        (* print_endline ("//adding match variable component value "^string_of_int vid^" --> " ^ vname);
-        *)
-        Hashtbl.add dfns vid (vname, sr,Some i, 
-          `SYMDEF_dcl (`DCL_val (`TYP_typeof component))
-        );
-        let bvtyp = typeofindex dfns counter freg [] [] vid in
-        Hashtbl.add bbdfns vid (vname, Some i, 
-          `BBDCL_val bvtyp 
-        );
-        let top_table,_ = List.hd env in
-        Hashtbl.add top_table vname (NonFunctionEntry (Simple vid));
-        let instr = `EXE_init (vname, component) in
-        (* print_endline (string_of_exe 1 instr);
-        *)
-        exes := instr :: !exes;
-      )
-      vars;
-      let _,bbexes = bexes env name sr !exes `BTYP_void in
-      Hashtbl.add bbdfns i (name,parent,
-        `BBDCL_procedure ([],bbexes,name_map))
-    
-    | `SYMDEF_match_result _ ->
-      let t = typeofindex dfns counter freg [] [] i in
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_val t)
-    *)
-
     | `SYMDEF_dcl dcl -> match dcl with
 
     (* ugly special handling of DCLs *)
@@ -640,23 +569,23 @@ let bbind dfns counter freg =
     flush stdout
     *)
    )
-  dfns
+  sym_state.dfns
   ;
   bbdfns
 
-let bind_ifaces dfns counter freg 
+let bind_ifaces sym_state
   (ifaces:
     (iface_t * int option) list
   )
 = 
-  let luqn env n = lookup_qn_in_env dfns counter freg env [] n in
+  let luqn env n = lookup_qn_in_env sym_state env [] n in
   let dummy_sr = ("bind_ifaces",0,0,0,0) in
   let bound_ifaces = 
     List.map
     (function 
       | `IFACE_export (sn, cpp_name), parent ->
-        let env = build_env dfns counter freg [] parent in
-        let index = lookup_sn_in_env dfns counter freg env [] sn in
+        let env = build_env sym_state [] parent in
+        let index = lookup_sn_in_env sym_state env [] sn in
         `BIFACE_export (index, cpp_name) 
      )
      ifaces
@@ -702,8 +631,16 @@ try
   in
     print_endline "//BINDING EXECUTABLE CODE";
     print_endline "//-----------------------";
-    let bbdfns = bbind dfns counter freg in
-    let bifaces = bind_ifaces dfns counter freg ifaces in
+    let sym_state = 
+      { 
+        env_cache = Hashtbl.create 97;
+        dfns = dfns; 
+        freg = freg; 
+        counter = counter; 
+      }
+    in
+    let bbdfns = bbind sym_state in
+    let bifaces = bind_ifaces sym_state ifaces in
     print_endline "//Binding complete";
     Hashtbl.iter
     (fun index (name,parent,entry) -> print_endline

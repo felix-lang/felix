@@ -9,12 +9,8 @@ header """
 #include <assert.h>
 #include <limits.h>
 
-// this header is stolen from boost,
-// it is supplied with Felix, but left
-// in a directory plainly marked boost
-// so you know I'm not responsible for 
-// all the hard work that went into producing it
-#include <boost/cstdint.hpp>
+// this header is stolen from boost
+#include <rtl/boost_cstdint.hpp>
 
 using namespace std;
 
