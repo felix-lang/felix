@@ -43,18 +43,15 @@ OCAMLC=OCAMLBINPREFIX+'ocamlc.opt -I '+OCAML_OBJDIR+' -rectypes '
 # where gnu readline header files are
 #READLINE_INCLUDE_DIRECTORY='/usr/include/readline'
 
-# c compiler and options
-CCOMPILE = "gcc -Wno-long-long -pedantic -ansi -O2 -c "
-
 # the boost directory
-BOOST_DIRECTORY = 'boost_1_22_0'
+BOOST_DIRECTORY = 'boost'
 REGEX_LIBRARY = BOOST_DIRECTORY + '/libs/regex/build/gcc/libboost_regex.so'
 
 # for compiling mainlines
-FLX_CPP_LINK = "g++ -Wno-long-long -pedantic -ansi -rdynamic -ldl "
+FLX_CPP_LINK = "g++ -Wno-long-long -D_GNU_SOURCE -ansi -rdynamic -ldl "
 
 # for building shared libraries
-FLX_CPP_DYNLINK = "g++ -Wno-long-long -pedantic -ansi -shared -I"+BOOST_DIRECTORY+" "+REGEX_LIBRARY+" "
+FLX_CPP_DYNLINK = "g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared -I"+BOOST_DIRECTORY+" "+REGEX_LIBRARY+" "
 
 # ------------------------------------------------
 # END USER CONFIGURABLE SECTION
@@ -112,6 +109,7 @@ INTERFACES = [
   'flx_symtab'       , 
   'flx_lookup'       , 
   'flx_overload'     , 
+  'flx_env'          , 
   'flx_tbind'        , 
   'flx_ebind'        , 
   'flx_bind'         , 
@@ -144,6 +142,7 @@ IMPLEMENTATIONS = [
   'flx_symtab'       , 
   'flx_lookup'       , 
   'flx_overload'     , 
+  'flx_env'          , 
   'flx_tbind'        , 
   'flx_ebind'        , 
   'flx_bind'         , 
@@ -371,8 +370,7 @@ try:
         if buildall or filetime(basename+ '.cpp') > filetime(basename):
           try:
             xqt(FLX_CPP_LINK + " -I. -Itest -Igc/src " +
-              BOOST_DIRECTORY +
-              "/libs/regex/build/gcc/libboost_regex.a " +
+              "-I"+BOOST_DIRECTORY + " " +
               "gc/src/flx_gc.cpp " +
               "gc/src/flx_collector.cpp " +
               basename + ".cpp -o " + basename)
@@ -424,19 +422,53 @@ except MakeError:
 @tangle('\t\tbin/flxg \\')
 @tangle('\t\tbin/flx \\')
 @tangle('\t\ttest/flx_run \\')
-@tangle('\t\tlib/std.flx \\')
+@tangle('\t\tlib/*.flx \\')
 @tangle('\t\tgc/src/*.hpp \\')
 @tangle('\t\tgc/src/*.cpp \\')
 @tangle('\t\ttut/examples/*.flx \\')
 @tangle('\t\ttut/doc/*.html \\')
 @tangle('\t\ttut/doc/*.css ')
 @tangle('')
+@tangle('src: dummy')
+@tangle('\ttar -zcvf flx_1.0a1_src.tgz\\')
+@tangle('\t\tsrc/*.ml \\')
+@tangle('\t\tsrc/*.mli \\')
+@tangle('\t\tsrc/*.mly \\')
+@tangle('\t\tsrc/*.mll \\')
+@tangle('\t\tlib/*.flx \\')
+@tangle('\t\ttest/*.flx \\')
+@tangle('\t\ttest/*.cpp \\')
+@tangle('\t\ttest/*.hpp \\')
+@tangle('\t\ttut/examples/*.flx \\')
+@tangle('\t\tgc/src/*.hpp \\')
+@tangle('\t\tgc/src/*.cpp \\')
+@tangle('\t\tscript/maker \\')
+@tangle('')
+@tangle('upload_www: dummy')
+@tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('')
 @tangle('upload: dummy')
+@tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('\tscp flx_1.0a1_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('\tscp flx_1.0a1_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('')
+@tangle('download_boost: dummy')
+@tangle('\tmake -C boost download')
 @tangle('')
 @tangle('test_clean: dummy')
-@tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp')
-@tangle('\trm -rf test/rt*.cpp test/rt*.hpp')
+@tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so')
+@tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so')
+@tangle('')
+@tangle('dummy:')
+@tangle('\techo "out of date"')
+@tangle('')
+
+@head(1,'Boost download')
+@select(tangler('boost/makefile'))
+@tangle('download: dummy')
+@tangle('\tcvs -d:pserver:anonymous@cvs.boost.sourceforge.net:/cvsroot/boost login')
+@tangle('\tcvs -d:pserver:anonymous@cvs.boost.sourceforge.net:/cvsroot/boost update')
+@tangle('\tcvs -d:pserver:anonymous@cvs.boost.sourceforge.net:/cvsroot/boost logout')
 @tangle('')
 @tangle('dummy:')
 @tangle('\techo "out of date"')
@@ -453,9 +485,9 @@ if
   ./bin/flxg -q -Ilib $1
 then
   if 
-    g++ -Wno-long-long -pedantic -ansi -shared  \
-      boost_1_22_0/libs/regex/build/gcc/libboost_regex.so \
-      -I. -Iboost_1_22_0 -Igc/src $1.cpp \
+    g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared  \
+      boost/libs/regex/build/gcc/libboost_regex.so \
+      -I. -Iboost -Igc/src $1.cpp \
       -o $1.so
   then
     ./test/flx_run ./$1.so

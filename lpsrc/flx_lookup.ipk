@@ -79,18 +79,53 @@ let rec lookup_qn_in_htab dfns htab sr qn : entry_set_t =
 (* lookup a string with a starting symbol table stack,
   return data and possible table
 *)
-let rec lookup_name_in_env env sr name : entry_set_t =
+let lookup_name_in_env env sr name : entry_set_t =
+  let rec aux env = 
   match env with 
   | h :: t ->
     begin 
-      try lookup_name_in_htab h sr name
-      with _ -> lookup_name_in_env t sr name 
+      try Some (lookup_name_in_htab h sr name)
+      with _ -> aux t 
     end
-  | [] -> failwith 
-    (
-      "[lookup_name_in_env]: Name '" ^ name ^ "' not found in environment: " ^
-      short_string_of_src sr 
-    )
+  | [] -> None
+  in 
+    match aux env with
+    | Some x -> x
+    | None ->
+      (*
+      let env_contents = String.concat "\n----------\n"
+      (
+        List.map 
+        (
+          fun table ->
+          (
+            let s = ref "" in
+            Hashtbl.iter 
+            (
+              fun k v ->
+              (
+                s := !s ^ k ^ ", "
+              )
+            )
+            table
+            ;
+            !s
+          )
+        )
+        env
+      ) 
+      in
+      print_endline env_contents;
+      *)
+      failwith 
+      (
+        "[lookup_name_in_env]: Name '" ^ 
+        name ^ 
+        "' not found in environment (depth "^
+        string_of_int (List.length env)^ "\n" ^
+        "): " ^
+        short_string_of_src sr 
+      )
     
 (* lookup string list with a starting symbol table stack *)
 let lookup_qn_in_env dfns env sr qn : entry_set_t =

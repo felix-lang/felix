@@ -12,12 +12,12 @@ header """
 // BOOST IS REQUIRED FOR FELIX NOW
 #include <boost/cstdint.hpp>
 
-#ifdef BOOST_NO_INT64_T
-namespace boost {
-  typedef long long int64_t;
-  typedef unsigned long long uint64_t;
-}
-#endif
+//#ifdef BOOST_NO_INT64_T
+//namespace boost {
+//  typedef long long int64_t;
+//  typedef unsigned long long uint64_t;
+//}
+//#endif
 
 using namespace std;
 
@@ -89,7 +89,7 @@ namespace std_flx {
   #floating
   "float"   : "float",
   "double"  : "double",
-  "ldouble"  : "long double",
+  "ldouble"  : "double",
   }
 
 @chars = ["char", "wchar"]
@@ -101,7 +101,8 @@ namespace std_flx {
   "utiny", "ushort", "uint", "ulong","uvlong",
   "uint8","uint16","uint32","uint64"
   ]
-@floats = ["float", "double"]
+@floats = ["float", "double", "ldouble"]
+
 @all = ["byte", "size","address","offset","bool"] + chars + sints + uints + floats
 @ints = uints + sints
 

@@ -15,7 +15,6 @@ val bind_expression :
 val typeofindex :
   symbol_table_t ->
   bound_symbol_table_t ->
-  env_t ->
   int list ->
   range_srcref ->
   int ->
@@ -34,6 +33,7 @@ open Flx_lookup
 open Flx_tbind
 open List
 open Flx_srcref
+open Flx_env
 
 let base_typename_of_literal v = match v with
   | AST_int (t,_) -> t
@@ -65,7 +65,7 @@ and cal_apply tbe1 tbe2 : tbexpr_t =
   | BTYP_name index -> t1 (* ?? *)
   | _ -> failwith "Attempt to apply non-function"
 
-let rec typeofindex dfns bdfns env exclude sr index = 
+let rec typeofindex dfns bdfns exclude sr index = 
   let id,parent,entry = Hashtbl.find bdfns index in
   if List.mem index exclude
   then failwith ("Recursive type dependency for " ^ id)
@@ -81,11 +81,16 @@ let rec typeofindex dfns bdfns env exclude sr index =
   | BDCL_val t -> t
   | BDCL_var t -> t
   | BDCL_val_typeof e -> 
+    (* print_endline ("Binding type for val_typeof " ^ string_of_expression e);
+    *)
+    let env = build_env dfns parent in 
     snd (bind_expression dfns bdfns env (index::exclude) e)
   | BDCL_var_typeof e -> 
+    let env = build_env dfns parent in 
     snd (bind_expression dfns bdfns env (index::exclude) e)
 
   | BDCL_match_check _ -> 
+    let env = build_env dfns parent in 
     BTYP_function (BTYP_tuple [], typeof_literal dfns env sr (AST_bool true))
   | BDCL_match_handler _ ->
     BTYP_function (BTYP_tuple [],BTYP_void)
@@ -108,6 +113,9 @@ let rec typeofindex dfns bdfns env exclude sr index =
 and bind_expression dfns bdfns env exclude e : tbexpr_t = 
   let be e = bind_expression dfns bdfns env exclude e in
   let lu sr qn = lookup_qn_in_env dfns env sr qn in
+  (*
+  print_endline ("Binding expression " ^ string_of_expression e);
+  *)
   match e with
   | AST_get_n (sr,(n,e')) -> 
     let expr,typ = be e' in
@@ -144,7 +152,7 @@ and bind_expression dfns bdfns env exclude e : tbexpr_t =
       begin match lu sr qn with
       | NonFunctionEntry index -> 
         BEXPR_name index,
-        typeofindex dfns bdfns env exclude sr index
+        typeofindex dfns bdfns exclude sr index
       | FunctionEntry _ -> 
         (* This case should have been handled by bind_expression,
            with case AST_apply (AST_name (...), ...)
@@ -174,7 +182,7 @@ and bind_expression dfns bdfns env exclude e : tbexpr_t =
               short_string_of_src sr
             )
         in
-        BEXPR_closure index, typeofindex dfns bdfns env exclude sr index
+        BEXPR_closure index, typeofindex dfns bdfns exclude sr index
     end
 
   | AST_ref (srr,AST_name (srn,(qn,suf))) -> 
@@ -186,7 +194,7 @@ and bind_expression dfns bdfns env exclude e : tbexpr_t =
       | SYMDEF_dcl (DCL_var_typeof _)
       | SYMDEF_parameter (TYP_pointer _) -> 
         BEXPR_ref index, 
-        BTYP_pointer (typeofindex dfns bdfns env exclude srn index)
+        BTYP_pointer (typeofindex dfns bdfns exclude srn index)
       | SYMDEF_parameter _ -> 
         failwith 
         (
@@ -292,7 +300,7 @@ and bind_expression dfns bdfns env exclude e : tbexpr_t =
                 BEXPR_closure index'',
                 (
                   match 
-                    try typeofindex dfns bdfns env exclude sra index'' 
+                    try typeofindex dfns bdfns exclude sra index'' 
                     with _ -> failwith "typeofindex failed"
                   with
                   | BTYP_function _ as t -> t
@@ -333,7 +341,7 @@ and bind_expression dfns bdfns env exclude e : tbexpr_t =
         match lu srn qn with
         | NonFunctionEntry index ->
           BEXPR_name index, 
-          typeofindex dfns bdfns env exclude srn index
+          typeofindex dfns bdfns exclude srn index
 
         | FunctionEntry fs -> 
           (* print_endline ("Simple overload: function "^name^" found"); *)
@@ -341,7 +349,7 @@ and bind_expression dfns bdfns env exclude e : tbexpr_t =
           | Some index -> 
             BEXPR_closure index,
             (
-              match typeofindex dfns bdfns env exclude srn index with
+              match typeofindex dfns bdfns exclude srn index with
               | BTYP_function _ as t -> t
               | t -> 
                 failwith 

@@ -24,6 +24,7 @@ open Flx_ebind
 open Flx_mbind
 open Flx_srcref
 open Flx_tbind
+open Flx_env
 
 let cal_call dfns (p,pt) e =
   match pt with
@@ -61,7 +62,9 @@ let bind_exes dfns bdfns env exes ret_type =
 
   let bound_exes = 
     List.map
-    (function 
+    (fun x -> 
+      (* print_endline (string_of_exe 1 x); *)
+       match x with
       | EXE_comment s ->       BEXE_comment s
       | EXE_label s ->         BEXE_label s
       | EXE_goto s ->          BEXE_goto s
@@ -128,7 +131,7 @@ let bind_exes dfns bdfns env exes ret_type =
                BEXPR_name index
             )
             , 
-            typeofindex dfns bdfns env [] sr index
+            typeofindex dfns bdfns [] sr index
           in cal_call dfns (be1,t1) (be2,t2)
 
         (* Do normal overloading for a qualified name:
@@ -152,7 +155,7 @@ let bind_exes dfns bdfns env exes ret_type =
                   "[flx_bbind.bind_exes|EXE_call] No match for " ^ name ^ " in " ^
                    short_string_of_src sr
                 )
-          in BEXPR_name index, typeofindex dfns bdfns env [] sr index
+          in BEXPR_name index, typeofindex dfns bdfns [] sr index
           in cal_call dfns (be1,t1) (be2,t2)
         | _ -> 
           let be1,t1 = be (AST_name (sr,sn)) and be2,t2 = be e in
@@ -187,7 +190,7 @@ let bind_exes dfns bdfns env exes ret_type =
         | FunctionEntry _ -> failwith "Can't init function constant"
         | NonFunctionEntry index -> 
           let e',t' = be e in
-          let t = typeofindex dfns bdfns env [] sr index in
+          let t = typeofindex dfns bdfns [] sr index in
           if t = t'
           then BEXE_init (index, (e',t'))
           else failwith (
@@ -231,17 +234,22 @@ let bbind counter dfns bdfns =
     Hashtbl.add bbdfns i (name,parent,BBDCL_function (ps,rt,display,bbexes,name_map))
 
   | BDCL_procedure (ps,display,exes,name_map) -> 
-    (* print_endline ("//Binding procedure " ^ string_of_int i ^ " --> " ^ name); 
+    (*
+    print_endline ("//Binding procedure " ^ string_of_int i ^ " --> " ^ name); 
     *)
     let env = build_env dfns (Some i) in 
     let bbexes = bexes env exes BTYP_void in
     Hashtbl.add bbdfns i (name,parent,BBDCL_procedure (ps,display,bbexes,name_map))
-  
+    (*
+    ;
+    print_endline "procedure bound";
+    *) 
+
   | BDCL_match_check (pat,mvindex, display) ->
     (* print_endline ("//Binding match checker " ^ string_of_int i ^ " --> " ^ name); 
     *)
     let env = build_env dfns (Some i) in 
-    let t = typeofindex dfns bdfns env [] dummy_sr mvindex in
+    let t = typeofindex dfns bdfns [] dummy_sr mvindex in
     let true_val = AST_name (("Generated",0,0,0,0),(["true"],TYP_none)) in
     let _,rt = bind_expression dfns bdfns env [] true_val in
     let name_map = Hashtbl.create 97 in
@@ -295,7 +303,7 @@ let bbind counter dfns bdfns =
       Hashtbl.add bdfns vid (vname, Some i, 
         BDCL_val_typeof component
       );
-      let bvtyp = typeofindex dfns bdfns env [] dummy_sr vid in
+      let bvtyp = typeofindex dfns bdfns [] dummy_sr vid in
       Hashtbl.add bbdfns vid (vname, Some i, 
         BBDCL_val bvtyp 
       );
@@ -321,10 +329,18 @@ let bbind counter dfns bdfns =
     Hashtbl.add bbdfns i (name,parent,BBDCL_var t)
 
   | BDCL_val_typeof e  ->
-    (* print_endline ("//Binding value(typeof)" ^ string_of_int i ^ " --> " ^ name); 
+    (*
+    print_endline ("//Binding value(typeof)" ^ string_of_int i ^ " --> " ^ name ^ " = " ^ string_of_expression e); 
+    print_endline ("Parent is " ^ match parent with |Some i-> string_of_int i | None -> "none");
     *)
     let env = build_env dfns parent in 
+    (*
+    print_endline "Now binding ..";
+    *)
     let _,t = bind_expression dfns bdfns env [] e in
+    (*
+    print_endline "Binding done";
+    *)
     Hashtbl.add bbdfns i (name,parent,BBDCL_val t)
 
   | BDCL_var_typeof e ->

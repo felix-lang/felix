@@ -102,6 +102,7 @@ let rec register_type_r registry counter dfns bbdfns exclude t =
     | BBDCL_struct cs -> 
       let argt = typeoflist (List.map snd cs) in
       List.iter rr (List.map snd cs);      (* components *)
+      rnr argt;                            (* argument tuple *)
       rnr t;                               (* the struct type *)
       rnr (BTYP_function (argt,t))         (* constructor *)
 
@@ -266,7 +267,7 @@ let gen_type_name registry dfns bbdfns (index,typ) =
     | _ -> failwith "expected type declaration"
 
 let gen_type registry dfns bbdfns (index,typ) =
-  "//TYPE: " ^ string_of_btypecode dfns typ ^ "\n"^
+  "//TYPE "^string_of_int index^": " ^ string_of_btypecode dfns typ ^ "\n"^
   let tn t = cpp_typename registry dfns bbdfns t in
   let cn t = cpp_classname registry dfns bbdfns t in
   match typ with
