@@ -29362,6 +29362,14 @@ try Unix.mkdir outdir 0o777 with _ -> ()
 ;;
 exception Next
 ;;
+
+let is_nonempty h = 
+  try 
+    Hashtbl.iter (fun _ -> raise Not_found) h; 
+    false
+   with Not_found -> true
+;;
+
 let rec find_includes' includes fname =
   let f = open_in fname in
   try 
@@ -29499,7 +29507,7 @@ begin
     end
     ;
 
-    if Hashtbl.length stab.abstract_types > 0 then
+    if is_nonempty stab.abstract_types then
     begin
       print_endline "";
       print_endline "//ABSTRACT TYPES";
@@ -29511,7 +29519,7 @@ begin
     end
     ;
 
-    if Hashtbl.length stab.registry > 0 then
+    if is_nonempty stab.registry then
     begin
       print_endline "";
       print_endline "//C FUNCTION POINTER TYPES";
@@ -29524,7 +29532,7 @@ begin
     end
     ;
 
-    if Hashtbl.length xtyps > 0 then
+    if is_nonempty xtyps then
     begin
       print_endline "";
       print_endline "//EXTERNALLY COMPLETED TYPES";
@@ -29537,7 +29545,7 @@ begin
     end
     ;
 
-    if Hashtbl.length ict > 0 then
+    if is_nonempty ict then
     begin
       print_endline "";
       print_endline "//PURE INCOMPLETE TYPES";
@@ -29549,7 +29557,7 @@ begin
     end
     ;
 
-    if Hashtbl.length stab.struct_aliases > 0 then
+    if is_nonempty stab.struct_aliases then
     begin
       print_endline "";
       print_endline "//STRUCT or UNION ALIASES";
@@ -29563,7 +29571,7 @@ begin
     end
     ;
 
-    if Hashtbl.length stab.aliases > 0 then
+    if is_nonempty stab.aliases then
     begin
       print_endline "";
       print_endline "//TYPE ALIASES";
@@ -29577,7 +29585,7 @@ begin
     end
     ;
 
-    if Hashtbl.length stab.variables > 0 then
+    if is_nonempty stab.variables then
     begin
       print_endline "";
       print_endline "//VARIABLES";
@@ -29589,7 +29597,7 @@ begin
     end
     ;
 
-    if Hashtbl.length stab.enums > 0 then
+    if is_nonempty stab.enums then
     begin
       print_endline "";
       print_endline "//ENUMERATION CONSTANTS";
@@ -29601,7 +29609,7 @@ begin
     end
     ;
 
-    if Hashtbl.length stab.procedures > 0 then
+    if is_nonempty stab.procedures then
     begin
       print_endline "";
       print_endline "//PROCEDURES";
@@ -29613,7 +29621,7 @@ begin
     end
     ;
 
-    if Hashtbl.length stab.functions > 0 then
+    if is_nonempty stab.functions then
     begin
       print_endline "";
       print_endline "//FUNCTIONS";
@@ -29625,7 +29633,7 @@ begin
     end
     ;
 
-    if Hashtbl.length stab.fields > 0 then
+    if is_nonempty stab.fields then
     begin
       print_endline "";
       print_endline "//STRUCT and UNION FIELDS";

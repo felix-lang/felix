@@ -477,6 +477,9 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   (* IDENTIFIER RENAMING NOT SUPPORTED IN TYPES *)
   | `AST_type_alias (sr, id, vs, t) ->  tack st
+  
+  | `AST_inherit (sr, id, vs, t) ->  tack st
+  | `AST_inherit_fun (sr, id, vs, t) ->  tack st
  
   | `AST_ctypes (sr, ids, reqs) ->  
     iter 

@@ -393,6 +393,8 @@ and statement_t =
   | `AST_union of range_srcref * id_t * id_t list * (id_t * typecode_t) list
   | `AST_struct of range_srcref * id_t * id_t list * (id_t * typecode_t) list
   | `AST_type_alias of range_srcref * id_t * id_t list * typecode_t
+  | `AST_inherit of range_srcref * id_t * id_t list * qualified_name_t
+  | `AST_inherit_fun of range_srcref * id_t * id_t list * qualified_name_t
 
   (* variables *)
   | `AST_val_decl of range_srcref * id_t * id_t list * typecode_t option * expr_t option
@@ -519,6 +521,8 @@ type dcl_t =
   | `DCL_val of          typecode_t
   | `DCL_var of          typecode_t
   | `DCL_type_alias of   typecode_t
+  | `DCL_inherit of   qualified_name_t
+  | `DCL_inherit_fun of   qualified_name_t
 
   (* module system *)
   | `DCL_module of       asm_t list  
@@ -691,6 +695,8 @@ type symbol_definition_t =
   | `SYMDEF_union of  (id_t * typecode_t) list
   | `SYMDEF_struct of  (id_t * typecode_t) list
   | `SYMDEF_type_alias of   typecode_t
+  | `SYMDEF_inherit of   qualified_name_t
+  | `SYMDEF_inherit_fun of   qualified_name_t
   ]
 
 type symbol_data_t = {
@@ -985,6 +991,8 @@ let src_of_stmt e = match e with
  
 
   | `AST_type_alias (s,_,_,_) 
+  | `AST_inherit (s,_,_,_) 
+  | `AST_inherit_fun (s,_,_,_) 
   | `AST_nop (s, _) 
 
   | `AST_assign (s, _, _,_ ) 
@@ -1852,7 +1860,7 @@ and string_of_statement level s =
   
   | `AST_use (_,n,qn) -> 
     spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
-  
+
   | `AST_regdef (_,n,r) -> 
     spaces level ^ "regdef " ^ n ^ " = " ^string_of_re r^";"
   
@@ -1861,6 +1869,16 @@ and string_of_statement level s =
     spaces level ^ "type " ^ t1 ^ print_vs vs ^
     " = " ^ 
     string_of_typecode t2 ^ ";"
+
+  | `AST_inherit (_,name,vs,qn) ->
+    spaces level ^ "inherit " ^ name ^ print_vs vs ^
+    " = " ^ 
+    string_of_qualified_name qn ^ ";"
+
+  | `AST_inherit_fun (_,name,vs,qn) ->
+    spaces level ^ "inherit fun " ^ name ^ print_vs vs ^
+    " = " ^ 
+    string_of_qualified_name qn ^ ";"
 
   | `AST_untyped_module (_,name, vs,sts)  -> 
     spaces level ^ "module " ^ name ^ 
@@ -2151,7 +2169,13 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
 
   | `SYMDEF_type_alias t -> 
     "typedef " ^ name ^ print_ivs vs ^" = " ^ string_of_typecode t ^ ";"
-  
+
+  | `SYMDEF_inherit qn -> 
+    "inherit " ^ name ^ print_ivs vs ^" = " ^ string_of_qualified_name qn ^ ";"
+
+  | `SYMDEF_inherit_fun qn -> 
+    "inherit fun " ^ name ^ print_ivs vs ^" = " ^ string_of_qualified_name qn ^ ";"
+
   | `SYMDEF_abs (flag,code, reqs) ->
     (if flag then "" else "incomplete ") ^
     "type " ^ name ^ print_ivs vs ^
@@ -2450,6 +2474,14 @@ and string_of_dcl level name vs (s:dcl_t) =
   | `DCL_type_alias (t2) ->
     spaces level ^ "typedef " ^ name ^ print_vs vs ^
     " = " ^ string_of_typecode t2 ^ ";"
+
+  | `DCL_inherit qn ->
+    spaces level ^ "inherit " ^ name ^ print_vs vs ^
+    " = " ^ string_of_qualified_name qn ^ ";"
+
+  | `DCL_inherit_fun qn ->
+    spaces level ^ "inherit fun " ^ name ^ print_vs vs ^
+    " = " ^ string_of_qualified_name qn ^ ";"
 
   | `DCL_module (asms) -> 
     spaces level ^ "module " ^ name ^ print_vs vs ^ " = " ^

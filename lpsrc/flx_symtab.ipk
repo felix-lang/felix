@@ -419,7 +419,27 @@ let rec build_tables syms name level parent grandparent root asms =
           add_unique priv_name_map id n
           ;
           add_tvars privtab
+         
+        | `DCL_inherit qn ->
+          Hashtbl.add dfns n 
+          {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;
+          privmap=privtab;dirs=dirs;symdef=`SYMDEF_inherit qn}
+          ;
+          if access = `Public then add_unique pub_name_map id n;
+          add_unique priv_name_map id n
+          ;
+          add_tvars privtab
 
+         | `DCL_inherit_fun qn ->
+          Hashtbl.add dfns n 
+          {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;
+          privmap=privtab;dirs=dirs;symdef=`SYMDEF_inherit_fun qn}
+          ;
+          if access = `Public then add_function pub_name_map id n;
+          add_function priv_name_map id n
+          ;
+          add_tvars privtab
+        
         | `DCL_abs (flag,c, reqs) ->
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_abs (flag,c,reqs)}
           ;

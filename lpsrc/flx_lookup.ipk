@@ -103,6 +103,7 @@ val build_env:
   env_t
 
 val lookup_name_in_env :
+  sym_state_t ->
   env_t ->
   range_srcref ->
   id_t -> 
@@ -221,6 +222,7 @@ open Flx_ast
 open Flx_types
 open Flx_print
 open Flx_exceptions
+open Flx_mtypes1
 open Flx_typing
 open Flx_typing2
 open List
@@ -323,7 +325,62 @@ let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
   
   | [] -> None
 
-let lookup_name_in_env (env:env_t) sr name : entry_set_t =
+(* this ugly thing merges a list of function entries
+some of which might be inherits, into a list of
+actual functions
+*)
+
+let rec trclose syms excluded_dirs sr fs =
+  let inset = ref IntSet.empty in
+  let outset = ref IntSet.empty in
+  let exclude = ref IntSet.empty in
+  let append fs = iter (fun i -> inset := IntSet.add i !inset) fs in
+
+  let rec trclosem () =
+    if IntSet.is_empty !inset then ()
+    else
+      (* grab an element *)
+      let x = IntSet.choose !inset in
+      inset := IntSet.remove x !inset;
+      
+      (* loop if already handled *)
+      if IntSet.mem x !exclude then trclosem ()
+      else begin
+        (* say we're handling this one *)
+        exclude := IntSet.add x !exclude;
+
+        match Hashtbl.find syms.dfns x with
+        | {parent=parent; sr=sr2; symdef=`SYMDEF_inherit_fun qn} ->
+          let env = build_env syms excluded_dirs parent in
+          begin match fst (lookup_qn_in_env2 syms env excluded_dirs qn) with
+          | NonFunctionEntry _ -> clierr2 sr sr2 "Inherit fun doesn't denote function set"
+          | FunctionEntry fs' -> append fs'; trclosem ()
+          end
+
+        | _ -> outset := IntSet.add x !outset; trclosem ()
+      end
+  in
+  append fs;
+  trclosem (); 
+  let output = ref [] in 
+  IntSet.iter (fun i -> output := i :: !output) !outset;
+  !output
+
+and resolve_inherits syms excluded_dirs sr x =
+  match x with
+  | NonFunctionEntry z -> 
+    begin match Hashtbl.find syms.dfns z with
+    | {parent=parent; symdef=`SYMDEF_inherit qn} ->
+      let env = build_env syms excluded_dirs parent in
+      fst (lookup_qn_in_env2 syms env excluded_dirs qn)
+    | {sr=sr2; symdef=`SYMDEF_inherit_fun qn} ->
+      clierr2 sr sr2
+      "NonFunction inherit denotes function"
+    | _ -> x
+    end
+  | FunctionEntry fs -> FunctionEntry (trclose syms excluded_dirs sr fs)
+
+and lookup_name_in_env syms (env:env_t) sr name : entry_set_t =
   (* print_endline "Lookup name in env"; *)
   let rec aux env = 
     match env with 
@@ -334,9 +391,7 @@ let lookup_name_in_env (env:env_t) sr name : entry_set_t =
       | None -> aux tail
   in 
     match aux env with
-    | Some x -> 
-      (* print_endline ("Found name "^name^" in env"); flush stdout; *) 
-      x
+    | Some x -> resolve_inherits syms [] sr x
     | None ->
       clierr sr 
       (
@@ -351,7 +406,7 @@ let lookup_name_in_env (env:env_t) sr name : entry_set_t =
    can be either non-function or function set
 *)
 
-let rec lookup_qn_in_env2
+and lookup_qn_in_env2
   syms
   (env:env_t) 
   excluded_dirs
@@ -364,12 +419,16 @@ let rec lookup_qn_in_env2
   | `AST_typed_case (sr,_,_) -> clierr sr "[lookup_qn_in_env2] Can't lookup a typed case tag"
 
   | `AST_name (sr,name,ts) -> 
-    lookup_name_in_env env sr name, ts
+    lookup_name_in_env syms env sr name, ts
 
   | `AST_lookup (sr,(me,name,ts)) ->
     match eval_module_expr syms env excluded_dirs me with 
     | Simple_module (impl,ts', htab,dirs) ->
-      begin try Hashtbl.find htab name, ts' @ ts
+      begin 
+      try 
+        let entry = Hashtbl.find htab name in
+        resolve_inherits syms excluded_dirs sr entry,
+        ts' @ ts
       with Not_found -> 
         clierr sr
         (
@@ -1138,7 +1197,7 @@ and base_typename_of_literal v = match v with
 and  typeof_literal syms env sr v : btypecode_t = 
   let root,_ = List.hd (List.rev env) in
   let name = base_typename_of_literal v in
-  match lookup_name_in_env env dummy_sr name with
+  match lookup_name_in_env syms env dummy_sr name with
   | NonFunctionEntry (index) -> 
     `BTYP_inst (index,[])
   | _ -> 
@@ -1411,6 +1470,8 @@ and inner_typeofindex
     t'
   in
   match entry with
+  | `SYMDEF_inherit qn -> failwith ("Woops inner_typeofindex found inherit " ^ si index)
+  | `SYMDEF_inherit_fun qn -> failwith ("Woops inner_typeofindex found inherit fun!! " ^ si index)
   | `SYMDEF_function (ps, rt,_,_) -> 
     let pts = List.map snd ps in
     let rt' = 
@@ -1696,6 +1757,12 @@ and lookup_qn_with_sig'
           {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=entry} 
           ->
             begin match entry with
+            | `SYMDEF_inherit_fun qn ->
+                failwith "Chasing functional inherit in lookup_qn_with_sig'";
+
+            | `SYMDEF_inherit qn ->
+                failwith "Chasing inherit in lookup_qn_with_sig'";
+
             | `SYMDEF_struct _ ->
               (*
               print_endline ("Struct constructor found, type= " ^ sbt syms.dfns t);
@@ -1861,54 +1928,50 @@ and handle_function
   sra srn 
   name 
   ts
-  overload 
+  index 
 : tbexpr_t 
 =
-  match overload with
-    | index -> 
-        begin 
-          match get_data syms.dfns index with 
-          {id=id;sr=sr;vs=vs;parent=parent;privmap=tabl;dirs=dirs;symdef=entry}
-          -> match entry with
-          | `SYMDEF_match_check _
-          | `SYMDEF_function _
-          | `SYMDEF_fun _
-          | `SYMDEF_struct _
-            ->
-            (*
-            print_endline ("closure of " ^ name);
-            flush stdout;
-            *)
-            let ts = adjust_ts syms index ts in
-            `BEXPR_closure (index,ts),
-            (
-              match inner_typeofindex_with_ts syms 
-                idx_fixlist expr_fixlist depth excluded_dirs 
-                index ts 
-              with
-              | `BTYP_function (s,d) as t -> t
-              | t -> 
-                ignore begin
-                  match t with 
-                  | `BTYP_fix _ -> raise (Free_fixpoint t)
-                  | _ -> try unfold t with
-                  | _ -> raise (Free_fixpoint t)
-                end
-                ;
-                failwith 
-                (
-                  "[handle_function]: closure operator expected '"^name^"' to be function definition, got '"^
-                  sbt syms.dfns t
-                  ^"', " ^ short_string_of_src sra
-                )
-            )
-          | _ -> 
-            failwith 
-            (
-              "[handle_function] Expected function"
-            )
-        end 
-  
+  match get_data syms.dfns index with 
+  {
+    id=id;sr=sr;vs=vs;parent=parent;
+    privmap=tabl;dirs=dirs;
+    symdef=entry
+  }
+  -> match entry with
+  | `SYMDEF_match_check _
+  | `SYMDEF_function _
+  | `SYMDEF_fun _
+  | `SYMDEF_struct _
+    ->
+    let ts = adjust_ts syms index ts in
+    `BEXPR_closure (index,ts),
+    (
+      match inner_typeofindex_with_ts syms 
+        idx_fixlist expr_fixlist depth excluded_dirs 
+        index ts 
+      with
+      | `BTYP_function (s,d) as t -> t
+      | t -> 
+        ignore begin
+          match t with 
+          | `BTYP_fix _ -> raise (Free_fixpoint t)
+          | _ -> try unfold t with
+          | _ -> raise (Free_fixpoint t)
+        end
+        ;
+        failwith 
+        (
+          "[handle_function]: closure operator expected '"^name^"' to be function definition, got '"^
+          sbt syms.dfns t
+          ^"', " ^ short_string_of_src sra
+        )
+    )
+  | _ -> 
+    failwith 
+    (
+      "[handle_function] Expected function"
+    )
+
 and handle_variable syms env excluded_dirs index id sr vs ts t t2 = 
   let bt sr t = 
     bind_type syms env excluded_dirs sr t 
@@ -2003,6 +2066,11 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     begin match get_data syms.dfns index with
     {id=id;sr=sr;parent=parent;vs=vs;symdef=entry}->
     begin match entry with
+    | `SYMDEF_inherit _ -> 
+      failwith "Woops found inherit in lookup_name_in_table_dirs_with_sig"
+    | `SYMDEF_inherit_fun _ -> 
+      failwith "Woops found inherit function in lookup_name_in_table_dirs_with_sig"
+
     | `SYMDEF_struct _
       ->
         (*
@@ -2165,7 +2233,8 @@ and handle_map sr (f,ft) (a,at) =
       *)
       failwith "NOT  IMPLEMENTED"
  
-and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e 
+and bind_expression' syms env idx_fixlist expr_fixlist depth 
+excluded_dirs e 
 : tbexpr_t = 
   (*
   print_endline ("[bind_expression'] " ^ string_of_expr e);
@@ -2189,7 +2258,8 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
     let t = beta_reduce syms [] t in
     t
   in
-  let ti i ts = inner_typeofindex_with_ts syms 
+  let ti i ts = 
+    inner_typeofindex_with_ts syms 
     idx_fixlist ((e,depth)::expr_fixlist) (depth+1) excluded_dirs i ts 
          (* CHANGED THIS ------------------*******)
   in
@@ -2324,7 +2394,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
     print_endline ("AST_name " ^ name ^ "[" ^ catmap "," string_of_typecode ts^ "]");
     *)
     let ts = map (bt sr) ts in
-    begin match lookup_name_in_env env sr name with
+    begin match lookup_name_in_env syms env sr name with
     | NonFunctionEntry (index) -> 
       (*
       print_endline ("[bind_expression] FOUND INDEX " ^ si index);
@@ -2364,16 +2434,20 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
       | Some entry -> 
         begin match entry with
         | NonFunctionEntry (i) ->  
-          let ts = adjust_ts syms i ts in
-          `BEXPR_name (i,ts), 
-          ti i ts
-          
+          begin match Hashtbl.find syms.dfns i with
+          | {sr=srn; symdef=`SYMDEF_inherit qn} -> be (qn :> expr_t)
+          | _ ->
+            let ts = adjust_ts syms i ts in
+            `BEXPR_name (i,ts), 
+            ti i ts
+          end
+
         | FunctionEntry fs ->
-          failwith 
+          clierr sr 
           (
-            "[bind_expression] Qualified name " ^ string_of_qualified_name qn ^ 
-            " binds to function set in\n" ^
-            short_string_of_src sr
+            "[bind_expression] Qualified name " ^ 
+            string_of_qualified_name qn ^ 
+            " binds to function set"
           )
         end
 
@@ -2412,6 +2486,8 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
       begin match get_data syms.dfns index with
       {id=id; sr=sr; symdef=entry} ->
       begin match entry with
+      | `SYMDEF_inherit _ -> failwith "Woops, bindexpr yielded inherit"
+      | `SYMDEF_inherit_fun _ -> failwith "Woops, bindexpr yielded inherit fun"
       | `SYMDEF_var _
       | `SYMDEF_parameter (`TYP_pointer _) -> 
         `BEXPR_ref (index,ts), 
@@ -2646,6 +2722,7 @@ and resolve_overload
     let env = build_env syms excluded_dirs (Some i) in
     bind_type syms env excluded_dirs sr t
   in
+    let fs = trclose syms excluded_dirs sr fs in
     overload syms bt sr fs name suf ts
 
 (* an environment is a list of hastables, mapping
@@ -2743,7 +2820,7 @@ and build_env'' syms excluded_dirs parent : env_t =
           | FunctionEntry ls2 ->
             Hashtbl.replace use_map n (FunctionEntry (ls @ ls2))
       )
-      uses
+      uses 
       ;
       let bound_dirs = 
         List.map
@@ -2831,7 +2908,7 @@ and eval_module_expr syms env excluded_dirs e : module_rep_t =
   *)
   match e with
   | `AST_name (sr,name,ts) ->
-    let entries = lookup_name_in_env env sr name in
+    let entries = lookup_name_in_env syms env sr name in
     check_module syms excluded_dirs sr entries ts
 
   | `AST_lookup (sr,(e,name,ts)) ->

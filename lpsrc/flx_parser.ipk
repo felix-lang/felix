@@ -542,6 +542,25 @@ type_alias:
       mktypefun sr name vs args return_type body
     }
 
+  | INHERIT NAME tvarlist EQUAL qualified_name SEMI 
+    { 
+      let sr = rstoken $1 $6
+      and name = snd $2 
+      and vs = List.map snd $3 
+      and qn = qualified_name_of_expr $5
+      in
+      `AST_inherit (sr,name,vs,qn)
+    }
+  
+  | INHERIT FUNCTION NAME tvarlist EQUAL qualified_name SEMI 
+    { 
+      let sr = rstoken $1 $7
+      and name = snd $3 
+      and vs = List.map snd $4 
+      and qn = qualified_name_of_expr $6
+      in
+      `AST_inherit_fun (sr,name,vs,qn)
+    }
 
 @head(3,'Export')
 @select(h)
@@ -576,7 +595,7 @@ use_decl:
       match $2 with
       | (`AST_lookup (_,(e,n,[])) as qn) -> `AST_use (sr,n,qualified_name_of_expr qn)
       | (`AST_name (_,n,_) as qn) -> `AST_use (sr,n,qualified_name_of_expr qn)
-      | _ -> failwith "Use declaration requires qualified name"
+      | _ -> Flx_exceptions.clierr sr "Use declaration requires qualified name"
     }
     
   | USE NAME EQUAL qualified_name SEMI
@@ -584,7 +603,7 @@ use_decl:
       let sr = rstoken $1 $5 in
       `AST_use (sr, snd $2, qualified_name_of_expr $4)
     }
-  
+
 @head(3,'Macro Definition')
 @select(h)
 mac_arg:

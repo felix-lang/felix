@@ -294,6 +294,10 @@ Please read <A HREF=jobs.html>Jobs</A>.
 <P>
 Please read <A HREF=coding.html>Coding Guidelines</A>.
 </P>
+<H1>Flxcc wrapper generator</H1>
+<P>
+There is some information on using the <A HREF=flxcc.html>flxcc</A> wrapper generator.
+</P>
 </BODY>
 </HTML>
 
@@ -345,6 +349,71 @@ process.</EM>
 <H1>Compiler documentation</H1>
 <P>The ocamldoc generated <A HREF=impldoc/index.html>module reference</A>
 for the modules in the core compiler are useful sometimes.
+</P>
+</BODY>
+</HTML>
+
+
+@select(tangler('www/flxcc.html','data'))
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>Flxcc Wrapper Generator</TITLE>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY>
+<H1>Flxcc Wrapper Generator</H1>
+<P>Felix now ships with <STRONG>flxcc</STRONG> which can 
+be used to bulk generate wrappers for installed libraries.
+This tool is very much work in progress.
+Here's how it currently works.
+</P>
+<P>The first step you need to take is to create a 
+single C header file, called something like:
+</P><P><CODE>
+  usr_include.h
+</CODE></P><P>
+which consists of a long sequence of C <CODE>#include</CODE>
+preprocessor directives for all the library header files
+you would like to wrap. I generated this list from a listing
+of the directory <CODE>/usr/include</CODE>
+</P>
+<P>The second step is to preprocess this header file
+using the system preprocessor. For gcc based systems
+you should use a command like:
+</P><P><CODE><PREFORMAT>
+  gcc -E `pkg-config --cflags gtk+-2.0` usr_include.h > usr_include.hhh
+</PREFORMAT></CODE></P><P>
+to generate a preprocessed output file.
+</P>
+<P>The third step is to execute the wrapper generator:
+</P><P><CODE>
+  flxcc usr_include.hhh
+</CODE>
+</P><P>This will create a directory <CODE>flxcc_out</CODE> containing
+wrappers for every included file: this is the inclusion closure
+of the files listed in the original usr_include.h file.
+</P>
+<P>In principle if everything worked, you now have a set
+of wrappers for your C environment. In practice, you will
+probably need to remove some include files from the bootstrap
+because they create conflicts, they're C++, they weren't meant
+to be included at the top level, they have syntax errors in them,
+or other reasons. Even then, the resulting wrappers may not
+work. At present there is no recourse: you can edit the generated
+wrappers by hand if you're desparate, but of course be careful
+subsequent runs of flxcc don't clobber your changes.
+</P>
+<P>The following rules currently apply: module and include
+names are the same as the C header, except "_h" is pasted 
+on the end, and certain files found in subdirectories get
+the subdirectory name prefixed to the start, including
+'sys', 'bits', and 'asm'.
+</P>
+<P>The wrappers for your functions might not be where you
+expect. For example on my system 'sin()' is actually 
+defined in 'bits/mathcalls.h' and so ends up in
+module 'bits_mathcalls_h' instead of 'math_h'. 
 </P>
 </BODY>
 </HTML>

@@ -6,6 +6,7 @@ manfoot = r"""
 .SH SEE ALSO
 .B felix(1)
 for a language introduction and man page index
+.br
 .B flx(1) 
 for a list of the tools.
 .br
@@ -263,6 +264,12 @@ raw string, no escape processing
 
 .B u
 UCS-4 (32 bit) string
+.br
+
+.B c
+8 bit C null terminated C string, of
+.br
+type cptr[char] = 'char const*'
 .br
 
 .B Escapes:

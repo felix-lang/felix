@@ -250,6 +250,8 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
 
     | `SYMDEF_regdef _ -> ()
     | `SYMDEF_type_alias _ -> ()
+    | `SYMDEF_inherit _ -> ()
+    | `SYMDEF_inherit_fun _ -> ()
 
     | `SYMDEF_abs (complete,ct,reqs)->
       (*
