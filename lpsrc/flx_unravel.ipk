@@ -1,0 +1,82 @@
+@head(1,"Expression unraveller")
+@h = tangler("src/flx_unravel.mli")
+@select(h)
+open Flx_types
+
+val unravel:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  tbexpr_t ->
+  (tbexpr_t * string) list * 
+  tbexpr_t
+
+@h = tangler("src/flx_unravel.ml")
+@select(h)
+open Flx_types
+open List
+open Flx_maps
+open Flx_util
+open Flx_print
+
+let rec eassoc x l = match l with 
+  | [] -> raise Not_found
+  | (a,b) ::t -> 
+    if Flx_typing.cmp_tbexpr x a then b else eassoc x t
+
+(* Unravel an expression into 'three address code',
+  at the same time eliminating common sub-expressions.
+  Note primitive applications are regarded as unary operators.
+*)
+let unravel syms bbdfns e =
+  let sube = ref [] in
+  let get e = 
+    try eassoc e !sube 
+    with Not_found ->
+      let n = !(syms.counter) in incr (syms.counter);
+      let name = "_tmp" ^ si n in
+      sube := (e,name) :: !sube;
+      name
+    
+  in
+  let refer ((_,t) as e) = 
+    `BEXPR_expr (get e,t),t
+  in
+  let idt t = t in
+  let e' = 
+    let rec aux e = 
+      match e with
+      | `BEXPR_apply ((`BEXPR_name _,_) as f, b),t ->
+        refer (`BEXPR_apply (f, aux b),t)
+
+      | `BEXPR_apply ((`BEXPR_closure (i,_),_) as f, b),t ->
+        let id,parent,sr,entry = Hashtbl.find bbdfns i in
+        begin match entry with 
+        | `BBDCL_struct _ -> `BEXPR_apply (f, aux b),t
+        | `BBDCL_fun _ -> `BEXPR_apply (f, aux b),t
+        | `BBDCL_function _ -> refer (`BEXPR_apply (f, aux b),t)
+        | _ -> assert false
+        end
+
+      | `BEXPR_apply (f,b),t -> refer (`BEXPR_apply(aux f, aux b),t)
+      | `BEXPR_tuple ls,t -> (`BEXPR_tuple (map aux ls),t)
+      | (`BEXPR_name _,t) as x -> x
+      | (`BEXPR_literal (`AST_int _ )),t as x -> x
+      | (`BEXPR_literal (`AST_float _ )),t as x -> x
+      | x -> refer x
+    in 
+      aux e
+  in
+  let sube = rev !sube in
+  (*
+  print_endline 
+  (
+    "Unravelled " ^ sbe syms.dfns e ^ "-->" ^ sbe syms.dfns e' ^
+    " where:\n" ^
+    catmap ""
+    (fun (x,s) ->
+      s ^ " = "^sbe syms.dfns x ^";\n"
+    )
+    sube
+  );
+  *)
+  sube,e'
