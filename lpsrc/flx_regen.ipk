@@ -1,0 +1,158 @@
+@head(1,'Lexer generator')
+@h = tangler('src/flx_regen.mli')
+@select(h)
+open Flx_ast
+open Flx_types
+
+type reg_kind_t = 
+[
+  | `regmatch of tbexpr_t 
+  | `reglex of tbexpr_t * tbexpr_t
+]
+
+val regen: 
+  Buffer.t -> 
+  regular_args_t -> 
+  reg_kind_t -> 
+  (tbexpr_t -> string) ->
+  unit
+
+@h = tangler('src/flx_regen.ml')
+@select(h)
+open Flx_ast
+open Flx_types
+open Flx_util
+
+type reg_kind_t = 
+[
+  | `regmatch of tbexpr_t 
+  | `reglex of tbexpr_t * tbexpr_t
+]
+
+
+let regen b (alpha, nstates, cases, matrix) kind ge =
+  let tack s = bcat b s in
+
+  tack ("  // regmatch/lex: error state=0, start state=1, valid states=1 to "^si nstates^"\n");
+
+  (* transition matrix *)
+  let d = Array.make_matrix 256 nstates (-1) in
+  Hashtbl.iter
+  (fun (c,s1) s2 -> 
+    d.(c).(s1) <- s2
+  )
+  matrix
+  ;
+  begin match kind with | `reglex _ ->
+  tack ("  // accepting states\n");
+  tack ("  static int accept["^si (nstates+1)^"]={\n");
+  tack (
+    "    0," ^
+    catmap "," 
+    (fun i -> match Hashtbl.mem cases i with
+    | true -> "1" | false -> "0"
+    )
+    (nlist nstates)
+  );
+  tack "\n  };\n";
+  | _ -> ()
+  end
+  ;
+  (* find equivalent chars *)
+  tack "  // state->state transition vectors for canonical characters\n";
+  let canon = Array.make 256 0 in
+  for i = 0 to 255 do
+    try
+      for j = 0 to i do
+        if d.(i) = d.(j) then 
+        begin
+          canon.(i) <- j;
+          if i = j then
+          begin
+            tack("  static int s"^si i^"["^si (nstates+1)^"]=\n");
+            tack "  {0, // error\n"
+            ;
+            for state = 0 to nstates - 1 do
+              if state mod 16 = 0 then tack "      ";
+              let s = "     " ^ si (d.(i).(state)+1) in
+              let n = String.length s in
+              let s = String.sub s (n-3) 3 in
+              tack s;
+              if state <> nstates - 1 then tack ", ";
+              if state mod 16 = 15 then tack "\n"
+            done
+            ;
+            tack "\n";
+            tack "  };\n"
+          end;
+          raise Not_found;
+        end
+      done (* j *)
+    with Not_found -> ()
+  done (* i *)
+  ;
+  tack ("  //char -> (state->state) lookup\n");
+  tack ("  static int *matrix[256] =\n");
+  tack "  {\n";
+  for i = 0 to 255 do
+    if i mod 16 = 0 then tack "      ";
+    let s = "     s" ^ si canon.(i) in
+    let n = String.length s in
+    let s = String.sub s (n-4) 4 in
+    tack s;
+    if i <> 255 then tack ", ";
+    if i mod 16 = 15 then tack "\n"
+  done;
+  tack "  };\n\n";
+
+  begin match kind with
+  | `regmatch e ->
+    (* eval argument as a C++ string *)
+    tack "  string s = ";
+    tack (ge e);
+    tack ";\n";
+    tack "  char const *lexeme_start = s.data();\n";
+    tack "  char const *lexeme_end = lexeme_start;\n";
+    tack "  char const *buffer_end = lexeme_start + s.size();\n";
+    tack "  int state = 1;\n";
+    tack "  while(state && lexeme_end != buffer_end)\n";
+    tack "    state = matrix[*lexeme_end++][state];\n";
+    tack "  switch (state)\n"
+  | `reglex (p1,p2) ->
+    tack ("  char const *lexeme_start = "^ge p1^";\n");
+    tack "  char const *p= lexeme_start;\n";
+    tack ("  char const *buffer_end = "^ge p2^";\n");
+    tack "  int state = 1;\n";
+    tack "  int last_state = 0;\n";
+    tack "  char const *lexeme_end = NULL;\n";
+    tack "  if(accept[state]){\n";
+    tack "    last_state = state;\n";
+    tack "    lexeme_end = p;\n";
+    tack "  }\n";
+    tack "  while(state && p != buffer_end) {\n";
+    tack "    state = matrix[*p++][state];\n";
+    tack "    if(accept[state]){\n";
+    tack "      last_state = state;\n";
+    tack "      lexeme_end = p;\n";
+    tack "    }\n";
+    tack "  }\n";
+    tack "  switch (last_state)\n"
+  | _ -> assert false 
+  end
+  ;
+  tack "  {\n";
+  Hashtbl.iter
+  (fun state expr ->
+    tack 
+    (
+      "    case " ^ si (state + 1)^ ":"^
+      " return " ^ ge expr ^ ";\n"
+    )
+  )
+  cases 
+  ;
+  tack "    case 0: assert((\"regmatch failure\",0));\n";
+  tack "    default: assert((\"system failure in regmatch\",0));\n";
+  tack "  }\n";
+
+
