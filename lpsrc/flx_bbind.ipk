@@ -159,7 +159,7 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
         )
       ;
       Hashtbl.add bbdfns i (name,parent,
-        `BBDCL_function ([],[],flx_bbool,bbexes,name_map));
+        `BBDCL_function (vs,[],flx_bbool,bbexes,name_map));
     
     | `SYMDEF_val (t) -> 
       (*

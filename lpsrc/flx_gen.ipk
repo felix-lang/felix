@@ -89,6 +89,14 @@ let find_references bbdfns name_map ts =
       | `BBDCL_var (vs,(`BTYP_pointer _ as t))
       | `BBDCL_val (vs,(`BTYP_pointer _ as t))
         -> 
+        if length ts <> length vs then 
+        failwith 
+        (
+          "[find_references} wrong number of args, expected vs = " ^ 
+          si (length vs) ^ 
+          ", got ts=" ^ 
+          si (length ts)
+        );
         let t = tsubst vs ts (lower t) in
         references := (idx,t) :: !references
       | _ -> ()
@@ -482,6 +490,14 @@ let get_variable_typename syms bbdfns i ts =
   | `BBDCL_var (vs,t)
   | `BBDCL_val (vs,t) ->
     let t = lower t in
+    if length ts <> length vs then 
+    failwith 
+    (
+      "[get_variable_typename} wrong number of args, expected vs = " ^ 
+      si (length vs) ^ 
+      ", got ts=" ^ 
+      si (length ts)
+    );
     let t = tsubst vs ts t in
     cpp_typename syms t
 
@@ -492,6 +508,14 @@ let get_fun_tn syms vs ps ret ts =
   let pts = map (fun (_,(_,t)) -> t) ps in
   let pt = typeoflist pts in
   let ft = fold (lower (`BTYP_function (pt,ret))) in
+  if length ts <> length vs then 
+  failwith 
+  (
+    "[get_fun_tn} wrong number of args, expected vs = " ^ 
+    si (length vs) ^ 
+    ", got ts=" ^ 
+    si (length ts)
+  );
   let t = tsubst vs ts ft in
   cpp_typename syms t
 
@@ -565,6 +589,14 @@ let gen_function syms bbdfns index id vs bps ret' ts instance_no =
     )
   );
   let argtype = lower(typeof_bparams bps) in
+  if length ts <> length vs then 
+  failwith 
+  (
+    "[gen_function} wrong number of args, expected vs = " ^ 
+    si (length vs) ^ 
+    ", got ts=" ^ 
+    si (length ts)
+  );
   let argtype = tsubst vs ts argtype in
   let ret = lower ret' in
   let ret = tsubst vs ts ret in
@@ -796,6 +828,14 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
   print_endline ("Generating expression " ^ string_of_bound_expression syms.dfns (e,t));
   *)
   let ge e = gen_expr syms bbdfns this e vs ts in
+  if length ts <> length vs then 
+  failwith 
+  (
+    "[gen_expr} wrong number of args, expected vs = " ^ 
+    si (length vs) ^ 
+    ", got ts=" ^ 
+    si (length ts)
+  );
   let tsub t = tsubst vs ts t in
   let tn t = cpp_typename syms (tsub (lower t)) in
   let ge_arg a = 
@@ -1004,9 +1044,16 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
     *)
     match entry with
     | `BBDCL_fun (vs,ps,retyp,ct) -> 
-      if length vs <> length ts
-      then failwith "Wrong number of type arguments to generic function"
-      ;
+      if length vs <> length ts then
+      failwith 
+      (
+        "[get_expr:apply closure of fun] function " ^ 
+        id ^ "<" ^ si index ^">" ^
+        ", wrong number of args, expected vs = " ^ 
+        si (length vs) ^ 
+        ", got ts=" ^ 
+        si (length ts)
+      );
       let ts = map tsub ts in
       let retyp = tsubst vs ts retyp in
       let retyp = tn retyp in
@@ -1136,6 +1183,14 @@ let get_parameters syms index : int list =
 type kind_t = Function | Procedure
 
 let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
+  if length ts <> length vs then 
+  failwith 
+  (
+    "[gen_exe} wrong number of args, expected vs = " ^ 
+    si (length vs) ^ 
+    ", got ts=" ^ 
+    si (length ts)
+  );
   let sr = ("dummy",0,0,0,0) in
   let src_str = string_of_bexe syms.dfns 0 exe in
   (*
@@ -1143,6 +1198,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
   print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs);
   print_endline ("ts = " ^ catmap ","  (string_of_btypecode syms.dfns) ts);
   *)
+  let tsub t = tsubst vs ts t in
   let ret_string = "      FLX_RETURN\n" in
   let ge e : string = gen_expr syms bbdfns this e vs ts in
   let tn t : string = cpp_typename syms (tsubst vs ts (lower t)) in
@@ -1381,9 +1437,11 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
   *)
 
   | `BEXE_jump ((`BEXPR_closure (index,ts),_) as f,a) ->
+    let ts = map tsub ts in
     handle_closure true index ts a
     
   | `BEXE_call ((`BEXPR_closure (index,ts),_) as f,a) ->
+    let ts = map tsub ts in
     handle_closure false index ts a
 
   | `BEXE_loop (i,a) ->
@@ -1650,6 +1708,14 @@ let gen_function_methods syms bbdfns label_map counter index ts instance_no =
   );
   match entry with 
   | `BBDCL_function (vs,bps,ret',exes,_) ->
+    if length ts <> length vs then 
+    failwith 
+    (
+      "[get_function_methods} wrong number of args, expected vs = " ^ 
+      si (length vs) ^ 
+      ", got ts=" ^ 
+      si (length ts)
+    );
     let argtype = lower (typeof_bparams bps) in
     let argtype = tsubst vs ts argtype in
     let ret = tsubst vs ts (lower ret') in
@@ -1723,6 +1789,14 @@ let gen_procedure_methods syms bbdfns label_map counter index ts instance_no =
   );
   match entry with 
   | `BBDCL_procedure (vs,bps,exes,_) ->
+    if length ts <> length vs then 
+    failwith 
+    (
+      "[get_procedure_methods} wrong number of args, expected vs = " ^ 
+      si (length vs) ^ 
+      ", got ts=" ^ 
+      si (length ts)
+    );
     let argtype = lower (typeof_bparams bps) in
     let argtype = tsubst vs ts argtype in
     let funtype = fold(`BTYP_function (argtype, `BTYP_void)) in

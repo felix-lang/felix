@@ -484,6 +484,41 @@ module Control
   fun fail_fun[t]:string->t = 'throw std::exception ($1),*(?1*)0';
 }
 
+module List
+{
+  union list[T] = | Empty | Cons of T * list[T];
+
+  fun rev_map[T,U] (f:T->U) (x:list[T]): list[U] = {
+    return
+      match x with
+      | Empty => Empty[U]
+      | Cons (?h, ?t) => Cons (f(h), rev_map f t)
+      endmatch
+    ;
+  }
+
+  fun rev[T] (x:list[T]):list[T]= {
+    return 
+      match x with
+      | Empty => Empty
+      | Cons (?h, ?t) => Cons (h, rev t)
+      endmatch
+    ;
+  }
+
+  fun map[T,U] (f:T->U) (x:list[T]): list[U] = {
+    return rev (rev_map f x);
+  }
+
+  proc iter[T] (f:T->void) (x:list[T]) {
+    match x with
+    | Empty => {} 
+    | Cons (?h,?t) => { f h; iter f t; }
+    endmatch
+    ;
+  }
+}
+
 // ------ Open common modules -------------
 open Bool;
 open Int;

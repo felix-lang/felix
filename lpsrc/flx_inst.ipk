@@ -28,14 +28,28 @@ open Flx_unify
 open Flx_treg
 open Flx_generic
 
-let add_inst syms ref_insts1 x =
+let add_inst syms ref_insts1 ((i,ts) as x) =
+  let has_variables = 
+    fold_left
+    (fun truth t -> truth || var_occurs t)
+    false
+    ts
+  in
+  if has_variables then
+  failwith
+  (
+    "Attempt to register instance " ^ si i ^ "[" ^
+    catmap ", " (sbt syms.dfns) ts ^
+    "] with type variable in a subscript"
+  )
+  ;
   if not (FunInstSet.mem x !ref_insts1)
   && not (Hashtbl.mem syms.instances x)
   then ref_insts1 := FunInstSet.add x !ref_insts1
 
 let rec process_expr syms bbdfns ref_insts1 hvarmap ((e,t) as be) =
   (*
-  print_endline ("Process expr " ^ string_of_bound_expression syms.dfns be ^ " .. raw type " ^ string_of_btypecode syms.dfns t);
+  print_endline ("Process expr " ^ sbe syms.dfns be ^ " .. raw type " ^ sbt syms.dfns t);
   print_endline (" .. instantiated type " ^ string_of_btypecode syms.dfns (varmap_subst hvarmap t));
   *)
   let ue e = process_expr syms bbdfns ref_insts1 hvarmap e in
@@ -51,7 +65,9 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap ((e,t) as be) =
   | `BEXPR_case_arg (_,e)
     -> ue e
     
-  | `BEXPR_apply (e1,e2) -> ue e1; ue e2
+  | `BEXPR_apply (e1,e2) -> 
+    ue e1; ue e2
+
   | `BEXPR_tuple es -> iter ue es 
   | `BEXPR_dot (e,i) -> ue e
      
@@ -60,12 +76,12 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap ((e,t) as be) =
   | `BEXPR_case (_,t) -> ut (vs t)
 
   | `BEXPR_name (i,ts) -> 
-    let ts = map (varmap_subst hvarmap) ts in
+    let ts = map vs ts in
     ui i ts; iter ut ts
 
   | `BEXPR_closure (i,ts)
     -> 
-    let ts = map (varmap_subst hvarmap) ts in
+    let ts = map vs ts in
     ui i ts; iter ut ts
 
   | _ -> ()
@@ -104,7 +120,7 @@ and process_function syms bbdfns ref_insts1 index argtypes ret exes ts =
   let hvarmap = make_varmap syms index ts in
   let t = varmap_subst hvarmap t in
   register_type_r syms bbdfns [] t;
-  process_exes syms bbdfns ref_insts1 ts hvarmap exes 
+  process_exes syms bbdfns ref_insts1 ts hvarmap exes ;
  
 and process_inst syms bbdfns ref_insts1 i ts inst =
   let rtr t = register_type_r syms bbdfns [] t in
@@ -135,15 +151,8 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
   | `BBDCL_var (vs,t)
   | `BBDCL_const (vs,t,_)
     ->
-    (*
-    print_endline "Processing variable";
-    print_endline ("type " ^ string_of_btypecode syms.dfns t);
-    *)
     let hvarmap = make_varmap syms i ts in
     let t = varmap_subst hvarmap t in
-    (*
-    print_endline ("instantiated type " ^ string_of_btypecode syms.dfns t);
-    *)
     register_type_r syms bbdfns [] t
  
   | `BBDCL_header _
@@ -198,8 +207,9 @@ let instantiate syms bbdfns (root:bid_t) (bifaces:biface_t list) =
   let insts1 = ref FunInstSet.empty in
 
   (* append routine to add an instance *)
-  let add_inst1 i ts = insts1 := FunInstSet.add (i,ts) !insts1 in
-  let add_inst2 i ts = 
+  let add_cand i ts = insts1 := FunInstSet.add (i,ts) !insts1 in
+
+  let add_instance i ts =
     let n = !(syms.counter) in
     incr (syms.counter);
     Hashtbl.add syms.instances (i,ts) n;
@@ -207,16 +217,16 @@ let instantiate syms bbdfns (root:bid_t) (bifaces:biface_t list) =
   in
 
   (* add the root *)
-  add_inst1 root [];
+  add_cand root [];
 
   (* add exported functions *)
-  iter (function `BIFACE_export (x,_) -> add_inst1 x []) bifaces;
+  iter (function `BIFACE_export (x,_) -> add_cand x []) bifaces;
 
   (* add header and body items *)
   Hashtbl.iter 
   (fun i b -> match b with
     | _,_,`BBDCL_header _
-    | _,_,`BBDCL_body _ -> ignore(add_inst2 i [])
+    | _,_,`BBDCL_body _ -> ignore(add_instance i [])
     | _ -> ()
   )
   bbdfns
@@ -224,6 +234,9 @@ let instantiate syms bbdfns (root:bid_t) (bifaces:biface_t list) =
   while not (FunInstSet.is_empty !insts1) do
     let (index,vars) as x = FunInstSet.choose !insts1 in
     insts1 := FunInstSet.remove x !insts1;
-    let inst = add_inst2 index vars in
+    let inst = add_instance index vars in
     process_inst syms bbdfns insts1 index vars inst
   done
+
+
+

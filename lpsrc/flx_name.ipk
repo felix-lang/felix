@@ -24,11 +24,6 @@ val cpp_typename :
   btypecode_t -> 
   string
 
-val tsubst :
-  (string * int) list ->
-  btypecode_t list ->
-  btypecode_t ->
-  btypecode_t
 
 @h = tangler('src/flx_name.ml')
 @select(h)
@@ -96,10 +91,17 @@ let cpp_instance_name syms bbdfns index ts =
         let id,_,_ = Hashtbl.find bbdfns index in id
       with Not_found -> "unknown"
     in
+    let has_variables = 
+      fold_left 
+      (fun truth t -> truth || var_occurs t)
+      false
+      ts
+    in
     failwith 
     (
       "[cpp_intance_name] unable to find instance " ^ id ^
       "<" ^ si index ^ ">[" ^catmap ", " (string_of_btypecode syms.dfns) ts ^ "]"
+      ^ (if has_variables then " .. a subscript contains a type variable" else "")
     )
   in
   "_i" ^ si inst ^ cpp_name syms bbdfns index 
@@ -161,31 +163,4 @@ let cpp_typename syms t =
   | `BTYP_function _ -> cpp_type_classname syms t ^ "*"
   | _ -> cpp_type_classname syms t
 
-(* the type arguments are matched up with the type
-  variables in order so that
-  vs_i -> ts_i
-  where vs_t might be (fred,var j)
-*)
-let tsubst 
-  (vs:(string * int) list) 
-  (ts:btypecode_t list)
-  (t:btypecode_t) 
-=
-  if length ts <> length vs 
-  then 
-    failwith 
-    (
-      "[tsubst] wrong number of type args, expected vs=" ^ 
-      si (length vs) ^
-      ", got ts=" ^ 
-      si (length ts)
-    )
-  ;
-  let tvs = combine vs ts in
-  let varmap = Hashtbl.create 97 in
-  iter
-  (fun ((name, varidx),typ) -> Hashtbl.add varmap varidx typ)
-  tvs
-  ;
-  varmap_subst varmap t
 

@@ -150,7 +150,6 @@ type vs_list_t = (id_t * int) list
 type bid_t = int
 type index_map_t = (int,int) Hashtbl.t
 
-
 (** type of a qualified name *)
 type qualified_name_t =
   [
@@ -426,6 +425,17 @@ type compilation_unit_t = statement_t list
 @h = tangler('src/flx_types.mli')
 These files declare the main data structures used by the compiler,
 and provide routines to dump them to a string for debugging purposes.
+
+@head(2,'Generic partial ordering comparison result')
+@select(h)
+type partial_order_result_t = 
+[
+  | `Less 
+  | `Equal 
+  | `Greater 
+  | `Incomparable
+]
+
 
 @head(2,'Version identification kit')
 @select(h)
@@ -1028,6 +1038,10 @@ val sbt: symbol_table_t -> btypecode_t -> string
 val special_string_of_typecode : typecode_t -> string
 val string_of_expr : expr_t -> string
 val string_of_bound_expression : 
+  symbol_table_t -> 
+  tbexpr_t -> 
+  string
+val sbe: 
   symbol_table_t -> 
   tbexpr_t -> 
   string
@@ -2061,6 +2075,8 @@ and string_of_exe level s =
 
   | `EXE_init (l,r) -> spc ^ 
     l ^ " := " ^ se r ^ ";"
+
+and sbe dfns e = string_of_bound_expression dfns e 
 
 and string_of_bound_expression dfns e = 
   let se e = string_of_bound_expression dfns e in

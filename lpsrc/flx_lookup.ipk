@@ -236,13 +236,15 @@ open Flx_srcref
 open Flx_unify
 open Flx_beta
 open Flx_generic
+open Flx_name
 
 exception Found of int
 
-type partial_compare = Incomparable | Equal | Less | Greater
-
 type overload_result = 
- int * btypecode_t * (int * btypecode_t) list * btypecode_t list
+ int *  (* index of function *)
+ btypecode_t * (* type of function signature *)
+ (int * btypecode_t) list * (* mgu *)
+ btypecode_t list (* ts *)
 
 type result = 
   | Unique of overload_result
@@ -482,7 +484,8 @@ and lookup_sn_in_env
       env [] excluded_dirs 
       qn bsuf
     in match be with
-    | `BEXPR_name (index,ts) -> index,ts
+    | `BEXPR_name (index,ts) -> 
+      index,ts
     | `BEXPR_closure (index,ts) -> index,ts
 
     | _ -> failwith "Expected expression to be index"
@@ -520,7 +523,7 @@ and map_type
   | `BTYP_void -> `BTYP_void
   | `BTYP_fix i -> `BTYP_fix i
   | `BTYP_var i -> failwith "Unexpected type variable in map_type"
-  | _ -> failwith ("[map_type] Unexpected " ^ string_of_btypecode syms.dfns t)
+  | _ -> failwith ("[map_type] Unexpected " ^ sbt syms.dfns t)
 
 (* NOTE ON COMPARISONS: 
   We don't allow a val to match a const. Probably,
@@ -997,7 +1000,7 @@ and handle_module_coercion syms env sr excluded_dirs m t =
     failwith 
     (
       "Expected module type to be an interface name (functors later), got: " ^
-      string_of_btypecode syms.dfns t
+      sbt syms.dfns t
     )
 
 and compare_module_expr_with_type syms excluded_dirs sr t m =
@@ -1061,7 +1064,7 @@ and resolve_functor_overload syms env excluded_dirs sr ls m' =
       in
       let t = bind_type syms env [] excluded_dirs sr t 
       in 
-        (* print_endline ("Type of functor signature is " ^ string_of_btypecode syms.dfns t); *)
+        (* print_endline ("Type of functor signature is " ^ sbt syms.dfns t); *)
         compare_module_expr_with_type syms excluded_dirs sr t m'
     | `SYMDEF_untyped_functor (ps,e) ->
       let t = 
@@ -1071,7 +1074,7 @@ and resolve_functor_overload syms env excluded_dirs sr ls m' =
       in
       let t = bind_type syms env [] excluded_dirs sr t 
       in 
-        (* print_endline ("Type of functor signature is " ^ string_of_btypecode syms.dfns t); *)
+        (* print_endline ("Type of functor signature is " ^ sbt syms.dfns t); *)
         compare_module_expr_with_type syms excluded_dirs sr t m'
     | _ -> failwith "Expected FUnctor"
   )
@@ -1435,7 +1438,7 @@ and bind_type' syms env idx_fixlist as_fixlist expr_fixlist depth excluded_dirs
   begin
     print_endline ("  [" ^
     catmap ", " 
-    (fun (s,t) -> s ^ " -> " ^ string_of_btypecode syms.dfns t)
+    (fun (s,t) -> s ^ " -> " ^ sbt syms.dfns t)
     params
     ^ "]"
     )
@@ -1544,7 +1547,7 @@ and bind_type' syms env idx_fixlist as_fixlist expr_fixlist depth excluded_dirs
         snd(bind_expression syms env [] ((e,depth)::expr_fixlist) (depth) excluded_dirs e)
     in 
       (*
-      print_endline ("typeof --> " ^ string_of_btypecode syms.dfns t);
+      print_endline ("typeof --> " ^ sbt syms.dfns t);
       *)
       t
 
@@ -1634,12 +1637,12 @@ and bind_type' syms env idx_fixlist as_fixlist expr_fixlist depth excluded_dirs
       let ts = map bt ts in
       (*
       print_endline ("Qualified name lookup finds index " ^ si i ^
-      "[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]");
+      "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
       *)
       bi i ts
   in
     (*
-    print_endline ("Bound type is " ^ string_of_btypecode syms.dfns t);
+    print_endline ("Bound type is " ^ sbt syms.dfns t);
     *)
     t
 
@@ -1755,11 +1758,11 @@ and bind_type_index syms idx_fixlist as_fixlist expr_fixlist depth excluded_dirs
         bind_type' syms env ((index,depth) :: idx_fixlist) as_fixlist expr_fixlist (depth:int) (excluded_dirs:int list) (sr:range_srcref) (t:typecode_t) params 
       in
         (*
-        print_endline ("Unravelled and bound is " ^ string_of_btypecode syms.dfns t);
+        print_endline ("Unravelled and bound is " ^ sbt syms.dfns t);
         *)
         let t = beta_reduce syms [] t in
         (*
-        print_endline ("Beta reduced: " ^ string_of_btypecode syms.dfns t);
+        print_endline ("Beta reduced: " ^ sbt syms.dfns t);
         *)
         t
 
@@ -1824,7 +1827,7 @@ and rebind_btype syms env excluded_dirs sr ts t: btypecode_t =
   | `BTYP_binding (a,b) -> `BTYP_binding (rbt a,rbt b)
   | `BTYP_fix i -> `BTYP_fix i
   | `BTYP_var i -> failwith "Unexpected type variable in rebind_type"
-  | _ -> failwith ("[rebind_type] Unexpected " ^ string_of_btypecode syms.dfns t)
+  | _ -> failwith ("[rebind_type] Unexpected " ^ sbt syms.dfns t)
 
 
 and base_typename_of_literal v = match v with
@@ -1924,7 +1927,7 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth excluded_dirs index args =
       print_endline 
       (
        "Calc ret type of regmatch, initially " ^
-       string_of_btypecode syms.dfns !ret_type
+       sbt syms.dfns !ret_type
       );
       *)
 
@@ -1936,7 +1939,7 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth excluded_dirs index args =
          print_endline 
          (
            "regmatch instance " ^ string_of_expr e ^ ", type " ^ 
-           string_of_btypecode syms.dfns t
+           sbt syms.dfns t
          );
          *)
          if do_unify syms t !ret_type 
@@ -1951,7 +1954,7 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth excluded_dirs index args =
       cls
       (*
       ;
-      print_endline ("type is " ^ string_of_btypecode syms.dfns !ret_type)
+      print_endline ("type is " ^ sbt syms.dfns !ret_type)
       *)
         
     | _ ->
@@ -2031,12 +2034,12 @@ and typeofindex'
     (*
     print_endline ("TYPEOFINDEX binding type " ^ string_of_typecode t); 
     flush stdout;
-    print_endline ("params = " ^ catmap ", " (fun (s,t) -> s ^ "->" ^ string_of_btypecode syms.dfns t) params);
+    print_endline ("params = " ^ catmap ", " (fun (s,t) -> s ^ "->" ^ sbt syms.dfns t) params);
     *)
     let t' = bind_type' syms env [] [] expr_fixlist depth excluded_dirs sr t params in
     let t' = beta_reduce syms [] t' in
     (*
-    print_endline ("TYPE BOUND" ^ string_of_btypecode syms.dfns t');
+    print_endline ("TYPE BOUND" ^ sbt syms.dfns t');
     *)
     t'
   in
@@ -2051,12 +2054,15 @@ and typeofindex'
     let rt' = 
       cal_ret_type syms idx_fixlist expr_fixlist depth excluded_dirs index params 
     in 
-      if var_occurs rt' then 
+      (* this really isn't right .. need a better way to 
+        handle indeterminate result .. hmm .. 
+      *)
+      if var_i_occurs index rt' then 
         failwith 
         (
           "function "^id^"<"^string_of_int index^
           ">: return type is not resolved, got: " ^ 
-          string_of_btypecode syms.dfns rt'
+          sbt syms.dfns rt'
         )
       else
         let t = `BTYP_function (bt (typeof_list pts), rt') in
@@ -2079,11 +2085,11 @@ and typeofindex'
     let t = `TYP_function (typeof_list pts,rt) in
     (*
     print_endline ("binding fun type in typeofindex=" ^ string_of_typecode t);
-    print_endline ("params = " ^ catmap ", " (fun (s,t) -> s ^ "->" ^ string_of_btypecode syms.dfns t) params);
+    print_endline ("params = " ^ catmap ", " (fun (s,t) -> s ^ "->" ^ sbt syms.dfns t) params);
     *)
     let t = bt t in
     (*
-    print_endline ("type is " ^ string_of_btypecode syms.dfns t);
+    print_endline ("type is " ^ sbt syms.dfns t);
     *)
     t
     
@@ -2098,7 +2104,7 @@ and typeofindex'
     let ts = adjust_ts syms index ts in
     let t = `BTYP_function(bt (paramtype ls),`BTYP_inst (index,ts)) in
     (*
-    print_endline ("Struct as function type is " ^ string_of_btypecode syms.dfns t);
+    print_endline ("Struct as function type is " ^ sbt syms.dfns t);
     *)
     t
 
@@ -2119,15 +2125,15 @@ and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
         clierr sr
         (
           "[cal_apply] Function " ^
-          string_of_bound_expression syms.dfns tbe1 ^
+          sbe syms.dfns tbe1 ^
           "\nof type " ^
-          string_of_btypecode syms.dfns t1 ^
+          sbt syms.dfns t1 ^
           "\napplied to argument " ^
-          string_of_bound_expression syms.dfns tbe2 ^
+          sbe syms.dfns tbe2 ^
           "\n of type " ^
-          string_of_btypecode syms.dfns t2 ^
+          sbt syms.dfns t2 ^
           "\nwhich doesn't agree with parameter type\n" ^
-          string_of_btypecode syms.dfns argt 
+          sbt syms.dfns argt 
         )
 
     | `BTYP_binding (
@@ -2141,11 +2147,11 @@ and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
         clierr sr
         (
           "[cal_apply] Function argument " ^
-          string_of_bound_expression syms.dfns tbe2 ^
+          sbe syms.dfns tbe2 ^
           " has type\n" ^
-          string_of_btypecode syms.dfns t2 ^
+          sbt syms.dfns t2 ^
           "\nwhich doesn't agree with parameter type\n" ^
-          string_of_btypecode syms.dfns argt 
+          sbt syms.dfns argt 
         )
 
     (* HACKERY TO SUPPORT STRUCT CONSTRUCTORS *)
@@ -2157,7 +2163,7 @@ and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
         clierr sr
         (
           "[cal_apply] Attempt to apply non-struct " ^ id ^ ", type " ^
-          string_of_btypecode syms.dfns t1 ^
+          sbt syms.dfns t1 ^
           " as constructor"
         )
       end
@@ -2165,20 +2171,20 @@ and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
       clierr sr
       (
         "Attempt to apply non-function\n" ^
-        string_of_bound_expression syms.dfns tbe1 ^ 
+        sbe syms.dfns tbe1 ^ 
         "\nof type\n" ^
-        string_of_btypecode syms.dfns t1 ^
+        sbt syms.dfns t1 ^
         "\nto argument of type\n" ^
-        string_of_bound_expression syms.dfns tbe2
+        sbe syms.dfns tbe2
       )
   in
   (*
   print_endline 
   (
     "---------------------------------------" ^
-    "\nApply type " ^ string_of_btypecode syms.dfns t1 ^
-    "\nto argument of type " ^ string_of_btypecode syms.dfns t2 ^ 
-    "\nresult type is " ^ string_of_btypecode syms.dfns rest ^
+    "\nApply type " ^ sbt syms.dfns t1 ^
+    "\nto argument of type " ^ sbt syms.dfns t2 ^ 
+    "\nresult type is " ^ sbt syms.dfns rest ^
     "\n-------------------------------------"
   );
   *)
@@ -2197,11 +2203,11 @@ and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
     clierr sr
     (
       "[cal_apply] Type variable in return type applying\n" ^
-        string_of_bound_expression syms.dfns tbe1 ^ 
+        sbe syms.dfns tbe1 ^ 
         "\nof type\n" ^
-        string_of_btypecode syms.dfns t1 ^
+        sbt syms.dfns t1 ^
         "\nto argument of type\n" ^
-        string_of_bound_expression syms.dfns tbe2
+        sbe syms.dfns tbe2
     )
   ;
   *)
@@ -2283,14 +2289,14 @@ and lookup_qn_with_sig
       clierr sr 
       (
         "[lookup_qn_with_sig] Type of case must be sum, got " ^
-        string_of_btypecode syms.dfns t
+        sbt syms.dfns t
       )
     end
 
   | `AST_name (sr,name,ts) ->
     let ts = map (bt sr) ts in
     (*
-    print_endline ("Lookup qn with sig has name " ^ name ^ "["^catmap "," (string_of_btypecode syms.dfns) ts^"]");
+    print_endline ("Lookup qn with sig has name " ^ name ^ "["^catmap "," (sbt syms.dfns) ts^"]");
     *)
     lookup_name_with_sig 
       syms 
@@ -2321,47 +2327,101 @@ and lookup_qn_with_sig
           )
         | Some x -> match x with 
         | NonFunctionEntry (Simple index) ->
-          let ts = adjust_ts syms index ts in
-          let t = typeofindex syms idx_fixlist [] 0 excluded_dirs index ts in
-          begin match t with
-          | `BTYP_function (a,b) ->
-            if a <> sign 
-            then 
-              failwith
+          let id,sr,parent,vs,tabl,dirs,entry = get_data syms.dfns index in
+          begin match entry with
+          | `SYMDEF_struct _ ->
+            (*
+            print_endline ("Struct constructor found, type= " ^ sbt syms.dfns t);
+            *)
+            let ts = adjust_ts syms index ts in
+            let t = typeofindex syms idx_fixlist [] 0 excluded_dirs index ts in
+            begin match t with
+            | `BTYP_function (a,_) ->
+              if a <> sign then
+                clierr sr
+                (
+                  "[lookup_qn_with_sig] Struct constructor for "^id^" has wrong signature, got:\n" ^
+                  sbt syms.dfns t ^
+                  "\nexpected:\n" ^
+                  sbt syms.dfns sign
+                )
+            | _ -> assert false
+            end
+            ;
+            `BEXPR_closure (index,ts),
+            t
+
+          | `SYMDEF_const (t,_) 
+          | `SYMDEF_val t 
+          | `SYMDEF_var t 
+          | `SYMDEF_parameter t
+            ->
+            let ts = adjust_ts syms index ts in
+            let t = bt sr t in
+            let t = tsubst vs ts t in
+            begin match t with
+            | `BTYP_function (a,b) ->
+              if a <> sign then 
+              clierr srn
               (
-                "[lookup_qn_with_sig] Non function entry requires function type, got\n" ^
-                string_of_btypecode syms.dfns t
+                "[lookup_qn_with_sig] Expected variable "^id ^
+                "<" ^ si index ^ "> to have function type with signature " ^
+                sbt syms.dfns sign ^
+                ", got function type:\n" ^
+                sbt syms.dfns t
               )
-            else 
-              let id,sr,parent,vs,tabl,dirs,entry = get_data syms.dfns index in
-              begin match entry with
-              | `SYMDEF_struct _ ->
-                (*
-                print_endline ("Struct constructor found, type= " ^ string_of_btypecode syms.dfns t);
-                *)
-                `BEXPR_closure (index,ts),
-                t
-
-
-              | `SYMDEF_const _ 
-              | `SYMDEF_val _ 
-              | `SYMDEF_var _ 
-              | `SYMDEF_parameter _ 
-                ->
+              else
                 `BEXPR_name (index, ts),
                 t
+
+            | `BTYP_inst (i,[]) ->
+              let id',sr',paren't,vs',tabl',dirs',entry' = 
+                get_data syms.dfns i 
+              in
+              begin match sign with
+              | `BTYP_inst (j,[]) ->
+                let id'',sr'',parent'',vs'',tabl'',dirs'',entry'' = 
+                  get_data syms.dfns j 
+                in
+                begin match id',id'' with
+                | "string","string" 
+                | "ustring","ustring" 
+                | "string","int"
+                | "ustring","int" -> 
+                  `BEXPR_name (index, ts),
+                   t
+
+                | _ ->
+                  clierr srn
+                  (
+                    "[lookup_qn_with_sig] expected variable " ^ 
+                    id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
+                    sbt syms.dfns t
+                  )
+                end
               | _ ->
-                failwith
+                clierr srn
                 (
-                  "[lookup_qn_with_sig] Named Non function entry of function type requires struct, value or variable, got\n" ^
-                  string_of_btypecode syms.dfns t
+                  "[lookup_qn_with_sig] expected variable " ^ 
+                  id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
+                  sbt syms.dfns t
                 )
               end
-          | _ -> 
-            failwith
+            | _ ->
+              clierr srn
+              (
+                "[lookup_qn_with_sig] expected variable " ^ 
+                id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
+                sbt syms.dfns t
+                
+              )
+            end
+          | _ ->
+            clierr sr
             (
-              "[lookup_qn_with_sig] Non function entry requires function type, got\n" ^
-              string_of_btypecode syms.dfns t
+              "[lookup_qn_with_sig] Named Non function entry "^id^
+              "must befunction type requires struct," ^
+              "or value or variable of function type"
             )
           end
 
@@ -2415,10 +2475,11 @@ and lookup_qn_with_sig
                  (
                    "Non function entry has wrong type"
                  )
-               else 
+               else begin 
                  (`BEXPR_name (index,ts),
                  typeofindex syms idx_fixlist [] 0 excluded_dirs index ts
                  )
+               end
 
             | _ -> 
               failwith
@@ -2470,14 +2531,14 @@ and lookup_name_with_sig
   (t2:btypecode_t) 
 : tbexpr_t =
   (*
-  print_endline ("Lookup_name_with_sig: " ^ name ^ " of " ^ string_of_btypecode syms.dfns t2);
+  print_endline ("Lookup_name_with_sig: " ^ name ^ " of " ^ sbt syms.dfns t2);
   *)
   match env with
   | [] -> 
     clierr srn
     (
       "[lookup_name_with_sig] Can't find " ^ name ^ 
-      " of " ^ string_of_btypecode syms.dfns t2
+      " of " ^ sbt syms.dfns t2
     )
   | (table,dirs)::tail ->
     match 
@@ -2519,7 +2580,7 @@ and handle_function
           (
             "[handle_function]: closure operator expected '"^
             name^"' to be function definition, got '"^
-            string_of_btypecode syms.dfns t
+            sbt syms.dfns t
             ^"', " ^ short_string_of_src sra
           )
       and mt =
@@ -2530,7 +2591,7 @@ and handle_function
           (
             "[handle_function]: closure operator expected '"^
             name^"' to be function definition, got '"^
-            string_of_btypecode syms.dfns t
+            sbt syms.dfns t
             ^"', " ^ short_string_of_src sra
           )
       in
@@ -2558,7 +2619,7 @@ and handle_function
                 failwith 
                 (
                   "[handle_function]: closure operator expected '"^name^"' to be function definition, got '"^
-                  string_of_btypecode syms.dfns t
+                  sbt syms.dfns t
                   ^"', " ^ short_string_of_src sra
                 )
             )
@@ -2579,10 +2640,11 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
   print_endline 
   (
     "LOOKUP NAME "^name ^"["^
-    catmap "," (string_of_btypecode syms.dfns) ts ^
-    "] IN TABLE DIRS WITH SIG " ^ string_of_btypecode syms.dfns t2
+    catmap "," (sbt syms.dfns) ts ^
+    "] IN TABLE DIRS WITH SIG " ^ sbt syms.dfns t2
   ); 
   *)
+  let bt sr t = bind_type syms env [] excluded_dirs sr t in
   let result:entry_set_t =
     match lookup_name_in_htab table name  with
     | Some x -> x
@@ -2591,71 +2653,111 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
   match result with
   | NonFunctionEntry (Simple index) ->
     let id, sr,parent,vs,tabl,dirs,entry = get_data syms.dfns index in
-    begin
-      match entry with
-      | `SYMDEF_struct _
-        ->
-          (*
-          print_endline "lookup_name_in_table_dirs_with_sig finds struct constructor";
-          *)
-          let ro = 
-            resolve_overload 
-            syms excluded_dirs sra [Simple index] name t2 ts
-          in
-            begin match ro with 
-            | Some (index,t,mgu,ts) ->
-              (*
-              print_endline "got result ..";
-              *)
-              let tb : tbexpr_t =
-                handle_function 
-                syms 
-                env idx_fixlist excluded_dirs 
-                sra srn name ts index
-              in 
-                (*
-                print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind syms.dfns index);
-                print_endline ("Value of ts is " ^ catmap "," (string_of_btypecode syms.dfns) ts);
-                print_endline ("Instantiated closure value is " ^ string_of_bound_expression syms.dfns tb);
-                *)
-                Some tb 
-            | None -> None
-            end
+    begin match entry with
+    | `SYMDEF_struct _
+      ->
+        (*
+        print_endline "lookup_name_in_table_dirs_with_sig finds struct constructor";
+        *)
+        let ro = 
+          resolve_overload 
+          syms excluded_dirs sra [Simple index] name t2 ts
+        in
+          begin match ro with 
+          | Some (index,t,mgu,ts) ->
+            let tb : tbexpr_t =
+              handle_function 
+              syms 
+              env idx_fixlist excluded_dirs 
+              sra srn name ts index
+            in 
+              Some tb 
+          | None -> None
+          end
 
-          (*
+    | `SYMDEF_const (t,_)
+    | `SYMDEF_var t
+    | `SYMDEF_val t 
+    | `SYMDEF_parameter t
+      ->
+      (* we have to check the variable is the right type *) 
+      let t = bt sr t in
+      let t = tsubst vs ts t in
+      begin match t with
+      | `BTYP_function (d,c) ->
+        if d <> t2 then
+        clierr srn
+        (
+          "[lookup_name_in_table_dirs_with_sig] Expected variable "^id ^
+          "<" ^ si index ^ "> to have function type with signature " ^
+          sbt syms.dfns t2 ^
+          ", got function type:\n" ^
+          sbt syms.dfns t
+        )
+        else
+          let ts = adjust_ts syms index ts in
           Some
           (
-            `BEXPR_closure (index, ts),
+            `BEXPR_name (index, ts),t
+            (* should equal t ..
             typeofindex syms idx_fixlist [] 0 excluded_dirs index ts
+            *)
           )
-          *)
-      | `SYMDEF_const _
-      | `SYMDEF_var _
-      | `SYMDEF_val _ 
-      | `SYMDEF_parameter _ 
-        ->
-          Some
+
+      | `BTYP_inst (i,[]) ->
+        let id',sr',paren't,vs',tabl',dirs',entry' = 
+          get_data syms.dfns i 
+        in
+        begin match t2 with
+        | `BTYP_inst (j,[]) ->
+          let id'',sr'',parent'',vs'',tabl'',dirs'',entry'' = 
+            get_data syms.dfns j 
+          in
+          begin match id',id'' with
+          | "string","string" 
+          | "ustring","ustring" 
+          | "string","int"
+          | "ustring","int" -> 
+            Some (`BEXPR_name (index, ts),t)
+          | _ ->
+            clierr srn
+            (
+              "[lookup_name_in_table_dirs_with_sig] expected variable " ^ 
+              id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
+              sbt syms.dfns t
+            )
+          end
+        | _ ->
+          clierr srn
           (
-            `BEXPR_name (index, ts),
-            typeofindex syms idx_fixlist [] 0 excluded_dirs index ts
+            "[lookup_name_in_table_dirs_with_sig] expected variable " ^ 
+            id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
+            sbt syms.dfns t
           )
-      | _ 
-        -> 
-          failwith 
-          (
-            "Expected " ^id^
-            " to be struct or variable of function type, got " ^ 
-            string_of_symdef entry id vs
-          )
+        end
+      | _ ->
+        clierr srn
+        (
+          "[lookup_name_in_table_dirs_with_sig] expected variable " ^ 
+          id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
+          sbt syms.dfns t
+          
+        )
+      end
+    | _ 
+      -> 
+        failwith 
+        (
+          "Expected " ^id^
+          " to be struct or variable of function type, got " ^ 
+          string_of_symdef entry id vs
+        )
     end
 
   | NonFunctionEntry _ ->
     failwith "[lookup_name_in_table_dirs_with_sig] expected simple nonfunction entry"
 
   | FunctionEntry fs ->
-    (*
-    print_endline ("Found overload set ... " ^ string_of_entry_set result);
-    *)
     let ro = 
       resolve_overload 
       syms excluded_dirs sra fs name t2 ts
@@ -2668,7 +2770,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         (*
         print_endline "got result ..";
         *)
-        let tb : tbexpr_t =
+        let ((_,tt) as tb) =
           handle_function 
           syms 
           env idx_fixlist excluded_dirs 
@@ -2676,8 +2778,9 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         in 
           (*
           print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind syms.dfns index);
-          print_endline ("Value of ts is " ^ catmap "," (string_of_btypecode syms.dfns) ts);
-          print_endline ("Instantiated closure value is " ^ string_of_bound_expression syms.dfns tb);
+          print_endline ("Value of ts is " ^ catmap "," (sbt syms.dfns) ts);
+          print_endline ("Instantiated closure value is " ^ sbe syms.dfns tb);
+          print_endline ("type is " ^ sbt syms.dfns tt);
           *)
           Some tb 
 
@@ -2854,7 +2957,7 @@ and bind_expression syms env idx_fixlist expr_fixlist depth excluded_dirs e
         "[bind_expression] Expected tuple " ^ 
         string_of_expr e' ^ 
         " to have tuple type, got " ^ 
-        string_of_btypecode syms.dfns typ ^
+        sbt syms.dfns typ ^
         " in " ^
         short_string_of_src sr
       )
@@ -2881,7 +2984,7 @@ and bind_expression syms env idx_fixlist expr_fixlist depth excluded_dirs e
       clierr sr 
       (
         "[bind_expression] Type of case must be sum, got " ^
-        string_of_btypecode syms.dfns t
+        sbt syms.dfns t
       )
     end
 
@@ -2908,7 +3011,7 @@ and bind_expression syms env idx_fixlist expr_fixlist depth excluded_dirs e
       `BEXPR_name (m,ts), t
 
     | FunctionEntry fs -> 
-      failwith 
+      clierr sr
       (
         "[bind_expression] Simple name " ^ name ^ 
         " binds to function set in\n" ^
@@ -3202,25 +3305,6 @@ and bind_expression syms env idx_fixlist expr_fixlist depth excluded_dirs e
       "[Compiler error] Unexpected match when binding expression (should have been lifted out)"
     )
 
-and compare_sigs syms a b =
-  match maybe_unification [a,b] with
-  | None -> Incomparable
-  | Some [] -> Equal
-  | Some mgu ->
-    let left = ref 0 ad right = ref 0 in
-    iter (fun (i,t) ->
-      match t with `BYP_var _ -> () | _ ->
-      if var_occurs i a incr left
-      else incr right
-    )
-    mgu
-    ;
-    match !left,!right with
-    | 0,0 -> Equal
-    | 0,_ -> Less 
-    | _,0 -> Greater
-    | _ -> Incomparable
-
 and resolve_overload 
   syms 
   excluded_dirs sr 
@@ -3231,7 +3315,7 @@ and resolve_overload
 : (entry_kind_t * btypecode_t * (int * btypecode_t) list * btypecode_t list) option =
 
   (*
-  print_endline ("Argument sig is " ^ string_of_btypecode syms.dfns suf);
+  print_endline ("Argument sig is " ^ sbt syms.dfns suf);
   print_endline ("Candidates are " ^ catmap "," (string_of_entry_kind) fs);
   *)
   let resolve i =
@@ -3248,12 +3332,12 @@ and resolve_overload
     let t = bind_type syms env [] excluded_dirs sr t in
     let t = lift t in
     (*
-    print_endline ("Candidate bound sig is " ^ string_of_btypecode syms.dfns t);
+    print_endline ("Candidate bound sig is " ^ sbt syms.dfns t);
     *)
     let eqns = make_eqns syms i ts in (* do this first to avoid gratuitous equalities *)
     let ts = adjust_ts syms i ts in
     let eqns = (t, sign) :: eqns in
-    let mgu = maybe_unification eqns in
+    let mgu = maybe_unification syms.dfns eqns in
     (match mgu with
     | Some mgu -> 
       if sign <> list_subst mgu sign then
@@ -3272,7 +3356,7 @@ and resolve_overload
       (*
       print_endline ("Matched with mgu = " ^ string_of_varlist syms.dfns mgu);
       *)
-      Some (i,t,mgu,t',ts)
+      Some (i,t,mgu,ts)
 
     | None -> 
       (*
@@ -3296,7 +3380,7 @@ and resolve_overload
       )
   in
   let fun_defs = List.map aux fs in
-  match 
+  let candidates = 
     let lift_suf = lift suf in
     List.filter 
     (fun result -> match result with
@@ -3305,19 +3389,102 @@ and resolve_overload
       | Fail -> false
     ) 
     fun_defs
-  with 
+  in
+    (*
+    print_endline "Got matching candidates .. ";
+    *)
+  (* start with an empty list, and fold one result
+  at a time into it, as follows: if one element
+  of the list is greater (more general) than the candidate,
+  then add the candidate to the list and remove all
+  element greater than the candidate,
+
+  otherwise, if one element of the list is less then
+  the candidate, keep the list and discard the candidate.
+
+  The list starts off empty, so that all elements in
+  it are vacuously incomparable. It follows either
+  the candidate is not less than all the list,
+  or not less than all the list: that is, there cannot
+  be two element a,b sch that a < c < b, since by
+  transitivity a < c would follow, contradicting
+  the assumption the list contains no ordered pairs.
+
+  If in case 1, all the greater element are removed and c added,
+  all the elements must be less or not comparable to c,
+  thus the list remains without comparable pairs,
+  otherwise in case 2, the list is retained and c discarded
+  and so trivially remains unordered.
+  *)
+
+  let candidates = fold_left
+  (fun oc r ->
+     match r with Unique (_,c,_,_) | Pair ((_,c,_,_),_) -> 
+     (*
+     print_endline ("Considering candidate sig " ^ sbt syms.dfns c);
+     *)
+     let rec aux lhs rhs =
+       match rhs with
+       | [] -> 
+         (*
+         print_endline "return elements plus candidate";
+         *)
+         r::lhs (* return all non-greater elements plus candidate *)
+       | (Unique(i,typ,mgu,ts) as x)::t 
+       | (Pair((i,typ,mgu,ts),_) as x) ::t 
+       ->
+         (*
+         print_endline (" .. comparing with " ^ sbt syms.dfns typ);
+         *)
+         begin match compare_sigs syms.dfns typ c with
+         | `Less -> 
+           (*
+           print_endline "Candidate is more general, discard it, retain whole list";
+           *)
+           lhs @ rhs (* keep whole list, discard c *) 
+         | `Equal -> 
+           failwith "[resolve_overload] Not expecting equal signatures"
+
+         | `Greater -> 
+           (*
+           print_endline "Candidate is less general: discard this element";
+           *)
+           aux lhs t (* discard greater element *)
+         | `Incomparable -> 
+           (*
+           print_endline "Candidate is comparable, retail element";
+           *)
+           aux (x::lhs) t (* keep element *)
+       end
+       | Fail::_ -> assert false
+     in aux [] oc
+     | Fail -> assert false
+  )
+  []
+  candidates in
+  match candidates with
   | [Unique (i,t,mgu,ts)] -> 
-    Some (Simple i,t,mgu,t',ts)
+    Some (Simple i,t,mgu,ts)
 
   | [Pair ((i,t,mgu,ts),j)] -> 
-    Some (Bound (i,j),t,mgu,t',ts)
+    Some (Bound (i,j),t,mgu,ts)
   | [] -> None
   | _ -> 
-  (* THIS STEP NEEDS TO CONSIDER MATCHES TO GENERIC SIGNATURES
-  BY PARTIALLY ORDERING THE RESULTS .. IF THERE IS A UNIQUE
-  MOST SPECIALISED SIGNATURE, RETURN THAT FUNCTION
-  *)
-    clierr sr ("Too many candidates match in overloading " ^ name)
+    clierr sr 
+    (
+      "Too many candidates match in overloading " ^ name ^
+      " with argument type " ^ sbt syms.dfns sign ^
+      "\nOf the matching candidates, the following are most specialised ones are incomparable\n" ^
+      catmap "\n" (function 
+        | Unique (i,t,_,_) 
+        | Pair ((i,t,_,_),_) ->
+          qualified_name_of_index syms.dfns i ^ "<" ^ si i ^ "> sig " ^ sbt syms.dfns t
+        | Fail -> assert false
+      ) 
+      candidates
+      ^ 
+      "\nPerhaps you need to define a function more specialised than all these?"
+    )
 
 (* FINAL NOTE: THIS STILL WON'T BE ENOUGH: THE SEARCH ALGORITHM
 NEEDS TO BE MODIFIED TO FIND **ALL** FUNCTIONS .. alternatively,

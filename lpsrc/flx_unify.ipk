@@ -9,19 +9,29 @@ open Flx_types
 
 (** obtain the mgu of a set of type equations *)
 val maybe_unification: 
+  symbol_table_t -> (* just for diagnostics *)
   (btypecode_t * btypecode_t) list ->
   (int * btypecode_t) list option
 
 (** obtain the mgu of a set of type equations *)
 val unification: 
-  (btypecode_t * btypecode_t) list ->
+  symbol_table_t -> (* just for diagnostics *)
+  (btypecode_t * btypecode_t) list -> 
   (int * btypecode_t) list
 
 (** test if two types unify *)
 val unifies: 
+  symbol_table_t -> (* just for diagnostics *)
   btypecode_t -> 
   btypecode_t -> 
   bool
+
+(** compare type for structural/unificational ordering *)
+val compare_sigs:
+  symbol_table_t ->
+  btypecode_t ->
+  btypecode_t ->
+  partial_order_result_t
 
 (** check if the two types unify: update the
 variable definitions in sym_state ??? Only
@@ -64,6 +74,14 @@ val minimise:
 the mapping in a list *)
 val list_subst:
   (int * btypecode_t) list ->
+  btypecode_t ->
+  btypecode_t
+
+(** replace variables using vs and ts list to
+determine mapping *)
+val tsubst :
+  (string * int) list -> (* vs list *)
+  btypecode_t list ->  (* ts list *)
   btypecode_t ->
   btypecode_t
 
@@ -135,6 +153,34 @@ let varmap_subst varmap t =
   | x -> x
   in s t
 
+(* the type arguments are matched up with the type
+  variables in order so that
+  vs_i -> ts_i
+  where vs_t might be (fred,var j)
+*)
+let tsubst 
+  (vs:(string * int) list) 
+  (ts:btypecode_t list)
+  (t:btypecode_t) 
+=
+  if length ts <> length vs 
+  then 
+    failwith 
+    (
+      "[tsubst] wrong number of type args, expected vs=" ^ 
+      si (length vs) ^
+      ", got ts=" ^ 
+      si (length ts)
+    )
+  ;
+  let tvs = combine vs ts in
+  let varmap = Hashtbl.create 97 in
+  iter
+  (fun ((name, varidx),typ) -> Hashtbl.add varmap varidx typ)
+  tvs
+  ;
+  varmap_subst varmap t
+
 
 (* returns the most general unifier (mgu)
   of a set of type equations as a list
@@ -201,7 +247,7 @@ let varmap_subst varmap t =
 
 let var_i_occurs i t =
   let rec aux t:unit = match t with
-    | `BTYP_var i -> raise Not_found
+    | `BTYP_var j when i = j -> raise Not_found
     | _ -> iter_btype aux t
  in 
    try 
@@ -213,7 +259,7 @@ let var_i_occurs i t =
   not inequations, therefore it doesn't
   handle any subtyping
 *)
-let rec unification eqns: (int * btypecode_t) list = 
+let rec unification dfns eqns: (int * btypecode_t) list = 
   let eqns = ref eqns in
   let mgu = ref [] in
   let rec loop () : unit =
@@ -232,7 +278,12 @@ let rec unification eqns: (int * btypecode_t) list =
         then  (* we actually want to handle this, but I can't
           seem to generate any test cases that trigger this
           message .. *)
-          failwith "Unexpected recursion in unification"
+          failwith 
+          (
+            "Unexpected recursion in unification, terms: " ^
+            match h with (a,b) ->
+            sbt dfns a ^ " = " ^ sbt dfns b
+         )
         else
           s := Some (i,t)
 
@@ -304,13 +355,36 @@ let rec unification eqns: (int * btypecode_t) list =
       loop (); 
       !mgu
 
-let maybe_unification eqns = 
-  try Some (unification eqns)
+let maybe_unification dfns eqns = 
+  try Some (unification dfns eqns)
   with Not_found -> None
 
-let unifies t1 t2 =
-  try ignore(unification [t1,t2]); true
+let unifies dfns t1 t2 =
+  try ignore(unification dfns [t1,t2]); true
   with Not_found -> false
+
+(* a < b means a is more specialised than b *)
+let compare_sigs dfns a b =
+  (*
+  print_endline ("Compare " ^ sbt dfns a ^ " with " ^ sbt dfns b);
+  *)
+  match maybe_unification dfns [a,b] with
+  | None -> `Incomparable
+  | Some [] -> `Equal
+  | Some mgu ->
+    let left = ref 0 and right = ref 0 in
+    iter (fun (i,t) ->
+      match t with `BTYP_var _ -> () | _ ->
+      if var_i_occurs i a then incr left
+      else incr right
+    )
+    mgu
+    ;
+    match !left,!right with
+    | 0,0 -> `Equal
+    | 0,_ -> `Less 
+    | _,0 -> `Greater
+    | _ -> `Incomparable
 
 (* returns true if a and b have an mgu,
    and also adds each element of the mgu to
@@ -338,7 +412,7 @@ let do_unify syms a b =
     (*
     print_endline "Calling unification";
     *)
-    let mgu = unification eqns in
+    let mgu = unification syms.dfns eqns in
     (*
     print_endline "mgu=";
     iter
