@@ -41,7 +41,7 @@ to supply a user written allocator.
 #ifndef FLX_GC
 #define FLX_GC
 
-#include <stdlib.h>
+#include <cstdlib>
 
 // we use an STL set to hold the collection of roots
 #include <set>
@@ -369,8 +369,8 @@ extern size_t handle_offsets[1];
 namespace flx {
 namespace gc {
 namespace generic {
-#include <stdio.h>
-#include <assert.h>
+#include <cstdio>
+#include <cassert>
 
 // create a shape object given an array of offsets
 gc_shape_t::gc_shape_t
@@ -563,7 +563,7 @@ private:
 
   frame_t *first;
   frame_t *to_delete;
-  typedef std::map<frame_t*,unsigned long, less<frame_t*> > rootmap_t;
+  typedef std::map<frame_t*,unsigned long, std::less<frame_t*> > rootmap_t;
   rootmap_t roots;
   bool parity;
   allocator_t *allocator;
@@ -573,12 +573,12 @@ private:
 #endif
 
 @select(tangler('rtl/flx_collector.cpp'))
-#include <stdlib.h>
+#include <cstdlib>
 #include <map>
 #include <limits.h>
-#include <assert.h>
-#include <stdio.h>
-#include <stddef.h>
+#include <cassert>
+#include <cstdio>
+#include <cstddef>
 #include "flx_collector.hpp"
 namespace flx {
 namespace gc {

@@ -12,6 +12,7 @@ of functions remain unbound.
 
 @h = tangler("src/flx_symtab.mli")
 @select(h)
+open Flx_ast
 open Flx_types
 val build_tables:
   sym_state_t ->
@@ -31,6 +32,7 @@ val build_tables:
 @h = tangler("src/flx_symtab.ml")
 @select(h)
 open Flx_util
+open Flx_ast
 open Flx_types
 open Flx_print
 open Flx_mtypes
@@ -38,9 +40,10 @@ open Flx_typing
 open Flx_srcref
 open List
 open Flx_lookup
+open Flx_exceptions
 
 let split_asms asms : 
-  (range_srcref * id_t * dcl_t) list * 
+  (range_srcref * id_t * id_t list * dcl_t) list * 
   exe_t list *
   iface_t list *
   dir_t list
@@ -51,7 +54,7 @@ let split_asms asms :
     | h :: t -> 
       match h with 
       | Exe (sr,exe) -> aux t dcls (exe :: exes) ifaces dirs
-      | Dcl (sr,id,dcl) -> aux t ((sr,id,dcl) :: dcls) exes ifaces dirs
+      | Dcl (sr,id,vs,dcl) -> aux t ((sr,id,vs,dcl) :: dcls) exes ifaces dirs
       | Iface (sr,iface) -> aux t dcls exes (iface :: ifaces) dirs
       | Dir (sr,dir) -> aux t dcls exes ifaces (dir::dirs)
   in 
@@ -64,7 +67,7 @@ let dump_name_to_int_map level name name_map =
   Hashtbl.iter
   (
     fun id n ->
-      print_endline ( "//" ^ spc ^ id ^ ": " ^ string_of_int n) 
+      print_endline ( "//" ^ spc ^ id ^ ": " ^ si n) 
   ) 
   name_map
   ;
@@ -72,11 +75,21 @@ let dump_name_to_int_map level name name_map =
 
   
  
-let add_unique table key value =
+let add_unique syms sr table key value =
   try 
-    Hashtbl.find table key;
-    failwith ("Duplicate key " ^ key)
-  with Not_found -> Hashtbl.add table key (NonFunctionEntry (Simple value))
+    let entry = Hashtbl.find table key in
+    match entry with 
+    | NonFunctionEntry (Simple idx) 
+    | FunctionEntry (Simple idx :: _ ) ->
+      let id,sr2,parent,vs,table,dirs,entry = 
+        Hashtbl.find syms.dfns idx 
+      in
+       clierr2 sr sr2 ("[build_tables] Duplicate non-function name declared " ^ key)
+     | _ ->
+       clierr sr ("[build_tables] Duplicate non-function name declared " ^ key)
+
+  with Not_found -> 
+    Hashtbl.add table key (NonFunctionEntry (Simple value))
 
 let add_function table key value =
   try 
@@ -104,6 +117,8 @@ let add_function table key value =
   be created in the child, but it cannot be followed until
   registration of all the children and their parent is complete
 *)
+
+let null_tab = Hashtbl.create 3 
 
 let rec build_tables syms name level parent grandparent root asms = 
   let 
@@ -136,29 +151,53 @@ let rec build_tables syms name level parent grandparent root asms =
   begin 
     List.iter
     (
-      fun (sr,id,dcl) -> 
+      fun (sr,id,vs',dcl) -> 
+        let table = Hashtbl.create 3 in (* dummy-ish table could contain type vars *)
+        let add_unique table id idx = add_unique syms sr table id idx in
         let n = !counter in 
         incr counter; 
         if print_flag then 
           print_endline 
           (
-            "//" ^ spc ^ string_of_int n ^ " -> " ^ id ^ 
+            "//" ^ spc ^ si n ^ " -> " ^ id ^ 
             " " ^ short_string_of_src sr
           )
         ;
-        begin match dcl with
+        let vs = 
+          List.map 
+          (
+            fun tid-> let n = !counter in incr counter; 
+            if print_flag then
+            print_endline ("//  "^spc ^ si n ^ " -> " ^ tid^ " (type variable)");
+            tid,n
+          ) 
+          vs'
+        in
+        let add_tvars table =        
+          List.iter
+          (fun (tvid,i) ->
+            Hashtbl.add dfns i (tvid,sr,Some n,[],null_tab,[],`SYMDEF_typevar `TYP_type);
+            add_unique table tvid i 
+          )
+          vs
+        in
+        begin match (dcl:dcl_t) with
         | `DCL_regdef re ->
-          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
+          Hashtbl.add dfns n (id,sr,parent,vs,table,dirs,`SYMDEF_regdef re)
           ;
           add_unique name_map id n
+          ;
+          add_tvars table
 
 
-        | `DCL_module_binding e -> 
-          Hashtbl.add dfns n (id, sr, parent,
+        | `DCL_module_binding (e) -> 
+          Hashtbl.add dfns n (id, sr, parent,vs,table,dirs,
             `SYMDEF_module_binding e 
           );
           add_unique name_map id n;
           interfaces := !interfaces @ ifaces
+          ;
+          add_tvars table
 
         | `DCL_typed_functor (ps,ret,asms) -> 
           let fun_index = n in
@@ -166,15 +205,16 @@ let rec build_tables syms name level parent grandparent root asms =
             build_tables syms id (level+1) (Some n) parent root
             asms
           in
-          Hashtbl.add dfns fun_index (id, sr, parent,
-            `SYMDEF_typed_functor (ps,ret,exes,table, dirs) 
+          Hashtbl.add dfns fun_index (id, sr, parent,vs,table,dirs,
+            `SYMDEF_typed_functor (ps,ret,exes) 
           );
           List.iter (fun (name,typ) -> 
             let n = !counter in
             incr counter;
             if print_flag then
-            print_endline ("//  "^spc ^ string_of_int n ^ " -> " ^ name^ " (parameter)");
-            Hashtbl.add dfns n (name,sr,Some fun_index,`SYMDEF_parameter typ);
+            print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
+            let vs = [] in (* KLUDGE *)
+            Hashtbl.add dfns n (name,sr,Some fun_index,vs,null_tab,[],`SYMDEF_parameter (typ));
             add_unique table name n
           ) ps
           ;
@@ -184,20 +224,20 @@ let rec build_tables syms name level parent grandparent root asms =
           let init_def = 
             `SYMDEF_function
             (
-              [],[], `AST_void sr,
-              exes, 
-              Hashtbl.create 97,
-              [] 
+              [], `AST_void sr,
+              exes
             ) 
           in
-          Hashtbl.add dfns n' ("_init_",sr,Some fun_index, init_def);
+          Hashtbl.add dfns n' ("_init_",sr,Some fun_index, vs,null_tab,[],init_def);
           if print_flag then
-          print_endline ("//  "^spc ^ string_of_int n' ^ " -> _init_ (functor "^id^")");
+          print_endline ("//  "^spc ^ si n' ^ " -> _init_ (functor "^id^")");
           (* NOTE: NO CALL TO INIT ROUTINE HERE! *)
           add_function table ("_init_") n';
 
           add_function name_map id fun_index ;
           interfaces := !interfaces @ ifaces
+          ;
+          add_tvars table
 
         | `DCL_untyped_functor (ps,asms) -> 
           let fun_index = n in
@@ -205,40 +245,35 @@ let rec build_tables syms name level parent grandparent root asms =
             build_tables syms id (level+1) (Some n) parent root
             asms
           in
-          Hashtbl.add dfns fun_index (id, sr, parent,
-            `SYMDEF_untyped_functor (ps,exes,table, dirs) 
+          Hashtbl.add dfns fun_index (id, sr, parent,vs,table,dirs,
+            `SYMDEF_untyped_functor (ps,exes) 
           );
           List.iter (fun (name,typ) -> 
             let n = !counter in
             incr counter;
             if print_flag then
-            print_endline ("//  "^spc ^ string_of_int n ^ " -> " ^ name^ " (parameter)");
-            Hashtbl.add dfns n (name,sr,Some fun_index,`SYMDEF_parameter typ);
+            print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
+            let vs = [] in (* KLUDGE *)
+            Hashtbl.add dfns n (name,sr,Some fun_index,vs,null_tab,[],`SYMDEF_parameter (typ));
             add_unique table name n
           ) ps
           ;
 
          let n' = !counter in
           incr counter;
-          let init_def = 
-            `SYMDEF_function
-            (
-              [],[], `AST_void sr,
-              exes, 
-              Hashtbl.create 97,
-              [] 
-            ) 
-          in
-          Hashtbl.add dfns n' ("_init_",sr,Some fun_index, init_def);
+          let init_def = `SYMDEF_function ( [], `AST_void sr, exes) in
+          Hashtbl.add dfns n' ("_init_",sr,Some fun_index, vs,null_tab,[],init_def);
           if print_flag then
-          print_endline ("//  "^spc ^ string_of_int n' ^ " -> _init_ (functor "^id^")");
+          print_endline ("//  "^spc ^ si n' ^ " -> _init_ (functor "^id^")");
           (* NOTE: NO CALL TO INIT ROUTINE HERE! *)
           add_function table ("_init_") n';
 
           add_function name_map id fun_index ;
           interfaces := !interfaces @ ifaces
+          ;
+          add_tvars table
 
-        | `DCL_function (vs,ps,t,asms) ->   
+        | `DCL_function (ps,t,asms) ->   
           let fun_index = n in
           let t = if t = `TYP_none then `TYP_var fun_index else t in
           let table, exes, ifaces,dirs =  
@@ -250,22 +285,20 @@ let rec build_tables syms name level parent grandparent root asms =
             let n = !counter in
             incr counter;
             if print_flag then
-            print_endline ("//  "^spc ^ string_of_int n ^ " -> " ^ name^ " (parameter)");
-            Hashtbl.add dfns n (name,sr,Some fun_index,`SYMDEF_parameter typ);
+            print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
+            Hashtbl.add dfns n (name,sr,Some fun_index,[],null_tab,[],`SYMDEF_parameter (typ));
             add_unique table name n;
             ips := (name,typ) :: !ips 
           ) ps
           ; 
-          let vs = 
-            List.map (fun x-> let n = !counter in incr counter; x,n) vs
-          in
-          Hashtbl.add dfns fun_index (id, sr,parent,
-            `SYMDEF_function (vs, List.rev !ips, t, exes, table, dirs)
+          Hashtbl.add dfns fun_index (id, sr,parent,vs,table,dirs,
+            `SYMDEF_function (List.rev !ips, t, exes)
           )
           ;
           add_function name_map id fun_index ;
           interfaces := !interfaces @ ifaces
-
+          ;
+          add_tvars table
 
         | `DCL_match_check (pat,mvname) ->
           let fun_index = n in
@@ -274,12 +307,14 @@ let rec build_tables syms name level parent grandparent root asms =
             | NonFunctionEntry (Simple idx) -> idx
             | _ -> assert false
           in 
-          Hashtbl.add dfns fun_index (id, sr, parent,
+          Hashtbl.add dfns fun_index (id, sr, parent,vs,table,dirs,
             `SYMDEF_match_check (pat, match_var_index)
           );
           add_function name_map id fun_index ;
           interfaces := !interfaces @ ifaces
-        
+          ;
+          add_tvars table
+
         | `DCL_match_handler (pat,mvname,asms) ->
           let vars = Hashtbl.create 97 in
           Flx_mbind.get_pattern_vars vars pat [];
@@ -288,7 +323,7 @@ let rec build_tables syms name level parent grandparent root asms =
           print_endline "VARIABLES ARE";
           Hashtbl.iter (fun vname (sr,extractor) ->
             let component = 
-              Flx_mbind.gen_extractor extractor (`AST_name (sr,mvname)) 
+              Flx_mbind.gen_extractor extractor (`AST_name (sr,mvname,[])) 
             in
             print_endline ("  " ^ vname ^ " := " ^ string_of_expr component);
           ) vars;
@@ -299,9 +334,9 @@ let rec build_tables syms name level parent grandparent root asms =
           (fun vname (sr,extractor) ->
             let component = 
               Flx_mbind.gen_extractor extractor 
-              (`AST_name (sr,mvname)) 
+              (`AST_name (sr,mvname,[])) 
             in
-            let dcl = Dcl (sr, vname, `DCL_val (`TYP_typeof (component))) 
+            let dcl = Dcl (sr, vname, vs',`DCL_val (`TYP_typeof (component))) 
             and instr = Exe (sr, `EXE_init (vname, component)) 
             in
               new_asms := dcl :: instr :: !new_asms;
@@ -313,20 +348,22 @@ let rec build_tables syms name level parent grandparent root asms =
             build_tables syms id (level+1) 
             (Some fun_index) parent root !new_asms 
           in
-          Hashtbl.add dfns fun_index (id, sr, parent,
-            `SYMDEF_function ([],[],`TYP_var fun_index, exes, table, dirs)
+          Hashtbl.add dfns fun_index (id, sr, parent,vs,table,dirs,
+            `SYMDEF_function ([],`TYP_var fun_index, exes)
           );
           add_function name_map id fun_index;
           interfaces := !interfaces @ ifaces
+          ;
+          add_tvars table
 
 
         | `DCL_header s ->
-          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
+          Hashtbl.add dfns n (id,sr,parent,vs,table,dirs,`SYMDEF_header s)
           ;
           add_unique name_map id n
 
         | `DCL_body s ->
-          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
+          Hashtbl.add dfns n (id,sr,parent,vs,table,dirs,`SYMDEF_body s)
           ;
           add_unique name_map id n
 
@@ -335,129 +372,103 @@ let rec build_tables syms name level parent grandparent root asms =
             build_tables syms id (level+1) (Some n) parent root
             asms
           in
-          Hashtbl.add dfns n (id, sr,parent,`SYMDEF_module (table,dirs));
+          Hashtbl.add dfns n (id, sr,parent,vs,table,dirs,`SYMDEF_module);
           let n' = !counter in
           incr counter;
-          let init_def = 
-            `SYMDEF_function
-            (
-              [],[], `AST_void sr,
-              exes, 
-              Hashtbl.create 97,
-              []
-            ) 
-          in
+          let init_def = `SYMDEF_function ( [],`AST_void sr, exes) in
           if print_flag then
-          print_endline ("//  "^spc ^ string_of_int n' ^ " -> _init_  (module "^id^")");
-          Hashtbl.add dfns n' ("_init_",sr,Some n, init_def);
+          print_endline ("//  "^spc ^ si n' ^ " -> _init_  (module "^id^")");
+          Hashtbl.add dfns n' ("_init_",sr,Some n, vs,null_tab,[],init_def);
 
           add_unique name_map id n;
           add_function table ("_init_") n';
           interfaces := !interfaces @ ifaces
+          ;
+          add_tvars table
         
         | `DCL_interface asms ->
           let table, exes,ifaces,dirs = 
             build_tables syms id (level+1) (Some n) parent root
             asms
           in
-          Hashtbl.add dfns n (id, sr,parent,`SYMDEF_interface (table, dirs));
+          Hashtbl.add dfns n (id, sr,parent,vs,table,dirs,`SYMDEF_interface);
           let n' = !counter in
           incr counter;
           let init_def = 
             `SYMDEF_if_fun ( `TYP_function (`TYP_tuple [], `AST_void sr))
           in
-          Hashtbl.add dfns n' ("_init_",sr,Some n, init_def);
+          Hashtbl.add dfns n' ("_init_",sr,Some n, vs,null_tab,[],init_def);
           if print_flag then
-          print_endline ("//  "^spc ^ string_of_int n' ^ " -> _init_ (interface "^id^")");
+          print_endline ("//  "^spc ^ si n' ^ " -> _init_ (interface "^id^")");
           add_unique name_map id n;
           add_function table ("_init_") n';
           interfaces := !interfaces @ ifaces
-
-        (*
-        | `DCL_procedure (vs,ps,asms) -> 
-          let fun_index = n in
-          let table, exes,ifaces,dirs = 
-            build_tables syms id 
-            (level+1) (Some fun_index) parent root asms 
-          in
-          let ips = ref [] in
-          List.iter (fun (name,typ) -> 
-            let n = !counter in
-            incr counter;
-            if print_flag
-            then print_endline ("//  "^spc ^ string_of_int n ^ " -> " ^ name^" (parameter)" );
-            Hashtbl.add dfns n (name,sr,Some fun_index,`SYMDEF_parameter typ);
-            add_unique table name n;
-            ips := (name,(n,typ)) :: !ips 
-          ) ps
-          ; 
-
-          let vs = 
-            List.map (fun x-> let n = !counter in incr counter; x,n) vs
-          in
-
-          Hashtbl.add dfns fun_index (id, sr,parent,
-            `SYMDEF_procedure (vs,List.rev !ips, exes, table, dirs))
           ;
-          add_function name_map id fun_index;
-          interfaces := !interfaces @ ifaces
-        *)
+          add_tvars table
 
+ 
         | `DCL_if_fun t ->
-          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_if_fun t)
+          Hashtbl.add dfns n (id,sr,parent,vs,table,dirs,`SYMDEF_if_fun t)
           ;
           add_function name_map id n
+          ;
+          add_tvars table
           
-        (*
-        | `DCL_if_proc (t) ->
-          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_if_proc t)
-          ;
-          add_function name_map id n
-        *)
-
         | `DCL_type ->
-          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_if_type)
+          Hashtbl.add dfns n (id,sr,parent,vs,table,dirs,`SYMDEF_if_type)
           ;
           add_unique name_map id n
+          ;
+          add_tvars table
 
         | `DCL_val t ->
           let t = match t with | `TYP_none -> `TYP_var n | _ -> t in
-          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_val t)
+          Hashtbl.add dfns n (id,sr,parent,vs,table,dirs,`SYMDEF_val (t))
           ;
           add_unique name_map id n
+          ;
+          add_tvars table
 
         | `DCL_var t ->       
           let t = if t = `TYP_none then `TYP_var n else t in
-          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_var t)
+          Hashtbl.add dfns n (id,sr,parent,vs,table,dirs,`SYMDEF_var (t))
           ;
           add_unique name_map id n
+          ;
+          add_tvars table
 
-        | `DCL_type_alias t ->
-          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
+        | `DCL_type_alias (t) ->
+          Hashtbl.add dfns n (id,sr,parent,vs,table,dirs,`SYMDEF_type_alias t)
           ;
           add_unique name_map id n
-        | `DCL_abs c ->
-          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
+          ;
+          add_tvars table
+
+        | `DCL_abs (c) ->
+          Hashtbl.add dfns n (id,sr,parent,vs,table,dirs,`SYMDEF_abs c)
           ;
           add_unique name_map id n
+          ;
+          add_tvars table
+
         | `DCL_const (t,c) ->
-          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
+          Hashtbl.add dfns n (id,sr,parent,vs,table,dirs,`SYMDEF_const (t,c))
           ;
           add_unique name_map id n
-        | `DCL_fun (vs,ts,t,c) ->
-          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
+          ;
+          add_tvars table
+
+        | `DCL_fun (ts,t,c) ->
+          Hashtbl.add dfns n (id,sr,parent,vs,table,dirs,`SYMDEF_fun (ts,t,c))
           ;
           add_function name_map id n
-
-        (*
-        | `DCL_proc (vs,ts,c) ->
-          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
           ;
-          add_function name_map id n
-        *)
+          add_tvars table
 
-        | `DCL_union its ->
-          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
+        | `DCL_union (its) ->
+          let tvars = map (fun (_,i)-> `TYP_var i) vs in
+          let utype = `AST_name(sr,id, tvars) in
+          Hashtbl.add dfns n (id,sr,parent,vs,table,dirs,`SYMDEF_union (its))
           ;
           add_unique name_map id n
           ;
@@ -465,19 +476,15 @@ let rec build_tables syms name level parent grandparent root asms =
           let asgn_idx = !counter in incr counter;
           let asgn_name = "set" in
           let asgn_dcl = 
-            `DCL_fun
+            `SYMDEF_fun
             (
-              [],
-              [
-                `TYP_pointer (`AST_name (sr,id));
-                `AST_name (sr,id)
-              ],
+              [ `TYP_pointer utype; utype ],
               `AST_void sr,
               "*$1=$2;"
             ) 
           in
-          if print_flag then print_endline ("//  " ^ spc ^ string_of_int asgn_idx ^ " -> " ^ asgn_name); 
-          Hashtbl.add dfns asgn_idx (asgn_name,sr,parent,`SYMDEF_dcl asgn_dcl);
+          if print_flag then print_endline ("//  " ^ spc ^ si asgn_idx ^ " -> " ^ asgn_name); 
+          Hashtbl.add dfns asgn_idx (asgn_name,sr,parent,vs,table,dirs,asgn_dcl);
           add_function name_map asgn_name asgn_idx
           ; 
 
@@ -497,66 +504,65 @@ let rec build_tables syms name level parent grandparent root asms =
               if unit_sum
               then begin
                   add_unique name_map component_name dfn_idx;
-                  `DCL_const 
+                  `SYMDEF_const 
                   (
-                    `AST_name (sr,id),
-                    string_of_int ctor_idx
+                    utype,
+                    si ctor_idx
                   )
               end
               else
                 match t with
                 | `AST_void _ -> (* constant constructor *)
                   add_unique name_map component_name dfn_idx;
-                  `DCL_const 
+                  `SYMDEF_const 
                   (
-                    `AST_name (sr,id),
-                    "_uctor_(" ^ string_of_int ctor_idx ^ ",0)"
+                    utype,
+                    "_uctor_(" ^ si ctor_idx ^ ",0)"
                   )
                 | `TYP_tuple ts -> (* non-constant constructor or 2 or more arguments *)
                   add_function name_map component_name dfn_idx;
                   let dcl = 
-                    `DCL_fun 
+                    `SYMDEF_fun 
                     (
-                      [],
                       ts,
-                      `AST_name (sr,id),
-                      "_uctor_(" ^ string_of_int ctor_idx ^ 
+                      utype,
+                      "_uctor_(" ^ si ctor_idx ^ 
                       ", new(gc,@t) #t($t))"
                     )
                   in 
                     dcl
                 | _ -> (* non-constant constructor of 1 argument *)
                   add_function name_map component_name dfn_idx;
-                  `DCL_fun ([],[t],`AST_name (sr,id),
-                    "_uctor_(" ^ string_of_int ctor_idx ^ 
+                  `SYMDEF_fun (
+                    [t],
+                    utype,
+                    "_uctor_(" ^ si ctor_idx ^ 
                     ", new(gc,@1) #1($1))"
                   )
             and ctor_match = 
               if unit_sum
               then
-                `DCL_fun 
+                `SYMDEF_fun 
                 (
-                  [],
-                  [`AST_name (sr,id)],
+                  [utype],
                   flx_bool,
-                  "($1 ==" ^ string_of_int ctor_idx ^")"
+                  "($1 ==" ^ si ctor_idx ^")"
                 )
               else
-                `DCL_fun 
+                `SYMDEF_fun 
                 (
-                  [],
-                  [`AST_name (sr,id)],
+                  [utype],
                   flx_bool,
-                  "($1.variant==" ^ string_of_int ctor_idx ^")"
+                  "($1.variant==" ^ si ctor_idx ^")"
                 )
             and ctor_match_name ="_match_ctor_" ^ component_name 
             in
 
-            if print_flag then print_endline ("//  " ^ spc ^ string_of_int dfn_idx ^ " -> " ^ component_name); 
-            Hashtbl.add dfns dfn_idx (component_name,sr,parent,`SYMDEF_dcl ctor_dcl);
+            if print_flag then print_endline ("//  " ^ spc ^ si dfn_idx ^ " -> " ^ component_name); 
+            Hashtbl.add dfns dfn_idx (component_name,sr,parent,vs,table,dirs,ctor_dcl);
 
-            if print_flag then print_endline ("//  " ^ spc ^ string_of_int match_idx ^ " -> " ^ ctor_match_name); 
-            Hashtbl.add dfns match_idx (ctor_match_name,sr,parent,`SYMDEF_dcl ctor_match);
+            if print_flag then print_endline ("//  " ^ spc ^ si match_idx ^ " -> " ^ ctor_match_name); 
+            Hashtbl.add dfns match_idx (ctor_match_name,sr,parent,vs,table,dirs,ctor_match);
 
             add_function name_map ctor_match_name match_idx;
 
@@ -566,15 +572,19 @@ let rec build_tables syms name level parent grandparent root asms =
             | _ -> (* non-constant constructor *)
               let dtor_idx = !counter in incr counter;
               let dtor_name = "_ctor_arg_" ^ component_name in
-              let dtor_dcl = `DCL_fun ([],[`AST_name (sr,id)],t,"*(#0*)`1.data") in
-              if print_flag then print_endline ("//  " ^ spc ^ string_of_int dtor_idx ^ " -> " ^ dtor_name); 
-              Hashtbl.add dfns dtor_idx (dtor_name,sr,parent,`SYMDEF_dcl dtor_dcl);
+              let dtor_dcl = `SYMDEF_fun ([utype],t,"*(#0*)$1.data") in
+              if print_flag then print_endline ("//  " ^ spc ^ si dtor_idx ^ " -> " ^ dtor_name); 
+              Hashtbl.add dfns dtor_idx (dtor_name,sr,parent,vs,table,dirs,dtor_dcl);
               add_function name_map dtor_name dtor_idx
           )
           its
+          ;
+          add_tvars table
  
-        | `DCL_struct sts ->
-          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
+        | `DCL_struct (sts) ->
+          let tvars = map (fun (_,i)-> `TYP_var i) vs in
+          let stype = `AST_name(sr,id,tvars) in
+          Hashtbl.add dfns n (id,sr,parent,vs,table,dirs,`SYMDEF_struct (sts))
           ;
           add_unique name_map id n
           ;
@@ -582,24 +592,25 @@ let rec build_tables syms name level parent grandparent root asms =
           (fun (component_name,t) ->
             let getn = !counter in incr counter;
             let get_name = "get_" ^ component_name in
-            let get_dcl = `DCL_fun ([],[`AST_name (sr,id)],t,"$1." ^ component_name) in
-            Hashtbl.add dfns getn (get_name,sr,parent,`SYMDEF_dcl get_dcl);
+            let get_dcl = `SYMDEF_fun ([stype],t,"$1." ^ component_name) in
+            Hashtbl.add dfns getn (get_name,sr,parent,vs,table,dirs,get_dcl);
             add_function name_map get_name getn
             ;
 
             let refn = !counter in incr counter;
             let ref_name = "ref_" ^ component_name in
-            let ref_dcl = `DCL_fun (
-              [],[`TYP_pointer (`AST_name (sr,id))],
+            let ref_dcl = `SYMDEF_fun (
+              [`TYP_pointer stype],
               `TYP_pointer t,
-              "_make_ref_(`1.frame,&($1->" ^ component_name ^"))"
+              "_ref_($1.frame,&($1->" ^ component_name ^"))"
             ) 
             in
-            Hashtbl.add dfns refn (ref_name,sr,parent,`SYMDEF_dcl ref_dcl) ;
+            Hashtbl.add dfns refn (ref_name,sr,parent,vs,table,dirs,ref_dcl) ;
             add_function name_map ref_name refn
           )
           sts
           ;
+          add_tvars table
         end
     ) 
     dcls

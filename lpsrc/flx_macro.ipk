@@ -26,7 +26,7 @@ to rename macros.
 @head(2,'Implementation')
 @h = tangler('src/flx_macro.mli')
 @select(h)
-open Flx_types
+open Flx_ast
 val expand_macros:
   string -> 
   int -> 
@@ -35,7 +35,7 @@ val expand_macros:
 
 @h = tangler('src/flx_macro.ml')
 @select(h)
-open Flx_types
+open Flx_ast
 open Flx_print
 open Flx_exceptions
 open List
@@ -122,7 +122,7 @@ let protect sr (ps:id_t list) : macro_dfn_t list =
     match t with
     | [] -> macs 
     | h :: t -> 
-      let mac = h, MVal (`AST_noexpand (sr,`AST_name (sr,h))) in
+      let mac = h, MVal (`AST_noexpand (sr,`AST_name (sr,h,[]))) in
       aux t (mac::macs)
   in 
     aux ps []
@@ -133,7 +133,7 @@ let build_args sr ps args =
     match t with
     | Ident -> 
       begin match a with
-      | `AST_name (_,name) -> (p,MName name)
+      | `AST_name (_,name,[]) -> (p,MName name)
       | _ -> 
         clierr sr 
         (
@@ -146,7 +146,7 @@ let build_args sr ps args =
     | Stmt ->
       begin match a with
       | `AST_lambda (_,([],`TYP_none,sts)) -> (p,MStmt ([],sts))
-      | `AST_name(_,name) ->(p,MVal a)
+      | `AST_name(_,name,[]) ->(p,MVal a)
       | _ -> 
         clierr sr 
         (
@@ -217,7 +217,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
           (
             sr,
             (
-              `AST_name ( sr,"add"),
+              `AST_name ( sr,"add",[]),
               `AST_tuple (sr,[me x; me y])
             )
           )
@@ -239,7 +239,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
           (
             sr,
             (
-              `AST_name ( sr,"mul"), 
+              `AST_name ( sr,"mul",[]), 
               `AST_tuple (sr,[me x; me y])
             )
           )
@@ -249,14 +249,23 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     end
  
   (* Name expansion *)
-  | `AST_name (sr, name) ->
+  | `AST_name (sr, name,[]) ->
     begin try 
       match List.assoc name macros with
       | MVar b -> me !b
       | MVal b -> me b
       | MExpr(ps,b) -> e
-      | MName _ -> `AST_name (sr,mi sr name)
+      | MName _ -> `AST_name (sr,mi sr name,[])
       | MStmt (ps,b) -> e
+    with 
+    | Not_found -> e
+    end
+
+  | `AST_name (sr, name,ts) -> 
+    begin try 
+      match List.assoc name macros with
+      | MName _ -> `AST_name (sr,mi sr name,ts)
+      | _ -> e
     with 
     | Not_found -> e
     end
@@ -277,7 +286,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       e2 = me e2' 
     in
       begin match e1 with
-      | `AST_name(srn,name) ->
+      | `AST_name(srn,name,[]) ->
         begin try 
           match List.assoc name macros with
           | MName _ 
@@ -351,11 +360,10 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     `AST_lambda (sr, (ps, t, sts))
 
   (* Name lookup *)
-  | `AST_lookup (sr, (e1, name)) -> `AST_lookup (sr,(me e1, mi sr name))
+  | `AST_lookup (sr, (e1, name,ts)) -> `AST_lookup (sr,(me e1, mi sr name,ts))
 
   | `AST_case_tag (sr, i) -> e
   | `AST_typed_case (sr, i, t) -> e
-  | `AST_index (sr, bid) -> e
   | `AST_bound_module _ -> failwith "Unexpected bound module"
 
 
@@ -399,10 +407,11 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     let res = map (fun (rexp,e) -> rexp, me e) res in
     `AST_regmatch (sr,(me e1, res))
 
-  | `AST_typeof (sr, e1) -> `AST_typeof(sr, me e1)
+  | `AST_reglex (sr, (e1, res)) -> 
+    let res = map (fun (rexp,e) -> rexp, me e) res in
+    `AST_reglex (sr,(me e1, res))
 
-  | `AST_texpr (sr, e1) -> e
-  | `AST_ginst (sr, (e1, ts)) -> `AST_ginst (sr, (me e1, ts))
+  | `AST_typeof (sr, e1) -> `AST_typeof(sr, me e1)
 
 (* ---------------------------------------------------------------------
   do the common work of both subst_statement and expand_statement,
@@ -436,24 +445,19 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   (* IDENTIFIER RENAMING NOT SUPPORTED IN REGDEF *)
   | `AST_regdef (sr, id, re)  ->  tack st
 
-  | `AST_union (sr, id, idts ) ->  tack (`AST_union (sr, mi sr id, idts))
-  | `AST_struct (sr, id, idts) ->  tack (`AST_struct (sr, mi sr id, idts))
+  | `AST_union (sr, id, vs, idts ) ->  tack (`AST_union (sr, mi sr id, vs, idts))
+  | `AST_struct (sr, id, vs, idts) ->  tack (`AST_struct (sr, mi sr id, vs, idts))
 
   (* IDENTIFIER RENAMING NOT SUPPORTED IN TYPES *)
-  | `AST_type_alias (sr, id, t) ->  tack st
+  | `AST_type_alias (sr, id, vs, t) ->  tack st
 
-  | `AST_abs_decl (sr, id, ids, c) ->  tack st
-  | `AST_const_decl (sr, id, t, c) -> 
-     tack (`AST_const_decl (sr, mi sr id, t, c))
+  | `AST_abs_decl (sr, id, vs, c) ->  tack st
+  | `AST_const_decl (sr, id, vs, t, c) -> 
+     tack (`AST_const_decl (sr, mi sr id, vs, t, c))
     
-  | `AST_fun_decl (sr, id, ss, ts, t, c) -> 
-     tack (`AST_fun_decl (sr, mi sr id, ss, ts, t, c))
+  | `AST_fun_decl (sr, id, vs, ts, t, c) -> 
+     tack (`AST_fun_decl (sr, mi sr id, vs, ts, t, c))
     
-  (*
-  | `AST_proc_decl (sr, id, ss,  ts, c) -> 
-     tack (`AST_proc_decl (sr,mi sr id, ss, ts, c))
-  *) 
-
   | `AST_header (sr, s) ->  tack st
   | `AST_body (sr, s) ->  tack st
 
@@ -474,11 +478,10 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_export (sr, sn, s) ->  tack st
 
   (* IDENTIFIER RENAMING NOT SUPPORTED IN TYPES *)
-  | `AST_type (sr, id)  ->  tack st
-  | `AST_function_decl (sr, id, t) ->  tack (`AST_function_decl (sr,mi sr id, t))
-  (*
-  | `AST_procedure_decl (sr, id, t) -> tack (`AST_procedure_decl (sr, mi sr id, t))
-  *)
+  | `AST_type (sr, id, vs)  ->  tack st
+
+  | `AST_function_decl (sr, id, vs, t) ->  
+    tack (`AST_function_decl (sr,mi sr id, vs, t))
 
   | `AST_label (sr, id) ->  
     reachable:=true; 
@@ -496,13 +499,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     let pr = map fst ps in
     tack(`AST_function (sr, mi sr id, vs, ps, t, msp sr pr sts ))
 
-  (*
-  | `AST_procedure (sr, id, vs, ps, sts) ->
-    let pr = map fst ps in
-    tack (`AST_procedure (sr, id, vs, ps, msp sr pr sts))
-  *)
-
-  | `AST_val_decl (sr, id, optt, opte) -> 
+  | `AST_val_decl (sr, id, vs, optt, opte) -> 
     let opte = match opte with
     | Some x -> Some (me x)
         (* 
@@ -515,9 +512,9 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
           we can't tell the difference here
         *)
     in
-      tack (`AST_val_decl (sr, mi sr id, optt, opte))
-  
-  | `AST_var_decl (sr, id, optt, opte) -> 
+      tack (`AST_val_decl (sr, mi sr id, vs, optt, opte))
+
+  | `AST_var_decl (sr, id, vs, optt, opte) -> 
     let opte = 
       match opte with
       | Some x -> Some (me x)
@@ -526,26 +523,25 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       | None -> None 
         (* vars don't have to be initialised *)
     in
-      tack (`AST_var_decl (sr, mi sr id, optt, opte))
+      tack (`AST_var_decl (sr, mi sr id, vs, optt, opte))
   
- 
-  | `AST_untyped_module (sr, id, sts) ->
-    tack (`AST_untyped_module (sr, mi sr id, ms sts))
+  | `AST_untyped_module (sr, id, vs, sts) ->
+    tack (`AST_untyped_module (sr, mi sr id, vs, ms sts))
 
-  | `AST_typed_module (sr, id, t, sts) ->
-    tack (`AST_typed_module (sr, mi sr id, t, ms sts))
+  | `AST_typed_module (sr, id, vs, t, sts) ->
+    tack (`AST_typed_module (sr, mi sr id, vs, t, ms sts))
 
-  | `AST_module_binding (sr, id, e) ->
-    tack (`AST_module_binding (sr, mi sr id, me e))
+  | `AST_module_binding (sr, id, vs, e) ->
+    tack (`AST_module_binding (sr, mi sr id, vs, me e))
 
-  | `AST_typed_functor (sr, id, ps, t, sts) ->
-    tack (`AST_typed_functor (sr, mi sr id, ps, t, ms sts))
+  | `AST_typed_functor (sr, id, vs, ps, t, sts) ->
+    tack (`AST_typed_functor (sr, mi sr id, vs, ps, t, ms sts))
 
-  | `AST_untyped_functor (sr, id, ps, sts) ->
-    tack (`AST_untyped_functor (sr, mi sr id, ps, ms sts))
+  | `AST_untyped_functor (sr, id, vs, ps, sts) ->
+    tack (`AST_untyped_functor (sr, mi sr id, vs, ps, ms sts))
 
-  | `AST_interface (sr, id, sts) ->
-    tack (`AST_interface (sr, mi sr id, ms sts))
+  | `AST_interface (sr, id, vs, sts) ->
+    tack (`AST_interface (sr, mi sr id, vs, ms sts))
   
   | `AST_ifgoto (sr, e , id) -> 
     let e = me e in
@@ -584,7 +580,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_fun_return (sr, e)  ->
     ctack (`AST_fun_return (sr, me e));
     reachable := false
-
   | st -> failwith ("[subst_or_expand] Unhandled case " ^ string_of_statement 0 st)
   end
   ;
@@ -636,8 +631,8 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
     so we can't elide it even if unreachable:
     it might expand to declarations or macros
   *)
-  | `AST_call (sr, `AST_name(srn,name), e2) ->
-    let e1 = `AST_name(srn, name) in
+  | `AST_call (sr, `AST_name(srn,name,[]), e2) ->
+    let e1 = `AST_name(srn, name,[]) in
     begin try
       match assoc name macros with
       | MStmt ([],b) ->
@@ -736,7 +731,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       e2 = me e2'
     in
       begin match e1 with
-      | `AST_name(srn,name) ->
+      | `AST_name(srn,name,[]) ->
         begin try 
           match List.assoc name (!ref_macros @ macros) with
           | MName _
@@ -932,10 +927,11 @@ and expand_macros local_prefix recursion_limit ss =
 open Flx_util
 open Flx_macro
 open Flx_print
-open Flx_types
+open Flx_ast
 open Flx_getopt
 open Flx_version
 open Flx_flxopt
+open Flx_types
 
 let print_help () = print_options(); exit(0)
 ;;

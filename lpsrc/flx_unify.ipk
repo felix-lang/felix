@@ -7,8 +7,21 @@ and utilities
 
 open Flx_types
 
+(** obtain the mgu of a set of type equations *)
+val unification: 
+  (btypecode_t * btypecode_t) list ->
+  (int * btypecode_t) list
+
+(** test if two types unify *)
+val unifies: 
+  btypecode_t -> 
+  btypecode_t -> 
+  bool
+
 (** check if the two types unify: update the
-variable definitions in sym_state 
+variable definitions in sym_state ??? Only
+useful if type variables are global, which is
+the function return type unknown variable case..
 *)
 val do_unify:
   sym_state_t ->
@@ -196,7 +209,9 @@ let rec unification eqns: (int * btypecode_t) list =
       | `BTYP_var i, t
       | t,`BTYP_var i ->
         if var_i_occurs i t
-        then 
+        then  (* we actually want to handle this, but I can't
+          seem to generate any test cases that trigger this
+          message .. *)
           failwith "Unexpected recursion in unification"
         else
           s := Some (i,t)
@@ -268,9 +283,23 @@ let rec unification eqns: (int * btypecode_t) list =
       loop (); 
       !mgu
 
+let unifies t1 t2 =
+  try ignore(unification [t1,t2]); true
+  with Not_found -> false
+
 (* returns true if a and b have an mgu,
    and also adds each element of the mgu to
    the varmap if it isn't already present
+   this routine is ONLY to be used for
+   calculating the return types of functions,
+   where we're unifying the type of the
+   return statements... probably fails
+   for generic functions .. since the two
+   kinds of type variables aren't distinguished
+   (Fun ret type var is an unknown type, not a 
+   variable one .. it must be eliminated, but
+   type parameters must not be [since they're
+   instantiated to multiple values .. ..])
 *)
 
 let do_unify syms a b =
@@ -400,7 +429,10 @@ let unfold t =
   | _ -> t'
   in aux 0 t
 
-(* this undoes an unfold: it won't minimise an arbitrary type *)
+(* this undoes an unfold: it won't minimise an arbitrary type
+ .. hmm .. but it does seem to .. hmmm .. i wrote it and
+ I don't understand why it works .. 
+*)
 exception Found of btypecode_t
 
 let fold t = 
@@ -424,8 +456,11 @@ let fold t =
 
     | `BTYP_fix i ->
       let k = depth + i in
-      let t'' = assoc k trail in
-      if type_eq t'' t then raise (Found t'')
+      begin try 
+        let t'' = assoc k trail in
+        if type_eq t'' t then raise (Found t'')
+      with Not_found -> ()
+      end 
     | _ -> failwith "unexpected metatype"
   in
     try aux [] 0 t; t

@@ -1,0 +1,226 @@
+@head(1,"Elide unused entries")
+Name binding pass 2.
+
+@h = tangler("src/flx_inst.mli")
+@select(h)
+open Flx_ast
+open Flx_types
+open Flx_typing
+val instantiate:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  bid_t ->
+  biface_t list ->
+  unit
+
+@h = tangler("src/flx_inst.ml")
+@select(h)
+open Flx_util
+open Flx_ast
+open Flx_types
+open Flx_print
+open Flx_mtypes
+open Flx_typing
+open Flx_mbind
+open Flx_srcref
+open List
+open Flx_unify
+open Flx_treg
+open Flx_generic
+
+let add_inst syms ref_insts1 x =
+  if not (FunInstSet.mem x !ref_insts1)
+  && not (Hashtbl.mem syms.instances x)
+  then ref_insts1 := FunInstSet.add x !ref_insts1
+
+let rec process_expr syms bbdfns ref_insts1 hvarmap ((e,t) as be) =
+  let vlist = ref [] in
+  Hashtbl.iter
+  (fun i t -> vlist := (i,t)::!vlist)
+  hvarmap
+  ;
+  let ue e = process_expr syms bbdfns ref_insts1 hvarmap e in
+  let ui i ts = add_inst syms ref_insts1 (i,ts) in
+  let ut t = register_type_r syms bbdfns [] t in
+  let t = varmap_subst hvarmap t in
+  ut t
+  ;
+  begin match e with
+  | `BEXPR_deref e
+  | `BEXPR_get_n (_,e)
+  | `BEXPR_match_case (_,e)
+  | `BEXPR_case_arg (_,e)
+    -> ue e
+    
+  | `BEXPR_apply (e1,e2) -> ue e1; ue e2
+  | `BEXPR_tuple es -> iter ue es 
+  | `BEXPR_dot (e,i)
+     -> ue e
+     
+  | `BEXPR_coercion (e,t)
+     -> ue e; ut t
+     
+  | `BEXPR_case (_,t)
+    -> ut t
+
+  | `BEXPR_name (i,ts)
+  | `BEXPR_closure (i,ts)
+    -> 
+    let ts = map (varmap_subst hvarmap) ts in 
+    ui i ts; iter ut ts
+
+  | _ -> ()
+  end
+
+and process_exe syms bbdfns ref_insts1 ts hvarmap exe =
+  let ue e = process_expr syms bbdfns ref_insts1 hvarmap e in
+  let ui i = add_inst syms ref_insts1 (i,ts) in
+  match exe with
+  | `BEXE_call (e1,e2) 
+  | `BEXE_jump (e1,e2) 
+    -> ue e1; ue e2
+    
+  | `BEXE_loop (_,e)
+  | `BEXE_ifgoto (e,_)
+  | `BEXE_ifnotgoto (e,_)
+  | `BEXE_fun_return e 
+    -> ue e
+
+  | `BEXE_init (i,e) -> ui i; ue e
+  | `BEXE_read i -> ui i 
+  | _ -> ()
+
+
+and process_exes syms bbdfns ref_insts1 ts hvarmap exes = 
+  iter (process_exe syms bbdfns ref_insts1 ts hvarmap) exes
+
+and process_function syms bbdfns ref_insts1 index argtypes ret exes ts =
+  let argtype = typeoflist argtypes in
+  let t = `BTYP_function (argtype, ret) in
+  let hvarmap = make_varmap syms index ts in
+  let t = varmap_subst hvarmap t in
+  register_type_r syms bbdfns [] t;
+  process_exes syms bbdfns ref_insts1 ts hvarmap exes 
+ 
+and process_inst syms bbdfns ref_insts1 i ts inst =
+  let rtr t = register_type_r syms bbdfns [] t in
+  let rtnr t = register_type_nr syms t in
+  let id,parent,entry = Hashtbl.find bbdfns i in 
+  if syms.compiler_options.print_flag then
+  print_endline ("instance "^si inst ^ "="^id^"<" ^ si i ^ ">[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]");
+  match entry with
+  | `BBDCL_function (vs,ps,ret,exes, _) -> 
+    let argtypes = map (fun x -> snd (snd x)) ps in
+    process_function syms bbdfns ref_insts1 i argtypes ret exes ts
+ 
+  | `BBDCL_procedure (vs,ps, exes, _) ->
+    let argtypes = map (fun x -> snd (snd x)) ps in
+    process_function syms bbdfns ref_insts1 i argtypes `BTYP_void exes ts
+
+  | `BBDCL_union (vs,ps)
+  | `BBDCL_struct (vs,ps)
+    ->
+    let ts = adjust_ts syms i ts in
+    let argtypes = map snd ps in
+    let hvarmap = make_varmap syms i ts in
+    let tss = map (varmap_subst hvarmap) argtypes in
+    iter rtr tss;
+    rtnr (`BTYP_inst (i,ts))
+
+  | `BBDCL_val (vs,t)
+  | `BBDCL_var (vs,t)
+  | `BBDCL_const (vs,t,_)
+    ->
+    (*
+    print_endline "Processing variable";
+    print_endline ("type " ^ string_of_btypecode syms.dfns t);
+    *)
+    let ts = adjust_ts syms i ts in
+    let hvarmap = make_varmap syms i ts in
+    let t = varmap_subst hvarmap t in
+    (*
+    print_endline ("instantiated type " ^ string_of_btypecode syms.dfns t);
+    *)
+    register_type_r syms bbdfns [] t
+ 
+  | `BBDCL_header _
+  | `BBDCL_body _
+    -> () (* already handled *)
+
+  | `BBDCL_fun (vs,argtypes,ret,_) ->
+    process_function syms bbdfns ref_insts1 i argtypes ret [] ts
+
+  | `BBDCL_proc (vs,argtypes,_) ->
+    process_function syms bbdfns ref_insts1 i argtypes `BTYP_void [] ts
+
+  | `BBDCL_abs _
+    -> failwith "Call type" 
+(* 
+  This routine creates the instance tables.
+  There are 2 tables: instance types and function types (including procs)
+
+  The type registry holds the types used.
+  The instance registry holds a pair:
+  (index, types)
+  where index is the function or procedure index,
+  and types is a list of types to instantiated it.
+
+  The algorithm starts with a list of roots, being
+  the top level init routine and any exported functions.
+  These must be non-generic.
+
+  It puts these into a set of functions to be examined.
+  Then it begins examining the set by chosing one function
+  and moving it to the 'examined' set.
+
+  It registers the function type, and then
+  examines the body.
+
+  In the process of examining the body,
+  every function or procedure call is examined.
+
+  The function being called is added to the
+  to be examined list with the calling type arguments.
+  Note that these type arguments may include type variables
+  which have to be replaced by their instances which are
+  passed to the examination routine.
+
+  The process continues until there are no unexamined
+  functions left. The effect is to instantiate every used
+  type and function.
+*)
+
+let instantiate syms bbdfns (root:bid_t) (bifaces:biface_t list) =
+  (* empty instantiation registry *)
+  let insts1 = ref FunInstSet.empty in
+
+  (* append routine to add an instance *)
+  let add_inst1 i ts = insts1 := FunInstSet.add (i,ts) !insts1 in
+  let add_inst2 i ts = 
+    let n = !(syms.counter) in
+    incr (syms.counter);
+    Hashtbl.add syms.instances (i,ts) n;
+    n
+  in
+
+  (* add the root *)
+  add_inst1 root [];
+
+  (* add exported functions *)
+  iter (function `BIFACE_export (x,_) -> add_inst1 x []) bifaces;
+
+  (* add header and body items *)
+  Hashtbl.iter 
+  (fun i b -> match b with
+    | _,_,`BBDCL_header _
+    | _,_,`BBDCL_body _ -> ignore(add_inst2 i [])
+    | _ -> ()
+  )
+  bbdfns
+  ;
+  while not (FunInstSet.is_empty !insts1) do
+    let (index,vars) as x = FunInstSet.choose !insts1 in
+    insts1 := FunInstSet.remove x !insts1;
+    let inst = add_inst2 index vars in
+    process_inst syms bbdfns insts1 index vars inst
+  done

@@ -26,13 +26,15 @@ open Flx_srcref
 open Flx_unify
 open Flx_exceptions
 open Flx_bexe
+open List
+open Flx_generic
 
 let rec proper_descendant dfns parent =
   match parent with
   | Some parent -> 
-    let _,_,parent,entry = Hashtbl.find dfns parent in
+    let _,_,parent,vs,_,_,entry = Hashtbl.find dfns parent in
     begin match entry with
-    | `SYMDEF_interface _ 
+    | `SYMDEF_interface  
     | `SYMDEF_typed_functor _
     | `SYMDEF_untyped_functor _ 
       -> false
@@ -45,8 +47,7 @@ let find_param name_map s =
   | NonFunctionEntry (Simple i) -> i
   | _ -> failwith ("[find_param] Can't find parameter " ^ s )
 
-  
-let bbind_sym syms bbdfns i (name,sr,parent,bdcl) =
+let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
   let bexes env exes rt i tvars = bind_exes syms env sr exes rt name i tvars in
   if syms.compiler_options.print_flag then
   print_endline ("//binding  " ^ name ^ "<"^string_of_int i^">");
@@ -55,53 +56,38 @@ let bbind_sym syms bbdfns i (name,sr,parent,bdcl) =
   *) 
   if proper_descendant syms.dfns parent
   then begin
-    (*
-    print_endline "Building ENV";
-    *)
-    let env = 
-      build_env syms [] parent 
-    in 
-    (* print_env env; *)
-    (*
-    print_endline "Building ENV Complete";
-    flush stdout;
-    *)
+    (* let env = build_env syms [] parent in  *)
+    let env = build_env syms [] (Some i) in 
+    let vs = find_vs syms i in
     let bt t = bind_type syms env [] [] sr t in
-    let bgt vs t = bind_type_with_tvars syms env [] [] sr t vs in
-    (*
-    print_endline ("BINDING " ^ name ^ "<" ^ string_of_int i ^ ">");
-    *)
-    begin match bdcl with
+    match bdcl with
 
     (* Pure declarations of functions, modules, and type
        don't generate anything. Variable dcls do, however.
     *)
-    | `SYMDEF_interface _
+    | `SYMDEF_interface
     | `SYMDEF_if_fun _ 
-    | `SYMDEF_if_proc _
-    | `SYMDEF_module _
+    | `SYMDEF_module
     | `SYMDEF_typed_functor _
     | `SYMDEF_untyped_functor _
     | `SYMDEF_module_binding _
+    | `SYMDEF_typevar _
     | `SYMDEF_if_type  -> ()
 
-    | `SYMDEF_function (vs, ps,rt,exes,name_map,dirs) -> 
+    | `SYMDEF_function (ps,rt,exes) -> 
       (*
       print_endline ("//Binding function " ^ string_of_int i ^ " --> " ^ name); 
-      *)
-      (*
       print_endline ("given type is " ^ string_of_typecode rt);
       print_endline ("exes are: " ^ (String.concat "\n  " (List.map (string_of_exe 1) exes)));
       *)
-      let tv2 = List.map (fun (s,i) -> s,`BTYP_var i) vs in
       let bps : (string * (int * btypecode_t)) list = 
         List.map (fun (s,t) -> 
         let i = find_param name_map s in
-        s,(i,bgt tv2 t)) 
+        s,(i,bt t)) 
       ps 
       in
       let env' = build_env syms [] (Some i) in
-      let brt = bgt tv2 rt in
+      let brt = bt rt in
       (*
       print_endline ("return type is stated as " ^ string_of_btypecode syms.dfns brt);
       *)
@@ -128,26 +114,26 @@ let bbind_sym syms bbdfns i (name,sr,parent,bdcl) =
           (*
           print_endline (" .. binding parameter " ^ s ^ "<"^ string_of_int k ^ ">");
           *)
-          Hashtbl.add bbdfns k (s,Some i,`BBDCL_val t)
+          Hashtbl.add bbdfns k (s,Some i,`BBDCL_val ([],t))
         )
         bps 
-
     (* this case is messy: function bind their own parameters,
       but functors do not, we have to do it for them,
       temporarily (this will obviously fail when there are
       type variables around .. we need to get em from the
       functor sig, but they're not parameterised yet
     *)
-    | `SYMDEF_parameter t -> 
+    | `SYMDEF_parameter (t) -> 
       begin match parent with 
       | None -> failwith "[bbind_sym] expected parameter to have a parent" 
       | Some ip ->
-        let id2,sr,parent2,entry2 = Hashtbl.find syms.dfns ip in
+        let id2,sr,parent2,vs,_,_,entry2 = Hashtbl.find syms.dfns ip in
         match entry2 with
         | `SYMDEF_function _ -> ()
         | `SYMDEF_typed_functor _
         | `SYMDEF_untyped_functor _ ->
-           Hashtbl.add bbdfns i (name,parent,`BBDCL_val (bt t))
+           let t = bt t in
+           Hashtbl.add bbdfns i (name,parent,`BBDCL_val (vs,t))
         | _ -> failwith "[bbind_sym] expected parameter to have function or functor parent"
       end
 
@@ -157,10 +143,10 @@ let bbind_sym syms bbdfns i (name,sr,parent,bdcl) =
       *)
       let t = typeofindex syms [] [] 0 [] mvindex in
       let name_map = Hashtbl.create 97 in
-      let arg,sr = match Hashtbl.find syms.dfns mvindex with id,sr,_,_ -> id,sr in
+      let arg,sr = match Hashtbl.find syms.dfns mvindex with id,sr,_,_,_,_,_ -> id,sr in
       let exes = 
         [
-        `EXE_fun_return (gen_match_check pat (`AST_name (sr,arg)))
+        `EXE_fun_return (gen_match_check pat (`AST_name (sr,arg,[])))
         ] 
       in
       let brt',bbexes = bexes env exes flx_bbool i [] in
@@ -175,100 +161,81 @@ let bbind_sym syms bbdfns i (name,sr,parent,bdcl) =
       Hashtbl.add bbdfns i (name,parent,
         `BBDCL_function ([],[],flx_bbool,bbexes,name_map));
     
-    | `SYMDEF_val t -> 
+    | `SYMDEF_val (t) -> 
       (*
       print_endline ("//Binding value " ^ string_of_int i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_val (bt t))
+      let t = bt t in
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_val (vs,t))
 
-    | `SYMDEF_var t ->
+    | `SYMDEF_var (t) ->
       (* print_endline ("//Binding variable " ^ string_of_int i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_var (bt t))
+      let t = bt t in
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_var (vs,t))
 
-    | `SYMDEF_dcl dcl -> match dcl with
+    | `SYMDEF_fun (ts,ret,ct) ->
+      (*
+      print_endline ("//Binding primitive function " ^ string_of_int i ^ " --> " ^ name);
+      *)
+      let params : btypecode_t list = List.map bt ts in
+      (*
+      print_endline "got params";
+      *)
+      let bret = bt ret in
+      let bbdcl = match bret with
+        | `BTYP_void ->
+          `BBDCL_proc (vs, params,ct)
+        | _ ->
+          `BBDCL_fun (vs, params,bret,ct)
+      in
+      Hashtbl.add bbdfns i (name,parent,bbdcl)
 
-    (* ugly special handling of DCLs *)
+    | `SYMDEF_union (cs) ->
+      (* print_endline ("//Binding union " ^ string_of_int i ^ " --> " ^ name); 
+      *)
+      let cs' = List.map (fun (n,t) -> n, bt t) cs in
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_union (vs,cs'))
 
-    | `DCL_type -> ()
+    | `SYMDEF_struct (cs) ->
+      (* print_endline ("//Binding struct " ^ string_of_int i ^ " --> " ^ name); 
+      *)
+      let cs' = List.map (fun (n,t) -> n, bt t) cs in
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_struct (vs,cs'))
 
-    | `DCL_regdef _ -> ()
-    | `DCL_type_alias _ -> ()
-
-
-    | `DCL_const (t,ct) ->
+    | `SYMDEF_const (t,ct) ->
       (* print_endline ("//Binding constant " ^ string_of_int i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_const (bt t,ct))
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_const (vs,bt t,ct))
 
-    | `DCL_abs (vs,ct) ->
+    | `SYMDEF_regdef _ -> ()
+    | `SYMDEF_type_alias _ -> ()
+
+
+
+    | `SYMDEF_abs ct->
       (*
       print_endline ("//Binding abstract type " ^ string_of_int i ^ " --> " ^ name); 
       *)
       Hashtbl.add bbdfns i (name,parent,`BBDCL_abs (vs,ct))
 
-    | `DCL_header ct ->
+    | `SYMDEF_header ct ->
       (* print_endline ("//Binding header string " ^ string_of_int i ^ " --> " ^ name); 
       *)
       Hashtbl.add bbdfns i (name,parent,`BBDCL_header ct)
 
-    | `DCL_body ct ->
+    | `SYMDEF_body ct ->
       (* print_endline ("//Binding body string " ^ string_of_int i ^ " --> " ^ name); 
       *)
       Hashtbl.add bbdfns i (name,parent,`BBDCL_body ct)
 
-    | `DCL_fun (vs,ts,ret,ct) ->
-      (*
-      print_endline ("//Binding primitive function " ^ string_of_int i ^ " --> " ^ name);
-      *)
-      let tvars : (string * int) list= 
-        List.map
-        (fun s -> 
-          let n = !(syms.counter) in 
-          incr (syms.counter);
-          s,n
-        )
-        vs
-      in
-      let tv2 = List.map (fun (s,i) -> s,`BTYP_var i) tvars in
-      let params : btypecode_t list = List.map (bgt tv2 ) ts in
-      let bret = bgt tv2 ret in
-      let bbdcl = match bret with
-        | `BTYP_void ->
-          `BBDCL_proc (tvars, params,ct)
-        | _ ->
-          `BBDCL_fun (tvars, params,bret,ct)
-      in
-      Hashtbl.add bbdfns i (name,parent,bbdcl)
-
-    | `DCL_union cs ->
-      (* print_endline ("//Binding union " ^ string_of_int i ^ " --> " ^ name); 
-      *)
-      let cs' = List.map (fun (n,t) -> n, bt t) cs in
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_union cs')
-
-    | `DCL_struct cs ->
-      (* print_endline ("//Binding struct " ^ string_of_int i ^ " --> " ^ name); 
-      *)
-      let cs' = List.map (fun (n,t) -> n, bt t) cs in
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_struct cs')
-
-    | `DCL_val _ -> failwith "[bind_entry] Unexpected val decl"
-    | `DCL_var _ -> failwith "[bind_entry] Unexpected var decl"
-    | `DCL_if_fun _ -> failwith "[bind_entry] Unexpected function decl"
-    | `DCL_if_proc _ -> failwith "[bind_entry] Unexpected procedure decl"
-    | `DCL_interface _ -> failwith "[bind_entry] Unexpected interface"
-    | `DCL_module_binding _ -> failwith "[bind_entry] Unexpected module binding"
-    | `DCL_untyped_functor _ -> failwith "[bind_entry] Unexpected functor"
-    | `DCL_typed_functor _ -> failwith "[bind_entry] Unexpected functor"
-    | `DCL_function _ -> failwith "[bind_entry] Unexpected function"
-    | `DCL_procedure  _ -> failwith "[bind_entry] Unexpected procedure"
-    | `DCL_module _ -> failwith "[bind_entry] Unexpected module"
-    | `DCL_match_handler _ -> failwith "[bind_entry] Unexpected match handler"
-    | `DCL_match_check _ -> failwith "[bind_entry] Unexpected match checker"
-    | `DCL_lazy _ -> failwith "[bind_entry] Unexpected lazy"
-    | `DCL_regmatch _ -> failwith "[bind_entry] Unexpected regmatch"
-    end
+    (*
+    | x -> 
+      failwith
+      (
+      "[bind_entry] Unexpected entry " ^ string_of_symdef x name vs 
+      )
+    *) 
     end
     (*
     ;
@@ -315,8 +282,14 @@ let bind_ifaces syms
     (function 
       | `IFACE_export (sn, cpp_name), parent ->
         let env = build_env syms [] parent in
-        let index = lookup_sn_in_env syms env [] sn in
-        `BIFACE_export (index, cpp_name) 
+        let index,ts = lookup_sn_in_env syms env [] sn in
+        if length ts = 0 then
+          `BIFACE_export (index, cpp_name) 
+        else clierr dummy_sr 
+        (
+          "Can't export generic entity " ^
+          string_of_suffixed_name sn
+        )
      )
      ifaces
    in bound_ifaces

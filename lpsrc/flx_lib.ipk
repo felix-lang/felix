@@ -1,4 +1,12 @@
 @head(1,'Felix Standard Library')
+Support table.
+@begin_table("filebase","language","namespace","function")
+@table_row("rtl/flx_i18n","C++","flx::i18n","utf8 codec support")
+@table_row("rtl/flx_strutil","C++","flx::lib","Python style substring support")
+@table_row("lib/std","Felix","","Standard Library")
+@table_row("lib/stl","Felix","","STL support")
+@end_table()
+
 @select(tangler('rtl/flx_i18n.hpp'))
 #ifndef FLX_I18N
 #define FLX_I18N
@@ -63,26 +71,13 @@ namespace flx { namespace i18n {
   }
 }}
 
-@h=tangler('lib/std.flx')
+
+@h=tangler('rtl/flx_strutil.cpp')
 @select(h)
-header """
-#include <stdio.h>
-#include <stddef.h>
-#include <cmath>
-#include <iostream>
-#include <string>
-#include <assert.h>
-#include <limits.h>
-#include "rtl/boost_cstdint.hpp"
-#include "rtl/flx_i18n.hpp"
-""";
-
-body """
-using namespace std;
-
 namespace flx { namespace lib {
-  inline string mul(string s, int n) {
-    string r = "";
+  template<class T>
+  std::basic_string<T> mul(std::basic_string<T> s, int n) {
+    std::basic_string<T> r = "";
     while(n--) r+=s;
     return r;
   }
@@ -91,7 +86,7 @@ namespace flx { namespace lib {
   // note substr requires 0<=b<=size, 0<=n,
   // however n>size is OK
   template<class T>
-  inline basic_string<T> substr(basic_string<T> const &s, int b, int e)
+  std::basic_string<T> substr(std::basic_string<T> const &s, int b, int e)
   {
     int n = s.size();
     if(b<0)  b=b+n;
@@ -104,7 +99,26 @@ namespace flx { namespace lib {
     if(m<0)  m=0;
     return s.substr(b,m);
   }
+
 }}
+
+@h=tangler('lib/std.flx')
+@select(h)
+header """
+#include <cstdio>
+#include <cstddef>
+#include <cmath>
+#include <iostream>
+#include <string>
+#include <cassert>
+#include <climits>
+#include "rtl/boost_cstdint.hpp"
+#include "rtl/flx_i18n.hpp"
+""";
+
+body """
+#include "rtl/flx_strutil.cpp"
+using namespace std;
 """;
 
 @tmap = {
@@ -171,7 +185,7 @@ namespace flx { namespace lib {
   gen_type(t)
 
 @def gen_asgn(t):
-  tangle('  proc set: &'+t+' * '+t+' = "*$1=$2;";')
+  tangle('  proc set: &'+t+' * '+t+' = "*('+tmap[t]+'*)($1.data)=$2;";')
   tangle('  fun eq: '+t+' * '+t+' -> bool = "$1==$2";')
   tangle('  fun ne: '+t+' * '+t+' -> bool = "$1!=$2";')
 
@@ -261,13 +275,13 @@ module Bool
   tangle('  fun isnan: '+t+' -> bool = "isnan'+fc[t]+'($1)";')
 
 @def gen_inc(t):
-  tangle('  proc pre_incr:  &'+t+' = "++*$1;";')
-  tangle('  proc pre_decr:  &'+t+' = "--*$1;";')
-  tangle('  proc post_incr: &'+t+' = "++*$1;";')
-  tangle('  proc post_decr: &'+t+' = "--*$1;";')
+  tangle('  proc pre_incr:  &'+t+' = "++*('+tmap[t]+'*)($1.data);";')
+  tangle('  proc pre_decr:  &'+t+' = "--*('+tmap[t]+'*)($1.data);";')
+  tangle('  proc post_incr: &'+t+' = "++*('+tmap[t]+'*)($1.data);";')
+  tangle('  proc post_decr: &'+t+' = "--*('+tmap[t]+'*)($1.data);";')
   
 @#------------- INTEGER MODULES -------------------
-type string = "string";
+type string = "std::string";
 @for t in ints:
   tangle("module " + string.capitalize(t))
   tangle("{")
@@ -343,8 +357,8 @@ module String
   open Bool;
   open Char;
   open Int;
-  proc set: &string * string = "$1->assign($2);";
-  proc pluseq: &string * string = "$1->append($2);";
+  proc set: &string * string = "((string*)($1.data))->assign($2);";
+  proc pluseq: &string * string = "((string*)($1.data))->append($2);";
 
   fun len: string -> int = "$1.size()";
   fun add: string * string -> string = "$1+$2";
@@ -378,8 +392,8 @@ module Ustring
   open Bool;
   open Char;
   open Int;
-  proc set: &ustring * ustring = "$1->assign($1);";
-  proc pluseq: &ustring * ustring = "$1->append($2);";
+  proc set: &ustring * ustring = "(basic_string<uint32_t>*)($1.data)->assign($1);";
+  proc pluseq: &ustring * ustring = "(basic_string<uint32_t>*)($1.data)->append($2);";
 
   fun len: ustring -> int = "$1.size()";
   fun add: ustring * ustring -> ustring = "$1+$2";

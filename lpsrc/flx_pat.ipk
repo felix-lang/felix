@@ -2,12 +2,12 @@
 @h = tangler("src/flx_pat.mli")
 @select(h)
 val validate_patterns:
-  Flx_types.pattern_t list -> unit
+  Flx_ast.pattern_t list -> unit
 
 @h = tangler("src/flx_pat.ml")
 @select(h)
 open Flx_util
-open Flx_types
+open Flx_ast
 open Flx_print
 open Flx_mtypes
 open Flx_typing

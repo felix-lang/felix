@@ -2,53 +2,33 @@
 @select(h)
 open Flx_types
 val cpp_name :
+  sym_state_t ->
   fully_bound_symbol_table_t ->
   int ->
   string
 
 val cpp_instance_name :
+  sym_state_t ->
   fully_bound_symbol_table_t ->
   int ->
-  string list ->
+  btypecode_t list ->
   string
 
 val cpp_type_classname :
   sym_state_t ->
-  fully_bound_symbol_table_t ->
   btypecode_t -> 
-  string
-
-val cpp_type_class_instance :
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  btypecode_t -> 
-  (int * string) list ->
   string
 
 val cpp_typename :
   sym_state_t ->
-  fully_bound_symbol_table_t ->
   btypecode_t -> 
   string
 
-val cpp_type_instance:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  btypecode_t -> 
-  (int * string) list ->
-  string
-
-val ptr_map_of_type:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
+val tsubst :
+  (string * int) list ->
+  btypecode_t list ->
   btypecode_t ->
-  string
-
-val template_args:
-  string list -> string
-
-val template_args_comma:
-  string list -> string
+  btypecode_t
 
 @h = tangler('src/flx_name.ml')
 @select(h)
@@ -56,6 +36,7 @@ open Flx_types
 open Flx_unify
 open Flx_print
 open Flx_util
+open Flx_csubst
 open List
 
 let cvt s = 
@@ -77,20 +58,26 @@ let mangle_cpp_typename ct =
   let tack_str str = Buffer.add_string buf str in
   for i=0 to n - 1 do
     match ct.[i] with
-    | ':' -> tack_ch '_'
     | '*' -> tack_str "_p"
-    | '<' -> tack_ch '_'
-    | '>' -> tack_ch '_'
-    | ' ' -> tack_ch '_'
+    | ':' 
+    | '<'
+    | '>'
+    | ' '
+    | '?'
+    | '$'
+    | '@'
+    | '#'
+    | '`'
+      -> tack_ch '_'
     | x -> tack_ch x
   done;
   Buffer.contents buf
 
 (* basic name mangler *)
-let cpp_name bbdfns index =
+let cpp_name syms bbdfns index =
   let id,parent,entry = 
     try Hashtbl.find bbdfns index 
-    with _ -> failwith ("[cpp_name] Can't find index " ^ string_of_int index)
+    with _ -> failwith ("[cpp_name] Can't find index " ^ si index)
   in
   (match entry with
   | `BBDCL_function _ -> "_fun_"   
@@ -98,275 +85,100 @@ let cpp_name bbdfns index =
   | `BBDCL_var _ -> "_var_"
   | `BBDCL_val _ -> "_val_"
   | _ -> failwith "cpp_name expected func,proc,var or val"
-  ) ^ string_of_int index ^ "_" ^ cvt id
+  ) ^ si index ^ "_" ^ cvt id
 
-(* makes string <t1, t2, t2> *)
-let template_args ts = 
-  if length ts = 0 then ""
-  else 
-    "<" ^
-    String.concat ", " ts ^
-    ">"
-
-let template_args_comma ts = 
-  if length ts = 0 then ""
-  else 
-    "<" ^
-    String.concat " comma " ts ^
-    ">"
-
-let cpp_instance_name bbdfns index vs =
-  let targs = template_args vs in
-  cpp_name bbdfns index ^ targs
-
-(* 
-  the name of a type, when used in a declaration,
-  or as a constructor, etc. 
-  For a generic type, this is always an instance,
-  even if the type variables are instantiated
-  to template parameters.
-
-  The vs is a map i -> string
-  of type variables to strings
-
-  If the type is a generic,
-  it's assumed to be a template and it's instantiated
-  with the variables.
-
-  The order of instantiation is normalisation order.
-*)
-
-let list_index lst i = 
-  match list_index lst i with
-  | Some i -> i
-  | None ->
-     failwith ("Can't find position of value " ^ si i ^ " in list")
-
-
-let assoc i lst = 
-  try assoc i lst 
-  with Not_found ->
-   failwith ("Can't find index " ^ si i ^ " in assoc list")
-
-let rec cpp_type_instance syms bbdfns t vs = 
-  let dfns = syms.dfns in
-  let registry = syms.registry in
-  let tn t = cpp_type_instance syms bbdfns t vs in
-  let t' = fold t in
-  let varmap,t' = normalise_type t' in
-  let n = length varmap in
-  let targs = 
-    template_args 
+let cpp_instance_name syms bbdfns index ts =
+  let inst = 
+    try Hashtbl.find syms.instances (index,ts) 
+    with Not_found -> 
+    let id = 
+      try 
+        let id,_,_ = Hashtbl.find bbdfns index in id
+      with Not_found -> "unknown"
+    in
+    failwith 
     (
-      map
-      (fun i-> assoc (nth varmap i) vs)
-      (nlist n) 
+      "[cpp_intance_name] unable to find instance " ^ id ^
+      "<" ^ si index ^ ">[" ^catmap ", " (string_of_btypecode syms.dfns) ts ^ "]"
     )
   in
-  try match t' with
-  | `BTYP_var i -> assoc (nth varmap i) vs
-  | `BTYP_fix i ->  failwith "[cpp_typename] Can't name type fixpoint"
+  "_inst_" ^ si inst ^ "_" ^ cpp_name syms bbdfns index 
+
+let rec cpp_type_classname syms t = 
+  let registry = syms.registry in
+  let t = fold t in
+  try match unfold t with
+  | `BTYP_var i -> failwith ("[cpp_type_classname] Can't name type variable " ^ si i) 
+  | `BTYP_fix i -> failwith "[cpp_type_classname] Can't name type fixpoint"
+  | `BTYP_binding _ -> failwith "[cpp_type_classname] Unexpected binding type"
+  | `BTYP_void -> failwith "void doesn't have a classname"
   | `BTYP_tuple [] -> "unit"
+
+  | `BTYP_pointer t' -> 
+    "_ref_" ^ cpp_type_classname syms t' 
+
   | `BTYP_function (_,`BTYP_void) -> 
-    "_proc_type_" ^ string_of_int (Hashtbl.find registry t') ^ targs ^ "*"
+    "_proc_type_" ^ si (Hashtbl.find registry t) 
 
   | `BTYP_function _ -> 
-    "_fun_type_" ^ string_of_int (Hashtbl.find registry t') ^ targs ^ "*"
+    "_fun_type_" ^ si (Hashtbl.find registry t)
 
   | `BTYP_tuple _ -> 
-    "_tuple_type_" ^
-    string_of_int (Hashtbl.find registry t') ^ 
-    targs ^ (if n = 0 then "" else "::t")
+    "_tuple_type_" ^ si (Hashtbl.find registry t)
+  
+  | `BTYP_sum _ -> 
+    "_sum_type_" ^ si (Hashtbl.find registry t)
+
     
-  | `BTYP_sum _ -> 
-    "_sum_type_" ^ string_of_int (Hashtbl.find registry t') ^ targs
+  | `BTYP_inst (i,_) -> 
+    let id,sr,parent,vs,tabl,dirs,entry = Hashtbl.find syms.dfns i in
+    let prefix =
+      match entry with
+      | `SYMDEF_struct _  -> "_struct_"
+      | `SYMDEF_union _  -> "_union_"
+      | `SYMDEF_abs _ -> "_abs_"
+      | _ -> "_unk_"
+    in 
+      prefix ^ si i ^ "_type_" ^ si (Hashtbl.find registry t) 
 
-  | `BTYP_pointer t' -> "_ref_<"^tn t'^" >"
-  | `BTYP_void -> "void"
-  | `BTYP_binding (_,t) -> tn t
-  | `BTYP_inst (i,ts)-> 
-    let index = Hashtbl.find syms.prim_inst (i,ts) in
-    "_type_inst_" ^ string_of_int index
-
-  | `BTYP_name index ->
-    let id,parent,entry = 
-      try Hashtbl.find bbdfns index
-      with Not_found -> failwith ("cpp_typename Can't find index " ^ string_of_int index ^ " in fully bound symbol table")
-    in begin match entry with
-      | `BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
-      | `BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
-      | `BBDCL_abs (vs,ct) -> 
-        (match vs with
-        | [] -> "_abs_" ^ string_of_int index ^ "_" ^ mangle_cpp_typename ct
-        | _ -> failwith "can't name template"
-        )
-      | _ -> 
-        failwith 
-        (
-          "[cpp_typename] expected type declaration, got " ^
-          string_of_bbdcl dfns entry index
-        )
-    end
-    ^ targs
-  
-  | _ -> failwith "Unexpected metatype in cpp_typename"
+  | _ -> 
+    failwith 
+    (
+      "[cpp_type_classname] Unexpected " ^
+      string_of_btypecode syms.dfns t
+    )
   with Not_found -> 
     failwith 
     (
-      "[cpp_typename] Expected type "^ 
-      string_of_btypecode dfns t' ^ 
+      "[cpp_type_classname] Expected type "^ 
+      string_of_btypecode syms.dfns t ^ 
       " to be in registry"
     )
 
-let cpp_typename syms bbdfns t = 
-  let varmap,t = normalise_type t in
-  let n = length varmap in
-  let zipped = combine (nlist n) varmap in
-  let targs = map (fun (i,j) -> i,"T" ^ si j) zipped in
-  cpp_type_instance syms bbdfns t targs
 
-(* this routine names the class which denotes
-  a type
+let cpp_typename syms t = 
+  match unfold t with
+  | `BTYP_function _ -> cpp_type_classname syms t ^ "*"
+  | _ -> cpp_type_classname syms t
+
+(* the type arguments are matched up with the type
+  variables in order so that
+  vs_i -> ts_i
+  where vs_t might be (fred,var j)
 *)
-let rec cpp_type_class_instance syms bbdfns t vs = 
-  let registry = syms.registry in
-  let t = fold t in
-  let varmap,t = normalise_type t in
-  let n = length varmap in
-  let targs = 
-    template_args 
-    (
-      map
-      (fun i-> assoc (nth varmap i) vs)
-      (nlist n) 
-    )
-  in
-  try match t with
-  | `BTYP_var i -> (* "T"^ si i *) failwith "[cpp_type_classname] Can't name type variable" 
-  | `BTYP_fix i -> failwith "[cpp_type_classname] Can't name type fixpoint"
-  | `BTYP_binding _ -> failwith "[cpp_type_classname] Unexpected binding type"
-  | `BTYP_tuple [] -> "unit"
-  | `BTYP_void -> failwith "void doesn't have a classname"
-  | `BTYP_pointer t' -> failwith "pointer has no classname" (* "_ref_<"^tn t'^">" *)
-
-  | `BTYP_function (_,`BTYP_void) -> 
-    "_proc_type_" ^ 
-    string_of_int (Hashtbl.find registry t) ^ 
-    targs
-
-  | `BTYP_function _ -> 
-    "_fun_type_" ^ 
-    string_of_int (Hashtbl.find registry t)  ^ 
-    targs
-
-  | `BTYP_tuple _ -> 
-    "_tuple_type_" ^ 
-    string_of_int (Hashtbl.find registry t) ^ 
-    targs ^ (if n = 0 then "" else "::t")
-  
-  | `BTYP_sum _ -> 
-    "_sum_type_" ^ 
-    string_of_int (Hashtbl.find registry t) ^ (if n = 0 then "" else "::t")
-
-  | `BTYP_inst (i,ts) -> 
-    let index = Hashtbl.find syms.prim_inst (i,ts) in
-    "_type_inst_" ^ string_of_int index
-
-  | `BTYP_name index ->
-    let id,parent,entry = 
-      try Hashtbl.find bbdfns index
-      with Not_found -> failwith ("cpp_type_classname Can't find index " ^ string_of_int index ^ " in fully bound symbol table")
-    in begin match entry with
-      | `BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
-      | `BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
-      | `BBDCL_abs (vs,ct) -> 
-        (match vs with
-        | [] -> "_abs_" ^ string_of_int index ^ "_" ^ mangle_cpp_typename ct
-        | _ -> failwith "[cpp_type_classname] Can't name template"
-        )
-      | _ -> 
-        failwith 
-        (
-          "[cpp_type_classname] expected type declaration, got " ^
-          string_of_bbdcl syms.dfns entry index
-        )
-    end
-  
-  | _ -> failwith "Unexpected metatype in cpp_type_classname"
-  with Not_found -> 
-    failwith 
-    (
-      "[cpp_type_classname] Expected type "^ 
-      string_of_btypecode syms.dfns t ^ 
-      " to be in registry"
-    )
-
-let rec cpp_type_classname syms bbdfns t = 
-  let registry = syms.registry in
-  let t = fold t in
-  let varmap,t = normalise_type t in
-  let n = length varmap in
-  try match t with
-  | `BTYP_var i -> (* "T"^ si i *) failwith "[cpp_type_classname] Can't name type variable" 
-  | `BTYP_fix i -> failwith "[cpp_type_classname] Can't name type fixpoint"
-  | `BTYP_binding _ -> failwith "[cpp_type_classname] Unexpected binding type"
-  | `BTYP_tuple [] -> "unit"
-  | `BTYP_void -> failwith "void doesn't have a classname"
-  | `BTYP_pointer t' -> failwith "pointer has no classname" (* "_ref_<"^tn t'^">" *)
-
-  | `BTYP_function (_,`BTYP_void) -> 
-    "_proc_type_" ^ string_of_int (Hashtbl.find registry t) 
-
-  | `BTYP_function _ -> 
-    "_fun_type_" ^ string_of_int (Hashtbl.find registry t) 
-
-  | `BTYP_tuple _ -> 
-    "_tuple_type_" ^ string_of_int (Hashtbl.find registry t)
-  
-  | `BTYP_sum _ -> 
-    "_sum_type_" ^ string_of_int (Hashtbl.find registry t) 
-
-  | `BTYP_inst (i,ts) -> 
-    let index = Hashtbl.find syms.prim_inst (i,ts) in
-    "_type_inst_" ^ string_of_int index
-
-  | `BTYP_name index ->
-    let id,parent,entry = 
-      try Hashtbl.find bbdfns index
-      with Not_found -> failwith ("cpp_type_classname Can't find index " ^ string_of_int index ^ " in fully bound symbol table")
-    in begin match entry with
-      | `BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
-      | `BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
-      | `BBDCL_abs (vs,ct) -> 
-        (match vs with
-        | [] -> "_abs_" ^ string_of_int index ^ "_" ^ mangle_cpp_typename ct
-        | _ -> failwith "[cpp_type_classname] Can't name template"
-        )
-      | _ -> 
-        failwith 
-        (
-          "[cpp_type_classname] expected type declaration, got " ^
-          string_of_bbdcl syms.dfns entry index
-        )
-    end
-  
-  | _ -> failwith "Unexpected metatype in cpp_type_classname"
-  with Not_found -> 
-    failwith 
-    (
-      "[cpp_type_classname] Expected type "^ 
-      string_of_btypecode syms.dfns t ^ 
-      " to be in registry"
-    )
-
-let cpp_typename syms bbdfns t = 
-  let varmap,t = normalise_type t in
-  let n = length varmap in
-  let zipped = combine (nlist n) varmap in
-  let targs = map (fun (i,j) -> i,"T" ^ si j) zipped in
-  cpp_type_instance syms bbdfns t targs
-
-let ptr_map_of_type syms bbdfns t =
- cpp_typename syms bbdfns t ^ "_ptr_map"
-
+let tsubst 
+  (vs:(string * int) list) 
+  (ts:btypecode_t list)
+  (t:btypecode_t) 
+=
+  if length ts <> length vs
+  then failwith "[tsubst] wrong number of type args"
+  ;
+  let tvs = combine vs ts in
+  let varmap = Hashtbl.create 97 in
+  iter
+  (fun ((name, varidx),typ) -> Hashtbl.add varmap varidx typ)
+  tvs
+  ;
+  varmap_subst varmap t
 

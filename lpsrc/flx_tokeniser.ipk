@@ -143,6 +143,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | JUMP _ -> "jump"
   | LOOP _ -> "loop"
   | REGMATCH _ -> "regmatch"
+  | REGLEX _ -> "reglex"
   | MATCH _ -> "match"
   | WITH _ -> "with"
   | CASE _ -> "case"
@@ -291,6 +292,7 @@ let src_of_token t = match t with
   | GOTO s 
   | EXPORT s 
   | REGMATCH s 
+  | REGLEX s 
   | MATCH s 
   | WITH s 
   | ENDMATCH s 
@@ -374,7 +376,7 @@ let print_pre_tokens ts =
 @h = tangler('src/flx_pretok.mli')
 @select(h)
 open Flx_parse
-val src_of_token : token -> Flx_types.srcref
+val src_of_token : token -> Flx_ast.srcref
 val string_of_token : token -> string
 val pre_tokens_of_filename : string -> string -> string list -> token list
 val pre_tokens_of_string : string -> string -> token list

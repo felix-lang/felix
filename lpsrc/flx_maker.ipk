@@ -244,7 +244,8 @@ if "compiler" in options or "bytecode" in options:
 #READLINE_INCLUDE_DIRECTORY='/usr/include/readline'
 
 # for compiling mainlines
-FLX_CPP_LINK = "g++ -fomit-frame-pointer -Wno-long-long -D_GNU_SOURCE -ansi -rdynamic -ldl "
+#FLX_CPP_LINK = "g++ -fomit-frame-pointer -Wno-long-long -D_GNU_SOURCE -ansi -rdynamic -ldl "
+FLX_CPP_LINK = "g++ -w -ansi -pedantic -rdynamic -ldl "
 if "optimise" in options:
   FLX_CPP_LINK = FLX_CPP_LINK + "-O "
 
@@ -252,7 +253,8 @@ if "refcnt" in options:
   FLX_CPP_LINK = FLX_CPP_LINK + "-DFLX_REFCNT "
 
 # for building shared libraries
-FLX_CPP_DYNLINK = "g++ -fomit-frame-pointer -Wno-long-long -D_GNU_SOURCE -ansi -shared -I."
+#FLX_CPP_DYNLINK = "g++ -fomit-frame-pointer -Wno-long-long -D_GNU_SOURCE -ansi -shared -I."
+FLX_CPP_DYNLINK = "g++ -w -ansi -pedantic -shared -I."
 if "optimise" in options:
   FLX_CPP_DYNLINK = FLX_CPP_DYNLINK + "-O "
 if "refcnt" in options:
@@ -313,13 +315,16 @@ MODULES = [
   'flx_desugar'      , 
   'flx_mbind'        , 
   'flx_symtab'       , 
+  'flx_csubst'       , 
+  'flx_name'         , 
+  'flx_treg'         ,
+  'flx_beta'         ,
+  'flx_generic'      , 
   'flx_lookup'       , 
   'flx_bexe'         , 
   'flx_bbind'        , 
-  'flx_use'          , 
-  'flx_name'         , 
+  'flx_inst'         , 
   'flx_cexpr'        ,
-  'flx_csubst'       , 
   'flx_tgen'         , 
   'flx_display'      , 
   'flx_ogen'         , 
@@ -329,6 +334,7 @@ MODULES = [
 ]
 
 INTERFACES = [
+  'flx_ast'        ,
   'flx_types'        ,
   'flx_ctypes'        ,
 ] + MODULES
@@ -1421,7 +1427,7 @@ DIV.DIFF_SECTION_HEAD EM, DIV.DIFF_SECTION_FOOT EM {
 # flx - felix script harness
 
 # g++ compilation string
-GPP="g++ -Wno-long-long -D_GNU_SOURCE -ansi"
+GPP="g++ -w -ansi -pedantic"
 
 # check for test mode: this argument must come first
 

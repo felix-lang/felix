@@ -48,7 +48,7 @@
 @select(h)
 %{
 exception EndOfInput
-open Flx_types
+open Flx_ast
 open Flx_typing
 open Flx_typing2
 open Flx_srcref
@@ -67,7 +67,7 @@ let apl2 (sri:srcref) (fn : string) (tup:expr_t list) =
   (
     sr, 
     (
-      `AST_name (slift sri,fn), 
+      `AST_name (slift sri,fn,[]), 
       `AST_tuple (sr,tup)
     )
   )
@@ -79,7 +79,7 @@ let apl (sri:srcref) (fn : string) (arg:expr_t):expr_t =
   (
     sr, 
     (
-      `AST_name (slift sri, fn),
+      `AST_name (slift sri, fn,[]),
       arg
     )
   )
@@ -89,7 +89,7 @@ let assign (op:string) (sr:range_srcref) (sri:srcref) l r =
   `AST_call 
   (
     sr,
-    `AST_name (slift sri, op),
+    `AST_name (slift sri, op,[]),
     `AST_tuple 
     (
       sr, 
@@ -102,7 +102,7 @@ let call1 (op:string) (sr:range_srcref) (sri:srcref) l =
   `AST_call 
   (
     sr,
-    `AST_name (slift sri, op),
+    `AST_name (slift sri, op,[]),
     `AST_ref (src_of_expr l,l)
   )
 
@@ -146,7 +146,7 @@ let mkcurry sr name vs args return_type body =
             (
               sr,
               (
-                `AST_name (sr,name (m-1)),
+                `AST_name (sr,name (m-1),[]),
                 typeoflist (List.map snd (List.hd t))
               )
             )
@@ -156,12 +156,39 @@ let mkcurry sr name vs args return_type body =
         `AST_function (sr, name m, vs, h, rettype t, body)
    in aux args
 
+(* handle curried type functions *)
+let mktypefun sr name vs args return_type body =
+  let argtyp t = match t with
+    | [] -> failwith "Lambda abstraction requires nonunit parameter"
+    | [x] -> x
+    | x -> `TYP_type_tuple x
+  in
+  let body = 
+    let p = ref (List.rev args) in
+    let r = ref return_type in
+    let b = ref body in
+    while !p <> [] do
+      let arg = List.hd !p in
+      p := List.tl !p;
+      b := `TYP_typefun (arg, !r, !b);
+      r := `TYP_function(argtyp (List.map snd arg),!r)
+    done;
+    !b
+  in
+  `AST_type_alias
+  (
+    sr,
+    name,
+    vs,
+    body
+  )
+
 %}
 
 @head(2,'Tokens')
 @select(h)
 /* special */
-%token<Flx_types.srcref * string> ERRORTOKEN
+%token<Flx_ast.srcref * string> ERRORTOKEN
 
 /* whitespace */
 %token NEWLINE 
@@ -174,83 +201,83 @@ let mkcurry sr name vs args return_type body =
 %token ENDMARKER
 
 /* literals */
-%token<Flx_types.srcref * string> NAME
-%token<Flx_types.srcref * string * Big_int.big_int> INTEGER
-%token<Flx_types.srcref * string * string > FLOAT
-%token<Flx_types.srcref * string> STRING
-%token<Flx_types.srcref * string> WSTRING
-%token<Flx_types.srcref * string> USTRING
-%token<Flx_types.srcref> INF
-%token<Flx_types.srcref> NAN 
+%token<Flx_ast.srcref * string> NAME
+%token<Flx_ast.srcref * string * Big_int.big_int> INTEGER
+%token<Flx_ast.srcref * string * string > FLOAT
+%token<Flx_ast.srcref * string> STRING
+%token<Flx_ast.srcref * string> WSTRING
+%token<Flx_ast.srcref * string> USTRING
+%token<Flx_ast.srcref> INF
+%token<Flx_ast.srcref> NAN 
 
 /* operators and punctuation */
 
 /* assignment */
-%token<Flx_types.srcref> EQUAL
+%token<Flx_ast.srcref> EQUAL
 
 /* math */
-%token<Flx_types.srcref> PLUS MINUS STAR SLASH PERCENT STARSTAR 
+%token<Flx_ast.srcref> PLUS MINUS STAR SLASH PERCENT STARSTAR 
 
 /* comparison */
 
 /* logic */
-%token<Flx_types.srcref> AMPER VBAR PERCENT
-%token<Flx_types.srcref> EXCLAMATION
+%token<Flx_ast.srcref> AMPER VBAR PERCENT
+%token<Flx_ast.srcref> EXCLAMATION
 
 /* brackets */
-%token<Flx_types.srcref> LPAR RPAR 
-%token<Flx_types.srcref> LSQB RSQB 
-%token<Flx_types.srcref> LBRACE RBRACE  
-%token<Flx_types.srcref> LSQANGLE RSQANGLE
+%token<Flx_ast.srcref> LPAR RPAR 
+%token<Flx_ast.srcref> LSQB RSQB 
+%token<Flx_ast.srcref> LBRACE RBRACE  
+%token<Flx_ast.srcref> LSQANGLE RSQANGLE
 
 /* terminal */
-%token<Flx_types.srcref> COLON COMMA SEMI DOT BACKQUOTE
+%token<Flx_ast.srcref> COLON COMMA SEMI DOT BACKQUOTE
 
 /* comparison */
-%token<Flx_types.srcref> LESS GREATER EQEQUAL NOTEQUAL LESSEQUAL GREATEREQUAL 
-%token<Flx_types.srcref> ANDLESS ANDGREATER ANDEQEQUAL ANDNOTEQUAL ANDLESSEQUAL ANDGREATEREQUAL 
+%token<Flx_ast.srcref> LESS GREATER EQEQUAL NOTEQUAL LESSEQUAL GREATEREQUAL 
+%token<Flx_ast.srcref> ANDLESS ANDGREATER ANDEQEQUAL ANDNOTEQUAL ANDLESSEQUAL ANDGREATEREQUAL 
 
 /* bitwise */
-%token<Flx_types.srcref> TILDE CIRCUMFLEX LEFTSHIFT RIGHTSHIFT DOUBLESTAR
+%token<Flx_ast.srcref> TILDE CIRCUMFLEX LEFTSHIFT RIGHTSHIFT DOUBLESTAR
 
 /* read-modify-write */
-%token<Flx_types.srcref> PLUSPLUS MINUSMINUS PLUSEQUAL MINUSEQUAL STAREQUAL SLASHEQUAL PERCENTEQUAL
-%token<Flx_types.srcref> CARETEQUAL VBAREQUAL AMPEREQUAL TILDEEQUAL COLONEQUAL
-%token<Flx_types.srcref> LEFTSHIFTEQUAL RIGHTSHIFTEQUAL LEFTARROW RIGHTARROW COLONGREATER LESSCOLON
-%token<Flx_types.srcref> LEFTRIGHTARROW 
+%token<Flx_ast.srcref> PLUSPLUS MINUSMINUS PLUSEQUAL MINUSEQUAL STAREQUAL SLASHEQUAL PERCENTEQUAL
+%token<Flx_ast.srcref> CARETEQUAL VBAREQUAL AMPEREQUAL TILDEEQUAL COLONEQUAL
+%token<Flx_ast.srcref> LEFTSHIFTEQUAL RIGHTSHIFTEQUAL LEFTARROW RIGHTARROW COLONGREATER LESSCOLON
+%token<Flx_ast.srcref> LEFTRIGHTARROW 
 
 /* other */
-%token<Flx_types.srcref> COLONCOLON
-%token<Flx_types.srcref> DOTDOT SLOSH DOTDOTDOT
+%token<Flx_ast.srcref> COLONCOLON
+%token<Flx_ast.srcref> DOTDOT SLOSH DOTDOTDOT
 
 /* operator keywords */
-%token<Flx_types.srcref> NOT OR AND DOLLAR
+%token<Flx_ast.srcref> NOT OR AND DOLLAR
 
 /* patterns */
-%token<Flx_types.srcref> AS UNDERSCORE REGEXP WHEN ALL
+%token<Flx_ast.srcref> AS UNDERSCORE REGEXP WHEN ALL
 
 /* statement keywords */
-%token<Flx_types.srcref> IF THEN ELSE ENDIF ELIF 
-%token<Flx_types.srcref> OF VAR UNION CLASS GOTO EXPORT
+%token<Flx_ast.srcref> IF THEN ELSE ENDIF ELIF 
+%token<Flx_ast.srcref> OF VAR UNION CLASS GOTO EXPORT
 
-%token<Flx_types.srcref> MATCH WITH ENDMATCH CASE REGMATCH
-%token<Flx_types.srcref> HEADER BODY MODULE CODE LET IN
-%token<Flx_types.srcref> CALL PROCEDURE FUNCTION FUNCTOR JUMP LOOP
-%token<Flx_types.srcref> RETURN FORK 
-%token<Flx_types.srcref> TO OPEN EQRIGHTARROW USE INCLUDE
-%token<Flx_types.srcref> TODO INTERFACE DEFINE
-%token<Flx_types.srcref> TYPE READ CONST STRUCT 
-%token<Flx_types.srcref> VAL TYPEDEF
-%token<Flx_types.srcref> QUEST
-%token<Flx_types.srcref> MACRO IDENT NEW FORGET
+%token<Flx_ast.srcref> MATCH WITH ENDMATCH CASE REGMATCH REGLEX
+%token<Flx_ast.srcref> HEADER BODY MODULE CODE LET IN
+%token<Flx_ast.srcref> CALL PROCEDURE FUNCTION FUNCTOR JUMP LOOP
+%token<Flx_ast.srcref> RETURN FORK 
+%token<Flx_ast.srcref> TO OPEN EQRIGHTARROW USE INCLUDE
+%token<Flx_ast.srcref> TODO INTERFACE DEFINE
+%token<Flx_ast.srcref> TYPE READ CONST STRUCT 
+%token<Flx_ast.srcref> VAL TYPEDEF
+%token<Flx_ast.srcref> QUEST
+%token<Flx_ast.srcref> MACRO IDENT NEW FORGET
 
-%type <Flx_types.compilation_unit_t> compilation_unit
-%type <Flx_types.range_srcref * Flx_types.statement_t list> compound
-%type <Flx_types.statement_t> statement 
-%type <Flx_types.expr_t> expr
-%type <Flx_types.expr_t> rvalue
+%type <Flx_ast.compilation_unit_t> compilation_unit
+%type <Flx_ast.range_srcref * Flx_ast.statement_t list> compound
+%type <Flx_ast.statement_t> statement 
+%type <Flx_ast.expr_t> expr
+%type <Flx_ast.expr_t> rvalue
 
-%type <Flx_types.pattern_t> pattern
+%type <Flx_ast.pattern_t> pattern
 
 %start compilation_unit
 %%
@@ -352,9 +379,9 @@ re_name:
     { 
       let e = ($1 :> expr_t) in
       let sr = rsrange (src_of_expr e) (slift (fst $3)) in
-      `AST_lookup (sr, (e, snd $3))
+      `AST_lookup (sr, (e, snd $3,[]))
     }
-  | NAME { `AST_name (slift (fst $1), snd $1) }
+  | NAME { `AST_name (slift (fst $1), snd $1,[]) }
 
 charset0:
   | STRING MINUS STRING      { charset_of_range (snd $1) (snd $3) }
@@ -375,21 +402,21 @@ abstract_type:
       `AST_abs_decl (rstoken $1 $6, snd $2, List.map snd $3, snd $5) 
     }
 
-  | TYPE NAME SEMI 
+  | TYPE NAME tvarlist SEMI 
     { 
-      `AST_type (rstoken $1 $3, snd $2) 
+      `AST_type (rstoken $1 $4, snd $2, List.map snd $3) 
     }
 
 @head(3,'Union Binding')
 @select(h)
 union_decl:
-  | UNION NAME EQUAL type_sum_items SEMI 
+  | UNION NAME tvarlist EQUAL type_sum_items SEMI 
     { 
-      `AST_union (rstoken $1 $5, snd $2, $4) 
+      `AST_union (rstoken $1 $6, snd $2, List.map snd $3, $5) 
     }
-  | UNION NAME EQUAL VBAR type_sum_items SEMI 
+  | UNION NAME tvarlist EQUAL VBAR type_sum_items SEMI 
     { 
-      `AST_union (rstoken $1 $6, snd $2, $5) 
+      `AST_union (rstoken $1 $7, snd $2, List.map snd $3, $6) 
     }
 type_sum_items:
   | type_sum_items VBAR type_sum_item { $1 @ [$3] }
@@ -405,13 +432,13 @@ type_sum_item:
 @head(3,'Struct Binding')
 @select(h)
 struct_decl:
-  | STRUCT NAME EQUAL LBRACE struct_component_aster RBRACE 
+  | STRUCT NAME tvarlist EQUAL LBRACE struct_component_aster RBRACE 
   { 
-    `AST_struct (rstoken $1 $6, snd $2, $5) 
+    `AST_struct (rstoken $1 $7, snd $2, List.map snd $3, $6) 
   }
-  | STRUCT NAME LBRACE struct_component_aster RBRACE 
+  | STRUCT NAME tvarlist LBRACE struct_component_aster RBRACE 
   { 
-    `AST_struct (rstoken $1 $5, snd $2, $4) 
+    `AST_struct (rstoken $1 $6, snd $2, List.map snd $3, $5) 
   }
 
 @aster("struct_component")
@@ -422,9 +449,16 @@ struct_component:
 @head(3,'Abstract Constant Binding')
 @select(h)
 const_def:
-  | CONST NAME COLON type_expr EQUAL STRING SEMI 
+  | CONST NAME tvarlist COLON type_expr EQUAL STRING SEMI 
   { 
-    `AST_const_decl (rstoken $1 $7, snd $2, typecode_of_expr $4, snd $6) 
+    `AST_const_decl 
+    (
+      rstoken $1 $8, 
+      snd $2, 
+      List.map snd $3,
+      typecode_of_expr $5, 
+      snd $7
+    ) 
   }
 
 
@@ -442,42 +476,27 @@ inline_cpp:
 @head(3,'Type Alias')
 @select(h)
 type_alias:
-  | TYPEDEF NAME EQUAL type_expr SEMI 
+  | TYPEDEF NAME tvarlist EQUAL type_expr SEMI 
     { 
-      `AST_type_alias (rstoken $1 $5, snd $2, typecode_of_expr $4) 
+      let sr = rstoken $1 $6
+      and name = snd $2 
+      and return_type = `TYP_type
+      and body = typecode_of_expr $5
+      and vs = List.map snd $3 
+      in
+      `AST_type_alias (sr,name,vs,body)
     }
 
-  | TYPEDEF FUNCTION NAME fun_args COLON type_expr EQUAL type_expr SEMI
+  | TYPEDEF FUNCTION NAME tvarlist fun_args COLON type_expr EQUAL type_expr SEMI
     {
-      let sr = rstoken $1 $9
+      let sr = rstoken $1 $10
       and name = snd $3 
-      and return_type = typecode_of_expr $6
-      and body = typecode_of_expr $8
-      and args = List.map snd $4 (* elide srcref *)
+      and return_type = typecode_of_expr $7
+      and body = typecode_of_expr $9
+      and args = List.map snd $5 (* elide srcref *)
+      and vs = List.map snd $4 
       in 
-        let argtyp t = match t with
-        | [] -> failwith "Lambda abstraction requires nonunit parameter"
-        | [x] -> x
-        | x -> `TYP_type_tuple x
-      in
-      let body = 
-        let p = ref (List.rev args) in
-        let r = ref return_type in
-        let b = ref body in
-        while !p <> [] do
-          let arg = List.hd !p in
-          p := List.tl !p;
-          b := `TYP_typefun (arg, !r, !b);
-          r := `TYP_function(argtyp (List.map snd arg),!r)
-        done;
-        !b
-      in
-      `AST_type_alias
-      (
-        sr,
-        name,
-        body
-      )
+      mktypefun sr name vs args return_type body
     }
 
 
@@ -502,8 +521,8 @@ use_decl:
     {
       let sr = rstoken $1 $3 in
       match $2 with
-      | (`AST_lookup (_,(e,n)) as qn) -> `AST_use (sr,n,qualified_name_of_expr qn)
-      | (`AST_name (_,n) as qn) -> `AST_use (sr,n,qualified_name_of_expr qn)
+      | (`AST_lookup (_,(e,n,[])) as qn) -> `AST_use (sr,n,qualified_name_of_expr qn)
+      | (`AST_name (_,n,_) as qn) -> `AST_use (sr,n,qualified_name_of_expr qn)
       | _ -> failwith "Use declaration requires qualified name"
     }
     
@@ -681,7 +700,13 @@ function_definition:
     }
   | FUNCTION NAME tvarlist COLON type_expr SEMI
     {
-      `AST_function_decl (rstoken $1 $6, snd $2, typecode_of_expr $5) 
+      `AST_function_decl 
+      (
+        rstoken $1 $6, 
+        snd $2, 
+        List.map snd $3, 
+        typecode_of_expr $5
+      ) 
     }
 
 procedure_definition:
@@ -694,27 +719,17 @@ procedure_definition:
         body = snd $4 and
         args = [] 
       in
-      (*
-      `AST_procedure (sr, name, vs, args, body) 
-      *)
       `AST_function (sr, name, vs, args, `AST_void sr,body) 
     }
 
   | PROCEDURE NAME tvarlist COLON type_expr SEMI
     {
-      (*
-      `AST_procedure_decl 
-      (
-        rstoken $1 $6,
-        snd $2, 
-        typecode_of_expr $5
-      );
-      *)
       let sr = rstoken $1 $6 in
       `AST_function_decl 
       (
         sr,
         snd $2, 
+        List.map snd $3,
         `TYP_function 
         (
           typecode_of_expr $5,
@@ -747,9 +762,6 @@ procedure_definition:
         | `TYP_tuple lst -> lst
         | x -> [x]
       in
-      (*
-      `AST_proc_decl (sr,name,vs, ts,ct) 
-      *)
       `AST_fun_decl (sr,name,vs, ts,`AST_void sr, ct) 
     }
 
@@ -798,133 +810,151 @@ placed in the variable by the dispatcher.
 @head(3,'Module Definition')
 @select(h)
 module_definition:
-  | MODULE NAME compound 
+  | MODULE NAME tvarlist compound 
     { 
       `AST_untyped_module 
       (
-        rsrange (slift $1) (fst $3), 
+        rsrange (slift $1) (fst $4), 
         snd $2, 
-        snd $3
+        List.map snd $3,
+        snd $4
       ) 
     }
 
-  | MODULE NAME COLON type_expr EQUAL compound 
+  | MODULE NAME tvarlist COLON type_expr EQUAL compound 
     { 
       `AST_typed_module 
       (
-        rsrange (slift $1) (fst $6), 
+        rsrange (slift $1) (fst $7), 
         snd $2, 
-        typecode_of_expr $4,
-        snd $6
+        List.map snd $3,
+        typecode_of_expr $5,
+        snd $7
       ) 
     }
 
-  | FUNCTOR NAME fun_args compound
+  | FUNCTOR NAME tvarlist fun_args compound
     {
-      let sr = rsrange (slift $1) (fst $4)
+      let sr = rsrange (slift $1) (fst $5)
       and name = snd $2 
-      and body = snd $4
-      and args = List.map snd $3 (* elide srcref *)
-      in `AST_untyped_functor (sr, name, List.hd args, body)
+      and vs = List.map snd $3
+      and body = snd $5
+      and args = List.map snd $4 (* elide srcref *)
+      in `AST_untyped_functor (sr, name, vs, List.hd args, body)
     }
 
-  | FUNCTOR NAME fun_args COLON type_expr EQUAL compound
+  | FUNCTOR NAME tvarlist fun_args COLON type_expr EQUAL compound
     {
-      let sr = rsrange (slift $1) (fst $7)
+      let sr = rsrange (slift $1) (fst $8)
       and name = snd $2 
-      and return_type = typecode_of_expr $5
-      and body = snd $7
-      and args = List.map snd $3 (* elide srcref *)
-      in `AST_typed_functor (sr, name, List.hd args, return_type, body)
+      and vs = List.map snd $3
+      and return_type = typecode_of_expr $6
+      and body = snd $8
+      and args = List.map snd $4 (* elide srcref *)
+      in `AST_typed_functor (sr, name, vs, List.hd args, return_type, body)
     }
 
-  | MODULE NAME EQUAL expr SEMI
+  | MODULE NAME tvarlist EQUAL expr SEMI
     {
       `AST_module_binding 
       (
-        rstoken $1 $5, 
+        rstoken $1 $6, 
         snd $2, 
-        $4 
+        List.map snd $3,
+        $5 
       )
     }
  
 interface_decl:
-  | INTERFACE NAME compound
-    {
-      `AST_interface
-      (
-        rsrange (slift $1) (fst $3),
-        snd $2,
-        snd $3
-      )
-    }
-
-  | INTERFACE NAME EQUAL compound 
+  | INTERFACE NAME tvarlist compound
     {
       `AST_interface
       (
         rsrange (slift $1) (fst $4),
         snd $2,
+        List.map snd $3,
         snd $4
+      )
+    }
+
+  | INTERFACE NAME tvarlist EQUAL compound 
+    {
+      `AST_interface
+      (
+        rsrange (slift $1) (fst $5),
+        snd $2,
+        List.map snd $3,
+        snd $5
       )
     }
 
 @head(3,'Variable and Constant Declaration')
 @select(h)
 var_def:  
-  | VAR NAME EQUAL expr SEMI  
-    { 
-      `AST_var_decl (rstoken $1 $5, snd $2, None, Some $4) 
-    }
-  | VAR NAME COLON type_expr EQUAL expr SEMI  
+  | VAR NAME tvarlist EQUAL expr SEMI  
     { 
       `AST_var_decl 
       (
-        rstoken $1 $7, 
+        rstoken $1 $6, 
         snd $2, 
-        Some (typecode_of_expr $4), 
-        Some $6
+        List.map snd $3, None, Some $5
       ) 
     }
-  | VAR NAME COLON type_expr SEMI  
+  | VAR NAME tvarlist COLON type_expr EQUAL expr SEMI  
     { 
       `AST_var_decl 
       (
-        rstoken $1 $5, 
+        rstoken $1 $8, 
         snd $2, 
-        Some (typecode_of_expr $4), 
+        List.map snd $3,
+        Some (typecode_of_expr $5), 
+        Some $7
+      ) 
+    }
+  | VAR NAME tvarlist COLON type_expr SEMI  
+    { 
+      `AST_var_decl 
+      (
+        rstoken $1 $6, 
+        snd $2, 
+        List.map snd $3,
+        Some (typecode_of_expr $5), 
         None
       ) 
     }
+
 val_def:  
-  | VAL NAME EQUAL expr SEMI  
+  | VAL NAME tvarlist EQUAL expr SEMI  
     { 
       `AST_val_decl 
       (
-        rstoken $1 $5, 
+        rstoken $1 $6, 
         snd $2, 
+        List.map snd $3,
         None, 
-        Some $4
+        Some $5
       ) 
     }
 
-  | VAL NAME COLON type_expr EQUAL expr SEMI  
+  | VAL NAME tvarlist COLON type_expr EQUAL expr SEMI  
     { 
       `AST_val_decl 
       (
-        rstoken $1 $7, 
+        rstoken $1 $8, 
         snd $2, 
-        Some (typecode_of_expr $4), 
-        Some $6
+        List.map snd $3,
+        Some (typecode_of_expr $5), 
+        Some $7
       ) 
     }
-  | VAL NAME COLON type_expr SEMI  
+  | VAL NAME tvarlist COLON type_expr SEMI  
     { 
       `AST_val_decl 
       (
-        rstoken $1 $5, 
+        rstoken $1 $6, 
         snd $2, 
-        Some (typecode_of_expr $4), 
+        List.map snd $3,
+        Some (typecode_of_expr $5), 
         None
       ) 
     }
@@ -1040,10 +1070,10 @@ call:
     let sr = rstoken $1 $3 in
     let u = `AST_tuple (slift $3, []) in
     match $2 with 
-    | `AST_apply (_,(`AST_name (_,name), arg)) -> 
+    | `AST_apply (_,(`AST_name (_,name,[]), arg)) -> 
       `AST_loop (sr, name, arg)
     
-    | `AST_name (s,name) ->
+    | `AST_name (s,name,[]) ->
       `AST_loop (sr, name, u)
 
     | _ -> failwith "Loop requires unqualified name"
@@ -1122,6 +1152,11 @@ regmatch_expr:
   | REGMATCH expr WITH regmatch_alternatives ENDMATCH
   {
     `AST_regmatch (rstoken $1 $5,($2,$4))
+  }
+
+  | REGLEX expr WITH regmatch_alternatives ENDMATCH
+  {
+    `AST_reglex (rstoken $1 $5,($2,$4))
   }
 
 regmatch_alternatives:
@@ -1261,7 +1296,7 @@ ctor_pattern:
     }
 
 ctor_name:
-  | NAME { `AST_name (slift (fst $1), snd $1) }
+  | NAME { `AST_name (slift (fst $1), snd $1,[]) }
   | CASE INTEGER { 
       let sr,t,v = $2 in 
       `AST_case_tag (rstoken $1 sr, Big_int.int_of_big_int v)
@@ -1415,17 +1450,18 @@ comparison:
       let unit_tuple:expr_t = `AST_tuple (dummy_sr,[]) in
       let sr:range_srcref = rsrange (src_of_expr $1) (src_of_expr (snd (list_last $4))) in
       let si i = string_of_int i in
-      let nm s = `AST_name (dummy_sr,s) in
+      let nm s = `AST_name (dummy_sr,s,[]) in
       let rec p n lst = 
         match lst with
         | [] -> [] 
         | ((op,opsrc),ex) :: t ->
-           `AST_val_decl(slift opsrc,"_t"^si (n+1), None, Some ex)
+           `AST_val_decl(slift opsrc,"_t"^si (n+1), [],None, Some ex)
            ::
            `AST_val_decl
            (
              slift opsrc,
              "_r"^si (n+1),
+             [],
              None,
              Some 
              (
@@ -1445,18 +1481,18 @@ comparison:
       in 
       let stmts = 
         let n = List.length $4 in
-        `AST_val_decl (src_of_expr $3,"_t0",None,Some $3) ::
+        `AST_val_decl (src_of_expr $3,"_t0",[],None,Some $3) ::
         `AST_val_decl 
         (
           rsrange (src_of_expr $1) (src_of_expr $3),
-          "_r0",
+          "_r0",[],
           None,
           Some (apl2 (snd $2) (fst $2) [$1; nm "_t0"])
         ) 
         ::
         p 0 $4
         @
-        [`AST_fun_return (sr,`AST_name(sr,"_r"^si n))]
+        [`AST_fun_return (sr,`AST_name(sr,"_r"^si n,[]))]
       in
       `AST_apply
       (
@@ -1471,6 +1507,7 @@ comparison:
   | arrow                               { $1 }
 
 /* arrow is right associative */
+@commalistof('type_expr')
 type_expr:
   | arrow { $1 }
 
@@ -1627,10 +1664,15 @@ factor:
     }
 
 qualified_name:
+  | qualified_name COLONCOLON NAME LSQB type_expr_comma_list RSQB              
+    { 
+      let sr = rsrange (src_of_expr $1) (slift $6) in
+      `AST_lookup (sr,($1, snd $3, List.map typecode_of_expr $5))
+    }
   | qualified_name COLONCOLON NAME 
     { 
       let sr = rsrange (src_of_expr $1) (slift (fst $3)) in
-      `AST_lookup (sr, ($1, snd $3))
+      `AST_lookup (sr, ($1, snd $3,[]))
     }
   | dollar_atom { $1 }
 
@@ -1700,7 +1742,6 @@ atom:
       )
     
     }
-  | LSQB expr RSQB      { `AST_texpr (rstoken $1 $3, $2) }
   | LPAR expr RPAR      { $2 }
   | LPAR RPAR           { `AST_tuple (rstoken $1 $2,[]) }
   | literal             { $1 }
@@ -1724,12 +1765,23 @@ literal:
     }
 
 simple_name:
+  | NAME LSQB type_expr_comma_list RSQB  
+    { 
+      `AST_name 
+      (
+        rsrange (slift (fst $1)) (slift $4),
+        snd $1,
+        List.map typecode_of_expr $3 
+      ) 
+    }
+
   | NAME 
     { 
       `AST_name 
       (
         slift (fst $1), 
-        snd $1
+        snd $1,
+        []
       ) 
     }
 
@@ -1752,7 +1804,7 @@ suffixed_name:
 @h = tangler('src/flx_parse_ctrl.ml')
 @select(h)
 
-open Flx_types
+open Flx_ast
 open Flx_exceptions
 open Flx_parse
 
@@ -1814,12 +1866,12 @@ val parse_file :
   string -> 
   string ->
   string list ->
-  Flx_types.compilation_unit_t
+  Flx_ast.compilation_unit_t
 
 val parse_string : 
   string -> 
   string -> 
-  Flx_types.compilation_unit_t
+  Flx_ast.compilation_unit_t
   
 @head(1,'Parser test harness')
 @h = tangler('src/flxp.ml')

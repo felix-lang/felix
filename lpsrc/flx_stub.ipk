@@ -7,3 +7,55 @@ open Flx_types
 print_endline "STUB TEST PROGRAM"
 ;;
 
+(* test fold unfold *)
+
+open Flx_unify
+open Flx_print
+open Flx_flxopt
+open Flx_getopt
+open Flx_maps
+open List
+    
+let t1 =  `BTYP_tuple [`BTYP_name 1; `BTYP_fix (-1)]
+let t2 = `BTYP_tuple [`BTYP_name 1; unfold t1]
+
+let types =
+  [
+  t1; 
+  t2;
+  `BTYP_tuple [`BTYP_name 2; `BTYP_fix (-1); t2]
+  ]
+;;
+
+(* Hmm HOT DAMN! fold minimises a type .. I don't
+  understand why!
+*)
+
+let multi_fold t = map_btype fold t
+;;
+
+try
+  let raw_options = parse_options Sys.argv in
+  let compiler_options = get_felix_options raw_options in
+  let syms = make_syms compiler_options in
+
+  let syms = make_syms compiler_options in
+  let p t = print_endline (string_of_btypecode syms.dfns t) in
+
+  iter 
+  (fun t ->
+    print_string "Original type "; p t;
+    let ut = unfold t in 
+    print_string "Unfolded type "; p ut;
+    let ft = fold ut in 
+    print_string "Refolded type "; p ft;
+    let ft = multi_fold ft in 
+    print_string "Refolded type "; p ft;
+    print_endline "---";
+  )
+  types;
+  
+
+  exit 0
+with x -> Flx_terminate.terminate true x
+;;

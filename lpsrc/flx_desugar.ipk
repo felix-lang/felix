@@ -4,6 +4,7 @@ from modules, and one to lift lambdas
 and also blocks.
 @h = tangler("src/flx_desugar.mli")
 @select(h)
+open Flx_ast
 open Flx_types
 val desugar_program: 
   string list ->
@@ -19,6 +20,7 @@ val build_interface:
 @h = tangler("src/flx_desugar.ml")
 @select(h)
 open Flx_util
+open Flx_ast
 open Flx_types
 open Flx_print
 open Flx_mtypes
@@ -105,10 +107,6 @@ let rec rex include_dirs seq (e:expr_t) : asm_t list * expr_t =
   match e with
 
   (* these cases should use the source reference for the error *)
-  | `AST_ginst _
-    -> clierr sr "[rex] not expecting generic binding"
-  | `AST_texpr _ 
-    -> clierr sr "[rex] not expecting type expression"
   | `AST_match_ctor _ 
     -> clierr sr "[rex] not expecting union component constructor matcher"
   | `AST_match_case _ 
@@ -117,8 +115,6 @@ let rec rex include_dirs seq (e:expr_t) : asm_t list * expr_t =
     -> clierr sr "[rex] not expecting union component destructor"
   | `AST_case_arg _ 
     -> clierr sr "[rex] not expecting anonymous union component destructor"
-  | `AST_index _ 
-    -> clierr sr "[rex] not expecting `AST_index "
   | `AST_bound_module _
     -> clierr sr "[rex] not expecting `AST_bound_module"
   | `AST_void _ 
@@ -133,7 +129,7 @@ let rec rex include_dirs seq (e:expr_t) : asm_t list * expr_t =
   | `AST_sum (sr,xs) -> clierr sr "[rex] Unexpected sum"
 
   | `AST_noexpand (_,e) -> rex e
-  | `AST_name (sr,name) -> [],e
+  | `AST_name (sr,name,_) -> [],e
 
   | `AST_deref (sr,e) ->
     let l1,x1 = rex e in
@@ -145,9 +141,9 @@ let rec rex include_dirs seq (e:expr_t) : asm_t list * expr_t =
 
   | `AST_suffix _ -> [],e  (* ?? *)
 
-  | `AST_lookup (sr,(e,id)) ->
+  | `AST_lookup (sr,(e,id,ts)) ->
     let l1,x1 = rex e in
-    l1, `AST_lookup (sr,(x1,id))
+    l1, `AST_lookup (sr,(x1,id,ts))
 
   | `AST_case_tag _ -> [],e
   | `AST_typed_case _ -> [],e
@@ -181,15 +177,6 @@ let rec rex include_dirs seq (e:expr_t) : asm_t list * expr_t =
     let l1,x1 = rex e' in
     l1, `AST_get_n (sr,(n,x1))
 
-  | `AST_apply (sr,(fn,`AST_texpr (_,t))) -> 
-    let l1,x1 = rex fn in 
-    let ts = 
-      match t with
-      | `AST_tuple (_,ts) -> map typecode_of_expr ts
-      | _ -> [typecode_of_expr t]
-    in
-    l1, `AST_ginst (sr,(x1,ts))
-
   | `AST_apply (sr,(fn,arg)) -> 
     let l1,x1 = rex fn in 
     let l2,x2 = rex arg in
@@ -208,17 +195,13 @@ let rec rex include_dirs seq (e:expr_t) : asm_t list * expr_t =
     let name = "_lambda_" ^ string_of_int n in
     let argtyp = type_of_argtypes (map snd params) in
     [match res with
-    (*
-    | `AST_void _ ->
-      Dcl (sr,name,`DCL_procedure ([],params, rsts sts))
-    *)
-    | _ -> Dcl (sr,name,`DCL_function ([],params, res, rsts sts))
+    | _ -> Dcl (sr,name,[],`DCL_function (params, res, rsts sts))
     ],
     `AST_suffix 
     (
       generated,
       (
-        `AST_name (generated,name), 
+        `AST_name (generated,name,[]), 
         type_of_argtypes (map snd params)
       )
     )
@@ -247,9 +230,29 @@ let rec rex include_dirs seq (e:expr_t) : asm_t list * expr_t =
     let fname = "regmatch" ^ string_of_int n in
     let l,x = rex e in
     let exes = [Exe(sr,`EXE_regmatch (x,!cls))] in
-    let rfun = Dcl(sr,fname,`DCL_function([],[],`TYP_none,exes)) in
+    let rfun = Dcl(sr,fname,[],`DCL_function([],`TYP_none,exes)) in
     rfun :: l @ !dcls,
-    `AST_apply(sr,(`AST_name(sr,fname),`AST_tuple(sr,[])))
+    `AST_apply(sr,(`AST_name(sr,fname,[]),`AST_tuple(sr,[])))
+   
+  | `AST_reglex (sr,(e,cls')) ->
+    let dcls = ref [] in
+    let cls = ref [] in
+    iter 
+    (fun (re,e) -> 
+      let l,x = rex e in
+      dcls := l @ !dcls;
+      cls := (re,x) :: !cls
+    )
+    cls'
+    ;
+
+    let n = seq() in
+    let fname = "reglex" ^ string_of_int n in
+    let l,x = rex e in
+    let exes = [Exe(sr,`EXE_reglex (x,!cls))] in
+    let rfun = Dcl(sr,fname,[],`DCL_function([],`TYP_none,exes)) in
+    rfun :: l @ !dcls,
+    `AST_apply(sr,(`AST_name(sr,fname,[]),`AST_tuple(sr,[])))
      
   | `AST_letin (sr,(pat,e1,e2)) ->
     rex (`AST_match (sr,(e1,[pat,e2])))
@@ -276,7 +279,7 @@ let rec rex include_dirs seq (e:expr_t) : asm_t list * expr_t =
 
     let match_var_name = "_match_var_"^string_of_int match_function_index in
     let match_function_id = "_match__fun_"^ string_of_int match_function_index in
-    let match_function = `AST_name (sr,match_function_id) in
+    let match_function = `AST_name (sr,match_function_id,[]) in
     let match_seq = ref (seq()) in
 
     let expr_src = src_of_expr e in
@@ -286,7 +289,7 @@ let rec rex include_dirs seq (e:expr_t) : asm_t list * expr_t =
     *)
     let evl = 
       [
-        Dcl (expr_src,match_var_name,`DCL_val (`TYP_typeof x));
+        Dcl (expr_src,match_var_name,[],`DCL_val (`TYP_typeof x));
         Exe (expr_src,`EXE_init (match_var_name,x))
       ]
     in
@@ -307,8 +310,8 @@ let rec rex include_dirs seq (e:expr_t) : asm_t list * expr_t =
       let expr_src = src_of_expr e in
       let match_checker_id = "_match_checker_" ^ string_of_int n1 in
       let match_handler_id = "_match_handler_" ^ string_of_int n1 in
-      let match_checker = `AST_name (patsrc,match_checker_id) in
-      let match_handler = `AST_name (expr_src,match_handler_id) in
+      let match_checker = `AST_name (patsrc,match_checker_id,[]) in
+      let match_handler = `AST_name (expr_src,match_handler_id,[]) in
 
       let sts,result_expr = rex e in
       let body = 
@@ -317,11 +320,11 @@ let rec rex include_dirs seq (e:expr_t) : asm_t list * expr_t =
       in
       matches := !matches @
       [
-        Dcl (patsrc,match_checker_id,`DCL_match_check (pat,match_var_name));
+        Dcl (patsrc,match_checker_id,[],`DCL_match_check (pat,match_var_name));
         Dcl 
         (
           expr_src,
-          match_handler_id,
+          match_handler_id,[],
           `DCL_match_handler 
           (
             pat,
@@ -400,10 +403,10 @@ let rec rex include_dirs seq (e:expr_t) : asm_t list * expr_t =
       Dcl 
       (
         sr,
-        match_function_id,
+        match_function_id,[],
         `DCL_function 
         (
-          [],[],
+          [],
           `TYP_none,
           match_function_body
         )
@@ -488,7 +491,7 @@ and rst include_dirs seq st : asm_t list =
     in
       rsts sts
 
-  | `AST_regdef (sr,name,regexp) -> [Dcl (sr,name,`DCL_regdef regexp)]
+  | `AST_regdef (sr,name,regexp) -> [Dcl (sr,name,[],`DCL_regdef regexp)]
   | `AST_label (sr,s) -> [Exe (sr,`EXE_label s)]
   | `AST_proc_return sr -> [Exe (sr,`EXE_proc_return)]
   | `AST_goto (sr,s) -> [Exe (sr,`EXE_goto s)]
@@ -501,72 +504,63 @@ and rst include_dirs seq st : asm_t list =
   | `AST_export (sr,name,cpp_name) ->
     [Iface (sr,`IFACE_export (name,cpp_name))]
 
-  | `AST_var_decl (sr,name,typ,expr) -> 
+  | `AST_var_decl (sr,name,vs,typ,expr) -> 
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,`DCL_var t); Exe (sr,`EXE_init (name,x))]
+      d @ [Dcl (sr,name,vs,`DCL_var t); Exe (sr,`EXE_init (name,x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,`DCL_var (`TYP_typeof x)); Exe (sr,`EXE_init (name,x))]
-    | Some t,None -> [Dcl (sr,name,`DCL_var t)]
+      d @ [Dcl (sr,name,vs,`DCL_var (`TYP_typeof x)); Exe (sr,`EXE_init (name,x))]
+    | Some t,None -> [Dcl (sr,name,vs,`DCL_var t)]
     | None,None -> failwith "Expected variable to have type or initialiser"
     end
 
-  | `AST_val_decl (sr,name,typ,expr) -> 
+  | `AST_val_decl (sr,name,vs,typ,expr) -> 
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,`DCL_val t); Exe (sr,`EXE_init (name,x))]
+      d @ [Dcl (sr,name,vs,`DCL_val t); Exe (sr,`EXE_init (name,x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,`DCL_val (`TYP_typeof x)); Exe (sr,`EXE_init (name,x))]
-    | Some t, None -> [Dcl (sr,name,`DCL_val t)] (* allowed in interfaces *)
+      d @ [Dcl (sr,name,vs,`DCL_val (`TYP_typeof x)); Exe (sr,`EXE_init (name,x))]
+    | Some t, None -> [Dcl (sr,name,vs,`DCL_val t)] (* allowed in interfaces *)
     | None,None -> failwith "Expected value to have type or initialiser"
     end
 
-  | `AST_const_decl (sr,name, typ, s) -> [Dcl (sr,name,`DCL_const (typ,s))]
+  | `AST_const_decl (sr,name, vs,typ, s) -> [Dcl (sr,name,vs,`DCL_const (typ,s))]
 
   (* types *)
-  | `AST_abs_decl (sr,name,vs,str) -> [Dcl (sr,name,`DCL_abs (vs,str))]
-  | `AST_union (sr,name, components) -> [Dcl (sr,name,`DCL_union components)]
-  | `AST_struct (sr,name, components) ->  [Dcl (sr,name,`DCL_struct components)]
-  | `AST_type_alias (sr,name,typ) -> [Dcl (sr,name,`DCL_type_alias typ)]
-  | `AST_type (sr,name) -> [Dcl (sr,name,`DCL_type)]
+  | `AST_abs_decl (sr,name,vs,str) -> [Dcl (sr,name,vs,`DCL_abs (str))]
+  | `AST_union (sr,name, vs, components) -> [Dcl (sr,name,vs,`DCL_union (components))]
+  | `AST_struct (sr,name, vs, components) ->  [Dcl (sr,name,vs,`DCL_struct (components))]
+  | `AST_type_alias (sr,name,vs,typ) -> [Dcl (sr,name,vs,`DCL_type_alias (typ))]
+  | `AST_type (sr,name,vs) -> [Dcl (sr,name,vs,`DCL_type)]
 
   (* functions *)
   | `AST_function (sr,name, vs, params, res, sts) -> 
-    [Dcl (sr,name,`DCL_function (vs, params, res, rsts sts))]
+    [Dcl (sr,name,vs,`DCL_function (params, res, rsts sts))]
     
-  (*
-  | `AST_procedure (sr,name, vs, params, sts) -> 
-    [Dcl (sr,name,`DCL_procedure (vs, params, rsts sts))]
-  *)
-    
-  (*
-  | `AST_procedure_decl (sr,name,typ) ->
-    [Dcl (sr,name,`DCL_if_proc (typ))]
-  *)
-
-  | `AST_function_decl (sr,name,typ) ->
-    [Dcl (sr,name,`DCL_if_fun typ)]
+  | `AST_function_decl (sr,name,vs,typ) ->
+    [Dcl (sr,name,vs,`DCL_if_fun typ)]
 
   | `AST_fun_decl (sr,name,vs,args,result,code) -> 
-    [Dcl (sr,name,`DCL_fun (vs,args,result,code))]
-  (*
-  | `AST_proc_decl (sr,name,vs,args,code) -> 
-    [Dcl (sr,name,`DCL_proc(vs,args,code))]
-  *)
+    [Dcl (sr,name,vs,`DCL_fun (args,result,code))]
 
   (* misc *)
-  | `AST_interface (sr,name,sts) ->
+  | `AST_interface (sr,name,vs,sts) ->
     [
-      Dcl (sr,name,`DCL_interface (rsts sts))
+      Dcl (sr,name,vs,`DCL_interface (rsts sts))
     ]
 
-  | `AST_untyped_module (sr,name, sts) -> 
+  | `AST_untyped_module (sr,name, vs, sts) -> 
     [
-      Dcl (sr,name,`DCL_module (rsts sts));
+      Dcl (sr,name,vs,`DCL_module (rsts sts))
+    ]
+    @
+      (* HACK !!!! *)
+    if vs = [] then
+    [
       Exe 
       (
         sr,
@@ -580,8 +574,9 @@ and rst include_dirs seq st : asm_t list =
               (
                 sr,
                 (
-                  `AST_name (sr,name),
-                  "_init_"
+                  `AST_name (sr,name,[]),
+                  "_init_",
+                  []
                 )
               ),
               `TYP_tuple []
@@ -590,21 +585,25 @@ and rst include_dirs seq st : asm_t list =
           `AST_tuple (generated,[])
         )
       )
-    ]
-  | `AST_typed_module (sr,name, typ, sts) -> 
+    ] else []
+
+  | `AST_typed_module (sr,name, vs, typ, sts) -> 
     let mname = name ^ "_impl_" in
     let mexpr = `AST_coercion 
     (
       sr,
       (
-        `AST_name (sr,mname), 
+        `AST_name (sr,mname,[]), 
         typ
       )
     ) 
     in
     [
-      Dcl (sr,mname,`DCL_module (rsts sts));
-      Dcl (sr,name,`DCL_module_binding mexpr);
+      Dcl (sr,mname,vs,`DCL_module (rsts sts));
+      Dcl (sr,name,vs,`DCL_module_binding mexpr)
+    ] 
+    @
+    (if vs = [] then [
       Exe 
       (
         sr,
@@ -617,8 +616,9 @@ and rst include_dirs seq st : asm_t list =
               (
                 sr,
                 (
-                  `AST_name (sr,name),
-                  "_init_"
+                  `AST_name (sr,name,[]),
+                  "_init_",
+                  []
                 )
               ),
               `TYP_tuple []
@@ -627,31 +627,31 @@ and rst include_dirs seq st : asm_t list =
           `AST_tuple (generated,[])
         )
       )
-    ]
+    ] else [])
 
-  | `AST_typed_functor (sr,name,ps,typ,sts) ->
+  | `AST_typed_functor (sr,name,vs,ps,typ,sts) ->
     [
-      Dcl (sr,name,`DCL_typed_functor (ps,typ,rsts sts));
+      Dcl (sr,name,vs,`DCL_typed_functor (ps,typ,rsts sts));
     ]
 
-  | `AST_untyped_functor (sr,name,ps,sts) ->
+  | `AST_untyped_functor (sr,name,vs,ps,sts) ->
     [
-      Dcl (sr,name,`DCL_untyped_functor (ps,rsts sts));
+      Dcl (sr,name,vs,`DCL_untyped_functor (ps,rsts sts));
     ]
 
-  | `AST_module_binding (sr,name,mexpr) ->
-    [Dcl (sr,name,`DCL_module_binding mexpr)]
+  | `AST_module_binding (sr,name,vs,mexpr) ->
+    [Dcl (sr,name,vs,`DCL_module_binding mexpr)]
 
 
   | `AST_header (sr,s) -> 
     let n = seq() in 
     let name = "_header_" ^ string_of_int n in 
-    [Dcl (sr,name,`DCL_header s)]
+    [Dcl (sr,name,[],`DCL_header s)]
 
   | `AST_body (sr,s) -> 
     let n = seq() in 
     let name = "_body_" ^ string_of_int n in 
-    [Dcl (sr,name,`DCL_body s)]
+    [Dcl (sr,name,[],`DCL_body s)]
 
   (* executable *)
   | `AST_fun_return (sr,e) ->
@@ -716,6 +716,7 @@ let rec build_if d = match d with
       (
         sr,
         name,
+        vs,
         `TYP_function 
         (
           typeofargs ps,
@@ -724,26 +725,10 @@ let rec build_if d = match d with
       )
     ]
 
-  (*
-  | `AST_procedure (sr,name,vs, ps,_) ->
-    [
-      `AST_procedure_decl 
-      (
-        sr,
-        name,
-        `TYP_function 
-        (
-          typeofargs ps,
-          `AST_void sr
-        )
-      )
-    ]
-  *)
-
-  | `AST_typed_module (sr,name,typ,sts) -> 
-    [`AST_typed_module (sr,name,typ,build_interface sts)]
-  | `AST_untyped_module (sr,name,sts) -> 
-    [`AST_untyped_module (sr,name,build_interface sts)]
+  | `AST_typed_module (sr,name,vs,typ,sts) -> 
+    [`AST_typed_module (sr,name,vs,typ,build_interface sts)]
+  | `AST_untyped_module (sr,name,vs,sts) -> 
+    [`AST_untyped_module (sr,name,vs,build_interface sts)]
 
   | `AST_var_decl _
   | `AST_val_decl _
@@ -773,7 +758,7 @@ let desugar_program include_dirs name counter sts =
     n 
   in
   let sts = expand_macros name 5000 sts in
-  rst include_dirs seq (`AST_untyped_module (sr,name,sts))
+  rst include_dirs seq (`AST_untyped_module (sr,name,[],sts))
 
 @h = tangler("src/flxd.ml")
 @select(h)

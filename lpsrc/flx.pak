@@ -23,7 +23,124 @@ C/C++ programmers, together with control inversion.
 
 @head(1,'Implementation')
 @head(2,'The Felix Compiler')
-@push_head()
+Basic phase diagram:
+@begin_displayed_code()
+  Lexer -> 
+  Token Filter ->
+  Parser -> 
+  Syntax Macro Processor ->
+  Desugaring/Lambda Lifting ->
+  Unbound Symbol Table Construction ->
+  Lookup/Binding/Use analysis ->
+  Optimisation ->
+  Code generation
+@end_displayed_code()
+The lexer generates tokens, which are passed
+to the token filter to strip out white spaces
+(since these make LR(1) parsing almost impossible
+by eating up lookaheads). Any token stream macro
+processing will be inserted here. The parser then
+builds the Abstract Syntax Treee from the filtered
+token stream.
+@p()
+The syntax macro processor is a basic term calculator
+for generating and reducing terms. The macro
+processing phase includes constant folding,
+with special handling for conditionals so that
+conditional compilation of syntactically correct
+phrases doesn't require any special syntax.
+@p()
+Lambda lifting replaces each anonymous function
+used in an expressions with a fresh name and
+defines the name in some context including
+the expression.
+@p()
+Desugaring includes lambda lifting and a few
+other rewrites. For example, the if/then/else/endif
+expression is replaced by an equivalent match.
+[We want to put this in the library eventually]
+@p()
+The unbound symbol table is a map from indexes
+to symbol definitions, and is a convolution
+of the hierarchical input structure of the AST.
+Each symbol has a unique index, a link to
+its parent context, and each context containing
+definitions has a map from names to indexes.
+However, the uses of symbols are unbound.
+@p()
+The binding phase performs lookups on the
+types, expressions,  directives, and executable
+statements to replace each names with its
+index in the symbol table, resulting
+in the fully bound symbol table.
+@p()
+This phase is extremely complex, since the binding
+of all components must be done on the unbound symbol
+table. Whilst simple lookups present no problem,
+functions can be overloaded. This means the type
+of an application cannot be determined until the
+overload is resolved, which requires typing the
+argument of the function, which in turn depends
+on overloading.
+@p()
+In addition, the open directive adds considerable
+complication, since in Felix everything in the
+same scope is considered to be mutually recursive.
+This means the argument of the open directive
+requires lookup of the name in a context enriched
+by all the other open directives, but the enrichment
+requires lookup of the argument of those open
+directives.
+@p()
+Even more complicated: Felix has module expressions,
+and so the prefix part of a name doesn't have to
+be a module name .. it can be a module expression.
+Module expressions include functor applications,
+and functors can be overloaded. The argument
+type of a functor must be matched to the supplied
+module, which requires binding every element of
+the interface and and the signatures of the elements
+of the module.
+@p()
+The binding and lookup is driven by a flow analyser
+than is iniialised with the root procedure (the 
+init routine of the top level module) plus any
+exported procedures or functions. By chasing
+down all calls, it discovers all instances types used
+in the program, and all instances of
+functions and procedures. An instances is a binding
+of a type or function to a list of types, which is
+the basic mechanism for generic programming.
+@p()
+The code generator constructs classes
+for each type, function and procedure,
+and generates descriptors for each entity
+which includes a list of offsets at which
+frame object pointers are located so
+the garbage collector can operate.
+@p()
+Finally, the code generator makes C wrappers for 
+exported functions, and provides initialisation and termination
+functions to construct and destroy the
+instance frame objects (global, process,
+and thread frames at present).
+
+@head(2,'Version control')
+We need a special hack for version control.
+Since every build results in a changed
+version control record, we have to put
+the record in the last module in the
+compiler list to avoid unnecessary compilations.
+Unfortunately, that means no modules can reference
+it due to a limitation in Ocaml. Therefore,
+we make the first module a reference to the version
+control data, initialised with a dummy value,
+put the real data in the last module, and store
+it in the reference when the last module is
+initialised. Note that this means the version
+information will not be available until
+the mainline module begins.
+
 @h=tangler('src/flx_version.mli')
 @select(h)
 open Flx_types
@@ -78,6 +195,7 @@ let version_data: version_data_t =
 Flx_version.version_data := version_data
 ;;
 
+@push_head()
 @include_file ('flx_util.ipk')
 @include_file ('flx_types.ipk')
 @include_file ('flx_ctypes.ipk')
@@ -91,11 +209,14 @@ Flx_version.version_data := version_data
 @include_file ('flx_macro.ipk')
 @include_file ('flx_desugar.ipk')
 @include_file ('flx_symtab.ipk')
+@include_file ('flx_beta.ipk')
+@include_file ('flx_treg.ipk')
+@include_file ('flx_generic.ipk')
 @include_file ('flx_lookup.ipk')
 @include_file ('flx_mbind.ipk')
 @include_file ('flx_bexe.ipk')
 @include_file ('flx_bbind.ipk')
-@include_file ('flx_use.ipk')
+@include_file ('flx_inst.ipk')
 @include_file ('flx_name.ipk')
 @include_file ('flx_tgen.ipk')
 @include_file ('flx_csubst.ipk')
@@ -114,7 +235,7 @@ Flx_version.version_data := version_data
 @head(2,'The lexer generator')
 @include_file ('flx_regexp.ipk')
 
-@head(2,'Stud mainline')
+@head(2,'Stub mainline')
 @include_file ('flx_stub.ipk')
 
 @head(2,'The Unix Build system')

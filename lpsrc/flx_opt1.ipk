@@ -3,22 +3,30 @@ Name binding pass 2.
 
 @h = tangler("src/flx_use.mli")
 @select(h)
+open Flx_ast
 open Flx_types
-val elide_unused:
+open Flx_typing
+val instantiate:
+  sym_state_t ->
   fully_bound_symbol_table_t ->
   bid_t ->
   biface_t list ->
-  fully_bound_symbol_table_t
+  unit
 
 @h = tangler("src/flx_use.ml")
 @select(h)
 open Flx_util
+open Flx_ast
 open Flx_types
 open Flx_print
 open Flx_mtypes
 open Flx_typing
 open Flx_mbind
 open Flx_srcref
+open List
+open Flx_unify
+open Flx_treg
+open Flx_generic
 
 module BidSet = PosSet
 
@@ -50,12 +58,10 @@ let rec isuseless bbdfns exes =
   try
     List.iter
     (fun x -> match x with
-      | `BEXE_call ((`BEXPR_closure i,_),_) 
+      | `BEXE_call ((`BEXPR_closure (i,_),_),_) 
       | `BEXE_call ((`BEXPR_name i,_),_) 
-      | `BEXE_call ((`BEXPR_ginst (i,_),_),_) 
-      | `BEXE_jump ((`BEXPR_closure i,_),_) 
+      | `BEXE_jump ((`BEXPR_closure (i,_),_),_) 
       | `BEXE_jump  ((`BEXPR_name i,_),_) 
-      | `BEXE_jump  ((`BEXPR_ginst (i,_),_),_) 
         -> 
          check i
 
@@ -82,7 +88,7 @@ let useless_call_elim bbdfns exes =
   let exes' = ref [] in
   List.iter
   (fun x -> match x with
-  | `BEXE_call ((`BEXPR_closure i,_),_)
+  | `BEXE_call ((`BEXPR_closure (i,_),_),_)
   | `BEXE_call ((`BEXPR_name i,_),_)
     -> (* only keep calls to useful procedures *) 
       begin match Hashtbl.find bbdfns i with
@@ -91,7 +97,7 @@ let useless_call_elim bbdfns exes =
       | _ -> exes' := x :: !exes'
       end
 
-  | `BEXE_jump ((`BEXPR_closure i,_),_)
+  | `BEXE_jump ((`BEXPR_closure (i,_),_),_)
   | `BEXE_jump ((`BEXPR_name i,_),_)
     -> (* only keep calls to useful procedures *) 
       begin match Hashtbl.find bbdfns i with
@@ -136,8 +142,7 @@ let useless_call_elim bbdfns exes =
     | `BEXE_proc_return :: `BEXE_call (p,a) :: t ->
       begin 
         match p with
-        | (`BEXPR_closure i,_) 
-        | (`BEXPR_ginst (i,_),_) ->
+        | (`BEXPR_closure (i,_),_) ->
           begin 
             match Hashtbl.find bbdfns i with
             | id,parent,`BBDCL_proc _ ->
@@ -164,9 +169,14 @@ let useless_call_elim bbdfns exes =
 let rec uses_type used bbdfns t = 
   let ut t = uses_type used bbdfns t in
   match t with
-  | `BTYP_name i -> uses used bbdfns i
+  | `BTYP_name i 
+    -> uses used bbdfns i
 
-  | `BTYP_inst (_,ts)
+  | `BTYP_inst (i,ts)
+    -> 
+      uses used bbdfns i;
+      List.iter ut ts
+
   | `BTYP_tuple ts
   | `BTYP_sum ts
   | `BTYP_type_tuple ts
@@ -218,9 +228,8 @@ and uses_tbexpr used bbdfns (e,t) =
   | `BEXPR_case_arg (_,e)
     -> ue e
     
-  | `BEXPR_name i
-  | `BEXPR_closure i
-    -> ui i
+  | `BEXPR_name (i,ts)
+    -> ui i; iter ut ts
     
   | `BEXPR_apply (e1,e2) -> ue e1; ue e2
   | `BEXPR_tuple es -> List.iter ue es 
@@ -233,88 +242,11 @@ and uses_tbexpr used bbdfns (e,t) =
   | `BEXPR_case (_,t)
     -> ut t
 
-  | `BEXPR_ginst (i,ts) 
-    -> ui i; List.iter ut ts
+  | `BEXPR_closure (i,ts)
+    -> ui i; iter ut ts
 
   | _ -> ()
 
-and uses used bbdfns i =
-  let ut t = uses_type used bbdfns t in
-  let ux x = uses_exes used bbdfns x in
-  if not (BidSet.mem i !used) then
-  begin 
-    match 
-      try Some (Hashtbl.find bbdfns i)
-      with Not_found -> None
-    with 
-    | Some (_,_,bbdcl) ->
-      used := BidSet.add i !used;
-      begin match bbdcl with
-      | `BBDCL_function (_,ps,ret,exes, _) -> 
-        List.iter ut (List.map (fun x -> snd (snd x)) ps);
-        ut ret;
-        ux exes
-      
-      | `BBDCL_procedure (_,ps, exes, _) ->
-        List.iter ut (List.map (fun x -> snd (snd x)) ps);
-        ux exes
+and uses used bbdfns i = () (*hack from instantiator .. fix*)
 
-      | `BBDCL_union ps 
-      | `BBDCL_struct ps 
-        ->
-        List.iter ut (List.map snd ps)
-
-      | `BBDCL_val t
-      | `BBDCL_var t
-      | `BBDCL_const (t,_)
-        -> ut t
-      
-      | `BBDCL_fun (_,ps, ret, _) -> List.iter ut ps; ut ret 
-      | `BBDCL_proc (_,ps, _)  -> List.iter ut ps
-      
-      | _ -> ()
-      end
-    | None -> ()
-  end
-
-let copy_bbdcl bbdfns bbdfns2 i =
-  let data = 
-    match Hashtbl.find bbdfns i with
-    | id,parent,`BBDCL_procedure (vs,p,exes,names) ->
-      let exes = useless_call_elim bbdfns exes in
-      id,parent,`BBDCL_procedure (vs,p,exes,names)
-    | x -> x
-  in
-    Hashtbl.add bbdfns2 i data
-
-let elide_unused (bbdfns:fully_bound_symbol_table_t) (root:bid_t) (bifaces:biface_t list) =
-  (* make a list of the root and all exported things *)
-  let roots : bid_t list = root :: 
-  (
-    List.map  (function `BIFACE_export (x,_) -> x) bifaces
-  ) 
-  in
-
-  (* make set of used things, initially empty *)
-  let used = ref BidSet.empty in
-
-  let uses i = uses used bbdfns i in
-
-  (* add root item to set, then add items it uses *)
-  List.iter uses roots
-  ;
-  (* copy used things *)
-  let bbdfns2 = Hashtbl.create 97 in
-  BidSet.iter (copy_bbdcl bbdfns bbdfns2) !used
-  ;
-  (* copy all header and body specs, they're always considered used *)
-  Hashtbl.iter 
-  (fun i b -> match b with
-    | _,_,`BBDCL_header _
-    | _,_,`BBDCL_body _ -> Hashtbl.add bbdfns2 i b
-    | _ -> ()
-  )
-  bbdfns
-  ;
-  bbdfns2
-
+(* put driver loop here .. root following .. *)

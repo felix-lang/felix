@@ -1,6 +1,6 @@
 @head(1,'DFA')
 @select(tangler('src/flx_dfa.mli'))
-open Flx_types
+open Flx_ast
 open Flx_mtypes
 
 val process_regexp:
@@ -13,7 +13,7 @@ val process_regexp:
 @select(tangler('src/flx_dfa.ml'))
 (* build a DFA from a regular expression
 *)
-open Flx_types
+open Flx_ast
 open Flx_print
 open Flx_mtypes
 

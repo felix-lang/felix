@@ -4,28 +4,27 @@
 open Flx_types
 
 val csubst:
-  (tbexpr_t -> string) ->
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
   string ->
-  tbexpr_t list ->
-  btypecode_t list ->
-  btypecode_t ->
-  btypecode_t list ->
+  string list -> (* value arguments as strings *)
+  string list -> (* types of value arguments as strings *)
+  string ->      (* argument type as string *)
+  string ->      (* return type as string *)
+  string list -> (* generic arguments as strings *)
   string
 
 @h = tangler('src/flx_csubst.ml')
 @select(h)
 open Flx_types
 open Flx_typing
-open Flx_name
+open List
+open Flx_util
 
 (* substitution encoding:
    $n: n'th component of argument tuple, 1 origin!
-       (but only 'data' part of pointers)
    $a: expands to $1, $2, .. $n
+   `n: n'th component of argument tuple, reference kind
+
    #n: type of n'th component of argument tuple (1 origin)
-   `n: n'th component (including frame* for pointers)
    #0: return type
    @n: reference to shape object
 
@@ -38,25 +37,22 @@ open Flx_name
    ?a: expands to ?1,?2, ...
 *)
 
-let catmap s f x = String.concat s (List.map f x)
-
 (* finite state machine states *)
 type mode_t = 
  | Normal
  | CString | CChar
  | CStringBackslash | CCharBackslash
- | Dollar | Hash | Earhole | Backquote | Quest (* last char was one of these *)
- | DollarDigits | HashDigits | EarholeDigits | BackquoteDigits | QuestDigits
+ | Dollar | Backquote | Hash | Earhole | Quest (* last char was one of these *)
+ | DollarDigits | BackquoteDigits | HashDigits | EarholeDigits | QuestDigits
   
-let csubst ge sym_state bbdfns ct args' typs retyp gargs =
-  let args = List.map ge args' in
-  let registry = sym_state.registry 
-  and dfns = sym_state.dfns in
-  let n = List.length args in
-  assert (n = List.length typs); 
+let csubst ct args typs argtyp retyp gargs =
+  let n = length args in
+  assert (n = length typs); 
   (* print_endline ("SUBST " ^ ct ^ ", count="^string_of_int n); *)
   let len = String.length ct in
   let buf = Buffer.create (n * 2 + 20) in
+  let bcat s = Buffer.add_string buf s in
+  let chcat c = Buffer.add_char buf c in
   let mode = ref Normal in
   let digits = ref 0 in
   let serr i msg = 
@@ -72,66 +68,46 @@ let csubst ge sym_state bbdfns ct args' typs retyp gargs =
     | Normal -> 
       begin match ch with
       | '$' -> mode := Dollar
+      | '`' -> mode := Backquote
       | '#' -> mode := Hash
       | '@' -> mode := Earhole
       | '?' -> mode := Quest
-      | '`' -> mode := Backquote 
       | '\\' -> serr i "Naked \\"
-      | '"' -> Buffer.add_char buf ch; mode := CString
-      | '\'' -> Buffer.add_char buf ch; mode := CChar
-      | _ -> Buffer.add_char buf ch
+      | '"' -> chcat ch; mode := CString
+      | '\'' -> chcat ch; mode := CChar
+      | _ -> chcat ch
       end
 
     | CString ->
       begin match ch with
-      | '"' -> Buffer.add_char buf ch; mode := Normal
-      | '\\' -> Buffer.add_char buf ch; mode := CStringBackslash
-      | _ -> Buffer.add_char buf ch
+      | '"' -> chcat ch; mode := Normal
+      | '\\' -> chcat ch; mode := CStringBackslash
+      | _ -> chcat ch
       end
 
     | CChar ->
       begin match ch with
-      | '\'' -> Buffer.add_char buf ch; mode := Normal
-      | '\\' -> Buffer.add_char buf ch; mode := CCharBackslash
-      | _ -> Buffer.add_char buf ch
+      | '\'' -> chcat ch; mode := Normal
+      | '\\' -> chcat ch; mode := CCharBackslash
+      | _ -> chcat ch
       end
 
     | CStringBackslash -> 
-      Buffer.add_char buf ch; 
+      chcat ch; 
       mode := CString
 
     | CCharBackslash -> 
-      Buffer.add_char buf ch; 
+      chcat ch; 
       mode := CChar
 
     | Dollar ->
       begin match ch with
       | 'a' ->
-        for j=0 to n - 1 do
-          let s' = List.nth args j in
-          begin match List.nth typs j with
-          (* In the special case of passing a Felix pointer,
-             we use the data pointer 
-             (ignoring the frame pointer)
-           *)
-          | `BTYP_pointer _ ->
-            Buffer.add_string buf  ("(" ^ s' ^ ").data")
-          | _ -> 
-            Buffer.add_string buf ("(" ^ s' ^ ")")
-          end;
-          if j<n-1 then
-          Buffer.add_string buf ", "
-        done;
+        bcat (cat ", " args);
         mode := Normal
 
       | 't' ->
-        Buffer.add_string buf
-        (
-          cpp_typename sym_state bbdfns (lower (typeoflist typs)) ^
-          "(" ^
-          String.concat "," args ^
-          ")"      
-        );
+        bcat ( argtyp ^ "(" ^ cat "," args ^ ")");
         mode := Normal
 
       | '0' .. '9' -> 
@@ -139,42 +115,6 @@ let csubst ge sym_state bbdfns ct args' typs retyp gargs =
         mode := DollarDigits
 
       | _ -> serr i "Expected 't' or digit after $"
-      end
-
-    | Quest ->
-      begin match ch with
-      | '?' ->
-        Buffer.add_char buf '?';
-        mode := Normal
-
-      | '0' .. '9' ->
-        digits := Char.code ch - Char.code '0'; 
-        mode := QuestDigits
-
-      | 'a' ->
-        Buffer.add_string buf
-        (
-          catmap "," (fun t -> cpp_typename sym_state bbdfns (lower t)) gargs
-        );
-        mode := Normal
-
-      | _ -> serr i "Expected '?a' or digit after ?"
-      end
-
-    | Earhole ->
-      begin match ch with
-      | 't' ->
-        Buffer.add_string buf
-        (
-          ptr_map_of_type sym_state bbdfns (lower (typeoflist typs))
-        );
-        mode := Normal
-
-      | '0' .. '9' -> 
-        digits := Char.code ch - Char.code '0'; 
-        mode := EarholeDigits
-
-      | _ -> serr i "Expected 't' or digit after @"
       end
 
     | Backquote ->
@@ -186,13 +126,40 @@ let csubst ge sym_state bbdfns ct args' typs retyp gargs =
       | _ -> serr i "Expected digit after `"
       end
 
+    | Quest ->
+      begin match ch with
+      | '?' ->
+        chcat '?';
+        mode := Normal
+
+      | '0' .. '9' ->
+        digits := Char.code ch - Char.code '0'; 
+        mode := QuestDigits
+
+      | 'a' ->
+        bcat ( cat "," gargs);
+        mode := Normal
+
+      | _ -> serr i "Expected '?a' or digit after ?"
+      end
+
+    | Earhole ->
+      begin match ch with
+      | 't' ->
+        bcat ( argtyp ^"_ptr_map" );
+        mode := Normal
+
+      | '0' .. '9' -> 
+        digits := Char.code ch - Char.code '0'; 
+        mode := EarholeDigits
+
+      | _ -> serr i "Expected 't' or digit after @"
+      end
+
     | Hash ->
       begin match ch with
       | 't' ->
-        Buffer.add_string buf
-        (
-          cpp_typename sym_state bbdfns (lower (typeoflist typs))
-        );
+        bcat argtyp;
         mode := Normal
 
       | '0' .. '9' -> 
@@ -212,32 +179,11 @@ let csubst ge sym_state bbdfns ct args' typs retyp gargs =
         then serr i ("Arg no " ^ string_of_int !digits ^ " too large")
         else if !digits<=0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
         else
-          let s' = List.nth args (!digits-1) in
-          let tbexpr = List.nth args' (!digits-1) in
-          begin match List.nth typs (!digits-1) with
-          (* In the special case of passing a Felix pointer,
-             we use the data pointer 
-             (ignoring the frame pointer)
-           *)
-          | `BTYP_pointer _ ->
-            begin match tbexpr with
-            | `BEXPR_ref index,`BTYP_pointer _ ->
-              (*
-              print_endline "GOT AN INDEX";
-              print_endline ("ref is " ^ ge tbexpr);
-              print_endline ("Adddress is " ^ ge (`BEXPR_name index,`BTYP_void));
-              *)
-              let address = ge (`BEXPR_name index,`BTYP_void) in
-              Buffer.add_string buf  ("(&" ^ address ^ ")")
-            | _ ->
-              Buffer.add_string buf  ("(" ^ s' ^ ").data")
-            end
-          | _ -> 
-            Buffer.add_string buf ("(" ^ s' ^ ")")
-          end;
+          let s' = nth args (!digits-1) in
+          bcat ("(" ^ s' ^ ")");
           mode := Normal;
           trans i ch
-      end
+       end
 
     | BackquoteDigits ->
       begin match ch with
@@ -249,8 +195,9 @@ let csubst ge sym_state bbdfns ct args' typs retyp gargs =
         then serr i ("Arg no " ^ string_of_int !digits ^ " too large")
         else if !digits<=0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
         else
-          let s' = List.nth args (!digits-1) in
-          Buffer.add_string buf ("(" ^ s' ^ ")");
+          let s' = nth args (!digits-1) in
+          let t' = nth typs (!digits-1) in
+          bcat ("("^t'^"*)(" ^ s' ^ ".data)");
           mode := Normal;
           trans i ch
        end
@@ -260,9 +207,8 @@ let csubst ge sym_state bbdfns ct args' typs retyp gargs =
         then serr i ("Arg no " ^ string_of_int !digits ^ " too large")
         else if !digits<0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
         else
-          let t = lower (List.nth typs (!digits-1)) in
-          Buffer.add_string buf
-            (ptr_map_of_type sym_state bbdfns t);
+          let t = nth typs (!digits-1) in
+          bcat (t ^ "_ptr_map");
           mode := Normal;
           trans i ch
             
@@ -271,11 +217,11 @@ let csubst ge sym_state bbdfns ct args' typs retyp gargs =
         then serr i ("Arg no " ^ string_of_int !digits ^ " too large")
         else if !digits<0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
         else
-          Buffer.add_string buf
+          bcat
           (
             if !digits = 0 
-            then cpp_typename sym_state bbdfns (lower retyp)
-            else cpp_typename sym_state bbdfns (lower (List.nth typs (!digits-1)))
+            then retyp
+            else nth typs (!digits-1)
           );
           mode := Normal;
           trans i ch
@@ -285,9 +231,9 @@ let csubst ge sym_state bbdfns ct args' typs retyp gargs =
         then serr i ("Generic type arg no " ^ string_of_int !digits ^ " too large")
         else if !digits<1 then serr i ("Generic type arg no " ^ string_of_int !digits ^ " too small")
         else
-          Buffer.add_string buf
+          bcat
           (
-            cpp_typename sym_state bbdfns (lower (List.nth gargs (!digits-1)))
+            nth gargs (!digits-1)
           );
           mode := Normal;
           trans i ch
@@ -299,7 +245,7 @@ in
   | EarholeDigits
   | DollarDigits
   | QuestDigits
-  | BackquoteDigits -> trans len ' ' (* hack .. space is harmless *)
+    -> trans len ' ' (* hack .. space is harmless *)
   | _ -> serr len "Unexpected end of fragment"
   end;
   Buffer.contents buf

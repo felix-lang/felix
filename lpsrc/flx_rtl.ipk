@@ -39,6 +39,8 @@ right type by client drivers.
 #endif
 
 namespace flx { namespace rtl {
+
+// CONTINUATION
 struct con_t // abstract base for mutable continuations
 {
   int pc;              // program counter
@@ -56,14 +58,14 @@ struct con_t // abstract base for mutable continuations
   con_t * _caller;
 };
 
-//REFERENCE TEMPLATE
-template<class T> struct _ref_
+//REFERENCE
+struct _ref_
 {
   void *frame;
-  T *data;
+  void *data;
 
   _ref_(){}
-  _ref_(void *f, T *d): frame(f), data(d) {}
+  _ref_(void *f, void *d): frame(f), data(d) {}
   ~_ref_()
   { 
     //printf("destroy ref decref %p\n", frame);
@@ -90,13 +92,7 @@ template<class T> struct _ref_
       data = r.data;
     }
   }
-  T *operator->()const { return data; }
 };
-
-template<class T> _ref_<T> _make_ref_(void *f, T *d)
-{
-  return _ref_<T>(f,d);
-}
 
 //VARIANTS
 struct _uctor_
@@ -108,6 +104,7 @@ struct _uctor_
   _uctor_(int i, void *d) : variant(i), data(d) {}
 };
 
+// UNIT
 struct unit {};
 
 }} // namespaces
@@ -116,7 +113,7 @@ struct unit {};
 @h = tangler("rtl/flx_rtl.cpp")
 @select(h)
 #include "flx_rtl.hpp"
-#include <stdio.h>
+#include <cstdio>
 
 namespace flx { namespace rtl {
 con_t::con_t() : pc(0), action(yield_action), _caller(0) { 
@@ -168,6 +165,7 @@ or even constants which require dynamic initialisation.
 #include "flx_gc.hpp"
 #endif
 #include <string>
+using namespace std;
 
 // Utilities to make dynamic linkage and
 // initialisation of Felix modules easier
@@ -405,8 +403,8 @@ program must not read any messages.
 #include <vector>
 #include <list>
 #include <map>
-#include <string.h>
-#include <assert.h>
+#include <cstring>
+#include <cassert>
 
 #include <string>
 #include <unistd.h>

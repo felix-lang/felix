@@ -3,7 +3,13 @@ Name binding pass 2.
 
 @h = tangler("src/flx_mbind.mli")
 @select(h)
+open Flx_ast
 open Flx_types
+
+type extract_t = 
+  | Proj_n of range_srcref * int             (* tuple projections 1 .. n *)
+  | Udtor of range_srcref * qualified_name_t (* argument of union component s *)
+
 val gen_match_check:
   pattern_t ->
   expr_t ->
@@ -24,6 +30,7 @@ val gen_extractor:
 @h = tangler("src/flx_mbind.ml")
 @select(h)
 open Flx_util
+open Flx_ast
 open Flx_types
 open Flx_print
 open Flx_mtypes
@@ -31,6 +38,10 @@ open Flx_typing
 open Flx_lookup
 open Flx_srcref
 open Flx_typing
+
+type extract_t = 
+  | Proj_n of range_srcref * int             (* tuple projections 1 .. n *)
+  | Udtor of range_srcref * qualified_name_t (* argument of union component s *)
 
 (* the extractor is a function to be applied to
    the argument to extract the value of the identifier;
@@ -73,8 +84,6 @@ let rec subst vars (e:expr_t) mv : expr_t =
   *)
   match e with
   | `AST_noexpand _ -> failwith "Not expecting noexpand in pattern"
-  | `AST_ginst _ -> failwith "Not expecting generic binding in when part of pattern (should be replaced by match)"
-  | `AST_texpr _ -> failwith "Not expecting type expression in when part of pattern (should be replaced by match)"
   | `AST_letin _ -> failwith "Not expecting conditional in when part of pattern (should be replaced by match)"
   | `AST_cond _ -> failwith "Not expecting conditional in when part of pattern (should be replaced by match)"
   | `AST_typeof _ -> failwith "Not expecting typeof in when part of pattern"
@@ -88,20 +97,23 @@ let rec subst vars (e:expr_t) mv : expr_t =
                      (* this one really SHOULD work! *)
 
   | `AST_regmatch _  -> failwith "Not expecting regmatch in when part of pattern"
+  | `AST_reglex _  -> failwith "Not expecting reglex in when part of pattern"
 
   | `AST_lookup _ -> e
   | `AST_suffix _ -> e
-  | `AST_index _ -> e
   | `AST_literal _ -> e
   | `AST_case_tag _ -> e
   | `AST_as _ -> e
 
-  | `AST_name (sr,name) ->
+  | `AST_name (sr,name,idx) ->
+    if idx = [] then
     if Hashtbl.mem vars name 
     then 
       let sr,extractor = Hashtbl.find vars name in
       gen_extractor extractor mv
     else e
+    else failwith "Can't use indexed name in when clause :("
+
     
 
   | `AST_deref (sr,e') -> `AST_deref (sr,subst e')
@@ -199,7 +211,7 @@ let rec gen_match_check pat (arg:expr_t) =
     (
       sr,
       (
-        `AST_name (sr,f),
+        `AST_name (sr,f,[]),
         x
       )
     )
@@ -208,11 +220,11 @@ let rec gen_match_check pat (arg:expr_t) =
     (
       sr,
       (
-        `AST_name (sr,f),
+        `AST_name (sr,f,[]),
         `AST_tuple (sr,[x1;x2])
       )
     )
-  (* and truth sr = `AST_name (sr,"true") *)
+  (* and truth sr = `AST_name (sr,"true",[]) *)
   and truth sr = `AST_typed_case (sr,2,flx_bool)
   and ssrc x = short_string_of_src x
   in 

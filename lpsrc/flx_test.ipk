@@ -281,16 +281,17 @@ messages.
 @head(3,'Driver Implementation')
 @d = tangler('test/flx_perf_drv1.cpp')
 @select(d)
-#include <stdio.h>
+#include <unistd.h>
+#include <dlfcn.h>
+
+#include <cstdio>
+#include <cstring>
+#include <cassert>
+
 #include <vector>
 #include <list>
 #include <map>
 #include <string>
-#include <string.h>
-#include <assert.h>
-#include <dlfcn.h>
-#include <string>
-#include <unistd.h>
 #include <iostream>
 
 #include "rtl/flx_rtl.hpp"

@@ -155,10 +155,8 @@ let make_syms options =
     varmap = Hashtbl.create 97;
     ticache = Hashtbl.create 97;
     env_cache = Hashtbl.create 97;
-    prim_inst = Hashtbl.create 97;
-    rev_prim_inst = Hashtbl.create 97;
-    instantiated_types = Hashtbl.create 97;
     compiler_options = options;
+    instances = Hashtbl.create 97;
   }
 
 

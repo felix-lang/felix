@@ -668,6 +668,20 @@ regexp id = alpha (alpha | digit) *;
 Regular expressions are used in regular match expressions.
 These are like ordinary matches, except that the pattern
 is a regular expression, and the argument must be a string.
+If more than one pattern matches the string, the first
+one is used.
+@p()
+There is a also a related reglex constructions, which
+matches a prefix of the string. Of all possible matches,
+reglex chooses the longest match. As for regmatch, if
+more than one regexp matches, the first written is used.
+@p()
+Note: in its current form reglex is a precursor
+to a richer construction which splits the argument
+into the matched prefix and remained of the string,
+allowing the construction to be used to tokenise
+a string.
+
 @select(h)
 print 
   regmatch "identifier" with
@@ -685,24 +699,13 @@ print
 ; 
 endl;
 
-/* both these cases causes assertion failures 
 print 
-  regmatch "999xxx" with
+  reglex "9999XXXXX" with
   | digit+ => "Number"
   | id =>  "Identifier"
   endmatch
 ; 
 endl;
-
-
-print 
-  regmatch "????" with
-  | digit+ => "Number"
-  | id =>  "Identifier"
-  endmatch
-; 
-endl;
-*/
 
 print 
   regmatch "999xxx" with
@@ -721,14 +724,13 @@ machine and guarranteed to be linear in the length of the input,
 and, in particular independent of the number of regular expressions.
 Each character is processed at most once.
 @p()
-Note also that the whole string must be matched.
-@p()
-[The construction will be upgraded later to support
-input iterators with comparable value types]
-@p()
-[The construction will be upgraded later to support
-finding the longest matching prefix, which requires
-forward iterators]
+Note: the generated code is *extremely* fast, within
+one or two memory fetches of the fastest possible code.
+here is the generated code for the inner loop of a regmatch:
+@begin_displayed_code()
+  while(state && start != end)
+    state = matrix[*start++][state];
+@end_displayed_code()
 
 @head(2,'Expression Macro Facility')
 Felix provides an powerful and dangerous 
@@ -1455,6 +1457,7 @@ generic primitive bindings.
 
 // include STL vector template
 header """
+#include <iostream>
 #include <vector>
 """;
 
@@ -1462,8 +1465,8 @@ header """
 // and some output procedures
 type int = "int";
 type long = "long";
-proc endl:1= "cout << endl;";
-proc print: long = "cout << $1;";
+proc endl:1= "std::cout << std::endl;";
+proc print: long = "std::cout << $1;";
 
 // define a generic cast
 // here ?2 means the second generic type parameter
@@ -1476,7 +1479,7 @@ print (cast [int,long] 1); endl;
 // when the type vector is instantiated
 // the name t is a placeholder used for consistency
 
-type vector[t] = "vector<?1>";
+type vector[t] = "std::vector<?1>";
 
 // declare print routine for vector
 // notice that the type 'vector t'
@@ -1488,15 +1491,15 @@ type vector[t] = "vector<?1>";
 // its argument, the parameter t in this case,
 // with the same syntax
 
-proc vprint[t]: vector t = """
+proc vprint[t]: vector[t] = """
   { 
-    vector<?1> v = $1;
+    std::vector<?1> v = $1;
     for(
-      vector<?1>::iterator p = v.begin();
+      std::vector<?1>::iterator p = v.begin();
       p != v.end();
       ++p
     )
-      cout << *p << " ";
+      std::cout << *p << " ";
   }
 """;
 
@@ -1504,10 +1507,10 @@ proc vprint[t]: vector t = """
 // this procedure takes a pointer to a vector of t
 // and a value of type t and appends the value
 // to the vector
-proc append[t]:&(vector t)*t="$1->push_back($2);";
+proc append[t]:&(vector[t])*t="$1->push_back($2);";
 
 // make an empty vector of int
-var v : vector int;
+var v : vector[int];
 
 // put 1,2,3 into the vector
 append[int](&v,1);
@@ -1528,16 +1531,60 @@ if an instantiation matches the use. If not, the next
 outermost scope is searched.
 
 @select(tangler(tdir+'tut135.flx'))
+header "#include <iostream>";
 type int = "int";
-proc endl:1= "cout << endl;";
-proc print[t]: t = 'cout << $1 << " A1";';
-proc print[t1,t2]: t1 = 'cout << $1 << " A2";';
+proc endl:1= "std::cout << std::endl;";
+proc print[t]: t = 'std::cout << $1 << " A1";';
+proc print[t1,t2]: t1 = 'std::cout << $1 << " A2";';
 
 {
-  proc print[t]: t = 'cout << $1 << " B1";';
+  proc print[t]: t = 'std::cout << $1 << " B1";';
   print[int] 1; endl; // B1
   print[int,int] 1; endl; // A2
 };
+
+@head(2,'Generic Functions')
+Felix functions and procedures can be generic too.
+Here is a simple example.
+
+@select(tangler(tdir+'tut135a.flx'))
+header "#include <iostream>";
+type int = "int";
+proc print[T]:T="std::cout << $1 << endl;";
+fun fst[T,U](x:T,y:U): T ={ return x; }
+fun snd[T,U](x:T,y:U): U ={ return y; }
+
+val x = (1,2);
+print[int] (fst[int,int] x);
+print[int] (snd[int,int] x);
+
+proc pp[T] (x:T) { print[T](x); }
+
+pp[int] (snd[int,int] x);
+
+@head(2,'Generic Structs and Unions')
+Felix structs and unions can be generic too.
+Here is a simple example.
+
+@select(tangler(tdir+'tut135b.flx'))
+include "std";
+union list[T] = 
+  | Cons of T * list[T] 
+  | Empty
+;
+
+struct pair[T,U] = 
+{
+  fst : T;
+  snd : U;
+}
+
+var x = Cons[int] (1,Empty[int]);
+x =  Cons[int] (2,x);
+x = Cons[int] (3,x);
+
+val y = pair[int,int] (1,2);
+print y.fst; print ","; print y.snd; endl;
 
 @head(2,'Inductive types')
 Felix supports inductive types such as lists.
@@ -3039,10 +3086,11 @@ module, nor open a module using a used name (even as
 a prefix).
 
 @select(tangler(tdir+'tut206a.flx'))
+header "#include <iostream>";
 module X {
   type int = "int";
-  proc print: int = "cout << $1;";
-  proc endl: 1 = "cout << endl;";
+  proc print: int = "std::cout << $1;";
+  proc endl: 1 = "std::cout << std::endl;";
 }
 
 use X::int;

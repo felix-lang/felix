@@ -84,6 +84,8 @@ open Uint64;
     for s in ss:
       tangle("assert(int_of("+x+s+" + "+y+s+")==42);") 
 
+print "rt01 complete\n";
+
 @select(tangler('test/rt02.flx'))
 header r"""
 #include <stdio.h>
