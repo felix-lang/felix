@@ -1,5 +1,5 @@
 @head(1,"Vim Syntax File")
-@select(tangler("misc/felix.vim"))
+@select(tangler("misc/felix.vim",'data'))
 " Vim syntax file
 " Language:	Felix
 " Maintainer:	<John Max Skaller> skaller@ozemail.com.au

@@ -1,5 +1,5 @@
 @head(1,'Parser')
-@h = tangler('src/flx_parse.mly')
+@h = tangler('src/flx_parse.mly','data')
 @# define meta operators:
 @#  aster: t*
 @#  plus:  t+
@@ -47,6 +47,7 @@
 @head(2,'Header')
 @select(h)
 %{
+(* parser header *)
 exception EndOfInput
 open Flx_ast
 open Flx_typing
@@ -125,7 +126,7 @@ let mkcurry sr name vs args return_type body =
     let name n = 
       if n = arity
       then name (* top level *)
-      else "_curry_" ^ string_of_int n
+      else name^"_curry_" ^ string_of_int n
     in
     match args with 
     | [] -> assert false

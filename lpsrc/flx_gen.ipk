@@ -2141,7 +2141,7 @@ try
   (* THIS IS A HACK! *)
   let root = !(syms.counter) in
   if compiler_options.print_flag 
-  then print_endline ("//Top level module ''"^module_name^" has index " ^ si root);
+  then print_endline ("//Top level module '"^module_name^"' has index " ^ si root);
 
 
   if compiler_options.print_flag 

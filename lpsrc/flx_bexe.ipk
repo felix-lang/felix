@@ -97,10 +97,10 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     (list_prefix parent_ts (parent_ts_len - n)) @ ts
   in
   let ret_type = ref ret_type in
-  let be e : tbexpr_t = bind_expression syms env [] [] 0 [] e in
+  let be e : tbexpr_t = bind_expression syms env [] e in
   let lun sr n = lookup_name_in_env env sr n in
   let luqn n = lookup_qn_in_env syms env [] n in
-  let bt sr t : btypecode_t = bind_type syms env [] [] sr t in
+  let bt sr t : btypecode_t = bind_type syms env [] sr t in
   let return_count = ref 0 in
   let reachable = ref true in
 
@@ -235,8 +235,15 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       begin match lun sr s with
       | FunctionEntry _ -> clierr sr "Can't init function constant"
       | NonFunctionEntry (Simple index) -> 
+        (*
+        print_endline "Binding RHS of initialisation with bind_expression";
+        *)
         let e',rhst = be e in
-        let lhst = typeofindex syms [] [] 0 [] index parent_ts in
+
+        (*
+        print_endline "Binding LHS of initialistion with typeofindex";
+        *)
+        let lhst = typeofindex_with_ts syms [] index parent_ts in
         let rhst = minimise rhst in
         if type_eq lhst rhst
         then tack (`BEXE_init (index, (e',rhst)))

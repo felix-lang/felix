@@ -64,6 +64,7 @@ let register_type_nr syms t =
     let t = fold t in
     if not (Hashtbl.mem syms.registry t)
     then
+      let () = check_recursion t in
       let n = !(syms.counter) in
       incr syms.counter;
       if syms.compiler_options.print_flag then
@@ -73,12 +74,17 @@ let register_type_nr syms t =
 let rec register_type_r syms bbdfns exclude t =
   let t = lower t in
   (*
-  print_endline ("Register type " ^ string_of_btypecode syms.dfns t);
+  let sp = String.make (length exclude * 2) ' ' in
+  print_endline (sp ^ "Register type " ^ string_of_btypecode syms.dfns t);
+  if (mem t exclude) then print_endline (sp ^ "Excluded ..");
   *)
   if not (mem t exclude) then
   let rr t' = register_type_r syms bbdfns (t :: exclude) t' in
   let rnr t = register_type_nr syms t in
   let t' = unfold t in
+  (*
+  print_endline (sp ^ "Unfolded type " ^ string_of_btypecode syms.dfns t');
+  *)
   match t' with
   | `BTYP_void -> ()
   | `BTYP_fix i -> failwith ("[register_type_r] Fixpoint "^si i^"encountered") 

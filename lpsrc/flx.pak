@@ -202,6 +202,8 @@ Flx_version.version_data := version_data
 @include_file ('flx_unify.ipk')
 @include_file ('flx_parser.ipk')
 @include_file ('flx_string.ipk')
+@include_file ('flx_keywords.ipk')
+@include_file ('flx_ulex.ipk')
 @include_file ('flx_lexer.ipk')
 @include_file ('flx_tokeniser.ipk')
 @include_file ('flx_pat.ipk')

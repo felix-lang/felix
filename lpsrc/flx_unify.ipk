@@ -111,6 +111,10 @@ val var_i_occurs:
 val normalise_type: 
   btypecode_t -> int list * btypecode_t
 
+(** check for bad recursions *)
+val check_recursion:
+  btypecode_t -> unit
+
 @h=tangler('src/flx_unify.ml')
 @select(h)
 open Flx_types
@@ -118,6 +122,19 @@ open Flx_print
 open Flx_maps
 open Flx_util
 open List
+open Flx_exceptions
+
+(* top down check for fix point not under sum or pointer *)
+let rec check_recursion t = match t with
+   | `BTYP_pointer _ 
+   | `BTYP_sum _ 
+   | `BTYP_function _
+     -> ()
+
+   | `BTYP_fix i 
+     -> raise Bad_recursion 
+
+   | x -> iter_btype check_recursion x
 
 let term_subst t1 i t2 =
   let rec s t = match map_btype s t with
@@ -440,10 +457,17 @@ let do_unify syms a b =
         end
       else 
         begin
-          (*
-          print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode syms.dfns t);
-          *)
+          match Hashtbl.find syms.dfns i with
+          | id,sr,parent,vs,table,dirs,`SYMDEF_function _ ->
+            (*
+            print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode syms.dfns t);
+            *)
           Hashtbl.add syms.varmap i t
+          | _ -> failwith 
+            (
+              "[do_unify] attempt to add non-function return unknown type variable "^
+              si i^" to hashtble"
+            )
         end
     )
     mgu

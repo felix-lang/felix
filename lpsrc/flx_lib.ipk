@@ -517,6 +517,51 @@ module List
     endmatch
     ;
   }
+
+  fun fold_left[T,U] (f:U->T->U) (init:U) (x:list[T]):U =
+  {
+    return
+      match x with
+      | Empty => init
+      | Cons (?h,?t) => fold_left f (f init h) t
+      endmatch
+    ;
+  }
+
+  fun fold_right[T,U] (f:T->U->U) (x:list[T]) (init:U):U =
+  {
+    return
+      match x with
+      | Empty => init
+      | Cons (?h,?t) => fold_right f t (f h init)
+      endmatch
+    ;
+  }
+  
+  fun join[T] (x:list[T]) (y:list[T]):list[T] = 
+  {
+    return
+      match x with
+      | Empty => y
+      | Cons (?h,?t) => Cons (h, join t y)
+      endmatch
+    ;
+  }
+
+  fun cat[T] (x:list[list[T]]):list[T] =
+  {
+     return 
+       match x with
+       | Empty => Empty[T]
+       | Cons (?h,?t) => fold_left join of (list[T]) h t
+       endmatch
+     ;
+   }
+}
+
+module Assoc_list
+{
+  typedef assoc_list[A,B] = List::list[(A,B)];
 }
 
 // ------ Open common modules -------------

@@ -50,6 +50,7 @@ let find_param name_map s =
 let print_vs vs =
   if length vs = 0 then "" else
   "[" ^ catmap "," (fun (s,i) -> s ^ "<"^si i^">") vs^ "]"
+
 let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
   let bexes env exes rt i tvars = bind_exes syms env sr exes rt name i tvars in
   (*
@@ -60,7 +61,7 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
     (* let env = build_env syms [] parent in  *)
     let env = build_env syms [] (Some i) in 
     let vs = find_vs syms i in
-    let bt t = bind_type syms env [] [] sr t in
+    let bt t = bind_type syms env [] sr t in
     match bdcl with
 
     (* Pure declarations of functions, modules, and type
@@ -82,6 +83,7 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
         s,(i,bt t)) 
       ps 
       in
+      let ts = map (fun (s,(i,t)) -> t) bps in
       let env' = build_env syms [] (Some i) in
       let brt = bt rt in
       let brt',bbexes = bexes env' exes brt i vs in
@@ -93,7 +95,12 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
           `BBDCL_function (vs,bps,brt',bbexes,name_map)
       in
         Hashtbl.add bbdfns i (name,parent,bbdcl);
-
+        begin
+          if not (Hashtbl.mem syms.ticache i) then
+          let t = fold (`BTYP_function (typeoflist ts,brt')) in
+          Hashtbl.add syms.ticache i t
+        end
+        ;
         let atyp = typeoflist (map (fun (s,(i,t)) -> t) bps) in
         if syms.compiler_options.print_flag then
         print_endline 
@@ -112,8 +119,9 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
         | `SYMDEF_function _
         | `SYMDEF_typed_functor _
         | `SYMDEF_untyped_functor _ ->
-          let t = bt t in
+          let t = typeofindex syms [] i in
           Hashtbl.add bbdfns i (name,parent,`BBDCL_val (vs,t));
+          Hashtbl.add syms.varmap i t;
 
           if syms.compiler_options.print_flag then
           print_endline ("//bound val " ^ name ^ "<"^si i^">" ^
@@ -124,7 +132,7 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
       end
 
     | `SYMDEF_match_check (pat,mvindex) ->
-      let t = typeofindex syms [] [] 0 [] mvindex in
+      let t = typeofindex syms [] mvindex in
       let name_map = Hashtbl.create 97 in
       let arg,sr = match Hashtbl.find syms.dfns mvindex with id,sr,_,_,_,_,_ -> id,sr in
       let exes = 
@@ -144,6 +152,13 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
       Hashtbl.add bbdfns i (name,parent,
         `BBDCL_function (vs,[],flx_bbool,bbexes,name_map)
       );
+      begin
+        if not (Hashtbl.mem syms.ticache i) then
+        let t = fold (`BTYP_function (`BTYP_tuple[],flx_bbool)) in
+        Hashtbl.add syms.ticache i t
+      end
+      ;
+
       if syms.compiler_options.print_flag then
       print_endline ("//bound match check " ^ name ^ "<"^si i^">" ^
       print_vs vs ^ ":" ^
@@ -151,7 +166,7 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
       )
     
     | `SYMDEF_val (t) -> 
-      let t = bt t in
+      let t = typeofindex syms [] i in
       Hashtbl.add bbdfns i (name,parent,`BBDCL_val (vs,t));
 
       if syms.compiler_options.print_flag then
@@ -160,27 +175,42 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
       sbt syms.dfns t)
 
     | `SYMDEF_var (t) ->
-      let t = bt t in
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_var (vs,t));
-
+      (*
+      print_endline ("Binding variable " ^ name ^"<"^ si i ^">");
+      *)
+      let t = typeofindex syms [] i in
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_var (vs,t))
+      ;
       if syms.compiler_options.print_flag then
       print_endline ("//bound var " ^ name ^ "<"^si i^">" ^
       print_vs vs ^ ":" ^
       sbt syms.dfns t)
+    
+    | `SYMDEF_const (t,ct) ->
+      let t = typeofindex syms [] i in
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_const (vs,t,ct));
+      if syms.compiler_options.print_flag then
+      print_endline ("//bound const " ^ name ^ "<"^si i^">:" ^
+      sbt syms.dfns t)
 
 
     | `SYMDEF_fun (ts,ret,ct) ->
-      let params : btypecode_t list = List.map bt ts in
+      let ts = map bt ts in
       let bret = bt ret in
       let bbdcl = match bret with
         | `BTYP_void ->
-          `BBDCL_proc (vs, params,ct)
+          `BBDCL_proc (vs, ts,ct)
         | _ ->
-          `BBDCL_fun (vs, params,bret,ct)
+          `BBDCL_fun (vs, ts,bret,ct)
       in
       Hashtbl.add bbdfns i (name,parent,bbdcl);
-
-      let atyp = typeoflist params in
+      begin
+        if not (Hashtbl.mem syms.ticache i) then
+        let t = fold (`BTYP_function (typeoflist ts,bret)) in
+        Hashtbl.add syms.ticache i t
+      end
+      ;
+      let atyp = typeoflist ts in
       if syms.compiler_options.print_flag then
       print_endline ("//bound fun " ^ name ^ "<"^si i^">"^
       print_vs vs ^ ":" ^
@@ -199,18 +229,9 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
       Hashtbl.add bbdfns i (name,parent,`BBDCL_struct (vs,cs'))
 
-    | `SYMDEF_const (t,ct) ->
-      let t = bt t in
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_const (vs,t,ct));
-      if syms.compiler_options.print_flag then
-      print_endline ("//bound const " ^ name ^ "<"^si i^">:" ^
-      sbt syms.dfns t);
-
 
     | `SYMDEF_regdef _ -> ()
     | `SYMDEF_type_alias _ -> ()
-
-
 
     | `SYMDEF_abs ct->
       (*

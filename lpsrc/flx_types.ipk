@@ -702,7 +702,7 @@ type sym_state_t =
   freg : instantiation_registry_t;
   counter : int ref;
   varmap : typevarmap_t;
-  ticache : (int * btypecode_t list, btypecode_t) Hashtbl.t;
+  ticache : (int, btypecode_t) Hashtbl.t;
   env_cache : (int, env_t) Hashtbl.t;
   registry : type_registry_t;
   compiler_options : felix_compiler_options_t;
@@ -1041,7 +1041,15 @@ val string_of_bound_expression :
   symbol_table_t -> 
   tbexpr_t -> 
   string
+val string_of_bound_expression_with_type : 
+  symbol_table_t -> 
+  tbexpr_t -> 
+  string
 val sbe: 
+  symbol_table_t -> 
+  tbexpr_t -> 
+  string
+val tsbe: 
   symbol_table_t -> 
   tbexpr_t -> 
   string
@@ -1386,10 +1394,15 @@ and sb dfns depth fixlist counter prec tc =
     let iprec, term = 
       match tc with
       | `BTYP_fix i ->
-         incr counter; (* 'a is 1 anyhow .. *)
-         let lab = "fix" ^ si i ^ "_"^get_label !counter in
-         fixlist := (depth+i,lab) :: !fixlist;
-         0,lab 
+         0,
+         (
+           try assoc (depth+i) !fixlist
+           with Not_found ->
+             incr counter; (* 'a is 1 anyhow .. *)
+             let lab = "fix" ^ si i ^ "_"^get_label !counter in
+             fixlist := (depth+i,lab) :: !fixlist;
+             lab 
+         )
 
       | `BTYP_binding (a,b) -> 
         6,
@@ -2077,6 +2090,11 @@ and string_of_exe level s =
     l ^ " := " ^ se r ^ ";"
 
 and sbe dfns e = string_of_bound_expression dfns e 
+and tsbe dfns e = string_of_bound_expression_with_type dfns e 
+
+and string_of_bound_expression_with_type dfns ((e',t) as e) = 
+  string_of_bound_expression dfns e ^ ":" ^
+  sbt dfns t
 
 and string_of_bound_expression dfns e = 
   let se e = string_of_bound_expression dfns e in
@@ -2584,6 +2602,7 @@ exception ClientError of range_srcref * string
 exception ClientError2 of range_srcref * range_srcref * string
 exception SystemError of range_srcref * string
 exception Exit of int
+exception Bad_recursion
 """
 //
 @h = tangler('src/flx_exceptions.ml')

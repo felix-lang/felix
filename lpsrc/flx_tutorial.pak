@@ -1985,6 +1985,31 @@ val y = rev x;
 iter (proc (x:int) { print x; print ", "; }) x; endl;
 iter (proc (x:int) { print x; print ", "; }) y; endl;
 
+proc print (x:list[int]) 
+{
+  match x with
+  | Empty => { print "[]"; }
+  | Cons (?h,?t) => 
+    {
+      print "["; print h;
+      iter (proc (x:int) { print ","; print x; }) t;
+      print "]";
+    }
+  endmatch;
+}
+
+fun add (x:int) (y:int):int = { return x + y; }
+
+val x_l_total = fold_left add of (int) 0 x;
+val y_l_total = fold_left add of (int) 0 y;
+val x_r_total = fold_right add of (int) x 0;
+val y_r_total = fold_right add of (int) y 0;
+print x_l_total; endl;
+print y_l_total; endl;
+print x_r_total; endl;
+print y_r_total; endl;
+
+
 
 @head(2,'Modules')
 Most modern languages support packaging of related

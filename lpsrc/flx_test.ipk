@@ -2,9 +2,6 @@
 These are C++ mainline routines, which are used
 to drive different kinds of Felix programs.
 @p()
-The Universal Program Driver, flx_run,
-runs a Felix program with no inputs.
-@p()
 The Universal Filter Driver, flx_stdin,
 runs a Felix program which reads standard input.
 @p()
@@ -12,7 +9,11 @@ We need some other standard drivers.
 An X-Windows driver would be really nice.
 
 
-@head(3,'Test 1')
+@head(2,'Test 1')
+The Universal Program Driver, flx_run,
+runs a Felix program with no inputs.
+This driver is located in flx_rtl.ipk.
+@p()
 This routine just loops through
 numbers 1 to 10, and prints if they're odd or even.
 @d = tangler('test/flx_run_lib1.flx')

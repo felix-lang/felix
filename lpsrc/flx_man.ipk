@@ -41,7 +41,7 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 //
 
 @head(2,'felix:language overview')
-@select(tangler('man/man1/felix.1'))
+@select(tangler('man/man1/felix.1','data'))
 .TH FELIX LANGUAGE "2003 Jan 1"
 .SH NAME
 Felix language
@@ -104,7 +104,7 @@ is the standard library.
 @tangle(manfoot)
 
 @head(2,'felix:Literals')
-@select(tangler('man/man1/flx_lit.1'))
+@select(tangler('man/man1/flx_lit.1','data'))
 .TH FELIX LITERALS "2003 April 11"
 .SH NAME
 Felix literals.
@@ -313,7 +313,7 @@ Hexadecimal
 @tangle(manfoot)
 
 @head(2,'felix:operator summary')
-@select(tangler('man/man1/flx_op.1'))
+@select(tangler('man/man1/flx_op.1','data'))
 .TH FELIX OPERATORS "2003 April 11"
 .SH NAME
 Felix operators and operator names
@@ -522,7 +522,7 @@ The second form is short for
 @tangle(manfoot)
 
 @head(2,'felix:directive summary')
-@select(tangler('man/man1/flx_dir.1'))
+@select(tangler('man/man1/flx_dir.1','data'))
 .TH FELIX DIRECTIVES "2003 April 11"
 .SH NAME
 Felix statements and directives
@@ -567,7 +567,7 @@ without qualification.
 @tangle(manfoot)
 
 @head(2,'felix:binding summary')
-@select(tangler('man/man1/flx_bind.1'))
+@select(tangler('man/man1/flx_bind.1','data'))
 .TH FELIX BINDING DEFINITIONS "2003 April 11"
 .SH NAME
 Felix binding definitons 
@@ -641,7 +641,7 @@ Question mark character ? emitted.
 @tangle(manfoot)
 
 @head(2,'felix:keyword summary')
-@select(tangler('man/man1/flx_key.1'))
+@select(tangler('man/man1/flx_key.1','data'))
 .TH FELIX KEYWORDS "2003 April 11"
 .SH NAME
 Felix keywords and operator symbols
@@ -651,7 +651,6 @@ _
 all
 and
 as
-attempt
 body
 call
 case
@@ -661,13 +660,10 @@ const
 define
 elif
 else
-endattempt
 endif
 endmatch
 except
-exceptions
 export
-finally
 fork
 fun
 function
@@ -781,7 +777,7 @@ with
 @tangle(manfoot)
 
 @head(2,'felix:declarations and definitions')
-@select(tangler('man/man1/flx_decl.1'))
+@select(tangler('man/man1/flx_decl.1','data'))
 .TH FELIX Declarations "2003 April 11"
 .SH NAME
 Felix declarations and definitons 
@@ -820,7 +816,7 @@ Specify a label.
 @tangle(manfoot)
 
 @head(2,'felix:Executable statements')
-@select(tangler('man/man1/flx_exec.1'))
+@select(tangler('man/man1/flx_exec.1','data'))
 .TH FELIX Executable statements "2003 April 11"
 .SH NAME
 Felix executable statements 
@@ -874,7 +870,7 @@ in a way that is easy to search for.
 @tangle(manfoot)
 
 @head(2,'felix:Standard library:types')
-@select(tangler('man/man1/flx_lib_typ.1'))
+@select(tangler('man/man1/flx_lib_typ.1','data'))
 .TH FELIX STANDARD LIBRARY - TYPES "2003 April 11"
 .SH NAME
 Standard library types
@@ -951,7 +947,7 @@ Unit of memory store, unisgned char in C.
 @tangle(manfoot)
 
 @head(2,'felix:command line tools')
-@select(tangler('man/man1/flx.1'))
+@select(tangler('man/man1/flx.1','data'))
 .TH FELIX TOOLS "2003 April 11"
 .SH NAME
 Felix tools
