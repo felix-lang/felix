@@ -767,7 +767,7 @@ We have no idea if it continues copying.
 
 @select(tangler('Makefile','data'))
 @tangle('PREFIX='+PREFIX)
-@tangle('INSTALL_DIR=${PREFIX}/felix/lib')
+@tangle('INSTALL_DIR=${PREFIX}/lib/felix')
 @tangle('EXEC_DIR=${PREFIX}/bin')
 @tangle('MAN_DIR=${PREFIX}/man')
 @try:
@@ -1027,6 +1027,7 @@ We have no idea if it continues copying.
 
 @tangle('config: dummy')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_config.pak')
+@tangle('\tpython -O script/make_config.py quiet')
 @tangle('')
 
 @tangle('boot: dummy')
@@ -1039,16 +1040,15 @@ We have no idea if it continues copying.
 @tangle('\t#"INSTALL_DIR=${INSTALL_DIR}"')
 @tangle('\t#"EXEC_DIR=${EXEC_DIR}"')
 @tangle('\t#"MAN_DIR=${MAN_DIR}"')
-@tangle('\tinstall -d ${INSTALL_DIR}/felix/lib ${INSTALL_DIR}/felix/rtl')
-@tangle('\tinstall -d ${INSTALL_DIR}/felix/doc')
-@tangle('\tinstall -d ${INSTALL_DIR}/felix/htmlman')
-@tangle('\t(install lib/* ${INSTALL_DIR}/felix/lib || exit 0) &> /dev/null')
-@tangle('\t(install rtl/* ${INSTALL_DIR}/felix/rtl || exit 0) &> /dev/null')
-@tangle('\t(install doc/* ${INSTALL_DIR}/felix/doc || exit 0) &> /dev/null')
-@tangle('\t(install impldoc/* ${INSTALL_DIR}/felix/impldoc || exit 0) &> /dev/null')
-@tangle('\t(install htmlman/* ${INSTALL_DIR}/felix/htmlman || exit 0) &> /dev/null')
+@tangle('\tinstall -d ${INSTALL_DIR}/lib ${INSTALL_DIR}/rtl')
+@tangle('\tinstall -d ${INSTALL_DIR}/doc')
+@tangle('\tinstall -d ${INSTALL_DIR}/htmlman')
+@tangle('\t(install lib/* ${INSTALL_DIR}/lib || exit 0) &> /dev/null')
+@tangle('\t(install rtl/* ${INSTALL_DIR}/rtl || exit 0) &> /dev/null')
+@tangle('\t(install doc/* ${INSTALL_DIR}/doc || exit 0) &> /dev/null')
+@tangle('\t(install impldoc/* ${INSTALL_DIR}/impldoc || exit 0) &> /dev/null')
+@tangle('\t(install htmlman/* ${INSTALL_DIR}/htmlman || exit 0) &> /dev/null')
 @tangle('\t(install bin/* ${EXEC_DIR} || exit 0) &> /dev/null')
-@tangle('\t(install man/man1/* ${MAN_DIR}/man1 || exit 0) &> /dev/null')
 @tangle('\t(install man/man1/* ${MAN_DIR}/man1 || exit 0) &> /dev/null')
 @tangle('\techo "Stuff in misc has to be installed by hand"')
 @tangle('')
@@ -1070,10 +1070,11 @@ We have no idea if it continues copying.
 @head(1,'README')
 @select(tangler('README'))
 This will be the readme file one day ..
+please see the INSTALL file
 
 @head(1,'AUTHORS')
 @select(tangler('AUTHORS'))
-John (Max) Skaller skaller@users.sf.net
+John (Max) Skaller skaller@users.sourceforge.net
 
 @head(1,'COPYING')
 @select(tangler('COPYING'))
@@ -1632,7 +1633,11 @@ DIV.DIFF_SECTION_HEAD EM, DIV.DIFF_SECTION_FOOT EM {
 # flx - felix script harness
 
 # g++ compilation string
-GPP="g++ -w -ansi "
+@tangle('CCOBJ_DLLIB="'+CCOBJ_DLLIB+'"')
+@tangle('CCLINK_DLLIB="'+CCLINK_DLLIB+'"')
+@tangle('CCOBJ_STATIC_LIB="'+CCOBJ_STATIC_LIB+'"')
+@tangle('CCLINK_STATIC="'+CCLINK_STATIC+'"')
+@tangle('VERSION="'+flx_version+'"')
 
 # check for test mode: this argument must come first
 
@@ -1640,6 +1645,9 @@ TESTMODE=0
 RECOMPILE=0
 DEBUG=0
 INLINE=0
+STATIC=0
+RUNIT=1
+
 grab=1
 
 while (( "$grab" == "1" ));
@@ -1660,8 +1668,28 @@ do
     shift
   ;;
 
+  x--static)
+    STATIC=1
+    shift
+  ;;
+
   x--inline)
     INLINE=1
+    shift
+  ;;
+
+  x--version)
+    echo $VERSION
+    exit 0
+  ;;
+
+  x--help)
+    man flx
+    exit 0
+  ;;
+
+  x-c)
+    RUNIT=0
     shift
   ;;
 
@@ -1677,11 +1705,6 @@ then
   echo "TESTMODE: running felix from current directory"
 fi
 
-if [ "$DEBUG" = "0" ]
-then
-  GPP="$GPP -DNDEBUG"
-fi
-
 # make a list of any *.cpp files (or other g++ options ..)
 
 grab=1
@@ -1695,12 +1718,22 @@ do
       shift
     ;;
 
+    *.cxx)
+      cpps="$cpps $1"
+      shift
+    ;;
+
     *.c)
       cpps="$cpps $1"
       shift
     ;;
      
     *.o)
+      cpps="$cpps $1"
+      shift
+    ;;
+
+    *.a)
       cpps="$cpps $1"
       shift
     ;;
@@ -1728,6 +1761,12 @@ else
   PKGS=`pkg-config --cflags --libs $pkgs`
 fi
  
+if [ "x$1" = "x" ]
+then
+  echo "usage: flx filename"
+  exit 1
+fi
+
 # Strip trailing .flx or .so
 # users should type 'flx file' without extension,
 # but #! interpreter always passes extension ..
@@ -1777,12 +1816,33 @@ then
   exit 1
 fi
 
+shift
+
+# grab arguments
+grab=1
+args=""
+while (( "$grab" == "1" ));
+do
+  case "x$1" in
+    x)  
+      grab=0
+    ;;
+
+    x*)
+      args="$args $1"
+      shift
+    ;;
+ esac
+done
+
 if [ "$TESTMODE" = "1" ]
 then
   INCLUDE_DIR="."
   FLXG="./bin/flxg"
   FLXLIB="./lib"
   FLXRUN="./bin/flx_run"
+  FLXRTL="./rtl"
+  FLXBIN="./bin"
 else
   # Locate the felix installation
   prefix=""
@@ -1800,15 +1860,32 @@ else
   FLXG="$prefix/bin/flxg"
   FLXRUN="$prefix/bin/flx_run"
   FLXLIB="$prefix/lib/felix/lib"
+  FLXRTL="$prefix/lib/felix/rtl"
+  FLXBIN="$prefix/bin"
 fi
 
 # No need to compile, just run it
-
-if [ $RECOMPILE = 0 -a -r "$base.so" -a "(" ! -r "$base.flx" -o "$base.so" -nt "$base.flx" ")" ]
+if [ $STATIC = 0 ]
 then
-  if [ $DEBUG = 1 ]; then echo "running $base.so"; fi
-  "$FLXRUN" "$base.so"
-  exit $?
+  if [ $RECOMPILE = 0 -a -r "$base.so" -a "(" ! -r "$base.flx" -o "$base.so" -nt "$base.flx" ")" ]
+  then
+    if [ $RUNIT = 1 ]
+    then
+      if [ $DEBUG = 1 ]; then echo "running $base.so"; fi
+      `echo "$FLXRUN" "$base.so $args"`
+    fi
+    exit $?
+  fi
+else
+  if [ $RECOMPILE = 0 -a -r "$base" -a "(" ! -r "$base.flx" -o "$base" -nt "$base.flx" ")" ]
+  then
+    if [ $DEBUG = 1 ]; then echo "running $base"; fi
+    if [ $RUNIT = 1 ]
+    then
+      `echo "$base $args"`
+    fi
+    exit $?
+  fi
 fi
 
 # Need Felix and c++ compile, then run it
@@ -1828,18 +1905,38 @@ else
   FLXFLAGS=""
 fi
 
-if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $base"` 
+if [ $STATIC = 0 ]
 then
-  if `echo $GPP -shared -I"$INCLUDE_DIR" "$PKGS" "$cpps" "$base.cpp" -o "$base.so"`
+  if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $base"` 
   then
-    # rm -f "$base.cpp"
-    "$FLXRUN" "$base.so"
-    exit $?
-  else
-    exit $?
+    if `echo $CCLINK_DLLIB -I"$INCLUDE_DIR" "$PKGS" "$cpps" "$base.cpp" -o "$base.so"`
+    then
+      # rm -f "$base.cpp"
+      if [ $RUNIT = 1 ]
+      then
+        `echo "$FLXRUN" "$base.so" $args`
+      fi
+      exit $?
+    else
+      exit $?
+    fi
+  fi
+else
+  if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $base"` 
+  then
+    if `echo $CCLINK_STATIC -DFLX_STATIC_LINK -I"$INCLUDE_DIR" $FLXBIN/flx_run_static.o "$PKGS" "$cpps" "$base.cpp" $FLXRTL/flx_static.a -o "$base"`
+    then
+      # rm -f "$base.cpp"
+      if [ $RUNIT = 1 ]
+      then
+        `echo $base $args`
+      fi
+      exit $?
+    else
+      exit $?
+    fi
   fi
 fi
-
 
 @os.system('chmod u+x bin/flx')
 @os.system('cp doc/*.css tut/doc &>/dev/null')

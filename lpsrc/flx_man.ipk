@@ -957,8 +957,13 @@ libname
 
 .br
 .B flx
+[--version] [--help] [--test] [--force] [--inline] [--static] [-c]
+[ [--pkg=<pkg-config pkg>] 
+[<file>.cpp] 
+[<file>.o] 
+[<file>.a] 
+[<linkops>]..]
 filebasename
-
 .br
 .B lexl
 filebasename
@@ -1019,6 +1024,71 @@ is a load and go test harness which compiles its
 argument to C++, compiles and links the C++ using gcc,
 then executes the resulting library using flx_run.
 
+.SH flx options
+.B --test
+.br
+Forces use of the Felix system in the current directory.
+Intended for use testing during development.
+
+.B --force
+.br
+Forces both Felix and C++ recompilation and linking.
+Normally, timestamps are checked, and compilation
+is skipped if the program is up to date.
+
+.B --inline
+.br
+Enables experimental inlining features. May slow
+down Felix compilation significantly. May cause
+significant code bloat.
+
+.B --static
+.br
+Force linking of an executable instead of a shared library.
+
+.B --version
+.br
+Prints version and exits.
+
+.B --help
+.br
+Runs 'man flx' and exits.
+
+.B -c
+.br
+Generates but does not execute the program.
+
+.B --pkg=<pkg-config pkg>
+.br
+Specifies the particular C library is required.
+This option causes the required flags to be added
+to compilation and link steps to allow #includes
+to find the headers, and to link the library
+to the program. This option uses the pkg-config
+program to obtain this data. May be specified
+any number of times.
+
+.B *.cpp *.cxx *.o *.a
+.br
+Files ending in these extensions are normally recognized 
+by the C/C++ compiler/linker harness are passed to it
+during C++ compilation and linkage steps. This allows
+linking Felix to arbitrary C, C++ codes available
+as source, object files, or in an archive.
+
+.B <link opts>
+.br
+Various options normally recognized by the C/C++ compiler/linker
+harness are passed through to it transparently.
+
+.B filebasename
+.br
+The name of the Felix program to run. May be given with
+or without the .flx extension. This program is compiled
+with the flxg driver to produce filebasename.cpp which is
+then compiled and linked with other specified files.
+Currently only one Felix file may be given.
+
 .SH USE
 .B flxg
 is the compiler proper. flx[lpmdb] are provided to
@@ -1031,6 +1101,7 @@ C++ compilation of the output, and execution
 using the standard program driver,
 for rapid prototyping in a scripting style.
 
+.SH DRIVERS
 .B flx_run
 is the standard prgram driver. Its argument
 is a shared library which is passed to 
@@ -1057,15 +1128,6 @@ newline character. A zero length line
 is passed at end of file. The message 
 types is 
 .B std::basic_string<char>
-
-.B lexl
-Lexer generator (lex/flex equivalent for felix) lexer.
-
-.B lexp
-Lexer generator (lex/flex equivalent for felix) parser.
-
-.B lexd
-Lexer generator (lex/flex equivalent for felix).
 
 @tangle(manfoot)
 

@@ -48,6 +48,10 @@ val gen_offset_tables:
   fully_bound_symbol_table_t ->
   string
 
+val find_thread_vars_with_type:
+  fully_bound_symbol_table_t ->
+  (bid_t * btypecode_t) list
+
 @h = tangler('src/flx_ogen.ml')
 @select(h)
 open Flx_util
@@ -58,6 +62,21 @@ open Flx_unify
 open Flx_typing
 open Flx_tgen
 open List
+
+let find_thread_vars_with_type bbdfns =
+  let vars = ref [] in
+  Hashtbl.iter
+  (fun k (id,parent,sr,entry) ->
+    match parent,entry with
+    | None,`BBDCL_var (_,t)
+    | None,`BBDCL_val (_,t)
+      -> vars := (k,t) :: !vars
+    | _ -> ()
+  )
+  bbdfns
+  ;
+  !vars
+
 
 let find_references syms (child_map,bbdfns) index ts = 
   let children = 
@@ -212,6 +231,59 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance =
   );
   gen_offset_data s n name offsets
 
+let gen_thread_frame_offsets s syms bbdfns =
+  let vars = find_thread_vars_with_type bbdfns in
+  let ts = [] in
+  let refs = filter 
+    (fun (i,t) -> match t with 
+    | `BTYP_pointer _ -> true 
+    | _ -> false
+    ) vars 
+  in
+  let funs = filter 
+    (fun (i,t) -> match t with 
+    | `BTYP_function _ -> true 
+    | _ -> false
+    ) vars 
+  in
+  let refnames = 
+    map 
+    (fun (index,t)-> 
+      cpp_instance_name syms bbdfns index ts,
+      cpp_typename syms t
+    )
+    refs
+  in
+  let funnames = 
+    map 
+    (fun (index,t)-> 
+      cpp_instance_name syms bbdfns index ts,
+      cpp_typename syms t
+    )
+    funs
+  in
+  let name = "thread_frame_t" in
+  let offsets = 
+    map
+    (fun (mem,reftyp)->
+      "offsetof("^name^","^mem^")" ^
+      "+offsetof("^comma_sub reftyp^",frame)" 
+    )
+    refnames
+    @
+    map 
+    (fun (mem,reftyp)->
+      "offsetof("^name^","^mem^")"
+    )
+    funnames
+  in
+  let n = length offsets in
+  bcat s 
+  (
+    "\n//OFFSETS for "^ name ^ "\n"
+  );
+  gen_offset_data s n name offsets
+
 let gen_offset_tables syms (child_map,bbdfns) =
   let primitive_shapes = Hashtbl.create 97 in
   let s = Buffer.create 20000 in
@@ -229,6 +301,8 @@ let gen_offset_tables syms (child_map,bbdfns) =
   | _ -> ()
   )
   syms.instances
+  ;
+  gen_thread_frame_offsets s syms bbdfns
   ;
 
   (* We're not finished: we need offsets for tuple and pointer types too *)
@@ -422,6 +496,7 @@ open List
 open Flx_generic
 open Flx_label
 open Flx_unravel
+open Flx_ogen
 
 let string_of_string = Flx_string.c_quote_of_string
 
@@ -460,20 +535,8 @@ let cstring_of_literal e = match e with
   | `AST_wstring s -> "L" ^ string_of_string s
   | `AST_ustring s -> "L" ^ string_of_string s
 
-let find_thread_vars bbdfns =
-  let vars = ref [] in
-  Hashtbl.iter
-  (fun k (id,parent,sr,entry) ->
-    match parent,entry with
-    | None,`BBDCL_var _
-    | None,`BBDCL_val _ 
-      -> vars := k :: !vars
-    | _ -> ()
-  )
-  bbdfns
-  ;
-  !vars
-
+let find_thread_vars bbdfns = 
+  map fst (find_thread_vars_with_type bbdfns)
 
 let find_variable_indices syms (child_map,bbdfns) index = 
   let children = 
@@ -2413,13 +2476,15 @@ try
   plb "  process_frame_t *ppf,";
   plb "  collector_t *gc";
   plb ") {";
-  plb "  return new thread_frame_t(pgf,ppf,gc);";
+  plb "  thread_frame_t *p = new(*gc,thread_frame_t_ptr_map) thread_frame_t(pgf,ppf,gc);";
+  plb "  gc->add_root(p);";
+  plb "  return p;";
   plb "}";
 
   plb "extern \"C\" void destroy_thread_frame(";
   plb "  thread_frame_t *ptf";
   plb ") {";
-  plb "  delete ptf;";
+  plb "  ptf->gc->remove_root(ptf);";
   plb "}";
 
   plb "extern \"C\" con_t *start(";

@@ -497,8 +497,12 @@ int main(int argc, char* argv[])
     return 1;
   }
   char *filename = argv[1];
+  char **flx_argv = argv+1;
+  int flx_argc = argc-1;
 #else
   char *filename = "static";
+  char **flx_argv = argv;
+  int flx_argc = argc;
 //  printf("Statically linked Felix program running\n");
 #endif
   try 
@@ -518,27 +522,30 @@ int main(int argc, char* argv[])
 //    printf("Created instance %s\n",filename);
 #endif
  
-    collector.add_root(instance.start);
     int gc_counter = 0;
     con_t *top = instance.start;
+    collector.add_root(top);
+    con_t *old_root = top;
 
     while( top && top->action == con_t::yield_action)
     {
-      con_t *new_top = top->resume();
-      if(new_top != top) {
-        if(new_top) collector.add_root(new_top);
-        collector.remove_root(top);
-        top = new_top;
-      }
+      top = top->resume();
       gc_counter++;
       if(gc_counter == 100)
       {
         gc_counter = 0;
+        // reset the root to the current top
+        if(old_root != top) {
+          if(top) collector.add_root(top);
+          if(old_root) collector.remove_root(old_root);
+          old_root = top;
+        }
         collector.collect();
       }
     }
 
     instance.destroy();
+    collector.collect();
     //printf("flx_run driver ends normally\n");
     return 0;
   }

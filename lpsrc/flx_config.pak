@@ -223,7 +223,7 @@ try:
   p(f,"SUPPORT_DYNAMIC_LOADING")
   pr(f,"SUPPORT_STATIC_LINKAGE = 1")
   p(f,"DEFAULT_LINK_MODEL")
-  pr(f,'PREFIX = "/usr/local/"')
+  pr(f,'PREFIX = "/usr/local"')
   pr(f,"ISCR='env PYTHONPATH=. python -O interscript/bin/iscr.py'")
   f.close()
 except:

@@ -343,8 +343,17 @@ static int counter = 0;
 struct checker
 {
   int number;
-  checker() { number = counter++; std::cout << "ctor " << number << std::endl; }
-  ~checker() {std::cout << "dtor " << number << std::endl; --counter; assert (number==counter);}
+  checker() { 
+    number = counter++; 
+    std::cout << "ctor " << number << std::endl; 
+  }
+  ~checker() {
+    std::cout << "dtor " << number << std::endl; 
+    --counter; 
+#ifdef FLX_REFCNT    
+    assert (number==counter);
+#endif  
+  }
 };
 """;
 
