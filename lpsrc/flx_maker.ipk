@@ -1,0 +1,373 @@
+@head(1,'Maker')
+@h = tangler('script/maker','python')
+@select(h)
+#!/usr/bin/env python
+###############################################################
+# FELIX MAKE SCRIPT
+###############################################################
+
+# --------------------------------------------------
+# IMPORT UTILITY RESOURCES
+# ---------------------------------------------------
+import os
+import stat
+import string
+import sys
+
+# ------------------------------------------------
+# PROCESS COMMAND LINE OPTIONS
+# ------------------------------------------------
+options = sys.argv[1:]
+if options:
+  print "OPTIONS: ", options
+if "clean" in options:
+    os.system("rm -f tmp/* src/* test/* lpsrc/*.cache")
+do_tests = "test" in options
+use_interscript = "noiscr" not in options
+
+# ------------------------------------------------
+# BEGIN USER CONFIGURABLE SECTION
+#-------------------------------------------------
+
+# uncomment to DISABLE INTERSCRIPT
+#use_interscript = 0
+
+# invoke ocaml interface compiler
+OCAMLBINPREFIX=''
+OCAML_OBJDIR='src'
+OCAMLC=OCAMLBINPREFIX+'ocamlc.opt -I '+OCAML_OBJDIR+' -rectypes '
+
+# where the ocaml is installed
+#OCAML_INCLUDE_DIRECTORY='/usr/local/lib/ocaml'
+
+# where gnu readline header files are
+#READLINE_INCLUDE_DIRECTORY='/usr/include/readline'
+
+# c compiler and options
+CCOMPILE = "gcc -Wno-long-long -pedantic -ansi -O2 -c "
+
+# for compiling mainlines
+FLX_CPP_LINK = "g++ -Wno-long-long -pedantic -ansi -rdynamic -ldl "
+
+# for building shared libraries
+FLX_CPP_DYNLINK = "g++ -Wno-long-long -pedantic -ansi -shared "
+
+# ------------------------------------------------
+# END USER CONFIGURABLE SECTION
+#-------------------------------------------------
+
+# invoke ocaml implementation compiler
+OCAMLOPT=OCAMLBINPREFIX+'ocamlopt.opt -I '+OCAML_OBJDIR+' -rectypes '
+
+# invoke ocaml yacc parser generator
+OCAMLYACC = OCAMLBINPREFIX+'ocamlyacc '
+
+# invoke ocaml lex lexer generator
+OCAMLLEX = OCAMLBINPREFIX+'ocamllex.opt '
+
+# where documentation gets put
+WEAVER_DIRECTORY='doc/'
+TUTORIAL_DIRECTORY='tut/'
+TUTORIAL_DOC=TUTORIAL_DIRECTORY+'doc/'
+TUTORIAL_EXAMPLES=TUTORIAL_DIRECTORY+'examples/'
+
+# where the garbage collector sources are
+# (the collector is now a separate package)
+FLX_GC_SRC='gc/src/'
+
+# -------------------------------------------------
+# BEGIN IMPLEMENTOR CONFIGURABLE SECTION
+# ------------------------------------------------
+
+# files containing ocamllex sources
+LEXS = ['flx_lex']
+
+# files containing ocamlyacc sources
+PARSES = ['flx_parse']
+
+# ocaml interface files
+INTERFACES = [
+  'flx_util'         ,
+  'flx_types'        ,
+  'flx_mtypes'       ,
+  'flx_typing'       ,
+  'flx_exceptions'   ,
+  'flx_string'       ,
+  'flx_print'        ,
+  'flx_srcref'       ,
+  'ucs_id'           ,
+  'flx_parse'        ,
+  'flx_keywords'     ,
+  'flx_lex'          ,
+  'flx_pretok'       ,
+  'flx_lex1'         ,
+  'flx_tok'          ,
+  'flx_parse_ctrl'   ,
+  'flx_pat'          , 
+  'flx_desugar'      , 
+  'flx_lookup'       , 
+  'flx_overload'     , 
+  'flx_tbind'        , 
+  'flx_ebind'        , 
+  'flx_bind'         , 
+  'flx_mbind'        , 
+  'flx_bbind'        , 
+  'flx_name'         , 
+  'flx_tgen'         , 
+  'flx_gen'          , 
+]
+
+# ocaml implementation files
+IMPLEMENTATIONS = [
+  'flx_util'         ,
+  'flx_mtypes'       ,
+  'flx_typing'       ,
+  'flx_exceptions'   ,
+  'flx_string'       ,
+  'flx_print'        ,
+  'flx_srcref'       ,
+  'ucs_id'           ,
+  'flx_parse'        ,
+  'flx_keywords'     ,
+  'flx_lex'          ,
+  'flx_pretok'       ,
+  'flx_lex1'         ,
+  'flx_tok'          ,
+  'flx_parse_ctrl'   ,
+  'flx_pat'          , 
+  'flx_desugar'      , 
+  'flx_lookup'       , 
+  'flx_overload'     , 
+  'flx_tbind'        , 
+  'flx_ebind'        , 
+  'flx_bind'         , 
+  'flx_mbind'        , 
+  'flx_bbind'        , 
+  'flx_name'         , 
+  'flx_tgen'         , 
+  'flx_gen'          , 
+]
+
+CPPTESTS = [
+  'test/flx_run.cpp',
+]
+
+# C files that we need to compile, with options required to build them
+COBJECTS = {
+}
+# *.so/.a libraries
+CLIBRARIES = ['nums']
+
+# *.cmxa libraries
+OLIBRARIES = ['nums','flxlib']
+
+
+# target executable programs to produce
+EXES = [
+  'flxl',
+  'flxp',
+  'flxd',
+  'flxb',
+  'flxg',
+]
+
+if 1:
+  s = ' -cclib "-Lsrc '
+  for library in CLIBRARIES:
+    s = s + ' -l'+library
+  s = s + '"'
+  LDFLAGS = s
+  del s
+
+if 1:
+  o = ''
+  for object in COBJECTS.keys():
+    o = o + ' src/' + object + '.o'
+  OBJECT_FILES = o
+  del o
+
+TESTS = [
+  'test/test_library1.flx',
+]
+
+# -------------------------------------------------
+# END IMPLEMENTOR CONFIGURABLE SECTION
+# -------------------------------------------------
+
+# ----------- Utilities ---------------------
+class MakeError: pass
+
+def filetime(f):
+  try:
+    return os.stat(f)[stat.ST_MTIME]
+  except: return 0
+
+def xqt(x):
+  print x
+  sys.stdin.flush()
+  f = os.popen(x + " 2>&1","r")
+  output = f.readlines()
+  result = f.close()
+  if result: print "  .. ERROR CODE",hex(result)
+  if output: print string.join(output,"")
+  sys.stdin.flush()
+
+  if result:
+    raise MakeError
+
+# ----------- Here begins the actual build procedure ---------------------
+
+buildall = "clean" in options
+stop_on_error = "stop_on_error" in options
+import glob
+
+try:
+  # STEP 0: run interscript
+  if "noiscr" not in options:
+    if "doc" in options:
+      xqt('iscr --language=en --weaver=web --passes=200 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
+      xqt('iscr --language=en --weaver=web --passes=200 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
+    else:
+      xqt('iscr lpsrc/flx.pak')
+      xqt('iscr lpsrc/flx_tutorial.pak')
+    os.system('rm -f tmp.tmp')
+
+  if do_tests:
+    REGRESSION_TESTS = glob.glob('test/rt*.flx')
+    TUTORIAL_TESTS = glob.glob('tut/examples/tut*.flx')
+    TESTS = TESTS + REGRESSION_TESTS + TUTORIAL_TESTS
+
+
+  # STEP 1: Compile all C files
+  for cobject in COBJECTS.keys():
+    flags = COBJECTS[cobject]
+    file = 'src/'+cobject
+    if buildall or filetime(file +".c") > filetime(file +".o"):
+      xqt(CCOMPILE +" -I "+OCAML_INCLUDE_DIRECTORY+" -I. "+flags+" "+file+".c")
+
+  # STEP 2: Generate lexers
+  for lex in LEXS:
+    file = 'src/'+lex
+    if buildall or filetime(file + '.mll') > filetime(file +'.ml'):
+      buildall = 1
+      xqt(OCAMLLEX + file + '.mll')
+
+  # STEP 3: Generate parsers
+  for parse in PARSES:
+    file = 'src/'+parse
+    if buildall or filetime(file + '.mly') > filetime(file +'.ml'):
+      buildall = 1
+      xqt(OCAMLYACC+ ' -v '+ file + '.mly')
+
+  # STEP 4: Compile ocaml interfaces
+  for interface in INTERFACES:
+    file = 'src/'+interface
+    if buildall or filetime(file + '.mli') > filetime(file+'.cmi'):
+      buildall = 1
+      xqt(OCAMLC + ' -c '+file+ '.mli')
+
+  # STEP 5: Compile ocaml implementations
+  for implementation in IMPLEMENTATIONS + EXES:
+    file = 'src/'+implementation
+    if buildall or filetime(file+ '.ml') > filetime(file+'.cmx'):
+      buildall = 1
+      xqt(OCAMLOPT + ' -c ' + file +'.ml')
+
+
+  # STEP 6: Build FELIX Library
+  linkstring = OCAMLOPT + " -a -o src/flxlib.cmxa "
+  library_filetime = filetime('src/flxlib.cmxa')
+  for implementation in IMPLEMENTATIONS:
+    file = 'src/'+implementation
+    if filetime(file+'.cmx') > library_filetime:
+      for implementation in IMPLEMENTATIONS:
+        file = 'src/'+implementation
+        linkstring = linkstring + file + ".cmx "
+      xqt(linkstring)
+      buildall = 1
+      break
+
+  # STEP 8: Link executables
+  x = ''
+  for library in OLIBRARIES:
+    x = x + ' ' + library + '.cmxa'
+
+  # finally, mainline *.cmx files to link to executables
+  for exe in EXES:
+    if buildall or filetime(exe + '.cmx') > filetime(exe):
+      xqt(OCAMLOPT + LDFLAGS + ' -o bin/'+exe + x + OBJECT_FILES + ' ' + exe + '.cmx')
+
+  w = 50
+  # run tests
+  if do_tests:
+    try:
+      results = []
+
+      # GENERATE C++ FROM FELIX SOURCE
+      for testfile in TESTS:
+        #print 'Running Felix code generator on ',testfile
+        try:
+          basename = string.split(testfile,'.')[0]
+          cppfilename = basename + ".cpp"
+          xqt('bin/flxg -q -Ilib ' + basename)
+          #print 'TESTFILE -- generated ',basename
+          results.append("flxg " + (basename+ ' ' * w)[:w]+ ' OK')
+        except MakeError:
+          print 'TESTFILE -- ERROR!',basename
+          if stop_on_error: raise MakeError
+          results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
+
+      # C++ COMPILE SHARED LIBRARIES
+      for testfile in TESTS:
+        #print 'Compiling generated code of ',testfile
+        try:
+          basename = string.split(testfile,'.')[0]
+          cppfilename = basename + ".cpp"
+          xqt(FLX_CPP_DYNLINK+" -I. -Igc/src "+cppfilename + " -o " + basename + ".so" )
+          #print 'TESTFILE -- OK!',basename
+          results.append("g++  " + (basename + ' ' * w)[:w]+ ' OK')
+        except MakeError:
+          print 'TESTFILE -- ERROR!',basename
+          if stop_on_error: raise MakeError
+          results.append("g++  " + (basename + ' '*w)[:w] + ' ERROR')
+
+
+      # COMPILER DRIVER PROGRAMS
+
+      for testfile in CPPTESTS:
+        #print 'Compiling driver program ',testfile
+        try:
+          basename = string.split(testfile,'.')[0]
+          xqt(FLX_CPP_LINK + " -I. -Itest -Igc/src gc/src/flx_gc.cpp gc/src/flx_collector.cpp " + basename + ".cpp -o " + basename)
+          #print 'TESTFILE -- OK!',basename
+          results.append("link " + (basename + ' ' * w)[:w]+ ' OK')
+        except MakeError:
+          print 'TESTFILE -- ERROR!',basename
+          if stop_on_error: raise MakeError
+          results.append("link " + (basename + ' '*w)[:w] + ' ERROR')
+
+      for testfile in TESTS:
+        basename = string.split(testfile,'.')[0]
+        testscript = "./test/flx_run ./"+basename+".so"
+        #print 'Executing ',testscript
+        try:
+          xqt(testscript)
+          #print 'TESTFILE -- OK!',testscript
+          results.append("Exec " + (testscript + ' ' * w)[:w]+ ' OK')
+        except MakeError:
+          print 'TESTFILE -- ERROR!',testscript
+          if stop_on_error: raise MakeError
+          results.append("Exec " + (testscript + ' '*w)[:w] + ' ERROR')
+
+      print "RUN COMPLETE"
+    finally:
+      # REPORT FINAL RESULTS
+      print
+      print '**********************************'
+      print 'final results'
+      for x in results: print x
+      print '**********************************'
+
+except MakeError:
+  print "Terminating due to error"
+

@@ -1,0 +1,449 @@
+@head(1,"Name Binding")
+Name binding pass 2.
+
+@h = tangler("src/flx_bbind.mli")
+@select(h)
+open Flx_types
+val bbind:
+  int ref ->
+  symbol_table_t ->
+  bound_symbol_table_t ->
+  fully_bound_symbol_table_t
+
+@h = tangler("src/flx_bbind.ml")
+@select(h)
+open Flx_util
+open Flx_types
+open Flx_print
+open Flx_mtypes
+open Flx_typing
+open Flx_bind
+open Flx_overload
+open Flx_lookup
+open Flx_ebind
+open Flx_mbind
+open Flx_srcref
+open Flx_tbind
+
+let cal_call dfns (p,pt) e =
+  match pt with
+  | BTYP_function (_, BTYP_void) -> 
+    BEXE_call ((p,pt), e)
+  | _ -> failwith ("call non procedure, type=" ^ string_of_btypecode dfns pt)
+
+exception Found of int
+
+let bind_exes dfns bdfns env exes ret_type = 
+  (*
+  print_endline ("bind_exes.. env depth="^ string_of_int (List.length env));
+  print_endline "Dumping Source Executables";
+  print_endline "--------------------------";
+  let soe = Flx_print.string_of_expression in
+  List.iter 
+    (fun x -> print_endline (string_of_exe 1 x))
+    exes
+  ;
+  print_endline ""
+  ;
+
+  print_endline "Binding Executables";
+  print_endline "-------------------";
+  *)
+  let be e = bind_expression dfns bdfns env [] e in
+  let lun sr n = lookup_name_in_env env sr n in
+  let luqn sr n = lookup_qn_in_env dfns env sr n in
+  let dummy_sr = ("bind exes",0,0,0,0) in
+  let bool_entry = luqn dummy_sr ["";"bool"] in
+  let bool_index = match bool_entry with
+    | FunctionEntry _ -> failwith "bool cannot be function"
+    | NonFunctionEntry index -> index
+  in let bool_type = BTYP_name bool_index in
+
+  let bound_exes = 
+    List.map
+    (function 
+      | EXE_comment s ->       BEXE_comment s
+      | EXE_label s ->         BEXE_label s
+      | EXE_goto s ->          BEXE_goto s
+      | EXE_ifgoto (e,s) ->    
+        let e',t = be e in
+        if t = bool_type 
+        then BEXE_ifgoto ((e',t), s)
+        else failwith "Conditional requires bool argument"
+      | EXE_ifnotgoto (e,s) -> 
+        let e',t = be e in
+        if t = bool_type 
+        then BEXE_ifnotgoto ((e',t), s)
+        else failwith "Conditional requires bool argument"
+
+      | EXE_call (AST_name (sr,sn), e) -> (* OVERLOADING *)
+        begin match sn with
+
+        (* Apply special lookup rules for an unqualified name:
+           search the environment until we get a match on
+           a function declaration, or find some other entity
+        *)
+        | ([name],typ) -> (* OVERLOAD UNQUALIFIED NAME *)
+          (* print_endline ("Call unqualified name " ^ name); *)
+          let typ' = bind_type dfns env [] typ in
+          let be2, t2 = be e in
+          if typ' <> BTYP_none && t2 <> typ'
+          then failwith "Type suffix doesn't agree with argument"
+          ;
+          let be1, t1 = 
+          try
+            List.iter
+            (fun htab ->
+              try 
+                match Hashtbl.find htab name with
+                | NonFunctionEntry index -> raise (Found index)
+                | FunctionEntry fs ->
+                  match resolve_overload dfns bdfns env fs name t2 with
+                  | Some i -> raise (Found i)
+                  | None ->  ()
+              with Not_found -> ()
+            )
+            env
+            ;
+            raise Not_found
+          with 
+          | Not_found ->
+              failwith 
+              (
+                "[flx_bbind.bind_exes|EXE_call] No match for " ^ name ^ " in " ^
+                 short_string_of_src sr
+              )
+
+          | Found index ->
+            (match Hashtbl.find bdfns index with id,parent,entry ->
+             match entry with
+             | BDCL_procedure _ 
+             | BDCL_match_handler _ ->
+               (* print_endline ("Procedure closure of " ^ name); *)
+               BEXPR_closure index
+             | _ -> 
+               (* print_endline ("Non closure " ^ name); *)
+               BEXPR_name index
+            )
+            , 
+            typeofindex dfns bdfns env [] sr index
+          in cal_call dfns (be1,t1) (be2,t2)
+
+        (* Do normal overloading for a qualified name:
+           run down the qualifier chain until we find
+           the final table, then try to match on
+           entries in it: if there are no matches,
+           we fail, rather than continue
+        *)
+        | (qn,TYP_none) -> (* OVERLOADING *)
+          let name = string_of_qualified_name qn in
+          let be2, t2 = be e in
+          let be1, t1 = 
+          let index = match luqn sr qn with
+            | NonFunctionEntry _ -> failwith "[bind_exes] Expected function"
+            | FunctionEntry fs -> 
+              match resolve_overload dfns bdfns env fs name t2 with
+              | Some i -> i
+              | None -> 
+                failwith 
+                (
+                  "[flx_bbind.bind_exes|EXE_call] No match for " ^ name ^ " in " ^
+                   short_string_of_src sr
+                )
+          in BEXPR_name index, typeofindex dfns bdfns env [] sr index
+          in cal_call dfns (be1,t1) (be2,t2)
+        | _ -> 
+          let be1,t1 = be (AST_name (sr,sn)) and be2,t2 = be e in
+          cal_call dfns (be1, t1) (be2, t2)
+        end
+      | EXE_call (p,e) ->
+        let p',pt' = be p and e',et' = be e in
+        cal_call dfns (p', pt') (e', et')
+
+      | EXE_read s ->          
+        begin match lun dummy_sr s with
+        | NonFunctionEntry index -> BEXE_read index
+        | FunctionEntry _ -> failwith "Can't read function!"
+        end
+
+      | EXE_return e ->        
+        let e',t' = be e in
+        if ret_type = t' then BEXE_return (e',t')
+        else failwith "Wrong return type"
+        
+      | EXE_nop s ->           BEXE_nop s 
+      | EXE_code s ->          BEXE_code s
+      | EXE_init (s,e) -> 
+        let sr = src_of_expr e in (* HACK! *)
+        begin match lun sr s with
+        | FunctionEntry _ -> failwith "Can't init function constant"
+        | NonFunctionEntry index -> 
+          let e',t' = be e in
+          let t = typeofindex dfns bdfns env [] sr index in
+          if t = t'
+          then BEXE_init (index, (e',t'))
+          else failwith (
+            "LHS["^s^"]("^string_of_btypecode dfns t^
+            ") of initialisation must have same type as RHS("^
+            string_of_btypecode dfns t'^")"
+          )
+        end
+      | EXE_raise (n,s,e) ->
+        let sr = src_of_expr e in (* HACK! *)
+        match lun sr s with
+        | NonFunctionEntry _ -> failwith "Can't raise non function"
+        | FunctionEntry fs ->
+          let name = s in
+          let e',argtype = be e in
+          let index = 
+            match resolve_overload dfns bdfns env fs name argtype with
+            | Some i -> i
+            | None -> failwith ("Can't find handler " ^ s)
+          in
+          BEXE_raise (n, index, (e',argtype))
+    )
+    exes
+  in 
+  (*
+  print_endline ""
+  ;
+  List.iter 
+    (fun x -> print_endline (string_of_bexe dfns 1 x)) 
+    bound_exes
+  ;
+  print_endline ""
+  ;
+  print_endline "BINDING COMPLETE"
+  ;
+  *)
+  bound_exes
+
+let bbind counter dfns bdfns = 
+  let bbdefns = Hashtbl.create 97 in
+  let bexes env exes rt = bind_exes dfns bdfns env exes rt in
+  let dummy_sr = ("Generated dummy",0,0,0,0) in
+  Hashtbl.iter
+  (fun i (name, parent, bdcl) -> 
+  match bdcl with
+  | BDCL_function (ps,rt,display,exes,name_map) -> 
+    (* print_endline ("//Binding function " ^ string_of_int i ^ " --> " ^ name); 
+    *)
+    let env = build_env dfns (Some i) in 
+    let bbexes = bexes env exes rt in
+    Hashtbl.add bbdefns i (name,parent,BBDCL_function (ps,rt,display,bbexes,name_map))
+
+  | BDCL_procedure (ps,display,exes,name_map) -> 
+    (* print_endline ("//Binding procedure " ^ string_of_int i ^ " --> " ^ name); 
+    *)
+    let env = build_env dfns (Some i) in 
+    let bbexes = bexes env exes BTYP_void in
+    Hashtbl.add bbdefns i (name,parent,BBDCL_procedure (ps,display,bbexes,name_map))
+  
+  | BDCL_match_check (pat,mvindex, display) ->
+    (* print_endline ("//Binding match checker " ^ string_of_int i ^ " --> " ^ name); 
+    *)
+    let env = build_env dfns (Some i) in 
+    let t = typeofindex dfns bdfns env [] dummy_sr mvindex in
+    let true_val = AST_name (("Generated",0,0,0,0),(["true"],TYP_none)) in
+    let _,rt = bind_expression dfns bdfns env [] true_val in
+    let name_map = Hashtbl.create 97 in
+    let arg,sr = match Hashtbl.find dfns mvindex with id,sr,_,_ -> id,sr in
+    let exes = 
+      [
+      EXE_return (gen_match_check pat (AST_name (sr,([arg],TYP_none))))
+      ] 
+    in
+    let bbexes = bexes env exes rt in
+    Hashtbl.add bbdefns i (name,parent,
+      BBDCL_function ([],rt,display,bbexes,name_map));
+  
+  | BDCL_match_handler (msgt,pat,mvindex,display,exes,name_map) ->
+    (* print_endline ("//Binding match handler " ^ string_of_int i ^ " --> " ^ name); 
+    *)
+    let env = build_env dfns (Some i) in 
+    let mvname,sr = 
+      match Hashtbl.find dfns mvindex 
+      with name,sr,_,_ -> name,sr
+    in
+    (* INSERT MATCH VARIABLE ASSIGNMENTS HERE *)
+    let vars = Hashtbl.create 97 in
+    Flx_mbind.get_pattern_vars vars pat [];
+    (* print_endline ("PATTERN IS " ^ string_of_pattern pat ^ ", VARIABLE=" ^ mvname);
+    print_endline "VARIABLES ARE";
+    Hashtbl.iter (fun vname (sr,extractor) ->
+      let component = 
+        Flx_mbind.gen_extractor extractor (AST_name (sr,([mvname],TYP_none))) 
+      in
+      print_endline ("  " ^ vname ^ " := " ^ string_of_expression component);
+    ) vars;
+    *)
+    (* Now, add the variables to the environment
+     and initialise them 
+    *)
+    let exes = ref exes in
+    Hashtbl.iter
+    (fun vname (sr,extractor) ->
+      let component = 
+        Flx_mbind.gen_extractor extractor 
+        (AST_name (sr,([mvname],TYP_none))) 
+      in
+      let vid = !counter in
+      incr counter;
+      (* print_endline ("//adding match variable component value "^string_of_int vid^" --> " ^ vname);
+      *)
+      Hashtbl.add dfns vid (vname, sr,Some i, 
+        SYMDEF_dcl (DCL_val_typeof component)
+      );
+      Hashtbl.add bdfns vid (vname, Some i, 
+        BDCL_val_typeof component
+      );
+      let bvtyp = typeofindex dfns bdfns env [] dummy_sr vid in
+      Hashtbl.add bbdefns vid (vname, Some i, 
+        BBDCL_val bvtyp 
+      );
+      Hashtbl.add (List.hd env) vname (NonFunctionEntry vid);
+      let instr = EXE_init (vname, component) in
+      (* print_endline (string_of_exe 1 instr);
+      *)
+      exes := instr :: !exes;
+    )
+    vars;
+    let bbexes = bexes env !exes BTYP_void in
+    Hashtbl.add bbdefns i (name,parent,
+      BBDCL_procedure ([],display,bbexes,name_map))
+  
+  | BDCL_val t -> 
+    (* print_endline ("//Binding value " ^ string_of_int i ^ " --> " ^ name); 
+    *)
+    Hashtbl.add bbdefns i (name,parent,BBDCL_val t)
+
+  | BDCL_var t ->
+    (* print_endline ("//Binding variable " ^ string_of_int i ^ " --> " ^ name); 
+    *)
+    Hashtbl.add bbdefns i (name,parent,BBDCL_var t)
+
+  | BDCL_val_typeof e  ->
+    (* print_endline ("//Binding value(typeof)" ^ string_of_int i ^ " --> " ^ name); 
+    *)
+    let env = build_env dfns parent in 
+    let _,t = bind_expression dfns bdfns env [] e in
+    Hashtbl.add bbdefns i (name,parent,BBDCL_val t)
+
+  | BDCL_var_typeof e ->
+    (* print_endline ("//Binding variable(typeof) " ^ string_of_int i ^ " --> " ^ name); 
+    *)
+    let env = build_env dfns parent in 
+    let _,t = bind_expression dfns bdfns env [] e in
+    Hashtbl.add bbdefns i (name,parent,BBDCL_var t)
+
+
+  | BDCL_const (t,ct) ->
+    (* print_endline ("//Binding constant " ^ string_of_int i ^ " --> " ^ name); 
+    *)
+    Hashtbl.add bbdefns i (name,parent,BBDCL_const (t,ct))
+
+  | BDCL_abs ct ->
+    (* print_endline ("//Binding abstract type " ^ string_of_int i ^ " --> " ^ name); 
+    *)
+    Hashtbl.add bbdefns i (name,parent,BBDCL_abs ct)
+
+  | BDCL_header ct ->
+    (* print_endline ("//Binding header string " ^ string_of_int i ^ " --> " ^ name); 
+    *)
+    Hashtbl.add bbdefns i (name,parent,BBDCL_header ct)
+
+  | BDCL_fun (ts,ret,ct) ->
+    (* print_endline ("//Binding primitive function " ^ string_of_int i ^ " --> " ^ name); 
+    *)
+    Hashtbl.add bbdefns i (name,parent,BBDCL_fun (ts,ret,ct))
+
+  | BDCL_proc (ts,ct) ->
+    (* print_endline ("//Binding primitive procedure " ^ string_of_int i ^ " --> " ^ name); 
+    *)
+    Hashtbl.add bbdefns i (name,parent,BBDCL_proc (ts,ct))
+
+  | BDCL_union cs ->
+    (* print_endline ("//Binding union " ^ string_of_int i ^ " --> " ^ name); 
+    *)
+    Hashtbl.add bbdefns i (name,parent,BBDCL_union cs)
+
+  | BDCL_struct cs ->
+    (* print_endline ("//Binding struct " ^ string_of_int i ^ " --> " ^ name); 
+    *)
+    Hashtbl.add bbdefns i (name,parent,BBDCL_struct cs)
+  )
+  bdfns
+  ;
+  bbdefns
+
+@h = tangler("src/flxb.ml")
+@select(h)
+open Flx_util
+open Flx_desugar
+open Flx_bind
+open Flx_bbind
+open Flx_print
+open Flx_types
+;;
+
+try
+  let filebase = Sys.argv.(1) in
+  let filename = filebase ^ ".flx" in
+  print_endline ("Parsing " ^ filename);
+
+  let parse_tree = 
+    Flx_parse_ctrl.parse_file 
+      filename 
+      (Filename.dirname filename)
+      []
+  in
+  print_endline (Flx_print.string_of_compilation_unit parse_tree);
+  print_endline "PARSE OK";
+
+  print_endline "----------------------------";
+  print_endline "DEBLOCKED:";
+
+  let counter = ref 1 in
+  let deblocked = desugar_program counter parse_tree in
+  print_endline (Flx_print.string_of_desugared deblocked);
+  print_endline "----------------------------";
+
+  let dfns = Hashtbl.create 97 in
+  let display = [] in
+  let msgt = TYP_void in
+  let table, exes, ifaces = 
+    build_tables true dfns counter "<top level>" 0 None [] msgt deblocked 
+  in
+    let bdfns = Hashtbl.create 97 in
+    Hashtbl.iter
+    (fun index _ -> bind_entry bdfns dfns index)
+    dfns
+    ;
+    Hashtbl.iter
+    (fun index (name,parent,entry) ->
+      print_endline  
+      (
+        string_of_int index ^
+        " --> " ^ string_of_bdcl dfns 0 index entry
+      )
+    )
+    bdfns
+    ;
+    print_endline "//BINDING EXECUTABLE CODE";
+    print_endline "//-----------------------";
+    let bbdfns = bbind counter dfns bdfns in
+    let bifaces = bind_ifaces dfns bdfns ifaces in
+    print_endline "//Binding complete";
+    Hashtbl.iter
+    (fun index (name,parent,entry) -> print_endline
+      (
+        string_of_int index ^ " --> " ^
+        string_of_bbdcl dfns entry index
+      )
+    )
+    bbdfns
+   
+with x -> flush stdout; print_endline "EXCEPTION"; 
+  print_endline (Printexc.to_string x)
+;;
+

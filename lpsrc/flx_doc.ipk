@@ -1,0 +1,232 @@
+@head(1,"Language Description")
+Hgsl is translator which generates C++ library code
+suitable for driving with an event driven dispatcher.
+@head(2,"Primitive types")
+Hgsl supports no primitive types. Instead, primitive types
+are defined by the user in C++, and specified as abstract
+types. An example is given below.
+@begin_displayed_code()
+type int = "long";
+fun add : int * int -> int = "$1 + $2";
+fun sub : int * int -> int = "$1 - $2";
+proc inc : &int = "++*$1;";
+@end_displayed_code()
+In this example, the Hgsl type 'int' is defined
+as the C++ type 'long'. The type can be used via
+the functions 'add' and 'sub', and variables can be
+modified by the procedure 'inc', which are also
+defined in C++.
+@p()
+In the function defintions, $1 and $2 denote the
+first and second components of the function argument
+tuple. Note that primitive functions specify C++ expressions,
+while primitive procedures specify C++ statements.
+@()
+The type combinator '*' denotes pair construction, 
+while '->' denotes a function.
+@p()
+Note that while the Hgsl lexer recognizes the boolean literals
+'true' and 'false', and integer, string, and floating literals,
+these types are not predefined and abstract types with these
+type names must be specified by the user if these types
+are used. 
+@p()
+Note also that 'bool' is extra special in that conditional
+constructions such as 'if/then/else' and 'while' also require
+that 'bool' be defined.
+@p()
+
+@head(2,"Algebraic types")
+Hgsl provides two combinators for specifying algebraic types.
+
+@head(3,"Tuple type")
+The infix '*' symbol can be used in a chain to specify
+a tuple, for example:
+@begin_displayed_code()
+  int * float * (int * string) * int
+@end_displayed_code()
+denotes the type of the tuple
+@begin_displayed_code()
+  (1,2.0,(3,"4"),5)
+@end_displayed_code()
+Note that this tuple has four components, the third of which
+is also a tuple: the '*' combinator chains components together,
+but is not associative.
+@p()
+Tuples are represented in C++ as structs with the
+components defined in the same order as in the Hgsl tuple.
+The components are named 'val_x' where the 'x' is replaced
+by a digit string representing the zero origin sequence number.
+The generated tuple is provided with a default 
+constructor, and a constructor accepting multiple arguments
+of the component types. For example, the definition of the
+tuple of type 'int * string' is given by
+@begin_displayed_code()
+  struct _88_tuple {
+    long val_1;
+    string val_2;
+    _88_tuple () : {}
+    _88_tuple (long arg1, float arg2) : 
+      val_1(arg1), 
+      val_2(arg2) 
+    {}
+  };
+@end_displayed_code()
+where we assume 'int' was defined as 'long', 
+and 'string' as 'string'.
+
+@head(3,"Function type")
+The infix '->' symbol can be used to specify a function,
+it is right associative so that
+@begin_displayed_code()
+  int -> float -> string
+@end_displayed_code()
+is equivalent to
+@begin_displayed_code()
+  int -> (float -> string)
+@end_displayed_code()
+and specifies the type of a function which accepts an int, 
+and returns a function which accepts a float and returns a string.
+@p()
+The right hand component of a function type may also be
+the keyword 'void', in which case the type is that of
+a procedure rather than a function. For example:
+@begin_displayed_code()
+  int -> void
+@end_displayed_code()
+denotes the type of a procedure which accepts an int.
+@p()
+Hgsl also supports passing references to variables.
+A '&' prefix may be used before a procedure's argument
+type to denote passing a reference to a variable.
+For example:
+@begin_displayed_code()
+  &int -> void
+@end_displayed_code()
+denotes the type of a procedure accepting a pointer
+to an int.
+@p()
+A '&' prefix may also be used before one or more
+top level components of a tuple type, for example
+@begin_displayed_code()
+  &int * &int -> void
+@end_displayed_code()
+denotes a procedure accepting a pair of references to int.
+@p()
+Note that functions cannot accept pointer arguments.
+Pass by reference is implemented by passing a C++ pointer.
+Hgsl functions are purely functional, and cannot modify
+their environment, so passing a reference would serve no
+purpose.
+@p()
+Note (as explained later in detail) that to pass a reference
+to a function, one writes '&' followed by the name of a variable:
+a reference to a value cannot be passed. For example:
+@begin_displayed_code()
+  proc inc : &int = "++*$1;";
+@end_displayed_code()
+
+@head(4,'Unit type')
+There is a special name for the type of an empty tuple (),
+namely 'unit'. Note that although one element tuples
+exist in principle, and have a distinct type, there is no 
+syntax for constructing such tuples, nor for denoting such a type.
+
+@head(3,"Union type")
+Hgsl provides a construction for creating a discriminated
+union type. We will give some examples.
+@begin_displayed_code()
+  union bool = false | true;
+  union number = 
+    | Int of int 
+    | Float of float 
+    | Complex of float * float
+    | NAN;
+@end_displayed_code()
+The first example defines two constants, 'true' and 'false',
+which constitute the type 'bool'. The '|' operator is used
+to separate alternatives. In the second example, and optional
+'|' is used before the first component to improve the 
+layout of the text. It defines a number as one of four
+cases. The first word after the '|' is the name of an
+function if the next word is 'of', in which case the
+function returns an object of the union type. Such a
+function is called a constructor function. The type given
+after the word 'of' specifies the function argument.
+@p()
+The definition of 'number' specifies three functions:
+@begin_displayed_code()
+  fun Int : int -> number;
+  fun Float : float -> number;
+  fun Complex : float * float -> number;
+@end_displayed_code()
+and a constant
+@begin_displayed_code()
+  const NAN : number;
+@end_displayed_code()
+However, 'number' is not an abstract type, it is possible
+to extract the arguments of the constructors with a 
+match expression or statement.
+@p()
+The representation of an object of type 'number'
+is one of the structs
+@begin_displayed_code()
+  struct _Int {
+    int index;
+    int val1;
+    _Int(int arg1) : val1(arg1), index(0) {}
+  };
+  struct _Float {
+    int index;
+    float val1;
+    _Float(float arg1) : val1(arg1), index(1) {}
+  };
+  struct _Complex {
+    int index;
+    float val1;
+    float val1;
+    _Float(float arg1, float arg2) : 
+      val1(arg1), 
+      val2(arg2),
+      index(2) 
+    {}
+  };
+  struct _NAN {
+    int index;
+    _NAN() : index(3) {}
+  };
+@end_displayed_code()
+Note only constant constructors components 
+have default C++ constructors!
+Values of these types are represented by the given structure,
+variables are represented by a reference (Hgsl pointer).
+
+@head(2,'Pointers')
+Hgsl does not provide a pointer type. However,
+pass by reference is available. Here is a quick
+example of pass by reference:
+@begin_displayed_code()
+  procedure incr (x : &int) {
+    x <- x +1;
+  }
+  var v = 1;
+  incr(&v); 
+@end_displayed_code()
+The type of the procedure is
+@begin_displayed_code()
+  &int -> void
+@end_displayed_code()
+which is distinct from
+@begin_displayed_code()
+  int -> void
+@end_displayed_code()
+References to variables consist of two pointers.
+The first pointer points to the physically malloc'ed
+storage extent: this is called a frame.
+@p()
+The first part of the allocated memory
+contains a header which contains information used
+by the garbage collector to chain memory extents
+together, and
+
+

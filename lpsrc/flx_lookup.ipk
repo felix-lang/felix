@@ -1,0 +1,142 @@
+@head(1,"Name Lookup")
+@h = tangler("src/flx_lookup.mli")
+@select(h)
+open Flx_types
+val lookup_name_in_env :
+  env_t ->
+  range_srcref ->
+  id_t -> 
+  entry_set_t
+
+val lookup_qn_in_env :
+  symbol_table_t ->
+  env_t ->
+  range_srcref ->
+  qualified_name_t -> 
+  entry_set_t
+
+@h = tangler("src/flx_lookup.ml")
+@select(h)
+open Flx_util
+open Flx_types
+open Flx_print
+open Flx_mtypes
+open Flx_typing
+open List
+open Flx_srcref
+
+let get_data table index : symbol_data_t = 
+  try Hashtbl.find table index
+  with Not_found -> 
+    failwith ("[Flx_lookup.get_data] No definition of <" ^ string_of_int index ^ ">")
+
+(* lookup a string in a symbol table, return index *)
+let lookup_name_in_htab htab sr name : entry_set_t =
+  try Hashtbl.find htab name
+  with Not_found -> 
+    failwith 
+    (
+      "Unable to find '" ^ name ^ "' in hashtable: " ^
+      short_string_of_src sr
+    )
+  
+(* lookup a list of strings with a starting symbol table,
+  return index
+*)
+let rec lookup_qn_in_htab dfns htab sr qn : entry_set_t =
+  match qn with
+  | [] -> 
+    failwith 
+    (
+      "[lookup_qn_in_htab] Empty name: " ^ 
+      short_string_of_src sr
+    )
+  | h :: t -> 
+    let entry = lookup_name_in_htab htab sr h in
+    if t = [] then entry
+    else let index = 
+      match entry with
+      | FunctionEntry _ ->
+        failwith 
+        (
+          "[lookup_qn_in_htab] Expected " ^ h ^ " to be module, got overload set: " ^
+          short_string_of_src sr
+        )
+      | NonFunctionEntry index -> index
+    in match get_data dfns index with
+    | (id,_,_,SYMDEF_module htab) -> 
+      lookup_qn_in_htab dfns htab sr t
+    | (id,_,_,_) -> 
+      failwith (
+        "[lookup_qn_in_htab] Expected " ^ 
+        h ^ 
+        "to be module to find " ^ 
+        (String.concat "::" t) ^ 
+        " in: " ^
+        short_string_of_src sr
+      )
+
+(* lookup a string with a starting symbol table stack,
+  return data and possible table
+*)
+let rec lookup_name_in_env env sr name : entry_set_t =
+  match env with 
+  | h :: t ->
+    begin 
+      try lookup_name_in_htab h sr name
+      with _ -> lookup_name_in_env t sr name 
+    end
+  | [] -> failwith 
+    (
+      "[lookup_name_in_env]: Name '" ^ name ^ "' not found in environment: " ^
+      short_string_of_src sr 
+    )
+    
+(* lookup string list with a starting symbol table stack *)
+let lookup_qn_in_env dfns env sr qn : entry_set_t =
+  match qn with
+  | [] -> 
+    failwith 
+    (
+      "[lookup_qn_in_env] empty name " ^ 
+      short_string_of_src sr
+    )
+  | h :: t -> 
+    if h = ""
+    then 
+      if List.length env = 0
+      then 
+        failwith 
+        (
+          "[lookup_qn_in_env] Empty environment " ^ 
+          short_string_of_src sr
+        )
+      else
+        let htab = List.hd (List.rev env) in
+        lookup_qn_in_htab dfns htab sr t
+    else
+      let entry = lookup_name_in_env env sr h in
+      if t = [] then entry
+      else let index = 
+        match entry with
+        | FunctionEntry _ ->
+          failwith 
+          (
+            "[lookup_qn_in_env] Expected " ^ h ^ " to be module, got overload set" ^
+            short_string_of_src sr
+          )
+        | NonFunctionEntry index -> index
+      in match get_data dfns index with
+      | (id,_,_,SYMDEF_module htab) ->
+        lookup_qn_in_htab dfns htab sr t
+      | (id,_,_,_) -> 
+        failwith (
+          "[lookup_qn_in_env] Expected " ^ 
+          h ^ 
+          "to have symbol table to find " ^ 
+          (String.concat "::" t) ^ 
+          " in :" ^
+          short_string_of_src sr
+        )
+
+

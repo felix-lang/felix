@@ -1,0 +1,512 @@
+@head(1,'Pre token filters')
+@h = tangler('src/flx_lex1.ml')
+@select(h)
+
+open Flx_parse
+open Flx_exceptions
+
+(* 1: remove comments *)
+
+let filter_comments x =
+  let rec filter x' =
+    match x' with 
+    | COMMENT_NEWLINE _ :: t-> filter t
+    | COMMENT _ :: t -> filter t
+    | NEWLINE :: t -> filter t
+    | WHITE _ :: t -> filter t
+    | h :: t -> h :: filter t
+    | [] -> []
+  in filter x
+
+(* check identifiers for compliance to PDTR 10176 compliance. 
+  Don't call this routine, if an 8 bit character set is used
+  (eg Latin-1)
+*)
+let special_id_chars = [
+  int_of_char '_';
+  int_of_char '\''
+]
+
+let check_id x =
+  let rec filter x' =
+    match x' with 
+    | NAME (sr,x) :: t -> 
+      Ucs_id.check_string special_id_chars x; 
+      NAME (sr,x) :: filter t
+    | h :: t -> h :: filter t
+    | [] -> []
+  in filter x
+
+let translate ts = 
+  let filters = [
+    (* 1 *) filter_comments; 
+    (* 1u *) check_id; 
+    ] 
+  and reverse_apply dat fn = fn dat 
+  in List.fold_left reverse_apply ts filters
+
+@h = tangler('src/flx_lex1.mli')
+@select(h)
+val translate : Flx_parse.token list -> Flx_parse.token list
+
+@head(1,'Pre token printer')
+@h = tangler('src/flx_pretok.ml')
+@select(h)
+open Flx_parse
+let string_of_string s = "\"" ^  Flx_string.c_quote_of_string s ^ "\""
+
+let string_of_token (tok :Flx_parse.token): string =
+  match tok with
+  | NAME (sr,s) -> s
+  | INTEGER (sr,t,i) -> Big_int.string_of_big_int i
+  | FLOAT (sr,f) -> (string_of_float f)
+  | COMPLEX (sr, r,i)  -> "(" ^ (string_of_float r) ^ ", " ^ (string_of_float i) ^ ")"
+  | STRING (sr,s) -> Flx_string.c_quote_of_string s 
+
+  (* one character tokens *)
+  | EXCLAMATION _ -> "!" 
+  | LPAR _ -> "(" 
+  | RPAR _ -> ")" 
+  | LSQB _ -> "["
+  | RSQB _ -> "]"
+  | LBRACE _ -> "{"
+  | RBRACE _ -> "}"
+  | COLON _ -> ":"
+  | COMMA _ -> ","
+  | SEMI _ -> ";"
+  | PLUS _ -> "+"
+  | MINUS _ -> "-"
+  | STAR _ -> "*"
+  | SLASH _ -> "/"
+  | VBAR _ -> "|"
+  | AMPER _ -> "&"
+  | LESS _ -> "<"
+  | GREATER _ -> ">"
+  | EQUAL _ -> "="
+  | DOT _ -> "."
+  | DOTDOT _ -> ".."
+  | DOTDOTDOT _ -> "..."
+  | PERCENT _ -> "%"
+  | BACKQUOTE _ -> "`"
+  | TILDE _ -> "~"
+  | CIRCUMFLEX _ -> "^"
+  | COLONCOLON _ -> "::"
+
+  (* two character tokens *)
+  | ANDLESS _ -> "&<"
+  | ANDGREATER _ -> "&>"
+  | EQEQUAL _ -> "=="
+  | NOTEQUAL _ -> "!="
+  | LESSEQUAL _ -> "<="
+  | GREATEREQUAL _ -> ">="
+  | LEFTSHIFT _ -> "<<"
+  | RIGHTSHIFT _ -> ">>"
+  | DOUBLESTAR _ -> "**"
+  | STARSTAR _ -> "<POW>**"
+  | LESSCOLON _ -> "<:"
+  | COLONGREATER _ -> ":>"
+
+  | PLUSPLUS _ -> "++"
+  | MINUSMINUS _ -> "--"
+  | PLUSEQUAL _ -> "+="
+  | MINUSEQUAL _ -> "-="
+  | STAREQUAL _ -> "*="
+  | SLASHEQUAL _ -> "/="
+  | PERCENTEQUAL _ -> "%="
+  | CARETEQUAL _ -> "^="
+  | VBAREQUAL _ -> "|="
+  | AMPEREQUAL _ -> "&="
+  | TILDEEQUAL _ -> "~="
+  | COLONEQUAL _ -> ":="
+  | RIGHTARROW _ -> "->"
+  | LEFTARROW _ -> "<-"
+  | LSQANGLE _ -> "[<"
+  | RSQANGLE _ -> ">]"
+  | LEFTSHIFTEQUAL _ -> "<<="
+  | RIGHTSHIFTEQUAL _ -> ">>="
+  | LEFTRIGHTARROW _ -> "<->"
+
+  | ANDEQEQUAL _ -> "&=="
+  | ANDNOTEQUAL _ -> "&!="
+  | ANDLESSEQUAL _ -> "&<="
+  | ANDGREATEREQUAL _ -> "&>="
+(* keywords *)
+  | AND _ ->  "and"
+  | NOT _ -> "not"
+  | OR _ -> "or"
+  | SERVICE _ -> "service" 
+  | COMMAND _ -> "command" 
+  | FUNCTION _ -> "function" 
+  | PROCEDURE _ -> "procedure" 
+  | READER _ -> "reader" 
+  | HANDLER _ -> "handler" 
+  | IF _ -> "if" 
+  | THEN _ -> "then" 
+  | ELSE _ -> "else" 
+  | ENDIF _ -> "endif" 
+  | ELIF _ -> "elif" 
+  | CALL _ -> "call"
+  | MATCH _ -> "match"
+  | WITH _ -> "with"
+  | CASE _ -> "case"
+  | ENDMATCH _ -> "endmatch"
+  | TYPE _ -> "type"
+  | TYPEDEF _ -> "typedef"
+  | FUN _ -> "fun"
+  | UNIT _ -> "unit"
+  | VOID _ -> "void"
+  | SLP _ -> "slp"
+  | READ _ -> "read"
+  | RETURN _ -> "return"
+  | CONST _ -> "const"
+  | PROC _ -> "proc"
+  | STRUCT _ -> "struct"
+  | HEADER _ -> "header"
+  | CODE _ -> "code"
+  | FORK _ -> "fork"
+  | WHILE _ -> "while"
+  | LOOP _ -> "loop"
+  | TODO _ -> "todo"
+  | OF _ -> "of" 
+  | ATTEMPT _ -> "attempt"
+  | RAISE _ -> "raise"
+  | EXCEPT _ -> "except"
+  | FINALLY _ -> "finally"
+  | UNION _ -> "union"
+  | LAMBDA _ -> "lambda"
+  | LAZY _ -> "lazy"
+  | WHEN _ -> "when"
+  | AS _ -> "as"
+  | REGEXP _ -> "regexp"
+  | ANY _ -> "_"
+  | VAR _ -> "var"
+  | EXCEPTIONS _ -> "exceptions"
+  | CLASS _ -> "class"
+  | CATEGORY _ -> "category"
+  | VAL _ -> "val"
+  | MODULE _ -> "module"
+  | GOTO _ -> "goto"
+  | EXPORT _ -> "export"
+
+  (* special things *)
+  | SLOSH _ -> "\\" (* "\"" *) 
+
+  | COMMENT s -> s (* C style comment, includes the /* */ pair *)
+  | COMMENT_NEWLINE s -> "#" ^ s ^ "<NEWLINE>"
+  | WHITE i -> String.make i ' '
+  | NEWLINE -> "<NEWLINE>"
+  | ENDMARKER -> "<<EOF>>"
+  | ERRORTOKEN (sref,s) -> "<<ERROR '"^ s ^"'>>"
+
+let src_of_token t = match t with
+  | NEWLINE 
+  | COMMENT _
+  | COMMENT_NEWLINE _
+  | WHITE _ 
+  | ENDMARKER
+    -> ("",0,0,0)
+
+  | NAME    (s,_)  -> s
+  | INTEGER (s,_,_) -> s 
+  | FLOAT   (s,_) -> s 
+  | COMPLEX (s,_,_) -> s 
+  | STRING  (s,_) -> s 
+
+  | ERRORTOKEN (s,_) -> s
+
+  | EQUAL s -> s
+  | PLUS s -> s
+  | MINUS s -> s
+  | STAR s -> s
+  | SLASH s -> s
+  | PERCENT s -> s
+  | STARSTAR s -> s
+  | AMPER s -> s
+  | VBAR s -> s
+  | EXCLAMATION s -> s
+  | LPAR s -> s
+  | RPAR s -> s
+  | LSQB s -> s
+  | RSQB s -> s
+  | LBRACE s -> s
+  | RBRACE s -> s
+  | LSQANGLE s -> s
+  | RSQANGLE s -> s
+  | COLON s -> s
+  | COMMA s -> s
+  | SEMI s -> s
+  | DOT s -> s
+  | BACKQUOTE s -> s
+  | LESS s -> s
+  | GREATER s -> s
+  | EQEQUAL s -> s
+  | NOTEQUAL s -> s
+  | LESSEQUAL s -> s
+  | GREATEREQUAL s -> s
+  | ANDLESS s -> s
+  | ANDGREATER s -> s
+  | ANDEQEQUAL s -> s
+  | ANDNOTEQUAL s -> s
+  | ANDLESSEQUAL s -> s
+  | ANDGREATEREQUAL s -> s
+  | TILDE s -> s
+  | CIRCUMFLEX s -> s
+  | LEFTSHIFT s -> s
+  | RIGHTSHIFT s -> s
+  | LEFTRIGHTARROW s -> s
+  | DOUBLESTAR s -> s
+  | PLUSPLUS s -> s
+  | MINUSMINUS s -> s
+  | PLUSEQUAL s -> s
+  | MINUSEQUAL s -> s
+  | STAREQUAL s -> s
+  | SLASHEQUAL s -> s
+  | PERCENTEQUAL s -> s
+  | CARETEQUAL s -> s
+  | VBAREQUAL s -> s
+  | AMPEREQUAL s -> s
+  | TILDEEQUAL s -> s
+  | COLONEQUAL s -> s
+  | LEFTSHIFTEQUAL s -> s
+  | RIGHTSHIFTEQUAL s -> s
+  | LEFTARROW s -> s
+  | RIGHTARROW s -> s
+  | COLONGREATER s -> s
+  | LESSCOLON s -> s
+  | COLONCOLON s -> s
+  | DOTDOT s -> s
+  | SLOSH s -> s
+  | DOTDOTDOT s -> s
+  | NOT s -> s
+  | OR s -> s
+  | AND s -> s
+  | LAMBDA s -> s
+  | LAZY s -> s
+  | AS s -> s
+  | ANY s -> s
+  | REGEXP s -> s
+  | WHEN s -> s
+  | IF s -> s
+  | THEN s -> s
+  | ELSE s -> s
+  | ENDIF s -> s
+  | ELIF s -> s
+  | OF s -> s
+  | VAR s -> s
+  | UNION s -> s
+  | CLASS s -> s
+  | CATEGORY s -> s
+  | EXCEPTIONS s -> s
+  | GOTO s -> s
+  | EXPORT s -> s
+  | MATCH s -> s
+  | WITH s -> s
+  | ENDMATCH s -> s
+  | CASE s -> s
+  | HEADER s -> s
+  | MODULE s -> s
+  | CODE s -> s
+  | SERVICE s -> s
+  | COMMAND s -> s
+  | HANDLER s -> s
+  | CALL s -> s
+  | PROCEDURE s -> s
+  | FUNCTION s -> s
+  | SLP s -> s
+  | READER s -> s
+  | UNIT s -> s
+  | RETURN s -> s
+  | FORK s -> s
+  | VOID s -> s
+  | WHILE s -> s
+  | LOOP s -> s
+  | TODO s -> s
+  | TYPE s -> s
+  | FUN s -> s
+  | READ s -> s
+  | PROC s -> s
+  | CONST s -> s
+  | STRUCT s -> s
+  | RAISE s -> s
+  | ATTEMPT s -> s
+  | FINALLY s -> s
+  | EXCEPT s -> s
+  | VAL s -> s
+  | TYPEDEF s -> s
+
+
+
+let pre_tokens_of_lexbuf buf state =
+  let lex_it() = Flx_lex.pre_flx_lex buf state in
+  let run = ref true in
+  let rec get () = 
+    if !run 
+    then let t = lex_it () in
+      match t with
+      | [Flx_parse.ENDMARKER] -> 
+        run := false;
+        [Flx_parse.ENDMARKER]
+      | _ -> t @ get()
+    else [Flx_parse.ENDMARKER]
+  in get ()
+
+let pre_tokens_of_filename filename dirname incdirs =
+  let state = new Flx_lex.lexer_state filename dirname incdirs in
+  let infile = open_in filename in
+  let src = Lexing.from_channel infile in
+  let toks = pre_tokens_of_lexbuf src state in
+    close_in infile; 
+    toks
+
+let pre_tokens_of_string s filename =
+  let state = new Flx_lex.lexer_state filename "" [] in
+  pre_tokens_of_lexbuf (Lexing.from_string s) state
+
+
+let print_pre_token t = 
+  let emit t = print_string (string_of_token t) in
+    begin match t with
+    | Flx_parse.COMMENT_NEWLINE s -> 
+      print_endline ("//" ^ s); 
+
+    | Flx_parse.NEWLINE -> 
+      print_endline ""
+
+    | Flx_parse.ENDMARKER -> print_endline "<<EOF>>" 
+    | _ -> emit t
+    end;
+    flush stdout
+
+let print_pre_tokens ts = 
+  if (List.length ts) = 0
+  then print_string "<Empty pretoken list>";
+  print_string "   1: ";
+  List.iter print_pre_token ts
+
+@h = tangler('src/flx_pretok.mli')
+@select(h)
+open Flx_parse
+val src_of_token : token -> Flx_types.srcref
+val string_of_token : token -> string
+val pre_tokens_of_filename : string -> string -> string list -> token list
+val pre_tokens_of_string : string -> string -> token list
+val print_pre_tokens : token list -> unit
+
+@head(1, 'Tokeniser')
+@h = tangler('src/flx_tok.ml')
+@select(h)
+let print_tokens ts = 
+  let lineno = ref 0 in
+  let indent = ref 0 in
+  let emit t = 
+    print_string ((Flx_pretok.string_of_token t) ^ " ") 
+  and emit_eol t = 
+    print_endline t;
+    let s' = "    " ^ (string_of_int !lineno) in
+    let n = String.length s' in
+    print_string ((String.sub s' (n-4) 4) ^ ": ");
+    for i=0 to !indent -1 do print_string "  " done
+  in
+  let print_token t =  
+    begin match t with
+    | Flx_parse.NEWLINE  -> 
+      emit_eol ("//")
+    | Flx_parse.LBRACE _ -> 
+      incr indent;
+      emit_eol "  {" 
+    | Flx_parse.RBRACE _ -> 
+      decr indent;
+      emit_eol "}" 
+    | Flx_parse.ENDMARKER -> emit_eol "#<<EOF>>"
+    | _ -> emit t
+    end;
+    flush stdout
+  in 
+    List.iter print_token ts
+;;
+
+class tokeniser t = 
+object
+  val mutable tokens = []
+  val mutable tokens_copy = []
+  val mutable current_token_index = 0
+  initializer tokens  <- t; tokens_copy <- t
+
+  method token_src (dummy :Lexing.lexbuf) =
+    let tmp = List.hd tokens in
+    tokens <- List.tl tokens;
+    current_token_index <- current_token_index + 1;
+    tmp
+
+  method report_syntax_error = 
+    print_endline "";
+    print_endline "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+    let n = List.length tokens_copy in
+    let first = max 0 (current_token_index - 20)
+    and last = min (n-1) (current_token_index + 20)
+    and slist = ref [] in
+    for i = first to current_token_index-1 do
+      slist := List.concat [!slist; [List.nth tokens_copy i]]
+    done;
+    print_tokens !slist;
+    print_endline "";
+    
+    print_string "Syntax Error before token ";
+    print_string (string_of_int current_token_index);
+    let token = List.nth tokens_copy current_token_index in
+    let file,line,scol,ecol = Flx_pretok.src_of_token token in
+    print_endline 
+    (
+      " in " ^ file ^ 
+      ", line " ^ string_of_int line ^ 
+      " col " ^ string_of_int scol
+    );
+    
+    slist := [];
+    for i = current_token_index to last do
+      slist := List.concat [!slist; [List.nth tokens_copy i]]
+    done;
+    print_tokens !slist;
+    print_endline "";
+    print_endline "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+    flush stdout
+end
+;;
+
+
+@h = tangler('src/flx_tok.mli')
+@select(h)
+
+val print_tokens : Flx_parse.token list -> unit
+class tokeniser :
+  Flx_parse.token list ->
+  object
+    val mutable current_token_index : int
+    val mutable tokens : Flx_parse.token list
+    val mutable tokens_copy : Flx_parse.token list
+    method report_syntax_error : unit
+    method token_src : Lexing.lexbuf -> Flx_parse.token
+  end
+
+@head(1, 'Lexer test harness')
+@h = tangler('src/flxl.ml')
+@select(h)
+
+(* just lex a file *)
+
+let filename = Sys.argv.(1) ^ ".flx";;
+print_endline "---------------------------------------";;
+print_endline ("Lexing " ^ filename);;
+print_endline "---------------------------------------";;
+
+print_endline "Pre tokens";;
+let pretokens = (Flx_pretok.pre_tokens_of_filename filename "" []);;
+Flx_pretok.print_pre_tokens  pretokens;;
+print_endline "---------------------------------------";;
+
+print_endline "Tokens";;
+let tokens = Flx_lex1.translate pretokens;;
+Flx_tok.print_tokens tokens;;
+print_endline "---------------------------------------";;
+
+

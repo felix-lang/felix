@@ -1,0 +1,422 @@
+@h = tangler('src/flx_tgen.mli')
+@select(h)
+open Flx_types
+val cpp_typename :
+  type_registry_t ->
+  fully_bound_symbol_table_t ->
+  btypecode_t -> string
+
+val collect_types :
+  type_registry_t ->
+  int ref ->
+  fully_bound_symbol_table_t ->
+  unit
+
+val gen_types :
+  type_registry_t ->
+  symbol_table_t ->
+  fully_bound_symbol_table_t ->
+  (int * btypecode_t) list -> string
+
+val gen_type_names :
+  type_registry_t ->
+  fully_bound_symbol_table_t ->
+  (int * btypecode_t) list -> string
+
+@h = tangler('src/flx_tgen.ml')
+@select(h)
+open Flx_types
+open Flx_bind
+open Flx_print
+open Flx_typing
+
+@head(2,'The type registry')
+Flx supports algebraic type expressions. For some of these,
+we need to construct a C++ class type. To ensure the same
+name is provided for each such class, we use a registry
+which maps the (bound) type expression to an integer.
+@p()
+The routine register_type_rn is a non-recursive registration
+procedure.
+@p()
+The routine register_type_r registers types recursively.
+The 'exclude' argument is a list of types which should
+not be registered, this is used to break potential
+infinite recursions. Note carefully that components
+are always registered before the type, so that they'll
+be defined before they're used. There two exceptions:
+for a pointer an incomplete type is sufficient,
+and sometimes necessary to break type recursion;
+and, unions may be recursive, but are represented
+by pointers anyhow.
+@p()
+Note that a function may accept an argument tuple
+one of whose arguments is a pointer to a function
+of the same type.
+@p()
+Note that the types of implicitly declared tuples
+will be caught here, since the only thing you can
+do with a tuple is make it the argument of a function.
+
+@select(h)
+let register_type_nr registry counter t =
+  if t <> BTYP_tuple [] then
+  if not (Hashtbl.mem registry t)
+  then
+    let n = !counter in
+    incr counter;
+    Hashtbl.add registry t n
+
+let rec register_type_r registry counter bbdfns exclude t =
+  if not (List.mem t exclude) then
+  let rr t' = register_type_r 
+    registry counter bbdfns (t :: exclude) t'
+  in
+  let rnr t = register_type_nr registry counter t in
+  match t with
+  | BTYP_void -> ()
+  | BTYP_none -> ()
+  | BTYP_function (ps,ret) -> rr ps; rr ret; rnr t
+  | BTYP_tuple ps -> List.iter rr ps; rnr t
+  | BTYP_pointer t' -> rr t' 
+    (* We don't register pointer types: use _ref_ template! *)
+  | BTYP_name index ->
+    let id, parent, entry = 
+      try Hashtbl.find bbdfns index 
+      with Not_found -> failwith ("register_type_r Can't find index " ^ string_of_int index ^ " in fully bound symbol table")
+    in
+    match entry with
+    | BBDCL_union cs -> List.iter rr (List.map snd cs); rnr t
+    | BBDCL_struct cs -> 
+      List.iter rr (List.map snd cs); 
+      rnr (typeoflist (List.map snd cs));
+      rnr t
+    | BBDCL_abs ct -> ()
+    | _ -> failwith "expected type declaration"
+
+let rec cpp_typename registry bbdfns t = 
+  let tn t = cpp_typename registry bbdfns t in
+  try match t with
+  | BTYP_tuple [] -> "unit"
+  | BTYP_function (_,BTYP_void) -> 
+    "_procedure_type_" ^ string_of_int (Hashtbl.find registry t)
+  | BTYP_function _ -> 
+    "_function_type_" ^ string_of_int (Hashtbl.find registry t) 
+  | BTYP_tuple _ -> "_tuple_type_" ^ string_of_int (Hashtbl.find registry t)
+  | BTYP_pointer t' -> "_ref_<"^tn t'^">"
+  | BTYP_void -> "void"
+  | BTYP_none -> failwith "[cpp_typename] Expected real type, got 'none'"
+  | BTYP_name index ->
+    let id,parent,entry = 
+      try Hashtbl.find bbdfns index
+      with Not_found -> failwith ("cpp_typename Can't find index " ^ string_of_int index ^ " in fully bound symbol table")
+    in begin match entry with
+      | BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
+      | BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
+      | BBDCL_abs ct -> ct
+      | _ -> failwith "expected type declaration"
+    end
+  
+  with Not_found -> failwith "[cpp_typename] Expected type to be in registry"
+
+@doc()
+We now need to collect the types required for declarations.
+In order to sequence the C++ declarations according to
+dependecies, our recursive analysis takes care only
+to assign an integer to a type when all type on which
+it depends have been processed. 
+@select(h)
+let collect_types registry counter bbdfns = 
+  let rr t = register_type_r registry counter bbdfns [] t in
+  Hashtbl.iter
+  begin fun index (id,parent,bbdcl) -> match bbdcl with
+    | BBDCL_function (ps,ret,_,_,_) ->
+      let a = typeoflist (List.map snd ps) in
+      rr (BTYP_function (a,ret))
+
+    | BBDCL_procedure (ps,_,_,_) ->
+      let a = typeoflist (List.map snd ps) in
+      rr (BTYP_function (a,BTYP_void))
+
+    | BBDCL_val t -> rr t 
+    | BBDCL_var t ->  rr t
+    | BBDCL_abs ct -> ()
+    | BBDCL_const (t,_) -> rr t
+    | BBDCL_fun (ps,ret,_) ->
+      let a = typeoflist ps in
+      rr (BTYP_function (a,ret))
+    | BBDCL_proc (ps,_) ->
+      let a = typeoflist ps in
+      rr (BTYP_function (a,BTYP_void))
+    | BBDCL_union _ -> rr (BTYP_name index)
+    | BBDCL_struct _ -> rr (BTYP_name index)
+    | BBDCL_header _ -> ()
+  end
+  bbdfns 
+
+@doc()
+Now some code to generate the bases, given the
+hashtable.
+@select(h)
+let gen_type_name registry bbdfns (index,typ) =
+  let tn t = cpp_typename registry bbdfns t in
+  match typ with
+  | BTYP_function _ ->
+    let name = tn typ in
+    "struct " ^ name ^ ";\n"
+  | BTYP_tuple ts ->
+    let name = tn typ in
+    "struct " ^ name ^ ";\n"
+
+  | BTYP_void -> ""
+  | BTYP_none -> ""
+  | BTYP_pointer t -> "//Pointer by template"
+
+  | BTYP_name index ->
+    let name = tn typ in
+    let id,parent,entry = 
+      try Hashtbl.find bbdfns index
+      with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_int index)
+    in
+    match entry with
+    | BBDCL_struct cs ->
+      "struct " ^ name ^ ";\n"
+    | BBDCL_union _ -> "//UNION " ^ name ^ " by typedef\n"
+    | BBDCL_abs ct -> ""
+    | _ -> failwith "expected type declaration"
+
+let gen_type registry dfns bbdfns (index,typ) =
+  "//TYPE: " ^ string_of_btypecode dfns typ ^ "\n"^
+  let tn t = cpp_typename registry bbdfns t in
+  match typ with
+
+  (* PROCEDURE *)
+  | BTYP_function (a,BTYP_void) ->
+    let name = tn typ  
+    and argtype = tn a
+    in
+    "struct " ^ name ^
+    ": continuation_t {\n" ^
+    (if a <> BTYP_tuple [] 
+    then
+    "  virtual continuation_t *call(continuation_t *, "^argtype^" const &)=0;\n"
+    else
+    "  virtual continuation_t *call(continuation_t *)=0;\n"
+    ) ^
+    "  virtual continuation_t *resume()=0;\n"  ^
+    "};\n"
+
+  (* FUNCTION *)
+  | BTYP_function (a,r) ->
+    let name = tn typ  
+    and argtype = tn a
+    and rettype = tn r
+    in
+    "struct " ^ name ^ " {\n" ^
+    "  virtual "^rettype^" apply("^
+    (if a = BTYP_tuple []
+    then ""
+    else argtype^" const &") ^
+    ")=0;\n"  ^
+    "};\n"
+
+  | BTYP_tuple ts ->
+    let components = ref [] in
+    let counter = ref 1 in
+    List.iter 
+    (fun t -> 
+      components := !components @ [!counter, t]; 
+      incr counter
+    )
+    ts
+    ;
+    let mem_dcls = String.concat "" (List.map 
+    (fun (i,t) ->
+      "  " ^ tn t ^ " " ^
+      "mem_" ^ string_of_int i ^ ";\n"
+    )
+    !components)
+
+    and param_dcls =  String.concat ",\n" (List.map
+    (fun (i,t) -> "    " ^ tn t ^ " arg_" ^ string_of_int i)
+    !components) ^ "\n"
+    
+    and ctor_inits = String.concat ",\n" (List.map
+    (fun (i,t) -> "    mem_" ^ string_of_int i ^ "(arg_" ^ string_of_int i ^ ")")
+    !components) ^ "\n"
+    in 
+    
+    let name = tn typ in
+    let ctor = 
+      "  " ^ name ^ "\n" ^
+      "  (\n" ^
+      param_dcls ^
+      "  ) :\n" ^
+      ctor_inits ^
+      "  {}\n"
+    in
+    "struct " ^ name ^ " {\n" ^
+    mem_dcls^
+    "  " ^ name ^ "(){}\n"^
+    ctor ^
+    "};\n"
+
+  | BTYP_void -> ""
+  | BTYP_none -> ""
+  | BTYP_pointer t -> failwith "Generate pointer type: should use template"
+    (*
+    let name = tn typ in
+    let data_type = tn t in
+    "struct " ^ name ^ " {\n" ^
+    "  void *frame;\n" ^
+    "  "^data_type^" *data;\n" ^
+    "  " ^ name ^ "(){}\n" ^
+    "  " ^ name ^ "(" ^ data_type ^ " *d, void *f) : data(d), frame(f) {}\n" ^
+    "};\n"
+    *)
+
+  | BTYP_name index ->
+    let name = tn typ in
+    let id,parent,entry = 
+      try Hashtbl.find bbdfns index 
+      with _ -> failwith ("[gen_type] can't find index " ^ string_of_int index)
+    in
+    match entry with
+    | BBDCL_struct cs ->
+      let ctor = 
+        let equiv_tuple_type = typeoflist (List.map snd cs) in
+        match List.length cs with
+        | 0 -> "" (* just use default ctor *)
+        | 1 -> 
+          "  " ^ name ^ "(" ^ tn equiv_tuple_type ^ "const &_arg): " ^
+          fst (List.hd cs) ^ "(_arg) {}\n" 
+        | _ ->
+          let ctor_inits = ref [] in 
+          let counter = ref 0 in
+          List.iter 
+          (fun (name,typ) -> 
+            incr counter; 
+            ctor_inits :=
+              (name ^ "(_arg.mem_"^string_of_int !counter ^")")
+              :: !ctor_inits
+          )
+          cs
+          ;
+          "  " ^ name ^ "(" ^ tn equiv_tuple_type ^ " const &_arg) :\n" ^
+          "    " ^ String.concat ",\n    " (List.rev !ctor_inits) ^
+          "\n  {}\n" 
+      in
+      "struct " ^ name ^ "{\n" ^
+      "  "^ name ^ "(){}\n" ^
+      ctor ^
+      String.concat "" 
+      (
+        List.map 
+        (
+          fun (name,typ) -> "  " ^ tn typ ^ 
+          " " ^
+          name ^ ";\n"
+        )
+        cs
+      ) ^
+      "};\n"
+
+    | BBDCL_union _ ->
+      "typedef _uctor_ " ^ tn typ ^ ";\n"
+
+    | BBDCL_abs ct -> ""
+    | _ -> failwith "expected type declaration"
+
+let find_references bbdfns name_map = 
+  let references = ref [] in
+  Hashtbl.iter
+  (fun id entryset -> 
+    match entryset with
+    | FunctionEntry _ -> ()
+    | NonFunctionEntry idx ->
+    let _,_,bbdfn = 
+      try Hashtbl.find bbdfns idx
+      with _ -> failwith ("[find_references] can't find index " ^ string_of_int idx)
+    in
+    match bbdfn with
+    | BBDCL_var ((BTYP_pointer _) as t)
+      -> references := (idx,t) :: !references
+    | BBDCL_val ((BTYP_pointer _) as t)
+      -> references := (idx,t) :: !references
+    | _ -> ()
+  ) 
+  name_map
+  ;
+  !references
+
+let find_variable_indices dfns index = 
+  let _,_,symdef = 
+    try Hashtbl.find dfns index 
+    with _ -> failwith ("[find_variable_indices(1)] Can't find index " ^ string_of_int index)
+  in
+  let name_map = match symdef with 
+    | SYMDEF_function (_,_,_,_,name_map) -> name_map
+    | SYMDEF_procedure (_,_,_,_,name_map) -> name_map
+    | SYMDEF_module name_map -> name_map
+    | SYMDEF_match_handler (_,_,_,_,_,name_map) -> name_map
+    | SYMDEF_match_check _ -> Hashtbl.create 97 
+    | _ -> failwith "[find variable indicies] Expected function definition"
+  in
+  let rec extract name_map = 
+    let variables = ref [] in
+    Hashtbl.iter
+    (fun id entryset -> 
+      match entryset with
+      | FunctionEntry _ -> ()
+      | NonFunctionEntry idx ->
+      let _,_,symdef = 
+        try Hashtbl.find dfns idx 
+        with _ -> failwith ("[find_variable_indices(2)] can't find index " ^ string_of_int index)
+      in
+      match symdef with
+      | SYMDEF_parameter _
+      | SYMDEF_dcl (DCL_var _) 
+      | SYMDEF_dcl (DCL_var_typeof _) 
+      | SYMDEF_dcl (DCL_val _) 
+      | SYMDEF_dcl (DCL_val_typeof _) 
+        -> variables := idx :: !variables
+      | SYMDEF_module table -> 
+        variables := extract table @ !variables
+      | _ -> ()
+    ) 
+    name_map
+    ;
+    !variables
+  in extract name_map
+
+let get_display_list bbdfns index =
+  let id,parent,entry = 
+    try Hashtbl.find bbdfns index 
+    with _ -> failwith ("[get_display_list] Can't find index " ^ string_of_int index)
+  in
+  match entry with
+  | BBDCL_function (_,_,display,_,_) -> display
+  | BBDCL_procedure (_,display,_,_) -> display
+  | _ -> failwith "Only functions and procedures have a display"
+
+let get_type bbdfns index = 
+  let id,parent,entry = 
+    try Hashtbl.find bbdfns index 
+    with _ -> failwith ("[get_type] Can't find index " ^ string_of_int index)
+  in
+  match entry with
+  | BBDCL_function (ps,ret,_,_,_) -> 
+      BTYP_function (typeoflist (List.map snd ps),ret)
+  | BBDCL_procedure (ps,_,_,_) -> 
+      BTYP_function (typeoflist (List.map snd ps),BTYP_void)
+  | _ -> failwith "Only function and procedure types handles by get_type"
+
+
+let gen_type_names registry bbdfns ts = 
+  String.concat "" 
+  (List.map (gen_type_name registry bbdfns) ts)
+
+let gen_types registry dfns bbdfns ts = 
+  String.concat "" 
+  (List.map (gen_type registry dfns bbdfns) ts)
+

@@ -1,0 +1,357 @@
+@set_title('Felix Tutorial')
+@tdir = 'tut/examples/'
+@head(1,'Preface: Authors note')
+This document is literate programmed using interscript.
+Although it is primarily designed
+as a tutorial, almost all the code examples are complete
+executable programs. This is partly so readers can run
+the examples as written, but there is another purpose:
+tutorial examples are expected to provide coverage
+of basic language features with a graded increase
+in complexity, which makes the examples excellent
+regression tests. And unlike other tests, the purpose
+of the examples is usually well documented.
+@p()
+There is another role of the tutorial during development:
+it provides an excellent way to check the usability
+of the language and tools: issues of ease of comprehension
+and use arise more easily than when working on 
+the compiler itself. Development of tutorial material
+in parallel with the language specification, implementation,
+hard core unit tests, and reference manual, can be seen
+as a form of 'Extreme Programming', but it is better
+understood as the central paradigm of 'Literate Programming'.
+@p()
+There is no requirement to use literate programming tools like
+interscript when developing Felix code. Or any
+other code. But I strongly
+recommend it be considered for larger projects, 
+expecially libraries. The strong integration 
+provided by LP is likely to challange corporate 
+procedures. And they surely need it.
+
+@head(1,'Hello Felix')
+There is no better introduction to a programming
+language than the infamous hello-world program.
+
+@select(tangler(tdir+'tut01.flx'))
+#include <std.flx>
+print "Hello World\n";
+@doc()
+and the Felix version is simplicity itself.
+The first line includes the standard library,
+and the second prints the hello world message.
+You'll notice that the argument to print is not
+enclosed in backets.  We'll learn more about
+this shortly.
+@p()
+To translate this program to C++, use the
+command
+@begin_displayed_code()
+  bin/flxg tut/examples/tut01
+@end_displayed_code()
+This produces two files:
+@begin_displayed_code()
+  tut/examples/tut01.hpp
+  tut/examples/tut01.cpp
+@end_displayed_code()
+We'll learn more about their structure later.
+We need to compile and link the file into a shared
+library, which we can do with
+@begin_displayed_code()
+  g++ -shared  -I. -Igc/src \
+    tut/examples/tut01.cpp \
+    -o tut/examples/tut01.so
+@end_displayed_code()
+Now we need to run the program, which we can do with
+@begin_displayed_code()
+  ./test/flx_run ./tut/examples/tut01.so
+@end_displayed_code()
+The 'flx_run' program is a standard Felix driver
+program for running standalone Felix programs.
+There are other kinds of Felix programs,
+which we'll learn more about later.
+
+@head(1,'Overloading')
+Felix supports overloading. To demonstrate this,
+we'll make a small modification to the hello
+world program. You can compile and run the
+program as before, just change the example number.
+@select(tangler(tdir+'tut02.flx'))
+#include <std.flx>
+print "Hello World ";
+print 42;
+print "\n";
+@doc()
+Here you can see that there are two procedures,
+one to print strings, and one to print ints,
+but they're both called 'print'.
+@p()
+Felix allows procedures and functions to be 
+overloaded, as does C++. However, unlike C++,
+Felix has no automatic conversions, and
+overload matching must be exact.
+
+@head(1,'Value declaration')
+Felix allows values to be declared using the 'val'
+keyword.
+@select(tangler(tdir+'tut03.flx'))
+#include <std.flx>
+val i = 40;
+val j = 2;
+val k = i + j;
+print k; print "\n";
+@doc()
+There are three values declared here, 'i','j', and 'k'.
+The first two have the type 'int', because '40' and '42'
+have the type int, whilst 'k' has the type 'int'
+because the addition function which takes as
+an argument a pair of 'int', returns an 'int'.
+@p()
+Notice you did not have to declare the type of
+the values. This is called 'type inference':
+the compiler works out the type from the initial
+value for you. You can declare the type of a variable
+if you want: the following program is equivalent
+to the one above:
+@select(tangler(tdir+'tut04.flx'))
+#include <std.flx>
+val i : int = 40;
+val j : int = 2;
+val k : int = i + j;
+print k; print "\n";
+@doc()
+but it is never necessary for values: an initialiser
+must always be given. If you do declare the type,
+Felix will still deduce the type from the initialiser,
+and issue an error message if the types don't agree.
+@p()
+Values are constants: they cannot be modified,
+and, as we will see later, they cannot be addressed.
+
+@head(1,'Variable declaration')
+Felix also support mutable variables, which are
+declared with the 'var' keyword.
+@select(tangler(tdir+'tut05.flx'))
+#include <std.flx>
+var i = 1;
+var j : int;
+while (i < 10) 
+{
+  j = i + i;
+  print j; print "\n";
+  ++i;
+}
+@doc()
+Like value declarations, the type of a variable
+does not need to be declared if it is initialised.
+However, as you can see uninitialised variables
+are also permitted, and in this case the type
+must be given.
+@p()
+You will notice the assignment in the line:
+@begin_displayed_code()
+  j = i + i;
+@end_displayed_code()
+Naturally, variables must be initialised
+or assigned to before they are used, as in C.
+@p()
+You will also have noticed the 'while' loop,
+one of the control structures Felix provides:
+it works the same way as a 'while' loop in C.
+
+@head(1,'Functions')
+Felix allows you to define functions,
+although the syntax is different from C.
+Here is an example:
+@select(tangler(tdir+'tut06.flx'))
+#include <std.flx>
+fun mid(a:int, b:int):int
+{
+  val c = a + b / 2;
+  return c;
+}
+print (mid(2,4)); print "\n";
+@doc()
+It is clear that mid returns an int,
+and you might think that 'mid' has two arguments.
+This is not so. All functions in Felix have
+exactly one argument. Well, almost all of them :-)
+I'll explain this in the next example.
+
+@head(1,'Tuples')
+As you might guess from the title, Felix has
+tuples. A tuple is a value consisting of an ordered sequence of 
+two or more values, not necessarily of the same type.
+Here are some examples of tuples:
+@begin_displayed_code()
+  1,2
+  "Hello", "World"
+  (1, 2.7, "Hello")
+  ()
+@end_displayed_code()
+The comma operator constructs tuples.
+While brackets are not always necessary, the comma
+operator has a low precedence so tuples usually
+appear in brackets. Notice there is a special
+unique empty tuple '()'. There are no tuples
+with once component: for all values 'a', '(a)' is 
+equivalent.
+@p()
+Now perhaps you have guessed what I mean earlier
+when I said the function mid only had a single
+argument. If not, you get another chance,
+studying this example, which is equivalent
+to example 6.
+@select(tangler(tdir+'tut07.flx'))
+#include <std.flx>
+fun mid(a:int, b:int):int
+{
+  val c = a + b / 2;
+  return c;
+}
+val x = (2,4);
+print (mid x); print "\n";
+@doc()
+Here you can see that mid takes a single
+argument which is a tuple of two ints.
+@p()
+A tuple is a product type: you may be
+familiar with the Cartesian product of sets.
+The notation for tuple types is the same,
+except of course we use '*' instead of
+a multiply sign: here is the declaration
+of x with a type annotation:
+@begin_displayed_code()
+  val x : int * int = (2,4);
+@end_displayed_code()
+You should note that tuple construction
+is not associative. Here are three
+tuple value declarations with type annotations:
+@begin_displayed_code()
+  val x : int * int * int = (1,2,3);
+  val y : (int * int) * int = ((1,2),3);
+  val z : int * (int * int) = (1,(2,3));
+@end_displayed_code()
+These three tuples have distinct types and
+values. The first has three components,
+each of type int. The other two have two
+components each: an int and a pair of ints,
+in the two possible orderings.
+@p()
+The type of the empty tuple '()' is called
+'unit'.
+@p()
+I said before that 'almost' all functions in
+Felix have one argument. The tuple constructor
+is the exception.
+
+@head(1,'Procedures')
+Felix allows you define procedures.
+They're like functions, but they can't return values.
+On the other hand, procedures may have side effects,
+and they may read input from the drivers message
+dispatch queue.
+Here is an example of a procedure definition
+and use:
+@select(tangler(tdir+'tut08.flx'))
+#include <std.flx>
+proc print_newline (a:int)
+{
+  print a;
+  print "\n";
+}
+print_newline 1;
+@doc()
+There is a special short cut for calling procedures
+with unit argument: if the procedure is called
+by its name, the () can be elided:
+@select(tangler(tdir+'tut09.flx'))
+#include <std.flx>
+print 1; endl();
+print 1; endl;
+
+@head(1,'Structs')
+Felix supports C like structs. A struct, like a tuple,
+is a categorical product type. Unlike a tuple,
+a struct is named, its members are named, and 
+its members are mutable. 
+@p()
+Struct members can be used with C style dot notation.
+Here is an example:
+@select(tangler(tdir+'tut10.flx'))
+#include <std.flx>
+
+struct XY = {
+  x : int;
+  y : int;
+}
+
+var xy : XY;
+xy.x = 1;
+xy.y = 2;
+print xy.x; endl;
+print xy.y;  endl;
+@doc()
+The name of a struct is also the name of a function
+which constructs an object of the struct type
+from a tuple consisting of values to initialise
+the members in sequence. For example:
+@select(tangler(tdir+'tut11.flx'))
+#include <std.flx>
+
+struct XY = {
+  x : int;
+  y : int;
+}
+
+val xy = XY(1,2);
+print xy.x; endl;
+print xy.y;  endl;
+
+@head(1,'Unions')
+Felix supports unions, but they are a bit
+different to C unions. A union is a way
+of merging a finite set of types into
+a single type. An object of a union type
+consists of a tag, identifying what type
+the component has, and the actual component.
+Here are some examples of unions.
+@select(tangler(tdir+'tut12.flx'))
+#include <std.flx>
+
+union parity =
+  | Odd
+  | Even
+;
+
+union int_option =
+  | Some of int
+  | None
+;
+
+val x = Odd;
+val y = Some 1;
+
+@doc()
+We'll see how to actually use unions in the
+next section. But note first that the parity
+example is very similar to a C enumeration.
+The names of the union components are
+called constructors by convention.
+They have two roles: they represent the
+constant value of the tag indicating 
+which component we're talking about:
+tags values are assigned sequentially,
+starting at 0.
+@p()
+In their second role, the constructors
+are considered functions, so that
+Some is a function with type:
+@begin_displayed_code()
+  int -> int_option
+@end_displayed_code()
+It is important to note that the constructor
+names are visible in the enclosing space,
+unlike struct component names.
+

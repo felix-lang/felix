@@ -1,0 +1,56 @@
+@head(1,"Overloading")
+Name binding, pass 1.
+
+@h = tangler("src/flx_overload.mli")
+@select(h)
+val resolve_overload:
+  Flx_types.symbol_table_t ->
+  Flx_types.bound_symbol_table_t ->
+  Flx_types.env_t ->
+  int list ->  
+  Flx_types.id_t -> 
+  Flx_types.btypecode_t ->
+  int option
+
+@h = tangler("src/flx_overload.ml")
+@select(h)
+open Flx_util
+open Flx_types
+open Flx_print
+open Flx_mtypes
+open Flx_typing
+open List
+
+let rec resolve_overload dfns bdfns env fs name (suf : btypecode_t) =
+  let typlist params = List.map snd params in
+  let paramtype params = typeoflist (typlist params)
+  in let fun_defs = List.map
+    (fun i ->
+      match Hashtbl.find bdfns i with
+      | (id,parent,(BDCL_function (ps,t,_,_,_))) -> i,paramtype ps,t
+      | (id, parent,(BDCL_match_check (_,_,_))) ->
+        i,BTYP_tuple [],BTYP_none 
+
+      | (id, parent,(BDCL_match_handler (_,_,_,_,_,_))) ->
+        i,BTYP_tuple[],BTYP_none 
+
+      | (id,parent,(BDCL_fun (ps,t,_))) -> i,typeoflist ps,t
+      | (id,parent,(BDCL_procedure (ps,_,_,_))) -> i,paramtype ps,BTYP_void
+      | (id,parent,(BDCL_proc (ps,_))) -> i,typeoflist ps,BTYP_void
+      | _ -> 
+        failwith (
+          "[resolve_overload] Expected "^
+          name
+          ^" to be function or procedure"
+        )
+    )
+    fs
+  in match List.filter 
+    (fun (i,ps,t) -> ps = suf) 
+    fun_defs
+  with 
+  | [i,_,_] -> Some i
+  | [] -> None
+  | _ -> failwith ("Too many candidates match in overloading " ^ name)
+  
+

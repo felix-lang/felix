@@ -1,0 +1,324 @@
+@head(1,'Felix Standard Library')
+@h=tangler('lib/std.flx')
+@select(h)
+header """
+#include <stddef.h>
+#include <cmath>
+#include <iostream>
+#include <string>
+#include <assert.h>
+#include <limits.h>
+
+// The following code is a KLUDGE!!
+// We need the typedefs for exact precision.
+// If we're not running standard C99,
+// or if the types aren't defined,
+// we just hack them, but the semantics will be wrong.
+
+
+// WARNING: YOU MUST COMPILE WITH STRICT ISO RULES
+// For gcc I use the options
+//    -Wno-long-long -pedantic -ansi
+// This disables warnings about 'long long',
+// which is supported despite the pedantry :-)
+
+// If your compiler doesn't support long long,
+// remove this #define
+#define FLX_LONG_LONG_SUPPORTED
+
+#ifdef __STDC_VERSION__
+#if __STDC_VERSION__ >= 199901L
+#include <stdint.h>
+#define FLX_LONG_LONG_SUPPORTED
+#endif
+#endif
+
+#ifndef INT8_MAX
+  typedef signed char int8_t;
+#endif
+#ifndef UINT8_MAX
+  typedef unsigned char uint8_t;
+#endif
+
+#ifndef INT16_MAX
+  typedef signed short int16_t;
+#endif
+#ifndef UINT16_MAX
+  typedef unsigned short uint16_t;
+#endif
+
+#ifndef INT32_MAX
+  typedef signed long int32_t;
+#endif
+#ifndef UINT32_MAX
+  typedef unsigned long uint32_t;
+#endif
+
+#ifdef FLX_LONG_LONG_SUPPORTED
+  #ifndef INT64_MAX
+    typedef signed long long int64_t;
+  #endif
+  #ifndef UINT64_MAX
+    typedef unsigned long long uint64_t;
+  #endif
+#else
+  #ifndef INT64_MAX
+    typedef signed long int64_t;
+  #endif
+  #ifndef UINT64_MAX
+    typedef unsigned long uint64_t;
+  #endif
+#endif
+
+using namespace std;
+
+typedef signed char    _flx_schar;
+typedef unsigned char  _flx_uchar;
+typedef unsigned short _flx_ushort;
+typedef unsigned int   _flx_uint;
+typedef unsigned long  _flx_ulong;
+typedef long long      _flx_vlong;
+typedef unsigned long long _flx_uvlong;
+typedef unsigned char *_flx_address;
+typedef long double    _flx_ldouble;
+
+namespace std_flx {
+  inline string mul(string s, int n) {
+    string r = "";
+    while(n--) r+=s;
+    return r;
+  }
+
+  // normalise string positions Python style
+  // note substr requires 0<=b<=size, 0<=n,
+  // however n>size is OK
+  inline string substr(string const &s, int b, int e)
+  {
+    int n = s.size();
+    if(b<0)  b=b+n;
+    if(b<0)  b=0;
+    if(b>=n) b=n;
+    if(e<0)  e=e+n;
+    if(e<0)  e=0;
+    if(e>=n) e=n;
+    int m =  e-b;
+    if(m<0)  m=0;
+    return s.substr(b,m);
+  }
+}
+""";
+
+@tmap = {
+  # addressing
+  "byte"    : "_flx_uchar",
+  "size"    : "size_t",
+  "address" : "_flx_address",
+  "offset"  : "ptrdiff_t",
+  
+  #characters
+  "char"    : "char",
+  "wchar"   : "wchar_t",
+  "uchar"   : "int32_t", # Unicode/ISO10646, note: SIGNED!
+
+  #bool
+  "bool"    : "bool",
+  
+  #signed integers
+  "tiny"    : "_flx_schar",
+  "short"   : "short",
+  "int"     : "int",
+  "long"    : "long",
+  "vlong"   : "_flx_vlong",
+
+  #unsigned integers
+  "utiny"   : "_flx_uchar",
+  "ushort"  : "_flx_ushort",
+  "uint"    : "_flx_uint",
+  "ulong"   : "_flx_ulong",
+  "uvlong"  : "_flx_uvlong",
+
+  #exact integers
+  "int8"    : "int8_t",
+  "int16"   : "int16_t",
+  "int32"   : "int32_t",
+  "int64"   : "int64_t",
+  "uint8"   : "uint8_t",
+  "uint16"  : "uint16_t",
+  "uint32"  : "uint32_t",
+  "uint64"  : "uint64_t",
+
+  #floating
+  "float"   : "float",
+  "double"  : "double",
+  "ldouble"  : "_flx_ldouble",
+  }
+
+@chars = ["char", "wchar"]
+@sints = [
+  "tiny", "short", "int", "long", "vlong",
+  "int8","int16","int32","int64"
+  ]
+@uints = [
+  "utiny", "ushort", "uint", "ulong","uvlong",
+  "uint8","uint16","uint32","uint64"
+  ]
+@floats = ["float", "double"]
+@all = ["byte", "size","address","offset","bool"] + chars + sints + uints + floats
+@ints = uints + sints
+
+//types
+@for ft in all:
+  tangle('type '+ft+' = "'+tmap[ft]+'";')
+
+//
+//assignment, equality, inequality
+@for t in all:
+  tangle('//')
+  tangle('//'+t)
+  tangle('proc set: &'+t+' * '+t+' = "*($1.data)=$2;";')
+  tangle('fun eq: '+t+' * '+t+' -> bool = "$1==$2";')
+  tangle('fun ne: '+t+' * '+t+' -> bool = "$1!=$2";')
+
+// comparisons
+@for t in chars + ints + floats + ["bool","size","offset","address"]:
+  tangle('//')
+  tangle('//'+t)
+  for opname,op in [
+    ("lt","<"),
+    ("le","<="),
+    ("gt",">"),
+    ("ge",">=")
+  ]:
+    tangle('fun '+opname+': '+t+' * '+t+' -> bool = "$1'+op+'$2";')
+
+//
+// bool
+const true : bool = "true";
+const false : bool = "false";
+fun land: bool * bool -> bool = "$1 && $2";
+fun nand: bool * bool -> bool = "!($1 && $2)";
+fun lor: bool * bool -> bool = "$1 || $2";
+fun nor: bool * bool -> bool = "!($1 || $2)";
+fun xor: bool * bool -> bool = "$1 != $2";
+fun lnot: bool -> bool = "!$1";
+proc assert: bool = "assert($1);";
+
+//
+//general arithmetic
+@for t in ints + floats:
+  tangle('//')
+  tangle('//'+t)
+  for opname,op in [
+    ("add","+"),
+    ("sub","-"),
+    ("mul","*"),
+    ("div","/")
+  ]:
+    tangle('fun '+opname+': '+t+' * '+t+' -> '+t+' = "$1'+op+'$2";')
+
+//
+// modulus/remainder
+@for t in ints:
+  for opname,op in [
+    ("mod","%")
+  ]:
+    tangle('fun '+opname+': '+t+' * '+t+' -> '+t+' = "$1'+op+'$2";')
+
+//
+// prefix negation 
+@for t in ints + floats:
+  tangle('fun neg: '+t+' -> '+t+' = "-$1";')
+  tangle('fun pos: '+t+' -> '+t+' = "+$1";')
+
+//
+// floating math: C99 
+@fc = {'float':'f', 'double':'','ldouble':'l'}
+// R * R -> R
+@for t in floats:
+  for op in [
+    'pow',
+    'atan2',
+    'fmod',
+    'fmax','fmin'
+    ]:
+    tangle('fun '+op+': '+t+' * '+t+' -> '+t+' = "'+op+fc[t]+'($1, $2)";')
+// R -> R
+@for t in floats:
+  for op in [
+    'sin','cos','tan',
+    'asin','acos','atan',
+    'sinh','cosh','tanh',
+    'asinh','acosh','atanh',
+    'exp', 'log','log10',
+    'fabs','sqrt',
+    'ceil','floor','trunc'
+    ]:
+    tangle('fun '+op+': '+t+' -> '+t+' = "'+op+fc[t]+'($1)";')
+
+
+//
+// increment, decrement
+@for t in ints:
+  tangle('proc pre_incr:  &'+t+' = "++*($1.data);";')
+  tangle('proc pre_decr:  &'+t+' = "--*($1.data);";')
+  tangle('proc post_incr: &'+t+' = "++*($1.data);";')
+  tangle('proc post_decr: &'+t+' = "--*($1.data);";')
+  
+//
+// casts
+@for t1 in ints+floats:
+  tangle('//')
+  tangle('//'+t1)
+  for t2 in ints+floats:
+    tangle('fun '+t1+'_of: '+t2+' -> '+t1+' = "('+tmap[t1]+')$2";')
+
+// ordinary value of chars
+fun ord: char -> uint = "(int)$1";
+fun ord: wchar -> ulong ="(long)$1";
+
+
+// chars of ordinals
+fun chr: uint -> char = "(char)$1";
+fun wchr: ulong -> wchar = "(wchar_t)$1";
+
+// output
+@for t in all:
+  if t not in ['tiny','utiny']:
+    tangle('proc print: '+t+' = "std::cout<<$1;";')
+
+// cast tiny values, so they're not printed as characters
+proc print: tiny = "std::cout << (int)$1;";
+proc print: utiny = "std::cout << (unsigned int)$1;";
+
+proc endl: unit = "std::cout << endl;";
+proc space: int = "std::cout << ' ';";
+
+// strings
+type string = "string";
+proc set: &string * string = "$1.data->assign($1);";
+proc pluseq: &string * string = "$1.data->append($2);";
+
+fun len: string -> int = "$1.size()";
+fun add: string * string -> string = "$1+$2";
+fun mul: string * int -> string = "std_flx::mul($1,$2)";
+fun mul: char * int -> string = "string($2,$1)";
+
+fun subscript: string * int -> char = 
+  "$1[$2<0?$1.size()+$2:$2]";
+fun copyfrom: string * int -> string = 
+  "std_flx::substr($1,$2,$1.size())";
+fun copyto: string * int -> string = 
+  "std_flx::substr($1,0,$2)";
+fun substring: string * int * int -> string = 
+  "std_flx::substr($1,$2,$3)";
+
+// comparisons
+fun eq: string * string -> bool = "$1==$2";
+fun ne: string * string -> bool = "$1!=$2";
+fun lt: string * string -> bool = "$1<$2";
+fun le: string * string -> bool = "$1<=$2";
+fun gt: string * string -> bool = "$1>$2";
+fun ge: string * string -> bool = "$1>=$2";
+
+proc print: string = "std::cout << $1;";
+

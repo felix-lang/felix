@@ -1,0 +1,175 @@
+@head(1,'Regression tests')
+There are four kinds of test. The compiler
+must be run with standard output redirected
+to /dev/null. All these tests use the standard
+flx_run harness.
+@begin_list('keyed')
+@item('rt')
+Each good test should generate output which,
+when compared with a known good run, should
+be much the same. Good tests typically have
+several things tested. 
+@item('dt')
+Bad tests check the compiler issues
+a diagnostic. Usually, they have just one
+error.
+@item('ct')
+Nasty tests should crash. These are typically
+things I'd like to catch with an improved
+version of the compiler or run time.
+@item('pt')
+Performance tests measure speed. The result
+is an overall time in seconds, which should
+get smaller with each compiler improvement.
+@end_list()
+@class counter:
+  def __init__(self,a):
+    self.s = a
+    self.i = 0
+  def next(self): 
+    self.i = self.i + 1
+    s = self.s % self.i
+    return s
+@rt = counter("test/rt%02d.flx")
+@select(tangler(rt.next()))
+#include <std.flx>
+@xs = [
+  "2",
+  "0b10","0B10",
+  "0o2","0O2",
+  "0d2","0D2",
+  "0x2","0X2"
+  ]
+@ys = [
+  "40","0b0010_1000","0B_0010_1000",
+  "0o50","0O50",
+  "0d40","0D40",
+  "0x28",
+  "0X28"
+  ]
+@ss = [
+  "",
+  "t","T","s","S","i","I","l","L","v","V","ll","LL",
+  "u",
+  "ut","uT","us","uS","ui","uI","ul","uL","uv","uV","ull","uLL",
+  "Ut","UT","Us","US","Ui","UI","Ul","UL","Uv","UV","Ull","ULL",
+  "U",
+  "tu","Tu","su","Su","iu","Iu","lu","Lu","vu","Vu","llu","LLu",
+  "tU","TU","sU","SU","iU","IU","lU","LU","vU","VU","llU","LLU",
+  "i8","i16","i32","i64",
+  "u8","u16","u32","u64"
+  ]
+@for x in xs:
+  for y in ys:
+    tangle("endl;")
+    for s in ss:
+      tangle("print("+x+s+" + "+y+s+");") 
+
+@select(tangler(rt.next()))
+header r"""
+#include <stdio.h>
+typedef char *charp;
+""";
+
+type bool = "bool";
+type int = "int";
+type string = "charp";
+
+proc print: string = 'printf("%s",$1);';
+proc print: int = 'printf("%d",$1);';
+
+fun sub: int * int -> int = "$1 - $2";
+fun mul: int * int -> int = "$1 * $2";
+fun gt: int * int -> bool = "$1 > $2";
+
+// test some recursion
+fun fact(a:int): int
+{
+  fun f (a:int, p:int) : int {
+    if(a>1) return f(a-1, p*a);
+    else return p;
+  }
+  return f(a,1);
+}
+
+// test function variable
+val factc : int -> int = fact of (int);
+print (fact 6);
+print "\n";
+print (factc 6);
+
+// test procedure variable
+proc printer (a:int) { print a; }
+val printv = printer of (int);
+printer 10;
+print "\n";
+printv 10;
+
+// test structure constructor function
+struct X = {
+  x : int;
+  y : int;
+}
+
+proc printX (x:X) {
+  print "x=";
+  print x.x;
+  print ", y=";
+  print x.y;
+  print "\n";
+}
+
+val x = X(1,2);
+printX x;
+
+// test special procedure overloading
+proc t1() 
+{
+  proc print: int = 'printf("int=%d",$1);';
+  print "Not hidden: ";
+  print 1;
+  print " print:int hides outer\n";
+}
+t1();
+
+module A 
+{
+  proc print:int='printf("module A print int=%d",$1);';
+  print 1;
+  print "\n";
+}
+
+@select(tangler(rt.next()))
+// test the string library
+#include <std.flx>
+var x = "Hello";
+x += "+";
+x += "World";
+print x; endl;
+assert(x == "Hello+World");
+print x[1:6]; endl;
+print x[:6]; endl;
+print x[6:]; endl;
+print x[6:-1]; endl;
+
+var i = 0;
+var n = len x;
+while(i < n) {
+  print x[i];
+  ++i;
+}
+endl;
+
+i = 1;
+while(i <= n) {
+  print x[-i];
+  ++i;
+}
+endl;
+
+@select(tangler(rt.next()))
+// test the chained comparison
+#include <std.flx>
+assert(1<2&<3&<4);
+
+

@@ -1,0 +1,196 @@
+@head(1, 'Names and Lookup')
+Felix uses some interesting lookup rules.
+We present a rationale. Felix supports overloading.
+This means that in the following example:
+@begin_displayed_code()
+fun add: int * int -> int = "";
+fun add: long * long -> long = "";
+val x = add (1, 1);
+@end_displayed_code()
+there are two functions ostensibly named 'add',
+and in the initialisation of the value 'x',
+the 'add' with type 'int * int -> int' is used,
+because the type of the argument '(1,1)' is 
+'int * int'. The choice of function is called
+overload resolution.
+@p()
+The type of the argument of a function is known
+as the function's signature, and is used to
+determine which function to select. The return
+type is not considered.
+@p()
+Now consider the following example:
+@begin_displayed_code()
+fun add: int * int -> int = "";
+fun add: int * int -> long = "";
+val x = add (1, 1);
+@end_displayed_code()
+Here, there are two functions with the same name defined
+in the same scope, but while they have distinct types,
+they have the same signature: the call to 'add' would
+be ambiguous if such definitions were allowed.
+@p()
+Felix permits such duplicate definitions. There are two
+reasons: the first is that there is no necessary ambiguity
+unless there is an actual call. The second is to simplify
+the compilation model: it is not possible to detect
+the duplication at the point of definition.
+@p()
+In order to understand the second claim, it is necessary
+to see that such detection depends on being able
+to determine that the types of the arguments are
+equal. However, this is not possible until after the
+type names are bound. During the first pass the compiler
+must create symbol tables in which identifiers are
+mapped to unbound entities, since Felix allows forward
+references. Binding cannot commence until the whole
+program has be deconstructed. So it is not possible
+to determine if there is a duplication of signatures
+until binding commences.
+@p()
+There are also several other reasons duplicate signatures
+are permitted. Consider then opening two modules which each have
+a function with the same name and signature: should we
+really require that this be an error, or simply wait until
+an ambiguous call is seen? 
+@p()
+There is yet another reason: we may wish to support
+functions which have generic arguments, that is,
+the signatures contain type variables. In such cases
+the functions:
+@begin_displayed_code()
+fun add: 'a * int -> int = "";
+fun add: int * 'b -> long = "";
+@end_displayed_code()
+can be called unambiguously, even though some
+calls would be ambiguous. So non-generic
+arguments can then be seen to be a special case,
+and the more general permissive rule should apply.
+[There is special consideration for exporting functions:
+in this case, exportation is considered to be equivalent
+to use, and the duplication is detected as an ambiguity]
+@p()
+Now it is necessary to consider hiding.
+Consider:
+@begin_displayed_code()
+fun add: int * int -> int = "";
+fun fred() { 
+  fun add: long * long -> long = "";
+  val x = add(1,1);
+}
+@end_displayed_code()
+Normally, a name in one scope hides names in
+outer scopes. However, in the example, we would
+have to 'inject' the outer definition to make
+the expression add(1,1) resolve correctly.
+We can do this by forwarding:
+@begin_displayed_code()
+fun add: int * int -> int = "";
+fun fred() { 
+  fun add (a:int, b:int) { return ::add(a,b); }
+  fun add: long * long -> long = "";
+  val x = add(1,1);
+}
+@end_displayed_code()
+or by introducing a C++ style of 'using' declaration.
+Instead, we consider that the 'name' of the function
+is actually suffixed by the type of its arguments,
+so that a search for 'add:int*int' will skip
+right past the inner 'add:long*long' and find the
+outer function.
+@p()
+It may seem this decision is arbitrary.
+But consider the following:
+@begin_displayed_code()
+struct X { x : int; }
+fun f() {
+  struct Y { x : long; }
+  val z = X().x;
+}
+@end_displayed_code()
+Here, we need to know that the structure declaration
+is only sugar: the first declaration is equivalent to:
+@begin_displayed_code()
+  type X = "";
+  fun get_x: X -> int = "$1.x";
+@end_displayed_code()
+and 'X().x' is equivalent to
+@begin_displayed_code()
+  get_x( X() )
+@end_displayed_code()
+We can't have the inner 'get_x' generated
+by the declaration of Y hiding the outer one!
+[Koenig lookup is an alternative...]
+@p()
+There is a difficulty here, however. Consider:
+@begin_displayed_code()
+fun add: int * int -> int = "";
+fun fred() { 
+  val add = ::add of (int*int); 
+  val x = add(1,1);
+}
+@end_displayed_code()
+In this example, the 'add' in the call refers to
+a variable. Felix does not permit overloading
+of variables. (A variable of function type
+contains a function closure: a function name
+is used to find a function definition which
+indicates how to form a closure).
+@p()
+When we begin lookup, we do not know if we are
+searching for a variable or function. So we must
+search for the plain name 'add': if we find
+a function, we try to find a match, and continue
+if we fail. If we find something else, the search
+stops: either we have found a value or variable
+of a function type with the right signature or
+the program is ill-formed. This means that
+non-function names hide all names, whereas
+function names only hide other function names
+with exactly the same signature.
+@p()
+We have discussed lookup of unqualified, unsuffixed names.
+Let us consider:
+@begin_displayed_code()
+fun add: int * int -> int = "";
+fun fred() { 
+  val add = ::add of (int*int); 
+  val x = add of (int * int) (1,1);
+}
+@end_displayed_code()
+In this case, the call is specifically to
+a function: the outer add is found, because the search
+bypasses the variable (which has a plain name 'add').
+@p()
+Now we need to consider qualified lookup.
+There are two possibilities: the qualifiers must
+strictly name the entity, or they act only as guides.
+We adopt the second interpretation, since the first
+is unworkable in the presence of anonymous scopes.
+@p()
+Note that this means that the qualified name of an entity
+isn't unique, and it is even possible that
+A::B::x and B::A::x not only refer to the same x,
+but the A and B in both denote the same module:
+@begin_displayed_code()
+module A {
+  module B {
+    val a = A::B::x;
+    val b = B::A::x;
+    val c = A::A::B::B::A::B::x;
+@end_displayed_code()
+In Felix, names are never 'injected'.
+Inside B, B itself is not defined.
+However, B is defined in A. A search A::B::x
+then works by finding A in the root scope,
+then finding B in A. But the search B::A::x
+also works, by finding B in A, then finding A
+in the root scope: in each case, if a search fails
+it continues in the enclosing scope.
+@p()
+Finally, there are three special scopes:
+root, parent, and self. The notation '::name'
+is equivalent to 'root::name'. The notation 
+'name' is equivalent to 'self::name'.
+The notation 'parent::name' has no equivalent
+(but ..::name could be considered).

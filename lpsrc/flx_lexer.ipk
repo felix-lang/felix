@@ -1,0 +1,984 @@
+@head(1,'Keywords')
+@h = tangler('src/flx_keywords.ml')
+@select(h)
+
+open Flx_parse
+
+let hash_table_from_list n lst =
+  let tbl = Hashtbl.create n
+  in let addEntry (s,kw) = Hashtbl.add tbl s kw
+  in 
+  List.iter addEntry lst;
+  tbl
+
+
+let flx_keyword_table =          (* 97 is a prime larger than table size *)
+  hash_table_from_list 97 [  
+    "and", (fun s ->  AND s);
+    "not", (fun s ->  NOT s);
+    "or", (fun s ->  OR s);
+    "service", (fun s ->  SERVICE s);
+    "command", (fun s ->  COMMAND s);
+    "function", (fun s ->  FUNCTION s);
+    "procedure", (fun s ->  PROCEDURE s);
+    "reader", (fun s ->  READER s);
+    "handler", (fun s ->  HANDLER s);
+    "if", (fun s ->  IF s);
+    "then", (fun s ->  THEN s);
+    "else", (fun s ->  ELSE s);
+    "elif", (fun s ->  ELIF s);
+    "endif", (fun s ->  ENDIF s);
+    "call", (fun s ->  CALL s);
+    "type", (fun s ->  TYPE s);
+    "typedef", (fun s ->  TYPEDEF s);
+    "fun", (fun s ->  FUNCTION s);
+    "unit", (fun s ->  UNIT s);
+    "read", (fun s ->  READ s);
+    "return", (fun s ->  RETURN s);
+    "proc", (fun s ->  PROCEDURE s);
+    "const", (fun s ->  CONST s);
+    "struct", (fun s ->  STRUCT s);
+    "header", (fun s ->  HEADER s);
+    "code", (fun s ->  CODE s);
+    "fork", (fun s ->  FORK s);
+    "while", (fun s ->  WHILE s);
+    "loop", (fun s ->  LOOP s);
+    "todo", (fun s ->  TODO s);
+    "of", (fun s ->  OF s);
+    "attempt", (fun s ->  ATTEMPT s);
+    "except", (fun s ->  EXCEPT s);
+    "finally", (fun s ->  FINALLY s);
+    "raise", (fun s ->  RAISE s);
+    "_", (fun s ->  ANY s);
+    "when", (fun s ->  WHEN s);
+    "as", (fun s ->  AS s);
+    "case", (fun s ->  CASE s);
+    "regexp", (fun s ->  REGEXP s);
+    "match", (fun s ->  MATCH s);
+    "var", (fun s ->  VAR s);
+    "val", (fun s ->  VAL s);
+    "union", (fun s ->  UNION s);
+    "class", (fun s ->  CLASS s);
+    "category", (fun s ->  CATEGORY s);
+    "exceptions", (fun s ->  EXCEPTIONS s);
+    "module", (fun s ->  MODULE s);
+    "lambda", (fun s ->  LAMBDA s);
+    "lazy", (fun s ->  LAZY s);
+    "void", (fun s ->  VOID s);
+    "goto", (fun s ->  GOTO s);
+    "export", (fun s ->  EXPORT s);
+]
+
+let map_flx_keywords srcref lex_item = 
+  try (Hashtbl.find flx_keyword_table lex_item) srcref
+  with Not_found -> NAME (srcref, lex_item)
+
+@h = tangler('src/flx_keywords.mli')
+@select(h)
+val map_flx_keywords : Flx_types.srcref -> string -> Flx_parse.token
+
+@head(1,'Lexer')
+@h = tangler('src/flx_lex.mll')
+@select(h)
+{
+open Flx_parse
+open Flx_string
+open Big_int
+
+class comment_control = 
+  object (self)
+    val mutable nesting_level = 0
+    val mutable text = ""
+
+    method set_text s = text <- s; nesting_level <- 1
+    method append s = text <- text ^ s
+    method get_comment = text
+
+    method incr = nesting_level <- nesting_level + 1
+    method decr = nesting_level <- nesting_level - 1
+    method get_nesting_level = nesting_level
+  end
+
+exception Found_file of string
+
+class file_control 
+  (filename' : string) 
+  (basedir': string) 
+  (incdirs': string list) 
+= 
+  object(self)
+    val mutable buf_pos =  0
+    val mutable last_buf_pos =  0
+    val mutable line_no =  0
+    val original_filename = filename'
+    val incdirs = incdirs'
+    val basedir = basedir'
+    val mutable filename = filename'
+
+    method incr_lex_counters lexbuf =
+      line_no <- line_no + 1;
+      last_buf_pos <- buf_pos;
+      buf_pos <- Lexing.lexeme_end lexbuf
+
+    method set_buf_pos x = buf_pos <- x
+    method get_buf_pos = buf_pos
+    method get_srcref lexbuf = 
+      filename, 
+      line_no + 1, 
+      Lexing.lexeme_start lexbuf - buf_pos + 1, 
+      Lexing.lexeme_end lexbuf - buf_pos 
+
+    method incr n = line_no <- line_no + n
+
+    method set_line n = line_no <- n
+    method set_filename f = filename <- f
+    method get_relative f = 
+      Filename.concat basedir f
+    method get_absolute f = 
+      try
+        List.iter
+        (fun d -> 
+          let f = Filename.concat d f in 
+          if Sys.file_exists f 
+          then raise (Found_file f)
+        )
+        incdirs
+        ;
+        failwith ("Library File <" ^ f ^ "> not found in path")
+      with Found_file s -> s 
+
+    method get_incdirs = incdirs
+  end
+
+class lexer_state filename basedir incdirs = 
+  object (self)
+    val comment_ctrl = new comment_control
+    val file_ctrl = new file_control filename basedir incdirs 
+    val mutable at_line_start = true
+    method is_at_line_start = at_line_start
+
+    method inbody = at_line_start <- false
+    method get_srcref lexbuf = file_ctrl#get_srcref lexbuf
+    method string_of_srcref lexbuf =
+      match self#get_srcref lexbuf with
+      (filename, lineno, scol,ecol) ->
+      "File \"" ^ filename ^ "\"" ^
+      ", Line " ^ string_of_int lineno ^
+      ", Columns " ^ string_of_int scol ^
+      "-" ^ string_of_int ecol
+
+    (* comments *)
+    method comment_level = comment_ctrl#get_nesting_level
+    method incr_comment = comment_ctrl#incr
+    method decr_comment = comment_ctrl#decr
+
+    method set_comment text = comment_ctrl#set_text text
+    method append_comment text = comment_ctrl#append text
+    method get_comment = comment_ctrl#get_comment
+
+    (* line counting *)
+    method newline lexbuf = 
+      at_line_start <- true;
+      file_ctrl#incr_lex_counters lexbuf
+
+    method adj n = file_ctrl#incr n
+
+    (* string decoders *)
+    method decode decoder (s : string) : string = 
+      let lfcount s = 
+        let n = ref 0 in
+        for i = 0 to (String.length s) - 1 do
+          if s.[i] = '\n' then incr n
+        done;
+        !n
+      in 
+        file_ctrl#incr (lfcount s); 
+        decoder s
+
+    method set_line n = file_ctrl#set_line n
+    method set_filename f = file_ctrl#set_filename f
+
+    method get_incdirs = file_ctrl#get_incdirs
+    method get_relative f = file_ctrl#get_relative f
+    method get_absolute f = file_ctrl#get_absolute f
+  end
+
+
+let lexeme = Lexing.lexeme
+let lexeme_start = Lexing.lexeme_start
+let lexeme_end = Lexing.lexeme_end
+
+let substr = String.sub
+let len = String.length
+
+let decode_qstring s = let n = len s in unescape (substr s 0 (n-1)) 
+let decode_dqstring s = let n = len s in unescape (substr s 0 (n-1)) 
+let decode_qqqstring s = let n = len s in unescape (substr s 0 (n-3)) 
+let decode_dddstring s = let n = len s in unescape (substr s 0 (n-3)) 
+
+let decode_raw_qstring s = let n = len s in substr s 0 (n-1) 
+let decode_raw_dqstring s = let n = len s in substr s 0 (n-1) 
+let decode_raw_qqqstring s = let n = len s in substr s 0 (n-3) 
+let decode_raw_dddstring s = let n = len s in substr s 0 (n-3) 
+
+(* WARNING: hackery: adjust this when lex expression 'white'
+   is adjutsed
+*)
+let is_in_string s ch =
+  try 
+    ignore(String.index s ch);
+    true 
+  with Not_found -> 
+    false
+
+let is_white = is_in_string " \t"
+let is_digit = is_in_string "0123456789"
+
+} 
+
+(* ====================== REGULAR DEFINITIONS ============================ *)
+(* special characters *)
+let quote = '\''
+let dquote = '"'
+let slosh = '\\'
+let linefeed = '\n'
+let tab = '\t'
+let space = ' '
+let formfeed = '\012'
+let vtab = '\011'
+let carriage_return = '\013'
+let underscore = '_'
+
+(* character sets *)
+let bindigit = ['0'-'1']
+let octdigit = ['0'-'7'] 
+let digit = ['0'-'9']
+let hexdigit = digit | ['A'-'F'] | ['a'-'f']
+let lower = ['a'-'z']
+let upper = ['A'-'Z']
+(* let letter = lower | upper *)
+let letter = lower | upper
+let hichar = ['\128'-'\255']
+let white = space | tab
+
+(* nasty: form control characters *)
+let form_control = linefeed | carriage_return | vtab | formfeed
+let newline_prefix = linefeed | carriage_return
+let newline = formfeed | linefeed  | carriage_return linefeed
+(* let newline = newline_prefix form_control * *)
+
+let ordinary = letter | digit | hichar |
+  '!' | '#' | '$' | '%' | '&' | '(' | ')' | '*' |
+  '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' |
+  '=' | '>' | '?' | '@' | '[' | ']' | '^' | '_' |
+  '`' | '{' | '|' | '}' | '~'
+
+let printable = ordinary | quote | dquote | slosh
+
+(* identifiers *)
+let prime = '\''
+let idletter = letter | underscore | hichar
+let identifier = idletter (idletter | digit)* prime *
+
+(* integers *)
+let bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +
+let oct_lit  = '0' ('o' | 'O') (underscore? octdigit) +
+let dec_lit  = ('0' ('d' | 'D'))? digit (underscore? digit) *
+let hex_lit  = '0' ('x' | 'X') (underscore? hexdigit)  +
+let type_suffix = 
+  't'|'T'|'s'|'S'|'i'|'I'|'l'|'L'|'v'|'V'|"ll"|"LL"
+  | "i8" | "i16" | "i32" | "i64"
+  | "u8" | "u16" | "u32" | "u64"
+  | "I8" | "I16" | "I32" | "I64"
+  | "U8" | "U16" | "U32" | "U64"
+let signind = 'u' | 'U'
+let suffix = type_suffix? signind? | signind? type_suffix?
+let int_lit = (bin_lit | oct_lit | dec_lit | hex_lit) suffix
+
+(* floats *)
+let decimal_string = digit (underscore? digit) *
+let fixed_literal = decimal_string ? '.' decimal_string | 
+  decimal_string '.' decimal_string?
+let exponent = 'E' ('+'|'-')? decimal_string
+let floating_literal = fixed_literal exponent? | decimal_string exponent
+
+(* Python strings *)
+let qqq = quote quote quote
+let ddd = dquote dquote dquote 
+
+let escape = slosh _ 
+
+let dddnormal = ordinary | quote | escape | white | newline
+let dddspecial = dddnormal | dquote dddnormal | dquote dquote dddnormal
+
+let qqqnormal = ordinary | dquote | escape | white | newline
+let qqqspecial = qqqnormal | quote qqqnormal | quote quote qqqnormal
+
+let raw_dddnormal = ordinary | quote | slosh | white | newline
+let raw_dddspecial = raw_dddnormal | dquote raw_dddnormal | dquote dquote raw_dddnormal
+
+let raw_qqqnormal = ordinary | dquote | slosh | space | newline
+let raw_qqqspecial = raw_qqqnormal | quote raw_qqqnormal | quote quote raw_qqqnormal
+
+let qstring = (ordinary | dquote | escape | white) * quote
+let dqstring = (ordinary | quote | escape | white) * dquote
+let qqqstring = qqqspecial * qqq
+let dddstring = dddspecial * ddd
+
+let raw_qstring = (ordinary | dquote | escape | white) * quote
+let raw_dqstring =  (ordinary | quote | escape | white) * dquote
+
+let raw_qqqstring = raw_qqqspecial * qqq
+let raw_dddstring = raw_dddspecial * ddd
+
+let not_newline_or_slosh = ordinary | quote | dquote | white
+let not_newline = not_newline_or_slosh | slosh
+let quoted_filename = dquote (ordinary | quote | white | slosh)+ dquote
+
+(* ====================== PARSERS ============================ *)
+(* string lexers *)
+rule parse_qstring = parse
+| qstring { 
+    fun state -> 
+      state#inbody;
+      [STRING (
+        state#get_srcref lexbuf, 
+        state#decode decode_qstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state -> 
+    [ERRORTOKEN (
+      state#get_srcref lexbuf, 
+      "' string"
+    )] 
+  }
+
+and parse_dqstring = parse
+| dqstring {
+    fun state -> 
+      state#inbody;
+      [STRING (
+        state#get_srcref lexbuf, 
+        state#decode decode_dqstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state ->
+    state#inbody; 
+    [ERRORTOKEN (
+      state#get_srcref lexbuf, 
+      "\" string"
+    )]
+  }
+
+and parse_qqqstring = parse
+| qqqstring { 
+    fun state -> 
+      state#inbody;
+      [STRING (
+        state#get_srcref lexbuf, 
+        state#decode decode_qqqstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state -> 
+    state#inbody;
+    [ERRORTOKEN (
+      state#get_srcref lexbuf, 
+      "''' string"
+    )] 
+  }
+
+and parse_dddstring = parse
+| dddstring { 
+    fun state -> 
+      state#inbody;
+      [STRING (
+        state#get_srcref lexbuf,
+        state#decode decode_dddstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state -> 
+    state#inbody;
+    [ERRORTOKEN (
+      state#get_srcref lexbuf,
+      "\"\"\" string"
+    )] 
+  }
+
+and parse_raw_qstring = parse
+| raw_qstring { 
+    fun state -> 
+      state#inbody;
+      [STRING (
+        state#get_srcref lexbuf,
+        state#decode decode_raw_qstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state -> 
+    state#inbody;
+    [ERRORTOKEN (
+     state#get_srcref lexbuf,
+    "raw ' string")] 
+  }
+
+and parse_raw_dqstring = parse
+| raw_dqstring { 
+    fun state -> 
+      state#inbody;
+      [STRING (
+        state#get_srcref lexbuf,
+        state#decode decode_raw_dqstring (lexeme lexbuf)
+      )]
+  }
+| _ { 
+  fun state -> 
+    state#inbody;
+    [ERRORTOKEN (
+      state#get_srcref lexbuf,
+        "raw \" string"
+    )]
+  }
+
+and parse_raw_qqqstring = parse
+| raw_qqqstring { 
+    fun state -> 
+      state#inbody;
+      [STRING (
+        state#get_srcref lexbuf,
+        state#decode decode_raw_qqqstring (lexeme lexbuf)
+      )]
+  }
+| _ { fun state -> state#inbody; 
+  [ERRORTOKEN (
+    state#get_srcref lexbuf,
+    "raw ''' string")] }
+
+and parse_raw_dddstring = parse
+| raw_dddstring { 
+    fun state -> 
+      state#inbody;
+      [STRING (
+        state#get_srcref lexbuf,
+        state#decode decode_raw_dddstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+   fun state -> 
+     [ERRORTOKEN (
+       state#get_srcref lexbuf,
+       lexeme lexbuf)
+     ] 
+   }
+
+and parse_cpp_comment = parse 
+| [^'\n'] * newline {
+    fun state ->
+    begin
+      state#newline lexbuf;
+      let lex = lexeme lexbuf in
+      let n = String.length lex in
+      [COMMENT_NEWLINE  (String.sub lex 0 (n-1))]
+    end
+  }
+| _ { fun state -> [ERRORTOKEN (
+        state#get_srcref lexbuf,
+  lexeme lexbuf)] }
+
+and parse_C_comment = parse 
+| "/*" { 
+    fun state -> 
+    begin
+      state#append_comment (lexeme lexbuf);
+      state#incr_comment; 
+      parse_C_comment lexbuf state
+    end
+  }
+| newline {
+    fun state -> 
+    begin
+      state#newline lexbuf;
+      state#append_comment (lexeme lexbuf);
+      parse_C_comment lexbuf state
+    end
+  }
+| "*/" { 
+    fun state ->
+    begin
+      state#append_comment (lexeme lexbuf); 
+      state#decr_comment; 
+      if state#comment_level > 0 
+      then parse_C_comment lexbuf state 
+      else ()
+      ;
+      state#inbody
+    end
+  }
+| _ {
+    fun state ->
+    begin
+      state#append_comment (lexeme lexbuf);
+      parse_C_comment lexbuf state 
+    end
+  }
+
+and parse_preprocessor = parse
+| not_newline * newline {
+    fun state -> 
+      let ident,s =
+        let s = lexeme lexbuf in
+        let i = ref 0 in
+        while is_white s.[!i] do incr i done;
+        let n = ref 1 in 
+        while 
+          not (is_white s.[!i + !n]) && 
+          not (s.[!i + !n]='\n') 
+        do incr n done;
+
+        let ident = String.sub s !i !n in
+        let j = ref (!i + !n) in
+        while is_white s.[!j] do incr j done;
+        let rest = String.sub s !j ((String.length s) - !j) in
+        ident,rest
+      in
+      match ident with
+      | "line" ->
+        let i = ref 0 in
+        let a = 
+          let a = ref 0 in
+          while is_digit s.[!i] do
+            a := !a * 10 + dec_char2int s.[!i];
+            incr i
+          done;
+          !a
+        in
+        if !i = 0 
+        then begin
+          print_endline (state#string_of_srcref lexbuf);
+          print_endline "PREPROCESSING ERROR: digits required after #line, IGNORING DIRECTIVE"
+        end else begin
+          while is_white s.[!i] do incr i done;
+          if s.[!i] <> '\n'
+          then begin
+            if s.[!i]<>'"'
+            then begin
+              print_endline (state#string_of_srcref lexbuf);
+              print_endline (
+                "PREPROCESSING ERROR: double quote required after #line " ^ 
+                string_of_int a ^ ": IGNORING DIRECTIVE"
+              )
+            end else begin
+              incr i;
+              let j = !i in
+              while s.[!i]<>'"' && s.[!i]<>'\n' do incr i done;
+
+              if s.[!i]='\n'
+              then begin
+                print_endline (state#string_of_srcref lexbuf);
+                print_endline
+                  "PREPROCESSING ERROR: double quote required after filename in #line directive"
+              end else begin
+                let filename = String.sub s j (!i-j) in
+                state#set_filename filename;
+                state#set_line (a-1)
+              end
+            end
+          end else begin
+            print_endline ("SETTING LINE " ^ string_of_int a);
+            state#set_line (a-1)
+          end
+        end;
+        state#newline lexbuf;
+        [NEWLINE]
+
+      | "include" -> 
+        if s.[0]<>'"' && s.[0]<>'<'
+        then begin
+          print_endline (state#string_of_srcref lexbuf);
+          print_endline (
+            "PREPROCESSING ERROR: '\"' or '<' required after #include: IGNORING DIRECTIVE"
+          );
+          state#newline lexbuf;
+          [NEWLINE]
+        end else begin
+          let rquote = if s.[0]='"' then '"' else '>' in
+          let i = ref 1 in
+          let j = !i in
+          while s.[!i]<>rquote && s.[!i]<>'\n' do incr i done;
+
+          if s.[!i]='\n'
+          then begin
+            print_endline (state#string_of_srcref lexbuf);
+            print_endline
+              "PREPROCESSING ERROR: double quote required after filename in #include directive";
+            state#newline lexbuf;
+            [NEWLINE]
+          end else begin
+            let filename = String.sub s j (!i-j) in
+            let filename=
+              if rquote = '"'
+              then state#get_relative filename 
+              else state#get_absolute filename
+            in
+
+            (* print_endline (
+              "INCLUDING FILE \"" ^ filename ^ "\""
+            );
+            *)
+
+            let pre_tokens_of_lexbuf buf state =
+              let lex_it() = pre_flx_lex buf state in
+              let run = ref true in
+              let rec get () = 
+                if !run 
+                then let ts = lex_it () in
+                  match ts with
+                  | [Flx_parse.ENDMARKER] -> 
+                    run := false;
+                    []
+                  | _ -> ts @ get()
+                else []
+              in get ()
+            in
+            let pre_tokens_of_filename filename =
+              let incdirs = state#get_incdirs in
+              let basedir = Filename.dirname filename in
+              let state = new Flx_lex.lexer_state filename basedir incdirs in
+              let infile = open_in filename in
+              let src = Lexing.from_channel infile in
+              let toks = pre_tokens_of_lexbuf src state in
+                close_in infile; 
+                toks
+             in
+               state#newline lexbuf;
+               pre_tokens_of_filename filename
+          end
+        end 
+
+      | _ -> 
+        print_endline (state#string_of_srcref lexbuf);
+        print_endline 
+        (
+          "LEXICAL ERROR: IGNORING UNKNOWN PREPROCESSOR DIRECTIVE \"" ^
+          ident ^ "\""
+        );
+        state#newline lexbuf;
+        [NEWLINE]
+  }
+
+
+and pre_flx_lex = parse
+| "//" 
+  { 
+    fun (state : lexer_state) -> 
+    parse_cpp_comment lexbuf state 
+  }
+| "/*" { 
+    fun state ->
+    begin
+      state#set_comment (lexeme lexbuf);
+      parse_C_comment lexbuf state; 
+      [COMMENT (state#get_comment)]
+    end
+  }
+
+| identifier { 
+    fun state ->
+    begin
+      state#inbody;
+      [Flx_keywords.map_flx_keywords 
+        (state#get_srcref lexbuf) 
+        (lexeme lexbuf)
+      ]
+    end
+  } 
+
+| int_lit { 
+    fun state ->
+    begin
+      state#inbody;
+      let sr = state#get_srcref lexbuf in
+      let s = lexeme lexbuf in
+      let n = String.length s in
+      let converter, first =
+        if n>1 && s.[0]='0' 
+        then
+          match s.[1] with
+          | 'b' | 'B' -> binbig_int_of_string,2
+          | 'o' | 'O' -> octbig_int_of_string,2
+          | 'd' | 'D' -> decbig_int_of_string,2
+          | 'x' | 'X' -> hexbig_int_of_string,2
+          | _         -> decbig_int_of_string,0
+        else decbig_int_of_string,0
+      in
+      let k = ref (n-1) in
+      let t =
+        if n >= 2 && s.[n-2]='i' && s.[n-1]='8'
+        then (k:=n-2; "int8")
+        else if n >= 2 && s.[n-2]='u' && s.[n-1]='8'
+        then (k:=n-2; "uint8")
+        else if n >= 3 && s.[n-3]='i' && s.[n-2]='1' && s.[n-1]='6'
+        then (k:=n-3; "int16")
+        else if n >= 3 && s.[n-3]='u' && s.[n-2]='1' && s.[n-1]='6'
+        then (k:=n-3; "uint16")
+
+        else if n >= 3 && s.[n-3]='i' && s.[n-2]='3' && s.[n-1]='2'
+        then (k:=n-3; "int32")
+        else if n >= 3 && s.[n-3]='u' && s.[n-2]='3' && s.[n-1]='2'
+        then (k:=n-3; "uint32")
+
+        else if n >= 3 && s.[n-3]='i' && s.[n-2]='6' && s.[n-1]='4'
+        then (k:=n-3; "int64")
+        else if n >= 3 && s.[n-3]='u' && s.[n-2]='6' && s.[n-1]='4'
+        then (k:=n-3; "uint64")
+
+        else begin
+          let sign = ref "" in
+          let typ = ref "int" in
+          begin try while !k>first do 
+            (match s.[!k] with  
+            | 'u' | 'U' -> sign := "u"
+            | 't' | 'T' -> typ := "tiny"
+            | 's' | 'S' -> typ := "short"
+            | 'i' | 'I' -> typ := "int"
+            | 'l' | 'L' -> 
+              typ := 
+                if !typ = "long" then "vlong" else "long"
+            | 'v' | 'V' -> typ := "vlong"
+            | _ -> raise Not_found
+            );
+            decr k
+          done with _ -> () end;
+          incr k;
+          !sign ^ !typ
+        end
+      in
+      let d = String.sub s first (!k-first) in
+      let v = converter d in
+        [INTEGER (sr, t, v)]
+    end
+  }
+
+| floating_literal { 
+  fun state -> 
+    state#inbody;
+    [FLOAT (state#get_srcref lexbuf, floating_of_string (lexeme lexbuf))]
+  }
+
+| floating_literal ("J"|"j") { 
+    fun state ->
+    begin
+      state#inbody;
+      let s = lexeme lexbuf in
+      let n = String.length s in
+      let d = String.sub s 0 (n-1) in
+      [COMPLEX (state#get_srcref lexbuf, 0.0, floating_of_string d)]
+    end
+  }
+
+| decimal_string ("J"|"j") { 
+    fun state ->
+    begin
+      state#inbody;
+      let s = lexeme lexbuf in
+      let n = String.length s in
+      let d = String.sub s 0 (n-1) in
+      [COMPLEX (state#get_srcref lexbuf, 0.0, floating_of_string d)]
+    end
+  }
+
+(* one character sequences *)
+| "(" { fun state -> state#inbody; [LPAR          (state#get_srcref lexbuf)] }
+| ")" { fun state -> state#inbody; [RPAR          (state#get_srcref lexbuf)] }
+| "[" { fun state -> state#inbody; [LSQB          (state#get_srcref lexbuf)] }
+| "]" { fun state -> state#inbody; [RSQB          (state#get_srcref lexbuf)] }
+| "{" { fun state -> state#inbody; [LBRACE        (state#get_srcref lexbuf)] }
+| "}" { fun state -> state#inbody; [RBRACE        (state#get_srcref lexbuf)] }
+| "!" { fun state -> state#inbody; [EXCLAMATION   (state#get_srcref lexbuf)] }
+| ":" { fun state -> state#inbody; [COLON         (state#get_srcref lexbuf)] }
+| "," { fun state -> state#inbody; [COMMA         (state#get_srcref lexbuf)] }
+| ";" { fun state -> state#inbody; [SEMI          (state#get_srcref lexbuf)] }
+| "+" { fun state -> state#inbody; [PLUS          (state#get_srcref lexbuf)] }
+| "-" { fun state -> state#inbody; [MINUS         (state#get_srcref lexbuf)] }
+| "*" { fun state -> state#inbody; [STAR          (state#get_srcref lexbuf)] }
+| "/" { fun state -> state#inbody; [SLASH         (state#get_srcref lexbuf)] }
+| "|" { fun state -> state#inbody; [VBAR          (state#get_srcref lexbuf)] }
+| "&" { fun state -> state#inbody; [AMPER         (state#get_srcref lexbuf)] }
+| "<" { fun state -> state#inbody; [LESS          (state#get_srcref lexbuf)] }
+| ">" { fun state -> state#inbody; [GREATER       (state#get_srcref lexbuf)] }
+| "=" { fun state -> state#inbody; [EQUAL         (state#get_srcref lexbuf)] }
+| "." { fun state -> state#inbody; [DOT           (state#get_srcref lexbuf)] }
+| "%" { fun state -> state#inbody; [PERCENT       (state#get_srcref lexbuf)] }
+| "`" { fun state -> state#inbody; [BACKQUOTE     (state#get_srcref lexbuf)] }
+| "~" { fun state -> state#inbody; [TILDE         (state#get_srcref lexbuf)] }
+| "^" { fun state -> state#inbody; [CIRCUMFLEX    (state#get_srcref lexbuf)] }
+| "!" { fun state -> state#inbody; [EXCLAMATION   (state#get_srcref lexbuf)] }
+
+(* two character sequences *)
+| "&<" { fun state -> state#inbody; [ANDLESS      (state#get_srcref lexbuf)] }
+| "&>" { fun state -> state#inbody; [ANDGREATER   (state#get_srcref lexbuf)] }
+| ".." { fun state -> state#inbody; [DOTDOT       (state#get_srcref lexbuf)] }
+| "::" { fun state -> state#inbody; [COLONCOLON   (state#get_srcref lexbuf)] }
+| "==" { fun state -> state#inbody; [EQEQUAL      (state#get_srcref lexbuf)] }
+| "<>" 
+| "!=" { fun state -> state#inbody; [NOTEQUAL     (state#get_srcref lexbuf)] }
+| "<=" { fun state -> state#inbody; [LESSEQUAL    (state#get_srcref lexbuf)] }
+| ">=" { fun state -> state#inbody; [GREATEREQUAL (state#get_srcref lexbuf)] }
+| "<<" { fun state -> state#inbody; [LEFTSHIFT    (state#get_srcref lexbuf)] }
+| ">>" { fun state -> state#inbody; [RIGHTSHIFT   (state#get_srcref lexbuf)] }
+| "**" { fun state -> state#inbody; [STARSTAR     (state#get_srcref lexbuf)] }
+| "\\" { fun state -> state#inbody; [SLOSH        (state#get_srcref lexbuf)] }
+| "++" { fun state -> state#inbody; [PLUSPLUS     (state#get_srcref lexbuf)] }
+| "--" { fun state -> state#inbody; [MINUSMINUS   (state#get_srcref lexbuf)] }
+| "+=" { fun state -> state#inbody; [PLUSEQUAL    (state#get_srcref lexbuf)] }
+| "-=" { fun state -> state#inbody; [MINUSEQUAL   (state#get_srcref lexbuf)] }
+| "*=" { fun state -> state#inbody; [STAREQUAL    (state#get_srcref lexbuf)] }
+| "/=" { fun state -> state#inbody; [SLASHEQUAL   (state#get_srcref lexbuf)] }
+| "%=" { fun state -> state#inbody; [PERCENTEQUAL (state#get_srcref lexbuf)] }
+| "^=" { fun state -> state#inbody; [CARETEQUAL   (state#get_srcref lexbuf)] }
+| "|=" { fun state -> state#inbody; [VBAREQUAL    (state#get_srcref lexbuf)] }
+| "&=" { fun state -> state#inbody; [AMPEREQUAL   (state#get_srcref lexbuf)] }
+| "~=" { fun state -> state#inbody; [TILDEEQUAL   (state#get_srcref lexbuf)] }
+| ":=" { fun state -> state#inbody; [COLONEQUAL   (state#get_srcref lexbuf)] }
+| "<-" { fun state -> state#inbody; [LEFTARROW    (state#get_srcref lexbuf)] }
+| "->" { fun state -> state#inbody; [RIGHTARROW   (state#get_srcref lexbuf)] }
+| "<:" { fun state -> state#inbody; [LESSCOLON    (state#get_srcref lexbuf)] }
+| ":>" { fun state -> state#inbody; [COLONGREATER (state#get_srcref lexbuf)] }
+| "[<" { fun state -> state#inbody; [LSQANGLE     (state#get_srcref lexbuf)] }
+| ">]" { fun state -> state#inbody; [RSQANGLE     (state#get_srcref lexbuf)] }
+
+(* three character sequences *)
+| "<<=" { fun state -> state#inbody; [LEFTSHIFTEQUAL (state#get_srcref lexbuf)] }
+| ">>=" { fun state -> state#inbody; [RIGHTSHIFTEQUAL(state#get_srcref lexbuf)] }
+| "..." { fun state -> state#inbody; [DOTDOTDOT      (state#get_srcref lexbuf)] }
+| "<->" { fun state -> state#inbody; [LEFTRIGHTARROW (state#get_srcref lexbuf)] }
+| "&==" { fun state -> state#inbody; [ANDEQEQUAL      (state#get_srcref lexbuf)] }
+| "&<>" 
+| "&!=" { fun state -> state#inbody; [ANDNOTEQUAL     (state#get_srcref lexbuf)] }
+| "&<=" { fun state -> state#inbody; [ANDLESSEQUAL    (state#get_srcref lexbuf)] }
+| "&>=" { fun state -> state#inbody; [ANDGREATEREQUAL (state#get_srcref lexbuf)] }
+
+| quote  { fun state -> state#inbody; parse_qstring lexbuf state }
+| qqq    { fun state -> state#inbody; parse_qqqstring lexbuf state }
+| dquote { fun state -> state#inbody; parse_dqstring lexbuf state }
+| ddd    { fun state -> state#inbody; parse_dddstring lexbuf state }
+
+| ('r'|'R') quote  { fun state -> state#inbody; parse_raw_qstring lexbuf state }
+| ('r'|'R') qqq    { fun state -> state#inbody; parse_raw_qqqstring lexbuf state }
+| ('r'|'R') dquote { fun state -> state#inbody; parse_raw_dqstring lexbuf state }
+| ('r'|'R') ddd    { fun state -> state#inbody; parse_raw_dddstring lexbuf state }
+
+| white + { 
+    fun state ->
+    begin
+      (* we do NOT say 'inbody' here: we want to accept
+         #directives with leading spaces
+      *)
+      let spaces=lexeme lexbuf in
+      let column = ref 0 in
+      let n = String.length spaces in
+      for i=0 to n-1 do match spaces.[i] with
+        | '\t' -> column := ((!column + 8) / 8) * 8
+        | ' ' -> incr column
+        | _ -> raise (Failure "Error in lexer, bad white space character")
+      done;
+      [WHITE  (!column)]
+    end
+  }
+
+| "#" {
+  fun state ->
+    if state#is_at_line_start
+    then parse_preprocessor lexbuf state
+    else [
+      ERRORTOKEN 
+      (state#get_srcref lexbuf,
+       "#")
+     ]
+  }
+
+| newline {
+  fun state ->
+    begin 
+      state#newline lexbuf; 
+      [NEWLINE ]
+    end
+  }
+| eof { fun state -> [ENDMARKER] }
+| _ { fun state -> state#inbody; 
+   [ERRORTOKEN (
+    state#get_srcref lexbuf,
+    lexeme lexbuf)]}
+
+{
+}
+
+@h = tangler('src/flx_lex.mli')
+@select(h)
+open Flx_types
+class comment_control :
+  object
+    val mutable nesting_level : int
+    val mutable text : string
+    method append : string -> unit
+    method decr : unit
+    method get_comment : string
+    method get_nesting_level : int
+    method incr : unit
+    method set_text : string -> unit
+  end
+class file_control :
+  string ->
+  string ->
+  string list ->
+  object
+    val mutable buf_pos : int
+    val filename : string
+    val mutable last_buf_pos : int
+    val mutable line_no : int
+    method get_buf_pos : int
+    method get_srcref : Lexing.lexbuf -> srcref
+    method incr : int -> unit
+    method incr_lex_counters : Lexing.lexbuf -> unit
+    method set_buf_pos : int -> unit
+    method set_line : int -> unit
+    method set_filename : string -> unit
+    method get_relative : string -> string
+    method get_incdirs : string list
+    method get_absolute : string -> string
+  end
+class lexer_state :
+  string ->
+  string ->
+  string list ->
+  object
+    val comment_ctrl : comment_control
+    val file_ctrl : file_control
+    method adj : int -> unit
+    method append_comment : string -> unit
+    method comment_level : int
+    method decode : (string -> string) -> string -> string
+    method decr_comment : unit
+    method get_comment : string
+    method get_srcref : Lexing.lexbuf -> srcref
+    method incr_comment : unit
+    method newline : Lexing.lexbuf -> unit
+    method set_comment : string -> unit
+    method is_at_line_start : bool
+    method inbody: unit
+    method string_of_srcref : Lexing.lexbuf -> string
+    method set_line : int -> unit
+    method set_filename : string -> unit
+    method get_incdirs : string list
+    method get_relative : string -> string
+    method get_absolute : string -> string
+  end
+
+val pre_flx_lex : 
+  Lexing.lexbuf -> 
+  lexer_state -> 
+  Flx_parse.token list
+

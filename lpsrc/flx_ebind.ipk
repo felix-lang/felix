@@ -1,0 +1,353 @@
+@head(1,"Name Binding: expressions")
+Name binding, pass 1.
+
+@h = tangler("src/flx_ebind.mli")
+@select(h)
+open Flx_types
+val bind_expression :
+  symbol_table_t ->
+  bound_symbol_table_t ->
+  env_t ->
+  int list ->
+  expr_t ->
+  tbexpr_t
+
+val typeofindex :
+  symbol_table_t ->
+  bound_symbol_table_t ->
+  env_t ->
+  int list ->
+  range_srcref ->
+  int ->
+  btypecode_t
+
+@h = tangler("src/flx_ebind.ml")
+@select(h)
+open Flx_util
+open Flx_types
+open Flx_print
+open Flx_mtypes
+open Flx_typing
+open Flx_srcref
+open Flx_overload
+open Flx_lookup
+open Flx_tbind
+open List
+open Flx_srcref
+
+let base_typename_of_literal v = match v with
+  | AST_int (t,_) -> t
+  | AST_float _ -> "float"
+  | AST_string _ -> "string"
+  | AST_bool _ -> "bool"
+
+let qualified_typename_of_literal v =
+  [""; base_typename_of_literal v]
+
+let typeof_literal dfns env sr v : btypecode_t = 
+  let t = qualified_typename_of_literal v in
+  match lookup_qn_in_env dfns env sr t with
+  | NonFunctionEntry index -> BTYP_name index
+  | FunctionEntry _ -> failwith (
+      "[type_of_literal] Expected " ^ 
+      string_of_qualified_name t ^ 
+      " to be non function " ^
+      short_string_of_src sr
+    )
+
+and cal_apply tbe1 tbe2 : tbexpr_t =
+  match tbe1,tbe2 with (_,t1),(_,t2) ->
+  BEXPR_apply (tbe1, tbe2),
+  match t1 with
+  | BTYP_function (argt,rest) ->
+    if argt = t2 then rest
+    else failwith "[ebind:cal_apply] Function argument doesn't agree with function type"
+  | BTYP_name index -> t1 (* ?? *)
+  | _ -> failwith "Attempt to apply non-function"
+
+let rec typeofindex dfns bdfns env exclude sr index = 
+  let id,parent,entry = Hashtbl.find bdfns index in
+  if List.mem index exclude
+  then failwith ("Recursive type dependency for " ^ id)
+  else match entry with
+  | BDCL_function (ps, rt,_,_,_) -> 
+    let pts = List.map snd ps in
+    BTYP_function (typeoflist pts, rt)
+
+  | BDCL_procedure(ps,_,_,_) -> 
+    let pts = List.map snd ps in
+    BTYP_function (typeoflist pts, BTYP_void)
+
+  | BDCL_val t -> t
+  | BDCL_var t -> t
+  | BDCL_val_typeof e -> 
+    snd (bind_expression dfns bdfns env (index::exclude) e)
+  | BDCL_var_typeof e -> 
+    snd (bind_expression dfns bdfns env (index::exclude) e)
+
+  | BDCL_match_check _ -> 
+    BTYP_function (BTYP_tuple [], typeof_literal dfns env sr (AST_bool true))
+  | BDCL_match_handler _ ->
+    BTYP_function (BTYP_tuple [],BTYP_void)
+
+  | BDCL_const (t,_) -> t
+  | BDCL_fun (pts,rt,_) -> BTYP_function (typeoflist pts,rt)
+  | BDCL_proc (pts,_) -> BTYP_function (typeoflist pts, BTYP_void)
+  | BDCL_union _ -> BTYP_name index
+
+
+  (* NOTE: PROBLEMATIC: A structure has TWO types:
+    either the type of the structure, or the type
+    of its constructor
+  *)
+  | BDCL_struct _ -> BTYP_name index
+  | BDCL_abs _ -> failwith "[typeofindex] Expected expression term, got abstract type"
+  | BDCL_header _ -> failwith "[typeofindex] Expected expression term, got header"
+
+and bind_expression dfns bdfns env exclude e : tbexpr_t = 
+  let be e = bind_expression dfns bdfns env exclude e in
+  let lu sr qn = lookup_qn_in_env dfns env sr qn in
+  match e with
+  | AST_get_n (sr,(n,e')) -> 
+    let expr,typ = be e' in
+    let ctyp = match typ with 
+    | BTYP_tuple ts -> 
+      if List.length ts < n
+      then failwith ("[bind_expression] Expected tuple type to have at least " ^ string_of_int (n+1) ^ " components")
+      else List.nth ts (n-1)
+    | _ -> failwith ("[bind_expression] Expected tuple " ^ string_of_expression e' ^ " to have tuple type, got " ^ string_of_btypecode dfns typ)
+    in 
+      BEXPR_get_n (n, (expr,typ)), ctyp
+    
+  | AST_name (sr,(qn,suf)) -> 
+    begin match suf with
+    | TYP_none ->
+      begin match lu sr qn with
+      | NonFunctionEntry index -> 
+        BEXPR_name index,
+        typeofindex dfns bdfns env exclude sr index
+      | FunctionEntry _ -> 
+        (* This case should have been handled by bind_expression,
+           with case AST_apply (AST_name (...), ...)
+        *)
+        failwith 
+        (
+          "unsuffixed name "^
+          string_of_qualified_name qn ^
+          " must not bind to function (except as first argument of an application or call)" ^
+          short_string_of_src sr
+        )
+      end
+    | _ -> 
+      let bound_suffix =  bind_type dfns env [] suf in
+      match lu sr qn with
+      | NonFunctionEntry _ -> failwith "Suffixed name must bind to function overload set"
+      | FunctionEntry fs ->
+        let name = string_of_qualified_name qn in
+        let suf' = bind_type dfns env [] suf in
+        let index = 
+          match resolve_overload dfns bdfns env fs name suf' with
+          | Some i -> i
+          | None -> 
+            failwith 
+            (
+              "[flx_ebind] Can't find match for " ^ string_of_qualified_name qn ^ " in " ^
+              short_string_of_src sr
+            )
+        in
+        BEXPR_closure index, typeofindex dfns bdfns env exclude sr index
+    end
+
+  | AST_ref (srr,AST_name (srn,(qn,suf))) -> 
+    begin match lu srn qn with
+    | NonFunctionEntry index -> 
+      let id,sr,parent,entry = Hashtbl.find dfns index in
+      begin match entry with
+      | SYMDEF_dcl (DCL_var _)
+      | SYMDEF_dcl (DCL_var_typeof _)
+      | SYMDEF_parameter (TYP_pointer _) -> 
+        BEXPR_ref index, 
+        BTYP_pointer (typeofindex dfns bdfns env exclude srn index)
+      | SYMDEF_parameter _ -> 
+        failwith 
+        (
+          "[bind_expression] " ^
+          short_string_of_src srr ^
+          ": Address value parameter " ^ id ^ " defined at " ^
+          short_string_of_src sr
+        )
+      | SYMDEF_dcl (DCL_val _)
+      | SYMDEF_dcl (DCL_val_typeof _) ->
+        failwith 
+        (
+          "[bind_expression] " ^
+          short_string_of_src srr ^
+          "Can't address a value " ^ id ^ " defined at " ^
+          short_string_of_src sr
+        )
+      | _ -> 
+        failwith 
+        (
+          "[bind_expression] " ^
+          short_string_of_src srr ^
+          "Address non variable " ^ id ^ " defined at " ^
+          short_string_of_src sr
+        )
+      end
+    | FunctionEntry _ -> 
+      failwith 
+      (
+        "[bind_expression] " ^
+        short_string_of_src srr ^
+        ": Address function " ^ string_of_qualified_name qn
+      )
+    end
+
+  | AST_ref (_,(AST_deref (sr,e))) -> be e
+  
+  | AST_ref (sr,(AST_dot (_,(e,id)))) ->
+    let ref_name = "_ref_" ^ id in
+    be 
+    (
+      AST_apply 
+      (
+        sr,
+        (
+          name_of_string sr ref_name,
+          AST_ref (sr,e)
+        )
+      )
+    )
+
+  | AST_ref (sr,_) -> 
+    failwith 
+    (
+      short_string_of_src sr ^
+      ": Can't take address of expression"
+    )
+
+  | AST_deref (_,AST_ref (sr,e)) -> be e
+
+  | AST_deref (_,e) -> 
+    let e,t = be e in
+    begin match t with 
+    | BTYP_pointer t -> BEXPR_deref (e,t),t
+    | _ -> failwith "Dereference non pointer"
+    end
+
+  | AST_literal (sr,v) -> 
+    let t = typeof_literal dfns env sr v in
+    BEXPR_literal v, t
+
+  | AST_apply (sra,(AST_name (srn,sn),e2)) -> 
+    begin match sn with
+    | (qn,TYP_none) -> (* OVERLOADING *)
+      let name = string_of_qualified_name qn in
+      let be2,t2 = be e2 in
+      let tbe1 = 
+        match lu srn qn with
+        | NonFunctionEntry index ->
+          BEXPR_name index, 
+          typeofindex dfns bdfns env exclude srn index
+
+        | FunctionEntry fs -> 
+          (* print_endline ("Simple overload: function "^name^" found"); *)
+          match resolve_overload dfns bdfns env fs name t2 with
+          | Some index -> 
+            BEXPR_closure index,
+            (
+              match typeofindex dfns bdfns env exclude srn index with
+              | BTYP_function _ as t -> t
+              | t -> 
+                failwith 
+                (
+                  "[bind_expression]: closure operator expected '"^name^"' to be function definition, got '"^
+                  string_of_btypecode dfns t
+                  ^"', " ^ short_string_of_src sra
+                )
+            )
+          | None -> 
+            failwith 
+            (
+              "[flx_ebind] Can't find match for " ^ name ^ " in " ^
+              short_string_of_src srn
+            )
+      in
+      (* print_endline ("Simple overload: function "^name^" bound"); *)
+      cal_apply tbe1 (be2,t2)
+
+    | _ -> 
+      let tbe1 = be (AST_name (srn,sn)) 
+      and tbe2 = be e2 
+      in cal_apply tbe1 tbe2
+    end
+
+  | AST_apply (_,(e1,e2)) -> 
+    let tbe1 = be e1 and tbe2 = be e2 in
+    cal_apply tbe1 tbe2 
+
+  | AST_tuple (_,es) -> 
+    let bets = List.map be es in
+    let _, bts = List.split bets in
+    BEXPR_tuple bets, BTYP_tuple bts
+
+  | AST_dot (sr,(e,id)) ->
+    let get_name = "_get_" ^ id in
+    be (AST_apply (sr,(name_of_string sr get_name,e)))
+    
+  | AST_match_ctor (sr,(qn,e)) ->
+    let ctor, prefix = match List.rev qn with 
+      | h::t -> h,List.rev t 
+      | [] -> 
+        failwith 
+        (
+          "[bind_expression] " ^
+          short_string_of_src sr ^
+          ": Empty qualified name in AST_match_ctor"
+        )
+    in
+    (* print_endline ("Matching ctor " ^ string_of_qualified_name qn ^
+      " with " ^ string_of_expression e
+    );
+    *)
+    be (AST_apply (
+      sr,
+      (
+        AST_name (sr,(prefix @ ["_match_ctor_" ^ ctor],TYP_none)),
+        e
+      )
+    ))
+    
+  | AST_ctor_arg (sr,(qn,e)) ->
+   let ctor, prefix = match List.rev qn with 
+     | h::t -> h, List.rev t 
+     | [] -> 
+       failwith 
+       (
+        "[bind_expression] " ^
+         short_string_of_src sr ^
+         ": Empty qualified name in AST_ctor_arg"
+       )
+    in
+    be (AST_apply (sr,
+      (
+        AST_name (sr,(prefix @ ["ctor_arg_" ^ ctor],TYP_none)),
+        e
+      )
+    ))
+   
+  | AST_lambda (sr,_) -> 
+    failwith 
+    (
+      "[bind_expression] " ^
+      short_string_of_src sr ^
+      "[Compiler error] Unexpected lambda binding expression"
+    )
+
+(*
+let add_unique table key value =
+  try 
+    Hashtbl.find table key;
+    failwith ("Duplicate key " ^ key)
+  with Not_found -> Hashtbl.add table key (NonFunctionEntry value)
+*)
