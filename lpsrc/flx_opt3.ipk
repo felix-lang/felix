@@ -420,7 +420,7 @@ let mk_tvar_map vs ts =
 (* NOTE: result is in reversed order *)
 let gen_body syms bbdfns bbdfns2 id 
   varmap ps relabel revariable exes argument 
-  sr caller vs callee_vs_len
+  sr caller callee vs callee_vs_len
 =
   (*
   print_endline ("INLINING " ^ id ^ " into " ^ si caller ^ " .. INPUT:");
@@ -528,12 +528,19 @@ let gen_body syms bbdfns bbdfns2 id
   | `BEXE_jump (sr,e1,e2)  -> 
     end_label_used := true;
     [
-      `BEXE_call (sr,ge e1, ge e2); 
+      (let e = ge e1 in
+      match e with
+      | `BEXPR_closure (i,ts),_ ->
+        `BEXE_call_direct (sr,i,ts, ge e2)
+      | _ ->
+        `BEXE_call (sr,e, ge e2)
+      )
+      ;
       `BEXE_goto (sr,end_label)
     ]
   | `BEXE_loop (sr,i,e) -> 
     (* SPECIAL HANDLING OF LOOP REQUIRED *)
-    if i = 0 then begin
+    if i = callee then begin
       self_loop := true;
       match length ps with
       | 0 -> [`BEXE_goto (sr,loop_start)]
@@ -553,7 +560,7 @@ let gen_body syms bbdfns bbdfns2 id
     begin
       failwith "Loop to non-self unimplemented in inliner";
       (* this is probably right sometimes .. need to check *)
-      [`BEXE_loop (sr,i-1,ge e)]
+      [`BEXE_loop (sr,i,ge e)]
     end
 
   | `BEXE_ifgoto (sr,e,lab) -> [`BEXE_ifgoto (sr,ge e, relab lab)]
@@ -693,7 +700,7 @@ let call_lifting syms (child_map,bbdfns) bbdfns2 caller vs' callee ts a argument
     (* use the inliner to handle the heavy work *)
     let body =
       gen_body syms bbdfns bbdfns2 id varmap ps relabel revariable 
-      exes a sr caller vs' callee_vs_len
+      exes a sr caller callee vs' callee_vs_len
     in
 
     (* replace all function returns with tailed calls *)
@@ -705,8 +712,16 @@ let call_lifting syms (child_map,bbdfns) bbdfns2 caller vs' callee ts a argument
       (function 
       | `BEXE_fun_return (sr,e) ->
         (* NOTE REVERSED ORDER *)
+        let call_instr = 
+          (match e with
+          | `BEXPR_closure (i,ts),_ -> 
+            `BEXE_call_direct (sr,i,ts,argument)
+          | _ ->
+            `BEXE_call (sr,e,argument)
+          )
+        in
         body2 := `BEXE_goto (sr,end_label) :: !body2;
-        body2 := `BEXE_call (sr,e,argument) :: !body2;
+        body2 := call_instr :: !body2;
       | x -> body2 := x::!body2
       )
       body
@@ -756,7 +771,7 @@ let heavy_inline_call syms (child_map,bbdfns) bbdfns2
     in
     gen_body syms bbdfns bbdfns2 id 
       varmap ps relabel revariable exes 
-      argument sr caller vs' callee_vs_len
+      argument sr caller callee vs' callee_vs_len
 
   | _ -> assert false
   
@@ -808,10 +823,11 @@ let heavy_inline_calls syms (child_map,bbdfns) bbdfns2 vs' exes caller =
     end
     ;
     exes' := `BEXE_proc_return sr :: !exes'
+  | `BEXE_call (sr,(`BEXPR_apply((`BEXPR_closure (callee,ts),_),a),_),argument) -> assert false
 
   | `BEXE_call (sr,(`BEXPR_apply_stack (callee,ts,a),_),argument)
   | `BEXE_call (sr,(`BEXPR_apply_direct (callee,ts,a),_),argument)
-  | `BEXE_call (sr,(`BEXPR_apply((`BEXPR_closure (callee,ts),_),a),_),argument) ->
+    ->
     (*
     print_endline "DETECTED CANDIDATE FOR CALL LIFTING ";
     print_endline ("In procedure " ^ si caller ^ " with vs=" ^ string_of_vs vs');

@@ -1238,6 +1238,35 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
     ")"
 
 type kind_t = Function | Procedure
+ 
+let gen_prim_call 
+  syms bbdfns tn ge ct ts a sr sr2
+=
+  let ts = map tn ts in
+  match a with
+  | (`BEXPR_tuple es,`BTYP_tuple typs) ->
+    let ess = map (ge sr) es in
+    let ets = map tn typs in
+    let tt = tn (`BTYP_tuple typs) in
+    "      {" ^ csubst sr sr2 ct ess ets tt "Error" ts^ "}\n"
+  
+  (* this case is needed for a primitive value of tuple type *)
+  | (_,`BTYP_tuple typs) as x ->
+    let n = length typs in
+    let es = 
+      map2 
+      (fun i t -> `BEXPR_get_n (i,x),t) 
+      (nlist n) typs
+    in
+    let ess = map (ge sr) es in
+    let ets = map tn typs in
+    let tt = tn (`BTYP_tuple typs) in
+    "      {" ^ csubst sr sr2 ct ess ets tt "Error" ts^ "}\n"
+
+  | (_,typ) -> 
+    let typ = tn typ in
+    let a = ge sr a in
+    "      {" ^ csubst sr sr2 ct [a] [typ] typ "Error" ts^ "}\n"
 
 let gen_exe syms (child_map,bbdfns) label_map counter this vs ts instance_no (exe:bexe_t) : string =
   if length ts <> length vs then 
@@ -1293,66 +1322,17 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts instance_no (ex
     begin 
     match entry with
     | `BBDCL_proc (vs,_,ct,_) -> 
-      (*
-      print_endline "Handling call to primitive ..";
-      *)
-      let s = begin
-        if length vs = length ts 
-        then 
-          let ts = map tn ts in
-          begin match a with
-          | (`BEXPR_tuple es,`BTYP_tuple typs) ->
-            let ess = map (ge sr) es in
-            let ets = map tn typs in
-            let tt = tn (`BTYP_tuple typs) in
-            "      // " ^ src_str ^ "\n" ^
-            sub_start ^
-            "      {" ^ csubst sr sr2 ct ess ets tt "Error" ts^ "}\n" ^
-            sub_end
-          
-          (* this case is needed for a primitive value of tuple type *)
-          | (_,`BTYP_tuple typs) as x ->
-            let n = length typs in
-            let es = 
-              map2 
-              (fun i t -> `BEXPR_get_n (i,x),t) 
-              (nlist n) typs
-            in
-            let ess = map (ge sr) es in
-            let ets = map tn typs in
-            let tt = tn (`BTYP_tuple typs) in
-            "      // " ^ src_str ^ "\n" ^
-            sub_start ^
-            "      {" ^ csubst sr sr2 ct ess ets tt "Error" ts^ "}\n" ^
-            sub_end
+      assert (not is_jump);
 
+      if length vs <> length ts then
+      clierr sr "[gen_prim_call] Wrong number of type arguments"
+      ;
 
-          | (_,typ) -> 
-            (*
-            print_endline ("One argument primitive .. type is " ^ string_of_btypecode syms.dfns typ);
-            *)
-            let typ = tn typ in
-            (*
-            print_endline (" .. C++ type name is " ^ typ);
-            *)
-            let a = ge sr a in
-            "      // " ^ src_str ^ "\n" ^
-            sub_start ^
-            "      {" ^ csubst sr sr2 ct [a] [typ] typ "Error" ts^ "}\n" ^
-            sub_end
-          end
-          ^
-          begin
-            if is_jump then "      FLX_RETURN\n"
-            else ""
-          end
-        else clierr sr "[handle_closure] Wrong number of type arguments"
-      end
-      in 
-        (*
-        print_endline ".. done with call to primitive";
-        *)
-        s
+      "      // " ^ src_str ^ "\n" ^
+      sub_start ^
+      gen_prim_call syms bbdfns tn ge ct ts a sr sr2 ^
+      sub_end
+
 
     | `BBDCL_procedure (props,vs,ps,bexes) ->
       if bexes = []
@@ -1508,10 +1488,8 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts instance_no (ex
 
   | `BEXE_loop (sr,i,a) ->
     let ptr = 
-      if i= 0 then "this"
-      else 
-        let k = nth our_display (i-1) in 
-        "ptr"^cpp_instance_name syms bbdfns k ts
+      if i= this then "this"
+      else "ptr"^cpp_instance_name syms bbdfns i ts
     in
       print_endline ("Looping to " ^ ptr);
       let args = ptr ^ "->" ^ 
@@ -1522,7 +1500,7 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts instance_no (ex
       in
       "      //"^ src_str ^ "\n" ^
       (
-        if i <> 0 then
+        if i <> this then
         "      {\n" ^
         "        con_t *res = " ^ ptr ^ "\n      ->call(" ^ args ^");\n" ^
         "        printf(\"unwinding from %p to %p\\n\",this,"^ptr^");\n" ^

@@ -770,6 +770,14 @@ val map_tbexpr:
   (btypecode_t -> btypecode_t) ->
   tbexpr_t -> tbexpr_t
 
+val iter_bexe:
+  (bid_t -> unit) ->
+  (tbexpr_t -> unit) ->
+  (btypecode_t -> unit) ->
+  (string -> unit) ->
+  (string -> unit) ->
+  bexe_t -> unit
+
 @h = tangler('src/flx_maps.ml')
 @select(h)
 open Flx_ast
@@ -863,6 +871,62 @@ let map_tbexpr fe ft = function
 
   | `BEXPR_literal x,t -> `BEXPR_literal x, ft t
   | `BEXPR_expr (s,t1),t2 -> `BEXPR_expr (s, ft t1), ft t2
+
+
+let iter_bexe fi fe ft fl fldef exe =
+  match exe with 
+  | `BEXE_call_prim (sr,i,ts,e2)  
+  | `BEXE_call_stack (sr,i,ts,e2)  
+  | `BEXE_call_direct (sr,i,ts,e2)  
+    -> fi i; iter ft ts; fe e2
+
+  | `BEXE_assign (sr,e1,e2) 
+  | `BEXE_call (sr,e1,e2)
+  | `BEXE_jump (sr,e1,e2) 
+    -> fe e1; fe e2
+
+  | `BEXE_loop (sr,i,e) 
+    -> fi i; fe e
+    
+  | `BEXE_ifgoto (sr,e,lab) 
+  | `BEXE_ifnotgoto (sr,e,lab) 
+    -> fe e; fl lab
+
+  | `BEXE_label (sr,lab) 
+    -> fldef lab
+    
+  | `BEXE_goto (sr,lab) 
+    -> fl lab
+
+  | `BEXE_fun_return (sr,e) 
+    -> fe e
+
+  | `BEXE_init (sr,i,e) 
+    -> fi i; fe e
+    
+  | `BEXE_read (sr,i)  
+    -> fi i
+    
+  | `BEXE_regmatch (sr,e,(a,sc,h,tr)) 
+    -> 
+    fe e; 
+    Hashtbl.iter
+    (fun k v -> fe v)
+    h
+    
+  | `BEXE_reglex (sr,p1,p2,(a,sc,h,tr)) 
+    ->
+    fe p1; fe p2;
+    Hashtbl.iter
+    (fun k v -> fe v)
+    h
+    
+  | `BEXE_code _
+  | `BEXE_proc_return _
+  | `BEXE_comment _
+  | `BEXE_nop _
+    -> ()
+
 
 
 @head(1,'Routines to extract source reference from terms')

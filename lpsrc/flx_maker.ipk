@@ -872,6 +872,14 @@ try:
 
       if "log_output" in options:
         testscript = testscript + " >" + basename + ".output"
+      if "check_output" in options:
+        if filetime(basename+".output")==0:
+          testscript = testscript + " >" + basename + ".output"
+        else:
+          testscript = testscript + " >" + basename + ".tmp"
+          testscript = testscript + " && diff " + basename + ".tmp "+ basename + ".output"
+          testscript = testscript + " && rm -rf " + basename + ".tmp "
+
       #print 'Executing ',testscript
       try:
         run(testscript)
@@ -996,6 +1004,9 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('tests: dummy')
 @tangle('\tpython script/maker test log_output')
+@tangle('')
+@tangle('tests.verify: dummy')
+@tangle('\tpython script/maker test check_output')
 @tangle('')
 @tangle('tests.static: dummy')
 @tangle('\tpython script/maker test static log_output')
@@ -1136,8 +1147,8 @@ We have no idea if it continues copying.
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_web.pak')
 @tangle('')
 @tangle('clean: dummy')
-@tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.dll tut/examples/*.par')
-@tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so test/rt*.dll test/rt*.par')
+@tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.dll tut/examples/*.par tut/examples/*.o')
+@tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so test/rt*.dll test/rt*.par test/*.o')
 @tangle('')
 @tangle('virgin: dummy')
 @tangle('\tcp Makefile Makefile.old')
