@@ -550,31 +550,6 @@ let format_vars syms bbdfns vars ts =
   )
   vars
  
-let get_fun_tn syms vs ps ret ts =
-  let pts = map (fun (_,(_,t)) -> t) ps in
-  let pt = typeoflist pts in
-  let ft = fold (lower (`BTYP_function (pt,ret))) in
-  if length ts <> length vs then 
-  failwith 
-  (
-    "[get_fun_tn} wrong number of args, expected vs = " ^ 
-    si (length vs) ^ 
-    ", got ts=" ^ 
-    si (length ts)
-  );
-  let t = tsubst vs ts ft in
-  cpp_typename syms t
-
-let get_function_typename syms bbdfns i ts =
-  let id,parent,sr,entry = Hashtbl.find bbdfns i in
-  match entry with
-  | `BBDCL_function (props,vs,ps,ret,_) ->
-     get_fun_tn syms vs ps ret ts
-
-  | `BBDCL_procedure (props,vs,ps,_) ->
-     get_fun_tn syms vs ps `BTYP_void ts
-  | _ -> failwith "[get_function_typename] Expected function"
-
 let find_members syms (child_map,bbdfns) index ts = 
   let variables = find_variable_indices syms (child_map,bbdfns) index in
   match format_vars syms bbdfns variables ts with
@@ -630,7 +605,11 @@ let gen_function syms (child_map,bbdfns) index id vs bps ret' ts instance_no =
   let funtype = fold (`BTYP_function (argtype, ret)) in
 
   let argtypename = cpp_typename syms argtype in
-  let funtypename = cpp_type_classname syms funtype in 
+  let funtypename = 
+    try 
+      Some (cpp_type_classname syms funtype) 
+    with _ -> None 
+  in 
   let display = get_display_list bbdfns index in
   let frame_dcls = 
     "  FLX_FMEM_DECL\n"
@@ -672,7 +651,12 @@ let gen_function syms (child_map,bbdfns) index id vs bps ret' ts instance_no =
     let ctor = ctor_dcl name in
     let dtor = dtor_dcl name in
     "struct " ^ name ^
-    ": "^funtypename^" {\n" ^
+    (match funtypename with 
+    | Some x -> ": "^x
+    | None -> ": con_t"
+    )
+    ^
+    " {\n" ^
     "  //os frames\n" ^
     frame_dcls ^
     "  //display\n" ^
@@ -701,7 +685,12 @@ let gen_function syms (child_map,bbdfns) index id vs bps ret' ts instance_no =
     let ctor = ctor_dcl name in
     let dtor = dtor_dcl name in
     "struct " ^ name ^
-    ": "^funtypename^" {\n" ^
+    (match funtypename with 
+    | Some x -> ": "^x
+    | None -> ""
+    )
+    ^
+    " {\n" ^
     "  //os frames\n" ^
     frame_dcls ^
     "  //display\n" ^

@@ -64,6 +64,23 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   | `BEXPR_case_arg (_,e)
     -> ue e
     
+  | `BEXPR_apply ((`BEXPR_closure (index,ts),_) as f,a) ->
+    let id,parent,sr2,entry = 
+      try Hashtbl.find bbdfns index 
+      with _ -> failwith ("[process_expr(apply instance)] Can't find index " ^ si index)
+    in
+    begin match entry with
+    (* function type not needed for direct call *)
+    | `BBDCL_fun _ 
+    | `BBDCL_function _ -> 
+      let ts = map vs ts in
+      ui index ts; ue a
+    (* the remaining cases are struct/variant type constructors,
+    which probably don't need types either .. fix me!
+    *)
+    | _ -> ue f; ue a
+    end
+    
   | `BEXPR_apply (e1,e2) -> 
     ue e1; ue e2
 
@@ -133,10 +150,12 @@ and process_exes syms bbdfns ref_insts1 ts hvarmap exes =
   iter (process_exe syms bbdfns ref_insts1 ts hvarmap) exes
 
 and process_function syms bbdfns hvarmap ref_insts1 index sr argtypes ret exes ts =
+  (*
   let argtype = typeoflist argtypes in
   let t = `BTYP_function (argtype, ret) in
   let t = varmap_subst hvarmap t in
   register_type_r syms bbdfns [] sr t;
+  *)
   process_exes syms bbdfns ref_insts1 ts hvarmap exes ;
  
 and process_inst syms bbdfns ref_insts1 i ts inst =

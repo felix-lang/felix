@@ -104,7 +104,7 @@ let cpp_instance_name syms bbdfns index ts =
     in
     failwith 
     (
-      "[cpp_intance_name] unable to find instance " ^ id ^
+      "[cpp_instance_name] unable to find instance " ^ id ^
       "<" ^ si index ^ ">[" ^catmap ", " (string_of_btypecode syms.dfns) ts ^ "]"
       ^ (if has_variables then " .. a subscript contains a type variable" else "")
     )
