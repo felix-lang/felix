@@ -123,8 +123,18 @@ let gen_type_name syms bbdfns (index,typ) =
       in
       let instance_name = cn typ in
       let tss = map tn ts in
-      let instance = csubst sr ct [] [] "Error" "Error" tss in
-      descr ^ "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
+      let instance = csubst sr sr ct [] [] "Error" "Error" tss in
+
+      (* special hack to avoid 'typedef int int' when we decide
+      to use the native typename in generated code instead of
+      an alias
+      *)
+      (if instance = instance_name
+      then descr ^ "//" 
+      else descr
+      )
+      ^
+      "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
 
     | `BBDCL_struct _ ->
       let descr = 
@@ -206,7 +216,7 @@ let gen_type_name syms bbdfns (index,typ) =
           "\n" 
         in
         let vs = map fst vs in
-        let prim = csubst sr ct [] [] "Error" "Error" vs in
+        let prim = csubst sr sr ct [] [] "Error" "Error" vs in
         descr ^ "  struct " ^ name ^ " {\n" ^
         "    typedef "^prim^" t;\n" ^
         "  };\n"

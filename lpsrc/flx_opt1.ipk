@@ -307,8 +307,8 @@ let useless_call_elim syms used (child_map,bbdfns) vs' exes index =
 
   | `BEXE_assign (sr,a,b) -> exes' := `BEXE_assign (sr,ia a,ia b) :: !exes'
 
-  | `BEXE_call (sr,(`BEXPR_closure (i,ts),_),b')
-  | `BEXE_call (sr,(`BEXPR_name (i,ts),_),b')
+  | `BEXE_call (sr,((`BEXPR_closure (i,ts),_) as f), b')
+  | `BEXE_call (sr,((`BEXPR_name (i,ts),_) as f),b')
     -> (* only keep calls to useful procedures *) 
       begin match Hashtbl.find bbdfns i with
       | id,parent,sr2,`BBDCL_procedure (props,vs,ps,inner_exes) ->
@@ -338,11 +338,11 @@ let useless_call_elim syms used (child_map,bbdfns) vs' exes index =
                   *)
                   exes' := `BEXE_call (sr,a,b) :: !exes'
                 with 
-                  Cannot_inline -> exes' := x :: !exes'
+                  Cannot_inline -> exes' := `BEXE_call (sr,f,ia b') :: !exes'
               end
           | _ 
             -> 
-              exes' := x :: !exes'
+              exes' := `BEXE_call (sr,f,ia b') :: !exes'
         end else begin
           (*
           print_endline ("Eliding useless call to " ^ si i);
@@ -350,11 +350,11 @@ let useless_call_elim syms used (child_map,bbdfns) vs' exes index =
           ()
         end
 
-      | _ -> exes' := x :: !exes'
+      | _ -> exes' := `BEXE_call (sr,f,ia b') :: !exes'
       end
 
-  | `BEXE_jump (sr,(`BEXPR_closure (i,ts),_),b')
-  | `BEXE_jump (sr,(`BEXPR_name (i,ts),_),b')
+  | `BEXE_jump (sr,((`BEXPR_closure (i,ts),_) as f), b')
+  | `BEXE_jump (sr,((`BEXPR_name (i,ts),_) as f), b')
     -> (* only keep calls to useful procedures *) 
       begin match Hashtbl.find bbdfns i with
       | id,parent,sr2,`BBDCL_procedure (props,vs,ps,inner_exes) ->
@@ -384,14 +384,14 @@ let useless_call_elim syms used (child_map,bbdfns) vs' exes index =
                   *)
                   exes' := `BEXE_jump (sr,a,b) :: !exes'
                 with 
-                  Cannot_inline -> exes' := x :: !exes'
+                  Cannot_inline -> exes' := `BEXE_jump (sr,f,ia b') :: !exes'
               end
           | _ 
             -> 
-              exes' := x :: !exes'
+              exes' := `BEXE_jump (sr,f,ia b') :: !exes'
         end
         else exes' := `BEXE_proc_return sr :: !exes'
-      | _ -> exes' := x :: !exes'
+      | _ -> exes' := `BEXE_jump (sr,f,ia b') :: !exes'
       end
 
   | `BEXE_call (sr,a,b) -> exes' := `BEXE_call (sr,ia a,ia b) :: !exes'

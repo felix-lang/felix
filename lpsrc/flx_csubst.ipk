@@ -6,6 +6,7 @@ open Flx_ast
 
 val csubst:
   range_srcref ->
+  range_srcref ->
   string ->
   string list -> (* value arguments as strings *)
   string list -> (* types of value arguments as strings *)
@@ -51,7 +52,7 @@ type mode_t =
  | DollarDigits | BackquoteDigits | HashDigits | EarholeDigits | QuestDigits
  | Varargs | VarargsDigits
   
-let csubst sr ct args typs argtyp retyp gargs =
+let csubst sr sr2 ct args typs argtyp retyp gargs =
   let n = length args in
   assert (n = length typs); 
   (* print_endline ("SUBST " ^ ct ^ ", count="^string_of_int n); *)
@@ -63,7 +64,7 @@ let csubst sr ct args typs argtyp retyp gargs =
   let digits = ref 0 in
   let serr i msg = 
     let spc k = String.make k ' ' in
-    clierr sr
+    clierr2 sr sr2
     (
       "[csubst] " ^ msg ^ " in code fragment \n\"" ^ ct ^
        "\"\n" ^ spc (i+1) ^ "^" ^ "\n" ^ "Column " ^ string_of_int (i+1)

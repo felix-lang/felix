@@ -141,14 +141,21 @@ let rec cpp_type_classname syms t =
 
     
   | `BTYP_inst (i,_) -> 
-    let prefix =
-      match Hashtbl.find syms.dfns i with
-      | { symdef=`SYMDEF_struct _ } -> "_s"
-      | { symdef=`SYMDEF_union _  } -> "_u"
-      | { symdef=`SYMDEF_abs _ } -> "_a"
-      | _ -> "_unk_"
-    in 
-      prefix ^ si i ^ "t_" ^ si (Hashtbl.find registry t) 
+    begin match
+      match Hashtbl.find syms.dfns i with 
+      { symdef=symdef } -> symdef 
+    with
+    | `SYMDEF_abs (true,"int") -> "int" (* hack .. *)
+    | data  ->
+      let prefix =
+        match data with
+        | `SYMDEF_struct _  -> "_s"
+        | `SYMDEF_union _   -> "_u"
+        | `SYMDEF_abs _  -> "_a"
+        | _ -> "_unk_"
+      in 
+        prefix ^ si i ^ "t_" ^ si (Hashtbl.find registry t) 
+    end
 
   | _ -> 
     failwith 

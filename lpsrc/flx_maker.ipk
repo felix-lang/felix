@@ -403,6 +403,7 @@ MODULES = [
   'flx_display'      , 
   'flx_ogen'         , 
   'flx_regen'        ,
+  'flx_unravel'      , 
   'flx_gen'          , 
   'flx_flxopt'       , 
   'flx_terminate'    , 

@@ -392,6 +392,7 @@ open Flx_display
 open List
 open Flx_generic
 open Flx_label
+open Flx_unravel
 
 let string_of_string = Flx_string.c_quote_of_string
 
@@ -806,11 +807,11 @@ let get_var_frame syms bbdfns this index ts : string =
     end
   | _ -> failwith ("[get_var_frame] Expected name "^id^" to be variable or value")
 
-let rec gen_expr syms bbdfns this (e,t) vs ts =
+let rec gen_expr syms bbdfns this (e,t) vs ts sr =
   (*
   print_endline ("Generating expression " ^ string_of_bound_expression_with_type syms.dfns (e,t));
   *)
-  let ge e = gen_expr syms bbdfns this e vs ts in
+  let ge e = gen_expr syms bbdfns this e vs ts sr in
   if length ts <> length vs then 
   failwith 
   (
@@ -903,7 +904,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
     end 
    
   | `BEXPR_name (index,ts') -> 
-    let id,parent,sr,entry = 
+    let id,parent,sr2,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> 
         match Hashtbl.find syms.dfns index with
@@ -918,7 +919,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
 
       | `BBDCL_const (_,_,ct) -> 
         let ts = map tn ts in
-        csubst sr ct [] [] "Error" "Error" ts
+        csubst sr sr2 ct [] [] "Error" "Error" ts
 
       | `BBDCL_struct _ 
       | `BBDCL_function _
@@ -959,7 +960,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
           else d'
       in
       let name = cpp_instance_name syms bbdfns index ts in
-      "(new(gc,"^name^"_ptr_map)\n        " ^ name ^
+      "(FLX_NEWP("^name^")"^
       "(" ^ cat ", " ("FLX_FPAR_PASS" :: the_display) ^
       "))"
 
@@ -1022,7 +1023,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
     (*
     print_endline "Apply closure ..";
     *)
-    let id,parent,sr,entry = 
+    let id,parent,sr2,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
     in
@@ -1050,17 +1051,31 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
       begin
         (*
         print_endline "--- CASE OF PRIMITIVE"; 
-        *)
+        *) 
         match a with
         | (`BEXPR_tuple es,`BTYP_tuple typs) ->
           let ess = map ge es in
           let ets = map tn typs in
           let tt = tn (`BTYP_tuple typs) in
-          "(" ^ csubst sr ct ess ets tt retyp ts ^")"
+          "(" ^ csubst sr sr2 ct ess ets tt retyp ts ^")"
+
+        (* this case is needed for a primitive value of tuple type *)
+        | (_,`BTYP_tuple typs) as x ->
+          let n = length typs in
+          let es = 
+            map2 
+            (fun i t -> `BEXPR_get_n (i,x),t) 
+            (nlist n) typs
+          in
+          let ess = map ge es in
+          let ets = map tn typs in
+          let tt = tn (`BTYP_tuple typs) in
+          "(" ^ csubst sr sr2 ct ess ets tt retyp ts ^")"
+
         | (_,typ) -> 
           let typ = tn typ in
           let a = ge a in
-          "(" ^ csubst sr ct [a] [typ] typ retyp ts ^ ")"
+          "(" ^ csubst sr sr2 ct [a] [typ] typ retyp ts ^ ")"
       end
 
     | `BBDCL_function (props,vs,ps,retyp,_) ->
@@ -1110,7 +1125,7 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
   *)
   let tsub t = tsubst vs ts t in
   let ret_string = "      FLX_RETURN\n" in
-  let ge e : string = gen_expr syms bbdfns this e vs ts in
+  let ge sr e : string = gen_expr syms bbdfns this e vs ts sr in
   let tn t : string = cpp_typename syms (tsubst vs ts (lower t)) in
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns this 
@@ -1123,8 +1138,24 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
     | _ -> failwith "Expected executable code to be in function or procedure"
   in let our_level = length our_display in
 
-  let handle_closure sr is_jump index ts a =
-    let id,parent,sr,entry = 
+  let handle_closure sr is_jump index ts subs a =
+    let subs = 
+      catmap ""
+      (fun ((_,t) as e,s) ->
+        let t = cpp_typename syms t in
+        let e = ge sr e in
+        "      " ^ t ^ " " ^ s ^ " = " ^ e ^ ";\n"
+      )
+      subs
+    in
+    let sub_start =
+      if String.length subs = 0 then ""
+      else "      {\n" ^ subs
+    and sub_end =
+      if String.length subs = 0 then ""
+      else "      }\n"
+    in
+    let id,parent,sr2,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_exe(call)] Can't find index " ^ si index)
     in
@@ -1140,11 +1171,31 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
           let ts = map tn ts in
           begin match a with
           | (`BEXPR_tuple es,`BTYP_tuple typs) ->
-            let ess = map ge es in
+            let ess = map (ge sr) es in
             let ets = map tn typs in
             let tt = tn (`BTYP_tuple typs) in
             "      // " ^ src_str ^ "\n" ^
-            "      {" ^ csubst sr ct ess ets tt "Error" ts^ "}\n"
+            sub_start ^
+            "      {" ^ csubst sr sr2 ct ess ets tt "Error" ts^ "}\n" ^
+            sub_end
+          
+          (* this case is needed for a primitive value of tuple type *)
+          | (_,`BTYP_tuple typs) as x ->
+            let n = length typs in
+            let es = 
+              map2 
+              (fun i t -> `BEXPR_get_n (i,x),t) 
+              (nlist n) typs
+            in
+            let ess = map (ge sr) es in
+            let ets = map tn typs in
+            let tt = tn (`BTYP_tuple typs) in
+            "      // " ^ src_str ^ "\n" ^
+            sub_start ^
+            "      {" ^ csubst sr sr2 ct ess ets tt "Error" ts^ "}\n" ^
+            sub_end
+
+
           | (_,typ) -> 
             (*
             print_endline ("One argument primitive .. type is " ^ string_of_btypecode syms.dfns typ);
@@ -1153,9 +1204,11 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
             (*
             print_endline (" .. C++ type name is " ^ typ);
             *)
-            let a = ge a in
+            let a = ge sr a in
             "      // " ^ src_str ^ "\n" ^
-            "      {" ^ csubst sr ct [a] [typ] typ "Error" ts^ "}\n"
+            sub_start ^
+            "      {" ^ csubst sr sr2 ct [a] [typ] typ "Error" ts^ "}\n" ^
+            sub_end
           end
           ^
           begin
@@ -1203,7 +1256,7 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
 
         let args = match a with
           | _,`BTYP_tuple [] -> this
-          | _ -> this ^ ", " ^ ge a
+          | _ -> this ^ ", " ^ ge sr a
         in
 
         let name = cpp_instance_name syms bbdfns index ts in
@@ -1212,39 +1265,40 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
           match kind with
           | Function ->
             "      //run procedure " ^ src_str ^ "\n" ^
+            "      {\n" ^
+            subs ^
             "      con_t *_p =\n" ^
-            "      (new(gc,"^ ptrmap^")\n" ^ 
-            "      " ^ name ^ 
-            "(" ^ cat ",\n      " ("FLX_FPAR_PASS":: the_display) ^
-            "))\n      ->call(\n      " ^ args ^ "\n      );\n" ^
-            "      while(_p) _p=_p->resume();\n"
+            "      (FLX_NEWP(" ^ name ^ ")"^
+            "(" ^ cat ",\n      " ("FLX_FPAR_PASS":: the_display) ^ "))\n"^
+            "      ->call(\n      " ^ args ^ "\n      );\n" ^
+            "      while(_p) _p=_p->resume();\n" ^
+            "      }\n"
 
           | Procedure ->
             let call_string =
-              "      return (new(gc,"^ ptrmap^")\n" ^ 
-              "      " ^ name ^ 
-              "(" ^ cat ",\n      " ("FLX_FPAR_PASS":: the_display) ^
+              "      return (FLX_NEWP(" ^ name ^ 
+              ")(" ^ cat ",\n      " ("FLX_FPAR_PASS":: the_display) ^
               "))\n      ->call(\n      " ^ args ^ "\n      );\n"
             in
             if is_jump
             then
-              "     //jump to procedure " ^ src_str ^ "\n" ^
-              "     {\n" ^
-              "       con_t *tmp = _caller;\n" ^
-              "       _caller = 0;\n" ^
+              "      //jump to procedure " ^ src_str ^ "\n" ^
+              "      {\n" ^
+              subs ^
+              "      con_t *tmp = _caller;\n" ^
+              "      _caller = 0;\n" ^
               "      decref(this);\n" ^
               call_string ^
               "      }\n"
             else
-              "     //call procedure " ^ src_str ^ "\n" ^
+              "      //call procedure " ^ src_str ^ "\n" ^
+              sub_start ^
               "      pc = " ^ si n ^ ";\n" ^
               call_string ^
+              sub_end ^
               "    case " ^ si n ^ ":\n"
         end
       end
-      (*
-      ^ (if was_jump then "FLX_RETURN // optimisation defeated\n" else "")
-      *)
 
     | _ -> 
       failwith 
@@ -1306,16 +1360,18 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
     end
 
   (* conditional gotos are always local *)
-  | `BEXE_ifgoto (_,e,s) -> "      if(" ^ ge e ^ ")goto " ^ s ^ ";\n"
-  | `BEXE_ifnotgoto (_,e,s) ->"      if(!("^ge e^"))goto " ^ s ^ ";\n" 
+  | `BEXE_ifgoto (sr,e,s) -> "      if(" ^ ge sr e ^ ")goto " ^ s ^ ";\n"
+  | `BEXE_ifnotgoto (sr,e,s) ->"      if(!("^ge sr e^"))goto " ^ s ^ ";\n" 
   
   | `BEXE_jump (sr,((`BEXPR_closure (index,ts),_) as f),a) ->
+    let subs,x = unravel syms bbdfns a in
     let ts = map tsub ts in
-    handle_closure sr true index ts a
+    handle_closure sr true index ts subs x
     
   | `BEXE_call (sr,((`BEXPR_closure (index,ts),_) as f),a) ->
+    let subs,x = unravel syms bbdfns a in
     let ts = map tsub ts in
-    handle_closure sr false index ts a
+    handle_closure sr false index ts subs x
 
   (* Refcounting notes for loop 
     Normally, the refcnt of every frame in the call stack is 1
@@ -1348,7 +1404,7 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
     underpants removed: precisely, the control relationship
     is lost, and only any data relationship remains.
   *)
-  | `BEXE_loop (_,i,a) ->
+  | `BEXE_loop (sr,i,a) ->
     let ptr = 
       if i= 0 then "this"
       else 
@@ -1359,7 +1415,7 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
       let args = ptr ^ "->" ^ 
         (match a with
         | _,`BTYP_tuple [] -> "_caller"
-        | _ -> "_caller, " ^ ge a
+        | _ -> "_caller, " ^ ge sr a
         )
       in
       "      //"^ src_str ^ "\n" ^
@@ -1391,7 +1447,7 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
      used (a waste if it isn't re-entered .. oh well)
    *)
 
-  | `BEXE_call (_,p,a) ->
+  | `BEXE_call (sr,p,a) ->
     let args = 
       let this = match kind with
         | Procedure -> "this"
@@ -1399,13 +1455,13 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
       in
       match a with
       | _,`BTYP_tuple [] -> this
-      | _ -> this ^ ", " ^ ge a
+      | _ -> this ^ ", " ^ ge sr a
     in
     begin match kind with
     | Function ->
       "      //run procedure " ^ src_str ^ "\n" ^
       "      {\n" ^
-      "        con_t *_p = "^ge p ^ "->clone()\n      ->call("^args^");\n" ^
+      "        con_t *_p = "^ge sr p ^ "->clone()\n      ->call("^args^");\n" ^
       "        while(_p) _p=_p->resume();\n" ^
       "      }\n"
       
@@ -1417,21 +1473,21 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
       "      // MAYBE NEED INCREF HERE\n" ^
       "      //"^ src_str ^ "\n" ^
       "      pc = " ^ si n ^ ";\n" ^
-      "      return " ^ ge p ^ "->clone()\n      ->call(" ^ args ^");\n" ^
+      "      return " ^ ge sr p ^ "->clone()\n      ->call(" ^ args ^");\n" ^
       "    case " ^ si n ^ ":\n"
     end
 
-  | `BEXE_jump (_,p,a) ->
+  | `BEXE_jump (sr,p,a) ->
     let args = match a with
       | _,`BTYP_tuple [] -> "tmp"
-      | _ -> "tmp, " ^ ge a
+      | _ -> "tmp, " ^ ge sr a
     in
     "      //"^ src_str ^ "\n" ^
     "      {\n" ^
     "        con_t *tmp = _caller;\n" ^
     "        _caller=0;\n" ^
     "        decref(this);\n" ^
-    "        return " ^ ge p ^ "\n      ->call(" ^ args ^");\n" ^
+    "        return " ^ ge sr p ^ "\n      ->call(" ^ args ^");\n" ^
     "      }\n"
 
   | `BEXE_proc_return _ -> ret_string
@@ -1457,39 +1513,39 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
     "    case " ^ si n ^ ":\n"
 
     
-  | `BEXE_regmatch (_,e,reargs) ->
+  | `BEXE_regmatch (sr,e,reargs) ->
     let b = Buffer.create 500 in
-    Flx_regen.regen b reargs (`regmatch e) ge;
+    Flx_regen.regen b reargs (`regmatch e) (ge sr);
     Buffer.contents b
 
-  | `BEXE_reglex (_,p1,p2,reargs) ->
+  | `BEXE_reglex (sr,p1,p2,reargs) ->
     let b = Buffer.create 500 in
-    Flx_regen.regen b reargs (`reglex (p1,p2)) ge;
+    Flx_regen.regen b reargs (`reglex (p1,p2)) (ge sr);
     Buffer.contents b
     
-  | `BEXE_fun_return (_,e) -> 
+  | `BEXE_fun_return (sr,e) -> 
     let _,t = e in
     let t = tn t in
     "      //" ^ src_str ^ "\n" ^
     "      {\n" ^
-    "        "^t^" tmp="^ge e^";\n" ^
+    "        "^t^" tmp="^ge sr e^";\n" ^
     "        decref(this);\n" ^
     "        return tmp;\n" ^
     "      }\n"
 
   | `BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
 
-  | `BEXE_assign (_,e1,e2) ->
+  | `BEXE_assign (sr,e1,e2) ->
     "      //"^src_str^"\n" ^
-    "      "^ ge e1 ^ " = " ^ ge e2 ^
+    "      "^ ge sr e1 ^ " = " ^ ge sr e2 ^
     ";\n"
     
-  | `BEXE_init (_,v,e) -> 
+  | `BEXE_init (sr,v,e) -> 
     "      //"^src_str^"\n" ^
     "      "^
     get_var_ref syms bbdfns this v ts^ 
     " = " ^ 
-    ge e ^
+    ge sr e ^
     ";\n"
 
 let gen_exes syms bbdfns display label_map counter index exes vs ts =
@@ -2291,6 +2347,8 @@ try
   plb "  ppf,\\";
   plb "  ptf";
 
+  plb "#define FLX_NEWP(x) \\";
+  plb "  new(gc,x##_ptr_map)x";
 
   plb "\n//-----------------------------------------";
   plb "//DEFINE FUNCTION CLASS METHODS";

@@ -2819,6 +2819,9 @@ val int_of_unitsum : btypecode_t -> int
 val all_units : btypecode_t list -> bool
 val all_voids : btypecode_t list -> bool
 
+val cmp_literal: literal_t -> literal_t -> bool
+val cmp_tbexpr: tbexpr_t -> tbexpr_t -> bool
+
 val type_of_argtypes : 
   typecode_t list -> 
   typecode_t
@@ -2969,6 +2972,53 @@ let qualified_name_of_expr e =
       "Qualified name expected in\n" ^
       short_string_of_src (src_of_expr e)
     )
+
+(* Note floats are equal iff they're textually identical,
+   we don't make any assumptions about the target machine FP model.
+   OTOH, int comparisons are infinite precision, for the same
+   int kind, even if the underlying machine model is not
+*)
+
+let cmp_literal (l:literal_t) (l':literal_t) = match l, l' with
+  | `AST_int (a,b), `AST_int (a',b') -> a = a' && Big_int.eq_big_int b b'
+  | `AST_float (a,b), `AST_float (a',b') -> a = a' && b = b'
+  | `AST_string s, `AST_string s' -> s = s'
+  | `AST_cstring s, `AST_cstring s' -> s = s'
+  | `AST_wstring s, `AST_wstring s' -> s = s'
+  | `AST_ustring s, `AST_ustring s' -> s = s'
+  | _ -> false
+
+(* Note that we don't bother comparing the type subterm:
+  this had better be equal for equal expressions: the value
+  is merely the cached result of a synthetic context
+  independent type calculation
+*)
+
+let rec cmp_tbexpr (a,_) (b,_) = 
+  let ecmp = cmp_tbexpr in match a,b with
+  | `BEXPR_deref e,`BEXPR_deref e' -> ecmp e e'
+
+  | `BEXPR_name (i,ts),`BEXPR_name (i',ts')
+  | `BEXPR_ref (i,ts),`BEXPR_ref (i',ts') 
+  | `BEXPR_closure (i,ts),`BEXPR_closure (i',ts') ->
+     i = i' && 
+     fold_left2 (fun r a b -> r && a = b) true ts ts'
+
+  | `BEXPR_literal a,`BEXPR_literal a' -> cmp_literal a a'
+
+  | `BEXPR_apply (a,b),`BEXPR_apply (a',b') ->  ecmp a a' && ecmp b b'
+  | `BEXPR_tuple ls,`BEXPR_tuple ls' ->
+     fold_left2 (fun r a b -> r && ecmp a b) true ls ls'
+     
+  | `BEXPR_case_arg (i,e),`BEXPR_case_arg (i',e')
+  | `BEXPR_match_case (i,e),`BEXPR_match_case (i',e')
+  | `BEXPR_get_n (i,e),`BEXPR_get_n (i',e') ->
+    i = i' && ecmp e e'
+
+  | `BEXPR_coercion (e,t),`BEXPR_coercion (e',t') -> ecmp e e' && t = t'
+  | `BEXPR_case (i,t),`BEXPR_case (i',t') -> i = i' && t = t'
+  | `BEXPR_expr (s,t),`BEXPR_expr (s',t') -> s = s' && t = t'
+  | _ -> false
 
  
 @h = tangler('src/flx_typing2.mli')
