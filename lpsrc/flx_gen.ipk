@@ -491,7 +491,7 @@ let csuffix_of_type s = match s with
   | _ -> failwith ("[csuffix_of_type]: Unexpected Type " ^ s)
 
 let cstring_of_literal e = match e with
-  | `AST_int (s,i) -> (Big_int.string_of_big_int i)^csuffix_of_type s 
+  | `AST_int (s,i) -> (Big_int.string_of_big_int i#get)^csuffix_of_type s 
   | `AST_float (s,x) -> x ^ csuffix_of_type s
   | `AST_string s -> string_of_string s
   | `AST_cstring s -> string_of_string s
@@ -2095,6 +2095,10 @@ try
   let bbdfns = bbind syms in
   let child_map = cal_children syms bbdfns in
   let bifaces = bind_ifaces syms ifaces in
+  Hashtbl.clear syms.bind_type_cache;
+  Hashtbl.clear syms.bind_expression_cache;
+  Hashtbl.clear syms.ticache;
+
   let binding_time = tim() in
 
   if compiler_options.print_flag 

@@ -161,6 +161,8 @@ let make_syms options =
     compiler_options = options;
     instances = Hashtbl.create 97;
     include_files = ref [];
+    bind_type_cache = Hashtbl.create 97;
+    bind_expression_cache = Hashtbl.create 97;
   }
 
 

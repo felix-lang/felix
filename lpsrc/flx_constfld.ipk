@@ -77,6 +77,8 @@ open Flx_print
 open Flx_exceptions
 open List
 open Flx_typing
+open Big_int
+open Flx_mtypes1
 
 let truth sr r = 
   let r = if r then 2 else 1 in
@@ -87,7 +89,7 @@ let const_fold' e sr name arg = match name, arg with
   (* -x *)
   | "neg", `AST_literal (_,`AST_int ("int",x))
     -> 
-    `AST_literal (sr,`AST_int ("int",Big_int.minus_big_int x))
+    `AST_literal (sr,`AST_int ("int",mkbigint (minus_big_int x#get)))
 
   (* +x *)
   | "pos", `AST_literal (_,`AST_int ("int",x))
@@ -97,7 +99,7 @@ let const_fold' e sr name arg = match name, arg with
   (* abs x *)
   | "abs", `AST_literal (_,`AST_int ("int",x))
     -> 
-    `AST_literal (sr,`AST_int ("int", Big_int.abs_big_int x))
+    `AST_literal (sr,`AST_int ("int", mkbigint(abs_big_int x#get)))
 
   (* x+y *)
   | "add", `AST_tuple ( _, [
@@ -105,7 +107,7 @@ let const_fold' e sr name arg = match name, arg with
            `AST_literal (_,`AST_int ("int",y))
           ])
     -> 
-    `AST_literal (sr,`AST_int ("int",Big_int.add_big_int x y))
+    `AST_literal (sr,`AST_int ("int",mkbigint(add_big_int x#get y#get)))
 
   (* x-y *)
   | "sub", `AST_tuple ( _, [
@@ -113,7 +115,7 @@ let const_fold' e sr name arg = match name, arg with
            `AST_literal (_,`AST_int ("int",y))
           ])
     -> 
-    `AST_literal (sr,`AST_int ("int",Big_int.sub_big_int x y))
+    `AST_literal (sr,`AST_int ("int",mkbigint(sub_big_int x#get y#get)))
 
   (* x*y *)
   | "mul", `AST_tuple ( _, [
@@ -121,7 +123,7 @@ let const_fold' e sr name arg = match name, arg with
            `AST_literal (_,`AST_int ("int",y))
           ])
     -> 
-    `AST_literal (sr,`AST_int ("int",Big_int.mult_big_int x y))
+    `AST_literal (sr,`AST_int ("int",mkbigint(mult_big_int x#get y#get)))
 
   (* x/y *)
   | "div", `AST_tuple ( _, [
@@ -129,7 +131,7 @@ let const_fold' e sr name arg = match name, arg with
            `AST_literal (_,`AST_int ("int",y))
           ])
     -> 
-    `AST_literal (sr,`AST_int ("int",Big_int.div_big_int x y))
+    `AST_literal (sr,`AST_int ("int",mkbigint(div_big_int x#get y#get)))
 
   (* x mod y *)
   | "mod", `AST_tuple ( _, [
@@ -137,7 +139,7 @@ let const_fold' e sr name arg = match name, arg with
            `AST_literal (_,`AST_int ("int",y))
           ])
     -> 
-    `AST_literal (sr,`AST_int ("int",Big_int.mod_big_int x y))
+    `AST_literal (sr,`AST_int ("int",mkbigint(mod_big_int x#get y#get)))
 
   (* x ** y *)
   | "pow", `AST_tuple ( _, [
@@ -145,7 +147,7 @@ let const_fold' e sr name arg = match name, arg with
            `AST_literal (_,`AST_int ("int",y))
           ])
     -> 
-    `AST_literal (sr,`AST_int ("int",Big_int.power_big_int_positive_big_int x y))
+    `AST_literal (sr,`AST_int ("int",mkbigint(power_big_int_positive_big_int x#get y#get)))
 
   (* x < y *)
   | "lt", `AST_tuple ( _, [
@@ -153,7 +155,7 @@ let const_fold' e sr name arg = match name, arg with
            `AST_literal (_,`AST_int ("int",y))
           ])
     -> 
-    truth sr (Big_int.lt_big_int x y)
+    truth sr (lt_big_int x#get y#get)
 
   (* x > y *)
   | "gt", `AST_tuple ( _, [
@@ -161,7 +163,7 @@ let const_fold' e sr name arg = match name, arg with
            `AST_literal (_,`AST_int ("int",y))
           ])
     -> 
-    truth sr (Big_int.gt_big_int x y)
+    truth sr (gt_big_int x#get y#get)
 
   (* x <= y *)
   | "le", `AST_tuple ( _, [
@@ -169,7 +171,7 @@ let const_fold' e sr name arg = match name, arg with
            `AST_literal (_,`AST_int ("int",y))
           ])
     -> 
-    truth sr (Big_int.le_big_int x y)
+    truth sr (le_big_int x#get y#get)
 
   (* x >= y *)
   | "ge", `AST_tuple ( _, [
@@ -177,7 +179,7 @@ let const_fold' e sr name arg = match name, arg with
            `AST_literal (_,`AST_int ("int",y))
           ])
     -> 
-    truth sr (Big_int.ge_big_int x y)
+    truth sr (ge_big_int x#get y#get)
 
   (* x == y *)
   | "eq", `AST_tuple ( _, [
@@ -185,7 +187,7 @@ let const_fold' e sr name arg = match name, arg with
            `AST_literal (_,`AST_int ("int",y))
           ])
     -> 
-    truth sr (Big_int.eq_big_int x y)
+    truth sr (eq_big_int x#get y#get)
 
   (* x != y *)
   | "ne", `AST_tuple ( _, [
@@ -193,7 +195,7 @@ let const_fold' e sr name arg = match name, arg with
            `AST_literal (_,`AST_int ("int",y))
           ])
     -> 
-    truth sr (not (Big_int.eq_big_int x y))
+    truth sr (not (eq_big_int x#get y#get))
 
   (* strings *)
   (* x+y *)
@@ -212,7 +214,7 @@ let const_fold' e sr name arg = match name, arg with
     -> 
     let y = 
       try 
-        Big_int.int_of_big_int y 
+        int_of_big_int y#get 
       with _ -> clierr sr "String repeat count too large"
     in
     let s = Buffer.create (String.length x * y) in

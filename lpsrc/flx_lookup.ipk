@@ -243,7 +243,8 @@ let print_env e =
     print_endline "--"; Hashtbl.iter print_entry htab
 
   in 
-  let print_level (htab,htabs) = 
+  let print_level (index,id,htab,htabs) = 
+    print_string (id^"<"^si index^">");
     print_table htab;
     print_endline "OPENS:";
     List.iter print_table htabs;
@@ -280,13 +281,14 @@ let merge_functions
   opens
 
 let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
-  (* print_endline ("Lookup name " ^ name ^ " in table dirs");*)
+  (* 
+  print_endline ("Lookup name " ^ name ^ " in table dirs");
   flush stdout;
+  *)
   match lookup_name_in_htab table name with
   | Some x as y -> 
     y
   | None ->
-    flush stdout;
   let opens = 
     List.concat
     (
@@ -378,7 +380,7 @@ and lookup_name_in_env syms (env:env_t) sr name : entry_set_t =
   let rec aux env = 
     match env with 
     | [] -> None
-    | (table,dirs) :: tail ->
+    | (_,_,table,dirs) :: tail ->
       match lookup_name_in_table_dirs table dirs sr name with
       | Some x as y -> y
       | None -> aux tail
@@ -534,22 +536,30 @@ and bind_type syms env sr t : btypecode_t =
   (*
   print_endline ("[bind_type] " ^ string_of_typecode t);
   *)
-  let t:btypecode_t = 
-    bind_type' syms env [] [] [] [] 0 sr 
-    t []
+  match hd env with (index,_,_,_) ->
+  try Hashtbl.find syms.bind_type_cache (index,t) 
+  with Not_found ->
+  let bt:btypecode_t = 
+    bind_type' syms env [] [] [] [] 0 sr t []
   in
   (*
   print_endline ("Bound type= " ^ sbt syms.dfns t);
   *)
-  let t = beta_reduce syms [] t 
+  let bt = beta_reduce syms [] bt 
   in
     (*
-    print_endline ("Beta reduced type= " ^ sbt syms.dfns t);
+    print_endline ("Beta reduced type= " ^ sbt syms.dfns bt);
     *)
-    t 
+    Hashtbl.add syms.bind_type_cache (index,t) bt;
+    bt 
 
 and bind_expression syms env e  =
- bind_expression' syms env [] [] 0 e 
+  match hd env with (index,_,_,_) ->
+  try Hashtbl.find syms.bind_expression_cache (index,e)
+  with Not_found ->
+  let be = bind_expression' syms env [] [] 0 e in
+  Hashtbl.add syms.bind_expression_cache (index,e) be;
+  be
 
 
 (* =========================================== *)
@@ -1189,7 +1199,7 @@ and base_typename_of_literal v = match v with
   | `AST_ustring _ -> "string"
 
 and  typeof_literal syms env sr v : btypecode_t = 
-  let root,_ = List.hd (List.rev env) in
+  let _,_,root,_ = List.hd (List.rev env) in
   let name = base_typename_of_literal v in
   match lookup_name_in_env syms env dummy_sr name with
   | NonFunctionEntry (index) -> 
@@ -1890,7 +1900,7 @@ and lookup_name_with_sig
       "[lookup_name_with_sig] Can't find " ^ name ^ 
       " of " ^ sbt syms.dfns t2
     )
-  | (table,dirs)::tail ->
+  | (_,_,table,dirs)::tail ->
     match 
       lookup_name_in_table_dirs_with_sig 
       (table, dirs) 
@@ -2812,65 +2822,54 @@ and get_pub_tables syms env dirs =
 
 and mk_bare_env syms index = 
   match Hashtbl.find syms.dfns index with
-  {parent=parent;privmap=table} -> (table,[]) :: 
+  {id=id;parent=parent;privmap=table} -> (index,id,table,[]) :: 
   match parent with 
   | None -> [] 
   | Some index -> mk_bare_env syms index
 
+and merge_opens syms env (opens,includes,uses) =
+  let use_map = Hashtbl.create 97 in
+  List.iter
+  (fun (n,qn) ->
+    let entry,_ = lookup_qn_in_env2 syms env qn in
+    match entry with
+    
+    | NonFunctionEntry _ ->
+      if Hashtbl.mem use_map n
+      then failwith "Duplicate non function used"
+      else Hashtbl.add use_map n entry
+
+    | FunctionEntry ls ->
+      let entry2 = 
+        try Hashtbl.find use_map  n 
+        with Not_found -> FunctionEntry []
+      in
+      match entry2 with
+      | NonFunctionEntry _ ->
+        failwith "Use function and non-function kinds"
+      | FunctionEntry ls2 ->
+        Hashtbl.replace use_map n (FunctionEntry (ls @ ls2))
+  )
+  uses 
+  ;
+  let opens = uniq_list (map (bind_dir syms env) opens) in
+  let opens = uniq_cat opens (map (bind_dir syms env) includes) in
+
+  let includes = ref [] in
+  iter (get_includes' syms includes) opens;
+  let includes = uniq_list !includes in
+  let tables = map (pub_table_dir syms) includes in
+  use_map::tables 
+
 and build_env'' syms index : env_t =
-  let rec resolve_dirs env =
-    match env with
-    | [] -> []
-    | (id,index,table,opens,includes,uses)::tail ->
-      let base = resolve_dirs tail in
-      let env = (table,[])::base in
-      let use_map = Hashtbl.create 97 in
-      List.iter
-      (fun (n,qn) ->
-        let entry,_ = lookup_qn_in_env2 syms env qn in
-        match entry with
-        
-        | NonFunctionEntry _ ->
-          if Hashtbl.mem use_map n
-          then failwith "Duplicate non function used"
-          else Hashtbl.add use_map n entry
-
-        | FunctionEntry ls ->
-          let entry2 = 
-            try Hashtbl.find use_map  n 
-            with Not_found -> FunctionEntry []
-          in
-          match entry2 with
-          | NonFunctionEntry _ ->
-            failwith "Use function and non-function kinds"
-          | FunctionEntry ls2 ->
-            Hashtbl.replace use_map n (FunctionEntry (ls @ ls2))
-      )
-      uses 
-      ;
-      let opens = uniq_list (map (bind_dir syms env) opens) in
-      let opens = uniq_cat opens (map (bind_dir syms env) includes) in
-
-      let includes = ref [] in
-      iter (get_includes' syms includes) opens;
-      let includes = uniq_list !includes in
-      let tables = map (pub_table_dir syms) includes in
-      let second = use_map::tables in
-      (table,second) :: base
-  in 
-  let rec aux index = 
-     match Hashtbl.find syms.dfns index with
-     {id=id; parent=parent;privmap=table;dirs=dirs} ->
-     let a,b,c = split_dirs dirs in
-     (id,index,table,a,b,c) :: 
-     match parent with 
-     | None -> [] 
-     | Some index -> aux index
-  in 
-    let basic_env = aux index in
-    let x = resolve_dirs basic_env in 
-    x
-
+  match Hashtbl.find syms.dfns index with
+  {id=id; parent=parent;privmap=table;dirs=dirs} ->
+  let opens,includes,uses = split_dirs dirs in
+  let env = build_env syms parent in
+  let env' = (index,id,table,[])::env in
+  let second = merge_opens syms env' (opens,includes,uses) in
+  (index,id,table,second)::env
+  
 and build_env syms parent : env_t =
   match parent with
   | None -> []
