@@ -56,7 +56,7 @@ followed by a square bracket enclosed list of type expressions.
 type c_t = string     (* C++ code as a string *)
 type id_t = string
 
-type qualified_name_t =
+and qualified_name_t =
   [
   | `AST_void of range_srcref
   | `AST_root of range_srcref
@@ -140,6 +140,7 @@ and expr_t =
   | `AST_literal of range_srcref * literal_t
   | `AST_deref of range_srcref * expr_t
   | `AST_ref of range_srcref * expr_t
+
   | `AST_method_apply of range_srcref * (id_t * expr_t)
   | `AST_dot of range_srcref * (expr_t * id_t)
   | `AST_lambda of range_srcref * (parameter_t list * typecode_t * statement_t list)
@@ -238,6 +239,7 @@ and statement_t =
   | `AST_read of range_srcref * id_t
   | `AST_return of range_srcref * expr_t
   | `AST_nop of range_srcref * string
+  | `AST_set of range_srcref * (expr_t * expr_t)
 
   | `AST_block of range_srcref * statement_t list
   | `AST_if of 
@@ -280,6 +282,7 @@ and exe_t =
   | `EXE_return of expr_t
   | `EXE_nop of string
   | `EXE_init of id_t * expr_t 
+  | `EXE_set of expr_t * expr_t 
   ]
 
 and dir_t =
@@ -355,12 +358,14 @@ and bexe_t =
   | `BEXE_read of bid_t
   | `BEXE_return of tbexpr_t
   | `BEXE_nop of string
-  | `BEXE_code of string
+  | `BEXE_code of string (* C++ embedded statements *)
   | `BEXE_init of bid_t * tbexpr_t 
+  | `BEXE_set of tbexpr_t * tbexpr_t 
   ]
 
 and bexpr_t =
   [
+  (* there should be a way to embed C++ function calls directly .. *)
   | `BEXPR_deref of tbexpr_t
   | `BEXPR_name of bid_t
   | `BEXPR_ref of bid_t
@@ -609,6 +614,7 @@ let src_of_stmt e = match e with
   | `AST_untyped_functor (s,_,_,_)
   | `AST_label (s,_)
   | `AST_goto (s,_)
+  | `AST_set (s,_)
   
   | `AST_function (s, _, _ , _, _)
   | `AST_procedure (s, _, _ , _)
@@ -853,73 +859,129 @@ and string_of_expr (e:expr_t) =
     ^
     " endmatch"
 
-and string_of_typecode (tc:typecode_t) = 
-  match tc with
-  | #qualified_name_t as t -> string_of_qualified_name t
-  | `TYP_none -> "Unknown"
-  | `TYP_tuple ls ->
-    begin match ls with 
-    | [] -> "unit" 
-    | _ -> "(" ^ (String.concat " * " (List.map string_of_typecode ls)) ^")"
-    end
+(* precedences for type operators ..
+   0 -- atomic
+   1 -- pointer
+   2 -- application
+   3 -- *
+   4 -- +
+   5 -- ->
+   6 -- =>
+   7    as, all
+*)
 
-  | `TYP_sum ls ->
-    begin match ls with 
-    | [] -> "void" 
-    | _ -> "(" ^ (String.concat " * " (List.map string_of_typecode ls)) ^")"
-    end
 
-  | `TYP_function (args, result) ->  
-    "(" ^ (string_of_typecode args) ^ " -> " ^ (string_of_typecode result) ^ ")"
-  | `TYP_pointer t -> "&(" ^ (string_of_typecode t) ^ ")"
-  | `TYP_all (t,s) -> string_of_typecode t ^ " all " ^ s
-  | `TYP_as (t,s) -> string_of_typecode t ^ " as " ^ s
+and st prec tc = 
+  let iprec,txt =
+    match tc with
+    | #qualified_name_t as t -> 0,string_of_qualified_name t
+    | `TYP_none -> 0,"Unknown"
+    | `TYP_tuple ls ->
+      begin match ls with 
+      | [] -> 0,"unit" 
+      | _ -> 3, String.concat " * " (List.map (st 3) ls)
+      end
+
+    | `TYP_sum ls ->
+      begin match ls with 
+      | [] -> 0,"void" 
+      | _ -> 4,String.concat " * " (List.map (st 4) ls)
+      end
+
+    | `TYP_function (args, result) ->  
+      5,st 5 args ^ " -> " ^ st 5 result
+
+    | `TYP_pointer t -> 1,"&" ^ st 1 t
+    
+    | `TYP_all (t,s) -> 7,st 7 t ^ " all " ^ s
+    | `TYP_as (t,s) -> 7,st 7 t ^ " as " ^ s
+  in
+    if iprec >= prec 
+    then "(" ^ txt ^ ")" 
+    else txt
+
+and string_of_typecode tc = st 99 tc
 
 and qualified_name_of_index dfns index = 
   match Hashtbl.find dfns index with 
   | (id,sr,None,_) -> (* id ^ "<" ^ string_of_int index ^ ">" *) ""
   | (id,sr,Some index',_) -> 
     qualified_name_of_index dfns index' ^ "::" ^
-    id ^ "<" ^ string_of_int index ^ ">"
+    id 
+    (* ^ "<" ^ string_of_int index ^ ">" *)
 
-and string_of_btypecode dfns tc = sb dfns 0 tc
-and sb dfns depth tc = 
-  let sbt t = sb dfns (depth+1) t in
-  string_of_int depth ^ ":<" ^ 
-    begin match tc with
-    | `BTYP_fix i -> "<fix " ^ string_of_int i ^" (rel)->" ^ string_of_int (depth+i) ^ " (abs)>"
-    | `BTYP_binding (a,b) -> 
-      "binding (" ^ 
-      sbt a ^
-      " => " ^
-      sbt b ^
-      ")"
+(* fixppoint labeller .. very sloppy, ignores precedence .. *)
+and get_label i =
+  if i = 0 then "" 
+  else 
+    let ch = Char.chr (i mod 26 + Char.code('a')-1) in
+    get_label (i/26) ^ String.make 1 ch
+  
+and print_fixpoints depth fixlist =
+  match fixlist with
+  | (d,lab) :: t when d = depth -> 
+    let txt,lst = print_fixpoints depth t in
+    " as " ^ lab ^ " " ^ txt, lst
+  | _ -> "", fixlist
+  
+and sb dfns depth fixlist counter prec tc = 
+  let sbt prec t = sb dfns (depth+1) fixlist counter prec t in
+    let iprec, term = 
+      match tc with
+      | `BTYP_fix i ->
+         incr counter; (* 'a is 1 anyhow .. *)
+         let lab = "'" ^ get_label !counter in
+         fixlist := (depth+i,lab) :: !fixlist;
+         0,lab 
 
-    | `BTYP_name n -> qualified_name_of_index dfns n
-    | `BTYP_tuple ls -> 
-      begin match ls with 
-      | [] -> "unit" 
-      | [x] -> failwith ("UNEXPECTED TUPLE OF ONE ARGUMENT " ^ sbt x)
-      | _ -> "(" ^ (String.concat " * " (List.map sbt ls)) ^")"
-      end
+      | `BTYP_binding (a,b) -> 
+        6,
+        sbt 6 a ^
+        " => " ^
+        sbt 6 b
 
-    | `BTYP_sum ls -> 
-      begin match ls with 
-      | [] -> "UNEXPECTED EMPTY SUM = void" 
-      | [x] -> (* failwith *) ("UNEXPECTED SUM OF ONE ARGUMENT " ^ sbt x)
-      | _ -> "(" ^ (String.concat " + " (List.map sbt ls)) ^")"
-      end
+      | `BTYP_name n -> 0,qualified_name_of_index dfns n
 
-    | `BTYP_function (args, result) ->  
-      "(" ^ (sbt args) ^ " -> " ^ (sbt result) ^ ")"
+      | `BTYP_tuple ls -> 
+        begin match ls with 
+        | [] -> 0,"unit" 
+        | [x] -> failwith ("UNEXPECTED TUPLE OF ONE ARGUMENT " ^ sbt 9 x)
+        | _ -> 3,String.concat " * " (List.map (sbt 3) ls)
+        end
 
-    | `BTYP_pointer t -> "&(" ^ (sbt t) ^ ")"
-    | `BTYP_void -> "void"
-    | `BTYP_none -> "<none>"
-    end 
-    ^ 
-    ">"
+      | `BTYP_sum ls -> 
+        begin match ls with 
+        | [] -> 9,"UNEXPECTED EMPTY SUM = void" 
+        | [x] -> (* failwith *) (9,"UNEXPECTED SUM OF ONE ARGUMENT " ^ sbt 9 x)
+        | _ -> 4,String.concat " + " (List.map (sbt 4) ls)
+        end
 
+      | `BTYP_function (args, result) ->  
+        5,(sbt 5 args) ^ " -> " ^ (sbt 5 result)
+
+      | `BTYP_pointer t -> 1,"&" ^ sbt 1 t
+      | `BTYP_void -> 0,"void"
+      | `BTYP_none -> 0,"<none>"
+    in
+      let txt,lst = print_fixpoints depth !fixlist in
+      fixlist := lst;
+      if txt <> "" then "(" ^ term ^ txt ^ ")"
+      else if iprec >= prec then "(" ^ term ^ ")"
+      else term
+
+and string_of_btypecode dfns tc = 
+  let fixlist = ref [] in
+  let term = sb dfns 0 fixlist (ref 0) 99 tc in
+  let bad = ref "" in
+  while List.length !fixlist > 0 do
+    match !fixlist with
+    | (d,v)::t ->
+      bad := !bad ^ " FV" ^ string_of_int d ^ " " ^ v;
+      fixlist := t
+    | [] -> assert false
+  done;
+  term ^ !bad
+  
 and string_of_parameters ps = 
   String.concat 
     ", " 
@@ -1221,10 +1283,13 @@ and string_of_statement level s =
     ";"
 
   | `AST_return (_,e) -> 
-    spaces level ^ "return " ^ (se e) ^ ";"
+    spaces level ^ "return " ^ se e ^ ";"
     
   | `AST_read (_,name) ->
     spaces level ^ "read " ^ name ^ ";"
+
+  | `AST_set (_,(e1,e2)) ->
+     spaces level ^ "set " ^ se e1 ^ " to " ^ se e2 ^ ";"
 
 and string_of_compilation_unit stats =
   catmap "\n" (string_of_statement 0) stats
@@ -1337,7 +1402,10 @@ and string_of_exe level s =
     "code " ^ string_of_string s 
 
   | `EXE_init (l,r) -> spc ^ 
-    l ^ " := " ^ se r ^ ";"
+    l ^ " :init= " ^ se r ^ ";"
+
+  | `EXE_set (l,r) -> spc ^ 
+    se l ^ " :set= " ^ se r ^ ";"
 
 and string_of_bound_expression dfns e = 
   let se e = string_of_bound_expression dfns e in
@@ -1417,7 +1485,10 @@ and string_of_bexe dfns level s =
     "code " ^ string_of_string s 
 
   | `BEXE_init (l,r) -> spc ^ 
-    sid l ^ " := " ^ se r ^ ";"
+    sid l ^ " :init= " ^ se r ^ ";"
+
+  | `BEXE_set (l,r) -> spc ^ 
+    se l ^ " :set= " ^ se r ^ ";"
 
 and string_of_dcl level name s = 
   let se e = string_of_expr e in
@@ -1726,11 +1797,6 @@ module FuntypeSet = Set.Make(
   struct type t=typecode_t let compare = compare end
 )
 
-(* bound type! *)
-let typeoflist typlist = match typlist with
-  | [t] -> t
-  | _ -> `BTYP_tuple typlist
-
 let rec lower t = match t with
   | `BTYP_binding (i,t) -> t
   | `BTYP_pointer t -> `BTYP_pointer (lower t)
@@ -1787,6 +1853,16 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | `AST_ref (sr,e) -> `TYP_pointer (te e)
   | `AST_sum (_,ts) -> 
     `TYP_sum (List.map te ts)
+  | `AST_as (sr,(e1,e2)) ->
+     begin match e2 with 
+     | `AST_name (_,s) -> `TYP_as (te e1,s)
+     | _ -> 
+       failwith 
+       (
+         "identifier required after 'as' in type in" ^
+         short_string_of_src sr
+       )
+     end
 
   | `AST_literal (sr,`AST_int (enc,v)) ->
     if enc <> "int" 
@@ -1834,6 +1910,169 @@ let qualified_name_of_expr e =
       short_string_of_src (src_of_expr e)
     )
 
+(*  Unfold: remove a top level fixpoint operator
+    by replacing the recursion point
+    with the term it binds:
+    
+   x * b as x   ---> (x * b as x) * b
+   x -> b as x  ---> (x -> b as x) -> b
+
+   this guarrantees to remove the fixpoint binder
+   from the top level EXCEPT that fix 0 is just fix 0;
+   that is, unfold (x as x) = x as x
+
+   unfold is idempotent
+   it will NOT unroll a subterm loop eg (x * b as x) * c
+   will NOT be unrolled
+*)
+
+let type_unfold top =
+  let rec uf depth t =
+    let ruf t' = uf (depth+1) t' in
+    match t with
+    | `BTYP_tuple ls -> `BTYP_tuple (List.map ruf ls)
+    | `BTYP_sum ls -> `BTYP_sum (List.map ruf ls)
+    | `BTYP_function (s,d) -> `BTYP_function (ruf s, ruf d)
+    | `BTYP_pointer t -> `BTYP_pointer (ruf t)
+    | `BTYP_binding (s,d) -> `BTYP_binding (ruf s, ruf d) (* unusual! *)
+    | `BTYP_name _ 
+    | `BTYP_void
+    | `BTYP_none -> t
+    | `BTYP_fix i -> 
+      if depth+i < 0 then failwith "unfold: fixpoint off top of term";
+      if depth + i = 0
+      then top
+      else t
+  in uf 0 top
+
+
+(* equi-recursive type equality 
+  Cardelli's algorithm (quadratic performance)
+  compares infinite unfoldings of two types
+
+  Can use union-find here to get better performance,
+  see Pierce
+*)
+
+let rec memq trail a b = (* search for pair of addresses *)
+  match trail with
+  | [] -> false
+  | (x,y)::t -> 
+    if x == a && y ==b 
+    then true
+    else memq t a b
+
+let rec cmp' depth trail aenv a benv b =
+  if memq !trail a b
+  then true 
+  else begin
+    trail := (a,b)::!trail;
+    let aenv = (depth,a)::aenv in
+    let benv  = (depth,b)::benv in
+    let cmp a b = cmp' (depth+1) trail aenv a benv b in
+    match a, b with
+
+    | _,`BTYP_fix j ->
+      let b' = 
+        try 
+          List.assoc (depth+j) benv 
+        with _ -> failwith "Misplaced fix" 
+      in
+      cmp' depth trail aenv a benv b'
+
+    | `BTYP_fix i,_ ->
+      let a' = 
+        try 
+          List.assoc (depth+i) aenv 
+        with _ -> failwith "Misplaced fix"
+        in
+      cmp' depth trail aenv a' benv b
+
+    | `BTYP_name a, `BTYP_name b -> a = b
+
+    | `BTYP_sum la, `BTYP_sum lb 
+      when List.length la = List.length lb ->
+      List.fold_left (&&) true (List.map2 cmp la lb)
+      
+    | `BTYP_tuple la, `BTYP_tuple lb 
+      when List.length la = List.length lb ->
+      List.fold_left (&&) true (List.map2 cmp la lb)
+
+    | `BTYP_pointer a, `BTYP_pointer b ->
+       cmp a b
+
+    | `BTYP_function (sa,da),`BTYP_function (sb,db) ->
+       cmp sa sb && cmp da db
+
+    | `BTYP_binding (sa,da),`BTYP_binding (sb,db) ->
+       (* well, who knows .. ? *)
+       cmp sa sb && cmp da db
+
+    | `BTYP_void,`BTYP_void -> true
+
+    | _ -> false
+  end
+   
+let type_eq a b = cmp' 0 (ref []) [] a [] b
+
+(* fold is the inverse of unfold:
+
+   for example:
+   (x * b as x) * b -> x * b as x
+
+    it will only fold a recursion
+    to a point one level deep
+
+    it works by comparing each subtree of a term 
+    with the whole term using the equi-recursive
+    comparison routine
+
+    if all such comparisons fail, the original
+    term is returned, otherwise the first
+    subterm which is equi-recursively equal
+    to the whole term is returned.. note this
+    routine is not itself recursive ..
+
+    .. we don't use a shortcut .. might be worthwhile ..
+*) 
+
+exception Break of btypecode_t
+
+let type_fold top =
+  let eq x y = try type_eq x y with _ -> false in
+  match top with
+  | `BTYP_sum ls
+  | `BTYP_tuple ls -> 
+    begin try 
+      List.iter (fun t -> if eq top t then raise (Break t)) ls;
+      top
+    with Break t -> t
+    end
+     
+  | `BTYP_function (s,d) ->
+    if eq top s then s
+    else if eq top d then d 
+    else top
+
+  | `BTYP_pointer t ->
+     if eq top t then t else top
+
+  | `BTYP_binding (s,d) -> (* weird .. *)
+    if eq top s then s
+    else if eq top d then d 
+    else top
+
+  | `BTYP_name _ 
+  | `BTYP_void
+  | `BTYP_none 
+  | `BTYP_fix 0 -> top
+  | `BTYP_fix _ -> failwith "[type_fold] Recursion out of term"
+
+let typeoflist typlist = match typlist with
+  | [t] -> t
+  | _ -> type_fold (`BTYP_tuple typlist)
+
+
 @h = tangler('src/flx_typing.mli')
 @select(h)
 open Flx_types
@@ -1868,6 +2107,15 @@ val typecode_of_expr:
 
 val qualified_name_of_expr:
   expr_t -> qualified_name_t
+
+val type_unfold:
+  btypecode_t -> btypecode_t
+
+val type_fold:
+  btypecode_t -> btypecode_t
+
+val type_eq: (* equi-recursive *)
+  btypecode_t -> btypecode_t -> bool 
 
 module FuntypeSet :
   sig

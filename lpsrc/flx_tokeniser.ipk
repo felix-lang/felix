@@ -165,7 +165,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | LAZY _ -> "lazy"
   | WHEN _ -> "when"
   | AS _ -> "as"
-  | ALL _ -> "as"
+  | ALL _ -> "all"
   | REGEXP _ -> "regexp"
   | ANY _ -> "_"
   | VAR _ -> "var"

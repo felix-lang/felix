@@ -267,14 +267,14 @@ Felix have one argument. The tuple constructor
 is the exception.
 @p()
 You can get at tuple components using a suffixed
-dot followed a zero origin integer in brackets:
+dot followed a one origin integer in brackets:
 @select(tangler(tdir+'tut108.flx'))
 #include <std.flx>
 val x = (0,1,(3,4));
-print x.(0); print " ";
 print x.(1); print " ";
-print x.(2).(0); print " ";
-print x.(2).(1); print "\n";
+print x.(2); print " ";
+print x.(3).(1); print " ";
+print x.(3).(2); print "\n";
 @doc()
 The brackets are needed so the lexer
 doesn't get confused with floating point.
@@ -2294,19 +2294,112 @@ f i1;
 f i2;
 f i3;
 
-@head(1,'Misc junk')
-Misc weird feature tests .. remove in production
-tutorial.
-@select(tangler(tdir+'tut901.flx'))
+@head(1,'Type recursion over numbered unions')
+It is possible to specify a list
+using a recursive numbered union.
+@select(tangler(tdir+'tut208.flx'))
 #include <std.flx>
-// recursive typedefs
+// recursive typedef
 
-//typedef x = 1 + x * int;
-union x = Empty | Cons of x * int;
-fun f(a:x):x = 
+typedef list = 1 + int * list;
+
+fun cons(a:int, b:list):list = 
 { 
-  //val b = (case 2 of x) (a,2);
-  val b = Cons (a,2);
-  return b;
+  val z = (case 2 of list) (a,b);
+  return z;
 }
+
+proc print(a:list)
+{
+  match a with
+  | case 2 (?h, ?t) => { print h; print " "; print t; }
+  | case 1 => { print "END\n"; }
+  endmatch;
+}
+
+val a = case 1 of list;
+val b = cons(1,a);
+val c = cons(2,b);
+
+print c;
+
+@head(1,'Type recursion in functions')
+Here is another classic use of type recursion:
+a function which returns itself. Don't try this
+in C.
+@select(tangler(tdir+'tut209.flx'))
+#include <std.flx>
+// recursive typedef
+
+// requires equi-recursive type comparison 
+typedef selfun  = unit -> selfun;
+
+fun myself():selfun = 
+{ 
+  return myself of (unit);
+}
+
+var f1 = myself();
+f1 = f1 ();
+
+@head(1,'Fixpoint binder')
+In the previous examples, we used a typedef to
+provide an alias for a type, and then used that
+name within the type's definition. This equational
+formulation sometimes isn't convenient. Felix provides
+a fixpoint binder as an alternative for specifying
+recursive types. You can write
+
+@begin_displayed_code()
+  t as x
+@end_displayed_code()
+
+and use the name 'x' inside t to specify recursion.
+The actual name chosen is irrelevant, and not
+visible outside the scope of the binder.
+@p()
+Here's the list example, 
+using the postfix "as" construction: it binds
+more weakly than other operators, and so tends to
+apply to the whole of the type expression on
+the left unless brackets are used to restrict its scope.
+
+@select(tangler(tdir+'tut210.flx'))
+#include <std.flx>
+// fixpoint combinator
+
+typedef list = 1 + int * x as x;
+
+fun cons(a:int, b:list):list = 
+{ 
+  val z = (case 2 of list) (a,b);
+  return z;
+}
+
+proc print(a:list)
+{
+  match a with
+  | case 2 (?h, ?t) => { print h; print " "; print t; }
+  | case 1 => { print "END\n"; }
+  endmatch;
+}
+
+val a = case 1 of list;
+val b = cons(1,a);
+val c = cons(2,b);
+
+print c;
+
+@head(1,"Miscellaneous")
+Recursive products don't work!
+You can't have a tuple nested inside itself.
+You must use pointers instead, as in C.
+
+@select(tangler(tdir+'tut211.flx'))
+#include <std.flx>
+
+// crashes compiler 
+
+//typedef circ = int * circ; // useless type
+//var c: circ; // compiler will crash ?
 

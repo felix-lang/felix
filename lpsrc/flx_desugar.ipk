@@ -383,7 +383,8 @@ and rst seq st : asm_t list =
   | `AST_label (sr,s) -> [Exe (sr,`EXE_label s)]
   | `AST_goto (sr,s) -> [Exe (sr,`EXE_goto s)]
   | `AST_open (sr,name) -> [Dir (sr,DIR_open name)]
-  
+  | `AST_set (sr, (e1, e2)) -> [Exe (sr,`EXE_set (e1,e2))]
+
   | `AST_comment s -> [Exe (generated,`EXE_comment s)]
 
   (* objects *)

@@ -46,7 +46,7 @@ we need to construct a C++ class type. To ensure the same
 name is provided for each such class, we use a registry
 which maps the (bound) type expression to an integer.
 @p()
-The routine register_type_rn is a non-recursive registration
+The routine register_type_nr is a non-recursive registration
 procedure.
 @p()
 The routine register_type_r registers types recursively.
@@ -67,15 +67,27 @@ of the same type.
 Note that the types of implicitly declared tuples
 will be caught here, since the only thing you can
 do with a tuple is make it the argument of a function.
+@p()
+Note that we're given a type t we register it,
+but when we decompose it for components, we have to
+unfold it first before decomposition, in case
+the top level term has an implicit fix operator
+surrounding it. (The term representation uses
+a `BTYP_fix i to denote a fixpoint binder -i levels
+up in the term structure).
 
 @select(h)
 let register_type_nr registry counter dfns t =
-  if t <> `BTYP_tuple [] then
-  if not (Hashtbl.mem registry t)
-  then
-    let n = !counter in
-    incr counter;
-    Hashtbl.add registry t n
+  let t = type_fold t in
+  match t with 
+  | `BTYP_tuple [] 
+  | `BTYP_fix _ -> ()
+  | _ ->
+    if not (Hashtbl.mem registry t)
+    then
+      let n = !counter in
+      incr counter;
+      Hashtbl.add registry t n
 
 let rec register_type_r registry counter dfns bbdfns exclude t =
   (*
@@ -87,7 +99,7 @@ let rec register_type_r registry counter dfns bbdfns exclude t =
     registry counter dfns bbdfns (t :: exclude) t'
   in
   let rnr t = register_type_nr registry counter dfns t in
-  match t with
+  match type_unfold t with
   | `BTYP_void -> ()
   | `BTYP_none -> ()
   | `BTYP_fix _ -> ()
@@ -155,6 +167,7 @@ let mangle_cpp_typename ct =
 
 let rec cpp_typename registry dfns bbdfns t = 
   let tn t = cpp_typename registry dfns bbdfns t in
+  let t = type_fold t in
   try match t with
   | `BTYP_fix i ->  failwith "Can't name type fixpoint"
   | `BTYP_tuple [] -> "unit"
@@ -195,8 +208,9 @@ let rec cpp_typename registry dfns bbdfns t =
 
 let rec cpp_classname registry dfns bbdfns t = 
   let tn t = cpp_typename registry dfns bbdfns t in
-  try match t with
-  | `BTYP_fix i -> failwith "Can't name type fixpoint"
+  let t = type_fold t in
+  try match type_fold t with
+  | `BTYP_fix i -> failwith "type fixpoint doesn't have class"
   | `BTYP_binding _ -> failwith "[cpp_classname] Unexpected binding type"
   | `BTYP_tuple [] -> "unit"
   | `BTYP_void -> failwith "void doesn't have a classname"
@@ -309,8 +323,11 @@ let is_unitsum (t:btypecode_t) = match t with
 
 let gen_type_name registry dfns bbdfns (index,typ) =
   let tn t = cpp_classname registry dfns bbdfns t in
-  match typ with
-  | `BTYP_fix i -> ""
+  (*
+  print_endline ("gen_type_name " ^ string_of_btypecode dfns typ);
+  *)
+  match type_unfold typ with
+  | `BTYP_fix i -> failwith "[gen_type_name] Unexpected fix"
   | `BTYP_binding _ -> failwith "[gen_type_name] Unexpected binding type"
   | `BTYP_function _ ->
     let name = tn typ in
@@ -360,7 +377,7 @@ let gen_type registry dfns bbdfns (index,typ) =
   "//TYPE "^string_of_int index^": " ^ string_of_btypecode dfns typ ^ "\n"^
   let tn t = cpp_typename registry dfns bbdfns t in
   let cn t = cpp_classname registry dfns bbdfns t in
-  match typ with
+  match type_unfold typ with
 
   | `BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
   | `BTYP_binding _ -> failwith ("gen_type] Unexpected binding type")
@@ -399,7 +416,7 @@ let gen_type registry dfns bbdfns (index,typ) =
 
   | `BTYP_tuple ts ->
     let components = ref [] in
-    let counter = ref 0 in
+    let counter = ref 1 in
     List.iter 
     (fun t -> 
       components := !components @ [!counter, t]; 
@@ -469,7 +486,7 @@ let gen_type registry dfns bbdfns (index,typ) =
           fst (List.hd cs) ^ "(_arg) {}\n" 
         | _ ->
           let ctor_inits = ref [] in 
-          let counter = ref 0 in
+          let counter = ref 1 in
           List.iter 
           (fun (name,typ) -> 
             let n = !counter in incr counter; 

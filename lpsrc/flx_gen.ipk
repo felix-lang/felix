@@ -623,7 +623,7 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
     (* NOTE that the index is not used ... *)
     let _,t = e in
     let t = 
-      match t with 
+      match type_unfold t with 
       | `BTYP_sum ls -> List.nth ls (n-1)
       | _ -> assert false
     in
@@ -642,7 +642,7 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
     t ^ "(" ^ cstring_of_literal v ^ ")"
     
   | `BEXPR_case (v,t) ->
-    begin match t with
+    begin match type_unfold t with
     | `BTYP_sum ls ->
        let n = List.length ls in
        if v<1 or v>n
@@ -1108,6 +1108,23 @@ let gen_exe registry dfns bbdfns label_map counter this (exe:bexe_t) =
     
   | `BEXE_return e -> "      return "^ge e^";\n"
   | `BEXE_nop s -> "      //Nop: " ^ s ^ "\n"
+  | `BEXE_set (v,e) -> 
+    (* v must be a Felix pointer .. ie. _ref<> template instance *)
+    "      //C++ assignment "^string_of_bexe dfns 0 exe ^"\n" ^
+    "      "
+    ^
+    begin match v with
+    (* special case assignment to variable *)
+    | `BEXPR_ref index,`BTYP_pointer t -> 
+      ge (`BEXPR_name index,t)
+    | _ -> 
+      "*(" ^ ge v ^ ").data"
+    end
+    ^
+    " = " ^ 
+    ge e ^
+    ";\n"
+
   | `BEXE_init (v,e) -> 
     "      //initialisation "^string_of_bexe dfns 0 exe ^"\n" ^
     "      "^
@@ -1167,7 +1184,7 @@ let gen_function_methods registry dfns bbdfns label_map counter index =
         | 0 -> ""
         | 1 -> "  " ^ cpp_name bbdfns (List.hd params) ^ " = _arg;\n"
         | _ -> 
-          let counter = ref 0 in List.fold_left 
+          let counter = ref 1 in List.fold_left 
           (fun s i -> 
             let n = !counter in incr counter; 
             s ^ "  " ^ cpp_name bbdfns i ^ " = _arg.mem_"^ string_of_int n ^";\n"
@@ -1213,7 +1230,7 @@ let gen_procedure_methods registry dfns bbdfns label_map counter index =
         (match List.length params with
         | 0 -> ""
         | 1 -> "  " ^ cpp_name bbdfns (List.hd params) ^ " = _arg;\n"
-        | _ -> let counter = ref 0 in List.fold_left 
+        | _ -> let counter = ref 1 in List.fold_left 
           (fun s i -> 
             let n = !counter in incr counter; 
             s ^ "  " ^ cpp_name bbdfns i ^ " = _arg.mem_"^ string_of_int n ^";\n"
@@ -1285,12 +1302,12 @@ let gen_execute_methods registry dfns bbdfns counter =
 (* this code handles tuples and pointers *)
 let rec get_offsets registry dfns bbdfns typ : string list =
   let tname = cpp_typename registry dfns bbdfns typ in
-  match typ with
+  match type_unfold typ with
   | `BTYP_pointer t -> 
     ["offsetof("^tname^",frame)"]
 
   | `BTYP_tuple args -> 
-    let n = ref 0 in
+    let n = ref 1 in
     let lst = ref [] in
     List.iter 
     (fun t ->

@@ -117,8 +117,8 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_ctor_arg _ ->
     failwith "`AST_ctor_arg in 'when' expression not implemented"
   
-  | `AST_get_n _ ->
-    failwith "`AST_get_n in 'when' expression not implemented"
+  | `AST_get_n (sr,(n,e)) ->
+    `AST_get_n (sr,(n,subst e))
   
   | `AST_coercion _ -> failwith "subst: coercion"
 
@@ -150,7 +150,7 @@ let rec get_pattern_vars
   | `PAT_name (sr,id) -> Hashtbl.add vars id (sr,extractor)
   
   | `PAT_tuple (sr,pats) ->
-    let n = ref 0 in
+    let n = ref 1 in
     List.iter
     (fun pat -> 
       let sr = src_of_pat pat in
@@ -273,7 +273,7 @@ let rec gen_match_check pat (arg:expr_t) =
   (* other *)
   | `PAT_name (sr,_) -> truth sr
   | `PAT_tuple (sr,pats) ->
-    let counter = ref 1 in
+    let counter = ref 2 in
     List.fold_left 
     (fun init pat ->
       let sr = src_of_pat pat in
@@ -287,7 +287,7 @@ let rec gen_match_check pat (arg:expr_t) =
     (
       let pat = List.hd pats in 
       let sr = src_of_pat pat in
-      gen_match_check pat (`AST_get_n (sr,(0, arg)))
+      gen_match_check pat (`AST_get_n (sr,(1, arg)))
     )
     (List.tl pats)
 

@@ -764,9 +764,6 @@ call:
   }
 
 assignop:
-  | LEFTARROW       { $1,"set" }
-  | EQUAL           { $1,"set" }
-  | COLONEQUAL      { $1,"set" }
   | PLUSEQUAL       { $1,"pluseq" }
   | MINUSEQUAL      { $1,"minuseq" }
   | STAREQUAL       { $1,"muleq" }
@@ -780,23 +777,48 @@ assignop:
   | TILDEEQUAL      { $1,"tildeeq" }
   | LEFTRIGHTARROW  { $1,"swap" }
 
+setop:
+  | LEFTARROW       { $1 }
+  | EQUAL           { $1 }
+  | COLONEQUAL      { $1 }
+
 incrop:
   | PLUSPLUS        { $1,"incr" }
   | MINUSMINUS      { $1, "decr" }
 
 assignment: 
+  | expr setop expr SEMI 
+    {
+      let sr = rsrange (src_of_expr $1) (slift $4) in
+      `AST_set 
+      (
+        sr,
+        (
+          `AST_ref 
+          (
+            src_of_expr $1,
+            $1
+          )
+          ,
+          $3
+        )
+      )
+    }
+
   | expr assignop expr SEMI 
     { 
       let srop,sname = $2 in
       let sr = rsrange (src_of_expr $1) (slift $4) in
       assign sname sr srop $1 $3 
     }
+
   | expr incrop SEMI 
     {
       let srop,sname = $2 in
       let sr = rsrange (src_of_expr $1) (slift $3) in
       call1 ("post_" ^ sname) sr srop $1
     }
+
   | incrop expr SEMI
     {
       let srop,sname = $1 in
@@ -809,7 +831,10 @@ assignment:
 Note that a block is an anonymous procedure defintion together with
 a call to that procedure with the unit argument.
 @p()
-The assignment statement 'v <- e;' is syntact sugar for 'set(&v,e);'.
+The assignment statements 'v = e;' 
+and 'v := e;' are syntact sugar for 'set(&v,e);'.
+The assignment 'v <- e;' is sugar for 'set(v,e);',
+and is the same as '&v = e'.
 
 @head(3,'Place Holder')
 @select(h)
@@ -1177,10 +1202,10 @@ basic_name: NAME { $1 }
 @commalistof("basic_name")
 
 
-@head(2,'Executable Expressions')
+@head(2,'Expressions')
 @select(h)
-expr: 
-  | rvalue { $1 }
+type_expr: postfox { $1 }
+expr: rvalue { $1 }
 
 rvalue:
   | lambda { $1 }
@@ -1195,14 +1220,7 @@ lambda:
         ($3, typecode_of_expr $6, snd $8)
       )
     }
-  | LAZY LPAR expr RPAR 
-    {
-      `AST_lazy
-      (
-        rstoken $1 $4,
-        $3
-      )
-    }
+
   | PROCEDURE LPAR parameter_comma_list RPAR compound
     {
       let sr = rsrange (slift $1) (fst $5) in
@@ -1338,11 +1356,23 @@ comparison:
       )
     }
   | sum cmp_op sum                      { apl2 (snd $2) (fst $2) [$1; $3] }
-  | arrow                               { $1 }
+  | postfox                             { $1 }
+
+postfox:
+  | arrow AS atom 
+    { 
+      let sr = rsrange (src_of_expr $1) (src_of_expr $3) in
+      `AST_as (sr,($1,$3))
+     }
+  | arrow ALL atom
+    {
+      let sr = rsrange (src_of_expr $1) (src_of_expr $3) in
+      `AST_all (sr,($1,$3))
+    }
+
+  | arrow { $1 }
 
 /* arrow is right associative */
-type_expr:
-  | arrow { $1 }
 
 arrow:
   | case_literal RIGHTARROW arrow                
@@ -1489,16 +1519,6 @@ factor:
         in
           let sr = rsrange (src_of_expr $1) (slift $5) in
           `AST_get_n (sr, (n,$1)) 
-    }
-  | factor AS atom 
-    { 
-      let sr = rsrange (src_of_expr $1) (src_of_expr $3) in
-      `AST_as (sr,($1,$3))
-     }
-  | factor ALL atom
-    {
-      let sr = rsrange (src_of_expr $1) (src_of_expr $3) in
-      `AST_all (sr,($1,$3))
     }
 
 qualified_name:

@@ -1275,6 +1275,7 @@ and bind_index dfns counter freg env exclude depth excluded_dirs sr index =
   *)
   if List.mem_assoc index exclude 
   then begin
+    (*
     print_endline (
       "Recursive type alias " ^
       (
@@ -1283,6 +1284,7 @@ and bind_index dfns counter freg env exclude depth excluded_dirs sr index =
           short_string_of_src sr
       )
     );
+    *)
     `BTYP_fix ((List.assoc index exclude)-depth)
   end  
   else begin match get_data dfns index with
@@ -1295,7 +1297,7 @@ and bind_index dfns counter freg env exclude depth excluded_dirs sr index =
       (*
       print_endline "GOT A TYPE ALIAS";
       *)
-      bind_type' dfns counter freg env ((index,depth) :: exclude) depth excluded_dirs sr t
+      bind_type' dfns counter freg env ((index,depth) :: exclude) [] depth excluded_dirs sr t
 
     | `SYMDEF_if_type -> `BTYP_name index
     | `SYMDEF_dcl (`DCL_abs _) -> `BTYP_name index
@@ -1328,15 +1330,15 @@ and bind_index dfns counter freg env exclude depth excluded_dirs sr index =
 *)
 
 and bind_type dfns counter freg env excluded_dirs sr t : btypecode_t =
-  let t' = bind_type' dfns counter freg env [] 0 excluded_dirs sr t in
+  let t' = bind_type' dfns counter freg env [] [] 0 excluded_dirs sr t in
   (*
   print_endline ("TYPE  " ^ string_of_typecode t);
   print_endline ("BOUND " ^ string_of_btypecode dfns t');
   *)
-  t'
+  type_fold t'
 
-and bind_type' dfns counter freg env exclude depth excluded_dirs sr t : btypecode_t =
-  let bt t = bind_type' dfns counter freg env exclude (depth+1) excluded_dirs sr t in
+and bind_type' dfns counter freg env exclude fixnames depth excluded_dirs sr t : btypecode_t =
+  let bt t = bind_type' dfns counter freg env exclude fixnames (depth+1) excluded_dirs sr t in
   let bi i = bind_index dfns counter freg env exclude depth excluded_dirs sr i in
   (*
   print_endline ("BINDING TYPE " ^ string_of_typecode t);
@@ -1346,7 +1348,12 @@ and bind_type' dfns counter freg env exclude depth excluded_dirs sr t : btypecod
   | `AST_root _ -> failwith "Not expecting root in bind type"
   | `TYP_none ->  `BTYP_none
   | `TYP_all (t,s) -> failwith "Can't bind type scheme yet" 
-  | `TYP_as (t,s) -> failwith "can't bind recursive type yet"
+  | `TYP_as (t,s) ->
+     (* note depth is not incremented .. "x as x" yields `BTYP_fix 0 *)
+     bind_type' 
+       dfns counter freg env exclude 
+       ((s,depth)::fixnames) depth 
+       excluded_dirs sr t 
 
   | `TYP_tuple ts -> 
     let ts' =List.map bt ts  in
@@ -1381,6 +1388,9 @@ and bind_type' dfns counter freg env exclude depth excluded_dirs sr t : btypecod
     flush stdout; 
     *)
     `BTYP_void
+
+  | `AST_name (sr,s) when (List.mem_assoc s fixnames) ->
+     `BTYP_fix (List.assoc s fixnames - depth)
 
   | #qualified_name_t as x -> 
     (* print_endline "BIND TYPE DOING LOOKUP QN IN ENV";
@@ -1658,7 +1668,7 @@ and typeofindex
 
 and cal_apply dfns ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let rest =
-    match t1 with
+    match type_unfold t1 with
     | `BTYP_function (argt,rest) ->
       if argt = t2 then rest
       else 
@@ -2198,6 +2208,7 @@ and handle_entry dfns counter freg sra srn env exclude excluded_dirs entry t2 na
       )
     | None -> None
 
+
 and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t = 
   let be e = bind_expression dfns counter freg env exclude excluded_dirs e in
   let lu sr qn = lookup_qn_in_env dfns counter freg env excluded_dirs qn in
@@ -2262,17 +2273,17 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
     let ctyp = match typ with 
     | `BTYP_tuple ts -> 
       let len = List.length ts in
-      if n<0 or n>len-1
+      if n<1 or n>len
       then failwith 
         (
           "[bind_expression] Tuple index " ^ 
           string_of_int n ^
-          " out of range 0.." ^
-          string_of_int (len-1) ^
+          " out of range 1.." ^
+          string_of_int len ^
           " in " ^
           short_string_of_src sr
         )
-      else List.nth ts n
+      else List.nth ts (n-1)
     | _ -> 
       failwith 
       (
@@ -2291,7 +2302,7 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
 
   | `AST_typed_case (sr,v,t) ->
      let t = bt sr t in
-     begin match t with
+     begin match type_unfold t with
      | `BTYP_sum ls ->
        if v<1 or v> List.length ls
        then failwith "Case index out of range of sum"
@@ -2596,7 +2607,7 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
     
   | `AST_case_arg (sr,(v,e)) ->
      let (_,t) as e' = be e in
-     begin match t with
+     begin match type_unfold t with
      | `BTYP_sum ls ->
        let n = List.length ls in
        if v<1 or v>n 
@@ -2791,6 +2802,16 @@ and map_dir
     end
   | _ -> failwith "Expected module!"
 
+(* WARNING: if a module is opened twice, any ref to it is
+  ambiguous .. what SHOULD happen is that such
+  apparently ambiguous references are checked to see
+  if they refer to the same thing ..
+  once that is got working, we can try to exclude duplicate
+  opens here .. but better not to try until it is just 
+  an optimisation .. since it would hide the most common
+  source of this error .. but possibly not the only one ..
+  making it hard to test
+*)
 and build_env dfns counter freg excluded_dirs parent : env_t =
   let basic_env = build_env' dfns counter freg parent in
   let rec resolve_dirs env =
