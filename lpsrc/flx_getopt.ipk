@@ -139,6 +139,17 @@ let get_felix_options options =
     raw_options = options;
     reverse_return_parity = check_key options "e"; 
     heavy_inlining = check_keys options ["inline"];
+    max_inline_length = 
+      (match get_key_value options "inline_size_limit" with 
+      | Some i -> 
+        (
+          try int_of_string i 
+          with _ -> 
+            failwith ("Invalid value for inline_size_limit: " ^ i)
+        )
+      | None -> 50
+      )
+    ;
     compile_only = check_keys options ["c";"compile-only"]
   }
 

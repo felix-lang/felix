@@ -2881,6 +2881,7 @@ type felix_compiler_options_t =
   raw_options: (string * string) list;
   reverse_return_parity: bool;
   heavy_inlining : bool;
+  max_inline_length : int;
   compile_only : bool;
 }
 
@@ -3023,6 +3024,7 @@ type felix_compiler_options_t =
   raw_options: (string * string) list;
   reverse_return_parity: bool;
   heavy_inlining : bool;
+  max_inline_length : int;
   compile_only : bool;
 }
 

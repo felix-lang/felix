@@ -282,26 +282,6 @@ int main(int argc, char*argv[]) {
     return 0; 
 }
 
-@h=tangler("tmp/fileutils_check.ml")
-@select(h)
-open FilePath.AbstractDefaultPath
-;;
-
-let fn1 = "/aaa/bbb/ccc.d"
-let fn2 = "./string.h"
-let fn3 = "string.h"
-;;
-
-let afn1 = filename_of_string fn1
-let afn2 = filename_of_string fn2
-let afn3 = filename_of_string fn3
-;;
-
-print_endline (string_of_bool (is_implicit afn1));;
-print_endline (string_of_bool (is_implicit afn2));;
-print_endline (string_of_bool (is_implicit afn3));;
-
-
 @h = tangler("script/make_config.py")
 @select(h)
 # THIS PROGRAM CREATES THE DEFAULT CONFIGURATION FILE
@@ -446,41 +426,6 @@ OCAMLCP = "ocamlcp "
 result,x = get_stdout(OCAMLC + " -where")
 OCAML_INCLUDE_DIRECTORY= x[0][0:-1]
 
-# Find Sylvain's Ocaml file utils
-# look in Felix dev directory first
-
-OCAML_FILEUTILS_DIRECTORY = "fileutils"
-cmd = OCAMLC + " -o tmp/fileutils_check -I " + OCAML_FILEUTILS_DIRECTORY + " fileutils.cmxa tmp/fileutils_check.ml"
-try:
-  xqt(cmd)
-except:
-  # guess it's installed in same dir as Ocaml lib, as subdir
-  OCAML_FILEUTILS_DIRECTORY = OCAML_INCLUDE_DIRECTORY + "/fileutils"
-  cmd = OCAMLC + " -o tmp/fileutils_check -I " + OCAML_FILEUTILS_DIRECTORY + " fileutils.cmxa tmp/fileutils_check.ml"
-  try:
-    xqt(cmd)
-  except:
-    try:
-      # guess its sibling of lib/ocaml
-      x,y= os.path.split(OCAML_INCLUDE_DIRECTORY)
-      OCAML_FILEUTILS_DIRECTORY = x + "/fileutils"
-      if os.path.exists(OCAML_FILEUTILS_DIRECTORY):
-        cmd = OCAMLC + " -o tmp/fileutils_check -I " + OCAML_FILEUTILS_DIRECTORY + " fileutils.cmxa tmp/fileutils_check.ml"
-        xqt(cmd)
-      else:
-        raise Error
-    except:
-      # try main Ocaml library
-      OCAML_FILEUTILS_DIRECTORY = OCAML_INCLUDE_DIRECTORY
-      try:
-        cmd = OCAMLC + " -o tmp/fileutils_check -I " + OCAML_FILEUTILS_DIRECTORY + " fileutils.cmxa tmp/fileutils_check.ml"
-        xqt(cmd)
-      except:
-        # empty string if not found .. don't disturb builds
-        # not needing it
-        OCAML_FILEUTILS_DIRECTORY = ""
-        print "WARNING: ocaml-fileutils not found"
-   
 #---------------------------------------------------
 # Discover C/C++ compilers, linker, and other 'binutils'
 
@@ -835,7 +780,6 @@ try:
   p(f,"OCAMLDOC")
   p(f,"NATIVE_CODE_COMPILER")
   p(f,"OCAML_INCLUDE_DIRECTORY")
-  p(f,"OCAML_FILEUTILS_DIRECTORY")
   pr(f,"")
   pr(f,"#C++ tools")
   p(f,"HAVE_CPP")

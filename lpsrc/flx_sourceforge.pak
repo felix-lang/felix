@@ -161,12 +161,8 @@ HREF=//interscript.sf.net>interscript</A>.
 <H1>Prerequisites</H2>
 <P>You must first have installed:
 <OL>
-<LI><A HREF=http://caml.inria.fr>Ocaml 3.07</A> to build
+<LI><A HREF=http://caml.inria.fr>Ocaml 3.08</A> to build
 the Felix compiler,
-
-<LI>The ocaml package <A HREF=http://www.carva.org/sylvain.le-gall/ocaml-fileutils.html>fileutils</A>
-written by <A HREF=mailto@sylvain.le-gall@polytechnique.org>Sylvain Le Gall</A>. There is also
-a copy of this package <A HREF=ocaml-fileutils-latest.tar.gz>cached here</A>
 
 <LI><A HREF=http://www.python.org>Python</A>
 to run the build scripts,
@@ -191,6 +187,7 @@ has been built on the following platforms:
 
 <H1>Download</H1>
 @tangle("<P> Download developer tarball <A HREF=flx_"+flx_version+"_src.tgz>flx_"+flx_version+"_src.tgz</A> (486391bytes)")
+@tangle("<P> Old Version <A HREF=flx_1.0.7_src.tgz>flx_1.0.7_src.tgz</A> (486391bytes)")
 </P>
 <H1>Make procedure</H1>
 To bootstrap the build, type

@@ -34,7 +34,7 @@ val heavy_inlining:
   fully_bound_symbol_table_t ->
   bid_t ->
   biface_t list ->
-  fully_bound_symbol_table_t
+  unit
 
 val descendants:
   (bid_t, bid_t list) Hashtbl.t ->
@@ -255,7 +255,7 @@ let remap_exe syms relabel varmap revariable caller_vars callee_vs_len exe =
 let remap_exes syms relabel varmap revariable caller_vars callee_vs_len exes =
   map (remap_exe syms relabel varmap revariable caller_vars callee_vs_len) exes
 
-let reparent1 syms bbdfns bbdfns2 
+let reparent1 syms (child_map,bbdfns )
   relabel varmap revariable 
   vs' callee_vs_len index parent
 =
@@ -286,24 +286,30 @@ let reparent1 syms bbdfns bbdfns2
     sop parent
   );
   *)
-
+  begin match parent with
+  | Some p ->
+    let old_kids = try Hashtbl.find child_map p with Not_found -> [] in
+    Hashtbl.replace child_map p (k::old_kids)
+  | None -> ()
+  end
+  ;
   match entry with
   | `BBDCL_procedure (props,vs,ps,exes) ->
     let exes = remap_exes syms relabel varmap revariable caller_vars callee_vs_len exes in
     let ps = remap_ps ps in
-    Hashtbl.add bbdfns2 k (id,parent,sr,`BBDCL_procedure (props,splice vs,ps,exes))
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_procedure (props,splice vs,ps,exes))
     
   | `BBDCL_function (props, vs, ps, ret, exes) ->
     let ps = remap_ps ps in
     let exes = remap_exes syms relabel varmap revariable caller_vars callee_vs_len exes in
     let ret = auxt ret in
-    Hashtbl.add bbdfns2 k (id,parent,sr,`BBDCL_function (props,splice vs,ps,ret,exes))
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_function (props,splice vs,ps,ret,exes))
 
   | `BBDCL_var (vs,t) ->
-    Hashtbl.add bbdfns2 k (id,parent,sr,`BBDCL_var (splice vs,auxt t))
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_var (splice vs,auxt t))
 
   | `BBDCL_val (vs,t) ->
-    Hashtbl.add bbdfns2 k (id,parent,sr,`BBDCL_val (splice vs,auxt t))
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_val (splice vs,auxt t))
 
   | _ -> assert false
 
@@ -311,7 +317,7 @@ let reparent1 syms bbdfns bbdfns2
   parent which is i to the given new parent
 *)
 
-let reparent_children syms (child_map,bbdfns) bbdfns2 
+let reparent_children syms (child_map,bbdfns) 
   vs' callee_vs_len index parent relabel varmap 
 =
  let pp p = match p with None -> "NONE" | Some i -> si i in
@@ -336,7 +342,7 @@ let reparent_children syms (child_map,bbdfns) bbdfns2
        if p = index then parent
        else Some (Hashtbl.find revariable p)
    in
-   reparent1 syms bbdfns bbdfns2 relabel varmap revariable 
+   reparent1 syms (child_map,bbdfns) relabel varmap revariable 
    vs' callee_vs_len i new_parent
  )
  closure
@@ -345,23 +351,6 @@ let reparent_children syms (child_map,bbdfns) bbdfns2
  
 
  
-exception Found
-let has_nested_funs (child_map,bbdfns) i =
-  let children = try Hashtbl.find child_map i with Not_found -> [] in
-  try
-    iter
-    (fun i ->
-      let id,parent,sr,entry = Hashtbl.find bbdfns i in
-      match entry with 
-      | `BBDCL_procedure _ 
-      | `BBDCL_function _  -> raise Found
-      | _ -> ()
-    )
-    children
-    ;
-    false
-  with Found -> true
-    
 (* Heavy inlining routine. This routine can inline
 any procedure. The basic operation is emit the body
 of the target procedure. We have to do the following to
@@ -419,7 +408,7 @@ let mk_tvar_map vs ts =
   varmap
 
 (* NOTE: result is in reversed order *)
-let gen_body syms bbdfns bbdfns2 id 
+let gen_body syms bbdfns id 
   varmap ps relabel revariable exes argument 
   sr caller callee vs callee_vs_len
 =
@@ -505,28 +494,11 @@ let gen_body syms bbdfns bbdfns2 id
     let i,ts = fixup i ts in
     [`BEXE_call_direct (sr,i,ts, ge e2)]
 
-  | `BEXE_call_stack (sr,i,ts,e2)  -> 
-    let fixup i ts = 
-      let splice ts = (* replace callee type variables with callers *)
-        let rec aux lst n =  (* elide first n elements *)
-          if n = 0 then lst 
-          else aux (tl lst) (n-1) 
-        in
-        caller_vars @ aux ts callee_vs_len 
-      in
-
-      let auxt t = varmap_subst varmap t in
-      let ts = map auxt ts in
-      try 
-        let j= Hashtbl.find revariable i in 
-        j, splice ts
-      with Not_found -> i,ts
-    in
-    let i,ts = fixup i ts in
-    [`BEXE_call_stack (sr,i,ts, ge e2)]
+  | `BEXE_call_stack (sr,i,ts,e2)  -> assert false
     
   | `BEXE_call (sr,e1,e2)  -> [`BEXE_call (sr,ge e1, ge e2)]
-  | `BEXE_jump (sr,e1,e2)  -> 
+  | `BEXE_jump (sr,e1,e2)  -> assert false
+    (*
     end_label_used := true;
     [
       (let e = ge e1 in
@@ -539,6 +511,8 @@ let gen_body syms bbdfns bbdfns2 id
       ;
       `BEXE_goto (sr,end_label)
     ]
+    *)
+
   | `BEXE_loop (sr,i,e) -> 
     (* SPECIAL HANDLING OF LOOP REQUIRED *)
     if i = callee then begin
@@ -608,7 +582,7 @@ let gen_body syms bbdfns bbdfns2 id
         if length ps > 1
         then begin
           let entry = `BBDCL_var (vs,paramtype) in
-          Hashtbl.add bbdfns2 parameter (id,Some caller,sr,entry);
+          Hashtbl.add bbdfns parameter (id,Some caller,sr,entry);
           `BEXE_init (sr,parameter,argument)
         end
         else 
@@ -677,9 +651,13 @@ let gen_body syms bbdfns bbdfns2 id
   a procedure, to a procedure which executes that
   procedure.
 
+  NOTE: this is a special case of the distributive law.
+
+  f (if c then a else b) v => if c then f a v else f b v
+
 *)
 
-let call_lifting syms (child_map,bbdfns) bbdfns2 caller vs' callee ts a argument =
+let call_lifting syms (child_map,bbdfns) caller vs' callee ts a argument =
   (*
   print_endline "DOING CALL LIFTING";
   *)
@@ -694,13 +672,13 @@ let call_lifting syms (child_map,bbdfns) bbdfns2 caller vs' callee ts a argument
     let callee_vs_len = length vs in
 
     let revariable = reparent_children 
-      syms (child_map,bbdfns) bbdfns2  
+      syms (child_map,bbdfns) 
       vs' callee_vs_len callee (Some caller) relabel varmap
     in
 
     (* use the inliner to handle the heavy work *)
     let body =
-      gen_body syms bbdfns bbdfns2 id varmap ps relabel revariable 
+      gen_body syms bbdfns id varmap ps relabel revariable 
       exes a sr caller callee vs' callee_vs_len
     in
 
@@ -737,156 +715,125 @@ let call_lifting syms (child_map,bbdfns) bbdfns2 caller vs' callee ts a argument
 
   | _ -> assert false
 
-let heavy_inline_call syms (child_map,bbdfns) bbdfns2 
-  caller vs' callee ts argument 
+let heavy_inline_call syms (child_map,bbdfns) 
+  caller vs' callee ts argument id parent sr (props, vs, ps, exes)
 =
   (*
   print_endline ("Examining call to " ^ si callee);
   *)
-  let id,parent,sr,entry = Hashtbl.find bbdfns callee in
-  match entry with 
-  | `BBDCL_procedure (props,vs,ps,exes) ->
-    (*
-    print_endline ("In procedure " ^ si caller ^ " with vs=" ^ string_of_vs vs');
-    print_endline ("Callee is " ^ id ^ "<"^si callee ^ "> with ts = " ^ catmap "," (sbt syms.dfns) ts);
-    print_endline ("Callee vs=" ^ string_of_vs vs);
-    *)
-    let caller_vs_len = length vs' in
-    let callee_vs_len = length vs in
-    (*
-    print_endline ("In the callee and its children,");
-    print_endline ("The callee vs are elided and replaced by the caller vs");
-    print_endline ("ELIDE: first " ^ si callee_vs_len ^ ", PREPEND " ^ si caller_vs_len);
-    print_endline ("This works by instantiating the callee vs with the calls ts");
-    *)
-    assert(length vs = length ts);
-    
-    (*
-    print_endline ("Found procedure "^id^": Inline it!");
-    *)
-    let relabel = mk_label_map syms exes in
-    let varmap = mk_tvar_map vs ts in
-    let revariable = reparent_children 
-      syms (child_map,bbdfns) bbdfns2 
-      vs' callee_vs_len callee (Some caller) relabel varmap
-    in
-    gen_body syms bbdfns bbdfns2 id 
-      varmap ps relabel revariable exes 
-      argument sr caller callee vs' callee_vs_len
-
-  | _ -> assert false
+  (*
+  print_endline ("In procedure " ^ si caller ^ " with vs=" ^ string_of_vs vs');
+  print_endline ("Callee is " ^ id ^ "<"^si callee ^ "> with ts = " ^ catmap "," (sbt syms.dfns) ts);
+  print_endline ("Callee vs=" ^ string_of_vs vs);
+  *)
+  let caller_vs_len = length vs' in
+  let callee_vs_len = length vs in
+  (*
+  print_endline ("In the callee and its children,");
+  print_endline ("The callee vs are elided and replaced by the caller vs");
+  print_endline ("ELIDE: first " ^ si callee_vs_len ^ ", PREPEND " ^ si caller_vs_len);
+  print_endline ("This works by instantiating the callee vs with the calls ts");
+  *)
+  assert(length vs = length ts);
   
+  (*
+  print_endline ("Found procedure "^id^": Inline it!");
+  *)
+  let relabel = mk_label_map syms exes in
+  let varmap = mk_tvar_map vs ts in
+  let revariable = reparent_children 
+    syms (child_map,bbdfns) 
+    vs' callee_vs_len callee (Some caller) relabel varmap
+  in
+  gen_body syms bbdfns id 
+    varmap ps relabel revariable exes 
+    argument sr caller callee vs' callee_vs_len
 
-let heavy_inline_calls syms (child_map,bbdfns) bbdfns2 vs' exes caller =
-  let exes' = ref [] in
-  iter
+let rec heavy_inline_calls syms (child_map,bbdfns) vs' caller excludes exes =
+  let hic callee exes = 
+    heavy_inline_calls syms (child_map,bbdfns) 
+    vs' caller (callee::excludes) (rev exes) 
+  in
+  let exes' = ref [] in (* reverse order *)
+  iter 
   (fun exe -> 
-  match exe with
-  | `BEXE_call_stack (sr,callee,ts,argument) -> assert false
-  | `BEXE_call (sr,(`BEXPR_closure (callee,ts),_),argument) -> assert false
-  | `BEXE_jump _ -> assert false
+    match exe with
+    | `BEXE_call_direct (sr,callee,ts,argument) 
+      when not (mem callee excludes)
+      ->
+      let id,parent,sr,entry = Hashtbl.find bbdfns callee in
+      begin match entry with
+      | `BBDCL_procedure (props,vs,ps,exes) ->
+        if length exes <= syms.compiler_options.max_inline_length
+        then begin
+          (*
+          print_endline "INLINE CANDIDATE DETECTED - CALL";
+          *)
+          let xs = 
+            heavy_inline_call syms (child_map,bbdfns) 
+            caller vs' callee ts argument id parent sr (props,vs,ps,exes)
+          in 
+            exes' := hic callee xs @ !exes'
+        end
+        else
+          exes' := exe :: !exes'
 
-  | `BEXE_call_direct (sr,callee,ts,argument) ->
-    let id,parent,sr,entry = Hashtbl.find bbdfns callee in
-    begin match entry with
-    | `BBDCL_procedure _ ->
+      | _ ->  exes' := exe :: !exes'
+      end
+
+    | `BEXE_call (sr,(`BEXPR_apply((`BEXPR_closure (callee,ts),_),a),_),argument) -> assert false
+    | `BEXE_call (sr,(`BEXPR_apply_stack (callee,ts,a),_),argument) -> assert false
+
+    | `BEXE_call (sr,(`BEXPR_apply_direct (callee,ts,a),_),argument)
+      when not (mem callee excludes)
+      ->
       (*
-      print_endline "INLINE CANDIDATE DETECTED - CALL";
-      print_endline (string_of_bexe syms.dfns 0 x);
+      print_endline "DETECTED CANDIDATE FOR CALL LIFTING ";
+      print_endline ("In procedure " ^ si caller ^ " with vs=" ^ string_of_vs vs');
+      print_endline (string_of_bexe syms.dfns 0 exe);
+      print_endline ("Callee is " ^ si callee ^ " with ts = " ^ catmap "," (sbt syms.dfns) ts);
       *)
       let xs = 
-        heavy_inline_call syms (child_map,bbdfns) bbdfns2 caller vs' callee ts argument
+         call_lifting syms (child_map,bbdfns) caller vs' callee ts a argument
       in 
-        exes' := xs @ !exes'
+        exes' := hic callee xs @ !exes'
 
-    | _ ->  exes' := exe :: !exes'
-    end
-
-  | `BEXE_call (sr,(`BEXPR_apply((`BEXPR_closure (callee,ts),_),a),_),argument) -> assert false
-
-  | `BEXE_call (sr,(`BEXPR_apply_stack (callee,ts,a),_),argument)
-  | `BEXE_call (sr,(`BEXPR_apply_direct (callee,ts,a),_),argument)
-    ->
-    (*
-    print_endline "DETECTED CANDIDATE FOR CALL LIFTING ";
-    print_endline ("In procedure " ^ si caller ^ " with vs=" ^ string_of_vs vs');
-    print_endline (string_of_bexe syms.dfns 0 exe);
-    print_endline ("Callee is " ^ si callee ^ " with ts = " ^ catmap "," (sbt syms.dfns) ts);
-    *)
-    begin try
-      let xs = 
-       call_lifting syms (child_map,bbdfns) bbdfns2 caller vs' callee ts a argument
-      in 
-        exes' := xs @ !exes'
-    with _ ->
-      exes' := exe :: !exes'
-    end
-
-  | x -> exes' := x :: !exes'
+    | x -> exes' := x :: !exes'
   )
   exes
   ;
-  rev !exes' 
-  
-let heavily_inline_bbdcl syms (child_map,bbdfns) bbdfns2 i =
-  let data =
-    match Hashtbl.find bbdfns i with
-    | id,parent,sr,`BBDCL_procedure (props,vs,p,exes) ->
-      (*
-      print_endline ("Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
-      *)
-      let exes = heavy_inline_calls syms (child_map,bbdfns) bbdfns2 vs exes i in
-      id,parent,sr,`BBDCL_procedure (props,vs,p,exes)
+  !exes'
+    
+let heavily_inline_bbdcl syms (child_map,bbdfns) i =
+  match Hashtbl.find bbdfns i with
+  | id,parent,sr,`BBDCL_procedure (props,vs,p,exes) ->
+    (*
+    print_endline ("Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
+    *)
+    let exes = heavy_inline_calls syms (child_map,bbdfns) vs i [i] exes in
+    let data = id,parent,sr,`BBDCL_procedure (props,vs,p,rev exes) in
+    Hashtbl.replace bbdfns i data
 
-    | id,parent,sr,`BBDCL_function (props,vs,p,ret,exes) ->
-      (*
-      print_endline ("Examining function " ^ id ^"<" ^ si i ^ "> for inlinable calls");
-      *)
-      let exes = heavy_inline_calls syms (child_map,bbdfns) bbdfns2 vs exes i in
-      id,parent,sr,`BBDCL_function (props,vs,p,ret,exes)
-    | x -> x
-  in
-    Hashtbl.add bbdfns2 i data
+  | id,parent,sr,`BBDCL_function (props,vs,p,ret,exes) ->
+    (*
+    print_endline ("Examining function " ^ id ^"<" ^ si i ^ "> for inlinable calls");
+    *)
+    let exes = heavy_inline_calls syms (child_map,bbdfns) vs i [i] exes in
+    let data = id,parent,sr,`BBDCL_function (props,vs,p,ret,rev exes) in
+    Hashtbl.replace bbdfns i data
+
+  | _ -> ()
 
 let heavy_inlining syms  
   (child_map,bbdfns)
   (root:bid_t) 
   (bifaces:biface_t list) 
 =
-  (* make set of used things, initially empty *)
   let used = ref BidSet.empty in
-
-  (* make a list of the root and all exported functions,
-  add exported types and components thereof into the used
-  set now too
-  *)
-  let roots = ref [root] in
-  iter
-  (function
-     | `BIFACE_export_fun (_,x,_) -> roots := x :: !roots
-     | `BIFACE_export_type (_,t,_) -> 
-        uses_type syms used (child_map,bbdfns) t
-  )
-  bifaces
-  ;
-  let uses i = uses syms used (child_map,bbdfns) i in
-
-  (* add root items to set, then add items it uses *)
-  iter uses !roots
-  ;
-  (* copy used things *)
-  let bbdfns2 = Hashtbl.create 97 in
-  let usage = Flx_call.call_data bbdfns in
-  BidSet.iter (heavily_inline_bbdcl syms (child_map,bbdfns) bbdfns2) !used
-  ;
-  (* copy all header and body specs, they're always considered used *)
   Hashtbl.iter
-  (fun i b -> match b with
-    | _,_,_,`BBDCL_header _
-    | _,_,_,`BBDCL_body _ -> Hashtbl.add bbdfns2 i b
-    | _ -> ()
-  )
+  (fun i _ -> used := BidSet.add i !used)
   bbdfns
   ;
-  bbdfns2
+  BidSet.iter (heavily_inline_bbdcl syms (child_map,bbdfns)) !used
+
 

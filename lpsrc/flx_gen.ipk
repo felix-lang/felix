@@ -6,7 +6,7 @@ open Flx_ast
 val get_display_list:
   fully_bound_symbol_table_t ->
   bid_t ->
-  bid_t list
+  (bid_t * int) list
 
 
 @h = tangler('src/flx_display.ml')
@@ -29,7 +29,7 @@ let rec cal_display bbdfns parent display : bid_t list =
     -> cal_display bbdfns parent' (parent::display)
   | _ -> assert false
 
-let get_display_list bbdfns index : bid_t list =
+let get_display_list' bbdfns index : bid_t list =
   match 
     try Hashtbl.find bbdfns index 
     with Not_found -> failwith ("[get_display_list] Can't find index " ^ si index)
@@ -38,6 +38,15 @@ let get_display_list bbdfns index : bid_t list =
   | id,parent,sr,`BBDCL_function _ ->
     List.rev (cal_display bbdfns parent [])
   | _ -> assert false
+
+let get_display_list bbdfns index : (bid_t * int) list =
+  List.map
+  (fun i -> match Hashtbl.find bbdfns i with
+  | _,_,_,`BBDCL_procedure (_,vs,_,_) -> i,List.length vs
+  | _,_,_,`BBDCL_function (_,vs,_,_,_) -> i,List.length vs
+  | _ -> assert false
+  )
+  (get_display_list' bbdfns index)
 
 @h = tangler('src/flx_ogen.mli')
 @select(h)
@@ -216,8 +225,8 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance =
     ) 
     @
     map
-    (fun didx ->
-    let dptr = "ptr" ^ cpp_instance_name syms bbdfns didx ts in
+    (fun (didx, vslen) ->
+    let dptr = "ptr" ^ cpp_instance_name syms bbdfns didx (list_prefix ts vslen) in
     "offsetof("^name^","^dptr^")"
     )
     display
@@ -627,9 +636,11 @@ let gen_function syms (child_map,bbdfns) index id vs bps ret' ts instance_no =
       cat "" 
       (
         map
-        (fun i-> 
-         let instname = cpp_instance_name syms bbdfns i ts in
+        (fun (i, vslen) -> 
+         try
+         let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
          "  " ^ instname ^ " *ptr" ^ instname ^ ";\n"
+         with _ -> failwith "Can't cal display name"
          )
         display
       )
@@ -641,8 +652,8 @@ let gen_function syms (child_map,bbdfns) index id vs bps ret' ts instance_no =
         "    FLX_FPAR_DECL " ::
         map 
         (
-          fun i -> 
-          let instname = cpp_instance_name syms bbdfns i ts in
+          fun (i,vslen) -> 
+          let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
           "    " ^ instname ^ "*"
         )
         display
@@ -763,8 +774,8 @@ let gen_ctor syms bbdfns name display funs ts =
     "    FLX_FPAR_DECL" ::
     map 
     (
-      fun i -> 
-        let instname = cpp_instance_name syms bbdfns i ts in
+      fun (i,vslen) -> 
+        let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
       "    " ^ instname ^ " *pptr" ^ instname
     )
     display
@@ -775,7 +786,7 @@ let gen_ctor syms bbdfns name display funs ts =
     "  FLX_FMEM_INIT" ::
     map 
     (
-      fun i -> let instname = cpp_instance_name syms bbdfns i ts in
+      fun (i,vslen) -> let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
       "  ptr" ^ instname ^ "(pptr"^instname^")"
     )
     display
@@ -999,7 +1010,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
     | `BBDCL_procedure _ ->
       let the_display = 
         let d' = 
-          map (fun i-> "ptr"^ cpp_instance_name syms bbdfns i ts)
+          map (fun (i,vslen) -> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
           (get_display_list bbdfns index)
         in 
           if length d' > our_level
@@ -1152,7 +1163,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
       let ts = map tsub ts in
       let the_display = 
         let d' = 
-          map (fun i-> "ptr"^ cpp_instance_name syms bbdfns i ts)
+          map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
           (get_display_list bbdfns index)
         in 
           if length d' > our_level
@@ -1195,7 +1206,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
       let ts = map tsub ts in
       let the_display = 
         let d' = 
-          map (fun i-> "ptr"^ cpp_instance_name syms bbdfns i ts)
+          map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
           (get_display_list bbdfns index)
         in 
           if length d' > our_level
@@ -1343,7 +1354,7 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts instance_no (ex
         incr counter;
         let the_display = 
           let d' = 
-            map (fun i -> "ptr"^cpp_instance_name syms bbdfns i ts)
+            map (fun (i,vslen) -> "ptr"^cpp_instance_name syms bbdfns i (list_prefix ts vslen))
             (get_display_list bbdfns index)
           in 
             if length d' > our_level
@@ -1418,214 +1429,216 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts instance_no (ex
       )
     end
   in
-  match exe with
-  | `BEXE_code (_,s) -> s
-  | `BEXE_comment (_,s) -> "\n/*" ^ s ^ "*/\n"
-  | `BEXE_label (_,s) -> 
-    let local_labels = 
-      try Hashtbl.find label_map this 
-      with _ -> failwith ("[gen_exe] Can't find label map of " ^ si this)
-    in
-    let label_index = 
-      try Hashtbl.find local_labels s 
-      with _ -> failwith ("[gen_exe] In " ^ id ^ ": Can't find label " ^ s)
-    in
-    (match kind with
-      | Procedure ->
-      "    FLX_LABEL(" ^ si label_index ^ ","^si instance_no ^","^s^")\n" 
-      | Function ->
-      (* functions only allow local labels *)
-      "    " ^ s ^ ":;\n"
-    )
-
-  | `BEXE_goto (sr,s) -> 
-    begin match find_label bbdfns label_map this s with
-    | `Local _ -> "      goto " ^ s ^ ";\n"
-    | `Nonlocal (pc,frame) ->
-      (* WHAT THIS CODE DOES: we pop the call stack until
-         we find the first ancestor containing the target label,
-         set the pc there, and return its continuation to the
-         driver; we know the address of this frame because
-         it must be in this function's display.
-      *)
-      let target_instance = 
-        try Hashtbl.find syms.instances (frame, ts) 
-        with Not_found -> failwith "Woops, bugged code, wrong type arguments for instance?"
+  let rec gexe exe = 
+    match exe with
+    | `BEXE_code (_,s) -> s
+    | `BEXE_comment (_,s) -> "\n/*" ^ s ^ "*/\n"
+    | `BEXE_label (_,s) -> 
+      let local_labels = 
+        try Hashtbl.find label_map this 
+        with _ -> failwith ("[gen_exe] Can't find label map of " ^ si this)
       in
-      let frame_ptr = "ptr" ^ cpp_instance_name syms bbdfns frame ts in
-      "      // non local goto " ^ s ^ "\n" ^
-      "      {\n" ^
-      "        con_t *tmp1 = this;\n" ^
-      "        while(tmp1 && " ^ frame_ptr ^ "!= tmp1)\n" ^
-      "        {\n" ^
-      "          con_t *tmp2 = tmp1->_caller;\n" ^
-      "          tmp1 -> _caller = 0;\n" ^
-      "          tmp1 = tmp2;\n" ^
-      "        }\n" ^
-      "      }\n" ^
-      "      " ^ frame_ptr ^ "->pc = FLX_FARTARGET("^si pc^","^si target_instance^","^s^");\n" ^
-      "      return " ^ frame_ptr ^ ";\n"
-    | `Unreachable -> 
-      clierr sr ("Unreachable label " ^ s)
-    end
-
-  (* conditional gotos are always local *)
-  | `BEXE_ifgoto (sr,e,s) -> "      if(" ^ ge sr e ^ ")goto " ^ s ^ ";\n"
-  | `BEXE_ifnotgoto (sr,e,s) ->"      if(!("^ge sr e^"))goto " ^ s ^ ";\n" 
-  
-  | `BEXE_jump (sr,((`BEXPR_closure (index,ts),_) as f),a) ->
-    let subs,x = unravel syms bbdfns a in
-    let ts = map tsub ts in
-    handle_closure sr true index ts subs x
-    
-  | `BEXE_call_prim (sr,index,ts,a) 
-  | `BEXE_call_direct (sr,index,ts,a) 
-  | `BEXE_call_stack (sr,index,ts,a) 
-  | `BEXE_call (sr,(`BEXPR_closure (index,ts),_),a) ->
-    let subs,x = unravel syms bbdfns a in
-    let ts = map tsub ts in
-    handle_closure sr false index ts subs x
-
-  | `BEXE_loop (sr,i,a) ->
-    let ptr = 
-      if i= this then "this"
-      else "ptr"^cpp_instance_name syms bbdfns i ts
-    in
-      print_endline ("Looping to " ^ ptr);
-      let args = ptr ^ "->" ^ 
-        (match a with
-        | _,`BTYP_tuple [] -> "_caller"
-        | _ -> "_caller, " ^ ge sr a
-        )
+      let label_index = 
+        try Hashtbl.find local_labels s 
+        with _ -> failwith ("[gen_exe] In " ^ id ^ ": Can't find label " ^ s)
       in
-      "      //"^ src_str ^ "\n" ^
-      (
-        if i <> this then
-        "      {\n" ^
-        "        con_t *res = " ^ ptr ^ "\n      ->call(" ^ args ^");\n" ^
-        "        printf(\"unwinding from %p to %p\\n\",this,"^ptr^");\n" ^
-        "        con_t *p = this;\n" ^
-        "        while(res && res != "^ptr^") { res = p->_caller; printf(\"called by %p\\n\",p); }\n"^
-        "        for(con_t *tmp=this; tmp != (con_t*)"^ptr^";){//unwind stack\n" ^
-        "           con_t *tmp2 = tmp->_caller;\n" ^
-        "           printf(\"unwinding %p, caller is %p\\n\",tmp,tmp2);\n" ^
-        "           tmp->_caller = 0;\n" ^
-        "           tmp = tmp2;\n"^
-        "        }\n" ^
-        "        return res;\n" ^
-        "      }\n"
-        else 
-        "      return " ^ ptr ^ "\n      ->call(" ^ args ^");\n"
+      (match kind with
+        | Procedure ->
+        "    FLX_LABEL(" ^ si label_index ^ ","^si instance_no ^","^s^")\n" 
+        | Function ->
+        (* functions only allow local labels *)
+        "    " ^ s ^ ":;\n"
       )
 
-  (* If p is a variable containing a closure,
-     and p recursively invokes the same closure,
-     then the program counter and other state 
-     of the closure would be lost, so we clone it
-     instead .. the closure variables is never
-     used (a waste if it isn't re-entered .. oh well)
-   *)
+    | `BEXE_goto (sr,s) -> 
+      begin match find_label bbdfns label_map this s with
+      | `Local _ -> "      goto " ^ s ^ ";\n"
+      | `Nonlocal (pc,frame) ->
+        (* WHAT THIS CODE DOES: we pop the call stack until
+           we find the first ancestor containing the target label,
+           set the pc there, and return its continuation to the
+           driver; we know the address of this frame because
+           it must be in this function's display.
+        *)
+        let target_instance = 
+          try Hashtbl.find syms.instances (frame, ts) 
+          with Not_found -> failwith "Woops, bugged code, wrong type arguments for instance?"
+        in
+        let frame_ptr = "ptr" ^ cpp_instance_name syms bbdfns frame ts in
+        "      // non local goto " ^ s ^ "\n" ^
+        "      {\n" ^
+        "        con_t *tmp1 = this;\n" ^
+        "        while(tmp1 && " ^ frame_ptr ^ "!= tmp1)\n" ^
+        "        {\n" ^
+        "          con_t *tmp2 = tmp1->_caller;\n" ^
+        "          tmp1 -> _caller = 0;\n" ^
+        "          tmp1 = tmp2;\n" ^
+        "        }\n" ^
+        "      }\n" ^
+        "      " ^ frame_ptr ^ "->pc = FLX_FARTARGET("^si pc^","^si target_instance^","^s^");\n" ^
+        "      return " ^ frame_ptr ^ ";\n"
+      | `Unreachable -> 
+        clierr sr ("Unreachable label " ^ s)
+      end
 
-  | `BEXE_call (sr,p,a) ->
-    let args = 
-      let this = match kind with
-        | Procedure -> "this"
-        | Function -> "0"
-      in
-      match a with
-      | _,`BTYP_tuple [] -> this
-      | _ -> this ^ ", " ^ ge sr a
-    in
-    begin match kind with
-    | Function ->
-      "      //run procedure " ^ src_str ^ "\n" ^
-      "      {\n" ^
-      "        con_t *_p = "^ge sr p ^ "->clone()\n      ->call("^args^");\n" ^
-      "        while(_p) _p=_p->resume();\n" ^
-      "      }\n"
+    (* conditional gotos are always local *)
+    | `BEXE_ifgoto (sr,e,s) -> "      if(" ^ ge sr e ^ ")goto " ^ s ^ ";\n"
+    | `BEXE_ifnotgoto (sr,e,s) ->"      if(!("^ge sr e^"))goto " ^ s ^ ";\n" 
+    
+    | `BEXE_jump (sr,((`BEXPR_closure (index,ts),_) as f),a) ->
+      let subs,x = unravel syms bbdfns a in
+      let ts = map tsub ts in
+      handle_closure sr true index ts subs x
       
+    | `BEXE_call_prim (sr,index,ts,a) 
+    | `BEXE_call_direct (sr,index,ts,a) 
+    | `BEXE_call_stack (sr,index,ts,a) 
+    | `BEXE_call (sr,(`BEXPR_closure (index,ts),_),a) ->
+      let subs,x = unravel syms bbdfns a in
+      let ts = map tsub ts in
+      handle_closure sr false index ts subs x
+
+    | `BEXE_loop (sr,i,a) ->
+      let ptr = 
+        if i= this then "this"
+        else "ptr"^cpp_instance_name syms bbdfns i ts
+      in
+        print_endline ("Looping to " ^ ptr);
+        let args = ptr ^ "->" ^ 
+          (match a with
+          | _,`BTYP_tuple [] -> "_caller"
+          | _ -> "_caller, " ^ ge sr a
+          )
+        in
+        "      //"^ src_str ^ "\n" ^
+        (
+          if i <> this then
+          "      {\n" ^
+          "        con_t *res = " ^ ptr ^ "\n      ->call(" ^ args ^");\n" ^
+          "        printf(\"unwinding from %p to %p\\n\",this,"^ptr^");\n" ^
+          "        con_t *p = this;\n" ^
+          "        while(res && res != "^ptr^") { res = p->_caller; printf(\"called by %p\\n\",p); }\n"^
+          "        for(con_t *tmp=this; tmp != (con_t*)"^ptr^";){//unwind stack\n" ^
+          "           con_t *tmp2 = tmp->_caller;\n" ^
+          "           printf(\"unwinding %p, caller is %p\\n\",tmp,tmp2);\n" ^
+          "           tmp->_caller = 0;\n" ^
+          "           tmp = tmp2;\n"^
+          "        }\n" ^
+          "        return res;\n" ^
+          "      }\n"
+          else 
+          "      return " ^ ptr ^ "\n      ->call(" ^ args ^");\n"
+        )
+
+    (* If p is a variable containing a closure,
+       and p recursively invokes the same closure,
+       then the program counter and other state 
+       of the closure would be lost, so we clone it
+       instead .. the closure variables is never
+       used (a waste if it isn't re-entered .. oh well)
+     *)
+
+    | `BEXE_call (sr,p,a) ->
+      let args = 
+        let this = match kind with
+          | Procedure -> "this"
+          | Function -> "0"
+        in
+        match a with
+        | _,`BTYP_tuple [] -> this
+        | _ -> this ^ ", " ^ ge sr a
+      in
+      begin match kind with
+      | Function ->
+        "      //run procedure " ^ src_str ^ "\n" ^
+        "      {\n" ^
+        "        con_t *_p = "^ge sr p ^ "->clone()\n      ->call("^args^");\n" ^
+        "        while(_p) _p=_p->resume();\n" ^
+        "      }\n"
+        
 
 
-    | Procedure ->
+      | Procedure ->
+        let n = !counter in
+        incr counter;
+        "      //"^ src_str ^ "\n" ^
+        "      FLX_SET_PC(" ^ si n ^ ")\n" ^
+        "      return " ^ ge sr p ^ "->clone()\n      ->call(" ^ args ^");\n" ^
+        "    FLX_CASE_LABEL(" ^ si n ^ ")\n"
+      end
+
+    | `BEXE_jump (sr,p,a) ->
+      let args = match a with
+        | _,`BTYP_tuple [] -> "tmp"
+        | _ -> "tmp, " ^ ge sr a
+      in
+      "      //"^ src_str ^ "\n" ^
+      "      {\n" ^
+      "        con_t *tmp = _caller;\n" ^
+      "        _caller=0;\n" ^
+      "        return " ^ ge sr p ^ "\n      ->call(" ^ args ^");\n" ^
+      "      }\n"
+
+    | `BEXE_proc_return _ -> "      FLX_RETURN\n"
+
+    | `BEXE_read (sr,index) -> 
+      let id,parent,sr,entry = 
+        try Hashtbl.find bbdfns index 
+        with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
+      in
+      let t =
+        match entry with
+        | `BBDCL_var (_,t) -> t
+        | `BBDCL_val (_,t) -> t
+        | _ -> syserr sr "Expected read argument to be variable"
+      in
       let n = !counter in
       incr counter;
-      "      //"^ src_str ^ "\n" ^
+      "      //read variable\n" ^
+      "      p_message = &(" ^ get_var_ref syms bbdfns this index ts^");\n" ^
+      "      action = wait_action;\n" ^
       "      FLX_SET_PC(" ^ si n ^ ")\n" ^
-      "      return " ^ ge sr p ^ "->clone()\n      ->call(" ^ args ^");\n" ^
+      "      return this;\n" ^
       "    FLX_CASE_LABEL(" ^ si n ^ ")\n"
-    end
 
-  | `BEXE_jump (sr,p,a) ->
-    let args = match a with
-      | _,`BTYP_tuple [] -> "tmp"
-      | _ -> "tmp, " ^ ge sr a
-    in
-    "      //"^ src_str ^ "\n" ^
-    "      {\n" ^
-    "        con_t *tmp = _caller;\n" ^
-    "        _caller=0;\n" ^
-    "        return " ^ ge sr p ^ "\n      ->call(" ^ args ^");\n" ^
-    "      }\n"
+      
+    | `BEXE_regmatch (sr,e,reargs) ->
+      let b = Buffer.create 500 in
+      Flx_regen.regen b reargs (`regmatch e) (ge sr);
+      Buffer.contents b
 
-  | `BEXE_proc_return _ -> "      FLX_RETURN\n"
+    | `BEXE_reglex (sr,p1,p2,reargs) ->
+      let b = Buffer.create 500 in
+      Flx_regen.regen b reargs (`reglex (p1,p2)) (ge sr);
+      Buffer.contents b
+      
+    | `BEXE_fun_return (sr,e) -> 
+      let _,t = e in
+      let t = tn t in
+      "      //" ^ src_str ^ "\n" ^
+      "      {\n" ^
+      "        "^t^" tmp="^ge sr e^";\n" ^
+      "        return tmp;\n" ^
+      "      }\n"
 
-  | `BEXE_read (sr,index) -> 
-    let id,parent,sr,entry = 
-      try Hashtbl.find bbdfns index 
-      with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
-    in
-    let t =
-      match entry with
-      | `BBDCL_var (_,t) -> t
-      | `BBDCL_val (_,t) -> t
-      | _ -> syserr sr "Expected read argument to be variable"
-    in
-    let n = !counter in
-    incr counter;
-    "      //read variable\n" ^
-    "      p_message = &(" ^ get_var_ref syms bbdfns this index ts^");\n" ^
-    "      action = wait_action;\n" ^
-    "      FLX_SET_PC(" ^ si n ^ ")\n" ^
-    "      return this;\n" ^
-    "    FLX_CASE_LABEL(" ^ si n ^ ")\n"
+    | `BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
 
-    
-  | `BEXE_regmatch (sr,e,reargs) ->
-    let b = Buffer.create 500 in
-    Flx_regen.regen b reargs (`regmatch e) (ge sr);
-    Buffer.contents b
-
-  | `BEXE_reglex (sr,p1,p2,reargs) ->
-    let b = Buffer.create 500 in
-    Flx_regen.regen b reargs (`reglex (p1,p2)) (ge sr);
-    Buffer.contents b
-    
-  | `BEXE_fun_return (sr,e) -> 
-    let _,t = e in
-    let t = tn t in
-    "      //" ^ src_str ^ "\n" ^
-    "      {\n" ^
-    "        "^t^" tmp="^ge sr e^";\n" ^
-    "        return tmp;\n" ^
-    "      }\n"
-
-  | `BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
-
-  | `BEXE_assign (sr,e1,e2) ->
-    "      //"^src_str^"\n" ^
-    "      "^ ge sr e1 ^ " = " ^ ge sr e2 ^
-    ";\n"
-    
-  | `BEXE_init (sr,v,e) -> 
-    (*
-    print_endline ("INIT of " ^ si v ^ " inside " ^ si this);
-    *)
-    "      //"^src_str^"\n" ^
-    "      "^
-    get_var_ref syms bbdfns this v ts^ 
-    " = " ^ 
-    ge sr e ^
-    ";\n"
+    | `BEXE_assign (sr,e1,e2) ->
+      "      //"^src_str^"\n" ^
+      "      "^ ge sr e1 ^ " = " ^ ge sr e2 ^
+      ";\n"
+      
+    | `BEXE_init (sr,v,e) -> 
+      (*
+      print_endline ("INIT of " ^ si v ^ " inside " ^ si this);
+      *)
+      "      //"^src_str^"\n" ^
+      "      "^
+      get_var_ref syms bbdfns this v ts^ 
+      " = " ^ 
+      ge sr e ^
+      ";\n"
+  in gexe exe
 
 let gen_exes syms bbdfns display label_map counter index exes vs ts instance_no =
   cat ""
@@ -2212,22 +2225,21 @@ try
 
   if compiler_options.print_flag 
   then print_endline "//OPTIMISING";
-  let bbdfns = Flx_use.elide_unused syms (child_map,bbdfns) root_proc bifaces in
+  let bbdfns = Flx_useless.elide_unused syms (child_map,bbdfns) root_proc bifaces in
   let child_map = cal_children syms bbdfns in
-  let bbdfns = Flx_use.elide_unused syms (child_map,bbdfns) root_proc bifaces in
+  let bbdfns = Flx_useless.elide_unused syms (child_map,bbdfns) root_proc bifaces in
   let child_map = cal_children syms bbdfns in
 
   let bbdfns = ref bbdfns in
   let child_map = ref child_map in
-  if compiler_options.heavy_inlining then begin
+  if compiler_options.heavy_inlining then
+  begin
     if compiler_options.print_flag then
     print_endline "//INLINING";
-    for i = 1 to 3 do
-      bbdfns := Flx_inline.heavy_inlining syms (!child_map,!bbdfns) root_proc bifaces;
-      child_map := cal_children syms !bbdfns;
-      bbdfns := Flx_use.elide_unused syms (!child_map,!bbdfns) root_proc bifaces;
-      child_map := cal_children syms !bbdfns
-    done
+    Flx_inline.heavy_inlining syms (!child_map,!bbdfns) root_proc bifaces;
+    child_map := cal_children syms !bbdfns;
+    bbdfns := Flx_useless.elide_unused syms (!child_map,!bbdfns) root_proc bifaces;
+    child_map := cal_children syms !bbdfns
   end
   ;
   let bbdfns = !bbdfns in

@@ -1,6 +1,6 @@
 @bc = begin_displayed_code
 @ec = end_displayed_code
-@flx_version = '1.0.7'
+@flx_version = '1.0.8'
 @set_title('Felix '+flx_version)
 @head(1,'Purpose')
 Felix is a procedural language designed to implement
@@ -420,6 +420,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_label.ipk')
 @include_file ('flx_call.ipk')
 @include_file ('flx_use.ipk')
+@include_file ('flx_useless.ipk')
 @include_file ('flx_opt3.ipk')
 @include_file ('flx_opt4.ipk')
 @include_file ('flx_inst.ipk')
