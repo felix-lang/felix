@@ -878,10 +878,10 @@ and rst syms name access parent_vs st : asm_t list =
       )
     ]
     
-  | `AST_fun_decl (sr,name',vs,args,result,code, reqs) ->
+  | `AST_fun_decl (sr,name',vs,args,result,code, reqs,prec) ->
     let dcls, reqs = mkreqs sr reqs in
     Dcl (sr,name',access,vs,
-      `DCL_fun (args,result,code,map_reqs sr reqs))
+      `DCL_fun (args,result,code,map_reqs sr reqs,prec))
     :: dcls
 
   (* misc *)

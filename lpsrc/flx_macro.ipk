@@ -554,8 +554,9 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_const_decl (sr, id, vs, t, c, reqs) -> 
      tack (`AST_const_decl (sr, mi sr id, vs, mt sr t, c, reqs))
     
-  | `AST_fun_decl (sr, id, vs, ts, t, c, reqs) -> 
-     tack (`AST_fun_decl (sr, mi sr id, vs, map (mt sr) ts, mt sr t, c, reqs))
+  | `AST_fun_decl (sr, id, vs, ts, t, c, reqs,prec) -> 
+     let c,prec = Flx_cexpr.genprec c prec in
+     tack (`AST_fun_decl (sr, mi sr id, vs, map (mt sr) ts, mt sr t, c, reqs,prec))
     
   | `AST_header (sr, n, vs, s,reqs) ->  tack st
   | `AST_body (sr, n, vs, s, reqs) ->  tack st

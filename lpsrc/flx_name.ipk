@@ -39,7 +39,6 @@ open Flx_mtypes2
 open Flx_unify
 open Flx_print
 open Flx_util
-open Flx_csubst
 open Flx_exceptions
 open List
 

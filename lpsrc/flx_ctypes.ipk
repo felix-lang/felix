@@ -154,25 +154,33 @@ let string_of_cdecl_type n t =
  
 @h = tangler("src/flx_cexpr.mli")
 @select(h)
+open Flx_ast
 open Flx_ctypes
-val string_of_cexpr : cexpr_t -> string
 
-val ce_atom : string -> cexpr_t
-val ce_postfix : string -> cexpr_t -> cexpr_t
-val ce_prefix : string -> cexpr_t -> cexpr_t
-val ce_infix : string -> cexpr_t -> cexpr_t -> cexpr_t
+val string_of_cexpr : cexpr_t -> string
+val sc : prec_t -> cexpr_t -> string
+val ce : prec_t -> string -> cexpr_t
+
+val ce_atom : c_t -> cexpr_t
+val ce_postfix : c_t -> cexpr_t -> cexpr_t
+val ce_prefix : c_t -> cexpr_t -> cexpr_t
+val ce_infix : c_t -> cexpr_t -> cexpr_t -> cexpr_t
 val ce_call : cexpr_t -> cexpr_t list -> cexpr_t
 val ce_array : cexpr_t -> cexpr_t -> cexpr_t
 val ce_new : cexpr_t list -> string -> cexpr_t list -> cexpr_t
-val ce_cast : string -> cexpr_t -> cexpr_t
+val ce_cast : c_t -> cexpr_t -> cexpr_t
 val ce_cond : cexpr_t -> cexpr_t -> cexpr_t -> cexpr_t
-val ce_expr : string -> string -> cexpr_t
-val ce_top : string -> cexpr_t
+val ce_expr : prec_t -> c_t -> cexpr_t
+val ce_top : c_t -> cexpr_t
 val ce_dot : cexpr_t -> string -> cexpr_t
+exception Unknown_prec of prec_t
+
+val genprec: c_t -> prec_t -> c_t * prec_t 
 
 @h = tangler("src/flx_cexpr.ml")
 @select(h)
 open Flx_ctypes
+exception Unknown_prec of string
 
 let iter = List.iter
 let map = List.map
@@ -263,16 +271,77 @@ let infix_cops = [
 ]
 ;;
 
+let remaps = [
+  "$1++",("$1:postfix ++ ","postfix");
+  "$1--",("$1:postfix -- ","postfix");
+
+  "~$1",("~$1:unary","unary");
+  "+$1",("+ $1:unary","unary");
+  "-$1",("- $1:unary","unary");
+  "!$1",("!$1:unary","unary");
+  "&$1",("& $1:unary","unary");
+  "*$1",("*$1:unary","unary");
+  "++$1",("++ $1:unary","unary");
+  "--$1",("-- $1:unary","unary");
+  "$1+$2",("$1:add + $2:mult","add");
+  "$1-$2",("$1:add - $2:mult","add");
+  "$1*$2",("$1:mult * $2:pm","mult");
+  "$1/$2",("$1:mult / $2:pm","mult");
+  "$1%$2",("$1:mult % $2:pm","mult");
+
+  "$1<<$2",("$1:shift << $2:band","shift");
+  "$1>>$2",("$1:shift >> $2:band","shift");
+  "$1&$2",("$1:band & $2:bor","band");
+  "$1|$2",("$1:bor | $2:bxor","bor");
+  "$1^$2",("$1:bxor ^ $2:and","bxor");
+  "$1&&$2",("$1:and &&  $2:or","and");
+  "$1||$2",("$1:or || $2:cond","or");
+
+  "$1+=$2",("$1:cond += $2:assign","assign");
+  "$1-=$2",("$1:cond -= $2:assign","assign");
+  "$1*=$2",("$1:cond *= $2:assign","assign");
+  "$1/=$2",("$1:cond /= $2:assign","assign");
+  "$1%=$2",("$1:cond %= $2:assign","assign");
+  "$1<<=$2",("$1:cond <<= $2:assign","assign");
+  "$1>>=$2",("$1:cond >>= $2:assign","assign");
+  "$1&=$2",("$1:cond &= $2:assign","assign");
+  "$1|=$2",("$1:cond |= $2:assign","assign");
+  "$1^=$2",("$1:cond ^= $2:assign","assign");
+
+  "$1<$2",("$1:rel < $2:shift","rel");
+  "$1>$2",("$1:rel > $2:shift","rel");
+  "$1>=$2",("$1:rel >= $2:shift","rel");
+  "$1<=$2",("$1:rel <= $2:shift","rel");
+  "$1==$2",("$1:eq == $2:rel","eq");
+  "$1!=$2",("$1:eq != $2:rel","eq");
+
+  "$1($2)",("$1:postfix($2:assign)","postfix");
+  "$1[$2]",("$1:postfix[$2:expr]","postfix");
+  "$1->$2",("$1:postfix->$2:atom","postfix");
+  "$1.*$2",("$1:pm.*$2:cast","pm");
+  "$1->*$2",("$1:pm->*$2:cast","pm");
+  "$1:comma,$2:comma",("$1,$2","comma");
+]
+;;
+
 let prec = Hashtbl.create 17
 let infix = Hashtbl.create 31
 let prefix = Hashtbl.create 17
 let postfix = Hashtbl.create 17
+let prec_remap = Hashtbl.create 31
 let seq = ref 0
 ;;
+let find_prec p = 
+  try Hashtbl.find prec p 
+  with Not_found -> 
+    raise (Unknown_prec p)
+;; 
+
 iter (fun x -> add prec x !seq; incr seq; incr seq) precedence;
-iter (fun (n,p) -> add infix n (find prec p)) infix_cops;
-iter (fun (n,p) -> add prefix n (find prec p)) prefix_cops;
-iter (fun (n,p) -> add postfix n (find prec p)) postfix_cops
+iter (fun (n,p) -> add infix n (find_prec p)) infix_cops;
+iter (fun (n,p) -> add prefix n (find_prec p)) prefix_cops;
+iter (fun (n,p) -> add postfix n (find_prec p)) postfix_cops;
+iter (fun (k,v) -> add prec_remap k v) remaps
 ;;
 
 let pr cop =
@@ -283,14 +352,14 @@ let pr cop =
   | `Ce_infix (s,_,_) -> find infix s
 
   | `Ce_call _ 
-  | `Ce_array _ -> find prec "postfix"
+  | `Ce_array _ -> find_prec "postfix"
 
-  | `Ce_new _ -> find prec "unary"
-  | `Ce_cast _ -> find prec "cast"
-  | `Ce_cond _ -> find prec "cond"
-  | `Ce_expr (p,_) -> find prec p
+  | `Ce_new _ -> find_prec "unary"
+  | `Ce_cast _ -> find_prec "cast"
+  | `Ce_cond _ -> find_prec "cond"
+  | `Ce_expr (p,_) -> find_prec p
 
-let commaprec = find prec "comma"
+let commaprec = find_prec "comma"
 let rec comma es = "(" ^ strcat ", " (map (cep commaprec) es) ^ ")" 
 and comma_opt = function | [] -> "" | ps -> comma ps
 
@@ -304,7 +373,7 @@ slightly higher.
 and cep cp e = 
   let ep = pr e in
   let rce e = cep ep e and lce e = cep (ep+1) e in
-  let need_brackets = ep >= cp in
+  let need_brackets = ep > cp in
   (if need_brackets then "(" else "") 
   ^
   begin match e with
@@ -324,8 +393,6 @@ and cep cp e =
   ^
   (if need_brackets then ")" else "")
 
-let string_of_cexpr e = cep 1000 e
-
 let ce_atom s = `Ce_atom s 
 let ce_postfix o e = `Ce_postfix (o,e)
 let ce_prefix o e = `Ce_prefix (o,e)
@@ -338,3 +405,12 @@ let ce_cond c a b = `Ce_cond (c,a,b)
 let ce_expr p s = `Ce_expr (p,s)
 let ce_top s = ce_expr "expr" s
 let ce_dot e s = ce_infix "." e (ce_atom s)
+
+let string_of_cexpr e = cep 1000 e
+let sc p e = cep (find_prec p) e
+let ce p s = ce_expr p s
+
+let genprec ct prec =
+  try Hashtbl.find prec_remap ct 
+  with Not_found -> ct,prec
+

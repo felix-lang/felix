@@ -473,6 +473,7 @@ and requirement_t = [
 
 and requirements_t = requirement_t list
 and named_reqs_t = qualified_name_t list
+and prec_t = string
 
 and statement_t =
   [ 
@@ -541,7 +542,7 @@ and statement_t =
   | `AST_abs_decl of range_srcref * id_t * id_t list * type_qual_t list * c_t * requirements_t
   | `AST_ctypes of range_srcref * (srcref * id_t) list * type_qual_t list  * requirements_t 
   | `AST_const_decl of range_srcref * id_t * id_t list * typecode_t * c_t * requirements_t
-  | `AST_fun_decl of range_srcref * id_t * id_t list * typecode_t list * typecode_t * c_t  * requirements_t
+  | `AST_fun_decl of range_srcref * id_t * id_t list * typecode_t list * typecode_t * c_t  * requirements_t * prec_t
 
   (* embedding *)
   | `AST_header of range_srcref * id_t * id_t list * c_t * requirements_t
@@ -648,7 +649,7 @@ type dcl_t =
   (* binding structures [prolog] *)
   | `DCL_abs of          type_qual_t list * c_t * named_reqs_t
   | `DCL_const of        typecode_t * c_t * named_reqs_t
-  | `DCL_fun of          typecode_t list * typecode_t * c_t * named_reqs_t
+  | `DCL_fun of          typecode_t list * typecode_t * c_t * named_reqs_t * prec_t
   | `DCL_header of       c_t * named_reqs_t
   | `DCL_body of         c_t * named_reqs_t
   | `DCL_regdef of      regexp_t
@@ -790,7 +791,7 @@ and bbdcl_t =
   (* binding structures [prolog] *)
   | `BBDCL_abs of        bvs_t * type_qual_t list * c_t * breqs_t
   | `BBDCL_const of      bvs_t * btypecode_t * c_t * breqs_t
-  | `BBDCL_fun of        bvs_t * btypecode_t list * btypecode_t * c_t  * breqs_t
+  | `BBDCL_fun of        bvs_t * btypecode_t list * btypecode_t * c_t  * breqs_t * prec_t
   | `BBDCL_proc of       bvs_t * btypecode_t list * c_t  * breqs_t
   | `BBDCL_header of     bvs_t * c_t  * breqs_t
   | `BBDCL_body of       bvs_t * c_t  * breqs_t
@@ -820,7 +821,7 @@ type symbol_definition_t =
   | `SYMDEF_const of typecode_t * c_t * named_reqs_t
   | `SYMDEF_var of  typecode_t
   | `SYMDEF_val of  typecode_t
-  | `SYMDEF_fun of typecode_t list * typecode_t * c_t  * named_reqs_t
+  | `SYMDEF_fun of typecode_t list * typecode_t * c_t  * named_reqs_t * prec_t
   | `SYMDEF_header of c_t  * named_reqs_t
   | `SYMDEF_body of c_t  * named_reqs_t
   | `SYMDEF_union of  (id_t * typecode_t) list
@@ -1368,7 +1369,7 @@ let src_of_stmt e = match e with
   | `AST_abs_decl (s,_,_, _,_,_) 
   | `AST_ctypes (s,_,_,_) 
   | `AST_const_decl (s,_,_,_,_,_) 
-  | `AST_fun_decl (s,_,_,_,_,_,_ ) 
+  | `AST_fun_decl (s,_,_,_,_,_,_,_ ) 
   | `AST_header (s,_,_,_,_) 
   | `AST_body (s,_,_,_,_) 
   | `AST_code (s, _) 
@@ -2333,13 +2334,14 @@ and string_of_statement level s =
     string_of_reqs reqs ^
     ";"
 
-  | `AST_fun_decl (_,name,vs,args, result, code, reqs) ->
+  | `AST_fun_decl (_,name,vs,args, result, code, reqs,prec) ->
     spaces level ^ 
     "fun " ^ name ^ print_vs vs ^
     ": " ^ 
     (string_of_typecode (`TYP_tuple args)) ^ " -> " ^
     (string_of_typecode result) ^ 
     " = " ^ string_of_string code ^ 
+    (if prec = "" then "" else ":"^prec^" ")^
     string_of_reqs reqs ^
     ";"
 
@@ -2635,7 +2637,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
   | `SYMDEF_cstruct (cts) -> 
     "cstruct " ^ name ^ print_ivs vs ^ ";"
     
-  | `SYMDEF_fun (pts,res,cts, reqs) -> 
+  | `SYMDEF_fun (pts,res,cts, reqs,prec) -> 
     "fun " ^ name ^ print_ivs vs ^
     ": " ^ string_of_typecode 
     (
@@ -2650,6 +2652,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
         res
       )
     ) ^
+    (if prec = "" then "" else ":"^prec^" ")^
     string_of_named_reqs reqs ^
     ";"
 
@@ -2995,13 +2998,14 @@ and string_of_dcl level name vs (s:dcl_t) =
     string_of_named_reqs reqs ^
     ";"
 
-  | `DCL_fun (args, result, code, reqs) ->
+  | `DCL_fun (args, result, code, reqs,prec) ->
     let argtype:typecode_t = type_of_argtypes args in
     let t:typecode_t = `TYP_function (argtype,result) in
     spaces level ^ 
     "fun " ^ name ^ print_vs vs ^
     ": " ^ string_of_typecode t ^
     " = " ^ string_of_string code ^ 
+    (if prec = "" then "" else ":"^prec^" ")^
     string_of_named_reqs reqs ^
     ";"
 
@@ -3119,12 +3123,13 @@ and string_of_bbdcl dfns bbdcl index =
      string_of_breqs dfns reqs ^
      ";" 
 
-  | `BBDCL_fun (vs,ps,rt,code,reqs) ->
+  | `BBDCL_fun (vs,ps,rt,code,reqs,prec) ->
     "fun " ^ name ^ print_bvs vs ^
     ": " ^ 
     (sobt (typeoflist ps)) ^ " -> " ^
     (sobt rt) ^ 
     " = " ^ string_of_string code ^ 
+    (if prec = "" then "" else ":"^prec^" ")^
      string_of_breqs dfns reqs ^
     ";"
 

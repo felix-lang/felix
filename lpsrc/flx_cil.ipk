@@ -1,5 +1,5 @@
 @head(1,'Cil package')
-@select(tangler("licenses/cil_license.txt"))
+@select(tangler("licences/cil_licence.txt",'data'))
 (*
  *
  * Copyright (c) 2001 by

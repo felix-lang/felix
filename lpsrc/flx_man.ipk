@@ -19,6 +19,9 @@ for a description of literals
 .B flx_op(1)
 for a list of operators
 .br
+.B flx_cop(1)
+for a list of C operator precedence names
+.br
 .B flx_key(1)
 for a list of keywords
 .br
@@ -399,6 +402,185 @@ Prefix denotes radix, default decimal:
 Hexadecimal 
 
 @tangle(manfoot)
+
+@head(2,'felix:C operator precedences')
+@select(tangler('man/man1/flx_cop.1','data'))
+@mh('C OPERATOR PRECEDENCES')
+.SH NAME
+C operator precedences.
+
+
+.SH precedence names
+atom
+primary
+postfix
+unary
+cast
+pm
+mult
+add
+shift
+rel
+eq
+band
+bxor
+bor
+and
+xor
+or
+cond
+assign
+comma
+expr
+
+.SH postfix
+++,postfix
+--,postfix
+
+.SH prefix
+~,primary
++,unary
+-,unary
+!,unary
+&,unary
+*,unary
+++,unary
+--,unary
+sizeof,unary
+
+.SH infix
++,add
+-,add
+*,mult
+/,mult
+%,mult
+<<,shift
+>>,shift
+
+&,band
+|,bor
+^,bxor
+
+&&,and
+||,or
+
++=,assign
+-=,assign
+*=,assign
+/=,assign
+%=,assign
+<<=,assign
+>>=,assign
+&=,assign
+|=,assign
+^=,assign
+
+<,rel
+>,rel
+>=,rel
+<=,rel
+==,eq
+!=,eq
+
+.,postfix
+->,postfix
+.*,pm
+->*,pm
+,,comma
+
+.SH default precedences
+.br 
+"~$1",("~$1:primary","primary");
+.br 
+.br 
+"$1++",("$1:postfix ++ ","postfix");
+.br 
+"$1--",("$1:postfix -- ","postfix");
+.br 
+.br 
+"$1($2)",("$1:postfix($2:assign)","postfix");
+.br 
+"$1[$2]",("$1:postfix[$2:expr]","postfix");
+.br 
+"$1->$2",("$1:postfix->$2:atom","postfix");
+.br 
+"~$1",("~$1:unary","unary");
+.br 
+"+$1",("+ $1:unary","unary");
+.br 
+"-$1",("- $1:unary","unary");
+.br 
+"!$1",("!$1:unary","unary");
+.br 
+"&$1",("& $1:unary","unary");
+.br 
+"*$1",("*$1:unary","unary");
+.br 
+"++$1",("++ $1:unary","unary");
+.br 
+"--$1",("-- $1:unary","unary");
+.br 
+"$1+$2",("$1:add + $2:mult","add");
+.br 
+"$1-$2",("$1:add - $2:mult","add");
+.br 
+"$1*$2",("$1:mult * $2:pm","mult");
+.br 
+"$1/$2",("$1:mult / $2:pm","mult");
+.br 
+"$1%$2",("$1:mult % $2:pm","mult");
+.br 
+"$1<<$2",("$1:shift << $2:band","shift");
+.br 
+"$1>>$2",("$1:shift >> $2:band","shift");
+.br 
+"$1&$2",("$1:band & $2:bor","band");
+.br 
+"$1|$2",("$1:bor | $2:bxor","bor");
+.br 
+"$1^$2",("$1:bxor ^ $2:and","bxor");
+.br 
+"$1&&$2",("$1:and &&  $2:or","and");
+.br 
+"$1||$2",("$1:or || $2:cond","or");
+.br 
+"$1+=$2",("$1:cond += $2:assign","assign");
+.br 
+"$1-=$2",("$1:cond -= $2:assign","assign");
+.br 
+"$1*=$2",("$1:cond *= $2:assign","assign");
+.br 
+"$1/=$2",("$1:cond /= $2:assign","assign");
+.br 
+"$1%=$2",("$1:cond %= $2:assign","assign");
+.br 
+"$1<<=$2",("$1:cond <<= $2:assign","assign");
+.br 
+"$1>>=$2",("$1:cond >>= $2:assign","assign");
+.br 
+"$1&=$2",("$1:cond &= $2:assign","assign");
+.br 
+"$1|=$2",("$1:cond |= $2:assign","assign");
+.br 
+"$1^=$2",("$1:cond ^= $2:assign","assign");
+.br 
+"$1<$2",("$1:rel < $2:shift","rel");
+.br 
+"$1>$2",("$1:rel > $2:shift","rel");
+.br 
+"$1>=$2",("$1:rel >= $2:shift","rel");
+.br 
+"$1<=$2",("$1:rel <= $2:shift","rel");
+.br 
+"$1==$2",("$1:eq == $2:rel","eq");
+.br 
+"$1!=$2",("$1:eq != $2:rel","eq");
+.br 
+"$1.*$2",("$1:pm.*$2:cast","pm");
+.br 
+"$1->*$2",("$1:pm->*$2:cast","pm");
+.br 
+"$1:comma,$2:comma",("$1,$2","comma");
 
 @head(2,'felix:operator summary')
 @select(tangler('man/man1/flx_op.1','data'))

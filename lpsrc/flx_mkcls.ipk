@@ -57,7 +57,7 @@ let gen_closure syms bbdfns i =
     Hashtbl.add bbdfns j (id,parent,sr,entry);
     j
 
-  | `BBDCL_fun (vs,ps,ret,c,reqs) ->
+  | `BBDCL_fun (vs,ps,ret,c,reqs,_) ->
     let ts = map (fun (_,i) -> `BTYP_var i) vs in
     let arg_t = 
       match ps with | [t] -> t | ps -> `BTYP_tuple ps

@@ -552,6 +552,8 @@ FLX_MODULES = [
   'flx_unify'        ,
   'flx_charset'      ,
   'flx_constfld'     , 
+  'flx_cexpr'        ,
+  'flx_csubst'       , 
   'flx_macro'        , 
   'flx_parse'        ,
   'flx_keywords'     ,
@@ -568,7 +570,6 @@ FLX_MODULES = [
   'flx_desugar'      , 
   'flx_mbind'        , 
   'flx_symtab'       , 
-  'flx_csubst'       , 
   'flx_name'         , 
   'flx_treg'         ,
   'flx_beta'         ,
@@ -586,7 +587,6 @@ FLX_MODULES = [
   'flx_stack_calls'  , 
   'flx_mkcls'        , 
   'flx_inst'         , 
-  'flx_cexpr'        ,
   'flx_tgen'         , 
   'flx_display'      , 
   'flx_ogen'         , 
@@ -955,8 +955,8 @@ try:
       ars = ""
       for x in RTL_CPPS:
         print 'Compiling rtl object',x
-        ars = ars + x + "_static.o"
-        xqt(CCOBJ_STATIC_LIB + " -Irtl " + x + "cpp -o " +x+"_static.o")
+        ars = ars + x + "_static.o "
+        xqt(CCOBJ_STATIC_LIB + " -Irtl " + x + ".cpp -o " +x+"_static.o")
       xqt(AR + " rtl/libflx_static.a " + ars)
       xqt(RANLIB + " rtl/libflx_static.a")
 
@@ -1292,7 +1292,7 @@ We have no idea if it continues copying.
 @tangle('\t\tflx_'+flx_version+'/CONTENTS \\')
 @tangle('\t\tflx_'+flx_version+'/INSTALL \\')
 @tangle('\t\tflx_'+flx_version+'/VERSION \\')
-@tangle('\t\tflx_'+flx_version+'/LICENSE \\')
+@tangle('\t\tflx_'+flx_version+'/LICENCE \\')
 @tangle('\t\tflx_'+flx_version+'/NEWS \\')
 @tangle('\t\tflx_'+flx_version+'/AUTHORS \\')
 @tangle('\t\tflx_'+flx_version+'/COPYING\\')
@@ -1325,7 +1325,7 @@ We have no idea if it continues copying.
 @tangle('\t\tflx_'+flx_version+'/CONTENTS \\')
 @tangle('\t\tflx_'+flx_version+'/INSTALL \\')
 @tangle('\t\tflx_'+flx_version+'/VERSION \\')
-@tangle('\t\tflx_'+flx_version+'/LICENSE \\')
+@tangle('\t\tflx_'+flx_version+'/LICENCE \\')
 @tangle('\t\tflx_'+flx_version+'/NEWS \\')
 @tangle('\t\tflx_'+flx_version+'/AUTHORS \\')
 @tangle('\t\tflx_'+flx_version+'/COPYING\\')
@@ -1351,7 +1351,7 @@ We have no idea if it continues copying.
 @tangle('\t\tflx_'+flx_version+'/doc/*.html \\')
 @tangle('\t\tflx_'+flx_version+'/doc/*.css \\')
 @tangle('\t\tflx_'+flx_version+'/doc/*.tex \\')
-@tangle('\t\tflx_'+flx_version+'/licenses/*.txt \\')
+@tangle('\t\tflx_'+flx_version+'/licences/*.txt \\')
 @tangle('\t\tflx_'+flx_version+'/misc/* \\')
 @tangle('\t\tflx_'+flx_version+'/htmlman/*.html \\')
 @tangle('\t\tflx_'+flx_version+'/man/man1/*.1 \\')
@@ -1393,7 +1393,7 @@ We have no idea if it continues copying.
 @tangle('\trm -rf lpsrc/*.cache')
 @tangle('\trm -rf interscript/*.pyc')
 @tangle('\trm -rf interscript/*.pyo')
-@tangle('\trm -f README LICENSE VERSION CONTENTS INSTALL AUTHORS NEWS COPYING ChangeLog')
+@tangle('\trm -f README LICENCE VERSION CONTENTS INSTALL AUTHORS NEWS COPYING ChangeLog')
 @tangle('')
 
 @tangle('backup: dummy')
@@ -1580,7 +1580,7 @@ Top level files:
   CONTENTS  (this file)
   README    the usual readme file
   INSTALL   how to install and build felix
-  LICENSE   license details
+  LICENCE   licence details
   AUTHORS   list of contributors
   NEWS      handy place to plug Felix
   ChangeLog where change info should go but doesn't
@@ -1622,8 +1622,8 @@ The directories are:
   bin    -- compiler tools directory
   rtl    -- C++ run time library sources
 
-@head(1,'LICENSE')
-@select(tangler('LICENSE'))
+@head(1,'LICENCE')
+@select(tangler('LICENCE'))
 @tangle('Version ' + flx_version + ' of Felix')
 is free for any use, provided the authors
 are not misrepresented in any way.
@@ -2151,15 +2151,33 @@ do
     shift
   ;;
 
-  x--optimise)
+  x--opt=1)
+    INLINE=1
+    cpps="-O1 $cpps"
+    shift
+  ;;
+
+  x--opt=2)
+    INLINE=1
+    cpps="-O2 $cpps"
+    shift
+  ;;
+
+  x--opt=3)
     INLINE=1
     cpps="-O3 $cpps"
     shift
   ;;
 
+  x--optimise)
+    INLINE=1
+    cpps="-O3 -fomit-frame-pointer -finline $cpps"
+    shift
+  ;;
+
   x--optimize)
     INLINE=1
-    cpps="-O3 $cpps"
+    cpps="-O3 -fomit-frame-pointer -finline $cpps"
     shift
   ;;
 

@@ -479,7 +479,7 @@ let get_var_frame syms bbdfns this index ts : string =
   | _ -> failwith ("[get_var_frame] Expected name "^id^" to be variable or value")
 
 let gen_prim_call 
-  syms bbdfns tn ge ct ts (arg,argt as a) ret sr sr2
+  syms bbdfns tn ge ct ts (arg,argt as a) ret sr sr2 prec
 =
   (*
   print_endline ("ts= "^catmap "," (sbt syms.dfns) ts);
@@ -487,13 +487,17 @@ let gen_prim_call
   *)
   let ts = map tn ts in
   match arg,argt with
-  | (`BEXPR_tuple es,`BTYP_tuple typs) ->
+  | (`BEXPR_tuple es,t) ->
     let ess = map (ge sr) es in
-
-    (* typs is already reduced and instantiated *)
-    let ets = map (cpp_typename syms) typs in
-    let tt = tn (`BTYP_tuple typs) in
-    csubst sr sr2 ct ess ets tt ret ts
+    let ets = 
+      match t with
+      | `BTYP_tuple typs -> map (cpp_typename syms) typs
+      | `BTYP_array (t,`BTYP_unitsum n) ->
+        let t = tn t in rev_map (fun _ -> t) (nlist n)
+      | _ -> assert false
+    in
+    let tt = tn t in
+    csubst sr sr2 ct ess ets tt ret ts prec
   
   (* this case is needed for a primitive value of tuple type *)
   | (_,`BTYP_tuple typs) as x ->
@@ -506,8 +510,9 @@ let gen_prim_call
     let ess = map (ge sr) es in
     let ets = map tn typs in
     let tt = tn (`BTYP_tuple typs) in
-    csubst sr sr2 ct ess ets tt ret ts
+    csubst sr sr2 ct ess ets tt ret ts prec
 
+  (* this case is needed for a primitive value of array type *)
   | (_,(`BTYP_array(t,`BTYP_unitsum n) as ta)) as x ->
     let typs = map (fun _ -> t) (nlist n) in
     let es = 
@@ -518,21 +523,22 @@ let gen_prim_call
     let ess = map (ge sr) es in
     let ets = map tn typs in
     let tt = tn ta in
-    csubst sr sr2 ct ess ets tt ret ts
+    csubst sr sr2 ct ess ets tt ret ts prec
 
 
+  (* this case is needed for a singleton type *)
   | (_,typ) -> 
     let typ = tn typ in
     let a = ge sr a in
-    csubst sr sr2 ct [a] [typ] typ ret ts
+    csubst sr sr2 ct [a] [typ] typ ret ts prec
 
-let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
+let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   (*
   print_endline ("Generating expression " ^ string_of_bound_expression_with_type syms.dfns (e,t));
   *)
   let ge' e = gen_expr' syms bbdfns this e vs ts sr in
   let ge e = gen_expr syms bbdfns this e vs ts sr in
-  let ge'' sr e = gen_expr syms bbdfns this e vs ts sr in
+  let ge'' sr e = gen_expr' syms bbdfns this e vs ts sr in
   if length ts <> length vs then 
   failwith 
   (
@@ -580,18 +586,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
       (ce_atom (si (n-1)))
 
   | `BEXPR_case_arg (n,e) ->
-    (* NOTE that the index is not used ... *)
-    (*
-    let _,t = e in
-    let t = 
-      match unfold syms.dfns t with 
-      | `BTYP_sum ls -> nth ls (n-1)
-      | _ -> assert false
-    in
-      let t = tn t in
-    *)
-      (* really ugly brackets .. *)
-      ce_top ("*("^tn t^"*)(" ^ ge e ^ ".data)")
+    let cast = tn t ^ "*" in
+    ce_prefix "*" (ce_cast cast (ce_dot (ge' e) "data"))
      
   | `BEXPR_deref ((`BEXPR_ref index),`BTYP_pointer t) -> 
     ge' (`BEXPR_name index,t)
@@ -599,9 +595,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
   | `BEXPR_deref e -> 
     let cast = tn t ^ "*" in
     ce_prefix "*" (ce_cast cast (ce_dot (ge' e) "data"))
-    (*
-    "*("^tn t^"*)(" ^ ge e ^ ".data)"
-    *)
 
   | `BEXPR_literal v ->
     if is_native_literal v
@@ -669,7 +662,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
 
       | `BBDCL_const (_,_,ct,_) -> 
         let ts = map tn ts in
-        ce_atom (csubst sr sr2 ct [] [] "Error" "Error" ts)
+        csubst sr sr2 ct [] [] "Error" "Error" ts "expr"
 
       | `BBDCL_cstruct _ 
       | `BBDCL_struct _ 
@@ -732,7 +725,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
     let ts = map tsub ts' in
     let t = lower t in
     let ref_type = tn (lower t) in
-    let var_ptr = "&(" ^ get_var_ref syms bbdfns this index ts ^ ")" in
+    let var_ptr = "&" ^ get_var_ref syms bbdfns this index ts  in
     let frame_ptr = get_var_frame syms bbdfns this index ts in
     let reference = ref_type ^ 
       "(" ^ frame_ptr ^ ", " ^ var_ptr ^ ")" 
@@ -784,7 +777,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
     in
     begin 
     match entry with
-    | `BBDCL_fun (vs,ps,retyp,ct,_) -> 
+    | `BBDCL_fun (vs,ps,retyp,ct,_,prec) -> 
       if length vs <> length ts then
       failwith 
       (
@@ -798,8 +791,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
       let ts = map tsub ts in
       let retyp = reduce_type (tsubst vs ts retyp) in
       let retyp = tn retyp in
-      let s = gen_prim_call syms bbdfns tn ge'' ct ts (arg,argt) retyp sr sr2 
-      in ce_top s
+      gen_prim_call syms bbdfns tn ge'' ct ts (arg,argt) retyp sr sr2 prec
 
     (* not sure whether these will be prims or directs or what .. *)
     | `BBDCL_cstruct (vs,_) ->
@@ -954,7 +946,11 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
 
 and gen_expr syms bbdfns this e vs ts sr =
   let e = Flx_maps.reduce_tbexpr bbdfns e in
-  let s = gen_expr' syms bbdfns this e vs ts sr  in
+  let s = 
+    try gen_expr' syms bbdfns this e vs ts sr  
+    with Unknown_prec p -> clierr sr 
+    ("[gen_expr] Unknown precedence name '"^p^"' in " ^ sbe syms.dfns e)
+  in
   string_of_cexpr s
 
 type kind_t = Function | Procedure
@@ -1019,7 +1015,8 @@ let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter
       if length vs <> length ts then
       clierr sr "[gen_prim_call] Wrong number of type arguments"
       ;
-      let s = gen_prim_call syms bbdfns tn ge ct ts a "Error" sr sr2 in
+      let s = gen_prim_call syms bbdfns tn ge' ct ts a "Error" sr sr2 "atom" in
+      let s = sc "expr" s in
       "      // " ^ src_str ^ "\n" ^
       sub_start ^
       "      " ^ s ^ "\n" ^
@@ -1073,7 +1070,7 @@ let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter
             "      con_t *_p =\n" ^
             "      (FLX_NEWP(" ^ name ^ ")"^
             "(" ^ cat ",\n      " ("FLX_FPAR_PASS":: the_display) ^ "))\n"^
-            "      ->call(\n      " ^ args ^ "\n      );\n" ^
+            "      ->call(" ^ args ^ ");\n" ^
             "      while(_p) _p=_p->resume();\n" ^
             "      }\n"
 
@@ -1081,7 +1078,7 @@ let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter
             let call_string =
               "      return (FLX_NEWP(" ^ name ^ 
               ")(" ^ cat ",\n      " ("FLX_FPAR_PASS":: the_display) ^
-              "))\n      ->call(\n      " ^ args ^ "\n      );\n"
+              "))\n      ->call(" ^ args ^ ");\n"
             in
             if is_jump
             then
@@ -1314,7 +1311,7 @@ let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter
       let n = !counter in incr counter;
       needs_switch := true;
       "      //read variable\n" ^
-      "      p_message = &(" ^ get_var_ref syms bbdfns this index ts^");\n" ^
+      "      p_message = &" ^ get_var_ref syms bbdfns this index ts^";\n" ^
       "      action = wait_action;\n" ^
       "      FLX_SET_PC(" ^ si n ^ ")\n" ^
       "      return this;\n" ^
@@ -1564,8 +1561,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
     in
     let call =
       cont ^name^
-      "::call(\n" ^ arg_sig ^
-      "){\n" ^
+      "::call(" ^ arg_sig ^ "){\n" ^
       (
         "  _caller = _ptr_caller;\n" ^
         (match length bps with
@@ -2090,7 +2086,8 @@ try
           (* do we need tsubst vs ts t? *)
           let tn t = cpp_typename syms (Flx_typing.lower t) in
           let ts = List.map tn ts in
-          let s = Flx_csubst.csubst sr sr s [] [] "Error" "Error" ts in
+          let s = Flx_csubst.csubst sr sr s [] [] "Error" "Error" ts "atom" in
+          let s = Flx_cexpr.sc "expr" s in
           if not (Hashtbl.mem insts s) then
           begin
             Hashtbl.add insts s ();
@@ -2198,7 +2195,8 @@ try
           (* do we need tsubst vs ts t? *)
           let tn t = cpp_typename syms (Flx_typing.lower t) in
           let ts = List.map tn ts in
-          let s = Flx_csubst.csubst sr sr s [] [] "Error" "Error" ts in
+          let s = Flx_csubst.csubst sr sr s [] [] "Error" "Error" ts "atom" in
+          let s = Flx_cexpr.sc "expr" s in
           if not (Hashtbl.mem insts s) then
           begin
             Hashtbl.add insts s ();

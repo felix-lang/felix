@@ -25,6 +25,7 @@ open Flx_typing
 open Flx_srcref
 open Flx_unify
 open Flx_name
+open Flx_cexpr
 open Flx_csubst
 open Flx_exceptions
 open Flx_treg
@@ -130,7 +131,10 @@ let gen_type_name syms bbdfns (index,typ) =
       in
       let instance_name = cn typ in
       let tss = map tn ts in
-      let instance = csubst sr sr ct [] [] "Error" "Error" tss in
+      let instance = 
+        try sc "expr" (csubst sr sr ct [] [] "Error" "Error" tss "atom") 
+        with Not_found -> failwith "[gen_type_name] Unexpected error in csubst"
+      in
 
       (* special hack to avoid 'typedef int int' when we decide
       to use the native typename in generated code instead of

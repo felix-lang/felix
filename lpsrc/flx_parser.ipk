@@ -786,6 +786,10 @@ adjectives:
   | adjective adjectives { $1 :: $2 }
   | { [] }
 
+opt_prec:
+  | IS NAME { snd $2 }
+  | { "" }
+
 function_definition:
   | adjectives FUNCTION NAME tvarlist fun_args opt_type_expr EQRIGHTARROW expr SEMI
     { 
@@ -817,13 +821,14 @@ function_definition:
       in mkcurry sr name vs args return_type kind body
     }
   
-  | adjectives FUNCTION NAME tvarlist COLON type_expr opt_cstring requires_clause SEMI 
+  | adjectives FUNCTION NAME tvarlist COLON type_expr opt_cstring opt_prec requires_clause SEMI 
     { 
       let name = snd $3 
       and vs = List.map snd $4
       and t = typecode_of_expr $6 
-      and sr = rstoken $2 $9
-      and reqs = $8 
+      and sr = rstoken $2 $10
+      and prec = $8
+      and reqs = $9 
       in
       let ct =  
         match $7 with 
@@ -841,9 +846,9 @@ function_definition:
         then
           let vs = vs @ ["_varargs"] in
           let args = List.rev (`AST_name (sr,"_varargs",[]) :: List.tl (List.rev args)) in
-          `AST_fun_decl (sr, name, vs, args,  ret,  ct, reqs) 
+          `AST_fun_decl (sr, name, vs, args,  ret,  ct, reqs,prec) 
         else
-          `AST_fun_decl (sr, name, vs, args,  ret,  ct, reqs) 
+          `AST_fun_decl (sr, name, vs, args,  ret,  ct, reqs,prec) 
       | _ -> 
         failwith 
         (
@@ -898,9 +903,9 @@ procedure_definition:
         then
           let vs = vs @ ["_varargs"] in
           let args = List.rev (`AST_name (sr,"_varargs",[]) :: List.tl (List.rev args)) in
-          `AST_fun_decl (sr, name, vs, args,  `AST_void sr,  ct,$7) 
+          `AST_fun_decl (sr, name, vs, args,  `AST_void sr,  ct,$7,"") 
         else
-          `AST_fun_decl (sr,name,vs, args,`AST_void sr, ct, $7) 
+          `AST_fun_decl (sr,name,vs, args,`AST_void sr, ct, $7,"") 
     }
 
 @head(3,'Object')

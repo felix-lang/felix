@@ -224,7 +224,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       sbt syms.dfns t)
 
 
-    | `SYMDEF_fun (ts,ret,ct,reqs) ->
+    | `SYMDEF_fun (ts,ret,ct,reqs,prec) ->
       let ts = map bt ts in
       let bret = bt ret in
       let reqs = bind_reqs reqs in
@@ -232,7 +232,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
         | `BTYP_void ->
           `BBDCL_proc (vs, ts,ct,reqs)
         | _ ->
-          `BBDCL_fun (vs, ts,bret,ct,reqs)
+          `BBDCL_fun (vs, ts,bret,ct,reqs,prec)
       in
       Hashtbl.add bbdfns i (name,None,sr,bbdcl);
       begin

@@ -134,7 +134,7 @@ and uses syms used bbdfns i =
       | `BBDCL_var (_,t) -> ut t
 
       | `BBDCL_const (_,t,_,reqs) -> ut t; iter ur reqs
-      | `BBDCL_fun (_,ps, ret, _,reqs) -> iter ut ps; ut ret; iter ur reqs
+      | `BBDCL_fun (_,ps, ret, _,reqs,_) -> iter ut ps; ut ret; iter ur reqs
       | `BBDCL_proc (_,ps, _, reqs)  -> iter ut ps; iter ur reqs
 
       | `BBDCL_abs (_,_,_,reqs) -> iter ur reqs

@@ -266,7 +266,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     do_reqs vs reqs
 
 
-  | `BBDCL_fun (vs,argtypes,ret,_,reqs) ->
+  | `BBDCL_fun (vs,argtypes,ret,_,reqs,_) ->
     (*
     print_endline ("Handling requirements of fun " ^ id);
     *)

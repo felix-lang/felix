@@ -419,9 +419,9 @@ let rec build_tables syms name level parent grandparent root asms =
           ;
           add_tvars privtab
 
-        | `DCL_fun (ts,t,c,reqs) ->
+        | `DCL_fun (ts,t,c,reqs,prec) ->
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
-            symdef=`SYMDEF_fun (ts,t,c,reqs)}
+            symdef=`SYMDEF_fun (ts,t,c,reqs,prec)}
           ;
           if access = `Public then add_function pub_name_map id n;
           add_function priv_name_map id n
@@ -481,7 +481,8 @@ let rec build_tables syms name level parent grandparent root asms =
                       ts,
                       utype,
                       "_uctor_(" ^ si ctor_idx ^ 
-                      ", new(gc,@t) #t($t))",[]
+                      ", new(gc,@t) #t($t))",[],
+                      "primary"
                     )
                   in 
                     dcl
@@ -492,7 +493,8 @@ let rec build_tables syms name level parent grandparent root asms =
                     [t],
                     utype,
                     "_uctor_(" ^ si ctor_idx ^ 
-                    ", new(gc,@1) #1($1))",[]
+                    ", new(gc,@1) #1($1))",[],
+                    "primary"
                   )
             and ctor_match = 
               if unit_sum
@@ -501,14 +503,16 @@ let rec build_tables syms name level parent grandparent root asms =
                 (
                   [utype],
                   flx_bool,
-                  "($1 ==" ^ si ctor_idx ^")",[]
+                  "($1 ==" ^ si ctor_idx ^")",[],
+                  "primary"
                 )
               else
                 `SYMDEF_fun 
                 (
                   [utype],
                   flx_bool,
-                  "($1.variant==" ^ si ctor_idx ^")",[]
+                  "($1.variant==" ^ si ctor_idx ^")",[],
+                  "primary"
                 )
             and ctor_match_name ="_match_ctor_" ^ component_name 
             in
@@ -528,7 +532,7 @@ let rec build_tables syms name level parent grandparent root asms =
             | _ -> (* non-constant constructor *)
               let dtor_idx = !counter in incr counter;
               let dtor_name = "_ctor_arg_" ^ component_name in
-              let dtor_dcl = `SYMDEF_fun ([utype],t,"(*(#0*)$1.data)",[]) in
+              let dtor_dcl = `SYMDEF_fun ([utype],t,"(*(#0*)$1.data)",[],"primary") in
               if print_flag then print_endline ("//  " ^ spc ^ si dtor_idx ^ " -> " ^ dtor_name); 
               Hashtbl.add dfns dtor_idx {id=dtor_name;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=dtor_dcl};
               if access = `Public then add_function pub_name_map dtor_name dtor_idx;
@@ -562,7 +566,7 @@ let rec build_tables syms name level parent grandparent root asms =
             begin
               let getn = !counter in incr counter;
               let get_name = "get_" ^ component_name in
-              let get_dcl = `SYMDEF_fun ([stype],t,"$1." ^ component_name,[]) in
+              let get_dcl = `SYMDEF_fun ([stype],t,"$1." ^ component_name,[],"primary") in
               Hashtbl.add dfns getn {
                 id=get_name;sr=sr;parent=parent;vs=vs;
                 pubmap=pubtab;privmap=privtab;dirs=dirs;
@@ -577,7 +581,7 @@ let rec build_tables syms name level parent grandparent root asms =
             begin
               let getn = !counter in incr counter;
               let get_name = "get_" ^ component_name in
-              let get_dcl = `SYMDEF_fun ([`TYP_lvalue stype],`TYP_lvalue t,"$1." ^ component_name,[]) in
+              let get_dcl = `SYMDEF_fun ([`TYP_lvalue stype],`TYP_lvalue t,"$1." ^ component_name,[],"primary") in
               Hashtbl.add dfns getn {
                 id=get_name;sr=sr;parent=parent;vs=vs;
                 pubmap=pubtab;privmap=privtab;dirs=dirs;
