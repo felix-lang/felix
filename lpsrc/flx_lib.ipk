@@ -190,8 +190,12 @@ using namespace std;
   #floating
   "float"   : "float",
   "double"  : "double",
-  "ldouble"  : "long double",
   }
+
+@if HAVE_LONGDOUBLE:
+   tmap["ldouble"]="long double"
+  else:
+   tmap["ldouble"]="double"
 
 @if HAVE_LONGLONG:
    tmap["vlong"]="long long"
@@ -218,7 +222,7 @@ using namespace std;
      SIZEOF_LONG*8 : "long",
    }
    if HAVE_LONGLONG:
-     sizes[SIZEOF_LONGLONG]="long long"
+     sizes[SIZEOF_LONGLONG*8]="long long"
    for size in [16,32,64]:
      try:
        t = sizes[size]
