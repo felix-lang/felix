@@ -225,7 +225,7 @@ let mkcurry sr name args return_type body =
 %token<Flx_types.srcref> DOTDOT SLOSH DOTDOTDOT
 
 /* operator keywords */
-%token<Flx_types.srcref> NOT OR AND LAMBDA DOLLAR
+%token<Flx_types.srcref> NOT OR AND DOLLAR
 
 /* patterns */
 %token<Flx_types.srcref> AS UNDERSCORE REGEXP WHEN ALL

@@ -2121,13 +2121,13 @@ and typeofindex'
       short_string_of_src sr
     )
 
-and cal_apply syms ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
+and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let rest =
     match t1 with
     | `BTYP_function (argt,rest) ->
       if argt = t2 then rest
       else 
-        failwith 
+        clierr sr
         (
           "[ebind:cal_apply] Function " ^
           string_of_bound_expression syms.dfns tbe1 ^
@@ -2149,7 +2149,7 @@ and cal_apply syms ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
       && argt' = lower t2
       then `BTYP_binding (rest, rest')
       else 
-        failwith 
+        clierr sr
         (
           "[ebind:cal_apply] Function argument " ^
           string_of_bound_expression syms.dfns tbe2 ^
@@ -2165,15 +2165,15 @@ and cal_apply syms ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
       begin match entry with
       | `SYMDEF_dcl (`DCL_struct cs) -> t1
       | _ -> 
-        failwith 
+        clierr sr
         (
-          "Attempt to apply non-struct " ^ id ^ ", type " ^
+          "[cal_apply] Attempt to apply non-struct " ^ id ^ ", type " ^
           string_of_btypecode syms.dfns t1 ^
           " as constructor"
         )
       end
     | _ -> 
-      failwith 
+      clierr sr
       (
         "Attempt to apply non-function\n" ^
         string_of_bound_expression syms.dfns tbe1 ^ 
@@ -2197,7 +2197,7 @@ and cal_apply syms ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let rest = varmap_subst syms.varmap rest in
   if var_occurs rest 
   then 
-    failwith 
+    clierr sr
     (
       "[cal_apply] Type variable in return type applying\n" ^
         string_of_bound_expression syms.dfns tbe1 ^ 
@@ -3061,7 +3061,7 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
         `BEXPR_ref index, 
         `BTYP_pointer (typeofindex syms exclude expr_fixlist depth excluded_dirs index)
       | `SYMDEF_parameter _ -> 
-        failwith 
+         clierr srr 
         (
           "[bind_expression] " ^
           short_string_of_src srr ^
@@ -3069,7 +3069,7 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
           short_string_of_src sr
         )
       | `SYMDEF_val _ ->
-        failwith 
+        clierr srr 
         (
           "[bind_expression] " ^
           short_string_of_src srr ^
@@ -3077,7 +3077,7 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
           short_string_of_src sr
         )
       | _ -> 
-        failwith 
+         clierr srr 
         (
           "[bind_expression] " ^
           short_string_of_src srr ^
@@ -3086,7 +3086,7 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
         )
       end
     | _ ->
-      failwith 
+       clierr srr 
         (
           "[bind_expression] " ^
           short_string_of_src srr ^
@@ -3097,11 +3097,11 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
 
   | `AST_deref (_,`AST_ref (sr,e)) -> be e
 
-  | `AST_deref (_,e) -> 
+  | `AST_deref (sr,e) -> 
     let e,t = be e in
     begin match t with 
     | `BTYP_pointer t -> `BEXPR_deref (e,t),t
-    | _ -> failwith "Dereference non pointer"
+    | _ -> clierr sr "Dereference non pointer"
     end
 
   | `AST_literal (sr,v) -> 
@@ -3125,32 +3125,33 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
           | `SYMDEF_interface (name_map,dirs) ->
             koenig_lookup syms sra exclude excluded_dirs id' name_map fn t2
 
-          | _ -> failwith ("Koenig lookup: parent for method apply not module")
+          | _ -> clierr sra ("Koenig lookup: parent for method apply not module")
         end
-      | _ -> failwith "apply method to nongenerative type"
+      | _ -> clierr sra "apply method to nongenerative type"
       end
     in
-      cal_apply syms tbe1 (be2, t2)
+      cal_apply syms sra tbe1 (be2, t2)
 
-  (* Note special case: apply(s1,s2) -> concat (s1,s2) *)
   | `AST_apply (sr,(f',a')) ->
     let (ba, ta) as a = be a' in
     let f = lookup sr f' ta in
     begin 
       match f,a with
-      | (_,`BTYP_name i),(_,`BTYP_name j) when i = j ->
-        let id,_,_,entry = get_data syms.dfns i in
-        if id = "string" 
-        then
-          match entry with
-          | `SYMDEF_dcl (`DCL_abs _) ->
-            be (`AST_apply (sr,(`AST_name (sr,"add"),`AST_tuple (sr,[f';a']))))
-          | _ ->
-            cal_apply syms f a
-        else
-          cal_apply syms f a
-      | _ ->
-        cal_apply syms f a
+      | (_,`BTYP_name i1),(_,`BTYP_name i2) ->
+        let id1,_,_,entry1 = get_data syms.dfns i1 in
+        let id2,_,_,entry2 = get_data syms.dfns i2 in
+        let apl name =
+          be (`AST_apply (sr,(`AST_name (sr,name),`AST_tuple (sr,[f';a']))))
+        in
+        begin
+          match id1,id2 with
+          | "string","string" -> apl "add"
+          | "ustring","ustring" -> apl "add"
+          | "string","int" -> apl "add"
+          | "ustring","int" -> apl "add"
+          | _ -> cal_apply syms sr f a
+        end
+      | _ -> cal_apply syms sr f a
     end
 
   | `AST_tuple (_,es) -> 
@@ -3179,7 +3180,7 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
     | `AST_case_tag (sr,v) ->
        be (`AST_match_case (sr,(v,e)))
 
-    | _ -> failwith "Expected variant constructor name in union decoder"
+    | _ -> clierr sr "Expected variant constructor name in union decoder"
     end
     
   | `AST_case_arg (sr,(v,e)) ->
@@ -3188,10 +3189,10 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
      | `BTYP_sum ls ->
        let n = List.length ls in
        if v<1 or v>n 
-       then failwith "Invalid sum index"
+       then clierr sr "Invalid sum index"
        else let t = List.nth ls (v-1) in
        `BEXPR_case_arg (v, e'),t
-     | _ -> failwith "Expected sum type"
+     | _ -> clierr sr "Expected sum type"
      end 
 
   | `AST_ctor_arg (sr,(qn,e)) ->
@@ -3208,7 +3209,7 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
     | `AST_case_tag (sr,v) ->
       be (`AST_case_arg (sr,(v,e)))
 
-    | _ -> failwith "Expected variant constructor name in union dtor"
+    | _ -> clierr sr "Expected variant constructor name in union dtor"
     end
 
   | `AST_regmatch (sr,(e,cls)) ->
@@ -3288,7 +3289,7 @@ and resolve_overload
   | [Unique (i,_)] -> Some (Simple i)
   | [Pair ((i,_),j)] -> Some (Bound (i,j))
   | [] -> None
-  | _ -> failwith ("Too many candidates match in overloading " ^ name)
+  | _ -> clierr sr ("Too many candidates match in overloading " ^ name)
   
 
 (* an environment is a list of hastables, mapping

@@ -1,4 +1,68 @@
 @head(1,'Felix Standard Library')
+@select(tangler('rtl/flx_i18n.hpp'))
+#ifndef FLX_I18N
+#define FLX_I18N
+#include <string>
+namespace flx { namespace i18n {
+   std::string utf8(unsigned long);
+}}
+#endif
+
+@select(tangler('rtl/flx_i18n.cpp'))
+#include "rtl/flx_i18n.hpp"
+namespace flx { namespace i18n {
+  std::string utf8(unsigned long i) 
+  {
+    char s[6];
+    if (i < 0x80UL ) 
+    {
+      s[0]= i;
+      s[1]= 0;
+    }
+    else if (i < 0x800UL ) 
+    {
+      s[0]=0xC0u | (i >> 6ul)  & 0x1Fu;
+      s[1]=0x80u | i           & 0x3Fu;
+      s[2]=0;
+    }
+    else if (i < 0x10000UL ) 
+    {
+      s[0]=0xE0u | (i >> 12ul) & 0xFu;
+      s[1]=0x80u | (i >> 6ul)  & 0x3Fu;
+      s[2]=0x80u | i           & 0x3F;
+      s[3]=0;
+    }
+    else if (i < 0x200000UL ) 
+    {
+      s[0]=0xF0u | (i >> 18ul) & 0x7u;
+      s[1]=0x80u | (i >> 12ul) & 0x3Fu;
+      s[2]=0x80u | (i >> 6ul)  & 0x3Fu;
+      s[3]=0x80u | i           & 0x3F;
+      s[4]=0;
+    }
+    else if (i < 0x4000000UL ) 
+    {
+      s[0]=0xF8u | (i >> 24ul) & 0x3u;
+      s[1]=0x80u | (i >> 18ul) & 0x3Fu;
+      s[2]=0x80u | (i >> 12ul) & 0x3Fu;
+      s[3]=0x80u | (i >> 6ul)  & 0x3Fu;
+      s[4]=0x80u | i           & 0x3Fu;
+      s[5]=0;
+    }
+    else 
+    {
+      s[0]=0xFCu | (i >> 30ul) & 0x1u;
+      s[1]=0x80u | (i >> 24ul) & 0x3Fu;
+      s[2]=0x80u | (i >> 18ul) & 0x3Fu;
+      s[3]=0x80u | (i >> 12ul) & 0x3Fu;
+      s[4]=0x80u | (i >> 6ul)  & 0x3Fu;
+      s[5]=0x80u | i           & 0x3Fu;
+      s[6]=0;
+    }
+    return s;
+  }
+}}
+
 @h=tangler('lib/std.flx')
 @select(h)
 header """
@@ -9,6 +73,7 @@ header """
 #include <assert.h>
 #include <limits.h>
 #include "rtl/boost_cstdint.hpp"
+#include "rtl/flx_i18n.hpp"
 #include <vector>
 #include <list>
 #include <set>
@@ -21,7 +86,7 @@ header """
 body """
 using namespace std;
 
-namespace std_flx {
+namespace flx { namespace lib {
   inline string mul(string s, int n) {
     string r = "";
     while(n--) r+=s;
@@ -45,7 +110,7 @@ namespace std_flx {
     if(m<0)  m=0;
     return s.substr(b,m);
   }
-}
+}}
 """;
 
 @tmap = {
@@ -284,22 +349,23 @@ module String
   open Bool;
   open Char;
   open Int;
-  proc set: &string * string = "$1->assign($1);";
+  proc set: &string * string = "$1->assign($2);";
   proc pluseq: &string * string = "$1->append($2);";
 
   fun len: string -> int = "$1.size()";
   fun add: string * string -> string = "$1+$2";
-  fun mul: string * int -> string = "std_flx::mul($1,$2)";
+  fun add: string * int -> string = "$1+flx::i18n::utf8($2)";
+  fun mul: string * int -> string = "flx::lib::mul($1,$2)";
   fun mul: char * int -> string = "string($2,$1)";
 
   fun subscript: string * int -> char = 
     "$1[$2<0??$1.size()+$2:$2]";
   fun copyfrom: string * int -> string = 
-    "std_flx::substr($1,$2,$1.size())";
+    "flx::lib::substr($1,$2,$1.size())";
   fun copyto: string * int -> string = 
-    "std_flx::substr($1,0,$2)";
+    "flx::lib::substr($1,0,$2)";
   fun substring: string * int * int -> string = 
-    "std_flx::substr($1,$2,$3)";
+    "flx::lib::substr($1,$2,$3)";
 
   // comparisons
   fun eq: string * string -> bool = "$1==$2";
@@ -323,17 +389,17 @@ module Ustring
 
   fun len: ustring -> int = "$1.size()";
   fun add: ustring * ustring -> ustring = "$1+$2";
-  fun mul: ustring * int -> ustring = "std_flx::mul($1,$2)";
+  fun mul: ustring * int -> ustring = "flx::lib::mul($1,$2)";
   fun mul: char * int -> ustring = "ustring($2,$1)";
 
   fun subscript: ustring * int -> char = 
     "$1[$2<0??$1.size()+$2:$2]";
   fun copyfrom: ustring * int -> ustring = 
-    "std_flx::substr($1,$2,$1.size())";
+    "flx::lib::substr($1,$2,$1.size())";
   fun copyto: ustring * int -> ustring = 
-    "std_flx::substr($1,0,$2)";
+    "flx::lib::substr($1,0,$2)";
   fun subustring: ustring * int * int -> ustring = 
-    "std_flx::substr($1,$2,$3)";
+    "flx::lib::substr($1,$2,$3)";
 
   // comparisons
   fun eq: ustring * ustring -> bool = "$1==$2";

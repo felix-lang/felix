@@ -730,60 +730,67 @@ input iterators with comparable value types]
 finding the longest matching prefix, which requires
 forward iterators]
 
-@head(2,'Expression Macros')
+@head(2,'Expression Macro Facility')
 Felix provides an powerful and dangerous 
-expression macro facility. Expression macros
-allow you to define a name for an expression,
-possibly parameterised, so that each use of
-the name is replace by its definition, 
-after replacement of any parameters with
-actual argumets.
+expression macro facility. Felix macros 
+generally respect scope, so any definitions
+nested in a function or module, for example,
+will not be visible outside that scope.
 @p()
-This facility loosly resembles C's #define
-mechanism but differs in many important respects.
-@p()
-@begin_list("number")
-@item()
-Felix expression macros define 
-executable expressions.
-@item()
-Felix expression macros can only be used in
-executable expressions.
-@item()
-Felix macros respect scope.
-@item()
-After replacement the resulting expression
-is rescanned until no more replacement 
-is possible.
-@item()
-If a macro has no arguments, a call
-is replaced immediately.
-@item()
-If a macro has parameters, the actual arguments are
-expanded first, and then the call or application 
-is replaced with the body expanded in the context
-enriched by definition of the parameters as macros
-with bodies the expanded arguments.
-@item()
-If a macro has arguments, but none are given,
-the macro is not expanded immediately. It may,
-however, be exanded later in a rescan.
-@item()
-A macro can be defined any number of times,
-only the latest in scope definition is used.
-@end_list()
-@p()
-Below are some simple examples.
-You should note that whilst macros
-are always expressions, they can be expressions
-denoting a procedure.
-@p()
-A more precise statement of expansion rules is:
-macros are expanded by a recursive descent algorithm
-which proceeds depth first top down. Expansion
-occurs both on the way down and on the way up.
+Expresion symbols only expand inside expressions.
 
-@select(tangler(tdir+'tut115b.flx'))
+@head(3,'Macro values')
+The macro val statement defines a LHS symbol
+as the expansion of the RHS. The same
+value can be defined any number of times,
+a redefinition hides the preceding defintion
+until the end of the scope.
+
+@select(tangler(tdir+'tut115b1.flx'))
+#include <std.flx>
+macro val mx1 = 1+y;
+macro val mx2 = 2+y;
+val y = 100;
+print mx1; endl; // 101
+print mx2; endl; // 102
+{
+  macro val mx1 = 3+y; // 103
+  print mx1; endl;
+  macro val mx2 = mx2 + 10; // 112
+};
+print mx1; endl; // 101
+print mx2; endl; // 102
+
+@head(3,'Macro variables')
+The macro var statement defines a LHS symbol
+as the expansion of the RHS. The same
+value can be defined any number of times,
+a redefinition hides the preceding defintion
+until the end of the scope.
+@p()
+Macro variables can be assigned a new value.
+
+@select(tangler(tdir+'tut115b1.flx'))
+#include <std.flx>
+macro var mx1 = 1+y;
+val y = 100;
+print mx1; endl; // 101
+{
+  macro mx1 = 3+y; // 103 [assignment!]
+  print mx1; endl;
+};
+print mx1; endl; // 103 [uses assigned value]
+
+
+@head(3,'Macro functions')
+You can also define a macro function.
+The expansion rules are: the body
+is not expanded during definition.
+At the point of call, the arguments
+are expanded and then substituted into
+the body, then the body is expanded.
+
+@select(tangler(tdir+'tut115b3.flx'))
 #include <std.flx>
 
 // a basic expression macro without parameters
@@ -924,6 +931,12 @@ val lib = openlib ("MyLibrary" ext);
 
 @head(2,'Procedure Macros')
 A procedure macro represents a list of statements.
+Macros defined in macro procedures are exported
+to the surrounding scope so that macro procedures
+can be used to package up a set of macro definitions.
+This represents a special exception to the rule
+that macros respect scope.
+
 @select(tangler(tdir+'tut115d.flx'))
 #include <std.flx>
 // procedure macro
@@ -941,6 +954,51 @@ macro proc k
   val xx = 2;
   k();
 };
+
+macro proc pkg (x)
+{
+  macro proc printxy (y) { print (x+y); endl; }
+  macro val doublex = x + x;
+}
+
+pkg 10;
+printxy doublex; // prints 30
+
+macro proc dump_s (sts:proc)
+{
+  print "Start"; endl;
+  sts;
+  print "End"; endl;
+}
+
+macro proc dump_e (sts:fun)
+{
+  print "Start"; endl;
+  sts;
+  print "End"; endl;
+}
+
+dump_s { print 1; endl; print 2; endl; };
+dump_e { val x = 1; print x; endl; print 2; endl; };
+
+macro proc todump { val dd = 1; print "Dumped"; endl; }
+dump_s todump;
+dump_e todump;
+
+macro proc todump_wa (x) { print x; endl; }
+dump_s (todump_wa 66);
+dump_e (todump_wa 66);
+
+@doc()
+Note there is a crucial difference between procedure
+and expressions macros. In the above example,
+dump requires a proc argument. When the parameter
+is expanded, the list of statements it represented
+is produced. Had this been a function macro,
+the result would have been an the call executable lambda
+expression applied to unit argument. The difference
+is in the handling of any variable declarations:
+they'd be exposed in the first case, but not the second.
 
 @head(2,'Expansion Barrier')
 The symbol '$' can be used to block expansion.
@@ -978,24 +1036,25 @@ or which recurs.
 
 @select(tangler(tdir+'tut115f.flx'))
 #include <std.flx>
+
 macro ident oldname = newname;
 fun oldname(x:int):int = { return x; }
 print (newname 1); endl;
 
 macro proc make_ints
 {
-  macro ident old = v;
-  macro ident v = new;
-  val v = old+1;
+  macro ident vnew = new;
+  val vnew = vold+1;
+  macro vold = vnew;
 }
 
 val x = 1;
 
-macro ident v = x;
+macro var vold = x;
 make_ints;
 make_ints;
 make_ints;
-print v; endl;
+print vold; endl;
 
 @head(2,'Basic Bindings')
 In the previous examples, we've use the Felix standard
@@ -2572,7 +2631,7 @@ Note that if the string is 8 bit, UTF-8 encoding will be applied.
 
 @select(tangler(tdir+'tut138a.flx'))
 #include <std.flx>
-string s = "Hello" 32; // add a space after "Hello"
+var s = "Hello" 32; // add a space after "Hello"
 s = s s; // says "Hello Hello "
 print s; endl;
 

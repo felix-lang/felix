@@ -71,7 +71,6 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "class", (fun s ->  CLASS s);
     "exceptions", (fun s ->  EXCEPTIONS s);
     "module", (fun s ->  MODULE s);
-    "lambda", (fun s ->  LAMBDA s);
     "goto", (fun s ->  GOTO s);
     "export", (fun s ->  EXPORT s);
     "inf", (fun s -> INF s);

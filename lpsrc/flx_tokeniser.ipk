@@ -165,7 +165,6 @@ let string_of_token (tok :Flx_parse.token): string =
   | EXCEPT _ -> "except"
   | FINALLY _ -> "finally"
   | UNION _ -> "union"
-  | LAMBDA _ -> "lambda"
   | WHEN _ -> "when"
   | AS _ -> "as"
   | ALL _ -> "as"
@@ -280,7 +279,6 @@ let src_of_token t = match t with
   | NOT s 
   | OR s 
   | AND s 
-  | LAMBDA s 
   | AS s 
   | ALL s 
   | REGEXP s 

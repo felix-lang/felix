@@ -241,7 +241,7 @@ try:
     TESTS.sort()
     BAD_TESTS.sort()
 
-  # STEP 1: Compile all C files
+  # STEP 1: Compile all copiler support C files
   for cobject in COBJECTS.keys():
     flags = COBJECTS[cobject]
     file = 'src/'+cobject
@@ -311,6 +311,7 @@ try:
           "rtl/flx_gc.cpp " +
           "rtl/flx_collector.cpp " +
           "rtl/flx_rtl.cpp " +
+          "rtl/flx_i18n.cpp " +
           "rtl/" + basename + ".cpp -o bin/" + basename)
       except MakeError:
         print "Unable to build driver"
