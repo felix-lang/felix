@@ -51,6 +51,7 @@ val version_string : string
 @include_file ('flx_use.ipk')
 @include_file ('flx_name.ipk')
 @include_file ('flx_tgen.ipk')
+@include_file ('flx_csubst.ipk')
 @include_file ('flx_gen.ipk')
 @pop_head()
 

@@ -548,7 +548,8 @@ type sym_state_t =
   counter : int ref;
   varmap : typevarmap_t;
   ticache : (int, btypecode_t) Hashtbl.t;
-  env_cache : (int, env_t) Hashtbl.t
+  env_cache : (int, env_t) Hashtbl.t;
+  registry : type_registry_t
 }
 
 @doc()

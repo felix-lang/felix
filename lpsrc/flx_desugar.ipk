@@ -231,6 +231,19 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
   | `AST_letin (sr,(pat,e1,e2)) ->
     rex (`AST_match (sr,(e1,[pat,e2])))
     
+  (* MATCH HANDLING NEEDS TO BE REWORKED, THE SWITCHING SHOULD BE
+     DELAYED TO ALLOW TYPE BASED OPTIMISATION WHERE THE TOP
+     LEVEL MATCH ON A UNION CAN USE A SWITCH.
+
+     ALSO, TO ALLOW MULTIPLE PATTERNS WITH ONE HANDLER,
+     GIVE THE HANDLER PARAMETERS, AND HAVE THE TOP LEVEL
+     MATCH HANDLERS FOR EACH CASE FOR THAT CODE CALL IT:
+
+     eg:
+     
+     match x with | A x | B x => x endmatch
+  *)
+  
   | `AST_match (sr,(e,pss)) ->
     if List.length pss = 0 then failwith "Empty Pattern";
 

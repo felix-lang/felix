@@ -3,7 +3,7 @@
 @select(h)
 open Flx_types
 
-val subst:
+val csubst:
   sym_state_t ->
   fully_bound_symbol_table_t ->
   string ->
@@ -38,6 +38,8 @@ open Flx_tgen
    ?a: expands to ?1,?2, ...
 *)
 
+let catmap s f x = String.concat s (List.map f x)
+
 (* finite state machine states *)
 type mode_t = 
  | Normal
@@ -45,8 +47,8 @@ type mode_t =
  | CStringBackslash | CCharBackslash
  | Dollar | Hash | Earhole | Backquote | Quest (* last char was one of these *)
  | DollarDigits | HashDigits | EarholeDigits | BackquoteDigits | QuestDigits
-
-let subst sym_state bbdfns ct args typs retyp gargs =
+  
+let csubst sym_state bbdfns ct args typs retyp gargs =
   let registry = sym_state.registry 
   and dfns = sym_state.dfns in
   let n = List.length args in
@@ -151,9 +153,11 @@ let subst sym_state bbdfns ct args typs retyp gargs =
       | 'a' ->
         Buffer.add_string buf
         (
-          catmap "," (fun t -> cpp_typename bbdfns (lower t)) gargs
+          catmap "," (fun t -> cpp_typename sym_state bbdfns (lower t)) gargs
         );
         mode := Normal
+
+      | _ -> serr i "Expected '?a' or digit after ?"
       end
 
     | Earhole ->
@@ -263,7 +267,7 @@ let subst sym_state bbdfns ct args typs retyp gargs =
           mode := Normal;
           trans i ch
 
-    | QuoteDigits ->
+    | QuestDigits ->
         if !digits> List.length gargs
         then serr i ("Generic type arg no " ^ string_of_int !digits ^ " too large")
         else if !digits<1 then serr i ("Generic type arg no " ^ string_of_int !digits ^ " too small")

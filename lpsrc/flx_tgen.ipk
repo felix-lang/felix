@@ -2,36 +2,36 @@
 @select(h)
 open Flx_types
 val cpp_typename :
-  type_registry_t ->
-  symbol_table_t ->
+  sym_state_t ->
   fully_bound_symbol_table_t ->
   btypecode_t -> string
 
 val cpp_classname :
-  type_registry_t ->
-  symbol_table_t ->
+  sym_state_t ->
   fully_bound_symbol_table_t ->
   btypecode_t -> string
 
 val collect_types :
-  type_registry_t ->
-  int ref ->
-  symbol_table_t ->
+  sym_state_t ->
   fully_bound_symbol_table_t ->
   unit
 
 val gen_types :
-  type_registry_t ->
-  symbol_table_t ->
+  sym_state_t ->
   fully_bound_symbol_table_t ->
   (int * btypecode_t) list -> string
 
 val gen_type_names :
-  type_registry_t ->
-  symbol_table_t ->
+  sym_state_t ->
   fully_bound_symbol_table_t ->
   (int * btypecode_t) list -> string
 
+
+val ptr_map_of_type:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  btypecode_t ->
+  string
 
 @h = tangler('src/flx_tgen.ml')
 @select(h)
@@ -70,29 +70,29 @@ will be caught here, since the only thing you can
 do with a tuple is make it the argument of a function.
 
 @select(h)
-let register_type_nr registry counter dfns t =
+let register_type_nr sym_state t =
   match t with
   | `BTYP_fix _ 
   | `BTYP_tuple []
     -> ()
   | _ 
     ->
-    if not (Hashtbl.mem registry t)
+    if not (Hashtbl.mem sym_state.registry t)
     then
-      let n = !counter in
-      incr counter;
-      Hashtbl.add registry t n
+      let n = !(sym_state.counter) in
+      incr sym_state.counter;
+      Hashtbl.add sym_state.registry t n
 
-let rec register_type_r registry counter dfns bbdfns exclude t =
+let rec register_type_r sym_state bbdfns exclude t =
   (*
   print_endline (string_of_btypecode dfns t);
   *)
   let t = lower t in
   if not (List.mem t exclude) then
   let rr t' = register_type_r 
-    registry counter dfns bbdfns (t :: exclude) t'
+    sym_state bbdfns (t :: exclude) t'
   in
-  let rnr t = register_type_nr registry counter dfns t in
+  let rnr t = register_type_nr sym_state t in
   match unfold t with
   | `BTYP_void -> ()
   | `BTYP_none -> ()
@@ -108,7 +108,7 @@ let rec register_type_r registry counter dfns bbdfns exclude t =
     let id, parent, entry = 
       try Hashtbl.find bbdfns index 
       with Not_found -> 
-        let id,sr,parent,entry= Hashtbl.find dfns index in
+        let id,sr,parent,entry= Hashtbl.find sym_state.dfns index in
         failwith 
         (
           "register_type_r Can't find " ^ 
@@ -141,7 +141,7 @@ let rec register_type_r registry counter dfns bbdfns exclude t =
       failwith 
       (
         "[register_type_r] expected type declaration, got " ^
-        string_of_bbdcl dfns entry index
+        string_of_bbdcl sym_state.dfns entry index
       )
     end
   | _ -> failwith "Unexpected metatype in register type"
@@ -162,13 +162,16 @@ let mangle_cpp_typename ct =
   done;
   Buffer.contents buf
 
-let rec cpp_typename registry dfns bbdfns t = 
+let rec cpp_typename  sym_state bbdfns t = 
+  let dfns = sym_state.dfns 
+  and registry = sym_state.registry 
+  in
   let t' = fold t in
   (*
   print_endline ("type  : " ^ string_of_btypecode dfns t);
   print_endline ("folded: " ^ string_of_btypecode dfns t');
   *)
-  let tn t = cpp_typename registry dfns bbdfns t in
+  let tn t = cpp_typename sym_state bbdfns t in
   try match t' with
   | `BTYP_var i ->  failwith "[cpp_typename] Can't name type type variable"
   | `BTYP_fix i ->  failwith "[cpp_typename] Can't name type fixpoint"
@@ -209,8 +212,9 @@ let rec cpp_typename registry dfns bbdfns t =
       " to be in registry"
     )
 
-let rec cpp_classname registry dfns bbdfns t = 
-  let tn t = cpp_typename registry dfns bbdfns t in
+let rec cpp_classname sym_state bbdfns t = 
+  let registry = sym_state.registry in
+  let tn t = cpp_typename sym_state bbdfns t in
   try match fold t with
   | `BTYP_var i -> failwith "[cpp_classname] Can't name type variable"
   | `BTYP_fix i -> failwith "[cpp_classname] Can't name type fixpoint"
@@ -238,7 +242,7 @@ let rec cpp_classname registry dfns bbdfns t =
         failwith 
         (
           "[cpp_classname] expected type declaration, got " ^
-          string_of_bbdcl dfns entry index
+          string_of_bbdcl sym_state.dfns entry index
         )
     end
   
@@ -247,7 +251,7 @@ let rec cpp_classname registry dfns bbdfns t =
     failwith 
     (
       "[cpp_classname] Expected type "^ 
-      string_of_btypecode dfns t ^ 
+      string_of_btypecode sym_state.dfns t ^ 
       " to be in registry"
     )
 
@@ -264,9 +268,13 @@ be used unless the type is an argument of some
 function or procedure, which we should pick up here.
 @select(h)
 
-let collect_types registry counter dfns bbdfns = 
-  let rr t = register_type_r registry counter dfns bbdfns [] t in
-  let rnr t = register_type_nr registry counter dfns t in
+let collect_types sym_state bbdfns = 
+  let registry = sym_state.registry
+  and dfns = sym_state.dfns 
+  and counter = sym_state.counter
+  in
+  let rr t = register_type_r sym_state bbdfns [] t in
+  let rnr t = register_type_nr sym_state t in
   Hashtbl.iter
   begin fun index (id,parent,bbdcl) -> 
     (* if proper_descendant dfns parent
@@ -281,7 +289,7 @@ let collect_types registry counter dfns bbdfns =
         | Some i ->string_of_int i
         | None -> "None"
       );
-      print_endline ("=======>  " ^ string_of_bbdcl dfns bbdcl index);
+      print_endline ("=======>  " ^ string_of_bbdcl sym_state.dfns bbdcl index);
       *)
       match bbdcl with
       | `BBDCL_abs _ -> rnr (`BTYP_name index)
@@ -326,8 +334,8 @@ let is_unitsum (t:btypecode_t) = match t with
 
   | _ -> false
 
-let gen_type_name registry dfns bbdfns (index,typ) =
-  let tn t = cpp_classname registry dfns bbdfns t in
+let gen_type_name sym_state bbdfns (index,typ) =
+  let tn t = cpp_classname sym_state bbdfns t in
   match typ with
   | `BTYP_fix i -> ""
   | `BTYP_var i -> failwith "[gen_type_name] Can't gen name of type variable"
@@ -368,12 +376,15 @@ let gen_type_name registry dfns bbdfns (index,typ) =
       failwith 
       (
         "[gen_type_name] expected type declaration, got " ^
-        string_of_bbdcl dfns entry index
+        string_of_bbdcl sym_state.dfns entry index
       )
     end
   | _ -> failwith "Unexpected metatype in gen_type_name"
 
-let gen_type registry dfns bbdfns (index,typ) =
+let ptr_map_of_type sym_state bbdfns t =
+ cpp_typename sym_state bbdfns t ^ "_ptr_map"
+
+let gen_type sym_state bbdfns (index,typ) =
   (*
   print_endline (
     "GENERATING TYPE " ^
@@ -381,9 +392,9 @@ let gen_type registry dfns bbdfns (index,typ) =
     string_of_btypecode dfns typ
   );
   *)
-  "//TYPE "^string_of_int index^": " ^ string_of_btypecode dfns typ ^ "\n"^
-  let tn t = cpp_typename registry dfns bbdfns t in
-  let cn t = cpp_classname registry dfns bbdfns t in
+  "//TYPE "^string_of_int index^": " ^ string_of_btypecode sym_state.dfns typ ^ "\n"^
+  let tn t = cpp_typename sym_state bbdfns t in
+  let cn t = cpp_classname sym_state bbdfns t in
   match unfold typ with
 
   | `BTYP_var _ -> failwith "[gen_type] can't gen type variable"
@@ -530,18 +541,24 @@ let gen_type registry dfns bbdfns (index,typ) =
       failwith 
       (
         "[gen_typ] expected type declaration, got " ^
-        string_of_bbdcl dfns entry index
+        string_of_bbdcl sym_state.dfns entry index
       )
     end
   | _ -> failwith "Unexpected metatype in gen_type"
 
-let gen_type_names registry dfns bbdfns ts = 
+let gen_type_names sym_state bbdfns ts = 
   (* print_endline "GENERATING TYPE NAMES"; *)
-  String.concat "" 
-  (List.map (gen_type_name registry dfns bbdfns) ts)
+  let s = Buffer.create 100 in
+  List.iter 
+  (fun t -> Buffer.add_string s (gen_type_name sym_state bbdfns t))
+  ts;
+  Buffer.contents s
 
-let gen_types registry dfns bbdfns ts = 
+let gen_types sym_state bbdfns ts = 
   (* print_endline "GENERATING TYPES"; *)
-  String.concat "" 
-  (List.map (gen_type registry dfns bbdfns) ts)
+  let s = Buffer.create 100 in
+  List.iter 
+  (fun t -> Buffer.add_string s (gen_type sym_state bbdfns t))
+  ts;
+  Buffer.contents s
 

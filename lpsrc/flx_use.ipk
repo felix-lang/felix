@@ -22,6 +22,87 @@ open Flx_srcref
 
 module BidSet = PosSet
 
+(* Elide calls to useless procedures. Note we can't simply
+elide the procedures, since they might be addressed/passed
+as an argument, or be a root [main or exported]. 
+
+Instead we rely on 'elide_useless' to elide procedures 
+which are unused, by first eliding the call.
+*)
+
+exception Useful
+let rec isuseless bbdfns exes = 
+  try
+    List.iter
+    (fun x -> match x with
+      | `BEXE_call ((`BEXPR_closure i,_),_) 
+      | `BEXE_call ((`BEXPR_name i,_),_) 
+        ->
+        begin try 
+          match Hashtbl.find bbdfns i with 
+          | _,_,`BBDCL_procedure (_,exes,_) -> 
+            if not (isuseless bbdfns exes) 
+            then raise Useful
+            else ()
+          | _,_,`BBDCL_proc _
+          | _,_,`BBDCL_val _
+          | _,_,`BBDCL_var _
+            -> raise Useful
+          | _ -> failwith "[isuseless] Expected procedure type"
+        with 
+          Not_found -> ()
+        end
+      | `BEXE_call _ (* assume useful if not call to name useful proc *)
+      | `BEXE_read _ (* useful even if local, due to side effect *)
+      | `BEXE_code _ 
+      | `BEXE_goto _ (* assume a non-local goto here *)
+        -> raise Useful 
+      (* NOTE: 
+        BEXE_init always inits a local variable which isn't useful by itself 
+      *)
+      | _ -> () 
+    )
+    exes
+    ;
+    true
+  with Useful -> false
+
+let useless_call_elim bbdfns exes =
+  let exes' = ref [] in
+  List.iter
+  (fun x -> match x with
+  | `BEXE_call ((`BEXPR_closure i,_),_)
+  | `BEXE_call ((`BEXPR_name i,_),_)
+    -> (* only keep calls to useful procedures *) 
+      begin match Hashtbl.find bbdfns i with
+      | id,parent,`BBDCL_procedure (ps,exes,nm) ->
+        if not (isuseless bbdfns exes) then exes' := x :: !exes'
+      | _ -> exes' := x :: !exes'
+      end
+
+  | `BEXE_nop _ 
+  | `BEXE_comment _  (* we shouldn't really elide comments .. *)
+    -> ()
+  | `BEXE_label s -> (* but it makes this test easier *)
+    while            (* eliminate jumps to next instruction *)
+      match !exes' with
+      | (`BEXE_goto s') :: _
+      | (`BEXE_ifgoto (_,s')) :: _
+      | (`BEXE_ifnotgoto (_,s')) :: _
+        -> s = s'
+      | _ -> false
+    do 
+      exes' := List.tl !exes'
+    done
+    ;
+    exes' := x :: !exes'
+
+  | x -> exes' := x :: !exes'
+  )
+  exes
+  ;
+  List.rev !exes'
+
 let rec uses_type used bbdfns t = 
   let ut t = uses_type used bbdfns t in
   match t with
@@ -130,7 +211,14 @@ and uses used bbdfns i =
   end
 
 let copy_bbdcl bbdfns bbdfns2 i =
-  Hashtbl.add bbdfns2 i (Hashtbl.find bbdfns i)
+  let data = 
+    match Hashtbl.find bbdfns i with
+    | id,parent,`BBDCL_procedure (p,exes,names) ->
+      let exes = useless_call_elim bbdfns exes in
+      id,parent,`BBDCL_procedure (p,exes,names)
+    | x -> x
+  in
+    Hashtbl.add bbdfns2 i data
 
 let elide_unused (bbdfns:fully_bound_symbol_table_t) (root:bid_t) (bifaces:biface_t list) =
   (* make a list of the root and all exported things *)

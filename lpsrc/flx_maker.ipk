@@ -122,6 +122,7 @@ MODULES = [
   'flx_use'          , 
   'flx_name'         , 
   'flx_tgen'         , 
+  'flx_csubst'       , 
   'flx_gen'          , 
 ]
 
@@ -420,8 +421,8 @@ except MakeError:
   print "Terminating due to error"
 
 @head(1,'Man pages')
-@select(tangler('man/felix.1'))
-.TH FELIX LANGUAGE "2002 April 11"
+@select(tangler('man/man1/felix.1'))
+.TH FELIX LANGUAGE "2003 Jan 1"
 .SH NAME
 Felix language
 .SH SYNOPSIS
@@ -493,7 +494,7 @@ See
 .SH AUTHOR
 John Maxwell Skaller, mailto:skaller@ozemail.com.au
 
-@select(tangler('man/flx_op.1'))
+@select(tangler('man/man1/flx_op.1'))
 .TH FELIX OPERATORS "2002 April 11"
 .SH NAME
 Felix operators and operator names
@@ -527,6 +528,11 @@ so only one is allowed.
 .B ^= xoreq
 .br
 .B &= andeq
+.br
+
+.SH let/in
+.B let <expr> in <expr>
+prefix
 .br
 
 .SH tuple
@@ -653,6 +659,19 @@ left assoc
 .B of
 left assoc
 
+.SH atomic
+.B if/then/else/endif
+.br
+
+.B match <expr> with 
+.br
+.B | <pattern> => <expr>
+.br
+.B ...
+.br
+.B endmatch
+.br
+
 .SH SEE ALSO
 .B flx(1) 
 for a list of the tools.
@@ -666,7 +685,7 @@ See
 .SH AUTHOR
 John Maxwell Skaller, mailto:skaller@ozemail.com.au
 
-@select(tangler('man/flx.1'))
+@select(tangler('man/man1/flx.1'))
 .TH FELIX TOOLS "2002 April 11"
 .SH NAME
 Felix tools
@@ -825,6 +844,10 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 
 @head(1,'Makefile')
 @select(tangler('makefile'))
+@tangle('PREFIX=/usr/local')
+@tangle('INSTALL_DIR=${PREFIX}/lib')
+@tangle('EXEC_DIR=${PREFIX}/bin')
+@tangle('MAN_DIR=${PREFIX}/man')
 @tangle('all: dummy')
 @tangle('\tpython script/maker')
 @tangle('')
@@ -893,6 +916,18 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('\t  ./lexl test_lex')
 @tangle('\t  ./lexp test_lex')
 @tangle('\t  ./lexd test_lex')
+
+@tangle('install:')
+@tangle('\t  echo "INSTALL_DIR=${INSTALL_DIR}"')
+@tangle('\t  echo "EXEC_DIR=${EXEC_DIR}"')
+@tangle('\t  echo "MAN_DIR=${MAN_DIR}"')
+@tangle('\t  install -d ${INSTALL_DIR}/felix/lib ${INSTALL_DIR}/felix/rtl')
+@tangle('\t  install -d ${INSTALL_DIR}/felix/doc')
+@tangle('\t  install lib/* ${INSTALL_DIR}/felix/lib')
+@tangle('\t  install rtl/* ${INSTALL_DIR}/felix/rtl')
+@tangle('\t  install doc/* ${INSTALL_DIR}/felix/doc')
+@tangle('\t  install bin/* ${EXEC_DIR}')
+@tangle('\t  install man/man1/* ${MAN_DIR}/man1')
 
 
 @head(1,'README')
@@ -970,7 +1005,7 @@ are already included in this tarball. You can just
 FULL BUILD.
 -----------
 
-1. Download, build, and install Ocaml 3.04 
+1. Download, build, and install Ocaml (3.04 or greater)
    if you don't have it already
 
    http://caml.inria.fr

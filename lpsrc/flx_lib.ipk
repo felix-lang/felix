@@ -149,7 +149,7 @@ module Bool
   fun xor: bool * bool -> bool = "$1 != $2";
   fun lnot: bool -> bool = "!$1";
   proc assert: bool = "assert($1);";
-  proc print: bool = 'std::cout << ($1?"true":"false");';
+  proc print: bool = 'std::cout << ($1??"true":"false");';
 }
 
 @def gen_arith(t):
@@ -287,7 +287,7 @@ module String
   fun mul: char * int -> string = "string($2,$1)";
 
   fun subscript: string * int -> char = 
-    "$1[$2<0?$1.size()+$2:$2]";
+    "$1[$2<0??$1.size()+$2:$2]";
   fun copyfrom: string * int -> string = 
     "std_flx::substr($1,$2,$1.size())";
   fun copyto: string * int -> string = 

@@ -565,6 +565,7 @@ try
 
   let syms = 
     { 
+      registry = Hashtbl.create 97;
       counter = ref 1; 
       freg = Hashtbl.create 97;
       dfns = Hashtbl.create 97 ;
