@@ -336,7 +336,7 @@ CCOBJ_STATIC_MAIN = CXX + "-w -g -c "
 # it does NOT mean not to do dynamic loading at load time
 CCLINK_STATIC = CXX  + "-w "
 
-#check if we can get dlopen to work
+#check if we can get dlopen to work without -ldl (BSD doesn't need)
 try:
   xqt(CCOBJ_DLLIB+"tmp/dummy_lib.cxx -o tmp/dummy_lib.o")
   xqt(CCOBJ_DLMAIN+"tmp/dummy_main.cxx -o tmp/dummy_main.o")
@@ -345,15 +345,21 @@ try:
   xqt("tmp/dlmain tmp/dummy_lib.so")
   SUPPORT_DYNAMIC_LOADING = 1
 except:
-  try: #again with --shared
-    CCLINK_DLLIB = CXX + "-w --shared "
-    CCLINK_DLMAIN = CXX + "-w -Wl,-Bdynamic -ldl "
-    xqt(CCLINK_DLLIB+"tmp/dummy_lib.o -o tmp/dummy_lib.so")
+  try: # nope, try with -ldl
+    CCLINK_DLMAIN = CCLINK_DLMAIN + "-ldl "
     xqt(CCLINK_DLMAIN+"tmp/dummy_main.o -o tmp/dlmain")
     xqt("tmp/dlmain tmp/dummy_lib.so")
     SUPPORT_DYNAMIC_LOADING = 1
   except:
-    SUPPORT_DYNAMIC_LOADING = 0
+    try: #again with --shared
+      CCLINK_DLLIB = CXX + "-w --shared "
+      CCLINK_DLMAIN = CXX + "-w -Wl,-Bdynamic -ldl "
+      xqt(CCLINK_DLLIB+"tmp/dummy_lib.o -o tmp/dummy_lib.so")
+      xqt(CCLINK_DLMAIN+"tmp/dummy_main.o -o tmp/dlmain")
+      xqt("tmp/dlmain tmp/dummy_lib.so")
+      SUPPORT_DYNAMIC_LOADING = 1
+    except:
+      SUPPORT_DYNAMIC_LOADING = 0
 
 # see if we have strip
 try:

@@ -822,7 +822,7 @@ and rst syms name access st : asm_t list =
         ]
     in
     [
-      Dcl (sr,prim_id,access,vs,`DCL_fun (args,result,code,[]));
+      Dcl (sr,prim_id,access,vs,`DCL_fun (args,result,code,reqs));
       Dcl (sr,name,access,vs,`DCL_function (params,result,[`Inline],body))
     ]
 

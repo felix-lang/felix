@@ -144,13 +144,16 @@ namespace flx { namespace rtl { namespace strutil {
 @h=tangler('lib/std.flx','data')
 @# use data tangler to prevent line number generation
 @select(h)
-header """
-#include <cstdio>
-#include <cstddef>
+header iostream "#include <iostream>";
+header cmath """
 #include <cmath>
 @if HAVE_ISNANF_IN_IEEEFP:
   tangle("#include <ieeefp.h>")
-#include <iostream>
+""";
+
+header """
+#include <cstdio>
+#include <cstddef>
 #include <string>
 #include <cassert>
 #include <climits>
@@ -304,7 +307,7 @@ module Bool
   fun xor: bool * bool -> bool = "$1 != $2";
   fun lnot: bool -> bool = "!$1";
   proc assert: bool = "assert($1);";
-  proc print: bool = 'std::cout << ($1??"true":"false");';
+  proc print: bool = 'std::cout << ($1??"true":"false");' requires iostream;
 }
 
 @def gen_arith(t):
@@ -361,7 +364,7 @@ module Bool
     'fmod',
     'fmax','fmin'
     ]:
-    tangle('  fun '+op+': '+t+' * '+t+' -> '+t+' = "'+op+fc[t]+'($1, $2)";')
+    tangle('  fun '+op+': '+t+' * '+t+' -> '+t+' = "'+op+fc[t]+'($1, $2)" requires cmath;')
 
 @def gen_trig(t):
   for op in [
@@ -373,15 +376,15 @@ module Bool
     'fabs','sqrt',
     'ceil','floor','trunc'
     ]:
-    tangle('  fun '+op+': '+t+' -> '+t+' = "'+op+fc[t]+'($1)";')
+    tangle('  fun '+op+': '+t+' -> '+t+' = "'+op+fc[t]+'($1)" requires cmath;')
 
 @def gen_nan(t):
   if HAVE_ISNAN_IN_CMATH:
-    tangle('  fun isnan: '+t+' -> bool = "isnan'+fc[t]+'($1)";')
+    tangle('  fun isnan: '+t+' -> bool = "isnan'+fc[t]+'($1)" requires cmath;')
   elif HAVE_ISNANF_IN_IEEEFP:
-    tangle('  fun isnan: '+t+' -> bool = "isnanf'+fc[t]+'($1)";')
+    tangle('  fun isnan: '+t+' -> bool = "isnanf'+fc[t]+'($1)" requires cmath;')
   else:
-    tangle('  fun isnan: '+t+' -> bool = "!($1==$1)";')
+    tangle('  fun isnan: '+t+' -> bool = "!($1==$1)" requires cmath;')
 
 @def gen_inc(t):
   tangle('  proc pre_incr:  &'+t+' = "++*('+tmap[t]+'*)($1.data);";')
@@ -473,8 +476,8 @@ module C_hack
   publish """
   Unsafe output of hopefully null terminated C strings
   """
-  proc print: charp = "std::cout << $1;";
-  proc print: charcp = "std::cout << $1;";
+  proc print: charp = "std::cout << $1;" requires iostream;
+  proc print: charcp = "std::cout << $1;" requires iostream;
 
   header "template<class T> T dflt() { return T(); }";
   publish """
@@ -500,11 +503,11 @@ type string = "std::string";
   gen_neg(t)
   gen_inc(t)
   if t == "tiny":
-    tangle('  proc print: tiny = "std::cout << (int)$1;";')
+    tangle('  proc print: tiny = "std::cout << (int)$1;" requires iostream;')
   elif t == "utiny":
-    tangle('  proc print: utiny = "std::cout << (unsigned int)$1;";')
+    tangle('  proc print: utiny = "std::cout << (unsigned int)$1;" requires iostream;')
   else:
-    tangle('  proc print: '+t+' = "std::cout<<$1;";')
+    tangle('  proc print: '+t+' = "std::cout<<$1;" requires iostream;')
   tangle("}")
   tangle("")
 
@@ -520,7 +523,7 @@ type string = "std::string";
   gen_pow(t)
   gen_trig(t)
   gen_nan(t)
-  tangle('  proc print: '+t+' = "std::cout<<$1;";')
+  tangle('  proc print: '+t+' = "std::cout<<$1;" requires iostream;')
   tangle("}")
   tangle("")
   
@@ -531,7 +534,7 @@ module Char
   open Int;
   fun ord: char -> int = "(int)$1";
   fun chr: int -> char = "(char)$1";
-  proc print: char = "std::cout<<$1;";
+  proc print: char = "std::cout<<$1;" requires iostream;
 }
 
 module Wchar
@@ -539,7 +542,7 @@ module Wchar
   open Long;
   fun ord: wchar -> long ="(long)$1";
   fun wchr: long -> wchar = "(wchar_t)$1";
-  proc print: wchar = "std::cout<<$1;";
+  proc print: wchar = "std::cout<<$1;" requires iostream;
 }
 
 module Unicode
@@ -548,15 +551,15 @@ module Unicode
   fun ord: uchar -> uint32 ="$1";
   fun uchr: uint32 -> uchar = "$1";
   //this needs to be fixed!
-  //proc print: uchar = "std::cout<<$1;";
+  //proc print: uchar = "std::cout<<$1;" requires iostream;
 }
 
 
 @#------------- STDOUT UTILITY -------------------
 module Stdout 
 {
-  proc endl: unit = "std::cout << endl;";
-  proc space: int = "std::cout << ' ';";
+  proc endl: unit = "std::cout << endl;" requires iostream;
+  proc space: int = "std::cout << ' ';" requires iostream;
 }
 macro proc print_line (x) { print x; Stdout::endl; }
 
@@ -593,7 +596,7 @@ module String
   fun gt: string * string -> bool = "$1>$2";
   fun ge: string * string -> bool = "$1>=$2";
 
-  proc print: string = "std::cout << $1;";
+  proc print: string = "std::cout << $1;" requires iostream;
 
   publish "Unsafe extract buffer pointer"
   fun cstr: string -> C_hack::ptr[char] = "$1.data()";
@@ -630,7 +633,7 @@ module Ustring
   fun gt: ustring * ustring -> bool = "$1>$2";
   fun ge: ustring * ustring -> bool = "$1>=$2";
 
-  proc print: ustring = "std::cout << $1;";
+  proc print: ustring = "std::cout << $1;" requires iostream;
 }
 
 publish """
