@@ -469,15 +469,16 @@ const_def:
 @head(3,'Binding Header Definition')
 @select(h)
 binding_header:
-  | HEADER STRING SEMI { `AST_header (rstoken $1 $3, "", snd $2) }
-  | BODY STRING SEMI { `AST_body (rstoken $1 $3, "", snd $2) }
+  | HEADER STRING SEMI { `AST_header (rstoken $1 $3, "_root", snd $2) }
+  | BODY STRING SEMI { `AST_body (rstoken $1 $3, "_root", snd $2) }
 
   | HEADER NAME STRING SEMI { `AST_header (rstoken $1 $4, snd $2, snd $3) }
   | BODY NAME STRING SEMI { `AST_body (rstoken $1 $4, snd $2, snd $3) }
 
 requires_clause:
   | REQUIRES basic_name_comma_list { List.map snd $2 }
-  
+  | {[]}
+
 @head(3,'Inline C++ Code Definition')
 @select(h)
 inline_cpp:

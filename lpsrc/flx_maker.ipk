@@ -112,7 +112,6 @@ if "help" in options:
   print "clean - remove generated C++ and binaries from test locations"
   print "debug - build debugging versions of targets"
   print "optimise - build high performance versions of targets"
-  print "refcnt - do not generate reference counting instructions"
   print "doc - build all user documentation"
   print "vim=gvim - set gvim as the vim editor"
   print "vimserver=FLX - set FLX as the editor server name"
@@ -206,7 +205,10 @@ def flxg(x,basename):
 
 #interscript command (now built in part of Felix package)
 def runISCR(a):
-  xqt(ISCR + ' ' + a)
+  if buildall:
+    xqt(ISCR + "--nocache " + a)
+  else:
+    xqt(ISCR + ' ' + a)
 
 if "compiler" in options or "bytecode" in options:
   OCAML_OBJDIR = "src"
@@ -464,7 +466,7 @@ def erasefile(f):
     pass
 # ----------- Here begins the actual build procedure ---------------------
 
-buildall = "clean" in options
+buildall = "clean" in options or "force" in options
 stop_on_error = "stop_on_error" in options
 import glob
 
@@ -795,23 +797,20 @@ We have no idea if it continues copying.
 @tangle('bytecode: dummy')
 @tangle('\tpython script/maker compiler bytecode')
 @tangle('')
-@tangle('bytecode.clean: dummy')
-@tangle('\tpython script/maker compiler bytecode clean')
-@tangle('')
 @tangle('bytecode.debug: dummy')
 @tangle('\tpython script/maker compiler bytecode debug')
 @tangle('')
 @tangle('extract: dummy')
 @tangle('\tpython script/maker extract')
 @tangle('')
+@tangle('extract.force: dummy')
+@tangle('\tpython script/maker extract force')
+@tangle('')
 @tangle('tut: dummy')
 @tangle('\tpython script/maker tutorial')
 @tangle('')
 @tangle('compiler: dummy')
 @tangle('\tpython script/maker compiler')
-@tangle('')
-@tangle('compiler.clean: dummy')
-@tangle('\tpython script/maker compiler clean')
 @tangle('')
 @tangle('doc: dummy')
 @tangle('\tpython script/maker doc')

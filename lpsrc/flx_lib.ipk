@@ -194,7 +194,7 @@ using namespace std;
 
 @if HAVE_LONGDOUBLE:
    tmap["ldouble"]="long double"
-  else:
+ else:
    tmap["ldouble"]="double"
 
 @if HAVE_LONGLONG:
