@@ -2,6 +2,7 @@
 @h = tangler("src/flx_unravel.mli")
 @select(h)
 open Flx_types
+open Flx_mtypes1
 
 val unravel:
   sym_state_t ->
@@ -13,6 +14,7 @@ val unravel:
 @h = tangler("src/flx_unravel.ml")
 @select(h)
 open Flx_types
+open Flx_mtypes1
 open List
 open Flx_maps
 open Flx_util

@@ -1,6 +1,8 @@
 @h = tangler('src/flx_name.mli')
 @select(h)
 open Flx_types
+open Flx_mtypes1
+
 val cpp_name :
   fully_bound_symbol_table_t ->
   int ->
@@ -27,6 +29,7 @@ val cpp_typename :
 @h = tangler('src/flx_name.ml')
 @select(h)
 open Flx_types
+open Flx_mtypes1
 open Flx_unify
 open Flx_print
 open Flx_util

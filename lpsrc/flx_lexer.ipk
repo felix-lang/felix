@@ -12,7 +12,7 @@ let string_of_string s = "\"" ^  Flx_string.c_quote_of_string s ^ "\""
 let string_of_token (tok :Flx_parse.token): string =
   match tok with
   | NAME (sr,s) -> s
-  | INTEGER (sr,t,i) -> Big_int.string_of_big_int i#get
+  | INTEGER (sr,t,i) -> Big_int.string_of_big_int i
   | FLOAT (sr,t,v) -> v
   | STRING (sr,s) -> Flx_string.c_quote_of_string s 
   | CSTRING (sr,s) -> Flx_string.c_quote_of_string s 
@@ -1428,7 +1428,7 @@ and pre_flx_lex state = parse
         end
       in
       let d = String.sub s first (!k-first) in
-      let v = Flx_mtypes1.mkbigint(converter d) in
+      let v = (converter d) in
         [INTEGER (sr, t, v)]
   }
 

@@ -351,8 +351,8 @@ charset0:
   | INTEGER MINUS INTEGER   
     { 
       let 
-        a = match $1 with _,_,x -> Big_int.int_of_big_int x#get and
-        b = match $3 with _,_,x -> Big_int.int_of_big_int x#get
+        a = match $1 with _,_,x -> Big_int.int_of_big_int x and
+        b = match $3 with _,_,x -> Big_int.int_of_big_int x
       in
       charset_of_int_range a b
     }
@@ -360,7 +360,7 @@ charset0:
   | STRING                  { charset_of_string (snd $1) }
   | INTEGER                 
     { 
-      let a = match $1 with _,_,x -> Big_int.int_of_big_int x#get in
+      let a = match $1 with _,_,x -> Big_int.int_of_big_int x in
       charset_of_int_range a a 
     } 
 charset:
@@ -1366,7 +1366,7 @@ ctor_name:
   
   | CASE INTEGER { 
       let sr,t,v = $2 in 
-      `AST_case_tag (rstoken $1 sr, Big_int.int_of_big_int v#get)
+      `AST_case_tag (rstoken $1 sr, Big_int.int_of_big_int v)
     }
 
 integral:
@@ -1374,7 +1374,7 @@ integral:
   | MINUS INTEGER 
     { 
       let sr,t,v = $2 in 
-      rstoken $1 sr, t, mkbigint(Big_int.minus_big_int v#get)
+      rstoken $1 sr, t, (Big_int.minus_big_int v)
     }
 
 floating:
@@ -1658,7 +1658,7 @@ case_literal:
   | CASE INTEGER 
     {
       let sr,t,v = $2 in 
-      `AST_case_tag (rstoken $1 sr, Big_int.int_of_big_int v#get)
+      `AST_case_tag (rstoken $1 sr, Big_int.int_of_big_int v)
     } 
   | CASE INTEGER OF sum
     {
@@ -1666,7 +1666,7 @@ case_literal:
       `AST_typed_case 
       (
         rsrange (slift $1) (src_of_expr $4),
-        Big_int.int_of_big_int v#get, 
+        Big_int.int_of_big_int v, 
         typecode_of_expr $4
       )
     } 
@@ -1794,12 +1794,12 @@ factor:
       match $4 with
       | (sr,t,v) ->
         let n = 
-          try Big_int.int_of_big_int v#get 
+          try Big_int.int_of_big_int v 
           with _ -> 
             failwith 
             (
               "[parser] Tuple index " ^
-              Big_int.string_of_big_int v#get ^
+              Big_int.string_of_big_int v ^
               " too big in " ^ 
               short_string_of_src (slift sr)
              )

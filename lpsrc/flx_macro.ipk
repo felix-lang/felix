@@ -668,8 +668,8 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
     so we can't elide it even if unreachable:
     it might expand to declarations or macros
   *)
-  | `AST_call (sr, `AST_name(srn,name,[]), e2) ->
-    let e1 = `AST_name(srn, name,[]) in
+  | `AST_call (sr, (`AST_name(srn,name,[]) as e1), e2) ->
+    (* let e1 = `AST_name(srn, name,[]) in *)
     begin try
       match assoc name macros with
       | MStmt ([],b) ->
@@ -974,6 +974,7 @@ open Flx_getopt
 open Flx_version
 open Flx_flxopt
 open Flx_types
+open Flx_mtypes1
 
 let print_help () = print_options(); exit(0)
 ;;

@@ -427,6 +427,7 @@ if OCAMLCC[0] != '#':
 else:
   OCAMLC = OCAMLB
 
+OCAMLCP = "ocamlcp "
 # where the ocaml is installed
 result,x = get_stdout(OCAMLC + " -where")
 OCAML_INCLUDE_DIRECTORY= x[0][0:-1]
@@ -806,6 +807,7 @@ try:
   pr(f,"#Ocaml tools")
   p(f,"OCAMLC")
   p(f,"OCAMLB")
+  p(f,"OCAMLCP")
   p(f,"OCAMLLEX")
   p(f,"OCAMLYACC")
   p(f,"OCAMLDOC")

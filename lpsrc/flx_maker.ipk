@@ -204,6 +204,7 @@ if "help" in options:
   print "extract - extract sources"
   print "compiler - build compiler"
   print "bytecode - build bytecode version of compiler"
+  print "profile - build profiling version of compiler"
   print "drivers - build drivers"
   print "regression - run regression tests"
   print "performance - run performance tests"
@@ -232,8 +233,8 @@ else:
   EDITOR = EDITORCLASS
 
 if "clean" in options:
-  os.system("rm -rf test/*.cpp test/*.hpp test/*.so")
-  os.system("rm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so")
+  os.system("rm -rf test/*.cpp test/*.hpp test/*.so test/*.par")
+  os.system("rm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.par")
 
 if "tests" in options or "test" in options:
   options = options + ["regression","tutorial"]
@@ -313,9 +314,17 @@ def runISCR(a):
 
 if "compiler" in options or "bytecode" in options:
   OCAML_OBJDIR = "src"
-  BYTECODE = not NATIVE_CODE_COMPILER or "bytecode" in options
-  if BYTECODE: OCAMLOPT = OCAMLB
-  else: OCAMLOPT = OCAMLC
+  BYTECODE = not NATIVE_CODE_COMPILER or "bytecode" in options 
+  if BYTECODE:
+    if "profile" in options: 
+      OCAMLOPT = OCAMLCP
+      OCAMLC = OCAMLCP
+    else: OCAMLOPT = OCAMLB
+  else:
+    OCAMLOPT = OCAMLC
+    if "profile" in options:
+      OCAMLOPT = OCAMLOPT+' -p '
+  
   OCAMLOPT = OCAMLOPT + " -I " + OCAML_OBJDIR
   OCAMLC = OCAMLC + " -I " + OCAML_OBJDIR
   
@@ -940,8 +949,14 @@ We have no idea if it continues copying.
 @tangle('\tpython script/maker extract compiler rtl drivers test')
 @tangle('')
 
+@tangle('profile: dummy')
+@tangle('\tpython script/maker compiler profile')
+@tangle('')
 @tangle('bytecode: dummy')
 @tangle('\tpython script/maker compiler bytecode')
+@tangle('')
+@tangle('bytecode.profile: dummy')
+@tangle('\tpython script/maker compiler bytecode profile')
 @tangle('')
 @tangle('bytecode.debug: dummy')
 @tangle('\tpython script/maker compiler bytecode debug')
@@ -1120,8 +1135,8 @@ We have no idea if it continues copying.
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_web.pak')
 @tangle('')
 @tangle('clean: dummy')
-@tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.dll')
-@tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so test/rt*.dll')
+@tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.dll tut/examples/*.par')
+@tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so test/rt*.dll test/rt*.par')
 @tangle('')
 @tangle('virgin: dummy')
 @tangle('\tcp Makefile Makefile.old')

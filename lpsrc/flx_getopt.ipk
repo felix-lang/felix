@@ -97,6 +97,7 @@ let get_keys_values options keys =
 
 @select(tangler('src/flx_flxopt.mli'))
 open Flx_types
+open Flx_mtypes1
 val get_felix_options:
   (string * string) list -> 
   felix_compiler_options_t
@@ -113,6 +114,7 @@ val print_chosen:
 
 @select(tangler('src/flx_flxopt.ml'))
 open Flx_types
+open Flx_mtypes1
 open Flx_getopt
 
 let print_chosen options =
@@ -161,8 +163,6 @@ let make_syms options =
     compiler_options = options;
     instances = Hashtbl.create 97;
     include_files = ref [];
-    bind_type_cache = Hashtbl.create 97;
-    bind_expression_cache = Hashtbl.create 97;
   }
 
 

@@ -43,6 +43,8 @@ let get_display_list bbdfns index : bid_t list =
 @select(h)
 open Flx_ast
 open Flx_types
+open Flx_mtypes1
+
 val gen_offset_tables:
   sym_state_t ->
   (bid_t, bid_t list) Hashtbl.t *
@@ -66,6 +68,7 @@ val find_references:
 open Flx_util
 open Flx_ast
 open Flx_types
+open Flx_mtypes1
 open Flx_name
 open Flx_unify
 open Flx_typing
@@ -400,6 +403,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
 @select(h)
 open Flx_ast
 open Flx_types
+open Flx_mtypes1
 
 val gen_functions:
   sym_state_t ->
@@ -447,6 +451,7 @@ val format_vars:
 open Flx_util
 open Flx_ast
 open Flx_types
+open Flx_mtypes1
 open Flx_print
 open Flx_typing
 open Flx_name
@@ -491,7 +496,7 @@ let csuffix_of_type s = match s with
   | _ -> failwith ("[csuffix_of_type]: Unexpected Type " ^ s)
 
 let cstring_of_literal e = match e with
-  | `AST_int (s,i) -> (Big_int.string_of_big_int i#get)^csuffix_of_type s 
+  | `AST_int (s,i) -> (Big_int.string_of_big_int i)^csuffix_of_type s 
   | `AST_float (s,x) -> x ^ csuffix_of_type s
   | `AST_string s -> string_of_string s
   | `AST_cstring s -> string_of_string s
@@ -1955,6 +1960,7 @@ let gen_biface_bodies syms bbdfns bifaces =
 open Flx_util
 open Flx_ast
 open Flx_types
+open Flx_mtypes1
 open Flx_print
 open Flx_srcref
 open Flx_desugar
@@ -2036,7 +2042,6 @@ try
   and header_file_name = filebase ^ ".hpp"
   and body_file_name = filebase ^ ".cpp" 
   and report_file_name = filebase ^ ".xref" 
-  and par_file_name = filebase ^ ".par"
   and module_name = 
     let n = String.length filebase in 
     let i = ref (n-1) in
@@ -2095,8 +2100,6 @@ try
   let bbdfns = bbind syms in
   let child_map = cal_children syms bbdfns in
   let bifaces = bind_ifaces syms ifaces in
-  Hashtbl.clear syms.bind_type_cache;
-  Hashtbl.clear syms.bind_expression_cache;
   Hashtbl.clear syms.ticache;
 
   let binding_time = tim() in
