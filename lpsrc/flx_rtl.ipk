@@ -47,7 +47,7 @@ namespace flx { namespace rtl {
 // CONTINUATION
 struct con_t // abstract base for mutable continuations
 {
-#ifdef FLX_CGOTO:
+#ifdef FLX_CGOTO
   void *pc;
 #else
    int pc;
@@ -128,7 +128,7 @@ struct flx_exec_failure_t {
     __asm__(""::"g"(&&x));
   #define FLX_FARTARGET(n,i,x) (void*)&f##i##_##n##_##x
   #define FLX_END_SWITCH
-#else:
+#else
   #define FLX_START_SWITCH switch(pc){case 0:;
   #define FLX_SET_PC(x) pc=x;
   #define FLX_CASE_LABEL(x) case x:;

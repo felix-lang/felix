@@ -83,6 +83,7 @@ open Flx_unify
 open Flx_typing
 open Flx_tgen
 open List
+open Flx_print
 
 let find_thread_vars_with_type bbdfns =
   let vars = ref [] in
@@ -109,7 +110,7 @@ let find_references syms (child_map,bbdfns) index ts =
   iter
   (fun idx -> 
     try
-      let _,_,_,bbdfn = 
+      let id,_,_,bbdfn = 
         Hashtbl.find bbdfns idx
       in
       match bbdfn with
@@ -313,6 +314,9 @@ let gen_offset_tables syms (child_map,bbdfns) =
   Hashtbl.iter
   (fun (index,ts) instance ->
   let id,parent,sr,entry = Hashtbl.find bbdfns index in 
+  (*
+  print_endline ("Offsets for " ^ id ^ "<"^ si index ^">["^catmap "," (sbt syms.dfns) ts ^"]");
+  *)
   match entry with
   | `BBDCL_function (props,vs,ps, ret,_) -> 
     gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance
@@ -2227,8 +2231,10 @@ try
   then print_endline "//OPTIMISING";
   let bbdfns = Flx_useless.elide_unused syms (child_map,bbdfns) root_proc bifaces in
   let child_map = cal_children syms bbdfns in
+  (*
   let bbdfns = Flx_useless.elide_unused syms (child_map,bbdfns) root_proc bifaces in
   let child_map = cal_children syms bbdfns in
+  *)
 
   let bbdfns = ref bbdfns in
   let child_map = ref child_map in

@@ -436,8 +436,8 @@ It is also possible to pattern match tuples.
 Here is an example:
 @select(tangler(tdir+'tut120.flx'))
 include "std";
-val x = 1,2,(3,4);
-match (x) with
+val v = 1,2,(3,4);
+match (v) with
   | (?x,_,?z) =>
   {
     print x; 
