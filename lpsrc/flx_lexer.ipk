@@ -53,6 +53,8 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "todo", (fun s ->  TODO s);
     "of", (fun s ->  OF s);
     "attempt", (fun s ->  ATTEMPT s);
+    "endattempt", (fun s ->  ENDATTEMPT s);
+    "endmatch", (fun s ->  ENDMATCH s);
     "except", (fun s ->  EXCEPT s);
     "finally", (fun s ->  FINALLY s);
     "raise", (fun s ->  RAISE s);
@@ -60,6 +62,7 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "when", (fun s ->  WHEN s);
     "as", (fun s ->  AS s);
     "case", (fun s ->  CASE s);
+    "with", (fun s ->  WITH s);
     "regexp", (fun s ->  REGEXP s);
     "match", (fun s ->  MATCH s);
     "var", (fun s ->  VAR s);
@@ -846,8 +849,10 @@ and pre_flx_lex = parse
 | "~" { fun state -> state#inbody; [TILDE         (state#get_srcref lexbuf)] }
 | "^" { fun state -> state#inbody; [CIRCUMFLEX    (state#get_srcref lexbuf)] }
 | "!" { fun state -> state#inbody; [EXCLAMATION   (state#get_srcref lexbuf)] }
+| "?" { fun state -> state#inbody; [QUEST         (state#get_srcref lexbuf)] }
 
 (* two character sequences *)
+| "=>" { fun state -> state#inbody; [EQRIGHTARROW (state#get_srcref lexbuf)] }
 | "&<" { fun state -> state#inbody; [ANDLESS      (state#get_srcref lexbuf)] }
 | "&>" { fun state -> state#inbody; [ANDGREATER   (state#get_srcref lexbuf)] }
 | ".." { fun state -> state#inbody; [DOTDOT       (state#get_srcref lexbuf)] }

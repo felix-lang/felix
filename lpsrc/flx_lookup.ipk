@@ -22,10 +22,18 @@ val lookup_qn_in_env :
   int ref ->
   instantiation_registry_t ->
   env_t ->
-  range_srcref ->
   int list -> (* excluded modules *)
   qualified_name_t -> 
-  entry_set_t
+  entry_kind_t
+
+val lookup_sn_in_env :
+  symbol_table_t ->
+  int ref ->
+  instantiation_registry_t ->
+  env_t ->
+  int list -> (* excluded modules *)
+  suffixed_name_t -> 
+  int
 
 val bind_type:
   symbol_table_t ->
@@ -34,6 +42,7 @@ val bind_type:
   env_t ->
   int list -> (* excluded type *)
   int list -> (* excluded modules *)
+  range_srcref ->
   typecode_t ->
   btypecode_t
 
@@ -51,6 +60,7 @@ val resolve_overload:
   int ref ->
   instantiation_registry_t ->
   int list -> (* excluded modules *)
+  range_srcref ->
   entry_kind_t list ->  
   id_t -> 
   btypecode_t ->
@@ -96,7 +106,10 @@ val lookup_qn_with_sig:
   qualified_name_t ->
   btypecode_t ->
   tbexpr_t
- 
+
+val print_env: (* debugging *)
+  env_t -> unit
+
 @h = tangler("src/flx_lookup.ml")
 @select(h)
 open Flx_util
@@ -115,99 +128,74 @@ type result =
 
 type kind_t = Parameter | Other
 
+ 
+let print_env e = 
+  let print_entry k v = 
+    print_endline 
+    (
+      "  " ^ k ^ 
+      (
+        match v with 
+        | (NonFunctionEntry (Simple i)) -> " Simple " ^ string_of_int i
+        | _ -> ""
+      )
+    )
+  in 
+  let print_table htab = 
+    print_endline "--"; Hashtbl.iter print_entry htab
+
+  in 
+  let print_level (htab,htabs) = print_table htab in 
+
+  List.iter print_level e
+
 let get_data table index : symbol_data_t = 
   try Hashtbl.find table index
   with Not_found -> 
     failwith ("[Flx_lookup.get_data] No definition of <" ^ string_of_int index ^ ">")
 
-(* lookup a string in a symbol table, return index *)
-let lookup_name_in_htab htab sr name : entry_set_t =
-  try Hashtbl.find htab name
-  with Not_found -> 
-    failwith 
-    (
-      "Unable to find '" ^ name ^ "' in hashtable: " ^
-      short_string_of_src sr 
-    )
+let lookup_name_in_htab htab name : entry_set_t option =
+  (* print_endline ("Lookup name in htab: " ^ name); *)
+  try Some (Hashtbl.find htab name)
+  with Not_found -> None
   
-(* lookup a list of strings with a starting symbol table,
-  return index
-*)
-let rec lookup_qn_in_htab dfns htab sr qn : entry_set_t =
-  match qn with
-  | [] -> 
-    failwith 
-    (
-      "[lookup_qn_in_htab] Empty name: " ^ 
-      short_string_of_src sr
-    )
-  | h :: t -> 
-    let entry = lookup_name_in_htab htab sr h in
-    if t = [] then entry
-    else let index = 
-      match entry with
-      | FunctionEntry _ ->
-        failwith 
-        (
-          "[lookup_qn_in_htab] Expected " ^ h ^ " to be module,\n" ^
-          " got overload set: " ^
-          short_string_of_src sr
-        )
-      | NonFunctionEntry (Simple index) -> index
-      | NonFunctionEntry _ -> assert false
-
-    in match get_data dfns index with
-    | (id,_,_,SYMDEF_module (htab,dirs)) -> 
-      assert (id = h);
-      lookup_qn_in_htab dfns htab sr t
-      
-    | (id,_,_,SYMDEF_interface (htab,dirs)) -> 
-      assert (id = h);
-      print_endline ("[luqn in htb] Look finds interface : " ^ id);
-      lookup_qn_in_htab dfns htab sr t
-
-    | (id,_,_,_) -> 
-      assert (id = h);
-      failwith (
-        "[lookup_qn_in_htab] Expected " ^ 
-        h ^ 
-        "to be interface to find " ^ 
-        (String.concat "::" t) ^ 
-        " in: " ^
-        short_string_of_src sr
-      )
-
-(* lookup a string with a starting symbol table stack,
-  return data and possible table
-*)
-let merge_functions opens name = 
-  FunctionEntry (
-    List.fold_left
+let merge_functions 
+  (opens:entry_set_t list) 
+  name 
+: entry_kind_t list = 
+  List.fold_left
     (fun init x -> match x with
     | FunctionEntry ls -> init @ ls
     | _ -> failwith ("Expected " ^ name ^ " to be function overload set in all open modules")
     )
-    []
-    opens
-  )
+  []
+  opens
 
-let lookup_name_in_table_dirs table dirs sr name =
-  try Some (lookup_name_in_htab table sr name)
-  with _ -> 
+let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
+  (* print_endline ("Lookup name " ^ name ^ " in table dirs");*)
+  flush stdout;
+  match lookup_name_in_htab table name with
+  | Some x as y -> 
+    (* print_endline "Found in table"; flush stdout; *)
+    y
+  | None ->
+    (* print_endline "Not found: calculating opens";*)
+    flush stdout;
   let opens = 
     List.concat
     (
       List.map
       (fun table -> 
-        try [lookup_name_in_htab table sr name]
-        with Not_found -> []
+        match lookup_name_in_htab table name with
+        | Some x -> [x]
+        | None -> [] 
       )
       dirs
     )
   in match opens with
   | [x] -> Some x
   | FunctionEntry ls :: rest ->
-    Some (merge_functions opens name)
+    Some (FunctionEntry (merge_functions opens name))
 
   | (NonFunctionEntry _)::_ -> 
     (* FIX: it might not be so! Could be two typedefs
@@ -218,6 +206,7 @@ let lookup_name_in_table_dirs table dirs sr name =
   | [] -> None
 
 let lookup_name_in_env env sr name : entry_set_t =
+  (* print_endline "Lookup name in env"; *)
   let rec aux env = 
     match env with 
     | [] -> None
@@ -227,7 +216,9 @@ let lookup_name_in_env env sr name : entry_set_t =
       | None -> aux tail
   in 
     match aux env with
-    | Some x -> x
+    | Some x -> 
+      (* print_endline ("Found name "^name^" in env"); flush stdout; *) 
+      x
     | None ->
       failwith 
       (
@@ -239,21 +230,19 @@ let lookup_name_in_env env sr name : entry_set_t =
         short_string_of_src sr 
       )
 
-let lookup_in_bound_module dfns iface binding sr t =
+let lookup_in_bound_module 
+  dfns iface binding sr 
+  (t:string) 
+: entry_set_t option  =
   match Hashtbl.find dfns iface with
-  | (_,_,_,SYMDEF_interface (table,dirs)) ->
-    let src = lookup_qn_in_htab dfns table sr t  in
+  | (_,_,_,`SYMDEF_interface (table,dirs)) ->
+    let src = lookup_name_in_htab table t  in
     begin match src with
+    | None -> None
+    | Some x -> match x with
     | NonFunctionEntry (Simple ix) ->
       let dst = Hashtbl.find binding ix in
-      (*
-      print_endline 
-      (
-        "Actually got NonFunction binding " ^
-        string_of_int ix ^ " ==> " ^ string_of_int dst
-      );
-      *)
-      NonFunctionEntry (Bound (ix,dst))
+      Some (NonFunctionEntry (Bound (ix,dst)))
 
     | NonFunctionEntry _ ->
       failwith
@@ -261,7 +250,6 @@ let lookup_in_bound_module dfns iface binding sr t =
         "[lookup_qn_in_env: Bound_module] Expected simple nonfunction entry got binding"
       )
     | FunctionEntry ls ->
-      (* print_endline ("Actually got Function bindings:"); *)
       let ns = ref [] in
       List.iter
       (fun ix ->
@@ -274,177 +262,151 @@ let lookup_in_bound_module dfns iface binding sr t =
       )
       ls
       ;
-      FunctionEntry !ns
+      Some (FunctionEntry !ns)
     end
 
   | _ -> 
     failwith "Lookup in bound module expected interface"
 
-(* lookup string list with a starting symbol table stack *)
+(* This routine looks up a qualified name in the
+   environment. The result is never a function or
+   functor decl, although it could be a variable
+   of function type.
+*)
+
 let rec lookup_qn_in_env 
   dfns 
   counter 
   (freg:instantiation_registry_t) 
   (env:env_t) 
-  sr 
   excluded_dirs
-  qn 
-  : entry_set_t 
+  (qn: qualified_name_t)
+  : entry_kind_t 
 =
-  (* print_endline ("[luqn_in_env] Searching for " ^ string_of_qualified_name qn); *)
   match qn with
-  | [] -> 
-    failwith 
-    (
-      "[lookup_qn_in_env] empty name " ^ 
-      short_string_of_src sr
-    )
-  | h :: t -> 
-    if h = ""
-    then 
-      if List.length env = 0
-      then 
-        failwith 
-        (
-          "[lookup_qn_in_env] Empty environment " ^ 
-          short_string_of_src sr
-        )
-      else
-        let htab,dirs = List.hd (List.rev env) in
-        (* LOOKUP IN DIRS IF FAILURE *)
-        lookup_qn_in_htab dfns htab sr t
-    else
-      let entry = lookup_name_in_env env sr h in
-      if t = [] then begin
-        (*
-        begin match entry with
-        | NonFunctionEntry (Simple index) ->
-          print_endline ("[luqn_in_env] Found Simple nonfunction " ^ h ^ "="^string_of_int index ^", finished");
-        | NonFunctionEntry (Bound (index1,index2)) ->
-          print_endline ("[luqn_in_env] Found Bound nonfunction " ^ h ^ "="^string_of_int index1 ^"=>"^string_of_int index2 ^", finished");
-        | FunctionEntry _ ->
-          print_endline ("[luqn_in_env] Found function " ^ h ^ ", finished");
-          
-        end
-        ;
-        *)
-        entry
-      end
-      else let index = 
-        match entry with
-        | FunctionEntry _ ->
-          failwith 
-          (
-            "[lookup_qn_in_env] Expected " ^ h ^ " to be module,\n" ^
-            " got overload set :" ^
-            short_string_of_src sr
-          )
-        | NonFunctionEntry (Simple index) -> index
-        | NonFunctionEntry _ -> assert false
+  | `AST_void _ -> failwith "qualified name is void"
+  | `AST_root _ -> failwith "Can't lookup root yet"
+  | `AST_case_tag _ -> failwith "Can't lookup a case tag"
+  | `AST_typed_case _ -> failwith "Can't lookup a case tag"
+  | `AST_name (sr,name) ->
+    begin match lookup_name_in_env env sr name with
+    | NonFunctionEntry x -> x
+    | FunctionEntry _ ->
+      failwith 
+      (
+        "Not expecting " ^ name ^
+        " to be function set in\n" ^
+        short_string_of_src sr
+      )
+    end
 
-      in 
-      (* print_endline ("[luqn_in_env] Found " ^ h ^ "="^string_of_int index ^", continuing"); *)
-      match get_data dfns index with
-      | (id,_,_,SYMDEF_module (htab,dirs)) ->
-        assert (id = h);
-        lookup_qn_in_htab dfns htab sr t
+  | `AST_lookup (sr,(me,name)) ->
+    match eval_module_expr dfns counter freg env excluded_dirs me with 
+    | Module_product _ ->
+      failwith "Unexpected module product"
 
-      | (id,_,_,SYMDEF_module_binding e) ->
-        (* print_endline ("Processing module binding " ^ id ^" = " ^ string_of_expression e); *)
-        begin match eval_module_expr dfns counter freg env excluded_dirs e with 
-        | Module_product _ ->
-          failwith "Unexpected module product"
+    | Functor_set _ ->
+      failwith "Unexpected Functor"
 
-        | Functor_set _ ->
-          failwith "Unexpected Functor"
-
-        | Simple_module (impl, htab,dirs) ->
-          (*
-          print_endline 
-          (
-            "[luqn in env] Lookup for '"^
-            string_of_qualified_name qn^
-            "' finds simple_module : " ^ 
-            id
-          );
-          print_endline "table is";
-          print_table htab;
-          print_endline "NOW DOING LOOKUP IN HTAB";
-          *)
-          lookup_qn_in_htab dfns htab sr t
-
-        | Bound_module (iface,impl,binding) ->
-          (*
-          print_endline 
-          (
-            "[luqn in env] Lookup for '"^
-            string_of_qualified_name qn^
-            "' finds bound_module : " ^ 
-            id
-          );
-          *)
-          lookup_in_bound_module dfns iface binding sr t
-
-        end
-        
-      | (id,_,_,SYMDEF_interface (htab,dirs)) ->
-        assert (id = h);
-        print_endline ("[luqn in env] Look finds interface : " ^ id);
-        lookup_qn_in_htab dfns htab sr t
-
-      | (_,_,_,SYMDEF_parameter t') ->
-        begin match bind_type dfns counter freg env [] excluded_dirs t' with
-        | BTYP_name index ->
-          let id,sr,parent,entry = Hashtbl.find dfns index in
-          begin match entry with
-          | SYMDEF_interface (htab,dirs) ->
-            print_endline 
-            (
-              "[luqn in env] Look finds interface parameter : " ^ 
-              id ^ 
-              "<"^string_of_int index^">"
-            );
-            lookup_qn_in_htab dfns htab sr t
-          | _ -> failwith "Expected parameter to be interface"
-          end
-        | _ -> 
+    | Simple_module (impl, htab,dirs) ->
+      begin match
+        try Hashtbl.find htab name with 
+        | Not_found -> 
           failwith
           (
-            "Expected parameter to be interface"
+            "Can't find " ^ name ^ " in\n" ^
+            short_string_of_src sr
           )
-        end
-
-      | (id,_,_,_) -> 
-        assert (id = h);
-        failwith (
-          "[lookup_qn_in_env] Expected '" ^ 
-          h ^ 
-          "' to have symbol table to find " ^ 
-          (String.concat "::" t) ^ 
-          " in :" ^
+      with
+      | NonFunctionEntry x -> x
+      | _ -> 
+        failwith 
+        (
+          "Not expecting " ^ string_of_qualified_name qn ^
+          " to be function set in\n" ^
           short_string_of_src sr
         )
+      end
 
+    | Bound_module (iface,impl,binding) ->
+      match lookup_in_bound_module dfns iface binding sr name with
+      | None -> 
+        failwith 
+        (
+          "Can't find " ^ 
+          string_of_qualified_name qn ^
+          " in\n" ^
+          short_string_of_src sr
+        )
+      | Some x -> match x with
+        | NonFunctionEntry x -> x
+        | FunctionEntry _ ->
+          failwith
+          (
+            "Not expecting " ^ string_of_qualified_name qn ^
+            " to be function set in\n" ^
+            short_string_of_src sr
+          )
+and lookup_sn_in_env 
+  dfns 
+  counter 
+  (freg:instantiation_registry_t) 
+  (env:env_t) 
+  excluded_dirs
+  (sn: suffixed_name_t)
+  : int 
+= 
+  match sn with
+  | #qualified_name_t as x ->
+    begin match
+      lookup_qn_in_env dfns counter freg env excluded_dirs x
+    with
+    | Simple index -> index
+    | Bound _ -> failwith "Expecting simple entry"
+    end
+
+  | `AST_suffix (sr,(qn,suf)) ->
+    let bsuf = bind_type dfns counter freg env [] excluded_dirs sr suf in
+    let be,t = 
+      lookup_qn_with_sig
+      dfns counter freg 
+      sr sr 
+      env [] excluded_dirs 
+      qn bsuf
+    in match be with
+    | `BEXPR_name index -> index
+    | `BEXPR_closure index -> index
+    | _ -> failwith "Expected expression to be index"
+
+(* this routine takes a bound type from an interface,
+   and applies the binding functor to produce a bound
+   type in the functors domain, which is a module.
+   Note that the target might be a typedef, so the result
+   is not necessarily unique. Rebind_type must be applied
+   to factor out the typedefs again.
+*)
 and map_type 
   iface 
   dfns counter freg 
-  mmap ienv binding excluded_dirs t 
+  mmap ienv binding excluded_dirs isr msr t 
 : btypecode_t = 
-  let map t = map_type iface dfns counter freg mmap ienv binding excluded_dirs t in
+  let map t = map_type iface dfns counter freg mmap ienv binding excluded_dirs isr msr t in
   match t with
-  | BTYP_name index ->
-    BTYP_name
+  | `BTYP_name index ->
+    `BTYP_name
     (
       get_unique_binding iface dfns counter freg 
         mmap ienv binding index excluded_dirs 
+        isr msr
     )
-  | BTYP_function (a, r) ->
-    BTYP_function (map a, map r)
-  | BTYP_tuple ls -> BTYP_tuple (List.map map ls)
-  | BTYP_pointer t -> BTYP_pointer (map t)
-  | BTYP_void -> BTYP_void
-  | BTYP_none -> BTYP_none 
-  | BTYP_binding (a,b) ->
+  | `BTYP_function (a, r) ->
+    `BTYP_function (map a, map r)
+  | `BTYP_tuple ls -> `BTYP_tuple (List.map map ls)
+  | `BTYP_sum ls -> `BTYP_sum (List.map map ls)
+  | `BTYP_pointer t -> `BTYP_pointer (map t)
+  | `BTYP_void -> `BTYP_void
+  | `BTYP_none -> `BTYP_none 
+  | `BTYP_binding (a,b) ->
     failwith "[map type] Unexpected type binding"
  
 (* NOTE ON COMPARISONS: 
@@ -464,7 +426,15 @@ and map_type
   either a Felix function or a primitive function.
 *)
 
-and compare_defn iface dfns counter freg mmap name ienv ientry menv mentry binding excluded_dirs =
+and compare_defn 
+  iface 
+  dfns counter freg 
+  mmap name 
+  ienv ientry 
+  menv mentry 
+  binding excluded_dirs 
+  isr msr
+=
   (*
   print_endline 
   (
@@ -473,82 +443,88 @@ and compare_defn iface dfns counter freg mmap name ienv ientry menv mentry bindi
     string_of_symdef mentry name ^ "'"
   );
   *)
-  let bt t: btypecode_t = bind_type dfns counter freg ienv [] excluded_dirs t in
-  let rt t: btypecode_t= rebind_btype dfns counter freg menv excluded_dirs t in 
+  let ibt t: btypecode_t = bind_type dfns counter freg ienv [] excluded_dirs isr t in
+  let rt t: btypecode_t= rebind_btype dfns counter freg menv excluded_dirs msr t in 
   let mt t: btypecode_t = 
-    map_type iface dfns counter freg mmap ienv binding excluded_dirs t
+    map_type iface 
+    dfns counter freg 
+    mmap ienv binding 
+    excluded_dirs 
+    isr msr 
+    t
   in
-  let rmb t: btypecode_t = rt (mt (bt t)) in
+  let rmb t: btypecode_t = rt (mt (ibt t)) in
+  let mbt t: btypecode_t = bind_type dfns counter freg menv [] excluded_dirs msr t in
     
   match ientry,mentry with
-  | SYMDEF_if_type,SYMDEF_dcl (DCL_type_alias _)
-  | SYMDEF_if_type,SYMDEF_dcl (DCL_abs _)
-  | SYMDEF_if_type,SYMDEF_dcl (DCL_union _)
-  | SYMDEF_if_type,SYMDEF_dcl (DCL_struct _)
-  | SYMDEF_if_type,SYMDEF_if_type
+  | `SYMDEF_if_type,`SYMDEF_dcl (`DCL_type_alias _)
+  | `SYMDEF_if_type,`SYMDEF_dcl (`DCL_abs _)
+  | `SYMDEF_if_type,`SYMDEF_dcl (`DCL_union _)
+  | `SYMDEF_if_type,`SYMDEF_dcl (`DCL_struct _)
+  | `SYMDEF_if_type,`SYMDEF_if_type
     ->   true
 
-  | SYMDEF_dcl (DCL_fun (ips,iret,ict)),SYMDEF_dcl (DCL_fun (mps,mret,mct)) ->
-    let it = TYP_function ( typeof_list ips , iret) in
-    let mt = TYP_function ( typeof_list mps , mret) in
-    let it = rmb it and mt = bt mt in
+  | `SYMDEF_dcl (`DCL_fun (ips,iret,ict)),`SYMDEF_dcl (`DCL_fun (mps,mret,mct)) ->
+    let it = `TYP_function ( typeof_list ips , iret) in
+    let mt = `TYP_function ( typeof_list mps , mret) in
+    let it = rmb it and mt = mbt mt in
     ict = mct && 
     it = mt
   
-  | SYMDEF_dcl (DCL_proc (ips,ict)),SYMDEF_dcl (DCL_proc (mps,mct)) ->
+  | `SYMDEF_dcl (`DCL_proc (ips,ict)),`SYMDEF_dcl (`DCL_proc (mps,mct)) ->
     let it = typeof_list ips in
     let mt = typeof_list mps in
-    let it = rmb it and mt = bt mt in
+    let it = rmb it and mt = mbt mt in
     ict = mct && 
     it = mt
 
-  | SYMDEF_if_proc (it), SYMDEF_dcl (DCL_proc (mps,mct)) ->
+  | `SYMDEF_if_proc (it), `SYMDEF_dcl (`DCL_proc (mps,mct)) ->
     let mt = typeof_list mps in
-    let it = rmb it and mt = bt mt in
+    let it = rmb it and mt = mbt mt in
     it = mt
  
-  | SYMDEF_if_fun (it),SYMDEF_dcl (DCL_fun (ps,ret,mct))  ->
-    let mt = TYP_function ( typeof_list ps , ret) in
-    let it = rmb it and mt = bt mt in
+  | `SYMDEF_if_fun (it),`SYMDEF_dcl (`DCL_fun (ps,ret,mct))  ->
+    let mt = `TYP_function ( typeof_list ps , ret) in
+    let it = rmb it and mt = mbt mt in
     it = mt
   
-  | SYMDEF_if_fun (it),SYMDEF_if_fun (mt) 
-  | SYMDEF_if_proc (it),SYMDEF_if_proc (mt) ->
-    let it = rmb it and mt = bt mt in
+  | `SYMDEF_if_fun (it),`SYMDEF_if_fun (mt) 
+  | `SYMDEF_if_proc (it),`SYMDEF_if_proc (mt) ->
+    let it = rmb it and mt = mbt mt in
     it = mt
     
-  | SYMDEF_if_fun (it),SYMDEF_function (ps,ret,_,_,_) ->
-    let mt = TYP_function ( paramtype ps , ret) in
-    let it = rmb it and mt = bt mt in
+  | `SYMDEF_if_fun (it),`SYMDEF_function (ps,ret,_,_,_) ->
+    let mt = `TYP_function ( paramtype ps , ret) in
+    let it = rmb it and mt = mbt mt in
     it = mt
 
-  | SYMDEF_if_proc (it),SYMDEF_procedure (ps,_,_,_) ->
+  | `SYMDEF_if_proc (it),`SYMDEF_procedure (ps,_,_,_) ->
     let mt =  paramtype ps in
-    let it = rmb it and mt = bt mt in
+    let it = rmb it and mt = mbt mt in
     it = mt
 
-  | SYMDEF_dcl (DCL_const (it,ict)), SYMDEF_dcl (DCL_const (mt,mct)) ->
-    let it = rmb it and mt = bt mt in
+  | `SYMDEF_dcl (`DCL_const (it,ict)), `SYMDEF_dcl (`DCL_const (mt,mct)) ->
+    let it = rmb it and mt = mbt mt in
     it = mt &&
     ict = mct
 
 
-  | SYMDEF_dcl (DCL_val it), SYMDEF_dcl (DCL_val mt) 
-  | SYMDEF_dcl (DCL_var it), SYMDEF_dcl (DCL_var mt) ->
-    let it = rmb it and mt = bt mt in
+  | `SYMDEF_dcl (`DCL_val it), `SYMDEF_dcl (`DCL_val mt) 
+  | `SYMDEF_dcl (`DCL_var it), `SYMDEF_dcl (`DCL_var mt) ->
+    let it = rmb it and mt = mbt mt in
     it = mt
 
-  | SYMDEF_dcl (DCL_var it), SYMDEF_dcl (DCL_var_typeof e)
-  | SYMDEF_dcl (DCL_val it), SYMDEF_dcl (DCL_val_typeof e) ->
+  | `SYMDEF_dcl (`DCL_var it), `SYMDEF_dcl (`DCL_var_typeof e)
+  | `SYMDEF_dcl (`DCL_val it), `SYMDEF_dcl (`DCL_val_typeof e) ->
     let mt = snd (bind_expression dfns counter freg menv [] excluded_dirs e)
     and it = rmb it in
     it = mt
 
-  | SYMDEF_dcl (DCL_union ics), SYMDEF_dcl (DCL_union mcs)
-  | SYMDEF_dcl (DCL_struct ics), SYMDEF_dcl (DCL_struct mcs) ->
+  | `SYMDEF_dcl (`DCL_union ics), `SYMDEF_dcl (`DCL_union mcs)
+  | `SYMDEF_dcl (`DCL_struct ics), `SYMDEF_dcl (`DCL_struct mcs) ->
     List.fold_left2
     (fun b (iname,it) (mname,mt) ->
-      let it = rmb it and mt = bt mt in
+      let it = rmb it and mt = mbt mt in
       b &&
       iname = mname &&
       it = mt
@@ -573,6 +549,7 @@ and compare_defn iface dfns counter freg mmap name ienv ientry menv mentry bindi
 *)
 and get_unique_binding iface dfns counter freg 
   mmap ienv (binding: index_map_t) iindex excluded_dirs 
+  isr msr
 : bid_t 
 =
   try Hashtbl.find binding iindex
@@ -599,6 +576,7 @@ and get_unique_binding iface dfns counter freg
         (
           compare_defn iface dfns counter freg 
           mmap mid ienv isymdef menv msymdef binding excluded_dirs
+          isr msr
         )
         then mindex
         else 
@@ -628,14 +606,16 @@ and get_unique_binding iface dfns counter freg
 
 and match_interface_entry 
   iface dfns counter freg 
-  mmap ienv binding excluded_dirs name ientry 
+  mmap ienv binding excluded_dirs 
+  isr msr
+  name ientry 
 =
   (*
   print_endline ("matching interface name " ^ name);
   *)
   match ientry with
   | NonFunctionEntry (Simple iindex) ->
-    ignore(get_unique_binding iface dfns counter freg mmap ienv binding iindex excluded_dirs)
+    ignore(get_unique_binding iface dfns counter freg mmap ienv binding iindex excluded_dirs isr msr)
   | NonFunctionEntry _ ->
     failwith
     (
@@ -646,7 +626,7 @@ and match_interface_entry
     (fun iindex ->
       match iindex with
       | Simple iindex ->
-        let iid,isr,iparent,isymdef = Hashtbl.find dfns iindex in
+        let iid,iesr,iparent,isymdef = Hashtbl.find dfns iindex in
         begin try
           match Hashtbl.find mmap name with
           | NonFunctionEntry _ ->
@@ -661,13 +641,14 @@ and match_interface_entry
             (fun mindex ->
               match mindex with
               | Simple mindex ->
-                let mid,msr,mparent,msymdef = Hashtbl.find dfns mindex in
+                let mid,mesr,mparent,msymdef = Hashtbl.find dfns mindex in
                 (* print_endline "BUILD ENV, MATCH INTERFACE ENTRY"; *)
                 let menv = build_env dfns counter freg excluded_dirs mparent in
                 if 
                 (
                   compare_defn iface dfns counter freg 
                   mmap name ienv isymdef menv msymdef binding excluded_dirs
+                  iesr mesr
                 )
                 then raise (Found mindex);
               | _ -> failwith "Expected Simple"
@@ -677,8 +658,26 @@ and match_interface_entry
             failwith 
             (
               "interface entry '"^
-              name^
-              "' doesn't match any one in the module"
+              string_of_symdef isymdef name ^ "' in\n" ^
+              short_string_of_src iesr ^
+              "\ndoesn't match any one in the module\n" ^
+              short_string_of_src msr ^
+              "\nCandidates are\n" ^
+              String.concat "\n"
+              (
+                List.map 
+                (fun x -> match x with 
+                  | Simple index ->
+                    let mid,mesr,mparent,msymdef = Hashtbl.find dfns index in
+                    string_of_symdef msymdef name 
+                  | Bound (i,j) -> 
+                    "binding "  ^ 
+                    string_of_int i ^ 
+                    " => " ^
+                    string_of_int j
+                )
+                ls
+              )
             )
             with Found mindex-> 
               Hashtbl.add binding iindex mindex
@@ -707,11 +706,15 @@ and match_interface
   (ienv:env_t)
   (imap:name_map_t)
   (excluded_dirs:int list)
+  isr msr
 =
   let binding = Hashtbl.create 97 in
   try 
     Hashtbl.iter
-    (match_interface_entry iface dfns counter freg mmap ienv binding excluded_dirs)
+    (match_interface_entry iface 
+      dfns counter freg mmap ienv binding excluded_dirs 
+      isr msr
+    )
     imap
     ;
     Some binding
@@ -765,12 +768,13 @@ and apply_binding imap binding : name_map_t = (* reverse polish *)
 and handle_coercion dfns counter freg env sr excluded_dirs  m t : module_rep_t =
   (* print_endline "HANDLING COERCION"; *)
   let m' = eval_module_expr dfns counter freg env excluded_dirs m in
-  let t' = bind_type dfns counter freg env [] excluded_dirs t in
+  let t' = bind_type dfns counter freg env [] excluded_dirs sr t in
   handle_module_coercion dfns counter freg env sr excluded_dirs m' t' 
 
 and handle_module_coercion dfns counter freg env sr excluded_dirs m t =
   match t with
-  | BTYP_tuple ts ->
+  | `BTYP_sum _ -> failwith "Can't handle module sums yet"
+  | `BTYP_tuple ts ->
     begin match m with
     | Module_product ms ->
       let nms = List.length ms and nts = List.length ts in
@@ -789,12 +793,12 @@ and handle_module_coercion dfns counter freg env sr excluded_dirs m t =
       )
     end
 
-  | BTYP_name index ->
-    let id,sr,parent,symdef = Hashtbl.find dfns index in
+  | `BTYP_name index ->
+    let id,isr,parent,symdef = Hashtbl.find dfns index in
     (* print_endline "BUILD_ENV, MODULE COERCION"; *)
     let ienv = build_env dfns counter freg excluded_dirs (Some index) in
     begin match symdef with
-    | SYMDEF_interface (imap,dirs) ->
+    | `SYMDEF_interface (imap,dirs) ->
       begin match m with
       | Functor_set _ ->
         failwith "Can't coerce functor (yet)"
@@ -804,18 +808,27 @@ and handle_module_coercion dfns counter freg env sr excluded_dirs m t =
         
       | Simple_module (impl,module_map,dirs) ->
         begin match
-          match_interface index dfns counter freg module_map ienv imap excluded_dirs
+          match_interface index 
+          dfns counter freg 
+          module_map ienv imap 
+          excluded_dirs 
+          isr sr
         with
           | Some binding ->
             Bound_module (index,impl,binding)
           | None -> failwith "Module doesn't match interface"
         end
       | Bound_module (iface,impl,binding) ->
-        let _,_,_,ientry = Hashtbl.find dfns iface in
+        let _,isr,_,ientry = Hashtbl.find dfns iface in
         begin match ientry with
-        | SYMDEF_interface (module_map,dirs) ->
+        | `SYMDEF_interface (module_map,dirs) ->
           begin match
-            match_interface index dfns counter freg module_map ienv imap excluded_dirs
+            match_interface index 
+              dfns counter freg 
+              module_map 
+              ienv imap 
+              excluded_dirs 
+              isr sr
           with
             | Some binding' ->
               print_endline ("Interface matches interface '"^id^"' OK");
@@ -858,17 +871,22 @@ and handle_module_coercion dfns counter freg env sr excluded_dirs m t =
       string_of_btypecode dfns t
     )
 
-and compare_module_expr_with_type dfns counter freg excluded_dirs t m =
+and compare_module_expr_with_type dfns counter freg excluded_dirs sr t m =
   (* print_endline "COMPARING MODULE EXPR WITH TYPE"; *)
   match m with
   | Module_product ls -> 
     (* print_endline "..MODULE PRODUCT";*)
     begin match t with
-    | BTYP_tuple ts ->
+    | `BTYP_tuple ts ->
       if List.length ts = List.length ls
       then
         List.fold_left2
-        (fun b t m -> b && (compare_module_expr_with_type dfns counter freg excluded_dirs t m))
+        (fun b t m -> b && 
+          (
+            compare_module_expr_with_type 
+            dfns counter freg excluded_dirs sr t m
+          )
+        )
         true ts ls
       else false
     | _ -> false
@@ -876,20 +894,23 @@ and compare_module_expr_with_type dfns counter freg excluded_dirs t m =
  | Bound_module (index,_,_) ->
    (* print_endline "..BOUND MODULE";*)
    begin match t with
-   | BTYP_name index2 -> index = index2
+   | `BTYP_name index2 -> index = index2
    | _ -> false
    end
  | Simple_module (impl,mmap,dirs) ->
    (* print_endline "..SIMPLE MODULE"; *)
    begin match t with
-   | BTYP_name iface ->
-     let _,_,p,ientry = Hashtbl.find dfns iface in
+   | `BTYP_name iface ->
+     let _,isr,p,ientry = Hashtbl.find dfns iface in
      begin match ientry with
-     | SYMDEF_interface (imap,dirs) ->
+     | `SYMDEF_interface (imap,dirs) ->
        begin match
          (* print_endline "BUILD ENV, COMPARE MODULE EXPR"; *)
          let ienv = build_env dfns counter freg excluded_dirs p in
-         match_interface iface dfns counter freg mmap ienv imap excluded_dirs
+         match_interface iface 
+         dfns counter freg 
+         mmap ienv imap 
+         excluded_dirs isr sr
        with
         | Some binding' -> true
         | None -> false
@@ -900,22 +921,32 @@ and compare_module_expr_with_type dfns counter freg excluded_dirs t m =
    end
  | Functor_set _ -> failwith "Can't compare functor set with single type"
  
-and resolve_functor_overload dfns counter freg env excluded_dirs ls m' =
+and resolve_functor_overload dfns counter freg env excluded_dirs sr ls m' =
   (* print_endline "RESOLVING FUNCTOR OVERLOAD"; *)
   List.filter
   (fun index -> 
     let id,sr,parent,entry = Hashtbl.find dfns index in
     match entry with 
-    | SYMDEF_functor (ps,t,e,nm,dirs) ->
+    | `SYMDEF_typed_functor (ps,t,e,nm,dirs) ->
       let t = 
         match List.map snd ps  with
         | [x] -> x
-        | x -> TYP_tuple x
+        | x -> `TYP_tuple x
       in
-      let t = bind_type dfns counter freg env [] excluded_dirs t
+      let t = bind_type dfns counter freg env [] excluded_dirs sr t
       in 
         (* print_endline ("Type of functor signature is " ^ string_of_btypecode dfns t); *)
-        compare_module_expr_with_type dfns counter freg excluded_dirs t m'
+        compare_module_expr_with_type dfns counter freg excluded_dirs sr t m'
+    | `SYMDEF_untyped_functor (ps,e,nm,dirs) ->
+      let t = 
+        match List.map snd ps  with
+        | [x] -> x
+        | x -> `TYP_tuple x
+      in
+      let t = bind_type dfns counter freg env [] excluded_dirs sr t
+      in 
+        (* print_endline ("Type of functor signature is " ^ string_of_btypecode dfns t); *)
+        compare_module_expr_with_type dfns counter freg excluded_dirs sr t m'
     | _ -> failwith "Expected FUnctor"
   )
   ls
@@ -926,33 +957,38 @@ and copy_entry dfns counter parent binding_list index =
   let id,sr,_,entry = Hashtbl.find dfns index in
   let kind,symdef = 
     match entry with
-    | SYMDEF_function (ps,t,es,table,dirs) ->
+    | `SYMDEF_function (ps,t,es,table,dirs) ->
       let table' = copy_table dfns counter (Some index') [] table in
-      Other,SYMDEF_function (ps,t,es,table',dirs)
+      Other,`SYMDEF_function (ps,t,es,table',dirs)
       
-    | SYMDEF_procedure (ps,es,table,dirs) ->
+    | `SYMDEF_procedure (ps,es,table,dirs) ->
       let table' = copy_table dfns counter (Some index') [] table in
-      Other,SYMDEF_procedure (ps,es,table',dirs)
+      Other,`SYMDEF_procedure (ps,es,table',dirs)
 
-    | SYMDEF_match_handler (p,u,es,table,dirs) ->
+    | `SYMDEF_match_handler (p,u,es,table,dirs) ->
       let table' = copy_table dfns counter (Some index') [] table in
-      Other,SYMDEF_match_handler (p,u,es,table',dirs)
+      Other,`SYMDEF_match_handler (p,u,es,table',dirs)
 
-    | SYMDEF_functor (ps,t,es,table,dirs) ->
+    | `SYMDEF_typed_functor (ps,t,es,table,dirs) ->
       let table' = copy_table dfns counter (Some index') [] table in
-      Other,SYMDEF_functor (ps,t,es,table',dirs)
+      Other,`SYMDEF_typed_functor (ps,t,es,table',dirs)
 
-    | SYMDEF_parameter _ ->
+    | `SYMDEF_untyped_functor (ps,es,table,dirs) ->
+      let table' = copy_table dfns counter (Some index') [] table in
+      Other,`SYMDEF_untyped_functor (ps,es,table',dirs)
+
+    | `SYMDEF_parameter _ ->
       begin try
         let iidx,midx,binding = List.assoc id binding_list in
-        Parameter,SYMDEF_module_binding 
+        Parameter,`SYMDEF_module_binding 
         (
-          AST_bound_module (sr,(iidx,midx,binding))
+          `AST_bound_module (sr,(iidx,midx,binding))
         ) 
       with Not_found -> Other,entry
       end
     | _ -> Other,entry
   in
+    (*
     print_endline 
     (
       "//   " ^ string_of_int index' ^ 
@@ -964,6 +1000,7 @@ and copy_entry dfns counter parent binding_list index =
       id ^ "["^string_of_int index^"]: " ^ 
       short_string_of_src sr
     );
+    *)
     Hashtbl.add dfns index' (id,sr,parent,symdef)
     ;
     index'
@@ -1004,14 +1041,15 @@ and instantiate_functor
     let afidx = Hashtbl.find freg (findex, m) in
     let _,_,_,entry = Hashtbl.find dfns afidx in
     match entry with
-    | SYMDEF_module (name_map,dirs) -> Simple_module (afidx,name_map,dirs)
+    | `SYMDEF_module (name_map,dirs) -> Simple_module (afidx,name_map,dirs)
     | _ -> failwith "Expected instantiation to be simple module"
   with Not_found ->
   (* print_endline "INSTANTIATING FUNCTOR"; *)
   let _,_,parent,entry = Hashtbl.find dfns findex in
-  let ps,rt,asms,name_map,dirs = 
+  let ps,asms,name_map,dirs = 
     match entry with 
-    | SYMDEF_functor (ps,rt,asms,name_map,dirs) -> ps,rt,asms,name_map,dirs
+    | `SYMDEF_typed_functor (ps,rt,asms,name_map,dirs) -> ps,asms,name_map,dirs
+    | `SYMDEF_untyped_functor (ps,asms,name_map,dirs) -> ps,asms,name_map,dirs
     | _ -> failwith "Expected functor"
   in
   let env = build_env dfns counter freg excluded_dirs parent in
@@ -1027,7 +1065,7 @@ and instantiate_functor
     | Simple_module (impl,mmap,dirs) -> 
       begin match ps with
       | [x] ->
-        let t = bind_type dfns counter freg env [] excluded_dirs (snd x) in
+        let t = bind_type dfns counter freg env [] excluded_dirs sr (snd x) in
         begin match handle_module_coercion dfns counter freg env sr excluded_dirs m t with
         | Bound_module (iindex,impl,binding)  -> 
           [fst x, (iindex,impl,binding)]
@@ -1054,7 +1092,7 @@ and instantiate_functor
     );
     Hashtbl.add freg (findex,m) mindex; 
     let mtable = copy_table dfns counter (Some mindex) binding name_map in
-    Hashtbl.add dfns mindex (mname,sr,parent, (SYMDEF_module (mtable,dirs))); 
+    Hashtbl.add dfns mindex (mname,sr,parent, (`SYMDEF_module (mtable,dirs))); 
     (*
     print_endline "Instantiated Functor has table:";
     Hashtbl.iter
@@ -1074,7 +1112,7 @@ and handle_functor_application dfns counter freg env sr excluded_dirs f m =
   let f' = eval_module_expr dfns counter freg env excluded_dirs f in
   match f' with
   | Functor_set ls ->
-    let matches = resolve_functor_overload dfns counter freg env excluded_dirs ls m' in
+    let matches = resolve_functor_overload dfns counter freg env excluded_dirs sr ls m' in
     begin match matches with
     | [index] -> 
         instantiate_functor dfns counter freg sr excluded_dirs index m'
@@ -1084,25 +1122,8 @@ and handle_functor_application dfns counter freg env sr excluded_dirs f m =
 
   | _ -> failwith "Expected functor"
 
-and eval_module_expr dfns counter freg env excluded_dirs e : module_rep_t = 
-  (* print_endline ("Handling module expression '"^string_of_expression e^"'");  *)
-  match e with
-  | AST_tuple (sr,es) ->
-    Module_product (List.map (eval_module_expr dfns counter freg env excluded_dirs) es)
 
-  | AST_coercion (sr,(m,t)) ->
-    handle_coercion dfns counter freg env sr excluded_dirs m t
-
-  | AST_bound_module (sr,(iface,impl,binding)) ->
-    Bound_module (iface,impl,binding)
-
-  | AST_apply (sr,(f,m)) ->
-    let x = handle_functor_application dfns counter freg env sr excluded_dirs f m in
-    (* print_endline "FUNCTOR APPLIED"; *)
-    x
-
-  | AST_name (sr,(qn,TYP_none)) ->
-    let entries = lookup_qn_in_env dfns counter freg env sr excluded_dirs qn in
+and check_module dfns counter freg excluded_dirs sr entries =
     begin match entries with
     | FunctionEntry ls -> 
       let ls = 
@@ -1111,7 +1132,8 @@ and eval_module_expr dfns counter freg env excluded_dirs e : module_rep_t =
           | Simple index -> 
             let id,sr,parent,entry = Hashtbl.find dfns index in
             begin match entry with
-            | SYMDEF_functor _ -> index
+            | `SYMDEF_typed_functor _ -> index
+            | `SYMDEF_untyped_functor _ -> index
             | _ -> 
               failwith 
               (
@@ -1128,10 +1150,9 @@ and eval_module_expr dfns counter freg env excluded_dirs e : module_rep_t =
     | NonFunctionEntry (Simple index) ->
       let id,sr',parent,entry = Hashtbl.find dfns index in
       begin match entry with
-      | SYMDEF_module (table,dirs) -> 
+      | `SYMDEF_module (table,dirs) -> 
         Simple_module (index,table,dirs)
-      | SYMDEF_module_binding e ->
-        print_endline "RECURSION?";
+      | `SYMDEF_module_binding e ->
         let env' = build_env dfns counter freg excluded_dirs parent in
         eval_module_expr dfns counter freg env' excluded_dirs e
       | _ -> 
@@ -1149,10 +1170,105 @@ and eval_module_expr dfns counter freg env excluded_dirs e : module_rep_t =
       )
     end
 
-  | _ ->
-    failwith "Invalid module expression"
+and make_bound binding x = 
+  let bi i = Bound (i, Hashtbl.find binding i) in
+  let be e = 
+    match e with 
+    | Simple i -> bi i
+    | Bound _ -> failwith "Entry already bound!"
+  in
+  match x with
+  | NonFunctionEntry e -> NonFunctionEntry (be e)
+  | FunctionEntry fs -> FunctionEntry (List.map be fs)
 
-and bind_index dfns counter freg env exclude excluded_dirs index = 
+and eval_module_expr dfns counter freg env excluded_dirs e : module_rep_t = 
+  (*
+  print_endline ("Handling module expression '"^string_of_expr e^"'"); 
+  *)
+  match e with
+  | `AST_root sr ->
+    let root_env,_ = list_last env in
+    let rec find_root i =
+      let id,sr,parent,entry = Hashtbl.find dfns i in
+      match parent with 
+      | None -> i
+      | Some i -> find_root i
+    in
+    (* THIS IS A HACK! It assumes the last use of the counter
+      was for building an entry in the dfns symtab!
+    *)
+    let root_index = find_root (!counter - 1) in
+    (*
+    print_endline ("ROOT IS INDEX " ^ string_of_int root_index)
+    ;
+    *)
+    Simple_module (root_index,root_env,[]) 
+
+  | `AST_tuple (sr,es) ->
+    Module_product (List.map (eval_module_expr dfns counter freg env excluded_dirs) es)
+
+  | `AST_coercion (sr,(m,t)) ->
+    handle_coercion dfns counter freg env sr excluded_dirs m t
+
+  | `AST_bound_module (sr,(iface,impl,binding)) ->
+    Bound_module (iface,impl,binding)
+
+  | `AST_apply (sr,(f,m)) ->
+    let x = handle_functor_application dfns counter freg env sr excluded_dirs f m in
+    (* print_endline "FUNCTOR APPLIED"; *)
+    x
+
+  | `AST_name (sr,name) ->
+    let entries = lookup_name_in_env env sr name in
+    check_module dfns counter freg excluded_dirs sr entries
+
+  | `AST_lookup (sr,(e,name)) ->
+    let result = eval_module_expr dfns counter freg env excluded_dirs e in
+    let entries = 
+      begin match result with
+      | Simple_module (index,table,dirs) ->
+        begin match lookup_name_in_htab table name with
+        | Some x -> x
+        | None -> failwith 
+          (
+            "Can't find " ^ name ^ " in module in\n"  ^ 
+            short_string_of_src sr 
+          )
+        end
+
+      | Bound_module (iface,impl,binding) ->
+        let id,sr,parent,entry = Hashtbl.find dfns iface in
+        begin match entry with
+        | `SYMDEF_interface (table,_) ->
+          begin match lookup_name_in_htab table name with
+          | Some x ->
+            make_bound binding x
+          | None -> failwith 
+            (
+              "Can't find " ^ name ^ " in module in\n"  ^ 
+              short_string_of_src sr 
+            )
+          end
+
+        | _ -> failwith "Expected interface"
+        end
+
+      | Functor_set _ -> failwith "Can't lookup in functor set"
+      | Module_product _ -> failwith "Can't lookup in module product"
+      end 
+    in check_module dfns counter freg excluded_dirs sr entries
+
+  | _ ->
+    failwith 
+    (
+      "Invalid module expression " ^ 
+      string_of_expr e ^ " in\n" ^
+      short_string_of_src (src_of_expr e) 
+    )
+
+and bind_index dfns counter freg env exclude excluded_dirs sr index = 
+  (* print_endline "BINDING INDEX";*)
+  flush stdout;
   if List.mem index exclude 
   then failwith (
     "Recursive type alias " ^
@@ -1163,21 +1279,21 @@ and bind_index dfns counter freg env exclude excluded_dirs index =
     )
   )
   else begin match get_data dfns index with
-  | _,_,_,SYMDEF_dcl (DCL_type_alias t) -> 
-    bind_type dfns counter freg env (index :: exclude) excluded_dirs t
+  | _,_,_,`SYMDEF_dcl (`DCL_type_alias t) -> 
+    bind_type dfns counter freg env (index :: exclude) excluded_dirs sr t
 
-  | _,_,_,SYMDEF_if_type -> BTYP_name index
-  | _,_,_,SYMDEF_dcl (DCL_abs _) -> BTYP_name index
-  | _,_,_,SYMDEF_dcl (DCL_union _) -> BTYP_name index
-  | _,_,_,SYMDEF_dcl (DCL_struct _) -> BTYP_name index
-  | _,_,_,SYMDEF_interface _ -> BTYP_name index
-  | _,_,_,SYMDEF_module_binding e ->
+  | _,_,_,`SYMDEF_if_type -> `BTYP_name index
+  | _,_,_,`SYMDEF_dcl (`DCL_abs _) -> `BTYP_name index
+  | _,_,_,`SYMDEF_dcl (`DCL_union _) -> `BTYP_name index
+  | _,_,_,`SYMDEF_dcl (`DCL_struct _) -> `BTYP_name index
+  | _,_,_,`SYMDEF_interface _ -> `BTYP_name index
+  | _,_,_,`SYMDEF_module_binding e ->
     let e' = 
       eval_module_expr dfns counter freg env excluded_dirs e
     in 
     begin match e' with
     | Bound_module (iface,impl,binding) -> 
-      BTYP_binding (BTYP_name iface, BTYP_name impl)
+      `BTYP_binding (`BTYP_name iface, `BTYP_name impl)
     | _ -> failwith "Expected module binding expression to be bound module"
     end
   | id,sr,_,entry -> 
@@ -1190,97 +1306,142 @@ and bind_index dfns counter freg env exclude excluded_dirs index =
     )
   end 
 
-and bind_type dfns counter freg env exclude excluded_dirs t : btypecode_t =
-  let bt t = bind_type dfns counter freg env exclude excluded_dirs t in
-  let dummy_sr = ("type binding",0,0,0,0) in
-  let lu qn = lookup_qn_in_env dfns counter freg env dummy_sr excluded_dirs qn in
+(* This routine binds a type expression to a bound type expression.
+   Note in particular that a type alias is replaced by what
+   it as an alias for, recursively so that the result 
+   globally unique
+*)
+
+and bind_type dfns counter freg env exclude excluded_dirs sr t : btypecode_t =
+  let bt t = bind_type dfns counter freg env exclude excluded_dirs sr t in
+  let bi i = bind_index dfns counter freg env exclude excluded_dirs sr i in
+  (* print_endline ("BINDING TYPE " ^ string_of_typecode t);*)
+  flush stdout;
   match t with
-  | TYP_tuple ts -> BTYP_tuple (List.map bt ts)
-  | TYP_function (d,c) -> BTYP_function (bt d, bt c)
-  | TYP_pointer t -> BTYP_pointer (bt t)
-  | TYP_void -> BTYP_void
-  | TYP_none -> BTYP_none
-  | TYP_name qn ->
-    match lu qn with
-    | NonFunctionEntry (Bound (i,m)) -> 
-      let i = bind_index dfns counter freg env exclude excluded_dirs i in
-      let m = bind_index dfns counter freg env exclude excluded_dirs m in
-      BTYP_binding (i,m)
+  | `AST_root _ -> failwith "Not expecting root in bind type"
 
-    | FunctionEntry _ -> 
-      failwith 
-      (
-        "[bind_types] Expected "^
-        string_of_qualified_name qn^
-        " to be a type, got function overload set"
-      )
+  | `TYP_tuple ts -> 
+    let ts' =List.map bt ts  in
+    `BTYP_tuple ts'
 
-    | NonFunctionEntry (Simple index) ->
-      bind_index dfns counter freg env exclude excluded_dirs index
+  | `TYP_sum ts -> 
+    let ts' =List.map bt ts  in
+    `BTYP_sum ts'
 
-and rebind_btype dfns counter freg env excluded_dirs t: btypecode_t =
-  let rbt t = rebind_btype dfns counter freg env excluded_dirs t in
+  | `TYP_function (d,c) -> 
+    let 
+      d' = bt d  and 
+      c' = bt c 
+    in 
+      (*
+      print_endline "DONE (function type)";
+      flush stdout;
+      *)
+      `BTYP_function (bt d, bt c)
+
+  | `TYP_pointer t -> 
+     let t' = bt t in 
+     (*
+     print_endline "Done (pointer type)"; 
+     flush stdout; 
+     *)
+     `BTYP_pointer t'
+
+  | `AST_void _ -> 
+    (*
+    print_endline "Done (void)"; 
+    flush stdout; 
+    *)
+    `BTYP_void
+
+  | #qualified_name_t as x -> 
+    (* print_endline "BIND TYPE DOING LOOKUP QN IN ENV";
+    flush stdout;
+    *)
+    match lookup_qn_in_env dfns counter freg env excluded_dirs x with
+    | Bound (i,m) -> 
+      (* print_endline "Lookup returns bound type";
+      flush stdout;
+      *)
+      `BTYP_binding (bi i, bi m)
+
+    | Simple index -> 
+      (* print_endline "Lookup returns simple index";
+      flush stdout; 
+      *)
+      bi index
+
+(* This routine takes a bound type, and produces a unique form
+   of the bound type, by again factoring out type aliases.
+   The type aliases can get reintroduced by map_type,
+   if an abstract type is mapped to a typedef, so we have
+   to factor them out again
+*)
+   
+and rebind_btype dfns counter freg env excluded_dirs sr t: btypecode_t =
+  let rbt t = rebind_btype dfns counter freg env excluded_dirs sr t in
   match t with
-  | BTYP_name i ->
+  | `BTYP_name i ->
     let id,sr,parent,entry = Hashtbl.find dfns i in
     begin match entry with
-    | SYMDEF_dcl (DCL_type_alias t') ->
-      bind_type dfns counter freg env [] excluded_dirs t'
+    | `SYMDEF_dcl (`DCL_type_alias t') ->
+      bind_type dfns counter freg env [] excluded_dirs sr t'
     | _ -> t
     end
-  | BTYP_tuple ts -> BTYP_tuple (List.map rbt ts)
-  | BTYP_function (a,r) -> BTYP_function (rbt a, rbt r) 
-  | BTYP_pointer t -> BTYP_pointer (rbt t)
-  | BTYP_void -> BTYP_void
-  | BTYP_none -> BTYP_none
-  | BTYP_binding (a,b) -> BTYP_binding (rbt a,rbt b)
+  | `BTYP_tuple ts -> `BTYP_tuple (List.map rbt ts)
+  | `BTYP_sum ts -> `BTYP_sum (List.map rbt ts)
+  | `BTYP_function (a,r) -> `BTYP_function (rbt a, rbt r) 
+  | `BTYP_pointer t -> `BTYP_pointer (rbt t)
+  | `BTYP_void -> `BTYP_void
+  | `BTYP_none -> `BTYP_none
+  | `BTYP_binding (a,b) -> `BTYP_binding (rbt a,rbt b)
 
 
 and base_typename_of_literal v = match v with
-  | AST_int (t,_) -> t
-  | AST_float (t,_) -> t
-  | AST_string _ -> "string"
-  | AST_bool _ -> "bool"
-
-and  qualified_typename_of_literal v =
-  [""; base_typename_of_literal v]
+  | `AST_int (t,_) -> t
+  | `AST_float (t,_) -> t
+  | `AST_string _ -> "string"
+  | `AST_bool _ -> "bool"
 
 and  typeof_literal dfns counter freg env sr v : btypecode_t = 
-  let t = qualified_typename_of_literal v in
-  match lookup_qn_in_env dfns counter freg env sr [] t with
-  | NonFunctionEntry (Simple index) -> BTYP_name index
-  | _ -> failwith (
-      "[type_of_literal] Expected " ^ 
-      string_of_qualified_name t ^ 
-      " to be simple non function " ^
-      short_string_of_src sr
+  let root,_ = List.hd (List.rev env) in
+  let name = base_typename_of_literal v in
+  match lookup_name_in_env env dummy_sr name with
+  | NonFunctionEntry (Simple index) -> 
+    `BTYP_name index
+  | _ -> 
+    failwith 
+    (
+      "Unable to find simple definition of type " ^ 
+      name ^ " of literal " ^
+      string_of_literal v
     )
-
+  
 and  typeof_list = function 
   | [x] -> x 
-  | x -> TYP_tuple x
+  | x -> `TYP_tuple x
 
 and  typlist params = List.map snd params
 and  paramtype params = typeof_list (typlist params)
 
 and  sig_of_symdef symdef name = match symdef with 
-  | SYMDEF_lazy (_) 
-  | SYMDEF_match_check (_) 
-  | SYMDEF_match_handler (_,_,_,_,_) -> TYP_tuple[]
+  | `SYMDEF_lazy (_) 
+  | `SYMDEF_match_check (_) 
+  | `SYMDEF_match_handler (_,_,_,_,_) -> `TYP_tuple[]
 
   (* primitives *)
-  | SYMDEF_dcl (DCL_fun (ps,_,_))
-  | SYMDEF_dcl (DCL_proc (ps,_)) -> typeof_list ps
+  | `SYMDEF_dcl (`DCL_fun (ps,_,_))
+  | `SYMDEF_dcl (`DCL_proc (ps,_)) -> typeof_list ps
 
-  | SYMDEF_function (ps,_,_,_,_)
-  | SYMDEF_procedure (ps,_,_,_) -> paramtype ps
+  | `SYMDEF_function (ps,_,_,_,_)
+  | `SYMDEF_procedure (ps,_,_,_) -> paramtype ps
 
-  | SYMDEF_if_fun (t) -> 
+  | `SYMDEF_if_fun (t) -> 
     begin match t with
-    | TYP_function (a,r) -> a
+    | `TYP_function (a,r) -> a
     | _ -> failwith "[resolve overload] Expected function to have function type"
     end
-  | SYMDEF_if_proc (t) -> t
+  | `SYMDEF_if_proc (t) -> t
   
   | symdef -> 
     failwith (
@@ -1298,57 +1459,118 @@ and typeofindex
   (excluded_dirs:int list)
   (index:int)
 : btypecode_t = 
+  (* print_endline ("TYPE OF INDEX " ^ string_of_int index); *)
+  flush stdout;
   let id,sr,parent,entry = Hashtbl.find dfns index in
-
+  (*
+  print_endline ("Index is id=" ^ id);
+  *)
   if List.mem index exclude
   then failwith ("Recursive type dependency for " ^ id);
 
-  (* print_endline "BUILD ENV IN TYPEOFINDEX"; *)
+  (* print_endline "BUILD ENV IN TYPEOFINDEX";  *)
   let env:env_t = build_env dfns counter freg excluded_dirs parent in 
-  let bt t:btypecode_t = bind_type dfns counter freg env (index::exclude) excluded_dirs t in
+  (* print_endline "ENV BUILT in typeofindex"; *)
+  flush stdout;
+  let bt t:btypecode_t = 
+    (* print_endline ("TYPEOFINDEX binding type " ^ string_of_typecode t); *)
+    flush stdout;
+    let t' = bind_type dfns counter freg env (index::exclude) excluded_dirs sr t in
+    (* print_endline "TYPE BOUND"; *)
+    t'
+  in
+    (*
+    print_endline ("typeofindex finds " ^ string_of_symdef entry id);
+    flush stdout;
+    *)
   match entry with
 
-  | SYMDEF_function (ps, rt,_,_,_) -> 
+  | `SYMDEF_function (ps, rt,_,_,_) -> 
     let pts = List.map snd ps in
-    bt (TYP_function (typeof_list pts, rt))
+    bt (`TYP_function (typeof_list pts, rt))
 
-  | SYMDEF_procedure(ps,_,_,_) -> 
+  | `SYMDEF_procedure(ps,_,_,_) -> 
+    (*
+    print_endline "typeofindex finds PROCEDURE";
+    flush stdout;
+    *)
     let pts = List.map snd ps in
-    bt (TYP_function (typeof_list pts, TYP_void))
+    bt (`TYP_function (typeof_list pts, `AST_void sr))
 
-  | SYMDEF_if_proc (t) -> 
-    bt (TYP_function (t,TYP_void))
+  | `SYMDEF_if_proc (t) -> 
+    bt (`TYP_function (t,`AST_void sr))
 
-  | SYMDEF_dcl (DCL_const (t,_))
-  | SYMDEF_parameter t
-  | SYMDEF_if_fun (t)
-  | SYMDEF_dcl (DCL_val t)
-  | SYMDEF_dcl (DCL_var t) -> bt t
+  | `SYMDEF_dcl (`DCL_const (t,_)) ->
+    (*
+    print_endline "Found const";
+    print_endline (":--->" ^ string_of_symdef entry id);
+    flush stdout;
+    *)
+    bt t
 
-  | SYMDEF_dcl (DCL_val_typeof e)
-  | SYMDEF_dcl (DCL_var_typeof e) ->
+  | `SYMDEF_parameter t ->
+    (*
+    print_endline "Found param";
+    print_endline (":--->" ^ string_of_symdef entry id);
+    flush stdout;
+    *)
+    bt t
+
+  | `SYMDEF_if_fun (t) ->
+    (*
+    print_endline "Found if_fun";
+    print_endline (":--->" ^ string_of_symdef entry id);
+    flush stdout;
+    *)
+    bt t
+
+  | `SYMDEF_dcl (`DCL_val t) ->
+    (*
+    print_endline "Found val";
+    print_endline (":--->" ^ string_of_symdef entry id);
+    flush stdout;
+    *)
+    bt t
+
+  | `SYMDEF_dcl (`DCL_var t) -> 
+    (*
+    print_endline "Found var";
+    print_endline (":--->" ^ string_of_symdef entry id);
+    flush stdout;
+    *)
+    bt t
+
+  | `SYMDEF_dcl (`DCL_val_typeof e)
+  | `SYMDEF_dcl (`DCL_var_typeof e) ->
+    (*
+    print_endline "CALLING BIND EXPRESSION.. (possible recursion)";
+    flush stdout;
+    *)
     snd(bind_expression dfns counter freg env (index::exclude) excluded_dirs e)
 
-  | SYMDEF_lazy (e) -> 
+  | `SYMDEF_lazy (e) -> 
     let rt = snd (bind_expression dfns counter freg env (index::exclude) excluded_dirs e) in
-    BTYP_function (BTYP_tuple [],rt)
+    `BTYP_function (`BTYP_tuple [],rt)
 
 
-  | SYMDEF_match_check _ ->
-    let bool_t = typeof_literal dfns counter freg env sr (AST_bool true) in
-    BTYP_function (BTYP_tuple [], bool_t)
+  | `SYMDEF_match_check _ ->
+    let bool_t = typeof_literal dfns counter freg env sr (`AST_bool true) in
+    `BTYP_function (`BTYP_tuple [], bool_t)
 
-  | SYMDEF_match_handler _ ->
-    BTYP_function (BTYP_tuple [],BTYP_void)
+  | `SYMDEF_match_handler _ ->
+    `BTYP_function (`BTYP_tuple [],`BTYP_void)
 
-  | SYMDEF_dcl (DCL_fun (pts,rt,_)) -> 
-    bt (TYP_function (typeof_list pts,rt))
+  | `SYMDEF_dcl (`DCL_fun (pts,rt,_)) -> 
+    (* print_endline "Found function primitive";
+    flush stdout;
+    *)
+    bt (`TYP_function (typeof_list pts,rt))
     
-  | SYMDEF_dcl (DCL_proc (pts,_)) -> 
-    bt (TYP_function (typeof_list pts, TYP_void))
+  | `SYMDEF_dcl (`DCL_proc (pts,_)) -> 
+    bt (`TYP_function (typeof_list pts, `AST_void sr))
     
-  | SYMDEF_dcl (DCL_union _)
-  | SYMDEF_dcl (DCL_struct _) -> BTYP_name index
+  | `SYMDEF_dcl (`DCL_union _)
+  | `SYMDEF_dcl (`DCL_struct _) -> `BTYP_name index
 
   | _ ->
     failwith 
@@ -1358,11 +1580,10 @@ and typeofindex
       short_string_of_src sr
     )
 
-and cal_apply dfns tbe1 tbe2 : tbexpr_t =
-  match tbe1,tbe2 with (_,t1),(_,t2) ->
+and cal_apply dfns ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let rest =
     match t1 with
-    | BTYP_function (argt,rest) ->
+    | `BTYP_function (argt,rest) ->
       if argt = t2 then rest
       else 
         failwith 
@@ -1375,15 +1596,33 @@ and cal_apply dfns tbe1 tbe2 : tbexpr_t =
           string_of_btypecode dfns argt 
         )
 
+    | `BTYP_binding (
+        `BTYP_function (argt,rest),
+        `BTYP_function (argt',rest')
+      ) ->
+      if argt = lift t2 
+      && argt' = lower t2
+      then `BTYP_binding (rest, rest')
+      else 
+        failwith 
+        (
+          "[ebind:cal_apply] Function argument " ^
+          string_of_bound_expression dfns tbe2 ^
+          " has type\n" ^
+          string_of_btypecode dfns t2 ^
+          "\nwhich doesn't agree with parameter type\n" ^
+          string_of_btypecode dfns argt 
+        )
+
     (* HACKERY TO SUPPORT STRUCT CONSTRUCTORS *)
-    | BTYP_name index -> 
-      let _,_,_,entry = Hashtbl.find dfns index in
+    | `BTYP_name index -> 
+      let id,_,_,entry = Hashtbl.find dfns index in
       begin match entry with
-      | SYMDEF_dcl (DCL_struct cs) -> t1
+      | `SYMDEF_dcl (`DCL_struct cs) -> t1
       | _ -> 
         failwith 
         (
-          "Attempt to apply non-struct " ^
+          "Attempt to apply non-struct " ^ id ^ ", type " ^
           string_of_btypecode dfns t1 ^
           " as constructor"
         )
@@ -1391,8 +1630,12 @@ and cal_apply dfns tbe1 tbe2 : tbexpr_t =
     | _ -> 
       failwith 
       (
-        "Attempt to apply non-function type " ^
-        string_of_btypecode dfns t1
+        "Attempt to apply non-function\n" ^
+        string_of_bound_expression dfns tbe1 ^ 
+        "\nof type\n" ^
+        string_of_btypecode dfns t1 ^
+        "\nto argument of type\n" ^
+        string_of_bound_expression dfns tbe2
       )
   in
   (*
@@ -1405,10 +1648,12 @@ and cal_apply dfns tbe1 tbe2 : tbexpr_t =
     "\n-------------------------------------"
   );
   *)
-  BEXPR_apply (tbe1, tbe2),rest
+  `BEXPR_apply ((be1,lower t1), (be2,lower t2)),rest
 
- 
 and koenig_lookup dfns counter freg sra exclude excluded_dirs id' name_map fn t2 =
+  (*
+  print_endline "Applying Koenig lookup";
+  *)
   let entries =  
     try Hashtbl.find name_map fn 
     with Not_found -> 
@@ -1425,16 +1670,16 @@ and koenig_lookup dfns counter freg sra exclude excluded_dirs id' name_map fn t2
   match entries with
   | FunctionEntry fs ->
     (* print_endline ("Got candidates: "); List.iter (fun x -> print_endline ("  " ^ string_of_int x)) fs ; *)
-    begin match resolve_overload dfns counter freg excluded_dirs fs fn t2 with
+    begin match resolve_overload dfns counter freg excluded_dirs sra fs fn t2 with
     | Some (Simple index'') ->
       (* print_endline "Overload resolution OK"; *)
-      BEXPR_closure index'',
+      `BEXPR_closure index'',
       (
         match 
           try typeofindex dfns counter freg exclude excluded_dirs index'' 
           with _ -> failwith "typeofindex failed"
         with
-        | BTYP_function _ as t -> t
+        | `BTYP_function _ as t -> t
         | t -> 
           failwith 
           (
@@ -1457,64 +1702,240 @@ and koenig_lookup dfns counter freg sra exclude excluded_dirs id' name_map fn t2
     end
   | NonFunctionEntry _ -> failwith "Koenig lookup expected function"
 
-and lookup_qn_with_sig dfns counter freg sra srn env exclude excluded_dirs qn t2 =    
+and lookup_qn_with_sig 
+  dfns counter freg 
+  sra srn 
+  env exclude excluded_dirs 
+  (qn:qualified_name_t)
+  (sign:btypecode_t)
+: tbexpr_t =    
   match qn with
-  | [] -> failwith "empty qualified name"
-  | [name] ->
-    lookup_name_with_sig dfns counter freg sra srn exclude excluded_dirs env name t2 
-  | qn -> 
-    let entry = lookup_qn_in_env dfns counter freg env srn excluded_dirs qn in
-    let name = string_of_qualified_name qn in
-    match handle_entry dfns counter freg sra srn env exclude excluded_dirs entry t2 name with
-    | Some result -> result
-    | None ->
-      failwith 
-      (
-        "[lookup_qn_with_sig] Can't find match for " ^ string_of_qualified_name qn ^ " in " ^
-        short_string_of_src srn ^
-        "\nArgtype is " ^ string_of_btypecode dfns t2 
-      )
+  | `AST_void _ -> failwith "qualified-name is void"
+  | `AST_root _ -> failwith "Can't handle root yet"
+  | `AST_case_tag _ -> failwith "Can't lookup case tag here"
+  | `AST_typed_case _ -> failwith "Can't lookup typed case tag here"
+  | `AST_name (sr,name) ->
+    (*
+    print_endline (
+      "Lookup unqualified name '"^
+      name
+      ^"' with sig '"^
+      string_of_btypecode dfns sign
+      ^"'"
+    );
+    flush stdout;
+    *)
+    lookup_name_with_sig 
+      dfns counter freg 
+      sra srn exclude excluded_dirs 
+      env name sign
 
-and lookup_name_with_sig dfns counter freg sra srn exclude excluded_dirs env name t2 =
+  | `AST_lookup (sr,(qn',name)) -> 
+    (*
+    print_endline (
+      "Lookup qn '"^
+      string_of_qualified_name qn
+      ^"' with sig'"^
+      string_of_btypecode dfns sign
+      ^"'"
+    );
+    flush stdout;
+    *)
+    match 
+      eval_module_expr 
+      dfns counter freg 
+      env excluded_dirs 
+      qn'
+    with 
+      | (Module_product _) ->
+        failwith "Unexpected module product"
+
+      | (Functor_set _) ->
+        failwith "Unexpected Functor"
+
+      | (Simple_module (impl, htab,dirs)) ->
+        begin match lookup_name_in_htab htab name with
+        | None -> 
+          failwith
+          (
+            "Can't find name " ^ name ^ " in\n" ^
+            short_string_of_src sr
+          )
+        | Some x -> match x with 
+        | NonFunctionEntry (Simple index) ->
+          let t = typeofindex dfns counter freg exclude excluded_dirs index in
+          begin match t with
+          | `BTYP_function (a,b) ->
+             if a <> sign 
+             then 
+               failwith
+               (
+                 "Non function entry has wrong type"
+               )
+             else 
+               `BEXPR_name index,
+               typeofindex dfns counter freg exclude excluded_dirs index
+
+          | _ -> 
+            failwith
+               (
+                 "Non function entry not function type"
+               )
+          end
+        | NonFunctionEntry (Bound (i,j)) ->
+          failwith "Can't handle bound result yet"
+        | FunctionEntry fs ->
+          match
+            resolve_overload
+            dfns counter freg excluded_dirs sra fs name sign
+          with
+          | Some (Simple index) ->
+             `BEXPR_closure index, 
+             typeofindex dfns counter freg exclude excluded_dirs index
+
+          | Some (Bound (iface,impl)) -> 
+             `BEXPR_closure impl, 
+             `BTYP_binding
+             (
+               typeofindex dfns counter freg exclude excluded_dirs iface,
+               typeofindex dfns counter freg exclude excluded_dirs impl
+             )
+
+          | None -> 
+            failwith 
+            (
+              "[Simple module] Unable to resolve overload in\n" ^
+              short_string_of_src sra
+            )
+        end
+
+      | (Bound_module (iface,impl,binding)) ->
+        let id,_,_,entry = Hashtbl.find dfns iface in
+        begin match entry with 
+        | `SYMDEF_interface (table,dirs) ->
+          let table' = apply_binding table binding in
+          begin match lookup_name_in_htab table' name with
+          | None -> 
+            failwith 
+            (
+              "Can't find name " ^ name ^ " in\n" ^
+              short_string_of_src sra
+            )
+          | Some x -> match x with
+          | NonFunctionEntry (Simple index) ->
+            let t = typeofindex dfns counter freg exclude excluded_dirs index in
+            begin match t with
+            | `BTYP_function (a,b) ->
+               if a <> sign  (* WE NEED TO DO A LIFT HERE *)
+               then 
+                 failwith
+                 (
+                   "Non function entry has wrong type"
+                 )
+               else 
+                 `BEXPR_name index,
+                 typeofindex dfns counter freg exclude excluded_dirs index
+
+            | _ -> 
+              failwith
+                 (
+                   "Non function entry not function type"
+                 )
+            end
+          | NonFunctionEntry (Bound (i,j)) ->
+            failwith
+            (
+              "Can't handle bound non-function result yet"
+            )
+
+          | FunctionEntry fs ->
+            match
+              resolve_overload
+              dfns counter freg excluded_dirs sra fs name sign
+            with
+            | Some (Simple index) ->
+               `BEXPR_closure index, 
+               typeofindex dfns counter freg exclude excluded_dirs index
+
+            | Some (Bound (iface,impl)) -> 
+               `BEXPR_closure impl, 
+               `BTYP_binding
+               (
+                 typeofindex dfns counter freg exclude excluded_dirs iface,
+                 typeofindex dfns counter freg exclude excluded_dirs impl
+               )
+
+            | None -> 
+              failwith 
+              (
+                "[Bound module] Unable to resolve overload in\n" ^
+                short_string_of_src sra
+              )
+
+          end
+        | _ -> failwith "Expected interface"
+        end
+
+and lookup_name_with_sig 
+  dfns counter freg 
+  sra srn 
+  exclude excluded_dirs env 
+  name (t2:btypecode_t) 
+: tbexpr_t =
+  (*
+  print_endline ("Lookup_name_with_sig: " ^ name ^ " of " ^ string_of_btypecode dfns t2);
+  flush stdout;
+  *)
   match env with
   | [] -> 
+    print_endline "ENV:";
+    print_env env;
     failwith 
     (
-      "Environment exhasuted: Can't find " ^ name ^ " in " ^
+      "[lookup name with sig] Can't find " ^ name ^ " in " ^
       short_string_of_src srn
     )
   | (table,dirs)::tail ->
-    match lookup_name_in_table_dirs table dirs srn name with
+    match 
+      lookup_name_in_table_dirs_with_sig 
+      (table, dirs) 
+      dfns counter freg 
+      env exclude excluded_dirs 
+      sra srn name t2 
+    with
+    | Some result -> (result:>tbexpr_t)
     | None -> 
-      lookup_name_with_sig dfns counter freg sra srn exclude excluded_dirs tail name t2
-    | Some entry -> 
-      match handle_entry dfns counter freg sra srn env exclude excluded_dirs entry t2 name with
-      | Some x -> x
-      | None ->
-        lookup_name_with_sig dfns counter freg sra srn exclude excluded_dirs tail name t2
+      (
+        (*
+        print_endline "Next level of env";
+        flush stdout;
+        *)
+        (
+        lookup_name_with_sig 
+          dfns counter freg 
+          sra srn 
+          exclude excluded_dirs 
+          tail name t2
+        ):>tbexpr_t
+      )
 
-and handle_entry dfns counter freg sra srn env exclude excluded_dirs entry t2 name =
-  let be e = bind_expression dfns counter freg env exclude excluded_dirs e in
-  let lu sr qn = lookup_qn_in_env dfns counter freg env sr excluded_dirs qn in
-  let bt t = bind_type dfns counter freg env [] excluded_dirs t in
-  match entry with
-  | NonFunctionEntry (Simple index) ->
-    Some
-    (
-      BEXPR_name index, 
-      typeofindex dfns counter freg exclude excluded_dirs index
-    )
-  | NonFunctionEntry _ ->
-    failwith "[lookup_qn_with_sig] expected simple nonfunction entry"
-
-  | FunctionEntry fs -> 
-    (* print_endline ("Simple overload: function "^name^" found"); *)
-    match resolve_overload dfns counter freg excluded_dirs fs name t2 with
-    | Some (Bound (i,j) ) -> 
-      (* print_endline "[lookup_qn_with_sig] handle opaque function"; *)
+and handle_function 
+  dfns counter freg 
+  env exclude excluded_dirs 
+  sra srn 
+  name 
+  (overload:entry_kind_t)
+: tbexpr_t 
+=
+  (*
+  print_endline "HANDLE FUNCTION";
+  *)
+  match overload with
+    | Bound (i,j) -> 
+      print_endline "[lookup_qn_with_sig] handle opaque function"; 
       let it =
         match typeofindex dfns counter freg exclude excluded_dirs i with
-        | BTYP_function _ as t -> t
+        | `BTYP_function _ as t -> t
         | t -> 
           failwith 
           (
@@ -1525,7 +1946,7 @@ and handle_entry dfns counter freg sra srn env exclude excluded_dirs entry t2 na
           )
       and mt =
         match typeofindex dfns counter freg exclude excluded_dirs j with
-        | BTYP_function _ as t -> t
+        | `BTYP_function _ as t -> t
         | t -> 
           failwith 
           (
@@ -1535,39 +1956,40 @@ and handle_entry dfns counter freg sra srn env exclude excluded_dirs entry t2 na
             ^"', " ^ short_string_of_src sra
           )
       in
-        Some
-        (
-          BEXPR_closure j,
-          unify dfns it mt
-        )
+        `BEXPR_closure j,
+        unify dfns it mt
       
-    | Some (Simple index) -> 
+    | Simple index -> 
+      (*
+      print_endline "HANDLE FUNCTION: SIMPLE INDEX";
+      flush stdout;
+      *)
       begin 
         match Hashtbl.find dfns index with id,sr,parent,entry 
         -> match entry with
-        | SYMDEF_match_check _
-        | SYMDEF_function _
-        | SYMDEF_dcl(DCL_proc _ )
-        | SYMDEF_dcl(DCL_fun _)
-        | SYMDEF_procedure _ 
-        | SYMDEF_match_handler _ 
-        | SYMDEF_lazy _
+        | `SYMDEF_match_check _
+        | `SYMDEF_function _
+        | `SYMDEF_dcl(`DCL_proc _ )
+        | `SYMDEF_dcl(`DCL_fun _)
+        | `SYMDEF_procedure _ 
+        | `SYMDEF_match_handler _ 
+        | `SYMDEF_lazy _
           ->
-          (* print_endline ("closure of " ^ name); *)
-          Some
+          (*
+          print_endline ("closure of " ^ name);
+          flush stdout;
+          *)
+          `BEXPR_closure index,
           (
-            BEXPR_closure index,
-            (
-              match typeofindex dfns counter freg exclude excluded_dirs index with
-              | BTYP_function _ as t -> t
-              | t -> 
-                failwith 
-                (
-                  "[lookup_qn_with_sig]: closure operator expected '"^name^"' to be function definition, got '"^
-                  string_of_btypecode dfns t
-                  ^"', " ^ short_string_of_src sra
-                )
-            )
+            match typeofindex dfns counter freg exclude excluded_dirs index with
+            | `BTYP_function _ as t -> t
+            | t -> 
+              failwith 
+              (
+                "[lookup_qn_with_sig]: closure operator expected '"^name^"' to be function definition, got '"^
+                string_of_btypecode dfns t
+                ^"', " ^ short_string_of_src sra
+              )
           )
         | _ -> 
           failwith 
@@ -1576,58 +1998,186 @@ and handle_entry dfns counter freg sra srn env exclude excluded_dirs entry t2 na
           )
       end 
 
-    | None -> None
-
-and print_entry k v = 
-  print_endline 
-  (
-    "  " ^ k ^ 
+and lookup_name_in_table_dirs_with_sig (table, dirs) 
+  dfns counter freg 
+  env exclude excluded_dirs 
+  sra srn name t2 
+: tbexpr_t option
+=
+  (* print_endline "LOOKUP NAME IN TABLE DIRS WITH SIG"; *)
+  let result:entry_set_t =
+    match lookup_name_in_htab table name  with
+    | Some x -> x
+    | None -> FunctionEntry []
+  in
+  match result with
+  | NonFunctionEntry (Simple index) ->
+    (* Struct constructor *)
+    (* print_endline "LOOKUP NAME IN TABLE DIRS WITH SIG: Done"; *)
+    Some
     (
-      match v with 
-      | (NonFunctionEntry (Simple i)) -> " Simple " ^ string_of_int i
-      | _ -> ""
+      `BEXPR_name index, 
+      typeofindex dfns counter freg exclude excluded_dirs index
     )
-  )
-and print_table htab = 
-  print_endline "--"; Hashtbl.iter print_entry htab
 
-and print_env e = List.iter print_table e
+  | NonFunctionEntry _ ->
+    failwith "[lookup_qn_with_sig] expected simple nonfunction entry"
+
+  | FunctionEntry fs ->
+    (*
+    print_endline "RESOLVING OVERLOAD"; flush stdout;
+    *)
+    let ro:entry_kind_t option = 
+      resolve_overload 
+      dfns counter freg excluded_dirs sra fs name t2
+    in
+    match ro with 
+      | Some result ->
+        let tb : tbexpr_t =
+          handle_function 
+          dfns counter freg 
+          env exclude excluded_dirs 
+          sra srn name result
+        in Some tb 
+
+      | None ->
+        (*
+        print_endline "NOT FOUND, trying opens";
+        flush stdout;
+        *)
+        let opens : entry_set_t list = 
+          List.concat
+          (
+            List.map
+            (fun table -> 
+              match lookup_name_in_htab table name with
+              | Some x -> [x]
+              | None -> []
+            )
+            dirs
+          )
+        in
+          (*
+          print_endline "OPENS BUILT"; flush stdout;
+          *)
+          let fs:entry_kind_t list = merge_functions opens name in
+          let ro:entry_kind_t option = 
+            resolve_overload
+            dfns counter freg excluded_dirs sra fs name t2
+          in
+          (*
+          print_endline "OVERLOAD RESOLVED .. ";
+          *)
+          match ro with
+          | Some result ->
+            let tb : tbexpr_t = 
+              handle_function 
+              dfns counter freg 
+              env exclude excluded_dirs 
+              sra srn name result
+            in 
+              (* 
+              print_endline "SUCCESS"; flush stdout; 
+              *)
+              Some tb
+          | None -> 
+            (*
+            print_endline "FAILURE"; flush stdout; 
+            *)
+            None
+
+and handle_entry dfns counter freg sra srn env exclude excluded_dirs entry t2 name =
+  let be e = bind_expression dfns counter freg env exclude excluded_dirs e in
+  let lu sr qn = lookup_qn_in_env dfns counter freg env excluded_dirs qn in
+  let bt t = bind_type dfns counter freg env [] excluded_dirs sra t in
+  match entry with
+  | NonFunctionEntry (Simple index) ->
+    Some
+    (
+      `BEXPR_name index, 
+      typeofindex dfns counter freg exclude excluded_dirs index
+    )
+  | NonFunctionEntry _ ->
+    failwith "[lookup_qn_with_sig] expected simple nonfunction entry"
+
+  | FunctionEntry fs -> 
+    (* print_endline ("Simple overload: function "^name^" found"); *)
+    match 
+      resolve_overload 
+      dfns counter freg 
+      excluded_dirs sra fs name t2 
+    with 
+    | Some result ->
+      Some
+      (
+        handle_function 
+        dfns counter freg 
+        env exclude excluded_dirs 
+        sra srn 
+        name result 
+      )
+    | None -> None
 
 and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t = 
   let be e = bind_expression dfns counter freg env exclude excluded_dirs e in
-  let lu sr qn = lookup_qn_in_env dfns counter freg env sr excluded_dirs qn in
-  let bt t = bind_type dfns counter freg env [] excluded_dirs t in
+  let lu sr qn = lookup_qn_in_env dfns counter freg env excluded_dirs qn in
+  let bt sr t = bind_type dfns counter freg env [] excluded_dirs sr t in
+  let ti i = typeofindex dfns counter freg exclude excluded_dirs i in
+
+  (* model infix operator as function call *)
+  let apl2 (sri:range_srcref) (fn : string) (tup:expr_t list) = 
+    let sr = rslist tup in
+    `AST_apply 
+    (
+      sr, 
+      (
+        `AST_name (sri,fn), 
+        `AST_tuple (sr,tup)
+      )
+    )
+  in
   (*
-  print_endline ("Binding expression " ^ string_of_expression e);
+  print_endline ("Binding expression " ^ string_of_expr e);
   print_endline ("environment is:");
   print_env env;
   print_endline "==";
   *)
   match e with
-  | AST_index (sr,i) -> 
-    let t = typeofindex dfns counter freg exclude excluded_dirs i in
-    BEXPR_name i,t
+  | `AST_sum (sri,ls) -> 
+    begin let mksum a b = apl2 sri "add" [a;b] in
+    match ls with 
+    | h::t -> be (List.fold_left mksum h t)
+    | [] -> failwith "Not expecting empty product (unit)"
+    end
+    
+  | `AST_product (sri,ls) ->
+    begin let mkprod a b = apl2 sri "mul" [a;b] in
+    match ls with 
+    | h::t -> be (List.fold_left mkprod h t)
+    | [] -> failwith "Not expecting empty sum (void)"
+    end
 
-  | AST_bound_module _ -> 
+  | `AST_void _
+  | `AST_arrow _ -> failwith "[bind expression] Not expecting void or arrow"
+
+  | `AST_root _ -> failwith "Can't bind root"
+  | `AST_index (sr,i) -> 
+    let t = typeofindex dfns counter freg exclude excluded_dirs i in
+    `BEXPR_name i,t
+
+  | `AST_bound_module _ -> 
     failwith "[Bind_expression] Not expecting bound module"
 
-  | AST_coercion (sr,(m,t)) -> 
-    (* print_endline "Value Coercion!"; *)
+  | `AST_coercion (sr,(m,t)) -> 
     let m' = be m in
-    (*
-    print_endline "Bound src module";
-    *)
-    let t' = bt t in
-    (*
-    print_endline "Bound src interface";
-    *)
-    BEXPR_coercion (m',t'),t'
+    let t' = bt sr t in
+    `BEXPR_coercion (m',t'),t'
 
-  | AST_lazy _ -> assert false
-  | AST_get_n (sr,(n,e')) -> 
+  | `AST_lazy _ -> assert false
+  | `AST_get_n (sr,(n,e')) -> 
     let expr,typ = be e' in
     let ctyp = match typ with 
-    | BTYP_tuple ts -> 
+    | `BTYP_tuple ts -> 
       let len = List.length ts in
       if n<0 or n>len-1
       then failwith 
@@ -1644,107 +2194,156 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
       failwith 
       (
         "[bind_expression] Expected tuple " ^ 
-        string_of_expression e' ^ 
+        string_of_expr e' ^ 
         " to have tuple type, got " ^ 
         string_of_btypecode dfns typ ^
         " in " ^
         short_string_of_src sr
       )
     in 
-      BEXPR_get_n (n, (expr,typ)), ctyp
-    
-  | AST_name (sr,(qn,suf)) -> 
-    begin match suf with
-    | TYP_none ->
-      begin match lu sr qn with
-      | NonFunctionEntry (Simple index) -> 
-        let t = typeofindex dfns counter freg exclude excluded_dirs index in
-        (*
-        print_endline 
-        (
-          "Name " ^ string_of_qualified_name qn ^ 
-          " has simple type " ^
-          string_of_btypecode dfns t 
-        );
-        *)
-        BEXPR_name index, t
+      `BEXPR_get_n (n, (expr,typ)), ctyp
+  | `AST_case_tag (sr,v) ->
+     failwith "plain case tag not allowed in expression"
 
-      | NonFunctionEntry Bound(i,m) ->
-        let it = typeofindex dfns counter freg exclude excluded_dirs i in
-        let mt = typeofindex dfns counter freg exclude excluded_dirs m in
-        let t = unify dfns it mt in
-        (*
-        print_endline 
-        (
-          "Name " ^ string_of_qualified_name qn ^ 
-          " has bound type " ^
-          string_of_btypecode dfns t 
-        );
-        *)
-        BEXPR_name m, t
+  | `AST_typed_case (sr,v,t) ->
+     failwith "Can't handle typed case tag in expression yet"
 
+  | `AST_name (sr,name) ->
+    begin match lookup_name_in_env env sr name with
+    | NonFunctionEntry (Simple index) -> 
+      `BEXPR_name index, ti index
 
-      | FunctionEntry _ -> 
-        (* This case should have been handled by bind_expression,
-           with case AST_apply (AST_name (...), ...)
-        *)
-        failwith 
+    | NonFunctionEntry Bound(i,m) ->
+      let it = ti i in
+      let mt = ti m in
+      let t = unify dfns it mt in
+      `BEXPR_name m, t
+
+    | FunctionEntry fs -> 
+      (* HACK. This is needed as the argument for `AST_suffix,
+         and other things that need to do overloading
+      *)
+      `BEXPR_functions (name,fs), `BTYP_none
+    end
+
+  | `AST_lookup (sr,(e,name)) ->
+    let entry = 
+      match 
+          eval_module_expr 
+          dfns counter freg 
+          env excluded_dirs 
+          e 
+      with 
+      | (Module_product _) ->
+        failwith "Unexpected module product"
+
+      | (Functor_set _) ->
+        failwith "Unexpected Functor"
+
+      | (Simple_module (impl, htab,dirs)) ->
+        lookup_name_in_htab htab name
+
+      | (Bound_module (iface,impl,binding)) ->
+        let _,_,_,entry = Hashtbl.find dfns iface in
+        begin match entry with 
+        | `SYMDEF_interface (table,dirs) ->
+          let table' = apply_binding table binding in
+          lookup_name_in_htab table' name
+        | _ -> failwith "Expected interface"
+        end
+    in 
+      begin match entry with
+      | Some entry -> 
+        begin match entry with
+        | NonFunctionEntry (Simple i) ->  
+          `BEXPR_name i, ti i
+          
+        | NonFunctionEntry (Bound (i,j)) -> 
+          `BEXPR_name j, 
+          `BTYP_binding (ti i, ti j)
+        | FunctionEntry fs ->
+          `BEXPR_functions (name,fs),
+          `BTYP_none
+        end
+
+      | None ->
+        failwith
         (
-          "unsuffixed name "^
-          string_of_qualified_name qn ^
-          " must not bind to function (except as first argument of an application or call)" ^
+          "Can't find " ^ name ^ " in\n" ^
           short_string_of_src sr
         )
       end
-    | _ -> 
-      let bound_suffix =  bt suf in
-      match lu sr qn with
-      | NonFunctionEntry _ -> failwith "Suffixed name must bind to function overload set"
-      | FunctionEntry fs ->
-        let name = string_of_qualified_name qn in
-        let suf' = bt suf in
-        match resolve_overload dfns counter freg excluded_dirs fs name suf' with
-        | Some (Simple index) ->
-           BEXPR_closure index, 
-           typeofindex dfns counter freg exclude excluded_dirs index
 
-        | Some (Bound (iface,impl)) -> 
-           BEXPR_closure impl, 
-           BTYP_binding
-           (
-             typeofindex dfns counter freg exclude excluded_dirs iface,
-             typeofindex dfns counter freg exclude excluded_dirs impl
-           )
+  | `AST_suffix (sr,(e,suf)) ->
+    let bound_suffix =  bt sr suf in
+    begin match be (e:>expr_t) with
+    | `BEXPR_functions (name,fs),`BTYP_none ->
+      begin match resolve_overload dfns counter freg excluded_dirs sr fs name bound_suffix with
+      | Some (Simple index) ->
+         `BEXPR_closure index, 
+         typeofindex dfns counter freg exclude excluded_dirs index
 
-        | None -> 
-          failwith 
-          (
-            "[flx_ebind] Can't find match for " ^ string_of_qualified_name qn ^ " in " ^
-            short_string_of_src sr ^ 
-            "\nCandidates are " ^
-            (String.concat "\n"
-              (List.map
-                (function Simple i | Bound (i,_)  ->
-                  string_of_int i ^ "==> " ^ 
-                  string_of_btypecode dfns (typeofindex dfns counter freg [] excluded_dirs i)
-                )
-                fs
+      | Some (Bound (iface,impl)) -> 
+         `BEXPR_closure impl, 
+         `BTYP_binding
+         (
+           typeofindex dfns counter freg exclude excluded_dirs iface,
+           typeofindex dfns counter freg exclude excluded_dirs impl
+         )
+
+      | None -> 
+        failwith 
+        (
+          "[flx_ebind] Can't find match for " ^ name ^ " in " ^
+          short_string_of_src sr ^ 
+          "\nCandidates are " ^
+          (String.concat "\n"
+            (List.map
+              (function Simple i | Bound (i,_)  ->
+                string_of_int i ^ "==> " ^ 
+                string_of_btypecode dfns (typeofindex dfns counter freg [] excluded_dirs i)
               )
+              fs
             )
           )
+        )
+      end
+    | _ -> 
+      failwith
+      (
+        "Expected suffix to select from function set in\n" ^
+        short_string_of_src sr
+      )
     end
 
-  | AST_ref (srr,AST_name (srn,(qn,suf))) -> 
-    begin match lu srn qn with
-    | NonFunctionEntry (Simple index) -> 
+  | `AST_ref (_,(`AST_deref (sr,e))) -> be e
+  
+  | `AST_ref (sr,(`AST_dot (_,(e,id)))) ->
+    let ref_name = "ref_" ^ id in
+    be 
+    (
+      `AST_apply 
+      (
+        sr,
+        (
+          `AST_name (sr, ref_name),
+          `AST_ref (sr,e)
+        )
+      )
+    )
+
+  | `AST_ref (srr,e) -> 
+    let e',t' = be e in 
+    begin match e' with
+    | `BEXPR_name index ->
       let id,sr,parent,entry = Hashtbl.find dfns index in
       begin match entry with
-      | SYMDEF_dcl (DCL_var _)
-      | SYMDEF_dcl (DCL_var_typeof _)
-      | SYMDEF_parameter (TYP_pointer _) -> 
-        BEXPR_ref index, 
-        BTYP_pointer (typeofindex dfns counter freg exclude excluded_dirs index)
-      | SYMDEF_parameter _ -> 
+      | `SYMDEF_dcl (`DCL_var _)
+      | `SYMDEF_dcl (`DCL_var_typeof _)
+      | `SYMDEF_parameter (`TYP_pointer _) -> 
+        `BEXPR_ref index, 
+        `BTYP_pointer (typeofindex dfns counter freg exclude excluded_dirs index)
+      | `SYMDEF_parameter _ -> 
         failwith 
         (
           "[bind_expression] " ^
@@ -1752,8 +2351,8 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
           ": Address value parameter " ^ id ^ " defined at " ^
           short_string_of_src sr
         )
-      | SYMDEF_dcl (DCL_val _)
-      | SYMDEF_dcl (DCL_val_typeof _) ->
+      | `SYMDEF_dcl (`DCL_val _)
+      | `SYMDEF_dcl (`DCL_val_typeof _) ->
         failwith 
         (
           "[bind_expression] " ^
@@ -1770,72 +2369,44 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
           short_string_of_src sr
         )
       end
-    | NonFunctionEntry _ ->
-      failwith
-      (
-        "[ebind] Expected simple nonfunction entry"
-      )
-    
-    | FunctionEntry _ -> 
+    | _ ->
       failwith 
-      (
-        "[bind_expression] " ^
-        short_string_of_src srr ^
-        ": Address function " ^ string_of_qualified_name qn
-      )
+        (
+          "[bind_expression] " ^
+          short_string_of_src srr ^
+          "Address non variable in\n" ^
+          short_string_of_src srr
+        )
     end
 
-  | AST_ref (_,(AST_deref (sr,e))) -> be e
-  
-  | AST_ref (sr,(AST_dot (_,(e,id)))) ->
-    let ref_name = "ref_" ^ id in
-    be 
-    (
-      AST_apply 
-      (
-        sr,
-        (
-          name_of_string sr ref_name,
-          AST_ref (sr,e)
-        )
-      )
-    )
+  | `AST_deref (_,`AST_ref (sr,e)) -> be e
 
-  | AST_ref (sr,_) -> 
-    failwith 
-    (
-      short_string_of_src sr ^
-      ": Can't take address of expression"
-    )
-
-  | AST_deref (_,AST_ref (sr,e)) -> be e
-
-  | AST_deref (_,e) -> 
+  | `AST_deref (_,e) -> 
     let e,t = be e in
     begin match t with 
-    | BTYP_pointer t -> BEXPR_deref (e,t),t
+    | `BTYP_pointer t -> `BEXPR_deref (e,t),t
     | _ -> failwith "Dereference non pointer"
     end
 
-  | AST_literal (sr,v) -> 
+  | `AST_literal (sr,v) -> 
     let t = typeof_literal dfns counter freg env sr v in
-    BEXPR_literal v, t
+    `BEXPR_literal v, t
 
-  | AST_method_apply (sra,(fn,e2)) -> 
+  | `AST_method_apply (sra,(fn,e2)) -> 
     let be2,t2 = be e2 in
     let tbe1 = 
       begin match t2 with
-      | BTYP_name index ->
+      | `BTYP_name index ->
         let id,sr,parent,entry = Hashtbl.find dfns index in
         begin match parent with
         | None -> failwith "Koenig lookup: No parent for method apply (can't handle global yet)"
         | Some index' ->
           let id',sr',parent',entry' = Hashtbl.find dfns index' in
           match entry' with
-          | SYMDEF_module (name_map,dirs) ->
+          | `SYMDEF_module (name_map,dirs) ->
             koenig_lookup dfns counter freg sra exclude excluded_dirs id' name_map fn t2
 
-          | SYMDEF_interface (name_map,dirs) ->
+          | `SYMDEF_interface (name_map,dirs) ->
             koenig_lookup dfns counter freg sra exclude excluded_dirs id' name_map fn t2
 
           | _ -> failwith ("Koenig lookup: parent for method apply not module")
@@ -1845,76 +2416,89 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
     in
       cal_apply dfns tbe1 (be2, t2)
 
-  | AST_apply (sra,(AST_name (srn,(qn,typ)),e2)) -> 
+  | `AST_apply (sra,(`AST_name (srn,qn) as name,e2)) -> 
+    (*
+    print_endline ("Apply unqualified name " ^ qn);
+    flush stdout;
+    *)
     let be2,t2 = be e2 in
-    let typ' = bind_type dfns counter freg env [] excluded_dirs typ in
-    if typ' <> BTYP_none && t2 <> typ'
-    then 
-      failwith 
-      (
-        "Type suffix doesn't agree with argument in " ^
-        short_string_of_src sra
-      )
-    else 
-      let tbe1 =
-        lookup_qn_with_sig dfns counter freg sra srn env exclude excluded_dirs qn t2 
-      in cal_apply dfns tbe1 (be2,t2)
+    let tbe1 =
+      lookup_qn_with_sig 
+        dfns counter freg 
+        sra srn env 
+        exclude excluded_dirs 
+        name t2 
+    in cal_apply dfns tbe1 (be2,t2)
 
-  | AST_apply (_,(e1,e2)) -> 
-    let tbe1 = be e1 and tbe2 = be e2 in
-    cal_apply dfns tbe1 tbe2 
+  | `AST_apply (sr,(e1,e2)) -> 
+    (*
+    print_endline ("General apply of " ^ string_of_expr e1);
+    *)
+    let tbe1 = be e1 and (be2,t2) as tbe2 = be e2 in
+    begin match tbe1 with
+    | `BEXPR_functions (name,fs), `BTYP_none ->
+      let entry = resolve_overload 
+        dfns counter freg 
+        excluded_dirs sr 
+        fs name t2 
+      in 
+      let tbe1' = match entry with
+      | None -> 
+       failwith (
+         "Unable to resolve overload of name " ^ string_of_expr e1 ^
+         " with argument of type " ^ string_of_btypecode dfns t2 ^
+         "\nin " ^ short_string_of_src sr
+       )
+      | Some (Simple index) ->
+         `BEXPR_closure index, 
+         typeofindex dfns counter freg exclude excluded_dirs index
 
-  | AST_tuple (_,es) -> 
+      | Some (Bound (iface,impl)) -> 
+         `BEXPR_closure impl, 
+         `BTYP_binding
+         (
+           typeofindex dfns counter freg exclude excluded_dirs iface,
+           typeofindex dfns counter freg exclude excluded_dirs impl
+         )
+      in
+        cal_apply dfns tbe1' tbe2
+
+    | _ ->
+      cal_apply dfns tbe1 tbe2
+    end
+
+  | `AST_tuple (_,es) -> 
     let bets = List.map be es in
     let _, bts = List.split bets in
-    BEXPR_tuple bets, BTYP_tuple bts
+    `BEXPR_tuple bets, `BTYP_tuple bts
 
-  | AST_dot (sr,(e,id)) ->
+  | `AST_dot (sr,(e,id)) ->
     let get_name = "get_" ^ id in
-    be (AST_method_apply (sr,(get_name,e)))
+    be (`AST_method_apply (sr,(get_name,e)))
 
-  | AST_match_ctor (sr,(qn,e)) ->
-    let ctor, prefix = match List.rev qn with 
-      | h::t -> h,List.rev t 
-      | [] -> 
-        failwith 
-        (
-          "[bind_expression] " ^
-          short_string_of_src sr ^
-          ": Empty qualified name in AST_match_ctor"
-        )
+  | `AST_match_ctor (sr,(qn,e)) ->
+    let fname = match qn with
+    | `AST_name (sr,name) -> 
+      `AST_name (sr,"_match_ctor_" ^ name)
+
+    | `AST_lookup (sr,(e,name)) ->
+      `AST_lookup (sr,(e,"_match_ctor_" ^ name))
+    | _ -> failwith "Expected variant constructor name"
     in
-    (* print_endline ("Matching ctor " ^ string_of_qualified_name qn ^
-      " with " ^ string_of_expression e
-    );
-    *)
-    be (AST_apply (
-      sr,
-      (
-        AST_name (sr,(prefix @ ["_match_ctor_" ^ ctor],TYP_none)),
-        e
-      )
-    ))
+    be (`AST_apply ( sr, (fname,e)))
     
-  | AST_ctor_arg (sr,(qn,e)) ->
-   let ctor, prefix = match List.rev qn with 
-     | h::t -> h, List.rev t 
-     | [] -> 
-       failwith 
-       (
-        "[bind_expression] " ^
-         short_string_of_src sr ^
-         ": Empty qualified name in AST_ctor_arg"
-       )
+  | `AST_ctor_arg (sr,(qn,e)) ->
+    let fname = match qn with
+    | `AST_name (sr,name) -> 
+      `AST_name (sr,"_ctor_arg_" ^ name)
+
+    | `AST_lookup (sr,(e,name)) ->
+      `AST_lookup (sr,(e,"_ctor_arg_" ^ name))
+    | _ -> failwith "Expected variant constructor name"
     in
-    be (AST_apply (sr,
-      (
-        AST_name (sr,(prefix @ ["ctor_arg_" ^ ctor],TYP_none)),
-        e
-      )
-    ))
-   
-  | AST_lambda (sr,_) -> 
+    be (`AST_apply ( sr, (fname,e)))
+  
+  | `AST_lambda (sr,_) -> 
     failwith 
     (
       "[bind_expression] " ^
@@ -1922,7 +2506,11 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
       "[Compiler error] Unexpected lambda binding expression"
     )
 
-and resolve_overload dfns counter freg excluded_dirs fs name (suf : btypecode_t) =
+and resolve_overload 
+  dfns counter freg 
+  excluded_dirs sr 
+  fs name (suf : btypecode_t) 
+: entry_kind_t option=
   let rec resolve i =
     match Hashtbl.find dfns i with (id,sr,parent,symdef) ->
     parent,i,sig_of_symdef symdef id
@@ -1932,13 +2520,13 @@ and resolve_overload dfns counter freg excluded_dirs fs name (suf : btypecode_t)
     | Simple i -> 
       let p,i,t = resolve i in
       let env = build_env dfns counter freg excluded_dirs p in
-      let t = bind_type dfns counter freg env [] excluded_dirs t in
+      let t = bind_type dfns counter freg env [] excluded_dirs sr t in
       Unique (i,t)
 
     | Bound (i,j) ->
       let p,i,t = resolve i in
       let env = build_env dfns counter freg excluded_dirs p in
-      let t = bind_type dfns counter freg env [] excluded_dirs t in
+      let t = bind_type dfns counter freg env [] excluded_dirs sr t in
       Pair ((i,t),j)
   in
   let fun_defs = List.map aux fs in
@@ -1952,23 +2540,9 @@ and resolve_overload dfns counter freg excluded_dirs fs name (suf : btypecode_t)
     ) 
     fun_defs
   with 
-  | [Unique (i,_)] -> 
-    (*
-    print_endline ("..resolved to basic function " ^ string_of_int i); 
-    *)
-    Some (Simple i)
-
-  | [Pair ((i,_),j)] ->
-    (*
-    print_endline (
-      "..resolved to binding " ^ string_of_int i ^
-      " ==> " ^ string_of_int j
-    ); 
-    *)
-    Some (Bound (i,j))
-
+  | [Unique (i,_)] -> Some (Simple i)
+  | [Pair ((i,_),j)] -> Some (Bound (i,j))
   | [] -> None
-
   | _ -> failwith ("Too many candidates match in overloading " ^ name)
   
 
@@ -1988,27 +2562,28 @@ and get_table_dirs_of_index dfns index =
   | (id,sr,parent,entry) ->
     let table,dirs = 
       match entry with
-      | SYMDEF_module (table,dirs) -> table,dirs
-      | SYMDEF_interface (table,dirs) -> table,dirs
-      | SYMDEF_function (ps,t,e,table,dirs) -> table,dirs
-      | SYMDEF_match_handler (pat,ex,e,table,dirs) -> table,dirs
-      | SYMDEF_procedure (ps,e,table,dirs) -> table,dirs
-      | SYMDEF_lazy _ -> Hashtbl.create 97,[]
-      | SYMDEF_match_check _ -> Hashtbl.create 97,[]
+      | `SYMDEF_module (table,dirs) -> table,dirs
+      | `SYMDEF_interface (table,dirs) -> table,dirs
+      | `SYMDEF_function (ps,t,e,table,dirs) -> table,dirs
+      | `SYMDEF_match_handler (pat,ex,e,table,dirs) -> table,dirs
+      | `SYMDEF_procedure (ps,e,table,dirs) -> table,dirs
+      | `SYMDEF_lazy _ -> Hashtbl.create 97,[]
+      | `SYMDEF_match_check _ -> Hashtbl.create 97,[]
 
-      | SYMDEF_functor (_,_,_,table,dirs) -> table,dirs
-      | SYMDEF_module_binding _ -> failwith "[build_env] Can't handle module binding"
-      | SYMDEF_if_fun _ -> failwith "Can't look into function dcl"
-      | SYMDEF_if_proc _ -> failwith "Can't look into proc dcl"
-      | SYMDEF_if_type -> failwith "Can't look into type"
-      | SYMDEF_parameter _ -> 
+      | `SYMDEF_typed_functor (_,_,_,table,dirs) -> table,dirs
+      | `SYMDEF_untyped_functor (_,_,table,dirs) -> table,dirs
+      | `SYMDEF_module_binding _ -> failwith "[build_env] Can't handle module binding"
+      | `SYMDEF_if_fun _ -> failwith "Can't look into function dcl"
+      | `SYMDEF_if_proc _ -> failwith "Can't look into proc dcl"
+      | `SYMDEF_if_type -> failwith "Can't look into type"
+      | `SYMDEF_parameter _ -> 
         failwith 
         (
           "[build_env] " ^
           short_string_of_src sr ^
           ": Lookup function, procedure or module as parent, got parameter "^id^"??"
         )
-      | SYMDEF_dcl d -> 
+      | `SYMDEF_dcl d -> 
         failwith 
         (
           "[build_env] " ^
@@ -2035,15 +2610,20 @@ and build_env' dfns counter freg parent : (name_map_t * qualified_name_t list) l
      in
        (table,qns) :: build_env' dfns counter freg parent
 
-and map_dir dfns counter freg (env:env_t) excluded_dirs qn : name_map_t =
+and map_dir 
+  dfns counter freg 
+  (env:env_t)
+  excluded_dirs 
+  qn 
+: name_map_t =
   (* print_endline ("Mapping open " ^ string_of_qualified_name qn); *)
   let sr = ("dummy",0,0,0,0) in
-  let result = lookup_qn_in_env dfns counter freg env sr excluded_dirs qn in
+  let result = lookup_qn_in_env dfns counter freg env excluded_dirs qn in
   match result with
-  | NonFunctionEntry (Simple i) ->
+  | Simple i ->
     begin match Hashtbl.find dfns i with
-    | _,_,_,SYMDEF_module (table,_) -> table
-    | _,_,_,SYMDEF_module_binding e -> 
+    | _,_,_,`SYMDEF_module (table,_) -> table
+    | _,_,_,`SYMDEF_module_binding e -> 
       (* print_endline "map_dir got module binding"; *)
       if not (List.mem i excluded_dirs)
       then
@@ -2060,7 +2640,7 @@ and map_dir dfns counter freg (env:env_t) excluded_dirs qn : name_map_t =
           (* print_endline "processing bound module"; *)
           let _,_,_,entry = Hashtbl.find dfns iface in
           begin match entry with 
-          | SYMDEF_interface (table,dirs) ->
+          | `SYMDEF_interface (table,dirs) ->
             (* print_endline "APPLYING BINDING"; *)
             apply_binding table binding
           | _ -> failwith "Expected interface"
@@ -2073,7 +2653,6 @@ and map_dir dfns counter freg (env:env_t) excluded_dirs qn : name_map_t =
 
     | _ -> failwith "[map_dir] Expected module"
     end
-  | NonFunctionEntry _ -> failwith "Can't open binding yet"
   | _ -> failwith "Expected module!"
 
 and build_env dfns counter freg excluded_dirs parent : env_t =

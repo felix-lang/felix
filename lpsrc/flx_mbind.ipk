@@ -1,4 +1,3 @@
-
 @head(1,"Name Binding")
 Name binding pass 2.
 
@@ -51,50 +50,67 @@ let gen_extractor
 : expr_t =
   List.fold_right
   (fun x marg -> match x with
-    | Proj_n (sr,n) -> AST_get_n (sr,(n,marg))
-    | Udtor (sr,qn) -> AST_ctor_arg (sr,(qn,marg))
+    | Proj_n (sr,n) -> `AST_get_n (sr,(n,marg))
+    | Udtor (sr,qn) -> `AST_ctor_arg (sr,(qn,marg))
   )
   extractor
   mv
 
-let rec subst vars e mv = 
+(* this routine is used to substitute match variables
+   in a when expression with their bindings
+*)
+let rec subst vars (e:expr_t) mv : expr_t = 
   let subst e = subst vars e mv in
   match e with
-  | AST_deref (sr,e') -> AST_deref (sr,subst e')
-  | AST_name (sr,([name],TYP_none)) ->
+  | `AST_product _
+  | `AST_void _
+  | `AST_sum _
+  | `AST_arrow _ -> failwith "Not expecting product, sum, void or arrow"
+  | `AST_root _ -> e
+  | `AST_lookup _ -> e
+  | `AST_suffix _ -> e
+  | `AST_index _ -> e
+  | `AST_literal _ -> e
+  | `AST_case_tag _ -> e
+  | `AST_typed_case _ -> e
+
+  | `AST_name (sr,name) ->
     if Hashtbl.mem vars name 
     then 
       let sr,extractor = Hashtbl.find vars name in
       gen_extractor extractor mv
     else e
     
-  | AST_index _ -> e
-  | AST_name _ -> e
-  | AST_ref (sr,e') -> AST_ref (sr,subst e')
-  | AST_literal _ -> e
-  | AST_apply (sr,(f,e)) -> AST_apply (sr,(subst f,subst e))
-  | AST_tuple (sr,es) -> AST_tuple (sr,List.map subst es)
+
+  | `AST_deref (sr,e') -> `AST_deref (sr,subst e')
+  | `AST_ref (sr,e') -> `AST_ref (sr,subst e')
+  | `AST_apply (sr,(f,e)) -> `AST_apply (sr,(subst f,subst e))
+  | `AST_tuple (sr,es) -> `AST_tuple (sr,List.map subst es)
 
 
   (* Only one of these should occur, but I can't
      figure out which one at the moment
   *)
-  | AST_method_apply (sr,(id,e)) -> 
-    AST_method_apply (sr,(id, subst e))
-  | AST_dot (sr,(e,id)) -> 
-    AST_dot (sr,(subst e, id))
+  | `AST_method_apply (sr,(id,e)) -> 
+    `AST_method_apply (sr,(id, subst e))
+  
+  | `AST_dot (sr,(e,id)) -> 
+    `AST_dot (sr,(subst e, id))
  
-  | AST_lazy _ -> assert false 
-  | AST_lambda _ -> assert false
-  | AST_bound_module _ -> assert false
+  | `AST_lazy _ -> assert false 
+  | `AST_lambda _ -> assert false
+  | `AST_bound_module _ -> assert false
 
-  | AST_match_ctor _ ->
-    failwith "AST_match_ctor in 'when' expression not implemented"
-  | AST_ctor_arg _ ->
-    failwith "AST_ctor_arg in 'when' expression not implemented"
-  | AST_get_n _ ->
-    failwith "AST_get_n in 'when' expression not implemented"
-  | AST_coercion _ -> failwith "subst: coercion"
+  | `AST_match_ctor _ ->
+    failwith "`AST_match_ctor in 'when' expression not implemented"
+  
+  | `AST_ctor_arg _ ->
+    failwith "`AST_ctor_arg in 'when' expression not implemented"
+  
+  | `AST_get_n _ ->
+    failwith "`AST_get_n in 'when' expression not implemented"
+  
+  | `AST_coercion _ -> failwith "subst: coercion"
 
 (* This routine runs through a pattern looking for
   pattern variables, and adds a record to a hashtable
@@ -121,74 +137,77 @@ let rec get_pattern_vars
   extractor (* extractor for this pattern *)
 = 
   match pat with
-  | PAT_name (sr,id) -> Hashtbl.add vars id (sr,extractor)
+  | `PAT_name (sr,id) -> Hashtbl.add vars id (sr,extractor)
   
-  | PAT_tuple (sr,pats) ->
+  | `PAT_tuple (sr,pats) ->
     let n = ref 0 in
     List.iter
     (fun pat -> 
-      let sr = src_of_pattern pat in
+      let sr = src_of_pat pat in
       let extractor' = (Proj_n (sr,!n)) :: extractor in
       incr n; 
       get_pattern_vars vars pat extractor'
     )
     pats
 
-  | PAT_regexp _ -> 
+  | `PAT_regexp _ -> 
     failwith "[get_pattern_vars] Can't handle regexp yet" 
 
-  | PAT_nonconst_ctor (sr,name,pat) ->
+  | `PAT_nonconst_ctor (sr,name,pat) ->
     let extractor' = (Udtor (sr, name)) :: extractor in
     get_pattern_vars vars pat extractor'
     
-  | PAT_as (sr,pat,id) -> 
+  | `PAT_as (sr,pat,id) -> 
     Hashtbl.add vars id (sr,extractor);
     get_pattern_vars vars pat extractor
  
-  | PAT_when (sr,pat,expr) ->
+  | `PAT_when (sr,pat,expr) ->
     get_pattern_vars vars pat extractor
 
   | _ -> ()
 
 let rec gen_match_check pat (arg:expr_t) =
-  let lint sr t i = AST_literal (sr,AST_int (t,i)) 
-  and lstr sr s = AST_literal (sr,AST_string s) 
-  and lfloat sr t x = AST_literal (sr,AST_float (t,x))
+  let lint sr t i = `AST_literal (sr,`AST_int (t,i)) 
+  and lstr sr s = `AST_literal (sr,`AST_string s) 
+  and lfloat sr t x = `AST_literal (sr,`AST_float (t,x))
   and apl sr f x = 
-    AST_apply 
+    `AST_apply 
     (
       sr,
       (
-        AST_name (sr,([f],TYP_none)),
+        `AST_name (sr,f),
         x
       )
     )
   and apl2 sr f x1 x2 = 
-    AST_apply 
+    `AST_apply 
     (
       sr,
-      (AST_name (sr,([f],TYP_none)),AST_tuple (sr,[x1;x2]))
+      (
+        `AST_name (sr,f),
+        `AST_tuple (sr,[x1;x2])
+      )
     )
-  and truth sr = AST_name (sr,(["true"],TYP_none))
+  and truth sr = `AST_name (sr,"true")
   and ssrc x = short_string_of_src x
   in 
   match pat with
-  | PAT_int (sr,t,i) -> apl2 sr "eq" (lint sr t i) arg
-  | PAT_string (sr,s) -> apl2 sr "eq" (lstr sr s) arg
-  | PAT_nan sr -> apl sr "isnan" arg
+  | `PAT_int (sr,t,i) -> apl2 sr "eq" (lint sr t i) arg
+  | `PAT_string (sr,s) -> apl2 sr "eq" (lstr sr s) arg
+  | `PAT_nan sr -> apl sr "isnan" arg
 
   (* ranges *)
-  | PAT_int_range (sr,t1,i1,t2,i2) -> 
+  | `PAT_int_range (sr,t1,i1,t2,i2) -> 
     let b1 = apl2 sr "le" (lint sr t1 i1) arg
     and b2 = apl2 sr "le" arg (lint sr t2 i2)
     in apl2 sr "land" b1 b2
 
-  | PAT_string_range (sr,s1,s2) ->
+  | `PAT_string_range (sr,s1,s2) ->
     let b1 = apl2 sr "le" (lstr sr s1) arg
     and b2 = apl2 sr "le" arg (lstr sr s2)
     in apl2 sr "land" b1 b2
 
-  | PAT_float_range (sr,x1,x2) ->
+  | `PAT_float_range (sr,x1,x2) ->
     begin match x1,x2 with
     | (Float_plus (t1,v1), Float_plus (t2,v2)) ->
       if t1 <> t2 then 
@@ -239,41 +258,41 @@ let rec gen_match_check pat (arg:expr_t) =
     end
 
   (* other *)
-  | PAT_name (sr,_) -> truth sr
-  | PAT_tuple (sr,pats) ->
+  | `PAT_name (sr,_) -> truth sr
+  | `PAT_tuple (sr,pats) ->
     let counter = ref 1 in
     List.fold_left 
     (fun init pat ->
-      let sr = src_of_pattern pat in
+      let sr = src_of_pat pat in
       let n = !counter in
       incr counter;
       apl2 sr "land" init 
         (
-          gen_match_check pat (AST_get_n (sr,(n, arg)))
+          gen_match_check pat (`AST_get_n (sr,(n, arg)))
         )
     )
     (
       let pat = List.hd pats in 
-      let sr = src_of_pattern pat in
-      gen_match_check pat (AST_get_n (sr,(0, arg)))
+      let sr = src_of_pat pat in
+      gen_match_check pat (`AST_get_n (sr,(0, arg)))
     )
     (List.tl pats)
 
-  | PAT_any sr -> truth sr
-  | PAT_regexp _ -> 
+  | `PAT_any sr -> truth sr
+  | `PAT_regexp _ -> 
     failwith "[gen_match_check] Can't handle regexp yet" 
-  | PAT_const_ctor (sr,name) ->
-    AST_match_ctor (sr,(name,arg))
+  | `PAT_const_ctor (sr,name) ->
+    `AST_match_ctor (sr,(name,arg))
     
-  | PAT_nonconst_ctor (sr,name,pat) ->
-    let check_component = AST_match_ctor (sr,(name,arg)) in
-    let tuple = AST_ctor_arg (sr,(name,arg)) in
+  | `PAT_nonconst_ctor (sr,name,pat) ->
+    let check_component = `AST_match_ctor (sr,(name,arg)) in
+    let tuple = `AST_ctor_arg (sr,(name,arg)) in
     let check_tuple = gen_match_check pat tuple in
     apl2 sr "land" check_component check_tuple
     
-  | PAT_as (sr,pat,_) -> gen_match_check pat arg
+  | `PAT_as (sr,pat,_) -> gen_match_check pat arg
 
-  | PAT_when (sr,pat,expr) ->
+  | `PAT_when (sr,pat,expr) ->
    let vars =  Hashtbl.create 97 in
    get_pattern_vars vars pat [];
    apl2 sr "land" (gen_match_check pat arg) (subst vars expr arg)

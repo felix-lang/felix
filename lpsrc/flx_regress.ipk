@@ -37,6 +37,23 @@ p; // ambiguous
 
 @select(tangler('test/rt01.flx'))
 #include <std.flx>
+open Tiny;
+open Short;
+open Long;
+open Vlong;
+open Utiny;
+open Ushort;
+open Uint;
+open Ulong;
+open Uvlong;
+open Int8;
+open Int16;
+open Int32;
+open Int64;
+open Uint8;
+open Uint16;
+open Uint32;
+open Uint64;
 @xs = [
   "2",
   "0b10","0B10",
@@ -68,7 +85,7 @@ p; // ambiguous
     for s in ss:
       tangle("assert(int_of("+x+s+" + "+y+s+")==42);") 
 
-@select(tangler('test/rt02'))
+@select(tangler('test/rt02.flx'))
 header r"""
 #include <stdio.h>
 typedef char *charp;
@@ -84,13 +101,19 @@ proc print: int = 'printf("%d",$1);';
 fun sub: int * int -> int = "$1 - $2";
 fun mul: int * int -> int = "$1 * $2";
 fun gt: int * int -> bool = "$1 > $2";
+fun eq: int * int -> bool = "$1 == $2";
+proc assert:bool = "assert($1);";
 
 // test some recursion
-fun fact(a:int): int
+fun fact(a:int): int =
 {
-  fun f (a:int, p:int) : int {
-    if(a>1) return f(a-1, p*a);
-    else return p;
+  fun f (a:int, p:int) : int = {
+    if a>1 
+    then 
+      return f(a-1, p*a);
+    else 
+      return p; 
+    endif
   }
   return f(a,1);
 }
@@ -141,7 +164,7 @@ module A
   print "\n";
 }
 
-@select(tangler('test/rt02.flx'))
+@select(tangler('test/rt03.flx'))
 // test the string library
 #include <std.flx>
 var x = "Hello";
@@ -169,13 +192,13 @@ while(i <= n) {
 };
 endl;
 
-@select(tangler('test/rt03.flx'))
+@select(tangler('test/rt04.flx'))
 // test the chained comparison
 #include <std.flx>
 assert(1<2&<3&<4);
 
 
-@select(tangler('test/rt04.flx'))
+@select(tangler('test/rt05.flx'))
 // open bound module
 #include <std.flx>
 interface I { proc print_endl:int; }

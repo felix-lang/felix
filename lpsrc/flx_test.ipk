@@ -269,19 +269,20 @@ union parity = Even | Odd;
 procedure fire()
 {
   var i : int = 0;
-  function get_parity(): parity
+  function get_parity(): parity =
   {
-    if(i%2==0) return Even;
+    if(i%2==0) then return Even;
     else return Odd;
+    endif
   }
   while ( i < 10)
   {
     print i; print " ";
-    match (get_parity())
-    {
-      case |Even: print "Even\n";
-      case |Odd: print "Odd\n";
-    }
+    match get_parity() with
+      |Even => print "Even\n";
+      |Odd => print "Odd\n";
+    endmatch
+
     incr (&i); 
   };
 }

@@ -52,7 +52,7 @@ let catmap f l = concat (map f l)
    (2) a block procedure and a call to it
 
    WARNING: this is a HACK: it relies
-   on the fact that (rst (AST_block ss)) 
+   on the fact that (rst (`AST_block ss)) 
    is a list of a single procedure (the block),
    followed by a called to it (where ss consists
    of more than one statement)
@@ -61,83 +61,152 @@ let catmap f l = concat (map f l)
 (* convert an expression into a list of assembly instructions,
    plus an expression: basically, this means removing lambdas
 *)
-let rec rex seq e = 
+let rec rex seq (e:expr_t) : asm_t list * expr_t = 
   let rex e = rex seq e in
   let rsts sts = catmap (rst seq) sts in
   match e with
 
   (* these cases should use the source reference for the error *)
-  | AST_match_ctor _ 
+  | `AST_match_ctor _ 
     -> failwith "[rex] not expecting union component constructor matcher"
-  | AST_ctor_arg _ 
+  | `AST_ctor_arg _ 
     -> failwith "[rex] not expecting union component destructor"
-  | AST_index _ 
-    -> failwith "[rex] not expecting AST_index "
-  | AST_bound_module _
-    -> failwith "[rex] not expecting AST_bound_module"
+  | `AST_index _ 
+    -> failwith "[rex] not expecting `AST_index "
+  | `AST_bound_module _
+    -> failwith "[rex] not expecting `AST_bound_module"
 
-  | AST_deref _ -> [],e
-  | AST_name _ -> [],e
-  | AST_ref _ -> [],e
-  | AST_literal _ -> [],e
+  | `AST_void _ 
+    -> failwith "[rex] not expecting `AST_void"
 
-  | AST_get_n (sr,(n,e')) ->
+  | `AST_arrow _ 
+    -> failwith "[rex] not expecting `AST_arrow"
+
+  | `AST_product (sr,xs) ->
+    let mul = `AST_name (sr,"mul") in
+    let x = 
+      List.fold_left
+      (fun factor atom ->
+        `AST_apply 
+        (
+          sr, 
+          (
+            mul, 
+            `AST_tuple (sr,[factor; atom])
+          )
+        )
+      )
+      (List.hd xs)
+      (List.tl xs)
+    in rex x
+
+  | `AST_sum (sr,xs) ->
+    let mul = `AST_name (sr,"add") in
+    let x = 
+      List.fold_left
+      (fun factor atom ->
+        `AST_apply 
+        (
+          sr, 
+          (
+            mul, 
+            `AST_tuple (sr,[factor; atom])
+          )
+        )
+      )
+      (List.hd xs)
+      (List.tl xs)
+    in rex x
+
+  | `AST_deref _ -> [],e
+  | `AST_root _ -> [],e
+  | `AST_name _ -> [],e
+  | `AST_case_tag _ -> [],e
+  | `AST_typed_case _ -> [],e
+  | `AST_suffix _ -> [],e  (* ?? *)
+  | `AST_lookup _ -> [],e  (* ?? *)
+  | `AST_ref _ -> [],e
+  | `AST_literal _ -> [],e
+
+
+  | `AST_get_n (sr,(n,e')) ->
     let l1,x1 = rex e' in
-    l1, AST_get_n (sr,(n,x1))
+    l1, `AST_get_n (sr,(n,x1))
 
-  | AST_apply (sr,(fn,arg)) -> 
+  | `AST_apply (sr,(fn,arg)) -> 
     let l1,x1 = rex fn in 
     let l2,x2 = rex arg in
-    l1 @ l2, AST_apply (sr,(x1,x2))
+    l1 @ l2, `AST_apply (sr,(x1,x2))
 
-  | AST_method_apply (sr,(fn,arg)) -> 
+  | `AST_method_apply (sr,(fn,arg)) -> 
     let l2,x2 = rex arg in
-    l2, AST_method_apply (sr,(fn,x2))
+    l2, `AST_method_apply (sr,(fn,x2))
     
-  | AST_tuple (sr,t) -> 
+  | `AST_tuple (sr,t) -> 
     let lss,xs = split (map rex t) in
-    concat lss,AST_tuple (sr,xs)
+    concat lss,`AST_tuple (sr,xs)
 
-  | AST_lambda (sr,(params,res,sts)) -> 
+  | `AST_lambda (sr,(params,res,sts)) -> 
     let n = seq() in
     let name = "_lambda_" ^ string_of_int n in
     let argtyp = type_of_argtypes (map snd params) in
     [match res with
-    | TYP_void -> Dcl (sr,name,DCL_procedure (params, rsts sts))
-    | _ -> Dcl (sr,name,DCL_function (params, res, rsts sts))
+    | `AST_void _ -> Dcl (sr,name,`DCL_procedure (params, rsts sts))
+    | _ -> Dcl (sr,name,`DCL_function (params, res, rsts sts))
     ],
-    AST_name (generated,([name], type_of_argtypes (map snd params)))
+    `AST_suffix 
+    (
+      generated,
+      (
+        `AST_name (generated,name), 
+        type_of_argtypes (map snd params)
+      )
+    )
 
-  | AST_lazy (sr,e) ->
+  | `AST_lazy (sr,e) ->
     let n = seq() in
     let name = "_lazy_" ^ string_of_int n in
     [
-      Dcl (sr,name,DCL_lazy e)
+      Dcl (sr,name,`DCL_lazy e)
     ],
-    AST_name (generated,([name], TYP_tuple []))
+    `AST_suffix 
+    (
+      generated,
+      (
+        `AST_name (generated,name),
+        `TYP_tuple []
+      )
+    )
 
-  | AST_dot (sr,(obj,comp)) -> 
+  | `AST_dot (sr,(obj,comp)) -> 
     let l1,x1 = rex obj in 
-    l1 , AST_dot (sr,(x1,comp))
+    l1 , `AST_dot (sr,(x1,comp))
 
-  | AST_coercion (sr,(e,t)) ->
+  | `AST_coercion (sr,(e,t)) ->
     let l1,x1 = rex e in 
-    l1, AST_coercion (sr,(x1,t))
+    l1, `AST_coercion (sr,(x1,t))
 
 
 and split_st seq sr s : asm_t list * asm_t =
   match rst seq s with
-  | [] -> [], Exe (generated,EXE_nop "")
+  | [] -> [], Exe (generated,`EXE_nop "")
   | [x] -> [],x
   | ss ->
     let name = "_block_" ^ string_of_int (seq()) in
     [
-      Dcl (sr,name,DCL_procedure ([], ss))
+      Dcl (sr,name,`DCL_procedure ([], ss))
     ]
     ,
-    Exe (sr,EXE_call (
-      AST_name (generated,([name],TYP_tuple [])), 
-      AST_tuple (generated,[])
+    Exe (sr,`EXE_call (
+      `AST_suffix
+      (
+        generated,
+        (
+          `AST_name (generated,name),
+          `TYP_tuple []
+        )
+      ), 
+      `AST_tuple (generated,[])
     ))
 
     
@@ -149,198 +218,236 @@ and rst seq st : asm_t list =
   let rsts' sts = catmap rst' sts in
   
   match st with
-  | AST_label (sr,s) -> [Exe (sr,EXE_label s)]
-  | AST_goto (sr,s) -> [Exe (sr,EXE_goto s)]
-  | AST_open (sr,name) -> [Dir (sr,DIR_open name)]
+  | `AST_label (sr,s) -> [Exe (sr,`EXE_label s)]
+  | `AST_goto (sr,s) -> [Exe (sr,`EXE_goto s)]
+  | `AST_open (sr,name) -> [Dir (sr,DIR_open name)]
   
-  | AST_comment s -> [Exe (generated,EXE_comment s)]
+  | `AST_comment s -> [Exe (generated,`EXE_comment s)]
 
   (* objects *)
-  | AST_export (sr,name,cpp_name) ->
-    [Iface (sr,IFACE_export (name,cpp_name))]
+  | `AST_export (sr,name,cpp_name) ->
+    [Iface (sr,`IFACE_export (name,cpp_name))]
 
-  | AST_var_decl (sr,name,typ,expr) -> 
+  | `AST_var_decl (sr,name,typ,expr) -> 
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,DCL_var t); Exe (sr,EXE_init (name,x))]
+      d @ [Dcl (sr,name,`DCL_var t); Exe (sr,`EXE_init (name,x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,DCL_var_typeof x); Exe (sr,EXE_init (name,x))]
-    | Some t,None -> [Dcl (sr,name,DCL_var t)]
+      d @ [Dcl (sr,name,`DCL_var_typeof x); Exe (sr,`EXE_init (name,x))]
+    | Some t,None -> [Dcl (sr,name,`DCL_var t)]
     | None,None -> failwith "Expected variable to have type or initialiser"
     end
 
-  | AST_val_decl (sr,name,typ,expr) -> 
+  | `AST_val_decl (sr,name,typ,expr) -> 
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,DCL_val t); Exe (sr,EXE_init (name,x))]
+      d @ [Dcl (sr,name,`DCL_val t); Exe (sr,`EXE_init (name,x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,DCL_val_typeof x); Exe (sr,EXE_init (name,x))]
-    | Some t, None -> [Dcl (sr,name,DCL_val t)] (* allowed in interfaces *)
+      d @ [Dcl (sr,name,`DCL_val_typeof x); Exe (sr,`EXE_init (name,x))]
+    | Some t, None -> [Dcl (sr,name,`DCL_val t)] (* allowed in interfaces *)
     | None,None -> failwith "Expected value to have type or initialiser"
     end
 
-  | AST_const_decl (sr,name, typ, s) -> [Dcl (sr,name,DCL_const (typ,s))]
+  | `AST_const_decl (sr,name, typ, s) -> [Dcl (sr,name,`DCL_const (typ,s))]
 
   (* types *)
-  | AST_abs_decl (sr,name,str) -> [Dcl (sr,name,DCL_abs str)]
-  | AST_union (sr,name, components) -> [Dcl (sr,name,DCL_union components)]
-  | AST_struct (sr,name, components) ->  [Dcl (sr,name,DCL_struct components)]
-  | AST_type_alias (sr,name,typ) -> [Dcl (sr,name,DCL_type_alias typ)]
-  | AST_type (sr,name) -> [Dcl (sr,name,DCL_type)]
+  | `AST_abs_decl (sr,name,str) -> [Dcl (sr,name,`DCL_abs str)]
+  | `AST_union (sr,name, components) -> [Dcl (sr,name,`DCL_union components)]
+  | `AST_struct (sr,name, components) ->  [Dcl (sr,name,`DCL_struct components)]
+  | `AST_type_alias (sr,name,typ) -> [Dcl (sr,name,`DCL_type_alias typ)]
+  | `AST_type (sr,name) -> [Dcl (sr,name,`DCL_type)]
 
   (* functions *)
-  | AST_function (sr,name, params, res, sts) -> 
-    [Dcl (sr,name,DCL_function (params, res, rsts' sts))]
+  | `AST_function (sr,name, params, res, sts) -> 
+    [Dcl (sr,name,`DCL_function (params, res, rsts' sts))]
     
-  | AST_procedure (sr,name, params, sts) -> 
+  | `AST_procedure (sr,name, params, sts) -> 
     let rst' st = rst seq st in
     let rsts' sts = catmap rst' sts in
-    [Dcl (sr,name,DCL_procedure (params, rsts' sts))]
+    [Dcl (sr,name,`DCL_procedure (params, rsts' sts))]
     
-  | AST_procedure_decl (sr,name,typ) ->
-    [Dcl (sr,name,DCL_if_proc (typ))]
+  | `AST_procedure_decl (sr,name,typ) ->
+    [Dcl (sr,name,`DCL_if_proc (typ))]
 
-  | AST_function_decl (sr,name,typ) ->
-    [Dcl (sr,name,DCL_if_fun typ)]
+  | `AST_function_decl (sr,name,typ) ->
+    [Dcl (sr,name,`DCL_if_fun typ)]
 
-  | AST_block (sr,sts) ->
+  | `AST_block (sr,sts) ->
     begin match sts with
     | [] -> []
     | [x] -> rst' x 
     | _ ->
     let name = "_block_" ^ string_of_int (seq()) in
     [
-      Dcl (sr,name,DCL_procedure ([], rsts' sts)); 
-      Exe (sr,EXE_call (AST_name (generated,([name],TYP_tuple [])),AST_tuple (generated,[])))
+      Dcl (sr,name,`DCL_procedure ([], rsts' sts)); 
+      Exe (sr,`EXE_call (
+        `AST_suffix 
+        (
+          generated,
+          (
+            `AST_name (generated,name),
+            `TYP_tuple []
+          )
+        ),
+        `AST_tuple (generated,[])
+      ))
     ]
     end
 
-  | AST_except_handler (sr,name,params,sts) ->  
+  | `AST_except_handler (sr,name,params,sts) ->  
     failwith "Unexpected exception handler"
     
-  | AST_fun_decl (sr,name,args,result,code) -> 
-    [Dcl (sr,name,DCL_fun (args,result,code))]
-  | AST_proc_decl (sr,name,args,code) -> 
-    [Dcl (sr,name,DCL_proc(args,code))]
+  | `AST_fun_decl (sr,name,args,result,code) -> 
+    [Dcl (sr,name,`DCL_fun (args,result,code))]
+  | `AST_proc_decl (sr,name,args,code) -> 
+    [Dcl (sr,name,`DCL_proc(args,code))]
 
   (* misc *)
-  | AST_interface (sr,name,sts) ->
+  | `AST_interface (sr,name,sts) ->
     [
-      Dcl (sr,name,DCL_interface (rsts' sts))
+      Dcl (sr,name,`DCL_interface (rsts' sts))
     ]
 
-  | AST_module (sr,name, typ, sts) -> 
-    begin match typ with
-    | TYP_none ->
-      [
-        Dcl (sr,name,DCL_module (rsts' sts));
-        Exe 
-        (
-          sr,
-          EXE_call 
-          (
-            AST_name (sr,([name;"_init_"],TYP_tuple [])),
-            AST_tuple (generated,[])
-          )
-        )
-      ]
-    | _ ->
-      let n = seq() in 
-      let mname = "_module_" ^ string_of_int n in
-      let mexpr = AST_coercion 
+  | `AST_untyped_module (sr,name, sts) -> 
+    [
+      Dcl (sr,name,`DCL_module (rsts' sts));
+      Exe 
       (
         sr,
+        `EXE_call 
         (
-          AST_name (sr,([mname],TYP_none)), 
-          typ
-        )
-      ) 
-      in
-      [
-        Dcl (sr,mname,DCL_module (rsts' sts));
-        Dcl (sr,name,DCL_module_binding mexpr);
-        Exe 
-        (
-          sr,
-          EXE_call 
+          `AST_suffix
           (
-            AST_name (sr,([name;"_init_"],TYP_tuple [])),
-            AST_tuple (generated,[])
-          )
+            sr,
+            (
+              `AST_lookup
+              (
+                sr,
+                (
+                  `AST_name (sr,name),
+                  "_init_"
+                )
+              ),
+              `TYP_tuple []
+            )
+          ),
+          `AST_tuple (generated,[])
         )
-      ]
-      end
-
-  | AST_functor (sr,name,ps,typ,sts) ->
+      )
+    ]
+  | `AST_typed_module (sr,name, typ, sts) -> 
+    let mname = name ^ "_impl_" in
+    let mexpr = `AST_coercion 
+    (
+      sr,
+      (
+        `AST_name (sr,mname), 
+        typ
+      )
+    ) 
+    in
     [
-      Dcl (sr,name,DCL_functor (ps,typ,rsts' sts));
+      Dcl (sr,mname,`DCL_module (rsts' sts));
+      Dcl (sr,name,`DCL_module_binding mexpr);
+      Exe 
+      (
+        sr,
+        `EXE_call 
+        (
+          `AST_suffix 
+          (sr,
+            (
+              `AST_lookup
+              (
+                sr,
+                (
+                  `AST_name (sr,name),
+                  "_init_"
+                )
+              ),
+              `TYP_tuple []
+            )
+          ),
+          `AST_tuple (generated,[])
+        )
+      )
     ]
 
-  | AST_module_binding (sr,name,mexpr) ->
-    [Dcl (sr,name,DCL_module_binding mexpr)]
+  | `AST_typed_functor (sr,name,ps,typ,sts) ->
+    [
+      Dcl (sr,name,`DCL_typed_functor (ps,typ,rsts' sts));
+    ]
+
+  | `AST_untyped_functor (sr,name,ps,sts) ->
+    [
+      Dcl (sr,name,`DCL_untyped_functor (ps,rsts' sts));
+    ]
+
+  | `AST_module_binding (sr,name,mexpr) ->
+    [Dcl (sr,name,`DCL_module_binding mexpr)]
 
 
-  | AST_header (sr,s) -> 
+  | `AST_header (sr,s) -> 
     let n = seq() in 
     let name = "_ header_" ^ string_of_int n in 
-    [Dcl (sr,name,DCL_header s)]
+    [Dcl (sr,name,`DCL_header s)]
 
   (* executable *)
-  | AST_attempt (sr,(sra,attempt), (srh,handlers), (srf,finally)) -> 
+  | `AST_attempt (sr,(sra,attempt), (srh,handlers), (srf,finally)) -> 
     let name_of_handler x = match x with 
-      | AST_except_handler (sr',name,_,_) -> name
+      | `AST_except_handler (sr',name,_,_) -> name
       | _ -> failwith ("System error, expected exception handler")
     in 
     let finally_seq = seq() in
     let finally_label = "_finally_label_" ^ string_of_int finally_seq in
     let rh h =
       match h with 
-      | AST_except_handler (sr',name,params,sts) -> 
-        let sts' = sts @ [AST_goto (srf,finally_label)] in
-        Dcl (sr',name,DCL_procedure (params, rsts' sts'))
+      | `AST_except_handler (sr',name,params,sts) -> 
+        let sts' = sts @ [`AST_goto (srf,finally_label)] in
+        Dcl (sr',name,`DCL_procedure (params, rsts' sts'))
       | _ -> failwith "Expected statement to be handler"
     in
     let handlers' = List.map rh handlers in
-    let f_dfs,f_st = split_st seq srf (AST_block (srf,finally)) in
+    let f_dfs,f_st = split_st seq srf (`AST_block (srf,finally)) in
     let handler_names = map name_of_handler handlers in
     let a_dfs,a_st = split_st seq  sra attempt in
       (* 
-      Exe (EXE_comment "attempt statement") :: 
-      Exe (EXE_comment "handlers") ::
+      Exe (`EXE_comment "attempt statement") :: 
+      Exe (`EXE_comment "handlers") ::
       *)
       handlers' @ 
       (*
-      [Exe (EXE_comment "(definitions for attempt)")] @
+      [Exe (`EXE_comment "(definitions for attempt)")] @
       *)
       a_dfs @ 
       (*
-      [Exe (EXE_comment "(definitions for finally clause)")] @
+      [Exe (`EXE_comment "(definitions for finally clause)")] @
       *)
       f_dfs @ 
       [
         (*
-        Exe (EXE_comment "the attempt");
+        Exe (`EXE_comment "the attempt");
         *)
         a_st;
-        Exe (srf,EXE_label finally_label);
+        Exe (srf,`EXE_label finally_label);
         (*
-        Exe (EXE_comment "finally clause");
+        Exe (`EXE_comment "finally clause");
         *)
         f_st;
         (*
-        Exe (EXE_comment "end attempt statement")
+        Exe (`EXE_comment "end attempt statement")
         *)
       ]
     
-  | AST_raise (sr,id,e) -> 
-    let name = AST_name(sr,([id],TYP_none)) in
-    [Exe (sr,EXE_call(name,e))]
+  | `AST_raise (sr,id,e) -> 
+    let name = `AST_name(sr,id) in
+    [Exe (sr,`EXE_call(name,e))]
 
-  | AST_match (sr,e,pss) ->
+  | `AST_match (sr,e,pss) ->
     if List.length pss = 0 then failwith "Empty Pattern";
 
     (* step 1: evaluate e *)
@@ -349,8 +456,8 @@ and rst seq st : asm_t list =
     let expr_src = src_of_expr e in
     let evl = 
       [
-        Dcl (expr_src,match_var_name,DCL_var_typeof(x));
-        Exe (expr_src,EXE_init (match_var_name,x))
+        Dcl (expr_src,match_var_name,`DCL_var_typeof(x));
+        Exe (expr_src,`EXE_init (match_var_name,x))
       ]
     in
     let pats,_ = List.split pss in
@@ -358,37 +465,37 @@ and rst seq st : asm_t list =
     ;
     let ematch_seq = seq() in
     let end_match_label = "_end_match_" ^ string_of_int ematch_seq in
-    let matches = ref [Exe (generated,EXE_comment "begin match")] in
+    let matches = ref [Exe (generated,`EXE_comment "begin match")] in
     let match_caseno = ref 1 in
     let match_seq = ref (seq()) in
     List.iter
     (fun (pat,st) -> 
       let n1 = !match_seq in
       let n2 = seq() in
-      let patsrc = src_of_pattern pat in
-      let stsrc = src_of_statement st in
+      let patsrc = src_of_pat pat in
+      let stsrc = src_of_stmt st in
       let match_checker_id = "_match_checker_" ^ string_of_int n1 in
       let match_handler_id = "_match_handler_" ^ string_of_int n1 in
-      let match_checker = AST_name (patsrc,([match_checker_id],TYP_none)) in
-      let match_handler = AST_name (stsrc,([match_handler_id],TYP_none)) in
+      let match_checker = `AST_name (patsrc,match_checker_id) in
+      let match_handler = `AST_name (stsrc,match_handler_id) in
       matches := !matches @
       [
-        Dcl (patsrc,match_checker_id,DCL_match_check (pat,match_var_name));
-        Dcl (stsrc,match_handler_id,DCL_match_handler (pat,match_var_name,rst' st))
+        Dcl (patsrc,match_checker_id,`DCL_match_check (pat,match_var_name));
+        Dcl (stsrc,match_handler_id,`DCL_match_handler (pat,match_var_name,rst' st))
       ]
       @
       [
-      Exe (patsrc,EXE_comment ("match case " ^ string_of_int !match_caseno));
-      Exe (patsrc,EXE_label ("_match_label_" ^ string_of_int n1));
+      Exe (patsrc,`EXE_comment ("match case " ^ string_of_int !match_caseno));
+      Exe (patsrc,`EXE_label ("_match_label_" ^ string_of_int n1));
       Exe 
       (
         patsrc,
-        EXE_ifnotgoto 
+        `EXE_ifnotgoto 
         (
-          AST_apply 
+          `AST_apply 
           (
             patsrc,
-            (match_checker,AST_tuple (patsrc,[]))
+            (match_checker,`AST_tuple (patsrc,[]))
           ), 
           "_match_label_" ^ string_of_int n2
         )
@@ -397,10 +504,10 @@ and rst seq st : asm_t list =
       Exe 
       (
         patsrc,
-        EXE_call (match_handler, AST_tuple (patsrc,[]))
+        `EXE_call (match_handler, `AST_tuple (patsrc,[]))
       )
       ;
-      Exe (patsrc,EXE_goto end_match_label)
+      Exe (patsrc,`EXE_goto end_match_label)
       ]
       ;
       incr match_caseno;
@@ -416,23 +523,23 @@ and rst seq st : asm_t list =
     !matches
     @
     [
-      Exe (sr,EXE_comment "match failure");
-      Exe (sr,EXE_label failure_label);
-      Exe (sr,EXE_code "      assert((\"match failure\",false));\n");
-      Exe (sr,EXE_comment "match exit");
-      Exe (sr,EXE_label end_match_label)
+      Exe (sr,`EXE_comment "match failure");
+      Exe (sr,`EXE_label failure_label);
+      Exe (sr,`EXE_code "      assert((\"match failure\",false));\n");
+      Exe (sr,`EXE_comment "match exit");
+      Exe (sr,`EXE_label end_match_label)
     ]
 
-  | AST_return (sr,e) ->
-    let d,x = rex e in d @ [Exe (sr,EXE_return x)]
+  | `AST_return (sr,e) ->
+    let d,x = rex e in d @ [Exe (sr,`EXE_return x)]
   
-  | AST_nop _ -> []
-  | AST_call (sr,proc, arg) ->
+  | `AST_nop _ -> []
+  | `AST_call (sr,proc, arg) ->
     let d1,x1 = rex proc in
     let d2,x2 = rex arg in
-    d1 @ d2 @ [Exe (sr,EXE_call (x1,x2))]
+    d1 @ d2 @ [Exe (sr,`EXE_call (x1,x2))]
 
-  | AST_if (sr,ifs, (esr,els)) -> 
+  | `AST_if (sr,ifs, (esr,els)) -> 
     let ubc (sr,(e,s)) : asm_t list * (range_srcref * (expr_t * asm_t)) = 
       match split_st seq sr s 
       with ss,s' -> 
@@ -446,63 +553,63 @@ and rst seq st : asm_t list =
       let next_label = "_next_" ^ string_of_int (seq()) in
       [
         (*
-        Exe (EXE_comment "conditional case");
+        Exe (`EXE_comment "conditional case");
         *)
-        Exe (sr,EXE_ifnotgoto (e,next_label));
+        Exe (sr,`EXE_ifnotgoto (e,next_label));
         s
         ;
-        Exe (sr,EXE_goto endif_label);
-        Exe (sr,EXE_label next_label);
+        Exe (sr,`EXE_goto endif_label);
+        Exe (sr,`EXE_label next_label);
       ] 
     in
     let ifs'' = catmap ifcase ifs' in
     (* 
-    Exe (EXE_comment "conditional chain") ::
-    Exe (EXE_comment "(definitions for conditional chain)") ::
+    Exe (`EXE_comment "conditional chain") ::
+    Exe (`EXE_comment "(definitions for conditional chain)") ::
     *)
     concat (ss @ [s']) @ 
     ifs'' @ 
     [ 
       (*
-      Exe (EXE_comment "else clause");
+      Exe (`EXE_comment "else clause");
       *)
       els'; 
-      Exe (esr,EXE_label endif_label);
+      Exe (esr,`EXE_label endif_label);
       (*
-      Exe (EXE_comment "endif")
+      Exe (`EXE_comment "endif")
       *)
     ]
 
-  | AST_while (sr,e,s) ->  
+  | `AST_while (sr,e,s) ->  
     let label1 = "_while_" ^ string_of_int (seq()) in
     let label2 = "_end_while_" ^ string_of_int (seq()) in
     let dfs,s' = 
-      split_st seq (src_of_statement s) s 
+      split_st seq (src_of_stmt s) s 
     in
     dfs @ [
-      Exe (sr,EXE_label label1);
-      Exe (sr,EXE_ifnotgoto (e, label2));
+      Exe (sr,`EXE_label label1);
+      Exe (sr,`EXE_ifnotgoto (e, label2));
       s';
-      Exe (sr,EXE_goto label1);
-      Exe (sr,EXE_label label2);
+      Exe (sr,`EXE_goto label1);
+      Exe (sr,`EXE_label label2);
     ]
 
-  | AST_read (sr,name) ->  [Exe (sr,EXE_read name)]
-  | AST_code (sr,s) -> [Exe (sr,EXE_code s)]
+  | `AST_read (sr,name) ->  [Exe (sr,`EXE_read name)]
+  | `AST_code (sr,s) -> [Exe (sr,`EXE_code s)]
 
 let typeofargs a = 
       match List.map snd a with
       | [x] -> x
-      | lst -> TYP_tuple lst
+      | lst -> `TYP_tuple lst
 
 let rec build_if d = match d with
-  | AST_function  (sr,name,ps,ret,_) -> 
+  | `AST_function  (sr,name,ps,ret,_) -> 
     [
-      AST_function_decl 
+      `AST_function_decl 
       (
         sr,
         name,
-        TYP_function 
+        `TYP_function 
         (
           typeofargs ps,
           ret
@@ -510,33 +617,35 @@ let rec build_if d = match d with
       )
     ]
 
-  | AST_procedure (sr,name,ps,_) ->
+  | `AST_procedure (sr,name,ps,_) ->
     [
-      AST_procedure_decl 
+      `AST_procedure_decl 
       (
         sr,
         name,
-        TYP_function 
+        `TYP_function 
         (
           typeofargs ps,
-          TYP_void 
+          `AST_void sr
         )
       )
     ]
 
-  | AST_module (sr,name,typ,sts) -> 
-    [AST_module (sr,name,typ,build_interface sts)]
+  | `AST_typed_module (sr,name,typ,sts) -> 
+    [`AST_typed_module (sr,name,typ,build_interface sts)]
+  | `AST_untyped_module (sr,name,sts) -> 
+    [`AST_untyped_module (sr,name,build_interface sts)]
 
-  | AST_var_decl _
-  | AST_val_decl _
+  | `AST_var_decl _
+  | `AST_val_decl _
 
-  | AST_type_alias _
-  | AST_union _
-  | AST_struct _
-  | AST_const_decl _
-  | AST_fun_decl _
-  | AST_proc_decl _ 
-  | AST_abs_decl _ 
+  | `AST_type_alias _
+  | `AST_union _
+  | `AST_struct _
+  | `AST_const_decl _
+  | `AST_fun_decl _
+  | `AST_proc_decl _ 
+  | `AST_abs_decl _ 
     -> [d]
   | _ -> [] 
 
@@ -546,11 +655,11 @@ and build_interface m =
 let desugar_program name counter sts =
   let sr = 
     rsrange 
-      (src_of_statement (List.hd sts)) 
-      (src_of_statement (list_last sts))
+      (src_of_stmt (List.hd sts)) 
+      (src_of_stmt (list_last sts))
   in
   let seq () = let n = !counter in incr counter; n in
-  rst seq (AST_module (sr,name,TYP_none,sts))
+  rst seq (`AST_untyped_module (sr,name,sts))
 
 @h = tangler("src/flxd.ml")
 @select(h)

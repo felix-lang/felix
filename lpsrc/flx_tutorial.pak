@@ -158,7 +158,7 @@ although the syntax is different from C.
 Here is an example:
 @select(tangler(tdir+'tut106.flx'))
 #include <std.flx>
-fun mid(a:int, b:int):int
+fun mid(a:int, b:int):int =
 {
   val c = (a + b) / 2;
   return c;
@@ -197,7 +197,7 @@ studying this example, which is equivalent
 to example 6.
 @select(tangler(tdir+'tut107.flx'))
 #include <std.flx>
-fun mid(a:int, b:int):int
+fun mid(a:int, b:int):int =
 {
   val c = (a + b) / 2;
   return c;
@@ -375,24 +375,23 @@ union int_option =
 
 val y = Some 1;
 
-match (y) 
-{
-  | Some i:
+match (y) with 
+  | Some ?i =>
     {
       print "Some "; 
       print i; 
     };
-  | None: 
+  | None =>
     {
       print "None"; 
     };
-}
+endmatch;
 endl;
 
 @doc()
 Notice that the value 'i' in the line
 @begin_displayed_code()
-  | Some i:
+  | Some ?i:
 @end_displayed_code()
 can be used in the handler for that case.
 This is how we get the 'int' out of the Some option.
@@ -402,22 +401,22 @@ there is no need to 'break' at the end of a
 case handler: control jumps to the end of the
 match statement when the handler is finished,
 it never falls through.
-
+@p()
+The question mark is used to indicate a pattern
+variable.
 @head(2,'Pattern Matching Tuples')
 It is also possible to match tuples.
 Here is an example:
 @select(tangler(tdir+'tut115.flx'))
 #include <std.flx>
 val x = 1,2,(3,4);
-match (x) 
-{
-  case (x,_,z): 
+match (x) with
+  | (?x,_,?z) =>
   {
     print x; 
     print ", ";
-    match (z)
-    {
-      case (a,b): 
+    match (z) with
+      | (?a,?b) =>
       {
         print "(";
         print a; 
@@ -425,9 +424,9 @@ match (x)
         print b; 
         print ")";
       };
-    }
+    endmatch;
   };
-}
+endmatch;
 endl;
 @doc()
 Notice the use of the special pattern '_', which matches
@@ -487,11 +486,11 @@ proc print(z:gauss) {
 }
 
 // And two pure Felix functions
-fun sqr(z:gauss):gauss {
+fun sqr(z:gauss):gauss = {
   return z * z;
 }
 
-fun norm(z:gauss): int {
+fun norm(z:gauss): int = {
   return 
     real z * real z + imag z * imag z
   ;
@@ -589,17 +588,17 @@ proc set ( lhs: &gauss, rhs: gauss )
   (*lhs).y = rhs.y;
 }
 
-fun add (a:gauss, b:gauss): gauss {
+fun add (a:gauss, b:gauss): gauss = {
   return gauss(a.x+b.x, a.y+b.y);
 }
 
-fun mul (a:gauss, b:gauss): gauss {
+fun mul (a:gauss, b:gauss): gauss = {
   return gauss(a.x+b.x - a.y+b.y, a.x*b.y + a.y*b.x);
 }
 
-fun mkgauss (a:int,b:int):gauss { return gauss(a,b); }
-fun real (z:gauss):int { return z.x; } 
-fun imag (z:gauss):int { return z.y; }
+fun mkgauss (a:int,b:int):gauss = { return gauss(a,b); }
+fun real (z:gauss):int = { return z.x; } 
+fun imag (z:gauss):int = { return z.y; }
 
 proc print(z:gauss) { 
   print "(";
@@ -609,11 +608,11 @@ proc print(z:gauss) {
   print ")";
 }
 
-fun sqr(z:gauss):gauss {
+fun sqr(z:gauss):gauss = {
   return z * z;
 }
 
-fun norm(z:gauss): int {
+fun norm(z:gauss): int = {
   return 
     real z * real z + imag z * imag z
   ;
@@ -746,16 +745,15 @@ val t2 = Cons (200.2,t1);
 
 proc print (a: float_list) 
 {
-  match (a) 
-  {
-    | Empty: print "[]";
-    | Cons (i,tail): 
-      {
-        print i; 
-        print " "; 
-        print tail;
-      };
-  }
+  match a with 
+  | Empty => print "[]";
+  | Cons (?i, ?tail) =>
+    {
+      print i; 
+      print " "; 
+      print tail;
+    };
+  endmatch;
 }
 
 print t2; endl;
@@ -775,42 +773,41 @@ union int_list =
 
 proc print (a: int_list) 
 {
-  match (a) 
-  {
-    | Empty: print "[]";
-    | Cons (i,tail): 
-      {
-        print i; 
-        print " "; 
-        print tail;
-      };
-  }
+  match a with
+  | Empty => print "[]";
+  | Cons (?i,?tail) =>
+    {
+      print i; 
+      print " "; 
+      print tail;
+    };
+  endmatch;
 }
 
-fun mk(i: int, tl:int_list):int_list
+fun mk(i: int, tl:int_list):int_list =
 {
-  if(i>0)
+  if(i>0) then
     return mk(i-1,Cons(i,tl));
   else return tl;
+  endif;
 }
 
 val a = mk(10,Empty);
 print "List= "; print a; endl;
 
-fun rev(lst:int_list):int_list
+fun rev(lst:int_list):int_list =
 {
   var result = Empty;
   proc aux(lst:int_list)
   {
-    match(lst)
-    {
-      | Empty: {} ;
-      | Cons (head,tail): 
-        {
-          result = Cons(head,result); 
-          aux(tail);
-        };
-    }
+    match lst with
+    | Empty => {} ;
+    | Cons (?head,?tail) =>
+      {
+        result = Cons(head,result); 
+        aux(tail);
+      };
+    endmatch;
   }
   aux(lst);
   return result;
@@ -842,7 +839,7 @@ contains quite a lot of subtle features!
 
 var j = 2;
 
-fun get_printer(i:int): unit->void  {
+fun get_printer(i:int): unit->void  = {
   proc print() { print (i+j); }
   return print of (unit);
 }
@@ -913,10 +910,10 @@ Consider the following example:
 @select(tangler(tdir+'tut122.flx'))
 #include <std.flx>
 
-fun f4(i4:int): int->int->int->int  {
-  fun f3(i3:int): int->int->int {
-    fun f2(i2:int): int->int {
-      fun f1(i1:int): int {
+fun f4(i4:int): int->int->int->int = {
+  fun f3(i3:int): int->int->int = {
+    fun f2(i2:int): int->int = {
+      fun f1(i1:int): int = {
         return i1+i2+i3+i4;
       }
       return f1 of (int);
@@ -974,7 +971,7 @@ Here is the equivalent code, using this sugar:
 @select(tangler(tdir+'tut123.flx'))
 #include <std.flx>
 
-fun f4(i4:int) (i3:int) (i2:int) (i1:int): int {
+fun f4(i4:int) (i3:int) (i2:int) (i1:int): int = {
   return i1+i2+i3+i4;
 }
 
@@ -1029,102 +1026,106 @@ It is necessary even for currified functions
 if you want to fix the second argument, but
 leave the first free.
 
-@head(2,'Regular expressions')
-The standard library contains types and functions
-for regular expression matching. Here's an example:
-
-@select(tangler(tdir+'tut124.flx'))
-#include <std.flx>
-#include <boost.flx>
-
-val rex = regex_of_string("(a|b)*abb");
-val matched = regex_match(rex,"aabbabababb");
-print matched; endl;
-
-@doc()
-Note that to make this work, you must edit the
-bin/flx script so that the directory containing
-the boost library is set correctly. The binary
-package provided with this demo uses boost_1_22_0,
-you must use that version of boost. You must build
-the shared version of the regex library using
-@begin_displayed_code()
-  cd boost_1_22_0/libs/regex/build/
-  make -f gcc-shared.mak
-@end_displayed_code()
-
-Now you've got that to work, lets look at currying.
-There is a currified version of regex_match in the boost
-library. Here's why it is useful:
-
-@select(tangler(tdir+'tut125.flx'))
-#include <std.flx>
-#include <boost.flx>
-
-val rex = regex_of_string("(a|b)*abb");
-val matchit = regex_match(rex);
-print (matchit "ababababb"); endl;
-print (matchit "No match"); endl;
-
-proc print_if_matches(matcher:string->bool) (s:string)
-{
-  if (matcher s) { print s; endl; };
-}
-
-val p = print_if_matches matchit;
-p "Hello";
-p "ababa";
-p "abbabbabb";
-p "ababababb";
-
-@doc()
-As you can see, matchit matches a particular 
-regular expression, so you don't have to keep
-specifying it. You can also pass it to a function
-that needs a string matcher, hiding the method by which
-the matching is done. We pass it to print_if_matches,
-which again partially applied to define the new function p.
-@p()
-I hope you can see uses for the combination of power
-obtained by treating functions as first class citizens,
-and by use of currying. The technique is used extensively
-in functional programming languages.
-
-@head(2,'More on regular expressions')
-Sick of writing doubled up sloshes in regular expressions?
-Felix provides Python style string literals, including
-raw strings. Strings prefixed by an r are called raw strings,
-slosh escapes are not processed. This makes it easier
-to define regular expressions. For example:
-
-@select(tangler(tdir+'tut126.flx'))
-#include <std.flx>
-#include <boost.flx>
-val rex = regex_of_string("\\A(\\d{3,4})[- ]?(\\d{4})[- ]?(\\d{4})[- ]?(\\d{4})\\z");
-val machine_format = merge_pattern_of_string ("\\1\\2\\3\\4");
-val human_format = merge_pattern_of_string("\\1-\\2-\\3-\\4");
-val credit_no_1 = "1234-5678-9012-3456";
-val credit_no_2 = "6676688-7765-1111";
-val bad_no = "XYZ";
-
-print (regex_merge rex machine_format credit_no_1); endl;
-print (regex_merge rex human_format credit_no_1); endl;
-print (regex_merge rex machine_format credit_no_2); endl;
-print (regex_merge rex human_format credit_no_2); endl;
-print (regex_merge rex human_format bad_no); endl;
-
-// again, using raw strings:
-
-val rex1 = regex_of_string(r"\A(\d{3,4})[- ]?(\d{4})[- ]?(\d{4})[- ]?(\d{4})\z");
-val machine_format1 = merge_pattern_of_string (r"\1\2\3\4");
-val human_format1 = merge_pattern_of_string(r"\1-\2-\3-\4");
-
-print (regex_merge rex1 machine_format1 credit_no_1); endl;
-print (regex_merge rex1 human_format1 credit_no_1); endl;
-print (regex_merge rex1 machine_format1 credit_no_2); endl;
-print (regex_merge rex1 human_format1 credit_no_2); endl;
-print (regex_merge rex1 human_format1 credit_no_2); endl;
-
+@# @head(2,'Regular expressions')
+@# The standard library contains types and functions
+@# for regular expression matching. Here's an example:
+@# 
+@# @select(tangler(tdir+'tut124.flx'))
+@# #include <std.flx>
+@# #include <boost.flx>
+@# 
+@# val rex = regex_of_string("(a|b)*abb");
+@# val matched = regex_match(rex,"aabbabababb");
+@# print matched; endl;
+@# 
+@# @doc()
+@# Note that to make this work, you must edit the
+@# bin/flx script so that the directory containing
+@# the boost library is set correctly. The binary
+@# package provided with this demo uses boost_1_22_0,
+@# you must use that version of boost. You must build
+@# the shared version of the regex library using
+@# @begin_displayed_code()
+@#   cd boost_1_22_0/libs/regex/build/
+@#   make -f gcc-shared.mak
+@# @end_displayed_code()
+@# 
+@# Now you've got that to work, lets look at currying.
+@# There is a currified version of regex_match in the boost
+@# library. Here's why it is useful:
+@# 
+@# @select(tangler(tdir+'tut125.flx'))
+@# #include <std.flx>
+@# #include <boost.flx>
+@# 
+@# val rex = regex_of_string("(a|b)*abb");
+@# val matchit = regex_match(rex);
+@# print (matchit "ababababb"); endl;
+@# print (matchit "No match"); endl;
+@# 
+@# proc print_if_matches(matcher:string->bool) (s:string)
+@# {
+@#   if (matcher s) then 
+@#   {
+@#     print s; endl;
+@#   };
+@#   endif;
+@# }
+@# 
+@# val p = print_if_matches matchit;
+@# p "Hello";
+@# p "ababa";
+@# p "abbabbabb";
+@# p "ababababb";
+@# 
+@# @doc()
+@# As you can see, matchit matches a particular 
+@# regular expression, so you don't have to keep
+@# specifying it. You can also pass it to a function
+@# that needs a string matcher, hiding the method by which
+@# the matching is done. We pass it to print_if_matches,
+@# which again partially applied to define the new function p.
+@# @p()
+@# I hope you can see uses for the combination of power
+@# obtained by treating functions as first class citizens,
+@# and by use of currying. The technique is used extensively
+@# in functional programming languages.
+@# 
+@# @head(2,'More on regular expressions')
+@# Sick of writing doubled up sloshes in regular expressions?
+@# Felix provides Python style string literals, including
+@# raw strings. Strings prefixed by an r are called raw strings,
+@# slosh escapes are not processed. This makes it easier
+@# to define regular expressions. For example:
+@# 
+@# @select(tangler(tdir+'tut126.flx'))
+@# #include <std.flx>
+@# #include <boost.flx>
+@# val rex = regex_of_string("\\A(\\d{3,4})[- ]?(\\d{4})[- ]?(\\d{4})[- ]?(\\d{4})\\z");
+@# val machine_format = merge_pattern_of_string ("\\1\\2\\3\\4");
+@# val human_format = merge_pattern_of_string("\\1-\\2-\\3-\\4");
+@# val credit_no_1 = "1234-5678-9012-3456";
+@# val credit_no_2 = "6676688-7765-1111";
+@# val bad_no = "XYZ";
+@# 
+@# print (regex_merge rex machine_format credit_no_1); endl;
+@# print (regex_merge rex human_format credit_no_1); endl;
+@# print (regex_merge rex machine_format credit_no_2); endl;
+@# print (regex_merge rex human_format credit_no_2); endl;
+@# print (regex_merge rex human_format bad_no); endl;
+@# 
+@# // again, using raw strings:
+@# 
+@# val rex1 = regex_of_string(r"\A(\d{3,4})[- ]?(\d{4})[- ]?(\d{4})[- ]?(\d{4})\z");
+@# val machine_format1 = merge_pattern_of_string (r"\1\2\3\4");
+@# val human_format1 = merge_pattern_of_string(r"\1-\2-\3-\4");
+@# 
+@# print (regex_merge rex1 machine_format1 credit_no_1); endl;
+@# print (regex_merge rex1 human_format1 credit_no_1); endl;
+@# print (regex_merge rex1 machine_format1 credit_no_2); endl;
+@# print (regex_merge rex1 human_format1 credit_no_2); endl;
+@# print (regex_merge rex1 human_format1 credit_no_2); endl;
+@# 
 
 @head(2,'Modules')
 Most modern languages support packaging of related
@@ -1141,7 +1142,7 @@ module A {
 }
 
 print top; endl;
-print (root::top); endl;
+print root::top; endl;
 print A::a; endl;
 print A::B::b; endl;
 @doc()
@@ -1319,7 +1320,7 @@ Here is an example:
 @select(tangler(tdir+'tut129.flx'))
 #include <std.flx>
 
-fun pone (): &int 
+fun pone (): &int = 
 {
   var x : int = 1;
   return &x;
@@ -1351,7 +1352,7 @@ and provides a goto statement.
 print "start"; endl;
 var i = 1;
 start_loop:>
-  if (not (i<10)) goto end_loop;
+  if (not (i<10)) then goto end_loop; endif;
   print i; endl;
   i++;
   goto start_loop;
@@ -1384,7 +1385,7 @@ proc run()
 {
   proc check()
   {
-    if(x!=1) goto bad_x;
+    if(x!=1) then goto bad_x; endif;
   }
   check();
   print "good x"; endl;
@@ -1521,6 +1522,7 @@ proc main
       print " -- aborting"; endl;
     }
   }
+  endattempt;
   print "error handled, continuing"; endl;
 }
 main;
@@ -1565,14 +1567,14 @@ they're called lambdas, after the lambda calculus:
 
 @select(tangler(tdir+'tut135.flx'))
 #include <std.flx>
-val f = fun(a:int):int { return a * a; };
+val f = fun(a:int):int = { return a * a; };
 
 print (f 1); 
 endl;
 
 print 
 (
-  (fun(a:int):int { return a * a; })
+  (fun(a:int):int = { return a * a; })
   1
 ); 
 endl;
@@ -1620,14 +1622,14 @@ Lets try to define it:
 proc While (cond: unit->bool) (body:unit->void)
 {
   repeat:>
-    if (not(cond())) goto finished;
+    if (not(cond())) then goto finished; endif;
     body();
     goto repeat;
   finished:>
 }
 
 var i = 0;
-While (fun():bool { return i < 10; })
+While (fun():bool= { return i < 10; })
 {
   print i; endl;
   i++;
@@ -1641,7 +1643,7 @@ Here's the first shortcut:
 proc While (cond: unit->bool) (body:unit->void)
 {
   repeat:>
-    if (not(cond())) goto finished;
+    if (not(cond())) then goto finished; endif;
     body();
     goto repeat;
   finished:>
@@ -1745,25 +1747,22 @@ floating point. Here are some examples:
 @select(tangler(tdir+'tut139.flx'))
 #include <std.flx>
 
-match (1.0)
-{
-  case NaN: print "Not a Number";
-  case -inf .. -0.999: print "lt -1";
-  case -1.001 .. 1.001: print "Unit circle";
-  case 0.999 .. inf: print "Greater than 1";
-}
+match (1.0) with
+  | NaN => print "Not a Number";
+  | -inf .. -0.999 => print "lt -1";
+  | -1.001 .. 1.001 => print "Unit circle";
+  | 0.999 .. inf => print "Greater than 1";
+endmatch;
 endl;
 
-match (1.0) 
-{
-  case 0.999 .. 1.001: print "one";
-}
+match (1.0) with 
+  | 0.999 .. 1.001 => print "one";
+endmatch;
 endl;
 
-match (1.0/3.0)
-{
- case 0.3333 .. 0.3334: print "One third";
-}
+match (1.0/3.0) with
+ | 0.3333 .. 0.3334 => print "One third";
+endmatch;
 
 @doc()
 Things to note are: if there is NaN test,
@@ -1844,10 +1843,10 @@ interface group
 
 module number {
   typedef t = int;
-  fun add(a:t, b:t):t { return root::add(a,b); }
-  fun neg(a:t):t { return -a; }
+  fun add(a:t, b:t):t = { return Int::add(a,b); }
+  fun neg(a:t):t = { return Int::neg a; }
   val zero = 0;
-  proc print (a:int) { root::print a; }
+  proc print (a:int) { Int::print a; }
 }
 
 module NUMBER = number : group;
@@ -1890,12 +1889,12 @@ interface group
   val zero:t;
 }
 
-module NUMBER: group {
+module NUMBER: group = {
   typedef t = int;
-  fun add(a:t, b:t):t { return root::add(a, b); }
-  fun neg(a:t):t { return -a; }
+  fun add(a:t, b:t):t = { return Int::add(a, b); }
+  fun neg(a:t):t = { return -a; }
   val zero = 0;
-  proc print (a:int) { root::print a; }
+  proc print (a:int) { Int::print a; }
 }
 
 val zero = NUMBER::zero;
@@ -1937,26 +1936,25 @@ functor List (req:list_req)
   ;
   proc print (a: list) 
   {
-    match (a) 
-    {
-      | Empty: print "[]";
-      | Cons (i,tail): 
-        {
-          req::print_element i; 
-          print " "; 
-          print tail;
-        };
-    }
+    match (a) with
+    | Empty => print "[]";
+    | Cons (?i, ?tail) =>
+      {
+        req::print_element i; 
+        print " "; 
+        print tail;
+      };
+    endmatch;
   }
 }
 
-module Int 
+module Integer 
 { 
   typedef element = int;
   proc print_element (a:int) { print a; }
 }
 
-module Int_req = Int : list_req;
+module Int_req = Integer : list_req;
 
 module int_list = List Int_req;
 
@@ -2029,6 +2027,44 @@ at the moment, we not only have to qualify all
 the names, but we also must coerce each int to
 the type Int_req::element.
 
+@head(2,'Nested functors')
+It is, of course, possible to nest functors.
+
+@select(tangler(tdir+'tut204.flx'))
+#include <std.flx>
+interface I 
+{ 
+  type t; 
+  proc print: t; 
+}
+
+module M 
+{ 
+  typedef t = int; 
+  proc print (a:int) { Int::print a; } 
+}
+module B = M:I;
+
+functor F(i:I) 
+{
+  functor G(j:I)
+  {
+    fun swap (a: i::t, b: j::t): j::t * i::t =
+    { 
+      return (b,a);
+    }
+    proc print (b: j::t, a: i::t)
+    {
+      j::print b; print ","; i::print a; endl;
+    }
+  }
+}
+
+module K = F B;
+module H = K::G B;
+val z = H::swap (1: B::t, 2: B::t);
+H::print z;
+
 @head(2,'The open directive')
 It's really boring writing qualified names all
 the time. Felix provides the open directive
@@ -2036,11 +2072,11 @@ to allow you to open a module so its contents
 can be accesses without using qualified names.
 Here's a simple example:
 
-@select(tangler(tdir+'tut204.flx'))
+@select(tangler(tdir+'tut205.flx'))
 #include <std.flx>
 module X {
   proc print_endl (a:int) { print a; endl; }
-  fun square (a:int):int { return a * a; }
+  fun square (a:int):int = { return a * a; }
 }
 
 open X;
@@ -2082,7 +2118,7 @@ a definition in the module containing the
 open directives. Alternatively, you can use
 a qualified name.
 
-@select(tangler(tdir+'tut205.flx'))
+@select(tangler(tdir+'tut206.flx'))
 #include <std.flx>
 module X1 {
   proc printme() { print "X1"; endl; }
@@ -2105,5 +2141,29 @@ defined: the contained X will not be seen
 by other open directives, whereas the module X
 will not be seen by any declarations and definitions
 in the body of the containing scope.
+
+@head(2,'Numbered unions')
+We'll take a break from the module system to 
+consider numbered sums. A numbered union is
+to a named unions, as a tuple is to a struct:
+its an anonymous non-generative type with
+non-negative case tags deduced positionally
+from the type. The infix + is used non-associatively
+to specify numbered unions.
+
+@select(tangler(tdir+'tut207.flx'))
+#include <std.flx>
+typedef three = unit +  unit + unit;
+typedef four = 4;
+typedef nu = int + int + long;
+
+val x = case 2 of 3;
+val x2 = (case 2 of 3) 33L;
+
+fun f(x:nu):int = {
+  match x with
+  | case 1 z => { return 1; };
+  endmatch;
+}
 
 

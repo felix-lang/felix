@@ -45,6 +45,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | STRING (sr,s) -> Flx_string.c_quote_of_string s 
 
   (* one character tokens *)
+  | QUEST _ -> "?" 
   | EXCLAMATION _ -> "!" 
   | LPAR _ -> "(" 
   | RPAR _ -> ")" 
@@ -100,6 +101,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | TILDEEQUAL _ -> "~="
   | COLONEQUAL _ -> ":="
   | RIGHTARROW _ -> "->"
+  | EQRIGHTARROW _ -> "=>"
   | LEFTARROW _ -> "<-"
   | LSQANGLE _ -> "[<"
   | RSQANGLE _ -> ">]"
@@ -154,6 +156,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | TODO _ -> "todo"
   | OF _ -> "of" 
   | ATTEMPT _ -> "attempt"
+  | ENDATTEMPT _ -> "endattempt"
   | RAISE _ -> "raise"
   | EXCEPT _ -> "except"
   | FINALLY _ -> "finally"
@@ -216,6 +219,7 @@ let src_of_token t = match t with
   | AMPER s 
   | VBAR s 
   | EXCLAMATION s 
+  | QUEST s 
   | LPAR s 
   | RPAR s 
   | LSQB s 
@@ -263,6 +267,7 @@ let src_of_token t = match t with
   | RIGHTSHIFTEQUAL s 
   | LEFTARROW s 
   | RIGHTARROW s 
+  | EQRIGHTARROW s 
   | COLONGREATER s 
   | LESSCOLON s 
   | COLONCOLON s 
@@ -282,6 +287,7 @@ let src_of_token t = match t with
   | THEN s 
   | ELSE s 
   | ENDIF s 
+  | ENDATTEMPT s
   | ELIF s 
   | OF s 
   | VAR s 

@@ -30,8 +30,8 @@ open Flx_srcref
 
 let cal_call dfns (p,pt) e =
   match lower pt with
-  | BTYP_function (_, BTYP_void) -> 
-    BEXE_call ((p,lower pt), e)
+  | `BTYP_function (_, `BTYP_void) -> 
+    `BEXE_call ((p,lower pt), e)
   | _ -> failwith ("call non procedure, type=" ^ string_of_btypecode dfns pt)
 
 exception Found of int
@@ -42,7 +42,7 @@ let bind_exes dfns counter freg env exes ret_type =
   print_endline ("bind_exes.. env depth="^ string_of_int (List.length env));
   print_endline "Dumping Source Executables";
   print_endline "--------------------------";
-  let soe = Flx_print.string_of_expression in
+  let soe e = Flx_print.string_of_expr e in
   List.iter 
     (fun x -> print_endline (string_of_exe 1 x))
     exes
@@ -55,178 +55,77 @@ let bind_exes dfns counter freg env exes ret_type =
   *)
   let be e = bind_expression dfns counter freg env [] [] e in
   let lun sr n = lookup_name_in_env env sr n in
-  let luqn sr n = lookup_qn_in_env dfns counter freg env sr [] n in
-  let bt t = bind_type dfns counter freg env [] [] t in
+  let luqn n = lookup_qn_in_env dfns counter freg env [] n in
+  let bt sr t = bind_type dfns counter freg env [] [] sr t in
   let dummy_sr = ("bind exes",0,0,0,0) in
-  let bool_entry = luqn dummy_sr ["";"bool"] in
-  let bool_index = match bool_entry with
-    | FunctionEntry _ -> failwith "bool cannot be function"
-    | NonFunctionEntry (Simple index) -> index
-    | _ -> failwith "bool cannot be abstract"
-  in let bool_type = BTYP_name bool_index in
+  let bool_type = bt dummy_sr flx_bool in
 
   let bound_exes = 
     List.map
     (fun x -> 
-      (* print_endline (string_of_exe 1 x); *)
+      (*
+      print_endline (string_of_exe 1 x);
+      *)
        match x with
-      | EXE_comment s ->       BEXE_comment s
-      | EXE_label s ->         BEXE_label s
-      | EXE_goto s ->          BEXE_goto s
-      | EXE_ifgoto (e,s) ->    
+      | `EXE_comment s ->       `BEXE_comment s
+      | `EXE_label s ->         `BEXE_label s
+      | `EXE_goto s ->          `BEXE_goto s
+      | `EXE_ifgoto (e,s) ->    
         let e',t = be e in
         if t = bool_type 
-        then BEXE_ifgoto ((e',t), s)
+        then `BEXE_ifgoto ((e',t), s)
         else failwith "Conditional requires bool argument"
-      | EXE_ifnotgoto (e,s) -> 
+      | `EXE_ifnotgoto (e,s) -> 
         let e',t = be e in
         if t = bool_type 
-        then BEXE_ifnotgoto ((e',t), s)
+        then `BEXE_ifnotgoto ((e',t), s)
         else failwith "Conditional requires bool argument"
 
-      | EXE_call (AST_name (sr,sn), e2) -> (* OVERLOADING *)
+      | `EXE_call (#suffixed_name_t as sn, e2) -> (* OVERLOADING *)
+        (*
+        print_endline "Handling call of suffixed name";
+        flush stdout;
+        *)
         let be2,t2 = be e2 in
+        (*
+        print_endline "Argument bound";
+        flush stdout;
+        *)
         let tbe1 =
-          begin match sn with
-          | (qn,TYP_none) -> (* OVERLOADING *)
-            lookup_qn_with_sig dfns counter freg sr sr env [] [] qn t2 
-          | _ -> 
-            be (AST_name (sr,sn)) 
-          end
-        in cal_call dfns tbe1 (be2,t2)
+           match sn with
+           | #qualified_name_t as qn ->
+             lookup_qn_with_sig 
+             dfns counter freg 
+             dummy_sr dummy_sr 
+             env [] [] 
+             qn t2 
+           | _ -> be sn
+        in  
+          (*
+          print_endline "Applying call now";
+          flush stdout;
+          *)
+          cal_call dfns tbe1 (be2,t2)
 
-(*
-        begin match sn with
-
-        (* Apply special lookup rules for an unqualified name:
-           search the environment until we get a match on
-           a function declaration, or find some other entity
-        *)
-        | ([name],typ) -> (* OVERLOAD UNQUALIFIED NAME *)
-          (* print_endline ("Call unqualified name " ^ name); *)
-          let typ' = bt typ in
-          let be2, t2 = be e in
-          if typ' <> BTYP_none && t2 <> typ'
-          then failwith "Type suffix doesn't agree with argument"
-          ;
-          let be1, t1 = 
-          try
-            List.iter
-            (fun (htab,dirs) ->
-              (* FIX TO SUPPORT OPEN DIRECTIVES *)
-              try 
-                match Hashtbl.find htab name with
-                | NonFunctionEntry (Simple index) -> raise (Found index)
-                | NonFunctionEntry _ -> failwith "No expect bound entry"
-                | FunctionEntry fs ->
-                  match resolve_overload dfns counter freg fs name t2 with
-                  | Some (Bound _) -> 
-                    failwith 
-                    (
-                      "[bind_exes:EXE_call] Can't handle bound result for unqualified name " ^
-                      name
-                    )
-                  | Some (Simple i) -> raise (Found i)
-                  | None ->  ()
-              with Not_found -> ()
-            )
-            env
-            ;
-            raise Not_found
-          with 
-          | Not_found ->
-              failwith 
-              (
-                "[flx_bbind.bind_exes|EXE_call] No match for " ^ 
-                name ^ " of " ^ string_of_btypecode dfns t2 ^ 
-                " in " ^
-                 short_string_of_src sr
-              )
-
-          | Found index ->
-            (match Hashtbl.find dfns index with id,sr,parent,entry ->
-             match entry with
-             | SYMDEF_procedure _ 
-             | SYMDEF_match_handler _ ->
-               (* print_endline ("Procedure closure of " ^ name); *)
-               BEXPR_closure index
-             | _ -> 
-               (* print_endline ("Non closure " ^ name); *)
-               BEXPR_name index
-            )
-            , 
-            typeofindex dfns counter freg [] [] index
-          in cal_call dfns (be1,t1) (be2,t2)
-
-        (* Do normal overloading for a qualified name:
-           run down the qualifier chain until we find
-           the final table, then try to match on
-           entries in it: if there are no matches,
-           we fail, rather than continue
-        *)
-        | (qn,TYP_none) -> (* OVERLOADING *)
-          let name = string_of_qualified_name qn in
-          let be2, t2 = be e in
-          let be1, t1 = 
-            match luqn sr qn with
-            | NonFunctionEntry _ -> 
-              failwith "[bind_exes] Expected function"
-
-            | FunctionEntry fs -> 
-              match resolve_overload dfns counter freg [] fs name t2 with
-              | Some (Simple index) ->  
-                (match Hashtbl.find dfns index with id,sr,parent,entry ->
-                match entry with
-                | SYMDEF_procedure _ 
-                | SYMDEF_match_handler _ ->
-                  (* print_endline ("Procedure closure of " ^ name); *)
-                  BEXPR_closure index
-                | _ -> 
-                  (* print_endline ("Non closure " ^ name); *)
-                   BEXPR_name index
-                ),
-                typeofindex dfns counter freg [] [] index
-
-              | Some (Bound (i,m)) -> 
-                BEXPR_closure m,
-                let it = typeofindex dfns counter freg [] [] i in
-                let mt = typeofindex dfns counter freg [] [] m in
-                unify dfns it mt
-
-              | None -> 
-                failwith 
-                (
-                  "[flx_bbind.bind_exes|EXE_call] No match for " ^ name ^ " in " ^
-                   short_string_of_src sr
-                )
-          in 
-            cal_call dfns (be1,t1) (be2,t2)
-
-        | _ -> 
-          let be1,t1 = be (AST_name (sr,sn)) and be2,t2 = be e in
-          cal_call dfns (be1, t1) (be2, t2)
-        end
-*)
-
-      | EXE_call (p,e) ->
+      | `EXE_call (p,e) ->
         let p',pt' = be p and e',et' = be e in
         cal_call dfns (p', pt') (e', et')
 
-      | EXE_read s ->          
+      | `EXE_read s ->          
         begin match lun dummy_sr s with
-        | NonFunctionEntry (Simple index) -> BEXE_read index
+        | NonFunctionEntry (Simple index) -> `BEXE_read index
         | NonFunctionEntry _ -> failwith "not expecting bound entry"
         | FunctionEntry _ -> failwith "Can't read function!"
         end
 
-      | EXE_return e ->        
+      | `EXE_return e ->        
         let e',t' = be e in
         begin try 
           assert (ret_type = t');
           (* &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& *)
           (* ignore(unify dfns ret_type t'); *)
           (* &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& *)
-          BEXE_return (e',lower t')
+          `BEXE_return (e',lower t')
         with 
           UnificationError _ ->
             failwith 
@@ -238,9 +137,9 @@ let bind_exes dfns counter freg env exes ret_type =
             )
         end
                 
-      | EXE_nop s ->           BEXE_nop s 
-      | EXE_code s ->          BEXE_code s
-      | EXE_init (s,e) -> 
+      | `EXE_nop s ->           `BEXE_nop s 
+      | `EXE_code s ->          `BEXE_code s
+      | `EXE_init (s,e) -> 
         let sr = src_of_expr e in (* HACK! *)
         begin match lun sr s with
         | FunctionEntry _ -> failwith "Can't init function constant"
@@ -248,7 +147,7 @@ let bind_exes dfns counter freg env exes ret_type =
           let e',rhst = be e in
           let lhst = typeofindex dfns counter freg [] [] index in
           if lhst = rhst
-          then BEXE_init (index, (e',rhst))
+          then `BEXE_init (index, (e',rhst))
           else failwith (
             "LHS["^s^"]("^string_of_btypecode dfns lhst^
             ") of initialisation must have same type as RHS("^
@@ -279,8 +178,10 @@ let rec proper_descendant dfns parent =
   | Some parent -> 
     let _,_,parent,entry = Hashtbl.find dfns parent in
     begin match entry with
-    | SYMDEF_interface _ -> false
-    | SYMDEF_functor _ -> false
+    | `SYMDEF_interface _ 
+    | `SYMDEF_typed_functor _
+    | `SYMDEF_untyped_functor _ 
+      -> false
     | _ -> proper_descendant dfns parent 
     end
   | None -> true
@@ -292,25 +193,38 @@ let bbind dfns counter freg =
   let dummy_sr = ("Generated dummy",0,0,0,0) in
   Hashtbl.iter
   (fun i (name, sr,parent, bdcl) -> 
+  (*
+  print_endline ("binding symbol " ^ name);
+  *)
   if proper_descendant dfns parent
   then begin
+    (*
+    print_endline "Building ENV";
+    *)
     let env = build_env dfns counter freg [] parent in 
-    let bt t = bind_type dfns counter freg env [] [] t in
-    (* print_endline ("BINDING " ^ name); *)
-    match bdcl with
+    (* print_env env; *)
+    (*
+    print_endline "Building ENV Complete";
+    *)
+    let bt t = bind_type dfns counter freg env [] [] sr t in
+    (*
+    print_endline ("BINDING " ^ name ^ "<" ^ string_of_int i ^ ">");
+    *)
+    begin match bdcl with
 
     (* Pure declarations of functions, modules, and type
        don't generate anything. Variable dcls do, however.
     *)
-    | SYMDEF_interface _
-    | SYMDEF_if_fun _ 
-    | SYMDEF_if_proc _
-    | SYMDEF_module _
-    | SYMDEF_functor _
-    | SYMDEF_module_binding _
-    | SYMDEF_if_type  -> ()
+    | `SYMDEF_interface _
+    | `SYMDEF_if_fun _ 
+    | `SYMDEF_if_proc _
+    | `SYMDEF_module _
+    | `SYMDEF_typed_functor _
+    | `SYMDEF_untyped_functor _
+    | `SYMDEF_module_binding _
+    | `SYMDEF_if_type  -> ()
 
-    | SYMDEF_function (ps,rt,exes,name_map,dirs) -> 
+    | `SYMDEF_function (ps,rt,exes,name_map,dirs) -> 
       (* 
       print_endline ("//Binding function " ^ string_of_int i ^ " --> " ^ name); 
       *)
@@ -319,50 +233,62 @@ let bbind dfns counter freg =
       let env' = build_env dfns counter freg [] (Some i) in
       let bbexes = bexes env' exes brt in
       Hashtbl.add bbdfns i 
-      (name,parent,BBDCL_function (bps,brt,bbexes,name_map))
+      (name,parent,`BBDCL_function (bps,brt,bbexes,name_map))
 
-    | SYMDEF_parameter t -> 
-      Hashtbl.add bbdfns i (name,parent,BBDCL_val (bt t))
+    | `SYMDEF_parameter t -> 
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_val (bt t))
 
-    | SYMDEF_lazy (e) ->
+    | `SYMDEF_lazy (e) ->
       let e',rt' = bind_expression dfns counter freg env [] [] e in
-      let bbexes = [BEXE_return (e',rt')] in
+      let bbexes = [`BEXE_return (e',rt')] in
       Hashtbl.add bbdfns i 
-      (name,parent,BBDCL_function ([],rt',bbexes,Hashtbl.create 97))
+      (name,parent,`BBDCL_function ([],rt',bbexes,Hashtbl.create 97))
 
 
-    | SYMDEF_procedure (ps,exes,name_map,dirs) -> 
+    | `SYMDEF_procedure (ps,exes,name_map,dirs) -> 
       (*
       print_endline ("//Binding procedure " ^ string_of_int i ^ " --> " ^ name); 
       *)
       let bps = List.map (fun (name,t) -> (name, bt t)) ps in
-      let env' = build_env dfns counter freg [] (Some i) in
-      let bbexes = bexes env' exes BTYP_void in
-      Hashtbl.add bbdfns i (name,parent,BBDCL_procedure (bps,bbexes,name_map))
       (*
+      print_endline "Procedure type bound";
+      flush stdout;
+      *)
+      let env' = build_env dfns counter freg [] (Some i) in
+      (*
+      print_endline "Procedure environment built";
+      flush stdout;
+      *)
+      let bbexes = bexes env' exes `BTYP_void in
+      (*
+      print_endline "Exes bound";
+      flush stdout;
+      *)
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_procedure (bps,bbexes,name_map))
       ;
+      (*
       print_endline "procedure bound";
-      *) 
+      *)
 
-    | SYMDEF_match_check (pat,mvindex) ->
+    | `SYMDEF_match_check (pat,mvindex) ->
       (*
       print_endline ("//Binding match checker " ^ string_of_int i ^ " --> " ^ name); 
       *)
       let t = typeofindex dfns counter freg [] [] mvindex in
-      let true_val = AST_name (("Generated",0,0,0,0),(["true"],TYP_none)) in
+      let true_val = `AST_name (dummy_sr,"true") in
       let _,rt = bind_expression dfns counter freg env [] [] true_val in
       let name_map = Hashtbl.create 97 in
       let arg,sr = match Hashtbl.find dfns mvindex with id,sr,_,_ -> id,sr in
       let exes = 
         [
-        EXE_return (gen_match_check pat (AST_name (sr,([arg],TYP_none))))
+        `EXE_return (gen_match_check pat (`AST_name (sr,arg)))
         ] 
       in
       let bbexes = bexes env exes rt in
       Hashtbl.add bbdfns i (name,parent,
-        BBDCL_function ([],rt,bbexes,name_map));
+        `BBDCL_function ([],rt,bbexes,name_map));
     
-    | SYMDEF_match_handler (pat,mvindex,exes,name_map,dirs) ->
+    | `SYMDEF_match_handler (pat,mvindex,exes,name_map,dirs) ->
       (* print_endline ("//Binding match handler " ^ string_of_int i ^ " --> " ^ name); 
       *)
       let env = build_env dfns counter freg [] (Some i) in 
@@ -377,7 +303,7 @@ let bbind dfns counter freg =
       print_endline "VARIABLES ARE";
       Hashtbl.iter (fun vname (sr,extractor) ->
         let component = 
-          Flx_mbind.gen_extractor extractor (AST_name (sr,([mvname],TYP_none))) 
+          Flx_mbind.gen_extractor extractor (`AST_name (sr,mvname)) 
         in
         print_endline ("  " ^ vname ^ " := " ^ string_of_expression component);
       ) vars;
@@ -390,49 +316,49 @@ let bbind dfns counter freg =
       (fun vname (sr,extractor) ->
         let component = 
           Flx_mbind.gen_extractor extractor 
-          (AST_name (sr,([mvname],TYP_none))) 
+          (`AST_name (sr,mvname)) 
         in
         let vid = !counter in
         incr counter;
         (* print_endline ("//adding match variable component value "^string_of_int vid^" --> " ^ vname);
         *)
         Hashtbl.add dfns vid (vname, sr,Some i, 
-          SYMDEF_dcl (DCL_val_typeof component)
+          `SYMDEF_dcl (`DCL_val_typeof component)
         );
         let bvtyp = typeofindex dfns counter freg [] [] vid in
         Hashtbl.add bbdfns vid (vname, Some i, 
-          BBDCL_val bvtyp 
+          `BBDCL_val bvtyp 
         );
         let top_table,_ = List.hd env in
         Hashtbl.add top_table vname (NonFunctionEntry (Simple vid));
-        let instr = EXE_init (vname, component) in
+        let instr = `EXE_init (vname, component) in
         (* print_endline (string_of_exe 1 instr);
         *)
         exes := instr :: !exes;
       )
       vars;
-      let bbexes = bexes env !exes BTYP_void in
+      let bbexes = bexes env !exes `BTYP_void in
       Hashtbl.add bbdfns i (name,parent,
-        BBDCL_procedure ([],bbexes,name_map))
+        `BBDCL_procedure ([],bbexes,name_map))
     
-    | SYMDEF_dcl dcl -> match dcl with
+    | `SYMDEF_dcl dcl -> match dcl with
 
     (* ugly special handling of DCLs *)
 
-    | DCL_type -> ()
-    | DCL_type_alias _ -> ()
+    | `DCL_type -> ()
+    | `DCL_type_alias _ -> ()
 
-    | DCL_val t -> 
+    | `DCL_val t -> 
       (* print_endline ("//Binding value " ^ string_of_int i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,parent,BBDCL_val (bt t))
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_val (bt t))
 
-    | DCL_var t ->
+    | `DCL_var t ->
       (* print_endline ("//Binding variable " ^ string_of_int i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,parent,BBDCL_var (bt t))
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_var (bt t))
 
-    | DCL_val_typeof e  ->
+    | `DCL_val_typeof e  ->
       (*
       print_endline ("//Binding value(typeof)" ^ string_of_int i ^ " --> " ^ name ^ " = " ^ string_of_expression e); 
       print_endline ("Parent is " ^ match parent with |Some i-> string_of_int i | None -> "none");
@@ -444,95 +370,89 @@ let bbind dfns counter freg =
       (*
       print_endline "Binding done";
       *)
-      Hashtbl.add bbdfns i (name,parent,BBDCL_val t)
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_val t)
 
-    | DCL_var_typeof e ->
+    | `DCL_var_typeof e ->
       (* print_endline ("//Binding variable(typeof) " ^ string_of_int i ^ " --> " ^ name); 
       *)
       let _,t = bind_expression dfns counter freg env [] [] e in
-      Hashtbl.add bbdfns i (name,parent,BBDCL_var t)
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_var t)
 
 
-    | DCL_const (t,ct) ->
+    | `DCL_const (t,ct) ->
       (* print_endline ("//Binding constant " ^ string_of_int i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,parent,BBDCL_const (bt t,ct))
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_const (bt t,ct))
 
-    | DCL_abs ct ->
+    | `DCL_abs ct ->
       (* print_endline ("//Binding abstract type " ^ string_of_int i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,parent,BBDCL_abs ct)
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_abs ct)
 
-    | DCL_header ct ->
+    | `DCL_header ct ->
       (* print_endline ("//Binding header string " ^ string_of_int i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,parent,BBDCL_header ct)
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_header ct)
 
-    | DCL_fun (ts,ret,ct) ->
-      (*
-      print_endline ("//Binding primitive function " ^ string_of_int i ^ " --> " ^ name); 
-      *)
-      Hashtbl.add bbdfns i (name,parent,BBDCL_fun (List.map bt ts,bt ret,ct))
+    | `DCL_fun (ts,ret,ct) ->
+      (* print_endline ("//Binding primitive function " ^ string_of_int i ^ " --> " ^ name);  *)
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_fun (List.map bt ts,bt ret,ct))
 
-    | DCL_proc (ts,ct) ->
+    | `DCL_proc (ts,ct) ->
       (* print_endline ("//Binding primitive procedure " ^ string_of_int i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,parent,BBDCL_proc (List.map bt ts,ct))
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_proc (List.map bt ts,ct))
 
-    | DCL_union cs ->
+    | `DCL_union cs ->
       (* print_endline ("//Binding union " ^ string_of_int i ^ " --> " ^ name); 
       *)
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
-      Hashtbl.add bbdfns i (name,parent,BBDCL_union cs')
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_union cs')
 
-    | DCL_struct cs ->
+    | `DCL_struct cs ->
       (* print_endline ("//Binding struct " ^ string_of_int i ^ " --> " ^ name); 
       *)
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
-      Hashtbl.add bbdfns i (name,parent,BBDCL_struct cs')
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_struct cs')
 
-    | DCL_if_fun _ -> failwith "[bind_entry] Unexpected function decl"
-    | DCL_if_proc _ -> failwith "[bind_entry] Unexpected procedure decl"
-    | DCL_interface _ -> failwith "[bind_entry] Unexpected interface"
-    | DCL_module_binding _ -> failwith "[bind_entry] Unexpected module binding"
-    | DCL_functor _ -> failwith "[bind_entry] Unexpected functor"
-    | DCL_function _ -> failwith "[bind_entry] Unexpected function"
-    | DCL_procedure  _ -> failwith "[bind_entry] Unexpected procedure"
-    | DCL_module _ -> failwith "[bind_entry] Unexpected module"
-    | DCL_match_handler _ -> failwith "[bind_entry] Unexpected match handler"
-    | DCL_match_check _ -> failwith "[bind_entry] Unexpected match checker"
-    | DCL_lazy _ -> failwith "[bind_entry] Unexpected lazy"
+    | `DCL_if_fun _ -> failwith "[bind_entry] Unexpected function decl"
+    | `DCL_if_proc _ -> failwith "[bind_entry] Unexpected procedure decl"
+    | `DCL_interface _ -> failwith "[bind_entry] Unexpected interface"
+    | `DCL_module_binding _ -> failwith "[bind_entry] Unexpected module binding"
+    | `DCL_untyped_functor _ -> failwith "[bind_entry] Unexpected functor"
+    | `DCL_typed_functor _ -> failwith "[bind_entry] Unexpected functor"
+    | `DCL_function _ -> failwith "[bind_entry] Unexpected function"
+    | `DCL_procedure  _ -> failwith "[bind_entry] Unexpected procedure"
+    | `DCL_module _ -> failwith "[bind_entry] Unexpected module"
+    | `DCL_match_handler _ -> failwith "[bind_entry] Unexpected match handler"
+    | `DCL_match_check _ -> failwith "[bind_entry] Unexpected match checker"
+    | `DCL_lazy _ -> failwith "[bind_entry] Unexpected lazy"
     end
+    end
+    (*
+    ;
+    print_endline ("BINDING " ^ name ^ "<" ^ string_of_int i ^ "> COMPLETE");
+    flush stdout
+    *)
    )
   dfns
   ;
   bbdfns
 
-let bind_ifaces dfns counter freg ifaces = 
-  let luqn env sr n = lookup_qn_in_env dfns counter freg env sr [] n in
+let bind_ifaces dfns counter freg 
+  (ifaces:
+    (iface_t * int option) list
+  )
+= 
+  let luqn env n = lookup_qn_in_env dfns counter freg env [] n in
   let dummy_sr = ("bind_ifaces",0,0,0,0) in
   let bound_ifaces = 
     List.map
     (function 
-      | IFACE_export ((qn,suf), cpp_name), parent ->
-        let name = string_of_qualified_name qn in
+      | `IFACE_export (sn, cpp_name), parent ->
         let env = build_env dfns counter freg [] parent in
-        let entries = luqn env dummy_sr qn in
-        let index = 
-          match entries with
-          | FunctionEntry fs ->
-            let bound_suffix =  bind_type dfns counter freg env [] [] suf in
-            (match resolve_overload dfns counter freg [] fs name bound_suffix with
-            | Some (Simple i) -> i
-            | Some (Bound _) -> failwith "[bind_ifaces] Can't handle bound result"
-            | None -> failwith 
-              (
-                "[flx_bbind] Can't find match to export " ^ name
-              )
-            )
-          | NonFunctionEntry (Simple index) -> index
-          | NonFunctionEntry _ -> failwith "Not expecteding bound entry"
-        in BIFACE_export (index, cpp_name) 
+        let index = lookup_sn_in_env dfns counter freg env [] sn in
+        `BIFACE_export (index, cpp_name) 
      )
      ifaces
    in bound_ifaces

@@ -92,7 +92,7 @@ namespace std_flx {
   "ldouble"  : "double",
   }
 
-@chars = ["char", "wchar"]
+@chars = ["char", "wchar", "uchar"]
 @sints = [
   "tiny", "short", "int", "long", "vlong",
   "int8","int16","int32","int64"
@@ -106,84 +106,70 @@ namespace std_flx {
 @all = ["byte", "size","address","offset","bool"] + chars + sints + uints + floats
 @ints = uints + sints
 
-//types
-@for ft in all:
-  tangle('type '+ft+' = "'+tmap[ft]+'";')
+@def gen_type(t):
+  tangle('type '+t+' = "'+tmap[t]+'";')
 
-//
-//assignment, equality, inequality
 @for t in all:
-  tangle('//')
-  tangle('//'+t)
-  tangle('proc set: &'+t+' * '+t+' = "*$1=$2;";')
-  tangle('fun eq: '+t+' * '+t+' -> bool = "$1==$2";')
-  tangle('fun ne: '+t+' * '+t+' -> bool = "$1!=$2";')
+  gen_type(t)
 
-// comparisons
-@for t in chars + ints + floats + ["bool","size","offset","address"]:
-  tangle('//')
-  tangle('//'+t)
+@def gen_asgn(t):
+  tangle('  proc set: &'+t+' * '+t+' = "*$1=$2;";')
+  tangle('  fun eq: '+t+' * '+t+' -> bool = "$1==$2";')
+  tangle('  fun ne: '+t+' * '+t+' -> bool = "$1!=$2";')
+
+@def gen_cmp(t):
   for opname,op in [
     ("lt","<"),
     ("le","<="),
     ("gt",">"),
     ("ge",">=")
   ]:
-    tangle('fun '+opname+': '+t+' * '+t+' -> bool = "$1'+op+'$2";')
+    tangle('  fun '+opname+': '+t+' * '+t+' -> bool = "$1'+op+'$2";')
 
-//
-// bool
-const true : bool = "true";
-const false : bool = "false";
-fun land: bool * bool -> bool = "$1 && $2";
-fun nand: bool * bool -> bool = "!($1 && $2)";
-fun lor: bool * bool -> bool = "$1 || $2";
-fun nor: bool * bool -> bool = "!($1 || $2)";
-fun xor: bool * bool -> bool = "$1 != $2";
-fun lnot: bool -> bool = "!$1";
-proc assert: bool = "assert($1);";
+module Bool 
+{
+  const true : bool = "true";
+  const false : bool = "false";
+  fun land: bool * bool -> bool = "$1 && $2";
+  fun nand: bool * bool -> bool = "!($1 && $2)";
+  fun lor: bool * bool -> bool = "$1 || $2";
+  fun nor: bool * bool -> bool = "!($1 || $2)";
+  fun xor: bool * bool -> bool = "$1 != $2";
+  fun lnot: bool -> bool = "!$1";
+  proc assert: bool = "assert($1);";
+  proc print: bool = 'std::cout << ($1?"true":"false");';
+}
 
-//
-//general arithmetic
-@for t in ints + floats:
-  tangle('//')
-  tangle('//'+t)
+@def gen_arith(t):
   for opname,op in [
     ("add","+"),
     ("sub","-"),
     ("mul","*"),
     ("div","/")
   ]:
-    tangle('fun '+opname+': '+t+' * '+t+' -> '+t+' = "$1'+op+'$2";')
+    tangle('  fun '+opname+': '+t+' * '+t+' -> '+t+' = "$1'+op+'$2";')
 
-//
-// modulus/remainder
-@for t in ints:
+@def gen_mod(t):
   for opname,op in [
     ("mod","%")
   ]:
-    tangle('fun '+opname+': '+t+' * '+t+' -> '+t+' = "$1'+op+'$2";')
+    tangle('  fun '+opname+': '+t+' * '+t+' -> '+t+' = "$1'+op+'$2";')
 
-//
-// prefix negation 
-@for t in ints + floats:
-  tangle('fun neg: '+t+' -> '+t+' = "-$1";')
-  tangle('fun pos: '+t+' -> '+t+' = "+$1";')
+@def gen_neg(t):
+  tangle('  fun neg: '+t+' -> '+t+' = "-$1";')
+  tangle('  fun pos: '+t+' -> '+t+' = "+$1";')
 
-//
-// floating math: C99 
 @fc = {'float':'f', 'double':'','ldouble':'l'}
-// R * R -> R
-@for t in floats:
+@def gen_pow(t):
   for op in [
     'pow',
     'atan2',
     'fmod',
     'fmax','fmin'
     ]:
-    tangle('fun '+op+': '+t+' * '+t+' -> '+t+' = "'+op+fc[t]+'($1, $2)";')
-// R -> R
-@for t in floats:
+    tangle('  fun '+op+': '+t+' * '+t+' -> '+t+' = "'+op+fc[t]+'($1, $2)";')
+
+@def gen_trig(t):
   for op in [
     'sin','cos','tan',
     'asin','acos','atan',
@@ -193,79 +179,136 @@ proc assert: bool = "assert($1);";
     'fabs','sqrt',
     'ceil','floor','trunc'
     ]:
-    tangle('fun '+op+': '+t+' -> '+t+' = "'+op+fc[t]+'($1)";')
+    tangle('  fun '+op+': '+t+' -> '+t+' = "'+op+fc[t]+'($1)";')
 
-// R -> bool
-@for t in floats:
-  tangle('fun isnan: '+t+' -> bool = "isnan'+fc[t]+'($1)";')
+@def gen_nan(t):
+  tangle('  fun isnan: '+t+' -> bool = "isnan'+fc[t]+'($1)";')
 
-//
-// increment, decrement
-@for t in ints:
-  tangle('proc pre_incr:  &'+t+' = "++*$1;";')
-  tangle('proc pre_decr:  &'+t+' = "--*$1;";')
-  tangle('proc post_incr: &'+t+' = "++*$1;";')
-  tangle('proc post_decr: &'+t+' = "--*$1;";')
+@def gen_inc(t):
+  tangle('  proc pre_incr:  &'+t+' = "++*$1;";')
+  tangle('  proc pre_decr:  &'+t+' = "--*$1;";')
+  tangle('  proc post_incr: &'+t+' = "++*$1;";')
+  tangle('  proc post_decr: &'+t+' = "--*$1;";')
   
-//
-// casts
-@for t1 in ints+floats:
-  tangle('//')
-  tangle('//'+t1)
-  for t2 in ints+floats:
-    tangle('fun '+t1+'_of: '+t2+' -> '+t1+' = "('+tmap[t1]+')$1";')
-
-// ordinary value of chars
-fun ord: char -> uint = "(int)$1";
-fun ord: wchar -> ulong ="(long)$1";
-
-
-// chars of ordinals
-fun chr: uint -> char = "(char)$1";
-fun wchr: ulong -> wchar = "(wchar_t)$1";
-
-// output
-@for t in all:
-  if t not in ['tiny','utiny','bool']:
-    tangle('proc print: '+t+' = "std::cout<<$1;";')
-
-// cast tiny values, so they're not printed as characters
-proc print: tiny = "std::cout << (int)$1;";
-proc print: utiny = "std::cout << (unsigned int)$1;";
-proc print: bool = 'std::cout << ($1?"true":"false");';
-
-proc endl: unit = "std::cout << endl;";
-proc space: int = "std::cout << ' ';";
-
-// strings
+@#------------- INTEGER MODULES -------------------
 type string = "string";
-proc set: &string * string = "$1->assign($1);";
-proc pluseq: &string * string = "$1->append($2);";
+@for t in ints:
+  tangle("module " + string.capitalize(t))
+  tangle("{")
+  gen_asgn(t)
+  gen_cmp(t)
+  gen_arith(t)
+  gen_mod(t)
+  gen_neg(t)
+  gen_inc(t)
+  if t == "tiny":
+    tangle('  proc print: tiny = "std::cout << (int)$1;";')
+  elif t == "utiny":
+    tangle('  proc print: utiny = "std::cout << (unsigned int)$1;";')
+  else:
+    tangle('  proc print: '+t+' = "std::cout<<$1;";')
+  tangle("}")
+  tangle("")
 
-fun len: string -> int = "$1.size()";
-fun add: string * string -> string = "$1+$2";
-fun mul: string * int -> string = "std_flx::mul($1,$2)";
-fun mul: char * int -> string = "string($2,$1)";
+@#------------- FLOATING MODULES -------------------
+@for t in floats:
+  tangle("module " + string.capitalize(t))
+  tangle("{")
+  gen_asgn(t)
+  gen_cmp(t)
+  gen_arith(t)
+  gen_neg(t)
+  gen_pow(t)
+  gen_trig(t)
+  gen_nan(t)
+  tangle('  proc print: '+t+' = "std::cout<<$1;";')
+  tangle("}")
+  tangle("")
+  
+@#------------- CHARACTER MODULES -------------------
+// ordinary value of chars
+module Char 
+{
+  open Int;
+  fun ord: char -> int = "(int)$1";
+  fun chr: int -> char = "(char)$1";
+  proc print: char = "std::cout<<$1;";
+}
 
-fun subscript: string * int -> char = 
-  "$1[$2<0?$1.size()+$2:$2]";
-fun copyfrom: string * int -> string = 
-  "std_flx::substr($1,$2,$1.size())";
-fun copyto: string * int -> string = 
-  "std_flx::substr($1,0,$2)";
-fun substring: string * int * int -> string = 
-  "std_flx::substr($1,$2,$3)";
+module Wchar
+{
+  open Long;
+  fun ord: wchar -> long ="(long)$1";
+  fun wchr: long -> wchar = "(wchar_t)$1";
+  proc print: wchar = "std::cout<<$1;";
+}
 
-// comparisons
-fun eq: string * string -> bool = "$1==$2";
-fun ne: string * string -> bool = "$1!=$2";
-fun lt: string * string -> bool = "$1<$2";
-fun le: string * string -> bool = "$1<=$2";
-fun gt: string * string -> bool = "$1>$2";
-fun ge: string * string -> bool = "$1>=$2";
+module Unicode
+{
+  open Int32;
+  fun ord: uchar -> int32 ="$1";
+  fun uchr: int32 -> uchar = "$1";
+  //this needs to be fixed!
+  //proc print: uchar = "std::cout<<$1;";
+}
 
-proc print: string = "std::cout << $1;";
 
+@#------------- STDOUT UTILITY -------------------
+module Stdout 
+{
+  proc endl: unit = "std::cout << endl;";
+  proc space: int = "std::cout << ' ';";
+}
+
+@#------------- STRING MODULES -------------------
+module String
+{
+  open Bool;
+  open Char;
+  open Int;
+  proc set: &string * string = "$1->assign($1);";
+  proc pluseq: &string * string = "$1->append($2);";
+
+  fun len: string -> int = "$1.size()";
+  fun add: string * string -> string = "$1+$2";
+  fun mul: string * int -> string = "std_flx::mul($1,$2)";
+  fun mul: char * int -> string = "string($2,$1)";
+
+  fun subscript: string * int -> char = 
+    "$1[$2<0?$1.size()+$2:$2]";
+  fun copyfrom: string * int -> string = 
+    "std_flx::substr($1,$2,$1.size())";
+  fun copyto: string * int -> string = 
+    "std_flx::substr($1,0,$2)";
+  fun substring: string * int * int -> string = 
+    "std_flx::substr($1,$2,$3)";
+
+  // comparisons
+  fun eq: string * string -> bool = "$1==$2";
+  fun ne: string * string -> bool = "$1!=$2";
+  fun lt: string * string -> bool = "$1<$2";
+  fun le: string * string -> bool = "$1<=$2";
+  fun gt: string * string -> bool = "$1>$2";
+  fun ge: string * string -> bool = "$1>=$2";
+
+  proc print: string = "std::cout << $1;";
+}
+
+module Arith_casts
+{
+@for t1 in ints+floats:
+  for t2 in ints+floats:
+    tangle('  fun '+t1+'_of: '+t2+' -> '+t1+' = "('+tmap[t1]+')$1";')
+}
+
+// ------ Open common modules -------------
+open Bool;
+open Int;
+open Double;
+open Char;
+open String;
+open Stdout;
+open Arith_casts;
 
 @h=tangler('lib/boost.flx')
 @select(h)
@@ -285,7 +328,7 @@ fun merge_pattern_of_string: string->merge_pattern = "$1";
 fun regex_match : regex * string -> bool 
   =  "boost::regex_match($2, $1)";
 
-fun regex_match (r:regex) (s:string): bool 
+fun regex_match (r:regex) (s:string): bool  =
 {
   return regex_match(r,s);
 }
@@ -293,7 +336,7 @@ fun regex_match (r:regex) (s:string): bool
 fun regex_merge : regex * merge_pattern * string -> string
   = "boost::regex_merge($3,$1,$2, boost::match_default | boost::format_sed)";
 
-fun regex_merge (r:regex) (m:merge_pattern) (s:string) :string
+fun regex_merge (r:regex) (m:merge_pattern) (s:string) :string =
 {
   return regex_merge(r,m,s);
 }

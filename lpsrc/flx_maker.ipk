@@ -45,13 +45,12 @@ OCAMLC=OCAMLBINPREFIX+'ocamlc.opt -I '+OCAML_OBJDIR+' -rectypes '
 
 # the boost directory
 BOOST_DIRECTORY = 'boost'
-REGEX_LIBRARY = BOOST_DIRECTORY + '/libs/regex/build/gcc/libboost_regex.so'
 
 # for compiling mainlines
 FLX_CPP_LINK = "g++ -Wno-long-long -D_GNU_SOURCE -ansi -rdynamic -ldl "
 
 # for building shared libraries
-FLX_CPP_DYNLINK = "g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared -I"+BOOST_DIRECTORY+" "+REGEX_LIBRARY+" "
+FLX_CPP_DYNLINK = "g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared -I"+BOOST_DIRECTORY+" "
 
 # ------------------------------------------------
 # END USER CONFIGURABLE SECTION
@@ -92,11 +91,11 @@ INTERFACES = [
   'flx_types'        ,
   'flx_mtypes'       ,
   'flx_exceptions'   ,
+  'flx_srcref'       ,
   'flx_typing'       ,
   'flx_string'       ,
   'flx_id'           ,
   'flx_print'        ,
-  'flx_srcref'       ,
   'flx_parse'        ,
   'flx_keywords'     ,
   'flx_lex'          ,
@@ -119,12 +118,12 @@ INTERFACES = [
 IMPLEMENTATIONS = [
   'flx_util'         ,
   'flx_mtypes'       ,
+  'flx_srcref'       ,
   'flx_typing'       ,
   'flx_exceptions'   ,
   'flx_string'       ,
   'flx_id'           ,
   'flx_print'        ,
-  'flx_srcref'       ,
   'flx_parse'        ,
   'flx_keywords'     ,
   'flx_lex'          ,
@@ -330,7 +329,7 @@ try:
           filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
           filetime('bin/flxg')> filetime(basename+'.cpp') or \
           filetime('lib/std.flx') > filetime(basename+'.cpp') or \
-          filetime('lib/regex.flx') > filetime(basename+'.cpp'):
+          filetime('lib/std.flx') > filetime(basename+'.cpp'):
           try:
             xqt('bin/flxg -q -Ilib ' + basename)
             #print 'TESTFILE -- generated ',basename
@@ -352,8 +351,7 @@ try:
           if buildall or \
             filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
             filetime('bin/flxg')> filetime(basename+'.cpp') or \
-            filetime('lib/std.flx') > filetime(basename+'.cpp') or \
-            filetime('lib/regex.flx') > filetime(basename+'.cpp'):
+            filetime('lib/std.flx') > filetime(basename+'.cpp'):
             try:
               xqt('bin/flxg -e -Ilib ' + basename)
               #print 'TESTFILE -- failed as expected',basename
@@ -389,7 +387,7 @@ try:
       # COMPILER DRIVER PROGRAMS
 
       for testfile in CPPTESTS:
-        #print 'Compiling driver program ',testfile
+        print 'Compiling driver program ',testfile
         basename = string.split(testfile,'.')[0]
         if buildall or filetime(basename+ '.cpp') > filetime(basename):
           try:
@@ -442,7 +440,7 @@ except MakeError:
 @tangle('\tpython script/maker test stop_on_error')
 @tangle('')
 @tangle('linux_binary: dummy')
-@tangle('\ttar -zcvf flx_1.0a1_linux.tgz\\')
+@tangle('\ttar -zcvf flx_1.0a2_linux.tgz\\')
 @tangle('\t\tbin/flxg \\')
 @tangle('\t\tbin/flx \\')
 @tangle('\t\ttest/flx_run \\')
@@ -453,8 +451,13 @@ except MakeError:
 @tangle('\t\ttut/doc/*.html \\')
 @tangle('\t\ttut/doc/*.css ')
 @tangle('')
+@tangle('lpsrc: dummy')
+@tangle('\ttar -zcvf flx_1.0a2_lpsrc.tgz\\')
+@tangle('\t\tlpsrc/*.ipk \\')
+@tangle('\t\tlpsrc/*.pak \\')
+@tangle('')
 @tangle('src: dummy')
-@tangle('\ttar -zcvf flx_1.0a1_src.tgz\\')
+@tangle('\ttar -zcvf flx_1.0a2_src.tgz\\')
 @tangle('\t\tsrc/*.ml \\')
 @tangle('\t\tsrc/*.mli \\')
 @tangle('\t\tsrc/*.mly \\')
@@ -473,8 +476,9 @@ except MakeError:
 @tangle('')
 @tangle('upload: dummy')
 @tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
-@tangle('\tscp flx_1.0a1_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
-@tangle('\tscp flx_1.0a1_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('\tscp flx_1.0a2_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('\tscp flx_1.0a2_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('\tscp flx_1.0a2_lpsrc.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('')
 @tangle('download_boost: dummy')
 @tangle('\tmake -C boost download')
@@ -510,7 +514,7 @@ if
 then
   if 
     g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared  \
-      boost/libs/regex/build/gcc/libboost_regex.so \
+#      boost/libs/regex/build/gcc/libboost_regex.so \
       -I. -Iboost -Igc/src $1.cpp \
       -o $1.so
   then

@@ -55,73 +55,97 @@ followed by a square bracket enclosed list of type expressions.
 @select(h)
 type c_t = string     (* C++ code as a string *)
 type id_t = string
-and qualified_name_t = id_t list      (* module nesting *)
-and suffixed_name_t = qualified_name_t * typecode_t  (* overload disambiguation *)
+
+type qualified_name_t =
+  [
+  | `AST_void of range_srcref
+  | `AST_root of range_srcref
+  | `AST_name of range_srcref * string
+  | `AST_case_tag of range_srcref * int
+  | `AST_typed_case of range_srcref * int * typecode_t
+  | `AST_lookup of range_srcref * (expr_t * string)
+  ]
+
+and suffixed_name_t =
+  [
+  | `AST_void of range_srcref
+  | `AST_root of range_srcref
+  | `AST_name of range_srcref * string
+  | `AST_case_tag of range_srcref * int
+  | `AST_typed_case of range_srcref * int * typecode_t
+  | `AST_lookup of range_srcref * (expr_t * string)
+  | `AST_suffix of range_srcref * (qualified_name_t * typecode_t)
+  ]
 
 @head(3,'Type sublanguage')
-Terms of the type sublanguage. The encoding 'TYP_none' is 
+Terms of the type sublanguage. The encoding '`TYP_none' is 
 a hack which allows the suffixed name representation
 to work for unsuffixed names. 
 @p()
-The encoding 'TYP_void'
+The encoding '`TYP_void'
 is the categorical initial: the type of an empty
 union, and the type ordinary procedure types return.
 There are no values of this type. 
 @select(h)
 and typecode_t = 
-  | TYP_name of qualified_name_t               (* named type *)
-  | TYP_tuple of typecode_t list               (* product type *)
-  | TYP_function of typecode_t * typecode_t    (* function type *)
-  | TYP_pointer  of typecode_t                 (* pointer type *)
-  | TYP_void                                   (* void type *)
-  | TYP_none                                   (* special hack for 'no type' *)
+  [
+  | `AST_void of range_srcref                   (* void type *)
+  | `AST_root of range_srcref                   (* top level module *)
+  | `AST_name of range_srcref * string
+  | `AST_case_tag of range_srcref * int
+  | `AST_typed_case of range_srcref * int * typecode_t
+  | `AST_lookup of range_srcref * (expr_t * string)
+  | `TYP_tuple of typecode_t list               (* product type *)
+  | `TYP_sum of typecode_t list                 (* numbered sum type *)
+  | `TYP_function of typecode_t * typecode_t    (* function type *)
+  | `TYP_pointer  of typecode_t                 (* pointer type *)
+  ]
 
 @head(3,'Literals')
 Literals recognized by the lexer.
 @select(h)
 and literal_t =
-  | AST_bool of bool
-  | AST_int of string * big_int
-  | AST_string of string
-  | AST_float of string * string
-                 (* basetype (i,j,k etc) value *)
+  [
+  | `AST_bool of bool
+  | `AST_int of string * big_int
+  | `AST_string of string
+  | `AST_float of string * string
+  ]
 
 @head(3,'Expressions')
-Expressions; that is, the functional calculator subsystem.
-A name in general form like
-@begin_displayed_code()
-  X::Y[<int,float>]::Z::f : int * int * Z::Y[<int>]::long
-@end_displayed_code()
-is encoded as a pair called a suffixed name. The first part
-of the suffixed name is the qualified name, and the last part
-is an argument type signature, used to disambiguate naming of functions.
-Note that this signature does NOT include the return type (since overloading
-is only permited on the argument type).
-@p()
-The qualified name part consists of a list of names, first mentioned at the 
-top of the list, each of which is a pair, the first part being an identifier,
-and the second a list of type expressions. The pair represents an
-instantiated module name; that is, a module name with bindings for 
-its type variables.
+Raw expression terms.
 
 @select(h)
 and expr_t =
-  | AST_deref of range_srcref * expr_t
-  | AST_name of range_srcref * suffixed_name_t
-  | AST_index of range_srcref * bid_t
-  | AST_bound_module of range_srcref * (bid_t * bid_t * index_map_t)
-  | AST_ref of range_srcref * expr_t
-  | AST_literal of range_srcref * literal_t
-  | AST_apply of range_srcref * (expr_t * expr_t)
-  | AST_method_apply of range_srcref * (id_t * expr_t)
-  | AST_tuple of range_srcref * expr_t list
-  | AST_dot of range_srcref * (expr_t * id_t)
-  | AST_lambda of range_srcref * (parameter_t list * typecode_t * statement_t list)
-  | AST_match_ctor of range_srcref * (qualified_name_t * expr_t)
-  | AST_ctor_arg of range_srcref * (qualified_name_t * expr_t)
-  | AST_get_n of range_srcref * (int * expr_t) (* get n'th component of a tuple *)
-  | AST_lazy of range_srcref * expr_t
-  | AST_coercion of range_srcref * (expr_t * typecode_t)
+  [
+  | `AST_root of range_srcref
+  | `AST_name of range_srcref * string
+  | `AST_case_tag of range_srcref * int
+  | `AST_typed_case of range_srcref * int * typecode_t
+  | `AST_lookup of range_srcref * (expr_t * string)
+  | `AST_index of range_srcref * bid_t
+  | `AST_bound_module of range_srcref * (bid_t * bid_t * index_map_t)
+  | `AST_apply of range_srcref * (expr_t * expr_t)
+  | `AST_tuple of range_srcref * expr_t list
+  | `AST_coercion of range_srcref * (expr_t * typecode_t)
+  | `AST_suffix of range_srcref * (qualified_name_t * typecode_t)
+
+  | `AST_void of range_srcref
+  | `AST_product of range_srcref * expr_t list
+  | `AST_sum of range_srcref * expr_t list
+  | `AST_arrow of range_srcref * (expr_t * expr_t)
+
+  | `AST_literal of range_srcref * literal_t
+  | `AST_deref of range_srcref * expr_t
+  | `AST_ref of range_srcref * expr_t
+  | `AST_method_apply of range_srcref * (id_t * expr_t)
+  | `AST_dot of range_srcref * (expr_t * id_t)
+  | `AST_lambda of range_srcref * (parameter_t list * typecode_t * statement_t list)
+  | `AST_match_ctor of range_srcref * (qualified_name_t * expr_t)
+  | `AST_ctor_arg of range_srcref * (qualified_name_t * expr_t)
+  | `AST_get_n of range_srcref * (int * expr_t) (* get n'th component of a tuple *)
+  | `AST_lazy of range_srcref * expr_t
+  ]
 
 @head(3,'Pattern')
 Patterns; used for matching variants in match statements.
@@ -133,28 +157,30 @@ and float_pat =
   | Float_minus_inf
 
 and pattern_t =
-  | PAT_nan of range_srcref
+  [
+  | `PAT_nan of range_srcref
 
   (* constants *)
-  | PAT_int of range_srcref * string * big_int
-  | PAT_string of range_srcref * string
+  | `PAT_int of range_srcref * string * big_int
+  | `PAT_string of range_srcref * string
 
   (* ranges *)
-  | PAT_int_range of range_srcref * string * big_int * string * big_int
-  | PAT_string_range of range_srcref * string * string
-  | PAT_float_range of range_srcref * float_pat * float_pat 
+  | `PAT_int_range of range_srcref * string * big_int * string * big_int
+  | `PAT_string_range of range_srcref * string * string
+  | `PAT_float_range of range_srcref * float_pat * float_pat 
 
   (* other *)
-  | PAT_name of range_srcref * id_t 
-  | PAT_tuple of range_srcref * pattern_t list
-  | PAT_any of range_srcref 
-  | PAT_regexp of range_srcref * string * id_t list 
+  | `PAT_name of range_srcref * id_t 
+  | `PAT_tuple of range_srcref * pattern_t list
+  | `PAT_any of range_srcref 
+  | `PAT_regexp of range_srcref * string * id_t list 
     (* second list is group bindings 1 .. n-1: EXCLUDES 0 cause we can use 'as' for that ?? *)
-  | PAT_const_ctor of range_srcref * qualified_name_t
-  | PAT_nonconst_ctor of range_srcref * qualified_name_t * pattern_t
-  | PAT_as of range_srcref * pattern_t * id_t
-  | PAT_when of range_srcref * pattern_t * expr_t
- 
+  | `PAT_const_ctor of range_srcref * qualified_name_t
+  | `PAT_nonconst_ctor of range_srcref * qualified_name_t * pattern_t
+  | `PAT_as of range_srcref * pattern_t * id_t
+  | `PAT_when of range_srcref * pattern_t * expr_t
+  ]
+
 @head(3,'Pattern extractor')
 This type is used to extract components of a value,
 corresponding to a match.
@@ -168,192 +194,217 @@ Statements; that is, the procedural sequence control system.
 @select(h)
 and parameter_t = id_t * typecode_t
 and statement_t =
- 
-  | AST_open of range_srcref * qualified_name_t
-  | AST_comment of string (* for documenting generated code *)
+  [ 
+  | `AST_open of range_srcref * qualified_name_t
+  | `AST_comment of string (* for documenting generated code *)
 
   (* definitions *)
-  | AST_function of range_srcref * id_t * parameter_t list * typecode_t * statement_t list
-  | AST_procedure of range_srcref * id_t * parameter_t list * statement_t list
+  | `AST_function of range_srcref * id_t * parameter_t list * typecode_t * statement_t list
+  | `AST_procedure of range_srcref * id_t * parameter_t list * statement_t list
 
   (* types *)
-  | AST_union of range_srcref * id_t * (id_t * typecode_t) list
-  | AST_struct of range_srcref * id_t * (id_t * typecode_t) list
-  | AST_type_alias of range_srcref * id_t * typecode_t
+  | `AST_union of range_srcref * id_t * (id_t * typecode_t) list
+  | `AST_struct of range_srcref * id_t * (id_t * typecode_t) list
+  | `AST_type_alias of range_srcref * id_t * typecode_t
 
   (* variables *)
-  | AST_val_decl of range_srcref * id_t * typecode_t option * expr_t option
-  | AST_var_decl of range_srcref * id_t * typecode_t option * expr_t option
+  | `AST_val_decl of range_srcref * id_t * typecode_t option * expr_t option
+  | `AST_var_decl of range_srcref * id_t * typecode_t option * expr_t option
  
   (* module system *)
-  | AST_module of range_srcref * id_t * typecode_t * statement_t list  
-  | AST_module_binding of range_srcref * id_t * expr_t
-  | AST_functor of range_srcref * id_t * parameter_t list * typecode_t * statement_t list
-  | AST_interface of range_srcref * id_t * statement_t list
-  | AST_type of range_srcref * id_t
-  | AST_function_decl of range_srcref * id_t * typecode_t
-  | AST_procedure_decl of range_srcref * id_t * typecode_t
+  | `AST_untyped_module of range_srcref * id_t * statement_t list  
+  | `AST_typed_module of range_srcref * id_t * typecode_t * statement_t list  
+  | `AST_module_binding of range_srcref * id_t * expr_t
+  | `AST_typed_functor of range_srcref * id_t * parameter_t list * typecode_t * statement_t list
+  | `AST_untyped_functor of range_srcref * id_t * parameter_t list * statement_t list
+  | `AST_interface of range_srcref * id_t * statement_t list
+  | `AST_type of range_srcref * id_t
+  | `AST_function_decl of range_srcref * id_t * typecode_t
+  | `AST_procedure_decl of range_srcref * id_t * typecode_t
 
  
   (* control structures: primitives *)
-  | AST_label of range_srcref * id_t (* for testing the code generator! *)
-  | AST_goto of range_srcref * id_t (* for testing the code generator! *)
-  | AST_call of range_srcref * expr_t * expr_t 
-  | AST_read of range_srcref * id_t
-  | AST_return of range_srcref * expr_t
-  | AST_nop of range_srcref * string
+  | `AST_label of range_srcref * id_t (* for testing the code generator! *)
+  | `AST_goto of range_srcref * id_t (* for testing the code generator! *)
+  | `AST_call of range_srcref * expr_t * expr_t 
+  | `AST_read of range_srcref * id_t
+  | `AST_return of range_srcref * expr_t
+  | `AST_nop of range_srcref * string
 
-  | AST_match of range_srcref * expr_t * (pattern_t * statement_t) list
-  | AST_block of range_srcref * statement_t list
-  | AST_if of 
+  | `AST_match of range_srcref * expr_t * (pattern_t * statement_t) list
+  | `AST_block of range_srcref * statement_t list
+  | `AST_if of 
     range_srcref * 
     (range_srcref * (expr_t * statement_t)) list * 
     (range_srcref * statement_t)
-  | AST_while of range_srcref * expr_t * statement_t
+  | `AST_while of range_srcref * expr_t * statement_t
 
   (* exceptions *)
-  | AST_attempt of 
+  | `AST_attempt of 
     range_srcref *
     (range_srcref * statement_t) *         (* the attempt *)
     (range_srcref * statement_t list) *    (* the handlers *)
     (range_srcref * statement_t list)      (* the finally block *)
-  | AST_except_handler of range_srcref * id_t * parameter_t list * statement_t list
-  | AST_raise of range_srcref * id_t * expr_t
+  | `AST_except_handler of range_srcref * id_t * parameter_t list * statement_t list
+  | `AST_raise of range_srcref * id_t * expr_t
 
   (* binding structures [prolog] *)
-  | AST_abs_decl of range_srcref * id_t * c_t
-  | AST_const_decl of range_srcref * id_t * typecode_t * c_t
-  | AST_fun_decl of range_srcref * id_t * typecode_t list * typecode_t * c_t 
-  | AST_proc_decl of range_srcref * id_t * typecode_t list * c_t 
-  | AST_header of range_srcref * string
-  | AST_code of range_srcref * string
+  | `AST_abs_decl of range_srcref * id_t * c_t
+  | `AST_const_decl of range_srcref * id_t * typecode_t * c_t
+  | `AST_fun_decl of range_srcref * id_t * typecode_t list * typecode_t * c_t 
+  | `AST_proc_decl of range_srcref * id_t * typecode_t list * c_t 
+  | `AST_header of range_srcref * string
+  | `AST_code of range_srcref * string
 
-  | AST_export of range_srcref * suffixed_name_t * string
+  | `AST_export of range_srcref * suffixed_name_t * string
+  ]
+
 
 and exe_t =
-  | EXE_code of string (* for inline C++ code *)
-  | EXE_comment of string (* for documenting generated code *)
-  | EXE_label of string (* for internal use only *)
-  | EXE_goto of string  (* for internal use only *)
-  | EXE_ifgoto of expr_t * string  (* for internal use only *)
-  | EXE_ifnotgoto of expr_t * string  (* for internal use only *)
-  | EXE_call of expr_t * expr_t 
-  | EXE_read of id_t
-  | EXE_return of expr_t
-  | EXE_nop of string
-  | EXE_init of id_t * expr_t 
+  [
+  | `EXE_code of string (* for inline C++ code *)
+  | `EXE_comment of string (* for documenting generated code *)
+  | `EXE_label of string (* for internal use only *)
+  | `EXE_goto of string  (* for internal use only *)
+  | `EXE_ifgoto of expr_t * string  (* for internal use only *)
+  | `EXE_ifnotgoto of expr_t * string  (* for internal use only *)
+  | `EXE_call of expr_t * expr_t 
+  | `EXE_read of id_t
+  | `EXE_return of expr_t
+  | `EXE_nop of string
+  | `EXE_init of id_t * expr_t 
+  ]
 
 and dir_t =
   | DIR_open of qualified_name_t
 
 and dcl_t = 
-  | DCL_header of string
+  [
+  | `DCL_header of string
 
   (* data structures *)
-  | DCL_function of    parameter_t list * typecode_t * asm_t list
-  | DCL_lazy of        expr_t
-  | DCL_procedure of   parameter_t list * asm_t list
-  | DCL_union of       (id_t * typecode_t) list
-  | DCL_struct of      (id_t * typecode_t) list
-  | DCL_match_check of pattern_t * string
-  | DCL_match_handler of pattern_t * string * asm_t list
+  | `DCL_function of    parameter_t list * typecode_t * asm_t list
+  | `DCL_lazy of        expr_t
+  | `DCL_procedure of   parameter_t list * asm_t list
+  | `DCL_union of       (id_t * typecode_t) list
+  | `DCL_struct of      (id_t * typecode_t) list
+  | `DCL_match_check of pattern_t * string
+  | `DCL_match_handler of pattern_t * string * asm_t list
   
   (* variables *)
-  | DCL_val of         typecode_t
-  | DCL_val_typeof of  expr_t
-  | DCL_var of         typecode_t
-  | DCL_var_typeof of  expr_t
-  | DCL_type_alias of  typecode_t
+  | `DCL_val of         typecode_t
+  | `DCL_val_typeof of  expr_t
+  | `DCL_var of         typecode_t
+  | `DCL_var_typeof of  expr_t
+  | `DCL_type_alias of  typecode_t
 
   (* module system *)
-  | DCL_module of      asm_t list  
-  | DCL_functor of     parameter_t list * typecode_t * asm_t list
-  | DCL_module_binding of expr_t
-  | DCL_interface of   asm_t list
+  | `DCL_module of      asm_t list  
+  | `DCL_typed_functor of     parameter_t list * typecode_t * asm_t list
+  | `DCL_untyped_functor of   parameter_t list * asm_t list
+  | `DCL_module_binding of expr_t
+  | `DCL_interface of   asm_t list
 
   (* interface elements *)
-  | DCL_if_proc of     typecode_t
-  | DCL_if_fun of      typecode_t
-  | DCL_type
+  | `DCL_if_proc of     typecode_t
+  | `DCL_if_fun of      typecode_t
+  | `DCL_type
   
   (* binding structures [prolog] *)
-  | DCL_abs of         c_t
-  | DCL_const of       typecode_t * c_t
-  | DCL_fun of         typecode_t list * typecode_t * c_t 
-  | DCL_proc of        typecode_t list * c_t 
+  | `DCL_abs of         c_t
+  | `DCL_const of       typecode_t * c_t
+  | `DCL_fun of         typecode_t list * typecode_t * c_t 
+  | `DCL_proc of        typecode_t list * c_t 
+  ]
 
 and asm_t = 
+  
   | Exe of range_srcref * exe_t 
   | Dcl of range_srcref * id_t * dcl_t 
   | Iface of range_srcref * iface_t
   | Dir of range_srcref * dir_t
+ 
 
 and bid_t = int
 
 and iface_t =
-  | IFACE_export of suffixed_name_t * string
+  [
+  | `IFACE_export of suffixed_name_t * string
+  ]
 
 and biface_t =
-  | BIFACE_export of bid_t * string
+  [
+  | `BIFACE_export of bid_t * string
+  ]
 
 and bexe_t =
-  | BEXE_label of string
-  | BEXE_comment of string (* for documenting generated code *)
-  | BEXE_goto of string  (* for internal use only *)
-  | BEXE_ifgoto of tbexpr_t * string  (* for internal use only *)
-  | BEXE_ifnotgoto of tbexpr_t * string  (* for internal use only *)
-  | BEXE_call of tbexpr_t * tbexpr_t 
-  | BEXE_read of bid_t
-  | BEXE_return of tbexpr_t
-  | BEXE_nop of string
-  | BEXE_code of string
-  | BEXE_init of bid_t * tbexpr_t 
+  [
+  | `BEXE_label of string
+  | `BEXE_comment of string (* for documenting generated code *)
+  | `BEXE_goto of string  (* for internal use only *)
+  | `BEXE_ifgoto of tbexpr_t * string  (* for internal use only *)
+  | `BEXE_ifnotgoto of tbexpr_t * string  (* for internal use only *)
+  | `BEXE_call of tbexpr_t * tbexpr_t 
+  | `BEXE_read of bid_t
+  | `BEXE_return of tbexpr_t
+  | `BEXE_nop of string
+  | `BEXE_code of string
+  | `BEXE_init of bid_t * tbexpr_t 
+  ]
 
 and bexpr_t =
-  | BEXPR_deref of tbexpr_t
-  | BEXPR_name of bid_t
-  | BEXPR_ref of bid_t
-  | BEXPR_literal of literal_t 
-  | BEXPR_apply of tbexpr_t * tbexpr_t 
-  | BEXPR_tuple of tbexpr_t list
-  | BEXPR_dot of tbexpr_t * bid_t
-  | BEXPR_get_n of int * tbexpr_t
-  | BEXPR_closure of bid_t
-  | BEXPR_coercion of tbexpr_t * btypecode_t
+  [
+  | `BEXPR_deref of tbexpr_t
+  | `BEXPR_name of bid_t
+  | `BEXPR_ref of bid_t
+  | `BEXPR_literal of literal_t 
+  | `BEXPR_apply of tbexpr_t * tbexpr_t 
+  | `BEXPR_tuple of tbexpr_t list
+  | `BEXPR_dot of tbexpr_t * bid_t
+  | `BEXPR_get_n of int * tbexpr_t
+  | `BEXPR_closure of bid_t
+  | `BEXPR_coercion of tbexpr_t * btypecode_t
+  | `BEXPR_functions of string * entry_kind_t list (* HACK! *)
+  ]
 
 and tbexpr_t = bexpr_t * btypecode_t
 
 and btypecode_t = 
-  | BTYP_name of bid_t                            (* named type *)
-  | BTYP_tuple of btypecode_t list                (* product type *)
-  | BTYP_function of btypecode_t * btypecode_t    (* function type *)
-  | BTYP_pointer  of btypecode_t                  (* pointer type *)
-  | BTYP_void                                     (* void type *)
-  | BTYP_none                                     (* special hack for 'no type' *)
-  | BTYP_binding of btypecode_t * btypecode_t           (* interface, module *)
+  [
+  | `BTYP_name of bid_t                            (* named type *)
+  | `BTYP_tuple of btypecode_t list                (* product type *)
+  | `BTYP_sum of btypecode_t list                (* product type *)
+  | `BTYP_function of btypecode_t * btypecode_t    (* function type *)
+  | `BTYP_pointer  of btypecode_t                  (* pointer type *)
+  | `BTYP_void                                     (* void type *)
+  | `BTYP_none                                     (* special hack for 'no type' *)
+  | `BTYP_binding of btypecode_t * btypecode_t           (* interface, module *)
+  ]
 
 and bparameter_t = string * btypecode_t
 and bbdcl_t = 
-  | BBDCL_header of     string
-  | BBDCL_function of   bparameter_t list * btypecode_t * bexe_t list * name_map_t
+  [
+  | `BBDCL_header of     string
+  | `BBDCL_function of   bparameter_t list * btypecode_t * bexe_t list * name_map_t
   (* 
-  | BBDCL_functor  of   bparameter_t list * btypecode_t * name_map_t
+  | `BBDCL_functor  of   bparameter_t list * btypecode_t * name_map_t
   *)
-  | BBDCL_procedure of  bparameter_t list * bexe_t list * name_map_t
+  | `BBDCL_procedure of  bparameter_t list * bexe_t list * name_map_t
   (*
-  | BBDCL_if_fun of     btypecode_t 
-  | BBDCL_if_proc of    btypecode_t
+  | `BBDCL_if_fun of     btypecode_t 
+  | `BBDCL_if_proc of    btypecode_t
   *) 
-  | BBDCL_val of        btypecode_t
-  | BBDCL_var of        btypecode_t
+  | `BBDCL_val of        btypecode_t
+  | `BBDCL_var of        btypecode_t
 
   (* binding structures [prolog] *)
-  | BBDCL_abs of        c_t
-  | BBDCL_const of      btypecode_t * c_t
-  | BBDCL_fun of        btypecode_t list * btypecode_t * c_t 
-  | BBDCL_proc of       btypecode_t list * c_t 
-  | BBDCL_union of      (id_t * btypecode_t) list
-  | BBDCL_struct of     (id_t * btypecode_t) list
+  | `BBDCL_abs of        c_t
+  | `BBDCL_const of      btypecode_t * c_t
+  | `BBDCL_fun of        btypecode_t list * btypecode_t * c_t 
+  | `BBDCL_proc of       btypecode_t list * c_t 
+  | `BBDCL_union of      (id_t * btypecode_t) list
+  | `BBDCL_struct of     (id_t * btypecode_t) list
+  ]
 
 and entry_kind_t = 
   | Simple of int
@@ -389,43 +440,51 @@ and functor_arg_binding_t =
 
 type env_t = (name_map_t * name_map_t list) list 
 type symbol_definition_t =
-  | SYMDEF_parameter of typecode_t
-  | SYMDEF_function of 
+  [
+  | `SYMDEF_parameter of typecode_t
+  | `SYMDEF_function of 
     parameter_t list * 
     typecode_t * 
     exe_t list * 
     name_map_t * 
     dir_t list
 
-  | SYMDEF_lazy of expr_t 
-  | SYMDEF_match_check of pattern_t * int 
-  | SYMDEF_match_handler of 
+  | `SYMDEF_lazy of expr_t 
+  | `SYMDEF_match_check of pattern_t * int 
+  | `SYMDEF_match_handler of 
     pattern_t * 
     int * 
     exe_t list * 
     name_map_t * 
     dir_t list
 
-  | SYMDEF_interface of name_map_t * dir_t list
-  | SYMDEF_functor of 
+  | `SYMDEF_interface of name_map_t * dir_t list
+  | `SYMDEF_typed_functor of 
     parameter_t list * 
     typecode_t * 
     exe_t list * 
     name_map_t * 
     dir_t list
 
-  | SYMDEF_module of name_map_t * dir_t list
-  | SYMDEF_if_type
-  | SYMDEF_if_proc of typecode_t 
-  | SYMDEF_if_fun of typecode_t
-  | SYMDEF_procedure of  
+  | `SYMDEF_untyped_functor of 
+    parameter_t list * 
+    exe_t list * 
+    name_map_t * 
+    dir_t list
+
+  | `SYMDEF_module of name_map_t * dir_t list
+  | `SYMDEF_if_type
+  | `SYMDEF_if_proc of typecode_t 
+  | `SYMDEF_if_fun of typecode_t
+  | `SYMDEF_procedure of  
      parameter_t list * 
      exe_t list * 
      name_map_t * 
      dir_t list
   
-  | SYMDEF_module_binding of expr_t
-  | SYMDEF_dcl of dcl_t
+  | `SYMDEF_module_binding of expr_t
+  | `SYMDEF_dcl of dcl_t
+  ]
 
 type symbol_data_t = string * range_srcref * int option * symbol_definition_t 
 type symbol_table_t = (int, symbol_data_t) Hashtbl.t
@@ -453,22 +512,13 @@ val slift: srcref -> range_srcref
 val rsexpr: expr_t -> expr_t -> range_srcref
 val rslist: expr_t list -> range_srcref
 
-val src_of_expr : expr_t -> range_srcref
-val src_of_statement: statement_t -> range_srcref
-val src_of_pattern: pattern_t -> range_srcref
+val src_of_expr: expr_t -> range_srcref
+val src_of_stmt : statement_t -> range_srcref
+val src_of_pat : pattern_t -> range_srcref
+val src_of_qualified_name : qualified_name_t -> range_srcref
+val src_of_suffixed_name: suffixed_name_t -> range_srcref
+
 val short_string_of_src: range_srcref -> string
-
-(* the following routine takes a 
-  source reference 'sr' 
-  and a string 's'
-  and produces an untyped AST_name:
-
-    AST_name (sr,([s],TYP_none))
-
-  It doesn't really belong here, but it was a convenient
-  place to put it :-)
-*)
-val name_of_string: range_srcref -> string -> expr_t
 
 @h = tangler('src/flx_srcref.ml')
 @doc()
@@ -496,24 +546,108 @@ Type specific operations.
 @select(h)
 open Flx_util
 open Flx_types
-let src_of_expr e = match e with
-  | AST_deref (s,_) 
-  | AST_name  (s,_) 
-  | AST_ref  (s,_) 
-  | AST_literal  (s,_) 
-  | AST_apply  (s,_) 
-  | AST_method_apply  (s,_) 
-  | AST_tuple  (s,_) 
-  | AST_dot  (s,_) 
-  | AST_lambda  (s,_) 
-  | AST_match_ctor  (s,_) 
-  | AST_ctor_arg  (s,_) 
-  | AST_get_n  (s,_) 
-  | AST_lazy (s,_)
-  | AST_coercion (s,_)
-  | AST_index (s,_)
-  | AST_bound_module (s,_)
-    -> s 
+let src_of_qualified_name (e : qualified_name_t) = match e with
+  | `AST_void s 
+  | `AST_root s 
+  | `AST_name  (s,_) 
+  | `AST_case_tag (s,_)
+  | `AST_typed_case (s,_,_)
+  | `AST_lookup (s,_)
+    -> s
+
+let src_of_suffixed_name (e : suffixed_name_t) = match e with
+  | #qualified_name_t as x -> src_of_qualified_name x
+  | `AST_suffix (s,_) 
+    -> s
+
+let src_of_expr (e : expr_t) = match e with
+  | #suffixed_name_t as x -> src_of_suffixed_name x
+
+  | `AST_product (s,_)
+  | `AST_sum (s,_)
+  | `AST_arrow (s,_)
+  | `AST_void s
+
+  | `AST_index (s,_)
+  | `AST_apply  (s,_) 
+  | `AST_bound_module (s,_)
+  | `AST_deref (s,_) 
+  | `AST_ref  (s,_) 
+  | `AST_literal  (s,_) 
+  | `AST_method_apply  (s,_) 
+  | `AST_tuple  (s,_) 
+  | `AST_dot  (s,_) 
+  | `AST_lambda  (s,_) 
+  | `AST_match_ctor  (s,_) 
+  | `AST_ctor_arg  (s,_) 
+  | `AST_get_n  (s,_) 
+  | `AST_lazy (s,_)
+  | `AST_coercion (s,_)
+    -> s
+
+let src_of_stmt e = match e with
+  | `AST_interface (s,_,_)
+  | `AST_module_binding (s,_,_)
+  | `AST_typed_functor (s,_,_,_,_)
+  | `AST_untyped_functor (s,_,_,_)
+  | `AST_label (s,_)
+  | `AST_goto (s,_)
+  
+  | `AST_function (s, _, _ , _, _)
+  | `AST_procedure (s, _, _ , _)
+
+  | `AST_val_decl (s, _, _, _) 
+  | `AST_var_decl (s, _, _, _) 
+
+  | `AST_type_alias (s, _, _) 
+  | `AST_except_handler (s, _, _, _ ) 
+  
+  | `AST_call (s, _, _ ) 
+  | `AST_read (s, _) 
+  | `AST_return (s, _) 
+  | `AST_block (s, _ ) 
+  | `AST_nop (s, _) 
+  | `AST_if (s, _ , _) 
+  | `AST_while (s, _, _) 
+  | `AST_attempt (s,_,_,_)
+  | `AST_raise (s, _, _) 
+  | `AST_match (s, _, _) 
+  | `AST_abs_decl (s, _, _) 
+  | `AST_const_decl (s, _, _, _) 
+  | `AST_fun_decl (s, _, _ , _, _ ) 
+  | `AST_proc_decl (s,_, _ , _ ) 
+  | `AST_header (s,_) 
+  | `AST_code (s, _) 
+  | `AST_union (s, _, _ ) 
+  | `AST_struct (s, _, _)
+  | `AST_typed_module (s, _,_,_)
+  | `AST_untyped_module (s,_,_)
+  | `AST_export (s, _,_)
+  | `AST_procedure_decl (s,_,_)
+  | `AST_function_decl (s,_,_)
+  | `AST_type (s,_)
+  | `AST_open (s,_)
+    -> s
+  | `AST_comment _ 
+    -> ("Generated",0,0,0,0)
+
+let src_of_pat e = match e with
+  | `PAT_nan s
+  | `PAT_int (s,_,_)
+  | `PAT_string (s, _)
+  | `PAT_int_range (s,_,_,_,_)
+  | `PAT_string_range (s, _, _)
+  | `PAT_float_range (s, _,_)
+  | `PAT_name (s, _)
+  | `PAT_tuple (s, _)
+  | `PAT_any s
+  | `PAT_regexp (s, _, _ )
+  | `PAT_const_ctor (s, _)
+  | `PAT_nonconst_ctor (s, _, _)
+  | `PAT_as (s, _, _)
+  | `PAT_when (s, _, _)
+    -> s
+
 (* get range from first and last expressions *)
 let rsexpr a b = rsrange (src_of_expr a) (src_of_expr b)
 
@@ -521,73 +655,6 @@ let rsexpr a b = rsrange (src_of_expr a) (src_of_expr b)
 let rslist lst = 
   rsexpr (List.hd lst) (list_last lst)
 
-let src_of_statement s = match s with
-  | AST_interface (s,_,_)
-  | AST_module_binding (s,_,_)
-  | AST_functor (s,_,_,_,_)
-  | AST_label (s,_)
-  | AST_goto (s,_)
-  
-  | AST_function (s, _, _ , _, _)
-  | AST_procedure (s, _, _ , _)
-
-  | AST_val_decl (s, _, _, _) 
-  | AST_var_decl (s, _, _, _) 
-
-  | AST_type_alias (s, _, _) 
-  | AST_except_handler (s, _, _, _ ) 
-  
-  | AST_call (s, _, _ ) 
-  | AST_read (s, _) 
-  | AST_return (s, _) 
-  | AST_block (s, _ ) 
-  | AST_nop (s, _) 
-  | AST_if (s, _ , _) 
-  | AST_while (s, _, _) 
-  | AST_attempt (s,_,_,_)
-
-  | AST_raise (s, _, _) 
-  | AST_match (s, _, _) 
-
-  | AST_abs_decl (s, _, _) 
-  | AST_const_decl (s, _, _, _) 
-  | AST_fun_decl (s, _, _ , _, _ ) 
-  | AST_proc_decl (s,_, _ , _ ) 
-  | AST_header (s,_) 
-  | AST_code (s, _) 
-  | AST_union (s, _, _ ) 
-  | AST_struct (s, _, _)
-  | AST_module (s, _,_,_)
-  | AST_export (s, _,_)
-  | AST_procedure_decl (s,_,_)
-  | AST_function_decl (s,_,_)
-  | AST_type (s,_)
-  | AST_open (s,_)
-    -> s
-
-  | AST_comment _ -> ("Generated",0,0,0,0)
-
-let src_of_pattern p = match p with
-  (* constants *)
-  | PAT_nan s
-  | PAT_int (s,_,_)
-  | PAT_string (s, _)
-
-  (* ranges *)
-  | PAT_int_range (s,_,_,_,_)
-  | PAT_string_range (s, _, _)
-  | PAT_float_range (s, _,_)
-
-  (* other *)
-  | PAT_name (s, _)
-  | PAT_tuple (s, _)
-  | PAT_any s
-  | PAT_regexp (s, _, _ )
-  | PAT_const_ctor (s, _)
-  | PAT_nonconst_ctor (s, _, _)
-  | PAT_as (s, _, _)
-  | PAT_when (s, _, _)
-    -> s
 
 let short_string_of_src (f,l1,c1,l2,c2) =
   if l1 = l2 
@@ -599,9 +666,6 @@ let short_string_of_src (f,l1,c1,l2,c2) =
     " col " ^ string_of_int c1 ^ " to " ^ 
     " line " ^ string_of_int l2 ^ " col " ^ string_of_int c2
 
-let name_of_string sr s = 
-  AST_name (sr,([s],TYP_none))
-
 @head(1,'Print module')
 Routines to print various terms.
 @h = tangler('src/flx_print.mli')
@@ -610,7 +674,8 @@ open Flx_types
 val string_of_typecode : typecode_t -> string
 val string_of_btypecode : symbol_table_t -> btypecode_t -> string
 val special_string_of_typecode : typecode_t -> string
-val string_of_expression : expr_t -> string
+val string_of_expr: expr_t -> string
+val string_of_expr : expr_t -> string
 val string_of_bound_expression : 
   symbol_table_t -> 
   tbexpr_t -> 
@@ -646,22 +711,7 @@ open Flx_srcref
 open Big_int
 open Flx_typing
 
-let string_of_string = Flx_string.c_quote_of_string
-
-let rec se e = string_of_expression e 
-
-and string_of_qualified_name name =
-  String.concat "::"  name
-
-and string_of_suffixed_name (name,typ) =
-  string_of_qualified_name name
-  ^
-  match typ with
-  | TYP_none -> ""
-  | _ -> " of (" ^ string_of_typecode typ ^ ")"
-
-and string_of_qualified_mname name =
-  String.concat "::"  name
+let rec string_of_string s = Flx_string.c_quote_of_string s
 
 and suffix_of_type s = match s with
   | "tiny" -> "t"
@@ -689,63 +739,98 @@ and suffix_of_type s = match s with
 
  
 and string_of_literal e = match e with
-  | AST_bool i -> (match i with | true -> "true" | false -> "false")
-  | AST_int (s,i) -> (string_of_big_int i)^suffix_of_type s 
-  | AST_float (t,v) -> v ^ suffix_of_type t
-  | AST_string s -> string_of_string s
+  | `AST_bool i -> (match i with | true -> "true" | false -> "false")
+  | `AST_int (s,i) -> (string_of_big_int i)^suffix_of_type s 
+  | `AST_float (t,v) -> v ^ suffix_of_type t
+  | `AST_string s -> string_of_string s
   
-and string_of_expression e = 
-  let se e = se e in
+and string_of_qualified_name (n:qualified_name_t) =
+  let se e = string_of_expr e in
+  match n with
+  | `AST_void _ -> "void"
+  | `AST_root _ -> "root"
+  | `AST_name (_,name) -> name 
+  | `AST_case_tag (_,v) -> "case " ^ string_of_int v
+  | `AST_typed_case (_,v,t) -> 
+    "(case " ^ string_of_int v ^ 
+    " of " ^ string_of_typecode t ^ ")"
+
+  | `AST_lookup (_,(e,name)) -> "("^se e ^")::" ^ name 
+
+and string_of_suffixed_name (n:suffixed_name_t) =
+  match n with
+  | #qualified_name_t as n -> string_of_qualified_name n
+  | `AST_suffix (_,(name,suf)) ->
+    string_of_qualified_name name ^ " of (" ^ string_of_typecode suf ^ ")"
+
+and string_of_expr (e:expr_t) = 
+  let se e = string_of_expr e 
+  and sme e = string_of_expr e 
+  and sqn e = string_of_qualified_name e
+  in
   match e with
-  | AST_index (sr,i) -> "(index " ^ string_of_int i ^ ")"
-  | AST_bound_module (sr,(iface,impl,binding)) -> "(module_binding)"
-  | AST_coercion (_,(e,t)) -> 
-    "(" ^ se e ^ ":" ^ 
+  | #suffixed_name_t as n -> string_of_suffixed_name n
+
+  | `AST_index (sr,i) -> "(index " ^ string_of_int i ^ ")"
+  | `AST_bound_module (sr,(iface,impl,binding)) -> "(module_binding)"
+  | `AST_coercion (_,(e,t)) -> 
+    "(" ^ sme e ^ ":" ^ 
     string_of_typecode t ^ ")"
 
-  | AST_lazy (_,e) -> "lazy(" ^ se e ^ ")"
-  | AST_get_n (_,(n,e)) -> "get (" ^ string_of_int n ^ ", " ^se e^")"
-  | AST_deref (_,e) -> "*(" ^ se e ^ ")"
-  | AST_name (_,name) -> string_of_suffixed_name name
-  | AST_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
-  | AST_literal (_,e) -> string_of_literal e
-  | AST_apply  (_,(fn, arg)) -> "(" ^ 
-    se fn ^ " " ^ 
-    se arg ^ 
+  | `AST_lazy (_,e) -> "lazy(" ^ se e ^ ")"
+  | `AST_get_n (_,(n,e)) -> "get (" ^ string_of_int n ^ ", " ^se e^")"
+  | `AST_deref (_,e) -> "*(" ^ se e ^ ")"
+  | `AST_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
+  | `AST_literal (_,e) -> string_of_literal e
+  | `AST_apply  (_,(fn, arg)) -> "(" ^ 
+    sme fn ^ " " ^ 
+    sme arg ^ 
     ")"
 
-  | AST_method_apply  (_,(fn, arg)) -> "(" ^ 
+  | `AST_product (_,ts) ->
+     String.concat "*" (List.map se ts)
+  | `AST_sum (_,ts) ->
+     String.concat "+" (List.map se ts)
+  | `AST_arrow (_,(a,b)) ->
+    "(" ^ se a ^ " -> " ^ se b ^ ")"
+    
+  | `AST_method_apply  (_,(fn, arg)) -> "(" ^ 
     fn ^ " " ^ 
     se arg ^ 
     ")"
 
-  | AST_tuple (_,t) -> "(" ^ catmap ", " se t ^ ")"
-  | AST_dot (_,(e,n)) ->  "get_" ^ n ^ "(" ^ se e ^ ")"
+  | `AST_tuple (_,t) -> "(" ^ catmap ", " sme t ^ ")"
+  | `AST_dot (_,(e,n)) ->  "get_" ^ n ^ "(" ^ se e ^ ")"
 
-  | AST_lambda (_,(params,ret, sts)) -> 
+  | `AST_lambda (_,(params,ret, sts)) -> 
     "(lambda(" ^ string_of_parameters params ^ "): " ^ 
     string_of_typecode ret ^
     string_of_compound 0 sts
-  | AST_ctor_arg (_,(cn,e)) ->
-    "ctor_arg " ^ string_of_qualified_name cn ^ "(" ^
+  | `AST_ctor_arg (_,(cn,e)) ->
+    "ctor_arg " ^ sqn cn ^ "(" ^
     se e ^ ")"
-  | AST_match_ctor (_,(cn,e)) ->
-    "match_ctor " ^ string_of_qualified_name cn ^ "(" ^
+  | `AST_match_ctor (_,(cn,e)) ->
+    "match_ctor " ^ sqn cn ^ "(" ^
     se e ^ ")"
 
-and string_of_typecode tc = match tc with
-  | TYP_name name -> string_of_qualified_name name
-  | TYP_tuple ls -> 
+and string_of_typecode (tc:typecode_t) = 
+  match tc with
+  | #qualified_name_t as t -> string_of_qualified_name t
+  | `TYP_tuple ls ->
     begin match ls with 
     | [] -> "unit" 
     | _ -> "(" ^ (String.concat " * " (List.map string_of_typecode ls)) ^")"
     end
 
-  | TYP_function (args, result) ->  
+  | `TYP_sum ls ->
+    begin match ls with 
+    | [] -> "void" 
+    | _ -> "(" ^ (String.concat " * " (List.map string_of_typecode ls)) ^")"
+    end
+
+  | `TYP_function (args, result) ->  
     "(" ^ (string_of_typecode args) ^ " -> " ^ (string_of_typecode result) ^ ")"
-  | TYP_pointer t -> "&(" ^ (string_of_typecode t) ^ ")"
-  | TYP_void -> "void"
-  | TYP_none -> "<none>"
+  | `TYP_pointer t -> "&(" ^ (string_of_typecode t) ^ ")"
 
 and qualified_name_of_index dfns index = 
   match Hashtbl.find dfns index with 
@@ -757,27 +842,34 @@ and qualified_name_of_index dfns index =
 and string_of_btypecode dfns tc = 
   let sbt t = string_of_btypecode dfns t in
   match tc with
-  | BTYP_binding (a,b) -> 
+  | `BTYP_binding (a,b) -> 
     "binding (" ^ 
     sbt a ^
     " => " ^
     sbt b ^
     ")"
 
-  | BTYP_name n -> qualified_name_of_index dfns n
-  | BTYP_tuple ls -> 
+  | `BTYP_name n -> qualified_name_of_index dfns n
+  | `BTYP_tuple ls -> 
     begin match ls with 
     | [] -> "unit" 
     | [x] -> failwith ("UNEXPECTED TUPLE OF ONE ARGUMENT " ^ sbt x)
     | _ -> "(" ^ (String.concat " * " (List.map sbt ls)) ^")"
     end
 
-  | BTYP_function (args, result) ->  
+  | `BTYP_sum ls -> 
+    begin match ls with 
+    | [] -> "void" 
+    | [x] -> failwith ("UNEXPECTED TUPLE OF ONE ARGUMENT " ^ sbt x)
+    | _ -> "(" ^ (String.concat " + " (List.map sbt ls)) ^")"
+    end
+
+  | `BTYP_function (args, result) ->  
     "(" ^ (sbt args) ^ " -> " ^ (sbt result) ^ ")"
 
-  | BTYP_pointer t -> "&(" ^ (sbt t) ^ ")"
-  | BTYP_void -> "void"
-  | BTYP_none -> "<none>"
+  | `BTYP_pointer t -> "&(" ^ (sbt t) ^ ")"
+  | `BTYP_void -> "void"
+  | `BTYP_none -> "<none>"
 
 and string_of_parameters ps = 
   String.concat 
@@ -790,7 +882,7 @@ and string_of_bparameters dfns ps =
     (List.map (fun (x,y)-> x ^ ": "^(string_of_btypecode dfns y)) ps)
 
 and string_of_arguments ass = 
-  catmap ", " se ass
+  catmap ", " string_of_expr ass
 
  
 and string_of_component level (name, typ) = 
@@ -802,29 +894,31 @@ and string_of_float_pat = function
   | Float_inf -> "inf"
   | Float_minus_inf -> "-inf"
 
-and string_of_pattern p = match p with
-  | PAT_nan _ -> "NaN"
-  | PAT_int (_,t,i) -> string_of_big_int i ^ suffix_of_type t
-  | PAT_int_range (_,t1,i1,t2,i2) -> 
+and string_of_pattern p = 
+  let se e = string_of_expr e in
+  match p with
+  | `PAT_nan _ -> "NaN"
+  | `PAT_int (_,t,i) -> string_of_big_int i ^ suffix_of_type t
+  | `PAT_int_range (_,t1,i1,t2,i2) -> 
     string_of_big_int i1 ^ suffix_of_type t1 ^
     " .. " ^ 
     string_of_big_int i2 ^ suffix_of_type t2
     
-  | PAT_string (_,s) -> string_of_string s
-  | PAT_string_range (_,s1, s2) -> 
+  | `PAT_string (_,s) -> string_of_string s
+  | `PAT_string_range (_,s1, s2) -> 
     string_of_string s1 ^ " .. " ^ string_of_string s2
-  | PAT_float_range (_,x1, x2) -> 
+  | `PAT_float_range (_,x1, x2) -> 
     string_of_float_pat x1 ^ " .. " ^ string_of_float_pat x2
-  | PAT_name (_,s) -> s
-  | PAT_tuple (_,ps) -> "(" ^ catmap ", "  string_of_pattern ps ^ ")"
-  | PAT_any _ -> "any"
-  | PAT_regexp (_,r,b) -> 
+  | `PAT_name (_,s) -> s
+  | `PAT_tuple (_,ps) -> "(" ^ catmap ", "  string_of_pattern ps ^ ")"
+  | `PAT_any _ -> "any"
+  | `PAT_regexp (_,r,b) -> 
     "regexp " ^ string_of_string r ^
     "(" ^ String.concat ", " b ^ ")"
-  | PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s 
-  | PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_pattern p
-  | PAT_as (_,p,n) -> "(" ^ string_of_pattern p ^ " as " ^ n ^ ")"
-  | PAT_when (_,p,e) -> "(" ^ string_of_pattern p ^ " when " ^ se e ^ ")"
+  | `PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s 
+  | `PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_pattern p
+  | `PAT_as (_,p,n) -> "(" ^ string_of_pattern p ^ " as " ^ n ^ ")"
+  | `PAT_when (_,p,e) -> "(" ^ string_of_pattern p ^ " when " ^ se e ^ ")"
  
 and string_of_compound level ss = 
   spaces level ^ "{\n" ^
@@ -848,17 +942,18 @@ and short_string_of_asm_compound level ss =
 
 and special_string_of_typecode ty =  (* used for constructors *)
   match ty with
-  | TYP_tuple [] -> ""
+  | `TYP_tuple [] -> ""
   | _ -> " of " ^ string_of_typecode ty
 
 and special_string_of_btypecode dfns ty =  (* used for constructors *)
   match ty with
-  | BTYP_tuple [] -> ""
+  | `BTYP_tuple [] -> ""
   | _ -> " of " ^ string_of_btypecode dfns ty
 
 and string_of_statement level s = 
+  let se e = string_of_expr e in
   match s with 
-  | AST_interface (_,name, entries) ->
+  | `AST_interface (_,name, entries) ->
     spaces level ^
     "interface " ^ name ^ "{\n" ^
     (
@@ -868,52 +963,57 @@ and string_of_statement level s =
     ) ^ "\n" ^
     spaces level ^ "}\n"
     
-  | AST_module_binding (_,name,e) ->
+  | `AST_module_binding (_,name,e) ->
     spaces level ^
     "module " ^ name ^ " = " ^
     se e ^ ";\n";
 
-  | AST_functor (_,name,ps,res,ss) ->
+  | `AST_typed_functor (_,name,ps,res,ss) ->
     spaces level ^ 
     "functor " ^ name ^ 
     "("^ (string_of_parameters ps)^"): "^(string_of_typecode res)^"\n" ^
     string_of_compound level ss
 
+  | `AST_untyped_functor (_,name,ps,ss) ->
+    spaces level ^ 
+    "functor " ^ name ^ 
+    "("^ (string_of_parameters ps)^")\n" ^
+    string_of_compound level ss
 
-  | AST_export (_,flx_name,cpp_name) -> 
+
+  | `AST_export (_,flx_name,cpp_name) -> 
     spaces level ^ "export " ^ 
     string_of_suffixed_name flx_name ^ 
     " as \"" ^ cpp_name ^ "\";"
 
-  | AST_label (_,s) -> s ^ ":"
-  | AST_goto (_,s) -> spaces level ^ "goto " ^ s ^ ";"
+  | `AST_label (_,s) -> s ^ ":"
+  | `AST_goto (_,s) -> spaces level ^ "goto " ^ s ^ ";"
 
-  | AST_comment s -> spaces level ^ "// " ^ s
-  | AST_open (_,n) -> 
+  | `AST_comment s -> spaces level ^ "// " ^ s
+  | `AST_open (_,n) -> 
     spaces level ^ "open " ^ string_of_qualified_name n ^ ";"
   
 
-  | AST_type_alias (_,t1,t2) ->
+  | `AST_type_alias (_,t1,t2) ->
     spaces level ^ "type " ^ t1 ^ " = " ^ string_of_typecode t2 ^ ";"
 
-  | AST_type (_,t) ->
+  | `AST_type (_,t) ->
     spaces level ^ "type " ^ t ^ ";"
 
-  | AST_module (_,name, typ, sts)  -> 
-    begin match typ with
-    | TYP_none ->
-      spaces level ^ "module " ^ name ^ " = " ^
-      "\n" ^ 
-      string_of_compound level sts
-    | _ ->
-      spaces level ^ "module " ^ name ^ ":" ^ 
-      string_of_typecode typ ^ 
-      " = " ^
-      "\n" ^ 
-      string_of_compound level sts
-    end
+  | `AST_untyped_module (_,name, sts)  -> 
+    spaces level ^ "module " ^ name ^ 
+    " = " ^
+    "\n" ^ 
+    string_of_compound level sts
 
-  | AST_struct (_,name, cs) -> 
+  | `AST_typed_module (_,name, typ, sts)  -> 
+    spaces level ^ "module " ^ name ^ ":" ^ 
+    string_of_typecode typ ^ 
+    " = " ^
+    "\n" ^ 
+    string_of_compound level sts
+
+  | `AST_struct (_,name, cs) -> 
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ name ^ ": " ^ string_of_typecode ty ^ ";"
     in
@@ -922,7 +1022,7 @@ and string_of_statement level s =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | AST_union (_,name, cs) -> 
+  | `AST_union (_,name, cs) -> 
     let string_of_union_component (name,ty) =
       (spaces (level+1)) ^ "|" ^ name ^ special_string_of_typecode ty
     in
@@ -931,7 +1031,7 @@ and string_of_statement level s =
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | AST_match (_,e, ps) ->
+  | `AST_match (_,e, ps) ->
     spaces level ^ "match " ^ se e ^ "\n" ^
     spaces level ^ "{\n" ^
     catmap "\n"
@@ -945,57 +1045,57 @@ and string_of_statement level s =
     ^
     "\n" ^ spaces level ^ "} /* end match */"
 
-  | AST_abs_decl (_,t,code) -> spaces level ^ 
+  | `AST_abs_decl (_,t,code) -> spaces level ^ 
    "type " ^ t ^ " = " ^ string_of_string code ^ ";"
 
-  | AST_fun_decl (_,name,args, result, code) ->
+  | `AST_fun_decl (_,name,args, result, code) ->
     spaces level ^ 
      "fun " ^ name ^ ": " ^ 
-     (string_of_typecode (TYP_tuple args)) ^ " -> " ^
+     (string_of_typecode (`TYP_tuple args)) ^ " -> " ^
      (string_of_typecode result) ^ 
      " = " ^ string_of_string code ^ ";"
 
-  | AST_proc_decl (_,name,args, code) ->
+  | `AST_proc_decl (_,name,args, code) ->
     spaces level ^ 
     "proc " ^ name ^ ": " ^ 
-     (string_of_typecode (TYP_tuple args)) ^
+     (string_of_typecode (`TYP_tuple args)) ^
      " = " ^ string_of_string code ^ ";"
 
-  | AST_const_decl (_,name,typ, code) ->
+  | `AST_const_decl (_,name,typ, code) ->
     spaces level ^ 
      "const " ^ name ^ 
      ": " ^ string_of_typecode typ ^ 
      " = "^string_of_string code^ ";" 
 
-  | AST_header (_,s) -> let triple_quote = "\"\"\"" in
+  | `AST_header (_,s) -> let triple_quote = "\"\"\"" in
     "header \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote
 
-  | AST_code (_,s) -> let triple_quote = "\"\"\"" in
+  | `AST_code (_,s) -> let triple_quote = "\"\"\"" in
     "code \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote
 
-  | AST_function (_,name, ps, res, ss) -> 
+  | `AST_function (_,name, ps, res, ss) -> 
     spaces level ^ 
     "function " ^ name ^ 
     "("^ (string_of_parameters ps)^"): "^(string_of_typecode res)^"\n" ^
     string_of_compound level ss
 
-  | AST_procedure (_,name, ps, ss) -> 
+  | `AST_procedure (_,name, ps, ss) -> 
     spaces level ^ 
     "procedure " ^ name ^ 
     "("^ (string_of_parameters ps)^")" ^
     short_string_of_compound level ss
 
-  | AST_procedure_decl (_, name,t) ->
+  | `AST_procedure_decl (_, name,t) ->
     spaces level ^
     "procedure " ^ name ^ ": " ^ string_of_typecode t ^ ";\n"
 
-  | AST_function_decl (_,name,t) ->
+  | `AST_function_decl (_,name,t) ->
     spaces level ^
     "function " ^ name ^ ": " ^ string_of_typecode t ^ ";\n"
 
-  | AST_block (_,ss) -> string_of_compound level ss
+  | `AST_block (_,ss) -> string_of_compound level ss
 
-  | AST_val_decl (_,name, ty, value) ->
+  | `AST_val_decl (_,name, ty, value) ->
     spaces level ^ 
     "val " ^ name ^ 
     (
@@ -1011,7 +1111,7 @@ and string_of_statement level s =
     )
     ^ ";"
 
-  | AST_var_decl (_,name, ty, value) ->
+  | `AST_var_decl (_,name, ty, value) ->
     spaces level ^ 
     "var " ^ name ^ 
     (
@@ -1028,13 +1128,13 @@ and string_of_statement level s =
     ^ ";"
 
 
-  | AST_call (_,pr, args) ->
+  | `AST_call (_,pr, args) ->
     spaces level
     ^ "call " ^ se pr ^ " " ^ se args ^ ";"
 
-  | AST_nop (_,s) -> spaces level ^ "{/*"^s^"*/;}"
+  | `AST_nop (_,s) -> spaces level ^ "{/*"^s^"*/;}"
 
-  | AST_if (_,clist, (_,s2)) ->
+  | `AST_if (_,clist, (_,s2)) ->
     begin catmap (spaces level ^ "else ")
       begin fun (sr, (e, s)) ->
         spaces level ^ "if " ^
@@ -1045,22 +1145,22 @@ and string_of_statement level s =
     end
     ^ 
     begin match s2 with 
-      | AST_nop (_,"") -> ""
+      | `AST_nop (_,"") -> ""
       | _ ->
         spaces level ^ "else\n" ^
         (string_of_statement (level+1) s2)
     end
   
-  | AST_while (_,e,s) ->
+  | `AST_while (_,e,s) ->
     spaces level ^ "while(" ^ (se e) ^ ")\n" ^
     (string_of_statement (level+1) s)
 
-  | AST_except_handler (_,label,params,code) ->
+  | `AST_except_handler (_,label,params,code) ->
     spaces level ^ "except " ^ label ^ " " ^ 
     "("^ (string_of_parameters params)^")"^
     short_string_of_compound level code
 
-  | AST_attempt (_,(_,main), (_,handlers), (fsr,finally)) ->
+  | `AST_attempt (_,(_,main), (_,handlers), (fsr,finally)) ->
     spaces level ^ "attempt\n" ^
     string_of_statement (level+1) main ^ "\n" ^
     spaces level ^ "exceptions\n" ^
@@ -1072,23 +1172,23 @@ and string_of_statement level s =
       | _ -> 
         spaces level ^ "finally\n" ^ 
         string_of_statement (level+1) 
-          (AST_block (fsr,finally))
+          (`AST_block (fsr,finally))
     ) ^ "\n" ^
     spaces level ^ "}"
     
 
-  | AST_raise (_,label,e) -> 
+  | `AST_raise (_,label,e) -> 
     spaces level ^ "raise " ^ label ^
     begin match e with
-    | AST_tuple (_,[]) -> ""
+    | `AST_tuple (_,[]) -> ""
     | expr -> " " ^ se expr
     end ^ 
     ";"
 
-  | AST_return (_,e) -> 
+  | `AST_return (_,e) -> 
     spaces level ^ "return " ^ (se e) ^ ";"
     
-  | AST_read (_,name) ->
+  | `AST_read (_,name) ->
     spaces level ^ "read " ^ name ^ ";"
 
 and string_of_compilation_unit stats =
@@ -1100,23 +1200,23 @@ and string_of_desugared stats =
 and string_of_iface level s =
   let spc = spaces level in
   match s with
-  | IFACE_export (flx_name,cpp_name) -> 
+  | `IFACE_export (flx_name,cpp_name) -> 
     spc ^ "export " ^ string_of_suffixed_name flx_name ^ 
     " as \"" ^ cpp_name ^ "\";"
 
 and string_of_symdef entry name = match entry with
-  | SYMDEF_parameter t -> 
+  | `SYMDEF_parameter t -> 
     "parameter " ^ string_of_typecode t ^ ";"
     
-  | SYMDEF_function (ps,res,es,nm,dir) -> 
+  | `SYMDEF_function (ps,res,es,nm,dir) -> 
     "function " ^ name ^ ": " ^ string_of_typecode 
     (
-      TYP_function 
+      `TYP_function 
       (
         (
           match List.map snd ps with
           | [x] -> x
-          | x -> TYP_tuple x
+          | x -> `TYP_tuple x
         )
         ,
         res
@@ -1124,108 +1224,114 @@ and string_of_symdef entry name = match entry with
     ) ^
     ";"
     
-  | SYMDEF_lazy (e) -> 
+  | `SYMDEF_lazy (e) -> 
     "lazy " ^ name ^ ";"
     
-  | SYMDEF_match_check (pat,i)-> 
+  | `SYMDEF_match_check (pat,i)-> 
     "match_check " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
   
-  | SYMDEF_match_handler (pat,i,es,nm,dir) ->
+  | `SYMDEF_match_handler (pat,i,es,nm,dir) ->
     "match_handler " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
 
-  | SYMDEF_interface (nm,dir) ->
+  | `SYMDEF_interface (nm,dir) ->
     "interface " ^ name ^ ";"
 
-  | SYMDEF_functor (ps,ret,es,nm,dir) ->
+  | `SYMDEF_typed_functor (ps,ret,es,nm,dir) ->
     "functor " ^ name ^ ";"
 
-  | SYMDEF_module (table,dir) -> 
+  | `SYMDEF_untyped_functor (ps,es,nm,dir) ->
+    "functor " ^ name ^ ";"
+
+  | `SYMDEF_module (table,dir) -> 
     "module " ^ name ^ ";"
     
-  | SYMDEF_if_type -> 
+  | `SYMDEF_if_type -> 
     "abstract_type " ^ name ^ ";"
     
-  | SYMDEF_if_proc t -> 
+  | `SYMDEF_if_proc t -> 
     "abstract_proc " ^ name ^ ": " ^ string_of_typecode t ^ ";"
 
-  | SYMDEF_if_fun t ->
+  | `SYMDEF_if_fun t ->
     "abstract_function  " ^ name ^ string_of_typecode t ^ ";"
 
-  | SYMDEF_procedure (ps,es,nm,dir) ->
+  | `SYMDEF_procedure (ps,es,nm,dir) ->
     "procedure " ^ name ^ ";"  
   
-  | SYMDEF_module_binding e ->
-    "module_binding " ^ string_of_expression e ^ ";"
+  | `SYMDEF_module_binding e ->
+    "module_binding " ^ string_of_expr e ^ ";"
 
-  | SYMDEF_dcl d ->
+  | `SYMDEF_dcl d ->
     "declaration " ^ string_of_dcl 0 name d
 
 and string_of_exe level s = 
-  let spc = spaces level in
+  let spc = spaces level
+  and se e = string_of_expr e 
+  in
   match s with
-  | EXE_goto s -> spc ^ "goto " ^ s ^ ";"
+  | `EXE_goto s -> spc ^ "goto " ^ s ^ ";"
 
-  | EXE_ifgoto (e,s) -> spc ^ 
+  | `EXE_ifgoto (e,s) -> spc ^ 
      "if(" ^ se e ^ ")goto " ^ s ^ ";"
 
-  | EXE_ifnotgoto (e,s) -> spc ^ 
+  | `EXE_ifnotgoto (e,s) -> spc ^ 
      "if(not(" ^ se e ^ "))goto " ^ s ^ ";"
 
-  | EXE_label s -> s ^ ":"
+  | `EXE_label s -> s ^ ":"
 
-  | EXE_comment s -> spc ^ 
+  | `EXE_comment s -> spc ^ 
     "// " ^ s 
 
-  | EXE_call (p,a) -> spc ^ 
+  | `EXE_call (p,a) -> spc ^ 
     "call " ^ 
     se p ^ " " ^ 
     se a ^ ";"
 
-  | EXE_read v -> spc ^ 
+  | `EXE_read v -> spc ^ 
     "read " ^ v
 
-  | EXE_return x -> spc ^ 
+  | `EXE_return x -> spc ^ 
     "return " ^ se x ^ ";"
 
-  | EXE_nop s -> spc ^ 
+  | `EXE_nop s -> spc ^ 
     "/*" ^ s ^ "*/"
 
-  | EXE_code s -> spc ^ 
+  | `EXE_code s -> spc ^ 
     "code " ^ string_of_string s 
 
-  | EXE_init (l,r) -> spc ^ 
+  | `EXE_init (l,r) -> spc ^ 
     l ^ " := " ^ se r ^ ";"
 
 and string_of_bound_expression dfns e = 
   let se e = string_of_bound_expression dfns e in
   let sid n = qualified_name_of_index dfns n in
   match fst e with
-  | BEXPR_coercion (m,t) -> 
+  | `BEXPR_functions (name,fs) -> name ^ "<functions>"
+  | `BEXPR_coercion (m,t) -> 
     "(" ^ 
     se m ^ 
     ": " ^
     string_of_btypecode dfns t ^ 
     ")"
-  | BEXPR_get_n (n,e') -> "(" ^ se e' ^ ").mem_" ^ string_of_int n
-  | BEXPR_deref e -> "*("^ se e ^ ")"
-  | BEXPR_name i -> sid i 
-  | BEXPR_closure i -> "closure(" ^ sid i ^ ")"
-  | BEXPR_ref i -> "&" ^ sid i
-  | BEXPR_literal e -> string_of_literal e
-  | BEXPR_apply  (fn, arg) -> "(" ^ 
+  | `BEXPR_get_n (n,e') -> "(" ^ se e' ^ ").mem_" ^ string_of_int n
+  | `BEXPR_deref e -> "*("^ se e ^ ")"
+  | `BEXPR_name i -> sid i 
+  | `BEXPR_closure i -> "closure(" ^ sid i ^ ")"
+  | `BEXPR_ref i -> "&" ^ sid i
+  | `BEXPR_literal e -> string_of_literal e
+  | `BEXPR_apply  (fn, arg) -> "(" ^ 
     se fn ^ " " ^ 
     se arg ^ 
     ")"
 
-  | BEXPR_tuple t -> "(" ^ catmap ", " se t ^ ")"
-  | BEXPR_dot (e,n) ->  "get_<" ^ string_of_int n ^ ">(" ^ se e ^ ")"
+  | `BEXPR_tuple t -> "(" ^ catmap ", " se t ^ ")"
+  | `BEXPR_dot (e,n) ->  "get_<" ^ string_of_int n ^ ">(" ^ se e ^ ")"
 
 and string_of_biface dfns level s = 
   let spc = spaces level in
   let se e = string_of_bound_expression dfns e in
   let sid n = qualified_name_of_index dfns n in
   match s with
-  | BIFACE_export (index,cpp_name) ->
+  | `BIFACE_export (index,cpp_name) ->
     spc ^ "export " ^ qualified_name_of_index dfns index ^ 
     " as \"" ^ cpp_name ^ "\";"
 
@@ -1234,71 +1340,73 @@ and string_of_bexe dfns level s =
   let se e = string_of_bound_expression dfns e in
   let sid n = qualified_name_of_index dfns n in
   match s with
-  | BEXE_goto s -> spc ^ "goto " ^ s ^ ";"
+  | `BEXE_goto s -> spc ^ "goto " ^ s ^ ";"
 
-  | BEXE_ifgoto (e,s) -> spc ^ 
+  | `BEXE_ifgoto (e,s) -> spc ^ 
      "if(" ^ se e ^ ")goto " ^ s ^ ";"
 
-  | BEXE_ifnotgoto (e,s) -> spc ^ 
+  | `BEXE_ifnotgoto (e,s) -> spc ^ 
      "if(not(" ^ se e ^ "))goto " ^ s ^ ";"
 
-  | BEXE_label s -> s ^ ":"
+  | `BEXE_label s -> s ^ ":"
 
-  | BEXE_comment s -> spc ^ 
+  | `BEXE_comment s -> spc ^ 
     "// " ^ s 
 
-  | BEXE_call (p,a) -> spc ^ 
+  | `BEXE_call (p,a) -> spc ^ 
     "call " ^ 
     se p ^ " " ^ 
     se a ^ ";"
 
-  | BEXE_read v -> spc ^ 
+  | `BEXE_read v -> spc ^ 
     "read " ^ sid v 
 
-  | BEXE_return x -> spc ^ 
+  | `BEXE_return x -> spc ^ 
     "return " ^ se x ^ ";"
 
-  | BEXE_nop s -> spc ^ 
+  | `BEXE_nop s -> spc ^ 
     "/*" ^ s ^ "*/"
 
-  | BEXE_code s -> spc ^ 
+  | `BEXE_code s -> spc ^ 
     "code " ^ string_of_string s 
 
-  | BEXE_init (l,r) -> spc ^ 
+  | `BEXE_init (l,r) -> spc ^ 
     sid l ^ " := " ^ se r ^ ";"
 
-and string_of_dcl level name s = match s with
-  | DCL_type -> spaces level ^ "type " ^ name ^ ";\n"
+and string_of_dcl level name s = 
+  let se e = string_of_expr e in
+  match s with
+  | `DCL_type -> spaces level ^ "type " ^ name ^ ";\n"
 
-  | DCL_if_proc (t) ->
+  | `DCL_if_proc (t) ->
     spaces level ^ "procedure " ^ name ^ ": " ^ string_of_typecode t
 
-  | DCL_if_fun t ->
+  | `DCL_if_fun t ->
     spaces level ^ "function " ^ name ^ ": " ^ string_of_typecode t
   
-  | DCL_module_binding expr -> 
+  | `DCL_module_binding expr -> 
     spaces level ^
     "module " ^ name ^ " = "^se expr^" ;\n"
 
-  | DCL_lazy e -> "val "^name^"= lazy(" ^ se e ^ ");\n"
+  | `DCL_lazy e -> "val "^name^"= lazy(" ^ se e ^ ");\n"
 
-  | DCL_header s -> "header " ^ string_of_string s
+  | `DCL_header s -> "header " ^ string_of_string s
 
-  | DCL_type_alias (t2) ->
+  | `DCL_type_alias (t2) ->
     spaces level ^ "type " ^ name ^ " = " ^ string_of_typecode t2 ^ ";"
 
-  | DCL_module asms -> 
+  | `DCL_module asms -> 
     spaces level ^ "module " ^ name ^ " = " ^
     "\n" ^ 
     string_of_asm_compound level asms 
 
-  | DCL_interface asms ->
+  | `DCL_interface asms ->
     spaces level ^ "interface " ^ name ^ " = " ^
     "\n" ^ 
     string_of_asm_compound level asms
 
 
-  | DCL_struct (cs) -> 
+  | `DCL_struct (cs) -> 
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ name ^ ": " ^ string_of_typecode ty ^ ";"
     in
@@ -1307,7 +1415,7 @@ and string_of_dcl level name s = match s with
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | DCL_union (cs) -> 
+  | `DCL_union (cs) -> 
     let string_of_union_component (name,ty) =
       (spaces (level+1)) ^ "|" ^name ^ special_string_of_typecode ty
     in
@@ -1316,73 +1424,79 @@ and string_of_dcl level name s = match s with
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | DCL_abs (code) -> spaces level ^ 
+  | `DCL_abs (code) -> spaces level ^ 
    "type " ^ name ^ " = " ^ string_of_string code ^ ";"
 
-  | DCL_fun (args, result, code) ->
+  | `DCL_fun (args, result, code) ->
+    let argtype:typecode_t = type_of_argtypes args in
+    let t:typecode_t = `TYP_function (argtype,result) in
     spaces level ^ 
-     "fun " ^ name ^ ": " ^ 
-     (string_of_typecode (type_of_argtypes args)) ^ " -> " ^
-     (string_of_typecode result) ^ 
-     " = " ^ string_of_string code ^ ";"
+    "fun " ^ name ^ ": " ^ string_of_typecode t ^
+    " = " ^ string_of_string code ^ ";"
 
-  | DCL_proc (args, code) ->
+  | `DCL_proc (args, code) ->
     spaces level ^ 
     "proc " ^ name ^ ": " ^ 
      (string_of_typecode (type_of_argtypes args)) ^
      " = " ^ string_of_string code ^ ";"
 
-  | DCL_const (typ, code) ->
+  | `DCL_const (typ, code) ->
     spaces level ^ 
      "const " ^ name ^ 
      ": " ^ string_of_typecode typ ^ 
      " = "^string_of_string code^ ";" 
 
-  | DCL_function (ps, res, ss) -> 
+  | `DCL_function (ps, res, ss) -> 
     spaces level ^ 
     "function " ^ name ^ 
     "("^ (string_of_parameters ps)^"): "^(string_of_typecode res)^"\n" ^
     string_of_asm_compound level ss
 
-  | DCL_functor (ps, res, ss) ->
+  | `DCL_typed_functor (ps, res, ss) ->
     spaces level ^ 
     "function " ^ name ^ 
     "("^ (string_of_parameters ps)^"): "^(string_of_typecode res)^"\n" ^
     string_of_asm_compound level ss
 
+  | `DCL_untyped_functor (ps, ss) ->
+    spaces level ^ 
+    "function " ^ name ^ 
+    "("^ (string_of_parameters ps)^")\n" ^
+    string_of_asm_compound level ss
 
-  | DCL_procedure (ps, ss) -> 
+
+  | `DCL_procedure (ps, ss) -> 
     spaces level ^ 
     "procedure " ^ name ^ 
     "("^ (string_of_parameters ps)^")" ^
     short_string_of_asm_compound level ss
 
-  | DCL_match_check (pat,s) ->
+  | `DCL_match_check (pat,s) ->
     spaces level ^ 
     "function " ^ name ^ "() { " ^ 
     s ^ " matches " ^ string_of_pattern pat ^
     " }"
 
-  | DCL_match_handler (pat,e, ss) ->
+  | `DCL_match_handler (pat,e, ss) ->
     spaces level ^ 
     "procedure " ^ name ^ 
     "() //pattern: " ^ string_of_pattern pat ^ "\n" ^
     string_of_asm_compound level ss
 
 
-  | DCL_val (ty) ->
+  | `DCL_val (ty) ->
     spaces level ^ 
     "val " ^ name ^ ": " ^ string_of_typecode ty ^ ";"
 
-  | DCL_var (ty) ->
+  | `DCL_var (ty) ->
     spaces level ^ 
     "var " ^ name ^ ": " ^ string_of_typecode ty ^ ";"
 
-  | DCL_val_typeof (e) ->
+  | `DCL_val_typeof (e) ->
     spaces level ^ 
     "val " ^ name ^ ": typeof(" ^ se e ^ ");"
 
-  | DCL_var_typeof (e) ->
+  | `DCL_var_typeof (e) ->
     spaces level ^ 
     "var " ^ name ^ ": typeof(" ^ se e ^ ");"
 
@@ -1403,8 +1517,8 @@ and string_of_bbdcl dfns bbdcl index =
   let sobt t = string_of_btypecode dfns t in
   let se e = string_of_bound_expression dfns e in
   match bbdcl with
-  | BBDCL_header s -> "header " ^ string_of_string s
-  | BBDCL_function (ps,res,es,name_map) ->
+  | `BBDCL_header s -> "header " ^ string_of_string s
+  | `BBDCL_function (ps,res,es,name_map) ->
     "function " ^ name ^ 
     "("^ (string_of_bparameters dfns ps)^"): "^(sobt res) ^
     "{\n" ^
@@ -1412,40 +1526,40 @@ and string_of_bbdcl dfns bbdcl index =
     "}"
 
   
-  | BBDCL_procedure (ps,es,name_map) ->
+  | `BBDCL_procedure (ps,es,name_map) ->
     "procedure " ^ name ^ 
     "("^ (string_of_bparameters dfns ps)^")" ^
     "{\n" ^
     String.concat "\n" (List.map (string_of_bexe dfns 1) es) ^
     "}"
 
-  | BBDCL_val ty ->
+  | `BBDCL_val ty ->
     "val " ^ name ^ ": " ^ sobt ty ^ ";"
 
-  | BBDCL_var ty ->
+  | `BBDCL_var ty ->
     "var " ^ name ^ ": " ^ sobt ty ^ ";"
 
   (* binding structures [prolog] *)
-  | BBDCL_abs code ->
+  | `BBDCL_abs code ->
    "type " ^ name ^ " = " ^ string_of_string code ^ ";"
 
-  | BBDCL_const (ty,code) ->
+  | `BBDCL_const (ty,code) ->
      "const " ^ name ^ 
      ": " ^ sobt ty ^ 
      " = "^string_of_string code^ ";" 
 
-  | BBDCL_fun (ps,rt,code) ->
+  | `BBDCL_fun (ps,rt,code) ->
      "fun " ^ name ^ ": " ^ 
      (sobt (typeoflist ps)) ^ " -> " ^
      (sobt rt) ^ 
      " = " ^ string_of_string code ^ ";"
 
-  | BBDCL_proc (ps,code) ->
+  | `BBDCL_proc (ps,code) ->
     "proc " ^ name ^ ": " ^ 
      (sobt (typeoflist ps)) ^
      " = " ^ string_of_string code ^ ";"
 
-  | BBDCL_union cs ->
+  | `BBDCL_union cs ->
     let string_of_union_component (name,ty) =
       "  " ^ "|" ^name ^ special_string_of_btypecode dfns ty
     in
@@ -1454,7 +1568,7 @@ and string_of_bbdcl dfns bbdcl index =
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     "}"
 
-  | BBDCL_struct cs ->
+  | `BBDCL_struct cs ->
     let string_of_struct_component (name,ty) =
       "  " ^ name ^ ": " ^ sobt ty ^ ";"
     in
@@ -1488,14 +1602,14 @@ module VarMap :
     type key = string
     and 'a t
     val empty : 'a t
-    val add : key:key -> data:'a -> 'a t -> 'a t
+    val add : key -> 'a -> 'a t -> 'a t
     val find : key -> 'a t -> 'a
     val remove : key -> 'a t -> 'a t
     val mem : key -> 'a t -> bool
-    val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
-    val map : f:('a -> 'b) -> 'a t -> 'b t
-    val mapi : f:(key -> 'a -> 'b) -> 'a t -> 'b t
-    val fold : f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
+    val iter : (key -> 'a -> unit) -> 'a t -> unit
+    val map : ('a -> 'b) -> 'a t -> 'b t
+    val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
+    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   end
 type varmap_t = string VarMap.t
 module TypecodeSet :
@@ -1514,12 +1628,12 @@ module TypecodeSet :
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val subset : t -> t -> bool
-    val iter : f:(elt -> unit) -> t -> unit
-    val fold : f:(elt -> 'a -> 'a) -> t -> init:'a -> 'a
-    val for_all : f:(elt -> bool) -> t -> bool
-    val exists : f:(elt -> bool) -> t -> bool
-    val filter : f:(elt -> bool) -> t -> t
-    val partition : f:(elt -> bool) -> t -> t * t
+    val iter : (elt -> unit) -> t -> unit
+    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val for_all : (elt -> bool) -> t -> bool
+    val exists : (elt -> bool) -> t -> bool
+    val filter : (elt -> bool) -> t -> t
+    val partition : (elt -> bool) -> t -> t * t
     val cardinal : t -> int
     val elements : t -> elt list
     val min_elt : t -> elt
@@ -1552,13 +1666,14 @@ open Flx_types
 @h = tangler('src/flx_typing.ml')
 @select(h)
 open Flx_types
-open Flx_print
+open Flx_srcref
+
 exception UnificationError of btypecode_t * btypecode_t
 
 (* unbound type *)
 let type_of_argtypes ls = match ls with
  | [x] -> x
- | _ -> TYP_tuple ls
+ | _ -> `TYP_tuple ls
 
 let funparamtype x = snd x
 
@@ -1569,47 +1684,112 @@ module FuntypeSet = Set.Make(
 (* bound type! *)
 let typeoflist typlist = match typlist with
   | [t] -> t
-  | _ -> BTYP_tuple typlist
+  | _ -> `BTYP_tuple typlist
 
 let rec lower t = match t with
-  | BTYP_binding (i,t) -> t
-  | BTYP_pointer t -> BTYP_pointer (lower t)
-  | BTYP_tuple ts -> BTYP_tuple (List.map lower ts)
-  | BTYP_none -> BTYP_none
-  | BTYP_void -> BTYP_void
-  | BTYP_function (a,b) -> BTYP_function (lower a, lower b)
-  | BTYP_name i -> BTYP_name i
+  | `BTYP_binding (i,t) -> t
+  | `BTYP_pointer t -> `BTYP_pointer (lower t)
+  | `BTYP_tuple ts -> `BTYP_tuple (List.map lower ts)
+  | `BTYP_sum ts -> `BTYP_sum (List.map lower ts)
+  | `BTYP_none -> `BTYP_none
+  | `BTYP_void -> `BTYP_void
+  | `BTYP_function (a,b) -> `BTYP_function (lower a, lower b)
+  | `BTYP_name i -> `BTYP_name i
 
 
 let rec lift t = match t with
-  | BTYP_binding (i,t) -> i
-  | BTYP_pointer t -> BTYP_pointer (lift t)
-  | BTYP_tuple ts -> BTYP_tuple (List.map lift ts)
-  | BTYP_none -> BTYP_none
-  | BTYP_void -> BTYP_void
-  | BTYP_function (a,b) -> BTYP_function (lift a, lift b)
-  | BTYP_name i -> BTYP_name i
+  | `BTYP_binding (i,t) -> i
+  | `BTYP_pointer t -> `BTYP_pointer (lift t)
+  | `BTYP_tuple ts -> `BTYP_tuple (List.map lift ts)
+  | `BTYP_sum ts -> `BTYP_sum (List.map lift ts)
+  | `BTYP_none -> `BTYP_none
+  | `BTYP_void -> `BTYP_void
+  | `BTYP_function (a,b) -> `BTYP_function (lift a, lift b)
+  | `BTYP_name i -> `BTYP_name i
 
 let rec unify dfns it mt = 
   let u it mt = unify dfns it mt in
   match it,mt with
-  | BTYP_function (a,b), BTYP_function(c,d) ->
-    BTYP_function (u a c, u b d)
+  | `BTYP_function (a,b), `BTYP_function(c,d) ->
+    `BTYP_function (u a c, u b d)
 
-  | BTYP_pointer a, BTYP_pointer b ->
-    BTYP_pointer (u a b)
+  | `BTYP_pointer a, `BTYP_pointer b ->
+    `BTYP_pointer (u a b)
 
-  | BTYP_tuple a, BTYP_tuple b ->
-    BTYP_tuple (List.map2 u a b)
+  | `BTYP_tuple a, `BTYP_tuple b ->
+    `BTYP_tuple (List.map2 u a b)
 
-  | BTYP_void, BTYP_void -> BTYP_void
-  | BTYP_none, BTYP_none -> BTYP_none
-  | i,m -> BTYP_binding (i,m)
+  | `BTYP_sum a, `BTYP_sum b ->
+    `BTYP_sum (List.map2 u a b)
+
+  | `BTYP_void, `BTYP_void -> `BTYP_void
+  | `BTYP_none, `BTYP_none -> `BTYP_none
+  | i,m -> `BTYP_binding (i,m)
+
+let dummy_sr = ("generated",0,0,0,0)
+let flx_bool =
+  (`AST_lookup (dummy_sr,(`AST_root dummy_sr,"bool")) :> typecode_t)
+
+let rec typecode_of_expr (e:expr_t) :typecode_t = 
+  let te e = typecode_of_expr e in
+  match e with 
+  | #qualified_name_t as x -> (x:>typecode_t)
+  | `AST_product (_,ts) -> `TYP_tuple (List.map te ts)
+  | `AST_arrow (_,(a,b)) -> `TYP_function (te a, te b)
+  | `AST_ref (sr,e) -> `TYP_pointer (te e)
+  | `AST_sum (_,ts) -> `TYP_sum (List.map te ts)
+  | `AST_literal (sr,`AST_int (enc,v)) ->
+    if enc <> "int" 
+    then 
+      failwith 
+      (
+        "Only plain integer can be used as a type, code= '" ^ 
+        enc ^
+        "'"
+      )
+    else 
+    let v = ref 
+      begin try Big_int.int_of_big_int v 
+      with _ -> failwith ("Integer used as type out of range")
+      end
+    in
+      if !v <0 then failwith "Negative int not allowed as type"
+      else if !v >=2000 then failwith "Int used as type must be <2000"
+      else if !v = 0 then ((`AST_void sr) :> typecode_t)
+      else begin 
+        let u = (`TYP_tuple [] :> typecode_t) in
+        let t = ref [u] in
+        while !v > 1 do
+          t := u :: !t;
+          decr v
+        done;
+        ((`TYP_sum !t):>typecode_t)
+      end
+
+  | #expr_t -> 
+    failwith 
+    (
+      "Type expression expected in\n" ^
+      short_string_of_src (src_of_expr e)
+    )
+    
+let qualified_name_of_expr e =
+  match e with
+  | #qualified_name_t as x -> x
+  | _ -> 
+    failwith
+    (
+      "Qualified name expected in\n" ^
+      short_string_of_src (src_of_expr e)
+    )
 
 @h = tangler('src/flx_typing.mli')
 @select(h)
 open Flx_types
 exception UnificationError of btypecode_t * btypecode_t
+val flx_bool : typecode_t
+val dummy_sr: range_srcref
+
 val type_of_argtypes : 
   typecode_t list -> 
   typecode_t
@@ -1632,6 +1812,12 @@ val lift:
 val lower:
   btypecode_t -> btypecode_t
 
+val typecode_of_expr:
+  expr_t -> typecode_t
+
+val qualified_name_of_expr:
+  expr_t -> qualified_name_t
+
 module FuntypeSet :
   sig
     type elt = Flx_types.typecode_t
@@ -1648,12 +1834,12 @@ module FuntypeSet :
     val compare : t -> t -> int
     val equal : t -> t -> bool
     val subset : t -> t -> bool
-    val iter : f:(elt -> unit) -> t -> unit
-    val fold : f:(elt -> 'a -> 'a) -> t -> init:'a -> 'a
-    val for_all : f:(elt -> bool) -> t -> bool
-    val exists : f:(elt -> bool) -> t -> bool
-    val filter : f:(elt -> bool) -> t -> t
-    val partition : f:(elt -> bool) -> t -> t * t
+    val iter : (elt -> unit) -> t -> unit
+    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val for_all : (elt -> bool) -> t -> bool
+    val exists : (elt -> bool) -> t -> bool
+    val filter : (elt -> bool) -> t -> t
+    val partition : (elt -> bool) -> t -> t * t
     val cardinal : t -> int
     val elements : t -> elt list
     val min_elt : t -> elt

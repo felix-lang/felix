@@ -70,7 +70,7 @@ do with a tuple is make it the argument of a function.
 
 @select(h)
 let register_type_nr registry counter dfns t =
-  if t <> BTYP_tuple [] then
+  if t <> `BTYP_tuple [] then
   if not (Hashtbl.mem registry t)
   then
     let n = !counter in
@@ -88,14 +88,15 @@ let rec register_type_r registry counter dfns bbdfns exclude t =
   in
   let rnr t = register_type_nr registry counter dfns t in
   match t with
-  | BTYP_void -> ()
-  | BTYP_none -> ()
-  | BTYP_function (ps,ret) -> rr ps; rr ret; rnr t
-  | BTYP_tuple ps -> List.iter rr ps; rnr t
-  | BTYP_pointer t' -> rr t' 
+  | `BTYP_void -> ()
+  | `BTYP_none -> ()
+  | `BTYP_function (ps,ret) -> rr ps; rr ret; rnr t
+  | `BTYP_tuple ps -> List.iter rr ps; rnr t
+  | `BTYP_sum ps -> List.iter rr ps; rnr t
+  | `BTYP_pointer t' -> rr t' 
     (* We don't register pointer types: use _ref_ template! *)
-  | BTYP_binding (src,dst) -> rr dst
-  | BTYP_name index ->
+  | `BTYP_binding (src,dst) -> rr dst
+  | `BTYP_name index ->
     let id, parent, entry = 
       try Hashtbl.find bbdfns index 
       with Not_found -> 
@@ -109,18 +110,18 @@ let rec register_type_r registry counter dfns bbdfns exclude t =
         )
     in
     match entry with
-    | BBDCL_union cs -> 
+    | `BBDCL_union cs -> 
       List.iter rr (List.map snd cs);      (* components *)
       rnr t                                (* the union type *)
 
-    | BBDCL_struct cs -> 
+    | `BBDCL_struct cs -> 
       let argt = typeoflist (List.map snd cs) in
       List.iter rr (List.map snd cs);      (* components *)
       rnr argt;                            (* argument tuple *)
       rnr t;                               (* the struct type *)
-      rnr (BTYP_function (argt,t))         (* constructor *)
+      rnr (`BTYP_function (argt,t))         (* constructor *)
 
-    | BBDCL_abs ct -> rnr t 
+    | `BBDCL_abs ct -> rnr t 
       (*
       failwith 
       (
@@ -154,24 +155,26 @@ let mangle_cpp_typename ct =
 let rec cpp_typename registry dfns bbdfns t = 
   let tn t = cpp_typename registry dfns bbdfns t in
   try match t with
-  | BTYP_tuple [] -> "unit"
-  | BTYP_function (_,BTYP_void) -> 
+  | `BTYP_tuple [] -> "unit"
+  | `BTYP_function (_,`BTYP_void) -> 
     "_procedure_type_" ^ string_of_int (Hashtbl.find registry t) ^ "*"
-  | BTYP_function _ -> 
+  | `BTYP_function _ -> 
     "_function_type_" ^ string_of_int (Hashtbl.find registry t) ^ "*"
-  | BTYP_tuple _ -> "_tuple_type_" ^ string_of_int (Hashtbl.find registry t)
-  | BTYP_pointer t' -> "_ref_<"^tn t'^">"
-  | BTYP_void -> "void"
-  | BTYP_none -> failwith "[cpp_typename] Expected real type, got 'none'"
-  | BTYP_binding (_,t) -> tn t
-  | BTYP_name index ->
+  | `BTYP_tuple _ -> "_tuple_type_" ^ string_of_int (Hashtbl.find registry t)
+  | `BTYP_sum _ -> "_sum_type_" ^ string_of_int (Hashtbl.find registry t)
+
+  | `BTYP_pointer t' -> "_ref_<"^tn t'^">"
+  | `BTYP_void -> "void"
+  | `BTYP_none -> failwith "[cpp_typename] Expected real type, got 'none'"
+  | `BTYP_binding (_,t) -> tn t
+  | `BTYP_name index ->
     let id,parent,entry = 
       try Hashtbl.find bbdfns index
       with Not_found -> failwith ("cpp_typename Can't find index " ^ string_of_int index ^ " in fully bound symbol table")
     in begin match entry with
-      | BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
-      | BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
-      | BBDCL_abs ct -> "_abs_" ^ string_of_int index ^ "_" ^ mangle_cpp_typename ct
+      | `BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
+      | `BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
+      | `BBDCL_abs ct -> "_abs_" ^ string_of_int index ^ "_" ^ mangle_cpp_typename ct
       | _ -> 
         failwith 
         (
@@ -191,25 +194,26 @@ let rec cpp_typename registry dfns bbdfns t =
 let rec cpp_classname registry dfns bbdfns t = 
   let tn t = cpp_typename registry dfns bbdfns t in
   try match t with
-  | BTYP_binding _ -> failwith "[cpp_classname] Unexpected binding type"
-  | BTYP_tuple [] -> "unit"
-  | BTYP_void -> failwith "void doesn't have a classname"
-  | BTYP_function (_,BTYP_void) -> 
+  | `BTYP_binding _ -> failwith "[cpp_classname] Unexpected binding type"
+  | `BTYP_tuple [] -> "unit"
+  | `BTYP_void -> failwith "void doesn't have a classname"
+  | `BTYP_function (_,`BTYP_void) -> 
     "_procedure_type_" ^ string_of_int (Hashtbl.find registry t)
-  | BTYP_function _ -> 
+  | `BTYP_function _ -> 
     "_function_type_" ^ string_of_int (Hashtbl.find registry t) 
-  | BTYP_tuple _ -> "_tuple_type_" ^ string_of_int (Hashtbl.find registry t)
-  | BTYP_pointer t' -> "_ref_<"^tn t'^">"
-  | BTYP_none -> 
+  | `BTYP_tuple _ -> "_tuple_type_" ^ string_of_int (Hashtbl.find registry t)
+  | `BTYP_sum _ -> "_sum_type_" ^ string_of_int (Hashtbl.find registry t)
+  | `BTYP_pointer t' -> "_ref_<"^tn t'^">"
+  | `BTYP_none -> 
     failwith "[cpp_typename] Expected real type, got 'none'"
-  | BTYP_name index ->
+  | `BTYP_name index ->
     let id,parent,entry = 
       try Hashtbl.find bbdfns index
       with Not_found -> failwith ("cpp_classname Can't find index " ^ string_of_int index ^ " in fully bound symbol table")
     in begin match entry with
-      | BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
-      | BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
-      | BBDCL_abs ct -> "_abs_" ^ string_of_int index ^ "_" ^ mangle_cpp_typename ct
+      | `BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
+      | `BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
+      | `BBDCL_abs ct -> "_abs_" ^ string_of_int index ^ "_" ^ mangle_cpp_typename ct
       | _ -> 
         failwith 
         (
@@ -259,31 +263,31 @@ let collect_types registry counter dfns bbdfns =
       print_endline ("=======>  " ^ string_of_bbdcl dfns bbdcl index);
       *)
       match bbdcl with
-      | BBDCL_abs _ -> rnr (BTYP_name index)
-      | BBDCL_function (ps,ret,_,_) ->
+      | `BBDCL_abs _ -> rnr (`BTYP_name index)
+      | `BBDCL_function (ps,ret,_,_) ->
         let a = typeoflist (List.map snd ps) in
-        rr (BTYP_function (a,ret))
+        rr (`BTYP_function (a,ret))
 
-      | BBDCL_fun (ps,ret,_) ->
+      | `BBDCL_fun (ps,ret,_) ->
         let a = typeoflist ps in
-        rr (BTYP_function (a,ret))
+        rr (`BTYP_function (a,ret))
 
-      | BBDCL_procedure (ps,_,_) ->
+      | `BBDCL_procedure (ps,_,_) ->
         let a = typeoflist (List.map snd ps) in
-        rr (BTYP_function (a,BTYP_void))
+        rr (`BTYP_function (a,`BTYP_void))
 
-      | BBDCL_proc (ps,_) ->
+      | `BBDCL_proc (ps,_) ->
         let a = typeoflist ps in
-        rr (BTYP_function (a,BTYP_void))
+        rr (`BTYP_function (a,`BTYP_void))
 
-      | BBDCL_val t
-      | BBDCL_var t
-      | BBDCL_const (t,_) -> rr t
+      | `BBDCL_val t
+      | `BBDCL_var t
+      | `BBDCL_const (t,_) -> rr t
 
-      | BBDCL_union _
-      | BBDCL_struct _ -> rr (BTYP_name index)
+      | `BBDCL_union _
+      | `BBDCL_struct _ -> rr (`BTYP_name index)
 
-      | BBDCL_header _ -> ()
+      | `BBDCL_header _ -> ()
     end
   end
   bbdfns 
@@ -295,30 +299,33 @@ hashtable. We also mangle c++ abstract type names.
 let gen_type_name registry dfns bbdfns (index,typ) =
   let tn t = cpp_classname registry dfns bbdfns t in
   match typ with
-  | BTYP_binding _ -> failwith "[gen_type_name] Unexpected binding type"
-  | BTYP_function _ ->
+  | `BTYP_binding _ -> failwith "[gen_type_name] Unexpected binding type"
+  | `BTYP_function _ ->
     let name = tn typ in
     "struct " ^ name ^ ";\n"
-  | BTYP_tuple ts ->
+  | `BTYP_tuple ts ->
     let name = tn typ in
     "struct " ^ name ^ ";\n"
 
-  | BTYP_void -> ""
-  | BTYP_none -> ""
-  | BTYP_pointer t -> "//Pointer by template"
+  | `BTYP_sum ts ->
+    "typedef _uctor_ " ^ tn typ ^ ";\n"
 
-  | BTYP_name index ->
+  | `BTYP_void -> ""
+  | `BTYP_none -> ""
+  | `BTYP_pointer t -> "//Pointer by template"
+
+  | `BTYP_name index ->
     let name = tn typ in
     let id,parent,entry = 
       try Hashtbl.find bbdfns index
       with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_int index)
     in
     match entry with
-    | BBDCL_struct cs ->
+    | `BBDCL_struct cs ->
       "struct " ^ name ^ ";\n"
-    | BBDCL_union _ -> 
+    | `BBDCL_union _ -> 
       "typedef _uctor_ " ^ tn typ ^ ";\n"
-    | BBDCL_abs ct -> "typedef " ^ ct ^ " " ^ tn typ ^ ";\n" 
+    | `BBDCL_abs ct -> "typedef " ^ ct ^ " " ^ tn typ ^ ";\n" 
     | _ -> 
       failwith 
       (
@@ -339,16 +346,16 @@ let gen_type registry dfns bbdfns (index,typ) =
   let cn t = cpp_classname registry dfns bbdfns t in
   match typ with
 
-  | BTYP_binding _ -> failwith ("gen_type] Unexpected binding type")
+  | `BTYP_binding _ -> failwith ("gen_type] Unexpected binding type")
 
   (* PROCEDURE *)
-  | BTYP_function (a,BTYP_void) ->
+  | `BTYP_function (a,`BTYP_void) ->
     let name = cn typ  
     and argtype = tn a
     in
     "struct " ^ name ^
     ": continuation_t {\n" ^
-    (if a <> BTYP_tuple [] 
+    (if a <> `BTYP_tuple [] 
     then
     "  virtual continuation_t *call(continuation_t *, "^argtype^" const &)=0;\n"
     else
@@ -358,20 +365,22 @@ let gen_type registry dfns bbdfns (index,typ) =
     "};\n"
 
   (* FUNCTION *)
-  | BTYP_function (a,r) ->
+  | `BTYP_function (a,r) ->
     let name = cn typ  
     and argtype = tn a
     and rettype = tn r
     in
     "struct " ^ name ^ " {\n" ^
     "  virtual "^rettype^" apply("^
-    (if a = BTYP_tuple []
+    (if a = `BTYP_tuple []
     then ""
     else argtype^" const &") ^
     ")=0;\n"  ^
     "};\n"
 
-  | BTYP_tuple ts ->
+  | `BTYP_sum _ -> "" (* union typedef *)
+
+  | `BTYP_tuple ts ->
     let components = ref [] in
     let counter = ref 0 in
     List.iter 
@@ -412,9 +421,9 @@ let gen_type registry dfns bbdfns (index,typ) =
     ctor ^
     "};\n"
 
-  | BTYP_void -> ""
-  | BTYP_none -> ""
-  | BTYP_pointer t -> failwith "Generate pointer type: should use template"
+  | `BTYP_void -> ""
+  | `BTYP_none -> ""
+  | `BTYP_pointer t -> failwith "Generate pointer type: should use template"
     (*
     let name = tn typ in
     let data_type = tn t in
@@ -426,14 +435,14 @@ let gen_type registry dfns bbdfns (index,typ) =
     "};\n"
     *)
 
-  | BTYP_name index ->
+  | `BTYP_name index ->
     let name = tn typ in
     let id,parent,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_type] can't find index " ^ string_of_int index)
     in
     match entry with
-    | BBDCL_struct cs ->
+    | `BBDCL_struct cs ->
       let ctor = 
         let equiv_tuple_type = typeoflist (List.map snd cs) in
         match List.length cs with
@@ -472,8 +481,8 @@ let gen_type registry dfns bbdfns (index,typ) =
       ) ^
       "};\n"
 
-    | BBDCL_union _ -> "" (* covered by prior typedef of _uctor_ *)
-    | BBDCL_abs ct -> ""
+    | `BBDCL_union _ -> "" (* covered by prior typedef of _uctor_ *)
+    | `BBDCL_abs ct -> ""
     | _ -> 
       failwith 
       (
