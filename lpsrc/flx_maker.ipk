@@ -514,8 +514,14 @@ COBJECTS = {
 CLIBRARIES = ['nums']
 
 # *.cmxa or .cma libraries
-OLIBRARIES = ['nums','unix','flxlib']
-
+# and some hackery so we can if the source doesn't need
+# ocaml-fileutils we can still build if it isn't found
+if OCAML_FILEUTILS_DIRECTORY == "":
+  OCAML_INCLUDES = ""
+  OLIBRARIES = ['nums','unix','flxlib']
+else:
+  OLIBRARIES = ['nums','unix','fileutils','flxlib']
+  OCAML_INCLUDES = "-I " + OCAML_FILEUTILS_DIRECTORY
 
 # target executable programs to produce
 EXES = [
@@ -655,7 +661,7 @@ try:
   BAD_TESTS.sort()
 
   if "compiler" in options:
-    # STEP 1: Compile all copiler support C files
+    # STEP 1: Compile all compiler support C files
     for cobject in COBJECTS.keys():
       flags = COBJECTS[cobject]
       file = 'src/'+cobject
@@ -682,14 +688,14 @@ try:
       file = 'src/'+interface
       if buildall or filetime(file + '.mli') > filetime(file+'.cmi'):
         buildall = 1
-        xqt(OCAMLC + ' -c '+file+ '.mli')
+        xqt(OCAMLC + ' ' + OCAML_INCLUDES+' -c '+file+ '.mli')
 
     # STEP 5: Compile ocaml implementations
     for implementation in IMPLEMENTATIONS + EXES:
       file = 'src/'+implementation
       if buildall or filetime(file+ '.ml') > filetime(file+OCAML_OBJECT_EXTENSION):
         buildall = 1
-        xqt(OCAMLOPT + ' -c ' + file +'.ml')
+        xqt(OCAMLOPT + ' '+ OCAML_INCLUDES+ ' -c ' + file +'.ml')
 
 
     # STEP 6: Build FELIX Library
@@ -714,7 +720,7 @@ try:
     # finally, mainline *.cmx or cma files to link to executables
     for exe in EXES:
       if buildall or filetime(exe + OCAML_OBJECT_EXTENSION) > filetime(exe):
-        xqt(OCAMLOPT + LDFLAGS + ' -o bin/'+exe + x + OBJECT_FILES + ' src/flx_version_hook.ml ' + exe + OCAML_OBJECT_EXTENSION)
+        xqt(OCAMLOPT + LDFLAGS + ' ' + OCAML_INCLUDES + ' -o bin/'+exe + x + OBJECT_FILES + ' src/flx_version_hook.ml ' + exe + OCAML_OBJECT_EXTENSION)
 
   # COMPILE RTL  
   if "rtl" in options:

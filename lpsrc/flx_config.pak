@@ -268,6 +268,26 @@ int main(int,char*[]) {
   return 0;
 }
 
+@h=tangler("tmp/fileutils_check.ml")
+@select(h)
+open FilePath.AbstractDefaultPath
+;;
+
+let fn1 = "/aaa/bbb/ccc.d"
+let fn2 = "./string.h"
+let fn3 = "string.h"
+;;
+
+let afn1 = filename_of_string fn1
+let afn2 = filename_of_string fn2
+let afn3 = filename_of_string fn3
+;;
+
+print_endline (string_of_bool (is_implicit afn1));;
+print_endline (string_of_bool (is_implicit afn2));;
+print_endline (string_of_bool (is_implicit afn3));;
+
+
 @h = tangler("script/make_config.py")
 @select(h)
 # THIS PROGRAM CREATES THE DEFAULT CONFIGURATION FILE
@@ -278,6 +298,7 @@ int main(int,char*[]) {
 print CONFIG_GENERATOR_CVS_ID
 import sys
 import os
+import os.path
 import traceback
 import string
 
@@ -410,6 +431,41 @@ else:
 result,x = get_stdout(OCAMLC + " -where")
 OCAML_INCLUDE_DIRECTORY= x[0][0:-1]
 
+# Find Sylvain's Ocaml file utils
+# look in Felix dev directory first
+
+OCAML_FILEUTILS_DIRECTORY = "fileutils"
+cmd = OCAMLC + " -o tmp/fileutils_check -I " + OCAML_FILEUTILS_DIRECTORY + " fileutils.cmxa tmp/fileutils_check.ml"
+try:
+  xqt(cmd)
+except:
+  # guess it's installed in same dir as Ocaml lib, as subdir
+  OCAML_FILEUTILS_DIRECTORY = OCAML_INCLUDE_DIRECTORY + "/fileutils"
+  cmd = OCAMLC + " -o tmp/fileutils_check -I " + OCAML_FILEUTILS_DIRECTORY + " fileutils.cmxa tmp/fileutils_check.ml"
+  try:
+    xqt(cmd)
+  except:
+    try:
+      # guess its sibling of lib/ocaml
+      x,y= os.path.split(OCAML_INCLUDE_DIRECTORY)
+      OCAML_FILEUTILS_DIRECTORY = x + "/fileutils"
+      if os.path.exists(OCAML_FILEUTILS_DIRECTORY):
+        cmd = OCAMLC + " -o tmp/fileutils_check -I " + OCAML_FILEUTILS_DIRECTORY + " fileutils.cmxa tmp/fileutils_check.ml"
+        xqt(cmd)
+      else:
+        raise Error
+    except:
+      # try main Ocaml library
+      OCAML_FILEUTILS_DIRECTORY = OCAML_INCLUDE_DIRECTORY
+      try:
+        cmd = OCAMLC + " -o tmp/fileutils_check -I " + OCAML_FILEUTILS_DIRECTORY + " fileutils.cmxa tmp/fileutils_check.ml"
+        xqt(cmd)
+      except:
+        # empty string if not found .. don't disturb builds
+        # not needing it
+        OCAML_FILEUTILS_DIRECTORY = ""
+        print "WARNING: ocaml-fileutils not found"
+   
 #---------------------------------------------------
 # Discover C/C++ compilers, linker, and other 'binutils'
 
@@ -674,45 +730,8 @@ def pne(f,s):
 try:
   try: os.mkdir("config")
   except: pass
-  f = open("config/config.py","w")
-  p(f,"CONFIG_GENERATOR_CVS_ID")
-  pr(f,"#Interscript support")
-  p(f,"ISCR")
-  pr(f,"")
-  pr(f,"#Ocaml tools")
-  p(f,"OCAMLC")
-  p(f,"OCAMLB")
-  p(f,"OCAMLLEX")
-  p(f,"OCAMLYACC")
-  p(f,"OCAMLDOC")
-  p(f,"NATIVE_CODE_COMPILER")
-  p(f,"OCAML_INCLUDE_DIRECTORY")
-  pr(f,"")
-  pr(f,"#C++ tools")
-  p(f,"HAVE_CPP")
-  p(f,"HAVE_CC")
-  p(f,"HAVE_CCCC")
-  p(f,"HAVE_MSVC")
-  p(f,"HAVE_GXX")
-  p(f,"HAVE_PKGCONFIG")
-  p(f,"CXX")
-  p(f,"CPP")
-  p(f,"FLXCC_CPP")
-  p(f,"STRIP")
-  p(f,"AR")
-  p(f,"RANLIB")
-  p(f,"CCOBJ_DLLIB")
-  p(f,"CCOBJ_DLMAIN")
-  p(f,"CCLINK_DLLIB")
-  p(f,"CCLINK_DLMAIN")
-  p(f,"CCOBJ_STATIC_LIB")
-  p(f,"CCOBJ_STATIC_MAIN")
-  p(f,"CCLINK_STATIC")
-  p(f,"DEBUG_SYMBOLS")
-  p(f,"CCOPT1")
-  p(f,"CCOPT2")
-  pr(f,"")
-
+  f = open("config/math_config.py","w")
+  pr(f,'#'+CONFIG_GENERATOR_CVS_ID)
   pr(f,"# Data types")
   p(f,"HAVE_STDINT")
   p(f,"HAVE_LONGLONG")
@@ -777,6 +796,49 @@ try:
   p(f,"CHAR_IS_UNSIGNED")
   p(f,"LITTLE_ENDIAN")
   p(f,"BIG_ENDIAN")
+  f.close()
+
+  f = open("config/config.py","w")
+  p(f,"CONFIG_GENERATOR_CVS_ID")
+  pr(f,"#Interscript support")
+  p(f,"ISCR")
+  pr(f,"")
+  pr(f,"#Ocaml tools")
+  p(f,"OCAMLC")
+  p(f,"OCAMLB")
+  p(f,"OCAMLLEX")
+  p(f,"OCAMLYACC")
+  p(f,"OCAMLDOC")
+  p(f,"NATIVE_CODE_COMPILER")
+  p(f,"OCAML_INCLUDE_DIRECTORY")
+  p(f,"OCAML_FILEUTILS_DIRECTORY")
+  pr(f,"")
+  pr(f,"#C++ tools")
+  p(f,"HAVE_CPP")
+  p(f,"HAVE_CC")
+  p(f,"HAVE_CCCC")
+  p(f,"HAVE_MSVC")
+  p(f,"HAVE_GXX")
+  p(f,"HAVE_PKGCONFIG")
+  p(f,"CXX")
+  p(f,"CPP")
+  p(f,"FLXCC_CPP")
+  p(f,"STRIP")
+  p(f,"AR")
+  p(f,"RANLIB")
+  p(f,"CCOBJ_DLLIB")
+  p(f,"CCOBJ_DLMAIN")
+  p(f,"CCLINK_DLLIB")
+  p(f,"CCLINK_DLMAIN")
+  p(f,"CCOBJ_STATIC_LIB")
+  p(f,"CCOBJ_STATIC_MAIN")
+  p(f,"CCLINK_STATIC")
+  p(f,"DEBUG_SYMBOLS")
+  p(f,"CCOPT1")
+  p(f,"CCOPT2")
+  pr(f,"")
+
+  pr(f,"execfile('config/math_config.py')")
   p(f,"HAVE_PKGCONFIG")
   pne(f,"PKGCONFIG_PACKAGES")
 
