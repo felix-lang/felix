@@ -6,7 +6,6 @@ open Flx_types
 
 val optimise_bbdfns:
   sym_state_t ->
-  type_registry_t ->
   fully_bound_symbol_table_t ->
   int ->
   biface_t list ->
@@ -28,17 +27,20 @@ open Flx_treg
      -- O(log n) performance
 *)
 
+(* input: a symbol i, and closed list of symbols ls
+   output: the union of ls and the closure of i
+*)
+
 let clos bbdfns i ls =
   let rec clos (i:int) ls = 
     if List.mem i ls then ls
-    else begin
+    else 
       let _,_,bbdcl = Hashtbl.find bbdfns i in
       match bbdcl with
       | `BBDCL_function (_,_,exes,_)
-      | `BBDCL_procedure (_,exes,_) ->
-        scan_exes exes (i::ls)
+      | `BBDCL_procedure (_,exes,_) 
+        -> scan_exes exes (i::ls)
       | _ -> i :: ls
-    end
   and scan_exes exes ls =
     match exes with
     | h :: t -> scan_exes t (scan_exe h ls)
@@ -59,10 +61,12 @@ let clos bbdfns i ls =
     | `BTYP_tuple [] -> ls
     | _ ->
     match (x:bexpr_t) with
-    | `BEXPR_name i
+    | `BEXPR_name (i,[])
     | `BEXPR_closure i
     | `BEXPR_ref i
       -> clos i ls
+
+    | `BEXPR_name (i,_) -> failwith "Can't find reach of generic yet"
 
     | `BEXPR_apply (x,y) 
       -> scan_expr y (scan_expr x ls)
@@ -87,6 +91,12 @@ let clos bbdfns i ls =
     | `BEXPR_functions _ -> ls
   in clos i ls
 
+(* Input: a closed list of symbols 'closed',
+   and a list of symbols 'opn'
+   Output: the union of set 'closed'
+   and the closures of each symbol in 'opn'
+*) 
+   
 let closure bbdfns closed opn =
  let rec cls closed opn = 
    match opn with
@@ -95,6 +105,142 @@ let closure bbdfns closed opn =
  in
    cls closed opn
 
+(* Return list of all header symbols *)
+let accrue_headers bbdfns ls =
+  let ls = ref ls in
+    Hashtbl.iter
+    (fun i j -> 
+      match j with 
+      | (_,_,`BBDCL_header _) -> ls := i::!ls
+      | _ -> ()
+    )
+    bbdfns
+    ;
+    !ls
+
+(* Return full set of roots *)
+let roots root ifaces = root ::
+  (List.map (function `BIFACE_export (i,_) -> i) ifaces)
+
+
+let rec instr_count  exes count = match exes with
+  | [] -> count 
+  | h :: t -> match h with
+    | `BEXE_nop _
+    | `BEXE_label _
+    | `BEXE_comment _
+        -> instr_count t count
+    | _ -> instr_count t (count+1)
+
+
+(* input: a list of lists of exes
+   output: a list of exes in reverse order,
+     in which some calls are inlined
+
+   We limit this version to just calling
+   procedures with no arguments, and which
+   also have no nested declarations
+*)
+
+let hempty h = 
+  try Hashtbl.iter (fun _ -> raise Not_found) h; true
+  with Not_found -> false
+
+(* Function inliner: 
+   start with dumb routine: only inline
+   functions of unit argument, and sole statement
+   'return x' 
+*)
+let rec inline_funcs bbdfns ((e,t) as te) = 
+  let inl e = inline_funcs bbdfns e in
+  match e with
+  | `BEXPR_apply((`BEXPR_closure index,_),(`BEXPR_tuple [],_)) ->
+     let id,parent,entry = Hashtbl.find bbdfns index in
+     begin match entry with
+     | `BBDCL_function ([],_,[`BEXE_return e'],name_map) -> 
+       print_endline "checking for function inlining";
+       if hempty name_map 
+       then 
+         begin 
+           print_endline "inlining function call";
+           inl e'
+         end
+       else te
+     | _ -> te
+     end
+  | `BEXPR_apply (f,a) -> `BEXPR_apply (inl f, inl a),t
+  | `BEXPR_tuple ls -> `BEXPR_tuple (List.map inl ls),t
+  | `BEXPR_dot (e,index) -> `BEXPR_dot (inl e, index),t
+  | `BEXPR_get_n (i,e) -> `BEXPR_get_n (i, inl e),t
+
+  | `BEXPR_coercion (e,t) -> `BEXPR_coercion (inl e,t),t
+  | `BEXPR_match_case (i,e) -> `BEXPR_match_case (i, inl e),t
+  | `BEXPR_case_arg (i,e) -> `BEXPR_case_arg (i, inl e),t
+
+  | `BEXPR_case _ 
+  | `BEXPR_closure _
+  | `BEXPR_deref _
+  | `BEXPR_name _
+  | `BEXPR_ref _
+  | `BEXPR_literal _
+     -> te
+  | `BEXPR_functions _ -> failwith "Not expecting 'function set'"
+
+let rec inline_procs bbdfns exes_out exes_in exclude =
+  let inl e = inline_funcs bbdfns e in
+  match exes_in with
+  | []  -> exes_out
+  | h' :: t' -> match h' with
+  | [] -> inline_procs bbdfns exes_out t' exclude
+  | h :: t ->
+    match h with
+    | `BEXE_nop _ 
+      -> inline_procs bbdfns exes_out (t::t') exclude
+
+    | `BEXE_call ((`BEXPR_closure index,_),_) ->
+      if not (List.mem index exclude) then
+      begin match Hashtbl.find bbdfns index with
+      | id,parent,`BBDCL_procedure ([],exes,name_map) ->
+        if hempty name_map then
+        if instr_count exes 0 < 20 then
+          inline_procs bbdfns exes_out (exes::t::t') (index::exclude)
+        else
+          inline_procs bbdfns (h::exes_out) (t::t') exclude
+        else
+          inline_procs bbdfns (h::exes_out) (t::t') exclude
+      | _ -> 
+          inline_procs bbdfns (h::exes_out) (t::t') exclude
+      end else
+        inline_procs bbdfns (h::exes_out) (t::t') exclude
+ 
+    | `BEXE_call (e1,e2) -> 
+      let exe =`BEXE_call (inl e1, inl e2) in
+      inline_procs bbdfns (exe :: exes_out) (t::t') exclude
+
+    | `BEXE_return e -> (* Hmmmm *) 
+      let exe =`BEXE_return (inl e) in
+      inline_procs bbdfns (exe :: exes_out) (t::t') exclude
+
+    | `BEXE_ifgoto  (e,x) -> 
+      let exe =`BEXE_ifgoto (inl e, x) in
+      inline_procs bbdfns (exe :: exes_out) (t::t') exclude
+
+    | `BEXE_ifnotgoto  (e,x) -> 
+      let exe =`BEXE_ifnotgoto (inl e, x) in
+      inline_procs bbdfns (exe :: exes_out) (t::t') exclude
+
+    | `BEXE_init (x,e) -> 
+      let exe =`BEXE_init (x, inl e) in
+      inline_procs bbdfns (exe :: exes_out) (t::t') exclude
+
+    | `BEXE_set (e1,e2) -> 
+      let exe =`BEXE_set (inl e1, inl e2) in
+      inline_procs bbdfns (exe :: exes_out) (t::t') exclude
+
+    | _ -> inline_procs bbdfns (h::exes_out) (t::t') exclude
+
+let inline_exes bbdfns exes = List.rev (inline_procs bbdfns  [] [exes] [])
+
 (* make a list of all useful stuff: this includes
    all headers (since we can't tell if C code can
    reach stuff in them, everything reachable
@@ -102,100 +248,53 @@ let closure bbdfns closed opn =
    and exported functions
 *)
 
+
 let useful bbdfns root ifaces = 
-  let accrue_headers ls =
-    let ls = ref ls in
-      Hashtbl.iter
-      (fun i j -> 
-        match j with 
-        | (_,_,`BBDCL_header _) -> ls := i::!ls
-        | _ -> ()
-      )
-      bbdfns
-      ;
-      !ls
-  in
-  let ifuncs = List.map (function `BIFACE_export (i,_) -> i) ifaces in
-  accrue_headers 
+  accrue_headers bbdfns 
   (
-    closure bbdfns [] (root :: ifuncs)
+    closure bbdfns [] 
+    (
+      roots root ifaces
+    )
   )
 
-@doc()
-We now need to collect the types required for declarations.
-In order to sequence the C++ declarations according to
-dependecies, our recursive analysis takes care only
-to assign an integer to a type when all type on which
-it depends have been processed. 
-@p()
-Note that implicitly declared tuple types should
-still get registered. The reason is that they can't
-be used unless the type is an argument of some 
-function or procedure, which we should pick up here.
-@select(h)
-
-let collect_types sym_state registry bbdfns useful= 
-  let rr t = register_type sym_state registry bbdfns useful t in
-  Hashtbl.iter
-  begin fun index (id,parent,bbdcl) -> 
-    (* if proper_descendant dfns parent
-    then 
-    *)
-    begin
-      (*
-      print_endline (
-        "Collecting BBDCL " ^ id ^ "<" ^ string_of_int index ^ 
-        ">, parent="^
-        match parent with 
-        | Some i ->string_of_int i
-        | None -> "None"
-      );
-      print_endline ("=======>  " ^ string_of_bbdcl dfns bbdcl index);
-      *)
-      match bbdcl with
-      | `BBDCL_abs _ -> rr (`BTYP_name index)
-      | `BBDCL_function (ps,ret,_,_) ->
-        let a = typeoflist (List.map snd ps) in
-        rr (`BTYP_function (a,ret))
-
-      | `BBDCL_fun (ps,ret,_) ->
-        let a = typeoflist ps in
-        rr (`BTYP_function (a,ret))
-
-      | `BBDCL_procedure (ps,_,_) ->
-        let a = typeoflist (List.map snd ps) in
-        rr (`BTYP_function (a,`BTYP_void))
-
-      | `BBDCL_proc (ps,_) ->
-        let a = typeoflist ps in
-        rr (`BTYP_function (a,`BTYP_void))
-
-      | `BBDCL_val t
-      | `BBDCL_var t
-      | `BBDCL_const (t,_) -> rr t
-
-      | `BBDCL_union _
-      | `BBDCL_struct _ -> rr (`BTYP_name index)
-
-      | `BBDCL_header _ -> ()
-    end
-  end
-  useful
 
 
 
-let optimise_bbdfns sym_state registry (bbdfns:fully_bound_symbol_table_t) root ifaces = 
+let optimise_bbdfns sym_state (bbdfns:fully_bound_symbol_table_t) root ifaces = 
+
+  (* PASS 1: gather useful stuff, and make a new table,
+     do some inlining as well
+  *)
   let ui = useful bbdfns root ifaces in
   let bbdfns2 = Hashtbl.create 97 in
   List.iter
   (fun k ->
-    let d = Hashtbl.find bbdfns k
-    in Hashtbl.add bbdfns2 k d
+    let d = Hashtbl.find bbdfns k in
+    match d with
+    | id,parent,`BBDCL_procedure (ps,exes,name_map) ->
+      let exes = inline_exes bbdfns exes in
+      Hashtbl.add bbdfns2 k (id,parent,(`BBDCL_procedure (ps,exes,name_map)))
+    | _ ->
+      Hashtbl.add bbdfns2 k d
   )
   ui
   ;
-  collect_types sym_state registry bbdfns bbdfns2
+  (* PASS 2: regather useful stuff and make a new table,
+     hoping that the inliner will have made some
+     procedures unreachable
+  *)
+  let ui2 = useful bbdfns2 root ifaces in
+  let bbdfns3 = Hashtbl.create 97 in
+  List.iter
+  (fun k ->
+    let d = Hashtbl.find bbdfns2 k in
+    Hashtbl.add bbdfns3 k d
+  )
+  ui2
   ;
-  bbdfns2
+  collect_types sym_state bbdfns bbdfns3
+  ;
+  bbdfns3
 
 

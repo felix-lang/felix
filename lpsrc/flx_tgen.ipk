@@ -7,17 +7,18 @@ val cpp_typename :
   fully_bound_symbol_table_t ->
   btypecode_t -> string
 
-val ptr_map_of_type:
-  type_registry_t ->
-  symbol_table_t ->
-  fully_bound_symbol_table_t ->
-  btypecode_t -> string
-
 val cpp_classname :
   type_registry_t ->
   symbol_table_t ->
   fully_bound_symbol_table_t ->
   btypecode_t -> string
+
+val collect_types :
+  type_registry_t ->
+  int ref ->
+  symbol_table_t ->
+  fully_bound_symbol_table_t ->
+  unit
 
 val gen_types :
   type_registry_t ->
@@ -39,6 +40,109 @@ open Flx_print
 open Flx_typing
 open Flx_srcref
 
+@head(2,'The type registry')
+Flx supports algebraic type expressions. For some of these,
+we need to construct a C++ class type. To ensure the same
+name is provided for each such class, we use a registry
+which maps the (bound) type expression to an integer.
+@p()
+The routine register_type_rn is a non-recursive registration
+procedure.
+@p()
+The routine register_type_r registers types recursively.
+The 'exclude' argument is a list of types which should
+not be registered, this is used to break potential
+infinite recursions. Note carefully that components
+are always registered before the type, so that they'll
+be defined before they're used. There two exceptions:
+for a pointer an incomplete type is sufficient,
+and sometimes necessary to break type recursion;
+and, unions may be recursive, but are represented
+by pointers anyhow.
+@p()
+Note that a function may accept an argument tuple
+one of whose arguments is a pointer to a function
+of the same type.
+@p()
+Note that the types of implicitly declared tuples
+will be caught here, since the only thing you can
+do with a tuple is make it the argument of a function.
+
+@select(h)
+let register_type_nr registry counter dfns t =
+  match t with
+  | `BTYP_fix _ 
+  | `BTYP_tuple []
+    -> ()
+  | _ 
+    ->
+    if not (Hashtbl.mem registry t)
+    then
+      let n = !counter in
+      incr counter;
+      Hashtbl.add registry t n
+
+let rec register_type_r registry counter dfns bbdfns exclude t =
+  (*
+  print_endline (string_of_btypecode dfns t);
+  *)
+  let t = lower t in
+  if not (List.mem t exclude) then
+  let rr t' = register_type_r 
+    registry counter dfns bbdfns (t :: exclude) t'
+  in
+  let rnr t = register_type_nr registry counter dfns t in
+  match unfold t with
+  | `BTYP_void -> ()
+  | `BTYP_none -> ()
+  | `BTYP_fix _ -> ()
+  | `BTYP_var _ -> failwith "Attempt to register type variable"
+  | `BTYP_function (ps,ret) -> rr ps; rr ret; rnr t
+  | `BTYP_tuple ps -> List.iter rr ps; rnr t
+  | `BTYP_sum ps -> List.iter rr ps; rnr t
+  | `BTYP_pointer t' -> rr t' 
+    (* We don't register pointer types: use _ref_ template! *)
+  | `BTYP_binding (src,dst) -> rr dst
+  | `BTYP_name index ->
+    let id, parent, entry = 
+      try Hashtbl.find bbdfns index 
+      with Not_found -> 
+        let id,sr,parent,entry= Hashtbl.find dfns index in
+        failwith 
+        (
+          "register_type_r Can't find " ^ 
+          id ^ "[" ^ string_of_int index ^ "]" ^
+          " in fully bound symbol table: " ^
+          short_string_of_src sr
+        )
+    in
+    match entry with
+    | `BBDCL_union cs -> 
+      List.iter rr (List.map snd cs);      (* components *)
+      rnr t                                (* the union type *)
+
+    | `BBDCL_struct cs -> 
+      let argt = typeoflist (List.map snd cs) in
+      List.iter rr (List.map snd cs);      (* components *)
+      rnr argt;                            (* argument tuple *)
+      rnr t;                               (* the struct type *)
+      rnr (`BTYP_function (argt,t))         (* constructor *)
+
+    | `BBDCL_abs ct -> rnr t 
+      (*
+      failwith 
+      (
+        "[register_type_r] expected type declaration, got type parameter " ^
+        string_of_bbdcl dfns entry index
+      )
+      *)
+    | _ -> 
+      failwith 
+      (
+        "[register_type_r] expected type declaration, got " ^
+        string_of_bbdcl dfns entry index
+      )
+
 let mangle_cpp_typename ct =
   let n = String.length ct in
   let buf = Buffer.create (n+20) in
@@ -57,9 +161,9 @@ let mangle_cpp_typename ct =
 
 let rec cpp_typename registry dfns bbdfns t = 
   let tn t = cpp_typename registry dfns bbdfns t in
-  let t = type_fold t in
   try match t with
-  | `BTYP_fix i ->  failwith "Can't name type fixpoint"
+  | `BTYP_var i ->  failwith "[cpp_typename] Can't name type type variable"
+  | `BTYP_fix i ->  failwith "[cpp_typename] Can't name type fixpoint"
   | `BTYP_tuple [] -> "unit"
   | `BTYP_function (_,`BTYP_void) -> 
     "_procedure_type_" ^ string_of_int (Hashtbl.find registry t) ^ "*"
@@ -98,9 +202,9 @@ let rec cpp_typename registry dfns bbdfns t =
 
 let rec cpp_classname registry dfns bbdfns t = 
   let tn t = cpp_typename registry dfns bbdfns t in
-  let t = type_fold t in
-  try match type_fold t with
-  | `BTYP_fix i -> failwith "type fixpoint doesn't have class"
+  try match t with
+  | `BTYP_var i -> failwith "[cpp_classname] Can't name type variable"
+  | `BTYP_fix i -> failwith "[cpp_classname] Can't name type fixpoint"
   | `BTYP_binding _ -> failwith "[cpp_classname] Unexpected binding type"
   | `BTYP_tuple [] -> "unit"
   | `BTYP_void -> failwith "void doesn't have a classname"
@@ -138,6 +242,68 @@ let rec cpp_classname registry dfns bbdfns t =
     )
 
 @doc()
+We now need to collect the types required for declarations.
+In order to sequence the C++ declarations according to
+dependecies, our recursive analysis takes care only
+to assign an integer to a type when all type on which
+it depends have been processed. 
+@p()
+Note that implicitly declared tuple types should
+still get registered. The reason is that they can't
+be used unless the type is an argument of some 
+function or procedure, which we should pick up here.
+@select(h)
+
+let collect_types registry counter dfns bbdfns = 
+  let rr t = register_type_r registry counter dfns bbdfns [] t in
+  let rnr t = register_type_nr registry counter dfns t in
+  Hashtbl.iter
+  begin fun index (id,parent,bbdcl) -> 
+    (* if proper_descendant dfns parent
+    then 
+    *)
+    begin
+      (*
+      print_endline (
+        "Collecting BBDCL " ^ id ^ "<" ^ string_of_int index ^ 
+        ">, parent="^
+        match parent with 
+        | Some i ->string_of_int i
+        | None -> "None"
+      );
+      print_endline ("=======>  " ^ string_of_bbdcl dfns bbdcl index);
+      *)
+      match bbdcl with
+      | `BBDCL_abs _ -> rnr (`BTYP_name index)
+      | `BBDCL_function (ps,ret,_,_) ->
+        let a = typeoflist (List.map snd ps) in
+        rr (`BTYP_function (a,ret))
+
+      | `BBDCL_fun (ps,ret,_) ->
+        let a = typeoflist ps in
+        rr (`BTYP_function (a,ret))
+
+      | `BBDCL_procedure (ps,_,_) ->
+        let a = typeoflist (List.map snd ps) in
+        rr (`BTYP_function (a,`BTYP_void))
+
+      | `BBDCL_proc (ps,_) ->
+        let a = typeoflist ps in
+        rr (`BTYP_function (a,`BTYP_void))
+
+      | `BBDCL_val t
+      | `BBDCL_var t
+      | `BBDCL_const (t,_) -> rr t
+
+      | `BBDCL_union _
+      | `BBDCL_struct _ -> rr (`BTYP_name index)
+
+      | `BBDCL_header _ -> ()
+    end
+  end
+  bbdfns 
+
+@doc()
 Now some code to generate the bases, given the
 hashtable. We also mangle c++ abstract type names.
 @select(h)
@@ -151,17 +317,15 @@ let is_unitsum (t:btypecode_t) = match t with
 
 let gen_type_name registry dfns bbdfns (index,typ) =
   let tn t = cpp_classname registry dfns bbdfns t in
-  (*
-  print_endline ("gen_type_name " ^ string_of_btypecode dfns typ);
-  *)
-  match type_unfold typ with
-  | `BTYP_fix i -> failwith "[gen_type_name] Unexpected fix"
+  match typ with
+  | `BTYP_fix i -> ""
+  | `BTYP_var i -> failwith "[gen_type_name] Can't gen name of type variable"
   | `BTYP_binding _ -> failwith "[gen_type_name] Unexpected binding type"
-  | `BTYP_function (_,`BTYP_tuple []) ->
-     "// elided " ^ tn typ
   | `BTYP_function _ ->
     let name = tn typ in
     "struct " ^ name ^ ";\n"
+
+  | `BTYP_tuple [] -> ""
   | `BTYP_tuple ts ->
     let name = tn typ in
     "struct " ^ name ^ ";\n"
@@ -207,8 +371,9 @@ let gen_type registry dfns bbdfns (index,typ) =
   "//TYPE "^string_of_int index^": " ^ string_of_btypecode dfns typ ^ "\n"^
   let tn t = cpp_typename registry dfns bbdfns t in
   let cn t = cpp_classname registry dfns bbdfns t in
-  match type_unfold typ with
+  match unfold typ with
 
+  | `BTYP_var _ -> failwith "[gen_type] can't gen type variable"
   | `BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
   | `BTYP_binding _ -> failwith ("gen_type] Unexpected binding type")
 
@@ -229,9 +394,6 @@ let gen_type registry dfns bbdfns (index,typ) =
     "};\n"
 
   (* FUNCTION *)
-  | `BTYP_function (a,`BTYP_tuple []) ->
-     "//  -- returns unit, elided\n"
-
   | `BTYP_function (a,r) ->
     let name = cn typ  
     and argtype = tn a
@@ -247,9 +409,10 @@ let gen_type registry dfns bbdfns (index,typ) =
 
   | `BTYP_sum _ -> "" (* union typedef *)
 
+  | `BTYP_tuple [] -> "" 
   | `BTYP_tuple ts ->
     let components = ref [] in
-    let counter = ref 1 in
+    let counter = ref 0 in
     List.iter 
     (fun t -> 
       components := !components @ [!counter, t]; 
@@ -319,7 +482,7 @@ let gen_type registry dfns bbdfns (index,typ) =
           fst (List.hd cs) ^ "(_arg) {}\n" 
         | _ ->
           let ctor_inits = ref [] in 
-          let counter = ref 1 in
+          let counter = ref 0 in
           List.iter 
           (fun (name,typ) -> 
             let n = !counter in incr counter; 
@@ -366,19 +529,4 @@ let gen_types registry dfns bbdfns ts =
   (* print_endline "GENERATING TYPES"; *)
   String.concat "" 
   (List.map (gen_type registry dfns bbdfns) ts)
-
-let ptr_map_of_type registry dfns bbdfns t =
-   if is_unitsum t
-   then "(flx::gc::generic::gc_shape_t*)0" (* SHOULD NOT HAPPEN BUT .. *)
-   else match t with
-   | `BTYP_sum _ -> "_uctor_ptr_map"
-   | `BTYP_name index ->
-      begin match Hashtbl.find dfns index with
-      | (_,_,_,`SYMDEF_dcl (`DCL_union _)) ->
-        "_uctor_ptr_map"
-      | _ ->
-        cpp_typename registry dfns bbdfns t ^ "_ptr_map"
-      end
-   | _ ->
-      cpp_typename registry dfns bbdfns t ^ "_ptr_map"
 

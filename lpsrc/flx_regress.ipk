@@ -23,30 +23,18 @@ is an overall time in seconds, which should
 get smaller with each compiler improvement.
 @end_list()
 
-@select(tangler('test/dt01.flx'))
+@select(tangler('test/bt01.flx'))
 basic parser error
 
-@select(tangler('test/dt02.flx'))
+@select(tangler('test/bt02.flx'))
 module X { proc p(){} }
 module Y { proc p(){} }
 open X;
 open Y;
 p; // ambiguous
 
-@select(tangler('test/dt03.flx'))
-// open depends on self
-#include <std.flx>
-interface I { proc print_endl:int; }
-module X {
-  module M { proc print_endl (a:int) { print a; endl; } }
-  module B = M:I;
-}
-open X;
-open B;
-print_endl 1;
 
-
-@select(tangler('test/rt01.flx','data'))
+@select(tangler('test/rt01.flx'))
 #include <std.flx>
 open Tiny;
 open Short;
@@ -109,23 +97,22 @@ type string = "charp";
 proc print: string = 'printf("%s",$1);';
 proc print: int = 'printf("%d",$1);';
 
-fun sub: int * int -> int = code "$1 - $2";
-fun mul: int * int -> int = code "$1 * $2";
-fun gt: int * int -> bool = code "$1 > $2";
-fun eq: int * int -> bool = code "$1 == $2";
+fun sub: int * int -> int = "$1 - $2";
+fun mul: int * int -> int = "$1 * $2";
+fun gt: int * int -> bool = "$1 > $2";
+fun eq: int * int -> bool = "$1 == $2";
 proc assert:bool = "assert($1);";
 
 // test some recursion
-fun fact(a:int): int do
+fun fact(a:int): int =
 {
-  fun f (a:int, p:int) : int do {
-    return 
-      if a>1 
-      then 
-        f(a-1, p*a)
-      else 
-        p
-      endif;
+  fun f (a:int, p:int) : int = {
+    if a>1 
+    then 
+      return f(a-1, p*a);
+    else 
+      return p; 
+    endif
   }
   return f(a,1);
 }
@@ -182,7 +169,7 @@ module A
 print "lazy expr eval test\n";
 var x = 1;
 var y = 2;
-val f = [x+y];
+val f = {x+y};
 print (f ()); print "\n";
 x = 3;
 print (f ()); print "\n";
@@ -202,14 +189,14 @@ print x.[6 to -1]; endl;
 
 var i = 0;
 var n = len x;
-while [i < n] {
+while {i < n} {
   print x.[i];
   ++i;
 };
 endl;
 
 i = 1;
-while [i <= n] {
+while {i <= n} {
   print x.[-i];
   ++i;
 };
@@ -230,72 +217,16 @@ module B = M:I;
 open B;
 print_endl 1;
 
-@select(tangler('test/rt07.flx'))
-// include a file twice
+@select(tangler('test/bt03.flx'))
+// open depends on self
 #include <std.flx>
-#include <std.flx>
-
-@select(tangler('test/rt08.flx'))
-//Duplicated Open
-type int = "int";
+interface I { proc print_endl:int; }
 module X {
-  proc f(a:int) {}
+  module M { proc print_endl (a:int) { print a; endl; } }
+  module B = M:I;
 }
 open X;
-open X;
-f 1; // should work ..
-
-@select(tangler('test/rt09.flx'))
-#include <std.flx>
-union  satisfaction = | Low | High | Very of satisfaction;
-union  diameter = | Large | Small;
-union  sort = | Mozzarella | Gorgonzola;
-union topping = | Cheese of sort | Tomatoes | Mushrooms;
-union  spiced = | False | True;
-union  meal =
-    | WienerSchnitzel of diameter
-    | Pizza of (diameter * spiced * topping)
-    | TapirSoup of spiced;
-
-fun model (meal_d1:meal):satisfaction =
-  let satisfaction_c1 = 
-    match meal_d1 with
-    | TapirSoup ?spiced_d1 =>
-      match spiced_d1 with
-        | True => Low
-        | False => High 
-      endmatch
-    | Pizza (_, ?spiced_d1, ?topping_d1) =>
-        let satisfaction_c1 =
-          match spiced_d1 with
-          | True =>
-          match topping_d1 with
-        | Cheese ?sort_d1 =>
-          match sort_d1 with
-          | Gorgonzola => Low
-          | Mozzarella => High
-          endmatch
-          | _ => High
-          endmatch
-          | False => Low
-          endmatch 
-        in
-        Very satisfaction_c1
-    | WienerSchnitzel _ => Low 
-    endmatch 
-    in
-  Very satisfaction_c1
-;
-
-fun string_of(x:satisfaction)=
-  match x with
-  | Low => "Low"
-  | High => "High"
-  | Very ?z => "Very " + string_of z
-  endmatch
-;
-
-val MyMeal = Pizza (Large,True, Cheese Mozzarella);
-assert (string_of (model MyMeal) == "Very Very High");
+open B;
+print_endl 1;
 
 

@@ -11,6 +11,208 @@ runs a Felix program which reads standard input.
 We need some other standard drivers.
 An X-Windows driver would be really nice.
 
+@head(2,'Universal Program Driver')
+This driver runs stand alone Felix programs.
+It invokes the library routine 'start'.
+No messages are dispatched, the Felix
+program must not read any messages.
+
+@d = tangler('rtl/flx_run.cpp')
+@select(d)
+#include <stdio.h>
+#include <vector>
+#include <list>
+#include <map>
+#include <string.h>
+#include <assert.h>
+#include <dlfcn.h>
+#include <string>
+#include <unistd.h>
+#include "rtl/flx_collector.hpp"
+#include "rtl/flx_rtl.hpp"
+using namespace flx::rtl;
+
+using namespace std;
+
+// frame types are incomplete
+typedef void global_frame_t;
+typedef void process_frame_t;
+typedef void thread_frame_t;
+
+
+struct library_linkage_t
+{
+  // types for linkage
+  // frame creators
+  typedef global_frame_t *(*global_frame_creator_t)(void);
+  typedef process_frame_t *(*process_frame_creator_t)(global_frame_t*);
+  typedef thread_frame_t *(*thread_frame_creator_t)
+  (
+    global_frame_t*,
+    process_frame_t*, 
+    flx::gc::generic::collector_t*
+  );
+
+  // frame destructors
+  typedef void (*global_frame_destructor_t)(global_frame_t*);
+  typedef void (*process_frame_destructor_t)(process_frame_t*);
+  typedef thread_frame_t *(*thread_frame_destructor_t) (thread_frame_t*);
+
+
+  // library initialisation routine
+  typedef continuation_t *(*start_t)
+  (
+    global_frame_t*, 
+    process_frame_t*, 
+    thread_frame_t*
+  );
+
+  // interface
+  void *library;
+  global_frame_creator_t global_frame_creator;
+  process_frame_creator_t process_frame_creator;
+  thread_frame_creator_t thread_frame_creator;
+  global_frame_destructor_t global_frame_destructor;
+  process_frame_destructor_t process_frame_destructor;
+  thread_frame_destructor_t thread_frame_destructor;
+  start_t start;
+  
+  
+  void link(char *filename)
+  {
+    library = dlopen(filename,RTLD_NOW);
+    if(!library) {
+      printf("Unable to load library %s: make sure LD_LIBRARY_PATH is set, or you use ./xxx.so form\n", filename);
+      printf("Error: %s\n", dlerror());
+      exit(1);
+    }
+
+    global_frame_creator = (global_frame_creator_t)
+      dlsym(library,"create_global_frame");
+    if(!global_frame_creator) {
+      printf("Unable to get global frame creator from library\n");
+      exit(1);
+    }
+    process_frame_creator = (process_frame_creator_t)
+      dlsym(library,"create_process_frame");
+    if(!process_frame_creator) {
+      printf("Unable to get process frame creator from library\n");
+      exit(1);
+    }
+    thread_frame_creator = (thread_frame_creator_t)
+      dlsym(library,"create_thread_frame");
+    if(!thread_frame_creator) {
+      printf("Unable to get thread frame creator from library\n");
+      exit(1);
+    }
+
+    global_frame_destructor = (global_frame_destructor_t)
+      dlsym(library,"destroy_global_frame");
+    if(!global_frame_destructor) {
+      printf("Unable to get global frame destructor from library\n");
+      exit(1);
+    }
+    process_frame_destructor = (process_frame_destructor_t)
+      dlsym(library,"destroy_process_frame");
+    if(!process_frame_destructor) {
+      printf("Unable to get process frame destructor from library\n");
+      exit(1);
+    }
+    thread_frame_destructor = (thread_frame_destructor_t)
+      dlsym(library,"destroy_thread_frame");
+    if(!thread_frame_destructor) {
+      printf("Unable to get thread frame destructor from library\n");
+      exit(1);
+    }
+
+    start = (start_t)
+      dlsym(library,"start");
+    if(!start) {
+      printf("Unable to get start procedure from library\n");
+      exit(1);
+    }
+  }
+
+  void unlink()
+  {
+    dlclose(library);
+  }
+};
+
+
+struct library_init_t 
+{
+  global_frame_t *global_frame;
+  process_frame_t *process_frame;
+  thread_frame_t *thread_frame;
+  continuation_t *start;
+  library_linkage_t *lib;
+
+  void create
+  (
+    library_linkage_t *lib_a, 
+    flx::gc::generic::collector_t *collector
+  )
+  {
+    lib = lib_a;
+    global_frame = lib->global_frame_creator();
+    process_frame = lib->process_frame_creator(global_frame);
+    thread_frame = lib->thread_frame_creator(
+      global_frame, 
+      process_frame, 
+      collector 
+    );
+    start = lib->start(global_frame, process_frame, thread_frame);
+  }
+
+  void destroy () {
+    lib->thread_frame_destructor(thread_frame);
+    lib->process_frame_destructor(process_frame);
+    lib->global_frame_destructor(global_frame);
+  }
+};
+
+int main(int argc, char* argv[])
+{
+ 
+  if (argc<2) 
+  {
+    printf("usage: flx_run ./<shared library name>\n");
+    exit(1);
+  }
+  try 
+  {
+    //printf("flx_run driver begins\n");
+    library_linkage_t library;
+    library_init_t instance;
+
+    library.link(argv[1]);
+    flx::gc::generic::malloc_free allocator;
+    flx::gc::collector::flx_collector_t collector(&allocator);
+    instance.create(&library, &collector);
+    
+    collector.add_root(instance.start);
+    int gc_counter = 0;
+    continuation_t *top = instance.start;
+
+    while( top && top->action == continuation_t::yield_action)
+    {
+      continuation_t *new_top = top->resume();
+      if(new_top != top) {
+        if(new_top) collector.add_root(new_top);
+        collector.remove_root(top);
+        top = new_top;
+      }
+    }
+
+    instance.destroy();
+    //printf("flx_run driver ends normally\n");
+  }
+  catch (...)
+  {
+    printf("flx_run driver ends with EXCEPTION\n");
+  }
+}
 
 @head(3,'Test 1')
 This routine just loops through
@@ -24,17 +226,15 @@ header r"""
 using namespace std;
 """;
 
-typedef void = 0;
-typedef unit = 1;
 typedef bool = 2;
 val false:bool = case 1 of 2;
 val true:bool = case 2 of 2;
-fun lnot:bool->bool = code "!$1";
+fun lnot:bool->bool = "!$1";
 
 proc while (cond:unit->bool) (body:unit->void)
 {
   repeat:>
-    if not (cond()) goto finished;
+    if not (cond()) then goto finished; endif;
     body();
     goto repeat;
   finished:>
@@ -47,9 +247,9 @@ proc print: string = 'printf("%s",$1.c_str());';
 type int = "int";
 proc print: int = 'printf("%d",$1);';
 proc incr : &int = "(*$1)++;";
-fun eq : int * int -> bool = code "$1==$2";
-fun mod: int * int -> int = code "$1%$2";
-fun lt : int * int -> bool = code "$1<$2";
+fun eq : int * int -> bool = "$1==$2";
+fun mod: int * int -> int = "$1%$2";
+fun lt : int * int -> bool = "$1<$2";
 proc set : & int * int = "*$1 = $2;";
 
 union parity = Even | Odd;
@@ -57,15 +257,13 @@ union parity = Even | Odd;
 procedure fire()
 {
   var i : int = 0;
-  function get_parity(): parity do
+  function get_parity(): parity =
   {
-    return 
-      if(i%2==0) then Even
-      else Odd
-      endif
-    ;
+    if(i%2==0) then return Even;
+    else return Odd;
+    endif
   }
-  while [i < 10]
+  while {i < 10}
   {
     print i; print " ";
 
@@ -123,7 +321,7 @@ proc print: string = 'printf("%s",$1.c_str());';
 type int = "int";
 proc print: int = 'printf("%d",$1);';
 proc incr : &int = "(*$1)++;";
-fun eq : int * int -> bool = code "$1==$2";
+fun eq : int * int -> bool = "$1==$2";
 proc set : & int * int = "*$1 = $2;";
 var counter : int = 0;
 var counter2 : int = 0;

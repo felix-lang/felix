@@ -40,10 +40,15 @@ open Flx_types
 
 val register_type:
   sym_state_t ->
-  type_registry_t ->
   fully_bound_symbol_table_t ->
   fully_bound_symbol_table_t ->
   btypecode_t ->
+  unit
+
+val collect_types:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  fully_bound_symbol_table_t ->
   unit
 
 @h = tangler('src/flx_treg.ml')
@@ -53,29 +58,32 @@ open Flx_typing
 open Flx_print
 open Flx_srcref
 
-let register_type_nr registry counter dfns t =
+let register_type_nr sym_state t =
   let t = type_fold t in
   match t with 
+  | `BTYP_var _ -> failwith "Can't register type variable"
   | `BTYP_tuple [] 
   | `BTYP_fix _ -> ()
   | _ ->
-    if not (Hashtbl.mem registry t)
+    if not (Hashtbl.mem sym_state.registry t)
     then
-      let n = !counter in
-      incr counter;
-      Hashtbl.add registry t n
+      let n = !(sym_state.counter) in
+      incr sym_state.counter;
+      Hashtbl.add sym_state.registry t n
 
-let rec register_type_r registry counter dfns bbdfns useful exclude t =
+let rec register_type_r sym_state bbdfns useful exclude t =
+  let dfns = sym_state.dfns in
   (*
   print_endline (string_of_btypecode dfns t);
   *)
   let t = lower t in
   if not (List.mem t exclude) then
   let rr t' = register_type_r 
-    registry counter dfns bbdfns useful (t :: exclude) t'
+    sym_state bbdfns useful (t :: exclude) t'
   in
-  let rnr t = register_type_nr registry counter dfns t in
+  let rnr t = register_type_nr sym_state t in
   match type_unfold t with
+  | `BTYP_var _ -> failwith "Can't register type variable"
   | `BTYP_void -> ()
   | `BTYP_none -> ()
   | `BTYP_fix _ -> ()
@@ -85,7 +93,8 @@ let rec register_type_r registry counter dfns bbdfns useful exclude t =
   | `BTYP_pointer t' -> rr t' 
     (* We don't register pointer types: use _ref_ template! *)
   | `BTYP_binding (src,dst) -> rr dst
-  | `BTYP_name index ->
+  | `BTYP_name (index,ts) ->
+    List.iter rr ts;
     let d =
       try Hashtbl.find bbdfns index
       with Not_found -> 
@@ -115,14 +124,18 @@ let rec register_type_r registry counter dfns bbdfns useful exclude t =
       rnr t;                               (* the struct type *)
       rnr (`BTYP_function (argt,t))         (* constructor *)
 
-    | `BBDCL_abs ct -> rnr t 
-      (*
-      failwith 
-      (
-        "[register_type_r] expected type declaration, got type parameter " ^
-        string_of_bbdcl dfns entry index
-      )
-      *)
+    | `BBDCL_abs (n,ct) -> 
+      if List.length ts = n
+      then begin
+        rnr t 
+        (*
+        failwith 
+        (
+          "[register_type_r] expected type declaration, got type parameter " ^
+          string_of_bbdcl dfns entry index
+        )
+        *)
+      end else failwith "Wrong number of type arguments for type"
     | _ -> 
       failwith 
       (
@@ -130,11 +143,81 @@ let rec register_type_r registry counter dfns bbdfns useful exclude t =
         string_of_bbdcl dfns entry index
       )
 
-let register_type sym_state registry bbdfns useful t =
+let register_type sym_state bbdfns useful t =
   register_type_r 
-    registry 
-    sym_state.counter 
-    sym_state.dfns 
+    sym_state
     bbdfns useful []  t
+
+@doc()
+We now need to collect the types required for declarations.
+In order to sequence the C++ declarations according to
+dependecies, our recursive analysis takes care only
+to assign an integer to a type when all type on which
+it depends have been processed. 
+@p()
+Note that implicitly declared tuple types should
+still get registered. The reason is that they can't
+be used unless the type is an argument of some 
+function or procedure, which we should pick up here.
+@select(h)
+
+let collect_types sym_state bbdfns useful= 
+  let registry = sym_state.registry in
+  let rr t = register_type sym_state bbdfns useful t in
+  Hashtbl.iter
+  begin fun index (id,parent,bbdcl) -> 
+    (* if proper_descendant dfns parent
+    then 
+    *)
+    begin
+      (*
+      print_endline (
+        "Collecting BBDCL " ^ id ^ "<" ^ string_of_int index ^ 
+        ">, parent="^
+        match parent with 
+        | Some i ->string_of_int i
+        | None -> "None"
+      );
+      print_endline ("=======>  " ^ string_of_bbdcl dfns bbdcl index);
+      *)
+      match bbdcl with
+      | `BBDCL_abs (0,_) -> rr (`BTYP_name (index,[]))
+      | `BBDCL_abs (n,_) ->
+         let tss = Hashtbl.find sym_state.generic_type_instances index in
+         List.iter
+         (fun ts ->
+           rr (`BTYP_name (index,ts))
+         )
+         tss
+         
+      | `BBDCL_function (ps,ret,_,_) ->
+        let a = typeoflist (List.map snd ps) in
+        rr (`BTYP_function (a,ret))
+
+      | `BBDCL_fun (0,ps,ret,_) ->
+        let a = typeoflist ps in
+        rr (`BTYP_function (a,ret))
+
+      | `BBDCL_procedure (ps,_,_) ->
+        let a = typeoflist (List.map snd ps) in
+        rr (`BTYP_function (a,`BTYP_void))
+
+      | `BBDCL_proc (0,ps,_) ->
+        let a = typeoflist ps in
+        rr (`BTYP_function (a,`BTYP_void))
+
+      | `BBDCL_val t
+      | `BBDCL_var t
+      | `BBDCL_const (t,_) -> rr t
+
+      | `BBDCL_union _
+      | `BBDCL_struct _ -> rr (`BTYP_name (index,[]))
+
+      | `BBDCL_header _ -> ()
+      | `BBDCL_body _ -> ()
+    end
+  end
+  useful
+
 
 

@@ -1,5 +1,5 @@
 @head(1,'Maker')
-@flx_version = '1.0a4'
+@flx_version = '1.0a2'
 @h = tangler('script/maker','python')
 @select(h)
 #!/usr/bin/env python
@@ -22,7 +22,7 @@ options = sys.argv[1:]
 if options:
   print "OPTIONS: ", options
 if "clean" in options:
-    os.system("rm -f tmp/* src/* test/* rtl/* lpsrc/*.cache")
+    os.system("rm -f tmp/* src/* test/* lpsrc/*.cache")
 do_tests = "test" in options or "tut" in options or "rt" in options or "bt" in options
 use_interscript = "noiscr" not in options
 
@@ -36,7 +36,7 @@ use_interscript = "noiscr" not in options
 # invoke ocaml interface compiler
 OCAMLBINPREFIX=''
 OCAML_OBJDIR='src'
-OCAMLC=OCAMLBINPREFIX+'ocamlc.opt -I '+OCAML_OBJDIR+' '
+OCAMLC=OCAMLBINPREFIX+'ocamlc.opt -I '+OCAML_OBJDIR+' -rectypes '
 
 # where the ocaml is installed
 #OCAML_INCLUDE_DIRECTORY='/usr/local/lib/ocaml'
@@ -44,14 +44,11 @@ OCAMLC=OCAMLBINPREFIX+'ocamlc.opt -I '+OCAML_OBJDIR+' '
 # where gnu readline header files are
 #READLINE_INCLUDE_DIRECTORY='/usr/include/readline'
 
-# for building .o files
-FLX_CPP_OBJ = "g++ -Wno-long-long -D_GNU_SOURCE -ansi -c "
-
 # for compiling mainlines
 FLX_CPP_LINK = "g++ -Wno-long-long -D_GNU_SOURCE -ansi -rdynamic -ldl "
 
 # for building shared libraries
-FLX_CPP_DYNLINK = "g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared "
+FLX_CPP_DYNLINK = "g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared -I."
 
 # ------------------------------------------------
 # END USER CONFIGURABLE SECTION
@@ -71,6 +68,10 @@ WEAVER_DIRECTORY='doc/'
 TUTORIAL_DIRECTORY='tut/'
 TUTORIAL_DOC=TUTORIAL_DIRECTORY+'doc/'
 TUTORIAL_EXAMPLES=TUTORIAL_DIRECTORY+'examples/'
+
+# where the garbage collector sources are
+# (the collector is now a separate package)
+FLX_GC_SRC='src/'
 
 # -------------------------------------------------
 # BEGIN IMPLEMENTOR CONFIGURABLE SECTION
@@ -93,6 +94,7 @@ INTERFACES = [
   'flx_string'       ,
   'flx_id'           ,
   'flx_print'        ,
+  'flx_unify'        ,
   'flx_parse'        ,
   'flx_keywords'     ,
   'flx_lex'          ,
@@ -101,16 +103,13 @@ INTERFACES = [
   'flx_tok'          ,
   'flx_parse_ctrl'   ,
   'flx_pat'          , 
-  'flx_mbind'        , 
   'flx_desugar'      , 
   'flx_symtab'       , 
   'flx_lookup'       , 
+  'flx_mbind'        , 
   'flx_bbind'        , 
   'flx_name'         , 
-  'flx_treg'         , 
-  'flx_opt'          , 
   'flx_tgen'         , 
-  'flx_csubst'       , 
   'flx_gen'          , 
 ]
 
@@ -124,6 +123,7 @@ IMPLEMENTATIONS = [
   'flx_string'       ,
   'flx_id'           ,
   'flx_print'        ,
+  'flx_unify'        ,
   'flx_parse'        ,
   'flx_keywords'     ,
   'flx_lex'          ,
@@ -132,30 +132,28 @@ IMPLEMENTATIONS = [
   'flx_tok'          ,
   'flx_parse_ctrl'   ,
   'flx_pat'          , 
-  'flx_mbind'        , 
   'flx_desugar'      , 
   'flx_symtab'       , 
   'flx_lookup'       , 
+  'flx_mbind'        , 
   'flx_bbind'        , 
   'flx_name'         , 
-  'flx_treg'         , 
-  'flx_opt'          , 
   'flx_tgen'         , 
-  'flx_csubst'       , 
   'flx_gen'          , 
 ]
 
-CPPTESTS = [
+DRIVERS = [
+  'flx_run',
 ]
 
-# C files that we need to compile, with options, to make compiler
+# C files that we need to compile, with options required to build them
 COBJECTS = {
 }
 # *.so/.a libraries
-CLIBRARIES = ['unix','nums']
+CLIBRARIES = ['nums']
 
 # *.cmxa libraries
-OLIBRARIES = ['unix','nums','flxlib']
+OLIBRARIES = ['nums','flxlib']
 
 
 # target executable programs to produce
@@ -165,18 +163,6 @@ EXES = [
   'flxd',
   'flxb',
   'flxg',
-]
-
-# C files for run time library
-RTLOBJS = [
-  'flx_dynlink',
-  'flx_gc',
-  'flx_collector',
-  'flx_rtl'
-]
-
-RTLPRGS = [
-  'flx_run'
 ]
 
 if 1:
@@ -210,29 +196,23 @@ def filetime(f):
     return os.stat(f)[stat.ST_MTIME]
   except: return 0
 
-def xqt(x,always_output=0, never_output=0):
+def xqt(x):
   print x
   sys.stdin.flush()
   f = os.popen(x + " 2>&1","r")
   output = f.readlines()
   result = f.close()
   if result: print "  .. ERROR CODE",hex(result)
-  if not never_output:
-    if output:
-      if always_output or result:
-        print string.join(output,"")
+  if output: print string.join(output,"")
   sys.stdin.flush()
 
   if result:
     raise MakeError
 
-def run(x, no_output=0):
+def run(x):
   print x
   sys.stdin.flush()
-  if no_output:
-    result = os.system(x + " >/dev/null 2>/dev/null")
-  else:
-    result = os.system(x)
+  result = os.system(x)
   if result: print "  .. ERROR CODE",hex(result)
   sys.stdin.flush()
 
@@ -248,23 +228,37 @@ def erasefile(f):
 
 buildall = "clean" in options
 stop_on_error = "stop_on_error" in options
-quiet = "no_output" in options
 import glob
 
 try:
   # STEP 0: run interscript
   if "noiscr" not in options:
     if "doc" in options:
-      xqt('iscr --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
-      xqt('iscr --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
+      xqt('iscr --language=en --weaver=web --weaver=latex --passes=200 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
+      xqt('iscr --language=en --weaver=web --weaver=latex --passes=200 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
     else:
       xqt('iscr lpsrc/flx.pak')
       xqt('iscr lpsrc/flx_tutorial.pak')
     os.system('rm -f tmp.tmp')
 
+  # COMPILER DRIVER PROGRAMS
+
+  for testfile in DRIVERS:
+    print 'Compiling driver program ',testfile
+    basename = string.split(testfile,'.')[0]
+    if buildall or filetime("rtl/"+basename+ '.cpp') > filetime("bin/"+basename):
+      try:
+        xqt(FLX_CPP_LINK + " -I. " +
+          "rtl/flx_gc.cpp " +
+          "rtl/flx_collector.cpp " +
+          "rtl/flx_rtl.cpp " +
+          "rtl/" + basename + ".cpp -o bin/" + basename)
+      except MakeError:
+        print "Unable to build driver"
+        raise MakeError
+
   if do_tests:
     REGRESSION_TESTS = glob.glob('test/rt*.flx')
-    DIAG_TESTS = glob.glob('test/dt*.flx')
     BAD_TESTS = glob.glob('test/bt*.flx')
     TUTORIAL_TESTS = glob.glob('tut/examples/tut*.flx')
     if "test" in options:
@@ -276,40 +270,39 @@ try:
         TESTS = TESTS + REGRESSION_TESTS
     TESTS.sort()
     BAD_TESTS.sort()
-    DIAG_TESTS.sort()
 
   # STEP 1: Compile all C files
   for cobject in COBJECTS.keys():
     flags = COBJECTS[cobject]
     file = 'src/'+cobject
-    if buildall or filetime(file +".c") >= filetime(file +".o"):
+    if buildall or filetime(file +".c") > filetime(file +".o"):
       xqt(CCOMPILE +" -I "+OCAML_INCLUDE_DIRECTORY+" -I. "+flags+" "+file+".c")
 
   # STEP 2: Generate lexers
   for lex in LEXS:
     file = 'src/'+lex
-    if buildall or filetime(file + '.mll') >= filetime(file +'.ml'):
+    if buildall or filetime(file + '.mll') > filetime(file +'.ml'):
       buildall = 1
       xqt(OCAMLLEX + file + '.mll')
 
   # STEP 3: Generate parsers
   for parse in PARSES:
     file = 'src/'+parse
-    if buildall or filetime(file + '.mly') >= filetime(file +'.ml'):
+    if buildall or filetime(file + '.mly') > filetime(file +'.ml'):
       buildall = 1
       xqt(OCAMLYACC+ ' -v '+ file + '.mly')
 
   # STEP 4: Compile ocaml interfaces
   for interface in INTERFACES:
     file = 'src/'+interface
-    if buildall or filetime(file + '.mli') >= filetime(file+'.cmi'):
+    if buildall or filetime(file + '.mli') > filetime(file+'.cmi'):
       buildall = 1
       xqt(OCAMLC + ' -c '+file+ '.mli')
 
   # STEP 5: Compile ocaml implementations
   for implementation in IMPLEMENTATIONS + EXES:
     file = 'src/'+implementation
-    if buildall or filetime(file+ '.ml') >= filetime(file+'.cmx'):
+    if buildall or filetime(file+ '.ml') > filetime(file+'.cmx'):
       buildall = 1
       xqt(OCAMLOPT + ' -c ' + file +'.ml')
 
@@ -319,7 +312,7 @@ try:
   library_filetime = filetime('src/flxlib.cmxa')
   for implementation in IMPLEMENTATIONS:
     file = 'src/'+implementation
-    if filetime(file+'.cmx') >= library_filetime:
+    if filetime(file+'.cmx') > library_filetime:
       for implementation in IMPLEMENTATIONS:
         file = 'src/'+implementation
         linkstring = linkstring + file + ".cmx "
@@ -334,37 +327,8 @@ try:
 
   # finally, mainline *.cmx files to link to executables
   for exe in EXES:
-    if buildall or filetime(exe + '.cmx') >= filetime(exe):
+    if buildall or filetime(exe + '.cmx') > filetime(exe):
       xqt(OCAMLOPT + LDFLAGS + ' -o bin/'+exe + x + OBJECT_FILES + ' ' + exe + '.cmx')
-
-  # COMPILE RUN TIME LIBRARY OBJECTS
-
-  for file in RTLOBJS:
-    if buildall or filetime("rtl/"+file+ '.cpp') >= filetime("rtl/"+file+'.o'):
-      print 'Compiling RTL file ',file
-      try:
-        xqt(FLX_CPP_OBJ + " -I. -Itest -Irtl " +
-          "rtl/"+file + ".cpp -o " + "rtl/"+file+".o")
-        #print 'TESTFILE -- OK!',file
-      except MakeError:
-        print 'TESTFILE -- ERROR!',file
-        if stop_on_error: raise MakeError
-
-  # COMPILE STANDARD PROGRAMS
-
-  for basename in RTLPRGS:
-    if buildall or filetime("rtl/"+basename+ '.cpp') >= filetime("bin/"+basename):
-      print 'Compiling standard driver program ',basename
-      try:
-        xqt(FLX_CPP_LINK + " -I. -Irtl " +
-          "rtl/flx_dynlink.o " +
-          "rtl/flx_rtl.o " +
-          "rtl/flx_gc.o " +
-          "rtl/flx_collector.o " +
-          "rtl/"+basename + ".cpp -o bin/" + basename)
-      except MakeError:
-        print 'TESTFILE -- ERROR!',basename
-        if stop_on_error: raise MakeError
 
   w = 50
   # run tests
@@ -378,10 +342,10 @@ try:
         basename = string.split(testfile,'.')[0]
         cppfilename = basename + ".cpp"
         if buildall or \
-          filetime(basename+ '.flx') >= filetime(basename+'.cpp') or \
-          filetime('bin/flxg')>= filetime(basename+'.cpp') or \
-          filetime('lib/std.flx') >= filetime(basename+'.cpp') or \
-          filetime('lib/std.flx') >= filetime(basename+'.cpp'):
+          filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
+          filetime('bin/flxg')> filetime(basename+'.cpp') or \
+          filetime('lib/std.flx') > filetime(basename+'.cpp') or \
+          filetime('lib/std.flx') > filetime(basename+'.cpp'):
           try:
             xqt('bin/flxg -q -Ilib ' + basename)
             #print 'TESTFILE -- generated ',basename
@@ -395,56 +359,38 @@ try:
             results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
 
       # FAILURE TESTS 
-
-      # COMPILE TIME ERROR EXPECTED
-      for testfile in DIAG_TESTS:
-        #print 'Running Felix code generator on ',testfile
-        basename = string.split(testfile,'.')[0]
-        try:
-          xqt('bin/flxg -e -Ilib ' + basename)
-          #print 'TESTFILE -- failed as expected',basename
-          results.append("flxg " + (basename+ ' ' * w)[:w]+ ' OK')
-          erasefile(basename+'.cpp')
-          erasefile(basename+'.hpp')
-          erasefile(basename+'.so')
-        except MakeError:
-          print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
-          erasefile(basename+'.cpp')
-          erasefile(basename+'.hpp')
-          erasefile(basename+'.so')
-          if stop_on_error: raise MakeError
-          results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
-
-      # RUN TIME ERROR EXPECTED
-      for testfile in BAD_TESTS:
-        #print 'Running Felix code generator on ',testfile
-        basename = string.split(testfile,'.')[0]
-        cppfilename = basename + ".cpp"
-        if buildall or \
-          filetime(basename+ '.flx') >= filetime(basename+'.cpp') or \
-          filetime('bin/flxg')>= filetime(basename+'.cpp') or \
-          filetime('lib/std.flx') >= filetime(basename+'.cpp'):
-          try:
-            xqt('bin/flxg -q -Ilib ' + basename)
-            results.append("flxg " + (basename+ ' ' * w)[:w]+ ' OK')
-            erasefile(basename+'.cpp')
-            erasefile(basename+'.hpp')
-            erasefile(basename+'.so')
-          except MakeError:
-            erasefile(basename+'.cpp')
-            erasefile(basename+'.hpp')
-            erasefile(basename+'.so')
-            if stop_on_error: raise MakeError
-            results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
+      if "bt" in options:
+        for testfile in BAD_TESTS:
+          #print 'Running Felix code generator on ',testfile
+          basename = string.split(testfile,'.')[0]
+          cppfilename = basename + ".cpp"
+          if buildall or \
+            filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
+            filetime('bin/flxg')> filetime(basename+'.cpp') or \
+            filetime('lib/std.flx') > filetime(basename+'.cpp'):
+            try:
+              xqt('bin/flxg -e -Ilib ' + basename)
+              #print 'TESTFILE -- failed as expected',basename
+              results.append("flxg " + (basename+ ' ' * w)[:w]+ ' OK')
+              erasefile(basename+'.cpp')
+              erasefile(basename+'.hpp')
+              erasefile(basename+'.so')
+            except MakeError:
+              print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
+              erasefile(basename+'.cpp')
+              erasefile(basename+'.hpp')
+              erasefile(basename+'.so')
+              if stop_on_error: raise MakeError
+              results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
 
       # C++ COMPILE SHARED LIBRARIES
       for testfile in TESTS:
         #print 'Compiling generated code of ',testfile
         basename = string.split(testfile,'.')[0]
         cppfilename = basename + ".cpp"
-        if buildall or filetime(basename+ '.cpp') >= filetime(basename+'.so'):
+        if buildall or filetime(basename+ '.cpp') > filetime(basename+'.so'):
           try:
-            xqt(FLX_CPP_DYNLINK+" -I. "+cppfilename + " -o " + basename + ".so" )
+            xqt(FLX_CPP_DYNLINK+" "+cppfilename + " -o " + basename + ".so" )
             #print 'TESTFILE -- OK!',basename
             results.append("g++  " + (basename + ' ' * w)[:w]+ ' OK')
           except MakeError:
@@ -454,32 +400,12 @@ try:
             results.append("g++  " + (basename + ' '*w)[:w] + ' ERROR')
 
 
-      # COMPILE DRIVER PROGRAMS
-
-      for testfile in CPPTESTS:
-        print 'Compiling driver program ',testfile
-        basename = string.split(testfile,'.')[0]
-        if buildall or filetime(basename+ '.cpp') >= filetime(basename):
-          try:
-            xqt(FLX_CPP_LINK + " -I. -Itest " +
-              "rtl/flx_dynlink.o " +
-              "rtl/flx_gc.o " +
-              "rtl/flx_rtl.o " +
-              "rtl/flx_collector.o " +
-              basename + ".cpp -o " + basename)
-            #print 'TESTFILE -- OK!',basename
-            results.append("link " + (basename + ' ' * w)[:w]+ ' OK')
-          except MakeError:
-            print 'TESTFILE -- ERROR!',basename
-            if stop_on_error: raise MakeError
-            results.append("link " + (basename + ' '*w)[:w] + ' ERROR')
-
       for testfile in TESTS:
         basename = string.split(testfile,'.')[0]
         testscript = "./bin/flx_run ./"+basename+".so"
         #print 'Executing ',testscript
         try:
-          run(testscript, quiet)
+          run(testscript)
           #print 'TESTFILE -- OK!',testscript
           results.append("Exec " + (testscript + ' ' * w)[:w]+ ' OK')
         except MakeError:
@@ -534,7 +460,7 @@ Here is an example of a C++ binding.
 int = "int";
 .br
 .B fun 
-add: int * int -> int = code "$1+$2";
+add: int * int -> int = "$1+$2";
 .br
 .B proc 
 print: int = 'printf("%d",$1);';
@@ -581,12 +507,6 @@ Felix operators and operator names
 
 A chainable binary operator such as +
 creates a list of subexpressions.
-
-.SH let .. in ..
-A prefix operator with weakest binding power.
-
-.SH lambda
-Lambda expressions have second weakest binding power.
 
 .SH assignment
 Assignment operators are sugar for statements,
@@ -789,42 +709,13 @@ libname
 
 .br
 .B flx
-[--test]
-[--force]
 filebasename
 
 .SH DESCRIPTION
 The 
-.B filebasename
-should not include an extension, which
-must be '.flx'. An extension .flx is allowed
-as a special case, and is stripped off:
-this is to support 
-.B #!env flx
-at the start of a script, which allows the script
-to be run directly, here the extension is passed
-by the shell.
-.br
-The 
-.B flx 
-harness tries to locate the felix installation
-by seaching the execution PATH for flxg. The 
-.B --test
-option must be first if used, and forces the script
-to use the tools from the build directory,
-which must be the current directory.
-.br
-The option 
-.B --force 
-forces a full recompilation,
-otherwise the shared library filebasename.so
-is run if it is newer than filebasename.flx,
-otherwise the felix file is compiled to C++
-using flxg, and then g++ invoked to build the shared library
-before it is run.
-.br
-The standard program driver flx_run is used to run
-the shared library.
+.B filebase 
+name must not include an extension, which
+must be '.flx'.
 .br
 
 .B flxl 
@@ -878,7 +769,7 @@ for rapid prototyping in a scripting style.
 is the standard prgram driver. Its argument
 is a shared library which is passed to 
 dlopen (note you need to use ./lib.so on
-linux to preempt the standard search path).
+linux to preempt the stanard search path).
 
 The driver creates a single thread
 from the libraries main entry point
@@ -919,42 +810,26 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 
 @head(1,'Makefile')
 @select(tangler('makefile'))
-@tangle('PREFIX=/usr/local')
-@tangle('all: FORCE')
+@tangle('all: dummy')
 @tangle('\tpython script/maker')
 @tangle('')
-@tangle('doc: FORCE')
+@tangle('doc: dummy')
 @tangle('\tpython script/maker doc')
 @tangle('\tcp doc/*.css tut/doc')
 @tangle('')
-@tangle('test: FORCE')
+@tangle('test: dummy')
 @tangle('\tpython script/maker test stop_on_error')
 @tangle('')
-@tangle('test_all: FORCE')
-@tangle('\tpython script/maker test')
-@tangle('')
-@tangle('test_all_no_output: FORCE')
-@tangle('\tpython script/maker test no_output')
-@tangle('')
-@tangle('tarball: FORCE')
-@tangle('\tstrip bin/flxg')
-@tangle('\ttar -zcvf flx_'+flx_version+'_bin_linux.tgz\\')
-@tangle('\t\tbin/flxg \\')
-@tangle('\t\tbin/flx_run \\')
-@tangle('')
-@tangle('\ttar -zcvf flx_'+flx_version+'_src.tgz\\')
+@tangle('tarball: dummy')
+@tangle('\ttar -zcvf flx_'+flx_version+'_linux.tgz\\')
 @tangle('\t\tmakefile README CONTENTS INSTALL VERSION  \\')
 @tangle('\t\tlpsrc/*.ipk \\')
 @tangle('\t\tlpsrc/*.pak \\')
 @tangle('\t\tscript/maker \\')
-@tangle('\t\trtl/*.cpp \\')
-@tangle('\t\trtl/*.hpp \\')
 @tangle('\t\tsrc/*.ml \\')
 @tangle('\t\tsrc/*.mli \\')
 @tangle('\t\tsrc/*.mly \\')
 @tangle('\t\tsrc/*.mll \\')
-@tangle('\t\tsrc/*.hpp\\')
-@tangle('\t\tsrc/*.cpp\\')
 @tangle('\t\tlib/*.flx \\')
 @tangle('\t\ttest/*.flx \\')
 @tangle('\t\ttest/*.cpp \\')
@@ -967,55 +842,31 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('\t\tdoc/*.css \\')
 @tangle('\t\tdoc/*.tex \\')
 @tangle('\t\tbin/flx \\')
-@tangle('\t\tmisc/felix.vim \\')
-@tangle('\t\tman/* \\')
-@tangle('\t\twww/* \\')
+@tangle('\t\tbin/flxg \\')
+@tangle('\t\tbin/flx_run \\')
 @tangle('')
-@tangle('www: FORCE')
+@tangle('www: dummy')
 @tangle('\tiscr lpsrc/flx_sourceforge.pak')
 @tangle('')
-@tangle('upload_www: FORCE')
+@tangle('upload_www: dummy')
 @tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
 @tangle('')
-@tangle('upload: FORCE')
+@tangle('upload: dummy')
 @tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
-@tangle('\tscp flx_'+flx_version+'_bin_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
-@tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('\tscp flx_'+flx_version+'_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('')
-@tangle('test_clean: FORCE')
-@tangle('\trm -rf tut/examples/*')
-@tangle('\trm -rf test/*')
+@tangle('test_clean: dummy')
+@tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so')
+@tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so')
 @tangle('')
-@tangle('really_clean: FORCE')
-@tangle('\trm -rf rtl tut test www src misc man script bin doc lib tmp.tmp lpsrc/*.cache')
+@tangle('really_clean: dummy')
+@tangle('\trm -rf tut test www src misc man script bin doc lib tmp.tmp')
 @tangle('')
-@tangle('install: FORCE')
-@for dir in [
-  "man",
-  "man/man1",
-  "lib",
-  "lib/felix",
-  "lib/felix/lib",
-  "lib/felix/rtl",
-  "bin"
-  ]:
-  tangle('\tif test -d "$(PREFIX)/'+dir+'"; then : ; else mkdir "$(PREFIX)/'+dir+'"; fi')
-@tangle('\tinstall -m 644 man/* $(PREFIX)/man/man1')
-@tangle('\tinstall -m 644 lib/* $(PREFIX)/lib/felix/lib')
-@tangle('\tinstall -m 644 rtl/* $(PREFIX)/lib/felix/rtl')
-@tangle('\tinstall -m 755 bin/* $(PREFIX)/bin')
-@tangle('')
-@tangle('boot: FORCE')
+@tangle('boot: dummy')
 @tangle('\tiscr lpsrc/flx.pak')
 @tangle('')
-@tangle('xdemo: FORCE')
-@tangle('\tiscr lpsrc/flx_xlib.pak')
-@tangle('\tbin/flxg -Ilib test/xdemo')
-@tangle('\tg++ -Wno-long-long -D_GNU_SOURCE -ansi -shared \\')
-@tangle('\t-I. -L/usr/X11R6/lib -lX11 test/xdemo.cpp -o test/xdemo.so')
-@tangle('\tbin/flx_run ./test/xdemo.so')
-@tangle('')
-@tangle('FORCE:')
+@tangle('dummy:')
+@tangle('\techo "out of date"')
 @tangle('')
 
 @head(1,'README')
@@ -1047,19 +898,16 @@ The directories are:
              if you have the full tool chain installed
   src     -- ocaml source code for the compiler
   test    -- regression tests and driver programs
-  doc     -- the reference manual, programmers guide, etc
-          -- program listing goes here too 
-             (but may be omitted from tarball to save space)
+  doc     -- the complete documented source of the compiler,
+          -- the tutorial .. and everything else
   tut/doc -- the tutorial
   tut/examples  -- examples from the tutorial
   www    -- the top level of the sourceforge web site
   script -- python build script
   misc   -- misc files including vim syntax colouring file
   lib    -- felix standard library
-  rtl    -- C++ runtime support 
   man    -- man pages for tools and some language features
   bin    -- compiler tools directory
-
 
 @head(1,'VERSION')
 @select(tangler('VERSION'))
@@ -1178,42 +1026,12 @@ work. You will need:
   make test_clean    -- delete all C/C++ generated from felix files
                         to force the felix compiler to rebuild them
 
-  make really_clean    -- this deletes EVERYTHING except the LP sources
+  make very_clean    -- this deletes EVERYTHING except the LP sources
 
   iscr lpsrc/flx.pak -- re-extract sources, including makefile
   make boot          -- use this to rebuild after a make very_clean,
                         but you need iscr lpsrc/flx.pak to re-extract
                         the makefile :-)
-
-
-INSTALL
--------
-  
-  typing 'make install'
-  
-installs felix to the PREFIX specified in the
-makefile, this defaults to 
-
-   /usr/local
-
-and uses directories
-
-   bin             -- binaries and run scripts
-   man/man1        -- man pages
-   lib/felix/rtl   -- run time C/C++
-   lib/felix/lib   -- felix standard library
-
-The script harness flx is a shell script that
-needs to know the PREFIX. 
-
-To change the PREFIX edit:
-
-   makefile
-   bin/flx
-
-by hand if /usr/local isn't good for you.
-(some kind of configure script may be
-added in the future).
 
 @head(1,'W3C Cascading Style Sheets')
 Needed to view interscript generated documentation.
@@ -1499,125 +1317,24 @@ DIV.DIFF_SECTION_HEAD EM, DIV.DIFF_SECTION_FOOT EM {
 // dummy: to be replaced by the user (but needed for some browsers)
 
 @head(1,'Run script')
-@select(tangler('bin/flx',"sh"))
-#!/bin/sh
-# flx - felix script harness
-# check for test mode: this argument must come first
-
-if [ "x$1" = "x--test" ]
-then 
-  TESTMODE=1
-  shift
-else 
-  TESTMODE=0 
-fi
-
-# check for forced recompile
-if [ "x$1" = "x--force" ]
-then 
-  RECOMPILE=1
-  shift
-else 
-  RECOMPILE=0 
-fi
-
-if [ "$TESTMODE" = "1" ]
+@select(tangler('bin/flx'))
+#/bin/env sh
+if [ "$1.flx" -nt "$1.so" ];
 then
-  echo "TESTMODE: running felix from current directory"
-fi
-
-# Strip trailing .flx or .so
-# users should type 'flx file' without extension,
-# but #! interpreter always passes extension ..
-
-case "$1" in
-  *.flx)
-    arg="`echo $1 | sed 's/\.flx$//'`"
-    is_flx=1
-    ;;
-  *.so)
-    arg="`echo $1 | sed 's/\.so$//'`"
-    is_so=1
-    ;;
-  *)
-    arg="$1"
-esac
-
-# Find absolute pathname
-
-base=""
-
-case "$arg" in
-  /*)
-    base="$arg"
-    ;;
-  [^/]*/*)
-    base="`pwd`/$arg"
-    ;;
-  *)
-    for dir in `echo .:$PATH | sed 's/:/ /g'`
-    do
-      dir=$dir
-      if [ -r "$dir/$arg.so" -o -r "$dir/$arg.flx" ]
-      then
-        base="$dir/$arg"
-        break
-      fi
-    done
-    ;;
-esac
-
-if [ "x$base" = "x" ]
-then
-  echo "No such felix program: $arg" >&2
-  exit 1
-fi
-
-# No need to compile, just run it
-
-if [ ! $RECOMPILE -a -r "$base.so" -a "(" ! -r "$base.flx" -o "$base.so" -nt "$base.flx" ")" ]
-then
-  flx_run "$base.so"
-  exit $?
-fi
-
-# Need to compile, then run it
-
-
-if [ "$TESTMODE" = "1" ]
-then
-  include_dir="."
-  FLXG="./bin/flxg"
-  FLXLIB="./lib"
-else
-  # Locate the felix installation
-  prefix=""
-  for dir in `echo $PATH | sed 's/:/ /g'`
-  do
-    dir=$dir
-    if [ -x "$dir/flxg" ]
-    then
-      prefix="$dir/flxg"
-      break
-    fi
-  done
-  prefix="`echo $prefix | sed 's/\/bin\/flxg$//'`"
-  include_dir="$prefix/lib/felix"
-  FLX="$prefix/bin/flxg"
-  FLXLIB="$prefix/lib/felix/lib"
-fi
-
-if $FLXG -q -I$FLXLIB "$base"
-then
-  if g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared  \
-      -I"$include_dir" "$base.cpp" -o "$base.so"
+  rm -f $1.cpp $1.hpp $1.so
+  if 
+    ./bin/flxg -q -Ilib $1
   then
-    # rm -f "$base.cpp"
-    flx_run "$base.so"
-    exit $?
-  else
-    exit $?
+    if 
+      g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared  \
+        $1.cpp \
+        -o $1.so
+    then
+      ./bin/flx_run ./$1.so
+    fi
   fi
+else
+  ./bin/flx_run ./$1.so
 fi
 
 @os.system('chmod a+x bin/flx')

@@ -37,6 +37,7 @@ struct continuation_t // abstract base for mutable continuations
   continuation_t();
   virtual continuation_t *resume()=0;
   virtual ~continuation_t();
+  continuation_t * _caller;
 };
 
 //REFERENCE TEMPLATE
@@ -73,7 +74,7 @@ struct unit {};
 #include "flx_rtl.hpp"
 
 namespace flx { namespace rtl {
-continuation_t::continuation_t() : pc(0), action(yield_action) {}
+continuation_t::continuation_t() : pc(0), action(yield_action), _caller(0) {}
 continuation_t::~continuation_t(){}
 }}
 

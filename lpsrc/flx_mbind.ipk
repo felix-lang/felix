@@ -1,4 +1,5 @@
-@head(1,"Pattern matching")
+@head(1,"Name Binding")
+Name binding pass 2.
 
 @h = tangler("src/flx_mbind.mli")
 @select(h)
@@ -30,33 +31,19 @@ open Flx_typing
 open Flx_lookup
 open Flx_srcref
 
-@head(2,"Extractor")
-The extractor is a function to be applied to
-the argument to extract the value of a component,
-in this context, one specified by a match name in a pattern,
-it is represented here as a list of functions
-to be applied, with the function at the top
-of the list to be applied last.
-@p()
-Note that the difference between an abstract 
-extractor and a concrete one is that the
-abstract one isn't applied to anything,
-while the concrete one is applied to a specific
-expression.
-@p()
-Extractors are basically eliminators or destructors,
-there are only two kinds: the tuple projection function,
-and the union constructor argument extractor.
-@p()
-The latter combinator is a partial function
-of the union type, since it is only defined
-for a specific variant.
+(* the extractor is a function to be applied to
+   the argument to extract the value of the identifier;
+   it is represented here as a list of functions
+   to be applied, with the function at the top
+   of the list to be applied last.
 
-@select(h)
-(* this function applies an abstract extractor
-to an argument expression to produce a concrete
-extraction
+   Note that the difference between an abstract 
+   extractor and a concrete one is that the
+   abstract one isn't applied to anything,
+   while the concrete one is applied to a specific
+   expression.
 *)
+
 let gen_extractor 
   (extractor : extract_t list) 
   (mv : expr_t) 
@@ -69,24 +56,13 @@ let gen_extractor
   extractor
   mv
 
-@head(2, 'When expressions')
-The expression of a when term must be evaluated
-in the context of a pattern match. This code
-inlines the match bindings directly into the 
-when expression.. its a temporary hack, and it doesn't
-handle all the cases. We should really generate
-a function and call it, passing the bindings in
-as arguments .. but we don't know the typing yet.
-@p()
-NEWSBREAK: we now have type combinators for
-representing projections and union destructors.
-
-@select(h)
+(* this routine is used to substitute match variables
+   in a when expression with their bindings ..
+   it needs to be completed!!!
+*)
 let rec subst vars (e:expr_t) mv : expr_t = 
   let subst e = subst vars e mv in
   match e with
-  | `AST_domain _ -> failwith "Not expecting dom in when part of pattern"
-  | `AST_codomain _ -> failwith "Not expecting cod in when part of pattern"
   | `AST_typeof _ -> failwith "Not expecting typeof in when part of pattern"
   | `AST_product _ -> failwith "Not expecting product in when part of pattern"
   | `AST_void _ -> failwith "Not expecting void in when part of pattern"
@@ -104,7 +80,6 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_literal _ -> e
   | `AST_case_tag _ -> e
   | `AST_as _ -> e
-  | `AST_all _ -> e
 
   | `AST_name (sr,name) ->
     if Hashtbl.mem vars name 
@@ -142,31 +117,30 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_ctor_arg _ ->
     failwith "`AST_ctor_arg in 'when' expression not implemented"
   
-  | `AST_get_n (sr,(n,e)) ->
-    `AST_get_n (sr,(n,subst e))
+  | `AST_get_n _ ->
+    failwith "`AST_get_n in 'when' expression not implemented"
   
   | `AST_coercion _ -> failwith "subst: coercion"
 
-@head(2,'Deconstruct a pattern')
-This routine runs through a pattern looking for
-pattern variables, and adds a record to a hashtable
-keyed by each variable name. The data recorded
-is the list of extractors which must be applied
-to 'deconstruct' the data type to get the part
-which the variable denotes in the pattern.
-@p()
-For example, for the pattern
-@begin_displayed_code()
+(* This routine runs through a pattern looking for
+  pattern variables, and adds a record to a hashtable
+  keyed by each variable name. The data recorded
+  is the list of extractors which must be applied
+  to 'deconstruct' the data type to get the part
+  which the variable denotes in the pattern
+
+  for example, for the pattern
+
     | Ctor (1,(x,_))
-@end_displayed_code()
+
   the extractor for x is
-@begin_displayed_code()
+
     [Udtor "Ctor"; Proj_n 2; Proj_n 1]
-@end_displayed_code()
-since x is the first component of the second
-component of the argument of the constructor "Ctor"
- 
-@select(h)
+
+  since x is the first component of the second
+  component of the argument of the constructor "Ctor"
+*)
+  
 let rec get_pattern_vars 
   vars      (* Hashtable of variable -> range_srcref * extractor *)
   pat       (* pattern *)
@@ -176,7 +150,7 @@ let rec get_pattern_vars
   | `PAT_name (sr,id) -> Hashtbl.add vars id (sr,extractor)
   
   | `PAT_tuple (sr,pats) ->
-    let n = ref 1 in
+    let n = ref 0 in
     List.iter
     (fun pat -> 
       let sr = src_of_pat pat in
@@ -204,33 +178,6 @@ let rec get_pattern_vars
 
 let bool_t = `TYP_sum [`TYP_tuple[]; `TYP_tuple []]
 
-@head(2,'Generate a match check function')
-A match check function checks is an expression
-matches a particular pattern shape.
-It doesn't do any binding! 
-@p()
-For purely algebraic patterns, only one kind of run time
-test is needed at present, a check on the union tag value,
-which is a simple comparison with a constant. Correctly
-type non-recursive tuple patterns always match.
-@p()
-Our match construction, however, is enriched by
-a variety of non-algebraic comparitors such
-as range tests and value comparisons which require
-run time tests to be done.
-@p()
-The most interesting problem here is the handling
-of recursive types. With the equi-recursive model,
-a simple algebraic test is enough, provided we
-exclude recursion over products.
-@p()
-However, it would be possible to use some iso-recursive
-matching here, which is equivalent to the client
-unfolding matches. The use of the "::" list constructor
-in many FP languages allows this kind of unfolding
-directly in the pattern.
-
-@select(h)
 let rec gen_match_check pat (arg:expr_t) =
   let lint sr t i = `AST_literal (sr,`AST_int (t,i)) 
   and lstr sr s = `AST_literal (sr,`AST_string s) 
@@ -326,7 +273,7 @@ let rec gen_match_check pat (arg:expr_t) =
   (* other *)
   | `PAT_name (sr,_) -> truth sr
   | `PAT_tuple (sr,pats) ->
-    let counter = ref 2 in
+    let counter = ref 1 in
     List.fold_left 
     (fun init pat ->
       let sr = src_of_pat pat in
@@ -340,7 +287,7 @@ let rec gen_match_check pat (arg:expr_t) =
     (
       let pat = List.hd pats in 
       let sr = src_of_pat pat in
-      gen_match_check pat (`AST_get_n (sr,(1, arg)))
+      gen_match_check pat (`AST_get_n (sr,(0, arg)))
     )
     (List.tl pats)
 

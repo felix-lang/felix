@@ -7,7 +7,6 @@ val catmap : string -> ('a -> string) -> 'a list -> string
 val (+>) : 'a -> ('a ->'b) -> 'b
 val transpose: 'a list list -> 'a list list
 val list_last: 'a list -> 'a 
-val list_omap: ('a->'b) -> 'a list -> 'b list
 
 @h = tangler('src/flx_util.ml')
 @select(h)
@@ -23,14 +22,6 @@ let transpose x =
   in List.tl (List.rev (cons [] ([],x)))
 
 let list_last l = List.hd (List.rev l)
-
-(* same as List.map, except ordered from first to last *)
-let list_omap f a =
-  let r = ref [] in
-  List.iter 
-  (fun x -> r := (f x) :: !r)
-  a;
-  List.rev !r
 
 @head(1,'Types')
 @h = tangler('src/flx_types.mli')
@@ -98,31 +89,20 @@ There are no values of this type.
 @select(h)
 and typecode_t = 
   [
-  (* All this crud is here because a name is a type .. YUK *)
   | `AST_void of range_srcref                   (* void type *)
   | `AST_root of range_srcref                   (* top level module *)
   | `AST_name of range_srcref * string
   | `AST_case_tag of range_srcref * int
   | `AST_typed_case of range_srcref * int * typecode_t
   | `AST_lookup of range_srcref * (expr_t * string)
-
-  (* irreducible terms *)
   | `TYP_tuple of typecode_t list               (* product type *)
   | `TYP_sum of typecode_t list                 (* numbered sum type *)
   | `TYP_function of typecode_t * typecode_t    (* function type *)
   | `TYP_pointer  of typecode_t                 (* pointer type *)
   | `TYP_as of typecode_t * string              (* fix *)
-  | `TYP_all of typecode_t * string             (* scheme *)
+  | `TYP_typeof of expr_t                       (* typeof *)
+  | `TYP_var of int                             (* unknown type *)
   | `TYP_none
-  | `TYP_typeof of expr_t
-
-  (* reducible terms *)
-  | `TYP_proj_n of int * typecode_t            (* 1 origin, product type projection *)
-  | `TYP_case_arg of int * typecode_t
-  | `TYP_ctor_arg of string * typecode_t
-  | `TYP_deref of typecode_t
-  | `TYP_domain of typecode_t
-  | `TYP_codomain of typecode_t
   ]
 
 @head(3,'Literals')
@@ -161,7 +141,6 @@ and expr_t =
   | `AST_literal of range_srcref * literal_t
   | `AST_deref of range_srcref * expr_t
   | `AST_ref of range_srcref * expr_t
-
   | `AST_method_apply of range_srcref * (id_t * expr_t)
   | `AST_dot of range_srcref * (expr_t * id_t)
   | `AST_lambda of range_srcref * (parameter_t list * typecode_t * statement_t list)
@@ -172,12 +151,9 @@ and expr_t =
 
   | `AST_get_n of range_srcref * (int * expr_t) (* get n'th component of a tuple *)
   | `AST_lazy of range_srcref * expr_t
-  | `AST_as of range_srcref * (expr_t * expr_t)
-  | `AST_all of range_srcref * (expr_t * expr_t)
+  | `AST_as of range_srcref * (expr_t * string)
   | `AST_match of range_srcref * (expr_t * (pattern_t * expr_t) list)
   | `AST_typeof of range_srcref * expr_t
-  | `AST_domain of range_srcref * expr_t
-  | `AST_codomain of range_srcref * expr_t
   ]
 
 @head(3,'Pattern')
@@ -257,21 +233,18 @@ and statement_t =
 
  
   (* control structures: primitives *)
-  | `AST_label of range_srcref * id_t 
-  | `AST_goto of range_srcref * id_t 
-  | `AST_ifgoto of range_srcref * expr_t * id_t 
+  | `AST_label of range_srcref * id_t (* for testing the code generator! *)
+  | `AST_goto of range_srcref * id_t (* for testing the code generator! *)
   | `AST_call of range_srcref * expr_t * expr_t 
   | `AST_read of range_srcref * id_t
   | `AST_return of range_srcref * expr_t
   | `AST_nop of range_srcref * string
-  | `AST_set of range_srcref * (expr_t * expr_t)
 
   | `AST_block of range_srcref * statement_t list
   | `AST_if of 
     range_srcref * 
     (range_srcref * (expr_t * statement_t)) list * 
     (range_srcref * statement_t)
-  | `AST_while of range_srcref * expr_t * statement_t
 
   (* exceptions *)
   | `AST_attempt of 
@@ -291,9 +264,6 @@ and statement_t =
   | `AST_code of range_srcref * string
 
   | `AST_export of range_srcref * suffixed_name_t * string
-
-  | `AST_typeassert of range_srcref * expr_t
-  | `AST_typeaxiom of range_srcref * expr_t
   ]
 
 
@@ -310,13 +280,10 @@ and exe_t =
   | `EXE_return of expr_t
   | `EXE_nop of string
   | `EXE_init of id_t * expr_t 
-  | `EXE_set of expr_t * expr_t 
   ]
 
 and dir_t =
   | DIR_open of qualified_name_t
-  | DIR_typeassert of expr_t 
-  | DIR_typeaxiom of expr_t
 
 and dcl_t = 
   [
@@ -329,10 +296,8 @@ and dcl_t =
   | `DCL_union of       (id_t * typecode_t) list
   | `DCL_struct of      (id_t * typecode_t) list
   | `DCL_match_check of pattern_t * string
-  (*
   | `DCL_match_handler of pattern_t * string * asm_t list
-  *)
-
+  
   (* variables *)
   | `DCL_val of         typecode_t
   | `DCL_var of         typecode_t
@@ -388,14 +353,12 @@ and bexe_t =
   | `BEXE_read of bid_t
   | `BEXE_return of tbexpr_t
   | `BEXE_nop of string
-  | `BEXE_code of string (* C++ embedded statements *)
+  | `BEXE_code of string
   | `BEXE_init of bid_t * tbexpr_t 
-  | `BEXE_set of tbexpr_t * tbexpr_t 
   ]
 
 and bexpr_t =
   [
-  (* there should be a way to embed C++ function calls directly .. *)
   | `BEXPR_deref of tbexpr_t
   | `BEXPR_name of bid_t
   | `BEXPR_ref of bid_t
@@ -425,6 +388,7 @@ and btypecode_t =
   | `BTYP_none                                     (* special hack for 'no type' *)
   | `BTYP_binding of btypecode_t * btypecode_t     (* interface, module *)
   | `BTYP_fix of int                               (* recurse to depth n *)
+  | `BTYP_var of int         (* unknown variable or function return type *)
   ]
 
 and bparameter_t = string * btypecode_t
@@ -474,6 +438,7 @@ and instantiation_registry_t =
     module_rep_t,                 (* argument list *) 
     int                           (* instantiated functor = module index *)
   ) Hashtbl.t
+and typevarmap_t = (int,btypecode_t) Hashtbl.t
 and functor_arg_binding_t = 
   (
     id_t *                        (* argument name *)
@@ -485,8 +450,6 @@ and functor_arg_binding_t =
   ) list
 
 type env_t = (name_map_t * name_map_t list) list 
-type env_cache_t = (int,env_t) Hashtbl.t
-
 type symbol_definition_t =
   [
   | `SYMDEF_parameter of typecode_t
@@ -498,16 +461,14 @@ type symbol_definition_t =
     dir_t list
 
   | `SYMDEF_lazy of expr_t 
-  | `SYMDEF_match_check of pattern_t * string
-
-  (*
+  | `SYMDEF_match_check of pattern_t * int 
   | `SYMDEF_match_handler of 
     pattern_t * 
-    string *
+    int *
     exe_t list * 
     name_map_t * 
     dir_t list
-  *)
+
   | `SYMDEF_interface of name_map_t * dir_t list
   | `SYMDEF_typed_functor of 
     parameter_t list * 
@@ -534,6 +495,8 @@ type symbol_definition_t =
   
   | `SYMDEF_module_binding of expr_t
   | `SYMDEF_dcl of dcl_t
+  | `SYMDEF_var of typecode_t
+  | `SYMDEF_val of typecode_t
   ]
 
 type symbol_data_t = string * range_srcref * int option * symbol_definition_t 
@@ -544,14 +507,14 @@ type fully_bound_symbol_table_t = (int, symbol_data3_t) Hashtbl.t
 
 type type_registry_t = (btypecode_t,int) Hashtbl.t
 
-(* this is a state record for use by lookup routines *)
-type sym_state_t = {
-  dfns:symbol_table_t; (* this table never changes *)
-  env_cache:env_cache_t; (* cache env building *)
-  counter: int ref;  (* mutable fresh name counter *)
-  freg:instantiation_registry_t (* functor instantiation registry *)
+type sym_state_t = 
+{
+  dfns : symbol_table_t;
+  freg : instantiation_registry_t;
+  counter : int ref;
+  varmap : typevarmap_t;
+  ticache : (int, btypecode_t) Hashtbl.t 
 }
-
 
 @doc()
 The whole of a compilation unit, this is the data structure
@@ -625,8 +588,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_product (s,_)
   | `AST_sum (s,_)
   | `AST_arrow (s,_)
-  | `AST_void s
-  | `AST_typeof (s,_)
+
   | `AST_index (s,_)
   | `AST_apply  (s,_) 
   | `AST_bound_module (s,_)
@@ -645,24 +607,17 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_lazy (s,_)
   | `AST_coercion (s,_)
   | `AST_as (s,_)
-  | `AST_all (s,_)
   | `AST_match (s, _) 
-  | `AST_domain (s,_)
-  | `AST_codomain (s,_)
+  | `AST_typeof (s, _) 
     -> s
 
 let src_of_stmt e = match e with
-  | `AST_typeassert (s,_)
-  | `AST_typeaxiom (s,_)
-
   | `AST_interface (s,_,_)
   | `AST_module_binding (s,_,_)
   | `AST_typed_functor (s,_,_,_,_)
   | `AST_untyped_functor (s,_,_,_)
   | `AST_label (s,_)
   | `AST_goto (s,_)
-  | `AST_ifgoto (s,_,_)
-  | `AST_set (s,_)
   
   | `AST_function (s, _, _ , _, _)
   | `AST_procedure (s, _, _ , _)
@@ -679,7 +634,6 @@ let src_of_stmt e = match e with
   | `AST_block (s, _ ) 
   | `AST_nop (s, _) 
   | `AST_if (s, _ , _) 
-  | `AST_while (s, _, _) 
   | `AST_attempt (s,_,_,_)
   | `AST_raise (s, _, _) 
   | `AST_abs_decl (s, _, _) 
@@ -846,9 +800,9 @@ and string_of_expr (e:expr_t) =
     "(" ^ sme e ^ ":" ^ 
     string_of_typecode t ^ ")"
 
+  | `AST_typeof (_,e) -> "typeof("^se e^")"
   | `AST_lazy (_,e) -> "lazy(" ^ se e ^ ")"
-  | `AST_as (_,(e1, e2)) -> se e1 ^ " as " ^ se e2 
-  | `AST_all (_,(e1, e2)) -> se e1 ^ " all " ^ se e2 
+  | `AST_as (_,(e1, name)) -> "(" ^ se e1 ^ ") as " ^ name  
   | `AST_get_n (_,(n,e)) -> "get (" ^ string_of_int n ^ ", " ^se e^")"
   | `AST_deref (_,e) -> "*(" ^ se e ^ ")"
   | `AST_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
@@ -857,8 +811,6 @@ and string_of_expr (e:expr_t) =
     sme fn ^ " " ^ 
     sme arg ^ 
     ")"
-
-  | `AST_typeof (_,t) -> "typeof (" ^ se t ^ ")"
 
   | `AST_product (_,ts) ->
      String.concat "*" (List.map se ts)
@@ -896,9 +848,6 @@ and string_of_expr (e:expr_t) =
     "match_case " ^ string_of_int v ^ "(" ^
     se e ^ ")"
 
-  | `AST_domain (_,t) -> "dom " ^ se t
-  | `AST_codomain (_,t) -> "cod" ^ se t
-
   | `AST_match (_,(e, ps)) ->
     "match " ^ se e ^ " with " ^
     catmap "\n"
@@ -928,13 +877,9 @@ and st prec tc =
   let iprec,txt =
     match tc with
     | #qualified_name_t as t -> 0,string_of_qualified_name t
-    | `TYP_none -> 0,"Unknown"
-    | `TYP_proj_n (n,t) -> 2,"prj"^string_of_int n^" " ^ st 2 t
-    | `TYP_domain t -> 2,"dom " ^ st 2 t
-    | `TYP_codomain t -> 2,"cod" ^ st 2 t
-    | `TYP_deref t -> 2,"*" ^ st 2 t
-    | `TYP_case_arg (n,t) -> 2,"udtor_"^string_of_int n^" "^st 2 t
-    | `TYP_ctor_arg (n,t) -> 2,"udtor_"^n^" "^st 2 t
+    | `TYP_none -> print_endline ("NONE DETECTED");
+       0,"Unknown"
+    | `TYP_var i -> 0,"<var " ^ string_of_int i ^ ">"
     | `TYP_tuple ls ->
       begin match ls with 
       | [] -> 0,"unit" 
@@ -951,9 +896,8 @@ and st prec tc =
       5,st 5 args ^ " -> " ^ st 5 result
 
     | `TYP_pointer t -> 1,"&" ^ st 1 t
-    | `TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
     
-    | `TYP_all (t,s) -> 7,st 7 t ^ " all " ^ s
+    | `TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
     | `TYP_as (t,s) -> 7,st 7 t ^ " as " ^ s
   in
     if iprec >= prec 
@@ -990,7 +934,7 @@ and sb dfns depth fixlist counter prec tc =
       match tc with
       | `BTYP_fix i ->
          incr counter; (* 'a is 1 anyhow .. *)
-         let lab = "'" ^ get_label !counter in
+         let lab = "fix_" ^ get_label !counter in
          fixlist := (depth+i,lab) :: !fixlist;
          0,lab 
 
@@ -999,6 +943,8 @@ and sb dfns depth fixlist counter prec tc =
         sbt 6 a ^
         " => " ^
         sbt 6 b
+
+      | `BTYP_var i -> 0,"<type_variable " ^ string_of_int i ^ ">"
 
       | `BTYP_name n -> 0,qualified_name_of_index dfns n
 
@@ -1036,7 +982,7 @@ and string_of_btypecode dfns tc =
   while List.length !fixlist > 0 do
     match !fixlist with
     | (d,v)::t ->
-      bad := !bad ^ " FV" ^ string_of_int d ^ " " ^ v;
+      bad := !bad ^ " [Free Fixpoint " ^ string_of_int d ^ " " ^ v ^"]";
       fixlist := t
     | [] -> assert false
   done;
@@ -1124,9 +1070,6 @@ and special_string_of_btypecode dfns ty =  (* used for constructors *)
 and string_of_statement level s = 
   let se e = string_of_expr e in
   match s with 
-  | `AST_typeassert (_,e) -> spaces level ^ "typeassert " ^ se e ^ ";\n"
-  | `AST_typeaxiom (_,e) -> spaces level ^ "typeaxiom " ^ se e ^ ";\n"
-
   | `AST_interface (_,name, entries) ->
     spaces level ^
     "interface " ^ name ^ "{\n" ^
@@ -1162,7 +1105,6 @@ and string_of_statement level s =
 
   | `AST_label (_,s) -> s ^ ":"
   | `AST_goto (_,s) -> spaces level ^ "goto " ^ s ^ ";"
-  | `AST_ifgoto (_,e,s) -> spaces level ^ "if " ^se e ^ "goto " ^ s ^ ";"
 
   | `AST_comment s -> spaces level ^ "// " ^ s
   | `AST_open (_,n) -> 
@@ -1312,10 +1254,6 @@ and string_of_statement level s =
         (string_of_statement (level+1) s2)
     end
   
-  | `AST_while (_,e,s) ->
-    spaces level ^ "while(" ^ (se e) ^ ")\n" ^
-    (string_of_statement (level+1) s)
-
   | `AST_except_handler (_,label,params,code) ->
     spaces level ^ "except " ^ label ^ " " ^ 
     "("^ (string_of_parameters params)^")"^
@@ -1347,13 +1285,10 @@ and string_of_statement level s =
     ";"
 
   | `AST_return (_,e) -> 
-    spaces level ^ "return " ^ se e ^ ";"
+    spaces level ^ "return " ^ (se e) ^ ";"
     
   | `AST_read (_,name) ->
     spaces level ^ "read " ^ name ^ ";"
-
-  | `AST_set (_,(e1,e2)) ->
-     spaces level ^ "set " ^ se e1 ^ " to " ^ se e2 ^ ";"
 
 and string_of_compilation_unit stats =
   catmap "\n" (string_of_statement 0) stats
@@ -1369,6 +1304,12 @@ and string_of_iface level s =
     " as \"" ^ cpp_name ^ "\";"
 
 and string_of_symdef entry name = match entry with
+  | `SYMDEF_var t -> 
+    "variable " ^ string_of_typecode t ^ ";"
+    
+  | `SYMDEF_val t -> 
+    "value " ^ string_of_typecode t ^ ";"
+    
   | `SYMDEF_parameter t -> 
     "parameter " ^ string_of_typecode t ^ ";"
     
@@ -1391,13 +1332,12 @@ and string_of_symdef entry name = match entry with
   | `SYMDEF_lazy (e) -> 
     "lazy " ^ name ^ ";"
     
-  | `SYMDEF_match_check (pat,mvname)-> 
+  | `SYMDEF_match_check (pat,i)-> 
     "match_check " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
   
-  (*
-  | `SYMDEF_match_handler (pat,mvname,es,_,dir) ->
+  | `SYMDEF_match_handler (pat,i,es,_,dir) ->
     "match_handler " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
-  *)
+
   | `SYMDEF_interface (nm,dir) ->
     "interface " ^ name ^ ";"
 
@@ -1436,10 +1376,10 @@ and string_of_exe level s =
   | `EXE_goto s -> spc ^ "goto " ^ s ^ ";"
 
   | `EXE_ifgoto (e,s) -> spc ^ 
-     "if " ^ se e ^ " goto " ^ s ^ ";"
+     "if(" ^ se e ^ ")goto " ^ s ^ ";"
 
   | `EXE_ifnotgoto (e,s) -> spc ^ 
-     "if not " ^ se e ^ " goto " ^ s ^ ";"
+     "if(not(" ^ se e ^ "))goto " ^ s ^ ";"
 
   | `EXE_label s -> s ^ ":"
 
@@ -1464,10 +1404,7 @@ and string_of_exe level s =
     "code " ^ string_of_string s 
 
   | `EXE_init (l,r) -> spc ^ 
-    l ^ " :init= " ^ se r ^ ";"
-
-  | `EXE_set (l,r) -> spc ^ 
-    se l ^ " :set= " ^ se r ^ ";"
+    l ^ " := " ^ se r ^ ";"
 
 and string_of_bound_expression dfns e = 
   let se e = string_of_bound_expression dfns e in
@@ -1519,10 +1456,10 @@ and string_of_bexe dfns level s =
   | `BEXE_goto s -> spc ^ "goto " ^ s ^ ";"
 
   | `BEXE_ifgoto (e,s) -> spc ^ 
-     "if " ^ se e ^ " goto " ^ s ^ ";"
+     "if(" ^ se e ^ ")goto " ^ s ^ ";"
 
   | `BEXE_ifnotgoto (e,s) -> spc ^ 
-     "if not " ^ se e ^ " goto " ^ s ^ ";"
+     "if(not(" ^ se e ^ "))goto " ^ s ^ ";"
 
   | `BEXE_label s -> s ^ ":"
 
@@ -1547,10 +1484,7 @@ and string_of_bexe dfns level s =
     "code " ^ string_of_string s 
 
   | `BEXE_init (l,r) -> spc ^ 
-    sid l ^ " :init= " ^ se r ^ ";"
-
-  | `BEXE_set (l,r) -> spc ^ 
-    se l ^ " :set= " ^ se r ^ ";"
+    sid l ^ " := " ^ se r ^ ";"
 
 and string_of_dcl level name s = 
   let se e = string_of_expr e in
@@ -1656,13 +1590,11 @@ and string_of_dcl level name s =
     s ^ " matches " ^ string_of_pattern pat ^
     " }"
 
-  (*
   | `DCL_match_handler (pat,varname, sts) ->
     spaces level ^ 
     "match_handler " ^ name ^ 
     "(" ^ string_of_pattern pat ^ ")" ^
     short_string_of_asm_compound level sts
-  *)
 
   | `DCL_val (ty) ->
     spaces level ^ 
@@ -1683,10 +1615,6 @@ and string_of_dir level s =
   match s with
   | DIR_open qn ->
     spaces level ^ "open " ^ string_of_qualified_name qn ^ ";"
-  | DIR_typeassert e ->
-    spaces level ^ "typeassert " ^ string_of_expr e ^ ";"
-  | DIR_typeaxiom e ->
-    spaces level ^ "typeaxiom " ^ string_of_expr e ^ ";"
 
 and string_of_bbdcl dfns bbdcl index = 
   let name = qualified_name_of_index dfns index in
@@ -1843,7 +1771,6 @@ open Flx_types
 @select(h)
 open Flx_types
 open Flx_srcref
-open Flx_print
 
 exception UnificationError of btypecode_t * btypecode_t
 
@@ -1858,13 +1785,10 @@ module FuntypeSet = Set.Make(
   struct type t=typecode_t let compare = compare end
 )
 
-let is_unitsum (t:btypecode_t) = match t with
-  | `BTYP_sum ls -> 
-    List.fold_left 
-    (fun acc t -> acc && (t = `BTYP_tuple []))
-    true ls
-
-  | _ -> false
+(* bound type! *)
+let typeoflist typlist = match typlist with
+  | [t] -> t
+  | _ -> `BTYP_tuple typlist
 
 let rec lower t = match t with
   | `BTYP_binding (i,t) -> t
@@ -1876,6 +1800,7 @@ let rec lower t = match t with
   | `BTYP_function (a,b) -> `BTYP_function (lower a, lower b)
   | `BTYP_name i -> `BTYP_name i
   | `BTYP_fix i -> `BTYP_fix i
+  | `BTYP_var i -> `BTYP_var i
 
 
 let rec lift t = match t with
@@ -1888,6 +1813,7 @@ let rec lift t = match t with
   | `BTYP_function (a,b) -> `BTYP_function (lift a, lift b)
   | `BTYP_name i -> `BTYP_name i
   | `BTYP_fix i -> `BTYP_fix i
+  | `BTYP_var i -> `BTYP_var i
 
 let rec unify dfns it mt = 
   let u it mt = unify dfns it mt in
@@ -1907,6 +1833,7 @@ let rec unify dfns it mt =
 
   | `BTYP_void, `BTYP_void -> `BTYP_void
   | `BTYP_none, `BTYP_none -> `BTYP_none
+  | (`BTYP_var i, `BTYP_var j) when i = j -> `BTYP_var i
   | i,m -> `BTYP_binding (i,m)
 
 let dummy_sr = ("generated",0,0,0,0)
@@ -1916,25 +1843,15 @@ let flx_bool =
 let rec typecode_of_expr (e:expr_t) :typecode_t = 
   let te e = typecode_of_expr e in
   match e with 
-  | `AST_apply (sr,(`AST_case_tag (_,n),t)) ->
-    `TYP_case_arg (n, te t)
-  
   | #qualified_name_t as x -> (x:>typecode_t)
   | `AST_product (_,ts) -> `TYP_tuple (List.map te ts)
   | `AST_arrow (_,(a,b)) -> `TYP_function (te a, te b)
   | `AST_ref (sr,e) -> `TYP_pointer (te e)
-  | `AST_sum (_,ts) -> `TYP_sum (List.map te ts)
+  | `AST_sum (_,ts) -> 
+    `TYP_sum (List.map te ts)
+
   | `AST_typeof (_,e) -> `TYP_typeof e
-  | `AST_as (sr,(e1,e2)) ->
-     begin match e2 with 
-     | `AST_name (_,s) -> `TYP_as (te e1,s)
-     | _ -> 
-       failwith 
-       (
-         "identifier required after 'as' in type in" ^
-         short_string_of_src sr
-       )
-     end
+  | `AST_as (sr,(t,x)) -> `TYP_as (te t,x)
 
   | `AST_literal (sr,`AST_int (enc,v)) ->
     if enc <> "int" 
@@ -1964,24 +1881,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
         done;
         `TYP_sum !t
       end
-  | `AST_get_n (sr,(n,t)) -> `TYP_proj_n (n,te t)
-  | `AST_case_arg (sr,(n,t)) -> `TYP_case_arg (n,te t)
-  | `AST_ctor_arg (sr,(n,t)) -> (* ARGGG! *)
-     begin match n with
-     | `AST_name (_,n) -> `TYP_ctor_arg (n,te t)
-     | _ -> 
-       failwith 
-       (
-         "For some reason .. \n" ^
-         "Simple name required for constructor in union type destructor\n" ^
-         "got qualified name in\n" ^
-         short_string_of_src sr
-       )
-     end
-       
-  | `AST_deref (sr,t) -> `TYP_deref (te t)
-  | `AST_domain (sr,t) -> `TYP_domain (te t)
-  | `AST_codomain (sr,t) -> `TYP_codomain (te t)
+
   | #expr_t -> 
     failwith 
     (
@@ -1999,218 +1899,29 @@ let qualified_name_of_expr e =
       short_string_of_src (src_of_expr e)
     )
 
-(*  Unfold: remove a top level fixpoint operator
-    by replacing the recursion point
-    with the term it binds:
-    
-   x * b as x   ---> (x * b as x) * b
-   x -> b as x  ---> (x -> b as x) -> b
-
-   this guarrantees to remove the fixpoint binder
-   from the top level EXCEPT that fix 0 is just fix 0;
-   that is, unfold (x as x) = x as x
-
-   unfold is idempotent
-   it will NOT unroll a subterm loop eg (x * b as x) * c
-   will NOT be unrolled
+(* NOTE: only works on explicit fixpoint operators,
+  i.e. it won't work on typedefs: no name lookup,
+  these should be removed first .. 
+  another view: only works on non-generative types.
 *)
 
-let type_unfold top =
-  let rec uf depth t =
-    let ruf t' = uf (depth+1) t' in
-    match t with
-    | `BTYP_tuple ls -> `BTYP_tuple (List.map ruf ls)
-    | `BTYP_sum ls -> `BTYP_sum (List.map ruf ls)
-    | `BTYP_function (s,d) -> `BTYP_function (ruf s, ruf d)
-    | `BTYP_pointer t -> `BTYP_pointer (ruf t)
-    | `BTYP_binding (s,d) -> `BTYP_binding (ruf s, ruf d) (* unusual! *)
-    | `BTYP_name _ 
-    | `BTYP_void
-    | `BTYP_none -> t
-    | `BTYP_fix i -> 
-      if depth+i < 0 then failwith "unfold: fixpoint off top of term";
-      if depth + i = 0
-      then top
-      else t
-  in uf 0 top
+let unfold t =
+  let rec aux depth t' = 
+  let uf t = aux (depth+1) t in
+  match t' with 
+  | `BTYP_sum ls -> `BTYP_sum (List.map uf ls)
+  | `BTYP_tuple ls -> `BTYP_tuple (List.map uf ls)
+  | `BTYP_function (a,b) -> `BTYP_function (uf a, uf b)
+  | `BTYP_pointer a -> `BTYP_pointer (uf a)
+  | `BTYP_binding (a,b) -> `BTYP_binding (uf a, uf b)
+  | `BTYP_fix i when (-i) = depth -> t
+  | `BTYP_fix i when (-i) > depth -> 
+    failwith ("Fix point outside term, depth="^string_of_int i)
 
+  | `BTYP_name i -> `BTYP_name i
+  | _ -> t'
+  in aux 0 t
 
-(* equi-recursive type equality 
-  Cardelli's algorithm (quadratic performance)
-  compares infinite unfoldings of two types
-
-  Can use union-find here to get better performance,
-  see Pierce
-*)
-
-let rec memq trail a b = (* search for pair of addresses *)
-  match trail with
-  | [] -> false
-  | (x,y)::t -> 
-    if x == a && y ==b 
-    then true
-    else memq t a b
-
-let rec cmp' pcmp depth trail aenv a benv b =
-  if memq !trail a b
-  then true 
-  else begin
-    trail := (a,b)::!trail;
-    let aenv = (depth,a)::aenv in
-    let benv  = (depth,b)::benv in
-    let cmp a b = cmp' pcmp (depth+1) trail aenv a benv b in
-    match a, b with
-
-    | _,`BTYP_fix j ->
-      let b' = 
-        try 
-          List.assoc (depth+j) benv 
-        with _ -> failwith "Misplaced fix" 
-      in
-      cmp' pcmp depth trail aenv a benv b'
-
-    | `BTYP_fix i,_ ->
-      let a' = 
-        try 
-          List.assoc (depth+i) aenv 
-        with _ -> failwith "Misplaced fix"
-        in
-      cmp' pcmp depth trail aenv a' benv b
-
-    | `BTYP_name a, `BTYP_name b -> pcmp a b
-
-    | `BTYP_sum la, `BTYP_sum lb 
-      when List.length la = List.length lb ->
-      List.fold_left (&&) true (List.map2 cmp la lb)
-      
-    | `BTYP_tuple la, `BTYP_tuple lb 
-      when List.length la = List.length lb ->
-      List.fold_left (&&) true (List.map2 cmp la lb)
-
-    | `BTYP_pointer a, `BTYP_pointer b ->
-       cmp a b && cmp b a 
-       (* NOTE: mutable pointer types are invariant 
-          WE NEED an immutable pointer (reference)
-          to fix this!!!!
-       *)
-
-    | `BTYP_function (sa,da),`BTYP_function (sb,db) ->
-       cmp sa sb && cmp db da 
-       (* NOTE RHS is contravariant!! *)
-
-    | `BTYP_binding (sa,da),`BTYP_binding (sb,db) ->
-       (* well, who knows .. ? *)
-       cmp sa sb && cmp da db
-
-    | `BTYP_void,`BTYP_void -> true
-
-    | _ -> false
-  end
-   
-let prim_eq a b = a = b
-
-let type_eq a b = cmp' prim_eq 0 (ref []) [] a [] b
-
-(* fold is the inverse of unfold:
-
-   for example:
-   (x * b as x) * b -> x * b as x
-
-    it will only fold a recursion
-    to a point one level deep
-
-    it works by comparing each subtree of a term 
-    with the whole term using the equi-recursive
-    comparison routine
-
-    if all such comparisons fail, the original
-    term is returned, otherwise the first
-    subterm which is equi-recursively equal
-    to the whole term is returned.. note this
-    routine is not itself recursive ..
-
-    .. we don't use a shortcut .. might be worthwhile ..
-
-    Hmmm this shouldn't work! Consider:
-
-    1 + int * list as list
-
-    after unfolding it is:
-
-    1 + int * (1 + int * list as list)
-
-    and folding this term has no effect because the 
-    second component of the top level sum isn't
-    equal to the top level.
-
-    MMMMM .. what should happen is this:
-
-    fold replaces 1 + int * list as list with
-
-    1 + (int * (1 + x) as x)
-
-    we can recapture the original term wth a top
-    level unfold now ...
-
-
-*) 
-
-exception Break of btypecode_t
-
-let type_fold top =
-  let eq x y = try type_eq x y with _ -> false in
-  match top with
-  | `BTYP_sum ls
-  | `BTYP_tuple ls -> 
-    begin try 
-      List.iter (fun t -> if eq top t then raise (Break t)) ls;
-      top
-    with Break t -> t
-    end
-     
-  | `BTYP_function (s,d) ->
-    if eq top s then s
-    else if eq top d then d 
-    else top
-
-  | `BTYP_pointer t ->
-     if eq top t then t else top
-
-  | `BTYP_binding (s,d) -> (* weird .. *)
-    if eq top s then s
-    else if eq top d then d 
-    else top
-
-  | `BTYP_name _ 
-  | `BTYP_void
-  | `BTYP_none 
-  | `BTYP_fix 0 -> top
-  | `BTYP_fix _ -> failwith "[type_fold] Recursion out of term"
-
-let typeoflist typlist = match typlist with
-  | [t] -> t
-  | _ -> type_fold (`BTYP_tuple typlist)
-
-(* in graph represented by:
-  hashtble of type `a -> `a list
-  determine if we can reach b from a
-*)
-
-let reach (tbl:('a,'a list) Hashtbl.t) (a:'t) (b:'t) :bool =
-  let rec aux exclude a =
-    if List.mem a exclude 
-    then false
-    else 
-      let bs = 
-        try Hashtbl.find tbl a
-        with Not_found -> []
-      in 
-        if List.mem b bs 
-        then true 
-        else 
-          List.fold_left (||) false
-            (List.map (aux (a::exclude)) bs)
-  in aux [] a 
 
 @h = tangler('src/flx_typing.mli')
 @select(h)
@@ -2218,8 +1929,6 @@ open Flx_types
 exception UnificationError of btypecode_t * btypecode_t
 val flx_bool : typecode_t
 val dummy_sr: range_srcref
-
-val is_unitsum: btypecode_t -> bool
 
 val type_of_argtypes : 
   typecode_t list -> 
@@ -2231,32 +1940,27 @@ val typeoflist:
   btypecode_t list ->
   btypecode_t
 
-val unify:
-  symbol_table_t ->
-  btypecode_t ->
-  btypecode_t ->
-  btypecode_t
-
 val lift:
   btypecode_t -> btypecode_t
 
 val lower:
   btypecode_t -> btypecode_t
 
+val unify:
+  symbol_table_t ->
+  btypecode_t -> 
+  btypecode_t ->
+  btypecode_t 
+
+val unfold:
+  btypecode_t ->
+  btypecode_t 
+
 val typecode_of_expr:
   expr_t -> typecode_t
 
 val qualified_name_of_expr:
   expr_t -> qualified_name_t
-
-val type_unfold:
-  btypecode_t -> btypecode_t
-
-val type_fold:
-  btypecode_t -> btypecode_t
-
-val type_eq: (* equi-recursive *)
-  btypecode_t -> btypecode_t -> bool 
 
 module FuntypeSet :
   sig

@@ -1,10 +1,7 @@
 @h = tangler('src/flx_name.mli')
 @select(h)
-open Flx_types
-
 val cpp_name :
-  symbol_table_t ->
-  fully_bound_symbol_table_t ->
+  Flx_types.fully_bound_symbol_table_t ->
   int ->
   string
 
@@ -22,15 +19,10 @@ let cvt s =
   done;
   Buffer.contents id
 
-let cpp_name dfns bbdfns index =
+let cpp_name bbdfns index =
   let id,parent,entry = 
     try Hashtbl.find bbdfns index 
-    with Not_found -> 
-      let id,_,_,_ = 
-        try Hashtbl.find dfns index 
-        with Not_found -> failwith ("[cpp_name] Can't find index " ^ string_of_int index)
-      in
-        failwith ("[cpp_name] Can't find "^id^"<" ^ string_of_int index ^"> in bound table")
+    with _ -> failwith ("[cpp_name] Can't find index " ^ string_of_int index)
   in
   (match entry with
   | `BBDCL_function _ -> "_function_"   

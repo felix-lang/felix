@@ -83,13 +83,6 @@ syn keyword cStatement export
 syn keyword cStatement inf
 syn keyword cStatement NaN
 syn keyword cStatement to
-syn keyword cStatement typeaxiom
-syn keyword cStatement typeassert
-syn keyword cStatement do
-
-" special operators
-syn keyword cOperator dom
-syn keyword cOperator cod
 
 " standard library types
 syn keyword cType unit

@@ -3,7 +3,6 @@ These HTML pages are manually prepared.
 The output lives in the subdirectory www,
 but the files must be at the top level on the
 sourceforge site to link to everything properly.
-
 @select(tangler('www/index.html'))
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <HTML>
@@ -14,19 +13,16 @@ sourceforge site to link to everything properly.
 <BODY>
 <H1>Felix: The power language for C++ programmers</H1>
 <P>
-Felix is new, high power general purpose programming language 
-with strong roots in functional programming systems.
-It provides an ML style type system with a syntax that C++
+Felix is new, high power programming language which
+provides an ML style type system with a syntax that C++
 programmers should find easy to learn. It generates 
 C++ and supports both use of C++ types as primitives,
-as well as embedding in existing C++ architectures.
-</P>
-<P>
+as well as embedding in existing C++ written architectures.
+</P><P>
 <STRONG>Control inversion</STRONG> converts logical threads
 into continuation objects with resume() callback methods, 
-obtaining stackless operation and thereby
-allowing embedding in event driven message passing frameworks.
-The technology supports high speed context switching
+allowing embedding in event driven message passing frameworks,
+and supporting high speed context switching
 of cooperatively multitasked logics, called
 ultra-lightweight threads. Memory is the only limit
 on the number of UL-threads supported, and context
@@ -46,15 +42,14 @@ systems.
 </UL>
 </LI>
 <LI>Pattern matching</LI>
-<LI>Type deduction for variables</LI>
-<LI>No top down type inference</LI>
+<LI>Type inference for variables</LI>
 <LI>Garbage Collection</LI>
-<LI>Unambiguous LL(1) Grammar</LI>
-<LI>No primitive types in core language</LI>
+<LI>LL(1) Grammar</LI>
+<LI>No primitive types in core language: all primitives supplied by user</LI>
 <LI>C++ binding constructions</LI>
 <LI>Module system</LI>
 <LI>ISO10646/Unicode character set</LI>
-<LI>Parameterized modules (functors) with implicit instantiation</LI>
+<LI>Planned: Parameterized modules (functors) with implicit instantiation</LI>
 </UL>
 
 <STRONG>Libraries</STRONG> include:
@@ -63,31 +58,33 @@ systems.
 <UL>
 <LI>C99/C++ exact and normal integral types</LI>
 <LI>C99 floats</LI>
-<LI>char, wchar, and unicode strings</LI>
+<LI>C++ complex</LI>
+<LI>string and wstring</LI>
 </UL>
-</UL>
-
-<STRONG>Architecture</STRONG> support may be described by:
+<LI>Boost Library includes bindings for</LI>
 <UL>
-<LI>Targets dynamically loadable shared libraries</LI>
-<LI>Standard driver for stand-alone program operation</LI>
-<LI>Standard tool for rapid prototyping/scripting operation</LI>
-<LI>Stackless operation</LI>
-<LI>Event driven architecture</LI>
-<LI>Cooperative multi-tasking</LI>
-<LI>Ultra-lightweight threading</LI>
-<LI>Constant time context switching</LI>
-<LI>Thread count bounded only by memory</LI>
+<LI>regex</LI>
+<LI>quaternions and octonions</LI>
+</UL>
+<LI>Planned bindings for
+<UL>
+<LI>Infinite precision integers</LI>
+</UL></LI>
+</UL>
+<STRONG>Architecture</STRONG> support includes:
+<UL>
+<LI>Control Inversion: mechanical translation of blocking reads into callbacks provides event
+driven cooperative multi-tasking</LI>
+<LI>Targets dynamically loaded shared libraries</LI>
 <LI>User written drivers allow integration into existing message passing
 frameworks</LI>
 <LI>Sample drivers for stand alone program and standard input</LI>
 </UL>
-
 <STRONG>Implementation</STRONG> information:
 <UL>
 <LI>All source written using the Literate Programming 
 tool <A HREF=http://interscript.sf.net>interscript</A></LI>
-<LI>Compiler implemented in <A HREF=http://caml.inria.fr>Ocaml 3.01</A></LI>
+<LI>Compiler implemented in <A HREF=http://caml.inria.fr>Ocaml 3.04</A></LI>
 <LI>Generates ISO C++ code</LI>
 </UL>
 <P>
@@ -111,9 +108,9 @@ HREF=http://lists.sourceforge.net/lists/listinfo/felix-impl>implementation</A>
 </P>
 The CVS location is
 <STRONG>cvs.felix.sourceforge.net:/cvsroot/felix</STRONG>
-and you need module "lpsrc"<P>
+<P>
 CVS web access <A
-HREF="http://cvs.sourceforge.net/cgi-bin/viewcvs.cgi/felix">here</A>
+HREF="http://cvs.sourceforge.net/cgi-bin/cvsweb.cgi/?cvsroot=felix">here</A>
 <P>
 <STRONG>Browse</STRONG> the complete documented source code, test suite, etc,
 using <A HREF=doc/en_flx_top.html>frames</A>,
@@ -132,8 +129,7 @@ HREF=//interscript.sf.net>interscript</A>.
 </HEAD>
 <BODY>
 <H1>Download</H1>
-<P> Download <A HREF=felix_src.tgz>Felix source tarball</A></P>
-<P> Download <A HREF=felix_bin_linux.tgz>Linux binaries</A></P>
+<P> Download <A HREF=felix_linux_binary.tgz>Felix tarball</A></P>
 <P>
 Felix is now packaged in a single tarball.
 This file is a gziped tar file which contains:
@@ -146,6 +142,7 @@ Documentation is available as:
 <LI>LaTeX2e source [you need to run LaTeX2e etc]</LI>
 <LI>Man pages [summarises toools and some language features]</LI>
 </OL>
+<LI> Binary executables for Linux </LI>
 </OL>
 </OL>
 </P>
@@ -173,7 +170,7 @@ compiler and run-times for your platform from the extracted sources.
 You don't need interscript for this, the sources are already
 extracted in the tarball.
 but you must first have installed:
-<A HREF=http://caml.inria.fr>Ocaml 3.01</A> to build
+<A HREF=http://caml.inria.fr>Ocaml 3.04</A> to build
 the Felix compiler, and  <A HREF=http://www.python.org>Python</A>
 to run the build scripts.
 </P>
@@ -188,12 +185,12 @@ of Felix is written using the Literate Programming
 tool <A HREF=http://interscript.sf.net>interscript</A>
 which you must also install: interscript is written in Python.
 Then you will need to install
-<A HREF=caml.inria.fr>Ocaml 3.01</A> 
+<A HREF=caml.inria.fr>Ocaml 3.04</A> or better
 to build the Felix compiler, which is written in Ocaml.
-NOTE: due to bugs in ocaml 3.02, 3.03, and 3.04, 
-you MUST use 3.01 to build felix.
 Although the optimising compiler is recommended,
 it should be possible to build a bytecode version of Felix.
+Then, you will need to install the felix 
+<A HREF=felix_lpsrc.tgz>felix original source</A> package.
 This includes the full interscript sources for the whole
 Felix package. To keep up to date,
 you need to connect to the CVS archive: the
@@ -207,12 +204,6 @@ To bootstrap the build, type
 iscr lpsrc/flx_maker.ipk
 </P>
 on the command line to unpack the build scripts and makefile.
-If you're running bash, or some other shell that expands 
-wildcards, you can do:
-<P>
-iscr lpsrc/*.pak
-</P>
-instead, which extracts all the sources.
 You should now be able to use the commands:
 <P>
 make 
@@ -232,34 +223,14 @@ iscr lpsrc/flx_maker.ipk
 before they'll run.
 
 <H2>Package Changes</H2>
-<P>Ocaml 3.04 doesn't work, Ocaml 3.01 is required</P>
-<P>There are two packages:
-<OL><LI>Source package. Everything except platform specific
-executable binaries. Python, Ocaml 3.01, and g++ are required
-to build the compiler, run time, and tests.</LI>
-<LI>Linux Binary Package. Requires the source tarball.
-Ocaml is not required, python is strongly recommended
-to execute the test harness.
-</LI>
-</OL>
-</P>
+<P>There is now only one tarball containing everything
+including the linux binaries. </P>
+
 <P>Felix no longer requires boost download. It uses a single
 boost header file to define int64_t which Felix requires,
 but that file is now packaged in the LP sources.
 </P>
 <H2>Language Changes</H2>
-<H3>Version 1.0a3</H3>
-<P>Match and if/then/else/endif are now expressions.</P>
-
-<P>Function return type are now deduced in many cases,
-they can be left off declarations.</P>
-
-<P>Syntax changes to function declarations</P>
-<P>All standard library types now defined in modules, typing
-of literals is now context sensitive.
-</P>
-<P>Recursive types are now supported across sums and functions.
-</P>
 <P>Felix now supports anonymous sum types.
 Consequently, I have finally managed to eliminate
 the boolean type from the core language, its now

@@ -127,6 +127,9 @@ let mkcurry sr name args return_type body =
       (match return_type with
       | `AST_void _ -> 
         `AST_procedure (sr, name n, h, body) 
+        (* Note that this '`TYP_void' is supposed to be
+           the type of the message: unused at present!
+        *)
       | _ -> 
         `AST_function (sr, name n, h, return_type, body)
       )
@@ -219,22 +222,24 @@ let mkcurry sr name args return_type body =
 %token<Flx_types.srcref> DOTDOT SLOSH DOTDOTDOT
 
 /* operator keywords */
-%token<Flx_types.srcref> NOT OR AND LAMBDA LAZY TYPEOF DOMAIN CODOMAIN
+%token<Flx_types.srcref> NOT OR AND LAMBDA LAZY
 
 /* patterns */
 %token<Flx_types.srcref> AS ANY REGEXP WHEN ALL
 
+/* type operator */
+%token<Flx_types.srcref> TYPEOF
+
 /* statement keywords */
 %token<Flx_types.srcref> IF THEN ELSE ENDIF ELIF OF VAR UNION CLASS CATEGORY EXCEPTIONS GOTO EXPORT
-%token<Flx_types.srcref> TYPEASSERT TYPEAXIOM
 
 %token<Flx_types.srcref> MATCH WITH ENDMATCH CASE HEADER MODULE CODE
-%token<Flx_types.srcref> SERVICE COMMAND HANDLER CALL PROCEDURE FUNCTION READER FUNCTOR DO
-%token<Flx_types.srcref> RETURN FORK 
-%token<Flx_types.srcref> TO OPEN EQRIGHTARROW
+%token<Flx_types.srcref> SERVICE COMMAND HANDLER CALL PROCEDURE FUNCTION READER FUNCTOR
+%token<Flx_types.srcref> UNIT RETURN FORK VOID
+%token<Flx_types.srcref> WHILE LOOP TO OPEN EQRIGHTARROW
 %token<Flx_types.srcref> TODO INTERFACE DEFINE OVERLOAD
 %token<Flx_types.srcref> TYPE FUN READ PROC CONST STRUCT RAISE ATTEMPT FINALLY EXCEPT VAL TYPEDEF ENDATTEMPT
-%token<Flx_types.srcref> QUEST LET IN DO
+%token<Flx_types.srcref> QUEST
 
 
 %type <Flx_types.compilation_unit_t> compilation_unit
@@ -244,12 +249,10 @@ let mkcurry sr name args return_type body =
 %type <Flx_types.expr_t> rvalue
 
 %type <Flx_types.pattern_t> pattern
-%type <Flx_types.pattern_t> letpat
-%type <Flx_types.pattern_t> atomic_letpat
 
 %start compilation_unit
 %%
-empty: { [] }
+/* empty: { [] } */
 
 @head(2,'Compilation Unit')
 @select(h)
@@ -293,8 +296,6 @@ declarative:
   | struct_decl { $1 }
   | interface_decl { $1 }
   | open_decl { $1 }
-  | type_assert { $1 }
-  | type_axiom { $1 }
 
 executable:
   | var_def { $1 }
@@ -302,6 +303,8 @@ executable:
   | call { $1 }
   | read { $1 }
   | return { $1 }
+  | if_stmt { $1 }
+/*  | while_stmt { $1 } */
   | todo { $1 }
   | attempt_stmt { $1 }
   | raise_stmt { $1 }
@@ -310,14 +313,6 @@ executable:
   | goto_statement { $1 }
   | label_statement { $1 }
 
-@head(3,'Type Assertions and Axioms')
-@select(h)
-type_assert:
-  | TYPEASSERT expr SEMI  { `AST_typeassert (rstoken $1 $3,$2) }
-    
-type_axiom:
-  | TYPEAXIOM expr SEMI  { `AST_typeaxiom (rstoken $1 $3,$2) }
-    
 @head(3,'Abstract Type')
 @select(h)
 abstract_type:
@@ -422,35 +417,27 @@ fun_args:
   | fun_arg fun_args      { $1 :: $2 }
   | fun_arg               { [$1] }
 
-opt_type:
+opt_type_expr:
   | COLON type_expr { typecode_of_expr $2 }
-  | empty { `TYP_none }
-
-body:
-  | DO compound { $2 }
-  | EQUAL expr SEMI
-    { 
-      let sr = src_of_expr $2 in
-      sr, [`AST_return (sr,$2)] 
-    }
+  | { `TYP_none }
 
 function_definition:
-  | FUNCTION NAME fun_args opt_type body
+  | FUNCTION NAME fun_args opt_type_expr EQUAL compound 
     { 
-      let sr = rsrange (slift $1) (fst $5)
+      let sr = rsrange (slift $1) (fst $6)
       and name = snd $2 
       and return_type = $4
+      and body = snd $6
       and args = List.map snd $3 (* elide srcref *)
-      and body = snd $5
       in mkcurry sr name args return_type body
     }
 
-  | FUNCTION NAME COLON type_expr EQUAL CODE STRING SEMI 
+  | FUNCTION NAME COLON type_expr EQUAL STRING SEMI 
     { 
       let name = snd $2 
       and t = typecode_of_expr $4 
-      and ct = snd $7 
-      and sr = rstoken $1 $8
+      and ct = snd $6 
+      and sr = rstoken $1 $7
       in
       match t with
       | `TYP_function (arg, ret) ->
@@ -468,30 +455,6 @@ function_definition:
           short_string_of_src sr
         )
     }
-
-  | FUNCTION NAME COLON type_expr EQUAL CODE SEMI
-    { 
-      let name = snd $2 
-      and t = typecode_of_expr $4 
-      and sr = rstoken $1 $7
-      in let ct = name ^ "($a)" in
-      match t with
-      | `TYP_function (arg, ret) ->
-        let args = 
-          match arg with
-          | `TYP_tuple lst -> lst
-          | x -> [x]
-        in
-        `AST_fun_decl (sr, name, args,  ret,  ct) 
-      | _ -> 
-        failwith 
-        (
-          "Function '"^name^"' requires function type, got " ^
-          string_of_typecode t ^ " in " ^
-          short_string_of_src sr
-        )
-    }
-
   | FUNCTION NAME COLON type_expr SEMI
     {
       `AST_function_decl (rstoken $1 $5, snd $2,  typecode_of_expr $4) 
@@ -520,7 +483,6 @@ procedure_definition:
       and args = List.map snd $3 (* elide srcref *)
       in mkcurry sr name args return_type body
     }
-
   | PROCEDURE NAME COLON type_expr EQUAL STRING SEMI 
     { 
       let sr = rstoken $1 $7 
@@ -528,20 +490,6 @@ procedure_definition:
       and t = typecode_of_expr $4
       and ct = snd $6
       in
-      let ts = 
-        match t with
-        | `TYP_tuple lst -> lst
-        | x -> [x]
-      in
-      `AST_proc_decl (sr,name, ts,ct) 
-    }
-
-  | PROCEDURE NAME COLON type_expr EQUAL CODE SEMI 
-    { 
-      let sr = rstoken $1 $7 
-      and name = snd $2 
-      and t = typecode_of_expr $4
-      in let ct = name ^ "($a);" in
       let ts = 
         match t with
         | `TYP_tuple lst -> lst
@@ -569,10 +517,6 @@ label:>
 to avoid ambiguity with 'x:int'.
 @select(h)
 goto_statement:
-  | IF expr GOTO NAME SEMI 
-    { 
-      `AST_ifgoto (rstoken $1 $5, $2, snd $4) 
-    }
   | GOTO NAME SEMI 
     { 
       `AST_goto (rstoken $1 $3, snd $2) 
@@ -824,6 +768,9 @@ call:
   }
 
 assignop:
+  | LEFTARROW       { $1,"set" }
+  | EQUAL           { $1,"set" }
+  | COLONEQUAL      { $1,"set" }
   | PLUSEQUAL       { $1,"pluseq" }
   | MINUSEQUAL      { $1,"minuseq" }
   | STAREQUAL       { $1,"muleq" }
@@ -837,48 +784,23 @@ assignop:
   | TILDEEQUAL      { $1,"tildeeq" }
   | LEFTRIGHTARROW  { $1,"swap" }
 
-setop:
-  | LEFTARROW       { $1 }
-  | EQUAL           { $1 }
-  | COLONEQUAL      { $1 }
-
 incrop:
   | PLUSPLUS        { $1,"incr" }
   | MINUSMINUS      { $1, "decr" }
 
 assignment: 
-  | expr setop expr SEMI 
-    {
-      let sr = rsrange (src_of_expr $1) (slift $4) in
-      `AST_set 
-      (
-        sr,
-        (
-          `AST_ref 
-          (
-            src_of_expr $1,
-            $1
-          )
-          ,
-          $3
-        )
-      )
-    }
-
   | expr assignop expr SEMI 
     { 
       let srop,sname = $2 in
       let sr = rsrange (src_of_expr $1) (slift $4) in
       assign sname sr srop $1 $3 
     }
-
   | expr incrop SEMI 
     {
       let srop,sname = $2 in
       let sr = rsrange (src_of_expr $1) (slift $3) in
       call1 ("post_" ^ sname) sr srop $1
     }
-
   | incrop expr SEMI
     {
       let srop,sname = $1 in
@@ -891,10 +813,7 @@ assignment:
 Note that a block is an anonymous procedure defintion together with
 a call to that procedure with the unit argument.
 @p()
-The assignment statements 'v = e;' 
-and 'v := e;' are syntact sugar for 'set(&v,e);'.
-The assignment 'v <- e;' is sugar for 'set(v,e);',
-and is the same as '&v = e'.
+The assignment statement 'v <- e;' is syntact sugar for 'set(&v,e);'.
 
 @head(3,'Place Holder')
 @select(h)
@@ -907,6 +826,61 @@ todo:
 The placed holder is used to denote an incomplete section of code.
 A string may be included after the 'todo' keyword to serve as a reminder
 of the programmers intentions.
+
+
+@head(3,'If/Then/Elif/Else')
+@select(h)
+elif_clause:
+  | ELIF expr THEN statement 
+    { 
+      rsrange (slift $1) (src_of_stmt $4), ($2, $4) 
+    }
+
+else_clause:
+  | ELSE statement 
+    { 
+      rsrange (slift $1) (src_of_stmt $2), $2 
+    }
+
+if_clause:
+  | IF expr THEN statement 
+    { 
+      rsrange (slift $1) (src_of_stmt $4),($2, $4) 
+    } 
+
+elif_clauses:
+  | elif_clause elif_clauses { $1 :: $2 }
+  | elif_clause { [$1] }
+
+ifelif_clause:
+  | if_clause elif_clauses { $1 :: $2 }
+  | if_clause { [$1]}
+
+if_stmt: 
+  | ifelif_clause else_clause ENDIF
+    { 
+      `AST_if 
+      (
+        rsrange (fst (List.hd $1)) (fst $2), 
+        $1, 
+        $2
+      )
+    } 
+  | ifelif_clause ENDIF
+    {  
+      `AST_if 
+      (
+        fst (List.hd $1), 
+        $1, 
+        (generated,`AST_nop (generated,""))
+      ) 
+    } 
+
+@doc()
+The if/then/elif/else constuction provides conditional execution
+of at most one branch; if the else clause is included, then
+exactly one branch is executed. The conditions are tested
+in order of writing.
 
 @head(3,'Attempt/Raise/Except/Finally')
 @select(h)
@@ -1043,7 +1017,7 @@ a value and selects the first matching case from the matching body.
 @head(4,'Patterns')
 @select(h)
 pattern:
-  | pattern WHEN expr 
+  | as_pattern WHEN expr 
     { 
       `PAT_when 
       (
@@ -1055,7 +1029,7 @@ pattern:
   | as_pattern { $1 }
 
 as_pattern:
-  | as_pattern AS NAME 
+  | variant_pattern AS NAME 
     { 
       `PAT_as 
       (
@@ -1068,7 +1042,6 @@ as_pattern:
 
 variant_pattern:
   | tuple_pattern { $1 }
-
 tuple_pattern:
   | atomic_pattern_list 
     { 
@@ -1182,80 +1155,35 @@ floating:
   | MINUS INF { slift $1, Float_minus_inf }
 
 basic_name: NAME { $1 }
-
-letpat:
-   | letpat AS NAME
-   {
-     let lhs:pattern_t = ($1:>pattern_t) in
-     let range:range_srcref = rsrange (src_of_pat lhs) (slift (fst $3)) in
-     let variant = `PAT_as (range, lhs, snd $3) in
-     let result:pattern_t = (variant :> pattern_t) in
-     result
-   }
-   | tuple_letpat { $1 :> pattern_t }
-
-tuple_letpat: 
-  | atomic_letpat_list 
-    { 
-      match $1 with 
-      | [x] -> (x :> pattern_t)
-      | _ -> 
-        (
-        `PAT_tuple 
-        (
-          rsrange (src_of_pat (List.hd $1)) (src_of_pat (list_last $1)),
-          $1
-        )
-        )
-        :> pattern_t
-    }
-
-atomic_letpat_list:
-  | atomic_letpat COMMA atomic_letpat_list { $1 :: $3 }
-  | atomic_letpat { [$1] }
-
-atomic_letpat:
-  | NAME             { (`PAT_name (slift (fst $1), snd $1))  :> pattern_t }
-  | QUEST            { (`PAT_any (slift $1)) :> pattern_t }
-  | ANY              { (`PAT_any (slift $1)) :> pattern_t }
-  | LPAR letpat RPAR { $2 }
-   
 @commalistof("basic_name")
-@head(2,'Expressions')
+
+
+@head(2,'Executable Expressions')
 @select(h)
-type_expr: postfox { $1 }
-expr: rvalue { $1 }
+expr: 
+  | rvalue { $1 }
 
 rvalue:
-  | LET letpat EQUAL rvalue IN rvalue 
-    {
-      let pat:pattern_t = $2 in
-      let match_expr:expr_t = $4 in
-      let match_handler:expr_t = $6 in
-      let sr = rsrange (slift $1) (src_of_expr $6) in
-      `AST_match 
-      (
-        sr, 
-        (
-          match_expr,
-          [pat, match_handler]
-        )
-      )
-    }
   | lambda { $1 }
 
 lambda:
   | tuple { $1 }
-
-  | FUNCTION LPAR parameter_comma_list RPAR opt_type body
+  | FUNCTION LPAR parameter_comma_list RPAR COLON type_expr EQUAL compound
     {
       `AST_lambda 
       (
-        rsrange (slift $1) (fst $6),
-        ($3, $5, snd $6)
+        rsrange (slift $1) (fst $8),
+        ($3, typecode_of_expr $6, snd $8)
       )
     }
-
+  | LAZY LPAR expr RPAR 
+    {
+      `AST_lazy
+      (
+        rstoken $1 $4,
+        $3
+      )
+    }
   | PROCEDURE LPAR parameter_comma_list RPAR compound
     {
       let sr = rsrange (slift $1) (fst $5) in
@@ -1391,23 +1319,11 @@ comparison:
       )
     }
   | sum cmp_op sum                      { apl2 (snd $2) (fst $2) [$1; $3] }
-  | postfox                             { $1 }
-
-postfox:
-  | arrow AS atom 
-    { 
-      let sr = rsrange (src_of_expr $1) (src_of_expr $3) in
-      `AST_as (sr,($1,$3))
-     }
-  | arrow ALL atom
-    {
-      let sr = rsrange (src_of_expr $1) (src_of_expr $3) in
-      `AST_all (sr,($1,$3))
-    }
-
-  | arrow { $1 }
+  | arrow                               { $1 }
 
 /* arrow is right associative */
+type_expr:
+  | arrow { $1 }
 
 arrow:
   | case_literal RIGHTARROW arrow                
@@ -1519,31 +1435,6 @@ application:
     { 
       `AST_apply (rsexpr $1 $2, ($1, $2)) 
     }
-
-  | TYPEOF coercion
-    {
-      `AST_typeof 
-      (
-        rsrange (slift $1) (src_of_expr $2), 
-        $2
-      )
-    }
-  | DOMAIN coercion
-    {
-      `AST_domain
-      (
-        rsrange (slift $1) (src_of_expr $2), 
-        $2
-      )
-    }
-  | CODOMAIN coercion
-    {
-      `AST_codomain
-      (
-        rsrange (slift $1) (src_of_expr $2), 
-        $2
-      )
-    }
   | coercion { $1 }
 
 coercion:
@@ -1580,6 +1471,11 @@ factor:
           let sr = rsrange (src_of_expr $1) (slift $5) in
           `AST_get_n (sr, (n,$1)) 
     }
+  | factor AS NAME
+    { 
+      let sr = rsrange (src_of_expr $1) (slift (fst $3)) in
+      `AST_as (sr,($1,snd $3))
+    }
 
 qualified_name:
   | qualified_name COLONCOLON NAME 
@@ -1590,8 +1486,12 @@ qualified_name:
   | atom { $1 }
 
 atom:
-  | ifthenelse         { $1 }
-  | LSQB expr RSQB     { `AST_lazy (rstoken $1 $3,$2) }
+  | TYPEOF LPAR expr RPAR
+    { 
+      let sr = rstoken $1 $4 in
+      `AST_typeof (sr,$3) 
+    }
+  | LBRACE expr RBRACE     { `AST_lazy (rstoken $1 $3,$2) }
   | match_expr { $1 }
   | compound            
     {
@@ -1599,7 +1499,7 @@ atom:
       `AST_lambda 
       (
         sr,
-        ([], `TYP_none, stmts)
+        ([], `AST_void sr, stmts)
       )
     
     }
@@ -1609,27 +1509,6 @@ atom:
   | VOID                { `AST_void (slift $1) }
   | literal             { $1 }
   | simple_name         { ($1:>expr_t) }
-
-ifthenelse:
-  | IF expr THEN expr ELSE expr ENDIF
-    {
-      let cond = $2 
-      and tru = $4
-      and fals = $6
-      in 
-      let sr = rstoken $1 $7 
-      and tpat = `PAT_const_ctor (slift $3,`AST_case_tag (slift $3,2))
-      and fpat = `PAT_const_ctor (slift $5,`AST_case_tag (slift $5,1))
-      in
-      let matchings = 
-        [
-          (tpat,tru);
-          (fpat,fals)
-         
-        ]
-      in
-      `AST_match (sr, (cond, matchings))
-    }
 
 literal:
   | INTEGER 

@@ -303,7 +303,7 @@ This allows an event loop to call Felix code with
 each message, whilst the Felix program can be
 crafted algorithmically, rather than as a callback.
 
-@head(2,'Compilation Model')
+@head(2,Compilation Model')
 Felix is designed to produce a dynamically loadable
 shared library object which is used by a driver
 program hand crafted in C++ by the programmer.
