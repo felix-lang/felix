@@ -114,7 +114,7 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
           (*
           print_endline (" .. binding parameter " ^ s ^ "<"^ string_of_int k ^ ">");
           *)
-          Hashtbl.add bbdfns k (s,Some i,`BBDCL_val ([],t))
+          Hashtbl.add bbdfns k (s,Some i,`BBDCL_val (vs,t))
         )
         bps 
     (* this case is messy: function bind their own parameters,
@@ -166,10 +166,14 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
       print_endline ("//Binding value " ^ string_of_int i ^ " --> " ^ name); 
       *)
       let t = bt t in
+      (*
+      print_endline ("bound type is " ^ sbt syms.dfns t);
+      *)
       Hashtbl.add bbdfns i (name,parent,`BBDCL_val (vs,t))
 
     | `SYMDEF_var (t) ->
-      (* print_endline ("//Binding variable " ^ string_of_int i ^ " --> " ^ name); 
+      (*
+      print_endline ("//Binding variable " ^ string_of_int i ^ " --> " ^ name); 
       *)
       let t = bt t in
       Hashtbl.add bbdfns i (name,parent,`BBDCL_var (vs,t))

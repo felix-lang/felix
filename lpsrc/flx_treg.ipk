@@ -67,7 +67,7 @@ let register_type_nr syms t =
       let n = !(syms.counter) in
       incr syms.counter;
       if syms.compiler_options.print_flag then
-      print_endline ("ADD type " ^ si n ^ ": " ^ string_of_btypecode syms.dfns t);
+      print_endline ("//Register type " ^ si n ^ ": " ^ string_of_btypecode syms.dfns t);
       Hashtbl.add syms.registry t n
 
 let rec register_type_r syms bbdfns exclude t =
@@ -79,12 +79,9 @@ let rec register_type_r syms bbdfns exclude t =
   let rr t' = register_type_r syms bbdfns (t :: exclude) t' in
   let rnr t = register_type_nr syms t in
   let t' = unfold t in
-  (*
-  print_endline (".. unfolded .." ^ string_of_btypecode syms.dfns t');
-  *)
   match t' with
   | `BTYP_void -> ()
-  | `BTYP_fix _ -> failwith "Fixpoint encountered" 
+  | `BTYP_fix i -> failwith ("[register_type_r] Fixpoint "^si i^"encountered") 
   | `BTYP_var i -> failwith ("Attempt to register type variable " ^ si i)
   | `BTYP_function (ps,ret) -> rr ps; rr ret; rnr t
   | `BTYP_tuple ps -> iter rr ps; rnr t
@@ -95,6 +92,7 @@ let rec register_type_r syms bbdfns exclude t =
     points to may need a complete pointer type: this
     is always the case for recursion under a pointer
   *)
+
   | `BTYP_pointer ts -> rnr t; rr ts
   | `BTYP_binding (src,dst) -> rr dst
   | `BTYP_inst (i,ts)->

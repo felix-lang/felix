@@ -31,7 +31,9 @@ open Flx_maps
 
 (* params is list of string * bound_typecode *)
 let rec metatype syms params term =
+  (*
   print_endline ("Metatype: " ^ string_of_btypecode syms.dfns term);
+  *)
   let st t = string_of_btypecode syms.dfns t in
   let mt t = metatype syms params t in
   match term with
@@ -156,13 +158,33 @@ and mk_prim_type_inst syms i args =
 
 
 and beta_reduce syms (btvars:(int * btypecode_t) list) t = 
-  let br t = beta_reduce syms btvars t in
-  let st t = string_of_btypecode syms.dfns t in
-  let mt t = metatype syms btvars t in
+  (*
+  print_endline ("Beta reduce " ^ sbt syms.dfns t);
+  *)
+  let t = beta_reduce' syms btvars [] t in
+  (*
+  print_endline ("  reduced= " ^ sbt syms.dfns t);
+  *)
+  t
+
+and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t = 
   (*
   print_endline ("BETA REDUCE " ^ string_of_btypecode syms.dfns t);
   *)
-  match unfold t with
+  match list_index termlist t with
+  | Some i -> print_endline ("Beta find fixpoint " ^ si (-i-1)); `BTYP_fix (-i - 1)
+  | None ->
+  let br t' = beta_reduce' syms btvars (t::termlist) t' in
+  let st t = string_of_btypecode syms.dfns t in
+  let mt t = metatype syms btvars t in
+  (* hhmm .. this has to handle a free fixpoint, because it 
+  is called during construction of a recursive type .. so
+  we can't do an unfold.. but them beta-reduce won't
+  find fix points .. hmm .. hmm .. we could fix that by
+  replacing a fixpoint with a copy of the recursed expression ..
+  then let beta-reduce find it..
+  *)
+  match t with
   | `BTYP_apply (t1,t2) ->
     (*
     print_endline "-----------------------";
@@ -217,41 +239,14 @@ and beta_reduce syms (btvars:(int * btypecode_t) list) t =
       print_endline ("Body is " ^ st body);
       *)
       let t = varmap_subst v body in
+      (*
       print_endline ("Result of application = " ^ st t);
+      *)
       br t
 
     | `BTYP_var _ -> t (* can't reduce it yet *)
 
     | `BTYP_name i -> failwith "Betareduce unexpected BTYP_name"
-    (*
-      let id,sr,parent,vs,_,_,dcl = Hashtbl.find syms.dfns i in
-      let brd n =
-        print_endline ("BETAREDUCE " ^ string_of_symdef dcl id vs);
-        begin
-          match t2 with
-          | `BTYP_type_tuple args ->
-            if List.length args = n 
-            then
-              mk_prim_type_inst syms i args
-            else
-              failwith "[beta-reduce] wrong number of arguments to generic type"
-          | _ ->
-            if n = 1 
-            then
-              mk_prim_type_inst syms i [t2]
-            else 
-              failwith "[beta-reduce wrong number of arguments to generic type"
-        end
-      in
-      begin
-        match dcl with
-        | `SYMDEF_union _
-        | `SYMDEF_struct _ -> brd (length vs)
-        | `SYMDEF_abs _ -> brd (length vs)
-
-        | _ -> failwith "[beta_reduce] Expected generic primitve, struct, or union type"
-      end
-    *)
     | _ -> failwith 
       (
         "[beta-reduce] Expected type function or variable, got " ^ 

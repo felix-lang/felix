@@ -80,10 +80,10 @@ let cpp_name syms bbdfns index =
     with _ -> failwith ("[cpp_name] Can't find index " ^ si index)
   in
   (match entry with
-  | `BBDCL_function _ -> "_f_"   
-  | `BBDCL_procedure _  -> "_p_"
-  | `BBDCL_var _ -> "_v_"
-  | `BBDCL_val _ -> "_v_"
+  | `BBDCL_function _ -> "_f"   
+  | `BBDCL_procedure _  -> "_p"
+  | `BBDCL_var _ -> "_v"
+  | `BBDCL_val _ -> "_v"
   | _ -> failwith "cpp_name expected func,proc,var or val"
   ) ^ si index ^ "_" ^ cvt id
 
@@ -102,7 +102,7 @@ let cpp_instance_name syms bbdfns index ts =
       "<" ^ si index ^ ">[" ^catmap ", " (string_of_btypecode syms.dfns) ts ^ "]"
     )
   in
-  "_i" ^ si inst ^ "_" ^ cpp_name syms bbdfns index 
+  "_i" ^ si inst ^ cpp_name syms bbdfns index 
 
 let rec cpp_type_classname syms t = 
   let registry = syms.registry in
@@ -171,8 +171,15 @@ let tsubst
   (ts:btypecode_t list)
   (t:btypecode_t) 
 =
-  if length ts <> length vs
-  then failwith "[tsubst] wrong number of type args"
+  if length ts <> length vs 
+  then 
+    failwith 
+    (
+      "[tsubst] wrong number of type args, expected vs=" ^ 
+      si (length vs) ^
+      ", got ts=" ^ 
+      si (length ts)
+    )
   ;
   let tvs = combine vs ts in
   let varmap = Hashtbl.create 97 in

@@ -234,14 +234,16 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       | NonFunctionEntry (Simple index) -> 
         let e',rhst = be e in
         let lhst = typeofindex syms [] [] 0 [] index parent_ts in
+        let rhst = minimise rhst in
         if type_eq lhst rhst
         then tack (`BEXE_init (index, (e',rhst)))
         else clierr sr
         (
-          "LHS["^s^"]("^string_of_btypecode syms.dfns lhst^
+          "[bind_exe] LHS["^s^"]("^string_of_btypecode syms.dfns lhst^
           ") of initialisation must have same type as RHS("^
           string_of_btypecode syms.dfns rhst^
-          ")"
+          ")" ^
+          " unfolded LHS = " ^ sbt syms.dfns (unfold lhst)
         )
       | NonFunctionEntry _ -> failwith "Not expecting bound entry"
       end

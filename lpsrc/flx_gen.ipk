@@ -485,7 +485,8 @@ let get_variable_typename syms bbdfns i ts =
     let t = tsubst vs ts t in
     cpp_typename syms t
 
-  | _ -> failwith "[get_variable_typename] Expected variable"
+  | _ -> 
+    failwith "[get_variable_typename] Expected variable"
 
 let get_fun_tn syms vs ps ret ts =
   let pts = map (fun (_,(_,t)) -> t) ps in
@@ -511,12 +512,14 @@ let find_members syms bbdfns index ts =
   (
     map 
     (fun idx -> 
-      try
-        let instname = cpp_instance_name syms bbdfns idx ts in
-        let typename = get_variable_typename syms bbdfns idx ts in
-        "  " ^ typename ^ " " ^ instname ^ ";\n"
-      with _ -> 
-        "" (* ignore unused variables *)
+        let instname = 
+          try Some (cpp_instance_name syms bbdfns idx ts) 
+          with _ -> None
+        in match instname with
+        | Some instname ->
+          let typename = get_variable_typename syms bbdfns idx ts in
+          "  " ^ typename ^ " " ^ instname ^ ";\n"
+        | None -> "" (* ignore unused variables *)
     )
     variables
   )
@@ -553,7 +556,7 @@ let gen_function syms bbdfns index id vs bps ret' ts instance_no =
   if syms.compiler_options.print_flag then
   print_endline 
   (
-    "generating function inst " ^ 
+    "//Generating function inst " ^ 
     si instance_no ^ "=" ^ 
     id ^ "<" ^si index^">" ^
     (
@@ -789,8 +792,12 @@ let is_unitsum (t:btypecode_t) = match t with
   | _ -> false
 
 let rec gen_expr syms bbdfns this (e,t) vs ts =
+  (*
+  print_endline ("Generating expression " ^ string_of_bound_expression syms.dfns (e,t));
+  *)
   let ge e = gen_expr syms bbdfns this e vs ts in
-  let tn t = cpp_typename syms (tsubst vs ts (lower t)) in
+  let tsub t = tsubst vs ts t in
+  let tn t = cpp_typename syms (tsub (lower t)) in
   let ge_arg a = 
     match a with
     | _,`BTYP_tuple [] -> ""
@@ -879,7 +886,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
         syserr sr
         ("[gen_expr(name)] Can't find "^ id ^ "<" ^ si index ^ ">")
     in
-    let ts = map (tsubst vs ts) ts' in
+    let ts = map tsub ts' in
     begin match entry with
       | `BBDCL_var (_,t)
       | `BBDCL_val (_,t) ->
@@ -911,7 +918,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
     in
-    let ts = map (tsubst vs ts) ts' in
+    let ts = map tsub ts' in
     begin match entry with
     | `BBDCL_function _ 
     | `BBDCL_procedure _ ->
@@ -937,7 +944,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
     end
 
   | `BEXPR_ref (index,ts') -> 
-    let ts = map (tsubst vs ts) ts' in
+    let ts = map tsub ts' in
     let t = lower t in
     let ref_type = tn (lower t) in
     let var_ptr = "&(" ^ get_var_ref syms bbdfns this index ts ^ ")" in
@@ -982,56 +989,9 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
       *) 
 
 
-  (* special case when function expression is a name *)
-  (*
-  | `BEXPR_apply ((`BEXPR_closure (index,ts),_) as f,a) ->
-    let id,parent,entry = 
-      try Hashtbl.find bbdfns index 
-      with _ -> failwith ("[gen_expr(apply closure)] Can't find index " ^ si index)
-    in
-    begin 
-    (*
-    print_endline ("apply closure of "^ id );
-    print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
-    *)
-    match entry with
-    | `BBDCL_fun (vs,ps,retyp,ct) -> 
-      let retyp = tn retyp in
-      if length vs = 0
-      then
-        (* print_endline "--- CASE OF PRIMITIVE"; *)
-        begin match a with
-        | (`BEXPR_tuple es,`BTYP_tuple typs) ->
-          let ess = map ge es in
-          let ets = map tn typs in
-          let tt = tn (`BTYP_tuple typs) in
-          "(" ^ csubst ct ess ets tt retyp []^ ")"
-        | (_,typ) -> 
-          let typ = tn typ in
-          let a = ge a in
-          "(" ^ csubst ct [a] [typ] typ retyp []^ ")"
-        end
-      else failwith "Generic function requires type arguments"
-
-    | `BBDCL_function (vs,ps,_,_,_) ->
-      (ge f) ^ "->apply(" ^ ge_arg a ^ ")"
-
-    | `BBDCL_struct (vs,_) ->
-      let name = tn (`BTYP_inst (index,ts)) in
-      name ^ "(" ^ ge a ^ ")"
-    
-    | _ -> 
-      failwith 
-      (
-        "[gen_expr] Expected '"^id^"' to be function constant or variable, got:\n" ^
-        string_of_bbdcl syms.dfns entry index 
-      )
-    end
-  *)
-
   | `BEXPR_apply ((`BEXPR_closure (index,ts),_) as f,a) ->
     (*
-    print_endline "generic instance application ..";
+    print_endline "Apply closure ..";
     *)
     let id,parent,entry = 
       try Hashtbl.find bbdfns index 
@@ -1044,11 +1004,14 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
     *)
     match entry with
     | `BBDCL_fun (vs,ps,retyp,ct) -> 
+      if length vs <> length ts
+      then failwith "Wrong number of type arguments to generic function"
+      ;
+      let ts = map tsub ts in
       let retyp = tsubst vs ts retyp in
       let retyp = tn retyp in
       let ts = map tn ts in
-      if length vs = length ts
-      then begin
+      begin
         (*
         print_endline "--- CASE OF PRIMITIVE"; 
         *)
@@ -1062,8 +1025,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
           let typ = tn typ in
           let a = ge a in
           "(" ^ csubst ct [a] [typ] typ retyp ts ^ ")"
-        end
-      else failwith "Wrong number of type arguments to generic function"
+      end
 
     | `BBDCL_function (vs,ps,retyp,_,_) ->
       (ge f) ^ "->apply(" ^ ge_arg a ^ "/* MAY NEED INCREF */)"
@@ -1678,7 +1640,7 @@ let gen_function_methods syms bbdfns label_map counter index ts instance_no =
   if syms.compiler_options.print_flag then
   print_endline 
   (
-    "generating function body inst " ^ 
+    "//Generating function body inst " ^ 
     si instance_no ^ "=" ^ 
     id ^ "<" ^si index^">" ^
     (
@@ -1751,7 +1713,7 @@ let gen_procedure_methods syms bbdfns label_map counter index ts instance_no =
   if syms.compiler_options.print_flag then
   print_endline 
   (
-    "generating procedure body inst " ^ 
+    "//Generating procedure body inst " ^ 
     si instance_no ^ "=" ^ 
     id ^ "<" ^si index^">" ^
     (
@@ -1851,8 +1813,6 @@ let gen_execute_methods syms bbdfns counter bf =
   let id,parent,entry = Hashtbl.find bbdfns index in 
   begin match entry with
   | `BBDCL_function (vs,ps, ret, _,_) -> 
-    if syms.compiler_options.print_flag then
-    print_endline ("//generating methods for function " ^ id ^ "<"^si index^">");
     bcat s ("//------------------------------\n");
     bcat s (
       gen_function_methods syms bbdfns label_map counter index ts instance_no
@@ -1860,8 +1820,6 @@ let gen_execute_methods syms bbdfns counter bf =
     
     
   | `BBDCL_procedure (vs,ps,_,_) -> 
-    if syms.compiler_options.print_flag then
-    print_endline ("//generating methods for procedure " ^ id ^ "<"^si index^">");
     bcat s ("//------------------------------\n");
     bcat s (
       gen_procedure_methods syms bbdfns label_map counter index ts instance_no
@@ -2001,6 +1959,15 @@ let print_help () = print_options(); exit(0)
 let reverse_return_parity = ref false
 ;;
 
+let last_time = ref 0.0
+;;
+let tim() = 
+  let now = (Unix.times()).Unix.tms_utime in
+  let elapsed = now -. !last_time in
+  last_time := now;
+  elapsed
+;;
+
 try
   let argc = Array.length Sys.argv in
   if argc <= 1 
@@ -2062,8 +2029,9 @@ try
   if compiler_options.print_flag
   then print_endline (Flx_print.string_of_compilation_unit parse_tree);
 
+  let parse_time = tim() in
   if compiler_options.print_flag
-  then print_endline "//PARSE OK";
+  then print_endline ("//PARSE OK time " ^ string_of_float parse_time);
 
   (* IF THERE WAS NO INTERFACE FILE, GENERATE ONE *)
   if not have_interface 
@@ -2092,6 +2060,9 @@ try
   let deblocked = 
     desugar_program include_dirs module_name syms.counter parse_tree 
   in
+  let desugar_time = tim() in
+  if compiler_options.print_flag 
+  then print_endline ("//DESUGAR time " ^ string_of_float desugar_time);
 
   (* THIS IS A HACK! *)
   let root = !(syms.counter) in
@@ -2105,15 +2076,20 @@ try
   let table, exes, ifaces,dirs = 
     build_tables syms "<top level>" 0 None None root deblocked 
   in
+  let build_table_time = tim() in
+  if compiler_options.print_flag 
+  then print_endline ("//BUILDING TABLES time " ^ string_of_float build_table_time);
+
 
   if compiler_options.print_flag 
   then print_endline "//BINDING EXECUTABLE CODE"
   ;
   let bbdfns = bbind syms in
   let bifaces = bind_ifaces syms ifaces in
+  let binding_time = tim() in
 
   if compiler_options.print_flag 
-  then print_endline "//Binding complete";
+  then print_endline ("//Binding complete time " ^ string_of_float binding_time);
 
   if compiler_options.print_flag 
   then print_endline "//CHECKING ROOT";
@@ -2160,7 +2136,11 @@ try
   in
   if compiler_options.print_flag 
   then print_endline ("//root module's init procedure has name " ^ top_class);
+  let instantiation_time = tim() in
 
+  if compiler_options.print_flag 
+  then print_endline ("//instantiation time " ^ string_of_float instantiation_time);
+  
   let hf = open_out header_file_name in
   let bf = open_out body_file_name in 
   let psh s = output_string hf s in
@@ -2171,6 +2151,8 @@ try
   if compiler_options.print_flag 
   then print_endline "//GENERATING C++: user headers";
   
+  plh ("#ifndef " ^ module_name);
+  plh ("#define " ^ module_name);
   plh ("//" ^ input_file_name);
   plh ("//Generated by Felix Version " ^ !version_data.version_string);
   plh "";
@@ -2230,7 +2212,8 @@ try
   "struct thread_frame_t;"
   ]
   ;
-  if compiler_options.print_flag then print_endline "//GENERATING C++: collect types";
+  if compiler_options.print_flag then 
+  print_endline "//GENERATING C++: collect types";
   let types = ref [] in 
     Hashtbl.iter 
     (fun t index-> types := (index, t) :: !types)
@@ -2250,17 +2233,20 @@ try
   ;
   *)
 
-  if compiler_options.print_flag then print_endline "//GENERATING C++: type class names";
+  if compiler_options.print_flag then 
+  print_endline "//GENERATING C++: type class names";
   plh "\n//-----------------------------------------";
   plh "//NAME THE TYPES";
   plh  (gen_type_names syms bbdfns types);
 
-  if compiler_options.print_flag then print_endline "//GENERATING C++: type class definitions";
+  if compiler_options.print_flag then 
+  print_endline "//GENERATING C++: type class definitions";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE THE TYPES";
   plh  (gen_types syms bbdfns types);
 
-  if compiler_options.print_flag then print_endline "//GENERATING C++: function and procedure classes";
+  if compiler_options.print_flag then 
+  print_endline "//GENERATING C++: function and procedure classes";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASSES";
   plh  (gen_functions syms bbdfns);
@@ -2291,7 +2277,9 @@ try
 
 
   (* BODY *)
-  if compiler_options.print_flag then print_endline "//GENERATING C++: GC ptr maps & offsets";
+  if compiler_options.print_flag then 
+  print_endline "//GENERATING C++: GC ptr maps & offsets";
+
   plb ("#include \"" ^ module_name ^ ".hpp\"");
   plb "#include <stdio.h>"; (* for diagnostics *)
   plb "#define comma ,";
@@ -2326,7 +2314,8 @@ try
 
   plb (Flx_ogen.gen_offset_tables syms bbdfns);
 
-  if compiler_options.print_flag then print_endline "//GENERATING C++: method bodies";
+  if compiler_options.print_flag then 
+  print_endline "//GENERATING C++: method bodies";
 
   plb "#define FLX_RETURN \\";
   plb "{ \\";
@@ -2406,10 +2395,23 @@ try
   plb (gen_biface_bodies syms bbdfns bifaces);
 
   plh "//header complete";
-  plh "//#endif";
+  plh "#endif";
   plb "//body complete";
   close_out hf;
   close_out bf;
+  let code_generation_time = tim() in
+  if compiler_options.print_flag then 
+  print_endline ("//code generation time " ^ string_of_float code_generation_time);
+  let total_time = 
+    parse_time +.
+    desugar_time +.
+    build_table_time +.
+    binding_time +.
+    instantiation_time +.
+    code_generation_time
+  in  
+  if compiler_options.print_flag then 
+  print_endline ("//Felix compiler time " ^ string_of_float total_time);
   exit (if compiler_options.reverse_return_parity then 1 else 0)
 
 with x -> Flx_terminate.terminate !reverse_return_parity x

@@ -19,19 +19,34 @@ open List
 let t1 =  `BTYP_tuple [`BTYP_name 1; `BTYP_fix (-1)]
 let t2 = `BTYP_tuple [`BTYP_name 1; unfold t1]
 
+let x1 = `BTYP_tuple [`BTYP_name 1; `BTYP_pointer (`BTYP_fix (-2))]
+let x2 = unfold x1
+let z = 
+`BTYP_tuple [`BTYP_name 1; `BTYP_pointer (
+`BTYP_tuple [`BTYP_name 1; `BTYP_pointer (
+`BTYP_tuple [`BTYP_name 1; `BTYP_pointer (
+`BTYP_tuple [`BTYP_name 1; `BTYP_pointer (
+`BTYP_tuple [`BTYP_name 1; `BTYP_pointer (
+ `BTYP_fix (-2)
+)]
+)]
+)]
+)]
+)]
+
+
+(* let minimise t = match map_btype fold t with x -> fold x
+*)
+
 let types =
   [
   t1; 
   t2;
-  `BTYP_tuple [`BTYP_name 2; `BTYP_fix (-1); t2]
+  `BTYP_tuple [`BTYP_name 2; `BTYP_fix (-1); t2];
+  x1;
+  x2;
+  z
   ]
-;;
-
-(* Hmm HOT DAMN! fold minimises a type .. I don't
-  understand why!
-*)
-
-let multi_fold t = map_btype fold t
 ;;
 
 try
@@ -45,12 +60,14 @@ try
   iter 
   (fun t ->
     print_string "Original type "; p t;
+    (*
     let ut = unfold t in 
     print_string "Unfolded type "; p ut;
-    let ft = fold ut in 
-    print_string "Refolded type "; p ft;
-    let ft = multi_fold ft in 
-    print_string "Refolded type "; p ft;
+    *)
+    let ft = fold t in 
+    print_string "folded type "; p ft;
+    let ft = minimise t in 
+    print_string "minimised type "; p ft;
     print_endline "---";
   )
   types;

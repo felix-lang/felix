@@ -1586,6 +1586,38 @@ x = Cons[int] (3,x);
 val y = pair[int,int] (1,2);
 print y.fst; print ","; print y.snd; endl;
 
+@head(2,'Argument Deduction')
+It is inconvenient to specify the type
+arguments for a function. Generally,
+this is not necessary, as illustrated in
+the example: Felix deduces the value
+of the type variables from function arguments.
+
+@select(tangler(tdir+'tut135c.flx'))
+include "std";
+union list[T] = 
+  | Cons of T * list[T] 
+  | Empty
+;
+
+struct pair[T,U] = 
+{
+  fst : T;
+  snd : U;
+}
+
+var x = Cons (1,Empty[int]); 
+  // the [int] in Empty is mandatory
+
+x =  Cons(2,x);
+x = Cons(3,x);
+
+val y = pair(1,2);
+print y.fst; print ","; print y.snd; endl;
+
+
+
+
 @head(2,'Inductive types')
 Felix supports inductive types such as lists.
 Here is a list of ints.

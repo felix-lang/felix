@@ -1066,6 +1066,11 @@ val string_of_entry_set:
 val full_string_of_entry_set:
   symbol_table_t -> entry_set_t -> string
 
+val string_of_varlist:
+  symbol_table_t ->
+  (int * btypecode_t) list ->
+  string
+
 @h = tangler('src/flx_print.ml')
 @select(h)
 open Flx_util
@@ -1368,7 +1373,7 @@ and sb dfns depth fixlist counter prec tc =
       match tc with
       | `BTYP_fix i ->
          incr counter; (* 'a is 1 anyhow .. *)
-         let lab = "fix_" ^ get_label !counter in
+         let lab = "fix" ^ si i ^ "_"^get_label !counter in
          fixlist := (depth+i,lab) :: !fixlist;
          0,lab 
 
@@ -1431,8 +1436,11 @@ and sb dfns depth fixlist counter prec tc =
     in
       let txt,lst = print_fixpoints depth !fixlist in
       fixlist := lst;
-      if iprec >= prec then "(" ^ term ^ txt ^ ")"
-      else term ^ txt
+      if txt = "" then
+        if iprec >= prec then "(" ^ term ^ ")"
+        else term
+      else
+      "(" ^ term ^ txt ^ ")"
 
 and string_of_btypecode (dfns:symbol_table_t) tc = 
   let fixlist = ref [] in
@@ -2380,6 +2388,9 @@ let full_string_of_entry_set dfns = function
     "{\n" ^
       catmap "\n" (full_string_of_entry_kind dfns) ls ^
     "\n}"
+
+let string_of_varlist dfns varlist =
+  catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt dfns t) varlist
 
 @h = tangler('src/flx_mtypes.ml')
 @select(h)

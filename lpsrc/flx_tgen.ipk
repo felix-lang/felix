@@ -76,6 +76,7 @@ let gen_ref name typ =
   "  "^name^"(){}\n" ^
   "  "^name^"(void *f, " ^typ^" *d): _ref_(f,d){}\n" ^
   "  "^typ^" *operator->()const { return ("^typ^"*)data; }\n" ^
+  "  "^typ^" &operator*() const { return *("^typ^"*)data; }\n" ^
   "};\n"
 
 (* this routine generates a typedef (for primitives)

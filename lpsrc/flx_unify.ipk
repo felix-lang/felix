@@ -47,11 +47,16 @@ val unfold:
   btypecode_t ->
   btypecode_t 
 
+(** undo an unfold *)
+val fold:
+  btypecode_t ->
+  btypecode_t 
+
 (** minimise the representation of a type
 with respect to recursion
 *)
 
-val fold:
+val minimise:
   btypecode_t ->
   btypecode_t 
 
@@ -449,12 +454,9 @@ let unfold t =
   | _ -> t'
   in aux 0 t
 
-(* this undoes an unfold: it won't minimise an arbitrary type
- .. hmm .. but it does seem to .. hmmm .. i wrote it and
- I don't understand why it works .. 
-*)
 exception Found of btypecode_t
 
+(* this undoes an unfold: it won't minimise an arbitrary type *)
 let fold t = 
   let rec aux trail depth t' = 
     let ax t = aux ((depth,t')::trail) (depth+1) t in
@@ -485,7 +487,12 @@ let fold t =
   in
     try aux [] 0 t; t
     with Found t -> t
-    
+
+(* produces a unique minimal representation of a type
+by folding at every node *)
+
+let minimise t = match map_btype fold t with x -> fold x
+
 let var_occurs t =
   let rec aux t =
     match t with
