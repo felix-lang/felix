@@ -23,9 +23,10 @@ to get some times.
   ('nestedloop',' 8'),
   ('objinst',' 8'),
   ('random',' 1000'),
-  ('regexmatch',' 8'),
+  ('regexmatch',' 8 < bagley/data/phone_numbers.data'),
   ('reversefile',' 1 < bagley/data/phone_numbers.data'),
   ('sieve',' 8'),
+  ('spellcheck',' < bagley/data/spellcheck.data'),
   ('strcat',' 8'),
   ('sumcol',' < bagley/data/sumcol.data'),
   ('wc',' < bagley/data/phone_numbers.data'), 
@@ -67,6 +68,9 @@ to get some times.
 @for i,j in bags: mko (i,j)
 
 @select(tangler('bagley/run.sh','data'))
+DICT_DIR=bagley/data/
+export DICT_DIR
+echo "DICT_DIR=$DICT_DIR"
 PLUGIN_DIR=bagley/felix/
 export PLUGIN_DIR
 echo "PLUGIN_DIR=$PLUGIN_DIR"
@@ -238,7 +242,7 @@ fun lexit (start:iterator, finish:iterator): iterator * string =>
 ;
 
 // hack so context_check won't crash (pre- and append space)
-val data = " " + Text_file::load("bagley/data/phone_numbers.data")+" ";
+val data = " " + Text_file::load(Text_file::stdin)+" ";
 first := Lexer::start_iterator data;
 finish := Lexer::end_iterator data;
 
@@ -1441,6 +1445,151 @@ done;
 print h1.["foo_1"]; print " "; print h1.["foo_9999"]; print " " ; 
 print h2.["foo_1"]; print " "; print h2.["foo_9999"]; endl;
 
+@select(tangler('bagley/felix/spellcheck.flx','data'))
+@setup()
+include "stl";
+open Stl;
+open Stl::HashSet;
+open Text_file;
+
+requires ext_string_hash;
+
+var prefix = Env::getenv "DICT_DIR";
+if prefix == "" do prefix = "./"; done;
 
 
+var dict = HashSet::create[string]();
+var f = fopen_input (prefix + "Usr.Dict.Words");
+var word = readln f;
+until word == "" do insert (dict,word); word = readln f; done;
+fclose f;
 
+word = readln stdin;
+until word == "" do
+  if not (mem (dict,word)) do print word; done;
+  word = readln stdin;
+done;
+
+@select(tangler('bagley/felix/wordfreq.flx','data'))
+@setup()
+include "stl";
+open Stl;
+open Stl::HashMap;
+open Text_file;
+open Lexer;
+
+requires ext_string_hash;
+
+regexp upper = ["ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
+regexp lower = ["abcdefghijklmnopqrstuvwxyz"];
+regexp wrd = ( upper | lower) +;
+
+fun lexit (start:iterator, finish:iterator): iterator * bool =>
+  reglex start to finish with
+  | wrd => true
+  | _ => false
+  endmatch
+;
+
+var dict = HashMap::create[string,int]();
+proc add_word(s:iterator, e:iterator)
+{
+  word := string_between(s,e);
+  p := find (dict,word);
+  if p == end dict do
+    insert (dict,word,1);
+  else 
+    k,j := deref p;
+    insert (dict, word, j + 1);
+  done;
+}
+
+var data = readln stdin;
+until data == "" do
+  first := start_iterator data;
+  last := end_iterator data;
+
+  var current = first;
+  var next = first;
+  var isword : bool;
+  until current == last do
+    next, isword = lexit(current, last);
+    if isword do 
+      add_word(current,next); 
+      current = next; 
+    else 
+      ++current; 
+    done;
+  done;
+  data = readln stdin;
+done;
+
+@select(tangler('bagley/data/Usr.Dict.Words','data'))
+aback
+abaft
+abandon
+abandoned
+abandoning
+abandonment
+abandons
+abase
+abased
+abasement
+abasements
+abases
+abash
+abashed
+abashes
+abashing
+abasing
+abate
+abated
+abatement
+abatements
+abater
+abates
+abating
+abbe
+abbey
+abbeys
+abbot
+abbots
+abbreviate
+abbreviated
+abbreviates
+abbreviating
+@select(tangler('bagley/data/spellcheck.data','data'))
+aback
+abaft
+abandon
+abandoned
+abandoning
+abandonment
+abandons
+abase
+abased
+abasement
+abases
+abash
+abashed
+abashes
+abashing
+abasing
+abate
+abated
+abatement
+abatements
+abater
+abates
+abating
+abbe
+abbey
+abbeys
+abbot
+abbots
+abbreviate
+abbreviated
+abbreviates
+abbreviating
+zuul
+abasements

@@ -91,15 +91,17 @@ let overload
   (*
   print_endline ("Argument sig is " ^ sbt syms.dfns suf);
   print_endline ("Candidates are " ^ catmap "," (string_of_entry_kind) fs);
+  print_endline ("Input ts = " ^ catmap ", " (sbt syms.dfns) ts);
   *)
   let resolve i =
     match get_data syms.dfns i with 
-    {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=symdef} ->
-    id,sr,parent,i,vs,sig_of_symdef symdef id
+    {id=id; sr=sr;parent=parent;privmap=table;dirs=dirs;symdef=symdef} ->
+    let pvs,vs = find_split_vs syms i in
+    id,sr,parent,i,vs,pvs,sig_of_symdef symdef id
   in
   let sign = lift suf in
   let consider i =
-    let id,sr,p,i,vs,t = resolve i in
+    let id,sr,p,i,vs,pvs,t = resolve i in
     (*
     print_endline ("Candidate "^si i^" sig is " ^ string_of_typecode t);
     *)
@@ -107,9 +109,7 @@ let overload
     let t = lift t in
     (*
     print_endline ("Candidate bound sig is " ^ sbt syms.dfns t);
-    *)
-
-    (*
+    print_endline ("pvs = " ^ catmap ", " (fun (s,i) ->s ^ "=" ^ si i) pvs);
     print_endline ("vs = " ^ catmap ", " (fun (s,i) ->s ^ "=" ^ si i) vs);
     *)
     (* Here we have a parameter list vs of m type variables,
@@ -133,17 +133,22 @@ let overload
        from the environment of a recursive function call
     *)
     (* Step1: make equations for the ts *)
-    let lv n = map (fun i->`BTYP_var i) (nlist n) in
-    let n = length ts in
+   
+    let k = length pvs in
     let m = length vs in 
+    let n = length ts in
     if n>m then clierr sr "Too many type subscripts";
 
-    let eqns = combine (lv n) ts in
+    let base = !(syms.counter) in
+    syms.counter := base + k + m;
+    let lhs = map (fun i -> `BTYP_var (i+base)) (nlist (k + m)) in
+    let rhs = (map (fun (_,i) -> `BTYP_var i) pvs) @ ts in
+    let eqns = combine (list_prefix lhs (k+n)) rhs in
 
     (* Step 2: convert t to use variables 0 to m-1 
       instead of those in vs
     *)
-    let t' = tsubst vs (lv m) t in
+    let t' = tsubst (pvs @ vs) lhs t in
     let eqns = (t',sign) :: eqns in
     (*
     print_endline "EQUATIONS ARE:";
@@ -152,7 +157,7 @@ let overload
     ;
     print_endline "...";
     *)
-    let mgu = maybe_matches syms.dfns eqns in
+    let mgu = maybe_specialisation syms.dfns eqns in
     (match mgu with
     | Some mgu -> 
       (*
@@ -160,6 +165,8 @@ let overload
       *)
       (* each universally quantified variable must be fixed
         by the mgu .. if it doesn't its an error .. hmmm
+
+        THIS CANNOT HAPPEN NOW!
       *)
       let th i = match i with 
         | 0 -> "first"
@@ -169,7 +176,7 @@ let overload
       in
       iter2
       (fun (s,i) k ->
-        if not (mem_assoc k mgu)
+        if not (mem_assoc (k+base) mgu)
         then clierr call_sr
         (
           "[resolve_overload] The " ^th k ^" subscript  " ^ s ^ "["^si i^"]" ^
@@ -192,16 +199,11 @@ let overload
         "\nwhich specialises a variable of the argument type"
       )
       ;
-      (* WRONG .. 
-      let t' = list_subst mgu t in
-      let ts = map (list_subst mgu) ts in
-      *)
       (*
       print_endline ("Matched with mgu = " ^ string_of_varlist syms.dfns mgu);
       *)
-
       (* RIGHT! *)
-      let ts = map (fun i -> assoc i mgu) (nlist m) in
+      let ts = map (fun i -> assoc (base+i) mgu) (nlist (m+k)) in
       
       (*
       print_endline ("Matched candidate " ^ si i ^ 

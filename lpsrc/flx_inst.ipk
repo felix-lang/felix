@@ -223,17 +223,15 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
   | `BBDCL_val (vs,t)
   | `BBDCL_var (vs,t)
     ->
-    assert (length vs = length ts);
-    (*
+    (* assert (length vs = length ts); *)
     if length vs <> length ts
     then syserr sr
     (
-      "ts/vs mismatch index "^si i^", inst "^si inst^": vs = [" ^
+      "ts/vs mismatch instantiating variable " ^ id ^ "<"^si i^">, inst "^si inst^": vs = [" ^
       catmap ";" (fun (s,i)-> s ^"<"^si i^">") vs ^ "], " ^
       "ts = [" ^
       catmap ";" (fun t->sbt syms.dfns t) ts ^ "]"
     );
-    *)
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     let t = varmap_subst hvarmap t in

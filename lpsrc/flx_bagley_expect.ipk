@@ -132,3 +132,7 @@ standard_deviation: 144.481833
 variance:           20875.000000
 skew:               0.000000
 kurtosis:           -1.207202
+@head(2,"bagley/felix/spellcheck.expect")
+@select(tangler("bagley/felix/spellcheck.expect","data"))
+zuul
+@doc()

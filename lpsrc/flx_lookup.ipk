@@ -173,6 +173,7 @@ val typeofindex :
 
 val typeofindex_with_ts:
   sym_state_t ->
+  range_srcref ->
   int ->
   btypecode_t list ->
   btypecode_t
@@ -521,7 +522,7 @@ and lookup_function_in_env
       )
 
 and lookup_sn_in_env 
-  syms
+  syms 
   (env:env_t) 
   (sn: suffixed_name_t)
   : int * btypecode_t list
@@ -540,7 +541,7 @@ and lookup_sn_in_env
     let bsuf = bind_type syms env sr suf in
     (* OUCH HACKERY *)
     let (be,t) = 
-      lookup_qn_with_sig'
+      lookup_qn_with_sig' 
       syms 
       sr sr 
       env [] [] 0 
@@ -844,8 +845,6 @@ and bind_type'
     (fun (e,d) -> string_of_expr e ^ " [depth " ^si d^"]") 
     expr_fixlist
   );
-  *)
-  (*
   if length params <> 0 then
   begin
     print_endline ("  [" ^
@@ -1173,7 +1172,11 @@ and bind_type_index syms
     *)
     `BTYP_fix ((List.assoc index type_alias_fixlist)-depth)
   end  
-  else begin let ts = adjust_ts syms index ts in
+  else begin 
+  (*
+  print_endline "bind_type_index";
+  *)
+  let ts = adjust_ts syms sr index ts in
   match get_data syms.dfns index with
   | {id=id;sr=sr;parent=parent;vs=vs;pubmap=tabl;dirs=dirs;symdef=entry} ->
     (*
@@ -1195,7 +1198,7 @@ and bind_type_index syms
       (*
       print_endline ("Unravelling type alias " ^ id);
       *)
-      let params = make_params syms index ts in
+      let params = make_params syms sr index ts in
       let env:env_t = build_env syms (Some index) in
       let t = 
         bind_type' syms env idx_fixlist ((index,depth) :: type_alias_fixlist) as_fixlist 
@@ -1254,12 +1257,12 @@ and  typeof_literal syms env sr v : btypecode_t =
     )
   
 and typeofindex_with_ts
-  syms 
+  syms sr
   (index:int)
   ts
 =
   let t = typeofindex syms index in
-  let varmap = make_varmap syms index ts in
+  let varmap = make_varmap syms sr index ts in
   let t = varmap_subst varmap t in
   t
 
@@ -1429,7 +1432,7 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth index args =
 
   
 and inner_typeofindex_with_ts
-  syms 
+  syms sr 
   (idx_fixlist:int list) expr_fixlist depth
   (index:int)
   (ts: btypecode_t list)
@@ -1438,7 +1441,7 @@ and inner_typeofindex_with_ts
  print_endline "Inner type of index with ts ..";
  *)
  let t = inner_typeofindex syms idx_fixlist expr_fixlist depth index in
- let varmap = make_varmap syms index ts in
+ let varmap = make_varmap syms sr index ts in
  varmap_subst varmap t
  
 
@@ -1558,7 +1561,10 @@ and inner_typeofindex
     (* ARGGG WHAT A MESS *)
     let ts = map (fun (s,i) -> `AST_name (sr,s,[])) vs in
     let ts = map bt ts in
-    let ts = adjust_ts syms index ts in
+  (*
+  print_endline "inner_typeofindex: struct";
+  *)
+    let ts = adjust_ts syms sr index ts in
     let t = `BTYP_function(bt (paramtype ls),`BTYP_inst (index,ts)) in
     (*
     print_endline ("Struct as function type is " ^ sbt syms.dfns t);
@@ -1694,7 +1700,7 @@ and koenig_lookup syms sra id' name_map fn t2 ts =
     | Some (index'',t,mgu,ts) ->
       (* print_endline "Overload resolution OK"; *)
       `BEXPR_closure (index'',ts),
-       typeofindex_with_ts syms index'' ts
+       typeofindex_with_ts syms sra index'' ts
 
 
     | None ->
@@ -1713,7 +1719,7 @@ and koenig_lookup syms sra id' name_map fn t2 ts =
 
 (* this routine has to return a function or procedure .. *)
 and lookup_qn_with_sig
-  syms 
+  syms  
   sra srn 
   env idx_fixlist 
   (qn:qualified_name_t)
@@ -1780,6 +1786,9 @@ and lookup_qn_with_sig'
     end
 
   | `AST_name (sr,name,ts) ->
+    (*
+    print_endline ("lookup name .." ^ name);
+    *)
     let ts = map (bt sr) ts in
     lookup_name_with_sig 
       syms 
@@ -1787,159 +1796,167 @@ and lookup_qn_with_sig'
       env name ts sign
 
   | `AST_lookup (sr,(qn',name,ts)) -> 
-    let n = length ts in
-    let ts = map (bt sr) ts in
     let m =  eval_module_expr syms env qn' in
-    match m with
-      | (Simple_module (impl, ts',htab,dirs)) ->
-        let ts' = map (bt sr) ts' in
-        (*
-        print_endline ("Module " ^ si impl ^ "[" ^ catmap "," (sbt syms.dfns) ts' ^"]");
-        *)
-        let env' = mk_bare_env syms impl in
-        let tables = get_pub_tables syms env' dirs in
-        let result = lookup_name_in_table_dirs htab tables sr name in
-        begin match result with
-        | None -> 
-          clierr sr
-          (
-            "[lookup_qn_with_sig] AST_lookup: Simple_module: Can't find name " ^ name
-          )
-        | Some entries -> match entries with 
-        | NonFunctionEntry (index) ->
-          begin match get_data syms.dfns index with 
-          {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=entry} 
+    match m with (Simple_module (impl, ts',htab,dirs)) ->
+    (* let n = length ts in *)
+    let ts = map (bt sr)( ts' @ ts) in
+    (*
+    print_endline ("Module " ^ si impl ^ "[" ^ catmap "," (sbt syms.dfns) ts' ^"]");
+    *)
+    let env' = mk_bare_env syms impl in
+    let tables = get_pub_tables syms env' dirs in
+    let result = lookup_name_in_table_dirs htab tables sr name in
+    begin match result with
+    | None -> 
+      clierr sr
+      (
+        "[lookup_qn_with_sig] AST_lookup: Simple_module: Can't find name " ^ name
+      )
+    | Some entries -> match entries with 
+    | NonFunctionEntry (index) ->
+      begin match get_data syms.dfns index with 
+      {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=entry} 
+      ->
+        begin match entry with
+        | `SYMDEF_inherit_fun qn ->
+            clierr sr "Chasing functional inherit in lookup_qn_with_sig'";
+
+        | `SYMDEF_inherit qn ->
+            clierr sr "Chasing inherit in lookup_qn_with_sig'";
+
+        | `SYMDEF_cstruct _ 
+        | `SYMDEF_struct _ ->
+          (*
+          print_endline ("Struct constructor found, type= " ^ sbt syms.dfns t);
+          *)
+  (*
+  print_endline "lookup_qn_with_sig: struct";
+  *)
+          (*
+          let ts = adjust_ts syms sr index ts in
+          *)
+          let t = typeofindex_with_ts syms sr index ts in
+          begin match t with
+          | `BTYP_function (a,_) ->
+            if a <> sign then
+              clierr sr
+              (
+                "[lookup_qn_with_sig] Struct constructor for "^id^" has wrong signature, got:\n" ^
+                sbt syms.dfns t ^
+                "\nexpected:\n" ^
+                sbt syms.dfns sign
+              )
+          | _ -> assert false
+          end
+          ;
+          `BEXPR_closure (index,ts),
+          t
+
+        | `SYMDEF_const (t,_,_) 
+        | `SYMDEF_val t 
+        | `SYMDEF_var t 
+        | `SYMDEF_parameter t
           ->
-            begin match entry with
-            | `SYMDEF_inherit_fun qn ->
-                clierr sr "Chasing functional inherit in lookup_qn_with_sig'";
-
-            | `SYMDEF_inherit qn ->
-                clierr sr "Chasing inherit in lookup_qn_with_sig'";
-
-            | `SYMDEF_cstruct _ 
-            | `SYMDEF_struct _ ->
-              (*
-              print_endline ("Struct constructor found, type= " ^ sbt syms.dfns t);
-              *)
-              let ts = adjust_ts syms index ts in
-              let t = typeofindex_with_ts syms index ts in
-              begin match t with
-              | `BTYP_function (a,_) ->
-                if a <> sign then
-                  clierr sr
-                  (
-                    "[lookup_qn_with_sig] Struct constructor for "^id^" has wrong signature, got:\n" ^
-                    sbt syms.dfns t ^
-                    "\nexpected:\n" ^
-                    sbt syms.dfns sign
-                  )
-              | _ -> assert false
-              end
-              ;
-              let ts'' = ts' @ ts in
-              let ts'' = adjust_ts syms index ts'' in
-              `BEXPR_closure (index,ts''),
+  (*
+  print_endline "lookup_qn_with_sig: val/var";
+  *)
+          (*
+          let ts = adjust_ts syms sr index ts in
+          *)
+          let t = bt sr t in
+          let t = try tsubst vs ts t with _ -> failwith "[lookup_qn_with_sig] WOOPS" in
+          begin match t with
+          | `BTYP_function (a,b) ->
+            if a <> sign then 
+            clierr srn
+            (
+              "[lookup_qn_with_sig] Expected variable "^id ^
+              "<" ^ si index ^ "> to have function type with signature " ^
+              sbt syms.dfns sign ^
+              ", got function type:\n" ^
+              sbt syms.dfns t
+            )
+            else
+              `BEXPR_name (index, ts),
               t
 
-            | `SYMDEF_const (t,_,_) 
-            | `SYMDEF_val t 
-            | `SYMDEF_var t 
-            | `SYMDEF_parameter t
-              ->
-              let ts = adjust_ts syms index ts in
-              let t = bt sr t in
-              let t = tsubst vs ts t in
-              begin match t with
-              | `BTYP_function (a,b) ->
-                if a <> sign then 
-                clierr srn
-                (
-                  "[lookup_qn_with_sig] Expected variable "^id ^
-                  "<" ^ si index ^ "> to have function type with signature " ^
-                  sbt syms.dfns sign ^
-                  ", got function type:\n" ^
-                  sbt syms.dfns t
-                )
-                else
-                  `BEXPR_name (index, ts),
-                  t
+          | `BTYP_inst (i,[]) ->
+            begin match get_data syms.dfns i with
+            { id=id'}->
+            begin match sign with
+            | `BTYP_inst (j,[]) ->
+              begin match get_data syms.dfns j with 
+              { id=id''} ->
+              begin match id',id'' with
+              | "string","string" 
+              | "ustring","ustring" 
+              | "string","int"
+              | "ustring","int" -> 
+                `BEXPR_name (index, ts),
+                 t
 
-              | `BTYP_inst (i,[]) ->
-                begin match get_data syms.dfns i with
-                { id=id'}->
-                begin match sign with
-                | `BTYP_inst (j,[]) ->
-                  begin match get_data syms.dfns j with 
-                  { id=id''} ->
-                  begin match id',id'' with
-                  | "string","string" 
-                  | "ustring","ustring" 
-                  | "string","int"
-                  | "ustring","int" -> 
-                    `BEXPR_name (index, ts),
-                     t
-
-                  | _ ->
-                    clierr srn
-                    (
-                      "[lookup_qn_with_sig] expected variable " ^ 
-                      id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
-                      sbt syms.dfns t
-                    )
-                  end
-                  end
-                | _ ->
-                  clierr srn
-                  (
-                    "[lookup_qn_with_sig] expected variable " ^ 
-                    id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
-                    sbt syms.dfns t
-                  )
-                end
-                end
               | _ ->
                 clierr srn
                 (
                   "[lookup_qn_with_sig] expected variable " ^ 
                   id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
                   sbt syms.dfns t
-                  
                 )
               end
+              end
             | _ ->
-              clierr sr
+              clierr srn
               (
-                "[lookup_qn_with_sig] Named Non function entry "^id^
-                "must befunction type requires struct," ^
-                "or value or variable of function type"
+                "[lookup_qn_with_sig] expected variable " ^ 
+                id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
+                sbt syms.dfns t
               )
             end
-          end
-
-        | FunctionEntry fs ->
-          match
-            resolve_overload
-            syms sra fs name sign ts
-          with
-          | Some (index,t,mgu,ts) ->
-            (*
-            print_endline ("Resolved overload for " ^ name);
-            print_endline ("ts = [" ^ catmap ", " (sbt syms.dfns) ts ^ "]");
-            *)
-            let ts = adjust_ts syms index (ts' @ ts) in
-            `BEXPR_closure (index,ts),
-             typeofindex_with_ts syms index ts
-
-          | None -> 
-            clierr sra
+            end
+          | _ ->
+            clierr srn
             (
-              "[lookup_qn_with_sig] (Simple module) Unable to resolve overload of " ^ 
-              string_of_qualified_name qn ^
-              " of (" ^ sbt syms.dfns sign ^")\n" ^
-              "candidates are: " ^ full_string_of_entry_set syms.dfns entries
+              "[lookup_qn_with_sig] expected variable " ^ 
+              id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
+              sbt syms.dfns t
+              
             )
+          end
+        | _ ->
+          clierr sr
+          (
+            "[lookup_qn_with_sig] Named Non function entry "^id^
+            "must befunction type requires struct," ^
+            "or value or variable of function type"
+          )
         end
+      end
+
+    | FunctionEntry fs ->
+      match
+        resolve_overload
+        syms sra fs name sign ts
+      with
+      | Some (index,t,mgu,ts) ->
+        (*
+        print_endline ("Resolved overload for " ^ name);
+        print_endline ("ts = [" ^ catmap ", " (sbt syms.dfns) ts ^ "]");
+        *)
+        (*
+        let ts = adjust_ts syms sr index ts in
+        *)
+        `BEXPR_closure (index,ts),
+         typeofindex_with_ts syms sr index ts
+
+      | None -> 
+        clierr sra
+        (
+          "[lookup_qn_with_sig] (Simple module) Unable to resolve overload of " ^ 
+          string_of_qualified_name qn ^
+          " of (" ^ sbt syms.dfns sign ^")\n" ^
+          "candidates are: " ^ full_string_of_entry_set syms.dfns entries
+        )
+    end
 
 and lookup_name_with_sig 
   syms 
@@ -1999,10 +2016,9 @@ and handle_function
   | `SYMDEF_struct _
   | `SYMDEF_cstruct _
     ->
-    let ts = adjust_ts syms index ts in
     `BEXPR_closure (index,ts),
     (
-      match inner_typeofindex_with_ts syms 
+      match inner_typeofindex_with_ts syms sr 
         idx_fixlist expr_fixlist depth 
         index ts 
       with
@@ -2027,13 +2043,15 @@ and handle_function
       "[handle_function] Expected function"
     )
 
-and handle_variable syms env index id sr vs ts t t2 = 
+and handle_variable syms env index id sr ts t t2 = 
   let bt sr t = 
     bind_type syms env sr t 
   in
 
     (* we have to check the variable is the right type *) 
     let t = bt sr t in
+    let ts = adjust_ts syms sr index ts in
+    let vs = find_vs syms index in
     let t = tsubst vs ts t in
     begin match t with
     | `BTYP_function (d,c) ->
@@ -2047,12 +2065,14 @@ and handle_variable syms env index id sr vs ts t t2 =
         sbt syms.dfns t
       )
       else
-        let ts = adjust_ts syms index ts in
+        (*
+        let ts = adjust_ts syms sr index ts in
+        *)
         Some
         (
           `BEXPR_name (index, ts),t
           (* should equal t ..
-          typeofindex_with_ts syms index ts
+          typeofindex_with_ts syms sr index ts
           *)
         )
 
@@ -2154,7 +2174,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_var t
     | `SYMDEF_val t 
     | `SYMDEF_parameter t
-      -> handle_variable syms env index id srn vs ts t t2
+      -> handle_variable syms env index id srn ts t t2
     | _ 
       -> 
         clierr sra 
@@ -2316,8 +2336,8 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     let t = beta_reduce syms [] t in
     t
   in
-  let ti i ts = 
-    inner_typeofindex_with_ts syms 
+  let ti sr i ts = 
+    inner_typeofindex_with_ts syms sr
     idx_fixlist ((e,depth)::expr_fixlist) (depth+1) i ts 
          (* CHANGED THIS ------------------*******)
   in
@@ -2446,19 +2466,15 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     end
 
   | `AST_name (sr,name,ts) ->
-    (*
-    print_endline ("AST_name " ^ name ^ "[" ^ catmap "," string_of_typecode ts^ "]");
-    *)
     let ts = map (bt sr) ts in
     begin match lookup_name_in_env syms env sr name with
     | NonFunctionEntry (index) -> 
       (*
       print_endline ("[bind_expression] FOUND INDEX " ^ si index);
       *)
-      let n = length ts in
-      let ts = adjust_ts syms index ts in
+      let ts = adjust_ts syms sr index ts in
       `BEXPR_name (index,ts),
-      let t = ti index ts in
+      let t = ti sr index ts in
       (*
       print_endline ("typ " ^name^ "=" ^ sbt syms.dfns t);
       *)
@@ -2480,19 +2496,16 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     let ts = map (bt sr) ts in
     begin match lookup_name_in_env syms env sr name with
     | NonFunctionEntry (index) -> 
-      let n = length ts in
-      let ts = adjust_ts syms index ts in
+      let ts = adjust_ts syms sr index ts in
       `BEXPR_name (index,ts),
-      let t = ti index ts in
+      let t = ti sr index ts in
       t
 
     | FunctionEntry [index] -> 
-      let n = length ts in
-      let ts = adjust_ts syms index ts in
+      let ts = adjust_ts syms sr index ts in
       `BEXPR_closure (index,ts),
-      let t = ti index ts in
+      let t = ti sr index ts in
       t
-
 
     | FunctionEntry _ -> 
       clierr sr
@@ -2526,9 +2539,9 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
           begin match Hashtbl.find syms.dfns i with
           | {sr=srn; symdef=`SYMDEF_inherit qn} -> be (qn :> expr_t)
           | _ ->
-            let ts = adjust_ts syms i ts in
+            let ts = adjust_ts syms sr i ts in
             `BEXPR_name (i,ts), 
-            ti i ts
+            ti sr i ts
           end
 
         | FunctionEntry fs ->
@@ -2581,7 +2594,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
       | `SYMDEF_inherit_fun _ -> clierr srr "Woops, bindexpr yielded inherit fun"
       | `SYMDEF_var _ ->
         let vtype = 
-          inner_typeofindex_with_ts syms 
+          inner_typeofindex_with_ts syms sr
           idx_fixlist ((e,depth)::expr_fixlist) 
           (depth+1) 
          index ts
@@ -2799,7 +2812,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     )
 
 and resolve_overload
-  syms
+  syms 
   sr
   (fs : entry_kind_t list)
   (name: string)

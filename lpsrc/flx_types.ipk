@@ -904,6 +904,8 @@ open Flx_types
 open List
 
 let map_type f = function
+  | `AST_name (sr,name,ts) -> `AST_name (sr,name, map f ts)
+  | `AST_lookup (sr,(e,name,ts)) -> `AST_lookup (sr,(e,name,map f ts))
   | `AST_typed_case (sr,i,t) -> `AST_typed_case (sr,i, f t)
   | `TYP_tuple ts -> `TYP_tuple (map f ts)
   | `TYP_sum ts -> `TYP_sum (map f ts)
@@ -2120,7 +2122,7 @@ and string_of_properties ps =
 and string_of_reqs = function 
   | [] -> ""
   | x -> 
-    "requires " ^ catmap ", " 
+    " requires " ^ catmap ", " 
     (function 
       | `Named_req s -> string_of_qualified_name s
       | `Body_req s -> "body \"" ^ s ^ "\""
@@ -2129,7 +2131,7 @@ and string_of_reqs = function
     x
 
 and string_of_named_reqs = function | [] -> ""
- | x -> "requires " ^ catmap ", " string_of_qualified_name x
+ | x -> " requires " ^ catmap ", " string_of_qualified_name x
 
 and string_of_qual = function 
 | `Incomplete -> "incomplete"
@@ -2918,12 +2920,12 @@ and string_of_dcl level name vs (s:dcl_t) =
   | `DCL_header (s,reqs) -> 
     spaces level ^ "header " ^ name ^  print_vs vs ^
     " = "^ string_of_string s ^
-    string_of_named_reqs reqs
+    string_of_named_reqs reqs ^ ";"
     
   | `DCL_body (s,reqs) -> 
     spaces level ^ "body " ^ name ^ print_vs vs ^
     " = "^ string_of_string s ^
-     string_of_named_reqs reqs
+     string_of_named_reqs reqs ^ ";"
 
   | `DCL_const (typ, code, reqs) ->
     spaces level ^ 

@@ -185,11 +185,6 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
   *)
 
   let parent_ts = map (fun (s,i) -> `BTYP_var i) parent_vs in
-  let parent_ts_len = length parent_ts in
-  let resolve_tvars ts =
-    let n = length ts in
-    (list_prefix parent_ts (parent_ts_len - n)) @ ts
-  in
   let ret_type = ref ret_type in
   let be e : tbexpr_t = bind_expression syms env e in
   let lun sr n = lookup_name_in_env syms env sr n in
@@ -336,7 +331,9 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
 
     | `EXE_nop s ->           tack (`BEXE_nop (sr,s))
     | `EXE_code s ->          tack (`BEXE_code (sr,s))
-    | `EXE_noreturn_code s ->  reachable := false; tack (`BEXE_nonreturn_code (sr,s))
+    | `EXE_noreturn_code s ->  
+      reachable := false; 
+      tack (`BEXE_nonreturn_code (sr,s))
 
     | `EXE_init (s,e) -> 
       begin match lun sr s with
@@ -350,7 +347,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         (*
         print_endline "Binding LHS of initialistion with typeofindex";
         *)
-        let lhst = typeofindex_with_ts syms index parent_ts in
+        let lhst = typeofindex_with_ts syms sr index parent_ts in
         let rhst = minimise syms.dfns rhst in
         let lhst = match lhst with |`BTYP_lvalue t -> t | t -> t in
         if type_match syms.dfns lhst rhst

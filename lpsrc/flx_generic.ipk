@@ -3,6 +3,12 @@
 @select(h)
 open Flx_types
 open Flx_mtypes2
+open Flx_ast
+
+val find_split_vs:
+  sym_state_t ->
+  int -> 
+  (string * int) list * (string * int) list 
 
 val find_vs:
   sym_state_t ->
@@ -11,31 +17,21 @@ val find_vs:
 
 val adjust_ts:
   sym_state_t ->
+  range_srcref ->
   int ->
-  btypecode_t list ->
-  btypecode_t list
-
-val adjust_vs_ts:
-  sym_state_t ->
-  int ->
-  (string * int) list ->
   btypecode_t list ->
   btypecode_t list
 
 val make_params:
   sym_state_t ->
+  range_srcref ->
   int ->
   btypecode_t list ->
   (string * btypecode_t) list
 
-val make_eqns:
-  sym_state_t ->
-  int ->
-  btypecode_t list ->
-  (btypecode_t * btypecode_t) list
-
 val make_varmap:
   sym_state_t ->
+  range_srcref ->
   int ->
   btypecode_t list ->
   (int, btypecode_t) Hashtbl.t
@@ -47,6 +43,7 @@ open Flx_mtypes1
 open Flx_mtypes2
 open Flx_util
 open List
+open Flx_exceptions
 
 (* Adjustment of type argument lists works much
 like the activation record display, so well call
@@ -86,38 +83,84 @@ let rec find_vs syms i =
   match parent with
   | Some i -> find_vs syms i @ vs
   | None -> vs
+
+let rec find_func_vs syms vs j =
+  match Hashtbl.find syms.dfns j with
+  | {parent=parent; vs=vs'; symdef=`SYMDEF_module } ->
+    begin match parent with 
+    | None -> [],vs' @ vs
+    | Some j -> find_func_vs syms (vs' @ vs) j
+    end
+
+  | _ ->
+    find_vs syms j,vs
+
+  (*
+  | {parent=parent; id=name; vs=vs'; symdef = symdef}-> 
+    begin match parent with 
+    | None -> [],vs' @ vs
+    | Some j -> find_func_vs syms (vs' @ vs) j
+    end
+  *)
+    (*
+    failwith 
+    (
+      "find_func_vs: parent must be module or function, got:" ^
+      Flx_print.string_of_symdef symdef name vs'
+    )
+    *)
+
+let find_split_vs syms i =
+  match Hashtbl.find syms.dfns i with
+  {symdef=`SYMDEF_typevar _} -> [],[]
   
-let adjust_vs_ts syms index vs ts =
-  let ts0 = map (fun (s,i) -> `BTYP_var i) vs in
-  let 
-    n = length vs and 
-    m = length ts 
-  in
-  let ts =
-    if m > n then list_prefix ts n
-    else list_prefix ts0 (n-m) @ ts
-  in
-    assert (length ts = length vs);
-    ts
+  | {parent=parent; vs=vs} ->
+  match parent with 
+  | None -> [],vs
+  | Some j -> find_func_vs syms vs j
 
-let adjust_ts syms index ts =
-  let vs = find_vs syms index in
-  adjust_vs_ts syms index vs ts
+let print_vs vs = catmap ", " (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs
 
-let make_params syms i ts =
+let adjust_ts syms sr index ts =
+  let pvs,vs = find_split_vs syms index in
+  let k = length pvs in
+  let m = length vs in 
+  let n = length ts in
+  if n>m then begin
+    match Hashtbl.find syms.dfns index with {id=id} ->
+    clierr sr 
+    (
+      "For "^ id^ "<" ^ si index ^ 
+      "> Too many type subscripts, expected " ^ 
+      si m ^ " got " ^ si n ^ 
+      "\nparent vs="^print_vs pvs ^ 
+      "\nvs="^print_vs vs
+    )
+  end;
+  if n<m then begin
+    match Hashtbl.find syms.dfns index with {id=id} ->
+    clierr sr 
+    (
+      "For "^id^"<" ^ si index ^ 
+      "> Not enough type subscripts, expected " ^ 
+      si m ^ " got " ^ si n ^ 
+      "\nparent vs="^print_vs pvs ^ 
+      "\nvs=" ^ print_vs vs
+    )
+  end;
+  
+  map (fun (_,i) -> `BTYP_var i) pvs @ ts
+  
+
+let make_params syms sr i ts =
   let vs = find_vs syms i in
-  let ts = adjust_vs_ts syms i vs ts in
+  let ts = adjust_ts syms sr i ts in
   map2 (fun (s,i) t -> s,t) vs ts
 
-let make_varmap syms i ts =
+(* full ts required *)
+let make_varmap syms sr i ts = 
   let vs = find_vs syms i in
-  let ts = adjust_vs_ts syms i vs ts in
+  assert (length ts = length vs);
   let vars = map2 (fun (s,i) t -> i,t) vs ts in
   hashtable_of_list vars
-
-let make_eqns syms i ts =
-  let vs = find_vs syms i in
-  let ts = adjust_vs_ts syms i vs ts in
-  map2 (fun (s,i) t -> `BTYP_var i,t) vs ts
-
 

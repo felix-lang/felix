@@ -24,6 +24,11 @@ val maybe_matches:
   (btypecode_t * btypecode_t) list ->
   (int * btypecode_t) list option
 
+val maybe_specialisation: 
+  symbol_table_t -> (* just for diagnostics *)
+  (btypecode_t * btypecode_t) list ->
+  (int * btypecode_t) list option
+
 (** test if two types unify *)
 val unifies: 
   symbol_table_t -> (* just for diagnostics *)

@@ -1245,7 +1245,64 @@ proc printint (x:int) { print x; }
 
 pr (x,(printint of (int))); endl;
 
+@head (2,'Generic modules')
+It is also possible specify type arguments for a module.
+The effect is simply that all the entities declared in
+the module are parameterised by the type parameter.
+@p()
+Because of this, you can open a generic module,
+but you must do so without specifying any type arguments.
+@p()
+When you use a qualified name, Felix concatenates
+all the arguments and applies them to the last component.
+@p()
+Note this excludes parent functions, since the type
+arguments of the parent of a function are fully
+determined by its child.
 
+@select(tangler(tdir+'tut135g.flx'))
+include "std";
+
+module X[t] {
+  fun f[k]: t * k  -> t = "1";
+  fun cmp: t * t -> bool = "1";
+  fun mk: 1 -> t = "1";
+  fun subscript: t * t -> t = "2";
+}
+
+// both args explicit
+var a1 = X[int,long]::f(1,1L);
+var a2 = X[int]::f[long](1,1L);
+var a3 = X::f[int,long](1,1L);
+
+// first arg explicit
+var a4 = X::f[int](1,1L);
+var a5 = X[int]::f(1,1L);
+
+// full deduction
+var a6 = X::f(1,1L);
+
+// using unqualified names
+open X;
+var a7 = f[int,long](1,1L);
+var a8 = f[int](1,1L);
+var a9 = f(1,1L);
+
+print a1;
+print a2;
+print a3;
+print a4;
+print a5;
+print a6;
+print a7;
+print a8;
+print a9;
+
+print (1).[2];
+
+var x = mk[int]();
+var y = mk[int]();
+if cmp(x,y) do print "YES"; endl; else print "NO"; endl; done;
 
 @head(2,'Inductive types')
 Felix supports inductive types such as lists.

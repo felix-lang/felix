@@ -48,6 +48,7 @@ open Flx_exceptions
 open List
 open Flx_constfld
 open Flx_srcref
+open Flx_typing2 
 
 exception Macro_return
 
@@ -197,12 +198,49 @@ and alpha_stmts sr local_prefix seq ps sts =
     let ps = combine psn' pst in
     ps,sts
   
+and expand_type_expr sr recursion_limit local_prefix seq (macros:macro_dfn_t list) (t:typecode_t):typecode_t=
+  if recursion_limit < 1 
+  then failwith "Recursion limit exceeded expanding macros";
+  let recursion_limit = recursion_limit - 1 in
+  let me e = expand_expr recursion_limit local_prefix seq macros e in
+  let mt t : typecode_t = expand_type_expr sr recursion_limit local_prefix seq macros t in
+  let mi sr i = expand_ident sr macros [] i in
+  match Flx_maps.map_type mt t with
+
+  (* Name expansion *)
+  | `AST_name (sr, name,[]) as t ->
+    begin try 
+      match List.assoc name macros with
+      | MVar b -> typecode_of_expr (me !b)
+      | MVal b -> typecode_of_expr (me b)
+      | MExpr(ps,b) -> t
+      | MName _ -> `AST_name (sr,mi sr name,[])
+      | MStmt (ps,b) -> t
+    with 
+    | Not_found -> t
+    end
+
+  | `AST_name (sr, name,ts) as t -> 
+    let ts = map mt ts in
+    begin try 
+      match List.assoc name macros with
+      | MName _ -> `AST_name (sr,mi sr name,ts)
+      | _ -> `AST_name (sr,name,ts)
+    with 
+    | Not_found -> t
+    end
+
+  | `TYP_typeof e -> `TYP_typeof (me e)
+
+  | x -> x
+
 (* expand expression *)
 and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:expr_t):expr_t =
   if recursion_limit < 1 
   then failwith "Recursion limit exceeded expanding macros";
   let recursion_limit = recursion_limit - 1 in
   let me e = expand_expr recursion_limit local_prefix seq macros e in
+  let mt sr e = expand_type_expr sr recursion_limit local_prefix seq macros e in
   let mi sr i = expand_ident sr macros [] i in
   let cf e = const_fold e in
   let e = cf e in
@@ -269,10 +307,11 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     end
 
   | `AST_name (sr, name,ts) -> 
+    let ts = map (mt sr) ts in
     begin try 
       match List.assoc name macros with
       | MName _ -> `AST_name (sr,mi sr name,ts)
-      | _ -> e
+      | _ -> `AST_name (sr,name,ts)
     with 
     | Not_found -> e
     end
@@ -381,15 +420,13 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | `AST_case_tag (sr, i) -> e
   | `AST_typed_case (sr, i, t) -> e
 
-  | `AST_ellipsis (sr) -> failwith "Unexpected ellipsis ..."
 
   | `AST_tuple (sr, es) -> `AST_tuple (sr, map me es)
-  | `AST_coercion (sr, (e1, t)) -> `AST_coercion (sr, (me e1,t)) 
+  | `AST_coercion (sr, (e1, t)) -> `AST_coercion (sr, (me e1,mt sr t)) 
   | `AST_suffix (sr, (qn, t)) -> 
     let qn = Flx_typing.qualified_name_of_expr (me (qn:>expr_t)) in
     `AST_suffix (sr, (qn,t)) 
 
-  | `AST_void sr -> e
   | `AST_arrow (sr, (e1, e2)) ->  `AST_arrow (sr,(me e1, me e2))
   | `AST_superscript (sr, (e1, e2)) ->  `AST_superscript (sr,(me e1, me e2))
 
@@ -397,7 +434,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | `AST_map (sr, f, e) -> `AST_map (sr, me f, me e)
   | `AST_deref (sr, e1) -> `AST_deref (sr, me e1)
   | `AST_ref (sr, e1) ->  `AST_ref (sr, me e1)
-  | `AST_lvalue (sr, e1) ->  `AST_lvalue (sr, me e1)
   | `AST_method_apply (sr, (id, e1)) -> `AST_method_apply (sr,(mi sr id, me e1))
   | `AST_dot (sr, (e1, id)) ->  `AST_dot (sr,(me e1,mi sr id))
   | `AST_match_ctor (sr, (qn, e1)) -> `AST_match_ctor (sr,(qn,me e1))
@@ -430,10 +466,12 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     let res = map (fun (rexp,e) -> rexp, me e) res in
     `AST_reglex (sr,(me e1, me e2, res))
 
-  | `AST_typeof (sr, e1) -> `AST_typeof(sr, me e1)
-
-  | `AST_type_match (sr, (e1, pes)) -> 
-    syserr sr "Expand expr: expected expresssion got type match"
+  | `AST_ellipsis _
+  | `AST_void _
+  | `AST_lvalue _
+  | `AST_type_match _
+  | `AST_typeof _
+    -> syserr (Flx_srcref.src_of_expr e) "Expand expr: expected expresssion, got type"
 
 (* ---------------------------------------------------------------------
   do the common work of both subst_statement and expand_statement,
@@ -441,6 +479,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 *)
 and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (st:statement_t):statement_t list = 
   let recurion_limit = recursion_limit - 1 in
+  let mt sr e = expand_type_expr sr recursion_limit local_prefix seq macros e in
   let me e = expand_expr recursion_limit local_prefix seq macros e in
   let ms s = recurse recursion_limit local_prefix seq (ref true) macros s in
   let ms' reachable s = recurse recursion_limit local_prefix seq reachable macros s in
@@ -482,12 +521,21 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   (* IDENTIFIER RENAMING NOT SUPPORTED IN REGDEF *)
   | `AST_regdef (sr, id, re)  ->  tack st
 
-  | `AST_union (sr, id, vs, idts ) ->  tack (`AST_union (sr, mi sr id, vs, idts))
-  | `AST_struct (sr, id, vs, idts) ->  tack (`AST_struct (sr, mi sr id, vs, idts))
-  | `AST_cstruct (sr, id, vs, idts) ->  tack (`AST_cstruct (sr, mi sr id, vs, idts))
+  | `AST_union (sr, id, vs, idts ) ->  
+    let idts = map (fun (id,t) -> id,mt sr t) idts in
+    tack (`AST_union (sr, mi sr id, vs, idts))
+    
+  | `AST_struct (sr, id, vs, idts) ->  
+    let idts = map (fun (id,t) -> id,mt sr t) idts in
+    tack (`AST_struct (sr, mi sr id, vs, idts))
+    
+  | `AST_cstruct (sr, id, vs, idts) ->  
+    let idts = map (fun (id,t) -> id,mt sr t) idts in
+    tack (`AST_cstruct (sr, mi sr id, vs, idts))
 
   (* IDENTIFIER RENAMING NOT SUPPORTED IN TYPES *)
-  | `AST_type_alias (sr, id, vs, t) ->  tack st
+  | `AST_type_alias (sr, id, vs, t) ->  
+    tack (`AST_type_alias (sr,id,vs, mt sr t))
   
   | `AST_inherit (sr, id, vs, t) ->  tack st
   | `AST_inherit_fun (sr, id, vs, t) ->  tack st
@@ -503,10 +551,10 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_abs_decl _ ->  tack st
 
   | `AST_const_decl (sr, id, vs, t, c, reqs) -> 
-     tack (`AST_const_decl (sr, mi sr id, vs, t, c, reqs))
+     tack (`AST_const_decl (sr, mi sr id, vs, mt sr t, c, reqs))
     
   | `AST_fun_decl (sr, id, vs, ts, t, c, reqs) -> 
-     tack (`AST_fun_decl (sr, mi sr id, vs, ts, t, c, reqs))
+     tack (`AST_fun_decl (sr, mi sr id, vs, map (mt sr) ts, mt sr t, c, reqs))
     
   | `AST_header (sr, n, vs, s,reqs) ->  tack st
   | `AST_body (sr, n, vs, s, reqs) ->  tack st
@@ -542,14 +590,17 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   | `AST_function (sr, id, vs, ps, t, props, sts ) ->
     let pr = map fst ps in
-    tack(`AST_function (sr, mi sr id, vs, ps, t, props, msp sr pr sts ))
+    let ps = map (fun (id,t) -> id,mt sr t) ps in
+    tack(`AST_function (sr, mi sr id, vs, ps, mt sr t, props, msp sr pr sts ))
 
   | `AST_curry (sr,id,vs,pss,ret,kind,sts) ->
     let pr = map fst (concat pss) in
+    let pss = map (map (fun (id,t) -> id,mt sr t)) pss in
     tack(`AST_curry(sr, mi sr id, vs, pss, ret,kind, msp sr pr sts ))
 
   | `AST_object (sr, id, vs, ps, sts ) ->
     let pr = map fst ps in
+    let ps = map (fun (id,t) -> id,mt sr t) ps in
     tack(`AST_object (sr, mi sr id, vs, ps, msp sr pr sts ))
 
   | `AST_val_decl (sr, id, vs, optt, opte) -> 
@@ -565,6 +616,10 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
           we can't tell the difference here
         *)
     in
+    let optt = match optt with
+    | Some t -> Some (mt sr t)
+    | None -> None
+    in
       tack (`AST_val_decl (sr, mi sr id, vs, optt, opte))
 
   | `AST_var_decl (sr, id, vs, optt, opte) -> 
@@ -575,6 +630,10 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
       | None -> None 
         (* vars don't have to be initialised *)
+    in
+    let optt = match optt with
+    | Some t -> Some (mt sr t)
+    | None -> None
     in
       tack (`AST_var_decl (sr, mi sr id, vs, optt, opte))
   

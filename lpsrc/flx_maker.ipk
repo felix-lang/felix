@@ -552,9 +552,9 @@ FLX_IMPLEMENTATIONS = FLX_INTERFACES
 CIL_IMPLEMENTATIONS = CIL_INTERFACES
 FISH_IMPLEMENTATIONS = FISH_INTERFACES
   
-IMPLEMENTATIONS = CIL_IMPLEMENTATIONS + FLX_IMPLEMENTATIONS + FISH_IMPLEMENTATIONS
-INTERFACES = CIL_INTERFACES + FLX_INTERFACES + FISH_INTERFACES
-RAW_INTERFACES = CIL_RAW_INTERFACES + FLX_RAW_INTERFACES + FISH_RAW_INTERFACES
+IMPLEMENTATIONS = CIL_IMPLEMENTATIONS + FISH_IMPLEMENTATIONS + FLX_IMPLEMENTATIONS 
+INTERFACES = CIL_INTERFACES + FISH_INTERFACES + FLX_INTERFACES
+RAW_INTERFACES = CIL_RAW_INTERFACES + FISH_RAW_INTERFACES + FLX_RAW_INTERFACES
 
 RTL_CPPS = [
   "rtl/flx_gc",
@@ -1001,9 +1001,6 @@ try:
       else:
         print "Bad",bad,"/",total
     print '**********************************'
-    sys.exit(bad)
-
-  sys.exit(0)
 
 except MakeError:
   print "Terminating due to error"
@@ -1321,7 +1318,6 @@ We have no idea if it continues copying.
 @tangle('\tinstall -d ${MAN_DIR}')
 @tangle('\tinstall -d ${SHLIB_DIR}')
 @tangle('\tinstall -d ${SHINC_DIR}')
-@tangle('\tinstall -d ${SHINC_DIR}/rtl')
 @tangle('\tinstall -d ${INSTALL_DIR}/lib')
 @tangle('\tinstall -d ${INSTALL_DIR}/rtl')
 @tangle('\tinstall -d ${INSTALL_DIR}/config')
@@ -1330,7 +1326,7 @@ We have no idea if it continues copying.
 @tangle('\tinstall config/*.py ${INSTALL_DIR}/config')
 @tangle('\tinstall config/*.flxcc ${INSTALL_DIR}/config')
 @tangle('\tinstall lib/* ${INSTALL_DIR}/lib')
-@tangle('\tinstall rtl/*.hpp ${SHINC_DIR}/rtl')
+@tangle('\tinstall rtl/*.hpp ${SHINC_DIR}')
 @tangle('\tinstall rtl/* ${INSTALL_DIR}/rtl')
 @if SUPPORT_STATIC_LINKAGE:
   tangle('\t'+RANLIB+' ${INSTALL_DIR}/rtl/libflx_static.a')

@@ -315,6 +315,16 @@ int main(int argc, char*argv[]) {
     return 0; 
 }
 
+@h = tangler("tmp/check_inclass.cxx",'c++')
+@select(h)
+struct X {
+  static const int i = 1;
+};
+
+int main(int,char*[]) { 
+  return 0;
+}
+
 @h = tangler("script/make_config.py")
 @select(h)
 # THIS PROGRAM CREATES THE DEFAULT CONFIGURATION FILE
@@ -560,7 +570,7 @@ try:
   CC = "cc "
   HAVE_CC=1
 except:
-  HAVE_CC = 0
+  HAVE_CC=0
 
 # find if we have CC (not 'cc' but 'CC')
 try:
@@ -578,6 +588,13 @@ else:
   CXX = "#g++ "
   print "WARNING: CANT FIND C++ COMPILER"
 
+if HAVE_MSVC: CC = MSVC
+elif HAVE_GXX: CC = GCC
+elif HAVE_CCC: CC = CC
+else:
+  CC = "#gcc "
+  print "WARNING: CANT FIND C COMPILER"
+
 # set preprocessor
 if HAVE_GCC:
   CPP = CXX + "-E "
@@ -588,6 +605,13 @@ try:
   CYGWIN=1
 except:
   CYGWIN=0
+
+# find if we have static const init in class
+try:
+  xqt(CXX+" -w -c tmp/check_inclass.cxx -o tmp/dummy.o")
+  HAVE_INCLASS_MEMBER_INITIALIZATION=1
+except:
+  HAVE_INCLASS_MEMBER_INITIALIZATION=0
 
 # find if we have pkg-config
 if 1:
@@ -697,28 +721,28 @@ except:
 
 # find if we have BSD isnan in <cmath> (NAUGHTY!)
 try:
-  xqt("g++ -w -c tmp/dummy_nan.cxx -o tmp/dummy_nan.o")
+  xqt(CXX+" -w -c tmp/dummy_nan.cxx -o tmp/dummy_nan.o")
   HAVE_ISNAN_IN_CMATH=1
 except:
   HAVE_ISNAN_IN_CMATH=0
 
 # find if we have BSD isnanf in <ieeefp.h> (NAUGHTY!)
 try:
-  xqt("g++ -w -c tmp/dummy_nan2.cxx -o tmp/dummy_nan2.o")
+  xqt(CXX+" -w -c tmp/dummy_nan2.cxx -o tmp/dummy_nan2.o")
   HAVE_ISNANF_IN_IEEEFP=1
 except:
   HAVE_ISNANF_IN_IEEEFP=0
 
 # find if we have stdint.h
 try:
-  xqt("g++ -w -c tmp/dummy_stdint.cxx -o tmp/dummy_stdint.o")
+  xqt(CXX+" -w -c tmp/dummy_stdint.cxx -o tmp/dummy_stdint.o")
   HAVE_STDINT=1
 except:
   HAVE_STDINT=0
 
 # find sizes of ints
 try:
-  xqt("g++ -w tmp/intsizes.cxx -o tmp/intsizes")
+  xqt(CXX+" -w tmp/intsizes.cxx -o tmp/intsizes")
   xxqt("tmp/intsizes > tmp/intsizes.py")
   execfile("tmp/intsizes.py")
 except:
@@ -727,7 +751,7 @@ except:
   
 # find if we have long long
 try:
-  xqt("g++ -w tmp/longlong.cxx -o tmp/longlong")
+  xqt(CXX+" -w tmp/longlong.cxx -o tmp/longlong")
   xxqt("tmp/longlong >tmp/longlong.py")
   execfile("tmp/longlong.py")
   HAVE_LONGLONG=1
@@ -736,7 +760,7 @@ except:
 
 # find if we have long double
 try:
-  xqt("g++ -w tmp/longdouble.cxx -o tmp/longdouble")
+  xqt(CXX+" -w tmp/longdouble.cxx -o tmp/longdouble")
   xxqt("tmp/longdouble >tmp/longdouble.py")
   execfile("tmp/longdouble.py")
   HAVE_LONGDOUBLE=1
@@ -745,7 +769,7 @@ except:
 
 # find if we have _Bool
 try:
-  xqt("gcc -w tmp/bool.c -o tmp/bool")
+  xqt(CC+" -w tmp/bool.c -o tmp/bool")
   xxqt("tmp/bool >tmp/bool.py")
   execfile("tmp/bool.py")
   HAVE_CBOOL=1
@@ -760,6 +784,28 @@ try:
   HAVE_COMPLEX=1
 except:
   HAVE_COMPLEX=0
+
+#calculate alignment tables
+vbls = [
+  ("ALIGNOF_BOOL","bool"),
+  ("ALIGNOF_SHORT","short"),
+  ("ALIGNOF_INT","int"),
+  ("ALIGNOF_LONG","long"),
+  ("ALIGNOF_LONGLONG","long long"),
+  
+  ("ALIGNOF_FLOAT","float"),
+  ("ALIGNOF_DOUBLE","double"),
+  ("ALIGNOF_LONGDOUBLE","long double"),
+
+  ("ALIGNOF_WCHAR","wchar_t"),
+  ("ALIGNOF_VOIDP","void*"),
+  ]
+
+aligns = {}
+for k,t in vbls:
+  v = eval(k)
+  aligns[v]=t
+aligns[1]="char"
 
 DEBUG_SYMBOLS = "-g "
 CCOPT1 = "-O1 -DNDEBUG "
@@ -863,7 +909,7 @@ try:
   p(f,"ALIGNOF_ENUM")
   p(f,"ALIGNOF_FUNCP")
 
-
+  pr(f,"flx_aligns = "+repr(aligns))
 
   p(f,"HAVE_ISNAN_IN_CMATH")
   p(f,"HAVE_ISNANF_IN_IEEEFP")
@@ -895,6 +941,7 @@ try:
   p(f,"HAVE_GXX_X86")
   p(f,"HAVE_CGOTO")
   p(f,"HAVE_ASM_LABELS")
+  p(f,"HAVE_INCLASS_MEMBER_INITIALIZATION")
   p(f,"HAVE_PKGCONFIG")
   p(f,"CXX")
   p(f,"CPP")

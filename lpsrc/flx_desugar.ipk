@@ -294,7 +294,7 @@ let find_methods seq sr sts =
 
 let rec rex syms name (e:expr_t) : asm_t list * expr_t = 
   let rex e = rex syms name e in
-  let rsts sts = concat (map (rst syms name `Private) sts) in
+  let rsts sts = concat (map (rst syms name `Private []) sts) in
   let sr = src_of_expr e in
   let seq () = let n = !(syms.counter) in incr (syms.counter); n in
   match e with
@@ -393,7 +393,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let access = `Private in
     let vs = [] in
     let sts = 
-      rst syms name access (mkcurry seq sr name' vs pps ret kind sts)
+      rst syms name access [] (mkcurry seq sr name' vs pps ret kind sts)
     in
     let e = 
       `AST_suffix 
@@ -679,25 +679,46 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     )
 
 (* remove blocks *)
-and rst syms name access st : asm_t list = 
+(* parent vs is containing module vs .. only for modules *)
+
+and rst syms name access parent_vs st : asm_t list = 
 
   (* construct an anonymous name *)
-  let rqname' sr = `AST_name (sr,"_rqs_" ^ name,[]) in
+  let parent_ts sr : typecode_t list = 
+    map (fun s-> `AST_name (sr,s,[])) parent_vs 
+  in
+  let rqname' sr = `AST_name (sr,"_rqs_" ^ name,parent_ts sr) in
 
-  (* add a requirement on us for a child *)
-  let rq n sr sts = 
-    `AST_body (sr,"_rqs_"^n,[],"",[`Named_req (rqname' sr)]) :: sts 
+  (* Add a root to child named 'n'.
+     All root requirements in the child go to this symbol, 
+     and it requires our root in turn.
+
+     parent_vs is the vs list required for us,
+     it is always empty for a function.
+  *)
+  let bridge n sr : asm_t = 
+    (*
+    print_endline ("Making bridge for " ^ n ^ " -> " ^ name ^"["^cat "," parent_vs ^"]");
+    *)
+    let ts = map (fun s-> `AST_name (sr,s,[])) parent_vs in
+    let us = `AST_name (sr,"_rqs_" ^ name,ts) in
+    let body = `DCL_body ("",[us]) in
+    Dcl (sr,"_rqs_"^n,`Public,[],body)
   in
 
   (* rename _root requirements *)
   let map_reqs sr (reqs : named_reqs_t) : named_reqs_t = 
-    rqname' sr ::
+    rqname' sr :: reqs
+    (*
     map 
     (function 
-      | `AST_name (sr,"_root",[]) -> rqname' sr
+      | `AST_name (sr,"_root",[]) -> 
+       print_endline "FOUND ROOT REQUIREMENT?";
+       rqname' sr
       | x -> x
     )
     reqs
+    *)
   in
 
   (* name literal requirements *)
@@ -710,13 +731,13 @@ and rst syms name access st : asm_t list =
         let n = !(syms.counter) in incr syms.counter;
         let n = "_req_" ^ si n in
         let dcl = Dcl (sr,n,access,[],`DCL_body (s,[])) in
-        aux t ( dcl :: dcls) ( `AST_name (sr,n,[]) :: nrqs)
+        aux t ( dcl :: dcls) ( `AST_name (sr,n,parent_ts sr) :: nrqs)
 
       | `Header_req s -> 
         let n = !(syms.counter) in incr syms.counter;
         let n = "_req_" ^ si n in
         let dcl = Dcl (sr,n,access,[],`DCL_header (s,[])) in
-        aux t ( dcl :: dcls) ( `AST_name (sr,n,[]) :: nrqs)
+        aux t ( dcl :: dcls) ( `AST_name (sr,n,parent_ts sr) :: nrqs)
 
       | `Named_req n -> aux t dcls (n::nrqs)
     in aux rqs [] []
@@ -726,18 +747,18 @@ and rst syms name access st : asm_t list =
   let map_req n = if n = "_root" then "_rqs_" ^ name else n in
 
   let rex x = rex syms name x in
-  let rsts name sts = concat (map (rst syms name access) sts) in
+  let rsts name vs sts = concat (map (rst syms name access vs) sts) in
   let seq () = let n = !(syms.counter) in incr (syms.counter); n in
   (* add _root headers and bodies as requirements for all
     bindings defined in this entity
   *)
   match st with
   | `AST_private (sr,st) ->
-     rst syms name `Private st
+     rst syms name `Private parent_vs st
      
   | `AST_include (sr,inspec) ->
     let sts = include_file syms inspec true in
-    rsts name sts
+    rsts name parent_vs  sts
 
   | `AST_regdef (sr,name,regexp) -> 
     [Dcl (sr,name,access,[],`DCL_regdef regexp)]
@@ -799,7 +820,7 @@ and rst syms name access st : asm_t list =
   | `AST_inherit_fun (sr,name,vs,qn) -> [Dcl (sr,name,access,vs,`DCL_inherit_fun qn)]
 
   | `AST_curry (sr,name',vs,pps,ret,kind,sts) ->
-    rst syms name access (mkcurry seq sr name' vs pps ret kind sts)
+    rst syms name access parent_vs (mkcurry seq sr name' vs pps ret kind sts)
 
   (* The object *)
   (* THIS IS HACKY AND DOESN'T WORK PROPERLY --
@@ -812,7 +833,6 @@ and rst syms name access st : asm_t list =
     be bound correctly without lookup
   *)
   | `AST_object (sr,name,vs,params,sts) -> 
-    let sts = rq name sr sts in
     let vs',params = fix_params seq params in
     let vs = vs @ vs' in
     let methods = find_methods seq sr sts in
@@ -834,31 +854,40 @@ and rst syms name access st : asm_t list =
     let rtyp = `AST_name (sr,otname,[]) in
     let retval:expr_t = `AST_apply (sr,(rtyp, mtuple)) in
     let sts = sts @ [`AST_fun_return (sr,retval)] in
+    let asms = rsts name [] sts in
+    let asms = bridge name sr :: asms in
     [
       Dcl (sr,otname,access,vs,`DCL_struct methods);
-      Dcl (sr,name,access,vs,`DCL_function (params,rtyp,[],rsts name sts))
+      Dcl (sr,name,access,vs,`DCL_function (params,rtyp,[],asms))
     ]
   
   (* functions *)
   | `AST_function (sr,name', vs, params, res, props, sts) -> 
-    let sts = rq name' sr sts in
     let vs',params = fix_params seq params in
     let vs = vs @ vs' in
-    [Dcl (sr,name',access,vs,`DCL_function (params, res, props, rsts name' sts))]
+    let asms = rsts name' [] sts in
+    let asms = bridge name' sr :: asms in
+    [
+      Dcl (sr,name',access,vs, 
+        `DCL_function (params, res, props, asms)
+      )
+    ]
     
   | `AST_fun_decl (sr,name',vs,args,result,code, reqs) ->
     let dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,name',access,vs,`DCL_fun (args,result,code,map_reqs sr reqs))
+    Dcl (sr,name',access,vs,
+      `DCL_fun (args,result,code,map_reqs sr reqs))
     :: dcls
 
   (* misc *)
-  | `AST_untyped_module (sr,name', vs, sts) -> 
-    let sts = rq name' sr sts in
+  | `AST_untyped_module (sr,name', vs', sts) -> 
+    let asms = rsts name' (parent_vs @ vs') sts in
+    let asms = bridge name' sr :: asms in
     let mdcl =
-      [ Dcl (sr,name',access,vs,`DCL_module (rsts name' sts)) ]
+      [ Dcl (sr,name',access,vs', `DCL_module asms) ]
     in
       (* HACK !!!! *)
-    if vs = [] then
+    if vs' = [] then
     (
       Exe 
       (
@@ -970,7 +999,7 @@ and rst syms name access st : asm_t list =
           `AST_val_decl (sr,vn,[],t,Some r) :: !sts
     in
       let sts = aux l r in
-      rsts name sts
+      rsts name parent_vs sts
 
   | `AST_call (sr,proc, arg) ->
     let d1,x1 = rex proc in
@@ -1034,8 +1063,10 @@ let desugar_program syms name sts =
       (src_of_stmt (list_last sts))
   in
   let sts = expand_macros name 5000 sts in
+  (*
   let sts = `AST_body(sr,"_rqs__top",[],"",[]) :: sts in
-  rst syms "_top" `Public (`AST_untyped_module (sr,name,[],sts))
+  *)
+  rst syms name `Public [] (`AST_untyped_module (sr,name,[],sts))
 
 @h = tangler("src/flxd.ml")
 @select(h)

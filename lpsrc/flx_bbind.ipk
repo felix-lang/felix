@@ -67,14 +67,19 @@ let bind_req syms env sr tag =
 
 let bind_reqs bt syms env sr reqs : (bid_t * btypecode_t list) list =
   let add lst i = if mem i lst then lst else i :: lst in
-  fold_left 
-  (fun lst tag ->
-    let entries,ts = bind_req syms env sr tag in
-    let ts = map bt ts in
-    fold_left (fun lst x -> add lst (x,ts)) lst entries
-  ) 
-  [] 
-  reqs
+  let br = 
+    fold_left 
+    (fun lst tag ->
+      let entries,ts = bind_req syms env sr tag in
+      let ts = map bt ts in
+      fold_left (fun lst index -> 
+        let ts = adjust_ts syms sr index ts in add lst (index,ts)
+      ) lst entries
+    ) 
+    [] 
+    reqs
+  in
+    br
   
 let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;dirs=dirs;symdef=bdcl} =
   let qname = qualified_name_of_index syms.dfns i in
@@ -89,6 +94,9 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
     let vs = find_vs syms i in
     let bt t = bind_type syms env sr t in
     let bind_reqs reqs = bind_reqs bt syms env sr reqs in
+    (*
+    print_endline ("Binding " ^ name);
+    *)
     match bdcl with
 
     (* Pure declarations of functions, modules, and type
@@ -106,9 +114,8 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       ps 
       in
       let ts = map (fun (s,(i,t)) -> t) bps in
-      let env' = build_env syms (Some i) in
       let brt = bt rt in
-      let brt',bbexes = bexes env' exes brt i vs in
+      let brt',bbexes = bexes env exes brt i vs in
       let bbdcl = 
         match brt' with
         | `BTYP_void ->
@@ -456,8 +463,10 @@ try
   let deblocked = desugar_program syms module_name parse_tree in
 
   let root = !(syms.counter) in
+  print_endline ("//Top level module '"^module_name^"' has index " ^ si root);
+
   let table, _, exes, ifaces,dirs = 
-    build_tables syms "<top level>" 0 None None root deblocked 
+    build_tables syms "root" 0 None None root deblocked 
   in
     print_endline "//BINDING EXECUTABLE CODE";
     print_endline "//-----------------------";
