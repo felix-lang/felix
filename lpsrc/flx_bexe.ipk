@@ -30,14 +30,30 @@ open Flx_unify
 open Flx_exceptions
 open List
 
-let cal_call dfns sr (p,pt) e =
-  match lower pt with
-  | `BTYP_function (_, `BTYP_void) -> 
-    `BEXE_call (sr,(p,lower pt), e)
+let cal_call syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) =
+  match unfold pt with
+  | `BTYP_function (t, `BTYP_void) -> 
+    if t = argt 
+    then `BEXE_call (sr,(p,lower pt), tbe2)
+    else
+      clierr sr
+      (
+        "[cal_call] Procedure " ^
+        sbe syms.dfns tbe1 ^
+        "\nof type " ^
+        sbt syms.dfns pt ^
+        "\napplied to argument " ^
+        sbe syms.dfns tbe2 ^
+        "\n of type " ^
+        sbt syms.dfns argt ^
+        "\nwhich doesn't agree with parameter type\n" ^
+        sbt syms.dfns t 
+      )
+
   | _ -> 
     clierr sr ("[cal_call] call non procedure, "^
-    string_of_bound_expression dfns (p,pt)
-    ^"\ntype=" ^ string_of_btypecode dfns pt)
+    sbe syms.dfns (p,pt)
+    ^"\ntype=" ^ sbt syms.dfns pt)
 
 let cal_loop dfns sr (p,pt) e this =
   match lower pt with
@@ -231,11 +247,11 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
            qn t2 
          | _ -> be sn
       in  
-        tack (cal_call syms.dfns sr tbe1 (be2,t2))
+        tack (cal_call syms sr tbe1 (be2,t2))
 
     | `EXE_call (p,e) ->
       let p',pt' = be p and e',et' = be e in
-      tack (cal_call syms.dfns sr (p', pt') (e', et'))
+      tack (cal_call syms sr (p', pt') (e', et'))
 
     | `EXE_read s ->          
       let dummy_sr = ("bind exes",0,0,0,0) in
