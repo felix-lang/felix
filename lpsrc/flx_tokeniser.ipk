@@ -185,7 +185,7 @@ type 'a parser_t =
   'a
 
 let parse_tokens (parser:'a parser_t) (tokens: Flx_parse.token list) = 
-  let toker = (new Flx_tok.tokeniser tokens) in
+  let toker = (new tokeniser tokens) in
   try 
     parser (toker#token_src) (Lexing.from_string "dummy" )
   with _ ->

@@ -341,9 +341,12 @@ let gen_offset_tables syms (child_map,bbdfns) =
       let offsets = get_offsets syms bbdfns t in
       let n = length offsets in 
       bcat s ("\n//OFFSETS for array type " ^ si index ^ "\n");
-      bcat s ("static std::size_t " ^ name ^ "_offsets[]={\n  ");
-      bcat s ("  " ^ cat ",\n  " offsets);
-      bcat s "};\n";
+      if n <> 0 then begin
+        bcat s ("static std::size_t " ^ name ^ "_offsets["^si n^"]={\n  ");
+        bcat s ("  " ^ cat ",\n  " offsets);
+        bcat s "};\n"
+      end
+      ;
       bcat s ("static void " ^ name ^ "_finaliser(collector_t *, void *p){\n");
       bcat s ("  for(std::size_t count = "^ si k ^"; count; --count)\n");
       bcat s ("  {\n");
@@ -353,7 +356,12 @@ let gen_offset_tables syms (child_map,bbdfns) =
       bcat s ("}\n");
       bcat s ("static gc_shape_t "^ name ^"_ptr_map(\n");
       bcat s ("  " ^ si k ^ ",\n");
-      bcat s ("  sizeof("^name^"),\n  "^name^"_finaliser,\n  "^si n^",\n  "^name^"_offsets\n");
+      bcat s ("  sizeof("^name^"),\n  "^name^"_finaliser,\n  "^si n^
+      (
+        if n = 0 then ",0\n" 
+        else ",\n  " ^name^"_offsets\n"
+      )
+      );
       bcat s ");\n"
 
     | `BTYP_inst (i,ts) ->
