@@ -476,7 +476,7 @@ let useless_call_elim syms bbdfns vs' exes index =
     ;
     !exes''
 
-let rec uses_type syms used bbdfns t = 
+let rec uses_type syms used bbdfns (t:btypecode_t) = 
   let ut t = uses_type syms used bbdfns t in
   match t with
   | `BTYP_name i 
@@ -492,6 +492,7 @@ let rec uses_type syms used bbdfns t =
   | `BTYP_type_tuple ts
     -> iter ut ts
 
+  | `BTYP_array (t1, t2)
   | `BTYP_function (t1, t2)
   | `BTYP_apply (t1, t2)
   | `BTYP_binding (t1, t2)
@@ -502,7 +503,18 @@ let rec uses_type syms used bbdfns t =
     ->
       iter ut (map snd ts);
       ut t1; ut t2
-  | _ -> ()
+
+  | `BTYP_type_match (t,tts)
+    -> ut t; iter (fun (t1,t2) -> ut t1; ut t2) tts
+
+  | `BTYP_var _ 
+  | `BTYP_void
+  | `BTYP_fix _
+    -> ()
+
+  | `BTYP_type 
+    -> 
+      failwith "[uses_type] Unexpected metatype"
 
 and uses_exes syms used bbdfns exes =
   iter (uses_exe syms used bbdfns) exes
@@ -627,20 +639,26 @@ let elide_unused syms
   (root:bid_t) 
   (bifaces:biface_t list) 
 =
-  (* make a list of the root and all exported things *)
-  let roots : bid_t list = root ::
-  (
-    map  (function `BIFACE_export (x,_) -> x) bifaces
-  )
-  in
-                                                                                
   (* make set of used things, initially empty *)
   let used = ref BidSet.empty in
-                                                                                
+
+  (* make a list of the root and all exported functions,
+  add exported types and components thereof into the used
+  set now too
+  *)
+  let roots = ref [root] in
+  iter
+  (function
+     | `BIFACE_export_fun (_,x,_) -> roots := x :: !roots
+     | `BIFACE_export_type (_,t,_) -> 
+        uses_type syms used bbdfns t
+  )
+  bifaces
+  ;
   let uses i = uses syms used bbdfns i in
-                                                                                
-  (* add root item to set, then add items it uses *)
-  iter uses roots
+
+  (* add root items to set, then add items it uses *)
+  iter uses !roots
   ;
   (* copy used things *)
   let bbdfns2 = Hashtbl.create 97 in

@@ -216,10 +216,10 @@ let mktypefun sr name vs args return_type body =
 %token<Flx_ast.srcref> MATCH WITH ENDMATCH CASE REGMATCH REGLEX TYPEMATCH
 %token<Flx_ast.srcref> HEADER BODY MODULE CODE LET IN
 %token<Flx_ast.srcref> CALL PROCEDURE FUNCTION FUNCTOR JUMP LOOP OBJECT
-%token<Flx_ast.srcref> RETURN FORK 
+%token<Flx_ast.srcref> RETURN FORK MAP
 %token<Flx_ast.srcref> TO OPEN EQRIGHTARROW USE INCLUDE
 %token<Flx_ast.srcref> TODO INTERFACE 
-%token<Flx_ast.srcref> TYPE READ CONST STRUCT CTYPES
+%token<Flx_ast.srcref> TYPE READ CONST STRUCT CTYPES INCOMPLETE
 %token<Flx_ast.srcref> VAL TYPEDEF DEF SET
 %token<Flx_ast.srcref> QUEST
 %token<Flx_ast.srcref> MACRO IDENT NEW FORGET
@@ -392,9 +392,20 @@ abstract_type:
       `AST_ctypes (sr,$2)
     }
 
+  | INCOMPLETE basic_name_comma_list SEMI
+    {
+      let sr = rstoken $1 $3 in
+      `AST_incomplete (sr,$2)
+    }
+
   | TYPE NAME tvarlist EQUAL STRING SEMI 
     { 
-      `AST_abs_decl (rstoken $1 $6, snd $2, List.map snd $3, snd $5) 
+      `AST_abs_decl (rstoken $1 $6, snd $2, List.map snd $3, true, snd $5) 
+    }
+
+  | INCOMPLETE TYPE NAME tvarlist EQUAL STRING SEMI 
+    { 
+      `AST_abs_decl (rstoken $1 $7, snd $3, List.map snd $4, false, snd $6) 
     }
 
   | TYPE NAME tvarlist SEMI 
@@ -498,11 +509,21 @@ type_alias:
 @head(3,'Export')
 @select(h)
 export_statement:
-  | EXPORT suffixed_name AS STRING SEMI 
+  | EXPORT FUNCTION suffixed_name AS STRING SEMI 
     { 
-      `AST_export (rstoken $1 $5, $2, snd $4) 
+      `AST_export_fun (rstoken $1 $6, $3, snd $5) 
     }
- 
+
+  | EXPORT PROCEDURE suffixed_name AS STRING SEMI 
+    { 
+      `AST_export_fun (rstoken $1 $6, $3, snd $5) 
+    }
+
+  | EXPORT TYPE LPAR type_expr RPAR AS STRING SEMI 
+    { 
+      `AST_export_type (rstoken $1 $8, typecode_of_expr $4, snd $7) 
+    }
+
 @head(3,'Open')
 @select(h)
 open_decl:
@@ -1743,6 +1764,10 @@ application:
   | application coercion
     { 
       `AST_apply (rsexpr $1 $2, ($1, $2)) 
+    }
+  | MAP coercion coercion
+    {
+      `AST_map (rsrange (slift $1) (src_of_expr $3), $2, $3)
     }
   | coercion { $1 }
 

@@ -341,7 +341,7 @@ let rec unification dfns eqns: (int * btypecode_t) list =
         else
           s := Some (i,t)
 
-      | `BTYP_pointer t2, `BTYP_pointer t1 ->
+      | `BTYP_pointer t1, `BTYP_pointer t2 ->
         eqns := (t1,t2) :: !eqns
 
       | `BTYP_binding (t11, t12), `BTYP_binding (t21, t22)

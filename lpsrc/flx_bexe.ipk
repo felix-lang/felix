@@ -282,7 +282,6 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     | `EXE_noreturn_code s ->  reachable := false; tack (`BEXE_code (sr,s))
 
     | `EXE_init (s,e) -> 
-      let sr = src_of_expr e in (* HACK! *)
       begin match lun sr s with
       | FunctionEntry _ -> clierr sr "Can't init function constant"
       | NonFunctionEntry (Simple index) -> 

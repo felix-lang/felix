@@ -26,7 +26,10 @@ The tutorial is found at
 @cite_url('../tut/doc/en_flx_tutorial_top.html')
 @p()
 The macro processor now has a separate tutorial at
-@cite_url('../tut/doc/en_flx_mtutorial_top.html')
+@cite_url('../tut/doc/en_flx_tut_macro_top.html')
+@p()
+The binding and embedding system now has a separate tutorial at
+@cite_url('../tut/doc/en_flx_tut_bind_top.html')
 
 @head(1,'The Felix Compiler')
 Basic phase diagram:
@@ -258,6 +261,13 @@ create a file here for unit tests.
 @head(2,'The Unix Build system')
 @include_file ('flx_man.ipk')
 @include_file ('flx_maker.ipk')
+
+@head(2,'The Swig interface wrappers')
+@include_file ('flx_swig.ipk')
+@include_file ('flx_swigwrap.ipk')
+
+@head(2,'Misc')
 @include_file ('flx_vim.ipk')
+@include_file ('flx_highlight.ipk')
 
 

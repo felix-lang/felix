@@ -339,6 +339,11 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let l2,x2 = rex arg in
     l1 @ l2, `AST_apply (sr,(x1,x2))
 
+  | `AST_map (sr,fn,arg) -> 
+    let l1,x1 = rex fn in 
+    let l2,x2 = rex arg in
+    l1 @ l2, `AST_map (sr,x1,x2)
+
   | `AST_method_apply (sr,(fn,arg)) -> 
     let l2,x2 = rex arg in
     l2, `AST_method_apply (sr,(fn,x2))
@@ -653,8 +658,11 @@ and rst syms name access st : asm_t list =
   | `AST_comment s -> [Exe (generated,`EXE_comment s)]
 
   (* objects *)
-  | `AST_export (sr,name,cpp_name) ->
-    [Iface (sr,`IFACE_export (name,cpp_name))]
+  | `AST_export_fun (sr,name,cpp_name) ->
+    [Iface (sr,`IFACE_export_fun (name,cpp_name))]
+
+  | `AST_export_type (sr,typ,cpp_name) ->
+    [Iface (sr,`IFACE_export_type (typ,cpp_name))]
 
   | `AST_var_decl (sr,name,vs,typ,expr) -> 
     begin match typ,expr with
@@ -683,7 +691,7 @@ and rst syms name access st : asm_t list =
   | `AST_const_decl (sr,name, vs,typ, s) -> [Dcl (sr,name,access,vs,`DCL_const (typ,s))]
 
   (* types *)
-  | `AST_abs_decl (sr,name,vs,str) -> [Dcl (sr,name,access,vs,`DCL_abs (str))]
+  | `AST_abs_decl (sr,name,vs,flag,str) -> [Dcl (sr,name,access,vs,`DCL_abs (flag,str))]
   | `AST_union (sr,name, vs, components) -> [Dcl (sr,name,access,vs,`DCL_union (components))]
   | `AST_struct (sr,name, vs, components) ->  [Dcl (sr,name,access,vs,`DCL_struct (components))]
   | `AST_type_alias (sr,name,vs,typ) -> [Dcl (sr,name,access,vs,`DCL_type_alias (typ))]
@@ -735,10 +743,16 @@ and rst syms name access st : asm_t list =
     [Dcl (sr,name,access,vs,`DCL_if_fun typ)]
 
   | `AST_fun_decl (sr,name,vs,args,result,code) ->
+    let typeoflist lst = match lst with
+      | [x] -> x
+      | _ -> `TYP_tuple lst
+    in 
     let n = length args in
     let prim_id = "_prim_" ^ name in
     let type_args = map (fun t -> `AST_name (sr,t,[])) vs in
     let prim_name = `AST_name (sr,prim_id,type_args) in
+    let argtype = typeoflist args in 
+    let prim_name = `AST_suffix (sr,(prim_name,argtype)) in
     let param_names = map (fun i -> "_a" ^ si i) (nlist n) in
     let params = combine param_names args in
     let argument =

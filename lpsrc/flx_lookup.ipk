@@ -873,6 +873,7 @@ and bind_type'
 
   | `TYP_proj (i,t) -> 
     let t = bt t in
+    ignore (try unfold t with _ -> failwith "TYP_proj unfold screwd");
     begin match unfold t with 
     | `BTYP_tuple ls ->
       if i < 1 or i>List.length ls
@@ -920,6 +921,7 @@ and bind_type'
 
   | `TYP_case_arg (i,t) ->
     let t = bt t in
+    ignore (try unfold t with _ -> failwith "TYP_case_arg unfold screwd");
     begin match unfold t with
     | `BTYP_sum ls ->
       if i < 1 or i>List.length ls
@@ -1556,7 +1558,7 @@ and inner_typeofindex
 
 and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let rest =
-    match t1 with
+    match unfold t1 with
     | `BTYP_function (argt,rest) ->
       if argt = t2 then rest
       else 
@@ -1721,6 +1723,9 @@ and lookup_qn_with_sig'
 : tbexpr_t =    
   (*
   print_endline ("[lookup_qn_with_sig] " ^ string_of_qualified_name qn);
+  print_endline ("sig = " ^ sbt syms.dfns sign);
+  *)
+  (*
   print_endline ("expr_fixlist is " ^ 
     catmap ","
     (fun (e,d) -> string_of_expr e ^ " [depth " ^si d^"]") 
@@ -1743,7 +1748,7 @@ and lookup_qn_with_sig'
   *)
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
-    begin match t with
+    begin match unfold t with
     | `BTYP_sum ls ->
       if v<1 or v> List.length ls
       then failwith "Case index out of range of sum"
@@ -2351,6 +2356,28 @@ and bind_regdef syms env idx_fixlist excluded_dirs regexp_exclude e =
 
   | x -> x
 
+and handle_map sr (f,ft) (a,at) =
+    let t =
+      match ft with
+      | `BTYP_function (d,c) ->
+        begin match at with
+        | `BTYP_inst (i,[t]) ->
+          if t <> d 
+          then clierr sr 
+            ("map type of data structure index " ^ 
+            "must agree with function domain")
+          else
+            `BTYP_inst (i,[c])
+        | _ -> clierr sr "map requires instance"
+        end
+      | _ -> clierr sr "map non-function"
+    in
+      (* actually this part is easy, it's just
+      applies ((map[i] f) a) where map[i] denotes
+      the map function generated for data structure i
+      *)
+      failwith "NOT  IMPLEMENTED"
+ 
 and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e 
 : tbexpr_t = 
   (*
@@ -2376,7 +2403,8 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
     t
   in
   let ti i ts = inner_typeofindex_with_ts syms 
-    idx_fixlist ((e,depth)::expr_fixlist) depth excluded_dirs i ts 
+    idx_fixlist ((e,depth)::expr_fixlist) (depth+1) excluded_dirs i ts 
+         (* CHANGED THIS ------------------*******)
   in
 
   let lookup sr f (sign:btypecode_t) =
@@ -2452,7 +2480,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
 
   | `AST_get_n (sr,(n,e')) -> 
     let expr,typ = be e' in
-    let ctyp = match typ with 
+    let ctyp = match unfold typ with 
     | `BTYP_tuple ts -> 
       let len = List.length ts in
       if n<0 or n>len-1
@@ -2484,7 +2512,8 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
 
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
-    begin match t with
+    ignore (try unfold t with _ -> failwith "AST_typed_case unfold screwd");
+    begin match unfold t with
     | `BTYP_sum ls ->
       if v<1 or v> List.length ls
       then failwith "Case index out of range of sum"
@@ -2518,7 +2547,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
       `BEXPR_name (index,ts),
       let t = ti index ts in
       (*
-      print_endline ("typ=" ^ sbt syms.dfns t);
+      print_endline ("typ " ^name^ "=" ^ sbt syms.dfns t);
       *)
       t
 
@@ -2675,7 +2704,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
 
   | `AST_deref (sr,e) -> 
     let e,t = be e in
-    begin match t with 
+    begin match unfold t with 
     | `BTYP_pointer t -> `BEXPR_deref (e,t),t
     | _ -> clierr sr "Dereference non pointer"
     end
@@ -2710,8 +2739,18 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
     in
       cal_apply syms sra tbe1 (be2, t2)
 
+  | `AST_map (sr,f,a) ->
+    handle_map sr (be f) (be a)
+  
   | `AST_apply (sr,(f',a')) ->
     let (ba, ta) as a = be a' in
+    (*
+    print_endline ("bind apply: "^string_of_expr f'^" sig=" ^ sbt syms.dfns ta);
+    *)
+    let _ = 
+      try unfold ta
+      with _ -> print_endline " .. free fixpoint"; raise (Free_fixpoint ta) 
+    in
     let f = lookup sr f' ta in
     begin 
       match f,a with
@@ -2774,7 +2813,8 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
     
   | `AST_case_arg (sr,(v,e)) ->
      let (_,t) as e' = be e in
-     begin match t with
+    ignore (try unfold t with _ -> failwith "AST_case_arg unfold screwd");
+     begin match unfold t with
      | `BTYP_sum ls ->
        let n = List.length ls in
        if v<1 or v>n 
@@ -2868,12 +2908,19 @@ and resolve_overload
     *)
     let eqns = make_eqns syms i ts in (* do this first to avoid gratuitous equalities *)
     let ts = adjust_ts syms i ts in
-    let eqns = (t, sign) :: eqns in
+    let eqns = (t,sign) :: eqns in
+    (*
+    print_endline "EQUATIONS ARE:";
+    iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
+    eqns
+    ;
+    print_endline "...";
+    *)
     let mgu = maybe_unification syms.dfns eqns in
     (match mgu with
     | Some mgu -> 
       if sign <> list_subst mgu sign then
-      failwith
+      clierr sr 
       (
         "[resolve_overload] Unification of function " ^ 
         id ^ "<" ^ si i ^ "> signature " ^

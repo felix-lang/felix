@@ -284,6 +284,7 @@ else:
   FLX_CPP_DYNLINK = FLX_CPP_DYNLINK + " -DNDEBUG "
 
 
+
 # ------------------------------------------------
 # END USER CONFIGURABLE SECTION
 #-------------------------------------------------
@@ -722,6 +723,7 @@ We have no idea if it continues copying.
 @tangle('INSTALL_DIR=${PREFIX}/lib')
 @tangle('EXEC_DIR=${PREFIX}/bin')
 @tangle('MAN_DIR=${PREFIX}/man')
+@tangle('SWIGDEVDIR=/usr/local/src/cvsswig/SWIG/')
 @tangle('all: dummy')
 @tangle('\tpython script/maker extract compiler drivers test')
 @tangle('')
@@ -779,6 +781,16 @@ We have no idea if it continues copying.
 @tangle('drivers.debug: dummy')
 @tangle('\tpython script/maker drivers debug')
 @tangle('')
+
+@tangle('swig: dummy')
+@tangle('\texport SWIGDEVDIR')
+@tangle('\t${MAKE} -C swig')
+@tangle('')
+
+@tangle('swig.wrap: dummy')
+@tangle('\t${MAKE} -C swig -f makewrap')
+@tangle('')
+
 @tangle('help: dummy')
 @tangle('\t#type "make virgin" to wipe out the whole development system')
 @tangle('\t#other than the orginal sources and this makefile')
@@ -807,6 +819,7 @@ We have no idea if it continues copying.
 @tangle('\t#type "make install" to install Felix')
 @tangle('\t#or ask the priviledged person to do it for you')
 @tangle('')
+
 @tangle('tarball: dummy')
 @tangle('\trm -f flx_'+flx_version)
 @tangle('\tln -s . flx_'+flx_version)
@@ -899,7 +912,7 @@ We have no idea if it continues copying.
 @tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so')
 @tangle('')
 @tangle('virgin: dummy')
-@tangle('\trm -rf tut rtl test www src misc man script bin doc lib impldoc htmlman tmp.tmp')
+@tangle('\trm -rf tut rtl test www src misc man script bin doc lib impldoc htmlman swig tmp.tmp')
 @tangle('\trm -rf lpsrc/*.cache')
 @tangle('\trm -rf interscript/*.pyc')
 @tangle('\trm -rf interscript/*.pyo')
@@ -919,12 +932,6 @@ We have no idea if it continues copying.
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_tutorial.pak')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_tut_macro.pak')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_tut_bind.pak')
-@tangle('')
-
-@tangle('test_lex: dummy')
-@tangle('\t  ./lexl test_lex')
-@tangle('\t  ./lexp test_lex')
-@tangle('\t  ./lexd test_lex')
 @tangle('')
 
 @tangle('install: dummy')
@@ -991,6 +998,7 @@ The directories are:
   man    -- man pages for tools and some language features
   bin    -- compiler tools directory
   rtl    -- C++ run time library sources
+  swig   -- Simplified Wrapper and Interface Generator for felix
 
 @head(1,'LICENSE')
 @select(tangler('LICENSE'))

@@ -82,11 +82,19 @@ print: int = 'printf("%d",$1);';
 
 .SH Exporting symbols
 Symbols are exported by the export statement.
-.B export
-add of int * int as "add_int";
+Function, procedures, and types can be exported.
+Note that types must be enclosed in brackets,
+because unfortunately 'as' is a keyword used 
+in recursive type expressions.
+
+.B export fun
+add of (int * int) as "add_int";
 .br
-.B export
-int as "flx_int";
+.B export proc
+print of (int * int) as "add_int";
+.br
+.B export type
+(int) as "flx_int";
 
 .SH FILES
 .B *.flx

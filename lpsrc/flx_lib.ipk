@@ -165,11 +165,13 @@ using namespace std;
   "size"    : "size_t",
   "address" : "void *",
   "offset"  : "ptrdiff_t",
+  "nts"     : "char*",
+  "ntsc"    : "char const*",
   
   #characters
   "char"    : "char",
   "wchar"   : "wchar_t",
-  "uchar"   : "int32_t", # Unicode/ISO10646, note: SIGNED!
+  "uchar"   : "boost::int32_t", # Unicode/ISO10646, note: SIGNED!
 
   #signed integers
   "tiny"    : "signed char",
@@ -212,15 +214,11 @@ using namespace std;
   ]
 @floats = ["float", "double", "ldouble"]
 
-// @all = ["byte", "size","address","offset","bool"] + chars + sints + uints + floats
 @all = ["byte", "size","address","offset"] + chars + sints + uints + floats
 @ints = uints + sints
 
 @def gen_type(t):
   tangle('type '+t+' = "'+tmap[t]+'";')
-
-@for t in all:
-  gen_type(t)
 
 @def gen_asgn(t):
   #tangle('  proc _set: &'+t+' * '+t+' = "*('+tmap[t]+'*)($1.data)=$2;";')
@@ -243,6 +241,9 @@ using namespace std;
     tangle('  fun '+opname+': '+t+' * '+t+' -> bool = "int($1'+op+'$2)";')
 
 
+@for t in all:
+  gen_type(t)
+
 publish "Empty sum"
   typedef void = 0;
 
@@ -255,7 +256,10 @@ publish "Boolean"
 publish "Universal type 'x as x'"
   typedef any = any;
 
-publish "Compatible with C"
+publish "Array type"
+  typedef array[t,n] = t ^ n;
+
+publish "Bool compatible with C"
 module Bool 
 {
 
@@ -363,6 +367,38 @@ module Typing
     | _ -> ?b => b
     endmatch
   ;
+
+}
+
+@#------------- CASTS and C HACKERY ---------------
+module C_hack
+{
+  fun cast[dst,src]: src->dst = '(?1)$1';
+  fun static_cast[dst,src]: src->dst = 'static_cast<?1>($1)';
+  fun dynamic_cast[dst,src]: src->dst = 'dynamic_cast<?1>($1)';
+  fun reinterpret_cast[dst,src]: src->dst = 'reinterpret_cast<?1>($1)';
+
+  publish "Abstract type for C pointer"
+  type ptr[t]="?1 *";
+
+  publish "Abstract type for C pointer to const"
+  type cptr[t]="?1 const *";
+
+  publish """
+  Unsafe function to get C pointer from Felix reference.
+  The pointer may dangle if the collector deletes the 
+  frame containing the object. 
+  """
+  fun unref[t]: &t->ptr[t] = "(?1)($1.data)";
+
+  publish """
+  Function to make Felix reference from C pointer.
+  This function is only safe if the C pointer
+  was not allocated by the Felix collector:
+  the resulting reference will never be collected
+  (because the frame pointer is set to 0)
+  """
+  fun mkref[t]: ptr[t]->&t = "flx::rtl::_ref_(0,(void*)$1)";
 
 }
 
@@ -474,6 +510,9 @@ module String
   fun ge: string * string -> bool = "$1>=$2";
 
   proc print: string = "std::cout << $1;";
+
+  publish "Unsafe extract buffer pointer"
+  fun cstr: string -> C_hack::ptr[char] = "$1.data()";
 }
 
 type ustring = "basic_string<uint32_t>";
@@ -510,6 +549,9 @@ module Ustring
   proc print: ustring = "std::cout << $1;";
 }
 
+publish """
+All the arithmetic casts between standard C arithmetic types.
+"""
 module Arith_casts
 {
 @for t1 in ints+floats:

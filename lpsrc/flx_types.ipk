@@ -255,6 +255,7 @@ Raw expression terms.
 @select(h)
 and expr_t =
   [
+  | `AST_map of range_srcref * expr_t * expr_t
   | `AST_noexpand of range_srcref * expr_t
   | `AST_name of range_srcref * string * typecode_t list
   | `AST_case_tag of range_srcref * int
@@ -417,8 +418,9 @@ and statement_t =
   | `AST_nop of range_srcref * string
 
   (* binding structures [prolog] *)
-  | `AST_abs_decl of range_srcref * id_t * id_t list * c_t
+  | `AST_abs_decl of range_srcref * id_t * id_t list * bool * c_t
   | `AST_ctypes of range_srcref * (srcref * id_t) list
+  | `AST_incomplete of range_srcref * (srcref * id_t) list
   | `AST_const_decl of range_srcref * id_t * id_t list * typecode_t * c_t
   | `AST_fun_decl of range_srcref * id_t * id_t list * typecode_t list * typecode_t * c_t 
 
@@ -428,7 +430,8 @@ and statement_t =
   | `AST_code of range_srcref * string
   | `AST_noreturn_code of range_srcref * string
 
-  | `AST_export of range_srcref * suffixed_name_t * string
+  | `AST_export_fun of range_srcref * suffixed_name_t * string
+  | `AST_export_type of range_srcref * typecode_t * string
 
   ]
 
@@ -528,7 +531,7 @@ type dcl_t =
   | `DCL_type
   
   (* binding structures [prolog] *)
-  | `DCL_abs of          c_t
+  | `DCL_abs of          bool * c_t (* bool is completeness flag *)
   | `DCL_const of        typecode_t * c_t
   | `DCL_fun of          typecode_t list * typecode_t * c_t 
   | `DCL_regdef of      regexp_t
@@ -561,12 +564,8 @@ and name_map_t = (string, entry_set_t) Hashtbl.t
 
 and iface_t =
   [
-  | `IFACE_export of suffixed_name_t * string
-  ]
-
-and biface_t =
-  [
-  | `BIFACE_export of bid_t * string
+  | `IFACE_export_fun of suffixed_name_t * string
+  | `IFACE_export_type of typecode_t * string
   ]
 
 (** value typing *)
@@ -604,6 +603,12 @@ type 't btypecode_t' =
 
 type b0typecode_t = 't b0typecode_t' as 't
 type btypecode_t = 't btypecode_t' as 't
+
+type biface_t =
+  [
+  | `BIFACE_export_fun of range_srcref * bid_t * string
+  | `BIFACE_export_type of range_srcref * btypecode_t * string
+  ]
 
 type regular_args_t =
     int list * (* alphabet *)
@@ -662,7 +667,7 @@ and bbdcl_t =
   | `BBDCL_var of        (string * int) list * btypecode_t
 
   (* binding structures [prolog] *)
-  | `BBDCL_abs of        (string * int) list * c_t
+  | `BBDCL_abs of        (string * int) list * bool * c_t
   | `BBDCL_const of      (string * int) list * btypecode_t * c_t
   | `BBDCL_fun of        (string * int) list * btypecode_t list * btypecode_t * c_t 
   | `BBDCL_proc of       (string * int) list * btypecode_t list * c_t 
@@ -692,7 +697,7 @@ type env_t = (name_map_t * name_map_t list) list
 
 type symbol_definition_t =
   [
-  | `SYMDEF_abs of c_t
+  | `SYMDEF_abs of bool * c_t
   | `SYMDEF_regdef of regexp_t
   | `SYMDEF_header of string
   | `SYMDEF_body of string
@@ -960,6 +965,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_arrow (s,_)
   | `AST_superscript (s,_)
 
+  | `AST_map (s,_,_) 
   | `AST_apply  (s,_) 
   | `AST_deref (s,_) 
   | `AST_ref  (s,_) 
@@ -1028,8 +1034,9 @@ let src_of_stmt e = match e with
   | `AST_proc_return s 
   | `AST_ifgoto (s,_,_)
   | `AST_ifnotgoto (s,_,_)
-  | `AST_abs_decl (s,_,_, _) 
+  | `AST_abs_decl (s,_,_, _,_) 
   | `AST_ctypes (s,_) 
+  | `AST_incomplete (s,_) 
   | `AST_const_decl (s,_,_,_,_) 
   | `AST_fun_decl (s,_,_,_,_,_ ) 
   | `AST_header (s,_) 
@@ -1040,7 +1047,8 @@ let src_of_stmt e = match e with
   | `AST_struct (s,_, _, _)
   | `AST_typed_module (s,_, _,_,_)
   | `AST_untyped_module (s,_,_,_)
-  | `AST_export (s, _,_)
+  | `AST_export_fun (s, _,_)
+  | `AST_export_type (s, _,_)
   | `AST_function_decl (s,_,_,_)
   | `AST_type (s,_,_)
   | `AST_open (s,_)
@@ -1329,6 +1337,7 @@ and string_of_expr (e:expr_t) =
   | `AST_typeof (_,e) -> "typeof("^se e^")"
   | `AST_as (_,(e1, name)) -> "(" ^ se e1 ^ ") as " ^ name  
   | `AST_get_n (_,(n,e)) -> "get (" ^ si n ^ ", " ^se e^")"
+  | `AST_map (_,f,e) -> "map (" ^ se f ^ ") (" ^ se e ^ ")"
   | `AST_deref (_,e) -> "*(" ^ se e ^ ")"
   | `AST_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
   | `AST_literal (_,e) -> string_of_literal e
@@ -1597,7 +1606,12 @@ and sb dfns depth fixlist counter prec tc =
       | [] -> 9,"UNEXPECTED EMPTY SUM = void" 
       | [`BTYP_tuple[]; `BTYP_tuple[]] -> 0,"bool"
       | [x] -> (* failwith *) (9,"UNEXPECTED SUM OF ONE ARGUMENT " ^ sbt 9 x)
-      | _ -> 5,cat " + " (List.map (sbt 5) ls)
+      | _ -> 
+        if (all_units ls)
+        then
+          0,si (length ls)
+        else
+          5,cat " + " (List.map (sbt 5) ls)
       end
 
     | `BTYP_function (args, result) ->  
@@ -1855,11 +1869,17 @@ and string_of_statement level s =
     string_of_compound level ss
 
 
-  | `AST_export (_,flx_name,cpp_name) -> 
+  | `AST_export_fun (_,flx_name,cpp_name) -> 
     spaces level ^ 
-    "export " ^ 
+    "export fun " ^ 
     string_of_suffixed_name flx_name ^ 
     " as \"" ^ cpp_name ^ "\";"
+
+  | `AST_export_type (_,flx_type,cpp_name) -> 
+    spaces level ^ 
+    "export type (" ^ 
+    string_of_typecode flx_type ^ 
+    ") as \"" ^ cpp_name ^ "\";"
 
   | `AST_label (_,s) -> s ^ ":"
   | `AST_goto (_,s) -> spaces level ^ "goto " ^ s ^ ";"
@@ -1921,7 +1941,11 @@ and string_of_statement level s =
   | `AST_ctypes (_,names) -> spaces level ^ 
     "ctypes " ^ catmap "," snd names ^ ";"
 
-  | `AST_abs_decl (_,t,vs, code) -> spaces level ^ 
+  | `AST_incomplete (_,names) -> spaces level ^ 
+    "incomplete ctypes " ^ catmap "," snd names ^ ";"
+
+  | `AST_abs_decl (_,t,vs, flag, code) -> spaces level ^ 
+   (if flag then "" else "incomplete ") ^
    "type " ^ t ^ print_vs vs ^
    " = " ^ string_of_string code ^ ";"
 
@@ -2138,9 +2162,13 @@ and string_of_desugared stats =
 and string_of_iface level s =
   let spc = spaces level in
   match s with
-  | `IFACE_export (flx_name,cpp_name) -> 
-    spc ^ "export " ^ string_of_suffixed_name flx_name ^ 
+  | `IFACE_export_fun (flx_name,cpp_name) -> 
+    spc ^ "export fun " ^ string_of_suffixed_name flx_name ^ 
     " as \"" ^ cpp_name ^ "\";"
+
+  | `IFACE_export_type (flx_type,cpp_name) -> 
+    spc ^ "export type (" ^ string_of_typecode flx_type ^ 
+    ") as \"" ^ cpp_name ^ "\";"
 
 and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t) 
 = match entry with
@@ -2156,7 +2184,8 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
   | `SYMDEF_type_alias t -> 
     "typedef " ^ name ^ print_ivs vs ^" = " ^ string_of_typecode t ^ ";"
   
-  | `SYMDEF_abs (code) ->
+  | `SYMDEF_abs (flag,code) ->
+    (if flag then "" else "incomplete ") ^
     "type " ^ name ^ print_ivs vs ^
     " = " ^ string_of_string code ^ ";"
 
@@ -2372,9 +2401,13 @@ and string_of_biface dfns level s =
   let se e = string_of_bound_expression dfns e in
   let sid n = qualified_name_of_index dfns n in
   match s with
-  | `BIFACE_export (index,cpp_name) ->
-    spc ^ "export " ^ qualified_name_of_index dfns index ^ 
+  | `BIFACE_export_fun (_,index,cpp_name) ->
+    spc ^ "export fun " ^ qualified_name_of_index dfns index ^ 
     " as \"" ^ cpp_name ^ "\";"
+
+  | `BIFACE_export_type (_,btyp,cpp_name) ->
+    spc ^ "export type (" ^ string_of_btypecode dfns btyp ^ 
+    ") as \"" ^ cpp_name ^ "\";"
 
 and string_of_bexe dfns level s = 
   let spc = spaces level in
@@ -2492,7 +2525,8 @@ and string_of_dcl level name vs (s:dcl_t) =
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | `DCL_abs (code) -> spaces level ^ 
+  | `DCL_abs (complete, code) -> spaces level ^ 
+    (if complete then "" else "incomplete ") ^
     "type " ^ name ^ print_vs vs ^
     " = " ^ string_of_string code ^ ";"
 
@@ -2600,7 +2634,8 @@ and string_of_bbdcl dfns bbdcl index =
     "var " ^ name ^ print_bvs vs ^ ": " ^ sobt ty ^ ";"
 
   (* binding structures [prolog] *)
-  | `BBDCL_abs (vs,code) ->
+  | `BBDCL_abs (vs,complete,code) ->
+   (if complete then "" else "incomplete ") ^
    "type " ^ name ^  print_bvs vs ^
    " = " ^ string_of_string code ^ ";"
 

@@ -80,6 +80,7 @@ print "rt01 complete\n";
 @select(tangler('test/rt02.flx'))
 header r"""
 #include <stdio.h>
+#include <assert.h>
 typedef char *charp;
 """;
 
@@ -208,6 +209,7 @@ print_endl 1;
 
 @select(tangler('test/rt07.flx'))
 header "#include <stdio.h>";
+header "#include <assert.h>";
 
 fun land: 2 * 2 -> 2 = "$1 && $2";
 type int = "int";
@@ -416,23 +418,12 @@ type int = "int";
 fun neg(a:int) = { return -a; }
 
 @select(tangler('test/bt06.flx'))
-// privacy violation 1
+// privacy violation
 include "std";
 
 module X 
 {
-  fun f:int -> int = "$1";
-  val x = f 1;
-}
-val x = X::f 1;
-
-@select(tangler('test/bt06.flx'))
-// privacy violation 1
-include "std";
-
-module X 
-{
-  fun f:int -> int = "$1";
+  private fun f:int -> int = "$1";
   val x = f 1;
 }
 open X;

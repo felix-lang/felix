@@ -26,7 +26,7 @@ val build_tables:
     name_map_t *  
     name_map_t *  
     sexe_t list * 
-    (iface_t * int option) list *
+    (range_srcref * iface_t * int option) list *
     dir_t list
   )
 
@@ -46,7 +46,7 @@ open Flx_exceptions
 let split_asms asms : 
   (range_srcref * id_t * access_t * id_t list * dcl_t) list * 
   sexe_t list *
-  iface_t list *
+  (range_srcref * iface_t) list *
   dir_t list
 = 
   let rec aux asms dcls exes ifaces dirs =
@@ -56,7 +56,7 @@ let split_asms asms :
       match h with 
       | Exe (sr,exe) -> aux t dcls ((sr,exe) :: exes) ifaces dirs
       | Dcl (sr,id,access,vs,dcl) -> aux t ((sr,id,access,vs,dcl) :: dcls) exes ifaces dirs
-      | Iface (sr,iface) -> aux t dcls exes (iface :: ifaces) dirs
+      | Iface (sr,iface) -> aux t dcls exes ((sr,iface) :: ifaces) dirs
       | Dir (sr,dir) -> aux t dcls exes ifaces (dir::dirs)
   in 
     aux asms [] [] [] []
@@ -134,7 +134,7 @@ let rec build_tables syms name level parent grandparent root asms =
   let dcls,exes,ifaces,dirs = 
     rev dcls,rev exes,rev ifaces, rev dirs
   in
-  let ifaces = map (fun i-> i,parent) ifaces in
+  let ifaces = map (fun (i,j)-> i,j,parent) ifaces in
   let interfaces = ref ifaces in
   let spc = spaces level in
   let pub_name_map = Hashtbl.create 97 in
@@ -469,8 +469,8 @@ let rec build_tables syms name level parent grandparent root asms =
           ;
           add_tvars privtab
 
-        | `DCL_abs (c) ->
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_abs c}
+        | `DCL_abs (flag,c) ->
+          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_abs (flag,c)}
           ;
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n

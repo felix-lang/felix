@@ -114,9 +114,10 @@ let gen_type_name syms bbdfns (index,typ) =
       with _ -> failwith ("[gen_type_name] can't find type" ^ si i)
     in
     begin match entry with
-    | `BBDCL_abs (vs,ct) -> 
+    | `BBDCL_abs (vs,complete,ct) -> 
       let descr = 
-        "\n//PRIMITIVE "^si i ^" INSTANCE " ^ 
+        "\n//"^(if complete then "" else "INCOMPLETE ")^
+        "PRIMITIVE "^si i ^" INSTANCE " ^ 
         si index^": " ^ 
         sbt syms.dfns typ ^ 
         "\n" 
@@ -194,12 +195,13 @@ let gen_type_name syms bbdfns (index,typ) =
         descr ^
         "typedef _uctor_ " ^ tn typ ^ ";\n"
 
-    | `BBDCL_abs (vs,ct) -> 
+    | `BBDCL_abs (vs,complete,ct) -> 
       begin match vs with
       | [] -> descr ^ "typedef " ^ ct ^ " " ^ tn typ ^ ";\n" 
       | _ -> 
         let descr = 
-          "\n//GENERIC PRIMITIVE TYPE " ^ 
+          "\n//"^(if complete then "" else "INCOMPLETE ")^
+          "GENERIC PRIMITIVE TYPE " ^ 
           si index^": " ^ 
           sbt syms.dfns typ ^ 
           "\n" 
@@ -245,14 +247,17 @@ let gen_type syms bbdfns (index,typ) =
     descr ^
     let name = cn typ  
     and argtype = tn a
+    and unitproc = a = `BTYP_tuple[]
     in
     "struct " ^ name ^
     ": con_t {\n" ^
-    (if a <> `BTYP_tuple [] 
+    "  typedef void rettype;\n" ^
+    "  typedef " ^ (if unitproc then "void" else argtype) ^ " argtype;\n" ^
+    (if unitproc 
     then
-    "  virtual con_t *call(con_t *, "^argtype^" const &)=0;\n"
-    else
     "  virtual con_t *call(con_t *)=0;\n"
+    else
+    "  virtual con_t *call(con_t *, "^argtype^" const &)=0;\n"
     ) ^
     "  virtual "^name^" *clone()const=0;\n"  ^
     "  virtual con_t *resume()=0;\n"  ^
@@ -264,12 +269,13 @@ let gen_type syms bbdfns (index,typ) =
     let name = cn typ  
     and argtype = tn a
     and rettype = tn r
+    and unitfun = a = `BTYP_tuple[]
     in
     "struct " ^ name ^ " {\n" ^
+    "  typedef " ^ rettype ^ " rettype;\n" ^
+    "  typedef " ^ (if unitfun then "void" else argtype) ^ " argtype;\n" ^
     "  virtual "^rettype^" apply("^
-    (if a = `BTYP_tuple []
-    then ""
-    else argtype^" const &") ^
+    (if unitfun then "" else argtype^" const &") ^
     ")=0;\n"  ^
     "  virtual "^name^" *clone()const=0;\n"  ^
     "};\n"
@@ -309,6 +315,8 @@ let gen_type syms bbdfns (index,typ) =
     in
     descr ^
     "struct " ^ name ^ " {\n" ^
+    "  static size_t const len = " ^ si n ^ ";\n" ^
+    "  typedef " ^ v ^ " element_type;\n" ^
     "  " ^ v ^ " data[" ^ si n ^ "];\n" ^
     "};\n"
   
@@ -319,7 +327,7 @@ let gen_type syms bbdfns (index,typ) =
       with _ -> failwith ("[gen_type_name] can't find type" ^ si i)
     in
     begin match entry with
-    | `BBDCL_abs (vs,ct) -> ""
+    | `BBDCL_abs (vs,complete,ct) -> ""
     | `BBDCL_struct (vs,cts) ->
       let cts = map (fun (name,typ) -> name, tsubst vs ts typ) cts in
       let ctss = map (fun (name,typ) -> name, tn typ) cts in
@@ -431,7 +439,7 @@ let gen_type syms bbdfns (index,typ) =
       "};\n"
 
     | `BBDCL_union _ -> "" (* covered by prior typedef of _uctor_ or int *)
-    | `BBDCL_abs (vs,ct) -> ""
+    | `BBDCL_abs (vs,complete,ct) -> ""
     | _ -> 
       failwith 
       (

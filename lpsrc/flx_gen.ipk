@@ -259,18 +259,20 @@ let gen_offset_tables syms bbdfns=
       let name = cpp_typename syms btyp in
       let id,parent,entry = Hashtbl.find bbdfns i in 
       begin match entry with
-      | `BBDCL_abs (_,_) ->
-        if not (Hashtbl.mem primitive_shapes name) then 
-        begin
-          Hashtbl.add primitive_shapes name true; 
-          bcat s ("\n//OFFSETS for abstract type " ^ name ^ " instance\n");
-          bcat s ( "static gc_shape_t " ^ name ^ "_ptr_map(\n") ;
-          bcat s ("  1,sizeof("^name^"),0,0,0\n");
-          bcat s ");\n"
-        end else begin
-          bcat s ("\n//OFFSETS for abstract type " ^ name ^ " instance\n");
-          bcat s ("//Use "^name^"_ptr_map\n");
-        end
+      | `BBDCL_abs (_,complete,_) ->
+        if complete then
+          if not (Hashtbl.mem primitive_shapes name) then 
+          begin
+            Hashtbl.add primitive_shapes name true; 
+            bcat s ("\n//OFFSETS for abstract type " ^ name ^ " instance\n");
+            bcat s ( "static gc_shape_t " ^ name ^ "_ptr_map(\n") ;
+            bcat s ("  1,sizeof("^name^"),0,0,0\n");
+            bcat s ");\n"
+          end else begin
+            bcat s ("\n//OFFSETS for abstract type " ^ name ^ " instance\n");
+            bcat s ("//Use "^name^"_ptr_map\n");
+          end
+        else ()
       | `BBDCL_struct (vs,cps) ->
         bcat s ("\n//OFFSETS for struct type " ^ name ^ " instance\n");
         bcat s ("//CANT HANDLE YET!\n");
@@ -867,7 +869,7 @@ let get_var_frame syms bbdfns this index ts : string =
 
 let rec gen_expr syms bbdfns this (e,t) vs ts =
   (*
-  print_endline ("Generating expression " ^ string_of_bound_expression syms.dfns (e,t));
+  print_endline ("Generating expression " ^ string_of_bound_expression_with_type syms.dfns (e,t));
   *)
   let ge e = gen_expr syms bbdfns this e vs ts in
   if length ts <> length vs then 
@@ -910,7 +912,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
     (* NOTE that the index is not used ... *)
     let _,t = e in
     let t = 
-      match t with 
+      match unfold t with 
       | `BTYP_sum ls -> nth ls (n-1)
       | _ -> assert false
     in
@@ -930,8 +932,8 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
     let t = tn t in
     t ^ "(" ^ cstring_of_literal v ^ ")"
     
-  | `BEXPR_case (v,t) ->
-    begin match t with
+  | `BEXPR_case (v,t') ->
+    begin match unfold t' with
     | `BTYP_sum ls ->
        let n = length ls in
        if v<1 or v>n
@@ -1057,7 +1059,9 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
          arg_typename ^ "(" ^ ge (a,t'') ^ ")"
        in
        let uval = "_uctor_(" ^ si (v-1) ^ ", " ^ aval ^")" in
-       "(" ^ union_typename ^ ")" ^ uval
+       let s = "(" ^ union_typename ^ ")" ^ uval in
+       s
+
        (*
        failwith 
        (
@@ -1879,13 +1883,13 @@ let gen_execute_methods syms bbdfns counter bf =
   syms.instances
 
 let gen_biface_header syms bbdfns biface = match biface with
-  | `BIFACE_export (index, export_name) ->
+  | `BIFACE_export_fun (sr,index, export_name) ->
     let id,parent,entry = Hashtbl.find bbdfns index in
-    match entry with
+    begin match entry with
     | `BBDCL_function (vs,ps, ret, _,_) ->
       let display = get_display_list syms index in
       if length display <> 0
-      then failwith "Can't export nested function";
+      then clierr sr "Can't export nested function";
 
       let argtypes = 
         map 
@@ -1902,7 +1906,7 @@ let gen_biface_header syms bbdfns biface = match biface with
     | `BBDCL_procedure (vs,ps, _,_) ->
       let display = get_display_list syms index in
       if length display <> 0
-      then failwith "Can't export nested proc";
+      then clierr sr "Can't export nested proc";
 
       let argtypes = 
         map 
@@ -1916,20 +1920,26 @@ let gen_biface_header syms bbdfns biface = match biface with
       "//EXPORT PROCEDURE " ^ cpp_instance_name syms bbdfns index [] ^ 
       " as " ^ export_name ^ "\n" ^
       "extern \"C\" con_t * "  ^ export_name ^ "(\n" ^ arglist ^ "\n);\n"
-
-    | _ -> failwith "Not implemented: export non-function/procedure"
   
+    | _ -> failwith "Not implemented: export non-function/procedure"
+    end
+  
+  | `BIFACE_export_type (sr, typ, export_name) ->
+    "//EXPORT type " ^ sbt  syms.dfns typ ^ " as " ^ export_name  ^ "\n" ^
+    "typedef " ^ cpp_type_classname syms typ ^ " " ^ export_name ^ "_class;\n" ^
+    "typedef " ^ cpp_typename syms typ ^ " " ^ export_name ^ ";\n"
+      
 let gen_biface_body syms bbdfns biface = match biface with
-  | `BIFACE_export (index, export_name) ->
+  | `BIFACE_export_fun (sr,index, export_name) ->
     let id,parent,entry = Hashtbl.find bbdfns index in
-    match entry with
+    begin match entry with
     | `BBDCL_function (vs,ps, ret, _,_) ->
       if length vs <> 0
-      then failwith ("Can't export generic function " ^ id)
+      then clierr sr ("Can't export generic function " ^ id)
       ;
       let display = get_display_list syms index in
       if length display <> 0
-      then failwith "Can't export nested function";
+      then clierr sr "Can't export nested function";
 
       let argtypes = 
         map 
@@ -1950,11 +1960,11 @@ let gen_biface_body syms bbdfns biface = match biface with
 
     | `BBDCL_procedure (vs,ps,_,_) ->
       if length vs <> 0
-      then failwith ("Can't export generic procedure " ^ id)
+      then clierr sr ("Can't export generic procedure " ^ id)
       ;
       let display = get_display_list syms index in
       if length display <> 0
-      then failwith "Can't export nested function";
+      then clierr sr "Can't export nested function";
 
       let argtypes = 
         map 
@@ -1973,6 +1983,9 @@ let gen_biface_body syms bbdfns biface = match biface with
       "}\n"
 
     | _ -> failwith "Not implemented: export non-function/procedure"
+    end
+
+  | `BIFACE_export_type _ -> ""
 
 let gen_biface_headers syms bbdfns bifaces = 
   cat "" (map (gen_biface_header syms bbdfns) bifaces)

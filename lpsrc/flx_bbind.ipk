@@ -4,19 +4,22 @@ Name binding pass 2.
 @h = tangler("src/flx_bbind.mli")
 @select(h)
 open Flx_types
+open Flx_ast
+
 val bbind:
   sym_state_t ->
   fully_bound_symbol_table_t
 
 val bind_ifaces:
   sym_state_t ->
-  (iface_t * int option) list ->
+  (range_srcref * iface_t * int option) list ->
   biface_t list 
 
 @h = tangler("src/flx_bbind.ml")
 @select(h)
 open Flx_util
 open Flx_types
+open Flx_ast
 open Flx_print
 open Flx_mtypes
 open Flx_typing
@@ -233,11 +236,11 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
     | `SYMDEF_regdef _ -> ()
     | `SYMDEF_type_alias _ -> ()
 
-    | `SYMDEF_abs ct->
+    | `SYMDEF_abs (complete,ct)->
       (*
       print_endline ("//Binding abstract type " ^ si i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_abs (vs,ct))
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_abs (vs,complete,ct))
 
     | `SYMDEF_header ct ->
       (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name); 
@@ -292,24 +295,35 @@ let bbind syms =
 
 let bind_ifaces syms 
   (ifaces:
-    (iface_t * int option) list
+    (range_srcref * iface_t * int option) list
   )
 = 
   let luqn env n = lookup_qn_in_env syms env [] n in
-  let dummy_sr = ("bind_ifaces",0,0,0,0) in
   let bound_ifaces = 
     List.map
     (function 
-      | `IFACE_export (sn, cpp_name), parent ->
+      | sr,`IFACE_export_fun (sn, cpp_name), parent ->
         let env = build_env syms [] parent in
         let index,ts = lookup_sn_in_env syms env [] sn in
         if length ts = 0 then
-          `BIFACE_export (index, cpp_name) 
-        else clierr dummy_sr 
+          `BIFACE_export_fun (sr,index, cpp_name) 
+        else clierr sr 
         (
           "Can't export generic entity " ^
           string_of_suffixed_name sn
         )
+      
+      | sr,`IFACE_export_type (typ, cpp_name), parent ->
+        let env = build_env syms [] parent in
+        let t = bind_type syms env [] dummy_sr typ in
+        if var_occurs t then
+        clierr sr 
+        (
+          "Can't export generic type " ^
+          string_of_btypecode syms.dfns t
+        )
+        else
+          `BIFACE_export_type (sr, t, cpp_name) 
      )
      ifaces
    in bound_ifaces
@@ -463,8 +477,20 @@ try
     )
     bbdfns
     ;
-    print_endline "//OPTIMISING";
-    print_endline "//----------";
+    print_endline "//OPTIMISING -- pass 1";
+    print_endline "//---------------------";
+    let bbdfns = elide_unused syms bbdfns root_proc bifaces in
+    Hashtbl.iter
+    (fun index (name,parent,entry) -> print_endline
+      (
+        si index ^ " --> " ^
+        string_of_bbdcl syms.dfns entry index
+      )
+    )
+    bbdfns
+    ;
+    print_endline "//OPTIMISING -- pass 2";
+    print_endline "//---------------------";
     let bbdfns = elide_unused syms bbdfns root_proc bifaces in
     Hashtbl.iter
     (fun index (name,parent,entry) -> print_endline

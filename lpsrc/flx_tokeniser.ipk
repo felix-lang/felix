@@ -142,6 +142,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | ELIF _ -> "elif" 
   | CALL _ -> "call"
   | JUMP _ -> "jump"
+  | MAP _ -> "map"
   | LOOP _ -> "loop"
   | TYPEMATCH _ -> "typematch"
   | REGMATCH _ -> "regmatch"
@@ -154,6 +155,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | IN _ -> "in"
   | TYPE _ -> "type"
   | CTYPES _ -> "ctypes"
+  | INCOMPLETE _ -> "incomplete"
   | TYPEDEF _ -> "typedef"
   | READ _ -> "read"
   | RETURN _ -> "return"
@@ -168,7 +170,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | UNION _ -> "union"
   | WHEN _ -> "when"
   | AS _ -> "as"
-  | ALL _ -> "as"
+  | ALL _ -> "all"
   | REGEXP _ -> "regexp"
   | VAR _ -> "var"
   | CLASS _ -> "class"
@@ -319,6 +321,7 @@ let src_of_token t = match t with
   | CALL s 
   | JUMP s 
   | LOOP s 
+  | MAP s 
   | PROCEDURE s 
   | FUNCTION s 
   | OBJECT s 
@@ -331,6 +334,7 @@ let src_of_token t = match t with
   | TODO s 
   | TYPE s 
   | CTYPES s 
+  | INCOMPLETE s 
   | READ s 
   | CONST s 
   | STRUCT s 
