@@ -2,8 +2,10 @@
 @h = tangler('src/flx_csubst.mli')
 @select(h)
 open Flx_types
+open Flx_ast
 
 val csubst:
+  range_srcref ->
   string ->
   string list -> (* value arguments as strings *)
   string list -> (* types of value arguments as strings *)
@@ -18,6 +20,7 @@ open Flx_types
 open Flx_typing
 open List
 open Flx_util
+open Flx_exceptions
 
 (* substitution encoding:
    $n: n'th component of argument tuple, 1 origin!
@@ -27,14 +30,16 @@ open Flx_util
    #n: type of n'th component of argument tuple (1 origin)
    #0: return type
    @n: reference to shape object
-
+   
    $t: pass a tuple argument 'as a tuple'
+   $Tn: pass argument n expanded into an argument list (varargs)
    #t: the type of the argument tuple
    @t: the shape of the argument tuple
-
+   
    ??: expands to ?
    ?n: the n'th generic type argument ..
    ?a: expands to ?1,?2, ...
+
 *)
 
 (* finite state machine states *)
@@ -44,8 +49,9 @@ type mode_t =
  | CStringBackslash | CCharBackslash
  | Dollar | Backquote | Hash | Earhole | Quest (* last char was one of these *)
  | DollarDigits | BackquoteDigits | HashDigits | EarholeDigits | QuestDigits
+ | Varargs | VarargsDigits
   
-let csubst ct args typs argtyp retyp gargs =
+let csubst sr ct args typs argtyp retyp gargs =
   let n = length args in
   assert (n = length typs); 
   (* print_endline ("SUBST " ^ ct ^ ", count="^string_of_int n); *)
@@ -57,9 +63,9 @@ let csubst ct args typs argtyp retyp gargs =
   let digits = ref 0 in
   let serr i msg = 
     let spc k = String.make k ' ' in
-    failwith
+    clierr sr
     (
-      "[subst] " ^ msg ^ " in code fragment \n\"" ^ ct ^
+      "[csubst] " ^ msg ^ " in code fragment \n\"" ^ ct ^
        "\"\n" ^ spc (i+1) ^ "^" ^ "\n" ^ "Column " ^ string_of_int (i+1)
     )
   in
@@ -110,6 +116,9 @@ let csubst ct args typs argtyp retyp gargs =
         bcat ( argtyp ^ "(" ^ cat "," args ^ ")");
         mode := Normal
 
+      | 'T' ->
+        mode := Varargs
+
       | '0' .. '9' -> 
         digits := Char.code ch - Char.code '0'; 
         mode := DollarDigits
@@ -117,6 +126,15 @@ let csubst ct args typs argtyp retyp gargs =
       | _ -> serr i "Expected 't' or digit after $"
       end
 
+    | Varargs ->
+      begin match ch with
+      | '0' .. '9' -> 
+        digits := Char.code ch - Char.code '0'; 
+        mode := VarargsDigits
+
+      | _ -> serr i "Expected digits after $T"
+      end
+      
     | Backquote ->
       begin match ch with
       | '0' .. '9' -> 
@@ -183,6 +201,38 @@ let csubst ct args typs argtyp retyp gargs =
           bcat ("(" ^ s' ^ ")");
           mode := Normal;
           trans i ch
+       end
+
+    | VarargsDigits ->
+      begin match ch with
+      | '0' .. '9' -> 
+        digits := !digits * 10 + Char.code ch - Char.code '0'
+
+      | _ -> 
+        if !digits> List.length args
+        then serr i ("Arg no " ^ string_of_int !digits ^ " too large")
+        else if !digits<=0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
+        else
+          let s' = nth args (!digits-1) in
+          let n = String.length s' in
+          begin 
+            try 
+              let start = String.index s' '('
+              and fin = String.rindex s' ')'
+              in 
+              let s' = String.sub s' (start+1) (fin-start-1)
+              in 
+                (* WE SHOULD CHECK THE # of args agrees with
+                the type of the tuple .. but there is no
+                way to do that since we only get a string
+                representation .. this code is unequivocably
+                a HACK
+                *)
+                bcat s';
+                mode := Normal;
+               trans i ch
+            with Not_found -> serr i "Varargs requires  literal tuple"
+          end
        end
 
     | BackquoteDigits ->

@@ -38,11 +38,10 @@ let string_of_string s = "\"" ^  Flx_string.c_quote_of_string s ^ "\""
 let string_of_token (tok :Flx_parse.token): string =
   match tok with
   | NAME (sr,s) -> s
-  | NAN _ -> "NaN"
-  | INF _ -> "inf"
   | INTEGER (sr,t,i) -> Big_int.string_of_big_int i
   | FLOAT (sr,t,v) -> v
   | STRING (sr,s) -> Flx_string.c_quote_of_string s 
+  | CSTRING (sr,s) -> Flx_string.c_quote_of_string s 
   | WSTRING (sr,s) -> Flx_string.c_quote_of_string s 
   | USTRING (sr,s) -> Flx_string.c_quote_of_string s 
 
@@ -74,7 +73,6 @@ let string_of_token (tok :Flx_parse.token): string =
   | BACKQUOTE _ -> "`"
   | TILDE _ -> "~"
   | CIRCUMFLEX _ -> "^"
-  | UNDERSCORE _ -> "_"
 
   (* two character tokens *)
   | ANDLESS _ -> "&<"
@@ -120,71 +118,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | DOTDOTDOT _ -> "..."
 
   (* keywords *)
-  | INCLUDE _ -> "include"
-  | OPEN _ -> "open"
-  | USE _ -> "use"
-  | INTERFACE _ -> "interface"
-  | FUNCTOR _ -> "functor"
-  | AND _ ->  "and"
-  | NOT _ -> "not"
-  | OR _ -> "or"
-  | FUNCTION _ -> "fun" 
-  | OBJECT _ -> "obj" 
-  | PROCEDURE _ -> "proc" 
-  | MACRO _ -> "macro" 
-  | FORGET _ -> "forget" 
-  | IDENT _ -> "ident"
-  | NEW _ -> "new"
-  | IF _ -> "if" 
-  | THEN _ -> "then" 
-  | ELSE _ -> "else" 
-  | ENDIF _ -> "endif" 
-  | ELIF _ -> "elif" 
-  | CALL _ -> "call"
-  | JUMP _ -> "jump"
-  | MAP _ -> "map"
-  | LOOP _ -> "loop"
-  | TYPEMATCH _ -> "typematch"
-  | REGMATCH _ -> "regmatch"
-  | REGLEX _ -> "reglex"
-  | MATCH _ -> "match"
-  | WITH _ -> "with"
-  | CASE _ -> "case"
-  | ENDMATCH _ -> "endmatch"
-  | LET _ -> "let"
-  | IN _ -> "in"
-  | TYPE _ -> "type"
-  | CTYPES _ -> "ctypes"
-  | INCOMPLETE _ -> "incomplete"
-  | TYPEDEF _ -> "typedef"
-  | READ _ -> "read"
-  | RETURN _ -> "return"
-  | CONST _ -> "const"
-  | STRUCT _ -> "struct"
-  | HEADER _ -> "header"
-  | BODY _ -> "body"
-  | CODE _ -> "code"
-  | FORK _ -> "fork"
-  | TODO _ -> "todo"
-  | OF _ -> "of" 
-  | UNION _ -> "union"
-  | WHEN _ -> "when"
-  | AS _ -> "as"
-  | ALL _ -> "all"
-  | REGEXP _ -> "regexp"
-  | VAR _ -> "var"
-  | CLASS _ -> "class"
-  | VAL _ -> "val"
-  | DEF _ -> "def"
-  | MODULE _ -> "module"
-  | GOTO _ -> "goto"
-  | COMMENT_KEYWORD _ -> "comment"
-  | PUBLISH _ -> "publish"
-  | PUBLIC _ -> "public"
-  | PRIVATE _ -> "private"
-  | TO _ -> "to"
-  | EXPORT _ -> "export"
-  | SET _ -> "set"
+@for n,t in flx_keywords: tangle('  |  '+t+' _ -> "'+n+'"')
 
   (* special things *)
   | SLOSH _ -> "\\" (* "\"" *) 
@@ -204,20 +138,18 @@ let src_of_token t = match t with
   | ENDMARKER
     -> ("",0,0,0)
 
-  | COMMENT_KEYWORD s
   | NAME    (s,_)
   | INTEGER (s,_,_)
   | FLOAT   (s,_,_)
-  | INF s 
-  | NAN s
   | STRING  (s,_)
+  | CSTRING  (s,_)
   | WSTRING  (s,_)
   | USTRING  (s,_)
 
   | ERRORTOKEN (s,_) 
 
-  | INTERFACE s
-  | FUNCTOR s
+@for n,t in flx_keywords: tangle('  | '+t+' s')
+
   | EQUAL s 
   | PLUS s 
   | MINUS s 
@@ -284,69 +216,6 @@ let src_of_token t = match t with
   | DOTDOT s 
   | SLOSH s 
   | DOTDOTDOT s 
-  | NOT s 
-  | OR s 
-  | AND s 
-  | AS s 
-  | ALL s 
-  | REGEXP s 
-  | WHEN s 
-  | IF s 
-  | THEN s 
-  | ELSE s 
-  | ENDIF s 
-  | ELIF s 
-  | OF s 
-  | VAR s 
-  | UNION s 
-  | CLASS s 
-  | GOTO s 
-  | PUBLIC s 
-  | PUBLISH s 
-  | PRIVATE s 
-  | EXPORT s 
-  | TYPEMATCH s 
-  | REGMATCH s 
-  | REGLEX s 
-  | MATCH s 
-  | WITH s 
-  | ENDMATCH s 
-  | CASE s 
-  | LET s
-  | IN s
-  | HEADER s 
-  | BODY s 
-  | MODULE s 
-  | CODE s 
-  | CALL s 
-  | JUMP s 
-  | LOOP s 
-  | MAP s 
-  | PROCEDURE s 
-  | FUNCTION s 
-  | OBJECT s 
-  | MACRO s 
-  | FORGET s 
-  | IDENT s 
-  | NEW s 
-  | RETURN s 
-  | FORK s 
-  | TODO s 
-  | TYPE s 
-  | CTYPES s 
-  | INCOMPLETE s 
-  | READ s 
-  | CONST s 
-  | STRUCT s 
-  | VAL s 
-  | DEF s 
-  | TYPEDEF s 
-  | TO s
-  | SET s
-  | OPEN s
-  | INCLUDE s
-  | USE s
-  | UNDERSCORE s
     -> s
 
 
@@ -357,7 +226,12 @@ let pre_tokens_of_lexbuf buf state =
     match t with
     | [Flx_parse.ENDMARKER] ->
       [Flx_parse.ENDMARKER] @ lst
-    | _ -> get (List.rev_append t lst)
+    | _ -> 
+      match state#get_condition with
+      | `Processing ->
+        get (List.rev_append t lst)
+      | _ ->
+        get lst
   in List.rev (get [])
 
 let pre_tokens_of_filename filename dirname incdirs =

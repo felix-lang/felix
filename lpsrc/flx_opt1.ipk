@@ -55,13 +55,13 @@ let rec isuseless bbdfns exes =
   let check i =         
     try 
       match Hashtbl.find bbdfns i with 
-      | _,_,`BBDCL_procedure (_,_,exes,_) -> 
+      | _,_,_,`BBDCL_procedure (_,_,exes,_) -> 
         if not (isuseless bbdfns exes) 
         then raise Useful
         else ()
-      | _,_,`BBDCL_proc _
-      | _,_,`BBDCL_val _
-      | _,_,`BBDCL_var _
+      | _,_,_,`BBDCL_proc _
+      | _,_,_,`BBDCL_val _
+      | _,_,_,`BBDCL_var _
         -> raise Useful
       | _ -> failwith "[isuseless] Expected procedure type"
     with 
@@ -194,7 +194,7 @@ let check_can_inline syms bbdfns nm =
     | FunctionEntry _ 
     | NonFunctionEntry (Bound _) -> raise Cannot_inline
     | NonFunctionEntry (Simple i) ->
-      let id,parent,entry = 
+      let id,sr,parent,entry = 
         try Hashtbl.find bbdfns i 
         with Not_found -> 
         match Hashtbl.find syms.dfns i with
@@ -247,7 +247,7 @@ let rec inline_applies syms bbdfns x =
   | `BEXPR_apply ((`BEXPR_closure (i,ts),_),b'),t ->
     begin 
       match Hashtbl.find bbdfns i 
-      with id,parent,bbdcl -> 
+      with id,parent,sr,bbdcl -> 
       match bbdcl with
       | `BBDCL_function (vs,ps,ret,exes,nm) ->
         begin match exes with
@@ -303,7 +303,7 @@ let useless_call_elim syms bbdfns vs' exes index =
   | `BEXE_call (sr,(`BEXPR_name (i,ts),_),b')
     -> (* only keep calls to useful procedures *) 
       begin match Hashtbl.find bbdfns i with
-      | id,parent,`BBDCL_procedure (vs,ps,inner_exes,nm) ->
+      | id,parent,sr,`BBDCL_procedure (vs,ps,inner_exes,nm) ->
         if not (isuseless bbdfns inner_exes) 
         then begin 
           match inner_exes with
@@ -349,7 +349,7 @@ let useless_call_elim syms bbdfns vs' exes index =
   | `BEXE_jump (sr,(`BEXPR_name (i,ts),_),b')
     -> (* only keep calls to useful procedures *) 
       begin match Hashtbl.find bbdfns i with
-      | id,parent,`BBDCL_procedure (vs,ps,inner_exes,nm) ->
+      | id,parent,sr,`BBDCL_procedure (vs,ps,inner_exes,nm) ->
         if not (isuseless bbdfns exes) 
         then begin
           match inner_exes with
@@ -447,7 +447,7 @@ let useless_call_elim syms bbdfns vs' exes index =
         | (`BEXPR_closure (i,_),_) ->
           begin 
             match Hashtbl.find bbdfns i with
-            | id,parent,`BBDCL_proc _ ->
+            | id,parent,sr,`BBDCL_proc _ ->
               tack (`BEXE_proc_return sr);
               tack (`BEXE_call (sr,p,a));
 
@@ -588,7 +588,7 @@ and uses syms used bbdfns i =
       try Some (Hashtbl.find bbdfns i)
       with Not_found -> None
     with
-    | Some (id,_,bbdcl) ->
+    | Some (id,_,_,bbdcl) ->
       used := BidSet.add i !used;
       begin match bbdcl with
       | `BBDCL_function (_,ps,ret,exes, _) ->
@@ -623,13 +623,13 @@ and uses syms used bbdfns i =
 let copy_bbdcl syms bbdfns bbdfns2 i =
   let data =
     match Hashtbl.find bbdfns i with
-    | id,parent,`BBDCL_procedure (vs,p,exes,names) ->
+    | id,parent,sr,`BBDCL_procedure (vs,p,exes,names) ->
       let exes = useless_call_elim syms bbdfns vs exes i in
-      id,parent,`BBDCL_procedure (vs,p,exes,names)
+      id,parent,sr,`BBDCL_procedure (vs,p,exes,names)
 
-    | id,parent,`BBDCL_function (vs,p,ret,exes,names) ->
+    | id,parent,sr,`BBDCL_function (vs,p,ret,exes,names) ->
       let exes = useless_call_elim syms bbdfns vs exes i in
-      id,parent,`BBDCL_function (vs,p,ret,exes,names)
+      id,parent,sr,`BBDCL_function (vs,p,ret,exes,names)
     | x -> x
   in
     Hashtbl.add bbdfns2 i data
@@ -667,8 +667,8 @@ let elide_unused syms
   (* copy all header and body specs, they're always considered used *)
   Hashtbl.iter
   (fun i b -> match b with
-    | _,_,`BBDCL_header _
-    | _,_,`BBDCL_body _ -> Hashtbl.add bbdfns2 i b
+    | _,_,_,`BBDCL_header _
+    | _,_,_,`BBDCL_body _ -> Hashtbl.add bbdfns2 i b
     | _ -> ()
   )
   bbdfns

@@ -365,6 +365,9 @@ let rec unification dfns eqns: (int * btypecode_t) list =
             s := None
         end
 
+      (* This is our expriemental matching for universal type 
+        any = fix 0
+      *)
       | `BTYP_fix 0,_
       | _,`BTYP_fix 0 -> ()
         

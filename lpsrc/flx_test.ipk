@@ -49,7 +49,7 @@ proc incr : &int = "(*$1)++;";
 fun eq : int * int -> bool = "$1==$2";
 fun mod: int * int -> int = "$1%$2";
 fun lt : int * int -> bool = "$1<$2";
-proc set : & int * int = "*$1 = $2;";
+proc _set : & int * int = "*$1 = $2;";
 
 union parity = Even | Odd;
 
@@ -243,7 +243,7 @@ type int = "int";
 proc print: int = 'printf("%d",$1);';
 proc incr : &int = "*$1++;";
 fun eq : int * int -> bool = "$1==$2";
-proc set : & int * int = "*$1 = $2;";
+proc _set : & int * int = "*$1 = $2;";
 var counter : int = 0;
 var counter2 : int = 0;
 proc eol : 1 = 'printf("\n");';
@@ -258,7 +258,7 @@ proc handle_line()
     goto repeat;
 }
 
-export handle_line of (1) as "line_handler_creator";
+export proc handle_line of (1) as "line_handler_creator";
 
 
 @head(2,'Performance Test')
@@ -282,6 +282,7 @@ messages.
 @head(3,'Driver Implementation')
 @d = tangler('test/flx_perf_drv1.cpp')
 @select(d)
+#include <time.h>
 #include <unistd.h>
 #include <dlfcn.h>
 
@@ -305,18 +306,19 @@ using namespace flx::gc::collector;
 using namespace std;
 
 typedef string message_t;
-
+int niter = 1000;
 int xcounter = 0;
 int xcounter2 = 0;
+bool run = true;
 message_t read_message() 
 {
   char buffer[30];
   memset(buffer,0,30);
   ++ xcounter;
-  if (xcounter > 100000) { 
+  if (xcounter > 1000) { 
     xcounter = 1; 
     xcounter2++; 
-    if(xcounter2>200) exit(0); 
+    if(xcounter2>=niter) run = false;
   }
   sprintf(buffer, "%d %d TEXT", xcounter & ~1, xcounter); 
   return buffer;
@@ -374,9 +376,15 @@ int main(int argc, char* argv[])
     printf("usage flx_perf_drv ./<shared library name>\n");
     exit(1);
   }
+  if(argc==3)
+  {
+    int tmp = 0;
+    sscanf(argv[2],"%d",&tmp);
+    niter = tmp ; // each loop is 1K transactions
+  }
   try 
   {
-    printf("Running flx_perf_drv ..\n");
+    printf("Running flx_perf_drv, %dK transactions\n", niter );
     sleep(1);
     library_linkage_t library;
     flx_libinit_t instance;
@@ -394,7 +402,9 @@ int main(int argc, char* argv[])
     active.push_front(make_pair(-1,instance.start));
     collector.add_root(instance.start);
     int gc_counter = 0;
-    while (true)
+
+    time_t start = time(NULL);
+    while (run)
     {
       // process all yielded threads until they block or die
       while(active.size() > 0)
@@ -433,7 +443,7 @@ int main(int argc, char* argv[])
           }
         }
         else {
-          //printf("SLPI SUICIDES\n");
+          //printf("THREAD SUICIDES\n");
         }
       }
 
@@ -519,11 +529,18 @@ int main(int argc, char* argv[])
           }
         }
         else 
-          printf("Slpi died before reading INITIAL message\n") ;
+          printf("Thread died before reading INITIAL message\n") ;
       }
     }
-    printf("All services terminated ..\n");
-    printf("%ld garbage\n",collector.get_allocation_amt());
+    time_t finished = time(NULL);
+    time_t seconds = finished - start;
+    int trxrate = niter / seconds;
+
+    printf("All services terminated .. %d K trx/sec real-time\n",trxrate);
+    printf("%ld garbage objects, %ld bytes\n",
+      collector.get_allocation_count(),
+      collector.get_allocation_amt()
+    );
     collector.collect();
     instance.destroy();
     printf("flx_perf_drv ends normally\n");
@@ -559,7 +576,7 @@ type int = "int";
 proc print: int = 'cout <<$1;';
 proc incr : &int = "(*$1)++;";
 fun eq : int * int -> bool = "$1==$2";
-proc set : & int * int = "*$1 = $2;";
+proc _set : & int * int = "*$1 = $2;";
 var counter : int = 0;
 var counter2 : int = 0;
 
@@ -567,30 +584,22 @@ proc handle_line()
 {
   //var checker : check;
   var line : string;
-  //print "Reading line 1 ..";
   read line;
-  //print "line 1 read: "; 
-  //print line;
-  //print "\n";
   incr (&counter);
   if (counter == 100000) then
   {
     counter = 0;
     incr (&counter2);
     print counter2;
-    print "00 K\n";
+    print "00 K threads\n";
   } 
   else 
   {} 
   endif
   ;
-  //print "SLPI: Reading line 2 ..";
   read line;
-  //print "line 2 read: "; 
-  //print line;
-  //print "suiciding now ..\n";
 }
 
-export handle_line of (1) as "line_handler_creator";
+export proc handle_line of (1) as "line_handler_creator";
 
 

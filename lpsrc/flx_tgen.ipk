@@ -109,7 +109,7 @@ let gen_type_name syms bbdfns (index,typ) =
   | `BTYP_void -> ""
 
   | `BTYP_inst (i,ts) -> 
-    let id,parent,entry = 
+    let id,parent,sr,entry = 
       try Hashtbl.find bbdfns i
       with _ -> failwith ("[gen_type_name] can't find type" ^ si i)
     in
@@ -124,7 +124,7 @@ let gen_type_name syms bbdfns (index,typ) =
       in
       let instance_name = cn typ in
       let tss = map tn ts in
-      let instance = csubst ct [] [] "Error" "Error" tss in
+      let instance = csubst sr ct [] [] "Error" "Error" tss in
       descr ^ "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
 
     | `BBDCL_struct _ ->
@@ -173,7 +173,7 @@ let gen_type_name syms bbdfns (index,typ) =
     (
       "[gen_type_name] non generic type shouldn't happen now " ^ name ^ "<" ^ si index ^ ">"
     );
-    let id,parent,entry = 
+    let id,parent,sr,entry = 
       try Hashtbl.find bbdfns index
       with _ -> failwith ("[gen_type_name] can't find type" ^ si index)
     in
@@ -207,7 +207,7 @@ let gen_type_name syms bbdfns (index,typ) =
           "\n" 
         in
         let vs = map fst vs in
-        let prim = csubst ct [] [] "Error" "Error" vs in
+        let prim = csubst sr ct [] [] "Error" "Error" vs in
         descr ^ "  struct " ^ name ^ " {\n" ^
         "    typedef "^prim^" t;\n" ^
         "  };\n"
@@ -322,7 +322,7 @@ let gen_type syms bbdfns (index,typ) =
   
 
   | `BTYP_inst (i,ts) ->
-    let id,parent,entry = 
+    let id,parent,sr,entry = 
       try Hashtbl.find bbdfns i
       with _ -> failwith ("[gen_type_name] can't find type" ^ si i)
     in
@@ -393,7 +393,7 @@ let gen_type syms bbdfns (index,typ) =
   | `BTYP_name index ->
     print_endline ("[gen_type] Deprecated BTYP_name " ^ si index);
     let name = tn typ in
-    let id,parent,entry = 
+    let id,parent,sr,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_type] can't find index " ^ si index)
     in
@@ -452,7 +452,7 @@ let gen_type syms bbdfns (index,typ) =
 let gen_type_names syms bbdfns ts = 
   (* print_endline "GENERATING TYPE NAMES"; *)
   let s = Buffer.create 100 in
- iter 
+  iter 
   (fun (i,t) -> 
     try
       Buffer.add_string s (gen_type_name syms bbdfns (i,t))

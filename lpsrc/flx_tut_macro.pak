@@ -1,5 +1,97 @@
-@set_title('Felix Tutorial: Syntax Macros')
+@set_title('Felix Tutorial: Macros')
 @tdir = 'tut/examples/'
+@head(1,'The PreProcessor')
+Felix provides a C like pre-processor. Note that 
+whilst it is C like in appearance, it isn't the same.
+Preprocessor directives start with a # in column 1,
+followed by a keyword denoting the directive.
+@p()
+The syntax and semantics of directives are 
+described below.
+
+@head(2,'Include directive')
+The #include directive takes the same
+form as the corresponding C preprocessor
+directive.
+@p()
+The file names used in include directives
+MUST be Unix style relative file names, no matter
+what operating system is hosting the compilation.
+@p()
+[To be done: should require URL format]
+@p()
+Relative file names inside angle brackets <>
+are searched for in the include path passed
+to the compiler on the command line.
+@p()
+Relative file names in double quotes are searched
+for first in the directory containing the
+file which contains the include directive,
+then in the include path passed to the
+compiler on the command line.
+@p()
+Absolute file names are NOT permitted. Files relative
+to the current directory are NOT permitted.
+In both cases the reason is to enhance the prospects
+for portability.
+@p()
+The C form #include MACRO is not accepted.
+@p()
+Note the notion path searching will be replaced
+by a more powerful technique allowing shadowed
+directories in the future.
+@p()
+Unlike the C #include directive, Felix only
+includes a file once: note that symbolic links
+will defeat the check for a duplication.
+
+@select(tangler(tdir+'mac101.flx'))
+include "std";
+print "This is mac101"; endl;
+
+@select(tangler(tdir+'mac102.flx'))
+include "std";
+#include "mac101.flx"
+print "This is mac102"; endl;
+print "it should have printed the 101 message too"; endl;
+
+@head(2,"Conditional compilation")
+@head(3,'Macro variables and functions')
+Felix provides the #define directive to
+define a macro variable or macro function.
+Unlike C macros, Felix macros are strictly scoped.
+They apply in the file in which they're defined
+and neither invade included files, nor are they
+exported to including files.
+@p()
+However, the #import directive can be used to
+include a file and also import macros into
+the including file, in order to allow processing
+of configuration files.
+@p()
+Note that unlike C, macros are ONLY expanded in
+conditional directives: they have no affect on ordinary
+source text.
+@p()
+A macro variable must be a valid constant expression
+after substitution of macro variables and application
+of macro functions.
+
+@head(3,'Conditionals')
+Felix provides the usual conditional directives
+#ifdef, #ifndef, #if, #elif, #else, #endif.
+[Add #switch/#case/#endswitch]
+@select(tangler(tdir+'mac103.flx'))
+include "std";
+print "Defining FIRST"; endl;
+#define FIRST
+#ifdef FIRST
+print "detected FIRST"; endl;
+#else
+print "SECOND"; endl;
+#endif
+
+
 @head(1,'The Syntax Macro Processor')
 @head(2,'Expression Macro Facility')
 Felix provides an powerful and dangerous 

@@ -165,8 +165,8 @@ using namespace std;
   "size"    : "size_t",
   "address" : "void *",
   "offset"  : "ptrdiff_t",
-  "nts"     : "char*",
-  "ntsc"    : "char const*",
+  "charp"   : "char*",
+  "charcp"  : "char const*",
   
   #characters
   "char"    : "char",
@@ -214,7 +214,7 @@ using namespace std;
   ]
 @floats = ["float", "double", "ldouble"]
 
-@all = ["byte", "size","address","offset"] + chars + sints + uints + floats
+@all = ["byte", "size","address","offset", "charp", "charcp"] + chars + sints + uints + floats
 @ints = uints + sints
 
 @def gen_type(t):
@@ -371,6 +371,13 @@ module Typing
 }
 
 @#------------- CASTS and C HACKERY ---------------
+publish """
+This module provides access to raw C/C++ encodings.
+Incorrect typing is likely to pass by Felix and
+be trapped by the C/C++ compiler. Incorrect management
+of storage can lead to corruption. The use of the
+C_hack module is necessary for interfacing.
+"""
 module C_hack
 {
   fun cast[dst,src]: src->dst = '(?1)$1';
@@ -384,12 +391,15 @@ module C_hack
   publish "Abstract type for C pointer to const"
   type cptr[t]="?1 const *";
 
+  publish "Convert pointer to pointer to const"
+  fun enconst[t]: ptr[t]->cptr[t] = "(?1 const*)$1";
+
   publish """
   Unsafe function to get C pointer from Felix reference.
   The pointer may dangle if the collector deletes the 
   frame containing the object. 
   """
-  fun unref[t]: &t->ptr[t] = "(?1)($1.data)";
+  fun unref[t]: &t->ptr[t] = "(?1*)($1.data)";
 
   publish """
   Function to make Felix reference from C pointer.
@@ -400,6 +410,43 @@ module C_hack
   """
   fun mkref[t]: ptr[t]->&t = "flx::rtl::_ref_(0,(void*)$1)";
 
+  publish """
+  Dereference a C pointer. If the expression is an
+  an lvalue, the result is an lvalue. Assignments
+  to const lvalues are trapped by the C/C++ compiler.
+  """
+  fun deref[t]: ptr[t] -> t = "*$1";
+  fun deref[t]: cptr[t] -> t = "*$1";
+
+  publish """
+  Function to take the address of a C lvalue,
+  fails in C/C++ compiler if the argument isn't an lvalue.
+  Addresses of Felix variables are safe to use provided the
+  containing frame won't be collected. 
+  Addresses of temporaries must not be taken.
+  """
+  fun addr[t]: t -> ptr[t] = "&$1";
+  fun caddr[t]: t -> cptr[t] ="(?1 const*)&$1";
+  
+  publish """
+  Polymorphic null pointer constant
+  """
+  const null_ptr[t]:ptr[t] = "(?1*)NULL";
+  const null_cptr[t]:ptr[t] = "(?1 const*)NULL";
+
+  publish """
+  Unsafe output of hopefully null terminated C strings
+  """
+  proc print: charp = "std::cout << $1;";
+  proc print: charcp = "std::cout << $1;";
+
+  header "template<class T> T dflt() { return T(); }";
+  publish """
+  Workaround for g++ 3.2.2 parsing bug,
+  it can parse T() as a default ctor call,
+  but screws up on (T())
+  """
+  fun dflt[t]:1->t = "dflt<?1>()";
 }
 
 @#------------- INTEGER MODULES -------------------
@@ -483,8 +530,9 @@ module String
   open Bool;
   open Char;
   open Int;
-@#  proc _set: &string * string = "((string*)($1.data))->assign($2);";
   proc pluseq: &string * string = "((string*)($1.data))->append($2);";
+  proc make_string: charp -> string = 'std::string($1)';
+  proc make_string: charcp -> string =' std::string($1)';
 
   fun len: string -> int = "$1.size()";
   fun add: string * string -> string = "$1+$2";
@@ -562,7 +610,7 @@ module Arith_casts
 @#------------- CONTROL STRUCTURES -------------------
 module Control 
 {
-  // infinite loop
+  publish 'infinite loop'
   proc forever (bdy:unit->void)
   {
     repeat:>
@@ -571,7 +619,7 @@ module Control
     dummy:> // fool reachability checker
   }
 
-  // C style while loop
+  publish 'C style while loop'
   proc while (cond:unit->bool) (bdy:unit->void)
   {
     repeat:>
@@ -581,8 +629,10 @@ module Control
     finish:>
   }
 
-  // C style while loop with reversed condition
-  // note the until is tested first -- zero iterations are possible
+  publish """
+  C style while loop with reversed condition
+  note the until is tested first -- zero iterations are possible
+  """
   proc until(cond:unit->bool) (bdy:unit->void)
   {
     repeat:>
@@ -592,10 +642,10 @@ module Control
     finish:>
   }
 
-  // do nothing [the name pass comes from Python]
+  publish "do nothing [the name pass comes from Python]"
   proc pass(){}
 
-  // C style for loop
+  publish 'C style for loop'
   proc for 
     (init:unit->void) 
     (cond:unit->bool) 
@@ -611,14 +661,33 @@ module Control
     finish:>
   }
 
+  publish 'abnormal termination with message'
   proc fail:string = 'throw std::exception ($1);';
+
+  publish "WILL BE DEPRECATED, these don't work right"
   fun fail_fun[t]:1->t = 'throw std::exception (""),*(?1*)0';
+
+  publish "WILL BE DEPRECATED, these don't work right"
   fun fail_fun[t]:string->t = 'throw std::exception ($1),*(?1*)0';
 
+  publish "Felix procedural continuation type"
   type cont = "flx::rtl::con_t*";
+
+  publish "Current continuation"
+  fun current_continuation: 1 -> cont = "this";
+
+  // BUGGED: doesn't pass argument
   private fun _start[t]: (t->0)*t->cont = "$1->clone()->call(0)";
   fun start[t] (p:t->0) (x:t) = { return _start (p,x); }
+
+  publish "Resume a continuation until it yields"
   fun step: cont -> cont = "$1->resume()";
+
+  publish """
+  Run a continuation until it terminates.
+  Do not use this proc if the underlying
+  procedure attempts to read messages
+  """
   proc run: cont = 
   """
   {
@@ -646,12 +715,29 @@ module Control
   }
   """;
 
+  publish """Send a message to a continuation.
+  There is no type checking on the message type.
+  The procedure is executed until
+  the next wait_state, then the message is stored.
+  """
   proc send[t] (p:&cont) (x:t)
   {
     _send (p,x);
   }
 
+  publish """
+  Type of the state of a continuation.
+  dead_state means, obviously, the continuation
+  has terminated, wait_state means it is waiting
+  for a message to be stored in a receptor variable,
+  and yield_state means it has suspended itself
+  for to allow the system to do any housekeeping
+  such as garbage collection and can be resumed 
+  at any time.
+  """
   union cont_state = | yield_state | wait_state | dead_state;
+
+  publish "Fetch the state of a continuation"
   fun get_cont_state: cont -> cont_state = "$1??$1->action:2";
 }
 

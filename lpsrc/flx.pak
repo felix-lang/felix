@@ -187,6 +187,8 @@ def get_buildno():
 //
 @import time
 @now = time.time()
+@gmtime = time.gmtime(now)
+@short_time = time.strftime("%a %d %b %Y",gmtime)
 @buildno = get_buildno()
 @print "BUILDNO",buildno
 open Flx_types
@@ -204,6 +206,76 @@ let version_data: version_data_t =
 Flx_version.version_data := version_data
 ;;
 
+@flx_keywords = [
+    ["all", "ALL"],
+    ["and", "AND"],
+    ["as", "AS"],
+    ["body", "BODY"],
+    ["call", "CALL"],
+    ["case", "CASE"],
+    ["class", "CLASS"],
+    ["code", "CODE"],
+    ["comment", "COMMENT_KEYWORD"],
+    ["const", "CONST"],
+    ["ctypes", "CTYPES"],
+    ["def", "DEF"],
+    ["elif", "ELIF"],
+    ["else", "ELSE"],
+    ["endif", "ENDIF"],
+    ["endmatch", "ENDMATCH"],
+    ["export", "EXPORT"],
+    ["forget", "FORGET"],
+    ["fork", "FORK"],
+    ["functor", "FUNCTOR"],
+    ["fun", "FUNCTION"],
+    ["goto", "GOTO"],
+    ["header", "HEADER"],
+    ["ident", "IDENT"],
+    ["if", "IF"],
+    ["include","INCLUDE"],
+    ["incomplete", "INCOMPLETE"],
+    ["inf", "INF"],
+    ["in", "IN"],
+    ["interface", "INTERFACE"],
+    ["jump", "JUMP"],
+    ["let", "LET"],
+    ["loop", "LOOP"],
+    ["macro", "MACRO"],
+    ["match", "MATCH"],
+    ["module", "MODULE"],
+    ["NaN", "NAN"],
+    ["new", "NEW"],
+    ["not", "NOT"],
+    ["obj", "OBJECT"],
+    ["of", "OF"],
+    ["open","OPEN"],
+    ["or", "OR"],
+    ["private", "PRIVATE"],
+    ["proc", "PROCEDURE"],
+    ["public", "PUBLIC"],
+    ["publish", "PUBLISH"],
+    ["read", "READ"],
+    ["regexp", "REGEXP"],
+    ["reglex", "REGLEX"],
+    ["regmatch", "REGMATCH"],
+    ["return", "RETURN"],
+    ["set","SET"],
+    ["struct", "STRUCT"],
+    ["then", "THEN"],
+    ["todo", "TODO"],
+    ["to", "TO"],
+    ["typedef", "TYPEDEF"],
+    ["typematch", "TYPEMATCH"],
+    ["type", "TYPE"],
+    ["union", "UNION"],
+    ["use","USE"],
+    ["val", "VAL"],
+    ["var", "VAR"],
+    ["when", "WHEN"],
+    ["with", "WITH"],
+    ["_", "UNDERSCORE"],
+  ]
+ 
 @head(2,'The front end')
 @push_head()
 @include_file ('flx_util.ipk')

@@ -158,10 +158,9 @@ let mktypefun sr name vs args return_type body =
 %token<Flx_ast.srcref * string * Big_int.big_int> INTEGER
 %token<Flx_ast.srcref * string * string > FLOAT
 %token<Flx_ast.srcref * string> STRING
+%token<Flx_ast.srcref * string> CSTRING
 %token<Flx_ast.srcref * string> WSTRING
 %token<Flx_ast.srcref * string> USTRING
-%token<Flx_ast.srcref> INF
-%token<Flx_ast.srcref> NAN 
 
 /* operators and punctuation */
 
@@ -202,27 +201,10 @@ let mktypefun sr name vs args return_type body =
 /* other */
 %token<Flx_ast.srcref> COLONCOLON
 %token<Flx_ast.srcref> DOTDOT SLOSH DOTDOTDOT
+%token<Flx_ast.srcref> DOLLAR QUEST EQRIGHTARROW
 
-/* operator keywords */
-%token<Flx_ast.srcref> NOT OR AND DOLLAR
-
-/* patterns */
-%token<Flx_ast.srcref> AS UNDERSCORE REGEXP WHEN ALL
-
-/* statement keywords */
-%token<Flx_ast.srcref> IF THEN ELSE ENDIF ELIF 
-%token<Flx_ast.srcref> OF VAR UNION CLASS GOTO EXPORT PUBLIC PRIVATE PUBLISH COMMENT_KEYWORD
-
-%token<Flx_ast.srcref> MATCH WITH ENDMATCH CASE REGMATCH REGLEX TYPEMATCH
-%token<Flx_ast.srcref> HEADER BODY MODULE CODE LET IN
-%token<Flx_ast.srcref> CALL PROCEDURE FUNCTION FUNCTOR JUMP LOOP OBJECT
-%token<Flx_ast.srcref> RETURN FORK MAP
-%token<Flx_ast.srcref> TO OPEN EQRIGHTARROW USE INCLUDE
-%token<Flx_ast.srcref> TODO INTERFACE 
-%token<Flx_ast.srcref> TYPE READ CONST STRUCT CTYPES INCOMPLETE
-%token<Flx_ast.srcref> VAL TYPEDEF DEF SET
-%token<Flx_ast.srcref> QUEST
-%token<Flx_ast.srcref> MACRO IDENT NEW FORGET
+@for n,t in flx_keywords:
+  tangle("%token<Flx_ast.srcref> " + t)
 
 %type <Flx_ast.compilation_unit_t> compilation_unit
 %type <Flx_ast.range_srcref * Flx_ast.statement_t list> compound
@@ -392,10 +374,10 @@ abstract_type:
       `AST_ctypes (sr,$2)
     }
 
-  | INCOMPLETE basic_name_comma_list SEMI
+  | INCOMPLETE CTYPES basic_name_comma_list SEMI
     {
-      let sr = rstoken $1 $3 in
-      `AST_incomplete (sr,$2)
+      let sr = rstoken $1 $4 in
+      `AST_incomplete (sr,$3)
     }
 
   | TYPE NAME tvarlist EQUAL STRING SEMI 
@@ -705,7 +687,13 @@ function_definition:
           | `TYP_tuple lst -> lst
           | x -> [x]
         in
-        `AST_fun_decl (sr, name, vs, args,  ret,  ct) 
+        if List.length args > 0 && list_last args = `TYP_ellipsis 
+        then
+          let vs = vs @ ["_varargs"] in
+          let args = List.rev (`AST_name (sr,"_varargs",[]) :: List.tl (List.rev args)) in
+          `AST_fun_decl (sr, name, vs, args,  ret,  ct) 
+        else
+          `AST_fun_decl (sr, name, vs, args,  ret,  ct) 
       | _ -> 
         failwith 
         (
@@ -773,12 +761,18 @@ procedure_definition:
       and t = typecode_of_expr $5
       and ct = snd $7
       in
-      let ts = 
+      let args = 
         match t with
         | `TYP_tuple lst -> lst
         | x -> [x]
       in
-      `AST_fun_decl (sr,name,vs, ts,`AST_void sr, ct) 
+        if List.length args > 0 && list_last args = `TYP_ellipsis 
+        then
+          let vs = vs @ ["_varargs"] in
+          let args = List.rev (`AST_name (sr,"_varargs",[]) :: List.tl (List.rev args)) in
+          `AST_fun_decl (sr, name, vs, args,  `AST_void sr,  ct) 
+        else
+          `AST_fun_decl (sr,name,vs, args,`AST_void sr, ct) 
     }
 
 @head(3,'Object')
@@ -1765,10 +1759,12 @@ application:
     { 
       `AST_apply (rsexpr $1 $2, ($1, $2)) 
     }
+/*
   | MAP coercion coercion
     {
       `AST_map (rsrange (slift $1) (src_of_expr $3), $2, $3)
     }
+*/
   | coercion { $1 }
 
 coercion:
@@ -1876,6 +1872,8 @@ expr_code_prefix:
     }
 
 atom:
+  | DOTDOTDOT { `AST_ellipsis (slift $1) }
+
   | type_match_expr { $1 }
   | expr_code_prefix NAME
     {
@@ -1937,6 +1935,12 @@ literal:
     { 
       let sr,s = $1 in
       `AST_literal (slift sr, `AST_string s) 
+    }
+
+  | CSTRING  
+    { 
+      let sr,s = $1 in
+      `AST_literal (slift sr, `AST_cstring s) 
     }
 
 simple_name:
@@ -2007,9 +2011,10 @@ let parse_file
           print_endline s;
           raise (Flx_exceptions.ParseError "Parsing File")
         end
-      | _ -> 
+      | x -> 
         begin
           toker#report_syntax_error;
+          print_endline (Printexc.to_string x);
           raise (Flx_exceptions.ParseError "Parsing File")
         end
       in parse_tree

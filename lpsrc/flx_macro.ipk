@@ -369,6 +369,8 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | `AST_bound_module _ -> failwith "Unexpected bound module"
 
 
+  | `AST_ellipsis (sr) -> failwith "Unexpected ellipsis ..."
+
   | `AST_tuple (sr, es) -> `AST_tuple (sr, map me es)
   | `AST_coercion (sr, (e1, t)) -> `AST_coercion (sr, (me e1,t)) 
   | `AST_suffix (sr, (qn, t)) -> 

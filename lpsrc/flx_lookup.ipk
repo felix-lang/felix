@@ -273,9 +273,14 @@ let merge_functions
   (opens:entry_set_t list) 
   name 
 : entry_kind_t list = 
-  List.fold_left
+  fold_left
     (fun init x -> match x with
-    | FunctionEntry ls -> init @ ls
+    | FunctionEntry ls -> 
+      fold_left
+      (fun init x -> 
+        if mem x init then init else x :: init
+      )
+      init ls
     | _ -> failwith ("Expected " ^ name ^ " to be function overload set in all open modules")
     )
   []
@@ -305,7 +310,21 @@ let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
   | FunctionEntry ls :: rest ->
     Some (FunctionEntry (merge_functions opens name))
 
-  | (NonFunctionEntry _)::_ -> 
+  | (NonFunctionEntry (Simple i)) as some ::_ -> 
+    if 
+      fold_left 
+        (function t -> function
+          | NonFunctionEntry (Simple j) when i = j -> t
+          | _ -> false
+        )
+        true
+        opens
+    then 
+      Some some
+    else
+      clierr sr ("Conflicting values for "^name ^" found in open modules")
+  
+  | (NonFunctionEntry (Bound (i,j)))::_ -> 
     (* FIX: it might not be so! Could be two typedefs
       of the same thing, later, when I implement it,
       injected names
@@ -945,6 +964,8 @@ and bind_type'
     end
 
  
+  | `TYP_ellipsis ->  
+    failwith "Unexpected `TYP_ellipsis (...) in bind type"
   | `TYP_none ->  
     failwith "Unexpected `TYP_none in bind type"
 
@@ -1183,6 +1204,7 @@ and base_typename_of_literal v = match v with
   | `AST_int (t,_) -> t
   | `AST_float (t,_) -> t
   | `AST_string _ -> "string"
+  | `AST_cstring _ -> "charp"
   | `AST_wstring _ -> "wstring"
   | `AST_ustring _ -> "string"
 
@@ -1796,7 +1818,7 @@ and lookup_qn_with_sig'
           (
             "[lookup_qn_with_sig] AST_lookup: Simple_module: Can't find name " ^ name
           )
-        | Some x -> match x with 
+        | Some entries -> match entries with 
         | NonFunctionEntry (Simple index) ->
           begin match get_data syms.dfns index with 
           {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=entry} 
@@ -1922,7 +1944,10 @@ and lookup_qn_with_sig'
           | None -> 
             clierr sra
             (
-              "[lookup_qn_with_sig] (Simple module) Unable to resolve overload of " ^ name 
+              "[lookup_qn_with_sig] (Simple module) Unable to resolve overload of " ^ 
+              string_of_qualified_name qn ^
+              " of (" ^ sbt syms.dfns sign ^")\n" ^
+              "candidates are: " ^ full_string_of_entry_set syms.dfns entries
             )
         end
 
@@ -2451,6 +2476,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
   | `AST_arrow _ 
   | `AST_superscript _ 
   | `AST_bound_module _ 
+  | `AST_ellipsis _ 
     -> 
       clierr sr 
      "[bind_expression] Unexpected in expression" 

@@ -4,10 +4,16 @@ Generic (non Felix dependent) utilities.
 @select(h)
 (** Generic utilities *)
 
-(** n spaces *)
+(** n spaces 
+  @cgname Skaller.spaces
+  @version 1.0
+*)
 val spaces : int -> string
 
-(** String.concat sep (List.map fun lst) *)
+(** String.concat sep (List.map fun lst) 
+  @cgname Skaller.catmap
+  @version 1.0
+*)
 val catmap : string -> ('a -> string) -> 'a list -> string
 
 (** reverse application *)
@@ -16,7 +22,10 @@ val (+>) : 'a -> ('a ->'b) -> 'b
 (** hmmm *)
 val transpose: 'a list list -> 'a list list
 
-(** last element of list *)
+(** last element of list 
+  @cgname Skaller.list_last
+  @version 1.0
+*)
 val list_last: 'a list -> 'a 
 
 (** position in list of value *)
@@ -205,6 +214,7 @@ and typecode_t =
   | `TYP_typeof of expr_t                       (** typeof *)
   | `TYP_var of int                             (** unknown type *)
   | `TYP_none                                   (** unspecified *)
+  | `TYP_ellipsis                               (** ... for varargs *)
 
   (* dualizer *)
   | `TYP_dual of typecode_t                     (** dual *)
@@ -244,6 +254,7 @@ and literal_t =
   [
   | `AST_int of string * big_int
   | `AST_string of string
+  | `AST_cstring of string
   | `AST_wstring of string
   | `AST_ustring of string
   | `AST_float of string * string
@@ -267,6 +278,7 @@ and expr_t =
   | `AST_suffix of range_srcref * (qualified_name_t * typecode_t)
 
   | `AST_void of range_srcref
+  | `AST_ellipsis of range_srcref
   | `AST_product of range_srcref * expr_t list
   | `AST_sum of range_srcref * expr_t list
   | `AST_arrow of range_srcref * (expr_t * expr_t)
@@ -738,7 +750,7 @@ type symbol_data_t = {
 
 type symbol_table_t = (int, symbol_data_t) Hashtbl.t
 
-type symbol_data3_t = string * int option * bbdcl_t 
+type symbol_data3_t = string * int option * range_srcref * bbdcl_t 
 type fully_bound_symbol_table_t = (int, symbol_data3_t) Hashtbl.t
 
 type type_registry_t = (btypecode_t,int) Hashtbl.t
@@ -959,6 +971,7 @@ let src_of_suffixed_name (e : suffixed_name_t) = match e with
 
 let src_of_expr (e : expr_t) = match e with
   | #suffixed_name_t as x -> src_of_suffixed_name x
+  | `AST_ellipsis (s)
   | `AST_noexpand (s,_)
   | `AST_product (s,_)
   | `AST_sum (s,_)
@@ -1260,8 +1273,9 @@ let string_of_literal e = match e with
   | `AST_int (s,i) -> (string_of_big_int i)^suffix_of_type s 
   | `AST_float (t,v) -> v ^ suffix_of_type t
   | `AST_string s -> string_of_string s
-  | `AST_wstring s -> string_of_string s
-  | `AST_ustring s -> string_of_string s
+  | `AST_cstring s -> "c"^string_of_string s
+  | `AST_wstring s -> "w"^string_of_string s
+  | `AST_ustring s -> "u"^string_of_string s
   
 let rec string_of_qualified_name (n:qualified_name_t) =
   let se e = string_of_expr e in
@@ -1315,6 +1329,7 @@ and string_of_expr (e:expr_t) =
   in
   match e with
   | #suffixed_name_t as n -> string_of_suffixed_name n
+  | `AST_ellipsis _ -> "..."
   | `AST_noexpand (sr,e) -> "$(" ^ string_of_expr e ^ ")"
 
   | `AST_letin (sr,(pat,e1, e2)) ->
@@ -1459,6 +1474,7 @@ and st prec tc : string =
     match tc with
     | #qualified_name_t as t -> 0,string_of_qualified_name t
     | `TYP_none -> 0,"<none>"
+    | `TYP_ellipsis-> 0,"..."
     | `TYP_type_match (e,ps) -> 0,
       "typematch " ^ string_of_typecode e ^ " with " ^
       catmap ""
@@ -2376,7 +2392,7 @@ and string_of_bound_expression dfns e =
 
   | `BEXPR_deref e -> "*("^ se e ^ ")"
   | `BEXPR_name (i,ts) -> sid i ^ print_inst dfns ts
-  | `BEXPR_closure (i,ts) -> "cls " ^ sid i ^ print_inst dfns ts
+  | `BEXPR_closure (i,ts) -> sid i ^ print_inst dfns ts
   | `BEXPR_ref (i,ts) -> "&" ^ sid i ^ print_inst dfns ts
 
   | `BEXPR_literal e -> string_of_literal e
@@ -3143,6 +3159,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   let te e = typecode_of_expr e in
   match e with 
   | `AST_name (_,"TYPE",[]) -> `TYP_type
+  | `AST_ellipsis _ -> `TYP_ellipsis
   | #qualified_name_t as x -> (x:>typecode_t)
   | `AST_tuple (sr,ls) ->
     `TYP_type_tuple (List.map te ls)

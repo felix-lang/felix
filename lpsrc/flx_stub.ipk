@@ -4,45 +4,96 @@ Used for misc testing of Ocaml things.
 @select(h)
 open Flx_types
 ;;
-print_endline "STUB TEST PROGRAM"
+let pe x = print_endline x
+;;
+pe "STUB TEST PROGRAM"
 ;;
 
 open Flx_ctypes
 open Flx_cexpr
+open Flx_ctype
 
 let e1 =
-  `C_infix ("*",
-    `C_infix ("+",`C_atom "x",`C_atom "y"),
-    `C_infix ("*",`C_atom "x",`C_atom "y")
+  `Ce_infix ("*",
+    `Ce_infix ("+",`Ce_atom "x",`Ce_atom "y"),
+    `Ce_infix ("*",`Ce_atom "x",`Ce_atom "y")
   )
 ;;
 let e2 =
-  `C_infix ("-",
-    `C_infix ("+",`C_atom "x",`C_atom "y"),
-    `C_infix ("-",`C_atom "x",`C_atom "y")
+  `Ce_infix ("-",
+    `Ce_infix ("+",`Ce_atom "x",`Ce_atom "y"),
+    `Ce_infix ("-",`Ce_atom "x",`Ce_atom "y")
   )
 ;;
 let e3 =
-  `C_infix ("-",
-    `C_infix ("*",`C_atom "x",`C_atom "y"),
-    `C_infix ("/",`C_atom "x",`C_atom "y")
+  `Ce_infix ("-",
+    `Ce_infix ("*",`Ce_atom "x",`Ce_atom "y"),
+    `Ce_infix ("/",`Ce_atom "x",`Ce_atom "y")
   )
 ;;
 
 let e4 =
-  `C_infix ("-",
-    `C_infix ("-",`C_atom "x",`C_atom "y"),
-    `C_atom "z"
+  `Ce_infix ("-",
+    `Ce_infix ("-",`Ce_atom "x",`Ce_atom "y"),
+    `Ce_atom "z"
   )
 ;;
 let e5 =
-  `C_infix ("-",
-    `C_atom "x",
-    `C_infix ("-",`C_atom "y",`C_atom "z")
+  `Ce_infix ("-",
+    `Ce_atom "x",
+    `Ce_infix ("-",`Ce_atom "y",`Ce_atom "z")
   )
 ;;
-print_endline (string_of_cexpr e1) ;;
-print_endline (string_of_cexpr e2) ;;
-print_endline (string_of_cexpr e3) ;;
-print_endline (string_of_cexpr e4) ;;
-print_endline (string_of_cexpr e5) ;;
+pe (string_of_cexpr e1) ;;
+pe (string_of_cexpr e2) ;;
+pe (string_of_cexpr e3) ;;
+pe (string_of_cexpr e4) ;;
+pe (string_of_cexpr e5) ;;
+
+let pt t = pe ("  " ^ (string_of_ctype t))
+let pd n t = pe ("  " ^ (string_of_cdecl_type n t))
+let pv n t = pe ("  "^ (string_of_cdecl_type n (`Cdt_value t)))
+
+let int_t =  `Ct_base "int"
+let long_t = `Ct_base "long"
+let pi_t = `Ct_ptr int_t
+let ai_t = `Ct_varray int_t
+let pai_t = `Ct_ptr ai_t
+let api_t = `Ct_varray pi_t
+let a6a4i_t = `Ct_array (6,`Ct_array(4,int_t))
+;;
+
+pv "pi" pi_t;;
+pv "ai" ai_t;;
+pv "pai" pai_t;;
+pv "api" api_t;;
+pv "a6a4i" a6a4i_t;;
+
+
+pt int_t;;
+pt long_t;;
+pt pi_t;;
+
+pe "//int * const * volatile *";;
+pt (`Ct_vptr (`Ct_cptr pi_t));;
+
+pd "cri" (`Cdt_cref int_t);;
+pv "a" (`Ct_array (9,int_t));;
+
+let f = `Ct_fun(int_t,[long_t]);;
+pe "//int f(long)";;
+pv "f" f;;
+
+pe "//int (*pf)(long)";;
+pv "pf" (`Ct_ptr f);;
+
+pe "//int *g(long)";;
+let g = `Ct_fun(`Ct_ptr int_t,[long_t]);;
+pv "g" g;;
+
+pe "//f is a function of int returning a pointer to a function of long returning int";;
+pe "//int (*ff(int))(long)";;
+let ff = `Ct_fun(`Ct_ptr f,[int_t]);;
+pv "ff" ff;;
+
+

@@ -32,6 +32,7 @@ open Flx_unify
 open Flx_print
 open Flx_util
 open Flx_csubst
+open Flx_exceptions
 open List
 
 let cvt s = 
@@ -70,7 +71,7 @@ let mangle_cpp_typename ct =
 
 (* basic name mangler *)
 let cpp_name syms bbdfns index =
-  let id,parent,entry = 
+  let id,parent,sr,entry = 
     try Hashtbl.find bbdfns index 
     with _ -> failwith ("[cpp_name] Can't find index " ^ si index)
   in
@@ -79,7 +80,7 @@ let cpp_name syms bbdfns index =
   | `BBDCL_procedure _  -> "_p"
   | `BBDCL_var _ -> "_v"
   | `BBDCL_val _ -> "_v"
-  | _ -> failwith "cpp_name expected func,proc,var or val"
+  | _ -> syserr sr "cpp_name expected func,proc,var or val"
   ) ^ si index ^ "_" ^ cvt id
 
 let cpp_instance_name syms bbdfns index ts =
@@ -88,7 +89,7 @@ let cpp_instance_name syms bbdfns index ts =
     with Not_found -> 
     let id = 
       try 
-        let id,parent,entry = Hashtbl.find bbdfns index in id
+        let id,parent,sr,entry = Hashtbl.find bbdfns index in id
       with Not_found -> 
       try
         match Hashtbl.find syms.dfns index with

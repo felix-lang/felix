@@ -2,7 +2,7 @@
 @python('//')
 manfoot = r"""
 .SH VERSION
-""".B """+flx_version+"""
+.B """+flx_version+"""
 .SH SEE ALSO
 .B felix(1)
 for a language introduction and man page index
@@ -42,9 +42,12 @@ John Maxwell Skaller, mailto:skaller@users.sourceforge.org
 """
 //
 
+@def mh(s):
+  tangle('.TH '+s+' "'+short_time+'" ('+flx_version+')')
+
 @head(2,'felix:language overview')
 @select(tangler('man/man1/felix.1','data'))
-@tangle(".TH FELIX LANGUAGE "2003 Jan 1("+flx_version+")")
+@mh('FELIX LANGUAGE')
 .SH NAME
 Felix language
 .SH SYNOPSIS
@@ -124,7 +127,7 @@ is the standard library.
 
 @head(2,'felix:Literals')
 @select(tangler('man/man1/flx_lit.1','data'))
-.TH FELIX LITERALS "2003 April 11"
+@mh('FELIX LITERALS')
 .SH NAME
 Felix literals.
 
@@ -333,7 +336,7 @@ Hexadecimal
 
 @head(2,'felix:operator summary')
 @select(tangler('man/man1/flx_op.1','data'))
-.TH FELIX OPERATORS "2003 April 11"
+@mh('FELIX OPERATORS')
 .SH NAME
 Felix operators and operator names
 (these need to be checked!).
@@ -542,7 +545,7 @@ The second form is short for
 
 @head(2,'felix:directive summary')
 @select(tangler('man/man1/flx_dir.1','data'))
-.TH FELIX DIRECTIVES "2003 April 11"
+@mh('FELIX DIRECTIVES')
 .SH NAME
 Felix statements and directives
 (these need to be checked!).
@@ -587,7 +590,7 @@ without qualification.
 
 @head(2,'felix:binding summary')
 @select(tangler('man/man1/flx_bind.1','data'))
-.TH FELIX BINDING DEFINITIONS "2003 April 11"
+@mh('FELIX BINDING DEFINITIONS')
 .SH NAME
 Felix binding definitons 
 (these need to be checked!).
@@ -661,67 +664,13 @@ Question mark character ? emitted.
 
 @head(2,'felix:keyword summary')
 @select(tangler('man/man1/flx_key.1','data'))
-.TH FELIX KEYWORDS "2003 April 11"
+@mh('FELIX KEYWORDS')
 .SH NAME
 Felix keywords and operator symbols
 
 .SH Keywords
-_
-all
-and
-as
-body
-call
-case
-class
-code
-const
-define
-elif
-else
-endif
-endmatch
-except
-export
-fork
-fun
-function
-functor
-goto
-header
-if
-in
-inf
-interface
-lambda
-let
-match
-module
-NaN
-not
-not
-of
-open
-or
-proc
-procedure
-raise
-read
-regexp
-regmatch
-return
-struct
-then
-to
-todo
-type
-typedef
-union
-use
-val
-var
-when
-with
+
+@for n,t in flx_keywords: tangle(n)
 .br
 
 .SH operator symbols
@@ -797,7 +746,7 @@ with
 
 @head(2,'felix:declarations and definitions')
 @select(tangler('man/man1/flx_decl.1','data'))
-.TH FELIX Declarations "2003 April 11"
+@mh('FELIX DECLARATIONS')
 .SH NAME
 Felix declarations and definitons 
 (these need to be checked!).
@@ -836,7 +785,7 @@ Specify a label.
 
 @head(2,'felix:Executable statements')
 @select(tangler('man/man1/flx_exec.1','data'))
-.TH FELIX Executable statements "2003 April 11"
+@mh('FELIX EXECUTABLE STATEMENTS')
 .SH NAME
 Felix executable statements 
 (these need to be checked!).
@@ -890,7 +839,7 @@ in a way that is easy to search for.
 
 @head(2,'felix:Standard library:types')
 @select(tangler('man/man1/flx_lib_typ.1','data'))
-.TH FELIX STANDARD LIBRARY - TYPES "2003 April 11"
+@mh('FELIX STANDARD LIBRARY - TYPES')
 .SH NAME
 Standard library types
 (these need to be checked!).
@@ -967,7 +916,7 @@ Unit of memory store, unisgned char in C.
 
 @head(2,'felix:command line tools')
 @select(tangler('man/man1/flx.1','data'))
-.TH FELIX TOOLS "2003 April 11"
+@mh('FELIX TOOLS')
 .SH NAME
 Felix tools
 .SH SYNOPSIS

@@ -70,7 +70,7 @@ let find_references bbdfns name_map ts =
         failwith "Not expecting bound entry"
 
       | NonFunctionEntry (Simple idx) ->
-      let _,_,bbdfn = 
+      let _,_,_,bbdfn = 
         (* try *)
         Hashtbl.find bbdfns idx
         (*
@@ -201,7 +201,7 @@ let gen_offset_tables syms bbdfns=
   (* print_endline "Function and procedure offsets"; *)
   Hashtbl.iter
   (fun (index,ts) instance ->
-  let id,parent,entry = Hashtbl.find bbdfns index in 
+  let id,parent,sr,entry = Hashtbl.find bbdfns index in 
   match entry with
   | `BBDCL_function (vs,ps, ret,_,name_map) -> 
     gen_fun_offsets s syms bbdfns index vs ps ret name_map ts instance
@@ -257,7 +257,7 @@ let gen_offset_tables syms bbdfns=
 
     | `BTYP_inst (i,ts) ->
       let name = cpp_typename syms btyp in
-      let id,parent,entry = Hashtbl.find bbdfns i in 
+      let id,parent,sr,entry = Hashtbl.find bbdfns i in 
       begin match entry with
       | `BBDCL_abs (_,complete,_) ->
         if complete then
@@ -420,6 +420,7 @@ let cstring_of_literal e = match e with
   | `AST_int (s,i) -> (Big_int.string_of_big_int i)^csuffix_of_type s 
   | `AST_float (s,x) -> x ^ csuffix_of_type s
   | `AST_string s -> string_of_string s
+  | `AST_cstring s -> string_of_string s
   | `AST_wstring s -> "L" ^ string_of_string s
   | `AST_ustring s -> "L" ^ string_of_string s
 
@@ -501,7 +502,7 @@ let find_variable_indices syms index =
   with {privmap=name_map} -> extract (Some index) name_map 
 
 let get_variable_typename syms bbdfns i ts =
-  let id,parent,entry = Hashtbl.find bbdfns i in
+  let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
   | `BBDCL_var (vs,t)
   | `BBDCL_val (vs,t) ->
@@ -536,7 +537,7 @@ let get_fun_tn syms vs ps ret ts =
   cpp_typename syms t
 
 let get_function_typename syms bbdfns i ts =
-  let id,parent,entry = Hashtbl.find bbdfns i in
+  let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
   | `BBDCL_function (vs,ps,ret,_,_) ->
      get_fun_tn syms vs ps ret ts
@@ -578,7 +579,7 @@ let typeof_bparams ps: btypecode_t  =
   )
 
 let get_type bbdfns index = 
-  let id,parent,entry = 
+  let id,parent,sr,entry = 
     try Hashtbl.find bbdfns index 
     with _ -> failwith ("[get_type] Can't find index " ^ si index)
   in
@@ -731,7 +732,7 @@ let gen_functions syms bbdfns =
       if length ts = 0 then "" else 
       "[" ^ catmap "," (string_of_btypecode syms.dfns) ts^ "]"
     in
-    match Hashtbl.find bbdfns index with (id,parent,entry) -> 
+    match Hashtbl.find bbdfns index with (id,parent,sr,entry) -> 
     match entry with
     | `BBDCL_function (vs,ps, ret, _,_) -> 
       bcat s ("\n//------------------------------\n");
@@ -887,7 +888,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
     | _,`BTYP_tuple [] -> ""
     | x -> ge x 
   in
-  let id,parent,entry = 
+  let id,parent,sr,entry = 
     try Hashtbl.find bbdfns this 
     with _ -> failwith ("[gen_expr] Can't find this = " ^ si this)
   in
@@ -964,7 +965,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
     end 
    
   | `BEXPR_name (index,ts') -> 
-    let id,parent,entry = 
+    let id,parent,sr,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> 
         match Hashtbl.find syms.dfns index with
@@ -977,7 +978,9 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
       | `BBDCL_val (_,t) ->
           get_var_ref syms bbdfns this index ts
 
-      | `BBDCL_const (_,_,ct) -> ct
+      | `BBDCL_const (_,_,ct) -> 
+        let ts = map tn ts in
+        csubst sr ct [] [] "Error" "Error" ts
 
       | `BBDCL_struct _ 
       | `BBDCL_function _
@@ -999,7 +1002,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
     end
 
   | `BEXPR_closure (index,ts') -> 
-    let id,parent,entry = 
+    let id,parent,sr,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
     in
@@ -1080,7 +1083,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
     (*
     print_endline "Apply closure ..";
     *)
-    let id,parent,entry = 
+    let id,parent,sr,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
     in
@@ -1114,11 +1117,11 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
           let ess = map ge es in
           let ets = map tn typs in
           let tt = tn (`BTYP_tuple typs) in
-          "(" ^ csubst ct ess ets tt retyp ts ^")"
+          "(" ^ csubst sr ct ess ets tt retyp ts ^")"
         | (_,typ) -> 
           let typ = tn typ in
           let a = ge a in
-          "(" ^ csubst ct [a] [typ] typ retyp ts ^ ")"
+          "(" ^ csubst sr ct [a] [typ] typ retyp ts ^ ")"
       end
 
     | `BBDCL_function (vs,ps,retyp,_,_) ->
@@ -1162,7 +1165,7 @@ let get_labels bbdfns counter exes =
 let create_label_map bbdfns counter =
   let label_map = Hashtbl.create 97 in
   Hashtbl.iter
-  (fun index (id,parent,entry) ->
+  (fun index (id,parent,sr,entry) ->
     match entry with
     | `BBDCL_function (_,_,_,exes,_) -> 
       Hashtbl.add label_map index (get_labels bbdfns counter exes)
@@ -1212,7 +1215,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
   let ret_string = "      FLX_RETURN\n" in
   let ge e : string = gen_expr syms bbdfns this e vs ts in
   let tn t : string = cpp_typename syms (tsubst vs ts (lower t)) in
-  let id,parent,entry = 
+  let id,parent,sr,entry = 
     try Hashtbl.find bbdfns this 
     with _ -> failwith ("[gen_exe] Can't find this " ^ si this)
   in
@@ -1224,7 +1227,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
   in let our_level = length our_display in
 
   let handle_closure sr is_jump index ts a =
-    let id,parent,entry = 
+    let id,parent,sr,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_exe(call)] Can't find index " ^ si index)
     in
@@ -1244,7 +1247,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
             let ets = map tn typs in
             let tt = tn (`BTYP_tuple typs) in
             "      // " ^ src_str ^ "\n" ^
-            "      {" ^ csubst ct ess ets tt "Error" ts^ "}\n"
+            "      {" ^ csubst sr ct ess ets tt "Error" ts^ "}\n"
           | (_,typ) -> 
             (*
             print_endline ("One argument primitive .. type is " ^ string_of_btypecode syms.dfns typ);
@@ -1255,7 +1258,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
             *)
             let a = ge a in
             "      // " ^ src_str ^ "\n" ^
-            "      {" ^ csubst ct [a] [typ] typ "Error" ts^ "}\n"
+            "      {" ^ csubst sr ct [a] [typ] typ "Error" ts^ "}\n"
           end
           ^
           begin
@@ -1409,12 +1412,12 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
       begin match kind with
       | Function -> failwith ("goto "^s^": can't jump out of function")
       | Procedure ->
-      let id,parent,entry = 
+      let id,parent,sr,entry = 
         try Hashtbl.find bbdfns this 
         with _ -> failwith ("[gen_exe(goto)] Can't find this = " ^ si this)
       in
       let frame, pc = aux parent in
-      let id,_,_ =
+      let id,_,_,_ =
         try Hashtbl.find bbdfns frame 
         with _ -> failwith ("[gen_exe(goto)] Can't find frame " ^ si frame)
       in
@@ -1566,7 +1569,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
   | `BEXE_proc_return _ -> ret_string
 
   | `BEXE_read (sr,index) -> 
-    let id,parent,entry = 
+    let id,parent,sr,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
     in
@@ -1646,7 +1649,7 @@ let gen_exes syms bbdfns display label_map counter index exes vs ts =
   The machine stack is used for functions.
 *)
 let gen_function_methods syms bbdfns label_map counter index ts instance_no = 
-  let id,parent,entry = Hashtbl.find bbdfns index in
+  let id,parent,sr,entry = Hashtbl.find bbdfns index in
   if syms.compiler_options.print_flag then
   print_endline 
   (
@@ -1740,7 +1743,7 @@ let gen_function_methods syms bbdfns label_map counter index ts instance_no =
   | _ -> failwith "function expected"
 
 let gen_procedure_methods syms bbdfns label_map counter index ts instance_no = 
-  let id,parent,entry = Hashtbl.find bbdfns index in (* can't fail *)
+  let id,parent,sr,entry = Hashtbl.find bbdfns index in (* can't fail *)
   if syms.compiler_options.print_flag then
   print_endline 
   (
@@ -1860,7 +1863,7 @@ let gen_execute_methods syms bbdfns counter bf =
   let s = Buffer.create 2000 in
   Hashtbl.iter
   (fun (index,ts) instance_no -> 
-  let id,parent,entry = Hashtbl.find bbdfns index in 
+  let id,parent,sr,entry = Hashtbl.find bbdfns index in 
   begin match entry with
   | `BBDCL_function (vs,ps, ret, _,_) -> 
     bcat s ("//------------------------------\n");
@@ -1884,7 +1887,7 @@ let gen_execute_methods syms bbdfns counter bf =
 
 let gen_biface_header syms bbdfns biface = match biface with
   | `BIFACE_export_fun (sr,index, export_name) ->
-    let id,parent,entry = Hashtbl.find bbdfns index in
+    let id,parent,sr,entry = Hashtbl.find bbdfns index in
     begin match entry with
     | `BBDCL_function (vs,ps, ret, _,_) ->
       let display = get_display_list syms index in
@@ -1931,7 +1934,7 @@ let gen_biface_header syms bbdfns biface = match biface with
       
 let gen_biface_body syms bbdfns biface = match biface with
   | `BIFACE_export_fun (sr,index, export_name) ->
-    let id,parent,entry = Hashtbl.find bbdfns index in
+    let id,parent,sr,entry = Hashtbl.find bbdfns index in
     begin match entry with
     | `BBDCL_function (vs,ps, ret, _,_) ->
       if length vs <> 0
@@ -2263,7 +2266,7 @@ try
   List.iter 
   (fun index ->
     match Hashtbl.find bbdfns index 
-    with (id,parent,entry) ->
+    with (id,parent,sr,entry) ->
     match entry with
     | `BBDCL_header s -> plh s
     | _ -> ()
@@ -2378,7 +2381,7 @@ try
   List.iter 
   (fun index ->
     match Hashtbl.find bbdfns index 
-    with (id,parent,entry) ->
+    with (id,parent,sr,entry) ->
     match entry with
     | `BBDCL_body s -> plb s
     | _ -> ()
