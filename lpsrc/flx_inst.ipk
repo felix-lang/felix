@@ -78,6 +78,7 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   | `BEXPR_name (i,ts)
   | `BEXPR_closure (i,ts)
     -> 
+    (* substitute out display variables *)
     let ts = map vs ts in
     ui i ts; iter ut ts
 
@@ -147,9 +148,15 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
   let rtnr t = register_type_nr syms t in
   if syms.compiler_options.print_flag then
   print_endline ("//Instance "^si inst ^ "="^id^"<" ^ si i ^ ">[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]");
-  let ts = adjust_ts syms i ts in
   match entry with
   | `BBDCL_function (vs,ps,ret,exes, _) -> 
+    if length vs <> length ts 
+    then begin 
+      print_endline "TS VS length mismatch";
+      print_endline ("Length ts = " ^ si (length ts));
+      print_endline ("Length vs = " ^ si (length vs));
+    end
+    ;
     let argtypes = map (fun x -> snd (snd x)) ps in
     process_function syms bbdfns ref_insts1 i sr argtypes ret exes ts
  

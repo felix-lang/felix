@@ -206,7 +206,6 @@ let mktypefun sr name vs args return_type body =
 @for n,t in flx_keywords:
   tangle("%token<Flx_ast.srcref> " + t)
 
-%type <Flx_ast.compilation_unit_t> compilation_unit
 %type <Flx_ast.range_srcref * Flx_ast.statement_t list> compound
 %type <Flx_ast.statement_t> statement 
 %type <Flx_ast.expr_t> expr
@@ -214,7 +213,11 @@ let mktypefun sr name vs args return_type body =
 %type<Flx_ast.tpattern_t> tpattern
 %type <Flx_ast.pattern_t> pattern
 
+%type <Flx_ast.compilation_unit_t> compilation_unit
 %start compilation_unit
+
+%type <Flx_ast.expr_t> expression
+%start expression
 
 %%
 /* empty: { [] } */
@@ -223,6 +226,9 @@ let mktypefun sr name vs args return_type body =
 @select(h)
 compilation_unit:  
   | statement_aster ENDMARKER { $1 }
+
+expression:  
+  | expr ENDMARKER { $1 }
 
 @aster("statement")
 @doc()
@@ -651,6 +657,7 @@ macro_names:
 @select(h)
 fun_arg:
   | LPAR parameter_comma_list RPAR { rstoken $1 $3,$2 }
+  | NAME { slift (fst $1),[snd $1,`TYP_none] }
 
 fun_args:
   | fun_arg fun_args      { $1 :: $2 }
@@ -794,6 +801,7 @@ object_definition:
 @commalistof("parameter")
 parameter:
   | NAME COLON type_expr { snd $1,typecode_of_expr $3 }
+  | NAME { snd $1,`TYP_none }
  
 @doc()
 Flx functions and procedures are first class citizens: the may both be passed
@@ -1357,7 +1365,12 @@ ctor_pattern:
     }
 
 ctor_name:
-  | NAME { `AST_name (slift (fst $1), snd $1,[]) }
+  | simple_name_parts 
+    { 
+      match $1 with sr,name,ts ->
+      `AST_name (sr,name,ts)
+    }
+  
   | CASE INTEGER { 
       let sr,t,v = $2 in 
       `AST_case_tag (rstoken $1 sr, Big_int.int_of_big_int v)
@@ -1818,14 +1831,18 @@ dollar_name:
   | qname { $1 }
 
 qualified_name:
-  | qname COLONCOLON simple_name
+  | qname COLONCOLON simple_name_parts
     { 
-      match $3 with `AST_name (sr,name,ts) ->
+      match $3 with sr,name,ts ->
       let sr = rsrange (src_of_expr $1) sr in
       `AST_lookup (sr,($1, name, ts))
     }
 
-  | simple_name         { ($1:>expr_t) }
+  | simple_name_parts  
+    { 
+      match $1 with sr,name,ts -> 
+      (`AST_name (sr,name,ts):>expr_t) 
+    }
 
 qname:
   | qualified_name { $1 }
@@ -1943,25 +1960,19 @@ literal:
       `AST_literal (slift sr, `AST_cstring s) 
     }
 
-simple_name:
+simple_name_parts:
   | NAME LSQB type_expr_comma_list RSQB  
     { 
-      `AST_name 
-      (
-        rsrange (slift (fst $1)) (slift $4),
-        snd $1,
-        List.map typecode_of_expr $3 
-      ) 
+      rsrange (slift (fst $1)) (slift $4),
+      snd $1,
+      List.map typecode_of_expr $3 
     }
 
   | NAME 
     { 
-      `AST_name 
-      (
-        slift (fst $1), 
-        snd $1,
-        []
-      ) 
+      slift (fst $1), 
+      snd $1,
+      []
     }
 
 suffixed_name:
@@ -2050,7 +2061,7 @@ val parse_string :
   string -> 
   string -> 
   Flx_ast.compilation_unit_t
-  
+
 @head(1,'Parser test harness')
 @h = tangler('src/flxp.ml')
 @select(h)

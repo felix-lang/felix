@@ -304,6 +304,30 @@ let var_i_occurs i t =
      false 
    with Not_found -> true
 
+let fix i t =
+  let rec aux n t = 
+    let aux t = aux (n - 1) t in 
+    match t with
+    | `BTYP_var k -> if k = i then `BTYP_fix n else t
+    | `BTYP_inst (k,ts) -> `BTYP_inst (k, map aux ts)
+    | `BTYP_tuple ts -> `BTYP_tuple (map aux ts)
+    | `BTYP_sum ts -> `BTYP_sum (map aux ts)
+    | `BTYP_binding (a,b) -> `BTYP_binding (aux a, aux b)
+    | `BTYP_function (a,b) -> `BTYP_function (aux a, aux b)
+    | `BTYP_pointer a -> `BTYP_pointer (aux a)
+    | `BTYP_array (a,b) -> `BTYP_array (aux a, aux b)
+
+    | `BTYP_name _
+    | `BTYP_void
+    | `BTYP_fix _
+    | `BTYP_apply _
+    | `BTYP_typefun _
+    | `BTYP_type 
+    | `BTYP_type_tuple _
+    | `BTYP_type_match _ -> t
+  in
+    aux 0 t
+
 let var_list_occurs ls t =
   let yes = ref false in
   iter (fun i -> yes := !yes || var_i_occurs i t) ls;
@@ -329,16 +353,15 @@ let rec unification dfns eqns: (int * btypecode_t) list =
       | `BTYP_var i, t
       | t,`BTYP_var i ->
         if var_i_occurs i t
-        then  (* we actually want to handle this, but I can't
-          seem to generate any test cases that trigger this
-          message .. *)
-          failwith 
+        then begin
+          print_endline 
           (
-            "Unexpected recursion in unification, terms: " ^
+            "recursion in unification, terms: " ^
             match h with (a,b) ->
             sbt dfns a ^ " = " ^ sbt dfns b
-         )
-        else
+          );
+          s := Some (i, fix i t)
+        end else
           s := Some (i,t)
 
       | `BTYP_pointer t1, `BTYP_pointer t2 ->

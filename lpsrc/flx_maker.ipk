@@ -122,6 +122,7 @@ if "help" in options:
   print "drivers - build drivers"
   print "regression - run regression tests"
   print "performance - run performance tests"
+  print "bagley - run bagley shootout performance tests"
   print "tutorial - run tutorial examples"
   print "tests- regression and tutorial combined"
   print "clean - remove generated C++ and binaries from test locations"
@@ -365,17 +366,18 @@ MODULES = [
   'flx_typing2'      ,
   'flx_unify'        ,
   'flx_charset'      ,
+  'flx_constfld'     , 
+  'flx_macro'        , 
   'flx_parse'        ,
   'flx_keywords'     ,
-  'flx_lex'          ,
-  'flx_pretok'       ,
+  'flx_prelex'       ,
   'flx_lex1'         ,
   'flx_tok'          ,
+  'flx_lex'          ,
+  'flx_pretok'       ,
   'flx_parse_ctrl'   ,
   'flx_dfa'          ,
   'flx_pat'          , 
-  'flx_constfld'     , 
-  'flx_macro'        , 
   'flx_desugar'      , 
   'flx_mbind'        , 
   'flx_symtab'       , 
@@ -384,6 +386,7 @@ MODULES = [
   'flx_treg'         ,
   'flx_beta'         ,
   'flx_generic'      , 
+  'flx_overload'     , 
   'flx_lookup'       , 
   'flx_bexe'         , 
   'flx_bbind'        , 
@@ -535,6 +538,9 @@ try:
   if "tutorial" in options:
     TESTS = TESTS + glob.glob('tut/examples/tut*.flx')
     TESTS = TESTS + glob.glob('tut/examples/mac*.flx')
+
+  if "bagley" in options:
+    TESTS = TESTS + glob.glob('test/bag*.flx')
 
   TESTS.sort()
   BAD_TESTS.sort()
@@ -815,6 +821,9 @@ sysconfdir=@sysconfdir@
 @tangle('bytecode: dummy')
 @tangle('\tpython script/maker compiler bytecode')
 @tangle('')
+@tangle('bytecode.clean: dummy')
+@tangle('\tpython script/maker compiler bytecode clean')
+@tangle('')
 @tangle('bytecode.debug: dummy')
 @tangle('\tpython script/maker compiler bytecode debug')
 @tangle('')
@@ -827,6 +836,9 @@ sysconfdir=@sysconfdir@
 @tangle('')
 @tangle('compiler: dummy')
 @tangle('\tpython script/maker compiler')
+@tangle('')
+@tangle('compiler.clean: dummy')
+@tangle('\tpython script/maker compiler clean')
 @tangle('')
 @tangle('doc: dummy')
 @tangle('\tpython script/maker doc')
@@ -852,7 +864,10 @@ sysconfdir=@sysconfdir@
 @tangle('tests.refcnt: dummy')
 @tangle('\tpython script/maker refcnt test log_output')
 @tangle('')
-@tangle('tests.performance: dummy')
+@tangle('tests.bagley: dummy')
+@tangle('\tpython script/maker bagley')
+@tangle('')
+@@tangle('tests.performance: dummy')
 @tangle('\tpython script/maker performance')
 @tangle('')
 @tangle('tests.regression: dummy')

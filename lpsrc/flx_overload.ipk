@@ -1,0 +1,351 @@
+@head(1,"overload resolution")
+@h = tangler("src/flx_overload.mli")
+@select(h)
+open Flx_ast
+open Flx_types
+
+val overload:
+  sym_state_t -> 
+  (range_srcref  -> int -> typecode_t -> btypecode_t) ->
+  range_srcref ->
+  entry_kind_t list ->
+  string ->
+  btypecode_t ->
+  btypecode_t list ->
+  (
+    entry_kind_t * 
+    btypecode_t * 
+    (int * btypecode_t) list * 
+    btypecode_t list
+  ) option
+
+@h = tangler("src/flx_overload.ml")
+@select(h)
+open Flx_util
+open Flx_ast
+open Flx_types
+open Flx_print
+open Flx_exceptions
+open Flx_mtypes
+open Flx_typing
+open Flx_typing2
+open List
+open Flx_srcref
+open Flx_unify
+open Flx_beta
+open Flx_generic
+open Flx_name
+
+type overload_result = 
+ int *  (* index of function *)
+ btypecode_t * (* type of function signature *)
+ (int * btypecode_t) list * (* mgu *)
+ btypecode_t list (* ts *)
+
+type result = 
+  | Unique of overload_result
+  | Pair of overload_result * int
+  | Fail
+
+
+let get_data table index : symbol_data_t = 
+  try Hashtbl.find table index
+  with Not_found -> 
+    failwith ("[Flx_lookup.get_data] No definition of <" ^ string_of_int index ^ ">")
+
+let sig_of_symdef symdef name = match symdef with 
+  | `SYMDEF_match_check (_) 
+    -> `TYP_tuple[]
+
+  (* primitives *)
+  | `SYMDEF_fun (ps,r,_)
+    -> typeof_list ps
+
+  | `SYMDEF_function (ps,r,_)
+    -> paramtype ps
+
+  | `SYMDEF_if_fun (t) -> 
+    begin match t with
+    | `TYP_function (a,r) -> a
+    | _ -> failwith "[sig_of_symdef] Expected function to have function type"
+    end
+
+  | `SYMDEF_struct ls ->
+    typeof_list (map snd ls)
+
+  | symdef -> 
+    failwith (
+      "[sig_of_symdef] Expected "^
+      name
+      ^" to be function or procedure, got " ^
+     string_of_symdef symdef name []
+    )    
+
+
+let overload 
+  syms 
+  bt 
+  sr 
+  (fs : entry_kind_t list)
+  (name: string)
+  (suf : btypecode_t) 
+  (ts:btypecode_t list) 
+: (entry_kind_t * btypecode_t * (int * btypecode_t) list * btypecode_t list) option =
+
+  (*
+  print_endline ("Argument sig is " ^ sbt syms.dfns suf);
+  print_endline ("Candidates are " ^ catmap "," (string_of_entry_kind) fs);
+  *)
+  let resolve i =
+    match get_data syms.dfns i with 
+    {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=symdef} ->
+    id,parent,i,vs,sig_of_symdef symdef id
+  in
+  let sign = lift suf in
+  let consider i =
+    let id,p,i,vs,t = resolve i in
+    (*
+    print_endline ("Candidate "^si i^" sig is " ^ string_of_typecode t);
+    *)
+    let t = bt sr i t in
+    let t = lift t in
+    (*
+    print_endline ("Candidate bound sig is " ^ sbt syms.dfns t);
+    *)
+
+    (*
+    print_endline ("vs = " ^ catmap ", " (fun (s,i) ->s ^ "=" ^ si i) vs);
+    *)
+    (* Here we have a parameter list vs of m type variables,
+       a signature type t, containing these variables,
+       and a list ts of type expressions of length n which are
+       bindings to first n of the m type variables.
+
+       Because of recursion, it is possible the ts also
+       contain the type variables in vs, however, these
+       are quite distinct.
+
+       To fix this problem we must 'alpha convert'
+       the type expression by replacing the vs variables
+       in t with fresh variables, and also assigning the
+       first n of these to the ts values.
+
+       Matching requires a solution for all the fresh variables.
+       The return type must be converted to use the fresh variables,
+       and then the solution plugged in to eliminate them: any
+       remaining variables from the original vs list are actually
+       from the environment of a recursive function call
+    *)
+    (* Step1: make equations for the ts *)
+    let lv n = map (fun i->`BTYP_var i) (nlist n) in
+    let n = length ts in
+    let m = length vs in 
+    if n>m then clierr sr "Too many type subscripts";
+
+    let eqns = combine (lv n) ts in
+
+    (* Step 2: convert t to use variables 0 to m-1 
+      instead of those in vs
+    *)
+    let t' = tsubst vs (lv m) t in
+    let eqns = (t',sign) :: eqns in
+    (*
+    print_endline "EQUATIONS ARE:";
+    iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
+    eqns
+    ;
+    print_endline "...";
+    *)
+    let mgu = maybe_unification syms.dfns eqns in
+    (match mgu with
+    | Some mgu -> 
+      (* each universally quantified variable must be fixed
+        by the mgu .. if it doesn't its an error .. hmmm
+      *)
+      let th i = match i with 
+        | 0 -> "first"
+        | 1 -> "second"
+        | 2 -> "third"
+        | _ -> si (i+1) ^ "'th"
+      in
+      iter2
+      (fun (s,i) k ->
+        if not (mem_assoc k mgu)
+        then clierr sr
+        (
+          "[resolve_overload] The " ^th k ^" subscript  " ^ s ^ "["^si i^"]" ^
+          " of function " ^ id ^
+          " cannot be determined in this application:\n" ^
+          "Try using an explicit subscript." ^
+          "\nmgu=" ^ string_of_varlist syms.dfns mgu 
+        )
+      )
+      vs (nlist m)
+      ;
+      if sign <> list_subst mgu sign then
+      clierr sr 
+      (
+        "[resolve_overload] Unification of function " ^ 
+        id ^ "<" ^ si i ^ "> signature " ^
+        sbt syms.dfns t ^ 
+        "\nwith argument type " ^ sbt syms.dfns sign ^
+        "\nhas mgu " ^ string_of_varlist syms.dfns mgu ^
+        "\nwhich specialises a variable of the argument type"
+      )
+      ;
+      (* WRONG .. 
+      let t' = list_subst mgu t in
+      let ts = map (list_subst mgu) ts in
+      *)
+      (*
+      print_endline ("Matched with mgu = " ^ string_of_varlist syms.dfns mgu);
+      *)
+
+      (* RIGHT! *)
+      let ts = map (fun i -> assoc i mgu) (nlist m) in
+      
+      (*
+      print_endline ("Matched candidate " ^ si i ^ 
+        " mgu=" ^ string_of_varlist syms.dfns mgu ^ 
+        ", ts=" ^ catmap ", " (sbt syms.dfns) ts
+      );
+      *)
+      Some (i,t,mgu,ts)
+
+    | None -> 
+      (*
+      print_endline "No match"; 
+      *)
+      None
+    )
+  in
+  let rec aux i =  
+    match i with
+    | Simple i -> 
+      (match consider i with
+      | Some x -> Unique x
+      | None -> Fail
+      )
+
+    | Bound (i,j) ->
+      (match consider i with
+      | Some x -> Pair (x,j)
+      | None -> Fail
+      )
+  in
+  let fun_defs = List.map aux fs in
+  let candidates = 
+    let lift_suf = lift suf in
+    List.filter 
+    (fun result -> match result with
+      | Unique _ -> true
+      | Pair _ -> true
+      | Fail -> false
+    ) 
+    fun_defs
+  in
+    (*
+    print_endline "Got matching candidates .. ";
+    *)
+  (* start with an empty list, and fold one result
+  at a time into it, as follows: if one element
+  of the list is greater (more general) than the candidate,
+  then add the candidate to the list and remove all
+  element greater than the candidate,
+
+  otherwise, if one element of the list is less then
+  the candidate, keep the list and discard the candidate.
+
+  The list starts off empty, so that all elements in
+  it are vacuously incomparable. It follows either
+  the candidate is not less than all the list,
+  or not less than all the list: that is, there cannot
+  be two element a,b sch that a < c < b, since by
+  transitivity a < c would follow, contradicting
+  the assumption the list contains no ordered pairs.
+
+  If in case 1, all the greater element are removed and c added,
+  all the elements must be less or not comparable to c,
+  thus the list remains without comparable pairs,
+  otherwise in case 2, the list is retained and c discarded
+  and so trivially remains unordered.
+  *)
+
+  let candidates = fold_left
+  (fun oc r ->
+     match r with Unique (_,c,_,_) | Pair ((_,c,_,_),_) -> 
+     (*
+     print_endline ("Considering candidate sig " ^ sbt syms.dfns c);
+     *)
+     let rec aux lhs rhs =
+       match rhs with
+       | [] -> 
+         (*
+         print_endline "return elements plus candidate";
+         *)
+         r::lhs (* return all non-greater elements plus candidate *)
+       | (Unique(i,typ,mgu,ts) as x)::t 
+       | (Pair((i,typ,mgu,ts),_) as x) ::t 
+       ->
+         (*
+         print_endline (" .. comparing with " ^ sbt syms.dfns typ);
+         *)
+         begin match compare_sigs syms.dfns typ c with
+         | `Less -> 
+           (*
+           print_endline "Candidate is more general, discard it, retain whole list";
+           *)
+           lhs @ rhs (* keep whole list, discard c *) 
+         | `Equal -> 
+           failwith "[resolve_overload] Not expecting equal signatures"
+
+         | `Greater -> 
+           (*
+           print_endline "Candidate is less general: discard this element";
+           *)
+           aux lhs t (* discard greater element *)
+         | `Incomparable -> 
+           (*
+           print_endline "Candidate is comparable, retail element";
+           *)
+           aux (x::lhs) t (* keep element *)
+       end
+       | Fail::_ -> assert false
+     in aux [] oc
+     | Fail -> assert false
+  )
+  []
+  candidates in
+  match candidates with
+  | [Unique (i,t,mgu,ts)] -> 
+    Some (Simple i,t,mgu,ts)
+
+  | [Pair ((i,t,mgu,ts),j)] -> 
+    Some (Bound (i,j),t,mgu,ts)
+  | [] -> None
+  | _ -> 
+    clierr sr 
+    (
+      "Too many candidates match in overloading " ^ name ^
+      " with argument type " ^ sbt syms.dfns sign ^
+      "\nOf the matching candidates, the following are most specialised ones are incomparable\n" ^
+      catmap "\n" (function 
+        | Unique (i,t,_,_) 
+        | Pair ((i,t,_,_),_) ->
+          qualified_name_of_index syms.dfns i ^ "<" ^ si i ^ "> sig " ^ sbt syms.dfns t
+        | Fail -> assert false
+      ) 
+      candidates
+      ^ 
+      "\nPerhaps you need to define a function more specialised than all these?"
+    )
+
+(* FINAL NOTE: THIS STILL WON'T BE ENOUGH: THE SEARCH ALGORITHM
+NEEDS TO BE MODIFIED TO FIND **ALL** FUNCTIONS .. alternatively,
+keep the results from overload resolution for each scope, and resubmit
+in a deeper scope: then if there is a conflict between signatures
+(equal or unordered) the closest is taken if that resolves the 
+conflict
+*)
+
+

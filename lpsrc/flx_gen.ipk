@@ -386,6 +386,7 @@ open Flx_csubst
 open Flx_exceptions
 open Flx_display
 open List
+open Flx_generic
 
 let string_of_string = Flx_string.c_quote_of_string
 
@@ -1006,7 +1007,8 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
     in
-    let ts = map tsub ts' in
+    let ts = adjust_ts syms index ts' in
+    let ts = map tsub ts in
     begin match entry with
     | `BBDCL_function _ 
     | `BBDCL_procedure _ ->

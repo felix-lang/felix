@@ -429,4 +429,14 @@ module X
 open X;
 val x = f 1;
 
+@select(tangler('test/bt07.flx'))
+#define FIRST
+#define FIRST
+
+@select(tangler('test/bt08.imp'))
+#define FIRST
+
+@select(tangler('test/bt08.flx'))
+#define FIRST
+#import "bt08.imp"
 

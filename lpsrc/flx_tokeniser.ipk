@@ -33,193 +33,8 @@ val translate : Flx_parse.token list -> Flx_parse.token list
 @h = tangler('src/flx_pretok.ml')
 @select(h)
 open Flx_parse
-let string_of_string s = "\"" ^  Flx_string.c_quote_of_string s ^ "\""
-
-let string_of_token (tok :Flx_parse.token): string =
-  match tok with
-  | NAME (sr,s) -> s
-  | INTEGER (sr,t,i) -> Big_int.string_of_big_int i
-  | FLOAT (sr,t,v) -> v
-  | STRING (sr,s) -> Flx_string.c_quote_of_string s 
-  | CSTRING (sr,s) -> Flx_string.c_quote_of_string s 
-  | WSTRING (sr,s) -> Flx_string.c_quote_of_string s 
-  | USTRING (sr,s) -> Flx_string.c_quote_of_string s 
-
-  (* one character tokens *)
-  | DOLLAR _ -> "$" 
-  | QUEST _ -> "?" 
-  | EXCLAMATION _ -> "!" 
-  | LPAR _ -> "(" 
-  | RPAR _ -> ")" 
-  | LSQB _ -> "["
-  | RSQB _ -> "]"
-  | LBRACE _ -> "{"
-  | RBRACE _ -> "}"
-  | COLON _ -> ":"
-  | COMMA _ -> ","
-  | SEMI _ -> ";"
-  | PLUS _ -> "+"
-  | MINUS _ -> "-"
-  | STAR _ -> "*"
-  | SLASH _ -> "/"
-  | VBAR _ -> "|"
-  | AMPER _ -> "&"
-  | LESS _ -> "<"
-  | GREATER _ -> ">"
-  | EQUAL _ -> "="
-  | DOT _ -> "."
-  | PERCENT _ -> "%"
-
-  | BACKQUOTE _ -> "`"
-  | TILDE _ -> "~"
-  | CIRCUMFLEX _ -> "^"
-
-  (* two character tokens *)
-  | ANDLESS _ -> "&<"
-  | ANDGREATER _ -> "&>"
-  | EQEQUAL _ -> "=="
-  | NOTEQUAL _ -> "!="
-  | LESSEQUAL _ -> "<="
-  | GREATEREQUAL _ -> ">="
-  | LEFTSHIFT _ -> "<<"
-  | RIGHTSHIFT _ -> ">>"
-  | DOUBLESTAR _ -> "**"
-  | STARSTAR _ -> "<POW>**"
-  | LESSCOLON _ -> "<:"
-  | COLONGREATER _ -> ":>"
-  | DOTDOT _ -> ".."
-  | COLONCOLON _ -> "::"
-
-  | PLUSPLUS _ -> "++"
-  | MINUSMINUS _ -> "--"
-  | PLUSEQUAL _ -> "+="
-  | MINUSEQUAL _ -> "-="
-  | STAREQUAL _ -> "*="
-  | SLASHEQUAL _ -> "/="
-  | PERCENTEQUAL _ -> "%="
-  | CARETEQUAL _ -> "^="
-  | VBAREQUAL _ -> "|="
-  | AMPEREQUAL _ -> "&="
-  | TILDEEQUAL _ -> "~="
-  | COLONEQUAL _ -> ":="
-  | RIGHTARROW _ -> "->"
-  | EQRIGHTARROW _ -> "=>"
-  | LEFTARROW _ -> "<-"
-  | LSQANGLE _ -> "[<"
-  | RSQANGLE _ -> ">]"
-
-  | LEFTSHIFTEQUAL _ -> "<<="
-  | RIGHTSHIFTEQUAL _ -> ">>="
-  | LEFTRIGHTARROW _ -> "<->"
-  | ANDEQEQUAL _ -> "&=="
-  | ANDNOTEQUAL _ -> "&!="
-  | ANDLESSEQUAL _ -> "&<="
-  | ANDGREATEREQUAL _ -> "&>="
-  | DOTDOTDOT _ -> "..."
-
-  (* keywords *)
-@for n,t in flx_keywords: tangle('  |  '+t+' _ -> "'+n+'"')
-
-  (* special things *)
-  | SLOSH _ -> "\\" (* "\"" *) 
-
-  | COMMENT s -> s (* C style comment, includes the /* */ pair *)
-  | COMMENT_NEWLINE s -> "// " ^ s ^ "<NEWLINE>"
-  | WHITE i -> String.make i ' '
-  | NEWLINE -> "<NEWLINE>"
-  | ENDMARKER -> "<<EOF>>"
-  | ERRORTOKEN (sref,s) -> "<<ERROR '"^ s ^"'>>"
-
-let src_of_token t = match t with
-  | NEWLINE 
-  | COMMENT _
-  | COMMENT_NEWLINE _
-  | WHITE _ 
-  | ENDMARKER
-    -> ("",0,0,0)
-
-  | NAME    (s,_)
-  | INTEGER (s,_,_)
-  | FLOAT   (s,_,_)
-  | STRING  (s,_)
-  | CSTRING  (s,_)
-  | WSTRING  (s,_)
-  | USTRING  (s,_)
-
-  | ERRORTOKEN (s,_) 
-
-@for n,t in flx_keywords: tangle('  | '+t+' s')
-
-  | EQUAL s 
-  | PLUS s 
-  | MINUS s 
-  | STAR s 
-  | SLASH s 
-  | PERCENT s 
-  | STARSTAR s 
-  | AMPER s 
-  | VBAR s 
-  | EXCLAMATION s 
-  | DOLLAR s 
-  | QUEST s 
-  | LPAR s 
-  | RPAR s 
-  | LSQB s 
-  | RSQB s 
-  | LBRACE s 
-  | RBRACE s 
-  | LSQANGLE s 
-  | RSQANGLE s 
-  | COLON s 
-  | COMMA s 
-  | SEMI s 
-  | DOT s 
-  | BACKQUOTE s 
-  | LESS s 
-  | GREATER s 
-  | EQEQUAL s 
-  | NOTEQUAL s 
-  | LESSEQUAL s 
-  | GREATEREQUAL s 
-  | ANDLESS s 
-  | ANDGREATER s 
-  | ANDEQEQUAL s 
-  | ANDNOTEQUAL s 
-  | ANDLESSEQUAL s 
-  | ANDGREATEREQUAL s 
-  | TILDE s 
-  | CIRCUMFLEX s 
-  | LEFTSHIFT s 
-  | RIGHTSHIFT s 
-  | LEFTRIGHTARROW s 
-  | DOUBLESTAR s 
-  | PLUSPLUS s 
-  | MINUSMINUS s 
-  | PLUSEQUAL s 
-  | MINUSEQUAL s 
-  | STAREQUAL s 
-  | SLASHEQUAL s 
-  | PERCENTEQUAL s 
-  | CARETEQUAL s 
-  | VBAREQUAL s 
-  | AMPEREQUAL s 
-  | TILDEEQUAL s 
-  | COLONEQUAL s 
-  | LEFTSHIFTEQUAL s 
-  | RIGHTSHIFTEQUAL s 
-  | LEFTARROW s 
-  | RIGHTARROW s 
-  | EQRIGHTARROW s 
-  | COLONGREATER s 
-  | LESSCOLON s 
-  | COLONCOLON s 
-  | DOTDOT s 
-  | SLOSH s 
-  | DOTDOTDOT s 
-    -> s
-
-
-
+open Flx_prelex
+;;
 let pre_tokens_of_lexbuf buf state =
   let rec get lst = 
     let t = Flx_lex.pre_flx_lex state buf in 
@@ -247,8 +62,17 @@ let pre_tokens_of_string s filename =
   pre_tokens_of_lexbuf (Lexing.from_string s) state
 
 
+@h = tangler('src/flx_pretok.mli')
+@select(h)
+open Flx_parse
+val pre_tokens_of_filename : string -> string -> string list -> token list
+val pre_tokens_of_string : string -> string -> token list
+
+@head(1, 'Tokeniser')
+@h = tangler('src/flx_tok.ml')
+@select(h)
 let print_pre_token t = 
-  let emit t = print_string (string_of_token t) in
+  let emit t = print_string (Flx_prelex.string_of_token t) in
     begin match t with
     | Flx_parse.COMMENT_NEWLINE s -> 
       print_endline ("//" ^ s); 
@@ -267,23 +91,11 @@ let print_pre_tokens ts =
   print_string "   1: ";
   List.iter print_pre_token ts
 
-@h = tangler('src/flx_pretok.mli')
-@select(h)
-open Flx_parse
-val src_of_token : token -> Flx_ast.srcref
-val string_of_token : token -> string
-val pre_tokens_of_filename : string -> string -> string list -> token list
-val pre_tokens_of_string : string -> string -> token list
-val print_pre_tokens : token list -> unit
-
-@head(1, 'Tokeniser')
-@h = tangler('src/flx_tok.ml')
-@select(h)
 let print_tokens ts = 
   let lineno = ref 0 in
   let indent = ref 0 in
   let emit t = 
-    print_string ((Flx_pretok.string_of_token t) ^ " ") 
+    print_string ((Flx_prelex.string_of_token t) ^ " ") 
   and emit_eol t = 
     print_endline t;
     let s' = "    " ^ (string_of_int !lineno) in
@@ -348,7 +160,7 @@ object
         end
       end
     in 
-    let file,line,scol,ecol = Flx_pretok.src_of_token token in
+    let file,line,scol,ecol = Flx_prelex.src_of_token token in
     print_endline 
     (
       " in " ^ file ^ 
@@ -367,20 +179,46 @@ object
 end
 ;;
 
+type 'a parser_t = 
+  (Lexing.lexbuf  -> Flx_parse.token) -> 
+  Lexing.lexbuf -> 
+  'a
+
+let parse_tokens (parser:'a parser_t) (tokens: Flx_parse.token list) = 
+  let toker = (new Flx_tok.tokeniser tokens) in
+  try 
+    parser (toker#token_src) (Lexing.from_string "dummy" )
+  with _ ->
+    toker#report_syntax_error;
+    raise (Flx_exceptions.ParseError "Parsing Tokens")
+
 
 @h = tangler('src/flx_tok.mli')
 @select(h)
+open Flx_parse
 
-val print_tokens : Flx_parse.token list -> unit
+val print_pre_tokens : token list -> unit
+val print_tokens : token list -> unit
 class tokeniser :
-  Flx_parse.token list ->
+  token list ->
   object
     val mutable current_token_index : int
-    val mutable tokens : Flx_parse.token list
-    val mutable tokens_copy : Flx_parse.token list
+    val mutable tokens : token list
+    val mutable tokens_copy : token list
     method report_syntax_error : unit
-    method token_src : Lexing.lexbuf -> Flx_parse.token
+    method token_src : Lexing.lexbuf -> token
   end
+
+type 'a parser_t = 
+  (Lexing.lexbuf  -> token) -> 
+  Lexing.lexbuf -> 
+  'a
+
+val parse_tokens:
+  'a parser_t ->
+  token list ->
+  'a
+
 
 @head(1, 'Lexer test harness')
 @h = tangler('src/flxl.ml')
@@ -395,7 +233,7 @@ print_endline "---------------------------------------";;
 
 print_endline "Pre tokens";;
 let pretokens = (Flx_pretok.pre_tokens_of_filename filename "" []);;
-Flx_pretok.print_pre_tokens  pretokens;;
+Flx_tok.print_pre_tokens  pretokens;;
 print_endline "---------------------------------------";;
 
 print_endline "Tokens";;

@@ -216,26 +216,17 @@ open Flx_print
 open Flx_exceptions
 open Flx_mtypes
 open Flx_typing
+open Flx_typing2
 open List
 open Flx_srcref
 open Flx_unify
 open Flx_beta
 open Flx_generic
 open Flx_name
+open Flx_overload
 
 exception Found of int
 exception Tfound of btypecode_t
-
-type overload_result = 
- int *  (* index of function *)
- btypecode_t * (* type of function signature *)
- (int * btypecode_t) list * (* mgu *)
- btypecode_t list (* ts *)
-
-type result = 
-  | Unique of overload_result
-  | Pair of overload_result * int
-  | Fail
 
 type kind_t = Parameter | Other
 
@@ -421,8 +412,8 @@ let rec lookup_qn_in_env2
     | Functor_set _ ->
       failwith "Unexpected Functor"
 
-    | Simple_module (impl, htab,dirs) ->
-      begin try Hashtbl.find htab name, ts
+    | Simple_module (impl,ts', htab,dirs) ->
+      begin try Hashtbl.find htab name, ts' @ ts
       with Not_found -> 
         failwith
         (
@@ -1222,41 +1213,6 @@ and  typeof_literal syms env sr v : btypecode_t =
       string_of_literal v
     )
   
-and  typeof_list = function 
-  | [x] -> x 
-  | x -> `TYP_tuple x
-
-and  typlist params = List.map snd params
-and  paramtype params = typeof_list (typlist params)
-
-and  sig_of_symdef symdef name = match symdef with 
-  | `SYMDEF_match_check (_) 
-    -> `TYP_tuple[]
-
-  (* primitives *)
-  | `SYMDEF_fun (ps,r,_)
-    -> typeof_list ps
-
-  | `SYMDEF_function (ps,r,_)
-    -> paramtype ps
-
-  | `SYMDEF_if_fun (t) -> 
-    begin match t with
-    | `TYP_function (a,r) -> a
-    | _ -> failwith "[sig_of_symdef] Expected function to have function type"
-    end
-
-  | `SYMDEF_struct ls ->
-    typeof_list (map snd ls)
-
-  | symdef -> 
-    failwith (
-      "[sig_of_symdef] Expected "^
-      name
-      ^" to be function or procedure, got " ^
-     string_of_symdef symdef name []
-    )    
-
 and typeofindex_with_ts
   syms 
   (excluded_dirs:int list)
@@ -1395,6 +1351,7 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth excluded_dirs index args =
           | Expr_recursion e -> () 
           | Free_fixpoint t -> () 
           | Unresolved_return (sr,s) -> () 
+          | ClientError (sr,s) as e -> raise (ClientError (sr,"Whilst calculating return type:\n"^s))
           | x -> 
           print_endline ("  .. Unable to compute type of " ^ string_of_expr e);
           print_endline ("Reason: " ^ Printexc.to_string x);
@@ -1582,8 +1539,9 @@ and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let rest =
     match unfold t1 with
     | `BTYP_function (argt,rest) ->
-      if argt = t2 then rest
-      else 
+      if argt = t2
+      then rest 
+      else
         clierr sr
         (
           "[cal_apply] Function " ^
@@ -1811,7 +1769,8 @@ and lookup_qn_with_sig'
       | (Functor_set _) ->
         failwith "Unexpected Functor"
 
-      | (Simple_module (impl, htab,dirs)) ->
+      | (Simple_module (impl, ts',htab,dirs)) ->
+        let ts' = map (bt sr) ts' in
         begin match lookup_name_in_htab htab name with
         | None -> 
           clierr sr
@@ -1843,7 +1802,9 @@ and lookup_qn_with_sig'
               | _ -> assert false
               end
               ;
-              `BEXPR_closure (index,ts),
+              let ts'' = ts' @ ts in
+              let ts'' = adjust_ts syms index ts'' in
+              `BEXPR_closure (index,ts''),
               t
 
             | `SYMDEF_const (t,_) 
@@ -1930,6 +1891,11 @@ and lookup_qn_with_sig'
             syms excluded_dirs sra fs name sign ts
           with
           | Some (Simple index,t,mgu,ts) ->
+            (*
+            print_endline ("Resolved overload for " ^ name);
+            print_endline ("ts = [" ^ catmap ", " (sbt syms.dfns) ts ^ "]");
+            *)
+            let ts = adjust_ts syms index ts in
             `BEXPR_closure (index,ts),
              typeofindex_with_ts syms excluded_dirs index ts
 
@@ -1999,6 +1965,7 @@ and lookup_qn_with_sig'
               syms excluded_dirs sra fs name sign ts
             with
             | Some (Simple index,t,mgu,ts) ->
+              let ts = adjust_ts syms index ts in
               `BEXPR_closure (index,ts),
               typeofindex_with_ts syms excluded_dirs index ts
 
@@ -2113,6 +2080,7 @@ and handle_function
             print_endline ("closure of " ^ name);
             flush stdout;
             *)
+            let ts = adjust_ts syms index ts in
             `BEXPR_closure (index,ts),
             (
               match inner_typeofindex_with_ts syms 
@@ -2608,7 +2576,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
       | (Functor_set _) ->
         failwith "Unexpected Functor"
 
-      | (Simple_module (impl, htab,dirs)) ->
+      | (Simple_module (impl, ts, htab,dirs)) ->
         lookup_name_in_htab htab name
 
       | (Bound_module (iface,impl,binding)) ->
@@ -2902,202 +2870,20 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
       "[Compiler error] Unexpected match when binding expression (should have been lifted out)"
     )
 
-and resolve_overload 
-  syms 
-  excluded_dirs sr 
+and resolve_overload
+  syms
+  excluded_dirs sr
   (fs : entry_kind_t list)
   (name: string)
-  (suf : btypecode_t) 
-  (ts:btypecode_t list) 
+  (suf : btypecode_t)
+  (ts:btypecode_t list)
 : (entry_kind_t * btypecode_t * (int * btypecode_t) list * btypecode_t list) option =
 
-  (*
-  print_endline ("Argument sig is " ^ sbt syms.dfns suf);
-  print_endline ("Candidates are " ^ catmap "," (string_of_entry_kind) fs);
-  *)
-  let resolve i =
-    match get_data syms.dfns i with 
-    {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=symdef} ->
-    id,parent,i,vs,sig_of_symdef symdef id
-  in
-  let sign = lift suf in
-  let consider i =
-    let id,p,i,vs,t = resolve i in
-    (*
-    print_endline ("Candidate "^si i^" sig is " ^ string_of_typecode t);
-    *)
+  let bt sr i t =
     let env = build_env syms excluded_dirs (Some i) in
-    let t = bind_type syms env excluded_dirs sr t in
-    let t = lift t in
-    (*
-    print_endline ("Candidate bound sig is " ^ sbt syms.dfns t);
-    *)
-    let eqns = make_eqns syms i ts in (* do this first to avoid gratuitous equalities *)
-    let ts = adjust_ts syms i ts in
-    let eqns = (t,sign) :: eqns in
-    (*
-    print_endline "EQUATIONS ARE:";
-    iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
-    eqns
-    ;
-    print_endline "...";
-    *)
-    let mgu = maybe_unification syms.dfns eqns in
-    (match mgu with
-    | Some mgu -> 
-      if sign <> list_subst mgu sign then
-      clierr sr 
-      (
-        "[resolve_overload] Unification of function " ^ 
-        id ^ "<" ^ si i ^ "> signature " ^
-        sbt syms.dfns t ^ 
-        "\nwith argument type " ^ sbt syms.dfns sign ^
-        "\nhas mgu " ^ string_of_varlist syms.dfns mgu ^
-        "\nwhich specialises a variable of the argument type"
-      )
-      ;
-      let t' = list_subst mgu t in
-      let ts = map (list_subst mgu) ts in
-      (*
-      print_endline ("Matched with mgu = " ^ string_of_varlist syms.dfns mgu);
-      *)
-      Some (i,t,mgu,ts)
-
-    | None -> 
-      (*
-      print_endline "No match"; 
-      *)
-      None
-    )
+    bind_type syms env excluded_dirs sr t
   in
-  let rec aux i =  
-    match i with
-    | Simple i -> 
-      (match consider i with
-      | Some x -> Unique x
-      | None -> Fail
-      )
-
-    | Bound (i,j) ->
-      (match consider i with
-      | Some x -> Pair (x,j)
-      | None -> Fail
-      )
-  in
-  let fun_defs = List.map aux fs in
-  let candidates = 
-    let lift_suf = lift suf in
-    List.filter 
-    (fun result -> match result with
-      | Unique _ -> true
-      | Pair _ -> true
-      | Fail -> false
-    ) 
-    fun_defs
-  in
-    (*
-    print_endline "Got matching candidates .. ";
-    *)
-  (* start with an empty list, and fold one result
-  at a time into it, as follows: if one element
-  of the list is greater (more general) than the candidate,
-  then add the candidate to the list and remove all
-  element greater than the candidate,
-
-  otherwise, if one element of the list is less then
-  the candidate, keep the list and discard the candidate.
-
-  The list starts off empty, so that all elements in
-  it are vacuously incomparable. It follows either
-  the candidate is not less than all the list,
-  or not less than all the list: that is, there cannot
-  be two element a,b sch that a < c < b, since by
-  transitivity a < c would follow, contradicting
-  the assumption the list contains no ordered pairs.
-
-  If in case 1, all the greater element are removed and c added,
-  all the elements must be less or not comparable to c,
-  thus the list remains without comparable pairs,
-  otherwise in case 2, the list is retained and c discarded
-  and so trivially remains unordered.
-  *)
-
-  let candidates = fold_left
-  (fun oc r ->
-     match r with Unique (_,c,_,_) | Pair ((_,c,_,_),_) -> 
-     (*
-     print_endline ("Considering candidate sig " ^ sbt syms.dfns c);
-     *)
-     let rec aux lhs rhs =
-       match rhs with
-       | [] -> 
-         (*
-         print_endline "return elements plus candidate";
-         *)
-         r::lhs (* return all non-greater elements plus candidate *)
-       | (Unique(i,typ,mgu,ts) as x)::t 
-       | (Pair((i,typ,mgu,ts),_) as x) ::t 
-       ->
-         (*
-         print_endline (" .. comparing with " ^ sbt syms.dfns typ);
-         *)
-         begin match compare_sigs syms.dfns typ c with
-         | `Less -> 
-           (*
-           print_endline "Candidate is more general, discard it, retain whole list";
-           *)
-           lhs @ rhs (* keep whole list, discard c *) 
-         | `Equal -> 
-           failwith "[resolve_overload] Not expecting equal signatures"
-
-         | `Greater -> 
-           (*
-           print_endline "Candidate is less general: discard this element";
-           *)
-           aux lhs t (* discard greater element *)
-         | `Incomparable -> 
-           (*
-           print_endline "Candidate is comparable, retail element";
-           *)
-           aux (x::lhs) t (* keep element *)
-       end
-       | Fail::_ -> assert false
-     in aux [] oc
-     | Fail -> assert false
-  )
-  []
-  candidates in
-  match candidates with
-  | [Unique (i,t,mgu,ts)] -> 
-    Some (Simple i,t,mgu,ts)
-
-  | [Pair ((i,t,mgu,ts),j)] -> 
-    Some (Bound (i,j),t,mgu,ts)
-  | [] -> None
-  | _ -> 
-    clierr sr 
-    (
-      "Too many candidates match in overloading " ^ name ^
-      " with argument type " ^ sbt syms.dfns sign ^
-      "\nOf the matching candidates, the following are most specialised ones are incomparable\n" ^
-      catmap "\n" (function 
-        | Unique (i,t,_,_) 
-        | Pair ((i,t,_,_),_) ->
-          qualified_name_of_index syms.dfns i ^ "<" ^ si i ^ "> sig " ^ sbt syms.dfns t
-        | Fail -> assert false
-      ) 
-      candidates
-      ^ 
-      "\nPerhaps you need to define a function more specialised than all these?"
-    )
-
-(* FINAL NOTE: THIS STILL WON'T BE ENOUGH: THE SEARCH ALGORITHM
-NEEDS TO BE MODIFIED TO FIND **ALL** FUNCTIONS .. alternatively,
-keep the results from overload resolution for each scope, and resubmit
-in a deeper scope: then if there is a conflict between signatures
-(equal or unordered) the closest is taken if that resolves the 
-conflict
-*)
+    overload syms bt sr fs name suf ts
 
 (* an environment is a list of hastables, mapping
    names to definition indicies. Each entity defining
@@ -3177,7 +2963,7 @@ and map_dir
         | Functor_set _ ->
           failwith "Unexpected Functor"
 
-        | Simple_module (impl, htab,dirs) ->
+        | Simple_module (impl, ts, htab,dirs) ->
           htab
         | Bound_module (iface,impl,binding) ->
           begin match get_data syms.dfns iface with
@@ -3742,7 +3528,7 @@ and handle_module_coercion syms env sr excluded_dirs m t =
       | Module_product _ ->
         failwith "Can't coerce module product to single interface"
         
-      | Simple_module (impl,module_map,dirs) ->
+      | Simple_module (impl,ts, module_map,dirs) ->
         begin match
           match_interface index ts'
           syms 
@@ -3832,7 +3618,7 @@ and compare_module_expr_with_type syms excluded_dirs sr t m =
    | `BTYP_inst (index2,ts) -> index = index2
    | _ -> false
    end
- | Simple_module (impl,mmap,dirs) ->
+ | Simple_module (impl,ts, mmap,dirs) ->
    begin match t with
    | `BTYP_inst (iface,ts) ->
      begin match get_data syms.dfns iface with
@@ -3991,7 +3777,7 @@ and instantiate_functor syms
   try 
     let afidx = Hashtbl.find syms.freg (findex, m) in
     match get_data syms.dfns afidx with
-    | {pubmap=name_map;dirs=dirs;symdef=`SYMDEF_module} -> Simple_module (afidx,name_map,dirs)
+    | {pubmap=name_map;dirs=dirs;symdef=`SYMDEF_module} -> Simple_module (afidx,[],name_map,dirs)
     | _ -> failwith "Expected instantiation to be simple module"
   with Not_found ->
   (* print_endline "INSTANTIATING FUNCTOR"; *)
@@ -4013,7 +3799,7 @@ and instantiate_functor syms
       | _ -> failwith "Multiple parameters require module product argument"
       end
 
-    | Simple_module (impl,mmap,dirs) -> 
+    | Simple_module (impl,ts,mmap,dirs) -> 
       begin match ps with
       | [x] ->
         let ts = [] in (* KLUDGE *)
@@ -4062,7 +3848,7 @@ and instantiate_functor syms
       mtable
     end
     ;
-    Simple_module (mindex,mtable,dirs)
+    Simple_module (mindex,[],mtable,dirs)
 
 and handle_functor_application syms env sr excluded_dirs f m =
   (* print_endline "HANDLING FUNCTOR APPLICATION"; *)
@@ -4081,7 +3867,7 @@ and handle_functor_application syms env sr excluded_dirs f m =
   | _ -> failwith "Expected functor"
 
 
-and check_module syms excluded_dirs sr entries =
+and check_module syms excluded_dirs sr entries ts =
     begin match entries with
     | FunctionEntry ls -> 
       let ls = 
@@ -4107,7 +3893,7 @@ and check_module syms excluded_dirs sr entries =
     | NonFunctionEntry (Simple index) ->
       begin match get_data syms.dfns index with
       | {dirs=dirs;pubmap=table;symdef=`SYMDEF_module} -> 
-        Simple_module (index,table,dirs)
+        Simple_module (index,ts,table,dirs)
       | {parent=parent;symdef=`SYMDEF_module_binding e} ->
         let env' = build_env syms excluded_dirs parent in
         eval_module_expr syms env' excluded_dirs e
@@ -4165,13 +3951,13 @@ and eval_module_expr syms env excluded_dirs e : module_rep_t =
 
   | `AST_name (sr,name,ts) ->
     let entries = lookup_name_in_env env sr name in
-    check_module syms excluded_dirs sr entries
+    check_module syms excluded_dirs sr entries ts
 
   | `AST_lookup (sr,(e,name,ts)) ->
     let result = eval_module_expr syms env excluded_dirs e in
     let entries = 
       begin match result with
-      | Simple_module (index,table,dirs) ->
+      | Simple_module (index,ts,table,dirs) ->
         begin match lookup_name_in_htab table name with
         | Some x -> x
         | None -> clierr sr 
@@ -4198,7 +3984,7 @@ and eval_module_expr syms env excluded_dirs e : module_rep_t =
       | Functor_set _ -> failwith "Can't lookup in functor set"
       | Module_product _ -> failwith "Can't lookup in module product"
       end 
-    in check_module syms excluded_dirs sr entries
+    in check_module syms excluded_dirs sr entries ts
 
   | _ ->
     failwith 

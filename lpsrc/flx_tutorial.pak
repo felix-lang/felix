@@ -1078,11 +1078,74 @@ proc pp[T] (x:T) { print[T](x); }
 
 pp[int] (snd[int,int] x);
 
+@doc()
+When declaring a generic function or procedure,
+if one of the parameters has the type of a type
+variable which is not used elsewhere, you can leave
+out the type variable, and one will be synthesised for you. 
+Synthesised type variables are added
+to the type variable list at the end. For example:
+
+@select(tangler(tdir+'tut135b.flx'))
+header "#include <iostream>";
+type int = "int";
+proc print[T]:T="std::cout << $1 << std::endl;";
+fun fst(x,y) = { return x; }
+fun snd(x,y) = { return y; }
+
+val x = (1,2);
+print[int] (fst[int,int] x);
+print[int] (snd[int,int] x);
+
+proc pp[T] (x:T) { print[T](x); }
+
+pp[int] (snd[int,int] x);
+
+@doc()
+Note in this example, the return type cannot
+be stated since it depends on a synthesised type variable.
+@p()
+When there is only one argument which has a type 
+which is a type variable, then if the type variable
+is omitted, the parentheses can also be omitted.
+This is particularly useful with curried declarations.
+@p()
+Note carefully that in the call to pair below, both the
+type subscripts must be given explicity, because they cannot
+be deduced from the argument. 
+
+@select(tangler(tdir+'tut135c.flx'))
+include "std";
+fun pair1 x y = { return x,y; }
+fun pair2[t,u] (x:t) (y:u) = { return x,y; }
+fun diag x = { return x,x; }
+fun fst (x,y) = { return x; }
+fun snd (x,y) = { return y; }
+
+{
+  val x34 = pair1[int,int] 3 4;
+  val a = fst x34;
+  val b = snd x34;
+  print a; print ","; print b; endl;
+};
+
+{
+  val x34 = pair2[int,int] 3 4;
+  val a = fst x34;
+  val b = snd x34;
+  print a; print ","; print b; endl;
+};
+
+val x22 = diag 2;
+val x = fst x22;
+val y = snd x22;
+print x; print ","; print y; endl;
+
 @head(2,'Generic Structs and Unions')
 Felix structs and unions can be generic too.
 Here is a simple example.
 
-@select(tangler(tdir+'tut135b.flx'))
+@select(tangler(tdir+'tut135e.flx'))
 include "std";
 union list[T] = 
   | Cons of T * list[T] 
@@ -1109,7 +1172,7 @@ this is not necessary, as illustrated in
 the example: Felix deduces the value
 of the type variables from function arguments.
 
-@select(tangler(tdir+'tut135c.flx'))
+@select(tangler(tdir+'tut135f.flx'))
 include "std";
 union list[T] =
   | Cons of T * list[T]
@@ -1504,8 +1567,8 @@ iter (proc (x:int) { print x; print ", "; }) y; endl;
 proc print (x:list[int]) 
 {
   match x with
-  | Empty => { print "[]"; }
-  | Cons (?h,?t) => 
+  | Empty[int] => { print "[]"; }
+  | Cons[int] (?h,?t) => 
     {
       print "["; print h;
       iter (proc (x:int) { print ","; print x; }) t;

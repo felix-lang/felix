@@ -33,6 +33,12 @@ val expand_macros:
   statement_t list -> 
   statement_t list
 
+(** [expand_expr] is a special hook used to perform
+  constant folding and desugaring in the preprocessor
+*)
+val expand_expression:
+  string -> expr_t -> expr_t
+  
 @h = tangler('src/flx_macro.ml')
 @select(h)
 open Flx_ast
@@ -970,6 +976,11 @@ and special_expand_statements recursion_limit local_prefix seq reachable ref_mac
 
 and expand_macros local_prefix recursion_limit ss = 
   expand_statements recursion_limit local_prefix (ref 1) (ref true) [] ss
+
+
+let expand_expression local_prefix e =
+  let seq = ref 1 in
+  expand_expr 20 local_prefix seq [] e
 
 @h = tangler("src/flxm.ml")
 @select(h)

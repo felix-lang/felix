@@ -567,7 +567,7 @@ and entry_set_t =
   | NonFunctionEntry of entry_kind_t
   
 and module_rep_t = 
-  | Simple_module of bid_t * name_map_t * dir_t list
+  | Simple_module of bid_t * typecode_t list * name_map_t * dir_t list
   | Bound_module of bid_t * bid_t * index_map_t
   | Functor_set of bid_t list
   | Module_product of module_rep_t list
@@ -1537,14 +1537,28 @@ and st prec tc : string =
 
 and string_of_typecode tc = st 99 tc
 
+and qualified_name_of_index_with_vs dfns index = 
+  match Hashtbl.find dfns index with 
+  | { id=id; vs=vs; parent=parent} ->
+    match parent with
+    | Some index' ->
+      qualified_name_of_index_with_vs dfns index' ^ 
+      id ^ 
+      print_ivs vs ^ 
+      "::"
+    | None -> ""
+      (* If this entity has no parent, its the root module,
+        and we don't bother to print its name as a prefix
+      *)
+
 and qualified_name_of_index dfns index = 
   match Hashtbl.find dfns index with 
-  (* don't print top level module name at present *)
-  | { parent=None } -> (* id ^ "<" ^ si index ^ ">" *) ""
-  | { id=id; parent=Some index' } -> 
-    let prefix = qualified_name_of_index dfns index' in
-    (if prefix <> "" then prefix ^ "::" else "")
-      ^ id (* ^ "<" ^ si index ^ ">" *)
+  | { id=id; parent=parent } ->
+    begin match parent with
+    | Some index' -> qualified_name_of_index_with_vs dfns index' 
+    | None -> ""
+    end ^
+    id
 
 (* fixppoint labeller .. very sloppy, ignores precedence .. *)
 and get_label i =
@@ -1600,7 +1614,7 @@ and sb dfns depth fixlist counter prec tc =
     | `BTYP_inst (i,ts) -> 
       0,qualified_name_of_index dfns i ^ 
       (if List.length ts = 0 then "" else
-      "[" ^cat ", " (List.map (string_of_btypecode dfns) ts) ^ "]"
+      "[" ^cat ", " (List.map (sbt 9) ts) ^ "]"
       )
 
     | `BTYP_name n -> 
@@ -1800,16 +1814,16 @@ and string_of_macro_parameter_type = function
  
 and print_vs = function
   | [] -> ""
-  | vs -> " [" ^ cat ", " vs ^ "]"
+  | vs -> "[" ^ cat ", " vs ^ "]"
 
 and print_ivs = function
   | [] -> ""
-  | vs -> " [" ^ cat ", " (map fst vs) ^ "]"
+  | vs -> "[" ^ cat ", " (map fst vs) ^ "]"
 
 and print_bvs = function
   | [] -> ""
   | vs -> 
-    " [" ^ 
+    "[" ^ 
     cat ", " 
     (
       List.map 
@@ -1821,7 +1835,7 @@ and print_bvs = function
 and print_inst dfns = function
   | [] -> ""
   | ts -> 
-    " [" ^ 
+    "[" ^ 
     cat ", " 
     (
       List.map (string_of_btypecode dfns) ts 
@@ -3148,12 +3162,27 @@ open Flx_ast
 val typecode_of_expr:
   expr_t -> typecode_t
 
+val typeof_list:
+  typecode_t list -> typecode_t
+
+val paramtype: 
+  (string * typecode_t) list -> typecode_t
+
 @h = tangler('src/flx_typing2.ml')
 @select(h)
 open Flx_ast
 open Flx_types
 open Flx_print
 open Flx_srcref
+
+let typeof_list = function 
+  | [x] -> x 
+  | x -> `TYP_tuple x
+
+let paramtype params = 
+  let typlist params = List.map snd params in
+  typeof_list (typlist params)
+
 
 let rec typecode_of_expr (e:expr_t) :typecode_t = 
   let te e = typecode_of_expr e in

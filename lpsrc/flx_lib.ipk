@@ -750,8 +750,8 @@ module List
   fun map[T,U] (f:T->U) (x:list[T]): list[U] = {
     return
       match x with
-      | Empty => Empty[U]
-      | Cons (?h, ?t) => Cons (f(h), map f t)
+      | Empty[T] => Empty[U]
+      | Cons[T] (?h, ?t) => Cons (f(h), map f t)
       endmatch
     ;
   }
@@ -761,8 +761,8 @@ module List
     {
       return 
         match x with
-        | Empty => y
-        | Cons (?h, ?t) => aux t (Cons (h, y))
+        | Empty[T] => y
+        | Cons[T] (?h, ?t) => aux t (Cons (h, y))
         endmatch
       ;
     }
@@ -771,8 +771,8 @@ module List
 
   proc iter[T] (f:T->void) (x:list[T]) {
     match x with
-    | Empty => {} 
-    | Cons (?h,?t) => { f h; iter f t; }
+    | Empty[T] => {} 
+    | Cons[T] (?h,?t) => { f h; iter f t; }
     endmatch
     ;
   }
@@ -781,8 +781,8 @@ module List
   {
     return
       match x with
-      | Empty => init
-      | Cons (?h,?t) => fold_left f (f init h) t
+      | Empty[T] => init
+      | Cons[T] (?h,?t) => fold_left f (f init h) t
       endmatch
     ;
   }
@@ -791,8 +791,8 @@ module List
   {
     return
       match x with
-      | Empty => init
-      | Cons (?h,?t) => fold_right f t (f h init)
+      | Empty[T] => init
+      | Cons[T] (?h,?t) => fold_right f t (f h init)
       endmatch
     ;
   }
@@ -801,8 +801,8 @@ module List
   {
     return
       match x with
-      | Empty => y
-      | Cons (?h,?t) => Cons (h, join t y)
+      | Empty[T] => y
+      | Cons[T] (?h,?t) => Cons (h, join t y)
       endmatch
     ;
   }
@@ -811,8 +811,8 @@ module List
   {
      return 
        match x with
-       | Empty => Empty[T]
-       | Cons (?h,?t) => fold_left join of (list[T]) h t
+       | Empty[list[T]] => Empty[T]
+       | Cons[list[T]] (?h,?t) => fold_left join of (list[T]) h t
        endmatch
      ;
    }

@@ -27,6 +27,7 @@ open Flx_unify
 open Flx_treg
 open Flx_generic
 open Flx_maps
+open Flx_exceptions
 
 module BidSet = PosSet
 
@@ -137,7 +138,16 @@ Replacement should work also in a case like:
 where we have T2-> int
 *)
 
-let param_subst syms vs b ps ts b' =
+let param_subst id syms sr vs b ps ts b' =
+  if length vs <> length ts
+  then syserr sr
+  (
+    "In body of " ^ id ^ 
+    ": length of vs ["^catmap "," fst vs^
+    "] <> length of ts [" ^ 
+    catmap "," (sbt syms.dfns) ts ^
+    "]"
+  );
   let bs = 
     match ps with
     | [x] -> [b']
@@ -151,7 +161,7 @@ let param_subst syms vs b ps ts b' =
       (fun i t -> `BEXPR_get_n (i,b'),t)
       (nlist n) tts
     | _ -> 
-      failwith 
+      syserr sr 
       (
         "[param_subst] expected tuple argument, got " ^
         sbe syms.dfns b'
@@ -247,15 +257,15 @@ let rec inline_applies syms bbdfns x =
   | `BEXPR_apply ((`BEXPR_closure (i,ts),_),b'),t ->
     begin 
       match Hashtbl.find bbdfns i 
-      with id,parent,sr,bbdcl -> 
+      with id,parent,sr2,bbdcl -> 
       match bbdcl with
       | `BBDCL_function (vs,ps,ret,exes,nm) ->
         begin match exes with
-        | [`BEXE_fun_return (_,b)] ->
+        | [`BEXE_fun_return (sr3,b)] ->
           begin 
             try 
               check_can_inline syms bbdfns nm;
-              let a = param_subst syms vs b ps ts b' in
+              let a = param_subst id syms sr3 vs b ps ts b' in
               a
             with Cannot_inline -> x
           end
@@ -303,20 +313,20 @@ let useless_call_elim syms bbdfns vs' exes index =
   | `BEXE_call (sr,(`BEXPR_name (i,ts),_),b')
     -> (* only keep calls to useful procedures *) 
       begin match Hashtbl.find bbdfns i with
-      | id,parent,sr,`BBDCL_procedure (vs,ps,inner_exes,nm) ->
+      | id,parent,sr2,`BBDCL_procedure (vs,ps,inner_exes,nm) ->
         if not (isuseless bbdfns inner_exes) 
         then begin 
           match inner_exes with
           (* inline simple procedures *)
-          | [`BEXE_call (sr,a,b)]
-          | [`BEXE_call (sr,a,b); `BEXE_proc_return _]
-          | [`BEXE_jump (sr,a,b)]
+          | [`BEXE_call (sr3,a,b)]
+          | [`BEXE_call (sr3,a,b); `BEXE_proc_return _]
+          | [`BEXE_jump (sr3,a,b)]
             ->
               begin 
                 try
                   check_can_inline syms bbdfns nm;
-                  let b = param_subst syms vs b ps ts b' in
-                  let a = param_subst syms vs a ps ts b' in
+                  let b = param_subst id syms sr3 vs b ps ts b' in
+                  let a = param_subst id syms sr3 vs a ps ts b' in
                   let a = ia a in
                   let b = ia b in
                   (*
@@ -349,20 +359,20 @@ let useless_call_elim syms bbdfns vs' exes index =
   | `BEXE_jump (sr,(`BEXPR_name (i,ts),_),b')
     -> (* only keep calls to useful procedures *) 
       begin match Hashtbl.find bbdfns i with
-      | id,parent,sr,`BBDCL_procedure (vs,ps,inner_exes,nm) ->
+      | id,parent,sr2,`BBDCL_procedure (vs,ps,inner_exes,nm) ->
         if not (isuseless bbdfns exes) 
         then begin
           match inner_exes with
           (* inline simple procedures *)
-          | [`BEXE_call (sr,a,b)]
-          | [`BEXE_call (sr,a,b); `BEXE_proc_return _]
-          | [`BEXE_jump (sr,a,b)]
+          | [`BEXE_call (sr3,a,b)]
+          | [`BEXE_call (sr3,a,b); `BEXE_proc_return _]
+          | [`BEXE_jump (sr3,a,b)]
             ->
               begin 
                 try
                   check_can_inline syms bbdfns nm;
-                  let b = param_subst syms vs b ps ts b' in
-                  let a = param_subst syms vs a ps ts b' in
+                  let b = param_subst id syms sr3 vs b ps ts b' in
+                  let a = param_subst id syms sr3 vs a ps ts b' in
                   let a = ia a in
                   let b = ia b in
                   (*

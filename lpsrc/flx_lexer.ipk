@@ -1,10 +1,208 @@
 @head(1,'Lexer')
+@h = tangler('src/flx_prelex.mli')
+@select(h)
+val src_of_token : Flx_parse.token -> Flx_ast.srcref
+val string_of_token : Flx_parse.token -> string
+@h = tangler('src/flx_prelex.ml')
+@select(h)
+open Flx_parse
+
+let string_of_string s = "\"" ^  Flx_string.c_quote_of_string s ^ "\""
+
+let string_of_token (tok :Flx_parse.token): string =
+  match tok with
+  | NAME (sr,s) -> s
+  | INTEGER (sr,t,i) -> Big_int.string_of_big_int i
+  | FLOAT (sr,t,v) -> v
+  | STRING (sr,s) -> Flx_string.c_quote_of_string s 
+  | CSTRING (sr,s) -> Flx_string.c_quote_of_string s 
+  | WSTRING (sr,s) -> Flx_string.c_quote_of_string s 
+  | USTRING (sr,s) -> Flx_string.c_quote_of_string s 
+
+  (* one character tokens *)
+  | DOLLAR _ -> "$" 
+  | QUEST _ -> "?" 
+  | EXCLAMATION _ -> "!" 
+  | LPAR _ -> "(" 
+  | RPAR _ -> ")" 
+  | LSQB _ -> "["
+  | RSQB _ -> "]"
+  | LBRACE _ -> "{"
+  | RBRACE _ -> "}"
+  | COLON _ -> ":"
+  | COMMA _ -> ","
+  | SEMI _ -> ";"
+  | PLUS _ -> "+"
+  | MINUS _ -> "-"
+  | STAR _ -> "*"
+  | SLASH _ -> "/"
+  | VBAR _ -> "|"
+  | AMPER _ -> "&"
+  | LESS _ -> "<"
+  | GREATER _ -> ">"
+  | EQUAL _ -> "="
+  | DOT _ -> "."
+  | PERCENT _ -> "%"
+
+  | BACKQUOTE _ -> "`"
+  | TILDE _ -> "~"
+  | CIRCUMFLEX _ -> "^"
+
+  (* two character tokens *)
+  | ANDLESS _ -> "&<"
+  | ANDGREATER _ -> "&>"
+  | EQEQUAL _ -> "=="
+  | NOTEQUAL _ -> "!="
+  | LESSEQUAL _ -> "<="
+  | GREATEREQUAL _ -> ">="
+  | LEFTSHIFT _ -> "<<"
+  | RIGHTSHIFT _ -> ">>"
+  | DOUBLESTAR _ -> "**"
+  | STARSTAR _ -> "<POW>**"
+  | LESSCOLON _ -> "<:"
+  | COLONGREATER _ -> ":>"
+  | DOTDOT _ -> ".."
+  | COLONCOLON _ -> "::"
+
+  | PLUSPLUS _ -> "++"
+  | MINUSMINUS _ -> "--"
+  | PLUSEQUAL _ -> "+="
+  | MINUSEQUAL _ -> "-="
+  | STAREQUAL _ -> "*="
+  | SLASHEQUAL _ -> "/="
+  | PERCENTEQUAL _ -> "%="
+  | CARETEQUAL _ -> "^="
+  | VBAREQUAL _ -> "|="
+  | AMPEREQUAL _ -> "&="
+  | TILDEEQUAL _ -> "~="
+  | COLONEQUAL _ -> ":="
+  | RIGHTARROW _ -> "->"
+  | EQRIGHTARROW _ -> "=>"
+  | LEFTARROW _ -> "<-"
+  | LSQANGLE _ -> "[<"
+  | RSQANGLE _ -> ">]"
+
+  | LEFTSHIFTEQUAL _ -> "<<="
+  | RIGHTSHIFTEQUAL _ -> ">>="
+  | LEFTRIGHTARROW _ -> "<->"
+  | ANDEQEQUAL _ -> "&=="
+  | ANDNOTEQUAL _ -> "&!="
+  | ANDLESSEQUAL _ -> "&<="
+  | ANDGREATEREQUAL _ -> "&>="
+  | DOTDOTDOT _ -> "..."
+
+  (* keywords *)
+@for n,t in flx_keywords: tangle('  |  '+t+' _ -> "'+n+'"')
+
+  (* special things *)
+  | SLOSH _ -> "\\" (* "\"" *) 
+
+  | COMMENT s -> s (* C style comment, includes the /* */ pair *)
+  | COMMENT_NEWLINE s -> "// " ^ s ^ "<NEWLINE>"
+  | WHITE i -> String.make i ' '
+  | NEWLINE -> "<NEWLINE>"
+  | ENDMARKER -> "<<EOF>>"
+  | ERRORTOKEN (sref,s) -> "<<ERROR '"^ s ^"'>>"
+
+let src_of_token t = match t with
+  | NEWLINE 
+  | COMMENT _
+  | COMMENT_NEWLINE _
+  | WHITE _ 
+  | ENDMARKER
+    -> ("",0,0,0)
+
+  | NAME    (s,_)
+  | INTEGER (s,_,_)
+  | FLOAT   (s,_,_)
+  | STRING  (s,_)
+  | CSTRING  (s,_)
+  | WSTRING  (s,_)
+  | USTRING  (s,_)
+
+  | ERRORTOKEN (s,_) 
+
+@for n,t in flx_keywords: tangle('  | '+t+' s')
+
+  | EQUAL s 
+  | PLUS s 
+  | MINUS s 
+  | STAR s 
+  | SLASH s 
+  | PERCENT s 
+  | STARSTAR s 
+  | AMPER s 
+  | VBAR s 
+  | EXCLAMATION s 
+  | DOLLAR s 
+  | QUEST s 
+  | LPAR s 
+  | RPAR s 
+  | LSQB s 
+  | RSQB s 
+  | LBRACE s 
+  | RBRACE s 
+  | LSQANGLE s 
+  | RSQANGLE s 
+  | COLON s 
+  | COMMA s 
+  | SEMI s 
+  | DOT s 
+  | BACKQUOTE s 
+  | LESS s 
+  | GREATER s 
+  | EQEQUAL s 
+  | NOTEQUAL s 
+  | LESSEQUAL s 
+  | GREATEREQUAL s 
+  | ANDLESS s 
+  | ANDGREATER s 
+  | ANDEQEQUAL s 
+  | ANDNOTEQUAL s 
+  | ANDLESSEQUAL s 
+  | ANDGREATEREQUAL s 
+  | TILDE s 
+  | CIRCUMFLEX s 
+  | LEFTSHIFT s 
+  | RIGHTSHIFT s 
+  | LEFTRIGHTARROW s 
+  | DOUBLESTAR s 
+  | PLUSPLUS s 
+  | MINUSMINUS s 
+  | PLUSEQUAL s 
+  | MINUSEQUAL s 
+  | STAREQUAL s 
+  | SLASHEQUAL s 
+  | PERCENTEQUAL s 
+  | CARETEQUAL s 
+  | VBAREQUAL s 
+  | AMPEREQUAL s 
+  | TILDEEQUAL s 
+  | COLONEQUAL s 
+  | LEFTSHIFTEQUAL s 
+  | RIGHTSHIFTEQUAL s 
+  | LEFTARROW s 
+  | RIGHTARROW s 
+  | EQRIGHTARROW s 
+  | COLONGREATER s 
+  | LESSCOLON s 
+  | COLONCOLON s 
+  | DOTDOT s 
+  | SLOSH s 
+  | DOTDOTDOT s 
+    -> s
+
+
 @h = tangler('src/flx_lex.mll','data')
 @select(h)
 {
+open Flx_util
 open Flx_parse
 open Flx_string
 open Big_int
+open Flx_exceptions
+
+exception Duplicate_macro of string
 
 class comment_control = 
   object (self)
@@ -79,10 +277,14 @@ class file_control
     method store_macro name params body = 
       Hashtbl.add macros name (params,body)
       
+    method undef_macro name = Hashtbl.remove macros name
+
     method get_macro name = 
       try Some (Hashtbl.find macros name)
       with Not_found -> None
     
+    method get_macros = macros
+
     method get_incdirs = incdirs
     method get_condition = List.hd condition
     method push_condition c =  condition <- (c :: condition)
@@ -151,7 +353,18 @@ class lexer_state filename basedir incdirs =
     method condition_stack_length = file_ctrl#condition_stack_length
     
     method store_macro name parms body = file_ctrl#store_macro name parms body
+    method undef_macro name = file_ctrl#undef_macro name
     method get_macro name = file_ctrl#get_macro name
+    method get_macros = file_ctrl#get_macros
+    method add_macros (s:lexer_state) = 
+      let h = self#get_macros in
+      Hashtbl.iter 
+      (fun k v -> 
+        if Hashtbl.mem h k 
+        then raise (Duplicate_macro k) 
+        else Hashtbl.add h k v 
+      )
+      s#get_macros
 end
 
 
@@ -211,7 +424,12 @@ let pre_tokens_of_lexbuf lexer buf state =
   in 
     List.rev (get [])
 
-let line_directive state s lexbuf =
+let pre_tokens_of_string lexer s filename =
+  let state = new Flx_lex.lexer_state filename "" [] in
+  pre_tokens_of_lexbuf lexer (Lexing.from_string s) state
+
+
+let line_directive state sr s lexbuf =
   let i = ref 0 in
   let a = 
     let a = ref 0 in
@@ -222,31 +440,21 @@ let line_directive state s lexbuf =
     !a
   in
   if !i = 0 
-  then begin
-    print_endline (state#string_of_srcref lexbuf);
-    print_endline "PREPROCESSING ERROR: digits required after #line, IGNORING DIRECTIVE";
-  end else begin
+  then clierr sr "digits required after #line"
+  else begin
     while is_white s.[!i] do incr i done;
     if s.[!i] <> '\n'
     then begin
       if s.[!i]<>'"'
-      then begin
-        print_endline (state#string_of_srcref lexbuf);
-        print_endline (
-          "PREPROCESSING ERROR: double quote required after #line " ^ 
-          string_of_int a ^ ": IGNORING DIRECTIVE"
-        )
-      end else begin
+      then clierr sr "double quote required after line number in #line"
+      else begin
         incr i;
         let j = !i in
         while s.[!i]<>'"' && s.[!i]<>'\n' do incr i done;
 
         if s.[!i]='\n'
-        then begin
-          print_endline (state#string_of_srcref lexbuf);
-          print_endline
-            "PREPROCESSING ERROR: double quote required after filename in #line directive"
-        end else begin
+        then clierr sr "double quote required after filename in #line directive"
+        else begin
           let filename = String.sub s j (!i-j) in
           state#set_filename filename;
           state#set_line (a-1)
@@ -259,11 +467,111 @@ let line_directive state s lexbuf =
   end;
   [NEWLINE]
 
-let eval_bool lexer s = true
 
-let rec parse_args toks = match toks with
+(* output expansion of input in reverse order with exclusions *)
+let rec expand' state exclude toks =
+  (* output expansion of input 
+    in reverse order 
+    with bindings and 
+    with exclusions,
+    this function is tail rec and used as a loop
+  *)
+  let rec aux exclude inp out bindings = 
+    match inp with
+    | [] -> out
+    | h :: ts ->
+      (* do not expand a symbol recursively *)
+      if List.mem h exclude
+      then aux exclude ts (h :: out) bindings
+      else
+        (* if it is a parameter name, replace by argument *)
+        let b = 
+          try Some (List.assoc h bindings)
+          with Not_found -> None
+        in match b with
+        | Some x ->
+          (* note binding body is in reverse order *)
+          aux exclude ts (x @ out) bindings
+        
+        | None ->
+        match h with
+        | Flx_parse.NAME (sr,s) ->
+          begin match state#get_macro s with
+          (* not a macro : output it *)
+          | None -> aux exclude ts (h :: out) bindings
+
+          (* argumentless macro : output expansion of body,
+            current bindings are ignored
+          *)
+          | Some ([], body) -> 
+            let body = expand' state (h::exclude) body
+            in aux exclude ts (body @ out) bindings
+            
+          | Some (params,body) ->
+            failwith "Can't handle macros with arguments yet"
+          end
+        | _ -> aux exclude ts (h :: out) bindings
+
+  in aux [] toks [] []
+
+let eval toks =
+  let e = Flx_tok.parse_tokens Flx_parse.expression toks in
+  (*
+  print_endline ("Evaluated expression as " ^ Flx_print.string_of_expr e);
+  *)
+  let e = Flx_macro.expand_expression "PREPROC_EVAL" e in
+  (*
+  print_endline ("Folded expression is    " ^ Flx_print.string_of_expr e);
+  *)
+  e
+  
+let expand state toks = List.rev (expand' state [] toks)
+
+let eval_bool state lexer sr s =
+  (*
+  print_endline("Evaluating bool from string '" ^ s ^"'");
+  *)
+  let toks = pre_tokens_of_string lexer s "DUMMY FILE NAME" in
+  (*
+  print_endline "Tokenised";
+  *)
+  let toks = List.rev (ENDMARKER :: List.rev toks) in
+  (*
+  print_endline "PreTokens = "; Flx_tok.print_pre_tokens toks;
+  *)
+  let toks = Flx_lex1.translate toks in
+  (*
+  print_endline "Pretoken stream translated to token stream";
+  print_endline "Tokens = "; Flx_tok.print_tokens toks;
+  *)
+  let toks = expand state toks in
+  (*
+  print_endline "Token stream expanded";
+  print_endline "Tokens = "; Flx_tok.print_tokens toks;
+  *)
+  let e = eval toks in
+  (*
+  print_endline "Tokens parsed as expression and folded to constant";
+  print_endline ("Value is " ^ Flx_print.string_of_expr e);
+  *)
+  match e with
+  | `AST_typed_case (sr,v,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) ->
+    (* NOTE: the type case term is 1 origin, even though the
+      generated code is 0 origain
+    *)
+    v = 2
+
+  | x -> 
+    clierr sr 
+    (
+      "Preprocessor constant expression of boolean type required\n" ^
+      "Actually got:\n" ^
+      Flx_print.string_of_expr x
+    )
+
+let rec parse_params sr toks = match toks with
   | NAME (_,id) :: COMMA _ :: ts ->
-    let args, body = parse_args toks in
+    let args, body = parse_params sr toks in
     id :: args, body
 
   | NAME (_,id) :: RPAR _ :: ts ->
@@ -272,40 +580,66 @@ let rec parse_args toks = match toks with
   | RPAR _ :: ts -> [], ts
 
   | h :: _ -> 
-    let sr = Flx_srcref.slift (Flx_pretok.src_of_token h) in
-    Flx_exceptions.clierr sr "Malformed #define directive"
-  
-let parse_macro_function state name toks =
-  let args, body = parse_args toks in
+    let sr = Flx_srcref.slift (Flx_prelex.src_of_token h) in
+    clierr sr "Malformed #define directive"
+  | [] ->
+    clierr sr "Malformed #define directive"
+   
+let parse_macro_function state sr name toks =
+  let args, body = parse_params sr toks in
   state#store_macro name args body
 
-let parse_macro_body state name toks =
+let parse_macro_body state sr name toks =
   match toks with
-  | LPAR _ :: ts -> parse_macro_function state name ts
+  | LPAR _ :: ts -> parse_macro_function state sr name ts
   | _ -> state#store_macro name [] toks
   
-let define_directive state s lexer =
+let undef_directive state sr s lexer =
   let src = Lexing.from_string s in
   let toks = pre_tokens_of_lexbuf lexer src state in
+  let toks = Flx_lex1.translate toks in
+  List.iter
+  begin function
+  | NAME (sr,name) -> state#undef_macro name
+  | h ->
+    let sr = Flx_srcref.slift (Flx_prelex.src_of_token h) in
+    clierr sr "#define requires identifier"
+  end
+  toks
+  ;
+  []
+ 
+let define_directive state sr s lexer =
+  let src = Lexing.from_string s in
+  let toks = pre_tokens_of_lexbuf lexer src state in
+  let toks = Flx_lex1.translate toks in
   match toks with
   | NAME (sr,name) :: ts -> 
-    parse_macro_body state name ts; 
-    []
-  | h :: _ ->
-    let sr = Flx_srcref.slift (Flx_pretok.src_of_token h) in
-    Flx_exceptions.clierr sr "#define requires identifier"
+    let sr = Flx_srcref.slift sr in
+    begin match state#get_macro name with
+    | None ->
+      parse_macro_body state sr name ts; 
+      []
+    | Some _ -> clierr sr ("Duplicate Macro definition for " ^ name)
+    end
 
-let if_directive state s lexer =
+  | h :: _ ->
+    let sr = Flx_srcref.slift (Flx_prelex.src_of_token h) in
+    clierr sr "#define requires identifier"
+  | [] ->
+    clierr sr "#define requires identifier"
+  
+let if_directive state sr s lexer =
   state#push_condition 
   (
-    match eval_bool lexer s with
+    match eval_bool state lexer sr s with
     | true -> `Processing
     | false -> `Skip_to_else
   )
   ;
   []
 
-let ifdef_directive state s =
+let ifdef_directive state sr s =
   begin match state#get_macro s with
   | None -> state#push_condition `Skip_to_else
   | Some _ -> state#push_condition `Processing
@@ -313,7 +647,7 @@ let ifdef_directive state s =
   ;
   []
 
-let ifndef_directive state s =
+let ifndef_directive state sr s =
   begin match state#get_macro s with
   | None -> state#push_condition `Processing
   | Some _ -> state#push_condition `Skip_to_else
@@ -321,7 +655,7 @@ let ifndef_directive state s =
   ; 
   []
 
-let else_directive state s =
+let else_directive state sr s =
   begin match state#get_condition with
   | `Processing -> state#set_condition `Skip_to_endif
   | `Skip_to_endif -> ()
@@ -330,14 +664,14 @@ let else_directive state s =
   ;
   []
 
-let elif_directive state s lexer =
+let elif_directive state sr s lexer =
   begin match state#get_condition with
   | `Processing -> state#set_condition `Skip_to_endif
   | `Skip_to_endif -> ()
   | `Skip_to_else -> 
     state#set_condition 
     (
-      match eval_bool lexer s with
+      match eval_bool state lexer sr s with
       | true -> `Processing
       | false -> `Skip_to_else
     )
@@ -346,37 +680,26 @@ let elif_directive state s lexer =
   []
 
 
-let endif_directive state lexbuf =
+let endif_directive state sr lexbuf =
   if state#condition_stack_length < 2
   then 
-    let sr = state#get_srcref lexbuf in
-    let sr = Flx_srcref.slift sr in
-    Flx_exceptions.clierr sr "Unmatched endif"
+    clierr sr "Unmatched endif"
   else
     state#pop_condition;
     []
 
-let include_directive state s pre_flx_lex lexbuf =
+let include_directive is_import state sr s pre_flx_lex lexbuf =
   if s.[0]<>'"' && s.[0]<>'<'
-  then begin
-    print_endline (state#string_of_srcref lexbuf);
-    print_endline (
-      "PREPROCESSING ERROR: '\"' or '<' required after #include: IGNORING DIRECTIVE"
-    );
-    [NEWLINE]
-  end else begin
+  then clierr sr "'\"' or '<' required after #include"
+  else begin
     let rquote = if s.[0]='"' then '"' else '>' in
     let i = ref 1 in
     let j = !i in
     while s.[!i]<>rquote && s.[!i]<>'\n' do incr i done;
 
     if s.[!i]='\n'
-    then begin
-      print_endline (state#string_of_srcref lexbuf);
-      print_endline
-        "PREPROCESSING ERROR: double quote required after filename in #include directive";
-      [NEWLINE]
-    end else begin
+    then clierr sr "double quote required after filename in #include directive"
+    else begin
       let filename = String.sub s j (!i-j) in
       let filename=
         if rquote = '"'
@@ -392,12 +715,18 @@ let include_directive state s pre_flx_lex lexbuf =
       let pre_tokens_of_filename filename =
         let incdirs = state#get_incdirs in
         let basedir = Filename.dirname filename in
-        let state = new lexer_state filename basedir incdirs in
+        let state' = new lexer_state filename basedir incdirs in
         let infile = open_in filename in
         let src = Lexing.from_channel infile in
-        let toks = pre_tokens_of_lexbuf pre_flx_lex src state in
+        let toks = pre_tokens_of_lexbuf pre_flx_lex src state' in
           close_in infile; 
+          if is_import then begin
+            try state#add_macros state'
+            with Duplicate_macro k -> clierr sr 
+            ("Duplicate Macro " ^ k ^ " imported")
+          end;
           toks
+
        in
          pre_tokens_of_filename filename
     end
@@ -888,86 +1217,98 @@ and parse_C_comment state = parse
   }
 
 and parse_preprocessor state = parse
-| not_newline * newline {
-      let ident,s =
-        let s = lexeme lexbuf in
-        let i = ref 0 in
-        while is_white s.[!i] do incr i done;
-        let n = ref 1 in 
-        while 
-          not (is_white s.[!i + !n]) && 
-          not (s.[!i + !n]='\n') 
-        do incr n done;
+| not_newline * newline 
+  {
+    let sr = state#get_srcref lexbuf in
+    let sr = Flx_srcref.slift sr in
+    let ident,s =
+      let s = lexeme lexbuf in
+      let i = ref 0 in
+      while is_white s.[!i] do incr i done;
+      let n = ref 1 in 
+      while 
+        not (is_white s.[!i + !n]) && 
+        not (s.[!i + !n]='\n') 
+      do incr n done;
 
-        let ident = String.sub s !i !n in
+      let ident = String.sub s !i !n in
 
-        (* scan for next non-white *)
-        let j = ref (!i + !n) in
-        while is_white s.[!j] do incr j done;
+      (* scan for next non-white *)
+      let j = ref (!i + !n) in
+      while is_white s.[!j] do incr j done;
 
-        (* scan back for last non-white *)
-        n := String.length s - 1;
-        while !n > !j && is_white(s.[!n-1]) do decr n done;
-        let rest = String.sub s !j (!n - !j) in
-        ident,rest
-      in
-      let result = match ident with
+      (* scan back for last non-white *)
+      n := String.length s - 1;
+      while !n > !j && is_white(s.[!n-1]) do decr n done;
+      let rest = String.sub s !j (!n - !j) in
+      ident,rest
+    in
+    let result = match ident with
 
-      (* print a warning *)
-      | "warn" -> 
-        begin match state#get_condition with
-        | `Processing ->
-          print_string (lexeme lexbuf); 
-          [NEWLINE]
-        | _ -> []
-        end
-        
-      | "line" ->
-        line_directive state s lexbuf
-
-      | "include" -> 
-        begin match state#get_condition with
-        | `Processing ->
-          include_directive state s pre_flx_lex lexbuf
-        | _ -> []
-        end
-
-      | "define" -> 
-        begin match state#get_condition with
-        | `Processing ->
-          define_directive state s pre_flx_lex
-        | _ -> []
-        end
-
-      | "if" -> 
-        if_directive state s pre_flx_lex 
-
-      | "ifdef" -> 
-        ifdef_directive state s
-
-      | "ifndef" -> 
-        ifndef_directive state s
-
-      | "else" -> 
-        else_directive state s 
-
-      | "elif" -> 
-        elif_directive state s pre_flx_lex
-
-      | "endif" -> 
-        endif_directive state lexbuf
-
-      | _ -> 
-        print_endline (state#string_of_srcref lexbuf);
-        print_endline 
-        (
-          "LEXICAL ERROR: IGNORING UNKNOWN PREPROCESSOR DIRECTIVE \"" ^
-          ident ^ "\""
-        );
+    (* print a warning *)
+    | "warn" -> 
+      begin match state#get_condition with
+      | `Processing ->
+        print_string (lexeme lexbuf); 
         [NEWLINE]
-      in 
-        state#newline lexbuf;
-        result
+      | _ -> []
+      end
+      
+    | "line" ->
+      line_directive state sr s lexbuf
+
+    | "include" 
+    | "import" -> 
+      let is_import = ident = "import" in
+      begin match state#get_condition with
+      | `Processing ->
+        include_directive is_import state sr s pre_flx_lex lexbuf
+      | _ -> []
+      end
+
+    | "define" -> 
+      begin match state#get_condition with
+      | `Processing ->
+        define_directive state sr s pre_flx_lex
+      | _ -> []
+      end
+
+    | "undef" -> 
+      begin match state#get_condition with
+      | `Processing ->
+        undef_directive state sr s pre_flx_lex
+      | _ -> []
+      end
+
+    | "if" -> 
+      if_directive state sr s pre_flx_lex 
+
+    | "ifdef" -> 
+      ifdef_directive state sr s
+
+    | "ifndef" -> 
+      ifndef_directive state sr s
+
+    | "else" -> 
+      else_directive state sr s 
+
+    | "elif" -> 
+      elif_directive state sr s pre_flx_lex
+
+    | "endif" -> 
+      endif_directive state sr lexbuf
+
+    | _ -> 
+      print_endline (state#string_of_srcref lexbuf);
+      print_endline 
+      (
+        "LEXICAL ERROR: IGNORING UNKNOWN PREPROCESSOR DIRECTIVE \"" ^
+        ident ^ "\""
+      );
+      [NEWLINE]
+    in 
+      state#newline lexbuf;
+      result
   }
 
 
@@ -1294,7 +1635,9 @@ class file_control :
     method condition_stack_length : int
 
     method store_macro : string -> string list -> Flx_parse.token list -> unit
+    method undef_macro : string -> unit
     method get_macro : string -> (string list * Flx_parse.token list) option
+    method get_macros : (string,string list * Flx_parse.token list) Hashtbl.t 
   end
 
 class lexer_state :
@@ -1330,7 +1673,10 @@ class lexer_state :
     method condition_stack_length : int
 
     method store_macro : string -> string list -> Flx_parse.token list -> unit
+    method undef_macro : string -> unit
     method get_macro : string -> (string list * Flx_parse.token list) option
+    method get_macros : (string,string list * Flx_parse.token list) Hashtbl.t 
+    method add_macros : lexer_state -> unit
 end
 
 val pre_flx_lex : 

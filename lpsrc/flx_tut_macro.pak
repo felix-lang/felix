@@ -81,6 +81,19 @@ of macro functions.
 Felix provides the usual conditional directives
 #ifdef, #ifndef, #if, #elif, #else, #endif.
 [Add #switch/#case/#endswitch]
+@p()
+The #if and #elif directives require an argument.
+@p()
+The balance of the line is first tokenised by
+the standard Felix tokeniser and thus may
+contain Felix literals and Felix identifiers.
+@p()
+The line is then expanded by macro substitution.
+The result is then parsed as an expression and
+constant folded and must yield a boolean constant.
+Note that every name encountered must name a 
+preprocessor macro.
+
 @select(tangler(tdir+'mac103.flx'))
 include "std";
 print "Defining FIRST"; endl;
@@ -88,9 +101,41 @@ print "Defining FIRST"; endl;
 #ifdef FIRST
 print "detected FIRST"; endl;
 #else
-print "SECOND"; endl;
+print "BAD"; endl;
 #endif
 
+@select(tangler(tdir+'mac104.flx'))
+include "std";
+#define FIRST 1
+#define SECOND 2
+#if FIRST == 1 and SECOND == 2
+print "OK"; endl;
+#else
+print "BAD"; endl;
+#endif
+
+@select(tangler(tdir+'mac105.flx'))
+include "std";
+#define FIRST 1
+#define SECOND 2
+#if if FIRST == 1 then SECOND == 2 else 1 == 0 endif
+print "OK"; endl;
+#else
+print "BAD"; endl;
+#endif
+
+@select(tangler(tdir+'mac105a.flx'))
+#define FIRST 1
+
+@select(tangler(tdir+'mac105b.flx'))
+include "std";
+#import "mac105a.flx"
+#ifdef FIRST
+print "OK";
+#else
+print "BAD";
+#endif
+endl;
 
 @head(1,'The Syntax Macro Processor')
 @head(2,'Expression Macro Facility')

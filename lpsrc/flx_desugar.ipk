@@ -127,12 +127,29 @@ let include_file syms inspec =
     in
       sts
 
+let  fix_params seq (ps:parameter_t list):string list * parameter_t list = 
+  let rec aux (ps:parameter_t list) :string list * parameter_t list =
+    match ps with
+    | (x,`TYP_none) :: t ->
+      let v = "_v"^si (seq()) in
+      let vt: typecode_t = `AST_name(generated,v,[]) in
+      let vs,ps = aux t in
+      (v::vs),((x,vt)::ps)
+      
+    | h :: t -> 
+      let vs,ps = aux t in 
+      vs, (h::ps)
+    | [] -> [],[]
+  in aux ps
+
 let arglist x = 
   match x with
   | `AST_tuple (_,ts) -> ts
   | _ -> [x]
 
-let mkcurry sr name vs args return_type kind body =
+let mkcurry seq sr name vs args return_type kind body =
+  let vss',args= split (map (fix_params seq) args) in
+  let vs = concat (vs :: vss') in
   let mkfuntyp d c = `TYP_function (d,c)
   and typeoflist lst = match lst with
     | [x] -> x
@@ -205,11 +222,11 @@ let assign sr op l r =
 
 
 
-let find_methods sr sts =
+let find_methods seq sr sts =
   let methods = ref [] in
   let rec check = function 
     | `AST_curry (sr,mname,vs,pss,ret,kind,sts) ->
-      check (mkcurry sr mname vs pss ret kind sts)
+      check (mkcurry seq sr mname vs pss ret kind sts)
 
     (*
     | `AST_object (sr,mname, vs, ps, sts) ->
@@ -354,11 +371,12 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     concat lss,`AST_tuple (sr,xs)
 
   | `AST_lambda (sr,(params,res,sts)) -> 
+    let vs, params = fix_params seq params in
     let n = seq() in
     let name = "_lam_" ^ string_of_int n in
     let argtyp = type_of_argtypes (map snd params) in
     [match res with
-    | _ -> Dcl (sr,name,`Private,[],`DCL_function (params, res, rsts sts))
+    | _ -> Dcl (sr,name,`Private,vs,`DCL_function (params, res, rsts sts))
     ],
     `AST_suffix 
     (
@@ -699,7 +717,7 @@ and rst syms name access st : asm_t list =
   | `AST_type (sr,name,vs) -> [Dcl (sr,name,access,vs,`DCL_type)]
 
   | `AST_curry (sr,name',vs,pps,ret,kind,sts) ->
-    rst syms name access (mkcurry sr name' vs pps ret kind sts)
+    rst syms name access (mkcurry seq sr name' vs pps ret kind sts)
 
   (* The object *)
   (* THIS IS HACKY AND DOESN'T WORK PROPERLY --
@@ -712,7 +730,9 @@ and rst syms name access st : asm_t list =
     be bound correctly without lookup
   *)
   | `AST_object (sr,name,vs,params,sts) -> 
-    let methods = find_methods sr sts in
+    let vs',params = fix_params seq params in
+    let vs = vs @ vs' in
+    let methods = find_methods seq sr sts in
     let mtuple =  
       `AST_tuple 
       (
@@ -738,6 +758,8 @@ and rst syms name access st : asm_t list =
   
   (* functions *)
   | `AST_function (sr,name, vs, params, res, sts) -> 
+    let vs',params = fix_params seq params in
+    let vs = vs @ vs' in
     [Dcl (sr,name,access,vs,`DCL_function (params, res, rsts name sts))]
     
   | `AST_function_decl (sr,name,vs,typ) ->
@@ -1056,6 +1078,10 @@ and build_interface m =
  concat (map build_if m)
  
 let desugar_program syms name sts =
+  let sts = match sts with
+    | [] -> [`AST_nop (generated, "empty module")]
+    | _ -> sts
+  in
   let sr = 
     rsrange 
       (src_of_stmt (hd sts)) 
