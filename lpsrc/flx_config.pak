@@ -1,4 +1,11 @@
 @head(1,'Configure')
+@h = tangler("tmp/check_cygwin.cxx",'c++')
+@select(h)
+int main(int,char*[]) { 
+   int x = __CYGWIN__;
+   return 0;
+}
+
 @h = tangler("tmp/dummy_lib.cxx",'c++')
 @select(h)
 extern "C" int fred(int,char*[]) { return 0; }
@@ -21,7 +28,8 @@ int main(int,char*[]) {
 #include <cmath>
 
 int main(int,char*[]) { 
-  std::isnan(0.0);
+  float f = 0.0;
+  std::isnan(f);
   return 0;
 }
 
@@ -30,7 +38,8 @@ int main(int,char*[]) {
 #include <ieeefp.h>
 
 int main(int,char*[]) { 
-  isnanf(0.0);
+  float f = 0.0;
+  isnanf(f);
   return 0;
 }
 
@@ -248,10 +257,30 @@ except:
   # just call the g++ compiler CC if we don't have g++
   CC = "CC "
 
-CCOBJ_DLLIB = CC + "-ansi -g -fPIC -c "
-CCOBJ_DLMAIN = CC + "-ansi -g -rdynamic -c "
-CCLINK_DLLIB = CC + "-ansi -g -shared "
-CCLINK_DLMAIN = CC + "-ansi -g -rdynamic -ldl "
+# find if we have CYGWIN
+try:
+  xqt("g++ -w -c tmp/check_cygwin.cxx -o tmp/dummy.o")
+  CYGWIN=1
+except:
+  CYGWIN=0
+
+# set C++ compilation commands
+# for CYGWIN, this isn't enough, it needs to generate
+# an additional output stub link library .. this is handled
+# directly in the script/maker at the moment
+#
+# down the track, we should replace these variables
+# with a Python function def, since that's more flexible
+if CYGWIN:
+  CCOBJ_DLLIB = CC + "-ansi -g -c "
+  CCOBJ_DLMAIN = CC + "-ansi -g -c "
+  CCLINK_DLLIB = CC + "-ansi -g -shared -Wl,--export-all-symbols -Wl,--enable-auto-import "
+  CCLINK_DLMAIN = CC + "-ansi -g "
+else:
+  CCOBJ_DLLIB = CC + "-ansi -g -fPIC -c "
+  CCOBJ_DLMAIN = CC + "-ansi -g -rdynamic -c "
+  CCLINK_DLLIB = CC + "-ansi -g -shared "
+  CCLINK_DLMAIN = CC + "-ansi -g -rdynamic -ldl "
 
 CCOBJ_STATIC_LIB = CC + "-ansi -g -c "
 CCOBJ_STATIC_MAIN = CC + "-ansi -g -c "
@@ -428,6 +457,7 @@ try:
   p(f,"SUPPORT_DYNAMIC_LOADING")
   pr(f,"SUPPORT_STATIC_LINKAGE = 1")
   p(f,"DEFAULT_LINK_MODEL")
+  p(f,"CYGWIN")
   pr(f,'PREFIX = "/usr/local"')
   p(f,"ISCR")
   f.close()

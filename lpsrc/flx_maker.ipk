@@ -251,7 +251,10 @@ if LINK_MODEL == "static" and not SUPPORT_STATIC_LINKAGE:
 if LINK_MODEL == "dynamic":
   FLX_CPP_DYNLINK = CCLINK_DLLIB
   FLX_CPP_LINK = CCLINK_DLMAIN
-  SHLX = ".so"
+  if CYGWIN:
+    SHLX = ".dll"
+  else:
+    SHLX = ".so"
 else:
   FLX_CPP_DYNLINK = CCOBJ_STATIC_LIB + "-DFLX_STATIC_LINK "
   FLX_CPP_LINK = CCLINK_STATIC + "-DFLX_STATIC_LINK "
@@ -592,20 +595,33 @@ try:
         print 'Compiling driver object',i,'-->',j
         xqt(FLX_CPP_DYNLINK + " -I. " + i + ".cpp -o " +j+"_static.o")
     else:
-      for testfile,outbin in DRIVERS:
-        print 'Compiling driver program ',testfile,'-->',outbin
-        try:
-          xqt(FLX_CPP_LINK + " -I. " +
-            "rtl/flx_gc.cpp " +
-            "rtl/flx_collector.cpp " +
-            "rtl/flx_rtl.cpp " +
-            "rtl/flx_dynlink.cpp " +
-            "rtl/flx_i18n.cpp " +
-            "rtl/flx_ioutil.cpp " +
-             testfile + ".cpp -o "+outbin)
+      if CYGWIN:
+        print "Building RTL for CYGWIN dynamic linkage"
+        cmd = (" g++ -w -ansi -g -I. -shared -o bin/cygflx_rtl.dll " +
+          "-Wl,--export-all-symbols -Wl,--enable-auto-import " +
+          "-Wl,--out-implib=rtl/libflx_rtl.dll.a ")
+        for x in RTL_CPPS: cmd = cmd + x + ".cpp "
+        try: 
+          xqt(cmd)
         except MakeError:
-          print "Unable to build driver"
-          raise MakeError
+          print "Unable to build CYGWIN run time DLL"
+      else:
+        pass
+
+      for x in RTL_CPPS:
+        for testfile,outbin in DRIVERS:
+          print 'Compiling driver program ',testfile,'-->',outbin
+          if CYGWIN:
+            cmd="g++ -w -ansi -g -o flx_run -I. "+testfile+".cpp -Lrtl -lflx_rtl -Wl,--enable-auto-import "
+          else:
+            cmd=FLX_CPP_LINK + " -I. "
+            for x in RTL_CPPS: cmd=cmd+x+".cpp "
+            cmd = cmd + testfile + ".cpp -o "+outbin
+          try:
+            xqt(cmd)
+          except MakeError:
+            print "Unable to build driver"
+            raise MakeError
 
   # run tests
   try:
@@ -674,7 +690,10 @@ try:
       if buildall or filetime(basename+ '.cpp') > filetime(basename+SHLX):
         try:
           if LINK_MODEL == "dynamic":
-            xqt(FLX_CPP_DYNLINK+" -I. "+cppfilename + " -o " + basename + SHLX )
+            if CYGWIN:
+              xqt("g++ -w -ansi -g -o "+basename+SHLX+" -shared -I. "+cppfilename+" -Lrtl -lflx_rtl -Wl,--enable-auto-import")
+            else:
+              xqt(FLX_CPP_DYNLINK+" -I. "+cppfilename + " -o " + basename + SHLX )
           else:
             xqt(FLX_CPP_DYNLINK+" -I. "+cppfilename + " -o " + basename + "_static.o" )
             xqt(FLX_CPP_LINK+" -I. ./bin/flx_run_static.o "+basename+ "_static.o ./rtl/flx_static.a -o " + basename + SHLX )
@@ -1061,7 +1080,8 @@ please see the INSTALL file
 
 @head(1,'AUTHORS')
 @select(tangler('AUTHORS'))
-John (Max) Skaller skaller@users.sourceforge.net
+John (Max) Skaller skaller at users dot sourceforge dot net
+Peter Jolly helped do the Cygwin build
 
 @head(1,'COPYING')
 @select(tangler('COPYING'))
