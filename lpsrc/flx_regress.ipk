@@ -535,7 +535,15 @@ fun f(x:int)=>
  
 print (f 10); endl;
 
-@select(tangler('test/drt20.flx'))
+@select(tangler('test/rt20.flx'))
+// lvalue decay if function called thru variable
+include "std";
+
+proc f(g:int->void) { var x=1; g x; }
+proc g(x:int) { }
+f g of (int);
+
+@select(tangler('test/drt1.flx'))
 // plugin loader test
 include "std";
 

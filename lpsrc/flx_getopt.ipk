@@ -141,6 +141,7 @@ let get_felix_options options =
     raw_options = options;
     reverse_return_parity = check_key options "e"; 
     heavy_inlining = check_keys options ["inline"];
+    force_recompile = check_keys options ["force"];
     max_inline_length = 
       (match get_key_value options "inline_size_limit" with 
       | Some i -> 
@@ -163,7 +164,8 @@ let print_options () =
   print_endline "  -q, --quiet: no stdout";
   print_endline "  -c, --compile-only: no code generation";
   print_endline "  -Idir, --include=dir : append dir to include path";
-  print_endline "  --inline"
+  print_endline "  --inline";
+  print_endline "  --force : force recompilation"
 
 let make_syms options = 
   {

@@ -39,6 +39,7 @@ open Flx_tgen
 open List
 open Flx_print
 open Flx_exceptions
+open Flx_maps
 
 let find_thread_vars_with_type bbdfns =
   let vars = ref [] in
@@ -80,7 +81,7 @@ let find_references syms (child_map,bbdfns) index ts =
           ", got ts=" ^ 
           si (length ts)
         );
-        let t = tsubst vs ts (lower t) in
+        let t = reduce_type (tsubst vs ts (lower t)) in
         references := (idx,t) :: !references
       | _ -> ()
     with Not_found -> ()
@@ -101,7 +102,7 @@ let comma_sub s =
  
 (* this code handles pointers in types *)
 let rec get_offsets syms bbdfns typ : string list =
-  let typ = lstrip syms.dfns typ in
+  let typ = reduce_type (lstrip syms.dfns typ) in
   let tname = cpp_typename syms typ in
   match unfold syms.dfns typ with
   | `BTYP_pointer t -> 
@@ -137,7 +138,29 @@ let rec get_offsets syms bbdfns typ : string list =
       ;
       !lst
  
+    (* this is a HACK to fix the continuation type *)
+    | `BBDCL_abs (vs,_,"flx::rtl::con_t*",_) when id = "cont" -> ["0"]
+    
     | _ -> []
+    end
+
+  | `BTYP_array (t,`BTYP_unitsum k) -> 
+    let toffsets = get_offsets syms bbdfns t in
+    if toffsets = [] then [] else 
+    if k> 20 then 
+      failwith "[get_offsets] Too many elements in array for shape"
+    else begin
+      let eltype = cpp_typename syms t in
+      fold_left 
+      (fun result i -> 
+        let ss = "+" ^ si i ^ "*sizeof("^eltype^")" in
+        fold_left
+        (fun result s -> (s ^ ss) :: result)
+        result
+        toffsets
+      )
+      []
+      (nlist k)
     end
 
   | `BTYP_tuple args -> 
@@ -159,10 +182,21 @@ let rec get_offsets syms bbdfns typ : string list =
     !lst
 
   | `BTYP_function _ -> ["0"]
-  | `BTYP_fix _ -> assert false
-  | `BTYP_void -> assert false
-  | `BTYP_var _ -> assert false
-  | _ -> []
+
+  | `BTYP_unitsum _ -> []
+
+  | `BTYP_sum _
+  | `BTYP_array _ 
+  | `BTYP_lvalue _ 
+  | `BTYP_fix _
+  | `BTYP_void 
+  | `BTYP_var _ 
+
+  | `BTYP_apply _
+  | `BTYP_type 
+  | `BTYP_typefun _
+  | `BTYP_type_tuple _
+  | `BTYP_type_match _ -> assert false
 
 let gen_offset_data s n name offsets =
   if n <> 0 then

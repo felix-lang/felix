@@ -82,6 +82,9 @@ let string_of_token (tok :Flx_parse.token): string =
   | LSQANGLE _ -> "[<"
   | RSQANGLE _ -> ">]"
 
+  | LSQBAR _ -> "[<"
+  | RSQBAR _ -> ">]"
+
   | LEFTSHIFTEQUAL _ -> "<<="
   | RIGHTSHIFTEQUAL _ -> ">>="
   | LEFTRIGHTARROW _ -> "<->"
@@ -144,6 +147,8 @@ let src_of_token t = match t with
   | RBRACE s 
   | LSQANGLE s 
   | RSQANGLE s 
+  | LSQBAR s 
+  | RSQBAR s 
   | COLON s 
   | COMMA s 
   | SEMI s 
@@ -192,10 +197,8 @@ let src_of_token t = match t with
   | DOTDOTDOT s 
     -> s
 
-
-@h = tangler('src/flx_lex.mll','data')
+@h = tangler('src/flx_lexstate.ml','data')
 @select(h)
-{
 open Flx_util
 open Flx_parse
 open Flx_string
@@ -293,11 +296,14 @@ class file_control
     method condition_stack_length = List.length condition
   end
 
-class lexer_state filename basedir incdirs = 
+class lexer_state filename basedir incdirs (ocs_env':Ocs_types.env) = 
   object (self)
+    val ocs_env = ocs_env'
     val comment_ctrl = new comment_control
     val file_ctrl = new file_control filename basedir incdirs 
     val mutable at_line_start = true
+
+    method get_ocs_env = ocs_env
 
     method is_at_line_start = at_line_start
 
@@ -367,28 +373,224 @@ class lexer_state filename basedir incdirs =
       s#get_macros
 end
 
+@h = tangler('src/flx_lexstate.mli','data')
+@select(h)
+open Flx_ast
+open Flx_string
 
-let lexeme = Lexing.lexeme
-let lexeme_start = Lexing.lexeme_start
-let lexeme_end = Lexing.lexeme_end
+exception Duplicate_macro of string
+
+class comment_control :
+  object
+    val mutable nesting_level : int
+    val mutable text : string
+    method append : string -> unit
+    method decr : unit
+    method get_comment : string
+    method get_nesting_level : int
+    method incr : unit
+    method set_text : string -> unit
+  end
+
+type condition_t = [
+ | `Processing
+ | `Skip_to_endif
+ | `Skip_to_else
+]
+
+class file_control :
+  string ->
+  string ->
+  string list ->
+  object
+    val mutable buf_pos : int
+    val filename : string
+    val mutable last_buf_pos : int
+    val mutable line_no : int
+    val mutable condition : condition_t list
+    val macros : (string,string list * Flx_parse.token list) Hashtbl.t 
+    
+    method get_buf_pos : int
+    method get_srcref : Lexing.lexbuf -> srcref
+    method incr : int -> unit
+    method incr_lex_counters : Lexing.lexbuf -> unit
+    method set_buf_pos : int -> unit
+    method set_line : int -> unit
+    method set_filename : string -> unit
+    method get_relative : string -> string
+    method get_incdirs : string list
+    method get_absolute : string -> string
+
+    method get_condition : condition_t 
+    method push_condition : condition_t -> unit
+    method pop_condition : unit
+    method set_condition : condition_t -> unit
+    method condition_stack_length : int
+
+    method store_macro : string -> string list -> Flx_parse.token list -> unit
+    method undef_macro : string -> unit
+    method get_macro : string -> (string list * Flx_parse.token list) option
+    method get_macros : (string,string list * Flx_parse.token list) Hashtbl.t 
+  end
+
+class lexer_state :
+  string ->
+  string ->
+  string list ->
+  Ocs_types.env ->
+  object
+    val ocs_env : Ocs_types.env
+    val comment_ctrl : comment_control
+    val file_ctrl : file_control
+
+    method get_ocs_env : Ocs_types.env
+    method adj : int -> unit
+    method append_comment : string -> unit
+    method comment_level : int
+    method decode : (string -> string) -> string -> string
+    method decr_comment : unit
+    method get_comment : string
+    method get_srcref : Lexing.lexbuf -> srcref
+    method incr_comment : unit
+    method newline : Lexing.lexbuf -> unit
+    method set_comment : string -> unit
+    method is_at_line_start : bool
+    method inbody: unit
+    method string_of_srcref : Lexing.lexbuf -> string
+    method set_line : int -> unit
+    method set_filename : string -> unit
+    method get_incdirs : string list
+    method get_relative : string -> string
+    method get_absolute : string -> string
+
+    method get_condition : condition_t 
+    method push_condition : condition_t -> unit
+    method pop_condition : unit
+    method set_condition : condition_t -> unit
+    method condition_stack_length : int
+
+    method store_macro : string -> string list -> Flx_parse.token list -> unit
+    method undef_macro : string -> unit
+    method get_macro : string -> (string list * Flx_parse.token list) option
+    method get_macros : (string,string list * Flx_parse.token list) Hashtbl.t 
+    method add_macros : lexer_state -> unit
+end
+
+@h = tangler('src/flx_preproc.mli')
+@select(h)
+open Flx_ast
+open Flx_parse
+open Flx_lexstate
+open Lexing
+
+val is_in_string : string -> char -> bool
+val is_white : char -> bool
+val is_digit : char -> bool
+val strip_us : string -> string
+
+val pre_tokens_of_lexbuf : 
+   (lexer_state -> lexbuf -> token list) ->
+  lexbuf -> lexer_state -> 
+  token list
+
+val pre_tokens_of_string :
+  (lexer_state -> lexbuf -> token list) ->
+  string -> string -> 
+  token list
+
+(*
+val line_directive :
+  lexer_state -> range_srcref -> string -> 
+  lexbuf -> 
+  token list
+
+val undef_directive :
+  lexer_state -> range_srcref -> string -> 
+  (lexer_state -> lexbuf -> token list) -> 
+  token list
+
+val define_directive :
+  lexer_state -> range_srcref -> string -> 
+  (lexer_state -> lexbuf -> token list) -> 
+  token list
+
+val if_directive :
+  lexer_state -> range_srcref -> string ->
+  (lexer_state -> lexbuf -> token list) ->
+  token list
+
+val ifdef_directive :
+  lexer_state -> range_srcref -> string -> 
+  token list
+
+val ifndef_directive :
+  lexer_state -> range_srcref -> string -> 
+  token list
+
+val else_directive :
+  lexer_state -> range_srcref -> string -> 
+  token list
+
+val elif_directive :
+  lexer_state -> range_srcref -> string ->
+  (lexer_state -> lexbuf -> token list) ->
+  token list
+
+val endif_directive :
+  lexer_state -> range_srcref -> string -> 
+  token list
+
+val divert_directive :
+  lexer_state ->
+  range_srcref ->
+  string ->
+  (lexer_state -> lexbuf -> token list) ->
+  token list
+
+val undivert_directive :
+  lexer_state ->
+  range_srcref ->
+  string ->
+  (lexer_state -> lexbuf -> token list) ->
+  token list
+
+val include_directive :
+  bool ->
+  lexer_state -> range_srcref -> string ->
+  (lexer_state -> lexbuf -> token list) ->
+  'a -> token list
+
+val scheme_file_directive :
+  lexer_state -> range_srcref -> string ->
+  (lexer_state -> lexbuf -> token list) ->
+  'a -> token list
+
+val scheme_string_directive :
+  lexer_state ->
+  range_srcref ->
+  string ->
+  (lexer_state -> lexbuf -> token list) -> 'b -> token list
+*)
+
+val handle_preprocessor :
+  lexer_state -> lexbuf -> string ->
+  (lexer_state -> lexbuf -> token list) ->
+  (lexer_state -> lexbuf -> string) ->
+  token list
+
+@h = tangler('src/flx_preproc.ml','data')
+@select(h)
+open Flx_util
+open Flx_parse
+open Flx_string
+open Big_int
+open Flx_exceptions
+open Flx_lexstate
+open Flx_preproc
 
 let substr = String.sub
 let len = String.length
 
-(* string parsers *)
-let decode_qstring s = let n = len s in unescape (substr s 0 (n-1)) 
-let decode_dqstring s = let n = len s in unescape (substr s 0 (n-1)) 
-let decode_qqqstring s = let n = len s in unescape (substr s 0 (n-3)) 
-let decode_dddstring s = let n = len s in unescape (substr s 0 (n-3)) 
-
-let decode_raw_qstring s = let n = len s in substr s 0 (n-1) 
-let decode_raw_dqstring s = let n = len s in substr s 0 (n-1) 
-let decode_raw_qqqstring s = let n = len s in substr s 0 (n-3) 
-let decode_raw_dddstring s = let n = len s in substr s 0 (n-3)
-
-(* WARNING: hackery: adjust this when lex expression 'white'
-   is adjutsed
-*)
 let is_in_string s ch =
   try 
     ignore(String.index s ch);
@@ -425,8 +627,10 @@ let pre_tokens_of_lexbuf lexer buf state =
     List.rev (get [])
 
 let pre_tokens_of_string lexer s filename =
-  let state = new lexer_state filename "" [] in
+  let e = Ocs_top.make_env() in
+  let state = new lexer_state filename "" [] e in
   pre_tokens_of_lexbuf lexer (Lexing.from_string s) state
+
 
 
 let line_directive state sr s lexbuf =
@@ -555,7 +759,7 @@ let eval_bool state lexer sr s =
   print_endline ("Value is " ^ Flx_print.string_of_expr e);
   *)
   match e with
-  | `AST_typed_case (sr,v,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) ->
+  | `AST_typed_case (sr,v,`TYP_unitsum 2) ->
     (* NOTE: the type case term is 1 origin, even though the
       generated code is 0 origain
     *)
@@ -745,7 +949,8 @@ let include_directive is_import state sr s pre_flx_lex lexbuf =
   let pre_tokens_of_filename filename =
   let incdirs = state#get_incdirs in
   let basedir = Filename.dirname filename in
-  let state' = new lexer_state filename basedir incdirs in
+  let ocs_env = state#get_ocs_env in
+  let state' = new lexer_state filename basedir incdirs ocs_env in
   let infile = open_in filename in
   let src = Lexing.from_channel infile in
   let toks = pre_tokens_of_lexbuf pre_flx_lex src state' in
@@ -760,6 +965,230 @@ let include_directive is_import state sr s pre_flx_lex lexbuf =
  in
    pre_tokens_of_filename filename
 
+let scheme_file_directive state sr s pre_flx_lex lexbuf =
+  let filename = find_include_file state s sr in
+  let basedir = Filename.dirname filename in
+  let ocs_env = state#get_ocs_env in
+  let state' = new lexer_state filename basedir state#get_incdirs ocs_env in
+  let th = Ocs_top.make_thread () in
+  let sp = Ocs_port.string_output_port () in
+  let th = { th with Ocs_types.th_stdout = Ocs_types.Sport sp } in
+  begin try
+     Ocs_prim.load_file ocs_env th filename;
+     let s = Ocs_port.get_string sp in
+     let src = Lexing.from_string s in
+     let toks = pre_tokens_of_lexbuf pre_flx_lex src state' in
+     toks
+
+   with
+     | Ocs_error.Error err ->
+       clierr sr ("Scheme error " ^ err)
+     | Ocs_error.ErrorL ((file, line), err) ->
+       let sr2 = file,line,1,line+1,1 in
+       clierr2 sr sr2
+       ("Scheme error " ^ err)
+  end
+
+let scheme_string_directive state sr s pre_flx_lex lexbuf =
+  let e = state#get_ocs_env in
+  let th = Ocs_top.make_thread () in
+  let sp = Ocs_port.string_output_port () in
+  let th = { th with Ocs_types.th_stdout = Ocs_types.Sport sp } in
+  begin try
+     Ocs_prim.load_string e th s;
+     let s = Ocs_port.get_string sp in
+     let src = Lexing.from_string s in
+     let toks = pre_tokens_of_lexbuf pre_flx_lex src state in
+     toks
+
+   with
+     | Ocs_error.Error err ->
+       clierr sr ("Scheme error " ^ err)
+     | Ocs_error.ErrorL ((file, line), err) ->
+       let sr2 = file,line,1,line+1,1 in
+       clierr2 sr sr2
+       ("Scheme error " ^ err)
+  end
+
+let slosh_cat s = 
+  let mode = ref `seek_eol in
+  for i = String.length s - 1 downto 0 do
+    let ch = s.[i] in 
+      if ch = '\n' then 
+        mode := `seek_slosh
+      else if ch = ' ' && !mode = `seek_slosh then ()
+      else if !mode = `seek_slosh && ch = '\\' then 
+        (s.[i]<-' '; mode :=`seek_eol)
+      else mode := `seek_eol
+  done;
+  s
+
+let handle_preprocessor state lexbuf s pre_flx_lex parse_line =
+  let s = slosh_cat s in
+  let sr = state#get_srcref lexbuf in
+  let sr = Flx_srcref.slift sr in
+  let ident,s =
+    let i = ref 0 in
+    while is_white s.[!i] do incr i done;
+    let n = ref 1 in 
+    while 
+      not (is_white s.[!i + !n]) && 
+      not (s.[!i + !n]='\n') 
+    do incr n done;
+
+    let ident = String.sub s !i !n in
+
+    (* scan for next non-white *)
+    let j = ref (!i + !n) in
+    while is_white s.[!j] do incr j done;
+
+    (* scan back for last non-white *)
+    n := String.length s - 1;
+    while !n > !j && is_white(s.[!n-1]) do decr n done;
+    let ssl = !n - !j in
+    let rest = String.sub s !j ssl in
+    if ssl >0 && rest.[0] = '#' then
+      let buf = Buffer.create 1000 in
+      let rec loop () =
+        let s = parse_line state lexbuf in
+        state#newline lexbuf;
+        let n = len s in
+        if n>0 && s.[0] = '#'
+        then Buffer.contents buf
+        else ( 
+          Buffer.add_string buf s; 
+          loop ()
+        )
+      in 
+        ident,loop ()
+    else
+      ident,rest
+  in
+  (*
+  print_endline ("PREPRO i=" ^ ident^", t='"^s^"'");
+  *)
+
+  let result = match ident with
+
+  (* print a warning *)
+  | "warn" -> 
+    begin match state#get_condition with
+    | `Processing ->
+      print_string s;
+      [NEWLINE]
+    | _ -> []
+    end
+    
+  | "line" ->
+    line_directive state sr s lexbuf
+
+  | "include" 
+  | "import" -> 
+    let is_import = ident = "import" in
+    begin match state#get_condition with
+    | `Processing ->
+      include_directive is_import state sr s pre_flx_lex lexbuf
+    | _ -> []
+    end
+
+  | "scheme_include" -> 
+    begin match state#get_condition with
+    | `Processing ->
+      scheme_file_directive state sr s pre_flx_lex lexbuf
+    | _ -> []
+    end
+
+  | "scheme" -> 
+    begin match state#get_condition with
+    | `Processing ->
+      scheme_string_directive state sr s pre_flx_lex lexbuf
+    | _ -> []
+    end
+
+  | "define" -> 
+    begin match state#get_condition with
+    | `Processing ->
+      define_directive state sr s pre_flx_lex
+    | _ -> []
+    end
+
+  | "undef" -> 
+    begin match state#get_condition with
+    | `Processing ->
+      undef_directive state sr s pre_flx_lex
+    | _ -> []
+    end
+
+  | "if" -> 
+    if_directive state sr s pre_flx_lex 
+
+  | "ifdef" -> 
+    ifdef_directive state sr s
+
+  | "ifndef" -> 
+    ifndef_directive state sr s
+
+  | "else" -> 
+    else_directive state sr s 
+
+  | "elif" -> 
+    elif_directive state sr s pre_flx_lex
+
+  | "endif" -> 
+    endif_directive state sr lexbuf
+  
+  | "divert" -> 
+    divert_directive state sr s pre_flx_lex
+
+  | "undivert" -> 
+    undivert_directive state sr s pre_flx_lex
+
+
+  | _ -> 
+    print_endline (state#string_of_srcref lexbuf);
+    print_endline 
+    (
+      "LEXICAL ERROR: IGNORING UNKNOWN PREPROCESSOR DIRECTIVE \"" ^
+      ident ^ "\""
+    );
+    [NEWLINE]
+  in 
+    state#newline lexbuf;
+    result
+
+
+@h = tangler('src/flx_lex.mll','data')
+@select(h)
+{
+open Flx_util
+open Flx_parse
+open Flx_string
+open Big_int
+open Flx_exceptions
+open Flx_lexstate
+open Flx_preproc
+
+let lexeme = Lexing.lexeme
+let lexeme_start = Lexing.lexeme_start
+let lexeme_end = Lexing.lexeme_end
+
+let substr = String.sub
+let len = String.length
+
+(* string parsers *)
+let decode_qstring s = let n = len s in unescape (substr s 0 (n-1)) 
+let decode_dqstring s = let n = len s in unescape (substr s 0 (n-1)) 
+let decode_qqqstring s = let n = len s in unescape (substr s 0 (n-3)) 
+let decode_dddstring s = let n = len s in unescape (substr s 0 (n-3)) 
+
+let decode_raw_qstring s = let n = len s in substr s 0 (n-1) 
+let decode_raw_dqstring s = let n = len s in substr s 0 (n-1) 
+let decode_raw_qqqstring s = let n = len s in substr s 0 (n-3) 
+let decode_raw_dddstring s = let n = len s in substr s 0 (n-3)
+
+(* WARNING: hackery: adjust this when lex expression 'white'
+   is adjutsed
+*)
 
 } 
 
@@ -1197,7 +1626,7 @@ and parse_raw_dddstring state = parse
    }
 
 and parse_cpp_comment state = parse 
-| [^'\n'] * newline {
+| not_newline * newline {
       state#newline lexbuf;
       let lex = lexeme lexbuf in
       let n = String.length lex in
@@ -1208,7 +1637,7 @@ and parse_cpp_comment state = parse
   lexeme lexbuf)] }
 
 and parse_hashbang state = parse 
-| [^'\n'] * newline {
+| not_newline * newline {
     begin
       state#newline lexbuf;
       let lex = lexeme lexbuf in
@@ -1245,106 +1674,17 @@ and parse_C_comment state = parse
       parse_C_comment state lexbuf 
   }
 
+and parse_line state = parse
+| not_newline * newline  
+  { 
+    state#newline lexbuf;
+    lexeme lexbuf
+  }
+
 and parse_preprocessor state = parse
-| not_newline * newline 
+| ( not_newline * slosh space * newline) * not_newline * newline 
   {
-    let sr = state#get_srcref lexbuf in
-    let sr = Flx_srcref.slift sr in
-    let ident,s =
-      let s = lexeme lexbuf in
-      let i = ref 0 in
-      while is_white s.[!i] do incr i done;
-      let n = ref 1 in 
-      while 
-        not (is_white s.[!i + !n]) && 
-        not (s.[!i + !n]='\n') 
-      do incr n done;
-
-      let ident = String.sub s !i !n in
-
-      (* scan for next non-white *)
-      let j = ref (!i + !n) in
-      while is_white s.[!j] do incr j done;
-
-      (* scan back for last non-white *)
-      n := String.length s - 1;
-      while !n > !j && is_white(s.[!n-1]) do decr n done;
-      let rest = String.sub s !j (!n - !j) in
-      ident,rest
-    in
-    let result = match ident with
-
-    (* print a warning *)
-    | "warn" -> 
-      begin match state#get_condition with
-      | `Processing ->
-        print_string (lexeme lexbuf); 
-        [NEWLINE]
-      | _ -> []
-      end
-      
-    | "line" ->
-      line_directive state sr s lexbuf
-
-    | "include" 
-    | "import" -> 
-      let is_import = ident = "import" in
-      begin match state#get_condition with
-      | `Processing ->
-        include_directive is_import state sr s pre_flx_lex lexbuf
-      | _ -> []
-      end
-
-    | "define" -> 
-      begin match state#get_condition with
-      | `Processing ->
-        define_directive state sr s pre_flx_lex
-      | _ -> []
-      end
-
-    | "undef" -> 
-      begin match state#get_condition with
-      | `Processing ->
-        undef_directive state sr s pre_flx_lex
-      | _ -> []
-      end
-
-    | "if" -> 
-      if_directive state sr s pre_flx_lex 
-
-    | "ifdef" -> 
-      ifdef_directive state sr s
-
-    | "ifndef" -> 
-      ifndef_directive state sr s
-
-    | "else" -> 
-      else_directive state sr s 
-
-    | "elif" -> 
-      elif_directive state sr s pre_flx_lex
-
-    | "endif" -> 
-      endif_directive state sr lexbuf
-    
-    | "divert" -> 
-      divert_directive state sr s pre_flx_lex
-
-    | "undivert" -> 
-      undivert_directive state sr s pre_flx_lex
-
-
-    | _ -> 
-      print_endline (state#string_of_srcref lexbuf);
-      print_endline 
-      (
-        "LEXICAL ERROR: IGNORING UNKNOWN PREPROCESSOR DIRECTIVE \"" ^
-        ident ^ "\""
-      );
-      [NEWLINE]
-    in 
-      state#newline lexbuf;
-      result
+    handle_preprocessor state lexbuf (lexeme lexbuf) pre_flx_lex parse_line
   }
 
 
@@ -1508,6 +1848,8 @@ and pre_flx_lex state = parse
 | ":>" { state#inbody; [COLONGREATER (state#get_srcref lexbuf)] }
 | "[<" { state#inbody; [LSQANGLE     (state#get_srcref lexbuf)] }
 | ">]" { state#inbody; [RSQANGLE     (state#get_srcref lexbuf)] }
+| "[|" { state#inbody; [LSQBAR       (state#get_srcref lexbuf)] }
+| "|]" { state#inbody; [RSQBAR       (state#get_srcref lexbuf)] }
 
 (* three character sequences *)
 | "<<=" { state#inbody; [LEFTSHIFTEQUAL (state#get_srcref lexbuf)] }
@@ -1620,103 +1962,12 @@ and pre_flx_lex state = parse
 
 @h = tangler('src/flx_lex.mli')
 @select(h)
-open Flx_ast
-open Flx_string
-
-class comment_control :
-  object
-    val mutable nesting_level : int
-    val mutable text : string
-    method append : string -> unit
-    method decr : unit
-    method get_comment : string
-    method get_nesting_level : int
-    method incr : unit
-    method set_text : string -> unit
-  end
-
-type condition_t = [
- | `Processing
- | `Skip_to_endif
- | `Skip_to_else
-]
-
-class file_control :
-  string ->
-  string ->
-  string list ->
-  object
-    val mutable buf_pos : int
-    val filename : string
-    val mutable last_buf_pos : int
-    val mutable line_no : int
-    val mutable condition : condition_t list
-    val macros : (string,string list * Flx_parse.token list) Hashtbl.t 
-    
-    method get_buf_pos : int
-    method get_srcref : Lexing.lexbuf -> srcref
-    method incr : int -> unit
-    method incr_lex_counters : Lexing.lexbuf -> unit
-    method set_buf_pos : int -> unit
-    method set_line : int -> unit
-    method set_filename : string -> unit
-    method get_relative : string -> string
-    method get_incdirs : string list
-    method get_absolute : string -> string
-
-    method get_condition : condition_t 
-    method push_condition : condition_t -> unit
-    method pop_condition : unit
-    method set_condition : condition_t -> unit
-    method condition_stack_length : int
-
-    method store_macro : string -> string list -> Flx_parse.token list -> unit
-    method undef_macro : string -> unit
-    method get_macro : string -> (string list * Flx_parse.token list) option
-    method get_macros : (string,string list * Flx_parse.token list) Hashtbl.t 
-  end
-
-class lexer_state :
-  string ->
-  string ->
-  string list ->
-  object
-    val comment_ctrl : comment_control
-    val file_ctrl : file_control
-    method adj : int -> unit
-    method append_comment : string -> unit
-    method comment_level : int
-    method decode : (string -> string) -> string -> string
-    method decr_comment : unit
-    method get_comment : string
-    method get_srcref : Lexing.lexbuf -> srcref
-    method incr_comment : unit
-    method newline : Lexing.lexbuf -> unit
-    method set_comment : string -> unit
-    method is_at_line_start : bool
-    method inbody: unit
-    method string_of_srcref : Lexing.lexbuf -> string
-    method set_line : int -> unit
-    method set_filename : string -> unit
-    method get_incdirs : string list
-    method get_relative : string -> string
-    method get_absolute : string -> string
-
-    method get_condition : condition_t 
-    method push_condition : condition_t -> unit
-    method pop_condition : unit
-    method set_condition : condition_t -> unit
-    method condition_stack_length : int
-
-    method store_macro : string -> string list -> Flx_parse.token list -> unit
-    method undef_macro : string -> unit
-    method get_macro : string -> (string list * Flx_parse.token list) option
-    method get_macros : (string,string list * Flx_parse.token list) Hashtbl.t 
-    method add_macros : lexer_state -> unit
-end
-
 val pre_flx_lex : 
-  lexer_state -> 
+  Flx_lexstate.lexer_state -> 
   Lexing.lexbuf -> 
   Flx_parse.token list
 
+val parse_line : 
+  Flx_lexstate.lexer_state -> 
+  Lexing.lexbuf -> 
+  string

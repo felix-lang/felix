@@ -92,12 +92,22 @@ let rec register_type_r ui syms bbdfns exclude sr t =
   *)
   match t' with
   | `BTYP_void -> ()
-  | `BTYP_fix i -> clierr sr ("[register_type_r] Fixpoint "^si i^"encountered") 
+  | `BTYP_fix i -> clierr sr ("[register_type_r] Fixpoint "^si i^" encountered") 
   | `BTYP_var i -> clierr sr ("Attempt to register type variable " ^ si i)
   | `BTYP_function (ps,ret) -> rr ps; rr ret; rnr t
-  | `BTYP_array (ps,ret) -> rr ps; rr ret; rnr t
+  | `BTYP_array (ps,ret) -> 
+    rr ps; rr ret; rnr t;
+    begin match ret with
+    | `BTYP_unitsum k ->
+      let tt = `BTYP_tuple (map (fun _ -> ps) (nlist k)) in
+      rnr tt
+
+    | _ -> clierr sr "Array of non-integer not supported"
+    end
+      
   | `BTYP_tuple ps -> iter rr ps; rnr t
   | `BTYP_sum ps -> iter rr ps; rnr t
+  | `BTYP_unitsum k -> rnr t
 
   (* NOTE: pointer type is registered before the type it points
     to because it can be incomplete, whereas the type it
@@ -136,10 +146,10 @@ let rec register_type_r ui syms bbdfns exclude sr t =
       let cts = map (tsubst vs ts) cts in
       iter rr cts;
       if length cts > 1 then rnr (`BTYP_tuple cts);
-      rnr t;
 
       let argt = typeoflist cts in
       rnr argt;                             (* argument tuple *)
+      rnr t;
       rnr (`BTYP_function (argt,t))         (* constructor *)
 
     | `BBDCL_abs _ -> ui i ts; rnr t  (* instantiate the type too *)

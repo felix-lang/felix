@@ -2,6 +2,11 @@
 Derived from Barry Jays FISh 1.6 language with permission
 to release under Felix FFAU licence.
 
+@select(tangler("licenses/fish_license.txt"))
+(C) Copyright 1998, C. Barry Jay
+Derived from Barry Jays FISh 1.6 language with permission
+to redistribute for any use.
+
 @head(2,"primitive_fish.mli")
 primitive_fish.mli.
 @select(tangler("src/primitive_fish.mli"))

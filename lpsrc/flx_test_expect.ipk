@@ -109,8 +109,10 @@ ONE
 @head(2,"test/rt19.expect")
 @select(tangler("test/rt19.expect","data"))
 1
-@head(2,"test/drt20.expect")
-@select(tangler("test/drt20.expect","data"))
+@head(2,"test/rt20.expect")
+@select(tangler("test/rt20.expect","data"))
+@head(2,"test/drt1.expect")
+@select(tangler("test/drt1.expect","data"))
 Starting .. 
 10
 10x=1, y=2

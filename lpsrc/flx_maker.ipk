@@ -16,6 +16,87 @@ for line in data:
   f.write(line)
 f.close()
 
+@h = tangler('script/mkocs.py','python')
+@select(h)
+
+import string
+import os
+
+prefix = '/usr/local/src/ocs-1.0/src/'
+
+files = [
+  'ocs_char.ml',
+  'ocs_char.mli',
+  'ocs_compile.ml',
+  'ocs_compile.mli',
+  'ocs_complex.ml',
+  'ocs_complex.mli',
+  'ocs_contin.ml',
+  'ocs_contin.mli',
+  'ocs_env.ml',
+  'ocs_env.mli',
+  'ocs_error.ml',
+  'ocs_eval.ml',
+  'ocs_eval.mli',
+  'ocs_io.ml',
+  'ocs_io.mli',
+  'ocs_lex.ml',
+  'ocs_lex.mli',
+  'ocs_list.ml',
+  'ocs_list.mli',
+  'ocs_macro.ml',
+  'ocs_macro.mli',
+  'ocs_main.ml',
+  'ocs_misc.ml',
+  'ocs_misc.mli',
+  'ocs_numaux.ml',
+  'ocs_numaux.mli',
+  'ocs_num.ml',
+  'ocs_num.mli',
+  'ocs_numstr.ml',
+  'ocs_numstr.mli',
+  'ocs_port.ml',
+  'ocs_port.mli',
+  'ocs_prim.ml',
+  'ocs_prim.mli',
+  'ocs_print.ml',
+  'ocs_print.mli',
+  'ocs_read.ml',
+  'ocs_read.mli',
+  'ocs_string.ml',
+  'ocs_string.mli',
+  'ocs_sym.ml',
+  'ocs_sym.mli',
+  'ocs_top.ml',
+  'ocs_top.mli',
+  'ocs_types.mli',
+  'ocs_vartable.ml',
+  'ocs_vartable.mli',
+  'ocs_vector.ml',
+  'ocs_vector.mli',
+]
+
+mods = {}
+tgts = [] 
+
+for fn in files:
+  parts = string.split(fn,'/')
+  base = parts[-1]
+  target = 'src/'+base
+  tgts.append((prefix+fn,target))
+  i = string.index(base,'.')
+
+print "@head(1,'OCS')"
+for fn,tgt in tgts:
+  print "@h=tangler('"+tgt+"')"
+  print "@select(h)"
+  f = open(fn)
+  data = f.readlines()
+  f.close()
+  for line in data:
+    line = string.expandtabs(line)
+    print line,
+ 
 @h = tangler('script/mkcil.py','python')
 @select(h)
 
@@ -305,7 +386,7 @@ def runISCR(a):
   else:
     xqt(ISCR + ' ' + a)
 
-if "compiler" in options or "bytecode" in options:
+if "compiler" in options or "bytecode" in options or "olink" in options:
   OCAML_OBJDIR = "src"
   BYTECODE = not NATIVE_CODE_COMPILER or "bytecode" in options 
   if BYTECODE:
@@ -445,8 +526,11 @@ CIL_MODULES = [
   'flx_cil_check',
 ]
 
-FLX_MODULES = [
+MISC_MODULES = [
   'flx_filesys'      ,
+]
+
+FLX_MODULES = [
   'flx_mtypes1'      ,
   'flx_ast'          ,
   'flx_types'        ,
@@ -474,6 +558,8 @@ FLX_MODULES = [
   'flx_prelex'       ,
   'flx_lex1'         ,
   'flx_tok'          ,
+  'flx_lexstate'     ,
+  'flx_preproc'      ,
   'flx_lex'          ,
   'flx_pretok'       ,
   'flx_parse_ctrl'   ,
@@ -511,6 +597,34 @@ FLX_MODULES = [
   'flx_terminate'    , 
 ]
 
+OCS_MODULES = [
+  'ocs_vartable', 
+  'ocs_error', 
+  'ocs_port', 
+  'ocs_types', 
+  'ocs_sym', 
+  'ocs_env',
+  'ocs_char', 
+  'ocs_numaux', 
+  'ocs_complex', 
+  'ocs_num', 
+  'ocs_numstr', 
+  'ocs_lex',
+  'ocs_misc',
+  'ocs_read', 
+  'ocs_eval', 
+  'ocs_list', 
+  'ocs_compile', 
+  'ocs_macro', 
+  'ocs_prim', 
+  'ocs_string',
+  'ocs_vector', 
+  'ocs_print', 
+  'ocs_io', 
+  'ocs_contin', 
+  'ocs_top', 
+]
+
 FISH_MODULES = [
   'primitive_fish'     ,
   'types_fish'         ,
@@ -542,19 +656,28 @@ FLX_RAW_INTERFACES = [
 ] 
 
 FISH_RAW_INTERFACES = [
+  'ocs_types',
+  'ocs_error'
 ]
 
+OCS_RAW_INTERFACES = [
+]
+
+MISC_INTERFACES = MISC_MODULES
 FLX_INTERFACES = FLX_MODULES
 CIL_INTERFACES = CIL_MODULES
+OCS_INTERFACES = OCS_MODULES
 FISH_INTERFACES = FISH_MODULES
 
+MISC_IMPLEMENTATIONS = MISC_INTERFACES
 FLX_IMPLEMENTATIONS = FLX_INTERFACES
+OCS_IMPLEMENTATIONS = OCS_INTERFACES
 CIL_IMPLEMENTATIONS = CIL_INTERFACES
 FISH_IMPLEMENTATIONS = FISH_INTERFACES
   
-IMPLEMENTATIONS = CIL_IMPLEMENTATIONS + FISH_IMPLEMENTATIONS + FLX_IMPLEMENTATIONS 
-INTERFACES = CIL_INTERFACES + FISH_INTERFACES + FLX_INTERFACES
-RAW_INTERFACES = CIL_RAW_INTERFACES + FISH_RAW_INTERFACES + FLX_RAW_INTERFACES
+IMPLEMENTATIONS = MISC_IMPLEMENTATIONS + CIL_IMPLEMENTATIONS + FISH_IMPLEMENTATIONS + OCS_IMPLEMENTATIONS + FLX_IMPLEMENTATIONS 
+INTERFACES = MISC_INTERFACES + CIL_INTERFACES + FISH_INTERFACES + OCS_INTERFACES + FLX_INTERFACES
+RAW_INTERFACES = CIL_RAW_INTERFACES + FISH_RAW_INTERFACES + OCS_RAW_INTERFACES + FLX_RAW_INTERFACES
 
 RTL_CPPS = [
   "rtl/flx_gc",
@@ -584,12 +707,14 @@ CLIBRARIES = ['nums']
 # and some hackery so we can if the source doesn't need
 # ocaml-fileutils we can still build if it isn't found
 OCAML_INCLUDES = ""
-OLIBRARIES = ['nums','unix','flxlib','cillib','fishlib']
+OLIBRARIES = ['nums','unix','misclib','cillib','fishlib','ocslib','flxlib']
 
 OCAMLLIBS = [
-  ('flxlib',FLX_IMPLEMENTATIONS),
+  ('misclib',MISC_IMPLEMENTATIONS),
   ('cillib',CIL_IMPLEMENTATIONS),
-  ('fishlib',FISH_IMPLEMENTATIONS)
+  ('fishlib',FISH_IMPLEMENTATIONS),
+  ('ocslib',OCS_IMPLEMENTATIONS),
+  ('flxlib',FLX_IMPLEMENTATIONS),
 ]
 
 # target executable programs to produce
@@ -605,6 +730,7 @@ EXES = [
   'flxg',
   'flxcc',
   'stub',
+  'ocs_main',
 ]
 
 if 1:
@@ -718,7 +844,7 @@ try:
     xqt('rm -rf impldoc/*')
     xqt('ocamldoc -I src -d impldoc src/*.mli -html')
     xqt('ocamldoc -I src -o impldoc/flx_impl.tex src/*.mli -latex')
-    xqt('(cd impldoc; latex flx_impl.tex  2>&1 >/dev/null; latex flx_impl.tex; latex flx_impl.tex)')
+    xqt('(cd impldoc; latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex)')
 
   if "regression" in options:
     TESTS = TESTS + glob.glob('test/rt*.flx')
@@ -740,7 +866,7 @@ try:
   BAD_TESTS.sort()
   BAGLEY.sort()
 
-  if "compiler" in options:
+  if "compiler" in options or "olink" in options:
     # STEP 1: Compile all compiler support C files
     for cobject in COBJECTS.keys():
       flags = COBJECTS[cobject]
@@ -780,13 +906,14 @@ try:
 
 
     # STEP 6: Build FELIX Library
+    if "olink" in options: buildall = 1
     for lib,IMPLEMENTATIONS in OCAMLLIBS:
       object_library_name = "src/" + lib + OCAML_LIB_EXTENSION
       linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
       library_filetime = filetime(object_library_name)
       for implementation in IMPLEMENTATIONS:
         file = 'src/'+implementation
-        if filetime(file+OCAML_OBJECT_EXTENSION) > library_filetime:
+        if buildall or filetime(file+OCAML_OBJECT_EXTENSION) > library_filetime:
           for implementation in IMPLEMENTATIONS:
             file = 'src/'+implementation
             linkstring = linkstring + file +OCAML_OBJECT_EXTENSION +" "
@@ -828,8 +955,8 @@ try:
       ars = ""
       for x in RTL_CPPS:
         print 'Compiling rtl object',x
-        ars = ars + x + "_static.o "
-        xqt(CCOBJ_STATIC_LIB + " -Irtl " + x + ".cpp -o " +x+"_static.o")
+        ars = ars + x + "_static.o"
+        xqt(CCOBJ_STATIC_LIB + " -Irtl " + x + "cpp -o " +x+"_static.o")
       xqt(AR + " rtl/libflx_static.a " + ars)
       xqt(RANLIB + " rtl/libflx_static.a")
 
@@ -1081,7 +1208,7 @@ We have no idea if it continues copying.
 @tangle('\tpython script/maker debug test stop_on_error')
 @tangle('')
 @tangle('tests: dummy')
-@tangle('\tpython script/maker test log_output')
+@tangle('\tpython script/maker test check_output')
 @tangle('\tsh bagley/compile.sh')
 @tangle('\tsh bagley/run.sh')
 @tangle('\tsh bagley/check.sh')
@@ -1206,6 +1333,7 @@ We have no idea if it continues copying.
 @tangle('\t\tflx_'+flx_version+'/lpsrc/*.ipk \\')
 @tangle('\t\tflx_'+flx_version+'/lpsrc/*.pak \\')
 @tangle('\t\tflx_'+flx_version+'/script/maker \\')
+@tangle('\t\tflx_'+flx_version+'/script/*\\')
 @tangle('\t\tflx_'+flx_version+'/src/*.ml \\')
 @tangle('\t\tflx_'+flx_version+'/src/*.mli \\')
 @tangle('\t\tflx_'+flx_version+'/src/*.mly \\')
@@ -1223,6 +1351,8 @@ We have no idea if it continues copying.
 @tangle('\t\tflx_'+flx_version+'/doc/*.html \\')
 @tangle('\t\tflx_'+flx_version+'/doc/*.css \\')
 @tangle('\t\tflx_'+flx_version+'/doc/*.tex \\')
+@tangle('\t\tflx_'+flx_version+'/licenses/*.txt \\')
+@tangle('\t\tflx_'+flx_version+'/misc/* \\')
 @tangle('\t\tflx_'+flx_version+'/htmlman/*.html \\')
 @tangle('\t\tflx_'+flx_version+'/man/man1/*.1 \\')
 @tangle('\t\tflx_'+flx_version+'/impldoc/*.html \\')

@@ -26,6 +26,12 @@ val cpp_typename :
   string
 
 
+val cpp_ltypename :
+  sym_state_t ->
+  btypecode_t -> 
+  string
+
+
 @h = tangler('src/flx_name.ml')
 @select(h)
 open Flx_types
@@ -141,6 +147,9 @@ let rec cpp_type_classname syms t =
   | `BTYP_sum _ -> 
     "_st" ^ si (Hashtbl.find registry t)
 
+  | `BTYP_unitsum k -> 
+    "_us" ^ si k
+
     
   | `BTYP_inst (i,_) -> 
     begin try match
@@ -185,5 +194,14 @@ let cpp_typename syms t =
   match unfold syms.dfns (lstrip syms.dfns t) with
   | `BTYP_function _ -> cpp_type_classname syms t ^ "*"
   | _ -> cpp_type_classname syms t
+
+let cpp_ltypename syms t = 
+ cpp_typename syms t ^
+ (
+   match t with 
+   | `BTYP_lvalue _ -> "&"
+   | _ -> ""
+ )
+  
 
 

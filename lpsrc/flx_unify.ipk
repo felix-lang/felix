@@ -172,6 +172,8 @@ open Flx_util
 open List
 open Flx_exceptions
 
+let unit_t = `BTYP_tuple []
+
 let rec dual t = 
   match map_btype dual t with
   | `BTYP_sum ls -> 
@@ -192,7 +194,11 @@ let rec dual t =
 
   | `BTYP_pointer t -> `BTYP_pointer (dual t)
   | `BTYP_lvalue t -> `BTYP_lvalue (dual t)
-  | `BTYP_void -> `BTYP_tuple []
+  | `BTYP_void -> unit_t
+  | `BTYP_unitsum k -> 
+    let rec aux ds k = if k = 0 then ds else aux (unit_t::ds) (k-1) in
+    `BTYP_tuple (aux [] k)
+
   | t -> t
 
 (* top down check for fix point not under sum or pointer *)
@@ -369,6 +375,7 @@ let fix i t =
     | `BTYP_lvalue a -> `BTYP_lvalue (aux a)
     | `BTYP_array (a,b) -> `BTYP_array (aux a, aux b)
 
+    | `BTYP_unitsum _
     | `BTYP_void
     | `BTYP_fix _
     | `BTYP_apply _
@@ -455,6 +462,18 @@ let rec unification allow_lval dfns eqns (dvars: IntSet.t) : (int * btypecode_t)
         eqns := (t1,t2) :: !eqns
 
 
+      | `BTYP_unitsum i, `BTYP_unitsum j when i = j -> ()
+
+      | `BTYP_unitsum k, `BTYP_sum ls
+      | `BTYP_sum ls, `BTYP_unitsum k when length ls = k ->
+        iter 
+        (function 
+          | `BTYP_var i as v ->
+             eqns := (v,unit_t) :: !eqns
+          | _ -> raise Not_found
+        )
+        ls
+      
       | `BTYP_array (t11, t12), `BTYP_array (t21, t22)
       | `BTYP_function (t11, t12), `BTYP_function (t21, t22) ->
         eqns := (t11,t21) :: (t12,t22) :: !eqns
@@ -475,18 +494,17 @@ let rec unification allow_lval dfns eqns (dvars: IntSet.t) : (int * btypecode_t)
             s := None
         end
 
-      (* This is our expriemental matching for universal type 
-        any = fix 0
-      *)
-      | `BTYP_fix 0,_
-      | _,`BTYP_fix 0 -> ()
-        
       | `BTYP_fix i,`BTYP_fix j ->
         if i <> j then raise Not_found
 
+      | `BTYP_tuple ls, `BTYP_array (ta,`BTYP_unitsum n)
+      | `BTYP_array (ta,`BTYP_unitsum n), `BTYP_tuple ls 
+        when n = length ls ->
+        iter (fun t -> eqns := (t,ta) :: !eqns) ls
+
       | (`BTYP_tuple ls1, `BTYP_tuple ls2) 
-      | (`BTYP_sum ls1, `BTYP_sum ls2)  ->
-        if length ls1 = length ls2 then
+      | (`BTYP_sum ls1, `BTYP_sum ls2)  
+        when length ls1 = length ls2 ->
         begin
           let rec merge e a b = match a,b with
           | [],[] -> e
@@ -496,7 +514,7 @@ let rec unification allow_lval dfns eqns (dvars: IntSet.t) : (int * btypecode_t)
             eqns := merge !eqns ls1 ls2;
             s := None
         end
-        else raise Not_found
+
       | _ -> raise Not_found
       end 
       ;
@@ -686,6 +704,8 @@ let rec type_eq' dfns allow_lval ltrail ldepth rtrail rdepth trail t1 t2 =
     (fun tr a b -> tr && te a b) 
     true ts1 ts2
  
+  | `BTYP_unitsum i,`BTYP_unitsum j -> i = j
+
   | `BTYP_sum ts1, `BTYP_sum ts2
   | `BTYP_tuple ts1,`BTYP_tuple ts2 ->
     if length ts1 = length ts2
@@ -698,6 +718,16 @@ let rec type_eq' dfns allow_lval ltrail ldepth rtrail rdepth trail t1 t2 =
   | `BTYP_array (s1,d1),`BTYP_array (s2,d2) 
   | `BTYP_function (s1,d1),`BTYP_function (s2,d2) 
     -> te s1 s2 && te d1 d2
+
+  (* order is important for lvalues .. *)
+  | `BTYP_array (ta,`BTYP_unitsum n),`BTYP_tuple ts
+    when length ts = n ->
+    fold_left (fun tr t -> tr && te ta t) true ts
+
+
+  | `BTYP_tuple ts,`BTYP_array (ta,`BTYP_unitsum n) 
+    when length ts = n ->
+    fold_left (fun tr t -> tr && te t ta) true ts
 
   | `BTYP_pointer p1,`BTYP_pointer p2 
     -> te p1 p2
@@ -785,7 +815,7 @@ let fold dfns t =
     | `BTYP_lvalue a  -> ax a
 
     | `BTYP_void
-
+    | `BTYP_unitsum _
     | `BTYP_var _ 
     | `BTYP_fix 0 -> ()
 
@@ -796,7 +826,13 @@ let fold dfns t =
         if type_eq dfns t'' t then raise (Found t'')
       with Not_found -> ()
       end 
-    | _ -> failwith "[fold] unexpected metatype"
+
+    | `BTYP_apply _
+    | `BTYP_typefun _
+    | `BTYP_type 
+    | `BTYP_type_tuple _
+    | `BTYP_type_match _ -> 
+      failwith "[fold] unexpected metatype"
   in
     try aux [] 0 t; t
     with Found t -> t
@@ -845,6 +881,7 @@ let var_occurs t =
     | `BTYP_pointer a  -> aux a
     | `BTYP_lvalue a  -> aux a
 
+    | `BTYP_unitsum _
     | `BTYP_void
     | `BTYP_fix _ -> ()
 

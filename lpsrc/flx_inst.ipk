@@ -30,8 +30,10 @@ open List
 open Flx_unify
 open Flx_treg
 open Flx_exceptions
+open Flx_maps
 
-let add_inst syms ref_insts1 ((i,ts) as x) =
+let add_inst syms ref_insts1 (i,ts) =
+  let x = i, map reduce_type ts in
   let has_variables = 
     fold_left
     (fun truth t -> truth || var_occurs t)
@@ -57,7 +59,7 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   *)
   let ue e = process_expr syms bbdfns ref_insts1 hvarmap sr e in
   let ui i ts = add_inst syms ref_insts1 (i,ts) in
-  let ut t = register_type_r ui syms bbdfns [] sr t in
+  let ut t = register_type_r ui syms bbdfns [] sr (reduce_type t) in
   let vs t = varmap_subst hvarmap t in
   ut (vs t)
   ;
@@ -123,7 +125,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   | `BEXE_jump_direct (sr,i,ts,e2) 
   | `BEXE_call_stack (sr,i,ts,e2) 
     -> 
-    let ut t = register_type_r uis syms bbdfns [] sr t in
+    let ut t = register_type_r uis syms bbdfns [] sr (reduce_type t) in
     let vs t = varmap_subst hvarmap t in
     let ts = map vs ts in
     iter ut ts;
@@ -173,12 +175,6 @@ and process_exes syms bbdfns ref_insts1 ts hvarmap exes =
   iter (process_exe syms bbdfns ref_insts1 ts hvarmap) exes
 
 and process_function syms bbdfns hvarmap ref_insts1 index sr argtypes ret exes ts =
-  (*
-  let argtype = typeoflist argtypes in
-  let t = `BTYP_function (argtype, ret) in
-  let t = varmap_subst hvarmap t in
-  register_type_r ui syms bbdfns [] sr t;
-  *)
   process_exes syms bbdfns ref_insts1 ts hvarmap exes ;
 
 and process_inst syms bbdfns ref_insts1 i ts inst =
@@ -189,7 +185,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     try Hashtbl.find bbdfns i 
     with Not_found -> failwith ("[process_inst] Can't find index " ^ si i)
   in 
-  let rtr t = register_type_r uis syms bbdfns [] sr t in
+  let rtr t = register_type_r uis syms bbdfns [] sr (reduce_type t) in
   let rtnr t = register_type_nr syms t in
   if syms.compiler_options.print_flag then
   print_endline ("//Instance "^si inst ^ "="^id^"<" ^ si i ^ ">[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]");

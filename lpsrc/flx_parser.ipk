@@ -178,6 +178,7 @@ let mktypefun sr name vs args return_type body =
 %token<Flx_ast.srcref> LSQB RSQB 
 %token<Flx_ast.srcref> LBRACE RBRACE  
 %token<Flx_ast.srcref> LSQANGLE RSQANGLE
+%token<Flx_ast.srcref> LSQBAR RSQBAR
 
 /* terminal */
 %token<Flx_ast.srcref> COLON COMMA SEMI DOT BACKQUOTE
@@ -541,6 +542,7 @@ binding_header:
 @select(h)
 inline_cpp:
   | CODE STRING SEMI { `AST_code (rstoken $1 $3, snd $2) }
+  | NORETURN CODE STRING SEMI { `AST_noreturn_code (rstoken $1 $4, snd $3) }
 
 @head(3,'Type Alias')
 @select(h)
@@ -2014,6 +2016,14 @@ atom:
       let s = snd $2 in
       let t = snd $1 in
       `AST_expr (sr,s,t)
+    }
+
+  | LSQBAR expr RSQBAR
+    {
+      let sr = rstoken $1 $3 in
+      match $2 with
+      | `AST_tuple (_,ls) -> `AST_arrayof (sr,ls)
+      | x -> `AST_arrayof (sr,[x])
     }
 
   | LBRACE expr RBRACE     

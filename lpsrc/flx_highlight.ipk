@@ -25,10 +25,14 @@
 # andre.simon1@gmx.de
 # http:/www.andre-simon.de/
 
-/KEYWORDS=all and as body call case class code const define elif else endif endmatch except export fork fun function
-functor goto header if in inf interface lambda let match module NaN  not of open or proc procedure raise read regexp
-regmatch return struct then to todo type typedef union use val var when with
-header body code open  use endl print include true false not and or lnot land lor pow eol
+@keystring = "/KEYWORDS="
+@for k,t in flx_keywords: 
+  keystring = keystring + k + " "
+  if len (keystring) > 60:
+    tangle(keystring)
+    keystring=""
+@tangle(keystring)
+@tangle('')
 
 /TYPESMODS=tiny short int long vlong utiny ushort uint ulong uvlong
 int8 int16 int32 int64 uint8 uint16 uint32 uint64
@@ -41,6 +45,8 @@ void unit bool any address byte
 /SINGLELINECOMMENT=//
 
 /MULTILINECOMMENT=/* */
+
+/ALLOWEDCHARS=_'
 
 /AllowNestedMultiLineComments=true
 

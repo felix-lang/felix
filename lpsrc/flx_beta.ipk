@@ -207,6 +207,7 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
   | `BTYP_type -> t
   | `BTYP_fix _ -> t
   | `BTYP_var _ -> t
+  | `BTYP_unitsum _ -> t
 
   | `BTYP_apply (t1,t2) ->
     (*

@@ -214,8 +214,8 @@ namespace flx { namespace rtl { namespace strutil {
   }
 }}}
 
-@python("EOF")
-categories = """
+@h=tangler('lib/flx_categories.flx')
+@select(h)
   macro proc gen_eq(t){
     fun eq: t * t -> bool = "$1==$2";
     fun ne: t * t -> bool = "$1!=$2";
@@ -283,13 +283,10 @@ categories = """
     gen_bidirectional t;
   }
 
-  """
-EOF
-
 @h=tangler('lib/std.flx','data')
 @# use data tangler to prevent line number generation
 @select(h)
-@tangle(categories)
+#include "flx_categories.flx"
 
 header iostream "#include <iostream>";
 header cmath """
@@ -392,6 +389,7 @@ publish "Lvalue hack"
 
 publish "Array access: works on LHS of assignment too"
 fun subscript[t,n]: array[t, n] * int -> t = "$1.data[$2]";
+fun subscript[t,n]: lvalue[array[t, n]] * int -> lvalue[t] = "$1.data[$2]";
 
 publish "Explicit array store function"
 proc store[t,n]: &array[t,n] * int * t = "((?1*)($1.data))[$2]=$3;";
@@ -835,7 +833,7 @@ module String
   fun mul: char * int -> string = "std::string($2,$1)";
 
   fun subscript: string * int -> char = 
-    "$1[$2<0??$1.size()+$2:$2]";
+    "$1[$2<0??$1.size()+$2 : $2]";
   fun copyfrom: string * int -> string = 
     "flx::rtl::strutil::substr($1,$2,$1.size())" requires flx_strutil;
   fun copyto: string * int -> string = 
@@ -880,7 +878,7 @@ module Ustring
   fun mul: char * int -> ustring = "ustring($2,$1)";
 
   fun subscript: ustring * int -> char = 
-    "$1[$2<0??$1.size()+$2:$2]";
+    "$1[$2<0??$1.size()+$2 : $2]";
   fun copyfrom: ustring * int -> ustring = 
     "flx::rtl::strutil::substr($1,$2,$1.size())";
   fun copyto: ustring * int -> ustring = 
@@ -970,11 +968,36 @@ module Control
   fun fail_fun[t]:string->t = 'throw std::exception ($1),*(?1*)0';
 
   publish "Felix procedural continuation type"
-  pod type cont = "flx::rtl::con_t*";
+  type cont = "flx::rtl::con_t*";
 
   publish "Current continuation"
   fun current_continuation: 1 -> cont = "this";
 
+ 
+  publish """
+    Throw a continuation. This is unsafe. It should
+    work from a top level procedure, or any function
+    called by such a procedure, but may fail
+    if thrown from a procedure called by a function.
+    The library run and driver will catch the
+    continuation and execute it instead of the
+    current continuation. If the library run is used
+    and the continuation being executed is down the
+    C stack, the C stack will not have been correctly
+    popped. Crudely, nested drivers should rethrow
+    the exception until the C stack is in the correct
+    state to execute the continuation, but there is no
+    way to determine that at the moment.
+
+    Compiler generated runs ignore the exception,
+    the library run catches it. Exceptions typically
+    use a non-local goto, and they cannot pass across
+    a function boundary.
+  """
+  proc throw(x: unit->void) { _throw (C_hack::cast[cont] x); }
+  private proc _throw: cont = "throw $1;";
+
+ 
   // BUGGED: doesn't pass argument
   private fun _start[t]: (t->0)*t->cont = "$1->clone()->call(0)";
   fun start[t] (p:t->0) (x:t) = { return _start (p,x); }
@@ -993,7 +1016,10 @@ module Control
     flx::rtl::con_t *tmp=$1;
     if(!tmp)
       throw flx::rtl::flx_exec_failure_t (__FILE__,"run","Run terminated procedure");
-    while(tmp)tmp=tmp->resume();
+      while(tmp) {
+        try { tmp=tmp->resume(); }
+        catch (flx::rtl::con_t *x) { tmp = x; }
+      }
   }
   """;
 
@@ -1002,14 +1028,18 @@ module Control
   {
     using namespace flx::rtl;
     con_t *tmp = *(con_t**)$1.data;
-    while(tmp && tmp->action == yield_action)
-      tmp=tmp->resume();
+    while(tmp && tmp->action == yield_action) {
+      try { tmp=tmp->resume(); }
+      catch (flx::rtl::con_t *x) { tmp = x; }
+    }
     if (!tmp) 
       throw flx::rtl::flx_exec_failure_t (__FILE__,"send","Send to terminated procedure");
     *(?1*)tmp->p_message = $2;
     tmp->action = yield_action;
-    while(tmp && tmp->action == yield_action)
-      tmp=tmp->resume();
+    while(tmp && tmp->action == yield_action) {
+      try { tmp=tmp->resume(); }
+      catch (flx::rtl::con_t *x) { tmp = x; }
+    }
     *(con_t**)$1.data = tmp; 
   }
   """;
@@ -1180,7 +1210,8 @@ open Control;
 @head(1,'Stl library')
 @h=tangler('lib/stl.flx','data')
 @select(h)
-@tangle(categories)
+#include "flx_categories.flx"
+
 include "std";
 header std_stl_vector "#include <vector>";
 header std_stl_list "#include <list>";
@@ -1227,9 +1258,9 @@ size_t __gnu_cxx::hash<std::string>::
   it = 'stl_'+n+'_iterator[t]'
 
   tangle('    type stl_'+n+' = "'+ns+'::'+n+'<?1>";')
-  tangle('    fun create : unit -> '+c+' = "0,'+ns+'::'+n+'<?1>()";')
-  tangle('    fun create : int * t -> '+c+'= "0,'+ns+'::'+n+'<?1>($1,$2)";')
-  tangle('    fun create[i] : i * i -> '+c+' = "0,'+ns+'::'+n+'<?1>($1,$2)";')
+  tangle('    fun create : unit -> '+c+' = "(0,'+ns+'::'+n+'<?1>())";')
+  tangle('    fun create : int * t -> '+c+'= "(0,'+ns+'::'+n+'<?1>($1,$2))";')
+  tangle('    fun create[i] : i * i -> '+c+' = "(0,'+ns+'::'+n+'<?1>($1,$2))";')
   gen_pcmp(c)
   tangle('    fun len: '+c+' -> int = "$1.size()";')
   tangle('    fun empty: '+c+' -> int = "$1.empty()";')
@@ -1285,7 +1316,7 @@ size_t __gnu_cxx::hash<std::string>::
   it = 'stl_'+n+'_iterator[t]'
   tangle('    type stl_'+n+' = "'+ns+'::'+n+'<?1>";')
   tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1,?2>::iterator";')
-  tangle('    fun create : unit -> '+c+' = "0,'+ns+'::'+n+'<?1>()";')
+  tangle('    fun create : unit -> '+c+' = "(0,'+ns+'::'+n+'<?1>())";')
   tangle('    gen_cmp '+c+';')
   tangle('    fun len: '+c+'->int = "$1.size()";')
   tangle('    fun empty: '+c+'->int = "$1.empty()";')
@@ -1306,7 +1337,7 @@ size_t __gnu_cxx::hash<std::string>::
   it = 'stl_'+n+'_iterator[k,v]'
   tangle('    type stl_'+n+' = "'+ns+'::'+n+'<?1,?2>";')
   tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1,?2>::iterator";')
-  tangle('    fun create : unit -> '+c+' = "0,'+ns+'::'+n+'<?1,?2>()";')
+  tangle('    fun create : unit -> '+c+' = "(0,'+ns+'::'+n+'<?1,?2>())";')
   tangle('    gen_cmp '+c+';')
   tangle('    fun len: '+c+'->int = "$1.size()";')
   tangle('    fun empty: '+c+'->int = "$1.empty()";')

@@ -254,35 +254,35 @@ let const_fold' e sr name arg = match name, arg with
   (* bool *)
   (* not x *)
   | "lnot", `AST_tuple ( _, [
-           `AST_typed_case (_,x,`TYP_sum [`TYP_tuple[];`TYP_tuple[]])
+           `AST_typed_case (_,x,`TYP_unitsum 2)
           ])
     -> truth sr (x=0)
 
   (* x or y *)
   | "lor", `AST_tuple ( _, [
-           `AST_typed_case (_,x,`TYP_sum [`TYP_tuple[];`TYP_tuple[]]);
-           `AST_typed_case (_,y,`TYP_sum [`TYP_tuple[];`TYP_tuple[]])
+           `AST_typed_case (_,x,`TYP_unitsum 2);
+           `AST_typed_case (_,y,`TYP_unitsum 2)
           ])
     -> truth sr (x=1 or y=1)
 
   (* x and y *)
   | "land", `AST_tuple ( _, [
-           `AST_typed_case (_,x,`TYP_sum [`TYP_tuple[];`TYP_tuple[]]);
-           `AST_typed_case (_,y,`TYP_sum [`TYP_tuple[];`TYP_tuple[]])
+           `AST_typed_case (_,x,`TYP_unitsum 2);
+           `AST_typed_case (_,y,`TYP_unitsum 2)
           ])
     -> truth sr (x=1 && y=1)
 
   (* x eq y *)
   | "eq", `AST_tuple ( _, [
-           `AST_typed_case (_,x,`TYP_sum [`TYP_tuple[];`TYP_tuple[]]);
-           `AST_typed_case (_,y,`TYP_sum [`TYP_tuple[];`TYP_tuple[]])
+           `AST_typed_case (_,x,`TYP_unitsum 2);
+           `AST_typed_case (_,y,`TYP_unitsum 2)
           ])
     -> truth sr (x=y)
 
   (* x ne y *)
   | "ne", `AST_tuple ( _, [
-           `AST_typed_case (_,x,`TYP_sum [`TYP_tuple[];`TYP_tuple[]]);
-           `AST_typed_case (_,y,`TYP_sum [`TYP_tuple[];`TYP_tuple[]])
+           `AST_typed_case (_,x,`TYP_unitsum 2);
+           `AST_typed_case (_,y,`TYP_unitsum 2)
           ])
     -> truth sr (x<>y)
 

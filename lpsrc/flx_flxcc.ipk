@@ -60,6 +60,7 @@ exception Next
 ;;
 type control_t = {
   mutable control_filename: string;
+  mutable flxg_command: string;
   mutable prein_filename: string;
   mutable preout_filename: string;
   mutable log_filename: string;
@@ -88,6 +89,7 @@ type control_t = {
 
 let control = {
   control_filename = Sys.argv.(1);
+  flxg_command = "";
   prein_filename = Sys.argv.(1) ^ ".h";
   preout_filename = Sys.argv.(1) ^ ".i";
   log_filename = Sys.argv.(1) ^ ".log";
@@ -243,6 +245,13 @@ let rec parse_control_file filename =
             ;
             raise Next
           
+          | "flx_compiler" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            let j = !i in
+            while !i < n do incr i done;
+            control.flxg_command <- String.sub line j (!i-j);
+            raise Next
+
           | "preprocessor" ->
             while !i < n && line.[!i]=' ' do incr i done;
             if !i = n then failwith "preprocessor statement requires arguments";
@@ -1180,7 +1189,7 @@ let handle_global_fun ft registry key key' fname loc =
       else String.concat " * " (List.map (soa registry) ps) 
     in
     let cv = cvqual a in
-    let ct = if key = key' then ";" else key'^"($a);" in
+    let ct = if key = key' then "" else key'^"($a);" in
     rpl loc (`procedures ((key,tsig,cv), (args,ct)))
 
   | TFun (TVoid _,None,false,a) ->
@@ -1190,7 +1199,7 @@ let handle_global_fun ft registry key key' fname loc =
 
   | TFun (TVoid _,Some _,true,a) ->
     let cv = cvqual a in
-    let ct = if key = key' then ";" else key'^"($a);" in
+    let ct = if key = key' then "" else key'^"($a);" in
     rpl loc (`procedures ((key^"[t]",[],cv), ("t",ct)))
 
   | TFun (ret,Some ps,false,a) ->
@@ -2263,9 +2272,12 @@ if is_nonempty control.incomplete_types_cache then
 ;;
 
 let flx f = 
-  let cmd = "flxg -Ilib -I"^control.outdir^" -c " ^ f in
-  print_endline cmd;
-  Unix.system(cmd)
+  if control.flxg_command <> "" then begin
+    let cmd = control.flxg_command ^ " -I"^control.outdir^" -c " ^f in
+    print_endline cmd;
+    Unix.system(cmd)
+  end
+  else Unix.WEXITED 0 (* cheat *) 
 ;;
 
 let fnames = ref []
@@ -2564,6 +2576,7 @@ merge /usr/include/bits/xtitypes.h /usr/include/stropts.h
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
 #include config/gnu_c_search_path.flxcc
+flx_compiler bin/flxg -Ilib
 
 outdir c89 
 prefix /usr/include 
@@ -2600,6 +2613,7 @@ rename String String_
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
 #include config/gnu_c_search_path.flxcc
+flx_compiler bin/flxg -Ilib
 
 outdir gnu89 
 prefix /usr/include 
@@ -2607,6 +2621,7 @@ prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
 preprocessor gcc -E -std=gnu89
 language C
 //-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
+flx_compiler bin/flxg -Ilib
 
 incfile assert.h
 incfile ctype.h
@@ -2639,6 +2654,7 @@ rename String String_
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
 #include config/gnu_c_search_path.flxcc
+flx_compiler bin/flxg -Ilib
 
 outdir c99 
 prefix /usr/include 
@@ -2678,6 +2694,7 @@ rename String String_
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
 #include config/gnu_c_search_path.flxcc
+flx_compiler bin/flxg -Ilib
 
 outdir gnu99
 prefix /usr/include 
@@ -2718,6 +2735,7 @@ rename String String_
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
 #include config/gnu_cxx_search_path.flxcc
+flx_compiler bin/flxg -Ilib
 
 outdir cxx 
 prefix /usr/include
@@ -2753,6 +2771,7 @@ rename String String_
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
 #include config/gnu_cxx_search_path.flxcc
+flx_compiler bin/flxg -Ilib
 
 outdir cxx_sys
 prefix /usr/include
@@ -2788,6 +2807,7 @@ rename String String_
 @select(h)
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
+flx_compiler bin/flxg -Ilib
 
 outdir gnucxx 
 prefix /usr/include
@@ -2822,6 +2842,7 @@ rename String String_
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
 #include config/gnu_cxx_search_path.flxcc
+flx_compiler bin/flxg -Ilib
 
 outdir flxcc_out
 prefix /usr/include

@@ -478,16 +478,38 @@ private:
 #include <cassert>
 #include <cstdio>
 #include <cstddef>
+#include "flx_rtl_config.hpp"
 #include "flx_collector.hpp"
 namespace flx {
 namespace gc {
 namespace collector {
 
+static int mcount = 0;
+#ifdef HAVE_GXX_X86
+register void *sp __asm__("esp");
+#else
+static void *sp = 0;
+#endif
+
+void *low_sp = 0;
+void *hi_sp = 0;
+
 void *malloc_free::allocate(std::size_t amt)
 {
   void *p = malloc(amt);
-  //printf("malloc %p\n",p);
-  return p;
+  //++mcount;
+  //void *x = sp;
+  //if (low_sp == NULL) low_sp = x,hi_sp = x;
+  //else { 
+  //  if (x < low_sp) low_sp = x;
+  //  if (x > hi_sp) hi_sp = x;
+  //}
+  //if(mcount%100==0)printf("malloc %p, count=%d,stack size = %ld\n",p,mcount,(char*)hi_sp - (char*)low_sp);
+  if(p)return p;
+  else {
+    fprintf(stderr,"Felix: Malloc out of memory, blk=%ld\n",long(amt));
+    abort();
+  }
 }
 
 void malloc_free::deallocate(void *p, std::size_t)

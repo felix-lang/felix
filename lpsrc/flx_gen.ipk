@@ -74,6 +74,7 @@ open Flx_unravel
 open Flx_ogen
 open Flx_ctypes
 open Flx_cexpr
+open Flx_maps
 
 let string_of_string = Flx_string.c_quote_of_string
 
@@ -154,7 +155,7 @@ let get_variable_typename syms bbdfns i ts =
       ", got ts=" ^ 
       si (length ts)
     );
-    let t = tsubst vs ts t in
+    let t = reduce_type (tsubst vs ts t) in
     cpp_typename syms t
 
   | _ -> 
@@ -224,9 +225,9 @@ let gen_function syms (child_map,bbdfns) all_closures index id vs bps ret' ts in
     ", got ts=" ^ 
     si (length ts)
   );
-  let argtype = tsubst vs ts argtype in
+  let argtype = reduce_type (tsubst vs ts argtype) in
   let ret = lower ret' in
-  let ret = tsubst vs ts ret in
+  let ret = reduce_type (tsubst vs ts ret) in
   let funtype = fold syms.dfns (`BTYP_function (argtype, ret)) in
 
   let argtypename = cpp_typename syms argtype in
@@ -269,15 +270,16 @@ let gen_function syms (child_map,bbdfns) all_closures index id vs bps ret' ts in
         display
       )^
       "\n  );\n" 
+  (*
   and dtor_dcl name =
     "  ~" ^ name ^"();\n"
+  *)
   in
   let members = find_members syms (child_map,bbdfns) index ts in
   match ret with
   | `BTYP_void ->
     let name = cpp_instance_name syms bbdfns index ts in
     let ctor = ctor_dcl name in
-    let dtor = dtor_dcl name in
     "struct " ^ name ^
     (match funtypename with 
     | Some x -> ": "^x
@@ -292,10 +294,6 @@ let gen_function syms (child_map,bbdfns) all_closures index id vs bps ret' ts in
     members ^
     "  //constructor\n" ^
     ctor ^
-    (*
-    "  //destructor\n" ^
-    dtor_dcl name ^
-    *)
     (
       if IntSet.mem index all_closures then
       "  //clone\n" ^
@@ -318,7 +316,6 @@ let gen_function syms (child_map,bbdfns) all_closures index id vs bps ret' ts in
     let name = cpp_instance_name syms bbdfns index ts in
     let rettypename = cpp_typename syms ret in
     let ctor = ctor_dcl name in
-    let dtor = dtor_dcl name in
     "struct " ^ name ^
     (match funtypename with 
     | Some x -> ": "^x
@@ -333,10 +330,6 @@ let gen_function syms (child_map,bbdfns) all_closures index id vs bps ret' ts in
     members ^
     "  //constructor\n" ^
     ctor ^
-    (*
-    "  //destructor\n" ^
-    dtor ^
-    *)
     (
       if IntSet.mem index all_closures then
       "  //clone\n" ^
@@ -423,9 +416,10 @@ let gen_ctor syms bbdfns name display funs ts =
   ) ^ 
   " {}\n"
 
+(*
 let gen_dtor syms bbdfns name display ts =
   name^"::~"^name^"(){}\n"
-
+*)
 let is_closure_var bbdfns index =
   let var_type bbdfns index =
     let id,_,entry = 
@@ -484,12 +478,61 @@ let get_var_frame syms bbdfns this index ts : string =
     end
   | _ -> failwith ("[get_var_frame] Expected name "^id^" to be variable or value")
 
+let gen_prim_call 
+  syms bbdfns tn ge ct ts (arg,argt as a) ret sr sr2
+=
+  (*
+  print_endline ("ts= "^catmap "," (sbt syms.dfns) ts);
+  print_endline ("argt = " ^ sbt syms.dfns argt);
+  *)
+  let ts = map tn ts in
+  match arg,argt with
+  | (`BEXPR_tuple es,`BTYP_tuple typs) ->
+    let ess = map (ge sr) es in
+
+    (* typs is already reduced and instantiated *)
+    let ets = map (cpp_typename syms) typs in
+    let tt = tn (`BTYP_tuple typs) in
+    csubst sr sr2 ct ess ets tt ret ts
+  
+  (* this case is needed for a primitive value of tuple type *)
+  | (_,`BTYP_tuple typs) as x ->
+    let n = length typs in
+    let es = 
+      map2 
+      (fun i t -> `BEXPR_get_n (i,x),t) 
+      (nlist n) typs
+    in
+    let ess = map (ge sr) es in
+    let ets = map tn typs in
+    let tt = tn (`BTYP_tuple typs) in
+    csubst sr sr2 ct ess ets tt ret ts
+
+  | (_,(`BTYP_array(t,`BTYP_unitsum n) as ta)) as x ->
+    let typs = map (fun _ -> t) (nlist n) in
+    let es = 
+      map 
+      (fun i -> `BEXPR_get_n (i,x),t) 
+      (nlist n)
+    in
+    let ess = map (ge sr) es in
+    let ets = map tn typs in
+    let tt = tn ta in
+    csubst sr sr2 ct ess ets tt ret ts
+
+
+  | (_,typ) -> 
+    let typ = tn typ in
+    let a = ge sr a in
+    csubst sr sr2 ct [a] [typ] typ ret ts
+
 let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
   (*
   print_endline ("Generating expression " ^ string_of_bound_expression_with_type syms.dfns (e,t));
   *)
   let ge' e = gen_expr' syms bbdfns this e vs ts sr in
   let ge e = gen_expr syms bbdfns this e vs ts sr in
+  let ge'' sr e = gen_expr syms bbdfns this e vs ts sr in
   if length ts <> length vs then 
   failwith 
   (
@@ -498,8 +541,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
     ", got ts=" ^ 
     si (length ts)
   );
-  let tsub t = tsubst vs ts t in
+  let tsub t = reduce_type (tsubst vs ts t) in
   let tn t = cpp_typename syms (tsub (lower t)) in
+  let raw_typename t = cpp_typename syms (tsubst vs ts (lower t)) in
   let ge_arg a = 
     match a with
     | _,`BTYP_tuple [] -> ""
@@ -511,6 +555,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
   in
   let our_display = get_display_list bbdfns this in
   let our_level = length our_display in
+  let rt t = reduce_type (lstrip syms.dfns (tsub t)) in
+  let t = rt t in
   match e with
   | `BEXPR_expr (s,_) -> ce_top s
 
@@ -518,9 +564,13 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
     (* generate a function style cast *)
     ce_call (ce_atom (tn t)) [ge' e]
     
-  | `BEXPR_get_n (n,e) -> 
-    ce_dot (ge' e) ("mem_" ^ si n)
-    
+  | `BEXPR_get_n (n,(e',t as e)) -> 
+    begin match rt t with
+    | `BTYP_array (_,`BTYP_unitsum _) -> 
+      ce_dot (ge' e) ("data["^si n^"]")
+    | _ -> ce_dot (ge' e) ("mem_" ^ si n)
+    end
+
   | `BEXPR_match_case (n,((e',t') as e)) -> 
     if is_unitsum t' then
       ce_infix "==" (ge' e) (ce_atom (si (n-1)))
@@ -541,7 +591,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
       let t = tn t in
     *)
       (* really ugly brackets .. *)
-      ce_atom ("*("^tn t^"*)(" ^ ge e ^ ".data)")
+      ce_top ("*("^tn t^"*)(" ^ ge e ^ ".data)")
      
   | `BEXPR_deref ((`BEXPR_ref index),`BTYP_pointer t) -> 
     ge' (`BEXPR_name index,t)
@@ -562,6 +612,16 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
     
   | `BEXPR_case (v,t') ->
     begin match unfold syms.dfns t' with
+    | `BTYP_unitsum n ->
+      if v<1 or v>n
+      then 
+        failwith 
+        (
+          "Invalid case index " ^ si v ^
+          " of " ^ si n ^ " cases  in unitsum"
+        )
+     else ce_atom (si (v-1))
+
     | `BTYP_sum ls ->
        let s = 
          let n = length ls in
@@ -716,7 +776,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
       *) 
 
 
-  | `BEXPR_apply_prim (index,ts,a) ->
+  | `BEXPR_apply_prim (index,ts,(arg,argt as a)) ->
+    let argt = tsub argt in
     let id,parent,sr2,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
@@ -735,40 +796,10 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
         si (length ts)
       );
       let ts = map tsub ts in
-      let retyp = tsubst vs ts retyp in
+      let retyp = reduce_type (tsubst vs ts retyp) in
       let retyp = tn retyp in
-      let ts = map tn ts in
-      let s = 
-      begin
-        (*
-        print_endline "--- CASE OF PRIMITIVE"; 
-        *) 
-        match a with
-        | (`BEXPR_tuple es,`BTYP_tuple typs) ->
-          let ess = map ge es in
-          let ets = map tn typs in
-          let tt = tn (`BTYP_tuple typs) in
-          "(" ^ csubst sr sr2 ct ess ets tt retyp ts ^")"
-
-        (* this case is needed for a primitive value of tuple type *)
-        | (_,`BTYP_tuple typs) as x ->
-          let n = length typs in
-          let es = 
-            map2 
-            (fun i t -> `BEXPR_get_n (i,x),t) 
-            (nlist n) typs
-          in
-          let ess = map ge es in
-          let ets = map tn typs in
-          let tt = tn (`BTYP_tuple typs) in
-          "(" ^ csubst sr sr2 ct ess ets tt retyp ts ^")"
-
-        | (_,typ) -> 
-          let typ = tn typ in
-          let a = ge a in
-          "(" ^ csubst sr sr2 ct [a] [typ] typ retyp ts ^ ")"
-      end
-      in ce_atom s
+      let s = gen_prim_call syms bbdfns tn ge'' ct ts (arg,argt) retyp sr sr2 
+      in ce_top s
 
     (* not sure whether these will be prims or directs or what .. *)
     | `BBDCL_cstruct (vs,_) ->
@@ -866,9 +897,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
       in ce_atom s
 
     | `BBDCL_cstruct (vs,_) ->
-     ce_atom (
-       "(*("^ id ^"*)(void*)&(" ^ ge a ^ "))"
-     )
+       ce_atom (
+         "(*("^ id ^"*)(void*)&(" ^ ge a ^ "))"
+       )
        
     | `BBDCL_struct (vs,_) ->
       let name = tn (`BTYP_inst (index,ts)) in
@@ -894,12 +925,32 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
 
   | `BEXPR_tuple es ->
     (* just apply the tuple type ctor to the arguments *)
-    let ctyp = tn (lower t) in
-    ce_atom (
-    ctyp ^ "(" ^
-    cat ", " (map ge es) ^
-    ")"
-    )
+    begin match t with
+    | `BTYP_array (t',`BTYP_unitsum n) ->
+      let tuple = 
+        let t'' = `BTYP_tuple (map (fun _ -> t') (nlist n)) in
+        let ctyp = raw_typename t'' in
+        ce_atom (
+        ctyp ^ "(" ^
+        cat ", " (map ge es) ^
+        ")"
+        )
+      in
+        (* cast a tuple which is an array type to an array *)
+        let atyp = tn (lower t) in
+        ce_cast 
+          (atyp ^ "&")
+          (ce_infix "," (ce_atom "0") tuple)
+
+    | `BTYP_tuple _ ->
+      let ctyp = tn (lower t) in
+      ce_atom (
+      ctyp ^ "(" ^
+      cat ", " (map ge es) ^
+      ")"
+      )
+    | _ -> assert false
+    end
 
 and gen_expr syms bbdfns this e vs ts sr =
   let e = Flx_maps.reduce_tbexpr bbdfns e in
@@ -908,35 +959,6 @@ and gen_expr syms bbdfns this e vs ts sr =
 
 type kind_t = Function | Procedure
  
-let gen_prim_call 
-  syms bbdfns tn ge ct ts a sr sr2
-=
-  let ts = map tn ts in
-  match a with
-  | (`BEXPR_tuple es,`BTYP_tuple typs) ->
-    let ess = map (ge sr) es in
-    let ets = map tn typs in
-    let tt = tn (`BTYP_tuple typs) in
-    "      {" ^ csubst sr sr2 ct ess ets tt "Error" ts^ "}\n"
-  
-  (* this case is needed for a primitive value of tuple type *)
-  | (_,`BTYP_tuple typs) as x ->
-    let n = length typs in
-    let es = 
-      map2 
-      (fun i t -> `BEXPR_get_n (i,x),t) 
-      (nlist n) typs
-    in
-    let ess = map (ge sr) es in
-    let ets = map tn typs in
-    let tt = tn (`BTYP_tuple typs) in
-    "      {" ^ csubst sr sr2 ct ess ets tt "Error" ts^ "}\n"
-
-  | (_,typ) -> 
-    let typ = tn typ in
-    let a = ge sr a in
-    "      {" ^ csubst sr sr2 ct [a] [typ] typ "Error" ts^ "}\n"
-
 let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter this vs ts instance_no needs_switch (exe:bexe_t) : string =
   if length ts <> length vs then 
   failwith 
@@ -953,10 +975,10 @@ let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter
   print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs);
   print_endline ("ts = " ^ catmap ","  (string_of_btypecode syms.dfns) ts);
   *)
-  let tsub t = tsubst vs ts t in
+  let tsub t = reduce_type (tsubst vs ts t) in
   let ge sr e : string = gen_expr syms bbdfns this e vs ts sr in
   let ge' sr e : cexpr_t = gen_expr' syms bbdfns this e vs ts sr in
-  let tn t : string = cpp_typename syms (tsubst vs ts (lower t)) in
+  let tn t : string = cpp_typename syms (reduce_type (tsubst vs ts (lower t))) in
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns this 
     with _ -> failwith ("[gen_exe] Can't find this " ^ si this)
@@ -972,7 +994,7 @@ let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter
     let subs = 
       catmap ""
       (fun ((_,t) as e,s) ->
-        let t = cpp_typename syms t in
+        let t = cpp_ltypename syms t in
         let e = ge sr e in
         "      " ^ t ^ " " ^ s ^ " = " ^ e ^ ";\n"
       )
@@ -997,10 +1019,10 @@ let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter
       if length vs <> length ts then
       clierr sr "[gen_prim_call] Wrong number of type arguments"
       ;
-
+      let s = gen_prim_call syms bbdfns tn ge ct ts a "Error" sr sr2 in
       "      // " ^ src_str ^ "\n" ^
       sub_start ^
-      gen_prim_call syms bbdfns tn ge ct ts a sr sr2 ^
+      "      " ^ s ^ "\n" ^
       sub_end
 
 
@@ -1182,12 +1204,14 @@ let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter
     | `BEXE_call_prim (sr,index,ts,a)
     | `BEXE_call_direct (sr,index,ts,a) 
     | `BEXE_call (sr,(`BEXPR_closure (index,ts),_),a) ->
+      let a = match a with (a,t) -> a, tsub t in
       let subs,x = unravel syms bbdfns a in
       let ts = map tsub ts in
       handle_closure sr false index ts subs x
 
     | `BEXE_jump (sr,((`BEXPR_closure (index,ts),_)),a) 
     | `BEXE_jump_direct (sr,index,ts,a) ->
+      let a = match a with (a,t) -> a, tsub t in
       let subs,x = unravel syms bbdfns a in
       let ts = map tsub ts in
       handle_closure sr true index ts subs x
@@ -1309,12 +1333,8 @@ let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter
       
     | `BEXE_fun_return (sr,e) -> 
       let _,t = e in
-      let t = tn t in
-      "      //" ^ src_str ^ "\n" ^
-      "      {\n" ^
-      "        "^t^" tmp="^ge sr e^";\n" ^
-      "        return tmp;\n" ^
-      "      }\n"
+      "      //" ^ src_str ^ ": type "^tn t^"\n" ^
+      "      return "^ge sr e^";\n" 
 
     | `BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
 
@@ -1361,7 +1381,9 @@ let gen_exes filename syms bbdfns display label_info counter index exes vs ts in
   accepts the argument and runs the function.
   The machine stack is used for functions.
 *)
-let gen_function_methods filename syms (child_map,bbdfns) all_closures label_info counter index ts instance_no = 
+let gen_function_methods filename syms (child_map,bbdfns) 
+  all_closures label_info counter index ts instance_no 
+= 
   let id,parent,sr,entry = Hashtbl.find bbdfns index in
   if syms.compiler_options.print_flag then
   print_endline 
@@ -1385,8 +1407,8 @@ let gen_function_methods filename syms (child_map,bbdfns) all_closures label_inf
       si (length ts)
     );
     let argtype = lower (typeof_bparams bps) in
-    let argtype = tsubst vs ts argtype in
-    let ret = tsubst vs ts (lower ret') in
+    let argtype = reduce_type (tsubst vs ts argtype) in
+    let ret = reduce_type (tsubst vs ts (lower ret')) in
     let funtype = fold syms.dfns (`BTYP_function (argtype, ret)) in
 
     let argtypename = cpp_typename syms argtype in
@@ -1406,7 +1428,9 @@ let gen_function_methods filename syms (child_map,bbdfns) all_closures label_inf
       in
       gen_ctor syms bbdfns name display funs ts 
     in
+    (*
     let dtor = gen_dtor syms bbdfns name display ts in
+    *)
     let params = map (fun (id,(ix,t)) -> ix) bps in
     let exe_string,_ =
       try 
@@ -1414,7 +1438,8 @@ let gen_function_methods filename syms (child_map,bbdfns) all_closures label_inf
       with x -> 
         print_endline (Printexc.to_string x);
         print_endline (catmap "\n" (string_of_bexe syms.dfns 1) exes);
-        failwith "Can't gen exes .."
+        print_endline "Can't gen exes ..";
+        raise x
     in
     let cont = "con_t *" in
     let apply =
@@ -1441,7 +1466,13 @@ let gen_function_methods filename syms (child_map,bbdfns) all_closures label_inf
             let n = !counter in incr counter; 
             if Hashtbl.mem syms.instances (i,ts)
             then 
-              s ^ "  " ^ cpp_instance_name syms bbdfns i ts ^ " = _arg.mem_"^ si n ^";\n"
+              let memexpr =
+                match argtype with
+                | `BTYP_array _ -> ".data["^si n^"]"
+                | `BTYP_tuple _ -> ".mem_"^ si n
+                | _ -> assert false
+              in
+              s ^ "  " ^ cpp_instance_name syms bbdfns i ts ^ " = _arg"^ memexpr ^";\n"
             else s (* elide initialisation of elided variable *)
           )
           "" params 
@@ -1456,10 +1487,6 @@ let gen_function_methods filename syms (child_map,bbdfns) all_closures label_inf
       let q = qualified_name_of_index syms.dfns index in
       "//FUNC " ^ q ^ ": Constructor\n" ^
       ctor^ "\n" ^
-      (*
-      "//FUNC " ^ q ^ ": Destructor\n" ^
-      dtor^ "\n" ^
-      *)
       (
         if IntSet.mem index all_closures then
         "\n//FUNC " ^ q ^ ": Clone method\n" ^
@@ -1498,7 +1525,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
       si (length ts)
     );
     let argtype = lower (typeof_bparams bps) in
-    let argtype = tsubst vs ts argtype in
+    let argtype = reduce_type (tsubst vs ts argtype) in
     let funtype = fold syms.dfns (`BTYP_function (argtype, `BTYP_void)) in
 
     let argtypename = cpp_typename syms argtype in
@@ -1517,7 +1544,9 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
       gen_ctor syms bbdfns name display funs ts 
     in
 
+    (*
     let dtor = gen_dtor syms bbdfns name display ts in
+    *)
     let ps = map (fun (id,(ix,t)) -> id,t) bps in
     let params = map (fun (id,(ix,t)) -> ix) bps in
 
@@ -1554,7 +1583,13 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
             let n = !counter in incr counter; 
             if Hashtbl.mem syms.instances (i,ts)
             then
-              s ^ "  " ^ cpp_instance_name syms bbdfns i ts ^ " = _arg.mem_"^ si n ^";\n"
+              let memexpr =
+                match argtype with
+                | `BTYP_array _ -> ".data["^si n^"]"
+                | `BTYP_tuple _ -> ".mem_"^ si n
+                | _ -> assert false
+              in
+              s ^ "  " ^ cpp_instance_name syms bbdfns i ts ^ " = _arg" ^ memexpr ^";\n"
             else s (* elide initialisation of elided variables *)
           )
           "" params
@@ -1599,10 +1634,6 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
       "\n//PROC " ^ q ^ "\n" ^
       "//PROC " ^ q ^ ": Constructor\n" ^
       ctor^
-      (*
-      "\n//PROC " ^ q ^ ": Destructor\n" ^
-      dtor^
-      *)
       (
         if IntSet.mem index all_closures then
         "\n//PROC " ^ q ^ ": Clone method\n" ^

@@ -190,7 +190,7 @@ native Win32 using MSVC++.
 </P>
 
 <H1>Download</H1>
-@keep=['1.0.15','1.0.12','1.0.11','1.0.10','1.0.9','1.0.8','1.0.7']
+@keep=['1.0.17','1.0.16','1.0.15','1.0.12','1.0.11','1.0.10','1.0.9','1.0.8','1.0.7']
 @tangle("<P> Download developer tarball <A HREF=flx_"+flx_version+"_src.tgz>flx_"+flx_version+"_src.tgz</A></P><P>")
 @for k in keep:
   tangle('Old Version <A HREF=flx_'+k+'_src.tgz>flx_'+k+'_src.tgz</A><BR>') 
@@ -756,7 +756,17 @@ computed jumps are adapted for use in the Felix system.
 on systems loading a gp register, described in the paper,
 do not apply to Felix non-local gotos since in our system the
 actual jump is always taken from inside the function, so we can use
-this technique even with shared libraries and position indpendent code.
+this technique even with shared libraries and position independent code.
+</P>
+<H2>Unification of recursive types with subtyping</H2>
+<P>You can find a pdf format copy of 
+<A HREF=papers/SRT.A4.pdf>Luca Cardelli's seminal paper</A>
+describing how to perform unification in a system supporting
+the infinite tree expansion interpretation of recursive
+types, together with subtyping rules. In such a system,
+the usual equations for solution by unification are
+replaced by inequalities. The mathematical proof is
+long and complex, the algorithm, however, is not.
 </P>
 </BODY>
 </HTML>

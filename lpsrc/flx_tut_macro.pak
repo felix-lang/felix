@@ -137,6 +137,43 @@ print "BAD";
 #endif
 endl;
 
+@head(2,'Long Lines')
+Preprocessor directives support a kind of 'here' doc.
+Place a # character after the command name, and
+all lines up to a line consisting solely of a #
+will be taken as the argument string.
+
+@select(tangler(tdir+'mac106.flx'))
+include "std";
+#define ONE 1
+#define TWO 1
+#define THREE 1
+#if #
+ONE + TWO + THREE > 0
+#
+print "Yes"; endl;
+#else
+print "No"; endl;
+#endif
+
+@head(2,'Code generation with Scheme')
+The Felix preprocessor contains a Scheme interpreter
+which can be invoked with the scheme directive.
+The directive is replaced by the output of the scheme
+program. Generally, the same environment is used by
+all scheme commands, to allow communication between
+parts of the program.
+
+@select(tangler(tdir+'mac107.flx'))
+include "std";
+#scheme (define x 1)
+#scheme (define y 2)
+#scheme #
+(display "var x = ") (display (+ x y)) (display ";")
+(newline)
+#
+print x; endl;
+
 @head(1,'The Syntax Macro Processor')
 @head(2,'Expression Macro Facility')
 Felix provides an powerful and dangerous 

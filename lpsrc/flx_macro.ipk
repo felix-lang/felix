@@ -53,8 +53,8 @@ open Flx_typing2
 exception Macro_return
 
 let truthof x = match x with
-  | `AST_typed_case (_,1,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) -> Some false
-  | `AST_typed_case (_,2,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) -> Some true
+  | `AST_typed_case (_,1,`TYP_unitsum 2) -> Some false
+  | `AST_typed_case (_,2,`TYP_unitsum 2) -> Some true
   | _ -> None
 
 (* 
@@ -392,7 +392,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | `AST_cond (sr, (e1, e2, e3)) -> 
     let cond = me e1 in
     begin match cond with
-    | `AST_typed_case (_,c,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) ->
+    | `AST_typed_case (_,c,`TYP_unitsum 2) ->
       if c=2 then me e2 else me e3
     | _ ->
       `AST_cond (sr,(cond,me e2,me e3))
@@ -422,6 +422,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
 
   | `AST_tuple (sr, es) -> `AST_tuple (sr, map me es)
+  | `AST_arrayof (sr, es) -> `AST_arrayof (sr, map me es)
   | `AST_coercion (sr, (e1, t)) -> `AST_coercion (sr, (me e1,mt sr t)) 
   | `AST_suffix (sr, (qn, t)) -> 
     let qn = Flx_typing.qualified_name_of_expr (me (qn:>expr_t)) in
@@ -643,7 +644,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_ifgoto (sr, e , id) -> 
     let e = me e in
     begin match e with
-    | `AST_typed_case (_,c,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) ->
+    | `AST_typed_case (_,c,`TYP_unitsum 2) ->
       if c = 2 then 
       ( 
         ctack (`AST_goto (sr,id));
@@ -660,7 +661,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     let n = !seq in incr seq;
     let fin = "_" ^ string_of_int n in
     begin match e with
-    | `AST_typed_case (_,c,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) ->
+    | `AST_typed_case (_,c,`TYP_unitsum 2) ->
       if c = 2 then (* infinite loop *)
       begin
         ctack (`AST_label(sr,start));
@@ -683,7 +684,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     let n = !seq in incr seq;
     let fin = "_" ^ string_of_int n in
     begin match e with
-    | `AST_typed_case (_,c,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) ->
+    | `AST_typed_case (_,c,`TYP_unitsum 2) ->
       if c = 1 then (* infinite loop *)
       begin
         ctack (`AST_label(sr,start));
@@ -703,7 +704,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_ifnotgoto (sr, e, id) -> 
     let e = me e in
     begin match e with
-    | `AST_typed_case (_,c,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) ->
+    | `AST_typed_case (_,c,`TYP_unitsum 2) ->
       if c = 1 then 
       (
         ctack (`AST_goto (sr,id)); 
@@ -716,7 +717,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_ifreturn (sr, e) -> 
     let e = me e in
     begin match e with
-    | `AST_typed_case (_,c,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) ->
+    | `AST_typed_case (_,c,`TYP_unitsum 2) ->
       if c = 2 then 
       ( 
         ctack (`AST_proc_return sr);
@@ -733,7 +734,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_ifdo (sr, e, sts1, sts2) -> 
     let e = me e in
     begin match e with
-    | `AST_typed_case (_,c,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) ->
+    | `AST_typed_case (_,c,`TYP_unitsum 2) ->
       if c = 2 then
         iter ctack (ms sts1)
       else

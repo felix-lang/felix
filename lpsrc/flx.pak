@@ -1,6 +1,6 @@
 @bc = begin_displayed_code
 @ec = end_displayed_code
-@flx_version = '1.0.16'
+@flx_version = '1.0.18'
 @godi_revision = '0'
 @set_title('Felix '+flx_version)
 @head(1,'Purpose')
@@ -271,6 +271,7 @@ Flx_version.version_data := version_data
     ["NaN", "NAN"],
     ["new", "NEW"],
     ["noinline", "NOINLINE"],
+    ["noreturn", "NORETURN"],
     ["not", "NOT"],
     ["obj", "OBJECT"],
     ["of", "OF"],
@@ -477,6 +478,9 @@ Flx_version.version_data := version_data
 
 @head(2,'Array Fish')
 @include_file ('flx_fish.ipk')
+
+@head(2,'Ocs Scheme')
+@include_file ('flx_ocs.ipk')
 
 @head(2,'The Felix Run time')
 @include_file ('flx_rtl.ipk')

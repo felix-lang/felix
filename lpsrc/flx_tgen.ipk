@@ -100,6 +100,9 @@ let gen_type_name syms bbdfns (index,typ) =
     "struct " ^ name ^ ";\n"
 
 
+  | `BTYP_unitsum k ->
+      "typedef int " ^ tn typ ^ ";\n"
+
   | `BTYP_sum ts ->
     descr ^
     if is_unitsum typ
@@ -242,6 +245,7 @@ let gen_type syms bbdfns (index,typ) =
     "  virtual "^name^" *clone()const=0;\n"  ^
     "};\n"
 
+  | `BTYP_unitsum _ -> "" (* union typedef *)
   | `BTYP_sum _ -> "" (* union typedef *)
 
   | `BTYP_tuple [] -> "" 
@@ -260,6 +264,7 @@ let gen_type syms bbdfns (index,typ) =
     let v = tn v in
     let n =
       match i with
+      | `BTYP_unitsum k -> k
       | `BTYP_sum ls ->
         if all_units ls then length ls
         else 
@@ -324,17 +329,30 @@ let gen_type syms bbdfns (index,typ) =
       ^
       "  {}\n" ^
       begin
-        if length cts > 1 then
-        let equiv_tuple = `BTYP_tuple (map snd cts) in
-        "  " ^ name ^ "("^ tn equiv_tuple ^ " _a)\n" ^
-        "    : " 
-        ^
-        catmap ", "
-        (fun ((name,_),i) -> name ^"(_a.mem_" ^si i^ ")")
-        (combine ctss (nlist (length ctss)))
-        ^
-        "  {}\n" 
-        else ""
+        match cts with
+        | [] | [_] -> ""
+        | h :: t -> let th = snd h in
+        try iter (fun (_,t) -> if t <> th then raise Not_found) cts;
+          let equiv_array = `BTYP_array (th, `BTYP_unitsum (length cts)) in
+          "  " ^ name ^ "("^ tn equiv_array ^ " const &_a)\n" ^
+          "    : " 
+          ^
+          catmap ", "
+          (fun ((name,_),i) -> name ^"(_a.data[" ^si i^ "])")
+          (combine ctss (nlist (length ctss)))
+          ^
+          "  {}\n" 
+
+        with Not_found ->
+          let equiv_tuple = `BTYP_tuple (map snd cts) in
+          "  " ^ name ^ "("^ tn equiv_tuple ^ " const &_a)\n" ^
+          "    : " 
+          ^
+          catmap ", "
+          (fun ((name,_),i) -> name ^"(_a.mem_" ^si i^ ")")
+          (combine ctss (nlist (length ctss)))
+          ^
+          "  {}\n" 
       end
       ^
       "};\n"

@@ -128,6 +128,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_apply (sr,(f,e)) -> `AST_apply (sr,(subst f,subst e))
   | `AST_map (sr,f,e) -> `AST_map (sr,subst f,subst e)
   | `AST_tuple (sr,es) -> `AST_tuple (sr,List.map subst es)
+  | `AST_arrayof (sr,es) -> `AST_arrayof (sr,List.map subst es)
 
 
   (* Only one of these should occur, but I can't

@@ -2996,11 +2996,12 @@ match x3 with
 | ((?a,?b),?c) => { print a; endl; print b; endl; print c; endl; } 
 endmatch;
 
-@head(1,'Cooperative Multitasking')
+@head(1,'Felix threads: Cooperative Multitasking')
 Felix supports event driven programming with
 a threading interface. This is variously known
 as cooperative multi-tasking, ultra-lightweight 
-threading, coroutines, continuations, or resumptions.
+threading, coroutines, continuations, resumptions,
+in Felix these are called fthreads.
 @p()
 The start function starts a new thread in a stopped state.
 @p()
@@ -3058,6 +3059,55 @@ proc report() {
 }
 
 print ".. OK"; endl;
+
+@head(2,'Message chain using fthreads')
+@select(tangler(tdir+'tut211.flx'))
+include "std";
+
+thread_max := 10;  
+message_max := 10;
+
+var thread_count = thread_max; 
+var message_count = message_max;
+
+print thread_count; print " threads"; endl;
+print message_count; print " messages"; endl;
+
+proc final() {
+  var msg:int;
+  var total = 0;
+  whilst true do
+    read msg;
+    total += msg;
+
+    if message_count == 0 do
+      print total; endl;
+    done;
+  done;
+}
+
+proc agent() {
+  us := thread_count;
+  --thread_count;
+  var next = 
+    if us > 1 then start the agent ()
+    else start the final () endif
+  ;
+  var msg:int;
+  whilst true do
+    read msg;
+    send[int] (&next) (msg+1);
+  done;
+}
+
+var first = start the agent ();
+
+whilst message_count >0 do
+  --message_count;
+  send[int] (&first) 0;
+  //collect();
+done;
+
 
 @head(1,"System interface")
 We show how to get at the command line arguments.

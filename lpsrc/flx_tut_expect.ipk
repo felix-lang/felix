@@ -22,6 +22,12 @@ OK
 @head(2,"tut/examples/mac105b.expect")
 @select(tangler("tut/examples/mac105b.expect","data"))
 OK
+@head(2,"tut/examples/mac106.expect")
+@select(tangler("tut/examples/mac106.expect","data"))
+Yes
+@head(2,"tut/examples/mac107.expect")
+@select(tangler("tut/examples/mac107.expect","data"))
+3
 @head(2,"tut/examples/mac122.expect")
 @select(tangler("tut/examples/mac122.expect","data"))
 101
@@ -924,6 +930,9 @@ Eol:     "
 11
 12
 321Empty
+@head(2,"tut/examples/tut135g.expect")
+@select(tangler("tut/examples/tut135g.expect","data"))
+1111111112YES
 @head(2,"tut/examples/tut136.expect")
 @select(tangler("tut/examples/tut136.expect","data"))
 200.2 100.1 []
@@ -1167,6 +1176,11 @@ wait
 Bye for now
 dead
 .. OK
+@head(2,"tut/examples/tut211.expect")
+@select(tangler("tut/examples/tut211.expect","data"))
+10 threads
+10 messages
+100
 @head(2,"tut/examples/tut301.expect")
 @select(tangler("tut/examples/tut301.expect","data"))
 argc=1

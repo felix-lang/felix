@@ -63,6 +63,7 @@ let rec process_expr h k sr ((e,t) as be) =
     ue e1; ue e2
 
   | `BEXPR_tuple es -> iter ue es 
+  | `BEXPR_array es -> iter ue es 
      
   | `BEXPR_coercion (e,_) -> ue e
      

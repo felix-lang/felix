@@ -1436,7 +1436,8 @@ var h2 = HashMap::create[string,int]();
 i=n; until i == 0 do
   var j = begin h1; until j == end h1 do
     k, v := deref j;
-    h2.[k] = h2.[k] + v; 
+    //h2.[k] = h2.[k] + v; 
+    h2.[k] += v; 
     ++j;
   done;
   --i;

@@ -894,9 +894,25 @@ Felix executable statements
 unconditional jump
 .br
 
-.B if <expr> goto <label>;
+.B if <cond> goto <label>;
 .br
 conditional jump
+.br
+
+.B if <cond> return;
+.br
+conditional return
+.br
+
+.B if <cond> do <statements> 
+.br
+.B [elif <cond> do <statements>] .. 
+.br
+.B [else <statements>] 
+.br 
+.B done;
+.br
+conditional execution
 .br
 
 .B call <expr><expr>;
@@ -924,6 +940,13 @@ Explicit tail call of parent <ident> which reuses its frame object.
 .B read <identifier>;
 .br
 blocking read of message into variable.
+.br
+
+.B whilst <cond> do <statements> done;
+.br
+.B until <cond> do <statements> done;
+.br
+Conditional iteration.
 .br
 
 .B todo <string>;

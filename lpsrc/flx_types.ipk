@@ -284,6 +284,7 @@ and typecode_t =
   | `AST_lookup of range_srcref * (expr_t * string * typecode_t list) 
   | `AST_the of range_srcref * qualified_name_t
   | `TYP_tuple of typecode_t list               (** product type *)
+  | `TYP_unitsum of int                         (** sum of units  *)
   | `TYP_sum of typecode_t list                 (** numbered sum type *)
   | `TYP_function of typecode_t * typecode_t    (** function type *)
   | `TYP_pointer of typecode_t                  (** pointer type *)
@@ -354,6 +355,7 @@ and expr_t =
   | `AST_lookup of range_srcref * (expr_t * string * typecode_t list) 
   | `AST_apply of range_srcref * (expr_t * expr_t)
   | `AST_tuple of range_srcref * expr_t list
+  | `AST_arrayof of range_srcref * expr_t list
   | `AST_coercion of range_srcref * (expr_t * typecode_t)
   | `AST_suffix of range_srcref * (qualified_name_t * typecode_t) 
 
@@ -683,7 +685,8 @@ type 't b0typecode_t' =
   [
   | `BTYP_inst of bid_t * 't list 
   | `BTYP_tuple of 't list         
-  | `BTYP_sum of 't list            
+  | `BTYP_unitsum of int
+  | `BTYP_sum of 't list 
   | `BTYP_function of 't * 't
   | `BTYP_pointer  of 't 
   | `BTYP_lvalue  of 't 
@@ -897,17 +900,43 @@ val reduce_bexe:
   fully_bound_symbol_table_t ->
   bexe_t -> bexe_t
 
+val reduce_type:
+  btypecode_t ->
+  btypecode_t
+
 @h = tangler('src/flx_maps.ml')
 @select(h)
 open Flx_ast
 open Flx_types
 open List
+open Flx_typing
 
+let rec list_of_n_things thing lst n =
+  if n = 0 then lst 
+  else list_of_n_things thing (thing::lst) (n-1)
+  
 let map_type f = function
   | `AST_name (sr,name,ts) -> `AST_name (sr,name, map f ts)
   | `AST_lookup (sr,(e,name,ts)) -> `AST_lookup (sr,(e,name,map f ts))
   | `AST_typed_case (sr,i,t) -> `AST_typed_case (sr,i, f t)
   | `TYP_tuple ts -> `TYP_tuple (map f ts)
+
+  (* we have to do this, so that a large unitsume
+     can be specified without overflowing the compiler
+     storage
+  *)
+  | `TYP_unitsum k -> 
+    if k>0 then
+      let mapped_unit = f (`TYP_tuple []) in
+      match mapped_unit with
+      | `TYP_tuple [] ->
+        `TYP_unitsum k
+      | _ -> `TYP_tuple ( list_of_n_things mapped_unit [] k)
+    else `TYP_unitsum k
+
+  (* here we don't need to go to a unitsum, since
+     we have already used up storage
+  *)
   | `TYP_sum ts -> `TYP_sum (map f ts)
   | `TYP_function (a,b) -> `TYP_function (f a, f b)
   | `TYP_pointer t -> `TYP_pointer (f t)
@@ -931,10 +960,36 @@ let map_type f = function
   | `TYP_type_tuple ts -> `TYP_type_tuple (map f ts)
   | x -> x
 
+let all_units' ts = 
+  try 
+    iter (function 
+      | `BTYP_tuple [] -> () 
+      | _ -> raise Not_found
+    ) 
+    ts; 
+    true 
+  with Not_found -> false
+
 let map_b0type f = function
   | `BTYP_inst (i,ts) -> `BTYP_inst (i, map f ts)
   | `BTYP_tuple ts -> `BTYP_tuple (map f ts)
-  | `BTYP_sum ts -> `BTYP_sum (map f ts)
+
+  | `BTYP_unitsum k -> 
+    if k>0 then
+      let mapped_unit = f (`BTYP_tuple []) in
+      match mapped_unit with
+      | `BTYP_tuple [] ->
+        `BTYP_unitsum k
+      | _ -> `BTYP_tuple ( list_of_n_things mapped_unit [] k)
+    else `BTYP_unitsum k
+  
+  | `BTYP_sum ts -> 
+    let ts = map f ts in
+    if all_units' ts then
+      `BTYP_unitsum (length ts)
+    else
+      `BTYP_sum ts
+
   | `BTYP_function (a,b) -> `BTYP_function (f a, f b)
   | `BTYP_pointer t->  `BTYP_pointer (f t)
   | `BTYP_lvalue t->  `BTYP_lvalue (f t)
@@ -950,11 +1005,16 @@ let map_btype f = function
     let g (a,b) = f a, f b in
     `BTYP_type_match (f t, map g ps)
     
+  | `BTYP_type -> `BTYP_type 
   | x -> map_b0type f x
 
 let iter_b0type f = function
   | `BTYP_inst (i,ts) -> iter f ts
   | `BTYP_tuple ts -> iter f ts
+  | `BTYP_unitsum k -> 
+    let unitrep = `BTYP_tuple [] in
+    for i = 1 to k do f unitrep done
+
   | `BTYP_sum ts -> iter f ts
   | `BTYP_function (a,b) -> f a; f b
   | `BTYP_pointer t->  f t
@@ -1153,6 +1213,11 @@ let reduce_bexe bbdfns exe =
     `BEXE_call_direct (sr,i,ts,a)
   | x -> x
 
+let rec reduce_type t =
+  match map_btype reduce_type t with
+  | `BTYP_tuple ts -> typeoflist (map reduce_type ts)
+  | t -> t
+
 @head(1,'Routines to extract source reference from terms')
 Source reference manipulators.
 @h = tangler('src/flx_srcref.mli')
@@ -1236,6 +1301,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_literal  (s,_) 
   | `AST_method_apply  (s,_) 
   | `AST_tuple  (s,_) 
+  | `AST_arrayof (s,_) 
   | `AST_dot  (s,_) 
   | `AST_lambda  (s,_) 
   | `AST_match_ctor  (s,_) 
@@ -1249,11 +1315,11 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_type_match (s, _) 
   | `AST_regmatch (s, _) 
   | `AST_reglex (s, _) 
-  | `AST_typeof (s, _) 
   | `AST_cond (s,_)
   | `AST_expr (s,_,_)
   | `AST_letin (s,_)
-
+  | `AST_typeof (s,_)
+  
     -> s
 
 let src_of_stmt e = match e with
@@ -1632,6 +1698,7 @@ and string_of_expr (e:expr_t) =
     ")"
 
   | `AST_tuple (_,t) -> "(" ^ catmap ", " sme t ^ ")"
+  | `AST_arrayof (_,t) -> "[|" ^ catmap ", " sme t ^ "|]"
   | `AST_dot (_,(e,n)) ->  "get_" ^ n ^ "(" ^ se e ^ ")"
 
   | `AST_lambda (_,(paramss,ret, sts)) -> 
@@ -1744,6 +1811,15 @@ and st prec tc : string =
       " endmatch"
       
     | `TYP_var i -> 0,"<var " ^ si i ^ ">"
+    | `TYP_unitsum k ->
+      0,
+      begin match k with 
+      | 0 -> "void"
+      | 1 -> "unit"
+      | 2 -> "bool"
+      | _ -> si k
+      end
+
     | `TYP_tuple ls ->
       begin match ls with 
       | [] -> 0,"unit" 
@@ -1881,10 +1957,17 @@ and sb dfns depth fixlist counter prec tc =
       | _ -> 4,cat " * " (List.map (sbt 4) ls)
       end
 
+    | `BTYP_unitsum k -> 
+      begin match k with
+      | 0 -> 0,"void"
+      | 2 -> 0,"bool"
+      | _ -> 0,si k
+      end
+
     | `BTYP_sum ls -> 
       begin match ls with 
       | [] -> 9,"UNEXPECTED EMPTY SUM = void" 
-      | [`BTYP_tuple[]; `BTYP_tuple[]] -> 0,"bool"
+      | [`BTYP_tuple[]; `BTYP_tuple[]] -> 0,"unexpected bool"
       | [x] -> (* failwith *) (9,"UNEXPECTED SUM OF ONE ARGUMENT " ^ sbt 9 x)
       | _ -> 
         if (all_units ls)
@@ -1897,7 +1980,11 @@ and sb dfns depth fixlist counter prec tc =
     | `BTYP_function (args, result) ->  
       6,(sbt 6 args) ^ " -> " ^ (sbt 6 result)
 
-    | `BTYP_array (t1,t2) -> 3, sbt 3 t1 ^"^"^sbt 3 t2
+    | `BTYP_array (t1,t2) -> 
+      begin match t2 with 
+      | `BTYP_unitsum k -> 3, sbt 3 t1 ^"^"^si k
+      | _ -> 3, sbt 3 t1 ^"^"^sbt 3 t2
+      end
 
     | `BTYP_lvalue t -> 0,"lvalue[" ^ sbt 0 t ^"]"
     | `BTYP_pointer t -> 1,"&" ^ sbt 1 t
@@ -2736,6 +2823,7 @@ and string_of_bound_expression dfns e =
     ")"
 
   | `BEXPR_tuple t -> "(" ^ catmap ", " se t ^ ")"
+
   | `BEXPR_case (v,t) -> 
     "case " ^ si v ^ " of " ^ string_of_btypecode dfns t
 
@@ -3202,6 +3290,7 @@ type felix_compiler_options_t =
   heavy_inlining : bool;
   max_inline_length : int;
   compile_only : bool;
+  force_recompile : bool;
 }
 
 
@@ -3398,6 +3487,7 @@ type felix_compiler_options_t =
   heavy_inlining : bool;
   max_inline_length : int;
   compile_only : bool;
+  force_recompile : bool;
 }
 
 
@@ -3466,6 +3556,7 @@ val dummy_sr: range_srcref
 
 val is_unitsum: btypecode_t -> bool
 val int_of_unitsum : btypecode_t -> int
+val all_units0 : b0typecode_t list -> bool
 val all_units : btypecode_t list -> bool
 val all_voids : btypecode_t list -> bool
 
@@ -3555,23 +3646,28 @@ open Flx_ast
 open Flx_types
 open Flx_srcref
 open List
+open Flx_maps
 
 let all_voids ls =    
     fold_left 
     (fun acc t -> acc && (t = `BTYP_void))
     true ls
 
-let all_units ls =    
+let all_units0 ls =    
     fold_left 
     (fun acc t -> acc && (t = `BTYP_tuple []))
     true ls
 
+let all_units ls = all_units0 ls
+
 let is_unitsum (t:btypecode_t) = match t with
+  | `BTYP_unitsum _ -> true
   | `BTYP_sum ls ->  all_units ls
   | _ -> false
 
 
 let int_of_unitsum t = match t with
+  | `BTYP_unitsum k -> k
   | `BTYP_sum ls ->  
     if all_units ls then length ls
     else raise Not_found
@@ -3602,16 +3698,23 @@ module FunInstSet = Set.Make(
 
 (* bound type! *)
 let typeoflist typlist = match typlist with
+  | [] -> `BTYP_tuple []
   | [t] -> t
-  | _ -> `BTYP_tuple typlist
-
+  | h :: t -> 
+    try 
+      iter 
+      (fun t -> if t <> h then raise Not_found)
+      t; 
+      `BTYP_array (h,`BTYP_unitsum (length typlist))
+    with Not_found ->
+      `BTYP_tuple typlist
 
 let lift t = t
 let lower t = t (* CHANGE THIS WHEN ABSTRACT TYPES IMPLEMENTED *)
 
 let dummy_sr = ("generated",0,0,0,0)
-let flx_bool = `TYP_sum [`TYP_tuple[]; `TYP_tuple []]
-let flx_bbool = `BTYP_sum [`BTYP_tuple[]; `BTYP_tuple []]
+let flx_bool = `TYP_unitsum 2
+let flx_bbool = `BTYP_unitsum 2
 
 let qualified_name_of_expr e =
   match e with
@@ -3667,7 +3770,7 @@ let rec cmp_tbexpr (a,_) (b,_) =
 
   | `BEXPR_tuple ls,`BEXPR_tuple ls' ->
      fold_left2 (fun r a b -> r && ecmp a b) true ls ls'
-     
+
   | `BEXPR_case_arg (i,e),`BEXPR_case_arg (i',e')
   | `BEXPR_match_case (i,e),`BEXPR_match_case (i',e')
   | `BEXPR_get_n (i,e),`BEXPR_get_n (i',e') ->
@@ -3691,6 +3794,7 @@ val typeof_list:
 val paramtype: 
   (string * typecode_t) list -> typecode_t
 
+
 @h = tangler('src/flx_typing2.ml')
 @select(h)
 open Flx_ast
@@ -3698,15 +3802,26 @@ open Flx_types
 open Flx_print
 open Flx_srcref
 open Flx_exceptions
+open List
 
 let typeof_list = function 
   | [x] -> x 
   | x -> `TYP_tuple x
 
 let paramtype params = 
-  let typlist params = List.map snd params in
+  let typlist params = map snd params in
   typeof_list (typlist params)
 
+let all_tunits ts = 
+  try 
+    iter 
+    (fun t -> 
+      if t <> `TYP_tuple [] 
+      then raise Not_found
+    ) 
+    ts; 
+    true
+  with Not_found -> false
 
 let rec typecode_of_expr (e:expr_t) :typecode_t = 
   let te e = typecode_of_expr e in
@@ -3715,15 +3830,19 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | `AST_ellipsis _ -> `TYP_ellipsis
   | #qualified_name_t as x -> (x:>typecode_t)
   | `AST_tuple (sr,ls) ->
-    `TYP_type_tuple (List.map te ls)
+    `TYP_type_tuple (map te ls)
 
-  | `AST_product (_,ts) -> `TYP_tuple (List.map te ts)
+  | `AST_product (_,ts) -> `TYP_tuple (map te ts)
   | `AST_arrow (_,(a,b)) -> `TYP_function (te a, te b)
   | `AST_superscript (_,(a,b)) -> `TYP_array (te a, te b)
   | `AST_lvalue (sr,e) -> `TYP_lvalue (te e)
   | `AST_ref (sr,e) -> `TYP_pointer (te e)
   | `AST_sum (_,ts) -> 
-    `TYP_sum (List.map te ts)
+    let ts = map te ts in
+    if all_tunits ts then
+      `TYP_unitsum (length ts)
+    else
+      `TYP_sum ts
 
   | `AST_typeof (_,e) -> `TYP_typeof e
   | `AST_as (sr,(t,x)) -> `TYP_as (te t,x)
@@ -3744,18 +3863,9 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
       end
     in
       if !v <0 then clierr sr "Negative int not allowed as type"
-      else if !v >=2000 then clierr sr "Int used as type must be <2000"
       else if !v = 0 then ((`AST_void sr) :> typecode_t)
       else if !v = 1 then `TYP_tuple[]
-      else begin 
-        let u = `TYP_tuple [] in
-        let t = ref [u] in
-        while !v > 1 do
-          t := u :: !t;
-          decr v
-        done;
-        `TYP_sum !t
-      end
+      else `TYP_unitsum !v
 
   | `AST_apply(sr,(e1,e2)) ->
     begin match e1 with

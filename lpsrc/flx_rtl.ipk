@@ -14,6 +14,7 @@ in namespace flx::rtl, except as noted.
 @h = tangler("rtl/flx_meta.hpp")
 @select(h)
 #ifndef FLX_META
+#define FLX_META
 // taken from BOOST
 @if HAVE_INCLASS_MEMBER_INITIALIZATION:
   tangle('#define FLX_HAVE_INCLASS_MEMBER_INITIALIZATION')
@@ -76,6 +77,8 @@ struct store_of
 
 @h = tangler("rtl/flx_rtl_config.hpp")
 @select(h)
+#ifndef FLX_RTL_CONFIG
+#define FLX_RTL_CONFIG
 #ifndef FLX_RTL_GNU
 @if HAVE_GXX:
   tangle('#define HAVE_GXX')
@@ -103,6 +106,7 @@ struct store_of
 #define FLX_NOINLINE 
 #define FLX_CONST
 #define FLX_PURE 
+#endif
 #endif
 #endif
 
@@ -682,7 +686,10 @@ int main(int argc, char** argv)
 
     while( top && top->action == con_t::yield_action)
     {
-      top = top->resume();
+      try {
+        top = top->resume();
+      }
+      catch (con_t *x) { top=x; }
       gc_counter++;
       if(gc_counter == 1000)
       {

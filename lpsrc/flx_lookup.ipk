@@ -225,6 +225,12 @@ open Flx_generic
 open Flx_name
 open Flx_overload
 
+let unit_t = `BTYP_tuple []
+
+let lvalify t = match t with 
+  | `BTYP_lvalue _ -> t
+  | t -> `BTYP_lvalue t
+
 exception Found of int
 exception Tfound of btypecode_t
 
@@ -990,6 +996,17 @@ and bind_type'
     let t = bt t in
     ignore (try unfold syms.dfns t with _ -> failwith "TYP_case_arg unfold screwd");
     begin match unfold syms.dfns t with
+    | `BTYP_unitsum k ->
+      if i < 1 or i>k
+      then 
+        clierr sr
+        (
+          "sum type extraction index " ^ 
+          string_of_int i ^ 
+          " out of range 1 to " ^ si k
+        )
+      else unit_t
+
     | `BTYP_sum ls ->
       if i < 1 or i>List.length ls
       then 
@@ -1053,9 +1070,14 @@ and bind_type'
     let ts' =List.map bt ts  in
     `BTYP_tuple ts'
 
+  | `TYP_unitsum k -> `BTYP_unitsum k
+
   | `TYP_sum ts -> 
-    let ts' =List.map bt ts  in
-    `BTYP_sum ts'
+    let ts' = List.map bt ts  in
+    if all_units ts' then
+      `BTYP_unitsum (length ts)
+    else
+      `BTYP_sum ts'
 
   | `TYP_function (d,c) -> 
     let 
@@ -1068,9 +1090,7 @@ and bind_type'
      let t' = bt t in 
      `BTYP_pointer t'
 
-  | `TYP_lvalue t -> 
-     let t' = bt t in 
-     `BTYP_lvalue t'
+  | `TYP_lvalue t -> lvalify (bt t)
 
   | `AST_void _ -> 
     `BTYP_void
@@ -1766,10 +1786,21 @@ and lookup_qn_with_sig'
   (* WEIRD .. this is a qualified name syntactically ..
     but semantically it belongs in bind_expression
     where this code is duplicated ..
+
+    AH NO it isn't. Here, we always return a function
+    type, even for constant constructors (because we 
+    have a signature ..)
   *)
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
     begin match unfold syms.dfns t with
+    | `BTYP_unitsum k ->
+      if v<1 or v> k
+      then clierr sra "Case index out of range of sum"
+      else 
+        let ct = `BTYP_function (unit_t,t) in
+        `BEXPR_case (v,t),ct 
+
     | `BTYP_sum ls ->
       if v<1 or v> List.length ls
       then clierr sra "Case index out of range of sum"
@@ -1838,7 +1869,7 @@ and lookup_qn_with_sig'
           let t = typeofindex_with_ts syms sr index ts in
           begin match t with
           | `BTYP_function (a,_) ->
-            if a <> sign then
+            if not (type_match syms.dfns a sign) then
               clierr sr
               (
                 "[lookup_qn_with_sig] Struct constructor for "^id^" has wrong signature, got:\n" ^
@@ -1867,7 +1898,7 @@ and lookup_qn_with_sig'
           let t = try tsubst vs ts t with _ -> failwith "[lookup_qn_with_sig] WOOPS" in
           begin match t with
           | `BTYP_function (a,b) ->
-            if a <> sign then 
+            if not (type_match syms.dfns a sign) then
             clierr srn
             (
               "[lookup_qn_with_sig] Expected variable "^id ^
@@ -2055,7 +2086,7 @@ and handle_variable syms env index id sr ts t t2 =
     let t = tsubst vs ts t in
     begin match t with
     | `BTYP_function (d,c) ->
-      if d <> t2 then
+      if not (type_match syms.dfns d t2) then
       clierr sr
       (
         "[handle_variable(1)] Expected variable "^id ^
@@ -2416,6 +2447,29 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
   | `AST_get_n (sr,(n,e')) -> 
     let expr,typ = be e' in
     let ctyp = match unfold syms.dfns typ with 
+    | `BTYP_array (t,`BTYP_unitsum len)  ->
+      if n<0 or n>len-1
+      then clierr sr
+        (
+          "[bind_expression] Tuple index " ^ 
+          string_of_int n ^
+          " out of range 0.." ^
+          string_of_int (len-1)
+        )
+      else t
+
+    | `BTYP_lvalue (`BTYP_array (t,`BTYP_unitsum len)) ->
+      if n<0 or n>len-1
+      then clierr sr
+        (
+          "[bind_expression] Tuple index " ^ 
+          string_of_int n ^
+          " out of range 0.." ^
+          string_of_int (len-1)
+        )
+      else lvalify t
+
+
     | `BTYP_tuple ts 
     | `BTYP_lvalue (`BTYP_tuple ts) 
       -> 
@@ -2447,6 +2501,12 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     let t = bt sr t in
     ignore (try unfold syms.dfns t with _ -> failwith "AST_typed_case unfold screwd");
     begin match unfold syms.dfns t with
+    | `BTYP_unitsum k ->
+      if v<1 or v> k
+      then clierr sr "Case index out of range of sum"
+      else 
+        `BEXPR_case (v,t),t  (* const ctor *)
+
     | `BTYP_sum ls ->
       if v<1 or v> List.length ls
       then clierr sr "Case index out of range of sum"
@@ -2632,11 +2692,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
 
   | `AST_deref (_,`AST_ref (sr,e)) -> 
     let e,t = be e in
-    let t = 
-      match t with 
-      | `BTYP_lvalue _ -> t
-      | t -> `BTYP_lvalue t
-     in e,t 
+    let t = lvalify t in e,t
 
   | `AST_deref (sr,e) -> 
     let e,t = be e in
@@ -2720,11 +2776,48 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
       | _ -> cal_apply syms sr f a
     end
 
+  | `AST_arrayof (sr,es) ->
+    let bets = List.map be es in
+    let _, bts = List.split bets in
+    let n = length bets in
+    if n > 1 then begin
+      let t = hd bts in
+      iter
+      (fun t' -> if t <> t' then 
+         clierr sr 
+         (
+           "Elements of this array must all be of type:\n" ^
+           sbt syms.dfns t ^ "\ngot:\n"^ sbt syms.dfns t'
+         )
+      )
+      (tl bts)
+      ;
+      let t = `BTYP_array (t,`BTYP_unitsum n) in
+      `BEXPR_tuple bets,t
+    end else if n = 1 then hd bets
+    else syserr sr "Empty array?"
+
+
   | `AST_tuple (_,es) -> 
     let bets = List.map be es in
     let _, bts = List.split bets in
-    let t = `BTYP_tuple bts in
-    `BEXPR_tuple bets, t
+    let n = length bets in
+    if n > 1 then
+      try 
+        let t = hd bts in
+        iter
+        (fun t' -> if t <> t' then raise Not_found)
+        (tl bts)
+        ;
+        let t = `BTYP_array (t,`BTYP_unitsum n) in
+        `BEXPR_tuple bets,t
+      with Not_found ->
+        `BEXPR_tuple bets, `BTYP_tuple bts
+    else if n = 1 then 
+      hd bets 
+    else
+    `BEXPR_tuple [],`BTYP_tuple []
+
 
   | `AST_dot (sr,(e,id)) ->
     let get_name = "get_" ^ id in
@@ -2754,12 +2847,19 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
      let (_,t) as e' = be e in
     ignore (try unfold syms.dfns t with _ -> failwith "AST_case_arg unfold screwd");
      begin match unfold syms.dfns t with
+     | `BTYP_unitsum n ->
+       if v<1 or v>n 
+       then clierr sr "Invalid sum index"
+       else
+         `BEXPR_case_arg (v, e'),unit_t
+
      | `BTYP_sum ls ->
        let n = List.length ls in
        if v<1 or v>n 
        then clierr sr "Invalid sum index"
        else let t = List.nth ls (v-1) in
        `BEXPR_case_arg (v, e'),t
+
      | _ -> clierr sr "Expected sum type"
      end 
 
@@ -3014,13 +3114,22 @@ and rebind_btype syms env sr ts t: btypecode_t =
     | _ -> t
     end
   | `BTYP_tuple ts -> `BTYP_tuple (List.map rbt ts)
-  | `BTYP_sum ts -> `BTYP_sum (List.map rbt ts)
+  | `BTYP_sum ts -> 
+    let ts = map rbt ts in 
+    if all_units ts then
+      `BTYP_unitsum (length ts)
+    else
+      `BTYP_sum ts
+    
   | `BTYP_function (a,r) -> `BTYP_function (rbt a, rbt r) 
   | `BTYP_pointer t -> `BTYP_pointer (rbt t)
-  | `BTYP_lvalue t -> `BTYP_lvalue (rbt t)
+  | `BTYP_lvalue t -> lvalify (rbt t)
   | `BTYP_array (t1,t2) -> `BTYP_array (rbt t1, rbt t2)
-  | `BTYP_void -> `BTYP_void
-  | `BTYP_fix i -> `BTYP_fix i
+
+  | `BTYP_unitsum _ 
+  | `BTYP_void 
+  | `BTYP_fix _ -> t
+
   | `BTYP_var i -> clierr sr ("[rebind_type] Unexpected type variable " ^ sbt syms.dfns t)
   | `BTYP_apply _
   | `BTYP_typefun _

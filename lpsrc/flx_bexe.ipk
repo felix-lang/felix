@@ -354,7 +354,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         then tack (`BEXE_init (sr,index, (e',rhst)))
         else clierr sr
         (
-          "[bind_exe] LHS["^s^"<"^si index^">:\n"^
+          "[bind_exe] LHS["^s^"<"^si index^">]:\n"^
           string_of_btypecode syms.dfns lhst^
           "\n of initialisation must have same type as RHS:\n"^
           string_of_btypecode syms.dfns rhst^

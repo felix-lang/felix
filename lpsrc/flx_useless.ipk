@@ -159,6 +159,13 @@ let param_subst bbdfns id syms sr vs b ps ts b' =
       map2 
       (fun i t -> `BEXPR_get_n (i,b'),t)
       (nlist n) tts
+
+    | x,`BTYP_array (t,`BTYP_unitsum n) -> 
+      assert (n = length ps);
+      map
+      (fun i -> `BEXPR_get_n (i,b'),t)
+      (nlist n)
+
     | _ -> 
       syserr sr 
       (

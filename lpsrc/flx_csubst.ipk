@@ -65,6 +65,7 @@ open Flx_exceptions
   'QuestDigits',
   'Varargs',
   'VarargsDigits',
+  'DollarDigitsPrec',
  ]
 
 type mode_t = 
@@ -97,6 +98,7 @@ let csubst sr sr2 ct args typs argtyp retyp gargs =
   let bcat s = Buffer.add_string buf s in
   let chcat c = Buffer.add_char buf c in
   let mode = ref Normal in
+  let precname = ref "" in
   let digits = ref 0 in
   let serr i msg = 
     let spc k = String.make k ' ' in
@@ -233,17 +235,40 @@ let csubst sr sr2 ct args typs argtyp retyp gargs =
       | '0' .. '9' -> 
         digits := !digits * 10 + Char.code ch - Char.code '0'
 
+      | ':' ->
+        precname := "";
+        mode := DollarDigitsPrec
+        
       | _ -> 
         if !digits> List.length args
-        then serr i ("Arg no " ^ string_of_int !digits ^ " too large")
-        else if !digits<=0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
+        then serr i 
+          ("Parameter $" ^ string_of_int !digits ^ " > number of arguments, only got " ^ si (length args))
+        else if !digits<=0 then serr i ("Negative $" ^ string_of_int !digits)
+        else begin
+          let s' = nth args (!digits-1) in
+          if is_atomic s' then bcat s'
+          else bcat ("(" ^ s' ^ ")");
+          mode := Normal;
+          trans i ch
+        end
+      end
+
+    | DollarDigitsPrec ->
+      begin match ch with
+      | 'a'..'z' -> precname := !precname ^ String.make 1 ch
+      | _ -> 
+        print_endline ("Got precedence for $" ^ si !digits ^ ":" ^ !precname);
+        if !digits> List.length args
+        then serr i 
+          ("Parameter $" ^ string_of_int !digits ^ " > number of arguments, only got " ^ si (length args))
+        else if !digits<=0 then serr i ("Negative $" ^ string_of_int !digits)
         else
           let s' = nth args (!digits-1) in
           if is_atomic s' then bcat s'
           else bcat ("(" ^ s' ^ ")");
           mode := Normal;
           trans i ch
-       end
+      end
 
     | VarargsDigits ->
       begin match ch with
@@ -252,7 +277,7 @@ let csubst sr sr2 ct args typs argtyp retyp gargs =
 
       | _ -> 
         if !digits> List.length args
-        then serr i ("Arg no " ^ string_of_int !digits ^ " too large")
+        then serr i ("Parameter no $T" ^ string_of_int !digits ^ " too large")
         else if !digits<=0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
         else
           let s' = nth args (!digits-1) in
@@ -284,7 +309,7 @@ let csubst sr sr2 ct args typs argtyp retyp gargs =
 
       | _ -> 
         if !digits> List.length args
-        then serr i ("Arg no " ^ string_of_int !digits ^ " too large")
+        then serr i ("Parameter `" ^ string_of_int !digits ^ " too large")
         else if !digits<=0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
         else
           let s' = nth args (!digits-1) in
@@ -296,7 +321,7 @@ let csubst sr sr2 ct args typs argtyp retyp gargs =
 
     | EarholeDigits ->
         if !digits> List.length args
-        then serr i ("Arg no " ^ string_of_int !digits ^ " too large")
+        then serr i ("Parameter @" ^ string_of_int !digits ^ " too large")
         else if !digits<0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
         else
           let t = nth typs (!digits-1) in
@@ -306,7 +331,7 @@ let csubst sr sr2 ct args typs argtyp retyp gargs =
             
     | HashDigits ->
         if !digits> List.length args
-        then serr i ("Arg no " ^ string_of_int !digits ^ " too large")
+        then serr i ("Paramater #" ^ string_of_int !digits ^ " too large")
         else if !digits<0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
         else
           bcat
@@ -320,7 +345,7 @@ let csubst sr sr2 ct args typs argtyp retyp gargs =
 
     | QuestDigits ->
         if !digits> List.length gargs
-        then serr i ("Generic type arg no " ^ string_of_int !digits ^ " too large")
+        then serr i ("Generic type parameter ?" ^ string_of_int !digits ^ " too large")
         else if !digits<1 then serr i ("Generic type arg no " ^ string_of_int !digits ^ " too small")
         else
           bcat
@@ -337,6 +362,7 @@ in
   | HashDigits
   | EarholeDigits
   | DollarDigits
+  | DollarDigitsPrec
   | QuestDigits
     -> trans len ' ' (* hack .. space is harmless *)
   | _ -> serr len ("Unexpected end in mode " ^ pr !mode)

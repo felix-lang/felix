@@ -1,6 +1,5 @@
 @head(1,'Cil package')
-The copyright following applies to this sub-package.
-@begin_displayed_code()
+@select(tangler("licenses/cil_license.txt"))
 (*
  *
  * Copyright (c) 2001 by
@@ -32,8 +31,6 @@ The copyright following applies to this sub-package.
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  *)
-@end_displayed_code()
-
 
 @h = tangler("src/flx_cil_cilversion.mli")
 @select(h)
