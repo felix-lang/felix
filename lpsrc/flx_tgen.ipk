@@ -180,6 +180,7 @@ let gen_type_name syms bbdfns (index,typ) =
       )
     end
 
+(*
   | `BTYP_name index ->
     failwith
     (
@@ -236,6 +237,7 @@ let gen_type_name syms bbdfns (index,typ) =
       )
     end
     *)
+*)
   | _ -> failwith "Unexpected metatype in gen_type_name"
 
 (* This routine generates complete types when needed *)
@@ -408,6 +410,7 @@ let gen_type syms bbdfns (index,typ) =
     end
 
 
+(*
   | `BTYP_name index ->
     failwith ("[gen_type] Deprecated BTYP_name " ^ si index);
     (*
@@ -468,6 +471,7 @@ let gen_type syms bbdfns (index,typ) =
       )
     end
     *)
+*)
 
   | _ -> failwith "Unexpected metatype in gen_type"
 

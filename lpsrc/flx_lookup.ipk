@@ -2900,8 +2900,8 @@ and build_env syms parent : env_t =
 and rebind_btype syms env sr ts t: btypecode_t =
   let rbt t = rebind_btype syms env sr ts t in
   match t with
-  | `BTYP_inst (i,_)
-  | `BTYP_name i ->
+(*  | `BTYP_name i *)
+  | `BTYP_inst (i,_) ->
     begin match get_data syms.dfns i with
     | {symdef=`SYMDEF_type_alias t'} ->
       bind_type syms env sr t'

@@ -1761,12 +1761,15 @@ TESTMODE=0
 RECOMPILE=0
 DEBUG=0
 INLINE=0
+ECHO=0
+TIME=0
 @if DEFAULT_LINK_MODEL=="dynamic":
    tangle("STATIC=0")
  else:
    tangle("STATIC=1")
 
 RUNIT=1
+cpps=""
 
 grab=1
 
@@ -1787,6 +1790,17 @@ do
 
   x--debug)
     DEBUG=1
+    ECHO=1
+    shift
+  ;;
+
+  x--time)
+    TIME=1
+    shift
+  ;;
+
+  x--echo)
+    ECHO=1
     shift
   ;;
 
@@ -1797,6 +1811,18 @@ do
 
   x--inline)
     INLINE=1
+    shift
+  ;;
+
+  x--optimise)
+    INLINE=1
+    cpps="-O3 $cpps"
+    shift
+  ;;
+
+  x--optimize)
+    INLINE=1
+    cpps="-O3 $cpps"
     shift
   ;;
 
@@ -1835,7 +1861,6 @@ fi
 # make a list of any *.cpp files (or other g++ options ..)
 
 grab=1
-cpps=""
 pkgs=""
 while (( "$grab" == "1" ));
 do
@@ -1998,7 +2023,7 @@ then
   then
     if [ $RUNIT = 1 ]
     then
-      if [ $DEBUG = 1 ]; then echo "running $base.so"; fi
+      if [ $ECHO = 1 ]; then echo "running $base.so"; fi
       `echo "$FLXRUN" "$base.so $args"`
     fi
     exit $?
@@ -2006,7 +2031,7 @@ then
 else
   if [ $RECOMPILE = 0 -a -r "$base" -a "(" ! -r "$base.flx" -o "$base" -nt "$base.flx" ")" ]
   then
-    if [ $DEBUG = 1 ]; then echo "running $base"; fi
+    if [ $ECHO = 1 ]; then echo "running $base"; fi
     if [ $RUNIT = 1 ]
     then
       `echo "$base $args"`
@@ -2017,9 +2042,13 @@ fi
 
 # Need Felix and c++ compile, then run it
 
-if [ $DEBUG = 1 ]
+if [ $ECHO = 1 ]
 then 
   echo "compiling $base.flx"
+fi
+
+if [ $DEBUG = 1 ]
+then 
   VERBOSE="-v"
   CCFLAGS="-g"
 else
@@ -2038,12 +2067,22 @@ if [ $STATIC = 0 ]
 then
   if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"` 
   then
-    if `echo $CCLINK_DLLIB $CCFLAGS -I"$INCLUDE_DIR" "$INCLUDE_DIRS" "$PKGS" "$cpps" "$base.cpp" -o "$base.so"`
+    CMD=`echo $CCLINK_DLLIB $CCFLAGS -I"$INCLUDE_DIR" "$INCLUDE_DIRS" "$PKGS" "$cpps" "$base.cpp" -o "$base.so"`
+    if [ $ECHO = 1 ] 
+    then 
+      echo "$CMD"
+    fi
+    if `$CMD`
     then
       # rm -f "$base.cpp"
       if [ $RUNIT = 1 ]
       then
-        `echo "$FLXRUN" "$base.so" $args`
+        if [ $TIME = 1 ]
+        then
+          `echo "time $FLXRUN" "$base.so" $args`
+        else
+          `echo "$FLXRUN" "$base.so" $args`
+        fi
       fi
       exit $?
     else
@@ -2053,12 +2092,23 @@ then
 else
   if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"` 
   then
-    if `echo $CCLINK_STATIC $CCFLAGS -DFLX_STATIC_LINK -I"$INCLUDE_DIR" "$INCLUDE_DIRS" $FLXRTL/flx_run_static.o "$PKGS" "$cpps" "$base.cpp" $FLXRTL/libflx_static.a -o "$base"`
+    CMD=`echo $CCLINK_STATIC $CCFLAGS -DFLX_STATIC_LINK -I"$INCLUDE_DIR" "$INCLUDE_DIRS" $FLXRTL/flx_run_static.o "$PKGS" "$cpps" "$base.cpp" $FLXRTL/libflx_static.a -o "$base"`
+    if [ $ECHO = 1 ] 
+    then 
+      echo "$CMD"
+    fi
+
+    if `$CMD`
     then
       # rm -f "$base.cpp"
       if [ $RUNIT = 1 ]
       then
-        `echo $base $args`
+        if [ $TIME ]
+        then
+          `echo time $base $args`
+        else
+          `echo $base $args`
+        fi
       fi
       exit $?
     else

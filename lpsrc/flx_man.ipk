@@ -1031,7 +1031,9 @@ libname
 
 .br
 .B flx
-[--version] [--help] [--test] [--force] [--inline] [--static] [-c]
+[--version] [--help] [--test] [--force] [--echo] [--time]
+[--inline] [--static] [--optimise] [--optimize]
+[-c] 
 [ [--pkg=<pkg-config pkg>] 
 [<file>.cpp] 
 [<file>.o] 
@@ -1041,9 +1043,9 @@ filebasename
 
 .SH DESCRIPTION
 The 
-.B filebase 
-name must not include an extension, which
-must be '.flx'.
+.B filebasename
+specifies the felix program to run. If there is an
+extension it should be .flx, if not it defauts to .flx.
 .br
 
 .B flxl 
@@ -1106,11 +1108,29 @@ Forces both Felix and C++ recompilation and linking.
 Normally, timestamps are checked, and compilation
 is skipped if the program is up to date.
 
+.B --echo
+.br
+Indicates what the flx script is doing,
+prints external commands such as the C++
+compilation command line. Use to check
+your options are being processed correctly
+by the flx script.
+
+.B --debug
+.br
+Tells the flxg compiler to print extensive
+details of its compilation process to help
+debugging.
+
 .B --inline
 .br
 Enables experimental inlining features. May slow
 down Felix compilation significantly. May cause
 significant code bloat.
+
+.B --optimise --optimize
+.br
+Enables inlining and passes -O3 to the C++ compiler.
 
 .B --static
 .br
@@ -1120,6 +1140,11 @@ Force linking of an executable instead of a shared library.
 .br
 Prints version and exits.
 
+.B --time
+.br
+Times execution of the target program using the time
+command. Note -- compilation time is not included.
+
 .B --help
 .br
 Runs 'man flx' and exits.
@@ -1127,6 +1152,13 @@ Runs 'man flx' and exits.
 .B -c
 .br
 Generates but does not execute the program.
+Warning -- this option is part of the felix options.
+It must be given before any C++ compiler options,
+or it will just be passed directly to the C++ compiler,
+resulting in generation of object files without linking,
+but the flx script will try to run the linked
+output anyhow (possibly resulting in an old version
+being executed).
 
 .B --pkg=<pkg-config pkg>
 .br

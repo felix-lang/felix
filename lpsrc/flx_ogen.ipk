@@ -66,10 +66,8 @@ let find_references syms (child_map,bbdfns) index ts =
         Hashtbl.find bbdfns idx
       in
       match bbdfn with
-      | `BBDCL_var (vs,(`BTYP_pointer _ as t))
-      | `BBDCL_val (vs,(`BTYP_pointer _ as t))
-      | `BBDCL_var (vs,(`BTYP_function _ as t))
-      | `BBDCL_val (vs,(`BTYP_function _ as t))
+      | `BBDCL_var (vs,t)
+      | `BBDCL_val (vs,t)
         -> 
         if length ts <> length vs then 
         failwith 
@@ -90,7 +88,7 @@ let find_references syms (child_map,bbdfns) index ts =
 
 let comma_sub s = 
   let rec aux l r =
-    try  
+    try   (* note: breaks tail recursion optimisation *)
       let i = String.index r ',' in
       let n = String.length r in
       aux (l ^ String.sub r 0 i ^ " comma ") (String.sub r (i+1) (n-i-1))
@@ -98,12 +96,45 @@ let comma_sub s =
   in
   aux "" s
  
-(* this code handles tuples and pointers *)
+(* this code handles pointers in types *)
 let rec get_offsets syms bbdfns typ : string list =
   let tname = cpp_typename syms typ in
   match unfold typ with
   | `BTYP_pointer t -> 
     ["offsetof("^tname^",frame)"]
+
+  | `BTYP_sum args when not (all_units args) -> 
+    ["offsetof("^tname^",data)"]
+
+  | `BTYP_inst (i,ts) ->
+    let id,parent,sr,entry = Hashtbl.find bbdfns i in 
+    begin match entry with
+    | `BBDCL_union (vs,idts) ->
+      let varmap = mk_varmap vs ts in
+      let cpts = map (fun (_,t) -> varmap_subst varmap t) idts in
+      if all_voids cpts then []
+      else ["offsetof("^tname^",data)"]
+
+    | `BBDCL_struct (vs,idts) ->
+      let varmap = mk_varmap vs ts in
+      let n = ref 0 in
+      let cpts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
+      let lst = ref [] in
+      iter 
+      (fun (s,t) ->
+        let prefix = 
+          "offsetof("^tname^","^s^")+" 
+        in
+        iter
+        (fun s -> lst := !lst @ [prefix ^ s])
+        (get_offsets syms bbdfns t)
+      )
+      cpts 
+      ;
+      !lst
+ 
+    | _ -> []
+    end
 
   | `BTYP_tuple args -> 
     let n = ref 0 in
@@ -123,6 +154,10 @@ let rec get_offsets syms bbdfns typ : string list =
     ;
     !lst
 
+  | `BTYP_function _ -> ["0"]
+  | `BTYP_fix _ -> assert false
+  | `BTYP_void -> assert false
+  | `BTYP_var _ -> assert false
   | _ -> []
 
 let gen_offset_data s n name offsets =
@@ -141,34 +176,6 @@ let gen_offset_data s n name offsets =
 
 let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance = 
   let vars =  (find_references syms (child_map,bbdfns) index ts) in
-  let refs = filter 
-    (fun (i,t) -> match t with 
-    | `BTYP_pointer _ -> true 
-    | _ -> false
-    ) vars 
-  in
-  let funs = filter 
-    (fun (i,t) -> match t with 
-    | `BTYP_function _ -> true 
-    | _ -> false
-    ) vars 
-  in
-  let refnames = 
-    map 
-    (fun (index,t)-> 
-      cpp_instance_name syms bbdfns index ts,
-      cpp_typename syms t
-    )
-    refs
-  in
-  let funnames = 
-    map 
-    (fun (index,t)-> 
-      cpp_instance_name syms bbdfns index ts,
-      cpp_typename syms t
-    )
-    funs
-  in
   let name = cpp_instance_name syms bbdfns index ts in
   let display = Flx_display.get_display_list bbdfns index in
   let offsets = 
@@ -184,17 +191,20 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance =
     )
     display
     @
-    map 
-    (fun (mem,reftyp)->
-      "offsetof("^name^","^mem^")" ^
-      "+offsetof("^comma_sub reftyp^",frame)") 
-    refnames
-    @
-    map 
-    (fun (mem,reftyp)->
-      "offsetof("^name^","^mem^")"
+    concat
+    (
+      map 
+      (fun (idx,typ)->
+        let mem = cpp_instance_name syms bbdfns idx ts in
+        let offsets = get_offsets syms bbdfns typ in
+        map 
+        (fun offset ->
+          "offsetof("^name^","^mem^")+" ^ offset
+        )
+        offsets 
+      )
+      vars
     )
-    funnames
   in
   let n = length offsets in
   bcat s 
@@ -208,48 +218,22 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance =
 let gen_thread_frame_offsets s syms bbdfns =
   let vars = find_thread_vars_with_type bbdfns in
   let ts = [] in
-  let refs = filter 
-    (fun (i,t) -> match t with 
-    | `BTYP_pointer _ -> true 
-    | _ -> false
-    ) vars 
-  in
-  let funs = filter 
-    (fun (i,t) -> match t with 
-    | `BTYP_function _ -> true 
-    | _ -> false
-    ) vars 
-  in
-  let refnames = 
-    map 
-    (fun (index,t)-> 
-      cpp_instance_name syms bbdfns index ts,
-      cpp_typename syms t
-    )
-    refs
-  in
-  let funnames = 
-    map 
-    (fun (index,t)-> 
-      cpp_instance_name syms bbdfns index ts,
-      cpp_typename syms t
-    )
-    funs
-  in
   let name = "thread_frame_t" in
   let offsets = 
-    map
-    (fun (mem,reftyp)->
-      "offsetof("^name^","^mem^")" ^
-      "+offsetof("^comma_sub reftyp^",frame)" 
+    concat
+    (
+      map 
+      (fun (idx,typ)->
+        let mem = cpp_instance_name syms bbdfns idx ts in
+        let offsets = get_offsets syms bbdfns typ in
+        map 
+        (fun offset ->
+          "offsetof("^name^","^mem^")+" ^ offset
+        )
+        offsets 
+      )
+      vars
     )
-    refnames
-    @
-    map 
-    (fun (mem,reftyp)->
-      "offsetof("^name^","^mem^")"
-    )
-    funnames
   in
   let n = length offsets in
   bcat s 

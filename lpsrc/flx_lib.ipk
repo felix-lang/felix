@@ -78,8 +78,10 @@ namespace flx { namespace rtl { namespace i18n {
 #ifndef FLX_IOUTIL
 #define FLX_IOUTIL
 #include <string>
+#include <cstdio>
 namespace flx { namespace rtl { namespace ioutil {
   std::string load_file (std::string);
+  std::string readln(std::FILE*);
 }}}
 #endif
 
@@ -100,10 +102,33 @@ namespace flx { namespace rtl { namespace ioutil {
       char buffer[512];
       int n;
       while (fgets(buffer,512,fi))
-      {
         x = x + string(buffer);
-      }
       fclose(fi);
+      return x;
+    }
+    else return "";
+  }
+
+  // includes newline if present
+  // null string indicates end of file
+  string readln (FILE *fi)
+  {
+    if(fi)
+    {
+      string x = "";
+      char buffer[513];
+      buffer[512]='\0';
+      int n;
+      while 
+      ( 
+        !(
+          (n=x.size()) && 
+          x[n-1]=='\n'
+        ) 
+        &&
+        fgets(buffer,512,fi)
+      )
+        x = x + string(buffer);
       return x;
     }
     else return "";
@@ -473,11 +498,16 @@ module Text_file
 {
   fun load: string -> string = "flx::rtl::ioutil::load_file($1)";
 
-  type text_file = "FILE*";
+  type text_file = "FILE*"; // its a macro?
 
-  fun fopen_input: string -> text_file = 'fopen($1.data(),"rt")';
-  fun fopen_output: string -> text_file = 'fopen($1.data(),"wt")';
-  proc fclose: text_file = '(void)fclose($1);';
+  fun fopen_input: string -> text_file = 'std::fopen($1.data(),"rt")';
+  fun fopen_output: string -> text_file = 'std::fopen($1.data(),"wt")';
+  proc fclose: text_file = '(void)std::fclose($1);';
+  fun readln: text_file -> string ="flx::rtl::ioutil::readln($1)";
+
+  const stdin: text_file = "stdin";
+  const stdout: text_file = "stdout";
+  const stderr: text_file = "stderr";
 }
 
 
@@ -899,6 +929,7 @@ module Lexer
   fun sub: iterator * int -> iterator = "$1 - $2";
   fun sub: iterator * iterator -> int = "$1 - $2";
   proc incr: &iterator -> iterator = "++*$1.data;";
+  fun deref: iterator -> char = "*$1";
 
 @#  proc _set: &iterator * iterator = "*(char const**)$1.data = $2;";
 }

@@ -49,9 +49,9 @@ let nop x = ()
 let rec uses_type syms used bbdfns (t:btypecode_t) = 
   let ut t = uses_type syms used bbdfns t in
   match t with
-  | `BTYP_name i 
+(*  | `BTYP_name i 
     -> uses syms used bbdfns i
-
+*)
   | `BTYP_inst (i,ts)
     -> 
       uses syms used bbdfns i;

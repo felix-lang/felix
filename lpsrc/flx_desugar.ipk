@@ -558,8 +558,8 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let d,x = rex e in
     let match_function_index = seq() in
 
-    let match_var_name = name^ "_match_var_"^string_of_int match_function_index in
-    let match_function_id = name^ "_match_fun_"^ string_of_int match_function_index in
+    let match_var_name = name^ "_mv_"^string_of_int match_function_index in
+    let match_function_id = name^ "_mf_"^ string_of_int match_function_index in
     let match_function = `AST_name (sr,match_function_id,[]) in
     let match_seq = ref (seq()) in
 

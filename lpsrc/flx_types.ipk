@@ -594,7 +594,7 @@ and iface_t =
 (** value typing *)
 type 't b0typecode_t' = 
   [
-  | `BTYP_name of bid_t         
+(*  | `BTYP_name of bid_t *)
   | `BTYP_inst of bid_t * 't list 
   | `BTYP_tuple of 't list         
   | `BTYP_sum of 't list            
@@ -1654,13 +1654,14 @@ and sb dfns depth fixlist counter prec tc =
       "[" ^cat ", " (List.map (sbt 9) ts) ^ "]"
       )
 
+(*    
     | `BTYP_name n -> 
       let name = 
         try qualified_name_of_index dfns n
         with Not_found -> "<N" ^ si n^ ">"
       in
       0,name
-
+*)
     | `BTYP_tuple ls -> 
       begin match ls with 
       | [] -> 0,"unit" 
