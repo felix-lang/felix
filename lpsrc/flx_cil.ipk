@@ -22756,7 +22756,7 @@ val tryFinally:
 type registerInfo = {
     rName: string; (** The name of the register *)
     rGroup: string; (** The name of the group to which this register belongs. 
-                     * The special group {!Engine.machineRegisterGroup} 
+                     * The special group Engine.machineRegisterGroup 
                      * contains the machine registers, which are displayed in 
                      * a special window. *)
     rVal: Flx_cil_pretty.doc; (** The value to be displayed about a register *)
@@ -22782,7 +22782,7 @@ module type STACK = sig
   (** The type of stacks containing elements of type ['a]. *)
 
   exception Empty
-  (** Raised when {!Stack.pop} or {!Stack.top} is applied to an empty stack. *)
+  (** Raised when Stack.pop or Stack.top is applied to an empty stack. *)
 
   val create : unit -> 'a t
 
@@ -23222,7 +23222,7 @@ let tryFinally
 type registerInfo = {
     rName: string; (** The name of the register *)
     rGroup: string; (** The name of the group to which this register belongs. 
-                     * The special group {!Engine.machineRegisterGroup} 
+                     * The special group Engine.machineRegisterGroup 
                      * contains the machine registers. *)
     rVal: Flx_cil_pretty.doc; (** The value to be displayed about a register *)
     rOneLineVal: Flx_cil_pretty.doc option (** The value to be displayed on one line *)
@@ -23254,7 +23254,7 @@ module type STACK = sig
   (** The type of stacks containing elements of type ['a]. *)
 
   exception Empty
-  (** Raised when {!Stack.pop} or {!Stack.top} is applied to an empty stack. *)
+  (** Raised when Stack.pop or Stack.top is applied to an empty stack. *)
 
   val create : unit -> 'a t
   (** Return a new stack, initially empty. *)

@@ -18,7 +18,7 @@ val gen_execute_methods:
   (bid_t, bid_t list) Hashtbl.t *
   fully_bound_symbol_table_t ->
   IntSet.t ->
-  label_map_t ->
+  label_map_t * label_usage_t ->
   int ref ->
   out_channel ->
   unit
@@ -883,7 +883,7 @@ let gen_prim_call
     let a = ge sr a in
     "      {" ^ csubst sr sr2 ct [a] [typ] typ "Error" ts^ "}\n"
 
-let gen_exe syms (child_map,bbdfns) label_map counter this vs ts instance_no (exe:bexe_t) : string =
+let gen_exe syms (child_map,bbdfns) (label_map,label_usage_map) counter this vs ts instance_no (exe:bexe_t) : string =
   if length ts <> length vs then 
   failwith 
   (
@@ -1046,12 +1046,24 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts instance_no (ex
         try Hashtbl.find local_labels s 
         with _ -> failwith ("[gen_exe] In " ^ id ^ ": Can't find label " ^ s)
       in
+      let label_kind = get_label_kind_from_index label_usage_map label_index in
       (match kind with
         | Procedure ->
-        "    FLX_LABEL(" ^ si label_index ^ ","^si instance_no ^","^s^")\n" 
+          begin match label_kind with
+          | `Far ->
+            "    FLX_LABEL(" ^ si label_index ^ ","^si instance_no ^","^s^")\n" 
+          | `Near ->
+            "    " ^ s ^ ":;\n"
+          | `Unused -> ""
+          end
+
         | Function ->
-        (* functions only allow local labels *)
-        "    " ^ s ^ ":;\n"
+          begin match label_kind with
+          | `Far -> assert false
+          | `Near ->
+            "    " ^ s ^ ":;\n"
+          | `Unused -> ""
+          end
       )
 
     | `BEXE_goto (sr,s) -> 
@@ -1244,9 +1256,9 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts instance_no (ex
       ";\n"
   in gexe exe
 
-let gen_exes syms bbdfns display label_map counter index exes vs ts instance_no =
+let gen_exes syms bbdfns display label_info counter index exes vs ts instance_no =
   cat ""
-  (map (gen_exe syms bbdfns label_map counter index vs ts instance_no) exes)
+  (map (gen_exe syms bbdfns label_info counter index vs ts instance_no) exes)
 
 (* PROCEDURES are implemented by continuations.
    The constructor accepts the display vector to
@@ -1267,7 +1279,7 @@ let gen_exes syms bbdfns display label_map counter index exes vs ts instance_no 
   accepts the argument and runs the function.
   The machine stack is used for functions.
 *)
-let gen_function_methods syms (child_map,bbdfns) all_closures label_map counter index ts instance_no = 
+let gen_function_methods syms (child_map,bbdfns) all_closures label_info counter index ts instance_no = 
   let id,parent,sr,entry = Hashtbl.find bbdfns index in
   if syms.compiler_options.print_flag then
   print_endline 
@@ -1316,7 +1328,7 @@ let gen_function_methods syms (child_map,bbdfns) all_closures label_map counter 
     let params = map (fun (id,(ix,t)) -> ix) bps in
     let exe_string =
       try 
-        gen_exes syms (child_map,bbdfns) display label_map counter index exes vs ts instance_no
+        gen_exes syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no
       with x -> 
         print_endline (Printexc.to_string x);
         print_endline (catmap "\n" (string_of_bexe syms.dfns 1) exes);
@@ -1376,7 +1388,9 @@ let gen_function_methods syms (child_map,bbdfns) all_closures label_map counter 
 
   | _ -> failwith "function expected"
 
-let gen_procedure_methods syms (child_map,bbdfns) all_closures label_map counter index ts instance_no = 
+let gen_procedure_methods syms (child_map,bbdfns) 
+  all_closures label_info counter index ts instance_no 
+= 
   let id,parent,sr,entry = Hashtbl.find bbdfns index in (* can't fail *)
   if syms.compiler_options.print_flag then
   print_endline 
@@ -1424,7 +1438,7 @@ let gen_procedure_methods syms (child_map,bbdfns) all_closures label_map counter
     let params = map (fun (id,(ix,t)) -> ix) bps in
 
     let exe_string =
-      gen_exes syms (child_map,bbdfns) display label_map counter index exes vs ts instance_no
+      gen_exes syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no
     in
     let cont = "con_t *" in
     let arg_sig = 
@@ -1514,7 +1528,7 @@ let gen_procedure_methods syms (child_map,bbdfns) all_closures label_map counter
   | _ -> failwith "procedure expected"
 
 
-let gen_execute_methods syms (child_map,bbdfns) all_closures label_map counter bf =
+let gen_execute_methods syms (child_map,bbdfns) all_closures label_info counter bf =
   let s = Buffer.create 2000 in
   Hashtbl.iter
   (fun (index,ts) instance_no -> 
@@ -1523,14 +1537,14 @@ let gen_execute_methods syms (child_map,bbdfns) all_closures label_map counter b
   | `BBDCL_function (props,vs,ps, ret, _) -> 
     bcat s ("//------------------------------\n");
     bcat s (
-      gen_function_methods syms (child_map,bbdfns) all_closures label_map counter index ts instance_no
+      gen_function_methods syms (child_map,bbdfns) all_closures label_info counter index ts instance_no
     )
     
     
   | `BBDCL_procedure (props,vs,ps,_) -> 
     bcat s ("//------------------------------\n");
     bcat s (
-      gen_procedure_methods syms (child_map,bbdfns) all_closures label_map counter index ts instance_no
+      gen_procedure_methods syms (child_map,bbdfns) all_closures label_info counter index ts instance_no
     )
   | _ -> ()
   end
@@ -1949,7 +1963,9 @@ try
 
   (* GLOBAL FRAME *)
   "struct global_frame_t {";
-  " // put global values here";
+  "  int argc;";
+  "  char **argv;";
+  "  // put global values here";
   "};";
   "struct process_frame_t {";
   "  global_frame_t *global_frame;";
@@ -2104,6 +2120,8 @@ try
   plb (Flx_ogen.gen_offset_tables syms (child_map,bbdfns) all_closures);
 
   let label_map = Flx_label.create_label_map bbdfns syms.counter in
+  let label_usage = Flx_label.create_label_usage bbdfns label_map in
+  let label_info = label_map, label_usage in
 
   plb "\n//-----------------------------------------";
   plb "#ifdef FLX_CGOTO";
@@ -2114,7 +2132,11 @@ try
       let labels = Hashtbl.find label_map fno in
       Hashtbl.iter
       (fun lab lno ->
-        plb ("FLX_DECLARE_LABEL(" ^ si lno ^ ","^ si inst ^ "," ^ lab^")")
+        match Flx_label.get_label_kind_from_index label_usage lno with
+        | `Far ->
+          plb ("FLX_DECLARE_LABEL(" ^ si lno ^ ","^ si inst ^ "," ^ lab^")")
+        | `Near -> ()
+        | `Unused -> () 
       )
       labels
     with Not_found -> ()
@@ -2128,7 +2150,7 @@ try
 
   plb "\n//-----------------------------------------";
   plb "//DEFINE FUNCTION CLASS METHODS";
-  gen_execute_methods syms (child_map,bbdfns) all_closures label_map syms.counter bf;
+  gen_execute_methods syms (child_map,bbdfns) all_closures label_info syms.counter bf;
 
   if compiler_options.print_flag then print_endline "//GENERATING C++: interface";
   plb "\n//-----------------------------------------";
@@ -2174,9 +2196,14 @@ try
   plb "extern \"C\" con_t *start(";
   plb "  global_frame_t *pgf,";
   plb "  process_frame_t *ppf,";
-  plb "  thread_frame_t *ptf";
+  plb "  thread_frame_t *ptf,";
+  plb "  int argc,";
+  plb "  char **argv";
   plb ") {";
-  plb ("  return (new(*ptf->gc,"^top_class^"_ptr_map) " ^ top_class ^ "(pgf,ppf,ptf))\n      ->call(0);");
+  plb "   pgf->argc = argc;";
+  plb "   pgf->argv = argv;";
+  plb ("  return (new(*ptf->gc,"^top_class^"_ptr_map) ");
+  plb ("   " ^ top_class ^ "(pgf,ppf,ptf))\n      ->call(0);");
   plb "}";
 
   plb "\n//-----------------------------------------";

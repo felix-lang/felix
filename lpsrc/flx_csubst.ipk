@@ -52,6 +52,21 @@ type mode_t =
  | Dollar | Backquote | Hash | Earhole | Quest (* last char was one of these *)
  | DollarDigits | BackquoteDigits | HashDigits | EarholeDigits | QuestDigits
  | Varargs | VarargsDigits
+
+let is_idletter ch =
+  ch >= '0' && ch <='9' ||
+  ch >= 'A' && ch <='Z' ||
+  ch >= 'a' && ch <='z' ||
+  ch = '_'
+
+(* identifier or integer *)
+let is_atomic s =
+  try 
+    for i = 0 to String.length s - 1 do 
+      if not (is_idletter s.[i]) then raise Not_found
+    done;
+    true
+  with Not_found -> false
   
 let csubst sr sr2 ct args typs argtyp retyp gargs =
   let n = length args in
@@ -204,7 +219,8 @@ let csubst sr sr2 ct args typs argtyp retyp gargs =
         else if !digits<=0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
         else
           let s' = nth args (!digits-1) in
-          bcat ("(" ^ s' ^ ")");
+          if is_atomic s' then bcat s'
+          else bcat ("(" ^ s' ^ ")");
           mode := Normal;
           trans i ch
        end

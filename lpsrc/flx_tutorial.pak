@@ -2845,6 +2845,26 @@ proc report() {
 
 print ".. OK"; endl;
 
+@head(1,"System interface")
+We show how to get at the command line arguments.
+The function 'argv' returns an empty string
+if the argument index is out of range.
+argv 0 is usually the program name:
+for the flx_run driver its the loaded library
+name: the driver name and control arguments
+are stripped.
+
+@select(tangler(tdir+'tut301.flx'))
+include "std";
+open System;
+print "argc="; print argc; endl;
+
+var i:int;
+for {i=0;} {i<argc} {++i;}
+{
+  print i; print "->"; print (argv i); endl;
+};
+
 @head(1,'Misc junk')
 Misc weird feature tests .. remove in production
 tutorial.

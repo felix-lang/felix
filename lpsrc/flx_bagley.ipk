@@ -1,27 +1,64 @@
 @head(1,'Bagley Language Shootout')
+@select(tangler('bagley/run.sh'))
+for i in 1 2 3 4 5 6 7 8; do time bin/flx --test --inline bagley/felix/ack $i; done
+for i in 1 2 3 4 5 6 7 8; do time bin/flx --test --inline bagley/felix/fib $i; done
+for i in 1 2 3 4; do time bin/flx --test --inline bagley/felix/nested_loops $i; done
+
 @head(2,'Ackermans Function')
-@select(tangler('test/bag01.flx'))
+Two of the three calls are tail recursive.
+@select(tangler('bagley/felix/ack.flx'))
 include "std";
 
-fun A(x:int,y:int):int={
-  return
-    if x == 0 then  y + 1
-    elif y == 0 then  A(x-1, 1)
-    else A(x-1, A(x, y-1))
-    endif
-  ;
-}
+fun ack(x:int,y:int):int =>
+  if x == 0 then  y + 1
+  elif y == 0 then  ack(x-1, 1)
+  else ack(x-1, ack(x, y-1))
+  endif
+;
 
-proc main()
-{
-    val n = 8;
-    var k = 1;
-    while { k <= n } {
-      val v = A(3,k);
-      print "Ack(3,"; print k; print "): "; print v; endl;
-      k++;
+val n = String::atoi(System::argv 1);
+val v = ack(3,n);
+print "Ack(3,"; print n; print "): "; print v; endl;
+
+
+@head(2,'Fibonacci Function')
+@select(tangler('bagley/felix/fib.flx'))
+include "std";
+
+fun fib(n:int):int => 
+  if n < 2 then 1 else fib (n - 2) + fib (n - 1) endif
+;
+
+val n = String::atoi(System::argv 1);
+val v = fib(n);
+print "Fib("; print n; print "): "; print v; endl;
+
+@head(2,"Nested Loops")
+@select(tangler('bagley/felix/nested_loops.flx'))
+include "std";
+
+val n = String::atoi(System::argv 1);
+var a:int;
+var b:int;
+var c:int;
+var d:int;
+var e:int;
+var f:int;
+var x = 0;
+
+for {a=0;} {a<n} {a++;} {
+  for {b=0;} {b<n} {b++;} {
+    for {c=0;} {c<n} {c++;} {
+      for {d=0;} {d<n} {d++;} {
+        for {e=0;} {e<n} {e++;} {
+          for {f=0;} {f<n} {f++;} {
+            x++;
+          };
+        };
+      };
     };
-}
+  };
+};
 
-main();
+print x; endl;
 

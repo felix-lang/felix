@@ -165,6 +165,8 @@ header """
 using namespace std;
 """;
 
+header cstdlib "#include <cstdlib>";
+
 @chars = ["char", "wchar", "uchar"]
 @sints = [
   "tiny", "short", "int", "long", "vlong",
@@ -449,6 +451,36 @@ module C_hack
   fun dflt[t]:1->t = "dflt<?1>()" requires dflt_h;
 }
 
+publish "System Interface"
+module System
+{
+  const argc:int = "pgf->argc";
+  fun argv:int -> string = 'std::string($1<0||$1>=pgf->argc??"":pgf->argv[$1])';
+@tangle('  const felix_version : string = \'std::string("'+flx_version+'")\';')
+  fun system: string -> int = "std::system($1.data())"
+    requires cstdlib;
+}
+
+@#------------- Environment -------------------
+module Env
+{
+  fun getenv:string -> string = "std::string(std::getenv($1.data()))"
+    requires cstdlib;
+}
+
+@#------------- Text I/O -------------------
+module Text_file
+{
+  fun load: string -> string = "flx::rtl::ioutil::load_file($1)";
+
+  type text_file = "FILE*";
+
+  fun fopen_input: string -> text_file = 'fopen($1.data(),"rt")';
+  fun fopen_output: string -> text_file = 'fopen($1.data(),"wt")';
+  proc fclose: text_file = '(void)fclose($1);';
+}
+
+
 @#------------- INTEGER MODULES -------------------
 type string = "std::string";
 @for t in ints:
@@ -530,7 +562,7 @@ module String
   open Bool;
   open Char;
   open Int;
-  proc pluseq: &string * string = "((string*)($1.data))->append($2);";
+  proc pluseq: &string * string = "((std::string*)($1.data))->append($2);";
   proc make_string: charp -> string = 'std::string($1)';
   proc make_string: charcp -> string =' std::string($1)';
 
@@ -538,7 +570,7 @@ module String
   fun add: string * string -> string = "$1+$2";
   fun add: string * int -> string = "$1+flx::rtl::i18n::utf8($2)";
   fun mul: string * int -> string = "flx::rtl::strutil::mul($1,$2)";
-  fun mul: char * int -> string = "string($2,$1)";
+  fun mul: char * int -> string = "std::string($2,$1)";
 
   fun subscript: string * int -> char = 
     "$1[$2<0??$1.size()+$2:$2]";
@@ -558,6 +590,7 @@ module String
   fun ge: string * string -> bool = "$1>=$2";
 
   proc print: string = "std::cout << $1;" requires iostream;
+  fun atoi: string -> int = "std::atoi($1.data())" requires cstdlib;
 
   publish "Unsafe extract buffer pointer"
   fun cstr: string -> C_hack::ptr[char] = "$1.data()";
@@ -825,6 +858,8 @@ module List
     ;
   }
 
+  fun add[T] (x:list[T], y: list[T]):list[T] => join x y;
+
   fun cat[T] (x:list[list[T]]):list[T] =
   {
      return 
@@ -840,24 +875,6 @@ publish "Association Lists (lists of pairs)"
 module Assoc_list
 {
   typedef assoc_list[A,B] = List::list[(A,B)];
-}
-
-@#------------- Text I/O -------------------
-module Text_file
-{
-  fun load: string -> string = "flx::rtl::ioutil::load_file($1)";
-
-  type text_file = "FILE*";
-
-  fun fopen_input: string -> text_file = 'fopen($1.data(),"rt")';
-  fun fopen_output: string -> text_file = 'fopen($1.data(),"wt")';
-  proc fclose: text_file = '(void)fclose($1);';
-}
-
-@#------------- Environment -------------------
-module Env
-{
-  fun getenv:string -> string = "std::string(std::getenv($1.data()))";
 }
 
 @#------------- Lexer -------------------

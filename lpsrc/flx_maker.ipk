@@ -178,6 +178,10 @@ options = sys.argv[1:]
 if "silent" in options: 
   options.append("quiet")
 
+if "bagley" in options: 
+  options.append("time_execution")
+  options.append("inline")
+
 if "inline" in options:
   FLXFLAGS = FLXFLAGS + "--inline "
 if options:
@@ -219,6 +223,7 @@ if "help" in options:
 if "clean" in options:
   os.system("rm -rf test/*.cpp test/*.hpp test/*.so test/*.par")
   os.system("rm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.par")
+  os.system("rm -rf bagley/felix/*.cpp bagley/felix/*.hpp bagley/felix/*.so bagley/felix/*.par")
 
 if "tests" in options or "test" in options:
   options = options + ["regression","tutorial"]
@@ -298,7 +303,12 @@ else:
   SHLX = ""
 
 # for compiling mainlines
-if "optimise" in options:
+if "bagley" in options:
+  CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + "-O3 "
+  CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-O3 "
+  CCOBJ_DLLIB = CCOBJ_DLLIB + "-O3 "
+  CCOBJ_DLMAIN = CCOBJ_DLMAIN + "-O3 "
+elif "optimise" in options:
   CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + "-O "
   CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-O "
   CCOBJ_DLLIB = CCOBJ_DLLIB + "-O "
@@ -331,9 +341,7 @@ PARSES = ['flx_cil_cparser','flx_cil_formatparse','flx_parse']
 
 # ocaml modules = interfaces + implementation files
 
-MODULES = [
-  'flx_version'      ,
-  'flx_ctype'        ,
+CIL_MODULES = [
   'flx_cil_cilversion',
   'flx_cil_machdep',
   'flx_cil_pretty',
@@ -361,6 +369,11 @@ MODULES = [
   'flx_cil_cilutil',
   'flx_cil_cabs2cil',
   'flx_cil_check',
+]
+
+FLX_MODULES = [
+  'flx_version'      ,
+  'flx_ctype'        ,
   'flx_util'         ,
   'flx_getopt'       ,
   'flx_mtypes1'      ,
@@ -418,18 +431,27 @@ MODULES = [
   'flx_terminate'    , 
 ]
 
-RAW_INTERFACES = [
+CIL_RAW_INTERFACES = [
   'flx_cil_machdep_type',
   'flx_cil_cabs',
+]
+
+FLX_RAW_INTERFACES = [
   'flx_ast'          ,
   'flx_types'        ,
   'flx_ctypes'       ,
 ] 
 
-INTERFACES = RAW_INTERFACES + MODULES
+FLX_INTERFACES = FLX_RAW_INTERFACES + FLX_MODULES
+CIL_INTERFACES = CIL_RAW_INTERFACES + CIL_MODULES
 
-IMPLEMENTATIONS = INTERFACES
+FLX_IMPLEMENTATIONS = FLX_INTERFACES
+CIL_IMPLEMENTATIONS = CIL_INTERFACES
   
+IMPLEMENTATIONS = CIL_IMPLEMENTATIONS + FLX_IMPLEMENTATIONS
+INTERFACES = CIL_INTERFACES + FLX_INTERFACES
+RAW_INTERFACES = CIL_RAW_INTERFACES + FLX_RAW_INTERFACES
+
 RTL_CPPS = [
   "rtl/flx_gc",
   "rtl/flx_collector",
@@ -455,7 +477,12 @@ CLIBRARIES = ['nums']
 # and some hackery so we can if the source doesn't need
 # ocaml-fileutils we can still build if it isn't found
 OCAML_INCLUDES = ""
-OLIBRARIES = ['nums','unix','flxlib']
+OLIBRARIES = ['nums','unix','flxlib','cillib']
+
+LIBS = [
+  ('flxlib',FLX_IMPLEMENTATIONS),
+  ('cillib',CIL_IMPLEMENTATIONS)
+]
 
 # target executable programs to produce
 EXES = [
@@ -578,6 +605,7 @@ try:
     except:pass
   
   if "doc" in options or "impldoc" in options:
+    xqt('rm -rf impldoc/*')
     xqt('ocamldoc -I src -d impldoc src/*.mli -html')
     xqt('ocamldoc -I src -o impldoc/flx_impl.tex src/*.mli -latex')
     xqt('(cd impldoc; latex flx_impl.tex  2>&1 >/dev/null; latex flx_impl.tex; latex flx_impl.tex)')
@@ -586,19 +614,18 @@ try:
     TESTS = TESTS + glob.glob('test/rt*.flx')
     BAD_TESTS = glob.glob('test/bt*.flx')
 
-  if "bagley" in options:
-    TESTS = TESTS + glob.glob('test/bag*.flx')
-
   if "tutorial" in options:
     TESTS = TESTS + glob.glob('tut/examples/tut*.flx')
     TESTS = TESTS + glob.glob('tut/examples/mac*.flx')
     TESTS = TESTS + glob.glob('tut/examples/mig*.flx')
 
+  BAGLEY = []
   if "bagley" in options:
-    TESTS = TESTS + glob.glob('test/bag*.flx')
+    BAGLEY = glob.glob('bagley/felix/bag*.flx')
 
   TESTS.sort()
   BAD_TESTS.sort()
+  BAGLEY.sort()
 
   if "compiler" in options:
     # STEP 1: Compile all compiler support C files
@@ -639,18 +666,19 @@ try:
 
 
     # STEP 6: Build FELIX Library
-    object_library_name = "src/flxlib" + OCAML_LIB_EXTENSION
-    linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
-    library_filetime = filetime(object_library_name)
-    for implementation in IMPLEMENTATIONS:
-      file = 'src/'+implementation
-      if filetime(file+OCAML_OBJECT_EXTENSION) > library_filetime:
-        for implementation in IMPLEMENTATIONS:
-          file = 'src/'+implementation
-          linkstring = linkstring + file +OCAML_OBJECT_EXTENSION +" "
-        xqt(linkstring)
-        buildall = 1
-        break
+    for lib,IMPLEMENTATIONS in LIBS:
+      object_library_name = "src/" + lib + OCAML_LIB_EXTENSION
+      linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
+      library_filetime = filetime(object_library_name)
+      for implementation in IMPLEMENTATIONS:
+        file = 'src/'+implementation
+        if filetime(file+OCAML_OBJECT_EXTENSION) > library_filetime:
+          for implementation in IMPLEMENTATIONS:
+            file = 'src/'+implementation
+            linkstring = linkstring + file +OCAML_OBJECT_EXTENSION +" "
+          xqt(linkstring)
+          buildall = 1
+          break
 
     # STEP 8: Link executables
     x = ''
@@ -717,7 +745,7 @@ try:
     if "performance" in options:
       for driver,testfile,moreargs in SPECIAL_TESTS: 
         EXTRA.append(testfile)
-    for testfile in TESTS+EXTRA:
+    for testfile in TESTS+EXTRA+BAGLEY:
       #print 'Running Felix code generator on ',testfile
       basename = string.split(testfile,'.')[0]
       cppfilename = basename + ".cpp"
@@ -768,7 +796,7 @@ try:
     if "performance" in options:
       for driver,testfile,moreargs in SPECIAL_TESTS: 
         EXTRA.append(testfile)
-    for testfile in TESTS+EXTRA:
+    for testfile in TESTS+EXTRA+BAGLEY:
       #print 'Compiling generated code of ',testfile
       basename = string.split(testfile,'.')[0]
       cppfilename = basename + ".cpp"
@@ -802,6 +830,9 @@ try:
 
       if "log_output" in options:
         testscript = testscript + " >" + basename + ".output"
+      if "time_execution" in options:
+        testscript = "time " + testscript 
+
       if "check_output" in options:
         if filetime(basename+".output")==0:
           testscript = testscript + " >" + basename + ".output"
@@ -819,7 +850,7 @@ try:
         print 'TESTFILE -- ERROR!',testscript
         if stop_on_error: raise MakeError
         results.append(("Exec",testscript,'ERROR'))
-
+    
     if "performance" in options:
       for driver,testfile,moreargs in SPECIAL_TESTS:
         test_basename = string.split(testfile,'.')[0]
@@ -952,6 +983,7 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('tests.bagley: dummy')
 @tangle('\tpython script/maker bagley')
+@tangle('\tsh bagley/run.sh')
 @tangle('')
 @tangle('rtl: dummy')
 @tangle('\tpython script/maker rtl')
@@ -1082,11 +1114,13 @@ We have no idea if it continues copying.
 @tangle('clean: dummy')
 @tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.dll tut/examples/*.par tut/examples/*.o')
 @tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so test/rt*.dll test/rt*.par test/*.o')
+@tangle('\trm -rf bagley/felix/rt*.cpp bagley/felix/rt*.hpp bagley/felix/rt*.so bagley/felix/rt*.dll bagley/felix/rt*.par bagley/felix/*.o')
 @tangle('')
 @tangle('virgin: dummy')
 @tangle('\tcp Makefile Makefile.old')
 @tangle('\trm -rf tut rtl test www src misc man script bin doc lib impldoc htmlman tmp tmp.tmp')
 @tangle('\trm -rf flxcc_out c89 c99 cxx gnu89 gnu99')
+@tangle('\trm -rf bagley')
 @tangle('\trm -rf config/*.default')
 @tangle('\trm -rf lpsrc/*.cache')
 @tangle('\trm -rf interscript/*.pyc')
@@ -1424,74 +1458,6 @@ cvs to ignore certain files.
 @select(tangler('lpsrc/.cvsignore','data'))
 *.cache
 *.swp
-
-
-@head(1,'Ocamldoc Latex Style')
-Taken from the distribution because ocamldoc
-doesn't put this file in the right place
-when it generates a tex file. (style sheets
-for html are correctly dumped though ..)
-
-@select(tangler('impldoc/ocamldoc.sty','data'))
-%% THIS FILE IS OBSOLETE WITH VERSION 1.0.8
-%% Support macros for LaTeX documentation generated by ocamldoc.
-%% This file is in the public domain; do what you want with it.
-
-\NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{ocamldoc}
-              [2001/12/04 v1.0 ocamldoc support]
-
-\newenvironment{ocamldoccode}{%
-  \bgroup
-  \leftskip\@totalleftmargin
-  \rightskip\z@skip
-  \parindent\z@
-  \parfillskip\@flushglue
-  \parskip\z@skip 
-  %\noindent
-  \@@par\smallskip
-  \@tempswafalse
-  \def\par{%
-    \if@tempswa
-      \leavevmode\null\@@par\penalty\interlinepenalty
-  \else
-    \@tempswatrue
-    \ifhmode\@@par\penalty\interlinepenalty\fi
-  \fi}
-  \obeylines
-  \verbatim@font
-  \let\org@prime~%
-  \@noligs
-  \let\org@dospecials\dospecials
-  \g@remfrom@specials{\\}
-  \g@remfrom@specials{\{}
-  \g@remfrom@specials{\}}
-  \let\do\@makeother
-  \dospecials
-  \let\dospecials\org@dospecials
-  \frenchspacing\@vobeyspaces
-  \everypar \expandafter{\the\everypar \unpenalty}}
-{\egroup\par}
-
-\def\g@remfrom@specials#1{%
-  \def\@new@specials{}
-  \def\@remove##1{%
-    \ifx##1#1\else
-    \g@addto@macro\@new@specials{\do ##1}\fi}
-  \let\do\@remove\dospecials
-  \let\dospecials\@new@specials
-  }
-
-\newenvironment{ocamldocdescription}
-{\list{}{\rightmargin0pt \topsep0pt}\raggedright\item\relax}
-{\endlist\medskip}
-
-\newenvironment{ocamldoccomment}
-{\list{}{\leftmargin 2\leftmargini \rightmargin0pt \topsep0pt}\raggedright\item\relax}
-{\endlist}
-
-\let\ocamldocvspace\vspace
-\endinput
 
 
 @head(1,'W3C Cascading Style Sheets')
@@ -2087,7 +2053,7 @@ then
 else
   if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"` 
   then
-    if `echo $CCLINK_STATIC $CCFLAGS -DFLX_STATIC_LINK -I"$INCLUDE_DIR" "$INCLUDE_DIRS" $FLXBIN/flx_run_static.o "$PKGS" "$cpps" "$base.cpp" $FLXRTL/flx_static.a -o "$base"`
+    if `echo $CCLINK_STATIC $CCFLAGS -DFLX_STATIC_LINK -I"$INCLUDE_DIR" "$INCLUDE_DIRS" $FLXRTL/flx_run_static.o "$PKGS" "$cpps" "$base.cpp" $FLXRTL/libflx_static.a -o "$base"`
     then
       # rm -f "$base.cpp"
       if [ $RUNIT = 1 ]
