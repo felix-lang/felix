@@ -40,6 +40,7 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "jump", (fun s ->  JUMP s);
     "loop", (fun s ->  LOOP s);
     "type", (fun s ->  TYPE s);
+    "ctypes", (fun s ->  CTYPES s);
     "typedef", (fun s ->  TYPEDEF s);
     "read", (fun s ->  READ s);
     "return", (fun s ->  RETURN s);

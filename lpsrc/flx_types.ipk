@@ -395,6 +395,7 @@ and statement_t =
 
   (* binding structures [prolog] *)
   | `AST_abs_decl of range_srcref * id_t * id_t list * c_t
+  | `AST_ctypes of range_srcref * (srcref * id_t) list
   | `AST_const_decl of range_srcref * id_t * id_t list * typecode_t * c_t
   | `AST_fun_decl of range_srcref * id_t * id_t list * typecode_t list * typecode_t * c_t 
 
@@ -723,7 +724,8 @@ type sym_state_t =
   env_cache : (int, env_t) Hashtbl.t;
   registry : type_registry_t;
   compiler_options : felix_compiler_options_t;
-  instances : instance_registry_t
+  instances : instance_registry_t;
+  include_files : string list ref
 }
 
 @head(1,'Mappings')
@@ -969,6 +971,7 @@ let src_of_stmt e = match e with
   | `AST_ifgoto (s,_,_)
   | `AST_ifnotgoto (s,_,_)
   | `AST_abs_decl (s,_,_, _) 
+  | `AST_ctypes (s,_) 
   | `AST_const_decl (s,_,_,_,_) 
   | `AST_fun_decl (s,_,_,_,_,_ ) 
   | `AST_header (s,_) 
@@ -1779,6 +1782,9 @@ and string_of_statement level s =
     spaces level ^ "{\n" ^
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     spaces level ^ "}"
+
+  | `AST_ctypes (_,names) -> spaces level ^ 
+    "ctypes " ^ catmap "," snd names ^ ";"
 
   | `AST_abs_decl (_,t,vs, code) -> spaces level ^ 
    "type " ^ t ^ print_vs vs ^

@@ -411,7 +411,7 @@ try
   let include_dirs =  (Filename.dirname input_file_name) :: compiler_options.include_dirs in
   let compiler_options = { compiler_options with include_dirs = include_dirs } in
   let syms = { syms with compiler_options = compiler_options } in
-  let deblocked = desugar_program include_dirs module_name syms.counter parse_tree in
+  let deblocked = desugar_program syms module_name parse_tree in
 
   let root = !(syms.counter) in
   let table, exes, ifaces,dirs = 

@@ -81,10 +81,17 @@ let rec isuseless bbdfns exes =
         -> raise Useful 
 
       (* NOTE: 
-        BEXE_init always inits a local variable which isn't useful by itself 
-        BEXE_loop isn't useful by itself
+        BEXE_init usually inits a local variable 
+          which isn't useful by itself, however,
+          it can also be used to init module variables ..
+          we cant tell the difference atm ..
       *)
       | `BEXE_init _ 
+        -> raise Useful
+
+      (*
+        BEXE_loop isn't useful by itself
+      *)
       | `BEXE_loop _
       | `BEXE_label _
       | `BEXE_nop _

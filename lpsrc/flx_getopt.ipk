@@ -157,6 +157,7 @@ let make_syms options =
     env_cache = Hashtbl.create 97;
     compiler_options = options;
     instances = Hashtbl.create 97;
+    include_files = ref [];
   }
 
 

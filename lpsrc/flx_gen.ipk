@@ -1357,7 +1357,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
            with Not_found -> aux parent
            end
          | `SYMDEF_module  -> aux parent
-         | `SYMDEF_function _ -> failwith ("goto "^s^" can't out of function")
+         | `SYMDEF_function _ -> failwith ("goto "^s^" can't out of function " ^ id)
          | _ -> failwith "Unknown parent kind"
     in 
       begin match kind with
@@ -1424,17 +1424,34 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
    *)
 
   | `BEXE_call (p,a) ->
-    let args = match a with
-      | _,`BTYP_tuple [] -> "this"
-      | _ -> "this, " ^ ge a
+    let args = 
+      let this = match kind with
+        | Procedure -> "this"
+        | Function -> "0"
+      in
+      match a with
+      | _,`BTYP_tuple [] -> this
+      | _ -> this ^ ", " ^ ge a
     in
-    let n = !counter in
-    incr counter;
-    "// MAYBE NEED INCREF HERE\n" ^
-    "      //"^ src_str ^ "\n" ^
-    "      pc = " ^ si n ^ ";\n" ^
-    "      return " ^ ge p ^ "->call(" ^ args ^");\n" ^
-    "    case " ^ si n ^ ":\n"
+    begin match kind with
+    | Function ->
+      "      //run procedure " ^ src_str ^ "\n" ^
+      "      {\n" ^
+      "        con_t *_p = "^ge p ^ "->call("^args^");\n" ^
+      "        while(_p) _p=_p->resume();\n" ^
+      "      }\n"
+      
+
+
+    | Procedure ->
+      let n = !counter in
+      incr counter;
+      "      // MAYBE NEED INCREF HERE\n" ^
+      "      //"^ src_str ^ "\n" ^
+      "      pc = " ^ si n ^ ";\n" ^
+      "      return " ^ ge p ^ "->call(" ^ args ^");\n" ^
+      "    case " ^ si n ^ ":\n"
+    end
 
   | `BEXE_jump (p,a) ->
     let args = match a with
@@ -1979,7 +1996,7 @@ try
   then print_endline "//DESUGARING";
 
   let deblocked = 
-    desugar_program include_dirs module_name syms.counter parse_tree 
+    desugar_program syms module_name parse_tree 
   in
   let desugar_time = tim() in
   if compiler_options.print_flag 

@@ -214,18 +214,9 @@ typedef any = any;
 
 module Bool 
 {
-// DEFN OF true and false ..
-// the order is CRITICAL for C/C++ compatibility
-// We're cheating: we know bool will be optimised
-// to an int by the compiler, and an int can
-// suffice for a bool in C/C++
-//
-// NOTE!!!! if ANY naughty functions generate
-// a boolean result which is other than 0 or 1 we have
-// a catastrophy
 
-  val false : bool = case 1 of 2;
-  val true : bool = case 2 of 2;
+  val false : bool = case 1 of 2; // binary 0
+  val true : bool = case 2 of 2; // binary 1
 
   fun land: bool * bool -> bool = "$1 && $2";
   fun nand: bool * bool -> bool = "!($1 && $2)";
@@ -605,19 +596,18 @@ module Text_file
       char *fname = f.data();
       FILE *fi = fopen(fname,"rt");
       if (fi)
-        printf("Opened file %s\n",fname);
-      else
-        printf("Cant open file %s\n",fname);
-      string x = "";
-      char buffer[512];
-      int n;
-      while (std::fgets(buffer,512,fi))
       {
-        printf("Read %s",buffer);
-        x = x + string(buffer);
+        string x = "";
+        char buffer[512];
+        int n;
+        while (std::fgets(buffer,512,fi))
+        {
+          x = x + string(buffer);
+        }
+        fclose(fi);
+        return x;
       }
-      fclose(fi);
-      return x;
+      else return "";
     }
   """;
   fun load: string -> string = "_load_file($1)";
@@ -644,6 +634,12 @@ module Lexer
   fun le:iterator * iterator -> bool = "$1<=$2";
   fun ge:iterator * iterator -> bool = "$1>=$2";
   fun gt:iterator * iterator -> bool = "$1>$2";
+
+  fun add: iterator * int -> iterator = "$1 + $2";
+  fun sub: iterator * int -> iterator = "$1 - $2";
+  fun sub: iterator * iterator -> int = "$1 - $2";
+  proc incr: &iterator -> iterator = "++*$1.data;";
+
 @#  proc _set: &iterator * iterator = "*(char const**)$1.data = $2;";
 }
 
@@ -884,6 +880,7 @@ module Flx_lex
   'dq',
   'qqq',
   'ddd',
+  'raw_q',
   'raw_dq',
   'raw_qqq',
   'raw_ddd'
@@ -891,124 +888,190 @@ module Flx_lex
 
 @for i in qtypes: lexstr(i)
 
+  fun to_eol(s:Lexer::iterator, e:Lexer::iterator) =
+  {
+    return 
+      match 
+        reglex s to e with
+        | .* "\n" => ()
+        endmatch
+      with 
+      | ?p,_ => p
+      endmatch
+    ; 
+  }
+
+  fun to_end_c_comment(s:Lexer::iterator, e:Lexer::iterator) =
+  {
+    var j = s;
+    var again = true;
+    while { again }
+    {
+      match 
+        reglex j to e with
+        | "*" "/" => "end"
+        | "/" "*" => "recurse"
+        | [^"/" "*"]* => "chars"
+        endmatch
+      with
+        | ?p,"end" => { j = p; again = false; }
+        | ?p,"recurse" => { j = to_end_c_comment(p,e); }
+        | ?p,"chars" => { j = p; }
+      endmatch
+      ;
+    }
+    ;
+    return j;
+  }
+
+  union pretoken_k = // k for "kind"
+    | Ident
+    | Int
+    | Float
+    | C_comment
+    | Cpp_comment
+    | Preprocessor
+    | Sym
+    
+    | qQuote
+    | dQuote
+    | qqqQoute
+    | dddQuote
+    
+    | wqQuote
+    | wdQuote
+    | wqqqQoute
+    | wdddQuote
+    
+    | uqQuote
+    | udQuote
+    | uqqqQoute
+    | udddQuote
+
+    | rqQuote
+    | rdQuote
+    | rqqqQoute
+    | rdddQuote
+  ;
+    
   fun pre_flx_lex(s:Lexer::iterator, e:Lexer::iterator) =
   {
     return reglex s to e with
-    | "//" => "C++ comment"
-    | "/*" =>  "C comment"
-    | identifier => "Ident"
-    | int_lit => "Int"
-    | floating_literal => "Float"
+    | "//" => Cpp_comment
+    | "/*" => C_comment
+    | identifier => Ident
+    | int_lit => Int
+    | floating_literal => Float
 
     /* Python strings */
-    | quote   =>"quote"
-    | qqq     =>"triple quote"
-    | dquote  =>"double quote"
-    | ddd     =>"triple double quote"
+    | quote   => qQuote
+    | qqq     => qqqQuote
+    | dquote  => dQuote
+    | ddd     => dddQuote
 
     /* wide strings */
-    | ('w' | 'W') quote  =>"wide quote"
-    | ('w' | 'W') qqq    =>"wide triple quote"
-    | ('w' | 'W') dquote =>"wide double quote"
-    | ('w' | 'W') ddd    =>"wide triple double quote"
+    | ('w' | 'W') quote  => wqQuote
+    | ('w' | 'W') qqq    => wqqqQuote
+    | ('w' | 'W') dquote => wdQuote
+    | ('w' | 'W') ddd    => wdddQuote
 
     /* UTF32 strings */
-    | ('u' | 'U') quote  =>"unicode quote"
-    | ('u' | 'U') qqq    =>"unicode triple quote"
-    | ('u' | 'U') dquote =>"unicode double quote"
-    | ('u' | 'U') ddd    =>"unicode triple double quote"
+    | ('u' | 'U') quote  => uqQuote
+    | ('u' | 'U') qqq    => uqqqQuote
+    | ('u' | 'U') dquote => udQuote
+    | ('u' | 'U') ddd    => udddQuote
 
     /* Python raw strings */
-    | ('r'|'R') quote   =>"raw quote"
-    | ('r'|'R') qqq     =>"raw triple quote"
-    | ('r'|'R') dquote  =>"raw double quote"
-    | ('r'|'R') ddd     =>"raw triple double quote"
+    | ('r'|'R') quote   => rqQuote
+    | ('r'|'R') qqq     => rqqqQuote
+    | ('r'|'R') dquote  => rdQuote
+    | ('r'|'R') ddd     => rdddQuote
 
 
     /* one character sequences */
-    | "$" => "symbol"
-    | "(" => "symbol"
-    | ")" => "symbol"
-    | "[" => "symbol"
-    | "]" => "symbol"
-    | "{" => "symbol"
-    | "}" => "symbol"
-    | "!" => "symbol"
-    | ":" => "symbol"
-    | "," => "symbol"
-    | ";" => "symbol"
-    | "+" => "symbol"
-    | "-" => "symbol"
-    | "*" => "symbol"
-    | "/" => "symbol"
-    | "|" =>"symbol"
-    | "&" =>"symbol"
-    | "<" =>"symbol"
-    | ">" =>"symbol"
-    | "=" =>"symbol"
-    | "." =>"symbol"
-    | "%" =>"symbol"
-    | "`" =>"symbol"
-    | "~" =>"symbol"
-    | "^" =>"symbol"
-    | "!" =>"symbol"
-    | "?" =>"symbol"
+    | "$" => Sym
+    | "(" => Sym
+    | ")" => Sym
+    | "[" => Sym
+    | "]" => Sym
+    | "{" => Sym
+    | "}" => Sym
+    | "!" => Sym
+    | ":" => Sym
+    | "," => Sym
+    | ";" => Sym
+    | "+" => Sym
+    | "-" => Sym
+    | "*" => Sym
+    | "/" => Sym
+    | "|" =>Sym
+    | "&" =>Sym
+    | "<" =>Sym
+    | ">" =>Sym
+    | "=" =>Sym
+    | "." =>Sym
+    | "%" =>Sym
+    | "`" =>Sym
+    | "~" =>Sym
+    | "^" =>Sym
+    | "!" =>Sym
+    | "?" =>Sym
 
     /* two character sequences */
-    | "=>" =>"symbol"
-    | "&<" =>"symbol"
-    | "&>" =>"symbol"
-    | ".." =>"symbol"
-    | "::" =>"symbol"
-    | "==" =>"symbol"
-    | "<>" =>"symbol"
-    | "!=" =>"symbol"
-    | "<=" =>"symbol"
-    | ">=" =>"symbol"
-    | "<<" =>"symbol"
-    | ">>" =>"symbol"
-    | "**" =>"symbol"
-    | "\\" =>"symbol"
-    | "++" =>"symbol"
-    | "--" =>"symbol"
-    | "+=" =>"symbol"
-    | "-=" =>"symbol"
-    | "*=" =>"symbol"
-    | "/=" =>"symbol"
-    | "%=" =>"symbol"
-    | "^=" =>"symbol"
-    | "|=" =>"symbol"
-    | "&=" =>"symbol"
-    | "~=" =>"symbol"
-    | ":=" =>"symbol"
-    | "<-" =>"symbol"
-    | "->" =>"symbol"
-    | "<:" =>"symbol"
-    | ":>" =>"symbol"
-    | "[<" =>"symbol"
-    | ">]" =>"symbol"
+    | "=>" =>Sym
+    | "&<" =>Sym
+    | "&>" =>Sym
+    | ".." =>Sym
+    | "::" =>Sym
+    | "==" =>Sym
+    | "<>" =>Sym
+    | "!=" =>Sym
+    | "<=" =>Sym
+    | ">=" =>Sym
+    | "<<" =>Sym
+    | ">>" =>Sym
+    | "**" =>Sym
+    | "\\" =>Sym
+    | "++" =>Sym
+    | "--" =>Sym
+    | "+=" =>Sym
+    | "-=" =>Sym
+    | "*=" =>Sym
+    | "/=" =>Sym
+    | "%=" =>Sym
+    | "^=" =>Sym
+    | "|=" =>Sym
+    | "&=" =>Sym
+    | "~=" =>Sym
+    | ":=" =>Sym
+    | "<-" =>Sym
+    | "->" =>Sym
+    | "<:" =>Sym
+    | ":>" =>Sym
+    | "[<" =>Sym
+    | ">]" =>Sym
 
     /* three character sequences */
-    | "<<=" => "symbol"
-    | ">>=" =>"symbol"
-    | "..." =>"symbol"
-    | "<->" =>"symbol"
-    | "&==" =>"symbol"
-    | "&<>" => "symbol"
-    | "&!=" =>"symbol"
-    | "&<=" =>"symbol"
-    | "&>=" =>"symbol"
+    | "<<=" => Sym
+    | ">>=" =>Sym
+    | "..." =>Sym
+    | "<->" =>Sym
+    | "&==" =>Sym
+    | "&<>" => Sym
+    | "&!=" =>Sym
+    | "&<=" =>Sym
+    | "&>=" =>Sym
 
     /* whitespace */
-    | white + => "white"
+    | white + => White
 
     /* Preprocessor Directive */
-    | "#" => "Preprocessor"
+    | "#" => Preprocessor
 
-    | newline => "newline"
+    | newline => Eol
 
     /* Anything else is an error */
-    | _ => "Error"
+    | _ => Error
     endmatch
     ;
   }

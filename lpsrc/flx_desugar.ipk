@@ -7,9 +7,8 @@ and also blocks.
 open Flx_ast
 open Flx_types
 val desugar_program: 
-  string list ->
+  sym_state_t ->
   string ->
-  int ref ->
   statement_t list -> 
   asm_t list
 
@@ -62,6 +61,71 @@ let filetime f =
   else 
     try (Unix.stat f).Unix.st_mtime 
     with | _ -> 0.0
+
+let include_file syms inspec =
+  let basename = try Filename.chop_extension inspec with _ -> inspec in
+  if mem basename !(syms.include_files)
+  then []
+  else 
+    let include_dirs = syms.compiler_options.include_dirs in
+    syms.include_files := basename :: !(syms.include_files);
+    let tf = find_file_in_path include_dirs (basename ^ ".flx") in
+    let pf = find_file_in_path include_dirs (basename ^ ".par") in
+    let tf_mt = filetime tf in
+    let pf_mt = filetime pf in
+    let saveit sts =
+      let pf = 
+        if pf = "" then 
+          (try Filename.chop_extension tf with | _ -> tf) ^ ".par"
+        else pf
+      in
+        try (* to write Marshalled parse tree out *)
+          let x = open_out pf in
+          Marshal.to_channel x (this_version,sts) [];
+          close_out x
+        with _ -> () (* can't write, don't worry *)
+    in
+    let parseit() =
+      let sts = 
+        Flx_parse_ctrl.parse_file 
+          tf 
+          (Filename.dirname tf)
+          include_dirs 
+      in
+        let local_prefix = Filename.basename basename in
+        expand_macros local_prefix 5000 sts
+    in
+    let sts =
+      (* -- no file ----------------------------------------- *)
+      if tf_mt = 0.0 && pf_mt = 0.0 then 
+        failwith 
+        (
+          "No .flx or .par file for name " ^ 
+          basename ^
+          " found in path:\n" ^ 
+          String.concat "; " include_dirs
+        )
+
+      (* -- parsed file is newer or text doesn't exist ------- *)
+      else if tf_mt < pf_mt then 
+        let x = open_in pf in
+        let (that_version,tree) = Marshal.from_channel x in
+        close_in x;
+        if this_version = that_version
+        then
+          tree
+        else 
+          let sts = parseit() in
+          saveit sts;
+          sts
+
+      (* -- text file is newer or parsed file doesn't exist -- *)
+      else 
+        let sts = parseit() in
+        saveit sts;
+        sts
+    in
+      sts
 
 let arglist x = 
   match x with
@@ -197,34 +261,27 @@ let find_methods sr sts =
   so we have to apply rsts to these bodies..
 *)
 
-let rec rex name include_dirs seq (e:expr_t) : asm_t list * expr_t = 
-  let rex e = rex name include_dirs seq e in
-  let rst x = rst name include_dirs seq x in
+let rec rex syms name (e:expr_t) : asm_t list * expr_t = 
+  let rex e = rex syms name e in
+  let rst x = rst syms name x in
   let rsts sts = concat (map rst sts) in
   let sr = src_of_expr e in
+  let seq () = let n = !(syms.counter) in incr (syms.counter); n in
   match e with
 
   (* these cases should use the source reference for the error *)
   | `AST_match_ctor _ 
-    -> clierr sr "[rex] not expecting union component constructor matcher"
   | `AST_match_case _ 
-    -> clierr sr "[rex] not expecting anonymous union component constructor matcher"
   | `AST_ctor_arg _ 
-    -> clierr sr "[rex] not expecting union component destructor"
   | `AST_case_arg _ 
-    -> clierr sr "[rex] not expecting anonymous union component destructor"
   | `AST_bound_module _
-    -> clierr sr "[rex] not expecting `AST_bound_module"
   | `AST_void _ 
-    -> clierr sr "[rex] not expecting `AST_void"
   | `AST_arrow _ 
-    -> clierr sr "[rex] not expecting `AST_arrow"
-  | `AST_as (sr,(e1,name)) 
-    -> clierr sr "[rex] Can't use 'as' in expression" 
-
-  | `AST_product (sr,xs) -> clierr sr "[rex] Unexpected product"
-
-  | `AST_sum (sr,xs) -> clierr sr "[rex] Unexpected sum"
+  | `AST_as _
+  | `AST_product _ 
+  | `AST_sum _
+    ->
+    clierr sr ("[rex] Unexpected " ^ string_of_expr e)
 
   | `AST_noexpand (_,e) -> rex e
   | `AST_name (sr,name,_) -> [],e
@@ -567,71 +624,16 @@ let rec rex name include_dirs seq (e:expr_t) : asm_t list * expr_t =
     )
 
 (* remove blocks *)
-and rst name include_dirs seq st : asm_t list = 
-  let rex x = rex name include_dirs seq x in
-  let rst name x = rst name include_dirs seq x in
+and rst syms name st : asm_t list = 
+  let rex x = rex syms name x in
+  let rst name x = rst syms name x in
   let rsts name sts = concat (map (rst name) sts) in
+  let seq () = let n = !(syms.counter) in incr (syms.counter); n in
 
   match st with
   | `AST_include (sr,inspec) ->
-    let basename = try Filename.chop_extension inspec with _ -> inspec in
-    let tf = find_file_in_path include_dirs (basename ^ ".flx") in
-    let pf = find_file_in_path include_dirs (basename ^ ".par") in
-    let tf_mt = filetime tf in
-    let pf_mt = filetime pf in
-    let saveit sts =
-      let pf = 
-        if pf = "" then 
-          (try Filename.chop_extension tf with | _ -> tf) ^ ".par"
-        else pf
-      in
-        try (* to write Marshalled parse tree out *)
-          let x = open_out pf in
-          Marshal.to_channel x (this_version,sts) [];
-          close_out x
-        with _ -> () (* can't write, don't worry *)
-    in
-    let parseit() =
-      let sts = 
-        Flx_parse_ctrl.parse_file 
-          tf 
-          (Filename.dirname tf)
-          include_dirs 
-      in
-        let local_prefix = Filename.basename basename in
-        expand_macros local_prefix 5000 sts
-    in
-    let sts =
-      (* -- no file ----------------------------------------- *)
-      if tf_mt = 0.0 && pf_mt = 0.0 then 
-        failwith 
-        (
-          "No .flx or .par file for name " ^ 
-          basename ^
-          " found in path:\n" ^ 
-          String.concat "; " include_dirs
-        )
-
-      (* -- parsed file is newer or text doesn't exist ------- *)
-      else if tf_mt < pf_mt then 
-        let x = open_in pf in
-        let (that_version,tree) = Marshal.from_channel x in
-        close_in x;
-        if this_version = that_version
-        then
-          tree
-        else 
-          let sts = parseit() in
-          saveit sts;
-          sts
-
-      (* -- text file is newer or parsed file doesn't exist -- *)
-      else 
-        let sts = parseit() in
-        saveit sts;
-        sts
-    in
-      rsts name sts
+    let sts = include_file syms inspec in
+    rsts name sts
 
   | `AST_regdef (sr,name,regexp) -> [Dcl (sr,name,[],`DCL_regdef regexp)]
   | `AST_label (sr,s) -> [Exe (sr,`EXE_label s)]
@@ -1021,19 +1023,14 @@ let rec build_if d = match d with
 and build_interface m =
  concat (map build_if m)
  
-let desugar_program include_dirs name counter sts =
+let desugar_program syms name sts =
   let sr = 
     rsrange 
       (src_of_stmt (hd sts)) 
       (src_of_stmt (list_last sts))
   in
-  let seq () = 
-    let n = !counter in 
-    incr counter; 
-    n 
-  in
   let sts = expand_macros name 5000 sts in
-  rst "top" include_dirs seq (`AST_untyped_module (sr,name,[],sts))
+  rst syms "top" (`AST_untyped_module (sr,name,[],sts))
 
 @h = tangler("src/flxd.ml")
 @select(h)
@@ -1131,7 +1128,7 @@ try
   let include_dirs =  (Filename.dirname input_file_name) :: compiler_options.include_dirs in
   let compiler_options = { compiler_options with include_dirs = include_dirs } in
   let syms = { syms with compiler_options = compiler_options } in
-  let deblocked = desugar_program include_dirs module_name counter parse_tree in
+  let deblocked = desugar_program syms module_name parse_tree in
   print_endline (Flx_print.string_of_desugared deblocked);
   print_endline "//----------------------------";
 

@@ -583,6 +583,20 @@ and parse_cpp_comment = parse
         state#get_srcref lexbuf,
   lexeme lexbuf)] }
 
+and parse_hashbang = parse 
+| [^'\n'] * newline {
+    fun state ->
+    begin
+      state#newline lexbuf;
+      let lex = lexeme lexbuf in
+      let n = String.length lex in
+      [COMMENT_NEWLINE  (String.sub lex 0 (n-1))]
+    end
+  }
+| _ { fun state -> [ERRORTOKEN (
+        state#get_srcref lexbuf,
+  lexeme lexbuf)] }
+
 and parse_C_comment = parse 
 | "/*" { 
     fun state -> 
@@ -993,6 +1007,17 @@ and pre_flx_lex = parse
   }
 
 (* Preprocessor Directive *)
+| "#!" {
+  fun state ->
+    if state#is_at_line_start
+    then parse_hashbang lexbuf state
+    else [
+      ERRORTOKEN 
+      (state#get_srcref lexbuf,
+       "#")
+     ]
+  }
+
 | "#" {
   fun state ->
     if state#is_at_line_start

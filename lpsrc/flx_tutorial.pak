@@ -253,12 +253,7 @@ var u: uint;
 var v: uint;
 
 // operator    procedure
-// generic
-//k :=  1;       _init         (&i,1);
-//i <-  1;       _move         (&i,1);
-i =   1;       _set          (&i,1);
-u =   1u;      _set          (&u,1u);
-//i <-> j;       _swap         (&i,&j);
+i = 1;         // assignment, intrinsic
 
 // integral
 i +=  1;       pluseq       (&i,1);
@@ -1203,6 +1198,19 @@ it all ends up as C++ anyhow.
 Usually, you'll write Felix, except when you have 
 an existing code base containing useful types
 you need to work with. 
+
+@head(2,'Binding Shortcuts')
+For your convenience, the ctypes declaration
+allows multiple type bindings to be defined
+at once. Each Felix name must also be a c identifier
+representing a type in C.
+
+@select(tangler(tdir+'tut131a.flx'))
+header "#include <cstdio>";
+ctypes int, long;
+proc print:int = 'printf("%d\n",$1);';
+print 1;
+print 2;
 
 @head(2,'Embedding C++')
 We have seen that we can use binding definitions to

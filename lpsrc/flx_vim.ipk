@@ -46,6 +46,7 @@ syn keyword cStatement jump
 syn keyword cStatement loop
 
 syn keyword cStatement type
+syn keyword cStatement ctypes
 syn keyword cStatement typedef
 syn keyword cStatement fun
 syn keyword cStatement read

@@ -152,6 +152,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | LET _ -> "let"
   | IN _ -> "in"
   | TYPE _ -> "type"
+  | CTYPES _ -> "ctypes"
   | TYPEDEF _ -> "typedef"
   | READ _ -> "read"
   | RETURN _ -> "return"
@@ -319,6 +320,7 @@ let src_of_token t = match t with
   | FORK s 
   | TODO s 
   | TYPE s 
+  | CTYPES s 
   | READ s 
   | CONST s 
   | STRUCT s 
