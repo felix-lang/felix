@@ -587,8 +587,11 @@ union int_option =
   | None
 ;
 
+enum E {zero, one, two};
+
 val x = Odd;
 val y = Some 1;
+val z = one;
 
 @doc()
 We'll see how to actually use unions in the
@@ -611,6 +614,9 @@ Some is a function with type:
 It is important to note that the constructor
 names are visible in the enclosing space,
 unlike struct component names.
+@p()
+The enum form only permits constant constructors
+(ones with no arguments), values are not permitted.
 
 @head(2,'Pattern Matching Unions')
 The only way to get at the current component

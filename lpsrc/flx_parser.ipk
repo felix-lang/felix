@@ -398,6 +398,11 @@ abstract_type:
 @head(3,'Union Binding')
 @select(h)
 union_decl:
+  | ENUM NAME LBRACE enum_items RBRACE SEMI 
+    { 
+      `AST_union (rstoken $1 $6, snd $2, [], $4) 
+    }
+
   | UNION NAME tvarlist EQUAL type_sum_items SEMI 
     { 
       `AST_union (rstoken $1 $6, snd $2, List.map snd $3, $5) 
@@ -406,6 +411,17 @@ union_decl:
     { 
       `AST_union (rstoken $1 $7, snd $2, List.map snd $3, $6) 
     }
+
+enum_items:
+  | enum_items COMMA enum_item { $1 @ [$3] }
+  | enum_item { [$1] }
+enum_item:
+  | NAME 
+    { 
+      let sr = slift (fst $1) in
+      snd $1, typecode_of_expr (`AST_void sr)
+    }
+
 type_sum_items:
   | type_sum_items VBAR type_sum_item { $1 @ [$3] }
   | type_sum_item { [$1] }

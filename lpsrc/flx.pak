@@ -223,6 +223,7 @@ Flx_version.version_data := version_data
     ["else", "ELSE"],
     ["endif", "ENDIF"],
     ["endmatch", "ENDMATCH"],
+    ["enum", "ENUM"],
     ["export", "EXPORT"],
     ["forget", "FORGET"],
     ["fork", "FORK"],
