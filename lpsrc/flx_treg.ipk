@@ -109,7 +109,7 @@ let rec register_type_r syms bbdfns exclude sr t =
     let id, parent, sr,entry = 
       try Hashtbl.find bbdfns i
       with Not_found -> 
-        match Hashtbl.find syms.dfns i with
+        try match Hashtbl.find syms.dfns i with
         { id=id; sr=sr; parent=parent; symdef=entry } ->
         clierr sr 
         (
@@ -118,6 +118,7 @@ let rec register_type_r syms bbdfns exclude sr t =
           " in fully bound symbol table: " ^
           short_string_of_src sr
         )
+        with Not_found -> failwith ("[register_type_r] Can't find index " ^ si i)
     in
     begin match entry with
     | `BBDCL_union (vs,cs) -> 

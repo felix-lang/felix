@@ -5,12 +5,31 @@ Name binding pass 2.
 @select(h)
 open Flx_ast
 open Flx_types
+open Flx_mtypes
+
 val elide_unused:
   sym_state_t ->
+  (bid_t, bid_t list) Hashtbl.t *
   fully_bound_symbol_table_t ->
   bid_t ->
   biface_t list ->
   fully_bound_symbol_table_t
+
+val uses_type:
+  sym_state_t ->
+  PosSet.t ref ->
+  (bid_t, bid_t list) Hashtbl.t *
+  fully_bound_symbol_table_t ->
+  btypecode_t -> 
+  unit
+
+val uses:
+  sym_state_t ->
+  PosSet.t ref ->
+  (bid_t, bid_t list) Hashtbl.t *
+  fully_bound_symbol_table_t ->
+  int ->
+  unit
 
 @h = tangler("src/flx_use.ml")
 @select(h)
@@ -29,8 +48,6 @@ open Flx_generic
 open Flx_maps
 open Flx_exceptions
 
-module BidSet = PosSet
-
 (* Elide calls to useless procedures. Note we can't simply
 elide the procedures, since they might be addressed/passed
 as an argument, or be a root [main or exported]. 
@@ -42,21 +59,16 @@ which are unused, by first eliding the call.
 exception Useful
 exception Cannot_inline
 
-let is_child dfns par cld =
-  if par = cld then false else
-  let rec aux cld = 
-    let id,sr,parent,vs,dirs,table,entry = Hashtbl.find dfns cld in
-    match parent with
-    | None -> false
-    | Some p -> if p = par then true else aux p
-  in 
-    aux cld
+let get_children child_map i = 
+  try 
+    Hashtbl.find child_map i 
+  with Not_found -> []
 
 let rec isuseless bbdfns exes = 
   let check i =         
     try 
       match Hashtbl.find bbdfns i with 
-      | _,_,_,`BBDCL_procedure (props,_,_,exes,_) -> 
+      | _,_,_,`BBDCL_procedure (props,_,_,exes) -> 
         if not (isuseless bbdfns exes) 
         then raise Useful
         else ()
@@ -193,35 +205,17 @@ let param_subst id syms sr vs b ps ts b' =
     *)
     a
 
-
-(* hackery because the name map is a fairly bad way 
-  to detect children -- we have to ignore references to
-  the symbol 'root' and to any type variables
-*)
-let check_can_inline syms bbdfns nm =
-  Hashtbl.iter
-    begin fun name es -> try if name <> "root" then match es with
-    | FunctionEntry _ -> raise Cannot_inline
-    | NonFunctionEntry (Simple i) ->
-      let id,sr,parent,entry = 
-        try Hashtbl.find bbdfns i 
-        with Not_found -> 
-        match Hashtbl.find syms.dfns i with
-        | {symdef=`SYMDEF_typevar _} -> raise Not_found
-        | {vs=vs; symdef=entry}  ->
-        failwith 
-        (
-          "[check_can_inline] Cant find index " ^ si i ^ " = " ^
-          string_of_symdef entry name vs
-        )
-      in
+let check_can_inline (child_map, bbdfns) i =
+  let children = get_children child_map i in
+  iter
+    begin fun i ->
+      let id,sr,parent,entry = Hashtbl.find bbdfns i in
       match entry with 
       | `BBDCL_var _
       | `BBDCL_val _ -> ()
       | _ -> raise Cannot_inline
-    with Not_found -> ()
     end
-  nm
+  children 
 
 
 (* This is basically beta expansion.
@@ -250,20 +244,20 @@ that requires rescanning the result of inlining.
 
 let tident t = t 
 
-let rec inline_applies syms bbdfns x = 
-  let ia x = inline_applies syms bbdfns x in
+let rec inline_applies syms (child_map, bbdfns) x = 
+  let ia x = inline_applies syms (child_map,bbdfns) x in
   match map_tbexpr ia tident x with
   | `BEXPR_apply ((`BEXPR_closure (i,ts),_),b'),t ->
     begin 
       match Hashtbl.find bbdfns i 
       with id,parent,sr2,bbdcl -> 
       match bbdcl with
-      | `BBDCL_function (props,vs,ps,ret,exes,nm) ->
+      | `BBDCL_function (props,vs,ps,ret,exes) ->
         begin match exes with
         | [`BEXE_fun_return (sr3,b)] ->
           begin 
             try 
-              check_can_inline syms bbdfns nm;
+              check_can_inline (child_map, bbdfns) i;
               let a = param_subst id syms sr3 vs b ps ts b' in
               a
             with Cannot_inline -> x
@@ -300,19 +294,25 @@ let rec inline_applies syms bbdfns x =
 
 *)
 
-let useless_call_elim syms bbdfns vs' exes index =
-  let ia x = inline_applies syms bbdfns x in
+let useless_call_elim syms used (child_map,bbdfns) vs' exes index =
+  let ia x = inline_applies syms (child_map,bbdfns) x in
   let exes' = ref [] in
   iter
   (fun x -> match x with
-  | `BEXE_init (sr,i,b) -> exes' := `BEXE_init (sr,i,ia b) :: !exes'
+  | `BEXE_init (sr,i,b) -> 
+    (* Elide initialisation of unused variables *)
+    if PosSet.mem i used
+    then
+      exes' := `BEXE_init (sr,i,ia b) :: !exes'
+
+
   | `BEXE_assign (sr,a,b) -> exes' := `BEXE_assign (sr,ia a,ia b) :: !exes'
 
   | `BEXE_call (sr,(`BEXPR_closure (i,ts),_),b')
   | `BEXE_call (sr,(`BEXPR_name (i,ts),_),b')
     -> (* only keep calls to useful procedures *) 
       begin match Hashtbl.find bbdfns i with
-      | id,parent,sr2,`BBDCL_procedure (props,vs,ps,inner_exes,nm) ->
+      | id,parent,sr2,`BBDCL_procedure (props,vs,ps,inner_exes) ->
         if not (isuseless bbdfns inner_exes) 
         then begin 
           match inner_exes with
@@ -323,7 +323,7 @@ let useless_call_elim syms bbdfns vs' exes index =
             ->
               begin 
                 try
-                  check_can_inline syms bbdfns nm;
+                  check_can_inline (child_map,bbdfns) i;
                   let b = param_subst id syms sr3 vs b ps ts b' in
                   let a = param_subst id syms sr3 vs a ps ts b' in
                   let a = ia a in
@@ -358,7 +358,7 @@ let useless_call_elim syms bbdfns vs' exes index =
   | `BEXE_jump (sr,(`BEXPR_name (i,ts),_),b')
     -> (* only keep calls to useful procedures *) 
       begin match Hashtbl.find bbdfns i with
-      | id,parent,sr2,`BBDCL_procedure (props,vs,ps,inner_exes,nm) ->
+      | id,parent,sr2,`BBDCL_procedure (props,vs,ps,inner_exes) ->
         if not (isuseless bbdfns exes) 
         then begin
           match inner_exes with
@@ -369,7 +369,7 @@ let useless_call_elim syms bbdfns vs' exes index =
             ->
               begin 
                 try
-                  check_can_inline syms bbdfns nm;
+                  check_can_inline (child_map,bbdfns) i;
                   let b = param_subst id syms sr3 vs b ps ts b' in
                   let a = param_subst id syms sr3 vs a ps ts b' in
                   let a = ia a in
@@ -402,10 +402,10 @@ let useless_call_elim syms bbdfns vs' exes index =
   | `BEXE_ifnotgoto (sr,e,l) -> exes' := `BEXE_ifnotgoto (sr,ia e, l) :: !exes'
   | `BEXE_loop (sr,i,e) -> exes' := `BEXE_loop (sr,i,ia e) :: !exes'
 
-  | `BEXE_nop _ 
-  | `BEXE_comment _  (* we shouldn't really elide comments .. *)
-    -> ()
-  | `BEXE_label (sr,s) -> (* but it makes this test easier *)
+  | `BEXE_nop _ -> () (* elide NOP *)
+  | `BEXE_comment _  as x -> exes' := x :: !exes' (* but not comments *)
+
+  | `BEXE_label (sr,s) -> 
     while            (* eliminate jumps to next instruction *)
       match !exes' with
       | (`BEXE_goto (_,s')) :: _
@@ -485,15 +485,15 @@ let useless_call_elim syms bbdfns vs' exes index =
     ;
     !exes''
 
-let rec uses_type syms used bbdfns (t:btypecode_t) = 
-  let ut t = uses_type syms used bbdfns t in
+let rec uses_type syms used (child_map,bbdfns) (t:btypecode_t) = 
+  let ut t = uses_type syms used (child_map,bbdfns) t in
   match t with
   | `BTYP_name i 
-    -> uses syms used bbdfns i
+    -> uses syms used (child_map,bbdfns) i
 
   | `BTYP_inst (i,ts)
     -> 
-      uses syms used bbdfns i;
+      uses syms used (child_map,bbdfns) i;
       iter ut ts
 
   | `BTYP_tuple ts
@@ -524,11 +524,11 @@ let rec uses_type syms used bbdfns (t:btypecode_t) =
     -> 
       failwith "[uses_type] Unexpected metatype"
 
-and uses_exes syms used bbdfns exes =
-  iter (uses_exe syms used bbdfns) exes
+and uses_exes syms used (child_map,bbdfns) exes =
+  iter (uses_exe syms used (child_map,bbdfns)) exes
 
-and uses_exe syms used bbdfns (exe:bexe_t) =
-  let ue e = uses_tbexpr syms used bbdfns e in
+and uses_exe syms used (child_map,bbdfns) (exe:bexe_t) =
+  let ue e = uses_tbexpr syms used (child_map,bbdfns) e in
   match exe with
   | `BEXE_call (_,e1,e2) 
   | `BEXE_jump (_,e1,e2) 
@@ -541,8 +541,8 @@ and uses_exe syms used bbdfns (exe:bexe_t) =
     -> ue e
 
   | `BEXE_assign (_,e1,e2) -> ue e1; ue e2
-  | `BEXE_init (_,i,e) -> uses syms used bbdfns i; ue e
-  | `BEXE_read (_,i) -> uses syms used bbdfns i
+  | `BEXE_init (_,i,e) -> (* uses syms used (child_map,bbdfns) i; *) ue e
+  | `BEXE_read (_,i) -> uses syms used (child_map,bbdfns) i
 
   | `BEXE_regmatch (_,e,(_,_,h,_)) -> 
     ue e;
@@ -565,10 +565,10 @@ and uses_exe syms used bbdfns (exe:bexe_t) =
   | `BEXE_label _ 
     -> ()
 
-and uses_tbexpr syms used bbdfns (e,t) =
-  let ue e = uses_tbexpr syms used bbdfns e in
-  let ut t = uses_type syms used bbdfns t in
-  let ui i = uses syms used bbdfns i in
+and uses_tbexpr syms used (child_map,bbdfns) (e,t) =
+  let ue e = uses_tbexpr syms used (child_map,bbdfns) e in
+  let ut t = uses_type syms used (child_map,bbdfns) t in
+  let ui i = uses syms used (child_map,bbdfns) i in
 
   ut t;
 
@@ -587,24 +587,24 @@ and uses_tbexpr syms used bbdfns (e,t) =
   | `BEXPR_literal _ -> ()
   | `BEXPR_expr (_,t) -> ut t
 
-and uses syms used bbdfns i =
-  let ut t = uses_type syms used bbdfns t in
-  let ux x = uses_exes syms used bbdfns x in
-  if not (BidSet.mem i !used) then
+and uses syms used (child_map,bbdfns) i =
+  let ut t = uses_type syms used (child_map,bbdfns) t in
+  let ux x = uses_exes syms used (child_map,bbdfns) x in
+  if not (PosSet.mem i !used) then
   begin
     match
       try Some (Hashtbl.find bbdfns i)
       with Not_found -> None
     with
     | Some (id,_,_,bbdcl) ->
-      used := BidSet.add i !used;
+      used := PosSet.add i !used;
       begin match bbdcl with
-      | `BBDCL_function (props,_,ps,ret,exes, _) ->
+      | `BBDCL_function (props,_,ps,ret,exes) ->
         iter ut (map (fun x -> snd (snd x)) ps);
         ut ret;
         ux exes
                                                                                 
-      | `BBDCL_procedure (props,_,ps, exes, _) ->
+      | `BBDCL_procedure (props,_,ps, exes) ->
         iter ut (map (fun x -> snd (snd x)) ps);
         ux exes
                                                                                 
@@ -628,27 +628,27 @@ and uses syms used bbdfns i =
     | None -> ()
   end
                                                                                 
-let copy_bbdcl syms bbdfns bbdfns2 i =
+let copy_bbdcl syms used (child_map,bbdfns) bbdfns2 i =
   let data =
     match Hashtbl.find bbdfns i with
-    | id,parent,sr,`BBDCL_procedure (props,vs,p,exes,names) ->
-      let exes = useless_call_elim syms bbdfns vs exes i in
-      id,parent,sr,`BBDCL_procedure (props,vs,p,exes,names)
+    | id,parent,sr,`BBDCL_procedure (props,vs,p,exes) ->
+      let exes = useless_call_elim syms used (child_map,bbdfns) vs exes i in
+      id,parent,sr,`BBDCL_procedure (props,vs,p,exes)
 
-    | id,parent,sr,`BBDCL_function (props,vs,p,ret,exes,names) ->
-      let exes = useless_call_elim syms bbdfns vs exes i in
-      id,parent,sr,`BBDCL_function (props,vs,p,ret,exes,names)
+    | id,parent,sr,`BBDCL_function (props,vs,p,ret,exes) ->
+      let exes = useless_call_elim syms used (child_map,bbdfns) vs exes i in
+      id,parent,sr,`BBDCL_function (props,vs,p,ret,exes)
     | x -> x
   in
     Hashtbl.add bbdfns2 i data
 
 let elide_unused syms  
-  (bbdfns:fully_bound_symbol_table_t) 
+  (child_map, bbdfns) 
   (root:bid_t) 
   (bifaces:biface_t list) 
 =
   (* make set of used things, initially empty *)
-  let used = ref BidSet.empty in
+  let used = ref PosSet.empty in
 
   (* make a list of the root and all exported functions,
   add exported types and components thereof into the used
@@ -659,18 +659,18 @@ let elide_unused syms
   (function
      | `BIFACE_export_fun (_,x,_) -> roots := x :: !roots
      | `BIFACE_export_type (_,t,_) -> 
-        uses_type syms used bbdfns t
+        uses_type syms used (child_map,bbdfns) t
   )
   bifaces
   ;
-  let uses i = uses syms used bbdfns i in
+  let uses i = uses syms used (child_map,bbdfns) i in
 
   (* add root items to set, then add items it uses *)
   iter uses !roots
   ;
   (* copy used things *)
   let bbdfns2 = Hashtbl.create 97 in
-  BidSet.iter (copy_bbdcl syms bbdfns bbdfns2) !used
+  PosSet.iter (copy_bbdcl syms !used (child_map,bbdfns) bbdfns2) !used
   ;
   (* copy all header and body specs, they're always considered used *)
   Hashtbl.iter

@@ -43,6 +43,7 @@ ISCR = '@ISCR@'
 if ISCR=='':
   ISCR='env PYTHONPATH=. python -O interscript/bin/iscr.py'
 
+FLXFLAGS = ""
 
 # --------------------------------------------------
 # IMPORT UTILITY RESOURCES
@@ -95,6 +96,8 @@ options = sys.argv[1:]
 if "silent" in options: 
   options.append("quiet")
 
+if "inline" in options:
+  FLXFLAGS = FLXFLAGS + "--inline "
 if options:
   print "OPTIONS: ", options
 
@@ -390,7 +393,10 @@ MODULES = [
   'flx_lookup'       , 
   'flx_bexe'         , 
   'flx_bbind'        , 
+  'flx_label'        , 
+  'flx_call'         , 
   'flx_use'          , 
+  'flx_inline'       , 
   'flx_inst'         , 
   'flx_cexpr'        ,
   'flx_tgen'         , 
@@ -643,7 +649,7 @@ try:
         filetime('lib/std.flx') > filetime(basename+'.cpp') or \
         filetime('lib/std.flx') > filetime(basename+'.cpp'):
         try:
-          flxg('-Ilib ' + basename,basename)
+          flxg('-Ilib ' +FLXFLAGS + basename,basename)
           #print 'TESTFILE -- generated ',basename
           results.append(("flxg",basename,'OK'))
         except MakeError:
@@ -854,6 +860,9 @@ sysconfdir=@sysconfdir@
 @tangle('')
 @tangle('test.refcnt: dummy')
 @tangle('\tpython script/maker refcnt test stop_on_error')
+@tangle('')
+@tangle('test.inline: dummy')
+@tangle('\tpython script/maker inline test stop_on_error')
 @tangle('')
 @tangle('test.debug: dummy')
 @tangle('\tpython script/maker debug test stop_on_error')
@@ -2179,6 +2188,7 @@ GPP="g++ -w -ansi "
 TESTMODE=0
 RECOMPILE=0
 DEBUG=0
+INLINE=0
 grab=1
 
 while (( "$grab" == "1" ));
@@ -2196,6 +2206,11 @@ do
 
   x--debug)
     DEBUG=1
+    shift
+  ;;
+
+  x--inline)
+    INLINE=1
     shift
   ;;
 
@@ -2354,7 +2369,15 @@ then
 else
   VERBOSE="-q"
 fi
-if "$FLXG" "$VERBOSE" -I"$FLXLIB" "$base"
+
+if [ $INLINE = 1 ]
+then
+  FLXFLAGS="--inline"
+else
+  FLXFLAGS=""
+fi
+
+if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $base"` 
 then
   if `echo $GPP -shared -I"$INCLUDE_DIR" "$PKGS" "$cpps" "$base.cpp" -o "$base.so"`
   then

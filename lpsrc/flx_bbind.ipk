@@ -15,6 +15,12 @@ val bind_ifaces:
   (range_srcref * iface_t * int option) list ->
   biface_t list 
 
+val cal_children:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  (bid_t, bid_t list) Hashtbl.t
+
+
 @h = tangler("src/flx_bbind.ml")
 @select(h)
 open Flx_util
@@ -41,7 +47,19 @@ let print_vs vs =
   if length vs = 0 then "" else
   "[" ^ catmap "," (fun (s,i) -> s ^ "<"^si i^">") vs^ "]"
 
+let rec find_true_parent dfns child parent = 
+  match parent with 
+  | None -> None
+  | Some parent ->
+    match Hashtbl.find dfns parent with
+    | {id=id; parent=grandparent; symdef=bdcl} ->
+      match bdcl with 
+      | `SYMDEF_module -> find_true_parent dfns id grandparent
+      | `SYMDEF_function _ -> Some parent
+      | _ -> None
+    
 let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;dirs=dirs;symdef=bdcl} =
+  let true_parent = find_true_parent syms.dfns name parent in
   let bexes env exes rt i tvars = bind_exes syms env sr exes rt name i tvars in
   (*
   print_endline ("Parent is " ^ (match parent with | None -> "none" | Some i -> si i));
@@ -74,11 +92,11 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       let bbdcl = 
         match brt' with
         | `BTYP_void ->
-          `BBDCL_procedure (props,vs,bps,bbexes,name_map)
+          `BBDCL_procedure (props,vs,bps,bbexes)
         | _ ->
-          `BBDCL_function (props,vs,bps,brt',bbexes,name_map)
+          `BBDCL_function (props,vs,bps,brt',bbexes)
       in
-        Hashtbl.add bbdfns i (name,parent,sr,bbdcl);
+        Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
         begin
           if not (Hashtbl.mem syms.ticache i) then
           let t = fold (`BTYP_function (typeoflist ts,brt')) in
@@ -101,7 +119,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
         match Hashtbl.find syms.dfns ip with
         | {symdef=`SYMDEF_function _} ->
           let t = typeofindex syms [] i in
-          Hashtbl.add bbdfns i (name,parent,sr,`BBDCL_val (vs,t));
+          Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_val (vs,t));
           Hashtbl.add syms.varmap i t;
 
           if syms.compiler_options.print_flag then
@@ -133,8 +151,8 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
           short_string_of_src sr
         )
       ;
-      Hashtbl.add bbdfns i (name,parent,sr,
-        `BBDCL_function ([`Inline],vs,[],flx_bbool,bbexes,name_map)
+      Hashtbl.add bbdfns i (name,true_parent,sr,
+        `BBDCL_function ([`Inline],vs,[],flx_bbool,bbexes)
       );
       begin
         if not (Hashtbl.mem syms.ticache i) then
@@ -151,7 +169,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
     
     | `SYMDEF_val (t) -> 
       let t = typeofindex syms [] i in
-      Hashtbl.add bbdfns i (name,parent,sr,`BBDCL_val (vs,t));
+      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_val (vs,t));
 
       if syms.compiler_options.print_flag then
       print_endline ("//bound val " ^ name ^ "<"^si i^">" ^
@@ -163,7 +181,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       print_endline ("Binding variable " ^ name ^"<"^ si i ^">");
       *)
       let t = typeofindex syms [] i in
-      Hashtbl.add bbdfns i (name,parent,sr,`BBDCL_var (vs,t))
+      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_var (vs,t))
       ;
       if syms.compiler_options.print_flag then
       print_endline ("//bound var " ^ name ^ "<"^si i^">" ^
@@ -172,7 +190,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
     
     | `SYMDEF_const (t,ct) ->
       let t = typeofindex syms [] i in
-      Hashtbl.add bbdfns i (name,parent,sr,`BBDCL_const (vs,t,ct));
+      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_const (vs,t,ct));
       if syms.compiler_options.print_flag then
       print_endline ("//bound const " ^ name ^ "<"^si i^">:" ^
       sbt syms.dfns t)
@@ -187,7 +205,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
         | _ ->
           `BBDCL_fun (vs, ts,bret,ct)
       in
-      Hashtbl.add bbdfns i (name,parent,sr,bbdcl);
+      Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
       begin
         if not (Hashtbl.mem syms.ticache i) then
         let t = fold (`BTYP_function (typeoflist ts,bret)) in
@@ -205,13 +223,13 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       (* print_endline ("//Binding union " ^ si i ^ " --> " ^ name); 
       *)
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
-      Hashtbl.add bbdfns i (name,parent,sr,`BBDCL_union (vs,cs'))
+      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_union (vs,cs'))
 
     | `SYMDEF_struct (cs) ->
       (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name); 
       *)
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
-      Hashtbl.add bbdfns i (name,parent,sr,`BBDCL_struct (vs,cs'))
+      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_struct (vs,cs'))
 
 
     | `SYMDEF_regdef _ -> ()
@@ -221,17 +239,17 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       (*
       print_endline ("//Binding abstract type " ^ si i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,parent,sr,`BBDCL_abs (vs,complete,ct))
+      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_abs (vs,complete,ct))
 
     | `SYMDEF_header ct ->
       (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,parent,sr,`BBDCL_header ct)
+      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_header ct)
 
     | `SYMDEF_body ct ->
       (* print_endline ("//Binding body string " ^ si i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,parent,sr,`BBDCL_body ct)
+      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_body ct)
 
     (*
     | x -> 
@@ -251,6 +269,25 @@ let bbind_index syms bbdfns i =
   if Hashtbl.mem bbdfns i then ()
   else let entry = Hashtbl.find syms.dfns i in
   bbind_sym syms bbdfns i entry
+
+let cal_children syms bbdfns =
+  let child_map = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun i (id,parent,sr,entry) ->
+    match parent with
+    | Some parent ->
+      Hashtbl.replace child_map parent
+      (i ::
+        (
+          try Hashtbl.find child_map parent
+          with Not_found -> []
+        )
+      )
+    | None -> ()
+  )
+  bbdfns
+  ;
+  child_map
 
 let bbind syms = 
   let bbdfns = Hashtbl.create 97 in
@@ -397,6 +434,7 @@ try
     print_endline "//BINDING EXECUTABLE CODE";
     print_endline "//-----------------------";
     let bbdfns = bbind syms in
+    let child_map = cal_children syms bbdfns in
     let bifaces = bind_ifaces syms ifaces in
     print_endline "//Binding complete";
 
@@ -442,7 +480,8 @@ try
     ;
     print_endline "//OPTIMISING -- pass 1";
     print_endline "//---------------------";
-    let bbdfns = elide_unused syms bbdfns root_proc bifaces in
+    let bbdfns = elide_unused syms (child_map,bbdfns) root_proc bifaces in
+    let child_map = cal_children syms bbdfns in
     Hashtbl.iter
     (fun index (name,parent,sr,entry) -> print_endline
       (
@@ -454,7 +493,7 @@ try
     ;
     print_endline "//OPTIMISING -- pass 2";
     print_endline "//---------------------";
-    let bbdfns = elide_unused syms bbdfns root_proc bifaces in
+    let bbdfns = elide_unused syms (child_map,bbdfns) root_proc bifaces in
     Hashtbl.iter
     (fun index (name,parent,sr,entry) -> print_endline
       (

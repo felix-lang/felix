@@ -1,0 +1,42 @@
+@head(1,"label management")
+@h = tangler("src/flx_label.mli")
+@select(h)
+open Flx_ast
+open Flx_types
+
+val create_label_map:
+  fully_bound_symbol_table_t ->
+  int ref ->
+  (bid_t,(string, int) Hashtbl.t) Hashtbl.t
+
+@h = tangler("src/flx_label.ml")
+@select(h)
+open Flx_types
+
+let get_labels bbdfns counter exes =
+  let labels = Hashtbl.create 97 in
+  List.iter
+    (fun exe -> match exe with 
+      | `BEXE_label (_,s) -> Hashtbl.add labels s !counter; incr counter
+      | _ -> ()
+    )
+    exes
+  ;
+  labels
+
+let create_label_map bbdfns counter =
+  let label_map = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun index (id,parent,sr,entry) ->
+    match entry with
+    | `BBDCL_function (_,_,_,_,exes) -> 
+      Hashtbl.add label_map index (get_labels bbdfns counter exes)
+    | `BBDCL_procedure (_,_,_,exes) -> 
+      Hashtbl.add label_map index (get_labels bbdfns counter exes)
+    | _ -> ()
+  ) 
+  bbdfns
+  ;
+  label_map
+
+

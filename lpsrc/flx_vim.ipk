@@ -41,6 +41,7 @@ syn keyword cToDo todo
 syn keyword cStatement interface
 syn keyword cStatement functor
 syn keyword cStatement fun
+syn keyword cStatement inline
 syn keyword cStatement obj
 syn keyword cStatement def
 syn keyword cStatement proc
@@ -93,6 +94,7 @@ syn keyword cStatement all
 syn keyword cStatement case
 syn keyword cStatement with
 syn keyword cStatement match
+syn keyword cStatement typematch
 syn keyword cStatement regmatch
 syn keyword cStatement lambda
 syn keyword cStatement goto

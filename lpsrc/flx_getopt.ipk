@@ -136,6 +136,7 @@ let get_felix_options options =
     files       = get_key_values options "";
     raw_options = options;
     reverse_return_parity = check_key options "e"; 
+    heavy_inlining = check_keys options ["inline"]
   }
 
 let print_options () =
@@ -144,13 +145,13 @@ let print_options () =
   print_endline "  --version: print version info";
   print_endline "  -v, --verbose: print symbol table";
   print_endline "  -q, --quiet: no stdout";
-  print_endline "  -Idir, --include=dir : append dir to include path"
+  print_endline "  -Idir, --include=dir : append dir to include path";
+  print_endline "  --inline"
 
 let make_syms options = 
   {
     registry = Hashtbl.create 97;
     counter = ref 1;
-    freg = Hashtbl.create 97;
     dfns = Hashtbl.create 97;
     varmap = Hashtbl.create 97;
     ticache = Hashtbl.create 97;

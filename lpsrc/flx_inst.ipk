@@ -143,13 +143,16 @@ and process_function syms bbdfns ref_insts1 index sr argtypes ret exes ts =
  
 and process_inst syms bbdfns ref_insts1 i ts inst =
   (* let sr = match Hashtbl.find syms.dfns i with { sr = sr } -> sr in *)
-  let id,parent,sr,entry = Hashtbl.find bbdfns i in 
+  let id,parent,sr,entry = 
+    try Hashtbl.find bbdfns i 
+    with Not_found -> failwith ("[process_inst] Can't find index " ^ si i)
+  in 
   let rtr t = register_type_r syms bbdfns [] sr t in
   let rtnr t = register_type_nr syms t in
   if syms.compiler_options.print_flag then
   print_endline ("//Instance "^si inst ^ "="^id^"<" ^ si i ^ ">[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]");
   match entry with
-  | `BBDCL_function (props,vs,ps,ret,exes, _) -> 
+  | `BBDCL_function (props,vs,ps,ret,exes) -> 
     if length vs <> length ts 
     then begin 
       print_endline "TS VS length mismatch";
@@ -160,7 +163,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     let argtypes = map (fun x -> snd (snd x)) ps in
     process_function syms bbdfns ref_insts1 i sr argtypes ret exes ts
  
-  | `BBDCL_procedure (props,vs,ps, exes, _) ->
+  | `BBDCL_procedure (props,vs,ps, exes) ->
     let argtypes = map (fun x -> snd (snd x)) ps in
     process_function syms bbdfns ref_insts1 i sr argtypes `BTYP_void exes ts
 
@@ -232,8 +235,23 @@ let instantiate syms bbdfns (root:bid_t) (bifaces:biface_t list) =
   (* empty instantiation registry *)
   let insts1 = ref FunInstSet.empty in
 
-  (* append routine to add an instance *)
-  let add_cand i ts = insts1 := FunInstSet.add (i,ts) !insts1 in
+  begin 
+    (* append routine to add an instance *)
+    let add_cand i ts = insts1 := FunInstSet.add (i,ts) !insts1 in
+
+    (* add the root *)
+    add_cand root [];
+
+    (* add exported functions, and register exported types *)
+    iter 
+    (function 
+      | `BIFACE_export_fun (_,x,_) -> add_cand x []
+      | `BIFACE_export_type (sr,t,_) ->
+        register_type_r syms bbdfns [] sr t
+    ) 
+    bifaces
+  end
+  ;
 
   let add_instance i ts =
     let n = !(syms.counter) in
@@ -241,19 +259,6 @@ let instantiate syms bbdfns (root:bid_t) (bifaces:biface_t list) =
     Hashtbl.add syms.instances (i,ts) n;
     n
   in
-
-  (* add the root *)
-  add_cand root [];
-
-  (* add exported functions, and register exported types *)
-  iter 
-  (function 
-    | `BIFACE_export_fun (_,x,_) -> add_cand x []
-    | `BIFACE_export_type (sr,t,_) ->
-      register_type_r syms bbdfns [] sr t
-  ) 
-  bifaces
-  ;
 
   (* add header and body items *)
   Hashtbl.iter 

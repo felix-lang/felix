@@ -652,8 +652,8 @@ and bbdcl_t =
   [
   | `BBDCL_header of     string
   | `BBDCL_body of       string
-  | `BBDCL_function of   property_t list * (string * int) list * bparameter_t list * btypecode_t * bexe_t list * name_map_t
-  | `BBDCL_procedure of  property_t list * (string * int) list * bparameter_t list * bexe_t list * name_map_t
+  | `BBDCL_function of   property_t list * (string * int) list * bparameter_t list * btypecode_t * bexe_t list
+  | `BBDCL_procedure of  property_t list * (string * int) list * bparameter_t list * bexe_t list
   | `BBDCL_val of        (string * int) list * btypecode_t
   | `BBDCL_var of        (string * int) list * btypecode_t
 
@@ -666,23 +666,7 @@ and bbdcl_t =
   | `BBDCL_struct of     (string * int) list * (id_t * btypecode_t) list
   ]
 
-(* functor instances *)
-and instantiation_registry_t = 
-  (
-    int *                         (* functor index *)
-    module_rep_t,                 (* argument list *) 
-    int                           (* instantiated functor = module index *)
-  ) Hashtbl.t
 and typevarmap_t = (int,btypecode_t) Hashtbl.t
-and functor_arg_binding_t = 
-  (
-    id_t *                        (* argument name *)
-    (
-      bid_t *                     (* interface *)
-      bid_t *                     (* implementation module  *)
-      index_map_t                 (* interface->module binding map *)
-    )
-  ) list
 
 type env_t = (name_map_t * name_map_t list) list 
 
@@ -741,12 +725,12 @@ type felix_compiler_options_t =
   files : string list;
   raw_options: (string * string) list;
   reverse_return_parity: bool;
+  heavy_inlining : bool;
 }
 
 type sym_state_t = 
 {
   dfns : symbol_table_t;
-  freg : instantiation_registry_t;
   counter : int ref;
   varmap : typevarmap_t;
   ticache : (int, btypecode_t) Hashtbl.t;
@@ -754,7 +738,7 @@ type sym_state_t =
   registry : type_registry_t;
   compiler_options : felix_compiler_options_t;
   instances : instance_registry_t;
-  include_files : string list ref
+  include_files : string list ref;
 }
 
 @head(1,'Mappings')
@@ -2527,7 +2511,7 @@ and string_of_bbdcl dfns bbdcl index =
   | `BBDCL_header s -> "header " ^ string_of_string s
   | `BBDCL_body s -> "body " ^ string_of_string s
 
-  | `BBDCL_function (props,vs,ps,res,es,name_map) ->
+  | `BBDCL_function (props,vs,ps,res,es) ->
     string_of_properties props ^
     "fun " ^ name ^ print_bvs vs ^
     "("^ (string_of_bparameters dfns ps)^"): "^(sobt res) ^
@@ -2536,7 +2520,7 @@ and string_of_bbdcl dfns bbdcl index =
     "}"
 
   
-  | `BBDCL_procedure (props,vs,ps,es,name_map) ->
+  | `BBDCL_procedure (props,vs,ps,es) ->
     string_of_properties props ^
     "proc " ^ name ^ print_bvs vs ^
     "("^ (string_of_bparameters dfns ps)^")" ^
@@ -2650,7 +2634,6 @@ module PosSetSet = Set.Make (struct type t = PosSet.t let compare=compare end);;
 (* character set [char type is 'int'] *)
 module CharSet = Set.Make (struct type t = int let compare=compare end);;
 
-
 @h = tangler('src/flx_mtypes.mli')
 @select(h)
 module VarMap :
@@ -2729,6 +2712,7 @@ module PosSet :
     val max_elt : t -> elt
     val choose : t -> elt
   end
+  
 module PosSetSet :
   sig
     type elt = PosSet.t
