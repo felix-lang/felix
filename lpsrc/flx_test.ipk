@@ -251,6 +251,16 @@ using namespace std;
 type bool = "bool";
 const true:bool = "true";
 const false:bool = "false";
+fun lnot:bool->bool = "!$1";
+
+proc while (cond:unit->bool) (body:unit->void)
+{
+  repeat:>
+    if not (cond()) then goto finished; endif;
+    body();
+    goto repeat;
+  finished:>
+}
 
 type string = "string";
 proc print: string = 'printf("%s",$1.c_str());';
@@ -275,13 +285,17 @@ procedure fire()
     else return Odd;
     endif
   }
-  while ( i < 10)
+  while [ i < 10]
   {
     print i; print " ";
-    match get_parity() with
-      |Even => print "Even\n";
-      |Odd => print "Odd\n";
-    endmatch
+
+    val result = 
+      match get_parity() with
+      |Even => "Even\n"
+      |Odd => "Odd\n"
+      endmatch
+    ;
+    print result;
 
     incr (&i); 
   };
@@ -691,7 +705,7 @@ procedure handle_line()
 {
   var checker : check;
   var line : string;
-  while(true)
+  loop
   {
     read line;
     print line;

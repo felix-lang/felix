@@ -101,6 +101,7 @@ and typecode_t =
   | `TYP_pointer  of typecode_t                 (* pointer type *)
   | `TYP_as of typecode_t * string              (* fix *)
   | `TYP_all of typecode_t * string             (* scheme *)
+  | `TYP_none
   ]
 
 @head(3,'Literals')
@@ -150,6 +151,9 @@ and expr_t =
 
   | `AST_get_n of range_srcref * (int * expr_t) (* get n'th component of a tuple *)
   | `AST_lazy of range_srcref * expr_t
+  | `AST_as of range_srcref * (expr_t * expr_t)
+  | `AST_all of range_srcref * (expr_t * expr_t)
+  | `AST_match of range_srcref * (expr_t * (pattern_t * expr_t) list)
   ]
 
 @head(3,'Pattern')
@@ -236,7 +240,6 @@ and statement_t =
   | `AST_return of range_srcref * expr_t
   | `AST_nop of range_srcref * string
 
-  | `AST_match of range_srcref * expr_t * (pattern_t * statement_t) list
   | `AST_block of range_srcref * statement_t list
   | `AST_if of 
     range_srcref * 
@@ -461,7 +464,7 @@ type symbol_definition_t =
   | `SYMDEF_match_check of pattern_t * int 
   | `SYMDEF_match_handler of 
     pattern_t * 
-    int * 
+    int *
     exe_t list * 
     name_map_t * 
     dir_t list
@@ -492,6 +495,7 @@ type symbol_definition_t =
   
   | `SYMDEF_module_binding of expr_t
   | `SYMDEF_dcl of dcl_t
+  | `SYMDEF_match_result of int
   ]
 
 type symbol_data_t = string * range_srcref * int option * symbol_definition_t 
@@ -593,6 +597,9 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_get_n  (s,_) 
   | `AST_lazy (s,_)
   | `AST_coercion (s,_)
+  | `AST_as (s,_)
+  | `AST_all (s,_)
+  | `AST_match (s, _) 
     -> s
 
 let src_of_stmt e = match e with
@@ -621,7 +628,6 @@ let src_of_stmt e = match e with
   | `AST_while (s, _, _) 
   | `AST_attempt (s,_,_,_)
   | `AST_raise (s, _, _) 
-  | `AST_match (s, _, _) 
   | `AST_abs_decl (s, _, _) 
   | `AST_const_decl (s, _, _, _) 
   | `AST_fun_decl (s, _, _ , _, _ ) 
@@ -788,6 +794,8 @@ and string_of_expr (e:expr_t) =
     string_of_typecode t ^ ")"
 
   | `AST_lazy (_,e) -> "lazy(" ^ se e ^ ")"
+  | `AST_as (_,(e1, e2)) -> se e1 ^ " as " ^ se e2 
+  | `AST_all (_,(e1, e2)) -> se e1 ^ " all " ^ se e2 
   | `AST_get_n (_,(n,e)) -> "get (" ^ string_of_int n ^ ", " ^se e^")"
   | `AST_deref (_,e) -> "*(" ^ se e ^ ")"
   | `AST_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
@@ -833,9 +841,23 @@ and string_of_expr (e:expr_t) =
     "match_case " ^ string_of_int v ^ "(" ^
     se e ^ ")"
 
+  | `AST_match (_,(e, ps)) ->
+    "match " ^ se e ^ " with " ^
+    catmap "\n"
+    (fun (p,e')->
+      " | " ^
+      string_of_pattern p ^
+      " => " ^
+      string_of_expr e'
+    )
+    ps
+    ^
+    " endmatch"
+
 and string_of_typecode (tc:typecode_t) = 
   match tc with
   | #qualified_name_t as t -> string_of_qualified_name t
+  | `TYP_none -> "Unknown"
   | `TYP_tuple ls ->
     begin match ls with 
     | [] -> "unit" 
@@ -1053,20 +1075,6 @@ and string_of_statement level s =
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | `AST_match (_,e, ps) ->
-    spaces level ^ "match " ^ se e ^ "\n" ^
-    spaces level ^ "{\n" ^
-    catmap "\n"
-    (fun (p,s)->
-      (spaces (level+1)) ^ "case " ^
-      string_of_pattern p ^
-      ":\n" ^
-      string_of_statement (level+2) s
-    )
-    ps
-    ^
-    "\n" ^ spaces level ^ "} /* end match */"
-
   | `AST_abs_decl (_,t,code) -> spaces level ^ 
    "type " ^ t ^ " = " ^ string_of_string code ^ ";"
 
@@ -1227,6 +1235,9 @@ and string_of_iface level s =
     " as \"" ^ cpp_name ^ "\";"
 
 and string_of_symdef entry name = match entry with
+  | `SYMDEF_match_result i ->
+     "match_result " ^ string_of_int i
+
   | `SYMDEF_parameter t -> 
     "parameter " ^ string_of_typecode t ^ ";"
     
@@ -1252,7 +1263,7 @@ and string_of_symdef entry name = match entry with
   | `SYMDEF_match_check (pat,i)-> 
     "match_check " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
   
-  | `SYMDEF_match_handler (pat,i,es,nm,dir) ->
+  | `SYMDEF_match_handler (pat,i,es,_,dir) ->
     "match_handler " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
 
   | `SYMDEF_interface (nm,dir) ->
@@ -1507,12 +1518,11 @@ and string_of_dcl level name s =
     s ^ " matches " ^ string_of_pattern pat ^
     " }"
 
-  | `DCL_match_handler (pat,e, ss) ->
+  | `DCL_match_handler (pat,varname, sts) ->
     spaces level ^ 
-    "procedure " ^ name ^ 
-    "() //pattern: " ^ string_of_pattern pat ^ "\n" ^
-    string_of_asm_compound level ss
-
+    "match_handler " ^ name ^ 
+    "(" ^ string_of_pattern pat ^ ")" ^
+    short_string_of_asm_compound level sts
 
   | `DCL_val (ty) ->
     spaces level ^ 

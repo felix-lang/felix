@@ -255,7 +255,28 @@ let rec build_tables print_flag dfns counter name level parent asms =
           ;
           add_function name_map id fun_index;
           interfaces := !interfaces @ ifaces
- 
+          ;
+
+          (* add the match result here if not already done ..
+             its a bit hacky .. oh well ..
+          *)
+
+          let match_result_name = mvname ^ "_result" in
+          let match_result_index = !counter in
+          incr counter;
+
+          if not (Hashtbl.mem name_map match_result_name)
+          then begin
+            Hashtbl.add dfns match_result_index
+            (
+              match_result_name,sr,parent,
+              `SYMDEF_match_result fun_index
+            )
+            ;
+            add_unique name_map match_result_name match_result_index;
+
+          end
+
         | `DCL_header s ->
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
           ;
@@ -358,14 +379,22 @@ let rec build_tables print_flag dfns counter name level parent asms =
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
           ;
           add_unique name_map id n
+
         | `DCL_var t ->       
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
           ;
           add_unique name_map id n
+
         | `DCL_var_typeof e ->
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
           ;
           add_unique name_map id n
+
+        | `DCL_match_result i ->
+          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
+          ;
+          add_unique name_map id n
+
         | `DCL_type_alias t ->
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
           ;
@@ -382,10 +411,12 @@ let rec build_tables print_flag dfns counter name level parent asms =
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
           ;
           add_function name_map id n
+
         | `DCL_proc (ts,c) ->
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
           ;
           add_function name_map id n
+
 
         | `DCL_union its ->
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)

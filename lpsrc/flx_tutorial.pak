@@ -126,7 +126,7 @@ declared with the 'var' keyword.
 #include <std.flx>
 var i = 1;
 var j : int;
-while (i < 10) 
+while [i < 10]
 {
   j = i + i;
   print j; print "\n";
@@ -149,8 +149,10 @@ or assigned to before they are used, as in C.
 You will also have noticed the 'while' loop,
 one of the control structures Felix provides:
 it appears to work the same way as a 'while' loop in C,
-except that a trailing ; is strangely required.
-We'll find out why later.
+except that a trailing ; is strangely required,
+and the condition is given in square brackets.
+We'll find out exactly why later, but here is a hit:
+there is no while statement in Felix!
 
 @head(2,'Functions')
 Felix allows you to define functions,
@@ -170,6 +172,31 @@ and you might think that 'mid' has two arguments.
 This is not so. All functions in Felix have
 exactly one argument. Well, almost all of them :-)
 I'll explain this in the next example.
+@p()
+Function in Felix may not have any side effects,
+except for diagnostic outputs.  Note however that
+functions may modify their own private data,
+that is, may contain and mutate local variables.
+
+@head(2,'The lazy expression')
+There is a function which is so useful, there
+is a special syntax for it: the lazy expression.
+@select(tangler(tdir+'tut106a.flx'))
+#include <std.flx>
+var x = 1;
+var y = 2;
+val f1 = [x + y]; // lazy expression
+fun f2():int = { return x + y; } // equivalent
+print (f1 ());
+print (f2 ());
+x = 2;
+y = 3;
+print (f1 ());
+print (f2 ());
+@doc()
+The square brackets denote a lazy expression, it is
+a function which evaluates the expression when passed
+the special unit value () explained below.
 
 @head(2,'Tuples')
 As you might guess from the title, Felix has
@@ -232,7 +259,8 @@ components each: an int and a pair of ints,
 in the two possible orderings.
 @p()
 The type of the empty tuple '()' is called
-'unit'.
+'unit'. It can also be called '1', the reason
+will become clear soon.
 @p()
 I said before that 'almost' all functions in
 Felix have one argument. The tuple constructor
@@ -250,13 +278,16 @@ print x.(2).(1); print "\n";
 @doc()
 The brackets are needed so the lexer
 doesn't get confused with floating point.
+The notation is ugly and not recommended ..
+there is a better way called pattern matching
+which you will learn about soon.
 
 @head(2,'Procedures')
-Felix allows you define procedures.
+Felix allows you to define procedures.
 They're like functions, but they can't return values.
 On the other hand, procedures may have side effects,
 and they may read input from the driver's message
-dispatch queue.
+dispatch queue (which you will learn about much later).
 @p()
 Here is an example of a procedure definition
 and use:
@@ -277,7 +308,36 @@ by its name, the () can be elided:
 print 1; endl();
 print 2; endl;
 @doc()
-There's another special shortcut, but we'll meet it later.
+More precisely, a statement consisting
+of an (almost) atomic expression
+is taken to be a call to a procedure with
+unit argument.
+
+@head(2,'The block procedure')
+There is a procedure which is so useful, there
+is a special syntax for it: the block.
+@select(tangler(tdir+'tut110a.flx'))
+#include <std.flx>
+var x = 1;
+val p1 = { print x; };
+proc p2() { print x; }; // equivalent to p1
+
+// all these calls have the same behaviour
+p1();
+p1;
+p2();
+p2;
+{ print x; }();
+{ print x; };
+print x;
+
+@doc()
+The block is a procedure taking a unit argument.
+So when you write one as a statement, it just gets
+called: note that unlike C, that thing in 
+curley braces is an expression, and you must 
+make a statement by adding a semi-colon,
+which has the effect of invoking it.
 
 @head(2,'Structs')
 Felix supports C like structs. A struct, like a tuple,
@@ -315,13 +375,14 @@ struct XY = {
 
 val xy = XY(1,2);
 print xy.x; endl;
-print xy.y;  endl;
+print xy.y; endl;
 
 @head(2,'Unions')
 Felix supports unions, but they are a bit
 different to C unions. A union is a way
 of merging a finite set of types into
-a single type. An object of a union type
+a single type; that is, it provides
+type unification. An object of a union type
 consists of a tag, identifying what type
 the component has, and the actual component.
 Here are some examples of unions.
@@ -375,16 +436,16 @@ union int_option =
 
 val y = Some 1;
 
-match (y) with 
+match y with 
   | Some ?i =>
     {
       print "Some "; 
       print i; 
-    };
+    }
   | None =>
     {
       print "None"; 
-    };
+    }
 endmatch;
 endl;
 
@@ -423,9 +484,9 @@ match (x) with
         print ", ";
         print b; 
         print ")";
-      };
+      }
     endmatch;
-  };
+  }
 endmatch;
 endl;
 @doc()
@@ -509,14 +570,15 @@ print n; endl;
 @doc()
 There are lots of things to note here.
 @p()
-First, the header command 
+First, the header statement
 
 @begin_displayed_code()
-  header """ .... """
+  header """ .... """;
 @end_displayed_code()
 
 specifies text to
-be emitted literally in the generated C++.
+be emitted literally in the generated C++:
+note the trailing semicolon
 In this case, we emit a C++ class defining
 a basic gaussian integer type.
 @p()
@@ -746,13 +808,13 @@ val t2 = Cons (200.2,t1);
 proc print (a: float_list) 
 {
   match a with 
-  | Empty => print "[]";
+  | Empty => { print "[]"; }
   | Cons (?i, ?tail) =>
     {
       print i; 
       print " "; 
       print tail;
-    };
+    }
   endmatch;
 }
 
@@ -774,13 +836,13 @@ union int_list =
 proc print (a: int_list) 
 {
   match a with
-  | Empty => print "[]";
+  | Empty => { print "[]"; }
   | Cons (?i,?tail) =>
     {
       print i; 
       print " "; 
       print tail;
-    };
+    }
   endmatch;
 }
 
@@ -801,12 +863,12 @@ fun rev(lst:int_list):int_list =
   proc aux(lst:int_list)
   {
     match lst with
-    | Empty => {} ;
+    | Empty => {}
     | Cons (?head,?tail) =>
       {
         result = Cons(head,result); 
         aux(tail);
-      };
+      }
     endmatch;
   }
   aux(lst);
@@ -870,9 +932,8 @@ This is the name of the function called 'print'
 which accepts a unit argument. Felix can perform
 overload resolution when a function name is applied
 to an argument, by inspecting the type of the argument.
-@p()
 In other circumstances, you have to specify the type
-of the argument.
+of the argument. 
 @p()
 There is a subtle point of the overloading system
 here. The procedure 'print of (unit)' actually
@@ -904,6 +965,17 @@ initialised to 30, and the variable 'j', it will
 print 40 + j as an answer when called. This is 42
 the first time, since at that time j is 2, and 43 the
 second time, since j is then 3.
+@p()
+The difference between a function specification
+and a function closure may seem difficult to grasp
+at first, but the implementation makes the distinction
+quite clear: a function specification is a C++ class,
+whereas a function closure is an object of that class.
+Function closures exist at run time, function specifications
+only exist at compile time. Unfortunately perhaps,
+the unqualified term "function" is used to refer to both.
+Even more confusing, it sometimes means procedures
+as well (even though they're utterly different beasts).
 
 @head(2,'Currying')
 Consider the following example:
@@ -963,7 +1035,7 @@ application is called currying (after the mathematician
 Howard Curry, who invented the lambda calculus).
 @p()
 While this is a perfectly good defintion,
-but there is a lot of housekeeping going on.
+there is a lot of housekeeping going on.
 Felix provides syntactic sugar that makes it easier
 to declare functions suitable for currying.
 Here is the equivalent code, using this sugar:
@@ -1223,7 +1295,9 @@ defined: in Felix the type must be generative,
 which means it must be a declared type
 such as a named struct or union
 and not an implicitly defined type like a tuple,
-pointer, or function type.
+pointer, or function type (typedefs do not count
+here, as in C they just specify an alias, they
+don't define a type).
 @p()
 In the example, 'get_x' is defined in the module X,
 because A is defined in the module X, and since
@@ -1614,68 +1688,95 @@ of the while statement? Are you getting a glimmer?
 Hint: Felix doesn't have a while statement.
 It's a library routine!
 
-@head(2,'Lazy Evaluation')
-To define the while loop, we need lazy evaluation.
-Lets try to define it:
-@select(tangler(tdir+'tut136.flx'))
-#include <std.flx>
-proc While (cond: unit->bool) (body:unit->void)
-{
-  repeat:>
-    if (not(cond())) then goto finished; endif;
-    body();
-    goto repeat;
-  finished:>
-}
-
-var i = 0;
-While (fun():bool= { return i < 10; })
-{
-  print i; endl;
-  i++;
-};
-
-@doc()
-Well that works fine, except for the ugly lambda.
-Here's the first shortcut:
+@head(2,'The while procedure')
+Here is the while procedure from
+the standard library, renamed While
+to avoid a clash:
 @select(tangler(tdir+'tut137.flx'))
 #include <std.flx>
-proc While (cond: unit->bool) (body:unit->void)
+proc While (cond:unit->bool) (body:unit->void)
 {
   repeat:>
-    if (not(cond())) then goto finished; endif;
+    if not (cond()) then goto finished; endif;
     body();
     goto repeat;
   finished:>
 }
 
-var i = 0;
-val x : unit -> int = lazy (i+1);
-print (x());
-While (lazy ( i < 10))
-{
-  print i; endl;
-  i++;
-};
+var x = 1;
+While [x>0] { print x; endl; x = x - 1; };
 
 @doc()
-The keyword lazy denotes a lazy expression:
-@begin_displayed_code()
-  lazy (expr)
-@end_displayed_code()
-means exactly the same as
-@begin_displayed_code()
-  fun():T { return expr; }
-@end_displayed_code()
-where T is the type of the expression expr.
-Well, we're not quite there syntactically!
+Notice how simple and powerful the combination
+of the lazy expression syntax, block syntax,
+and currying are.
+@p()
+Felix actually only has a three
+procedural control structures: 
+label/goto, procedure call/return,
+and raise/attempt/catch; and even the latter
+is only supported by the compiler for syntactic
+convenience.
+@p()
+The standard library defines several
+common procedural control structures.
+@p()
+Note that much of the rich control is obtained
+from the functional subsystem. For example
+the match expression is purely functional,
+it simply returns one of several expressions,
+but of course those expressions can be procedures
+which are subsequently called: here the default
+call syntax fools you into believing there
+is a match statement when actually there isn't.
 
-@head(2,'Numeric Lexemes')
+@head(2,'Standard types and Lexemes')
 Here is a more comprehensive set of examples
-of Felix numeric lexicology.
+of Felix standard types and numeric lexicology. 
+@p()
+The types:
+@begin_displayed_code()
+  // addressing
+  byte size address offset 
+
+  // logic
+  bool
+
+  // inexact integers
+  tiny  short  int  long  vlong
+  utiny ushort uint ulong uvlong
+
+  // exact integers
+  int8  int16  int32  int64
+  uint8 uint16 uint32 uint64
+
+  // floating point
+  float double ldouble
+
+  // character
+  char  wchar  uchar
+
+  // string
+  string wstring ustring
+@end_displayed_code()
+are defined in the standard library at the top level.
+Except for the addressing types, there is module
+containing the functions acting on the type for
+each type, with the same name except that the first
+letter is upper case: thus module Long contains all
+the operations on type long. Bool, Int, Double, Char
+and String are opened in the library so the operators
+for the corresponding types are available at the top
+level. Don't expect "1L + 1L" to work unless you
+first "open Long;" in your program!
+@p()
+The compiler directly supports literals of all
+the numeric types, but the lexicology is a sanitised
+version of that used by C. Note in particular
+that 010 is decimal ten in Felix!
+
 @select(tangler(tdir+'tut138.flx'))
 #include <std.flx>
-//#include <boost.flx>
 
 // radix
 {
@@ -1748,20 +1849,20 @@ floating point. Here are some examples:
 #include <std.flx>
 
 match (1.0) with
-  | NaN => print "Not a Number";
-  | -inf .. -0.999 => print "lt -1";
-  | -1.001 .. 1.001 => print "Unit circle";
-  | 0.999 .. inf => print "Greater than 1";
+  | NaN => { print "Not a Number"; }
+  | -inf .. -0.999 => { print "lt -1"; }
+  | -1.001 .. 1.001 => { print "Unit circle"; }
+  | 0.999 .. inf => { print "Greater than 1"; }
 endmatch;
 endl;
 
 match (1.0) with 
-  | 0.999 .. 1.001 => print "one";
+  | 0.999 .. 1.001 => { print "one"; }
 endmatch;
 endl;
 
 match (1.0/3.0) with
- | 0.3333 .. 0.3334 => print "One third";
+ | 0.3333 .. 0.3334 => { print "One third"; }
 endmatch;
 
 @doc()
@@ -1937,13 +2038,13 @@ functor List (req:list_req)
   proc print (a: list) 
   {
     match (a) with
-    | Empty => print "[]";
+    | Empty => { print "[]"; }
     | Cons (?i, ?tail) =>
       {
         req::print_element i; 
         print " "; 
         print tail;
-      };
+      }
     endmatch;
   }
 }
@@ -2154,34 +2255,81 @@ to specify numbered unions.
 @select(tangler(tdir+'tut207.flx'))
 #include <std.flx>
 open Long;
+
 typedef three = unit +  unit + unit;
 typedef four = 4;
-typedef nu = int + int + long;
+typedef nu = int + double + long;
 
-val x1 = case 2 of (1+1+1);
+
+val x1 = case 1 of (1+1+1);
 val x2 = case 2 of 3;
-val x3 = (case 3 of nu) 33L;
 
 proc g(x:three) {
   print "Case ";
   match x with
-  | case 1 => { print 1; };
-  | case 2 => { print 2; };
-  | case 3 => { print 3; };
+  | case 1 => { print 1; }
+  | case 2 => { print 2; }
+  | case 3 => { print 3; }
   endmatch;
   print " of three\n";
 }
 
+g x1;
+g x2;
 g (case 3 of three);
 
 proc f(x:nu) {
   match x with
-  | case 1 ?z => { print "case 1 "; print z; };
-  | case 2 ?z => { print "case 2 "; print z; };
-  | case 3 ?z => { print "case 3 "; print z; };
+  | case 1 ?z => { print "case 1 "; print z; }
+  | case 2 ?z => { print "case 2 "; print z; }
+  | case 3 ?z => { print "case 3 "; print z; }
   endmatch;
   print "\n";
 }
  
-f x3;
+val i1 = (case 1 of nu) 33;
+val i2 = (case 2 of nu) 3.3;
+val i3 = (case 3 of nu) 33L;
+f i1;
+f i2;
+f i3;
+
+@head(1,'Misc junk')
+Misc weird feature tests .. remove in production
+tutorial.
+@select(tangler(tdir+'tut901.flx'))
+#include <std.flx>
+val x = (1 + 2) as y, y;
+match x with
+| (?a,?b) =>
+{
+  print "(";
+  print a; 
+  print ", ";
+  print b; 
+  print ")\n";
+  print y; print "\n";
+}
+endmatch;
+
+@select(tangler(tdir+'tut902.flx'))
+#include <std.flx>
+proc While(cond:unit->bool) (body:unit->void)
+{
+  start_loop:>
+    if cond() then
+    {
+      body();
+      goto start_loop;
+    };
+    else todo "";
+    endif;
+}
+
+var x = 10;
+
+While [x>0] { 
+  print x; endl;
+  x = x - 1;
+};
 

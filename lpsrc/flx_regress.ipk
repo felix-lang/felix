@@ -165,6 +165,17 @@ module A
 }
 
 @select(tangler('test/rt03.flx'))
+#include <std.flx>
+// test lazy functions and procedures
+print "lazy expr eval test\n";
+var x = 1;
+var y = 2;
+val f = [x+y];
+print (f ()); print "\n";
+x = 3;
+print (f ()); print "\n";
+
+@select(tangler('test/rt04.flx'))
 // test the string library
 #include <std.flx>
 var x = "Hello";
@@ -172,33 +183,33 @@ x += "+";
 x += "World";
 print x; endl;
 assert(x == "Hello+World");
-print x[1 to 6]; endl;
-print x[to 6]; endl;
-print x[6 to]; endl;
-print x[6 to -1]; endl;
+print x.[1 to 6]; endl;
+print x.[to 6]; endl;
+print x.[6 to]; endl;
+print x.[6 to -1]; endl;
 
 var i = 0;
 var n = len x;
-while(i < n) {
-  print x[i];
+while [i < n] {
+  print x.[i];
   ++i;
 };
 endl;
 
 i = 1;
-while(i <= n) {
-  print x[-i];
+while [i <= n] {
+  print x.[-i];
   ++i;
 };
 endl;
 
-@select(tangler('test/rt04.flx'))
+@select(tangler('test/rt05.flx'))
 // test the chained comparison
 #include <std.flx>
 assert(1<2&<3&<4);
 
 
-@select(tangler('test/rt05.flx'))
+@select(tangler('test/rt06.flx'))
 // open bound module
 #include <std.flx>
 interface I { proc print_endl:int; }

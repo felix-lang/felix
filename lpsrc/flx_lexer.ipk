@@ -48,8 +48,10 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "header", (fun s ->  HEADER s);
     "code", (fun s ->  CODE s);
     "fork", (fun s ->  FORK s);
+    (*
     "while", (fun s ->  WHILE s);
     "loop", (fun s ->  LOOP s);
+    *)
     "todo", (fun s ->  TODO s);
     "of", (fun s ->  OF s);
     "attempt", (fun s ->  ATTEMPT s);
@@ -61,6 +63,7 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "_", (fun s ->  ANY s);
     "when", (fun s ->  WHEN s);
     "as", (fun s ->  AS s);
+    "all", (fun s ->  ALL s);
     "case", (fun s ->  CASE s);
     "with", (fun s ->  WITH s);
     "regexp", (fun s ->  REGEXP s);

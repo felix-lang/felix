@@ -120,7 +120,7 @@ let bind_exes dfns counter freg env exes ret_type =
 
       | `EXE_return e ->        
         let e',t' = be e in
-         if ret_type <> t'
+         if ret_type <> `BTYP_none && ret_type <> t'
          then
             failwith 
             (
@@ -336,6 +336,10 @@ let bbind dfns counter freg =
       Hashtbl.add bbdfns i (name,parent,
         `BBDCL_procedure ([],bbexes,name_map))
     
+    | `SYMDEF_match_result _ ->
+      let t = typeofindex dfns counter freg [] [] i in
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_val t)
+
     | `SYMDEF_dcl dcl -> match dcl with
 
     (* ugly special handling of DCLs *)

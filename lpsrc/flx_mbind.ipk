@@ -62,12 +62,14 @@ let gen_extractor
 let rec subst vars (e:expr_t) mv : expr_t = 
   let subst e = subst vars e mv in
   match e with
-  | `AST_product _
-  | `AST_void _
-  | `AST_sum _
-  | `AST_typed_case _
-  | `AST_case_arg _
-  | `AST_arrow _ -> failwith "Not expecting product, sum, case tag, void or arrow (or other weird stuff)"
+  | `AST_product _ -> failwith "Not expecting product in when part of pattern"
+  | `AST_void _ -> failwith "Not expecting void in when part of pattern"
+  | `AST_sum _ -> failwith "Not expecting sum in when part of pattern"
+  | `AST_typed_case _ -> failwith "Not expecting ptyped case in when part of pattern"
+  | `AST_case_arg _ -> failwith "Not expecting case_arg in when part of pattern"
+  | `AST_arrow _  -> failwith "Not expecting arrow in when part of pattern"
+  | `AST_match _  -> failwith "Not expecting match in when part of pattern"
+                     (* this one really SHOULD work! *)
 
   | `AST_root _ -> e
   | `AST_lookup _ -> e
@@ -75,6 +77,8 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_index _ -> e
   | `AST_literal _ -> e
   | `AST_case_tag _ -> e
+  | `AST_as _ -> e
+  | `AST_all _ -> e
 
   | `AST_name (sr,name) ->
     if Hashtbl.mem vars name 

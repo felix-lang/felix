@@ -61,6 +61,14 @@ let catmap f l = concat (map f l)
 (* convert an expression into a list of assembly instructions,
    plus an expression: basically, this means removing lambdas
 *)
+
+(*
+  ARGGG! rex guarrantees to lift lambdas out of expressions,
+  but the lifted lambda declarations also have bodies
+  which might contain expression containing lambdas,
+  so we have to apply rsts to these bodies..
+*)
+
 let rec rex seq (e:expr_t) : asm_t list * expr_t = 
   let rex e = rex seq e in
   let rsts sts = catmap (rst seq) sts in
@@ -142,6 +150,45 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
     let l2,x2 = rex arg in
     l1 @ l2, `AST_apply (sr,(x1,x2))
 
+  | `AST_as (sr,(e1,e2)) -> 
+    (* e2 must be a single identifier,
+       the whole expression is simply replaced
+       by it, and an initialised variable
+       dcl lifted out to the surrounding scope
+       ..
+       note this does NOT work for types ..
+       the translation is quite different ..
+       it also doesn't work in a pattern
+       ..
+       this is a seriously bad HACK: the value
+       declared is visible in the whole of 
+       the containing block!
+    *)
+    begin match e2 with
+    | `AST_name (_,name) ->
+       let l1,x1 = rex e1 in
+       let l2 = 
+         [
+           Dcl (sr,name,`DCL_val_typeof x1);
+           Exe (sr,`EXE_comment ("as variable '"^name^"'init"));
+           Exe (sr,`EXE_init (name,x1))
+         ] 
+       in
+         l1 @ l2, `AST_name (sr,name)
+       
+    | _ -> 
+     failwith "RHS of as expression must be identifier"
+    end
+
+  | `AST_all (sr,(e1,e2)) -> 
+    (* this is a shortform for a lambda:
+      expr all x:t <=> fun (x:t):rt { return expr; }
+      where rt is the expression type
+    *)
+    let l1,x1 = rex e1 in 
+    let l2,x2 = rex e2 in
+    l1 @ l2, `AST_all (sr,(x1,x2))
+
   | `AST_method_apply (sr,(fn,arg)) -> 
     let l2,x2 = rex arg in
     l2, `AST_method_apply (sr,(fn,x2))
@@ -155,7 +202,8 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
     let name = "_lambda_" ^ string_of_int n in
     let argtyp = type_of_argtypes (map snd params) in
     [match res with
-    | `AST_void _ -> Dcl (sr,name,`DCL_procedure (params, rsts sts))
+    | `AST_void _ ->
+      Dcl (sr,name,`DCL_procedure (params, rsts sts))
     | _ -> Dcl (sr,name,`DCL_function (params, res, rsts sts))
     ],
     `AST_suffix 
@@ -168,8 +216,11 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
     )
 
   | `AST_lazy (sr,e) ->
+    let asms,e = rex e in
     let n = seq() in
     let name = "_lazy_" ^ string_of_int n in
+    asms
+    @
     [
       Dcl (sr,name,`DCL_lazy e)
     ],
@@ -190,6 +241,113 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
     let l1,x1 = rex e in 
     l1, `AST_coercion (sr,(x1,t))
 
+  | `AST_match (sr,(e,pss)) ->
+    if List.length pss = 0 then failwith "Empty Pattern";
+    (* step 1: evaluate e *)
+    let d,x = rex e in
+ 
+    let match_var_name = "_match_var_"^string_of_int (seq()) in
+    let match_result_name = match_var_name ^ "_result" in
+    let match_seq = ref (seq()) in
+
+    let expr_src = src_of_expr e in
+
+    (* WOE. The expr may contain a lambda, which stuffs up
+       bind_expression which is called by bind_type ..
+    *)
+    let evl = 
+      [
+        Dcl (expr_src,match_var_name,`DCL_val_typeof(x));
+        Exe (expr_src,`EXE_init (match_var_name,x))
+      ]
+    in
+    let pats,_ = List.split pss in
+    Flx_pat.validate_patterns pats
+    ;
+    let ematch_seq = seq() in
+    let end_match_label = "_end_match_" ^ string_of_int ematch_seq in
+    let matches = ref [Exe (generated,`EXE_comment "begin match")] in
+    let match_caseno = ref 1 in
+    List.iter
+    (fun (pat,e) -> 
+      let n1 = !match_seq in
+      let n2 = seq() in
+      let patsrc = src_of_pat pat in
+      let expr_src = src_of_expr e in
+      let match_checker_id = "_match_checker_" ^ string_of_int n1 in
+      let match_handler_id = "_match_handler_" ^ string_of_int n1 in
+      let match_checker = `AST_name (patsrc,match_checker_id) in
+      let match_handler = `AST_name (expr_src,match_handler_id) in
+
+      let sts,result_expr = rex e in
+      let body = 
+        sts @ 
+        [Exe (expr_src,`EXE_init (match_result_name,result_expr))] 
+      in
+      matches := !matches @
+      [
+        Dcl (patsrc,match_checker_id,`DCL_match_check (pat,match_var_name));
+        Dcl 
+        (
+          expr_src,
+          match_handler_id,
+          `DCL_match_handler 
+          (
+            pat,
+            match_var_name,
+            body
+          )
+        )
+      ]
+      @
+      [
+      Exe (patsrc,`EXE_comment ("match case " ^ string_of_int !match_caseno));
+      Exe (patsrc,`EXE_label ("_match_label_" ^ string_of_int n1));
+      Exe 
+      (
+        patsrc,
+        `EXE_ifnotgoto 
+        (
+          `AST_apply 
+          (
+            patsrc,
+            (match_checker,`AST_tuple (patsrc,[]))
+          ), 
+          "_match_label_" ^ string_of_int n2
+        )
+      )
+      ;
+      Exe 
+      (
+        patsrc,
+        `EXE_call (match_handler, `AST_tuple (patsrc,[]))
+      )
+      ;
+      Exe (patsrc,`EXE_goto end_match_label)
+      ]
+      ;
+      incr match_caseno;
+      match_seq := n2
+    )
+    pss
+    ;
+    let failure_label = "_match_label_" ^ string_of_int !match_seq in
+
+    d
+    @
+    evl
+    @
+    !matches
+    @
+    [
+      Exe (sr,`EXE_comment "match failure");
+      Exe (sr,`EXE_label failure_label);
+      Exe (sr,`EXE_code "      assert((\"match failure\",false));\n");
+      Exe (sr,`EXE_comment "match exit");
+      Exe (sr,`EXE_label end_match_label)
+    ]
+    ,
+    `AST_name (sr,match_result_name)
 
 and split_st seq sr s : asm_t list * asm_t =
   match rst seq s with
@@ -270,8 +428,6 @@ and rst seq st : asm_t list =
     [Dcl (sr,name,`DCL_function (params, res, rsts' sts))]
     
   | `AST_procedure (sr,name, params, sts) -> 
-    let rst' st = rst seq st in
-    let rsts' sts = catmap rst' sts in
     [Dcl (sr,name,`DCL_procedure (params, rsts' sts))]
     
   | `AST_procedure_decl (sr,name,typ) ->
@@ -450,89 +606,6 @@ and rst seq st : asm_t list =
   | `AST_raise (sr,id,e) -> 
     let name = `AST_name(sr,id) in
     [Exe (sr,`EXE_call(name,e))]
-
-  | `AST_match (sr,e,pss) ->
-    if List.length pss = 0 then failwith "Empty Pattern";
-
-    (* step 1: evaluate e *)
-    let d,x = rex e in
-    let match_var_name = "_match_var_"^string_of_int (seq()) in
-    let expr_src = src_of_expr e in
-    let evl = 
-      [
-        Dcl (expr_src,match_var_name,`DCL_var_typeof(x));
-        Exe (expr_src,`EXE_init (match_var_name,x))
-      ]
-    in
-    let pats,_ = List.split pss in
-    Flx_pat.validate_patterns pats
-    ;
-    let ematch_seq = seq() in
-    let end_match_label = "_end_match_" ^ string_of_int ematch_seq in
-    let matches = ref [Exe (generated,`EXE_comment "begin match")] in
-    let match_caseno = ref 1 in
-    let match_seq = ref (seq()) in
-    List.iter
-    (fun (pat,st) -> 
-      let n1 = !match_seq in
-      let n2 = seq() in
-      let patsrc = src_of_pat pat in
-      let stsrc = src_of_stmt st in
-      let match_checker_id = "_match_checker_" ^ string_of_int n1 in
-      let match_handler_id = "_match_handler_" ^ string_of_int n1 in
-      let match_checker = `AST_name (patsrc,match_checker_id) in
-      let match_handler = `AST_name (stsrc,match_handler_id) in
-      matches := !matches @
-      [
-        Dcl (patsrc,match_checker_id,`DCL_match_check (pat,match_var_name));
-        Dcl (stsrc,match_handler_id,`DCL_match_handler (pat,match_var_name,rst' st))
-      ]
-      @
-      [
-      Exe (patsrc,`EXE_comment ("match case " ^ string_of_int !match_caseno));
-      Exe (patsrc,`EXE_label ("_match_label_" ^ string_of_int n1));
-      Exe 
-      (
-        patsrc,
-        `EXE_ifnotgoto 
-        (
-          `AST_apply 
-          (
-            patsrc,
-            (match_checker,`AST_tuple (patsrc,[]))
-          ), 
-          "_match_label_" ^ string_of_int n2
-        )
-      )
-      ;
-      Exe 
-      (
-        patsrc,
-        `EXE_call (match_handler, `AST_tuple (patsrc,[]))
-      )
-      ;
-      Exe (patsrc,`EXE_goto end_match_label)
-      ]
-      ;
-      incr match_caseno;
-      match_seq := n2
-    )
-    pss
-    ;
-    let failure_label = "_match_label_" ^ string_of_int !match_seq in
-    d 
-    @ 
-    evl
-    @
-    !matches
-    @
-    [
-      Exe (sr,`EXE_comment "match failure");
-      Exe (sr,`EXE_label failure_label);
-      Exe (sr,`EXE_code "      assert((\"match failure\",false));\n");
-      Exe (sr,`EXE_comment "match exit");
-      Exe (sr,`EXE_label end_match_label)
-    ]
 
   | `AST_return (sr,e) ->
     let d,x = rex e in d @ [Exe (sr,`EXE_return x)]

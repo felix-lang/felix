@@ -89,7 +89,7 @@ namespace std_flx {
   #floating
   "float"   : "float",
   "double"  : "double",
-  "ldouble"  : "double",
+  "ldouble"  : "long double",
   }
 
 @chars = ["char", "wchar", "uchar"]
@@ -301,6 +301,58 @@ module Arith_casts
     tangle('  fun '+t1+'_of: '+t2+' -> '+t1+' = "('+tmap[t1]+')$1";')
 }
 
+@#------------- CONTROL STRUCTURES -------------------
+module Control 
+{
+  // infinite loop
+  proc loop (body:unit->void)
+  {
+    repeat:>
+      body();
+      goto repeat;
+  }
+
+  // C style while loop
+  proc while (cond:unit->bool) (body:unit->void)
+  {
+    repeat:>
+      if not (cond()) then goto finish; endif;
+      body();
+      goto repeat;
+    finish:>
+  }
+
+  // C style while loop with reversed condition
+  // not the until is tested first -- zero iterations are possible
+  proc until(cond:unit->bool) (body:unit->void)
+  {
+    repeat:>
+      if cond() then goto finish; endif;
+      body();
+      goto repeat;
+    finish:>
+  }
+
+  // do nothing [the name pass comes from Python]
+  proc pass(){}
+
+  // C style for loop
+  proc for 
+    (init:unit->void) 
+    (cond:unit->bool) 
+    (incr:unit->void)
+    (body:unit->void)
+  {
+    init();
+    repeat:>
+      if not (cond()) then goto finish; endif;
+      body();
+      incr();
+      goto repeat;
+    finish:>
+  }
+}
+
 // ------ Open common modules -------------
 open Bool;
 open Int;
@@ -309,6 +361,7 @@ open Char;
 open String;
 open Stdout;
 open Arith_casts;
+open Control;
 
 @h=tangler('lib/boost.flx')
 @select(h)

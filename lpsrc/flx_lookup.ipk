@@ -247,7 +247,7 @@ let lookup_in_bound_module
     | NonFunctionEntry _ ->
       failwith
       (
-        "[lookup_qn_in_env: Bound_module] Expected simple nonfunction entry got binding"
+        "[lookup_qn_in_bound_module] Expected simple nonfunction entry got binding"
       )
     | FunctionEntry ls ->
       let ns = ref [] in
@@ -1319,6 +1319,7 @@ and bind_type dfns counter freg env exclude excluded_dirs sr t : btypecode_t =
   flush stdout;
   match t with
   | `AST_root _ -> failwith "Not expecting root in bind type"
+  | `TYP_none ->  `BTYP_none
   | `TYP_all (t,s) -> failwith "Can't bind type scheme yet" 
   | `TYP_as (t,s) -> failwith "can't bind recursive type yet"
 
@@ -1547,7 +1548,30 @@ and typeofindex
     (*
     print_endline "CALLING BIND EXPRESSION.. (possible recursion)";
     flush stdout;
+
+    ARGG! This is bugged. The expression e might contain a lambda,
+    which bind_expression rejects ..
+
+    Worse, the expression sometimes need to be
+    evaluated in an unavailable context .. for example,
+    match x with | y -> 1+y
+
+    is transformed to have an initialisation
+
+    e = 1 + y
+
+    and y isn't visible where e is declared ..
+
+    .. basically, requiring the user to declared the return type
+    of a function won't stick .. too many constructions map
+    to functions whose type must be deduced ..
+
+    Unfortunately, the DCL is generated before there is
+    a hashtable representing the environment .. so there 
+    is no way to specify the environment in which the expression
+    is to be evaluated .. or is it .. ??
     *)
+
     snd(bind_expression dfns counter freg env (index::exclude) excluded_dirs e)
 
   | `SYMDEF_lazy (e) -> 
@@ -1562,6 +1586,28 @@ and typeofindex
   | `SYMDEF_match_handler _ ->
     `BTYP_function (`BTYP_tuple [],`BTYP_void)
 
+  | `SYMDEF_match_result handler_index ->
+    let handler = Hashtbl.find dfns handler_index in
+    begin 
+      match handler with (id,sr,parent,sym) ->
+      match sym with `SYMDEF_match_handler (pat,mvindex,exes,nmap,dirs) ->
+      begin
+         let mvname = 
+           match Hashtbl.find dfns mvindex with (id,_,_,_) -> id
+         in
+         let last_instr = list_last exes in
+         match last_instr with
+         | `EXE_init (match_result_name, e) ->
+            assert (match_result_name = mvname ^ "_result");
+            (* We need the environment to be the handler body .. *)
+            let env:env_t = build_env dfns counter freg excluded_dirs (Some handler_index) in 
+            (* print_endline ("Trying to bind expression " ^ string_of_expr e); *)
+            snd(bind_expression dfns counter freg env (index::exclude) excluded_dirs e)
+         | _ -> assert false
+      end
+      | _ -> assert false
+    end
+    
   | `SYMDEF_dcl (`DCL_fun (pts,rt,_)) -> 
     (* print_endline "Found function primitive";
     flush stdout;
@@ -1682,6 +1728,7 @@ and koenig_lookup dfns counter freg sra exclude excluded_dirs id' name_map fn t2
           with _ -> failwith "typeofindex failed"
         with
         | `BTYP_function _ as t -> t
+          (* HANDLE UNKNOWN RETURN TYPE HERE *)
         | t -> 
           failwith 
           (
@@ -1890,12 +1937,11 @@ and lookup_name_with_sig
   *)
   match env with
   | [] -> 
-    print_endline "ENV:";
-    print_env env;
     failwith 
     (
-      "[lookup name with sig] Can't find " ^ name ^ " in " ^
-      short_string_of_src srn
+      "[lookup_name_with_sig] Can't find " ^ name ^ 
+      " of " ^ string_of_btypecode dfns t2 ^ "\n" ^
+      "in " ^ short_string_of_src srn
     )
   | (table,dirs)::tail ->
     match 
@@ -1934,14 +1980,14 @@ and handle_function
   *)
   match overload with
     | Bound (i,j) -> 
-      print_endline "[lookup_qn_with_sig] handle opaque function"; 
+      print_endline "[handle_function] handle opaque function"; 
       let it =
         match typeofindex dfns counter freg exclude excluded_dirs i with
         | `BTYP_function _ as t -> t
         | t -> 
           failwith 
           (
-            "[lookup_qn_with_sig]: closure operator expected '"^
+            "[handle_function]: closure operator expected '"^
             name^"' to be function definition, got '"^
             string_of_btypecode dfns t
             ^"', " ^ short_string_of_src sra
@@ -1952,7 +1998,7 @@ and handle_function
         | t -> 
           failwith 
           (
-            "[lookup_qn_with_sig]: closure operator expected '"^
+            "[handle_function]: closure operator expected '"^
             name^"' to be function definition, got '"^
             string_of_btypecode dfns t
             ^"', " ^ short_string_of_src sra
@@ -1984,11 +2030,15 @@ and handle_function
           `BEXPR_closure index,
           (
             match typeofindex dfns counter freg exclude excluded_dirs index with
-            | `BTYP_function _ as t -> t
+            | `BTYP_function (s,d) as t -> 
+              begin match d with
+              | `BTYP_none -> failwith "Can't handle Unknown type in handle_function"
+              | _ -> t
+              end
             | t -> 
               failwith 
               (
-                "[lookup_qn_with_sig]: closure operator expected '"^name^"' to be function definition, got '"^
+                "[handle_function]: closure operator expected '"^name^"' to be function definition, got '"^
                 string_of_btypecode dfns t
                 ^"', " ^ short_string_of_src sra
               )
@@ -1996,7 +2046,7 @@ and handle_function
         | _ -> 
           failwith 
           (
-            "[lookup_qn_with_sig] Expected function"
+            "[handle_function] Expected function"
           )
       end 
 
@@ -2023,7 +2073,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     )
 
   | NonFunctionEntry _ ->
-    failwith "[lookup_qn_with_sig] expected simple nonfunction entry"
+    failwith "[lookup_name_in_table_dirs_with_sig] expected simple nonfunction entry"
 
   | FunctionEntry fs ->
     (*
@@ -2100,7 +2150,7 @@ and handle_entry dfns counter freg sra srn env exclude excluded_dirs entry t2 na
       typeofindex dfns counter freg exclude excluded_dirs index
     )
   | NonFunctionEntry _ ->
-    failwith "[lookup_qn_with_sig] expected simple nonfunction entry"
+    failwith "[handle_entry] expected simple nonfunction entry"
 
   | FunctionEntry fs -> 
     (* print_endline ("Simple overload: function "^name^" found"); *)
@@ -2145,6 +2195,9 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
   print_endline "==";
   *)
   match e with
+  | `AST_as (sr, (e1,e2)) -> failwith "Unexpected 'as' in expression" 
+  | `AST_all (sr, (e1,e2)) -> failwith "Unexpected 'all' in expression" 
+
   | `AST_sum (sri,ls) -> 
     begin let mksum a b = apl2 sri "add" [a;b] in
     match ls with 
@@ -2444,7 +2497,8 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
         sra srn env 
         exclude excluded_dirs 
         name t2 
-    in cal_apply dfns tbe1 (be2,t2)
+    in 
+      cal_apply dfns tbe1 (be2,t2)
 
   | `AST_apply (sr,(e1,e2)) -> 
     (*
@@ -2547,8 +2601,18 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
     (
       "[bind_expression] " ^
       short_string_of_src sr ^
-      "[Compiler error] Unexpected lambda binding expression"
+      "\n[Compiler error] Unexpected lambda when binding expression (should have been lifted out)" ^
+      string_of_expr e
     )
+
+  | `AST_match (sr,_) -> 
+    failwith 
+    (
+      "[bind_expression] " ^
+      short_string_of_src sr ^
+      "[Compiler error] Unexpected match when binding expression (should have been lifted out)"
+    )
+
 
 and resolve_overload 
   dfns counter freg 
@@ -2620,6 +2684,7 @@ and get_table_dirs_of_index dfns index =
       | `SYMDEF_if_fun _ -> failwith "Can't look into function dcl"
       | `SYMDEF_if_proc _ -> failwith "Can't look into proc dcl"
       | `SYMDEF_if_type -> failwith "Can't look into type"
+      | `SYMDEF_match_result _  -> failwith "Can't look into match variable"
       | `SYMDEF_parameter _ -> 
         failwith 
         (

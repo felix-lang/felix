@@ -159,6 +159,7 @@ let find_variable_indices dfns index =
       *)
         match symdef with
         | `SYMDEF_parameter _
+        | `SYMDEF_match_result _
         | `SYMDEF_dcl (`DCL_var _) 
         | `SYMDEF_dcl (`DCL_var_typeof _) 
         | `SYMDEF_dcl (`DCL_val _) 
@@ -525,7 +526,8 @@ let get_var_ref (dfns:symbol_table_t) bbdfns this index : string =
   | `SYMDEF_dcl (`DCL_var _)
   | `SYMDEF_dcl (`DCL_var_typeof _)
   | `SYMDEF_dcl (`DCL_val _)
-  | `SYMDEF_dcl (`DCL_val_typeof _) ->
+  | `SYMDEF_dcl (`DCL_val_typeof _)
+  | `SYMDEF_match_result _ ->
     let rec chase_tail parent =
       match parent with
       | None -> "ptf->" ^ cpp_name bbdfns  index
@@ -559,7 +561,9 @@ let get_var_frame (dfns: symbol_table_t) bbdfns this index : string =
   | `SYMDEF_dcl (`DCL_var _)
   | `SYMDEF_dcl (`DCL_var_typeof _)
   | `SYMDEF_dcl (`DCL_val _)
-  | `SYMDEF_dcl (`DCL_val_typeof _) ->
+  | `SYMDEF_dcl (`DCL_val_typeof _) 
+  | `SYMDEF_match_result _
+  ->
     let rec chase_tail parent =
       match parent with
       | None -> "((void*)0)"
@@ -603,7 +607,7 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
     "(" ^ ge e ^ ").mem_" ^ string_of_int n
     
   | `BEXPR_match_case (n,e) -> 
-    "((" ^ ge e ^ ").variant == " ^ string_of_int n ^ ")"
+    "((" ^ ge e ^ ").variant == " ^ string_of_int (n-1) ^ ")"
 
   | `BEXPR_case_arg (n,e) ->
     (* NOTE that the index is not used ... *)
@@ -926,7 +930,7 @@ let gen_exe registry dfns bbdfns label_map counter this (exe:bexe_t) =
     in
     let label_index = 
       try Hashtbl.find local_labels s 
-      with _ -> failwith ("[gen_exe] Can't find label " ^ s)
+      with _ -> failwith ("[gen_exe] In " ^ id ^ ": Can't find label " ^ s)
     in
     (match kind with
       | Procedure ->
@@ -947,7 +951,7 @@ let gen_exe registry dfns bbdfns label_map counter this (exe:bexe_t) =
     then "      goto " ^ s ^ ";\n"
     else let rec aux parent =
       match parent with
-      | None -> failwith ("[gen_exe(goto)] Can't find label " ^ s)
+      | None -> failwith ("[gen_exe(goto)] In " ^ id ^ ": Can't find label " ^ s)
       | Some i -> 
          let id, sr, parent, entry = 
            try Hashtbl.find dfns i 
