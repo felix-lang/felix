@@ -19,7 +19,9 @@ val build_tables:
   int ref ->
   string ->
   int ->
-  int option ->
+  int option -> (* parent index *)
+  int option -> (* grandparent index *)
+  int -> (* root index *)
   asm_t list ->
   (
     name_map_t *  
@@ -92,8 +94,20 @@ let add_function table key value =
 (* this routine takes a partially filled unbound definition table,
   'dfns' and a counter 'counter', and adds entries to the table
   at locations equal to and above the counter
+
+  Each entity is also added to the name map of the parent entity.
+
+  We use recursive descent, noting that the whilst an entity
+  is not registered until its children are completely registered,
+  its index is allocated before descending into child structures,
+  so the index of children is always higher than its parent numerically
+
+  The parent index is passed down so an uplink to the parent can
+  be created in the child, but it cannot be followed until
+  registration of all the children and their parent is complete
 *)
-let rec build_tables print_flag dfns counter name level parent asms = 
+
+let rec build_tables print_flag dfns counter name level parent grandparent root asms = 
   let dcls,exes,ifaces,dirs = split_asms asms in
   let dcls,exes,ifaces,dirs = 
     List.rev dcls,List.rev exes,List.rev ifaces, List.rev dirs
@@ -102,6 +116,20 @@ let rec build_tables print_flag dfns counter name level parent asms =
   let interfaces = ref ifaces in
   let spc = spaces level in
   let name_map = Hashtbl.create 97 in
+
+  (* check root index *)
+  if level = 0 
+  then begin
+    if root <> !counter
+    then failwith "Wrong value for root index";
+    begin match dcls with
+    | [x] -> ()
+    | _ -> failwith "Expected top level to contain exactly one module declaration"
+    end
+  end
+  ;
+  Hashtbl.add name_map "root" (NonFunctionEntry (Simple root))
+  ;
   begin 
     List.iter
     (
@@ -132,7 +160,7 @@ let rec build_tables print_flag dfns counter name level parent asms =
         | `DCL_typed_functor (ps,ret,asms) -> 
           let fun_index = n in
           let table, exes,ifaces,dirs = 
-            build_tables print_flag dfns counter id (level+1) (Some n) 
+            build_tables print_flag dfns counter id (level+1) (Some n) parent root
             asms
           in
           Hashtbl.add dfns fun_index (id, sr, parent,
@@ -171,7 +199,7 @@ let rec build_tables print_flag dfns counter name level parent asms =
         | `DCL_untyped_functor (ps,asms) -> 
           let fun_index = n in
           let table, exes,ifaces,dirs = 
-            build_tables print_flag dfns counter id (level+1) (Some n) 
+            build_tables print_flag dfns counter id (level+1) (Some n) parent root
             asms
           in
           Hashtbl.add dfns fun_index (id, sr, parent,
@@ -212,7 +240,7 @@ let rec build_tables print_flag dfns counter name level parent asms =
           let t = if t = `TYP_none then `TYP_var fun_index else t in
           let table, exes, ifaces,dirs =  
             build_tables print_flag dfns counter id (level+1) 
-            (Some fun_index) asms 
+            (Some fun_index) parent root asms 
           in
           List.iter (fun (name,typ) -> 
             let n = !counter in
@@ -275,7 +303,7 @@ let rec build_tables print_flag dfns counter name level parent asms =
           let fun_index = n in
           let table, exes,ifaces,dirs = 
             build_tables print_flag dfns counter id (level+1) 
-            (Some fun_index) !new_asms 
+            (Some fun_index) parent root !new_asms 
           in
           Hashtbl.add dfns fun_index (id, sr, parent,
             `SYMDEF_function ([],`TYP_var fun_index, exes, table, dirs)
@@ -296,7 +324,7 @@ let rec build_tables print_flag dfns counter name level parent asms =
 
         | `DCL_module asms ->
           let table, exes,ifaces,dirs = 
-            build_tables print_flag dfns counter id (level+1) (Some n) 
+            build_tables print_flag dfns counter id (level+1) (Some n) parent root
             asms
           in
           Hashtbl.add dfns n (id, sr,parent,`SYMDEF_module (table,dirs));
@@ -321,7 +349,7 @@ let rec build_tables print_flag dfns counter name level parent asms =
         
         | `DCL_interface asms ->
           let table, exes,ifaces,dirs = 
-            build_tables print_flag dfns counter id (level+1) (Some n) 
+            build_tables print_flag dfns counter id (level+1) (Some n) parent root
             asms
           in
           Hashtbl.add dfns n (id, sr,parent,`SYMDEF_interface (table, dirs));
@@ -341,7 +369,7 @@ let rec build_tables print_flag dfns counter name level parent asms =
           let fun_index = n in
           let table, exes,ifaces,dirs = 
             build_tables print_flag dfns counter id 
-            (level+1) (Some fun_index) asms 
+            (level+1) (Some fun_index) parent root asms 
           in
           List.iter (fun (name,typ) -> 
             let n = !counter in

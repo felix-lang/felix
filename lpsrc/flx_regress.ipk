@@ -269,6 +269,32 @@ eol;
 print (if 1==1 then "true" else "false" endif); eol;
 print (if 1==0 then "true" else "false" endif); eol;
 
+@select(tangler('test/rt08.flx'))
+#include <std.flx>
+// closure formation test
+
+// struct as function
+/*
+struct X { x:int; }
+fun execX(p:int->X):X = { return p(1); }
+proc print(x:X){ print "struct X"; }
+print (execX (X of (int))); endl;
+print (execX (X)); endl;
+*/
+
+/*
+typedef Y = 1 + int;
+fun exec2(y2:int->Y,a:int):Y= { return  y2 a; }
+proc print(y:Y) { print "union Y"; }
+print (exec2(case 2 of Y, 1)); endl;
+*/
+
+/*
+union U = | A | B of int;
+fun exec3(y2:int->U,a:int):U= { return  y2 a; }
+proc print(y:U) { print "union U"; }
+print (exec2(B, 1)); endl;
+*/
 
 @select(tangler('test/bt04.flx'))
 #include <std.flx>

@@ -136,7 +136,6 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
     in rex x
 
   | `AST_deref _ -> [],e
-  | `AST_root _ -> [],e
   | `AST_name _ -> [],e
   | `AST_case_tag _ -> [],e
   | `AST_typed_case _ -> [],e
@@ -447,6 +446,7 @@ and rst seq st : asm_t list =
   | `AST_label (sr,s) -> [Exe (sr,`EXE_label s)]
   | `AST_goto (sr,s) -> [Exe (sr,`EXE_goto s)]
   | `AST_open (sr,name) -> [Dir (sr,DIR_open name)]
+  | `AST_use (sr,n,qn) -> [Dir (sr,DIR_use (n,qn))]
   
   | `AST_comment s -> [Exe (generated,`EXE_comment s)]
 

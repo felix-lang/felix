@@ -18,67 +18,74 @@ elseif exists("b:current_syntax")
 endif
 
 " all the felix keywords ..
-syn keyword cStatement open
-syn keyword cStatement define
-syn keyword cStatement overload
-syn keyword cStatement root
+" directives
+syn keyword cDefine open
+syn keyword cDefine define
+syn keyword cDefine use
+syn keyword cDefine include
+syn keyword cDefine header
+syn keyword cDefine body
+
+" special identifiers
+syn keyword cDefine root
+syn keyword cDefine parent
+syn keyword cDefine self
+
+" to do stuff
+syn keyword cToDo todo
+
+" statement keywords
 syn keyword cStatement interface
 syn keyword cStatement functor
-syn keyword cStatement not
-syn keyword cStatement and
-syn keyword cStatement not
-syn keyword cStatement or
-syn keyword cStatement service
-syn keyword cStatement command
 syn keyword cStatement function
 syn keyword cStatement procedure
-syn keyword cStatement reader
-syn keyword cStatement handler
-syn keyword cStatement if
-syn keyword cStatement then
-syn keyword cStatement else
-syn keyword cStatement elif
-syn keyword cStatement endif
 syn keyword cStatement call
 syn keyword cStatement type
 syn keyword cStatement typedef
 syn keyword cStatement fun
-syn keyword cStatement unit
 syn keyword cStatement read
 syn keyword cStatement return
 syn keyword cStatement proc
 syn keyword cStatement const
 syn keyword cStatement struct
-syn keyword cStatement header
-syn keyword cStatement body
-syn keyword cStatement code
-syn keyword cStatement fork
-syn keyword cStatement todo
-syn keyword cStatement of
+syn keyword cStatement var
+syn keyword cStatement val
+syn keyword cStatement union
+syn keyword cStatement class
+syn keyword cStatement exceptions
+syn keyword cStatement module
+syn keyword cStatement regexp
 syn keyword cStatement attempt
 syn keyword cStatement endattempt
 syn keyword cStatement endmatch
 syn keyword cStatement except
 syn keyword cStatement finally
 syn keyword cStatement raise
+
+" operators
+syn keyword cStatement not
+syn keyword cStatement and
+syn keyword cStatement not
+syn keyword cStatement or
+
+syn keyword cStatement if
+syn keyword cStatement then
+syn keyword cStatement else
+syn keyword cStatement elif
+syn keyword cStatement endif
+
+syn keyword cStatement code
+syn keyword cStatement fork
+syn keyword cStatement of
 syn keyword cStatement _
 syn keyword cStatement when
 syn keyword cStatement as
 syn keyword cStatement all
 syn keyword cStatement case
 syn keyword cStatement with
-syn keyword cStatement regexp
 syn keyword cStatement match
-syn keyword cStatement var
-syn keyword cStatement val
-syn keyword cStatement union
-syn keyword cStatement class
-syn keyword cStatement category
-syn keyword cStatement exceptions
-syn keyword cStatement module
+syn keyword cStatement regmatch
 syn keyword cStatement lambda
-syn keyword cStatement lazy
-syn keyword cStatement void
 syn keyword cStatement goto
 syn keyword cStatement export
 syn keyword cStatement inf
@@ -132,7 +139,7 @@ syn keyword cType ustring
 syn keyword cConstant true false
 
 " [JMS] yeah well, OK ..
-syn keyword	cTodo		contained TODO FIXME XXX
+syn keyword	cTodo		contained TODO FIXME XXX KLUDGE HACK
 
 " cCommentGroup allows adding matches for special things in comments
 syn cluster	cCommentGroup	contains=cTodo

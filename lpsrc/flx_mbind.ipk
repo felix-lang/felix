@@ -87,7 +87,6 @@ let rec subst vars (e:expr_t) mv : expr_t =
 
   | `AST_regmatch _  -> failwith "Not expecting regmatch in when part of pattern"
 
-  | `AST_root _ -> e
   | `AST_lookup _ -> e
   | `AST_suffix _ -> e
   | `AST_index _ -> e

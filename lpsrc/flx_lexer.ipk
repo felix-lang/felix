@@ -15,9 +15,9 @@ let hash_table_from_list n lst =
 let flx_keyword_table =          (* 97 is a prime larger than table size *)
   hash_table_from_list 97 [  
     "open",(fun s -> OPEN s);
+    "use",(fun s -> USE s);
     "define",(fun s -> DEFINE s);
     "overload",(fun s -> OVERLOAD s);
-    "root", (fun s ->  ROOT s);
     "interface", (fun s ->  INTERFACE s);
     "functor", (fun s ->  FUNCTOR s);
     "not", (fun s ->  NOT s);

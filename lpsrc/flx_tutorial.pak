@@ -1503,7 +1503,7 @@ When a qualified name is used, the qualifier specifies
 the module in which the next name must be found.
 Qualification inhibits upscope overloading.
 @p()
-Note the keyword 'root' is used to name the top-level
+Note the name 'root' is used to name the top-level
 module, in lieu of the actual module name, which is
 derived from the basename of the filename.
 @p()
@@ -2523,6 +2523,44 @@ defined: the contained X will not be seen
 by other open directives, whereas the module X
 will not be seen by any declarations and definitions
 in the body of the containing scope.
+
+@head(2,'The use directive')
+The open directive opens a whole module
+for internal use. Sometimes that is too coarse grained.
+The use directive allows you to import individual names into
+the current scope to reference with an unqualified name.
+The entity refered to can be a non-function, or a set of
+functions, and it can also be renamed in the use directive.
+The renaming feature can also be used on names in the current
+scope.
+@p()
+Note that you can't sensibly use a name from an opened
+module, nor open a module using a used name (even as
+a prefix).
+
+@select(tangler(tdir+'tut206a.flx'))
+module X {
+  type int = "int";
+  proc print: int = "cout << $1;";
+  proc endl: 1 = "cout << endl;";
+}
+
+use X::int;
+use eol = X::endl;
+
+val x:int = 1;
+use y = x;
+X::print y; eol;
+
+@doc()
+You can see the two forms of the use directive:
+@begin_displayed_code()
+  use qualified_name;
+  use new_name = old_qualified_name;
+@end_displayed_code()
+The first form requires a proper qualified name and is 
+equivalent to the second form, where the new_name is the
+last component of the qualified_name.
 
 @head(2,'Numbered unions')
 We'll take a break from the module system to 

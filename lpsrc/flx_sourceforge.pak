@@ -42,14 +42,15 @@ systems.
 </UL>
 </LI>
 <LI>Pattern matching</LI>
-<LI>Type inference for variables</LI>
+<LI>Regular matching</LI>
+<LI>Type inference for variables and function returns</LI>
 <LI>Garbage Collection</LI>
-<LI>LL(1) Grammar</LI>
+<LI>LALR(1) yaccable Grammar</LI>
 <LI>No primitive types in core language: all primitives supplied by user</LI>
 <LI>C++ binding constructions</LI>
 <LI>Module system</LI>
 <LI>ISO10646/Unicode character set</LI>
-<LI>Planned: Parameterized modules (functors) with implicit instantiation</LI>
+<LI>Generic primitives</LI>
 </UL>
 
 <STRONG>Libraries</STRONG> include:
@@ -59,17 +60,8 @@ systems.
 <LI>C99/C++ exact and normal integral types</LI>
 <LI>C99 floats</LI>
 <LI>C++ complex</LI>
-<LI>string and wstring</LI>
+<LI>string(8 bit), wstring(16 bit), ustring(32 bit)</LI>
 </UL>
-<LI>Boost Library includes bindings for</LI>
-<UL>
-<LI>regex</LI>
-<LI>quaternions and octonions</LI>
-</UL>
-<LI>Planned bindings for
-<UL>
-<LI>Infinite precision integers</LI>
-</UL></LI>
 </UL>
 <STRONG>Architecture</STRONG> support includes:
 <UL>
@@ -84,7 +76,7 @@ frameworks</LI>
 <UL>
 <LI>All source written using the Literate Programming 
 tool <A HREF=http://interscript.sf.net>interscript</A></LI>
-<LI>Compiler implemented in <A HREF=http://caml.inria.fr>Ocaml 3.04</A></LI>
+<LI>Compiler implemented in <A HREF=http://caml.inria.fr>Ocaml 3.06</A></LI>
 <LI>Generates ISO C++ code</LI>
 </UL>
 <P>
@@ -185,7 +177,7 @@ of Felix is written using the Literate Programming
 tool <A HREF=http://interscript.sf.net>interscript</A>
 which you must also install: interscript is written in Python.
 Then you will need to install
-<A HREF=caml.inria.fr>Ocaml 3.04</A> or better
+<A HREF=caml.inria.fr>Ocaml 3.06</A> or better
 to build the Felix compiler, which is written in Ocaml.
 Although the optimising compiler is recommended,
 it should be possible to build a bytecode version of Felix.

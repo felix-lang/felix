@@ -118,8 +118,8 @@ let string_of_token (tok :Flx_parse.token): string =
 
   (* keywords *)
   | OPEN _ -> "open"
+  | USE _ -> "use"
   | INTERFACE _ -> "interface"
-  | ROOT _ -> "root"
   | FUNCTOR _ -> "functor"
   | AND _ ->  "and"
   | NOT _ -> "not"
@@ -205,7 +205,6 @@ let src_of_token t = match t with
 
   | ERRORTOKEN (s,_) 
 
-  | ROOT s
   | INTERFACE s
   | FUNCTOR s
   | EQUAL s 
@@ -330,6 +329,7 @@ let src_of_token t = match t with
   | DEFINE s
   | OVERLOAD s
   | OPEN s
+  | USE s
   | UNDERSCORE s
     -> s
 

@@ -132,13 +132,31 @@ let get_name_map symdef name = match symdef with
         string_of_symdef symdef name
       )
 
+(* self's child's parent is normally self,
+  but there could be a module stuck in between,
+  so the child's parent is the module whose
+  parent is a module ... whose parent is self
+*)
+  
+   
+(* WARNING WARNING:
+
+  this algorithm makes a list, assuming
+  that name -> index is unique on the index
+
+  this won't be the case when we inject
+  entries
+
+  even though we check that the denoted
+  entity is a child, an actual child can
+  have a second name, and so occurs twice
+  in the name->index map
+
+  we need to use a SET here, not a list
+*)
+
 let find_variable_indices dfns index = 
-  let id,_,_,symdef = 
-    try Hashtbl.find dfns index 
-    with _ -> failwith ("[find_variable_indices(1)] Can't find index " ^ string_of_int index)
-  in
-  let name_map = get_name_map symdef id in
-  let rec extract name_map = 
+  let rec extract parent name_map = 
     let variables = ref [] in
     Hashtbl.iter
     (fun id entryset -> 
@@ -147,30 +165,47 @@ let find_variable_indices dfns index =
       | NonFunctionEntry (Bound _) ->
         failwith "Not expecting bound entry"
       | NonFunctionEntry (Simple idx) ->
-      let _,_,parent,symdef = 
+      let id2,_,parent',symdef = 
         try Hashtbl.find dfns idx 
         with _ -> failwith ("[find_variable_indices(2)] can't find index " ^ string_of_int index)
       in
-      (*
-      if proper_descendant dfns parent
-      then
+
+      (* make sure the entity is actually a child of index,
+        and not say a link to root, parent, or self.
       *)
-        match symdef with
-        | `SYMDEF_parameter _
-        | `SYMDEF_var _ 
-        | `SYMDEF_val _
-          -> variables := idx :: !variables
-        | `SYMDEF_module (table,dirs)
-          -> variables := extract table @ !variables
-        | _ -> ()
+      let sp p = match p with | None -> "none" | Some i -> string_of_int i in
+      if parent' = parent
+      then 
+        begin
+          match symdef with
+          | `SYMDEF_parameter _
+          | `SYMDEF_var _ 
+          | `SYMDEF_val _
+            -> 
+      (* print_endline (string_of_int index ^ ": " ^id ^"="^id2^ "<" ^ string_of_int idx ^">"^" member parent=" ^sp parent'); *)
+              variables := idx :: !variables
+
+          (* variables of a nested module are lifted into the function *)
+          | `SYMDEF_module (table,dirs)
+            -> 
+      (* print_endline (string_of_int index ^ ": " ^id ^ "="^id2^"<" ^ string_of_int idx ^">"^" nested module parent=" ^sp parent'); *)
+              variables := extract (Some idx) table @ !variables
+          | _ -> ()
+        end
     ) 
     name_map
     ;
     !variables
-  in extract name_map
+  in 
+  let id,_,_,symdef = 
+    try Hashtbl.find dfns index 
+    with _ -> failwith ("[find_variable_indices(1)] Can't find index " ^ string_of_int index)
+  in
+  (* print_endline ("Finding members of " ^ id ^ " index " ^ string_of_int index); *)
+  let name_map = get_name_map symdef id in
+  extract (Some index) name_map
 
 let find_members sym_state bbdfns index = 
-  (* print_endline ("Finding members of index " ^ string_of_int index); *)
   let variables = find_variable_indices sym_state.dfns index in
   let members = 
   String.concat ""
@@ -252,7 +287,10 @@ let get_type bbdfns index =
 
 
 let gen_function sym_state bbdfns index id ps ret' =
-  (* print_endline ("generating function " ^ id ^ "[" ^string_of_int index^"]");  *)
+  (*
+  print_endline ("generating function " ^ id ^ "[" ^string_of_int index^"]");
+  flush stdout;
+  *)
   let argtype = lower(typeoflist (List.map snd ps)) in
   let ret = lower ret' in
   let funtype = `BTYP_function (argtype, ret) in
@@ -346,6 +384,7 @@ let gen_functions sym_state bbdfns =
   bbdfns
   ;
   
+  flush stdout;
   let s = Buffer.create 2000 in
   List.iter
   (fun index ->
@@ -480,7 +519,6 @@ let rec gen_expr syms bbdfns this (e,t) =
   let our_display = get_display_list syms.dfns this in
   let our_level = List.length our_display in
   match e with
-  | `BEXPR_functions _ -> failwith "Not expecting unbound function set"
   | `BEXPR_coercion (e,t) -> 
     (* generate a function style cast *)
     cpp_typename syms bbdfns (lower t) ^ "(" ^ ge e ^ ")"
@@ -529,7 +567,7 @@ let rec gen_expr syms bbdfns this (e,t) =
          )
        else let t' = List.nth ls (v-1) in
        if t' = `BTYP_tuple []
-       then
+       then (* closure of const ctor is just the const value ???? *)
          if is_unitsum t then
            string_of_int (v-1)
          else
@@ -711,8 +749,11 @@ let rec gen_expr syms bbdfns this (e,t) =
 
     | `BBDCL_function (ps,_,_,_) ->
       (ge f) ^ "->apply(" ^ ge_arg a ^ ")"
+
+    | `BBDCL_struct _ ->
+      let name = cpp_typename syms bbdfns (`BTYP_name index) in
+      name ^ "(" ^ ge a ^ ")"
     
-   
     | _ -> 
       failwith 
       (
@@ -760,20 +801,6 @@ let rec gen_expr syms bbdfns this (e,t) =
         "[gen_expr] Expected '"^id^"' to be generic function instance, got:\n" ^
         string_of_bbdcl syms.dfns entry index 
       )
-    end
-
-  | `BEXPR_apply ((`BEXPR_name index,_) as f,a) ->
-    let id,parent,entry = 
-      try Hashtbl.find bbdfns index 
-      with _ -> failwith ("[gen_expr(apply)] Can't find index " ^ string_of_int index)
-    in
-    begin 
-    match entry with
-    | `BBDCL_struct _ ->
-      let name = cpp_typename syms bbdfns (`BTYP_name index) in
-      name ^ "(" ^ ge a ^ ")"
-    | _ ->
-      (ge f) ^ "->apply(" ^ ge_arg a ^ ")"
     end
 
   (* General application*)
@@ -1178,7 +1205,10 @@ let gen_exes sym_state bbdfns display label_map counter index exes =
 *)
 let gen_function_methods sym_state bbdfns label_map counter index = 
   let id,parent,entry = Hashtbl.find bbdfns index in
-  (* print_endline ("Generating body for " ^ id ^ "<"^string_of_int index^">"); *)
+  (*
+  print_endline ("Generating body for " ^ id ^ "<"^string_of_int index^">");
+  flush stdout;
+  *)
   (*
   print_endline ("function " ^ id ^ " methods");
   *)
@@ -1651,6 +1681,7 @@ let gen_biface_bodies sym_state bbdfns bifaces =
 open Flx_util
 open Flx_types
 open Flx_print
+open Flx_srcref
 open Flx_desugar
 open Flx_bbind
 open Flx_name
@@ -1659,6 +1690,7 @@ open Flx_gen
 open Flx_symtab
 open Flx_getopt
 open Flx_version
+open Flx_exceptions
 ;;
 
 let print_help () =
@@ -1762,8 +1794,9 @@ try
   in
   let deblocked = desugar_program module_name syms.counter parse_tree in
   if !print_flag then print_endline "//BUILDING TABLES";
+  let root = !(syms.counter) in (* hackery .. *)
   let table, exes, ifaces,dirs = 
-    build_tables !print_flag syms.dfns syms.counter "<top level>" 0 None deblocked 
+    build_tables !print_flag syms.dfns syms.counter "<top level>" 0 None None root deblocked 
   in
     if !print_flag then
     Hashtbl.iter 
@@ -1780,17 +1813,8 @@ try
     )
     table
     ;
-    let top_level_index = 
-      try 
-        match Hashtbl.find table module_name with
-        | NonFunctionEntry (Simple index) -> index
-        | _ -> 
-          failwith ("Expected '"^module_name^"' to be simple non function")
-      with Not_found -> 
-        failwith ("Unable to find top level '"^module_name^"'")
-    in
     if !print_flag 
-    then print_endline ("//Top level module ''"^module_name^" has index " ^ string_of_int top_level_index);
+    then print_endline ("//Top level module ''"^module_name^" has index " ^ string_of_int root);
     if !print_flag then print_endline "//BINDING ";
     let bbdfns = bbind syms in
     (*
@@ -1799,7 +1823,7 @@ try
     let bifaces = bind_ifaces syms ifaces in
 
     let top_class, root_proc = 
-      let id,sr,parent,entry = Hashtbl.find syms.dfns top_level_index in
+      let id,sr,parent,entry = Hashtbl.find syms.dfns root in
       let name_map = match entry with
         | `SYMDEF_module (table,dirs) -> table
         | _ -> failwith "Expected to find top level module ''"
@@ -1911,7 +1935,7 @@ try
     *)
     List.iter plh
     [
-    (find_members syms bbdfns top_level_index);
+    (find_members syms bbdfns root);
     "};"
     ];
 
@@ -2009,8 +2033,35 @@ try
     exit (if !return_parity then 0 else 1)
 
 with 
+  | LexError s ->
+    flush stdout; print_endline "LEX ERROR";
+    print_endline s;
+    exit (if !return_parity then 1 else 0)
+
+  | TokenError s ->
+    flush stdout; print_endline "TOKEN ERROR";
+    print_endline s;
+    exit (if !return_parity then 1 else 0)
+
+  | SyntaxError s ->
+    flush stdout; print_endline "SYNTAX ERROR";
+    print_endline s;
+    exit (if !return_parity then 1 else 0)
+
+  | ParseError s ->
+    flush stdout; print_endline "PARSE ERROR";
+    print_endline s;
+    exit (if !return_parity then 1 else 0)
+
+  | ClientError (sr,s) ->
+    flush stdout; print_endline "CLIENT ERROR";
+    print_endline ("In " ^ short_string_of_src sr);
+    print_endline s;
+    exit (if !return_parity then 1 else 0)
+
+
   | Failure s -> 
-    flush stdout; print_endline "FAILURE";
+    flush stdout; print_endline "SYSTEM FAILURE";
     print_endline s;
     exit (if !return_parity then 1 else 0)
 

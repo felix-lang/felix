@@ -73,7 +73,6 @@ type id_t = string
 type qualified_name_t =
   [
   | `AST_void of range_srcref
-  | `AST_root of range_srcref
   | `AST_name of range_srcref * string
   | `AST_case_tag of range_srcref * int
   | `AST_typed_case of range_srcref * int * typecode_t
@@ -83,7 +82,6 @@ type qualified_name_t =
 and suffixed_name_t =
   [
   | `AST_void of range_srcref
-  | `AST_root of range_srcref
   | `AST_name of range_srcref * string
   | `AST_case_tag of range_srcref * int
   | `AST_typed_case of range_srcref * int * typecode_t
@@ -114,7 +112,6 @@ There are no values of this type.
 and typecode_t = 
   [
   | `AST_void of range_srcref                   (* void type *)
-  | `AST_root of range_srcref                   (* top level module *)
   | `AST_name of range_srcref * string
   | `AST_case_tag of range_srcref * int
   | `AST_typed_case of range_srcref * int * typecode_t
@@ -156,7 +153,6 @@ Raw expression terms.
 @select(h)
 and expr_t =
   [
-  | `AST_root of range_srcref
   | `AST_name of range_srcref * string
   | `AST_case_tag of range_srcref * int
   | `AST_typed_case of range_srcref * int * typecode_t
@@ -245,6 +241,7 @@ and parameter_t = id_t * typecode_t
 and statement_t =
   [ 
   | `AST_open of range_srcref * qualified_name_t
+  | `AST_use of range_srcref * id_t * qualified_name_t
   | `AST_comment of string (* for documenting generated code *)
 
   (* definitions *)
@@ -333,6 +330,7 @@ and exe_t =
 
 and dir_t =
   | DIR_open of qualified_name_t
+  | DIR_use of id_t * qualified_name_t
 
 and dcl_t = 
   [
@@ -426,7 +424,6 @@ and bexpr_t =
   | `BEXPR_get_n of int * tbexpr_t
   | `BEXPR_closure of bid_t
   | `BEXPR_coercion of tbexpr_t * btypecode_t
-  | `BEXPR_functions of string * entry_kind_t list (* HACK! *)
   | `BEXPR_case of int * btypecode_t
   | `BEXPR_match_case of int * tbexpr_t
   | `BEXPR_case_arg of int * tbexpr_t
@@ -626,7 +623,6 @@ open Flx_util
 open Flx_types
 let src_of_qualified_name (e : qualified_name_t) = match e with
   | `AST_void s 
-  | `AST_root s 
   | `AST_name  (s,_) 
   | `AST_case_tag (s,_)
   | `AST_typed_case (s,_,_)
@@ -716,6 +712,7 @@ let src_of_stmt e = match e with
   | `AST_function_decl (s,_,_)
   | `AST_type (s,_)
   | `AST_open (s,_)
+  | `AST_use (s,_,_)
   | `AST_regdef (s,_,_)
     -> s
   | `AST_comment _ 
@@ -843,7 +840,6 @@ let rec string_of_qualified_name (n:qualified_name_t) =
   let se e = string_of_expr e in
   match n with
   | `AST_void _ -> "void"
-  | `AST_root _ -> "root"
   | `AST_name (_,name) -> name 
   | `AST_case_tag (_,v) -> "case " ^ string_of_int v
   | `AST_typed_case (_,v,t) -> 
@@ -1239,6 +1235,7 @@ and special_string_of_btypecode dfns ty =  (* used for constructors *)
 
 and string_of_statement level s = 
   let se e = string_of_expr e in
+  let sqn n = string_of_qualified_name n in
   match s with 
   | `AST_interface (_,name, entries) ->
     spaces level ^
@@ -1277,8 +1274,12 @@ and string_of_statement level s =
   | `AST_goto (_,s) -> spaces level ^ "goto " ^ s ^ ";"
 
   | `AST_comment s -> spaces level ^ "// " ^ s
+
   | `AST_open (_,n) -> 
-    spaces level ^ "open " ^ string_of_qualified_name n ^ ";"
+    spaces level ^ "open " ^ sqn n ^ ";"
+  
+  | `AST_use (_,n,qn) -> 
+    spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
   
   | `AST_regdef (_,n,r) -> 
     spaces level ^ "regdef " ^ n ^ " = " ^string_of_re r^";"
@@ -1626,7 +1627,6 @@ and string_of_bound_expression dfns e =
   let sid n = qualified_name_of_index dfns n in
   match fst e with
    
-  | `BEXPR_functions (name,fs) -> name ^ "<functions>"
   | `BEXPR_coercion (m,t) -> 
     "(" ^ 
     se m ^ 
@@ -1856,9 +1856,13 @@ and string_of_asm level s =
   | Dir (sr,s) -> string_of_dir level s
 
 and string_of_dir level s =
+  let sqn n = string_of_qualified_name n in
   match s with
   | DIR_open qn ->
-    spaces level ^ "open " ^ string_of_qualified_name qn ^ ";"
+    spaces level ^ "open " ^ sqn qn ^ ";"
+
+  | DIR_use (n,qn) ->
+    spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
 
 and string_of_bbdcl dfns bbdcl index = 
   let name = qualified_name_of_index dfns index in
@@ -2130,16 +2134,20 @@ exception SyntaxError of string
 exception ParseError of string
 exception LexError of string
 exception TokenError of string
+exception ClientError of range_srcref * string
 """
 //
 @h = tangler('src/flx_exceptions.ml')
 @select(h)
 open Flx_types
 @tangle(exceptions)
+let clierr sr s = raise (ClientError (sr,s))
+
 @h = tangler('src/flx_exceptions.mli')
 @select(h)
 open Flx_types
 @tangle(exceptions)
+val clierr: range_srcref -> string -> 'a
 
 @h = tangler('src/flx_typing.ml')
 @select(h)

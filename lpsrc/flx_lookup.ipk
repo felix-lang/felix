@@ -120,6 +120,7 @@ val bind_regdef:
 open Flx_util
 open Flx_types
 open Flx_print
+open Flx_exceptions
 open Flx_mtypes
 open Flx_typing
 open List
@@ -185,10 +186,8 @@ let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
   flush stdout;
   match lookup_name_in_htab table name with
   | Some x as y -> 
-    (* print_endline "Found in table"; flush stdout; *)
     y
   | None ->
-    (* print_endline "Not found: calculating opens";*)
     flush stdout;
   let opens = 
     List.concat
@@ -211,7 +210,7 @@ let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
       of the same thing, later, when I implement it,
       injected names
     *)
-    failwith ("Conflicting values for "^name ^" found in open modules")
+    clierr sr ("Conflicting values for "^name ^" found in open modules")
   | [] -> None
 
 let lookup_name_in_env env sr name : entry_set_t =
@@ -229,21 +228,19 @@ let lookup_name_in_env env sr name : entry_set_t =
       (* print_endline ("Found name "^name^" in env"); flush stdout; *) 
       x
     | None ->
-      failwith 
+      clierr sr 
       (
         "[lookup_name_in_env]: Name '" ^ 
         name ^ 
         "' not found in environment (depth "^
-        string_of_int (List.length env)^ "\n" ^
-        "): " ^
-        short_string_of_src sr 
+        string_of_int (List.length env)^ ")" 
       )
 
 let lookup_in_bound_module 
   dfns iface binding sr 
   (t:string) 
 : entry_set_t option  =
-  match Hashtbl.find dfns iface with
+  match get_data dfns iface with
   | (_,_,_,`SYMDEF_interface (table,dirs)) ->
     let src = lookup_name_in_htab table t  in
     begin match src with
@@ -278,35 +275,23 @@ let lookup_in_bound_module
     failwith "Lookup in bound module expected interface"
 
 (* This routine looks up a qualified name in the
-   environment. The result is never a function or
-   functor decl, although it could be a variable
-   of function type.
+   environment and returns an entry_set_t:
+   can be either non-function or function set
 *)
 
-let rec lookup_qn_in_env 
+let rec lookup_qn_in_env2
   syms
   (env:env_t) 
   excluded_dirs
   (qn: qualified_name_t)
-  : entry_kind_t 
+  : entry_set_t
 =
   match qn with
-  | `AST_void _ -> failwith "qualified name is void"
-  | `AST_root _ -> failwith "Can't lookup root yet"
-  | `AST_case_tag _ -> failwith "Can't lookup a case tag"
-  | `AST_typed_case _ -> failwith "Can't lookup a case tag"
+  | `AST_void _ -> failwith "[lookup_qn_in_env2] qualified name is void"
+  | `AST_case_tag _ -> failwith "[lookup_qn_in_env2] Can't lookup a case tag"
+  | `AST_typed_case _ -> failwith "[lookup_qn_in_env2] Can't lookup a typed case tag"
 
-  | `AST_name (sr,name) ->
-    begin match lookup_name_in_env env sr name with
-    | NonFunctionEntry x -> x
-    | FunctionEntry _ ->
-      failwith 
-      (
-        "Not expecting " ^ name ^
-        " to be function set in\n" ^
-        short_string_of_src sr
-      )
-    end
+  | `AST_name (sr,name) -> lookup_name_in_env env sr name
 
   | `AST_lookup (sr,(me,name)) ->
     match eval_module_expr syms env excluded_dirs me with 
@@ -317,21 +302,11 @@ let rec lookup_qn_in_env
       failwith "Unexpected Functor"
 
     | Simple_module (impl, htab,dirs) ->
-      begin match
-        try Hashtbl.find htab name with 
-        | Not_found -> 
-          failwith
-          (
-            "Can't find " ^ name ^ " in\n" ^
-            short_string_of_src sr
-          )
-      with
-      | NonFunctionEntry x -> x
-      | _ -> 
-        failwith 
+      begin try Hashtbl.find htab name 
+      with Not_found -> 
+        failwith
         (
-          "Not expecting " ^ string_of_qualified_name qn ^
-          " to be function set in\n" ^
+          "[lookup_qn_in_env2] Can't find " ^ name ^ " in\n" ^
           short_string_of_src sr
         )
       end
@@ -341,20 +316,29 @@ let rec lookup_qn_in_env
       | None -> 
         failwith 
         (
-          "Can't find " ^ 
+          "[lookup_qn_in_env2] Can't find " ^ 
           string_of_qualified_name qn ^
           " in\n" ^
           short_string_of_src sr
         )
-      | Some x -> match x with
-        | NonFunctionEntry x -> x
-        | FunctionEntry _ ->
-          failwith
-          (
-            "Not expecting " ^ string_of_qualified_name qn ^
-            " to be function set in\n" ^
-            short_string_of_src sr
-          )
+      | Some x -> x
+
+and lookup_qn_in_env 
+  syms
+  (env:env_t) 
+  excluded_dirs
+  (qn: qualified_name_t)
+  : entry_kind_t 
+=
+  match lookup_qn_in_env2 syms env excluded_dirs qn with
+    | NonFunctionEntry x -> x
+    | FunctionEntry _ ->
+      failwith 
+      (
+        "[lookup_qn_in_env] Not expecting " ^ 
+        string_of_qualified_name qn ^
+        " to be function set"
+      )
 
 and lookup_sn_in_env 
   syms
@@ -558,8 +542,18 @@ and get_unique_binding iface syms
 =
   try Hashtbl.find binding iindex
   with Not_found ->
-    let iid,isr,iparent,isymdef = Hashtbl.find syms.dfns iindex in
-    if iparent <> Some iface then iindex
+    let iid,isr,iparent,isymdef = get_data syms.dfns iindex in
+    (*
+    print_endline ("get binding for " ^ iid ^ "<"^string_of_int iindex^">");
+    *)
+    if iparent <> Some iface 
+    then 
+    begin
+      (*
+      print_endline "Woops, the parent of the interface element isn't the interface";
+      *)
+      iindex 
+    end
     else begin try
       match Hashtbl.find mmap iid with
       | NonFunctionEntry (Simple mindex) ->
@@ -572,7 +566,7 @@ and get_unique_binding iface syms
            the second time around.
         *)
         Hashtbl.add binding iindex mindex;
-        let mid,msr,mparent,msymdef = Hashtbl.find syms.dfns mindex in
+        let mid,msr,mparent,msymdef = get_data syms.dfns mindex in
         assert(iid=mid);
         (* print_endline "BUILD ENV, GET UNIQUE BINDING"; *)
         let menv = build_env syms excluded_dirs mparent in
@@ -614,12 +608,21 @@ and match_interface_entry
   isr msr
   name ientry 
 =
+  let si i = string_of_int i in
   (*
-  print_endline ("matching interface name " ^ name);
+  print_endline ("matching interface entry named " ^ name);
   *)
   match ientry with
   | NonFunctionEntry (Simple iindex) ->
-    ignore(get_unique_binding iface syms mmap ienv binding iindex excluded_dirs isr msr)
+    let binds_to =
+      get_unique_binding iface syms mmap ienv binding iindex 
+      excluded_dirs isr msr
+    in
+      (*
+      print_endline ("binding " ^ si iindex ^ " -> " ^ si binds_to);
+      *)
+      ()
+
   | NonFunctionEntry _ ->
     failwith
     (
@@ -630,7 +633,7 @@ and match_interface_entry
     (fun iindex ->
       match iindex with
       | Simple iindex ->
-        let iid,iesr,iparent,isymdef = Hashtbl.find syms.dfns iindex in
+        let iid,iesr,iparent,isymdef = get_data syms.dfns iindex in
         begin try
           match Hashtbl.find mmap name with
           | NonFunctionEntry _ ->
@@ -645,7 +648,7 @@ and match_interface_entry
             (fun mindex ->
               match mindex with
               | Simple mindex ->
-                let mid,mesr,mparent,msymdef = Hashtbl.find syms.dfns mindex in
+                let mid,mesr,mparent,msymdef = get_data syms.dfns mindex in
                 (* print_endline "BUILD ENV, MATCH INTERFACE ENTRY"; *)
                 let menv = build_env syms excluded_dirs mparent in
                 if 
@@ -672,7 +675,7 @@ and match_interface_entry
                 List.map 
                 (fun x -> match x with 
                   | Simple index ->
-                    let mid,mesr,mparent,msymdef = Hashtbl.find syms.dfns index in
+                    let mid,mesr,mparent,msymdef = get_data syms.dfns index in
                     string_of_symdef msymdef name 
                   | Bound (i,j) -> 
                     "binding "  ^ 
@@ -684,6 +687,9 @@ and match_interface_entry
               )
             )
             with Found mindex-> 
+              (*
+              print_endline ("binding " ^ si iindex ^ " -> " ^ si mindex);
+              *)
               Hashtbl.add binding iindex mindex
             end
         with 
@@ -710,6 +716,9 @@ and match_interface
   (excluded_dirs:int list)
   isr msr
 =
+  (*
+  print_endline ("match interface " ^ string_of_int iface);
+  *)
   let binding = Hashtbl.create 97 in
   try 
     Hashtbl.iter
@@ -737,7 +746,12 @@ and compose_bindings b1 b2 = (* reverse polish: b(i)= b2(b1(i)) *)
   b
 
 and rebind_entry binding v =
-  let apply ix = Hashtbl.find binding ix in
+  let apply ix = 
+    try 
+      Hashtbl.find binding ix 
+    with Not_found ->
+      failwith ("Can't find index " ^ string_of_int ix ^ " in module binding")
+  in
   match v with
   | NonFunctionEntry (Simple iix) ->
     let bix = apply iix in
@@ -745,6 +759,7 @@ and rebind_entry binding v =
 
   | NonFunctionEntry _ -> 
     failwith "Expected Simple interface entry"
+
   | FunctionEntry ls ->
     let ls' = 
       List.map
@@ -762,7 +777,12 @@ and apply_binding imap binding : name_map_t = (* reverse polish *)
   let bmap = Hashtbl.create 97 in
   let add k v = Hashtbl.add bmap k v in
   Hashtbl.iter 
-  (fun k v -> add k (rebind_entry binding v))
+  (fun k v -> 
+    (* print_endline ("Binding name " ^ k); *)
+    if k <> "root"
+    then
+      add k (rebind_entry binding v)
+  )
   imap
   ;
   bmap
@@ -797,7 +817,7 @@ and handle_module_coercion syms env sr excluded_dirs m t =
     end
 
   | `BTYP_name index ->
-    let id,isr,parent,symdef = Hashtbl.find syms.dfns index in
+    let id,isr,parent,symdef = get_data syms.dfns index in
     (* print_endline "BUILD_ENV, MODULE COERCION"; *)
     let ienv = build_env syms excluded_dirs (Some index) in
     begin match symdef with
@@ -822,7 +842,7 @@ and handle_module_coercion syms env sr excluded_dirs m t =
           | None -> failwith "Module doesn't match interface"
         end
       | Bound_module (iface,impl,binding) ->
-        let _,isr,_,ientry = Hashtbl.find syms.dfns iface in
+        let _,isr,_,ientry = get_data syms.dfns iface in
         begin match ientry with
         | `SYMDEF_interface (module_map,dirs) ->
           begin match
@@ -841,8 +861,8 @@ and handle_module_coercion syms env sr excluded_dirs m t =
               (fun i j -> 
                 print_endline 
                 (
-                  let iid,_,_,ie = Hashtbl.find syms.dfns i 
-                  and mid,_,_,me = Hashtbl.find syms.dfns j
+                  let iid,_,_,ie = get_data syms.dfns i 
+                  and mid,_,_,me = get_data syms.dfns j
                   in
                   iid ^
                   "[" ^ string_of_int i ^ "] -> " ^
@@ -900,7 +920,7 @@ and compare_module_expr_with_type syms excluded_dirs sr t m =
  | Simple_module (impl,mmap,dirs) ->
    begin match t with
    | `BTYP_name iface ->
-     let _,isr,p,ientry = Hashtbl.find syms.dfns iface in
+     let _,isr,p,ientry = get_data syms.dfns iface in
      begin match ientry with
      | `SYMDEF_interface (imap,dirs) ->
        begin match
@@ -924,7 +944,7 @@ and resolve_functor_overload syms env excluded_dirs sr ls m' =
   (* print_endline "RESOLVING FUNCTOR OVERLOAD"; *)
   List.filter
   (fun index -> 
-    let id,sr,parent,entry = Hashtbl.find syms.dfns index in
+    let id,sr,parent,entry = get_data syms.dfns index in
     match entry with 
     | `SYMDEF_typed_functor (ps,t,e,nm,dirs) ->
       let t = 
@@ -953,7 +973,7 @@ and resolve_functor_overload syms env excluded_dirs sr ls m' =
 
 and copy_entry syms parent binding_list index =
   let index' = !(syms.counter) in incr (syms.counter);
-  let id,sr,_,entry = Hashtbl.find syms.dfns index in
+  let id,sr,_,entry = get_data syms.dfns index in
   let kind,symdef = 
     match entry with
     | `SYMDEF_function (ps,t,es,table,dirs) ->
@@ -1003,7 +1023,11 @@ and copy_entry syms parent binding_list index =
 and copy_table syms parent binding_list name_map =
   let name_map' = Hashtbl.create 97 in
   Hashtbl.iter
-  (fun k v -> match v with
+  (fun k v -> 
+    (* KLUDGE *)
+    if k <> "root"
+    then
+    match v with
     | NonFunctionEntry (Simple i) ->
       let i' = copy_entry syms parent binding_list i in
       Hashtbl.add name_map' k (NonFunctionEntry (Simple i'))
@@ -1033,13 +1057,13 @@ and instantiate_functor syms
   (* print_endline "CHECKING FOR FUNCTOR INSTANTIATION"; *)
   try 
     let afidx = Hashtbl.find syms.freg (findex, m) in
-    let _,_,_,entry = Hashtbl.find syms.dfns afidx in
+    let _,_,_,entry = get_data syms.dfns afidx in
     match entry with
     | `SYMDEF_module (name_map,dirs) -> Simple_module (afidx,name_map,dirs)
     | _ -> failwith "Expected instantiation to be simple module"
   with Not_found ->
   (* print_endline "INSTANTIATING FUNCTOR"; *)
-  let _,_,parent,entry = Hashtbl.find syms.dfns findex in
+  let _,_,parent,entry = get_data syms.dfns findex in
   let ps,asms,name_map,dirs = 
     match entry with 
     | `SYMDEF_typed_functor (ps,rt,asms,name_map,dirs) -> ps,asms,name_map,dirs
@@ -1124,7 +1148,7 @@ and check_module syms excluded_dirs sr entries =
         List.map
         (function 
           | Simple index -> 
-            let id,sr,parent,entry = Hashtbl.find syms.dfns index in
+            let id,sr,parent,entry = get_data syms.dfns index in
             begin match entry with
             | `SYMDEF_typed_functor _ -> index
             | `SYMDEF_untyped_functor _ -> index
@@ -1142,7 +1166,7 @@ and check_module syms excluded_dirs sr entries =
       in Functor_set ls
 
     | NonFunctionEntry (Simple index) ->
-      let id,sr',parent,entry = Hashtbl.find syms.dfns index in
+      let id,sr',parent,entry = get_data syms.dfns index in
       begin match entry with
       | `SYMDEF_module (table,dirs) -> 
         Simple_module (index,table,dirs)
@@ -1175,29 +1199,18 @@ and make_bound binding x =
   | NonFunctionEntry e -> NonFunctionEntry (be e)
   | FunctionEntry fs -> FunctionEntry (List.map be fs)
 
+
+(* the top level table only has a single entry,
+  the root module, which is the whole file
+
+  returns the root name, table index, and environment
+*)
+
 and eval_module_expr syms env excluded_dirs e : module_rep_t = 
   (*
   print_endline ("Handling module expression '"^string_of_expr e^"'"); 
   *)
   match e with
-  | `AST_root sr ->
-    let root_env,_ = list_last env in
-    let rec find_root i =
-      let id,sr,parent,entry = Hashtbl.find syms.dfns i in
-      match parent with 
-      | None -> i
-      | Some i -> find_root i
-    in
-    (* THIS IS A HACK! It assumes the last use of the syms.counter
-      was for building an entry in the syms.dfns symtab!
-    *)
-    let root_index = find_root (!(syms.counter) - 1) in
-    (*
-    print_endline ("ROOT IS INDEX " ^ string_of_int root_index)
-    ;
-    *)
-    Simple_module (root_index,root_env,[]) 
-
   | `AST_tuple (sr,es) ->
     Module_product (List.map (eval_module_expr syms env excluded_dirs) es)
 
@@ -1231,7 +1244,7 @@ and eval_module_expr syms env excluded_dirs e : module_rep_t =
         end
 
       | Bound_module (iface,impl,binding) ->
-        let id,sr,parent,entry = Hashtbl.find syms.dfns iface in
+        let id,sr,parent,entry = get_data syms.dfns iface in
         begin match entry with
         | `SYMDEF_interface (table,_) ->
           begin match lookup_name_in_htab table name with
@@ -1382,7 +1395,7 @@ and metatype syms params term =
     end
 
   | `BTYP_name i ->
-    let id,sr,parent,dcl = Hashtbl.find syms.dfns i in
+    let id,sr,parent,dcl = get_data syms.dfns i in
     begin match dcl with
     | `SYMDEF_dcl (`DCL_abs (vs,ct)) ->
       begin match vs with
@@ -1567,7 +1580,7 @@ and beta_reduce syms (params:(int * btypecode_t) list) t =
 
     | `BTYP_var _ -> t (* can't reduce it yet *)
     | `BTYP_name i ->
-      let id,sr,parent,dcl = Hashtbl.find syms.dfns i in
+      let id,sr,parent,dcl = get_data syms.dfns i in
       begin
         match dcl with
         | `SYMDEF_dcl (`DCL_abs (vs,ct)) ->
@@ -1631,7 +1644,6 @@ and bind_type' syms env exclude fixlist expr_fixlist depth excluded_dirs sr t pa
   flush stdout;
   *)
   match t with
-  | `AST_root _ -> failwith "Not expecting root in bind type"
   | `TYP_proj (i,t) -> 
     let t = bt t in
     begin match unfold t with 
@@ -1829,7 +1841,7 @@ and rebind_btype syms env excluded_dirs sr t: btypecode_t =
   let rbt t = rebind_btype syms env excluded_dirs sr t in
   match t with
   | `BTYP_name i ->
-    let id,sr,parent,entry = Hashtbl.find syms.dfns i in
+    let id,sr,parent,entry = get_data syms.dfns i in
     begin match entry with
     | `SYMDEF_dcl (`DCL_type_alias t') ->
       bind_type syms env [] excluded_dirs sr t'
@@ -1919,7 +1931,7 @@ and typeofindex
 
 and cal_ret_type syms exclude expr_fixlist depth excluded_dirs index =
   let env = build_env syms excluded_dirs (Some index) in
-  match (Hashtbl.find syms.dfns index) with
+  match (get_data syms.dfns index) with
   | id,sr,parent,`SYMDEF_function (ps,rt,exes,name_map,dirs) ->
     let rt = bind_type' syms env [] [] expr_fixlist depth excluded_dirs sr rt [] in
     let rt = beta_reduce syms [] rt in
@@ -2020,7 +2032,7 @@ and typeofindex'
   (*
   print_endline ("TYPE OF INDEX " ^ string_of_int index ^ ", depth=" ^ string_of_int depth);
   *)
-  let id,sr,parent,entry = Hashtbl.find syms.dfns index in
+  let id,sr,parent,entry = get_data syms.dfns index in
   (*
   print_endline ("Index is id=" ^ id);
   *)
@@ -2081,8 +2093,13 @@ and typeofindex'
     (* this should crash on generics ..*)
     bt (`TYP_function (typeof_list pts, `AST_void sr))
     
-  | `SYMDEF_dcl (`DCL_union _)
-  | `SYMDEF_dcl (`DCL_struct _) -> `BTYP_name index
+  | `SYMDEF_dcl (`DCL_union _) ->
+    failwith ("Union "^id^" doesn't have a type")
+
+  (* struct as function *)
+  | `SYMDEF_dcl (`DCL_struct ls) -> 
+    let ls = bt (paramtype ls) in
+    `BTYP_function(ls,`BTYP_name index)
 
   | _ ->
     failwith 
@@ -2132,7 +2149,7 @@ and cal_apply syms ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
 
     (* HACKERY TO SUPPORT STRUCT CONSTRUCTORS *)
     | `BTYP_name index -> 
-      let id,_,_,entry = Hashtbl.find syms.dfns index in
+      let id,_,_,entry = get_data syms.dfns index in
       begin match entry with
       | `SYMDEF_dcl (`DCL_struct cs) -> t1
       | _ -> 
@@ -2233,6 +2250,7 @@ and koenig_lookup syms sra exclude excluded_dirs id' name_map fn t2 =
     end
   | NonFunctionEntry _ -> failwith "Koenig lookup expected function"
 
+(* this routine has to return a function or procedure .. *)
 and lookup_qn_with_sig 
   syms 
   sra srn 
@@ -2245,7 +2263,7 @@ and lookup_qn_with_sig
   let n = List.length ts in
   match qn with
   | `AST_void _ -> failwith "qualified-name is void"
-  | `AST_root _ -> failwith "Can't handle root yet"
+
   | `AST_case_tag _ -> failwith "Can't lookup case tag here"
 
   | `AST_typed_case (sr,v,t) ->
@@ -2261,33 +2279,12 @@ and lookup_qn_with_sig
     end
 
   | `AST_name (sr,name) ->
-    (*
-    print_endline (
-      "Lookup unqualified name '"^
-      name
-      ^"' with sig '"^
-      string_of_btypecode syms.dfns sign
-      ^"'" ^
-      " and " ^ string_of_int n ^ " type params"
-    );
-    flush stdout;
-    *)
     lookup_name_with_sig 
       syms 
       sra srn exclude excluded_dirs 
       env name ts sign
 
   | `AST_lookup (sr,(qn',name)) -> 
-    (*
-    print_endline (
-      "Lookup qn '"^
-      string_of_qualified_name qn
-      ^"' with sig '"^
-      string_of_btypecode syms.dfns sign
-      ^"'"
-    );
-    flush stdout;
-    *)
     match 
       eval_module_expr 
       syms 
@@ -2313,36 +2310,38 @@ and lookup_qn_with_sig
           let t = typeofindex syms exclude [] 0 excluded_dirs index in
           begin match t with
           | `BTYP_function (a,b) ->
-             if a <> sign 
-             then 
-               failwith
-               (
-                 "[lookup_qn_with_sig] Non function entry has wrong type"
-               )
-             else 
-               `BEXPR_name index,
-               typeofindex syms exclude [] 0 excluded_dirs index
-
-          | `BTYP_name idx ->
-            let id,sr,parent,entry = Hashtbl.find syms.dfns idx in
-            begin match entry with
-            | `SYMDEF_dcl (`DCL_struct _) ->
-              `BEXPR_name index,
-              `BTYP_name index
-            | _ ->
+            if a <> sign 
+            then 
               failwith
               (
-                "[lookup_qn_with_sig] Named Non function entry requires struct type, got: " ^
+                "[lookup_qn_with_sig] Non function entry requires function type, got\n" ^
                 string_of_btypecode syms.dfns t
               )
-            end
+            else 
+              let id,sr,parent,entry = get_data syms.dfns index in
+              begin match entry with
+              | `SYMDEF_dcl (`DCL_struct _) ->
+                `BEXPR_closure index,t
+              | `SYMDEF_val _ 
+              | `SYMDEF_var _ 
+              | `SYMDEF_parameter _ 
+                ->
+                `BEXPR_name index,t
+              | _ ->
+                failwith
+                (
+                  "[lookup_qn_with_sig] Named Non function entry of function type requires struct, value or variable, got\n" ^
+                  string_of_btypecode syms.dfns t
+                )
+              end
           | _ -> 
             failwith
             (
-              "[lookup_qn_with_sig] Non function entry requires function or struct type, got: " ^
+              "[lookup_qn_with_sig] Non function entry requires function type, got\n" ^
               string_of_btypecode syms.dfns t
             )
           end
+
         | NonFunctionEntry (Bound (i,j)) ->
           failwith "[lookup_qn_with_sig] Can't handle bound result yet"
 
@@ -2377,7 +2376,7 @@ and lookup_qn_with_sig
         end
 
       | (Bound_module (iface,impl,binding)) ->
-        let id,_,_,entry = Hashtbl.find syms.dfns iface in
+        let id,_,_,entry = get_data syms.dfns iface in
         begin match entry with 
         | `SYMDEF_interface (table,dirs) ->
           let table' = apply_binding table binding in
@@ -2488,7 +2487,7 @@ and lookup_name_with_sig
       )
 
 and mk_ginst syms exclude excluded_dirs index ts =
-  match Hashtbl.find syms.dfns index with
+  match get_data syms.dfns index with
   | id,sr,parent,entry 
     -> 
     match entry with
@@ -2569,7 +2568,7 @@ and handle_function
       if n = 0 
       then
         begin 
-          match Hashtbl.find syms.dfns index with id,sr,parent,entry 
+          match get_data syms.dfns index with id,sr,parent,entry 
           -> match entry with
           | `SYMDEF_match_check _
           | `SYMDEF_function _
@@ -2620,16 +2619,37 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
   in
   match result with
   | NonFunctionEntry (Simple index) ->
-    (* Struct constructor *)
-    (* print_endline "LOOKUP NAME IN TABLE DIRS WITH SIG: Done"; *)
+    let id, sr,parent,entry = get_data syms.dfns index in
     if List.length ts = 0 
-    then
-      Some
-      (
-        `BEXPR_name index, 
-        typeofindex syms exclude [] 0 excluded_dirs index
-      )
-    else failwith "Expected function since we have generic args"
+    then 
+      begin
+        match entry with
+        | `SYMDEF_dcl (`DCL_struct _) 
+          ->
+            Some
+            (
+              `BEXPR_closure index, 
+              typeofindex syms exclude [] 0 excluded_dirs index
+            )
+        | `SYMDEF_var _
+        | `SYMDEF_val _ 
+        | `SYMDEF_parameter _ 
+          ->
+            Some
+            (
+              `BEXPR_name index, 
+              typeofindex syms exclude [] 0 excluded_dirs index
+            )
+        | _ 
+          -> 
+            failwith 
+            (
+              "Expected " ^id^
+              " to be struct or variable of function type, got " ^ 
+              string_of_symdef entry id 
+            )
+      end
+        else failwith "Expected function since we have generic args"
 
   | NonFunctionEntry _ ->
     failwith "[lookup_name_in_table_dirs_with_sig] expected simple nonfunction entry"
@@ -2756,7 +2776,7 @@ and bind_regdef syms env exclude excluded_dirs regexp_exclude e =
         )
       else
         begin
-          let id,sr,parent,entry = Hashtbl.find syms.dfns i in
+          let id,sr,parent,entry = get_data syms.dfns i in
           match entry with
           | `SYMDEF_dcl (`DCL_regdef e) ->
             bind_regdef syms env exclude excluded_dirs (i::regexp_exclude) e
@@ -2777,7 +2797,7 @@ and choose_generic syms entries n =
   let aux entry = 
     match entry with
     | Simple i ->
-      let id,sr,parent,symdef = Hashtbl.find syms.dfns i in
+      let id,sr,parent,symdef = get_data syms.dfns i in
       begin match symdef with
       | `SYMDEF_dcl (`DCL_fun (vs,_,_,_))
       | `SYMDEF_dcl (`DCL_proc (vs,_,_))
@@ -2799,6 +2819,28 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
   let bt sr t = bgt sr t [] in
   let ti i = typeofindex syms exclude expr_fixlist depth excluded_dirs i in
   let tgi ts i = typeofindex' syms exclude expr_fixlist depth excluded_dirs i ts in
+
+  let lookup sr f sign =
+    match f with
+      
+    | `AST_ginst (srn,(#qualified_name_t as name,ts))-> 
+      let ts = List.map (bt srn) ts in
+      lookup_qn_with_sig 
+        syms 
+        sr srn env 
+        exclude excluded_dirs 
+        name ts sign
+
+    | #qualified_name_t as name -> 
+      let srn = src_of_expr name in
+      lookup_qn_with_sig 
+        syms 
+        sr srn env 
+        exclude excluded_dirs 
+        name [] sign
+
+    | e -> be e
+  in
 
   (* model infix operator as function call *)
   let apl2 (sri:range_srcref) (fn : string) (tup:expr_t list) = 
@@ -2850,7 +2892,6 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
   | `AST_void _
   | `AST_arrow _ -> failwith "[bind expression] Not expecting void or arrow"
 
-  | `AST_root _ -> failwith "Can't bind root"
   | `AST_index (sr,i) -> 
     let t = typeofindex syms exclude expr_fixlist depth excluded_dirs i in
     `BEXPR_name i,t
@@ -2923,13 +2964,15 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
       `BEXPR_name m, t
 
     | FunctionEntry fs -> 
-      (* HACK. This is needed as the argument for `AST_suffix,
-         and other things that need to do overloading
-      *)
-      `BEXPR_functions (name,fs), `BTYP_none
+      failwith 
+      (
+        "[bind_expression] Simple name " ^ name ^ 
+        " binds to function set in\n" ^
+        short_string_of_src sr
+      )
     end
 
-  | `AST_lookup (sr,(e,name)) ->
+  | (`AST_lookup (sr,(e,name))) as qn ->
     let entry = 
       match 
           eval_module_expr 
@@ -2947,7 +2990,7 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
         lookup_name_in_htab htab name
 
       | (Bound_module (iface,impl,binding)) ->
-        let _,_,_,entry = Hashtbl.find syms.dfns iface in
+        let _,_,_,entry = get_data syms.dfns iface in
         begin match entry with 
         | `SYMDEF_interface (table,dirs) ->
           let table' = apply_binding table binding in
@@ -2965,8 +3008,12 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
           `BEXPR_name j, 
           `BTYP_binding (ti i, ti j)
         | FunctionEntry fs ->
-          `BEXPR_functions (name,fs),
-          `BTYP_none
+          failwith 
+          (
+            "[bind_expression] Qualified name " ^ string_of_qualified_name qn ^ 
+            " binds to function set in\n" ^
+            short_string_of_src sr
+          )
         end
 
       | None ->
@@ -2977,47 +3024,9 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
         )
       end
 
-  | `AST_suffix (sr,(e,suf)) ->
-    let bound_suffix =  bt sr suf in
-    begin match be (e:>expr_t) with
-    | `BEXPR_functions (name,fs),`BTYP_none ->
-      begin match resolve_overload syms excluded_dirs sr fs name [] bound_suffix with
-      | Some (Simple index) ->
-         `BEXPR_closure index, 
-         typeofindex syms exclude expr_fixlist depth excluded_dirs index
-
-      | Some (Bound (iface,impl)) -> 
-         `BEXPR_closure impl, 
-         `BTYP_binding
-         (
-           typeofindex syms exclude expr_fixlist depth excluded_dirs iface,
-           typeofindex syms exclude expr_fixlist depth excluded_dirs impl
-         )
-
-      | None -> 
-        failwith 
-        (
-          "[flx_ebind] Can't find match for " ^ name ^ " in " ^
-          short_string_of_src sr ^ 
-          "\nCandidates are " ^
-          (String.concat "\n"
-            (List.map
-              (function Simple i | Bound (i,_)  ->
-                string_of_int i ^ "==> " ^ 
-                string_of_btypecode syms.dfns (typeofindex syms [] [] 0 excluded_dirs i)
-              )
-              fs
-            )
-          )
-        )
-      end
-    | _ -> 
-      failwith
-      (
-        "Expected suffix to select from function set in\n" ^
-        short_string_of_src sr
-      )
-    end
+  | `AST_suffix (sr,(f,suf)) ->
+    let sign = bt sr suf in
+    lookup sr (f:>expr_t) sign
 
   | `AST_ref (_,(`AST_deref (sr,e))) -> be e
   
@@ -3039,7 +3048,7 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
     let e',t' = be e in 
     begin match e' with
     | `BEXPR_name index ->
-      let id,sr,parent,entry = Hashtbl.find syms.dfns index in
+      let id,sr,parent,entry = get_data syms.dfns index in
       begin match entry with
       | `SYMDEF_var _
       | `SYMDEF_parameter (`TYP_pointer _) -> 
@@ -3098,11 +3107,11 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
     let tbe1 = 
       begin match t2 with
       | `BTYP_name index ->
-        let id,sr,parent,entry = Hashtbl.find syms.dfns index in
+        let id,sr,parent,entry = get_data syms.dfns index in
         begin match parent with
         | None -> failwith "Koenig lookup: No parent for method apply (can't handle global yet)"
         | Some index' ->
-          let id',sr',parent',entry' = Hashtbl.find syms.dfns index' in
+          let id',sr',parent',entry' = get_data syms.dfns index' in
           match entry' with
           | `SYMDEF_module (name_map,dirs) ->
             koenig_lookup syms sra exclude excluded_dirs id' name_map fn t2
@@ -3117,84 +3126,10 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
     in
       cal_apply syms tbe1 (be2, t2)
 
-  | `AST_apply ( sra, ( `AST_ginst (srn,(#qualified_name_t as name,ts)), e2)) -> 
-    let ts = List.map (bt srn) ts in
-    let be2,t2 = be e2 in
-    (*
-    print_endline 
-    (
-      "Argument " ^ string_of_bound_expression syms.dfns (be2,t2) ^ 
-      " has type " ^ string_of_btypecode syms.dfns t2
-    );
-    *)
-    let tbe1 =
-      lookup_qn_with_sig 
-        syms 
-        sra srn env 
-        exclude excluded_dirs 
-        name ts t2 
-    in 
-      cal_apply syms tbe1 (be2,t2)
-
-  (* | `AST_apply (sra,(`AST_name (srn,uqn) as name,e2)) ->  *)
-  | `AST_apply (sra,(#qualified_name_t as name,e2)) -> 
-    (*
-    print_endline ("Apply unqualified name " ^ uqn ^ " to " ^ string_of_expr e2);
-    flush stdout;
-    *)
-    let be2,t2 = be e2 in
-    (*
-    print_endline 
-    (
-      "Argument " ^ string_of_bound_expression syms.dfns (be2,t2) ^ 
-      " has type " ^ string_of_btypecode syms.dfns t2
-    );
-    *)
-    let srn = src_of_expr name in
-    let tbe1 =
-      lookup_qn_with_sig 
-        syms 
-        sra srn env 
-        exclude excluded_dirs 
-        name [] t2 
-    in 
-      cal_apply syms tbe1 (be2,t2)
-
-  | `AST_apply (sr,(e1,e2)) -> 
-    print_endline ("General apply of " ^ string_of_expr e1);
-    let tbe1 = be e1 and (be2,t2) as tbe2 = be e2 in
-    begin match tbe1 with
-    | `BEXPR_functions (name,fs), `BTYP_none ->
-      print_endline "GOT FUNCTION SET??";
-      let entry = resolve_overload 
-        syms 
-        excluded_dirs sr 
-        fs name [] t2 
-      in 
-      let tbe1' = match entry with
-      | None -> 
-       failwith (
-         "Unable to resolve overload of name " ^ string_of_expr e1 ^
-         " with argument of type " ^ string_of_btypecode syms.dfns t2 ^
-         "\nin " ^ short_string_of_src sr
-       )
-      | Some (Simple index) ->
-         `BEXPR_closure index, 
-         typeofindex syms exclude expr_fixlist depth excluded_dirs index
-
-      | Some (Bound (iface,impl)) -> 
-         `BEXPR_closure impl, 
-         `BTYP_binding
-         (
-           typeofindex syms exclude expr_fixlist depth excluded_dirs iface,
-           typeofindex syms exclude expr_fixlist depth excluded_dirs impl
-         )
-      in
-        cal_apply syms tbe1' tbe2
-
-    | _ ->
-      cal_apply syms tbe1 tbe2
-    end
+  | `AST_apply (sr,(f,a)) ->
+    let (ba, ta) as a = be a in
+    let f = lookup sr f ta in
+    cal_apply syms f a
 
   | `AST_tuple (_,es) -> 
     let bets = List.map be es in
@@ -3290,7 +3225,7 @@ and resolve_overload
 : entry_kind_t option=
   let n = List.length ts in
   let rec resolve i =
-    match Hashtbl.find syms.dfns i with (id,sr,parent,symdef) ->
+    match get_data syms.dfns i with (id,sr,parent,symdef) ->
     parent,i,sig_of_symdef symdef id
   in
   let rec aux i =  
@@ -3346,57 +3281,78 @@ and resolve_overload
    'top'->NonFunctionEntry 0. 
 *)
 and get_table_dirs_of_index dfns index = 
-  match get_data dfns index with
-  | (id,sr,parent,entry) ->
-    let table,dirs = 
-      match entry with
-      | `SYMDEF_module (table,dirs) -> table,dirs
-      | `SYMDEF_interface (table,dirs) -> table,dirs
-      | `SYMDEF_function (ps,t,e,table,dirs) -> table,dirs
-      | `SYMDEF_procedure (ps,e,table,dirs) -> table,dirs
-      | `SYMDEF_match_check _ -> Hashtbl.create 97,[]
+  match get_data dfns index with (id,sr,parent,entry) ->
+  let table,dirs = 
+    match entry with
+    | `SYMDEF_module (table,dirs) -> table,dirs
+    | `SYMDEF_interface (table,dirs) -> table,dirs
+    | `SYMDEF_function (ps,t,e,table,dirs) -> table,dirs
+    | `SYMDEF_procedure (ps,e,table,dirs) -> table,dirs
+    | `SYMDEF_match_check _ -> Hashtbl.create 97,[]
 
-      | `SYMDEF_typed_functor (_,_,_,table,dirs) -> table,dirs
-      | `SYMDEF_untyped_functor (_,_,table,dirs) -> table,dirs
-      | `SYMDEF_module_binding _ -> failwith "[build_env] Can't handle module binding"
-      | `SYMDEF_if_fun _ -> failwith "Can't look into function dcl"
-      | `SYMDEF_if_proc _ -> failwith "Can't look into proc dcl"
-      | `SYMDEF_if_type -> failwith "Can't look into type"
-      | `SYMDEF_parameter _
-      | `SYMDEF_val _ 
-      | `SYMDEF_var _ -> 
-        failwith 
-        (
-          "[build_env] " ^
-          short_string_of_src sr ^
-          ": Lookup function, procedure or module as parent, got parameter, value or variable "^id^"??"
-        )
-      | `SYMDEF_dcl d -> 
-        failwith 
-        (
-          "[build_env] " ^
-          short_string_of_src sr ^
-          ": Lookup of requires function, procedure or module as parent, got " ^ id
-        )
-    in parent,table,dirs
+    | `SYMDEF_typed_functor (_,_,_,table,dirs) -> table,dirs
+    | `SYMDEF_untyped_functor (_,_,table,dirs) -> table,dirs
 
-and build_env' syms parent : (name_map_t * qualified_name_t list) list =
+    | `SYMDEF_module_binding _ -> failwith "[build_env] Can't handle module binding"
+
+    | `SYMDEF_if_fun _ 
+    | `SYMDEF_if_proc _ 
+    | `SYMDEF_if_type 
+    | `SYMDEF_parameter _
+    | `SYMDEF_val _ 
+    | `SYMDEF_var _ -> 
+      failwith 
+      (
+        "[build_env] " ^
+        short_string_of_src sr ^
+        ": Lookup function, procedure or module as parent,\n" ^
+        "got parameter, value,  variable or intrface component "^
+        id^
+        "??"
+      )
+    | `SYMDEF_dcl d -> 
+      failwith 
+      (
+        "[build_env] " ^
+        short_string_of_src sr ^
+        ": Lookup of requires function, procedure or module as parent,\n"^
+        "got " ^ id
+      )
+  in parent,table,dirs
+
+and build_env' syms parent : 
+  (
+    name_map_t * 
+    qualified_name_t list *
+    (string * qualified_name_t) list
+  ) list =
   match parent with
   | None -> []
 
   | Some index ->
      let parent,table,dirs = get_table_dirs_of_index syms.dfns index in
-     let qns = 
+     let opens = 
        List.concat
        (
          List.map
          (fun x -> match x with 
            | DIR_open qn -> [qn]
+           | DIR_use (n,qn) -> []
+         )
+         dirs
+       )
+     and uses = 
+       List.concat
+       (
+         List.map
+         (fun x -> match x with 
+           | DIR_open qn -> []
+           | DIR_use (n,qn) -> [n,qn]
          )
          dirs
        )
      in
-       (table,qns) :: build_env' syms parent
+       (table,opens, uses) :: build_env' syms parent
 
 and map_dir 
   syms 
@@ -3404,18 +3360,25 @@ and map_dir
   excluded_dirs 
   qn 
 : name_map_t =
-  (* print_endline ("Mapping open " ^ string_of_qualified_name qn); *)
   let sr = ("dummy",0,0,0,0) in
-  let result = lookup_qn_in_env syms env excluded_dirs qn in
+  let result = 
+    try lookup_qn_in_env syms env excluded_dirs qn 
+    with Not_found -> failwith "QN NOT FOUND"
+  in
   match result with
   | Simple i ->
-    begin match Hashtbl.find syms.dfns i with
+    begin match get_data syms.dfns i with
     | _,_,_,`SYMDEF_module (table,_) -> table
-    | _,_,_,`SYMDEF_module_binding e -> 
-      (* print_endline "map_dir got module binding"; *)
+    | id,_,_,`SYMDEF_module_binding e -> 
       if not (List.mem i excluded_dirs)
       then
-        begin match eval_module_expr syms env (i::excluded_dirs) e with 
+        begin 
+        let me = 
+          try 
+            eval_module_expr syms env (i::excluded_dirs) e 
+          with _ -> failwith "Module expression eval failed"
+        in
+        match me with 
         | Module_product _ ->
           failwith "Unexpected module product"
 
@@ -3425,11 +3388,9 @@ and map_dir
         | Simple_module (impl, htab,dirs) ->
           htab
         | Bound_module (iface,impl,binding) ->
-          (* print_endline "processing bound module"; *)
-          let _,_,_,entry = Hashtbl.find syms.dfns iface in
+          let _,_,_,entry = get_data syms.dfns iface in
           begin match entry with 
           | `SYMDEF_interface (table,dirs) ->
-            (* print_endline "APPLYING BINDING"; *)
             apply_binding table binding
           | _ -> failwith "Expected interface"
           end
@@ -3448,14 +3409,39 @@ and build_env'' syms excluded_dirs parent : env_t =
   let rec resolve_dirs env =
     match env with
     | [] -> []
-    | (table,dirs)::tail ->
+    | (table,dirs,uses)::tail ->
       let base = resolve_dirs tail in
+      let env = (table,[])::base in
+      let use_map = Hashtbl.create 97 in
+      List.iter
+      (fun (n,qn) ->
+        let entry = lookup_qn_in_env2 syms env excluded_dirs qn in
+        match entry with
+        
+        | NonFunctionEntry _ ->
+          if Hashtbl.mem use_map n
+          then failwith "Duplicate non function used"
+          else Hashtbl.add use_map n entry
+
+        | FunctionEntry ls ->
+          let entry2 = 
+            try Hashtbl.find use_map  n 
+            with Not_found -> FunctionEntry []
+          in
+          match entry2 with
+          | NonFunctionEntry _ ->
+            failwith "Use function and non-function kinds"
+          | FunctionEntry ls2 ->
+            Hashtbl.replace use_map n (FunctionEntry (ls @ ls2))
+      )
+      uses
+      ;
       let bound_dirs = 
         List.map
-        (map_dir syms ((table,[])::base) excluded_dirs)
+        (map_dir syms env excluded_dirs)
         dirs
       in
-        (table,bound_dirs) ::base
+        (table,use_map :: bound_dirs) :: base
    in 
      resolve_dirs basic_env
 
@@ -3463,9 +3449,11 @@ and build_env syms excluded_dirs parent : env_t =
   match parent with
   | None -> []
   | Some i ->
-    try Hashtbl.find syms.env_cache i
-    with Not_found ->
-    let env = build_env'' syms excluded_dirs parent in
-    Hashtbl.add syms.env_cache i env;
-    env
+    try 
+      Hashtbl.find syms.env_cache i
+    with 
+      Not_found ->
+       let env = build_env'' syms (i::excluded_dirs) parent in
+       Hashtbl.add syms.env_cache i env;
+       env
 

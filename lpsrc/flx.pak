@@ -1,6 +1,6 @@
 @bc = begin_displayed_code
 @ec = end_displayed_code
-@flx_version = '1.0a5'
+@flx_version = '1.0a6'
 @set_title('Felix '+flx_version)
 @head(1,'Purpose')
 Felix is a procedural language designed to implement

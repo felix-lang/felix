@@ -318,16 +318,20 @@ let bbind_sym syms bbdfns i (name,sr,parent,bdcl) =
   let dummy_sr = ("Generated dummy",0,0,0,0) in
   (*
   print_endline ("binding symbol " ^ name);
-  *)
+  print_endline ("Parent is " ^ (match parent with | None -> "none" | Some i -> string_of_int i));
+  *) 
   if proper_descendant syms.dfns parent
   then begin
     (*
     print_endline "Building ENV";
     *)
-    let env = build_env syms [] parent in 
+    let env = 
+      build_env syms [] parent 
+    in 
     (* print_env env; *)
     (*
     print_endline "Building ENV Complete";
+    flush stdout;
     *)
     let bt t = bind_type syms env [] [] sr t in
     let bgt vs t = bind_type_with_tvars syms env [] [] sr t vs in
@@ -683,8 +687,9 @@ try
   print_endline (Flx_print.string_of_desugared deblocked);
   print_endline "----------------------------";
 
+  let root = !(syms.counter) in
   let table, exes, ifaces,dirs = 
-    build_tables true syms.dfns syms.counter "<top level>" 0 None deblocked 
+    build_tables true syms.dfns syms.counter "<top level>" 0 None None root deblocked 
   in
     print_endline "//BINDING EXECUTABLE CODE";
     print_endline "//-----------------------";
