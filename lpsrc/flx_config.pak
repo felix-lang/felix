@@ -272,6 +272,9 @@ int main(int,char*[]) {
 @select(h)
 int main(int argc, char*argv[]) { 
   void *label = &&label2;
+  __asm__(".global fred");
+  __asm__("fred:");
+  __asm__(""::"g"(&&label1));
   goto *label;
   label1: 
     return 1;

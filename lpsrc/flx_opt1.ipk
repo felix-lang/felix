@@ -418,6 +418,9 @@ let useless_call_elim syms used (child_map,bbdfns) vs' exes index =
   | `BEXE_call (sr,((`BEXPR_closure (i,ts),_) as f), b') -> assert false
 
 
+  | `BEXE_jump _ -> assert false
+
+  (*
   | `BEXE_jump (sr,((`BEXPR_closure (i,ts),_) as f), b')
   | `BEXE_jump (sr,((`BEXPR_name (i,ts),_) as f), b')
     -> (* only keep calls to useful procedures *) 
@@ -449,7 +452,8 @@ let useless_call_elim syms used (child_map,bbdfns) vs' exes index =
         else exes' := `BEXE_proc_return sr :: !exes'
       | _ -> exes' := `BEXE_jump (sr,f,ia b') :: !exes'
       end
-
+  | `BEXE_jump (sr,a,b) -> exes' := `BEXE_jump (sr,ia a,ia b) :: !exes'
+  *)
   | `BEXE_call (sr,a,b) -> 
     let a = ia a in
     begin match a with
@@ -459,7 +463,6 @@ let useless_call_elim syms used (child_map,bbdfns) vs' exes index =
       exes' := `BEXE_call (sr,a,ia b) :: !exes'
     end
 
-  | `BEXE_jump (sr,a,b) -> exes' := `BEXE_jump (sr,ia a,ia b) :: !exes'
   | `BEXE_call_prim (sr,i,ts,b) -> exes' := `BEXE_call_prim (sr,i,ts, ia b) :: !exes'
 
   | `BEXE_fun_return (sr,a) -> exes' := `BEXE_fun_return (sr,ia a) :: !exes'
@@ -509,50 +512,7 @@ let useless_call_elim syms used (child_map,bbdfns) vs' exes index =
   )
   exes
   ;
-
-  (* replace call/return with jump *)
-  let exes'' = ref [] in
-  let tack x = exes'' := x :: !exes'' in
-  let rec tail_check (lst: bexe_t list) = 
-    match lst with
-    | [] -> ()
-    | `BEXE_proc_return _ :: `BEXE_proc_return sr :: t ->
-      tail_check (`BEXE_proc_return sr :: t)
-      
-    | `BEXE_proc_return _ :: `BEXE_call (sr,p,a) :: t ->
-      begin 
-        match p with
-        | (`BEXPR_closure (i,ts),_) ->
-          begin 
-            match Hashtbl.find bbdfns i with
-            | id,parent,sr,`BBDCL_proc _ ->
-              tack (`BEXE_proc_return sr);
-              tack (`BEXE_call_direct (sr,i,ts,a));
-
-            | _ -> 
-              tack (`BEXE_jump (sr,p,a))
-          end
-        | _ -> 
-          (* jumps to variables not supported in case the
-            variable is a child 
-          *)
-          tack (`BEXE_proc_return sr);
-          tack (`BEXE_call (sr,p,a));
-      end
-      ;
-      tail_check t
-
-    | h :: t -> 
-      tack h; 
-      tail_check t
-  in
-    tail_check 
-      begin match !exes' with
-      | `BEXE_call (sr,_,_) :: _ -> `BEXE_proc_return sr :: !exes'
-      | _ -> !exes'
-      end
-    ;
-    !exes''
+  List.rev !exes'
 
 let nop x = ()
 
