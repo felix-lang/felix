@@ -57,19 +57,19 @@ struct collector_t;  // the collector itself
 
 struct gc_shape_t
 {
-  size_t count;              // array element count
-  size_t amt;                // bytes allocated
+  std::size_t count;              // array element count
+  std::size_t amt;                // bytes allocated
   void (*finaliser)(collector_t*, void*);  // finalisation function
-  size_t n_offsets;          // number of offsets
-  size_t *offsets;           // actual offsets
+  std::size_t n_offsets;          // number of offsets
+  std::size_t *offsets;           // actual offsets
 
   // convenience constructor
   gc_shape_t(
-    size_t count_a,
-    size_t amt_a,
+    std::size_t count_a,
+    std::size_t amt_a,
     void (*finaliser_a)(collector_t*, void*),
-    size_t n_offsets_a,
-    size_t *offsets_a
+    std::size_t n_offsets_a,
+    std::size_t *offsets_a
   );
 };
 @doc()
@@ -146,8 +146,8 @@ if necessary.
 Here is the allocator abstraction.
 @select(h)
 struct allocator_t {
-  virtual void *allocate(size_t)=0;
-  virtual void deallocate(void *, size_t)=0;
+  virtual void *allocate(std::size_t)=0;
+  virtual void deallocate(void *, std::size_t)=0;
   virtual ~allocator_t(){};
 };
 
@@ -268,8 +268,8 @@ C++ type safe heap allocation. There are no corresponding
 delete routines, please use the destroy function.
 
 @select(h)
-void *operator new(size_t, collector_t &, gc_shape_t &);
-void *operator new(size_t, collector_t &, gc_shape_t &, unsigned long);
+void *operator new(std::size_t, collector_t &, gc_shape_t &);
+void *operator new(std::size_t, collector_t &, gc_shape_t &, unsigned long);
 
 @doc()
 These two routines are used to reset the type
@@ -295,11 +295,11 @@ namespace generic {
 // create a shape object given an array of offsets
 gc_shape_t::gc_shape_t
 (
-  size_t count_a,
-  size_t amt_a,
+  std::size_t count_a,
+  std::size_t amt_a,
   void (*finaliser_a)(collector_t*, void*),
-  size_t n_offsets_a,
-  size_t *offsets_a
+  std::size_t n_offsets_a,
+  std::size_t *offsets_a
 )
   :
   count(count_a),
@@ -346,7 +346,7 @@ void _destroy_ptr(void **a)
 }
 
 void *operator new(
-  size_t amt,
+  std::size_t amt,
   collector_t &collector,
   gc_shape_t &shape
 )
@@ -356,7 +356,7 @@ void *operator new(
 }
 
 void *operator new(
-  size_t amt,
+  std::size_t amt,
   collector_t &collector,
   gc_shape_t &shape,
   unsigned long count
@@ -392,8 +392,8 @@ namespace collector {
 using namespace generic;
 
 struct malloc_free : public virtual allocator_t {
-  void *allocate(size_t);
-  void deallocate(void *, size_t);
+  void *allocate(std::size_t);
+  void deallocate(void *, std::size_t);
 };
 
 
@@ -464,14 +464,14 @@ namespace flx {
 namespace gc {
 namespace collector {
 
-void *malloc_free::allocate(size_t amt)
+void *malloc_free::allocate(std::size_t amt)
 {
   void *p = malloc(amt);
   //printf("malloc %p\n",p);
   return p;
 }
 
-void malloc_free::deallocate(void *p, size_t)
+void malloc_free::deallocate(void *p, std::size_t)
 {
   //printf("free %p\n",p);
   free(p);
@@ -508,7 +508,7 @@ flx_collector_t::flx_collector_t(allocator_t *a) :
 void * flx_collector_t::allocate(gc_shape_t *shape, unsigned long nobj)
 {
   // calculate how much memory to request
-  size_t amt = nobj * shape->amt + FRAMESIZE;
+  std::size_t amt = nobj * shape->amt + FRAMESIZE;
 
   // allocate a block
   frame_t *fp = (frame_t*)allocator->allocate(amt);
@@ -589,7 +589,7 @@ void flx_collector_t::delete_frame(frame_t *fp)
 {
   // update statistics
   allocation_count--;
-  size_t size = fp->shape->amt + FRAMESIZE;
+  std::size_t size = fp->shape->amt + FRAMESIZE;
   allocation_amt -= size;
 
   // deallocate the storage
@@ -672,9 +672,9 @@ void flx_collector_t::scan_object(frame_t *frame)
     frame->garbage = !parity; // reachable!
     gc_shape_t *shape = frame->shape;
     unsigned long n_objects = frame->n_objects * shape->count;
-    size_t obj_size = shape->amt;
-    size_t n_offsets = shape->n_offsets;
-    size_t *offsets = shape->offsets;
+    std::size_t obj_size = shape->amt;
+    std::size_t n_offsets = shape->n_offsets;
+    std::size_t *offsets = shape->offsets;
     unsigned char *p = (unsigned char*)FRAME_TO_CLIENT(frame);
 
     for(unsigned long j=0; j<n_objects; ++j)

@@ -503,7 +503,7 @@ FLXCC_CPP = CPP
 if HAVE_PKGCONFIG:
   pkgs = ""
   for i in PKGCONFIG_PACKAGES.keys(): pkgs = pkgs + i + " "
-  FLXCC_CPP = FLXCC_CPP + "`pkg-config --cflags "+pkgs+"`"
+  FLXCC_CPP = FLXCC_CPP + "-I/usr/local/include/python2.3 `pkg-config --cflags "+pkgs+"`"
 
 # set C++ compilation commands
 # for CYGWIN, this isn't enough, it needs to generate

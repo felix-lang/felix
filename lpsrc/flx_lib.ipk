@@ -348,7 +348,7 @@ module Typing
   ;
 
 }
-
+  
 @#------------- CASTS and C HACKERY ---------------
 publish """
 This module provides access to raw C/C++ encodings.
@@ -408,7 +408,7 @@ module C_hack
   the resulting reference will never be collected
   (because the frame pointer is set to 0)
   """
-  fun mkref[t]: ptr[t]->&t = "flx::rtl::_ref_(0,(void*)$1)";
+  fun mkref[t]: ptr[t]->&t = "(#0 const&)flx::rtl::_ref_(0,(void*)$1)";
 
   publish """
   Dereference a C pointer. If the expression is an

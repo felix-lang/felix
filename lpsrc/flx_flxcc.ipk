@@ -6,13 +6,23 @@ open Flx_util
 open Flx_types
 open Flx_version
 open Flx_mtypes1
+open Flx_cil_cabs
+open Flx_cil_cil
 ;;
 
 type stab_t = {
+  stab_cfile: string;
+  stab_flxfile: string;
+  stab_flxinclude: string;
+  stab_module: string;
+
   aliases: (string,string) Hashtbl.t;
   struct_aliases: (string,string) Hashtbl.t;
   abstract_types: (string,string) Hashtbl.t;
   incomplete_types: (string,string) Hashtbl.t;
+  mutable xtyps: (string,string) Hashtbl.t;
+  mutable udt: (string,unit) Hashtbl.t;
+  mutable ict: (string,string) Hashtbl.t;
   used_types: (string,unit) Hashtbl.t;
   variables : (string,string) Hashtbl.t;
   functions: (string,string * string) Hashtbl.t;
@@ -20,6 +30,7 @@ type stab_t = {
   procedures: (string,string * string) Hashtbl.t;
   enums: (string,string) Hashtbl.t;
   registry: (typsig, string * string) Hashtbl.t;
+  mutable includes: StringSet.t;
   counter: int ref
 }
 ;;
@@ -32,12 +43,54 @@ let isprefix p s =
 
 exception Next
 ;;
-let filename = ref ""
-let noincludes = ref []
-let merge_files = Hashtbl.create 97
-let outdir = ref "flxcc_out/"
+type control_t = {
+  mutable control_filename: string;
+  mutable prein_filename: string;
+  mutable preout_filename: string;
+  mutable preprocessor: string;
+  mutable raw_includes: StringSet.t;
+  mutable raw_include_dirs : StringSet.t;
+  mutable include_path: string list;
+  mutable noincludes: string list;
+  merge_files: (string,string) Hashtbl.t;
+  rev_merge_files: (string,string list) Hashtbl.t;
+  mutable outdir: string;
+  stabs : (string,stab_t) Hashtbl.t;
+  mutable special_subdirs : string list;
+  all_types : (string,string) Hashtbl.t;
+  incomplete_types_cache: (string,string * string list) Hashtbl.t;
+  files: (string,string) Hashtbl.t;
+  replacements : (string,string) Hashtbl.t;
+  rejects: (string,unit) Hashtbl.t;
+  mutable root_includes: string list;
+  mutable root_rec_includes: string list;
+  mutable root_excludes : string list;
+}
 ;;
-let rev_merge_files = Hashtbl.create 97
+
+let control = {
+  control_filename = Sys.argv.(1);
+  prein_filename = "flxcc_prein.h";
+  preout_filename = "flxcc_preout.hhh";
+@tangle('  preprocessor ="'+FLXCC_CPP+'";')
+  noincludes = [];
+  raw_includes = StringSet.empty;
+  raw_include_dirs = StringSet.empty;
+  include_path = [];
+  merge_files = Hashtbl.create 97;
+  rev_merge_files = Hashtbl.create 97;
+  outdir = "flxcc_out";
+  stabs  = Hashtbl.create 97;
+  special_subdirs = [];
+  all_types = Hashtbl.create 97;
+  incomplete_types_cache = Hashtbl.create 97;
+  files = Hashtbl.create 97;
+  replacements = Hashtbl.create 97;
+  rejects = Hashtbl.create 97;
+  root_rec_includes = [];
+  root_includes = [];
+  root_excludes = [];
+}
 ;;
 
 (* map the name of a #include file which is
@@ -59,14 +112,49 @@ let rev_merge_files = Hashtbl.create 97
 *)
 
 let map_filename f = 
-  try Hashtbl.find merge_files f 
+  try Hashtbl.find control.merge_files f 
   with Not_found -> f
 ;;
 
-let control_filename = Sys.argv.(1)
+let rec glob dir recurse level =
+  if not (mem dir control.root_excludes) then
+  let spaces = String.make level ' ' in
+  try
+    let f = Unix.opendir dir in
+    control.raw_include_dirs <- StringSet.add dir control.raw_include_dirs;
+    begin 
+      try 
+        while true do let m = Unix.readdir f in
+          let path = Filename.concat dir m in
+          let st = 
+            try Unix.lstat path
+            with _ -> failwith ("Can't lstat " ^ path)
+          in
+          match st.Unix.st_kind with
+          | Unix.S_REG ->
+            if not (mem path control.root_excludes) then
+            control.raw_includes <- StringSet.add path control.raw_includes
+            
+          | Unix.S_DIR ->
+            if recurse then
+            if not (isprefix "." m) then
+            begin
+              glob path recurse (level + 1)
+            end
+            
+          | _ -> ()
+        done 
+      with End_of_file -> Unix.closedir f
+    end
+  with Unix.Unix_error _ ->
+    failwith ("Can't find directory " ^ dir)
 ;;
-let f = open_in control_filename
+
+let f = open_in control.control_filename
 ;;
+let pattern = ref "*.h" 
+;;
+
 let rec aux () =
   try 
     let line = input_line f in
@@ -91,24 +179,76 @@ let rec aux () =
           if !i = n then failwith "outdir statement requires filename";
           let j = !i in
           while !i < n && line.[!i]<>' ' do incr i done;
-          outdir := String.sub line j (!i-j);
+          control.outdir <- String.sub line j (!i-j);
           raise Next
 
-        | "data" ->
+        | "prein" ->
           while !i < n && line.[!i]=' ' do incr i done;
-          if !i = n then failwith "data statement requires filename";
+          if !i = n then failwith "prein statement requires filename";
           let j = !i in
           while !i < n && line.[!i]<>' ' do incr i done;
-          filename := String.sub line j (!i-j);
+          control.prein_filename <- String.sub line j (!i-j);
           raise Next
 
-        | "noinclude" ->
+        | "preout" ->
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "preout statement requires filename";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          control.preout_filename <- String.sub line j (!i-j);
+          raise Next
+        
+        | "preprocessor" ->
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "preprocessor statement requires arguments";
+          let j = !i in
+          while !i < n do incr i done;
+          control.preprocessor <- String.sub line j (!i-j);
+          raise Next
+
+        | "noheader" ->
           while !i < n && line.[!i]=' ' do incr i done;
           if !i = n then failwith "noinclude statement requires filename";
           let j = !i in
           while !i < n && line.[!i]<>' ' do incr i done;
           let fn = String.sub line j (!i-j) in
-          noincludes := fn :: !noincludes;
+          control.noincludes <- fn :: control.noincludes;
+          raise Next
+
+        | "incdir" ->
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "incdir statement requires filename";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          let fn = String.sub line j (!i-j) in
+          control.root_includes <- fn :: control.root_includes;
+          raise Next
+
+        | "recincdir" ->
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "incdir statement requires filename";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          let fn = String.sub line j (!i-j) in
+          control.root_rec_includes <- fn :: control.root_rec_includes;
+          raise Next
+
+        | "path" ->
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "path statement requires filename";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          let fn = String.sub line j (!i-j) in
+          control.include_path <- fn :: control.include_path;
+          raise Next
+
+        | "exclude" ->
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "exclude statement requires filename";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          let fn = String.sub line j (!i-j) in
+          control.root_excludes<- fn :: control.root_excludes;
           raise Next
 
         | "merge" ->
@@ -123,12 +263,45 @@ let rec aux () =
           let j = !i in
           while !i < n && line.[!i]<>' ' do incr i done;
           let fn2 = String.sub line j (!i-j) in
-          Hashtbl.add merge_files fn1 fn2;
+          Hashtbl.add control.merge_files fn1 fn2;
           let x = 
-            try Hashtbl.find rev_merge_files fn2 
+            try Hashtbl.find control.rev_merge_files fn2 
             with Not_found -> [] 
-          in Hashtbl.replace rev_merge_files fn2 (fn1::x)
+          in Hashtbl.replace control.rev_merge_files fn2 (fn1::x)
           ; 
+          raise Next
+
+        | "rename" ->
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "rename statement requires name";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          let fn1 = String.sub line j (!i-j) in
+
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "rename statement requires 2 names";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          let fn2 = String.sub line j (!i-j) in
+          Hashtbl.add control.replacements fn1 fn2;
+          raise Next
+
+        | "ignore" ->
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "ignore statement requires name";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          let fn = String.sub line j (!i-j) in
+          Hashtbl.add control.rejects fn ();
+          raise Next
+
+        | "subdir" ->
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "subdir statement requires name";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          let fn = String.sub line j (!i-j) in
+          control.special_subdirs <- fn :: control.special_subdirs;
           raise Next
 
         | _ -> failwith ("Unknown keyword " ^keyword^ " in control file")
@@ -141,7 +314,72 @@ in aux()
 close_in f
 ;;
 
-let filename = !filename
+iter
+(fun s -> glob s false 0)
+control.root_includes
+;;
+
+iter
+(fun s -> glob s true 0)
+control.root_rec_includes
+;;
+
+let autocreate x =
+  try open_out x 
+  with | _ ->
+  let rec mkpath x  =
+    let d = Filename.dirname x in
+    if d <> "" then begin
+      try Unix.mkdir d 0o777 
+      with _ -> 
+        mkpath d;
+        Unix.mkdir d 0o777 
+    end
+  in
+  mkpath x;
+  open_out x
+;;
+
+let f = autocreate control.prein_filename in
+StringSet.iter 
+(fun s ->
+  output_string f ("#include \"" ^ s ^ "\"\n")
+)
+control.raw_includes
+;
+close_out f
+;;
+
+let precmd = 
+  let path = ref "" in
+  (*
+  StringSet.iter
+  (fun s -> path := !path ^ "-I" ^ s ^ " ")
+  control.raw_include_dirs
+  ;
+  *)
+  path := 
+  (
+    String.concat " " 
+    (
+      map 
+      (fun s-> "-I"^s^" ")
+      (rev control.include_path)
+    )
+  ) ^ " " ^ !path
+  ;
+  
+  control.preprocessor ^ " " ^ 
+  !path ^ " " ^
+  control.prein_filename ^ 
+  " >" ^control.preout_filename
+;;
+
+print_endline "PREPROCESSOR COMMAND:";
+print_endline precmd
+;;
+
+Unix.system precmd
 ;;
 
 let format_time tm = 
@@ -163,7 +401,7 @@ let compile_start_local_string = format_time compile_start_local ^ " (local)"
 Flx_cil_cil.initCIL()
 ;;
 
-let lexbuf = Flx_cil_clexer.init filename;;
+let lexbuf = Flx_cil_clexer.init control.preout_filename;;
 let cabs = Flx_cil_cparser.file Flx_cil_clexer.initial lexbuf
 ;;
 Flx_cil_clexer.finish()
@@ -173,8 +411,6 @@ Flx_cil_clexer.finish()
 Flx_cil_cprint.print_defs cabs;;
 *)
 
-open Flx_cil_cabs
-;;
 let ns (s,_,_,_) = s
 ;;
 let is_def = function | Some _ -> "complete" | None -> "incomplete"
@@ -232,11 +468,9 @@ let rec find_type d = match d with
 List.iter find_type cabs ;;
 *)
 
-let cil = Flx_cil_cabs2cil.convFile (filename, cabs)
+let cil = Flx_cil_cabs2cil.convFile (control.preout_filename, cabs)
 ;;
 
-open Flx_cil_cil
-;;
 
 (*
 dumpFile defaultCilPrinter stdout cil ;;
@@ -262,20 +496,8 @@ let exclude_file f =
     mem f !excludes
 ;;
 
-let replacements : (string,string) Hashtbl.t = Hashtbl.create 97
-;;
-@for k,j in flx_keywords+[('String','')]:
-  tangle('Hashtbl.add replacements "'+k+'" "'+k+"_"+'";;')
-
-Hashtbl.add replacements "size_t" "size";;
-Hashtbl.add replacements "wchar_t" "wchar";;
-
-let rejects: (string,unit) Hashtbl.t = Hashtbl.create 97;;
-@for k in tmap.keys()+['wchar']:
-  tangle('Hashtbl.add rejects "'+k+'" ();;')
-
 let rplname s = 
-  try Hashtbl.find replacements s 
+  try Hashtbl.find control.replacements s 
   with Not_found -> s
 ;;
 
@@ -506,7 +728,12 @@ let rec isanont t =  match t with
 
 
 
-let mk_stab () = {
+let mk_stab cfile flxfile flxinclude flxmodule = {
+  stab_cfile = cfile;
+  stab_flxfile = flxfile;
+  stab_flxinclude = flxinclude;
+  stab_module = flxmodule;
+
   aliases= Hashtbl.create 97;
   struct_aliases= Hashtbl.create 97;
   abstract_types= Hashtbl.create 97;
@@ -518,72 +745,89 @@ let mk_stab () = {
   procedures= Hashtbl.create 97;
   enums= Hashtbl.create 97;
   registry= Hashtbl.create 97;
+  includes = StringSet.empty;
+  xtyps = Hashtbl.create 97;
+  ict = Hashtbl.create 97;
+  udt = Hashtbl.create 97;
   counter = ref 1
 }
 ;;
-let stabs : (string,stab_t) Hashtbl.t = Hashtbl.create 97
-;;
-let getstab s = 
-  let s = map_filename s in
-  try Hashtbl.find stabs s 
-  with Not_found ->
-    let x = mk_stab () in
-    Hashtbl.add stabs s x;
-    x
-;;
-let special_subdirs = ref ["bits"; "sys";"asm";"rpc";"linux"]
+
+let chop_extension f =
+  let b = Filename.basename f in
+  let d = Filename.dirname f in
+  let b = try Filename.chop_extension b with _ -> b in
+  Filename.concat d b
 ;;
 
-let srepl s c1 c2 =
-  for i = 0 to String.length s - 1 do
-    if s.[i]=c1 then s.[i] <- c2
-  done
+let flxinclude_of_cfile cfilename =
+  let x = chop_extension cfilename ^ "_lib" in
+  String.sub x 1 (String.length x - 1)
+;;
+
+let flxfile_of_cfile cfilename =
+  let base = flxinclude_of_cfile cfilename in
+  Filename.concat (control.outdir)  (base ^ ".flx")
 ;;
 
 let module_of_filename fname =
+  let srepl s c1 c2 =
+    for i = 0 to String.length s - 1 do
+      if s.[i]=c1 then s.[i] <- c2
+    done
+  in
   let basename = Filename.basename fname in
   let dirname = Filename.dirname fname in
   let subdirname = Filename.basename dirname in
   let prefix = 
-    if mem subdirname !special_subdirs then subdirname ^ "_"
+    if mem subdirname control.special_subdirs then subdirname ^ "_"
     else ""
   in
   try 
-    let x = prefix ^ (Filename.chop_extension basename) in
+    let x = prefix ^ (chop_extension basename) in
     srepl x '.' '_';
     srepl x ' ' '_';
     srepl x '/' '_';
     srepl x '-' '_';
-    x
+    x ^ "_h"
   with Invalid_argument _ ->
-    print_endline ("Weird filename " ^ fname ^ " without extension");
-    basename
+    print_endline ("Weird (C++??) filename " ^ fname ^ " without extension");
+    basename ^ "_hxx"
 ;;
 
+let getstab s = 
+  let s = map_filename s in
+  try Hashtbl.find control.stabs s 
+  with Not_found ->
+    let x = mk_stab s 
+      (flxfile_of_cfile s) 
+      (flxinclude_of_cfile s) 
+      (module_of_filename s) 
+    in
+    Hashtbl.add control.stabs s x;
+    x
+;;
 
 let getreg {file=s} = 
   let stab = getstab s in 
-  let m = module_of_filename s in
-  stab.registry,stab.counter,m,stab.used_types
+  stab.registry,stab.counter,stab.stab_module,stab.used_types
 ;;
 
-let all_types : (string,string) Hashtbl.t = Hashtbl.create 97
-;;
 
 let rpl {file=s} which = 
   let stab = (getstab s) in
   match which with
   | `aliases (k,v) -> 
     Hashtbl.replace stab.aliases k v;
-    Hashtbl.replace all_types k s
+    Hashtbl.replace control.all_types k s
   
   | `struct_aliases(k,v)  -> 
     Hashtbl.replace stab.struct_aliases k v;
-    Hashtbl.replace all_types k s
+    Hashtbl.replace control.all_types k s
 
   | `abstract_types (k,v)  -> 
     Hashtbl.replace stab.abstract_types k v;
-    Hashtbl.replace all_types k s
+    Hashtbl.replace control.all_types k s
 
   | `incomplete_types (k,v)  -> Hashtbl.replace stab.incomplete_types k v
   | `variables(k,v)  ->  Hashtbl.replace stab.variables k v
@@ -598,16 +842,13 @@ let ispublic s =
 ;;
 
 
-let files: (string,string) Hashtbl.t = Hashtbl.create 97
-;;
-
 let add_file fname =
   if not (exclude_file fname) then
   let m = module_of_filename fname in
-  if not (Hashtbl.mem files m) then
-    Hashtbl.add files m fname
+  if not (Hashtbl.mem control.files m) then
+    Hashtbl.add control.files m fname
   else 
-    let existing_fname = Hashtbl.find files m in
+    let existing_fname = Hashtbl.find control.files m in
     if not (fname = existing_fname) then 
     begin
       print_endline
@@ -626,7 +867,7 @@ let add_loc {file=fname} =
 ;;
 
 let filename_of_module m =
-  Hashtbl.find files m
+  Hashtbl.find control.files m
 ;;
 
 List.iter
@@ -637,7 +878,7 @@ List.iter
   | true,_,_ -> ()
   | _,Some _,None -> assert false
   | false,Some key,Some key' ->
-  if not (Hashtbl.mem rejects key) then
+  if not (Hashtbl.mem control.rejects key) then
   match g with
   | GType (ti,loc) -> 
     let registry = getreg loc in
@@ -674,6 +915,10 @@ List.iter
           rpl loc (`abstract_types (key, key'))
         else
           rpl loc (`aliases (key, (ptdef registry ti)))
+
+      | TFun (_,_,true,_) -> 
+        (* HACK: varargs function typedef *)
+        rpl loc (`abstract_types (key, key'))
 
       | t ->
         if isanont t then
@@ -779,9 +1024,17 @@ List.iter
 )
 gs
 ;;
-try Unix.mkdir !outdir 0o777 with _ -> ()
-;;
 
+(*
+iter 
+(fun s ->
+  let s = Filename.concat control.outdir s in
+  try Unix.mkdir s 0o777 
+  with _ -> ()
+)
+control.special_subdirs
+;;
+*)
 let is_nonempty h = 
   try 
     Hashtbl.iter (fun _ -> raise Not_found) h; 
@@ -918,7 +1171,7 @@ let find_includes fname =
   let includes = ref StringSet.empty in
   find_includes' includes fname;
   let extras = 
-    try Hashtbl.find rev_merge_files fname 
+    try Hashtbl.find control.rev_merge_files fname 
     with Not_found -> [] 
   in
   iter (find_includes' includes) extras
@@ -926,28 +1179,75 @@ let find_includes fname =
   stringset_map map_filename !includes
 ;;
 
-let module_of_mapped_filename f = 
-  module_of_filename (map_filename f)
+Hashtbl.iter
+begin 
+  fun fname stab ->
+  let includes = ref (find_includes fname) in
+  let ict = Hashtbl.create 97 in
+  let xtyps = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun k v ->
+    if not (Hashtbl.mem stab.abstract_types k) then 
+    try 
+      let file = Hashtbl.find control.all_types k in
+      includes := StringSet.add file !includes;
+      Hashtbl.add xtyps k file;
+
+    with Not_found ->
+      Hashtbl.add ict k v;
+      let v',ms = 
+        try Hashtbl.find control.incomplete_types_cache k 
+        with Not_found -> v,[]
+      in
+      if v'<>v then 
+      failwith ("Inconsistent type " ^k^"->"^ v ^ " <> " ^ v')
+      ;
+      Hashtbl.replace control.incomplete_types_cache k (v,stab.stab_module::ms)
+    else
+      ()
+  )
+  stab.incomplete_types
+  ;
+
+  let udt = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun k v ->
+    let k = rplname k in
+    if not (Hashtbl.mem control.rejects k) then
+    try 
+      let file = Hashtbl.find control.all_types k in
+      includes := StringSet.add file !includes;
+    with Not_found ->
+      if not (Hashtbl.mem control.incomplete_types_cache k) then
+      Hashtbl.add udt k v
+  )
+  stab.used_types
+  ;
+  stab.includes <- !includes;
+  stab.udt <- udt;
+  stab.ict <- ict;
+  stab.xtyps <- xtyps
+end
+control.stabs
 ;;
 
 Hashtbl.iter
 begin 
   fun fname stab ->
-  let modulename = module_of_filename fname in
-  let outname = Filename.concat (!outdir)  (modulename ^ "_lib.flx") in
-  let outf = open_out outname in
+  let outname = flxfile_of_cfile fname in
+  let outf = autocreate outname in
 
   let print_endline s = output_string outf (s ^ "\n") in
 
   print_endline ("// " ^ fname);
-  print_endline ("//Raw Input file: " ^ filename);
+  print_endline ("//Raw Input file: " ^ control.preout_filename);
   print_endline ("//Generated by Felix Version " ^ !version_data.version_string);
   print_endline ("//Timestamp: " ^ compile_start_gm_string);
   print_endline ("//Timestamp: " ^ compile_start_local_string);
   print_endline ("include 'std';");
   print_endline "";
  
-  if not (mem fname !noincludes) then
+  if not (mem fname control.noincludes) then
     print_endline ("header '#include \"" ^ fname^"\"';")
   else
     print_endline ("//NOT INCLUDED: \"" ^ fname^"\"")
@@ -1003,61 +1303,58 @@ begin
   failure of flxcc to cope is inevitable and not
   a design flaw.
   *)
-  
-  let includes = ref (find_includes fname) in
-  let ict = Hashtbl.create 97 in
-  let xtyps = Hashtbl.create 97 in
-  Hashtbl.iter
-  (fun k v ->
-    if not (Hashtbl.mem stab.abstract_types k) then 
-    try 
-      let file = Hashtbl.find all_types k in
-      includes := StringSet.add file !includes;
-      Hashtbl.add xtyps k file;
-
-    with Not_found ->
-      Hashtbl.add ict k v
-  )
-  stab.incomplete_types
+       
+  begin 
+    try
+      Hashtbl.iter
+      (fun k v-> 
+        match Hashtbl.find control.incomplete_types_cache k with
+        | (_,[_]) -> ()
+        | _ -> 
+          print_endline ("include \"_incomplete_types_cache\";");
+          raise Not_found
+      )
+      stab.ict 
+    with Not_found -> ()
+  end
   ;
 
-  let udt = Hashtbl.create 97 in
-  Hashtbl.iter
-  (fun k v ->
-    try 
-      let file = Hashtbl.find all_types k in
-      includes := StringSet.add file !includes;
-    with Not_found ->
-      Hashtbl.add udt k v
-  )
-  stab.used_types
-  ;
-  let depends = stringset_map module_of_mapped_filename !includes in
-  let depends = StringSet.remove modulename depends in
-  if StringSet.cardinal depends > 0 then
+
+  let include_depends = 
+    let x = stringset_map map_filename stab.includes in
+    let x = stringset_map flxinclude_of_cfile x in
+    StringSet.remove stab.stab_flxinclude x
+  in
+  let module_depends = 
+    let x = stringset_map map_filename stab.includes in
+    let x = stringset_map module_of_filename x in
+    StringSet.remove stab.stab_module x
+  in
+
+  if StringSet.cardinal include_depends > 0 then
   begin
     print_endline "";
     print_endline "//INCLUDES";
     StringSet.iter
-    (fun modulename' -> 
-      print_endline ("include \"" ^ modulename' ^ "_lib\";")
+    (fun incname -> 
+      print_endline ("include \"" ^ incname^ "\";")
     )
-    depends
+    include_depends
   end
   ;
 
   print_endline "";
-  print_endline ("module " ^ modulename ^ "_h \n{");
+  print_endline ("module " ^ stab.stab_module ^ "\n{");
   begin
     let print_endline s = output_string outf ("  " ^ s ^ "\n") in
     print_endline "open C_hack;";
-    if StringSet.cardinal depends > 0 then
+    if StringSet.cardinal module_depends > 0 then
     begin
       StringSet.iter
       (fun modulename' -> 
-        print_endline ("open " ^ modulename' ^ "_h;")
+        print_endline ("open " ^ modulename' ^";")
       )
-      depends
+      module_depends
     end
     ;
 
@@ -1086,7 +1383,7 @@ begin
     end
     ;
 
-    if is_nonempty xtyps then
+    if is_nonempty stab.xtyps then
     begin
       print_endline "";
       print_endline "//EXTERNALLY COMPLETED TYPES";
@@ -1095,23 +1392,28 @@ begin
         let m = module_of_filename v in
         print_endline ("//type " ^ k ^ " defined in "^m^"='" ^ v ^ "';")
       )
-      xtyps 
+      stab.xtyps 
     end
     ;
 
-    if is_nonempty ict then
+    if is_nonempty stab.ict then
     begin
       print_endline "";
       print_endline "//PURE INCOMPLETE TYPES";
       Hashtbl.iter
       (fun k v-> 
-        print_endline ("type " ^ k ^ " = '" ^ v ^ "';")
+        match Hashtbl.find control.incomplete_types_cache k with
+        | (_,[_]) ->
+          print_endline ("type " ^ k ^ " = '" ^ v ^ "'; //local")
+        | (_,ls) -> 
+          print_endline ("typedef " ^ k ^ " = _incomplete_types::" ^ k ^ ";//shared");
+          iter (fun s->print_endline ("//shared by: " ^ s)) ls
       )
-      ict 
+      stab.ict 
     end
     ;
 
-    if is_nonempty udt then
+    if is_nonempty stab.udt then
     begin
       print_endline "";
       print_endline "//TYPES WE CAN'T FIND";
@@ -1119,7 +1421,7 @@ begin
       (fun k _ -> 
         print_endline ("//type " ^ k ^ " ??")
       )
-      udt 
+      stab.udt 
     end
     ;
 
@@ -1214,81 +1516,235 @@ begin
   print_endline "}";
   close_out outf
 end
-stabs
+control.stabs
 ;;
 
-@select(tangler("config/make_usr_include_hhh.sh.default","data"))
-gcc -E `pkg-config --cflags gtk+-2.0` config/usr_include.h > config/usr_include.hhh
+if is_nonempty control.incomplete_types_cache then
+  let outname = 
+    Filename.concat (control.outdir)  
+    ("_incomplete_types_cache.flx") 
+  in
+  let outf = autocreate outname in
+  let print_endline s = output_string outf (s ^ "\n") in
+  print_endline "//incomplete type cache";
+  print_endline "module _incomplete_types {";
+  Hashtbl.iter
+  (fun k (v,m) ->
+    match m with
+    | [_] -> ()
+    | _ ->
+      print_endline ("incomplete type " ^ k ^ " = '" ^v^ "';");
+      List.iter
+      (fun s -> print_endline ("  // used by " ^ s)
+      )
+      m
+  )
+  control.incomplete_types_cache
+  ;
+  print_endline "}";
+  close_out outf
+;;
+
+let flx f = 
+  let cmd = "flxg -Ilib -I"^control.outdir^" -c " ^ f in
+  print_endline cmd;
+  Unix.system(cmd)
+;;
+  
+let rec dflx dir =
+  try
+    let f = Unix.opendir dir in
+    begin 
+      try 
+        while true do let m = Unix.readdir f in
+          let path = Filename.concat dir m in
+          let st = 
+            try Unix.lstat path
+            with _ -> failwith ("Can't lstat " ^ path)
+          in
+          match st.Unix.st_kind with
+          | Unix.S_REG ->
+            if Filename.check_suffix path ".flx" then
+            let fn = Filename.chop_suffix path ".flx" in
+            let result = flx fn in
+            begin match result with
+            | Unix.WEXITED 0 -> ()
+            | Unix.WEXITED i -> print_endline ("***** Failed, error " ^ string_of_int i)
+            | Unix.WSIGNALED i 
+            | Unix.WSTOPPED i -> failwith ("SIGNAL " ^ string_of_int i)
+            end
+          | Unix.S_DIR -> 
+            if not (isprefix "." m) then dflx path 
+          | _ -> ()
+        done 
+      with End_of_file -> Unix.closedir f
+    end
+  with Unix.Unix_error _ ->
+    failwith ("Can't find directory " ^ dir)
+;;
+
+dflx control.outdir
+;;
 
 @h=tangler("config/usr_include.flxcc.default","data")
 @select(h)
 outdir flxcc_out
-data config/usr_include.hhh
-noinclude /usr/include/bits/byteswap.h
-noinclude /usr/include/bits/cmathcalls.h
-noinclude /usr/include/bits/confname.h
-noinclude /usr/include/bits/dirent.h
-noinclude /usr/include/bits/dlfcn.h
-noinclude /usr/include/bits/elfclass.h
-noinclude /usr/include/bits/endian.h
-noinclude /usr/include/bits/environments.h
-noinclude /usr/include/bits/fcntl.h
-noinclude /usr/include/bits/fenv.h
-noinclude /usr/include/bits/huge_val.h
-noinclude /usr/include/bits/in.h
-noinclude /usr/include/bits/ioctls.h
-noinclude /usr/include/bits/ioctl-types.h
-noinclude /usr/include/bits/ipc.h
-noinclude /usr/include/bits/ipctypes.h
-noinclude /usr/include/bits/locale.h
-noinclude /usr/include/bits/mathcalls.h
-noinclude /usr/include/bits/mathdef.h
-noinclude /usr/include/bits/mathinline.h
-noinclude /usr/include/bits/mman.h
-noinclude /usr/include/bits/msq.h
-noinclude /usr/include/bits/nan.h
-noinclude /usr/include/bits/netdb.h
-noinclude /usr/include/bits/poll.h
-noinclude /usr/include/bits/posix1_lim.h
-noinclude /usr/include/bits/posix2_lim.h
-noinclude /usr/include/bits/pthreadtypes.h
-noinclude /usr/include/bits/resource.h
-noinclude /usr/include/bits/sched.h
-noinclude /usr/include/bits/select.h
-noinclude /usr/include/bits/sem.h
-noinclude /usr/include/bits/setjmp.h
-noinclude /usr/include/bits/shm.h
-//noinclude /usr/include/bits/sigset.h
-//noinclude /usr/include/bits/sigaction.h
-//noinclude /usr/include/bits/sigcontext.h
-//noinclude /usr/include/bits/siginfo.h
-//noinclude /usr/include/bits/sigstack.h
-//noinclude /usr/include/bits/sigthread.h
-noinclude /usr/include/bits/sockaddr.h
-noinclude /usr/include/bits/socket.h
-noinclude /usr/include/bits/statfs.h
-noinclude /usr/include/bits/stat.h
-noinclude /usr/include/bits/statvfs.h
-noinclude /usr/include/bits/stdio.h
-noinclude /usr/include/bits/stdio_lim.h
-noinclude /usr/include/bits/string2.h
-noinclude /usr/include/bits/string.h
-noinclude /usr/include/bits/stropts.h
-noinclude /usr/include/bits/syscall.h
-noinclude /usr/include/bits/sys_errlist.h
-noinclude /usr/include/bits/termios.h
-noinclude /usr/include/bits/time.h
-noinclude /usr/include/bits/types.h
-noinclude /usr/include/bits/typesizes.h
-noinclude /usr/include/bits/uio.h
-noinclude /usr/include/bits/ustat.h
-noinclude /usr/include/bits/utmp.h
-noinclude /usr/include/bits/utmpx.h
-noinclude /usr/include/bits/utsname.h
-noinclude /usr/include/bits/waitflags.h
-noinclude /usr/include/bits/waitstatus.h
-noinclude /usr/include/bits/xopen_lim.h
-noinclude /usr/include/bits/xtitypes.h
+prein usr_include.h
+preout usr_include.hhh
+preprocessor gcc -E 
+
+//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
+
+path /usr/include/atk-1.0 
+path /usr/include/bonobo-activation-2.0 
+path /usr/include/eel-2 
+path /usr/include/gail-1.0 
+path /usr/include/gal-1.0 
+path /usr/include/gconf/2 
+path /usr/include/gtk-2.0 
+path /usr/lib/gtk-2.0/include 
+path /usr/X11R6/include 
+path /usr/include/glib-2.0 
+path /usr/lib/glib-2.0/include 
+path /usr/lib/glib/include 
+path /usr/include/gnome-vfs-2.0 
+path /usr/lib/gnome-vfs-2.0/include 
+path /usr/include/gnome-vfs-module-2.0 
+path /usr/include/gtkhtml-1.1 
+path /usr/include/gdk-pixbuf-1.0 
+path /usr/include/gnome-1.0 
+path /usr/include/freetype2 
+path /usr/lib/gnome-libs/include 
+path /usr/include/gnome-xml 
+path /usr/include/libglade-1.0 
+path /usr/include/libart-2.0 
+path /usr/include/libbonobo-2.0 
+path /usr/include/libbonoboui-2.0 
+path /usr/include/libglade-2.0 
+path /usr/include/libgnome-2.0 
+path /usr/include/libgnomecanvas-2.0 
+path /usr/include/libgnomeui-2.0 
+path /usr/include/libgsf-1 
+path /usr/include/libIDL-2.0 
+path /usr/include/metacity-1 
+path /usr/include/panel-2.0 
+path /usr/include/libpng12 
+path /usr/include/librsvg-2 
+path /usr/include/libxml2 
+path /usr/include/linc-1.0 
+path /usr/kerberos/include 
+path /usr/include/orbit-2.0 
+path /usr/include/orbit-2.0/orbit-idl 
+path /usr/include/pango-1.0 
+path /usr/include  
+
+subdir bits
+subdir sys
+subdir asm
+subdir rpc
+subdir linux
+subdir python2.3
+
+incdir /usr/include
+recincdir /usr/local/include/python2.3
+exclude /usr/include/af_vfs.h
+exclude /usr/include/disptmpl.h
+exclude /usr/include/bits
+exclude /usr/include/asm
+exclude /usr/include/linux
+exclude /usr/include/glib-1.2
+exclude /usr/include/orbit-1.0
+exclude /usr/include/c++
+exclude /usr/include/g++-3
+exclude /usr/include/libglade-1.0
+exclude /usr/include/libIDL-1.0
+exclude /usr/include/gtk-1.2
+exclude /usr/include/glib-2.0/gobject
+exclude /usr/include/FlexLexer.h
+exclude /usr/include/swig.h
+exclude /usr/include/Imlib.h
+exclude /usr/include/Imlib_private.h
+exclude /usr/include/Imlib_types.h
+exclude /usr/include/jpeglib.h
+exclude /usr/include/rle.h
+exclude /usr/include/rle_config.h
+exclude /usr/include/md5.h
+exclude /usr/include/pcap-namedb.h
+exclude /usr/include/regexp.h
+exclude /usr/include/hmac-md5.h
+exclude /usr/include/jmorecfg.h
+exclude /usr/include/jconfig.h
+exclude /usr/include/resolv.h
+exclude /usr/local/include/python2.3/pymactoolbox.h
+exclude /usr/include/libmng.h
+exclude /usr/include/mp.h
+exclude /usr/include/pammap.h
+
+noheader /usr/include/bits/byteswap.h
+noheader /usr/include/bits/cmathcalls.h
+noheader /usr/include/bits/confname.h
+noheader /usr/include/bits/dirent.h
+noheader /usr/include/bits/dlfcn.h
+noheader /usr/include/bits/elfclass.h
+noheader /usr/include/bits/endian.h
+noheader /usr/include/bits/environments.h
+noheader /usr/include/bits/fcntl.h
+noheader /usr/include/bits/fenv.h
+noheader /usr/include/bits/huge_val.h
+noheader /usr/include/bits/in.h
+noheader /usr/include/bits/ioctls.h
+noheader /usr/include/bits/ioctl-types.h
+noheader /usr/include/bits/ipc.h
+noheader /usr/include/bits/ipctypes.h
+noheader /usr/include/bits/locale.h
+noheader /usr/include/bits/mathcalls.h
+noheader /usr/include/bits/mathdef.h
+noheader /usr/include/bits/mathinline.h
+noheader /usr/include/bits/mman.h
+noheader /usr/include/bits/msq.h
+noheader /usr/include/bits/nan.h
+noheader /usr/include/bits/netdb.h
+noheader /usr/include/bits/poll.h
+noheader /usr/include/bits/posix1_lim.h
+noheader /usr/include/bits/posix2_lim.h
+noheader /usr/include/bits/pthreadtypes.h
+noheader /usr/include/bits/resource.h
+noheader /usr/include/bits/sched.h
+noheader /usr/include/bits/select.h
+noheader /usr/include/bits/sem.h
+noheader /usr/include/bits/setjmp.h
+noheader /usr/include/bits/shm.h
+//noheader /usr/include/bits/sigset.h
+//noheader /usr/include/bits/sigaction.h
+//noheader /usr/include/bits/sigcontext.h
+//noheader /usr/include/bits/siginfo.h
+//noheader /usr/include/bits/sigstack.h
+//noheader /usr/include/bits/sigthread.h
+noheader /usr/include/bits/sockaddr.h
+noheader /usr/include/bits/socket.h
+noheader /usr/include/bits/statfs.h
+noheader /usr/include/bits/stat.h
+noheader /usr/include/bits/statvfs.h
+noheader /usr/include/bits/stdio.h
+noheader /usr/include/bits/stdio_lim.h
+noheader /usr/include/bits/string2.h
+noheader /usr/include/bits/string.h
+noheader /usr/include/bits/stropts.h
+noheader /usr/include/bits/syscall.h
+noheader /usr/include/bits/sys_errlist.h
+noheader /usr/include/bits/termios.h
+noheader /usr/include/bits/time.h
+noheader /usr/include/bits/types.h
+noheader /usr/include/bits/typesizes.h
+noheader /usr/include/bits/uio.h
+noheader /usr/include/bits/ustat.h
+noheader /usr/include/bits/utmp.h
+noheader /usr/include/bits/utmpx.h
+noheader /usr/include/bits/utsname.h
+noheader /usr/include/bits/waitflags.h
+noheader /usr/include/bits/waitstatus.h
+noheader /usr/include/bits/xopen_lim.h
+noheader /usr/include/bits/xtitypes.h
 
 merge /usr/include/bits/sigset.h /usr/include/signal.h
 merge /usr/include/bits/sigaction.h /usr/include/signal.h
@@ -1356,9 +1812,12 @@ merge /usr/include/bits/waitflags.h /usr/include/sys/wait.h
 merge /usr/include/bits/waitstatus.h /usr/include/sys/wait.h
 merge /usr/include/bits/xopen_lim.h /usr/include/limits.h
 merge /usr/include/bits/xtitypes.h /usr/include/stropts.h
-
-@h.sink.close()
-@doc()
+@for k,j in flx_keywords+[('String','')]:
+  tangle('rename '+k+' '+k+'_')
+rename size_t size
+rename wchar_t wchar
+@for k in tmap.keys()+['wchar']:
+  tangle('ignore '+k)
 
 @h=tangler("config/usr_include.h.default","data")
 @select(h)
@@ -1689,24 +2148,6 @@ for some other types ..
 #include "/usr/include/sys/vtimes.h"
 #include "/usr/include/sys/wait.h"
 #include "/usr/include/sys/xattr.h"
-@doc()
-@h.sink.close()
 
-@import stat
-@def filetime(f):
-  try:
-    t = os.stat(f)[stat.ST_MTIME]
-  except:
-    t = 0
-  return t
-
-@if filetime("config/usr_include.h") == 0:
-  os.system("cp config/usr_include.h.default config/usr_include.h")
-
-@if filetime("config/usr_include.flxcc") == 0:
-  os.system("cp config/usr_include.flxcc.default config/usr_include.flxcc")
-
-@if filetime("config/usr_include.hhh") == 0:
-  os.system(FLXCC_CPP+" config/usr_include.h >config/usr_include.hhh")
-
+#include "/usr/local/include/python2.3/Python.h"
 

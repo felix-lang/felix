@@ -163,7 +163,7 @@ let rec get_offsets syms bbdfns typ : string list =
 let gen_offset_data s n name offsets =
   if n <> 0 then
   begin
-    bcat s ("static size_t " ^ name ^ "_offsets["^si n^"]={\n");
+    bcat s ("static std::size_t " ^ name ^ "_offsets["^si n^"]={\n");
     bcat s ("  " ^ cat ",\n  " offsets);
     bcat s ("\n" ^  "};\n");
   end;
@@ -341,11 +341,11 @@ let gen_offset_tables syms (child_map,bbdfns) =
       let offsets = get_offsets syms bbdfns t in
       let n = length offsets in 
       bcat s ("\n//OFFSETS for array type " ^ si index ^ "\n");
-      bcat s ("static size_t " ^ name ^ "_offsets[]={\n  ");
+      bcat s ("static std::size_t " ^ name ^ "_offsets[]={\n  ");
       bcat s ("  " ^ cat ",\n  " offsets);
       bcat s "};\n";
       bcat s ("static void " ^ name ^ "_finaliser(collector_t *, void *p){\n");
-      bcat s ("  for(size_t count = "^ si k ^"; count; --count)\n");
+      bcat s ("  for(std::size_t count = "^ si k ^"; count; --count)\n");
       bcat s ("  {\n");
       bcat s ("    (("^ tname ^ "*)p)->~" ^ tname ^ "();\n");
       bcat s ("    p = (void*)((char*)p + sizeof("^tname^"));\n");
@@ -674,7 +674,7 @@ let gen_function syms (child_map,bbdfns) index id vs bps ret' ts instance_no =
     "  //destructor\n" ^
     dtor_dcl name ^
     "  //clone\n" ^
-    "  " ^name^"* "^name^"::clone()const;\n" ^
+    "  " ^name^"* clone()const;\n" ^
     "  //call\n" ^
     (if argtype = `BTYP_tuple [] 
     then
@@ -703,7 +703,7 @@ let gen_function syms (child_map,bbdfns) index id vs bps ret' ts instance_no =
     "  //destructor\n" ^
     dtor ^
     "  //clone\n" ^
-    "  " ^name^"* "^name^"::clone()const;\n" ^
+    "  " ^name^"* clone()const;\n" ^
     "  //apply\n" ^
     "  "^rettypename^" apply(" ^
     (if argtype = `BTYP_tuple[] then ""
@@ -2045,40 +2045,12 @@ try
   let compiler_options = { compiler_options with include_dirs = include_dirs } in
   let syms = { syms with compiler_options = compiler_options } in
 
-  (* try to prevent the top level module including itself,
-  this can happen when compiling a library module with the -c
-  option to generate a .par file, and it includes a file
-  which recursively includes it -- such recursion is allowed
-  in Felix, as in Python, as multiple inclusions are automatically
-  blocked, including recursive ones .. there is a problem here
-  if the include filenames are distinct strings but denote the
-  same file, which can happen easily if pathnames are used:
-  the pathname used on the command line must agree with internal
-  uses for duplicate inclusions to be blocked -- it won't in a 
-  typical case, so we just strip away the directory name
-  part as a hack
-  *)
-  syms.include_files := [Filename.basename filebase];
-
   (* PARSE THE IMPLEMENTATION FILE *)
 
-  (* Note: we're too lazy to check if there is a .par file
-  for the top level. If there is, there's no need to parse
-  it. This can happen, but still the rest of the process
-  starting with desugaring must be run, since included
-  files may have changed .. Felix reparses them automatically
-  from withing the desugaring step: its much more efficient
-  than C! Note that none of this handles #includes, only
-  includes of precompiled headers
-  *)
-  
   if compiler_options.print_flag
   then print_endline ("//Parsing Implementation " ^ input_file_name);
-  let parse_tree =
-    Flx_parse_ctrl.parse_file 
-      input_file_name 
-      (Filename.dirname input_file_name)
-      compiler_options.include_dirs 
+  let parse_tree = 
+    Flx_desugar.include_file syms input_file_name false
   in
   if compiler_options.print_flag
   then print_endline (Flx_print.string_of_compilation_unit parse_tree);
@@ -2086,16 +2058,6 @@ try
   let parse_time = tim() in
   if compiler_options.print_flag
   then print_endline ("//PARSE OK time " ^ string_of_float parse_time);
-
-  if compiler_options.compile_only then begin
-    let this_version = !Flx_version.version_data in
-    try (* to write Marshalled parse tree out *)
-      let x = open_out_bin par_file_name in
-      Marshal.to_channel x (this_version,parse_tree) [];
-      close_out x
-    with _ -> () (* can't write, don't worry *)
-  end
-  ;
 
   if compiler_options.print_flag 
   then print_endline "//DESUGARING";
@@ -2417,7 +2379,7 @@ try
 
   plb "\n//-----------------------------------------";
   plb "//DEFINE OFFSET tables for GC";
-  plb "static size_t _uctor_offsets[1]= { offsetof(_uctor_,data) };";
+  plb "static std::size_t _uctor_offsets[1]= { offsetof(_uctor_,data) };";
   plb "static gc_shape_t _uctor_ptr_map ("; 
   plb "  1,";
   plb "  sizeof(_uctor_),";

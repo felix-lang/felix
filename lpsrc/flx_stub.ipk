@@ -96,4 +96,3 @@ pe "//int (*ff(int))(long)";;
 let ff = `Ct_fun(`Ct_ptr f,[int_t]);;
 pv "ff" ff;;
 
-

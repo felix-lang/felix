@@ -123,7 +123,7 @@ void _ref_::operator = (_ref_ const& r)
 }
 
 //OFFSETS for _ref_
-static size_t _ref_offsets[1]={
+static std::size_t _ref_offsets[1]={
     offsetof(_ref_,frame)
 };
 
