@@ -28,7 +28,7 @@ program must not read any messages.
 #include <dlfcn.h>
 #include <string>
 #include <unistd.h>
-#include "gc/src/flx_collector.hpp"
+#include "flx_collector.hpp"
 
 // ********** BEGIN HACKS ***************************
 // We hack the continuation structure

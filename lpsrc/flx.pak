@@ -22,6 +22,7 @@ C/C++ programmers, together with control inversion.
 
 @head(1,'Implementation')
 @head(2,'The Felix Compiler')
+@push_head()
 @include_file ('flx_types.ipk')
 @include_file ('flx_parser.ipk')
 @include_file ('flx_string.ipk')
@@ -36,8 +37,10 @@ C/C++ programmers, together with control inversion.
 @include_file ('flx_name.ipk')
 @include_file ('flx_tgen.ipk')
 @include_file ('flx_gen.ipk')
+@pop_head()
 
 @head(2,'The Felix Run time')
+@include_file ('flx_gc.ipk')
 @include_file ('flx_boost.ipk')
 @include_file ('flx_lib.ipk')
 @include_file ('flx_test.ipk')
@@ -45,4 +48,8 @@ C/C++ programmers, together with control inversion.
 
 @head(2,'The Unix Build system')
 @include_file ('flx_maker.ipk')
+
+@head(2,'The tutorial')
+The tutorial is found at
+@cite_url('../tut/doc/en_flx_tutorial_top.html')
 

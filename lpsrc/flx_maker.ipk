@@ -73,7 +73,7 @@ TUTORIAL_EXAMPLES=TUTORIAL_DIRECTORY+'examples/'
 
 # where the garbage collector sources are
 # (the collector is now a separate package)
-FLX_GC_SRC='gc/src/'
+FLX_GC_SRC='src/'
 
 # -------------------------------------------------
 # BEGIN IMPLEMENTOR CONFIGURABLE SECTION
@@ -374,7 +374,7 @@ try:
         cppfilename = basename + ".cpp"
         if buildall or filetime(basename+ '.cpp') > filetime(basename+'.so'):
           try:
-            xqt(FLX_CPP_DYNLINK+" -I. -Igc/src "+cppfilename + " -o " + basename + ".so" )
+            xqt(FLX_CPP_DYNLINK+" -I. -Isrc "+cppfilename + " -o " + basename + ".so" )
             #print 'TESTFILE -- OK!',basename
             results.append("g++  " + (basename + ' ' * w)[:w]+ ' OK')
           except MakeError:
@@ -391,10 +391,10 @@ try:
         basename = string.split(testfile,'.')[0]
         if buildall or filetime(basename+ '.cpp') > filetime(basename):
           try:
-            xqt(FLX_CPP_LINK + " -I. -Itest -Igc/src " +
+            xqt(FLX_CPP_LINK + " -I. -Itest -Isrc " +
               "-I"+BOOST_DIRECTORY + " " +
-              "gc/src/flx_gc.cpp " +
-              "gc/src/flx_collector.cpp " +
+              "src/flx_gc.cpp " +
+              "src/flx_collector.cpp " +
               basename + ".cpp -o " + basename)
             #print 'TESTFILE -- OK!',basename
             results.append("link " + (basename + ' ' * w)[:w]+ ' OK')
@@ -816,35 +816,17 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('all: dummy')
 @tangle('\tpython script/maker')
 @tangle('')
-@tangle('gc: dummy')
-@tangle('\tcd gc; iscr lpsrc/flx_gc.ipk')
-@tangle('')
 @tangle('doc: dummy')
 @tangle('\tpython script/maker doc')
 @tangle('')
 @tangle('test: dummy')
 @tangle('\tpython script/maker test stop_on_error')
 @tangle('')
-@tangle('linux_binary: dummy')
+@tangle('tarball: dummy')
 @tangle('\ttar -zcvf flx_1.0a2_linux.tgz\\')
-@tangle('\t\tbin/flxg \\')
-@tangle('\t\tbin/flx \\')
-@tangle('\t\ttest/flx_run \\')
-@tangle('\t\tlib/*.flx \\')
-@tangle('\t\tgc/src/*.hpp \\')
-@tangle('\t\tgc/src/*.cpp \\')
-@tangle('\t\ttut/examples/*.flx \\')
-@tangle('\t\ttut/doc/*.html \\')
-@tangle('\t\ttut/doc/*.css ')
-@tangle('')
-@tangle('lpsrc: dummy')
-@tangle('\ttar -zcvf flx_1.0a2_lpsrc.tgz\\')
 @tangle('\t\tlpsrc/*.ipk \\')
 @tangle('\t\tlpsrc/*.pak \\')
-@tangle('\t\tgc/lpsrc/*.pak \\')
-@tangle('')
-@tangle('src: dummy')
-@tangle('\ttar -zcvf flx_1.0a2_src.tgz\\')
+@tangle('\t\tscript/maker \\')
 @tangle('\t\tsrc/*.ml \\')
 @tangle('\t\tsrc/*.mli \\')
 @tangle('\t\tsrc/*.mly \\')
@@ -853,41 +835,76 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('\t\ttest/*.flx \\')
 @tangle('\t\ttest/*.cpp \\')
 @tangle('\t\ttest/*.hpp \\')
+@tangle('\t\tboost/*.hpp \\')
 @tangle('\t\ttut/examples/*.flx \\')
-@tangle('\t\tgc/src/*.hpp \\')
-@tangle('\t\tgc/src/*.cpp \\')
-@tangle('\t\tscript/maker \\')
+@tangle('\t\ttut/doc/*.html \\')
+@tangle('\t\ttut/doc/*.css \\')
+@tangle('\t\twww/*.html \\')
+@tangle('\t\tbin/flx \\')
+@tangle('\t\tbin/flxg \\')
+@tangle('\t\ttest/flx_run \\')
+@tangle('')
+@tangle('www: dummy')
+@tangle('\tiscr lpsrc/flx_sourceforge.pak')
 @tangle('')
 @tangle('upload_www: dummy')
-@tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
 @tangle('')
 @tangle('upload: dummy')
-@tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
 @tangle('\tscp flx_1.0a2_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
-@tangle('\tscp flx_1.0a2_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
-@tangle('\tscp flx_1.0a2_lpsrc.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
-@tangle('')
-@tangle('download_boost: dummy')
-@tangle('\tmake -C boost download')
 @tangle('')
 @tangle('test_clean: dummy')
 @tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so')
 @tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so')
 @tangle('')
+@tangle('really_clean: dummy')
+@tangle('\trm -rf tut test www src misc man script boost bin doc lib tmp.tmp')
+@tangle('')
+@tangle('boot: dummy')
+@tangle('\tiscr lpsrc/flx.pak')
+@tangle('')
 @tangle('dummy:')
 @tangle('\techo "out of date"')
 @tangle('')
 
-@head(1,'Boost download')
-@select(tangler('boost/makefile'))
-@tangle('download: dummy')
-@tangle('\tcvs -d:pserver:anonymous@cvs.boost.sourceforge.net:/cvsroot/boost login')
-@tangle('\tcvs -d:pserver:anonymous@cvs.boost.sourceforge.net:/cvsroot/boost update')
-@tangle('\tcvs -d:pserver:anonymous@cvs.boost.sourceforge.net:/cvsroot/boost logout')
-@tangle('')
-@tangle('dummy:')
-@tangle('\techo "out of date"')
-@tangle('')
+@head(1,'README')
+@select(tangler('README'))
+This will be the readme file one day ..
+
+@head(1,'CONTENTS')
+@select(tangler('CONTENTS'))
+The tarball contains the literate programmed original sources,
+all the sources derived from that by running interscript,
+including Ocaml sources for the compiler, C++ sources for
+the run time components, build scripts, documentation,
+the tutorial, and all the examples and regression tests, 
+the codes generated by running Felix against the examples,
+and finally, a linux binary version of the compiler
+and program driver. 
+
+There is only one top level file:
+
+  makefile
+
+The directories are:
+
+  lpsrc   -- LP original sources, contains EVERYTHING you need
+             if you have the full tool chain installed
+  src     -- ocaml source code for the compiler
+  test    -- regression tests and driver programs
+  doc     -- the complete documented source of the compiler,
+          -- the tutorial .. and everything else
+  tut/doc -- the tutorial
+  tut/examples  -- examples from the tutorial
+  www    -- the top level of the sourceforge web site
+  script -- python build script
+  misc   -- misc files including vim syntax colouring file
+  boost  -- contains the files config.hpp and cstdint.hpp
+            used to ensure ISO C99 int64_t is available
+  lib    -- felix standard library
+  man    -- man pages for tools and some language features
+  bin    -- compiler tools directory
 
 @head(1,'Run script')
 @select(tangler('bin/flx'))
@@ -901,10 +918,11 @@ if
 then
   if 
     g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared  \
-      -I. -Iboost -Igc/src $1.cpp \
+      -I. -Iboost -Isrc $1.cpp \
       -o $1.so
   then
     ./test/flx_run ./$1.so
   fi
 fi
 @os.system('chmod a+x bin/flx')
+

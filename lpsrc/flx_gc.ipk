@@ -1,0 +1,617 @@
+@head(1,'Garbage collector')
+[The original LP source was lost including test code .. ]
+
+@select(tangler('src/flx_collector.hpp'))
+#ifndef FLX_COLLECTOR
+#define FLX_COLLECTOR
+#include "flx_gc.hpp"
+#include <map>
+
+namespace flx {
+namespace gc {
+namespace collector {
+using namespace generic;
+
+struct flx_collector_t : public collector_t
+{
+  flx_collector_t(allocator_t *);
+  ~flx_collector_t();
+
+  // allocator
+  void *allocate(gc_shape_t *ptr_map) ;
+
+  // collector (returns number of objects collected)
+  unsigned long collect();
+
+  // add and remove roots
+  void add_root(void *memory);
+  void remove_root(void *memory);
+
+  //
+  void check();
+
+  // statistics
+  unsigned long get_allocation_count()const;
+  unsigned long get_root_count()const;
+  unsigned long get_allocation_amt()const;
+
+private:
+  bool collecting;
+  unsigned long allocation_count;
+  unsigned long root_count;
+  unsigned long allocation_amt;
+
+  void deallocate(frame_t *frame);
+    // calls unlink and dispose
+
+  void unlink(frame_t *frame);
+  void dispose(frame_t *frame);
+    // calls post_delete or delete_frame
+
+  void post_delete(frame_t *frame);
+  void delete_frame(frame_t *frame);
+  unsigned long reap();
+
+  void mark();
+  unsigned long sweep(); // calls scan_object
+  void scan_object(frame_t *frame);
+
+  frame_t *first;
+  frame_t *to_delete;
+  typedef std::map<frame_t*,unsigned long, less<frame_t*> > rootmap_t;
+  rootmap_t roots;
+  bool parity;
+  allocator_t *allocator;
+};
+
+}}} // end namespaces
+#endif
+
+@select(tangler('src/flx_collector.cpp'))
+#include <stdlib.h>
+#include <map>
+#include <limits.h>
+#include <assert.h>
+#include <stdio.h>
+#include <stddef.h>
+#include "flx_collector.hpp"
+namespace flx {
+namespace gc {
+namespace collector {
+
+void *malloc_free::allocate(size_t amt)
+{
+  return malloc(amt);
+}
+
+void malloc_free::deallocate(void *p, size_t)
+{
+  free(p);
+}
+
+unsigned long flx_collector_t::get_allocation_count()const
+{
+  return allocation_count;
+}
+
+unsigned long flx_collector_t::get_root_count()const
+{
+  return root_count;
+}
+
+unsigned long flx_collector_t::get_allocation_amt()const
+{
+  return allocation_amt;
+}
+
+
+flx_collector_t::flx_collector_t(allocator_t *a) :
+  collecting(false),
+  first(0),
+  to_delete(0),
+  allocation_count(0),
+  allocation_amt(0),
+  root_count(0),
+  allocator(a),
+  parity(false)
+{}
+
+
+void * flx_collector_t::allocate(gc_shape_t *shape)
+{
+  // calculate how much memory to request
+  size_t amt = shape->amt+FRAMESIZE;
+
+  // allocate a block
+  frame_t *fp = (frame_t*)allocator->allocate(amt);
+  assert(fp); // Got some memory!
+
+  // initialise the shape, garbage flag, and refcount
+  fp->shape=shape;
+  fp->garbage=parity;
+  fp->finalised = false;
+  fp->refcnt=0;
+  fp->collector = this;
+
+  // link the frame into the collectors list
+  fp->prev = 0;
+  fp->next = first;
+  if(first) first->prev = fp;
+  first = fp;
+
+  // update statistics
+  allocation_count++;
+  allocation_amt += amt;
+
+  // return client memory pointer
+  return FRAME_TO_CLIENT(fp);
+}
+
+void flx_collector_t::deallocate(frame_t *fp)
+{
+  unlink(fp);
+  dispose(fp);
+}
+
+void flx_collector_t::unlink(frame_t *fp)
+{
+
+  // check we have a pointer to an object
+  assert(fp);
+
+  // flag the object as finalised, even before
+  // actually calling the finaliser, to
+  // prevent recursion via decref or destroy
+  fp->finalised = true;
+
+  // call the finaliser if there is one
+  void (*finaliser)(collector_t*, void*) = fp->shape->finaliser;
+  if (finaliser)  (*finaliser)(this,FRAME_TO_CLIENT(fp));
+
+  // unlink the frame from the collectors list
+  if(fp->prev)
+    fp->prev->next = fp->next;
+  else {
+    assert(first==fp);
+    first=fp->next;
+  }
+  if(fp->next)
+    fp->next->prev = fp->prev;
+}
+
+void flx_collector_t::post_delete(frame_t *fp)
+{
+  assert(collecting);
+  // link into list of objects to delete
+  // this list uses the prev pointer!
+  fp->prev = to_delete;
+  to_delete = fp;
+}
+
+void flx_collector_t::dispose(frame_t *fp)
+{
+  if(collecting) post_delete(fp);
+  else delete_frame(fp);
+}
+
+void flx_collector_t::delete_frame(frame_t *fp)
+{
+  // update statistics
+  allocation_count--;
+  size_t size = fp->shape->amt + FRAMESIZE;
+  allocation_amt -= size;
+
+  // deallocate the storage
+  allocator->deallocate(fp, size);
+}
+
+unsigned long flx_collector_t::reap ()
+{
+  unsigned long count = 0;
+  while(to_delete)
+  {
+    frame_t *next = to_delete-> prev;
+    delete_frame(to_delete);
+    to_delete = next;
+    ++count;
+  }
+  return count;
+}
+
+
+unsigned long flx_collector_t::sweep()
+{
+  collecting=true;
+  frame_t *current = first;
+  while(current)
+  {
+    if(current->garbage == parity)
+    {
+      unlink(current);
+      post_delete(current);
+    }
+    current = current->next;
+  }
+  parity = !parity;
+  collecting = false;
+  return reap();
+}
+
+void flx_collector_t::add_root(void *memory)
+{
+  frame_t *p =  CLIENT_TO_FRAME(memory);
+  rootmap_t::iterator iter = roots.find(p);
+  if(iter == roots.end())
+  {
+    std::pair<frame_t *const, unsigned long> entry(p,1UL);
+    roots.insert (entry);
+    root_count++;
+  }
+  else
+    ++(*iter).second;
+}
+
+void flx_collector_t::remove_root(void *memory)
+{
+  frame_t *p =  CLIENT_TO_FRAME(memory);
+  rootmap_t::iterator iter = roots.find(p);
+  if(iter == roots.end())
+  {
+    fprintf(stderr, "GC ERROR: REMOVE ROOT WHICH IS NOT ROOT\n");
+    abort();
+  }
+  if((*iter).second == 1UL)
+  {
+    roots.erase(iter);
+    root_count--;
+  }
+  else
+    --(*iter).second;
+}
+
+void flx_collector_t::scan_object(frame_t *frame)
+{
+  if(frame->garbage == parity)
+  {
+    frame->garbage = !parity; // reachable!
+    gc_shape_t *shape = frame->shape;
+    size_t n_offsets = shape->n_offsets;
+    size_t *offsets = shape->offsets;
+    unsigned char *p = (unsigned char*)FRAME_TO_CLIENT(frame);
+
+    for(int i=0; i<n_offsets; ++i)
+    {
+      void **q = (void**)(void*)(p + offsets[i]);
+      if(*q)
+        scan_object(CLIENT_TO_FRAME(*q));
+    }
+  }
+}
+
+void flx_collector_t::mark()
+{
+  assert (root_count == roots.size());
+
+  rootmap_t::iterator const end = roots.end();
+  for(
+    rootmap_t::iterator i = roots.begin();
+    i != end;
+    ++i
+  )
+    scan_object((*i).first);
+}
+
+unsigned long flx_collector_t::collect()
+{
+  mark();
+  return sweep();
+}
+
+void flx_collector_t::check()
+{
+ // not implemented: should scan all objects,
+ // and check total memory is as expected
+ // can also check back links, statistics,
+ // and parity
+}
+
+flx_collector_t::~flx_collector_t()
+{
+  roots.clear();
+  root_count = 0;
+  sweep();
+}
+
+}}} // end namespaces
+
+@select(tangler('src/flx_gc.hpp'))
+#ifndef FLX_GC
+#define FLX_GC
+
+#include <stdlib.h>
+
+// we use an STL set to hold the collection of roots
+#include <set>
+
+namespace flx {
+namespace gc {
+namespace generic {
+// Here are the types we refer to:
+
+struct frame_t;      // the type of all collectable objects
+struct gc_shape_t;   // the shape of collectable objects
+struct collector_t;  // the collector itself
+
+struct gc_shape_t
+{
+  size_t amt;                // bytes allocated
+  void (*finaliser)(collector_t*, void*);  // finalisation function
+  size_t n_offsets;          // number of offsets
+  size_t *offsets;           // actual offsets
+
+  // convenience constructor
+  gc_shape_t(
+    size_t amt_a,
+    void (*finaliser_a)(collector_t*, void*),
+    size_t n_offsets_a,
+    size_t *offsets_a
+  );
+};
+
+template<class T>
+void std_finaliser(collector_t*, void *t)
+{
+  static_cast<T*>(t) -> ~T();
+}
+
+struct frame_t
+{
+  gc_shape_t *shape;      // the shape of the object
+  frame_t *next;          // the next and previous objects
+  frame_t *prev;          // in the collectors list
+  unsigned long refcnt;   // the reference count
+  collector_t *collector; // the managing collector
+  bool garbage;           // the garbage flag
+  bool finalised;         // whether the object is finalised
+};
+
+
+// ----------------------------------------------------
+// WARNING: MACHINE DEPENDENT HACKERY
+// YOU MUST CHANGE THIS VALUE TO SUIT YOUR SYSTEM
+
+#define _MAX_ALIGN 4
+
+// ----------------------------------------------------
+
+#define _ROUNDUP(i,n) ((i + n - 1) / n * n)
+#define _ALIGN(i) _ROUNDUP(i,_MAX_ALIGN)
+
+#define FRAMESIZE _ALIGN(sizeof(frame_t))
+#define FRAME_TO_CLIENT(p) \
+  ((void*)((unsigned char*)(void*)p + FRAMESIZE))
+#define CLIENT_TO_FRAME(p) \
+  ((frame_t*)(void*)((unsigned char*)p - FRAMESIZE))
+
+struct allocator_t {
+  virtual void *allocate(size_t)=0;
+  virtual void deallocate(void *, size_t)=0;
+  virtual ~allocator_t(){};
+};
+
+struct malloc_free : public virtual allocator_t {
+  void *allocate(size_t);
+  void deallocate(void *, size_t);
+};
+
+struct collector_t
+{
+  collector_t(){}
+  virtual ~collector_t(){}
+
+  virtual unsigned long get_allocation_count()const=0;
+  virtual unsigned long get_root_count()const=0;
+  virtual unsigned long get_allocation_amt()const=0;
+
+  virtual void *allocate(gc_shape_t *shape)=0;
+
+  virtual void deallocate(frame_t *fp)=0;
+
+  virtual unsigned long collect()=0;
+
+  virtual void add_root(void *memory)=0;
+
+  virtual void remove_root(void *memory)=0;
+
+  virtual void check()=0;
+
+private: // no assignment or copy
+  void operator=(collector_t const&);
+  collector_t(collector_t const&);
+};
+
+void incref(void *b);
+
+void decref(void *b);
+
+void destroy(void *b);
+
+void _init_ptr(void **a, void *b);
+
+template<class T>
+void init_ptr(T **a, T *b)
+{
+  _init_ptr
+  (
+    reinterpret_cast<void**>(a),
+    reinterpret_cast<void*>(b)
+  );
+}
+
+void _set_ptr(void **a, void *b);
+
+template<class T>
+void set_ptr(T **a, T *b)
+{
+  _set_ptr
+  (
+    reinterpret_cast<void**>(a),
+    reinterpret_cast<void*>(b)
+  );
+}
+void _release_ptr(void **a);
+
+template<class T>
+void release_ptr(T **a)
+{
+  _release_ptr
+  (
+    reinterpret_cast<void**>(a)
+  );
+}
+
+
+void _destroy_ptr(void **a);
+
+template<class T>
+void destroy_ptr(T **a)
+{
+  _destroy_ptr
+  (
+    reinterpret_cast<void**>(a)
+  );
+}
+
+
+void *operator new(size_t, collector_t &, gc_shape_t &);
+
+void flx_reset_shape(void *memory, gc_shape_t &);
+
+template<class T>
+struct handle
+{
+  T *p;
+  handle(T *a=0) : p(a) { incref(a); }
+  handle(handle const &h) : p(h.a) { incref(p); }
+  handle &operator=(handle const &h)
+  {
+    set_ptr(&p, h.p);
+    return *this;
+  }
+
+  ~handle() {
+    release_ptr(&p);
+  }
+  T *operator->()const { return p; }
+  T &operator *()const { return *p; }
+  void release() { release_ptr(&p); }
+  void set(T *a) { set_ptr(&p, a); }
+};
+
+extern size_t handle_offsets[1];
+
+}}} // end namespaces
+#endif
+
+@select(tangler('src/flx_gc.cpp'))
+
+#include "flx_gc.hpp"
+namespace flx {
+namespace gc {
+namespace generic {
+#include <stdio.h>
+#include <assert.h>
+
+// create a shape object given an array of offsets
+gc_shape_t::gc_shape_t
+(
+  size_t amt_a,
+  void (*finaliser_a)(collector_t*, void*),
+  size_t n_offsets_a,
+  size_t *offsets_a
+)
+  :
+  amt(amt_a),
+  finaliser(finaliser_a),
+  n_offsets(n_offsets_a),
+  offsets(offsets_a)
+{}
+
+size_t handle_offsets[1] = {0};
+
+void destroy(void *p)
+{
+  if(p)
+  {
+    frame_t *fp = CLIENT_TO_FRAME(p);
+    if(!fp->finalised)
+      fp->collector->deallocate(fp);
+   }
+}
+
+void incref(void *client)
+{
+  if(client)
+    ++(CLIENT_TO_FRAME(client)->refcnt);
+}
+
+void decref(void *client)
+{
+  if(client)
+  {
+    frame_t *frame = CLIENT_TO_FRAME(client);
+    if(!frame->finalised && frame->refcnt)
+    {
+      if(!--frame->refcnt)
+        frame->collector->deallocate(frame);
+    }
+  }
+}
+
+// b may be 0
+void _init_ptr(void **a, void *b)
+{
+  incref(b);
+  *a = b;
+}
+
+// *a or b may be 0
+void _set_ptr(void **a, void *b)
+{
+  incref(b);
+  decref(*a);
+  *a = b;
+}
+
+// *a may be 0
+void _release_ptr(void **a)
+{
+  void *p = *a;
+  *a = 0;
+  decref(p);
+}
+
+void _destroy_ptr(void **a)
+{
+  void *b = *a; // save the pointer value
+  *a=0;         // null out the variable
+  destroy(b);
+}
+void *operator new(
+  size_t amt,
+  collector_t &collector,
+  gc_shape_t &shape
+)
+{
+  assert (amt == shape.amt);
+  return collector.allocate(&shape);
+}
+
+void reset_shape(void *memory, gc_shape_t &shape)
+{
+  assert(memory);
+  CLIENT_TO_FRAME(memory)->shape = &shape;
+}
+
+}}} // end namespaces
+
