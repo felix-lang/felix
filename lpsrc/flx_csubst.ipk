@@ -135,8 +135,7 @@ let subst registry (dfns:symbol_table_t) bbdfns ct args typs retyp =
       | 't' ->
         Buffer.add_string buf
         (
-          cpp_typename registry dfns bbdfns (lower (typeoflist typs)) ^ 
-          "_ptr_map"
+          ptr_map_of_type registry dfns bbdfns (lower (typeoflist typs))
         );
         mode := Normal
 
@@ -217,8 +216,9 @@ let subst registry (dfns:symbol_table_t) bbdfns ct args typs retyp =
         then serr i ("Arg no " ^ string_of_int !digits ^ " too large")
         else if !digits<0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
         else
+          let t = lower (List.nth typs (!digits-1)) in
           Buffer.add_string buf
-            (cpp_typename registry dfns bbdfns (lower (List.nth typs (!digits-1))) ^ "_ptr_map");
+            (ptr_map_of_type registry dfns bbdfns t);
           mode := Normal;
           trans i ch
             

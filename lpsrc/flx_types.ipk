@@ -1858,6 +1858,14 @@ module FuntypeSet = Set.Make(
   struct type t=typecode_t let compare = compare end
 )
 
+let is_unitsum (t:btypecode_t) = match t with
+  | `BTYP_sum ls -> 
+    List.fold_left 
+    (fun acc t -> acc && (t = `BTYP_tuple []))
+    true ls
+
+  | _ -> false
+
 let rec lower t = match t with
   | `BTYP_binding (i,t) -> t
   | `BTYP_pointer t -> `BTYP_pointer (lower t)
@@ -2210,6 +2218,8 @@ open Flx_types
 exception UnificationError of btypecode_t * btypecode_t
 val flx_bool : typecode_t
 val dummy_sr: range_srcref
+
+val is_unitsum: btypecode_t -> bool
 
 val type_of_argtypes : 
   typecode_t list -> 

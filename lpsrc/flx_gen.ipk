@@ -85,6 +85,8 @@ let cstring_of_literal e = match e with
   | `AST_float (s,x) -> x ^ csuffix_of_type s
   | `AST_string s -> string_of_string s
 
+
+        
 let find_references bbdfns name_map = 
   let references = ref [] in
   Hashtbl.iter
@@ -196,8 +198,12 @@ let find_members registry dfns bbdfns index =
           " of (lowered) type " ^ string_of_btypecode dfns (lower t)
         );
         *)
-        let typename = cpp_typename registry dfns bbdfns (lower t) in
-        "  " ^ typename ^ " " ^ cpp_name bbdfns idx ^ ";\n"
+        if lower t = `BTYP_tuple []
+        then 
+          "//  unit " ^ cpp_name bbdfns idx ^ "; [type unit: elided]\n"
+        else
+          let typename = cpp_typename registry dfns bbdfns (lower t) in
+          "  " ^ typename ^ " " ^ cpp_name bbdfns idx ^ ";\n"
       | _ -> failwith "[find members] Expected variable or value"
     )
     variables
@@ -257,6 +263,9 @@ let gen_function registry (dfns : symbol_table_t) bbdfns index id ps ret' =
   (* print_endline ("generating function " ^ id ^ "[" ^string_of_int index^"]");  *)
   let argtype = lower(typeoflist (List.map snd ps)) in
   let ret = lower ret' in
+  if ret = `BTYP_tuple []
+  then "// function type returns unit, elided\n"
+  else
   let funtype = `BTYP_function (argtype, ret) in
   let argtypename = cpp_typename registry dfns bbdfns argtype
   and funtypename = cpp_classname registry dfns bbdfns funtype
@@ -356,8 +365,11 @@ let gen_functions registry dfns bbdfns =
     | `BBDCL_function (ps, ret, _,_) -> 
       Buffer.add_string s ("//------------------------------\n");
       Buffer.add_string s ("//FUNCTION " ^ id ^ "\n");
-      Buffer.add_string s 
-      (gen_function registry dfns bbdfns index id ps ret)
+      if lower ret = `BTYP_tuple [] then
+        Buffer.add_string s "//  -- returns unit, elided\n"
+      else 
+        Buffer.add_string s 
+        (gen_function registry dfns bbdfns index id ps ret)
     | `BBDCL_procedure (ps,_,_) -> 
       Buffer.add_string s ("//------------------------------\n");
       Buffer.add_string s ("//PROCEDURE " ^ id ^ "\n");
@@ -466,14 +478,7 @@ let get_var_frame (dfns: symbol_table_t) bbdfns this index : string =
       chase_tail parent
   | _ -> failwith ("[get_var_frame] Expected name "^id^" to be variable or value")
 
-let is_unitsum (t:btypecode_t) = match t with
-  | `BTYP_sum ls -> 
-    List.fold_left 
-    (fun acc t -> acc && (t = `BTYP_tuple []))
-    true ls
-
-  | _ -> false
-
+ 
 let rec gen_expr registry dfns bbdfns this (e,t) =
   (* print_endline ("Gen expr " ^ string_of_bound_expression dfns (e,t)); *)
   let ge e = gen_expr registry dfns bbdfns this e in
@@ -659,14 +664,20 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
           t' is the function type of the constructor,
           t'' is the type of the argument
        *)
+       (* NOTE: This case does NOT cover unit sums, since
+          they're constructed with a constant constructor
+          which has no argument
+       *)
        let 
          arg_typename = cpp_typename registry dfns bbdfns (lower t'') 
        and
          union_typename = cpp_typename registry dfns bbdfns (lower t)
+       and
+         arg_ptr_map_name = ptr_map_of_type registry dfns bbdfns (lower t'')
        in
 
        let aval = 
-         "new (gc, "^arg_typename^"_ptr_map) " ^
+         "new (gc, "^arg_ptr_map_name^") " ^
          arg_typename ^ "(" ^ ge (a,t'') ^ ")"
        in
        let uval = "_uctor_(" ^ string_of_int (v-1) ^ ", " ^ aval ^")" in
@@ -995,7 +1006,12 @@ let gen_exe registry dfns bbdfns label_map counter this (exe:bexe_t) =
     
   | `BEXE_return e -> "      return "^ge e^";\n"
   | `BEXE_nop s -> "      //Nop: " ^ s ^ "\n"
-  | `BEXE_set (v,e) -> 
+  | `BEXE_set ((v',vt' as v),(e',et' as e)) -> 
+    begin match vt' with
+    | `BTYP_tuple [] ->
+       "      //elided C++ assignment to unit "^string_of_bexe dfns 0 exe ^"\n"
+    | _ ->
+
     (* v must be a Felix pointer .. ie. _ref<> template instance *)
     "      //C++ assignment "^string_of_bexe dfns 0 exe ^"\n" ^
     "      "
@@ -1009,16 +1025,31 @@ let gen_exe registry dfns bbdfns label_map counter this (exe:bexe_t) =
     end
     ^
     " = " ^ 
-    ge e ^
+    ( 
+      match et' with
+      (* assignment *from* unit must be allowed,
+        the LHS still has to be initialised ..
+        and side effects allowed to happen ..
+      *)
+      | `BTYP_tuple [] -> "unit()"
+      | _ -> ge e
+    ) 
+    ^
     ";\n"
+    end
 
-  | `BEXE_init (v,e) -> 
+  | `BEXE_init (v,(x,t as e)) -> 
+    begin match lower t with
+    | `BTYP_tuple [] ->
+    "      //unit initialisation "^string_of_bexe dfns 0 exe ^" elided\n"
+    | _ ->
     "      //initialisation "^string_of_bexe dfns 0 exe ^"\n" ^
     "      "^
     get_var_ref dfns bbdfns this v ^ 
     " = " ^ 
     ge e ^
     ";\n"
+    end
 
 let gen_exes registry dfns bbdfns display label_map counter index exes =
   (* print_endline ("// generating exes for index " ^ string_of_int index); *)
@@ -1171,9 +1202,13 @@ let gen_execute_methods registry dfns bbdfns counter =
   | `BBDCL_function (ps, ret, _,_) -> 
     (* print_endline ("//generating methods for " ^ id ^ "<"^string_of_int index^">"); *)
     Buffer.add_string s ("//------------------------------\n");
-    Buffer.add_string s (
-      gen_function_methods registry dfns bbdfns label_map counter index
-    )
+    if lower ret = `BTYP_tuple []
+    then
+      Buffer.add_string s "// -- returns unit, elided\n"
+    else 
+      Buffer.add_string s (
+        gen_function_methods registry dfns bbdfns label_map counter index
+      )
   | `BBDCL_procedure (ps,_,_) -> 
     (* print_endline ("//generating methods for " ^ id ^ "<"^string_of_int index^">"); *)
     Buffer.add_string s ("//------------------------------\n");
@@ -1219,38 +1254,44 @@ let gen_offset_tables registry dfns bbdfns =
   Hashtbl.iter
   (fun index (id,parent,entry) -> match entry with
   | `BBDCL_function (ps, ret,_,name_map) -> 
-    let refnames = 
-      List.map 
-      (fun (index,t)-> 
-        cpp_name bbdfns index,
-        cpp_typename registry dfns bbdfns t
-      )
-      (find_references bbdfns name_map)
-    in
-    let name = cpp_name bbdfns index in
-    let display = get_display_list dfns index in
-    let offsets = 
-      List.map
-      (fun didx ->
-      let dptr = "ptr" ^ cpp_name bbdfns didx in
-      "offsetof("^name^","^dptr^")"
-      )
-      display
-      @
-      List.map 
-      (fun (mem,reftyp)->
-        "offsetof("^name^","^mem^")" ^
-        "+offsetof("^reftyp^",frame)") 
-      refnames
-    in
-    let n = List.length offsets in
-    Buffer.add_string s ("\n//OFFSETS for function " ^ name ^ "\n");
-    Buffer.add_string s ("static size_t " ^ name ^ "_offsets[]={\n  ");
-    Buffer.add_string s ("  " ^ String.concat ",\n  " offsets);
-    Buffer.add_string s "};\n";
-    Buffer.add_string s ( "static flx::gc::generic::gc_shape_t "^ name ^"_ptr_map(\n");
-    Buffer.add_string s ("  sizeof("^name^"),\n  0,\n  "^string_of_int n^",\n  "^name^"_offsets\n");
-    Buffer.add_string s ");\n"
+    begin match lower ret with 
+    | `BTYP_tuple [] -> 
+      Buffer.add_string s "// returns unit, elided\n"
+
+    | _ ->
+      let refnames = 
+        List.map 
+        (fun (index,t)-> 
+          cpp_name bbdfns index,
+          cpp_typename registry dfns bbdfns t
+        )
+        (find_references bbdfns name_map)
+      in
+      let name = cpp_name bbdfns index in
+      let display = get_display_list dfns index in
+      let offsets = 
+        List.map
+        (fun didx ->
+        let dptr = "ptr" ^ cpp_name bbdfns didx in
+        "offsetof("^name^","^dptr^")"
+        )
+        display
+        @
+        List.map 
+        (fun (mem,reftyp)->
+          "offsetof("^name^","^mem^")" ^
+          "+offsetof("^reftyp^",frame)") 
+        refnames
+      in
+      let n = List.length offsets in
+      Buffer.add_string s ("\n//OFFSETS for function " ^ name ^ "\n");
+      Buffer.add_string s ("static size_t " ^ name ^ "_offsets[]={\n  ");
+      Buffer.add_string s ("  " ^ String.concat ",\n  " offsets);
+      Buffer.add_string s "};\n";
+      Buffer.add_string s ( "static flx::gc::generic::gc_shape_t "^ name ^"_ptr_map(\n");
+      Buffer.add_string s ("  sizeof("^name^"),\n  0,\n  "^string_of_int n^",\n  "^name^"_offsets\n");
+      Buffer.add_string s ");\n"
+    end
 
   | `BBDCL_procedure (ps,_,name_map) -> 
     let refnames = 
@@ -1532,7 +1573,7 @@ let print_help () =
 
 let basename s = 
   let n = String.length s in
-  let i = ref (-1) in
+  let i = ref 0 in
   for j=0 to n-1 do
     if s.[j]='/' then i := j+1
   done;
@@ -1604,14 +1645,12 @@ try
       !include_dirs 
   in
 
-  Gc.full_major();
 
   if !print_flag then print_endline "//DESUGARING";
 
   let counter = ref 1 in 
   let deblocked = desugar_program module_name counter parse_tree in
 
-  Gc.full_major();
 
   if !print_flag then print_endline "//BUILDING TABLES";
   let dfns = Hashtbl.create 97 in
@@ -1619,7 +1658,6 @@ try
     build_tables !print_flag dfns counter "<top level>" 0 None deblocked 
   in
   
-    Gc.full_major();
   
     if !print_flag then
     Hashtbl.iter 
@@ -1662,7 +1700,6 @@ try
     print_endline "BINDING IS DONE"; flush stdout;
     *)
     
-    Gc.full_major();
     
     let bifaces = bind_ifaces sym_state ifaces in
 

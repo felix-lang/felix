@@ -25,6 +25,9 @@ open Flx_srcref
 
 let cal_call dfns (p,pt) e =
   match lower pt with
+  (* functions returning unit are not evaluated *)
+  | `BTYP_function (`BTYP_tuple [], `BTYP_void) -> 
+    `BEXE_call ((p,lower pt), (`BEXPR_tuple[],`BTYP_tuple[]))
   | `BTYP_function (_, `BTYP_void) -> 
     `BEXE_call ((p,lower pt), e)
   | _ -> failwith ("call non procedure, type=" ^ string_of_btypecode dfns pt)

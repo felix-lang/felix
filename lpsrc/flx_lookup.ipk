@@ -1666,7 +1666,11 @@ and cal_apply sym_state ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
     "\n-------------------------------------"
   );
   *)
-  `BEXPR_apply ((be1,lower t1), (be2,lower t2)),rest
+  match lower t2 with
+  | `BTYP_tuple [] ->
+    `BEXPR_apply ((be1,lower t1), (`BEXPR_tuple[],`BTYP_tuple [])),rest
+  | _ ->
+    `BEXPR_apply ((be1,lower t1), (be2,lower t2)),rest
 
 and koenig_lookup sym_state sra exclude excluded_dirs id' name_map fn t2 =
   (*

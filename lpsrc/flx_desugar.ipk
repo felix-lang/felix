@@ -826,9 +826,12 @@ and build_interface m =
  
 let desugar_program name counter sts =
   let sr = 
-    rsrange 
+    if List.length sts > 0 
+    then
+       rsrange 
       (src_of_stmt (List.hd sts)) 
       (src_of_stmt (list_last sts))
+    else (name,0,0,0,0)
   in
   let seq () = let n = !counter in incr counter; n in
   rst seq (`AST_untyped_module (sr,name,sts))

@@ -1544,29 +1544,32 @@ fi
 
 # Need to compile, then run it
 
-if flxg -q -Ilib "$base"
+
+if [ "$TESTMODE" = "1" ]
 then
+  include_dir="."
+  FLXG="./bin/flxg"
+  FLXLIB="./lib"
+else
+  # Locate the felix installation
+  prefix=""
+  for dir in `echo $PATH | sed 's/:/ /g'`
+  do
+    dir=$dir
+    if [ -x "$dir/flxg" ]
+    then
+      prefix="$dir/flxg"
+      break
+    fi
+  done
+  prefix="`echo $prefix | sed 's/\/bin\/flxg$//'`"
+  include_dir="$prefix/lib/felix"
+  FLX="$prefix/bin/flxg"
+  FLXLIB="$prefix/lib/felix/lib"
+fi
 
-  if [ "$TESTMODE" = "1" ]
-  then
-    include_dir="."
-  else
-    # Locate the felix installation
-    prefix=""
-    for dir in `echo $PATH | sed 's/:/ /g'`
-    do
-      dir=$dir
-      if [ -x "$dir/flxg" ]
-      then
-        prefix="$dir/flxg"
-        break
-      fi
-    done
-    prefix="`echo $prefix | sed 's/\/bin\/flxg$//'`"
-    include_dir="$prefix/lib/felix"
-  fi
-
-
+if $FLXG -q -I$FLXLIB "$base"
+then
   if g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared  \
       -I"$include_dir" "$base.cpp" -o "$base.so"
   then

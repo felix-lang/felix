@@ -1256,16 +1256,6 @@ lambda:
       )
     }
 
-  /*
-  | FUNCTION LPAR parameter_comma_list RPAR EQUAL compound
-    {
-      `AST_lambda 
-      (
-        rsrange (slift $1) (fst $6),
-        ($3, `TYP_none, snd $6)
-      )
-    }
-  */
   | PROCEDURE LPAR parameter_comma_list RPAR compound
     {
       let sr = rsrange (slift $1) (fst $5) in

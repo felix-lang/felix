@@ -245,3 +245,57 @@ open X;
 open X;
 f 1; // should work ..
 
+@select(tangler('test/rt09.flx'))
+#include <std.flx>
+union  satisfaction = | Low | High | Very of satisfaction;
+union  diameter = | Large | Small;
+union  sort = | Mozzarella | Gorgonzola;
+union topping = | Cheese of sort | Tomatoes | Mushrooms;
+union  spiced = | False | True;
+union  meal =
+    | WienerSchnitzel of diameter
+    | Pizza of (diameter * spiced * topping)
+    | TapirSoup of spiced;
+
+fun model (meal_d1:meal):satisfaction =
+  let satisfaction_c1 = 
+    match meal_d1 with
+    | TapirSoup ?spiced_d1 =>
+      match spiced_d1 with
+        | True => Low
+        | False => High 
+      endmatch
+    | Pizza (_, ?spiced_d1, ?topping_d1) =>
+        let satisfaction_c1 =
+          match spiced_d1 with
+          | True =>
+          match topping_d1 with
+        | Cheese ?sort_d1 =>
+          match sort_d1 with
+          | Gorgonzola => Low
+          | Mozzarella => High
+          endmatch
+          | _ => High
+          endmatch
+          | False => Low
+          endmatch 
+        in
+        Very satisfaction_c1
+    | WienerSchnitzel _ => Low 
+    endmatch 
+    in
+  Very satisfaction_c1
+;
+
+fun string_of(x:satisfaction)=
+  match x with
+  | Low => "Low"
+  | High => "High"
+  | Very ?z => "Very " + string_of z
+  endmatch
+;
+
+val MyMeal = Pizza (Large,True, Cheese Mozzarella);
+assert (string_of (model MyMeal) == "Very Very High");
+
+

@@ -124,6 +124,7 @@ namespace std_flx {
 
 typedef void = 0;
 typedef unit = 1;
+typedef any = any;
 
 module Bool 
 {

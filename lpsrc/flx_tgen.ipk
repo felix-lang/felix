@@ -7,6 +7,12 @@ val cpp_typename :
   fully_bound_symbol_table_t ->
   btypecode_t -> string
 
+val ptr_map_of_type:
+  type_registry_t ->
+  symbol_table_t ->
+  fully_bound_symbol_table_t ->
+  btypecode_t -> string
+
 val cpp_classname :
   type_registry_t ->
   symbol_table_t ->
@@ -329,6 +335,8 @@ let gen_type_name registry dfns bbdfns (index,typ) =
   match type_unfold typ with
   | `BTYP_fix i -> failwith "[gen_type_name] Unexpected fix"
   | `BTYP_binding _ -> failwith "[gen_type_name] Unexpected binding type"
+  | `BTYP_function (_,`BTYP_tuple []) ->
+     "// elided " ^ tn typ
   | `BTYP_function _ ->
     let name = tn typ in
     "struct " ^ name ^ ";\n"
@@ -399,6 +407,9 @@ let gen_type registry dfns bbdfns (index,typ) =
     "};\n"
 
   (* FUNCTION *)
+  | `BTYP_function (a,`BTYP_tuple []) ->
+     "//  -- returns unit, elided\n"
+
   | `BTYP_function (a,r) ->
     let name = cn typ  
     and argtype = tn a
@@ -533,4 +544,19 @@ let gen_types registry dfns bbdfns ts =
   (* print_endline "GENERATING TYPES"; *)
   String.concat "" 
   (List.map (gen_type registry dfns bbdfns) ts)
+
+let ptr_map_of_type registry dfns bbdfns t =
+   if is_unitsum t
+   then "(flx::gc::generic::gc_shape_t*)0" (* SHOULD NOT HAPPEN BUT .. *)
+   else match t with
+   | `BTYP_sum _ -> "_uctor_ptr_map"
+   | `BTYP_name index ->
+      begin match Hashtbl.find dfns index with
+      | (_,_,_,`SYMDEF_dcl (`DCL_union _)) ->
+        "_uctor_ptr_map"
+      | _ ->
+        cpp_typename registry dfns bbdfns t ^ "_ptr_map"
+      end
+   | _ ->
+      cpp_typename registry dfns bbdfns t ^ "_ptr_map"
 

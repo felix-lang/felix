@@ -1,4 +1,4 @@
-@title("Felix Programmers Guide")
+@set_title("Felix Programmers Guide")
 @head(1,"Audience")
 This document is for programmers who need to understand
 how to bind Felix to C/C++. It explains the data structures
@@ -163,7 +163,7 @@ unreachable.
 
 @head(1,"Pointers")
 Felix supports pointers to variables. The implementation is a struct
-consisting of two points: the first pointer "frame"
+consisting of two pointers: the first pointer "frame"
 is to the frame containing the variable, and the second "data"
 is to the actual variable. The garbage collector
 uses the frame pointer to determine if one or more
@@ -190,11 +190,29 @@ that is, the types are abstract on the Felix side
 (though they're concrete on the C/C++ side).
 @p()
 Although primitive types must be assignable,
-Felix assignments are modelled by calls to a set procedure,
-in particular an assignment x = y is syntactic sugar
-for set(&x, y).
-You must define a set procedure of type &T * T
-for assignments to work.
+Felix assignments are modelled as follows:
+for an assignment a = b
+Felix first tries to find a procedure
+named 'set' with argument of type
+@begin_displayed_code()
+  &typeof(a) * typeof(b)
+@end_displayed_code()
+and if this lookup succeeds, a procedure call:
+@begin_displayed_code()
+  set(&a,b);
+@end_displayed_code()
+is generated. If a set procedure is not found,
+a C++ assigment is generated:
+@begin_displayed_code()
+  a = b;
+@end_displayed_code()
+and C++ is responsible for finding an appropriate
+operator =. Note that this can cause the C++ compilation
+step to fail, just as any incorrectly typed binding can.
+@p()
+This implementation is used to relieve both the programmer
+and Felix compiler from the task of defining set 
+methods for every type. 
 
 @head(2,"Structs and tuples")
 A Felix struct is represented by a C++ struct with the
@@ -236,8 +254,9 @@ to the constructor argument if it exists, or
 is null otherwise. The data member is cast
 on use to the correct type.
 @p()
-A planned optimisation is to use a plain int
-if all variants of a union have no arguments.
+If all variants of an anonymous union have no arguments,
+a plain int is used instead (since the data pointer
+would always be NULL).
 @()
 The abstract representation of a union consists
 of three functions: an injection function called
@@ -252,6 +271,4 @@ a test to check the type at run time.
 Note that type recursion in unions works because
 the constructor argument is always in a separate
 piece of memory, and accessed via a pointer.
-@p()
-...
 
