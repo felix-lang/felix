@@ -116,6 +116,53 @@ for i in glob("*.mli")+glob("*.mll")+glob("*.mly")+glob("*.ml"):
     f.close()
     print
 
+@h = tangler('script/mk_expect','python')
+@select(h)
+import glob
+import sys
+for k in sys.argv[1:]:
+  files = glob.glob(k+'/*.output')
+  print '@head(1,"Expected outputs for '+k+'")'
+  for i in files:
+    j = i[:-7]+'.expect'
+    print '@head(2,"'+j+'")'
+    print '@select(tangler("'+j+'","data"))'
+    f = open(i,"r")
+    for l in f: print l,
+    f.close()
+
+@h = tangler('script/get_grammar','python')
+@select(h)
+import string
+import sys
+f = open(sys.argv[1])
+start = 0
+count = 0
+for l in f:
+  if start:
+    if l[:2]=='%%': start=0
+    else:
+      out = ""
+      for ch in l:
+        if ch == '{': count+=1
+        elif ch == '}': count-=1
+        elif count == 0: out += ch
+      out = string.strip(out)
+      if out: 
+        if out[0]=='|': 
+          out = string.strip(out[1:])
+          if out=="": print "  | /* empty */"
+          else: print "  | "+out
+        elif out[-1]==':': 
+          print 
+          print out
+        elif out==';': pass
+        else: 
+          print out
+  elif l[:2]=='%%': start=1
+f.close()
+
+
 @h = tangler('script/maker','python')
 @select(h)
 #!/usr/bin/env python
@@ -407,6 +454,7 @@ FLX_MODULES = [
   'flx_version'      ,
   'flx_ctype'        ,
   'flx_util'         ,
+  'flx_dlst'         ,
   'flx_getopt'       ,
   'flx_mtypes2'      ,
   'flx_srcref'       ,
@@ -893,16 +941,13 @@ try:
 
       if "log_output" in options:
         testscript = testscript + " >" + basename + ".output"
-      if "time_execution" in options:
+
+      elif "time_execution" in options:
         testscript = "time " + testscript 
 
-      if "check_output" in options:
-        if filetime(basename+".output")==0:
-          testscript = testscript + " >" + basename + ".output"
-        else:
-          testscript = testscript + " >" + basename + ".tmp"
-          testscript = testscript + " && diff " + basename + ".tmp "+ basename + ".output"
-          testscript = testscript + " && rm -rf " + basename + ".tmp "
+      elif "check_output" in options:
+        testscript = testscript + " >" + basename + ".output"
+        testscript = testscript + " && diff -a -b " + basename + ".expect "+ basename + ".output"
 
       #print 'Executing ',testscript
       try:
@@ -1001,10 +1046,15 @@ We have no idea if it continues copying.
 @tangle('tut: dummy')
 @tangle('\tpython script/maker tutorial')
 @tangle('')
+@tangle('grammar: dummy')
+@tangle('\tpython script/get_grammar src/flx_parse.mly >misc/flx_parse.grammar')
+@tangle('\tpython script/get_grammar src/flx_cil_cparser.mly >misc/flx_cil_cparser.grammar')
+@tangle('\tpython script/get_grammar src/parse_fish.mly >misc/parse_fish.grammar')
+@tangle('')
 @tangle('compiler: dummy')
 @tangle('\tpython script/maker compiler')
 @tangle('')
-@tangle('doc: dummy')
+@tangle('doc: grammar')
 @tangle('\tpython script/maker doc man impldoc')
 @tangle('\tcp doc/*.css tut/doc >/dev/null 2>&1')
 @tangle('\tmake impldoc')
@@ -1049,10 +1099,19 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('tests.bagley: dummy')
 @tangle('\tpython script/maker bagley')
-@tangle('\tsh -x bagley/run.sh')
+@tangle('\tsh bagley/check.sh')
 @tangle('')
 @tangle('rtl: dummy')
 @tangle('\tpython script/maker rtl')
+@tangle('')
+@tangle('expect: clean')
+@tangle('\tpython script/maker bagley')
+@tangle('\tsh bagley/run.sh')
+@tangle('\tsh bagley/run.sh')
+@tangle('\tpython script/maker test log_output')
+@tangle('\tpython script/mk_expect tut/examples > lpsrc/flx_tut_expect.ipk')
+@tangle('\tpython script/mk_expect test > lpsrc/flx_test_expect.ipk')
+@tangle('\tpython script/mk_expect bagley/felix > lpsrc/flx_bagley_expect.ipk')
 @tangle('')
 @tangle('drivers: dummy')
 @tangle('\tpython script/maker drivers')
@@ -1181,8 +1240,8 @@ We have no idea if it continues copying.
 @tangle('\t${BUILTIN_ISCR} lpsrc/flx_web.pak')
 @tangle('')
 @tangle('clean: dummy')
-@tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.dll tut/examples/*.par tut/examples/*.o')
-@tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so test/rt*.dll test/rt*.par test/*.o')
+@tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.dll tut/examples/*.par tut/examples/*.o tut/examples/*.output')
+@tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so test/rt*.dll test/rt*.par test/*.o test/*.output')
 @tangle('\trm -rf bagley/felix/*.cpp bagley/felix/*.hpp bagley/felix/*.so bagley/felix/*.dll bagley/felix/*.par bagley/felix/*.o')
 @tangle('')
 @tangle('virgin: dummy')
@@ -1190,7 +1249,6 @@ We have no idea if it continues copying.
 @tangle('\trm -rf tut rtl test www src misc man script bin doc lib impldoc htmlman tmp tmp.tmp')
 @tangle('\trm -rf flxcc_out c89 c99 cxx gnu89 gnu99 gnucxx')
 @tangle('\trm -rf bagley')
-@tangle('\trm -rf config/*.default')
 @tangle('\trm -rf lpsrc/*.cache')
 @tangle('\trm -rf interscript/*.pyc')
 @tangle('\trm -rf interscript/*.pyo')

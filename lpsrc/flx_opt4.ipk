@@ -202,6 +202,7 @@ let copy_bbdcl syms (child_map,bbdfns) bbdfns2 i bbdfn =
     match bbdfn with
     | id,parent,sr,`BBDCL_procedure (props,vs,p,exes) ->
       let exes = enstack_calls syms (child_map,bbdfns) exes in
+      let exes = Flx_cflow.final_tailcall_opt exes in
       id,parent,sr,`BBDCL_procedure (props,vs,p,exes)
 
     | id,parent,sr,`BBDCL_function (props,vs,p,ret,exes) ->

@@ -47,13 +47,31 @@ open Flx_exceptions
 *)
 
 (* finite state machine states *)
+@modes = [
+  'Normal',
+  'CString',
+  'CChar',
+  'CStringBackslash',
+  'CCharBackslash',
+  'Dollar',
+  'Backquote',
+  'Hash',
+  'Earhole',
+  'Quest',
+  'DollarDigits',
+  'BackquoteDigits',
+  'HashDigits',
+  'EarholeDigits',
+  'QuestDigits',
+  'Varargs',
+  'VarargsDigits',
+ ]
+
 type mode_t = 
- | Normal
- | CString | CChar
- | CStringBackslash | CCharBackslash
- | Dollar | Backquote | Hash | Earhole | Quest (* last char was one of these *)
- | DollarDigits | BackquoteDigits | HashDigits | EarholeDigits | QuestDigits
- | Varargs | VarargsDigits
+@for m in modes: tangle(' | ' + m)
+
+let pr = function 
+@for m in modes: tangle(' | ' + m + ' -> "'+m+'"')
 
 let is_idletter ch =
   ch >= '0' && ch <='9' ||
@@ -314,13 +332,14 @@ let csubst sr sr2 ct args typs argtyp retyp gargs =
 in
   for i = 0 to len - 1 do trans i ct.[i] done;
   begin match !mode with
+  | CChar
   | Normal -> ()
   | HashDigits
   | EarholeDigits
   | DollarDigits
   | QuestDigits
     -> trans len ' ' (* hack .. space is harmless *)
-  | _ -> serr len "Unexpected end of fragment"
+  | _ -> serr len ("Unexpected end in mode " ^ pr !mode)
   end;
   Buffer.contents buf
 

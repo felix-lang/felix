@@ -85,6 +85,7 @@ and process_exe (h:usage_t) k exe =
   match exe with
   | `BEXE_call_prim (sr,i,ts,e2) 
   | `BEXE_call_direct (sr,i,ts,e2) 
+  | `BEXE_jump_direct (sr,i,ts,e2) 
   | `BEXE_call_stack (sr,i,ts,e2) 
     -> ui i sr; ue sr e2
   

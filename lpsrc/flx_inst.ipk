@@ -120,6 +120,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   match exe with
   | `BEXE_call_prim (sr,i,ts,e2) 
   | `BEXE_call_direct (sr,i,ts,e2) 
+  | `BEXE_jump_direct (sr,i,ts,e2) 
   | `BEXE_call_stack (sr,i,ts,e2) 
     -> 
     let ut t = register_type_r uis syms bbdfns [] sr t in
@@ -183,7 +184,7 @@ and process_function syms bbdfns hvarmap ref_insts1 index sr argtypes ret exes t
 and process_inst syms bbdfns ref_insts1 i ts inst =
   let uis i ts = add_inst syms ref_insts1 (i,ts) in
   let ui i = uis i ts in
-  let do_reqs reqs = iter ui reqs in
+  let do_reqs vs reqs = iter (fun (i,ts)-> uis i( map vs ts)) reqs in
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns i 
     with Not_found -> failwith ("[process_inst] Can't find index " ^ si i)
@@ -222,6 +223,8 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
   | `BBDCL_val (vs,t)
   | `BBDCL_var (vs,t)
     ->
+    assert (length vs = length ts);
+    (*
     if length vs <> length ts
     then syserr sr
     (
@@ -230,12 +233,15 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
       "ts = [" ^
       catmap ";" (fun t->sbt syms.dfns t) ts ^ "]"
     );
+    *)
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     let t = varmap_subst hvarmap t in
     rtr t
  
   | `BBDCL_const (vs,t,_,reqs) ->
+    assert (length vs = length ts);
+    (*
     if length vs <> length ts
     then syserr sr
     (
@@ -244,43 +250,57 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
       "ts = [" ^
       catmap ";" (fun t->sbt syms.dfns t) ts ^ "]"
     );
+    *)
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     let t = varmap_subst hvarmap t in
     rtr t;
-    do_reqs reqs
+    let vs t = varmap_subst hvarmap t in
+    do_reqs vs reqs
  
   (* shortcut -- header and body can only require other header and body *)
-  | `BBDCL_header (s,reqs)
-  | `BBDCL_body (s,reqs)
+  | `BBDCL_header (vs,s,reqs)
+  | `BBDCL_body (vs,s,reqs)
     -> 
     (*
     print_endline ("Handling requirements of header/body " ^ s);
     *)
-    do_reqs reqs
+    assert (length vs = length ts);
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let hvarmap = hashtable_of_list vars in
+    let vs t = varmap_subst hvarmap t in
+    do_reqs vs reqs
+
 
   | `BBDCL_fun (vs,argtypes,ret,_,reqs) ->
     (*
     print_endline ("Handling requirements of fun " ^ id);
     *)
-    do_reqs reqs;
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
+    let vs t = varmap_subst hvarmap t in
+    do_reqs vs reqs;
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret [] ts
 
   | `BBDCL_proc (vs,argtypes,_,reqs) ->
     (*
     print_endline ("Handling requirements of proc " ^ id);
     *)
-    do_reqs reqs;
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
+    let vs t = varmap_subst hvarmap t in
+    do_reqs vs reqs;
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes `BTYP_void [] ts
 
-  | `BBDCL_abs (_,_,_,reqs)
-    -> do_reqs reqs
+  | `BBDCL_abs (vs,_,_,reqs)
+    -> 
+    assert (length vs = length ts);
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let hvarmap = hashtable_of_list vars in
+    let vs t = varmap_subst hvarmap t in
+    do_reqs vs reqs
 (* 
   This routine creates the instance tables.
   There are 2 tables: instance types and function types (including procs)

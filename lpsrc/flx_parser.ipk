@@ -225,11 +225,11 @@ let mktypefun sr name vs args return_type body =
 %type <Flx_ast.compilation_unit_t> compilation_unit
 %start compilation_unit
 
+%type <Flx_ast.expr_t> qualified_name
 %type <Flx_ast.expr_t> expression
 %start expression
 
 %%
-/* empty: { [] } */
 
 @head(2,'Compilation Unit')
 @select(h)
@@ -521,32 +521,32 @@ requires_clause:
 binding_header:
   | HEADER STRING requires_clause SEMI 
   { 
-      `AST_header (rstoken $1 $4, "_root", snd $2, $3) 
+      `AST_header (rstoken $1 $4, "_root", [], snd $2, $3) 
   }
   
   | BODY STRING requires_clause SEMI 
   { 
-    `AST_body (rstoken $1 $4, "_root", snd $2, $3) 
+    `AST_body (rstoken $1 $4, "_root", [], snd $2, $3) 
   }
 
-  | HEADER NAME STRING requires_clause SEMI 
+  | HEADER NAME tvarlist STRING requires_clause SEMI 
   { 
-    `AST_header (rstoken $1 $5, snd $2, snd $3, $4) 
+    `AST_header (rstoken $1 $6, snd $2, List.map snd $3, snd $4, $5) 
   }
   
-  | BODY NAME STRING requires_clause SEMI 
+  | BODY NAME tvarlist STRING requires_clause SEMI 
   { 
-    `AST_body (rstoken $1 $5, snd $2, snd $3, $4) 
+    `AST_body (rstoken $1 $6, snd $2, List.map snd $3, snd $4, $5) 
   }
 
   | REQUIRES requirements SEMI 
   { 
-    `AST_body (rstoken $1 $3, "_root", "", $2)
+    `AST_body (rstoken $1 $3, "_root", [], "", $2)
   }
 
   | NAME REQUIRES requirements SEMI 
   { 
-    `AST_body (rstoken (fst $1) $4, snd $1, "", $3)
+    `AST_body (rstoken (fst $1) $4, snd $1, [], "", $3)
   }
 
 @head(3,'Inline C++ Code Definition')
@@ -1688,16 +1688,6 @@ cmp_op:
   | LESSEQUAL                          { "le",$1 }
   | GREATEREQUAL                       { "ge",$1 }
 
-/* NOTE: this routine has a FAULT: the variables
-  _t0 .. _tn, _r0 .. _rn in the generated lambda
-  WILL hide similar variables in the expressions.
-  Normally, this can't happen because these are not
-  legal user names. We should use a unique index,
-  but the parser is currently stateless.
-
-  THis routine should be moved to desugaring phase.
-*/
-  
 comparison:
   | sum cmp_op sum cmp_item_list
     {
@@ -1941,9 +1931,15 @@ dollar_name:
       let sr = rsrange (slift $1) sr in
       `AST_noexpand (sr,e) 
     }
+  | THE qname 
+  { 
+    let sr = src_of_expr $2 in 
+    let sr = rsrange (slift $1) sr in
+    let qn = qualified_name_of_expr $2 in
+    (`AST_the (sr,qn))
+  }
   | qname { $1 }
 
-/* @commalistof("qualified_name") */
 qualified_name:
   | qname COLONCOLON simple_name_parts
     { 

@@ -466,7 +466,7 @@ represent alternative cases. The infix
 operator + is the type combinator used
 to denote them.
 
-@select(tangler(tdir+'tut207.flx'))
+@select(tangler(tdir+'tut207a.flx'))
 include "std";
 open Long;
 
@@ -1010,6 +1010,7 @@ y = 3;
 
 print (f1 ());
 print (f2 ());
+endl;
 
 @doc()
 The curly brackets denote a lazy expression, it is
@@ -1050,7 +1051,7 @@ p2();
 p2;
 { print x; }();
 { print x; };
-print x;
+print x; endl;
 
 @doc()
 The block is a procedure taking a unit argument.
@@ -1242,7 +1243,7 @@ proc pr[T] (x:list[T], pp:T->void) {
 proc printint (x:int) { print x; }
   // because we can't use a primitive as a closure yet
 
-pr (x,(printint of (int)));
+pr (x,(printint of (int))); endl;
 
 
 
@@ -1435,6 +1436,21 @@ only exist at compile time. Unfortunately perhaps,
 the unqualified term "function" is used to refer to both.
 Even more confusing, it sometimes means procedures
 as well (even though they're utterly different beasts).
+
+@head(2,'The "the" keyword')
+When naming functions, it annoying
+to write the signature of the function
+when there is clearly only one function
+of a given name. in this special case
+you can use the keyword 'the' to specify
+you mean that function.
+@select(tangler(tdir+'tut138a.flx'))
+include "std";
+
+fun f(x:int):int=>x*x;
+fun apply[s,d] (f:s->d) (x:s) : d => f x;
+
+print (apply (the f) 4); endl;
 
 @head(2,'Currying')
 Consider the following example:
@@ -2063,6 +2079,7 @@ proc f(x:int) {
 f 1;
 f 2;
 f 3;
+endl;
 
 @head(2,'More on Conditionals')
 Of course conditional statements can be nested.
@@ -2526,6 +2543,7 @@ endl;
 match (1.0/3.0) with
  | 0.3333 .. 0.3334 => { print "One third"; }
 endmatch;
+endl;
 
 @doc()
 Things to note are: if there is NaN test,
@@ -2728,7 +2746,7 @@ names have the same priority as other names defined
 in the module: any collision with a locally defined
 function is final, and cannot be resolved.
 
-@select(tangler(tdir+'tut207.flx'))
+@select(tangler(tdir+'tut207b.flx'))
 header "#include <iostream>";
 module X {
   type x_t = "int";
@@ -2784,7 +2802,7 @@ publish the same set of names: note however that
 local overrides may mean the definition associated
 with a name is different for each module.
 
-@select(tangler(tdir+'tut207a.flx'))
+@select(tangler(tdir+'tut207c.flx'))
 header "#include <iostream>";
 header "#include <string>";
 

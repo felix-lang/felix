@@ -555,7 +555,7 @@ Here's an example demonstrating polymorphic insertions.
 pod type int="int";
 pod type double="double";
 
-body prb "void pr(?1 x) { std::cout << x << std::endl; }"
+body prb[t] "void pr(?1 x) { std::cout << x << std::endl; }"
   requires header "#include <iostream>";
 
 proc pr[t]:t = "pr($1);" requires prb[t];

@@ -176,6 +176,7 @@ macro val y1 = print;
 macro val y2 = 1;
 
 r1 r2; // print 1
+endl;
 
 @head(3,'Macro variables')
 The macro var statement defines a LHS symbol

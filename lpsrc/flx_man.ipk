@@ -22,6 +22,9 @@ for a list of operators
 .B flx_key(1)
 for a list of keywords
 .br
+.B flx_grammar(1)
+for a grammar summary
+.br
 .B flx_lib_typ(1)
 for a list of library types 
 .br
@@ -415,7 +418,7 @@ so only one is allowed.
 .br
 .B <- asgn 
 .br
-.B := asgn 
+.B := initialise new val
 .br
 .B += pluseq
 .br
@@ -711,19 +714,40 @@ Return type
 Specifies n'th component (1 origin) including
 frame pointer for pointer types
 
-.B @n
+.B @<n>
 reference to shape object of n'th argument type
 
 .B ?<n>
 Specifies n'th type argument (1 origin)
 
-.B ?a
+.B ?<a>
 Short hand for ?1,?2,?3 ...
 
 .B ??
 Question mark character ? emitted.
 
 @tangle(manfoot)
+
+@head(2,'felix:grammar summary')
+@select(tangler('man/man1/flx_grammar.1','data'))
+@mh('FELIX GRAMMAR')
+.SH NAME
+Felix grammar summary.
+
+.SH Grammar
+
+@f = open('misc/flx_parse.grammar')
+@for l in f:
+   x = l[:-1]
+   if x[-1:]==':':
+     tangle('.B '+x)
+   else:
+     tangle(x)
+   tangle('.br')
+@f.close()
+.br
+@tangle(manfoot)
+
 
 @head(2,'felix:keyword summary')
 @select(tangler('man/man1/flx_key.1','data'))

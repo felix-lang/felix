@@ -338,6 +338,8 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
 
   | `AST_suffix _ -> [],e  (* ?? *)
 
+  | `AST_the (_,_) -> [],e
+  
   | `AST_lookup (sr,(e,id,ts)) ->
     let l1,x1 = rex e in
     l1, `AST_lookup (sr,(x1,id,ts))
@@ -694,7 +696,7 @@ and rst syms name access st : asm_t list =
 
   (* add a requirement on us for a child *)
   let rq n sr sts = 
-    `AST_body (sr,"_rqs_"^n,"",[`Named_req (rqname' sr)]) :: sts 
+    `AST_body (sr,"_rqs_"^n,[],"",[`Named_req (rqname' sr)]) :: sts 
   in
 
   (* rename _root requirements *)
@@ -894,14 +896,14 @@ and rst syms name access st : asm_t list =
       )
     ) :: mdcl else mdcl
 
-  | `AST_header (sr,name',s,reqs) -> 
+  | `AST_header (sr,name',vs,s,reqs) -> 
     let dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,map_req name',access,[],`DCL_header (s, map_reqs sr reqs))
+    Dcl (sr,map_req name',access,vs,`DCL_header (s, map_reqs sr reqs))
     :: dcls
 
-  | `AST_body (sr,name',s, reqs) -> 
+  | `AST_body (sr,name',vs,s, reqs) -> 
     let dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,map_req name',access,[],`DCL_body (s, map_reqs sr reqs))
+    Dcl (sr,map_req name',access,vs,`DCL_body (s, map_reqs sr reqs))
     :: dcls
 
   (* executable *)
@@ -1042,7 +1044,7 @@ let desugar_program syms name sts =
       (src_of_stmt (list_last sts))
   in
   let sts = expand_macros name 5000 sts in
-  let sts = `AST_body(sr,"_rqs__top","",[]) :: sts in
+  let sts = `AST_body(sr,"_rqs__top",[],"",[]) :: sts in
   rst syms "_top" `Public (`AST_untyped_module (sr,name,[],sts))
 
 @h = tangler("src/flxd.ml")

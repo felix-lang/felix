@@ -11,6 +11,9 @@ val tailable:
 val chain_gotos:
   bexe_t list -> bexe_t list
 
+val final_tailcall_opt:
+  bexe_t list -> bexe_t list
+
 @select(tangler('src/flx_cflow.ml'))
 open Flx_types
 open List
@@ -101,4 +104,20 @@ let chain_gotos exes =
       aux t (h :: out)
   in aux exes []
 
+(* this procedure converts tail calls into jumps, it is ONLY
+intended to be used temporarily whilst the inlining code
+can't handle jump instruction
+*)
+
+let final_tailcall_opt exes =
+  let rec aux inp out = match inp with
+    | [] -> rev out
+    | `BEXE_call_direct (sr,i,ts,a) :: tail
+      when tailable exes [] tail
+      -> aux tail (`BEXE_jump_direct (sr,i,ts,a) :: out)
+    | `BEXE_call (sr,a,b) :: tail
+      when tailable exes [] tail
+      -> aux tail (`BEXE_jump (sr,a,b) :: out)
+    | head :: tail -> aux tail (head :: out)
+  in aux exes []
 

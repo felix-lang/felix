@@ -102,8 +102,9 @@ and uses_tbexpr syms used bbdfns (e,t) =
   | `BEXPR_expr (_,t) -> ut t
 
 and uses syms used bbdfns i =
-  let ur i = uses syms used bbdfns i in
+  let ui i = uses syms used bbdfns i in
   let ut t = uses_type syms used bbdfns t in
+  let ur (i,ts) = ui i; iter ut ts in
   let ux x = uses_exes syms used bbdfns x in
   if not (IntSet.mem i !used) then
   begin
@@ -136,13 +137,9 @@ and uses syms used bbdfns i =
       | `BBDCL_fun (_,ps, ret, _,reqs) -> iter ut ps; ut ret; iter ur reqs
       | `BBDCL_proc (_,ps, _, reqs)  -> iter ut ps; iter ur reqs
 
-      | `BBDCL_abs (vs,_,_,reqs) -> iter ur reqs
-      | `BBDCL_header (s,reqs)  
-      | `BBDCL_body (s,reqs) -> 
-        (*
-        if s <> "" then print_endline ("Using " ^ s);
-        *)
-        iter ur reqs
+      | `BBDCL_abs (_,_,_,reqs) -> iter ur reqs
+      | `BBDCL_header (_,s,reqs)  
+      | `BBDCL_body (_,s,reqs) -> iter ur reqs
       end
     | None -> ()
   end

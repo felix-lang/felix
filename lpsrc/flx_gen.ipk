@@ -1175,10 +1175,6 @@ let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter
       let not_e = string_of_cexpr not_e in
       "      if("^not_e^")goto " ^ s ^ ";\n" 
     
-    | `BEXE_jump (sr,((`BEXPR_closure (index,ts),_) as f),a) ->
-      let subs,x = unravel syms bbdfns a in
-      let ts = map tsub ts in
-      handle_closure sr true index ts subs x
       
     (* Hmmm .. stack calls ?? *)
     | `BEXE_call_stack (sr,index,ts,a)  -> assert false
@@ -1189,6 +1185,12 @@ let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter
       let subs,x = unravel syms bbdfns a in
       let ts = map tsub ts in
       handle_closure sr false index ts subs x
+
+    | `BEXE_jump (sr,((`BEXPR_closure (index,ts),_)),a) 
+    | `BEXE_jump_direct (sr,index,ts,a) ->
+      let subs,x = unravel syms bbdfns a in
+      let ts = map tsub ts in
+      handle_closure sr true index ts subs x
 
     | `BEXE_loop (sr,i,a) ->
       let ptr = 
@@ -1969,6 +1971,11 @@ try
   then print_endline "//Calculating stackable calls";
   let bbdfns = Flx_stack_calls.make_stack_calls syms (child_map,bbdfns) in
 
+  let opt_time = tim() in
+
+  if compiler_options.print_flag 
+  then print_endline ("//Optimisation complete time " ^ string_of_float opt_time);
+
 
   if compiler_options.print_flag 
   then print_endline "//Generating primitive wrapper closures";
@@ -2046,7 +2053,7 @@ try
       match Hashtbl.find bbdfns i
       with (id,parent,sr,entry) ->
       match entry with
-      | `BBDCL_header (s,_) -> 
+      | `BBDCL_header (_,s,_) -> 
         if s <> "" then 
         begin
           (* do we need tsubst vs ts t? *)
@@ -2171,7 +2178,7 @@ try
       match Hashtbl.find bbdfns i
       with (id,parent,sr,entry) ->
       match entry with
-      | `BBDCL_body (s,_) -> 
+      | `BBDCL_body (_,s,_) -> 
         if s <> "" then 
         begin
           (* do we need tsubst vs ts t? *)
@@ -2292,6 +2299,7 @@ try
     desugar_time +.
     build_table_time +.
     binding_time +.
+    opt_time +.
     instantiation_time +.
     code_generation_time
   in  
@@ -2303,20 +2311,21 @@ try
     old_desugar_time,
     old_build_table_time,
     old_binding_time,
+    old_opt_time,
     old_instantiation_time,
     old_code_generation_time,
     old_total_time
   = 
-  let zeroes = 0.0,0.0,0.0,0.0,0.0,0.0,0.0 in
+  let zeroes = 0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0 in
   let f = try Some (open_in fname) with _ -> None in
   begin match f with
   | None -> zeroes
   | Some f ->
     let x =
       try
-        let id x1 x2 x3 x4 x5 x6 x7 = x1, x2, x3, x4, x5, x6, x7 in
+        let id x1 x2 x3 x4 x5 x6 x7 x8 = x1, x2, x3, x4, x5, x6, x7, x8 in
         Scanf.fscanf f 
-        "parse=%f desugar=%f build=%f bind=%f inst=%f gen=%f tot=%f"
+        "parse=%f desugar=%f build=%f bind=%f opt=%f inst=%f gen=%f tot=%f"
         id
       with _ -> zeroes
     in close_in f; x
@@ -2325,11 +2334,12 @@ try
     let f = open_out fname in
     Printf.fprintf 
       f
-      "parse=%f\ndesugar=%f\nbuild=%f\nbind=%f\ninst=%f\ngen=%f\ntot=%f\n"
+      "parse=%f\ndesugar=%f\nbuild=%f\nbind=%f\nopt=%f\ninst=%f\ngen=%f\ntot=%f\n"
       (old_parse_time +. parse_time)
       (old_desugar_time +. desugar_time)
       (old_build_table_time +. build_table_time)
       (old_binding_time +. binding_time)
+      (old_opt_time +. opt_time)
       (old_instantiation_time +. instantiation_time)
       (old_code_generation_time +. code_generation_time)
       (old_total_time +. total_time)

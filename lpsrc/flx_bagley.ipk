@@ -10,29 +10,36 @@ Temporary script to check the tests work, and also
 to get some times.
 
 @bags = [
+  ('array',' 1000'),
   ('ackermann',' 8'),
-  ('fibo',' 8'),
-  ('nestedloop',' 8'),
-  ('regexmatch',' 8'),
-  ('random',' 1000'),
-  ('hello',' 1'),
-  ('matrix',' 8'),
-  ('reversefile',' 1 < bagley/data/phone_numbers.data'),
-  ('sumcol',' < bagley/data/sumcol.data'),
-  ('sieve',' 8'),
-  ('lists',' 8'),
-  ('objinst',' 8'),
-  ('methcall',' 8'),
-  ('strcat',' 8'),
   ('except',' 8'),
+  ('fibo',' 8'),
+  ('hello',' 1'),
+  ('lists',' 8'),
+  ('matrix',' 8'),
+  ('methcall',' 8'),
+  ('nestedloop',' 8'),
+  ('objinst',' 8'),
+  ('random',' 1000'),
+  ('regexmatch',' 8'),
+  ('reversefile',' 1 < bagley/data/phone_numbers.data'),
+  ('sieve',' 8'),
+  ('strcat',' 8'),
+  ('sumcol',' < bagley/data/sumcol.data'),
   ('wc',' < bagley/data/phone_numbers.data'), 
  ]
 
 @def mk(i,j):
-  tangle('/usr/bin/time -f "'+i+' User Time: %U" bin/flx --test --echo --optimise bagley/felix/'+i+' '+j)
+  tangle('/usr/bin/time -f "'+i+' User Time: %U" bin/flx --test --echo --optimise bagley/felix/'+i+' '+j+' >bagley/felix/'+i+'.output')
+@def mkc(i,j):
+  mk(i,j)
+  tangle('diff -a -b bagley/felix/'+i+'.output bagley/felix/'+i+'.expect')
 
 @select(tangler('bagley/run.sh','data'))
 @for i,j in bags: mk (i,j)
+
+@select(tangler('bagley/check.sh','data'))
+@for i,j in bags: mkc (i,j)
 
 @head(2,'Hello World')
 @select(tangler('bagley/felix/hello.flx','data'))
@@ -44,8 +51,8 @@ Two of the three calls are tail recursive.
 @select(tangler('bagley/felix/ackermann.flx','data'))
 @setup()
 fun ack(x:int,y:int):int =>
-  if x == 0 then  y + 1
-  elif y == 0 then  ack(x-1, 1)
+  if x == 0 then y + 1
+  elif y == 0 then ack(x-1, 1)
   else ack(x-1, ack(x, y-1))
   endif
 ;
@@ -65,29 +72,49 @@ fun fib(n:int):int =>
 v := fib(n);
 print "Fib("; print n; print "): "; print v; endl;
 
+@head(2,'Array access')
+Inspired by the C code.
+@select(tangler('bagley/felix/array.flx','data'))
+@setup()
+//adapted from C solution
+open Carray;
+
+x := array_calloc[int] n;
+y := array_calloc[int] n;
+
+var i = 0;
+whilst i < n do x.[i] = i + 1; ++i; done;
+
+var k = 0;
+whilst k<1000 do
+  i = n - 1;
+  whilst i >= 0 do
+    y.[i] += x.[i];
+    --i;
+  done;
+  ++k;
+done;
+
+print y.[0]; print " "; print y.[n-1]; endl;
+free x;
+free y;
+
 @head(2,"Nested Loops")
 @select(tangler('bagley/felix/nestedloop.flx','data'))
 @setup()
-
-var a:int;
-var b:int;
-var c:int;
-var d:int;
-var e:int;
-var f:int;
 var x = 0;
 
-a=0; 
+var a=0; 
 whilst a<n do
-  b=0; 
+  var b=0; 
   whilst b<n do
-    c=0; 
+    var c=0; 
     whilst c<n do
-      d=0; 
+      var d=0; 
       whilst d<n do
-        e=0; 
+        var e=0; 
         whilst e<n do
-          f=0; 
+          var f=0; 
           whilst f<n do
             x++;
             ++f;
@@ -297,7 +324,7 @@ proc plist(x:list[string]){
   endmatch;
 };
 
-plist x; endl;
+plist x; 
 
 @head(2,'Matrix multiplication')
 @select(tangler('bagley/felix/matrix.flx','data'))

@@ -126,7 +126,7 @@ val lookup_code_in_env:
   env_t ->
   range_srcref ->
   qualified_name_t -> 
-  entry_kind_t list
+  entry_kind_t list * typecode_t list
 
 (** This routine takes an unbound type term 
 and binds it. The term may contain explicit
@@ -417,6 +417,15 @@ and lookup_qn_in_env2
   | `AST_name (sr,name,ts) -> 
     lookup_name_in_env syms env sr name, ts
 
+  | `AST_the (sr,qn) -> 
+    let es,ts = lookup_qn_in_env2 syms env qn in
+    begin match es with
+    | NonFunctionEntry  _
+    | FunctionEntry [_] -> es,ts
+    | _ -> clierr sr
+      "'the' expression denotes non-singleton function set"
+    end
+
   | `AST_lookup (sr,(me,name,ts)) ->
     match eval_module_expr syms env me with 
     | Simple_module (impl,ts', htab,dirs) ->
@@ -456,7 +465,7 @@ and lookup_code_in_env syms env sr qn =
         string_of_qualified_name qn ^
         " to be non-function (code insertions use function entries) "
       )
-    | FunctionEntry x,ts -> x
+    | FunctionEntry x,ts -> x,ts
 
 
 and lookup_qn_in_env 
@@ -474,6 +483,41 @@ and lookup_qn_in_env
         "[lookup_qn_in_env] Not expecting " ^ 
         string_of_qualified_name qn ^
         " to be function set"
+      )
+
+and lookup_uniq_in_env 
+  syms
+  (env:env_t) 
+  (qn: qualified_name_t)
+  : entry_kind_t  * typecode_t list
+=
+  match lookup_qn_in_env2 syms env qn with
+    | NonFunctionEntry x,ts -> x,ts
+    | FunctionEntry [x],ts -> x,ts
+    | _ ->
+      let sr = src_of_expr (qn:>expr_t) in
+      clierr sr
+      (
+        "[lookup_qn_in_env] Not expecting " ^ 
+        string_of_qualified_name qn ^
+        " to be non-singleton function set"
+      )
+
+and lookup_function_in_env 
+  syms
+  (env:env_t) 
+  (qn: qualified_name_t)
+  : entry_kind_t  * typecode_t list
+=
+  match lookup_qn_in_env2 syms env qn with
+    | FunctionEntry [x],ts -> x,ts
+    | _ ->
+      let sr = src_of_expr (qn:>expr_t) in
+      clierr sr
+      (
+        "[lookup_qn_in_env] Not expecting " ^ 
+        string_of_qualified_name qn ^
+        " to be non-function or non-singleton function set"
       )
 
 and lookup_sn_in_env 
@@ -1700,6 +1744,11 @@ and lookup_qn_with_sig'
     *)
     bind_type syms env sr t in
   match qn with
+  | `AST_the (sr,qn) -> 
+    lookup_qn_with_sig' syms sra srn
+    env idx_fixlist expr_fixlist depth 
+    qn sign
+
   | `AST_void _ -> clierr sra "qualified-name is void"
 
   | `AST_case_tag _ -> clierr sra "Can't lookup case tag here"
@@ -2416,6 +2465,36 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
       )
     end
 
+  | `AST_the(_,`AST_name (sr,name,ts)) ->
+    (*
+    print_endline ("AST_name " ^ name ^ "[" ^ catmap "," string_of_typecode ts^ "]");
+    *)
+    let ts = map (bt sr) ts in
+    begin match lookup_name_in_env syms env sr name with
+    | NonFunctionEntry (index) -> 
+      let n = length ts in
+      let ts = adjust_ts syms index ts in
+      `BEXPR_name (index,ts),
+      let t = ti index ts in
+      t
+
+    | FunctionEntry [index] -> 
+      let n = length ts in
+      let ts = adjust_ts syms index ts in
+      `BEXPR_closure (index,ts),
+      let t = ti index ts in
+      t
+
+
+    | FunctionEntry _ -> 
+      clierr sr
+      (
+        "[bind_expression] Simple 'the' name " ^ name ^ 
+        " binds to non-singleton function set"
+      )
+    end
+  | `AST_the (sr,q) -> clierr sr "invalid use of 'the' "
+
   | (`AST_lookup (sr,(e,name,ts))) as qn ->
     let ts = map (bt sr) ts in
     let entry = 
@@ -2498,10 +2577,22 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
         )
       end
       end
+
+    | `BEXPR_apply_prim (i,_,_) ->
+      begin match get_data syms.dfns i with
+      {id=id; sr=sr; symdef=entry} ->
+      print_endline 
+      (
+        "WARNING: application of primitive '"^id^"' should be an lvalue"
+      )
+      end
+      ;
+      et'
+
     | _ ->
        clierr srr 
         (
-          "[bind_expression] " ^
+          "[bind_expression:lvalue] " ^
           "Address non variable"
         )
     end

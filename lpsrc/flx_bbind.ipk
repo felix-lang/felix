@@ -65,12 +65,13 @@ let bind_req syms env sr tag =
   lookup_code_in_env syms env sr tag
 
 
-let bind_reqs syms env sr reqs : bid_t list =
+let bind_reqs bt syms env sr reqs : (bid_t * btypecode_t list) list =
   let add lst i = if mem i lst then lst else i :: lst in
   fold_left 
   (fun lst tag ->
-    let entries = bind_req syms env sr tag in
-    fold_left (fun lst (x) -> add lst x) lst entries
+    let entries,ts = bind_req syms env sr tag in
+    let ts = map bt ts in
+    fold_left (fun lst x -> add lst (x,ts)) lst entries
   ) 
   [] 
   reqs
@@ -85,9 +86,9 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
   begin
     (* let env = build_env syms parent in  *)
     let env = build_env syms (Some i) in 
-    let bind_reqs reqs = bind_reqs syms env sr reqs in
     let vs = find_vs syms i in
     let bt t = bind_type syms env sr t in
+    let bind_reqs reqs = bind_reqs bt syms env sr reqs in
     match bdcl with
 
     (* Pure declarations of functions, modules, and type
@@ -275,13 +276,13 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name); 
       *)
       let reqs = bind_reqs reqs in
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_header (ct,reqs))
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_header (vs,ct,reqs))
 
     | `SYMDEF_body (ct,reqs) ->
       (* print_endline ("//Binding body string " ^ si i ^ " --> " ^ name); 
       *)
       let reqs = bind_reqs reqs in
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_body (ct,reqs))
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_body (vs,ct,reqs))
 
     end
     (*

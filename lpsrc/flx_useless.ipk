@@ -72,6 +72,7 @@ let rec isuseless bbdfns exes =
       | `BEXE_call (_,(`BEXPR_closure (_,_),_),_) 
       | `BEXE_call_stack _
       | `BEXE_jump _ -> assert false
+      | `BEXE_jump_direct _ -> assert false
 
       | `BEXE_assign _
       | `BEXE_call _ (* assume useful if not call to named useful proc *)
@@ -405,6 +406,7 @@ let rec useless_call_elim syms used (child_map,bbdfns) vs' exes index =
 
 
   | `BEXE_jump _ -> assert false
+  | `BEXE_jump_direct _ -> assert false
 
   | `BEXE_call (sr,a,b) -> 
     let a = ia a in

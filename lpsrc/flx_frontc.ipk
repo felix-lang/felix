@@ -2079,12 +2079,12 @@ let mkflds accessible ls =
 %%
 
 interpret:
-  file EOF                              {$1}
+| file EOF                              {$1}
 ;
 file: globals                           {$1}
 ;
 globals:
-  /* empty */                           { [] }
+| /* empty */                           { [] }
 | global globals                        { $1 :: $2 }
 | SEMICOLON globals                     { $2 }
 ;
@@ -2151,7 +2151,7 @@ id_or_typename:
 ;
 
 maybecomma:
-   /* empty */                          { () }
+|  /* empty */                          { () }
 |  COMMA                                { () }
 ;
 
@@ -2159,7 +2159,7 @@ maybecomma:
 
 
 expression:
-                constant
+|               constant
                         {CONSTANT (fst $1), snd $1}
 |               IDENT
                         {VARIABLE (fst $1), snd $1}
@@ -2279,7 +2279,7 @@ expression:
 ;
 
 constant:
-    CST_INT                             {CONST_INT (fst $1), snd $1}
+|   CST_INT                             {CONST_INT (fst $1), snd $1}
 |   CST_FLOAT                           {CONST_FLOAT (fst $1), snd $1}
 |   CST_CHAR                            {CONST_CHAR (fst $1), snd $1}
 |   CST_WCHAR                           {CONST_WCHAR (fst $1), snd $1}
@@ -2290,26 +2290,26 @@ constant:
 string_constant:
 /* Now that we know this constant isn't part of a wstring, convert it
    back to a string for easy viewing. */
-    string_list                         {intlist_to_string (fst $1), snd $1 }
+|   string_list                         {intlist_to_string (fst $1), snd $1 }
 ;
 one_string_constant:
 /* Don't concat multiple strings.  For asm templates. */
-    CST_STRING                          {intlist_to_string (fst $1) }
+|   CST_STRING                          {intlist_to_string (fst $1) }
 ;
 string_list:
-    one_string                          { $1 }
+|   one_string                          { $1 }
 |   string_list one_string              { (fst $1) @ (fst $2), snd $1 }
 ;
 
 wstring_list:
-    CST_WSTRING                         { $1 }
+|   CST_WSTRING                         { $1 }
 |   wstring_list one_string             { (fst $1) @ (fst $2), snd $1 }
 |   wstring_list CST_WSTRING            { (fst $1) @ (fst $2), snd $1 }
 /* Only the first string in the list needs an L, so L"a" "b" is the same
  * as L"ab" or L"a" L"b". */
 
 one_string: 
-    CST_STRING                          {$1}
+|   CST_STRING                          {$1}
 |   FUNCTION__                          {(Flx_cil_cabs_helper.explodeStringToInts 
                                             !currentFunctionName), $1}
 |   PRETTY_FUNCTION__                   {(Flx_cil_cabs_helper.explodeStringToInts 
@@ -2317,82 +2317,84 @@ one_string:
 ;    
 
 init_expression:
-     expression         { SINGLE_INIT (fst $1) }
+|    expression         { SINGLE_INIT (fst $1) }
 |    LBRACE initializer_list_opt RBRACE
                         { COMPOUND_INIT $2}
 
-initializer_list:    /* ISO 6.7.8. Allow a trailing COMMA */
-    initializer                             { [$1] }
+/* ISO 6.7.8. Allow a trailing COMMA */
+initializer_list:    
+|   initializer                             { [$1] }
 |   initializer COMMA initializer_list_opt  { $1 :: $3 }
 ;
 initializer_list_opt:
-    /* empty */                             { [] }
+|   /* empty */                             { [] }
 |   initializer_list                        { $1 }
 ;
 initializer: 
-    init_designators eq_opt init_expression { ($1, $3) }
+|   init_designators eq_opt init_expression { ($1, $3) }
 |   gcc_init_designators init_expression { ($1, $2) }
 |                       init_expression { (NEXT_INIT, $1) }
 ;
 eq_opt: 
-   EQ                        { () }
+|  EQ                        { () }
    /*(* GCC allows missing = *)*/
 |  /*(* empty *)*/               { () }
 ;
 init_designators: 
-    DOT id_or_typename init_designators_opt      { INFIELD_INIT($2, $3) }
+|   DOT id_or_typename init_designators_opt      { INFIELD_INIT($2, $3) }
 |   LBRACKET  expression RBRACKET init_designators_opt
                                         { ATINDEX_INIT(fst $2, $4) }
 |   LBRACKET  expression ELLIPSIS expression RBRACKET
                                         { ATINDEXRANGE_INIT(fst $2, fst $4) }
 ;         
 init_designators_opt:
-   /* empty */                          { NEXT_INIT }
+|  /* empty */                          { NEXT_INIT }
 |  init_designators                     { $1 }
 ;
 
 /*(* GCC supports these strange things *)*/
 gcc_init_designators:    
-  id_or_typename COLON                 { INFIELD_INIT($1, NEXT_INIT) }
+| id_or_typename COLON                 { INFIELD_INIT($1, NEXT_INIT) }
 ;
 
 arguments: 
-                /* empty */         { [] }
+|               /* empty */         { [] }
 |               comma_expression    { fst $1 }
 ;
 
 opt_expression:
-                /* empty */
+|               /* empty */
                         {NOTHING}
 |               comma_expression
                         {smooth_expression (fst $1)}
 ;
 
 comma_expression:
-                expression                        {[fst $1], snd $1}
+|               expression                        {[fst $1], snd $1}
 |               expression COMMA comma_expression { fst $1 :: fst $3, snd $1 }
 |               error COMMA comma_expression      { $3 }
 ;
 
 comma_expression_opt:
-                /* empty */         { NOTHING }
+|               /* empty */         { NOTHING }
 |               comma_expression    { smooth_expression (fst $1) }
 ;
 
 paren_comma_expression:
-  LPAREN comma_expression RPAREN                   { $2 }
+| LPAREN comma_expression RPAREN                   { $2 }
 | LPAREN error RPAREN                              { [], $1 }
 ;
 
 bracket_comma_expression:
-  LBRACKET comma_expression RBRACKET                   { fst $2 }
+| LBRACKET comma_expression RBRACKET                   { fst $2 }
 | LBRACKET error RBRACKET                              { [] }
 ;
 
 
 /*** statements ***/
-block: /* ISO 6.8.2 */
-    block_begin local_labels block_attrs block_element_list RBRACE
+/* ISO 6.8.2 */
+block: 
+|   block_begin local_labels block_attrs block_element_list RBRACE
                                          {!Flx_cil_lexerhack.pop_context();
                                           { blabels = $2;
                                             battrs = $3;
@@ -2406,18 +2408,18 @@ block: /* ISO 6.8.2 */
                                          }
 ;
 block_begin:
-    LBRACE                               {!Flx_cil_lexerhack.push_context (); $1}
+|   LBRACE                               {!Flx_cil_lexerhack.push_context (); $1}
 ;
 
 block_attrs:
-   /* empty */                                              { [] }
+|  /* empty */                                              { [] }
 |  BLOCKATTRIBUTE paren_attr_list_ne
                                         { [("__blockattribute__", $2)] }
 ;
 
 /* statements and declarations in a block, in any order (for C99 support) */
 block_element_list:
-    /* empty */                          { [] }
+|   /* empty */                          { [] }
 |   declaration block_element_list       { DEFINITION($1) :: $2 }
 |   statement block_element_list         { $1 :: $2 }
 /*(* GCC accepts a label at the end of a block *)*/
@@ -2426,18 +2428,18 @@ block_element_list:
 ;
 
 local_labels:
-   /* empty */                                       { [] }
+|  /* empty */                                       { [] }
 |  LABEL__ local_label_names SEMICOLON local_labels  { $2 @ $4 }
 ;
 local_label_names: 
-   IDENT                                 { [ fst $1 ] }
+|  IDENT                                 { [ fst $1 ] }
 |  IDENT COMMA local_label_names         { fst $1 :: $3 }
 ;
 
 
 
 statement:
-    SEMICOLON           {NOP $1 }
+|   SEMICOLON           {NOP $1 }
 |   comma_expression SEMICOLON
                         {COMPUTATION (smooth_expression (fst $1), snd $1)}
 |   block               {BLOCK (fst3 $1, snd3 $1)}
@@ -2493,27 +2495,33 @@ statement:
 
 
 for_clause: 
-    opt_expression SEMICOLON     { FC_EXP $1 }
+|   opt_expression SEMICOLON     { FC_EXP $1 }
 |   declaration                  { FC_DECL $1 }
 ;
 
-declaration:                                /* ISO 6.7.*/
-    decl_spec_list init_declarator_list SEMICOLON
+/* ISO 6.7.*/
+declaration:                                
+|   decl_spec_list init_declarator_list SEMICOLON
                                        { doDeclaration (snd $1) (fst $1) $2 }
 |   decl_spec_list SEMICOLON           { doDeclaration (snd $1) (fst $1) [] }
 ;
-init_declarator_list:                       /* ISO 6.7 */
-    init_declarator                              { [$1] }
+
+/* ISO 6.7 */
+init_declarator_list:                       
+|   init_declarator                              { [$1] }
 |   init_declarator COMMA init_declarator_list   { $1 :: $3 }
 
 ;
-init_declarator:                             /* ISO 6.7 */
-    declarator                          { ($1, NO_INIT) }
+
+/* ISO 6.7 */
+init_declarator:
+|   declarator                          { ($1, NO_INIT) }
 |   declarator EQ init_expression
                                         { ($1, $3) }
 ;
 
-decl_spec_list:                         /* ISO 6.7 */
+/* ISO 6.7 */
+decl_spec_list:
                                         /* ISO 6.7.1 */
 |   TYPEDEF decl_spec_list_opt          { SpecTypedef :: $2, $1  }    
 |   EXTERN decl_spec_list_opt           { SpecStorage EXTERN :: $2, $1 }
@@ -2532,7 +2540,7 @@ decl_spec_list:                         /* ISO 6.7 */
 /* (* In most cases if we see a NAMED_TYPE we must shift it. Thus we declare 
     * NAMED_TYPE to have right associativity  *) */
 decl_spec_list_opt: 
-    /* empty */                         { [] } %prec NAMED_TYPE
+|   /* empty */                         { [] } %prec NAMED_TYPE
 |   decl_spec_list                      { fst $1 }
 ;
 /* (* We add this separate rule to handle the special case when an appearance 
@@ -2540,7 +2548,7 @@ decl_spec_list_opt:
     * part of the declarator. IDENT has higher precedence than NAMED_TYPE  *)
  */
 decl_spec_list_opt_no_named: 
-    /* empty */                         { [] } %prec IDENT
+|   /* empty */                         { [] } %prec IDENT
 |   decl_spec_list                      { fst $1 }
 ;
 
@@ -2571,7 +2579,8 @@ int_spec:
 |   SIGNED          { Tsigned, $1 }
 |   UNSIGNED        { Tunsigned, $1 }
 
-type_spec:   /* ISO 6.7.2 */
+/* ISO 6.7.2 */
+type_spec:   
 |   int_spec        { $1 }
 |   VOID            { Tvoid, $1}
 |   BOOL            { Tbool, $1 }
@@ -2640,10 +2649,12 @@ type_spec:   /* ISO 6.7.2 */
 |   TYPEOF LPAREN type_name RPAREN      { let s, d = $3 in
                                           TtypeofT (s, d), $1 }
 ;
-struct_decl_list: /* (* ISO 6.7.2. Except that we allow empty structs. We 
-                      * also allow missing field names. *)
-                   */
-   /* empty */                           { [] }
+
+/* (* ISO 6.7.2. Except that we allow empty structs. We 
+ * also allow missing field names. *)
+ */
+struct_decl_list: 
+|  /* empty */                           { [] }
 
 |  decl_spec_list                 SEMICOLON struct_decl_list
    { `Fields (fst $1, [(missingFieldDecl, None)]) :: $3 }
@@ -2675,11 +2686,15 @@ struct_decl_list: /* (* ISO 6.7.2. Except that we allow empty structs. We
 |  error                          SEMICOLON struct_decl_list
    { $3 } 
 ;
-field_decl_list: /* (* ISO 6.7.2 *) */
-    field_decl                           { [$1] }
+
+/* (* ISO 6.7.2 *) */
+field_decl_list: 
+|   field_decl                           { [$1] }
 |   field_decl COMMA field_decl_list     { $1 :: $3 }
 ;
-field_decl: /* (* ISO 6.7.2. Except that we allow unnamed fields. *) */
+
+/* (* ISO 6.7.2. Except that we allow unnamed fields. *) */
+field_decl: 
 |   declarator                      { ($1, None) }
 |   declarator COLON expression     { ($1, Some (fst $3)) }    
 
@@ -2697,19 +2712,21 @@ of type struct X, length Y
 */
 ;
 
-enum_list: /* (* ISO 6.7.2.2 *) */
-    enumerator                          {[$1]}
+/* (* ISO 6.7.2.2 *) */
+enum_list: 
+|   enumerator                          {[$1]}
 |   enum_list COMMA enumerator          {$1 @ [$3]}
 |   enum_list COMMA error               { $1 } 
 ;
 enumerator:     
-    IDENT                       {(fst $1, NOTHING, snd $1)}
+|   IDENT                       {(fst $1, NOTHING, snd $1)}
 |   IDENT EQ expression         {(fst $1, fst $3, snd $1)}
 ;
 
 
-declarator:  /* (* ISO 6.7.5. Plus Microsoft declarators.*) */
-   pointer_opt direct_decl attributes_with_asm
+/* (* ISO 6.7.5. Plus Microsoft declarators.*) */
+declarator:  
+|  pointer_opt direct_decl attributes_with_asm
     { 
       let (n, decl) = $2 in
       (n, applyPointer (fst $1) decl, $3, snd $1) 
@@ -2717,7 +2734,8 @@ declarator:  /* (* ISO 6.7.5. Plus Microsoft declarators.*) */
 ;
 
 
-direct_decl: /* (* ISO 6.7.5 *) */
+/* (* ISO 6.7.5 *) */
+direct_decl: 
                                    /* (* We want to be able to redefine named
                                     * types as variable names *) */
 |   id_or_typename                 { ($1, JUSTBASE) }
@@ -2740,7 +2758,7 @@ direct_decl: /* (* ISO 6.7.5 *) */
                                    }
 ;
 parameter_list_startscope: 
-    LPAREN                         { !Flx_cil_lexerhack.push_context () }
+|   LPAREN                         { !Flx_cil_lexerhack.push_context () }
 ;
 rest_par_list:
 |   /* empty */                    { ([], false) }
@@ -2749,7 +2767,7 @@ rest_par_list:
                                    }
 ;
 rest_par_list1: 
-    /* empty */                         { ([], false) }
+|   /* empty */                         { ([], false) }
 |   COMMA ELLIPSIS                      { ([], true) }
 |   COMMA parameter_decl rest_par_list1 { let (params, isva) = $3 in 
                                           ($2 :: params, isva)
@@ -2757,8 +2775,9 @@ rest_par_list1:
 ;    
 
 
-parameter_decl: /* (* ISO 6.7.5 *) */
-   decl_spec_list declarator              { (fst $1, $2) }
+/* (* ISO 6.7.5 *) */
+parameter_decl: 
+|  decl_spec_list declarator              { (fst $1, $2) }
 |  decl_spec_list abstract_decl           { let d, a = $2 in
                                             (fst $1, ("", d, a, cabslu)) }
 |  decl_spec_list                         { (fst $1, ("", JUSTBASE, [], cabslu)) }
@@ -2767,11 +2786,11 @@ parameter_decl: /* (* ISO 6.7.5 *) */
 
 /* (* Old style prototypes. Like a declarator *) */
 old_proto_decl:
-  pointer_opt direct_old_proto_decl   { let (n, decl, a) = $2 in
+| pointer_opt direct_old_proto_decl   { let (n, decl, a) = $2 in
                                           (n, applyPointer (fst $1) decl, a, snd $1) }
 ;
 direct_old_proto_decl:
-  direct_decl LPAREN old_parameter_list_ne RPAREN old_pardef_list
+| direct_decl LPAREN old_parameter_list_ne RPAREN old_pardef_list
                                    { let par_decl, isva = doOldParDecl $3 $5 in
                                      let n, decl = $1 in
                                      (n, PROTO(decl, par_decl, isva), [])
@@ -2789,7 +2808,7 @@ old_parameter_list_ne:
 ;
 
 old_pardef_list: 
-   /* empty */                            { ([], false) }
+|  /* empty */                            { ([], false) }
 |  decl_spec_list old_pardef SEMICOLON ELLIPSIS
                                           { ([(fst $1, $2)], true) }  
 |  decl_spec_list old_pardef SEMICOLON old_pardef_list  
@@ -2799,22 +2818,24 @@ old_pardef_list:
 ;
 
 old_pardef: 
-   declarator                             { [$1] }
+|  declarator                             { [$1] }
 |  declarator COMMA old_pardef            { $1 :: $3 }
 |  error                                  { [] }
 ;
 
 
-pointer: /* (* ISO 6.7.5 *) */ 
-   STAR attributes pointer_opt  { $2 :: fst $3, $1 }
+/* (* ISO 6.7.5 *) */ 
+pointer: 
+|  STAR attributes pointer_opt  { $2 :: fst $3, $1 }
 ;
 pointer_opt:
-   /**/                          { [], currentLoc () }
+|  /**/                          { [], currentLoc () }
 |  pointer                       { $1 }
 ;
 
-type_name: /* (* ISO 6.7.6 *) */
-  decl_spec_list abstract_decl { let d, a = $2 in
+/* (* ISO 6.7.6 *) */
+type_name: 
+| decl_spec_list abstract_decl { let d, a = $2 in
                                  if a <> [] then begin
                                    parse_error "attributes in type name";
                                    raise Parsing.Parse_error
@@ -2824,7 +2845,7 @@ type_name: /* (* ISO 6.7.6 *) */
 | decl_spec_list               { (fst $1, JUSTBASE) }
 ;
 abstract_decl: /* (* ISO 6.7.6. *) */
-  pointer_opt abs_direct_decl attributes  { applyPointer (fst $1) $2, $3 }
+| pointer_opt abs_direct_decl attributes  { applyPointer (fst $1) $2, $3 }
 | pointer                                 { applyPointer (fst $1) JUSTBASE, [] }
 ;
 
@@ -2849,11 +2870,11 @@ abs_direct_decl: /* (* ISO 6.7.6. We do not support optional declarator for
                                    } 
 ;
 abs_direct_decl_opt:
-    abs_direct_decl                 { $1 }
+|   abs_direct_decl                 { $1 }
 |   /* empty */                     { JUSTBASE }
 ;
 function_def:  /* (* ISO 6.9.1 *) */
-  function_def_start block   
+| function_def_start block   
           { let (loc, specs, decl) = $1 in
             currentFunctionName := "<__FUNCTION__ used outside any functions>";
             !Flx_cil_lexerhack.pop_context (); (* The context pushed by 
@@ -2863,7 +2884,7 @@ function_def:  /* (* ISO 6.9.1 *) */
 
 
 function_def_start:  /* (* ISO 6.9.1 *) */
-  decl_spec_list declarator   
+| decl_spec_list declarator   
                             { announceFunctionName $2;
                               (snd $1, fst $1, $2)
                             } 
@@ -2912,21 +2933,21 @@ function_def_start:  /* (* ISO 6.9.1 *) */
 
 /* const/volatile as type specifier elements */
 cvspec:
-    CONST                               { SpecCV(CV_CONST), $1 }
+|   CONST                               { SpecCV(CV_CONST), $1 }
 |   VOLATILE                            { SpecCV(CV_VOLATILE), $1 }
 |   RESTRICT                            { SpecCV(CV_RESTRICT), $1 }
 ;
 
 /*** GCC attributes ***/
 attributes:
-    /* empty */                         { []}
+|   /* empty */                         { []}
 |   attribute attributes                { fst $1 :: $2 }
 ;
 
 /* (* In some contexts we can have an inline assembly to specify the name to 
     * be used for a global. We treat this as a name attribute *) */
 attributes_with_asm:
-    /* empty */                         { [] }
+|   /* empty */                         { [] }
 |   attribute attributes_with_asm       { fst $1 :: $2 }
 |   ASM LPAREN string_constant RPAREN attributes        
                                         { ("__asm__", 
@@ -2935,7 +2956,7 @@ attributes_with_asm:
 
 /* things like __attribute__, but no const/volatile */
 attribute_nocv:
-    ATTRIBUTE LPAREN paren_attr_list_ne RPAREN  
+|   ATTRIBUTE LPAREN paren_attr_list_ne RPAREN  
                                         { ("__attribute__", $3), $1 }
 |   DECLSPEC paren_attr_list_ne         { ("__declspec", $2), $1 }
 |   MSATTR                              { (fst $1, []), snd $1 }
@@ -2945,7 +2966,7 @@ attribute_nocv:
 
 /* __attribute__ plus const/volatile */
 attribute:
-    attribute_nocv                      { $1 }
+|   attribute_nocv                      { $1 }
 |   CONST                               { ("const", []), $1 }
 |   RESTRICT                            { ("restrict",[]), $1 }
 |   VOLATILE                            { ("volatile",[]), $1 }
@@ -2963,7 +2984,7 @@ just_attribute:
 /* this can't be empty, b/c I folded that possibility into the calling
  * productions to avoid some S/R conflicts */
 just_attributes:
-    just_attribute                      { [$1] }
+|   just_attribute                      { [$1] }
 |   just_attribute just_attributes      { $1 :: $2 }
 ;
 
@@ -3030,12 +3051,12 @@ attr_list_ne:
 |  error COMMA attr_list_ne              { $3 }
 ;
 paren_attr_list_ne: 
-   LPAREN attr_list_ne RPAREN            { $2 }
+|  LPAREN attr_list_ne RPAREN            { $2 }
 |  LPAREN error RPAREN                   { [] }
 ;
 /*** GCC ASM instructions ***/
 asmattr:
-     /* empty */                        { [] }
+|    /* empty */                        { [] }
 |    VOLATILE  asmattr                  { ("volatile", []) :: $2 }
 |    CONST asmattr                      { ("const", []) :: $2 } 
 ;
@@ -3044,34 +3065,34 @@ asmtemplate:
 |   one_string_constant asmtemplate              { $1 :: $2 }
 ;
 asmoutputs: 
-  /* empty */           { ([], [], []) }
+| /* empty */           { ([], [], []) }
 | COLON asmoperands asminputs
                         { let (ins, clobs) = $3 in
                           ($2, ins, clobs) }
 ;
 asmoperands:
-     /* empty */                        { [] }
+|    /* empty */                        { [] }
 |    asmoperandsne                      { List.rev $1 }
 ;
 asmoperandsne:
-     asmoperand                         { [$1] }
+|    asmoperand                         { [$1] }
 |    asmoperandsne COMMA asmoperand     { $3 :: $1 }
 ;
 asmoperand:
-     string_constant LPAREN expression RPAREN    { (fst $1, fst $3) }
+|    string_constant LPAREN expression RPAREN    { (fst $1, fst $3) }
 |    string_constant LPAREN error RPAREN         { (fst $1, NOTHING ) } 
 ; 
 asminputs: 
-  /* empty */                { ([], []) }
+| /* empty */                { ([], []) }
 | COLON asmoperands asmclobber
                         { ($2, $3) }
 ;
 asmclobber:
-    /* empty */                         { [] }
+|   /* empty */                         { [] }
 | COLON asmcloberlst_ne                 { $2 }
 ;
 asmcloberlst_ne:
-   one_string_constant                           { [$1] }
+|  one_string_constant                           { [$1] }
 |  one_string_constant COMMA asmcloberlst_ne     { $1 :: $3 }
 ;
   

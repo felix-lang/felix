@@ -448,6 +448,8 @@ module C_hack
   fun static_cast[dst,src]: src->dst = 'static_cast<?1>($1)';
   fun dynamic_cast[dst,src]: src->dst = 'dynamic_cast<?1>($1)';
   fun reinterpret_cast[dst,src]: src->dst = 'reinterpret_cast<?1>($1)';
+  const sizeof[t]:size = 'sizeof(?1)';
+  fun int_of:size->int='$1';
 
   publish "Abstract type for C pointer"
   pod type ptr[t]="?1 *";
@@ -511,6 +513,17 @@ module C_hack
   but screws up on (T())
   """
   fun dflt[t]:1->t = "dflt<?1>()" requires dflt_h;
+}
+
+module Carray
+{
+  requires cstdlib;
+  open C_hack;
+
+  fun array_alloc[t]: int -> ptr[t] = '(?1*)std::malloc(sizeof(?1)*$1)'; 
+  fun array_calloc[t]: int -> ptr[t] = '(?1*)std::calloc(sizeof(?1),$1)'; 
+  proc free[t]: ptr[t]="std::free($1);";
+  fun subscript[t]: ptr[t] * int -> t = '$1[$2]';
 }
 
 publish "System Interface"
