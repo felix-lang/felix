@@ -1,10 +1,30 @@
 @head(1,'Maker')
-@h = tangler('script/maker','python')
+@h = tangler('script/maker.in','python')
 @select(h)
 #!/usr/bin/env python
 ###############################################################
 # FELIX MAKE SCRIPT
 ###############################################################
+
+#--------------------------------------------------------------
+# Autoconf section
+# @configure_input@
+#--------------------------------------------------------------
+
+CFLAGS = '@CFLAGS@'
+CPPFLAGS = '@CPPFLAGS@'
+CXXFLAGS = '@CXXFLAGS@'
+DEFS = '@DEFS@'
+LDFLAGS = '@LDFLAGS@'
+LIBS = '@LIBS@'
+BUILDDIR = '@builddir@'
+ABS_BUILDDIR = '@abs_builddir@'
+TOP_BUILDDIR = '@top_builddir@'
+ABS_TOP_BUILDDIR = '@abs_top_builddir@'
+SRCDIR = '@srcdir@'
+ABS_SRCDIR = '@abs_srcdir@'
+TOP_SRCDIR = '@top_srcdir@'
+TOP_ABS_SRCDIR = '@top_abs_srcdir@'
 
 # --------------------------------------------------
 # IMPORT UTILITY RESOURCES
@@ -718,15 +738,56 @@ If it hits a an empty file set it gives an error:
 we fix it. If it hits a subdirectory it gives an error.
 We have no idea if it continues copying.
 
-@select(tangler('makefile'))
-@tangle('PREFIX=/usr/local')
-@tangle('INSTALL_DIR=${PREFIX}/lib')
-@tangle('EXEC_DIR=${PREFIX}/bin')
-@tangle('MAN_DIR=${PREFIX}/man')
+@select(tangler('Makefile.in','data'))
+#--------------------------------------------------------------
+# Autoconf section
+# @configure_input@
+#--------------------------------------------------------------
+# Variable set by autoconf
+
+CFLAGS = @CFLAGS@
+CPPFLAGS = @CPPFLAGS@
+CXXFLAGS = @CXXFLAGS@
+DEFS = @DEFS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+builddir = @builddir@
+abs_builddir= @abs_builddir@
+top_builddir= @top_builddir@
+abs_top_builddir= @abs_top_builddir@
+srcdir = @srcdir@
+abs_srcdir = @abs_srcdir@
+top_srcdir = @top_srcdir@
+abs_top_srcdir = @abs_top_srcdir@
+
+bindir=@bindir@
+datadir=@datadir@
+exec_prefix=@exec_prefix@
+includedir=@includedir@
+infodir=@infodir@
+libdir=@libdir@
+libexecdir=@libexecdir@
+localstatedir=@localstatedir@
+mandir=@mandir@
+prefix=@prefix@
+sbindir=@sbindir@
+sharedstatedir=@sharedstatedir@
+sysconfdir=@sysconfdir@
+
+#----------------------
+@tangle('INSTALL_DIR=${libdir}')
+@tangle('EXEC_DIR=${bindir}')
+@tangle('MAN_DIR=${mandir}')
 @tangle('SWIGDEVDIR=/usr/local/src/cvsswig/SWIG/')
+@tangle('')
 @tangle('all: dummy')
 @tangle('\tpython script/maker extract compiler drivers test')
 @tangle('')
+@tangle('config: dummy')
+@tangle('\tautoconf')
+@tangle('\t./configure')
+@tangle('')
+
 @tangle('bytecode: dummy')
 @tangle('\tpython script/maker compiler bytecode')
 @tangle('')
@@ -824,7 +885,16 @@ We have no idea if it continues copying.
 @tangle('\trm -f flx_'+flx_version)
 @tangle('\tln -s . flx_'+flx_version)
 @tangle('\ttar -zcvf flx_'+flx_version+'_src.tgz\\')
-@tangle('\t\tflx_'+flx_version+'/makefile flx_'+flx_version+'/README flx_'+flx_version+'/CONTENTS flx_'+flx_version+'/INSTALL flx_'+flx_version+'/VERSION flx_'+flx_version+'/LICENSE \\')
+@tangle('\t\tflx_'+flx_version+'/boot\\')
+@tangle('\t\tflx_'+flx_version+'/README \\')
+@tangle('\t\tflx_'+flx_version+'/CONTENTS \\')
+@tangle('\t\tflx_'+flx_version+'/INSTALL \\')
+@tangle('\t\tflx_'+flx_version+'/VERSION \\')
+@tangle('\t\tflx_'+flx_version+'/LICENSE \\')
+@tangle('\t\tflx_'+flx_version+'/NEWS \\')
+@tangle('\t\tflx_'+flx_version+'/AUTHORS \\')
+@tangle('\t\tflx_'+flx_version+'/COPYING\\')
+@tangle('\t\tflx_'+flx_version+'/ChangeLog \\')
 @tangle('\t\tflx_'+flx_version+'/lpsrc/*.ipk\\')
 @tangle('\t\tflx_'+flx_version+'/lpsrc/*.pak\\')
 @tangle('\t\tflx_'+flx_version+'/interscript/*.py \\')
@@ -847,7 +917,16 @@ We have no idea if it continues copying.
 @tangle('\t\tflx_'+flx_version+'/interscript/weavers/*.py \\')
 @tangle('')
 @tangle('\ttar -zcvf flx_'+flx_version+'_bin_linux.tgz\\')
-@tangle('\t\tflx_'+flx_version+'/makefile flx_'+flx_version+'/README flx_'+flx_version+'/CONTENTS flx_'+flx_version+'/INSTALL flx_'+flx_version+'/VERSION flx_'+flx_version+'/LICENSE \\')
+@tangle('\t\tflx_'+flx_version+'/makefile \\')
+@tangle('\t\tflx_'+flx_version+'/README \\')
+@tangle('\t\tflx_'+flx_version+'/CONTENTS \\')
+@tangle('\t\tflx_'+flx_version+'/INSTALL \\')
+@tangle('\t\tflx_'+flx_version+'/VERSION \\')
+@tangle('\t\tflx_'+flx_version+'/LICENSE \\')
+@tangle('\t\tflx_'+flx_version+'/NEWS \\')
+@tangle('\t\tflx_'+flx_version+'/AUTHORS \\')
+@tangle('\t\tflx_'+flx_version+'/COPYING\\')
+@tangle('\t\tflx_'+flx_version+'/ChangeLog \\')
 @tangle('\t\tflx_'+flx_version+'/lpsrc/*.ipk \\')
 @tangle('\t\tflx_'+flx_version+'/lpsrc/*.pak \\')
 @tangle('\t\tflx_'+flx_version+'/script/maker \\')
@@ -873,6 +952,13 @@ We have no idea if it continues copying.
 @tangle('\t\tflx_'+flx_version+'/bin/flx \\')
 @tangle('\t\tflx_'+flx_version+'/bin/flxg \\')
 @tangle('\t\tflx_'+flx_version+'/bin/flx_run \\')
+@tangle('\t\tflx_'+flx_version+'/swig/*.swg \\')
+@tangle('\t\tflx_'+flx_version+'/swig/*.i \\')
+@tangle('\t\tflx_'+flx_version+'/swig/makefile \\')
+@tangle('\t\tflx_'+flx_version+'/swig/CONTENTS \\')
+@tangle('\t\tflx_'+flx_version+'/swig/INSTALL \\')
+@tangle('\t\tflx_'+flx_version+'/swig/preprocessor.patch \\')
+@tangle('\t\tflx_'+flx_version+'/swig/swigmain.cxx \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/bin/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/compilers/*.py \\')
@@ -899,24 +985,19 @@ We have no idea if it continues copying.
 @tangle('man: dummy')
 @tangle('\tpython script/maker man')
 @tangle('')
-@tangle('upload_www: dummy')
-@tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
-@tangle('')
-@tangle('upload: dummy')
-@tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
-@tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
-@tangle('\tscp flx_'+flx_version+'_bin_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
-@tangle('')
 @tangle('clean: dummy')
 @tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so')
 @tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so')
 @tangle('')
 @tangle('virgin: dummy')
+@tangle('\tcp Makefile Makefile.old')
 @tangle('\trm -rf tut rtl test www src misc man script bin doc lib impldoc htmlman swig tmp.tmp')
 @tangle('\trm -rf lpsrc/*.cache')
 @tangle('\trm -rf interscript/*.pyc')
 @tangle('\trm -rf interscript/*.pyo')
-@tangle('\trm -rf README LICENSE VERSION CONTENTS INSTALL')
+@tangle('\trm -f README LICENSE VERSION CONTENTS INSTALL AUTHORS NEWS COPYING ChangeLog')
+@tangle('\trm -f config* Makefile.in')
+@tangle('\trm -rf autom4te.cache')
 @tangle('')
 
 @tangle('backup: dummy')
@@ -932,6 +1013,7 @@ We have no idea if it continues copying.
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_tutorial.pak')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_tut_macro.pak')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_tut_bind.pak')
+@tangle('\tautoconf')
 @tangle('')
 
 @tangle('install: dummy')
@@ -953,11 +1035,45 @@ We have no idea if it continues copying.
 @tangle('dummy:')
 @tangle('\t#felix make')
 @tangle('')
+@tangle("# These targets are for SKALLER only")
+@tangle("# they're used to upload stuff to sourceforge")
+@tangle('upload_www: dummy')
+@tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
+@tangle('')
+@tangle('upload: dummy')
+@tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
+@tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('\tscp flx_'+flx_version+'_bin_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('')
 
+@head(1,'Bootstrapper')
+@select(tangler('boot.sh','data'))
+env PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx.pak
+autoconf
 
 @head(1,'README')
 @select(tangler('README'))
 This will be the readme file one day ..
+
+@head(1,'AUTHORS')
+@select(tangler('AUTHORS'))
+John (Max) Skaller skaller@ozemail.com.au
+
+@head(1,'COPYING')
+@select(tangler('COPYING'))
+Felix is free for any use. Just don't misrepresent
+the Authors.
+
+@head(1,'ChangeLog')
+@select(tangler('ChangeLog'))
+Well, this file shouldn't be here, it should
+be generated by something .. [needed to shut auto tools up]
+
+@head(1,'NEWS')
+@select(tangler('NEWS'))
+Well, this file shouldn't be here, it should
+be generated by something .. [needed to shut auto tools up]
+
 
 @head(1,'CONTENTS')
 @select(tangler('CONTENTS'))
@@ -972,12 +1088,32 @@ and program driver.
 
 Top level files:
 
-  makefile
 @tangle('  VERSION   current version number, should be '+flx_version)
   CONTENTS  (this file)
   README    the usual readme file
   INSTALL   how to install and build felix
   LICENSE   license details
+  AUTHORS   list of contributors
+  NEWS      handy place to plug Felix
+  ChangeLog where change info should go but doesn't
+
+  buildno.txt contains the build sequence number
+            this must differ between builds in case
+            Marshalled data format changes
+ 
+EXPERIMENTAL! Auto* stuff :(
+
+  configure.ac  autoconf input file
+  configure     what autoconf generates
+  config.h.in   input for config.h file
+  config.h      generated from config.h.in by autoconf
+  Makefile.am   input for automake (coming .. argghh)
+  Makefile.in   input for autoconf generated by automake
+  Makefile      the makefile
+ 
+  boot.sh        shell script to start everything rolling
+                 run this first:
+                    sh boot.sh
 
 The directories are:
 
@@ -1003,9 +1139,8 @@ The directories are:
 @head(1,'LICENSE')
 @select(tangler('LICENSE'))
 @tangle('Version ' + flx_version + ' of Felix')
-is free for any use, provided the author
-is not misrepresented in any way.
-
+is free for any use, provided the authors
+are not misrepresented in any way.
 
 @head(1,'INSTALL')
 @select(tangler('INSTALL'))
@@ -1013,7 +1148,7 @@ is not misrepresented in any way.
 FULL BUILD.
 -----------
 
-1. Download, build, and install Ocaml (3.06 or greater)
+1. Download, build, and install Ocaml (3.07 or greater)
    if you don't have it already
 
    http://caml.inria.fr
@@ -1024,25 +1159,48 @@ FULL BUILD.
     http://www.python.org
     http://python.sourceforge.net
 
+3. Download and install gnu autoconf
+
+    http://www.gnu.org
+
 3. Download the Felix tarball (this package)
    and unpack it in your workspace
    
 @tangle('   tar -zxvf felix_'+flx_version+'_src.tgz')
 @tangle('   cd felix_'+flx_version)
 
-   make help -- gives help on make targets
+4. Bootstrap the system.
+
+   sh boot.sh
+
+  This extracts the basic sources from the
+  LP archive, and invokes GNU autoconf
+  to build a configure script.
+
+  IF YOU LOSE THIS FILE: you will have
+  to extract the sources by hand.
+  Here's what's in the boot.sh shell script:
+
+  env PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx.pak
+  autoconf
+
+5. Configure the system
+
+   ./configure
+
+   This uses the default install points.
+   There will be some options added soon
+   to help locate the numerous packages
+   we will try to build wrappers for using SWIG.
+
+   At the moment on the default gnu options
+
+   --prefix, --exec_prefix 
+
+   are supported.
+
    
-for a quick build type:
-
-  make virgin boot compiler drivers doc tests
-
-  [does all the steps below except install]
-  
-4. Perform the initial source extraction:
-
-   make boot
-   
-5. Build the compiler
+6. Build the compiler
    For systems where the Ocaml native code compiler
    is supported:
 
@@ -1053,7 +1211,7 @@ for a quick build type:
 
    make compiler.bytecode drivers
 
-6. Build the documentation and tutorial
+7. Build the documentation and tutorial
 
    make doc 
 
@@ -1061,7 +1219,7 @@ for a quick build type:
 
    make impldoc
 
-7. Test the compiler
+8. Test the compiler
 
    make test
 
@@ -1071,17 +1229,9 @@ for a quick build type:
 
    to run the force all the tests to run
    
-8. Install the compiler
+9. Install the compiler
 
-   EDIT THE MAKEFILE TO SET THE INSTALL POINTS
-
-   By default, Felix installs in:
-
-   /usr/local/bin/ -- the compiler executable
-   /usr/local/man/ -- the man pages
-   /usr/local/lib/ -- the rest of the package
-   
-   become super user if necessary, then:
+   Become super user if necessary, then:
 
    make install -- installs felix
 
@@ -1089,9 +1239,12 @@ REBUILD
 -------
 
   make virgin        -- this deletes EVERYTHING generated
-                        except the makefile
+                        except the Makefile
 
   make boot          -- use this to reextract after a make virgin
+                        it also runs autoconf again
+
+  ./configure        -- to reconfigure the system
 
   make clean         -- use this to delete all output from
                         test runs
@@ -1126,6 +1279,177 @@ make a sample program mytest.flx:
 and then run it:
   
   flx -Ilib mytest
+
+@head(1,'configure.ac')
+This is input to autoconf.
+@select(tangler('configure.ac','data'))
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.57)
+@tangle("AC_INIT(felix, ["+flx_version+"], [felix-impl@mail.sf.net])")
+AC_REVISION($Revision$)
+#AC_CONFIG_SRCDIR([.flx.hpp])
+
+#------------------------------------------
+# Checks for programs.
+AC_PROG_CXX
+AC_PROG_CC
+AC_PROG_LN_S
+AC_CHECK_PROGS(OCAML,ocamlopt.opt,ocamlopt,ocamlc.opt,ocamlc)
+
+#------------------------------------------
+# Checks for libraries.
+# CORE libraries -- we're screwed without these
+AC_CHECK_LIB([dl], [dlopen])
+AC_CHECK_LIB([gmp], [dlopen])
+
+# archaic ..
+AC_CHECK_LIB([curses], [dlopen])
+AC_CHECK_LIB([readline], [dlopen])
+
+# GUI stuff -- no we refuse to support version 1.x
+AC_CHECK_LIB([glib-2.0], [dlopen])
+AC_CHECK_LIB([gdk-2.0], [dlopen])
+AC_CHECK_LIB([gtk-x11-2.0], [dlopen])
+
+# networking essentials
+AC_CHECK_LIB([pthread], [SSL_library_init])
+AC_CHECK_LIB([ssl], [SSL_library_init])
+AC_CHECK_LIB([crypto], [SSL_library_init])
+
+
+#simple data stores (no, they're not really databases)
+AC_CHECK_LIB([gdbm], [dlopen])
+
+#raf's libslack
+AC_CHECK_LIB([slack], [dlopen])
+
+#other fun stuff
+AC_CHECK_LIB([png], [dlopen])
+
+#------------------------------------------
+# Checks for header files.
+AC_HEADER_STDC
+AC_HEADER_DIRENT
+AC_CHECK_HEADERS([stdint.h unistd.h])
+AC_HEADER_SYS_WAIT
+
+#------------------------------------------
+# Checks for typedefs, structures, and compiler characteristics.
+AC_HEADER_STDBOOL
+AC_C_CONST
+AC_FUNC_OBSTACK
+AC_TYPE_SIZE_T
+
+#------------------------------------------
+# Checks for library functions.
+AC_FUNC_MALLOC
+AC_FUNC_ALLOCA
+AC_FUNC_MMAP
+
+AC_CHECK_FUNCS([memset])
+
+#------------------------------------------
+# check compiler stuff
+AC_CHECK_SIZEOF(char)
+AC_CHECK_SIZEOF(short)
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(long)
+AC_CHECK_SIZEOF(long long)
+AC_CHECK_SIZEOF(float)
+AC_CHECK_SIZEOF(double)
+AC_CHECK_SIZEOF(long double)
+AC_CHECK_SIZEOF([void*])
+AC_CHECK_SIZEOF([wchar_t])
+AC_CHECK_SIZEOF([ptrdiff_t])
+AC_CHECK_SIZEOF([void(*)()])
+AC_C_BIGENDIAN
+AC_C_CHAR_UNSIGNED
+AC_C_LONG_DOUBLE
+AC_SYS_LARGEFILE
+
+#------------------------------------------
+# find X
+AC_PATH_XTRA
+
+#------------------------------------------
+AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([script/maker])
+AC_OUTPUT
+
+@head(1,'config.h.in')
+This is input to autoconf.
+@select(tangler('config.h.in','data'))
+/* config.h.in.  Generated from configure.ac by autoheader.  */
+/* fiddled by JMS -- I refuse to support non-ISO systems,
+   so there are no tests for that kind of junk.
+
+   We do check for gcc specialities though,
+   and for non-ISO C/C++ features including posix.
+*/
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `dl' library (-ldl). */
+#undef HAVE_LIBDL
+
+/* Define to 1 if your system has a GNU libc compatible `malloc' function, and
+   to 0 otherwise. */
+#undef HAVE_MALLOC
+
+/* Define to 1 if libc includes obstacks. */
+#undef HAVE_OBSTACK
+
+/* Define to 1 if stdbool.h conforms to C99. */
+#undef HAVE_STDBOOL_H
+
+/* Define to 1 if you have the <stdint.h> header file. (C99) */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Define to 1 if the system has the type `_Bool'. */
+#undef HAVE__BOOL
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* Define to 1 if you have the ISO C89 or ISO C99 headers. */
+#undef STDC_HEADERS
+
+
+@head(1,'.cvsignore')
+This is actually put in the lpsrc directory to tell
+cvs to ignore certain files.
+@select(tangler('lpsrc/.cvsignore'))
+*.cache
+*.swp
+
 
 @head(1,'Ocamldoc Latex Style')
 Taken from the distribution because ocamldoc

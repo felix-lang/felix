@@ -36,7 +36,7 @@ See
 .B http://felix.sf.net
 .br
 .SH AUTHOR
-John Maxwell Skaller, mailto:skaller@ozemail.com.au
+John Maxwell Skaller, mailto:skaller@users.sourceforge.org
 """
 //
 
@@ -73,6 +73,15 @@ Here is an example of a C++ binding.
 
 .B type
 int = "int";
+.br
+.B incomplete type
+int = "int";
+.br
+.B ctypes
+int, long;
+.br
+.B incomplete ctypes
+astruct, bstruct;
 .br
 .B fun 
 add: int * int -> int = "$1+$2";

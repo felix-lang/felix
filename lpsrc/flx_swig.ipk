@@ -18,12 +18,24 @@ felix.swg -- the standard definitions processed before user inputs
 swigmain.cxx -- a replacement for Source/Modules/swigmain.cxx
            which works on version 1.1.20 and supports dynamic loading
 
-Makefile -- a file to make the felix language module
+makefile -- a file to make the felix language module
             this file MUST BE PATCHED BY HAND to locate
-            the required include files. These files are
-            available in the 1.1.20 distribution, but they
-            are NOT installed.
+            the required include files if you run this makefile
+            directly (the location is patched by the master makefile
+            if this makefile is run recursively by it). 
+            
+            These files are available in the 1.1.20 distribution, 
+            but they are NOT installed.
 
+preprocessor.patch -- a patch for the 1.1.20 distribution
+            preprocessor to fix a serious bug: it doesn't
+            concatenate lines ending in \ inside directives.
+            You will need to cd into Source/Preprocessor
+            to apply the patch.
+
+*.i  --     swig interfaces for various libraries
+            you may need to patch the include locations
+            to match your system.
 @doc()
 Here are some notes on installing the Felix module.
 @h = tangler("swig/INSTALL","data")
@@ -176,6 +188,8 @@ FELIXBN(talse);
 @h = tangler("swig/felix.swg","data")
 @select(h)
 // felix names for C++ operators (to be completed)
+// these names are currently WRONG, they don't
+// agree with the names used in Felix ..
 #ifdef __cplusplus
 %rename(__add__)      *::operator+;
 %rename(__pos__)      *::operator+();
@@ -224,8 +238,28 @@ FELIXBN(talse);
 
 // felix specific directives
 // %header directive inserts C into header statement
+//   this is a standard SWIG directive
+
 // %body directive inserts C into body statement
-// %felix directive inserts felix code inline
+
+// %felix directive inserts arbitrary felix code inline
+
+// %callback_type(t){n} defines a callback function type
+//   with client  data in argument n
+
+// %callback_client(t){m,n} defines a function
+//   which accepts a callback argument in argument m,
+//   and client data in argument n
+
+// %abstract(x) specifies a type x = 'x'; be generated
+//   for a typedef
+
+// %alias(x) species a typedef x = ?; be generated
+//   for a typedef
+
+// %bitmask(x) specifies an enum is a bitstring,
+//   and generates & | ~ ^ operators for it
+
 #define %body %insert("body")
 #define %felix %insert("felix")
 #define %bitmask(x) %feature("bitmask") x {}
@@ -1370,4 +1404,51 @@ int main(int argc, char **argv) {
   }
   return SWIG_main(argc,argv,dl);
 }
+
+@head(1,'patch for swig 1.1.20')
+This patch fixes a bug in the swig 1.1.20 preprocessor
+which fails to concatenate lines terminate by \ in 
+preprocessor directives. You will need to apply
+the patch in directory Source/Preprocessor.
+
+@select(tangler('swig/preprocessor.patch','data'))
+*** cpp.c.old   2004-01-01 14:20:58.000000000 +1100
+--- cpp.c       2004-01-01 14:26:36.000000000 +1100
+***************
+*** 1153,1168 ****
+        Putc(c,value);
+        skip_tochar(s,'\'',value);
+        } else {
+        Putc(c,value);
+-       if (c == '\\') state = 44;
+        }
+        break;
+   
+!     case 44:
+        if (c == '\n') {
+!       Putc(c,value);
+!       cpp_lines++;
+        } else {
+!       Ungetc(c,s);
+        }
+        state = 43;
+--- 1153,1170 ----
+        Putc(c,value);
+        skip_tochar(s,'\'',value);
++       }       else if (c == '\\') {
++         state = 44;
+        } else {
+        Putc(c,value);
+        }
+        break;
+   
+!     case 44:
+!       /* join \ terminated lines or copy \ escapes as is */
+        if (c == '\n') {
+!       cpp_lines++; /* not sure if this is right .. */
+        } else {
+!         Putc('\\',value);
+!         Putc(c,value);
+        }
+        state = 43;
 
