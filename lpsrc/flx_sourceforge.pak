@@ -6,7 +6,23 @@ sourceforge site to link to everything properly.
 @f = open("VERSION")
 @flx_version = string.strip(f.readline())
 @f.close()
-@select(tangler('www/index.html','data'))
+@select(tangler('www/licence.html','data'))
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>Felix</TITLE>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY>
+<H1>Licence</H1>
+<P>Copyright (C) 2004 John Skaller.
+<P>Felix is Free For Any Use.
+<P>Redistribution and use in source and binary forms, with or without
+modification, are permitted.
+</BODY>
+</HTML>
+
+@select(tangler('www/old_index.html','data'))
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <HTML>
 <HEAD>
@@ -40,7 +56,8 @@ into continuation objects with resume() callback methods,
 allowing embedding in event driven message passing frameworks,
 and supporting high speed context switching
 of cooperatively multitasked logics, called
-ultra-lightweight threads. Memory is the only limit
+ultra-lightweight threads, or just <STRONG>microthreading</STRONG>. 
+Memory is the only limit
 on the number of UL-threads supported, and context
 switching times of order O(1) can be achieved using
 hash tables. Applications include web services,
@@ -51,8 +68,10 @@ systems.
 is provided by incorporating some of the them directly into 
 the core compiler, with the idea of later providing
 an abstracted extension mechanism. We currently
-support regular matching and lexing, and hope to extend
-this set to include parsing, numerical computation,
+support <EM>regular matching</EM>, and <EM>lexing</EM>,
+and <EM>GLR parsing</EM>
+and hope to extend this set to include
+numerical computation,
 term rewriting, XML processing, and SQL.
 </P><P>
 <STRONG>Language Features</STRONG> include:
@@ -85,6 +104,7 @@ term rewriting, XML processing, and SQL.
 <LI>C99 floats</LI>
 <LI>string(8 bit), ustring(32 bit)</LI>
 <LI>GNU multiple precision arithmetic (gmp) package</LI>
+<LI>STL</LI>
 </UL>
 </UL>
 <STRONG>Architecture</STRONG> support includes:
@@ -151,6 +171,25 @@ HREF=//interscript.sf.net>interscript</A>.
 </BODY>
 </HTML>
 
+@select(tangler('www/tutorial.html','data'))
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+@tangle("<TITLE>Felix Download Felix "+flx_version+"</TITLE>")
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY>
+<H1>Tutorials</H1>
+<UL>
+<LI><A HREF=../tut/doc/en_flx_tutorial_top.html>main tutorial</A>,
+<LI><A HREF=../tut/doc/en_flx_tut_bind_top.html>binding and embedding tutorial</A> or
+<LI><A HREF=../tut/doc/en_flx_tut_macro_top.html>macro processor tutorial</A> 
+<LI><A HREF=../tut/doc/en_flx_tut_migration_top.html>C++ migration tutorial</A> 
+<LI><A HREF=../htmlman/felix_1.html>man pages</A> 
+</UL>
+</BODY>
+</HTML>
+
 @select(tangler('www/download.html','data'))
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <HTML>
@@ -190,20 +229,20 @@ native Win32 using MSVC++.
 </P>
 
 <H1>Download</H1>
-@keep=['1.0.18','1.0.17','1.0.16','1.0.15','1.0.12','1.0.11','1.0.10','1.0.9','1.0.8','1.0.7']
-@tangle("<P> Download developer tarball 'Morphlix' <A HREF=flx_"+flx_version+"_src.tgz>flx_"+flx_version+"_src.tgz</A></P><P>")
+@keep=['1.0.19','1.0.18','1.0.17','1.0.16','1.0.15','1.0.12','1.0.11','1.0.10','1.0.9','1.0.8','1.0.7']
+@tangle("<P> Download developer tarball 'Morphlix' <A HREF=../../flx_"+flx_version+"_src.tgz>flx_"+flx_version+"_src.tgz</A></P><P>")
 @for k in keep:
-  tangle('Old Version <A HREF=flx_'+k+'_src.tgz>flx_'+k+'_src.tgz</A><BR>') 
+  tangle('Old Version <A HREF=../../flx_'+k+'_src.tgz>flx_'+k+'_src.tgz</A><BR>') 
 </P>
 <H1>Make procedure</H1>
 To bootstrap the build, type
 </P><P><CODE>
-make boot
+./configure
 </CODE></P><P>
 on the command line to unpack the build scripts and makefile.
-You may need to <STRONG>edit</STRONG> the file
+You may need to <STRONG>edit</STRONG> the files
 </P><P><CODE>
-config/config.py
+config/*.py
 </CODE></P>
 to suit your platform.</P><P>
 You should now be able to:
@@ -350,6 +389,17 @@ There is some information on using the <A HREF=flxcc.html>flxcc</A> wrapper gene
 Please read <A HREF=papers.html>Interesting Papers</A>.
 and see <A HREF=related.html>Related</A> for links
 to related projects and other resources.
+
+<H1>Sourceforge Project Page</H1>
+The felix sourceforge <A HREF=http://sourceforge.net/projects/felix/>project</A> page.
+
+<H1>CVS access</H1>
+The CVS location is
+<STRONG>cvs.sourceforge.net:/cvsroot/felix</STRONG>
+<P>
+CVS web access <A
+HREF="http://sourceforge.net/cvs/?group_id=28597">here</A>
+<P>
 </P>
 </BODY>
 </HTML>
@@ -401,7 +451,7 @@ process.</EM>
 <BODY>
 <H1>Compiler documentation</H1>
 <P>The ocamldoc generated 
-@tangle("<A HREF=flx_"+flx_version+"/impldoc/index.html>module reference</A>")
+@tangle("<A HREF=../impldoc/index.html>module reference</A>")
 for the modules in the core compiler are useful sometimes.
 </P>
 </BODY>
@@ -748,7 +798,7 @@ which have very narrow width.
 <H2>GNU C tricks</H2>
 <P>
 Fergus Henderson, Thomas Conway, and Zoltan Somogyi wrote a report on 
-<A HREF=papers/mercury_to_c.ps>Compiling logic programs to C using GNU C as a portable assembler</A>.
+<A HREF=../../papers/mercury_to_c.ps>Compiling logic programs to C using GNU C as a portable assembler</A>.
 Some of the techniques described in this paper for speeding up
 computed jumps are adapted for use in the Felix system.
 </P>
@@ -760,7 +810,7 @@ this technique even with shared libraries and position independent code.
 </P>
 <H2>Unification of recursive types with subtyping</H2>
 <P>You can find a pdf format copy of 
-<A HREF=papers/SRT.A4.pdf>Luca Cardelli's seminal paper</A>
+<A HREF=../../papers/SRT.A4.pdf>Luca Cardelli's seminal paper</A>
 describing how to perform unification in a system supporting
 the infinite tree expansion interpretation of recursive
 types, together with subtyping rules. In such a system,

@@ -37,6 +37,11 @@ val register_type_nr:
   btypecode_t ->
   unit
 
+val register_tuple:
+  sym_state_t ->
+  btypecode_t ->
+  unit
+
 val register_type_r:
   (int -> btypecode_t list -> unit) ->
   sym_state_t ->
@@ -58,8 +63,13 @@ open Flx_util
 open Flx_srcref
 open Flx_name
 open List
+open Flx_maps
 
 let register_type_nr syms t =
+  (*
+  let t' = Flx_maps.reduce_type t in
+  if t <> t' then print_endline ("UNREDUCED TYPE! " ^ sbt syms.dfns t ^ " <> " ^ sbt syms.dfns t');
+  *)
   match t with
   | `BTYP_fix _ 
   | `BTYP_tuple []
@@ -68,21 +78,40 @@ let register_type_nr syms t =
     ->
     let t = lstrip syms.dfns (fold syms.dfns t) in
     if not (Hashtbl.mem syms.registry t)
-    then
+    then begin
       let () = check_recursion t in
       let n = !(syms.counter) in
       incr syms.counter;
       if syms.compiler_options.print_flag then
       print_endline ("//Register type " ^ si n ^ ": " ^ string_of_btypecode syms.dfns t);
       Hashtbl.add syms.registry t n
+    end
+
+let register_tuple syms t =
+  let t = lstrip syms.dfns (fold syms.dfns t) in
+  match t with
+  | `BTYP_tuple [] -> ()
+  | `BTYP_tuple [_] -> assert false
+
+  | `BTYP_tuple ts ->
+    let t = `BTYP_tuple (map reduce_type ts) in
+    register_type_nr syms t
+
+  | `BTYP_array (t',`BTYP_unitsum n) ->
+    let t' = reduce_type t' in
+    let ts = rev_map (fun _ -> t') (nlist n) in
+    register_type_nr syms (`BTYP_tuple ts)
+    
+  | _ -> assert false
 
 let rec register_type_r ui syms bbdfns exclude sr t =
-  let t = lower (lstrip syms.dfns t) in
+  let t = reduce_type (lower (lstrip syms.dfns t)) in
   (*
   let sp = String.make (length exclude * 2) ' ' in
   print_endline (sp ^ "Register type " ^ string_of_btypecode syms.dfns t);
   if (mem t exclude) then print_endline (sp ^ "Excluded ..");
   *)
+  if not (Hashtbl.mem syms.registry t) then
   if not (mem t exclude) then
   let rr t' = register_type_r ui syms bbdfns (t :: exclude) sr t' in
   let rnr t = register_type_nr syms t in
@@ -96,7 +125,9 @@ let rec register_type_r ui syms bbdfns exclude sr t =
   | `BTYP_var i -> clierr sr ("Attempt to register type variable " ^ si i)
   | `BTYP_function (ps,ret) -> rr ps; rr ret; rnr t
   | `BTYP_array (ps,ret) -> 
-    rr ps; rr ret; rnr t;
+    rr ps; rr ret; rnr t
+    (*
+    ;
     begin match ret with
     | `BTYP_unitsum k ->
       let tt = `BTYP_tuple (map (fun _ -> ps) (nlist k)) in
@@ -104,7 +135,8 @@ let rec register_type_r ui syms bbdfns exclude sr t =
 
     | _ -> clierr sr "Array of non-integer not supported"
     end
-      
+    *)
+
   | `BTYP_tuple ps -> iter rr ps; rnr t
   | `BTYP_sum ps -> iter rr ps; rnr t
   | `BTYP_unitsum k -> rnr t
@@ -145,12 +177,22 @@ let rec register_type_r ui syms bbdfns exclude sr t =
       let cts = map snd cs in
       let cts = map (tsubst vs ts) cts in
       iter rr cts;
-      if length cts > 1 then rnr (`BTYP_tuple cts);
 
+      (* HACKERY HERE... We should NOT need to register
+        constructors, etc, unless they're actually used
+      *)
+      (*
+      if length cts > 1 then rnr (`BTYP_tuple cts);
+      *)
+
+      (*
       let argt = typeoflist cts in
       rnr argt;                             (* argument tuple *)
+      *)
       rnr t;
-      rnr (`BTYP_function (argt,t))         (* constructor *)
+      (*
+      rnr (`BTYP_function (argt,t))         (* constructor as function *)
+      *)
 
     | `BBDCL_abs _ -> ui i ts; rnr t  (* instantiate the type too *)
 

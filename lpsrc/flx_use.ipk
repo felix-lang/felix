@@ -101,6 +101,13 @@ and uses_tbexpr syms used bbdfns (e,t) =
   | `BEXPR_literal _ -> ()
   | `BEXPR_expr (_,t) -> ut t
 
+and uses_production syms used bbdfns p =
+  let uses_symbol (_,nt) = match nt with
+  | `Nonterm ii -> iter (uses syms used bbdfns) ii
+  | `Term i -> () (* HACK! This is a union constructor name  we need to 'use' the union type!! *)
+  in
+  iter uses_symbol p
+
 and uses syms used bbdfns i =
   let ui i = uses syms used bbdfns i in
   let ut t = uses_type syms used bbdfns t in
@@ -126,7 +133,8 @@ and uses syms used bbdfns i =
         ux exes
 
       | `BBDCL_glr (t,(p,e)) ->
-        ut t; ux e
+        ut t; ux e;
+        uses_production syms used bbdfns p
 
       | `BBDCL_union (_,ps)
       | `BBDCL_struct (_,ps)
@@ -144,6 +152,9 @@ and uses syms used bbdfns i =
       | `BBDCL_abs (_,_,_,reqs) -> iter ur reqs
       | `BBDCL_header (_,s,reqs)  
       | `BBDCL_body (_,s,reqs) -> iter ur reqs
+      | `BBDCL_nonconst_ctor (_,_,unt,_,ct) ->
+        ut unt; ut ct
+
       end
     | None -> ()
   end

@@ -15,6 +15,8 @@ val csubst:
   string ->      (* return type as string *)
   string list -> (* generic arguments as strings *)
   string ->      (* precedence *)
+  string ->      (* shape of argument *)
+  string list -> (* shape of arguments *)
   cexpr_t
   
 @h = tangler('src/flx_csubst.ml')
@@ -95,7 +97,7 @@ let is_atomic s =
 
 let islower = function | 'a' .. 'z' -> true | _ -> false
 
-let csubst sr sr2 ct (args:cexpr_t list) typs argtyp retyp gargs prec =
+let csubst sr sr2 ct (args:cexpr_t list) typs argtyp retyp gargs prec argshape argshapes =
   let n = length args in
   assert (n = length typs); 
   (* print_endline ("CSUBST " ^ ct ^ ", count="^si n^", result prec=" ^ prec); *)
@@ -213,7 +215,7 @@ let csubst sr sr2 ct (args:cexpr_t list) typs argtyp retyp gargs prec =
     | Earhole ->
       begin match ch with
       | 't' ->
-        bcat ( argtyp ^"_ptr_map" );
+        bcat ( argshape );
         mode := Normal
 
       | '0' .. '9' -> 
@@ -335,8 +337,8 @@ let csubst sr sr2 ct (args:cexpr_t list) typs argtyp retyp gargs prec =
         then serr i ("Parameter @" ^ string_of_int !digits ^ " too large")
         else if !digits<0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
         else
-          let t = nth typs (!digits-1) in
-          bcat (t ^ "_ptr_map");
+          let t = nth argshapes (!digits-1) in
+          bcat (argshape);
           mode := Normal;
           trans i ch
             

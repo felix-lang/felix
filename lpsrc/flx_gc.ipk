@@ -57,6 +57,7 @@ struct collector_t;  // the collector itself
 
 struct gc_shape_t
 {
+  char const *cname;              // C++ typename
   std::size_t count;              // array element count
   std::size_t amt;                // bytes allocated
   void (*finaliser)(collector_t*, void*);  // finalisation function
@@ -65,6 +66,7 @@ struct gc_shape_t
 
   // convenience constructor
   gc_shape_t(
+    char const *cn,
     std::size_t count_a,
     std::size_t amt_a,
     void (*finaliser_a)(collector_t*, void*),
@@ -142,9 +144,12 @@ if necessary.
 Here is the allocator abstraction.
 @select(h)
 struct allocator_t {
+  bool debug;
+  allocator_t():debug(false){}
   virtual void *allocate(std::size_t)=0;
   virtual void deallocate(void *, std::size_t)=0;
   virtual ~allocator_t(){};
+  void set_debug(bool d){debug=d;}
 };
 
 @doc()
@@ -152,7 +157,8 @@ And here is the collector abstraction.
 @select(h)
 struct collector_t
 {
-  collector_t(){}
+  bool debug;
+  collector_t();
   virtual ~collector_t(){}
 
 @doc()
@@ -183,6 +189,7 @@ Routines to add and remove roots.
 Integrity check for the data structure being managed.
 @select(h)
   virtual void check()=0;
+  void set_debug(bool d);
 
 @doc()
 It doesn't make any sense to copy collector objects
@@ -308,6 +315,7 @@ namespace generic {
 // create a shape object given an array of offsets
 gc_shape_t::gc_shape_t
 (
+  char const *cn,
   std::size_t count_a,
   std::size_t amt_a,
   void (*finaliser_a)(collector_t*, void*),
@@ -315,6 +323,7 @@ gc_shape_t::gc_shape_t
   std::size_t *offsets_a
 )
   :
+  cname(cn),
   count(count_a),
   amt(amt_a),
   finaliser(finaliser_a),
@@ -379,7 +388,12 @@ void *operator new(
   flx::gc::generic::gc_shape_t &shape
 )
 {
-  assert (amt == shape.amt);
+  if (amt != shape.amt)
+  {
+    fprintf(stderr,"Shape size error: allocator size = %ld\n",amt);
+    fprintf(stderr,"Shape %s size = %ld\n",shape.cname,shape.amt);
+    abort();
+  }
   return collector.allocate(&shape,1);
 }
 
@@ -429,6 +443,8 @@ struct flx_collector_t : public collector_t
 
   //
   void check();
+  bool check_client_pointer(void *);
+  bool check_frame_pointer(frame_t *);
 
   // statistics
   unsigned long get_allocation_count()const;
@@ -493,6 +509,7 @@ void *hi_sp = 0;
 void *malloc_free::allocate(std::size_t amt)
 {
   void *p = malloc(amt);
+  if(debug)fprintf(stderr,"Malloc %p\n",p);
   //++mcount;
   //void *x = sp;
   //if (low_sp == NULL) low_sp = x,hi_sp = x;
@@ -511,8 +528,16 @@ void *malloc_free::allocate(std::size_t amt)
 void malloc_free::deallocate(void *p, std::size_t)
 {
   //printf("free %p\n",p);
+  if(debug)fprintf(stderr,"Free %p\n",p);
   free(p);
 }
+
+void collector_t::set_debug(bool d) {
+  debug = d;
+  if (debug) fprintf(stderr,"Collector: FRAMESIZE 0x%x\n",FRAMESIZE);
+}
+
+collector_t::collector_t() : debug(false) {}
 
 unsigned long flx_collector_t::get_allocation_count()const
 {
@@ -649,12 +674,14 @@ unsigned long flx_collector_t::reap ()
 
 unsigned long flx_collector_t::sweep()
 {
+  if(debug)fprintf(stderr,"Collector: Sweep\n");
   collecting=true;
   frame_t *current = first;
   while(current)
   {
     if(current->garbage == parity)
     {
+      if(debug)fprintf(stderr,"Garbage %p=%s\n",current,current->shape->cname);
       unlink(current);
       post_delete(current);
     }
@@ -704,8 +731,32 @@ void flx_collector_t::remove_root(void *memory)
 
 void flx_collector_t::scan_object(frame_t *frame)
 {
+  if(debug)fprintf(stderr,"Scanning %p\n",frame);
+  if(debug)fprintf(stderr,"Scanning [valid] %p=%s\n",frame,frame->shape->cname);
   if(frame->garbage == parity)
   {
+    if(debug){
+      fprintf(stderr,"Reachable %p\n",frame);
+      gc_shape_t * shape = frame->shape;
+      fprintf(stderr,"Reachable [valid] %p=%s\n",frame,shape->cname);
+      for(int i=0; i<shape->n_offsets; ++i)
+      {
+        unsigned long offset = shape->offsets[i];
+        unsigned char *p = (unsigned char*)FRAME_TO_CLIENT(frame);
+        void *x = *(void**)(p+offset);
+        if(x) {
+          bool valid = check_client_pointer(x);
+          fprintf(stderr," offset: 0x%04x %p->[%p-0x%x] %s\n",
+            offset,p+offset,x,FRAMESIZE,
+            valid?"[valid]":"INVALID"
+          );
+          if(!valid) abort();
+        }
+        else
+          fprintf(stderr," offset: 0x%04x %p->[%p] NULL\n",
+            offset,p+offset,x);
+      }
+    }
     frame->garbage = !parity; // reachable!
     gc_shape_t *shape = frame->shape;
     unsigned long n_objects = frame->n_objects * shape->count;
@@ -729,6 +780,7 @@ void flx_collector_t::scan_object(frame_t *frame)
 
 void flx_collector_t::mark()
 {
+  if(debug)fprintf(stderr,"Collector: Running mark\n");
   assert (root_count == roots.size());
 
   rootmap_t::iterator const end = roots.end();
@@ -742,7 +794,7 @@ void flx_collector_t::mark()
 
 unsigned long flx_collector_t::collect()
 {
-  //printf("Running collector\n");
+  if(debug)fprintf(stderr,"Running collector\n");
   mark();
   return sweep();
 }
@@ -753,6 +805,22 @@ void flx_collector_t::check()
  // and check total memory is as expected
  // can also check back links, statistics,
  // and parity
+}
+
+bool flx_collector_t::check_frame_pointer(frame_t *p)
+{
+  frame_t *current = first;
+  while(current)
+  {
+    if(current == p) return true;
+    current = current->next;
+  }
+  return false;
+}
+
+bool flx_collector_t::check_client_pointer(void *p)
+{
+  return p?check_frame_pointer (CLIENT_TO_FRAME(p)):true;
 }
 
 flx_collector_t::~flx_collector_t()

@@ -16,6 +16,620 @@ for line in data:
   f.write(line)
 f.close()
 
+@h = tangler('script/mksm.py','python')
+@select(h)
+
+import string
+import os
+import sys
+
+prefix = '/usr/local/src/elsa-2004.11.13/smbase/'
+
+sm_files = [
+  'array.h',
+  'arraymap.h',
+  'arrayqueue.h',
+  'astlist.h',
+  'autofile.h',
+  'bflatten.h',
+  'bit2d.h',
+  'bitarray.h',
+  'boxprint.h',
+  'breaker.h',
+  'ckheap.h',
+  'crc.h',
+  'cycles.h',
+  'datablok.h',
+  'exc.h',
+  'flatten.h',
+  'gprintf.h',
+  'growbuf.h',
+  'hashline.h',
+  'hashtbl.h',
+  'macros.h',
+  'missing.h',
+  'mypopen.h',
+  'mysig.h',
+  'nonport.h',
+  'objlist.h',
+  'objpool.h',
+  'objstack.h',
+  'ohashtbl.h',
+  'okhasharr.h',
+  'okhashtbl.h',
+  'oobjmap.h',
+  'owner.h',
+  'point.h',
+  'pprint.h',
+  'ptrmap.h',
+  'sm_flexlexer.h',
+  'smregexp.h',
+  'sobjlist.h',
+  'sobjset.h',
+  'sobjstack.h',
+  'srcloc.h',
+  'strdict.h',
+  'str.h',
+  'strhash.h',
+  'stringset.h',
+  'strobjdict.h',
+  'strsobjdict.h',
+  'strtokp.h',
+  'strutil.h',
+  'svdict.h',
+  'syserr.h',
+  'taillist.h',
+  'test.h',
+  'thashtbl.h',
+  'trace.h',
+  'trdelete.h',
+  'typ.h',
+  'unixutil.h',
+  'vdtllist.h',
+  'voidlist.h',
+  'vptrmap.h',
+  'warn.h',
+  'xassert.h',
+  'xobjlist.h',
+  'autofile.cc',
+  'bflatten.cc',
+  'bit2d.cc',
+  'bitarray.cc',
+  'boxprint.cc',
+  'cycles.c',
+  'flatten.cc',
+  'gprintf.c',
+  'growbuf.cc',
+  'hashline.cc',
+  'hashtbl.cc',
+  'mypopen.c',
+  'mysig.cc',
+  'point.cc',
+  'pprint.cc',
+  'smregexp.cc',
+  'srcloc.cc',
+  'strdict.cc',
+  'strhash.cc',
+  'stringset.cc',
+  'strutil.cc',
+  'svdict.cc',
+  'trace.cc',
+  'trdelete.cc',
+  'tsobjlist.cc',
+  'unixutil.c',
+  'vdtllist.cc',
+  'voidlist.cc',
+  'vptrmap.cc',
+  'breaker.cpp',
+  'crc.cpp',
+  'datablok.cpp',
+  'exc.cpp',
+  'missing.cpp',
+  'nonport.cpp',
+  'str.cpp',
+  'strtokp.cpp',
+  'syserr.cpp',
+  'warn.cpp',
+  'malloc_stub.c',
+]
+
+mods = {}
+tgts = [] 
+
+for fn in sm_files:
+  parts = string.split(fn,'/')
+  base = parts[-1]
+  target = 'elk/sm_'+base
+  if target[-2:]=='cc': 
+    target = target[:-2]+'cpp'
+  elif target[-1:]=='c':
+    target = target[:-1]+'cpp'
+  tgts.append((prefix+fn,target))
+
+def index(line,ch):
+  n = len (line)
+  for i in range(0,n):
+    if line[i]==ch: return i
+  return -1
+
+def incl(line):
+  hp = index(line,'#')
+  if hp == -1: return ""
+  line = line[hp:]
+  if line[:10]=='#include "':
+    line=line[10:]
+    qp = index(line,'"')
+    if qp == -1: return ""
+    return line[:qp]
+  else:
+    return ""
+
+print "@head(1,'smbase')"
+for fn,tgt in tgts:
+  print "@h=tangler('"+tgt+"')"
+  print "@select(h)"
+  f = open(fn)
+  data = f.readlines()
+  f.close()
+  for line in data:
+    line = string.expandtabs(line)
+    fl = incl(line)
+    if fl:
+      if fl in sm_files:
+        print '#include "sm_'+fl+'"'
+      else:
+        print "UNKNOWN FILE:",fl
+        sys.exit(1)
+    else:
+      if line[:5] != '#line':
+        print line,
+ 
+@h = tangler('script/mkast.py','python')
+@select(h)
+
+import string
+import os
+import sys
+
+prefix = '/usr/local/src/elsa-2004.11.13/ast/'
+
+sm_files = [
+  'array.h',
+  'arraymap.h',
+  'arrayqueue.h',
+  'astlist.h',
+  'autofile.h',
+  'bflatten.h',
+  'bit2d.h',
+  'bitarray.h',
+  'boxprint.h',
+  'breaker.h',
+  'ckheap.h',
+  'crc.h',
+  'cycles.h',
+  'datablok.h',
+  'exc.h',
+  'flatten.h',
+  'gprintf.h',
+  'growbuf.h',
+  'hashline.h',
+  'hashtbl.h',
+  'macros.h',
+  'missing.h',
+  'mypopen.h',
+  'mysig.h',
+  'nonport.h',
+  'objlist.h',
+  'objpool.h',
+  'objstack.h',
+  'ohashtbl.h',
+  'okhasharr.h',
+  'okhashtbl.h',
+  'oobjmap.h',
+  'owner.h',
+  'point.h',
+  'pprint.h',
+  'ptrmap.h',
+  'sm_flexlexer.h',
+  'smregexp.h',
+  'sobjlist.h',
+  'sobjset.h',
+  'sobjstack.h',
+  'srcloc.h',
+  'strdict.h',
+  'str.h',
+  'strhash.h',
+  'stringset.h',
+  'strobjdict.h',
+  'strsobjdict.h',
+  'strtokp.h',
+  'strutil.h',
+  'svdict.h',
+  'syserr.h',
+  'taillist.h',
+  'test.h',
+  'thashtbl.h',
+  'trace.h',
+  'trdelete.h',
+  'typ.h',
+  'unixutil.h',
+  'vdtllist.h',
+  'voidlist.h',
+  'vptrmap.h',
+  'warn.h',
+  'xassert.h',
+  'xobjlist.h',
+  'autofile.cc',
+  'bflatten.cc',
+  'bit2d.cc',
+  'bitarray.cc',
+  'boxprint.cc',
+  'cycles.c',
+  'flatten.cc',
+  'gprintf.c',
+  'growbuf.cc',
+  'hashline.cc',
+  'hashtbl.cc',
+  'mypopen.c',
+  'mysig.cc',
+  'point.cc',
+  'pprint.cc',
+  'smregexp.cc',
+  'srcloc.cc',
+  'strdict.cc',
+  'strhash.cc',
+  'stringset.cc',
+  'strutil.cc',
+  'svdict.cc',
+  'trace.cc',
+  'trdelete.cc',
+  'tsobjlist.cc',
+  'unixutil.c',
+  'vdtllist.cc',
+  'voidlist.cc',
+  'vptrmap.cc',
+  'breaker.cpp',
+  'crc.cpp',
+  'datablok.cpp',
+  'exc.cpp',
+  'missing.cpp',
+  'nonport.cpp',
+  'str.cpp',
+  'strtokp.cpp',
+  'syserr.cpp',
+  'warn.cpp',
+  'malloc_stub.c',
+]
+
+
+ast_files = [
+  'agramlex.lex',
+  'agrampar.y',
+  'agrampar.codes.h',
+  'agrampar.h',
+  'agrampar.tab.h',
+  'ast.ast.h',
+  'ast.hand.h',
+  'asthelp.h',
+  'ccsstr.h',
+  'embedded.h',
+  'fakelist.h',
+  'gramlex.h',
+  'locstr.h',
+  'reporterr.h',
+  'strtable.h',
+  'agramlex.yy.cc',
+  'agrampar.cc',
+  'agrampar.tab.cc',
+  'ast.ast.cc',
+  'astgen.cc',
+  'ast.hand.cc',
+  'asthelp.cc',
+  'ccsstr.cc',
+  'embedded.cc',
+  'gramlex.cc',
+  'locstr.cc',
+  'reporterr.cc',
+  'strtable.cc',
+  'towner.cc',
+]
+mods = {}
+tgts = [] 
+
+def index(line,ch):
+  n = len (line)
+  for i in range(0,n):
+    if line[i]==ch: return i
+  return -1
+
+def incl(line):
+  hp = index(line,'#')
+  if hp == -1: return ""
+  line = line[hp:]
+  if line[:10]=='#include "':
+    line=line[10:]
+    qp = index(line,'"')
+    if qp == -1: return ""
+    return line[:qp]
+  else:
+    return ""
+
+
+for fn in ast_files:
+  parts = string.split(fn,'/')
+  base = parts[-1]
+  target = 'elk/ast_'+base
+  if target[-2:]=='cc': target = target[:-2]+'cpp'
+  tgts.append((prefix+fn,target))
+
+print "@head(1,'ast')"
+for fn,tgt in tgts:
+  print "@h=tangler('"+tgt+"')"
+  print "@select(h)"
+  f = open(fn)
+  data = f.readlines()
+  'sm_cycles',
+  f.close()
+  for line in data:
+    line = string.expandtabs(line)
+    fl = incl(line)
+    if fl:
+      if fl in sm_files:
+        print '#include "sm_'+fl+'"'
+      elif fl in ast_files:
+        print '#include "ast_'+fl+'"'
+      else:
+        print "FILE:",fl," -- not known"
+        sys.exit(1)
+    else:
+      if line[:5] != '#line':
+        print line,
+ 
+@h = tangler('script/mkelk.py','python')
+@select(h)
+
+import string
+import os
+import sys
+
+prefix = '/usr/local/src/elsa-2004.11.13/elkhound/'
+
+sm_files = [
+  'array.h',
+  'arraymap.h',
+  'arrayqueue.h',
+  'astlist.h',
+  'autofile.h',
+  'bflatten.h',
+  'bit2d.h',
+  'bitarray.h',
+  'boxprint.h',
+  'breaker.h',
+  'ckheap.h',
+  'crc.h',
+  'cycles.h',
+  'datablok.h',
+  'exc.h',
+  'flatten.h',
+  'gprintf.h',
+  'growbuf.h',
+  'hashline.h',
+  'hashtbl.h',
+  'macros.h',
+  'missing.h',
+  'mypopen.h',
+  'mysig.h',
+  'nonport.h',
+  'objlist.h',
+  'objpool.h',
+  'objstack.h',
+  'ohashtbl.h',
+  'okhasharr.h',
+  'okhashtbl.h',
+  'oobjmap.h',
+  'owner.h',
+  'point.h',
+  'pprint.h',
+  'ptrmap.h',
+  'sm_flexlexer.h',
+  'smregexp.h',
+  'sobjlist.h',
+  'sobjset.h',
+  'sobjstack.h',
+  'srcloc.h',
+  'strdict.h',
+  'str.h',
+  'strhash.h',
+  'stringset.h',
+  'strobjdict.h',
+  'strsobjdict.h',
+  'strtokp.h',
+  'strutil.h',
+  'svdict.h',
+  'syserr.h',
+  'taillist.h',
+  'test.h',
+  'thashtbl.h',
+  'trace.h',
+  'trdelete.h',
+  'typ.h',
+  'unixutil.h',
+  'vdtllist.h',
+  'voidlist.h',
+  'vptrmap.h',
+  'warn.h',
+  'xassert.h',
+  'xobjlist.h',
+  'autofile.cc',
+  'bflatten.cc',
+  'bit2d.cc',
+  'bitarray.cc',
+  'boxprint.cc',
+  'cycles.c',
+  'flatten.cc',
+  'gprintf.c',
+  'growbuf.cc',
+  'hashline.cc',
+  'hashtbl.cc',
+  'mypopen.c',
+  'mysig.cc',
+  'point.cc',
+  'pprint.cc',
+  'smregexp.cc',
+  'srcloc.cc',
+  'strdict.cc',
+  'strhash.cc',
+  'stringset.cc',
+  'strutil.cc',
+  'svdict.cc',
+  'trace.cc',
+  'trdelete.cc',
+  'tsobjlist.cc',
+  'unixutil.c',
+  'vdtllist.cc',
+  'voidlist.cc',
+  'vptrmap.cc',
+  'breaker.cpp',
+  'crc.cpp',
+  'datablok.cpp',
+  'exc.cpp',
+  'missing.cpp',
+  'nonport.cpp',
+  'str.cpp',
+  'strtokp.cpp',
+  'syserr.cpp',
+  'warn.cpp',
+  'malloc_stub.c',
+]
+
+ast_files = [
+  'agramlex.lex',
+  'agrampar.y',
+  'agrampar.codes.h',
+  'agrampar.h',
+  'agrampar.tab.h',
+  'ast.ast.h',
+  'ast.hand.h',
+  'asthelp.h',
+  'ccsstr.h',
+  'embedded.h',
+  'fakelist.h',
+  'gramlex.h',
+  'locstr.h',
+  'reporterr.h',
+  'strtable.h',
+  'agramlex.yy.cc',
+  'agrampar.cc',
+  'agrampar.tab.cc',
+  'ast.ast.cc',
+  'astgen.cc',
+  'ast.hand.cc',
+  'asthelp.cc',
+  'ccsstr.cc',
+  'embedded.cc',
+  'gramlex.cc',
+  'locstr.cc',
+  'reporterr.cc',
+  'strtable.cc',
+  'towner.cc',
+]
+
+elk_files = [
+  'gramlex.lex',
+  'grampar.y',
+  'asockind.h',
+  'cyctimer.h',
+  'emitcode.h',
+  'flatutil.h',
+  'genml.h',
+  'glrconfig.h',
+  'glr.h',
+  'gramanl.h',
+  'gramast.ast.gen.h',
+  'grammar.h',
+  'grampar.codes.h',
+  'grampar.h',
+  'grampar.tab.h',
+  'lexerint.h',
+  'mlsstr.h',
+  'ownerspec.h',
+  'parsetables.h',
+  'ptreeact.h',
+  'ptreenode.h',
+  'rcptr.h',
+  'useract.h',
+  'util.h',
+  'asockind.cc',
+  'cyctimer.cc',
+  'emitcode.cc',
+  'genml.cc',
+  'glr.cc',
+  'gramanl.cc',
+  'gramast.ast.gen.cc',
+  'gramlex.yy.cc',
+  'grampar.cc',
+  'grampar.tab.cc',
+  'grammar.cc',
+  'mlsstr.cc',
+  'parsetables.cc',
+  'ptreeact.cc',
+  'ptreenode.cc',
+  'useract.cc',
+  'gramexpl.cc'
+]
+mods = {}
+tgts = [] 
+
+
+for fn in elk_files:
+  parts = string.split(fn,'/')
+  base = parts[-1]
+  target = 'elk/elk_'+base
+  if target[-2:]=='cc': target = target[:-2]+'cpp'
+  tgts.append((prefix+fn,target))
+
+def index(line,ch):
+  n = len (line)
+  for i in range(0,n):
+    if line[i]==ch: return i
+  return -1
+
+def incl(line):
+  hp = index(line,'#')
+  if hp == -1: return ""
+  line = line[hp:]
+  if line[:10]=='#include "':
+    line=line[10:]
+    qp = index(line,'"')
+    if qp == -1: return ""
+    return line[:qp]
+  else:
+    return ""
+
+print "@head(1,'elkhound')"
+for fn,tgt in tgts:
+  print "@h=tangler('"+tgt+"')"
+  print "@select(h)"
+  f = open(fn)
+  data = f.readlines()
+  f.close()
+  for line in data:
+    line = string.expandtabs(line)
+    fl = incl(line)
+    if fl:
+      if fl in sm_files:
+        print '#include "sm_'+fl+'"'
+      elif fl in ast_files:
+        print '#include "ast_'+fl+'"'
+      elif fl in elk_files:
+        print '#include "elk_'+fl+'"'
+      else:
+        print "FILE:",fl," -- not known"
+        sys.exit(1)
+    else:
+      if line[:5] != '#line':
+        print line,
+ 
 @h = tangler('script/mkocs.py','python')
 @select(h)
 
@@ -927,16 +1541,11 @@ else:
   SHLX = ""
 
 # for compiling mainlines
-if "bagley" in options:
-  CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + "-O3 "
-  CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-O3 "
-  CCOBJ_DLLIB = CCOBJ_DLLIB + "-O3 "
-  CCOBJ_DLMAIN = CCOBJ_DLMAIN + "-O3 "
-elif "optimise" in options:
-  CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + "-O "
-  CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-O "
-  CCOBJ_DLLIB = CCOBJ_DLLIB + "-O "
-  CCOBJ_DLMAIN = CCOBJ_DLMAIN + "-O "
+if "optimise" in options:
+  CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + "-O3 -fomit-frame-pointer "
+  CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-O3 -fomit-frame-pointer "
+  CCOBJ_DLLIB = CCOBJ_DLLIB + "-O3 -fomit-frame-pointer "
+  CCOBJ_DLMAIN = CCOBJ_DLMAIN + "-O3 -fomit-frame-pointer "
 
 
 CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + ' ' + CCMACS
@@ -962,6 +1571,91 @@ FLX_GC_SRC='src/'
 # -------------------------------------------------
 # BEGIN IMPLEMENTOR CONFIGURABLE SECTION
 # ------------------------------------------------
+
+# Elkhound stuffs
+
+SMBASE = [
+  'sm_malloc_stub',
+]
+
+# These are the files actually needed at run time by Felix
+SMRTL = [
+  'sm_nonport',
+  'sm_autofile',
+  'sm_bflatten',
+  'sm_bit2d',
+  'sm_bitarray',
+  'sm_boxprint',
+  'sm_breaker',
+  'sm_crc',
+  'sm_datablok',
+  'sm_flatten',
+  'sm_growbuf',
+  'sm_gprintf',
+  'sm_hashline',
+  'sm_hashtbl',
+  'sm_missing',
+  'sm_mypopen',
+  'sm_mysig',
+  'sm_point',
+  'sm_pprint',
+  'sm_smregexp',
+  'sm_strdict',
+  'sm_strhash',
+  'sm_stringset',
+  'sm_strtokp',
+  'sm_strutil',
+  'sm_svdict',
+  'sm_unixutil',
+  'sm_vdtllist',
+  'sm_vptrmap',
+  'sm_warn',
+  'sm_cycles',
+  'sm_srcloc',
+  'sm_syserr',
+  'sm_str',
+  'sm_trace',
+  'sm_trdelete',
+  'sm_voidlist',
+  'sm_exc',
+]
+
+ASTGEN = [
+  'ast_gramlex',
+  #'ast_agrampar.tab',
+  'ast_ccsstr',
+  #'ast_agramlex.yy',
+  'ast_reporterr',
+  'ast_embedded',
+  #'ast_ast.hand',
+  'ast_asthelp',
+  'ast_strtable',
+  #'ast_agrampar',
+  #'ast_astgen',
+  'ast_locstr',
+]
+
+ELKHOUND = [
+  'elk_asockind',
+  'elk_grammar',
+  'elk_emitcode',
+  'elk_mlsstr',
+  'elk_genml',
+  'elk_gramast.ast.gen',
+  'elk_gramlex.yy',
+  'elk_grampar',
+  'elk_grampar.tab',
+  'elk_gramexpl',
+]
+
+ELKRTL = [
+  'elk_cyctimer',
+  'elk_glr',
+  'elk_parsetables',
+  'elk_useract',
+  'elk_ptreenode',
+  'elk_ptreeact',
+]
 
 # files containing ocamllex sources
 LEXS = [
@@ -1298,6 +1992,9 @@ try:
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_migrate.pak')
   elif "extract" in options:
     runISCR('lpsrc/flx.pak')
+    runISCR('lpsrc/sm.pak')
+    runISCR('lpsrc/ast.pak')
+    runISCR('lpsrc/elk.pak')
     copy_mli2ml()
     runISCR('lpsrc/flx_tutorial.pak')
     runISCR('lpsrc/flx_tut_macro.pak')
@@ -1426,6 +2123,10 @@ try:
         print 'Compiling rtl object',x
         ars = ars + x + "_dynamic.o "
         xqt(CCOBJ_DLLIB + " -Irtl " + x + ".cpp -o " +x+"_dynamic.o")
+      for x in SMRTL+ELKRTL:
+        print 'Compiling elkhound rtl object',x
+        ars = ars + "rtl/" + x + "_dynamic.o "
+        xqt(CCOBJ_DLLIB + " -D__UNIX__ -Ielk elk/" + x + ".cpp -o rtl/" +x+"_dynamic.o")
       xqt(AR + " rtl/libflx_dynamic.a " + ars)
       xqt(RANLIB + " rtl/libflx_dynamic.a")
 
@@ -1444,9 +2145,25 @@ try:
         print 'Compiling rtl object',x
         ars = ars + x + "_static.o "
         xqt(CCOBJ_STATIC_LIB + " -Irtl " + x + ".cpp -o " +x+"_static.o")
+      for x in SMRTL+ELKRTL:
+        print 'Compiling elkhound rtl object',x
+        ars = ars + "rtl/" + x + "_static.o "
+        xqt(CCOBJ_DLLIB + " -D__UNIX__ -Ielk elk/" + x + ".cpp -o rtl/" +x+"_static.o")
       xqt(AR + " rtl/libflx_static.a " + ars)
       xqt(RANLIB + " rtl/libflx_static.a")
 
+  if "elkhound" in options:
+    ars = ""
+    for x in SMBASE + SMRTL + ASTGEN + ELKHOUND + ELKRTL:
+      print 'Compiling elkhound object',x
+      ars = ars + "elk/"+x + "_static.o "
+      xqt(CCOBJ_STATIC_LIB + " -D__UNIX__ -Ielk elk/" + x + ".cpp -o elk/" +x+"_static.o")
+    xqt(AR + " elk/libelk_static.a " + ars)
+    xqt(RANLIB + " elk/libelk_static.a")
+
+    xqt(CCOBJ_STATIC_MAIN + " -DGRAMANL_MAIN elk/elk_gramanl.cpp -o elk/elkhound.o")
+    xqt(CCLINK_STATIC + " elk/elkhound.o elk/libelk_static.a -o bin/flx_elkhound")
+ 
   # COMPILE DRIVER PROGRAMS
   if "drivers" in options:
     if SUPPORT_STATIC_LINKAGE:
@@ -1637,7 +2354,7 @@ We have no idea if it continues copying.
 @tangle('BUILTIN_ISCR=env PYTHONPATH=. python -O interscript/bin/iscr.py --nocache')
 @tangle('')
 @tangle('all: dummy')
-@tangle('\tpython script/maker extract compiler rtl drivers test log_output check_output')
+@tangle('\tpython script/maker extract compiler rtl elkhound drivers test log_output check_output optimise')
 @tangle('')
 
 @tangle('profile: dummy')
@@ -1651,6 +2368,10 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('bytecode.debug: dummy')
 @tangle('\tpython script/maker compiler bytecode debug')
+@tangle('')
+@tangle('extract_compiler: dummy')
+@tangle('\t${BUILTIN_ISCR} lpsrc/flx.pak')
+@tangle('\tpython script/maker compiler')
 @tangle('')
 @tangle('extract: dummy')
 @tangle('\tpython script/maker extract')
@@ -1666,7 +2387,7 @@ We have no idea if it continues copying.
 @tangle('\tpython script/get_grammar src/flx_cil_cparser.mly >misc/flx_cil_cparser.grammar')
 @tangle('\tpython script/get_grammar src/parse_fish.mly >misc/parse_fish.grammar')
 @tangle('\tpython script/elk_flx_grgen misc/flx_parse.grammar >misc/elk_flx_gr.gr')
-@tangle('\tpython script/flx_flx_grgen misc/flx_parse.grammar >misc/flx_flx_gr.flx')
+@tangle('\tpython script/flx_flx_grgen misc/flx_parse.grammar >lib/flx_grammar.flx')
 @tangle('\tpython script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
 @tangle('')
 @tangle('compiler: dummy')
@@ -1684,7 +2405,7 @@ We have no idea if it continues copying.
 @tangle('\tbin/flxf -Ilib -Irtl fish/tfish')
 @tangle('')
 @tangle('test: dummy')
-@tangle('\tpython script/maker test stop_on_error')
+@tangle('\tpython script/maker test stop_on_error check_output')
 @tangle('\tsh bagley/compile.sh')
 @tangle('\tsh bagley/run.sh')
 @tangle('\tsh bagley/check.sh')
@@ -1730,7 +2451,10 @@ We have no idea if it continues copying.
 @tangle('\tsh bagley/check.sh')
 @tangle('')
 @tangle('rtl: dummy')
-@tangle('\tpython script/maker rtl')
+@tangle('\tpython script/maker rtl optimise')
+@tangle('')
+@tangle('elkhound: dummy')
+@tangle('\tpython script/maker elkhound optimise')
 @tangle('')
 @tangle('expect.bagley: clean')
 @tangle('\tpython script/maker bagley')
@@ -1850,6 +2574,7 @@ We have no idea if it continues copying.
 @tangle('\t\tflx_'+flx_version+'/htmlman/*.html \\')
 @tangle('\t\tflx_'+flx_version+'/man/man1/*.1 \\')
 @tangle('\t\tflx_'+flx_version+'/impldoc/*.html \\')
+@tangle('\t\tflx_'+flx_version+'/www/*.html \\')
 @tangle('\t\tflx_'+flx_version+'/bin/flx \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/bin/*.py \\')
@@ -1872,7 +2597,6 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('www: dummy')
 @tangle('\t${BUILTIN_ISCR} lpsrc/flx_sourceforge.pak')
-@tangle('\t${BUILTIN_ISCR} lpsrc/flx_web.pak')
 @tangle('')
 @tangle('clean: dummy')
 @tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.dll tut/examples/*.par tut/examples/*.o tut/examples/*.output')
@@ -1882,6 +2606,7 @@ We have no idea if it continues copying.
 @tangle('virgin: dummy')
 @tangle('\tcp Makefile Makefile.old')
 @tangle('\trm -rf tut rtl test www src misc man script bin doc lib impldoc htmlman tmp tmp.tmp')
+@tangle('\trm -rf elk')
 @tangle('\trm -rf flxcc_out c89 c99 cxx gnu89 gnu99 gnucxx cxx_sys')
 @tangle('\trm -rf bagley')
 @tangle('\trm -rf fish meta licences')
@@ -1895,7 +2620,8 @@ We have no idea if it continues copying.
 @tangle('\t(DATE=`date -I`;\\')
 @tangle('\tmkdir -p "lpbackup/$${DATE}";\\')
 @tangle('\tcp lpsrc/*.ipk "lpbackup/$${DATE}";\\')
-@tangle('\tcp lpsrc/*.pak "lpbackup/$${DATE}"\\')
+@tangle('\tcp lpsrc/*.pak "lpbackup/$${DATE}";\\')
+@tangle('\tcp homepage/*.html "lpbackup/$${DATE}"\\')
 @tangle('\t)')
 @tangle('')
 
@@ -1976,8 +2702,14 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle("# These targets are for SKALLER only")
 @tangle("# they're used to upload stuff to sourceforge")
-@tangle('upload_www: dummy')
-@tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
+@tangle('upload_images:')
+@tangle('\tscp homepage/images/*.jpg skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/images')
+@tangle('')
+@tangle('upload_homepage: dummy')
+@tangle('\tscp homepage/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/')
+@tangle('')
+@tangle('upload_www: upload_homepage')
+@tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/current/www')
 @tangle('')
 @tangle('upload_src: dummy')
 @tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')

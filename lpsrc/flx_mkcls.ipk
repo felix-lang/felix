@@ -185,6 +185,11 @@ let process_entry syms bbdfns all_closures i =
     let entry = `BBDCL_procedure (props,vs,ps,exes) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry)
 
+  | `BBDCL_glr (t,(p,exes)) ->
+    let exes = process_exes syms bbdfns all_closures exes in
+    let entry = `BBDCL_glr (t,(p,exes)) in
+    Hashtbl.replace bbdfns i (id,parent,sr,entry)
+
   | _ -> ()
 
 let make_closures syms bbdfns =

@@ -80,6 +80,9 @@ struct store_of
 #ifndef FLX_RTL_CONFIG
 #define FLX_RTL_CONFIG
 #ifndef FLX_RTL_GNU
+@if HAVE_ISNANF_IN_IEEEFP:
+  tangle('#define HAVE_ISNANF_IN_IEEEFP')
+
 @if HAVE_GXX:
   tangle('#define HAVE_GXX')
 
@@ -209,6 +212,7 @@ struct _uctor_
 };
 
 extern flx::gc::generic::gc_shape_t _uctor_ptr_map;
+extern flx::gc::generic::gc_shape_t int_ptr_map;
 
 // UNIT
 struct unit {};
@@ -404,6 +408,7 @@ static void _ref_finaliser (flx::gc::generic::collector_t *, void *p)
 }
 
 flx::gc::generic::gc_shape_t _ref_ptr_map(
+  "_ref_",
   1,sizeof(_ref_),
   _ref_finaliser,
   1,
@@ -416,11 +421,21 @@ static std::size_t _uctor_offsets[1]= {
 };
 
 flx::gc::generic::gc_shape_t _uctor_ptr_map (
+  "_uctor_",
   1,
   sizeof(_uctor_),
   0,
   1,
   _uctor_offsets
+);
+
+flx::gc::generic::gc_shape_t int_ptr_map (
+  "int",
+  1,
+  sizeof(int),
+  0,
+  0,
+  0
 );
                                                                                 
 flx_exec_failure_t::flx_exec_failure_t(std::string f, std::string o, std::string w) : 
@@ -784,7 +799,9 @@ int main(int argc, char** argv)
 
     library.link(filename);
     flx::gc::collector::malloc_free allocator;
+    allocator.set_debug(debug);
     flx::gc::collector::flx_collector_t collector(&allocator);
+    collector.set_debug(debug);
     instance.create(&library, &collector,flx_argc,flx_argv);
     if(debug) {
       fprintf(stderr,"loaded library %s at %p\n",filename,library.library);

@@ -13,6 +13,10 @@ open Flx_ctypes
 open Flx_cexpr
 open Flx_ctype
 
+let raw_options = Flx_getopt.parse_options Sys.argv;;
+let compiler_options = Flx_flxopt.get_felix_options raw_options;;
+let syms = Flx_flxopt.make_syms compiler_options;;
+
 let e1 =
   `Ce_infix ("*",
     `Ce_infix ("+",`Ce_atom "x",`Ce_atom "y"),
@@ -95,4 +99,17 @@ pe "//f is a function of int returning a pointer to a function of long returning
 pe "//int (*ff(int))(long)";;
 let ff = `Ct_fun(`Ct_ptr f,[int_t]);;
 pv "ff" ff;;
+
+
+(* reduce type check *)
+
+let u = `BTYP_tuple [];;
+let u2= `BTYP_tuple [u;u];;
+let u4 = `BTYP_tuple [u2;u2];;
+
+print_endline ("u4="^Flx_print.string_of_btypecode syms.Flx_mtypes2.dfns u4);;
+let u4 = Flx_maps.reduce_type u4 in
+print_endline ("u4="^Flx_print.string_of_btypecode syms.Flx_mtypes2.dfns u4);;
+
+
 

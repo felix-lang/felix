@@ -456,7 +456,7 @@ let rec build_tables syms name level parent grandparent root asms =
               id=name;sr=sr;parent=Some fun_index;vs=[];
               pubmap=null_tab;
               privmap=null_tab;dirs=[];
-              symdef=`SYMDEF_const (`TYP_glr_attr_type typ,name,[])
+              symdef=`SYMDEF_const (`TYP_glr_attr_type typ,"*"^name,[])
             };
             if access = `Public then add_unique pubtab name n;
             add_unique privtab name n;
@@ -505,56 +505,28 @@ let rec build_tables syms name level parent grandparent root asms =
             let dfn_idx = !counter in incr counter; (* constructor *)
             let match_idx = !counter in incr counter; (* matcher *)
             let ctor_idx = !ccount in incr ccount; (* ctor sequence in union *)
-            let ctor_dcl1, ctor_dcl2 =
+            let ctor_dcl2 =
               if unit_sum
               then begin
                   if access = `Public then add_unique pub_name_map component_name dfn_idx;
                   add_unique priv_name_map component_name dfn_idx;
-                  `SYMDEF_const 
-                  (
-                    utype,
-                    si ctor_idx,
-                    []
-                  ),
                   `SYMDEF_const_ctor (n,utype,ctor_idx)
-                  
               end
               else
                 match t with
                 | `AST_void _ -> (* constant constructor *)
                   if access = `Public then add_unique pub_name_map component_name dfn_idx;
                   add_unique priv_name_map component_name dfn_idx;
-                  `SYMDEF_const 
-                  (
-                    utype,
-                    "_uctor_(" ^ si ctor_idx ^ ",0)",
-                    []
-                  ),
                   `SYMDEF_const_ctor (n,utype,ctor_idx)
 
                 | `TYP_tuple ts -> (* non-constant constructor or 2 or more arguments *)
                   if access = `Public then add_function pub_name_map component_name dfn_idx;
                   add_function priv_name_map component_name dfn_idx;
-                  `SYMDEF_fun 
-                  (
-                    ts,
-                    utype,
-                    "_uctor_(" ^ si ctor_idx ^ 
-                    ", new(gc,@t) #t($t))",[],
-                    "primary"
-                  ),
                   `SYMDEF_nonconst_ctor (n,utype,ctor_idx,t)
 
                 | _ -> (* non-constant constructor of 1 argument *)
                   if access = `Public then add_function pub_name_map component_name dfn_idx;
                   add_function priv_name_map component_name dfn_idx;
-                  `SYMDEF_fun (
-                    [t],
-                    utype,
-                    "_uctor_(" ^ si ctor_idx ^ 
-                    ", new(gc,@1) #1($1))",[],
-                    "primary"
-                  ),
                   `SYMDEF_nonconst_ctor (n,utype,ctor_idx,t)
             and ctor_match = 
               if unit_sum
@@ -579,12 +551,6 @@ let rec build_tables syms name level parent grandparent root asms =
 
             if print_flag then print_endline ("//  " ^ spc ^ si dfn_idx ^ " -> " ^ component_name); 
             Hashtbl.add dfns dfn_idx {id=component_name;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=ctor_dcl2};
-            (*
-            Hashtbl.add dfns dfn_idx {id=component_name;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=ctor_dcl1};
-            let xtor_idx = !counter in incr counter;
-            if print_flag then print_endline ("//  " ^ spc ^ si xtor_idx ^ " -> " ^ component_name); 
-            Hashtbl.add dfns xtor_idx {id=component_name;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=ctor_dcl2};
-            *)
             
             if print_flag then print_endline ("//  " ^ spc ^ si match_idx ^ " -> " ^ ctor_match_name); 
             Hashtbl.add dfns match_idx {id=ctor_match_name;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=ctor_match};

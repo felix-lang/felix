@@ -203,11 +203,23 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
 
       let brt = `BTYP_var i in (* hack .. *)
 
-      (* FIX! This expression needs context from the pattern *)
       let bn q = 
         (* we have to check this .. *)
         match luqn2 q with 
-        | FunctionEntry ii,[] -> `Nonterm ii
+        | FunctionEntry [i],[] -> 
+          begin match Hashtbl.find syms.dfns i with
+          | {symdef=`SYMDEF_glr _ } -> `Nonterm [i]
+          | {symdef=`SYMDEF_nonconst_ctor _} -> `Term i
+          | _ -> clierr sr "Expected nonterminal or union constructor"
+          end
+        | FunctionEntry ii,[] -> 
+          let i = hd ii in
+          begin match Hashtbl.find syms.dfns i with
+          | {symdef=`SYMDEF_glr _ } -> `Nonterm ii
+          | {symdef=`SYMDEF_nonconst_ctor _} -> 
+            clierr sr "Expected unique union constructor (it's overloaded)"
+          | _ -> clierr sr "Expected nonterminal or union constructor"
+          end
         | NonFunctionEntry i,[] -> `Term i
         | _,ts -> clierr sr "Unexpected type variables"
       in
@@ -248,7 +260,8 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       let t = typeofindex syms i in
       let argt = bt argt in
       let ut = bt ut in
-      let bbdcl = 
+      let bbdcl = `BBDCL_nonconst_ctor (vs,uidx,ut,ctor_idx,argt) in
+      (*
         match argt with
         (* non-constant constructor or 2 or more arguments *)
         (* BUG --> NEED TO HANDLE ARRAYS *)
@@ -269,6 +282,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
              "primary"
             )
       in
+      *)
       Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
 
       if syms.compiler_options.print_flag then

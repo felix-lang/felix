@@ -180,6 +180,8 @@ let make_syms options =
     include_files = ref [];
     roots = ref IntSet.empty;
     wrappers = Hashtbl.create 97;
+    lexers = Hashtbl.create 7;
+    parsers = Hashtbl.create 7;
   }
 
 

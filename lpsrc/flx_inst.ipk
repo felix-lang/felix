@@ -52,7 +52,9 @@ let add_inst syms ref_insts1 (i,ts) =
   ;
   if not (FunInstSet.mem x !ref_insts1)
   && not (Hashtbl.mem syms.instances x)
-  then ref_insts1 := FunInstSet.add x !ref_insts1
+  then begin
+    ref_insts1 := FunInstSet.add x !ref_insts1
+  end
 
 let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   (*
@@ -61,7 +63,7 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   *)
   let ue e = process_expr syms bbdfns ref_insts1 hvarmap sr e in
   let ui i ts = add_inst syms ref_insts1 (i,ts) in
-  let ut t = register_type_r ui syms bbdfns [] sr (reduce_type (lstrip syms.dfns t)) in
+  let ut t = register_type_r ui syms bbdfns [] sr t in
   let vs t = varmap_subst hvarmap t in
   ut (vs t)
   ;
@@ -86,7 +88,9 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     begin match entry with
     (* function type not needed for direct call *)
     | `BBDCL_fun _ 
-    | `BBDCL_function _ -> 
+    | `BBDCL_function _ 
+    | `BBDCL_nonconst_ctor _
+      -> 
       let ts = map vs ts in
       ui index ts; ue a
     (* the remaining cases are struct/variant type constructors,
@@ -99,7 +103,9 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   | `BEXPR_apply (e1,e2) -> 
     ue e1; ue e2
 
-  | `BEXPR_tuple es -> iter ue es 
+  | `BEXPR_tuple es -> 
+    iter ue es;
+    register_tuple syms (vs t)
      
   | `BEXPR_case (_,t) -> ut (vs t)
 
@@ -128,7 +134,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   | `BEXE_jump_direct (sr,i,ts,e2) 
   | `BEXE_call_stack (sr,i,ts,e2) 
     -> 
-    let ut t = register_type_r uis syms bbdfns [] sr (reduce_type (lstrip syms.dfns t)) in
+    let ut t = register_type_r uis syms bbdfns [] sr t in
     let vs t = varmap_subst hvarmap t in
     let ts = map vs ts in
     iter ut ts;
@@ -178,7 +184,18 @@ and process_exes syms bbdfns ref_insts1 ts hvarmap exes =
   iter (process_exe syms bbdfns ref_insts1 ts hvarmap) exes
 
 and process_function syms bbdfns hvarmap ref_insts1 index sr argtypes ret exes ts =
+  (*
+  print_endline ("Process function " ^ si index);
+  *)
   process_exes syms bbdfns ref_insts1 ts hvarmap exes ;
+
+and process_production syms bbdfns ref_insts1 p =
+  let uses_symbol (_,nt) = match nt with
+  | `Nonterm ii -> iter (fun i -> add_inst syms ref_insts1 (i,[])) ii
+  | `Term i -> () (* HACK! This is a union constructor name  we need to 'use' the union type!! *)
+  in
+  iter uses_symbol p
+                                                                                
 
 and process_inst syms bbdfns ref_insts1 i ts inst =
   let uis i ts = add_inst syms ref_insts1 (i,ts) in
@@ -189,15 +206,17 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     with Not_found -> failwith ("[process_inst] Can't find index " ^ si i)
   in 
   let ue hvarmap e = process_expr syms bbdfns ref_insts1 hvarmap sr e in
-  let rtr t = register_type_r uis syms bbdfns [] sr (reduce_type (lstrip syms.dfns t)) in
-  let rtnr t = register_type_nr syms t in
+  let rtr t = register_type_r uis syms bbdfns [] sr t in
+  let rtnr t = register_type_nr syms (reduce_type (lstrip syms.dfns t)) in
   if syms.compiler_options.print_flag then
   print_endline ("//Instance "^si inst ^ "="^id^"<" ^ si i ^ ">[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]");
   match entry with
   | `BBDCL_glr (ret, (p,exes)) ->
     assert (length ts = 0);
-    process_function syms bbdfns null_table ref_insts1 i sr [] ret exes ts
-    
+    process_function syms bbdfns null_table ref_insts1 i sr [] ret exes ts;
+    process_production syms bbdfns ref_insts1 p
+ 
+ 
   | `BBDCL_function (props,vs,ps,ret,exes) -> 
     let argtypes = map (fun x -> snd (snd x)) ps in
     assert (length vs = length ts);
@@ -303,6 +322,16 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs
+
+  | `BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt) ->
+    assert (length vs = length ts);
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let hvarmap = hashtable_of_list vars in
+
+    (* we don't register the union .. it's a uctor anyhow *)
+    let ctor_argt = varmap_subst hvarmap ctor_argt in
+    rtr ctor_argt
+ 
 (* 
   This routine creates the instance tables.
   There are 2 tables: instance types and function types (including procs)

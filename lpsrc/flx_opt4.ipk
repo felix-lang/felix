@@ -20,6 +20,7 @@ open Flx_ast
 open Flx_types
 open Flx_print
 open Flx_mtypes1
+open Flx_mtypes2
 open Flx_typing
 open Flx_mbind
 open Flx_srcref
@@ -96,39 +97,66 @@ let has_fun bbdfns children =
 (* NOTE: this won't work for abstracted types like unions
    or structs .. 
 *)
-let has_ptr_fn bbdfns children e = 
-  let rec aux exclude e = match e with
-    | `BTYP_function _ -> 
-      (* if has_fun bbdfns children then *)
-      raise Not_found
+exception Unsafe
 
-    | `BTYP_pointer _ -> 
-      (* encode the more lenient condition here!! *)
-      raise Not_found 
+let has_ptr_fn cache syms bbdfns children e = 
+  let rec aux e = 
+    try match Hashtbl.find cache e with
+    | `Recurse -> ()
+    | `Unsafe -> raise Unsafe
+    | `Safe -> ()
+    with Not_found ->
+      Hashtbl.add cache e `Recurse;
+      match e with
+      | `BTYP_function _ -> 
+        (* if has_fun bbdfns children then *)
+        Hashtbl.replace cache e `Unsafe;
+        raise Unsafe
 
-    | `BTYP_inst (i,ts) ->
-      if not (mem i exclude) then
-      let id,parent,sr,entry = Hashtbl.find bbdfns i in
-      begin match entry with
-      | `BBDCL_abs _ -> ()
-      | `BBDCL_union (vs,cs)
-      | `BBDCL_struct (vs,cs)
-      | `BBDCL_cstruct (vs,cs) -> 
-        let varmap = mk_varmap vs ts in
-        iter 
-        (fun (_,t) -> aux (i::exclude) (varmap_subst varmap t)) 
-        cs
-      | _ -> assert false
-      end
-    | x -> iter_btype (aux exclude) x
+      | `BTYP_pointer _ -> 
+        (* encode the more lenient condition here!! *)
+        Hashtbl.replace cache e `Unsafe;
+        raise Unsafe
 
-  in try aux [] e; false with Not_found -> true
+      | `BTYP_inst (i,ts) ->
+        let id,parent,sr,entry = Hashtbl.find bbdfns i in
+        begin match entry with
+        | `BBDCL_abs _ -> ()
+        | `BBDCL_union (vs,cs)
+        | `BBDCL_struct (vs,cs)
+        | `BBDCL_cstruct (vs,cs) -> 
+          let varmap = mk_varmap vs ts in
+          begin try
+            iter 
+            (fun (_,t) -> 
+              let t = varmap_subst varmap t in
+              aux t
+            ) 
+            cs;
+            Hashtbl.replace cache e `Safe
+          with Unsafe ->
+            Hashtbl.replace cache e `Unsafe;
+            raise Unsafe
+          end
+
+        | _ -> assert false
+        end
+      | x -> 
+        try 
+          iter_btype aux x;
+          Hashtbl.replace cache e `Safe
+        with Unsafe ->
+          Hashtbl.replace cache e `Unsafe;
+          raise Unsafe
+
+  in try aux e; false with Unsafe -> true
     
-let can_stack_func (child_map,bbdfns) i =
+let can_stack_func cache syms (child_map,bbdfns) i =
   let children = try Hashtbl.find child_map i with Not_found -> [] in
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
-  | `BBDCL_function (_,_,_,ret,_) -> not (has_ptr_fn bbdfns children ret)
+  | `BBDCL_function (_,_,_,ret,_) -> not (has_ptr_fn cache syms bbdfns children ret)
+  | `BBDCL_nonconst_ctor _
   | `BBDCL_fun _
   | `BBDCL_struct _
   | `BBDCL_cstruct _ -> false (* hack *)
@@ -137,18 +165,18 @@ let can_stack_func (child_map,bbdfns) i =
 let ident x = x 
 let tident t = t 
 
-let rec enstack_applies syms (child_map, bbdfns) x = 
-  let ea e = enstack_applies syms (child_map, bbdfns) e in
+let rec enstack_applies cache syms (child_map, bbdfns) x = 
+  let ea e = enstack_applies cache syms (child_map, bbdfns) e in
   match map_tbexpr ident ea tident x with
   | `BEXPR_apply_direct (i,ts,b),t  ->
-    if can_stack_func (child_map, bbdfns) i
+    if can_stack_func cache syms (child_map, bbdfns) i
     then `BEXPR_apply_stack (i,ts,b),t
     else x
   
   | x -> x
 
-let enstack_calls syms (child_map,bbdfns) exes =
-  let ea e = enstack_applies syms (child_map, bbdfns) e in
+let enstack_calls cache syms (child_map,bbdfns) exes =
+  let ea e = enstack_applies cache syms (child_map, bbdfns) e in
   let exes' = ref [] in
   iter
   (fun x -> match x with
@@ -197,26 +225,32 @@ let enstack_calls syms (child_map,bbdfns) exes =
   ;
   rev !exes'
 
-let copy_bbdcl syms (child_map,bbdfns) bbdfns2 i bbdfn =
+let copy_bbdcl cache syms (child_map,bbdfns) bbdfns2 i bbdfn =
   let data =
     match bbdfn with
     | id,parent,sr,`BBDCL_procedure (props,vs,p,exes) ->
-      let exes = enstack_calls syms (child_map,bbdfns) exes in
+      let exes = enstack_calls cache syms (child_map,bbdfns) exes in
       let exes = Flx_cflow.final_tailcall_opt exes in
       id,parent,sr,`BBDCL_procedure (props,vs,p,exes)
 
     | id,parent,sr,`BBDCL_function (props,vs,p,ret,exes) ->
-      let exes = enstack_calls syms (child_map,bbdfns) exes in
+      let exes = enstack_calls cache syms (child_map,bbdfns) exes in
       id,parent,sr,`BBDCL_function (props,vs,p,ret,exes)
+
+    | id,parent,sr,`BBDCL_glr (t,(p,exes)) ->
+      let exes = enstack_calls cache syms (child_map,bbdfns) exes in
+      id,parent,sr,`BBDCL_glr (t,(p,exes))
+
     | x -> x
   in
     Hashtbl.add bbdfns2 i data
 
 let make_stack_calls syms (child_map, bbdfns) =
   let bbdfns2 = Hashtbl.create 97 in
+  let cache = Hashtbl.create 97 in
   Hashtbl.iter
   (fun i bbdfn ->
-    copy_bbdcl syms (child_map,bbdfns) bbdfns2 i bbdfn
+    copy_bbdcl cache syms (child_map,bbdfns) bbdfns2 i bbdfn
   )
   bbdfns
   ;

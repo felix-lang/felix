@@ -46,15 +46,17 @@ to get some times.
  ]
 
 @bags = sbags
-@if SUPPORT_DYNAMIC_LOADING:
-  bags = bags + dbags
-
 @if HAVE_STL_GNU_CXX:
   bags = bags + ebags
 
+@runbags = bags
+@if SUPPORT_DYNAMIC_LOADING:
+  runbags = runbags + dbags
+
+
 @def mko(i,j):
   tangle('echo "Compiling '+i+'"')
-  tangle('bin/flx --test --force --echo -c --optimise bagley/felix/'+i)
+  tangle('bin/flx --test --force --echo -c --optimise -DFLX_PTF_STATIC_POINTER bagley/felix/'+i)
 
 @def mkr(i,j):
   k = (i+' .................  ')[:20]+' '
@@ -70,6 +72,7 @@ to get some times.
   tangle('bin/flx --test --force --optimise -c bagley/felix/plugin_1')
   tangle('bin/flx --test --force --optimise -c bagley/felix/plugin_2')
   tangle('bin/flx --test --force --optimise -c bagley/felix/plugin_3')
+  tangle('bin/flx --test --force --optimise -c bagley/felix/plugin')
 @for i,j in bags: mko (i,j)
 
 @select(tangler('bagley/run.sh','data'))
@@ -82,10 +85,10 @@ echo "PLUGIN_DIR=$PLUGIN_DIR"
 LD_LBRARY_PATH=`pwd`/rtl:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH
 echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
-@for i,j in bags: mkr (i,j)
+@for i,j in runbags: mkr (i,j)
 
 @select(tangler('bagley/check.sh','data'))
-@for i,j in bags: mkc (i,j)
+@for i,j in runbags: mkc (i,j)
 
 @head(2,'Hello World')
 @select(tangler('bagley/felix/hello.flx','data'))

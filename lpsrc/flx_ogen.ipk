@@ -101,7 +101,7 @@ let comma_sub s =
   aux "" s
  
 (* this code handles pointers in types *)
-let rec get_offsets syms bbdfns typ : string list =
+let rec get_offsets' syms bbdfns typ : string list =
   let typ = reduce_type (lstrip syms.dfns typ) in
   let tname = cpp_typename syms typ in
   match unfold syms.dfns typ with
@@ -132,7 +132,7 @@ let rec get_offsets syms bbdfns typ : string list =
         in
         iter
         (fun s -> lst := !lst @ [prefix ^ s])
-        (get_offsets syms bbdfns t)
+        (get_offsets' syms bbdfns t)
       )
       cpts 
       ;
@@ -145,7 +145,7 @@ let rec get_offsets syms bbdfns typ : string list =
     end
 
   | `BTYP_array (t,`BTYP_unitsum k) -> 
-    let toffsets = get_offsets syms bbdfns t in
+    let toffsets = get_offsets' syms bbdfns t in
     if toffsets = [] then [] else 
     if k> 20 then 
       failwith "[get_offsets] Too many elements in array for shape"
@@ -173,7 +173,7 @@ let rec get_offsets syms bbdfns typ : string list =
       in
       iter
       (fun s -> lst := !lst @ [prefix ^ s])
-      (get_offsets syms bbdfns t)
+      (get_offsets' syms bbdfns t)
       ;
       incr n
     )
@@ -198,22 +198,25 @@ let rec get_offsets syms bbdfns typ : string list =
   | `BTYP_type_tuple _
   | `BTYP_type_match _ -> assert false
 
+let get_offsets syms bbdfns typ =
+  map (fun s -> s^",") (get_offsets' syms bbdfns typ)
+
 let gen_offset_data s n name offsets isfun =
+  let noffsets = 
+    if isfun then si (n-1)^"+FLX_PASS_PTF"
+    else si n
+  in
   if n <> 0 then
   begin
     bcat s ("static std::size_t " ^ name ^ 
-      "_offsets["^
-      (
-        if isfun then si (n-1)^"+FLX_PASS_PTF"
-        else si n
-      )^
-      "]={\n");
+      "_offsets["^noffsets^ "]={\n");
     bcat s ("  " ^ cat "\n  " offsets);
     bcat s ("\n" ^  "};\n");
   end;
   bcat s ("FLX_FINALISER("^name^")\n");
   bcat s (  "static gc_shape_t "^ name ^"_ptr_map (\n");
-  bcat s ( "  1,sizeof("^name^"),\n  "^name^"_finaliser,\n  "^si n^",\n  "^
+  bcat s ("  \"" ^ name ^ "\",\n");
+  bcat s ( "  1,sizeof("^name^"),\n  "^name^"_finaliser,\n  "^noffsets^",\n  "^
   (if n<>0 then name^"_offsets\n" else "0\n"));
   bcat s ( ");\n")
 
@@ -243,7 +246,7 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance =
         let offsets = get_offsets syms bbdfns typ in
         map 
         (fun offset ->
-          "offsetof("^name^","^mem^")+" ^ offset^","
+          "offsetof("^name^","^mem^")+" ^ offset
         )
         offsets 
       )
@@ -272,7 +275,7 @@ let gen_thread_frame_offsets s syms bbdfns =
         let offsets = get_offsets syms bbdfns typ in
         map 
         (fun offset ->
-          "offsetof("^name^","^mem^")+" ^ offset ^ ","
+          "offsetof("^name^","^mem^")+" ^ offset
         )
         offsets 
       )
@@ -332,7 +335,7 @@ let gen_offset_tables syms (child_map,bbdfns) all_closures =
     match unfold syms.dfns btyp with
     | `BTYP_sum args -> 
       iter 
-      (fun t ->
+      (fun t -> let t = reduce_type t in
         match t with
         | `BTYP_tuple [] 
         | `BTYP_void -> ()
@@ -356,7 +359,7 @@ let gen_offset_tables syms (child_map,bbdfns) all_closures =
         let args = map snd args in
         let args = map (varmap_subst varmap) args in
         iter 
-        (fun t ->
+        (fun t -> let t = reduce_type t in
           match t with
           | `BTYP_tuple [] 
           | `BTYP_void -> ()
@@ -418,6 +421,7 @@ let gen_offset_tables syms (child_map,bbdfns) all_closures =
       bcat s ("  }\n");
       bcat s ("}\n");
       bcat s ("static gc_shape_t "^ name ^"_ptr_map(\n");
+      bcat s ("  \"" ^ name ^ "\",\n");
       bcat s ("  " ^ si k ^ ",\n");
       bcat s ("  sizeof("^name^"),\n  "^name^"_finaliser,\n  "^si n^
       (
@@ -443,6 +447,7 @@ let gen_offset_tables syms (child_map,bbdfns) all_closures =
             );
             if not pod then bcat s ("FLX_FINALISER("^name^")\n");
             bcat s ( "static gc_shape_t " ^ name ^ "_ptr_map(\n") ;
+            bcat s ("  \"" ^ name ^ "\",\n");
             if pod then
               bcat s ("  1,sizeof("^name^"),0,0,0\n")
             else

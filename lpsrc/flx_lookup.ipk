@@ -1129,21 +1129,29 @@ and bind_type'
     assoc s params
 
   | `TYP_glr_attr_type qn ->
+    (*
+    print_string ("[bind_type] Calculating type of glr symbol " ^ string_of_qualified_name qn);
+    *)
     (* WARNING: we're skipping the recursion stoppers here !! *)
-    begin match lookup_qn_in_env2 syms env qn with
-    | FunctionEntry ii,[] -> 
-      cal_glr_attr_type syms sr ii
+    let t = 
+      match lookup_qn_in_env2 syms env qn with
+      | FunctionEntry ii,[] -> 
+        cal_glr_attr_type syms sr ii
 
-    | NonFunctionEntry i,[] ->
-      let env = build_env syms (Some i) in
-      begin match Hashtbl.find syms.dfns i with
-      | {sr=sr; symdef=`SYMDEF_const_ctor (_,ut,_)} -> `BTYP_void (* hack *)
-      | {sr=sr; symdef=`SYMDEF_nonconst_ctor (_,_,_,argt)} -> bind_type syms env sr argt
-      | _ -> clierr sr "Token must be union constructor"
-      end
-    | _,ts -> clierr sr "GLR symbol can't have type subscripts"
-    end
-    
+      | NonFunctionEntry i,[] ->
+        begin match Hashtbl.find syms.dfns i with
+        | {sr=sr; symdef=`SYMDEF_const_ctor (_,ut,_)} -> `BTYP_void (* hack *)
+        | {sr=sr; symdef=`SYMDEF_nonconst_ctor (_,_,_,argt)} -> 
+          cal_glr_attr_type'' syms sr i argt
+        | _ -> clierr sr "Token must be union constructor"
+        end
+      | _,ts -> clierr sr "GLR symbol can't have type subscripts"
+    in 
+      (*
+      print_endline (" .. Calculated: " ^sbt syms.dfns t);
+      *)
+      t
+      
 
   (* QUALIFIED OR UNQUALIFIED NAME *)
   | #qualified_name_t as x ->
@@ -1164,30 +1172,44 @@ and bind_type'
     *)
     t
 
+and cal_glr_attr_type'' syms sr i t =
+  try Hashtbl.find syms.ticache i
+  with Not_found ->
+    let env = build_env syms (Some i) in
+    let t = bind_type syms env sr t in
+    Hashtbl.add syms.ticache i t;
+    t
+ 
+and cal_glr_attr_type' syms sr i =
+  match Hashtbl.find syms.dfns i with
+  | {symdef=`SYMDEF_glr (t,_)} -> 
+    `Nonterm,cal_glr_attr_type'' syms sr i t 
+    
+  | {symdef=`SYMDEF_nonconst_ctor (_,_,_,t)} -> 
+    `Term, cal_glr_attr_type'' syms sr i t 
+
+  (* shouldn't happen .. *)
+  | {symdef=`SYMDEF_const_ctor (_,_,_)} -> 
+    `Term, `BTYP_void 
+
+  | _ -> clierr sr "Expected glr nonterminal or token (union constructor with argument)"
+
 and cal_glr_attr_type syms sr ii =
-  let bte env t = bind_type syms env sr t in
   match ii with
   | [] -> syserr sr "Unexpected empty FunctonEntry"
   | h :: tts -> 
-    let kind,t =
-      let env = build_env syms (Some h) in
-      match Hashtbl.find syms.dfns h with
-      | {symdef=`SYMDEF_glr (t,_)} -> `Nonterm, bte env t
-      | {symdef=`SYMDEF_nonconst_ctor (_,_,_,t)} -> `Term, bte env t
-      | _ -> clierr sr "Expected glr nonterminal or token (union constructor with argument)"
-    in 
+    let kind,t = cal_glr_attr_type' syms sr h in
     iter 
     (fun i ->
-      let env = build_env syms (Some i) in
-      match kind,Hashtbl.find syms.dfns h with
-      | `Nonterm, {symdef=`SYMDEF_glr (ntt,_)}
-      | `Term, {symdef=`SYMDEF_nonconst_ctor (_,_,_,ntt)} ->
-        let t' = bte env ntt in
+      let kind',t' = cal_glr_attr_type' syms sr i in
+      match kind,kind' with
+      | `Nonterm,`Nonterm 
+      | `Term,`Term  ->
         if not (type_eq syms.dfns t t') then
-        clierr sr "Expected same type for glr nonterminals"
+        clierr sr "Expected same type for glr symbols"
 
-      | `Nonterm,_ -> clierr sr "Expected glr nonterminal argument"
-      | `Term,_ -> clierr sr "Token: Expected union constructor with argument"
+      | `Nonterm,`Term -> clierr sr "Expected glr nonterminal argument"
+      | `Term,`Nonterm -> clierr sr "Token: Expected union constructor with argument"
     )
     tts
     ;
@@ -2497,9 +2519,11 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
       clierr sr 
      "[bind_expression] Unexpected in expression" 
 
-  | `AST_sparse (sr,e,_,nts) ->
+  | `AST_sparse (sr,e,nt,nts) ->
     let e = be e in
+    print_endline ("Calculating AST_parse, symbol " ^ nt);
     let t = cal_glr_attr_type syms sr nts in
+    print_endline (".. DONE: Calculating AST_parse, type=" ^ sbt syms.dfns t);
     `BEXPR_parse (e,nts),t
     
   | `AST_expr (sr,s,t) -> 

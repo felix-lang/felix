@@ -1074,10 +1074,45 @@ and rst syms name access parent_vs st : asm_t list =
     let rec aux dcls ms = match ms with
     | [] ->dcls
     | (sr',p,e)::ta -> 
-      let l,x = rex e in
-        let dcl =   `DCL_glr (t,(p,x)) in
-        let dcl =   Dcl (sr',id,None,`Public,[],dcl) in
-        aux (dcl :: l @ dcls) ta
+      (* we turn the expression into a call to a function
+        so any lambdas lifted out are nested in the
+        function, and rely on the call to bind to the
+        arguments, and we mark the function noinline,
+        to stop it being inlined into the C wrapper code
+      *)
+      let n = seq() in
+      let nname = "_nth_" ^ si n in
+      let hname = `AST_index (sr',nname,n) in
+      let params : (string * typecode_t) list = 
+        let rec aux params prod = match prod with
+        | [] -> rev params
+        | (None,_):: tail -> aux params tail
+        | (Some n,qn) :: tail ->
+          let typ = `TYP_glr_attr_type qn in
+          aux ((n,typ)::params) tail
+        in aux [] p
+      in
+      let lams,x = rex e in
+      let d: asm_t = Dcl
+        (
+          sr,
+          nname, Some n,
+          `Private,
+          [],
+          `DCL_function 
+          (
+            params,
+            `TYP_none,
+            [`NoInline],
+            (Exe (sr,`EXE_fun_return x) :: lams)
+           )
+        ) 
+      in
+      let args = map (fun (n,_) -> `AST_name (sr',n,[])) params in
+      let invoke = `AST_apply(sr',(hname,`AST_tuple (sr',args))) in 
+      let dcl =   `DCL_glr (t,(p,invoke)) in
+      let dcl =   Dcl (sr',id,None,`Public,[],dcl) in
+      aux (d:: dcl :: dcls) ta
     in aux [] ms
 
   | `AST_ctypes _ 

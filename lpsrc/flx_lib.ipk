@@ -286,13 +286,15 @@ namespace flx { namespace rtl { namespace strutil {
 @h=tangler('lib/std.flx','data')
 @# use data tangler to prevent line number generation
 @select(h)
+header '#include "flx_rtl_config.hpp"';
 #include "flx_categories.flx"
 
 header iostream "#include <iostream>";
 header cmath """
 #include <cmath>
-@if HAVE_ISNANF_IN_IEEEFP:
-  tangle("#include <ieeefp.h>")
+#ifdef HAVE_ISNANF_IN_IEEEFP
+#include <ieeefp.h>
+#endif
 """;
 
 header """
