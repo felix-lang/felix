@@ -70,10 +70,10 @@ let rec isuseless bbdfns exes =
   try
     iter
     (fun x -> match (x:bexe_t) with
-      | `BEXE_call ((`BEXPR_closure (i,_),_),_) 
-      | `BEXE_call ((`BEXPR_name (i,_),_),_) 
-      | `BEXE_jump ((`BEXPR_closure (i,_),_),_) 
-      | `BEXE_jump  ((`BEXPR_name (i,_),_),_) 
+      | `BEXE_call (_,(`BEXPR_closure (i,_),_),_) 
+      | `BEXE_call (_,(`BEXPR_name (i,_),_),_) 
+      | `BEXE_jump (_,(`BEXPR_closure (i,_),_),_) 
+      | `BEXE_jump  (_,(`BEXPR_name (i,_),_),_) 
         -> 
          check i
 
@@ -106,7 +106,7 @@ let rec isuseless bbdfns exes =
       | `BEXE_label _
       | `BEXE_nop _
       | `BEXE_comment _
-      | `BEXE_proc_return 
+      | `BEXE_proc_return _
         -> ()
     )
     exes
@@ -253,7 +253,7 @@ let rec inline_applies syms bbdfns x =
       match bbdcl with
       | `BBDCL_function (vs,ps,ret,exes,nm) ->
         begin match exes with
-        | [`BEXE_fun_return b] ->
+        | [`BEXE_fun_return (_,b)] ->
           begin 
             try 
               check_can_inline syms bbdfns nm;
@@ -298,11 +298,11 @@ let useless_call_elim syms bbdfns vs' exes index =
   let exes' = ref [] in
   iter
   (fun x -> match x with
-  | `BEXE_init (i,b) -> exes' := `BEXE_init (i,ia b) :: !exes'
-  | `BEXE_assign (a,b) -> exes' := `BEXE_assign (ia a,ia b) :: !exes'
+  | `BEXE_init (sr,i,b) -> exes' := `BEXE_init (sr,i,ia b) :: !exes'
+  | `BEXE_assign (sr,a,b) -> exes' := `BEXE_assign (sr,ia a,ia b) :: !exes'
 
-  | `BEXE_call ((`BEXPR_closure (i,ts),_),b')
-  | `BEXE_call ((`BEXPR_name (i,ts),_),b')
+  | `BEXE_call (sr,(`BEXPR_closure (i,ts),_),b')
+  | `BEXE_call (sr,(`BEXPR_name (i,ts),_),b')
     -> (* only keep calls to useful procedures *) 
       begin match Hashtbl.find bbdfns i with
       | id,parent,`BBDCL_procedure (vs,ps,inner_exes,nm) ->
@@ -310,9 +310,9 @@ let useless_call_elim syms bbdfns vs' exes index =
         then begin 
           match inner_exes with
           (* inline simple procedures *)
-          | [`BEXE_call (a,b)]
-          | [`BEXE_call (a,b); `BEXE_proc_return]
-          | [`BEXE_jump (a,b)]
+          | [`BEXE_call (sr,a,b)]
+          | [`BEXE_call (sr,a,b); `BEXE_proc_return _]
+          | [`BEXE_jump (sr,a,b)]
             ->
               begin 
                 try
@@ -330,7 +330,7 @@ let useless_call_elim syms bbdfns vs' exes index =
                     sbe syms.dfns b
                   );
                   *)
-                  exes' := `BEXE_call (a,b) :: !exes'
+                  exes' := `BEXE_call (sr,a,b) :: !exes'
                 with 
                   Cannot_inline -> exes' := x :: !exes'
               end
@@ -347,8 +347,8 @@ let useless_call_elim syms bbdfns vs' exes index =
       | _ -> exes' := x :: !exes'
       end
 
-  | `BEXE_jump ((`BEXPR_closure (i,ts),_),b')
-  | `BEXE_jump ((`BEXPR_name (i,ts),_),b')
+  | `BEXE_jump (sr,(`BEXPR_closure (i,ts),_),b')
+  | `BEXE_jump (sr,(`BEXPR_name (i,ts),_),b')
     -> (* only keep calls to useful procedures *) 
       begin match Hashtbl.find bbdfns i with
       | id,parent,`BBDCL_procedure (vs,ps,inner_exes,nm) ->
@@ -356,9 +356,9 @@ let useless_call_elim syms bbdfns vs' exes index =
         then begin
           match inner_exes with
           (* inline simple procedures *)
-          | [`BEXE_call (a,b)]
-          | [`BEXE_call (a,b); `BEXE_proc_return]
-          | [`BEXE_jump (a,b)]
+          | [`BEXE_call (sr,a,b)]
+          | [`BEXE_call (sr,a,b); `BEXE_proc_return _]
+          | [`BEXE_jump (sr,a,b)]
             ->
               begin 
                 try
@@ -376,7 +376,7 @@ let useless_call_elim syms bbdfns vs' exes index =
                     sbe syms.dfns b
                   );
                   *)
-                  exes' := `BEXE_jump (a,b) :: !exes'
+                  exes' := `BEXE_jump (sr,a,b) :: !exes'
                 with 
                   Cannot_inline -> exes' := x :: !exes'
               end
@@ -384,26 +384,26 @@ let useless_call_elim syms bbdfns vs' exes index =
             -> 
               exes' := x :: !exes'
         end
-        else exes' := `BEXE_proc_return :: !exes'
+        else exes' := `BEXE_proc_return sr :: !exes'
       | _ -> exes' := x :: !exes'
       end
 
-  | `BEXE_call (a,b) -> exes' := `BEXE_call (ia a,ia b) :: !exes'
-  | `BEXE_jump (a,b) -> exes' := `BEXE_jump (ia a,ia b) :: !exes'
-  | `BEXE_fun_return a -> exes' := `BEXE_fun_return (ia a) :: !exes'
-  | `BEXE_ifgoto (e,l) -> exes' := `BEXE_ifgoto (ia e, l) :: !exes'
-  | `BEXE_ifnotgoto (e,l) -> exes' := `BEXE_ifnotgoto (ia e, l) :: !exes'
-  | `BEXE_loop (i,e) -> exes' := `BEXE_loop (i,ia e) :: !exes'
+  | `BEXE_call (sr,a,b) -> exes' := `BEXE_call (sr,ia a,ia b) :: !exes'
+  | `BEXE_jump (sr,a,b) -> exes' := `BEXE_jump (sr,ia a,ia b) :: !exes'
+  | `BEXE_fun_return (sr,a) -> exes' := `BEXE_fun_return (sr,ia a) :: !exes'
+  | `BEXE_ifgoto (sr,e,l) -> exes' := `BEXE_ifgoto (sr,ia e, l) :: !exes'
+  | `BEXE_ifnotgoto (sr,e,l) -> exes' := `BEXE_ifnotgoto (sr,ia e, l) :: !exes'
+  | `BEXE_loop (sr,i,e) -> exes' := `BEXE_loop (sr,i,ia e) :: !exes'
 
   | `BEXE_nop _ 
   | `BEXE_comment _  (* we shouldn't really elide comments .. *)
     -> ()
-  | `BEXE_label s -> (* but it makes this test easier *)
+  | `BEXE_label (sr,s) -> (* but it makes this test easier *)
     while            (* eliminate jumps to next instruction *)
       match !exes' with
-      | (`BEXE_goto s') :: _
-      | (`BEXE_ifgoto (_,s')) :: _
-      | (`BEXE_ifnotgoto (_,s')) :: _
+      | (`BEXE_goto (_,s')) :: _
+      | (`BEXE_ifgoto (_,_,s')) :: _
+      | (`BEXE_ifnotgoto (_,_,s')) :: _
         -> s = s'
       | _ -> false
     do 
@@ -412,22 +412,22 @@ let useless_call_elim syms bbdfns vs' exes index =
     ;
     exes' := x :: !exes'
 
-  | `BEXE_regmatch (e,(a,n,h,tr)) ->
+  | `BEXE_regmatch (sr,e,(a,n,h,tr)) ->
      let h' = Hashtbl.create 97 in
      Hashtbl.iter
      (fun i e -> Hashtbl.add h' i (ia e))
      h
      ;
-    exes' := `BEXE_regmatch (ia e,(a,n,h',tr)) :: !exes'
+    exes' := `BEXE_regmatch (sr,ia e,(a,n,h',tr)) :: !exes'
 
 
-  | `BEXE_reglex (p1,p2,(a,n,h,tr)) ->
+  | `BEXE_reglex (sr,p1,p2,(a,n,h,tr)) ->
      let h' = Hashtbl.create 97 in
      Hashtbl.iter
      (fun i e -> Hashtbl.add h' i (ia e))
      h
      ;
-    exes' := `BEXE_reglex (ia p1, ia p2,(a,n,h',tr)) :: !exes'
+    exes' := `BEXE_reglex (sr,ia p1, ia p2,(a,n,h',tr)) :: !exes'
 
   | x -> exes' := x :: !exes'
   )
@@ -440,28 +440,28 @@ let useless_call_elim syms bbdfns vs' exes index =
   let rec tail_check (lst: bexe_t list) = 
     match lst with
     | [] -> ()
-    | `BEXE_proc_return :: `BEXE_proc_return :: t ->
-      tail_check (`BEXE_proc_return :: t)
+    | `BEXE_proc_return _ :: `BEXE_proc_return sr :: t ->
+      tail_check (`BEXE_proc_return sr :: t)
       
-    | `BEXE_proc_return :: `BEXE_call (p,a) :: t ->
+    | `BEXE_proc_return _ :: `BEXE_call (sr,p,a) :: t ->
       begin 
         match p with
         | (`BEXPR_closure (i,_),_) ->
           begin 
             match Hashtbl.find bbdfns i with
             | id,parent,`BBDCL_proc _ ->
-              tack `BEXE_proc_return;
-              tack (`BEXE_call (p,a));
+              tack (`BEXE_proc_return sr);
+              tack (`BEXE_call (sr,p,a));
 
             | _ -> 
-              tack (`BEXE_jump (p,a))
+              tack (`BEXE_jump (sr,p,a))
           end
         | _ -> 
           (* jumps to variables not supported in case the
             variable ius a child 
           *)
-          tack `BEXE_proc_return;
-          tack (`BEXE_call (p,a));
+          tack (`BEXE_proc_return sr);
+          tack (`BEXE_call (sr,p,a));
       end
       ;
       tail_check t
@@ -472,7 +472,7 @@ let useless_call_elim syms bbdfns vs' exes index =
   in
     tail_check 
       begin match !exes' with
-      | `BEXE_call _ :: _ -> `BEXE_proc_return :: !exes'
+      | `BEXE_call (sr,_,_) :: _ -> `BEXE_proc_return sr :: !exes'
       | _ -> !exes'
       end
     ;
@@ -512,27 +512,27 @@ and uses_exes syms used bbdfns exes =
 and uses_exe syms used bbdfns (exe:bexe_t) =
   let ue e = uses_tbexpr syms used bbdfns e in
   match exe with
-  | `BEXE_call (e1,e2) 
-  | `BEXE_jump (e1,e2) 
+  | `BEXE_call (_,e1,e2) 
+  | `BEXE_jump (_,e1,e2) 
     -> ue e1; ue e2
     
-  | `BEXE_loop (_,e)
-  | `BEXE_ifgoto (e,_)
-  | `BEXE_ifnotgoto (e,_)
-  | `BEXE_fun_return e 
+  | `BEXE_loop (_,_,e)
+  | `BEXE_ifgoto (_,e,_)
+  | `BEXE_ifnotgoto (_,e,_)
+  | `BEXE_fun_return (_,e)
     -> ue e
 
-  | `BEXE_assign (e1,e2) -> ue e1; ue e2
-  | `BEXE_init (i,e) -> uses syms used bbdfns i; ue e
-  | `BEXE_read i -> uses syms used bbdfns i
+  | `BEXE_assign (_,e1,e2) -> ue e1; ue e2
+  | `BEXE_init (_,i,e) -> uses syms used bbdfns i; ue e
+  | `BEXE_read (_,i) -> uses syms used bbdfns i
 
-  | `BEXE_regmatch (e,(_,_,h,_)) -> 
+  | `BEXE_regmatch (_,e,(_,_,h,_)) -> 
     ue e;
     Hashtbl.iter
     (fun _ e -> ue e)
     h
 
-  | `BEXE_reglex (p1,p2,(_,_,h,_)) -> 
+  | `BEXE_reglex (_,p1,p2,(_,_,h,_)) -> 
     ue p1; 
     ue p2;
     Hashtbl.iter
@@ -541,7 +541,7 @@ and uses_exe syms used bbdfns (exe:bexe_t) =
 
   | `BEXE_code _ 
   | `BEXE_goto _ 
-  | `BEXE_proc_return  
+  | `BEXE_proc_return _
   | `BEXE_comment _ 
   | `BEXE_nop _ 
   | `BEXE_label _ 

@@ -199,7 +199,8 @@ and typecode_t =
   | `TYP_tuple of typecode_t list               (** product type *)
   | `TYP_sum of typecode_t list                 (** numbered sum type *)
   | `TYP_function of typecode_t * typecode_t    (** function type *)
-  | `TYP_pointer  of typecode_t                 (** pointer type *)
+  | `TYP_pointer of typecode_t                  (** pointer type *)
+  | `TYP_array of typecode_t * typecode_t       (** array type base ^ index *)
   | `TYP_as of typecode_t * string              (** fixpoint *)
   | `TYP_typeof of expr_t                       (** typeof *)
   | `TYP_var of int                             (** unknown type *)
@@ -268,6 +269,7 @@ and expr_t =
   | `AST_product of range_srcref * expr_t list
   | `AST_sum of range_srcref * expr_t list
   | `AST_arrow of range_srcref * (expr_t * expr_t)
+  | `AST_superscript of range_srcref * (expr_t * expr_t)
 
   | `AST_literal of range_srcref * literal_t
   | `AST_deref of range_srcref * expr_t
@@ -358,6 +360,8 @@ and statement_t =
   | `AST_open of range_srcref * qualified_name_t
   | `AST_use of range_srcref * id_t * qualified_name_t
   | `AST_comment of string (* for documenting generated code *)
+  | `AST_public of range_srcref * string * statement_t
+  | `AST_private of range_srcref * statement_t
 
   (* definitions *)
   | `AST_function of range_srcref * id_t * id_t list * parameter_t list * typecode_t * statement_t list
@@ -450,6 +454,8 @@ and exe_t =
   | `EXE_regmatch of (expr_t * (regexp_t * expr_t) list)
   | `EXE_reglex of (expr_t * expr_t * (regexp_t * expr_t) list)
   ]
+
+type sexe_t = range_srcref * exe_t
 
 @doc()
 The whole of a compilation unit, this is the data structure
@@ -570,6 +576,7 @@ type 't b0typecode_t' =
   | `BTYP_sum of 't list            
   | `BTYP_function of 't * 't
   | `BTYP_pointer  of 't 
+  | `BTYP_array of 't * 't 
   | `BTYP_void                       
   | `BTYP_binding of 't * 't 
   | `BTYP_fix of int      
@@ -604,23 +611,23 @@ type regular_args_t =
 
 and bexe_t =
   [
-  | `BEXE_label of string
-  | `BEXE_comment of string (* for documenting generated code *)
-  | `BEXE_goto of string  (* for internal use only *)
-  | `BEXE_ifgoto of tbexpr_t * string  (* for internal use only *)
-  | `BEXE_ifnotgoto of tbexpr_t * string  (* for internal use only *)
-  | `BEXE_call of tbexpr_t * tbexpr_t 
-  | `BEXE_jump of tbexpr_t * tbexpr_t 
-  | `BEXE_loop of int * tbexpr_t 
-  | `BEXE_read of bid_t
-  | `BEXE_fun_return of tbexpr_t
-  | `BEXE_proc_return 
-  | `BEXE_nop of string
-  | `BEXE_code of string
-  | `BEXE_assign of tbexpr_t * tbexpr_t 
-  | `BEXE_init of bid_t * tbexpr_t 
-  | `BEXE_regmatch of tbexpr_t * regular_args_t
-  | `BEXE_reglex of tbexpr_t * tbexpr_t * regular_args_t
+  | `BEXE_label of range_srcref * string
+  | `BEXE_comment of range_srcref * string (* for documenting generated code *)
+  | `BEXE_goto of range_srcref * string  (* for internal use only *)
+  | `BEXE_ifgoto of range_srcref * tbexpr_t * string  (* for internal use only *)
+  | `BEXE_ifnotgoto of range_srcref * tbexpr_t * string  (* for internal use only *)
+  | `BEXE_call of range_srcref * tbexpr_t * tbexpr_t 
+  | `BEXE_jump of range_srcref * tbexpr_t * tbexpr_t 
+  | `BEXE_loop of range_srcref * int * tbexpr_t 
+  | `BEXE_read of range_srcref * bid_t
+  | `BEXE_fun_return of range_srcref * tbexpr_t
+  | `BEXE_proc_return of range_srcref   
+  | `BEXE_nop of range_srcref * string
+  | `BEXE_code of range_srcref * string
+  | `BEXE_assign of range_srcref * tbexpr_t * tbexpr_t 
+  | `BEXE_init of range_srcref * bid_t * tbexpr_t 
+  | `BEXE_regmatch of range_srcref * tbexpr_t * regular_args_t
+  | `BEXE_reglex of range_srcref * tbexpr_t * tbexpr_t * regular_args_t
   ]
 
 and bexpr_t =
@@ -691,12 +698,12 @@ type symbol_definition_t =
   | `SYMDEF_parameter of  typecode_t
   | `SYMDEF_typevar of typecode_t (* usually type TYPE *)
 
-  | `SYMDEF_function of parameter_t list * typecode_t * exe_t list
+  | `SYMDEF_function of parameter_t list * typecode_t * sexe_t list
 
   | `SYMDEF_match_check of  pattern_t * int 
   | `SYMDEF_interface 
-  | `SYMDEF_typed_functor of parameter_t list * typecode_t * exe_t list
-  | `SYMDEF_untyped_functor of parameter_t list * exe_t list 
+  | `SYMDEF_typed_functor of parameter_t list * typecode_t * sexe_t list
+  | `SYMDEF_untyped_functor of parameter_t list * sexe_t list 
   | `SYMDEF_module
   | `SYMDEF_if_type
   | `SYMDEF_if_fun of typecode_t
@@ -786,6 +793,7 @@ let map_type f = function
   | `TYP_sum ts -> `TYP_sum (map f ts)
   | `TYP_function (a,b) -> `TYP_function (f a, f b)
   | `TYP_pointer t -> `TYP_pointer (f t)
+  | `TYP_array (t1, t2) -> `TYP_array (f t1, f t2)
   | `TYP_as (t,s) -> `TYP_as (f t,s)
 
   (* destructors *)
@@ -810,6 +818,7 @@ let map_b0type f = function
   | `BTYP_sum ts -> `BTYP_sum (map f ts)
   | `BTYP_function (a,b) -> `BTYP_function (f a, f b)
   | `BTYP_pointer t->  `BTYP_pointer (f t)
+  | `BTYP_array (t1,t2)->  `BTYP_array (f t1, f t2)
   | `BTYP_binding (a,b) -> `BTYP_binding (f a, f b)
   | x -> x
 
@@ -830,6 +839,7 @@ let iter_b0type f = function
   | `BTYP_sum ts -> iter f ts
   | `BTYP_function (a,b) -> f a; f b
   | `BTYP_pointer t->  f t
+  | `BTYP_array (t1,t2)->  f t1; f t2
   | `BTYP_binding (a,b) -> f a; f b
   | x -> ()
 
@@ -936,6 +946,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_product (s,_)
   | `AST_sum (s,_)
   | `AST_arrow (s,_)
+  | `AST_superscript (s,_)
 
   | `AST_apply  (s,_) 
   | `AST_deref (s,_) 
@@ -965,6 +976,8 @@ let src_of_expr (e : expr_t) = match e with
     -> s
 
 let src_of_stmt e = match e with
+  | `AST_public (s,_,_)
+  | `AST_private (s,_)
   | `AST_interface (s,_,_,_)
   | `AST_module_binding (s,_,_,_)
   | `AST_typed_functor (s,_,_,_,_,_)
@@ -1318,6 +1331,9 @@ and string_of_expr (e:expr_t) =
      cat "+" (List.map se ts)
   | `AST_arrow (_,(a,b)) ->
     "(" ^ se a ^ " -> " ^ se b ^ ")"
+
+  | `AST_superscript (_,(a,b)) ->
+    "(" ^ se a ^ " ^ " ^ se b ^ ")"
     
   | `AST_method_apply  (_,(fn, arg)) -> "(" ^ 
     fn ^ " " ^ 
@@ -1408,11 +1424,12 @@ and string_of_expr (e:expr_t) =
    0.5 -- indexing t[i]
    1 -- pointer
    2 -- application
-   3 -- *
-   4 -- +
-   5 -- ->
-   6 -- =>
-   7    as, all
+   3 -- ^
+   4 -- *
+   5 -- +
+   6 -- ->
+   7 -- =>
+   8    as, all
 *)
 
 
@@ -1435,23 +1452,25 @@ and st prec tc : string =
     | `TYP_tuple ls ->
       begin match ls with 
       | [] -> 0,"unit" 
-      | _ -> 3, cat " * " (List.map (st 3) ls)
+      | _ -> 4, cat " * " (List.map (st 4) ls)
       end
 
     | `TYP_sum ls ->
       begin match ls with 
       | [] -> 0,"void" 
       | [`TYP_tuple[];`TYP_tuple[]] -> 0,"bool" 
-      | _ -> 4,cat " * " (List.map (st 4) ls)
+      | _ -> 5,cat " * " (List.map (st 5) ls)
       end
 
     | `TYP_function (args, result) ->  
-      5,st 5 args ^ " -> " ^ st 5 result
+      6,st 6 args ^ " -> " ^ st 6 result
 
+    | `TYP_array (vt,it) -> 3, st 1 vt ^ "^" ^ st 3 it
+    
     | `TYP_pointer t -> 1,"&" ^ st 1 t
     
     | `TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
-    | `TYP_as (t,s) -> 7,st 7 t ^ " as " ^ s
+    | `TYP_as (t,s) -> 8,st 8 t ^ " as " ^ s
 
     | `TYP_proj (i,t) -> 2,"proj_"^si i^" "^ st 2 t
     | `TYP_dual t -> 2,"~"^ st 2 t
@@ -1462,17 +1481,17 @@ and st prec tc : string =
     | `TYP_apply (t1,t2) -> 2,st 2 t1 ^ " " ^ st 2 t2
     | `TYP_type -> 0,"TYPE"
     | `TYP_type_tuple ls ->
-      3, cat ", " (List.map (st 3) ls)
+      4, cat ", " (List.map (st 4) ls)
     | `TYP_typefun (args,ret,body) -> 
-       7,
+       8,
        (
          "fun(" ^ cat ", " 
          (
            List.map 
-           (fun (n,t)-> n ^ ": " ^ st 7 t) 
+           (fun (n,t)-> n ^ ": " ^ st 8 t) 
            args
          ) ^
-         "): " ^ st 0 ret ^ "=" ^ st 7 body
+         "): " ^ st 0 ret ^ "=" ^ st 8 body
        )
   in
     if iprec >= prec 
@@ -1535,10 +1554,10 @@ and sb dfns depth fixlist counter prec tc =
        )
 
     | `BTYP_binding (a,b) -> 
-      6,
-      sbt 6 a ^
+      7,
+      sbt 7 a ^
       " => " ^
-      sbt 6 b
+      sbt 7 b
 
     | `BTYP_var i -> 0,"<T" ^ si i ^ ">"
     | `BTYP_inst (i,ts) -> 
@@ -1558,7 +1577,7 @@ and sb dfns depth fixlist counter prec tc =
       begin match ls with 
       | [] -> 0,"unit" 
       | [x] -> failwith ("UNEXPECTED TUPLE OF ONE ARGUMENT " ^ sbt 9 x)
-      | _ -> 3,cat " * " (List.map (sbt 3) ls)
+      | _ -> 4,cat " * " (List.map (sbt 4) ls)
       end
 
     | `BTYP_sum ls -> 
@@ -1566,11 +1585,13 @@ and sb dfns depth fixlist counter prec tc =
       | [] -> 9,"UNEXPECTED EMPTY SUM = void" 
       | [`BTYP_tuple[]; `BTYP_tuple[]] -> 0,"bool"
       | [x] -> (* failwith *) (9,"UNEXPECTED SUM OF ONE ARGUMENT " ^ sbt 9 x)
-      | _ -> 4,cat " + " (List.map (sbt 4) ls)
+      | _ -> 5,cat " + " (List.map (sbt 5) ls)
       end
 
     | `BTYP_function (args, result) ->  
-      5,(sbt 5 args) ^ " -> " ^ (sbt 5 result)
+      6,(sbt 6 args) ^ " -> " ^ (sbt 6 result)
+
+    | `BTYP_array (t1,t2) -> 3, sbt 3 t1 ^"^"^sbt 3 t2
 
     | `BTYP_pointer t -> 1,"&" ^ sbt 1 t
     | `BTYP_void -> 0,"void"
@@ -1578,18 +1599,18 @@ and sb dfns depth fixlist counter prec tc =
     | `BTYP_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2
     | `BTYP_type -> 0,"TYPE"
     | `BTYP_type_tuple ls ->
-      3, cat ", " (List.map (sbt 3) ls)
+      4, cat ", " (List.map (sbt 4) ls)
 
     | `BTYP_typefun (args,ret,body) -> 
-       7,
+       8,
        (
          "fun (" ^ cat ", " 
          (
            List.map 
-           (fun (i,t)-> "T"^si i ^ ": " ^ sbt 7 t) 
+           (fun (i,t)-> "T"^si i ^ ": " ^ sbt 8 t) 
            args
          ) ^
-         "): " ^ sbt 0 ret ^ "=" ^ sbt 7 body
+         "): " ^ sbt 0 ret ^ "=" ^ sbt 8 body
        )
   in
     let txt,lst = print_fixpoints depth !fixlist in
@@ -1784,6 +1805,15 @@ and string_of_statement level s =
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
   match s with 
+  | `AST_public (_,s,st) ->
+    "\n" ^
+    spaces level ^ "public '" ^ s ^ "'\n" ^
+    string_of_statement (level+1) st
+
+  | `AST_private (_,st) ->
+    spaces level ^ "private " ^
+    string_of_statement 0 st
+
   | `AST_interface (_,name, vs, entries) ->
     spaces level ^
     "interface " ^ name ^ "{\n" ^
@@ -2339,63 +2369,63 @@ and string_of_bexe dfns level s =
   let se e = string_of_bound_expression dfns e in
   let sid n = qualified_name_of_index dfns n in
   match s with
-  | `BEXE_regmatch (e,(alphabet, nstates, termcodes,matrix)) -> 
+  | `BEXE_regmatch (_,e,(alphabet, nstates, termcodes,matrix)) -> 
     spc ^ "regmatch " ^ se e ^ " with " ^
     "<TRANSITION MATRIX of "^si nstates^" states> " ^
     "endmatch;"
 
-  | `BEXE_reglex (p1,p2,(alphabet, nstates, termcodes,matrix)) -> 
+  | `BEXE_reglex (_,p1,p2,(alphabet, nstates, termcodes,matrix)) -> 
     spc ^ "reglex " ^ se p1 ^ " to " ^ se p2 ^ " with " ^
     "<TRANSITION MATRIX of "^si nstates^" states> " ^
     "endmatch;"
 
-  | `BEXE_goto s -> spc ^ "goto " ^ s ^ ";"
+  | `BEXE_goto (_,s) -> spc ^ "goto " ^ s ^ ";"
 
-  | `BEXE_ifgoto (e,s) -> spc ^ 
+  | `BEXE_ifgoto (_,e,s) -> spc ^ 
      "if(" ^ se e ^ ")goto " ^ s ^ ";"
 
-  | `BEXE_ifnotgoto (e,s) -> spc ^ 
+  | `BEXE_ifnotgoto (_,e,s) -> spc ^ 
      "if(not(" ^ se e ^ "))goto " ^ s ^ ";"
 
-  | `BEXE_label s -> s ^ ":"
+  | `BEXE_label (_,s) -> s ^ ":"
 
-  | `BEXE_comment s -> spc ^ 
+  | `BEXE_comment (_,s) -> spc ^ 
     "// " ^ s 
 
-  | `BEXE_call (p,a) -> spc ^ 
+  | `BEXE_call (_,p,a) -> spc ^ 
     "call " ^ 
     se p ^ " " ^ 
     se a ^ ";"
 
-  | `BEXE_jump (p,a) -> spc ^ 
+  | `BEXE_jump (_,p,a) -> spc ^ 
     "tail call " ^ 
     se p ^ " " ^ 
     se a ^ ";"
 
-  | `BEXE_loop (p,a) -> spc ^ 
+  | `BEXE_loop (_,p,a) -> spc ^ 
     "loop<" ^ 
     si p ^ "> " ^ 
     se a ^ ";"
 
-  | `BEXE_read v -> spc ^ 
+  | `BEXE_read (_,v) -> spc ^ 
     "read " ^ sid v 
 
-  | `BEXE_fun_return x -> spc ^ 
+  | `BEXE_fun_return (_,x) -> spc ^ 
     "return " ^ se x ^ ";"
 
-  | `BEXE_proc_return -> spc ^ 
+  | `BEXE_proc_return _ -> spc ^ 
     "return;"
 
-  | `BEXE_nop s -> spc ^ 
+  | `BEXE_nop (_,s) -> spc ^ 
     "/*" ^ s ^ "*/"
 
-  | `BEXE_code s -> spc ^ 
+  | `BEXE_code (_,s) -> spc ^ 
     "code " ^ string_of_string s 
 
-  | `BEXE_assign (l,r) -> spc ^ 
+  | `BEXE_assign (_,l,r) -> spc ^ 
     se l ^ " = " ^ se r ^ ";"
 
-  | `BEXE_init (l,r) -> spc ^ 
+  | `BEXE_init (_,l,r) -> spc ^ 
     sid l ^ " := " ^ se r ^ ";"
 
 and string_of_dcl level name vs (s:dcl_t) = 
@@ -2833,6 +2863,11 @@ val flx_bool : typecode_t
 val flx_bbool : btypecode_t
 val dummy_sr: range_srcref
 
+val is_unitsum: btypecode_t -> bool
+val int_of_unitsum : btypecode_t -> int
+val all_units : btypecode_t list -> bool
+val all_voids : btypecode_t list -> bool
+
 val type_of_argtypes : 
   typecode_t list -> 
   typecode_t
@@ -2921,6 +2956,31 @@ module FunInstSet :
 open Flx_ast
 open Flx_types
 open Flx_srcref
+open List
+
+let all_voids ls =    
+    fold_left 
+    (fun acc t -> acc && (t = `BTYP_void))
+    true ls
+
+let all_units ls =    
+    fold_left 
+    (fun acc t -> acc && (t = `BTYP_tuple []))
+    true ls
+
+let is_unitsum (t:btypecode_t) = match t with
+  | `BTYP_sum ls ->  all_units ls
+  | _ -> false
+
+
+let int_of_unitsum t = match t with
+  | `BTYP_sum ls ->  
+    if all_units ls then length ls
+    else raise Not_found
+
+  | _ -> raise Not_found 
+
+
 
 exception UnificationError of btypecode_t * btypecode_t
 
@@ -2950,6 +3010,7 @@ let typeoflist typlist = match typlist with
 let rec lower t = match t with
   | `BTYP_binding (i,t) -> t
   | `BTYP_pointer t -> `BTYP_pointer (lower t)
+  | `BTYP_array (t1,t2) -> `BTYP_array (lower t1, lower t2)
   | `BTYP_tuple ts -> `BTYP_tuple (List.map lower ts)
   | `BTYP_sum ts -> `BTYP_sum (List.map lower ts)
   | `BTYP_void -> `BTYP_void
@@ -2964,6 +3025,7 @@ let rec lower t = match t with
 let rec lift t = match t with
   | `BTYP_binding (i,t) -> i
   | `BTYP_pointer t -> `BTYP_pointer (lift t)
+  | `BTYP_array (t1,t2) -> `BTYP_array (lift t1, lift t2)
   | `BTYP_tuple ts -> `BTYP_tuple (List.map lift ts)
   | `BTYP_sum ts -> `BTYP_sum (List.map lift ts)
   | `BTYP_void -> `BTYP_void
@@ -3035,6 +3097,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
 
   | `AST_product (_,ts) -> `TYP_tuple (List.map te ts)
   | `AST_arrow (_,(a,b)) -> `TYP_function (te a, te b)
+  | `AST_superscript (_,(a,b)) -> `TYP_array (te a, te b)
   | `AST_ref (sr,e) -> `TYP_pointer (te e)
   | `AST_sum (_,ts) -> 
     `TYP_sum (List.map te ts)

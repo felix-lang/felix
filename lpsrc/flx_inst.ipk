@@ -92,29 +92,29 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   print_endline ("processing exe " ^ string_of_bexe syms.dfns 0 exe);
   *)
   match exe with
-  | `BEXE_call (e1,e2) 
-  | `BEXE_jump (e1,e2) 
+  | `BEXE_call (_,e1,e2) 
+  | `BEXE_jump (_,e1,e2) 
     -> ue e1; ue e2
     
-  | `BEXE_loop (_,e)
-  | `BEXE_ifgoto (e,_)
-  | `BEXE_ifnotgoto (e,_)
-  | `BEXE_fun_return e 
+  | `BEXE_loop (_,_,e)
+  | `BEXE_ifgoto (_,e,_)
+  | `BEXE_ifnotgoto (_,e,_)
+  | `BEXE_fun_return (_,e) 
     -> ue e
 
   (* this is wrong: initialisation is not use .. *)
-  | `BEXE_init (i,e) -> ui i; ue e
-  | `BEXE_assign (e1,e2) -> ue e1; ue e2
+  | `BEXE_init (sr,i,e) -> ui i; ue e
+  | `BEXE_assign (sr,e1,e2) -> ue e1; ue e2
 
-  | `BEXE_read i -> ui i 
+  | `BEXE_read (sr,i) -> ui i 
 
-  | `BEXE_regmatch (e,(_,_,h,_)) -> 
+  | `BEXE_regmatch (sr,e,(_,_,h,_)) -> 
     ue e;
     Hashtbl.iter
     (fun _ e -> ue e)
     h
 
-  | `BEXE_reglex (p1,p2,(_,_,h,_)) -> 
+  | `BEXE_reglex (sr,p1,p2,(_,_,h,_)) -> 
     ue p1; 
     ue p2;
     Hashtbl.iter
@@ -126,7 +126,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   | `BEXE_code _
   | `BEXE_comment _
   | `BEXE_nop _
-  | `BEXE_proc_return
+  | `BEXE_proc_return _
     -> ()
 
 and process_exes syms bbdfns ref_insts1 ts hvarmap exes = 

@@ -153,7 +153,7 @@ let gen_offset_data s n name offsets =
   bcat s ("static void " ^ name ^ "_finaliser(collector_t *, void *p){\n");
   bcat s ("  (("^ name ^ "*)p)->~" ^ name ^ "();\n}\n");
   bcat s (  "static gc_shape_t "^ name ^"_ptr_map (\n");
-  bcat s ( "  sizeof("^name^"),\n  "^name^"_finaliser,\n  "^si n^",\n  "^
+  bcat s ( "  1,sizeof("^name^"),\n  "^name^"_finaliser,\n  "^si n^",\n  "^
   (if n<>0 then name^"_offsets\n" else "0\n"));
   bcat s ( ");\n")
 
@@ -231,16 +231,30 @@ let gen_offset_tables syms bbdfns=
       bcat s ("\n//OFFSETS for tuple type " ^ si index ^ "\n");
       gen_offset_data s n name offsets
 
-    | `BTYP_pointer t ->
+    (* for an array, we only have offsets for the first element *)
+    | `BTYP_array (t,i) ->
+      let k = 
+        try int_of_unitsum i
+        with Not_found -> failwith "Array index must be unitsum"
+      in
       let name = cpp_typename syms btyp in
-      let offsets = get_offsets syms bbdfns btyp in
+      let tname = cpp_typename syms t in
+      let offsets = get_offsets syms bbdfns t in
       let n = length offsets in 
-      bcat s ("\n//OFFSETS for pointer type " ^ si index ^ "\n");
+      bcat s ("\n//OFFSETS for array type " ^ si index ^ "\n");
       bcat s ("static size_t " ^ name ^ "_offsets[]={\n  ");
       bcat s ("  " ^ cat ",\n  " offsets);
       bcat s "};\n";
-      bcat s ( "static gc_shape_t "^ name ^"_ptr_map(\n");
-      bcat s ("  sizeof("^name^"),\n  0,\n  "^si n^",\n  "^name^"_offsets\n");
+      bcat s ("static void " ^ name ^ "_finaliser(collector_t *, void *p){\n");
+      bcat s ("  for(size_t count = "^ si k ^"; count; --count)\n");
+      bcat s ("  {\n");
+      bcat s ("    (("^ tname ^ "*)p)->~" ^ tname ^ "();\n");
+      bcat s ("    p = (void*)((char*)p + sizeof("^tname^"));\n");
+      bcat s ("  }\n");
+      bcat s ("}\n");
+      bcat s ("static gc_shape_t "^ name ^"_ptr_map(\n");
+      bcat s ("  " ^ si k ^ ",\n");
+      bcat s ("  sizeof("^name^"),\n  "^name^"_finaliser,\n  "^si n^",\n  "^name^"_offsets\n");
       bcat s ");\n"
 
     | `BTYP_inst (i,ts) ->
@@ -253,7 +267,7 @@ let gen_offset_tables syms bbdfns=
           Hashtbl.add primitive_shapes name true; 
           bcat s ("\n//OFFSETS for abstract type " ^ name ^ " instance\n");
           bcat s ( "static gc_shape_t " ^ name ^ "_ptr_map(\n") ;
-          bcat s ("  sizeof("^name^"),0,0,0\n");
+          bcat s ("  1,sizeof("^name^"),0,0,0\n");
           bcat s ");\n"
         end else begin
           bcat s ("\n//OFFSETS for abstract type " ^ name ^ " instance\n");
@@ -836,7 +850,7 @@ let get_var_frame syms bbdfns this index ts : string =
   ->
     let rec chase_tail parent =
       match parent with
-      | None -> "((void*)0)"
+      | None -> "0"
       | Some i ->
         let _,sr,parent,vs,_,_,entry = Hashtbl.find syms.dfns i in
         match entry with
@@ -850,14 +864,6 @@ let get_var_frame syms bbdfns this index ts : string =
     in
       chase_tail parent
   | _ -> failwith ("[get_var_frame] Expected name "^id^" to be variable or value")
-
-let is_unitsum (t:btypecode_t) = match t with
-  | `BTYP_sum ls -> 
-    fold_left 
-    (fun acc t -> acc && (t = `BTYP_tuple []))
-    true ls
-
-  | _ -> false
 
 let rec gen_expr syms bbdfns this (e,t) vs ts =
   (*
@@ -1027,7 +1033,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
     let var_ptr = "&(" ^ get_var_ref syms bbdfns this index ts ^ ")" in
     let frame_ptr = get_var_frame syms bbdfns this index ts in
     let reference = ref_type ^ 
-      "((void*)" ^ frame_ptr ^ ", " ^ var_ptr ^ ")" 
+      "(" ^ frame_ptr ^ ", " ^ var_ptr ^ ")" 
     in
     reference
 
@@ -1142,7 +1148,7 @@ let get_labels bbdfns counter exes =
   let labels = Hashtbl.create 97 in
   iter
     (fun exe -> match exe with 
-      | `BEXE_label s -> Hashtbl.add labels s !counter; incr counter
+      | `BEXE_label (_,s) -> Hashtbl.add labels s !counter; incr counter
       | _ -> ()
     )
     exes
@@ -1213,7 +1219,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
     | _ -> failwith "Expected executable code to be in function or procedure"
   in let our_level = length our_display in
 
-  let handle_closure is_jump index ts a =
+  let handle_closure sr is_jump index ts a =
     let id,parent,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_exe(call)] Can't find index " ^ si index)
@@ -1252,7 +1258,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
             if is_jump then ret_string
             else ""
           end
-        else failwith "[handle_closure] Wrong number of type arguments"
+        else clierr sr "[handle_closure] Wrong number of type arguments"
       end
       in 
         (*
@@ -1345,9 +1351,9 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
     end
   in
   match exe with
-  | `BEXE_code s -> s
-  | `BEXE_comment s -> "\n/*" ^ s ^ "*/\n"
-  | `BEXE_label s -> 
+  | `BEXE_code (_,s) -> s
+  | `BEXE_comment (_,s) -> "\n/*" ^ s ^ "*/\n"
+  | `BEXE_label (_,s) -> 
     let local_labels = 
       try Hashtbl.find label_map this 
       with _ -> failwith ("[gen_exe] Can't find label map of " ^ si this)
@@ -1367,7 +1373,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
     ^
     "    " ^ s ^ ":;\n"
 
-  | `BEXE_goto s -> 
+  | `BEXE_goto (_,s) -> 
     let local_labels = 
       try Hashtbl.find label_map this 
       with _ -> failwith ("Can't find label map of " ^ si this)
@@ -1424,16 +1430,16 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
       end
 
   (* conditional gotos are always local *)
-  | `BEXE_ifgoto (e,s) -> "      if(" ^ ge e ^ ")goto " ^ s ^ ";\n"
-  | `BEXE_ifnotgoto (e,s) ->"      if(!("^ge e^"))goto " ^ s ^ ";\n" 
+  | `BEXE_ifgoto (_,e,s) -> "      if(" ^ ge e ^ ")goto " ^ s ^ ";\n"
+  | `BEXE_ifnotgoto (_,e,s) ->"      if(!("^ge e^"))goto " ^ s ^ ";\n" 
   
-  | `BEXE_jump ((`BEXPR_closure (index,ts),_) as f,a) ->
+  | `BEXE_jump (sr,((`BEXPR_closure (index,ts),_) as f),a) ->
     let ts = map tsub ts in
-    handle_closure true index ts a
+    handle_closure sr true index ts a
     
-  | `BEXE_call ((`BEXPR_closure (index,ts),_) as f,a) ->
+  | `BEXE_call (sr,((`BEXPR_closure (index,ts),_) as f),a) ->
     let ts = map tsub ts in
-    handle_closure false index ts a
+    handle_closure sr false index ts a
 
   (* Refcounting notes for loop 
     Normally, the refcnt of every frame in the call stack is 1
@@ -1466,7 +1472,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
     underpants removed: precisely, the control relationship
     is lost, and only any data relationship remains.
   *)
-  | `BEXE_loop (i,a) ->
+  | `BEXE_loop (_,i,a) ->
     let ptr = 
       if i= 0 then "this"
       else 
@@ -1509,7 +1515,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
      used (a waste if it isn't re-entered .. oh well)
    *)
 
-  | `BEXE_call (p,a) ->
+  | `BEXE_call (_,p,a) ->
     let args = 
       let this = match kind with
         | Procedure -> "this"
@@ -1539,7 +1545,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
       "    case " ^ si n ^ ":\n"
     end
 
-  | `BEXE_jump (p,a) ->
+  | `BEXE_jump (_,p,a) ->
     let args = match a with
       | _,`BTYP_tuple [] -> "tmp"
       | _ -> "tmp, " ^ ge a
@@ -1552,9 +1558,9 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
     "        return " ^ ge p ^ "\n      ->call(" ^ args ^");\n" ^
     "      }\n"
 
-  | `BEXE_proc_return -> ret_string
+  | `BEXE_proc_return _ -> ret_string
 
-  | `BEXE_read index -> 
+  | `BEXE_read (sr,index) -> 
     let id,parent,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
@@ -1563,7 +1569,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
       match entry with
       | `BBDCL_var (_,t) -> t
       | `BBDCL_val (_,t) -> t
-      | _ -> failwith "Expected read argument to be variable"
+      | _ -> syserr sr "Expected read argument to be variable"
     in
     let n = !counter in
     incr counter;
@@ -1575,27 +1581,34 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
     "    case " ^ si n ^ ":\n"
 
     
-  | `BEXE_regmatch (e,reargs) ->
+  | `BEXE_regmatch (_,e,reargs) ->
     let b = Buffer.create 500 in
     Flx_regen.regen b reargs (`regmatch e) ge;
     Buffer.contents b
 
-  | `BEXE_reglex (p1,p2,reargs) ->
+  | `BEXE_reglex (_,p1,p2,reargs) ->
     let b = Buffer.create 500 in
     Flx_regen.regen b reargs (`reglex (p1,p2)) ge;
     Buffer.contents b
     
-  | `BEXE_fun_return e -> 
+  | `BEXE_fun_return (_,e) -> 
+    let _,t = e in
+    let t = tn t in
     "      //" ^ src_str ^ "\n" ^
-    "      return "^ge e^";\n"
-  | `BEXE_nop s -> "      //Nop: " ^ s ^ "\n"
+    "      {\n" ^
+    "        "^t^" tmp="^ge e^";\n" ^
+    "        decref(this);\n" ^
+    "        return tmp;\n" ^
+    "      }\n"
 
-  | `BEXE_assign (e1,e2) ->
+  | `BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
+
+  | `BEXE_assign (_,e1,e2) ->
     "      //"^src_str^"\n" ^
     "      "^ ge e1 ^ " = " ^ ge e2 ^
     ";\n"
     
-  | `BEXE_init (v,e) -> 
+  | `BEXE_init (_,v,e) -> 
     "      //"^src_str^"\n" ^
     "      "^
     get_var_ref syms bbdfns this v ts^ 
@@ -2363,6 +2376,7 @@ try
   plb "//DEFINE OFFSET tables for GC";
   plb "static size_t _uctor_offsets[1]= { offsetof(_uctor_,data) };";
   plb "static gc_shape_t _uctor_ptr_map ("; 
+  plb "  1,";
   plb "  sizeof(_uctor_),";
   plb "  0,";
   plb "  1,";

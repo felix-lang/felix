@@ -24,6 +24,7 @@ right type by client drivers.
 #ifndef FLX_GC
 #include <rtl/flx_gc.hpp>
 #endif
+#include <string>
 
 //enable or disable refcounting: off by default
 #ifdef FLX_REFCNT
@@ -78,22 +79,10 @@ struct _ref_
     //printf("copy ref incref %p\n", frame);
     _incref(frame);
   }
-  void operator = (_ref_ const& r)
-  {
-    if (data != r.data)
-    {
-      if (frame != r.frame)
-      {
-        //printf("assign [old frame] ref decref %p\n", frame);
-        decref(frame);
-        frame = r.frame;
-        //printf("assign [new frame] ref incref %p\n", frame);
-        _incref(frame);
-      }
-      data = r.data;
-    }
-  }
+  void operator = (_ref_ const& r);
 };
+
+extern flx::gc::generic::gc_shape_t _ref_ptr_map;
 
 //VARIANTS
 struct _uctor_
@@ -101,12 +90,21 @@ struct _uctor_
   int variant;
   void *data;
   _uctor_() : variant(-1), data(0) {}
-
   _uctor_(int i, void *d) : variant(i), data(d) {}
 };
 
 // UNIT
 struct unit {};
+
+// EXEC protocol failure
+// Thrown when trying to run a dead procedure
+struct flx_exec_failure_t {
+  std::string filename;
+  std::string operation;
+  std::string what;
+  flx_exec_failure_t(std::string f, std::string o, std::string w);
+};
+
 
 }} // namespaces
 #endif
@@ -127,6 +125,47 @@ con_t::~con_t(){
   printf("Destroying %p\n",this);
 #endif
 }
+
+void _ref_::operator = (_ref_ const& r)
+{
+  if (data != r.data)
+  {
+    if (frame != r.frame)
+    {
+      //printf("assign [old frame] ref decref %p\n", frame);
+      decref(frame);
+      frame = r.frame;
+      //printf("assign [new frame] ref incref %p\n", frame);
+      _incref(frame);
+    }
+    data = r.data;
+  }
+}
+
+//OFFSETS for _ref_
+static size_t _ref_offsets[1]={
+    offsetof(_ref_,frame)
+};
+
+static void _ref_finaliser (flx::gc::generic::collector_t *, void *p)
+{
+  ((_ref_*)p)->~_ref_();
+}
+
+flx::gc::generic::gc_shape_t _ref_ptr_map(
+  1,sizeof(_ref_),
+  _ref_finaliser,
+  1,
+  _ref_offsets
+);
+
+flx_exec_failure_t::flx_exec_failure_t(std::string f, std::string o, std::string w) : 
+  filename(f), 
+  operation(o), 
+  what(w) 
+{}
+
+
 }}
 
 @head(2,"Unix Dynamic linker")
@@ -462,10 +501,18 @@ int main(int argc, char* argv[])
     printf("what: %s\n",x.what.data());
     return 2;
   }
+  catch (flx_exec_failure_t x)
+  {
+    printf("Execution error\n");
+    printf("filename: %s\n",x.filename.data());
+    printf("operation: %s\n",x.operation.data());
+    printf("what: %s\n",x.what.data());
+    return 3;
+  }
   catch (...)
   {
     printf("flx_run driver ends with unknown EXCEPTION\n");
-    return 3;
+    return 4;
   }
 }
 

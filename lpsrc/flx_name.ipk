@@ -129,6 +129,9 @@ let rec cpp_type_classname syms t =
   | `BTYP_function _ -> 
     "_ft" ^ si (Hashtbl.find registry t)
 
+  | `BTYP_array _ -> 
+    "_at" ^ si (Hashtbl.find registry t)
+
   | `BTYP_tuple _ -> 
     "_tt" ^ si (Hashtbl.find registry t)
   

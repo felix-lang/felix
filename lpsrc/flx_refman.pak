@@ -1,0 +1,266 @@
+@set_title("Felix Language Reference")
+@head(1,"Introduction")
+Felix is a multi-faceted system. It includes
+an architectural layer, a pure lannguage,
+a library, and representation specification.
+@p()
+This manual documents the Felix Core, binding
+constructions, and those parts of the
+standard library which together constitute the Felix language.
+@p() 
+For details of representations, and Felix/C++
+interfacing specifications, see the Felix Programmers
+Guide.
+@p()
+This document is intended to be a specification,
+altough it uses natural language description and
+examples rather than a formalism for that purpose.
+It is also intended to specify the language
+and is not a standard for conformance of a Felix
+language translator.
+
+@head(2,"Structure")
+The Felix language can be decomposed as follows.
+Resources consist of those provided directly
+by the compiler, those provided by the compiler
+in conjunction with library components, and 
+standard library components.
+@p()
+For pragmatic reasons the compiler also provides some support
+for facilities not intended to be in the core
+language, such as string handling.
+
+@head(1,"Lexicology and environment")
+The Felix compiler reads files from
+directories to obtain the primary input,
+which is defined as a stream of ISO10646 code points.
+
+@head(2,"File System Layer")
+The method by which files are located for
+processing is implementation defined; however
+we provide a standard for certain operating
+systems.
+@p()
+For Unix and Windows based systems, a hierarchical
+file system is assumed. The compiler or top level
+command processor is passed the primary file
+in native format, and it is located according
+to operating system conventions.
+
+@head(3,'Include directive')
+Two forms of #include are supported, similar
+to those provided in C:
+
+@begin_displayed_code()
+  #include <filename>
+  #include "filename"
+@end_displayed_code()
+
+The first form is used to locate the standard
+library, standardised extensions and bindings,
+and is recommended for non-standard implementor 
+provided packages, third party libraries, and developer files
+containing common resources definitions and
+bindings.
+@p()
+The second form is used to locate application specific
+files.
+@p()
+The character set used for filenames 
+is restricted to the 8 bit ISO10646 characters
+with lexicology 'filename' given below in felix notation:
+
+@begin_displayed_code()
+  regexp upper = ['A'-'Z'];
+  regexp lower = ['a'-'z'];
+  regexp letter = upper | lower;
+  regexp digit = ['0'-'9'];
+  regexp underscore = '_';
+  regexp achar = letter | digit | underscore;
+  regexp id = letter achar *;
+  regexp component = id | id dot achar +;
+  regexp filename = component ('/' component) *;
+@end_displayed_code()
+@p()
+No restrictions apply to the second form, save that
+it must be a legitimate filename for the host platform
+and not contain the double quote (") char.
+@p()
+The path for searching for the first form is specified
+by I options to the compiler command, in order of writing: in Unix, 
+
+@begin_displayed_code()
+  -Idirectory
+@end_displayed_code()
+is required.
+@p()
+For the second form, the file must be a proper descendant
+of the directory containing the file containing
+the include directive.
+
+@head(1,"Character set")
+Felix uses the ISO10646 character set. If the input
+file is 8 bit data, UTF-8 encoding must be used.
+On Linux, UTF-8 encoding must be used.
+@p()
+On platforms providing files of 16, 24, 32, or other sized
+characters, the files must be converted possibly internally
+by the compiler, into UTF-8 encoding.
+@p()
+The requirement for UTF-8 exists to ensure the
+Felix lexer is platform independent.
+@p()
+UTF-8 encoding is required for Internet hosted
+files.
+
+@head(1,"Tokeniser")
+@head(1,"Parser")
+@head(1,'Macros')
+
+@head(1,'The pure language')
+This section describes an abstraction
+of the Felix system which excludes representation
+details such as binding directives, preprocessor
+inclusions, etc.
+
+@head(2,'Type System')
+@head(3,'Algebraic types')
+@head(4,'Tuples')
+The canonical categorical product of 2 or more types
+other than void is designated by the chain operator *. Values are 
+designated by the chain operator ,. The canonical
+terminal has type 1 with value (), the name 'unit'
+may also be used. The canonical
+product of one type t is just t.
+@p()
+Note the product of an initial type are isomorphic
+to an initial type, however the canonical constructor
+does not implement the isomorphism. In particular this
+means that a type such as '1 * 0' may not be given,
+in particular it may not be given by substitution
+into type variables.
+
+@head(4,'Sums')
+The canonical categorical sum of 2 or more types
+is designated by the chain operator +. The n'th type
+constructor of a sum type t is
+designated by the notation 'case n of t'. 
+If the argument is not type 1, this form takes
+an argument of the n'th component, which is written
+like '(case n of t) v', the type constructor may be
+used as a function in this case.
+@p()
+In pattern matches, the 'of t' is elided since the
+type is determined by the value being matched.
+@p()
+The canonical initial is denoted by 0, it has no values,
+it may also be designated by 'void'.
+@p()
+The canonical sum of two units 1 + 1 may also be designated
+as 'bool'.
+@p()
+A plain non-negative integer literal n designates the
+sum of n units.
+@p()
+BUG: There is no designation for the sum of one element,
+however the type does exist and is distinct from the element
+type, with values designated
+in the same way as for the canonical sum of 2 or more elements.
+It is not clear if the type distinction should be eliminated
+and values such as '(case 1 of t) x' or 'case 1 of 1' identified
+with values x and 1 respectively, or a library function provided
+to construct the type.
+@p()
+BUG: sum elements of unit type are represented as constants,
+rather than functions of unit. This is conventional in ML
+languages, but it is irregular.
+
+@head(2,'Expressions')
+@head(2,'Directives')
+@head(2,'Definitions')
+@head(2,'Executable Statements')
+
+@head(1,'Representation Specifications')
+This section describes details of how the abstract
+language is related to the target language.
+There are two parts to this: explicit facilities
+provided to enable embedding, and requirements
+on the emedding and embedded code that enble
+communication.
+
+@head(2,'Supported Target Languages')
+Felix current only supports C++ as a target
+language. However the C++ facilities required
+are quite lightweight and the compiler may
+be retargetted to C.
+@p()
+In the future we hope to allow Ocaml as a target
+language.
+
+@head(2,'Identifier Mangling')
+In this section, we sometimes say that the 
+generated name is the same as the source
+name. This only true for a certain subset
+of the strings which are legal identifiers
+in both languages. 
+@p()
+Felix always generates a legal target language
+identifier for any Felix identifier.
+The algorithm is unspecified, but is constrained
+by a requirement that a common subset remains
+unmodified.
+@p()
+For C the common subset is: ASCII letters, digits,
+and underscores with the initial character a letter,
+and each underscore with a non-undescore next to it.
+[That is; doubled, leading, and trailing underscores
+may be transformed by the name mangler]
+
+@head(2,'Export Directive')
+The export directive can be used to provide 
+certain constructions with definite names
+in the target language.
+@p()
+Currently, only top level functions and procedures may
+be exported, and an explicit target language
+name must be quoted.
+@p()
+Felix generates a C function with the specified
+target language name. 
+For C++ this is an 'extern "C"' name.
+@p()
+The calling convention is modified for exported
+procedures: calling the procedure returns
+a continuation of type con_t*.
+@p()
+If the procedure does not read messages it may be
+invoked by the algorithm:
+@begin_displayed_code()
+  con_t *p = the_proc(the_args);
+  while(p) p = p->resume();
+@end_displayed_code()
+
+@head(2,'Type System')
+@head(3,'Tuples')
+Felix generates a target language record or struct
+type, with fields named mem0, mem1, etc. The name
+of the type is is arbitrary.
+
+@head(3,'Structs')
+Felix generates a target language record or struct
+type, with fields named the same as in the Felix definition.
+The name of the type is arbitrary, however the constructor
+has the name given in the Felix script.
+
+@head(2,'Expressions')
+@head(2,'Directives')
+@head(2,'Definitions')
+@head(2,'Executable Statements')
+
+@head(1,'Standard Library')
+@head(2,'Basic types')
+@head(2,'Control Structures')
+
+@head(1,'Extension Library')
+@head(1,'Unix Library')
+

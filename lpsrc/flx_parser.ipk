@@ -211,7 +211,7 @@ let mktypefun sr name vs args return_type body =
 
 /* statement keywords */
 %token<Flx_ast.srcref> IF THEN ELSE ENDIF ELIF 
-%token<Flx_ast.srcref> OF VAR UNION CLASS GOTO EXPORT
+%token<Flx_ast.srcref> OF VAR UNION CLASS GOTO EXPORT PUBLIC PRIVATE
 
 %token<Flx_ast.srcref> MATCH WITH ENDMATCH CASE REGMATCH REGLEX TYPEMATCH
 %token<Flx_ast.srcref> HEADER BODY MODULE CODE LET IN
@@ -255,12 +255,27 @@ statement:
   | declarative { $1 }
   | executable { $1 }
   | inclusion { $1 }
+  | directive { $1 }
+  | publish { $1}
 
 binding_definition:
   | abstract_type { $1 }
   | const_def { $1 }
   | binding_header { $1 }
   | export_statement { $1 }
+
+publish:
+  | PUBLIC STRING binding_definition 
+    { `AST_public (slift $1, snd $2, $3) }
+
+  | PUBLIC STRING declarative 
+    { `AST_public (slift $1, snd $2, $3) }
+
+  | PRIVATE declarative 
+    { `AST_private (slift $1, $2) }
+
+  | PRIVATE binding_definition
+    { `AST_private (slift $1, $2) }
 
 declarative:
   | type_alias { $1 }
@@ -271,6 +286,8 @@ declarative:
   | union_decl { $1 }
   | struct_decl { $1 }
   | interface_decl { $1 }
+
+directive:
   | open_decl { $1 }
   | use_decl { $1 }
   | regdef { $1 }
@@ -1687,9 +1704,17 @@ prefixed:
 
 /* exponentiation is right associative */
 power:
-  | refr STARSTAR prefixed               { apl2 $2 "pow" [$1; $3] }
-  | refr { $1 }
+  | superscript STARSTAR prefixed      { apl2 $2 "pow" [$1; $3] }
+  | superscript { $1 }
 
+superscript:
+  | superscript CIRCUMFLEX refr 
+    { 
+      let sr = rsrange (src_of_expr $1) (src_of_expr $3) in
+      `AST_superscript (sr, ($1, $3))
+    }
+
+  | refr { $1 }
 refr:
   | AMPER refr
     { 

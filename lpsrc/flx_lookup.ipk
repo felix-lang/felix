@@ -977,6 +977,9 @@ and bind_type'
       *)
       t
 
+  | `TYP_array (t1,t2)-> 
+    `BTYP_array (bt t1, bt t2)
+
   | `TYP_tuple ts -> 
     let ts' =List.map bt ts  in
     `BTYP_tuple ts'
@@ -1284,8 +1287,8 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth excluded_dirs index args =
       really regmatch is a function, but we use a normal function wrapper
       and a special instruction because the processing is lighter
     *)
-    | [`EXE_reglex (_,_,cls)] 
-    | [`EXE_regmatch (_,cls)] ->
+    | [sr,`EXE_reglex (_,_,cls)] 
+    | [sr,`EXE_regmatch (_,cls)] ->
       (*
       print_endline 
       (
@@ -1330,7 +1333,7 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth excluded_dirs index args =
       let return_counter = ref 0 in
       List.iter
       (fun exe -> match exe with
-      | `EXE_fun_return e ->
+      | (sr,`EXE_fun_return e) ->
         incr return_counter;
         (*
         print_endline ("  .. Handling return of " ^ string_of_expr e);
@@ -2403,6 +2406,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
   | `AST_as _
   | `AST_void _
   | `AST_arrow _ 
+  | `AST_superscript _ 
   | `AST_bound_module _ 
     -> 
       clierr sr 
@@ -3175,6 +3179,7 @@ and rebind_btype syms env excluded_dirs sr ts t: btypecode_t =
   | `BTYP_sum ts -> `BTYP_sum (List.map rbt ts)
   | `BTYP_function (a,r) -> `BTYP_function (rbt a, rbt r) 
   | `BTYP_pointer t -> `BTYP_pointer (rbt t)
+  | `BTYP_array (t1,t2) -> `BTYP_array (rbt t1, rbt t2)
   | `BTYP_void -> `BTYP_void
   | `BTYP_binding (a,b) -> `BTYP_binding (rbt a,rbt b)
   | `BTYP_fix i -> `BTYP_fix i
@@ -3209,6 +3214,7 @@ and map_type
   | `BTYP_tuple ls -> `BTYP_tuple (map mt ls)
   | `BTYP_sum ls -> `BTYP_sum (map mt ls)
   | `BTYP_pointer t -> `BTYP_pointer (mt t)
+  | `BTYP_array (t1,t2) -> `BTYP_array (mt t1, mt t2)
   | `BTYP_binding (a,b) ->
     failwith "[map type] Unexpected type binding"
 

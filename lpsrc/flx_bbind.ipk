@@ -137,7 +137,7 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
       let arg,sr = match Hashtbl.find syms.dfns mvindex with id,sr,_,_,_,_,_ -> id,sr in
       let exes = 
         [
-        `EXE_fun_return (gen_match_check pat (`AST_name (sr,arg,[])))
+        sr,`EXE_fun_return (gen_match_check pat (`AST_name (sr,arg,[])))
         ] 
       in
       let brt',bbexes = bexes env exes flx_bbool i [] in

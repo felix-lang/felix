@@ -1630,13 +1630,14 @@ fi
 
 if [ $RECOMPILE = 0 -a -r "$base.so" -a "(" ! -r "$base.flx" -o "$base.so" -nt "$base.flx" ")" ]
 then
+  if [ $DEBUG = 1 ]; then echo "running $base.so"; fi
   "$FLXRUN" "$base.so"
   exit $?
 fi
 
-# Need to compile, then run it
+# Need Felix and c++ compile, then run it
 
-
+if [ $DEBUG = 1 ]; then echo "compiling $base.flx"; fi
 if "$FLXG" -q -I"$FLXLIB" "$base"
 then
   if `echo $GPP -shared -I"$INCLUDE_DIR" "$cpps" "$base.cpp" -o "$base.so"`

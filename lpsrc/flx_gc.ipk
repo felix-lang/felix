@@ -57,6 +57,7 @@ struct collector_t;  // the collector itself
 
 struct gc_shape_t
 {
+  size_t count;              // array element count
   size_t amt;                // bytes allocated
   void (*finaliser)(collector_t*, void*);  // finalisation function
   size_t n_offsets;          // number of offsets
@@ -64,6 +65,7 @@ struct gc_shape_t
 
   // convenience constructor
   gc_shape_t(
+    size_t count_a,
     size_t amt_a,
     void (*finaliser_a)(collector_t*, void*),
     size_t n_offsets_a,
@@ -375,12 +377,14 @@ namespace generic {
 // create a shape object given an array of offsets
 gc_shape_t::gc_shape_t
 (
+  size_t count_a,
   size_t amt_a,
   void (*finaliser_a)(collector_t*, void*),
   size_t n_offsets_a,
   size_t *offsets_a
 )
   :
+  count(count_a),
   amt(amt_a),
   finaliser(finaliser_a),
   n_offsets(n_offsets_a),
@@ -794,8 +798,8 @@ void flx_collector_t::scan_object(frame_t *frame)
   if(frame->garbage == parity)
   {
     frame->garbage = !parity; // reachable!
-    unsigned long n_objects = frame->n_objects;
     gc_shape_t *shape = frame->shape;
+    unsigned long n_objects = frame->n_objects * shape->count;
     size_t obj_size = shape->amt;
     size_t n_offsets = shape->n_offsets;
     size_t *offsets = shape->offsets;

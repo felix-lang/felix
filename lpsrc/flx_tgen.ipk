@@ -31,20 +31,6 @@ open List
 Now some code to generate the bases, given the
 hashtable. We also mangle c++ abstract type names.
 @select(h)
-let all_voids ls =    
-    fold_left 
-    (fun acc t -> acc && (t = `BTYP_void))
-    true ls
-
-let all_units ls =    
-    fold_left 
-    (fun acc t -> acc && (t = `BTYP_tuple []))
-    true ls
-
-let is_unitsum (t:btypecode_t) = match t with
-  | `BTYP_sum ls ->  all_units ls
-  | _ -> false
-
 let gen_tuple name typs =
   let n = length typs in
   "struct " ^ name ^ " {\n" ^
@@ -88,13 +74,13 @@ let gen_type_name syms bbdfns (index,typ) =
   print_endline (
     "GENERATING TYPE NAME " ^
     si index^": " ^ 
-    string_of_btypecode syms.dfns typ
+    sbt syms.dfns typ
   );
   *)
   let cn t = cpp_type_classname syms t in
   let tn t = cpp_typename syms t in
   let descr = 
-    "\n//TYPE "^si index^": " ^ string_of_btypecode syms.dfns typ ^ "\n" 
+    "\n//TYPE "^si index^": " ^ sbt syms.dfns typ ^ "\n" 
   in
   match unfold typ with
   | `BTYP_fix i -> ""
@@ -105,6 +91,7 @@ let gen_type_name syms bbdfns (index,typ) =
 
   | `BTYP_pointer _
   | `BTYP_tuple _
+  | `BTYP_array _
   | `BTYP_function _ ->
     descr ^
     let name = cn typ in
@@ -131,7 +118,7 @@ let gen_type_name syms bbdfns (index,typ) =
       let descr = 
         "\n//PRIMITIVE "^si i ^" INSTANCE " ^ 
         si index^": " ^ 
-        string_of_btypecode syms.dfns typ ^ 
+        sbt syms.dfns typ ^ 
         "\n" 
       in
       let instance_name = cn typ in
@@ -143,7 +130,7 @@ let gen_type_name syms bbdfns (index,typ) =
       let descr = 
         "\n//STRUCT "^si i ^" INSTANCE " ^ 
         si index^": " ^ 
-        string_of_btypecode syms.dfns typ ^ 
+        sbt syms.dfns typ ^ 
         "\n" 
       in
       let name = cn typ in
@@ -153,7 +140,7 @@ let gen_type_name syms bbdfns (index,typ) =
       let descr = 
         "\n//UNION "^si i ^" INSTANCE " ^ 
         si index^": " ^ 
-        string_of_btypecode syms.dfns typ ^ 
+        sbt syms.dfns typ ^ 
         "\n" 
       in
       let name = cn typ in
@@ -214,7 +201,7 @@ let gen_type_name syms bbdfns (index,typ) =
         let descr = 
           "\n//GENERIC PRIMITIVE TYPE " ^ 
           si index^": " ^ 
-          string_of_btypecode syms.dfns typ ^ 
+          sbt syms.dfns typ ^ 
           "\n" 
         in
         let vs = map fst vs in
@@ -238,14 +225,14 @@ let gen_type syms bbdfns (index,typ) =
   print_endline (
     "GENERATING TYPE " ^
     si index^": " ^ 
-    string_of_btypecode syms.dfns typ
+    sbt syms.dfns typ
   );
   *)
   let tn t = cpp_typename syms t in
   let cn t = cpp_type_classname syms t in
   let descr = 
     "\n//TYPE "^ si index^ ": " ^ 
-    string_of_btypecode syms.dfns typ ^ 
+    sbt syms.dfns typ ^ 
     "\n" 
   in
   match unfold typ with
@@ -300,6 +287,32 @@ let gen_type syms bbdfns (index,typ) =
     let t = tn t in
     descr ^ gen_ref name t
 
+  | `BTYP_array (v,i) ->
+    let name = tn typ in
+    let v = tn v in
+    let n =
+      match i with
+      | `BTYP_sum ls ->
+        if all_units ls then length ls
+        else 
+          failwith 
+          (
+            "Array index must be unit sum, got\n" ^
+            sbt syms.dfns i
+          )
+      | _ ->
+        failwith 
+        (
+          "Array index must be unit sum, got\n" ^
+          sbt syms.dfns i
+        )
+    in
+    descr ^
+    "struct " ^ name ^ " {\n" ^
+    "  " ^ v ^ " data[" ^ si n ^ "];\n" ^
+    "};\n"
+  
+
   | `BTYP_inst (i,ts) ->
     let id,parent,entry = 
       try Hashtbl.find bbdfns i
@@ -313,7 +326,7 @@ let gen_type syms bbdfns (index,typ) =
       let descr = 
         "\n//GENERIC STRUCT "^si i ^" INSTANCE " ^ 
         si index^": " ^ 
-        string_of_btypecode syms.dfns typ ^ 
+        sbt syms.dfns typ ^ 
         "\n" 
       in
       let name = cn typ in
@@ -436,7 +449,7 @@ let gen_type_names syms bbdfns ts =
     try
       Buffer.add_string s (gen_type_name syms bbdfns (i,t))
     with Not_found -> 
-      failwith ("Can't gen type name " ^ si i ^ "=" ^ string_of_btypecode syms.dfns t)
+      failwith ("Can't gen type name " ^ si i ^ "=" ^ sbt syms.dfns t)
   )
   ts;
   Buffer.contents s

@@ -176,6 +176,8 @@ let string_of_token (tok :Flx_parse.token): string =
   | DEF _ -> "def"
   | MODULE _ -> "module"
   | GOTO _ -> "goto"
+  | PUBLIC _ -> "public"
+  | PRIVATE _ -> "private"
   | TO _ -> "to"
   | EXPORT _ -> "export"
   | SET _ -> "set"
@@ -294,6 +296,8 @@ let src_of_token t = match t with
   | UNION s 
   | CLASS s 
   | GOTO s 
+  | PUBLIC s 
+  | PRIVATE s 
   | EXPORT s 
   | TYPEMATCH s 
   | REGMATCH s 

@@ -90,6 +90,7 @@ let rec register_type_r syms bbdfns exclude t =
   | `BTYP_fix i -> failwith ("[register_type_r] Fixpoint "^si i^"encountered") 
   | `BTYP_var i -> failwith ("Attempt to register type variable " ^ si i)
   | `BTYP_function (ps,ret) -> rr ps; rr ret; rnr t
+  | `BTYP_array (ps,ret) -> rr ps; rr ret; rnr t
   | `BTYP_tuple ps -> iter rr ps; rnr t
   | `BTYP_sum ps -> iter rr ps; rnr t
 

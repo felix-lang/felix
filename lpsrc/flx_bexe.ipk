@@ -7,8 +7,8 @@ open Flx_types
 val bind_exes:
   sym_state_t ->
   env_t ->
-  range_srcref -> 
-  exe_t list ->
+  range_srcref ->
+  (range_srcref * exe_t) list ->
   btypecode_t ->
   string ->
   bid_t ->
@@ -30,16 +30,16 @@ open Flx_unify
 open Flx_exceptions
 open List
 
-let cal_call dfns (p,pt) e =
+let cal_call dfns sr (p,pt) e =
   match lower pt with
   | `BTYP_function (_, `BTYP_void) -> 
-    `BEXE_call ((p,lower pt), e)
+    `BEXE_call (sr,(p,lower pt), e)
   | _ -> 
-    failwith ("[cal_call] call non procedure, "^
+    clierr sr ("[cal_call] call non procedure, "^
     string_of_bound_expression dfns (p,pt)
     ^"\ntype=" ^ string_of_btypecode dfns pt)
 
-let cal_loop dfns (p,pt) e this =
+let cal_loop dfns sr (p,pt) e this =
   match lower pt with
   | `BTYP_function (_, `BTYP_void) -> 
     begin match p with
@@ -53,20 +53,20 @@ let cal_loop dfns (p,pt) e this =
           let id,sr,parent,_,_,_,_ = Hashtbl.find dfns k in
           match parent with
           | Some k -> incr j; aux k
-          | None -> failwith "[cal_loop] Loop target must be self or parent"
+          | None -> clierr sr "[cal_loop] Loop target must be self or parent"
       in 
         aux this;
         print_endline ("loop " ^ si !j);
-        `BEXE_loop (!j, e)
+        `BEXE_loop (sr,!j, e)
 
     | _ -> 
-      failwith (
+      clierr sr (
         "[cal_loop] Expected procedure closure, got "^
         string_of_bound_expression dfns (p,pt)
       )
     end
   | _ -> 
-    failwith ("[cal_loop] loop to non procedure, "^
+    clierr sr ("[cal_loop] loop to non procedure, "^
     string_of_bound_expression dfns (p,pt)
     ^"\ntype=" ^ string_of_btypecode dfns pt)
 
@@ -125,7 +125,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
   print_endline "--------------------------";
   let soe e = Flx_print.string_of_expr e in
   List.iter 
-    (fun x -> print_endline (string_of_exe 1 x))
+    (fun (_,x) -> print_endline (string_of_exe 1 x))
     exes
   ;
   print_endline ""
@@ -150,9 +150,9 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
   let reachable = ref true in
   let proc_return_count = ref 0 in
 
-  let bound_exes = ref [] in
+  let bound_exes : bexe_t list ref = ref [] in
   let tack x = bound_exes := x :: !bound_exes in
-  let rec bind_exe x = 
+  let rec bind_exe (sr,x) = 
     (*
     print_endline ("EXE="^string_of_exe 1 x);
     *)
@@ -171,14 +171,14 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     end
     ;
     match x with
-    | `EXE_comment s ->       tack (`BEXE_comment s)
-    | `EXE_label s ->         reachable := true; tack (`BEXE_label s)
-    | `EXE_goto s ->          reachable := false; tack (`BEXE_goto s)
+    | `EXE_comment s ->       tack (`BEXE_comment (sr,s))
+    | `EXE_label s ->         reachable := true; tack (`BEXE_label (sr,s))
+    | `EXE_goto s ->          reachable := false; tack (`BEXE_goto (sr,s))
 
     | `EXE_ifgoto (e,s) ->    
       let e',t = be e in
       if t = flx_bbool
-      then tack (`BEXE_ifgoto ((e',t), s))
+      then tack (`BEXE_ifgoto (sr,(e',t), s))
       else 
         clierr (src_of_expr e)
         (
@@ -189,7 +189,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     | `EXE_ifnotgoto (e,s) -> 
       let e',t = be e in
       if t = flx_bbool
-      then tack (`BEXE_ifnotgoto ((e',t), s))
+      then tack (`BEXE_ifnotgoto (sr,(e',t), s))
       else 
         clierr (src_of_expr e)
         (
@@ -208,12 +208,12 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
          (`AST_name(sr,n,[]) : qualified_name_t)
          t2 
       in  
-        tack (cal_loop syms.dfns tbe1 (be2,t2) index)
+        tack (cal_loop syms.dfns sr tbe1 (be2,t2) index)
 
     | `EXE_jump (a,b) ->
       incr proc_return_count;
-      bind_exe (`EXE_call (a,b));
-      bind_exe  (`EXE_proc_return)
+      bind_exe (sr,`EXE_call (a,b));
+      bind_exe  (sr,`EXE_proc_return)
 
     | `EXE_call (#suffixed_name_t as sn, e2) -> (* OVERLOADING *)
       let sr = src_of_expr sn in
@@ -228,16 +228,16 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
            qn t2 
          | _ -> be sn
       in  
-        tack (cal_call syms.dfns tbe1 (be2,t2))
+        tack (cal_call syms.dfns sr tbe1 (be2,t2))
 
     | `EXE_call (p,e) ->
       let p',pt' = be p and e',et' = be e in
-      tack (cal_call syms.dfns (p', pt') (e', et'))
+      tack (cal_call syms.dfns sr (p', pt') (e', et'))
 
     | `EXE_read s ->          
       let dummy_sr = ("bind exes",0,0,0,0) in
       begin match lun dummy_sr s with
-      | NonFunctionEntry (Simple index) -> tack (`BEXE_read index)
+      | NonFunctionEntry (Simple index) -> tack (`BEXE_read (sr,index))
       | NonFunctionEntry _ -> failwith "not expecting bound entry"
       | FunctionEntry _ -> failwith "Can't read function!"
       end
@@ -249,7 +249,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       then 
         begin
           ret_type := varmap_subst syms.varmap !ret_type;
-          tack (`BEXE_proc_return)
+          tack (`BEXE_proc_return sr)
         end
       else
         clierr sr 
@@ -263,7 +263,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       let e',t' = be e in
       if do_unify syms !ret_type t' then begin
         ret_type := varmap_subst syms.varmap !ret_type;
-        tack (`BEXE_fun_return (e',lower t'))
+        tack (`BEXE_fun_return (sr,(e',lower t')))
       end 
       else
         clierr sr
@@ -274,9 +274,9 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
           string_of_btypecode syms.dfns t'
         )
 
-    | `EXE_nop s ->           tack (`BEXE_nop s )
-    | `EXE_code s ->          tack (`BEXE_code s)
-    | `EXE_noreturn_code s ->  reachable := false; tack (`BEXE_code s)
+    | `EXE_nop s ->           tack (`BEXE_nop (sr,s))
+    | `EXE_code s ->          tack (`BEXE_code (sr,s))
+    | `EXE_noreturn_code s ->  reachable := false; tack (`BEXE_code (sr,s))
 
     | `EXE_init (s,e) -> 
       let sr = src_of_expr e in (* HACK! *)
@@ -294,7 +294,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         let lhst = typeofindex_with_ts syms [] index parent_ts in
         let rhst = minimise rhst in
         if type_eq lhst rhst
-        then tack (`BEXE_init (index, (e',rhst)))
+        then tack (`BEXE_init (sr,index, (e',rhst)))
         else clierr sr
         (
           "[bind_exe] LHS["^s^"<"^si index^">:"^string_of_btypecode syms.dfns lhst^
@@ -310,20 +310,20 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       end
 
     | `EXE_assign (l,r) -> 
-      tack (`BEXE_assign (be l, be r))
+      tack (`BEXE_assign (sr,be l, be r))
 
     | `EXE_reglex (p1,p2,cls) ->
       reachable := false;
       let p1 = be p1 in
       let p2 = be p2 in
       let regex_args = bind_regex syms env sr be return_count ret_type cls in
-      tack (`BEXE_reglex (p1,p2,regex_args))
+      tack (`BEXE_reglex (sr,p1,p2,regex_args))
 
     | `EXE_regmatch (e,cls) ->  
       reachable := false;
       let e = be e in
       let regex_args = bind_regex syms env sr be return_count ret_type cls in
-      tack (`BEXE_regmatch (e,regex_args))
+      tack (`BEXE_regmatch (sr,e,regex_args))
 
   in 
   List.iter bind_exe exes;

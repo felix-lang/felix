@@ -269,7 +269,6 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   let seq () = let n = !(syms.counter) in incr (syms.counter); n in
   match e with
 
-  (* these cases should use the source reference for the error *)
   | `AST_match_ctor _ 
   | `AST_match_case _ 
   | `AST_ctor_arg _ 
@@ -277,6 +276,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_bound_module _
   | `AST_void _ 
   | `AST_arrow _ 
+  | `AST_superscript _ 
   | `AST_as _
   | `AST_product _ 
   | `AST_sum _

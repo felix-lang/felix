@@ -243,12 +243,19 @@ using namespace std;
     tangle('  fun '+opname+': '+t+' * '+t+' -> bool = "int($1'+op+'$2)";')
 
 
-// !!!!! NEW DEFINITION OF BOOL !!!!!
-typedef void = 0;
-typedef unit = 1;
-typedef bool = 2;
-typedef any = any;
+public "Empty sum"
+  typedef void = 0;
 
+public "Unit type"
+  typedef unit = 1;
+
+public "Boolean"
+  typedef bool = 2;
+
+public "Universal type 'x as x'"
+  typedef any = any;
+
+public "Compatible with C"
 module Bool 
 {
 
@@ -565,6 +572,45 @@ module Control
   proc fail:string = 'throw std::exception ($1);';
   fun fail_fun[t]:1->t = 'throw std::exception (""),*(?1*)0';
   fun fail_fun[t]:string->t = 'throw std::exception ($1),*(?1*)0';
+
+  type cont = "flx::rtl::con_t*";
+  private fun _start[t]: (t->0)*t->cont = "$1->clone()->call(0)";
+  fun start[t] (p:t->0) (x:t) = { return _start (p,x); }
+  fun step: cont -> cont = "$1->resume()";
+  proc run: cont = 
+  """
+  {
+    flx::rtl::con_t *tmp=$1;
+    if(!tmp)
+      throw flx::rtl::flx_exec_failure_t (__FILE__,"run","Run terminated procedure");
+    while(tmp)tmp=tmp->resume();
+  }
+  """;
+
+  private proc _send[t]: &cont * t = 
+  """
+  {
+    using namespace flx::rtl;
+    con_t *tmp = *(con_t**)$1.data;
+    while(tmp && tmp->action == yield_action)
+      tmp=tmp->resume();
+    if (!tmp) 
+      throw flx::rtl::flx_exec_failure_t (__FILE__,"send","Send to terminated procedure");
+    *(?1*)tmp->p_message = $2;
+    tmp->action = yield_action;
+    while(tmp && tmp->action == yield_action)
+      tmp=tmp->resume();
+    *(con_t**)$1.data = tmp; 
+  }
+  """;
+
+  proc send[t] (p:&cont) (x:t)
+  {
+    _send (p,x);
+  }
+
+  union cont_state = | yield_state | wait_state | dead_state;
+  fun get_cont_state: cont -> cont_state = "$1??$1->action:2";
 }
 
 @#------------- List -------------------

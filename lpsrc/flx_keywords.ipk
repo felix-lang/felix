@@ -74,6 +74,8 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "module", (fun s ->  MODULE s);
     "goto", (fun s ->  GOTO s);
     "export", (fun s ->  EXPORT s);
+    "public", (fun s ->  PUBLIC s);
+    "private", (fun s ->  PRIVATE s);
     "inf", (fun s -> INF s);
     "NaN", (fun s -> NAN s);
     "to", (fun s -> TO s);

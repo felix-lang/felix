@@ -377,6 +377,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   | `AST_void sr -> e
   | `AST_arrow (sr, (e1, e2)) ->  `AST_arrow (sr,(me e1, me e2))
+  | `AST_superscript (sr, (e1, e2)) ->  `AST_superscript (sr,(me e1, me e2))
 
   | `AST_literal (sr, literal) ->  e
   | `AST_deref (sr, e1) -> `AST_deref (sr, me e1)
@@ -425,7 +426,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (st:statement_t):statement_t list = 
   let recurion_limit = recursion_limit - 1 in
   let me e = expand_expr recursion_limit local_prefix seq macros e in
-  let ms ss = recurse recursion_limit local_prefix seq (ref true) macros ss in
+  let ms s = recurse recursion_limit local_prefix seq (ref true) macros s in
   let msp sr ps ss = 
     let pr = protect sr ps in
     recurse recursion_limit local_prefix seq (ref true) (pr @ macros) ss 
@@ -436,6 +437,10 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   let ctack x = if !reachable then tack x in
 
   begin match st with
+  (* cheat for now and ignore public and private decls *)
+  | `AST_public (_,_,st) -> iter tack (ms [st])
+  | `AST_private (_,st) -> iter tack (ms [st])
+  
   | `AST_include (sr, s) -> tack st
 
   (* FIX TO SUPPORT IDENTIFIER RENAMING *)

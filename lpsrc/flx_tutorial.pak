@@ -547,6 +547,23 @@ val xy = XY(1,2);
 print xy.x; endl;
 print xy.y; endl;
 
+@head(2,'Arrays')
+Felix provides arrays of constant length.
+The type notation
+@begin_displayed_code()
+  t ^ m
+@end_displayed_code()
+is used to declare an array with elements
+of type t, indexed by elements of type m.
+Currently, m must be a sum of units, that is,
+it must have the form 1 + 1 + 1 .. which
+can be abbreviated by a non-negative integer
+constant. The implementation is a struct
+wrapping an actual C array.
+@p()
+An array is just a tuple of m elements of type t.
+[More .. ]
+
 @head(2,'Unions')
 Felix supports unions, but they are a bit
 different to C unions. A union is a way
@@ -893,9 +910,9 @@ fun lexit(start:iterator, finish:iterator):
 
 
 val s = "A string 2 lex";
-val start = start_iterator s;
+val first = start_iterator s;
 val finish = end_iterator s;
-var current = start;
+var current = first;
 
 while { current != finish }
 {
@@ -2817,6 +2834,69 @@ val x3 : (f (int,twoup) (int)) = ((1,2),3);
 match x3 with
 | ((?a,?b),?c) => { print a; endl; print b; endl; print c; endl; } 
 endmatch;
+
+@head(1,'Cooperative Multitasking')
+Felix supports event driven programming with
+a threading interface. This is variously known
+as cooperative multi-tasking, ultra-lightweight 
+threading, coroutines, continuations, or resumptions.
+@p()
+The start function starts a new thread in a stopped state.
+@p()
+If the thread does not read input, it can be
+executed by the run procedure. If it reads input,
+the send procedure is used to send data to the thread.
+Each send must correspond to a read operation dynamically.
+@p()
+A C++ exception is thrown, aborting the program,
+if you try to run a dead (terminated) thread,
+or send data to a terminated thread.
+@p()
+CAVEAT: At present, there is no check
+that the type of the data sent agrees with the
+type which is read.
+
+@select(tangler(tdir+'tut210.flx'))
+include "std";
+
+print "Start .. "; endl;
+
+proc printing() {
+  var s:string;
+  print "Hello "; 
+  read s;
+  print s; endl;
+
+  print "This is ";
+  read s;
+  print s; endl;
+
+  print "Saying "; endl;
+  read s;
+  print s; endl;
+}
+
+var x = start printing of(unit) ();
+report;
+send[string] (&x) "World";
+report;
+send[string] (&x) "Felix";
+report;
+send[string] (&x) "Bye for now";
+report;
+
+proc report() {
+  print
+    match get_cont_state x with
+    | yield_state => "yield"
+    | wait_state => "wait"
+    | dead_state => "dead"
+    endmatch
+  ;
+  endl;
+}
+
+print ".. OK"; endl;
 
 @head(1,'Misc junk')
 Misc weird feature tests .. remove in production

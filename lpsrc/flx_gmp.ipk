@@ -1,0 +1,40 @@
+@head(1,'GNU Multiple Precision library')
+This module provides a wrapper for the Gnu Multiple
+Precision Arithmetic library known as gmp.
+The C++ interface is required for this library,
+you may need to download it. The library and include
+files must be available in standard places for the
+scripting harness to find them.
+@p()
+REQUIRES: -lgmpxx -lgmp
+
+@h = tangler('lib/flx_gmp.flx','data')
+@select(h)
+header "#include <cstdio>";
+header "#include <gmpxx.h>";
+
+@typs = ['mpz', 'mpq', 'mpf']
+@iops = [('add','+'),('sub','-',),('mul','*')]
+module Gmp
+{
+  type mpz='mpz_class';
+  type mpq='mpq_class';
+  type mpf='mpf_class';
+@for t in typs:
+  for op,infix in iops:
+    tangle('  fun '+op+':'+t+'*'+t+'->'+t+'="$1'+infix+'$2";')
+  tangle('  proc print:'+t+'="cout << $1;";')
+}
+
+@h = tangler('test/flx_gmp_test.flx')
+@select(h)
+include "std";
+include "flx_gmp";
+open Gmp;
+
+fun mpz_of_int: int -> mpz = "mpz_class($1)";
+
+val x:mpz = mpz_of_int 99;
+print x;
+endl;
+

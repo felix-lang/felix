@@ -24,7 +24,7 @@ val build_tables:
   asm_t list ->
   (
     name_map_t *  
-    exe_t list * 
+    sexe_t list * 
     (iface_t * int option) list *
     dir_t list
   )
@@ -44,7 +44,7 @@ open Flx_exceptions
 
 let split_asms asms : 
   (range_srcref * id_t * id_t list * dcl_t) list * 
-  exe_t list *
+  sexe_t list *
   iface_t list *
   dir_t list
 = 
@@ -53,7 +53,7 @@ let split_asms asms :
     | [] -> (dcls,exes,ifaces, dirs)
     | h :: t -> 
       match h with 
-      | Exe (sr,exe) -> aux t dcls (exe :: exes) ifaces dirs
+      | Exe (sr,exe) -> aux t dcls ((sr,exe) :: exes) ifaces dirs
       | Dcl (sr,id,vs,dcl) -> aux t ((sr,id,vs,dcl) :: dcls) exes ifaces dirs
       | Iface (sr,iface) -> aux t dcls exes (iface :: ifaces) dirs
       | Dir (sr,dir) -> aux t dcls exes ifaces (dir::dirs)
@@ -130,9 +130,9 @@ let rec build_tables syms name level parent grandparent root asms =
   in
   let dcls,exes,ifaces,dirs = split_asms asms in
   let dcls,exes,ifaces,dirs = 
-    List.rev dcls,List.rev exes,List.rev ifaces, List.rev dirs
+    rev dcls,rev exes,rev ifaces, rev dirs
   in
-  let ifaces = List.map (fun i-> i,parent) ifaces in
+  let ifaces = map (fun i-> i,parent) ifaces in
   let interfaces = ref ifaces in
   let spc = spaces level in
   let name_map = Hashtbl.create 97 in
@@ -151,7 +151,7 @@ let rec build_tables syms name level parent grandparent root asms =
   Hashtbl.add name_map "root" (NonFunctionEntry (Simple root))
   ;
   begin 
-    List.iter
+    iter
     (
       fun (sr,id,vs',dcl) -> 
         let table = Hashtbl.create 3 in (* dummy-ish table could contain type vars *)
@@ -166,7 +166,7 @@ let rec build_tables syms name level parent grandparent root asms =
           )
         ;
         let vs = 
-          List.map 
+          map 
           (
             fun tid-> let n = !counter in incr counter; 
             if print_flag then
@@ -176,7 +176,7 @@ let rec build_tables syms name level parent grandparent root asms =
           vs'
         in
         let add_tvars table =        
-          List.iter
+          iter
           (fun (tvid,i) ->
             Hashtbl.add dfns i (tvid,sr,Some n,[],null_tab,[],`SYMDEF_typevar `TYP_type);
             add_unique table tvid i 
@@ -210,7 +210,7 @@ let rec build_tables syms name level parent grandparent root asms =
           Hashtbl.add dfns fun_index (id, sr, parent,vs,table,dirs,
             `SYMDEF_typed_functor (ps,ret,exes) 
           );
-          List.iter (fun (name,typ) -> 
+          iter (fun (name,typ) -> 
             let n = !counter in
             incr counter;
             if print_flag then
@@ -250,7 +250,7 @@ let rec build_tables syms name level parent grandparent root asms =
           Hashtbl.add dfns fun_index (id, sr, parent,vs,table,dirs,
             `SYMDEF_untyped_functor (ps,exes) 
           );
-          List.iter (fun (name,typ) -> 
+          iter (fun (name,typ) -> 
             let n = !counter in
             incr counter;
             if print_flag then
@@ -283,7 +283,7 @@ let rec build_tables syms name level parent grandparent root asms =
             (Some fun_index) parent root asms 
           in
           let ips = ref [] in
-          List.iter (fun (name,typ) -> 
+          iter (fun (name,typ) -> 
             let n = !counter in
             incr counter;
             if print_flag then
@@ -294,7 +294,7 @@ let rec build_tables syms name level parent grandparent root asms =
           ) ps
           ; 
           Hashtbl.add dfns fun_index (id, sr,parent,vs,table,dirs,
-            `SYMDEF_function (List.rev !ips, t, exes)
+            `SYMDEF_function (rev !ips, t, exes)
           )
           ;
           add_function sr name_map id fun_index ;
@@ -495,13 +495,13 @@ let rec build_tables syms name level parent grandparent root asms =
           ; 
 
           let unit_sum = 
-            List.fold_left 
+            fold_left 
             (fun v (_,t) -> v && (match t with `AST_void _ -> true | _ -> false) )
             true 
             its
           in
           let ccount = ref 0 in (* count component constructors *)
-          List.iter
+          iter
           (fun (component_name,t) ->
             let dfn_idx = !counter in incr counter; (* constructor *)
             let match_idx = !counter in incr counter; (* matcher *)
@@ -610,7 +610,7 @@ let rec build_tables syms name level parent grandparent root asms =
           add_function sr name_map asgn_name asgn_idx
           ; 
           (* projections *)
-          List.iter
+          iter
           (fun (component_name,t) ->
             let getn = !counter in incr counter;
             let get_name = "get_" ^ component_name in
