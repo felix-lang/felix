@@ -83,8 +83,6 @@ let rec isuseless bbdfns exes =
       | `BEXE_ifnotgoto _ (* assume a non-local goto here *)
       | `BEXE_goto _ (* assume a non-local goto here *)
       | `BEXE_fun_return _ (* returning a value is useful *)
-      | `BEXE_reglex _ 
-      | `BEXE_regmatch _ 
       | `BEXE_halt _ 
         -> raise Useful 
 
@@ -448,6 +446,7 @@ let rec useless_call_elim syms used (child_map,bbdfns) vs' exes index =
     ;
     exes' := x :: !exes'
 
+  (*
   | `BEXE_regmatch (sr,e,(a,n,h,tr)) ->
      let h' = Hashtbl.create 97 in
      Hashtbl.iter
@@ -464,6 +463,7 @@ let rec useless_call_elim syms used (child_map,bbdfns) vs' exes index =
      h
      ;
     exes' := `BEXE_reglex (sr,ia p1, ia p2,(a,n,h',tr)) :: !exes'
+  *)
 
   | `BEXE_goto _
   | `BEXE_proc_return _

@@ -226,6 +226,77 @@ let rec build_tables syms name level parent grandparent root asms =
           ;
           add_tvars privtab
 
+        | `DCL_regmatch cls ->
+          let lexmod = `AST_name (sr,"Lexer",[]) in
+          let ptyp = `AST_lookup (sr,(lexmod,"iterator",[])) in
+
+          let p1 = !(syms.counter) in incr syms.counter;
+          let p2 = !(syms.counter) in incr syms.counter;
+          add_unique privtab "lexeme_start" p1;
+          add_unique privtab "buffer_end" p2;
+          Hashtbl.add dfns p1 {id="lexeme_start";sr=sr;
+            parent=Some n;vs=vs;
+            pubmap=Hashtbl.create 3;privmap=Hashtbl.create 3;dirs=[];
+            symdef=`SYMDEF_parameter ptyp
+          };
+
+          Hashtbl.add dfns p2 {id="buffer_end";sr=sr;
+            parent=Some n;vs=vs;
+            pubmap=Hashtbl.create 3;privmap=Hashtbl.create 3;dirs=[];
+            symdef=`SYMDEF_parameter ptyp
+          };
+
+          let ps = ["lexeme_start",ptyp; "buffer_end",ptyp] in
+
+
+          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;
+            vs=vs; pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=`SYMDEF_regmatch (ps,cls)
+          };
+          if access = `Public then add_unique pub_name_map id n;
+          add_unique priv_name_map id n
+          ;
+          add_tvars privtab
+
+        | `DCL_reglex cls ->
+          let lexmod = `AST_name (sr,"Lexer",[]) in
+          let ptyp = `AST_lookup (sr,(lexmod,"iterator",[])) in
+
+          let p1 = !(syms.counter) in incr syms.counter;
+          let p2 = !(syms.counter) in incr syms.counter;
+          let v3 = !(syms.counter) in incr syms.counter;
+          add_unique privtab "lexeme_start" p1;
+          add_unique privtab "buffer_end" p2;
+          add_unique privtab "lexeme_end" v3;
+          Hashtbl.add dfns p1 {id="lexeme_start";sr=sr;
+            parent=Some n;vs=vs;
+            pubmap=Hashtbl.create 3;privmap=Hashtbl.create 3;dirs=[];
+            symdef=`SYMDEF_parameter ptyp
+          };
+
+          Hashtbl.add dfns p2 {id="buffer_end";sr=sr;
+            parent=Some n;vs=vs;
+            pubmap=Hashtbl.create 3;privmap=Hashtbl.create 3;dirs=[];
+            symdef=`SYMDEF_parameter ptyp
+          };
+
+          Hashtbl.add dfns v3 {id="lexeme_end";sr=sr;
+            parent=Some n;vs=vs;
+            pubmap=Hashtbl.create 3;privmap=Hashtbl.create 3;dirs=[];
+            symdef=`SYMDEF_var ptyp
+          };
+
+          let ps = ["lexeme_start",ptyp; "buffer_end",ptyp] in
+
+          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;
+            vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=`SYMDEF_reglex (ps,v3,cls)
+          };
+          if access = `Public then add_unique pub_name_map id n;
+          add_unique priv_name_map id n
+          ;
+          add_tvars privtab
+
 
         | `DCL_function (ps,t,props,asms) ->   
           let fun_index = n in

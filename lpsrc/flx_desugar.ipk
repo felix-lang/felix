@@ -449,7 +449,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     in
     l,`AST_sparse (sr,e,nt,glr_ixs)
   
-  | `AST_regmatch (sr,(e,cls')) ->
+  | `AST_regmatch (sr,(p1,p2,cls')) ->
     let dcls = ref [] in
     let cls = ref [] in
     iter 
@@ -463,14 +463,37 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
 
     let n = seq() in
     let fname = "regmatch" ^ si n in
-    let l,x = rex e in
-    let exes = [Exe(sr,`EXE_regmatch (x,!cls))] in
-    let rfun = Dcl(sr,fname,None,`Private,[],
-      `DCL_function([],`TYP_none,[`NoInline],exes)) 
-    in
-    rfun :: l @ !dcls,
-    `AST_apply(sr,(`AST_name(sr,fname,[]),`AST_tuple(sr,[])))
+    let l1,p1 = rex p1 in
+    let l2,p2 = rex p2 in
+    let rfun = Dcl(sr,fname,Some n,`Private,[], `DCL_regmatch !cls) in
+    let pp = `AST_tuple (sr,[p1;p2]) in
+    rfun :: l1 @ l2 @ !dcls,
+    `AST_apply(sr,(`AST_index(sr,fname,n),pp))
+
+  | `AST_reglex (sr,(p1,p2,cls')) ->
+    let dcls = ref [] in
+    let cls = ref [] in
+    let le = `AST_name (sr,"lexeme_end",[]) in
+    iter 
+    (fun (re,e) -> 
+      let l,x = rex e in
+      let x = `AST_tuple (sr,[le;x]) in
+      dcls := l @ !dcls;
+      cls := (re,x) :: !cls
+    )
+    cls'
+    ;
+
+    let n = seq() in
+    let fname = "reglex" ^ si n in
+    let l1,p1 = rex p1 in
+    let l2,p2 = rex p2 in
+    let rfun = Dcl(sr,fname,Some n,`Private,[], `DCL_reglex !cls) in
+    let pp = `AST_tuple (sr,[p1;p2]) in
+    rfun :: l1 @ l2 @ !dcls,
+    `AST_apply(sr,(`AST_index(sr,fname,n),pp))
    
+  (*
   | `AST_reglex (sr,(p1,p2,cls')) ->
     let lexer_module = `AST_name(sr,"Lexer",[]) in
     let iterator_type = 
@@ -538,6 +561,8 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     in
     rfun :: l1 @ l2 @ !dcls,
     `AST_apply(sr,(`AST_name(sr,fname,[]),`AST_tuple(sr,[])))
+
+    *)
      
   | `AST_letin (sr,(pat,e1,e2)) ->
     rex (`AST_match (sr,(e1,[pat,e2])))

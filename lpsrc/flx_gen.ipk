@@ -52,29 +52,6 @@ val format_vars:
   btypecode_t list ->
   string
 
-val gen_elk_parser:
-  string ->
-  string ->
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  int ->
-  range_srcref ->
-  btypecode_t ->
-  int ->
-  int list -> 
-  unit
-
-val gen_elk_lexer:
-  string ->
-  string ->
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  int ->
-  range_srcref ->
-  tbexpr_t ->
-  int ->
-  unit
-
 @h = tangler('src/flx_gen.ml')
 @select(h)
 open Flx_util
@@ -98,54 +75,9 @@ open Flx_ogen
 open Flx_ctypes
 open Flx_cexpr
 open Flx_maps
-
-let string_of_string = Flx_string.c_quote_of_string
-
-(* HACKERY: this assumes library dependent things:
-  but we can't add literals in the library code :-(
-*)
-let csuffix_of_type s = match s with
-  | "tiny" -> ""
-  | "short" -> ""
-  | "int" -> ""
-  | "long" -> "l"
-  | "vlong" -> "ll"
-  | "utiny" -> "u"
-  | "ushort" -> "u"
-  | "uint" -> "u"
-  | "ulong" -> "lu"
-  | "uvlong" -> "llu"
-  | "int8" -> ""
-  | "int16" -> ""
-  | "int32" -> "l"
-  | "int64" -> "ll"
-  | "uint8" -> "u"
-  | "uint16" -> "u"
-  | "uint32" -> "lu"
-  | "uint64" -> "llu"
-  | "double" -> ""
-  | "float" -> "f"
-  | "ldouble" -> "l"
-  | _ -> failwith ("[csuffix_of_type]: Unexpected Type " ^ s)
-
-let cstring_of_literal e = match e with
-  | `AST_int (s,i) -> (Big_int.string_of_big_int i)^csuffix_of_type s 
-  | `AST_float (s,x) -> x ^ csuffix_of_type s
-  | `AST_string s -> string_of_string s
-  | `AST_cstring s -> string_of_string s
-  | `AST_wstring s -> "L" ^ string_of_string s
-  | `AST_ustring s -> "L" ^ string_of_string s
-
-(* a native literal is one not needing a cast to get the type right *)
-let is_native_literal e = match e with
-  | `AST_int ("int",_) 
-  | `AST_int ("long",_) 
-  | `AST_int ("uint",_) 
-  | `AST_int ("ulong",_) 
-  | `AST_int ("vlong",_) 
-  | `AST_int ("uvlong",_) 
-  | `AST_float ("double",_) -> true
-  | _ -> false
+open Flx_egen
+open Flx_pgen
+open Flx_ctorgen
 
 let find_variable_indices syms (child_map,bbdfns) index = 
   let children = 
@@ -398,6 +330,18 @@ let gen_functions syms (child_map,bbdfns) all_closures =
       bcat s 
       (gen_function syms (child_map,bbdfns) all_closures index id vs ps ret ts i)
 
+    | `BBDCL_regmatch (vs, ps, ret, regargs) -> 
+      bcat s ("\n//------------------------------\n");
+      bcat s ("//REGMATCH " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+      bcat s 
+      (gen_function syms (child_map,bbdfns) all_closures index id vs ps ret ts i)
+
+    | `BBDCL_reglex (vs, ps, i, ret, regargs) -> 
+      bcat s ("\n//------------------------------\n");
+      bcat s ("//REGLEX " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+      bcat s 
+      (gen_function syms (child_map,bbdfns) all_closures index id vs ps ret ts i)
+
     | `BBDCL_procedure (props,vs,ps,_) -> 
       bcat s ("\n//------------------------------\n");
       bcat s ("//PROC " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
@@ -408,61 +352,6 @@ let gen_functions syms (child_map,bbdfns) all_closures =
   (sort compare !xxdfns)
   ;
   Buffer.contents s
-
-let gen_ctor syms bbdfns name display funs extra_args extra_inits ts =
-  name^"::"^name^
-  (if length display + length extra_args = 0 then
-  "(FLX_FPAR_DECL_ONLY)"
-  else
-  "\n  (\n" ^
-  "    FLX_FPAR_DECL\n" ^
-  cat ",\n"
-  (
-    map 
-    (
-      fun (i,vslen) -> 
-        let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
-      "    " ^ instname ^ " *pptr" ^ instname
-    )
-    display
-    @
-    map
-    (
-      fun (t,a) -> "    " ^ t ^ " _"^a
-    )
-    extra_args
-  )^
-  "\n  )\n" 
-  )
-  ^
-  (if length display + length funs + length extra_args + length extra_inits = 0 then "FLX_FMEM_INIT_ONLY"
-  else
-  "  FLX_FMEM_INIT " ^
-  cat ",\n"
-  (
-    map 
-    (
-      fun (i,vslen) -> let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
-      "  ptr" ^ instname ^ "(pptr"^instname^")"
-    )
-    display
-    @
-    map 
-    (fun (index,t)-> 
-      cpp_instance_name syms bbdfns index ts
-      ^ "(0)"
-    )
-    funs
-    @
-    map 
-    (fun (t,a) -> "  " ^a ^ "(_"^a^")")
-    extra_args
-    @
-    map 
-    (fun x -> "  " ^x) 
-    extra_inits
-  )) ^ 
-  " {}\n"
 
 (*
 let gen_dtor syms bbdfns name display ts =
@@ -482,997 +371,13 @@ let is_closure_var bbdfns index =
   | `BTYP_function _ -> true
   | _ -> false
   
-let get_var_ref syms bbdfns this index ts : string =
-  match 
-    try Hashtbl.find bbdfns index 
-    with _ -> failwith ("[get_var_ref] Can't find index " ^ si index)
-  with (id,parent,sr,entry) ->
-  (*
-  print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode syms.dfns) ts^"]");
-  *)
-  match entry with
-  | `BBDCL_val (vs,t)
-  | `BBDCL_var (vs,t) ->
-    begin match parent with
-    | None -> (* print_endline "No parent ...?"; *)
-      "PTF " ^ cpp_instance_name syms bbdfns index ts
-    | Some i -> 
-      (*
-      print_endline ("Parent " ^ si i);
-      *)
-      (
-        if i <> this 
-        then "ptr" ^ cpp_instance_name syms bbdfns i ts ^ "->" 
-        else ""
-      ) ^
-      cpp_instance_name syms bbdfns index ts
-    end
-  | _ -> failwith ("[get_var_ref(3)] Expected name "^id^" to be variable or value")
-
-let get_var_frame syms bbdfns this index ts : string =
-  match 
-    try Hashtbl.find bbdfns index 
-    with _ -> failwith ("[get_var_frame(1)] Can't find index " ^ si index)
-  with (id,parent,sr,entry) -> 
-  match entry with
-  | `BBDCL_val (vs,t)
-  | `BBDCL_var (vs,t) ->
-    begin match parent with
-    | None -> "0"
-    | Some i ->
-      if i <> this
-      then "ptr" ^ cpp_instance_name syms bbdfns i ts
-      else "this"
-    end
-  | _ -> failwith ("[get_var_frame] Expected name "^id^" to be variable or value")
-
 (* NOTE: it isn't possible to pass an explicit tuple as a single 
 argument to a primitive, nor a single value of tuple/array type.
 In the latter case a cast/abstraction can defeat this, for the
 former you'll need to make a dummy variable.
 *)
 
-let shape_of bbdfns tn t =
-  match t with
-  | `BTYP_inst (i,ts) ->
-    let id,parent,sr,entry = Hashtbl.find bbdfns i in
-    begin match entry with
-    | `BBDCL_union (vs,idts) ->
-      let varmap = mk_varmap vs ts in
-      let cpts = map (fun (_,t) -> varmap_subst varmap t) idts in
-      if all_voids cpts then "_int_ptr_map"
-      else "_uctor_ptr_map"
-     | _ -> tn t ^ "_ptr_map"
-     end
-  | `BTYP_pointer _ -> "_ref_ptr_map"
-  | _ -> tn t ^ "_ptr_map"
-  
-let gen_prim_call 
-  syms bbdfns tsub ge ct ts (arg,argt as a) ret sr sr2 prec
-=
-  (*
-  print_endline ("ts= "^catmap "," (sbt syms.dfns) ts);
-  print_endline ("argt = " ^ sbt syms.dfns argt);
-  *)
-  let tn t = cpp_typename syms t in
-  let rt t = reduce_type (lstrip syms.dfns (tsub t)) in
-  let rtn t = tn (rt t) in
-
-  let ts = map rtn ts in
-  let argt = rt argt in
-  let tt = tn argt in
-  let sh t = shape_of bbdfns tn t in
-  let ashape = sh argt in
-
-  match arg,argt with
-
-  (* the argument is explicitly a tuple *)
-  | (`BEXPR_tuple es,_) ->
-    let ess = map (ge sr) es in
-    let ets,ashapes = 
-      match argt with
-      | `BTYP_tuple typs -> map rtn typs, map sh typs
-      | `BTYP_array (t,`BTYP_unitsum n) ->
-        let t = tn t 
-        and s = sh t
-        in rev_map (fun _ -> t) (nlist n), rev_map (fun _ -> s) (nlist n)
-      | _ -> assert false
-    in
-    csubst sr sr2 ct ess ets tt ret ts prec ashape ashapes
-  
-  (* the argument isnt a tuple, but the type is *)
-  | (_,`BTYP_tuple typs) as x ->
-    let n = length typs in
-    let typs = map rt typs in
-    let es = 
-      map2 
-      (fun i t -> `BEXPR_get_n (i,x),t) 
-      (nlist n) typs
-    in
-    let ess = map (ge sr) es in
-    let ets = map tn typs in
-    csubst sr sr2 ct ess ets tt ret ts prec ashape (map sh typs)
-
-  (* the argument isnt a tuple, but the type is an array *)
-  | (_,(`BTYP_array(t,`BTYP_unitsum n) as ta)) as x ->
-    let t = rt t in
-    let typs = map (fun _ -> rt t) (nlist n) in
-    let es = 
-      map 
-      (fun i -> `BEXPR_get_n (i,x),t) 
-      (nlist n)
-    in
-    let ess = map (ge sr) es in
-    let ets = map tn typs in
-    csubst sr sr2 ct ess ets tt ret ts prec ashape (map sh typs)
-
-  (* the argument isn't an explicit tuple, and the type
-     is neither an array nor tuple
-  *)
-  | (_,typ) -> 
-    let a = ge sr a in
-    csubst sr sr2 ct [a] [tt] tt ret ts prec ashape [ashape]
-
-let strd the_display =
-  if length the_display = 0 then
-  "(FLX_FPAR_PASS_ONLY)"
-  else
-  "(FLX_FPAR_PASS " ^ cat ", " the_display ^ ")"
  
-let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
-  (*
-  print_endline ("Generating expression " ^ string_of_bound_expression_with_type syms.dfns (e,t));
-  *)
-  let ge' e = gen_expr' syms bbdfns this e vs ts sr in
-  let ge e = gen_expr syms bbdfns this e vs ts sr in
-  let ge'' sr e = gen_expr' syms bbdfns this e vs ts sr in
-  if length ts <> length vs then 
-  failwith 
-  (
-    "[gen_expr} wrong number of args, expected vs = " ^ 
-    si (length vs) ^ 
-    ", got ts=" ^ 
-    si (length ts)
-  );
-  let tsub t = reduce_type (tsubst vs ts t) in
-  let tn t = cpp_typename syms (tsub (lower t)) in
-  let raw_typename t = cpp_typename syms (tsubst vs ts (lower t)) in
-  let ge_arg a = 
-    match a with
-    | _,`BTYP_tuple [] -> ""
-    | x -> ge x 
-  in
-  let id,parent,sr,entry = 
-    try Hashtbl.find bbdfns this 
-    with _ -> failwith ("[gen_expr] Can't find this = " ^ si this)
-  in
-  let our_display = get_display_list bbdfns this in
-  let our_level = length our_display in
-  let rt t = reduce_type (lstrip syms.dfns (tsub t)) in
-  let t = rt t in
-  match e with
-  | `BEXPR_parse ((_,t')as e,ii) -> 
-    let pn = Hashtbl.find syms.parsers (this,t',ii) in
-    let ln = Hashtbl.find syms.lexers (this,e) in
-    let the_display = 
-      "this"::
-      map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-      our_display
-    in
-
-    let pdisplay = strd the_display in
-    let ldisplay = strd (the_display @[ge e]) in
-    let callstr = 
-    "(Elk_" ^ si pn ^ pdisplay ^
-    ".apply((new ElkLex_" ^ si ln^ldisplay^")->init()))"
-    in
-      (*
-      print_endline ("Parse call : " ^ callstr);
-      *)
-      ce_atom callstr
-
-  | `BEXPR_expr (s,_) -> ce_top s
-
-  | `BEXPR_case_index e ->
-    let _,t = e in
-    let t = lstrip syms.dfns t in
-    begin match t with
-    | `BTYP_sum _
-    | `BTYP_unitsum _ ->
-      if is_unitsum t then ge' e
-      else ce_dot (ge' e) "variant"
-    | `BTYP_inst (i,ts) ->
-      let ts = map tsub ts in
-      let id,_,_,entry = Hashtbl.find bbdfns i in
-      begin match entry with
-      | `BBDCL_union (bvs,cts) ->
-        let tsub' t = reduce_type (tsubst bvs ts t) in
-        let cts = map (fun (_,t) -> tsub' t) cts in
-        if all_voids cts then ge' e
-        else ce_dot (ge' e) "variant"
-      | _ -> failwith ("Woops expected union, got " ^ id)
-      end 
-    | _ -> failwith ("Woops expected union or sum, got " ^ sbt syms.dfns t)
-    end
-
-  | `BEXPR_get_n (n,(e',t as e)) -> 
-    begin match rt t with
-    | `BTYP_array (_,`BTYP_unitsum _) -> 
-      ce_dot (ge' e) ("data["^si n^"]")
-    | _ -> ce_dot (ge' e) ("mem_" ^ si n)
-    end
-
-  | `BEXPR_match_case (n,((e',t') as e)) -> 
-    let t' = reduce_type (lstrip syms.dfns t') in
-    if is_unitsum t' then
-      ce_infix "==" (ge' e) (ce_atom (si (n-1)))
-    else
-      ce_infix "==" 
-      (ce_dot (ge' e) "variant")
-      (ce_atom (si (n-1)))
-
-  | `BEXPR_case_arg (n,e) ->
-    let cast = tn t ^ "*" in
-    ce_prefix "*" (ce_cast cast (ce_dot (ge' e) "data"))
-     
-  | `BEXPR_deref ((`BEXPR_ref index),`BTYP_pointer t) -> 
-    ge' (`BEXPR_name index,t)
-
-  | `BEXPR_deref e -> 
-    let cast = tn t ^ "*" in
-    ce_prefix "*" (ce_cast cast (ce_dot (ge' e) "data"))
-
-  | `BEXPR_literal v ->
-    if is_native_literal v
-    then ce_atom (cstring_of_literal v)
-    else
-    let t = tn t in
-    ce_atom (t ^ "(" ^ cstring_of_literal v ^ ")")
-    
-  | `BEXPR_case (v,t') ->
-    begin match unfold syms.dfns t' with
-    | `BTYP_unitsum n ->
-      if v<1 or v>n
-      then 
-        failwith 
-        (
-          "Invalid case index " ^ si v ^
-          " of " ^ si n ^ " cases  in unitsum"
-        )
-     else ce_atom (si (v-1))
-
-    | `BTYP_sum ls ->
-       let s = 
-         let n = length ls in
-         if v<1 or v>n
-         then 
-           failwith 
-           (
-             "Invalid case index " ^ si v ^
-             " of " ^ si n ^ " cases"
-           )
-         else let t' = nth ls (v-1) in
-         if t' = `BTYP_tuple []
-         then (* closure of const ctor is just the const value ???? *)
-           if is_unitsum t then
-             si (v-1)
-           else
-             "_uctor_(" ^ si (v-1) ^ ",0)"
-         else 
-           failwith 
-           ( 
-              "Can't handle closure of case " ^ 
-              si v ^ 
-              " of " ^
-              string_of_btypecode syms.dfns t
-           )
-       in ce_atom s
-       (* "(" ^ tn (lower t) ^ "*)_uctor_" *)
-
-    | _ -> failwith "Case tag must have sum type"
-    end 
-   
-  | `BEXPR_name (index,ts') -> 
-    let id,parent,sr2,entry = 
-      try Hashtbl.find bbdfns index 
-      with _ -> 
-        match Hashtbl.find syms.dfns index with
-        {id=id; sr=sr} -> syserr sr
-        ("[gen_expr(name)] Can't find "^ id ^ "<" ^ si index ^ ">")
-    in
-    let ts = map tsub ts' in
-    begin match entry with
-      | `BBDCL_var (_,t)
-      | `BBDCL_val (_,t) ->
-          ce_atom (get_var_ref syms bbdfns this index ts)
-
-      | `BBDCL_const (_,_,ct,_) -> 
-        let ts = map tn ts in
-        csubst sr sr2 ct [] [] "Error" "Error" ts "expr" "Error" ["Error"]
-
-      | `BBDCL_cstruct _ 
-      | `BBDCL_struct _ 
-      | `BBDCL_function _
-      | `BBDCL_procedure _ 
-      | `BBDCL_fun _
-      | `BBDCL_proc _ ->
-         failwith 
-         (
-           "[gen_expr: name] Open function '" ^ 
-           id ^ "'<"^si index^
-           "> in expression (closure required)"
-         )
-      | _ -> 
-        failwith 
-        (
-          "[gen_expr: name] Cannot use this kind of name '"^
-          id^"' in expression"
-        )
-    end
-
-  | `BEXPR_closure (index,ts') -> 
-    let id,parent,sr,entry = 
-      try Hashtbl.find bbdfns index 
-      with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
-    in
-    (*
-    Should not be needed now .. 
-    let ts = adjust_ts syms index ts' in
-    *)
-    let ts = map tsub ts' in
-    begin match entry with
-    | `BBDCL_function _ 
-    | `BBDCL_procedure _ ->
-      let the_display = 
-        let d' = 
-          map (fun (i,vslen) -> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-          (get_display_list bbdfns index)
-        in 
-          if length d' > our_level
-          then "this" :: tl d'
-          else d'
-      in
-      let name = cpp_instance_name syms bbdfns index ts in
-      ce_atom (
-      "(FLX_NEWP("^name^")" ^ strd the_display ^")"
-      )
-
-    | `BBDCL_cstruct _ 
-    | `BBDCL_struct _ 
-    | `BBDCL_fun _
-    | `BBDCL_proc _ ->
-      failwith ("[gen_expr: closure] Can't wrap primitive proc, fun, or struct '"^id^"' yet")
-    | _ -> failwith ("[gen_expr: closure] Cannot use this kind of name '"^id^"' in expression")
-    end
-
-  | `BEXPR_ref (index,ts') -> 
-    let ts = map tsub ts' in
-    let t = lower t in
-    let ref_type = tn (lower t) in
-    let var_ptr = "&" ^ get_var_ref syms bbdfns this index ts  in
-    let frame_ptr = get_var_frame syms bbdfns this index ts in
-    let reference = ref_type ^ 
-      "(" ^ frame_ptr ^ ", " ^ var_ptr ^ ")" 
-    in
-    ce_atom reference
-
-  (* Hackery -- we allow a constructor with no
-     arguments to be applied to a unit anyhow
-  *)
-  | `BEXPR_apply 
-     (
-       (`BEXPR_case (v,t),t'),
-       (a,t'') 
-     ) ->
-       (* t is the type of the sum, 
-          t' is the function type of the constructor,
-          t'' is the type of the argument
-       *)
-       let 
-         arg_typename = tn (lower t'') 
-       and
-         union_typename = tn (lower t)
-       in
-       let aval = 
-         "new (gc, "^arg_typename^"_ptr_map) " ^
-         arg_typename ^ "(" ^ ge (a,t'') ^ ")"
-       in
-       let uval = 
-         if is_unitsum t then
-           si (v-1) 
-         else
-         "_uctor_(" ^ si (v-1) ^ ", " ^ aval ^")" 
-       in
-       let s = "(" ^ union_typename ^ ")" ^ uval in
-       ce_atom s
-
-       (*
-       failwith 
-       (
-         "Trapped application, case " ^ 
-         si v ^
-         " of " ^ string_of_btypecode syms.dfns t ^
-         "\ntype " ^ string_of_btypecode syms.dfns t' ^
-         "\nargument=" ^ 
-         string_of_bound_expression syms.dfns (a,t'') ^
-         "\ntype " ^ string_of_btypecode syms.dfns t''
-       )
-      *) 
-
-
-  | `BEXPR_apply_prim (index,ts,(arg,argt as a)) ->
-    let argt = tsub argt in
-    let id,parent,sr2,entry = 
-      try Hashtbl.find bbdfns index 
-      with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
-    in
-    begin 
-    match entry with
-    | `BBDCL_fun (vs,ps,retyp,ct,_,prec) -> 
-      if length vs <> length ts then
-      failwith 
-      (
-        "[get_expr:apply closure of fun] function " ^ 
-        id ^ "<" ^ si index ^">" ^
-        ", wrong number of args, expected vs = " ^ 
-        si (length vs) ^ 
-        ", got ts=" ^ 
-        si (length ts)
-      );
-      let ts = map tsub ts in
-      let retyp = reduce_type (lstrip syms.dfns (tsubst vs ts retyp)) in
-      let retyp = tn retyp in
-      gen_prim_call syms bbdfns tsub ge'' ct ts (arg,argt) retyp sr sr2 prec
-
-    (* not sure whether these will be prims or directs or what .. *)
-    | `BBDCL_cstruct (vs,_) ->
-      ce_atom ("reinterpret<"^ id ^">(" ^ ge a ^ ")")
-       
-    (* not sure whether these will be prims or directs or what .. *)
-    | `BBDCL_struct (vs,cts) ->
-      let name = tn (`BTYP_inst (index,ts)) in
-      if length cts > 1 then
-        (* argument must be an lvalue *)
-       ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
-      else
-        ce_atom (name ^ "(" ^ ge a ^ ")")
-
-    (* but can't be a Felix function *)
-    | _ -> 
-      failwith 
-      (
-        "[gen_expr: apply prim] Expected '"^id^"' to be primitive function instance, got:\n" ^
-        string_of_bbdcl syms.dfns entry index 
-      )
-    end
-
-  | `BEXPR_apply_direct (index,ts,a) ->
-    let id,parent,sr2,entry = 
-      try Hashtbl.find bbdfns index 
-      with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
-    in
-    begin 
-    (*
-    print_endline ("apply closure of "^ id );
-    print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
-    *)
-    match entry with
-    | `BBDCL_function (props,vs,ps,retyp,_) ->
-      let ts = map tsub ts in
-      let the_display = 
-        let d' = 
-          map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-          (get_display_list bbdfns index)
-        in 
-          if length d' > our_level
-          then "this" :: tl d'
-          else d'
-      in
-      let name = cpp_instance_name syms bbdfns index ts in
-      ce_atom (
-      "(FLX_NEWP("^name^")"^ strd the_display ^")"^
-      "\n      ->apply(" ^ ge_arg a ^ ")"
-      )
-
-    | `BBDCL_cstruct (vs,_) ->
-      ce_atom ("reinterpret<"^ id ^">(" ^ ge a ^ ")")
-       
-    | `BBDCL_struct (vs,cts) ->
-      let name = tn (`BTYP_inst (index,ts)) in
-      if length cts > 1 then 
-        (* argument must be an lvalue *)
-        ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
-      else
-        ce_atom (name ^ "(" ^ ge a ^ ")")
-
-    | `BBDCL_fun _ ->
-      ge' (`BEXPR_apply_prim (index,ts,a),t)
-
-    | `BBDCL_nonconst_ctor (vs,uidx,udt,cidx,ct) ->
-      let ts = map tsub ts in
-      let ct = reduce_type (tsubst vs ts ct) in
-      let ctt = tn ct in
-      let ptrmap = shape_of bbdfns tn ct in 
-      ce_atom (
-        "(_uctor_(" ^ si cidx ^ ", new(gc,"^ ptrmap^")"^
-        ctt ^"("^ ge a ^")))"
-      )
-
-    | _ -> 
-      failwith 
-      (
-        "[gen_expr: apply_direct] Expected '"^id^"' to be generic function instance, got:\n" ^
-        string_of_bbdcl syms.dfns entry index 
-      )
-    end
-
-  | `BEXPR_apply_stack (index,ts,a) ->
-    let id,parent,sr2,entry = 
-      try Hashtbl.find bbdfns index 
-      with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
-    in
-    begin 
-    (*
-    print_endline ("apply closure of "^ id );
-    print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
-    *)
-    match entry with
-    | `BBDCL_function (props,vs,ps,retyp,_) ->
-      let ts = map tsub ts in
-      let the_display = 
-        let d' = 
-          map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-          (get_display_list bbdfns index)
-        in 
-          if length d' > our_level
-          then "this" :: tl d'
-          else d'
-      in
-      let name = cpp_instance_name syms bbdfns index ts in
-      let s = 
-      name^ strd the_display 
-      ^
-      "\n      .apply(" ^ ge_arg a ^ ")"
-      in ce_atom s
-
-    | `BBDCL_cstruct (vs,_) ->
-      ce_atom ("reinterpret<"^ id ^">(" ^ ge a ^ ")")
-       
-    | `BBDCL_struct (vs,cts) ->
-      let name = tn (`BTYP_inst (index,ts)) in
-      if length cts > 1 then
-        (* argument must be an lvalue *)
-        ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
-      else
-        ce_atom (name ^ "(" ^ ge a ^ ")")
-
-    | _ -> 
-      failwith 
-      (
-        "[gen_expr: apply_direct] Expected '"^id^"' to be generic function instance, got:\n" ^
-        string_of_bbdcl syms.dfns entry index 
-      )
-    end
-
-  | `BEXPR_apply ((`BEXPR_closure (index,ts),_),a) ->
-    assert false (* should have been factored out *)
-
-  (* General application*)
-  | `BEXPR_apply (f,a) ->
-    ce_atom (
-    (ge f) ^ "->clone()\n      ->apply(" ^ ge_arg a ^ ")"
-    )
-
-  | `BEXPR_tuple es ->
-    (* just apply the tuple type ctor to the arguments *)
-    begin match t with
-    | `BTYP_array (t',`BTYP_unitsum n) ->
-      let tuple = 
-        let t'' = `BTYP_tuple (map (fun _ -> t') (nlist n)) in
-        let ctyp = raw_typename t'' in
-        ce_atom (
-        ctyp ^ "(" ^
-        cat ", " (map ge es) ^
-        ")"
-        )
-      in
-        (* cast a tuple which is an array type to an array *)
-        let atyp = tn (lower t) in
-        ce_cast 
-          (atyp ^ "&")
-          (ce_infix "," (ce_atom "0") tuple)
-
-    | `BTYP_tuple _ ->
-      let ctyp = tn (lower t) in
-      ce_atom (
-      ctyp ^ "(" ^
-      cat ", " (map ge es) ^
-      ")"
-      )
-    | _ -> assert false
-    end
-
-and gen_expr syms bbdfns this e vs ts sr =
-  let e = Flx_maps.reduce_tbexpr bbdfns e in
-  let s = 
-    try gen_expr' syms bbdfns this e vs ts sr  
-    with Unknown_prec p -> clierr sr 
-    ("[gen_expr] Unknown precedence name '"^p^"' in " ^ sbe syms.dfns e)
-  in
-  string_of_cexpr s
-
-let gen_elk_lexer filebase module_name syms bbdfns this sr ((_,t') as e) n  =
-  let lexer_name = "ElkLex_"^si n in
-  let ge e = gen_expr syms bbdfns this e [] [] sr in
-  let tn t = cpp_typename syms t in
-  let get_token_fun_type = tn t' in
-
-  let display = cal_display bbdfns (Some this) in
-  let frame_dcls = 
-    "  FLX_FMEM_DECL\n"
-  in
-  let display_string = 
-    cat "" 
-    (
-      map
-      (fun (i, vslen) -> 
-       try
-       let instname = cpp_instance_name syms bbdfns i [] in
-       "  " ^ instname ^ " *ptr" ^ instname ^ ";\n"
-       with _ -> failwith "Can't cal display name"
-       )
-      display
-    )
-  and ctor_dcl =  
-    "  "^lexer_name ^ "(\n" ^
-    "    FLX_FPAR_DECL\n" ^
-    cat ""
-    (
-      map 
-      (
-        fun (i,vslen) -> 
-        let instname = cpp_instance_name syms bbdfns i [] in
-        "    " ^ instname ^ "*,\n"
-      )
-      display
-    )^
-    "    "^get_token_fun_type ^"\n  );\n" 
-  in
-  let filename = filebase ^ "_lexer_" ^ si n ^ ".hpp" in
-  if syms.compiler_options.print_flag then
-  print_endline ("Generating Elkhound lexer " ^ lexer_name ^ " in " ^ filename);
-  
-  let f = open_out filename in
-  let pe s = output_string f (s ^ "\n") in
-
-  let token_type, token_type_name, token_id, cts =
-    match t' with
-    | `BTYP_function (`BTYP_tuple [],`BTYP_inst(i,[])) ->
-      let id,parent,sr',entry = Hashtbl.find bbdfns i in
-      let token_type = `BTYP_inst(i,[]) in
-      let token_type_name = tn token_type in
-      begin match entry with
-      | `BBDCL_union ([],cts) -> token_type, token_type_name, id, cts
-      | _ -> assert false
-      end
-    | _ -> assert false
-  in
-  pe ("#ifndef ELKLEX_"^si n);
-  pe ("#define ELKLEX_"^si n);
-  pe "#include \"elk_lexerint.h\"";
-  pe "";
-  pe ("struct "^lexer_name^": public LexerInterface {");
-  pe ("  //frame");
-  pe frame_dcls;
-  pe ("  //display");
-  pe display_string;
-  pe ("  // constructor");
-  pe ctor_dcl;
-  pe ("  collector_t &gc; // Felix garbage collector");
-  pe ("  " ^ get_token_fun_type ^ " get_token; // client token generator");
-  pe "  void setToken();  //fetch next token ";
-  pe ("  "^lexer_name^" *init(); //prime the lexer");
-  pe "";
-  pe "  //Elkhound API";
-  pe "  static void nextToken(LexerInterface *lex);";
-  pe "  NextTokenFunc getTokenFunc() const { return &nextToken; }";
-  pe "  sm_string tokenDesc() const;";
-  pe "  sm_string tokenKindDesc(int kind) const;";
-  pe "};";
-  pe "#endif";
-  close_out f;
-
-  let filename = filebase ^ "_lexer_" ^ si n ^ ".cpp" in
-  let f = open_out filename in
-  let pe s = output_string f (s ^ "\n") in
-  pe ("#include \""^module_name^"_lexer_"^si n^".hpp\"");
-  pe ("//token type = " ^ token_type_name);
-  pe ("static char *"^token_id^"_desc["^si (length cts)^"]={");
-  iter (fun (nm,_) -> pe ("   \""^nm^"\",")) cts;
-  pe ("};");
-  pe "";
-  pe (gen_ctor syms bbdfns lexer_name display [] [get_token_fun_type,"get_token"] ["gc(*PTF gc)"] []);
-  pe ("sm_string " ^ lexer_name ^ "::tokenDesc() const { return tokenKindDesc(type); }");
-  pe "";
-  pe ("sm_string " ^ lexer_name ^ "::tokenKindDesc(int kind) const {");
-  pe ("  return "^token_id^"_desc[kind];");
-  pe ("}");
-  pe "";
-  pe ("void " ^ lexer_name ^ "::setToken() {");
-  pe ("  _uctor_ token = get_token->apply();");
-  pe ("  type = token.variant;");
-  pe ("  sval =  (SemanticValue)token.data;");
-  pe ("}");
-  pe "";
-  pe ("void " ^ lexer_name ^ "::nextToken(LexerInterface *lex) {");
-  pe ("  (("^lexer_name^"*)lex)->setToken();");
-  pe ("}");
-  pe "";
-  pe (lexer_name^" *"^lexer_name^"::init(){");
-  pe ("  nextToken(this);");
-  pe ("  return this;");
-  pe ("}");
-
-  close_out f
-
-let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
-  let filename = filebase ^ "_parser_" ^ si n ^ ".gr" in
-  let parser_name = "_" ^ si n in
-  if syms.compiler_options.print_flag then
-  print_endline ("Generating Elkhound parser " ^ filename)
-  ;
-  let f = open_out filename in
-  let pe s = output_string f (s ^ "\n") in
-  let ps s = output_string f s in
-  let ge this e = gen_expr syms bbdfns this e [] [] sr in
-  let tn t = cpp_typename syms (reduce_type t) in
-  let string_of_bprod (n,g) =
-    (match n with | None -> "" | Some n -> cid_of_flxid n ^ ":") ^
-    (match g with 
-    | `Term k ->
-      (match Hashtbl.find syms.dfns k with {id=id}->cid_of_flxid id)
-    | `Nonterm (k::_) ->
-      (match Hashtbl.find syms.dfns k with {id=id}->cid_of_flxid id)
-    | _ -> assert false
-    )
-  in
-  let print_production (this,p,xs) =
-    match xs with
-    | [`BEXE_fun_return (_,((_,t) as e))] ->
-      let t = tn t in
-      ps ("  -> ");
-      ps (catmap " " string_of_bprod p);
-      pe "";
-      pe "    {";
-      pe ("       "^t^" *_x = new "^t^"(" ^ ge this e ^ ");");
-      iter 
-      (function 
-        | Some n, `Nonterm _ -> pe ("       delete " ^ n^";")
-        | _ -> ()
-      )
-      p;
-      pe ("       return _x;");
-      pe "    }";
-    | _ -> assert false 
-  in
-  let set_of_list ii : IntSet.t = fold_left (fun s elt ->IntSet.add elt s) IntSet.empty ii in
-  let nts_of_prod p : IntSetSet.t = 
-    fold_left
-    (fun x (_,k) -> match k with
-      | `Nonterm ii -> IntSetSet.add (set_of_list ii) x
-      | `Term _ -> x
-    ) 
-    IntSetSet.empty 
-    p 
-  in
-  let prod_of_glr i =
-    try
-    match Hashtbl.find bbdfns i with
-    | _,_,_,`BBDCL_glr (_,_,(p,_)) -> p
-    | id,_,_,entry -> failwith
-      ("Expected "^si i^"->BBDCL_glr, got " ^ string_of_bbdcl syms.dfns entry i)
-    
-    with Not_found -> failwith ("Can't find BBDCL_glr " ^ si i)
-  in
-  let nts_of_glr i : IntSetSet.t = nts_of_prod (prod_of_glr i) in
-  let nt_uses x : IntSetSet.t = 
-    IntSet.fold 
-    (fun i nts ->
-      IntSetSet.union nts (nts_of_glr i)
-    )
-    x 
-    IntSetSet.empty 
-  in
-  let make_closure ii = 
-    let been_done = ref (IntSetSet.singleton (set_of_list ii)) in
-    let to_do = ref (nt_uses (set_of_list ii)) in
-    while not (IntSetSet.is_empty !to_do) do
-      let x = IntSetSet.choose !to_do in
-      to_do := IntSetSet.remove x !to_do;
-      if not (IntSetSet.mem x !been_done) then begin
-        been_done := IntSetSet.add x !been_done;
-        to_do := IntSetSet.union !to_do (nt_uses x)
-      end
-    done;
-    !been_done
-  in
-  let print_nonterm x = 
-    let j = IntSet.choose x in 
-    let id,parent,sr'',entry = Hashtbl.find bbdfns j in
-    begin match entry with
-    | `BBDCL_glr (_,t,(p,xs)) ->
-      let tt = tn t in
-      pe ("nonterm("^tt^"*) "^cid_of_flxid id^" {");
-      pe ("  fun dup(x) { return new " ^ tt ^ "(*x); }");
-      pe ("  fun del(x) { delete x; }");
-      IntSet.iter (fun i ->
-        let id,parent,sr'',entry = Hashtbl.find bbdfns i in
-        match entry with
-        | `BBDCL_glr (_,t,(p,xs)) -> print_production (i,p,xs)
-        | _ -> assert false
-      )
-      x;
-      pe "}";
-    | _ -> assert false
-    end
-  in
-  let display = cal_display bbdfns (Some this) in
-  let frame_dcls = 
-    "  FLX_FMEM_DECL"
-  in
-  let display_string = 
-    cat "" 
-    (
-      map
-      (fun (i,vslen) -> 
-       try
-       let instname = cpp_instance_name syms bbdfns i [] in
-       "  " ^ instname ^ " *ptr" ^ instname ^ ";\n"
-       with _ -> failwith "Can't cal display name"
-       )
-      display
-    )
-  and ctor_dcl =  
-    "  Elk" ^parser_name^
-    (if length display = 0 
-    then "(FLX_FPAR_DECL_ONLY);\n"
-    else (
-    "  (\n" ^
-    "    FLX_FPAR_DECL\n " ^
-    cat ",\n"
-      (
-        map 
-        (
-          fun (i,vslen) -> 
-          let instname = cpp_instance_name syms bbdfns i [] in
-          "    " ^ instname ^ "*"
-        )
-        display
-      )^
-      "\n  );\n" 
-    ))
-  in
-    begin match t' with
-    | `BTYP_function (`BTYP_tuple [],`BTYP_inst(i,[])) ->
-      let token_id,parent,sr',entry = Hashtbl.find bbdfns i in
-      let token_type = `BTYP_inst(i,[]) in
-      let token_type_name = tn token_type in
-      begin match entry with
-      | `BBDCL_union ([],cts) ->
-        let j = hd ii in 
-        let id,parent,sr'',entry = Hashtbl.find bbdfns j in
-        begin match entry with
-        | `BBDCL_glr (_,t,(p,xs)) ->
-          let result_type = tn t in
-          pe ("//Elkhound parser Elk" ^ parser_name ^ " -> " ^ result_type);
-          pe ("//Token type " ^ token_id ^ " -> " ^ token_type_name);
-          pe "terminals {";
-          let i = ref 0 in
-          iter (fun (id,t) -> 
-            pe ("  " ^ si !i^" : "^ cid_of_flxid id ^ ";"); incr i
-          ) 
-          cts;
-        
-        pe "";
-        iter (fun (id,t) -> 
-          if t <> `BTYP_void then begin
-            pe ("  token("^tn t^"*) " ^ cid_of_flxid id ^ "{");
-            pe ("    fun dup(x) { return x; }");
-            pe ("    fun del(x) {}");
-            pe ("}");
-          end 
-        )
-        cts;
-        
-        pe "}";
-        pe "";
-        pe ("context_class Elk"^parser_name^": public UserActions {");
-        pe ("public:");
-        pe frame_dcls;
-        ps display_string;
-        pe ctor_dcl;
-        pe ("  collector_t &gc;");
-        pe 
-        (
-          (if t = `BTYP_tuple [] then "int" else "_uctor_") ^
-          " apply(LexerInterface *lex);"
-        );
-        pe "};";
-        pe "";
-        pe "impl_verbatim {";
-        pe (gen_ctor syms bbdfns ("Elk"^parser_name) display [] [] ["gc(*PTF gc)"] []);
-        pe "}";
-        pe "";
-        pe "impl_verbatim {";
-        pe "// Felix function to apply the parser to a lexer";
-        pe "// This returns a polymorphic option";
-        pe "// case 0- Parse failed";
-        pe "// case 1- Argument contains parser result";
-        pe ("// Type of parser result is " ^ sbt syms.dfns t);
-        
-        pe 
-        (
-          (if t = `BTYP_tuple [] then "int" else "_uctor_") ^
-          " Elk"^parser_name^"::apply(LexerInterface *lex) {"
-        );
-        pe "  _uctor_ result(0,0);";
-        pe "  SemanticValue p=(SemanticValue)(void*)0;";
-        pe "  GLR glr(this,this->makeTables());";
-        pe "  glr.noisyFailedParse = true;";
-        pe "  result.variant = glr.glrParse(*lex,p);";
-        pe "";
-        pe "  if(result.variant==1)";
-        
-        if t = `BTYP_tuple [] then begin
-        pe "  delete (void*)p;";
-        pe "  return result.variant;";
-        end else begin
-        pe ("    result.data =");
-        pe ("      new(gc,"^shape_of bbdfns tn t^")");
-        pe ("      "^result_type^"(*("^result_type^"*)(void*)p)");
-        pe ("  ;");
-        pe "  delete (void*)p;";
-        pe "  return result;";
-        end;
-        pe "}";
-        pe "}";
-        pe "";
-
-        pe ("nonterm("^result_type^"*) elk"^parser_name^" {");
-        print_production (j,p,xs);
-        iter (fun i ->
-          let id,parent,sr'',entry = Hashtbl.find bbdfns i in
-          match entry with
-          | `BBDCL_glr (vs,t,(p,xs)) -> print_production (i,p,xs)
-          | _ -> assert false
-        )
-        (tl ii)
-        ;
-        pe "}";
-        let cls = make_closure ii in
-        IntSetSet.iter print_nonterm cls;
-        pe "//End grammar"
-
-      | _ -> assert false (* must be glr *)
-      end
-
-    | _ -> 
-      clierr sr 
-      "Parser function must have unit domain and return a non-polymorphic union"
-    end
-  | _ -> 
-    clierr sr 
-    "Parser function must have unit domain and return a non-polymorphic union"
-  end
-  ;
-  close_out f
-  ;
-  let retval = Unix.system("flx_elkhound -tr nolines " ^ filename) in
-  begin match retval with
-  | Unix.WEXITED 0 -> ()
-  | _ -> failwith "Error executing flx_elkhound"
-  end
-
 
 type kind_t = Function | Procedure
  
@@ -1866,6 +771,7 @@ let gen_exe filename syms
       "    FLX_CASE_LABEL(" ^ si n ^ ")\n"
 
       
+    (*
     | `BEXE_regmatch (sr,e,reargs) ->
       let b = Buffer.create 500 in
       Flx_regen.regen b reargs (`regmatch e) (ge sr);
@@ -1876,6 +782,7 @@ let gen_exe filename syms
       Flx_regen.regen b reargs (`reglex (p1,p2)) (ge sr);
       Buffer.contents b
       
+    *)
     | `BEXE_fun_return (sr,e) -> 
       let _,t = e in
       "      //" ^ src_str ^ ": type "^tn t^"\n" ^
@@ -2044,6 +951,108 @@ let gen_function_methods filename syms (child_map,bbdfns)
 
   | _ -> failwith "function expected"
 
+let gen_regexp_methods filename syms (child_map,bbdfns) 
+  all_closures label_info counter index ts instance_no 
+= 
+  let id,parent,sr,entry = Hashtbl.find bbdfns index in
+  if syms.compiler_options.print_flag then
+  print_endline 
+  (
+    "//Generating regmatch/reglex body inst " ^ 
+    si instance_no ^ "=" ^ 
+    id ^ "<" ^si index^">" ^
+    (
+      if length ts = 0 then "" 
+      else "[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]"
+    )
+  );
+  let lexeme_start,buffer_end,lexeme_end,kind = match entry with 
+  | `BBDCL_regmatch (vs,bps,ret',cls) -> 
+    let p1 = fst (snd (hd bps)) in
+    let p1' = cpp_instance_name syms bbdfns p1 ts in
+    let p2 = fst (snd (hd (tl bps))) in
+    let p2' = cpp_instance_name syms bbdfns p2 ts in
+    p1',p2',None,`regmatch (p1',p2')
+    
+  | `BBDCL_reglex (vs,bps,i,ret',cls) -> 
+    let p1 = fst (snd (hd bps)) in
+    let p1' = cpp_instance_name syms bbdfns p1 ts in
+    let p2 = fst (snd (hd (tl bps))) in
+    let p2' = cpp_instance_name syms bbdfns p2 ts in
+    let v = cpp_instance_name syms bbdfns i ts in
+    p1',p2',Some v,`reglex (p1',p2',v)
+  | _ -> assert false
+  in
+  match entry with 
+  | `BBDCL_regmatch (vs,bps,ret',cls)
+  | `BBDCL_reglex (vs,bps,_,ret',cls) ->
+    if length ts <> length vs then 
+    failwith 
+    (
+      "[get_function_methods} wrong number of args, expected vs = " ^ 
+      si (length vs) ^ 
+      ", got ts=" ^ 
+      si (length ts)
+    );
+    let argtype = lower (typeof_bparams bps) in
+    let argtype = reduce_type (tsubst vs ts argtype) in
+    let ret = reduce_type (tsubst vs ts (lower ret')) in
+    let funtype = fold syms.dfns (`BTYP_function (argtype, ret)) in
+
+    let argtypename = cpp_typename syms argtype in
+    let name = cpp_instance_name syms bbdfns index ts in
+
+    let display = get_display_list bbdfns index in
+
+    let rettypename = cpp_typename syms ret in
+
+    let ctor = 
+      let vars =  find_references syms (child_map,bbdfns) index ts in
+      let funs = filter 
+        (fun (i,t) -> match t with 
+        | `BTYP_function _ -> true 
+        | _ -> false
+        ) vars 
+      in
+      gen_ctor syms bbdfns name display funs [] [] ts 
+    in
+    let params = map (fun (id,(ix,t)) -> ix) bps in
+    let exe_string = 
+      let ge e : string = gen_expr syms bbdfns index e vs ts sr in
+      let b = Buffer.create 2000 in
+      Flx_regen.regen b cls kind ge;
+      Buffer.contents b
+    in
+    let cont = "con_t *" in
+    let apply =
+      rettypename^ " " ^name^ "::apply("^
+      argtypename ^" const &_arg ){\n" ^
+      "  collector_t &gc = *PTF gc;\n" ^
+      "  " ^ lexeme_start ^ " = _arg.data[0];\n" ^
+      "  " ^ buffer_end ^ " = _arg.data[1];\n" ^
+      exe_string ^
+      "}\n"
+    and clone =
+      "  " ^ name ^ "* "^name^"::clone()const {\n"^
+      "  return new(*PTF gc,"^name^"_ptr_map) "^name^"(*this);\n"^
+      "}\n"
+    in
+      let q = qualified_name_of_index syms.dfns index in
+      "//FUNC " ^ q ^ ": Constructor\n" ^
+      ctor^ "\n" ^
+      (
+        if IntSet.mem index all_closures then
+        "\n//FUNC " ^ q ^ ": Clone method\n" ^
+        clone^ "\n" 
+        else ""
+      )
+      ^
+      "//FUNC " ^ q ^ ": Apply method\n" ^
+      apply^ "\n"
+
+  | _ -> failwith "function expected"
+
+
 let gen_procedure_methods filename syms (child_map,bbdfns) 
   all_closures label_info counter index ts instance_no 
 = 
@@ -2211,6 +1220,14 @@ let gen_execute_methods filename syms (child_map,bbdfns) all_closures label_info
     bcat s (
       gen_procedure_methods filename syms (child_map,bbdfns) all_closures label_info counter index ts instance_no
     )
+
+  | `BBDCL_regmatch _
+  | `BBDCL_reglex _ ->
+    bcat s ("//------------------------------\n");
+    bcat s (
+      gen_regexp_methods filename syms (child_map,bbdfns) all_closures label_info counter index ts instance_no
+    )
+
   | _ -> ()
   end
   ;
@@ -2364,6 +1381,7 @@ open Flx_version
 open Flx_exceptions
 open Flx_flxopt
 open Flx_ogen
+open Flx_elkgen
 ;;
 
 let print_help () = print_options(); exit(0)

@@ -6,8 +6,8 @@ open Flx_types
 
 type reg_kind_t = 
 [
-  | `regmatch of tbexpr_t 
-  | `reglex of tbexpr_t * tbexpr_t
+  | `regmatch of string * string
+  | `reglex of string * string * string   
 ]
 
 val regen: 
@@ -25,8 +25,8 @@ open Flx_util
 
 type reg_kind_t = 
 [
-  | `regmatch of tbexpr_t 
-  | `reglex of tbexpr_t * tbexpr_t
+  | `regmatch of string * string
+  | `reglex of string * string * string   
 ]
 
 
@@ -115,37 +115,29 @@ let regen b (alpha, nstates, cases, matrix) kind ge =
   emit_matrix tack nchars nstates d
   ;
   begin match kind with
-  | `regmatch e ->
-    (* eval argument as a C++ string *)
-    tack "  string s = ";
-    tack (ge e);
-    tack ";\n";
-    tack "  char const *lexeme_start = s.data();\n";
-    tack "  char const *lexeme_end = lexeme_start;\n";
-    tack "  char const *buffer_end = lexeme_start + s.size();\n";
-    tack "  int state = 1;\n";
-    tack "  while(state && lexeme_end != buffer_end)\n";
-    tack "    state = matrix[*lexeme_end++][state];\n";
-    tack "  switch (state)\n"
-  | `reglex (p1,p2) ->
-    tack ("  char const *lexeme_start = "^ge p1^";\n");
-    tack "  char const *p= lexeme_start;\n";
-    tack ("  char const *buffer_end = "^ge p2^";\n");
-    tack "  int state = 1;\n";
-    tack "  int last_state = 0;\n";
-    tack "  char const *lexeme_end = NULL;\n";
-    tack "  if(accept[state]){\n";
-    tack "    last_state = state;\n";
-    tack "    lexeme_end = p;\n";
-    tack "  }\n";
-    tack "  while(state && p != buffer_end) {\n";
-    tack "    state = matrix[*p++][state];\n";
-    tack "    if(accept[state]){\n";
-    tack "      last_state = state;\n";
-    tack "      lexeme_end = p;\n";
-    tack "    }\n";
-    tack "  }\n";
-    tack "  switch (last_state)\n"
+  | `regmatch (lexeme_start,buffer_end) ->
+    tack ("  char const*p = "^lexeme_start^";\n");
+    tack ("  int state = 1;\n");
+    tack ("  while(state && p != "^buffer_end^")\n");
+    tack ("    state = matrix[*p++][state];\n");
+    tack ("  switch (state)\n")
+  | `reglex (lexeme_start, buffer_end, lexeme_end) ->
+    tack ("  char const *p= "^lexeme_start^";\n");
+    tack ("  int state = 1;\n");
+    tack ("  int last_state = 0;\n");
+    tack ("  "^lexeme_end^" = NULL;\n");
+    tack ("  if(accept[state]){\n");
+    tack ("    last_state = state;\n");
+    tack ("    "^lexeme_end^" = p;\n");
+    tack ("  }\n");
+    tack ("  while(state && p != "^buffer_end^") {\n");
+    tack ("    state = matrix[*p++][state];\n");
+    tack ("    if(accept[state]){\n");
+    tack ("      last_state = state;\n");
+    tack ("      "^lexeme_end^" = p;\n");
+    tack ("    }\n");
+    tack ("  }\n");
+    tack ("  switch (last_state)\n")
   | _ -> assert false 
   end
   ;

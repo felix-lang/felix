@@ -137,6 +137,15 @@ and uses syms used bbdfns i =
         ut t; ux e;
         uses_production syms used bbdfns p
 
+      | `BBDCL_regmatch (_,ps,t,(_,_,h,_)) ->
+        ut t; Hashtbl.iter (fun _ e -> ue e) h;
+        iter (fun (_,(i,_)) -> ui i) ps
+
+      | `BBDCL_reglex (_,ps,i,t,(_,_,h,_)) ->
+        ut t; Hashtbl.iter (fun _ e -> ue e) h;
+        iter (fun (_,(i,_)) -> ui i) ps;
+        ui i
+        
       | `BBDCL_union (_,ps)
       | `BBDCL_struct (_,ps)
       | `BBDCL_cstruct (_,ps)

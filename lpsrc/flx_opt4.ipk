@@ -159,7 +159,10 @@ let can_stack_func cache syms (child_map,bbdfns) i =
   | `BBDCL_nonconst_ctor _
   | `BBDCL_fun _
   | `BBDCL_struct _
-  | `BBDCL_cstruct _ -> false (* hack *)
+  | `BBDCL_cstruct _ 
+  | `BBDCL_regmatch _
+  | `BBDCL_reglex _
+    -> false (* hack *)
   | _ -> failwith ("Unexpected non-function " ^ id)
 
 let ident x = x 
@@ -202,6 +205,7 @@ let enstack_calls cache syms (child_map,bbdfns) exes =
   | `BEXE_label (sr,s) -> 
     exes' := x :: !exes'
 
+  (*
   | `BEXE_regmatch (sr,e,(a,n,h,tr)) ->
      let h' = Hashtbl.create 97 in
      Hashtbl.iter
@@ -218,6 +222,7 @@ let enstack_calls cache syms (child_map,bbdfns) exes =
      h
      ;
     exes' := `BEXE_reglex (sr,ea p1, ea p2,(a,n,h',tr)) :: !exes'
+  *)
 
   | x -> exes' := x :: !exes'
   )

@@ -153,6 +153,12 @@ let remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e =
     let i,ts = fixup i ts in
     `BEXPR_apply_prim (i,ts,aux e), auxt t
 
+  | `BEXPR_parse (e,gs),t ->
+    let revar i = try Hashtbl.find revariable i with Not_found -> i in
+    let e = aux e in
+    let gs = map revar gs in
+    `BEXPR_parse (e,gs), auxt t
+
   | x -> x
   in
     let a = aux e in
@@ -228,6 +234,8 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   let remap_ps ps = map (fun (id,(i,t)) -> id,(revar i,auxt t)) ps in
 
   let k = Hashtbl.find revariable index in
+  let rexes xs = remap_exes syms bbdfns relabel varmap revariable caller_vars callee_vs_len xs in
+  let rexpr e = remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e in 
   let id,old_parent,sr,entry = Hashtbl.find bbdfns index in
   (*
   print_endline 
@@ -246,7 +254,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   ;
   match entry with
   | `BBDCL_procedure (props,vs,ps,exes) ->
-    let exes = remap_exes syms bbdfns relabel varmap revariable caller_vars callee_vs_len exes in
+    let exes = rexes exes in
     let ps = remap_ps ps in
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_procedure (props,splice vs,ps,exes));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
@@ -255,7 +263,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
      
   | `BBDCL_function (props, vs, ps, ret, exes) ->
     let ps = remap_ps ps in
-    let exes = remap_exes syms bbdfns relabel varmap revariable caller_vars callee_vs_len exes in
+    let exes = rexes exes in
     let ret = auxt ret in
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_function (props,splice vs,ps,ret,exes));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
@@ -268,7 +276,38 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   | `BBDCL_val (vs,t) ->
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_val (splice vs,auxt t))
 
-  | _ -> assert false
+  | `BBDCL_reglex (vs,ps,i,t,(a,j,h,m)) ->
+    let t = auxt t in
+    let ps = remap_ps ps in
+    let vs = splice vs in
+    let i = revar i in
+    let h2 = Hashtbl.create 13 in
+    Hashtbl.iter (fun x e -> Hashtbl.add h2 x (rexpr e)) h;
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_reglex (vs,ps,i,t,(a,j,h2,m)))
+
+  | `BBDCL_regmatch (vs,ps,t,(a,j,h,m)) ->
+    let t = auxt t in
+    let ps = remap_ps ps in
+    let vs = splice vs in
+    let h2 = Hashtbl.create 13 in
+    Hashtbl.iter (fun x e -> Hashtbl.add h2 x (rexpr e)) h;
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_regmatch (vs,ps,t,(a,j,h2,m)))
+  
+  | `BBDCL_glr (vs,t,(prd,exes)) -> 
+    let t = auxt t in
+    let vs = splice vs in
+    let exes = rexes exes in
+    let remap_glr g = match g with 
+      | `Nonterm js -> `Nonterm (map revar js)
+      | x -> x (* terminal codes are invariant *)
+    in
+    let prd = map (fun (s,g) -> s,remap_glr g) prd in
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_glr (vs,t,(prd,exes)));
+    let calls = try Hashtbl.find uses index with Not_found -> [] in
+    let calls = map (fun (j,sr) -> revar j,sr) calls in
+    Hashtbl.add uses k calls
+
+  | _ -> syserr sr ("[reparent1] Unexpected bbdcl " ^ string_of_bbdcl syms.dfns entry index)
 
 (* make a copy all the descendants of i, changing any
   parent which is i to the given new parent
@@ -482,6 +521,7 @@ let gen_body syms (uses,child_map,bbdfns) id
   | `BEXE_init (sr,i,e) -> [`BEXE_init (sr,revar i, ge e)]
   | `BEXE_read (sr,i)  -> [`BEXE_read (sr, revar i)]
 
+  (*
   | `BEXE_regmatch (sr,e,(a,sc,h,tr)) ->
     let h' = Hashtbl.create 97 in
     Hashtbl.iter 
@@ -497,6 +537,7 @@ let gen_body syms (uses,child_map,bbdfns) id
     h
     ;
     [`BEXE_reglex (sr, ge p1, ge p2,(a,sc,h',tr))]
+  *)
 
   | `BEXE_code (sr,s)  as x -> [x]
   | `BEXE_nonreturn_code (sr,s)  as x -> [x]
@@ -961,6 +1002,7 @@ let xmap_bexe syms (child_map,bbdfns) caller vs exe : bexe_t list =
       let e,xs = u sr e in
       `BEXE_init (sr,i,e) :: xs
     
+    (*
     | `BEXE_regmatch (sr,e,(a,sc,h,tr)) ->
       let e,xs = u sr e in
       `BEXE_regmatch (sr,e,(a,sc,h,tr)) :: xs
@@ -969,7 +1011,8 @@ let xmap_bexe syms (child_map,bbdfns) caller vs exe : bexe_t list =
       let p1,xs1 = u sr p1 in
       let p2,xs2 = u sr p2 in
       `BEXE_reglex(sr,p1,p2,(a,sc,h,tr)) :: xs1 @ xs2
-    
+    *)
+
     | `BEXE_read _
     | `BEXE_label _
     | `BEXE_goto _

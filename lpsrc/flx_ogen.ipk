@@ -309,6 +309,15 @@ let gen_offset_tables syms (child_map,bbdfns) all_closures =
       else 
         print_endline ("Warning: no closure of " ^ id ^ "<"^si index ^"> is used")
       *)
+
+    | `BBDCL_regmatch (vs,ps,ret,_) 
+    | `BBDCL_reglex (vs,ps,_,ret,_)  ->
+      if IntSet.mem index all_closures then
+        gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance
+      (*
+      else 
+        print_endline ("Warning: no closure of " ^ id ^ "<"^si index ^"> is used")
+      *)
         
     | `BBDCL_procedure (props,vs,ps,_) -> 
       if IntSet.mem index all_closures then

@@ -2003,6 +2003,10 @@ FLX_MODULES = [
   'flx_ogen'         , 
   'flx_regen'        ,
   'flx_unravel'      , 
+  'flx_pgen'         , 
+  'flx_egen'         , 
+  'flx_ctorgen'      , 
+  'flx_elkgen'       , 
   'flx_gen'          , 
   'flx_flxopt'       , 
   'flx_terminate'    , 
@@ -2832,7 +2836,6 @@ We have no idea if it continues copying.
 @tangle('\t\tflx_'+flx_version+'/interscript/drivers/sources/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/drivers/storage/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/encoding/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/encoding/*.dat \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/frames/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/frames/platform/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/languages/*.py \\')
@@ -2893,7 +2896,6 @@ We have no idea if it continues copying.
 @tangle('\t\tflx_'+flx_version+'/interscript/drivers/sources/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/drivers/storage/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/encoding/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/encoding/*.dat \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/frames/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/frames/platform/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/languages/*.py \\')

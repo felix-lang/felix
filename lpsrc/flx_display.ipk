@@ -13,6 +13,9 @@ val cal_display:
   bid_t option ->
   (bid_t * int) list
 
+val strd: 
+  string list -> string
+
 @h = tangler('src/flx_display.ml')
 @select(h)
 open Flx_ast
@@ -33,6 +36,8 @@ let cal_display bbdfns parent : (bid_t *int) list =
     with
     | _,parent',sr,`BBDCL_procedure (_,vs,_,_)
     | _,parent',sr,`BBDCL_function (_,vs,_,_,_)
+    | _,parent',sr,`BBDCL_regmatch (vs,_,_,_)
+    | _,parent',sr,`BBDCL_reglex (vs,_,_,_,_)
     | _,parent',sr,`BBDCL_glr (vs,_,_)
       -> aux parent' ((parent,length vs)::display)
     | _ -> assert false
@@ -42,4 +47,9 @@ let cal_display bbdfns parent : (bid_t *int) list =
 let get_display_list bbdfns index : (bid_t * int) list =
   tl (cal_display bbdfns (Some index))
 
-
+let strd the_display =
+  if length the_display = 0 then
+  "(FLX_FPAR_PASS_ONLY)"
+  else
+  "(FLX_FPAR_PASS " ^ cat ", " the_display ^ ")"
+ 

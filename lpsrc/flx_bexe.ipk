@@ -433,6 +433,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       tack (`BEXE_assign (sr,bel, be r))
       *)
 
+    (*
     | `EXE_reglex (p1,p2,cls) ->
       reachable := false;
       let p1 = be p1 in
@@ -445,6 +446,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       let e = be e in
       let regex_args = bind_regex syms env sr be return_count ret_type cls in
       tack (`BEXE_regmatch (sr,e,regex_args))
+    *)
 
   in 
   List.iter bind_exe exes;

@@ -143,6 +143,7 @@ let process_exe syms bbdfns all_closures (exe : bexe_t) : bexe_t =
 
   | `BEXE_read (sr,i) -> exe
 
+  (*
   | `BEXE_regmatch (sr,e,(a,b,h,d)) -> 
     let h' = Hashtbl.create 97 in
     Hashtbl.iter
@@ -158,6 +159,7 @@ let process_exe syms bbdfns all_closures (exe : bexe_t) : bexe_t =
     h
     ;
     `BEXE_reglex (sr, ue p1, ue p2, (a,b,h',d))
+  *)
 
   | `BEXE_label _
   | `BEXE_halt _
@@ -173,6 +175,7 @@ let process_exes syms bbdfns all_closures exes =
   map (process_exe syms bbdfns all_closures) exes
 
 let process_entry syms bbdfns all_closures i =
+  let ue e = adj_cls syms bbdfns all_closures e in 
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
   | `BBDCL_function (props,vs,ps,ret,exes) ->
@@ -189,6 +192,12 @@ let process_entry syms bbdfns all_closures i =
     let exes = process_exes syms bbdfns all_closures exes in
     let entry = `BBDCL_glr (vs,t,(p,exes)) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry)
+
+  | `BBDCL_regmatch (vs,ps,t,(a,j,h,m)) ->
+    Hashtbl.iter (fun i e -> Hashtbl.replace h i (ue e)) h
+
+  | `BBDCL_reglex (vs,ps,i,t,(a,j,h,m)) ->
+    Hashtbl.iter (fun i e -> Hashtbl.replace h i (ue e)) h
 
   | _ -> ()
 

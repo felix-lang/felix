@@ -1394,6 +1394,7 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth index args =
     ;
     *)
     begin match exes with
+    (*
     (* a bit hacky: in principle this is a multi-branch return statement,
       so it could be used wherever a return statement is used, however
       really regmatch is a function, but we use a normal function wrapper
@@ -1432,7 +1433,9 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth index args =
          else 
            clierr sr
            (
-              "Inconsistent return type of " ^ id ^ "<"^string_of_int index^">"
+              "[cal_ret_type] Inconsistent return type of " ^ id ^ "<"^string_of_int index^">" ^
+              "\nGot: " ^ sbt syms.dfns !ret_type ^
+              "\nAnd: " ^ sbt syms.dfns t
            )
       )
       cls
@@ -1440,7 +1443,8 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth index args =
       ;
       print_endline ("type is " ^ sbt syms.dfns !ret_type)
       *)
-        
+    *)
+
     | _ ->
       let return_counter = ref 0 in
       iter
@@ -1467,14 +1471,20 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth index args =
           then 
             ret_type := varmap_subst syms.varmap !ret_type
           else begin
+            (*
             print_endline 
             (
-              "Inconsistent return type of " ^ id ^ "<"^string_of_int index^">"
+              "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<"^string_of_int index^">" ^
+              "\nGot: " ^ sbt syms.dfns !ret_type ^
+              "\nAnd: " ^ sbt syms.dfns t
             )
             ;
+            *)
             clierr sr
             (
-              "Inconsistent return type of " ^ id ^ "<"^string_of_int index^">"
+              "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<"^string_of_int index^">" ^
+              "\nGot: " ^ sbt syms.dfns !ret_type ^
+              "\nAnd: " ^ sbt syms.dfns t
             )
           end
         with 
@@ -1633,6 +1643,17 @@ and inner_typeofindex
   | `SYMDEF_const_ctor (_,t,_)
     -> 
     bt t
+
+  | `SYMDEF_regmatch (ps,cls)
+  | `SYMDEF_reglex (ps,_,cls) ->
+    let be e = 
+      bind_expression' syms env 
+      (index::idx_fixlist) expr_fixlist depth 
+      e
+    in
+    let t = snd (be (snd (hd cls))) in
+    let lexit_t = bt (`AST_lookup (sr,(`AST_name (sr,"Lexer",[]),"iterator",[]))) in
+    `BTYP_function (`BTYP_array (lexit_t,`BTYP_unitsum 2),t)
 
   | `SYMDEF_nonconst_ctor (_,ut,_,argt) ->
     bt (`TYP_function (argt,ut))
@@ -1858,6 +1879,8 @@ and lookup_qn_with_sig'
       | `SYMDEF_inherit qn ->
           clierr sr "Chasing inherit in lookup_qn_with_sig'";
 
+      | `SYMDEF_regmatch _
+      | `SYMDEF_reglex _
       | `SYMDEF_cstruct _ 
       | `SYMDEF_struct _ ->
         (*
@@ -2151,6 +2174,8 @@ and handle_function
   | `SYMDEF_struct _
   | `SYMDEF_cstruct _
   | `SYMDEF_nonconst_ctor _
+  | `SYMDEF_regmatch _
+  | `SYMDEF_reglex _
     ->
     let t = inner_typeofindex_with_ts syms sr 
         idx_fixlist expr_fixlist depth 
@@ -2285,6 +2310,8 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_inherit_fun _ -> 
       clierr sra "Woops found inherit function in lookup_name_in_table_dirs_with_sig"
 
+    | `SYMDEF_regmatch _
+    | `SYMDEF_reglex _
     | `SYMDEF_cstruct _
     | `SYMDEF_struct _
     | `SYMDEF_nonconst_ctor _
@@ -3024,7 +3051,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     | _ -> clierr sr "Expected variant constructor name in union dtor"
     end
 
-  | `AST_regmatch (sr,(e,cls)) ->
+  | `AST_regmatch (sr,(p1,p2,cls)) ->
     syserr sr
     (
       "[bind_expression] "  ^

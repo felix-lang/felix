@@ -50,6 +50,50 @@ let print_vs vs =
   if length vs = 0 then "" else
   "[" ^ catmap "," (fun (s,i) -> s ^ "<"^si i^">") vs^ "]"
 
+
+
+let bind_regex syms env sr be ret_type cls : regular_args_t =
+  (*
+  print_endline "Binding regmatch";
+  *) 
+  let bd e = bind_regdef syms env [] [] e in
+
+  (* create a unified regexp using REGEXP_code for expressions *)
+  let f (e,c) = REGEXP_seq (e, REGEXP_code c) in
+  let re = List.map f cls in
+  let alt r1 r2 = REGEXP_alt (r1,r2) in
+  let re = List.fold_right alt re REGEXP_sentinel in
+
+  (* do lookups *)
+  let re = bd re in
+
+  (* generate transition matrix *)
+  let alphabet, nstates, code_table, matrix = Flx_dfa.process_regexp re in
+  let alphabet = CharSet.elements alphabet in
+
+  (* bind RHS expressions *)
+  let bcode = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun i c -> 
+    let sr = src_of_expr c in
+    let _,t as bt = be c in
+    Hashtbl.add bcode i bt;
+    if do_unify syms !ret_type t then
+      ret_type := varmap_subst syms.varmap !ret_type
+    else 
+      clierr sr 
+      (
+        "Wrong return type,\nexpected : " ^ 
+        string_of_btypecode syms.dfns !ret_type ^
+        "\nbut we got " ^
+        string_of_btypecode syms.dfns t ^ " in\n" ^
+        short_string_of_src sr
+      )
+  )
+  code_table
+  ;
+  alphabet,nstates, bcode,matrix
+
 let rec find_true_parent dfns child parent = 
   match parent with 
   | None -> None
@@ -58,6 +102,8 @@ let rec find_true_parent dfns child parent =
     | {id=id; parent=grandparent; symdef=bdcl} ->
       match bdcl with 
       | `SYMDEF_module -> find_true_parent dfns id grandparent
+      | `SYMDEF_regmatch _ 
+      | `SYMDEF_reglex _ 
       | `SYMDEF_function _ -> Some parent
       | _ -> None
     
@@ -147,7 +193,10 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       | None -> failwith "[bbind_sym] expected parameter to have a parent" 
       | Some ip ->
         match Hashtbl.find syms.dfns ip with
-        | {symdef=`SYMDEF_function _} ->
+        | {symdef=`SYMDEF_function _} 
+        | {symdef=`SYMDEF_regmatch _} 
+        | {symdef=`SYMDEF_reglex _} 
+          ->
           let t = typeofindex syms i in
           Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_val (vs,t));
           Hashtbl.add syms.varmap i t;
@@ -193,6 +242,53 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
         sbt syms.dfns (`BTYP_function (`BTYP_tuple[],flx_bbool))
       )
     
+    | `SYMDEF_regexp _ -> ()
+
+    | `SYMDEF_regmatch (ps,cls) ->
+      let bps : (string * (int * btypecode_t)) list = 
+        List.map (fun (s,t) -> 
+        let i = find_param name_map s in
+        s,(i,bt t)) 
+      ps 
+      in
+      let ts = map (fun (s,(i,t)) -> t) bps in
+      let ret_type =  ref (snd (be (snd (hd cls)))) in
+      let bregex = bind_regex syms env sr be ret_type cls in
+      let bbdcl = `BBDCL_regmatch (vs,bps,!ret_type,bregex) in
+      Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl)
+      ;
+      begin
+        if not (Hashtbl.mem syms.ticache i) then
+        let t = fold syms.dfns (`BTYP_function (typeoflist ts,!ret_type)) in
+        Hashtbl.add syms.ticache i t
+      end
+      ;
+      if syms.compiler_options.print_flag then
+      print_endline ("//bound regmatch " ^ name ^ "<"^si i^">" )
+
+      
+    | `SYMDEF_reglex (ps,le,cls) ->
+      let bps : (string * (int * btypecode_t)) list = 
+        List.map (fun (s,t) -> 
+        let i = find_param name_map s in
+        s,(i,bt t)) 
+      ps 
+      in
+      let ts = map (fun (s,(i,t)) -> t) bps in
+      let ret_type = ref (snd (be (snd (hd cls)))) in
+      let bregex = bind_regex syms env sr be ret_type cls in
+      let bbdcl = `BBDCL_reglex (vs,bps,le,!ret_type,bregex) in
+      Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl)
+      ;
+      begin
+        if not (Hashtbl.mem syms.ticache i) then
+        let t = fold syms.dfns (`BTYP_function (typeoflist ts,!ret_type)) in
+        Hashtbl.add syms.ticache i t
+      end
+      ;
+      if syms.compiler_options.print_flag then
+      print_endline ("//bound reglex " ^ name ^ "<"^si i^">" )
+
     | `SYMDEF_glr (t,(p,exes)) ->
       (*
       print_endline ("Binding nonterm " ^ name ^"<"^ si i ^">");

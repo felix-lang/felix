@@ -394,7 +394,7 @@ and expr_t =
   | `AST_parse of range_srcref * expr_t * (range_srcref * production_t * expr_t) list
   | `AST_sparse of range_srcref * expr_t * string * int list
 
-  | `AST_regmatch of range_srcref * (expr_t * (regexp_t * expr_t) list)
+  | `AST_regmatch of range_srcref * (expr_t * expr_t * (regexp_t * expr_t) list)
   | `AST_reglex of range_srcref * (expr_t * expr_t * (regexp_t * expr_t) list)
   | `AST_typeof of range_srcref * expr_t
   | `AST_cond of range_srcref * (expr_t * expr_t * expr_t)
@@ -607,8 +607,10 @@ and exe_t =
   | `EXE_init of id_t * expr_t 
   | `EXE_iinit of (id_t * int) * expr_t 
   | `EXE_assign of expr_t * expr_t 
+  (*
   | `EXE_regmatch of (expr_t * (regexp_t * expr_t) list)
   | `EXE_reglex of (expr_t * expr_t * (regexp_t * expr_t) list)
+  *)
   ]
 
 type sexe_t = range_srcref * exe_t
@@ -687,6 +689,8 @@ type dcl_t =
   | `DCL_header of       c_t * named_reqs_t
   | `DCL_body of         c_t * named_reqs_t
   | `DCL_regdef of      regexp_t
+  | `DCL_regmatch of    (regexp_t * expr_t) list
+  | `DCL_reglex of      (regexp_t * expr_t) list
   ]
 
 and access_t = [`Private | `Public ]
@@ -786,8 +790,10 @@ and bexe_t =
   | `BEXE_nonreturn_code of range_srcref * string
   | `BEXE_assign of range_srcref * tbexpr_t * tbexpr_t 
   | `BEXE_init of range_srcref * bid_t * tbexpr_t 
+  (*
   | `BEXE_regmatch of range_srcref * tbexpr_t * regular_args_t
   | `BEXE_reglex of range_srcref * tbexpr_t * tbexpr_t * regular_args_t
+  *)
   ]
 
 and bexpr_t =
@@ -828,6 +834,8 @@ and bbdcl_t =
   | `BBDCL_val of        bvs_t * btypecode_t
   | `BBDCL_var of        bvs_t * btypecode_t
   | `BBDCL_glr of        bvs_t * btypecode_t * (bproduction_t * bexe_t list)
+  | `BBDCL_regmatch of   bvs_t * bparameter_t list * btypecode_t * regular_args_t
+  | `BBDCL_reglex of     bvs_t * bparameter_t list * int * btypecode_t * regular_args_t
 
   (* binding structures [prolog] *)
   | `BBDCL_abs of        bvs_t * type_qual_t list * c_t * breqs_t
@@ -851,6 +859,8 @@ type symbol_definition_t =
   [
   | `SYMDEF_abs of type_qual_t list * c_t * named_reqs_t
   | `SYMDEF_regdef of regexp_t
+  | `SYMDEF_regmatch of parameter_t list * (regexp_t * expr_t) list
+  | `SYMDEF_reglex of parameter_t list * int * (regexp_t * expr_t) list
   | `SYMDEF_glr of typecode_t * (reduced_production_t * sexe_t list) 
 
   | `SYMDEF_parameter of  typecode_t
@@ -1143,6 +1153,7 @@ let iter_bexe fi fe ft fl fldef exe =
   | `BEXE_read (sr,i)  
     -> fi i
     
+  (*
   | `BEXE_regmatch (sr,e,(a,sc,h,tr)) 
     -> 
     fe e; 
@@ -1157,6 +1168,7 @@ let iter_bexe fi fe ft fl fldef exe =
     (fun k v -> fe v)
     h
     
+  *)
   | `BEXE_halt _
   | `BEXE_code _
   | `BEXE_nonreturn_code _
@@ -1213,6 +1225,7 @@ let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
   | `BEXE_read (sr,i) ->
     `BEXE_read (sr,fi i)  
     
+  (*
   | `BEXE_regmatch (sr,e,(a,sc,h,tr)) 
     -> 
     let h' = Hashtbl.create 97 in
@@ -1230,6 +1243,7 @@ let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
     h
     ;
     `BEXE_reglex (sr,fe p1,fe p2,(a,sc,h',tr)) 
+  *)
   
   | `BEXE_halt _
   | `BEXE_code _
@@ -1832,8 +1846,8 @@ and string_of_expr (e:expr_t) =
     ^
     " endmatch"
 
-  | `AST_regmatch (_,(e, ps)) ->
-    "regmatch " ^ se e ^ " with " ^
+  | `AST_regmatch (_,(p1,p2, ps)) ->
+    "regmatch " ^ se p1 ^ " to " ^ se p2 ^ " with " ^
     catmap "\n"
     (fun (p,e')->
       " | " ^
@@ -2692,6 +2706,17 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
   | `SYMDEF_regdef re ->
     "regexp " ^ name ^ " = " ^ string_of_re re ^ ";\n"
 
+  | `SYMDEF_regmatch (ps,cls) ->
+    "regmatch " ^ name ^ " with " ^ 
+    catmap "" (fun (re,e) -> "| " ^ string_of_re re ^ " => " ^string_of_expr e) cls ^
+    "endmatch;\n"
+
+  | `SYMDEF_reglex (ps,i,cls) ->
+    "regmatch " ^ name ^ " with " ^ 
+    catmap "" (fun (re,e) -> "| " ^ string_of_re re ^ " => " ^string_of_expr e) cls ^
+    "endmatch;\n"
+
+
   | `SYMDEF_glr(t,(p,sexes)) ->
     "nonterm " ^ name ^ " : " ^string_of_typecode t ^ " = | " ^
     string_of_reduced_production p ^
@@ -2812,6 +2837,7 @@ and string_of_exe level s =
   and se e = string_of_expr e 
   in
   match s with
+  (*
   | `EXE_regmatch (e,cls) ->
     spc ^
     "regmatch " ^ se e ^ " with " ^
@@ -2839,7 +2865,7 @@ and string_of_exe level s =
     cls 
     ^
     " endmatch;"
-
+  *)
 
   | `EXE_goto s -> spc ^ "goto " ^ s ^ ";"
 
@@ -2973,6 +2999,7 @@ and string_of_bexe dfns level s =
   let se e = string_of_bound_expression dfns e in
   let sid n = qualified_name_of_index dfns n in
   match s with
+  (*
   | `BEXE_regmatch (_,e,(alphabet, nstates, termcodes,matrix)) -> 
     spc ^ "regmatch " ^ se e ^ " with " ^
     "<TRANSITION MATRIX of "^si nstates^" states> " ^
@@ -2983,6 +3010,7 @@ and string_of_bexe dfns level s =
     "<TRANSITION MATRIX of "^si nstates^" states> " ^
     "endmatch;"
 
+  *)
   | `BEXE_goto (_,s) -> spc ^ "goto " ^ s ^ ";"
 
   | `BEXE_halt (_,s) -> spc ^ "halt " ^ s ^ ";"
@@ -3063,6 +3091,16 @@ and string_of_dcl level name seq vs (s:dcl_t) =
   match s with
   | `DCL_regdef re -> 
     spaces level ^ "regexp " ^ name^seq ^ " = " ^ string_of_re re ^ ";\n"
+
+  | `DCL_regmatch cls -> 
+    spaces level ^ "regmatch " ^ name^seq ^ " with " ^ 
+    catmap "" (fun (re,e) -> "| " ^ string_of_re re ^ " => " ^string_of_expr e) cls ^
+    "endmatch;\n"
+
+  | `DCL_reglex cls -> 
+    spaces level ^ "reglex " ^ name^seq ^ " with " ^ 
+    catmap "" (fun (re,e) -> "| " ^ string_of_re re ^ " => " ^string_of_expr e) cls ^
+    "endmatch;\n"
 
 
   | `DCL_type_alias (t2) ->
@@ -3350,6 +3388,9 @@ and string_of_bbdcl dfns bbdcl index =
     cat "\n" (map (string_of_bexe dfns 1) bexes) ^
     ";"
   
+  | `BBDCL_regmatch (vs,ps,t,regargs) -> "regmatch.."
+  | `BBDCL_reglex (vs,ps,i,t,regargs) -> "reglex.."
+
   | `BBDCL_nonconst_ctor (vs,uidx,ut,ctor_idx, ctor_argt) ->
     "  uctor<" ^ name ^ ">"^ print_bvs vs ^
     " : " ^ sobt ut ^ 

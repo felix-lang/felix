@@ -91,6 +91,8 @@ let cpp_name bbdfns index =
   (match entry with
   | `BBDCL_function _ -> "_f"   
   | `BBDCL_procedure _  -> "_p"
+  | `BBDCL_regmatch _  -> "_rm"
+  | `BBDCL_reglex _  -> "_rl"
   | `BBDCL_var _ -> "_v"
   | `BBDCL_val _ -> "_v"
   | _ -> syserr sr "cpp_name expected func,proc,var or val"
