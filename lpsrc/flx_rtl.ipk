@@ -21,9 +21,25 @@ right type by client drivers.
 @select(h)
 #ifndef FLX_RTL
 #define FLX_RTL
+#ifndef FLX_GC
+#include <rtl/flx_gc.hpp>
+#endif
+
+//enable or disable refcounting: off by default
+#ifdef FLX_REFCNT
+#define incref(x) flx::gc::generic::incref(x)
+#define _incref(x) flx::gc::generic::_incref(x)
+#define decref(x) flx::gc::generic::decref(x)
+#define _release_ptr(x) flx::gc::generic::_release_ptr(x)
+#else
+#define incref(x) x
+#define _incref(x) x
+#define decref(x) x
+#define _release_ptr(x) *x = 0
+#endif
 
 namespace flx { namespace rtl {
-struct continuation_t // abstract base for mutable continuations
+struct con_t // abstract base for mutable continuations
 {
   int pc;              // program counter
   enum action_t        // what the dispatch should do
@@ -34,19 +50,47 @@ struct continuation_t // abstract base for mutable continuations
 
   void *p_message;   // where the next message is put
 
-  continuation_t();
-  virtual continuation_t *resume()=0;
-  virtual ~continuation_t();
-  continuation_t * _caller;
+  con_t();
+  virtual con_t *resume()=0;
+  virtual ~con_t();
+  con_t * _caller;
 };
 
 //REFERENCE TEMPLATE
 template<class T> struct _ref_
 {
-  _ref_(){}
-  _ref_(void *f, T *d): frame(f), data(d) {}
   void *frame;
   T *data;
+
+  _ref_(){}
+  _ref_(void *f, T *d): frame(f), data(d) {}
+  ~_ref_()
+  { 
+    //printf("destroy ref decref %p\n", frame);
+    _release_ptr(&frame); 
+  }
+
+  _ref_(_ref_ const& r) : frame(r.frame), data(r.data) 
+  {
+    //printf("copy ref incref %p\n", frame);
+    _incref(frame);
+  }
+  void operator = (_ref_ const& r)
+  {
+    if (data != r.data)
+    {
+      if (frame != r.frame)
+      {
+        //printf("assign [old frame] ref decref %p\n", frame);
+        decref(frame);
+        frame = r.frame;
+        //printf("assign [new frame] ref incref %p\n", frame);
+        _incref(frame);
+      }
+      data = r.data;
+    }
+  }
+  T *operator->()const { return data; }
 };
 
 template<class T> _ref_<T> _make_ref_(void *f, T *d)
@@ -72,10 +116,19 @@ struct unit {};
 @h = tangler("rtl/flx_rtl.cpp")
 @select(h)
 #include "flx_rtl.hpp"
+#include <stdio.h>
 
 namespace flx { namespace rtl {
-continuation_t::continuation_t() : pc(0), action(yield_action), _caller(0) {}
-continuation_t::~continuation_t(){}
+con_t::con_t() : pc(0), action(yield_action), _caller(0) { 
+#ifdef FLX_DEBUG_CONT
+ printf("Constructing %p\n",this);
+#endif
+}
+con_t::~con_t(){
+#ifdef FLX_DEBUG_CONT
+  printf("Destroying %p\n",this);
+#endif
+}
 }}
 
 @head(2,"Unix Dynamic linker")
@@ -110,8 +163,9 @@ or even constants which require dynamic initialisation.
 @select(h)
 #ifndef FLX_DYNLINK
 #define FLX_DYNLINK
+#ifndef FLX_RTL
 #include "flx_rtl.hpp"
-#include "flx_gc.hpp"
+#endif
 #include <string>
 
 namespace flx { namespace rtl {
@@ -145,7 +199,7 @@ typedef thread_frame_t *(*thread_frame_destructor_t) (thread_frame_t*);
 
 
 // library initialisation routine
-typedef continuation_t *(*start_t)
+typedef con_t *(*start_t)
 (
   global_frame_t*, 
   process_frame_t*, 
@@ -262,7 +316,7 @@ struct library_init_t
   global_frame_t *global_frame;
   process_frame_t *process_frame;
   thread_frame_t *thread_frame;
-  continuation_t *start;
+  con_t *start;
   flx_dynlink_t *lib;
 
   void create
@@ -312,11 +366,11 @@ int main(int argc, char* argv[])
     
     collector.add_root(instance.start);
     int gc_counter = 0;
-    continuation_t *top = instance.start;
+    con_t *top = instance.start;
 
-    while( top && top->action == continuation_t::yield_action)
+    while( top && top->action == con_t::yield_action)
     {
-      continuation_t *new_top = top->resume();
+      con_t *new_top = top->resume();
       if(new_top != top) {
         if(new_top) collector.add_root(new_top);
         collector.remove_root(top);

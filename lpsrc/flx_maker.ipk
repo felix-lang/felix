@@ -14,53 +14,147 @@ import stat
 import string
 import sys
 
+# define our version of C's system() function
+def xqt(x):
+  print x
+  sys.stdin.flush()
+  f = os.popen(x + " 2>&1","r")
+  output = f.readlines()
+  result = f.close()
+  if result: print "  .. ERROR CODE",hex(result)
+  if output: print string.join(output,"")
+  sys.stdin.flush()
+
+  if result:
+    raise MakeError
+
+
 # ------------------------------------------------
 # PROCESS COMMAND LINE OPTIONS
 # ------------------------------------------------
+
 options = sys.argv[1:]
 if options:
   print "OPTIONS: ", options
+
+if "help" in options:
+  print "extract - extract sources"
+  print "compiler - build compiler"
+  print "bytecode - build bytecode version of compiler"
+  print "drivers - build drivers"
+  print "regression - run regression tests"
+  print "performance - run performance tests"
+  print "tutorial - run tutorial examples"
+  print "tests- regression and tutorial combined"
+  print "clean - remove generated files"
+  print "debug - build debugging versions of targets"
+  print "optimise - build high performance versions of targets"
+  print "refcnt - generate reference counting instructions"
+  print "doc - build all documentation"
+
+  
 if "clean" in options:
     os.system("rm -f tmp/* src/* test/* lpsrc/*.cache")
-do_tests = "test" in options or "tut" in options or "rt" in options or "bt" in options
-use_interscript = "noiscr" not in options
+
+if "tests" in options:
+  options = options + ["regression","tutorial"]
 
 # ------------------------------------------------
 # BEGIN USER CONFIGURABLE SECTION
 #-------------------------------------------------
 
-# uncomment to DISABLE INTERSCRIPT
-#use_interscript = 0
+#interscript command (now built in part of Felix package)
+def ISCR(a):
+  xqt('env PYTHONPATH=. python -O interscript/bin/iscr.py ' + a)
 
-# invoke ocaml interface compiler
-OCAMLBINPREFIX=''
-OCAML_OBJDIR='src'
-OCAMLC=OCAMLBINPREFIX+'ocamlc.opt -I '+OCAML_OBJDIR+' -rectypes '
+if "compiler" in options or "bytecode" in options:
+  # invoke ocaml interface compiler
+  OCAML_OBJDIR='src'
+  try:
+    xqt('ocamlopt.opt')
+    OCAMLCC = 'ocamlopt.opt '
+    OCAMLLEX = 'ocamllex.opt '
+    OCAMLYACC = 'ocamlyacc '
+    BYTECODE = 0
+  except:
+    try:
+      xqt('ocamlopt')
+      OCAMLCC = 'ocamlopt '
+      OCAMLLEX = 'ocamllex '
+      OCAMLYACC = 'ocamlyacc '
+      BYTECODE = 0
+    except:
+      try:
+        xqt('ocamlc')
+        OCAMLCC = 'ocamlc '
+        if "debug" in options:
+          OCAMLCC = 'ocamlc -g '
+        OCAMLLEX = 'ocamllex '
+        OCAMLYACC = 'ocamlyacc '
+      except:
+        BYTECODE = -1
+        OCAMLCC = '#ocamlc '
+        OCAMLLEX = '#ocamllex '
+        OCAMLYACC = '#ocamlyacc '
+        BYTECODE = 1
 
-# where the ocaml is installed
-#OCAML_INCLUDE_DIRECTORY='/usr/local/lib/ocaml'
+  try:
+    xqt('ocamlc.opt')
+    OCAMLB = 'ocamlc.opt '
+  except:
+    try:
+      xqt('ocamlc')
+      OCAMLB = 'ocamlc '
+    except:
+      OCAMLB = '#ocamlc '
+
+  if "debug" in options:
+    OCAMLB = OCAMLB + "-g "
+
+  if "bytecode" in options:
+    OCAMLOPT= OCAMLB + ' -I '+OCAML_OBJDIR+' '
+    if BYTECODE <> -1: BYTECODE = 1
+  else:
+    OCAMLOPT= OCAMLCC + ' -I '+OCAML_OBJDIR+' '
+
+  if "optimise" in options:
+    OCAMLOPT = OCAMLOPT + "-unsafe -noassert -inline 5 "
+
+  #OCAMLC=OCAMLB + ' -I '+OCAML_OBJDIR+' -rectypes '
+  OCAMLC=OCAMLB + ' -I '+OCAML_OBJDIR+' '
+
+  if BYTECODE == 0:
+    OCAML_OBJECT_EXTENSION = '.cmx'
+    OCAML_LIB_EXTENSION = '.cmxa'
+  else:
+    OCAML_OBJECT_EXTENSION = '.cmo'
+    OCAML_LIB_EXTENSION = '.cma'
+
+  # where the ocaml is installed
+  #OCAML_INCLUDE_DIRECTORY='/usr/local/lib/ocaml'
 
 # where gnu readline header files are
 #READLINE_INCLUDE_DIRECTORY='/usr/include/readline'
 
 # for compiling mainlines
-FLX_CPP_LINK = "g++ -Wno-long-long -D_GNU_SOURCE -ansi -rdynamic -ldl "
+FLX_CPP_LINK = "g++ -fomit-frame-pointer -Wno-long-long -D_GNU_SOURCE -ansi -rdynamic -ldl "
+if "optimise" in options:
+  FLX_CPP_LINK = FLX_CPP_LINK + "-O "
+
+if "refcnt" in options:
+  FLX_CPP_LINK = FLX_CPP_LINK + "-DFLX_REFCNT "
 
 # for building shared libraries
-FLX_CPP_DYNLINK = "g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared -I."
+FLX_CPP_DYNLINK = "g++ -fomit-frame-pointer -Wno-long-long -D_GNU_SOURCE -ansi -shared -I."
+if "optimise" in options:
+  FLX_CPP_DYNLINK = FLX_CPP_DYNLINK + "-O "
+if "refcnt" in options:
+  FLX_CPP_DYNLINK = FLX_CPP_DYNLINK + "-DFLX_REFCNT "
+
 
 # ------------------------------------------------
 # END USER CONFIGURABLE SECTION
 #-------------------------------------------------
-
-# invoke ocaml implementation compiler
-OCAMLOPT=OCAMLBINPREFIX+'ocamlopt.opt -I '+OCAML_OBJDIR+' '
-
-# invoke ocaml yacc parser generator
-OCAMLYACC = OCAMLBINPREFIX+'ocamlyacc '
-
-# invoke ocaml lex lexer generator
-OCAMLLEX = OCAMLBINPREFIX+'ocamllex.opt '
 
 # where documentation gets put
 WEAVER_DIRECTORY='doc/'
@@ -85,8 +179,8 @@ PARSES = ['flx_parse']
 # ocaml modules = interfaces + implementation files
 MODULES = [
   'flx_version'      ,
-  'flx_getopt'       ,
   'flx_util'         ,
+  'flx_getopt'       ,
   'flx_mtypes'       ,
   'flx_srcref'       ,
   'flx_typing'       ,
@@ -115,19 +209,27 @@ MODULES = [
   'flx_bbind'        , 
   'flx_use'          , 
   'flx_name'         , 
+  'flx_cexpr'        ,
   'flx_csubst'       , 
   'flx_tgen'         , 
+  'flx_display'      , 
+  'flx_ogen'         , 
   'flx_gen'          , 
+  'flx_flxopt'       , 
+  'flx_terminate'    , 
 ]
 
 INTERFACES = [
   'flx_types'        ,
+  'flx_ctypes'        ,
 ] + MODULES
 
 IMPLEMENTATIONS = MODULES
 
 DRIVERS = [
-  'flx_run',
+  ('rtl/flx_run','bin/flx_run'),
+  ('test/flx_perf_drv1','test/flx_perf_drv1'),
+  ('rtl/flx_stdin_drv','bin/flx_stdin_drv'),
 ]
 
 # C files that we need to compile, with options required to build them
@@ -136,7 +238,7 @@ COBJECTS = {
 # *.so/.a libraries
 CLIBRARIES = ['nums']
 
-# *.cmxa libraries
+# *.cmxa or .cma libraries
 OLIBRARIES = ['nums','unix','flxlib']
 
 
@@ -166,8 +268,13 @@ if 1:
   OBJECT_FILES = o
   del o
 
-TESTS = [
-  'test/test_library1.flx',
+TESTS=[]
+BAD_TESTS = []
+
+SPECIAL_TESTS = [
+  ('bin/flx_run','test/flx_run_lib1.flx'),
+  ('test/flx_perf_drv1','test/flx_perf_lib1.flx'),
+  ('bin/flx_stdin_drv','test/flx_stdin_lib1.flx'),
 ]
 
 # -------------------------------------------------
@@ -181,19 +288,6 @@ def filetime(f):
   try:
     return os.stat(f)[stat.ST_MTIME]
   except: return 0
-
-def xqt(x):
-  print x
-  sys.stdin.flush()
-  f = os.popen(x + " 2>&1","r")
-  output = f.readlines()
-  result = f.close()
-  if result: print "  .. ERROR CODE",hex(result)
-  if output: print string.join(output,"")
-  sys.stdin.flush()
-
-  if result:
-    raise MakeError
 
 def run(x):
   print x
@@ -218,1183 +312,335 @@ import glob
 
 try:
   # STEP 0: run interscript
-  if use_interscript:
-    if "doc" in options:
-      xqt('iscr --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
-      xqt('iscr --inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
-    else:
-      xqt('iscr lpsrc/flx.pak')
-      xqt('iscr lpsrc/flx_tutorial.pak')
-    os.system('rm -f tmp.tmp')
+  if "doc" in options:
+    ISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
+    ISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
+  elif "extract" in options:
+    ISCR('lpsrc/flx.pak')
+    ISCR('lpsrc/flx_tutorial.pak')
+  os.system('rm -f tmp.tmp')
 
-  if do_tests:
-    REGRESSION_TESTS = glob.glob('test/rt*.flx')
+  if "doc" in options or "man" in options:
+    mp = glob.glob('man/man1/*.1')
+    MAN_PAGES = []
+    for i in mp:
+      MAN_PAGES.append (i[9:])
+    try: os.mkdir("htmlman")
+    except: pass
+    dtd = ('<!DOCTYPE HTML PUBLIC \\"-//W3C//DTD HTML 4.0 Transitional//EN\\"\\n'+
+      '  \\"http://www.w3.org/TR/REC-html40/loose.dtd\\">')
+    try:
+      for file in MAN_PAGES:
+        basename = string.split(file,".")[0]
+        xqt(
+          "man2html man/man1/" + file + 
+          '| sed -e "s%http://localhost/cgi-bin/man/man2html?1+\(.*\)\\">%\\1_1.html\\">%"' +
+          '| sed -e "7d"' +
+          '| sed -e "1,3d"' +
+          '| sed -e "s%<html>%'+dtd+'\\n<html>%"' +
+          ' >' + "htmlman/" + basename+'_1.html'
+        )
+    except:pass
+
+  if "regression" in options:
+    TESTS = TESTS + glob.glob('test/rt*.flx')
     BAD_TESTS = glob.glob('test/bt*.flx')
-    TUTORIAL_TESTS = glob.glob('tut/examples/tut*.flx')
-    if "test" in options:
-      TESTS = TESTS + REGRESSION_TESTS + TUTORIAL_TESTS
-    else:
-      if "tut" in options:
-        TESTS = TESTS + TUTORIAL_TESTS
-      if "rt" in options:
-        TESTS = TESTS + REGRESSION_TESTS
-    TESTS.sort()
-    BAD_TESTS.sort()
 
-  # STEP 1: Compile all copiler support C files
-  for cobject in COBJECTS.keys():
-    flags = COBJECTS[cobject]
-    file = 'src/'+cobject
-    if buildall or filetime(file +".c") > filetime(file +".o"):
-      xqt(CCOMPILE +" -I "+OCAML_INCLUDE_DIRECTORY+" -I. "+flags+" "+file+".c")
+  if "tutorial" in options:
+    TESTS = TESTS + glob.glob('tut/examples/tut*.flx')
 
-  # STEP 2: Generate lexers
-  for lex in LEXS:
-    file = 'src/'+lex
-    if buildall or filetime(file + '.mll') > filetime(file +'.ml'):
-      buildall = 1
-      xqt(OCAMLLEX + file + '.mll')
+  TESTS.sort()
+  BAD_TESTS.sort()
 
-  # STEP 3: Generate parsers
-  for parse in PARSES:
-    file = 'src/'+parse
-    if buildall or filetime(file + '.mly') > filetime(file +'.ml'):
-      buildall = 1
-      xqt(OCAMLYACC+ ' -v '+ file + '.mly')
+  if "compiler" in options:
+    # STEP 1: Compile all copiler support C files
+    for cobject in COBJECTS.keys():
+      flags = COBJECTS[cobject]
+      file = 'src/'+cobject
+      if buildall or filetime(file +".c") > filetime(file +".o"):
+        xqt(CCOMPILE +" -I "+OCAML_INCLUDE_DIRECTORY+" -I. "+flags+" "+file+".c")
 
-  # STEP 4: Compile ocaml interfaces
-  for interface in INTERFACES:
-    file = 'src/'+interface
-    if buildall or filetime(file + '.mli') > filetime(file+'.cmi'):
-      buildall = 1
-      xqt(OCAMLC + ' -c '+file+ '.mli')
+    # STEP 2: Generate lexers
+    for lex in LEXS:
+      file = 'src/'+lex
+      if buildall or filetime(file + '.mll') > filetime(file +'.ml'):
+        buildall = 1
+        xqt(OCAMLLEX + file + '.mll')
 
-  # STEP 5: Compile ocaml implementations
-  for implementation in IMPLEMENTATIONS + EXES:
-    file = 'src/'+implementation
-    if buildall or filetime(file+ '.ml') > filetime(file+'.cmx'):
-      buildall = 1
-      xqt(OCAMLOPT + ' -c ' + file +'.ml')
+    # STEP 3: Generate parsers
+    for parse in PARSES:
+      file = 'src/'+parse
+      if buildall or filetime(file + '.mly') > filetime(file +'.ml'):
+        buildall = 1
+        xqt(OCAMLYACC+ ' -v '+ file + '.mly')
+
+    # STEP 4: Compile ocaml interfaces
+    for interface in INTERFACES:
+      file = 'src/'+interface
+      if buildall or filetime(file + '.mli') > filetime(file+'.cmi'):
+        buildall = 1
+        xqt(OCAMLC + ' -c '+file+ '.mli')
+
+    # STEP 5: Compile ocaml implementations
+    for implementation in IMPLEMENTATIONS + EXES:
+      file = 'src/'+implementation
+      if buildall or filetime(file+ '.ml') > filetime(file+OCAML_OBJECT_EXTENSION):
+        buildall = 1
+        xqt(OCAMLOPT + ' -c ' + file +'.ml')
 
 
-  # STEP 6: Build FELIX Library
-  linkstring = OCAMLOPT + " -a -o src/flxlib.cmxa "
-  library_filetime = filetime('src/flxlib.cmxa')
-  for implementation in IMPLEMENTATIONS:
-    file = 'src/'+implementation
-    if filetime(file+'.cmx') > library_filetime:
-      for implementation in IMPLEMENTATIONS:
-        file = 'src/'+implementation
-        linkstring = linkstring + file + ".cmx "
-      xqt(linkstring)
-      buildall = 1
-      break
+    # STEP 6: Build FELIX Library
+    object_library_name = "src/flxlib" + OCAML_LIB_EXTENSION
+    linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
+    library_filetime = filetime(object_library_name)
+    for implementation in IMPLEMENTATIONS:
+      file = 'src/'+implementation
+      if filetime(file+OCAML_OBJECT_EXTENSION) > library_filetime:
+        for implementation in IMPLEMENTATIONS:
+          file = 'src/'+implementation
+          linkstring = linkstring + file +OCAML_OBJECT_EXTENSION +" "
+        xqt(linkstring)
+        buildall = 1
+        break
 
-  # STEP 8: Link executables
-  x = ''
-  for library in OLIBRARIES:
-    x = x + ' ' + library + '.cmxa'
+    # STEP 8: Link executables
+    x = ''
+    for library in OLIBRARIES:
+      x = x + ' ' + library + OCAML_LIB_EXTENSION
 
-  # finally, mainline *.cmx files to link to executables
-  for exe in EXES:
-    if buildall or filetime(exe + '.cmx') > filetime(exe):
-      xqt(OCAMLOPT + LDFLAGS + ' -o bin/'+exe + x + OBJECT_FILES + ' ' + exe + '.cmx')
+    # finally, mainline *.cmx or cma files to link to executables
+    for exe in EXES:
+      if buildall or filetime(exe + OCAML_OBJECT_EXTENSION) > filetime(exe):
+        xqt(OCAMLOPT + LDFLAGS + ' -o bin/'+exe + x + OBJECT_FILES + ' src/flx_version_hook.ml ' + exe + OCAML_OBJECT_EXTENSION)
 
   # COMPILER DRIVER PROGRAMS
-
-  for testfile in DRIVERS:
-    basename = string.split(testfile,'.')[0]
-    if buildall or filetime("rtl/"+basename+ '.cpp') > filetime("bin/"+basename):
-      print 'Compiling driver program ',testfile
-      try:
-        xqt(FLX_CPP_LINK + " -I. " +
-          "rtl/flx_gc.cpp " +
-          "rtl/flx_collector.cpp " +
-          "rtl/flx_rtl.cpp " +
-          "rtl/flx_i18n.cpp " +
-          "rtl/" + basename + ".cpp -o bin/" + basename)
-      except MakeError:
-        print "Unable to build driver"
-        raise MakeError
+  if "drivers" in options:
+    for testfile,outbin in DRIVERS:
+        print 'Compiling driver program ',testfile
+        try:
+          xqt(FLX_CPP_LINK + " -I. " +
+            "rtl/flx_gc.cpp " +
+            "rtl/flx_collector.cpp " +
+            "rtl/flx_rtl.cpp " +
+            "rtl/flx_i18n.cpp " +
+             testfile + ".cpp -o "+outbin)
+        except MakeError:
+          print "Unable to build driver"
+          raise MakeError
 
   w = 50
   # run tests
-  if do_tests:
-    try:
-      results = []
+  try:
+    results = []
 
-      # GENERATE C++ FROM FELIX SOURCE
-      for testfile in TESTS:
+    # GENERATE C++ FROM FELIX SOURCE
+    EXTRA = []
+    if "performance" in options:
+      for driver,testfile in SPECIAL_TESTS: EXTRA.append(testfile)
+    for testfile in TESTS+EXTRA:
+      #print 'Running Felix code generator on ',testfile
+      basename = string.split(testfile,'.')[0]
+      cppfilename = basename + ".cpp"
+      if buildall or \
+        filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
+        filetime('bin/flxg')> filetime(basename+'.cpp') or \
+        filetime('lib/std.flx') > filetime(basename+'.cpp') or \
+        filetime('lib/std.flx') > filetime(basename+'.cpp'):
+        try:
+          xqt('bin/flxg -q -Ilib ' + basename)
+          #print 'TESTFILE -- generated ',basename
+          results.append(("flxg",basename,'OK'))
+        except MakeError:
+          print 'TESTFILE -- ERROR!',basename
+          erasefile(basename+'.cpp')
+          erasefile(basename+'.hpp')
+          erasefile(basename+'.so')
+          if stop_on_error: raise MakeError
+          results.append(("flxg",basename,'ERROR'))
+
+    # FAILURE TESTS 
+    if "regression" in options:
+      for testfile in BAD_TESTS:
         #print 'Running Felix code generator on ',testfile
         basename = string.split(testfile,'.')[0]
         cppfilename = basename + ".cpp"
         if buildall or \
           filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
           filetime('bin/flxg')> filetime(basename+'.cpp') or \
-          filetime('lib/std.flx') > filetime(basename+'.cpp') or \
           filetime('lib/std.flx') > filetime(basename+'.cpp'):
           try:
-            xqt('bin/flxg -q -Ilib ' + basename)
-            #print 'TESTFILE -- generated ',basename
-            results.append("flxg " + (basename+ ' ' * w)[:w]+ ' OK')
+            xqt('bin/flxg -e -Ilib ' + basename)
+            #print 'TESTFILE -- failed as expected',basename
+            results.append(("flxg",basename,'OK'))
+            erasefile(basename+'.cpp')
+            erasefile(basename+'.hpp')
+            erasefile(basename+'.so')
           except MakeError:
-            print 'TESTFILE -- ERROR!',basename
+            print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
             erasefile(basename+'.cpp')
             erasefile(basename+'.hpp')
             erasefile(basename+'.so')
             if stop_on_error: raise MakeError
-            results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
+            results.append(("flxg",basename,'ERROR'))
 
-      # FAILURE TESTS 
-      if "bt" in options:
-        for testfile in BAD_TESTS:
-          #print 'Running Felix code generator on ',testfile
-          basename = string.split(testfile,'.')[0]
-          cppfilename = basename + ".cpp"
-          if buildall or \
-            filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
-            filetime('bin/flxg')> filetime(basename+'.cpp') or \
-            filetime('lib/std.flx') > filetime(basename+'.cpp'):
-            try:
-              xqt('bin/flxg -e -Ilib ' + basename)
-              #print 'TESTFILE -- failed as expected',basename
-              results.append("flxg " + (basename+ ' ' * w)[:w]+ ' OK')
-              erasefile(basename+'.cpp')
-              erasefile(basename+'.hpp')
-              erasefile(basename+'.so')
-            except MakeError:
-              print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
-              erasefile(basename+'.cpp')
-              erasefile(basename+'.hpp')
-              erasefile(basename+'.so')
-              if stop_on_error: raise MakeError
-              results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
-
-      # C++ COMPILE SHARED LIBRARIES
-      for testfile in TESTS:
-        #print 'Compiling generated code of ',testfile
-        basename = string.split(testfile,'.')[0]
-        cppfilename = basename + ".cpp"
-        if buildall or filetime(basename+ '.cpp') > filetime(basename+'.so'):
-          try:
-            xqt(FLX_CPP_DYNLINK+" "+cppfilename + " -o " + basename + ".so" )
-            #print 'TESTFILE -- OK!',basename
-            results.append("g++  " + (basename + ' ' * w)[:w]+ ' OK')
-          except MakeError:
-            print 'TESTFILE -- ERROR!',basename
-            erasefile(basename+'.so')
-            if stop_on_error: raise MakeError
-            results.append("g++  " + (basename + ' '*w)[:w] + ' ERROR')
+    # C++ COMPILE SHARED LIBRARIES
+    EXTRA = []
+    if "performance" in options:
+      for driver,testfile in SPECIAL_TESTS: EXTRA.append(testfile)
+    for testfile in TESTS+EXTRA:
+      #print 'Compiling generated code of ',testfile
+      basename = string.split(testfile,'.')[0]
+      cppfilename = basename + ".cpp"
+      if buildall or filetime(basename+ '.cpp') > filetime(basename+'.so'):
+        try:
+          xqt(FLX_CPP_DYNLINK+" "+cppfilename + " -o " + basename + ".so" )
+          #print 'TESTFILE -- OK!',basename
+          results.append(("g++",basename,'OK'))
+        except MakeError:
+          print 'TESTFILE -- ERROR!',basename
+          erasefile(basename+'.so')
+          if stop_on_error: raise MakeError
+          results.append(("g++",basename,'ERROR'))
 
 
-      for testfile in TESTS:
-        basename = string.split(testfile,'.')[0]
-        testscript = "./bin/flx_run ./"+basename+".so"
+    for testfile in TESTS:
+      basename = string.split(testfile,'.')[0]
+      testscript = "./bin/flx_run ./"+basename+".so"
+      #print 'Executing ',testscript
+      try:
+        run(testscript)
+        #print 'TESTFILE -- OK!',testscript
+        results.append(("Exec",testscript,'OK'))
+      except MakeError:
+        print 'TESTFILE -- ERROR!',testscript
+        if stop_on_error: raise MakeError
+        results.append(("Exec",testscript,'ERROR'))
+
+    if "performance" in options:
+      for driver,testfile in SPECIAL_TESTS:
+        test_basename = string.split(testfile,'.')[0]
+        drv_basename = string.split(driver,'.')[0]
+        testscript = "./"+drv_basename+ " ./"+test_basename+".so"
         #print 'Executing ',testscript
         try:
           run(testscript)
           #print 'TESTFILE -- OK!',testscript
-          results.append("Exec " + (testscript + ' ' * w)[:w]+ ' OK')
+          results.append(("Exec Special",testscript,'OK'))
         except MakeError:
           print 'TESTFILE -- ERROR!',testscript
           if stop_on_error: raise MakeError
-          results.append("Exec " + (testscript + ' '*w)[:w] + ' ERROR')
+          results.append(("Exec Special",testscript,'ERROR'))
 
-      print "RUN COMPLETE"
-    finally:
-      # REPORT FINAL RESULTS
-      print
-      print '**********************************'
-      print 'final results'
-      for x in results: print x
-      print '**********************************'
+    print "RUN COMPLETE"
+  finally:
+    # REPORT FINAL RESULTS
+    print
+    print '**********************************'
+    #print 'final results'
+    total = 0
+    bad = 0
+    for x,y,z in results: 
+      total = total + 1
+      if "OK" == z: pass
+      else:
+        bad = bad + 1
+        print x,y,z
+    if bad == 0: 
+      print "ALL",total,"PASSED"
+    else:
+      print "Bad",bad,"/",total
+    print '**********************************'
 
 except MakeError:
   print "Terminating due to error"
 
-@head(1,'Man pages')
-@select(tangler('man/man1/felix.1'))
-.TH FELIX LANGUAGE "2003 Jan 1"
-.SH NAME
-Felix language
-.SH SYNOPSIS
-.br
-.B Felix
-is a modern statically typed, modular programming language
-which targets shared libraries rather than programs.
-It features automatic generation of event driven, cooperatively
-multitasked programs written in algorithmic style.
-It is hybrid functional, procedural
-and object oriented system
-
-.SH TECHNOLOGY
-.B Felix
-generates C++ which is then built into a shared library
-and dynamically loaded by a client written architectural
-framework, which is also responsible for feeding an appropriate
-Felix coroutine messages.
-.br
-.B Felix
-provides no primitive types. Instead, it provides
-powerful type combinators, and a facility for
-binding C++ types to Felix ones. A set of basic
-primitive types are provided in the standard library.
-
-.SH C++ bindings 
-Here is an example of a C++ binding.
-
-.B type
-int = "int";
-.br
-.B fun 
-add: int * int -> int = "$1+$2";
-.br
-.B proc 
-print: int = 'printf("%d",$1);';
-
-.SH Exporting symbols
-Symbols are exported by the export statement.
-.B export
-add of int * int as "add_int";
-.br
-.B export
-int as "flx_int";
-
-.SH FILES
-.B *.flx
-are Felix input files
-.br
-.B *.cpp
-generated 
-C++ implementation files
-.B *.hpp
-generated 
-C++ header files
-
-.B std.flx
-is the standard library.
-.SH SEE ALSO
-.B flx(1) 
-for a list of the tools.
-.B flx_op(1)
-for a list of operators
-
-.SH WEB SITE
-See 
-.B http://felix.sf.net
-
-.SH AUTHOR
-John Maxwell Skaller, mailto:skaller@ozemail.com.au
-
-@select(tangler('man/man1/flx_op.1'))
-.TH FELIX OPERATORS "2003 April 11"
-.SH NAME
-Felix operators and operator names
-(these need to be checked!).
-
-A chainable binary operator such as +
-creates a list of subexpressions.
-
-.SH assignment
-Assignment operators are sugar for statements,
-so only one is allowed.
-
-.B = asgn  
-.br
-.B <- asgn 
-.br
-.B := asgn 
-.br
-.B += pluseq
-.br
-.B -= minuseq
-.br
-.B *= muleq
-.br
-.B /= diveq
-.br
-.B %= modeq
-.br
-.B |= oreq
-.br
-.B ^= xoreq
-.br
-.B &= andeq
-.br
-
-.SH let/in
-.B let <expr> in <expr>
-prefix
-.br
-
-.SH tuple
-.B , chain
-.br
-
-.SH logic 
-Note that "shortcut" doesn't apply in Felix since
-expressions are purely functional.
-
-.B || lor 
-chain
-.br
-.B && land 
-chain
-.br
-.B ! lnot 
-prefix
-.br
-
-.SH comparison
-.B == eq 
-binary
-.br
-.B <= le 
-chain
-.br
-.B < lt 
-chain
-.br
-.B >= ge 
-chain
-.br
-.B > gt 
-chain
-.br
-.B <> ne 
-chain
-.br
-.B != ne 
-chain
-.br
-
-.B -> arrow
-left assoc
-.br
-
-.B case <int> of <int>
-unassoc
-.br
-
-.SH numeric
-Note that + has a lower precedence than -,
-and * has a lower precedence than / which is
-unusual.
-
-.B - sub 
-left assoc
-.br
-.B + add 
-chain
-.br
-.B * mul 
-chain
-.br
-.B / div 
-left assoc
-.br
-.B % mod 
-left assoc
-.br
-.B - sub 
-prefix 
-.br
-.B + sub 
-prefix 
-.br
-.B ** 
-pow
-right (special prec rules)
-.br
-
-.SH addressing
-.B & 
-prefix 
-.br
-.B * 
-prefix
-.br
-
-.SH bitwise 
-.B | bor 
-chain
-.br
-.B ^ xor 
-chain
-.br
-.B & band 
-chain
-.br
-.B ~ bnot 
-prefix
-.br
-
-.SH application
-.B (juxtaposition) 
-left assoc
-
-.SH coercion
-.B :
-left assoc
-
-.SH component
-.B . 
-left assoc
-.br
-
-.SH qualified name
-.B :: 
-left assoc
-.br
-
-.SH suffixed name
-.B of
-left assoc
-
-.SH atomic
-.B if/then/else/endif
-.br
-
-.B match <expr> with 
-.br
-.B | <pattern> => <expr>
-.br
-.B ...
-.br
-.B endmatch
-.br
-
-.B regmatch <expr> with 
-.br
-.B | <regexp> => <expr>
-.br
-.B ...
-.br
-.B endmatch
-.br
-
-.B (fun (<arglist>):<type> = { <expr> })
-.br
-.B (fun (<arglist>):<type> = { <statements> })
-.br
-.B { <expr> }
-.br
-Lambda function. The return type is optional.
-The third form is short for 
-.B (fun () = { <expr> })
-.br
-
-.B (proc (<arglist>){ <statements> })
-.br
-.B { <statements> }
-.br
-Lambda procedure.
-The second form is short for 
-.B (proc () = { <statements> })
-.br
-
-.SH SEE ALSO
-.B flx(1) 
-for a list of the tools.
-.B felix(1)
-for a language introduction,
-.B flx_op(1)
-for a list of operators,
-.B flx_dir(1)
-for a list of directives.
-.B flx_exec(1)
-for a list of executable statement.
-.B flx_decl(1)
-for a list of declarations and definitons
-.B flx_lib_type(1)
-for a list of standard library types
-.B flx_bind(1)
-for a list of binding defintions.
-.B flx_key(1)
-for a list of keywords
-
-
-.SH WEB SITE
-See 
-.B http://felix.sf.net
-
-.SH AUTHOR
-John Maxwell Skaller, mailto:skaller@ozemail.com.au
-
-@select(tangler('man/man1/flx_dir.1'))
-.TH FELIX DIRECTIVES "2003 April 11"
-.SH NAME
-Felix statements and directives
-(these need to be checked!).
-
-.SH Directives
-.B #include <string>
-.br
-Preprocessor include like C, except that only the first
-occurence of an include directive causes inclusion.
-.br
-
-.B header <string>;
-.br
-Includes C++ literally neat top of header file.
-.br
-
-.B body <string>;
-.br
-Includes C++ literally near top of body file.
-.br
-
-.B code <string>;
-.br
-Includes C++ literally in body file ay point of writing.
-.br
-
-.B open <name>;
-.br
-Makes identifiers in the specified module available for use
-without qualification.
-.br
-
-.B use <name>::identifier;
-.br
-.B use <identifier>=<name>;
-.br
-Makes the specified identifier available for use
-without qualification.
-.br
-
-.SH SEE ALSO
-.B felix(1)
-for a language introduction and man page reference
-
-.SH WEB SITE
-See 
-.B http://felix.sf.net
-
-.SH AUTHOR
-John Maxwell Skaller, mailto:skaller@ozemail.com.au
-
-
-@select(tangler('man/man1/flx_bind.1'))
-.TH FELIX BINDING DEFINITIONS "2003 April 11"
-.SH NAME
-Felix binding definitons 
-(these need to be checked!).
-
-.SH Binding defintions 
-
-.B type <identifier> = string>;
-.br
-.B type <identifier> [<identlist>]= string>;
-.br
-Define function by C++ expression. 
-In the second form a parameterised type is defined.
-.br
-
-.B const <identifier>: <type> = <string>;
-.br
-Define constant by C++ expression. 
-.br
-
-.B fun <identifier> type>=<string>;
-.br
-.B fun <identifier> [<identlist>]<type>=<string>;
-.br
-Define function by C++ expression.
-In the second form a parameterised function is defined.
-.br
-
-.B proc <identifier> <type>=<string>;
-.br
-.B proc <identifier> [<identlist>]<type>=<string>;
-.br
-Define procedure by C++ statements.
-In the second form a parameterised procedure is defined.
-.br
-
-.SH Argument Encoding
-.br
-.B $<n>
-Specifies n'th argument (1 origin), data pointer
-only for pointer types
-
-.B $a
-Specifies all arguments, short hand for $1, $2, $3 ...
-
-.B $t
-pass argument tuple as a tuple object
-
-.B #<n>
-Specifies type of n'th argment (1 origin)
-
-.B #0 
-Return type
-
-.B `<n>
-Specifies n'th component (1 origin) including
-frame pointer for pointer types
-
-.B @n
-reference to shape object of n'th argument type
-
-.B ?<n>
-Specifies n'th type argument (1 origin)
-
-.B ?a
-Short hand for ?1,?2,?3 ...
-
-.B ??
-Question mark character ? emitted.
-
-.SH SEE ALSO
-.B felix(1)
-for a language introduction and man page index
-
-@select(tangler('man/man1/flx_key.1'))
-.TH FELIX KEYWORDS "2003 April 11"
-.SH NAME
-Felix keywords and operator symbols
-
-.SH Keywords
-_
-all
-and
-as
-attempt
-body
-call
-case
-class
-code
-const
-define
-elif
-else
-endattempt
-endif
-endmatch
-except
-exceptions
-export
-finally
-fork
-fun
-function
-functor
-goto
-header
-if
-in
-inf
-interface
-lambda
-let
-match
-module
-NaN
-not
-not
-of
-open
-or
-proc
-procedure
-raise
-read
-regexp
-regmatch
-return
-struct
-then
-to
-todo
-type
-typedef
-union
-use
-val
-var
-when
-with
-.br
-
-.SH operator symbols
-( 
-) 
-[ 
-] 
-
-} 
-! 
-: 
-, 
-; 
-+ 
-- 
-* 
-/ 
-| 
-& 
-< 
-> 
-= 
-. 
-% 
-` 
-~ 
-^ 
-! 
-? 
-=> 
-&< 
-&> 
-.. 
-:: 
-== 
-<> 
-!= 
-<= 
->= 
-<< 
->> 
-** 
-\\ 
-++ 
--- 
-+= 
--= 
-*= 
-/= 
-%= 
-^= 
-|= 
-&= 
-~= 
-:= 
-<- 
--> 
-<: 
-:> 
-[< 
->] 
-<<= 
->>= 
-... 
-<-> 
-&== 
-&<> 
-&!= 
-&<= 
-&>= 
-
-.SH SEE ALSO
-.B felix(1)
-for a language introduction and man page index
-
-@select(tangler('man/man1/flx_decl.1'))
-.TH FELIX Declarations "2003 April 11"
-.SH NAME
-Felix declarations and definitons 
-(these need to be checked!).
-
-.SH declarations and defintions 
-
-.B struct <identifier> { <identifier>: <type>  ... };
-.br
-Define a struct. 
-.br
-
-.B union <identifier> = | <identifier> of <type>  ...;
-.br
-Define a union.  The of <type> part is optional.
-.br
-
-.B module <identifier> { <statements> } 
-.br
-Define a module.
-.br
-
-.B fun <identifier> (<arglist>):<type>= { <statements> };
-.br
-Define a function. The return type is optional.
-
-.B proc <identifier> (<arglist>) { <statements> };
-.br
-Define a procedure. 
-
-.B <identifier> :>
-.br
-Specify a label.
-.br
-
-.SH SEE ALSO
-.B felix(1)
-for a language introduction and man page index.
-
-.SH WEB SITE
-See 
-.B http://felix.sf.net
-
-.SH AUTHOR
-John Maxwell Skaller, mailto:skaller@ozemail.com.au
-
-@select(tangler('man/man1/flx_exec.1'))
-.TH FELIX Executable statements "2003 April 11"
-.SH NAME
-Felix executable statements 
-(these need to be checked!).
-
-.SH Executable Statements
-
-.B goto <label>;
-.br
-unconditional jump
-.br
-
-.B if <expr> goto <label>;
-.br
-conditional jump
-.br
-
-.B call <expr><expr>;
-.br
-.B <expr><expr>;
-.br
-.B call <expr>;
-.br
-.B <expr>;
-.br
-Procedure call. The third and fourth forms call <expr> ().
-.br
-
-.B jump <expr>;
-.br
-Explicit tail call: same as 
-.B call <expr>; return;
-.br
-
-.B loop <ident><expr>;
-.br
-Explicit tail call of parent <ident> which reuses its frame object.
-.br
-
-.B read <identifier>;
-.br
-blocking read of message into variable.
-.br
-
-.B attempt { <statements> } exceptions { <handlers> }
-.br
-.B raise <identifier> <argument>;
-.br
-.B <identifier> ( <parameters> ) { <statements> }
-.br
-Execute the statements in the attempt clause
-and if it falls through, continue after the
-exceptions clause.
-If a raise statement is executed, find the innermost
-matching handler and invoke it. If the handler
-falls through continue afters its containing exceptions
-clause. Each exception must match a visible handler
-of a compiler time error is issued.
-.br
-
-.B todo <string>;
-.br
-Fail with unimplemented feature error at run time. Used to mark
-incomplete parts of a program.
-.br
-
-.SH SEE ALSO
-.B felix(1)
-for a language introduction and man page index.
-
-.SH WEB SITE
-See 
-.B http://felix.sf.net
-
-.SH AUTHOR
-John Maxwell Skaller, mailto:skaller@ozemail.com.au
-
-
-@select(tangler('man/man1/flx_lib_typ.1'))
-.TH FELIX STANDARD LIBRARY - TYPES "2003 April 11"
-.SH NAME
-Standard library types
-(these need to be checked!).
-
-.SH Integers
-
-.B tiny short int long vlong
-.br
-Signed integers corresponding to char, int, short, long and long long in C.
-.br
-
-.B utiny ushort uint ulong uvlong
-.br
-Signed integers corresponding to unsigned char, unsigned short, unsigned int, 
-unsigned long and unsigned long long in C.
-.br
-
-.B int8 int16 int32 int64
-.br
-Signed two's complement integers of exact size.
-.br
-
-.B uint8 uint16 uint32 uint64
-.br
-Signed two's complement integers of exact size.
-.br
-
-.SH Floats
-.B float double ldouble
-.br
-Floats corresponding to  float, double and long double in C.
-.br
-
-.B float32 float64 float80
-.br
-IEEE floats
-.br
-
-.SH chars
-.B char wchar uchar
-.br
-character types corresponding to char, wchar_t in C, and an ISO10646 
-code point type (guarrateed to be at at least 24 bits).
-.br
-
-.SH strings
-.B string wstring ustring 
-.br
-string types corresponding to char, wchar and uchar 
-.br
-
-.SH sums
-.br
-.B void unit bool
-.br
-Equal to types 0, 1, and 2: anonymous 
-unit sums of no, one, and two cases.
-
-.SH any
-.B any
-.br
-Any type. Only useful for unused parameters.
-Defined as the fixpoint of the type equation "typedef x = x;".
-
-.SH misc
-.B address
-.be
-Machine address, void* in C.
-.br
-.B byte
-Unit of memory store, unisgned char in C.
-
-.SH SEE ALSO
-.B felix(1)
-for a language introduction and man page index.
-
-.SH WEB SITE
-See 
-.B http://felix.sf.net
-
-.SH AUTHOR
-John Maxwell Skaller, mailto:skaller@ozemail.com.au
-
-
-@select(tangler('man/man1/flx.1'))
-.TH FELIX TOOLS "2003 April 11"
-.SH NAME
-Felix tools
-.SH SYNOPSIS
-.br
-.B flxl 
-[-Iinclude-dir]
-filebasename
-
-.br
-.B flxp 
-[-Iinclude-dir]
-filebasename
-
-.br
-.B flxm
-[-Iinclude-dir]
-filebasename
-
-.br
-.B flxd 
-[-Iinclude-dir]
-filebasename
-
-.br
-.B flxb 
-[-Iinclude-dir]
-filebasename
-
-.br
-.B flxg 
-[-v]
-[-Iinclude-dir]
-filebasename
-
-.br
-.B flx_run 
-libname
-
-.br
-.B flx
-filebasename
-
-.br
-.B lexl
-filebasename
-
-.br
-.B lexp
-filebasename
-
-.br
-.B lexd
-filebasename
-
-.SH DESCRIPTION
-The 
-.B filebase 
-name must not include an extension, which
-must be '.flx'.
-.br
-
-.B flxl 
-lexes the input and prints the token list to standard output
-
-.br
-.B flxp
-lexes and parses the input and prints the parse tree to standard output
-
-.br
-.B flxm
-lexes, parses, folds constants and performs
-macro expansion of the input and prints the
-AST tree to standard output
-
-.br
-.B flxd
-lexes, parses and
-desugars the the input and prints the desugared 
-AST tree to standard output
-
-.br
-.B flxb
-lexes, parses, desugars and binds identifiers and prints
-the bindings to  standard output
-
-.br
-.B flxg
-lexes, parses, desugars, binds, and generates C++ code.
-Two files,
-.B filebase.cpp
-and
-.B filebase.hpp
-are created. Use the 
-.B -v 
-option for verbose output.
-
-.br
-.B flx 
-is a load and go test harness which compiles its
-argument to C++, compiles and links the C++ using gcc,
-then executes the resulting library using flx_run.
-
-.SH USE
-.B flxg
-is the compiler proper. flx[lpmdb] are provided to
-aid in debugging, and perform successive phases of
-the compilation process.
-
-.B flx
-is a script which combines felix compilation,
-C++ compilation of the output, and execution
-using the standard program driver,
-for rapid prototyping in a scripting style.
-
-.B flx_run
-is the standard prgram driver. Its argument
-is a shared library which is passed to 
-dlopen (note you need to use ./lib.so on
-linux to preempt the stanard search path).
-
-The driver creates a single thread
-from the libraries main entry point
-.B _init_
-and runs the thread until it terminates,
-then exits. The message type here is 
-.B void
-and the driver exists with an error
-diagnostic if the thread tries to read
-any messages.
-
-.B flx_sif
-is like 
-.B flx_run
-except that it reads standard input
-and passes lines to the single instance
-thread. The lines include terminating
-newline character. A zero length line
-is passed at end of file. The message 
-types is 
-.B std::basic_string<char>
-
-.B lexl
-Lexer generator (lex/flex equivalent for felix) lexer.
-
-.B lexp
-Lexer generator (lex/flex equivalent for felix) parser.
-
-.B lexd
-Lexer generator (lex/flex equivalent for felix).
-
-.SH WEB SITE
-See 
-.B http://felix.sf.net
-
-.SH BUGS
-Plenty, this is a pre-alpha release.
-
-.SH TODO
-Separate compilation is the big one.
-
-.SH SEE ALSO
-.B felix(1)
-for a language introduction and man page index.
-
-.SH WEB SITE
-See 
-.B http://felix.sf.net
-
-.SH AUTHOR
-John Maxwell Skaller, mailto:skaller@ozemail.com.au
-
 @head(1,'Makefile')
+We attempt to fix the brain dead install command.
+If it hits a an empty file set it gives an error:
+we fix it. If it hits a subdirectory it gives an error.
+We have no idea if it continues copying.
+
 @select(tangler('makefile'))
 @tangle('PREFIX=/usr/local')
 @tangle('INSTALL_DIR=${PREFIX}/lib')
 @tangle('EXEC_DIR=${PREFIX}/bin')
 @tangle('MAN_DIR=${PREFIX}/man')
 @tangle('all: dummy')
-@tangle('\tpython script/maker')
+@tangle('\tpython script/maker extract compiler drivers test')
+@tangle('')
+@tangle('bytecode: dummy')
+@tangle('\tpython script/maker compiler bytecode')
+@tangle('')
+@tangle('bytecode.debug: dummy')
+@tangle('\tpython script/maker compiler bytecode debug')
+@tangle('')
+@tangle('extract: dummy')
+@tangle('\tpython script/maker extract')
+@tangle('')
+@tangle('tut: dummy')
+@tangle('\tpython script/maker tutorial')
+@tangle('')
+@tangle('compiler: dummy')
+@tangle('\tpython script/maker compiler')
 @tangle('')
 @tangle('doc: dummy')
 @tangle('\tpython script/maker doc')
 @tangle('\tcp doc/*.css tut/doc')
 @tangle('')
+@tangle('impldoc: dummy')
+@tangle('\tocamldoc -I src -d impldoc src/*.mli -html')
+@tangle('\tocamldoc -I src -o impldoc/flx_impl.tex src/*.mli -latex')
+@tangle('\t(cd impldoc; latex flx_impl.tex)')
+@tangle('')
 @tangle('test: dummy')
 @tangle('\tpython script/maker test stop_on_error')
 @tangle('')
+@tangle('tests: dummy')
+@tangle('\tpython script/maker test')
+@tangle('')
+@tangle('tests.performance: dummy')
+@tangle('\tpython script/maker performance')
+@tangle('')
+@tangle('tests.regression: dummy')
+@tangle('\tpython script/maker regression')
+@tangle('')
+@tangle('drivers: dummy')
+@tangle('\tpython script/maker drivers')
+@tangle('')
+@tangle('drivers.debug: dummy')
+@tangle('\tpython script/maker drivers debug')
+@tangle('')
+@tangle('help: dummy')
+@tangle('\t#type "make virgin" to wipe out the whole development system')
+@tangle('\t#other than the orginal sources and this makefile')
+@tangle('\t#DONT DO THIS UNLESS YOU HAVE PYTHON INSTALLED AND WORKING')
+@tangle('\t#DONT DO THIS UNLESS YOU HAVE OCAML INSTALLED AND WORKING')
+@tangle('\t#DONT DO THIS UNLESS YOU HAVE g++ INSTALLED AND WORKING')
+@tangle('\t#')
+@tangle('\t#type "make boot" to extract the dervied sources')
+@tangle('\t#from the original sources, including the tutorial')
+@tangle('\t#')
+@tangle('\t#type "make" to build the felix compiler and runtime')
+@tangle('\t#REQUIRES OCAML 3.06 or better')
+@tangle('\t#REQUIRES g++ 2.96 or better')
+@tangle('\t#')
+@tangle('\t#type "make test" to build and execute all the tests')
+@tangle('\t#including all the tutorial examples')
+@tangle('\t#REQUIRES Felix')
+@tangle('\t#REQUIRES g++ 2.96 or better')
+@tangle('\t#')
+@tangle('\t#type "make doc" to typeset the original sources')
+@tangle('\t#')
+@tangle('\t#EDIT THIS MAKEFILE TO SET INSTALLATION DIRECTORIES')
+@tangle('\t#SEE THE TOP OF THE MAKEFILE')
+@tangle('\t#Obtain the required priviledges to install into the chosen directories')
+@tangle('\t#or ask someone who has the to do it for you')
+@tangle('\t#type "make install" to install Felix')
+@tangle('\t#or ask the priviledged person to do it for you')
+@tangle('')
 @tangle('tarball: dummy')
 @tangle('\ttar -zcvf flx_'+flx_version+'_linux.tgz\\')
-@tangle('\t\tmakefile README CONTENTS INSTALL VERSION  \\')
+@tangle('\t\tmakefile README CONTENTS INSTALL VERSION LICENSE \\')
 @tangle('\t\tlpsrc/*.ipk \\')
 @tangle('\t\tlpsrc/*.pak \\')
 @tangle('\t\tscript/maker \\')
@@ -1407,7 +653,6 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('\t\tlib/*.flx \\')
 @tangle('\t\ttest/*.flx \\')
 @tangle('\t\ttest/*.cpp \\')
-@tangle('\t\ttest/*.hpp \\')
 @tangle('\t\ttut/examples/*.flx \\')
 @tangle('\t\ttut/doc/*.html \\')
 @tangle('\t\ttut/doc/*.css \\')
@@ -1415,12 +660,36 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('\t\tdoc/*.html \\')
 @tangle('\t\tdoc/*.css \\')
 @tangle('\t\tdoc/*.tex \\')
+@tangle('\t\thtmlman/*.html \\')
+@tangle('\t\tman/man1/*.1 \\')
+@tangle('\t\timpldoc/*.html \\')
 @tangle('\t\tbin/flx \\')
 @tangle('\t\tbin/flxg \\')
 @tangle('\t\tbin/flx_run \\')
+@tangle('\t\tinterscript/*.py \\')
+@tangle('\t\tinterscript/bin/*.py \\')
+@tangle('\t\tinterscript/compilers/*.py \\')
+@tangle('\t\tinterscript/core/*.py \\')
+@tangle('\t\tinterscript/drivers/*.py \\')
+@tangle('\t\tinterscript/drivers/sinks/*.py \\')
+@tangle('\t\tinterscript/drivers/sources/*.py \\')
+@tangle('\t\tinterscript/drivers/storage/*.py \\')
+@tangle('\t\tinterscript/encoding/*.py \\')
+@tangle('\t\tinterscript/encoding/*.dat \\')
+@tangle('\t\tinterscript/frames/*.py \\')
+@tangle('\t\tinterscript/frames/platform/*.py \\')
+@tangle('\t\tinterscript/languages/*.py \\')
+@tangle('\t\tinterscript/parsers/*.py \\')
+@tangle('\t\tinterscript/tanglers/*.py \\')
+@tangle('\t\tinterscript/tokenisers/*.py \\')
+@tangle('\t\tinterscript/utilities/*.py \\')
+@tangle('\t\tinterscript/weavers/*.py \\')
 @tangle('')
 @tangle('www: dummy')
 @tangle('\tiscr lpsrc/flx_sourceforge.pak')
+@tangle('')
+@tangle('man: dummy')
+@tangle('\tpython script/maker man')
 @tangle('')
 @tangle('upload_www: dummy')
 @tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
@@ -1429,36 +698,56 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
 @tangle('\tscp flx_'+flx_version+'_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('')
-@tangle('test_clean: dummy')
+@tangle('tests.clean: dummy')
 @tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so')
 @tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so')
 @tangle('')
-@tangle('really_clean: dummy')
-@tangle('\trm -rf tut rtl test www src misc man script bin doc lib tmp.tmp')
-@tangle('')
-@tangle('boot: dummy')
-@tangle('\tiscr lpsrc/flx.pak')
-@tangle('')
-@tangle('dummy:')
-@tangle('\techo "out of date"')
+@tangle('virgin: dummy')
+@tangle('\trm -rf tut rtl test www src misc man script bin doc lib impldoc htmlman tmp.tmp')
+@tangle('\trm -rf lpsrc/*.cache')
+@tangle('\trm -rf interscript/*.pyc')
+@tangle('\trm -rf interscript/*.pyo')
+@tangle('\trm -rf README LICENSE VERSION CONTENTS INSTALL')
 @tangle('')
 
-@tangle('test_lex:')
+@tangle('backup: dummy')
+@tangle('\t(DATE=`date -I`;\\')
+@tangle('\tmkdir -p "lpbackup/$${DATE}";\\')
+@tangle('\tcp lpsrc/*.ipk "lpbackup/$${DATE}";\\')
+@tangle('\tcp lpsrc/*.pak "lpbackup/$${DATE}"\\')
+@tangle('\t)')
+@tangle('')
+
+@tangle('boot: dummy')
+@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx.pak')
+@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_tutorial.pak')
+@tangle('')
+
+@tangle('test_lex: dummy')
 @tangle('\t  ./lexl test_lex')
 @tangle('\t  ./lexp test_lex')
 @tangle('\t  ./lexd test_lex')
+@tangle('')
 
-@tangle('install:')
-@tangle('\t  echo "INSTALL_DIR=${INSTALL_DIR}"')
-@tangle('\t  echo "EXEC_DIR=${EXEC_DIR}"')
-@tangle('\t  echo "MAN_DIR=${MAN_DIR}"')
+@tangle('install: dummy')
+@tangle('\t  #"INSTALL_DIR=${INSTALL_DIR}"')
+@tangle('\t  #"EXEC_DIR=${EXEC_DIR}"')
+@tangle('\t  #"MAN_DIR=${MAN_DIR}"')
 @tangle('\t  install -d ${INSTALL_DIR}/felix/lib ${INSTALL_DIR}/felix/rtl')
 @tangle('\t  install -d ${INSTALL_DIR}/felix/doc')
-@tangle('\t  install lib/* ${INSTALL_DIR}/felix/lib')
-@tangle('\t  install rtl/* ${INSTALL_DIR}/felix/rtl')
-@tangle('\t  install doc/* ${INSTALL_DIR}/felix/doc')
-@tangle('\t  install bin/* ${EXEC_DIR}')
-@tangle('\t  install man/man1/* ${MAN_DIR}/man1')
+@tangle('\t  install -d ${INSTALL_DIR}/felix/htmlman')
+@tangle('\t  (install lib/* ${INSTALL_DIR}/felix/lib || exit 0) &> /dev/null')
+@tangle('\t  (install rtl/* ${INSTALL_DIR}/felix/rtl || exit 0) &> /dev/null')
+@tangle('\t  (install doc/* ${INSTALL_DIR}/felix/doc || exit 0) &> /dev/null')
+@tangle('\t  (install impldoc/* ${INSTALL_DIR}/felix/impldoc || exit 0) &> /dev/null')
+@tangle('\t  (install htmlman/* ${INSTALL_DIR}/felix/htmlman || exit 0) &> /dev/null')
+@tangle('\t  (install bin/* ${EXEC_DIR} || exit 0) &> /dev/null')
+@tangle('\t  (install man/man1/* ${MAN_DIR}/man1 || exit 0) &> /dev/null')
+@tangle('')
+
+@tangle('dummy:')
+@tangle('\t#felix make')
+@tangle('')
 
 
 @head(1,'README')
@@ -1484,14 +773,17 @@ Top level files:
   README    the usual readme file
   INSTALL   how to install and build felix
   LICENSE   license details
+
 The directories are:
 
   lpsrc   -- LP original sources, contains EVERYTHING you need
              if you have the full tool chain installed
+  interscript -- the complete interscript package
   src     -- ocaml source code for the compiler
   test    -- regression tests and driver programs
-  doc     -- the complete documented source of the compiler,
-          -- the tutorial .. and everything else
+  doc     -- the complete documented source of the compiler
+  htmlman -- man pages converted to html by htmlman
+
   tut/doc -- the tutorial
   tut/examples  -- examples from the tutorial
   www    -- the top level of the sourceforge web site
@@ -1500,6 +792,7 @@ The directories are:
   lib    -- felix standard library
   man    -- man pages for tools and some language features
   bin    -- compiler tools directory
+  rtl    -- C++ run time library sources
 
 @head(1,'LICENSE')
 @select(tangler('LICENSE'))
@@ -1547,12 +840,7 @@ FULL BUILD.
     http://www.python.org
     http://python.sourceforge.net
 
-3. Download and install Interscript
-   if you don't have it already -- requires Python
-
-   http://interscript.sourceforge.net
-
-4. Download the Felix tarball (this package)
+3. Download the Felix tarball (this package)
    and unpack it into a clean directory (the felix directory)
 
 @tangle('   tar -zxvf felix_'+flx_version+'_linux.tgz')
@@ -1614,12 +902,84 @@ work. You will need:
   make test_clean    -- delete all C/C++ generated from felix files
                         to force the felix compiler to rebuild them
 
-  make very_clean    -- this deletes EVERYTHING except the LP sources
+  make virgin        -- this deletes EVERYTHING except the LP sources
 
-  iscr lpsrc/flx.pak -- re-extract sources, including makefile
-  make boot          -- use this to rebuild after a make very_clean,
-                        but you need iscr lpsrc/flx.pak to re-extract
-                        the makefile :-)
+  make boot          -- use this to rebuild after a make virgin
+
+LOST THE MAKEFILE?
+------------------
+
+  env PYTHONPATH=. python interscript/bin/iscr.py lpsrc/flx.pak 
+  
+                     -- re-extract sources, including makefile
+
+
+@head(1,'Ocamldoc Latex Style')
+Taken from the distribution because ocamldoc
+doesn't put this file in the right place
+when it generates a tex file. (style sheets
+for html are correctly dumped though ..)
+
+@select(tangler('impldoc/ocamldoc.sty'))
+%% Support macros for LaTeX documentation generated by ocamldoc.
+%% This file is in the public domain; do what you want with it.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{ocamldoc}
+              [2001/12/04 v1.0 ocamldoc support]
+
+\newenvironment{ocamldoccode}{%
+  \bgroup
+  \leftskip\@totalleftmargin
+  \rightskip\z@skip
+  \parindent\z@
+  \parfillskip\@flushglue
+  \parskip\z@skip 
+  %\noindent
+  \@@par\smallskip
+  \@tempswafalse
+  \def\par{%
+    \if@tempswa
+      \leavevmode\null\@@par\penalty\interlinepenalty
+  \else
+    \@tempswatrue
+    \ifhmode\@@par\penalty\interlinepenalty\fi
+  \fi}
+  \obeylines
+  \verbatim@font
+  \let\org@prime~%
+  \@noligs
+  \let\org@dospecials\dospecials
+  \g@remfrom@specials{\\}
+  \g@remfrom@specials{\{}
+  \g@remfrom@specials{\}}
+  \let\do\@makeother
+  \dospecials
+  \let\dospecials\org@dospecials
+  \frenchspacing\@vobeyspaces
+  \everypar \expandafter{\the\everypar \unpenalty}}
+{\egroup\par}
+
+\def\g@remfrom@specials#1{%
+  \def\@new@specials{}
+  \def\@remove##1{%
+    \ifx##1#1\else
+    \g@addto@macro\@new@specials{\do ##1}\fi}
+  \let\do\@remove\dospecials
+  \let\dospecials\@new@specials
+  }
+
+\newenvironment{ocamldocdescription}
+{\list{}{\rightmargin0pt \topsep0pt}\raggedright\item\relax}
+{\endlist\medskip}
+
+\newenvironment{ocamldoccomment}
+{\list{}{\leftmargin 2\leftmargini \rightmargin0pt \topsep0pt}\raggedright\item\relax}
+{\endlist}
+
+\let\ocamldocvspace\vspace
+\endinput
+
 
 @head(1,'W3C Cascading Style Sheets')
 Needed to view interscript generated documentation.

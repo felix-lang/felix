@@ -1,35 +1,64 @@
-@head(1,'Get options')
-@h=tangler('src/flx_getopt.mli')
+@head(1,'Felix specific Utilities')
+@head(2,'Terminal Error handler')
+@h = tangler('src/flx_terminate.mli')
 @select(h)
-val get_options: string array -> (string * string) list
-@h=tangler('src/flx_getopt.ml')
-@select(h)
-let get_options argv = 
-  let options = ref [] in
-  for i = 1 to Array.length argv - 1 do
-    let s = argv.(i) in
-    let n = String.length s in
-    if n > 1 && s.[0]='-' then 
-      if n > 2 && s.[1]='-' then 
-      begin
-        let j = ref 2 in
-        while !j < n && s.[!j]<>'=' do incr j done;
-        let key = String.sub s 2 (!j - 2) in
-        let value = 
-          if !j<n && s.[!j]='=' then 
-            String.sub s (!j+1) (n - !j - 1)
-          else 
-            ""
-        in
-          options := !options @ [key,value]
-      end 
-      else
-        options := !options @ [String.sub s 1 1, String.sub s 2 (n-2)]
-    else 
-      if i <> Array.length argv - 1 then 
-        print_endline ("Option '"^s^"' must start with '-': ignored")
-  done;
-  !options
-;;
+(** Misc compiler utilities *)
 
+val terminate:
+  bool -> 
+  exn -> 
+  unit
+(** terminate the top level program in case of error *)
+
+@h = tangler('src/flx_terminate.ml')
+@select(h)
+open Flx_srcref
+open Flx_exceptions
+
+let terminate rrp = let return_parity = not rrp in function
+  | Exit n ->
+    exit (if return_parity then n else (if n=0 then 1 else 0))
+
+  | LexError s ->
+    flush stdout; print_endline "LEX ERROR";
+    print_endline s;
+    exit (if return_parity then 1 else 0)
+
+  | TokenError s ->
+    flush stdout; print_endline "TOKEN ERROR";
+    print_endline s;
+    exit (if return_parity then 1 else 0)
+
+  | SyntaxError s ->
+    flush stdout; print_endline "SYNTAX ERROR";
+    print_endline s;
+    exit (if return_parity then 1 else 0)
+
+  | ParseError s ->
+    flush stdout; print_endline "PARSE ERROR";
+    print_endline s;
+    exit (if return_parity then 1 else 0)
+
+  | ClientError (sr,s) ->
+    flush stdout; print_endline "CLIENT ERROR";
+    print_endline s;
+    print_endline ("In " ^ long_string_of_src sr);
+    exit (if return_parity then 1 else 0)
+
+  | SystemError (sr,s) ->
+    flush stdout; print_endline "FELIX COMPILER ERROR";
+    print_endline ("In " ^ short_string_of_src sr);
+    print_endline s;
+    exit (if return_parity then 1 else 0)
+
+
+  | Failure s -> 
+    flush stdout; print_endline "SYSTEM FAILURE";
+    print_endline s;
+    exit (if return_parity then 1 else 0)
+
+  | x -> 
+    flush stdout; print_endline "EXCEPTION"; 
+    print_endline (Printexc.to_string x);
+    exit (if return_parity then 1 else 0)
 

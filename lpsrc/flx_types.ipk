@@ -9,6 +9,8 @@ val transpose: 'a list list -> 'a list list
 val list_last: 'a list -> 'a 
 val list_index: 'a list -> 'a -> int option
 val list_omap: ('a -> 'b) -> 'a list -> 'b list
+val catch_all : ('a -> 'b) -> 'a -> 'b option
+val is_some: 'a option -> bool
 
 @h = tangler('src/flx_util.ml')
 @select(h)
@@ -36,21 +38,40 @@ let rec list_index l x =
 let list_omap f ls =
   List.rev (List.rev_map f ls)
 
+let catch_all f x = 
+  try Some (f x) with _ -> None
+
+let is_some = function | Some _ -> true | None -> false
+
 @head(1,'Types')
 @h = tangler('src/flx_types.mli')
 These files declare the main data structures used by the compiler,
 and provide routines to dump them to a string for debugging purposes.
+
+@head(2,'Version identification kit')
+@select(h)
+type version_data_t =
+{
+  version_string : string;
+  build_time_float : float;
+  build_time : string;
+  buildno : int;
+}
+
 @head(2,'Source Reference')
 Provides a reference to the original source.
 @select(h)
+(** Types used in the Felix compiler *)
 open Big_int
 
+(** type of a position in the {e original} sources *)
 type srcref = 
-  string * (* filename *)
-  int * (* line number, 1 origin *)
-  int * (* starting column, 1 origin *)
-  int   (* ending column, 1 origin *)
+  string (* filename *) *
+  int (* line number, 1 origin *) *
+  int (* starting column, 1 origin *) *
+  int (* ending column, 1 origin *)
 
+(** type of a span between two positions in one file*)
 type range_srcref =
   string * (* filename *)
   int * (* starting line number, 1 origin *)
@@ -70,6 +91,7 @@ followed by a square bracket enclosed list of type expressions.
 type c_t = string     (* C++ code as a string *)
 type id_t = string
 
+(** type of a qualified name *)
 type qualified_name_t =
   [
   | `AST_void of range_srcref
@@ -79,6 +101,7 @@ type qualified_name_t =
   | `AST_lookup of range_srcref * (expr_t * string)
   ]
 
+(** type of a suffixed name *)
 and suffixed_name_t =
   [
   | `AST_void of range_srcref
@@ -89,15 +112,16 @@ and suffixed_name_t =
   | `AST_suffix of range_srcref * (qualified_name_t * typecode_t)
   ]
 
+(** type of a regular expression *)
 and regexp_t =
-  | REGEXP_seq of regexp_t * regexp_t
-  | REGEXP_alt of regexp_t * regexp_t
-  | REGEXP_aster of regexp_t
-  | REGEXP_name of qualified_name_t
-  | REGEXP_string of string
-  | REGEXP_epsilon
-  | REGEXP_sentinel
-  | REGEXP_code of expr_t
+  | REGEXP_seq of regexp_t * regexp_t (** concatenation *)
+  | REGEXP_alt of regexp_t * regexp_t (** alternation *)
+  | REGEXP_aster of regexp_t (** Kleene closure *)
+  | REGEXP_name of qualified_name_t (** lookup regular definition *)
+  | REGEXP_string of string  (** concatenation of chars of string *)
+  | REGEXP_epsilon (** epsilon: null string *)
+  | REGEXP_sentinel (** end marker *)
+  | REGEXP_code of expr_t (** associated code *)
 
 @head(3,'Type sublanguage')
 The encoding '`TYP_void'
@@ -105,32 +129,34 @@ is the categorical initial: the type of an empty
 union, and the type ordinary procedure types return.
 There are no values of this type. 
 @select(h)
+(** type of a type *)
 and typecode_t = 
   [
-  | `AST_void of range_srcref                   (* void type *)
+  | `AST_void of range_srcref                   (** void type *)
   | `AST_name of range_srcref * string
   | `AST_case_tag of range_srcref * int
   | `AST_typed_case of range_srcref * int * typecode_t
   | `AST_lookup of range_srcref * (expr_t * string)
-  | `TYP_tuple of typecode_t list               (* product type *)
-  | `TYP_sum of typecode_t list                 (* numbered sum type *)
-  | `TYP_function of typecode_t * typecode_t    (* function type *)
-  | `TYP_pointer  of typecode_t                 (* pointer type *)
-  | `TYP_as of typecode_t * string              (* fix *)
-  | `TYP_typeof of expr_t                       (* typeof *)
-  | `TYP_var of int                             (* unknown type *)
-  | `TYP_none
+  | `TYP_tuple of typecode_t list               (** product type *)
+  | `TYP_sum of typecode_t list                 (** numbered sum type *)
+  | `TYP_function of typecode_t * typecode_t    (** function type *)
+  | `TYP_pointer  of typecode_t                 (** pointer type *)
+  | `TYP_as of typecode_t * string              (** fixpoint *)
+  | `TYP_typeof of expr_t                       (** typeof *)
+  | `TYP_var of int                             (** unknown type *)
+  | `TYP_none                                   (** unspecified *)
 
   (* destructors *)
-  | `TYP_dom of typecode_t                      (* domain *)
-  | `TYP_cod of typecode_t                      (* codomain *)
-  | `TYP_proj of int * typecode_t               (* tuple projection *)
-  | `TYP_case_arg of int * typecode_t           (* argument of n'th variant *)
+  | `TYP_dom of typecode_t                      (** function domain extractor *)
+  | `TYP_cod of typecode_t                      (** function codomain extractor *)
+  | `TYP_proj of int * typecode_t               (** tuple projection *)
+  | `TYP_case_arg of int * typecode_t           (** argument of n'th variant *)
 
-  | `TYP_apply of typecode_t * typecode_t
+  | `TYP_apply of typecode_t * typecode_t       (** type function application *)
   | `TYP_typefun of parameter_t list * typecode_t * typecode_t
-  | `TYP_type
-  | `TYP_type_tuple of typecode_t list
+                                                (** type lambda *)
+  | `TYP_type                                   (** meta type of a type *)
+  | `TYP_type_tuple of typecode_t list          (** meta type product *)
   ]
 
 @head(3,'Literals')
@@ -195,10 +221,10 @@ and expr_t =
 Patterns; used for matching variants in match statements.
 @select(h)
 and float_pat = 
-  | Float_plus of string * string (* type, value *)
+  | Float_plus of string * string (** type, value *)
   | Float_minus of string * string
-  | Float_inf 
-  | Float_minus_inf
+  | Float_inf  (** infinity *)
+  | Float_minus_inf (** negative infinity *)
 
 and pattern_t =
   [
@@ -301,22 +327,15 @@ and statement_t =
   | `AST_proc_return of range_srcref 
   | `AST_nop of range_srcref * string
 
+  (*
   | `AST_block of range_srcref * statement_t list
+  *)
   (*
   | `AST_if of 
     range_srcref * 
     (range_srcref * (expr_t * statement_t)) list * 
     (range_srcref * statement_t)
   *)
-
-  (* exceptions *)
-  | `AST_attempt of 
-    range_srcref *
-    (range_srcref * statement_t) *         (* the attempt *)
-    (range_srcref * statement_t list) *    (* the handlers *)
-    (range_srcref * statement_t list)      (* the finally block *)
-  | `AST_except_handler of range_srcref * id_t * parameter_t list * statement_t list
-  | `AST_raise of range_srcref * id_t * expr_t
 
   (* binding structures [prolog] *)
   | `AST_abs_decl of range_srcref * id_t * id_t list * c_t
@@ -581,6 +600,18 @@ type fully_bound_symbol_table_t = (int, symbol_data3_t) Hashtbl.t
 
 type type_registry_t = (btypecode_t,int) Hashtbl.t
 
+type felix_compiler_options_t = 
+{
+  print_flag: bool;
+  debug : bool;
+  optimise : bool;
+  trace : bool;
+  include_dirs : string list;
+  files : string list;
+  raw_options: (string * string) list;
+  reverse_return_parity: bool;
+}
+
 type sym_state_t = 
 {
   dfns : symbol_table_t;
@@ -592,7 +623,8 @@ type sym_state_t =
   registry : type_registry_t;
   prim_inst : (int * btypecode_t list, int) Hashtbl.t;
   rev_prim_inst : (int, int * btypecode_t list) Hashtbl.t;
-  instantiated_types : (btypecode_t,unit) Hashtbl.t
+  instantiated_types : (btypecode_t,unit) Hashtbl.t;
+  compiler_options : felix_compiler_options_t
 }
 
 @doc()
@@ -729,12 +761,12 @@ let src_of_stmt e = match e with
   | `AST_read (s, _) 
   | `AST_fun_return (s, _) 
   | `AST_proc_return s 
+  (*
   | `AST_block (s, _ ) 
+  *)
   | `AST_nop (s, _) 
   | `AST_ifgoto (s,_,_)
   | `AST_ifnotgoto (s,_,_)
-  | `AST_attempt (s,_,_,_)
-  | `AST_raise (s,_,_) 
   | `AST_abs_decl (s,_,_, _) 
   | `AST_const_decl (s,_,_,_) 
   | `AST_fun_decl (s,_,_,_,_,_ ) 
@@ -1572,7 +1604,9 @@ and string_of_statement level s =
     spaces level ^
     "function " ^ name ^ ": " ^ string_of_typecode t ^ ";\n"
 
+  (*
   | `AST_block (_,ss) -> string_of_compound level ss
+  *)
 
   | `AST_val_decl (_,name, ty, value) ->
     spaces level ^ 
@@ -1628,54 +1662,6 @@ and string_of_statement level s =
   | `AST_ifnotgoto (_,e,lab) ->
     spaces level ^
     "if not("^string_of_expr e^")goto " ^ lab
-  (*
-  | `AST_if (_,clist, (_,s2)) ->
-    begin catmap (spaces level ^ "else ")
-      begin fun (sr, (e, s)) ->
-        spaces level ^ "if " ^
-        (se e) ^ " then\n" ^
-        (string_of_statement (level+1) s) ^ "\n"
-      end
-      clist
-    end
-    ^ 
-    begin match s2 with 
-      | `AST_nop (_,"") -> ""
-      | _ ->
-        spaces level ^ "else\n" ^
-        (string_of_statement (level+1) s2)
-    end
-  *)
-
-  | `AST_except_handler (_,label,params,code) ->
-    spaces level ^ "except " ^ label ^ " " ^ 
-    "("^ (string_of_parameters params)^")"^
-    short_string_of_compound level code
-
-  | `AST_attempt (_,(_,main), (_,handlers), (fsr,finally)) ->
-    spaces level ^ "attempt\n" ^
-    string_of_statement (level+1) main ^ "\n" ^
-    spaces level ^ "exceptions\n" ^
-    spaces level ^ "{\n" ^
-    catmap "\n" (string_of_statement (level+1)) handlers ^ "\n" ^
-    (
-      match finally with 
-      | [] -> "" 
-      | _ -> 
-        spaces level ^ "finally\n" ^ 
-        string_of_statement (level+1) 
-          (`AST_block (fsr,finally))
-    ) ^ "\n" ^
-    spaces level ^ "}"
-    
-
-  | `AST_raise (_,label,e) -> 
-    spaces level ^ "raise " ^ label ^
-    begin match e with
-    | `AST_tuple (_,[]) -> ""
-    | expr -> " " ^ se expr
-    end ^ 
-    ";"
 
   | `AST_fun_return (_,e) -> 
     spaces level ^ "return " ^ (se e) ^ ";"
@@ -2354,6 +2340,7 @@ exception LexError of string
 exception TokenError of string
 exception ClientError of range_srcref * string
 exception SystemError of range_srcref * string
+exception Exit of int
 """
 //
 @h = tangler('src/flx_exceptions.ml')

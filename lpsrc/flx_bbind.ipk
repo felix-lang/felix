@@ -665,16 +665,13 @@ open Flx_types
 open Flx_symtab
 open Flx_getopt
 open Flx_version
+open Flx_flxopt
+open Flx_exceptions
 ;;
 
-let print_help () =
-  print_endline "options:";
-  print_endline "  -h, --help : print this help";
-  print_endline "  --version: print version info";
-  print_endline "  -v, --verbose: print symbol table";
-  print_endline "  -q, --quiet: no stdout";
-  print_endline "  -Idir, --include=dir : append dir to include path";
-  exit(0)
+let print_help () = print_options(); exit(0)
+;;
+let reverse_return_parity = ref false
 ;;
 
 try
@@ -682,36 +679,35 @@ try
   if argc <= 1 
   then begin
     print_endline "usage: flxg --key=value ... filename; -h for help";
-    exit 0
+    raise (Exit 0)
   end
   ;
-  let options = get_options Sys.argv in
-  let include_dirs = ref [] in
-  let print_flag = ref false in
-  List.iter (fun (key,value) ->
-    if key = "include" || key = "I"
-    then include_dirs := !include_dirs @ [value]
-
-    else if key = "verbose" || key = "v"
-    then print_flag := true
-
-    else if key = "help" || key = "h"
-    then print_help ()
-
-    else if key = "version" 
-    then (print_endline ("Felix Version " ^ version_string))
-  )
-  options
+  let raw_options = parse_options Sys.argv in
+  let compiler_options = get_felix_options raw_options in
+  reverse_return_parity :=  compiler_options.reverse_return_parity
   ;
-  if !print_flag then begin
+  let syms = make_syms compiler_options in
+
+  if check_keys raw_options ["h"; "help"]
+  then print_help ()
+  ;
+  if check_key raw_options "version" 
+  then (print_endline ("Felix Version " ^ !version_data.version_string))
+  ;
+  if compiler_options.print_flag then begin
     print_string "//Include directories = ";
     List.iter (fun d -> print_string (d ^ " "))
-    !include_dirs;
+    compiler_options.include_dirs;
     print_endline ""
   end
   ;
 
-  let filebase = Sys.argv.(argc-1) in
+  let filename = 
+    match get_key_value raw_options "" with
+    | Some s -> s
+    | None -> exit 0
+  in
+  let filebase = filename in
   let input_file_name = filebase ^ ".flx" 
   and iface_file_name = filebase ^ ".fix"
   and module_name = 
@@ -721,42 +717,45 @@ try
     String.sub filebase (!i+1) (n - !i - 1)
   in
 
-  print_endline ("Parsing " ^ input_file_name);
+  (* PARSE THE IMPLEMENTATION FILE *)
+  print_endline ("//Parsing Implementation " ^ input_file_name);
   let parse_tree =
     Flx_parse_ctrl.parse_file 
       input_file_name 
       (Filename.dirname input_file_name)
-      !include_dirs 
+      compiler_options.include_dirs 
   in
-
+  let have_interface = Sys.file_exists iface_file_name in
   print_endline (Flx_print.string_of_compilation_unit parse_tree);
-  print_endline "PARSE OK";
+  print_endline "//PARSE OK";
 
-  print_endline "----------------------------";
-  print_endline "DEBLOCKED:";
-
-  let syms = 
-    { 
-      registry = Hashtbl.create 97;
-      counter = ref 1; 
-      freg = Hashtbl.create 97;
-      dfns = Hashtbl.create 97 ;
-      varmap = Hashtbl.create 97;
-      ticache = Hashtbl.create 97;
-      env_cache = Hashtbl.create 97;
-      prim_inst = Hashtbl.create 97;
-      rev_prim_inst = Hashtbl.create 97;
-      instantiated_types = Hashtbl.create 97;
-    } 
-  in
-  let include_dirs = (Filename.dirname input_file_name) :: !include_dirs in
-  let deblocked = desugar_program include_dirs "DUMMY" (syms.counter) parse_tree in
-  print_endline (Flx_print.string_of_desugared deblocked);
-  print_endline "----------------------------";
+  (* IF THERE WAS NO INTERFACE FILE, GENERATE ONE *)
+  if not have_interface 
+  then begin
+    print_endline "//No interface file found: generating one";
+    let h = open_out iface_file_name in
+    let iface = build_interface parse_tree in
+    List.iter 
+    (
+      fun x->
+        output_string h
+        (
+          (string_of_statement 0 x)^"\n"
+        )
+    ) 
+    iface;
+    close_out h
+  end
+  ;
+  let counter = ref 1 in
+  let include_dirs =  (Filename.dirname input_file_name) :: compiler_options.include_dirs in
+  let compiler_options = { compiler_options with include_dirs = include_dirs } in
+  let syms = { syms with compiler_options = compiler_options } in
+  let deblocked = desugar_program include_dirs module_name counter parse_tree in
 
   let root = !(syms.counter) in
   let table, exes, ifaces,dirs = 
-    build_tables true syms.dfns syms.counter "<top level>" 0 None None root deblocked 
+    build_tables syms "<top level>" 0 None None root deblocked 
   in
     print_endline "//BINDING EXECUTABLE CODE";
     print_endline "//-----------------------";
@@ -772,7 +771,6 @@ try
     )
     bbdfns
    
-with x -> flush stdout; print_endline "EXCEPTION"; 
-  print_endline (Printexc.to_string x)
+with x -> Flx_terminate.terminate !reverse_return_parity x
 ;;
 

@@ -2330,69 +2330,6 @@ resume:>
   print "error handled, continuing"; endl;
 }
 
-@head(2,'Exceptions')
-I've shown you static exception handling using goto
-for a reason: Felix provides syntactic sugar for this.
-Here is the same program, using the sugar:
-
-@select(tangler(tdir+'tut153.flx'))
-include "std";
-
-proc main
-{
-  attempt
-  {
-    // do something
-
-    raise err 1;
-   
-    // do something else
-
-  };
-  exceptions
-  {
-    err(errno:int)
-    {
-      print "error "; print errno;
-      print " -- aborting"; endl;
-    }
-  }
-  endattempt;
-  print "error handled, continuing"; endl;
-}
-main;
-
-@doc()
-There's no goto visible, nor a resume label,
-but the effect is the same. It looks like
-exception handling, but its really a kind
-of labelled break. The key difference between
-static and dynamic exception handling is that
-static handlers are bound at compile time:
-no run time type information is required.
-@p()
-Dynamic exception handling is better done using
-the idiom shown earlier in which the handlers
-are passed explicitly.
-@p()
-Naturally, because this is just sugar, you can
-deduce that it is possible to pass arguments
-to handlers, and indeed to overload them,
-indeed it is possible to raise an exception
-which is handled several levels away,
-skipping past exception blocks which do not
-contain a matching handler: the resume point
-is always after the block exceptions block
-containing the handler.
-@p()
-A key property of static exceptions is that
-if there is no matching handler, a compile
-time error resuts, and the handler will always
-be found in a scope enclosing the raise statement,
-or, the exception list following the attempt
-immediately enclosing it: in other words,
-the handler is always 'nearby'.
-
 @head(2,'Procedure Values Again')
 We've seen the advantages of higher order 
 functions and procedures. It is possible
@@ -3293,3 +3230,4 @@ fun f(a:x):x =
   return b;
 }
 */
+

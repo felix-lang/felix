@@ -581,31 +581,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     ctack (`AST_fun_return (sr, me e));
     reachable := false
 
-  | `AST_block (sr, sts) ->
-    ctack (`AST_block (sr, ms sts))
-
-  | `AST_attempt (sr, (sr1, st), (sr2, sts2), (sr3, sts3)) ->
-    let st =
-      match ms [st] with
-      | [] -> `AST_nop (sr1,"empty attempt")
-      | [st] -> st
-      | sts -> `AST_block (sr1,sts)
-    in
-      ctack (`AST_attempt 
-      (
-        sr, 
-        (sr1, st), 
-        (sr2, ms sts2), 
-        (sr3, ms sts3)
-      ))
-
-  | `AST_except_handler (sr, id, ps, sts ) ->
-     let pr = map fst ps in
-     tack (`AST_except_handler (sr, mi sr id, ps, msp sr pr sts ))
-
-  | `AST_raise (sr, id, e) ->
-     ctack (`AST_raise (sr, mi sr id, me e));
-     reachable := false
   | st -> failwith ("[subst_or_expand] Unhandled case " ^ string_of_statement 0 st)
   end
   ;
@@ -956,18 +931,12 @@ open Flx_print
 open Flx_types
 open Flx_getopt
 open Flx_version
-;;
+open Flx_flxopt
 
-let print_help () =
-  print_endline "options:";
-  print_endline "  -h, --help : print this help";
-  print_endline "  --version: print version info";
-  print_endline "  -v, --verbose: print symbol table";
-  print_endline "  -q, --quiet: no stdout";
-  print_endline "  -Idir, --include=dir : append dir to include path";
-  exit(0)
+let print_help () = print_options(); exit(0)
 ;;
-
+let reverse_return_parity = ref false
+;;
 try
   let argc = Array.length Sys.argv in
   if argc <= 1 
@@ -976,33 +945,32 @@ try
     exit 0
   end
   ;
-  let options = get_options Sys.argv in
-  let include_dirs = ref [] in
-  let print_flag = ref false in
-  List.iter (fun (key,value) ->
-    if key = "include" || key = "I"
-    then include_dirs := !include_dirs @ [value]
-
-    else if key = "verbose" || key = "v"
-    then print_flag := true
-
-    else if key = "help" || key = "h"
-    then print_help ()
-
-    else if key = "version" 
-    then (print_endline ("Felix Version " ^ version_string))
-  )
-  options
+  let raw_options = parse_options Sys.argv in
+  let compiler_options = get_felix_options raw_options in
+  reverse_return_parity := compiler_options.reverse_return_parity
   ;
-  if !print_flag then begin
+  let syms = make_syms compiler_options in
+
+  if check_keys raw_options ["h"; "help"]
+  then print_help ()
+  ;
+  if check_key raw_options "version" 
+  then (print_endline ("Felix Version " ^ !version_data.version_string))
+  ;
+  if compiler_options.print_flag then begin
     print_string "//Include directories = ";
     List.iter (fun d -> print_string (d ^ " "))
-    !include_dirs;
+    compiler_options.include_dirs;
     print_endline ""
   end
   ;
 
-  let filebase = Sys.argv.(argc-1) in
+  let filename = 
+    match get_key_value raw_options "" with
+    | Some s -> s
+    | None -> exit 0
+  in
+  let filebase = filename in
   let input_file_name = filebase ^ ".flx" 
   and iface_file_name = filebase ^ ".fix"
   and module_name = 
@@ -1018,7 +986,7 @@ try
     Flx_parse_ctrl.parse_file 
       input_file_name 
       (Filename.dirname input_file_name)
-      !include_dirs 
+      compiler_options.include_dirs 
   in
   print_endline (Flx_print.string_of_compilation_unit parse_tree);
   print_endline "//PARSE OK";
@@ -1031,7 +999,6 @@ try
   print_endline (Flx_print.string_of_compilation_unit expanded);
   print_endline "//----------------------------";
 
-with x -> flush stdout; print_endline "EXCEPTION"; 
-  print_endline (Printexc.to_string x)
+with x -> Flx_terminate.terminate !reverse_return_parity x
 ;;
 

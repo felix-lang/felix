@@ -4,10 +4,11 @@
 open Flx_types
 
 val csubst:
+  (tbexpr_t -> string) ->
   sym_state_t ->
   fully_bound_symbol_table_t ->
   string ->
-  string list ->
+  tbexpr_t list ->
   btypecode_t list ->
   btypecode_t ->
   btypecode_t list ->
@@ -47,7 +48,8 @@ type mode_t =
  | Dollar | Hash | Earhole | Backquote | Quest (* last char was one of these *)
  | DollarDigits | HashDigits | EarholeDigits | BackquoteDigits | QuestDigits
   
-let csubst sym_state bbdfns ct args typs retyp gargs =
+let csubst ge sym_state bbdfns ct args' typs retyp gargs =
+  let args = List.map ge args' in
   let registry = sym_state.registry 
   and dfns = sym_state.dfns in
   let n = List.length args in
@@ -211,13 +213,25 @@ let csubst sym_state bbdfns ct args typs retyp gargs =
         else if !digits<=0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
         else
           let s' = List.nth args (!digits-1) in
+          let tbexpr = List.nth args' (!digits-1) in
           begin match List.nth typs (!digits-1) with
           (* In the special case of passing a Felix pointer,
              we use the data pointer 
              (ignoring the frame pointer)
            *)
           | `BTYP_pointer _ ->
-            Buffer.add_string buf  ("(" ^ s' ^ ").data")
+            begin match tbexpr with
+            | `BEXPR_ref index,`BTYP_pointer _ ->
+              (*
+              print_endline "GOT AN INDEX";
+              print_endline ("ref is " ^ ge tbexpr);
+              print_endline ("Adddress is " ^ ge (`BEXPR_name index,`BTYP_void));
+              *)
+              let address = ge (`BEXPR_name index,`BTYP_void) in
+              Buffer.add_string buf  ("(&" ^ address ^ ")")
+            | _ ->
+              Buffer.add_string buf  ("(" ^ s' ^ ").data")
+            end
           | _ -> 
             Buffer.add_string buf ("(" ^ s' ^ ")")
           end;

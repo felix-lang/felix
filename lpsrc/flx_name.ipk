@@ -62,8 +62,8 @@ let cpp_name bbdfns index =
     with _ -> failwith ("[cpp_name] Can't find index " ^ string_of_int index)
   in
   (match entry with
-  | `BBDCL_function _ -> "_function_"   
-  | `BBDCL_procedure _  -> "_procedure_"
+  | `BBDCL_function _ -> "_fun_"   
+  | `BBDCL_procedure _  -> "_proc_"
   | `BBDCL_var _ -> "_var_"
   | `BBDCL_val _ -> "_val_"
   | _ -> failwith "cpp_name expected func,proc,var or val"
@@ -84,9 +84,11 @@ let rec cpp_typename  syms bbdfns t =
   | `BTYP_fix i ->  failwith "[cpp_typename] Can't name type fixpoint"
   | `BTYP_tuple [] -> "unit"
   | `BTYP_function (_,`BTYP_void) -> 
-    "_procedure_type_" ^ string_of_int (Hashtbl.find registry t') ^ "*"
+    "_proc_type_" ^ string_of_int (Hashtbl.find registry t') ^ "*"
+
   | `BTYP_function _ -> 
-    "_function_type_" ^ string_of_int (Hashtbl.find registry t') ^ "*"
+    "_fun_type_" ^ string_of_int (Hashtbl.find registry t') ^ "*"
+
   | `BTYP_tuple _ -> "_tuple_type_" ^ string_of_int (Hashtbl.find registry t')
   | `BTYP_sum _ -> "_sum_type_" ^ string_of_int (Hashtbl.find registry t')
 
@@ -136,9 +138,9 @@ let rec cpp_classname syms bbdfns t =
   | `BTYP_tuple [] -> "unit"
   | `BTYP_void -> failwith "void doesn't have a classname"
   | `BTYP_function (_,`BTYP_void) -> 
-    "_procedure_type_" ^ string_of_int (Hashtbl.find registry t)
+    "_proc_type_" ^ string_of_int (Hashtbl.find registry t)
   | `BTYP_function _ -> 
-    "_function_type_" ^ string_of_int (Hashtbl.find registry t) 
+    "_fun_type_" ^ string_of_int (Hashtbl.find registry t) 
   | `BTYP_tuple _ -> "_tuple_type_" ^ string_of_int (Hashtbl.find registry t)
   | `BTYP_sum _ -> "_sum_type_" ^ string_of_int (Hashtbl.find registry t)
   | `BTYP_pointer t' -> "_ref_<"^tn t'^">"

@@ -14,9 +14,7 @@ of functions remain unbound.
 @select(h)
 open Flx_types
 val build_tables:
-  bool ->
-  symbol_table_t ->
-  int ref ->
+  sym_state_t ->
   string ->
   int ->
   int option -> (* parent index *)
@@ -107,7 +105,12 @@ let add_function table key value =
   registration of all the children and their parent is complete
 *)
 
-let rec build_tables print_flag dfns counter name level parent grandparent root asms = 
+let rec build_tables syms name level parent grandparent root asms = 
+  let 
+    print_flag = syms.compiler_options.print_flag and
+    dfns = syms.dfns and
+    counter = syms.counter
+  in
   let dcls,exes,ifaces,dirs = split_asms asms in
   let dcls,exes,ifaces,dirs = 
     List.rev dcls,List.rev exes,List.rev ifaces, List.rev dirs
@@ -160,7 +163,7 @@ let rec build_tables print_flag dfns counter name level parent grandparent root 
         | `DCL_typed_functor (ps,ret,asms) -> 
           let fun_index = n in
           let table, exes,ifaces,dirs = 
-            build_tables print_flag dfns counter id (level+1) (Some n) parent root
+            build_tables syms id (level+1) (Some n) parent root
             asms
           in
           Hashtbl.add dfns fun_index (id, sr, parent,
@@ -199,7 +202,7 @@ let rec build_tables print_flag dfns counter name level parent grandparent root 
         | `DCL_untyped_functor (ps,asms) -> 
           let fun_index = n in
           let table, exes,ifaces,dirs = 
-            build_tables print_flag dfns counter id (level+1) (Some n) parent root
+            build_tables syms id (level+1) (Some n) parent root
             asms
           in
           Hashtbl.add dfns fun_index (id, sr, parent,
@@ -239,7 +242,7 @@ let rec build_tables print_flag dfns counter name level parent grandparent root 
           let fun_index = n in
           let t = if t = `TYP_none then `TYP_var fun_index else t in
           let table, exes, ifaces,dirs =  
-            build_tables print_flag dfns counter id (level+1) 
+            build_tables syms id (level+1) 
             (Some fun_index) parent root asms 
           in
           List.iter (fun (name,typ) -> 
@@ -302,7 +305,7 @@ let rec build_tables print_flag dfns counter name level parent grandparent root 
 
           let fun_index = n in
           let table, exes,ifaces,dirs = 
-            build_tables print_flag dfns counter id (level+1) 
+            build_tables syms id (level+1) 
             (Some fun_index) parent root !new_asms 
           in
           Hashtbl.add dfns fun_index (id, sr, parent,
@@ -324,7 +327,7 @@ let rec build_tables print_flag dfns counter name level parent grandparent root 
 
         | `DCL_module asms ->
           let table, exes,ifaces,dirs = 
-            build_tables print_flag dfns counter id (level+1) (Some n) parent root
+            build_tables syms id (level+1) (Some n) parent root
             asms
           in
           Hashtbl.add dfns n (id, sr,parent,`SYMDEF_module (table,dirs));
@@ -349,7 +352,7 @@ let rec build_tables print_flag dfns counter name level parent grandparent root 
         
         | `DCL_interface asms ->
           let table, exes,ifaces,dirs = 
-            build_tables print_flag dfns counter id (level+1) (Some n) parent root
+            build_tables syms id (level+1) (Some n) parent root
             asms
           in
           Hashtbl.add dfns n (id, sr,parent,`SYMDEF_interface (table, dirs));
@@ -368,7 +371,7 @@ let rec build_tables print_flag dfns counter name level parent grandparent root 
         | `DCL_procedure (ps,asms) -> 
           let fun_index = n in
           let table, exes,ifaces,dirs = 
-            build_tables print_flag dfns counter id 
+            build_tables syms id 
             (level+1) (Some fun_index) parent root asms 
           in
           List.iter (fun (name,typ) -> 

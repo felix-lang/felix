@@ -275,7 +275,8 @@ let gen_type_name syms bbdfns (index,typ) =
       | _ -> failwith "Expected primitive type"
     in
     let name = tn typ in
-    let s = csubst syms bbdfns ct [] [] `BTYP_void vs in
+    let dummy_ge = fun _ -> (assert false) in
+    let s = csubst dummy_ge syms bbdfns ct [] [] `BTYP_void vs in
     "typedef " ^ s ^ " " ^ name ^ ";\n"
 
   | `BTYP_name index ->
@@ -332,14 +333,14 @@ let gen_type syms bbdfns (index,typ) =
     and argtype = tn a
     in
     "struct " ^ name ^
-    ": continuation_t {\n" ^
+    ": con_t {\n" ^
     (if a <> `BTYP_tuple [] 
     then
-    "  virtual continuation_t *call(continuation_t *, "^argtype^" const &)=0;\n"
+    "  virtual con_t *call(con_t *, "^argtype^" const &)=0;\n"
     else
-    "  virtual continuation_t *call(continuation_t *)=0;\n"
+    "  virtual con_t *call(con_t *)=0;\n"
     ) ^
-    "  virtual continuation_t *resume()=0;\n"  ^
+    "  virtual con_t *resume()=0;\n"  ^
     "};\n"
 
   (* FUNCTION *)

@@ -26,17 +26,61 @@ C/C++ programmers, together with control inversion.
 @push_head()
 @h=tangler('src/flx_version.mli')
 @select(h)
-val version_string : string
+open Flx_types
+val version_data: version_data_t ref
 
 @h=tangler('src/flx_version.ml')
 @select(h)
-@tangle('let version_string = "'+flx_version+'"')
+open Flx_types
+let version_data = ref
+{
+  version_string = "no version";
+  build_time_float = -1.0;
+  build_time = "0000-00-00";
+  buildno = -1;
+}
+
+@h=tangler('src/flx_version_hook.ml')
+@select(h)
+@python("//")
+def get_buildno():
+  fname = "buildno.txt"
+  try:
+    f = open(fname)
+    s = f.readline()
+    s = s[0:-1]
+    i = int(s) + 1
+    f.close()
+  except:
+    i = 1
+  s = str(i)
+  f = open(fname,"w")
+  f.write("%d\n" % i)
+  f.close()
+  return s
+//
+@import time
+@now = time.time()
+@buildno = get_buildno()
+@print "BUILDNO",buildno
+open Flx_types
+let version_data: version_data_t =
+{
+@tangle('  buildno = '+buildno+";")
+@tangle('  version_string = "'+flx_version+'";')
+@tangle('  build_time_float = '+str(now)+";")
+@tangle('  build_time = "'+time.ctime(now)+'";')
 @f = open ("VERSION","w")
 @f.write(flx_version+"\n")
 @f.close()
+} 
+;;
+Flx_version.version_data := version_data
+;;
 
 @include_file ('flx_util.ipk')
 @include_file ('flx_types.ipk')
+@include_file ('flx_ctypes.ipk')
 @include_file ('flx_unify.ipk')
 @include_file ('flx_parser.ipk')
 @include_file ('flx_string.ipk')
@@ -55,6 +99,7 @@ val version_string : string
 @include_file ('flx_tgen.ipk')
 @include_file ('flx_csubst.ipk')
 @include_file ('flx_gen.ipk')
+@include_file ('flx_getopt.ipk')
 @pop_head()
 
 @head(2,'The Felix Run time')
@@ -69,6 +114,7 @@ val version_string : string
 @include_file ('flx_regexp.ipk')
 
 @head(2,'The Unix Build system')
+@include_file ('flx_man.ipk')
 @include_file ('flx_maker.ipk')
 @include_file ('flx_vim.ipk')
 

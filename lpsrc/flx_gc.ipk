@@ -1,5 +1,504 @@
 @head(1,'Garbage collector')
-[The original LP source was lost including test code .. ]
+The Felix garbage collector consists of two components: the collector
+abstraction, and a concrete collector.
+@p()
+The abstraction consists of an abstract class collector_t,
+which models the collector,
+an abstract class allocator_t, which models an allocator,
+and two concrete classes:
+shape_t, which defines a type shape descriptor, and frame_t,
+which describes an allocated memory block, called a frame.
+@p()
+The frame_t data is stored at the beginning of every block
+the collector manages, this is called the header part. 
+The rest of the block is for client data, and is called the client part.
+The collector manages frames in terms of pointers to the whole block,
+which are also pointers to the header. The client only sees a pointer
+to the client part.
+@p()
+The header contains links to other frames, so the collector can navigate 
+the set of blocks, and a pointer to a shape object, 
+which describes where in the client part pointers reside, so that the
+collector can chase down all the reachable blocks.
+@p()
+The collector mechanism provides resources for a simple
+mark and sweep collector, reference counting, and manual
+deletion. It also provides for user written finalisers,
+in particular C++ class destructors.
+@p()
+Note that the collector is a 'world stop' synchronous collector.
+Collection only occurs when you call the collect() method of the
+collector object.
+@p()
+Note the Felix allocator abstraction is not compatible with 
+the C++ allocator concept; instead, it is a simple wrapper
+around the malloc/free interface. It is provided primarily
+to allow instrumentation of allocations, although it is possible
+to supply a user written allocator.
+
+@h = tangler('rtl/flx_gc.hpp')
+@select(h)
+#ifndef FLX_GC
+#define FLX_GC
+
+#include <stdlib.h>
+
+// we use an STL set to hold the collection of roots
+#include <set>
+
+namespace flx {
+namespace gc {
+namespace generic {
+// Here are the types we refer to:
+
+struct frame_t;      // the type of all collectable objects
+struct gc_shape_t;   // the shape of collectable objects
+struct collector_t;  // the collector itself
+
+struct gc_shape_t
+{
+  size_t amt;                // bytes allocated
+  void (*finaliser)(collector_t*, void*);  // finalisation function
+  size_t n_offsets;          // number of offsets
+  size_t *offsets;           // actual offsets
+
+  // convenience constructor
+  gc_shape_t(
+    size_t amt_a,
+    void (*finaliser_a)(collector_t*, void*),
+    size_t n_offsets_a,
+    size_t *offsets_a
+  );
+};
+@doc()
+The following template is provided as a standard wrapper
+for C++ class destructors. The term
+@begin_displayed_code()
+  std_finaliser<T>
+@end_displayed_code()
+denotes a function pointer to the wrapper for the destructor
+of class T, which can be used as a finaliser in the shape
+descriptor of a T. The client is cautioned than the order
+of finalisation may not be what is expected. Finalisers
+should be provided for all C++ objects managed by the Felix
+collector and not refering to Felix objects, 
+but which contain pointers to other objects that need 
+to be deleted when the main object is destroyed;
+for example a string class managing an array of char
+requires its destructor be invoked to delete the managed
+array, and so a finaliser wrapping the destructor must
+be provided.
+@p()
+C data types may, of course, also require destruction,
+and Felix therefore can provide programmers with
+the convenience of C++ destructors, even for C data types.
+
+@select(h)
+template<class T>
+void std_finaliser(collector_t*, void *t)
+{
+  static_cast<T*>(t) -> ~T();
+}
+
+@doc()
+Here is the frame_t data type.
+@select(h)
+struct frame_t
+{
+  gc_shape_t *shape;      // the shape of each object
+  unsigned long n_objects; // how many objects (for arrays)
+  frame_t *next;          // the next and previous objects
+  frame_t *prev;          // in the collectors list
+  unsigned long refcnt;   // the reference count
+  collector_t *collector; // the managing collector
+  bool garbage;           // the garbage flag
+  bool finalised;         // whether the object is finalised
+};
+
+@doc()
+Its unfortunate, but neither C nor C++ provide
+proper alignment controls, and rather than mess
+around with weird macro solutions, we just fix
+a reasonable figure for 32 bit machines and hope
+for the best. Change this figure for your machine
+if necessary.
+
+@select(h)
+// ----------------------------------------------------
+// WARNING: MACHINE DEPENDENT HACKERY
+// YOU MUST CHANGE THIS VALUE TO SUIT YOUR SYSTEM
+
+#define _MAX_ALIGN 16
+
+// ----------------------------------------------------
+
+#define _ROUNDUP(i,n) ((i + n - 1) / n * n)
+#define _ALIGN(i) _ROUNDUP(i,_MAX_ALIGN)
+
+#define FRAMESIZE _ALIGN(sizeof(frame_t))
+#define FRAME_TO_CLIENT(p) \
+  ((void*)((unsigned char*)(void*)p + FRAMESIZE))
+#define CLIENT_TO_FRAME(p) \
+  ((frame_t*)(void*)((unsigned char*)p - FRAMESIZE))
+
+@doc()
+Here is the allocator abstraction.
+@select(h)
+struct allocator_t {
+  virtual void *allocate(size_t)=0;
+  virtual void deallocate(void *, size_t)=0;
+  virtual ~allocator_t(){};
+};
+
+@doc()
+And here is the collector abstraction.
+@select(h)
+struct collector_t
+{
+  collector_t(){}
+  virtual ~collector_t(){}
+
+@doc()
+These routines just provide statistics.
+@select(h)
+  virtual unsigned long get_allocation_count()const=0;
+  virtual unsigned long get_root_count()const=0;
+  virtual unsigned long get_allocation_amt()const=0;
+
+@doc()
+Hooks for the supplied allocator, which operate in
+terms of shape objects rather than raw memory amounts.
+@select(h)
+  virtual void *allocate(gc_shape_t *shape, unsigned long)=0;
+  virtual void deallocate(frame_t *fp)=0;
+@doc()
+The mark and sweep collector algorithm.
+@select(h)
+  virtual unsigned long collect()=0;
+
+@doc()
+Routines to add and remove roots.
+@select(h)
+  virtual void add_root(void *memory)=0;
+  virtual void remove_root(void *memory)=0;
+
+@doc()
+Integrity check for the data structure being managed.
+@select(h)
+  virtual void check()=0;
+
+@doc()
+It doesn't make any sense to copy collector objects
+about.
+@select(h)
+private: // no assignment or copy
+  void operator=(collector_t const&);
+  collector_t(collector_t const&);
+};
+
+@doc()
+The following functions are used to manipulate the
+reference counting system. The pointers here must be
+pointers to the client part, not the frame.
+Reference counting is entirely optional, but if it is
+used, the count must be correctly maintained because
+the decref routine deletes an object when its refcount
+drops to zero.
+@select(h)
+void *_incref(void *b);
+void decref(void *b);
+unsigned long getref(void *b);
+
+template<class T>
+T *incref(T *b)
+{
+  return static_cast<T*>(_incref(b));
+}
+@doc()
+The destroy function unconditionally deletes an object,
+so it must only be used when there are no managed pointers
+to the object. Other pointers might exist, and that is normally
+OK provided they're not dereferenced.
+
+@select(h)
+void destroy(void *b);
+
+@doc()
+The following routines are provided to help
+safely manage pointers. The can be used
+to initialise, assign and destroy, and delete 
+pointer variables, where delete implies
+both NULLing out the variable and also deleting
+the object pointed to. 
+@p()
+Each untyped routine has a corresponding
+template to provide a type safe interface.
+
+@select(h)
+void _init_ptr(void **a, void *b);
+void _set_ptr(void **a, void *b);
+void _release_ptr(void **a);
+void _destroy_ptr(void **a);
+
+template<class T>
+void init_ptr(T **a, T *b)
+{
+  _init_ptr
+  (
+    reinterpret_cast<void**>(a),
+    reinterpret_cast<void*>(b)
+  );
+}
+
+template<class T>
+void set_ptr(T **a, T *b)
+{
+  _set_ptr
+  (
+    reinterpret_cast<void**>(a),
+    reinterpret_cast<void*>(b)
+  );
+}
+
+template<class T>
+void release_ptr(T **a)
+{
+  _release_ptr
+  (
+    reinterpret_cast<void**>(a)
+  );
+}
+
+template<class T>
+void destroy_ptr(T **a)
+{
+  _destroy_ptr
+  (
+    reinterpret_cast<void**>(a)
+  );
+}
+
+@doc()
+The following two routines are used to provide
+C++ type safe heap allocation. There are no corresponding
+delete routines, please use the destroy function.
+
+@select(h)
+void *operator new(size_t, collector_t &, gc_shape_t &);
+void *operator new(size_t, collector_t &, gc_shape_t &, unsigned long);
+
+@doc()
+These two routines are used to reset the type
+of object an memory block hold, and reset the
+length of an array, respectively.
+
+@select(h)
+void flx_reset_shape(void *memory, gc_shape_t &);
+void flx_reset_count(void *memory, unsigned long); 
+
+@doc()
+The handle class is provided to automate reference
+counting. If reference counting is used correctly
+in conjunction with the collector, the collector
+will delete an object with a non-zero reference
+count if and only if it is unreachable from a root,
+and the reference counting system will delete 
+an unreachable object for which there are no cycles.
+Therefore, the reference counting system will
+pre-empt the collector for non-cyclic data collections,
+thereby providing synchronous collection.
+@p()
+In particular, Felix stack frames, when reference 
+counted, will be deleted in the FIFO ordering
+corresponding to C++ function calls, provided
+no Felix pointers to variables in inactive
+frames exist. Felix permits such pointers,
+which is the primary reason frames are collected.
+@p()
+Note: reference counting is expensive, and should only
+be used when synchronous well ordered destructor
+calls are required for stack frames, or when overall
+performance is less important than real time behaviour.
+@p()
+Felix objects owned exclusively by STL containers,
+for example, will be deleted if no Felix object
+refers to them. Therefore do not call the collector
+when this is the case. The objects will be correctly
+deleted by destroying the STL container provided
+they're managed by the handle class.
+@p()
+The handle class must only be used on objects managed
+by the collector, in particular, constructed by the
+provided operator new. The appropriate syntax
+for construction is then:
+@begin_displayed_code()
+  handle(new (gc) X(args))
+@end_displayed_code()
+Use of the pointer management routines is clearly
+exhibited in this class.
+@select(h)
+template<class T>
+struct handle
+{
+  T *p;
+  handle(T *a=0) : p(a) { _incref(a); }
+  handle(handle const &h) : p(h.a) { _incref(p); }
+  handle &operator=(handle const &h)
+  {
+    set_ptr(&p, h.p);
+    return *this;
+  }
+
+  ~handle() {
+    release_ptr(&p);
+  }
+  T *operator->()const { return p; }
+  T &operator *()const { return *p; }
+  void release() { release_ptr(&p); }
+  void set(T *a) { set_ptr(&p, a); }
+};
+
+extern size_t handle_offsets[1];
+
+}}} // end namespaces
+#endif
+
+@select(tangler('rtl/flx_gc.cpp'))
+
+#include "flx_gc.hpp"
+namespace flx {
+namespace gc {
+namespace generic {
+#include <stdio.h>
+#include <assert.h>
+
+// create a shape object given an array of offsets
+gc_shape_t::gc_shape_t
+(
+  size_t amt_a,
+  void (*finaliser_a)(collector_t*, void*),
+  size_t n_offsets_a,
+  size_t *offsets_a
+)
+  :
+  amt(amt_a),
+  finaliser(finaliser_a),
+  n_offsets(n_offsets_a),
+  offsets(offsets_a)
+{}
+
+size_t handle_offsets[1] = {0};
+
+void destroy(void *p)
+{
+  if(p)
+  {
+    frame_t *fp = CLIENT_TO_FRAME(p);
+    if(!fp->finalised)
+      fp->collector->deallocate(fp);
+   }
+}
+
+void *_incref(void *client)
+{
+  printf("incref %p: %ld->%ld\n",client, getref(client), getref(client)+1);
+  if(client)
+    ++(CLIENT_TO_FRAME(client)->refcnt);
+  return client;
+}
+
+void decref(void *client)
+{
+  printf("decref %p: %ld->%ld\n",client,getref(client),getref(client)-1);
+  if(client)
+  {
+    if(getref(client)<=0) printf("SYSTEM ERROR : ZERO REFCNT\n");
+    frame_t *frame = CLIENT_TO_FRAME(client);
+    if(!frame->finalised && frame->refcnt)
+    {
+      if(!--frame->refcnt)
+      {
+        //printf("DEALLOCATE %p\n",client);
+        frame->collector->deallocate(frame);
+      }
+    }
+  }
+}
+
+unsigned long getref(void *client)
+{
+  if(client)
+  {
+    frame_t *frame = CLIENT_TO_FRAME(client);
+    return frame->refcnt;
+  }
+  else return (unsigned long)-1;
+}
+
+// b may be 0
+void _init_ptr(void **a, void *b)
+{
+  _incref(b);
+  *a = b;
+}
+
+// *a or b may be 0
+void _set_ptr(void **a, void *b)
+{
+  _incref(b);
+  decref(*a);
+  *a = b;
+}
+
+// *a may be 0
+void _release_ptr(void **a)
+{
+  void *p = *a;
+  *a = 0;
+  decref(p);
+}
+
+void _destroy_ptr(void **a)
+{
+  void *b = *a; // save the pointer value
+  *a=0;         // null out the variable
+  destroy(b);
+}
+
+void *operator new(
+  size_t amt,
+  collector_t &collector,
+  gc_shape_t &shape
+)
+{
+  assert (amt == shape.amt);
+  return collector.allocate(&shape,1);
+}
+
+void *operator new(
+  size_t amt,
+  collector_t &collector,
+  gc_shape_t &shape,
+  unsigned long count
+)
+{
+  assert (amt == shape.amt * count);
+  return collector.allocate(&shape,count);
+}
+
+void reset_shape(void *memory, gc_shape_t &shape)
+{
+  assert(memory);
+  CLIENT_TO_FRAME(memory)->shape = &shape;
+}
+
+void reset_count(void *memory, unsigned long n)
+{
+  assert(memory);
+  CLIENT_TO_FRAME(memory)->n_objects = n;
+}
+
+}}} // end namespaces
 
 @select(tangler('rtl/flx_collector.hpp'))
 #ifndef FLX_COLLECTOR
@@ -12,13 +511,19 @@ namespace gc {
 namespace collector {
 using namespace generic;
 
+struct malloc_free : public virtual allocator_t {
+  void *allocate(size_t);
+  void deallocate(void *, size_t);
+};
+
+
 struct flx_collector_t : public collector_t
 {
   flx_collector_t(allocator_t *);
   ~flx_collector_t();
 
   // allocator
-  void *allocate(gc_shape_t *ptr_map) ;
+  void *allocate(gc_shape_t *ptr_map, unsigned long);
 
   // collector (returns number of objects collected)
   unsigned long collect();
@@ -81,11 +586,14 @@ namespace collector {
 
 void *malloc_free::allocate(size_t amt)
 {
-  return malloc(amt);
+  void *p = malloc(amt);
+  //printf("malloc %p\n",p);
+  return p;
 }
 
 void malloc_free::deallocate(void *p, size_t)
 {
+  //printf("free %p\n",p);
   free(p);
 }
 
@@ -117,20 +625,21 @@ flx_collector_t::flx_collector_t(allocator_t *a) :
 {}
 
 
-void * flx_collector_t::allocate(gc_shape_t *shape)
+void * flx_collector_t::allocate(gc_shape_t *shape, unsigned long nobj)
 {
   // calculate how much memory to request
-  size_t amt = shape->amt+FRAMESIZE;
+  size_t amt = nobj * shape->amt + FRAMESIZE;
 
   // allocate a block
   frame_t *fp = (frame_t*)allocator->allocate(amt);
   assert(fp); // Got some memory!
 
   // initialise the shape, garbage flag, and refcount
-  fp->shape=shape;
-  fp->garbage=parity;
+  fp->shape = shape;
+  fp->garbage = parity;
   fp->finalised = false;
-  fp->refcnt=0;
+  fp->refcnt = 1;
+  fp->n_objects = nobj;
   fp->collector = this;
 
   // link the frame into the collectors list
@@ -274,16 +783,22 @@ void flx_collector_t::scan_object(frame_t *frame)
   if(frame->garbage == parity)
   {
     frame->garbage = !parity; // reachable!
+    unsigned long n_objects = frame->n_objects;
     gc_shape_t *shape = frame->shape;
+    size_t obj_size = shape->amt;
     size_t n_offsets = shape->n_offsets;
     size_t *offsets = shape->offsets;
     unsigned char *p = (unsigned char*)FRAME_TO_CLIENT(frame);
 
-    for(int i=0; i<n_offsets; ++i)
+    for(unsigned long j=0; j<n_objects; ++j)
     {
-      void **q = (void**)(void*)(p + offsets[i]);
-      if(*q)
-        scan_object(CLIENT_TO_FRAME(*q));
+      for(int i=0; i<n_offsets; ++i)
+      {
+        void **q = (void**)(void*)(p + offsets[i]);
+        if(*q)
+          scan_object(CLIENT_TO_FRAME(*q));
+      }
+      p+=obj_size;
     }
   }
 }
@@ -303,6 +818,7 @@ void flx_collector_t::mark()
 
 unsigned long flx_collector_t::collect()
 {
+  //printf("Running collector\n");
   mark();
   return sweep();
 }
@@ -324,294 +840,4 @@ flx_collector_t::~flx_collector_t()
 
 }}} // end namespaces
 
-@select(tangler('rtl/flx_gc.hpp'))
-#ifndef FLX_GC
-#define FLX_GC
-
-#include <stdlib.h>
-
-// we use an STL set to hold the collection of roots
-#include <set>
-
-namespace flx {
-namespace gc {
-namespace generic {
-// Here are the types we refer to:
-
-struct frame_t;      // the type of all collectable objects
-struct gc_shape_t;   // the shape of collectable objects
-struct collector_t;  // the collector itself
-
-struct gc_shape_t
-{
-  size_t amt;                // bytes allocated
-  void (*finaliser)(collector_t*, void*);  // finalisation function
-  size_t n_offsets;          // number of offsets
-  size_t *offsets;           // actual offsets
-
-  // convenience constructor
-  gc_shape_t(
-    size_t amt_a,
-    void (*finaliser_a)(collector_t*, void*),
-    size_t n_offsets_a,
-    size_t *offsets_a
-  );
-};
-
-template<class T>
-void std_finaliser(collector_t*, void *t)
-{
-  static_cast<T*>(t) -> ~T();
-}
-
-struct frame_t
-{
-  gc_shape_t *shape;      // the shape of the object
-  frame_t *next;          // the next and previous objects
-  frame_t *prev;          // in the collectors list
-  unsigned long refcnt;   // the reference count
-  collector_t *collector; // the managing collector
-  bool garbage;           // the garbage flag
-  bool finalised;         // whether the object is finalised
-};
-
-
-// ----------------------------------------------------
-// WARNING: MACHINE DEPENDENT HACKERY
-// YOU MUST CHANGE THIS VALUE TO SUIT YOUR SYSTEM
-
-#define _MAX_ALIGN 4
-
-// ----------------------------------------------------
-
-#define _ROUNDUP(i,n) ((i + n - 1) / n * n)
-#define _ALIGN(i) _ROUNDUP(i,_MAX_ALIGN)
-
-#define FRAMESIZE _ALIGN(sizeof(frame_t))
-#define FRAME_TO_CLIENT(p) \
-  ((void*)((unsigned char*)(void*)p + FRAMESIZE))
-#define CLIENT_TO_FRAME(p) \
-  ((frame_t*)(void*)((unsigned char*)p - FRAMESIZE))
-
-struct allocator_t {
-  virtual void *allocate(size_t)=0;
-  virtual void deallocate(void *, size_t)=0;
-  virtual ~allocator_t(){};
-};
-
-struct malloc_free : public virtual allocator_t {
-  void *allocate(size_t);
-  void deallocate(void *, size_t);
-};
-
-struct collector_t
-{
-  collector_t(){}
-  virtual ~collector_t(){}
-
-  virtual unsigned long get_allocation_count()const=0;
-  virtual unsigned long get_root_count()const=0;
-  virtual unsigned long get_allocation_amt()const=0;
-
-  virtual void *allocate(gc_shape_t *shape)=0;
-
-  virtual void deallocate(frame_t *fp)=0;
-
-  virtual unsigned long collect()=0;
-
-  virtual void add_root(void *memory)=0;
-
-  virtual void remove_root(void *memory)=0;
-
-  virtual void check()=0;
-
-private: // no assignment or copy
-  void operator=(collector_t const&);
-  collector_t(collector_t const&);
-};
-
-void incref(void *b);
-
-void decref(void *b);
-
-void destroy(void *b);
-
-void _init_ptr(void **a, void *b);
-
-template<class T>
-void init_ptr(T **a, T *b)
-{
-  _init_ptr
-  (
-    reinterpret_cast<void**>(a),
-    reinterpret_cast<void*>(b)
-  );
-}
-
-void _set_ptr(void **a, void *b);
-
-template<class T>
-void set_ptr(T **a, T *b)
-{
-  _set_ptr
-  (
-    reinterpret_cast<void**>(a),
-    reinterpret_cast<void*>(b)
-  );
-}
-void _release_ptr(void **a);
-
-template<class T>
-void release_ptr(T **a)
-{
-  _release_ptr
-  (
-    reinterpret_cast<void**>(a)
-  );
-}
-
-
-void _destroy_ptr(void **a);
-
-template<class T>
-void destroy_ptr(T **a)
-{
-  _destroy_ptr
-  (
-    reinterpret_cast<void**>(a)
-  );
-}
-
-
-void *operator new(size_t, collector_t &, gc_shape_t &);
-
-void flx_reset_shape(void *memory, gc_shape_t &);
-
-template<class T>
-struct handle
-{
-  T *p;
-  handle(T *a=0) : p(a) { incref(a); }
-  handle(handle const &h) : p(h.a) { incref(p); }
-  handle &operator=(handle const &h)
-  {
-    set_ptr(&p, h.p);
-    return *this;
-  }
-
-  ~handle() {
-    release_ptr(&p);
-  }
-  T *operator->()const { return p; }
-  T &operator *()const { return *p; }
-  void release() { release_ptr(&p); }
-  void set(T *a) { set_ptr(&p, a); }
-};
-
-extern size_t handle_offsets[1];
-
-}}} // end namespaces
-#endif
-
-@select(tangler('rtl/flx_gc.cpp'))
-
-#include "flx_gc.hpp"
-namespace flx {
-namespace gc {
-namespace generic {
-#include <stdio.h>
-#include <assert.h>
-
-// create a shape object given an array of offsets
-gc_shape_t::gc_shape_t
-(
-  size_t amt_a,
-  void (*finaliser_a)(collector_t*, void*),
-  size_t n_offsets_a,
-  size_t *offsets_a
-)
-  :
-  amt(amt_a),
-  finaliser(finaliser_a),
-  n_offsets(n_offsets_a),
-  offsets(offsets_a)
-{}
-
-size_t handle_offsets[1] = {0};
-
-void destroy(void *p)
-{
-  if(p)
-  {
-    frame_t *fp = CLIENT_TO_FRAME(p);
-    if(!fp->finalised)
-      fp->collector->deallocate(fp);
-   }
-}
-
-void incref(void *client)
-{
-  if(client)
-    ++(CLIENT_TO_FRAME(client)->refcnt);
-}
-
-void decref(void *client)
-{
-  if(client)
-  {
-    frame_t *frame = CLIENT_TO_FRAME(client);
-    if(!frame->finalised && frame->refcnt)
-    {
-      if(!--frame->refcnt)
-        frame->collector->deallocate(frame);
-    }
-  }
-}
-
-// b may be 0
-void _init_ptr(void **a, void *b)
-{
-  incref(b);
-  *a = b;
-}
-
-// *a or b may be 0
-void _set_ptr(void **a, void *b)
-{
-  incref(b);
-  decref(*a);
-  *a = b;
-}
-
-// *a may be 0
-void _release_ptr(void **a)
-{
-  void *p = *a;
-  *a = 0;
-  decref(p);
-}
-
-void _destroy_ptr(void **a)
-{
-  void *b = *a; // save the pointer value
-  *a=0;         // null out the variable
-  destroy(b);
-}
-void *operator new(
-  size_t amt,
-  collector_t &collector,
-  gc_shape_t &shape
-)
-{
-  assert (amt == shape.amt);
-  return collector.allocate(&shape);
-}
-
-void reset_shape(void *memory, gc_shape_t &shape)
-{
-  assert(memory);
-  CLIENT_TO_FRAME(memory)->shape = &shape;
-}
-
-}}} // end namespaces
 

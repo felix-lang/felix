@@ -50,14 +50,9 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "fork", (fun s ->  FORK s);
     "todo", (fun s ->  TODO s);
     "of", (fun s ->  OF s);
-    "attempt", (fun s ->  ATTEMPT s);
-    "endattempt", (fun s ->  ENDATTEMPT s);
     "endmatch", (fun s ->  ENDMATCH s);
     "let", (fun s ->  LET s);
     "in", (fun s ->  IN s);
-    "except", (fun s ->  EXCEPT s);
-    "finally", (fun s ->  FINALLY s);
-    "raise", (fun s ->  RAISE s);
     "_", (fun s ->  UNDERSCORE s);
     "when", (fun s ->  WHEN s);
     "as", (fun s ->  AS s);
@@ -71,7 +66,6 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "val", (fun s ->  VAL s);
     "union", (fun s ->  UNION s);
     "class", (fun s ->  CLASS s);
-    "exceptions", (fun s ->  EXCEPTIONS s);
     "module", (fun s ->  MODULE s);
     "goto", (fun s ->  GOTO s);
     "export", (fun s ->  EXPORT s);
@@ -826,13 +820,13 @@ and parse_preprocessor = parse
                 let ts = pre_flx_lex buf state in 
                 match ts with
                 | [Flx_parse.ENDMARKER] -> lst
-                | _ -> get (List.rev ts @ lst)
+                | _ -> get (List.rev_append ts lst)
               in List.rev (get [])
             in
             let pre_tokens_of_filename filename =
               let incdirs = state#get_incdirs in
               let basedir = Filename.dirname filename in
-              let state = new Flx_lex.lexer_state filename basedir incdirs in
+              let state = new lexer_state filename basedir incdirs in
               let infile = open_in filename in
               let src = Lexing.from_channel infile in
               let toks = pre_tokens_of_lexbuf src state in

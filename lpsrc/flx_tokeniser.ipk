@@ -8,15 +8,15 @@ open Flx_exceptions
 (* 1: remove comments *)
 
 let filter_comments x =
-  let rec filter x' =
+  let rec filter x' result  =
     match x' with 
-    | COMMENT_NEWLINE _ :: t-> filter t
-    | COMMENT _ :: t -> filter t
-    | NEWLINE :: t -> filter t
-    | WHITE _ :: t -> filter t
-    | h :: t -> h :: filter t
-    | [] -> []
-  in filter x
+    | COMMENT_NEWLINE _ :: t
+    | COMMENT _ :: t 
+    | NEWLINE :: t
+    | WHITE _ :: t -> filter t result
+    | h :: t -> filter t (h::result)
+    | [] -> List.rev result
+  in filter x []
 
 let translate ts = 
   let filters = [
@@ -161,18 +161,12 @@ let string_of_token (tok :Flx_parse.token): string =
   | FORK _ -> "fork"
   | TODO _ -> "todo"
   | OF _ -> "of" 
-  | ATTEMPT _ -> "attempt"
-  | ENDATTEMPT _ -> "endattempt"
-  | RAISE _ -> "raise"
-  | EXCEPT _ -> "except"
-  | FINALLY _ -> "finally"
   | UNION _ -> "union"
   | WHEN _ -> "when"
   | AS _ -> "as"
   | ALL _ -> "as"
   | REGEXP _ -> "regexp"
   | VAR _ -> "var"
-  | EXCEPTIONS _ -> "exceptions"
   | CLASS _ -> "class"
   | VAL _ -> "val"
   | MODULE _ -> "module"
@@ -289,13 +283,11 @@ let src_of_token t = match t with
   | THEN s 
   | ELSE s 
   | ENDIF s 
-  | ENDATTEMPT s
   | ELIF s 
   | OF s 
   | VAR s 
   | UNION s 
   | CLASS s 
-  | EXCEPTIONS s 
   | GOTO s 
   | EXPORT s 
   | REGMATCH s 
@@ -325,10 +317,6 @@ let src_of_token t = match t with
   | READ s 
   | CONST s 
   | STRUCT s 
-  | RAISE s 
-  | ATTEMPT s 
-  | FINALLY s 
-  | EXCEPT s 
   | VAL s 
   | TYPEDEF s 
   | TO s
@@ -347,7 +335,7 @@ let pre_tokens_of_lexbuf buf state =
     match t with
     | [Flx_parse.ENDMARKER] ->
       [Flx_parse.ENDMARKER] @ lst
-    | _ -> get (List.rev t @ lst)
+    | _ -> get (List.rev_append t lst)
   in List.rev (get [])
 
 let pre_tokens_of_filename filename dirname incdirs =

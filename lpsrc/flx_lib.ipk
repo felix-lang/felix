@@ -66,6 +66,7 @@ namespace flx { namespace i18n {
 @h=tangler('lib/std.flx')
 @select(h)
 header """
+#include <stdio.h>
 #include <stddef.h>
 #include <cmath>
 #include <iostream>

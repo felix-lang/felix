@@ -1,4 +1,4 @@
-@head(1,'Test Drivers')
+@head(1,'Drivers')
 These are C++ mainline routines, which are used
 to drive different kinds of Felix programs.
 @p()
@@ -31,6 +31,8 @@ program must not read any messages.
 #include "rtl/flx_collector.hpp"
 #include "rtl/flx_rtl.hpp"
 using namespace flx::rtl;
+using namespace flx::gc::generic;
+using namespace flx::gc::collector;
 
 using namespace std;
 
@@ -50,7 +52,7 @@ struct library_linkage_t
   (
     global_frame_t*,
     process_frame_t*, 
-    flx::gc::generic::collector_t*
+    collector_t*
   );
 
   // frame destructors
@@ -60,7 +62,7 @@ struct library_linkage_t
 
 
   // library initialisation routine
-  typedef continuation_t *(*start_t)
+  typedef con_t *(*start_t)
   (
     global_frame_t*, 
     process_frame_t*, 
@@ -145,13 +147,13 @@ struct library_init_t
   global_frame_t *global_frame;
   process_frame_t *process_frame;
   thread_frame_t *thread_frame;
-  continuation_t *start;
+  con_t *start;
   library_linkage_t *lib;
 
   void create
   (
     library_linkage_t *lib_a, 
-    flx::gc::generic::collector_t *collector
+    collector_t *collector
   )
   {
     lib = lib_a;
@@ -187,37 +189,48 @@ int main(int argc, char* argv[])
     library_init_t instance;
 
     library.link(argv[1]);
-    flx::gc::generic::malloc_free allocator;
-    flx::gc::collector::flx_collector_t collector(&allocator);
+    malloc_free allocator;
+    flx_collector_t collector(&allocator);
     instance.create(&library, &collector);
     
     collector.add_root(instance.start);
     int gc_counter = 0;
-    continuation_t *top = instance.start;
+    con_t *top = instance.start;
 
-    while( top && top->action == continuation_t::yield_action)
+    int gc_trigger = 100;
+    while( top && top->action == con_t::yield_action)
     {
-      continuation_t *new_top = top->resume();
+      con_t *new_top = top->resume();
       if(new_top != top) {
         if(new_top) collector.add_root(new_top);
         collector.remove_root(top);
         top = new_top;
       }
+      if(!--gc_trigger)
+      {
+        if (collector.get_allocation_amt() > 100000L)
+          collector.collect();
+        gc_trigger = 100;
+      }
     }
 
+    printf("%ld garbage\n",collector.get_allocation_amt());
+    collector.collect();
     instance.destroy();
-    //printf("flx_run driver ends normally\n");
+    printf("flx_run driver ends normally\n");
+    exit(0);
   }
   catch (...)
   {
     printf("flx_run driver ends with EXCEPTION\n");
+    exit(1);
   }
 }
 
 @head(3,'Test 1')
 This routine just loops through
 numbers 1 to 10, and prints if they're odd or even.
-@d = tangler('test/test_library1.flx')
+@d = tangler('test/flx_run_lib1.flx')
 @select(d)
 // dispatcher test
 header r"""
@@ -229,8 +242,6 @@ using namespace std;
 typedef void = 0;
 typedef unit = 1;
 typedef bool = 2;
-val false:bool = case 1 of 2;
-val true:bool = case 2 of 2;
 fun lnot:bool->bool = "!$1";
 
 proc while (cond:unit->bool) (bdy:unit->void)
@@ -243,7 +254,7 @@ proc while (cond:unit->bool) (bdy:unit->void)
 }
 
 type string = "string";
-proc print: string = 'printf("%s",$1.c_str());';
+proc print: string = 'printf("%s",$1.data());';
 
 // type int
 type int = "int";
@@ -286,78 +297,13 @@ print "Felix test_library1 initialising\n";
 fire();
 print "Felix test_library1 terminating\n";
 
-@head(2,'Performance Test')
-The first test program generates lines like:
-@begin_displayed_code()
-0 0 TEXT
-0 1 TEXT
-2 2 TEXT
-2 3 TEXT
-...
-@end_displayed_code()
-where the first value is a service key, and the second
-a sequence number. Messages with the same service
-key are sent to the same Felix line handler task:
-if one does not exist, it is created. Each task
-suicides after reading two lines.
-@p()
-We create 1 million threads, and process 2 million
-messages.
-@d = tangler('test/perf_lib_1.flx')
-@select(d)
-// dispatcher test
-header r"""
-#include <string>
-#include <stdio.h>
-using namespace std;
-struct check {
-  check() { printf("ctor\n"); }
-  ~check() { printf("dtor\n"); }
-};
-""";
+@head(2,'Standard input Driver')
+Driver delivers standard input by way
+of a string. No end of file is delivered
+to the client.
 
-type check = "check";
-type bool = "bool";
-type string = "string";
-proc print: string = 'printf("%s",$1.c_str());';
-
-type int = "int";
-proc print: int = 'printf("%d",$1);';
-proc incr : &int = "(*$1)++;";
-fun eq : int * int -> bool = "$1==$2";
-proc set : & int * int = "*$1 = $2;";
-var counter : int = 0;
-var counter2 : int = 0;
-proc eol : unit = 'printf("\n");';
-
-proc handle_line()
-{
-  var checker : check;
-  var line : string;
-  print "Reading line 1 ..";
-  read line;
-  print "line 1 read: "; 
-  print line;
-  print "\n";
-  incr (&counter);
-  if (counter == 1000)
-  {
-    counter <- 0;
-    incr (&counter2);
-    print counter2;
-    print " K\n";
-    eol();
-  }
-  print "SLPI: Reading line 2 ..";
-  read line;
-  print "line 2 read: "; 
-  print line;
-  print "suiciding now ..\n";
-}
-
-export handle_line of (unit) as "line_handler_creator";
-
-@d = tangler('test/perf_drv_1.cpp')
+@head(3,'Driver implementation')
+@d = tangler('rtl/flx_stdin_drv.cpp')
 @select(d)
 #include <stdio.h>
 #include <vector>
@@ -369,60 +315,59 @@ export handle_line of (unit) as "line_handler_creator";
 #include <string>
 #include <unistd.h>
 
-#include "perf_lib_1.hpp"
-continuation_t::continuation_t() : pc(0), action(yield_action) {}
-continuation_t::~continuation_t(){}
+#include "rtl/flx_rtl.hpp"
+#include "rtl/flx_collector.hpp"
 
+using namespace flx::rtl;
+using namespace flx::gc::generic;
+using namespace flx::gc::collector;
 using namespace std;
 
-int xcounter = 0;
-int xcounter2 = 0;
-message_t read_message() 
-{
-  char buffer[2000];
-  ++ xcounter;
-  if (xcounter > 100000) { 
-    xcounter = 1; 
-    xcounter2++; 
-    if(xcounter2>200) exit(0); 
-  }
-  sprintf(buffer, "%d %d TEXT", xcounter & ~1, xcounter); 
-  return message_t(buffer); 
-}
+// frame types are incomplete
+typedef void global_frame_t;
+typedef void process_frame_t;
+typedef void thread_frame_t;
 
-
-int id_of_message(message_t const &msg) 
-{
-//  return msg >> 1;
-
-  int id = 0;
-  char const*p = msg.c_str();
-  for(; *p; ++p)
-    if(isdigit(*p)) break;
-
-  for(; *p; ++p)
-  {
-    if(!isdigit(*p)) break;
-    else id = id * 10 + int(*p)-int('0');
-  }
-  //printf("Message id is %d\n",id);
-  return id;
-}
-
+typedef string message_t;
 struct library_linkage_t
 {
   // types for linkage
+  // frame creators
   typedef global_frame_t *(*global_frame_creator_t)(void);
-  typedef process_frame_t *(*process_frame_creator_t)(global_frame_t *);
-  typedef thread_frame_t *(*thread_frame_creator_t)(global_frame_t *, process_frame_t *, flx::gc::generic::allocator_t *);
-  typedef continuation_t *(*start_t)(global_frame_t*, process_frame_t*, thread_frame_t*);
-  typedef continuation_t *(*line_handler_creator_t)(global_frame_t*,process_frame_t*,thread_frame_t*);
+  typedef process_frame_t *(*process_frame_creator_t)(global_frame_t*);
+  typedef thread_frame_t *(*thread_frame_creator_t)
+  (
+    global_frame_t*,
+    process_frame_t*, 
+    collector_t*
+  );
+
+  // frame destructors
+  typedef void (*global_frame_destructor_t)(global_frame_t*);
+  typedef void (*process_frame_destructor_t)(process_frame_t*);
+  typedef thread_frame_t *(*thread_frame_destructor_t) (thread_frame_t*);
+
+  typedef con_t *(*start_t)
+  (
+    global_frame_t*, 
+    process_frame_t*, 
+    thread_frame_t*
+  );
+  typedef con_t *(*line_handler_creator_t)
+  (
+    global_frame_t*,
+    process_frame_t*,
+    thread_frame_t*
+  );
 
   // interface
   void *library;
   global_frame_creator_t global_frame_creator;
   process_frame_creator_t process_frame_creator;
   thread_frame_creator_t thread_frame_creator;
+  global_frame_destructor_t global_frame_destructor;
+  process_frame_destructor_t process_frame_destructor;
+  thread_frame_destructor_t thread_frame_destructor;
   start_t start;
   line_handler_creator_t line_handler_creator;
   
@@ -454,6 +399,26 @@ struct library_linkage_t
       printf("Unable to get thread frame creator from library\n");
       exit(1);
     }
+
+   global_frame_destructor = (global_frame_destructor_t)
+      dlsym(library,"destroy_global_frame");
+    if(!global_frame_destructor) {
+      printf("Unable to get global frame destructor from library\n");
+      exit(1);
+    }
+    process_frame_destructor = (process_frame_destructor_t)
+      dlsym(library,"destroy_process_frame");
+    if(!process_frame_destructor) {
+      printf("Unable to get process frame destructor from library\n");
+      exit(1);
+    }
+    thread_frame_destructor = (thread_frame_destructor_t)
+      dlsym(library,"destroy_thread_frame");
+    if(!thread_frame_destructor) {
+      printf("Unable to get thread frame destructor from library\n");
+      exit(1);
+    }
+
     start = (start_t)
       dlsym(library,"start");
     if(!start) {
@@ -480,17 +445,32 @@ struct library_init_t
   void *global_frame;
   void *process_frame;
   thread_frame_t *thread_frame;
-  continuation_t *start;
+  con_t *start;
+  library_linkage_t *lib;
 
-  void create(library_linkage_t *lib, flx::gc::generic::allocator_t *allocator)
+  void create
+  (
+    library_linkage_t *lib_a, 
+    collector_t *collector
+  )
   {
+    lib = lib_a;
     global_frame = lib->global_frame_creator();
     process_frame = lib->process_frame_creator(global_frame);
-    thread_frame = lib->thread_frame_creator(global_frame, process_frame);
+    thread_frame = lib->thread_frame_creator(
+      global_frame, 
+      process_frame, 
+      collector
+    );
     start = lib->start(global_frame, process_frame, thread_frame);
   }
 
-  void destroy () {}
+  void destroy () {
+    lib->thread_frame_destructor(thread_frame);
+    lib->process_frame_destructor(process_frame);
+    lib->global_frame_destructor(global_frame);
+  }
+
 };
 
 int main(int argc, char* argv[])
@@ -498,163 +478,86 @@ int main(int argc, char* argv[])
  
   if (argc<2) 
   {
-    printf("usage test_dispatch ./<shared library name>\n");
+    printf("stdin filter driver\n");
+    printf("usage flx_stdin_drv ./<shared library name>\n");
     exit(1);
   }
   try 
   {
-    printf("Running dispatcher ..\n");
-    sleep(1);
+    printf("Running stdin filter ..\n");
     library_linkage_t library;
     library_init_t instance;
 
     library.link(argv[1]);
-    flx::gc::generic::malloc_free allocator;
-    instance.create(&library, &allocator);
-    
-    typedef int session_key;
-    typedef pair<const session_key, continuation_t*> session_record;
-
-    std::list<session_record> active;
-    std::map<session_key,continuation_t*> waiting;
-    active.push_front(make_pair(-1,instance.start));
-    instance.thread_frame->pool.add_root(instance.start);
+    malloc_free allocator;
+    flx_collector_t collector(&allocator);
+    instance.create(&library, &collector);
+ 
+    collector.add_root(instance.start);
     int gc_counter = 0;
-    while (true)
+    con_t *top = 
+      library.line_handler_creator(
+        instance.global_frame,
+        instance.process_frame,
+        instance.thread_frame
+    );
+    collector.add_root(top);
+
+    while(true)
     {
-      // process all yielded threads until they block or die
-      while(active.size() > 0)
+      while( top && top->action == con_t::yield_action)
       {
-        assert(active.size()<100);
-        session_record top_rec = *(active.begin());
-        int active_thread_id = top_rec.first;
-        //printf("Processing active thread %d\n",top_rec.first);
-        continuation_t *top = top_rec.second;
-        active.pop_front();
-        assert(top);
-        while(
-          top && 
-          (
-            top->action == continuation_t::yield_action
-          )
-        )
-        {
-          continuation_t *new_top = top->resume();
-          if(new_top != top) {
-            if(new_top) instance.thread_frame->pool.add_root(new_top);
-            instance.thread_frame->pool.remove_root(top);
-            top = new_top;
-          }
-        }
-        if(top)
-        {
-          assert (top->action==continuation_t::wait_action);
-          try {
-            waiting.insert(make_pair(top_rec.first, top));
-            assert(waiting.size()<100);
-          }
-          catch (...) {
-            fprintf(stderr,"INSERT FAILED\n");
-            exit(0);
-          }
-        }
-        else {
-          //printf("SLPI SUICIDES\n");
+        con_t *new_top = top->resume();
+        if(new_top != top) {
+          if(new_top) collector.add_root(new_top);
+          collector.remove_root(top);
+          top = new_top;
         }
       }
 
-      //printf("Out of active threads\n");
-      // read a message, calculate it's session id
-      message_t msg = read_message();
-      //printf("Message =%s\n",msg.c_str());
-      int id = id_of_message(msg);
-      //printf("New message Id=%d\n",id);
-   
-      // find the id in the map of waiting
-      std::map<int,continuation_t*>::iterator line_handler_ptr = 
-        waiting.find(id);
-      
-      if(line_handler_ptr  != waiting.end())
+      // dispatch message
+      if(top)
       {
-        //printf("Found existing WAITING line handler for %d, making active\n", id);
-        active.push_front(*line_handler_ptr);
-        *((*line_handler_ptr).second->p_message) = msg;  
-        (*line_handler_ptr).second->action = continuation_t::yield_action;  
-        waiting.erase(line_handler_ptr);
-      }
-      else 
-      {
-        //printf("creating new slpi %d\n", id);
-        gc_counter++;
-        if(gc_counter==10) {
-          //printf("TRIGGERING GC CYCLE\n");
-          //printf("Total memory allocated=%ld\n",instance.thread_frame->pool.allocation_amt);
-          int collected = instance.thread_frame->pool.collect(); 
-          //printf("Collected %d unreachable objects\n", collected);
-          //printf("Total memory allocated=%ld\n",instance.thread_frame->pool.allocation_amt);
-          if(instance.thread_frame->pool.allocation_count>100)
-            printf("WARNING!: Currently allocated=%ld\n", 
-            instance.thread_frame->pool.allocation_count);
-          gc_counter = 0;
-        }
-        continuation_t *top = 
-          library.line_handler_creator(
-            instance.global_frame,
-            instance.process_frame,
-            instance.thread_frame
-          )
-        ;
-        instance.thread_frame->pool.add_root(top);
-        //printf("slpi created, continuation=%p\n",top);
-        while(
-          top && 
-          (
-            top->action == continuation_t::yield_action
-          )
-        )
+        assert (top->action==con_t::wait_action);
+        top->action = con_t::yield_action;
+        if (top->p_message)
         {
-          continuation_t *new_top = top->resume();
-          if(new_top != top) {
-            if(new_top) instance.thread_frame->pool.add_root(new_top);
-            instance.thread_frame->pool.remove_root(top);
-            top = new_top;
-          }
-        }
-        if(top)
-        {
-          assert (top->action==continuation_t::wait_action);
-          top->action = continuation_t::yield_action;
-          //printf("slpi waiting for INITIAL message\n");
-          try {
-            active.push_front (make_pair(id,top));
-            assert(active.size()<100);
-          }
-          catch (...) {
-            fprintf(stderr,"PUSH FRONT3 failed\n");
-            exit(0);
-          }
-
-          if (top->p_message)
-          {
-            *(top->p_message) = msg;
-          }
-          else 
-          {
-            printf("SERVICE ERROR: waiting for message without setting address\n");
-            exit(1);
-          }
+          char buffer[2000];
+          if(fgets(buffer,2000,stdin))
+            *(string*)(top->p_message) = string(buffer);
+          else break;
         }
         else 
-          printf("Slpi died before reading INITIAL message\n") ;
+        {
+          printf("SERVICE ERROR: waiting for message without setting address\n");
+          exit(1);
+        }
+      }
+
+      // collect garbage
+      {
+        gc_counter++;
+        if(gc_counter==10) {
+          int collected = collector.collect(); 
+          if(collector.get_allocation_count()>100)
+            printf("WARNING!: Currently allocated=%ld\n", 
+            collector.get_allocation_count());
+          gc_counter = 0;
+        }
       }
     }
+    instance.destroy();
+    printf("DONE\n");
   }
-  catch (...) {
-    fprintf(stderr,"EXCEPTION CAUGHT\n");
+  catch (...)
+  {
+    printf("EXCEPTION\n");
   }
 }
 
-@d = tangler('test/test_library3.flx')
+
+@head(3,'Test1')
+@d = tangler('test/flx_stdin_lib1.flx')
 @select(d)
 header r"""
 #include <string>
@@ -667,11 +570,10 @@ struct check {
 """;
 
 type check = "check";
-type bool = "bool";
-const true : bool = "true";
+typedef bool = 2;
 
 type string = "string";
-proc print: string = 'printf("%s",$1.c_str());';
+proc print: string = 'printf("%s",$1.data());';
 
 type int = "int";
 proc print: int = 'printf("%d",$1);';
@@ -680,54 +582,143 @@ fun eq : int * int -> bool = "$1==$2";
 proc set : & int * int = "*$1 = $2;";
 var counter : int = 0;
 var counter2 : int = 0;
-proc eol : unit = 'printf("\n");';
+proc eol : 1 = 'printf("\n");';
 
 proc handle_line()
 {
   var checker : check;
   var line : string;
-  loop
-  {
+  repeat:> 
     read line;
     print line;
-  }
+    goto repeat;
 }
 
-export handle_line of (unit) as "line_handler_creator";
+export handle_line of (1) as "line_handler_creator";
 
 
-@d = tangler('test/test_program2.cpp')
+@head(2,'Performance Test')
+The first test program generates lines like:
+@begin_displayed_code()
+0 0 TEXT
+0 1 TEXT
+2 2 TEXT
+2 3 TEXT
+...
+@end_displayed_code()
+where the first value is a service key, and the second
+a sequence number. Messages with the same service
+key are sent to the same Felix line handler task:
+if one does not exist, it is created. Each task
+suicides after reading two lines.
+@p()
+We create 1 million threads, and process 2 million
+messages.
+
+@head(3,'Driver Implementation')
+@d = tangler('test/flx_perf_drv1.cpp')
 @select(d)
 #include <stdio.h>
 #include <vector>
 #include <list>
 #include <map>
+#include <string>
 #include <string.h>
 #include <assert.h>
 #include <dlfcn.h>
 #include <string>
 #include <unistd.h>
+#include <iostream>
 
-#include "test_filter1.hpp"
-continuation_t::continuation_t() : pc(0), action(yield_action) {}
-continuation_t::~continuation_t(){}
+#include "rtl/flx_rtl.hpp"
+#include "rtl/flx_collector.hpp"
 
+using namespace flx::rtl;
+using namespace flx::gc::generic;
+using namespace flx::gc::collector;
 using namespace std;
+
+// frame types are incomplete
+typedef void global_frame_t;
+typedef void process_frame_t;
+typedef void thread_frame_t;
+
+typedef string message_t;
+
+int xcounter = 0;
+int xcounter2 = 0;
+message_t read_message() 
+{
+  char buffer[30];
+  memset(buffer,0,30);
+  ++ xcounter;
+  if (xcounter > 100000) { 
+    xcounter = 1; 
+    xcounter2++; 
+    if(xcounter2>200) exit(0); 
+  }
+  sprintf(buffer, "%d %d TEXT", xcounter & ~1, xcounter); 
+  return buffer;
+}
+
+
+int id_of_message(string const &msg) 
+{
+//  return msg >> 1;
+
+  int id = 0;
+  char const*p = msg.data();
+  for(; *p; ++p)
+    if(isdigit(*p)) break;
+
+  for(; *p; ++p)
+  {
+    if(!isdigit(*p)) break;
+    else id = id * 10 + int(*p)-int('0');
+  }
+  //printf("Message id is %d\n",id);
+  return id;
+}
 
 struct library_linkage_t
 {
   // types for linkage
+  // frame creators
   typedef global_frame_t *(*global_frame_creator_t)(void);
-  typedef process_frame_t *(*process_frame_creator_t)(global_frame_t *);
-  typedef thread_frame_t *(*thread_frame_creator_t)(global_frame_t *, process_frame_t *, flx::gc::generic::allocator_t *);
-  typedef continuation_t *(*start_t)(global_frame_t*, process_frame_t*, thread_frame_t*);
-  typedef continuation_t *(*line_handler_creator_t)(global_frame_t*,process_frame_t*,thread_frame_t*);
+  typedef process_frame_t *(*process_frame_creator_t)(global_frame_t*);
+  typedef thread_frame_t *(*thread_frame_creator_t)
+  (
+    global_frame_t*,
+    process_frame_t*, 
+    collector_t*
+  );
+
+  // frame destructors
+  typedef void (*global_frame_destructor_t)(global_frame_t*);
+  typedef void (*process_frame_destructor_t)(process_frame_t*);
+  typedef thread_frame_t *(*thread_frame_destructor_t) (thread_frame_t*);
+
+  typedef con_t *(*start_t)
+  (
+    global_frame_t*, 
+    process_frame_t*, 
+    thread_frame_t*
+  );
+  typedef con_t *(*line_handler_creator_t)
+  (
+    global_frame_t*,
+    process_frame_t*,
+    thread_frame_t*
+  );
 
   // interface
   void *library;
   global_frame_creator_t global_frame_creator;
   process_frame_creator_t process_frame_creator;
   thread_frame_creator_t thread_frame_creator;
+  global_frame_destructor_t global_frame_destructor;
+  process_frame_destructor_t process_frame_destructor;
+  thread_frame_destructor_t thread_frame_destructor;
   start_t start;
   line_handler_creator_t line_handler_creator;
   
@@ -759,6 +750,26 @@ struct library_linkage_t
       printf("Unable to get thread frame creator from library\n");
       exit(1);
     }
+
+   global_frame_destructor = (global_frame_destructor_t)
+      dlsym(library,"destroy_global_frame");
+    if(!global_frame_destructor) {
+      printf("Unable to get global frame destructor from library\n");
+      exit(1);
+    }
+    process_frame_destructor = (process_frame_destructor_t)
+      dlsym(library,"destroy_process_frame");
+    if(!process_frame_destructor) {
+      printf("Unable to get process frame destructor from library\n");
+      exit(1);
+    }
+    thread_frame_destructor = (thread_frame_destructor_t)
+      dlsym(library,"destroy_thread_frame");
+    if(!thread_frame_destructor) {
+      printf("Unable to get thread frame destructor from library\n");
+      exit(1);
+    }
+
     start = (start_t)
       dlsym(library,"start");
     if(!start) {
@@ -782,24 +793,35 @@ struct library_linkage_t
 
 struct library_init_t 
 {
-  global_frame_t *global_frame;
-  process_frame_t *process_frame;
+  void *global_frame;
+  void *process_frame;
   thread_frame_t *thread_frame;
-  continuation_t *start;
+  con_t *start;
+  library_linkage_t *lib;
 
-  void create(library_linkage_t *lib, flx::gc::generic::allocator_t *allocator)
+  void create
+  (
+    library_linkage_t *lib_a, 
+    collector_t *collector
+  )
   {
+    lib = lib_a;
     global_frame = lib->global_frame_creator();
     process_frame = lib->process_frame_creator(global_frame);
-    thread_frame = lib->thread_frame_creator(global_frame, process_frame, allocator);
+    thread_frame = lib->thread_frame_creator(
+      global_frame, 
+      process_frame, 
+      collector
+    );
     start = lib->start(global_frame, process_frame, thread_frame);
   }
 
   void destroy () {
-    delete thread_frame;
-    delete process_frame;
-    delete global_frame;
+    lib->thread_frame_destructor(thread_frame);
+    lib->process_frame_destructor(process_frame);
+    lib->global_frame_destructor(global_frame);
   }
+
 };
 
 int main(int argc, char* argv[])
@@ -807,79 +829,226 @@ int main(int argc, char* argv[])
  
   if (argc<2) 
   {
-    printf("usage test_filter ./<shared library name>\n");
+    printf("usage flx_perf_drv ./<shared library name>\n");
     exit(1);
   }
   try 
   {
-    printf("Running stdin filter ..\n");
+    printf("Running flx_perf_drv ..\n");
+    sleep(1);
     library_linkage_t library;
     library_init_t instance;
 
     library.link(argv[1]);
-    flx::gc::generic::malloc_free allocator;
-    instance.create(&library, &allocator);
+    malloc_free allocator;
+    flx_collector_t collector(&allocator);
+    instance.create(&library, &collector);
     
-    instance.thread_frame->pool.add_root(instance.start);
+    typedef int session_key;
+    typedef pair<const session_key, con_t*> session_record;
+
+    std::list<session_record> active;
+    std::map<session_key,con_t*> waiting;
+    active.push_front(make_pair(-1,instance.start));
+    collector.add_root(instance.start);
     int gc_counter = 0;
-    continuation_t *top = 
-      library.line_handler_creator(
-        instance.global_frame,
-        instance.process_frame,
-        instance.thread_frame
-    );
-    instance.thread_frame->pool.add_root(top);
-
-    while(true)
+    while (true)
     {
-      while( top && top->action == continuation_t::yield_action)
+      // process all yielded threads until they block or die
+      while(active.size() > 0)
       {
-        continuation_t *new_top = top->resume();
-        if(new_top != top) {
-          if(new_top) instance.thread_frame->pool.add_root(new_top);
-          instance.thread_frame->pool.remove_root(top);
-          top = new_top;
+        assert(active.size()<100);
+        session_record top_rec = *(active.begin());
+        int active_thread_id = top_rec.first;
+        //printf("Processing active thread %d\n",top_rec.first);
+        con_t *top = top_rec.second;
+        active.pop_front();
+        assert(top);
+        while(
+          top && 
+          (
+            top->action == con_t::yield_action
+          )
+        )
+        {
+          con_t *new_top = top->resume();
+          if(new_top != top) {
+            if(new_top) collector.add_root(new_top);
+            collector.remove_root(top);
+            top = new_top;
+          }
+        }
+        if(top)
+        {
+          assert (top->action==con_t::wait_action);
+          try {
+            waiting.insert(make_pair(top_rec.first, top));
+            assert(waiting.size()<100);
+          }
+          catch (...) {
+            fprintf(stderr,"INSERT FAILED\n");
+            exit(0);
+          }
+        }
+        else {
+          //printf("SLPI SUICIDES\n");
         }
       }
 
-      // dispatch message
-      if(top)
+      //printf("Out of active threads\n");
+      // read a message, calculate it's session id
+      message_t msg = read_message();
+      //printf("Message =%s\n",msg.data());
+      int id = id_of_message(msg);
+      //printf("New message Id=%d\n",id);
+   
+      // find the id in the map of waiting
+      std::map<int,con_t*>::iterator line_handler_ptr = 
+        waiting.find(id);
+      
+      if(line_handler_ptr  != waiting.end())
       {
-        assert (top->action==continuation_t::wait_action);
-        top->action = continuation_t::yield_action;
-        if (top->p_message)
-        {
-          char buffer[2000];
-          if(fgets(buffer,2000,stdin))
-            *(string*)(top->p_message) = string(buffer);
-          else break;
-        }
-        else 
-        {
-          printf("SERVICE ERROR: waiting for message without setting address\n");
-          exit(1);
-        }
+        //printf("Found existing WAITING line handler for %d, making active\n", id);
+        active.push_front(*line_handler_ptr);
+        *(message_t*)((*line_handler_ptr).second->p_message) = msg;  
+        (*line_handler_ptr).second->action = con_t::yield_action;  
+        waiting.erase(line_handler_ptr);
       }
-
-      // collect garbage
+      else 
       {
+        //printf("creating new slpi %d\n", id);
         gc_counter++;
-        if(gc_counter==10) {
-          int collected = instance.thread_frame->pool.collect(); 
-          if(instance.thread_frame->pool.get_allocation_count()>100)
+        if(gc_counter==100) {
+          //printf("TRIGGERING GC CYCLE\n");
+          //printf("Total memory allocated=%ld\n",collector.get_allocation_amt());
+          int collected = collector.collect(); 
+          //printf("Collected %d unreachable objects\n", collected);
+          //printf("Total memory allocated=%ld\n",collector.get_allocation_amt());
+          if(collector.get_allocation_count()>100)
             printf("WARNING!: Currently allocated=%ld\n", 
-            instance.thread_frame->pool.get_allocation_count());
+            collector.get_allocation_count());
           gc_counter = 0;
         }
+        con_t *top = 
+          library.line_handler_creator(
+            instance.global_frame,
+            instance.process_frame,
+            instance.thread_frame
+          )
+        ;
+        collector.add_root(top);
+        //printf("slpi created, continuation=%p\n",top);
+        while(
+          top && 
+          (
+            top->action == con_t::yield_action
+          )
+        )
+        {
+          con_t *new_top = top->resume();
+          if(new_top != top) {
+            if(new_top) collector.add_root(new_top);
+            collector.remove_root(top);
+            top = new_top;
+          }
+        }
+        if(top)
+        {
+          assert (top->action==con_t::wait_action);
+          top->action = con_t::yield_action;
+          //printf("slpi waiting for INITIAL message\n");
+          try {
+            active.push_front (make_pair(id,top));
+            assert(active.size()<100);
+          }
+          catch (...) {
+            fprintf(stderr,"PUSH FRONT3 failed\n");
+            exit(1);
+          }
+
+          if (top->p_message)
+          {
+            *(message_t*)(top->p_message) = msg;
+          }
+          else 
+          {
+            printf("SERVICE ERROR: waiting for message without setting address\n");
+            exit(1);
+          }
+        }
+        else 
+          printf("Slpi died before reading INITIAL message\n") ;
       }
     }
+    printf("All services terminated ..\n");
+    printf("%ld garbage\n",collector.get_allocation_amt());
+    collector.collect();
     instance.destroy();
-    printf("DONE\n");
+    printf("flx_perf_drv ends normally\n");
+    exit(0);
   }
-  catch (...)
-  {
-    printf("EXCEPTION\n");
+  catch (...) {
+    fprintf(stderr,"EXCEPTION CAUGHT\n");
   }
 }
+
+@head(2,'Performance test client')
+@d = tangler('test/flx_perf_lib1.flx')
+@select(d)
+// dispatcher test
+header r"""
+#include <string>
+#include <stdio.h>
+#include <iostream>
+
+using namespace std;
+struct check {
+  check() { printf("ctor %p\n",this); }
+  ~check() { printf("dtor %p\n",this); }
+};
+""";
+
+type check = "check";
+typedef bool = 2;
+type string = "string";
+proc print: string = 'cout << $1;';
+
+type int = "int";
+proc print: int = 'cout <<$1;';
+proc incr : &int = "(*$1)++;";
+fun eq : int * int -> bool = "$1==$2";
+proc set : & int * int = "*$1 = $2;";
+var counter : int = 0;
+var counter2 : int = 0;
+
+proc handle_line()
+{
+  //var checker : check;
+  var line : string;
+  //print "Reading line 1 ..";
+  read line;
+  //print "line 1 read: "; 
+  //print line;
+  //print "\n";
+  incr (&counter);
+  if (counter == 100000) then
+  {
+    counter = 0;
+    incr (&counter2);
+    print counter2;
+    print "00 K\n";
+  } 
+  else 
+  {} 
+  endif
+  ;
+  //print "SLPI: Reading line 2 ..";
+  read line;
+  //print "line 2 read: "; 
+  //print line;
+  //print "suiciding now ..\n";
+}
+
+export handle_line of (1) as "line_handler_creator";
 
 
