@@ -46,11 +46,15 @@ OCAMLC=OCAMLBINPREFIX+'ocamlc.opt -I '+OCAML_OBJDIR+' -rectypes '
 # c compiler and options
 CCOMPILE = "gcc -Wno-long-long -pedantic -ansi -O2 -c "
 
+# the boost directory
+BOOST_DIRECTORY = 'boost_1_22_0'
+REGEX_LIBRARY = BOOST_DIRECTORY + '/libs/regex/build/gcc/libboost_regex.so'
+
 # for compiling mainlines
 FLX_CPP_LINK = "g++ -Wno-long-long -pedantic -ansi -rdynamic -ldl "
 
 # for building shared libraries
-FLX_CPP_DYNLINK = "g++ -Wno-long-long -pedantic -ansi -shared "
+FLX_CPP_DYNLINK = "g++ -Wno-long-long -pedantic -ansi -shared -I"+BOOST_DIRECTORY+" "+REGEX_LIBRARY+" "
 
 # ------------------------------------------------
 # END USER CONFIGURABLE SECTION
@@ -325,7 +329,9 @@ try:
         cppfilename = basename + ".cpp"
         if buildall or \
           filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
-          filetime('bin/flxg')> filetime(basename+'.cpp'):
+          filetime('bin/flxg')> filetime(basename+'.cpp') or \
+          filetime('lib/std.flx') > filetime(basename+'.cpp') or \
+          filetime('lib/regex.flx') > filetime(basename+'.cpp'):
           try:
             xqt('bin/flxg -q -Ilib ' + basename)
             #print 'TESTFILE -- generated ',basename
@@ -362,7 +368,12 @@ try:
         basename = string.split(testfile,'.')[0]
         if buildall or filetime(basename+ '.cpp') > filetime(basename):
           try:
-            xqt(FLX_CPP_LINK + " -I. -Itest -Igc/src gc/src/flx_gc.cpp gc/src/flx_collector.cpp " + basename + ".cpp -o " + basename)
+            xqt(FLX_CPP_LINK + " -I. -Itest -Igc/src " +
+              BOOST_DIRECTORY +
+              "/libs/regex/build/gcc/libboost_regex.a " +
+              "gc/src/flx_gc.cpp " +
+              "gc/src/flx_collector.cpp " +
+              basename + ".cpp -o " + basename)
             #print 'TESTFILE -- OK!',basename
             results.append("link " + (basename + ' ' * w)[:w]+ ' OK')
           except MakeError:
@@ -421,16 +432,26 @@ except MakeError:
 @tangle('upload: dummy')
 @tangle('\tscp flx_1.0a1_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('')
+@tangle('test_clean: dummy')
+@tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp')
+@tangle('\trm -rf test/rt*.cpp test/rt*.hpp')
+@tangle('')
 @tangle('dummy:')
 @tangle('\techo "out of date"')
 @tangle('')
 
 @head(1,'Run script')
 @select(tangler('bin/flx'))
+#/bin/env sh
+#edit this file to set the boost directory for your installation
+# you need to change the file in two places
+#
 rm -f $1.cpp $1.hpp $1.so
 ./bin/flxg -q -Ilib $1
 g++ -Wno-long-long -pedantic -ansi -shared  \
-  -I. -Igc/src $1.cpp -o $1.so
+  boost_1_22_0/libs/regex/build/gcc/libboost_regex.so \
+  -I. -Iboost_1_22_0 -Igc/src $1.cpp \
+  -o $1.so
 ./test/flx_run ./$1.so
 
 @os.system('chmod a+x bin/flx')

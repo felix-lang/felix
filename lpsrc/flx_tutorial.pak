@@ -988,3 +988,100 @@ leave the second free. There's a more elegant
 way to do this using labelled arguments, 
 as we shall see. [Maybe?]
 
+@head(1,'Regular expressions')
+The standard library contains types and functions
+for regular expression matching. Here's an example:
+
+@select(tangler(tdir+'tut24.flx'))
+#include <std.flx>
+#include <boost.flx>
+
+val rex = regex_of_string("(a|b)*abb");
+val matched = regex_match(rex,"aabbabababb");
+print matched; endl;
+
+@doc()
+Note that to make this work, you must edit the
+bin/flx script so that the directory containing
+the boost library is set correctly. The binary
+package provided with this demo uses boost_1_22_0,
+you must use that version of boost. You must build
+the shared version of the regex library using
+@begin_displayed_code()
+  cd boost_1_22_0/libs/regex/build/
+  make -f gcc-shared.mak
+@end_displayed_code()
+
+Now you've got that to work, lets look at currying.
+There is a currified version of regex_match in the boost
+library. Here's why it is useful:
+
+@select(tangler(tdir+'tut25.flx'))
+#include <std.flx>
+#include <boost.flx>
+
+val rex = regex_of_string("(a|b)*abb");
+val matchit = regex_match(rex);
+print (matchit "ababababb"); endl;
+print (matchit "No match"); endl;
+
+proc print_if_matches(matcher:string->bool) (s:string)
+{
+  if (matcher s) { print s; endl; }
+}
+
+val p = print_if_matches matchit;
+p "Hello";
+p "ababa";
+p "abbabbabb";
+p "ababababb";
+
+@doc()
+As you can see, matchit matches a particular 
+regular expression, so you don't have to keep
+specifying it. You can also pass it to a function
+that needs a string matcher, hiding the method by which
+the matching is done. We pass it to print_if_matches,
+which again partially applied to define the new function p.
+@p()
+I hope you can see uses for the combination of power
+obtained by treating functions as first class citizens,
+and by use of currying. The technique is used extensively
+in functional programming languages.
+
+@head(1,'More on regular expressions')
+Sick of writing doubled up sloshes in regular expressions?
+Felix provides Python style string literals, including
+raw strings. Strings prefixed by an r are called raw strings,
+slosh escapes are not processed. This makes it easier
+to define regular expressions. For example:
+
+@select(tangler(tdir+'tut26.flx'))
+#include <std.flx>
+#include <boost.flx>
+val rex = regex_of_string("\\A(\\d{3,4})[- ]?(\\d{4})[- ]?(\\d{4})[- ]?(\\d{4})\\z");
+val machine_format = merge_pattern_of_string ("\\1\\2\\3\\4");
+val human_format = merge_pattern_of_string("\\1-\\2-\\3-\\4");
+val credit_no_1 = "1234-5678-9012-3456";
+val credit_no_2 = "6676688-7765-1111";
+val bad_no = "XYZ";
+
+print (regex_merge rex machine_format credit_no_1); endl;
+print (regex_merge rex human_format credit_no_1); endl;
+print (regex_merge rex machine_format credit_no_2); endl;
+print (regex_merge rex human_format credit_no_2); endl;
+print (regex_merge rex human_format bad_no); endl;
+
+// again, using raw strings:
+
+val rex1 = regex_of_string(r"\A(\d{3,4})[- ]?(\d{4})[- ]?(\d{4})[- ]?(\d{4})\z");
+val machine_format1 = merge_pattern_of_string (r"\1\2\3\4");
+val human_format1 = merge_pattern_of_string(r"\1-\2-\3-\4");
+
+print (regex_merge rex1 machine_format1 credit_no_1); endl;
+print (regex_merge rex1 human_format1 credit_no_1); endl;
+print (regex_merge rex1 machine_format1 credit_no_2); endl;
+print (regex_merge rex1 human_format1 credit_no_2); endl;
+print (regex_merge rex1 human_format1 credit_no_2); endl;
+
+

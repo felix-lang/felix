@@ -145,7 +145,7 @@ let mkcurry sr name args return_type body =
               sr,
               (
                 [name (m-1)],
-                typeoflist (List.map snd (List.hd args))
+                typeoflist (List.map snd (List.hd t))
               )
             )
           )

@@ -9,65 +9,14 @@ header """
 #include <assert.h>
 #include <limits.h>
 
-// The following code is a KLUDGE!!
-// We need the typedefs for exact precision.
-// If we're not running standard C99,
-// or if the types aren't defined,
-// we just hack them, but the semantics will be wrong.
+// BOOST IS REQUIRED FOR FELIX NOW
+#include <boost/cstdint.hpp>
 
-
-// WARNING: YOU MUST COMPILE WITH STRICT ISO RULES
-// For gcc I use the options
-//    -Wno-long-long -pedantic -ansi
-// This disables warnings about 'long long',
-// which is supported despite the pedantry :-)
-
-// If your compiler doesn't support long long,
-// remove this #define
-#define FLX_LONG_LONG_SUPPORTED
-
-#ifdef __STDC_VERSION__
-#if __STDC_VERSION__ >= 199901L
-#include <stdint.h>
-#define FLX_LONG_LONG_SUPPORTED
-#endif
-#endif
-
-#ifndef INT8_MAX
-  typedef signed char int8_t;
-#endif
-#ifndef UINT8_MAX
-  typedef unsigned char uint8_t;
-#endif
-
-#ifndef INT16_MAX
-  typedef signed short int16_t;
-#endif
-#ifndef UINT16_MAX
-  typedef unsigned short uint16_t;
-#endif
-
-#ifndef INT32_MAX
-  typedef signed long int32_t;
-#endif
-#ifndef UINT32_MAX
-  typedef unsigned long uint32_t;
-#endif
-
-#ifdef FLX_LONG_LONG_SUPPORTED
-  #ifndef INT64_MAX
-    typedef signed long long int64_t;
-  #endif
-  #ifndef UINT64_MAX
-    typedef unsigned long long uint64_t;
-  #endif
-#else
-  #ifndef INT64_MAX
-    typedef signed long int64_t;
-  #endif
-  #ifndef UINT64_MAX
-    typedef unsigned long uint64_t;
-  #endif
+#ifdef BOOST_NO_INT64_T
+namespace boost {
+  typedef long long int64_t;
+  typedef unsigned long long uint64_t;
+}
 #endif
 
 using namespace std;
@@ -81,6 +30,16 @@ typedef long long      _flx_vlong;
 typedef unsigned long long _flx_uvlong;
 typedef unsigned char *_flx_address;
 typedef long double    _flx_ldouble;
+
+typedef boost::uint8_t  _flx_uint8_t;
+typedef boost::uint16_t _flx_uint16_t;
+typedef boost::uint32_t _flx_uint32_t;
+typedef boost::uint64_t _flx_uint64_t;
+
+typedef boost::int8_t  _flx_int8_t;
+typedef boost::int16_t _flx_int16_t;
+typedef boost::int32_t _flx_int32_t;
+typedef boost::int64_t _flx_int64_t;
 
 namespace std_flx {
   inline string mul(string s, int n) {
@@ -118,7 +77,7 @@ namespace std_flx {
   #characters
   "char"    : "char",
   "wchar"   : "wchar_t",
-  "uchar"   : "int32_t", # Unicode/ISO10646, note: SIGNED!
+  "uchar"   : "_flx_int32_t", # Unicode/ISO10646, note: SIGNED!
 
   #bool
   "bool"    : "bool",
@@ -138,14 +97,14 @@ namespace std_flx {
   "uvlong"  : "_flx_uvlong",
 
   #exact integers
-  "int8"    : "int8_t",
-  "int16"   : "int16_t",
-  "int32"   : "int32_t",
-  "int64"   : "int64_t",
-  "uint8"   : "uint8_t",
-  "uint16"  : "uint16_t",
-  "uint32"  : "uint32_t",
-  "uint64"  : "uint64_t",
+  "int8"    : "_flx_int8_t",
+  "int16"   : "_flx_int16_t",
+  "int32"   : "_flx_int32_t",
+  "int64"   : "_flx_int64_t",
+  "uint8"   : "_flx_uint8_t",
+  "uint16"  : "_flx_uint16_t",
+  "uint32"  : "_flx_uint32_t",
+  "uint64"  : "_flx_uint64_t",
 
   #floating
   "float"   : "float",
@@ -283,12 +242,13 @@ fun wchr: ulong -> wchar = "(wchar_t)$1";
 
 // output
 @for t in all:
-  if t not in ['tiny','utiny']:
+  if t not in ['tiny','utiny','bool']:
     tangle('proc print: '+t+' = "std::cout<<$1;";')
 
 // cast tiny values, so they're not printed as characters
 proc print: tiny = "std::cout << (int)$1;";
 proc print: utiny = "std::cout << (unsigned int)$1;";
+proc print: bool = 'std::cout << ($1?"true":"false");';
 
 proc endl: unit = "std::cout << endl;";
 proc space: int = "std::cout << ' ';";
@@ -321,4 +281,37 @@ fun gt: string * string -> bool = "$1>$2";
 fun ge: string * string -> bool = "$1>=$2";
 
 proc print: string = "std::cout << $1;";
+
+
+@h=tangler('lib/boost.flx')
+@select(h)
+// regular expressions
+header """
+#include <boost/regex.hpp>
+typedef boost::regex regex;
+""";
+
+
+type regex = "regex";
+fun regex_of_string : string -> regex = "boost::regex($1)";
+
+type merge_pattern = "string";
+fun merge_pattern_of_string: string->merge_pattern = "$1";
+
+fun regex_match : regex * string -> bool 
+  =  "boost::regex_match($2, $1)";
+
+fun regex_match (r:regex) (s:string): bool 
+{
+  return regex_match(r,s);
+}
+
+fun regex_merge : regex * merge_pattern * string -> string
+  = "boost::regex_merge($3,$1,$2, boost::match_default | boost::format_sed)";
+
+fun regex_merge (r:regex) (m:merge_pattern) (s:string) :string
+{
+  return regex_merge(r,m,s);
+}
+
 
