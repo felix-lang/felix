@@ -61,6 +61,7 @@ val resolve_overload:
   range_srcref ->
   entry_kind_t list ->  
   id_t -> 
+  btypecode_t list ->
   btypecode_t ->
   entry_kind_t option
 
@@ -98,6 +99,7 @@ val lookup_qn_with_sig:
   int list ->
   int list ->
   qualified_name_t ->
+  btypecode_t list ->
   btypecode_t ->
   tbexpr_t
 
@@ -131,6 +133,7 @@ exception Found of int
 type result = 
   | Unique of int * btypecode_t
   | Pair of (int * btypecode_t) * int
+  | Fail
 
 type kind_t = Parameter | Other
 
@@ -292,6 +295,7 @@ let rec lookup_qn_in_env
   | `AST_root _ -> failwith "Can't lookup root yet"
   | `AST_case_tag _ -> failwith "Can't lookup a case tag"
   | `AST_typed_case _ -> failwith "Can't lookup a case tag"
+
   | `AST_name (sr,name) ->
     begin match lookup_name_in_env env sr name with
     | NonFunctionEntry x -> x
@@ -375,7 +379,7 @@ and lookup_sn_in_env
       syms 
       sr sr 
       env [] excluded_dirs 
-      qn bsuf
+      qn [] bsuf
     in match be with
     | `BEXPR_name index -> index
     | `BEXPR_closure index -> index
@@ -871,10 +875,8 @@ and handle_module_coercion syms env sr excluded_dirs m t =
     )
 
 and compare_module_expr_with_type syms excluded_dirs sr t m =
-  (* print_endline "COMPARING MODULE EXPR WITH TYPE"; *)
   match m with
   | Module_product ls -> 
-    (* print_endline "..MODULE PRODUCT";*)
     begin match t with
     | `BTYP_tuple ts ->
       if List.length ts = List.length ls
@@ -891,13 +893,11 @@ and compare_module_expr_with_type syms excluded_dirs sr t m =
     | _ -> false
     end
  | Bound_module (index,_,_) ->
-   (* print_endline "..BOUND MODULE";*)
    begin match t with
    | `BTYP_name index2 -> index = index2
    | _ -> false
    end
  | Simple_module (impl,mmap,dirs) ->
-   (* print_endline "..SIMPLE MODULE"; *)
    begin match t with
    | `BTYP_name iface ->
      let _,isr,p,ientry = Hashtbl.find syms.dfns iface in
@@ -1875,21 +1875,21 @@ and  paramtype params = typeof_list (typlist params)
 
 and  sig_of_symdef symdef name = match symdef with 
   | `SYMDEF_match_check (_) 
-    -> `TYP_tuple[]
+    -> [],`TYP_tuple[]
 
   (* primitives *)
-  | `SYMDEF_dcl (`DCL_fun (_,ps,_,_))
-  | `SYMDEF_dcl (`DCL_proc (_,ps,_)) -> typeof_list ps
+  | `SYMDEF_dcl (`DCL_fun (vs,ps,_,_))
+  | `SYMDEF_dcl (`DCL_proc (vs,ps,_)) -> vs,typeof_list ps
 
   | `SYMDEF_function (ps,_,_,_,_)
-  | `SYMDEF_procedure (ps,_,_,_) -> paramtype ps
+  | `SYMDEF_procedure (ps,_,_,_) -> [],paramtype ps
 
   | `SYMDEF_if_fun (t) -> 
     begin match t with
-    | `TYP_function (a,r) -> a
+    | `TYP_function (a,r) -> [],a
     | _ -> failwith "[resolve overload] Expected function to have function type"
     end
-  | `SYMDEF_if_proc (t) -> t
+  | `SYMDEF_if_proc (t) -> [],t
   
   | symdef -> 
     failwith (
@@ -2200,7 +2200,7 @@ and koenig_lookup syms sra exclude excluded_dirs id' name_map fn t2 =
   match entries with
   | FunctionEntry fs ->
     (* print_endline ("Got candidates: "); List.iter (fun x -> print_endline ("  " ^ string_of_int x)) fs ; *)
-    begin match resolve_overload syms excluded_dirs sra fs fn t2 with
+    begin match resolve_overload syms excluded_dirs sra fs fn [] t2 with
     | Some (Simple index'') ->
       (* print_endline "Overload resolution OK"; *)
       `BEXPR_closure index'',
@@ -2238,13 +2238,28 @@ and lookup_qn_with_sig
   sra srn 
   env exclude excluded_dirs 
   (qn:qualified_name_t)
+  (ts:btypecode_t list)
   (sign:btypecode_t)
 : tbexpr_t =    
+  let bt sr t = bind_type syms env [] excluded_dirs sr t in
+  let n = List.length ts in
   match qn with
   | `AST_void _ -> failwith "qualified-name is void"
   | `AST_root _ -> failwith "Can't handle root yet"
   | `AST_case_tag _ -> failwith "Can't lookup case tag here"
-  | `AST_typed_case _ -> failwith "Can't lookup typed case tag here"
+
+  | `AST_typed_case (sr,v,t) ->
+    let t = bt sr t in
+    begin match t with
+    | `BTYP_sum ls ->
+      if v<1 or v> List.length ls
+      then failwith "Case index out of range of sum"
+      else let vt = List.nth ls (v-1) in
+      let ct = `BTYP_function (vt,t) in
+      `BEXPR_case (v,t), ct
+    | _ -> failwith "Type of case must be sum"
+    end
+
   | `AST_name (sr,name) ->
     (*
     print_endline (
@@ -2252,21 +2267,22 @@ and lookup_qn_with_sig
       name
       ^"' with sig '"^
       string_of_btypecode syms.dfns sign
-      ^"'"
+      ^"'" ^
+      " and " ^ string_of_int n ^ " type params"
     );
     flush stdout;
     *)
     lookup_name_with_sig 
       syms 
       sra srn exclude excluded_dirs 
-      env name sign
+      env name ts sign
 
   | `AST_lookup (sr,(qn',name)) -> 
     (*
     print_endline (
       "Lookup qn '"^
       string_of_qualified_name qn
-      ^"' with sig'"^
+      ^"' with sig '"^
       string_of_btypecode syms.dfns sign
       ^"'"
     );
@@ -2301,28 +2317,48 @@ and lookup_qn_with_sig
              then 
                failwith
                (
-                 "Non function entry has wrong type"
+                 "[lookup_qn_with_sig] Non function entry has wrong type"
                )
              else 
                `BEXPR_name index,
                typeofindex syms exclude [] 0 excluded_dirs index
 
+          | `BTYP_name idx ->
+            let id,sr,parent,entry = Hashtbl.find syms.dfns idx in
+            begin match entry with
+            | `SYMDEF_dcl (`DCL_struct _) ->
+              `BEXPR_name index,
+              `BTYP_name index
+            | _ ->
+              failwith
+              (
+                "[lookup_qn_with_sig] Named Non function entry requires struct type, got: " ^
+                string_of_btypecode syms.dfns t
+              )
+            end
           | _ -> 
             failwith
-               (
-                 "Non function entry not function type"
-               )
+            (
+              "[lookup_qn_with_sig] Non function entry requires function or struct type, got: " ^
+              string_of_btypecode syms.dfns t
+            )
           end
         | NonFunctionEntry (Bound (i,j)) ->
-          failwith "Can't handle bound result yet"
+          failwith "[lookup_qn_with_sig] Can't handle bound result yet"
+
         | FunctionEntry fs ->
           match
             resolve_overload
-            syms excluded_dirs sra fs name sign
+            syms excluded_dirs sra fs name ts sign
           with
           | Some (Simple index) ->
-             `BEXPR_closure index, 
-             typeofindex syms exclude [] 0 excluded_dirs index
+            if List.length ts = 0 then
+            begin
+              `BEXPR_closure index, 
+              typeofindex syms exclude [] 0 excluded_dirs index
+            end
+            else
+              mk_ginst syms exclude excluded_dirs index ts
 
           | Some (Bound (iface,impl)) -> 
              `BEXPR_closure impl, 
@@ -2335,7 +2371,7 @@ and lookup_qn_with_sig
           | None -> 
             failwith 
             (
-              "[Simple module] Unable to resolve overload in\n" ^
+              "[lookup_qn_with_sig] (Simple module) Unable to resolve overload in\n" ^
               short_string_of_src sra
             )
         end
@@ -2382,7 +2418,7 @@ and lookup_qn_with_sig
           | FunctionEntry fs ->
             match
               resolve_overload
-              syms excluded_dirs sra fs name sign
+              syms excluded_dirs sra fs name ts sign
             with
             | Some (Simple index) ->
                `BEXPR_closure index, 
@@ -2411,7 +2447,9 @@ and lookup_name_with_sig
   syms 
   sra srn 
   exclude excluded_dirs env 
-  name (t2:btypecode_t) 
+  name 
+  ts
+  (t2:btypecode_t) 
 : tbexpr_t =
   (*
   print_endline ("Lookup_name_with_sig: " ^ name ^ " of " ^ string_of_btypecode syms.dfns t2);
@@ -2431,7 +2469,7 @@ and lookup_name_with_sig
       (table, dirs) 
       syms 
       env exclude excluded_dirs 
-      sra srn name t2 
+      sra srn name ts t2 
     with
     | Some result -> (result:>tbexpr_t)
     | None -> 
@@ -2445,21 +2483,55 @@ and lookup_name_with_sig
           syms 
           sra srn 
           exclude excluded_dirs 
-          tail name t2
+          tail name ts t2
         ):>tbexpr_t
       )
+
+and mk_ginst syms exclude excluded_dirs index ts =
+  match Hashtbl.find syms.dfns index with
+  | id,sr,parent,entry 
+    -> 
+    match entry with
+    | `SYMDEF_dcl(`DCL_proc (vs,_,_))
+    | `SYMDEF_dcl(`DCL_fun (vs,_,_,_))
+      ->
+        let tvars = List.map2 (fun s t -> s,t) vs ts in
+        `BEXPR_ginst (index,ts),
+        (
+          match typeofindex' syms exclude [] 0 excluded_dirs index tvars with
+          | `BTYP_function (s,d) as t -> 
+            begin match d with
+            | `BTYP_none -> failwith "[mk_ginst] Can't handle Unknown"
+            | _ -> t
+            end
+          | t -> 
+            failwith 
+            (
+              "[handle_function]: closure operator expected '"^id^"' to be function definition, got '"^
+              string_of_btypecode syms.dfns t
+              ^"', " ^ short_string_of_src sr
+            )
+        )
+    | _ -> 
+      failwith 
+      (
+        "[handle_function] Expected primitive generic function"
+      )
+
 
 and handle_function 
   syms 
   env exclude excluded_dirs 
   sra srn 
   name 
+  ts
   (overload:entry_kind_t)
 : tbexpr_t 
 =
   (*
   print_endline "HANDLE FUNCTION";
   *)
+  let n = List.length ts in
   match overload with
     | Bound (i,j) -> 
       print_endline "[handle_function] handle opaque function"; 
@@ -2494,46 +2566,50 @@ and handle_function
       print_endline "HANDLE FUNCTION: SIMPLE INDEX";
       flush stdout;
       *)
-      begin 
-        match Hashtbl.find syms.dfns index with id,sr,parent,entry 
-        -> match entry with
-        | `SYMDEF_match_check _
-        | `SYMDEF_function _
-        | `SYMDEF_dcl(`DCL_proc _ )
-        | `SYMDEF_dcl(`DCL_fun _)
-        | `SYMDEF_procedure _ 
-          ->
-          (*
-          print_endline ("closure of " ^ name);
-          flush stdout;
-          *)
-          `BEXPR_closure index,
-          (
-            match typeofindex syms exclude [] 0 excluded_dirs index with
-            | `BTYP_function (s,d) as t -> 
-              begin match d with
-              | `BTYP_none -> failwith "Can't handle Unknown type in handle_function"
-              | _ -> t
-              end
-            | t -> 
-              failwith 
-              (
-                "[handle_function]: closure operator expected '"^name^"' to be function definition, got '"^
-                string_of_btypecode syms.dfns t
-                ^"', " ^ short_string_of_src sra
-              )
-          )
-        | _ -> 
-          failwith 
-          (
-            "[handle_function] Expected function"
-          )
-      end 
+      if n = 0 
+      then
+        begin 
+          match Hashtbl.find syms.dfns index with id,sr,parent,entry 
+          -> match entry with
+          | `SYMDEF_match_check _
+          | `SYMDEF_function _
+          | `SYMDEF_dcl(`DCL_proc _ )
+          | `SYMDEF_dcl(`DCL_fun _)
+          | `SYMDEF_procedure _ 
+            ->
+            (*
+            print_endline ("closure of " ^ name);
+            flush stdout;
+            *)
+            `BEXPR_closure index,
+            (
+              match typeofindex syms exclude [] 0 excluded_dirs index with
+              | `BTYP_function (s,d) as t -> 
+                begin match d with
+                | `BTYP_none -> failwith "Can't handle Unknown type in handle_function"
+                | _ -> t
+                end
+              | t -> 
+                failwith 
+                (
+                  "[handle_function]: closure operator expected '"^name^"' to be function definition, got '"^
+                  string_of_btypecode syms.dfns t
+                  ^"', " ^ short_string_of_src sra
+                )
+            )
+          | _ -> 
+            failwith 
+            (
+              "[handle_function] Expected function"
+            )
+        end 
+      else
+        mk_ginst syms exclude excluded_dirs index ts
 
 and lookup_name_in_table_dirs_with_sig (table, dirs) 
   syms 
   env exclude excluded_dirs 
-  sra srn name t2 
+  sra srn name ts t2 
 : tbexpr_t option
 =
   (* print_endline "LOOKUP NAME IN TABLE DIRS WITH SIG"; *)
@@ -2546,11 +2622,14 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
   | NonFunctionEntry (Simple index) ->
     (* Struct constructor *)
     (* print_endline "LOOKUP NAME IN TABLE DIRS WITH SIG: Done"; *)
-    Some
-    (
-      `BEXPR_name index, 
-      typeofindex syms exclude [] 0 excluded_dirs index
-    )
+    if List.length ts = 0 
+    then
+      Some
+      (
+        `BEXPR_name index, 
+        typeofindex syms exclude [] 0 excluded_dirs index
+      )
+    else failwith "Expected function since we have generic args"
 
   | NonFunctionEntry _ ->
     failwith "[lookup_name_in_table_dirs_with_sig] expected simple nonfunction entry"
@@ -2561,15 +2640,21 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     *)
     let ro:entry_kind_t option = 
       resolve_overload 
-      syms excluded_dirs sra fs name t2
+      syms excluded_dirs sra fs name ts t2
     in
+    (*
+    print_endline "OVERLOAD RESOLVED";
+    *)
     match ro with 
       | Some result ->
+        (*
+        print_endline "GOT A RESULT";
+        *)
         let tb : tbexpr_t =
           handle_function 
           syms 
           env exclude excluded_dirs 
-          sra srn name result
+          sra srn name ts result
         in Some tb 
 
       | None ->
@@ -2595,7 +2680,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
           let fs:entry_kind_t list = merge_functions opens name in
           let ro:entry_kind_t option = 
             resolve_overload
-            syms excluded_dirs sra fs name t2
+            syms excluded_dirs sra fs name ts t2
           in
           (*
           print_endline "OVERLOAD RESOLVED .. ";
@@ -2606,7 +2691,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
               handle_function 
               syms 
               env exclude excluded_dirs 
-              sra srn name result
+              sra srn name ts result
             in 
               (* 
               print_endline "SUCCESS"; flush stdout; 
@@ -2618,7 +2703,8 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
             *)
             None
 
-and handle_entry syms sra srn env exclude expr_fixlist excluded_dirs entry t2 name =
+(*
+and handle_entry syms sra srn env exclude expr_fixlist excluded_dirs entry t2 name ts =
   let be e = bind_expression syms env exclude expr_fixlist 0 excluded_dirs e in
   let lu sr qn = lookup_qn_in_env syms env excluded_dirs qn in
   let bt t = bind_type syms env expr_fixlist excluded_dirs sra t in
@@ -2637,7 +2723,7 @@ and handle_entry syms sra srn env exclude expr_fixlist excluded_dirs entry t2 na
     match 
       resolve_overload 
       syms 
-      excluded_dirs sra fs name t2 
+      excluded_dirs sra fs name [] t2 
     with 
     | Some result ->
       Some
@@ -2646,9 +2732,10 @@ and handle_entry syms sra srn env exclude expr_fixlist excluded_dirs entry t2 na
         syms 
         env exclude excluded_dirs 
         sra srn 
-        name result 
+        name ts result 
       )
     | None -> None
+*)
 
 and bind_regdef syms env exclude excluded_dirs regexp_exclude e =
   let bd e = bind_regdef syms env exclude excluded_dirs regexp_exclude e in
@@ -2684,6 +2771,7 @@ and bind_regdef syms env exclude excluded_dirs regexp_exclude e =
 
   | x -> x
 
+(*
 and choose_generic syms entries n =
   let result = ref [] in
   let aux entry = 
@@ -2702,6 +2790,7 @@ and choose_generic syms entries n =
   in 
     List.iter aux entries; 
     !result
+*)
 
 and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr_t = 
   let be e = bind_expression syms env exclude expr_fixlist (depth+1) excluded_dirs e in
@@ -2730,67 +2819,14 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
   print_endline "==";
   *)
   match e with
-  | `AST_ginst (sr,(e,ts)) ->
-    (*
-    print_endline "Got ginst";
-    *)
-    let n = List.length ts in
-    let e,t = be e in
-    begin match e with
-    | `BEXPR_functions (name, entries) ->
-      let gfun =
-        match choose_generic syms entries n with
-        | [x] -> x
-        | [] -> 
-          failwith 
-          (
-            "Can't find any matches for generic "^
-            name^
-            "of " ^
-            string_of_int n ^ 
-            " args"
-          )
-        | _ -> 
-          failwith 
-          (
-            "Too many matches for generic "^
-            name^
-            " of " ^
-            string_of_int n ^ 
-            " args"
-          )
-      in
-      let id,sr',parent,symdef = Hashtbl.find syms.dfns gfun in
-      begin match symdef with
-      | `SYMDEF_dcl (`DCL_fun (vs,_,_,_)) 
-      | `SYMDEF_dcl (`DCL_proc (vs,_,_)) 
-        ->
-          (*
-          print_endline ("Resolved generic " ^ id);
-          *)
-          if n = List.length vs 
-          then
-            begin
-              let ts = 
-                List.map2 
-                (fun s t -> s, bt sr t) 
-                vs ts 
-              in
-              let t = tgi ts gfun in
-              (*
-              print_endline ("Type of instantiated generic function is " ^ string_of_btypecode syms.dfns t);
-              *)
-              Hashtbl.replace syms.instantiated_types t ();
-              let ts = List.map snd ts in
-              `BEXPR_ginst (gfun,ts),t
-            end
-          else failwith "Generic has wrong number of arguments"
-
-      | _ -> failwith "Expected primitive generic function"
-      end
-    | _ -> failwith "Expected function set"
-    end
-    
+  | `AST_ginst (sr,(_,ts)) ->
+    failwith 
+    (
+      "Unexpected naked generic instance " ^
+      string_of_expr e ^
+      "\n in " ^ short_string_of_src sr
+      
+    )
   | `AST_texpr (sr,t) -> failwith "Unexpected type expression"
   | `AST_letin _ -> failwith "Unexpected letin"
   | `AST_cond _ -> failwith "Unexpected conditional expression (should be replaced by match)"
@@ -2945,7 +2981,7 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
     let bound_suffix =  bt sr suf in
     begin match be (e:>expr_t) with
     | `BEXPR_functions (name,fs),`BTYP_none ->
-      begin match resolve_overload syms excluded_dirs sr fs name bound_suffix with
+      begin match resolve_overload syms excluded_dirs sr fs name [] bound_suffix with
       | Some (Simple index) ->
          `BEXPR_closure index, 
          typeofindex syms exclude expr_fixlist depth excluded_dirs index
@@ -3081,11 +3117,8 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
     in
       cal_apply syms tbe1 (be2, t2)
 
-  | `AST_apply (sra,(`AST_name (srn,qn) as name,e2)) -> 
-    (*
-    print_endline ("Apply unqualified name " ^ qn ^ " to " ^ string_of_expr e2);
-    flush stdout;
-    *)
+  | `AST_apply ( sra, ( `AST_ginst (srn,(#qualified_name_t as name,ts)), e2)) -> 
+    let ts = List.map (bt srn) ts in
     let be2,t2 = be e2 in
     (*
     print_endline 
@@ -3099,21 +3132,44 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
         syms 
         sra srn env 
         exclude excluded_dirs 
-        name t2 
+        name ts t2 
+    in 
+      cal_apply syms tbe1 (be2,t2)
+
+  (* | `AST_apply (sra,(`AST_name (srn,uqn) as name,e2)) ->  *)
+  | `AST_apply (sra,(#qualified_name_t as name,e2)) -> 
+    (*
+    print_endline ("Apply unqualified name " ^ uqn ^ " to " ^ string_of_expr e2);
+    flush stdout;
+    *)
+    let be2,t2 = be e2 in
+    (*
+    print_endline 
+    (
+      "Argument " ^ string_of_bound_expression syms.dfns (be2,t2) ^ 
+      " has type " ^ string_of_btypecode syms.dfns t2
+    );
+    *)
+    let srn = src_of_expr name in
+    let tbe1 =
+      lookup_qn_with_sig 
+        syms 
+        sra srn env 
+        exclude excluded_dirs 
+        name [] t2 
     in 
       cal_apply syms tbe1 (be2,t2)
 
   | `AST_apply (sr,(e1,e2)) -> 
-    (*
     print_endline ("General apply of " ^ string_of_expr e1);
-    *)
     let tbe1 = be e1 and (be2,t2) as tbe2 = be e2 in
     begin match tbe1 with
     | `BEXPR_functions (name,fs), `BTYP_none ->
+      print_endline "GOT FUNCTION SET??";
       let entry = resolve_overload 
         syms 
         excluded_dirs sr 
-        fs name t2 
+        fs name [] t2 
       in 
       let tbe1' = match entry with
       | None -> 
@@ -3228,8 +3284,11 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
 and resolve_overload 
   syms 
   excluded_dirs sr 
-  fs name (suf : btypecode_t) 
+  fs name 
+  ts
+  (suf : btypecode_t) 
 : entry_kind_t option=
+  let n = List.length ts in
   let rec resolve i =
     match Hashtbl.find syms.dfns i with (id,sr,parent,symdef) ->
     parent,i,sig_of_symdef symdef id
@@ -3237,16 +3296,25 @@ and resolve_overload
   let rec aux i =  
     match i with
     | Simple i -> 
-      let p,i,t = resolve i in
-      let env = build_env syms excluded_dirs p in
-      let t = bind_type syms env [] excluded_dirs sr t in
-      Unique (i,t)
+      let p,i,(vs,t) = resolve i in
+      if List.length vs = n
+      then
+        let tvars = List.map2 (fun s t -> s,t) vs ts in
+        let env = build_env syms excluded_dirs p in
+        let t = bind_type_with_tvars syms env [] excluded_dirs sr t tvars in
+        Unique (i,t)
+      else Fail
 
     | Bound (i,j) ->
-      let p,i,t = resolve i in
-      let env = build_env syms excluded_dirs p in
-      let t = bind_type syms env [] excluded_dirs sr t in
-      Pair ((i,t),j)
+      let p,i,(vs,t) = resolve i in
+      if List.length vs = n
+      then
+        let tvars = List.map2 (fun s t -> s,t) vs ts in
+        let env = build_env syms excluded_dirs p in
+        let t = bind_type_with_tvars syms env [] excluded_dirs sr t tvars in
+        Pair ((i,t),j)
+      else Fail
+
   in
   let fun_defs = List.map aux fs in
   match 
@@ -3256,6 +3324,7 @@ and resolve_overload
       | Unique (_,t) 
       | Pair ((_,t),_) -> 
         lift t = lift_suf
+      | Fail -> false
     ) 
     fun_defs
   with 

@@ -105,6 +105,30 @@ let bind_exes syms env exes ret_type id =
             string_of_btypecode syms.dfns t
           )
 
+      | `EXE_call (`AST_ginst(sr,(#qualified_name_t as qn,ts)), e2) -> (* OVERLOADING *)
+        (*
+        print_endline "Handling call of generic with qualified name";
+        flush stdout;
+        *)
+        let be2,t2 = be e2 in
+        (*
+        print_endline "Argument bound";
+        flush stdout;
+        *)
+        let ts = List.map (bt sr) ts in
+        let tbe1 =
+          lookup_qn_with_sig 
+          syms 
+          dummy_sr dummy_sr 
+          env [] [] 
+          qn ts t2 
+        in  
+          (*
+          print_endline "Applying call now";
+          flush stdout;
+          *)
+          cal_call syms.dfns tbe1 (be2,t2)
+
       | `EXE_call (#suffixed_name_t as sn, e2) -> (* OVERLOADING *)
         (*
         print_endline "Handling call of suffixed name";
@@ -122,7 +146,7 @@ let bind_exes syms env exes ret_type id =
              syms 
              dummy_sr dummy_sr 
              env [] [] 
-             qn t2 
+             qn [] t2 
            | _ -> be sn
         in  
           (*

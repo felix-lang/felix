@@ -1037,6 +1037,27 @@ append[int](&v,3);
 vprint[int] v; endl();
 
 
+@head(2,'Overloading Generics')
+Generic functions and procedures overload much as
+if they were the family of their instances.
+@p()
+For an unqualified name, the lookup finds only generics with the 
+correct number of type arguments, if any. Then it checks
+if an instantiation matches the use. If not, the next
+outermost scope is searched.
+
+@select(tangler(tdir+'tut118b.flx'))
+type int = "int";
+proc endl:1= "cout << endl;";
+proc print[t]: t = 'cout << $1 << " A1";';
+proc print[t1,t2]: t1 = 'cout << $1 << " A2";';
+
+{
+  proc print[t]: t = 'cout << $1 << " B1";';
+  print[int] 1; endl; // B1
+  print[int,int] 1; endl; // A2
+};
+
 @head(2,'Inductive types')
 Felix supports inductive types such as lists.
 Here is a list of ints.
