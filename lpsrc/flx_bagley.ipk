@@ -14,12 +14,14 @@ to get some times.
   ('ackermann',' 8'),
   ('except',' 8'),
   ('fibo',' 8'),
+  ('heapsort',' 1000'),
   ('hello',' 1'),
   ('lists',' 8'),
   ('matrix',' 8'),
   ('methcall',' 8'),
   ('nestedloop',' 8'),
   ('objinst',' 8'),
+  ('plugin',' 20'),
   ('random',' 1000'),
   ('regexmatch',' 8'),
   ('reversefile',' 1 < bagley/data/phone_numbers.data'),
@@ -30,15 +32,23 @@ to get some times.
  ]
 
 @def mk(i,j):
-  tangle('/usr/bin/time -f "'+i+' User Time: %U" bin/flx --test --echo --optimise bagley/felix/'+i+' '+j+' >bagley/felix/'+i+'.output')
+  k = (i+' .................  ')[:20]+' '
+  tangle('/usr/bin/time -f "'+k+' %U" bin/flx --test --optimise bagley/felix/'+i+' '+j+' >bagley/felix/'+i+'.output')
 @def mkc(i,j):
   mk(i,j)
   tangle('diff -a -b bagley/felix/'+i+'.output bagley/felix/'+i+'.expect')
 
 @select(tangler('bagley/run.sh','data'))
+PLUGIN_DIR=bagley/felix/
+export PLUGIN_DIR
+bin/flx --test --optimise -c bagley/felix/plugin_1
+bin/flx --test --optimise -c bagley/felix/plugin_2
+bin/flx --test --optimise -c bagley/felix/plugin_3
 @for i,j in bags: mk (i,j)
 
 @select(tangler('bagley/check.sh','data'))
+PLUGIN_DIR=bagley/felix/
+export PLUGIN_DIR
 @for i,j in bags: mkc (i,j)
 
 @head(2,'Hello World')
@@ -89,7 +99,7 @@ var k = 0;
 whilst k<1000 do
   i = n - 1;
   whilst i >= 0 do
-    y.[i] += x.[i];
+    y.[i] = y.[i] + x.[i];
     --i;
   done;
   ++k;
@@ -150,7 +160,7 @@ as a mismatch. You can see how the other languages
 cheated -- for example the gcc encoding goes ..
 
 @begin_displayed_code()
-"(?:^|[^\\d\\(])"		/* must be preceeded by non-digit */
+"(?:^|[^\\d\\(])"  	/* must be preceeded by non-digit */
              ^ since when is ( a digit?
 @end_displayed_code()
 
@@ -346,7 +356,7 @@ void zeromatrix(int rows, int cols, int **m) {
   int i, j;
   for (i=0; i<rows; i++)
   for (j=0; j<cols; j++)
-	  m[i][j] = 0;
+    m[i][j] = 0;
 }
 
 void freematrix(int rows, int **m) {
@@ -357,9 +367,9 @@ void freematrix(int rows, int **m) {
 void mmult(int rows, int cols, int **m1, int **m2, int **m3) {
   int i, j, k, val;
   for (i=0; i<rows; i++)
-	for (j=0; j<cols; j++) {
-	  val = 0;
-	  for (k=0; k<cols; k++) val += m1[i][k] * m2[k][j];
+  for (j=0; j<cols; j++) {
+    val = 0;
+    for (k=0; k<cols; k++) val += m1[i][k] * m2[k][j];
     m3[i][j] = val;
   }
 }
@@ -403,8 +413,7 @@ var sum = 0;
 var line = readln stdin;
 
 until line == "" do
-  word := line.[to -1];
-  sum += atoi(word);
+  sum += atoi(line);
   line = readln stdin;
 done;
 
@@ -813,12 +822,12 @@ reserve(str,capacity); // as per C-string
 var newLength = 6;
 var i = n;
 until i == 0 do
-	if newLength > capacity do
-	  capacity *= 2;
-	  reserve(str,capacity);
+  if newLength > capacity do
+    capacity *= 2;
+    reserve(str,capacity);
   done;
-	str += c"hello\n";
-	newLength += 6;
+  str += c"hello\n";
+  newLength += 6;
   --i;
 done;
 
@@ -873,11 +882,11 @@ char lf='\\n';
 unsigned char buff[BSIZE];
 ''';
 
-const UCHAR_MAX:int = "UCHAR_MAX";
-const BSIZE:int = "BSIZE";
-const sp:int = "sp";
-const lf:int = "lf";
-const tab:int = "tab";
+const UCHAR_MAX:int;
+const BSIZE:int;
+const sp:int;
+const lf:int;
+const tab:int;
 
 proc setws: int * ulong = "wds[$1]=$2;";
 proc setnws: int * ulong = "nwds[$1]=$2;";
@@ -953,4 +962,273 @@ fun ul(x:bool)=> C_hack::cast[ulong]x;
 };
 
 print l_cnt; print " "; print w_cnt; print " "; print b_cnt; endl;
+
+@head(2,'Heapsort')
+@select(tangler('bagley/felix/heapsort.flx','data'))
+@setup()
+// stolen from C implementation
+
+fun gen_random: double -> double 
+  requires body """
+    #define IM 139968
+    #define IA   3877
+    #define IC  29573
+    static long last;
+    double
+    gen_random(double max) {
+        static long last = 42;
+        return( max * (last = (last * IA + IC) % IM) / IM );
+    }
+""";
+typedef darray = C_hack::ptr[double];
+
+fun subscript: darray * int -> double = "$1[$2]";
+
+val cows_jump_over_moon = false;
+
+proc heapsort(n:int, ra: darray) {
+    var i:int;
+    var j:int;
+    var ir = n;
+    var l = (n / 2) + 1;
+    var rra:double;
+
+    until cows_jump_over_moon do
+        if l > 1 do 
+            --l;
+            rra = ra.[l];
+        else
+            rra = ra.[ir];
+            ra.[ir] = ra.[1];
+            --ir;
+            if ir == 1 do
+                ra.[1] = rra;
+                return;
+            done;
+        done;
+        i = l;
+        j = l * 2;
+        whilst j <= ir do
+            if j < ir and ra.[j] < ra.[j+1] do ++j; done;
+            if rra < ra.[j] do 
+                ra.[i] = ra.[j];
+                i = j;
+                j *= 2;
+            else
+                j = ir + 1;
+            done;
+        done;
+        ra.[i] = rra;
+    done;
+}
+
+var ary = Carray::array_alloc[double] (n+1);
+var i = n; until i == 0 do
+    ary.[i] = gen_random(1.0);
+    --i;
+done;
+
+heapsort(n, ary);
+
+proc print_10f: double = 'printf("%.10f\\n", $1);';
+print_10f ary.[n];
+
+Carray::free ary;
+
+@select(tangler('bagley/felix/plugin.flx','data'))
+@setup()
+open List;
+
+var prefix = Env::getenv "PLUGIN_DIR";
+if prefix == "" do prefix = "./"; done;
+
+// list of the plugin filenames
+var plugins = List::Empty[string];
+plugins = plugins + (prefix + 'plugin_1.so');
+plugins = plugins + (prefix + 'plugin_2.so');
+plugins = plugins + (prefix + 'plugin_3.so');
+
+// data structure for communication with plugin
+struct plugin_com_t
+{
+  input_line: string;
+  string_pos:int;
+  decoded_num:int;
+  success:bool;
+};
+
+var plugin_com : plugin_com_t;
+var ptr_plugin_com = C_hack::address_of plugin_com;
+plugin_com.input_line = "I 1 i 2 3";
+
+val m = len plugin_com.input_line;
+var sum = 0;
+
+// do it n times
+var repeat_count = n; 
+until repeat_count == 0 do
+
+  // starting at start of string
+  plugin_com.string_pos = 0;
+  until plugin_com.string_pos == m do
+
+    // trying each plugin
+    var remaining_plugins = plugins; 
+    plugin_com.success = false;
+    until plugin_com.success do
+    
+      match remaining_plugins with
+      | Empty => 
+        {
+          print "Can't find a suitable plugin"; endl;
+          print "Position "; print plugin_com.string_pos; endl;
+          System::exit 1;
+        }
+
+      | Cons (?plugin, ?tail) =>
+        {
+          var plug_lib = Dynlink::init_lib(plugin);
+          Dynlink::run_proc(plug_lib,"plugin",ptr_plugin_com);
+          if plugin_com.success do
+            sum += plugin_com.decoded_num;
+          else 
+            remaining_plugins = tail;
+          done;
+          Dynlink::destroy_lib plug_lib;
+        }
+      endmatch;
+    done;
+  done;
+  --repeat_count; 
+done;
+
+print sum; endl;
+
+@select(tangler('bagley/felix/plugin_1.flx','data'))
+@setup()
+// data structure for communication with plugin
+struct plugin_com_t
+{
+  input_line: string;
+  string_pos:int;
+  decoded_num:int;
+  success:bool;
+};
+
+val zero = '0'.[0];
+val nine = '9'.[0];
+val space = ' '.[0];
+
+proc plugin (p:address) {
+  var q = C_hack::cast[C_hack::ptr[plugin_com_t]] p;
+  val r = C_hack::deref q;
+  var k = r.string_pos;
+  var acc = 0;
+  whilst r.input_line.[k] == space do ++k; done;
+  if ord zero <= ord r.input_line.[k] &<= ord nine do
+    whilst ord zero <= ord r.input_line.[k] &<= ord nine do
+      acc += acc * 10 + (ord r.input_line.[k] - ord zero);
+      ++k;
+    done;
+    r.success = true;
+    r.decoded_num = acc;
+    r.string_pos = k;
+  else 
+    r.success = false;
+  done;
+  C_hack::deref q = r;
+}
+
+export fun plugin of (address) as "plugin";
+
+@select(tangler('bagley/felix/plugin_2.flx','data'))
+@setup()
+// data structure for communication with plugin
+struct plugin_com_t
+{
+  input_line: string;
+  string_pos:int;
+  decoded_num:int;
+  success:bool;
+};
+
+val zero = '0'.[0];
+val nine = '9'.[0];
+val space = ' '.[0];
+val leadin = 'i'.[0];
+
+proc plugin (p:address) {
+  var q = C_hack::cast[C_hack::ptr[plugin_com_t]] p;
+  val r = C_hack::deref q;
+  var k = r.string_pos;
+  var acc = 0;
+  whilst r.input_line.[k] == space do ++k; done;
+  if r.input_line.[k] == leadin do
+    ++k;
+    whilst r.input_line.[k] == space do ++k; done;
+    if ord zero <= ord r.input_line.[k] &<= ord nine do
+      whilst ord zero <= ord r.input_line.[k] &<= ord nine do
+        acc += acc * 10 + (ord r.input_line.[k] - ord zero);
+        ++k;
+      done;
+      r.success = true;
+      r.decoded_num = acc;
+      r.string_pos = k;
+    else 
+      r.success = false;
+    done;
+  else
+    r.success = false;
+  done;
+  C_hack::deref q = r;
+}
+
+export fun plugin of (address) as "plugin";
+
+
+@select(tangler('bagley/felix/plugin_3.flx','data'))
+@setup()
+// data structure for communication with plugin
+struct plugin_com_t
+{
+  input_line: string;
+  string_pos:int;
+  decoded_num:int;
+  success:bool;
+};
+
+val zero = '0'.[0];
+val nine = '9'.[0];
+val space = ' '.[0];
+val leadin = 'I'.[0];
+
+proc plugin (p:address) {
+  var q = C_hack::cast[C_hack::ptr[plugin_com_t]] p;
+  val r = C_hack::deref q;
+  var k = r.string_pos;
+  var acc = 0;
+  whilst r.input_line.[k] == space do ++k; done;
+  if r.input_line.[k] == leadin do
+    ++k;
+    whilst r.input_line.[k] == space do ++k; done;
+    if ord zero <= ord r.input_line.[k] &<= ord nine do
+      whilst ord zero <= ord r.input_line.[k] &<= ord nine do
+        acc += acc * 10 + (ord r.input_line.[k] - ord zero);
+        ++k;
+      done;
+      r.success = true;
+      r.decoded_num = acc;
+      r.string_pos = k;
+    else 
+      r.success = false;
+    done;
+  else
+    r.success = false;
+  done;
+  C_hack::deref q = r;
+}
+
+export fun plugin of (address) as "plugin";
+
+
 

@@ -119,8 +119,6 @@ struct library_linkage_t : flx_dynlink_t
 {
   typedef con_t *(*line_handler_creator_t)
   (
-    global_frame_t*,
-    process_frame_t*,
     thread_frame_t*
   );
 
@@ -160,12 +158,10 @@ int main(int argc, char** argv)
     flx_collector_t collector(&allocator);
     instance.create(&library, &collector,0,NULL);
  
-    collector.add_root(instance.start);
+    collector.add_root(instance.start_proc);
     int gc_counter = 0;
     con_t *top = 
       library.create_line_handler(
-        instance.global_frame,
-        instance.process_frame,
         instance.thread_frame
     );
     collector.add_root(top);
@@ -354,8 +350,6 @@ struct library_linkage_t : flx_dynlink_t
 {
   typedef con_t *(*line_handler_creator_t)
   (
-    global_frame_t*,
-    process_frame_t*,
     thread_frame_t*
   );
 
@@ -406,8 +400,8 @@ int main(int argc, char** argv)
 
     std::list<session_record> active;
     std::map<session_key,con_t*> waiting;
-    active.push_front(make_pair(-1,instance.start));
-    collector.add_root(instance.start);
+    active.push_front(make_pair(-1,instance.start_proc));
+    collector.add_root(instance.start_proc);
     int gc_counter = 0;
 
     time_t start = time(NULL);
@@ -490,8 +484,6 @@ int main(int argc, char** argv)
         }
         con_t *top = 
           library.create_line_handler(
-            instance.global_frame,
-            instance.process_frame,
             instance.thread_frame
           )
         ;

@@ -535,7 +535,28 @@ fun f(x:int)=>
  
 print (f 10); endl;
 
+@select(tangler('test/rt20.flx'))
+// plugin loader test
+include "std";
 
+print "Starting .. "; endl;
+Dynlink::run_lib("./test/rt02.so");
+Dynlink::run_lib("./test/rt04.so");
+Dynlink::run_lib("./test/rt05.so");
+Dynlink::run_lib("./test/rt07.so");
+Dynlink::run_lib("./test/rt08.so");
+Dynlink::run_lib("./test/rt09.so");
+Dynlink::run_lib("./test/rt10.so");
+Dynlink::run_lib("./test/rt11.so");
+Dynlink::run_lib("./test/rt12.so");
+Dynlink::run_lib("./test/rt13.so");
+Dynlink::run_lib("./test/rt14.so");
+Dynlink::run_lib("./test/rt15.so");
+Dynlink::run_lib("./test/rt16.so");
+Dynlink::run_lib("./test/rt17.so");
+Dynlink::run_lib("./test/rt18.so");
+Dynlink::run_lib("./test/rt19.so");
+print "Its run"; endl;
 
 @head(2,'Bad tests')
 All these should fail gracefully at (felix) compile time. 

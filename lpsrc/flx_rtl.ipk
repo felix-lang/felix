@@ -27,18 +27,19 @@ right type by client drivers.
 #include <string>
 
 @if HAVE_CGOTO:
-  tangle("#define FLX_CGOTO")
+  tangle("#define FLX_HAVE_CGOTO")
+@if HAVE_ASM_LABELS:
+  tangle("#define FLX_HAVE_ASM_LABELS")
 //
+#if defined(FLX_HAVE_CGOTO) && defined(FLX_HAVE_ASM_LABELS)
+#define FLX_CGOTO
+#endif
 
 // for declarations in header file 
 #define FLX_FMEM_DECL \
-  global_frame_t *pgf;\
-  process_frame_t *ppf;\
   thread_frame_t *ptf;
 
 #define FLX_FPAR_DECL \
-    global_frame_t *_pgf,\
-    process_frame_t *_ppf,\
     thread_frame_t *_ptf
 
 
@@ -147,8 +148,8 @@ struct flx_exec_failure_t {
   return tmp; \
 }
   
-#define FLX_FMEM_INIT pgf(_pgf), ppf(_ppf), ptf(_ptf)
-#define FLX_FPAR_PASS pgf,ppf,ptf
+#define FLX_FMEM_INIT ptf(_ptf)
+#define FLX_FPAR_PASS ptf
 #define FLX_NEWP(x) new(gc,x##_ptr_map)x
 
 #define FLX_FINALISER(x) \
@@ -157,51 +158,23 @@ static void x##_finaliser(collector_t *, void *p){\
 }
 
 #define FLX_FRAME_WRAPPERS \
-extern "C" global_frame_t *create_global_frame() {\
-  return new global_frame_t;\
-}\
-extern "C" void destroy_global_frame(\
-  global_frame_t *pgf\
-) {\
-  delete pgf;\
-}\
-extern "C" process_frame_t *create_process_frame(\
-  global_frame_t *pgf\
-) {\
-  return new process_frame_t(pgf);\
-}\
-extern "C" void destroy_process_frame(\
-  process_frame_t *ppf\
-) {\
-  delete ppf;\
-}\
 extern "C" thread_frame_t *create_thread_frame(\
-  global_frame_t *pgf,\
-  process_frame_t *ppf,\
   collector_t *gc\
 ) {\
-  thread_frame_t *p = new(*gc,thread_frame_t_ptr_map) thread_frame_t(pgf,ppf,gc);\
-  gc->add_root(p);\
+  thread_frame_t *p = new(*gc,thread_frame_t_ptr_map) thread_frame_t(gc);\
   return p;\
-}\
-extern "C" void destroy_thread_frame(\
-  thread_frame_t *ptf\
-) {\
-  ptf->gc->remove_root(ptf);\
 }
 
 #define FLX_START_WRAPPER(x)\
-extern "C" con_t *start(\
-  global_frame_t *pgf,\
-  process_frame_t *ppf,\
+extern "C" con_t *flx_start(\
   thread_frame_t *ptf,\
   int argc,\
   char **argv\
 ) {\
-  pgf->argc = argc;\
-  pgf->argv = argv;\
+  ptf->argc = argc;\
+  ptf->argv = argv;\
   return (new(*ptf->gc,x##_ptr_map) \
-    x(pgf,ppf,ptf)) ->call(0);\
+    x(ptf)) ->call(0);\
 }
 
 
@@ -286,13 +259,8 @@ The link routine links the following symbols,
 which must be present in all felix libraries.
 
 @begin_displayed_code()
-  create_global_frame
-  create_process_frame
   create_thread_frame
   start
-  destroy_thread_frame
-  destroy_process_frame
-  destroy_global_frame
 @end_displayed_code()
 
 The unlink routine is called to unlink the library.
@@ -343,6 +311,9 @@ using namespace std;
 // they're dispatched automatically by wrappers
 // defined in the base]
 
+// must be at global scope, because the users is
+struct thread_frame_t;
+
 namespace flx { namespace rtl {
 
 struct flx_link_failure_t {
@@ -352,32 +323,15 @@ struct flx_link_failure_t {
   flx_link_failure_t(string f, string o, string w);
 };
 
-// frame types are incomplete
-typedef void global_frame_t;
-typedef void process_frame_t;
-typedef void thread_frame_t;
-
 // frame creators
-typedef global_frame_t *(*global_frame_creator_t)(void);
-typedef process_frame_t *(*process_frame_creator_t)(global_frame_t*);
 typedef thread_frame_t *(*thread_frame_creator_t)
 (
-  global_frame_t*,
-  process_frame_t*, 
   flx::gc::generic::collector_t*
 );
-
-// frame destructors
-typedef void (*global_frame_destructor_t)(global_frame_t*);
-typedef void (*process_frame_destructor_t)(process_frame_t*);
-typedef thread_frame_t *(*thread_frame_destructor_t) (thread_frame_t*);
-
 
 // library initialisation routine
 typedef con_t *(*start_t)
 (
-  global_frame_t*, 
-  process_frame_t*, 
   thread_frame_t*,
   int,
   char **
@@ -387,13 +341,9 @@ struct flx_dynlink_t
 {
   // data
   void *library;
-  global_frame_creator_t global_frame_creator;
-  process_frame_creator_t process_frame_creator;
   thread_frame_creator_t thread_frame_creator;
-  global_frame_destructor_t global_frame_destructor;
-  process_frame_destructor_t process_frame_destructor;
-  thread_frame_destructor_t thread_frame_destructor;
-  start_t start;
+  start_t start_sym;
+  long refcnt;
 
   // routines
   void link(char const *filename) throw(flx_link_failure_t);
@@ -412,22 +362,22 @@ private:
 
 struct flx_libinit_t 
 {
-  global_frame_t *global_frame;
-  process_frame_t *process_frame;
   thread_frame_t *thread_frame;
-  con_t *start;
+  con_t *start_proc;
   flx_dynlink_t *lib;
-
+  flx::gc::generic::collector_t *collector;
   void create
   (
     flx_dynlink_t *lib_a, 
-    flx::gc::generic::collector_t *collector,
+    flx::gc::generic::collector_t *collector_a,
     int argc,
     char **argv
   );
 
   void destroy ();
 
+  con_t *bind_proc(void *fn, void *data);
+  
 private:
   // the user can override these procedures
   // to perform any additional initialisation
@@ -447,13 +397,8 @@ private:
 @select(h)
 #include "flx_dynlink.hpp"
 #ifdef FLX_STATIC_LINK
-extern void *create_global_frame;
-extern void *create_process_frame;
 extern void *create_thread_frame;
-extern void *destroy_global_frame;
-extern void *destroy_process_frame;
-extern void *destroy_thread_frame;
-extern void *start;
+extern void *flx_start;
 #endif
 
 namespace flx { namespace rtl {
@@ -469,48 +414,28 @@ void flx_dynlink_t::link(char const *filename) throw(flx_link_failure_t)
 
 #ifndef FLX_STATIC_LINK
   library = dlopen(filename,RTLD_NOW);
-  if(!library) throw flx_link_failure_t(filename,"dlopen",dlerror());
+  if(!library) 
+    throw flx_link_failure_t(filename,"dlopen",dlerror());
 #endif
 
-  global_frame_creator = (global_frame_creator_t)
-    DLSYM(library,create_global_frame);
-  if(!global_frame_creator) 
-    throw(filename,"dlsym","create_global_frame");
-
-  process_frame_creator = (process_frame_creator_t)
-    DLSYM(library,create_process_frame);
-  if(!process_frame_creator)
-    throw flx_link_failure_t(filename,"dlsym","create_process_frame");
+  //fprintf(stderr,"File %s dlopened at %p ok\n",filename,library);
 
   thread_frame_creator = (thread_frame_creator_t)
     DLSYM(library,create_thread_frame);
   if(!thread_frame_creator) 
     throw flx_link_failure_t(filename,"dlsym","create_thread_frame");
 
-  global_frame_destructor = (global_frame_destructor_t)
-    DLSYM(library,destroy_global_frame);
-  if(!global_frame_destructor) 
-    throw flx_link_failure_t(filename,"dlsym","destroy_global_frame");
+  //fprintf(stderr,"Thread frame creator found at %p\n",thread_frame_creator);
 
-  process_frame_destructor = (process_frame_destructor_t)
-    DLSYM(library,destroy_process_frame);
-  if(!process_frame_destructor) 
-    throw flx_link_failure_t(filename,"dlsym","destroy_process_frame");
+  start_sym = (start_t)DLSYM(library,flx_start);
+  if(!start_sym) 
+    throw flx_link_failure_t(filename,"dlsym","flx_start");
 
-  thread_frame_destructor = (thread_frame_destructor_t)
-    DLSYM(library,destroy_thread_frame);
-  if(!thread_frame_destructor) 
-    throw flx_link_failure_t(filename,"dlsym","destroy_thread_frame");
+  //fprintf(stderr,"Start symbol found at %p\n",start_sym);
+  
+  refcnt = 1L;
 
-  start = (start_t)
-#ifndef FLX_STATIC_LINK
-    dlsym(library,"start");
-#else
-  (void*)&::start;
-#endif
-  if(!start) 
-    throw flx_link_failure_t(filename,"dlsym","start");
-
+  //fprintf(stderr,"Set refcnt to 1\n");
   try { usr_link(); }
   catch (flx_link_failure_t &) { throw; }
   catch (...) { 
@@ -525,43 +450,34 @@ void flx_dynlink_t::link(char const *filename) throw(flx_link_failure_t)
 
 void flx_dynlink_t::unlink()
 {
+  --refcnt;
+  if(refcnt == 0) {
+    //fprintf(stderr,"closing library\n");
 #ifndef FLX_STATIC_LINK
-  dlclose(library);
+    //dlclose(library);
 #endif
+  }
 }
-  
+
 void flx_dynlink_t::usr_link(){}
 
 void flx_libinit_t::create
 (
   flx_dynlink_t *lib_a, 
-  flx::gc::generic::collector_t *collector,
+  flx::gc::generic::collector_t *collector_a,
   int argc,
   char **argv
 )
 {
   lib = lib_a;
-#ifdef FLX_STATIC_LINK
-//  printf("Building frames now ..\n");
-//  printf("Global frame creator is %p\n",lib->global_frame_creator);
-#endif
-  global_frame = lib->global_frame_creator();
-#ifdef FLX_STATIC_LINK
-//  printf("Built global frame %p\n",global_frame);
-#endif
-  process_frame = lib->process_frame_creator(global_frame);
+  collector = collector_a;
   thread_frame = lib->thread_frame_creator(
-    global_frame, 
-    process_frame, 
     collector 
   );
-#ifdef FLX_STATIC_LINK
-//  printf("Built frames, creating init continuation ..\n");
-#endif
-  start = lib->start(global_frame, process_frame, thread_frame, argc, argv);
-#ifdef FLX_STATIC_LINK
-//  printf("Init continuation created %p\n",start);
-#endif
+  //fprintf(stderr,"Incrementing refcnt\n");
+  ++lib->refcnt;
+  collector->add_root(thread_frame);
+  start_proc = lib->start_sym(thread_frame, argc, argv);
   usr_create();
 }
 
@@ -569,13 +485,19 @@ void flx_libinit_t::usr_create(){}
 
 void flx_libinit_t::destroy () {
   usr_destroy();
-  lib->thread_frame_destructor(thread_frame);
-  lib->process_frame_destructor(process_frame);
-  lib->global_frame_destructor(global_frame);
+  collector->remove_root(thread_frame);
+  //fprintf(stderr,"Decrementing refcnt\n");
+  //fprintf(stderr,"Ref cnt=%ld\n",lib->refcnt);
+  --lib->refcnt;
+  //fprintf(stderr,"Ref cnt=%ld\n",lib->refcnt);
 }
 
 void flx_libinit_t::usr_destroy (){}
 
+con_t *flx_libinit_t::bind_proc(void *fn, void *data) {
+  typedef con_t *(*binder_t)(void *,void*);
+  return ((binder_t)fn)(thread_frame,data);
+}
 
 }} // namespaces
 
@@ -607,9 +529,19 @@ shared library name are not passed.
 #include <unistd.h>
 #include "flx_collector.hpp"
 #include "flx_dynlink.hpp"
+@if HAVE_GXX:
+  tangle('#define HAVE_GXX')
+
+@if HAVE_GXX_X86:
+  tangle('#define HAVE_GXX_X86')
 
 using namespace std;
 using namespace flx::rtl;
+#ifdef HAVE_GXX_X86
+register void *sp __asm__("esp");
+#else
+static void *sp = 0;
+#endif
 
 int main(int argc, char** argv)
 {
@@ -641,12 +573,17 @@ int main(int argc, char** argv)
   bool debug = false;
 //  printf("Statically linked Felix program running\n");
 #endif
+#ifdef HAVE_GXX
+    static void *init_sp = sp;
+    static void *init_fframe = __builtin_frame_address(0);
+    static void *init_ret = __builtin_return_address(0);
+#endif
   if(debug)
     for(int i=0; i<flx_argc; ++i) 
-    printf("flx_argv[%d]->%s\n",i,flx_argv[i]);
+    fprintf(stderr,"flx_argv[%d]->%s\n",i,flx_argv[i]);
   try 
   {
-    if(debug)printf("flx_run driver begins %s\n",flx_argv[0]);
+    if(debug)fprintf(stderr,"flx_run driver begins %s\n",flx_argv[0]);
     flx_dynlink_t library;
     flx_libinit_t instance;
 
@@ -656,7 +593,7 @@ int main(int argc, char** argv)
     instance.create(&library, &collector,flx_argc,flx_argv);
  
     int gc_counter = 0;
-    con_t *top = instance.start;
+    con_t *top = instance.start_proc;
     collector.add_root(top);
     con_t *old_root = top;
 
@@ -664,7 +601,7 @@ int main(int argc, char** argv)
     {
       top = top->resume();
       gc_counter++;
-      if(gc_counter == 100)
+      if(gc_counter == 1000)
       {
         gc_counter = 0;
         // reset the root to the current top
@@ -677,33 +614,75 @@ int main(int argc, char** argv)
         if(debug)printf("collected %ld\n",n);
       }
     }
-
+    if(old_root) collector.remove_root(old_root);
+    {
+      unsigned long n = collector.collect();
+      unsigned long a = collector.get_allocation_count();
+      //if(a!=0)
+      //  fprintf(stderr,"flx_run %ld uncollected objects!\n",a);
+    }
+    //fprintf(stderr,"Destroying instance ..\n");
     instance.destroy();
+    //fprintf(stderr,"Collecting ..\n");
     unsigned long n = collector.collect();
-    if(debug)printf("flx_run driver ends normally, collected %ld\n",n);
-    return 0;
+    unsigned long a = collector.get_allocation_count();
+    //fprintf(stderr,"Collecting done ..\n");
+    if(a!=0){
+      fprintf(stderr,"flx_run %ld uncollected objects!\n",a);
+      return 5;
+    }
+    //fprintf(stderr,"Libref cnt = %ld\n",library.refcnt);
+    //if(library.refcnt >0)
+    //{
+    //  fprintf(stderr,"flx_run %p library still referenced %ld times (expected 1)\n",library.library,library.refcnt);
+    //}
+    //fprintf(stderr,"Unlinking library ..\n");
+    library.unlink();
+    if(library.refcnt >0)
+    {
+      fprintf(stderr,"flx_run %p library still referenced %ld times?!\n",library.library,library.refcnt);
+      return 6;
+    }
+    if(debug)fprintf(stderr,"flx_run driver ends normally, collected %ld,left=%ld\n",n,a);
   }
   catch (flx_link_failure_t x)
   {
-    printf("Dynamic linkage error\n");
-    printf("filename: %s\n",x.filename.data());
-    printf("operation: %s\n",x.operation.data());
-    printf("what: %s\n",x.what.data());
+    fprintf(stderr,"Dynamic linkage error\n");
+    fprintf(stderr,"filename: %s\n",x.filename.data());
+    fprintf(stderr,"operation: %s\n",x.operation.data());
+    fprintf(stderr,"what: %s\n",x.what.data());
     return 2;
   }
   catch (flx_exec_failure_t x)
   {
-    printf("Execution error\n");
-    printf("filename: %s\n",x.filename.data());
-    printf("operation: %s\n",x.operation.data());
-    printf("what: %s\n",x.what.data());
+    fprintf(stderr,"Execution error\n");
+    fprintf(stderr,"filename: %s\n",x.filename.data());
+    fprintf(stderr,"operation: %s\n",x.operation.data());
+    fprintf(stderr,"what: %s\n",x.what.data());
     return 3;
   }
   catch (...)
   {
-    printf("flx_run driver ends with unknown EXCEPTION\n");
+    fprintf(stderr,"flx_run driver ends with unknown EXCEPTION\n");
     return 4;
   }
+#ifdef HAVE_GXX
+    // check the frame pointer isn't corrupted
+    static void *fin_sp = sp;
+    static void *fin_fframe = __builtin_frame_address(0);
+    static void *fin_ret = __builtin_return_address(0);
+    if (init_sp != fin_sp ) {
+      fprintf(stderr,"g++: STACK POINTER ERROR %p != %p\n",init_sp,fin_sp);
+    }
+    if (init_fframe != fin_fframe) {
+      fprintf(stderr,"g++: FRAME POINTER ERROR %p != %p\n",init_fframe,fin_fframe);
+    }
+    else if (init_ret != fin_ret) {
+      fprintf(stderr,"g++: RETURN ADDRESS ERROR %p != %p\n",init_ret,fin_ret);
+    }
+#endif
+  if(debug)fprintf(stderr,"flx_run driver ends OK\n");
+  return 0;
 }
 
 

@@ -1067,6 +1067,8 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('test: dummy')
 @tangle('\tpython script/maker test stop_on_error')
+@tangle('\tpython script/maker bagley')
+@tangle('\tsh bagley/check.sh')
 @tangle('')
 @tangle('test.static: dummy')
 @tangle('\tpython script/maker test static stop_on_error')
@@ -1079,6 +1081,8 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('tests: dummy')
 @tangle('\tpython script/maker test log_output')
+@tangle('\tpython script/maker bagley')
+@tangle('\tsh bagley/check.sh')
 @tangle('')
 @tangle('tests.verify: dummy')
 @tangle('\tpython script/maker test check_output')
@@ -1103,6 +1107,12 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('rtl: dummy')
 @tangle('\tpython script/maker rtl')
+@tangle('')
+@tangle('expect.bagley: clean')
+@tangle('\tpython script/maker bagley')
+@tangle('\tsh bagley/run.sh')
+@tangle('\tsh bagley/run.sh')
+@tangle('\tpython script/mk_expect bagley/felix > lpsrc/flx_bagley_expect.ipk')
 @tangle('')
 @tangle('expect: clean')
 @tangle('\tpython script/maker bagley')
@@ -1214,8 +1224,6 @@ We have no idea if it continues copying.
 @tangle('\t\tflx_'+flx_version+'/man/man1/*.1 \\')
 @tangle('\t\tflx_'+flx_version+'/impldoc/*.html \\')
 @tangle('\t\tflx_'+flx_version+'/bin/flx \\')
-@tangle('\t\tflx_'+flx_version+'/bin/flxg \\')
-@tangle('\t\tflx_'+flx_version+'/bin/flx_run \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/bin/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/compilers/*.py \\')
@@ -1357,14 +1365,22 @@ A shell script to run the config step.
 @select(tangler('configure'))
 echo "Configuring Felix"
 grab=1
+
 PREFIX=$PREFIX
 while (( "$grab" == "1" ));
 do
   case x$1 in
   x--prefix=*)
-     PREFIX="`echo \"$1\" | sed 's/--prefix=\(.*\)/\\1'`"
+     PREFIX="`echo \"$1\" | sed 's/--prefix=\(.*\)/\\1/'`"
      shift
   ;;
+
+  x--prefix)
+    shift
+    PREFIX="$1"
+    shift
+  ;;
+
   x) 
     grab=0
   ;;
@@ -1373,7 +1389,8 @@ done
 
 echo "Installing at PREFIX=$PREFIX"
 make PREFIX=$PREFIX config
-make boot
+make PREFIX=$PREFIX boot
+make grammar
 make extract
 
 @head(1,'README')
@@ -2040,7 +2057,7 @@ do
   esac
 done
 
-if [ "$TESTMODE" = "1" ]
+if [ "$TESTMODE" = "1" -a "$ECHO" = "1" ]
 then
   echo "TESTMODE: running felix from current directory"
 fi
@@ -2318,7 +2335,7 @@ Package: apps-felix
 @tangle('Version: '+flx_version)
 Revision: 0
 Depends:
-Build-depends: godi-ocaml (> 3.08) 
+Build-Depends: godi-ocaml (> 3.08) 
 @tangle('Sources: http://felix.sf.net/flx_'+flx_version+'_src.tgz')
 @tangle('Unpacks-To: flx_'+flx_version)
 Bytecode-Target: all
@@ -2332,7 +2349,7 @@ Felix Compiler
 
 @select(tangler('meta/godiva/flx.godiva_camlsyntax','data'))
 name = "felix";
-version = "1.0.10";
+@tangle('version = "'+flx_version+'";')
 revision = 0;
 category = `apps;
 depends = [];
@@ -2394,7 +2411,7 @@ MAKE_FLAGS=     PREFIX=${PREFIX}
 
 PATH:=          ${LOCALBASE}/bin:${PATH}
 HAS_CONFIGURE = yes
-CONFIGURE_ARGS+= --prefix=${PREFIX}
+CONFIGURE_ARGS+= --prefix ${PREFIX}
 CONFIGURE_ENV+= ${BUILD_OCAMLFIND_ENV}
 USE_GMAKE = yes
 

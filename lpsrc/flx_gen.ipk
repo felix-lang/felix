@@ -1716,7 +1716,7 @@ let gen_biface_body syms bbdfns biface = match biface with
       " as " ^ export_name ^ "\n" ^
       rettypename ^" " ^ export_name ^ "(\n" ^ arglist ^ "\n){\n" ^
       "  return (new(*_ptf->gc,"^class_name^"_ptr_map)\n" ^
-      "    " ^ class_name ^ "(_pgf,_ppf,_ptf))\n" ^
+      "    " ^ class_name ^ "(_ptf))\n" ^
       "    ->apply(" ^ cat ", " (map fst ps) ^ ");\n" ^
       "}\n"
 
@@ -1740,7 +1740,7 @@ let gen_biface_body syms bbdfns biface = match biface with
       " as " ^ export_name ^ "\n" ^
       "con_t *" ^ export_name ^ "(\n" ^ arglist ^ "\n){\n" ^
       "  return (new(*_ptf->gc,"^class_name^"_ptr_map)\n" ^
-      "    " ^ class_name ^ "(_pgf,_ppf,_ptf))" ^
+      "    " ^ class_name ^ "(_ptf))" ^
       "\n      ->call(" ^ cat ", " ("0"::(map fst ps)) ^ ");\n" ^
       "}\n"
 
@@ -2076,21 +2076,6 @@ try
   List.iter plh [
   "//FELIX SYSTEM";
 
-  (* GLOBAL FRAME *)
-  "struct global_frame_t {";
-  "  int argc;";
-  "  char **argv;";
-  "  // put global values here";
-  "};";
-  "struct process_frame_t {";
-  "  global_frame_t *global_frame;";
-  "  process_frame_t(";
-  "    global_frame_t *_global_frame";
-  "  ) :";
-  "    global_frame(_global_frame)";
-  "  {}";
-  "};";
-
   "struct thread_frame_t;"
   ]
   ;
@@ -2138,12 +2123,10 @@ try
   List.iter plh 
   [
   "struct thread_frame_t {";
-  "  global_frame_t *global_frame;";
-  "  process_frame_t *process_frame;";
+  "  int argc;";
+  "  char **argv;";
   "  collector_t *gc;";
   "  thread_frame_t(";
-  "    global_frame_t*,";
-  "    process_frame_t*,";
   "    collector_t*";
   "  );";
   ]
@@ -2209,8 +2192,6 @@ try
   let topfuns = List.map fst topfuns in
   let topinits =
     [
-      "  process_frame(pf_a)";
-      "  global_frame(gf_a)";
       "  gc(gc_a)"
     ]
     @
@@ -2226,8 +2207,6 @@ try
   List.iter plb
   [
   "thread_frame_t::thread_frame_t(";
-  "  global_frame_t *gf_a,";
-  "  process_frame_t *pf_a,";
   "  collector_t *gc_a";
   ") :";
   topinits;

@@ -1,28 +1,18 @@
 @head(1,"Expected outputs for bagley/felix")
 @head(2,"bagley/felix/array.expect")
 @select(tangler("bagley/felix/array.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/array.so
-0 0
+1000 1000000
 @head(2,"bagley/felix/ackermann.expect")
 @select(tangler("bagley/felix/ackermann.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/ackermann.so
 Ack(3,8): 2045
 @head(2,"bagley/felix/fibo.expect")
 @select(tangler("bagley/felix/fibo.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/fibo.so
 Fib(8): 34
 @head(2,"bagley/felix/nestedloop.expect")
 @select(tangler("bagley/felix/nestedloop.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/nestedloop.so
 262144
 @head(2,"bagley/felix/regexmatch.expect")
 @select(tangler("bagley/felix/regexmatch.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/regexmatch.so
 1: (111) 111 1111
 2: (111) 222 2222
 3: (111) 333 3333
@@ -38,23 +28,15 @@ running /home/skaller/links/flx/bagley/felix/regexmatch.so
 13: (213) 222 2222
 @head(2,"bagley/felix/random.expect")
 @select(tangler("bagley/felix/random.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/random.so
 8.16329
 @head(2,"bagley/felix/hello.expect")
 @select(tangler("bagley/felix/hello.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/hello.so
 hello world
 @head(2,"bagley/felix/matrix.expect")
 @select(tangler("bagley/felix/matrix.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/matrix.so
 270165 1061760 1453695 1856025
 @head(2,"bagley/felix/reversefile.expect")
 @select(tangler("bagley/felix/reversefile.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/reversefile.so
 
 
 foo 214) 222 2222 bar
@@ -94,23 +76,15 @@ the following numbers should match:
 datafile for regex matching of phone numbers test
 @head(2,"bagley/felix/sumcol.expect")
 @select(tangler("bagley/felix/sumcol.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/sumcol.so
 500500
 @head(2,"bagley/felix/sieve.expect")
 @select(tangler("bagley/felix/sieve.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/sieve.so
 Count: 1028
 @head(2,"bagley/felix/lists.expect")
 @select(tangler("bagley/felix/lists.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/lists.so
 10000
 @head(2,"bagley/felix/objinst.expect")
 @select(tangler("bagley/felix/objinst.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/objinst.so
 false
 true
 false
@@ -127,22 +101,20 @@ true
 true
 @head(2,"bagley/felix/methcall.expect")
 @select(tangler("bagley/felix/methcall.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/methcall.so
 true
 true
 @head(2,"bagley/felix/strcat.expect")
 @select(tangler("bagley/felix/strcat.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/strcat.so
 48
 @head(2,"bagley/felix/except.expect")
 @select(tangler("bagley/felix/except.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/except.so
 Exceptions: HI=4 / LO=4
 @head(2,"bagley/felix/wc.expect")
 @select(tangler("bagley/felix/wc.expect","data"))
-TESTMODE: running felix from current directory
-running /home/skaller/links/flx/bagley/felix/wc.so
 37 100 568
+@head(2,"bagley/felix/heapsort.expect")
+@select(tangler("bagley/felix/heapsort.expect","data"))
+0.9990640718
+@head(2,"bagley/felix/plugin.expect")
+@select(tangler("bagley/felix/plugin.expect","data"))
+120

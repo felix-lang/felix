@@ -202,6 +202,7 @@ header """
 using namespace std;
 """;
 
+header flx_dynlink '#include "flx_dynlink.hpp"';
 header flx_i18n '#include "flx_i18n.hpp"';
 
 // note -- this code is templated, we include
@@ -281,6 +282,9 @@ publish "Unit type"
 
 publish "Boolean"
   typedef bool = 2;
+
+publish "option type"
+  typedef optional[t] = 1 + t;
 
 publish "Universal type 'x as x'"
   typedef any = any;
@@ -493,6 +497,7 @@ module C_hack
   """
   fun addr[t]: t -> ptr[t] = "&$1";
   fun caddr[t]: t -> cptr[t] ="(?1 const*)&$1";
+  fun address_of[t]: t-> address = "(void*)&$1";
   
   publish """
   Polymorphic null pointer constant
@@ -506,6 +511,9 @@ module C_hack
   proc print: charp = "std::cout << $1;" requires iostream;
   proc print: charcp = "std::cout << $1;" requires iostream;
 
+  publish """ print an address in hex """
+  proc print: address = "std::cout << $1;" requires iostream;
+
   header dflt_h "template<class T> T dflt() { return T(); }";
   publish """
   Workaround for g++ 3.2.2 parsing bug,
@@ -513,6 +521,7 @@ module C_hack
   but screws up on (T())
   """
   fun dflt[t]:1->t = "dflt<?1>()" requires dflt_h;
+
 }
 
 module Carray
@@ -523,14 +532,14 @@ module Carray
   fun array_alloc[t]: int -> ptr[t] = '(?1*)std::malloc(sizeof(?1)*$1)'; 
   fun array_calloc[t]: int -> ptr[t] = '(?1*)std::calloc(sizeof(?1),$1)'; 
   proc free[t]: ptr[t]="std::free($1);";
-  fun subscript[t]: ptr[t] * int -> t = '$1[$2]';
+  fun subscript[t]: lvalue[ptr[t]] * int -> lvalue[t] = '$1[$2]';
 }
 
 publish "System Interface"
 module System
 {
-  const argc:int = "pgf->argc";
-  fun argv:int -> string = 'std::string($1<0||$1>=pgf->argc??"":pgf->argv[$1])';
+  const argc:int = "ptf->argc";
+  fun argv:int -> string = 'std::string($1<0||$1>=ptf->argc??"":ptf->argv[$1])';
 @tangle('  const felix_version : string = \'std::string("'+flx_version+'")\';')
   fun system: string -> int = "std::system($1.data())"
     requires cstdlib;
@@ -542,6 +551,97 @@ module Env
 {
   fun getenv:string -> string = "std::string(std::getenv($1.data()))"
     requires cstdlib;
+}
+
+module Dynlink
+{
+  requires flx_dynlink;
+  type flx_library = "flx::rtl::flx_dynlink_t*";
+  type flx_instance = "flx::rtl::flx_libinit_t";
+  proc dlopen:flx_library * string = "$1->link($2.data());";
+  proc dlclose:flx_library = "$1->unlink();";
+
+  proc create: flx_library * flx_instance = 
+    "_create($1,&$2,&gc,ptf->argc,ptf->argv);"
+    requires body """
+    flx::rtl::con_t *_create
+    (
+      flx::rtl::flx_dynlink_t *library,
+      flx::rtl::flx_libinit_t *instance,
+      flx::gc::generic::collector_t *gc,
+      int argc, char **argv
+    )
+    { 
+      instance->create(library,gc,argc,argv); 
+    }
+    """;
+  
+  private fun get_init: flx_instance -> cont = "$1.start_proc";
+  private fun get_library: flx_instance -> flx_library = "$1.lib";
+  proc destroy: flx_instance = "$1.destroy();";
+  
+  fun create_library_handle: unit->flx_library=
+    "new flx::rtl::flx_dynlink_t()";
+
+  proc delete_library_handle: flx_library =
+    "delete $1;";
+    
+  noinline fun init_lib(filename:string):flx_instance = {
+    var library = create_library_handle();
+    var instance: flx_instance;
+    dlopen(library,filename);
+    create (library,instance);
+    var init = get_init instance;
+    Control::run init;
+    return instance;
+  }
+
+  publish """ Run a Felix program. 
+    WARNING!! All data created by the target
+    program must be destroyed 
+    before the library code is unlinked.
+  """
+  proc run_lib(filename:string) 
+  {
+    var instance = init_lib(filename);
+    destroy_lib instance;
+  }
+
+  noinline proc destroy_lib(instance:flx_instance)
+  {
+    destroy instance;
+    Control::collect();
+    dl := get_library instance;
+    dlclose dl;
+    delete_library_handle dl;
+  }
+
+  publish "dlsym wrapper, returns any symbol"
+  fun dlsym:flx_library * string->address = 
+      "dlsym($1->library,$2.data())";
+
+  publish """
+    execute an address representing a top
+    level exported felix procedure's C wrapper,
+    this creates a 'read to run' continuation object
+    by both constructing the object using the thread
+    frame of the instance as an argument, and calling
+    it to fix a null return address and an arbitrary
+    client data pointer as arguments to the call method.
+  """
+  fun bind_proc: flx_instance * address * address -> cont = 
+    "$1.bind_proc($2,$3)";
+
+  fun dlib_of : flx_library -> address = "$1->library";
+
+  noinline proc run_proc (instance:flx_instance, p: string, data: address) 
+  {
+    var lib = get_library instance;
+    var sym = dlsym(lib, p);
+    var f = bind_proc(instance, sym, data);
+    run f;
+  }
+
 }
 
 @#------------- Text I/O -------------------
@@ -605,6 +705,9 @@ type string = "std::string";
   
 @#------------- CHARACTER MODULES -------------------
 // ordinary value of chars
+@for t in chars:
+  gen_asgn(t)
+
 module Char 
 {
   open Int;
@@ -948,6 +1051,8 @@ module List
   }
 
   fun add[T] (x:list[T], y: list[T]):list[T] => join x y;
+
+  fun add[T] (x:list[T], y: T):list[T] => Cons (y, x);
 
   fun cat[T] (x:list[list[T]]):list[T] =
   {

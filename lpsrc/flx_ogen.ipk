@@ -181,6 +181,7 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance =
   let name = cpp_instance_name syms bbdfns index ts in
   let display = Flx_display.get_display_list bbdfns index in
   let offsets = 
+    ("offsetof(" ^ name ^ ",ptf)") ::
     (match ret with 
       | `BTYP_void -> [ ("offsetof(" ^ name ^ ",_caller)")  ] 
       | _ -> []

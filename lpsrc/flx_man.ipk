@@ -736,15 +736,18 @@ Felix grammar summary.
 
 .SH Grammar
 
-@f = open('misc/flx_parse.grammar')
-@for l in f:
-   x = l[:-1]
-   if x[-1:]==':':
-     tangle('.B '+x)
-   else:
-     tangle(x)
-   tangle('.br')
-@f.close()
+@try:
+  f = open('misc/flx_parse.grammar')
+  for l in f:
+     x = l[:-1]
+     if x[-1:]==':':
+       tangle('.B '+x)
+     else:
+       tangle(x)
+     tangle('.br')
+  f.close()
+ except:
+  print 'run "make grammar" first'
 .br
 @tangle(manfoot)
 

@@ -739,9 +739,14 @@ void flx_collector_t::check()
 
 flx_collector_t::~flx_collector_t()
 {
-  roots.clear();
-  root_count = 0;
-  sweep();
+  //THIS IS VERY DANGEROUS! What if don't want to collect
+  //the garbage for efficiency reasons???
+  //
+  // ELIDED .. already caused a bug!
+  //
+  //roots.clear();
+  //root_count = 0;
+  //sweep();
 }
 
 }}} // end namespaces
