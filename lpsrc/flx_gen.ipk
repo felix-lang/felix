@@ -48,7 +48,7 @@ open Flx_print
 open Flx_typing
 open Flx_name
 open Flx_tgen
-
+open Flx_csubst
 
 let string_of_string = Flx_string.c_quote_of_string
 
@@ -398,126 +398,6 @@ let gen_ctor bbdfns name display =
     display
   ) ^ 
   "\n  {}\n"
-
-type mode_t = Normal | Dollar | Hash | Earhole | Backquote
-
-(* substitution encoding:
-   $n: n'th component of argument tuple, 1 origin!
-       (but only 'data' part of pointers)
-   #n: type of n'th component of argument tuple (1 origin)
-   `n: n'th component (including frame* for pointers)
-   #0: return type
-   @n: reference to shape object
-
-   $t: expands to $1, $2, .. $n
-   #t: the type of the argument tuple
-   @t: the shape of the argument tuple
-*)
-
-let subst registry (dfns:symbol_table_t) bbdfns ct args typs retyp =
-  let n = List.length args in
-  assert (n = List.length typs); 
-  (* print_endline ("SUBST " ^ ct ^ ", count="^string_of_int n); *)
-  let s = ref "" in
-  let mode = ref Normal in
-  for i = 0 to (String.length ct) - 1 do
-    if !mode <> Normal
-    then if ct.[i]='t'
-    then begin match !mode with
-      | Backquote -> failwith "`t undefined"
-      | Dollar -> 
-          s := !s ^ 
-          cpp_typename registry dfns bbdfns (lower (typeoflist typs)) ^
-          "(" ^
-          String.concat "," args ^
-          ")";
-          mode := Normal
-          
-      | Hash ->
-          s := !s ^ 
-          cpp_typename registry dfns bbdfns (lower (typeoflist typs));
-          mode := Normal
-
-      | Earhole ->
-          s := !s ^ 
-          cpp_typename registry dfns bbdfns (lower (typeoflist typs)) ^ 
-          "_ptr_map";
-          mode := Normal
-
-      | Normal -> assert false; 
-    end else let j = 
-      match ct.[i] with
-      | '0' -> 0
-      | '1' -> 1
-      | '2' -> 2
-      | '3' -> 3
-      | '4' -> 4
-      | '5' -> 5
-      | '6' -> 6
-      | '7' -> 7
-      | '8' -> 8
-      | '9' -> 9
-      | x -> failwith 
-        (
-          "[subst] Expected digit 0-9 in \"" ^ ct ^ 
-          "\", pos " ^ string_of_int i ^
-          ", got '" ^ String.make 1 x ^ "'"
-        )
-      in 
-        if j <= List.length args
-        then begin 
-          match !mode with 
-          | Backquote -> 
-            if j == 0 then failwith "[subst] 0 not valid argument number";
-            let s' = List.nth args (j-1) in
-            s := !s ^ "(" ^ s' ^ ")";
-            mode := Normal
-
-          | Dollar -> 
-            if j == 0 then failwith "[subst] 0 not valid argument number";
-            let s' = List.nth args (j-1) in
-            (match List.nth typs (j-1) with
-            (* In the special case of passing a Felix pointer,
-               we get use the data pointer 
-               (ignoring the frame pointer)
-             *)
-            | `BTYP_pointer _ ->
-              s := !s ^ "(" ^ s' ^ ").data"
-            | _ -> 
-              s := !s ^ "(" ^ s' ^ ")"
-            );
-            mode := Normal
-          | Hash ->
-            if j = 0 
-            then s := !s ^ cpp_typename registry dfns bbdfns (lower retyp)
-            else s := !s ^ cpp_typename registry dfns bbdfns (lower (List.nth typs (j-1)));
-            mode := Normal
-          | Earhole ->
-            if j == 0 then failwith "[subst] 0 not valid argument number";
-            s := !s ^ cpp_typename registry dfns bbdfns (lower (List.nth typs (j-1))) ^ "_ptr_map";
-            mode := Normal
-          | Normal -> failwith "Expected non-normal mode"
-        end 
-        else failwith (
-          "Got parameter $" ^ string_of_int j ^
-          ", but there are only " ^ 
-          string_of_int (List.length args) ^
-          " arguments: code='"^ct^
-          "', col="^string_of_int i^", " ^
-          "args="^(String.concat ", " args)
-        )
-    else if ct.[i] = '$'
-    then mode := Dollar
-    else if ct.[i] = '`'
-    then mode := Backquote 
-    else if ct.[i] = '#'
-    then mode := Hash
-    else if ct.[i] = '@'
-    then mode := Earhole
-    else s := !s ^ String.sub ct i 1
-  done
-  ;
-  !s
 
 let get_var_ref (dfns:symbol_table_t) bbdfns this index : string =
   let id,sr,parent,entry = 
@@ -1650,6 +1530,15 @@ let print_help () =
   exit(0)
 ;;
 
+let basename s = 
+  let n = String.length s in
+  let i = ref (-1) in
+  for j=0 to n-1 do
+    if s.[j]='/' then i := j+1
+  done;
+  if !i = n then failwith "Filename ends in /";
+  String.sub s !i (n - !i)
+
 let version_string = "1.0a4"
 ;;
 let return_parity = ref true
@@ -1695,19 +1584,11 @@ try
   let filebase = Sys.argv.(argc-1) in
   if filebase.[0] = '-' then failwith "No filename";
   let input_file_name = filebase ^ ".flx" in
-  let header_file_name = filebase ^ ".hpp" in
-  let body_file_name = filebase ^ ".cpp" in
-  let module_name = 
-    let n = String.length filebase in 
-    let i = ref n in 
-    begin try while !i>0 do
-      if filebase.[!i-1] = '/'
-      then raise Not_found; 
-      decr i
-    done with _ -> () end;
-    String.sub filebase !i (n - !i)
-  in
 
+  let header_file_name = filebase ^ ".hpp" in
+  let header_include_name = basename header_file_name in
+  let body_file_name = filebase ^ ".cpp" in
+  let module_name = basename filebase in
   let hf = open_out header_file_name in
   let bf = open_out body_file_name in 
   let psh s = output_string hf s in
@@ -1887,7 +1768,7 @@ try
 
     (* BODY *)
     if !print_flag then print_endline "//GENERATING C++: GC ptr maps & offsets";
-    plb ("#include \"" ^ header_file_name ^ "\"");
+    plb ("#include \"" ^ header_include_name ^ "\"");
     plb "using namespace flx::rtl;";
     plb "";
     plb "//OFFSET tables for GC";

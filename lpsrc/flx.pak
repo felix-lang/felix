@@ -36,6 +36,7 @@ C/C++ programmers, together with control inversion.
 @include_file ('flx_bbind.ipk')
 @include_file ('flx_name.ipk')
 @include_file ('flx_tgen.ipk')
+@include_file ('flx_csubst.ipk')
 @include_file ('flx_gen.ipk')
 @pop_head()
 

@@ -349,16 +349,16 @@ let src_of_token t = match t with
 let pre_tokens_of_lexbuf buf state =
   let lex_it() = Flx_lex.pre_flx_lex buf state in
   let run = ref true in
-  let rec get () = 
+  let rec get k = 
     if !run 
-    then let t = lex_it () in
-      match t with
+    then let ts = lex_it () in
+      match ts with
       | [Flx_parse.ENDMARKER] -> 
         run := false;
-        [Flx_parse.ENDMARKER]
-      | _ -> t @ get()
-    else [Flx_parse.ENDMARKER]
-  in get ()
+        [Flx_parse.ENDMARKER] @ k
+      | _ -> get (List.rev_append ts k)
+    else [Flx_parse.ENDMARKER] 
+  in List.rev (get []) 
 
 let pre_tokens_of_filename filename dirname incdirs =
   let state = new Flx_lex.lexer_state filename dirname incdirs (ref []) in

@@ -1,0 +1,250 @@
+@head(1,"Code fragment inliner")
+@h = tangler('src/flx_csubst.mli')
+@select(h)
+open Flx_types
+
+val subst:
+  type_registry_t ->
+  symbol_table_t ->
+  fully_bound_symbol_table_t ->
+  string ->
+  string list ->
+  btypecode_t list ->
+  btypecode_t ->
+  string
+
+@h = tangler('src/flx_csubst.ml')
+@select(h)
+open Flx_types
+open Flx_typing
+open Flx_tgen
+
+(* substitution encoding:
+   $n: n'th component of argument tuple, 1 origin!
+       (but only 'data' part of pointers)
+   $a: expands to $1, $2, .. $n
+   #n: type of n'th component of argument tuple (1 origin)
+   `n: n'th component (including frame* for pointers)
+   #0: return type
+   @n: reference to shape object
+
+   $t: pass a tuple argument 'as a tuple'
+   #t: the type of the argument tuple
+   @t: the shape of the argument tuple
+*)
+
+(* finite state machine states *)
+type mode_t = 
+ | Normal
+ | CString | CChar
+ | CStringBackslash | CCharBackslash
+ | Dollar | Hash | Earhole | Backquote (* last char was one of these *)
+ | DollarDigits | HashDigits | EarholeDigits | BackquoteDigits
+
+let subst registry (dfns:symbol_table_t) bbdfns ct args typs retyp =
+  let n = List.length args in
+  assert (n = List.length typs); 
+  (* print_endline ("SUBST " ^ ct ^ ", count="^string_of_int n); *)
+  let len = String.length ct in
+  let buf = Buffer.create (n * 2 + 20) in
+  let mode = ref Normal in
+  let digits = ref 0 in
+  let serr i msg = 
+    let spc k = String.make k ' ' in
+    failwith
+    (
+      "[subst] " ^ msg ^ " in code fragment \n\"" ^ ct ^
+       "\"\n" ^ spc (i+1) ^ "^" ^ "\n" ^ "Column " ^ string_of_int (i+1)
+    )
+  in
+  let rec trans i ch =
+    match !mode with
+    | Normal -> 
+      begin match ch with
+      | '$' -> mode := Dollar
+      | '#' -> mode := Hash
+      | '@' -> mode := Earhole
+      | '`' -> mode := Backquote 
+      | '\\' -> serr i "Naked \\"
+      | '"' -> Buffer.add_char buf ch; mode := CString
+      | '\'' -> Buffer.add_char buf ch; mode := CChar
+      | _ -> Buffer.add_char buf ch
+      end
+
+    | CString ->
+      begin match ch with
+      | '"' -> Buffer.add_char buf ch; mode := Normal
+      | '\\' -> Buffer.add_char buf ch; mode := CStringBackslash
+      | _ -> Buffer.add_char buf ch
+      end
+
+    | CChar ->
+      begin match ch with
+      | '\'' -> Buffer.add_char buf ch; mode := Normal
+      | '\\' -> Buffer.add_char buf ch; mode := CCharBackslash
+      | _ -> Buffer.add_char buf ch
+      end
+
+    | CStringBackslash -> 
+      Buffer.add_char buf ch; 
+      mode := CString
+
+    | CCharBackslash -> 
+      Buffer.add_char buf ch; 
+      mode := CChar
+
+    | Dollar ->
+      begin match ch with
+      | 'a' ->
+        for j=0 to n - 1 do
+          let s' = List.nth args j in
+          begin match List.nth typs j with
+          (* In the special case of passing a Felix pointer,
+             we use the data pointer 
+             (ignoring the frame pointer)
+           *)
+          | `BTYP_pointer _ ->
+            Buffer.add_string buf  ("(" ^ s' ^ ").data")
+          | _ -> 
+            Buffer.add_string buf ("(" ^ s' ^ ")")
+          end;
+          if j<n-1 then
+          Buffer.add_string buf ", "
+        done;
+        mode := Normal
+
+      | 't' ->
+        Buffer.add_string buf
+        (
+          cpp_typename registry dfns bbdfns (lower (typeoflist typs)) ^
+          "(" ^
+          String.concat "," args ^
+          ")"      
+        );
+        mode := Normal
+
+      | '0' .. '9' -> 
+        digits := Char.code ch - Char.code '0'; 
+        mode := DollarDigits
+
+      | _ -> serr i "Expected 't' or digit after $"
+      end
+
+    | Earhole ->
+      begin match ch with
+      | 't' ->
+        Buffer.add_string buf
+        (
+          cpp_typename registry dfns bbdfns (lower (typeoflist typs)) ^ 
+          "_ptr_map"
+        );
+        mode := Normal
+
+      | '0' .. '9' -> 
+        digits := Char.code ch - Char.code '0'; 
+        mode := EarholeDigits
+
+      | _ -> serr i "Expected 't' or digit after @"
+      end
+
+    | Backquote ->
+      begin match ch with
+      | '0' .. '9' -> 
+        digits := Char.code ch - Char.code '0'; 
+        mode := BackquoteDigits
+
+      | _ -> serr i "Expected digit after `"
+      end
+
+    | Hash ->
+      begin match ch with
+      | 't' ->
+        Buffer.add_string buf
+        (
+          cpp_typename registry dfns bbdfns (lower (typeoflist typs))
+        );
+        mode := Normal
+
+      | '0' .. '9' -> 
+        digits := Char.code ch - Char.code '0'; 
+        mode := HashDigits
+
+      | _ -> serr i "Expected 't' or digit after #"
+      end
+
+    | DollarDigits ->
+      begin match ch with
+      | '0' .. '9' -> 
+        digits := !digits * 10 + Char.code ch - Char.code '0'
+
+      | _ -> 
+        if !digits> List.length args
+        then serr i ("Arg no " ^ string_of_int !digits ^ " too large")
+        else if !digits<=0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
+        else
+          let s' = List.nth args (!digits-1) in
+          begin match List.nth typs (!digits-1) with
+          (* In the special case of passing a Felix pointer,
+             we use the data pointer 
+             (ignoring the frame pointer)
+           *)
+          | `BTYP_pointer _ ->
+            Buffer.add_string buf  ("(" ^ s' ^ ").data")
+          | _ -> 
+            Buffer.add_string buf ("(" ^ s' ^ ")")
+          end;
+          mode := Normal;
+          trans i ch
+      end
+
+    | BackquoteDigits ->
+      begin match ch with
+      | '0' .. '9' -> 
+        digits := !digits * 10 + Char.code ch - Char.code '0'
+
+      | _ -> 
+        if !digits> List.length args
+        then serr i ("Arg no " ^ string_of_int !digits ^ " too large")
+        else if !digits<=0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
+        else
+          let s' = List.nth args (!digits-1) in
+          Buffer.add_string buf ("(" ^ s' ^ ")");
+          mode := Normal;
+          trans i ch
+       end
+    | EarholeDigits ->
+        if !digits> List.length args
+        then serr i ("Arg no " ^ string_of_int !digits ^ " too large")
+        else if !digits<0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
+        else
+          Buffer.add_string buf
+            (cpp_typename registry dfns bbdfns (lower (List.nth typs (!digits-1))) ^ "_ptr_map");
+          mode := Normal;
+          trans i ch
+            
+    | HashDigits ->
+        if !digits> List.length args
+        then serr i ("Arg no " ^ string_of_int !digits ^ " too large")
+        else if !digits<0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
+        else
+          Buffer.add_string buf
+          (
+            if !digits = 0 
+            then cpp_typename registry dfns bbdfns (lower retyp)
+            else cpp_typename registry dfns bbdfns (lower (List.nth typs (!digits-1)))
+          );
+          mode := Normal;
+          trans i ch
+  in
+  for i = 0 to len - 1 do trans i ct.[i] done;
+  begin match !mode with
+  | Normal -> ()
+  | HashDigits
+  | EarholeDigits
+  | DollarDigits
+  | BackquoteDigits -> trans len ' ' (* hack .. space is harmless *)
+  | _ -> serr len "Unexpected end of fragment"
+  end;
+  Buffer.contents buf
+
+

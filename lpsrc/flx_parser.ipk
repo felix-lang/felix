@@ -468,6 +468,30 @@ function_definition:
           short_string_of_src sr
         )
     }
+
+  | FUNCTION NAME COLON type_expr EQUAL CODE SEMI
+    { 
+      let name = snd $2 
+      and t = typecode_of_expr $4 
+      and sr = rstoken $1 $7
+      in let ct = name ^ "($a)" in
+      match t with
+      | `TYP_function (arg, ret) ->
+        let args = 
+          match arg with
+          | `TYP_tuple lst -> lst
+          | x -> [x]
+        in
+        `AST_fun_decl (sr, name, args,  ret,  ct) 
+      | _ -> 
+        failwith 
+        (
+          "Function '"^name^"' requires function type, got " ^
+          string_of_typecode t ^ " in " ^
+          short_string_of_src sr
+        )
+    }
+
   | FUNCTION NAME COLON type_expr SEMI
     {
       `AST_function_decl (rstoken $1 $5, snd $2,  typecode_of_expr $4) 
@@ -496,6 +520,7 @@ procedure_definition:
       and args = List.map snd $3 (* elide srcref *)
       in mkcurry sr name args return_type body
     }
+
   | PROCEDURE NAME COLON type_expr EQUAL STRING SEMI 
     { 
       let sr = rstoken $1 $7 
@@ -503,6 +528,20 @@ procedure_definition:
       and t = typecode_of_expr $4
       and ct = snd $6
       in
+      let ts = 
+        match t with
+        | `TYP_tuple lst -> lst
+        | x -> [x]
+      in
+      `AST_proc_decl (sr,name, ts,ct) 
+    }
+
+  | PROCEDURE NAME COLON type_expr EQUAL CODE SEMI 
+    { 
+      let sr = rstoken $1 $7 
+      and name = snd $2 
+      and t = typecode_of_expr $4
+      in let ct = name ^ "($a);" in
       let ts = 
         match t with
         | `TYP_tuple lst -> lst

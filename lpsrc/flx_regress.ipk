@@ -46,7 +46,7 @@ open B;
 print_endl 1;
 
 
-@select(tangler('test/rt01.flx'))
+@select(tangler('test/rt01.flx','data'))
 #include <std.flx>
 open Tiny;
 open Short;

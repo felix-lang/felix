@@ -711,16 +711,16 @@ and parse_preprocessor = parse
             let pre_tokens_of_lexbuf buf state =
               let lex_it() = pre_flx_lex buf state in
               let run = ref true in
-              let rec get () = 
+              let rec get k = 
                 if !run 
                 then let ts = lex_it () in
                   match ts with
                   | [Flx_parse.ENDMARKER] -> 
                     run := false;
-                    []
-                  | _ -> ts @ get()
+                    k
+                  | _ -> get (List.rev_append ts k)
                 else []
-              in get ()
+              in List.rev (get [])
             in
             let pre_tokens_of_filename filename =
               if state#already_included filename
@@ -739,9 +739,9 @@ and parse_preprocessor = parse
                 let toks = pre_tokens_of_lexbuf src state in
                   close_in infile; 
                   toks
-             in
-               state#newline lexbuf;
-               pre_tokens_of_filename filename
+            in
+              state#newline lexbuf;
+              pre_tokens_of_filename filename
           end
         end 
 
@@ -1003,10 +1003,14 @@ and pre_flx_lex = parse
     end
   }
 | eof { fun state -> [ENDMARKER] }
-| _ { fun state -> state#inbody; 
-   [ERRORTOKEN (
+| _ 
+  { 
+    fun state -> 
+    state#inbody; 
+    [ERRORTOKEN (
     state#get_srcref lexbuf,
-    lexeme lexbuf)]}
+    lexeme lexbuf)]
+  }
 
 {
 }

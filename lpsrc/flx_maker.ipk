@@ -108,6 +108,7 @@ INTERFACES = [
   'flx_bbind'        , 
   'flx_name'         , 
   'flx_tgen'         , 
+  'flx_csubst'       , 
   'flx_gen'          , 
 ]
 
@@ -136,6 +137,7 @@ IMPLEMENTATIONS = [
   'flx_bbind'        , 
   'flx_name'         , 
   'flx_tgen'         , 
+  'flx_csubst'       , 
   'flx_gen'          , 
 ]
 
@@ -946,7 +948,7 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('\trm -rf test/*')
 @tangle('')
 @tangle('really_clean: FORCE')
-@tangle('\trm -rf tut test www src misc man script bin doc lib tmp.tmp lpsrc/*.cache')
+@tangle('\trm -rf rtl tut test www src misc man script bin doc lib tmp.tmp lpsrc/*.cache')
 @tangle('')
 @tangle('install: FORCE')
 @for dir in [
@@ -966,6 +968,14 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('')
 @tangle('boot: FORCE')
 @tangle('\tiscr lpsrc/flx.pak')
+@tangle('')
+@tangle('xdemo: FORCE')
+@tangle('\tiscr lpsrc/flx_xlib.pak')
+@tangle('\tbin/flxg -Ilib test/xdemo')
+@tangle('\tg++ -Wno-long-long -D_GNU_SOURCE -ansi -shared \\')
+@tangle('\t-I. -L/usr/X11R6/lib -lX11 test/xdemo.cpp -o test/xdemo.so')
+@tangle('\tbin/flx_run ./test/xdemo.so')
+@tangle('')
 @tangle('FORCE:')
 @tangle('')
 
@@ -1129,7 +1139,7 @@ work. You will need:
   make test_clean    -- delete all C/C++ generated from felix files
                         to force the felix compiler to rebuild them
 
-  make very_clean    -- this deletes EVERYTHING except the LP sources
+  make really_clean    -- this deletes EVERYTHING except the LP sources
 
   iscr lpsrc/flx.pak -- re-extract sources, including makefile
   make boot          -- use this to rebuild after a make very_clean,
@@ -1552,10 +1562,10 @@ then
         break
       fi
     done
+    prefix="`echo $prefix | sed 's/\/bin\/flxg$//'`"
     include_dir="$prefix/lib/felix"
   fi
 
-  prefix="`echo $prefix | sed 's/\/bin\/flxg$//'`"
 
   if g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared  \
       -I"$include_dir" "$base.cpp" -o "$base.so"
