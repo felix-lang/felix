@@ -1,6 +1,8 @@
 @head(1,'Man pages')
 @python('//')
 manfoot = r"""
+.SH VERSION
+""".B """+flx_version+"""
 .SH SEE ALSO
 .B felix(1)
 for a language introduction and man page index
@@ -42,7 +44,7 @@ John Maxwell Skaller, mailto:skaller@users.sourceforge.org
 
 @head(2,'felix:language overview')
 @select(tangler('man/man1/felix.1','data'))
-.TH FELIX LANGUAGE "2003 Jan 1"
+@tangle(".TH FELIX LANGUAGE "2003 Jan 1("+flx_version+")")
 .SH NAME
 Felix language
 .SH SYNOPSIS

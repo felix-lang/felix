@@ -5,7 +5,7 @@
 ###############################################################
 # FELIX MAKE SCRIPT
 ###############################################################
-
+CVSDATA = '$Header$'
 #--------------------------------------------------------------
 # Autoconf section
 # @configure_input@
@@ -917,7 +917,11 @@ sysconfdir=@sysconfdir@
 @tangle('\t\tflx_'+flx_version+'/interscript/weavers/*.py \\')
 @tangle('')
 @tangle('\ttar -zcvf flx_'+flx_version+'_bin_linux.tgz\\')
-@tangle('\t\tflx_'+flx_version+'/makefile \\')
+@tangle('\t\tflx_'+flx_version+'/boot\\')
+@tangle('\t\tflx_'+flx_version+'/configure.ac\\')
+@tangle('\t\tflx_'+flx_version+'/configure.in\\')
+@tangle('\t\tflx_'+flx_version+'/Makefile.in\\')
+@tangle('\t\tflx_'+flx_version+'/Makefile\\')
 @tangle('\t\tflx_'+flx_version+'/README \\')
 @tangle('\t\tflx_'+flx_version+'/CONTENTS \\')
 @tangle('\t\tflx_'+flx_version+'/INSTALL \\')
@@ -954,7 +958,9 @@ sysconfdir=@sysconfdir@
 @tangle('\t\tflx_'+flx_version+'/bin/flx_run \\')
 @tangle('\t\tflx_'+flx_version+'/swig/*.swg \\')
 @tangle('\t\tflx_'+flx_version+'/swig/*.i \\')
+@tangle('\t\tflx_'+flx_version+'/swig/*.flx \\')
 @tangle('\t\tflx_'+flx_version+'/swig/makefile \\')
+@tangle('\t\tflx_'+flx_version+'/swig/makewrap \\')
 @tangle('\t\tflx_'+flx_version+'/swig/CONTENTS \\')
 @tangle('\t\tflx_'+flx_version+'/swig/INSTALL \\')
 @tangle('\t\tflx_'+flx_version+'/swig/preprocessor.patch \\')
@@ -1266,7 +1272,7 @@ LOST THE MAKEFILE?
 
   env PYTHONPATH=. python interscript/bin/iscr.py lpsrc/flx.pak 
   
-                     -- re-extract sources, including makefile
+                     -- re-extract sources
 
 HOW TO USE IT
 -------------
@@ -1287,16 +1293,34 @@ This is input to autoconf.
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.57)
-@tangle("AC_INIT(felix, ["+flx_version+"], [felix-impl@mail.sf.net])")
+@tangle("AC_INIT(felix, ["+flx_version+"], [felix-impl@lists.sf.net])")
 AC_REVISION($Revision$)
-#AC_CONFIG_SRCDIR([.flx.hpp])
 
 #------------------------------------------
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_LN_S
-AC_CHECK_PROGS(OCAML,ocamlopt.opt,ocamlopt,ocamlc.opt,ocamlc)
+AC_PROG_AWK
+AC_PROG_EGREP
+AC_PROG_FGREP
+AC_PROG_INSTALL
+AC_PROG_RANLIB
+
+# Ocaml tools
+AC_CHECK_PROGS(OCAMLCC,[ocamlopt.opt ocamlopt ocamlc.opt ocamlc])
+AC_CHECK_PROGS(OCAMLC,[ocamlc.opt ocamlc])
+AC_CHECK_PROGS(OCAMLYACC,[ocamlyacc])
+AC_CHECK_PROGS(OCAMLLEX,[ocamllex])
+AC_CHECK_PROGS(LEDIT,ledit)
+AC_CHECK_PROGS(OCAMLFIND,ocamlfind)
+AC_CHECK_PROGS(CAMLP4,camlp4)
+AC_CHECK_PROGS(OCAMLDOC,ocamldoc)
+AC_CHECK_PROGS(OCAMLDEP,ocamldep)
+
+AC_CHECK_PROGS(TEX,tex)
+AC_CHECK_PROGS(LATEX,latex,latex2e)
+AC_CHECK_PROGS(AMSTEX,amstex)
 
 #------------------------------------------
 # Checks for libraries.
@@ -1374,14 +1398,14 @@ AC_SYS_LARGEFILE
 AC_PATH_XTRA
 
 #------------------------------------------
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([rtl/config.h])
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([script/maker])
 AC_OUTPUT
 
-@head(1,'config.h.in')
+@head(1,'rtl/config.h.in')
 This is input to autoconf.
-@select(tangler('config.h.in','data'))
+@select(tangler('rtl/config.h.in','data'))
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 /* fiddled by JMS -- I refuse to support non-ISO systems,
    so there are no tests for that kind of junk.
@@ -1442,6 +1466,15 @@ This is input to autoconf.
 /* Define to 1 if you have the ISO C89 or ISO C99 headers. */
 #undef STDC_HEADERS
 
+/* Which Ocamls do we have? */
+#undef HAVE_OCAMLOPT_OPT
+#undef HAVE_OCAMLOPT
+#undef HAVE_OCAMLC_OPT
+#undef HAVE_OCAMLC
+
+/* Which libraries */
+#undef HAVE_DL
+#undef HAVE_PNG
 
 @head(1,'.cvsignore')
 This is actually put in the lpsrc directory to tell
