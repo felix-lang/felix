@@ -565,7 +565,7 @@ let gen_exe filename syms
     match exe with
     | `BEXE_code (_,s) -> s
     | `BEXE_nonreturn_code (_,s) -> s
-    | `BEXE_comment (_,s) -> "\n/*" ^ s ^ "*/\n"
+    | `BEXE_comment (_,s) -> "/*" ^ s ^ "*/\n"
     | `BEXE_label (_,s) -> 
       let local_labels = 
         try Hashtbl.find label_map this 
