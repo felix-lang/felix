@@ -142,13 +142,14 @@ let rec cpp_type_classname syms t =
   | `BTYP_inst (i,_) -> 
     begin try match
       match Hashtbl.find syms.dfns i with 
-      { symdef=symdef } -> symdef 
+      { id=id; symdef=symdef } -> id,symdef 
     with
-    | `SYMDEF_abs (true,"int",_) -> "int" (* hack .. *)
-    | `SYMDEF_abs (true,"long",_) -> "long" (* hack .. *)
-    | `SYMDEF_abs (true,"float",_) -> "float" (* hack .. *)
-    | `SYMDEF_abs (true,"double",_) -> "double" (* hack .. *)
-    | data  ->
+    | id,`SYMDEF_cstruct _ -> id
+    | _,`SYMDEF_abs (true,"int",_) -> "int" (* hack .. *)
+    | _,`SYMDEF_abs (true,"long",_) -> "long" (* hack .. *)
+    | _,`SYMDEF_abs (true,"float",_) -> "float" (* hack .. *)
+    | _,`SYMDEF_abs (true,"double",_) -> "double" (* hack .. *)
+    | _,data  ->
       let prefix =
         match data with
         | `SYMDEF_struct _  -> "_s"

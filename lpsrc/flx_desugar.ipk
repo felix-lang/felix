@@ -755,6 +755,7 @@ and rst syms name access st : asm_t list =
   | `AST_abs_decl (sr,name,vs,flag,str, reqs) -> [Dcl (sr,name,access,vs,`DCL_abs (flag,str,reqs))]
   | `AST_union (sr,name, vs, components) -> [Dcl (sr,name,access,vs,`DCL_union (components))]
   | `AST_struct (sr,name, vs, components) ->  [Dcl (sr,name,access,vs,`DCL_struct (components))]
+  | `AST_cstruct (sr,name, vs, components) ->  [Dcl (sr,name,access,vs,`DCL_cstruct (components))]
   | `AST_type_alias (sr,name,vs,typ) -> [Dcl (sr,name,access,vs,`DCL_type_alias (typ))]
   | `AST_inherit (sr,name,vs,qn) -> [Dcl (sr,name,access,vs,`DCL_inherit qn)]
   | `AST_inherit_fun (sr,name,vs,qn) -> [Dcl (sr,name,access,vs,`DCL_inherit_fun qn)]

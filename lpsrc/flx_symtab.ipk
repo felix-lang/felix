@@ -533,31 +533,24 @@ let rec build_tables syms name level parent grandparent root asms =
           ;
           add_tvars privtab
  
+        | `DCL_cstruct (sts)
         | `DCL_struct (sts) ->
           let tvars = map (fun (s,_)-> `AST_name (sr,s,[])) vs in
           let stype = `AST_name(sr,id,tvars) in
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_struct (sts)}
+          Hashtbl.add dfns n {
+            id=id;sr=sr;parent=parent;
+            vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=(
+              match dcl with 
+              | `DCL_struct _ -> `SYMDEF_struct (sts)
+              | `DCL_cstruct _ -> `SYMDEF_cstruct (sts)
+              | _ -> assert false
+            ) 
+          }
           ;
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n
           ;
-          (* ASSIGNMENT NOT REQUIRED NOW
-          (* assignment *)
-          let asgn_idx = !counter in incr counter;
-          let asgn_name = "_set" in
-          let asgn_dcl = 
-            `SYMDEF_fun
-            (
-              [ `TYP_pointer stype; stype ],
-              `AST_void sr,
-              "*$1=$2;",[]
-            ) 
-          in
-          if print_flag then print_endline ("//  " ^ spc ^ si asgn_idx ^ " -> " ^ asgn_name); 
-          Hashtbl.add dfns asgn_idx {id=asgn_name;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=asgn_dcl};
-          add_function name_map asgn_name asgn_idx
-          ; 
-          *)
           (* projections *)
           iter
           (fun (component_name,t) ->
@@ -588,10 +581,11 @@ let rec build_tables syms name level parent grandparent root asms =
           sts
           ;
           add_tvars privtab
+          ;
 
-          (* NOTE: we don't add a type constructor, because 
+          (* NOTE: we don't add a type constructor for struct, because 
           it would have the same name as the struct type ..
-          we just check this case as required ..
+          we just check this case as required 
           *)
         end
     ) 

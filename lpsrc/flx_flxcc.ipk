@@ -993,9 +993,9 @@ let find_voidps ps =
   let voids = ref [] in
   let i = ref 0 in
   List.iter
-  (fun t ->
-    (match t with 
-    | _,TPtr (TVoid _,_),_ -> voids := !i :: !voids 
+  (fun (_,t,_) ->
+    (match unrollType t with 
+    | TPtr (TVoid _,[]) -> voids := !i :: !voids 
     | _ -> ()
     ); 
     incr i
@@ -2555,8 +2555,9 @@ incdir /usr/include/gtk-2.0/gdk
 incdir /usr/include/gtk-2.0/gdk-pixbuf
 incdir /usr/include/gtkhtml-1.1
 recincdir /usr/include/libIDL-2.0
-
+incfile /usr/include/gtk-2.0/gtk/gtk.h
 recincdir /usr/local/include/python2.3
+
 exclude /usr/include/af_vfs.h
 exclude /usr/include/disptmpl.h
 exclude /usr/include/bits

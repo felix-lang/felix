@@ -382,6 +382,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
             bcat s ("//Use "^name^"_ptr_map\n");
           end
         else ()
+      | `BBDCL_cstruct (vs,cps)
       | `BBDCL_struct (vs,cps) ->
         bcat s ("\n//OFFSETS for struct type " ^ name ^ " instance\n");
         bcat s ("//CANT HANDLE YET!\n");
@@ -963,6 +964,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
         let ts = map tn ts in
         csubst sr sr2 ct [] [] "Error" "Error" ts
 
+      | `BBDCL_cstruct _ 
       | `BBDCL_struct _ 
       | `BBDCL_function _
       | `BBDCL_procedure _ 
@@ -1009,6 +1011,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
       "(" ^ cat ", " ("FLX_FPAR_PASS" :: the_display) ^
       "))"
 
+    | `BBDCL_cstruct _ 
     | `BBDCL_struct _ 
     | `BBDCL_fun _
     | `BBDCL_proc _ ->
@@ -1126,6 +1129,9 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
     | `BBDCL_function (props,vs,ps,retyp,_) ->
       (ge f) ^ "\n      ->apply(" ^ ge_arg a ^ ")"
 
+    | `BBDCL_cstruct (vs,_) ->
+     "(*("^ id ^"*)(void*)&(" ^ ge a ^ "))"
+       
     | `BBDCL_struct (vs,_) ->
       let name = tn (`BTYP_inst (index,ts)) in
       name ^ "(" ^ ge a ^ ")"

@@ -408,6 +408,7 @@ and statement_t =
   (* types *)
   | `AST_union of range_srcref * id_t * id_t list * (id_t * typecode_t) list
   | `AST_struct of range_srcref * id_t * id_t list * (id_t * typecode_t) list
+  | `AST_cstruct of range_srcref * id_t * id_t list * (id_t * typecode_t) list
   | `AST_type_alias of range_srcref * id_t * id_t list * typecode_t
   | `AST_inherit of range_srcref * id_t * id_t list * qualified_name_t
   | `AST_inherit_fun of range_srcref * id_t * id_t list * qualified_name_t
@@ -529,6 +530,7 @@ type dcl_t =
   | `DCL_function of     parameter_t list * typecode_t * property_t list * asm_t list
   | `DCL_union of        (id_t * typecode_t) list
   | `DCL_struct of       (id_t * typecode_t) list
+  | `DCL_cstruct of      (id_t * typecode_t) list
   | `DCL_match_check of pattern_t * string
   | `DCL_match_handler of pattern_t * string * asm_t list
  
@@ -682,6 +684,7 @@ and bbdcl_t =
   
   | `BBDCL_union of      (string * int) list * (id_t * btypecode_t) list
   | `BBDCL_struct of     (string * int) list * (id_t * btypecode_t) list
+  | `BBDCL_cstruct of     (string * int) list * (id_t * btypecode_t) list
   ]
 
 and typevarmap_t = (int,btypecode_t) Hashtbl.t
@@ -709,6 +712,7 @@ type symbol_definition_t =
   | `SYMDEF_fun of typecode_t list * typecode_t * c_t  * requirements_t
   | `SYMDEF_union of  (id_t * typecode_t) list
   | `SYMDEF_struct of  (id_t * typecode_t) list
+  | `SYMDEF_cstruct of  (id_t * typecode_t) list
   | `SYMDEF_type_alias of   typecode_t
   | `SYMDEF_inherit of   qualified_name_t
   | `SYMDEF_inherit_fun of   qualified_name_t
@@ -1031,6 +1035,7 @@ let src_of_stmt e = match e with
   | `AST_noreturn_code (s, _) 
   | `AST_union (s, _,_, _ ) 
   | `AST_struct (s,_, _, _)
+  | `AST_cstruct (s,_, _, _)
   | `AST_untyped_module (s,_,_,_)
   | `AST_export_fun (s, _,_)
   | `AST_export_type (s, _,_)
@@ -1914,6 +1919,15 @@ and string_of_statement level s =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     spaces level ^ "}"
 
+  | `AST_cstruct (_,name, vs, cs) -> 
+    let string_of_struct_component (name,ty) =
+      (spaces (level+1)) ^ name ^ ": " ^ string_of_typecode ty ^ ";"
+    in
+    spaces level ^ "cstruct " ^ name ^ print_vs vs ^ " = " ^
+    spaces level ^ "{\n" ^
+    catmap "\n" string_of_struct_component cs ^ "\n" ^
+    spaces level ^ "}"
+
   | `AST_union (_,name, vs,cs) -> 
     let string_of_union_component (name,ty) =
       (spaces (level+1)) ^ "|" ^ name ^ special_string_of_typecode ty
@@ -2221,6 +2235,8 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
 
   | `SYMDEF_struct (cts) -> 
     "struct " ^ name ^ print_ivs vs ^ ";"
+  | `SYMDEF_cstruct (cts) -> 
+    "cstruct " ^ name ^ print_ivs vs ^ ";"
     
   | `SYMDEF_fun (pts,res,cts, reqs) -> 
     "fun " ^ name ^ print_ivs vs ^
@@ -2509,6 +2525,15 @@ and string_of_dcl level name vs (s:dcl_t) =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     spaces level ^ "}"
 
+  | `DCL_cstruct (cs) -> 
+    let string_of_struct_component (name,ty) =
+      (spaces (level+1)) ^ name ^ ": " ^ string_of_typecode ty ^ ";"
+    in
+    spaces level ^ "cstruct " ^ name ^ print_vs vs ^ " = " ^
+    spaces level ^ "{\n" ^
+    catmap "\n" string_of_struct_component cs ^ "\n" ^
+    spaces level ^ "}"
+
   | `DCL_union (cs) -> 
     let string_of_union_component (name,ty) =
       (spaces (level+1)) ^ "|" ^name ^ special_string_of_typecode ty
@@ -2678,6 +2703,15 @@ and string_of_bbdcl dfns bbdcl index =
       "  " ^ name ^ ": " ^ sobt ty ^ ";"
     in
     "struct " ^ name ^ print_bvs vs ^ " = " ^
+    "{\n" ^
+    catmap "\n" string_of_struct_component cs ^ "\n" ^
+    "}"
+
+  | `BBDCL_cstruct (vs,cs) ->
+    let string_of_struct_component (name,ty) =
+      "  " ^ name ^ ": " ^ sobt ty ^ ";"
+    in
+    "cstruct " ^ name ^ print_bvs vs ^ " = " ^
     "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     "}"

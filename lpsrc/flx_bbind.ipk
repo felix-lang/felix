@@ -247,6 +247,12 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_struct (vs,cs'))
 
+    | `SYMDEF_cstruct (cs) ->
+      (* print_endline ("//Binding cstruct " ^ si i ^ " --> " ^ name); 
+      *)
+      let cs' = List.map (fun (n,t) -> n, bt t) cs in
+      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_cstruct (vs,cs'))
+
 
     | `SYMDEF_regdef _ -> ()
     | `SYMDEF_type_alias _ -> ()

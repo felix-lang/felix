@@ -610,6 +610,7 @@ and uses syms used (child_map,bbdfns) i =
                                                                                 
       | `BBDCL_union (_,ps)
       | `BBDCL_struct (_,ps)
+      | `BBDCL_cstruct (_,ps)
         ->
         iter ut (map snd ps)
                                                                                 

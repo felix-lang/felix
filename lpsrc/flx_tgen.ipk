@@ -136,6 +136,8 @@ let gen_type_name syms bbdfns (index,typ) =
       ^
       "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
 
+    | `BBDCL_cstruct _ -> ""
+
     | `BBDCL_struct _ ->
       let descr = 
         "\n//STRUCT "^si i ^" INSTANCE " ^ 
@@ -177,16 +179,19 @@ let gen_type_name syms bbdfns (index,typ) =
     end
 
   | `BTYP_name index ->
-    let name = cn typ in
-    print_endline 
+    failwith
     (
-      "[gen_type_name] non generic type shouldn't happen now " ^ name ^ "<" ^ si index ^ ">"
+      "[gen_type_name] non generic type shouldn't happen now <" ^ si index ^ ">"
     );
+    (*
+    let name = cn typ in
     let id,parent,sr,entry = 
       try Hashtbl.find bbdfns index
       with _ -> failwith ("[gen_type_name] can't find type" ^ si index)
     in
     begin match entry with
+    | `BBDCL_cstruct (vs,cs) -> ""
+    
     | `BBDCL_struct (vs,cs) ->
       descr ^
       "struct " ^ name ^ ";\n"
@@ -203,7 +208,7 @@ let gen_type_name syms bbdfns (index,typ) =
       else
         descr ^
         "typedef _uctor_ " ^ tn typ ^ ";\n"
-
+    
     | `BBDCL_abs (vs,complete,ct,_) -> 
       begin match vs with
       | [] -> descr ^ "typedef " ^ ct ^ " " ^ tn typ ^ ";\n" 
@@ -228,6 +233,7 @@ let gen_type_name syms bbdfns (index,typ) =
         string_of_bbdcl syms.dfns entry index
       )
     end
+    *)
   | _ -> failwith "Unexpected metatype in gen_type_name"
 
 (* This routine generates complete types when needed *)
@@ -336,6 +342,8 @@ let gen_type syms bbdfns (index,typ) =
     in
     begin match entry with
     | `BBDCL_abs (vs,complete,ct,_) -> ""
+    | `BBDCL_cstruct (vs,cts) -> ""
+
     | `BBDCL_struct (vs,cts) ->
       let cts = map (fun (name,typ) -> name, tsubst vs ts typ) cts in
       let ctss = map (fun (name,typ) -> name, tn typ) cts in
@@ -399,6 +407,8 @@ let gen_type syms bbdfns (index,typ) =
 
 
   | `BTYP_name index ->
+    failwith ("[gen_type] Deprecated BTYP_name " ^ si index);
+    (*
     print_endline ("[gen_type] Deprecated BTYP_name " ^ si index);
     let name = tn typ in
     let id,parent,sr,entry = 
@@ -455,6 +465,8 @@ let gen_type syms bbdfns (index,typ) =
         string_of_bbdcl syms.dfns entry index
       )
     end
+    *)
+
   | _ -> failwith "Unexpected metatype in gen_type"
 
 let gen_type_names syms bbdfns ts = 

@@ -1165,6 +1165,7 @@ and bind_type_index syms
 
     | `SYMDEF_union _
     | `SYMDEF_struct _ 
+    | `SYMDEF_cstruct _ 
       ->
       `BTYP_inst (index,ts)
 
@@ -1501,6 +1502,7 @@ and inner_typeofindex
     clierr sr ("Union "^id^" doesn't have a type")
 
   (* struct as function *)
+  | `SYMDEF_cstruct (ls)
   | `SYMDEF_struct (ls) -> 
     (* ARGGG WHAT A MESS *)
     let ts = map (fun (s,i) -> `AST_name (sr,s,[])) vs in
@@ -1545,6 +1547,7 @@ and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
       begin match get_data syms.dfns index with
       { id=id;vs=vs;symdef=entry} ->
         begin match entry with
+        | `SYMDEF_cstruct (cs)
         | `SYMDEF_struct (cs) -> t1
         | _ -> 
           clierr sr
@@ -1745,6 +1748,7 @@ and lookup_qn_with_sig'
             | `SYMDEF_inherit qn ->
                 clierr sr "Chasing inherit in lookup_qn_with_sig'";
 
+            | `SYMDEF_cstruct _ 
             | `SYMDEF_struct _ ->
               (*
               print_endline ("Struct constructor found, type= " ^ sbt syms.dfns t);
@@ -1924,6 +1928,7 @@ and handle_function
   | `SYMDEF_function _
   | `SYMDEF_fun _
   | `SYMDEF_struct _
+  | `SYMDEF_cstruct _
     ->
     let ts = adjust_ts syms index ts in
     `BEXPR_closure (index,ts),
@@ -2052,6 +2057,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_inherit_fun _ -> 
       clierr sra "Woops found inherit function in lookup_name_in_table_dirs_with_sig"
 
+    | `SYMDEF_cstruct _
     | `SYMDEF_struct _
       ->
         (*

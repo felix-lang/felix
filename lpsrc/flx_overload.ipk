@@ -62,6 +62,7 @@ let sig_of_symdef symdef name = match symdef with
   | `SYMDEF_function (ps,r,_,_)
     -> paramtype ps
 
+  | `SYMDEF_cstruct ls
   | `SYMDEF_struct ls ->
     typeof_list (map snd ls)
 

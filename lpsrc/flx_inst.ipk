@@ -165,6 +165,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
 
   | `BBDCL_union (vs,ps)
   | `BBDCL_struct (vs,ps)
+  | `BBDCL_cstruct (vs,ps)
     ->
     let argtypes = map snd ps in
     assert (length vs = length ts);

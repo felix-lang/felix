@@ -445,6 +445,11 @@ struct_decl:
     `AST_struct (rstoken $1 $6, snd $2, List.map snd $3, $5) 
   }
 
+  | CSTRUCT NAME LBRACE struct_component_aster RBRACE 
+  { 
+    `AST_cstruct (rstoken $1 $5, snd $2, [], $4) 
+  }
+
 @aster("struct_component")
 struct_component:
   | NAME COLON type_expr SEMI { (snd $1,typecode_of_expr $3) }

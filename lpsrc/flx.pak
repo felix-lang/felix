@@ -235,6 +235,7 @@ Flx_version.version_data := version_data
     ["code", "CODE"],
     ["comment", "COMMENT_KEYWORD"],
     ["const", "CONST"],
+    ["cstruct", "CSTRUCT"],
     ["ctypes", "CTYPES"],
     ["def", "DEF"],
     ["elif", "ELIF"],

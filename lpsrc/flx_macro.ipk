@@ -474,6 +474,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   | `AST_union (sr, id, vs, idts ) ->  tack (`AST_union (sr, mi sr id, vs, idts))
   | `AST_struct (sr, id, vs, idts) ->  tack (`AST_struct (sr, mi sr id, vs, idts))
+  | `AST_cstruct (sr, id, vs, idts) ->  tack (`AST_cstruct (sr, mi sr id, vs, idts))
 
   (* IDENTIFIER RENAMING NOT SUPPORTED IN TYPES *)
   | `AST_type_alias (sr, id, vs, t) ->  tack st
