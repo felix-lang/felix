@@ -17,7 +17,7 @@ val csubst:
 @select(h)
 open Flx_types
 open Flx_typing
-open Flx_tgen
+open Flx_name
 
 (* substitution encoding:
    $n: n'th component of argument tuple, 1 origin!
@@ -285,6 +285,7 @@ in
   | HashDigits
   | EarholeDigits
   | DollarDigits
+  | QuestDigits
   | BackquoteDigits -> trans len ' ' (* hack .. space is harmless *)
   | _ -> serr len "Unexpected end of fragment"
   end;

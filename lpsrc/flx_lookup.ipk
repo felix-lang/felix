@@ -38,6 +38,16 @@ val bind_type:
   typecode_t ->
   btypecode_t
 
+val bind_type_with_tvars:
+  sym_state_t ->
+  env_t ->
+  (expr_t * int) list -> (* excluded expressions *)
+  int list -> (* excluded modules *)
+  range_srcref ->
+  typecode_t ->
+  (string * btypecode_t) list ->
+  btypecode_t
+
 val eval_module_expr:
   sym_state_t ->
   env_t ->
@@ -460,26 +470,26 @@ and compare_defn
   | `SYMDEF_if_type,`SYMDEF_if_type
     ->   true
 
-  | `SYMDEF_dcl (`DCL_fun (ips,iret,ict)),`SYMDEF_dcl (`DCL_fun (mps,mret,mct)) ->
+  | `SYMDEF_dcl (`DCL_fun (_,ips,iret,ict)),`SYMDEF_dcl (`DCL_fun (_,mps,mret,mct)) ->
     let it = `TYP_function ( typeof_list ips , iret) in
     let mt = `TYP_function ( typeof_list mps , mret) in
     let it = rmb it and mt = mbt mt in
     ict = mct && 
     it = mt
   
-  | `SYMDEF_dcl (`DCL_proc (ips,ict)),`SYMDEF_dcl (`DCL_proc (mps,mct)) ->
+  | `SYMDEF_dcl (`DCL_proc (_,ips,ict)),`SYMDEF_dcl (`DCL_proc (_,mps,mct)) ->
     let it = typeof_list ips in
     let mt = typeof_list mps in
     let it = rmb it and mt = mbt mt in
     ict = mct && 
     it = mt
 
-  | `SYMDEF_if_proc (it), `SYMDEF_dcl (`DCL_proc (mps,mct)) ->
+  | `SYMDEF_if_proc (it), `SYMDEF_dcl (`DCL_proc (_,mps,mct)) ->
     let mt = typeof_list mps in
     let it = rmb it and mt = mbt mt in
     it = mt
  
-  | `SYMDEF_if_fun (it),`SYMDEF_dcl (`DCL_fun (ps,ret,mct))  ->
+  | `SYMDEF_if_fun (it),`SYMDEF_dcl (`DCL_fun (_,ps,ret,mct))  ->
     let mt = `TYP_function ( typeof_list ps , ret) in
     let it = rmb it and mt = mbt mt in
     it = mt
@@ -1250,6 +1260,7 @@ and eval_module_expr syms env excluded_dirs e : module_rep_t =
       short_string_of_src (src_of_expr e) 
     )
 
+(* params is list string -> bound type *)
 and bind_index syms env exclude fixlist expr_fixlist depth excluded_dirs sr index params = 
   (*
   print_endline ("BINDING INDEX " ^ string_of_int index);
@@ -1257,6 +1268,7 @@ and bind_index syms env exclude fixlist expr_fixlist depth excluded_dirs sr inde
   *)
   if List.mem_assoc index exclude 
   then begin
+    (*
     print_endline (
       "Making fixpoint for Recursive type alias " ^
       (
@@ -1265,6 +1277,7 @@ and bind_index syms env exclude fixlist expr_fixlist depth excluded_dirs sr inde
           short_string_of_src sr
       )
     );
+    *)
     `BTYP_fix ((List.assoc index exclude)-depth)
   end  
   else begin match get_data syms.dfns index with
@@ -1303,6 +1316,7 @@ and bind_index syms env exclude fixlist expr_fixlist depth excluded_dirs sr inde
       )
   end 
 
+(* params is list of string * bound_typecode *)
 and metatype syms params term =
   let st t = string_of_btypecode syms.dfns t in
   let mt t = metatype syms params t in
@@ -1342,7 +1356,51 @@ and metatype syms params term =
           failwith "Metatype error: function argument wrong metatype"
       | _ -> failwith "Metatype error: function required for LHS of application"
     end
-  | `BTYP_var i -> List.assoc i params
+  | `BTYP_var i -> 
+    begin try 
+      List.assoc i params 
+      with 
+        Not_found -> 
+          print_endline "assoc list = ";
+          List.iter
+          (fun (i,s) -> 
+            print_string 
+            (
+              string_of_int i ^ 
+              ": " ^ 
+              string_of_btypecode syms.dfns s ^ 
+              " "
+            )
+          )
+          params
+          ;
+          print_endline "";
+          failwith 
+          (
+            "[metatype] Can't find index " ^ string_of_int i ^ " in generic assoc list"
+          )
+    end
+
+  | `BTYP_name i ->
+    let id,sr,parent,dcl = Hashtbl.find syms.dfns i in
+    begin match dcl with
+    | `SYMDEF_dcl (`DCL_abs (vs,ct)) ->
+      begin match vs with
+      | [] -> `BTYP_type
+      | [x] -> `BTYP_function (`BTYP_type, `BTYP_type)
+      | _ -> 
+        `BTYP_function 
+        (
+          `BTYP_type_tuple 
+          (
+            List.map (fun x->`BTYP_type) vs
+          )
+          ,
+          `BTYP_type
+        )
+      end
+    | _ -> `BTYP_type
+    end
   | _ -> `BTYP_type
   
 
@@ -1351,7 +1409,22 @@ and metatype syms params term =
    Note in particular that a type alias is replaced by what
    it as an alias for, recursively so that the result 
    globally unique
+
+   if params is present it is a list mapping strings to types
+   possibly bound type variable
 *)
+
+and bind_type_with_tvars syms env expr_fixlist excluded_dirs sr t params : btypecode_t =
+  let t' = bind_type' syms env [] [] expr_fixlist 0 excluded_dirs sr t params in
+  let vars = ref [] in
+  List.iter
+  (fun (s,t) -> match t with 
+  | `BTYP_var i -> vars := (i,`BTYP_type) :: !vars
+  | _ -> ()
+  )
+  params
+  ;
+  beta_reduce syms !vars t'
 
 and bind_type syms env expr_fixlist excluded_dirs sr t : btypecode_t =
   let t' = bind_type' syms env [] [] expr_fixlist 0 excluded_dirs sr t [] in
@@ -1412,7 +1485,23 @@ and fixup ps body =
    *)
    aux body 1
 
-and beta_reduce syms params t = 
+and mk_prim_type_inst syms i args =
+  let t = `BTYP_inst (i,args) in
+  let inst_index =
+  try
+    Hashtbl.find syms.prim_inst (i,args)
+  with Not_found -> 
+    let n = !(syms.counter) in
+    incr (syms.counter);
+    Hashtbl.add syms.prim_inst (i, args) n;
+    Hashtbl.add syms.rev_prim_inst n (i, args);
+    n
+  in
+    t  
+
+(* params is map int->bound type 
+*)
+and beta_reduce syms (params:(int * btypecode_t) list) t = 
   let br t = beta_reduce syms params t in
   let st t = string_of_btypecode syms.dfns t in
   let mt t = metatype syms params t in
@@ -1443,7 +1532,7 @@ and beta_reduce syms params t =
       if a <> mt2
       then failwith ("Argument metatype not same as function parameter")
     | _ -> 
-      failwith ("Expected LHS of application to be function, got\n" ^ st t1)
+      failwith ("Expected LHS of application to be type function, got\n" ^ st t1)
     end
     ;
     begin match t1 with
@@ -1477,6 +1566,29 @@ and beta_reduce syms params t =
       br t
 
     | `BTYP_var _ -> t (* can't reduce it yet *)
+    | `BTYP_name i ->
+      let id,sr,parent,dcl = Hashtbl.find syms.dfns i in
+      begin
+        match dcl with
+        | `SYMDEF_dcl (`DCL_abs (vs,ct)) ->
+          let n = List.length vs in
+          begin
+            match t2 with
+            | `BTYP_type_tuple args ->
+              if List.length args = n 
+              then
+                mk_prim_type_inst syms i args
+              else
+                failwith "[beta-reduce] wrong number of arguments to generic primitive"
+            | _ ->
+              if n = 1 
+              then
+                mk_prim_type_inst syms i [t2]
+              else 
+                failwith "[beta-reduce wrong number of arguments to generic primitive"
+          end
+        | _ -> failwith "[beta_reduce] Expected generic primitve type"
+      end
     | _ -> failwith "[beta-reduce] Expected type function or variable"
     end
 
@@ -1500,11 +1612,22 @@ and beta_reduce syms params t =
 
   | _ -> t
 
+(* params is list of string * bound type *)
+
 and bind_type' syms env exclude fixlist expr_fixlist depth excluded_dirs sr t params : btypecode_t =
   let bt t = bind_type' syms env exclude fixlist expr_fixlist (depth+1) excluded_dirs sr t params in
   let bi i = bind_index syms env exclude fixlist expr_fixlist depth excluded_dirs sr i params in
   (*
   print_endline ("BINDING TYPE " ^ string_of_typecode t);
+  if List.length params <> 0
+  then begin
+    print_endline ("Assoc list is ");
+    List.iter
+    (fun (s,t) -> print_string (s ^ " -> " ^ string_of_btypecode syms.dfns t ^ " "))
+    params;
+    print_endline ""
+  end
+  ;
   flush stdout;
   *)
   match t with
@@ -1625,35 +1748,29 @@ and bind_type' syms env exclude fixlist expr_fixlist depth excluded_dirs sr t pa
       d' = bt d  and 
       c' = bt c 
     in 
-      (*
-      print_endline "DONE (function type)";
-      flush stdout;
-      *)
       `BTYP_function (bt d, bt c)
 
   | `TYP_pointer t -> 
      let t' = bt t in 
-     (*
-     print_endline "Done (pointer type)"; 
-     flush stdout; 
-     *)
      `BTYP_pointer t'
 
   | `AST_void _ -> 
-    (*
-    print_endline "Done (void)"; 
-    flush stdout; 
-    *)
     `BTYP_void
 
   | `TYP_typefun (ps,r,body) -> 
     let data = 
       List.rev_map 
-      (fun x -> fst x, bt (snd x), let n = !(syms.counter) in incr (syms.counter); n) 
+      (fun x -> 
+        fst x, 
+        bt (snd x), 
+        let n = !(syms.counter) in 
+        incr (syms.counter); 
+        n
+      ) 
       ps 
     in
     let pnames =  (* reverse order .. *)
-      List.map (fun (n, t, i) -> (n,i)) data 
+      List.map (fun (n, t, i) -> (n,`BTYP_var i)) data 
     in
     let bbody = 
       bind_type' syms env exclude 
@@ -1672,11 +1789,13 @@ and bind_type' syms env exclude fixlist expr_fixlist depth excluded_dirs sr t pa
   | `TYP_type -> `BTYP_type
 
   | `AST_name (sr,s) when List.mem_assoc s fixlist ->
+    (*
     print_endline ("Binding fixpoint " ^ s);
+    *)
     `BTYP_fix ((List.assoc s fixlist)-depth)
 
   | `AST_name (sr,s) when List.mem_assoc s params ->
-    `BTYP_var (List.assoc s params)
+    List.assoc s params
 
   | `TYP_type_tuple ts ->
     `BTYP_type_tuple (List.map bt ts)
@@ -1759,8 +1878,8 @@ and  sig_of_symdef symdef name = match symdef with
     -> `TYP_tuple[]
 
   (* primitives *)
-  | `SYMDEF_dcl (`DCL_fun (ps,_,_))
-  | `SYMDEF_dcl (`DCL_proc (ps,_)) -> typeof_list ps
+  | `SYMDEF_dcl (`DCL_fun (_,ps,_,_))
+  | `SYMDEF_dcl (`DCL_proc (_,ps,_)) -> typeof_list ps
 
   | `SYMDEF_function (ps,_,_,_,_)
   | `SYMDEF_procedure (ps,_,_,_) -> paramtype ps
@@ -1791,7 +1910,7 @@ and typeofindex
     if Hashtbl.mem syms.ticache index
     then Hashtbl.find syms.ticache index
     else 
-      let t = typeofindex' syms exclude expr_fixlist depth excluded_dirs index in
+      let t = typeofindex' syms exclude expr_fixlist depth excluded_dirs index [] in
       (match t with (* HACK .. *)
       | `BTYP_fix _ -> ()
       | _ -> Hashtbl.add syms.ticache index t
@@ -1895,6 +2014,7 @@ and typeofindex'
   depth
   (excluded_dirs:int list)
   (index:int)
+  (params: (string * btypecode_t) list)
 : btypecode_t = 
 
   (*
@@ -1914,7 +2034,7 @@ and typeofindex'
   let bt t:btypecode_t = 
     (* print_endline ("TYPEOFINDEX binding type " ^ string_of_typecode t); *)
     flush stdout;
-    let t' = bind_type' syms env [] [] expr_fixlist depth excluded_dirs sr t [] in
+    let t' = bind_type' syms env [] [] expr_fixlist depth excluded_dirs sr t params in
     let t' = beta_reduce syms [] t' in
     (* print_endline "TYPE BOUND"; *)
     t'
@@ -1942,31 +2062,23 @@ and typeofindex'
   | `SYMDEF_if_proc (t) -> 
     bt (`TYP_function (t,`AST_void sr))
 
-  | `SYMDEF_dcl (`DCL_const (t,_)) ->
-    bt t
-
-  | `SYMDEF_parameter t ->
-    bt t
-
-  | `SYMDEF_val t ->
-    bt t
-
-  | `SYMDEF_var t ->
-    bt t
-
-  | `SYMDEF_if_fun (t) ->
-    bt t
+  | `SYMDEF_dcl (`DCL_const (t,_))
+  | `SYMDEF_parameter t
+  | `SYMDEF_val t
+  | `SYMDEF_var t
+  | `SYMDEF_if_fun (t) 
+    ->
+      bt t
 
   | `SYMDEF_match_check _ ->
     `BTYP_function (`BTYP_tuple [], bool_t)
 
-  | `SYMDEF_dcl (`DCL_fun (pts,rt,_)) -> 
-    (* print_endline "Found function primitive";
-    flush stdout;
-    *)
+  | `SYMDEF_dcl (`DCL_fun (_,pts,rt,_)) -> 
+    (* this should crash on generics ..*)
     bt (`TYP_function (typeof_list pts,rt))
     
-  | `SYMDEF_dcl (`DCL_proc (pts,_)) -> 
+  | `SYMDEF_dcl (`DCL_proc (_,pts,_)) -> 
+    (* this should crash on generics ..*)
     bt (`TYP_function (typeof_list pts, `AST_void sr))
     
   | `SYMDEF_dcl (`DCL_union _)
@@ -1975,8 +2087,8 @@ and typeofindex'
   | _ ->
     failwith 
     (
-      "[typeofindex] Expected expression term, got " ^
-      id ^ " in " ^
+      "[typeofindex] Expected declaration of typed entity for index "^string_of_int index^", got " ^
+      id ^ " declared at " ^
       short_string_of_src sr
     )
 
@@ -2571,12 +2683,33 @@ and bind_regdef syms env exclude excluded_dirs regexp_exclude e =
     end 
 
   | x -> x
-  
+
+and choose_generic syms entries n =
+  let result = ref [] in
+  let aux entry = 
+    match entry with
+    | Simple i ->
+      let id,sr,parent,symdef = Hashtbl.find syms.dfns i in
+      begin match symdef with
+      | `SYMDEF_dcl (`DCL_fun (vs,_,_,_))
+      | `SYMDEF_dcl (`DCL_proc (vs,_,_))
+        ->
+        if List.length vs = n
+        then result := i :: ! result
+      | _ -> failwith "Expected generic function"
+      end 
+    | Bound _ -> failwith "Can't handle bound generic set"
+  in 
+    List.iter aux entries; 
+    !result
+
 and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr_t = 
   let be e = bind_expression syms env exclude expr_fixlist (depth+1) excluded_dirs e in
   let lu sr qn = lookup_qn_in_env syms env excluded_dirs qn in
-  let bt sr t = beta_reduce syms [] (bind_type' syms env [] [] expr_fixlist depth excluded_dirs sr t []) in
+  let bgt sr t params = beta_reduce syms [] (bind_type' syms env [] [] expr_fixlist depth excluded_dirs sr t params) in
+  let bt sr t = bgt sr t [] in
   let ti i = typeofindex syms exclude expr_fixlist depth excluded_dirs i in
+  let tgi ts i = typeofindex' syms exclude expr_fixlist depth excluded_dirs i ts in
 
   (* model infix operator as function call *)
   let apl2 (sri:range_srcref) (fn : string) (tup:expr_t list) = 
@@ -2597,6 +2730,68 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
   print_endline "==";
   *)
   match e with
+  | `AST_ginst (sr,(e,ts)) ->
+    (*
+    print_endline "Got ginst";
+    *)
+    let n = List.length ts in
+    let e,t = be e in
+    begin match e with
+    | `BEXPR_functions (name, entries) ->
+      let gfun =
+        match choose_generic syms entries n with
+        | [x] -> x
+        | [] -> 
+          failwith 
+          (
+            "Can't find any matches for generic "^
+            name^
+            "of " ^
+            string_of_int n ^ 
+            " args"
+          )
+        | _ -> 
+          failwith 
+          (
+            "Too many matches for generic "^
+            name^
+            " of " ^
+            string_of_int n ^ 
+            " args"
+          )
+      in
+      let id,sr',parent,symdef = Hashtbl.find syms.dfns gfun in
+      begin match symdef with
+      | `SYMDEF_dcl (`DCL_fun (vs,_,_,_)) 
+      | `SYMDEF_dcl (`DCL_proc (vs,_,_)) 
+        ->
+          (*
+          print_endline ("Resolved generic " ^ id);
+          *)
+          if n = List.length vs 
+          then
+            begin
+              let ts = 
+                List.map2 
+                (fun s t -> s, bt sr t) 
+                vs ts 
+              in
+              let t = tgi ts gfun in
+              (*
+              print_endline ("Type of instantiated generic function is " ^ string_of_btypecode syms.dfns t);
+              *)
+              Hashtbl.replace syms.instantiated_types t ();
+              let ts = List.map snd ts in
+              `BEXPR_ginst (gfun,ts),t
+            end
+          else failwith "Generic has wrong number of arguments"
+
+      | _ -> failwith "Expected primitive generic function"
+      end
+    | _ -> failwith "Expected function set"
+    end
+    
+  | `AST_texpr (sr,t) -> failwith "Unexpected type expression"
   | `AST_letin _ -> failwith "Unexpected letin"
   | `AST_cond _ -> failwith "Unexpected conditional expression (should be replaced by match)"
   | `AST_typeof (sr,e) -> failwith "Unexpected 'typeof' in expression"
@@ -2888,10 +3083,17 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
 
   | `AST_apply (sra,(`AST_name (srn,qn) as name,e2)) -> 
     (*
-    print_endline ("Apply unqualified name " ^ qn);
+    print_endline ("Apply unqualified name " ^ qn ^ " to " ^ string_of_expr e2);
     flush stdout;
     *)
     let be2,t2 = be e2 in
+    (*
+    print_endline 
+    (
+      "Argument " ^ string_of_bound_expression syms.dfns (be2,t2) ^ 
+      " has type " ^ string_of_btypecode syms.dfns t2
+    );
+    *)
     let tbe1 =
       lookup_qn_with_sig 
         syms 

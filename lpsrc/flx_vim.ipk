@@ -50,6 +50,7 @@ syn keyword cStatement proc
 syn keyword cStatement const
 syn keyword cStatement struct
 syn keyword cStatement header
+syn keyword cStatement body
 syn keyword cStatement code
 syn keyword cStatement fork
 syn keyword cStatement todo

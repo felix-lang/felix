@@ -1,16 +1,6 @@
 @h = tangler('src/flx_tgen.mli')
 @select(h)
 open Flx_types
-val cpp_typename :
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  btypecode_t -> string
-
-val cpp_classname :
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  btypecode_t -> string
-
 val collect_types :
   sym_state_t ->
   fully_bound_symbol_table_t ->
@@ -26,13 +16,6 @@ val gen_type_names :
   fully_bound_symbol_table_t ->
   (int * btypecode_t) list -> string
 
-
-val ptr_map_of_type:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  btypecode_t ->
-  string
-
 @h = tangler('src/flx_tgen.ml')
 @select(h)
 open Flx_types
@@ -40,6 +23,8 @@ open Flx_print
 open Flx_typing
 open Flx_srcref
 open Flx_unify
+open Flx_name
+open Flx_csubst
 
 @head(2,'The type registry')
 Flx supports algebraic type expressions. For some of these,
@@ -70,29 +55,29 @@ will be caught here, since the only thing you can
 do with a tuple is make it the argument of a function.
 
 @select(h)
-let register_type_nr sym_state t =
+let register_type_nr syms t =
   match t with
   | `BTYP_fix _ 
   | `BTYP_tuple []
     -> ()
   | _ 
     ->
-    if not (Hashtbl.mem sym_state.registry t)
+    if not (Hashtbl.mem syms.registry t)
     then
-      let n = !(sym_state.counter) in
-      incr sym_state.counter;
-      Hashtbl.add sym_state.registry t n
+      let n = !(syms.counter) in
+      incr syms.counter;
+      Hashtbl.add syms.registry t n
 
-let rec register_type_r sym_state bbdfns exclude t =
+let rec register_type_r syms bbdfns exclude t =
   (*
   print_endline (string_of_btypecode dfns t);
   *)
   let t = lower t in
   if not (List.mem t exclude) then
   let rr t' = register_type_r 
-    sym_state bbdfns (t :: exclude) t'
+    syms bbdfns (t :: exclude) t'
   in
-  let rnr t = register_type_nr sym_state t in
+  let rnr t = register_type_nr syms t in
   match unfold t with
   | `BTYP_void -> ()
   | `BTYP_none -> ()
@@ -104,11 +89,15 @@ let rec register_type_r sym_state bbdfns exclude t =
   | `BTYP_pointer t' -> rr t' 
     (* We don't register pointer types: use _ref_ template! *)
   | `BTYP_binding (src,dst) -> rr dst
+  | `BTYP_inst (i,ts)->
+     List.iter rr ts;
+     rnr t
+
   | `BTYP_name index ->
     let id, parent, entry = 
       try Hashtbl.find bbdfns index 
       with Not_found -> 
-        let id,sr,parent,entry= Hashtbl.find sym_state.dfns index in
+        let id,sr,parent,entry= Hashtbl.find syms.dfns index in
         failwith 
         (
           "register_type_r Can't find " ^ 
@@ -129,7 +118,11 @@ let rec register_type_r sym_state bbdfns exclude t =
       rnr t;                               (* the struct type *)
       rnr (`BTYP_function (argt,t))         (* constructor *)
 
-    | `BBDCL_abs ct -> rnr t 
+    | `BBDCL_abs (vs,ct) -> 
+      ( match vs with 
+      | [] -> rnr t 
+      | _ -> failwith "[register_type_r] Can't register template"
+      )
       (*
       failwith 
       (
@@ -141,118 +134,14 @@ let rec register_type_r sym_state bbdfns exclude t =
       failwith 
       (
         "[register_type_r] expected type declaration, got " ^
-        string_of_bbdcl sym_state.dfns entry index
+        string_of_bbdcl syms.dfns entry index
       )
     end
-  | _ -> failwith "Unexpected metatype in register type"
-
-let mangle_cpp_typename ct =
-  let n = String.length ct in
-  let buf = Buffer.create (n+20) in
-  let tack_ch ch = Buffer.add_char buf ch in
-  let tack_str str = Buffer.add_string buf str in
-  for i=0 to n - 1 do
-    match ct.[i] with
-    | ':' -> tack_ch '_'
-    | '*' -> tack_str "_p"
-    | '<' -> tack_ch '_'
-    | '>' -> tack_ch '_'
-    | ' ' -> tack_ch '_'
-    | x -> tack_ch x
-  done;
-  Buffer.contents buf
-
-let rec cpp_typename  sym_state bbdfns t = 
-  let dfns = sym_state.dfns 
-  and registry = sym_state.registry 
-  in
-  let t' = fold t in
-  (*
-  print_endline ("type  : " ^ string_of_btypecode dfns t);
-  print_endline ("folded: " ^ string_of_btypecode dfns t');
-  *)
-  let tn t = cpp_typename sym_state bbdfns t in
-  try match t' with
-  | `BTYP_var i ->  failwith "[cpp_typename] Can't name type type variable"
-  | `BTYP_fix i ->  failwith "[cpp_typename] Can't name type fixpoint"
-  | `BTYP_tuple [] -> "unit"
-  | `BTYP_function (_,`BTYP_void) -> 
-    "_procedure_type_" ^ string_of_int (Hashtbl.find registry t') ^ "*"
-  | `BTYP_function _ -> 
-    "_function_type_" ^ string_of_int (Hashtbl.find registry t') ^ "*"
-  | `BTYP_tuple _ -> "_tuple_type_" ^ string_of_int (Hashtbl.find registry t')
-  | `BTYP_sum _ -> "_sum_type_" ^ string_of_int (Hashtbl.find registry t')
-
-  | `BTYP_pointer t' -> "_ref_<"^tn t'^">"
-  | `BTYP_void -> "void"
-  | `BTYP_none -> failwith "[cpp_typename] Expected real type, got 'none'"
-  | `BTYP_binding (_,t) -> tn t
-  | `BTYP_name index ->
-    let id,parent,entry = 
-      try Hashtbl.find bbdfns index
-      with Not_found -> failwith ("cpp_typename Can't find index " ^ string_of_int index ^ " in fully bound symbol table")
-    in begin match entry with
-      | `BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
-      | `BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
-      | `BBDCL_abs ct -> "_abs_" ^ string_of_int index ^ "_" ^ mangle_cpp_typename ct
-      | _ -> 
-        failwith 
-        (
-          "[cpp_typename] expected type declaration, got " ^
-          string_of_bbdcl dfns entry index
-        )
-    end
-  
-  | _ -> failwith "Unexpected metatype in cpp_typename"
-  with Not_found -> 
+  | _ -> 
     failwith 
     (
-      "[cpp_typename] Expected type "^ 
-      string_of_btypecode dfns t' ^ 
-      " to be in registry"
-    )
-
-let rec cpp_classname sym_state bbdfns t = 
-  let registry = sym_state.registry in
-  let tn t = cpp_typename sym_state bbdfns t in
-  try match fold t with
-  | `BTYP_var i -> failwith "[cpp_classname] Can't name type variable"
-  | `BTYP_fix i -> failwith "[cpp_classname] Can't name type fixpoint"
-  | `BTYP_binding _ -> failwith "[cpp_classname] Unexpected binding type"
-  | `BTYP_tuple [] -> "unit"
-  | `BTYP_void -> failwith "void doesn't have a classname"
-  | `BTYP_function (_,`BTYP_void) -> 
-    "_procedure_type_" ^ string_of_int (Hashtbl.find registry t)
-  | `BTYP_function _ -> 
-    "_function_type_" ^ string_of_int (Hashtbl.find registry t) 
-  | `BTYP_tuple _ -> "_tuple_type_" ^ string_of_int (Hashtbl.find registry t)
-  | `BTYP_sum _ -> "_sum_type_" ^ string_of_int (Hashtbl.find registry t)
-  | `BTYP_pointer t' -> "_ref_<"^tn t'^">"
-  | `BTYP_none -> 
-    failwith "[cpp_typename] Expected real type, got 'none'"
-  | `BTYP_name index ->
-    let id,parent,entry = 
-      try Hashtbl.find bbdfns index
-      with Not_found -> failwith ("cpp_classname Can't find index " ^ string_of_int index ^ " in fully bound symbol table")
-    in begin match entry with
-      | `BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
-      | `BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
-      | `BBDCL_abs ct -> "_abs_" ^ string_of_int index ^ "_" ^ mangle_cpp_typename ct
-      | _ -> 
-        failwith 
-        (
-          "[cpp_classname] expected type declaration, got " ^
-          string_of_bbdcl sym_state.dfns entry index
-        )
-    end
-  
-  | _ -> failwith "Unexpected metatype in cpp_classname"
-  with Not_found -> 
-    failwith 
-    (
-      "[cpp_classname] Expected type "^ 
-      string_of_btypecode sym_state.dfns t ^ 
-      " to be in registry"
+      "Unexpected kind in register type: " ^ 
+      string_of_btypecode syms.dfns t
     )
 
 @doc()
@@ -268,13 +157,13 @@ be used unless the type is an argument of some
 function or procedure, which we should pick up here.
 @select(h)
 
-let collect_types sym_state bbdfns = 
-  let registry = sym_state.registry
-  and dfns = sym_state.dfns 
-  and counter = sym_state.counter
+let collect_types syms bbdfns = 
+  let registry = syms.registry
+  and dfns = syms.dfns 
+  and counter = syms.counter
   in
-  let rr t = register_type_r sym_state bbdfns [] t in
-  let rnr t = register_type_nr sym_state t in
+  let rr t = register_type_r syms bbdfns [] t in
+  let rnr t = register_type_nr syms t in
   Hashtbl.iter
   begin fun index (id,parent,bbdcl) -> 
     (* if proper_descendant dfns parent
@@ -289,25 +178,35 @@ let collect_types sym_state bbdfns =
         | Some i ->string_of_int i
         | None -> "None"
       );
-      print_endline ("=======>  " ^ string_of_bbdcl sym_state.dfns bbdcl index);
+      print_endline ("=======>  " ^ string_of_bbdcl syms.dfns bbdcl index);
       *)
       match bbdcl with
-      | `BBDCL_abs _ -> rnr (`BTYP_name index)
+      | `BBDCL_abs (vs,_) -> 
+        if List.length vs = 0
+        then rnr (`BTYP_name index)
+        (* ignore generic types *)
+
       | `BBDCL_function (ps,ret,_,_) ->
         let a = typeoflist (List.map snd ps) in
         rr (`BTYP_function (a,ret))
 
-      | `BBDCL_fun (ps,ret,_) ->
-        let a = typeoflist ps in
-        rr (`BTYP_function (a,ret))
+      | `BBDCL_fun (vs,ps,ret,_) ->
+        if List.length vs = 0
+        then
+          let a = typeoflist ps in
+          rr (`BTYP_function (a,ret))
+        (* ignore generic functions *)
 
       | `BBDCL_procedure (ps,_,_) ->
         let a = typeoflist (List.map snd ps) in
         rr (`BTYP_function (a,`BTYP_void))
 
-      | `BBDCL_proc (ps,_) ->
-        let a = typeoflist ps in
-        rr (`BTYP_function (a,`BTYP_void))
+      | `BBDCL_proc (vs,ps,_) ->
+        if List.length vs = 0
+        then
+          let a = typeoflist ps in
+          rr (`BTYP_function (a,`BTYP_void))
+        (* ignore generic procedures *)
 
       | `BBDCL_val t
       | `BBDCL_var t
@@ -321,6 +220,10 @@ let collect_types sym_state bbdfns =
     end
   end
   bbdfns 
+  ;
+  Hashtbl.iter
+  (fun t _ -> rr t)
+  syms.instantiated_types
 
 @doc()
 Now some code to generate the bases, given the
@@ -334,8 +237,8 @@ let is_unitsum (t:btypecode_t) = match t with
 
   | _ -> false
 
-let gen_type_name sym_state bbdfns (index,typ) =
-  let tn t = cpp_classname sym_state bbdfns t in
+let gen_type_name syms bbdfns (index,typ) =
+  let tn t = cpp_classname syms bbdfns t in
   match typ with
   | `BTYP_fix i -> ""
   | `BTYP_var i -> failwith "[gen_type_name] Can't gen name of type variable"
@@ -360,6 +263,17 @@ let gen_type_name sym_state bbdfns (index,typ) =
   | `BTYP_none -> ""
   | `BTYP_pointer t -> "//Pointer by template"
 
+  | `BTYP_inst (i,vs) ->
+    let sr,id,parent,dcl = Hashtbl.find syms.dfns i in
+    let ct = 
+      match dcl with
+      | `SYMDEF_dcl (`DCL_abs (_,ct)) -> ct
+      | _ -> failwith "Expected primitive type"
+    in
+    let name = tn typ in
+    let s = csubst syms bbdfns ct [] [] `BTYP_none vs in
+    "typedef " ^ s ^ " " ^ name ^ ";\n"
+
   | `BTYP_name index ->
     let name = tn typ in
     let id,parent,entry = 
@@ -371,20 +285,21 @@ let gen_type_name sym_state bbdfns (index,typ) =
       "struct " ^ name ^ ";\n"
     | `BBDCL_union _ -> 
       "typedef _uctor_ " ^ tn typ ^ ";\n"
-    | `BBDCL_abs ct -> "typedef " ^ ct ^ " " ^ tn typ ^ ";\n" 
+    | `BBDCL_abs (vs,ct) -> 
+      (match vs with
+      | [] -> "typedef " ^ ct ^ " " ^ tn typ ^ ";\n" 
+      | _ -> "[gen_type_name] can't name template"
+      )
     | _ -> 
       failwith 
       (
         "[gen_type_name] expected type declaration, got " ^
-        string_of_bbdcl sym_state.dfns entry index
+        string_of_bbdcl syms.dfns entry index
       )
     end
   | _ -> failwith "Unexpected metatype in gen_type_name"
 
-let ptr_map_of_type sym_state bbdfns t =
- cpp_typename sym_state bbdfns t ^ "_ptr_map"
-
-let gen_type sym_state bbdfns (index,typ) =
+let gen_type syms bbdfns (index,typ) =
   (*
   print_endline (
     "GENERATING TYPE " ^
@@ -392,9 +307,9 @@ let gen_type sym_state bbdfns (index,typ) =
     string_of_btypecode dfns typ
   );
   *)
-  "//TYPE "^string_of_int index^": " ^ string_of_btypecode sym_state.dfns typ ^ "\n"^
-  let tn t = cpp_typename sym_state bbdfns t in
-  let cn t = cpp_classname sym_state bbdfns t in
+  "//TYPE "^string_of_int index^": " ^ string_of_btypecode syms.dfns typ ^ "\n"^
+  let tn t = cpp_typename syms bbdfns t in
+  let cn t = cpp_classname syms bbdfns t in
   match unfold typ with
 
   | `BTYP_var _ -> failwith "[gen_type] can't gen type variable"
@@ -489,6 +404,8 @@ let gen_type sym_state bbdfns (index,typ) =
     "};\n"
     *)
 
+  | `BTYP_inst _ -> ""
+
   | `BTYP_name index ->
     let name = tn typ in
     let id,parent,entry = 
@@ -536,29 +453,29 @@ let gen_type sym_state bbdfns (index,typ) =
       "};\n"
 
     | `BBDCL_union _ -> "" (* covered by prior typedef of _uctor_ *)
-    | `BBDCL_abs ct -> ""
+    | `BBDCL_abs (vs,ct) -> ""
     | _ -> 
       failwith 
       (
         "[gen_typ] expected type declaration, got " ^
-        string_of_bbdcl sym_state.dfns entry index
+        string_of_bbdcl syms.dfns entry index
       )
     end
   | _ -> failwith "Unexpected metatype in gen_type"
 
-let gen_type_names sym_state bbdfns ts = 
+let gen_type_names syms bbdfns ts = 
   (* print_endline "GENERATING TYPE NAMES"; *)
   let s = Buffer.create 100 in
   List.iter 
-  (fun t -> Buffer.add_string s (gen_type_name sym_state bbdfns t))
+  (fun t -> Buffer.add_string s (gen_type_name syms bbdfns t))
   ts;
   Buffer.contents s
 
-let gen_types sym_state bbdfns ts = 
+let gen_types syms bbdfns ts = 
   (* print_endline "GENERATING TYPES"; *)
   let s = Buffer.create 100 in
   List.iter 
-  (fun t -> Buffer.add_string s (gen_type sym_state bbdfns t))
+  (fun t -> Buffer.add_string s (gen_type syms bbdfns t))
   ts;
   Buffer.contents s
 

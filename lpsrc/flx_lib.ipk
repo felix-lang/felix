@@ -9,6 +9,13 @@ header """
 #include <assert.h>
 #include <limits.h>
 #include "rtl/boost_cstdint.hpp"
+#include <vector>
+#include <list>
+#include <set>
+#include <map>
+#include <deque>
+#include <queue>
+#include <stack>
 """;
 
 body """
@@ -126,16 +133,13 @@ typedef any = any;
 
 module Bool 
 {
-//  const true : bool = "true";
-//  const false : bool = "false";
-
-// !!!!! NEW DEFN OF true and false ..
+// DEFN OF true and false ..
 // the order is CRITICAL for C/C++ compatibility
 // We're cheating: we know bool will be optimised
 // to an int by the compiler, and an int can
 // suffice for a bool in C/C++
 //
-// NOTE!!!! if ANY bad naughty functions generate
+// NOTE!!!! if ANY naughty functions generate
 // a boolean result which is other than 0 or 1 we have
 // a catastrophy
 
@@ -313,6 +317,70 @@ module Arith_casts
     tangle('  fun '+t1+'_of: '+t2+' -> '+t1+' = "('+tmap[t1]+')$1";')
 }
 
+@#------------- STL CONTAINERS -----------------------
+module Stl 
+{
+  module Vector
+  {
+    type stl_vector[t] = "std::vector<`1>";
+    type stl_vector_iterator[t] = "std::vector<`1>::iterator";
+    type stl_vector_const_iterator[t] = "std::vector<`1>::const_iterator";
+  }
+  module List
+  {
+    type stl_list[t] = "std::list<`1>";
+    type stl_list_iterator[t] = "std::list<`1>::iterator";
+    type stl_list_const_iterator[t] = "std::list<`1>::const_iterator";
+  }
+  module Set
+  {
+    type stl_set[t] = "std::set<`1>";
+    type stl_set_iterator[t] = "std::set<`1>::iterator";
+    type stl_set_const_iterator[t] = "std::set<`1>::const_iterator";
+  }
+  module MultiSet
+  {
+    type stl_multiset[t] = "std::multiset<`1>";
+    type stl_multiset_iterator[t] = "std::multiset<`1>::iterator";
+    type stl_multiset_const_iterator[t] = "std::multiset<`1>::const_iterator";
+  }
+  module Map
+  {
+    type stl_map[k,v] = "std::map<`1,`2>";
+    type stl_map_iterator[t] = "std::map<`1>::iterator";
+    type stl_map_const_iterator[t] = "std::map<`1>::const_iterator";
+  }
+  module MultiMap
+  {
+    type stl_multimap[k,v] = "std::multimap<`1,`2>";
+    type stl_multimap_iterator[t] = "std::multimap<`1>::iterator";
+    type stl_multimap_const_iterator[t] = "std::multimap<`1>::const_iterator";
+  }
+  module Queue
+  {
+    type queue[t] = "std::queue[`1]";
+    type stl_queue_iterator[t] = "std::queue<`1>::iterator";
+    type stl_queue_const_iterator[t] = "std::queue<`1>::const_iterator";
+  }
+  module Deque
+  {
+    type deque[t] = "std::deque[`1]";
+    type stl_deque_iterator[t] = "std::deque<`1>::iterator";
+    type stl_deque_const_iterator[t] = "std::deque<`1>::const_iterator";
+  }
+  module PriorityQueue 
+  {
+    type stl_priority_queue[t] = "std::priority_queue[`1]";
+    type stl_priority_queue_iterator[t] = "std::priority_queue<`1>::iterator";
+    type stl_priority_queue_const_iterator[t] = "std::priority_queue<`1>::const_iterator";
+  }
+  module Stack
+  {
+    type stl_stack[t] = "std::stack[`1]";
+    type stl_stack_iterator[t] = "std::stack<`1>::iterator";
+    type stl_stack_const_iterator[t] = "std::stack<`1>::const_iterator";
+  }
+}
 @#------------- CONTROL STRUCTURES -------------------
 module Control 
 {
@@ -375,36 +443,5 @@ open String;
 open Stdout;
 open Arith_casts;
 open Control;
-
-@h=tangler('lib/boost.flx')
-@select(h)
-// regular expressions
-header """
-#include <boost/regex.hpp>
-//typedef boost::regex regex;
-""";
-
-
-type regex = "boost::regex";
-fun regex_of_string : string -> regex = "boost::regex($1)";
-
-type merge_pattern = "string";
-fun merge_pattern_of_string: string->merge_pattern = "$1";
-
-fun regex_match : regex * string -> bool 
-  =  "boost::regex_match($2, $1)";
-
-fun regex_match (r:regex) (s:string): bool  =
-{
-  return regex_match(r,s);
-}
-
-fun regex_merge : regex * merge_pattern * string -> string
-  = "boost::regex_merge($3,$1,$2, boost::match_default | boost::format_sed)";
-
-fun regex_merge (r:regex) (m:merge_pattern) (s:string) :string =
-{
-  return regex_merge(r,m,s);
-}
 
 

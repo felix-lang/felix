@@ -70,7 +70,7 @@ followed by a square bracket enclosed list of type expressions.
 type c_t = string     (* C++ code as a string *)
 type id_t = string
 
-and qualified_name_t =
+type qualified_name_t =
   [
   | `AST_void of range_srcref
   | `AST_root of range_srcref
@@ -191,6 +191,9 @@ and expr_t =
   | `AST_regmatch of range_srcref * (expr_t * (regexp_t * expr_t) list)
   | `AST_typeof of range_srcref * expr_t
   | `AST_cond of range_srcref * (expr_t * expr_t * expr_t)
+
+  | `AST_texpr of range_srcref * expr_t
+  | `AST_ginst of range_srcref * (expr_t * typecode_t list)
   ]
 
 @head(3,'Pattern')
@@ -298,10 +301,10 @@ and statement_t =
   | `AST_raise of range_srcref * id_t * expr_t
 
   (* binding structures [prolog] *)
-  | `AST_abs_decl of range_srcref * id_t * c_t
+  | `AST_abs_decl of range_srcref * id_t * id_t list * c_t
   | `AST_const_decl of range_srcref * id_t * typecode_t * c_t
-  | `AST_fun_decl of range_srcref * id_t * typecode_t list * typecode_t * c_t 
-  | `AST_proc_decl of range_srcref * id_t * typecode_t list * c_t 
+  | `AST_fun_decl of range_srcref * id_t * string list * typecode_t list * typecode_t * c_t 
+  | `AST_proc_decl of range_srcref * id_t * string list *  typecode_t list * c_t 
   | `AST_header of range_srcref * string
   | `AST_body of range_srcref * string
   | `AST_code of range_srcref * string
@@ -362,10 +365,10 @@ and dcl_t =
   | `DCL_type
   
   (* binding structures [prolog] *)
-  | `DCL_abs of         c_t
+  | `DCL_abs of         string list * c_t
   | `DCL_const of       typecode_t * c_t
-  | `DCL_fun of         typecode_t list * typecode_t * c_t 
-  | `DCL_proc of        typecode_t list * c_t 
+  | `DCL_fun of         string list * typecode_t list * typecode_t * c_t 
+  | `DCL_proc of        string list * typecode_t list * c_t 
 
   | `DCL_regdef of      regexp_t
   ]
@@ -427,6 +430,7 @@ and bexpr_t =
   | `BEXPR_case of int * btypecode_t
   | `BEXPR_match_case of int * tbexpr_t
   | `BEXPR_case_arg of int * tbexpr_t
+  | `BEXPR_ginst of int * btypecode_t list
   ]
 
 and tbexpr_t = bexpr_t * btypecode_t
@@ -434,6 +438,7 @@ and tbexpr_t = bexpr_t * btypecode_t
 and btypecode_t = 
   [
   | `BTYP_name of bid_t                            (* named type *)
+  | `BTYP_inst of bid_t * btypecode_t list         (* instantiation *)
   | `BTYP_tuple of btypecode_t list                (* product type *)
   | `BTYP_sum of btypecode_t list                  (* product type *)
   | `BTYP_function of btypecode_t * btypecode_t    (* function type *)
@@ -457,22 +462,15 @@ and bbdcl_t =
   | `BBDCL_header of     string
   | `BBDCL_body of     string
   | `BBDCL_function of   bparameter_t list * btypecode_t * bexe_t list * name_map_t
-  (* 
-  | `BBDCL_functor  of   bparameter_t list * btypecode_t * name_map_t
-  *)
   | `BBDCL_procedure of  bparameter_t list * bexe_t list * name_map_t
-  (*
-  | `BBDCL_if_fun of     btypecode_t 
-  | `BBDCL_if_proc of    btypecode_t
-  *) 
   | `BBDCL_val of        btypecode_t
   | `BBDCL_var of        btypecode_t
 
   (* binding structures [prolog] *)
-  | `BBDCL_abs of        c_t
+  | `BBDCL_abs of        string list * c_t
   | `BBDCL_const of      btypecode_t * c_t
-  | `BBDCL_fun of        btypecode_t list * btypecode_t * c_t 
-  | `BBDCL_proc of       btypecode_t list * c_t 
+  | `BBDCL_fun of        (string * int) list * btypecode_t list * btypecode_t * c_t 
+  | `BBDCL_proc of       (string * int) list * btypecode_t list * c_t 
   | `BBDCL_union of      (id_t * btypecode_t) list
   | `BBDCL_struct of     (id_t * btypecode_t) list
   ]
@@ -568,7 +566,10 @@ type sym_state_t =
   varmap : typevarmap_t;
   ticache : (int, btypecode_t) Hashtbl.t;
   env_cache : (int, env_t) Hashtbl.t;
-  registry : type_registry_t
+  registry : type_registry_t;
+  prim_inst : (int * btypecode_t list, int) Hashtbl.t;
+  rev_prim_inst : (int, int * btypecode_t list) Hashtbl.t;
+  instantiated_types : (btypecode_t,unit) Hashtbl.t
 }
 
 @doc()
@@ -639,7 +640,7 @@ let src_of_suffixed_name (e : suffixed_name_t) = match e with
 
 let src_of_expr (e : expr_t) = match e with
   | #suffixed_name_t as x -> src_of_suffixed_name x
-
+  | `AST_texpr (s,_)
   | `AST_product (s,_)
   | `AST_sum (s,_)
   | `AST_arrow (s,_)
@@ -666,6 +667,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_typeof (s, _) 
   | `AST_cond (s,_)
   | `AST_letin (s,_)
+  | `AST_ginst (s,_)
     -> s
 
 let src_of_stmt e = match e with
@@ -696,11 +698,11 @@ let src_of_stmt e = match e with
   | `AST_ifgoto (s,_,_)
   | `AST_ifnotgoto (s,_,_)
   | `AST_attempt (s,_,_,_)
-  | `AST_raise (s, _, _) 
-  | `AST_abs_decl (s, _, _) 
-  | `AST_const_decl (s, _, _, _) 
-  | `AST_fun_decl (s, _, _ , _, _ ) 
-  | `AST_proc_decl (s,_, _ , _ ) 
+  | `AST_raise (s,_,_) 
+  | `AST_abs_decl (s,_,_, _) 
+  | `AST_const_decl (s,_,_,_) 
+  | `AST_fun_decl (s,_,_,_,_,_ ) 
+  | `AST_proc_decl (s,_,_,_,_ ) 
   | `AST_header (s,_) 
   | `AST_body (s,_) 
   | `AST_code (s, _) 
@@ -883,6 +885,12 @@ and string_of_expr (e:expr_t) =
   in
   match e with
   | #suffixed_name_t as n -> string_of_suffixed_name n
+  | `AST_texpr (sr,e) -> "[" ^ se e ^ "]"
+  | `AST_ginst (sr,(e1,ts)) -> 
+    "(" ^ se e1 ^ ")" ^
+    "[" ^ 
+    String.concat "," (List.map string_of_typecode ts) ^ 
+    "]"
 
   | `AST_letin (sr,(pat,e1, e2)) ->
     "let " ^ string_of_letpat pat ^ " = " ^ se e1 ^ " in " ^ se e2
@@ -1077,6 +1085,9 @@ and sb dfns depth fixlist counter prec tc =
         sbt 6 b
 
       | `BTYP_var i -> 0,"<type_variable " ^ string_of_int i ^ ">"
+      | `BTYP_inst (i,ts) -> 
+        0,qualified_name_of_index dfns i ^ 
+        "[" ^String.concat ", " (List.map (string_of_btypecode dfns) ts) ^ "]"
 
       | `BTYP_name n -> 0,qualified_name_of_index dfns n
 
@@ -1310,21 +1321,36 @@ and string_of_statement level s =
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | `AST_abs_decl (_,t,code) -> spaces level ^ 
-   "type " ^ t ^ " = " ^ string_of_string code ^ ";"
+  | `AST_abs_decl (_,t,vs, code) -> spaces level ^ 
+   "type " ^ t ^ 
+   (match vs with
+   | [] -> ""
+   | _ -> " [" ^ String.concat ", " vs ^ "]"
+   ) ^
+   " = " ^ string_of_string code ^ ";"
 
-  | `AST_fun_decl (_,name,args, result, code) ->
+  | `AST_fun_decl (_,name,vs,args, result, code) ->
     spaces level ^ 
-     "fun " ^ name ^ ": " ^ 
-     (string_of_typecode (`TYP_tuple args)) ^ " -> " ^
-     (string_of_typecode result) ^ 
-     " = " ^ string_of_string code ^ ";"
+    "fun " ^ name ^ 
+    (match vs with 
+    | [] -> ""
+    | _ -> " [" ^ String.concat ", " vs ^ "]"
+    ) ^
+    ": " ^ 
+    (string_of_typecode (`TYP_tuple args)) ^ " -> " ^
+    (string_of_typecode result) ^ 
+    " = " ^ string_of_string code ^ ";"
 
-  | `AST_proc_decl (_,name,args, code) ->
+  | `AST_proc_decl (_,name,vs,args, code) ->
     spaces level ^ 
-    "proc " ^ name ^ ": " ^ 
-     (string_of_typecode (`TYP_tuple args)) ^
-     " = " ^ string_of_string code ^ ";"
+    "proc " ^ name ^ 
+    (match vs with 
+    | [] -> ""
+    | _ -> " [" ^ String.concat ", " vs ^ "]"
+    ) ^
+    ": " ^ 
+    (string_of_typecode (`TYP_tuple args)) ^
+    " = " ^ string_of_string code ^ ";"
 
   | `AST_const_decl (_,name,typ, code) ->
     spaces level ^ 
@@ -1628,6 +1654,12 @@ and string_of_bound_expression dfns e =
     "(match case " ^ string_of_int v ^ ")(" ^ se e ^ ")"
   | `BEXPR_case_arg (v,e) ->
     "(arg of case " ^ string_of_int v ^ " of " ^ se e ^ ")"
+  | `BEXPR_ginst (i,ts) ->
+    sid i ^ 
+    "["^
+    String.concat ", " 
+    (List.map (string_of_btypecode dfns) ts)^
+    "]"
 
 and string_of_biface dfns level s = 
   let spc = spaces level in
@@ -1734,19 +1766,34 @@ and string_of_dcl level name s =
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | `DCL_abs (code) -> spaces level ^ 
-   "type " ^ name ^ " = " ^ string_of_string code ^ ";"
+  | `DCL_abs (vs, code) -> spaces level ^ 
+    "type " ^ name ^ 
+    (match vs with 
+    | [] -> ""
+    | _ -> " [" ^ String.concat ", " vs ^ "]"
+    ) ^
+    " = " ^ string_of_string code ^ ";"
 
-  | `DCL_fun (args, result, code) ->
+  | `DCL_fun (vs, args, result, code) ->
     let argtype:typecode_t = type_of_argtypes args in
     let t:typecode_t = `TYP_function (argtype,result) in
     spaces level ^ 
-    "fun " ^ name ^ ": " ^ string_of_typecode t ^
+    "fun " ^ name ^ 
+    (match vs with 
+    | [] -> ""
+    | _ -> " [" ^ String.concat ", " vs ^ "]"
+    ) ^
+    ": " ^ string_of_typecode t ^
     " = " ^ string_of_string code ^ ";"
 
-  | `DCL_proc (args, code) ->
+  | `DCL_proc (vs, args, code) ->
     spaces level ^ 
-    "proc " ^ name ^ ": " ^ 
+    "proc " ^ name ^ 
+     (match vs with 
+    | [] -> ""
+    | _ -> " [" ^ String.concat ", " vs ^ "]"
+    ) ^
+    ": " ^ 
      (string_of_typecode (type_of_argtypes args)) ^
      " = " ^ string_of_string code ^ ";"
 
@@ -1843,22 +1890,53 @@ and string_of_bbdcl dfns bbdcl index =
     "var " ^ name ^ ": " ^ sobt ty ^ ";"
 
   (* binding structures [prolog] *)
-  | `BBDCL_abs code ->
-   "type " ^ name ^ " = " ^ string_of_string code ^ ";"
+  | `BBDCL_abs (vs,code) ->
+   "type " ^ name ^ 
+   (match vs with 
+   | [] -> ""
+   | _ -> " [" ^ String.concat ", " vs ^ "]"
+   ) ^
+   " = " ^ string_of_string code ^ ";"
 
   | `BBDCL_const (ty,code) ->
      "const " ^ name ^ 
      ": " ^ sobt ty ^ 
      " = "^string_of_string code^ ";" 
 
-  | `BBDCL_fun (ps,rt,code) ->
-     "fun " ^ name ^ ": " ^ 
-     (sobt (typeoflist ps)) ^ " -> " ^
-     (sobt rt) ^ 
-     " = " ^ string_of_string code ^ ";"
+  | `BBDCL_fun (vs,ps,rt,code) ->
+    "fun " ^ name ^ 
+    (match vs with
+    | [] -> ""
+    | _ -> 
+      " [" ^ 
+      String.concat ", " 
+      (
+        List.map 
+        (fun (s,i)-> s^"<"^string_of_int i^">" ) 
+        vs
+      ) ^
+      "]"
+    ) ^ 
+    ": " ^ 
+    (sobt (typeoflist ps)) ^ " -> " ^
+    (sobt rt) ^ 
+    " = " ^ string_of_string code ^ ";"
 
-  | `BBDCL_proc (ps,code) ->
-    "proc " ^ name ^ ": " ^ 
+  | `BBDCL_proc (vs, ps,code) ->
+    "proc " ^ name ^ 
+    (match vs with
+    | [] -> ""
+    | _ -> 
+      " [" ^ 
+      String.concat ", " 
+      (
+        List.map 
+        (fun (s,i)-> s^"<"^string_of_int i^">" ) 
+        vs
+      ) ^
+      "]"
+    ) ^ 
+    ": " ^ 
      (sobt (typeoflist ps)) ^
      " = " ^ string_of_string code ^ ";"
 
@@ -2097,6 +2175,7 @@ let rec lower t = match t with
   | `BTYP_name i -> `BTYP_name i
   | `BTYP_fix i -> `BTYP_fix i
   | `BTYP_var i -> `BTYP_var i
+  | `BTYP_inst (i,ts) -> `BTYP_inst (i, List.map lower ts)
   | _ -> failwith "Unexpected metatype"
 
 
@@ -2111,6 +2190,7 @@ let rec lift t = match t with
   | `BTYP_name i -> `BTYP_name i
   | `BTYP_fix i -> `BTYP_fix i
   | `BTYP_var i -> `BTYP_var i
+  | `BTYP_inst (i,ts) -> `BTYP_inst (i, List.map lift ts)
   | _ -> failwith "Unexpected metatype"
 
 let rec unify dfns it mt = 
@@ -2132,6 +2212,9 @@ let rec unify dfns it mt =
   | `BTYP_void, `BTYP_void -> `BTYP_void
   | `BTYP_none, `BTYP_none -> `BTYP_none
   | (`BTYP_var i, `BTYP_var j) when i = j -> `BTYP_var i
+  | (`BTYP_inst (i1,ts1), `BTYP_inst (i2,ts2)) when i1 = i2 -> 
+    `BTYP_inst (i1,List.map2 u ts1 ts2)
+    
   | i,m -> `BTYP_binding (i,m)
 
 let dummy_sr = ("generated",0,0,0,0)
@@ -2221,6 +2304,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   match e with 
   | `AST_name (_,"TYPE") -> `TYP_type
   | #qualified_name_t as x -> (x:>typecode_t)
+  | `AST_texpr (sr,t) -> te t
   | `AST_tuple (sr,ls) ->
     `TYP_type_tuple (List.map te ls)
 

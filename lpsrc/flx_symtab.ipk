@@ -397,12 +397,12 @@ let rec build_tables print_flag dfns counter name level parent asms =
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
           ;
           add_unique name_map id n
-        | `DCL_fun (ts,t,c) ->
+        | `DCL_fun (vs,ts,t,c) ->
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
           ;
           add_function name_map id n
 
-        | `DCL_proc (ts,c) ->
+        | `DCL_proc (vs,ts,c) ->
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
           ;
           add_function name_map id n
@@ -419,6 +419,7 @@ let rec build_tables print_flag dfns counter name level parent asms =
           let asgn_dcl = 
             `DCL_proc 
             (
+              [],
               [
                 `TYP_pointer (`AST_name (sr,id));
                 `AST_name (sr,id)
@@ -448,6 +449,7 @@ let rec build_tables print_flag dfns counter name level parent asms =
                 let dcl = 
                   `DCL_fun 
                   (
+                    [],
                     ts,
                     `AST_name (sr,id),
                     "_uctor_(" ^ string_of_int ctor_idx ^ 
@@ -457,13 +459,14 @@ let rec build_tables print_flag dfns counter name level parent asms =
                   dcl
               | _ -> (* non-constant constructor of 1 argument *)
                 add_function name_map component_name dfn_idx;
-                `DCL_fun ([t],`AST_name (sr,id),
+                `DCL_fun ([],[t],`AST_name (sr,id),
                   "_uctor_(" ^ string_of_int ctor_idx ^ 
                   ", new(gc,@1) #1($1))"
                 )
             in
               let ctor_match = 
                 `DCL_fun (
+                  [],
                   [`AST_name (sr,id)],
                   flx_bool,
                   "($1.variant==" ^ string_of_int ctor_idx ^")"
@@ -485,7 +488,7 @@ let rec build_tables print_flag dfns counter name level parent asms =
               | _ -> (* non-constant constructor *)
                 let dtor_idx = !counter in incr counter;
                 let dtor_name = "_ctor_arg_" ^ component_name in
-                let dtor_dcl = `DCL_fun ([`AST_name (sr,id)],t,"*(#0*)`1.data") in
+                let dtor_dcl = `DCL_fun ([],[`AST_name (sr,id)],t,"*(#0*)`1.data") in
                 if print_flag then print_endline ("//  " ^ spc ^ string_of_int dtor_idx ^ " -> " ^ dtor_name); 
                 Hashtbl.add dfns dtor_idx (dtor_name,sr,parent,`SYMDEF_dcl dtor_dcl);
                 add_function name_map dtor_name dtor_idx
@@ -501,7 +504,7 @@ let rec build_tables print_flag dfns counter name level parent asms =
           (fun (component_name,t) ->
             let getn = !counter in incr counter;
             let get_name = "get_" ^ component_name in
-            let get_dcl = `DCL_fun ([`AST_name (sr,id)],t,"$1." ^ component_name) in
+            let get_dcl = `DCL_fun ([],[`AST_name (sr,id)],t,"$1." ^ component_name) in
             Hashtbl.add dfns getn (get_name,sr,parent,`SYMDEF_dcl get_dcl);
             add_function name_map get_name getn
             ;
@@ -509,7 +512,7 @@ let rec build_tables print_flag dfns counter name level parent asms =
             let refn = !counter in incr counter;
             let ref_name = "ref_" ^ component_name in
             let ref_dcl = `DCL_fun (
-              [`TYP_pointer (`AST_name (sr,id))],
+              [],[`TYP_pointer (`AST_name (sr,id))],
               `TYP_pointer t,
               "_make_ref_(`1.frame,&($1->" ^ component_name ^"))"
             ) 

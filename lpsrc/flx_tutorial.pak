@@ -175,28 +175,49 @@ It is clear that mid returns an int,
 and you might think that 'mid' has two arguments.
 This is not so. All functions in Felix have
 exactly one argument. Well, almost all of them :-)
-I'll explain this in the next example.
+I'll explain shortly.
 @p()
 Functions in Felix may not have any side effects,
 except for diagnostic outputs.  Note however that
 functions may modify their own private data,
 that is, may contain and mutate local variables.
+@p()
+Whilst in the above example the return type of the
+function is clearly given, it is not necessary,
+as illustrated by the next example:
+@select(tangler(tdir+'tut106a.flx'))
+#include <std.flx>
+fun mid(a:int, b:int) =
+{
+  val c = (a + b) / 2;
+  return c;
+}
+print (mid(2,4)); print "\n";
+@doc()
+which is equivalent to the one above.
+Note however that the types of the arguments
+must be given.
 
-@head(2,'The lazy expression')
+@head(2,'Lazy expressions')
 There is a function which is so useful, there
 is a special syntax for it: the lazy expression.
-@select(tangler(tdir+'tut106a.flx'))
+@select(tangler(tdir+'tut106b.flx'))
 #include <std.flx>
 var x = 1;
 var y = 2;
+
 val f1 = {x + y}; // lazy expression
 fun f2():int = { return x + y; } // equivalent
+
 print (f1 ());
 print (f2 ());
-x = 2;
+
+x = 2; // change value of variables
 y = 3;
+
 print (f1 ());
 print (f2 ());
+
 @doc()
 The curly brackets denote a lazy expression, it is
 a function which evaluates the expression when passed
@@ -205,7 +226,7 @@ is the type of the expression.
 @p()
 You can also put statements inside curly brackets
 to define a lazy function:
-@select(tangler(tdir+'tut106b.flx'))
+@select(tangler(tdir+'tut106c.flx'))
 #include <std.flx>
 val x = 1;
 val f = { val y = x + 1; return y; };
@@ -214,7 +235,7 @@ val eol = { endl; };
 print (f ()); eol;
 
 @doc()
-If there is no return statement, a procedure is denoted,
+If there is no return statement, a block procedure is denoted,
 otherwise the return type is the type of the return
 statement arguments, which must all be the same.
 
@@ -229,7 +250,7 @@ Here are some examples of tuples:
   (1, 2.7, "Hello")
   ()
 @end_displayed_code()
-The comma operator constructs tuples.
+The comma chain operator constructs tuples.
 While brackets are not always necessary, the comma
 operator has a low precedence so tuples usually
 appear in brackets. Notice there is a special
@@ -331,16 +352,21 @@ print 2; endl;
 More precisely, a statement consisting
 of an (almost) atomic expression
 is taken to be a call to a procedure with
-unit argument.
+unit argument. Note there is no confusion
+with the use of a procedure name as an expression,
+that always represents the closure of the procedure
+at the point of writing.
 
 @head(2,'The block procedure')
 There is a procedure which is so useful, there
-is a special syntax for it: the block.
+is a special syntax for it, as described above in
+the section on lazy things: the block.
+
 @select(tangler(tdir+'tut110a.flx'))
 #include <std.flx>
 var x = 1;
 val p1 = { print x; };
-proc p2() { print x; }; // equivalent to p1
+proc p2() { print x; }; // equivalent to p1 (almost)
 
 // all these calls have the same behaviour
 p1();
@@ -357,7 +383,8 @@ So when you write one as a statement, it just gets
 called: note that unlike C, that thing in 
 curley braces is an expression, and you must 
 make a statement by adding a semi-colon,
-which has the effect of invoking it.
+which has the effect of invoking it due to the
+short cut rule.
 
 @head(2,'Structs')
 Felix supports C like structs. A struct, like a tuple,
@@ -472,7 +499,7 @@ endl;
 @doc()
 Notice that the value 'i' in the line
 @begin_displayed_code()
-  | Some ?i:
+  | Some ?i =>
 @end_displayed_code()
 can be used in the handler for that case.
 This is how we get the 'int' out of the Some option.
@@ -932,6 +959,83 @@ C++, although we'll defer disucssion of the C++
 representation of Felix data structures until later.
 [The C++ name of the struct type is not the same
 as the Felix name]
+
+@head(2,'Generic primitive bindings')
+Felix provides a way of creating generic primitive bindings.
+A generic binding is a binding to a family of C++ types,
+functions, or procedured, parameterised by one or more
+types. Generic bindings are roughly equivalent to 
+templates, and can be used to bind to templates, 
+although that isn't the only use.
+@p()
+Here is a simple example illustrating
+generic primitive bindings.
+@select(tangler(tdir+'tut118a.flx'))
+
+// include STL vector template
+header """
+#include <vector>
+""";
+
+// declare non-generic primitives int and long
+// and some output procedures
+type int = "int";
+type long = "long";
+proc endl:1= "cout << endl;";
+proc print: long = "cout << $1;";
+
+// define a generic cast
+// here ?2 means the second generic type parameter
+
+fun cast[t1,t2]:t1->t2 = "(?2)($1)";
+print (cast [int,long] 1); endl;
+
+// declare generic binding for vector
+// ?1 is replaced by the first type argument
+// when the type vector is instantiated
+// the name t is a placeholder used for consistency
+
+type vector[t] = "vector<?1>";
+
+// declare print routine for vector
+// notice that the type 'vector t'
+// describes a vector of objects 
+// of type t, the type of the generic parameter
+// 
+// in a type expression, the generic type vector
+// is used 'as a function' and applied to the
+// its argument, the parameter t in this case,
+// with the same syntax
+
+proc vprint[t]: vector t = """
+  { 
+    vector<?1> v = $1;
+    for(
+      vector<?1>::iterator p = v.begin();
+      p != v.end();
+      ++p
+    )
+      cout << *p << " ";
+  }
+""";
+
+// a generic procedure for appending to a vector
+// this procedure takes a pointer to a vector of t
+// and a value of type t and appends the value
+// to the vector
+proc append[t]:&(vector t)*t="$1->push_back($2);";
+
+// make an empty vector of int
+var v : vector int;
+
+// put 1,2,3 into the vector
+append[int](&v,1);
+append[int](&v,2);
+append[int](&v,3);
+
+// print the vector
+vprint[int] v; endl();
+
 
 @head(2,'Inductive types')
 Felix supports inductive types such as lists.

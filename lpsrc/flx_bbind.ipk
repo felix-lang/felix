@@ -306,6 +306,7 @@ let bbind_sym syms bbdfns i (name,sr,parent,bdcl) =
     print_endline "Building ENV Complete";
     *)
     let bt t = bind_type syms env [] [] sr t in
+    let bgt vs t = bind_type_with_tvars syms env [] [] sr t vs in
     (*
     print_endline ("BINDING " ^ name ^ "<" ^ string_of_int i ^ ">");
     *)
@@ -439,10 +440,11 @@ let bbind_sym syms bbdfns i (name,sr,parent,bdcl) =
       *)
       Hashtbl.add bbdfns i (name,parent,`BBDCL_const (bt t,ct))
 
-    | `DCL_abs ct ->
-      (* print_endline ("//Binding abstract type " ^ string_of_int i ^ " --> " ^ name); 
+    | `DCL_abs (vs,ct) ->
+      (*
+      print_endline ("//Binding abstract type " ^ string_of_int i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_abs ct)
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_abs (vs,ct))
 
     | `DCL_header ct ->
       (* print_endline ("//Binding header string " ^ string_of_int i ^ " --> " ^ name); 
@@ -454,14 +456,41 @@ let bbind_sym syms bbdfns i (name,sr,parent,bdcl) =
       *)
       Hashtbl.add bbdfns i (name,parent,`BBDCL_body ct)
 
-    | `DCL_fun (ts,ret,ct) ->
-      (* print_endline ("//Binding primitive function " ^ string_of_int i ^ " --> " ^ name);  *)
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_fun (List.map bt ts,bt ret,ct))
-
-    | `DCL_proc (ts,ct) ->
-      (* print_endline ("//Binding primitive procedure " ^ string_of_int i ^ " --> " ^ name); 
+    | `DCL_fun (vs,ts,ret,ct) ->
+      (*
+      print_endline ("//Binding primitive function " ^ string_of_int i ^ " --> " ^ name);
       *)
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_proc (List.map bt ts,ct))
+      let tvars : (string * int) list= 
+        List.map
+        (fun s -> 
+          let n = !(syms.counter) in 
+          incr (syms.counter);
+          s,n
+        )
+        vs
+      in
+      let tv2 = List.map (fun (s,i) -> s,`BTYP_var i) tvars in
+      let params : btypecode_t list = List.map (bgt tv2 ) ts in
+      Hashtbl.add bbdfns i (name,parent,
+        `BBDCL_fun (tvars, params,bgt tv2 ret,ct)
+      )
+
+    | `DCL_proc (vs,ts,ct) ->
+      (*
+      print_endline ("//Binding primitive procedure " ^ string_of_int i ^ " --> " ^ name);
+      *)
+      let tvars : (string * int) list= 
+        List.map
+        (fun s -> 
+          let n = !(syms.counter) in 
+          incr (syms.counter);
+          s,n
+        )
+        vs
+      in
+      let tv2 = List.map (fun (s,i) -> s,`BTYP_var i) tvars in
+      let params : btypecode_t list = List.map (bgt tv2) ts in
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_proc (tvars,params,ct))
 
     | `DCL_union cs ->
       (* print_endline ("//Binding union " ^ string_of_int i ^ " --> " ^ name); 
@@ -621,6 +650,9 @@ try
       varmap = Hashtbl.create 97;
       ticache = Hashtbl.create 97;
       env_cache = Hashtbl.create 97;
+      prim_inst = Hashtbl.create 97;
+      rev_prim_inst = Hashtbl.create 97;
+      instantiated_types = Hashtbl.create 97;
     } 
   in
   let deblocked = desugar_program "DUMMY" (syms.counter) parse_tree in

@@ -80,6 +80,20 @@ let rec unification eqns =
 
       | `BTYP_void,`BTYP_void -> ()
 
+      | `BTYP_inst (i1,ts1),`BTYP_inst (i2,ts2) ->
+        if i1 <> i2 then raise Not_found
+        else if List.length ts1 <> List.length ts2 then raise Not_found
+        else
+        begin
+          let rec merge e a b = match a,b with
+          | [],[] -> e
+          | ah :: at, bh :: bt -> merge ((ah,bh) :: e) at bt
+          | _ -> assert false
+          in 
+            eqns := merge !eqns ts1 ts2;
+            s := None
+        end
+
       | `BTYP_fix i,`BTYP_fix j
       | `BTYP_name i, `BTYP_name j ->
         if i <> j then raise Not_found
@@ -184,7 +198,15 @@ let rec type_eq' trail depth t1 t2 =
   if memq trail (t1,t2) then true
   else let te a b = type_eq' ((depth,(t1,t2))::trail) (depth+1) a b in
   match t1,t2 with
-  | `BTYP_name i,`BTYP_name j when i = j -> true
+  | `BTYP_inst (i1,ts1),`BTYP_inst (i2,ts2) -> 
+    i1 = i2 && 
+    List.length ts1 = List.length ts2 &&
+    List.fold_left2 
+    (fun tr a b -> tr && te a b) 
+    true ts1 ts2
+ 
+  | `BTYP_name i,`BTYP_name j 
+    -> i = j 
 
   | `BTYP_sum ts1, `BTYP_sum ts2
   | `BTYP_tuple ts1,`BTYP_tuple ts2 ->
@@ -241,6 +263,7 @@ let unfold t =
   | `BTYP_fix i when (-i) > depth -> 
     failwith ("Fix point outside term, depth="^string_of_int i)
 
+  | `BTYP_inst (i,ts) -> `BTYP_inst (i,List.map uf ts)
   | `BTYP_name i -> `BTYP_name i
   | _ -> t'
   in aux 0 t
@@ -253,6 +276,7 @@ let fold t =
     let ax t = aux ((depth,t')::trail) (depth+1) t in
     match t' with
     | `BTYP_sum ls 
+    | `BTYP_inst (_,ls)
     | `BTYP_tuple ls -> List.iter ax ls
 
     | `BTYP_binding (a,b)
@@ -263,6 +287,7 @@ let fold t =
     | `BTYP_void
     | `BTYP_none
     | `BTYP_name _ 
+
     | `BTYP_var _ 
     | `BTYP_fix 0 -> ()
 
@@ -279,6 +304,7 @@ let var_occurs t =
   let rec aux t =
     match t with
     | `BTYP_sum ls 
+    | `BTYP_inst (_,ls)
     | `BTYP_tuple ls -> List.iter aux ls
 
     | `BTYP_binding (a,b)

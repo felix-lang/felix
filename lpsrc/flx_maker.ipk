@@ -113,8 +113,8 @@ MODULES = [
   'flx_bbind'        , 
   'flx_use'          , 
   'flx_name'         , 
-  'flx_tgen'         , 
   'flx_csubst'       , 
+  'flx_tgen'         , 
   'flx_gen'          , 
 ]
 
@@ -218,7 +218,7 @@ try:
   if "noiscr" not in options:
     if "doc" in options:
       xqt('iscr --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
-      xqt('iscr --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
+      xqt('iscr --inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
     else:
       xqt('iscr lpsrc/flx.pak')
       xqt('iscr lpsrc/flx_tutorial.pak')
@@ -654,6 +654,15 @@ left assoc
 .B match <expr> with 
 .br
 .B | <pattern> => <expr>
+.br
+.B ...
+.br
+.B endmatch
+.br
+
+.B regmatch <expr> with 
+.br
+.B | <regexp> => <expr>
 .br
 .B ...
 .br

@@ -22,6 +22,7 @@ open Flx_types
 open Flx_print
 open Flx_mtypes
 open Flx_typing
+open Flx_typing2
 open List
 open Flx_pat
 open Flx_srcref
@@ -75,6 +76,10 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
   match e with
 
   (* these cases should use the source reference for the error *)
+  | `AST_ginst _
+    -> failwith "[rex] not expecting generic binding"
+  | `AST_texpr _ 
+    -> failwith "[rex] not expecting type expression"
   | `AST_match_ctor _ 
     -> failwith "[rex] not expecting union component constructor matcher"
   | `AST_match_case _ 
@@ -167,6 +172,15 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
   | `AST_get_n (sr,(n,e')) ->
     let l1,x1 = rex e' in
     l1, `AST_get_n (sr,(n,x1))
+
+  | `AST_apply (sr,(fn,`AST_texpr (_,t))) -> 
+    let l1,x1 = rex fn in 
+    let ts = 
+      match t with
+      | `AST_tuple (_,ts) -> List.map typecode_of_expr ts
+      | _ -> [typecode_of_expr t]
+    in
+    l1, `AST_ginst (sr,(x1,ts))
 
   | `AST_apply (sr,(fn,arg)) -> 
     let l1,x1 = rex fn in 
@@ -467,7 +481,7 @@ and rst seq st : asm_t list =
   | `AST_const_decl (sr,name, typ, s) -> [Dcl (sr,name,`DCL_const (typ,s))]
 
   (* types *)
-  | `AST_abs_decl (sr,name,str) -> [Dcl (sr,name,`DCL_abs str)]
+  | `AST_abs_decl (sr,name,vs,str) -> [Dcl (sr,name,`DCL_abs (vs,str))]
   | `AST_union (sr,name, components) -> [Dcl (sr,name,`DCL_union components)]
   | `AST_struct (sr,name, components) ->  [Dcl (sr,name,`DCL_struct components)]
   | `AST_type_alias (sr,name,typ) -> [Dcl (sr,name,`DCL_type_alias typ)]
@@ -511,10 +525,10 @@ and rst seq st : asm_t list =
   | `AST_except_handler (sr,name,params,sts) ->  
     failwith "Unexpected exception handler"
     
-  | `AST_fun_decl (sr,name,args,result,code) -> 
-    [Dcl (sr,name,`DCL_fun (args,result,code))]
-  | `AST_proc_decl (sr,name,args,code) -> 
-    [Dcl (sr,name,`DCL_proc(args,code))]
+  | `AST_fun_decl (sr,name,vs,args,result,code) -> 
+    [Dcl (sr,name,`DCL_fun (vs,args,result,code))]
+  | `AST_proc_decl (sr,name,vs,args,code) -> 
+    [Dcl (sr,name,`DCL_proc(vs,args,code))]
 
   (* misc *)
   | `AST_interface (sr,name,sts) ->
@@ -666,6 +680,7 @@ and rst seq st : asm_t list =
     let d,x = rex e in d @ [Exe (sr,`EXE_return x)]
   
   | `AST_nop _ -> []
+
   | `AST_call (sr,proc, arg) ->
     let d1,x1 = rex proc in
     let d2,x2 = rex arg in

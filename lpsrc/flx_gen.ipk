@@ -465,9 +465,9 @@ let is_unitsum (t:btypecode_t) = match t with
 
   | _ -> false
 
-let rec gen_expr sym_state bbdfns this (e,t) =
+let rec gen_expr syms bbdfns this (e,t) =
   (* print_endline ("Gen expr " ^ string_of_bound_expression dfns (e,t)); *)
-  let ge e = gen_expr sym_state bbdfns this e in
+  let ge e = gen_expr syms bbdfns this e in
   let ge_arg a = 
     match a with
     | _,`BTYP_tuple [] -> ""
@@ -477,13 +477,13 @@ let rec gen_expr sym_state bbdfns this (e,t) =
     try Hashtbl.find bbdfns this 
     with _ -> failwith ("[gen_expr] Can't find this = " ^ string_of_int this)
   in
-  let our_display = get_display_list sym_state.dfns this in
+  let our_display = get_display_list syms.dfns this in
   let our_level = List.length our_display in
   match e with
   | `BEXPR_functions _ -> failwith "Not expecting unbound function set"
   | `BEXPR_coercion (e,t) -> 
     (* generate a function style cast *)
-    cpp_typename sym_state bbdfns (lower t) ^ "(" ^ ge e ^ ")"
+    cpp_typename syms bbdfns (lower t) ^ "(" ^ ge e ^ ")"
     
   | `BEXPR_get_n (n,e) -> 
     "(" ^ ge e ^ ").mem_" ^ string_of_int n
@@ -502,7 +502,7 @@ let rec gen_expr sym_state bbdfns this (e,t) =
       | `BTYP_sum ls -> List.nth ls (n-1)
       | _ -> assert false
     in
-      let t = cpp_typename sym_state bbdfns (lower t) in
+      let t = cpp_typename syms bbdfns (lower t) in
       (* really ugly brackets .. *)
       "(*("^t^"*)((" ^ ge e ^ ").data))"
      
@@ -513,7 +513,7 @@ let rec gen_expr sym_state bbdfns this (e,t) =
     "*(" ^ ge e ^ ".data)"
 
   | `BEXPR_literal v ->
-    let t = cpp_typename sym_state bbdfns (lower t) in
+    let t = cpp_typename syms bbdfns (lower t) in
     t ^ "(" ^ cstring_of_literal v ^ ")"
     
   | `BEXPR_case (v,t) ->
@@ -540,9 +540,9 @@ let rec gen_expr sym_state bbdfns this (e,t) =
             "Can't handle closure of case " ^ 
             string_of_int v ^ 
             " of " ^
-            string_of_btypecode sym_state.dfns t
+            string_of_btypecode syms.dfns t
          )
-       (* "(" ^ cpp_typename sym_state bbdfns (lower t) ^ "*)_uctor_" *)
+       (* "(" ^ cpp_typename syms bbdfns (lower t) ^ "*)_uctor_" *)
 
     | _ -> failwith "Case tag must have sum type"
     end 
@@ -554,10 +554,10 @@ let rec gen_expr sym_state bbdfns this (e,t) =
     in
     begin match entry with
       | `BBDCL_var t ->
-          get_var_ref sym_state.dfns bbdfns this index
+          get_var_ref syms.dfns bbdfns this index
 
       | `BBDCL_val _ ->
-          get_var_ref sym_state.dfns bbdfns this index
+          get_var_ref syms.dfns bbdfns this index
       | `BBDCL_const (_,ct) -> ct
 
       | `BBDCL_struct _ 
@@ -589,7 +589,7 @@ let rec gen_expr sym_state bbdfns this (e,t) =
       let the_display = 
         let d' = 
           List.map (fun i-> "ptr"^ cpp_name bbdfns i)
-          (get_display_list sym_state.dfns index)
+          (get_display_list syms.dfns index)
         in 
           if List.length d' > our_level
           then "this" :: List.tl d'
@@ -609,7 +609,7 @@ let rec gen_expr sym_state bbdfns this (e,t) =
       let the_display = 
         let d' = 
           List.map (fun i-> "ptr"^ cpp_name bbdfns i)
-          (get_display_list sym_state.dfns index)
+          (get_display_list syms.dfns index)
         in 
           if List.length d' > our_level
           then "this" :: List.tl d'
@@ -633,9 +633,9 @@ let rec gen_expr sym_state bbdfns this (e,t) =
     end
 
   | `BEXPR_ref index -> 
-    let ref_type = cpp_typename sym_state bbdfns (lower t) in
-    let var_ptr = "&(" ^ get_var_ref sym_state.dfns bbdfns this index ^ ")" in
-    let frame_ptr = get_var_frame sym_state.dfns bbdfns this index in
+    let ref_type = cpp_typename syms bbdfns (lower t) in
+    let var_ptr = "&(" ^ get_var_ref syms.dfns bbdfns this index ^ ")" in
+    let frame_ptr = get_var_frame syms.dfns bbdfns this index in
     let reference = ref_type ^ 
       "((void*)" ^ frame_ptr ^ ", " ^ var_ptr ^ ")" 
     in
@@ -651,9 +651,9 @@ let rec gen_expr sym_state bbdfns this (e,t) =
           t'' is the type of the argument
        *)
        let 
-         arg_typename = cpp_typename sym_state bbdfns (lower t'') 
+         arg_typename = cpp_typename syms bbdfns (lower t'') 
        and
-         union_typename = cpp_typename sym_state bbdfns (lower t)
+         union_typename = cpp_typename syms bbdfns (lower t)
        in
 
        let aval = 
@@ -667,11 +667,11 @@ let rec gen_expr sym_state bbdfns this (e,t) =
        (
          "Trapped application, case " ^ 
          string_of_int v ^
-         " of " ^ string_of_btypecode sym_state.dfns t ^
-         "\ntype " ^ string_of_btypecode sym_state.dfns t' ^
+         " of " ^ string_of_btypecode syms.dfns t ^
+         "\ntype " ^ string_of_btypecode syms.dfns t' ^
          "\nargument=" ^ 
-         string_of_bound_expression sym_state.dfns (a,t'') ^
-         "\ntype " ^ string_of_btypecode sym_state.dfns t''
+         string_of_bound_expression syms.dfns (a,t'') ^
+         "\ntype " ^ string_of_btypecode syms.dfns t''
        )
       *) 
 
@@ -680,51 +680,88 @@ let rec gen_expr sym_state bbdfns this (e,t) =
   | `BEXPR_apply ((`BEXPR_closure index,_) as f,a) ->
     let id,parent,entry = 
       try Hashtbl.find bbdfns index 
-      with _ -> failwith ("[gen_expr(apply)] Can't find index " ^ string_of_int index)
+      with _ -> failwith ("[gen_expr(apply closure)] Can't find index " ^ string_of_int index)
     in
     begin 
     (*
     print_endline ("apply closure of "^ id );
-    print_endline ("  .. argument is " ^ string_of_bound_expression sym_state.dfns a);
+    print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
     *)
     match entry with
-    | `BBDCL_fun (ps,retyp,ct) -> 
-      (* print_endline "--- CASE OF PRIMITIVE"; *)
-      begin match a with
-      | (`BEXPR_tuple es,`BTYP_tuple typs) ->
-        (* 
-        print_endline "--- ARGS ARE TUPLE";
-        print_endline ("N params = " ^ (string_of_int (List.length ps)));
-        *)
-        let args = List.map ge es in
-        "(" ^ csubst sym_state bbdfns ct args typs retyp []^ ")"
-      | (_,typ) -> 
-        (*
-        print_endline ("--- ARGS ARE NOT TUPLE: type=" ^ string_of_btypecode sym_state.dfns typ);
-        print_endline ("N params = " ^ (string_of_int (List.length ps)));
-        *)
-        "(" ^ csubst sym_state bbdfns ct [ge a] [typ] retyp []^ ")"
-      end
+    | `BBDCL_fun (vs,ps,retyp,ct) -> 
+      if List.length vs = 0
+      then
+        (* print_endline "--- CASE OF PRIMITIVE"; *)
+        begin match a with
+        | (`BEXPR_tuple es,`BTYP_tuple typs) ->
+          (* 
+          print_endline "--- ARGS ARE TUPLE";
+          print_endline ("N params = " ^ (string_of_int (List.length ps)));
+          *)
+          let args = List.map ge es in
+          "(" ^ csubst syms bbdfns ct args typs retyp []^ ")"
+        | (_,typ) -> 
+          (*
+          print_endline ("--- ARGS ARE NOT TUPLE: type=" ^ string_of_btypecode syms.dfns typ);
+          print_endline ("N params = " ^ (string_of_int (List.length ps)));
+          *)
+          "(" ^ csubst syms bbdfns ct [ge a] [typ] retyp []^ ")"
+        end
+      else failwith "Generic function requires type arguments"
 
     | `BBDCL_function (ps,_,_,_) ->
       (ge f) ^ "->apply(" ^ ge_arg a ^ ")"
     
    
-    (*
-    | `BBDCL_val _ 
-    | `BBDCL_var _ ->
-        (get_var_ref sym_state.dfns bbdfns this index) ^ 
-        ".data->apply(" ^
-        ge_arg a ^
-        ")"
-    *)
     | _ -> 
       failwith 
       (
         "[gen_expr] Expected '"^id^"' to be function constant or variable, got:\n" ^
-        string_of_bbdcl sym_state.dfns entry index 
+        string_of_bbdcl syms.dfns entry index 
       )
     end
+  
+  (* special case when function expression is a generic instance *)
+  | `BEXPR_apply ((`BEXPR_ginst (index,ts),_) as f,a) ->
+    let id,parent,entry = 
+      try Hashtbl.find bbdfns index 
+      with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ string_of_int index)
+    in
+    begin 
+    (*
+    print_endline ("apply closure of "^ id );
+    print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
+    *)
+    match entry with
+    | `BBDCL_fun (vs,ps,retyp,ct) -> 
+      if List.length vs = List.length ts
+      then
+        (* print_endline "--- CASE OF PRIMITIVE"; *)
+        begin match a with
+        | (`BEXPR_tuple es,`BTYP_tuple typs) ->
+          (* 
+          print_endline "--- ARGS ARE TUPLE";
+          print_endline ("N params = " ^ (string_of_int (List.length ps)));
+          *)
+          let args = List.map ge es in
+          "(" ^ csubst syms bbdfns ct args typs retyp ts ^")"
+        | (_,typ) -> 
+          (*
+          print_endline ("--- ARGS ARE NOT TUPLE: type=" ^ string_of_btypecode syms.dfns typ);
+          print_endline ("N params = " ^ (string_of_int (List.length ps)));
+          *)
+          "(" ^ csubst syms bbdfns ct [ge a] [typ] retyp ts ^ ")"
+        end
+      else failwith "Wrong number of type arguments to generic function"
+
+    | _ -> 
+      failwith 
+      (
+        "[gen_expr] Expected '"^id^"' to be generic function instance, got:\n" ^
+        string_of_bbdcl syms.dfns entry index 
+      )
+    end
+
   | `BEXPR_apply ((`BEXPR_name index,_) as f,a) ->
     let id,parent,entry = 
       try Hashtbl.find bbdfns index 
@@ -733,7 +770,7 @@ let rec gen_expr sym_state bbdfns this (e,t) =
     begin 
     match entry with
     | `BBDCL_struct _ ->
-      let name = cpp_typename sym_state bbdfns (`BTYP_name index) in
+      let name = cpp_typename syms bbdfns (`BTYP_name index) in
       name ^ "(" ^ ge a ^ ")"
     | _ ->
       (ge f) ^ "->apply(" ^ ge_arg a ^ ")"
@@ -745,7 +782,7 @@ let rec gen_expr sym_state bbdfns this (e,t) =
     
   | `BEXPR_tuple es ->
     (* just apply the tuple type ctor to the arguments *)
-    let ctyp = cpp_typename sym_state bbdfns (lower t) in
+    let ctyp = cpp_typename syms bbdfns (lower t) in
     ctyp ^ "(" ^
     String.concat ", " (List.map ge es) ^
     ")"
@@ -756,6 +793,13 @@ let rec gen_expr sym_state bbdfns this (e,t) =
     *)
     (* "(" ^ ge e ^ ")." ^ name *)
 
+  | `BEXPR_ginst (i,ts) ->
+    failwith 
+    (
+      "can't evaluate unapplied generic instance " ^
+      string_of_bound_expression syms.dfns (e,t)
+    )
+    
 let get_labels bbdfns counter exes =
   let labels = Hashtbl.create 97 in
   List.iter
@@ -886,23 +930,48 @@ let gen_exe sym_state bbdfns label_map counter this (exe:bexe_t) =
   (* conditional gotos are always local *)
   | `BEXE_ifgoto (e,s) -> "      if(" ^ ge e ^ ")goto " ^ s ^ ";\n"
   | `BEXE_ifnotgoto (e,s) ->"      if(!("^ge e^"))goto " ^ s ^ ";\n" 
-
+  
+  | `BEXE_call ((`BEXPR_ginst (index,ts),_) as f,a) ->
+    let id,parent,entry = 
+      try Hashtbl.find bbdfns index 
+      with _ -> failwith ("[gen_exe(call)] Can't find index " ^ string_of_int index)
+    in
+    begin match entry with
+    | `BBDCL_proc (vs,_,ct) -> 
+      if List.length vs = List.length ts 
+      then
+        begin match a with
+        | (`BEXPR_tuple es,`BTYP_tuple typs) ->
+          let args = List.map ge es in
+          "      //call multi (or no) -arg generic primitive " ^ id ^ "\n" ^
+          "      {" ^ csubst sym_state bbdfns ct args typs `BTYP_void ts^ "}\n"
+        | (_,typ) -> 
+          "      //call single-arg generic primitive " ^ id ^ "\n" ^
+          "      {" ^ csubst sym_state bbdfns ct [ge a] [typ] `BTYP_void ts^ "}\n"
+        end
+      else failwith "Generic procedure has wrong number of type arguments"
+    | _ -> failwith "Expected generic instance procedure"
+    end
+ 
   | `BEXE_call ((`BEXPR_closure index,_) as f,a) ->
     let id,parent,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_exe(call)] Can't find index " ^ string_of_int index)
     in
     begin match entry with
-    | `BBDCL_proc (_,ct) -> 
-      begin match a with
-      | (`BEXPR_tuple es,`BTYP_tuple typs) ->
-        let args = List.map ge es in
-        "      //call multi (or no) -arg primitive " ^ id ^ "\n" ^
-        "      {" ^ csubst sym_state bbdfns ct args typs `BTYP_void []^ "}\n"
-      | (_,typ) -> 
-        "      //call single-arg primitive " ^ id ^ "\n" ^
-        "      {" ^ csubst sym_state bbdfns ct [ge a] [typ] `BTYP_void []^ "}\n"
-      end
+    | `BBDCL_proc (vs,_,ct) -> 
+      if List.length vs = 0
+      then
+        begin match a with
+        | (`BEXPR_tuple es,`BTYP_tuple typs) ->
+          let args = List.map ge es in
+          "      //call multi (or no) -arg primitive " ^ id ^ "\n" ^
+          "      {" ^ csubst sym_state bbdfns ct args typs `BTYP_void []^ "}\n"
+        | (_,typ) -> 
+          "      //call single-arg primitive " ^ id ^ "\n" ^
+          "      {" ^ csubst sym_state bbdfns ct [ge a] [typ] `BTYP_void []^ "}\n"
+        end
+      else failwith "Generic procedure requires type arguments"
 
     | `BBDCL_procedure (ps,bexes,nmap) ->
       if bexes = []
@@ -994,59 +1063,57 @@ let gen_exe sym_state bbdfns label_map counter this (exe:bexe_t) =
 
     tack ("  // regmatch: nstates= "^string_of_int nstates^"\n");
 
-    (* alphabet: char -> pos *)
-    let a = Array.make 256 (-1) in
-    let k = ref 0 in
-    List.iter
-    (fun ch ->
-      a.(ch) <- !k;
-      incr k;
-    )
-    alpha
-    ;
-    tack "  static int alpha[256] =\n";
-    tack "  {\n";
-    for i = 0 to 15 do
-      tack "    ";
-      for j = 0 to 15 do
-        let s = "   " ^ (string_of_int (a.(i * 16 + j)+1)) in
-        let n = String.length s in
-        let s = String.sub s (n-3) 3 in
-        tack s;
-        if i <> 15 || j <> 15 then tack ", ";
-      done;
-      tack "\n"
-    done;
-    tack "  };\n\n";
-
     (* transition matrix *)
-    let k = !k in (* width *)
-    let d = Array.make_matrix nstates (k+1) (-1) in
+    let d = Array.make_matrix 256 nstates (-1) in
     Hashtbl.iter
     (fun (c,s1) s2 -> 
-      let ix = a.(c) in
-      d.(s1).(ix) <- s2
+      d.(c).(s1) <- s2
     )
     matrix
     ;
-    tack ("  static int matrix["^string_of_int nstates^"]["^string_of_int (k+1) ^ "] =\n");
+
+    (* find equivalent chars *)
+    let canon = Array.make 256 0 in
+    for i = 0 to 255 do
+      try
+        for j = 0 to i do
+          if d.(i) = d.(j) then 
+          begin
+            canon.(i) <- j;
+            if i = j then
+            begin
+              tack("  static int s"^string_of_int i^"["^string_of_int nstates^"]=\n");
+              tack "  {\n"
+              ;
+              for state = 0 to nstates - 1 do
+                if state mod 16 = 0 then tack "      ";
+                let s = "     " ^ string_of_int (d.(i).(state)+1) in
+                let n = String.length s in
+                let s = String.sub s (n-3) 3 in
+                tack s;
+                if state <> nstates - 1 then tack ", ";
+                if state mod 16 = 15 then tack "\n"
+              done
+              ;
+              tack "\n";
+              tack "  };\n"
+            end;
+            raise Not_found;
+          end
+        done (* j *)
+      with Not_found -> ()
+    done (* i *)
+    ;
+    tack ("  static int *matrix[256] =\n");
     tack "  {\n";
-    for i = 0 to nstates - 1 do
-      tack "    {\n";
-      tack "     0,\n";
-      for j = 0 to k - 1 do
-        if j mod 16 = 0 then tack "      ";
-        let s = "     " ^ (string_of_int (d.(i).(j)+1)) in
-        let n = String.length s in
-        let s = String.sub s (n-3) 3 in
-        tack s;
-        if j <> k - 1 then tack ", ";
-        if j mod 16 = 15 then tack "\n"
-      done;
-      if k mod 16 <> 0 then tack "\n";
-      tack "    }";
-      if i <> nstates - 1 then tack ",";
-      tack "\n"
+    for i = 0 to 255 do
+      if i mod 16 = 0 then tack "      ";
+      let s = "     s" ^ string_of_int canon.(i) in
+      let n = String.length s in
+      let s = String.sub s (n-4) 4 in
+      tack s;
+      if i <> 255 then tack ", ";
+      if i mod 16 = 15 then tack "\n"
     done;
     tack "  };\n\n";
 
@@ -1059,7 +1126,7 @@ let gen_exe sym_state bbdfns label_map counter this (exe:bexe_t) =
     tack "  int state = 1;\n";
     
     tack "  while(state && start != end)\n";
-    tack "    state = matrix[state-1][alpha[*start++]];\n";
+    tack "    state = matrix[*start++][state-1];\n";
     
     tack "  switch (state)\n";
     tack "  {\n";
@@ -1383,23 +1450,25 @@ let gen_offset_tables sym_state bbdfns =
     );
     Buffer.add_string s ");\n"
 
-  | `BBDCL_abs _ ->
+  | `BBDCL_abs (vs,ct) ->
     (* These use the actual C++ type name of the primitive type,
        so they might not be unique: therefore, we have to track
        which ones have been generated
     *)
-    let name = cpp_typename sym_state bbdfns (`BTYP_name index) in
-    if not (Hashtbl.mem primitive_shapes name) then 
-    begin
-      Hashtbl.add primitive_shapes name true; 
-      Buffer.add_string s ("\n//OFFSETS for abstract type " ^ name ^ "\n");
-      Buffer.add_string s ( "static flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map(\n") ;
-      Buffer.add_string s ("  sizeof("^name^"),0,0,0\n");
-      Buffer.add_string s ");\n"
-    end else begin
-      Buffer.add_string s ("\n//OFFSETS for abstract type " ^ name ^ "\n");
-      Buffer.add_string s ("//Use "^name^"_ptr_map\n");
-    end
+    if List.length vs = 0
+    then
+      let name = cpp_typename sym_state bbdfns (`BTYP_name index) in
+      if not (Hashtbl.mem primitive_shapes name) then 
+      begin
+        Hashtbl.add primitive_shapes name true; 
+        Buffer.add_string s ("\n//OFFSETS for abstract type " ^ name ^ "\n");
+        Buffer.add_string s ( "static flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map(\n") ;
+        Buffer.add_string s ("  sizeof("^name^"),0,0,0\n");
+        Buffer.add_string s ");\n"
+      end else begin
+        Buffer.add_string s ("\n//OFFSETS for abstract type " ^ name ^ "\n");
+        Buffer.add_string s ("//Use "^name^"_ptr_map\n");
+      end
 
   | _ -> () (* this is NOT right, we need offsets for all data
                structures *)
@@ -1686,6 +1755,9 @@ try
       varmap = Hashtbl.create 97;
       ticache = Hashtbl.create 97;
       env_cache = Hashtbl.create 97;
+      prim_inst = Hashtbl.create 97;
+      rev_prim_inst = Hashtbl.create 97;
+      instantiated_types = Hashtbl.create 97;
     }
   in
   let deblocked = desugar_program module_name syms.counter parse_tree in

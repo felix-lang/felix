@@ -37,6 +37,7 @@ let rec isuseless bbdfns exes =
     (fun x -> match x with
       | `BEXE_call ((`BEXPR_closure i,_),_) 
       | `BEXE_call ((`BEXPR_name i,_),_) 
+      | `BEXE_call ((`BEXPR_ginst (i,_),_),_) 
         ->
         begin try 
           match Hashtbl.find bbdfns i with 
@@ -107,6 +108,8 @@ let rec uses_type used bbdfns t =
   let ut t = uses_type used bbdfns t in
   match t with
   | `BTYP_name i -> uses used bbdfns i
+
+  | `BTYP_inst (_,ts)
   | `BTYP_tuple ts
   | `BTYP_sum ts
   | `BTYP_type_tuple ts
@@ -169,6 +172,10 @@ and uses_tbexpr used bbdfns (e,t) =
      
   | `BEXPR_case (_,t)
     -> ut t
+
+  | `BEXPR_ginst (i,ts) 
+    -> ui i; List.iter ut ts
+
   | _ -> ()
 
 and uses used bbdfns i =
@@ -202,8 +209,8 @@ and uses used bbdfns i =
       | `BBDCL_const (t,_)
         -> ut t
       
-      | `BBDCL_fun (ps, ret, _) -> List.iter ut ps; ut ret 
-      | `BBDCL_proc (ps, _)  -> List.iter ut ps
+      | `BBDCL_fun (_,ps, ret, _) -> List.iter ut ps; ut ret 
+      | `BBDCL_proc (_,ps, _)  -> List.iter ut ps
       
       | _ -> ()
       end

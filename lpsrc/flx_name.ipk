@@ -1,13 +1,34 @@
 @h = tangler('src/flx_name.mli')
 @select(h)
+open Flx_types
 val cpp_name :
-  Flx_types.fully_bound_symbol_table_t ->
+  fully_bound_symbol_table_t ->
   int ->
   string
+
+val cpp_typename :
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  btypecode_t -> string
+
+val cpp_classname :
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  btypecode_t -> string
+
+val ptr_map_of_type:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  btypecode_t ->
+  string
+
 
 @h = tangler('src/flx_name.ml')
 @select(h)
 open Flx_types
+open Flx_unify
+open Flx_print
+
 let cvt s = 
   let n = String.length s in
   let id = Buffer.create (n+10) in
@@ -18,6 +39,22 @@ let cvt s =
     | x -> Buffer.add_char id x
   done;
   Buffer.contents id
+
+let mangle_cpp_typename ct =
+  let n = String.length ct in
+  let buf = Buffer.create (n+20) in
+  let tack_ch ch = Buffer.add_char buf ch in
+  let tack_str str = Buffer.add_string buf str in
+  for i=0 to n - 1 do
+    match ct.[i] with
+    | ':' -> tack_ch '_'
+    | '*' -> tack_str "_p"
+    | '<' -> tack_ch '_'
+    | '>' -> tack_ch '_'
+    | ' ' -> tack_ch '_'
+    | x -> tack_ch x
+  done;
+  Buffer.contents buf
 
 let cpp_name bbdfns index =
   let id,parent,entry = 
@@ -31,5 +68,116 @@ let cpp_name bbdfns index =
   | `BBDCL_val _ -> "_val_"
   | _ -> failwith "cpp_name expected func,proc,var or val"
   ) ^ string_of_int index ^ "_" ^ cvt id
+
+let rec cpp_typename  syms bbdfns t = 
+  let dfns = syms.dfns 
+  and registry = syms.registry 
+  in
+  let t' = fold t in
+  (*
+  print_endline ("type  : " ^ string_of_btypecode dfns t);
+  print_endline ("folded: " ^ string_of_btypecode dfns t');
+  *)
+  let tn t = cpp_typename syms bbdfns t in
+  try match t' with
+  | `BTYP_var i ->  failwith "[cpp_typename] Can't name type type variable"
+  | `BTYP_fix i ->  failwith "[cpp_typename] Can't name type fixpoint"
+  | `BTYP_tuple [] -> "unit"
+  | `BTYP_function (_,`BTYP_void) -> 
+    "_procedure_type_" ^ string_of_int (Hashtbl.find registry t') ^ "*"
+  | `BTYP_function _ -> 
+    "_function_type_" ^ string_of_int (Hashtbl.find registry t') ^ "*"
+  | `BTYP_tuple _ -> "_tuple_type_" ^ string_of_int (Hashtbl.find registry t')
+  | `BTYP_sum _ -> "_sum_type_" ^ string_of_int (Hashtbl.find registry t')
+
+  | `BTYP_pointer t' -> "_ref_<"^tn t'^">"
+  | `BTYP_void -> "void"
+  | `BTYP_none -> failwith "[cpp_typename] Expected real type, got 'none'"
+  | `BTYP_binding (_,t) -> tn t
+  | `BTYP_inst (i,ts)-> 
+    let index = Hashtbl.find syms.prim_inst (i,ts) in
+    "_type_inst_" ^ string_of_int index
+
+  | `BTYP_name index ->
+    let id,parent,entry = 
+      try Hashtbl.find bbdfns index
+      with Not_found -> failwith ("cpp_typename Can't find index " ^ string_of_int index ^ " in fully bound symbol table")
+    in begin match entry with
+      | `BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
+      | `BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
+      | `BBDCL_abs (vs,ct) -> 
+        (match vs with
+        | [] -> "_abs_" ^ string_of_int index ^ "_" ^ mangle_cpp_typename ct
+        | _ -> failwith "can't name template"
+        )
+      | _ -> 
+        failwith 
+        (
+          "[cpp_typename] expected type declaration, got " ^
+          string_of_bbdcl dfns entry index
+        )
+    end
+  
+  | _ -> failwith "Unexpected metatype in cpp_typename"
+  with Not_found -> 
+    failwith 
+    (
+      "[cpp_typename] Expected type "^ 
+      string_of_btypecode dfns t' ^ 
+      " to be in registry"
+    )
+
+let rec cpp_classname syms bbdfns t = 
+  let registry = syms.registry in
+  let tn t = cpp_typename syms bbdfns t in
+  try match fold t with
+  | `BTYP_var i -> failwith "[cpp_classname] Can't name type variable"
+  | `BTYP_fix i -> failwith "[cpp_classname] Can't name type fixpoint"
+  | `BTYP_binding _ -> failwith "[cpp_classname] Unexpected binding type"
+  | `BTYP_tuple [] -> "unit"
+  | `BTYP_void -> failwith "void doesn't have a classname"
+  | `BTYP_function (_,`BTYP_void) -> 
+    "_procedure_type_" ^ string_of_int (Hashtbl.find registry t)
+  | `BTYP_function _ -> 
+    "_function_type_" ^ string_of_int (Hashtbl.find registry t) 
+  | `BTYP_tuple _ -> "_tuple_type_" ^ string_of_int (Hashtbl.find registry t)
+  | `BTYP_sum _ -> "_sum_type_" ^ string_of_int (Hashtbl.find registry t)
+  | `BTYP_pointer t' -> "_ref_<"^tn t'^">"
+  | `BTYP_none -> 
+    failwith "[cpp_typename] Expected real type, got 'none'"
+  | `BTYP_inst (i,ts) -> 
+    let index = Hashtbl.find syms.prim_inst (i,ts) in
+    "_type_inst_" ^ string_of_int index
+  | `BTYP_name index ->
+    let id,parent,entry = 
+      try Hashtbl.find bbdfns index
+      with Not_found -> failwith ("cpp_classname Can't find index " ^ string_of_int index ^ " in fully bound symbol table")
+    in begin match entry with
+      | `BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
+      | `BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
+      | `BBDCL_abs (vs,ct) -> 
+        (match vs with
+        | [] -> "_abs_" ^ string_of_int index ^ "_" ^ mangle_cpp_typename ct
+        | _ -> failwith "[cpp_classname] Can't name template"
+        )
+      | _ -> 
+        failwith 
+        (
+          "[cpp_classname] expected type declaration, got " ^
+          string_of_bbdcl syms.dfns entry index
+        )
+    end
+  
+  | _ -> failwith "Unexpected metatype in cpp_classname"
+  with Not_found -> 
+    failwith 
+    (
+      "[cpp_classname] Expected type "^ 
+      string_of_btypecode syms.dfns t ^ 
+      " to be in registry"
+    )
+
+let ptr_map_of_type syms bbdfns t =
+ cpp_typename syms bbdfns t ^ "_ptr_map"
 
 
