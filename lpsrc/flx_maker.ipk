@@ -1866,7 +1866,6 @@ LUARTL = [
   'ltable',
   'ltests',
   'ltm',
-  'lundump',
   'lvm',
   'lzio',
   'lauxlib',
@@ -1877,6 +1876,7 @@ LUARTL = [
   'loadlib',
   'lstrlib',
   'ltablib',
+  'lundump',
   'luac_print',
 ]
 
@@ -1885,6 +1885,7 @@ LUARTL_INTERFACES = [
   'lauxlib.h',
   'lualib.h'
 ]
+
 
 # files containing ocamllex sources
 LEXS = [

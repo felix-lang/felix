@@ -3417,12 +3417,12 @@ fun get_token():token_t =
 union expr_t =
   | Integer of int
 ;
- 
+
 // a grammar for expressions
 nonterm expr : expr_t =
-| xx:expr TOK_PLUS y:TOK_INT* =>
+| xx:expr TOK_PLUS y:TOK_INT+ =>
   match xx with
-  | Integer ?i => Integer (i+y)
+  | Integer ?i => let case 2 (?j,_) = y in Integer (i+j)
   endmatch
  
 | y:TOK_INT => Integer y

@@ -2807,6 +2807,7 @@ rename String String_
 @select(h)
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
+#include config/gnu_cxx_search_path.flxcc
 flx_compiler bin/flxg -Ilib
 
 outdir gnucxx 

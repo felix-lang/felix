@@ -1879,6 +1879,9 @@ argc=1
 @head(2,"tut/examples/tut311.expect")
 @select(tangler("tut/examples/tut311.expect","data"))
 6
+@head(2,"tut/examples/tut312.expect")
+@select(tangler("tut/examples/tut312.expect","data"))
+6
 @head(2,"tut/examples/tut330.expect")
 @select(tangler("tut/examples/tut330.expect","data"))
 Hello
