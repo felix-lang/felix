@@ -38,6 +38,7 @@ C/C++ programmers, together with control inversion.
 @include_file ('flx_gen.ipk')
 
 @head(2,'The Felix Run time')
+@include_file ('flx_boost.ipk')
 @include_file ('flx_lib.ipk')
 @include_file ('flx_test.ipk')
 @include_file ('flx_regress.ipk')

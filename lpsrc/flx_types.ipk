@@ -99,6 +99,8 @@ and typecode_t =
   | `TYP_sum of typecode_t list                 (* numbered sum type *)
   | `TYP_function of typecode_t * typecode_t    (* function type *)
   | `TYP_pointer  of typecode_t                 (* pointer type *)
+  | `TYP_as of typecode_t * string              (* fix *)
+  | `TYP_all of typecode_t * string             (* scheme *)
   ]
 
 @head(3,'Literals')
@@ -142,7 +144,10 @@ and expr_t =
   | `AST_dot of range_srcref * (expr_t * id_t)
   | `AST_lambda of range_srcref * (parameter_t list * typecode_t * statement_t list)
   | `AST_match_ctor of range_srcref * (qualified_name_t * expr_t)
+  | `AST_match_case of range_srcref * (int * expr_t)
   | `AST_ctor_arg of range_srcref * (qualified_name_t * expr_t)
+  | `AST_case_arg of range_srcref * (int * expr_t)
+
   | `AST_get_n of range_srcref * (int * expr_t) (* get n'th component of a tuple *)
   | `AST_lazy of range_srcref * expr_t
   ]
@@ -365,6 +370,9 @@ and bexpr_t =
   | `BEXPR_closure of bid_t
   | `BEXPR_coercion of tbexpr_t * btypecode_t
   | `BEXPR_functions of string * entry_kind_t list (* HACK! *)
+  | `BEXPR_case of int * btypecode_t
+  | `BEXPR_match_case of int * tbexpr_t
+  | `BEXPR_case_arg of int * tbexpr_t
   ]
 
 and tbexpr_t = bexpr_t * btypecode_t
@@ -373,12 +381,12 @@ and btypecode_t =
   [
   | `BTYP_name of bid_t                            (* named type *)
   | `BTYP_tuple of btypecode_t list                (* product type *)
-  | `BTYP_sum of btypecode_t list                (* product type *)
+  | `BTYP_sum of btypecode_t list                  (* product type *)
   | `BTYP_function of btypecode_t * btypecode_t    (* function type *)
   | `BTYP_pointer  of btypecode_t                  (* pointer type *)
   | `BTYP_void                                     (* void type *)
   | `BTYP_none                                     (* special hack for 'no type' *)
-  | `BTYP_binding of btypecode_t * btypecode_t           (* interface, module *)
+  | `BTYP_binding of btypecode_t * btypecode_t     (* interface, module *)
   ]
 
 and bparameter_t = string * btypecode_t
@@ -579,7 +587,9 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_dot  (s,_) 
   | `AST_lambda  (s,_) 
   | `AST_match_ctor  (s,_) 
+  | `AST_match_case (s,_)
   | `AST_ctor_arg  (s,_) 
+  | `AST_case_arg  (s,_) 
   | `AST_get_n  (s,_) 
   | `AST_lazy (s,_)
   | `AST_coercion (s,_)
@@ -806,11 +816,21 @@ and string_of_expr (e:expr_t) =
     "(lambda(" ^ string_of_parameters params ^ "): " ^ 
     string_of_typecode ret ^
     string_of_compound 0 sts
+
   | `AST_ctor_arg (_,(cn,e)) ->
     "ctor_arg " ^ sqn cn ^ "(" ^
     se e ^ ")"
+
+  | `AST_case_arg (_,(n,e)) ->
+    "case_arg " ^ string_of_int n ^ "(" ^
+    se e ^ ")"
+
   | `AST_match_ctor (_,(cn,e)) ->
     "match_ctor " ^ sqn cn ^ "(" ^
+    se e ^ ")"
+
+  | `AST_match_case (_,(v,e)) ->
+    "match_case " ^ string_of_int v ^ "(" ^
     se e ^ ")"
 
 and string_of_typecode (tc:typecode_t) = 
@@ -831,6 +851,8 @@ and string_of_typecode (tc:typecode_t) =
   | `TYP_function (args, result) ->  
     "(" ^ (string_of_typecode args) ^ " -> " ^ (string_of_typecode result) ^ ")"
   | `TYP_pointer t -> "&(" ^ (string_of_typecode t) ^ ")"
+  | `TYP_all (t,s) -> string_of_typecode t ^ " all " ^ s
+  | `TYP_as (t,s) -> string_of_typecode t ^ " as " ^ s
 
 and qualified_name_of_index dfns index = 
   match Hashtbl.find dfns index with 
@@ -859,8 +881,8 @@ and string_of_btypecode dfns tc =
 
   | `BTYP_sum ls -> 
     begin match ls with 
-    | [] -> "void" 
-    | [x] -> failwith ("UNEXPECTED TUPLE OF ONE ARGUMENT " ^ sbt x)
+    | [] -> "UNEXPECTED EMPTY SUM = void" 
+    | [x] -> (* failwith *) ("UNEXPECTED SUM OF ONE ARGUMENT " ^ sbt x)
     | _ -> "(" ^ (String.concat " + " (List.map sbt ls)) ^")"
     end
 
@@ -1313,6 +1335,7 @@ and string_of_bound_expression dfns e =
     string_of_btypecode dfns t ^ 
     ")"
   | `BEXPR_get_n (n,e') -> "(" ^ se e' ^ ").mem_" ^ string_of_int n
+
   | `BEXPR_deref e -> "*("^ se e ^ ")"
   | `BEXPR_name i -> sid i 
   | `BEXPR_closure i -> "closure(" ^ sid i ^ ")"
@@ -1325,6 +1348,13 @@ and string_of_bound_expression dfns e =
 
   | `BEXPR_tuple t -> "(" ^ catmap ", " se t ^ ")"
   | `BEXPR_dot (e,n) ->  "get_<" ^ string_of_int n ^ ">(" ^ se e ^ ")"
+  | `BEXPR_case (v,t) -> 
+    "case " ^ string_of_int v ^ " of " ^ string_of_btypecode dfns t
+
+  | `BEXPR_match_case (v,e) -> 
+    "(match case " ^ string_of_int v ^ ")(" ^ se e ^ ")"
+  | `BEXPR_case_arg (v,e) ->
+    "(arg of case " ^ string_of_int v ^ " of " ^ se e ^ ")"
 
 and string_of_biface dfns level s = 
   let spc = spaces level in
@@ -1726,6 +1756,32 @@ let rec unify dfns it mt =
   | `BTYP_none, `BTYP_none -> `BTYP_none
   | i,m -> `BTYP_binding (i,m)
 
+let rec type_eq a b = 
+  match (a,b) with
+  | `BTYP_binding (i,j), `BTYP_binding (i',j')
+  | `BTYP_function (i,j), `BTYP_function (i',j')
+    -> type_eq i i' && type_eq j j'
+
+  | `BTYP_pointer t, `BTYP_pointer t' 
+    -> type_eq t t'
+
+  | `BTYP_tuple ts, `BTYP_tuple ts'
+  | `BTYP_sum ts, `BTYP_sum ts' 
+     -> 
+       List.fold_left2
+       (fun b i j -> b && type_eq i j)
+       true
+       ts
+       ts'
+
+  | `BTYP_none, `BTYP_none
+  | `BTYP_void, `BTYP_void 
+     -> true 
+
+  | `BTYP_name i, `BTYP_name i' 
+     -> i = i'
+  | _ -> false
+  
 let dummy_sr = ("generated",0,0,0,0)
 let flx_bool =
   (`AST_lookup (dummy_sr,(`AST_root dummy_sr,"bool")) :> typecode_t)
@@ -1737,7 +1793,9 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | `AST_product (_,ts) -> `TYP_tuple (List.map te ts)
   | `AST_arrow (_,(a,b)) -> `TYP_function (te a, te b)
   | `AST_ref (sr,e) -> `TYP_pointer (te e)
-  | `AST_sum (_,ts) -> `TYP_sum (List.map te ts)
+  | `AST_sum (_,ts) -> 
+    `TYP_sum (List.map te ts)
+
   | `AST_literal (sr,`AST_int (enc,v)) ->
     if enc <> "int" 
     then 
@@ -1756,14 +1814,15 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
       if !v <0 then failwith "Negative int not allowed as type"
       else if !v >=2000 then failwith "Int used as type must be <2000"
       else if !v = 0 then ((`AST_void sr) :> typecode_t)
+      else if !v = 1 then `TYP_tuple[]
       else begin 
-        let u = (`TYP_tuple [] :> typecode_t) in
+        let u = `TYP_tuple [] in
         let t = ref [u] in
         while !v > 1 do
           t := u :: !t;
           decr v
         done;
-        ((`TYP_sum !t):>typecode_t)
+        `TYP_sum !t
       end
 
   | #expr_t -> 

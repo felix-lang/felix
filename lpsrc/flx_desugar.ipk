@@ -69,8 +69,12 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
   (* these cases should use the source reference for the error *)
   | `AST_match_ctor _ 
     -> failwith "[rex] not expecting union component constructor matcher"
+  | `AST_match_case _ 
+    -> failwith "[rex] not expecting anonymous union component constructor matcher"
   | `AST_ctor_arg _ 
     -> failwith "[rex] not expecting union component destructor"
+  | `AST_case_arg _ 
+    -> failwith "[rex] not expecting anonymous union component destructor"
   | `AST_index _ 
     -> failwith "[rex] not expecting `AST_index "
   | `AST_bound_module _

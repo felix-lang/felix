@@ -594,19 +594,67 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
   let our_display = get_display_list dfns this in
   let our_level = List.length our_display in
   match e with
-  | `BEXPR_functions _ -> failwith "Not expection unbound function set"
+  | `BEXPR_functions _ -> failwith "Not expecting unbound function set"
   | `BEXPR_coercion (e,t) -> 
     (* generate a function style cast *)
     cpp_typename registry dfns bbdfns (lower t) ^ "(" ^ ge e ^ ")"
     
-  | `BEXPR_get_n (n,e) -> "(" ^ ge e ^ ").mem_" ^ string_of_int n
+  | `BEXPR_get_n (n,e) -> 
+    "(" ^ ge e ^ ").mem_" ^ string_of_int n
+    
+  | `BEXPR_match_case (n,e) -> 
+    "((" ^ ge e ^ ").variant == " ^ string_of_int n ^ ")"
+
+  | `BEXPR_case_arg (n,e) ->
+    (* NOTE that the index is not used ... *)
+    let _,t = e in
+    let t = 
+      match t with 
+      | `BTYP_sum ls -> List.nth ls (n-1)
+      | _ -> assert false
+    in
+      let t = cpp_typename registry dfns bbdfns (lower t) in
+      (* really ugly brackets .. *)
+      "(*("^t^"*)((" ^ ge e ^ ").data))"
+     
   | `BEXPR_deref ((`BEXPR_ref index),`BTYP_pointer t) -> 
     ge (`BEXPR_name index,t)
-  | `BEXPR_deref e -> "*(" ^ ge e ^ ".data)"
+
+  | `BEXPR_deref e -> 
+    "*(" ^ ge e ^ ".data)"
+
   | `BEXPR_literal v ->
     let t = cpp_typename registry dfns bbdfns (lower t) in
     t ^ "(" ^ cstring_of_literal v ^ ")"
+    
+  | `BEXPR_case (v,t) ->
+    begin match t with
+    | `BTYP_sum ls ->
+       let n = List.length ls in
+       if v<1 or v>n
+       then 
+         failwith 
+         (
+           "Invalid case index " ^ string_of_int v ^
+           " of " ^ string_of_int n ^ " cases"
+         )
+       else let t' = List.nth ls (v-1) in
+       if t' = `BTYP_tuple []
+       then
+         "_uctor_(" ^ string_of_int (v-1) ^ ",0)"
+       else 
+         failwith 
+         ( 
+            "Can't handle closure of case " ^ 
+            string_of_int v ^ 
+            " of " ^
+            string_of_btypecode dfns t
+         )
+       (* "(" ^ cpp_typename registry dfns bbdfns (lower t) ^ "*)_uctor_" *)
 
+    | _ -> failwith "Case tag must have sum type"
+    end 
+   
   | `BEXPR_name index -> 
     let id,parent,entry = 
       try Hashtbl.find bbdfns index 
@@ -700,6 +748,41 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
       "((void*)" ^ frame_ptr ^ ", " ^ var_ptr ^ ")" 
     in
     reference
+
+  | `BEXPR_apply 
+     (
+       (`BEXPR_case (v,t),t'),
+       (a,t'') 
+     ) ->
+       (* t is the type of the sum, 
+          t' is the function type of the constructor,
+          t'' is the type of the argument
+       *)
+       let 
+         arg_typename = cpp_typename registry dfns bbdfns (lower t'') 
+       and
+         union_typename = cpp_typename registry dfns bbdfns (lower t)
+       in
+
+       let aval = 
+         "new (gc, "^arg_typename^"_ptr_map) " ^
+         arg_typename ^ "(" ^ ge (a,t'') ^ ")"
+       in
+       let uval = "_uctor_(" ^ string_of_int (v-1) ^ ", " ^ aval ^")" in
+       "(" ^ union_typename ^ ")" ^ uval
+       (*
+       failwith 
+       (
+         "Trapped application, case " ^ 
+         string_of_int v ^
+         " of " ^ string_of_btypecode dfns t ^
+         "\ntype " ^ string_of_btypecode dfns t' ^
+         "\nargument=" ^ 
+         string_of_bound_expression dfns (a,t'') ^
+         "\ntype " ^ string_of_btypecode dfns t''
+       )
+      *) 
+
 
   (* special case when function expression is a name *)
   | `BEXPR_apply ((`BEXPR_closure index,_) as f,a) ->

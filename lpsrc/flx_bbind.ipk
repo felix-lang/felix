@@ -120,23 +120,18 @@ let bind_exes dfns counter freg env exes ret_type =
 
       | `EXE_return e ->        
         let e',t' = be e in
-        begin try 
-          assert (ret_type = t');
-          (* &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& *)
-          (* ignore(unify dfns ret_type t'); *)
-          (* &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& *)
-          `BEXE_return (e',lower t')
-        with 
-          UnificationError _ ->
+         if ret_type <> t'
+         then
             failwith 
             (
               "Wrong return type,\nexpected : " ^ 
               string_of_btypecode dfns ret_type ^
-              "\nbut we got:" ^
+              "\nbut we got " ^
               string_of_btypecode dfns t'
             )
-        end
-                
+         else
+          `BEXE_return (e',lower t')
+
       | `EXE_nop s ->           `BEXE_nop s 
       | `EXE_code s ->          `BEXE_code s
       | `EXE_init (s,e) -> 

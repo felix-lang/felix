@@ -1675,7 +1675,7 @@ Here is a more comprehensive set of examples
 of Felix numeric lexicology.
 @select(tangler(tdir+'tut138.flx'))
 #include <std.flx>
-#include <boost.flx>
+//#include <boost.flx>
 
 // radix
 {
@@ -2153,17 +2153,35 @@ to specify numbered unions.
 
 @select(tangler(tdir+'tut207.flx'))
 #include <std.flx>
+open Long;
 typedef three = unit +  unit + unit;
 typedef four = 4;
 typedef nu = int + int + long;
 
-val x = case 2 of 3;
-val x2 = (case 2 of 3) 33L;
+val x1 = case 2 of (1+1+1);
+val x2 = case 2 of 3;
+val x3 = (case 3 of nu) 33L;
 
-fun f(x:nu):int = {
+proc g(x:three) {
+  print "Case ";
   match x with
-  | case 1 z => { return 1; };
+  | case 1 => { print 1; };
+  | case 2 => { print 2; };
+  | case 3 => { print 3; };
   endmatch;
+  print " of three\n";
 }
 
+g (case 3 of three);
+
+proc f(x:nu) {
+  match x with
+  | case 1 ?z => { print "case 1 "; print z; };
+  | case 2 ?z => { print "case 2 "; print z; };
+  | case 3 ?z => { print "case 3 "; print z; };
+  endmatch;
+  print "\n";
+}
+ 
+f x3;
 

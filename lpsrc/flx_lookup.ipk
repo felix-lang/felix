@@ -1319,6 +1319,8 @@ and bind_type dfns counter freg env exclude excluded_dirs sr t : btypecode_t =
   flush stdout;
   match t with
   | `AST_root _ -> failwith "Not expecting root in bind type"
+  | `TYP_all (t,s) -> failwith "Can't bind type scheme yet" 
+  | `TYP_as (t,s) -> failwith "can't bind recursive type yet"
 
   | `TYP_tuple ts -> 
     let ts' =List.map bt ts  in
@@ -2202,11 +2204,25 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
       )
     in 
       `BEXPR_get_n (n, (expr,typ)), ctyp
+
   | `AST_case_tag (sr,v) ->
-     failwith "plain case tag not allowed in expression"
+     failwith "plain case tag not allowed in expression (only in pattern)"
 
   | `AST_typed_case (sr,v,t) ->
-     failwith "Can't handle typed case tag in expression yet"
+     let t = bt sr t in
+     begin match t with
+     | `BTYP_sum ls ->
+       if v<1 or v> List.length ls
+       then failwith "Case index out of range of sum"
+       else let vt = List.nth ls (v-1) in
+       let ct = 
+         match vt with
+         | `BTYP_tuple [] -> t        (* const ctor *)
+         | _ -> `BTYP_function (vt,t) (* non-const ctor *)
+       in
+       `BEXPR_case (v,t), ct
+     | _ -> failwith "Type of case must be sum"
+     end
 
   | `AST_name (sr,name) ->
     begin match lookup_name_in_env env sr name with
@@ -2476,28 +2492,56 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
     let get_name = "get_" ^ id in
     be (`AST_method_apply (sr,(get_name,e)))
 
+  | `AST_match_case (sr,(v,e)) ->
+     let bool_t = typeof_literal dfns counter freg env sr (`AST_bool true) in
+     `BEXPR_match_case (v,be e),bool_t
+
   | `AST_match_ctor (sr,(qn,e)) ->
-    let fname = match qn with
+    begin match qn with
     | `AST_name (sr,name) -> 
-      `AST_name (sr,"_match_ctor_" ^ name)
+      let fname = `AST_name (sr,"_match_ctor_" ^ name) in
+      be (`AST_apply ( sr, (fname,e)))
 
-    | `AST_lookup (sr,(e,name)) ->
-      `AST_lookup (sr,(e,"_match_ctor_" ^ name))
-    | _ -> failwith "Expected variant constructor name"
-    in
-    be (`AST_apply ( sr, (fname,e)))
+    | `AST_lookup (sr,(context,name)) ->
+      let fname = `AST_lookup (sr,(context,"_match_ctor_" ^ name)) in
+      be (`AST_apply ( sr, (fname,e)))
+
+    | `AST_typed_case (sr,v,_)
+    | `AST_case_tag (sr,v) ->
+       be (`AST_match_case (sr,(v,e)))
+
+    | _ -> failwith "Expected variant constructor name in union decoder"
+    end
     
+  | `AST_case_arg (sr,(v,e)) ->
+     let (_,t) as e' = be e in
+     begin match t with
+     | `BTYP_sum ls ->
+       let n = List.length ls in
+       if v<1 or v>n 
+       then failwith "Invalid sum index"
+       else let t = List.nth ls (v-1) in
+       `BEXPR_case_arg (n, e'),t
+     | _ -> failwith "Expected sum type"
+     end 
+
   | `AST_ctor_arg (sr,(qn,e)) ->
-    let fname = match qn with
+    begin match qn with
     | `AST_name (sr,name) -> 
-      `AST_name (sr,"_ctor_arg_" ^ name)
+      let fname = `AST_name (sr,"_ctor_arg_" ^ name) in
+      be (`AST_apply ( sr, (fname,e)))
 
     | `AST_lookup (sr,(e,name)) ->
-      `AST_lookup (sr,(e,"_ctor_arg_" ^ name))
-    | _ -> failwith "Expected variant constructor name"
-    in
-    be (`AST_apply ( sr, (fname,e)))
-  
+      let fname = `AST_lookup (sr,(e,"_ctor_arg_" ^ name)) in
+      be (`AST_apply ( sr, (fname,e)))
+
+    | `AST_typed_case (sr,v,_)
+    | `AST_case_tag (sr,v) ->
+      be (`AST_case_arg (sr,(v,e)))
+
+    | _ -> failwith "Expected variant constructor name in union dtor"
+    end
+
   | `AST_lambda (sr,_) -> 
     failwith 
     (

@@ -65,14 +65,16 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_product _
   | `AST_void _
   | `AST_sum _
-  | `AST_arrow _ -> failwith "Not expecting product, sum, void or arrow"
+  | `AST_typed_case _
+  | `AST_case_arg _
+  | `AST_arrow _ -> failwith "Not expecting product, sum, case tag, void or arrow (or other weird stuff)"
+
   | `AST_root _ -> e
   | `AST_lookup _ -> e
   | `AST_suffix _ -> e
   | `AST_index _ -> e
   | `AST_literal _ -> e
   | `AST_case_tag _ -> e
-  | `AST_typed_case _ -> e
 
   | `AST_name (sr,name) ->
     if Hashtbl.mem vars name 
@@ -103,6 +105,9 @@ let rec subst vars (e:expr_t) mv : expr_t =
 
   | `AST_match_ctor _ ->
     failwith "`AST_match_ctor in 'when' expression not implemented"
+
+  | `AST_match_case _ ->
+    failwith "`AST_match_case in 'when' expression not implemented"
   
   | `AST_ctor_arg _ ->
     failwith "`AST_ctor_arg in 'when' expression not implemented"
