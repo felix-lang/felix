@@ -263,15 +263,6 @@ void destroy_ptr(T **a)
 }
 
 @doc()
-The following two routines are used to provide
-C++ type safe heap allocation. There are no corresponding
-delete routines, please use the destroy function.
-
-@select(h)
-void *operator new(std::size_t, collector_t &, gc_shape_t &);
-void *operator new(std::size_t, collector_t &, gc_shape_t &, unsigned long);
-
-@doc()
 These two routines are used to reset the type
 of object an memory block hold, and reset the
 length of an array, respectively.
@@ -281,6 +272,32 @@ void flx_reset_shape(void *memory, gc_shape_t &);
 void flx_reset_count(void *memory, unsigned long); 
 
 }}} // end namespaces
+
+@doc()
+The following two routines are used to provide
+C++ type safe heap allocation. There are no corresponding
+delete routines, please use the destroy function.
+@p()
+Note these routines are now placed
+in the global namespace to accomodate Metrowerks
+compiler on Mac OS. 
+
+@select(h)
+void *operator new
+(
+  std::size_t, 
+  flx::gc::generic::collector_t &, 
+  flx::gc::generic::gc_shape_t &
+);
+
+void *operator new
+(
+  std::size_t, 
+  flx::gc::generic::collector_t &, 
+  flx::gc::generic::gc_shape_t &, 
+  unsigned long
+);
+
 #endif
 
 @select(tangler('rtl/flx_gc.cpp'))
@@ -345,27 +362,6 @@ void _destroy_ptr(void **a)
   destroy(b);
 }
 
-void *operator new(
-  std::size_t amt,
-  collector_t &collector,
-  gc_shape_t &shape
-)
-{
-  assert (amt == shape.amt);
-  return collector.allocate(&shape,1);
-}
-
-void *operator new(
-  std::size_t amt,
-  collector_t &collector,
-  gc_shape_t &shape,
-  unsigned long count
-)
-{
-  assert (amt == shape.amt * count);
-  return collector.allocate(&shape,count);
-}
-
 void reset_shape(void *memory, gc_shape_t &shape)
 {
   assert(memory);
@@ -379,6 +375,29 @@ void reset_count(void *memory, unsigned long n)
 }
 
 }}} // end namespaces
+
+// in global namespace now ..
+void *operator new(
+  std::size_t amt,
+  flx::gc::generic::collector_t &collector,
+  flx::gc::generic::gc_shape_t &shape
+)
+{
+  assert (amt == shape.amt);
+  return collector.allocate(&shape,1);
+}
+
+void *operator new(
+  std::size_t amt,
+  flx::gc::generic::collector_t &collector,
+  flx::gc::generic::gc_shape_t &shape,
+  unsigned long count
+)
+{
+  assert (amt == shape.amt * count);
+  return collector.allocate(&shape,count);
+}
+
 
 @select(tangler('rtl/flx_collector.hpp'))
 #ifndef FLX_COLLECTOR
