@@ -4,6 +4,7 @@
 open Flx_ast
 open Flx_types
 open Flx_mtypes1
+open Flx_mtypes2
 
 val gen_offset_tables:
   sym_state_t ->
@@ -30,12 +31,14 @@ open Flx_util
 open Flx_ast
 open Flx_types
 open Flx_mtypes1
+open Flx_mtypes2
 open Flx_name
 open Flx_unify
 open Flx_typing
 open Flx_tgen
 open List
 open Flx_print
+open Flx_exceptions
 
 let find_thread_vars_with_type bbdfns =
   let vars = ref [] in
@@ -167,8 +170,7 @@ let gen_offset_data s n name offsets =
     bcat s ("  " ^ cat ",\n  " offsets);
     bcat s ("\n" ^  "};\n");
   end;
-  bcat s ("static void " ^ name ^ "_finaliser(collector_t *, void *p){\n");
-  bcat s ("  (("^ name ^ "*)p)->~" ^ name ^ "();\n}\n");
+  bcat s ("FLX_FINALISER("^name^")\n");
   bcat s (  "static gc_shape_t "^ name ^"_ptr_map (\n");
   bcat s ( "  1,sizeof("^name^"),\n  "^name^"_finaliser,\n  "^si n^",\n  "^
   (if n<>0 then name^"_offsets\n" else "0\n"));
@@ -255,10 +257,20 @@ let gen_offset_tables syms (child_map,bbdfns) all_closures =
     *)
     match entry with
     | `BBDCL_function (props,vs,ps, ret,_) -> 
-      gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance
+      if IntSet.mem index all_closures then
+        gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance
+      (*
+      else 
+        print_endline ("Warning: no closure of " ^ id ^ "<"^si index ^"> is used")
+      *)
         
     | `BBDCL_procedure (props,vs,ps,_) -> 
-      gen_fun_offsets s syms (child_map,bbdfns) index vs ps `BTYP_void ts instance
+      if IntSet.mem index all_closures then
+        gen_fun_offsets s syms (child_map,bbdfns) index vs ps `BTYP_void ts instance
+      (*
+      else
+        print_endline ("Warning: no closure of " ^ id ^"<" ^ si index ^ "> is used")
+      *)
     | _ -> ()
   )
   syms.instances
@@ -266,12 +278,67 @@ let gen_offset_tables syms (child_map,bbdfns) all_closures =
   gen_thread_frame_offsets s syms bbdfns
   ;
 
-  (* We're not finished: we need offsets for tuple and pointer types too *)
-  (* print_endline "Tuple and pointer offsets"; *)
+  (* We're not finished: we need offsets dynamically allocated types too *)
+
+  (* currently the ONLY non-function types that can be allocated
+    are the arguments of non-constant variant constructors:
+    this WILL change when a 'new' operator is introduced.
+  *)
+  let allocable_types = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun btyp index -> 
+    match unfold btyp with
+    | `BTYP_sum args -> 
+      iter 
+      (fun t ->
+        match t with
+        | `BTYP_tuple [] 
+        | `BTYP_void -> ()
+        | _ -> 
+          try
+          let index = Hashtbl.find syms.registry t in
+          Hashtbl.replace allocable_types t index
+          with Not_found -> 
+            failwith ("Can't find the type " ^ sbt syms.dfns t ^ " in registry")
+      )
+      args
+
+    | `BTYP_inst (i,ts) ->
+      (*
+      print_endline ("Thinking about instance type --> " ^ string_of_btypecode syms.dfns btyp);
+      *)
+      let id,parent,sr,entry = Hashtbl.find bbdfns i in 
+      begin match entry with
+      | `BBDCL_union (vs,args) ->
+        let varmap = mk_varmap vs ts in
+        let args = map snd args in
+        let args = map (varmap_subst varmap) args in
+        iter 
+        (fun t ->
+          match t with
+          | `BTYP_tuple [] 
+          | `BTYP_void -> ()
+          | _ -> 
+            (*
+              print_endline ("Thinking about argument type --> " ^ string_of_btypecode syms.dfns t);
+            *)
+            try
+            let index = Hashtbl.find syms.registry t in
+            Hashtbl.replace allocable_types t index
+            with Not_found -> 
+              failwith ("Can't find the type " ^ sbt syms.dfns t ^ " in registry")
+        )
+        args
+      | _ -> ()
+      end
+    | _ -> ()
+  )
+  syms.registry
+  ;
   Hashtbl.iter
   (fun btyp index -> 
     (*
-    print_endline ("type --> " ^ string_of_btypecode syms.dfns btyp);
+    print_endline ("allocable type --> " ^ string_of_btypecode syms.dfns btyp);
     *)
     match unfold btyp with
     | `BTYP_tuple args ->
@@ -299,6 +366,8 @@ let gen_offset_tables syms (child_map,bbdfns) all_closures =
         bcat s "};\n"
       end
       ;
+
+      bcat s ("//WARNING: ONLY WORKS WITH CORRECT STATIC SIZE\n");
       bcat s ("static void " ^ name ^ "_finaliser(collector_t *, void *p){\n");
       bcat s ("  for(std::size_t count = "^ si k ^"; count; --count)\n");
       bcat s ("  {\n");
@@ -320,30 +389,60 @@ let gen_offset_tables syms (child_map,bbdfns) all_closures =
       let name = cpp_typename syms btyp in
       let id,parent,sr,entry = Hashtbl.find bbdfns i in 
       begin match entry with
-      | `BBDCL_abs (_,complete,_,_) ->
+      | `BBDCL_abs (_,quals,_,_) ->
+        let complete = not (mem `Incomplete quals) in
+        let pod = mem `Pod quals in
         if complete then
           if not (Hashtbl.mem primitive_shapes name) then 
           begin
             Hashtbl.add primitive_shapes name true; 
-            bcat s ("\n//OFFSETS for abstract type " ^ name ^ " instance\n");
+            bcat s ("\n//OFFSETS for complete abstract "^(if pod then "pod " else "finalisable ")^
+              "type " ^ name ^ " instance\n"
+            );
+            if pod then bcat s ("FLX_FINALISER("^name^")\n");
             bcat s ( "static gc_shape_t " ^ name ^ "_ptr_map(\n") ;
-            bcat s ("  1,sizeof("^name^"),0,0,0\n");
+            if pod then
+              bcat s ("  1,sizeof("^name^"),0,0,0\n")
+            else
+              bcat s ("  1,sizeof("^name^"),"^name^"_finaliser,0,0\n")
+            ;
             bcat s ");\n"
           end else begin
             bcat s ("\n//OFFSETS for abstract type " ^ name ^ " instance\n");
             bcat s ("//Use "^name^"_ptr_map\n");
           end
-        else ()
+        else 
+          clierr sr 
+          ("[ogen] attempt to allocate an incomplete type: '" ^ id ^"'")
+        
+      | `BBDCL_union _ -> () (* handled by universal _uctor_ *)
       | `BBDCL_cstruct (vs,cps)
       | `BBDCL_struct (vs,cps) ->
+        failwith 
+        (
+          "[ogen]: can't handle struct offsets yet: type " ^ 
+          sbt syms.dfns btyp
+        )
+        (*
         bcat s ("\n//OFFSETS for struct type " ^ name ^ " instance\n");
         bcat s ("//CANT HANDLE YET!\n");
-      | _ -> ()
+        *)
+      | _ -> 
+        failwith 
+        (
+          "[ogen]: can't handle instances of this kind yet: type " ^ 
+          sbt syms.dfns btyp
+        )
     end
 
-   | _ -> () 
+   | _ -> 
+     failwith 
+     (
+       "[ogen]: Unknown kind of allocable type " ^ 
+       sbt syms.dfns btyp
+     )
   )
-  syms.registry
+  allocable_types
   ;
   Buffer.contents s
 

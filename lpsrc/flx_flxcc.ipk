@@ -10,6 +10,18 @@ open Flx_cil_cabs
 open Flx_cil_cil
 ;;
 
+let force_open_in place f = 
+  try 
+    open_in f 
+  with 
+  |  _ -> failwith ("[" ^ place ^ "] Can't open " ^ f ^ " for input")
+
+let force_open_out place f = 
+  try 
+    open_out f 
+  with 
+  |  _ -> failwith ("[" ^ place ^ "] Can't open " ^ f ^ " for output")
+
 type stab_t = {
   stab_cfile: string;
   stab_flxfile: string;
@@ -27,6 +39,7 @@ type stab_t = {
   variables : (string,string) Hashtbl.t;
   functions: (string * typsig list * string,string * string) Hashtbl.t;
   fields: (string,string * string) Hashtbl.t;
+  cstructs : (string,(string * string) list) Hashtbl.t;
   procedures: (string * typsig list * string,string * string) Hashtbl.t;
   callback_types: (string,typ * int) Hashtbl.t;
   callback_clients: (string,typ * string * int * int) Hashtbl.t;
@@ -64,6 +77,7 @@ type control_t = {
   incomplete_types_cache: (string,string * string list) Hashtbl.t;
   mutable files: StringSet.t;
   replacements : (string,string) Hashtbl.t;
+  nontype_replacements : (string,string) Hashtbl.t;
   rejects: (string,unit) Hashtbl.t;
   mutable root_includes: string list;
   mutable root_rec_includes: string list;
@@ -90,6 +104,7 @@ let control = {
   incomplete_types_cache = Hashtbl.create 97;
   files = StringSet.empty;
   replacements = Hashtbl.create 97;
+  nontype_replacements = Hashtbl.create 97;
   rejects = Hashtbl.create 97;
   root_rec_includes = [];
   root_includes = [];
@@ -156,7 +171,8 @@ let pattern = ref "*.h"
 ;;
 
 let rec parse_control_file filename =
-  let f = open_in filename in
+  let f = force_open_in "parse_control_file" filename 
+  in
   let rec aux () =
     try 
       let line = input_line f in
@@ -341,6 +357,21 @@ let rec parse_control_file filename =
             Hashtbl.add control.replacements fn1 fn2;
             raise Next
 
+          | "rename_nontype" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "rename_nontype statement requires name";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            let fn1 = String.sub line j (!i-j) in
+
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "rename_nontype statement requires 2 names";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            let fn2 = String.sub line j (!i-j) in
+            Hashtbl.add control.nontype_replacements fn1 fn2;
+            raise Next
+
           | "ignore" ->
             while !i < n && line.[!i]=' ' do incr i done;
             if !i = n then failwith "ignore statement requires name";
@@ -380,11 +411,13 @@ let autocreate x =
       try Unix.mkdir d 0o777 
       with _ -> 
         mkpath d;
-        Unix.mkdir d 0o777 
+        try Unix.mkdir d 0o777 
+        with _ -> failwith ("[autocreate] Can't create (p=0777) directory " ^ d)
     end
   in
   mkpath x;
-  open_out x
+  force_open_out "autocreate" x
+
 ;;
 
 let f = autocreate control.prein_filename in
@@ -496,10 +529,15 @@ let excludes : string list ref = ref
 ]
 ;;
 
-let rplname s = 
+let rpltname s = 
   try Hashtbl.find control.replacements s 
   with Not_found -> s
-;;
+
+let rplname s = 
+  try Hashtbl.find control.nontype_replacements s 
+  with Not_found -> 
+  try Hashtbl.find control.replacements s 
+  with Not_found -> s
 
 let soi = function
 | IBool -> "bool"
@@ -635,12 +673,12 @@ match t with
 | TNamed (ti,a) -> 
   let name = ptname ti in 
   Hashtbl.add used_types name ();
-  rplname name
+  rpltname name
   
 | TComp (ci,a) ->  
   let name = pci ci in 
   Hashtbl.add used_types name ();
-  rplname name
+  rpltname name
 
 | TEnum (ei,a) -> "int"
 | TBuiltin_va_list a -> "__builtin_va_list"
@@ -698,7 +736,7 @@ let isanon = function
   | GPragma _ -> true
   | GText _ -> true
 
-
+(* pure name *)
 let flx_name' = function
   | GType ({tname=tname},_) -> Some tname
   | GCompTag (ci,sr) -> Some (pci ci)
@@ -711,12 +749,16 @@ let flx_name' = function
   | GAsm _ -> None
   | GPragma _ -> None
   | GText _ -> None
-;;
 
+(* name with replacement *)
 let flx_name x = match flx_name' x with 
 | Some x -> Some (rplname x)
 | None -> None
-;;
+
+(* type name with replacement *)
+let flx_tname x = match flx_name' x with 
+| Some x -> rpltname x
+| None -> "error!!"
 
 let c_name = function
   | GType ({tname=tname},_) -> Some tname
@@ -747,13 +789,38 @@ let rec isanont t =  match t with
 | TEnum _ -> false
 | TBuiltin_va_list _ -> false
 
+(* got to be a named non function type *)
+let is_cstruct_field t =  match t with
+| TVoid _
+| TInt _
+| TFloat _  
+| TNamed _
+| TPtr _
+| TArray _
+| TComp _
+| TEnum _ 
+  -> true
+
+| TFun _
+| TBuiltin_va_list _ 
+  -> false
+
+let ispublic s = 
+ String.length s < 2 || String.sub s 0 2 <> "__" 
+
+let can_gen_ctype cstruct cfields =  cstruct &&
+  fold_left 
+  (fun t {fname=fname; ftype=ftype} -> 
+    t && not (isanont ftype) && ispublic fname &&
+    is_cstruct_field ftype
+  )
+  true cfields 
 
 let chop_extension f =
   let b = Filename.basename f in
   let d = Filename.dirname f in
   let b = try Filename.chop_extension b with _ -> b in
   if d = "." then b else Filename.concat d b
-;;
 
 let replace_prefix x ls =
   let x = ref x in
@@ -767,12 +834,9 @@ let replace_prefix x ls =
   ls
   ;
   !x
-;;
 let map_filename f = 
   let f = replace_prefix f control.merge_files in
   f
-;;
-
 
 let flxinclude_of_cfile cfilename =
   let x = map_filename cfilename in
@@ -781,12 +845,10 @@ let flxinclude_of_cfile cfilename =
   let x = if isprefix "/" x then String.sub x 1 (String.length x - 1) else x in
   let x = if isprefix "." x then String.sub x 1 (String.length x - 1) else x in
   x
-;;
 
 let flxfile_of_cfile cfilename =
   let base = flxinclude_of_cfile cfilename in
   Filename.concat (control.outdir)  (base ^ ".flx")
-;;
 
 let srepl s c1 c2 =
   for i = 0 to String.length s - 1 do
@@ -841,6 +903,7 @@ let mk_stab cfile =
   variables= Hashtbl.create 97;
   functions= Hashtbl.create 97;
   fields= Hashtbl.create 97;
+  cstructs = Hashtbl.create 97;
   procedures= Hashtbl.create 97;
   callback_types = Hashtbl.create 97;
   callback_clients = Hashtbl.create 97;
@@ -959,6 +1022,11 @@ let rpl {file=s} which =
     let k = fixsym k in
     Hashtbl.replace stab.fields k v
 
+  | `cstruct (k,v)  -> 
+    let k = fixsym k in
+    Hashtbl.replace control.all_types k k;
+    Hashtbl.replace stab.cstructs k v
+
   | `procedures((k,ts,cv),v)  -> 
     let k = fixsym k in
     Hashtbl.replace stab.procedures (k,ts,cv) v
@@ -974,11 +1042,6 @@ let rpl {file=s} which =
     Hashtbl.replace stab.callback_clients s (t,cbt,i,j)
 
 ;;
-
-let ispublic s = 
- String.length s < 2 || String.sub s 0 2 <> "__" 
-;;
-
 
 let add_file fname =
   control.files <- StringSet.add fname control.files
@@ -1092,7 +1155,8 @@ let handle_global_fun ft registry key key' fname loc =
       else String.concat " * " (List.map (soa registry) ps) 
     in
     let cv = cvqual a in
-    rpl loc (`procedures ((key,tsig,cv), (args,key'^"($a);")))
+    let ct = if key = key' then ";" else key'^"($a);" in
+    rpl loc (`procedures ((key,tsig,cv), (args,ct)))
 
   | TFun (TVoid _,None,false,a) ->
     let args = "1" in
@@ -1101,12 +1165,14 @@ let handle_global_fun ft registry key key' fname loc =
 
   | TFun (TVoid _,Some _,true,a) ->
     let cv = cvqual a in
-    rpl loc (`procedures ((key^"[t]",[],cv), ("t",key'^"($a);")))
+    let ct = if key = key' then ";" else key'^"($a);" in
+    rpl loc (`procedures ((key^"[t]",[],cv), ("t",ct)))
 
   | TFun (ret,Some ps,false,a) ->
     let ftb =
       let ret = sot (getreg loc) ret
       and args = List.map (soa registry) ps
+      and ct = if key = key' then "" else key'^"($a)"
       in 
       (
         (
@@ -1115,7 +1181,7 @@ let handle_global_fun ft registry key key' fname loc =
           else String.concat " * " args
         ) 
         ^ 
-        " -> " ^ ret,key'^"($a)"
+        " -> " ^ ret,ct
       )
     in 
       let tsig = map (fun (_,t,a) -> typeSig t) ps in
@@ -1213,9 +1279,24 @@ let handle_field registry key fname ftype loc =
   | _ ->
     let t = key ^ " -> " ^ sot registry ftype in
     rpl loc (`fields (("get_"^fname), (t,"$1->"^fname)))
+ 
+let gen_cstruct registry loc key cname cfields =
+  let flds = ref [] in
+  iter
+  (fun {fname=fname; ftype=ftype} -> 
+    let t = sot registry ftype in
+    flds := (rplname fname,t) :: !flds
+  )
+  cfields
+  ;
+  let flds = rev !flds in
+  rpl loc (`cstruct (cname, flds));
+  if key <> cname then
+    rpl loc (`aliases (key, cname))
 
 let handle_global g =  let loc = get_globalLoc g in 
   add_loc loc;
+  let type_name = flx_tname g in
   match isanon g,flx_name g,flx_name' g with
   | _,None,_ 
   | true,_,_ ->
@@ -1244,6 +1325,7 @@ let handle_global g =  let loc = get_globalLoc g in
       match  ttype with 
       | TComp (ci,_) -> 
         let anon= achk (ciname ci) in
+        (*
         begin match ci with { cname=cname; cfields=cfields } ->
         iter
         (fun {fname=fname; ftype=ftype} -> 
@@ -1253,13 +1335,13 @@ let handle_global g =  let loc = get_globalLoc g in
         cfields
         end
         ;
+        *)
         if anon then
-          rpl loc (`abstract_types (key, key'))
+          rpl loc (`abstract_types (type_name, key'))
         else
           let v = ptdef registry ti in
-          rpl loc (`struct_aliases (key, v))
-
-
+          rpl loc (`struct_aliases (type_name, v))
+   
       | TEnum (ei,_) -> 
         begin match ei with { eitems=eitems } ->
         iter
@@ -1268,47 +1350,55 @@ let handle_global g =  let loc = get_globalLoc g in
         end
         ;
         if achk (einame ei) then
-          rpl loc (`abstract_types (key, key'))
+          rpl loc (`abstract_types (type_name, key'))
         else
-          rpl loc (`aliases (key, (ptdef registry ti)))
+          rpl loc (`aliases (type_name, (ptdef registry ti)))
 
       | TFun (_,_,true,_) -> 
         (* HACK: varargs function typedef *)
-        rpl loc (`abstract_types (key, key'))
+        rpl loc (`abstract_types (type_name, key'))
 
       | t ->
         if isanont t then
-          rpl loc (`abstract_types (key, key'))
+          rpl loc (`abstract_types (type_name, key'))
         else
           let v = ptdef registry ti in
-          rpl loc (`aliases (key, v))
+          rpl loc (`aliases (type_name, v))
     end
 
   | GCompTag (ci,loc) -> 
     let registry = getreg loc in
-    rpl loc (`abstract_types (key, (pcci ci)));
-    begin match ci with { cname=cname; cfields=cfields } ->
-    iter
-    (fun {fname=fname; ftype=ftype} -> 
-      if not (isanont ftype) && ispublic fname then
-      handle_field registry key fname ftype loc
-    )
-    cfields
+    begin match ci with { 
+      cname=cname; 
+      cfields=cfields; 
+      cstruct=cstruct 
+    } ->
+      if can_gen_ctype cstruct cfields then 
+        gen_cstruct registry loc type_name cname cfields
+      else begin
+        rpl loc (`abstract_types (type_name, (pcci ci)));
+        iter
+        (fun {fname=fname; ftype=ftype} -> 
+          if not (isanont ftype) && ispublic fname then
+          handle_field registry type_name fname ftype loc
+        )
+        cfields
+      end
     end
 
     
   | GCompTagDecl (ci,loc) -> 
-    rpl loc (`incomplete_types (key, (pcci ci)))
+    rpl loc (`incomplete_types (type_name, (pcci ci)))
     
   | GEnumTag (ei,loc) -> 
-    rpl loc (`aliases (key, "int"));
+    rpl loc (`aliases (type_name, "int"));
     begin match ei with { eitems=eitems } ->
     iter
     (fun (s,_,_) -> if ispublic s then rpl loc (`enums (rplname s,s)))
     eitems
     end
 
-  | GEnumTagDecl (ci,loc) -> rpl loc (`aliases (key, "int"))
+  | GEnumTagDecl (ci,loc) -> rpl loc (`aliases (type_name, "int"))
   
   | GVar (vi,_,loc) 
   | GFun ({svar=vi},loc)
@@ -1355,8 +1445,7 @@ let pathname_of f =
 
 let rec find_includes' includes fname =
   if not (StringSet.mem fname !includes) then
-  try
-    let f = open_in fname in
+    let f = force_open_in "find_includes'" fname in
     includes := StringSet.add fname !includes;
     begin try 
       let rec aux () =
@@ -1426,8 +1515,6 @@ let rec find_includes' includes fname =
         aux()
     with End_of_file -> close_in f
     end
-  with _ ->
-    failwith ("Can't open " ^ fname);
 ;;
 
 let find_includes fname =
@@ -1505,46 +1592,52 @@ StringSet.iter
 ;;
 
 let rec find_macros fname =
-  let f = open_in fname in
   let macros = ref [] in
-  try 
-    let rec aux () =
-      let line = input_line f in
-      let n = String.length line in
-      let i = ref 0 in
+  begin
+    try
+      let f = open_in fname in
+      begin 
+        try 
+          let rec aux () =
+            let line = input_line f in
+            let n = String.length line in
+            let i = ref 0 in
 
-      try
-        (* skip white *)
-        while !i < n && line.[!i]=' ' do incr i done;
-        if !i = n then raise Next;
+            try
+              (* skip white *)
+              while !i < n && line.[!i]=' ' do incr i done;
+              if !i = n then raise Next;
 
-        (* check # *)
-        if line.[!i]<>'#' then raise Next;
-        incr i;
+              (* check # *)
+              if line.[!i]<>'#' then raise Next;
+              incr i;
 
-        (* skip white *)
-        while !i < n && line.[!i]=' ' do incr i done;
-        if !i = n then raise Next;
+              (* skip white *)
+              while !i < n && line.[!i]=' ' do incr i done;
+              if !i = n then raise Next;
 
-        (* check include *)
-        let li = String.length "define" in
-        if !i+li > n then raise Next;
-        if (String.sub line !i li)  <> "define" then raise Next;
-        i := !i + li;
+              (* check include *)
+              let li = String.length "define" in
+              if !i+li > n then raise Next;
+              if (String.sub line !i li)  <> "define" then raise Next;
+              i := !i + li;
 
-        (* skip white *)
-        while !i < n && line.[!i]=' ' do incr i done;
-        let m = String.sub line !i (n - !i) in
-        macros := m :: !macros;
+              (* skip white *)
+              while !i < n && line.[!i]=' ' do incr i done;
+              let m = String.sub line !i (n - !i) in
+              macros := m :: !macros;
 
-        (* next line *)
-        raise Next
-      with Next -> aux ()
-    in 
-      aux()
-  with End_of_file -> 
-    close_in f; 
-    !macros
+              (* next line *)
+              raise Next
+            with Next -> aux ()
+          in 
+            aux()
+        with End_of_file -> close_in f
+      end
+    with _ -> ()
+  end
+  ;
+  !macros
 ;;
 exception Equal
 exception Not_equal
@@ -1555,7 +1648,7 @@ begin
   let outname = stab.stab_flxfile in
   let mode, outf =
     if Sys.file_exists outname then 
-      `tmp,open_out "tmp.tmp"
+      `tmp, force_open_out "generate_file" "tmp.tmp" 
     else
       `orig,autocreate outname 
   in
@@ -1646,6 +1739,24 @@ begin
     end
     ;
 
+    if is_nonempty stab.cstructs then
+    begin
+      pe "";
+      pe "//CSTRUCTS ";
+      Hashtbl.iter
+      (fun k flds -> 
+        pe ("cstruct " ^ k ^ " {");
+        iter (fun (fld,typ) ->
+          pe ("  " ^ fld ^": " ^ typ^ ";")
+        )
+        flds
+        ;
+        pe ("}")
+      )
+      stab.cstructs
+    end
+    ;
+
     if is_nonempty stab.registry then
     begin
       pe "";
@@ -1704,11 +1815,13 @@ begin
     if is_nonempty stab.struct_aliases then
     begin
       pe "";
-      pe "//STRUCT or UNION ALIASES";
+      pe "//STRUCT or UNION TAG ALIASES";
       Hashtbl.iter
       (fun k v-> 
         (* va_list is already defined in the standard library *)
         if k <> "va_list" then
+        (* hack to fiddle typedef X {} X *)
+        if not (Hashtbl.mem stab.cstructs k) then
         pe ("typedef " ^ k ^ " = " ^ v ^ ";")
       )
       stab.struct_aliases
@@ -1765,7 +1878,10 @@ begin
       let ps = sort compare !ps in
       iter
       (fun (k, (v,b)) -> 
-        pe ("proc " ^ k ^ ": " ^v^ " = '"^b^"';")
+        if b = "" then 
+         pe ("proc " ^ k ^ ": " ^v^ ";")
+        else
+         pe ("proc " ^ k ^ ": " ^v^ " = '"^b^"';")
       )
       ps
     end
@@ -1783,7 +1899,10 @@ begin
       let ps = sort compare !ps in
       iter
       (fun (k, (v,b))-> 
-        pe ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
+        if b = "" then
+          pe ("fun " ^ k ^ ": " ^v^ ";")
+        else
+          pe ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
       )
       ps
     end
@@ -2028,8 +2147,8 @@ begin
   match mode with
   | `orig -> print_endline ("New file " ^ outname); ()
   | `tmp ->
-    let f1 = open_in "tmp.tmp" in
-    let f2 = open_in outname in
+    let f1 = force_open_in "new_file" "tmp.tmp" in
+    let f2 = force_open_in "changed_file" outname in
     for i = 1 to 6 do (* skip timestamps when comparing *)
       ignore(input_line f1); 
       ignore(input_line f2)
@@ -2049,8 +2168,8 @@ begin
         begin 
           print_endline ("Changed file .. " ^ outname);
           close_in f1; close_in f2; 
-          let f1 = open_in "tmp.tmp" in
-          let f2 = open_out outname in
+          let f1 = force_open_in "changed_file" "tmp.tmp" in
+          let f2 = force_open_out "change_file" outname in
           try while true do output_string f2 ((input_line f1) ^ "\n")
           done with End_of_file ->
           close_in f1; close_out f2
@@ -2154,6 +2273,45 @@ ignore wchar
 
 @h = tangler("config/gnu_headers.flxcc.default","data")
 @select(h)
+// This file contains annotations to control
+// use of GNU system header files, and some other
+// essential system resources
+
+// Some files say:
+//
+// extern struct X X(..
+//
+// which defines a function of the same name as
+// a struct tag -- this is OK in C, problematic
+// in C++, and definitely out for Felix
+//
+// Such functions are renamed by appending a trailin underscore
+// without changing the name of the type
+//
+// NOTE: this is a serious pain because Felix cstructs
+// automatically get constructors of the same name
+// so the client using such a name may get an overload
+// error (or even worse, a program that has the wrong semantics)
+
+rename_nontype sigaltstack sigaltstack_
+rename_nontype sigstack sigstack_
+rename_nontype sigvec sigvec_
+rename_nontype mallinfo mallinfo_
+rename_nontype vtimes vtimes_
+rename_nontype statfs statfs_ 
+rename_nontype timezone timezone_
+
+// Some files are designed as implementation details
+// and not intended to be used directly
+// We therefore prevent C level #includes like
+//
+// header '#include <file>'; 
+//
+// from being generated
+//
+// This related to the merge specifications below,
+// but the two facilities are independent
+
 noheader /usr/include/bits/byteswap.h
 noheader /usr/include/bits/cmathcalls.h
 noheader /usr/include/bits/confname.h
@@ -2220,7 +2378,17 @@ noheader /usr/include/bits/waitstatus.h
 noheader /usr/include/bits/xopen_lim.h
 noheader /usr/include/bits/xtitypes.h
 
-merge /usr/X11R6/include/X11 /usr/include/X11
+// Some files have aliases created by
+// symlinks and others include details
+// that should really be treated as if they're
+// physically included in the file, rather than
+// a separate module -- see above comments on
+// the related noheader command
+//
+// We use merge specification to say that any
+// text found in the first file is treated as
+// if it were physically part of the second one
+
 merge /usr/include/bits/sigset.h /usr/include/signal.h
 merge /usr/include/bits/sigaction.h /usr/include/signal.h
 merge /usr/include/bits/sigcontext.h /usr/include/signal.h
@@ -2487,6 +2655,40 @@ incfile cwctype
 
 rename String String_
 
+@h=tangler("config/gnucxx.flxcc.default","data")
+@select(h)
+#include config/felix.flxcc
+#include config/gnu_headers.flxcc
+
+outdir gnucxx 
+prefix /usr/include
+prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
+prein gnucxx.h
+preout gnucxx.hhh
+preprocessor g++ -E -I/usr/include/g++-3
+language C++
+
+//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
+
+incfile cctype
+incfile cerrno
+incfile cfloat
+incfile climits
+incfile clocale
+incfile cmath
+incfile csetjmp
+incfile csignal
+incfile cstdarg
+incfile cstddef
+incfile cstdio
+incfile cstdlib
+incfile cstring
+incfile ctime
+incfile cwchar
+incfile cwctype
+
+rename String String_
+
 @h=tangler("config/usr_include.flxcc.default","data")
 @select(h)
 #include config/felix.flxcc
@@ -2588,4 +2790,11 @@ exclude /usr/include/mp.h
 exclude /usr/include/pammap.h
 
 rename String String_
+
+rename_nontype _ns_flagdata _ns_flagdata_
+rename_nontype usb_device usb_device_
+rename_nontype tcpd_context tcpd_context_
+
+merge /usr/X11R6/include/X11 /usr/include/X11
+
 

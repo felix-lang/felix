@@ -95,7 +95,7 @@ that of its parents (string -> int) form.
 @select(h)
 open Flx_ast
 open Flx_types
-open Flx_mtypes1
+open Flx_mtypes2
 
 val build_env:
   sym_state_t ->
@@ -213,6 +213,7 @@ open Flx_types
 open Flx_print
 open Flx_exceptions
 open Flx_mtypes1
+open Flx_mtypes2
 open Flx_typing
 open Flx_typing2
 open List
@@ -892,6 +893,7 @@ and bind_type'
     | Tfound t -> t
     end
 
+  | `TYP_lvalue t -> bt t
   | `TYP_dual t ->
     let t = bt t in
     dual t

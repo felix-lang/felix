@@ -98,6 +98,8 @@ struct _uctor_
   _uctor_(int i, void *d) : variant(i), data(d) {}
 };
 
+extern flx::gc::generic::gc_shape_t _uctor_ptr_map;
+
 // UNIT
 struct unit {};
 
@@ -149,6 +151,59 @@ struct flx_exec_failure_t {
 #define FLX_FPAR_PASS pgf,ppf,ptf
 #define FLX_NEWP(x) new(gc,x##_ptr_map)x
 
+#define FLX_FINALISER(x) \
+static void x##_finaliser(collector_t *, void *p){\
+  ((x*)p)->~x();\
+}
+
+#define FLX_FRAME_WRAPPERS \
+extern "C" global_frame_t *create_global_frame() {\
+  return new global_frame_t;\
+}\
+extern "C" void destroy_global_frame(\
+  global_frame_t *pgf\
+) {\
+  delete pgf;\
+}\
+extern "C" process_frame_t *create_process_frame(\
+  global_frame_t *pgf\
+) {\
+  return new process_frame_t(pgf);\
+}\
+extern "C" void destroy_process_frame(\
+  process_frame_t *ppf\
+) {\
+  delete ppf;\
+}\
+extern "C" thread_frame_t *create_thread_frame(\
+  global_frame_t *pgf,\
+  process_frame_t *ppf,\
+  collector_t *gc\
+) {\
+  thread_frame_t *p = new(*gc,thread_frame_t_ptr_map) thread_frame_t(pgf,ppf,gc);\
+  gc->add_root(p);\
+  return p;\
+}\
+extern "C" void destroy_thread_frame(\
+  thread_frame_t *ptf\
+) {\
+  ptf->gc->remove_root(ptf);\
+}
+
+#define FLX_START_WRAPPER(x)\
+extern "C" con_t *start(\
+  global_frame_t *pgf,\
+  process_frame_t *ppf,\
+  thread_frame_t *ptf,\
+  int argc,\
+  char **argv\
+) {\
+  pgf->argc = argc;\
+  pgf->argv = argv;\
+  return (new(*ptf->gc,x##_ptr_map) \
+    x(pgf,ppf,ptf)) ->call(0);\
+}
+
 
 #endif
 
@@ -198,6 +253,19 @@ flx::gc::generic::gc_shape_t _ref_ptr_map(
   _ref_offsets
 );
 
+//OFFSETS for _uctor_
+static std::size_t _uctor_offsets[1]= { 
+  offsetof(_uctor_,data) 
+};
+
+flx::gc::generic::gc_shape_t _uctor_ptr_map (
+  1,
+  sizeof(_uctor_),
+  0,
+  1,
+  _uctor_offsets
+);
+                                                                                
 flx_exec_failure_t::flx_exec_failure_t(std::string f, std::string o, std::string w) : 
   filename(f), 
   operation(o), 

@@ -213,7 +213,7 @@ header cstdlib "#include <cstdlib>";
 @ints = uints + sints
 
 @def gen_type(t):
-  tangle('type '+t+' = "'+tmap[t]+'";')
+  tangle('pod type '+t+' = "'+tmap[t]+'";')
 
 @def gen_asgn(t):
   tangle('  proc swap: lvalue['+t+'] * lvalue['+t+'] ="""')
@@ -415,10 +415,10 @@ module C_hack
   fun reinterpret_cast[dst,src]: src->dst = 'reinterpret_cast<?1>($1)';
 
   publish "Abstract type for C pointer"
-  type ptr[t]="?1 *";
+  pod type ptr[t]="?1 *";
 
   publish "Abstract type for C pointer to const"
-  type cptr[t]="?1 const *";
+  pod type cptr[t]="?1 const *";
 
   publish "Convert pointer to pointer to const"
   fun enconst[t]: ptr[t]->cptr[t] = "(?1 const*)$1";
@@ -500,7 +500,7 @@ module Text_file
 {
   fun load: string -> string = "flx::rtl::ioutil::load_file($1)";
 
-  type text_file = "FILE*"; // its a macro?
+  pod type text_file = "FILE*"; // its a macro?
 
   fun fopen_input: string -> text_file = 'std::fopen($1.data(),"rt")';
   fun fopen_output: string -> text_file = 'std::fopen($1.data(),"wt")';
@@ -735,7 +735,7 @@ module Control
   fun fail_fun[t]:string->t = 'throw std::exception ($1),*(?1*)0';
 
   publish "Felix procedural continuation type"
-  type cont = "flx::rtl::con_t*";
+  pod type cont = "flx::rtl::con_t*";
 
   publish "Current continuation"
   fun current_continuation: 1 -> cont = "this";
@@ -913,7 +913,7 @@ module Assoc_list
 // use in conjunction with the reglex construction
 module Lexer
 {
-  type iterator = "char const*";
+  pod type iterator = "char const*";
   fun start_iterator : string -> iterator = "$1.data()";
   fun end_iterator: string -> iterator = "$1.data()+$1.size()";
   fun string_between: iterator * iterator -> string =

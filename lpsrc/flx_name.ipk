@@ -1,7 +1,7 @@
 @h = tangler('src/flx_name.mli')
 @select(h)
 open Flx_types
-open Flx_mtypes1
+open Flx_mtypes2
 
 val cpp_name :
   fully_bound_symbol_table_t ->
@@ -29,7 +29,7 @@ val cpp_typename :
 @h = tangler('src/flx_name.ml')
 @select(h)
 open Flx_types
-open Flx_mtypes1
+open Flx_mtypes2
 open Flx_unify
 open Flx_print
 open Flx_util
@@ -148,10 +148,10 @@ let rec cpp_type_classname syms t =
       { id=id; symdef=symdef } -> id,symdef 
     with
     | id,`SYMDEF_cstruct _ -> id
-    | _,`SYMDEF_abs (true,"int",_) -> "int" (* hack .. *)
-    | _,`SYMDEF_abs (true,"long",_) -> "long" (* hack .. *)
-    | _,`SYMDEF_abs (true,"float",_) -> "float" (* hack .. *)
-    | _,`SYMDEF_abs (true,"double",_) -> "double" (* hack .. *)
+    | _,`SYMDEF_abs (_,"int",_) -> "int" (* hack .. *)
+    | _,`SYMDEF_abs (_,"long",_) -> "long" (* hack .. *)
+    | _,`SYMDEF_abs (_,"float",_) -> "float" (* hack .. *)
+    | _,`SYMDEF_abs (_,"double",_) -> "double" (* hack .. *)
     | _,data  ->
       let prefix =
         match data with

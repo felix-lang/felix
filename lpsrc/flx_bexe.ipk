@@ -3,7 +3,7 @@
 @select(h)
 open Flx_ast
 open Flx_types
-open Flx_mtypes1
+open Flx_mtypes2
 
 val bind_exes:
   sym_state_t ->
@@ -286,9 +286,18 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       tack (cal_call syms sr (p', pt') (e', et'))
 
     | `EXE_read s ->          
-      let dummy_sr = ("bind exes",0,0,0,0) in
-      begin match lun dummy_sr s with
-      | NonFunctionEntry (index) -> tack (`BEXE_read (sr,index))
+      begin match lun sr s with
+      | NonFunctionEntry (index) -> 
+        let {symdef=entry; id=id} = Hashtbl.find syms.dfns index in
+        begin match entry with
+        | `SYMDEF_var _ -> ()
+        | `SYMDEF_val _ -> clierr sr ("Can't read into value " ^ id)
+        | `SYMDEF_parameter _ -> clierr sr ("Can't read into parameter value " ^ id)
+        | _ -> clierr sr ("[bexe] Read requires variable, got " ^ id)
+        end
+        ;
+        tack (`BEXE_read (sr,index))
+
       | FunctionEntry _ -> failwith "Can't read function!"
       end
 
@@ -358,7 +367,45 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       end
 
     | `EXE_assign (l,r) -> 
-      tack (`BEXE_assign (sr,be l, be r))
+      let bel = be l in
+      begin match bel with
+      | `BEXPR_name (index,_),_ -> 
+        let {symdef=entry; id=id} = Hashtbl.find syms.dfns index in
+        begin match entry with
+        | `SYMDEF_var _ -> ()
+        | `SYMDEF_val _ -> clierr sr ("Can't assign into value " ^ id)
+        | `SYMDEF_parameter _ -> clierr sr ("Can't assign into parameter value " ^ id)
+        | _ -> clierr sr ("[bexe] assign requires variable, got " ^ id)
+        end
+      | `BEXPR_deref _,_ -> ()
+
+      | `BEXPR_apply_prim (i,_,_),_ -> 
+        let {symdef=entry; id=id; vs=vs} = Hashtbl.find syms.dfns i in
+        begin match entry with 
+        | `SYMDEF_fun (_,t,_,_) -> 
+          begin match t with
+          | `TYP_lvalue _ -> ()
+          | _ -> 
+            print_endline 
+            (
+              "WARNING: assign to application of primitive "^
+              id^
+              " not declared to return an lvalue"
+            )
+          end
+        | _ -> 
+          failwith 
+          (
+            "[bexe]Expected prim apply to apply a primitive fun, got: " ^
+            string_of_symdef entry id vs
+          )
+        end
+      | _ -> 
+        print_endline ("Assign to non variable..(is it an lvalue?)" ^ sbe syms.dfns bel);
+        ()
+      end
+      ;
+      tack (`BEXE_assign (sr,bel, be r))
 
     | `EXE_reglex (p1,p2,cls) ->
       reachable := false;

@@ -131,7 +131,13 @@ let const_fold' e sr name arg = match name, arg with
            `AST_literal (_,`AST_int ("int",y))
           ])
     -> 
-    `AST_literal (sr,`AST_int ("int",(div_big_int x y)))
+    let r = 
+      try div_big_int x y 
+      with Division_by_zero ->
+        clierr sr "[constfld] Division by zero"
+    in
+    `AST_literal (sr,`AST_int ("int",r))
+      
 
   (* x mod y *)
   | "mod", `AST_tuple ( _, [
@@ -139,7 +145,12 @@ let const_fold' e sr name arg = match name, arg with
            `AST_literal (_,`AST_int ("int",y))
           ])
     -> 
-    `AST_literal (sr,`AST_int ("int",(mod_big_int x y)))
+    let r = 
+      try mod_big_int x y
+      with Division_by_zero ->
+        clierr sr "[constfld] Division by zero"
+    in
+    `AST_literal (sr,`AST_int ("int",r))
 
   (* x ** y *)
   | "pow", `AST_tuple ( _, [

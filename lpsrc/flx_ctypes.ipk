@@ -14,6 +14,7 @@ type cexpr_t =
   | `Ce_new of cexpr_t list * string * cexpr_t list
   | `Ce_cast of string * cexpr_t
   | `Ce_cond of cexpr_t * cexpr_t * cexpr_t 
+  | `Ce_expr of string * string 
 ]
 
 
@@ -156,8 +157,23 @@ let string_of_cdecl_type n t =
 open Flx_ctypes
 val string_of_cexpr : cexpr_t -> string
 
+val ce_atom : string -> cexpr_t
+val ce_postfix : string -> cexpr_t -> cexpr_t
+val ce_prefix : string -> cexpr_t -> cexpr_t
+val ce_infix : string -> cexpr_t -> cexpr_t -> cexpr_t
+val ce_call : cexpr_t -> cexpr_t list -> cexpr_t
+val ce_array : cexpr_t -> cexpr_t -> cexpr_t
+val ce_new : cexpr_t list -> string -> cexpr_t list -> cexpr_t
+val ce_cast : string -> cexpr_t -> cexpr_t
+val ce_cond : cexpr_t -> cexpr_t -> cexpr_t -> cexpr_t
+val ce_expr : string -> string -> cexpr_t
+val ce_top : string -> cexpr_t
+val ce_dot : cexpr_t -> string -> cexpr_t
+
 @h = tangler("src/flx_cexpr.ml")
 @select(h)
+open Flx_ctypes
+
 let iter = List.iter
 let map = List.map
 let find = Hashtbl.find
@@ -184,8 +200,8 @@ let precedence = [
 "or";
 "cond";
 "assign";
-"comma"
-
+"comma";
+"expr"
 ]
 
 let postfix_cops = [
@@ -272,6 +288,7 @@ let pr cop =
   | `Ce_new _ -> find prec "unary"
   | `Ce_cast _ -> find prec "cast"
   | `Ce_cond _ -> find prec "cond"
+  | `Ce_expr (p,_) -> find prec p
 
 let commaprec = find prec "comma"
 let rec comma es = "(" ^ strcat ", " (map (cep commaprec) es) ^ ")" 
@@ -299,12 +316,25 @@ and cep cp e =
     | `Ce_call (f,es) -> rce f ^comma es
     | `Ce_array (f,e) -> rce f ^ "["^lce e^"]"
     | `Ce_new (ps,cls,args) -> 
-      "new" ^ comma_opt ps ^ " " ^ comma_opt args
-    | `Ce_cast (cast,e) -> cast ^ rce e
+      "new" ^ comma_opt ps ^ " " ^ cls ^ " " ^ comma_opt args
+    | `Ce_cast (cast,e) -> "("^cast^")" ^ rce e
     | `Ce_cond (e,e1,e2) -> lce e ^ "?" ^ rce e1 ^ ":" ^ rce e2
+    | `Ce_expr (_, s) -> s
   end
   ^
   (if need_brackets then ")" else "")
 
 let string_of_cexpr e = cep 1000 e
 
+let ce_atom s = `Ce_atom s 
+let ce_postfix o e = `Ce_postfix (o,e)
+let ce_prefix o e = `Ce_prefix (o,e)
+let ce_infix o a b = `Ce_infix (o,a,b)
+let ce_call a b = `Ce_call (a,b)
+let ce_array a b = `Ce_array (a,b)
+let ce_new p c a = `Ce_new (p,c,a)
+let ce_cast s e = `Ce_cast (s,e)
+let ce_cond c a b = `Ce_cond (c,a,b)
+let ce_expr p s = `Ce_expr (p,s)
+let ce_top s = ce_expr "expr" s
+let ce_dot e s = ce_infix "." e (ce_atom s)

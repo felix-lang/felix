@@ -380,27 +380,26 @@ tvarlist:
    | LSQB basic_name_comma_list RSQB { $2 }
    | { [] } 
 
+type_qual:
+  | INCOMPLETE { $1,`Incomplete }
+  | POD { $1, `Pod }
+
+type_quals:
+  | type_qual type_quals { $1 :: $2 }
+  | { [] }
+  
 abstract_type:
-  | CTYPES basic_name_comma_list requires_clause SEMI
+  | type_quals CTYPES basic_name_comma_list requires_clause SEMI
     {
-      let sr = rstoken $1 $4 in
-      `AST_ctypes (sr,$2,$3)
+      let sr = rstoken $2 $5 in
+      let qs = List.map snd $1 in
+      `AST_ctypes (sr,$3,qs,$4)
     }
 
-  | INCOMPLETE CTYPES basic_name_comma_list requires_clause SEMI
-    {
-      let sr = rstoken $1 $5 in
-      `AST_incomplete (sr,$3,$4)
-    }
-
-  | TYPE NAME tvarlist EQUAL STRING requires_clause SEMI 
+  | type_quals TYPE NAME tvarlist EQUAL STRING requires_clause SEMI 
     { 
-      `AST_abs_decl (rstoken $1 $7, snd $2, List.map snd $3, true, snd $5, $6) 
-    }
-
-  | INCOMPLETE TYPE NAME tvarlist EQUAL STRING requires_clause SEMI 
-    { 
-      `AST_abs_decl (rstoken $1 $8, snd $3, List.map snd $4, false, snd $6, $7) 
+      let qs = List.map snd $1 in
+      `AST_abs_decl (rstoken $2 $8, snd $3, List.map snd $4, qs, snd $6, $7) 
     }
 
 @head(3,'Union Binding')
@@ -750,47 +749,61 @@ opt_type_expr:
   | COLON type_expr { typecode_of_expr $2 }
   | { `TYP_none }
 
+opt_cstring:
+  | EQUAL STRING { Some (snd $2) }
+  | { None }
+
+adjective:
+  | INLINE { $1,`InlineFunction }
+  | NOINLINE { $1,`NoInlineFunction }
+
+adjectives:
+  | adjective adjectives { $1 :: $2 }
+  | { [] }
+
 function_definition:
-  | FUNCTION NAME tvarlist fun_args opt_type_expr EQRIGHTARROW expr SEMI
+  | adjectives FUNCTION NAME tvarlist fun_args opt_type_expr EQRIGHTARROW expr SEMI
     { 
-      let sr = rstoken $1 $8 in
-      let name = snd $2 
-      and return_type = $5
-      and body = [`AST_fun_return (sr,$7)]
-      and args = List.map snd $4 (* elide srcref *)
-      and vs = List.map snd $3
-      in mkcurry sr name vs args return_type `Function body
+      let kind = match $1 with
+        | [] -> `Function
+        | h :: t -> snd h
+      in
+      let sr = rstoken $2 $9 in
+      let name = snd $3 
+      and return_type = $6
+      and body = [`AST_fun_return (sr,$8)]
+      and args = List.map snd $5 (* elide srcref *)
+      and vs = List.map snd $4
+      in mkcurry sr name vs args return_type kind body
     }
 
-  | FUNCTION NAME tvarlist fun_args opt_type_expr EQUAL compound 
+  | adjectives FUNCTION NAME tvarlist fun_args opt_type_expr EQUAL compound 
     { 
-      let sr = rsrange (slift $1) (fst $7)
-      and name = snd $2 
-      and return_type = $5
-      and body = snd $7
-      and args = List.map snd $4 (* elide srcref *)
-      and vs = List.map snd $3
-      in mkcurry sr name vs args return_type `Function body
-    }
-
-  | INLINE FUNCTION NAME tvarlist fun_args opt_type_expr EQUAL compound 
-    { 
-      let sr = rsrange (slift $1) (fst $8)
+      let kind = match $1 with
+        | [] -> `Function
+        | h :: t -> snd h
+      in
+      let sr = rsrange (slift $2) (fst $8)
       and name = snd $3 
       and return_type = $6
       and body = snd $8
       and args = List.map snd $5 (* elide srcref *)
       and vs = List.map snd $4
-      in mkcurry sr name vs args return_type `InlineFunction body
+      in mkcurry sr name vs args return_type kind body
     }
-
-  | FUNCTION NAME tvarlist COLON type_expr EQUAL STRING requires_clause SEMI 
+  
+  | adjectives FUNCTION NAME tvarlist COLON type_expr opt_cstring requires_clause SEMI 
     { 
-      let name = snd $2 
-      and vs = List.map snd $3
-      and t = typecode_of_expr $5 
-      and ct = snd $7 
-      and sr = rstoken $1 $9
+      let name = snd $3 
+      and vs = List.map snd $4
+      and t = typecode_of_expr $6 
+      and sr = rstoken $2 $9
+      and reqs = $8 
+      in
+      let ct =  
+        match $7 with 
+        | Some x -> x 
+        | None -> name ^ "($a)"
       in
       match t with
       | `TYP_function (arg, ret) ->
@@ -803,9 +816,9 @@ function_definition:
         then
           let vs = vs @ ["_varargs"] in
           let args = List.rev (`AST_name (sr,"_varargs",[]) :: List.tl (List.rev args)) in
-          `AST_fun_decl (sr, name, vs, args,  ret,  ct, $8) 
+          `AST_fun_decl (sr, name, vs, args,  ret,  ct, reqs) 
         else
-          `AST_fun_decl (sr, name, vs, args,  ret,  ct, $8) 
+          `AST_fun_decl (sr, name, vs, args,  ret,  ct, reqs) 
       | _ -> 
         failwith 
         (
@@ -827,24 +840,29 @@ procedure_definition:
       in mkcurry sr name vs args return_type `Function body
     }
 
-  | INLINE PROCEDURE NAME tvarlist fun_args compound 
+  | adjective PROCEDURE NAME tvarlist fun_args compound 
     { 
-      let sr = rsrange (slift $1) (fst $6) in
+      let sr = rsrange (slift (fst $1)) (fst $6) in
       let name = snd $3 
       and vs = List.map snd $4
       and return_type = `AST_void sr
       and body = snd $6
       and args = List.map snd $5 (* elide srcref *)
-      in mkcurry sr name vs args return_type `InlineFunction body
+      and adjective = snd $1 
+      in mkcurry sr name vs args return_type adjective body
     }
 
-  | PROCEDURE NAME tvarlist COLON type_expr EQUAL STRING requires_clause SEMI 
+  | PROCEDURE NAME tvarlist COLON type_expr opt_cstring requires_clause SEMI 
     { 
-      let sr = rstoken $1 $9
+      let sr = rstoken $1 $8
       and vs = List.map snd $3
       and name = snd $2 
       and t = typecode_of_expr $5
-      and ct = snd $7
+      in
+      let ct =  
+        match $6 with 
+        | Some x -> x 
+        | None -> name ^ "($a);"
       in
       let args = 
         match t with
@@ -855,9 +873,9 @@ procedure_definition:
         then
           let vs = vs @ ["_varargs"] in
           let args = List.rev (`AST_name (sr,"_varargs",[]) :: List.tl (List.rev args)) in
-          `AST_fun_decl (sr, name, vs, args,  `AST_void sr,  ct,$8) 
+          `AST_fun_decl (sr, name, vs, args,  `AST_void sr,  ct,$7) 
         else
-          `AST_fun_decl (sr,name,vs, args,`AST_void sr, ct, $8) 
+          `AST_fun_decl (sr,name,vs, args,`AST_void sr, ct, $7) 
     }
 
 @head(3,'Object')
@@ -1495,21 +1513,21 @@ lambda_fun_args:
 lambda:
   | tuple { $1 }
 
-  | FUNCTION lambda_fun_args opt_type_expr EQUAL compound
+  | adjectives FUNCTION lambda_fun_args opt_type_expr EQUAL compound
     {
-      let sr = rsrange (slift $1) (fst $5) in
-      let args = List.map snd $2 in
-      let ret = $3 in
-      let body = snd $5 in
+      let sr = rsrange (slift $2) (fst $6) in
+      let args = List.map snd $3 in
+      let ret = $4 in
+      let body = snd $6 in
       `AST_lambda ( sr,(args, ret, body))
     }
 
-  | FUNCTION lambda_fun_args opt_type_expr EQRIGHTARROW expr
+  | adjectives FUNCTION lambda_fun_args opt_type_expr EQRIGHTARROW expr
     {
-      let sr = rsrange (slift $1) (src_of_expr $5) in
-      let args = List.map snd $2 in
-      let body = [`AST_fun_return (sr,$5)] in
-      let ret = $3 in
+      let sr = rsrange (slift $2) (src_of_expr $6) in
+      let args = List.map snd $3 in
+      let body = [`AST_fun_return (sr,$6)] in
+      let ret = $4 in
       `AST_lambda (sr, (args, ret, body))
     }
 

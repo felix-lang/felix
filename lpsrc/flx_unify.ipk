@@ -7,6 +7,7 @@ and utilities
 
 open Flx_types
 open Flx_mtypes1
+open Flx_mtypes2
 
 (** obtain the mgu of a set of type equations *)
 val maybe_unification: 
@@ -137,6 +138,7 @@ val dual:
 @select(h)
 open Flx_types
 open Flx_mtypes1
+open Flx_mtypes2
 open Flx_print
 open Flx_maps
 open Flx_util

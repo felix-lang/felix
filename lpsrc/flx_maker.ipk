@@ -342,6 +342,8 @@ PARSES = ['flx_cil_cparser','flx_cil_formatparse','flx_parse']
 # ocaml modules = interfaces + implementation files
 
 CIL_MODULES = [
+  'flx_cil_machdep_type',
+  'flx_cil_cabs',
   'flx_cil_cilversion',
   'flx_cil_machdep',
   'flx_cil_pretty',
@@ -372,11 +374,14 @@ CIL_MODULES = [
 ]
 
 FLX_MODULES = [
+  'flx_mtypes1'      ,
+  'flx_ast'          ,
+  'flx_types'        ,
+  'flx_ctypes'       ,
   'flx_version'      ,
   'flx_ctype'        ,
   'flx_util'         ,
   'flx_getopt'       ,
-  'flx_mtypes1'      ,
   'flx_mtypes2'      ,
   'flx_srcref'       ,
   'flx_typing'       ,
@@ -442,8 +447,8 @@ FLX_RAW_INTERFACES = [
   'flx_ctypes'       ,
 ] 
 
-FLX_INTERFACES = FLX_RAW_INTERFACES + FLX_MODULES
-CIL_INTERFACES = CIL_RAW_INTERFACES + CIL_MODULES
+FLX_INTERFACES = FLX_MODULES
+CIL_INTERFACES = CIL_MODULES
 
 FLX_IMPLEMENTATIONS = FLX_INTERFACES
 CIL_IMPLEMENTATIONS = CIL_INTERFACES
@@ -1114,12 +1119,12 @@ We have no idea if it continues copying.
 @tangle('clean: dummy')
 @tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.dll tut/examples/*.par tut/examples/*.o')
 @tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so test/rt*.dll test/rt*.par test/*.o')
-@tangle('\trm -rf bagley/felix/rt*.cpp bagley/felix/rt*.hpp bagley/felix/rt*.so bagley/felix/rt*.dll bagley/felix/rt*.par bagley/felix/*.o')
+@tangle('\trm -rf bagley/felix/*.cpp bagley/felix/*.hpp bagley/felix/*.so bagley/felix/*.dll bagley/felix/*.par bagley/felix/*.o')
 @tangle('')
 @tangle('virgin: dummy')
 @tangle('\tcp Makefile Makefile.old')
 @tangle('\trm -rf tut rtl test www src misc man script bin doc lib impldoc htmlman tmp tmp.tmp')
-@tangle('\trm -rf flxcc_out c89 c99 cxx gnu89 gnu99')
+@tangle('\trm -rf flxcc_out c89 c99 cxx gnu89 gnu99 gnucxx')
 @tangle('\trm -rf bagley')
 @tangle('\trm -rf config/*.default')
 @tangle('\trm -rf lpsrc/*.cache')
@@ -1150,7 +1155,7 @@ We have no idea if it continues copying.
 @tangle('\tfor i in config/*.default; do cp $$i config/`basename $$i .default`; done')
 @tangle('')
 @tangle('wrappers.clean:')
-@tangle('\trm -rf flxcc_out c89 c99 cxx gnu89 gnu99')
+@tangle('\trm -rf flxcc_out c89 c99 cxx gnu89 gnu99 gnucxx')
 @tangle('')
 @tangle('wrappers:')
 @tangle('\tbin/flxcc config/c89.flxcc')
@@ -1158,6 +1163,7 @@ We have no idea if it continues copying.
 @tangle('\tbin/flxcc config/gnu89.flxcc')
 @tangle('\tbin/flxcc config/gnu99.flxcc')
 @tangle('\tbin/flxcc config/cxx.flxcc')
+@tangle('\tbin/flxcc config/gnucxx.flxcc')
 @tangle('\tbin/flxcc config/usr_include.flxcc')
 @tangle('')
 @tangle('install: dummy')

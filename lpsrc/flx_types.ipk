@@ -226,6 +226,7 @@ and typecode_t =
   | `TYP_var of int                             (** unknown type *)
   | `TYP_none                                   (** unspecified *)
   | `TYP_ellipsis                               (** ... for varargs *)
+  | `TYP_lvalue of typecode_t                   (** ... lvalue annotation *)
 
   (* dualizer *)
   | `TYP_dual of typecode_t                     (** dual *)
@@ -389,6 +390,11 @@ and property_t = [
   | `Inlining_complete
 ]
 
+and type_qual_t = [
+  | `Incomplete
+  | `Pod
+]
+
 and requirements_t = qualified_name_t list
 
 and statement_t =
@@ -451,9 +457,8 @@ and statement_t =
   | `AST_nop of range_srcref * string
 
   (* binding structures [prolog] *)
-  | `AST_abs_decl of range_srcref * id_t * id_t list * bool * c_t * requirements_t
-  | `AST_ctypes of range_srcref * (srcref * id_t) list * requirements_t 
-  | `AST_incomplete of range_srcref * (srcref * id_t) list * requirements_t
+  | `AST_abs_decl of range_srcref * id_t * id_t list * type_qual_t list * c_t * requirements_t
+  | `AST_ctypes of range_srcref * (srcref * id_t) list * type_qual_t list  * requirements_t 
   | `AST_const_decl of range_srcref * id_t * id_t list * typecode_t * c_t * requirements_t
   | `AST_fun_decl of range_srcref * id_t * id_t list * typecode_t list * typecode_t * c_t  * requirements_t
 
@@ -507,6 +512,8 @@ and provide routines to dump them to a string for debugging purposes.
 
 @head(2,'Generic partial ordering comparison result')
 @select(h)
+open Flx_mtypes1
+
 type partial_order_result_t = 
 [
   | `Less 
@@ -560,7 +567,7 @@ type dcl_t =
   | `DCL_module of       asm_t list  
 
   (* binding structures [prolog] *)
-  | `DCL_abs of          bool * c_t * requirements_t (* bool is completeness flag *)
+  | `DCL_abs of          type_qual_t list * c_t * requirements_t
   | `DCL_const of        typecode_t * c_t * requirements_t
   | `DCL_fun of          typecode_t list * typecode_t * c_t * requirements_t
   | `DCL_regdef of      regexp_t
@@ -698,7 +705,7 @@ and bbdcl_t =
   | `BBDCL_var of        (string * int) list * btypecode_t
 
   (* binding structures [prolog] *)
-  | `BBDCL_abs of        (string * int) list * bool * c_t * brequirements_t
+  | `BBDCL_abs of        (string * int) list * type_qual_t list * c_t * brequirements_t
   | `BBDCL_const of      (string * int) list * btypecode_t * c_t * brequirements_t
   | `BBDCL_fun of        (string * int) list * btypecode_t list * btypecode_t * c_t  * brequirements_t
   | `BBDCL_proc of       (string * int) list * btypecode_t list * c_t  * brequirements_t
@@ -714,7 +721,7 @@ type env_t = (bid_t * id_t * name_map_t * name_map_t list) list
 
 type symbol_definition_t =
   [
-  | `SYMDEF_abs of bool * c_t * requirements_t
+  | `SYMDEF_abs of type_qual_t list * c_t * requirements_t
   | `SYMDEF_regdef of regexp_t
   | `SYMDEF_header of string * requirements_t
   | `SYMDEF_body of string * requirements_t
@@ -1195,8 +1202,7 @@ let src_of_stmt e = match e with
   | `AST_ifgoto (s,_,_)
   | `AST_ifnotgoto (s,_,_)
   | `AST_abs_decl (s,_,_, _,_,_) 
-  | `AST_ctypes (s,_,_) 
-  | `AST_incomplete (s,_,_) 
+  | `AST_ctypes (s,_,_,_) 
   | `AST_const_decl (s,_,_,_,_,_) 
   | `AST_fun_decl (s,_,_,_,_,_,_ ) 
   | `AST_header (s,_,_,_) 
@@ -1658,6 +1664,7 @@ and st prec tc : string =
     | `TYP_array (vt,it) -> 3, st 1 vt ^ "^" ^ st 3 it
     
     | `TYP_pointer t -> 1,"&" ^ st 1 t
+    | `TYP_lvalue t -> 0,"lvalue[" ^ st 1 t ^"]"
     
     | `TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
     | `TYP_as (t,s) -> 8,st 8 t ^ " as " ^ s
@@ -2015,6 +2022,12 @@ and string_of_properties ps =
 and string_of_reqs = function | [] -> ""
  | x -> "requires " ^ catmap ", " string_of_qualified_name x
 
+and string_of_qual = function 
+| `Incomplete -> "incomplete"
+| `Pod -> "pod"
+
+and string_of_quals qs = catmap " " string_of_qual qs
+
 and string_of_statement level s = 
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
@@ -2109,22 +2122,18 @@ and string_of_statement level s =
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | `AST_ctypes (_,names, reqs) -> spaces level ^ 
+  | `AST_ctypes (_,names, quals, reqs) -> spaces level ^ 
+    (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "ctypes " ^ catmap "," snd names ^ 
     string_of_reqs reqs ^
     ";"
 
-  | `AST_incomplete (_,names, reqs) -> spaces level ^ 
-    "incomplete ctypes " ^ catmap "," snd names ^ 
+  | `AST_abs_decl (_,t,vs, quals, ct, reqs) -> spaces level ^ 
+    (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
+    "type " ^ t ^ print_vs vs ^
+    " = " ^ string_of_string ct ^ 
     string_of_reqs reqs ^
     ";"
-
-  | `AST_abs_decl (_,t,vs, flag, code, reqs) -> spaces level ^ 
-   (if flag then "" else "incomplete ") ^
-   "type " ^ t ^ print_vs vs ^
-   " = " ^ string_of_string code ^ 
-   string_of_reqs reqs ^
-   ";"
 
   | `AST_fun_decl (_,name,vs,args, result, code, reqs) ->
     spaces level ^ 
@@ -2378,8 +2387,8 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
   | `SYMDEF_inherit_fun qn -> 
     "inherit fun " ^ name ^ print_ivs vs ^" = " ^ string_of_qualified_name qn ^ ";"
 
-  | `SYMDEF_abs (flag,code, reqs) ->
-    (if flag then "" else "incomplete ") ^
+  | `SYMDEF_abs (quals,code, reqs) ->
+    (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ name ^ print_ivs vs ^
     " = " ^ string_of_string code ^ 
     string_of_reqs reqs ^
@@ -2750,8 +2759,8 @@ and string_of_dcl level name vs (s:dcl_t) =
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | `DCL_abs (complete, code, reqs) -> spaces level ^ 
-    (if complete then "" else "incomplete ") ^
+  | `DCL_abs (quals, code, reqs) -> spaces level ^ 
+    (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ name ^ print_vs vs ^
     " = " ^ string_of_string code ^ 
     string_of_reqs reqs ^
@@ -2866,10 +2875,10 @@ and string_of_bbdcl dfns bbdcl index =
     "var " ^ name ^ print_bvs vs ^ ": " ^ sobt ty ^ ";"
 
   (* binding structures [prolog] *)
-  | `BBDCL_abs (vs,complete,code,reqs) ->
-   (if complete then "" else "incomplete ") ^
-   "type " ^ name ^  print_bvs vs ^
-   " = " ^ string_of_string code ^ ";"
+  | `BBDCL_abs (vs,quals,code,reqs) ->
+    (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
+    "type " ^ name ^  print_bvs vs ^
+    " = " ^ string_of_string code ^ ";"
 
   | `BBDCL_const (vs,ty,code,reqs) ->
      "const " ^ name ^ print_bvs vs ^    
@@ -2952,8 +2961,14 @@ let string_of_varlist dfns varlist =
 
 @h = tangler('src/flx_mtypes1.ml')
 @select(h)
-open Flx_ast
-open Flx_types
+module IntHashtbl = Hashtbl.Make(
+  struct
+    type t = int
+    let equal = fun x y -> x = y
+    let hash = fun x -> x
+  end
+)
+;;
 
 module StringMap = Map.Make(
   struct 
@@ -2995,44 +3010,25 @@ let stringset_map f s =
   ;
   !d
 
-(* generic entity instances: functions, variables *)
-type instance_registry_t = (int * btypecode_t list, int) Hashtbl.t
-
-type felix_compiler_options_t = 
-{
-  print_flag: bool;
-  debug : bool;
-  optimise : bool;
-  trace : bool;
-  include_dirs : string list;
-  files : string list;
-  raw_options: (string * string) list;
-  reverse_return_parity: bool;
-  heavy_inlining : bool;
-  max_inline_length : int;
-  compile_only : bool;
-}
-
-type sym_state_t = 
-{
-  dfns : symbol_table_t;
-  counter : int ref;
-  varmap : typevarmap_t;
-  ticache : (int, btypecode_t) Hashtbl.t;
-  env_cache : (int, env_t) Hashtbl.t;
-  registry : type_registry_t;
-  compiler_options : felix_compiler_options_t;
-  instances : instance_registry_t;
-  include_files : string list ref;
-  roots : IntSet.t ref;
-  wrappers : (int, int) Hashtbl.t;
-}
-
-
 @h = tangler('src/flx_mtypes1.mli')
 @select(h)
-open Flx_ast
-open Flx_types
+module IntHashtbl :
+  sig
+    type key = int
+    type 'a t
+    val create : int -> 'a t
+    val clear : 'a t -> unit
+    val copy : 'a t -> 'a t
+    val add : 'a t -> key -> 'a -> unit
+    val remove : 'a t -> key -> unit
+    val find : 'a t -> key -> 'a
+    val find_all : 'a t -> key -> 'a list
+    val replace : 'a t -> key -> 'a -> unit
+    val mem : 'a t -> key -> bool
+    val iter : (key -> 'a -> unit) -> 'a t -> unit
+    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val length : 'a t -> int
+  end
 
 module StringMap :
   sig
@@ -3140,8 +3136,13 @@ module IntSetSet :
     val choose : t -> elt
   end
 
+@h = tangler('src/flx_mtypes2.ml')
+@select(h)
+open Flx_mtypes1
+open Flx_types
+
 (* generic entity instances: functions, variables *)
-type instance_registry_t = (int * Flx_types.btypecode_t list, int) Hashtbl.t
+type instance_registry_t = (int * btypecode_t list, int) Hashtbl.t
 
 type felix_compiler_options_t = 
 {
@@ -3174,9 +3175,6 @@ type sym_state_t =
   wrappers : (int, int) Hashtbl.t;
 }
 
-@h = tangler('src/flx_mtypes2.ml')
-@select(h)
-open Flx_mtypes1
 module VarMap = StringMap
 type varmap_t = string_string_map_t
 
@@ -3202,6 +3200,9 @@ module CharSet = IntSet
 
 @h = tangler('src/flx_mtypes2.mli')
 @select(h)
+open Flx_types
+open Flx_mtypes1
+
 module VarMap :
   sig
     type key = string
@@ -3335,6 +3336,41 @@ module CharSet :
     val max_elt : t -> elt
     val choose : t -> elt
   end
+
+(* generic entity instances: functions, variables *)
+type instance_registry_t = (int * btypecode_t list, int) Hashtbl.t
+
+type felix_compiler_options_t = 
+{
+  print_flag: bool;
+  debug : bool;
+  optimise : bool;
+  trace : bool;
+  include_dirs : string list;
+  files : string list;
+  raw_options: (string * string) list;
+  reverse_return_parity: bool;
+  heavy_inlining : bool;
+  max_inline_length : int;
+  compile_only : bool;
+}
+
+
+type sym_state_t = 
+{
+  dfns : symbol_table_t;
+  counter : int ref;
+  varmap : typevarmap_t;
+  ticache : (int, btypecode_t) Hashtbl.t;
+  env_cache : (int, env_t) Hashtbl.t;
+  registry : type_registry_t;
+  compiler_options : felix_compiler_options_t;
+  instances : instance_registry_t;
+  include_files : string list ref;
+  roots : IntSet.t ref;
+  wrappers : (int, int) Hashtbl.t;
+}
+
 
 @head(1,'Compile time exceptions')
 @python('//')
@@ -3639,7 +3675,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | `AST_product (_,ts) -> `TYP_tuple (List.map te ts)
   | `AST_arrow (_,(a,b)) -> `TYP_function (te a, te b)
   | `AST_superscript (_,(a,b)) -> `TYP_array (te a, te b)
-  | `AST_lvalue (sr,e) -> te e
+  | `AST_lvalue (sr,e) -> `TYP_lvalue (te e)
   | `AST_ref (sr,e) -> `TYP_pointer (te e)
   | `AST_sum (_,ts) -> 
     `TYP_sum (List.map te ts)

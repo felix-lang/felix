@@ -14,7 +14,7 @@ of functions remain unbound.
 @select(h)
 open Flx_ast
 open Flx_types
-open Flx_mtypes1
+open Flx_mtypes2
 
 val build_tables:
   sym_state_t ->
@@ -37,7 +37,7 @@ val build_tables:
 open Flx_util
 open Flx_ast
 open Flx_types
-open Flx_mtypes1
+open Flx_mtypes2
 open Flx_print
 open Flx_typing
 open Flx_srcref
@@ -382,8 +382,12 @@ let rec build_tables syms name level parent grandparent root asms =
           ;
           add_tvars privtab
         
-        | `DCL_abs (flag,c, reqs) ->
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_abs (flag,c,reqs)}
+        | `DCL_abs (quals,c, reqs) ->
+          Hashtbl.add dfns n {
+            id=id;sr=sr;parent=parent;vs=vs;
+            pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=`SYMDEF_abs (quals,c,reqs)
+          }
           ;
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n
@@ -541,13 +545,14 @@ let rec build_tables syms name level parent grandparent root asms =
           (fun (component_name,t) ->
             let getn = !counter in incr counter;
             let get_name = "get_" ^ component_name in
-            let get_dcl = `SYMDEF_fun ([stype],t,"$1." ^ component_name,[]) in
+            let get_dcl = `SYMDEF_fun ([stype],`TYP_lvalue t,"$1." ^ component_name,[]) in
             Hashtbl.add dfns getn {id=get_name;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=get_dcl};
             if access = `Public then add_function pub_name_map get_name getn;
             add_function priv_name_map get_name getn
             ;
             if print_flag then print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name)
             ; 
+            (*
             let refn = !counter in incr counter;
             let ref_name = "ref_" ^ component_name in
             let ref_dcl = `SYMDEF_fun (
@@ -562,6 +567,7 @@ let rec build_tables syms name level parent grandparent root asms =
             add_function priv_name_map ref_name refn
             ;
             if print_flag then print_endline ("//  " ^ spc ^ si refn ^ " -> " ^ ref_name)
+            *)
           )
           sts
           ;

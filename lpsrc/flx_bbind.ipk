@@ -5,7 +5,7 @@ Name binding pass 2.
 @select(h)
 open Flx_types
 open Flx_ast
-open Flx_mtypes1
+open Flx_mtypes2
 
 
 val bbind:
@@ -29,6 +29,7 @@ open Flx_util
 open Flx_types
 open Flx_ast
 open Flx_mtypes1
+open Flx_mtypes2
 open Flx_print
 open Flx_typing
 open Flx_lookup
@@ -384,6 +385,7 @@ open Flx_version
 open Flx_flxopt
 open Flx_exceptions
 open Flx_mtypes1
+open Flx_mtypes2
 open Flx_use
 ;;
 
