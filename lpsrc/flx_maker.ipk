@@ -112,6 +112,7 @@ if "help" in options:
   print "clean - remove generated C++ and binaries from test locations"
   print "debug - build debugging versions of targets"
   print "optimise - build high performance versions of targets"
+  print "refcnt - do not generate reference counting instructions"
   print "doc - build all user documentation"
   print "vim=gvim - set gvim as the vim editor"
   print "vimserver=FLX - set FLX as the editor server name"
@@ -205,10 +206,7 @@ def flxg(x,basename):
 
 #interscript command (now built in part of Felix package)
 def runISCR(a):
-  if buildall:
-    xqt(ISCR + "--nocache " + a)
-  else:
-    xqt(ISCR + ' ' + a)
+  xqt(ISCR + ' ' + a)
 
 if "compiler" in options or "bytecode" in options:
   OCAML_OBJDIR = "src"
@@ -253,10 +251,7 @@ if LINK_MODEL == "static" and not SUPPORT_STATIC_LINKAGE:
 if LINK_MODEL == "dynamic":
   FLX_CPP_DYNLINK = CCLINK_DLLIB
   FLX_CPP_LINK = CCLINK_DLMAIN
-  if CYGWIN:
-    SHLX = ".dll"
-  else:
-    SHLX = ".so"
+  SHLX = ".so"
 else:
   FLX_CPP_DYNLINK = CCOBJ_STATIC_LIB + "-DFLX_STATIC_LINK "
   FLX_CPP_LINK = CCLINK_STATIC + "-DFLX_STATIC_LINK "
@@ -466,7 +461,7 @@ def erasefile(f):
     pass
 # ----------- Here begins the actual build procedure ---------------------
 
-buildall = "clean" in options or "force" in options
+buildall = "clean" in options
 stop_on_error = "stop_on_error" in options
 import glob
 
@@ -592,38 +587,24 @@ try:
         xqt(FLX_CPP_DYNLINK + " -I. " + x + ".cpp -o " +x+"_static.o")
       print "Building static archive"
       xqt(AR + " rtl/flx_static.a " + ars)
-      xqt(RANLIB + " rtl/flx_static.a ")
       for i,j in DRIVERS:
         print 'Compiling driver object',i,'-->',j
         xqt(FLX_CPP_DYNLINK + " -I. " + i + ".cpp -o " +j+"_static.o")
     else:
-      if CYGWIN:
-        print "Building RTL for CYGWIN dynamic linkage"
-        cmd = (" g++ -w -ansi -g -I. -shared -o bin/cygflx_rtl.dll " +
-          "-Wl,--export-all-symbols -Wl,--enable-auto-import " +
-          "-Wl,--out-implib=rtl/libflx_rtl.dll.a ")
-        for x in RTL_CPPS: cmd = cmd + x + ".cpp "
-        try: 
-          xqt(cmd)
+      for testfile,outbin in DRIVERS:
+        print 'Compiling driver program ',testfile,'-->',outbin
+        try:
+          xqt(FLX_CPP_LINK + " -I. " +
+            "rtl/flx_gc.cpp " +
+            "rtl/flx_collector.cpp " +
+            "rtl/flx_rtl.cpp " +
+            "rtl/flx_dynlink.cpp " +
+            "rtl/flx_i18n.cpp " +
+            "rtl/flx_ioutil.cpp " +
+             testfile + ".cpp -o "+outbin)
         except MakeError:
-          print "Unable to build CYGWIN run time DLL"
-      else:
-        pass
-
-      for x in RTL_CPPS:
-        for testfile,outbin in DRIVERS:
-          print 'Compiling driver program ',testfile,'-->',outbin
-          if CYGWIN:
-            cmd="g++ -w -ansi -g -o flx_run -I. "+testfile+".cpp -Lrtl -lflx_rtl -Wl,--enable-auto-import "
-          else:
-            cmd=FLX_CPP_LINK + " -I. "
-            for x in RTL_CPPS: cmd=cmd+x+".cpp "
-            cmd = cmd + testfile + ".cpp -o "+outbin
-          try:
-            xqt(cmd)
-          except MakeError:
-            print "Unable to build driver"
-            raise MakeError
+          print "Unable to build driver"
+          raise MakeError
 
   # run tests
   try:
@@ -692,10 +673,7 @@ try:
       if buildall or filetime(basename+ '.cpp') > filetime(basename+SHLX):
         try:
           if LINK_MODEL == "dynamic":
-            if CYGWIN:
-              xqt("g++ -w -ansi -g -o "+basename+SHLX+" -shared -I. "+cppfilename+" -Lrtl -lflx_rtl -Wl,--enable-auto-import")
-            else:
-              xqt(FLX_CPP_DYNLINK+" -I. "+cppfilename + " -o " + basename + SHLX )
+            xqt(FLX_CPP_DYNLINK+" -I. "+cppfilename + " -o " + basename + SHLX )
           else:
             xqt(FLX_CPP_DYNLINK+" -I. "+cppfilename + " -o " + basename + "_static.o" )
             xqt(FLX_CPP_LINK+" -I. ./bin/flx_run_static.o "+basename+ "_static.o ./rtl/flx_static.a -o " + basename + SHLX )
@@ -797,20 +775,23 @@ We have no idea if it continues copying.
 @tangle('bytecode: dummy')
 @tangle('\tpython script/maker compiler bytecode')
 @tangle('')
+@tangle('bytecode.clean: dummy')
+@tangle('\tpython script/maker compiler bytecode clean')
+@tangle('')
 @tangle('bytecode.debug: dummy')
 @tangle('\tpython script/maker compiler bytecode debug')
 @tangle('')
 @tangle('extract: dummy')
 @tangle('\tpython script/maker extract')
 @tangle('')
-@tangle('extract.force: dummy')
-@tangle('\tpython script/maker extract force')
-@tangle('')
 @tangle('tut: dummy')
 @tangle('\tpython script/maker tutorial')
 @tangle('')
 @tangle('compiler: dummy')
 @tangle('\tpython script/maker compiler')
+@tangle('')
+@tangle('compiler.clean: dummy')
+@tangle('\tpython script/maker compiler clean')
 @tangle('')
 @tangle('doc: dummy')
 @tangle('\tpython script/maker doc')
@@ -839,7 +820,7 @@ We have no idea if it continues copying.
 @tangle('tests.static: dummy')
 @tangle('\tpython script/maker test static log_output')
 @tangle('')
-@tangle('tests.performance: dummy')
+@@tangle('tests.performance: dummy')
 @tangle('\tpython script/maker performance')
 @tangle('')
 @tangle('tests.regression: dummy')
@@ -906,7 +887,7 @@ We have no idea if it continues copying.
 @tangle('\trm -f flx_'+flx_version)
 @tangle('\tln -s . flx_'+flx_version)
 @tangle('\ttar -zcvf flx_'+flx_version+'_src.tgz\\')
-@tangle('\t\tflx_'+flx_version+'/Makefile\\')
+@tangle('\t\tflx_'+flx_version+'/boot-sh\\')
 @tangle('\t\tflx_'+flx_version+'/README \\')
 @tangle('\t\tflx_'+flx_version+'/CONTENTS \\')
 @tangle('\t\tflx_'+flx_version+'/INSTALL \\')
@@ -1049,7 +1030,6 @@ We have no idea if it continues copying.
 @tangle('\tinstall -d ${INSTALL_DIR}/htmlman')
 @tangle('\t(install lib/* ${INSTALL_DIR}/lib || exit 0) &> /dev/null')
 @tangle('\t(install rtl/* ${INSTALL_DIR}/rtl || exit 0) &> /dev/null')
-@tangle('\t('+RANLIB+' ${INSTALL_DIR}/rtl/flx_static.a || exit 0) &> /dev/null')
 @tangle('\t(install doc/* ${INSTALL_DIR}/doc || exit 0) &> /dev/null')
 @tangle('\t(install impldoc/* ${INSTALL_DIR}/impldoc || exit 0) &> /dev/null')
 @tangle('\t(install htmlman/* ${INSTALL_DIR}/htmlman || exit 0) &> /dev/null')
@@ -1079,8 +1059,7 @@ please see the INSTALL file
 
 @head(1,'AUTHORS')
 @select(tangler('AUTHORS'))
-John (Max) Skaller skaller at users dot sourceforge dot net
-Peter Jolly helped do the Cygwin build
+John (Max) Skaller skaller@users.sourceforge.net
 
 @head(1,'COPYING')
 @select(tangler('COPYING'))
@@ -1651,11 +1630,7 @@ TESTMODE=0
 RECOMPILE=0
 DEBUG=0
 INLINE=0
-@if DEFAULT_LINK_MODEL=="dynamic":
-   tangle("STATIC=0")
- else:
-   tangle("STATIC=1")
-
+STATIC=0
 RUNIT=1
 
 grab=1

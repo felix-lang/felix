@@ -416,15 +416,15 @@ and statement_t =
   | `AST_nop of range_srcref * string
 
   (* binding structures [prolog] *)
-  | `AST_abs_decl of range_srcref * id_t * id_t list * bool * c_t * string list
-  | `AST_ctypes of range_srcref * (srcref * id_t) list * string list
-  | `AST_incomplete of range_srcref * (srcref * id_t) list * string list
-  | `AST_const_decl of range_srcref * id_t * id_t list * typecode_t * c_t * string list
-  | `AST_fun_decl of range_srcref * id_t * id_t list * typecode_t list * typecode_t * c_t  * string list
+  | `AST_abs_decl of range_srcref * id_t * id_t list * bool * c_t
+  | `AST_ctypes of range_srcref * (srcref * id_t) list
+  | `AST_incomplete of range_srcref * (srcref * id_t) list
+  | `AST_const_decl of range_srcref * id_t * id_t list * typecode_t * c_t
+  | `AST_fun_decl of range_srcref * id_t * id_t list * typecode_t list * typecode_t * c_t 
 
   (* embedding *)
-  | `AST_header of range_srcref * string * string
-  | `AST_body of range_srcref * string * string
+  | `AST_header of range_srcref * string
+  | `AST_body of range_srcref * string
   | `AST_code of range_srcref * string
   | `AST_noreturn_code of range_srcref * string
 
@@ -521,9 +521,9 @@ type dcl_t =
   | `DCL_module of       asm_t list  
 
   (* binding structures [prolog] *)
-  | `DCL_abs of          bool * c_t * string list (* bool is completeness flag *)
-  | `DCL_const of        typecode_t * c_t * string list
-  | `DCL_fun of          typecode_t list * typecode_t * c_t * string list
+  | `DCL_abs of          bool * c_t (* bool is completeness flag *)
+  | `DCL_const of        typecode_t * c_t
+  | `DCL_fun of          typecode_t list * typecode_t * c_t 
   | `DCL_regdef of      regexp_t
   ]
 
@@ -666,7 +666,7 @@ type env_t = (name_map_t * name_map_t list) list
 
 type symbol_definition_t =
   [
-  | `SYMDEF_abs of bool * c_t * string list
+  | `SYMDEF_abs of bool * c_t
   | `SYMDEF_regdef of regexp_t
   | `SYMDEF_header of string
   | `SYMDEF_body of string
@@ -679,10 +679,10 @@ type symbol_definition_t =
   | `SYMDEF_match_check of  pattern_t * int 
   | `SYMDEF_module
   
-  | `SYMDEF_const of typecode_t * c_t * string list
+  | `SYMDEF_const of typecode_t * c_t
   | `SYMDEF_var of  typecode_t
   | `SYMDEF_val of  typecode_t
-  | `SYMDEF_fun of typecode_t list * typecode_t * c_t  * string list
+  | `SYMDEF_fun of typecode_t list * typecode_t * c_t 
   | `SYMDEF_union of  (id_t * typecode_t) list
   | `SYMDEF_struct of  (id_t * typecode_t) list
   | `SYMDEF_type_alias of   typecode_t
@@ -991,13 +991,13 @@ let src_of_stmt e = match e with
   | `AST_proc_return s 
   | `AST_ifgoto (s,_,_)
   | `AST_ifnotgoto (s,_,_)
-  | `AST_abs_decl (s,_,_, _,_,_) 
-  | `AST_ctypes (s,_,_) 
-  | `AST_incomplete (s,_,_) 
-  | `AST_const_decl (s,_,_,_,_,_) 
-  | `AST_fun_decl (s,_,_,_,_,_,_ ) 
-  | `AST_header (s,_,_) 
-  | `AST_body (s,_,_) 
+  | `AST_abs_decl (s,_,_, _,_) 
+  | `AST_ctypes (s,_) 
+  | `AST_incomplete (s,_) 
+  | `AST_const_decl (s,_,_,_,_) 
+  | `AST_fun_decl (s,_,_,_,_,_ ) 
+  | `AST_header (s,_) 
+  | `AST_body (s,_) 
   | `AST_code (s, _) 
   | `AST_noreturn_code (s, _) 
   | `AST_union (s, _,_, _ ) 
@@ -1805,9 +1805,6 @@ and string_of_properties ps =
   | [] -> ""
   | ps -> catmap " " string_of_property ps
   
-and string_of_reqs = function | [] -> ""
- | x -> "requires " ^ cat ", " x
-
 and string_of_statement level s = 
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
@@ -1880,47 +1877,38 @@ and string_of_statement level s =
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | `AST_ctypes (_,names, reqs) -> spaces level ^ 
-    "ctypes " ^ catmap "," snd names ^ 
-    string_of_reqs reqs ^
-    ";"
+  | `AST_ctypes (_,names) -> spaces level ^ 
+    "ctypes " ^ catmap "," snd names ^ ";"
 
-  | `AST_incomplete (_,names, reqs) -> spaces level ^ 
-    "incomplete ctypes " ^ catmap "," snd names ^ 
-    string_of_reqs reqs ^
-    ";"
+  | `AST_incomplete (_,names) -> spaces level ^ 
+    "incomplete ctypes " ^ catmap "," snd names ^ ";"
 
-  | `AST_abs_decl (_,t,vs, flag, code, reqs) -> spaces level ^ 
+  | `AST_abs_decl (_,t,vs, flag, code) -> spaces level ^ 
    (if flag then "" else "incomplete ") ^
    "type " ^ t ^ print_vs vs ^
-   " = " ^ string_of_string code ^ 
-   string_of_reqs reqs ^
-   ";"
+   " = " ^ string_of_string code ^ ";"
 
-  | `AST_fun_decl (_,name,vs,args, result, code, reqs) ->
+  | `AST_fun_decl (_,name,vs,args, result, code) ->
     spaces level ^ 
     "fun " ^ name ^ print_vs vs ^
     ": " ^ 
     (string_of_typecode (`TYP_tuple args)) ^ " -> " ^
     (string_of_typecode result) ^ 
-    " = " ^ string_of_string code ^ 
-    string_of_reqs reqs ^
-    ";"
+    " = " ^ string_of_string code ^ ";"
 
-  | `AST_const_decl (_,name,vs,typ, code, reqs) ->
+  | `AST_const_decl (_,name,vs,typ, code) ->
     spaces level ^ 
      "const " ^ name ^ 
      ": " ^ string_of_typecode typ ^ 
      " = "^string_of_string code^ 
-     string_of_reqs reqs ^
      ";" 
 
-  | `AST_header (_,n,s) -> let triple_quote = "\"\"\"" in
-    "header "^n^"\n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
+  | `AST_header (_,s) -> let triple_quote = "\"\"\"" in
+    "header \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
     ";\n"
 
-  | `AST_body (_,n,s) -> let triple_quote = "\"\"\"" in
-    "body "^n^"\n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
+  | `AST_body (_,s) -> let triple_quote = "\"\"\"" in
+    "body \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
     ";\n"
 
   | `AST_code (_,s) -> let triple_quote = "\"\"\"" in
@@ -2125,10 +2113,10 @@ and string_of_iface level s =
 and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t) 
 = match entry with
   | `SYMDEF_header s -> 
-    "header " ^ name ^ " "^ string_of_string s ^ ";\n"
+    "header " ^ string_of_string s ^ ";\n"
     
   | `SYMDEF_body s -> 
-    "body " ^ name ^ " "^ string_of_string s ^ ";\n"
+    "body " ^ string_of_string s ^ ";\n"
 
   | `SYMDEF_regdef re ->
     "regexp " ^ name ^ " = " ^ string_of_re re ^ ";\n"
@@ -2136,12 +2124,10 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
   | `SYMDEF_type_alias t -> 
     "typedef " ^ name ^ print_ivs vs ^" = " ^ string_of_typecode t ^ ";"
   
-  | `SYMDEF_abs (flag,code, reqs) ->
+  | `SYMDEF_abs (flag,code) ->
     (if flag then "" else "incomplete ") ^
     "type " ^ name ^ print_ivs vs ^
-    " = " ^ string_of_string code ^ 
-    string_of_reqs reqs ^
-    ";"
+    " = " ^ string_of_string code ^ ";"
 
   | `SYMDEF_var (t) -> 
     "var " ^ name ^ print_ivs vs ^":"^ string_of_typecode t ^ ";"
@@ -2155,11 +2141,8 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
   | `SYMDEF_typevar (t) -> 
     "typevar " ^ name ^ print_ivs vs ^":"^ string_of_typecode t ^ ";"
 
-  | `SYMDEF_const (t,ct, reqs) -> 
-    "const " ^ name ^ print_ivs vs ^":"^ 
-    string_of_typecode t ^ " = '" ^ct^"'"^
-    string_of_reqs reqs ^
-    ";"
+  | `SYMDEF_const (t,ct) -> 
+    "const " ^ name ^ print_ivs vs ^":"^ string_of_typecode t ^ " = '" ^ct^"';"
     
   | `SYMDEF_union (cts) -> 
     "union " ^ name ^ print_ivs vs ^ ";"
@@ -2167,7 +2150,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
   | `SYMDEF_struct (cts) -> 
     "struct " ^ name ^ print_ivs vs ^ ";"
     
-  | `SYMDEF_fun (pts,res,cts, reqs) -> 
+  | `SYMDEF_fun (pts,res,cts) -> 
     "fun " ^ name ^ print_ivs vs ^
     ": " ^ string_of_typecode 
     (
@@ -2182,7 +2165,6 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
         res
       )
     ) ^
-    string_of_reqs reqs ^
     ";"
  
   | `SYMDEF_function (ps,res,props, es) -> 
@@ -2420,8 +2402,8 @@ and string_of_dcl level name vs (s:dcl_t) =
   | `DCL_regdef re -> 
     spaces level ^ "regexp " ^ name ^ " = " ^ string_of_re re ^ ";\n"
 
-  | `DCL_header s -> "header " ^ name ^ " "^ string_of_string s
-  | `DCL_body s -> "body " ^ name ^ " "^ string_of_string s
+  | `DCL_header s -> "header " ^ string_of_string s
+  | `DCL_body s -> "body " ^ string_of_string s
 
   | `DCL_type_alias (t2) ->
     spaces level ^ "typedef " ^ name ^ print_vs vs ^
@@ -2451,30 +2433,24 @@ and string_of_dcl level name vs (s:dcl_t) =
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | `DCL_abs (complete, code, reqs) -> spaces level ^ 
+  | `DCL_abs (complete, code) -> spaces level ^ 
     (if complete then "" else "incomplete ") ^
     "type " ^ name ^ print_vs vs ^
-    " = " ^ string_of_string code ^ 
-    string_of_reqs reqs ^
-    ";"
+    " = " ^ string_of_string code ^ ";"
 
-  | `DCL_fun (args, result, code, reqs) ->
+  | `DCL_fun (args, result, code) ->
     let argtype:typecode_t = type_of_argtypes args in
     let t:typecode_t = `TYP_function (argtype,result) in
     spaces level ^ 
     "fun " ^ name ^ print_vs vs ^
     ": " ^ string_of_typecode t ^
-    " = " ^ string_of_string code ^ 
-    string_of_reqs reqs ^
-    ";"
+    " = " ^ string_of_string code ^ ";"
 
-  | `DCL_const (typ, code, reqs) ->
+  | `DCL_const (typ, code) ->
     spaces level ^ 
      "const " ^ name ^print_vs vs ^  
      ": " ^ string_of_typecode typ ^ 
-     " = "^string_of_string code^ 
-    string_of_reqs reqs ^
-     ";" 
+     " = "^string_of_string code^ ";" 
 
   | `DCL_function (ps, res, props, ss) -> 
     spaces level ^ 
@@ -2530,8 +2506,8 @@ and string_of_bbdcl dfns bbdcl index =
   let sobt t = string_of_btypecode dfns t in
   let se e = string_of_bound_expression dfns e in
   match bbdcl with
-  | `BBDCL_header s -> "header " ^ name^ " "^ string_of_string s
-  | `BBDCL_body s -> "body " ^ name^ " "^ string_of_string s
+  | `BBDCL_header s -> "header " ^ string_of_string s
+  | `BBDCL_body s -> "body " ^ string_of_string s
 
   | `BBDCL_function (props,vs,ps,res,es) ->
     string_of_properties props ^

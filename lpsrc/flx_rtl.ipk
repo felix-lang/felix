@@ -22,7 +22,7 @@ right type by client drivers.
 #ifndef FLX_RTL
 #define FLX_RTL
 #ifndef FLX_GC
-#include "rtl/flx_gc.hpp"
+#include <rtl/flx_gc.hpp>
 #endif
 #include <string>
 
@@ -95,7 +95,7 @@ struct flx_exec_failure_t {
 
 @h = tangler("rtl/flx_rtl.cpp")
 @select(h)
-#include "rtl/flx_rtl.hpp"
+#include "flx_rtl.hpp"
 #include <cstdio>
 
 namespace flx { namespace rtl {
@@ -181,8 +181,8 @@ or even constants which require dynamic initialisation.
 #ifndef FLX_DYNLINK
 #define FLX_DYNLINK
 #ifndef FLX_RTL
-#include "rtl/flx_rtl.hpp"
-#include "rtl/flx_gc.hpp"
+#include "flx_rtl.hpp"
+#include "flx_gc.hpp"
 #endif
 #include <string>
 using namespace std;
@@ -314,7 +314,7 @@ private:
 
 @h = tangler("rtl/flx_dynlink.cpp")
 @select(h)
-#include "rtl/flx_dynlink.hpp"
+#include "flx_dynlink.hpp"
 #ifdef FLX_STATIC_LINK
 extern void *create_global_frame;
 extern void *create_process_frame;
@@ -464,8 +464,8 @@ program must not read any messages.
 
 #include <string>
 #include <unistd.h>
-#include "rtl/flx_collector.hpp"
-#include "rtl/flx_dynlink.hpp"
+#include "flx_collector.hpp"
+#include "flx_dynlink.hpp"
 
 using namespace std;
 using namespace flx::rtl;

@@ -277,7 +277,6 @@ Flx_version.version_data := version_data
     ["regexp", "REGEXP"],
     ["reglex", "REGLEX"],
     ["regmatch", "REGMATCH"],
-    ["requires", "REQUIRES"],
     ["return", "RETURN"],
     ["set","SET"],
     ["struct", "STRUCT"],
@@ -342,6 +341,7 @@ Flx_version.version_data := version_data
 @head(2,'The Felix Run time')
 @include_file ('flx_rtl.ipk')
 @include_file ('flx_gc.ipk')
+@include_file ('flx_boost.ipk')
 @include_file ('flx_lib.ipk')
 @include_file ('flx_lex_lib.ipk')
 

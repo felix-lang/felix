@@ -30,80 +30,48 @@ open Flx_unify
 open Flx_exceptions
 open List
 
-let cal_call syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) =
-  match unfold pt with
-  | `BTYP_function (t, `BTYP_void) -> 
-    if t = argt 
-    then `BEXE_call (sr,(p,lower pt), tbe2)
-    else
-      clierr sr
-      (
-        "[cal_call] Procedure " ^
-        sbe syms.dfns tbe1 ^
-        "\nof type " ^
-        sbt syms.dfns pt ^
-        "\napplied to argument " ^
-        sbe syms.dfns tbe2 ^
-        "\n of type " ^
-        sbt syms.dfns argt ^
-        "\nwhich doesn't agree with parameter type\n" ^
-        sbt syms.dfns t 
-      )
-
+let cal_call dfns sr (p,pt) e =
+  match lower pt with
+  | `BTYP_function (_, `BTYP_void) -> 
+    `BEXE_call (sr,(p,lower pt), e)
   | _ -> 
     clierr sr ("[cal_call] call non procedure, "^
-    sbe syms.dfns (p,pt)
-    ^"\ntype=" ^ sbt syms.dfns pt)
+    string_of_bound_expression dfns (p,pt)
+    ^"\ntype=" ^ string_of_btypecode dfns pt)
 
-let cal_loop syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
-  match unfold pt with
-  | `BTYP_function (t, `BTYP_void) -> 
-    if t = argt 
-    then 
-      match p with
-      | `BEXPR_closure (i,ts) ->
-        begin match Hashtbl.find syms.dfns i with
-        {id=id;sr=sr}->
-        print_endline ("In function " ^ si this ^ " loop to " ^ id ^ "[" ^ si i ^"]");
-        let j = ref 0 in 
-        let rec aux k = 
-          if k <> i
-          then
-            match Hashtbl.find syms.dfns k with
-            | {parent=Some k} -> incr j; aux k
-            | {parent=None; sr=sr'} -> 
-              clierr2 sr sr' 
-              "[cal_loop] Loop target must be self or parent"
-        in 
-          aux this;
-          print_endline ("loop " ^ si !j);
-          `BEXE_loop (sr,!j, tbe2)
-        end
+let cal_loop dfns sr (p,pt) e this =
+  match lower pt with
+  | `BTYP_function (_, `BTYP_void) -> 
+    begin match p with
+    | `BEXPR_closure (i,ts) ->
+      begin match Hashtbl.find dfns i with
+      {id=id;sr=sr}->
+      print_endline ("In function " ^ si this ^ " loop to " ^ id ^ "[" ^ si i ^"]");
+      let j = ref 0 in 
+      let rec aux k = 
+        if k <> i
+        then
+          match Hashtbl.find dfns k with
+          | {parent=Some k} -> incr j; aux k
+          | {parent=None; sr=sr'} -> 
+            clierr2 sr sr' 
+            "[cal_loop] Loop target must be self or parent"
+      in 
+        aux this;
+        print_endline ("loop " ^ si !j);
+        `BEXE_loop (sr,!j, e)
+      end
 
-      | _ -> 
-        clierr sr (
-          "[cal_loop] Expected procedure closure, got "^
-          string_of_bound_expression syms.dfns (p,pt)
-        )
-    else
-      clierr sr
-      (
-        "[cal_loop] Procedure " ^
-        sbe syms.dfns tbe1 ^
-        "\nof type " ^
-        sbt syms.dfns pt ^
-        "\napplied to argument " ^
-        sbe syms.dfns tbe2 ^
-        "\n of type " ^
-        sbt syms.dfns argt ^
-        "\nwhich doesn't agree with parameter type\n" ^
-        sbt syms.dfns t 
+    | _ -> 
+      clierr sr (
+        "[cal_loop] Expected procedure closure, got "^
+        string_of_bound_expression dfns (p,pt)
       )
-
+    end
   | _ -> 
     clierr sr ("[cal_loop] loop to non procedure, "^
-    string_of_bound_expression syms.dfns (p,pt)
-    ^"\ntype=" ^ string_of_btypecode syms.dfns pt)
+    string_of_bound_expression dfns (p,pt)
+    ^"\ntype=" ^ string_of_btypecode dfns pt)
 
 exception Found of int
 
@@ -243,7 +211,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
          (`AST_name(sr,n,[]) : qualified_name_t)
          t2 
       in  
-        tack (cal_loop syms sr tbe1 (be2,t2) index)
+        tack (cal_loop syms.dfns sr tbe1 (be2,t2) index)
 
     | `EXE_jump (a,b) ->
       incr proc_return_count;
@@ -263,11 +231,11 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
            qn t2 
          | _ -> be sn
       in  
-        tack (cal_call syms sr tbe1 (be2,t2))
+        tack (cal_call syms.dfns sr tbe1 (be2,t2))
 
     | `EXE_call (p,e) ->
       let p',pt' = be p and e',et' = be e in
-      tack (cal_call syms sr (p', pt') (e', et'))
+      tack (cal_call syms.dfns sr (p', pt') (e', et'))
 
     | `EXE_read s ->          
       let dummy_sr = ("bind exes",0,0,0,0) in
