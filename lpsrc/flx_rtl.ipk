@@ -505,22 +505,18 @@ int main(int argc, char* argv[])
   int flx_argc = argc;
 //  printf("Statically linked Felix program running\n");
 #endif
+  bool debug = (flx_argc > 1) && (strcmp(flx_argv[1],"--debug")==0);
+  if(debug)for(int i=0; i<flx_argc; ++i) printf("flx_argv[%d]->%s\n",i,flx_argv[i]);
   try 
   {
-    //printf("flx_run driver begins\n");
+    if(debug)printf("flx_run driver begins %s\n",flx_argv[0]);
     flx_dynlink_t library;
     flx_libinit_t instance;
 
     library.link(filename);
-#ifdef FLX_STATIC_LINK
-//    printf("Linked %s\n",filename);
-#endif
     flx::gc::collector::malloc_free allocator;
     flx::gc::collector::flx_collector_t collector(&allocator);
     instance.create(&library, &collector);
-#ifdef FLX_STATIC_LINK
-//    printf("Created instance %s\n",filename);
-#endif
  
     int gc_counter = 0;
     con_t *top = instance.start;
@@ -540,13 +536,14 @@ int main(int argc, char* argv[])
           if(old_root) collector.remove_root(old_root);
           old_root = top;
         }
-        collector.collect();
+        unsigned long n = collector.collect();
+        if(debug)printf("collected %ld\n",n);
       }
     }
 
     instance.destroy();
-    collector.collect();
-    //printf("flx_run driver ends normally\n");
+    unsigned long n = collector.collect();
+    if(debug)printf("flx_run driver ends normally, collected %ld\n",n);
     return 0;
   }
   catch (flx_link_failure_t x)

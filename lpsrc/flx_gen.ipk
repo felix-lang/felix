@@ -429,57 +429,6 @@ val format_vars:
   string
 
 @h = tangler('src/flx_gen.ml')
-@doc()
-Ref counting notes. 
-@p()
-Call: the callers frame count is up by 1,
-since the callee has a link to it.
-The callee count should probably go up by 1 too.
-@p()
-Return: the callers count goes down,
-because the callee no longer has a link to it.
-The callee's count should go down by 1.
-@p()
-Jump: we give the callee our own callers
-address, so that should remain the same.
-Our own count goes down by 1, the new frame's up by 1.
-@p()
-Loop. Nothing changes if we loop to ourself.
-If we loop up scope, the stack must be unwound
-by the equivalent of a lot of returns.
-@p()
-Issue: The driver holds the current frame's address (old)
-and then get the new one (new). Logically it should
-increment new, and decrement old (in that order in case
-its the same frame). Unfortunately, this cannot work
-in the return case, since the calling code decrements
-the callers frame to zero before it is returned
-to the driver, and it is too late to increment it
-back again.
-@p()
-This means the driver cannot do the increment
-on the frame it gets, and so it has to be done
-by the client.
-@p()
-On the other hand, its OK for the driver to
-decrement a frame it is losing. On a return,
-this deletes the callee. On a call, the callers
-count goes down by one, but only after the increment
-due to the callee acquiring it. It is also possible
-to 'decref(this)' on the client side, since we actually
-know the driver is holding a pointer to us, and will
-soon lose it.
-@p()
-Call: increment new frame. The link in the new frame to 
-us replaces the one the driver holds, so our refcount
-doesn't change.
-@p()
-Return: decrement this. Although the link to 
-the caller is no longer valid, the driver is about
-to acquire the caller, so leave the caller count alone.
-@p()
-Jump: increment the new frame and decrement this.
-
 @select(h)
 open Flx_util
 open Flx_ast
@@ -826,24 +775,10 @@ let gen_ctor syms bbdfns name display ts =
     )
     display
   ) ^ 
-  "\n  {"^
-  (match display with
-  | [] -> ""
-  | h :: _ -> 
-    let iname = cpp_instance_name syms bbdfns h ts in
-    " incref(ptr"^iname^"); "
-  )
-  ^"}\n"
+  " {}\n"
 
 let gen_dtor syms bbdfns name display ts =
-  name^"::~"^name^"(){" ^
-  (match display with
-  | [] -> ""
-  | h :: _ -> 
-    let iname = cpp_instance_name syms bbdfns h ts in
-    " decref(ptr"^iname^"); "
-  )
-  ^"}\n"
+  name^"::~"^name^"(){}\n"
 
 let is_closure_var bbdfns index =
   let var_type bbdfns index =
@@ -1379,7 +1314,6 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
               subs ^
               "      con_t *tmp = _caller;\n" ^
               "      _caller = 0;\n" ^
-              "      decref(this);\n" ^
               call_string ^
               "      }\n"
             else
@@ -1441,7 +1375,6 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
       "        {\n" ^
       "          con_t *tmp2 = tmp1->_caller;\n" ^
       "          tmp1 -> _caller = 0;\n" ^
-      "          decref(tmp1);\n" ^
       "          tmp1 = tmp2;\n" ^
       "        }\n" ^
       "      }\n" ^
@@ -1465,37 +1398,6 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
     let ts = map tsub ts in
     handle_closure sr false index ts subs x
 
-  (* Refcounting notes for loop 
-    Normally, the refcnt of every frame in the call stack is 1
-    (if there are no pointer into any frames)
-
-    There is a _caller link in each frame, which is the pointer
-    being counted, except the top frame, whose pointer is
-    held by the driver. Not that display pointers are considered
-    weak and are never counted. The reason is that they
-    always point to a frame the _caller variable points to,
-    directly or indirectly, if the top frame is deleted,
-    the call link -- and the display pointers -- disappear.
-
-    If the top frame is not deleted, because for example
-    there is a pointer into it, the caller and display
-    pointers would hold the whole call chain in place.
-    We don't want that, so we have to zero out the caller link.
-
-    Unfortunately .. the display pointers are still there,
-    they're garbage collected, but they're not counted,
-    so decrementing the caller frames ref count to zero
-    could produce a disaster if we're not careful.
-
-    Normally, once a frame has been executed, it can't
-    be executed again. Therefore the display pointers
-    cannot be used. The exception is the loop command target,
-    but that has no impact since it isn't unwound.
-
-    The effect is, an isolated top frame may exist with its
-    underpants removed: precisely, the control relationship
-    is lost, and only any data relationship remains.
-  *)
   | `BEXE_loop (sr,i,a) ->
     let ptr = 
       if i= 0 then "this"
@@ -1522,7 +1424,6 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
         "           con_t *tmp2 = tmp->_caller;\n" ^
         "           printf(\"unwinding %p, caller is %p\\n\",tmp,tmp2);\n" ^
         "           tmp->_caller = 0;\n" ^
-        "           decref(tmp);\n" ^
         "           tmp = tmp2;\n"^
         "        }\n" ^
         "        return res;\n" ^
@@ -1578,7 +1479,6 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
     "      {\n" ^
     "        con_t *tmp = _caller;\n" ^
     "        _caller=0;\n" ^
-    "        decref(this);\n" ^
     "        return " ^ ge sr p ^ "\n      ->call(" ^ args ^");\n" ^
     "      }\n"
 
@@ -1621,7 +1521,6 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
     "      //" ^ src_str ^ "\n" ^
     "      {\n" ^
     "        "^t^" tmp="^ge sr e^";\n" ^
-    "        decref(this);\n" ^
     "        return tmp;\n" ^
     "      }\n"
 
@@ -2424,7 +2323,6 @@ try
   plb "{ \\";
   plb "  con_t *tmp = _caller; \\";
 (*    plb "  printf(\"returning from %p to %p\\n\",this,tmp);\\"; *)
-  plb "  decref(this); \\";
   plb "  _caller = 0; \\";
   plb "  return tmp; \\";
   plb "}";

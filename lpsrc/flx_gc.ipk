@@ -111,7 +111,6 @@ struct frame_t
   unsigned long n_objects; // how many objects (for arrays)
   frame_t *next;          // the next and previous objects
   frame_t *prev;          // in the collectors list
-  unsigned long refcnt;   // the reference count
   collector_t *collector; // the managing collector
   bool garbage;           // the garbage flag
   bool finalised;         // whether the object is finalised
@@ -198,24 +197,7 @@ private: // no assignment or copy
   collector_t(collector_t const&);
 };
 
-@doc()
-The following functions are used to manipulate the
-reference counting system. The pointers here must be
-pointers to the client part, not the frame.
-Reference counting is entirely optional, but if it is
-used, the count must be correctly maintained because
-the decref routine deletes an object when its refcount
-drops to zero.
-@select(h)
-void *_incref(void *b);
-void decref(void *b);
-unsigned long getref(void *b);
 
-template<class T>
-T *incref(T *b)
-{
-  return static_cast<T*>(_incref(b));
-}
 @doc()
 The destroy function unconditionally deletes an object,
 so it must only be used when there are no managed pointers
@@ -298,70 +280,6 @@ length of an array, respectively.
 void flx_reset_shape(void *memory, gc_shape_t &);
 void flx_reset_count(void *memory, unsigned long); 
 
-@doc()
-The handle class is provided to automate reference
-counting. If reference counting is used correctly
-in conjunction with the collector, the collector
-will delete an object with a non-zero reference
-count if and only if it is unreachable from a root,
-and the reference counting system will delete 
-an unreachable object for which there are no cycles.
-Therefore, the reference counting system will
-pre-empt the collector for non-cyclic data collections,
-thereby providing synchronous collection.
-@p()
-In particular, Felix stack frames, when reference 
-counted, will be deleted in the FIFO ordering
-corresponding to C++ function calls, provided
-no Felix pointers to variables in inactive
-frames exist. Felix permits such pointers,
-which is the primary reason frames are collected.
-@p()
-Note: reference counting is expensive, and should only
-be used when synchronous well ordered destructor
-calls are required for stack frames, or when overall
-performance is less important than real time behaviour.
-@p()
-Felix objects owned exclusively by STL containers,
-for example, will be deleted if no Felix object
-refers to them. Therefore do not call the collector
-when this is the case. The objects will be correctly
-deleted by destroying the STL container provided
-they're managed by the handle class.
-@p()
-The handle class must only be used on objects managed
-by the collector, in particular, constructed by the
-provided operator new. The appropriate syntax
-for construction is then:
-@begin_displayed_code()
-  handle(new (gc) X(args))
-@end_displayed_code()
-Use of the pointer management routines is clearly
-exhibited in this class.
-@select(h)
-template<class T>
-struct handle
-{
-  T *p;
-  handle(T *a=0) : p(a) { _incref(a); }
-  handle(handle const &h) : p(h.a) { _incref(p); }
-  handle &operator=(handle const &h)
-  {
-    set_ptr(&p, h.p);
-    return *this;
-  }
-
-  ~handle() {
-    release_ptr(&p);
-  }
-  T *operator->()const { return p; }
-  T &operator *()const { return *p; }
-  void release() { release_ptr(&p); }
-  void set(T *a) { set_ptr(&p, a); }
-};
-
-extern size_t handle_offsets[1];
-
 }}} // end namespaces
 #endif
 
@@ -391,8 +309,6 @@ gc_shape_t::gc_shape_t
   offsets(offsets_a)
 {}
 
-size_t handle_offsets[1] = {0};
-
 void destroy(void *p)
 {
   if(p)
@@ -403,62 +319,15 @@ void destroy(void *p)
    }
 }
 
-void *_incref(void *client)
-{
-#ifndef NDEBUG  
-  if (client)
-    printf("incref %p: %ld->%ld\n",client, getref(client), getref(client)+1);
-#endif
-  if(client)
-    ++(CLIENT_TO_FRAME(client)->refcnt);
-  return client;
-}
-
-void decref(void *client)
-{
-#ifndef NDEBUG  
-  if(client)
-    printf("decref %p: %ld->%ld\n",client,getref(client),getref(client)-1);
-#endif
-  if(client)
-  {
-    if(getref(client)<=0) printf("SYSTEM ERROR : ZERO REFCNT\n");
-    frame_t *frame = CLIENT_TO_FRAME(client);
-    if(!frame->finalised && frame->refcnt)
-    {
-      if(!--frame->refcnt)
-      {
-#ifndef NDEBUG  
-        printf("DEALLOCATE %p\n",client);
-#endif
-        frame->collector->deallocate(frame);
-      }
-    }
-  }
-}
-
-unsigned long getref(void *client)
-{
-  if(client)
-  {
-    frame_t *frame = CLIENT_TO_FRAME(client);
-    return frame->refcnt;
-  }
-  else return (unsigned long)-1;
-}
-
 // b may be 0
 void _init_ptr(void **a, void *b)
 {
-  _incref(b);
   *a = b;
 }
 
 // *a or b may be 0
 void _set_ptr(void **a, void *b)
 {
-  _incref(b);
-  decref(*a);
   *a = b;
 }
 
@@ -467,7 +336,6 @@ void _release_ptr(void **a)
 {
   void *p = *a;
   *a = 0;
-  decref(p);
 }
 
 void _destroy_ptr(void **a)
@@ -650,7 +518,6 @@ void * flx_collector_t::allocate(gc_shape_t *shape, unsigned long nobj)
   fp->shape = shape;
   fp->garbage = parity;
   fp->finalised = false;
-  fp->refcnt = 1;
   fp->n_objects = nobj;
   fp->collector = this;
 
@@ -682,7 +549,7 @@ void flx_collector_t::unlink(frame_t *fp)
 
   // flag the object as finalised, even before
   // actually calling the finaliser, to
-  // prevent recursion via decref or destroy
+  // prevent recursion via destroy
   fp->finalised = true;
 
   // call the finaliser if there is one
