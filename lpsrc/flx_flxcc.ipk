@@ -224,6 +224,15 @@ let rec aux () =
           control.root_includes <- fn :: control.root_includes;
           raise Next
 
+        | "incfile" ->
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "incfile statement requires filename";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          let fn = String.sub line j (!i-j) in
+          control.raw_includes <- StringSet.add fn control.raw_includes;
+          raise Next
+
         | "recincdir" ->
           while !i < n && line.[!i]=' ' do incr i done;
           if !i = n then failwith "incdir statement requires filename";
@@ -757,7 +766,7 @@ let chop_extension f =
   let b = Filename.basename f in
   let d = Filename.dirname f in
   let b = try Filename.chop_extension b with _ -> b in
-  Filename.concat d b
+  if d = "." then b else Filename.concat d b
 ;;
 
 let flxinclude_of_cfile cfilename =
@@ -875,7 +884,21 @@ List.iter
   add_loc loc;
   match isanon g,flx_name g,flx_name' g with
   | _,None,_ 
-  | true,_,_ -> ()
+  | true,_,_ ->
+    begin match g with
+
+    (* enum { .. }; *)
+    | GEnumTag (ei,_) -> 
+      begin match ei with { eitems=eitems } ->
+        iter
+        (fun (s,_,_) -> 
+          if ispublic s then rpl loc (`enums (rplname s,s))
+        )
+        eitems
+      end
+    | _ -> ()
+    end
+
   | _,Some _,None -> assert false
   | false,Some key,Some key' ->
   if not (Hashtbl.mem control.rejects key) then

@@ -67,17 +67,13 @@ let include_file syms inspec lookup =
   let d = Filename.dirname inspec in
   let b = Filename.basename inspec in
   let b = try Filename.chop_extension b with _ -> b in
-  let basename = Filename.concat d b in
-  if mem basename !(syms.include_files)
-  then []
-  else 
-    let include_dirs = syms.compiler_options.include_dirs in
-    syms.include_files := basename :: !(syms.include_files);
-    let tf = find_file lookup include_dirs (basename ^ ".flx") in
-    let pf = find_file lookup include_dirs (basename ^ ".par") in
-    let tf_mt = filetime tf in
-    let pf_mt = filetime pf in
-    let saveit sts =
+  let basename = if d = "." then b else Filename.concat d b in
+  let include_dirs = syms.compiler_options.include_dirs in
+  let tf = find_file lookup include_dirs (basename ^ ".flx") in
+  let pf = find_file lookup include_dirs (basename ^ ".par") in
+  let tf_mt = filetime tf in
+  let pf_mt = filetime pf in
+  let saveit sts =
       let pf = 
         if pf = "" then 
           (try Filename.chop_extension tf with | _ -> tf) ^ ".par"
@@ -88,8 +84,8 @@ let include_file syms inspec lookup =
           Marshal.to_channel x (this_version,sts) [];
           close_out x
         with _ -> () (* can't write, don't worry *)
-    in
-    let parseit() =
+  in
+  let parseit() =
       let sts = 
         Flx_parse_ctrl.parse_file 
           tf 
@@ -98,10 +94,10 @@ let include_file syms inspec lookup =
       in
         let local_prefix = Filename.basename basename in
         expand_macros local_prefix 5000 sts
-    in
-    let sts =
+  in
+  let sts =
       (* -- no file ----------------------------------------- *)
-      if tf_mt = 0.0 && pf_mt = 0.0 then 
+    if tf_mt = 0.0 && pf_mt = 0.0 then 
         failwith 
         (
           "No .flx or .par file for name " ^ 
@@ -111,25 +107,36 @@ let include_file syms inspec lookup =
         )
 
       (* -- parsed file is newer or text doesn't exist ------- *)
-      else if tf_mt < pf_mt then 
-        let x = open_in_bin pf in
-        let (that_version,tree) = Marshal.from_channel x in
-        close_in x;
-        if this_version = that_version
-        then
-          tree
+    else 
+    let include_name =
+      Filename.chop_extension 
+      (if tf <> "" then tf else pf)
+    in
+      if mem include_name !(syms.include_files) then []
+      else
+      begin
+        syms.include_files := include_name :: !(syms.include_files)
+        ;
+        if tf_mt < pf_mt then 
+          let x = open_in_bin pf in
+          let (that_version,tree) = Marshal.from_channel x in
+          close_in x;
+          if this_version = that_version
+          then
+            tree
+          else 
+            let sts = parseit() in
+            saveit sts;
+            sts
+
+        (* -- text file is newer or parsed file doesn't exist -- *)
         else 
           let sts = parseit() in
           saveit sts;
           sts
-
-      (* -- text file is newer or parsed file doesn't exist -- *)
-      else 
-        let sts = parseit() in
-        saveit sts;
-        sts
-    in
-      sts
+      end
+  in
+    sts
 
 let  fix_params seq (ps:parameter_t list):string list * parameter_t list = 
   let rec aux (ps:parameter_t list) :string list * parameter_t list =
