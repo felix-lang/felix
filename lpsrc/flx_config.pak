@@ -471,7 +471,7 @@ else:
   print "WARNING: CANT FIND C++ COMPILER"
 
 # set preprocessor
-if not HAVE_CPP:
+if HAVE_GCC:
   CPP = CXX + "-E "
 
 # find if we have CYGWIN
@@ -497,6 +497,13 @@ if 1:
   else:
     HAVE_PKGCONFIG=0
     PKGCONFIG_PACKAGES = {}
+
+# set preprocessing command for flxcc (tricky!)
+FLXCC_CPP = CPP
+if HAVE_PKGCONFIG:
+  pkgs = ""
+  for i in PKGCONFIG_PACKAGES.keys(): pkgs = pkgs + i + " "
+  FLXCC_CPP = FLXCC_CPP + "`pkg-config --cflags "+pkgs+"`"
 
 # set C++ compilation commands
 # for CYGWIN, this isn't enough, it needs to generate
@@ -690,6 +697,7 @@ try:
   p(f,"HAVE_PKGCONFIG")
   p(f,"CXX")
   p(f,"CPP")
+  p(f,"FLXCC_CPP")
   p(f,"STRIP")
   p(f,"AR")
   p(f,"RANLIB")

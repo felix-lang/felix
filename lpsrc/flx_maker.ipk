@@ -417,17 +417,14 @@ MODULES = [
   'flx_cil_rmtmps',
   'flx_cil_cabsvisit',
   'flx_cil_inthash',
-  #'flx_cil_testcil',
   'flx_cil_formatparse',
   'flx_cil_formatlex',
-  #'flx_cil_libmaincil',
   'flx_cil_util',
   'flx_cil_mergecil',
   'flx_cil_patch',
   'flx_cil_formatcil',
   'flx_cil_cilutil',
   'flx_cil_cabs2cil',
-  #'flx_cil_maincil',
   'flx_cil_check',
   'flx_util'         ,
   'flx_getopt'       ,
@@ -596,7 +593,7 @@ import glob
 
 def copy_mli2ml():
   for f in RAW_INTERFACES:
-    if filetime("src/"+f+".mli") > filetime("src/"+f+".cmi"):
+    if filetime("src/"+f+".mli") > filetime("src/"+f+".ml"):
       os.system("cp src/"+f+".mli src/"+f+".ml")
 
 
@@ -1147,7 +1144,13 @@ We have no idea if it continues copying.
 @tangle('\tpython -O script/make_config.py quiet')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx.pak')
 @tangle('')
-
+@tangle('config/usr_include.hhh: config/usr_include.h')
+@tangle('\t'+FLXCC_CPP+' config/usr_include.h >config/usr_include.hhh')
+@tangle('')
+@tangle('wrappers: config/usr_include.hhh')
+@tangle('\tbin/flxcc config/usr_include.flxcc')
+@tangle('\tfor i in `ls flxcc_out/*.flx`; do echo $$i; bin/flxg -Ilib -Iflxcc_out -c flxcc_out/`basename $$i .flx`; done')
+@tangle('')
 @tangle('install: dummy')
 @tangle('\t#"INSTALL_DIR=${INSTALL_DIR}"')
 @tangle('\t#"EXEC_DIR=${EXEC_DIR}"')

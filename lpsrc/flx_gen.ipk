@@ -2033,6 +2033,7 @@ try
   and header_file_name = filebase ^ ".hpp"
   and body_file_name = filebase ^ ".cpp" 
   and report_file_name = filebase ^ ".xref" 
+  and par_file_name = filebase ^ ".par"
   and module_name = 
     let n = String.length filebase in 
     let i = ref (n-1) in
@@ -2044,7 +2045,33 @@ try
   let compiler_options = { compiler_options with include_dirs = include_dirs } in
   let syms = { syms with compiler_options = compiler_options } in
 
+  (* try to prevent the top level module including itself,
+  this can happen when compiling a library module with the -c
+  option to generate a .par file, and it includes a file
+  which recursively includes it -- such recursion is allowed
+  in Felix, as in Python, as multiple inclusions are automatically
+  blocked, including recursive ones .. there is a problem here
+  if the include filenames are distinct strings but denote the
+  same file, which can happen easily if pathnames are used:
+  the pathname used on the command line must agree with internal
+  uses for duplicate inclusions to be blocked -- it won't in a 
+  typical case, so we just strip away the directory name
+  part as a hack
+  *)
+  syms.include_files := [Filename.basename filebase];
+
   (* PARSE THE IMPLEMENTATION FILE *)
+
+  (* Note: we're too lazy to check if there is a .par file
+  for the top level. If there is, there's no need to parse
+  it. This can happen, but still the rest of the process
+  starting with desugaring must be run, since included
+  files may have changed .. Felix reparses them automatically
+  from withing the desugaring step: its much more efficient
+  than C! Note that none of this handles #includes, only
+  includes of precompiled headers
+  *)
+  
   if compiler_options.print_flag
   then print_endline ("//Parsing Implementation " ^ input_file_name);
   let parse_tree =
@@ -2059,6 +2086,16 @@ try
   let parse_time = tim() in
   if compiler_options.print_flag
   then print_endline ("//PARSE OK time " ^ string_of_float parse_time);
+
+  if compiler_options.compile_only then begin
+    let this_version = !Flx_version.version_data in
+    try (* to write Marshalled parse tree out *)
+      let x = open_out_bin par_file_name in
+      Marshal.to_channel x (this_version,parse_tree) [];
+      close_out x
+    with _ -> () (* can't write, don't worry *)
+  end
+  ;
 
   if compiler_options.print_flag 
   then print_endline "//DESUGARING";
@@ -2173,7 +2210,11 @@ try
 
   if compiler_options.print_flag 
   then print_endline ("//instantiation time " ^ string_of_float instantiation_time);
-  
+ 
+  if compiler_options.compile_only
+  then exit (if compiler_options.reverse_return_parity then 1 else 0)
+  ;
+
   let hf = open_out header_file_name in
   let bf = open_out body_file_name in 
   let psh s = output_string hf s in

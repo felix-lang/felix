@@ -731,6 +731,7 @@ type felix_compiler_options_t =
   raw_options: (string * string) list;
   reverse_return_parity: bool;
   heavy_inlining : bool;
+  compile_only : bool;
 }
 
 type sym_state_t = 
@@ -2729,6 +2730,14 @@ module IntSetSet = Set.Make (
   end
 );;
 
+let stringset_map f s =
+  let d = ref StringSet.empty in
+  StringSet.iter
+  (fun x -> d := StringSet.add (f x) !d)
+  s
+  ;
+  !d
+
 @h = tangler('src/flx_mtypes1.mli')
 @select(h)
 module StringMap :
@@ -2776,6 +2785,8 @@ module StringSet :
     val max_elt : t -> elt
     val choose : t -> elt
   end
+
+val stringset_map: (string -> string) -> StringSet.t -> StringSet.t
 
 module IntSet :
   sig

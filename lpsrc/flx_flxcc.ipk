@@ -1,0 +1,1712 @@
+@head(1,'Flxcc wrapper generator')
+@h= tangler("src/flxcc.ml")
+@select(h)
+open List
+open Flx_util
+open Flx_types
+open Flx_version
+open Flx_mtypes1
+;;
+
+type stab_t = {
+  aliases: (string,string) Hashtbl.t;
+  struct_aliases: (string,string) Hashtbl.t;
+  abstract_types: (string,string) Hashtbl.t;
+  incomplete_types: (string,string) Hashtbl.t;
+  used_types: (string,unit) Hashtbl.t;
+  variables : (string,string) Hashtbl.t;
+  functions: (string,string * string) Hashtbl.t;
+  fields: (string,string * string) Hashtbl.t;
+  procedures: (string,string * string) Hashtbl.t;
+  enums: (string,string) Hashtbl.t;
+  registry: (typsig, string * string) Hashtbl.t;
+  counter: int ref
+}
+;;
+
+let isprefix p s =
+  let pn = String.length p in
+  String.length s >= pn &&
+  String.sub s 0 pn = p
+;;
+
+exception Next
+;;
+let filename = ref ""
+let noincludes = ref []
+let merge_files = Hashtbl.create 97
+let outdir = ref "flxcc_out/"
+;;
+let rev_merge_files = Hashtbl.create 97
+;;
+
+(* map the name of a #include file which is
+  intended to be a physical part of another
+  into that filename. 
+  
+  The mapping is used to prevent
+  a Felix include file or module being
+  created for definitions in this file,
+  but it should *only* be used when a file
+  is uniquely included by another
+
+  When we're scanning for includes,
+  we need all the physical (unmapped)
+  filenames as inputs to find the transitive
+  closure. Once that is done, the transitive
+  closure itself must be mapped to avoid
+  references to non-existent Felix modules.
+*)
+
+let map_filename f = 
+  try Hashtbl.find merge_files f 
+  with Not_found -> f
+;;
+
+let control_filename = Sys.argv.(1)
+;;
+let f = open_in control_filename
+;;
+let rec aux () =
+  try 
+    let line = input_line f in
+    let n = String.length line in
+    let i = ref 0 in
+    try
+        (* skip white *)
+        while !i < n && line.[!i]=' ' do incr i done;
+        if !i = n then raise Next;
+
+        (* detect C++ style comment *)
+        if isprefix "//" (String.sub line !i (n - !i))
+        then raise Next
+        ;
+        let j = !i in
+        while !i < n && line.[!i]<>' ' do incr i done;
+        let keyword = String.sub line j (!i-j) in
+
+        match keyword with
+        | "outdir" ->
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "outdir statement requires filename";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          outdir := String.sub line j (!i-j);
+          raise Next
+
+        | "data" ->
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "data statement requires filename";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          filename := String.sub line j (!i-j);
+          raise Next
+
+        | "noinclude" ->
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "noinclude statement requires filename";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          let fn = String.sub line j (!i-j) in
+          noincludes := fn :: !noincludes;
+          raise Next
+
+        | "merge" ->
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "merge statement requires filename";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          let fn1 = String.sub line j (!i-j) in
+
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "merge statement requires 2 filenames";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          let fn2 = String.sub line j (!i-j) in
+          Hashtbl.add merge_files fn1 fn2;
+          let x = 
+            try Hashtbl.find rev_merge_files fn2 
+            with Not_found -> [] 
+          in Hashtbl.replace rev_merge_files fn2 (fn1::x)
+          ; 
+          raise Next
+
+        | _ -> failwith ("Unknown keyword " ^keyword^ " in control file")
+
+    with Next -> aux()
+  with End_of_file -> ()
+in aux()
+;;
+
+close_in f
+;;
+
+let filename = !filename
+;;
+
+let format_time tm = 
+  si (tm.Unix.tm_year + 1900) ^ "/" ^
+  si (tm.Unix.tm_mon + 1) ^ "/" ^
+  si tm.Unix.tm_mday ^ " " ^
+  si tm.Unix.tm_hour ^ ":" ^
+  si tm.Unix.tm_min ^ ":" ^
+  si tm.Unix.tm_sec 
+;;
+
+let compile_start = Unix.time () 
+let compile_start_gm = Unix.gmtime compile_start 
+let compile_start_local = Unix.localtime compile_start 
+let compile_start_gm_string = format_time compile_start_gm ^ " UTC" 
+let compile_start_local_string = format_time compile_start_local ^ " (local)" 
+;;
+
+Flx_cil_cil.initCIL()
+;;
+
+let lexbuf = Flx_cil_clexer.init filename;;
+let cabs = Flx_cil_cparser.file Flx_cil_clexer.initial lexbuf
+;;
+Flx_cil_clexer.finish()
+;;
+
+(*
+Flx_cil_cprint.print_defs cabs;;
+*)
+
+open Flx_cil_cabs
+;;
+let ns (s,_,_,_) = s
+;;
+let is_def = function | Some _ -> "complete" | None -> "incomplete"
+;;
+let type_of_se = function
+| SpecType ts -> 
+  begin match ts with
+  | Tnamed s -> print_endline ("type " ^ s)
+  | Tstruct (s,fglo,_) -> 
+    print_endline ("struct " ^ s ^ " " ^ is_def fglo)
+  | Tunion (s,fglo,_) -> 
+    print_endline ("union " ^ s ^ " " ^ is_def fglo)
+  | Tenum (s,fglo,_) -> 
+    print_endline ("enum " ^ s ^ " " ^ is_def fglo)
+  | _ -> ()
+  end
+| _ -> ()
+
+let types_in sp = List.iter type_of_se sp
+;;
+
+let rec find_type d = match d with
+ | FUNDEF ((spec,s),b,_,_) -> 
+   print_endline ("fun " ^ns s);
+   types_in spec
+
+ | DECDEF ((spec,ss),_) -> 
+   List.iter 
+   (fun (s,_)-> print_endline ("Decl " ^ ns s)) 
+   ss
+   ;
+   types_in spec
+
+ | TYPEDEF ((sp,ss),_)-> 
+   List.iter 
+   (fun s -> 
+     print_endline ("typedef " ^ ns s);
+   ) 
+   ss
+   ;
+   types_in sp
+   
+ | LINKAGE (s,_,cabs') ->
+   if s = "C"
+   then List.iter find_type cabs'
+   else print_endline ("Unknown linkage " ^s)
+
+ | ONLYTYPEDEF (spec,_) -> types_in spec
+ | GLOBASM _  
+ | PRAGMA _ 
+ | TRANSFORMER _
+ | EXPRTRANSFORMER _ -> ()
+;;
+(*
+List.iter find_type cabs ;;
+*)
+
+let cil = Flx_cil_cabs2cil.convFile (filename, cabs)
+;;
+
+open Flx_cil_cil
+;;
+
+(*
+dumpFile defaultCilPrinter stdout cil ;;
+*)
+
+let {fileName=f; globals=gs} = cil
+;;
+
+(* files not corresponding to a module *)
+let excludes : string list ref = ref
+[
+]
+;;
+
+let exclude_prefixes = ref [] (*"/usr/include/bits/"; "/usr/include/asm/"] *)
+;;
+let exclude_file f =
+  let rec aux ts = match ts with
+  | [] -> false
+  | h :: t -> if isprefix h f then true else aux t
+  in 
+    aux !exclude_prefixes ||
+    mem f !excludes
+;;
+
+let replacements : (string,string) Hashtbl.t = Hashtbl.create 97
+;;
+@for k,j in flx_keywords+[('String','')]:
+  tangle('Hashtbl.add replacements "'+k+'" "'+k+"_"+'";;')
+
+Hashtbl.add replacements "size_t" "size";;
+Hashtbl.add replacements "wchar_t" "wchar";;
+
+let rejects: (string,unit) Hashtbl.t = Hashtbl.create 97;;
+@for k in tmap.keys()+['wchar']:
+  tangle('Hashtbl.add rejects "'+k+'" ();;')
+
+let rplname s = 
+  try Hashtbl.find replacements s 
+  with Not_found -> s
+;;
+
+let soi = function
+| IBool -> "bool"
+| IChar -> "char"
+| ISChar -> "tiny"
+| IUChar -> "utiny"
+| IInt -> "int"
+| IUInt -> "uint"
+| IShort -> "short"
+| IUShort -> "ushort"
+| ILong -> "long"
+| IULong -> "ulong"
+| ILongLong -> "vlong"
+| IULongLong -> "uvlong"
+
+let sof = function
+| FFloat -> "float"
+| FDouble -> "double"
+| FLongDouble -> "ldouble"
+
+| IFloat -> "imaginary"
+| IDouble -> "dimaginary"
+| ILongDouble -> "limaginary"
+
+| CFloat -> "complex"
+| CDouble -> "dcomplex"
+| CLongDouble -> "lcomplex"
+
+let cvqual a = 
+  let const = ref false
+  and volatile = ref false
+  in
+  List.iter
+  (fun (Attr (s,_)) -> 
+    if s = "const" then const := true
+    else if s = "volatile" then volatile := true
+  )
+  a
+  ;
+  if !const && !volatile then "cv"
+  else if !const then "c"
+  else if !volatile then "v"
+  else ""
+
+let attrof = function
+| TVoid a
+| TInt (_,a) 
+| TFloat (_,a)
+| TPtr (_,a)
+| TArray (_,_,a)
+| TFun (_,_,_,a) 
+| TNamed (_,a)
+| TComp (_,a) 
+| TEnum (_,a) 
+| TBuiltin_va_list a 
+-> a
+
+let strexp n = "0" (* cheat *)
+;;
+
+let remove_pnames t = match t with
+| TPtr (TFun (t,Some ps,b,a),a') ->
+  let ps = map (fun (_,t,a)->"",t,a) ps in
+  TPtr (TFun (t,Some ps,b,a),a')
+| _ -> t
+
+let rec sot ((registry,counter,modulename,used_types) as reg) t = 
+match t with
+| TVoid a -> "void_t"
+| TInt (ik,a) -> soi ik
+| TFloat (fk,a) -> sof fk
+| TPtr (TVoid a',a) -> (cvqual a')^"address"
+| TPtr (TFun _,a) ->
+  let t' = typeSig t in
+  begin try 
+    fst (Hashtbl.find registry t')
+  with
+    Not_found ->
+    let name = modulename ^"_cft_" ^ si !counter in
+    incr counter;
+    let sr = locUnknown in
+    let t = remove_pnames t in
+    let si = {tname=name;ttype=t;treferenced=true } in
+    let gt =  GType (si,sr) in
+    let d = defaultCilPrinter#pGlobal () gt in
+    let s = Flx_cil_pretty.sprint 65 d in
+    Hashtbl.add registry t' (name,s);
+    name
+  end
+   
+| TPtr (t',a) -> cvqual (attrof t') ^ "ptr[" ^ sot reg t'^ "]"
+| TArray (t',Some n,a)-> 
+  cvqual (attrof t') ^ "ptr[" ^ sot reg t'^ "]"
+
+| TArray (t',None,a)-> 
+  cvqual (attrof t') ^ "ptr[" ^ sot reg t' ^ "]"
+
+| TFun (t',Some ps,false,a) ->
+  let ret = sot reg t'
+  and args = 
+    if length ps = 0 then "1" 
+    else String.concat " * " (List.map (soa reg) ps) 
+  in args ^ " -> " ^ ret
+    
+| TFun (t',None,false,a) -> 
+  let ret = sot reg t'
+  and args = "1"
+  in args ^ " -> " ^ ret
+
+| TFun (t',_,_,a) -> "CANT HANDLE THIS FUN"
+
+| TNamed (ti,a) -> 
+  let name = ptname ti in 
+  Hashtbl.add used_types name ();
+  rplname name
+  
+| TComp (ci,a) ->  
+  let name = pci ci in 
+  Hashtbl.add used_types name ();
+  rplname name
+
+| TEnum (ei,a) -> "int"
+| TBuiltin_va_list a -> "__builtin_va_list"
+
+and ptname {tname=tname} = tname
+and ciname {cname=cname} = cname
+and einame {ename=ename} = ename
+and viname {vname=vname} = vname
+
+and pci ci = match ci with
+{cname=cname; cstruct=cstruct} -> 
+(if cstruct then "_struct_" else "_union_") ^ cname
+
+and pcci ci = match ci with
+{cname=cname; cstruct=cstruct} -> 
+(if cstruct then "struct " else " union ") ^ cname
+
+and pei ei = match ei with
+{ename=ename} -> "_enum_" ^ ename
+
+and pcei ei = match ei with
+{ename=ename} -> "enum " ^ ename
+
+and ptdef registry ti:string = match ti with
+{ttype=tt} -> sot registry tt
+
+and pcomp pi = match pi with
+{cname=name} -> name
+
+and soa registry (name,t,a) = sot registry t
+
+and sov registry vi = match vi with
+{vname=vname; vtype=vtype} ->
+"const " ^ vname ^ ": " ^ sot registry vtype
+
+let pe x = print_endline x
+;;
+
+let achk x = 
+  let a = "__anon" in
+  let n = String.length a in
+  String.length x > n &&
+  a = String.sub x 0 n 
+  
+let isanon = function
+  | GType ({tname=tname},_) -> achk tname
+  | GCompTag ({cname=cname},_) -> achk cname
+  | GCompTagDecl ({cname=cname},_) -> achk cname
+  | GEnumTag ({ename=ename},_) -> achk ename
+  | GEnumTagDecl ({ename=ename},_) -> achk ename
+  | GVarDecl ({vname=vname},_) -> false
+  | GVar ({vname=vname},_,_) -> false
+  | GFun (fd,sr) -> false
+  | GAsm _ -> true
+  | GPragma _ -> true
+  | GText _ -> true
+
+
+let flx_name' = function
+  | GType ({tname=tname},_) -> Some tname
+  | GCompTag (ci,sr) -> Some (pci ci)
+  | GCompTagDecl (ci,_) -> Some (pci ci)
+  | GEnumTag ({ename=ename},_) -> Some ename
+  | GEnumTagDecl ({ename=ename},_) -> Some ename
+  | GVarDecl ({vname=vname},_) -> Some vname
+  | GVar ({vname=vname},_,_) -> Some vname
+  | GFun ({svar={vname=vname}},sr) -> Some vname
+  | GAsm _ -> None
+  | GPragma _ -> None
+  | GText _ -> None
+;;
+
+let flx_name x = match flx_name' x with 
+| Some x -> Some (rplname x)
+| None -> None
+;;
+
+let c_name = function
+  | GType ({tname=tname},_) -> Some tname
+  | GCompTag (ci,sr) -> Some (pcci ci)
+  | GCompTagDecl (ci,_) -> Some (pcci ci)
+  | GEnumTag (ei,_) -> Some "int"
+  | GEnumTagDecl (ei,_) -> Some "int"
+  | GVarDecl ({vname=vname},_) -> Some vname
+  | GVar ({vname=vname},_,_) -> Some vname
+  | GFun ({svar={vname=vname}},sr) -> Some vname
+  | GAsm _ -> None
+  | GPragma _ -> None
+  | GText _ -> None
+;;
+
+let rec isanont t =  match t with
+| TVoid _
+| TInt _
+| TFloat _ -> false
+| TPtr (t,_) -> isanont t
+| TArray (t,_,_) -> isanont t
+| TFun (t,Some ps,_,_) -> 
+  fold_left (fun b (_,t,_)-> b || isanont t ) (isanont t) ps
+
+| TFun (t,None,_,_) -> isanont t
+| TNamed ({tname=tname},_) -> achk tname
+| TComp ({cname=cname},_) -> achk cname
+| TEnum _ -> false
+| TBuiltin_va_list _ -> false
+
+
+
+let mk_stab () = {
+  aliases= Hashtbl.create 97;
+  struct_aliases= Hashtbl.create 97;
+  abstract_types= Hashtbl.create 97;
+  incomplete_types= Hashtbl.create 97;
+  used_types= Hashtbl.create 97;
+  variables= Hashtbl.create 97;
+  functions= Hashtbl.create 97;
+  fields= Hashtbl.create 97;
+  procedures= Hashtbl.create 97;
+  enums= Hashtbl.create 97;
+  registry= Hashtbl.create 97;
+  counter = ref 1
+}
+;;
+let stabs : (string,stab_t) Hashtbl.t = Hashtbl.create 97
+;;
+let getstab s = 
+  let s = map_filename s in
+  try Hashtbl.find stabs s 
+  with Not_found ->
+    let x = mk_stab () in
+    Hashtbl.add stabs s x;
+    x
+;;
+let special_subdirs = ref ["bits"; "sys";"asm";"rpc";"linux"]
+;;
+
+let srepl s c1 c2 =
+  for i = 0 to String.length s - 1 do
+    if s.[i]=c1 then s.[i] <- c2
+  done
+;;
+
+let module_of_filename fname =
+  let basename = Filename.basename fname in
+  let dirname = Filename.dirname fname in
+  let subdirname = Filename.basename dirname in
+  let prefix = 
+    if mem subdirname !special_subdirs then subdirname ^ "_"
+    else ""
+  in
+  try 
+    let x = prefix ^ (Filename.chop_extension basename) in
+    srepl x '.' '_';
+    srepl x ' ' '_';
+    srepl x '/' '_';
+    srepl x '-' '_';
+    x
+  with Invalid_argument _ ->
+    print_endline ("Weird filename " ^ fname ^ " without extension");
+    basename
+;;
+
+
+let getreg {file=s} = 
+  let stab = getstab s in 
+  let m = module_of_filename s in
+  stab.registry,stab.counter,m,stab.used_types
+;;
+
+let all_types : (string,string) Hashtbl.t = Hashtbl.create 97
+;;
+
+let rpl {file=s} which = 
+  let stab = (getstab s) in
+  match which with
+  | `aliases (k,v) -> 
+    Hashtbl.replace stab.aliases k v;
+    Hashtbl.replace all_types k s
+  
+  | `struct_aliases(k,v)  -> 
+    Hashtbl.replace stab.struct_aliases k v;
+    Hashtbl.replace all_types k s
+
+  | `abstract_types (k,v)  -> 
+    Hashtbl.replace stab.abstract_types k v;
+    Hashtbl.replace all_types k s
+
+  | `incomplete_types (k,v)  -> Hashtbl.replace stab.incomplete_types k v
+  | `variables(k,v)  ->  Hashtbl.replace stab.variables k v
+  | `functions(k,v)  -> Hashtbl.replace stab.functions k v
+  | `fields(k,v)  -> Hashtbl.replace stab.fields k v
+  | `procedures(k,v)  -> Hashtbl.replace stab.procedures k v
+  | `enums(k,v)  -> Hashtbl.replace stab.enums k v
+;;
+
+let ispublic s = 
+ String.length s < 2 || String.sub s 0 2 <> "__" 
+;;
+
+
+let files: (string,string) Hashtbl.t = Hashtbl.create 97
+;;
+
+let add_file fname =
+  if not (exclude_file fname) then
+  let m = module_of_filename fname in
+  if not (Hashtbl.mem files m) then
+    Hashtbl.add files m fname
+  else 
+    let existing_fname = Hashtbl.find files m in
+    if not (fname = existing_fname) then 
+    begin
+      print_endline
+      (
+        "Duplicate module name " ^ m ^
+        " for files \n" ^
+        "Existing file: " ^ existing_fname ^ "\n" ^
+        "Excluding new file: " ^ fname ^ "\n"
+      );
+      excludes := fname :: !excludes
+    end
+;;
+
+let add_loc {file=fname} = 
+  add_file fname
+;;
+
+let filename_of_module m =
+  Hashtbl.find files m
+;;
+
+List.iter
+(fun g-> let loc = get_globalLoc g in 
+  add_loc loc;
+  match isanon g,flx_name g,flx_name' g with
+  | _,None,_ 
+  | true,_,_ -> ()
+  | _,Some _,None -> assert false
+  | false,Some key,Some key' ->
+  if not (Hashtbl.mem rejects key) then
+  match g with
+  | GType (ti,loc) -> 
+    let registry = getreg loc in
+    begin
+      match ti with {ttype=ttype} ->
+      match  ttype with 
+      | TComp (ci,_) -> 
+        let anon= achk (ciname ci) in
+        begin match ci with { cfields=cfields } ->
+        iter
+        (fun {fname=fname; ftype=ftype} -> 
+          if not (isanont ftype) && ispublic fname then
+          let t = key ^ " -> " ^ sot registry ftype in
+          rpl loc (`fields (("get_"^fname), (t,"$1."^fname)))
+        )
+        cfields
+        end
+        ;
+        if anon then
+          rpl loc (`abstract_types (key, key'))
+        else
+          let v = ptdef registry ti in
+          rpl loc (`struct_aliases (key, v))
+
+
+      | TEnum (ei,_) -> 
+        begin match ei with { eitems=eitems } ->
+        iter
+        (fun (s,_,_) -> if ispublic s then rpl loc (`enums (rplname s,s)))
+        eitems
+        end
+        ;
+        if achk (einame ei) then
+          rpl loc (`abstract_types (key, key'))
+        else
+          rpl loc (`aliases (key, (ptdef registry ti)))
+
+      | t ->
+        if isanont t then
+          rpl loc (`abstract_types (key, key'))
+        else
+          let v = ptdef registry ti in
+          rpl loc (`aliases (key, v))
+    end
+
+  | GCompTag (ci,loc) -> 
+    rpl loc (`abstract_types (key, (pcci ci)));
+    begin match ci with { cfields=cfields } ->
+    iter
+    (fun {fname=fname; ftype=ftype} -> 
+      if not (isanont ftype) && ispublic fname then
+      let t = key ^ " -> " ^ sot (getreg loc) ftype in
+      rpl loc (`fields (("get_"^fname), (t,"$1."^fname)))
+    )
+    cfields
+    end
+
+    
+  | GCompTagDecl (ci,loc) -> 
+    rpl loc (`incomplete_types (key, (pcci ci)))
+    
+  | GEnumTag (ei,loc) -> 
+    rpl loc (`aliases (key, "int"));
+    begin match ei with { eitems=eitems } ->
+    iter
+    (fun (s,_,_) -> if ispublic s then rpl loc (`enums (rplname s,s)))
+    eitems
+    end
+
+  | GEnumTagDecl (ci,loc) -> rpl loc (`aliases (key, "int"))
+  
+  | GVar (vi,_,loc) 
+  | GFun ({svar=vi},loc)
+  | GVarDecl (vi,loc) ->
+    let registry = getreg loc in
+    let vname, vtype=
+      match vi with {vname=vname; vtype=vtype}->vname,vtype 
+    in
+    if ispublic vname then
+    begin match vtype with
+    | TFun (TVoid _,Some ps,false,a) ->
+      let args = 
+        if length ps = 0 then "1" 
+        else String.concat " * " (List.map (soa registry) ps) 
+      in
+      rpl loc (`procedures (key, (args,key'^"($a);")))
+
+    | TFun (TVoid _,Some _,true,a) ->
+      rpl loc (`procedures ((key^"[t]"), ("t",key'^"($a);")))
+
+    | TFun (ret,Some ps,false,a) ->
+      let ftb,ptb =
+        let ret = sot (getreg loc) ret
+        and args = List.map (soa registry) ps
+        in 
+        (
+          (
+            if length ps = 0 
+            then "1" 
+            else String.concat " * " args
+          ) 
+          ^ 
+          " -> " ^ ret,key'^"($a)"
+        ),
+        (String.concat " * " (ret :: args),
+          let a2 = 
+            String.concat "," 
+            (tl (tl 
+              (
+                map 
+                (fun i->"$"^si i) 
+                (nlist ((length ps)+2))
+              )
+            ))
+          in
+          "$1="^key'^"("^a2^");"
+        )
+      in 
+        rpl loc (`functions (key, ftb))
+        (*
+        ;
+        rpl loc (`procedures (key, ptb))
+        *)
+
+    | TFun (ret,Some _,true,a) ->
+      let ftb =
+        let ret = sot (getreg loc) ret in 
+        "t -> " ^ ret,key'^"($a)"
+      in 
+        rpl loc (`functions ((key^"[t]"), ftb));
+        
+    | _ ->
+      rpl loc (`variables (key, (sot (getreg loc) vtype)))
+    end
+
+  | GAsm _ -> print_endline "GASM"
+  | GPragma _ -> print_endline "PRAGMA"
+  | GText _ -> print_endline "TEXT"
+)
+gs
+;;
+try Unix.mkdir !outdir 0o777 with _ -> ()
+;;
+
+let is_nonempty h = 
+  try 
+    Hashtbl.iter (fun _ -> raise Not_found) h; 
+    false
+   with Not_found -> true
+;;
+
+(* This routine calculates the transitive closure
+of includes of 'known' C header files, where
+a file is 'known' if the table 'files' contains
+a map from the file's deduced modulename.
+
+This process in bugged in that a file's modulename
+might map to a different file. We always know when
+this happens when adding files during the processing
+of preprocessed C headers because the preprocessor
+has expanded them to absolute pathnames.
+
+Currently, a warning is printed, rather than terminating
+the process: to prevent the subsequent possibly hard to 
+detect faults we should probably turn this warning into
+an error.
+
+Note that the set of known files excludes specifically
+excluded files (as well as any file sharing the modulename
+of an already registered file .. which one is included
+is implementation dependent and thus fragile)
+
+Note that the result found is NOT the intersection
+of the known files with the transitive closure of
+includes, because including a file outside the known
+set, which subsequently includes on inside the known
+set, will not introduce the latter into the closure,
+even though it is actually known.
+*)
+
+let rec find_includes' includes fname =
+  if not (StringSet.mem fname !includes) then
+  let f = open_in fname in
+  includes := StringSet.add fname !includes;
+  try 
+    let rec aux () =
+      let line = input_line f in
+      let n = String.length line in
+      let i = ref 0 in
+
+      try
+        (* skip white *)
+        while !i < n && line.[!i]=' ' do incr i done;
+        if !i = n then raise Next;
+
+        (* check # *)
+        if line.[!i]<>'#' then raise Next;
+        incr i;
+
+        (* skip white *)
+        while !i < n && line.[!i]=' ' do incr i done;
+        if !i = n then raise Next;
+
+        (* check include *)
+        if !i+String.length "include" > n then raise Next;
+        let li = String.length "include" in
+        if (String.sub line !i li)  <> "include" then raise Next;
+        i := !i + li;
+
+        (* skip white *)
+        while !i < n && line.[!i]=' ' do incr i done;
+
+        (* check < or '"' *)
+        if line.[!i]<>'"' && line.[!i]<>'<' then raise Next;
+        incr i;
+
+        (* skip to > or '"' *)
+        let j = !i in
+        while !i < n && line.[!i]<>'>' && line.[!i]<>'"' do incr i done;
+
+        (* extract filename *)
+        let filename = String.sub line j (!i-j) in
+
+
+        (* lookup full path name *)
+        let filename = 
+          if not (Filename.is_relative filename) then filename else
+          try filename_of_module (module_of_filename filename)
+          (*
+          with Not_found -> 
+          try
+            (* try a relative lookup *)
+            if Filename.is_implicit filename then
+              let d = Filename.dirname fname in
+              let f = Filename.concat d filename in
+              if Sys.file_exists f then f
+              else raise Not_found
+            else raise Not_found
+          *)
+          with Not_found -> 
+            (*
+            print_endline 
+            (
+              "[include_file'] Can't resolve " ^ filename ^
+              " included from " ^ fname
+            );
+            *)
+            raise Next
+        in
+        add_file filename;
+
+        (* if not already known, put transitive closure in set *)
+        if StringSet.mem filename !includes then raise Next;
+        includes := StringSet.add filename !includes;
+        find_includes' includes filename;
+
+        (* next line *)
+        raise Next
+      with Next -> aux ()
+    in 
+      aux()
+  with End_of_file -> close_in f
+
+(* This routine computes the union of transitive
+closures with respect to known inclusion, 
+of a file, and all the files registered to be merged
+into that file. Note that these roots are always
+counted in the transitive closure even if they
+themselves are excluded or not known.
+
+The resultant set is then filtered using the
+filename merge mapping, to remove filenames
+registered to be merged into others, and replace
+them by their merge targets.
+*)
+
+let find_includes fname =
+  let includes = ref StringSet.empty in
+  find_includes' includes fname;
+  let extras = 
+    try Hashtbl.find rev_merge_files fname 
+    with Not_found -> [] 
+  in
+  iter (find_includes' includes) extras
+  ;
+  stringset_map map_filename !includes
+;;
+
+let module_of_mapped_filename f = 
+  module_of_filename (map_filename f)
+;;
+
+Hashtbl.iter
+begin 
+  fun fname stab ->
+  let modulename = module_of_filename fname in
+  let outname = Filename.concat (!outdir)  (modulename ^ "_lib.flx") in
+  let outf = open_out outname in
+
+  let print_endline s = output_string outf (s ^ "\n") in
+
+  print_endline ("// " ^ fname);
+  print_endline ("//Raw Input file: " ^ filename);
+  print_endline ("//Generated by Felix Version " ^ !version_data.version_string);
+  print_endline ("//Timestamp: " ^ compile_start_gm_string);
+  print_endline ("//Timestamp: " ^ compile_start_local_string);
+  print_endline ("include 'std';");
+  print_endline "";
+ 
+  if not (mem fname !noincludes) then
+    print_endline ("header '#include \"" ^ fname^"\"';")
+  else
+    print_endline ("//NOT INCLUDED: \"" ^ fname^"\"")
+  ;
+
+  (* This process calculates all the modules
+  on which the current module depends in two stages.
+  
+  First it finds the transitive closure using
+  the find_includes function.
+
+  Then it augments the set, by looking up every
+  incomplete type registered for that module,
+  and adds to the set the module containing
+  the complete definition.
+
+  We have to do this, because Felix does not
+  permit two abstract types definitions to
+  be unified, even if one or both specify
+  the type is incomplete: abstract type
+  bindings are generative, every specification
+  denotes a distinct type. 
+  
+  This isn't so in C, so we have to try to fix this up.
+  Note that in C some types can remain incomplete.
+  So if we cannot find a complete definition,
+  we have to generate an incomplete abstract type.
+
+  If the type is defined in two places, two distinct
+  types will be generated, which is wrong.
+
+  If the type is, in fact defined completely,
+  but outside the set of files known to flxcc,
+  then again any subsequent separate wrapping
+  will generate a distinct type, which is wrong.
+
+  However, even a human programmer will be hard
+  pressed to tell the difference between such
+  an error, and an accidental use of the same
+  structure tag in two unrelated headers, 
+  which might in fact introduce two incompatible
+  definitions.
+
+  At least with Felix, in the case the wrappings
+  are independent, these incompatible definitions
+  will not clash because they're wrapped in distinct
+  modules .. however complete types will clash
+  if both are actually used in a program because
+  two conflicting C headers will be dragged in.
+
+  This is basically a C problem, it cannot be 
+  circumvented even by manual wrapping, so the
+  failure of flxcc to cope is inevitable and not
+  a design flaw.
+  *)
+  
+  let includes = ref (find_includes fname) in
+  let ict = Hashtbl.create 97 in
+  let xtyps = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun k v ->
+    if not (Hashtbl.mem stab.abstract_types k) then 
+    try 
+      let file = Hashtbl.find all_types k in
+      includes := StringSet.add file !includes;
+      Hashtbl.add xtyps k file;
+
+    with Not_found ->
+      Hashtbl.add ict k v
+  )
+  stab.incomplete_types
+  ;
+
+  let udt = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun k v ->
+    try 
+      let file = Hashtbl.find all_types k in
+      includes := StringSet.add file !includes;
+    with Not_found ->
+      Hashtbl.add udt k v
+  )
+  stab.used_types
+  ;
+  let depends = stringset_map module_of_mapped_filename !includes in
+  let depends = StringSet.remove modulename depends in
+  if StringSet.cardinal depends > 0 then
+  begin
+    print_endline "";
+    print_endline "//INCLUDES";
+    StringSet.iter
+    (fun modulename' -> 
+      print_endline ("include \"" ^ modulename' ^ "_lib\";")
+    )
+    depends
+  end
+  ;
+
+  print_endline "";
+  print_endline ("module " ^ modulename ^ "_h \n{");
+  begin
+    let print_endline s = output_string outf ("  " ^ s ^ "\n") in
+    print_endline "open C_hack;";
+    if StringSet.cardinal depends > 0 then
+    begin
+      StringSet.iter
+      (fun modulename' -> 
+        print_endline ("open " ^ modulename' ^ "_h;")
+      )
+      depends
+    end
+    ;
+
+    if is_nonempty stab.abstract_types then
+    begin
+      print_endline "";
+      print_endline "//ABSTRACT TYPES";
+      Hashtbl.iter
+      (fun k v-> 
+        print_endline ("type " ^ k ^ " = '" ^ v ^ "';")
+      )
+      stab.abstract_types
+    end
+    ;
+
+    if is_nonempty stab.registry then
+    begin
+      print_endline "";
+      print_endline "//C FUNCTION POINTER TYPES";
+      Hashtbl.iter
+      (fun _ (name,tdef)-> 
+        print_endline ("header '''" ^ tdef ^ "''';");
+        print_endline ("type " ^ name ^ " = '" ^ name ^ "';")
+      )
+      stab.registry
+    end
+    ;
+
+    if is_nonempty xtyps then
+    begin
+      print_endline "";
+      print_endline "//EXTERNALLY COMPLETED TYPES";
+      Hashtbl.iter
+      (fun k v-> 
+        let m = module_of_filename v in
+        print_endline ("//type " ^ k ^ " defined in "^m^"='" ^ v ^ "';")
+      )
+      xtyps 
+    end
+    ;
+
+    if is_nonempty ict then
+    begin
+      print_endline "";
+      print_endline "//PURE INCOMPLETE TYPES";
+      Hashtbl.iter
+      (fun k v-> 
+        print_endline ("type " ^ k ^ " = '" ^ v ^ "';")
+      )
+      ict 
+    end
+    ;
+
+    if is_nonempty udt then
+    begin
+      print_endline "";
+      print_endline "//TYPES WE CAN'T FIND";
+      Hashtbl.iter
+      (fun k _ -> 
+        print_endline ("//type " ^ k ^ " ??")
+      )
+      udt 
+    end
+    ;
+
+    if is_nonempty stab.struct_aliases then
+    begin
+      print_endline "";
+      print_endline "//STRUCT or UNION ALIASES";
+      Hashtbl.iter
+      (fun k v-> 
+        (* va_list is already defined in the standard library *)
+        if k <> "va_list" then
+        print_endline ("typedef " ^ k ^ " = " ^ v ^ ";")
+      )
+      stab.struct_aliases
+    end
+    ;
+
+    if is_nonempty stab.aliases then
+    begin
+      print_endline "";
+      print_endline "//TYPE ALIASES";
+      Hashtbl.iter
+      (fun k v-> 
+        (* va_list is already defined in the standard library *)
+        if k <> "va_list" then
+        print_endline ("typedef " ^ k ^ " = " ^ v ^ ";")
+      )
+      stab.aliases
+    end
+    ;
+
+    if is_nonempty stab.variables then
+    begin
+      print_endline "";
+      print_endline "//VARIABLES";
+      Hashtbl.iter
+      (fun k v-> 
+        print_endline ("const " ^ k ^ ": " ^v^ " = '" ^ k ^ "';")
+      )
+      stab.variables
+    end
+    ;
+
+    if is_nonempty stab.enums then
+    begin
+      print_endline "";
+      print_endline "//ENUMERATION CONSTANTS";
+      Hashtbl.iter
+      (fun k v -> 
+        print_endline ("const " ^ k ^ ": int = '" ^ v ^ "';")
+      )
+      stab.enums
+    end
+    ;
+
+    if is_nonempty stab.procedures then
+    begin
+      print_endline "";
+      print_endline "//PROCEDURES";
+      Hashtbl.iter
+      (fun k (v,b)-> 
+        print_endline ("proc " ^ k ^ ": " ^v^ " = '"^b^"';")
+      )
+      stab.procedures
+    end
+    ;
+
+    if is_nonempty stab.functions then
+    begin
+      print_endline "";
+      print_endline "//FUNCTIONS";
+      Hashtbl.iter
+      (fun k (v,b)-> 
+        print_endline ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
+      )
+      stab.functions
+    end
+    ;
+
+    if is_nonempty stab.fields then
+    begin
+      print_endline "";
+      print_endline "//STRUCT and UNION FIELDS";
+      Hashtbl.iter
+      (fun k (v,b)-> 
+        print_endline ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
+      )
+      stab.fields
+    end
+  end
+  ;
+  print_endline "}";
+  close_out outf
+end
+stabs
+;;
+
+@select(tangler("config/make_usr_include_hhh.sh.default","data"))
+gcc -E `pkg-config --cflags gtk+-2.0` config/usr_include.h > config/usr_include.hhh
+
+@h=tangler("config/usr_include.flxcc.default","data")
+@select(h)
+outdir flxcc_out
+data config/usr_include.hhh
+noinclude /usr/include/bits/byteswap.h
+noinclude /usr/include/bits/cmathcalls.h
+noinclude /usr/include/bits/confname.h
+noinclude /usr/include/bits/dirent.h
+noinclude /usr/include/bits/dlfcn.h
+noinclude /usr/include/bits/elfclass.h
+noinclude /usr/include/bits/endian.h
+noinclude /usr/include/bits/environments.h
+noinclude /usr/include/bits/fcntl.h
+noinclude /usr/include/bits/fenv.h
+noinclude /usr/include/bits/huge_val.h
+noinclude /usr/include/bits/in.h
+noinclude /usr/include/bits/ioctls.h
+noinclude /usr/include/bits/ioctl-types.h
+noinclude /usr/include/bits/ipc.h
+noinclude /usr/include/bits/ipctypes.h
+noinclude /usr/include/bits/locale.h
+noinclude /usr/include/bits/mathcalls.h
+noinclude /usr/include/bits/mathdef.h
+noinclude /usr/include/bits/mathinline.h
+noinclude /usr/include/bits/mman.h
+noinclude /usr/include/bits/msq.h
+noinclude /usr/include/bits/nan.h
+noinclude /usr/include/bits/netdb.h
+noinclude /usr/include/bits/poll.h
+noinclude /usr/include/bits/posix1_lim.h
+noinclude /usr/include/bits/posix2_lim.h
+noinclude /usr/include/bits/pthreadtypes.h
+noinclude /usr/include/bits/resource.h
+noinclude /usr/include/bits/sched.h
+noinclude /usr/include/bits/select.h
+noinclude /usr/include/bits/sem.h
+noinclude /usr/include/bits/setjmp.h
+noinclude /usr/include/bits/shm.h
+//noinclude /usr/include/bits/sigset.h
+//noinclude /usr/include/bits/sigaction.h
+//noinclude /usr/include/bits/sigcontext.h
+//noinclude /usr/include/bits/siginfo.h
+//noinclude /usr/include/bits/sigstack.h
+//noinclude /usr/include/bits/sigthread.h
+noinclude /usr/include/bits/sockaddr.h
+noinclude /usr/include/bits/socket.h
+noinclude /usr/include/bits/statfs.h
+noinclude /usr/include/bits/stat.h
+noinclude /usr/include/bits/statvfs.h
+noinclude /usr/include/bits/stdio.h
+noinclude /usr/include/bits/stdio_lim.h
+noinclude /usr/include/bits/string2.h
+noinclude /usr/include/bits/string.h
+noinclude /usr/include/bits/stropts.h
+noinclude /usr/include/bits/syscall.h
+noinclude /usr/include/bits/sys_errlist.h
+noinclude /usr/include/bits/termios.h
+noinclude /usr/include/bits/time.h
+noinclude /usr/include/bits/types.h
+noinclude /usr/include/bits/typesizes.h
+noinclude /usr/include/bits/uio.h
+noinclude /usr/include/bits/ustat.h
+noinclude /usr/include/bits/utmp.h
+noinclude /usr/include/bits/utmpx.h
+noinclude /usr/include/bits/utsname.h
+noinclude /usr/include/bits/waitflags.h
+noinclude /usr/include/bits/waitstatus.h
+noinclude /usr/include/bits/xopen_lim.h
+noinclude /usr/include/bits/xtitypes.h
+
+merge /usr/include/bits/sigset.h /usr/include/signal.h
+merge /usr/include/bits/sigaction.h /usr/include/signal.h
+merge /usr/include/bits/sigcontext.h /usr/include/signal.h
+merge /usr/include/bits/siginfo.h /usr/include/signal.h
+merge /usr/include/bits/sigstack.h /usr/include/signal.h
+merge /usr/include/bits/sigthread.h /usr/include/pthread.h
+merge /usr/include/bits/sched.h /usr/include/sched.h
+merge /usr/include/bits/pthreadtypes.h /usr/include/sys/types.h
+merge /usr/include/bits/confname.h /usr/include/unistd.h
+merge /usr/include/bits/time.h /usr/include/time.h
+
+merge /usr/include/bits/byteswap.h /usr/include/byteswap.h
+merge /usr/include/bits/cmathcalls.h /usr/include/complex.h
+merge /usr/include/bits/dirent.h /usr/include/dirent.h
+merge /usr/include/bits/dlfcn.h /usr/include/dlfcn.h
+merge /usr/include/bits/elfclass.h /usr/include/link.h
+merge /usr/include/bits/endian.h /usr/include/endian.h
+merge /usr/include/bits/environments.h /usr/include/unistd.h
+merge /usr/include/bits/fcntl.h /usr/include/fcntl.h
+merge /usr/include/bits/fenv.h /usr/include/fenv.h
+merge /usr/include/bits/huge_val.h /usr/include/math.h
+merge /usr/include/bits/in.h /usr/include/netinet/in.h
+merge /usr/include/bits/ioctls.h /usr/include/sys/ioctl.h
+merge /usr/include/bits/ioctl-types.h /usr/include/sys/ioctl.h
+merge /usr/include/bits/ipc.h /usr/include/sys/ipc.h
+merge /usr/include/bits/ipctypes.h /usr/include/sys/ipc.h
+merge /usr/include/bits/locale.h /usr/include/locale.h
+merge /usr/include/bits/mathcalls.h /usr/include/math.h
+merge /usr/include/bits/mathdef.h /usr/include/math.h
+merge /usr/include/bits/mathinline.h /usr/include/math.h
+merge /usr/include/bits/mman.h /usr/include/sys/mman.h
+merge /usr/include/bits/msq.h /usr/include/sys/msg.h
+merge /usr/include/bits/nan.h /usr/include/math.h
+merge /usr/include/bits/netdb.h /usr/include/netdb.h
+merge /usr/include/bits/poll.h /usr/include/sys/poll.h
+merge /usr/include/bits/posix1_lim.h /usr/include/limits.h
+merge /usr/include/bits/posix2_lim.h /usr/include/limits.h
+merge /usr/include/bits/resource.h /usr/include/sys/resource.h
+merge /usr/include/bits/select.h /usr/include/sys/select.h
+merge /usr/include/bits/sem.h /usr/include/sys/sem.h
+merge /usr/include/bits/setjmp.h /usr/include/setjmp.h
+merge /usr/include/bits/shm.h /usr/include/sys/shm.h
+merge /usr/include/bits/sockaddr.h /usr/include/sys/socket.h
+merge /usr/include/bits/socket.h /usr/include/sys/socket.h
+merge /usr/include/bits/statfs.h /usr/include/sys/statfs.h
+merge /usr/include/bits/stat.h /usr/include/sys/stat.h
+merge /usr/include/bits/statvfs.h /usr/include/sys/statvfs.h
+merge /usr/include/bits/stdio.h /usr/include/stdio.h
+merge /usr/include/bits/stdio_lim.h /usr/include/stdio.h
+merge /usr/include/bits/string2.h /usr/include/string.h
+merge /usr/include/bits/string.h /usr/include/string.h
+merge /usr/include/bits/stropts.h /usr/include/stropts.h
+merge /usr/include/bits/syscall.h /usr/include/sys/syscall.h
+merge /usr/include/bits/sys_errlist.h /usr/include/stdio.h
+merge /usr/include/bits/termios.h /usr/include/termios.h
+merge /usr/include/bits/types.h /usr/include/sys/types.h
+merge /usr/include/bits/typesizes.h /usr/include/sys/types.h
+merge /usr/include/bits/uio.h /usr/include/sys/uio.h
+merge /usr/include/bits/ustat.h /usr/include/sys/ustat.h
+merge /usr/include/bits/utmp.h /usr/include/utmp.h
+merge /usr/include/bits/utmpx.h /usr/include/utmpx.h
+merge /usr/include/bits/utsname.h /usr/include/sys/utsname.h
+merge /usr/include/bits/waitflags.h /usr/include/sys/wait.h
+merge /usr/include/bits/waitstatus.h /usr/include/sys/wait.h
+merge /usr/include/bits/xopen_lim.h /usr/include/limits.h
+merge /usr/include/bits/xtitypes.h /usr/include/stropts.h
+
+@h.sink.close()
+@doc()
+
+@h=tangler("config/usr_include.h.default","data")
+@select(h)
+
+/* we have to have this .. */
+#include <stddef.h>
+
+/* shut up some error diagnostics */
+#include <features.h>
+
+/* due to GNU WEIRDNESS sigset_t gets defined in either
+/usr/include/signal.h or in /usr/include/sys/select.h,
+whichever comes first .. this works for C, but alphabetical
+order would #include select.h first, and it include
+sys/select.h, so sigset_t ends up in the wrong place for us:
+we want it in signal.h please! A few similar problems exist
+for some other types ..
+*/
+#include "/usr/include/signal.h"
+#include "/usr/include/sys/types.h"
+
+/* #include "/usr/include/af_vfs.h" */
+#include "/usr/include/aio.h"
+#include "/usr/include/aliases.h"
+#include "/usr/include/alloca.h"
+#include "/usr/include/ansidecl.h"
+#include "/usr/include/a.out.h"
+#include "/usr/include/apm.h"
+#include "/usr/include/argp.h"
+#include "/usr/include/argz.h"
+#include "/usr/include/ar.h"
+#include "/usr/include/assert.h"
+#include "/usr/include/audiofile.h"
+#include "/usr/include/aupvlist.h"
+#include "/usr/include/baudboy.h"
+#include "/usr/include/bfd.h"
+#include "/usr/include/bfdlink.h"
+#include "/usr/include/byteswap.h"
+#include "/usr/include/complex.h"
+#include "/usr/include/cpio.h"
+#include "/usr/include/crack.h"
+#include "/usr/include/crypt.h"
+#include "/usr/include/ctype.h"
+#include "/usr/include/curses.h"
+/* #include "/usr/include/cxx_common.h" */
+/* #include "/usr/include/cxx_except.h" */
+#include "/usr/include/db_185.h"
+#include "/usr/include/db.h"
+#include "/usr/include/dejagnu.h"
+#include "/usr/include/dirent.h"
+#include "/usr/include/dis-asm.h"
+/* #include "/usr/include/disptmpl.h" */
+#include "/usr/include/dlfcn.h"
+#include "/usr/include/efs_error.h"
+#include "/usr/include/efs.h"
+/* #include "/usr/include/elf.h" */ /* obsolete .. */
+#include "/usr/include/endian.h"
+#include "/usr/include/envz.h"
+#include "/usr/include/err.h"
+#include "/usr/include/errno.h"
+#include "/usr/include/error.h"
+#include "/usr/include/esd.h"
+#include "/usr/include/eti.h"
+#include "/usr/include/execinfo.h"
+#include "/usr/include/expat.h"
+#include "/usr/include/fam.h"
+#include "/usr/include/fcntl.h"
+#include "/usr/include/features.h"
+#include "/usr/include/fenv.h"
+#include "/usr/include/fmtmsg.h"
+#include "/usr/include/fnmatch.h"
+#include "/usr/include/form.h"
+#include "/usr/include/fpu_control.h"
+#include "/usr/include/fstab.h"
+#include "/usr/include/ft2build.h"
+#include "/usr/include/fts.h"
+#include "/usr/include/ftw.h"
+#include "/usr/include/_G_config.h"
+#include "/usr/include/gconv.h"
+#include "/usr/include/gdbm.h"
+#include "/usr/include/gdcache.h"
+#include "/usr/include/gdfontg.h"
+#include "/usr/include/gdfontl.h"
+#include "/usr/include/gdfontmb.h"
+#include "/usr/include/gdfonts.h"
+#include "/usr/include/gdfontt.h"
+#include "/usr/include/gd.h"
+#include "/usr/include/gd_io.h"
+#include "/usr/include/gdk_imlib.h"
+#include "/usr/include/gdk_imlib_private.h"
+#include "/usr/include/gdk_imlib_types.h"
+#include "/usr/include/getopt.h"
+#include "/usr/include/gif_lib.h"
+#include "/usr/include/glibtop.h"
+#include "/usr/include/glibtop_machine.h"
+#include "/usr/include/glibtop_server.h"
+#include "/usr/include/glob.h"
+#include "/usr/include/gmp.h"
+#include "/usr/include/gmp-mparam.h"
+#include "/usr/include/gnu-versions.h"
+#include "/usr/include/gpm.h"
+#include "/usr/include/grp.h"
+#include "/usr/include/hesiod.h"
+/* #include "/usr/include/hmac-md5.h" */
+#include "/usr/include/iconv.h"
+#include "/usr/include/ieee754.h"
+#include "/usr/include/ifaddrs.h"
+#include "/usr/include/Imlib.h"
+#include "/usr/include/Imlib_private.h"
+#include "/usr/include/Imlib_types.h"
+#include "/usr/include/inttypes.h"
+#include "/usr/include/iwlib.h"
+#include "/usr/include/jconfig.h"
+#include "/usr/include/jerror.h"
+#include "/usr/include/jmorecfg.h"
+#include "/usr/include/jpeglib.h"
+#include "/usr/include/langinfo.h"
+#include "/usr/include/lastlog.h"
+#include "/usr/include/lber.h"
+#include "/usr/include/lber_types.h"
+#include "/usr/include/ldap_cdefs.h"
+#include "/usr/include/ldap_features.h"
+#include "/usr/include/ldap.h"
+#include "/usr/include/ldap_schema.h"
+#include "/usr/include/liba2ps.h"
+#include "/usr/include/libgen.h"
+#include "/usr/include/libiberty.h"
+#include "/usr/include/libintl.h"
+#include "/usr/include/libio.h"
+#include "/usr/include/libmng_conf.h"
+#include "/usr/include/libmng.h"
+#include "/usr/include/libmng_types.h"
+#include "/usr/include/libsmbclient.h"
+#include "/usr/include/limits.h"
+#include "/usr/include/link.h"
+#include "/usr/include/locale.h"
+#include "/usr/include/lockdev.h"
+#include "/usr/include/ltdl.h"
+#include "/usr/include/malloc.h"
+#include "/usr/include/math.h"
+#include "/usr/include/mcheck.h"
+#include "/usr/include/md5global.h"
+#include "/usr/include/md5.h"
+#include "/usr/include/memory.h"
+#include "/usr/include/menu.h"
+#include "/usr/include/mikmod.h"
+#include "/usr/include/mntent.h"
+#include "/usr/include/monetary.h"
+/* #include "/usr/include/mp.h" */
+#include "/usr/include/ncurses.h"
+#include "/usr/include/netdb.h"
+#include "/usr/include/newt.h"
+#include "/usr/include/nl_types.h"
+#include "/usr/include/nss.h"
+#include "/usr/include/obstack.h"
+#include "/usr/include/pam.h"
+/* #include "/usr/include/pammap.h" */
+#include "/usr/include/panel.h"
+#include "/usr/include/paths.h"
+#include "/usr/include/pbm.h"
+#include "/usr/include/pbmshhopt.h"
+#include "/usr/include/pcap.h"
+#include "/usr/include/pcap-namedb.h"
+#include "/usr/include/pgm.h"
+#include "/usr/include/pm_config.h"
+#include "/usr/include/pm.h"
+/* #include "/usr/include/pngconf.h" */
+/* #include "/usr/include/png.h" */
+#include "/usr/include/pnm.h"
+#include "/usr/include/poll.h"
+#include "/usr/include/popt.h"
+#include "/usr/include/ppmcmap.h"
+#include "/usr/include/ppmfloyd.h"
+#include "/usr/include/ppm.h"
+#include "/usr/include/printf.h"
+#include "/usr/include/pthread.h"
+#include "/usr/include/pty.h"
+#include "/usr/include/pwd.h"
+#include "/usr/include/re_comp.h"
+#include "/usr/include/regex.h"
+/* #include "/usr/include/regexp.h" */
+/* hack .. */
+#undef BSD
+#include "/usr/include/resolv.h"
+#include "/usr/include/sasl.h"
+#include "/usr/include/saslplug.h"
+#include "/usr/include/saslutil.h"
+#include "/usr/include/sched.h"
+#include "/usr/include/search.h"
+#include "/usr/include/semaphore.h"
+#include "/usr/include/setjmp.h"
+#include "/usr/include/sgtty.h"
+#include "/usr/include/shadow.h"
+#include "/usr/include/spawn.h"
+#include "/usr/include/srchpref.h"
+#include "/usr/include/stab.h"
+#include "/usr/include/stdint.h"
+#include "/usr/include/stdio_ext.h"
+#include "/usr/include/stdio.h"
+#include "/usr/include/stdlib.h"
+#include "/usr/include/string.h"
+#include "/usr/include/strings.h"
+#include "/usr/include/stropts.h"
+/* #include "/usr/include/swig.h" */
+#include "/usr/include/symcat.h"
+#include "/usr/include/syscall.h"
+#include "/usr/include/sysexits.h"
+#include "/usr/include/syslog.h"
+#include "/usr/include/tar.h"
+/* #include "/usr/include/tclDecls.h" */
+#include "/usr/include/tcl.h"
+#include "/usr/include/tclPlatDecls.h"
+#include "/usr/include/tcpd.h"
+#include "/usr/include/termcap.h"
+/* #include "/usr/include/term.h" */
+#include "/usr/include/termio.h"
+#include "/usr/include/termios.h"
+#include "/usr/include/tgmath.h"
+#include "/usr/include/thread_db.h"
+#include "/usr/include/tiffconf.h"
+#include "/usr/include/tiff.h"
+#include "/usr/include/tiffio.h"
+#include "/usr/include/tiffvers.h"
+#include "/usr/include/time.h"
+/* #include "/usr/include/tkDecls.h" */
+#include "/usr/include/tk.h"
+#include "/usr/include/tkPlatDecls.h"
+#include "/usr/include/ttyent.h"
+#include "/usr/include/ttylock.h"
+#include "/usr/include/ucontext.h"
+#include "/usr/include/ulimit.h"
+#include "/usr/include/unctrl.h"
+#include "/usr/include/unicode.h"
+#include "/usr/include/unistd.h"
+#include "/usr/include/usb.h"
+#include "/usr/include/ustat.h"
+#include "/usr/include/utempter.h"
+#include "/usr/include/utime.h"
+#include "/usr/include/utmp.h"
+#include "/usr/include/utmpx.h"
+#include "/usr/include/values.h"
+#include "/usr/include/wait.h"
+#include "/usr/include/wchar.h"
+#include "/usr/include/wctype.h"
+#include "/usr/include/wordexp.h"
+#include "/usr/include/xlocale.h"
+#include "/usr/include/zconf.h"
+#include "/usr/include/zlib.h"
+/* #include "/usr/include/zutil.h" */
+
+#include "/usr/include/sys/acct.h"
+#include "/usr/include/sys/acl.h"
+#include "/usr/include/sys/bitypes.h"
+#include "/usr/include/sys/capability.h"
+#include "/usr/include/sys/cdefs.h"
+#include "/usr/include/sys/debugreg.h"
+#include "/usr/include/sys/dir.h"
+/* #include "/usr/include/sys/elf.h" */ /* obsolete */
+#include "/usr/include/sys/epoll.h"
+#include "/usr/include/sys/errno.h"
+#include "/usr/include/sys/fcntl.h"
+#include "/usr/include/sys/file.h"
+#include "/usr/include/sys/fsuid.h"
+#include "/usr/include/sys/gmon.h"
+#include "/usr/include/sys/gmon_out.h"
+#include "/usr/include/sys/ioctl.h"
+#include "/usr/include/sys/io.h"
+#include "/usr/include/sys/ipc.h"
+#include "/usr/include/sys/kdaemon.h"
+#include "/usr/include/sys/kd.h"
+#include "/usr/include/sys/klog.h"
+#include "/usr/include/sys/mman.h"
+#include "/usr/include/sys/mount.h"
+#include "/usr/include/sys/msg.h"
+#include "/usr/include/sys/mtio.h"
+#include "/usr/include/sys/param.h"
+#include "/usr/include/sys/pci.h"
+#include "/usr/include/sys/perm.h"
+#include "/usr/include/sys/personality.h"
+#include "/usr/include/sys/poll.h"
+#include "/usr/include/sys/prctl.h"
+#include "/usr/include/sys/procfs.h"
+#include "/usr/include/sys/profil.h"
+#include "/usr/include/sys/ptrace.h"
+#include "/usr/include/sys/queue.h"
+#include "/usr/include/sys/quota.h"
+#include "/usr/include/sys/raw.h"
+#include "/usr/include/sys/reboot.h"
+#include "/usr/include/sys/reg.h"
+#include "/usr/include/sys/resource.h"
+#include "/usr/include/sys/select.h"
+#include "/usr/include/sys/sem.h"
+#include "/usr/include/sys/sendfile.h"
+#include "/usr/include/sys/shm.h"
+#include "/usr/include/sys/signal.h"
+#include "/usr/include/sys/socket.h"
+#include "/usr/include/sys/socketvar.h"
+#include "/usr/include/sys/soundcard.h"
+#include "/usr/include/sys/statfs.h"
+#include "/usr/include/sys/stat.h"
+#include "/usr/include/sys/statvfs.h"
+#include "/usr/include/sys/stropts.h"
+#include "/usr/include/sys/swap.h"
+#include "/usr/include/sys/syscall.h"
+#include "/usr/include/sys/sysctl.h"
+#include "/usr/include/sys/sysinfo.h"
+#include "/usr/include/sys/syslog.h"
+#include "/usr/include/sys/sysmacros.h"
+#include "/usr/include/sys/termios.h"
+#include "/usr/include/sys/timeb.h"
+#include "/usr/include/sys/time.h"
+#include "/usr/include/sys/times.h"
+#include "/usr/include/sys/timex.h"
+#include "/usr/include/sys/ttychars.h"
+#include "/usr/include/sys/ttydefaults.h"
+#include "/usr/include/sys/ucontext.h"
+#include "/usr/include/sys/uio.h"
+#include "/usr/include/sys/ultrasound.h"
+#include "/usr/include/sys/un.h"
+#include "/usr/include/sys/unistd.h"
+#include "/usr/include/sys/user.h"
+#include "/usr/include/sys/ustat.h"
+#include "/usr/include/sys/utsname.h"
+#include "/usr/include/sys/vfs.h"
+#include "/usr/include/sys/vlimit.h"
+#include "/usr/include/sys/vm86.h"
+#include "/usr/include/sys/vt.h"
+#include "/usr/include/sys/vtimes.h"
+#include "/usr/include/sys/wait.h"
+#include "/usr/include/sys/xattr.h"
+@doc()
+@h.sink.close()
+
+@import stat
+@def filetime(f):
+  try:
+    t = os.stat(f)[stat.ST_MTIME]
+  except:
+    t = 0
+  return t
+
+@if filetime("config/usr_include.h") == 0:
+  os.system("cp config/usr_include.h.default config/usr_include.h")
+
+@if filetime("config/usr_include.flxcc") == 0:
+  os.system("cp config/usr_include.flxcc.default config/usr_include.flxcc")
+
+@if filetime("config/usr_include.hhh") == 0:
+  os.system(FLXCC_CPP+" config/usr_include.h >config/usr_include.hhh")
+
+
