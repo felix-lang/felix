@@ -118,6 +118,10 @@ and issue an error message if the types don't agree.
 @p()
 Values are constants: they cannot be modified,
 and, as we will see later, they cannot be addressed.
+This means the compiler is free to load the value into a register
+or perform other optimisations (including elide the storage
+for the value entirely).
+
 
 @head(2,'Variable declaration')
 Felix also support mutable variables, which are
@@ -150,8 +154,8 @@ You will also have noticed the 'while' loop,
 one of the control structures Felix provides:
 it appears to work the same way as a 'while' loop in C,
 except that a trailing ; is strangely required,
-and the condition is given in square brackets.
-We'll find out exactly why later, but here is a hit:
+and the condition is given in curly brackets.
+We'll find out exactly why later, but here is a hint:
 there is no while statement in Felix!
 
 @head(2,'Functions')
@@ -173,7 +177,7 @@ This is not so. All functions in Felix have
 exactly one argument. Well, almost all of them :-)
 I'll explain this in the next example.
 @p()
-Function in Felix may not have any side effects,
+Functions in Felix may not have any side effects,
 except for diagnostic outputs.  Note however that
 functions may modify their own private data,
 that is, may contain and mutate local variables.
@@ -194,9 +198,25 @@ y = 3;
 print (f1 ());
 print (f2 ());
 @doc()
-The square brackets denote a lazy expression, it is
+The curly brackets denote a lazy expression, it is
 a function which evaluates the expression when passed
-the special unit value () explained below.
+the special unit value () explained below, the return type
+is the type of the expression.
+@p()
+You can also put statements inside curly brackets
+to define a lazy function:
+@select(tangler(tdir+'tut106b.flx'))
+#include <std.flx>
+val x = 1;
+val f = { val y = x + 1; return y; };
+val eol = { endl; };
+
+print (f ()); eol;
+
+@doc()
+If there is no return statement, a procedure is denoted,
+otherwise the return type is the type of the return
+statement arguments, which must all be the same.
 
 @head(2,'Tuples')
 As you might guess from the title, Felix has
@@ -217,11 +237,11 @@ unique empty tuple '()'. There are no tuples
 with one component: for all values 'a', '(a)' is 
 equivalent.
 @p()
-Now perhaps you have guessed what I mean earlier
+Now perhaps you have guessed what I meant earlier
 when I said the function mid only had a single
 argument. If not, you get another chance,
 studying this example, which is equivalent
-to example 6.
+to example 106.
 @select(tangler(tdir+'tut107.flx'))
 #include <std.flx>
 fun mid(a:int, b:int):int =
@@ -457,14 +477,22 @@ Notice that the value 'i' in the line
 can be used in the handler for that case.
 This is how we get the 'int' out of the Some option.
 The 'i' is scoped so it can only be seen inside
-the handler for the Some case. Also note that
-there is no need to 'break' at the end of a 
-case handler: control jumps to the end of the
-match statement when the handler is finished,
-it never falls through.
-@p()
+the handler for the Some case. 
 The question mark is used to indicate a pattern
-variable.
+variable, its type is deduced from the pattern context
+and match argument type.
+@p()
+By the way, match/endmatch is an expression.
+It happens in the example above that each handler
+is a procedure value taking a unit argument, and the match
+expression returns one of these values depending on the 
+argument exprssion. Oh, and it happens that the semi-colon
+after the 'endmatch' keyword then executes this procedure.
+@p()
+It is important to note that the match expression is
+purely functional! It doesn't print anything, it just
+returns a procedure which could print something.
+
 @head(2,'Pattern Matching Tuples')
 It is also possible to match tuples.
 Here is an example:
@@ -577,10 +605,12 @@ First, the header statement
 @end_displayed_code()
 
 specifies text to
-be emitted literally in the generated C++:
-note the trailing semicolon
+be emitted literally in the generated C++ header file:
+note the trailing semicolon.
 In this case, we emit a C++ class defining
-a basic gaussian integer type.
+a basic gaussian integer type. There is also a 
+'body' keyword to literally emit code in the
+generated implementation (body) file.
 @p()
 Next, we define the felix type gauss.
 
@@ -1229,12 +1259,13 @@ modules that you can put at the top level, and for a
 very simple reason: the top level is, in fact,
 a module itself.
 @p()
-When qualified name is used, the qualifier specifies
+When a qualified name is used, the qualifier specifies
 the module in which the next name must be found.
 Qualification inhibits upscope overloading.
 @p()
 Note the keyword 'root' is used to name the top-level
-module.
+module, in lieu of the actual module name, which is
+derived from the basename of the filename.
 @p()
 Finally, it is vital to understand that Felix
 scopes act like sets of names. Names are always defined
@@ -1362,20 +1393,25 @@ the procedure call:
 @end_displayed_code()
 This procedure is defined automatically
 for structs, unions, and function and procedure
-closures, that is, for Felix types; but you must
+closures, that is, for Felix types; but you can
 define it manually for abstract types including
 primitives. The usual definition is:
 @begin_displayed_code()
   type T = "T";
   proc set: &T * t = "*$1=$2;"
 @end_displayed_code()
+If you don't define a set method for a primitive
+type, Felix assumes the C++ assignment operator
+as above. WARNING: This is wrong in principle,
+since Felix cannot check such a function exists,
+if it doesn't, you will get an error at C++ compilation
+time instead of Felix compilation time. Be warned!
+@p()
 Note that all Felix primitives must be C++ assignable
 and implicitly default constructible,
 since in the generated code all values and variables 
 are first declared without an initialiser and 
-then assigned to. A Felix set function, however,
-is not required, and its absence can be used
-to prevent assignment to variables of a Felix type.
+then assigned to. 
 @p()
 It is important to note that in Felix,
 you can take the address of any variable,
@@ -1420,7 +1456,7 @@ the wild blue yonder.
 
 @head(2,'The ubiquitous goto')
 Felix allows statements to be labelled,
-and provides a goto statement.
+and provides a conditional and unconditional goto statement.
 
 @select(tangler(tdir+'tut130.flx'))
 #include <std.flx>
@@ -1438,12 +1474,10 @@ end_loop:>
 Note that labels require a terminating :> rather
 that C's plain :. 
 @p()
-The above code is rougly
-what felix generates for the equivalent while loop.
 Goto is not recommended programming style,
 but it is an essential primitive, and it is used
-by the Felix compiler when desugaring control
-structures. 
+both by the compiler and in the standard library
+to define control structures such as 'while'.
 @p()
 It is also useful for inventing your own
 control structures: together with higher
@@ -1737,6 +1771,9 @@ of Felix standard types and numeric lexicology.
 @p()
 The types:
 @begin_displayed_code()
+  // categorical
+  void unit
+
   // addressing
   byte size address offset 
 
@@ -1846,6 +1883,9 @@ that 010 is decimal ten in Felix!
 @head(2,'Floating matches')
 Felix provides special matching for
 floating point. Here are some examples:
+[This will change, the need for overlapping
+ranges is too ugly ..]
+
 @select(tangler(tdir+'tut139.flx'))
 #include <std.flx>
 
@@ -1896,7 +1936,7 @@ Identifiers beginning with an underscore are
 reserved to Felix. Identifiers containing
 more than one underscore in a row are
 reserved to Felix. Reserved identifiers may
-be used by progrogrammers, but not defined.
+be used by programmers, but not defined.
 @p()
 The letters referred to consist of the usual
 A-Z and a-z, but also include any Unicode/ISO10646

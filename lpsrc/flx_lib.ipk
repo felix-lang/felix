@@ -52,10 +52,6 @@ namespace std_flx {
   "wchar"   : "wchar_t",
   "uchar"   : "int32_t", # Unicode/ISO10646, note: SIGNED!
 
-  #bool
-  # !!! EXPERIMENT !!! GET RID OF BOOL 
-  #"bool"    : "bool",
-  
   #signed integers
   "tiny"    : "signed char",
   "short"   : "short",
@@ -123,7 +119,10 @@ namespace std_flx {
 
 
 // !!!!! NEW DEFINITION OF BOOL !!!!!
+typedef void = 0;
+typedef unit = 1;
 typedef bool = 2;
+typedef any = any;
 
 module Bool 
 {

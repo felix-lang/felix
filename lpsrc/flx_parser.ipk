@@ -50,6 +50,7 @@
 exception EndOfInput
 open Flx_types
 open Flx_typing
+open Flx_typing2
 open Flx_srcref
 open Flx_print
 
@@ -227,15 +228,12 @@ let mkcurry sr name args return_type body =
 /* patterns */
 %token<Flx_types.srcref> AS ANY REGEXP WHEN ALL
 
-/* type operator */
-%token<Flx_types.srcref> TYPEOF
-
 /* statement keywords */
 %token<Flx_types.srcref> IF THEN ELSE ENDIF ELIF OF VAR UNION CLASS CATEGORY EXCEPTIONS GOTO EXPORT
 
 %token<Flx_types.srcref> MATCH WITH ENDMATCH CASE HEADER BODY MODULE CODE
 %token<Flx_types.srcref> SERVICE COMMAND HANDLER CALL PROCEDURE FUNCTION READER FUNCTOR
-%token<Flx_types.srcref> UNIT RETURN FORK VOID
+%token<Flx_types.srcref> RETURN FORK 
 %token<Flx_types.srcref> WHILE LOOP TO OPEN EQRIGHTARROW
 %token<Flx_types.srcref> TODO INTERFACE DEFINE OVERLOAD
 %token<Flx_types.srcref> TYPE FUN READ PROC CONST STRUCT RAISE ATTEMPT FINALLY EXCEPT VAL TYPEDEF ENDATTEMPT
@@ -1493,11 +1491,6 @@ qualified_name:
   | atom { $1 }
 
 atom:
-  | TYPEOF LPAR expr RPAR
-    { 
-      let sr = rstoken $1 $4 in
-      `AST_typeof (sr,$3) 
-    }
   | LBRACE expr RBRACE     { `AST_lazy (rstoken $1 $3,$2) }
   | match_expr { $1 }
   | compound            
@@ -1512,8 +1505,6 @@ atom:
     }
   | LPAR expr RPAR      { $2 }
   | LPAR RPAR           { `AST_tuple (rstoken $1 $2,[]) }
-  | UNIT                { `AST_product (slift $1,[]) }
-  | VOID                { `AST_void (slift $1) }
   | literal             { $1 }
   | simple_name         { ($1:>expr_t) }
   | IF expr THEN expr ELSE expr ENDIF 

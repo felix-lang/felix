@@ -170,7 +170,7 @@ compiler and run-times for your platform from the extracted sources.
 You don't need interscript for this, the sources are already
 extracted in the tarball.
 but you must first have installed:
-<A HREF=http://caml.inria.fr>Ocaml 3.04</A> to build
+<A HREF=http://caml.inria.fr>Ocaml 3.05</A> to build
 the Felix compiler, and  <A HREF=http://www.python.org>Python</A>
 to run the build scripts.
 </P>
@@ -231,6 +231,10 @@ boost header file to define int64_t which Felix requires,
 but that file is now packaged in the LP sources.
 </P>
 <H2>Language Changes</H2>
+<P>If/then/else/endif is now an expression, a conditional
+goto statement has been added. Deduction of function
+return types. 
+</P>
 <P>Felix now supports anonymous sum types.
 Consequently, I have finally managed to eliminate
 the boolean type from the core language, its now

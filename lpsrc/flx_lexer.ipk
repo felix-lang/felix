@@ -39,7 +39,6 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "type", (fun s ->  TYPE s);
     "typedef", (fun s ->  TYPEDEF s);
     "fun", (fun s ->  FUNCTION s);
-    "unit", (fun s ->  UNIT s);
     "read", (fun s ->  READ s);
     "return", (fun s ->  RETURN s);
     "proc", (fun s ->  PROCEDURE s);
@@ -74,13 +73,11 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "module", (fun s ->  MODULE s);
     "lambda", (fun s ->  LAMBDA s);
     "lazy", (fun s ->  LAZY s);
-    "void", (fun s ->  VOID s);
     "goto", (fun s ->  GOTO s);
     "export", (fun s ->  EXPORT s);
     "inf", (fun s -> INF s);
     "NaN", (fun s -> NAN s);
     "to", (fun s -> TO s);
-    "typeof", (fun s -> TYPEOF s);
 ]
 
 let map_flx_keywords srcref lex_item = 

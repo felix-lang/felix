@@ -141,8 +141,6 @@ let string_of_token (tok :Flx_parse.token): string =
   | TYPE _ -> "type"
   | TYPEDEF _ -> "typedef"
   | FUN _ -> "fun"
-  | UNIT _ -> "unit"
-  | VOID _ -> "void"
   | READ _ -> "read"
   | RETURN _ -> "return"
   | CONST _ -> "const"
@@ -180,7 +178,6 @@ let string_of_token (tok :Flx_parse.token): string =
   | EXPORT _ -> "export"
   | DEFINE _ -> "define"
   | OVERLOAD _ -> "overload"
-  | TYPEOF _ -> "typeof"
 
   (* special things *)
   | SLOSH _ -> "\\" (* "\"" *) 
@@ -316,10 +313,8 @@ let src_of_token t = match t with
   | PROCEDURE s 
   | FUNCTION s 
   | READER s 
-  | UNIT s 
   | RETURN s 
   | FORK s 
-  | VOID s 
   | WHILE s 
   | LOOP s 
   | TODO s 
@@ -339,7 +334,6 @@ let src_of_token t = match t with
   | DEFINE s
   | OVERLOAD s
   | OPEN s
-  | TYPEOF s
     -> s
 
 

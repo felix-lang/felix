@@ -226,6 +226,8 @@ header r"""
 using namespace std;
 """;
 
+typedef void = 0;
+typedef unit = 1;
 typedef bool = 2;
 val false:bool = case 1 of 2;
 val true:bool = case 2 of 2;

@@ -1,5 +1,5 @@
 @head(1,'Maker')
-@flx_version = '1.0a2'
+@flx_version = '1.0a3'
 @h = tangler('script/maker','python')
 @select(h)
 #!/usr/bin/env python
@@ -94,6 +94,7 @@ INTERFACES = [
   'flx_string'       ,
   'flx_id'           ,
   'flx_print'        ,
+  'flx_typing2'      ,
   'flx_unify'        ,
   'flx_parse'        ,
   'flx_keywords'     ,
@@ -123,6 +124,7 @@ IMPLEMENTATIONS = [
   'flx_string'       ,
   'flx_id'           ,
   'flx_print'        ,
+  'flx_typing2'      ,
   'flx_unify'        ,
   'flx_parse'        ,
   'flx_keywords'     ,
@@ -234,28 +236,12 @@ try:
   # STEP 0: run interscript
   if "noiscr" not in options:
     if "doc" in options:
-      xqt('iscr --language=en --weaver=web --weaver=latex --passes=200 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
-      xqt('iscr --language=en --weaver=web --weaver=latex --passes=200 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
+      xqt('iscr --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
+      xqt('iscr --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
     else:
       xqt('iscr lpsrc/flx.pak')
       xqt('iscr lpsrc/flx_tutorial.pak')
     os.system('rm -f tmp.tmp')
-
-  # COMPILER DRIVER PROGRAMS
-
-  for testfile in DRIVERS:
-    print 'Compiling driver program ',testfile
-    basename = string.split(testfile,'.')[0]
-    if buildall or filetime("rtl/"+basename+ '.cpp') > filetime("bin/"+basename):
-      try:
-        xqt(FLX_CPP_LINK + " -I. " +
-          "rtl/flx_gc.cpp " +
-          "rtl/flx_collector.cpp " +
-          "rtl/flx_rtl.cpp " +
-          "rtl/" + basename + ".cpp -o bin/" + basename)
-      except MakeError:
-        print "Unable to build driver"
-        raise MakeError
 
   if do_tests:
     REGRESSION_TESTS = glob.glob('test/rt*.flx')
@@ -329,6 +315,22 @@ try:
   for exe in EXES:
     if buildall or filetime(exe + '.cmx') > filetime(exe):
       xqt(OCAMLOPT + LDFLAGS + ' -o bin/'+exe + x + OBJECT_FILES + ' ' + exe + '.cmx')
+
+  # COMPILER DRIVER PROGRAMS
+
+  for testfile in DRIVERS:
+    print 'Compiling driver program ',testfile
+    basename = string.split(testfile,'.')[0]
+    if buildall or filetime("rtl/"+basename+ '.cpp') > filetime("bin/"+basename):
+      try:
+        xqt(FLX_CPP_LINK + " -I. " +
+          "rtl/flx_gc.cpp " +
+          "rtl/flx_collector.cpp " +
+          "rtl/flx_rtl.cpp " +
+          "rtl/" + basename + ".cpp -o bin/" + basename)
+      except MakeError:
+        print "Unable to build driver"
+        raise MakeError
 
   w = 50
   # run tests
@@ -830,6 +832,8 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('\t\tsrc/*.mli \\')
 @tangle('\t\tsrc/*.mly \\')
 @tangle('\t\tsrc/*.mll \\')
+@tangle('\t\trtl/*.cpp\\')
+@tangle('\t\trtl/*.hpp\\')
 @tangle('\t\tlib/*.flx \\')
 @tangle('\t\ttest/*.flx \\')
 @tangle('\t\ttest/*.cpp \\')
@@ -860,7 +864,7 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so')
 @tangle('')
 @tangle('really_clean: dummy')
-@tangle('\trm -rf tut test www src misc man script bin doc lib tmp.tmp')
+@tangle('\trm -rf tut rtl test www src misc man script bin doc lib tmp.tmp')
 @tangle('')
 @tangle('boot: dummy')
 @tangle('\tiscr lpsrc/flx.pak')

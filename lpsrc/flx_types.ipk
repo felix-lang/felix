@@ -1895,6 +1895,84 @@ let dummy_sr = ("generated",0,0,0,0)
 let flx_bool = 
  `TYP_sum [`TYP_tuple[]; `TYP_tuple []]
 
+let qualified_name_of_expr e =
+  match e with
+  | #qualified_name_t as x -> x
+  | _ -> 
+    failwith
+    (
+      "Qualified name expected in\n" ^
+      short_string_of_src (src_of_expr e)
+    )
+
+ 
+@h = tangler('src/flx_typing.mli')
+@select(h)
+open Flx_types
+exception UnificationError of btypecode_t * btypecode_t
+val flx_bool : typecode_t
+val dummy_sr: range_srcref
+
+val type_of_argtypes : 
+  typecode_t list -> 
+  typecode_t
+  
+val funparamtype : 'a * 'b -> 'b
+
+val typeoflist:
+  btypecode_t list ->
+  btypecode_t
+
+val lift:
+  btypecode_t -> btypecode_t
+
+val lower:
+  btypecode_t -> btypecode_t
+
+val unify:
+  symbol_table_t ->
+  btypecode_t -> 
+  btypecode_t ->
+  btypecode_t 
+
+val qualified_name_of_expr:
+  expr_t -> qualified_name_t
+
+module FuntypeSet :
+  sig
+    type elt = Flx_types.typecode_t
+    and t
+    val empty : t
+    val is_empty : t -> bool
+    val mem : elt -> t -> bool
+    val add : elt -> t -> t
+    val singleton : elt -> t
+    val remove : elt -> t -> t
+    val union : t -> t -> t
+    val inter : t -> t -> t
+    val diff : t -> t -> t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val subset : t -> t -> bool
+    val iter : (elt -> unit) -> t -> unit
+    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val for_all : (elt -> bool) -> t -> bool
+    val exists : (elt -> bool) -> t -> bool
+    val filter : (elt -> bool) -> t -> t
+    val partition : (elt -> bool) -> t -> t * t
+    val cardinal : t -> int
+    val elements : t -> elt list
+    val min_elt : t -> elt
+    val max_elt : t -> elt
+    val choose : t -> elt
+  end
+
+@h = tangler('src/flx_typing2.ml')
+@select(h)
+open Flx_types
+open Flx_print
+open Flx_srcref
+
 let rec typecode_of_expr (e:expr_t) :typecode_t = 
   let te e = typecode_of_expr e in
   match e with 
@@ -1937,6 +2015,63 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
         `TYP_sum !t
       end
 
+  | `AST_apply(sr,(e1,e2)) ->
+    begin match e1 with
+    | `AST_name (_,name) ->
+      let name' = name ^ "          " (* 10 chars *) in
+      if name = "typeof" then `TYP_typeof e2 
+      else let arg = typecode_of_expr e2 in
+      if name = "dom" then `TYP_dom arg
+      else if name = "cod" then `TYP_cod arg
+      else if String.sub name' 0 5 = "proj_" 
+      then 
+        begin 
+          let acc = ref 0 in
+          for i = 5 to String.length name - 1 do
+          if name.[i] <= '9' && name.[i] >='0'
+          then acc := 10 * !acc + Char.code (name.[i]) - Char.code '0'
+          else
+            failwith 
+            (
+              "Digits expected in name '" ^ name ^ "' in\n" ^
+              short_string_of_src sr
+            )
+          done;
+          `TYP_proj (!acc, arg)
+         end
+
+      else if String.sub name' 0 9 = "case_arg_" 
+      then 
+        begin 
+          let acc = ref 0 in
+          for i = 9 to String.length name - 1 do
+          if name.[i] <= '9' && name.[i] >='0'
+          then acc := 10 * !acc + Char.code (name.[i]) - Char.code '0'
+          else
+            failwith 
+            (
+              "Digits expected in name '" ^ name ^ "' in\n" ^
+              short_string_of_src sr
+            )
+          done;
+          `TYP_case_arg (!acc, arg)
+         end
+      else 
+        failwith
+        (
+          "unknown type function " ^ string_of_expr e1 ^
+          "at " ^ short_string_of_src sr
+        )
+
+    | _ -> 
+      failwith 
+      (
+        "type function " ^ string_of_expr e1 ^
+        " must be an identifier\n" ^
+        "at " ^ short_string_of_src sr
+      )
+    end
+
   | #expr_t -> 
     failwith 
     (
@@ -1944,78 +2079,10 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
       short_string_of_src (src_of_expr e)
     )
     
-let qualified_name_of_expr e =
-  match e with
-  | #qualified_name_t as x -> x
-  | _ -> 
-    failwith
-    (
-      "Qualified name expected in\n" ^
-      short_string_of_src (src_of_expr e)
-    )
-
- 
-@h = tangler('src/flx_typing.mli')
+@h = tangler('src/flx_typing2.mli')
 @select(h)
 open Flx_types
-exception UnificationError of btypecode_t * btypecode_t
-val flx_bool : typecode_t
-val dummy_sr: range_srcref
-
-val type_of_argtypes : 
-  typecode_t list -> 
-  typecode_t
-  
-val funparamtype : 'a * 'b -> 'b
-
-val typeoflist:
-  btypecode_t list ->
-  btypecode_t
-
-val lift:
-  btypecode_t -> btypecode_t
-
-val lower:
-  btypecode_t -> btypecode_t
-
-val unify:
-  symbol_table_t ->
-  btypecode_t -> 
-  btypecode_t ->
-  btypecode_t 
-
 val typecode_of_expr:
   expr_t -> typecode_t
 
-val qualified_name_of_expr:
-  expr_t -> qualified_name_t
-
-module FuntypeSet :
-  sig
-    type elt = Flx_types.typecode_t
-    and t
-    val empty : t
-    val is_empty : t -> bool
-    val mem : elt -> t -> bool
-    val add : elt -> t -> t
-    val singleton : elt -> t
-    val remove : elt -> t -> t
-    val union : t -> t -> t
-    val inter : t -> t -> t
-    val diff : t -> t -> t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val subset : t -> t -> bool
-    val iter : (elt -> unit) -> t -> unit
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-    val for_all : (elt -> bool) -> t -> bool
-    val exists : (elt -> bool) -> t -> bool
-    val filter : (elt -> bool) -> t -> t
-    val partition : (elt -> bool) -> t -> t * t
-    val cardinal : t -> int
-    val elements : t -> elt list
-    val min_elt : t -> elt
-    val max_elt : t -> elt
-    val choose : t -> elt
-  end
 
