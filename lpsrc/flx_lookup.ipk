@@ -1771,6 +1771,9 @@ and lookup_qn_with_sig'
 
       | (Simple_module (impl, ts',htab,dirs)) ->
         let ts' = map (bt sr) ts' in
+        (*
+        print_endline ("Module " ^ si impl ^ "[" ^ catmap "," (sbt syms.dfns) ts' ^"]");
+        *)
         begin match lookup_name_in_htab htab name with
         | None -> 
           clierr sr
@@ -1895,7 +1898,7 @@ and lookup_qn_with_sig'
             print_endline ("Resolved overload for " ^ name);
             print_endline ("ts = [" ^ catmap ", " (sbt syms.dfns) ts ^ "]");
             *)
-            let ts = adjust_ts syms index ts in
+            let ts = adjust_ts syms index (ts' @ ts) in
             `BEXPR_closure (index,ts),
              typeofindex_with_ts syms excluded_dirs index ts
 
@@ -3955,11 +3958,12 @@ and eval_module_expr syms env excluded_dirs e : module_rep_t =
 
   | `AST_lookup (sr,(e,name,ts)) ->
     let result = eval_module_expr syms env excluded_dirs e in
-    let entries = 
-      begin match result with
-      | Simple_module (index,ts,table,dirs) ->
+    begin match result with
+      | Simple_module (index,ts',table,dirs) ->
         begin match lookup_name_in_htab table name with
-        | Some x -> x
+        | Some x -> 
+          check_module syms excluded_dirs sr x (ts' @ ts)
+
         | None -> clierr sr 
           (
             "Can't find " ^ name ^ " in module"
@@ -3970,7 +3974,10 @@ and eval_module_expr syms env excluded_dirs e : module_rep_t =
         begin match get_data syms.dfns iface with
         { id=id;sr=sr;pubmap=table;symdef=`SYMDEF_interface}  ->
           begin match lookup_name_in_htab table name with
-          | Some x -> make_bound binding x
+          | Some x -> 
+            let entries = make_bound binding x in
+            check_module syms excluded_dirs sr entries ts
+
           | None -> 
             clierr sr
             (
@@ -3983,8 +3990,7 @@ and eval_module_expr syms env excluded_dirs e : module_rep_t =
 
       | Functor_set _ -> failwith "Can't lookup in functor set"
       | Module_product _ -> failwith "Can't lookup in module product"
-      end 
-    in check_module syms excluded_dirs sr entries ts
+    end 
 
   | _ ->
     failwith 
