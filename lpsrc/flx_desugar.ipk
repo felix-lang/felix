@@ -64,10 +64,16 @@ let filetime f =
 
 let include_file syms inspec lookup =
   let this_version = !Flx_version.version_data in
-  let d = Filename.dirname inspec in
-  let b = Filename.basename inspec in
-  let b = try Filename.chop_extension b with _ -> b in
-  let basename = if d = "." then b else Filename.concat d b in
+  let basename = 
+    let n = String.length inspec in
+    if n <= 3 then inspec
+    else 
+      let x = String.sub inspec (n-4) 4 in
+      match x with
+      | ".flx" | ".par" -> String.sub inspec 0 (n-4)
+      | _ -> x
+    
+  in
   let include_dirs = syms.compiler_options.include_dirs in
   let tf = find_file lookup include_dirs (basename ^ ".flx") in
   let pf = find_file lookup include_dirs (basename ^ ".par") in
