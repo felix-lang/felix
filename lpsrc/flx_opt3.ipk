@@ -1017,7 +1017,6 @@ let tailit syms (child_map,bbdfns) this sr ps vs exes : bexe_t list =
     | x -> `BTYP_tuple x
   in
   let cal_tail_call e = 
-    jump_done := true;
     match length ps with
     | 0 -> [`BEXE_goto (sr,start_label)]
     | 1 ->
@@ -1051,6 +1050,7 @@ let tailit syms (child_map,bbdfns) this sr ps vs exes : bexe_t list =
     when (i,ts)=(this,ts') && tailable tail
     ->
      print_endline ("--> Tail loop " ^ si this);
+     jump_done := true;
      let res = cal_tail_call a @ res
      in aux tail res
 
@@ -1089,11 +1089,6 @@ let tail_bbdcl syms (child_map,bbdfns) i =
   | id,parent,sr,`BBDCL_procedure (props,vs,ps,exes) ->
     let exes = tailit syms (child_map,bbdfns) i sr ps vs exes in
     let data = id,parent,sr,`BBDCL_procedure (props,vs,ps,exes) in
-    Hashtbl.replace bbdfns i data
-
-  | id,parent,sr,`BBDCL_function (props,vs,ps,ret,exes) ->
-    let exes = tailit syms (child_map,bbdfns) i sr ps vs exes in
-    let data = id,parent,sr,`BBDCL_function (props,vs,ps,ret,exes) in
     Hashtbl.replace bbdfns i data
 
   | _ -> ()
@@ -1174,15 +1169,11 @@ let heavy_inlining syms
   print_endline "Inlining heavy pass1";
   *)
   BidSet.iter (tail_bbdcl syms (child_map,bbdfns)) !used;
-  (*
   BidSet.iter (heavily_inline_bbdcl syms (child_map,bbdfns)) !used;
-  *)
   (*
   print_endline "Unravelling";
   *)
-  (*
   BidSet.iter (unravel_bbdcl syms (child_map,bbdfns)) !used;
-  *)
   (*
   print_endline "Inlining heavy pass2";
   *)

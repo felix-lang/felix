@@ -435,6 +435,8 @@ Flx_version.version_data := version_data
 @include_file ('flx_regexp.ipk')
 @include_file ('flx_regen.ipk')
 @include_file ('flx_unravel.ipk')
+@include_file ('flx_display.ipk')
+@include_file ('flx_ogen.ipk')
 @include_file ('flx_gen.ipk')
 @include_file ('flx_getopt.ipk')
 @pop_head()

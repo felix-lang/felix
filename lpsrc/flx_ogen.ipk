@@ -1,0 +1,366 @@
+@head(1,'GC shape object generator')
+@h = tangler('src/flx_ogen.mli')
+@select(h)
+open Flx_ast
+open Flx_types
+open Flx_mtypes1
+
+val gen_offset_tables:
+  sym_state_t ->
+  (bid_t, bid_t list) Hashtbl.t *
+  fully_bound_symbol_table_t ->
+  IntSet.t ->
+  string
+
+val find_thread_vars_with_type:
+  fully_bound_symbol_table_t ->
+  (bid_t * btypecode_t) list
+
+val find_references:
+  sym_state_t ->
+  (bid_t, bid_t list) Hashtbl.t *
+  fully_bound_symbol_table_t ->
+  bid_t ->
+  btypecode_t list ->
+  (bid_t * btypecode_t) list
+
+@h = tangler('src/flx_ogen.ml')
+@select(h)
+open Flx_util
+open Flx_ast
+open Flx_types
+open Flx_mtypes1
+open Flx_name
+open Flx_unify
+open Flx_typing
+open Flx_tgen
+open List
+open Flx_print
+
+let find_thread_vars_with_type bbdfns =
+  let vars = ref [] in
+  Hashtbl.iter
+  (fun k (id,parent,sr,entry) ->
+    match parent,entry with
+    | None,`BBDCL_var (_,t)
+    | None,`BBDCL_val (_,t)
+      -> vars := (k,t) :: !vars
+    | _ -> ()
+  )
+  bbdfns
+  ;
+  !vars
+
+
+let find_references syms (child_map,bbdfns) index ts = 
+  let children = 
+    try 
+      Hashtbl.find child_map index 
+    with Not_found -> []
+  in
+  let references = ref [] in
+  iter
+  (fun idx -> 
+    try
+      let id,_,_,bbdfn = 
+        Hashtbl.find bbdfns idx
+      in
+      match bbdfn with
+      | `BBDCL_var (vs,(`BTYP_pointer _ as t))
+      | `BBDCL_val (vs,(`BTYP_pointer _ as t))
+      | `BBDCL_var (vs,(`BTYP_function _ as t))
+      | `BBDCL_val (vs,(`BTYP_function _ as t))
+        -> 
+        if length ts <> length vs then 
+        failwith 
+        (
+          "[find_references} wrong number of args, expected vs = " ^ 
+          si (length vs) ^ 
+          ", got ts=" ^ 
+          si (length ts)
+        );
+        let t = tsubst vs ts (lower t) in
+        references := (idx,t) :: !references
+      | _ -> ()
+    with Not_found -> ()
+  ) 
+  children 
+  ;
+  !references
+
+let comma_sub s = 
+  let rec aux l r =
+    try  
+      let i = String.index r ',' in
+      let n = String.length r in
+      aux (l ^ String.sub r 0 i ^ " comma ") (String.sub r (i+1) (n-i-1))
+    with Not_found -> l ^ r
+  in
+  aux "" s
+ 
+(* this code handles tuples and pointers *)
+let rec get_offsets syms bbdfns typ : string list =
+  let tname = cpp_typename syms typ in
+  match unfold typ with
+  | `BTYP_pointer t -> 
+    ["offsetof("^tname^",frame)"]
+
+  | `BTYP_tuple args -> 
+    let n = ref 0 in
+    let lst = ref [] in
+    iter 
+    (fun t ->
+      let prefix = 
+        "offsetof("^tname^",mem_"^si !n^")+" 
+      in
+      iter
+      (fun s -> lst := !lst @ [prefix ^ s])
+      (get_offsets syms bbdfns t)
+      ;
+      incr n
+    )
+    args
+    ;
+    !lst
+
+  | _ -> []
+
+let gen_offset_data s n name offsets =
+  if n <> 0 then
+  begin
+    bcat s ("static std::size_t " ^ name ^ "_offsets["^si n^"]={\n");
+    bcat s ("  " ^ cat ",\n  " offsets);
+    bcat s ("\n" ^  "};\n");
+  end;
+  bcat s ("static void " ^ name ^ "_finaliser(collector_t *, void *p){\n");
+  bcat s ("  (("^ name ^ "*)p)->~" ^ name ^ "();\n}\n");
+  bcat s (  "static gc_shape_t "^ name ^"_ptr_map (\n");
+  bcat s ( "  1,sizeof("^name^"),\n  "^name^"_finaliser,\n  "^si n^",\n  "^
+  (if n<>0 then name^"_offsets\n" else "0\n"));
+  bcat s ( ");\n")
+
+let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance = 
+  let vars =  (find_references syms (child_map,bbdfns) index ts) in
+  let refs = filter 
+    (fun (i,t) -> match t with 
+    | `BTYP_pointer _ -> true 
+    | _ -> false
+    ) vars 
+  in
+  let funs = filter 
+    (fun (i,t) -> match t with 
+    | `BTYP_function _ -> true 
+    | _ -> false
+    ) vars 
+  in
+  let refnames = 
+    map 
+    (fun (index,t)-> 
+      cpp_instance_name syms bbdfns index ts,
+      cpp_typename syms t
+    )
+    refs
+  in
+  let funnames = 
+    map 
+    (fun (index,t)-> 
+      cpp_instance_name syms bbdfns index ts,
+      cpp_typename syms t
+    )
+    funs
+  in
+  let name = cpp_instance_name syms bbdfns index ts in
+  let display = Flx_display.get_display_list bbdfns index in
+  let offsets = 
+    (match ret with 
+      | `BTYP_void -> [ ("offsetof(" ^ name ^ ",_caller)")  ] 
+      | _ -> []
+    ) 
+    @
+    map
+    (fun (didx, vslen) ->
+    let dptr = "ptr" ^ cpp_instance_name syms bbdfns didx (list_prefix ts vslen) in
+    "offsetof("^name^","^dptr^")"
+    )
+    display
+    @
+    map 
+    (fun (mem,reftyp)->
+      "offsetof("^name^","^mem^")" ^
+      "+offsetof("^comma_sub reftyp^",frame)") 
+    refnames
+    @
+    map 
+    (fun (mem,reftyp)->
+      "offsetof("^name^","^mem^")"
+    )
+    funnames
+  in
+  let n = length offsets in
+  bcat s 
+  (
+    "\n//OFFSETS for "^
+    (match ret with |`BTYP_void -> "procedure " | _ -> "function ") ^ 
+    name ^ "\n"
+  );
+  gen_offset_data s n name offsets
+
+let gen_thread_frame_offsets s syms bbdfns =
+  let vars = find_thread_vars_with_type bbdfns in
+  let ts = [] in
+  let refs = filter 
+    (fun (i,t) -> match t with 
+    | `BTYP_pointer _ -> true 
+    | _ -> false
+    ) vars 
+  in
+  let funs = filter 
+    (fun (i,t) -> match t with 
+    | `BTYP_function _ -> true 
+    | _ -> false
+    ) vars 
+  in
+  let refnames = 
+    map 
+    (fun (index,t)-> 
+      cpp_instance_name syms bbdfns index ts,
+      cpp_typename syms t
+    )
+    refs
+  in
+  let funnames = 
+    map 
+    (fun (index,t)-> 
+      cpp_instance_name syms bbdfns index ts,
+      cpp_typename syms t
+    )
+    funs
+  in
+  let name = "thread_frame_t" in
+  let offsets = 
+    map
+    (fun (mem,reftyp)->
+      "offsetof("^name^","^mem^")" ^
+      "+offsetof("^comma_sub reftyp^",frame)" 
+    )
+    refnames
+    @
+    map 
+    (fun (mem,reftyp)->
+      "offsetof("^name^","^mem^")"
+    )
+    funnames
+  in
+  let n = length offsets in
+  bcat s 
+  (
+    "\n//OFFSETS for "^ name ^ "\n"
+  );
+  gen_offset_data s n name offsets
+
+let gen_offset_tables syms (child_map,bbdfns) all_closures =
+  let primitive_shapes = Hashtbl.create 97 in
+  let s = Buffer.create 20000 in
+
+  (* print_endline "Function and procedure offsets"; *)
+  Hashtbl.iter
+  (fun (index,ts) instance ->
+    let id,parent,sr,entry = Hashtbl.find bbdfns index in 
+    (*
+    print_endline ("Offsets for " ^ id ^ "<"^ si index ^">["^catmap "," (sbt syms.dfns) ts ^"]");
+    *)
+    match entry with
+    | `BBDCL_function (props,vs,ps, ret,_) -> 
+      gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance
+        
+    | `BBDCL_procedure (props,vs,ps,_) -> 
+      gen_fun_offsets s syms (child_map,bbdfns) index vs ps `BTYP_void ts instance
+    | _ -> ()
+  )
+  syms.instances
+  ;
+  gen_thread_frame_offsets s syms bbdfns
+  ;
+
+  (* We're not finished: we need offsets for tuple and pointer types too *)
+  (* print_endline "Tuple and pointer offsets"; *)
+  Hashtbl.iter
+  (fun btyp index -> 
+    (*
+    print_endline ("type --> " ^ string_of_btypecode syms.dfns btyp);
+    *)
+    match unfold btyp with
+    | `BTYP_tuple args ->
+      let name = cpp_type_classname syms btyp in
+      let offsets = get_offsets syms bbdfns btyp in
+      let n = length offsets in 
+      let classname = cpp_type_classname syms btyp in
+      bcat s ("\n//OFFSETS for tuple type " ^ si index ^ "\n");
+      gen_offset_data s n name offsets
+
+    (* for an array, we only have offsets for the first element *)
+    | `BTYP_array (t,i) ->
+      let k = 
+        try int_of_unitsum i
+        with Not_found -> failwith "Array index must be unitsum"
+      in
+      let name = cpp_typename syms btyp in
+      let tname = cpp_typename syms t in
+      let offsets = get_offsets syms bbdfns t in
+      let n = length offsets in 
+      bcat s ("\n//OFFSETS for array type " ^ si index ^ "\n");
+      if n <> 0 then begin
+        bcat s ("static std::size_t " ^ name ^ "_offsets["^si n^"]={\n  ");
+        bcat s ("  " ^ cat ",\n  " offsets);
+        bcat s "};\n"
+      end
+      ;
+      bcat s ("static void " ^ name ^ "_finaliser(collector_t *, void *p){\n");
+      bcat s ("  for(std::size_t count = "^ si k ^"; count; --count)\n");
+      bcat s ("  {\n");
+      bcat s ("    (("^ tname ^ "*)p)->~" ^ tname ^ "();\n");
+      bcat s ("    p = (void*)((char*)p + sizeof("^tname^"));\n");
+      bcat s ("  }\n");
+      bcat s ("}\n");
+      bcat s ("static gc_shape_t "^ name ^"_ptr_map(\n");
+      bcat s ("  " ^ si k ^ ",\n");
+      bcat s ("  sizeof("^name^"),\n  "^name^"_finaliser,\n  "^si n^
+      (
+        if n = 0 then ",0\n" 
+        else ",\n  " ^name^"_offsets\n"
+      )
+      );
+      bcat s ");\n"
+
+    | `BTYP_inst (i,ts) ->
+      let name = cpp_typename syms btyp in
+      let id,parent,sr,entry = Hashtbl.find bbdfns i in 
+      begin match entry with
+      | `BBDCL_abs (_,complete,_,_) ->
+        if complete then
+          if not (Hashtbl.mem primitive_shapes name) then 
+          begin
+            Hashtbl.add primitive_shapes name true; 
+            bcat s ("\n//OFFSETS for abstract type " ^ name ^ " instance\n");
+            bcat s ( "static gc_shape_t " ^ name ^ "_ptr_map(\n") ;
+            bcat s ("  1,sizeof("^name^"),0,0,0\n");
+            bcat s ");\n"
+          end else begin
+            bcat s ("\n//OFFSETS for abstract type " ^ name ^ " instance\n");
+            bcat s ("//Use "^name^"_ptr_map\n");
+          end
+        else ()
+      | `BBDCL_cstruct (vs,cps)
+      | `BBDCL_struct (vs,cps) ->
+        bcat s ("\n//OFFSETS for struct type " ^ name ^ " instance\n");
+        bcat s ("//CANT HANDLE YET!\n");
+      | _ -> ()
+    end
+
+   | _ -> () 
+  )
+  syms.registry
+  ;
+  Buffer.contents s
+
+
