@@ -1417,7 +1417,7 @@ and inner_typeofindex
         let t = `BTYP_function (bt (typeof_list pts), rt') in
         t
 
-  | `SYMDEF_const (t,_)
+  | `SYMDEF_const (t,_,_)
   | `SYMDEF_parameter (t)
   | `SYMDEF_val (t)
   | `SYMDEF_var (t)
@@ -1426,7 +1426,7 @@ and inner_typeofindex
   | `SYMDEF_match_check _ ->
     `BTYP_function (`BTYP_tuple [], flx_bbool)
 
-  | `SYMDEF_fun (pts,rt,_) -> 
+  | `SYMDEF_fun (pts,rt,_,_) -> 
     let t = `TYP_function (typeof_list pts,rt) in
     bt t
     
@@ -1703,7 +1703,7 @@ and lookup_qn_with_sig'
               `BEXPR_closure (index,ts''),
               t
 
-            | `SYMDEF_const (t,_) 
+            | `SYMDEF_const (t,_,_) 
             | `SYMDEF_val t 
             | `SYMDEF_var t 
             | `SYMDEF_parameter t
@@ -2007,7 +2007,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
           | None -> None
           end
 
-    | `SYMDEF_const (t,_)
+    | `SYMDEF_const (t,_,_)
     | `SYMDEF_var t
     | `SYMDEF_val t 
     | `SYMDEF_parameter t

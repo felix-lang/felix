@@ -1,4 +1,19 @@
 @head(1,'Configure')
+@h = tangler("tmp/check_cygwin.cxx",'c++')
+@select(h)
+int main(int,char*[]) { 
+   int x = __CYGWIN__;
+   return 0;
+}
+
+@h = tangler("tmp/dummy.cxx",'c++')
+@select(h)
+int main(int argc, char*argv[]) { return 0; }
+
+@h = tangler("tmp/dummyc.c",'c')
+@select(h)
+int main(int argc, char*argv[]) { return 0; }
+
 @h = tangler("tmp/dummy_lib.cxx",'c++')
 @select(h)
 extern "C" int fred(int,char*[]) { return 0; }
@@ -13,7 +28,126 @@ int main(int,char*[]) {
    if(!lib) exit(1);
    void *fred = dlsym(lib,"fred");
    if(!fred) exit(1);
-   exit(0);   
+   return 0;
+}
+
+@h = tangler("tmp/dummy_nan.cxx",'c++')
+@select(h)
+#include <cmath>
+
+int main(int,char*[]) { 
+  float f = 0.0;
+  std::isnan(f);
+  return 0;
+}
+
+@h = tangler("tmp/dummy_nan2.cxx",'c++')
+@select(h)
+#include <ieeefp.h>
+
+int main(int,char*[]) { 
+  float f = 0.0;
+  isnanf(f);
+  return 0;
+}
+
+@h = tangler("tmp/dummy_stdint.cxx",'c++')
+@select(h)
+#include <stdint.h>
+
+int main(int,char*[]) { 
+  {int8_t i;}
+  {int16_t i;}
+  {int32_t i;}
+  {int64_t i;}
+  {uint8_t i;}
+  {uint16_t i;}
+  {uint32_t i;}
+  {uint64_t i;}
+  return 0;
+}
+
+@h = tangler("tmp/intsizes.cxx",'c++')
+@select(h)
+#include <stdio.h>
+#include <stddef.h>
+
+struct SHORT {
+  char x;
+  short y;
+};
+
+struct INT {
+  char x;
+  int y;
+};
+
+struct LONG {
+  char x;
+  long y;
+};
+
+struct FLOAT {
+  char x;
+  float y;
+};
+
+struct DOUBLE {
+  char x;
+  double y;
+};
+
+struct VOIDP {
+  char x;
+  void *y;
+};
+
+int main(int,char*[]) { 
+  printf("SIZEOF_SHORT=%d\n",sizeof(short));
+  printf("SIZEOF_INT=%d\n",sizeof(int));
+  printf("SIZEOF_LONG=%d\n",sizeof(long));
+  printf("SIZEOF_FLOAT=%d\n",sizeof(float));
+  printf("SIZEOF_DOUBLE=%d\n",sizeof(double));
+  printf("SIZEOF_VOIDP=%d\n",sizeof(void*));
+  printf("ALIGNOF_SHORT=%d\n",offsetof(SHORT,y));
+  printf("ALIGNOF_INT=%d\n",offsetof(INT,y));
+  printf("ALIGNOF_LONG=%d\n",offsetof(LONG,y));
+  printf("ALIGNOF_FLOAT=%d\n",offsetof(FLOAT,y));
+  printf("ALIGNOF_DOUBLE=%d\n",offsetof(DOUBLE,y));
+  printf("ALIGNOF_VOIDP=%d\n",offsetof(VOIDP,y));
+  return 0;
+}
+
+@h = tangler("tmp/longlong.cxx",'c++')
+@select(h)
+#include <stdio.h>
+#include <stddef.h>
+
+struct LONGLONG {
+  char x;
+  long long y;
+};
+
+int main(int,char*[]) { 
+  printf("SIZEOF_LONGLONG=%d\n",sizeof(long long));
+  printf("ALIGNOF_LONGLONG=%d\n",offsetof(LONGLONG,y));
+  return 0;
+}
+
+@h = tangler("tmp/longdouble.cxx",'c++')
+@select(h)
+#include <stdio.h>
+#include <stddef.h>
+
+struct LONGDOUBLE {
+  char x;
+  long double y;
+};
+
+int main(int,char*[]) { 
+  printf("SIZEOF_LONGDOUBLE=%d\n",sizeof(long double));
+  printf("ALIGNOF_LONGDOUBLE=%d\n",offsetof(LONGDOUBLE,y));
+  return 0;
 }
 
 @h = tangler("script/make_config.py")
@@ -24,8 +158,29 @@ int main(int,char*[]) {
 
 import sys
 import os
+import traceback
+
 class Error: pass
 this = sys.modules[__name__]
+
+# make doc directories to stop 'cp' complaining
+try: os.mkdir("doc")
+except: pass
+
+try: os.mkdir("impldoc")
+except: pass
+
+try: os.mkdir("tut")
+except: pass
+
+try: os.mkdir("man")
+except: pass
+
+try: os.mkdir("htmlman")
+except: pass
+
+try: os.mkdir("tut/doc")
+except: pass
 
 def file_exists(f):
   try:
@@ -61,10 +216,13 @@ def get_stdout(x):
 # stdout/stderr because we don't know what OS we're on
 
 def xqt(x):
-  print x
-  result = os.system(x)
-  if result != 0: raise Error
+  result = os.system(x + " &>/dev/null")
+  if result != 0: 
+    print "FAIL:",x
+    raise Error
+  else: print x
 
+#---------------------------------------------------
 # discover which ocaml compilers are available
 
 try: # check if the client bootstrapped the native code compiler
@@ -89,6 +247,7 @@ except:
       OCAMLYACC = 'ocamlyacc '
       OCAMLDOC = 'ocamldoc '
     except:
+      print "WARNING: CANT FIND OCAML TOOLS (ocamlc, ocamllex, ocamlyacc)"
       OCAMLCC = '#ocamlc '
       OCAMLLEX = '#ocamllex '
       OCAMLYACC = '#ocamlyacc '
@@ -101,6 +260,7 @@ except:
     xqt('ocamlc')
     OCAMLB = 'ocamlc '
   except:
+    print "WARNING: CANT FIND OCAML TOOL 'ocamlc'"
     OCAMLB = '#ocamlc '
 
 try:
@@ -111,6 +271,7 @@ except:
     xqt('ocamldoc')
     OCAMLDOC = 'ocamldoc '
   except:
+    print "WARNING: CANT FIND OCAML TOOL 'ocamldoc'"
     OCAMLDOC = '#ocamldoc '
 
 # set the default ocaml compiler
@@ -123,39 +284,55 @@ else:
 result,x = get_stdout(OCAMLC + " -where")
 OCAML_INCLUDE_DIRECTORY= x[0][0:-1]
 
+#---------------------------------------------------
+# Discover C/C++ compilers, linker, and other 'binutils'
+
 # find if we have g++
 try:
-  xqt("g++ -w -c tmp/dummy_lib.cxx -o tmp/dummy.o")
-  CC = "g++ -w " 
+  xqt("g++ -w -c tmp/dummy.cxx -o tmp/dummy.o")
+  CXX = "g++ " 
 except:
-  # just call the g++ compiler CC if we don't have g++
-  CC = "CC "
+  # just call the system CC if we don't have g++
+  try:
+    xqt("CC -c tmp/dummy.cxx -o tmp/dummy.o")
+    CXX= "CC "
+  except:
+    print "WARNING: CANT FIND C++ COMPILER"
+    CXX="#CC "
 
-CCOBJ_DLLIB = CC + "-ansi -g -fPIC -c "
-CCOBJ_DLMAIN = CC + "-ansi -g -rdynamic -c "
-CCLINK_DLLIB = CC + "-ansi -g -shared "
-CCLINK_DLMAIN = CC + "-ansi -g -rdynamic -ldl "
+# find if we have CYGWIN
+try:
+  xqt("g++ -w -c tmp/check_cygwin.cxx -o tmp/dummy.o")
+  CYGWIN=1
+except:
+  CYGWIN=0
 
-CCOBJ_STATIC_LIB = CC + "-ansi -g -c "
-CCOBJ_STATIC_MAIN = CC + "-ansi -g -c "
+# set C++ compilation commands
+# for CYGWIN, this isn't enough, it needs to generate
+# an additional output stub link library .. this is handled
+# directly in the script/maker at the moment
+#
+# down the track, we should replace these variables
+# with a Python function def, since that's more flexible
+if CYGWIN:
+  CCOBJ_DLLIB = CXX + "-ansi -w -g -c "
+  CCOBJ_DLMAIN = CXX + "-ansi -w -g -c "
+  CCLINK_DLLIB = CXX + "-shared -Wl,--export-all-symbols -Wl,--enable-auto-import "
+  CCLINK_DLMAIN = CXX 
+else:
+  CCOBJ_DLLIB = CXX + "-ansi -w -g -fPIC -c "
+  CCOBJ_DLMAIN = CXX + "-ansi -w -g -fPIC -c "
+  CCLINK_DLLIB = CXX + "-Wl,-shared -Wl,--export-dynamic "
+  CCLINK_DLMAIN = CXX + "-Wl,-Bdynamic -Wl,--export-dynamic -ldl "
 
-# NOTE: static link means the driver is linked
-# with the library to produce an executable.
-# .. as opposed to making a DLL which is loaded
-# at run time by the driver.
+CCOBJ_STATIC_LIB = CXX + "-ansi -w -g -c "
+CCOBJ_STATIC_MAIN = CXX + "-ansi -w -g -c "
 
-# It does NOT mean that executable is fully statically
-# linked, C libraries including the C and C++ run time
-# are still linked at load time by the default method.
-# 
-# Perhaps we need an option for a full static link:
-# however that's very platform dependent (impossible
-# on Windows for example, where the system is intrinsically
-# represented by DLLs)
+# NOTE: static here means linking felix libraries with drivers
+# it does NOT mean not to do dynamic loading at load time
+CCLINK_STATIC = CXX 
 
-CCLINK_STATIC = CC + "-ansi -g "
-
-#find if -rdynamic and -shared supported
+#check if we can get dlopen to work
 try:
   xqt(CCOBJ_DLLIB+"tmp/dummy_lib.cxx -o tmp/dummy_lib.o")
   xqt(CCOBJ_DLMAIN+"tmp/dummy_main.cxx -o tmp/dummy_main.o")
@@ -164,7 +341,15 @@ try:
   xqt("tmp/dlmain tmp/dummy_lib.so")
   SUPPORT_DYNAMIC_LOADING = 1
 except:
-  SUPPORT_DYNAMIC_LOADING = 0
+  try: #again with --shared
+    CCLINK_DLLIB = CXX + "--shared "
+    CCLINK_DLMAIN = CXX + "-Wl,-Bdynamic -ldl "
+    xqt(CCLINK_DLLIB+"tmp/dummy_lib.o -o tmp/dummy_lib.so")
+    xqt(CCLINK_DLMAIN+"tmp/dummy_main.o -o tmp/dlmain")
+    xqt("tmp/dlmain tmp/dummy_lib.so")
+    SUPPORT_DYNAMIC_LOADING = 1
+  except:
+    SUPPORT_DYNAMIC_LOADING = 0
 
 # see if we have strip
 try:
@@ -179,6 +364,67 @@ try:
   AR="ar -rc "
 except:
   AR="#ar -rc "
+
+# see if we have ranlib
+try:
+  xqt("ranlib tmp/dummy.a")
+  RANLIB="ranlib "
+except:
+  RANLIB="#ranlib "
+
+# see if we have interscript
+try:
+  xqt("iscr")
+  ISCR="iscr "
+except:
+  ISCR='env PYTHONPATH=. python -O interscript/bin/iscr.py '
+
+# find if we have BSD isnan in <cmath> (NAUGHTY!)
+try:
+  xqt("g++ -w -c tmp/dummy_nan.cxx -o tmp/dummy_nan.o")
+  HAVE_ISNAN_IN_CMATH=1
+except:
+  HAVE_ISNAN_IN_CMATH=0
+
+# find if we have BSD isnanf in <ieeefp.h> (NAUGHTY!)
+try:
+  xqt("g++ -w -c tmp/dummy_nan2.cxx -o tmp/dummy_nan2.o")
+  HAVE_ISNANF_IN_IEEEFP=1
+except:
+  HAVE_ISNANF_IN_IEEEFP=0
+
+# find if we have stdint.h
+try:
+  xqt("g++ -w -c tmp/dummy_stdint.cxx -o tmp/dummy_stdint.o")
+  HAVE_STDINT=1
+except:
+  HAVE_STDINT=0
+
+# find sizes of ints
+try:
+  xqt("g++ -w tmp/intsizes.cxx -o tmp/intsizes")
+  xqt("tmp/intsizes > tmp/intsizes.py")
+  execfile("tmp/intsizes.py")
+except:
+  pass
+
+# find if we have long long
+try:
+  xqt("g++ -w tmp/longlong.cxx -o tmp/longlong")
+  xqt("tmp/longlong >tmp/longlong.py")
+  execfile("tmp/longlong.py")
+  HAVE_LONGLONG=1
+except:
+  HAVE_LONGLONG=0
+
+# find if we have long double
+try:
+  xqt("g++ -w tmp/longdouble.cxx -o tmp/longdouble")
+  xqt("tmp/longdouble >tmp/longdouble.py")
+  execfile("tmp/longdouble.py")
+  HAVE_LONGDOUBLE=1
+except:
+  HAVE_LONGDOUBLE=0
 
 DEBUG_SYMBOLS = "-g "
 CCOPT1 = "-O1 -DNDEBUG "
@@ -199,15 +445,25 @@ def p(f,s):
   pr(f,x)
 
 try:
+  try: os.mkdir("config")
+  except: pass
   f = open("config/config.py","w")
+  pr(f,"#Interscript support")
+  p(f,"ISCR")
+  pr(f,"")
+  pr(f,"#Ocaml tools")
   p(f,"OCAMLC")
   p(f,"OCAMLB")
   p(f,"OCAMLLEX")
   p(f,"OCAMLYACC")
   p(f,"OCAMLDOC")
   p(f,"NATIVE_CODE_COMPILER")
+  p(f,"OCAML_INCLUDE_DIRECTORY")
+  pr(f,"")
+  pr(f,"#C++ tools")
   p(f,"STRIP")
   p(f,"AR")
+  p(f,"RANLIB")
   p(f,"CCOBJ_DLLIB")
   p(f,"CCOBJ_DLMAIN")
   p(f,"CCLINK_DLLIB")
@@ -218,13 +474,41 @@ try:
   p(f,"DEBUG_SYMBOLS")
   p(f,"CCOPT1")
   p(f,"CCOPT2")
-  p(f,"OCAML_INCLUDE_DIRECTORY")
+  pr(f,"")
+  pr(f,"# Data types")
+  p(f,"HAVE_STDINT")
+  p(f,"HAVE_LONGLONG")
+  p(f,"HAVE_LONGDOUBLE")
+  p(f,"SIZEOF_SHORT")
+  p(f,"SIZEOF_INT")
+  p(f,"SIZEOF_LONG")
+  p(f,"SIZEOF_FLOAT")
+  p(f,"SIZEOF_DOUBLE")
+  p(f,"SIZEOF_VOIDP")
+  p(f,"ALIGNOF_SHORT")
+  p(f,"ALIGNOF_INT")
+  p(f,"ALIGNOF_LONG")
+  p(f,"ALIGNOF_FLOAT")
+  p(f,"ALIGNOF_DOUBLE")
+  p(f,"ALIGNOF_VOIDP")
+  if HAVE_LONGLONG:
+    p(f,"SIZEOF_LONGLONG")
+    p(f,"ALIGNOF_LONGLONG")
 
+  if HAVE_LONGDOUBLE:
+    p(f,"SIZEOF_LONGDOUBLE")
+    p(f,"ALIGNOF_LONGDOUBLE")
+
+  p(f,"HAVE_ISNAN_IN_CMATH")
+  p(f,"HAVE_ISNANF_IN_IEEEFP")
+
+  pr(f,"")
+  pr(f,"#User configurable section")
   p(f,"SUPPORT_DYNAMIC_LOADING")
   pr(f,"SUPPORT_STATIC_LINKAGE = 1")
   p(f,"DEFAULT_LINK_MODEL")
+  p(f,"CYGWIN")
   pr(f,'PREFIX = "/usr/local"')
-  pr(f,"ISCR='env PYTHONPATH=. python -O interscript/bin/iscr.py'")
   f.close()
 except:
   print "Unable to create config/config.py"

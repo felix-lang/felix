@@ -209,7 +209,7 @@ fun eq: int * int -> 2 = "$1 == $2";
 type string = "char*";
 proc print: string = 'printf("%s",$1);';
 proc print: int = 'printf("%d",$1);';
-proc eol: 1 = 'printf("\n");';
+proc eol: 1 = 'printf("\\n");';
 
 val x:int = 1;
 val y : typeof(x) = 1;

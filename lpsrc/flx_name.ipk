@@ -144,7 +144,10 @@ let rec cpp_type_classname syms t =
       match Hashtbl.find syms.dfns i with 
       { symdef=symdef } -> symdef 
     with
-    | `SYMDEF_abs (true,"int") -> "int" (* hack .. *)
+    | `SYMDEF_abs (true,"int",_) -> "int" (* hack .. *)
+    | `SYMDEF_abs (true,"long",_) -> "long" (* hack .. *)
+    | `SYMDEF_abs (true,"float",_) -> "float" (* hack .. *)
+    | `SYMDEF_abs (true,"double",_) -> "double" (* hack .. *)
     | data  ->
       let prefix =
         match data with

@@ -728,10 +728,10 @@ and rst syms name access st : asm_t list =
     | None,None -> failwith "Expected value to have type or initialiser"
     end
 
-  | `AST_const_decl (sr,name, vs,typ, s) -> [Dcl (sr,name,access,vs,`DCL_const (typ,s))]
+  | `AST_const_decl (sr,name, vs,typ, s, reqs) -> [Dcl (sr,name,access,vs,`DCL_const (typ,s, reqs))]
 
   (* types *)
-  | `AST_abs_decl (sr,name,vs,flag,str) -> [Dcl (sr,name,access,vs,`DCL_abs (flag,str))]
+  | `AST_abs_decl (sr,name,vs,flag,str, reqs) -> [Dcl (sr,name,access,vs,`DCL_abs (flag,str,reqs))]
   | `AST_union (sr,name, vs, components) -> [Dcl (sr,name,access,vs,`DCL_union (components))]
   | `AST_struct (sr,name, vs, components) ->  [Dcl (sr,name,access,vs,`DCL_struct (components))]
   | `AST_type_alias (sr,name,vs,typ) -> [Dcl (sr,name,access,vs,`DCL_type_alias (typ))]
@@ -782,7 +782,7 @@ and rst syms name access st : asm_t list =
     let vs = vs @ vs' in
     [Dcl (sr,name,access,vs,`DCL_function (params, res, props, rsts name sts))]
     
-  | `AST_fun_decl (sr,name,vs,args,result,code) ->
+  | `AST_fun_decl (sr,name,vs,args,result,code, reqs) ->
     let typeoflist lst = match lst with
       | [x] -> x
       | _ -> `TYP_tuple lst
@@ -822,7 +822,7 @@ and rst syms name access st : asm_t list =
         ]
     in
     [
-      Dcl (sr,prim_id,access,vs,`DCL_fun (args,result,code));
+      Dcl (sr,prim_id,access,vs,`DCL_fun (args,result,code,[]));
       Dcl (sr,name,access,vs,`DCL_function (params,result,[`Inline],body))
     ]
 
@@ -861,14 +861,10 @@ and rst syms name access st : asm_t list =
       )
     ] else []
 
-  | `AST_header (sr,s) -> 
-    let n = seq() in 
-    let name = "_header_" ^ string_of_int n in 
+  | `AST_header (sr,name,s) -> 
     [Dcl (sr,name,access,[],`DCL_header s)]
 
-  | `AST_body (sr,s) -> 
-    let n = seq() in 
-    let name = "_body_" ^ string_of_int n in 
+  | `AST_body (sr,name,s) -> 
     [Dcl (sr,name,access,[],`DCL_body s)]
 
   (* executable *)

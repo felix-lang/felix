@@ -112,7 +112,6 @@ if "help" in options:
   print "clean - remove generated C++ and binaries from test locations"
   print "debug - build debugging versions of targets"
   print "optimise - build high performance versions of targets"
-  print "refcnt - do not generate reference counting instructions"
   print "doc - build all user documentation"
   print "vim=gvim - set gvim as the vim editor"
   print "vimserver=FLX - set FLX as the editor server name"
@@ -206,7 +205,10 @@ def flxg(x,basename):
 
 #interscript command (now built in part of Felix package)
 def runISCR(a):
-  xqt(ISCR + ' ' + a)
+  if buildall:
+    xqt(ISCR + "--nocache " + a)
+  else:
+    xqt(ISCR + ' ' + a)
 
 if "compiler" in options or "bytecode" in options:
   OCAML_OBJDIR = "src"
@@ -248,35 +250,23 @@ if LINK_MODEL == "static" and not SUPPORT_STATIC_LINKAGE:
   print "dynamic linkage not supported"
   sys.exit(1)
 
+CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + "-DFLX_STATIC_LINK "
+CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-DFLX_STATIC_LINK "
+
 if LINK_MODEL == "dynamic":
-  FLX_CPP_DYNLINK = CCLINK_DLLIB
-  FLX_CPP_LINK = CCLINK_DLMAIN
-  SHLX = ".so"
+  if CYGWIN:
+    SHLX = ".dll"
+  else:
+    SHLX = ".so"
 else:
-  FLX_CPP_DYNLINK = CCOBJ_STATIC_LIB + "-DFLX_STATIC_LINK "
-  FLX_CPP_LINK = CCLINK_STATIC + "-DFLX_STATIC_LINK "
   SHLX = ""
 
 # for compiling mainlines
 if "optimise" in options:
-  FLX_CPP_LINK = FLX_CPP_LINK + "-O "
-
-if "debug" in options:
-  pass
-else:
-  pass
-  #FLX_CPP_LINK = FLX_CPP_LINK + " -DNDEBUG "
-
-# for building shared libraries
-if "optimise" in options:
-  FLX_CPP_DYNLINK = FLX_CPP_DYNLINK + "-O "
-
-if "debug" in options:
-  pass
-else:
-  pass
-  #FLX_CPP_DYNLINK = FLX_CPP_DYNLINK + " -DNDEBUG "
-
+  CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + "-O "
+  CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-O "
+  CCOBJ_DLLIB = CCOBJ_DLLIB + "-O "
+  CCOBJ_DLMAIN = CCOBJ_DLMAIN + "-O "
 
 
 # ------------------------------------------------
@@ -461,7 +451,7 @@ def erasefile(f):
     pass
 # ----------- Here begins the actual build procedure ---------------------
 
-buildall = "clean" in options
+buildall = "clean" in options or "force" in options
 stop_on_error = "stop_on_error" in options
 import glob
 
@@ -577,34 +567,51 @@ try:
       if buildall or filetime(exe + OCAML_OBJECT_EXTENSION) > filetime(exe):
         xqt(OCAMLOPT + LDFLAGS + ' -o bin/'+exe + x + OBJECT_FILES + ' src/flx_version_hook.ml ' + exe + OCAML_OBJECT_EXTENSION)
 
-  # COMPILER DRIVER PROGRAMS
-  if "drivers" in options:
-    if LINK_MODEL == "static":
+  # COMPILE RTL  
+  if "rtl" in options:
+    if SUPPORT_DYNAMIC_LOADING:
+      ars = ""
+      for x in RTL_CPPS:
+        print 'Compiling rtl object',x
+        ars = ars + x + "_dynamic.o "
+        xqt(CCOBJ_DLLIB + " -I. " + x + ".cpp -o " +x+"_dynamic.o")
+      xqt(AR + " rtl/libflx_dynamic.a " + ars)
+      xqt(RANLIB + " rtl/libflx_dynamic.a")
+
+      if CYGWIN:
+        print "Building RTL for CYGWIN dynamic linkage"
+        cmd = (CCLINK_DLLIB + " -shared -o bin/cygflx_dynamic.dll " +
+          "--export-all-symbols --enable-auto-import " +
+          "--out-implib=rtl/libflx_dynamic.dll.a ")
+        xqt(cmd)
+      else:
+        xqt(CCLINK_DLLIB + "-o rtl/libflx_dynamic.so "+ars)
+
+    if SUPPORT_STATIC_LINKAGE:
       ars = ""
       for x in RTL_CPPS:
         print 'Compiling rtl object',x
         ars = ars + x + "_static.o "
-        xqt(FLX_CPP_DYNLINK + " -I. " + x + ".cpp -o " +x+"_static.o")
-      print "Building static archive"
-      xqt(AR + " rtl/flx_static.a " + ars)
+        xqt(CCOBJ_STATIC_LIB + " -I. " + x + ".cpp -o " +x+"_static.o")
+      xqt(AR + " rtl/libflx_static.a " + ars)
+      xqt(RANLIB + " rtl/libflx_static.a")
+
+  # COMPILE DRIVER PROGRAMS
+  if "drivers" in options:
+    if SUPPORT_STATIC_LINKAGE:
       for i,j in DRIVERS:
-        print 'Compiling driver object',i,'-->',j
-        xqt(FLX_CPP_DYNLINK + " -I. " + i + ".cpp -o " +j+"_static.o")
-    else:
-      for testfile,outbin in DRIVERS:
-        print 'Compiling driver program ',testfile,'-->',outbin
-        try:
-          xqt(FLX_CPP_LINK + " -I. " +
-            "rtl/flx_gc.cpp " +
-            "rtl/flx_collector.cpp " +
-            "rtl/flx_rtl.cpp " +
-            "rtl/flx_dynlink.cpp " +
-            "rtl/flx_i18n.cpp " +
-            "rtl/flx_ioutil.cpp " +
-             testfile + ".cpp -o "+outbin)
-        except MakeError:
-          print "Unable to build driver"
-          raise MakeError
+        print 'Compiling driver object',i
+        xqt(CCOBJ_STATIC_MAIN + " -I. " + i + ".cpp -o " +i+"_static.o")
+
+    if SUPPORT_DYNAMIC_LOADING:
+      for i,j in DRIVERS:
+        print 'Compiling driver object',i
+        xqt(CCOBJ_DLMAIN + " -I. " + i + ".cpp -o " +i+"_dynamic.o")
+
+        if CYGWIN:
+          xqt("g++ -o "+j+" -Lrtl -lflx_dynamic -Wl,--enable-auto-import " + i + "_dynamic.o")
+        else:
+          xqt(CCLINK_DLMAIN + " -o "+j+" -Lrtl -lflx_dynamic " +i+"_dynamic.o")
 
   # run tests
   try:
@@ -673,10 +680,14 @@ try:
       if buildall or filetime(basename+ '.cpp') > filetime(basename+SHLX):
         try:
           if LINK_MODEL == "dynamic":
-            xqt(FLX_CPP_DYNLINK+" -I. "+cppfilename + " -o " + basename + SHLX )
+            if CYGWIN:
+              xqt("g++ -w -ansi -g -o "+basename+SHLX+" -shared -I. "+cppfilename+" -Lrtl -lflx_rtl -Wl,--enable-auto-import")
+            else:
+              xqt(CCOBJ_DLLIB+" -I. "+cppfilename + " -o " + basename + "_dynamic.o")
+              xqt(CCLINK_DLLIB+" -Lrtl -lflx_dynamic -o "+ basename + SHLX + " "+basename+"_dynamic.o")
           else:
-            xqt(FLX_CPP_DYNLINK+" -I. "+cppfilename + " -o " + basename + "_static.o" )
-            xqt(FLX_CPP_LINK+" -I. ./bin/flx_run_static.o "+basename+ "_static.o ./rtl/flx_static.a -o " + basename + SHLX )
+            xqt(CCOBJ_STATIC_LIB +" -I. "+cppfilename + " -o " + basename + "_static.o" )
+            xqt(CCLINK_STATIC +" -I. ./bin/flx_run_static.o "+basename+ "_static.o ./rtl/flx_static.a -o " + basename + SHLX )
           #print 'TESTFILE -- OK!',basename
           results.append(("g++",basename,'OK'))
         except MakeError:
@@ -690,7 +701,7 @@ try:
     for testfile in TESTS:
       basename = string.split(testfile,'.')[0]
       if LINK_MODEL == "dynamic":
-        testscript = "./bin/flx_run ./"+basename+SHLX
+        testscript = "env LD_LIBRARY_PATH=./rtl:$LD_LIBRARY_PATH ./bin/flx_run ./"+basename+SHLX
       else:
         testscript = "./"+basename+SHLX
 
@@ -711,7 +722,7 @@ try:
         test_basename = string.split(testfile,'.')[0]
         drv_basename = string.split(driver,'.')[0]
         if LINK_MODEL == "dynamic":
-          testscript = "time ./"+drv_basename+ " ./"+test_basename+SHLX+" " + moreargs
+          testscript = "env LD_LIBRARY_PATH=./rtl:$LD_LIBRARY_PATH time ./"+drv_basename+ " ./"+test_basename+SHLX+" " + moreargs
         else:
           testscript = "time ./"+test_basename+SHLX+" " + moreargs
         #print 'Executing ',testscript
@@ -761,6 +772,8 @@ We have no idea if it continues copying.
 
 @select(tangler('Makefile','data'))
 @tangle('PREFIX='+PREFIX)
+@tangle('SHLIB_DIR=${PREFIX}/lib')
+@tangle('SHINC_DIR=${PREFIX}/include')
 @tangle('INSTALL_DIR=${PREFIX}/lib/felix')
 @tangle('EXEC_DIR=${PREFIX}/bin')
 @tangle('MAN_DIR=${PREFIX}/man')
@@ -769,14 +782,11 @@ We have no idea if it continues copying.
  except: pass
 @tangle('')
 @tangle('all: dummy')
-@tangle('\tpython script/maker extract compiler drivers test')
+@tangle('\tpython script/maker extract compiler rtl drivers test')
 @tangle('')
 
 @tangle('bytecode: dummy')
 @tangle('\tpython script/maker compiler bytecode')
-@tangle('')
-@tangle('bytecode.clean: dummy')
-@tangle('\tpython script/maker compiler bytecode clean')
 @tangle('')
 @tangle('bytecode.debug: dummy')
 @tangle('\tpython script/maker compiler bytecode debug')
@@ -784,14 +794,14 @@ We have no idea if it continues copying.
 @tangle('extract: dummy')
 @tangle('\tpython script/maker extract')
 @tangle('')
+@tangle('extract.force: dummy')
+@tangle('\tpython script/maker extract force')
+@tangle('')
 @tangle('tut: dummy')
 @tangle('\tpython script/maker tutorial')
 @tangle('')
 @tangle('compiler: dummy')
 @tangle('\tpython script/maker compiler')
-@tangle('')
-@tangle('compiler.clean: dummy')
-@tangle('\tpython script/maker compiler clean')
 @tangle('')
 @tangle('doc: dummy')
 @tangle('\tpython script/maker doc')
@@ -820,20 +830,17 @@ We have no idea if it continues copying.
 @tangle('tests.static: dummy')
 @tangle('\tpython script/maker test static log_output')
 @tangle('')
-@@tangle('tests.performance: dummy')
+@tangle('tests.performance: dummy')
 @tangle('\tpython script/maker performance')
 @tangle('')
 @tangle('tests.regression: dummy')
 @tangle('\tpython script/maker regression')
 @tangle('')
+@tangle('rtl: dummy')
+@tangle('\tpython script/maker rtl')
+@tangle('')
 @tangle('drivers: dummy')
 @tangle('\tpython script/maker drivers')
-@tangle('')
-@tangle('drivers.static: dummy')
-@tangle('\tpython script/maker drivers static')
-@tangle('')
-@tangle('drivers.refcnt: dummy')
-@tangle('\tpython script/maker refcnt drivers')
 @tangle('')
 @tangle('drivers.debug: dummy')
 @tangle('\tpython script/maker drivers debug')
@@ -887,7 +894,7 @@ We have no idea if it continues copying.
 @tangle('\trm -f flx_'+flx_version)
 @tangle('\tln -s . flx_'+flx_version)
 @tangle('\ttar -zcvf flx_'+flx_version+'_src.tgz\\')
-@tangle('\t\tflx_'+flx_version+'/boot-sh\\')
+@tangle('\t\tflx_'+flx_version+'/Makefile\\')
 @tangle('\t\tflx_'+flx_version+'/README \\')
 @tangle('\t\tflx_'+flx_version+'/CONTENTS \\')
 @tangle('\t\tflx_'+flx_version+'/INSTALL \\')
@@ -1025,15 +1032,29 @@ We have no idea if it continues copying.
 @tangle('\t#"INSTALL_DIR=${INSTALL_DIR}"')
 @tangle('\t#"EXEC_DIR=${EXEC_DIR}"')
 @tangle('\t#"MAN_DIR=${MAN_DIR}"')
-@tangle('\tinstall -d ${INSTALL_DIR}/lib ${INSTALL_DIR}/rtl')
+@tangle('\t#"SHLIB_DIR=${SHLIB_DIR}"')
+@tangle('\t#"INC_DIR=${INC_DIR}"')
+@tangle('\tinstall -d ${MAN_DIR}')
+@tangle('\tinstall -d ${SHLIB_DIR}')
+@tangle('\tinstall -d ${INSTALL_DIR}/lib')
+@tangle('\tinstall -d ${INSTALL_DIR}/rtl')
 @tangle('\tinstall -d ${INSTALL_DIR}/doc')
 @tangle('\tinstall -d ${INSTALL_DIR}/htmlman')
-@tangle('\t(install lib/* ${INSTALL_DIR}/lib || exit 0) &> /dev/null')
-@tangle('\t(install rtl/* ${INSTALL_DIR}/rtl || exit 0) &> /dev/null')
+@tangle('\tinstall lib/* ${INSTALL_DIR}/lib')
+@tangle('\tinstall rtl/* ${INSTALL_DIR}/rtl')
+@if SUPPORT_STATIC_LINKAGE:
+  tangle('\t'+RANLIB+' ${INSTALL_DIR}/rtl/libflx_static.a')
+  tangle('\tinstall rtl/libflx_static.a ${SHLIB_DIR}')
+  tangle('\t'+RANLIB+' ${SHLIB_DIR}/libflx_static.a')
+@if SUPPORT_DYNAMIC_LOADING:
+  tangle('\t'+RANLIB+' ${INSTALL_DIR}/rtl/libflx_dynamic.a')
+  tangle('\tinstall rtl/libflx_dynamic.so ${SHLIB_DIR}')
+  tangle('\tinstall rtl/libflx_dynamic.a ${SHLIB_DIR}')
+  tangle('\t'+RANLIB+' ${SHLIB_DIR}/libflx_dynamic.a')
 @tangle('\t(install doc/* ${INSTALL_DIR}/doc || exit 0) &> /dev/null')
 @tangle('\t(install impldoc/* ${INSTALL_DIR}/impldoc || exit 0) &> /dev/null')
 @tangle('\t(install htmlman/* ${INSTALL_DIR}/htmlman || exit 0) &> /dev/null')
-@tangle('\t(install bin/* ${EXEC_DIR} || exit 0) &> /dev/null')
+@tangle('\tinstall bin/* ${EXEC_DIR}')
 @tangle('\t(install man/man1/* ${MAN_DIR}/man1 || exit 0) &> /dev/null')
 @tangle('\techo "Stuff in misc has to be installed by hand"')
 @tangle('')
@@ -1045,6 +1066,9 @@ We have no idea if it continues copying.
 @tangle("# they're used to upload stuff to sourceforge")
 @tangle('upload_www: dummy')
 @tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
+@tangle('')
+@tangle('upload_src: dummy')
+@tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('')
 @tangle('upload: dummy')
 @tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
@@ -1059,7 +1083,8 @@ please see the INSTALL file
 
 @head(1,'AUTHORS')
 @select(tangler('AUTHORS'))
-John (Max) Skaller skaller@users.sourceforge.net
+John (Max) Skaller skaller at users dot sourceforge dot net
+Peter Jolly helped do the Cygwin build
 
 @head(1,'COPYING')
 @select(tangler('COPYING'))
@@ -1614,7 +1639,7 @@ DIV.DIFF_SECTION_HEAD EM, DIV.DIFF_SECTION_FOOT EM {
 
 @head(1,'Run script')
 @select(tangler('bin/flx'))
-#!/bin/sh
+#!/bin/bash
 # flx - felix script harness
 
 # g++ compilation string
@@ -1630,7 +1655,11 @@ TESTMODE=0
 RECOMPILE=0
 DEBUG=0
 INLINE=0
-STATIC=0
+@if DEFAULT_LINK_MODEL=="dynamic":
+   tangle("STATIC=0")
+ else:
+   tangle("STATIC=1")
+
 RUNIT=1
 
 grab=1
@@ -1825,7 +1854,7 @@ then
   INCLUDE_DIR="."
   FLXG="./bin/flxg"
   FLXLIB="./lib"
-  FLXRUN="./bin/flx_run"
+  FLXRUN="env LD_LIBRARY_PATH=./rtl:\$LD_LIBRARY_PATH ./bin/flx_run"
   FLXRTL="./rtl"
   FLXBIN="./bin"
 else
