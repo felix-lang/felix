@@ -22,7 +22,10 @@ to get some times.
   ('sieve',' 8'),
   ('lists',' 8'),
   ('objinst',' 8'),
-  ('methcall',' 8')
+  ('methcall',' 8'),
+  ('strcat',' 8'),
+  ('except',' 8'),
+  ('wc',' < bagley/data/phone_numbers.data'), 
  ]
 
 @def mk(i,j):
@@ -771,4 +774,156 @@ proc check (t:toggle) {
 
 check (new_toggle true);
 check (new_ntoggle (true, 3));
+
+
+@select(tangler('bagley/felix/strcat.flx','data'))
+@setup()
+// Adapted from C++ solution
+
+var str = "";
+var capacity = 31;
+reserve(str,capacity); // as per C-string
+var newLength = 6;
+var i = n;
+until i == 0 do
+	if newLength > capacity do
+	  capacity *= 2;
+	  reserve(str,capacity);
+  done;
+	str += c"hello\n";
+	newLength += 6;
+  --i;
+done;
+
+print (len str); endl;
+
+@select(tangler('bagley/felix/except.flx','data'))
+@setup()
+// Felix uses explicitly passed closures to handle errors
+// and therefore guarrantees exceptions get caught statically
+
+typedef err = int -> void;
+
+var hi = 0;
+var lo = 0;
+
+proc blowup (n:int, hie:err, loe:err) {
+  if n % 2 == 0 do loe n; else hie n; done;
+}
+
+proc lo_fun (n:int, hie:err) {
+  blowup (n,hie,loe of (int));
+  proc loe(n:int) { ++lo; goto fin; }
+fin:>
+}
+
+proc hi_fun (n:int) {
+  lo_fun (n,hie of (int));
+  proc hie(n:int) { ++hi; goto fin; }
+fin:>
+}
+
+proc some_fun (n:int) { hi_fun n; }
+
+var i = n - 1;
+until i < 0 do some_fun i; --i; done;
+print "Exceptions: HI="; print hi; print " / LO="; print lo; endl;
+
+
+@select(tangler('bagley/felix/wc.flx','data'))
+@setup()
+open Ulong;
+
+body '''
+#include <limits.h>
+#include <unistd.h>
+#define BSIZE 4096
+unsigned long wds[UCHAR_MAX + 1];
+unsigned long nwds[UCHAR_MAX + 1];
+char sp=' ';
+char tab = '\\t';
+char lf='\\n';
+unsigned char buff[BSIZE];
+''';
+
+const UCHAR_MAX:int = "UCHAR_MAX";
+const BSIZE:int = "BSIZE";
+const sp:int = "sp";
+const lf:int = "lf";
+const tab:int = "tab";
+
+proc setws: int * ulong = "wds[$1]=$2;";
+proc setnws: int * ulong = "nwds[$1]=$2;";
+fun getws: ulong -> ulong = "wds[$1]";
+fun getnws: ulong -> ulong = "nwds[$1]";
+
+fun readbuf: unit -> int = "read(0,buff,BSIZE)";
+
+var prev_nws = 0x1_0000uL;
+var w_cnt = 0uL;
+var l_cnt = 0uL;
+var b_cnt = 0uL;
+
+type iterator = "unsigned char *";
+fun eq: iterator * iterator -> bool = "$1 == $2";
+fun deref: iterator -> ulong = "*$1";
+fun add: iterator * ulong -> iterator = "$1 + $2";
+proc post_incr: iterator = "$1++;";
+
+fun band: ulong * ulong -> ulong = "$1 & $2";
+fun hi: ulong -> ulong = "$1 >> 16";
+fun lo: ulong -> ulong = "$1 & 0xFFFFuL";
+fun parity : ulong -> ulong = "$1 & 1uL";
+fun neg: ulong -> ulong = "-$1";
+
+const buff: iterator = "buff";
+
+fun iswhite(ch:int) => 
+  ch == sp or ch == tab or ch == lf;
+
+fun islf(ch:int)=> ch == lf;
+
+fun ul(x:bool)=> C_hack::cast[ulong]x;
+ 
+/* Fill tables */
+{
+  var ch = UCHAR_MAX; until ch < 0 do
+    setws(ch, ul (iswhite ch) + band (0x10000uL,  -(ul (islf ch))));
+    setnws(ch, ul (not (iswhite ch)) +  0x10000uL);
+    --ch;
+  done;
+};
+
+/* Main loop */
+{
+  var cnt: ulong;
+  proc uread() {
+    var n = readbuf();
+    if n < 0 do System::exit 1; done;
+    cnt = C_hack::cast[ulong]n;
+  }
+
+  uread;
+  whilst cnt > 0uL do
+    var vect_count = 0uL;
+    var pp:iterator;
+    pe := buff + cnt;
+
+    b_cnt += cnt;
+    pp = buff;
+
+    until pp == pe do
+      vect_count += band (getws(deref pp), prev_nws);
+      prev_nws    = getnws(deref pp);
+      pp++;
+    done;
+    w_cnt += lo vect_count;
+    l_cnt += hi vect_count;
+    uread;
+  done;
+
+  w_cnt += parity prev_nws;
+};
+
+print l_cnt; print " "; print w_cnt; print " "; print b_cnt; endl;
 

@@ -609,6 +609,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       ctack (`AST_label(sr,start));
       ctack (`AST_ifnotgoto (sr,e,fin));
       iter ctack (ms sts);
+      ctack (`AST_goto (sr,start));
       ctack (`AST_label(sr,fin))
     end
 
@@ -631,6 +632,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       ctack (`AST_label(sr,start));
       ctack (`AST_ifgoto (sr,e,fin));
       iter ctack (ms sts);
+      ctack (`AST_goto (sr,start));
       ctack (`AST_label(sr,fin))
     end
 

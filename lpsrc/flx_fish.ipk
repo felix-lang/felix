@@ -1,5 +1,6 @@
 @head(1,'FISh 1.6')
-Derived from Barry Jays FISh 1.6 language with permission.
+Derived from Barry Jays FISh 1.6 language with permission
+to release under Felix FFAU licence.
 
 @head(2,"primitive_fish.mli")
 primitive_fish.mli.
@@ -3160,7 +3161,8 @@ type fish_shell_action =
 
 exception No_such_mode
 let modes = ref [         (* list of string/default pairs *)
-  "batch",Show_on ;       (* do not display parse trees *)
+  "felix",Show_off ;      (* felix mode off *)
+  "batch",Show_on ;       (* do display *)
   "parse",Show_off ;      (* do not display parse trees *)
   "infer",Show_off ;      (* do not display inferred term *)
   "loop_opt",Show_on ;    (* do lift newvar from loops  *)
@@ -7363,6 +7365,7 @@ val format_fish_as_turbot :
   Environments_fish.TyEnv.key -> Util_fish.run_flag list -> unit
 val fileInCurrentDirectory : string -> string
 val compile_to_C_and_run :
+  string list ->
   Environments_fish.TyEnv.key -> Util_fish.run_flag list -> string -> unit
 val posStack : int Stack.t
 val pushLineStack : unit -> unit
@@ -7410,7 +7413,7 @@ exception InvalidRunType of phraseType
 (* version_fish.ml *)
 
 let version_number =
-  "1.6" (* ^ "02 Nov 1998" *) 
+  "1.7" (* ^ "04 Oct 2004 " *) 
 ;;
  
 
@@ -7497,12 +7500,21 @@ let fileInCurrentDirectory filename =
   "./" ^ filename  (* Unix *)
 ;;
 
-let compile_to_C_and_run v flags filename = (* v is a variable *)
+let compile_to_C_and_run include_dirs v flags filename = (* v is a variable *)
   let cFile = fileInCurrentDirectory (filename ^ ".c")
   and turbotTerm = fish2turbot v flags
   in
   translateToFile cFile turbotTerm;
-  ignore(Sys.command("fishcc " ^ cFile));
+
+  if get_mode "felix" = Util_fish.Show_on
+  then
+    let s = 
+      String.concat " " 
+      (map (fun x -> "-I"^x^ " -L"^x) include_dirs)
+    in
+    ignore(Sys.command("fishcc " ^ s ^ " " ^ cFile));
+  else
+    ignore(Sys.command("fcc " ^ cFile));
 
   if (List.mem Compile_flag flags = false) 
   then ignore(Sys.command(fileInCurrentDirectory filename)) 
@@ -7540,7 +7552,7 @@ let fish_process_action include_dirs file_parser sa  =  (* sa = shell action *)
         format_fish_as_turbot x flags;()
 
     | Run_directive (x,flags,basename) -> 
-        compile_to_C_and_run x flags basename;()
+        compile_to_C_and_run include_dirs x flags basename;()
 
     | Show_directive (mode,s) ->
         set_mode s mode
@@ -7695,7 +7707,6 @@ let fish () =
   pf "(C) Copyright 1998, C. Barry Jay";
   pf "Included in Felix with permission.";
   pf "No warranty expressed or implied" ;
-  pf "See README for details" ;
   readEvalPrint()
 ;;
 
@@ -7726,7 +7737,10 @@ begin
   if check_key raw_options "version"
   then (print_endline ("Felix FISh Version " ^ !version_data.version_string))
   ;
+  Util_fish.set_mode "felix" Util_fish.Show_on;
+  Util_fish.set_mode "batch" Util_fish.Show_off;
   if compiler_options.print_flag then begin
+    Util_fish.set_mode "batch" Util_fish.Show_on;
     print_string "//Include directories = ";
     List.iter (fun d -> print_string (d ^ " "))
     compiler_options.include_dirs;
@@ -7741,9 +7755,11 @@ begin
   in
   let filebase = filename in
   let input_file_name = filebase ^ ".fsh"
+  (*
   and header_file_name = filebase ^ ".hpp"
   and body_file_name = filebase ^ ".cpp"
   and report_file_name = filebase ^ ".xref"
+  *)
   and module_name =
     let n = String.length filebase in
     let i = ref (n-1) in
@@ -8392,7 +8408,7 @@ fish_top.ml.
 
 
 @head(2,'Standard prelude')
-@select(tangler("lib/standard_prelude.fsh"))
+@select(tangler("lib/standard_prelude.fsh",'data'))
 (* 
 %use "standard_prelude.fsh" ;;
 *)
@@ -9089,6 +9105,18 @@ let transpose_sh =
 let transpose = proc2fun transpose_pr transpose_sh 
 ;;
 
+
+@head(2,"tfish.fsh")
+tfish.fsh.
+@select(tangler("fish/tfish.fsh",'data'))
+(* quick test of fish:
+flxf -Ilib tfish
+*)
+%use "standard_prelude.fsh";;
+let f x = x*x;;
+let mat = fill {2,3:int_shape} with [0,1,2,3,4,5];;
+let mat2 = map f mat;;
+%run mat2;;
 
 @head(2,"map1.fsh")
 map1.fsh.
@@ -10355,7 +10383,7 @@ let explode_type k =
 
 @head(2,"permute.fsh")
 permute.fsh.
-@select(tangler("fish/permute.fsh"))
+@select(tangler("fish/permute.fsh",'data'))
 (*
 %use "Distributions/permute.fsh" ;;
 *)
@@ -10387,7 +10415,7 @@ return y
 
 @head(2,"stencil.fsh")
 stencil.fsh.
-@select(tangler("fish/stencil.fsh"))
+@select(tangler("fish/stencil.fsh",'data'))
 (* 
 %use "Distributions/stencil.fsh";;
 *)

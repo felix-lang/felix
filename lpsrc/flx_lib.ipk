@@ -603,7 +603,7 @@ module Unicode
 @#------------- STDOUT UTILITY -------------------
 module Stdout 
 {
-  proc endl: unit = "std::cout << endl;" requires iostream;
+  proc endl: unit = "std::cout << std::endl;" requires iostream;
   proc space: int = "std::cout << ' ';" requires iostream;
 }
 macro proc print_line (x) { print x; Stdout::endl; }
@@ -615,6 +615,8 @@ module String
   open Char;
   open Int;
   proc pluseq: lvalue[string] * string = "$1.append($2);";
+  proc pluseq: lvalue[string] * charcp = "$1.append($2);";
+  proc pluseq: lvalue[string] * charp = "$1.append($2);";
   proc make_string: charp -> string = 'std::string($1)';
   proc make_string: charcp -> string =' std::string($1)';
 
@@ -643,6 +645,8 @@ module String
 
   proc print: string = "std::cout << $1;" requires iostream;
   fun atoi: string -> int = "std::atoi($1.data())" requires cstdlib;
+
+  proc reserve: lvalue[string] * int = "$1.reserve($2);";
 
   publish "Unsafe extract buffer pointer"
   fun cstr: string -> C_hack::ptr[char] = "$1.data()";
