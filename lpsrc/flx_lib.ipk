@@ -1,8 +1,9 @@
 @head(1,'Felix Standard Library')
 Support table.
 @begin_table("filebase","language","namespace","function")
-@table_row("rtl/flx_i18n","C++","flx::i18n","utf8 codec support")
-@table_row("rtl/flx_strutil","C++","flx::lib","Python style substring support")
+@table_row("rtl/flx_i18n","C++","flx::rtl::i18n","utf8 codec support")
+@table_row("rtl/flx_strutil","C++","flx::rtl::strutil","Python style substring support")
+@table_row("rtl/flx_ioutil","C++","flx::rtl::ioutil","Standard IO support")
 @table_row("lib/std","Felix","","Standard Library")
 @table_row("lib/stl","Felix","","STL support")
 @end_table()
@@ -11,14 +12,14 @@ Support table.
 #ifndef FLX_I18N
 #define FLX_I18N
 #include <string>
-namespace flx { namespace i18n {
+namespace flx { namespace rtl { namespace i18n {
    std::string utf8(unsigned long);
-}}
+}}}
 #endif
 
 @select(tangler('rtl/flx_i18n.cpp'))
 #include "rtl/flx_i18n.hpp"
-namespace flx { namespace i18n {
+namespace flx { namespace rtl { namespace i18n {
   std::string utf8(unsigned long i) 
   {
     char s[6];
@@ -69,15 +70,54 @@ namespace flx { namespace i18n {
     }
     return s;
   }
-}}
+}}}
 
+
+@h=tangler('rtl/flx_ioutil.hpp')
+@select(h)
+#ifndef FLX_IOUTIL
+#define FLX_IOUTIL
+#include <string>
+namespace flx { namespace rtl { namespace ioutil {
+  std::string load_file (std::string);
+}}}
+#endif
+
+@h=tangler('rtl/flx_ioutil.cpp')
+@select(h)
+#include <cstdio>
+#include <string>
+#include "rtl/flx_ioutil.hpp"
+namespace flx { namespace rtl { namespace ioutil {
+  using namespace std;
+  string load_file (string f)
+  {
+    char const *fname = f.data();
+    FILE *fi = fopen(fname,"rt");
+    if (fi)
+    {
+      string x = "";
+      char buffer[512];
+      int n;
+      while (fgets(buffer,512,fi))
+      {
+        x = x + string(buffer);
+      }
+      fclose(fi);
+      return x;
+    }
+    else return "";
+  }
+}}}
 
 @h=tangler('rtl/flx_strutil.cpp')
 @select(h)
-namespace flx { namespace lib {
+#include <string>
+namespace flx { namespace rtl { namespace strutil {
+  using namespace std;
   template<class T>
-  std::basic_string<T> mul(std::basic_string<T> s, int n) {
-    std::basic_string<T> r = "";
+  basic_string<T> mul(basic_string<T> s, int n) {
+    basic_string<T> r = "";
     while(n--) r+=s;
     return r;
   }
@@ -86,7 +126,7 @@ namespace flx { namespace lib {
   // note substr requires 0<=b<=size, 0<=n,
   // however n>size is OK
   template<class T>
-  std::basic_string<T> substr(std::basic_string<T> const &s, int b, int e)
+  basic_string<T> substr(basic_string<T> const &s, int b, int e)
   {
     int n = s.size();
     if(b<0)  b=b+n;
@@ -99,8 +139,7 @@ namespace flx { namespace lib {
     if(m<0)  m=0;
     return s.substr(b,m);
   }
-
-}}
+}}}
 
 @h=tangler('lib/std.flx','data')
 @# use data tangler to prevent line number generation
@@ -115,9 +154,7 @@ header """
 #include <climits>
 #include "rtl/boost_cstdint.hpp"
 #include "rtl/flx_i18n.hpp"
-""";
-
-body """
+#include "rtl/flx_ioutil.hpp"
 #include "rtl/flx_strutil.cpp"
 using namespace std;
 """;
@@ -305,6 +342,23 @@ module Bool
   tangle('  proc post_incr: &'+t+' = "++*('+tmap[t]+'*)($1.data);";')
   tangle('  proc post_decr: &'+t+' = "--*('+tmap[t]+'*)($1.data);";')
   
+@#------------- TYPING ---------------------------
+module Typing
+{
+  typedef fun dom(t:TYPE):TYPE = 
+    typematch t with
+    | ?a -> _ => a
+    endmatch
+  ;
+
+  typedef fun cod(t:TYPE):TYPE = 
+    typematch t with
+    | _ -> ?b => b
+    endmatch
+  ;
+
+}
+
 @#------------- INTEGER MODULES -------------------
 type string = "std::string";
 @for t in ints:
@@ -391,18 +445,18 @@ module String
 
   fun len: string -> int = "$1.size()";
   fun add: string * string -> string = "$1+$2";
-  fun add: string * int -> string = "$1+flx::i18n::utf8($2)";
-  fun mul: string * int -> string = "flx::lib::mul($1,$2)";
+  fun add: string * int -> string = "$1+flx::rtl::i18n::utf8($2)";
+  fun mul: string * int -> string = "flx::rtl::strutil::mul($1,$2)";
   fun mul: char * int -> string = "string($2,$1)";
 
   fun subscript: string * int -> char = 
     "$1[$2<0??$1.size()+$2:$2]";
   fun copyfrom: string * int -> string = 
-    "flx::lib::substr($1,$2,$1.size())";
+    "flx::rtl::strutil::substr($1,$2,$1.size())";
   fun copyto: string * int -> string = 
-    "flx::lib::substr($1,0,$2)";
+    "flx::rtl::strutil::substr($1,0,$2)";
   fun substring: string * int * int -> string = 
-    "flx::lib::substr($1,$2,$3)";
+    "flx::rtl::strutil::substr($1,$2,$3)";
 
   // comparisons
   fun eq: string * string -> bool = "$1==$2";
@@ -432,11 +486,11 @@ module Ustring
   fun subscript: ustring * int -> char = 
     "$1[$2<0??$1.size()+$2:$2]";
   fun copyfrom: ustring * int -> ustring = 
-    "flx::lib::substr($1,$2,$1.size())";
+    "flx::rtl::strutil::substr($1,$2,$1.size())";
   fun copyto: ustring * int -> ustring = 
-    "flx::lib::substr($1,0,$2)";
+    "flx::rtl::strutil::substr($1,0,$2)";
   fun subustring: ustring * int * int -> ustring = 
-    "flx::lib::substr($1,$2,$3)";
+    "flx::rtl::strutil::substr($1,$2,$3)";
 
   // comparisons
   fun eq: ustring * ustring -> bool = "$1==$2";
@@ -513,6 +567,7 @@ module Control
   fun fail_fun[t]:string->t = 'throw std::exception ($1),*(?1*)0';
 }
 
+@#------------- List -------------------
 module List
 {
   union list[T] = | Empty | Cons of T * list[T];
@@ -588,36 +643,18 @@ module List
    }
 }
 
-module Text_file
-{
-  body """
-    std::string _load_file (std::string f)
-    {
-      char *fname = f.data();
-      FILE *fi = fopen(fname,"rt");
-      if (fi)
-      {
-        string x = "";
-        char buffer[512];
-        int n;
-        while (std::fgets(buffer,512,fi))
-        {
-          x = x + string(buffer);
-        }
-        fclose(fi);
-        return x;
-      }
-      else return "";
-    }
-  """;
-  fun load: string -> string = "_load_file($1)";
-}
-
 module Assoc_list
 {
   typedef assoc_list[A,B] = List::list[(A,B)];
 }
 
+@#------------- Text I/O -------------------
+module Text_file
+{
+  fun load: string -> string = "flx::rtl::ioutil::load_file($1)";
+}
+
+@#------------- Lexer -------------------
 // This module provides functions to 
 // use in conjunction with the reglex construction
 module Lexer
@@ -730,349 +767,4 @@ module Stl
   }
 }
 
-@head(1,'Felix lexerlibrary')
-@h=tangler('lib/flx_lex.flx')
-@select(h)
-include "std";
-/* ====================== REGULAR DEFINITIONS ============================ */
-module Flx_lex
-{
-  /* special characters */
-  regexp quote = '\'';
-  regexp dquote = '"';
-  regexp slosh = '\\';
-  regexp linefeed = '\n';
-  regexp tab = '\t';
-  regexp space = ' ';
-  regexp formfeed = [12];
-  regexp vtab = [11];
-  regexp carriage_return = [13];
-  regexp underscore = '_';
 
-  /* character sets */
-  regexp bindigit = ['0'-'1'];
-  regexp octdigit = ['0'-'7'];
-  regexp digit = ['0'-'9'];
-  regexp hexdigit = digit | ['A'-'F'] | ['a'-'f'];
-  regexp lower = ['a'-'z'];
-  regexp upper = ['A'-'Z'];
-  regexp letter = lower | upper;
-  regexp hichar = [128-255];
-  regexp white = space | tab;
-
-  /* nasty: form control characters */
-  regexp form_control = linefeed | carriage_return | vtab | formfeed;
-  regexp newline_prefix = linefeed | carriage_return;
-  regexp newline = formfeed | linefeed  | carriage_return linefeed;
-  /* regexp newline = newline_prefix form_control * */
-
-  regexp ordinary = letter | digit | hichar |
-    '!' | '#' | '$' | '%' | '&' | '(' | ')' | '*' |
-    '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' |
-    '=' | '>' | '?' | '@' | '[' | ']' | '^' | '_' |
-    '`' | '{' | '|' | '}' | '~'
-  ;
-
-  regexp printable = ordinary | quote | dquote | slosh;
-
-  /* identifiers */
-  regexp ucn = 
-      "\\u" hexdigit hexdigit hexdigit hexdigit 
-    | "\\U" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit
-  ;
-
-  regexp prime = '\'';
-  regexp idletter = letter | underscore | hichar | ucn;
-  regexp identifier = idletter (idletter | digit | prime )*;
-
-  /* integers */
-  regexp bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +;
-  regexp oct_lit  = '0' ('o' | 'O') (underscore? octdigit) +;
-  regexp dec_lit  = ('0' ('d' | 'D'))? digit (underscore? digit) *;
-  regexp hex_lit  = '0' ('x' | 'X') (underscore? hexdigit)  +;
-  regexp type_suffix = 
-    't'|'T'|'s'|'S'|'i'|'I'|'l'|'L'|'v'|'V'|"ll"|"LL"
-    | "i8" | "i16" | "i32" | "i64"
-    | "u8" | "u16" | "u32" | "u64"
-    | "I8" | "I16" | "I32" | "I64"
-    | "U8" | "U16" | "U32" | "U64"
-  ;
-  regexp signind = 'u' | 'U';
-  regexp suffix = type_suffix? signind? | signind? type_suffix?;
-  regexp int_lit = (bin_lit | oct_lit | dec_lit | hex_lit) suffix;
-
-  /* floats: Follows ISO C89, except that we allow underscores */
-  regexp decimal_string = digit (underscore? digit) *;
-  regexp hexadecimal_string = hexdigit (underscore? hexdigit) *;
-
-  regexp decimal_fractional_constant = 
-    decimal_string '.' decimal_string?
-    | '.' decimal_string
-  ; 
-
-  regexp hexadecimal_fractional_constant = 
-    ("0x" |"0X")
-    (hexadecimal_string '.' hexadecimal_string?
-    | '.' hexadecimal_string)
-  ;
-
-  regexp decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string;
-  regexp binary_exponent = ('P'|'p') ('+'|'-')? decimal_string;
-
-  regexp floating_suffix = 'L' | 'l' | 'F' | 'f' | 'D' | 'd';
-  regexp floating_literal = 
-    (
-      decimal_fractional_constant decimal_exponent? |
-      hexadecimal_fractional_constant binary_exponent?
-    )
-    floating_suffix?
-  ;
-
-  /* Python strings */
-  regexp qqq = quote quote quote;
-  regexp ddd = dquote dquote dquote ;
-
-  regexp escape = slosh _ ;
-
-  regexp dddnormal = ordinary | quote | escape | white | newline;
-  regexp dddspecial = dddnormal | dquote dddnormal | dquote dquote dddnormal;
-
-  regexp qqqnormal = ordinary | dquote | escape | white | newline;
-  regexp qqqspecial = qqqnormal | quote qqqnormal | quote quote qqqnormal;
-
-  regexp raw_dddnormal = ordinary | quote | slosh | white | newline;
-  regexp raw_dddspecial = raw_dddnormal | dquote raw_dddnormal | dquote dquote raw_dddnormal;
-
-  regexp raw_qqqnormal = ordinary | dquote | slosh | space | newline;
-  regexp raw_qqqspecial = raw_qqqnormal | quote raw_qqqnormal | quote quote raw_qqqnormal;
-
-  regexp qstring = (ordinary | dquote | escape | white) * quote;
-  regexp dqstring = (ordinary | quote | escape | white) * dquote;
-  regexp qqqstring = qqqspecial * qqq;
-  regexp dddstring = dddspecial * ddd;
-
-  regexp raw_qstring = (ordinary | dquote | escape | white) * quote;
-  regexp raw_dqstring =  (ordinary | quote | escape | white) * dquote;
-
-  regexp raw_qqqstring = raw_qqqspecial * qqq;
-  regexp raw_dddstring = raw_dddspecial * ddd;
-
-  regexp not_newline_or_slosh = ordinary | quote | dquote | white;
-  regexp not_newline = not_newline_or_slosh | slosh;
-  regexp quoted_filename = dquote (ordinary | quote | white | slosh)+ dquote;
-
-  /* ====================== PARSERS ============================ */
-  /* string tail lexers */
-
-@def lexstr(x):
-  tangle('  fun parse_'+x+'string(s:Lexer::iterator, e:Lexer::iterator) =' )
-  tangle('  {')
-  tangle('    return')
-  tangle('      reglex s to e with')
-  tangle('      | '+x+'string => "'+x+'string"' )
-  tangle('      | _ =>  "ERRORTOKEN"' )
-  tangle('      endmatch')
-  tangle('    ;')
-  tangle('  }')
-
-@qtypes=[
-  'q',
-  'dq',
-  'qqq',
-  'ddd',
-  'raw_q',
-  'raw_dq',
-  'raw_qqq',
-  'raw_ddd'
- ]
-
-@for i in qtypes: lexstr(i)
-
-  fun to_eol(s:Lexer::iterator, e:Lexer::iterator) =
-  {
-    return 
-      match 
-        reglex s to e with
-        | .* "\n" => ()
-        endmatch
-      with 
-      | ?p,_ => p
-      endmatch
-    ; 
-  }
-
-  fun to_end_c_comment(s:Lexer::iterator, e:Lexer::iterator) =
-  {
-    var j = s;
-    var again = true;
-    while { again }
-    {
-      match 
-        reglex j to e with
-        | "*" "/" => "end"
-        | "/" "*" => "recurse"
-        | [^"/" "*"]* => "chars"
-        endmatch
-      with
-        | ?p,"end" => { j = p; again = false; }
-        | ?p,"recurse" => { j = to_end_c_comment(p,e); }
-        | ?p,"chars" => { j = p; }
-      endmatch
-      ;
-    }
-    ;
-    return j;
-  }
-
-  union pretoken_k = // k for "kind"
-    | Ident
-    | Int
-    | Float
-    | C_comment
-    | Cpp_comment
-    | Preprocessor
-    | Sym
-    
-    | qQuote
-    | dQuote
-    | qqqQoute
-    | dddQuote
-    
-    | wqQuote
-    | wdQuote
-    | wqqqQoute
-    | wdddQuote
-    
-    | uqQuote
-    | udQuote
-    | uqqqQoute
-    | udddQuote
-
-    | rqQuote
-    | rdQuote
-    | rqqqQoute
-    | rdddQuote
-  ;
-    
-  fun pre_flx_lex(s:Lexer::iterator, e:Lexer::iterator) =
-  {
-    return reglex s to e with
-    | "//" => Cpp_comment
-    | "/*" => C_comment
-    | identifier => Ident
-    | int_lit => Int
-    | floating_literal => Float
-
-    /* Python strings */
-    | quote   => qQuote
-    | qqq     => qqqQuote
-    | dquote  => dQuote
-    | ddd     => dddQuote
-
-    /* wide strings */
-    | ('w' | 'W') quote  => wqQuote
-    | ('w' | 'W') qqq    => wqqqQuote
-    | ('w' | 'W') dquote => wdQuote
-    | ('w' | 'W') ddd    => wdddQuote
-
-    /* UTF32 strings */
-    | ('u' | 'U') quote  => uqQuote
-    | ('u' | 'U') qqq    => uqqqQuote
-    | ('u' | 'U') dquote => udQuote
-    | ('u' | 'U') ddd    => udddQuote
-
-    /* Python raw strings */
-    | ('r'|'R') quote   => rqQuote
-    | ('r'|'R') qqq     => rqqqQuote
-    | ('r'|'R') dquote  => rdQuote
-    | ('r'|'R') ddd     => rdddQuote
-
-
-    /* one character sequences */
-    | "$" => Sym
-    | "(" => Sym
-    | ")" => Sym
-    | "[" => Sym
-    | "]" => Sym
-    | "{" => Sym
-    | "}" => Sym
-    | "!" => Sym
-    | ":" => Sym
-    | "," => Sym
-    | ";" => Sym
-    | "+" => Sym
-    | "-" => Sym
-    | "*" => Sym
-    | "/" => Sym
-    | "|" =>Sym
-    | "&" =>Sym
-    | "<" =>Sym
-    | ">" =>Sym
-    | "=" =>Sym
-    | "." =>Sym
-    | "%" =>Sym
-    | "`" =>Sym
-    | "~" =>Sym
-    | "^" =>Sym
-    | "!" =>Sym
-    | "?" =>Sym
-
-    /* two character sequences */
-    | "=>" =>Sym
-    | "&<" =>Sym
-    | "&>" =>Sym
-    | ".." =>Sym
-    | "::" =>Sym
-    | "==" =>Sym
-    | "<>" =>Sym
-    | "!=" =>Sym
-    | "<=" =>Sym
-    | ">=" =>Sym
-    | "<<" =>Sym
-    | ">>" =>Sym
-    | "**" =>Sym
-    | "\\" =>Sym
-    | "++" =>Sym
-    | "--" =>Sym
-    | "+=" =>Sym
-    | "-=" =>Sym
-    | "*=" =>Sym
-    | "/=" =>Sym
-    | "%=" =>Sym
-    | "^=" =>Sym
-    | "|=" =>Sym
-    | "&=" =>Sym
-    | "~=" =>Sym
-    | ":=" =>Sym
-    | "<-" =>Sym
-    | "->" =>Sym
-    | "<:" =>Sym
-    | ":>" =>Sym
-    | "[<" =>Sym
-    | ">]" =>Sym
-
-    /* three character sequences */
-    | "<<=" => Sym
-    | ">>=" =>Sym
-    | "..." =>Sym
-    | "<->" =>Sym
-    | "&==" =>Sym
-    | "&<>" => Sym
-    | "&!=" =>Sym
-    | "&<=" =>Sym
-    | "&>=" =>Sym
-
-    /* whitespace */
-    | white + => White
-
-    /* Preprocessor Directive */
-    | "#" => Preprocessor
-
-    | newline => Eol
-
-    /* Anything else is an error */
-    | _ => Error
-    endmatch
-    ;
-  }
-}

@@ -910,6 +910,66 @@ while { current != finish }
 };
 print "Done.\n";
 
+@h= tangler(tdir+'tut121b.flx')
+@select(h)
+#!/bin/env flx
+include "std";
+include "flx_lex";
+use Lexer::sub;
+
+print "Lexer here"; endl;
+
+/* some /* commented */ stuffs */
+
+val xx = 1214;
+
+//val s = "A string is here == != @@ ";
+val s = Text_file::load("tut/examples/tut121b.flx");
+
+//print s; endl;
+
+i2 := Lexer::end_iterator s;
+var i1 = Lexer::start_iterator s;
+
+proc print_token()
+{
+  open Flx_lex;
+  def var j, var des = pre_flx_lex (i1, i2);
+  match des with
+  | qQuote =>        { j,des = parse_q_string (j,i2); }
+  | qqqQuote =>      { j,des = parse_qqq_string (j,i2); }
+  | dQuote =>        { j,des = parse_d_string (j,i2); }
+  | dddQuote =>      { j,des = parse_ddd_string (j,i2); }
+  | rqQuote =>       { j,des = parse_rq_string (j,i2); }
+  | rqqqQuote =>     { j,des = parse_rqqq_string (j,i2); }
+  | rdQuote =>       { j,des = parse_rd_string (j,i2); }
+  | rdddQuote =>     { j,des = parse_rddd_string (j,i2); }
+  | Preprocessor =>  { j = to_eol(j,i2) - 1; }
+  | Cpp_comment =>   { j = to_eol(j,i2) - 1; }
+  | C_comment =>     { j = to_end_c_comment (j,i2); }
+  | _ => {}
+  endmatch;
+  dess := 
+    match des with
+    | Eol => "Eol"
+    | Ident => "Id"
+    | Sym => "Sym"
+    | Preprocessor =>  "Pre"
+    | Cpp_comment =>   "Cppc"
+    | C_comment =>     "Cc"
+    | _ => "Other"
+    endmatch
+  ;
+  print (dess ":       ").[0 to 9]; 
+  print ('"' (Lexer::string_between(i1,j)) '"');
+  endl;
+  i1 = j;
+}
+
+use Lexer::ne;
+
+while { i1 != i2 } { print_token; };
+
 @head(2,'Lazy expressions')
 There is a function which is so useful, there
 is a special syntax for it: the lazy expression.
@@ -979,433 +1039,6 @@ curley braces is an expression, and you must
 make a statement by adding a semi-colon,
 which has the effect of invoking it due to the
 short cut rule.
-
-@head(2,'Basic Bindings')
-In the previous examples, we've use the Felix standard
-library. It's time to look at how it works.
-@p()
-The Felix language is somewhat novel in that there
-are no primitive data types, not even bool.
-Instead, Felix uses binding definitions to declare
-abstract primitive data types, and bind them to
-concrete C++ data type.
-@p()
-Here is an example of a binding. 
-@select(tangler(tdir+'tut130.flx'))
-include "std";
-header """
-// This is C++ code!
-class gauss;
-
-struct gauss {
-  int x;
-  int y;
-
-  gauss() : x(0), y(0) {}
-  gauss(int _x, int _y) : x(_x), y(_y) {}
-
-  gauss operator +(gauss z) const 
-  {
-    return gauss(x+z.x, y+z.y);
-  }
-  gauss operator *(gauss z) const
-  {
-    return gauss (x *z.x - y*z.y, x*z.y + y*z.x);
-  }
-};
-""";
-
-// Now the Felix binding
-type gauss = "gauss";
-proc _set : &gauss * gauss = "*$1 = $2;";
-fun add: gauss * gauss -> gauss = "$1 + $2";
-fun mul: gauss * gauss -> gauss = "$1 * $2";
-fun mkgauss: int * int -> gauss = "gauss($1,$2)";
-fun real: gauss -> int = "$1.x";
-fun imag: gauss -> int = "$1.y";
-
-// Now a pure Felix procedure
-proc print(z:gauss) { 
-  print "(";
-  print (real z);
-  print ", ";
-  print (imag z);
-  print ")";
-}
-
-// And two pure Felix functions
-fun sqr(z:gauss):gauss = {
-  return z * z;
-}
-
-fun norm(z:gauss): int = {
-  return 
-    real z * real z + imag z * imag z
-  ;
-}
-
-// Finally, some test code
-val z1 = mkgauss(1,2);
-val z2 = z1 + z1;
-val z3 = sqr z2;
-val n = norm z3;
-print z1; endl;
-print z2; endl;
-print z3; endl;
-print n; endl;
-
-@doc()
-There are lots of things to note here.
-@p()
-First, the header statement
-
-@begin_displayed_code()
-  header """ .... """;
-@end_displayed_code()
-
-specifies text to
-be emitted literally in the generated C++ header file:
-note the trailing semicolon.
-In this case, we emit a C++ class defining
-a basic gaussian integer type. There is also a 
-'body' keyword to literally emit code in the
-generated implementation (body) file.
-@p()
-Next, we define the felix type gauss.
-
-@begin_displayed_code()
-  type gauss = "gauss";
-@end_displayed_code()
-
-The definition specifies the Felix name, gauss,
-and then the C++ name, which also happens to be
-gauss.
-@p()
-Then we define the semantics of our new primitive
-by primitive functions and procedures which allow
-us to manipulate it. Theses consists of a function
-or procedure name, a type, and the C++ code to
-generate when the function or procedure is called.
-
-@begin_displayed_code()
-proc _set : &gauss * gauss = "*$1 = $2;";
-fun add: gauss * gauss -> gauss = "$1 + $2";
-fun mul: gauss * gauss -> gauss = "$1 * $2";
-fun mkgauss: int * int -> gauss = "gauss($1,$2)";
-fun real: gauss -> int = "$1.x";
-fun imag: gauss -> int = "$1.y";
-@end_displayed_code()
-
-In the definition string, $1 means the first argument
-of the argument tuple, and $2 means the second, etc.
-@p()
-If the type of an argument component is prefixed
-by a &, this means that a pointer is passed.
-@p()
-You should note that there is a predefined
-correspondence between Felix operators and certain
-function or procedure names. The ones we have
-used here are:
-@begin_displayed_code()
-  Operator  Name
-  =         set
-  +         add
-  *         mul
-  ==        eq
-@end_displayed_code()
-@p()
-Finally, note carefully that functions bind to C++
-expressions, whilst procedures bind to C++ statements.
-This is why the set procedure binding contains
-a ; inside the string, as well as after it.
-You can use a compound statement as well.
-
-@head(2,'Seamless Binding')
-Felix purports to support a property called seamless binding.
-What this means is that the boundary between C++ and Felix
-code is fluid. To illustrate this, lets consider
-a version of the above code written entirely in Felix.
-
-@select(tangler(tdir+'tut131.flx'))
-include "std";
-struct gauss = {
-  x : int;
-  y : int;
-}
-
-proc _set ( lhs: &gauss, rhs: gauss )
-{
-  (*lhs).x = rhs.x;
-  (*lhs).y = rhs.y;
-}
-
-fun add (a:gauss, b:gauss): gauss = {
-  return gauss(a.x+b.x, a.y+b.y);
-}
-
-fun mul (a:gauss, b:gauss): gauss = {
-  return gauss(a.x+b.x - a.y+b.y, a.x*b.y + a.y*b.x);
-}
-
-fun mkgauss (a:int,b:int):gauss = { return gauss(a,b); }
-fun real (z:gauss):int = { return z.x; } 
-fun imag (z:gauss):int = { return z.y; }
-
-proc print(z:gauss) { 
-  print "(";
-  print (real z);
-  print ", ";
-  print (imag z);
-  print ")";
-}
-
-fun sqr(z:gauss):gauss = {
-  return z * z;
-}
-
-fun norm(z:gauss): int = {
-  return 
-    real z * real z + imag z * imag z
-  ;
-}
-
-val z1 = mkgauss(1,2);
-val z2 = z1 + z1;
-val z3 = sqr z2;
-val n = norm z3;
-print z1; endl;
-print z2; endl;
-print z3; endl;
-print n; endl;
-
-@doc()
-The difference between these two programs is that
-in the second one, gauss is a concrete 
-non-primitive Felix data type.
-In the first program, gauss is an abstract 
-data type, together with a binding specifying
-the semantics in C++.
-@p()
-As you can guess, the whole of the program
-could have been written in C++ rather than 
-Felix.
-@p()
-It's up to you to choose what parts of your Felix
-program are written directly in C++, and which parts
-are written in Felix: since Felix is a C++ code generator,
-it all ends up as C++ anyhow.
-@p()
-Usually, you'll write Felix, except when you have 
-an existing code base containing useful types
-you need to work with. 
-
-@head(2,'Binding Shortcuts')
-For your convenience, the ctypes declaration
-allows multiple type bindings to be defined
-at once. Each Felix name must also be a c identifier
-representing a type in C.
-
-@select(tangler(tdir+'tut131a.flx'))
-header "#include <cstdio>";
-ctypes int, long;
-proc print:int = 'printf("%d\n",$1);';
-print 1;
-print 2;
-
-@head(2,'Embedding C++')
-We have seen that we can use binding definitions to
-embed C++ constants, expressions, and procedures
-into Felix code, and we can use the 
-@begin_code()
-header
-@end_code()
-statement
-to embed header text in the header (.hpp) file generated by Felix.
-@p()
-You can also use the 
-@begin_code()
-body
-@end_code()
-statement to embed C++ definitons
-in the body file Felix generates. Header text is concatenated
-and emitted in the header file after Felix standard definitions
-but before any bindings, and so is often used to 
-embed include directives.
-@p()
-Body code is also collected and emitted at the top of 
-the body (.cpp) file.
-@p()
-It is also possible to use the
-@begin_code()
-code
-@end_code()
-statement to embed statements directly in procedures.
-This is much the same as the body statement, except
-that it is an executable Felix statement, and is emitted
-in the place it is written.
-For example:
-@select(tangler(tdir+'tut132.flx'))
-include "std";
-header "#include<stdio.h>";
-print 1; endl;
-code 'printf("%d\n",2);';
-print 3; endl;
-
-
-@head(2,'Operator dot')
-It may look as if Felix knows how to access
-the components of a Felix struct value using
-operator dot. Strangely enough, this is not the
-case! When you write:
-@begin_displayed_code()
-  expr.name
-@end_displayed_code()
-in a value context, it is translated to the
-function application:
-@begin_displayed_code()
-  get_name expr
-@end_displayed_code()
-To illustrate this is really the case,
-consider the following example.
-
-@select(tangler(tdir+'tut133.flx'))
-include "std";
-
-// part 1
-header """
-struct gauss 
-{ 
-  int x; 
-  int y; 
-  gauss() : x(0), y(0) {}
-  gauss(int _x, int _y) : x(_x), y(_y) {}
-
-};
-""";
-
-type gauss = "gauss";
-fun get_x: gauss -> int = "$1.x";
-fun get_y: gauss -> int = "$1.y";
-fun mkgauss: int * int -> gauss = "gauss($1,$2)";
-
-val z = mkgauss(1,2);
-print z.x;
-print ", ";
-print z.y;
-endl;
-
-// part 2
-struct X {
-  x : int;
-}
-val i = X(1);
-print (get_x i);
-endl;
-
-@doc()
-In part 1, the functions get_x and get_y
-are defined by binding, but the dot notation
-is used to call them.
-@p()
-In part 2, the functions get_x and get_y are
-defined by defining a struct, and they're
-called directly, without the dot notation.
-@p()
-The dot notation is just syntactic sugar for
-calling a get function.
-@p()
-What is more, the struct definition is just
-syntactic sugar for defining an abstract type
-with some get functions (as well as a 
-constructor).
-@p()
-What this means is that for an arbitrary C++ type,
-you can create an abstract binding, and define
-get methods which can be called using dot notation.
-Just name the methods 'get_' something.
-@p()
-It is also possible to access a Felix struct from
-C++, although we'll defer disucssion of the C++
-representation of Felix data structures until later.
-[The C++ name of the struct type is not the same
-as the Felix name]
-
-@head(2,'Generic primitive bindings')
-Felix provides a way of creating generic primitive bindings.
-A generic binding is a binding to a family of C++ types,
-functions, or procedured, parameterised by one or more
-types. Generic bindings are roughly equivalent to 
-templates, and can be used to bind to templates, 
-although that isn't the only use.
-@p()
-Here is a simple example illustrating
-generic primitive bindings.
-@select(tangler(tdir+'tut134.flx'))
-
-// include STL vector template
-header """
-#include <iostream>
-#include <vector>
-""";
-
-// declare non-generic primitives int and long
-// and some output procedures
-type int = "int";
-type long = "long";
-proc endl:1= "std::cout << std::endl;";
-proc print: long = "std::cout << $1;";
-
-// define a generic cast
-// here ?2 means the second generic type parameter
-
-fun cast[t1,t2]:t1->t2 = "(?2)($1)";
-print (cast [int,long] 1); endl;
-
-// declare generic binding for vector
-// ?1 is replaced by the first type argument
-// when the type vector is instantiated
-// the name t is a placeholder used for consistency
-
-type vector[t] = "std::vector<?1>";
-
-// declare print routine for vector
-// notice that the type 'vector t'
-// describes a vector of objects 
-// of type t, the type of the generic parameter
-// 
-// in a type expression, the generic type vector
-// is used 'as a function' and applied to the
-// its argument, the parameter t in this case,
-// with the same syntax
-
-proc vprint[t]: vector[t] = """
-  { 
-    std::vector<?1> v = $1;
-    for(
-      std::vector<?1>::iterator p = v.begin();
-      p != v.end();
-      ++p
-    )
-      std::cout << *p << " ";
-  }
-""";
-
-// a generic procedure for appending to a vector
-// this procedure takes a pointer to a vector of t
-// and a value of type t and appends the value
-// to the vector
-proc append[t]:&(vector[t])*t="$1->push_back($2);";
-
-// make an empty vector of int
-var v : vector[int];
-
-// put 1,2,3 into the vector
-append[int](&v,1);
-append[int](&v,2);
-append[int](&v,3);
-
-// print the vector
-vprint[int] v; endl();
 
 
 @head(2,'Generic Functions')

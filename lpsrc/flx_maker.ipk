@@ -89,7 +89,7 @@ if "help" in options:
   print "clean - remove generated C++ and binaries from test locations"
   print "debug - build debugging versions of targets"
   print "optimise - build high performance versions of targets"
-  print "refcnt - generate reference counting instructions"
+  print "refcnt - do not generate reference counting instructions"
   print "doc - build all user documentation"
   print "vim=gvim - set gvim as the vim editor"
   print "vimserver=FLX - set FLX as the editor server name"
@@ -248,8 +248,6 @@ if "compiler" in options or "bytecode" in options:
     OCAML_OBJECT_EXTENSION = '.cmo'
     OCAML_LIB_EXTENSION = '.cma'
   
-  OCAMLC = OCAMLC + "-I ulex "
-  OCAMLOPT = OCAMLOPT + "-I ulex "
   # where the ocaml is installed
   result,x = get_stdout(OCAMLC + " -where")
   OCAML_INCLUDE_DIRECTORY= x[0][0:-1]
@@ -259,21 +257,31 @@ if "compiler" in options or "bytecode" in options:
 #READLINE_INCLUDE_DIRECTORY='/usr/include/readline'
 
 # for compiling mainlines
-#FLX_CPP_LINK = "g++ -fomit-frame-pointer -Wno-long-long -D_GNU_SOURCE -ansi -rdynamic -ldl "
-FLX_CPP_LINK = "g++ -w -ansi -pedantic -rdynamic -ldl "
+FLX_CPP_LINK = "g++ -w -ansi -rdynamic -ldl "
 if "optimise" in options:
   FLX_CPP_LINK = FLX_CPP_LINK + "-O "
 
 if "refcnt" in options:
-  FLX_CPP_LINK = FLX_CPP_LINK + "-DFLX_REFCNT "
+  FLX_CPP_LINK = FLX_CPP_LINK + " -DFLX_REFCNT "
+
+if "debug" in options:
+ pass
+else:
+  FLX_CPP_LINK = FLX_CPP_LINK + " -DNDEBUG "
 
 # for building shared libraries
 #FLX_CPP_DYNLINK = "g++ -fomit-frame-pointer -Wno-long-long -D_GNU_SOURCE -ansi -shared -I."
-FLX_CPP_DYNLINK = "g++ -w -ansi -pedantic -shared -I."
+FLX_CPP_DYNLINK = "g++ -w -ansi -shared -I."
 if "optimise" in options:
   FLX_CPP_DYNLINK = FLX_CPP_DYNLINK + "-O "
+
 if "refcnt" in options:
-  FLX_CPP_DYNLINK = FLX_CPP_DYNLINK + "-DFLX_REFCNT "
+  FLX_CPP_DYNLINK = FLX_CPP_DYNLINK + " -DFLX_REFCNT "
+
+if "debug" in options:
+  pass
+else:
+  FLX_CPP_DYNLINK = FLX_CPP_DYNLINK + " -DNDEBUG "
 
 
 # ------------------------------------------------
@@ -293,14 +301,6 @@ FLX_GC_SRC='src/'
 # -------------------------------------------------
 # BEGIN IMPLEMENTOR CONFIGURABLE SECTION
 # ------------------------------------------------
-
-P4S = [
-  (
-    'src/flx_ulex.mlp4',
-    'src/flx_ulex.ml',
-    'camlp4o ./ulex/pa_ulex.cma pr_o.cmo -impl src/flx_ulex.mlp4 -o src/flx_ulex.ml'
-  )
-]
 
 # files containing ocamllex sources
 LEXS = ['flx_lex']
@@ -328,7 +328,6 @@ MODULES = [
   'flx_parse'        ,
   'flx_keywords'     ,
   'flx_lex'          ,
-  'flx_ulex'         ,
   'flx_pretok'       ,
   'flx_lex1'         ,
   'flx_tok'          ,
@@ -458,11 +457,13 @@ try:
   if "doc" in options:
     ISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
     ISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
-    ISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_mtutorial.pak')
+    ISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_macro.pak')
+    ISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_bind.pak')
   elif "extract" in options:
     ISCR('lpsrc/flx.pak')
     ISCR('lpsrc/flx_tutorial.pak')
-    ISCR('lpsrc/flx_mtutorial.pak')
+    ISCR('lpsrc/flx_tut_macro.pak')
+    ISCR('lpsrc/flx_tut_bind.pak')
   os.system('rm -f tmp.tmp')
 
   if "doc" in options or "man" in options:
@@ -498,9 +499,6 @@ try:
   TESTS.sort()
   BAD_TESTS.sort()
 
-  if "ulex" in options:
-    xqt("(cd ulex; make all)")
-
   if "compiler" in options:
     # STEP 1: Compile all copiler support C files
     for cobject in COBJECTS.keys():
@@ -515,11 +513,6 @@ try:
       if buildall or filetime(file + '.mll') > filetime(file +'.ml'):
         buildall = 1
         xqt(OCAMLLEX + file + '.mll')
-
-    for inp,oup,cmd in P4S:
-      if buildall or filetime (inp) > filetime (oup):
-        buildall = 1
-        xqt(cmd)
 
     # STEP 3: Generate parsers
     for parse in PARSES:
@@ -579,6 +572,7 @@ try:
             "rtl/flx_rtl.cpp " +
             "rtl/flx_dynlink.cpp " +
             "rtl/flx_i18n.cpp " +
+            "rtl/flx_ioutil.cpp " +
              testfile + ".cpp -o "+outbin)
         except MakeError:
           print "Unable to build driver"
@@ -740,9 +734,6 @@ We have no idea if it continues copying.
 @tangle('extract: dummy')
 @tangle('\tpython script/maker extract')
 @tangle('')
-@tangle('ulex: dummy')
-@tangle('\tpython script/maker ulex')
-@tangle('')
 @tangle('tut: dummy')
 @tangle('\tpython script/maker tutorial')
 @tangle('')
@@ -761,8 +752,17 @@ We have no idea if it continues copying.
 @tangle('test: dummy')
 @tangle('\tpython script/maker test stop_on_error')
 @tangle('')
+@tangle('test.refcnt: dummy')
+@tangle('\tpython script/maker refcnt test stop_on_error')
+@tangle('')
+@tangle('test.debug: dummy')
+@tangle('\tpython script/maker debug test stop_on_error')
+@tangle('')
 @tangle('tests: dummy')
 @tangle('\tpython script/maker test log_output')
+@tangle('')
+@tangle('tests.refcnt: dummy')
+@tangle('\tpython script/maker refcnt test log_output')
 @tangle('')
 @tangle('tests.performance: dummy')
 @tangle('\tpython script/maker performance')
@@ -772,6 +772,9 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('drivers: dummy')
 @tangle('\tpython script/maker drivers')
+@tangle('')
+@tangle('drivers.refcnt: dummy')
+@tangle('\tpython script/maker refcnt drivers')
 @tangle('')
 @tangle('drivers.debug: dummy')
 @tangle('\tpython script/maker drivers debug')
@@ -914,7 +917,8 @@ We have no idea if it continues copying.
 @tangle('boot: dummy')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx.pak')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_tutorial.pak')
-@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_mtutorial.pak')
+@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_tut_macro.pak')
+@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_tut_bind.pak')
 @tangle('')
 
 @tangle('test_lex: dummy')
@@ -1471,31 +1475,82 @@ DIV.DIFF_SECTION_HEAD EM, DIV.DIFF_SECTION_FOOT EM {
 # flx - felix script harness
 
 # g++ compilation string
-GPP="g++ -w -ansi -pedantic"
+GPP="g++ -w -ansi "
 
 # check for test mode: this argument must come first
 
-if [ "x$1" = "x--test" ]
-then
-  TESTMODE=1
-  shift
-else
-  TESTMODE=0
-fi
+TESTMODE=0
+RECOMPILE=0
+DEBUG=0
+grab=1
 
-# check for forced recompile
-if [ "x$1" = "x--force" ]
-then
-  RECOMPILE=1
-  shift
-else
-  RECOMPILE=0
-fi
+while (( "$grab" == "1" ));
+do
+  case x$1 in
+  x--test)
+    TESTMODE=1
+    shift
+  ;;
+
+  x--force)
+    RECOMPILE=1
+    shift
+  ;;
+
+  x--debug)
+    DEBUG=1
+    shift
+  ;;
+
+  x*)
+    grab=0
+  ;;
+
+  esac
+done
 
 if [ "$TESTMODE" = "1" ]
 then
   echo "TESTMODE: running felix from current directory"
 fi
+
+if [ "$DEBUG" = "0" ]
+then
+  GPP="$GPP -DNDEBUG"
+fi
+
+# make a list of any *.cpp files (or other g++ options ..)
+
+grab=1
+cpps=""
+while (( "$grab" == "1" ));
+do
+  case "$1" in
+    *.cpp)
+      cpps="$cpps $1"
+      shift
+    ;;
+
+    *.c)
+      cpps="$cpps $1"
+      shift
+    ;;
+     
+    *.o)
+      cpps="$cpps $1"
+      shift
+    ;;
+
+    -*)
+      cpps="$cpps $1"
+      shift
+    ;;
+   
+    *)
+      grab=0
+    ;;
+  esac
+done
 
 # Strip trailing .flx or .so
 # users should type 'flx file' without extension,
@@ -1505,11 +1560,13 @@ case "$1" in
   *.flx)
     arg="`echo $1 | sed 's/\.flx$//'`"
     is_flx=1
-    ;;
+  ;;
+  
   *.so)
     arg="`echo $1 | sed 's/\.so$//'`"
     is_so=1
-    ;;
+  ;;
+
   *)
     arg="$1"
 esac
@@ -1582,7 +1639,7 @@ fi
 
 if "$FLXG" -q -I"$FLXLIB" "$base"
 then
-  if $GPP -shared -I"$INCLUDE_DIR" "$base.cpp" -o "$base.so"
+  if `echo $GPP -shared -I"$INCLUDE_DIR" "$cpps" "$base.cpp" -o "$base.so"`
   then
     # rm -f "$base.cpp"
     "$FLXRUN" "$base.so"

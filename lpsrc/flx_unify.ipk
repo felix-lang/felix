@@ -104,6 +104,12 @@ val var_i_occurs:
   btypecode_t ->
   bool
 
+(** check for variables *)
+val var_list_occurs:
+  int list ->
+  btypecode_t ->
+  bool
+
 (** normalise returns count of the type variables
   occuring in a type, and the type rewritten so the type variables
   are systematically numbered from 0 - n-1
@@ -115,6 +121,10 @@ val normalise_type:
 val check_recursion:
   btypecode_t -> unit
 
+(** construct the dual of a type *)
+val dual:
+  btypecode_t -> btypecode_t
+
 @h=tangler('src/flx_unify.ml')
 @select(h)
 open Flx_types
@@ -123,6 +133,27 @@ open Flx_maps
 open Flx_util
 open List
 open Flx_exceptions
+
+let rec dual t = 
+  match map_btype dual t with
+  | `BTYP_sum ls -> 
+    begin match ls with 
+    | [t] -> t
+    | ls -> `BTYP_tuple ls
+    end
+
+  | `BTYP_tuple ls -> 
+    begin match ls with 
+    | [] -> `BTYP_void
+    | [t] -> t
+    | ls -> `BTYP_sum ls
+    end
+
+  | `BTYP_function (a,b) -> `BTYP_function (b,a)
+
+  | `BTYP_pointer t -> `BTYP_pointer (dual t)
+  | `BTYP_void -> `BTYP_tuple []
+  | t -> t
 
 (* top down check for fix point not under sum or pointer *)
 let rec check_recursion t = match t with
@@ -272,6 +303,11 @@ let var_i_occurs i t =
      false 
    with Not_found -> true
 
+let var_list_occurs ls t =
+  let yes = ref false in
+  iter (fun i -> yes := !yes || var_i_occurs i t) ls;
+  !yes
+  
 (* NOTE: this algorithm unifies EQUATIONS 
   not inequations, therefore it doesn't
   handle any subtyping

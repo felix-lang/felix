@@ -205,6 +205,9 @@ and typecode_t =
   | `TYP_var of int                             (** unknown type *)
   | `TYP_none                                   (** unspecified *)
 
+  (* dualizer *)
+  | `TYP_dual of typecode_t                     (** dual *)
+
   (* destructors *)
   | `TYP_dom of typecode_t                      (** function domain extractor *)
   | `TYP_cod of typecode_t                      (** function codomain extractor *)
@@ -216,6 +219,21 @@ and typecode_t =
                                                 (** type lambda *)
   | `TYP_type                                   (** meta type of a type *)
   | `TYP_type_tuple of typecode_t list          (** meta type product *)
+
+  | `TYP_type_match of typecode_t * (tpattern_t * typecode_t) list
+  ]
+
+and tpattern_t =
+  [
+  |  `TPAT_function of tpattern_t * tpattern_t
+  |  `TPAT_sum of tpattern_t list
+  |  `TPAT_tuple of tpattern_t list
+  |  `TPAT_pointer of tpattern_t
+  |  `TPAT_void
+  |  `TPAT_var of string
+  |  `TPAT_name of string * tpattern_t list
+  |  `TPAT_as of tpattern_t * string
+  |  `TPAT_any
   ]
 
 @head(3,'Literals')
@@ -273,6 +291,7 @@ and expr_t =
 
   | `AST_expr of range_srcref * string * typecode_t
 
+  | `AST_type_match of range_srcref * (typecode_t * (tpattern_t * typecode_t) list)
    
   (* hacks .. *)
   | `AST_bound_module of range_srcref * (bid_t * bid_t * index_map_t)
@@ -564,6 +583,7 @@ type 't b1typecode_t' =
   | `BTYP_typefun of (int * 't) list * 't * 't
   | `BTYP_type
   | `BTYP_type_tuple of 't list
+  | `BTYP_type_match of 't * ('t * 't) list
   ]
 
 (** general typing *)
@@ -770,9 +790,13 @@ let map_type f = function
 
   (* destructors *)
   | `TYP_dom t -> `TYP_dom (f t)
+  | `TYP_dual t -> `TYP_dual (f t)
   | `TYP_cod t -> `TYP_cod (f t)
   | `TYP_proj (i,t) -> `TYP_proj (i, f t)
   | `TYP_case_arg (i,t) -> `TYP_case_arg (i, f t) 
+  | `TYP_type_match (t,ps) -> 
+    let ps = map (fun (p,t) -> p, f t) ps in
+    `TYP_type_match (f t, ps)
   
   (* meta constructors *)
   | `TYP_apply (a,b) -> `TYP_apply (f a, f b)
@@ -794,6 +818,10 @@ let map_btype f = function
   | `BTYP_typefun (its, a, b) ->
      `BTYP_typefun (map (fun (i,t) -> i, f t) its, f a , f b)
   | `BTYP_type_tuple ts -> `BTYP_type_tuple (map f ts)
+  | `BTYP_type_match (t,ps) ->
+    let g (a,b) = f a, f b in
+    `BTYP_type_match (f t, map g ps)
+    
   | x -> map_b0type f x
 
 let iter_b0type f = function
@@ -809,7 +837,11 @@ let iter_btype f = function
   | `BTYP_apply (a,b) -> f a; f b
   | `BTYP_typefun (its, a, b) ->
      iter (fun (i,t) -> f t) its; f a; f b
-
+  | `BTYP_type_match (t,ps) ->
+    let g (a,b) = f a; f b in
+    f t; 
+    iter g ps
+ 
   | `BTYP_type_tuple ts -> iter f ts
   | x -> iter_b0type f x
 
@@ -921,6 +953,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_coercion (s,_)
   | `AST_as (s,_)
   | `AST_match (s, _) 
+  | `AST_type_match (s, _) 
   | `AST_regmatch (s, _) 
   | `AST_reglex (s, _) 
   | `AST_typeof (s, _) 
@@ -1331,6 +1364,19 @@ and string_of_expr (e:expr_t) =
     ^
     " endmatch"
 
+  | `AST_type_match (_,(e, ps)) ->
+    "typematch " ^ string_of_typecode e ^ " with " ^
+    catmap "\n"
+    (fun (p,e')->
+      " | " ^
+      string_of_tpattern p ^
+      " => " ^
+      string_of_typecode e'
+    )
+    ps
+    ^
+    " endmatch"
+
   | `AST_regmatch (_,(e, ps)) ->
     "regmatch " ^ se e ^ " with " ^
     catmap "\n"
@@ -1375,6 +1421,16 @@ and st prec tc : string =
     match tc with
     | #qualified_name_t as t -> 0,string_of_qualified_name t
     | `TYP_none -> 0,"<none>"
+    | `TYP_type_match (e,ps) -> 0,
+      "typematch " ^ string_of_typecode e ^ " with " ^
+      catmap ""
+      (fun (p,t) ->
+      "| " ^ string_of_tpattern p ^ " => " ^ string_of_typecode t 
+      )
+      ps
+      ^
+      " endmatch"
+      
     | `TYP_var i -> 0,"<var " ^ si i ^ ">"
     | `TYP_tuple ls ->
       begin match ls with 
@@ -1398,6 +1454,7 @@ and st prec tc : string =
     | `TYP_as (t,s) -> 7,st 7 t ^ " as " ^ s
 
     | `TYP_proj (i,t) -> 2,"proj_"^si i^" "^ st 2 t
+    | `TYP_dual t -> 2,"~"^ st 2 t
     | `TYP_dom t -> 2,"dom "^ st 2 t
     | `TYP_cod t -> 2,"cod "^st 2 t
     | `TYP_case_arg (i,t) -> 2,"case_arg_"^si i^" "^st 2 t
@@ -1449,84 +1506,99 @@ and print_fixpoints depth fixlist =
   
 and sb dfns depth fixlist counter prec tc = 
   let sbt prec t = sb dfns (depth+1) fixlist counter prec t in
-    let iprec, term = 
-      match tc with
-      | `BTYP_fix i ->
-         0,
-         (
-           try assoc (depth+i) !fixlist
-           with Not_found ->
-             incr counter; (* 'a is 1 anyhow .. *)
-             let lab = "fix" ^ si i ^ "_"^get_label !counter in
-             fixlist := (depth+i,lab) :: !fixlist;
-             lab 
-         )
-
-      | `BTYP_binding (a,b) -> 
-        6,
-        sbt 6 a ^
-        " => " ^
-        sbt 6 b
-
-      | `BTYP_var i -> 0,"<T" ^ si i ^ ">"
-      | `BTYP_inst (i,ts) -> 
-        0,qualified_name_of_index dfns i ^ 
-        (if List.length ts = 0 then "" else
-        "[" ^cat ", " (List.map (string_of_btypecode dfns) ts) ^ "]"
+  let iprec, term = 
+    match tc with
+    | `BTYP_type_match (t,ps) ->
+      0,
+      (
+        "typematch " ^
+        sbt 99 t ^
+        " with" ^
+        catmap ""
+        (fun (p,t) ->
+          " | " ^ sbt 99 p ^ " => " ^ sbt 99 t 
         )
+        ps 
+        ^
+        " endmatch"
+      )
 
-      | `BTYP_name n -> 
-        let name = 
-          try qualified_name_of_index dfns n
-          with Not_found -> "<N" ^ si n^ ">"
-        in
-        0,name
+    | `BTYP_fix i ->
+       0,
+       (
+         try assoc (depth+i) !fixlist
+         with Not_found ->
+           incr counter; (* 'a is 1 anyhow .. *)
+           let lab = "fix" ^ si i ^ "_"^get_label !counter in
+           fixlist := (depth+i,lab) :: !fixlist;
+           lab 
+       )
 
-      | `BTYP_tuple ls -> 
-        begin match ls with 
-        | [] -> 0,"unit" 
-        | [x] -> failwith ("UNEXPECTED TUPLE OF ONE ARGUMENT " ^ sbt 9 x)
-        | _ -> 3,cat " * " (List.map (sbt 3) ls)
-        end
+    | `BTYP_binding (a,b) -> 
+      6,
+      sbt 6 a ^
+      " => " ^
+      sbt 6 b
 
-      | `BTYP_sum ls -> 
-        begin match ls with 
-        | [] -> 9,"UNEXPECTED EMPTY SUM = void" 
-        | [`BTYP_tuple[]; `BTYP_tuple[]] -> 0,"bool"
-        | [x] -> (* failwith *) (9,"UNEXPECTED SUM OF ONE ARGUMENT " ^ sbt 9 x)
-        | _ -> 4,cat " + " (List.map (sbt 4) ls)
-        end
+    | `BTYP_var i -> 0,"<T" ^ si i ^ ">"
+    | `BTYP_inst (i,ts) -> 
+      0,qualified_name_of_index dfns i ^ 
+      (if List.length ts = 0 then "" else
+      "[" ^cat ", " (List.map (string_of_btypecode dfns) ts) ^ "]"
+      )
 
-      | `BTYP_function (args, result) ->  
-        5,(sbt 5 args) ^ " -> " ^ (sbt 5 result)
+    | `BTYP_name n -> 
+      let name = 
+        try qualified_name_of_index dfns n
+        with Not_found -> "<N" ^ si n^ ">"
+      in
+      0,name
 
-      | `BTYP_pointer t -> 1,"&" ^ sbt 1 t
-      | `BTYP_void -> 0,"void"
-      
-      | `BTYP_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2
-      | `BTYP_type -> 0,"TYPE"
-      | `BTYP_type_tuple ls ->
-        3, cat ", " (List.map (sbt 3) ls)
+    | `BTYP_tuple ls -> 
+      begin match ls with 
+      | [] -> 0,"unit" 
+      | [x] -> failwith ("UNEXPECTED TUPLE OF ONE ARGUMENT " ^ sbt 9 x)
+      | _ -> 3,cat " * " (List.map (sbt 3) ls)
+      end
 
-      | `BTYP_typefun (args,ret,body) -> 
-         7,
+    | `BTYP_sum ls -> 
+      begin match ls with 
+      | [] -> 9,"UNEXPECTED EMPTY SUM = void" 
+      | [`BTYP_tuple[]; `BTYP_tuple[]] -> 0,"bool"
+      | [x] -> (* failwith *) (9,"UNEXPECTED SUM OF ONE ARGUMENT " ^ sbt 9 x)
+      | _ -> 4,cat " + " (List.map (sbt 4) ls)
+      end
+
+    | `BTYP_function (args, result) ->  
+      5,(sbt 5 args) ^ " -> " ^ (sbt 5 result)
+
+    | `BTYP_pointer t -> 1,"&" ^ sbt 1 t
+    | `BTYP_void -> 0,"void"
+    
+    | `BTYP_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2
+    | `BTYP_type -> 0,"TYPE"
+    | `BTYP_type_tuple ls ->
+      3, cat ", " (List.map (sbt 3) ls)
+
+    | `BTYP_typefun (args,ret,body) -> 
+       7,
+       (
+         "fun (" ^ cat ", " 
          (
-           "fun (" ^ cat ", " 
-           (
-             List.map 
-             (fun (i,t)-> "T"^si i ^ ": " ^ sbt 7 t) 
-             args
-           ) ^
-           "): " ^ sbt 0 ret ^ "=" ^ sbt 7 body
-         )
-    in
-      let txt,lst = print_fixpoints depth !fixlist in
-      fixlist := lst;
-      if txt = "" then
-        if iprec >= prec then "(" ^ term ^ ")"
-        else term
-      else
-      "(" ^ term ^ txt ^ ")"
+           List.map 
+           (fun (i,t)-> "T"^si i ^ ": " ^ sbt 7 t) 
+           args
+         ) ^
+         "): " ^ sbt 0 ret ^ "=" ^ sbt 7 body
+       )
+  in
+    let txt,lst = print_fixpoints depth !fixlist in
+    fixlist := lst;
+    if txt = "" then
+      if iprec >= prec then "(" ^ term ^ ")"
+      else term
+    else
+    "(" ^ term ^ txt ^ ")"
 
 and string_of_btypecode (dfns:symbol_table_t) tc = 
   let fixlist = ref [] in
@@ -1570,6 +1642,27 @@ and string_of_float_pat = function
   | Float_minus (t,v) -> "-" ^ v ^ t
   | Float_inf -> "inf"
   | Float_minus_inf -> "-inf"
+
+and string_of_tpattern p =
+  let sp p = string_of_tpattern p in
+  match p with
+  | `TPAT_function (p1,p2) -> sp p1 ^ " -> " ^ sp p2
+  | `TPAT_sum ps -> catmap " + " sp ps
+  | `TPAT_tuple ps -> catmap " * " sp ps
+  | `TPAT_pointer p -> "&" ^ sp p
+  | `TPAT_void -> "0"
+  | `TPAT_var s -> "?" ^ s
+  | `TPAT_name (s,ps) -> 
+    s ^ 
+    (
+      match ps with
+      | [] -> ""
+      | ps -> "[" ^ catmap "," sp ps ^ "]"
+    )
+  
+  |  `TPAT_as (p,s) -> sp p ^ " as " ^ s
+  |  `TPAT_any -> "_"
+
 
 and string_of_pattern p = 
   let se e = string_of_expr e in
@@ -2984,8 +3077,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
       let name' = name ^ "          " (* 10 chars *) in
       if name = "typeof" then `TYP_typeof e2 
       else let arg = typecode_of_expr e2 in
-      if name = "dom" then `TYP_dom arg
-      else if name = "cod" then `TYP_cod arg
+      if name = "compl" then `TYP_dual arg
       else if String.sub name' 0 5 = "proj_" 
       then 
         begin 
@@ -3043,6 +3135,9 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
          short_string_of_src sr
        )
      end
+
+  | `AST_type_match (sr,(e,ps)) ->
+    `TYP_type_match (e,ps)
 
   | #expr_t -> 
     failwith 

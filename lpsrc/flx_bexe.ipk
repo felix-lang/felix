@@ -45,9 +45,10 @@ let cal_loop dfns (p,pt) e this =
     begin match p with
     | `BEXPR_closure (i,ts) ->
       let id,sr,parent,vs,_,_,entry = Hashtbl.find dfns i in
+      print_endline ("In function " ^ si this ^ " loop to " ^ id ^ "[" ^ si i ^"]");
       let j = ref 0 in 
       let rec aux k = 
-        if k <> this
+        if k <> i
         then
           let id,sr,parent,_,_,_,_ = Hashtbl.find dfns k in
           match parent with
@@ -55,6 +56,7 @@ let cal_loop dfns (p,pt) e this =
           | None -> failwith "[cal_loop] Loop target must be self or parent"
       in 
         aux this;
+        print_endline ("loop " ^ si !j);
         `BEXE_loop (!j, e)
 
     | _ -> 

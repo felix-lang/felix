@@ -38,6 +38,7 @@ open Flx_typing
 open Flx_lookup
 open Flx_srcref
 open Flx_typing
+open Flx_exceptions
 
 type extract_t = 
   | Proj_n of range_srcref * int             (* tuple projections 1 .. n *)
@@ -83,22 +84,24 @@ let rec subst vars (e:expr_t) mv : expr_t =
      name the types of the arguments now)
   *)
   match e with
-  | `AST_noexpand _ -> failwith "Not expecting noexpand in pattern"
-  | `AST_letin _ -> failwith "Not expecting conditional in when part of pattern (should be replaced by match)"
-  | `AST_cond _ -> failwith "Not expecting conditional in when part of pattern (should be replaced by match)"
-  | `AST_expr _ -> failwith "Not expecting expr in when part of pattern (should be replaced by match)"
-  | `AST_typeof _ -> failwith "Not expecting typeof in when part of pattern"
-  | `AST_product _ -> failwith "Not expecting product in when part of pattern"
-  | `AST_void _ -> failwith "Not expecting void in when part of pattern"
-  | `AST_sum _ -> failwith "Not expecting sum in when part of pattern"
-  | `AST_typed_case _ -> failwith "Not expecting typed case in when part of pattern"
-  | `AST_case_arg _ -> failwith "Not expecting case_arg in when part of pattern"
-  | `AST_arrow _  -> failwith "Not expecting arrow in when part of pattern"
-  | `AST_match _  -> failwith "Not expecting match in when part of pattern"
-                     (* this one really SHOULD work! *)
-
-  | `AST_regmatch _  -> failwith "Not expecting regmatch in when part of pattern"
-  | `AST_reglex _  -> failwith "Not expecting reglex in when part of pattern"
+  | `AST_type_match _ 
+  | `AST_noexpand _ 
+  | `AST_letin _ 
+  | `AST_cond _ 
+  | `AST_expr _ 
+  | `AST_typeof _ 
+  | `AST_product _ 
+  | `AST_void _ 
+  | `AST_sum _ 
+  | `AST_typed_case _ 
+  | `AST_case_arg _ 
+  | `AST_arrow _  
+  | `AST_match _  
+  | `AST_regmatch _  
+  | `AST_reglex _  
+    -> 
+      let sr = src_of_expr e in
+      clierr sr "[mbind:subst] Not expected in when part of pattern"
 
   | `AST_lookup _ -> e
   | `AST_suffix _ -> e
@@ -135,17 +138,13 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_lambda _ -> assert false
   | `AST_bound_module _ -> assert false
 
-  | `AST_match_ctor _ ->
-    failwith "`AST_match_ctor in 'when' expression not implemented"
-
-  | `AST_match_case _ ->
-    failwith "`AST_match_case in 'when' expression not implemented"
-  
-  | `AST_ctor_arg _ ->
-    failwith "`AST_ctor_arg in 'when' expression not implemented"
-  
-  | `AST_get_n _ ->
-    failwith "`AST_get_n in 'when' expression not implemented"
+  | `AST_match_case _ 
+  | `AST_ctor_arg _ 
+  | `AST_get_n _ 
+  | `AST_match_ctor _ 
+    ->
+    let sr = src_of_expr e in
+    clierr sr "[subst] not implemented in when part of pattern"
   
   | `AST_coercion _ -> failwith "subst: coercion"
 

@@ -146,7 +146,7 @@ let rec get_offsets syms bbdfns typ : string list =
 let gen_offset_data s n name offsets =
   if n <> 0 then
   begin
-    bcat s ("static size_t " ^ name ^ "_offsets["^si n^"]={\n  ");
+    bcat s ("static size_t " ^ name ^ "_offsets["^si n^"]={\n");
     bcat s ("  " ^ cat ",\n  " offsets);
     bcat s ("\n" ^  "};\n");
   end;
@@ -606,13 +606,11 @@ let gen_function syms bbdfns index id vs bps ret' ts instance_no =
   let funtypename = cpp_type_classname syms funtype in 
   let display = get_display_list syms index in
   let frame_dcls = 
-    "  //OS frames\n" ^
     "  FLX_FMEM_DECL\n"
   in
   let display_string = match display with
     | [] -> ""
     | display -> 
-      "  //display\n" ^
       cat "" 
       (
         map
@@ -637,43 +635,64 @@ let gen_function syms bbdfns index id vs bps ret' ts instance_no =
         display
       )^
       "\n  );\n" 
+  and dtor_dcl name =
+    "  ~" ^ name ^"();\n"
   in
   let members = find_members syms bbdfns index ts in
   match ret with
   | `BTYP_void ->
     let name = cpp_instance_name syms bbdfns index ts in
+    let ctor = ctor_dcl name in
+    let dtor = dtor_dcl name in
     "struct " ^ name ^
     ": "^funtypename^" {\n" ^
+    "  //os frames\n" ^
+    frame_dcls ^
+    "  //display\n" ^
+    display_string ^ "\n" ^
+    "  //return address\n" ^
+    "  con_t *_caller;\n" ^
+    members ^
+    "  //constructor\n" ^
+    ctor ^
+    "  //destructor\n" ^
+    dtor_dcl name ^
+    "  //clone\n" ^
+    "  " ^name^"* "^name^"::clone()const;\n" ^
+    "  //call\n" ^
     (if argtype = `BTYP_tuple [] 
     then
     "  con_t *call(con_t*);\n" 
     else
     "  con_t *call(con_t*,"^argtypename^" const &);\n"
     ) ^
+    "  //resume\n" ^
     "  con_t *resume();\n"  ^
-    "  con_t *_caller; // callers return address\n" ^
-    frame_dcls ^
-    display_string ^ "\n" ^
-    "  //constructor\n" ^
-    ctor_dcl name ^
-    members ^
     "};\n"
 
   | _ ->
     let name = cpp_instance_name syms bbdfns index ts in
     let rettypename = cpp_typename syms ret in
     let ctor = ctor_dcl name in
+    let dtor = dtor_dcl name in
     "struct " ^ name ^
     ": "^funtypename^" {\n" ^
+    "  //os frames\n" ^
+    frame_dcls ^
+    "  //display\n" ^
+    display_string ^ "\n" ^
+    members ^
+    "  //constructor\n" ^
+    ctor ^
+    "  //destructor\n" ^
+    dtor ^
+    "  //clone\n" ^
+    "  " ^name^"* "^name^"::clone()const;\n" ^
+    "  //apply\n" ^
     "  "^rettypename^" apply(" ^
     (if argtype = `BTYP_tuple[] then ""
     else argtypename^" const &")^ 
     ");\n"  ^
-    frame_dcls ^
-    display_string ^ "\n" ^
-    "  //constructor\n" ^
-    ctor ^
-    members ^
     "};\n"
 
 
@@ -700,13 +719,13 @@ let gen_functions syms bbdfns =
     match entry with
     | `BBDCL_function (vs,ps, ret, _,_) -> 
       bcat s ("\n//------------------------------\n");
-      bcat s ("//FUNCTION " ^ id ^ tss ^ "\n");
+      bcat s ("//FUNCTION " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
       bcat s 
       (gen_function syms bbdfns index id vs ps ret ts i)
 
     | `BBDCL_procedure (vs,ps,_,_) -> 
       bcat s ("\n//------------------------------\n");
-      bcat s ("//PROCEDURE " ^ id ^ tss ^ "\n");
+      bcat s ("//PROC " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
       bcat s 
       (gen_function syms bbdfns index id vs ps `BTYP_void ts i)
     | _ -> () (* bcat s ("//SKIPPING " ^ id ^ "\n") *)
@@ -740,7 +759,24 @@ let gen_ctor syms bbdfns name display ts =
     )
     display
   ) ^ 
-  "\n  {}\n"
+  "\n  {"^
+  (match display with
+  | [] -> ""
+  | h :: _ -> 
+    let iname = cpp_instance_name syms bbdfns h ts in
+    " incref(ptr"^iname^"); "
+  )
+  ^"}\n"
+
+let gen_dtor syms bbdfns name display ts =
+  name^"::~"^name^"(){" ^
+  (match display with
+  | [] -> ""
+  | h :: _ -> 
+    let iname = cpp_instance_name syms bbdfns h ts in
+    " decref(ptr"^iname^"); "
+  )
+  ^"}\n"
 
 let is_closure_var bbdfns index =
   let var_type bbdfns index =
@@ -1076,7 +1112,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
       end
 
     | `BBDCL_function (vs,ps,retyp,_,_) ->
-      (ge f) ^ "->apply(" ^ ge_arg a ^ "/* MAY NEED INCREF */)"
+      (ge f) ^ "\n      ->apply(" ^ ge_arg a ^ ")"
 
     | `BBDCL_struct (vs,_) ->
       let name = tn (`BTYP_inst (index,ts)) in
@@ -1092,7 +1128,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
 
   (* General application*)
   | `BEXPR_apply (f,a) ->
-    (ge f) ^ "->apply(" ^ ge_arg a ^ "/* MAY NEED INCREF */)"
+    (ge f) ^ "->clone()\n      ->apply(" ^ ge_arg a ^ ")"
     
   | `BEXPR_tuple es ->
     (* just apply the tuple type ctor to the arguments *)
@@ -1178,9 +1214,6 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
   in let our_level = length our_display in
 
   let handle_closure is_jump index ts a =
-    (* DISABLE JUMP OPTIMISATION *)
-    let was_jump = is_jump in
-    let is_jump = false in
     let id,parent,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_exe(call)] Can't find index " ^ si index)
@@ -1273,7 +1306,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
             "      (new(gc,"^ ptrmap^")\n" ^ 
             "      " ^ name ^ 
             "(" ^ cat ",\n      " ("FLX_FPAR_PASS":: the_display) ^
-            "))->call(\n      " ^ args ^ "\n      );\n" ^
+            "))\n      ->call(\n      " ^ args ^ "\n      );\n" ^
             "      while(_p) _p=_p->resume();\n"
 
           | Procedure ->
@@ -1281,7 +1314,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
               "      return (new(gc,"^ ptrmap^")\n" ^ 
               "      " ^ name ^ 
               "(" ^ cat ",\n      " ("FLX_FPAR_PASS":: the_display) ^
-              "))->call(\n      " ^ args ^ "\n      );\n"
+              "))\n      ->call(\n      " ^ args ^ "\n      );\n"
             in
             if is_jump
             then
@@ -1299,7 +1332,9 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
               "    case " ^ si n ^ ":\n"
         end
       end
+      (*
       ^ (if was_jump then "FLX_RETURN // optimisation defeated\n" else "")
+      *)
 
     | _ -> 
       failwith 
@@ -1400,6 +1435,37 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
     let ts = map tsub ts in
     handle_closure false index ts a
 
+  (* Refcounting notes for loop 
+    Normally, the refcnt of every frame in the call stack is 1
+    (if there are no pointer into any frames)
+
+    There is a _caller link in each frame, which is the pointer
+    being counted, except the top frame, whose pointer is
+    held by the driver. Not that display pointers are considered
+    weak and are never counted. The reason is that they
+    always point to a frame the _caller variable points to,
+    directly or indirectly, if the top frame is deleted,
+    the call link -- and the display pointers -- disappear.
+
+    If the top frame is not deleted, because for example
+    there is a pointer into it, the caller and display
+    pointers would hold the whole call chain in place.
+    We don't want that, so we have to zero out the caller link.
+
+    Unfortunately .. the display pointers are still there,
+    they're garbage collected, but they're not counted,
+    so decrementing the caller frames ref count to zero
+    could produce a disaster if we're not careful.
+
+    Normally, once a frame has been executed, it can't
+    be executed again. Therefore the display pointers
+    cannot be used. The exception is the loop command target,
+    but that has no impact since it isn't unwound.
+
+    The effect is, an isolated top frame may exist with its
+    underpants removed: precisely, the control relationship
+    is lost, and only any data relationship remains.
+  *)
   | `BEXE_loop (i,a) ->
     let ptr = 
       if i= 0 then "this"
@@ -1408,19 +1474,39 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
         "ptr"^cpp_instance_name syms bbdfns k ts
     in
       print_endline ("Looping to " ^ ptr);
-      let args = match a with
+      let args = ptr ^ "->" ^ 
+        (match a with
         | _,`BTYP_tuple [] -> "_caller"
         | _ -> "_caller, " ^ ge a
+        )
       in
       "      //"^ src_str ^ "\n" ^
-      "      return " ^ ptr ^ "->call(" ^ args ^");\n"
+      (
+        if i <> 0 then
+        "      {\n" ^
+        "        con_t *res = " ^ ptr ^ "\n      ->call(" ^ args ^");\n" ^
+        "        printf(\"unwinding from %p to %p\\n\",this,"^ptr^");\n" ^
+        "        con_t *p = this;\n" ^
+        "        while(res && res != "^ptr^") { res = p->_caller; printf(\"called by %p\\n\",p); }\n"^
+        "        for(con_t *tmp=this; tmp != (con_t*)"^ptr^";){//unwind stack\n" ^
+        "           con_t *tmp2 = tmp->_caller;\n" ^
+        "           printf(\"unwinding %p, caller is %p\\n\",tmp,tmp2);\n" ^
+        "           tmp->_caller = 0;\n" ^
+        "           decref(tmp);\n" ^
+        "           tmp = tmp2;\n"^
+        "        }\n" ^
+        "        return res;\n" ^
+        "      }\n"
+        else 
+        "      return " ^ ptr ^ "\n      ->call(" ^ args ^");\n"
+      )
 
-  (* BUG?!? if p is a variable containing a closure,
+  (* If p is a variable containing a closure,
      and p recursively invokes the same closure,
      then the program counter and other state 
-     of the closure is lost: the closure will return
-     to its on previous state; that is, simply continue on:
-     there's only one frame
+     of the closure would be lost, so we clone it
+     instead .. the closure variables is never
+     used (a waste if it isn't re-entered .. oh well)
    *)
 
   | `BEXE_call (p,a) ->
@@ -1437,7 +1523,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
     | Function ->
       "      //run procedure " ^ src_str ^ "\n" ^
       "      {\n" ^
-      "        con_t *_p = "^ge p ^ "->call("^args^");\n" ^
+      "        con_t *_p = "^ge p ^ "->clone()\n      ->call("^args^");\n" ^
       "        while(_p) _p=_p->resume();\n" ^
       "      }\n"
       
@@ -1449,7 +1535,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
       "      // MAYBE NEED INCREF HERE\n" ^
       "      //"^ src_str ^ "\n" ^
       "      pc = " ^ si n ^ ";\n" ^
-      "      return " ^ ge p ^ "->call(" ^ args ^");\n" ^
+      "      return " ^ ge p ^ "->clone()\n      ->call(" ^ args ^");\n" ^
       "    case " ^ si n ^ ":\n"
     end
 
@@ -1463,7 +1549,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
     "        con_t *tmp = _caller;\n" ^
     "        _caller=0;\n" ^
     "        decref(this);\n" ^
-    "        return " ^ ge p ^ "->call(" ^ args ^");\n" ^
+    "        return " ^ ge p ^ "\n      ->call(" ^ args ^");\n" ^
     "      }\n"
 
   | `BEXE_proc_return -> ret_string
@@ -1576,6 +1662,7 @@ let gen_function_methods syms bbdfns label_map counter index ts instance_no =
 
     let rettypename = cpp_typename syms ret in
     let ctor = gen_ctor syms bbdfns name display ts in
+    let dtor = gen_dtor syms bbdfns name display ts in
     let params = get_parameters syms index in
     let exe_string =
       try 
@@ -1585,6 +1672,7 @@ let gen_function_methods syms bbdfns label_map counter index ts instance_no =
         print_endline (catmap "\n" (string_of_bexe syms.dfns 1) exes);
         failwith "Can't gen exes .."
     in
+    let cont = "con_t *" in
     let apply =
       rettypename^ " " ^name^
       "::apply("^
@@ -1616,10 +1704,19 @@ let gen_function_methods syms bbdfns label_map counter index ts instance_no =
       )^
       exe_string ^
       "}\n"
+    and clone =
+      "  " ^ name ^ "* "^name^"::clone()const {\n"^
+      "  return new(*ptf->gc,"^name^"_ptr_map) "^name^"(*this);\n"^
+      "}\n"
     in
-      "//FUNCTION " ^ id ^ ": Constructor\n" ^
+      let q = qualified_name_of_index syms.dfns index in
+      "//FUNC " ^ q ^ ": Constructor\n" ^
       ctor^ "\n" ^
-      "//FUNCTION " ^ id ^ ": Apply method\n" ^
+       "//FUNC " ^ q ^ ": Destructor\n" ^
+      dtor^ "\n" ^
+      "\n//FUNC " ^ q ^ ": Clone method\n" ^
+      clone^ "\n" ^
+      "//FUNC " ^ q ^ ": Apply method\n" ^
       apply^ "\n"
 
   | _ -> failwith "function expected"
@@ -1657,6 +1754,7 @@ let gen_procedure_methods syms bbdfns label_map counter index ts instance_no =
     let display = get_display_list syms index in
 
     let ctor = gen_ctor syms bbdfns name display ts in
+    let dtor = gen_dtor syms bbdfns name display ts in
     let params = get_parameters syms index in
     let ps = map (fun (id,(ix,t)) -> id,t) bps in
 
@@ -1718,13 +1816,22 @@ let gen_procedure_methods syms bbdfns label_map counter index ts instance_no =
         "    default: FLX_RETURN\n" ^
         "  }\n" ^
         "}\n"
+    and clone =
+      "  " ^name^"* "^name^"::clone()const {\n" ^
+        "  return new(*ptf->gc,"^name^"_ptr_map) "^name^"(*this);\n" ^
+        "}\n"
     in
-      "\n//PROC " ^ id ^ "\n" ^
-      "//PROC " ^ id ^ ": Constructor\n" ^
+      let q = qualified_name_of_index syms.dfns index in
+      "\n//PROC " ^ q ^ "\n" ^
+      "//PROC " ^ q ^ ": Constructor\n" ^
       ctor^
-      "\n//PROC " ^ id ^ ": Call method\n" ^
+      "\n//PROC " ^ q ^ ": Destructor\n" ^
+      dtor^
+      "\n//PROC " ^ q ^ ": Clone method\n" ^
+      clone^
+      "\n//PROC " ^ q ^ ": Call method\n" ^
       call^
-      "\n//PROC " ^ id ^ ": Resume method\n" ^
+      "\n//PROC " ^ q ^ ": Resume method\n" ^
       resume
 
   | _ -> failwith "prcoedure expected"
@@ -1823,8 +1930,8 @@ let gen_biface_body syms bbdfns biface = match biface with
       " as " ^ export_name ^ "\n" ^
       rettypename ^" " ^ export_name ^ "(\n" ^ arglist ^ "\n){\n" ^
       "  return (new(*_ptf->gc,"^class_name^"_ptr_map)\n" ^
-      "    " ^ class_name ^ "(_pgf,_ppf,_ptf))" ^
-      "->apply(" ^ cat ", " (map fst ps) ^ ");\n" ^
+      "    " ^ class_name ^ "(_pgf,_ppf,_ptf))\n" ^
+      "    ->apply(" ^ cat ", " (map fst ps) ^ ");\n" ^
       "}\n"
 
     | `BBDCL_procedure (vs,ps,_,_) ->
@@ -1848,7 +1955,7 @@ let gen_biface_body syms bbdfns biface = match biface with
       "con_t *" ^ export_name ^ "(\n" ^ arglist ^ "\n){\n" ^
       "  return (new(*_ptf->gc,"^class_name^"_ptr_map)\n" ^
       "    " ^ class_name ^ "(_pgf,_ppf,_ptf))" ^
-      "->call(" ^ cat ", " ("0"::(map fst ps)) ^ ");\n" ^
+      "\n      ->call(" ^ cat ", " ("0"::(map fst ps)) ^ ");\n" ^
       "}\n"
 
     | _ -> failwith "Not implemented: export non-function/procedure"
@@ -2335,7 +2442,7 @@ try
   plb "  process_frame_t *ppf,";
   plb "  thread_frame_t *ptf";
   plb ") {";
-  plb ("  return (new(*ptf->gc,"^top_class^"_ptr_map) " ^ top_class ^ "(pgf,ppf,ptf))->call(0);");
+  plb ("  return (new(*ptf->gc,"^top_class^"_ptr_map) " ^ top_class ^ "(pgf,ppf,ptf))\n      ->call(0);");
   plb "}";
 
   plb "\n//-----------------------------------------";

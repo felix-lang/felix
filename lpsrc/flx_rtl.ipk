@@ -54,6 +54,7 @@ struct con_t // abstract base for mutable continuations
 
   con_t();
   virtual con_t *resume()=0;
+  virtual con_t *clone()const=0;
   virtual ~con_t();
   con_t * _caller;
 };

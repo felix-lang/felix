@@ -17,43 +17,43 @@ module Xlib {
   type Display = "Display*";
 
   fun XOpenDisplay: string -> Display = 
-    code "XOpenDisplay($1.data())";
+    "XOpenDisplay($1.data())";
 
   fun XOpenDefaultDisplay: unit -> Display = 
-    code "XOpenDisplay(NULL)";
+    "XOpenDisplay(NULL)";
   
   fun isXOpenDisplay: Display -> bool = 
-    code "$1 != NULL";
+    "$1 != NULL";
 
   type ScreenKey = "int";
   
   fun DefaultScreen: Display -> ScreenKey = 
-    code "DefaultScreen($1)";
+    "DefaultScreen($1)";
 
   type Screen = "Screen*";
   
   fun DefaultScreenOfDisplay: Display -> Screen = 
-    code "DefaultScreenOfDisplay($1)";
+    "DefaultScreenOfDisplay($1)";
 
   fun ScreenCountdisplay : Display -> int =
-    code "ScreenCountdisplay($1)";
+    "ScreenCountdisplay($1)";
 
   fun DisplayWidth : Display * ScreenKey -> int = 
-    code "DisplayWidth($1, $2)";
+    "DisplayWidth($1, $2)";
 
   fun DisplayHeight: Display * ScreenKey -> int = 
-    code "DisplayHeight($1, $2)";
+    "DisplayHeight($1, $2)";
 
   fun RootWindow: Display * ScreenKey -> Window =
-    code "RootWindow($1,$2)";
+    "RootWindow($1,$2)";
 
   type Color = "int";
 
   fun BlackPixel: Display * ScreenKey -> Color =
-    code "BlackPixel($1,$2)";
+    "BlackPixel($1,$2)";
 
   fun WhitePixel: Display * ScreenKey -> Color =
-    code "WhitePixel($1,$2)";
+    "WhitePixel($1,$2)";
 
   type Window = "Window";
 
@@ -62,7 +62,7 @@ module Xlib {
     int * int * int * int * int *
     Color * Color -> Window
   =
-    code "XCreateSimpleWindow($a)";
+    "XCreateSimpleWindow($a)";
 }
 
 @head(1,"X Driver")
@@ -78,7 +78,7 @@ a top level X window.
 @h = tangler('test/xdemo.flx')
 @select(h)
 #include <std.flx>
-#include <xlib.flx>
+include <xlib.flx>
 open Xlib;
 
 val display_name = ":0";

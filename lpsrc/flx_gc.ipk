@@ -401,7 +401,10 @@ void destroy(void *p)
 
 void *_incref(void *client)
 {
-  printf("incref %p: %ld->%ld\n",client, getref(client), getref(client)+1);
+#ifndef NDEBUG  
+  if (client)
+    printf("incref %p: %ld->%ld\n",client, getref(client), getref(client)+1);
+#endif
   if(client)
     ++(CLIENT_TO_FRAME(client)->refcnt);
   return client;
@@ -409,7 +412,10 @@ void *_incref(void *client)
 
 void decref(void *client)
 {
-  printf("decref %p: %ld->%ld\n",client,getref(client),getref(client)-1);
+#ifndef NDEBUG  
+  if(client)
+    printf("decref %p: %ld->%ld\n",client,getref(client),getref(client)-1);
+#endif
   if(client)
   {
     if(getref(client)<=0) printf("SYSTEM ERROR : ZERO REFCNT\n");
@@ -418,7 +424,9 @@ void decref(void *client)
     {
       if(!--frame->refcnt)
       {
-        //printf("DEALLOCATE %p\n",client);
+#ifndef NDEBUG  
+        printf("DEALLOCATE %p\n",client);
+#endif
         frame->collector->deallocate(frame);
       }
     }
@@ -675,8 +683,11 @@ void flx_collector_t::unlink(frame_t *fp)
 
   // call the finaliser if there is one
   void (*finaliser)(collector_t*, void*) = fp->shape->finaliser;
-  if (finaliser)  (*finaliser)(this,FRAME_TO_CLIENT(fp));
-
+  if (finaliser)  
+  {
+    void *cp = FRAME_TO_CLIENT(fp);
+    (*finaliser)(this,cp);
+  }
   // unlink the frame from the collectors list
   if(fp->prev)
     fp->prev->next = fp->next;

@@ -62,6 +62,7 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "case", (fun s ->  CASE s);
     "with", (fun s ->  WITH s);
     "regexp", (fun s ->  REGEXP s);
+    "typematch", (fun s ->  TYPEMATCH s);
     "regmatch", (fun s ->  REGMATCH s);
     "reglex", (fun s ->  REGLEX s);
     "match", (fun s ->  MATCH s);

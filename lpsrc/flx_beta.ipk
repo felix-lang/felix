@@ -29,6 +29,8 @@ open Flx_srcref
 open Flx_unify
 open Flx_maps
 
+exception BTfound of btypecode_t
+
 (* params is list of string * bound_typecode *)
 let rec metatype syms params term =
   (*
@@ -272,6 +274,39 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
     print_endline ("After fixup body is " ^ st b);
     *)
     `BTYP_typefun (p', br r, beta_reduce syms (p' @ btvars) b)
+
+  | `BTYP_type_match (tt,pts) ->
+    (*
+    print_endline ("Typematch [before reduction] " ^ sbt syms.dfns tt);
+    *)
+    let tt = br tt in
+    let pts = map (fun (a,b) -> br a, br b) pts in
+    (*
+    print_endline ("Typematch [after reduction] " ^ sbt syms.dfns tt);
+    *)
+    begin try 
+      iter
+      (fun (p',t') ->
+        let u = maybe_unification syms.dfns [p', tt] in
+        match u with
+        | Some mgu when not (var_list_occurs (map fst mgu) tt)
+          -> raise (BTfound (list_subst mgu t'))
+        | Some _ 
+        | None -> ()
+      )
+      pts
+      ;
+      if var_occurs tt
+      then `BTYP_type_match (tt,pts)
+      else 
+        failwith 
+        (
+          "[beta_reduce] type_match failure in:\n" ^
+          string_of_btypecode syms.dfns t
+        )
+    with 
+    | BTfound t -> t
+    end
 
   | _ -> t
 

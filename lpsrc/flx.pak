@@ -201,9 +201,6 @@ let version_data: version_data_t =
 Flx_version.version_data := version_data
 ;;
 
-@head(2,'Tools')
-@include_file ('ulex.pak')
-
 @head(2,'The front end')
 @push_head()
 @include_file ('flx_util.ipk')
@@ -213,7 +210,6 @@ Flx_version.version_data := version_data
 @include_file ('flx_parser.ipk')
 @include_file ('flx_string.ipk')
 @include_file ('flx_keywords.ipk')
-@include_file ('flx_ulex.ipk')
 @include_file ('flx_lexer.ipk')
 @include_file ('flx_tokeniser.ipk')
 @include_file ('flx_pat.ipk')
@@ -248,6 +244,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_gc.ipk')
 @include_file ('flx_boost.ipk')
 @include_file ('flx_lib.ipk')
+@include_file ('flx_lex_lib.ipk')
 @include_file ('flx_test.ipk')
 @include_file ('flx_regress.ipk')
 

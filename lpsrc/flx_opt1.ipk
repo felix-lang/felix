@@ -41,6 +41,16 @@ which are unused, by first eliding the call.
 exception Useful
 exception Cannot_inline
 
+let is_child dfns par cld =
+  if par = cld then false else
+  let rec aux cld = 
+    let id,sr,parent,vs,dirs,table,entry = Hashtbl.find dfns cld in
+    match parent with
+    | None -> false
+    | Some p -> if p = par then true else aux p
+  in 
+    aux cld
+
 let rec isuseless bbdfns exes = 
   let check i =         
     try 
@@ -206,6 +216,7 @@ let check_can_inline syms bbdfns nm =
     end
   nm
 
+
 (* This is basically beta expansion.
 Given an application
 
@@ -282,7 +293,7 @@ let rec inline_applies syms bbdfns x =
 
 *)
 
-let useless_call_elim syms bbdfns vs' exes =
+let useless_call_elim syms bbdfns vs' exes index =
   let ia x = inline_applies syms bbdfns x in
   let exes' = ref [] in
   iter
@@ -441,22 +452,30 @@ let useless_call_elim syms bbdfns vs' exes =
             | id,parent,`BBDCL_proc _ ->
               tack `BEXE_proc_return;
               tack (`BEXE_call (p,a));
-              tail_check t
 
             | _ -> 
-              tack (`BEXE_jump (p,a));
-              tail_check t
+              tack (`BEXE_jump (p,a))
           end
         | _ -> 
-          tack (`BEXE_jump (p,a)); 
-          tail_check t
+          (* jumps to variables not supported in case the
+            variable ius a child 
+          *)
+          tack `BEXE_proc_return;
+          tack (`BEXE_call (p,a));
       end
+      ;
+      tail_check t
 
     | h :: t -> 
       tack h; 
       tail_check t
   in
-    tail_check (!exes');
+    tail_check 
+      begin match !exes' with
+      | `BEXE_call _ :: _ -> `BEXE_proc_return :: !exes'
+      | _ -> !exes'
+      end
+    ;
     !exes''
 
 let rec uses_type syms used bbdfns t = 
@@ -595,11 +614,11 @@ let copy_bbdcl syms bbdfns bbdfns2 i =
   let data =
     match Hashtbl.find bbdfns i with
     | id,parent,`BBDCL_procedure (vs,p,exes,names) ->
-      let exes = useless_call_elim syms bbdfns vs exes in
+      let exes = useless_call_elim syms bbdfns vs exes i in
       id,parent,`BBDCL_procedure (vs,p,exes,names)
 
     | id,parent,`BBDCL_function (vs,p,ret,exes,names) ->
-      let exes = useless_call_elim syms bbdfns vs exes in
+      let exes = useless_call_elim syms bbdfns vs exes i in
       id,parent,`BBDCL_function (vs,p,ret,exes,names)
     | x -> x
   in

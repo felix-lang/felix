@@ -213,7 +213,7 @@ let mktypefun sr name vs args return_type body =
 %token<Flx_ast.srcref> IF THEN ELSE ENDIF ELIF 
 %token<Flx_ast.srcref> OF VAR UNION CLASS GOTO EXPORT
 
-%token<Flx_ast.srcref> MATCH WITH ENDMATCH CASE REGMATCH REGLEX
+%token<Flx_ast.srcref> MATCH WITH ENDMATCH CASE REGMATCH REGLEX TYPEMATCH
 %token<Flx_ast.srcref> HEADER BODY MODULE CODE LET IN
 %token<Flx_ast.srcref> CALL PROCEDURE FUNCTION FUNCTOR JUMP LOOP OBJECT
 %token<Flx_ast.srcref> RETURN FORK 
@@ -229,7 +229,7 @@ let mktypefun sr name vs args return_type body =
 %type <Flx_ast.statement_t> statement 
 %type <Flx_ast.expr_t> expr
 %type <Flx_ast.expr_t> rvalue
-
+%type<Flx_ast.tpattern_t> tpattern
 %type <Flx_ast.pattern_t> pattern
 
 %start compilation_unit
@@ -1352,6 +1352,68 @@ floating:
 basic_name: NAME { $1 }
 @commalistof("basic_name")
 
+@head(2,'Type match')
+@select(h)
+@commalistof('tpattern')
+
+tpattern:
+  | tpattern AS NAME { `TPAT_as ($1,snd $3) }
+  | tpat0 { $1 }
+
+tpat0:
+  | tpat1 RIGHTARROW tpat0 { `TPAT_function ($1,$3) }
+  | tpat1  { $1 }
+
+tpat1:
+  | sumpat 
+    { 
+      match $1 with 
+      | [x] -> x 
+      | ps -> `TPAT_sum ps 
+    }
+
+sumpat:
+  | tpat2 PLUS sumpat { $1 :: $3 }
+  | tpat2 { [$1] }
+
+tpat2:
+  | mulpat 
+    { 
+      match $1 with 
+      | [x] -> x 
+      | ps -> `TPAT_tuple ps 
+    }
+
+mulpat:
+  | tpat3 STAR mulpat { $1 :: $3 }
+  | tpat3 { [$1] }
+
+tpat3:
+  | NAME tpatlist { `TPAT_name (snd $1, $2) }
+  | LPAR tpat0 RPAR { $2 }
+  | QUEST NAME { `TPAT_var (snd $2) }
+  | QUEST { `TPAT_any }
+  | UNDERSCORE { `TPAT_any }
+
+tpatlist:
+   | LSQB tpattern_comma_list RSQB { $2 }
+   | { [] }
+
+
+type_match_expr:
+  | TYPEMATCH type_expr WITH type_matchings ENDMATCH
+  { 
+    let t = typecode_of_expr $2 in
+    `AST_type_match (rstoken $1 $5, (t, $4))
+  }
+
+type_matchings:
+  | type_matching type_matchings { $1 :: $2 }
+  | type_matching { [$1] }
+
+type_matching:
+  | VBAR tpattern EQRIGHTARROW type_expr { $2, typecode_of_expr $4 }
+
 @head(2,'Executable Expressions')
 @select(h)
 expr: 
@@ -1436,9 +1498,9 @@ and_condition:
   | not_condition                       { $1 }
 
 notop:
-  | NOT {$1}
+  | NOT {$1,"lnot"}
 not_condition:
-  | notop not_condition                 { apl $1 "lnot" $2 }
+  | notop not_condition                 { apl (fst $1) (snd $1) $2 }
   | comparison                          { $1 }
 
 chain_cmp_op:
@@ -1620,6 +1682,7 @@ term:
 prefixed:
   | PLUS power  { apl $1 "pos" $2 }
   | MINUS power { apl $1 "neg" $2 }
+  | TILDE power { apl $1 "compl" $2 }
   | power       { $1 }
 
 /* exponentiation is right associative */
@@ -1664,7 +1727,7 @@ coercion:
 
 
 factor:
-  | qname                              { ($1:>expr_t) }
+  | dollar_name                        { ($1:>expr_t) }
   | factor DOT LSQB expr RSQB          { apl2 $3 "subscript" [$1; $4] }
   | factor DOT LSQB expr TO expr RSQB  { apl2 $3 "substring" [$1; $4; $6] }
   | factor DOT LSQB expr TO RSQB       { apl2 $3 "copyfrom" [$1; $4] }
@@ -1694,22 +1757,29 @@ factor:
       `AST_as (sr,($1,snd $3))
     }
 
+dollar_name:
+  | DOLLAR qname
+    { 
+      let e = ($2:>expr_t) in
+      let sr = src_of_expr e in
+      let sr = rsrange (slift $1) sr in
+      `AST_noexpand (sr,e) 
+    }
+  | qname { $1 }
+
 qualified_name:
-  | qname COLONCOLON NAME LSQB type_expr_comma_list RSQB              
+  | qname COLONCOLON simple_name
     { 
-      let sr = rsrange (src_of_expr $1) (slift $6) in
-      `AST_lookup (sr,($1, snd $3, List.map typecode_of_expr $5))
+      match $3 with `AST_name (sr,name,ts) ->
+      let sr = rsrange (src_of_expr $1) sr in
+      `AST_lookup (sr,($1, name, ts))
     }
-  | qname COLONCOLON NAME 
-    { 
-      let sr = rsrange (src_of_expr $1) (slift (fst $3)) in
-      `AST_lookup (sr, ($1, snd $3,[]))
-    }
+
   | simple_name         { ($1:>expr_t) }
 
 qname:
   | qualified_name { $1 }
-  | dollar_atom { $1 }
+  | atom { $1 }
 
 elif:
   | ELIF expr THEN expr { $2,$4 }
@@ -1744,13 +1814,6 @@ cond:
       `AST_cond (rstoken $1 $6,($2,$4,$5))
     }
 
-dollar_atom:
-  | DOLLAR atom 
-    { 
-      `AST_noexpand (rsrange (slift $1) (src_of_expr $2), $2)
-    }
-  | atom { $1}
-  
 expr_code_prefix:
   | CODE LSQB type_expr RSQB 
     {
@@ -1759,6 +1822,7 @@ expr_code_prefix:
     }
 
 atom:
+  | type_match_expr { $1 }
   | expr_code_prefix NAME
     {
       let sr = rstoken (fst $1) (fst $2) in

@@ -415,6 +415,9 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   | `AST_typeof (sr, e1) -> `AST_typeof(sr, me e1)
 
+  | `AST_type_match (sr, (e1, pes)) -> 
+    syserr sr "Expand expr: expected expresssion got type match"
+
 (* ---------------------------------------------------------------------
   do the common work of both subst_statement and expand_statement,
   recursion to the appropriate one as indicated by the argument 'recurse'

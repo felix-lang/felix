@@ -224,6 +224,7 @@ open Flx_generic
 open Flx_name
 
 exception Found of int
+exception Tfound of btypecode_t
 
 type overload_result = 
  int *  (* index of function *)
@@ -694,6 +695,61 @@ independent typing, say of an instance index value,
 should start with reset traps.
 
 *)
+
+(*
+  we match type patterns by cheating a bit:
+  we convert the pattern to a type, replacing
+  the _ with a dummy type variable. We then
+  record the 'as' terms of the pattern as a list
+  of equations with the as variable index
+  on the left, and the type term on the right:
+  the RHS cannot contain any as variables.
+
+  The generated type can contain both,
+  but we can factor the as variables out
+  and leave the type a function of the non-as
+  pattern variables
+*)
+
+and type_of_tpattern syms p : 
+  typecode_t * 
+  (int * string) list *     (* variables found *)
+  (int * typecode_t) list   (* as terms *)
+= 
+  let sr = "unk",0,0,0,0 in
+  let vars = ref [] in
+  let eqns = ref [] in
+  let rec tp p = 
+    match p with
+    | `TPAT_function (a,b) -> `TYP_function (tp a, tp b)
+    | `TPAT_tuple ps -> `TYP_tuple (map tp ps)
+    | `TPAT_sum ps -> `TYP_sum (map tp ps)
+    | `TPAT_pointer p -> `TYP_pointer (tp p)
+    | `TPAT_name (n,ps) -> `AST_name (sr,n,map tp ps)
+    | `TPAT_void -> `AST_void sr
+
+    | `TPAT_var n -> 
+      let j = !(syms.counter) in 
+      incr (syms.counter); 
+      vars := (j,n) :: !vars;
+      `TYP_var j 
+
+    | `TPAT_any -> 
+      let j = !(syms.counter) in 
+      incr (syms.counter); 
+      `TYP_var j
+
+    | `TPAT_as (t,n) ->
+      let t = tp t in
+      let j = !(syms.counter) in 
+      incr (syms.counter); 
+      vars := (j,n) :: !vars;
+      eqns := (j,t) :: !eqns;
+      t
+  in 
+    let t = tp p in
+    t,!vars, !eqns
+
 (* params is list of string * bound type *)
 
 and bind_type' 
@@ -702,10 +758,11 @@ and bind_type'
   excluded_dirs 
   sr t params
 : btypecode_t =
-  let bt t = bind_type' syms env 
+  let btp t params = bind_type' syms env 
     idx_fixlist type_alias_fixlist as_fixlist expr_fixlist (depth+1) 
     excluded_dirs sr t params 
   in
+  let bt t = btp t params in
   let bi i ts = bind_type_index syms 
     idx_fixlist type_alias_fixlist as_fixlist expr_fixlist depth 
     excluded_dirs sr i ts 
@@ -732,6 +789,88 @@ and bind_type'
   *)
   let t = 
   match t with
+
+  (* We first attempt to perform the match
+    at binding time as an optimisation, if that
+    fails, we generate a delayed matching construction.
+    The latter will be needed when the argument is a type
+    variable.
+  *)
+  | `TYP_type_match (t,ps) ->
+    let t = bt t in
+    (*
+    print_endline ("Typematch " ^ sbt syms.dfns t);
+    *)
+    let pts = ref [] in
+    begin try 
+      iter
+      (fun (p',t') ->
+        let p',vars,eqns = type_of_tpattern syms p' in
+        (*
+        print_endline ("Type of pattern is " ^ string_of_typecode p');
+        *)
+        let p' = bt p' in
+        (*
+        print_endline ("Bound Type of pattern is " ^ string_of_btypecode syms.dfns p');
+        *)
+        let eqns = map (fun (j,t) -> j, bt t) eqns in
+        let u = maybe_unification syms.dfns [p', t] in
+        match u with
+        | Some mgu 
+          when not (var_list_occurs (map fst mgu) t) ->
+          (*
+          print_endline "UNIFIED";
+          *)
+          (* bind the subterms of 'as' patterns,
+            substituting in any variables found
+          *)
+          let eqns = 
+            map 
+            (fun (j,t) -> j, list_subst mgu t) 
+            eqns 
+          in
+
+          (* join up the lists of variable assignments *)
+          let args = mgu @ eqns in
+
+          (* replace the variable index with its string name *)
+          let args' = ref [] in
+          iter
+          (fun (j,t) -> 
+            try args' := (assoc j vars,t) :: !args'
+            with Not_found -> ()
+          ) 
+          args 
+          ;
+          let args = !args' in
+
+          (* bind the result type, substituting the variables out *)
+          let t' = btp t' args in
+          raise (Tfound t')
+
+        | Some _
+        | None -> 
+          (*
+          print_endline "Not unified";
+          *)
+          let args = map (fun (i,s) -> s,`BTYP_var i) vars in
+          let t' = btp t' args in
+          let t' = list_subst eqns t' in
+          pts := (p',t') :: !pts
+      )
+      ps
+      ;
+      `BTYP_type_match (t,rev !pts)
+      (* clierr sr "[bind_type] typematch failure" *)
+
+    with 
+    | Tfound t -> t
+    end
+
+  | `TYP_dual t ->
+    let t = bt t in
+    dual t
+
   | `TYP_proj (i,t) -> 
     let t = bt t in
     begin match unfold t with 
@@ -2254,12 +2393,20 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
   print_env env;
   print_endline "==";
   *)
+  let sr = src_of_expr e in
   match e with
-  | `AST_noexpand(sr,e) -> syserr sr "[bind_expression] Unexpected $"
-  | `AST_letin _ -> failwith "[bind_expression] Unexpected letin"
-  | `AST_cond _ -> failwith "[bind_expression] Unexpected conditional expression (should be replaced by match)"
-  | `AST_typeof (sr,e) -> failwith "[bind_expression] Unexpected 'typeof' in expression"
-  | `AST_as (sr, (e1,e2)) -> failwith "[bind_expression] Unexpected 'as' in expression" 
+  | `AST_type_match _ 
+  | `AST_noexpand _
+  | `AST_letin _ 
+  | `AST_cond _ 
+  | `AST_typeof _
+  | `AST_as _
+  | `AST_void _
+  | `AST_arrow _ 
+  | `AST_bound_module _ 
+    -> 
+      clierr sr 
+     "[bind_expression] Unexpected in expression" 
 
   | `AST_expr (sr,s,t) -> 
     let t = bt sr t in 
@@ -2278,12 +2425,6 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
     | h::t -> be (List.fold_left mkprod h t)
     | [] -> failwith "Not expecting empty sum (void)"
     end
-
-  | `AST_void _
-  | `AST_arrow _ -> failwith "[bind expression] Not expecting void or arrow"
-
-  | `AST_bound_module _ -> 
-    failwith "[Bind_expression] Not expecting bound module"
 
   | `AST_coercion (sr,(m,t)) -> 
     let m' = be m in

@@ -143,6 +143,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | CALL _ -> "call"
   | JUMP _ -> "jump"
   | LOOP _ -> "loop"
+  | TYPEMATCH _ -> "typematch"
   | REGMATCH _ -> "regmatch"
   | REGLEX _ -> "reglex"
   | MATCH _ -> "match"
@@ -294,6 +295,7 @@ let src_of_token t = match t with
   | CLASS s 
   | GOTO s 
   | EXPORT s 
+  | TYPEMATCH s 
   | REGMATCH s 
   | REGLEX s 
   | MATCH s 

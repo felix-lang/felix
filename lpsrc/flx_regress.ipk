@@ -312,6 +312,71 @@ print d; print " ";
 print e; print " ";
 endl;
 
+@select(tangler('test/rt11.flx'))
+include "std";
+
+// test dual
+typedef y = ~(int+int); // = int * int
+val x : y = (1,2);
+
+print x.(0); print " "; print x.(1); endl;
+
+typedef ibl = typeof (1,1L);
+
+// test typematch
+typedef tt = typematch ibl with | _ * ?t as z => t * t * z endmatch;
+var a:tt = (1L, 2L, (3,4L));
+
+Long::print a.(0); print " "; Long::print a.(1); print " ";
+print a.(2).(0); print " "; Long::print a.(2).(1); endl;
+
+typedef fun domainf (t:TYPE):TYPE = typematch t with | ?aa -> ?bb => aa endmatch;
+typedef domains [t] = typematch t with | ?aa -> ?bb => aa endmatch;
+typedef il = int -> long;
+typedef ityf = domainf il;
+typedef itys = domains [il];
+
+val one:itys = 1;
+val two:ityf = 1;
+print one; endl;
+print two; endl;
+
+@select(tangler('test/rt12.flx'))
+include "std";
+print "Felix refcnt test"; endl;
+
+header """
+static int counter = 0;
+struct checker
+{
+  int number;
+  checker() { number = counter++; std::cout << "ctor " << number << std::endl; }
+  ~checker() {std::cout << "dtor " << number << std::endl; --counter; assert (number==counter);}
+};
+""";
+
+ctypes checker;
+fun counter:unit -> int = "counter";
+fun get_key:checker->int = "$1.number";
+
+proc f() {
+  var x:checker;
+  print "F"; print (get_key x); endl;
+ proc g() 
+ {
+    var x:checker;
+    print "G"; print (get_key x); endl;
+ }
+ g();
+ g();
+}
+
+print "mainline start "; print (get_key zz); endl;
+f();
+f();
+
+print "mainline end "; print (get_key zz); endl;
+var zz:checker;
 
 @head(2,'Bad tests')
 All these should fail gracefully at (felix) compile time. 
