@@ -35,7 +35,7 @@ exception Found of int
 
 let bool_t = `BTYP_sum [`BTYP_tuple[]; `BTYP_tuple []]
 
-let bind_exes syms env exes ret_type = 
+let bind_exes syms env exes ret_type id = 
   (*
   print_endline ("bind_exes.. env depth="^ string_of_int (List.length env));
   print_endline "Dumping Source Executables";
@@ -51,11 +51,14 @@ let bind_exes syms env exes ret_type =
   print_endline "Binding Executables";
   print_endline "-------------------";
   *)
+  let ret_type = ref ret_type in
   let be e = bind_expression syms env [] [] 0 [] e in
   let lun sr n = lookup_name_in_env env sr n in
   let luqn n = lookup_qn_in_env syms env [] n in
   let bt sr t = bind_type syms env [] [] sr t in
   let dummy_sr = ("bind exes",0,0,0,0) in
+  let return_count = ref 0 in
+  let reachable = ref true in
 
   let bound_exes = 
     List.map
@@ -63,10 +66,20 @@ let bind_exes syms env exes ret_type =
       (*
       print_endline (string_of_exe 1 x);
       *)
-       match x with
+      if not !reachable then 
+      begin 
+        match x with 
+        | `EXE_label _ -> ()
+        | `EXE_comment _ -> ()
+        | `EXE_nop _ -> ()
+        | _ -> print_endline ("WARNING: Unreachable code in "^id^": " ^ string_of_exe 1 x);
+      end
+      ;
+      match x with
       | `EXE_comment s ->       `BEXE_comment s
-      | `EXE_label s ->         `BEXE_label s
-      | `EXE_goto s ->          `BEXE_goto s
+      | `EXE_label s ->         reachable := true; `BEXE_label s
+      | `EXE_goto s ->          reachable := false; `BEXE_goto s
+
       | `EXE_ifgoto (e,s) ->    
         let e',t = be e in
         if t = bool_t
@@ -127,21 +140,39 @@ let bind_exes syms env exes ret_type =
         end
 
       | `EXE_return e ->        
+        (*
+        print_endline "Processsing return";
+        *)
+        reachable := false;
+        incr return_count;
+        (*
+        print_endline ("Expression is " ^ string_of_expr e);
+        *)
         let e',t' = be e in
-         if ret_type <> `BTYP_none && ret_type <> t'
-         then
-            failwith 
-            (
-              "Wrong return type,\nexpected : " ^ 
-              string_of_btypecode syms.dfns ret_type ^
-              "\nbut we got " ^
-              string_of_btypecode syms.dfns t'
-            )
-         else
-          `BEXE_return (e',lower t')
+        begin 
+          try 
+            (*
+            print_endline ("Starting ret type is " ^ string_of_btypecode syms.dfns !ret_type);
+            print_endline ("Expression type is   " ^ string_of_btypecode syms.dfns t');
+            *)
+            let mgu = do_unify syms !ret_type t' in
+            ret_type := varmap_subst syms.varmap !ret_type;
+            `BEXE_return (e',lower t')
+          with 
+            Not_found ->
+              failwith 
+              (
+                "Wrong return type,\nexpected : " ^ 
+                string_of_btypecode syms.dfns !ret_type ^
+                "\nbut we got " ^
+                string_of_btypecode syms.dfns t'
+              )
+        end
 
       | `EXE_nop s ->           `BEXE_nop s 
       | `EXE_code s ->          `BEXE_code s
+      | `EXE_noreturn_code s ->  reachable := false; `BEXE_code s
+
       | `EXE_init (s,e) -> 
         let sr = src_of_expr e in (* HACK! *)
         begin match lun sr s with
@@ -174,7 +205,27 @@ let bind_exes syms env exes ret_type =
   print_endline "BINDING COMPLETE"
   ;
   *)
-  bound_exes
+
+  (* No return statements found: it must be a procedure,
+     so unify void
+  *)
+  if !return_count = 0 then
+  begin
+    let mgu = do_unify syms !ret_type `BTYP_void in
+    ret_type := varmap_subst syms.varmap !ret_type;
+  end
+  ;
+
+  begin match !ret_type with
+  | `BTYP_void ->
+    if not !reachable
+    then print_endline ("WARNING: procedure " ^id^" doesn't drop thru end, possible infinit loop")
+  | _ ->
+    if !reachable 
+    then print_endline ("WARNING: function "^id^" drops off end, possible missing return statement");
+  end
+  ;
+  !ret_type,bound_exes
 
 let rec proper_descendant dfns parent =
   match parent with
@@ -190,12 +241,9 @@ let rec proper_descendant dfns parent =
   | None -> true
 
  
-let bbind syms = 
-  let bbdfns = Hashtbl.create 97 in
-  let bexes env exes rt = bind_exes syms env exes rt in
+let bbind_sym syms bbdfns i (name,sr,parent,bdcl) =
+  let bexes env exes rt = bind_exes syms env exes rt name in
   let dummy_sr = ("Generated dummy",0,0,0,0) in
-  Hashtbl.iter
-  (fun i (name, sr,parent, bdcl) -> 
   (*
   print_endline ("binding symbol " ^ name);
   *)
@@ -228,15 +276,26 @@ let bbind syms =
     | `SYMDEF_if_type  -> ()
 
     | `SYMDEF_function (ps,rt,exes,name_map,dirs) -> 
-      (* 
+      (*
       print_endline ("//Binding function " ^ string_of_int i ^ " --> " ^ name); 
+      print_endline ("given type is " ^ string_of_typecode rt);
+      print_endline ("exes are: " ^ (String.concat "\n  " (List.map (string_of_exe 1) exes)));
       *)
       let brt = bt rt in
       let bps = List.map (fun (name,t) -> (name, bt t)) ps in
       let env' = build_env syms [] (Some i) in
-      let bbexes = bexes env' exes brt in
-      Hashtbl.add bbdfns i 
-      (name,parent,`BBDCL_function (bps,brt,bbexes,name_map))
+      let brt',bbexes = bexes env' exes brt in
+      (*
+      print_endline ("return type is " ^ string_of_btypecode syms.dfns brt');
+      *)
+      let bbdcl = 
+        match brt' with
+        | `BTYP_void ->
+          `BBDCL_procedure (bps,bbexes,name_map)
+        | _ ->
+          `BBDCL_function (bps,brt',bbexes,name_map)
+      in
+        Hashtbl.add bbdfns i (name,parent,bbdcl)
 
     | `SYMDEF_parameter t -> 
       Hashtbl.add bbdfns i (name,parent,`BBDCL_val (bt t))
@@ -262,17 +321,24 @@ let bbind syms =
       print_endline "Procedure environment built";
       flush stdout;
       *)
-      let bbexes = bexes env' exes `BTYP_void in
+      let brt',bbexes = bexes env' exes `BTYP_void in
       (*
       print_endline "Exes bound";
       flush stdout;
       *)
+      if brt' <> `BTYP_void
+      then 
+        failwith 
+        (
+          "expected void return from procedure " ^ name ^ " in\n" ^
+          short_string_of_src sr
+        )
+      ;
       Hashtbl.add bbdfns i (name,parent,`BBDCL_procedure (bps,bbexes,name_map))
       ;
       (*
       print_endline "procedure bound";
-    
-  *)
+      *)
 
     | `SYMDEF_match_check (pat,mvindex) ->
       (*
@@ -286,12 +352,21 @@ let bbind syms =
         `EXE_return (gen_match_check pat (`AST_name (sr,arg)))
         ] 
       in
-      let bbexes = bexes env exes bool_t in
+      let brt',bbexes = bexes env exes bool_t in
+      if brt' <> bool_t
+      then 
+        failwith 
+        (
+          "expected boolean return from match checker " ^ name ^ " in\n" ^
+          short_string_of_src sr
+        )
+      ;
       Hashtbl.add bbdfns i (name,parent,
         `BBDCL_function ([],bool_t,bbexes,name_map));
     
     | `SYMDEF_match_handler (pat,mvindex,exes,name_map,dirs) ->
-      (* print_endline ("//Binding match handler " ^ string_of_int i ^ " --> " ^ name); 
+      (*
+      print_endline ("//Binding match handler " ^ string_of_int i ^ " --> " ^ name); 
       *)
       let env = build_env syms [] (Some i) in 
       let mvname,sr = 
@@ -325,7 +400,10 @@ let bbind syms =
         (* print_endline ("//adding match variable component value "^string_of_int vid^" --> " ^ vname);
         *)
         Hashtbl.add syms.dfns vid (vname, sr,Some i, 
+          (*
           `SYMDEF_val (`TYP_var vid)
+          *)
+          `SYMDEF_val (`TYP_typeof component)
         );
         let bvtyp = typeofindex syms [] [] 0 [] vid in
         Hashtbl.add bbdfns vid (vname, Some i, 
@@ -339,12 +417,25 @@ let bbind syms =
         exes := instr :: !exes;
       )
       vars;
-      let bbexes = bexes env !exes `BTYP_void in
+      let brt',bbexes = bexes env !exes (`BTYP_var i) in
+      if brt' = `BTYP_void
+      then 
+        failwith 
+        (
+          "expected non-void return from function " ^ name ^ " in\n" ^
+          short_string_of_src sr
+        )
+      ;
+      (*
+      print_endline ("Return type is " ^ string_of_btypecode syms.dfns brt');
+      *)
       Hashtbl.add bbdfns i (name,parent,
-        `BBDCL_procedure ([],bbexes,name_map))
+        `BBDCL_function ([],brt',bbexes,name_map))
     
     | `SYMDEF_val t -> 
+      (*
       print_endline ("//Binding value " ^ string_of_int i ^ " --> " ^ name); 
+      *)
       Hashtbl.add bbdfns i (name,parent,`BBDCL_val (bt t))
 
     | `SYMDEF_var t ->
@@ -374,6 +465,11 @@ let bbind syms =
       (* print_endline ("//Binding header string " ^ string_of_int i ^ " --> " ^ name); 
       *)
       Hashtbl.add bbdfns i (name,parent,`BBDCL_header ct)
+
+    | `DCL_body ct ->
+      (* print_endline ("//Binding body string " ^ string_of_int i ^ " --> " ^ name); 
+      *)
+      Hashtbl.add bbdfns i (name,parent,`BBDCL_body ct)
 
     | `DCL_fun (ts,ret,ct) ->
       (* print_endline ("//Binding primitive function " ^ string_of_int i ^ " --> " ^ name);  *)
@@ -417,8 +513,19 @@ let bbind syms =
     print_endline ("BINDING " ^ name ^ "<" ^ string_of_int i ^ "> COMPLETE");
     flush stdout
     *)
-   )
-  syms.dfns
+
+(*
+let bbind_index syms bbdfns i =
+  if Hashtbl.mem bbdfns i then ()
+  else let entry = Hashtbl.find syms.dfns i in
+  bbind_sym syms bbdfns i entry
+*) 
+
+let bbind syms = 
+  let bbdfns = Hashtbl.create 97 in
+  Hashtbl.iter 
+    (bbind_sym syms bbdfns)
+    syms.dfns
   ;
   bbdfns
 
@@ -474,7 +581,8 @@ try
       freg = Hashtbl.create 97;
       dfns = Hashtbl.create 97 ;
       varmap = Hashtbl.create 97;
-      ticache = Hashtbl.create 97 
+      ticache = Hashtbl.create 97;
+      env_cache = Hashtbl.create 97;
     } 
   in
   let deblocked = desugar_program "DUMMY" (syms.counter) parse_tree in

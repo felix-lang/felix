@@ -149,6 +149,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | PROC _ -> "proc"
   | STRUCT _ -> "struct"
   | HEADER _ -> "header"
+  | BODY _ -> "body"
   | CODE _ -> "code"
   | FORK _ -> "fork"
   | WHILE _ -> "while"
@@ -305,6 +306,7 @@ let src_of_token t = match t with
   | ENDMATCH s 
   | CASE s 
   | HEADER s 
+  | BODY s 
   | MODULE s 
   | CODE s 
   | SERVICE s 

@@ -48,7 +48,7 @@ open Flx_print
 open Flx_typing
 open Flx_name
 open Flx_tgen
-
+open Flx_unify
 
 let string_of_string = Flx_string.c_quote_of_string
 
@@ -834,7 +834,12 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
         ge_arg a ^
         ")"
     *)
-    | _ -> failwith ("[gen_expr] Expected '"^id^"' to be function constant or variable")
+    | _ -> 
+      failwith 
+      (
+        "[gen_expr] Expected '"^id^"' to be function constant or variable, got:\n" ^
+        string_of_bbdcl dfns entry index 
+      )
     end
   | `BEXPR_apply ((`BEXPR_name index,_) as f,a) ->
     let id,parent,entry = 
@@ -912,7 +917,9 @@ let get_parameters dfns index =
 type kind_t = Function | Procedure
 
 let gen_exe registry dfns bbdfns label_map counter this (exe:bexe_t) =
-  (* print_endline ("generating exe " ^ string_of_bexe dfns 0 exe); *)
+  (*
+  print_endline ("generating exe " ^ string_of_bexe dfns 0 exe);
+  *)
   let ge e = gen_expr registry dfns bbdfns this e in
   let id,parent,entry = 
     try Hashtbl.find bbdfns this 
@@ -1134,12 +1141,15 @@ let gen_exes registry dfns bbdfns display label_map counter index exes =
 let gen_function_methods registry dfns bbdfns label_map counter index = 
   let id,parent,entry = Hashtbl.find bbdfns index in
   (* print_endline ("Generating body for " ^ id ^ "<"^string_of_int index^">"); *)
+  (*
+  print_endline ("function " ^ id ^ " methods");
+  *)
   match entry with 
   | `BBDCL_function (ps,ret',exes,_) ->
     let name = cpp_name bbdfns index 
     and display = get_display_list dfns index
-    and argtype = lower (typeoflist (List.map snd ps))
-    and ret = lower ret' in
+    and argtype = unfold (lower (typeoflist (List.map snd ps)))
+    and ret = unfold (lower ret') in
     let argtypename = cpp_typename registry dfns bbdfns argtype 
     and rettypename = cpp_typename registry dfns bbdfns ret
     and ctor = gen_ctor bbdfns name display 
@@ -1179,9 +1189,12 @@ let gen_procedure_methods registry dfns bbdfns label_map counter index =
   let id,parent,entry = Hashtbl.find bbdfns index in (* can't fail *)
   match entry with 
   | `BBDCL_procedure (ps,exes,_) ->
+    (*
+    print_endline ("procedure " ^ id ^ " methods");
+    *)
     let name = cpp_name bbdfns index  
     and display = get_display_list dfns index 
-    and argtype = lower (typeoflist (List.map snd ps)) in
+    and argtype = unfold (lower (typeoflist (List.map snd ps))) in
     let argtypename = cpp_typename registry dfns bbdfns argtype 
     and ctor = gen_ctor bbdfns name display 
     and params = get_parameters dfns index 
@@ -1276,7 +1289,7 @@ let gen_execute_methods registry dfns bbdfns counter =
 (* this code handles tuples and pointers *)
 let rec get_offsets registry dfns bbdfns typ : string list =
   let tname = cpp_typename registry dfns bbdfns typ in
-  match typ with
+  match unfold typ with
   | `BTYP_pointer t -> 
     ["offsetof("^tname^",frame)"]
 
@@ -1303,7 +1316,9 @@ let rec get_offsets registry dfns bbdfns typ : string list =
 let gen_offset_tables registry dfns bbdfns =
   let primitive_shapes = Hashtbl.create 97 in
   let s = Buffer.create 2000 in
+  (*
   print_endline "Function and procedure offsets";
+  *)
   Hashtbl.iter
   (fun index (id,parent,entry) -> match entry with
   | `BBDCL_function (ps, ret,_,name_map) -> 
@@ -1405,9 +1420,15 @@ let gen_offset_tables registry dfns bbdfns =
   ;
 
   (* We're not finished: we need offsets for tuple and pointer types too *)
+  (*
   print_endline "Tuple and pointer offsets";
+  *)
   Hashtbl.iter
-  (fun btyp index -> match unfold btyp with
+  (fun btyp index -> 
+    (*
+    print_endline ("type --> " ^ string_of_btypecode dfns btyp);
+    *)
+    match unfold btyp with
     | `BTYP_tuple args ->
       let name = cpp_typename registry dfns bbdfns btyp in
       let offsets = get_offsets registry dfns bbdfns btyp in
@@ -1701,6 +1722,7 @@ try
       dfns = Hashtbl.create 97;
       varmap = Hashtbl.create 97;
       ticache = Hashtbl.create 97;
+      env_cache = Hashtbl.create 97;
     }
   in
   let deblocked = desugar_program module_name syms.counter parse_tree in
@@ -1846,6 +1868,24 @@ try
     if !print_flag then print_endline "//GENERATING C++: GC ptr maps & offsets";
     plb ("#include \"" ^ module_name ^ ".hpp\"");
     plb "";
+    plh "//USER BODY CODE";
+    (* These must be in order: build a list and sort it *)
+    let dfnlist = ref [] in
+    Hashtbl.iter
+    (fun index data -> dfnlist := index :: !dfnlist)
+    bbdfns
+    ;
+    List.iter 
+    (fun index ->
+      match Hashtbl.find bbdfns index 
+      with (id,parent,entry) ->
+      match entry with
+      | `BBDCL_body s -> plb s
+      | _ -> ()
+    )
+    (List.sort compare !dfnlist)
+    ;
+
     plb "//OFFSET tables for GC";
     plb "static size_t _uctor_offsets[1]= { offsetof(_uctor_,data) };";
     plb "static flx::gc::generic::gc_shape_t _uctor_ptr_map ("; 

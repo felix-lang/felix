@@ -62,7 +62,16 @@ let gen_extractor
 *)
 let rec subst vars (e:expr_t) mv : expr_t = 
   let subst e = subst vars e mv in
+  (* FIXME: most of these cases are legal, the when clause should
+     be made into a function call to an arbitrary function, passing
+     the match variables as arguments.
+
+     We can do this now, since we have type extractors matching
+     the structure extractors Proj_n and Udtor (ie, we can
+     name the types of the arguments now)
+  *)
   match e with
+  | `AST_cond _ -> failwith "Not expecting conditional in when part of pattern (should be replaced by match)"
   | `AST_typeof _ -> failwith "Not expecting typeof in when part of pattern"
   | `AST_product _ -> failwith "Not expecting product in when part of pattern"
   | `AST_void _ -> failwith "Not expecting void in when part of pattern"

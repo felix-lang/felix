@@ -107,12 +107,8 @@ proc assert:bool = "assert($1);";
 fun fact(a:int): int =
 {
   fun f (a:int, p:int) : int = {
-    if a>1 
-    then 
-      return f(a-1, p*a);
-    else 
-      return p; 
-    endif
+    return 
+      if a>1 then f(a-1, p*a) else p endif;
   }
   return f(a,1);
 }
@@ -228,5 +224,56 @@ module X {
 open X;
 open B;
 print_endl 1;
+
+@select(tangler('test/rt07.flx'))
+header "#include <stdio.h>";
+
+fun land: 2 * 2 -> 2 = "$1 && $2";
+type int = "int";
+fun eq: int * int -> 2 = "$1 == $2";
+
+type string = "char*";
+proc print: string = 'printf("%s",$1);';
+proc print: int = 'printf("%d",$1);';
+proc eol: unit = 'printf("\n");';
+
+val x:int = 1;
+val y : typeof(x) = 1;
+val z = 25;
+
+print  x; eol;
+print  y; eol;
+print  z; eol;
+
+// now try recursive case
+
+
+typedef tt = int * &tt;
+var v : tt = (1,&v);
+var u = (1,&u); // this is OK, type is 'tt'
+val xx = match u with |(?x,_) => x endmatch;
+
+print "OK"; eol;
+
+fun f(i:int) = { return 1; }
+fun e(i:int) = { return f 1; }
+
+print (e 10); eol;
+
+match (1,2) with
+| (?x,2) => { print x; }
+| (1,?y) => { print y; }
+endmatch;
+eol;
+
+print (if 1==1 then "true" else "false" endif); eol;
+print (if 1==0 then "true" else "false" endif); eol;
+
+
+@select(tangler('test/bt04.flx'))
+#include <std.flx>
+// these now fail OK: (should yield 'any' .. then fail overload :-)
+val aa = bb + 1;
+val bb = aa + 1;
 
 

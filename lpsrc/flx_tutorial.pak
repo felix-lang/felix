@@ -848,10 +848,11 @@ proc print (a: int_list)
 
 fun mk(i: int, tl:int_list):int_list =
 {
-  if(i>0) then
-    return mk(i-1,Cons(i,tl));
-  else return tl;
-  endif;
+  return 
+    if(i>0) then mk(i-1,Cons(i,tl))
+    else tl
+    endif
+  ;
 }
 
 val a = mk(10,Empty);
@@ -1426,7 +1427,7 @@ and provides a goto statement.
 print "start"; endl;
 var i = 1;
 start_loop:>
-  if (not (i<10)) then goto end_loop; endif;
+  if (not (i<10)) goto end_loop;
   print i; endl;
   i++;
   goto start_loop;
@@ -1459,7 +1460,7 @@ proc run()
 {
   proc check()
   {
-    if(x!=1) then goto bad_x; endif;
+    if(x!=1) goto bad_x;
   }
   check();
   print "good x"; endl;
@@ -1694,11 +1695,11 @@ the standard library, renamed While
 to avoid a clash:
 @select(tangler(tdir+'tut137.flx'))
 #include <std.flx>
-proc While (cond:unit->bool) (body:unit->void)
+proc While (cond:unit->bool) (bdy:unit->void)
 {
   repeat:>
-    if not (cond()) then goto finished; endif;
-    body();
+    if not (cond()) goto finished;
+    bdy();
     goto repeat;
   finished:>
 }

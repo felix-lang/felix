@@ -46,6 +46,7 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "const", (fun s ->  CONST s);
     "struct", (fun s ->  STRUCT s);
     "header", (fun s ->  HEADER s);
+    "body", (fun s ->  BODY s);
     "code", (fun s ->  CODE s);
     "fork", (fun s ->  FORK s);
     "todo", (fun s ->  TODO s);
@@ -589,6 +590,7 @@ and parse_preprocessor = parse
         ident,rest
       in
       match ident with
+      | "warn" -> print_string (lexeme lexbuf); []
       | "line" ->
         let i = ref 0 in
         let a = 

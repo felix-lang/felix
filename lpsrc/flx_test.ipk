@@ -231,11 +231,11 @@ val false:bool = case 1 of 2;
 val true:bool = case 2 of 2;
 fun lnot:bool->bool = "!$1";
 
-proc while (cond:unit->bool) (body:unit->void)
+proc while (cond:unit->bool) (bdy:unit->void)
 {
   repeat:>
-    if not (cond()) then goto finished; endif;
-    body();
+    if not (cond()) goto finished;
+    bdy();
     goto repeat;
   finished:>
 }
@@ -259,9 +259,10 @@ procedure fire()
   var i : int = 0;
   function get_parity(): parity =
   {
-    if(i%2==0) then return Even;
-    else return Odd;
-    endif
+    return
+      if(i%2==0) then Even
+      else Odd
+      endif;
   }
   while {i < 10}
   {

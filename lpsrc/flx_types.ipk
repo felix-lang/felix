@@ -103,6 +103,12 @@ and typecode_t =
   | `TYP_typeof of expr_t                       (* typeof *)
   | `TYP_var of int                             (* unknown type *)
   | `TYP_none
+
+  (* destructors *)
+  | `TYP_dom of typecode_t                      (* domain *)
+  | `TYP_cod of typecode_t                      (* codomain *)
+  | `TYP_proj of int * typecode_t               (* tuple projection *)
+  | `TYP_case_arg of int * typecode_t           (* argument of n'th variant *)
   ]
 
 @head(3,'Literals')
@@ -154,6 +160,7 @@ and expr_t =
   | `AST_as of range_srcref * (expr_t * string)
   | `AST_match of range_srcref * (expr_t * (pattern_t * expr_t) list)
   | `AST_typeof of range_srcref * expr_t
+  | `AST_cond of range_srcref * (expr_t * expr_t * expr_t)
   ]
 
 @head(3,'Pattern')
@@ -233,18 +240,22 @@ and statement_t =
 
  
   (* control structures: primitives *)
-  | `AST_label of range_srcref * id_t (* for testing the code generator! *)
-  | `AST_goto of range_srcref * id_t (* for testing the code generator! *)
+  | `AST_label of range_srcref * id_t
+  | `AST_goto of range_srcref * id_t 
+  | `AST_ifgoto of range_srcref * expr_t *id_t
+  | `AST_ifnotgoto of range_srcref * expr_t * id_t
   | `AST_call of range_srcref * expr_t * expr_t 
   | `AST_read of range_srcref * id_t
   | `AST_return of range_srcref * expr_t
   | `AST_nop of range_srcref * string
 
   | `AST_block of range_srcref * statement_t list
+  (*
   | `AST_if of 
     range_srcref * 
     (range_srcref * (expr_t * statement_t)) list * 
     (range_srcref * statement_t)
+  *)
 
   (* exceptions *)
   | `AST_attempt of 
@@ -261,7 +272,9 @@ and statement_t =
   | `AST_fun_decl of range_srcref * id_t * typecode_t list * typecode_t * c_t 
   | `AST_proc_decl of range_srcref * id_t * typecode_t list * c_t 
   | `AST_header of range_srcref * string
+  | `AST_body of range_srcref * string
   | `AST_code of range_srcref * string
+  | `AST_noreturn_code of range_srcref * string
 
   | `AST_export of range_srcref * suffixed_name_t * string
   ]
@@ -270,6 +283,7 @@ and statement_t =
 and exe_t =
   [
   | `EXE_code of string (* for inline C++ code *)
+  | `EXE_noreturn_code of string (* for inline C++ code *)
   | `EXE_comment of string (* for documenting generated code *)
   | `EXE_label of string (* for internal use only *)
   | `EXE_goto of string  (* for internal use only *)
@@ -288,6 +302,7 @@ and dir_t =
 and dcl_t = 
   [
   | `DCL_header of string
+  | `DCL_body of string
 
   (* data structures *)
   | `DCL_function of    parameter_t list * typecode_t * asm_t list
@@ -395,6 +410,7 @@ and bparameter_t = string * btypecode_t
 and bbdcl_t = 
   [
   | `BBDCL_header of     string
+  | `BBDCL_body of     string
   | `BBDCL_function of   bparameter_t list * btypecode_t * bexe_t list * name_map_t
   (* 
   | `BBDCL_functor  of   bparameter_t list * btypecode_t * name_map_t
@@ -513,7 +529,8 @@ type sym_state_t =
   freg : instantiation_registry_t;
   counter : int ref;
   varmap : typevarmap_t;
-  ticache : (int, btypecode_t) Hashtbl.t 
+  ticache : (int, btypecode_t) Hashtbl.t;
+  env_cache : (int, env_t) Hashtbl.t
 }
 
 @doc()
@@ -609,6 +626,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_as (s,_)
   | `AST_match (s, _) 
   | `AST_typeof (s, _) 
+  | `AST_cond (s,_)
     -> s
 
 let src_of_stmt e = match e with
@@ -633,7 +651,11 @@ let src_of_stmt e = match e with
   | `AST_return (s, _) 
   | `AST_block (s, _ ) 
   | `AST_nop (s, _) 
+  (*
   | `AST_if (s, _ , _) 
+  *)
+  | `AST_ifgoto (s,_,_)
+  | `AST_ifnotgoto (s,_,_)
   | `AST_attempt (s,_,_,_)
   | `AST_raise (s, _, _) 
   | `AST_abs_decl (s, _, _) 
@@ -641,7 +663,9 @@ let src_of_stmt e = match e with
   | `AST_fun_decl (s, _, _ , _, _ ) 
   | `AST_proc_decl (s,_, _ , _ ) 
   | `AST_header (s,_) 
+  | `AST_body (s,_) 
   | `AST_code (s, _) 
+  | `AST_noreturn_code (s, _) 
   | `AST_union (s, _, _ ) 
   | `AST_struct (s, _, _)
   | `AST_typed_module (s, _,_,_)
@@ -698,7 +722,6 @@ open Flx_types
 val string_of_typecode : typecode_t -> string
 val string_of_btypecode : symbol_table_t -> btypecode_t -> string
 val special_string_of_typecode : typecode_t -> string
-val string_of_expr: expr_t -> string
 val string_of_expr : expr_t -> string
 val string_of_bound_expression : 
   symbol_table_t -> 
@@ -800,6 +823,12 @@ and string_of_expr (e:expr_t) =
     "(" ^ sme e ^ ":" ^ 
     string_of_typecode t ^ ")"
 
+  | `AST_cond (_,(e,b1,b2)) -> 
+    "if " ^ se e ^ 
+    " then " ^ se b1 ^ 
+    " else " ^ se b2 ^ 
+    " endif"
+
   | `AST_typeof (_,e) -> "typeof("^se e^")"
   | `AST_lazy (_,e) -> "lazy(" ^ se e ^ ")"
   | `AST_as (_,(e1, name)) -> "(" ^ se e1 ^ ") as " ^ name  
@@ -877,7 +906,7 @@ and st prec tc =
   let iprec,txt =
     match tc with
     | #qualified_name_t as t -> 0,string_of_qualified_name t
-    | `TYP_none -> print_endline ("NONE DETECTED");
+    | `TYP_none -> (* print_endline ("NONE DETECTED"); *)
        0,"Unknown"
     | `TYP_var i -> 0,"<var " ^ string_of_int i ^ ">"
     | `TYP_tuple ls ->
@@ -899,6 +928,11 @@ and st prec tc =
     
     | `TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
     | `TYP_as (t,s) -> 7,st 7 t ^ " as " ^ s
+
+    | `TYP_proj (i,t) -> 0,"proj_"^string_of_int i^"("^string_of_typecode t^")"
+    | `TYP_dom t -> 0,"dom("^string_of_typecode t^")"
+    | `TYP_cod t -> 0,"cod("^string_of_typecode t^")"
+    | `TYP_case_arg (i,t) -> 0,"case_arg_"^string_of_int i^"("^string_of_typecode t^")"
   in
     if iprec >= prec 
     then "(" ^ txt ^ ")" 
@@ -1173,8 +1207,14 @@ and string_of_statement level s =
   | `AST_header (_,s) -> let triple_quote = "\"\"\"" in
     "header \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote
 
+  | `AST_body (_,s) -> let triple_quote = "\"\"\"" in
+    "body \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote
+
   | `AST_code (_,s) -> let triple_quote = "\"\"\"" in
     "code \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote
+
+  | `AST_noreturn_code (_,s) -> let triple_quote = "\"\"\"" in
+    "noreturn_code \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote
 
   | `AST_function (_,name, ps, res, ss) -> 
     spaces level ^ 
@@ -1237,6 +1277,14 @@ and string_of_statement level s =
 
   | `AST_nop (_,s) -> spaces level ^ "{/*"^s^"*/;}"
 
+  | `AST_ifgoto (_,e,lab) ->
+    spaces level ^
+    "if("^string_of_expr e^")goto " ^ lab
+    
+  | `AST_ifnotgoto (_,e,lab) ->
+    spaces level ^
+    "if not("^string_of_expr e^")goto " ^ lab
+  (*
   | `AST_if (_,clist, (_,s2)) ->
     begin catmap (spaces level ^ "else ")
       begin fun (sr, (e, s)) ->
@@ -1253,7 +1301,8 @@ and string_of_statement level s =
         spaces level ^ "else\n" ^
         (string_of_statement (level+1) s2)
     end
-  
+  *)
+
   | `AST_except_handler (_,label,params,code) ->
     spaces level ^ "except " ^ label ^ " " ^ 
     "("^ (string_of_parameters params)^")"^
@@ -1403,6 +1452,9 @@ and string_of_exe level s =
   | `EXE_code s -> spc ^ 
     "code " ^ string_of_string s 
 
+  | `EXE_noreturn_code s -> spc ^ 
+    "noreturn_code " ^ string_of_string s 
+
   | `EXE_init (l,r) -> spc ^ 
     l ^ " := " ^ se r ^ ";"
 
@@ -1504,6 +1556,7 @@ and string_of_dcl level name s =
   | `DCL_lazy e -> "val "^name^"= lazy(" ^ se e ^ ");\n"
 
   | `DCL_header s -> "header " ^ string_of_string s
+  | `DCL_body s -> "body " ^ string_of_string s
 
   | `DCL_type_alias (t2) ->
     spaces level ^ "type " ^ name ^ " = " ^ string_of_typecode t2 ^ ";"
@@ -1594,7 +1647,7 @@ and string_of_dcl level name s =
     spaces level ^ 
     "match_handler " ^ name ^ 
     "(" ^ string_of_pattern pat ^ ")" ^
-    short_string_of_asm_compound level sts
+    string_of_asm_compound level sts
 
   | `DCL_val (ty) ->
     spaces level ^ 
@@ -1622,6 +1675,8 @@ and string_of_bbdcl dfns bbdcl index =
   let se e = string_of_bound_expression dfns e in
   match bbdcl with
   | `BBDCL_header s -> "header " ^ string_of_string s
+  | `BBDCL_body s -> "body " ^ string_of_string s
+
   | `BBDCL_function (ps,res,es,name_map) ->
     "function " ^ name ^ 
     "("^ (string_of_bparameters dfns ps)^"): "^(sobt res) ^
@@ -1899,30 +1954,7 @@ let qualified_name_of_expr e =
       short_string_of_src (src_of_expr e)
     )
 
-(* NOTE: only works on explicit fixpoint operators,
-  i.e. it won't work on typedefs: no name lookup,
-  these should be removed first .. 
-  another view: only works on non-generative types.
-*)
-
-let unfold t =
-  let rec aux depth t' = 
-  let uf t = aux (depth+1) t in
-  match t' with 
-  | `BTYP_sum ls -> `BTYP_sum (List.map uf ls)
-  | `BTYP_tuple ls -> `BTYP_tuple (List.map uf ls)
-  | `BTYP_function (a,b) -> `BTYP_function (uf a, uf b)
-  | `BTYP_pointer a -> `BTYP_pointer (uf a)
-  | `BTYP_binding (a,b) -> `BTYP_binding (uf a, uf b)
-  | `BTYP_fix i when (-i) = depth -> t
-  | `BTYP_fix i when (-i) > depth -> 
-    failwith ("Fix point outside term, depth="^string_of_int i)
-
-  | `BTYP_name i -> `BTYP_name i
-  | _ -> t'
-  in aux 0 t
-
-
+ 
 @h = tangler('src/flx_typing.mli')
 @select(h)
 open Flx_types
@@ -1949,10 +1981,6 @@ val lower:
 val unify:
   symbol_table_t ->
   btypecode_t -> 
-  btypecode_t ->
-  btypecode_t 
-
-val unfold:
   btypecode_t ->
   btypecode_t 
 

@@ -103,6 +103,7 @@ open Flx_mtypes
 open Flx_typing
 open List
 open Flx_srcref
+open Flx_unify
 
 let bool_t = `BTYP_sum [`BTYP_tuple[]; `BTYP_tuple[]];
 
@@ -494,8 +495,8 @@ and compare_defn
     ict = mct
 
 
-  | `SYMDEF_dcl (`DCL_val it), `SYMDEF_dcl (`DCL_val mt) 
-  | `SYMDEF_dcl (`DCL_var it), `SYMDEF_dcl (`DCL_var mt) ->
+  | `SYMDEF_val it, `SYMDEF_val mt 
+  | `SYMDEF_var it, `SYMDEF_var mt ->
     let it = rmb it and mt = mbt mt in
     it = mt
 
@@ -1319,6 +1320,78 @@ and bind_type' syms env exclude fixlist expr_fixlist depth excluded_dirs sr t : 
   *)
   match t with
   | `AST_root _ -> failwith "Not expecting root in bind type"
+  | `TYP_proj (i,t) -> 
+    let t = bt t in
+    begin match unfold t with 
+    | `BTYP_tuple ls ->
+      if i < 1 or i>List.length ls
+      then 
+        failwith 
+        (
+          short_string_of_src sr ^
+          "\nproduct type projection index " ^ 
+          string_of_int i ^ 
+          " out of range 1 to " ^
+          string_of_int (List.length ls)
+        )
+      else List.nth ls (i-1)
+
+    | _ -> 
+      failwith 
+      (
+        short_string_of_src sr ^
+        "\ntype projection requires product type"
+      )
+    end
+
+  | `TYP_dom t -> 
+    let t = bt t in 
+    begin match unfold t with
+    | `BTYP_function (a,b) -> a
+    | _ ->
+      failwith 
+      (
+        short_string_of_src sr ^
+        "\ntype domain requires function" 
+      )
+    end
+  | `TYP_cod t -> 
+    let t = bt t in 
+    begin match unfold t with
+    | `BTYP_function (a,b) -> b
+    | _ ->
+      failwith 
+      (
+        short_string_of_src sr ^
+        "\ntype codomain requires function" 
+      )
+    end
+
+  | `TYP_case_arg (i,t) ->
+    let t = bt t in
+    begin match unfold t with
+    | `BTYP_sum ls ->
+      if i < 1 or i>List.length ls
+      then 
+        failwith 
+        (
+          short_string_of_src sr ^
+          "\nsum type extraction index " ^ 
+          string_of_int i ^ 
+          " out of range 1 to " ^
+          string_of_int (List.length ls)
+        )
+      else List.nth ls (i-1)
+
+    | _ -> 
+      failwith 
+      (
+        short_string_of_src sr ^
+        "\nsum type extraction requires sum type"
+      )
+    end
+
+ 
   | `TYP_none ->  `BTYP_none
   | `TYP_var i ->  `BTYP_var i
   | `TYP_as (t,s) -> 
@@ -1505,6 +1578,44 @@ and typeofindex
       );
       t
 
+and cal_ret_type syms exclude expr_fixlist depth excluded_dirs index =
+  let env = build_env syms excluded_dirs (Some index) in
+  match (Hashtbl.find syms.dfns index) with
+  | id,sr,parent,`SYMDEF_function (ps,rt,exes,name_map,dirs) ->
+    let rt = bind_type' syms env [] [] expr_fixlist depth excluded_dirs sr rt in
+    let ret_type = ref rt in
+    let return_counter = ref 0 in
+    List.iter
+    (fun exe -> match exe with
+    | `EXE_return e ->
+      incr return_counter;
+      begin try
+        let t = snd (bind_expression syms env (index::exclude) expr_fixlist depth excluded_dirs e) in
+        let mgu = do_unify syms t !ret_type in
+        ret_type := varmap_subst syms.varmap !ret_type
+      with _ -> ()
+      end
+    | _ -> ()
+    )
+    exes
+    ;
+    if !return_counter = 0 then (* it's a procedure .. *)
+    begin 
+      let mgu = do_unify syms `BTYP_void !ret_type in
+      ret_type := varmap_subst syms.varmap !ret_type
+    end
+    ;
+    if var_occurs !ret_type
+    then 
+      failwith 
+      (
+        "Unable to resolve return type of " ^ id ^ "<"^string_of_int index^">"
+      )
+    ;
+    !ret_type
+  | _ -> assert false
+
+  
 and typeofindex'
   syms 
   (exclude:int list)
@@ -1543,7 +1654,13 @@ and typeofindex'
 
   | `SYMDEF_function (ps, rt,_,_,_) -> 
     let pts = List.map snd ps in
-    bt (`TYP_function (typeof_list pts, rt))
+    let rt = 
+      cal_ret_type syms exclude expr_fixlist depth excluded_dirs index
+    in 
+      if var_occurs rt 
+      then failwith ("function "^id^"<"^string_of_int index^">: return type is not resolved, got: " ^ string_of_btypecode syms.dfns rt)
+      else
+      `BTYP_function (bt (typeof_list pts), rt)
 
   | `SYMDEF_procedure(ps,_,_,_) -> 
     let pts = List.map snd ps in
@@ -1575,8 +1692,15 @@ and typeofindex'
   | `SYMDEF_match_check _ ->
     `BTYP_function (`BTYP_tuple [], bool_t)
 
-  | `SYMDEF_match_handler _ ->
-    `BTYP_function (`BTYP_tuple [],`BTYP_void)
+  | `SYMDEF_match_handler (pat,mvar,exes,name_map,dirs) ->
+    let env = build_env syms excluded_dirs (Some index) in
+    let last_exe = list_last exes in
+    begin match last_exe with
+    | `EXE_return e ->
+      let rt = snd (bind_expression syms env (index::exclude) expr_fixlist depth excluded_dirs e) in
+      `BTYP_function (`BTYP_tuple [],rt)
+    | _ -> failwith ("Expected match_handler to end in return statement")
+    end
 
   | `SYMDEF_dcl (`DCL_fun (pts,rt,_)) -> 
     (* print_endline "Found function primitive";
@@ -1606,9 +1730,13 @@ and cal_apply syms ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
       else 
         failwith 
         (
-          "[ebind:cal_apply] Function argument " ^
+          "[ebind:cal_apply] Function " ^
+          string_of_bound_expression syms.dfns tbe1 ^
+          "\nof type " ^
+          string_of_btypecode syms.dfns t1 ^
+          "\napplied to argument " ^
           string_of_bound_expression syms.dfns tbe2 ^
-          " has type\n" ^
+          "\n of type " ^
           string_of_btypecode syms.dfns t2 ^
           "\nwhich doesn't agree with parameter type\n" ^
           string_of_btypecode syms.dfns argt 
@@ -1666,6 +1794,20 @@ and cal_apply syms ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
     "\n-------------------------------------"
   );
   *)
+
+  let rest = varmap_subst syms.varmap rest in
+  if var_occurs rest 
+  then 
+    failwith 
+    (
+      "[cal_apply] Type variable in return type applying\n" ^
+        string_of_bound_expression syms.dfns tbe1 ^ 
+        "\nof type\n" ^
+        string_of_btypecode syms.dfns t1 ^
+        "\nto argument of type\n" ^
+        string_of_bound_expression syms.dfns tbe2
+    )
+  ;
   `BEXPR_apply ((be1,lower t1), (be2,lower t2)),rest
 
 and koenig_lookup syms sra exclude excluded_dirs id' name_map fn t2 =
@@ -2165,6 +2307,7 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
   print_endline "==";
   *)
   match e with
+  | `AST_cond _ -> failwith "Unexpected conditional expression (should be replaced by match)"
   | `AST_typeof (sr,e) -> failwith "Unexpected 'typeof' in expression"
   | `AST_as (sr, (e1,e2)) -> failwith "Unexpected 'as' in expression" 
 
@@ -2732,7 +2875,7 @@ and map_dir
     end
   | _ -> failwith "Expected module!"
 
-and build_env syms excluded_dirs parent : env_t =
+and build_env'' syms excluded_dirs parent : env_t =
   let basic_env = build_env' syms parent in
   let rec resolve_dirs env =
     match env with
@@ -2748,5 +2891,13 @@ and build_env syms excluded_dirs parent : env_t =
    in 
      resolve_dirs basic_env
 
-
+and build_env syms excluded_dirs parent : env_t =
+  match parent with
+  | None -> []
+  | Some i ->
+    try Hashtbl.find syms.env_cache i
+    with Not_found ->
+    let env = build_env'' syms excluded_dirs parent in
+    Hashtbl.add syms.env_cache i env;
+    env
 

@@ -8,9 +8,10 @@ header """
 #include <string>
 #include <assert.h>
 #include <limits.h>
-
 #include "rtl/boost_cstdint.hpp"
+""";
 
+body """
 using namespace std;
 
 namespace std_flx {
@@ -317,30 +318,31 @@ module Arith_casts
 module Control 
 {
   // infinite loop
-  proc loop (body:unit->void)
+  proc loop (bdy:unit->void)
   {
     repeat:>
-      body();
+      bdy();
       goto repeat;
+    dummy:> // fool reachability checker
   }
 
   // C style while loop
-  proc while (cond:unit->bool) (body:unit->void)
+  proc while (cond:unit->bool) (bdy:unit->void)
   {
     repeat:>
-      if not (cond()) then goto finish; endif;
-      body();
+      if not (cond()) goto finish;
+      bdy();
       goto repeat;
     finish:>
   }
 
   // C style while loop with reversed condition
   // not the until is tested first -- zero iterations are possible
-  proc until(cond:unit->bool) (body:unit->void)
+  proc until(cond:unit->bool) (bdy:unit->void)
   {
     repeat:>
-      if cond() then goto finish; endif;
-      body();
+      if cond() goto finish;
+      bdy();
       goto repeat;
     finish:>
   }
@@ -353,12 +355,12 @@ module Control
     (init:unit->void) 
     (cond:unit->bool) 
     (incr:unit->void)
-    (body:unit->void)
+    (bdy:unit->void)
   {
     init();
     repeat:>
-      if not (cond()) then goto finish; endif;
-      body();
+      if not (cond()) goto finish;
+      bdy();
       incr();
       goto repeat;
     finish:>

@@ -263,6 +263,11 @@ let rec build_tables print_flag dfns counter name level parent asms =
           ;
           add_unique name_map id n
 
+        | `DCL_body s ->
+          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
+          ;
+          add_unique name_map id n
+
         | `DCL_module asms ->
           let table, exes,ifaces,dirs = 
             build_tables print_flag dfns counter id (level+1) (Some n) 

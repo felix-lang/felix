@@ -140,6 +140,22 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
   | `AST_ref _ -> [],e
   | `AST_literal _ -> [],e
 
+  | `AST_cond (sr,(e,b1,b2)) ->
+     rex 
+     (
+       `AST_match 
+       (
+         sr,
+         (
+           e,
+           [
+             `PAT_const_ctor (sr,`AST_case_tag (sr,1)),b2;
+             `PAT_const_ctor (sr,`AST_case_tag (sr,2)),b1
+           ]
+         )
+       )
+     )
+     
   (* we have to lift lambdas out of typeof exprs,
      even though they're never called,
      so the typing works correctly
@@ -231,7 +247,7 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
     *)
     let evl = 
       [
-        Dcl (expr_src,match_var_name,`DCL_val `TYP_none);
+        Dcl (expr_src,match_var_name,`DCL_val (`TYP_typeof x));
         Exe (expr_src,`EXE_init (match_var_name,x))
       ]
     in
@@ -239,7 +255,9 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
     Flx_pat.validate_patterns pats
     ;
     let ematch_seq = seq() in
+    (*
     let end_match_label = "_end_match_" ^ string_of_int ematch_seq in
+    *)
     let matches = ref [Exe (generated,`EXE_comment "begin match")] in
     let match_caseno = ref 1 in
     List.iter
@@ -309,8 +327,10 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
           )
         )
       )
+      (*
       ;
       Exe (patsrc,`EXE_goto end_match_label)
+      *)
       ]
       ;
       incr match_caseno;
@@ -330,9 +350,11 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
     [
       Exe (sr,`EXE_comment "match failure");
       Exe (sr,`EXE_label failure_label);
-      Exe (sr,`EXE_code "      assert((\"match failure\",false));\n");
+      Exe (sr,`EXE_noreturn_code "      assert((\"match failure\",false));\n");
+      (*
       Exe (sr,`EXE_comment "match exit");
       Exe (sr,`EXE_label end_match_label)
+      *)
     ]
     in
     [
@@ -562,8 +584,13 @@ and rst seq st : asm_t list =
 
   | `AST_header (sr,s) -> 
     let n = seq() in 
-    let name = "_ header_" ^ string_of_int n in 
+    let name = "_header_" ^ string_of_int n in 
     [Dcl (sr,name,`DCL_header s)]
+
+  | `AST_body (sr,s) -> 
+    let n = seq() in 
+    let name = "_body_" ^ string_of_int n in 
+    [Dcl (sr,name,`DCL_body s)]
 
   (* executable *)
   | `AST_attempt (sr,(sra,attempt), (srh,handlers), (srf,finally)) -> 
@@ -625,6 +652,24 @@ and rst seq st : asm_t list =
     let d2,x2 = rex arg in
     d1 @ d2 @ [Exe (sr,`EXE_call (x1,x2))]
 
+  | `AST_ifgoto (sr,e,lab)->
+    let next = "_skip_" ^ string_of_int (seq()) in
+    let d,x = rex e in
+    d @ 
+    [
+      (* we have to do this, in case the clients
+        goto is non-local
+      *)
+      Exe (sr,`EXE_ifnotgoto (x,next));
+      Exe (sr,`EXE_goto lab);
+      Exe (sr,`EXE_label next)
+    ]
+
+  | `AST_ifnotgoto (sr,e,lab)->
+    let d,x = rex e in
+    d @ [Exe (sr,`EXE_ifnotgoto (x,lab))]
+
+  (*
   | `AST_if (sr,ifs, (esr,els)) -> 
     let ubc (sr,(e,s)) : asm_t list * (range_srcref * (expr_t * asm_t)) = 
       match split_st seq sr s 
@@ -665,9 +710,12 @@ and rst seq st : asm_t list =
       Exe (`EXE_comment "endif")
       *)
     ]
+  *)
 
+   
   | `AST_read (sr,name) ->  [Exe (sr,`EXE_read name)]
   | `AST_code (sr,s) -> [Exe (sr,`EXE_code s)]
+  | `AST_noreturn_code (sr,s) -> [Exe (sr,`EXE_noreturn_code s)]
 
 let typeofargs a = 
       match List.map snd a with
