@@ -55,7 +55,6 @@ open List
 open Flx_overload
 open Flx_lookup
 open Flx_ebind
-open Flx_tbind
 open Flx_env
 
 let get_data table index : symbol_data_t = 
@@ -68,12 +67,41 @@ let rec bind_entry bdfns dfns index =
   let env = build_env dfns parent in
   let bt t = bind_type dfns env [] t in 
   match dfn with
+  | SYMDEF_if_fun (t,display) ->
+    let bdcl = BDCL_if_fun (bt t,display) in
+    Hashtbl.add bdfns index (id,parent,bdcl)
+
+  | SYMDEF_if_proc (msgt,t,display) ->
+    let bdcl = BDCL_if_proc (bt msgt, bt t,display) in
+    Hashtbl.add bdfns index (id,parent,bdcl)
+
+  | SYMDEF_module_binding e ->
+    let bdcl = BDCL_module_binding e in
+    Hashtbl.add bdfns index (id,parent,bdcl)
+
+  | SYMDEF_if_type ->
+    let bdcl = BDCL_type_parameter in 
+    Hashtbl.add bdfns index (id,parent,bdcl)
+
+  | SYMDEF_functor (ps,ret,display,exes,name_map) ->
+    let ps' = List.map
+      (fun (name,t) -> (name, bt t))
+    ps
+    in 
+    let ret' = bind_type dfns env [] ret in
+    Hashtbl.add bdfns index (id,parent,
+      BDCL_functor (ps',ret',exes,name_map)
+    )
+
   | SYMDEF_parameter t ->
     let bdcl = BDCL_val (bt t) in 
     Hashtbl.add bdfns index (id,parent,bdcl)
 
-  | SYMDEF_module table -> 
-    Hashtbl.add bdfns index (id,parent, BDCL_module table)
+  | SYMDEF_module table ->
+    Hashtbl.add bdfns index (id,parent, BDCL_module table )
+
+  | SYMDEF_interface table -> 
+    Hashtbl.add bdfns index (id,parent, BDCL_interface table)
 
   | SYMDEF_procedure (msgt,ps,display,exes,name_map) ->
     let ps' = List.map
@@ -173,12 +201,18 @@ let rec bind_entry bdfns dfns index =
     | DCL_type_alias _ -> ()
     
     (* these should have been special cased out *)
-    | DCL_function _ -> failwith "Unexpected function"
-    | DCL_procedure  _ -> failwith "Unexpected procedure"
-    | DCL_module _ -> failwith "Unexpected module"
-    | DCL_match_handler _ -> failwith "Unexpected match handler"
-    | DCL_match_check _ -> failwith "Unexpected match checker"
-    | DCL_lazy _ -> failwith "Unexpected lazy"
+    | DCL_type -> failwith "[bind_entry] Unexpected type"
+    | DCL_if_fun _ -> failwith "[bind_entry] Unexpected function decl"
+    | DCL_if_proc _ -> failwith "[bind_entry] Unexpected procedure decl"
+    | DCL_interface _ -> failwith "[bind_entry] Unexpected interface"
+    | DCL_module_binding _ -> failwith "[bind_entry] Unexpected module binding"
+    | DCL_functor _ -> failwith "[bind_entry] Unexpected functor"
+    | DCL_function _ -> failwith "[bind_entry] Unexpected function"
+    | DCL_procedure  _ -> failwith "[bind_entry] Unexpected procedure"
+    | DCL_module _ -> failwith "[bind_entry] Unexpected module"
+    | DCL_match_handler _ -> failwith "[bind_entry] Unexpected match handler"
+    | DCL_match_check _ -> failwith "[bind_entry] Unexpected match checker"
+    | DCL_lazy _ -> failwith "[bind_entry] Unexpected lazy"
  
 
 let bind_ifaces dfns bdfns ifaces = 

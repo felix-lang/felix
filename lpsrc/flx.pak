@@ -33,7 +33,6 @@ C/C++ programmers, together with control inversion.
 @include_file ('flx_lookup.ipk')
 @include_file ('flx_overload.ipk')
 @include_file ('flx_env.ipk')
-@include_file ('flx_tbind.ipk')
 @include_file ('flx_ebind.ipk')
 @include_file ('flx_bind.ipk')
 @include_file ('flx_mbind.ipk')

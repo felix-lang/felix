@@ -107,7 +107,15 @@ let rec register_type_r registry counter dfns bbdfns exclude t =
       rnr (BTYP_function (argt,t))         (* constructor *)
 
     | BBDCL_abs ct -> rnr t 
-    | _ -> failwith "expected type declaration"
+    | BBDCL_interface _ -> ()
+    | BBDCL_module _  -> ()
+    | BBDCL_type_parameter -> ()
+    | _ -> 
+      failwith 
+      (
+        "[register_type_r] expected type declaration, got " ^
+        string_of_bbdcl dfns entry index
+      )
 
 let mangle_cpp_typename ct =
   let n = String.length ct in
@@ -145,7 +153,12 @@ let rec cpp_typename registry dfns bbdfns t =
       | BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
       | BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
       | BBDCL_abs ct -> "_abs_" ^ string_of_int index ^ "_" ^ mangle_cpp_typename ct
-      | _ -> failwith "expected type declaration"
+      | _ -> 
+        failwith 
+        (
+          "[cpp_typename] expected type declaration, got " ^
+          string_of_bbdcl dfns entry index
+        )
     end
   
   with Not_found -> 
@@ -177,7 +190,12 @@ let rec cpp_classname registry dfns bbdfns t =
       | BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
       | BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
       | BBDCL_abs ct -> "_abs_" ^ string_of_int index ^ "_" ^ mangle_cpp_typename ct
-      | _ -> failwith "expected type declaration"
+      | _ -> 
+        failwith 
+        (
+          "[cpp_classname] expected type declaration, got " ^
+          string_of_bbdcl dfns entry index
+        )
     end
   
   with Not_found -> 
@@ -205,6 +223,10 @@ let collect_types registry counter dfns bbdfns =
   let rnr t = register_type_nr registry counter dfns t in
   Hashtbl.iter
   begin fun index (id,parent,bbdcl) -> match bbdcl with
+    | BBDCL_type_parameter -> ()
+    | BBDCL_if_fun (t,_) -> rr t
+    | BBDCL_if_proc (msgt,t,_) -> rr t
+
     | BBDCL_function (ps,ret,_,_,_) ->
       let a = typeoflist (List.map snd ps) in
       rr (BTYP_function (a,ret))
@@ -228,9 +250,12 @@ let collect_types registry counter dfns bbdfns =
     | BBDCL_union _
     | BBDCL_struct _ -> rr (BTYP_name index)
 
+    | BBDCL_module_binding e -> ()
     | BBDCL_abs _ -> ()
     | BBDCL_header _ -> ()
     | BBDCL_module _ -> ()
+    | BBDCL_interface _ -> ()
+    | BBDCL_functor _ -> ()
   end
   bbdfns 
 
@@ -264,7 +289,14 @@ let gen_type_name registry dfns bbdfns (index,typ) =
     | BBDCL_union _ -> 
       "typedef _uctor_ " ^ tn typ ^ ";\n"
     | BBDCL_abs ct -> "typedef " ^ ct ^ " " ^ tn typ ^ ";\n" 
-    | _ -> failwith "expected type declaration"
+    | BBDCL_module _ -> "//module " ^ name ^ ";\n"
+    | BBDCL_interface _ -> "//interface " ^ name ^ ";\n"
+    | _ -> 
+      failwith 
+      (
+        "[gen_type_name] expected type declaration, got " ^
+        string_of_bbdcl dfns entry index
+      )
 
 let gen_type registry dfns bbdfns (index,typ) =
   "//TYPE "^string_of_int index^": " ^ string_of_btypecode dfns typ ^ "\n"^
@@ -404,9 +436,15 @@ let gen_type registry dfns bbdfns (index,typ) =
       "};\n"
 
     | BBDCL_union _ -> "" (* covered by prior typedef of _uctor_ *)
-
+    | BBDCL_module _ -> ""
+    | BBDCL_interface _ -> ""
     | BBDCL_abs ct -> ""
-    | _ -> failwith "expected type declaration"
+    | _ -> 
+      failwith 
+      (
+        "[gen_typ] expected type declaration, got " ^
+        string_of_bbdcl dfns entry index
+      )
 
 let find_references bbdfns name_map = 
   let references = ref [] in
@@ -439,6 +477,7 @@ let find_variable_indices dfns index =
     | SYMDEF_function (_,_,_,_,name_map) -> name_map
     | SYMDEF_procedure (_,_,_,_,name_map) -> name_map
     | SYMDEF_module name_map -> name_map
+    | SYMDEF_interface name_map -> name_map
     | SYMDEF_match_handler (_,_,_,_,_,name_map) -> name_map
     | SYMDEF_lazy _ 
     | SYMDEF_match_check _ -> Hashtbl.create 97 

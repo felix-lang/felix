@@ -59,12 +59,15 @@ let rec bind_type dfns env exclude t : btypecode_t =
     | _,_,_,SYMDEF_dcl (DCL_abs _) -> BTYP_name index
     | _,_,_,SYMDEF_dcl (DCL_union _) -> BTYP_name index
     | _,_,_,SYMDEF_dcl (DCL_struct _) -> BTYP_name index
+    | _,_,_,SYMDEF_dcl (DCL_interface _) -> BTYP_name index
+    | _,_,_,SYMDEF_if_type -> BTYP_name index 
+    | _,_,_,SYMDEF_interface _ -> BTYP_name index
     | id,sr,_,_ -> 
       failwith 
       (
         "[bind_type] Type " ^ id ^ 
         " defined at " ^ short_string_of_src sr ^
-        " must be abstact, union or struct"
+        " must be abstract, union or struct"
       )
     end 
   | TYP_tuple ts -> BTYP_tuple (List.map bt ts)
@@ -73,4 +76,5 @@ let rec bind_type dfns env exclude t : btypecode_t =
   | TYP_void -> BTYP_void
   | TYP_none -> BTYP_none
  
+
 

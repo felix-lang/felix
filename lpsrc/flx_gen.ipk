@@ -123,6 +123,7 @@ let find_variable_indices dfns index =
     | SYMDEF_function (_,_,_,_,name_map) -> name_map
     | SYMDEF_procedure (_,_,_,_,name_map) -> name_map
     | SYMDEF_module name_map -> name_map
+    | SYMDEF_interface name_map -> name_map
     | SYMDEF_match_handler (_,_,_,_,_,name_map) -> name_map
     | SYMDEF_lazy _
     | SYMDEF_match_check _ -> Hashtbl.create 97 
@@ -146,8 +147,9 @@ let find_variable_indices dfns index =
       | SYMDEF_dcl (DCL_val _) 
       | SYMDEF_dcl (DCL_val_typeof _) 
         -> variables := idx :: !variables
-      | SYMDEF_module table -> 
-        variables := extract table @ !variables
+      | SYMDEF_module table
+      | SYMDEF_interface table 
+        -> variables := extract table @ !variables
       | _ -> ()
     ) 
     name_map
@@ -440,8 +442,11 @@ let subst registry (dfns:symbol_table_t) bbdfns ct args typs retyp =
         end 
         else failwith (
           "Got parameter $" ^ string_of_int j ^
-          ", but there are only " ^ string_of_int (List.length args) ^
-          " arguments"
+          ", but there are only " ^ 
+          string_of_int (List.length args) ^
+          " arguments: code='"^ct^
+          "', col="^string_of_int i^", " ^
+          "args="^(String.concat ", " args)
         )
     else if ct.[i] = '$'
     then mode := Dollar
@@ -537,6 +542,7 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
     | _ -> failwith "[gen_expr] Expected executable code to be in function or procedure"
   in let our_level = List.length our_display in
   match e with
+  | BEXPR_coercion _ -> failwith "gen_expr: can't generate coercion!"
   | BEXPR_get_n (n,e) -> "(" ^ ge e ^ ").mem_" ^ string_of_int n
   | BEXPR_deref ((BEXPR_ref index),BTYP_pointer t) -> 
     ge (BEXPR_name index,t)
@@ -807,7 +813,7 @@ let gen_exe registry dfns bbdfns label_map counter this exe =
            begin try i, Hashtbl.find local_map s
            with Not_found -> aux parent
            end
-         | BBDCL_module _ -> aux parent
+         | BBDCL_module  _ -> aux parent
          | BBDCL_function _ -> failwith ("goto "^s^" can't out of function")
          | _ -> failwith "Unknown parent kind"
     in 
@@ -1489,6 +1495,17 @@ try
   let input_file_name = filebase ^ ".flx" in
   let header_file_name = filebase ^ ".hpp" in
   let body_file_name = filebase ^ ".cpp" in
+  let module_name = 
+    let n = String.length filebase in 
+    let i = ref n in 
+    begin try while !i>0 do
+      if filebase.[!i-1] = '/'
+      then raise Not_found; 
+      decr i
+    done with _ -> () end;
+    String.sub filebase !i (n - !i)
+  in
+
   let hf = open_out header_file_name in
   let bf = open_out body_file_name in 
   let psh s = output_string hf s in
@@ -1506,7 +1523,8 @@ try
   if !print_flag then print_endline "//DESUGARING";
 
   let counter = ref 1 in 
-  let deblocked = desugar_program counter parse_tree in
+  let deblocked = desugar_program module_name counter parse_tree in
+  if !print_flag then print_endline "//BUILDING TABLES";
   let dfns = Hashtbl.create 97 in
   let display = [] in
   let table, exes, ifaces = 
@@ -1527,11 +1545,17 @@ try
     table
     ;
     let top_level_index = 
-      match Hashtbl.find table "" with
-      | NonFunctionEntry index -> index
-      | _ -> failwith "Expected '' to be non function" 
+      try 
+        match Hashtbl.find table module_name with
+        | NonFunctionEntry index -> index
+        | _ -> 
+          failwith ("Expected '"^module_name^"' to be non function")
+      with Not_found -> 
+        failwith ("Unable to find top level '"^module_name^"'")
     in
-    if !print_flag then print_endline ("//Top level module '' has index " ^ string_of_int top_level_index);
+    if !print_flag 
+    then print_endline ("//Top level module ''"^module_name^" has index " ^ string_of_int top_level_index);
+    if !print_flag then print_endline "//BINDING ENTRIES";
     let bdfns = Hashtbl.create 97 in
     Hashtbl.iter
     (fun index _ -> bind_entry bdfns dfns index)
@@ -1617,6 +1641,10 @@ try
       ) 
       !types
     in
+    List.iter
+    (fun (_,t) -> print_endline (string_of_btypecode dfns t))
+    types
+    ;
     plh "//REFERENCE TEMPLATE";
     plh "template<class T> struct _ref_";
     plh "{";

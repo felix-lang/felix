@@ -41,7 +41,6 @@ open List
 open Flx_overload
 open Flx_lookup
 open Flx_ebind
-open Flx_tbind
 
 let split_asms asms : 
   (range_srcref * id_t * dcl_t) list * 
@@ -116,6 +115,16 @@ let rec build_tables print_flag dfns counter name level parent display msgt asms
           )
         ;
         begin match dcl with
+        | DCL_module_binding e -> 
+          Hashtbl.add dfns n (id, sr, parent,
+            SYMDEF_module_binding e 
+          );
+          add_unique name_map id n;
+          interfaces := !interfaces @ ifaces
+
+        | DCL_functor _ -> 
+          failwith "Not implemented functor"
+
         | DCL_match_check (pat,mvname) ->
           let fun_index = n in
           let match_var_index = 
@@ -155,27 +164,12 @@ let rec build_tables print_flag dfns counter name level parent display msgt asms
           ;
           add_unique name_map id n
 
-        | DCL_module (iface,asms) ->
+        | DCL_module asms ->
           let table, exes,ifaces = 
             build_tables print_flag dfns counter id (level+1) (Some n) 
             display msgt asms
           in
           Hashtbl.add dfns n (id, sr,parent,SYMDEF_module table);
-          (*
-          print_endline ("Module " ^ id ^ 
-            " is numbered " ^ string_of_int n ^ 
-            " parent " ^ 
-            (match parent with 
-              Some n->string_of_int n | None -> "none"
-            )
-          );
-          print_endline ("It has table " ^
-          (
-            let s = ref "" in
-            Hashtbl.iter (fun k v -> s:= !s ^ k ^ " ") table;
-            !s
-          ));
-          *)
           let n' = !counter in
           incr counter;
           let init_def = 
@@ -190,41 +184,30 @@ let rec build_tables print_flag dfns counter name level parent display msgt asms
           in
           Hashtbl.add dfns n' ("_init_",sr,Some n, init_def);
 
-          (*
-          print_endline ("Module init for " ^ id ^ " is numbered " ^ string_of_int n');
-          *)
           add_unique name_map id n;
           add_function table ("_init_") n';
-          (*
-          print_endline "added init routine to module table";
-          *)
           interfaces := !interfaces @ ifaces
         
-        | DCL_interface entries ->
-          let if_index = n in
+        | DCL_interface asms ->
+          let table, exes,ifaces = 
+            build_tables print_flag dfns counter id (level+1) (Some n) 
+            display msgt asms
+          in
+          Hashtbl.add dfns n (id, sr,parent,SYMDEF_interface table);
+          let n' = !counter in
           incr counter;
-          let entrytab = Hashtbl.create 97 in
-          List.iter
-          (fun entry -> 
-            let n = !counter in incr counter;
-            match entry with
-            | IAST_val (name,t) ->
-              Hashtbl.add dfns !counter (name,sr,Some if_index,
-                SYMDEF_if_val t
-              );
-              Hashtbl.add entrytab name (NonFunctionEntry n)
-
-            | IAST_type name ->
-              Hashtbl.add dfns !counter (name,sr,Some if_index,
-                SYMDEF_if_type
-              );
-              Hashtbl.add entrytab name (NonFunctionEntry n)
-            )
-          entries
-          ;
-          Hashtbl.add dfns if_index (id,sr,parent,
-            SYMDEF_interface entrytab
-          )
+          let init_def = 
+            SYMDEF_if_proc
+            (
+              TYP_void,
+              TYP_function(TYP_tuple [],TYP_void), 
+              display
+            ) 
+          in
+          Hashtbl.add dfns n' ("_init_",sr,Some n, init_def);
+          add_unique name_map id n;
+          add_function table ("_init_") n';
+          interfaces := !interfaces @ ifaces
 
         | DCL_function (ps,t,asms) ->   
           let fun_index = n in
@@ -278,10 +261,26 @@ let rec build_tables print_flag dfns counter name level parent display msgt asms
           add_function name_map id fun_index;
           interfaces := !interfaces @ ifaces
         
+        | DCL_if_fun t ->
+          Hashtbl.add dfns n (id,sr,parent,SYMDEF_if_fun (t,display))
+          ;
+          add_function name_map id n
+          
+        | DCL_if_proc (msgt,t) ->
+          Hashtbl.add dfns n (id,sr,parent,SYMDEF_if_proc (msgt,t,display))
+          ;
+          add_function name_map id n
+
+        | DCL_type ->
+          Hashtbl.add dfns n (id,sr,parent,SYMDEF_if_type)
+          ;
+          add_unique name_map id n
+
         | DCL_val t ->
           Hashtbl.add dfns n (id,sr,parent,SYMDEF_dcl dcl)
           ;
           add_unique name_map id n
+
         | DCL_val_typeof e -> 
           Hashtbl.add dfns n (id,sr,parent,SYMDEF_dcl dcl)
           ;

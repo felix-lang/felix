@@ -23,7 +23,6 @@ open Flx_lookup
 open Flx_ebind
 open Flx_mbind
 open Flx_srcref
-open Flx_tbind
 open Flx_env
 
 let cal_call dfns (p,pt) e =
@@ -223,9 +222,26 @@ let bbind counter dfns bdfns =
   Hashtbl.iter
   (fun i (name, parent, bdcl) -> 
   match bdcl with
+  | BDCL_type_parameter ->
+    Hashtbl.add bbdfns i (name,parent, BBDCL_type_parameter)
+
+  | BDCL_interface table ->
+    Hashtbl.add bbdfns i (name,parent, BBDCL_interface table)
+
+  | BDCL_if_fun (t,display) ->
+    Hashtbl.add bbdfns i (name,parent, BBDCL_if_fun (t,display))
+
+  | BDCL_if_proc (msgt,t,display) ->
+    Hashtbl.add bbdfns i (name,parent, BBDCL_if_proc (msgt,t,display))
+  
   | BDCL_module table -> 
     Hashtbl.add bbdfns i (name,parent, BBDCL_module table)
   
+  | BDCL_module_binding e ->
+    let env = build_env dfns parent in 
+    let et = bind_expression dfns bdfns env [] e in
+    Hashtbl.add bbdfns i (name,parent, BBDCL_module_binding et)
+    
   | BDCL_function (ps,rt,display,exes,name_map) -> 
     (* print_endline ("//Binding function " ^ string_of_int i ^ " --> " ^ name); 
     *)
@@ -233,6 +249,13 @@ let bbind counter dfns bdfns =
     let bbexes = bexes env exes rt in
     Hashtbl.add bbdfns i 
     (name,parent,BBDCL_function (ps,rt,display,bbexes,name_map))
+
+  | BDCL_functor (ps,rt,exes,name_map) -> 
+    (*
+    print_endline ("//Binding functor " ^ string_of_int i ^ " --> " ^ name); 
+    *)
+    Hashtbl.add bbdfns i 
+    (name,parent,BBDCL_functor (ps,rt,name_map))
 
   | BDCL_lazy (display,e) ->
     let env = build_env dfns (Some i) in 
@@ -428,7 +451,7 @@ try
   print_endline "DEBLOCKED:";
 
   let counter = ref 1 in
-  let deblocked = desugar_program counter parse_tree in
+  let deblocked = desugar_program "DUMMY" counter parse_tree in
   print_endline (Flx_print.string_of_desugared deblocked);
   print_endline "----------------------------";
 

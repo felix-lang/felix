@@ -15,6 +15,14 @@ val lookup_qn_in_env :
   qualified_name_t -> 
   entry_set_t
 
+val bind_type:
+  symbol_table_t ->
+  env_t ->
+  int list ->
+  typecode_t ->
+  btypecode_t
+
+
 @h = tangler("src/flx_lookup.ml")
 @select(h)
 open Flx_util
@@ -24,6 +32,9 @@ open Flx_mtypes
 open Flx_typing
 open List
 open Flx_srcref
+open Flx_env
+
+exception Found of int
 
 let get_data table index : symbol_data_t = 
   try Hashtbl.find table index
@@ -59,18 +70,28 @@ let rec lookup_qn_in_htab dfns htab sr qn : entry_set_t =
       | FunctionEntry _ ->
         failwith 
         (
-          "[lookup_qn_in_htab] Expected " ^ h ^ " to be module, got overload set: " ^
+          "[lookup_qn_in_htab] Expected " ^ h ^ " to be module,\n" ^
+          " got overload set: " ^
           short_string_of_src sr
         )
       | NonFunctionEntry index -> index
     in match get_data dfns index with
     | (id,_,_,SYMDEF_module htab) -> 
+      assert (id = h);
+      (* failwith ("Qualified name lookup found module, interface required"); *)
       lookup_qn_in_htab dfns htab sr t
+      
+    | (id,_,_,SYMDEF_interface htab) -> 
+      assert (id = h);
+      print_endline ("[luqn in htb] Look finds interface : " ^ id);
+      lookup_qn_in_htab dfns htab sr t
+
     | (id,_,_,_) -> 
+      assert (id = h);
       failwith (
         "[lookup_qn_in_htab] Expected " ^ 
         h ^ 
-        "to be module to find " ^ 
+        "to be interface to find " ^ 
         (String.concat "::" t) ^ 
         " in: " ^
         short_string_of_src sr
@@ -92,31 +113,6 @@ let lookup_name_in_env env sr name : entry_set_t =
     match aux env with
     | Some x -> x
     | None ->
-      (*
-      let env_contents = String.concat "\n----------\n"
-      (
-        List.map 
-        (
-          fun table ->
-          (
-            let s = ref "" in
-            Hashtbl.iter 
-            (
-              fun k v ->
-              (
-                s := !s ^ k ^ ", "
-              )
-            )
-            table
-            ;
-            !s
-          )
-        )
-        env
-      ) 
-      in
-      print_endline env_contents;
-      *)
       failwith 
       (
         "[lookup_name_in_env]: Name '" ^ 
@@ -128,7 +124,7 @@ let lookup_name_in_env env sr name : entry_set_t =
       )
     
 (* lookup string list with a starting symbol table stack *)
-let lookup_qn_in_env dfns env sr qn : entry_set_t =
+let rec lookup_qn_in_env dfns env sr qn : entry_set_t =
   match qn with
   | [] -> 
     failwith 
@@ -157,21 +153,346 @@ let lookup_qn_in_env dfns env sr qn : entry_set_t =
         | FunctionEntry _ ->
           failwith 
           (
-            "[lookup_qn_in_env] Expected " ^ h ^ " to be module, got overload set" ^
+            "[lookup_qn_in_env] Expected " ^ h ^ " to be module,\n" ^
+            " got overload set :" ^
             short_string_of_src sr
           )
         | NonFunctionEntry index -> index
       in match get_data dfns index with
       | (id,_,_,SYMDEF_module htab) ->
+        assert (id = h);
         lookup_qn_in_htab dfns htab sr t
+
+      | (id,_,_,SYMDEF_module_binding e) ->
+        let htab = eval_module_expr dfns env e in
+        lookup_qn_in_htab dfns htab sr t
+
+      | (id,_,_,SYMDEF_interface htab) ->
+        assert (id = h);
+        print_endline ("[luqn in env] Look finds interface : " ^ id);
+        lookup_qn_in_htab dfns htab sr t
+
       | (id,_,_,_) -> 
+        assert (id = h);
         failwith (
-          "[lookup_qn_in_env] Expected " ^ 
+          "[lookup_qn_in_env] Expected '" ^ 
           h ^ 
-          "to have symbol table to find " ^ 
+          "' to have symbol table to find " ^ 
           (String.concat "::" t) ^ 
           " in :" ^
           short_string_of_src sr
         )
+
+and map_type iface dfns mmap ienv binding t = 
+  let map t = map_type iface dfns mmap ienv binding t in
+  match t with
+  | BTYP_name index ->
+    BTYP_name 
+    (
+      get_unique_binding iface dfns mmap ienv binding index
+    )
+  | BTYP_function (a, r) ->
+    BTYP_function (map a, map r)
+  | BTYP_tuple ls -> BTYP_tuple (List.map map ls)
+  | BTYP_pointer t -> BTYP_pointer (map t)
+  | BTYP_void -> BTYP_void
+  | BTYP_none -> BTYP_none 
+  
+and compare_defn iface dfns mmap name ienv ientry menv mentry binding =
+  print_endline 
+  (
+    "comparing iface element " ^ string_of_symdef ientry name ^ 
+    " with module element "  ^
+    string_of_symdef mentry name
+  );
+  match ientry,mentry with
+  | SYMDEF_if_type,SYMDEF_dcl (DCL_type_alias _)
+  | SYMDEF_if_type,SYMDEF_dcl (DCL_abs _)
+  | SYMDEF_if_type,SYMDEF_dcl (DCL_union _)
+  | SYMDEF_if_type,SYMDEF_dcl (DCL_struct _)
+    ->   true
+  | SYMDEF_if_fun (it,_),SYMDEF_function (ps,ret,_,_,_) ->
+    let mt = 
+      TYP_function 
+      (
+        (
+          match (List.map snd ps) with 
+          | [x]->x 
+          | x -> TYP_tuple x
+        )
+        ,
+        ret
+       
+      )
+    in
+      let it = bind_type dfns ienv [] it in
+      let mt = bind_type dfns menv [] mt in
+      let it = map_type iface dfns mmap ienv binding it in
+      let it = rebind_btype dfns menv it in (* replace typedefs *)
+      it = mt
+
+
+  | SYMDEF_if_proc (_,it,_),SYMDEF_procedure (_,ps,_,_,_) ->
+    let mt = 
+      TYP_function 
+      (
+        (
+          match (List.map snd ps) with 
+          | [x]->x 
+          | x -> TYP_tuple x
+        )
+        ,
+        TYP_void
+      )
+    in
+      let it = bind_type dfns ienv [] it in
+      let mt = bind_type dfns menv [] mt in
+      let it = map_type iface dfns mmap ienv binding it in
+      let it = rebind_btype dfns menv it in (* replace typedefs *)
+      it = mt
+
+  | _ -> false 
+
+
+(* GIVEN an index, if the index refers to an entity
+   declared in the interface, return what it binds
+   to in the module,
+   otherwise just return it
+
+   These semantics to support binding a a type in
+   the interface down to a type in the module
+*)
+and get_unique_binding iface dfns mmap ienv binding iindex =
+  try Hashtbl.find binding iindex
+  with Not_found ->
+    let iid,isr,iparent,isymdef = Hashtbl.find dfns iindex in
+    if iparent <> Some iface then iindex
+    else begin try
+      match Hashtbl.find mmap iid with
+      | NonFunctionEntry mindex ->
+        let mid,msr,mparent,msymdef = Hashtbl.find dfns mindex in
+        assert(iid=mid);
+        let menv = build_env dfns mparent in
+        if (compare_defn iface dfns mmap mid ienv isymdef menv msymdef binding)
+        then begin
+          Hashtbl.add binding iindex mindex
+          ;
+          mindex
+        end
+        else 
+          failwith 
+          (
+            "interface entry '"^ iid ^ 
+            "' doesn't match the one in the module"
+          )
+      | FunctionEntry _ ->
+        failwith 
+        (
+          "Non function entry '" ^ iid ^ 
+          "' in interface, found functions in module"
+        )
+    with 
+      | Not_found -> 
+        failwith 
+        (
+          "Name " ^ iid ^ " of interface not found in module"
+        )
+    end
+
+and match_interface_entry iface dfns mmap ienv binding name ientry =
+  print_endline ("matching interface name " ^ name);
+  match ientry with
+  | NonFunctionEntry iindex ->
+    ignore(get_unique_binding iface dfns mmap ienv binding iindex)
+
+  | FunctionEntry ls ->
+    List.iter
+    (fun iindex ->
+      let iid,isr,iparent,isymdef = Hashtbl.find dfns iindex in
+      begin try
+        match Hashtbl.find mmap name with
+        | NonFunctionEntry _ ->
+          failwith
+          (
+            "Function entry '" ^
+            name ^
+            "' in interface , found non function in module"
+          )
+        | FunctionEntry ls ->
+          begin try List.iter
+          (fun mindex ->
+            let mid,msr,mparent,msymdef = Hashtbl.find dfns mindex in
+            let menv = build_env dfns mparent in
+            if (compare_defn iface dfns mmap name ienv isymdef menv msymdef binding)
+            then raise (Found mindex);
+          )
+          ls
+          ;
+          failwith 
+          (
+            "interface entry '"^
+            name^
+            "' doesn't match the any one in the module"
+          )
+          with Found mindex-> 
+            Hashtbl.add binding iindex mindex
+          end
+      with 
+        | Not_found -> 
+          failwith 
+          (
+            "Name " ^ name ^ " of interface not found in module"
+          )
+      end
+    )
+    ls
+
+and match_interface iface dfns mmap ienv imap =
+  let binding = Hashtbl.create 97 in
+  Hashtbl.iter
+  (match_interface_entry iface dfns mmap ienv binding)
+  imap
+  ;
+  print_endline "Module matches interface OK";
+  print_endline "Binding is:";
+  Hashtbl.iter
+  (fun i j -> 
+    print_endline 
+    (
+      let iid,_,_,ie = Hashtbl.find dfns i 
+      and mid,_,_,me = Hashtbl.find dfns j
+      in
+      iid ^
+      "[" ^ string_of_int i ^ "] -> " ^
+      mid ^
+      "[" ^ string_of_int j ^ "]"
+    )
+  )
+  binding
+  ;
+  failwith "Done"
+
+and eval_module_expr dfns env e = 
+  print_endline ("Handling module expression '"^string_of_expression e^"'");
+  match e with
+  | AST_coercion (sr,(m,t)) ->
+    let module_map = eval_module_expr dfns env m in
+    let t' = bind_type dfns env [] t in
+    begin match t' with
+    | BTYP_name index ->
+      let id,sr,parent,symdef = Hashtbl.find dfns index in
+      let ienv = build_env dfns (Some index) in
+      begin match symdef with
+      | SYMDEF_interface imap ->
+        match_interface index dfns module_map ienv imap
+      | x -> 
+        failwith 
+        (
+          "[eval_module_expr]: Expected interface, got: " ^ 
+          string_of_symdef x id
+        )
+      end
+    | _ -> 
+      failwith 
+      (
+        "Exected module type to be an interface name (functors later), got: " ^
+        string_of_btypecode dfns t'
+      )
+    end
+
+  | AST_apply (sr,(f,m)) ->
+    failwith "Can't handle functor application in lookup yet"
+
+  | AST_name (sr,(qn,TYP_none)) ->
+    let entries = lookup_qn_in_env dfns env sr qn in
+    begin match entries with
+    | FunctionEntry _ -> 
+      failwith 
+      (
+        "Expected '" ^ string_of_qualified_name qn ^ 
+        "' to be module, got function overload set in : " ^
+        short_string_of_src sr
+      )
+    | NonFunctionEntry index ->
+      let id,sr',parent,entry = Hashtbl.find dfns index in
+      begin match entry with
+      | SYMDEF_module table -> table
+      | _ -> 
+        failwith 
+        (
+          "Expected '" ^ id ^ "' to me module in: " ^
+          short_string_of_src sr ^ ", found: " ^
+          short_string_of_src sr'
+        )
+      end
+    end
+
+  | _ ->
+    failwith "Invalid module expression"
+
+
+and bind_type dfns env exclude t : btypecode_t =
+  let bt t = bind_type dfns env exclude t in
+  let dummy_sr = ("type binding",0,0,0,0) in
+  let lu qn = lookup_qn_in_env dfns env dummy_sr qn in
+  match t with
+  | TYP_name qn ->
+    let index = match lu qn with
+      | NonFunctionEntry index -> index
+      | FunctionEntry _ -> 
+        failwith 
+        (
+          "[bind_types] Expected "^
+          string_of_qualified_name qn^
+          " to be a type, got function overload set"
+        )
+    in
+    if List.mem index exclude 
+    then failwith (
+      "Recursive type alias " ^
+      (
+        match get_data dfns index with id,sr,_,_ -> 
+          id ^ " defined at " ^
+          short_string_of_src sr
+      )
+    )
+    else begin match get_data dfns index with
+    | _,_,_,SYMDEF_dcl (DCL_type_alias t) -> bind_type dfns env (index :: exclude) t
+    | _,_,_,SYMDEF_dcl (DCL_abs _) -> BTYP_name index
+    | _,_,_,SYMDEF_dcl (DCL_union _) -> BTYP_name index
+    | _,_,_,SYMDEF_dcl (DCL_struct _) -> BTYP_name index
+    | _,_,_,SYMDEF_dcl (DCL_interface _) -> BTYP_name index
+    | _,_,_,SYMDEF_if_type -> BTYP_name index 
+    | _,_,_,SYMDEF_interface _ -> BTYP_name index
+    | id,sr,_,_ -> 
+      failwith 
+      (
+        "[bind_type] Type " ^ id ^ 
+        " defined at " ^ short_string_of_src sr ^
+        " must be abstract, union or struct"
+      )
+    end 
+  | TYP_tuple ts -> BTYP_tuple (List.map bt ts)
+  | TYP_function (d,c) -> BTYP_function (bt d, bt c)
+  | TYP_pointer t -> BTYP_pointer (bt t)
+  | TYP_void -> BTYP_void
+  | TYP_none -> BTYP_none
+ 
+
+and rebind_btype dfns env t =
+  let rbt t = rebind_btype dfns env t in
+  match t with
+  | BTYP_name i ->
+    let id,sr,parent,entry = Hashtbl.find dfns i in
+    begin match entry with
+    | SYMDEF_dcl (DCL_type_alias t') ->
+      bind_type dfns env [] t'
+    | _ -> t
+    end
+  | BTYP_tuple ts -> BTYP_tuple (List.map rbt ts)
+  | BTYP_function (a,r) -> BTYP_function (rbt a, rbt r) 
+  | BTYP_pointer t -> BTYP_pointer (rbt t)
+  | BTYP_void -> BTYP_void
+  | BTYP_none -> BTYP_none
 
 

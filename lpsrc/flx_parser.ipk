@@ -50,6 +50,7 @@
 exception EndOfInput
 open Flx_types
 open Flx_srcref
+open Flx_print
 
 let list_last lst = List.hd (List.rev lst)
 
@@ -229,9 +230,9 @@ let mkcurry sr name args return_type body =
 %token<Flx_types.srcref> IF THEN ELSE ENDIF ELIF OF VAR UNION CLASS CATEGORY EXCEPTIONS GOTO EXPORT
 
 %token<Flx_types.srcref> MATCH WITH ENDMATCH CASE HEADER MODULE CODE
-%token<Flx_types.srcref> SERVICE COMMAND HANDLER CALL PROCEDURE FUNCTION SLP READER FUNCTOR
+%token<Flx_types.srcref> SERVICE COMMAND HANDLER CALL PROCEDURE FUNCTION READER FUNCTOR
 %token<Flx_types.srcref> UNIT RETURN FORK VOID
-%token<Flx_types.srcref> WHILE LOOP
+%token<Flx_types.srcref> WHILE LOOP TO
 %token<Flx_types.srcref> TODO INTERFACE
 %token<Flx_types.srcref> TYPE FUN READ PROC CONST STRUCT RAISE ATTEMPT FINALLY EXCEPT VAL TYPEDEF
 
@@ -241,11 +242,8 @@ let mkcurry sr name args return_type body =
 %type <Flx_types.range_srcref * Flx_types.id_t> simple_name
 %type <Flx_types.range_srcref * Flx_types.qualified_name_t> qualified_name
 %type <Flx_types.range_srcref * Flx_types.suffixed_name_t> suffixed_name
-%type <Flx_types.range_srcref * Flx_types.suffixed_mname_t> suffixed_mname
 %type <Flx_types.statement_t> statement 
 %type <Flx_types.expr_t> expr
-%type <Flx_types.mexpr_t> mexpr
-%type <Flx_types.mexpr_t> mapplication
 %type <Flx_types.expr_t> rvalue
 
 %type <Flx_types.pattern_t> pattern
@@ -302,7 +300,6 @@ executable:
   | call { $1 }
   | read { $1 }
   | return { $1 }
-/*  | block { $1 } */
   | if_stmt { $1 }
   | while_stmt { $1 }
   | todo { $1 }
@@ -320,6 +317,11 @@ abstract_type:
   | TYPE NAME EQUAL STRING SEMI 
     { 
       AST_abs_decl (rstoken $1 $5, snd $2, snd $4) 
+    }
+
+  | TYPE NAME SEMI 
+    { 
+      AST_type (rstoken $1 $3, snd $2) 
     }
 
 @head(3,'Union Binding')
@@ -394,13 +396,6 @@ export_statement:
  
 @head(3,'Function and Procedure Definition')
 @select(h)
-pparam:
-  | NAME { TYP_name [snd $1] }
-  | AMPER NAME { TYP_pointer (TYP_name [snd $2]) }
-pparams:
-  | pparam STAR pparams { $1 :: $3 }
-  | pparam { [$1] }
-
 fun_arg:
   | LPAR parameter_comma_list RPAR { rstoken $1 $3,$2 }
 
@@ -419,23 +414,47 @@ function_definition:
       in mkcurry sr name args return_type body
     }
 
-  | FUNCTION NAME COLON UNIT RIGHTARROW type_expr EQUAL STRING SEMI 
+  | FUNCTION NAME COLON type_expr EQUAL STRING SEMI 
     { 
-      AST_fun_decl (rstoken $1 $9, snd $2, [],  $6,  snd $8) 
+      let name = snd $2 
+      and t = $4 
+      and ct = snd $6 
+      and sr = rstoken $1 $7
+      in
+      match t with
+      | TYP_function (arg, ret) ->
+        let args = 
+          match arg with
+          | TYP_tuple lst -> lst
+          | x -> [x]
+        in
+        AST_fun_decl (sr, name, args,  ret,  ct) 
+      | _ -> 
+        failwith 
+        (
+          "Function '"^name^"' requires function type, got " ^
+          string_of_typecode t ^ " in " ^
+          short_string_of_src sr
+        )
     }
-  | FUNCTION NAME COLON pparams RIGHTARROW type_expr EQUAL STRING SEMI 
-    { 
-      AST_fun_decl (rstoken $1 $9, snd $2,  $4,  $6,  snd $8) 
-    }
+
   | FUNCTION NAME fun_args compound 
     {
       failwith ("Missing return type in declaration of function " ^ snd $2)
     }
-  
+  | FUNCTION NAME COLON type_expr SEMI
+    {
+      AST_function_decl (rstoken $1 $5, snd $2,  $4) 
+    }
+
 procedure_definition:
   | PROCEDURE NAME compound 
     { 
       AST_procedure (rsrange (lift $1) (fst $3), TYP_void, snd $2, [], snd $3) 
+    }
+  | PROCEDURE NAME COLON type_expr SEMI
+    {
+      AST_procedure_decl (rstoken $1 $5,TYP_void,snd $2, $4);
     }
   | PROCEDURE NAME fun_args compound 
     { 
@@ -446,13 +465,19 @@ procedure_definition:
       and args = List.map snd $3 (* elide srcref *)
       in mkcurry sr name args return_type body
     }
-  | PROCEDURE NAME COLON UNIT EQUAL STRING SEMI 
+  | PROCEDURE NAME COLON type_expr EQUAL STRING SEMI 
     { 
-      AST_proc_decl (rstoken $1 $7, snd $2, [],  snd $6) 
-    }
-  | PROCEDURE NAME COLON pparams EQUAL STRING SEMI 
-    { 
-      AST_proc_decl (rstoken $1 $7, snd $2,  $4,  snd $6) 
+      let sr = rstoken $1 $7 
+      and name = snd $2 
+      and t = $4
+      and ct = snd $6
+      in
+      let ts = 
+        match t with
+        | TYP_tuple lst -> lst
+        | x -> [x]
+      in
+      AST_proc_decl (sr,name, ts,ct) 
     }
 
 
@@ -499,27 +524,6 @@ placed in the variable by the dispatcher.
 
 @head(3,'Module Definition')
 @select(h)
-@commalistof("mparameter")
-mparameter:
-  | NAME COLON mtype_expr { snd $1,$3 }
-
-/*
-mpparam:
-  | NAME { MTYP_name [snd $1] }
-  | AMPER NAME { MTYP_pointer (MTYP_name [snd $2]) }
-mpparams:
-  | mpparam STAR mpparams { $1 :: $3 }
-  | mpparam { [$1] }
-*/
-
-mfun_arg:
-  | LPAR mparameter_comma_list RPAR { rstoken $1 $3,$2 }
-
-mfun_args:
-  | mfun_arg mfun_args      { $1 :: $2 }
-  | mfun_arg               { [$1] }
-
-
 module_definition:
   | MODULE NAME compound 
     { 
@@ -527,50 +531,16 @@ module_definition:
       (
         rsrange (lift $1) (fst $3), 
         snd $2, 
-        snd $2, 
         snd $3
       ) 
     }
 
-  | MODULE NAME COLON NAME compound 
-    { 
-      AST_module 
-      (
-        rsrange (lift $1) (fst $5), 
-        snd $2, 
-        snd $4, 
-        snd $5
-      ) 
-    }
-
-  | MODULE NAME COLON NAME EQUAL compound 
-    { 
-      AST_module 
-      (
-        rsrange (lift $1) (fst $6), 
-        snd $2, 
-        snd $4, 
-        snd $6
-      ) 
-    }
-
-  | MODULE NAME EQUAL compound 
-    { 
-      AST_module 
-      (
-        rsrange (lift $1) (fst $4), 
-        snd $2, 
-        snd $2, 
-        snd $4
-      ) 
-    }
-
-  | FUNCTOR NAME mfun_args COLON mtype_expr compound
+  | FUNCTOR NAME fun_args compound
     {
-      let sr = rsrange (lift $1) (fst $6)
+      let sr = rsrange (lift $1) (fst $4)
       and name = snd $2 
-      and return_type = $5
-      and body = snd $6
+      and return_type = TYP_none
+      and body = snd $4
       and args = List.map snd $3 (* elide srcref *)
       in match args with
       | [x] ->
@@ -578,122 +548,49 @@ module_definition:
       | _ -> failwith "Can't handle functor of more than one arg"
     }
 
-  | MODULE NAME EQUAL mexpr SEMI
+  | FUNCTOR NAME fun_args COLON type_expr EQUAL compound
+    {
+      let sr = rsrange (lift $1) (fst $7)
+      and name = snd $2 
+      and return_type = $5
+      and body = snd $7
+      and args = List.map snd $3 (* elide srcref *)
+      in match args with
+      | [x] ->
+        AST_functor (sr, name, x, return_type, body)
+      | _ -> failwith "Can't handle functor of more than one arg"
+    }
+
+  | MODULE NAME EQUAL expr SEMI
     {
       AST_module_binding 
       (
-        rsrange (lift $1) (lift $5), 
+        rstoken $1 $5, 
         snd $2, 
         $4 
       )
     }
-
-interface_entry:
-  | TYPE NAME SEMI                  { IAST_type (snd $2); }
-  | VAL NAME COLON type_expr SEMI  { IAST_val (snd $2, $4); }
-  | VAR NAME COLON type_expr SEMI  { IAST_var (snd $2, $4); }
-  | PROCEDURE NAME COLON type_expr SEMI  { IAST_procedure (snd $2, $4); }
-  | FUNCTION NAME COLON type_expr SEMI  { IAST_function (snd $2, $4); }
-  
+ 
 interface_decl:
-  | INTERFACE NAME LBRACE interface_entry_aster RBRACE
+  | INTERFACE NAME compound
     {
       AST_interface
       (
-        rstoken $1 $5,
+        rsrange (lift $1) (fst $3),
         snd $2,
-        $4
+        snd $3
       )
     }
 
-  | INTERFACE NAME EQUAL LBRACE interface_entry_aster RBRACE
+  | INTERFACE NAME EQUAL compound 
     {
       AST_interface
       (
-        rstoken $1 $6,
+        rsrange (lift $1) (fst $4),
         snd $2,
-        $5
+        snd $4
       )
     }
-
-@aster("interface_entry")
-
-@head(3,'Module expression')
-@select(h)
-mexpr:
-  | mtuple { $1 }
-  
-mtuple:
-  | mapplication_comma_list 
-    { 
-      let lst = $1 in 
-      MAST_tuple ( rsmlist lst, lst) 
-    }
-
-mapplication:
-  | mapplication mfactor                  
-    { 
-      MAST_apply (rsmexpr $1 $2, ($1, $2)) 
-    }
-  | mfactor              { $1 }
-
-
-mfactor:
-  | mfactor DOT NAME     { MAST_dot (lift $2, ($1, snd $3)) }
-  | matom                { $1 }
-
-matom:
-  | LPAR mexpr RPAR      { $2 }
-  | suffixed_mname       { MAST_name (fst $1,snd $1) }
-
-suffixed_mname:
-  | qualified_name OF LPAR mtype_expr RPAR 
-    { 
-      fst $1,
-      (snd $1, $4)
-    }
-  | qualified_name 
-    { 
-      fst $1, 
-      (snd $1, MTYP_none) 
-    }
-
-@commalistof("mapplication")
-
-@head(2,'Module Type Grammar')
-@select(h)
-/* MODULE TYPE GRAMMAR */
-mtype_expr:
-  | mtype_arrow { $1 }
-
-/* arrow has the lowest precedence, and associates right */
-mtype_arrow:
-  | mtype_product RIGHTARROW mtype_arrow { MTYP_function ($1,$3) }
-  | mtype_product { $1 }
-
-/* star is left associative */
-mtype_product:
-  | mtype_pointer STAR mtype_product_list { MTYP_tuple ($1 :: $3) }
-  | mtype_pointer{ $1 }
-mtype_product_list:
-  | mtype_pointer STAR mtype_product_list { $1 :: $3 }
-  | mtype_pointer { [$1] }
-
-mtype_pointer:
-  | AMPER mtype_atom { MTYP_pointer $2 }
-  | mtype_atom { $1 }
-mtype_atom:
-  | LPAR mtype_expr RPAR { $2 }
-  | UNIT { MTYP_tuple [] }
-  | LPAR RPAR { MTYP_tuple [] }
-  | qualified_mtype_name { MTYP_name $1 }
-
-relative_mtype_name:
-  | relative_mtype_name COLONCOLON NAME { $1 @ [snd $3] }
-  | NAME { [snd $1] }
-qualified_mtype_name:
-  | COLONCOLON relative_mtype_name { "" :: $2 }
-  | relative_mtype_name { $1 }
 
 @head(3,'Variable and Constant Declaration')
 @select(h)
@@ -738,11 +635,6 @@ in a function.
 @select(h)
 compound:     
   | LBRACE statement_aster RBRACE  { rstoken $1 $3, $2 }
-
-/*
-block:        
-  | compound { AST_block (fst $1, snd $1) }
-*/
 
 @doc()
 A procedure call looks like a function application,
@@ -1505,19 +1397,35 @@ refr:
 
 /* applications is left associative */
 application:
-  | application factor                  
+  | application coercion
     { 
       AST_apply (rsexpr $1 $2, ($1, $2)) 
     }
-  | factor                              { $1 }
+  | coercion { $1 }
+
+coercion:
+  | factor COLON type_pointer
+    { 
+      AST_coercion 
+      (
+        rsrange (src_of_expr $1) (lift $2),
+        (
+          $1,$3
+        )
+      )
+    }
+  | factor { $1 }
 
 factor:
   | factor LSQB expr RSQB               { apl2 $2 "subscript" [$1; $3] }
-  | factor LSQB expr COLON expr RSQB    { apl2 $2 "substring" [$1; $3; $5] }
-  | factor LSQB COLON RSQB              { apl2 $2 "copystring" [$1] }
-  | factor LSQB expr COLON RSQB         { apl2 $2 "copyfrom" [$1; $3] }
-  | factor LSQB COLON expr RSQB         { apl2 $2 "copyto" [$1; $4] } 
+  | factor LSQB expr TO expr RSQB    { apl2 $2 "substring" [$1; $3; $5] }
+  | factor LSQB expr TO RSQB         { apl2 $2 "copyfrom" [$1; $3] }
+  | factor LSQB TO expr RSQB         { apl2 $2 "copyto" [$1; $4] } 
   | factor DOT NAME                     { AST_dot (lift $2, ($1, snd $3)) }
+  | factor RIGHTARROW NAME              
+    { 
+      AST_dot (lift $2, (AST_deref (lift $2,$1), snd $3)) 
+    }
   | factor DOT LPAR INTEGER RPAR
     { 
       match $4 with
@@ -1538,7 +1446,7 @@ factor:
     }
   | atom { $1 }
 
-
+ 
 atom:
   | compound            
     {

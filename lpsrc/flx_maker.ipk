@@ -107,10 +107,9 @@ INTERFACES = [
   'flx_pat'          , 
   'flx_desugar'      , 
   'flx_symtab'       , 
+  'flx_env'          , 
   'flx_lookup'       , 
   'flx_overload'     , 
-  'flx_env'          , 
-  'flx_tbind'        , 
   'flx_ebind'        , 
   'flx_bind'         , 
   'flx_mbind'        , 
@@ -140,10 +139,9 @@ IMPLEMENTATIONS = [
   'flx_pat'          , 
   'flx_desugar'      , 
   'flx_symtab'       , 
+  'flx_env'          , 
   'flx_lookup'       , 
   'flx_overload'     , 
-  'flx_env'          , 
-  'flx_tbind'        , 
   'flx_ebind'        , 
   'flx_bind'         , 
   'flx_mbind'        , 
@@ -256,7 +254,7 @@ try:
     REGRESSION_TESTS = glob.glob('test/rt*.flx')
     TUTORIAL_TESTS = glob.glob('tut/examples/tut*.flx')
     TESTS = TESTS + REGRESSION_TESTS + TUTORIAL_TESTS
-
+    TESTS.sort()
 
   # STEP 1: Compile all C files
   for cobject in COBJECTS.keys():

@@ -1,4 +1,20 @@
 @head(1,"Desugaring")
+Two routines: one to build interfaces
+from modules, and one to lift lambdas
+and blocks.
+@h = tangler("src/flx_desugar.mli")
+@select(h)
+open Flx_types
+val desugar_program: 
+  string ->
+  int ref ->
+  statement_t list -> 
+  asm_t list
+
+val build_interface:
+  statement_t list ->
+  statement_t list
+
 @h = tangler("src/flx_desugar.ml")
 @select(h)
 open Flx_util
@@ -100,6 +116,11 @@ let rec rex seq msgt e =
     let l1,x1 = rex obj in 
     l1 , AST_dot (sr,(x1,comp))
 
+  | AST_coercion (sr,(e,t)) ->
+    let l1,x1 = rex e in 
+    l1, AST_coercion (sr,(x1,t))
+
+
 and split_st seq msgt sr s : asm_t list * asm_t =
   match rst seq msgt s with
   | [] -> [], Exe (generated,EXE_nop "")
@@ -115,6 +136,7 @@ and split_st seq msgt sr s : asm_t list * asm_t =
       AST_tuple (generated,[])
     ))
 
+    
 (* remove blocks *)
 
 and rst seq msgt st : asm_t list = 
@@ -126,11 +148,6 @@ and rst seq msgt st : asm_t list =
   | AST_functor (sr,name,ps,typ,sts) ->
     [
       Dcl (sr,name,DCL_functor (ps,typ,rsts' sts));
-    ]
-
-  | AST_interface (sr,name,mifentries) ->
-    [
-      Dcl (sr,name,DCL_interface mifentries)
     ]
 
   | AST_module_binding (sr,name,mexpr) ->
@@ -176,6 +193,7 @@ and rst seq msgt st : asm_t list =
   | AST_union (sr,name, components) -> [Dcl (sr,name,DCL_union components)]
   | AST_struct (sr,name, components) ->  [Dcl (sr,name,DCL_struct components)]
   | AST_type_alias (sr,name,typ) -> [Dcl (sr,name,DCL_type_alias typ)]
+  | AST_type (sr,name) -> [Dcl (sr,name,DCL_type)]
 
   (* functions *)
   | AST_function (sr,name, params, res, sts) -> 
@@ -186,6 +204,12 @@ and rst seq msgt st : asm_t list =
     let rsts' sts = catmap rst' sts in
     [Dcl (sr,name,DCL_procedure (msgt, params, rsts' sts))]
     
+  | AST_procedure_decl (sr,msgt,name,typ) ->
+    [Dcl (sr,name,DCL_if_proc (msgt,typ))]
+
+  | AST_function_decl (sr,name,typ) ->
+    [Dcl (sr,name,DCL_if_fun typ)]
+
   | AST_block (sr,sts) ->
     begin match sts with
     | [] -> []
@@ -207,17 +231,22 @@ and rst seq msgt st : asm_t list =
     [Dcl (sr,name,DCL_proc(args,code))]
 
   (* misc *)
-  | AST_module (sr,name, iface,sts) -> 
+  | AST_interface (sr,name,sts) ->
     [
-      Dcl (sr,name,DCL_module (iface,rsts' sts));
+      Dcl (sr,name,DCL_interface (rsts' sts))
+    ]
+
+  | AST_module (sr,name, sts) -> 
+    [
+      Dcl (sr,name,DCL_module (rsts' sts));
       Exe 
       (
         sr,
         EXE_call 
-          (
-            AST_name (sr,([name;"_init_"],TYP_tuple [])),
-            AST_tuple (generated,[])
-          )
+        (
+          AST_name (sr,([name;"_init_"],TYP_tuple [])),
+          AST_tuple (generated,[])
+        )
       )
     ]
 
@@ -427,22 +456,68 @@ and rst seq msgt st : asm_t list =
   | AST_read (sr,name) ->  [Exe (sr,EXE_read name)]
   | AST_code (sr,s) -> [Exe (sr,EXE_code s)]
 
+let typeofargs a = 
+      match List.map snd a with
+      | [x] -> x
+      | lst -> TYP_tuple lst
 
-let desugar_program counter sts =
+let rec build_if d = match d with
+  | AST_function  (sr,name,ps,ret,_) -> 
+    [
+      AST_function_decl 
+      (
+        sr,
+        name,
+        TYP_function 
+        (
+          typeofargs ps,
+          ret
+        )
+      )
+    ]
+
+  | AST_procedure (sr,msgt,name,ps,_) ->
+    [
+      AST_procedure_decl 
+      (
+        sr,
+        msgt,
+        name,
+        TYP_function 
+        (
+          typeofargs ps,
+          TYP_void 
+        )
+      )
+    ]
+
+  | AST_module (sr,name,sts) -> 
+    [AST_module (sr,name,build_interface sts)]
+
+  | AST_var_decl _
+  | AST_val_decl _
+
+  | AST_type_alias _
+  | AST_union _
+  | AST_struct _
+  | AST_const_decl _
+  | AST_fun_decl _
+  | AST_proc_decl _ 
+  | AST_abs_decl _ 
+    -> [d]
+  | _ -> [] 
+
+and build_interface m =
+ List.concat (List.map build_if m)
+ 
+let desugar_program name counter sts =
   let sr = 
     rsrange 
       (src_of_statement (List.hd sts)) 
       (src_of_statement (list_last sts))
   in
   let seq () = let n = !counter in incr counter; n in
-  rst seq TYP_void (AST_module (sr,"","",sts))
-
-@h = tangler("src/flx_desugar.mli")
-@select(h)
-val desugar_program: 
-  int ref ->
-  Flx_types.statement_t list -> 
-  Flx_types.asm_t list
+  rst seq TYP_void (AST_module (sr,name,sts))
 
 @h = tangler("src/flxd.ml")
 @select(h)
@@ -527,10 +602,44 @@ try
   ;
 
   let filebase = Sys.argv.(argc-1) in
-  let input_file_name = filebase ^ ".flx" in
+  let input_file_name = filebase ^ ".flx" 
+  and iface_file_name = filebase ^ ".fix"
+  and module_name = 
+    let s = Buffer.create 50 in
+    begin 
+      try 
+        let i = ref (String.length filebase) in 
+        while !i>0 do
+          if filebase.[!i-1] = '/'
+          then raise Not_found;
+          Buffer.add_char s filebase.[!i-1];
+          decr i
+        done
+      with _ -> ()
+    end;
+    Buffer.contents s
+  in
 
-  print_endline ("//Parsing " ^ input_file_name);
+  let have_interface = Sys.file_exists iface_file_name in
 
+  (* PARSE THE INTERFACE FILE IF IT EXISTS *)
+  if have_interface 
+  then begin
+    print_endline ("//Parsing Interface " ^ iface_file_name);
+
+    let parse_tree =
+      Flx_parse_ctrl.parse_file 
+        input_file_name 
+        (Filename.dirname iface_file_name)
+        !include_dirs 
+    in
+    print_endline (Flx_print.string_of_compilation_unit parse_tree);
+    print_endline "//PARSE OK";
+  end 
+  ;
+
+  (* PARSE THE IMPLEMENTATION FILE *)
+  print_endline ("//Parsing Implementation " ^ input_file_name);
   let parse_tree =
     Flx_parse_ctrl.parse_file 
       input_file_name 
@@ -540,11 +649,30 @@ try
   print_endline (Flx_print.string_of_compilation_unit parse_tree);
   print_endline "//PARSE OK";
 
+  (* IF THERE WAS NO INTERFACE FILE, GENERATE ONE *)
+  if not have_interface 
+  then begin
+    print_endline "//No interface file found: generating one";
+    let h = open_out iface_file_name in
+    let iface = build_interface parse_tree in
+    List.iter 
+    (
+      fun x->
+        output_string h
+        (
+          (string_of_statement 0 x)^"\n"
+        )
+    ) 
+    iface;
+    close_out h
+  end
+  ;
+
   print_endline "//----------------------------";
-  print_endline "//DESUGARED:";
+  print_endline "//IMPLEMENTATION DESUGARED:";
 
   let counter = ref 1 in
-  let deblocked = desugar_program counter parse_tree in
+  let deblocked = desugar_program module_name counter parse_tree in
   print_endline (Flx_print.string_of_desugared deblocked);
   print_endline "//----------------------------";
 

@@ -53,9 +53,8 @@ get smaller with each compiler improvement.
   ]
 @for x in xs:
   for y in ys:
-    tangle("endl;")
     for s in ss:
-      tangle("print("+x+s+" + "+y+s+");") 
+      tangle("assert(int_of("+x+s+" + "+y+s+")==42);") 
 
 @select(tangler('test/rt02'))
 header r"""
@@ -86,9 +85,8 @@ fun fact(a:int): int
 
 // test function variable
 val factc : int -> int = fact of (int);
-print (fact 6);
-print "\n";
-print (factc 6);
+assert (fact 6 == 6 * 5 * 4 * 3 * 2);
+assert (factc 6 == 6 * 5 * 4 * 3 * 2);
 
 // test procedure variable
 proc printer (a:int) { print a; }
@@ -139,10 +137,10 @@ x += "+";
 x += "World";
 print x; endl;
 assert(x == "Hello+World");
-print x[1:6]; endl;
-print x[:6]; endl;
-print x[6:]; endl;
-print x[6:-1]; endl;
+print x[1 to 6]; endl;
+print x[to 6]; endl;
+print x[6 to]; endl;
+print x[6 to -1]; endl;
 
 var i = 0;
 var n = len x;

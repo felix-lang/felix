@@ -95,6 +95,7 @@ let rec subst vars e mv =
     failwith "AST_ctor_arg in 'when' expression not implemented"
   | AST_get_n _ ->
     failwith "AST_get_n in 'when' expression not implemented"
+  | AST_coercion _ -> failwith "subst: coercion"
 
 (* This routine runs through a pattern looking for
   pattern variables, and adds a record to a hashtable

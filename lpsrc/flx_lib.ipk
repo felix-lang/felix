@@ -213,7 +213,7 @@ proc assert: bool = "assert($1);";
   tangle('//')
   tangle('//'+t1)
   for t2 in ints+floats:
-    tangle('fun '+t1+'_of: '+t2+' -> '+t1+' = "('+tmap[t1]+')$2";')
+    tangle('fun '+t1+'_of: '+t2+' -> '+t1+' = "('+tmap[t1]+')$1";')
 
 // ordinary value of chars
 fun ord: char -> uint = "(int)$1";
