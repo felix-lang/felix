@@ -72,8 +72,13 @@ open Uint64;
   ]
 @for x in xs:
   for y in ys:
+    tname = "tst_"+x+y
+    tangle("//noinline is needed to stop gcc dropping dead") 
+    tangle("noinline proc "+tname+" {")
     for s in ss:
-      tangle("assert(int_of("+x+s+" + "+y+s+")==42);") 
+      tangle("  assert(int_of("+x+s+" + "+y+s+")==42);") 
+    tangle("}")
+    tangle(tname+";")
 
 print "rt01 complete\n";
 

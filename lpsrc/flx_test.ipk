@@ -100,9 +100,9 @@ to the client.
 #include <string>
 #include <unistd.h>
 
-#include "rtl/flx_rtl.hpp"
-#include "rtl/flx_collector.hpp"
-#include "rtl/flx_dynlink.hpp"
+#include "flx_rtl.hpp"
+#include "flx_collector.hpp"
+#include "flx_dynlink.hpp"
 
 using namespace flx::rtl;
 using namespace flx::gc::generic;
@@ -298,9 +298,9 @@ messages.
 #include <string>
 #include <iostream>
 
-#include "rtl/flx_rtl.hpp"
-#include "rtl/flx_collector.hpp"
-#include "rtl/flx_dynlink.hpp"
+#include "flx_rtl.hpp"
+#include "flx_collector.hpp"
+#include "flx_dynlink.hpp"
 
 using namespace flx::rtl;
 using namespace flx::gc::generic;

@@ -399,7 +399,7 @@ let gen_offset_tables syms (child_map,bbdfns) all_closures =
             bcat s ("\n//OFFSETS for complete abstract "^(if pod then "pod " else "finalisable ")^
               "type " ^ name ^ " instance\n"
             );
-            if pod then bcat s ("FLX_FINALISER("^name^")\n");
+            if not pod then bcat s ("FLX_FINALISER("^name^")\n");
             bcat s ( "static gc_shape_t " ^ name ^ "_ptr_map(\n") ;
             if pod then
               bcat s ("  1,sizeof("^name^"),0,0,0\n")

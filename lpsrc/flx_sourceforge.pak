@@ -191,8 +191,9 @@ native Win32 using MSVC++.
 
 <H1>Download</H1>
 @tangle("<P> Download developer tarball <A HREF=flx_"+flx_version+"_src.tgz>flx_"+flx_version+"_src.tgz</A> (734006 bytes)")
-@tangle("<P> Old Version <A HREF=flx_1.0.8_src.tgz>flx_1.0.8_src.tgz</A> (732372 bytes)")
-@tangle("<P> Old Version <A HREF=flx_1.0.7_src.tgz>flx_1.0.7_src.tgz</A> (725091 bytes)")
+@tangle("<P> Old Version <A HREF=flx_1.0.9_src.tgz>flx_1.0.9_src.tgz</A>") 
+@tangle("<P> Old Version <A HREF=flx_1.0.8_src.tgz>flx_1.0.8_src.tgz</A>")
+@tangle("<P> Old Version <A HREF=flx_1.0.7_src.tgz>flx_1.0.7_src.tgz</A>")
 </P>
 <H1>Make procedure</H1>
 To bootstrap the build, type

@@ -2015,9 +2015,9 @@ try
   plh ("//Timestamp: " ^ compile_start_local_string);
   plh "";
   plh "//FELIX RUNTIME";
-  plh "#include \"rtl/flx_rtl.hpp\"";
+  plh "#include \"flx_rtl.hpp\"";
   plh "using namespace flx::rtl;";
-  plh "#include \"rtl/flx_collector.hpp\"";
+  plh "#include \"flx_collector.hpp\"";
   plh "using namespace flx::gc::generic;";
   plh "";
 

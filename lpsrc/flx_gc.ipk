@@ -302,7 +302,7 @@ void *operator new
 
 @select(tangler('rtl/flx_gc.cpp'))
 
-#include "rtl/flx_gc.hpp"
+#include "flx_gc.hpp"
 #include <cstdio>
 #include <cassert>
 namespace flx {
@@ -402,7 +402,7 @@ void *operator new(
 @select(tangler('rtl/flx_collector.hpp'))
 #ifndef FLX_COLLECTOR
 #define FLX_COLLECTOR
-#include "rtl/flx_gc.hpp"
+#include "flx_gc.hpp"
 #include <map>
 
 namespace flx {
@@ -478,7 +478,7 @@ private:
 #include <cassert>
 #include <cstdio>
 #include <cstddef>
-#include "rtl/flx_collector.hpp"
+#include "flx_collector.hpp"
 namespace flx {
 namespace gc {
 namespace collector {

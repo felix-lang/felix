@@ -325,7 +325,7 @@ macro val windows = case 1 of 2;
 
 fun dlopen:string -> address = 'dlopen($1.data())';
 fun LoadLibrary:string -> int = 'LoadLibrary($.data())';
-fun testhook:string -> int = 'printf("LoadTheLibrary(%s)\n",$1.data())';
+fun testhook:string -> int = 'printf("LoadTheLibrary(%s)\\n",$1.data())';
 
 macro val openlib = 
   if unix then dlopen 

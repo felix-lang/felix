@@ -18,7 +18,7 @@ namespace flx { namespace rtl { namespace i18n {
 #endif
 
 @select(tangler('rtl/flx_i18n.cpp'))
-#include "rtl/flx_i18n.hpp"
+#include "flx_i18n.hpp"
 namespace flx { namespace rtl { namespace i18n {
   std::string utf8(unsigned long i) 
   {
@@ -89,7 +89,7 @@ namespace flx { namespace rtl { namespace ioutil {
 @select(h)
 #include <cstdio>
 #include <string>
-#include "rtl/flx_ioutil.hpp"
+#include "flx_ioutil.hpp"
 namespace flx { namespace rtl { namespace ioutil {
   using namespace std;
   string load_file (string f)
@@ -184,9 +184,9 @@ header """
 #include <climits>
 @if HAVE_STDINT:
   tangle("#include <stdint.h>")
-#include "rtl/flx_i18n.hpp"
-#include "rtl/flx_ioutil.hpp"
-#include "rtl/flx_strutil.cpp"
+#include "flx_i18n.hpp"
+#include "flx_ioutil.hpp"
+#include "flx_strutil.cpp"
 using namespace std;
 """;
 

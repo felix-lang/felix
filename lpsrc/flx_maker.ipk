@@ -638,7 +638,7 @@ try:
       flags = COBJECTS[cobject]
       file = 'src/'+cobject
       if buildall or filetime(file +".c") > filetime(file +".o"):
-        xqt(CCOMPILE +" -I "+OCAML_INCLUDE_DIRECTORY+" -I. "+flags+" "+file+".c")
+        xqt(CCOMPILE +" -I "+OCAML_INCLUDE_DIRECTORY+" -Irtl "+flags+" "+file+".c")
 
     # STEP 2: Generate lexers
     for lex in LEXS:
@@ -702,7 +702,7 @@ try:
       for x in RTL_CPPS:
         print 'Compiling rtl object',x
         ars = ars + x + "_dynamic.o "
-        xqt(CCOBJ_DLLIB + " -I. " + x + ".cpp -o " +x+"_dynamic.o")
+        xqt(CCOBJ_DLLIB + " -Irtl " + x + ".cpp -o " +x+"_dynamic.o")
       xqt(AR + " rtl/libflx_dynamic.a " + ars)
       xqt(RANLIB + " rtl/libflx_dynamic.a")
 
@@ -720,7 +720,7 @@ try:
       for x in RTL_CPPS:
         print 'Compiling rtl object',x
         ars = ars + x + "_static.o "
-        xqt(CCOBJ_STATIC_LIB + " -I. " + x + ".cpp -o " +x+"_static.o")
+        xqt(CCOBJ_STATIC_LIB + " -Irtl " + x + ".cpp -o " +x+"_static.o")
       xqt(AR + " rtl/libflx_static.a " + ars)
       xqt(RANLIB + " rtl/libflx_static.a")
 
@@ -729,12 +729,12 @@ try:
     if SUPPORT_STATIC_LINKAGE:
       for i,j in DRIVERS:
         print 'Compiling driver object',i
-        xqt(CCOBJ_STATIC_MAIN + " -I. " + i + ".cpp -o " +i+"_static.o")
+        xqt(CCOBJ_STATIC_MAIN + " -Irtl " + i + ".cpp -o " +i+"_static.o")
 
     if SUPPORT_DYNAMIC_LOADING:
       for i,j in DRIVERS:
         print 'Compiling driver object',i
-        xqt(CCOBJ_DLMAIN + " -I. " + i + ".cpp -o " +i+"_dynamic.o")
+        xqt(CCOBJ_DLMAIN + " -Irtl " + i + ".cpp -o " +i+"_dynamic.o")
 
         if CYGWIN:
           xqt("g++ -o "+j+" -Wl,--enable-auto-import " + i + "_dynamic.o -Lrtl -lflx_dynamic")
@@ -809,13 +809,13 @@ try:
         try:
           if LINK_MODEL == "dynamic":
             if CYGWIN:
-              xqt("g++ -w -ansi -g -o "+basename+SHLX+" -shared -I. "+cppfilename+" -Lrtl -lflx_dynamic -Wl,--enable-auto-import")
+              xqt("g++ -w -ansi -g -o "+basename+SHLX+" -shared -Irtl "+cppfilename+" -Lrtl -lflx_dynamic -Wl,--enable-auto-import")
             else:
-              xqt(CCOBJ_DLLIB+" -I. "+cppfilename + " -o " + basename + "_dynamic.o")
+              xqt(CCOBJ_DLLIB+" -Irtl "+cppfilename + " -o " + basename + "_dynamic.o")
               xqt(CCLINK_DLLIB+" -Lrtl -lflx_dynamic -o "+ basename + SHLX + " "+basename+"_dynamic.o")
           else:
-            xqt(CCOBJ_STATIC_LIB +" -I. "+cppfilename + " -o " + basename + "_static.o" )
-            xqt(CCLINK_STATIC +" -I. ./rtl/flx_run_static.o "+basename+ "_static.o -Lrtl -lflx_static -o " + basename + SHLX )
+            xqt(CCOBJ_STATIC_LIB +" -Irtl "+cppfilename + " -o " + basename + "_static.o" )
+            xqt(CCLINK_STATIC +" -Irtl ./rtl/flx_run_static.o "+basename+ "_static.o -Lrtl -lflx_static -o " + basename + SHLX )
           #print 'TESTFILE -- OK!',basename
           results.append(("g++",basename,'OK'))
         except MakeError:
@@ -1144,12 +1144,12 @@ We have no idea if it continues copying.
 
 @tangle('config: dummy')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_config.pak')
-@tangle('\tpython -O script/make_config.py quiet')
+@tangle('\tpython -O script/make_config.py --quiet --prefix=${PREFIX}')
 @tangle('')
 
 @tangle('boot: dummy')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_config.pak')
-@tangle('\tpython -O script/make_config.py quiet')
+@tangle('\tpython -O script/make_config.py --quiet --prefix=${PREFIX}')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx.pak')
 @tangle('')
 @tangle('default_wrappers:')
@@ -1179,8 +1179,11 @@ We have no idea if it continues copying.
 @tangle('\tinstall -d ${SHINC_DIR}/rtl')
 @tangle('\tinstall -d ${INSTALL_DIR}/lib')
 @tangle('\tinstall -d ${INSTALL_DIR}/rtl')
+@tangle('\tinstall -d ${INSTALL_DIR}/config')
 @tangle('\tinstall -d ${INSTALL_DIR}/doc')
 @tangle('\tinstall -d ${INSTALL_DIR}/htmlman')
+@tangle('\tinstall config/*.py ${INSTALL_DIR}/config')
+@tangle('\tinstall config/*.flxcc ${INSTALL_DIR}/config')
 @tangle('\tinstall lib/* ${INSTALL_DIR}/lib')
 @tangle('\tinstall rtl/*.hpp ${SHINC_DIR}/rtl')
 @tangle('\tinstall rtl/* ${INSTALL_DIR}/rtl')
@@ -2007,7 +2010,7 @@ done
 
 if [ "$TESTMODE" = "1" ]
 then
-  INCLUDE_DIR="."
+  INCLUDE_DIR="./rtl"
   FLXG="./bin/flxg"
   FLXLIB="./lib"
   FLXRUN="env LD_LIBRARY_PATH=./rtl:\$LD_LIBRARY_PATH ./bin/flx_run"
@@ -2026,7 +2029,7 @@ else
     fi
   done
   prefix="`echo $prefix | sed 's/\/bin\/flxg$//'`"
-  INCLUDE_DIR="$prefix/lib/felix"
+  INCLUDE_DIR="$prefix/lib/felix/rtl"
   FLXG="$prefix/bin/flxg"
   FLXRUN="$prefix/bin/flx_run"
   FLXLIB="$prefix/lib/felix/lib"

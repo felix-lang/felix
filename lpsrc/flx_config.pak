@@ -295,6 +295,11 @@ import os
 import os.path
 import traceback
 import string
+import time
+
+time_stamp_format = "%Y/%m/%d %H:%M:%S UTC"
+config_time=time.gmtime(time.time())
+CONFIG_TIME = time.strftime(time_stamp_format, config_time)
 
 class Error: pass
 this = sys.modules[__name__]
@@ -324,11 +329,24 @@ def file_exists(f):
     return 1
   except: return 0
 
+def has_prefix(prefix,v):
+  n = len (prefix)
+  return prefix == v[:n]
+  
 quiet = 0
-if len(sys.argv) > 1:
-  if sys.argv[1] == "quiet":
+PREFIX=os.getenv("PREFIX",default="/usr/local")
+
+i = 1
+while(i < len (sys.argv)):
+  arg = sys.argv[1]
+  if arg == "--quiet":
     quiet = 1
-    
+  elif has_prefix("--prefix=", arg):
+    PREFIX=arg[9:]
+  else:
+    print "UNKNOWN CONFIGURE OPTION",arg
+    sys.exit(1)
+  i = i + 1
 
 if file_exists("config/config.py"):
   if not quiet:
@@ -336,8 +354,7 @@ if file_exists("config/config.py"):
     print "It is assumed to container client configuration data"
     print "and so will not be clobbered."
     print "To recreate the default configuration"
-    print "you must delete config/config.py and rerun this"
-    print "script/make_config.py script"
+    print "you must delete config/config.py and rerun the config script"
   sys.exit(0)
 
 # We're screwed if popen doesn't work ..
@@ -685,6 +702,15 @@ if SUPPORT_DYNAMIC_LOADING:
 else:
   DEFAULT_LINK_MODEL="static"
 
+PYTHON_VERSION=sys.version
+PYTHON_OS_NAME=os.name
+PYTHON_OS_CURDIR=os.curdir
+PYTHON_OS_PARDIR=os.pardir
+PYTHON_OS_SEP=os.sep
+PYTHON_OS_EXTSEP=os.extsep
+PYTHON_OS_PATHSEP=os.pathsep
+
+print "ESTABLISHED CONFIGURATION"
 
 def pr(f,x):
   print x
@@ -698,11 +724,22 @@ def pne(f,s):
   x = s + "=" + repr(getattr(this,s))
   f.write(x+"\n")
 
+cf_reg = []
+
+def copen(c):
+  f = "config/"+c+"_config.py"
+  print "--------------------------"
+  print "Creating "+f
+  cf_reg.append(f)
+  f= open(f,"w")
+  pr(f,'#'+CONFIG_GENERATOR_CVS_ID)
+  pr(f,'#'+CONFIG_TIME)
+  return f
+
 try:
   try: os.mkdir("config")
   except: pass
-  f = open("config/math_config.py","w")
-  pr(f,'#'+CONFIG_GENERATOR_CVS_ID)
+  f = copen("math")
   pr(f,"# Data types")
   p(f,"HAVE_STDINT")
   p(f,"HAVE_LONGLONG")
@@ -769,11 +806,7 @@ try:
   p(f,"BIG_ENDIAN")
   f.close()
 
-  f = open("config/config.py","w")
-  p(f,"CONFIG_GENERATOR_CVS_ID")
-  pr(f,"#Interscript support")
-  p(f,"ISCR")
-  pr(f,"")
+  f = copen("ocaml")
   pr(f,"#Ocaml tools")
   p(f,"OCAMLC")
   p(f,"OCAMLB")
@@ -783,7 +816,9 @@ try:
   p(f,"OCAMLDOC")
   p(f,"NATIVE_CODE_COMPILER")
   p(f,"OCAML_INCLUDE_DIRECTORY")
-  pr(f,"")
+  f.close()
+
+  f = copen("c")
   pr(f,"#C++ tools")
   p(f,"HAVE_CPP")
   p(f,"HAVE_CC")
@@ -795,9 +830,6 @@ try:
   p(f,"CXX")
   p(f,"CPP")
   p(f,"FLXCC_CPP")
-  p(f,"STRIP")
-  p(f,"AR")
-  p(f,"RANLIB")
   p(f,"CCOBJ_DLLIB")
   p(f,"CCOBJ_DLMAIN")
   p(f,"CCLINK_DLLIB")
@@ -808,11 +840,47 @@ try:
   p(f,"DEBUG_SYMBOLS")
   p(f,"CCOPT1")
   p(f,"CCOPT2")
-  pr(f,"")
+  f.close()
 
-  pr(f,"execfile('config/math_config.py')")
+  f = copen("posix")
+  p(f,"STRIP")
+  p(f,"AR")
+  p(f,"RANLIB")
+  f.close()
+
+  f = copen("pkgconfig")
   p(f,"HAVE_PKGCONFIG")
   pne(f,"PKGCONFIG_PACKAGES")
+  f.close()
+
+  f = copen("iscr")
+  pr(f,"#Interscript support")
+  p(f,"ISCR")
+  f.close()
+
+  f = copen("python")
+  pr(f,"#Python config")
+  p(f,"PYTHON_VERSION")
+  p(f,"ISCR")
+  f.close()
+
+  f = copen("filename")
+  p(f,"PYTHON_OS_NAME")
+  p(f,"PYTHON_OS_CURDIR")
+  p(f,"PYTHON_OS_PARDIR")
+  p(f,"PYTHON_OS_SEP")
+  p(f,"PYTHON_OS_EXTSEP")
+  p(f,"PYTHON_OS_PATHSEP")
+  f.close()
+
+
+  f = open("config/config.py","w")
+  pr(f,'#'+CONFIG_TIME)
+  pr(f,'#'+CONFIG_GENERATOR_CVS_ID)
+  p(f,"CONFIG_GENERATOR_CVS_ID")
+  p(f,"CONFIG_TIME")
+  for fn in cf_reg:
+    pr(f,"execfile('"+fn+"')")
 
   pr(f,"")
   pr(f,"#User configurable section")
@@ -820,7 +888,7 @@ try:
   pr(f,"SUPPORT_STATIC_LINKAGE = 1")
   p(f,"DEFAULT_LINK_MODEL")
   p(f,"CYGWIN")
-  pr(f,'PREFIX = "/usr/local"')
+  p(f,"PREFIX")
   f.close()
 except:
   print "Unable to create config/config.py"
