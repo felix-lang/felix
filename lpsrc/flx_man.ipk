@@ -946,6 +946,10 @@ filebasename
 filebasename
 
 .br
+.B flxcc
+filename
+
+.br
 .B flxg 
 [-v]
 [-Iinclude-dir]
@@ -1006,6 +1010,11 @@ AST tree to standard output
 .B flxb
 lexes, parses, desugars and binds identifiers and prints
 the bindings to  standard output
+
+.br
+.B flxcc
+reads a preprocessed C header file and writes
+Felix wrapper bindings to standard output.
 
 .br
 .B flxg
@@ -1100,6 +1109,9 @@ is a script which combines felix compilation,
 C++ compilation of the output, and execution
 using the standard program driver,
 for rapid prototyping in a scripting style.
+
+.B flxcc
+is the wrapper generator for C headers.
 
 .SH DRIVERS
 .B flx_run

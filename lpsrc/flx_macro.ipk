@@ -494,7 +494,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     ) 
     ids
     
-  | `AST_abs_decl (sr, id, vs, true, c, reqs) ->  tack st
+  | `AST_abs_decl (sr, id, vs, _, c, reqs) ->  tack st
 
   | `AST_const_decl (sr, id, vs, t, c, reqs) -> 
      tack (`AST_const_decl (sr, mi sr id, vs, t, c, reqs))

@@ -57,20 +57,53 @@ type mach = {
   version_minor: int;     (* Minor version number *)
   version: string;        (* version number *)
   underscore_name: bool;  (* If assembly names have leading underscore *)
+  sizeof_bool: int;      (* Size of "bool" *)
+  sizeof_cbool: int;      (* Size of "_Bool" *)
   sizeof_short: int;      (* Size of "short" *)
   sizeof_int: int;        (* Size of "int" *)
   sizeof_long: int ;      (* Size of "long" *)
   sizeof_longlong: int;   (* Size of "long long" *)
-  sizeof_ptr: int;        (* Size of pointers *)
   sizeof_enum: int;       (* Size of enum types *)
-  sizeof_longdouble: int; (* Size of "long double" *)
   sizeof_sizeof: int;     (* Size of "sizeof(T)" *)
   sizeof_wchar: int;      (* Size of "wchar_t" *)
+
+  sizeof_ptr: int;        (* Size of pointers *)
   sizeof_void: int;       (* Size of "void" *)
   sizeof_fun: int;        (* Size of function *)
+
+  sizeof_float: int; (* Size of "float" *)
+  sizeof_double: int; (* Size of "double" *)
+  sizeof_longdouble: int; (* Size of "long double" *)
+
+  sizeof_complex: int;    (* Size of "complex" *)
+  sizeof_doublecomplex: int;    (* Size of "double complex" *)
+  sizeof_longdoublecomplex: int;    (* Size of "long double complex" *)
+
+  sizeof_imaginary: int;    (* Size of "complex" *)
+  sizeof_doubleimaginary: int;    (* Size of "double complex" *)
+  sizeof_longdoubleimaginary: int;    (* Size of "long double complex" *)
+
+  alignof_bool: int;  (* Alignment of "bool" *)
+  alignof_cbool: int;  (* Alignment of "_Bool" *)
+
+  alignof_short: int;  (* Alignment of "long long" *)
+  alignof_int: int;  (* Alignment of "long long" *)
+  alignof_long: int;  (* Alignment of "long long" *)
   alignof_longlong: int;  (* Alignment of "long long" *)
+  alignof_enum: int;  (* Alignment of "long long" *)
+
+  alignof_float: int;    (* Alignment of "double" *)
   alignof_double: int;    (* Alignment of "double" *)
   alignof_longdouble: int;  (* Alignment of "long double" *)
+
+  alignof_complex: int;    (* Alignment of "complex" *)
+  alignof_doublecomplex: int;    (* Alignment of "double complex" *)
+  alignof_longdoublecomplex: int;    (* Alignment of "long double complex" *)
+
+  alignof_imaginary: int;    (* Alignment of "complex" *)
+  alignof_doubleimaginary: int;    (* Alignment of "double complex" *)
+  alignof_longdoubleimaginary: int;    (* Alignment of "long double complex" *)
+
   alignof_str: int;       (* Alignment of strings *)
   alignof_fun: int;       (* Alignment of function *)
   char_is_unsigned: bool; (* Whether "char" is unsigned *)
@@ -96,20 +129,52 @@ let gcc:mach = {
   version_minor    = 2;
   version          = "3.2.2 20030222 (Red Hat Linux 3.2.2-5)";
   underscore_name  = true;
+@tangle("  sizeof_bool       = "+str(SIZEOF_BOOL)+";")
+@tangle("  sizeof_cbool       = "+str(SIZEOF_CBOOL)+";")
 @tangle("  sizeof_int       = "+str(SIZEOF_INT)+";")
 @tangle("  sizeof_short     = "+str(SIZEOF_SHORT)+";")
 @tangle("  sizeof_long      = "+str(SIZEOF_LONG)+";")
 @tangle("  sizeof_longlong  = "+str(SIZEOF_LONGLONG)+";")
-@tangle("  sizeof_ptr       = "+str(SIZEOF_VOIDP)+";")
 @tangle("  sizeof_enum      = "+str(SIZEOF_ENUM)+";")
-@tangle("  sizeof_longdouble  = "+str(SIZEOF_LONGDOUBLE)+";")
 @tangle("  sizeof_wchar     = "+str(SIZEOF_WCHAR)+";")
 @tangle("  sizeof_sizeof    = "+str(SIZEOF_SIZEOF)+";")
+@tangle("  sizeof_ptr       = "+str(SIZEOF_VOIDP)+";")
+
+@tangle("  sizeof_float= "+str(SIZEOF_FLOAT)+";")
+@tangle("  sizeof_double  = "+str(SIZEOF_DOUBLE)+";")
+@tangle("  sizeof_longdouble  = "+str(SIZEOF_LONGDOUBLE)+";")
+
+@tangle("  sizeof_complex = "+str(SIZEOF_COMPLEX)+";")
+@tangle("  sizeof_doublecomplex  = "+str(SIZEOF_DOUBLECOMPLEX)+";")
+@tangle("  sizeof_longdoublecomplex  = "+str(SIZEOF_LONGDOUBLECOMPLEX)+";")
+
+@tangle("  sizeof_imaginary = "+str(SIZEOF_IMAGINARY)+";")
+@tangle("  sizeof_doubleimaginary  = "+str(SIZEOF_DOUBLEIMAGINARY)+";")
+@tangle("  sizeof_longdoubleimaginary  = "+str(SIZEOF_LONGDOUBLEIMAGINARY)+";")
+
 @tangle("  sizeof_void      = 1;")
 @tangle("  sizeof_fun       = 1;")
+
+@tangle("  alignof_bool = "+str(ALIGNOF_BOOL)+";")
+@tangle("  alignof_cbool = "+str(ALIGNOF_CBOOL)+";")
+@tangle("  alignof_short = "+str(ALIGNOF_SHORT)+";")
+@tangle("  alignof_int = "+str(ALIGNOF_INT)+";")
+@tangle("  alignof_long = "+str(ALIGNOF_LONG)+";")
 @tangle("  alignof_longlong = "+str(ALIGNOF_LONGLONG)+";")
+@tangle("  alignof_enum = "+str(ALIGNOF_ENUM)+";")
+
+@tangle("  alignof_float = "+str(ALIGNOF_FLOAT)+";")
 @tangle("  alignof_double = "+str(ALIGNOF_DOUBLE)+";")
 @tangle("  alignof_longdouble = "+str(ALIGNOF_LONGDOUBLE)+";")
+
+@tangle("  alignof_complex = "+str(ALIGNOF_COMPLEX)+";")
+@tangle("  alignof_doublecomplex = "+str(ALIGNOF_DOUBLECOMPLEX)+";")
+@tangle("  alignof_longdoublecomplex = "+str(ALIGNOF_LONGDOUBLECOMPLEX)+";")
+
+@tangle("  alignof_imaginary = "+str(ALIGNOF_IMAGINARY)+";")
+@tangle("  alignof_doubleimaginary = "+str(ALIGNOF_DOUBLEIMAGINARY)+";")
+@tangle("  alignof_longdoubleimaginary = "+str(ALIGNOF_LONGDOUBLEIMAGINARY)+";")
+
 @tangle("  alignof_str = 1;")
 @tangle("  alignof_fun = 1;")
 @if CHAR_IS_UNSIGNED:
@@ -1309,7 +1374,8 @@ and typ =
 
 (** Various kinds of integers *)
 and ikind = 
-    IChar       (** [char] *)
+  | IBool       (** [_Bool] *)
+  | IChar       (** [char] *)
   | ISChar      (** [signed char] *)
   | IUChar      (** [unsigned char] *)
   | IInt        (** [int] *)
@@ -1327,6 +1393,14 @@ and fkind =
     FFloat      (** [float] *)
   | FDouble     (** [double] *)
   | FLongDouble (** [long double] *)
+
+  | CFloat      (** [_Complex] *)
+  | CDouble     (** [double _Complex] *)
+  | CLongDouble (** [long double _Complex] *)
+
+  | IFloat      (** [_Imaginary] *)
+  | IDouble     (** [double _Imaginary] *)
+  | ILongDouble (** [long double _Imaginary] *)
 
 (** An attribute has a name and some optional parameters *)
 and attribute = Attr of string * attrparam list
@@ -2161,6 +2235,7 @@ let warnLoc (loc: location) (fmt : ('a,unit,doc) format) : 'a =
 let truncateInteger64 (k: ikind) (i: int64) = 
   let nrBits, signed = 
     match k with 
+    | IBool -> 8, true
     | IChar|ISChar -> 8, true
     | IUChar -> 8, false
     | IShort -> 16, true
@@ -2215,6 +2290,7 @@ let uintType = TInt(IUInt,[])
 let longType = TInt(ILong,[])
 let ulongType = TInt(IULong,[])
 let charType = TInt(IChar, [])
+let boolType = TInt(IBool, [])
 
 let charPtrType = TPtr(charType,[])
 let charConstPtrType = TPtr(TInt(IChar, [Attr("const", [])]),[])
@@ -2341,6 +2417,7 @@ let kindOfSizeOf = ref IUInt
 
 (** Returns true if and only if the given integer type is signed. *)
 let isSigned = function
+  | IBool
   | IUChar
   | IUShort
   | IUInt
@@ -2617,7 +2694,8 @@ external parse : string -> file = "cil_main"
  *)
 
 let d_ikind () = function
-    IChar -> text "char"
+  | IBool -> text "_Bool"
+  | IChar -> text "char"
   | ISChar -> text "signed char"
   | IUChar -> text "unsigned char"
   | IInt -> text "int"
@@ -2636,6 +2714,14 @@ let d_fkind () = function
     FFloat -> text "float"
   | FDouble -> text "double"
   | FLongDouble -> text "long double"
+
+  | CFloat -> text "_Complex"
+  | CDouble -> text "double _Complex"
+  | CLongDouble -> text "long double _Complex"
+
+  | IFloat -> text "_Imaginary"
+  | IDouble -> text "double _Imaginary"
+  | ILongDouble -> text "long double _Imaginary"
 
 let d_storage () = function
     NoStorage -> nil
@@ -5555,14 +5641,25 @@ exception SizeOfError of typ
 (* Get the minimum aligment in bytes for a given type *)
 let rec alignOf_int = function
   | TInt((IChar|ISChar|IUChar), _) -> 1
-  | TInt((IShort|IUShort), _) -> !theMachine.sizeof_short
-  | TInt((IInt|IUInt), _) -> !theMachine.sizeof_int
-  | TInt((ILong|IULong), _) -> !theMachine.sizeof_long
+  | TInt((IBool), _) -> !theMachine.alignof_cbool 
+  | TInt((IShort|IUShort), _) -> !theMachine.alignof_short
+  | TInt((IInt|IUInt), _) -> !theMachine.alignof_int
+  | TInt((ILong|IULong), _) -> !theMachine.alignof_long
   | TInt((ILongLong|IULongLong), _) -> !theMachine.alignof_longlong
-  | TEnum _ -> !theMachine.sizeof_enum
-  | TFloat(FFloat, _) -> 4
+  | TEnum _ -> !theMachine.alignof_enum
+
+  | TFloat(FFloat, _) -> !theMachine.alignof_float 
   | TFloat(FDouble, _) -> !theMachine.alignof_double
   | TFloat(FLongDouble, _) -> !theMachine.alignof_longdouble
+
+  | TFloat(IFloat, _) -> !theMachine.alignof_imaginary
+  | TFloat(IDouble, _) -> !theMachine.alignof_doubleimaginary
+  | TFloat(ILongDouble, _) -> !theMachine.alignof_longdoubleimaginary
+
+  | TFloat(CFloat, _) -> !theMachine.alignof_complex 
+  | TFloat(CDouble, _) -> !theMachine.alignof_doublecomplex
+  | TFloat(CLongDouble, _) -> !theMachine.alignof_longdoublecomplex
+
   | TNamed (t, _) -> alignOf_int t.ttype
   | TArray (t, _, _) -> alignOf_int t
   | TPtr _ | TBuiltin_va_list _ -> !theMachine.sizeof_ptr
@@ -7174,7 +7271,8 @@ certain type attributes then use {!Flx_cil_cil.typeSigWithAttrs}.
 
 (** Various kinds of integers *)
 and ikind = 
-    IChar       (** [char] *)
+    IBool       (** [_Bool] *)
+  | IChar       (** [char] *)
   | ISChar      (** [signed char] *)
   | IUChar      (** [unsigned char] *)
   | IInt        (** [int] *)
@@ -7189,9 +7287,17 @@ and ikind =
 
 (** Various kinds of floating-point numbers*)
 and fkind = 
-    FFloat      (** [float] *)
+  | FFloat      (** [float] *)
   | FDouble     (** [double] *)
   | FLongDouble (** [long double] *)
+
+  | CFloat      (** [float _Complex] *)
+  | CDouble     (** [double _Complex] *)
+  | CLongDouble (** [long double _Complex] *)
+
+  | IFloat      (** [float _Imaginary] *)
+  | IDouble     (** [double _Imaginary] *)
+  | ILongDouble (** [long double _Imaginary] *)
 
 
 (** {b Attributes.} *)
@@ -9895,6 +10001,9 @@ let init ~(prog: string) : Lexing.lexbuf =
       ("volatile", VOLATILE);
       ("char", CHAR);
       ("int", INT);
+      ("_Imaginary", IMAGINARY);
+      ("_Complex", COMPLEX);
+      ("_Bool", BOOL);
       ("float", FLOAT);
       ("double", DOUBLE);
       ("void", VOID);
@@ -10134,10 +10243,13 @@ type token =
   | CST_WSTRING of string
   | NAMED_TYPE of string
   | EOF
+  | BOOL 
   | CHAR
   | INT
   | DOUBLE
   | FLOAT
+  | COMPLEX
+  | IMAGINARY
   | VOID
   | INT64
   | INT32
@@ -10561,7 +10673,7 @@ type maybeInit =
 %token <string> NAMED_TYPE
 
 %token EOF
-%token CHAR INT DOUBLE FLOAT VOID INT64 INT32
+%token BOOL CHAR INT DOUBLE FLOAT COMPLEX IMAGINARY VOID INT64 INT32
 %token ENUM STRUCT TYPEDEF UNION
 %token SIGNED UNSIGNED LONG SHORT
 %token VOLATILE EXTERN STATIC CONST RESTRICT AUTO REGISTER
@@ -11144,6 +11256,12 @@ type_spec:
                     }
 |   DOUBLE          { ((fun al args -> TFloat(FDouble, al)),
                        matchFloatType FDouble) }
+
+|   COMPLEX         { ((fun al args -> TFloat(CFloat, al)),
+                       matchFloatType CFloat ) }
+
+|   IMAGINARY       { ((fun al args -> TFloat(IFloat, al)),
+                       matchFloatType IFloat) }
 
 |   STRUCT ARG_c { let currentArg = $2 in
                       ((fun al args -> 
@@ -16945,6 +17063,7 @@ let rec doSpecList (suggestedAnonName: string) (* This string will be part of
   let sortedspecs = 
     let order = function (* Don't change this *)
       | A.Tvoid -> 0
+      | A.Tbool -> 0
       | A.Tsigned -> 1
       | A.Tunsigned -> 2
       | A.Tchar -> 3
@@ -16954,7 +17073,9 @@ let rec doSpecList (suggestedAnonName: string) (* This string will be part of
       | A.Tint64 -> 7
       | A.Tfloat -> 8
       | A.Tdouble -> 9
-      | _ -> 10 (* There should be at most one of the others *)
+      | A.Tcomplex -> 10
+      | A.Timaginary -> 10
+      | _ -> 11 (* There should be at most one of the others *)
     in
     (* Hopefully this is stable sort *)
     List.sort (fun ts1 ts2 -> compare (order ts1) (order ts2)) tspecs' 
@@ -17007,8 +17128,17 @@ let rec doSpecList (suggestedAnonName: string) (* This string will be part of
 
     | [A.Tfloat] -> TFloat(FFloat, [])
     | [A.Tdouble] -> TFloat(FDouble, [])
-
     | [A.Tlong; A.Tdouble] -> TFloat(FLongDouble, [])
+
+
+    | [A.Tcomplex] -> TFloat(CFloat, [])
+    | [A.Tfloat; A.Tcomplex] -> TFloat(CFloat, [])
+    | [A.Tdouble; A.Tcomplex] -> TFloat(CDouble, [])
+    | [A.Tlong; A.Tdouble; A.Tcomplex] -> TFloat(CLongDouble, [])
+
+    | [A.Timaginary] -> TFloat(IFloat, [])
+    | [A.Tdouble; A.Timaginary] -> TFloat(IDouble, [])
+    | [A.Tlong; A.Tdouble; A.Timaginary] -> TFloat(ILongDouble, [])
 
      (* Now the other type specifiers *)
     | [A.Tnamed n] -> begin
@@ -17363,6 +17493,11 @@ and doType (nameortype: attributeClass) (* This is AttrName if we are doing
 
     | A.ARRAY (d, al, len) -> 
         let lo = 
+          (* JMS:
+          Cil fails on sizeof() in constants .. we don't
+          actually care so just make all arrays unknown length
+          None
+          *)
           match len with 
             A.NOTHING -> None 
           | _ -> 
@@ -20681,7 +20816,8 @@ type cabsloc = {
 }                                                                     
 
 type typeSpecifier = (* Merge all specifiers into one type *)
-    Tvoid                             (* Type specifier ISO 6.7.2 *)
+  | Tvoid                             (* Type specifier ISO 6.7.2 *)
+  | Tbool
   | Tchar
   | Tshort
   | Tint
@@ -20691,6 +20827,8 @@ type typeSpecifier = (* Merge all specifiers into one type *)
   | Tdouble
   | Tsigned
   | Tunsigned
+  | Tcomplex
+  | Timaginary
   | Tnamed of string
   (* each of the following three kinds of specifiers contains a field 
    * or item list iff it corresponds to a definition (as opposed to
@@ -21713,7 +21851,11 @@ let init_lexicon _ =
   H.clear lexicon;
   List.iter 
     (fun (key, builder) -> H.add lexicon key builder)
-    [ ("auto", fun loc -> AUTO loc);
+    [ 
+      ("_Bool", fun loc -> BOOL loc);
+      ("_Imaginary", fun loc -> IMAGINARY loc);
+      ("_Complex", fun loc -> COMPLEX loc);
+      ("auto", fun loc -> AUTO loc);
       ("const", fun loc -> CONST loc);
       ("__const", fun loc -> CONST loc);
       ("__const__", fun loc -> CONST loc);
@@ -22396,7 +22538,7 @@ let trd3 (_, _, result) = result
 %token <int64 list * Flx_cil_cabs.cabsloc> CST_WSTRING
 
 %token EOF
-%token<Flx_cil_cabs.cabsloc> CHAR INT DOUBLE FLOAT VOID INT64 INT32
+%token<Flx_cil_cabs.cabsloc> BOOL CHAR INT DOUBLE FLOAT COMPLEX IMAGINARY VOID INT64 INT32
 %token<Flx_cil_cabs.cabsloc> ENUM STRUCT TYPEDEF UNION
 %token<Flx_cil_cabs.cabsloc> SIGNED UNSIGNED LONG SHORT
 %token<Flx_cil_cabs.cabsloc> VOLATILE EXTERN STATIC CONST RESTRICT AUTO REGISTER
@@ -22991,12 +23133,15 @@ decl_spec_list_opt_no_named:
 ;
 type_spec:   /* ISO 6.7.2 */
     VOID            { Tvoid, $1}
+|   BOOL            { Tbool, $1 }
 |   CHAR            { Tchar, $1 }
 |   SHORT           { Tshort, $1 }
 |   INT             { Tint, $1 }
 |   LONG            { Tlong, $1 }
 |   INT64           { Tint64, $1 }
 |   FLOAT           { Tfloat, $1 }
+|   COMPLEX         { Tcomplex, $1 }
+|   IMAGINARY       { Timaginary, $1 }
 |   DOUBLE          { Tdouble, $1 }
 |   SIGNED          { Tsigned, $1 }
 |   UNSIGNED        { Tunsigned, $1 }
@@ -23744,6 +23889,7 @@ let rec print_specifiers (specs: spec_elem list) =
 
 and print_type_spec = function
     Tvoid -> print "void "
+  | Tbool -> print "_Bool "
   | Tchar -> print "char "
   | Tshort -> print "short "
   | Tint -> print "int "
@@ -23751,6 +23897,8 @@ and print_type_spec = function
   | Tint64 -> print "__int64 "
   | Tfloat -> print "float "
   | Tdouble -> print "double "
+  | Tcomplex -> print "_Complex "
+  | Timaginary -> print "_Imaginary "
   | Tsigned -> print "signed "
   | Tunsigned -> print "unsigned "
   | Tnamed s -> comprint "tnamed"; print s; space ();
@@ -28497,9 +28645,31 @@ let symbolName (id: symbol) : string =
 @select(h)
 open List
 open Flx_util
+open Flx_types
+open Flx_version
+open Flx_mtypes1
+;;
 
-let filename = Sys.argv.(1);;
-print_endline ("//Parsing " ^ filename);;
+let filename = Sys.argv.(1)
+;;
+let format_time tm = 
+  si (tm.Unix.tm_year + 1900) ^ "/" ^
+  si (tm.Unix.tm_mon + 1) ^ "/" ^
+  si tm.Unix.tm_mday ^ " " ^
+  si tm.Unix.tm_hour ^ ":" ^
+  si tm.Unix.tm_min ^ ":" ^
+  si tm.Unix.tm_sec 
+;;
+
+let compile_start = Unix.time () 
+let compile_start_gm = Unix.gmtime compile_start 
+let compile_start_local = Unix.localtime compile_start 
+let compile_start_gm_string = format_time compile_start_gm ^ " UTC" 
+let compile_start_local_string = format_time compile_start_local ^ " (local)" 
+;;
+
+Flx_cil_cil.initCIL()
+;;
 
 let lexbuf = Flx_cil_clexer.init filename;;
 let cabs = Flx_cil_cparser.file Flx_cil_clexer.initial lexbuf
@@ -28582,10 +28752,128 @@ dumpFile defaultCilPrinter stdout cil ;;
 
 let {fileName=f; globals=gs} = cil
 ;;
-print_endline ("//FILE: " ^ f)
+
+(* files not corresponding to a module *)
+let excludes : string list ref = ref
+[
+]
 ;;
 
+let exclude_prefixes = ref [] (*"/usr/include/bits/"; "/usr/include/asm/"] *)
+;;
+let isprefix p s =
+  let pn = String.length p in
+  String.length s >= pn &&
+  String.sub s 0 pn = p
+;;
+let exclude_file f =
+  let rec aux ts = match ts with
+  | [] -> false
+  | h :: t -> if isprefix h f then true else aux t
+  in 
+    aux !exclude_prefixes ||
+    mem f !excludes
+;;
+
+let replacements : (string,string) Hashtbl.t = Hashtbl.create 97
+;;
+@for k,j in flx_keywords+[('String','')]:
+  tangle('Hashtbl.add replacements "'+k+'" "'+k+"_"+'";;')
+
+Hashtbl.add replacements "size_t" "size";;
+Hashtbl.add replacements "wchar_t" "wchar";;
+
+let rejects: (string,unit) Hashtbl.t = Hashtbl.create 97;;
+@for k in tmap.keys()+['wchar']:
+  tangle('Hashtbl.add rejects "'+k+'" ();;')
+
+let rplname s = 
+  try Hashtbl.find replacements s 
+  with Not_found -> s
+;;
+
+let fpatch =
+[
+  "/usr/include/bits/byteswap.h", "/usr/include/byteswap.h";
+  "/usr/include/bits/cmathcalls.h", "/usr/include/complex.h";
+  "/usr/include/bits/confname.h", "/usr/include/unistd.h";
+  "/usr/include/bits/dirent.h", "/usr/include/dirent.h";
+  "/usr/include/bits/dlfcn.h", "/usr/include/dlfcn.h";
+  "/usr/include/bits/elfclass.h", "/usr/include/link.h";
+  "/usr/include/bits/endian.h", "/usr/include/endian.h";
+  "/usr/include/bits/environments.h", "/usr/include/unistd.h";
+  "/usr/include/bits/fcntl.h", "/usr/include/fcntl.h";
+  "/usr/include/bits/fenv.h", "/usr/include/fenv.h";
+  "/usr/include/bits/huge_val.h", "/usr/include/math.h";
+  "/usr/include/bits/in.h", "/usr/include/netinet/in.h";
+  "/usr/include/bits/ioctls.h", "/usr/include/sys/ioctl.h";
+  "/usr/include/bits/ioctl-types.h", "/usr/include/sys/ioctl.h";
+  "/usr/include/bits/ipc.h", "/usr/include/sys/ipc.h";
+  "/usr/include/bits/ipctypes.h", "/usr/include/sys/ipc.h";
+  "/usr/include/bits/locale.h", "/usr/include/locale.h";
+  "/usr/include/bits/mathcalls.h", "/usr/include/math.h";
+  "/usr/include/bits/mathdef.h", "/usr/include/math.h";
+  "/usr/include/bits/mathinline.h", "/usr/include/math.h";
+  "/usr/include/bits/mman.h", "/usr/include/sys/mman.h";
+  "/usr/include/bits/msq.h", "/usr/include/sys/msg.h";
+  "/usr/include/bits/nan.h", "/usr/include/math.h";
+  "/usr/include/bits/netdb.h", "/usr/include/netdb.h";
+  "/usr/include/bits/poll.h", "/usr/include/sys/poll.h";
+  "/usr/include/bits/posix1_lim.h", "/usr/include/limits.h";
+  "/usr/include/bits/posix2_lim.h", "/usr/include/limits.h";
+  "/usr/include/bits/pthreadtypes.h", "/usr/include/sys/types.h";
+  "/usr/include/bits/resource.h", "/usr/include/sys/resource.h";
+  "/usr/include/bits/sched.h", "/usr/include/sched.h";
+  "/usr/include/bits/select.h", "/usr/include/sys/select.h";
+  "/usr/include/bits/sem.h", "/usr/include/sys/sem.h";
+  "/usr/include/bits/setjmp.h", "/usr/include/setjmp.h";
+  "/usr/include/bits/shm.h", "/usr/include/sys/shm.h";
+  "/usr/include/bits/sigset.h", "/usr/include/signal.h";
+  "/usr/include/bits/sigaction.h", "/usr/include/signal.h";
+  "/usr/include/bits/sigcontext.h", "/usr/include/signal.h";
+  "/usr/include/bits/siginfo.h", "/usr/include/signal.h";
+  "/usr/include/bits/sigstack.h", "/usr/include/signal.h";
+  "/usr/include/bits/sigthread.h", "/usr/include/pthread.h";
+  "/usr/include/bits/sockaddr.h", "/usr/include/sys/socket.h";
+  "/usr/include/bits/socket.h", "/usr/include/sys/socket.h";
+  "/usr/include/bits/statfs.h", "/usr/include/sys/statfs.h";
+  "/usr/include/bits/stat.h", "/usr/include/sys/stat.h";
+  "/usr/include/bits/statvfs.h", "/usr/include/sys/statvfs.h";
+  "/usr/include/bits/stdio.h", "/usr/include/stdio.h";
+  "/usr/include/bits/stdio_lim.h", "/usr/include/stdio.h";
+  "/usr/include/bits/string2.h", "/usr/include/string.h";
+  "/usr/include/bits/string.h", "/usr/include/string.h";
+  "/usr/include/bits/stropts.h", "/usr/include/stropts.h";
+  "/usr/include/bits/syscall.h", "/usr/include/sys/syscall.h";
+  "/usr/include/bits/sys_errlist.h", "/usr/include/stdio.h";
+  "/usr/include/bits/termios.h", "/usr/include/termios.h";
+  "/usr/include/bits/time.h", "/usr/include/time.h";
+  "/usr/include/bits/types.h", "/usr/include/sys/types.h";
+  "/usr/include/bits/typesizes.h", "/usr/include/sys/types.h";
+  "/usr/include/bits/uio.h", "/usr/include/sys/uio.h";
+  "/usr/include/bits/ustat.h", "/usr/include/sys/ustat.h";
+  "/usr/include/bits/utmp.h", "/usr/include/utmp.h";
+  "/usr/include/bits/utmpx.h", "/usr/include/utmpx.h";
+  "/usr/include/bits/utsname.h", "/usr/include/sys/utsname.h";
+  "/usr/include/bits/waitflags.h", "/usr/include/sys/wait.h";
+  "/usr/include/bits/waitstatus.h", "/usr/include/sys/wait.h";
+  "/usr/include/bits/xopen_lim.h", "/usr/include/limits.h";
+  "/usr/include/bits/xtitypes.h", "/usr/include/stropts.h";
+]
+;;
+
+let filename_patches = Hashtbl.create 97
+;;
+
+List.iter (fun (k,v) ->Hashtbl.add filename_patches k v) []
+;;
+
+let patch_filename s = 
+  try Hashtbl.find filename_patches s 
+  with Not_found -> s
+
 let soi = function
+| IBool -> "bool"
 | IChar -> "char"
 | ISChar -> "tiny"
 | IUChar -> "utiny"
@@ -28602,6 +28890,14 @@ let sof = function
 | FFloat -> "float"
 | FDouble -> "double"
 | FLongDouble -> "ldouble"
+
+| IFloat -> "imaginary"
+| IDouble -> "dimaginary"
+| ILongDouble -> "limaginary"
+
+| CFloat -> "complex"
+| CDouble -> "dcomplex"
+| CLongDouble -> "lcomplex"
 
 let cvqual a = 
   let const = ref false
@@ -28634,8 +28930,6 @@ let attrof = function
 
 let strexp n = "0" (* cheat *)
 ;;
-let fcount = ref 1
-;;
 
 let remove_pnames t = match t with
 | TPtr (TFun (t,Some ps,b,a),a') ->
@@ -28643,8 +28937,8 @@ let remove_pnames t = match t with
   TPtr (TFun (t,Some ps,b,a),a')
 | _ -> t
 
-let rec sot registry t = match t with
-| TVoid a -> "void"
+let rec sot ((registry,counter,modulename) as reg) t = match t with
+| TVoid a -> "void_t"
 | TInt (ik,a) -> soi ik
 | TFloat (fk,a) -> sof fk
 | TPtr (TVoid a',a) -> (cvqual a')^"address"
@@ -28654,8 +28948,8 @@ let rec sot registry t = match t with
     fst (Hashtbl.find registry t')
   with
     Not_found ->
-    let name = "_cft_" ^ si !fcount in
-    incr fcount;
+    let name = modulename ^"_cft_" ^ si !counter in
+    incr counter;
     let sr = locUnknown in
     let t = remove_pnames t in
     let si = {tname=name;ttype=t;treferenced=true } in
@@ -28666,24 +28960,24 @@ let rec sot registry t = match t with
     name
   end
    
-| TPtr (t',a) -> cvqual (attrof t') ^ "ptr[" ^ sot registry t'^ "]"
+| TPtr (t',a) -> cvqual (attrof t') ^ "ptr[" ^ sot reg t'^ "]"
 | TArray (t',Some n,a)-> 
-  cvqual (attrof t') ^ "ptr[" ^ sot registry t'^ "]"
+  cvqual (attrof t') ^ "ptr[" ^ sot reg t'^ "]"
 
 | TArray (t',None,a)-> 
-  cvqual (attrof t') ^ "ptr[" ^ sot registry t' ^ "]"
+  cvqual (attrof t') ^ "ptr[" ^ sot reg t' ^ "]"
 
 | TFun (t',Some ps,false,a) ->
-  let ret = sot registry t'
+  let ret = sot reg t'
   and args = 
     if length ps = 0 then "1" 
-    else String.concat " * " (List.map (soa registry) ps) 
+    else String.concat " * " (List.map (soa reg) ps) 
   in args ^ " -> " ^ ret
     
 | TFun (t',_,_,a) -> "CANT HANDLE THIS FUN"
 
-| TNamed (ti,a) -> ptname ti
-| TComp (ci,a) ->  pci ci
+| TNamed (ti,a) -> rplname (ptname ti)
+| TComp (ci,a) ->  rplname (pci ci)
 | TEnum (ei,a) -> "int"
 | TBuiltin_va_list a -> "__builtin_va_list"
 
@@ -28741,7 +29035,7 @@ let isanon = function
   | GText _ -> true
 
 
-let flx_name = function
+let flx_name' = function
   | GType ({tname=tname},_) -> Some tname
   | GCompTag (ci,sr) -> Some (pci ci)
   | GCompTagDecl (ci,_) -> Some (pci ci)
@@ -28753,6 +29047,12 @@ let flx_name = function
   | GAsm _ -> None
   | GPragma _ -> None
   | GText _ -> None
+;;
+
+let flx_name x = match flx_name' x with 
+| Some x -> Some (rplname x)
+| None -> None
+;;
 
 let c_name = function
   | GType ({tname=tname},_) -> Some tname
@@ -28789,12 +29089,14 @@ type stab_t = {
   aliases: (string,string) Hashtbl.t;
   struct_aliases: (string,string) Hashtbl.t;
   abstract_types: (string,string) Hashtbl.t;
+  incomplete_types: (string,string) Hashtbl.t;
   variables : (string,string) Hashtbl.t;
   functions: (string,string * string) Hashtbl.t;
   fields: (string,string * string) Hashtbl.t;
   procedures: (string,string * string) Hashtbl.t;
-  enums: (string,unit) Hashtbl.t;
-  registry: (typsig, string * string) Hashtbl.t
+  enums: (string,string) Hashtbl.t;
+  registry: (typsig, string * string) Hashtbl.t;
+  counter: int ref
 }
 ;;
 
@@ -28802,12 +29104,14 @@ let mk_stab () = {
   aliases= Hashtbl.create 97;
   struct_aliases= Hashtbl.create 97;
   abstract_types= Hashtbl.create 97;
+  incomplete_types= Hashtbl.create 97;
   variables= Hashtbl.create 97;
   functions= Hashtbl.create 97;
   fields= Hashtbl.create 97;
   procedures= Hashtbl.create 97;
   enums= Hashtbl.create 97;
-  registry= Hashtbl.create 97
+  registry= Hashtbl.create 97;
+  counter = ref 1
 }
 ;;
 let stabs : (string,stab_t) Hashtbl.t = Hashtbl.create 97
@@ -28819,28 +29123,101 @@ let getstab s =
     Hashtbl.add stabs s x;
     x
 ;;
-
-let getreg {file=s} = (getstab s).registry
+let special_subdirs = ref ["bits"; "sys";"asm";"rpc";"linux"]
 ;;
+
+
+let module_of_filename fname =
+  let basename = Filename.basename fname in
+  let dirname = Filename.dirname fname in
+  let subdirname = Filename.basename dirname in
+  let prefix = 
+    if mem subdirname !special_subdirs then subdirname ^ "_"
+    else ""
+  in
+  try prefix ^ (Filename.chop_extension basename) ^ "_h"
+  with Invalid_argument _ ->
+    print_endline ("Weird filename " ^ fname ^ " without extension");
+    basename ^ "_h"
+;;
+
+
+let getreg {file=s} = 
+  let s = patch_filename s in
+  let stab = getstab s in 
+  let m = module_of_filename s in
+  stab.registry,stab.counter,m
+;;
+
+let all_structs : (string,string) Hashtbl.t = Hashtbl.create 97
+;;
+
 let rpl {file=s} which = 
+  let s = patch_filename s in
   let stab = (getstab s) in
   match which with
   | `aliases (k,v) -> Hashtbl.replace stab.aliases k v
-  | `struct_aliases(k,v)  -> Hashtbl.replace stab.struct_aliases k v
-  | `abstract_types (k,v)  -> Hashtbl.replace stab.abstract_types k v
+  
+  | `struct_aliases(k,v)  -> 
+    Hashtbl.replace stab.struct_aliases k v
+
+  | `abstract_types (k,v)  -> 
+    Hashtbl.replace stab.abstract_types k v;
+    Hashtbl.replace all_structs k s
+
+  | `incomplete_types (k,v)  -> Hashtbl.replace stab.incomplete_types k v
   | `variables(k,v)  ->  Hashtbl.replace stab.variables k v
   | `functions(k,v)  -> Hashtbl.replace stab.functions k v
   | `fields(k,v)  -> Hashtbl.replace stab.fields k v
   | `procedures(k,v)  -> Hashtbl.replace stab.procedures k v
-  | `enums(k)  -> Hashtbl.replace stab.enums k ()
+  | `enums(k,v)  -> Hashtbl.replace stab.enums k v
 ;;
 
-let ispublic s = String.length s < 2 || String.sub s 0 2 <> "__"
+let ispublic s = 
+ String.length s < 2 || String.sub s 0 2 <> "__" 
 ;;
+
+
+let files: (string,string) Hashtbl.t = Hashtbl.create 97
+;;
+
+let add_file fname =
+  if not (exclude_file fname) then
+  let m = module_of_filename fname in
+  if not (Hashtbl.mem files m) then
+    Hashtbl.replace files m fname
+  else 
+    let existing_fname = Hashtbl.find files m in
+    if not (fname = existing_fname) then 
+    begin
+      print_endline
+      (
+        "Duplicate module name " ^ m ^
+        " for files \n" ^
+        "Existing file: " ^ existing_fname ^ "\n" ^
+        "Excluding new file: " ^ fname ^ "\n"
+      );
+      excludes := fname :: !excludes
+    end
+;;
+
+let add_loc {file=fname} = 
+  let fname = patch_filename fname in add_file fname
+;;
+
+let filename_of_module m =
+  Hashtbl.find files m
+;;
+
 List.iter
-(fun g-> match isanon g,flx_name g with
-  | _,None | true,_ -> ()
-  | false,Some key ->
+(fun g-> let loc = get_globalLoc g in 
+  add_loc loc;
+  match isanon g,flx_name g,flx_name' g with
+  | _,None,_ 
+  | true,_,_ -> ()
+  | _,Some _,None -> assert false
+  | false,Some key,Some key' ->
+  if not (Hashtbl.mem rejects key) then
   match g with
   | GType (ti,loc) -> 
     let registry = getreg loc in
@@ -28860,7 +29237,7 @@ List.iter
         end
         ;
         if anon then
-          rpl loc (`abstract_types (key, key))
+          rpl loc (`abstract_types (key, key'))
         else
           let v = ptdef registry ti in
           rpl loc (`struct_aliases (key, v))
@@ -28869,12 +29246,12 @@ List.iter
       | TEnum (ei,_) -> 
         begin match ei with { eitems=eitems } ->
         iter
-        (fun (s,_,_) -> if ispublic s then rpl loc (`enums s))
+        (fun (s,_,_) -> if ispublic s then rpl loc (`enums (rplname s,s)))
         eitems
         end
         ;
         if achk (einame ei) then
-          rpl loc (`abstract_types (key, key))
+          rpl loc (`abstract_types (key, key'))
         else
           rpl loc (`aliases (key, (ptdef registry ti)))
 
@@ -28897,13 +29274,13 @@ List.iter
 
     
   | GCompTagDecl (ci,loc) -> 
-    rpl loc (`abstract_types (key, (pcci ci)))
+    rpl loc (`incomplete_types (key, (pcci ci)))
     
   | GEnumTag (ei,loc) -> 
     rpl loc (`aliases (key, "int"));
     begin match ei with { eitems=eitems } ->
     iter
-    (fun (s,_,_) -> if ispublic s then rpl loc (`enums s))
+    (fun (s,_,_) -> if ispublic s then rpl loc (`enums (rplname s,s)))
     eitems
     end
 
@@ -28923,10 +29300,10 @@ List.iter
         if length ps = 0 then "1" 
         else String.concat " * " (List.map (soa registry) ps) 
       in
-      rpl loc (`procedures (key, (args,key^"($a);")))
+      rpl loc (`procedures (key, (args,key'^"($a);")))
 
     | TFun (TVoid _,Some _,true,a) ->
-      rpl loc (`procedures ((key^"[t]"), ("t",key^"($a);")))
+      rpl loc (`procedures ((key^"[t]"), ("t",key'^"($a);")))
 
     | TFun (ret,Some ps,false,a) ->
       let ftb,ptb =
@@ -28940,7 +29317,7 @@ List.iter
             else String.concat " * " args
           ) 
           ^ 
-          " -> " ^ ret,key^"($a)"
+          " -> " ^ ret,key'^"($a)"
         ),
         (String.concat " * " (ret :: args),
           let a2 = 
@@ -28953,7 +29330,7 @@ List.iter
               )
             ))
           in
-          "$1="^key^"("^a2^");"
+          "$1="^key'^"("^a2^");"
         )
       in 
         rpl loc (`functions (key, ftb))
@@ -28965,7 +29342,7 @@ List.iter
     | TFun (ret,Some _,true,a) ->
       let ftb =
         let ret = sot (getreg loc) ret in 
-        "t -> " ^ ret,key^"($a)"
+        "t -> " ^ ret,key'^"($a)"
       in 
         rpl loc (`functions ((key^"[t]"), ftb));
         
@@ -28973,137 +29350,295 @@ List.iter
       rpl loc (`variables (key, (sot (getreg loc) vtype)))
     end
 
-  | GAsm _ -> ()
-  | GPragma _ -> ()
-  | GText _ -> ()
+  | GAsm _ -> print_endline "GASM"
+  | GPragma _ -> print_endline "PRAGMA"
+  | GText _ -> print_endline "TEXT"
 )
 gs
 ;;
+let outdir = "flxcc_out/"
+;;
+try Unix.mkdir outdir 0o777 with _ -> ()
+;;
+exception Next
+;;
+let rec find_includes' includes fname =
+  let f = open_in fname in
+  try 
+    let rec aux () =
+      let line = input_line f in
+      let n = String.length line in
+      let i = ref 0 in
 
-print_endline ("//" ^ filename);
-print_endline ("include 'std';");
-print_endline "open C_hack;";
-print_endline "";;
-(* only used by gcc, but harmless even on MSVC *)
-print_endline ("type __builtin_va_list = '__builtin_va_list';");
-print_endline "";
+      try
+        (* skip white *)
+        while !i < n && line.[!i]=' ' do incr i done;
+        if !i = n then raise Next;
+
+        (* check # *)
+        if line.[!i]<>'#' then raise Next;
+        incr i;
+
+        (* skip white *)
+        while !i < n && line.[!i]=' ' do incr i done;
+        if !i = n then raise Next;
+
+        (* check include *)
+        if !i+String.length "include" > n then raise Next;
+        let li = String.length "include" in
+        if (String.sub line !i li)  <> "include" then raise Next;
+        i := !i + li;
+
+        (* skip white *)
+        while !i < n && line.[!i]=' ' do incr i done;
+
+        (* check < or '"' *)
+        if line.[!i]<>'"' && line.[!i]<>'<' then raise Next;
+        incr i;
+
+        (* skip to > or '"' *)
+        let j = !i in
+        while !i < n && line.[!i]<>'>' && line.[!i]<>'"' do incr i done;
+
+        (* extract filename *)
+        let filename = String.sub line j (!i-j) in
+
+        (* convert to module name *)
+        let m = module_of_filename filename in
+
+        (* lookup full path name *)
+        let filename = 
+          try filename_of_module m 
+          with Not_found -> raise Next
+        in
+
+        (* if not already known, put transitive closure in set *)
+        if StringSet.mem m !includes then raise Next;
+        includes := StringSet.add m !includes;
+        find_includes' includes filename;
+
+        (* next line *)
+        raise Next
+      with Next -> aux ()
+    in 
+      aux()
+  with End_of_file -> close_in f
+
+let find_includes fname =
+  let includes = ref StringSet.empty in
+  find_includes' includes fname;
+  !includes
+;;
 
 Hashtbl.iter
 begin 
   fun fname stab ->
-  print_endline "//----------------------------------";
-  print_endline ("//" ^ fname);
-  if Hashtbl.length stab.abstract_types > 0 then
+  let modulename = module_of_filename fname in
+  let outname = outdir ^ modulename ^ ".flx" in
+  let outf = open_out outname in
+
+  let print_endline s = output_string outf (s ^ "\n") in
+
+  print_endline ("// " ^ fname);
+  print_endline ("//Raw Input file: " ^ filename);
+  print_endline ("//Generated by Felix Version " ^ !version_data.version_string);
+  print_endline ("//Timestamp: " ^ compile_start_gm_string);
+  print_endline ("//Timestamp: " ^ compile_start_local_string);
+  print_endline ("include 'std';");
+  print_endline "";
+ 
+  if not (mem_assoc fname fpatch) then
+    print_endline ("header '#include \"" ^ fname^"\"';")
+  else
+    print_endline ("//NOT INCLUDED: \"" ^ fname^"\"")
+  ;
+
+  let includes = ref (find_includes fname) in
+  let ict = Hashtbl.create 97 in
+  let xtyps = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun k v ->
+    if not (Hashtbl.mem stab.abstract_types k) then 
+    try 
+      let file = Hashtbl.find all_structs k in
+      let m = module_of_filename file in
+      includes := StringSet.add m !includes;
+      Hashtbl.add xtyps k file;
+
+    with Not_found ->
+      Hashtbl.add ict k v
+  )
+  stab.incomplete_types
+  ;
+  if StringSet.cardinal !includes > 0 then
   begin
     print_endline "";
-    print_endline "//ABSTRACT TYPES";
-    Hashtbl.iter
-    (fun k v-> 
-      print_endline ("type " ^ k ^ " = '" ^ v ^ "';")
+    print_endline "//INCLUDES";
+    StringSet.iter
+    (fun modulename' -> 
+      if modulename <> modulename' then
+      print_endline ("include \"" ^ modulename' ^ "\";")
     )
-    stab.abstract_types
+    !includes
   end
   ;
 
-  if Hashtbl.length stab.registry > 0 then
+  print_endline "";
+  print_endline ("module " ^ modulename ^ "\n{\n");
   begin
-    print_endline "";
-    print_endline "//C FUNCTION POINTER TYPES";
-    Hashtbl.iter
-    (fun _ (name,tdef)-> 
-      print_endline ("header '''" ^ tdef ^ "''';");
-      print_endline ("type " ^ name ^ " = '" ^ name ^ "';")
-    )
-    stab.registry
+    let print_endline s = output_string outf ("  " ^ s ^ "\n") in
+    print_endline "open C_hack;";
+    if StringSet.cardinal !includes > 0 then
+    begin
+      StringSet.iter
+      (fun modulename' -> 
+        if modulename <> modulename' then
+        print_endline ("open " ^ modulename' ^ ";")
+      )
+      !includes
+    end
+    ;
+
+    if Hashtbl.length stab.abstract_types > 0 then
+    begin
+      print_endline "";
+      print_endline "//ABSTRACT TYPES";
+      Hashtbl.iter
+      (fun k v-> 
+        print_endline ("type " ^ k ^ " = '" ^ v ^ "';")
+      )
+      stab.abstract_types
+    end
+    ;
+
+    if Hashtbl.length stab.registry > 0 then
+    begin
+      print_endline "";
+      print_endline "//C FUNCTION POINTER TYPES";
+      Hashtbl.iter
+      (fun _ (name,tdef)-> 
+        print_endline ("header '''" ^ tdef ^ "''';");
+        print_endline ("type " ^ name ^ " = '" ^ name ^ "';")
+      )
+      stab.registry
+    end
+    ;
+
+    if Hashtbl.length xtyps > 0 then
+    begin
+      print_endline "";
+      print_endline "//EXTERNALLY COMPLETED TYPES";
+      Hashtbl.iter
+      (fun k v-> 
+        let m = module_of_filename v in
+        print_endline ("//type " ^ k ^ " defined in "^m^"='" ^ v ^ "';")
+      )
+      xtyps 
+    end
+    ;
+
+    if Hashtbl.length ict > 0 then
+    begin
+      print_endline "";
+      print_endline "//PURE INCOMPLETE TYPES";
+      Hashtbl.iter
+      (fun k v-> 
+        print_endline ("type " ^ k ^ " = '" ^ v ^ "';")
+      )
+      ict 
+    end
+    ;
+
+    if Hashtbl.length stab.struct_aliases > 0 then
+    begin
+      print_endline "";
+      print_endline "//STRUCT or UNION ALIASES";
+      Hashtbl.iter
+      (fun k v-> 
+        (* va_list is already defined in the standard library *)
+        if k <> "va_list" then
+        print_endline ("typedef " ^ k ^ " = " ^ v ^ ";")
+      )
+      stab.struct_aliases
+    end
+    ;
+
+    if Hashtbl.length stab.aliases > 0 then
+    begin
+      print_endline "";
+      print_endline "//TYPE ALIASES";
+      Hashtbl.iter
+      (fun k v-> 
+        (* va_list is already defined in the standard library *)
+        if k <> "va_list" then
+        print_endline ("typedef " ^ k ^ " = " ^ v ^ ";")
+      )
+      stab.aliases
+    end
+    ;
+
+    if Hashtbl.length stab.variables > 0 then
+    begin
+      print_endline "";
+      print_endline "//VARIABLES";
+      Hashtbl.iter
+      (fun k v-> 
+        print_endline ("const " ^ k ^ ": " ^v^ " = '" ^ k ^ "';")
+      )
+      stab.variables
+    end
+    ;
+
+    if Hashtbl.length stab.enums > 0 then
+    begin
+      print_endline "";
+      print_endline "//ENUMERATION CONSTANTS";
+      Hashtbl.iter
+      (fun k v -> 
+        print_endline ("const " ^ k ^ ": int = '" ^ v ^ "';")
+      )
+      stab.enums
+    end
+    ;
+
+    if Hashtbl.length stab.procedures > 0 then
+    begin
+      print_endline "";
+      print_endline "//PROCEDURES";
+      Hashtbl.iter
+      (fun k (v,b)-> 
+        print_endline ("proc " ^ k ^ ": " ^v^ " = '"^b^"';")
+      )
+      stab.procedures
+    end
+    ;
+
+    if Hashtbl.length stab.functions > 0 then
+    begin
+      print_endline "";
+      print_endline "//FUNCTIONS";
+      Hashtbl.iter
+      (fun k (v,b)-> 
+        print_endline ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
+      )
+      stab.functions
+    end
+    ;
+
+    if Hashtbl.length stab.fields > 0 then
+    begin
+      print_endline "";
+      print_endline "//STRUCT and UNION FIELDS";
+      Hashtbl.iter
+      (fun k (v,b)-> 
+        print_endline ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
+      )
+      stab.fields
+    end
   end
   ;
-
-  if Hashtbl.length stab.struct_aliases > 0 then
-  begin
-    print_endline "";
-    print_endline "//STRUCT or UNION ALIASES";
-    Hashtbl.iter
-    (fun k v-> 
-      (* va_list is already defined in the standard library *)
-      if k <> "va_list" then
-      print_endline ("typedef " ^ k ^ " = " ^ v ^ ";")
-    )
-    stab.struct_aliases
-  end
-  ;
-
-  if Hashtbl.length stab.aliases > 0 then
-  begin
-    print_endline "";
-    print_endline "//TYPE ALIASES";
-    Hashtbl.iter
-    (fun k v-> 
-      (* va_list is already defined in the standard library *)
-      if k <> "va_list" then
-      print_endline ("typedef " ^ k ^ " = " ^ v ^ ";")
-    )
-    stab.aliases
-  end
-  ;
-
-  if Hashtbl.length stab.variables > 0 then
-  begin
-    print_endline "";
-    print_endline "//VARIABLES";
-    Hashtbl.iter
-    (fun k v-> 
-      print_endline ("const " ^ k ^ ": " ^v^ " = '" ^ k ^ "';")
-    )
-    stab.variables
-  end
-  ;
-
-  if Hashtbl.length stab.enums > 0 then
-  begin
-    print_endline "";
-    print_endline "//ENUMERATION CONSTANTS";
-    Hashtbl.iter
-    (fun k _ -> 
-      print_endline ("const " ^ k ^ ": int = '" ^ k ^ "';")
-    )
-    stab.enums
-  end
-  ;
-
-  if Hashtbl.length stab.procedures > 0 then
-  begin
-    print_endline "";
-    print_endline "//PROCEDURES";
-    Hashtbl.iter
-    (fun k (v,b)-> 
-      print_endline ("proc " ^ k ^ ": " ^v^ " = '"^b^"';")
-    )
-    stab.procedures
-  end
-  ;
-
-  if Hashtbl.length stab.functions > 0 then
-  begin
-    print_endline "";
-    print_endline "//FUNCTIONS";
-    Hashtbl.iter
-    (fun k (v,b)-> 
-      print_endline ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
-    )
-    stab.functions
-  end
-  ;
-
-  if Hashtbl.length stab.fields > 0 then
-  begin
-    print_endline "";
-    print_endline "//STRUCT and UNION FIELDS";
-    Hashtbl.iter
-    (fun k (v,b)-> 
-      print_endline ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
-    )
-    stab.fields
-  end
+  print_endline "}";
+  close_out outf
 end
 stabs
 ;;

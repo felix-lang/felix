@@ -295,6 +295,98 @@ Flx_version.version_data := version_data
     ["with", "WITH"],
     ["_", "UNDERSCORE"],
   ]
+
+@tmap = {
+  # addressing
+  "byte"    : "unsigned char",
+  "size"    : "size_t",
+  "cvaddress" : "void const volatile*",
+  "vaddress" : "void volatile*",
+  "caddress" : "void const*",
+  "address" : "void *",
+  "offset"  : "ptrdiff_t",
+  "charp"   : "char*",
+  "charcp"  : "char const*",
+  
+  #characters
+  "char"    : "char",
+  "wchar"   : "wchar_t",
+
+  #signed integers
+  "tiny"    : "signed char",
+  "short"   : "short",
+  "int"     : "int",
+  "long"    : "long",
+
+  #unsigned integers
+  "utiny"   : "unsigned char",
+  "ushort"  : "unsigned short",
+  "uint"    : "unsigned int",
+  "ulong"   : "unsigned long",
+
+  #floating
+  "float"   : "float",
+  "double"  : "double",
+  "ldouble"  : "long double"
+ }
+
+@if HAVE_COMPLEX:
+  tmap["imaginary"]="float _Imaginary"
+  tmap["dimaginary"]="double _Imaginary"
+  tmap["limaginary"]="long double _Imaginary"
+  tmap["complex" ]="float _Complex"
+  tmap["dcomplex"]="double _Complex"
+  tmap["lcomplex"]="long double _Complex"
+ else:
+  tmap["imaginary"]="float"
+  tmap["dimaginary"]="double"
+  tmap["limaginary"]="long double"
+  tmap["complex" ]="std::complex<float>"
+  tmap["dcomplex"]="std::complex<double>"
+  tmap["lcomplex"]="std::complex<long double>"
+
+@if HAVE_LONGDOUBLE:
+   tmap["ldouble"]="long double"
+ else:
+   tmap["ldouble"]="double"
+
+@if HAVE_LONGLONG:
+   tmap["vlong"]="long long"
+   tmap["uvlong"]="unsigned long long"
+ else:
+   tmap["vlong"]="long"
+   tmap["uvlong"]="unsigned long"
+
+@if HAVE_STDINT:
+   tmap["int8"]="int8_t"
+   tmap["uint8"]="uint8_t"
+   tmap["int16"]="int16_t"
+   tmap["uint16"]="uint16_t"
+   tmap["int32"]="int32_t"
+   tmap["uint32"]="uint32_t"
+   tmap["int64"]="int64_t"
+   tmap["uint64"]="uint64_t"
+ else:
+   tmap["int8"]="signed char"
+   tmap["uint8"]="unsigned char"
+   sizes = { 
+     SIZEOF_SHORT*8 : "short",
+     SIZEOF_INT*8: "int",
+     SIZEOF_LONG*8 : "long",
+   }
+   if HAVE_LONGLONG:
+     sizes[SIZEOF_LONGLONG*8]="long long"
+   for size in [16,32,64]:
+     try:
+       t = sizes[size]
+       tmap["int"+str(size)]=t
+       tmap["uint"+str(size)]="unsigned " + t
+     except:
+       tmap["int"+str(size)]="emul_int"+str(size)
+       tmap["uint"+str(size)]="emul_uint"+str(size)
+
+@tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
+
  
 @head(2,'The front end')
 @push_head()

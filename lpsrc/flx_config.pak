@@ -134,8 +134,8 @@ union endian_t {
 } endian;
 
 int main(int,char*[]) { 
-  printf("SIZEOF_SIZEOF=%d\n",sizeof(sizeof(int)));
   printf("SIZEOF_BOOL=%d\n",sizeof(bool));
+  printf("SIZEOF_CBOOL=%d\n",sizeof(int)); // fallback
   printf("SIZEOF_SHORT=%d\n",sizeof(short));
   printf("SIZEOF_INT=%d\n",sizeof(int));
   printf("SIZEOF_LONG=%d\n",sizeof(long));
@@ -145,17 +145,38 @@ int main(int,char*[]) {
   printf("SIZEOF_LONGDOUBLE=%d\n",sizeof(double)); // fallback
   printf("SIZEOF_WCHAR=%d\n",sizeof(wchar_t));
   printf("SIZEOF_ENUM=%d\n",sizeof(enum_t));
+  printf("SIZEOF_SIZEOF=%d\n",sizeof(sizeof(int)));
+
+  printf("SIZEOF_COMPLEX=%d\n",sizeof(float)); // fallback
+  printf("SIZEOF_DOUBLECOMPLEX=%d\n",sizeof(double)); // fallback
+  printf("SIZEOF_LONGDOUBLECOMPLEX=%d\n",sizeof(double)); // fallback
+
+  printf("SIZEOF_IMAGINARY=%d\n",sizeof(float)); // fallback
+  printf("SIZEOF_DOUBLEIMAGINARY=%d\n",sizeof(double)); // fallback
+  printf("SIZEOF_LONGDOUBLEIMAGINARY=%d\n",sizeof(double)); // fallback
+
   printf("SIZEOF_VOIDP=%d\n",sizeof(void*));
   printf("SIZEOF_FUNCP=%d\n",sizeof(fp_t));
 
   printf("ALIGNOF_BOOL=%d\n",offsetof(BOOL,y));
+  printf("ALIGNOF_CBOOL=%d\n",offsetof(BOOL,y)); // fallback
   printf("ALIGNOF_SHORT=%d\n",offsetof(SHORT,y));
   printf("ALIGNOF_INT=%d\n",offsetof(INT,y));
   printf("ALIGNOF_LONG=%d\n",offsetof(LONG,y));
   printf("ALIGNOF_LONGLONG=%d\n",offsetof(LONG,y)); // fallback
+  
   printf("ALIGNOF_FLOAT=%d\n",offsetof(FLOAT,y));
   printf("ALIGNOF_DOUBLE=%d\n",offsetof(DOUBLE,y));
   printf("ALIGNOF_LONGDOUBLE=%d\n",offsetof(DOUBLE,y)); // fallback
+  
+  printf("ALIGNOF_COMPLEX=%d\n",offsetof(FLOAT,y)); // fallback
+  printf("ALIGNOF_DOUBLECOMPLEX=%d\n",offsetof(DOUBLE,y)); // fallback
+  printf("ALIGNOF_LONGDOUBLECOMPLEX=%d\n",offsetof(DOUBLE,y)); // fallback
+
+  printf("ALIGNOF_IMAGINARY=%d\n",offsetof(FLOAT,y)); // fallback
+  printf("ALIGNOF_DOUBLEIMAGINARY=%d\n",offsetof(DOUBLE,y)); // fallback
+  printf("ALIGNOF_LONGDOUBLEIMAGINARY=%d\n",offsetof(DOUBLE,y)); // fallback
+
   printf("ALIGNOF_WCHAR=%d\n",offsetof(WCHAR,y));
   printf("ALIGNOF_ENUM=%d\n",offsetof(ENUM,y));
   printf("ALIGNOF_FUNCP=%d\n",offsetof(FUNCP,y));
@@ -198,6 +219,52 @@ struct LONGDOUBLE {
 int main(int,char*[]) { 
   printf("SIZEOF_LONGDOUBLE=%d\n",sizeof(long double));
   printf("ALIGNOF_LONGDOUBLE=%d\n",offsetof(LONGDOUBLE,y));
+  return 0;
+}
+
+@h = tangler("tmp/complex.c",'c')
+@select(h)
+#include <stdio.h>
+#include <stddef.h>
+
+struct COMPLEX {
+  char x;
+  _Complex y;
+};
+
+struct DOUBLECOMPLEX {
+  char x;
+  double _Complex y;
+};
+
+struct LONGDOUBLECOMPLEX {
+  char x;
+  long double _Complex y;
+};
+
+int main(int,char*[]) { 
+  printf("SIZEOF_COMPLEX=%d\n",sizeof(_Complex));
+  printf("SIZEOF_DOUBLECOMPLEX=%d\n",sizeof(double _Complex));
+  printf("SIZEOF_LONGDOUBLECOMPLEX=%d\n",sizeof(long double _Complex));
+  printf("ALIGNOF_COMPLEX=%d\n",offsetof(COMPLEX,y));
+  printf("ALIGNOF_DOUBLECOMPLEX=%d\n",offsetof(DOUBLECOMPLEX,y));
+  printf("ALIGNOF_LONGDOUBLECOMPLEX=%d\n",offsetof(LONGDOUBLECOMPLEX,y));
+  return 0;
+}
+
+@h = tangler("tmp/cbool.c",'c')
+@select(h)
+#include <stdio.h>
+#include <stddef.h>
+
+struct CBOOL {
+  char x;
+  _Bool y;
+};
+
+int main(int,char*[]) { 
+  printf("SIZEOF_CBOOL=%d\n",sizeof(_Bool));
+  printf("ALIGNOF_CBOOL=%d\n",offsetof(CBOOL,y));
   return 0;
 }
 
@@ -557,6 +624,24 @@ try:
 except:
   HAVE_LONGDOUBLE=0
 
+# find if we have _Bool
+try:
+  xqt("gcc -w tmp/bool.c -o tmp/bool")
+  xxqt("tmp/bool >tmp/bool.py")
+  execfile("tmp/bool.py")
+  HAVE_CBOOL=1
+except:
+  HAVE_CBOOL=0
+
+# find if we have _Complex
+try:
+  xqt("gcc -w tmp/complex.c -o tmp/complex")
+  xxqt("tmp/complex >tmp/complex.py")
+  execfile("tmp/complex.py")
+  HAVE_COMPLEX=1
+except:
+  HAVE_COMPLEX=0
+
 DEBUG_SYMBOLS = "-g "
 CCOPT1 = "-O1 -DNDEBUG "
 CCOPT2 = "-O3 --inline -DNDEBUG "
@@ -624,35 +709,59 @@ try:
   p(f,"HAVE_STDINT")
   p(f,"HAVE_LONGLONG")
   p(f,"HAVE_LONGDOUBLE")
+  p(f,"HAVE_COMPLEX")
+  p(f,"HAVE_CBOOL")
 
   p(f,"SIZEOF_SIZEOF")
   p(f,"SIZEOF_BOOL")
+  p(f,"SIZEOF_CBOOL")
   p(f,"SIZEOF_SHORT")
   p(f,"SIZEOF_INT")
   p(f,"SIZEOF_LONG")
+  p(f,"SIZEOF_LONGLONG")
+
   p(f,"SIZEOF_FLOAT")
   p(f,"SIZEOF_DOUBLE")
+  p(f,"SIZEOF_LONGDOUBLE")
+
+  p(f,"SIZEOF_COMPLEX")
+  p(f,"SIZEOF_DOUBLECOMPLEX")
+  p(f,"SIZEOF_LONGDOUBLECOMPLEX")
+
+  p(f,"SIZEOF_IMAGINARY")
+  p(f,"SIZEOF_DOUBLEIMAGINARY")
+  p(f,"SIZEOF_LONGDOUBLEIMAGINARY")
+
   p(f,"SIZEOF_VOIDP")
   p(f,"SIZEOF_WCHAR")
   p(f,"SIZEOF_ENUM")
   p(f,"SIZEOF_FUNCP")
 
   p(f,"ALIGNOF_BOOL")
+  p(f,"ALIGNOF_CBOOL")
   p(f,"ALIGNOF_SHORT")
   p(f,"ALIGNOF_INT")
   p(f,"ALIGNOF_LONG")
+  p(f,"ALIGNOF_LONGLONG")
+
   p(f,"ALIGNOF_FLOAT")
   p(f,"ALIGNOF_DOUBLE")
+  p(f,"ALIGNOF_LONGDOUBLE")
+
+  p(f,"ALIGNOF_COMPLEX")
+  p(f,"ALIGNOF_DOUBLECOMPLEX")
+  p(f,"ALIGNOF_LONGDOUBLECOMPLEX")
+
+  p(f,"ALIGNOF_IMAGINARY")
+  p(f,"ALIGNOF_DOUBLEIMAGINARY")
+  p(f,"ALIGNOF_LONGDOUBLEIMAGINARY")
+
   p(f,"ALIGNOF_VOIDP")
   p(f,"ALIGNOF_WCHAR")
   p(f,"ALIGNOF_ENUM")
   p(f,"ALIGNOF_FUNCP")
 
-  p(f,"SIZEOF_LONGLONG")
-  p(f,"ALIGNOF_LONGLONG")
 
-  p(f,"SIZEOF_LONGDOUBLE")
-  p(f,"ALIGNOF_LONGDOUBLE")
 
   p(f,"HAVE_ISNAN_IN_CMATH")
   p(f,"HAVE_ISNANF_IN_IEEEFP")

@@ -372,7 +372,13 @@ let rec build_tables syms name level parent grandparent root asms =
             build_tables syms id (level+1) (Some n) parent root
             asms
           in
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_module};
+          Hashtbl.add dfns n {
+            id=id;sr=sr;
+            parent=parent;vs=vs;
+            pubmap=pubtab;privmap=privtab;
+            dirs=dirs;
+            symdef=`SYMDEF_module
+          };
           let n' = !counter in
           incr counter;
           let init_def = `SYMDEF_function ( [],`AST_void sr, [],exes) in

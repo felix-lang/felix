@@ -1857,6 +1857,8 @@ RUNIT=1
 
 grab=1
 
+INCLUDE_DIRS=""
+
 while (( "$grab" == "1" ));
 do
   case x$1 in
@@ -1897,6 +1899,11 @@ do
 
   x-c)
     RUNIT=0
+    shift
+  ;;
+
+  x-I*)
+    INCLUDE_DIRS="$INCLUDE_DIRS $1"
     shift
   ;;
 
@@ -2116,9 +2123,9 @@ fi
 
 if [ $STATIC = 0 ]
 then
-  if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $base"` 
+  if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"` 
   then
-    if `echo $CCLINK_DLLIB $CCFLAGS -I"$INCLUDE_DIR" "$PKGS" "$cpps" "$base.cpp" -o "$base.so"`
+    if `echo $CCLINK_DLLIB $CCFLAGS -I"$INCLUDE_DIR" "$INCLUDE_DIRS" "$PKGS" "$cpps" "$base.cpp" -o "$base.so"`
     then
       # rm -f "$base.cpp"
       if [ $RUNIT = 1 ]
@@ -2131,9 +2138,9 @@ then
     fi
   fi
 else
-  if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $base"` 
+  if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"` 
   then
-    if `echo $CCLINK_STATIC $CCFLAGS -DFLX_STATIC_LINK -I"$INCLUDE_DIR" $FLXBIN/flx_run_static.o "$PKGS" "$cpps" "$base.cpp" $FLXRTL/flx_static.a -o "$base"`
+    if `echo $CCLINK_STATIC $CCFLAGS -DFLX_STATIC_LINK -I"$INCLUDE_DIR" "$INCLUDE_DIRS" $FLXBIN/flx_run_static.o "$PKGS" "$cpps" "$base.cpp" $FLXRTL/flx_static.a -o "$base"`
     then
       # rm -f "$base.cpp"
       if [ $RUNIT = 1 ]
