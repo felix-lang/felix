@@ -26,12 +26,33 @@ right type by client drivers.
 #endif
 #include <string>
 
+@if HAVE_CGOTO:
+  tangle("#define FLX_CGOTO")
+//
+
+// for declarations in header file 
+#define FLX_FMEM_DECL \
+  global_frame_t *pgf;\
+  process_frame_t *ppf;\
+  thread_frame_t *ptf;
+
+#define FLX_FPAR_DECL \
+    global_frame_t *_pgf,\
+    process_frame_t *_ppf,\
+    thread_frame_t *_ptf
+
+
 namespace flx { namespace rtl {
 
 // CONTINUATION
 struct con_t // abstract base for mutable continuations
 {
-  int pc;              // program counter
+#ifdef FLX_CGOTO:
+  void *pc;
+#else
+   int pc;
+#endif
+
   enum action_t        // what the dispatch should do
   {                    // when the resume callback returns
     yield_action,      // cooperative yield (resume after housekeeping)
@@ -91,6 +112,44 @@ struct flx_exec_failure_t {
 
 
 }} // namespaces
+
+// for generated code in body file
+#define INIT_PC pc=0;
+
+#ifdef FLX_CGOTO
+  #define FLX_START_SWITCH if(pc)goto *pc;
+  #define FLX_SET_PC(x) pc=&&case_##x;
+  #define FLX_CASE_LABEL(x) case_##x:;
+  #define FLX_DECLARE_LABEL(n,i,x) \
+    extern void f##i##_##n##_##x(void) __asm__("l"#i"_"#n"_"#x);
+  #define FLX_LABEL(n,i,x) x:\
+    __asm__(".global l"#i"_"#n"_"#x);\
+    __asm__("l"#i"_"#n"_"#x":");\
+    __asm__(""::"g"(&&x));
+  #define FLX_FARTARGET(n,i,x) (void*)&f##i##_##n##_##x
+  #define FLX_END_SWITCH
+#else:
+  #define FLX_START_SWITCH switch(pc){case 0:;
+  #define FLX_SET_PC(x) pc=x;
+  #define FLX_CASE_LABEL(x) case x:;
+  #define FLX_DECLARE_LABEL(n,i,x)
+  #define FLX_LABEL(n,i,x) x:;
+  #define FLX_FARTARGET(n,i,x) n
+  #define FLX_END_SWITCH }
+#endif
+
+#define FLX_RETURN \
+{ \
+  con_t *tmp = _caller; \
+  _caller = 0; \
+  return tmp; \
+}
+  
+#define FLX_FMEM_INIT pgf(_pgf), ppf(_ppf), ptf(_ptf)
+#define FLX_FPAR_PASS pgf,ppf,ptf
+#define FLX_NEWP(x) new(gc,x##_ptr_map)x
+
+
 #endif
 
 @h = tangler("rtl/flx_rtl.cpp")

@@ -342,6 +342,10 @@ Please read <A HREF=coding.html>Coding Guidelines</A>.
 <P>
 There is some information on using the <A HREF=flxcc.html>flxcc</A> wrapper generator.
 </P>
+<H1>Related Papers</H1>
+<P>
+Please read <A HREF=papers.html>Interesting Papers</A>.
+</P>
 </BODY>
 </HTML>
 
@@ -751,4 +755,30 @@ which have very narrow width.
 </P>
 </BODY>
 </HTML>
+
+@select(tangler('www/papers.html','data'))
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+@tangle("<TITLE>interesting Papers</TITLE>")
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY>
+<H1>Some Interesting Papers</H1>
+<H2>GNU C tricks</H2>
+<P>
+Fergus Henderson, Thomas Conway, and Zoltan Somogyi wrote a report on 
+<A HREF=papers/mercury_to_c.ps>Compiling logic programs to C using GNU C as a portable assembler</A>.
+Some of the techniques described in this paper for speeding up
+computed jumps are adapted for use in the Felix system.
+</P>
+<P>Interestingly, one of the constraints for inter function jumps
+on systems loading a gp register, described in the paper,
+do not apply to Felix non-local gotos since in our system the
+actual jump is always taken from inside the function, so we can use
+this technique even with shared libraries and position indpendent code.
+</P>
+</BODY>
+</HTML>
+
 
