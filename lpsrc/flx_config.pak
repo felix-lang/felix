@@ -1,8 +1,8 @@
 @head(1,'Configure')
 @CVS_ID='$Id$'
-@CVS_DATE='$Date$
-@CVS_REVISION='$Revision'
-@print 'CVS_REVISION='+CVS_REVISION
+@CVS_DATE='$Date$'
+@CVS_REVISION='$Revision$'
+@print 'CVS_REVISION='+CVS_REVISION+' on ' + CVS_DATE + ' UTC'
 
 @h = tangler("tmp/check_cygwin.cxx",'c++')
 @select(h)
