@@ -180,6 +180,20 @@ try:
 except:
   AR="#ar -rc "
 
+# see if we have ranlib
+try:
+  xqt("ranlib tmp/dummy.a")
+  RANLIB="ranlib "
+except:
+  RANLIB="#ranlib "
+
+# see if we have interscript
+try:
+  xqt("iscr")
+  ISCR="iscr "
+except:
+  ISCR='env PYTHONPATH=. python -O interscript/bin/iscr.py '
+
 DEBUG_SYMBOLS = "-g "
 CCOPT1 = "-O1 -DNDEBUG "
 CCOPT2 = "-O3 --inline -DNDEBUG "
@@ -199,6 +213,8 @@ def p(f,s):
   pr(f,x)
 
 try:
+  try: os.mkdir("config")
+  except: pass
   f = open("config/config.py","w")
   p(f,"OCAMLC")
   p(f,"OCAMLB")
@@ -208,6 +224,7 @@ try:
   p(f,"NATIVE_CODE_COMPILER")
   p(f,"STRIP")
   p(f,"AR")
+  p(f,"RANLIB")
   p(f,"CCOBJ_DLLIB")
   p(f,"CCOBJ_DLMAIN")
   p(f,"CCLINK_DLLIB")
@@ -224,7 +241,7 @@ try:
   pr(f,"SUPPORT_STATIC_LINKAGE = 1")
   p(f,"DEFAULT_LINK_MODEL")
   pr(f,'PREFIX = "/usr/local"')
-  pr(f,"ISCR='env PYTHONPATH=. python -O interscript/bin/iscr.py'")
+  p(f,"ISCR")
   f.close()
 except:
   print "Unable to create config/config.py"

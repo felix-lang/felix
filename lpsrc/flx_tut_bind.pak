@@ -231,7 +231,7 @@ representing a type in C.
 @select(tangler(tdir+'tut_bind131a.flx'))
 header "#include <cstdio>";
 ctypes int, long;
-proc print:int = 'printf("%d\n",$1);';
+proc print:int = 'printf("%d\\n",$1);';
 print 1;
 print 2;
 
@@ -271,7 +271,7 @@ For example:
 include "std";
 header "#include<stdio.h>";
 print 1; endl;
-code 'printf("%d\n",2);';
+code 'printf("%d\\n",2);';
 print 3; endl;
 
 

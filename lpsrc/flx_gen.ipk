@@ -1467,7 +1467,6 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
     | Procedure ->
       let n = !counter in
       incr counter;
-      "      // MAYBE NEED INCREF HERE\n" ^
       "      //"^ src_str ^ "\n" ^
       "      pc = " ^ si n ^ ";\n" ^
       "      return " ^ ge sr p ^ "->clone()\n      ->call(" ^ args ^");\n" ^

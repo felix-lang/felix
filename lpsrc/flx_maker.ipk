@@ -587,6 +587,7 @@ try:
         xqt(FLX_CPP_DYNLINK + " -I. " + x + ".cpp -o " +x+"_static.o")
       print "Building static archive"
       xqt(AR + " rtl/flx_static.a " + ars)
+      xqt(RANLIB + " rtl/flx_static.a ")
       for i,j in DRIVERS:
         print 'Compiling driver object',i,'-->',j
         xqt(FLX_CPP_DYNLINK + " -I. " + i + ".cpp -o " +j+"_static.o")
@@ -820,7 +821,7 @@ We have no idea if it continues copying.
 @tangle('tests.static: dummy')
 @tangle('\tpython script/maker test static log_output')
 @tangle('')
-@@tangle('tests.performance: dummy')
+@tangle('tests.performance: dummy')
 @tangle('\tpython script/maker performance')
 @tangle('')
 @tangle('tests.regression: dummy')
@@ -887,7 +888,6 @@ We have no idea if it continues copying.
 @tangle('\trm -f flx_'+flx_version)
 @tangle('\tln -s . flx_'+flx_version)
 @tangle('\ttar -zcvf flx_'+flx_version+'_src.tgz\\')
-@tangle('\t\tflx_'+flx_version+'/boot-sh\\')
 @tangle('\t\tflx_'+flx_version+'/README \\')
 @tangle('\t\tflx_'+flx_version+'/CONTENTS \\')
 @tangle('\t\tflx_'+flx_version+'/INSTALL \\')

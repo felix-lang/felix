@@ -151,9 +151,9 @@ use GNU g++.
 </OL>
 </P>
 <H1>Download</H1>
-@tangle("<P> Download developer tarball <A HREF=flx_"+flx_version+"_src.tgz>flx_"+flx_version+"_src.tgz</A> (459111 bytes)")
+@tangle("<P> Download developer tarball <A HREF=flx_"+flx_version+"_src.tgz>flx_"+flx_version+"_src.tgz</A> (486391bytes)")
 </P>
-@tangle("<P> Download end user tarball <A HREF=flx_"+flx_version+"_bin_linux.tgz>flx_"+flx_version+"_bin_linux.tgz</A> (2237876 bytes)")
+@tangle("<P> Download end user tarball <A HREF=flx_"+flx_version+"_bin_linux.tgz>flx_"+flx_version+"_bin_linux.tgz</A> (2513039 bytes)")
 This is the same as the developer package except all sources are
 extracted and documentation built.
 </P>
@@ -163,6 +163,30 @@ you need to connect to the CVS archive, the CVS
 address is: <STRONG>cvs.sourceforge.net:/cvsroot/felix</STRONG>,
 see
 <A HREF=http://sourceforge.net/cvs/?group_id=28597>CVS web access</A>
+
+The first time you need to so, pressing Enter key for password:
+</P><P><CODE>
+make backup<BR>
+rm -rf lpsrc<BR>
+cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/felix login<BR>
+cvs -z3 -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/felix co lpsrc<BR>
+</CODE>
+</P><P>Thereafter you should be able to do:
+
+</P><P><CODE>
+make backup<BR>
+cd lpsrc<BR>
+cvs update<BR>
+cd ..<BR>
+</CODE>
+</P><P>Continue after refreshing the archive with:
+</P><P><CODE>
+make virgin<BR>
+make boot<BR>
+make<BR>
+</CODE>
+</P><P>and build documentation and install as required.
+</P>
 
 <H1>Mailing lists</H1>
 <P><OL>
@@ -185,7 +209,7 @@ make drivers<BR>
 make test<BR>
 make doc<BR>
 make man<BR>
-make impl_doc
+make impldoc
 </CODE></P>
 <P>Become superuser and type
 </P>
@@ -196,11 +220,11 @@ to install the system in /usr/local/lib/felix,
 the scripting driver harness in /usr/local/bin,
 and the man pages in /usr/local/man.
 If these install points are not suitable for your
-system, you'll have to edit the makefile.
+system, you'll have to edit the config/config.py file.
 </P>
 <H1>Contact</H1>
 <P>The principal developer is
-<A HREF=mailto:skaller@ozemail.com.au>John Skaller</A>
+<A HREF=mailto:skaller@users.sourceforge.net>John Skaller</A>
 </P>
 
 </BODY>

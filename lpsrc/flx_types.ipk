@@ -5,14 +5,10 @@ Generic (non Felix dependent) utilities.
 (** Generic utilities *)
 
 (** n spaces 
-  @cgname Skaller.spaces
-  @version 1.0
 *)
 val spaces : int -> string
 
 (** String.concat sep (List.map fun lst) 
-  @cgname Skaller.catmap
-  @version 1.0
 *)
 val catmap : string -> ('a -> string) -> 'a list -> string
 
@@ -23,8 +19,6 @@ val (+>) : 'a -> ('a ->'b) -> 'b
 val transpose: 'a list list -> 'a list list
 
 (** last element of list 
-  @cgname Skaller.list_last
-  @version 1.0
 *)
 val list_last: 'a list -> 'a 
 
