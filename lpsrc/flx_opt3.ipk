@@ -414,7 +414,6 @@ let gen_body syms (child_map,bbdfns) id
   let ge e = remap_expr syms varmap revariable caller_vars callee_vs_len e in
   let relab s = try Hashtbl.find relabel s with Not_found -> s in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
-  let self_loop = ref false in
   let end_label_used = ref false in
 
   (* create a variable for the parameter *)
@@ -431,12 +430,6 @@ let gen_body syms (child_map,bbdfns) id
   if length ps > 1 then 
   for i = 1 to length ps do incr syms.counter done;
   
-  (* create a possible label for a tail call *)
-  let loop_start = 
-    let n = !(syms.counter) in 
-    incr syms.counter;
-    "loop_" ^ si n 
-  in
   let remap: bexe_t -> bexe_t list =  fun exe ->
   match exe with
   | `BEXE_call_prim (sr,i,ts,e2)  -> 
@@ -467,45 +460,8 @@ let gen_body syms (child_map,bbdfns) id
     
   | `BEXE_call (sr,e1,e2)  -> [`BEXE_call (sr,ge e1, ge e2)]
   | `BEXE_jump (sr,e1,e2)  -> assert false
-    (*
-    end_label_used := true;
-    [
-      (let e = ge e1 in
-      match e with
-      | `BEXPR_closure (i,ts),_ ->
-        `BEXE_call_direct (sr,i,ts, ge e2)
-      | _ ->
-        `BEXE_call (sr,e, ge e2)
-      )
-      ;
-      `BEXE_goto (sr,end_label)
-    ]
-    *)
 
-  | `BEXE_loop (sr,i,e) -> 
-    (* SPECIAL HANDLING OF LOOP REQUIRED *)
-    if i = callee then begin
-      self_loop := true;
-      match length ps with
-      | 0 -> [`BEXE_goto (sr,loop_start)]
-      | 1 ->
-        let (_,(k,_)) = hd ps in
-        [
-          `BEXE_init (sr,revar k,ge e);
-          `BEXE_goto (sr,loop_start)
-        ]
-      | _ ->
-        [
-          `BEXE_init (sr,parameter,ge e);
-          `BEXE_goto (sr,loop_start)
-        ]
-    end
-    else 
-    begin
-      failwith "Loop to non-self unimplemented in inliner";
-      (* this is probably right sometimes .. need to check *)
-      [`BEXE_loop (sr,i,ge e)]
-    end
+  | `BEXE_loop (sr,i,e) -> assert false
 
   | `BEXE_ifgoto (sr,e,lab) -> [`BEXE_ifgoto (sr,ge e, relab lab)]
   | `BEXE_ifnotgoto (sr,e,lab) -> [`BEXE_ifnotgoto (sr,ge e, relab lab)]
@@ -582,14 +538,6 @@ let gen_body syms (child_map,bbdfns) id
       )
       ps
     end
-    ;
-    (* If we loop with a tail call, 
-      we need to make an entry point for the jump,
-      make it anyhow because it goes at the wrong
-      end of the list .. 
-    *)
-    let x = `BEXE_label (sr,loop_start) in
-    b := x :: !b;
     ;
     iter
     (fun exe -> 
@@ -891,6 +839,150 @@ let heavy_inline_call syms (child_map,bbdfns)
   gen_body syms (child_map,bbdfns) id 
     varmap ps relabel revariable exes 
     argument sr caller callee caller_vs callee_vs_len
+   
+let rec find_label tail label = 
+  match tail with
+  | [] -> None
+  | `BEXE_label (_,x) :: tail when x = label -> Some tail
+  | _ :: tail -> find_label tail label
+  
+(* tell whether there is any reachable executable code here:
+  if not, a previous call is a tail call
+*)
+let rec tailable exes exclude tail =
+  let rec aux tail = match tail with
+  | [] -> true
+  | h :: t -> match h with
+    | `BEXE_proc_return _
+    | `BEXE_comment _
+    | `BEXE_label _
+    | `BEXE_nop _
+      -> aux t
+    | `BEXE_goto (_,label) ->
+      if mem label exclude then false (* infinite loop *)
+      else
+        begin match find_label exes label with
+        | None -> false
+        | Some tail -> tailable exes (label::exclude) tail
+        end
+    | `BEXE_ifgoto (_,_,label)
+    | `BEXE_ifnotgoto (_,_,label) ->
+      if mem label exclude then false (* infinite loop *)
+      else
+        begin match find_label exes label with
+        | None -> false
+        | Some tail -> 
+          if tailable exes (label::exclude) tail then
+            tailable exes exclude t
+          else false
+        end
+    | _ -> false 
+  in aux tail
+
+let tailit syms (child_map,bbdfns) this sr ps vs exes : bexe_t list = 
+  let ts' = map (fun (_,i) -> `BTYP_var i) vs in
+  let parameter = !(syms.counter) in incr syms.counter;
+  let param_used = ref false in
+  let jump_done = ref false in
+  let start_label = "start_" ^ si parameter in
+  let paramtype  =
+    match map (fun (_,(_,t)) -> t) ps with
+    | [x] -> x
+    | x -> `BTYP_tuple x
+  in
+
+  (* note reverse order *)
+  let cal_tail_call e = 
+    match length ps with
+    | 0 -> [`BEXE_goto (sr,start_label)]
+    | 1 ->
+      let (_,(k,_)) = hd ps in
+      [
+        `BEXE_goto (sr,start_label);
+        `BEXE_init (sr,k,e)
+      ]
+    | _ ->
+
+      [
+        `BEXE_goto (sr,start_label);
+      ]
+      @
+      begin
+        param_used := true;
+        let p = `BEXPR_name (parameter,ts'),paramtype in  
+        let n = ref 0 in
+        map
+        (fun (_,(ix,prjt)) ->
+          let prj = `BEXPR_get_n (!n,p),prjt in
+          incr n;
+          `BEXE_init (sr,ix,prj)
+        )
+        ps
+      end
+      @
+      [
+        `BEXE_init (sr,parameter,e)
+      ]
+  in
+  let rec aux tail res = match tail with
+  | `BEXE_call_direct (sr,i,ts,a) :: tail 
+    when (i,ts)=(this,ts') && tailable exes [] tail
+    ->
+     print_endline ("--> Tail loop " ^ si this);
+     jump_done := true;
+     let res = cal_tail_call a @ res
+     in aux tail res
+
+  | (`BEXE_call_direct (sr,i,ts,a)) as x :: tail  ->
+    (*
+    print_endline ("Untailed call " ^ si i ^ "["^catmap "," (sbt syms.dfns) ts^"]");
+    print_endline ("This = " ^ si this);
+    print_endline ("ts'=" ^"["^catmap "," (sbt syms.dfns) ts'^"]");
+    print_endline "TAIL=";
+    iter (fun x -> print_endline (string_of_bexe syms.dfns 0 x)) tail;
+    print_endline "-- end of tail --";
+    *)
+    aux tail (x::res)
+    
+  | [] -> rev res
+  | h :: t  -> aux t (h::res)
+  in 
+    let exes = aux exes [] in
+
+    (* if parameter used, create a variable *)
+    if !param_used then
+    begin
+      let entry = `BBDCL_var (vs,paramtype) in
+      let kids = 
+        try Hashtbl.find child_map this
+        with Not_found -> [] 
+      in
+      Hashtbl.replace child_map this (parameter::kids);
+      let id = "_trp_" ^ si  parameter in
+      Hashtbl.add bbdfns parameter (id,Some this,sr,entry);
+    end
+    ;
+    (* return with posssible label at start *)
+    let exes = 
+      if !jump_done
+      then `BEXE_label (sr,start_label) :: exes
+      else exes
+    in
+      (*
+      print_endline ("Tailed exes = ");
+      iter (fun exe -> print_endline (string_of_bexe syms.dfns 0 exe)) exes;
+      *)
+      exes
+      
+let tail_bbdcl syms (child_map,bbdfns) i =
+  match Hashtbl.find bbdfns i with
+  | id,parent,sr,`BBDCL_procedure (props,vs,ps,exes) ->
+    let exes = tailit syms (child_map,bbdfns) i sr ps vs exes in
+    let data = id,parent,sr,`BBDCL_procedure (props,vs,ps,exes) in
+    Hashtbl.replace bbdfns i data
+
+  | _ -> ()
+
 
 let rec heavy_inline_calls
   syms (child_map,bbdfns)
@@ -907,6 +999,7 @@ let rec heavy_inline_calls
     | `BEXE_call_direct (sr,callee,ts,argument) 
       when not (mem callee excludes)
       ->
+      heavily_inline_bbdcl syms (child_map,bbdfns) (callee::excludes) callee;
       let id,parent,sr,entry = Hashtbl.find bbdfns callee in
       begin match entry with
       | `BBDCL_procedure (props,vs,ps,exes) ->
@@ -924,7 +1017,7 @@ let rec heavy_inline_calls
             heavy_inline_call syms (child_map,bbdfns) 
             caller caller_vs callee ts argument id sr (props,vs,ps,exes)
           in 
-            exes' := hic callee xs @ !exes'
+            exes' := xs @ !exes'
         end
         else
           exes' := exe :: !exes'
@@ -989,126 +1082,27 @@ let rec heavy_inline_calls
   exes
   ;
   !exes'
-   
-(* tell whether there is any reachable executable code here:
-  if not, a previous call is a tail call
-*)
-let tailable tail =
-  let rec aux tail = match tail with
-  | [] -> true
-  | h :: t -> match h with
-    | `BEXE_proc_return _
-    | `BEXE_comment _
-    | `BEXE_label _
-    | `BEXE_nop _
-      -> aux t
-    | _ -> false 
-  in aux tail
 
-let tailit syms (child_map,bbdfns) this sr ps vs exes : bexe_t list = 
-  let ts' = map (fun (_,i) -> `BTYP_var i) vs in
-  let parameter = !(syms.counter) in incr syms.counter;
-  let param_used = ref false in
-  let jump_done = ref false in
-  let start_label = "start_" ^ si parameter in
-  let paramtype  =
-    match map (fun (_,(_,t)) -> t) ps with
-    | [x] -> x
-    | x -> `BTYP_tuple x
-  in
-  let cal_tail_call e = 
-    match length ps with
-    | 0 -> [`BEXE_goto (sr,start_label)]
-    | 1 ->
-      let (_,(k,_)) = hd ps in
-      [
-        `BEXE_goto (sr,start_label);
-        `BEXE_init (sr,k,e)
-      ]
-    | _ ->
-
-      [
-        `BEXE_goto (sr,start_label);
-        `BEXE_init (sr,parameter,e)
-      ]
-      @
-      begin
-        param_used := true;
-        let p = `BEXPR_name (parameter,ts'),paramtype in  
-        let n = ref 0 in
-        map
-        (fun (_,(ix,prjt)) ->
-          let prj = `BEXPR_get_n (!n,p),prjt in
-          incr n;
-          `BEXE_init (sr,ix,prj)
-        )
-        ps
-      end
-  in
-  let rec aux exes res = match exes with
-  | `BEXE_call_direct (sr,i,ts,a) :: tail 
-    when (i,ts)=(this,ts') && tailable tail
-    ->
-     print_endline ("--> Tail loop " ^ si this);
-     jump_done := true;
-     let res = cal_tail_call a @ res
-     in aux tail res
-
-  | [] -> rev res
-  | h :: t  -> aux t (h::res)
-  in 
-    let exes = aux exes [] in
-
-    (* if parameter used, create a variable *)
-    if !param_used then
-    begin
-      let entry = `BBDCL_var (vs,paramtype) in
-      let kids = 
-        try Hashtbl.find child_map this
-        with Not_found -> [] 
-      in
-      Hashtbl.replace child_map this (parameter::kids);
-      let id = "_trp_" ^ si  parameter in
-      Hashtbl.add bbdfns parameter (id,Some this,sr,entry);
-    end
-    ;
-    (* return with posssible label at start *)
-    let exes = 
-      if !jump_done
-      then `BEXE_label (sr,start_label) :: exes
-      else exes
-    in
-      (*
-      print_endline ("Tailed exes = ");
-      iter (fun exe -> print_endline (string_of_bexe syms.dfns 0 exe)) exes;
-      *)
-      exes
-      
-let tail_bbdcl syms (child_map,bbdfns) i =
+and heavily_inline_bbdcl syms (child_map,bbdfns) excludes i =
   match Hashtbl.find bbdfns i with
   | id,parent,sr,`BBDCL_procedure (props,vs,ps,exes) ->
-    let exes = tailit syms (child_map,bbdfns) i sr ps vs exes in
-    let data = id,parent,sr,`BBDCL_procedure (props,vs,ps,exes) in
-    Hashtbl.replace bbdfns i data
+    if not (mem `Inlining_complete props) then begin
+      (*
+      print_endline ("HIB: Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
+      print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+      *)
+      let exes = heavy_inline_calls syms (child_map,bbdfns) vs i excludes exes in
+      let exes = rev exes in
+      let exes = tailit syms (child_map,bbdfns) i sr ps vs exes in
+      (*
+      print_endline ("Output:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+      *)
+      let props = `Inlining_complete :: props in
+      let data = id,parent,sr,`BBDCL_procedure (props,vs,ps,exes) in
+      Hashtbl.replace bbdfns i data
+    end
 
-  | _ -> ()
-
-let heavily_inline_bbdcl syms (child_map,bbdfns) i =
-  match Hashtbl.find bbdfns i with
-  | id,parent,sr,`BBDCL_procedure (props,vs,p,exes) ->
-    (*
-    print_endline ("HIB: Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
-    print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
-    *)
-    let exes = heavy_inline_calls syms (child_map,bbdfns) vs i [i] exes in
-    let exes = rev exes in
-    (*
-    print_endline ("Output:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
-    *)
-    let data = id,parent,sr,`BBDCL_procedure (props,vs,p,exes) in
-    Hashtbl.replace bbdfns i data
-
-  | id,parent,sr,`BBDCL_function (props,vs,p,ret,exes) ->
+  | id,parent,sr,`BBDCL_function (props,vs,ps,ret,exes) ->
     (*
     print_endline ("HIB:Examining function " ^ id ^"<" ^ si i ^ "> for inlinable calls");
     print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
@@ -1118,7 +1112,7 @@ let heavily_inline_bbdcl syms (child_map,bbdfns) i =
     (*
     print_endline ("Output:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
     *)
-    let data = id,parent,sr,`BBDCL_function (props,vs,p,ret,exes) in
+    let data = id,parent,sr,`BBDCL_function (props,vs,ps,ret,exes) in
     Hashtbl.replace bbdfns i data
 
   | _ -> ()
@@ -1168,8 +1162,7 @@ let heavy_inlining syms
   (*
   print_endline "Inlining heavy pass1";
   *)
-  BidSet.iter (tail_bbdcl syms (child_map,bbdfns)) !used;
-  BidSet.iter (heavily_inline_bbdcl syms (child_map,bbdfns)) !used;
+  BidSet.iter (fun i->heavily_inline_bbdcl syms (child_map,bbdfns) [i] i) !used;
   (*
   print_endline "Unravelling";
   *)

@@ -374,8 +374,20 @@ and lvalue_t = [
 ]
 and tlvalue_t = lvalue_t * typecode_t option
 
-and funkind_t = [`Object | `Function | `InlineFunction | `NoInlineFunction]
-and property_t = [`Recursive | `Inline | `NoInline]
+and funkind_t = [
+  | `Object 
+  | `Function 
+  | `InlineFunction 
+  | `NoInlineFunction
+]
+
+and property_t = [
+  | `Recursive 
+  | `Inline 
+  | `NoInline 
+  | `Inlining_complete
+]
+
 and requirements_t = qualified_name_t list
 
 and statement_t =
@@ -1886,6 +1898,7 @@ and string_of_property = function
 | `Recursive -> "recursive"
 | `Inline -> "inline"
 | `NoInline -> "noinline"
+| `Inlining_complete -> "inlining_complete"
 
 and string_of_properties ps =
   match ps with 

@@ -88,7 +88,7 @@ let cal_loop syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
       | `BEXPR_closure (i,ts) ->
         if check_if_parent syms i this
         then
-          `BEXE_loop (sr,i, tbe2)
+          `BEXE_call_direct (sr,i, ts, tbe2)
         else
           clierr sr
           "[cal_loop] Loop target must be self or parent"
@@ -256,6 +256,9 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
          (`AST_name(sr,n,[]) : qualified_name_t)
          t2 
       in  
+        (* reverse order .. *)
+        tack (`BEXE_proc_return sr);
+        (* note cal_loop actually generates a call .. *)
         tack (cal_loop syms sr tbe1 (be2,t2) index)
 
     | `EXE_jump (a,b) ->

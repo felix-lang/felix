@@ -118,6 +118,7 @@ compiler with bignum support is required to use Felix.
 @tangle("<LI><A HREF=flx_"+flx_version+"/tut/doc/en_flx_tutorial_top.html>main tutorial</A>,")
 @tangle("<LI><A HREF=flx_"+flx_version+"/tut/doc/en_flx_tut_bind_top.html>binding and embedding tutorial</A> or")
 @tangle("<LI><A HREF=flx_"+flx_version+"/tut/doc/en_flx_tut_macro_top.html>macro processor tutorial</A> ")
+@tangle("<LI><A HREF=flx_"+flx_version+"/tut/doc/en_flx_tut_migration_top.html>C++ migration tutorial</A> ")
 @tangle("<LI><A HREF=flx_"+flx_version+"/htmlman/felix_1.html>man pages</A> ")
 </UL>
 online.
@@ -307,7 +308,7 @@ make<BR>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <HTML>
 <HEAD>
-@tangle("<TITLE>Felix Developers Info</TITLE>")
+<TITLE>Felix Developers Info</TITLE>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
 </HEAD>
 <BODY>
@@ -339,9 +340,11 @@ Please read <A HREF=coding.html>Coding Guidelines</A>.
 <P>
 There is some information on using the <A HREF=flxcc.html>flxcc</A> wrapper generator.
 </P>
-<H1>Related Papers</H1>
+<H1>Related Stuff</H1>
 <P>
 Please read <A HREF=papers.html>Interesting Papers</A>.
+and see <A HREF=related.html>Related</A> for links
+to related projects and other resources.
 </P>
 </BODY>
 </HTML>
@@ -350,7 +353,7 @@ Please read <A HREF=papers.html>Interesting Papers</A>.
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <HTML>
 <HEAD>
-@tangle("<TITLE>Felix Jobs</TITLE>")
+<TITLE>Felix Jobs</TITLE>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
 </HEAD>
 <BODY>
@@ -387,7 +390,7 @@ process.</EM>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <HTML>
 <HEAD>
-@tangle("<TITLE>Felix Compiler Implementors</TITLE>")
+<TITLE>Felix Compiler Implementors</TITLE>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
 </HEAD>
 <BODY>
@@ -694,7 +697,7 @@ module _usr_include_stdio_h
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <HTML>
 <HEAD>
-@tangle("<TITLE>Felix Developers Info</TITLE>")
+<TITLE>Felix Developers Info</TITLE>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
 </HEAD>
 <BODY>
@@ -757,7 +760,7 @@ which have very narrow width.
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <HTML>
 <HEAD>
-@tangle("<TITLE>interesting Papers</TITLE>")
+<TITLE>interesting Papers</TITLE>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
 </HEAD>
 <BODY>
@@ -775,6 +778,54 @@ do not apply to Felix non-local gotos since in our system the
 actual jump is always taken from inside the function, so we can use
 this technique even with shared libraries and position indpendent code.
 </P>
+</BODY>
+</HTML>
+
+@select(tangler('www/related.html','data'))
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+<TITLE>Related</TITLE>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY>
+<H1>Erlang</H1>
+<P>
+The <A HREF=http://www.erlang.org>Erlang system</A> 
+is a general purpose network based agent architecture,
+with strong support for TCP/IP based messaging and
+telecomunications applications. </P>
+
+<H1>Capriccio</H1>
+<P>
+The <A HREF=http://capriccio.cs.berkeley.edu/index.html>Capriccio project</A> 
+at BSD uses low level system operations to switch multiple stacks,
+and hooks core blocking operations such as socket I/O in an attempt
+to allow cooperative multi-tasking of ordinary C code.
+</P>
+<P>It also used advanced analysis based on 
+<A HREF="http://manju.cs.berkeley.edu/cil">CIL</A>
+and
+<A HREF="http://manju.cs.berkeley.edu/ccured">CCured</A>
+to assist in optimisation.
+</P>
+<P>The flxcc tool provided by Felix is also based on CIL
+</P>
+
+<H1>IO</H1>
+<P>The <A HREF="http://www.iolanguage.com">IO</A> language also
+provides lightweight threading by C stack manipulation.
+</P>
+
+<H1>Lambda Weblogs</H1>
+<P>The <A HREF="http://lambda-the-ultimate.org/">Lambda The Ultimate</A> 
+weblogs are always great for discussions about languages.
+</P>
+<H1>CiteSeer</H1>
+<P>Probably the best database of online 
+academic papers on CS around is the NEC/IST
+<A HREF="http://citeseer.ist.psu.edu/cs">citeseer</A>
+system. Truly awesome!</P>
 </BODY>
 </HTML>
 
