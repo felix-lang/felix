@@ -40,9 +40,10 @@ let rec check_if_parent syms child parent =
       | {parent=None} -> false
 
 let cal_call syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) =
-  match unfold pt with
+  match unfold syms.dfns pt with
+  | `BTYP_lvalue (`BTYP_function (t, `BTYP_void))
   | `BTYP_function (t, `BTYP_void) -> 
-    if t = argt 
+    if type_match syms.dfns t argt 
     then 
       ( 
         match p with 
@@ -80,7 +81,7 @@ let cal_call syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) =
     ^"\ntype=" ^ sbt syms.dfns pt)
 
 let cal_loop syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
-  match unfold pt with
+  match unfold syms.dfns pt with
   | `BTYP_function (t, `BTYP_void) -> 
     if t = argt 
     then 
@@ -225,7 +226,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
 
     | `EXE_ifgoto (e,s) ->    
       let e',t = be e in
-      if t = flx_bbool
+      if lstrip syms.dfns t = flx_bbool
       then tack (`BEXE_ifgoto (sr,(e',t), s))
       else 
         clierr (src_of_expr e)
@@ -236,7 +237,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
 
     | `EXE_ifnotgoto (e,s) -> 
       let e',t = be e in
-      if t = flx_bbool
+      if lstrip syms.dfns t = flx_bbool
       then tack (`BEXE_ifnotgoto (sr,(e',t), s))
       else 
         clierr (src_of_expr e)
@@ -350,16 +351,17 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         print_endline "Binding LHS of initialistion with typeofindex";
         *)
         let lhst = typeofindex_with_ts syms index parent_ts in
-        let rhst = minimise rhst in
-        if type_eq lhst rhst
+        let rhst = minimise syms.dfns rhst in
+        let lhst = match lhst with |`BTYP_lvalue t -> t | t -> t in
+        if type_match syms.dfns lhst rhst
         then tack (`BEXE_init (sr,index, (e',rhst)))
         else clierr sr
         (
-          "[bind_exe] LHS["^s^"<"^si index^">:"^string_of_btypecode syms.dfns lhst^
-          " of initialisation must have same type as RHS("^
+          "[bind_exe] LHS["^s^"<"^si index^">:\n"^
+          string_of_btypecode syms.dfns lhst^
+          "\n of initialisation must have same type as RHS:\n"^
           string_of_btypecode syms.dfns rhst^
-          ")" ^
-          " unfolded LHS = " ^ sbt syms.dfns (unfold lhst) ^ 
+          "\nunfolded LHS = " ^ sbt syms.dfns (unfold syms.dfns lhst) ^ 
           "\nenvironment type variables are " ^
           print_vs parent_vs
           
@@ -367,7 +369,14 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       end
 
     | `EXE_assign (l,r) -> 
-      let bel = be l in
+      let (_,lt) as bel = be l in
+      begin match lt with 
+      |  `BTYP_lvalue _ ->
+         tack (`BEXE_assign (sr,bel, be r))
+      | _ -> clierr sr "LHS must be lvalue"
+      end
+
+      (*
       begin match bel with
       | `BEXPR_name (index,_),_ -> 
         let {symdef=entry; id=id} = Hashtbl.find syms.dfns index in
@@ -406,6 +415,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       end
       ;
       tack (`BEXE_assign (sr,bel, be r))
+      *)
 
     | `EXE_reglex (p1,p2,cls) ->
       reachable := false;

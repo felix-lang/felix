@@ -44,6 +44,18 @@ int main(int,char*[]) {
    return 0;
 }
 
+@h = tangler("tmp/gxx_hash.cxx",'c++')
+@select(h)
+#include <iostream>
+
+// we only bother to check the include file exists
+#include <ext/hash_map>
+using namespace __gnu_cxx;
+
+int main(int,char*[]) { 
+   return 0;
+}
+
 @h = tangler("tmp/dummy_nan.cxx",'c++')
 @select(h)
 #include <cmath>
@@ -533,6 +545,15 @@ try:
 except:
   HAVE_ASM_LABELS = 0
 
+# find if we have g++ supported ext/ with STL extensions
+try:
+  xqt("g++ tmp/gxx_hash.cxx -o tmp/gxx_hash")
+  xqt("tmp/gxx_hash")
+  HAVE_STL_GNU_CXX = 1
+except:
+  HAVE_STL_GNU_CXX = 0
+
+
 # find if we have cc
 try:
   xqt("cc -c tmp/dummyc.c -o tmp/dummy.o")
@@ -888,6 +909,7 @@ try:
   p(f,"DEBUG_SYMBOLS")
   p(f,"CCOPT1")
   p(f,"CCOPT2")
+  p(f,"HAVE_STL_GNU_CXX")
   f.close()
 
   f = copen("posix")

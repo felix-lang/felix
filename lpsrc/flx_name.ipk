@@ -116,8 +116,8 @@ let cpp_instance_name syms bbdfns index ts =
 
 let rec cpp_type_classname syms t = 
   let registry = syms.registry in
-  let t = fold t in
-  try match unfold t with
+  let t = fold syms.dfns (lstrip syms.dfns t) in
+  try match unfold syms.dfns t with
   | `BTYP_var i -> failwith ("[cpp_type_classname] Can't name type variable " ^ si i) 
   | `BTYP_fix i -> failwith "[cpp_type_classname] Can't name type fixpoint"
   | `BTYP_void -> failwith "void doesn't have a classname"
@@ -182,7 +182,7 @@ let rec cpp_type_classname syms t =
 
 
 let cpp_typename syms t = 
-  match unfold t with
+  match unfold syms.dfns (lstrip syms.dfns t) with
   | `BTYP_function _ -> cpp_type_classname syms t ^ "*"
   | _ -> cpp_type_classname syms t
 

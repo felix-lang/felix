@@ -264,6 +264,7 @@ Flx_version.version_data := version_data
     ["jump", "JUMP"],
     ["let", "LET"],
     ["loop", "LOOP"],
+    ["lval", "LVAL"],
     ["macro", "MACRO"],
     ["match", "MATCH"],
     ["module", "MODULE"],
@@ -351,12 +352,12 @@ Flx_version.version_data := version_data
   tmap["dcomplex"]="double _Complex"
   tmap["lcomplex"]="long double _Complex"
 
-  rmap["imaginary" ]="complex_h"
-  rmap["dimaginary" ]="complex_h"
-  rmap["limaginary" ]="complex_h"
-  rmap["complex" ]="complex_h"
-  rmap["dcomplex"]="complex_h"
-  rmap["lcomplex"]="complex_h"
+  rmap["imaginary" ]="c99_complex_h"
+  rmap["dimaginary" ]="c99_complex_h"
+  rmap["limaginary" ]="c99_complex_h"
+  rmap["complex" ]="c99_complex_h"
+  rmap["dcomplex"]="c99_complex_h"
+  rmap["lcomplex"]="c99_complex_h"
  else:
   tmap["imaginary"]="float"
   tmap["dimaginary"]="double"
@@ -392,14 +393,14 @@ Flx_version.version_data := version_data
    tmap["uint64"]="uint64_t"
 
    # requirements
-   rmap["int8"]="stdint_h"
-   rmap["uint8"]="stdint_h"
-   rmap["int16"]="stdint_h"
-   rmap["uint16"]="stdint_h"
-   rmap["int32"]="stdint_h"
-   rmap["uint32"]="stdint_h"
-   rmap["int64"]="stdint_h"
-   rmap["uint64"]="stdint_h"
+   rmap["int8"]="c99_stdint_h"
+   rmap["uint8"]="c99_stdint_h"
+   rmap["int16"]="c99_stdint_h"
+   rmap["uint16"]="c99_stdint_h"
+   rmap["int32"]="c99_stdint_h"
+   rmap["uint32"]="c99_stdint_h"
+   rmap["int64"]="c99_stdint_h"
+   rmap["uint64"]="c99_stdint_h"
  else:
    tmap["int8"]="signed char"
    tmap["uint8"]="unsigned char"

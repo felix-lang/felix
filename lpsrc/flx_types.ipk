@@ -686,6 +686,7 @@ type 't b0typecode_t' =
   | `BTYP_sum of 't list            
   | `BTYP_function of 't * 't
   | `BTYP_pointer  of 't 
+  | `BTYP_lvalue  of 't 
   | `BTYP_array of 't * 't 
   | `BTYP_void                       
   | `BTYP_fix of int      
@@ -908,6 +909,7 @@ let map_type f = function
   | `TYP_sum ts -> `TYP_sum (map f ts)
   | `TYP_function (a,b) -> `TYP_function (f a, f b)
   | `TYP_pointer t -> `TYP_pointer (f t)
+  | `TYP_lvalue t -> `TYP_lvalue (f t)
   | `TYP_array (t1, t2) -> `TYP_array (f t1, f t2)
   | `TYP_as (t,s) -> `TYP_as (f t,s)
 
@@ -933,6 +935,7 @@ let map_b0type f = function
   | `BTYP_sum ts -> `BTYP_sum (map f ts)
   | `BTYP_function (a,b) -> `BTYP_function (f a, f b)
   | `BTYP_pointer t->  `BTYP_pointer (f t)
+  | `BTYP_lvalue t->  `BTYP_lvalue (f t)
   | `BTYP_array (t1,t2)->  `BTYP_array (f t1, f t2)
   | x -> x
 
@@ -953,6 +956,7 @@ let iter_b0type f = function
   | `BTYP_sum ts -> iter f ts
   | `BTYP_function (a,b) -> f a; f b
   | `BTYP_pointer t->  f t
+  | `BTYP_lvalue t->  f t
   | `BTYP_array (t1,t2)->  f t1; f t2
   | x -> ()
 
@@ -1893,6 +1897,7 @@ and sb dfns depth fixlist counter prec tc =
 
     | `BTYP_array (t1,t2) -> 3, sbt 3 t1 ^"^"^sbt 3 t2
 
+    | `BTYP_lvalue t -> 0,"lvalue[" ^ sbt 0 t ^"]"
     | `BTYP_pointer t -> 1,"&" ^ sbt 1 t
     | `BTYP_void -> 0,"void"
     

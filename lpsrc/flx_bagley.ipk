@@ -16,9 +16,8 @@ to get some times.
   ('fibo',' 8'),
   ('heapsort',' 1000'),
   ('hello',' 1'),
-  ('hash',' 20000'),
-  ('hash2',' 10'),
   ('lists',' 8'),
+  ('moments',' 1 <bagley/data/moments.data'),
   ('matrix',' 8'),
   ('methcall',' 8'),
   ('nestedloop',' 8'),
@@ -36,30 +35,47 @@ to get some times.
   ('plugin',' 20'),
  ]
 
-@if SUPPORT_DYNAMIC_LOADING:
-  bags = sbags + dbags
- else:
-  bags = sbags
+@ebags = [
+  ('hash',' 20000'),
+  ('hash2',' 10'),
+ ]
 
-@def mk(i,j):
+@bags = sbags
+@if SUPPORT_DYNAMIC_LOADING:
+  bags = bags + dbags
+
+@if HAVE_STL_GNU_CXX:
+  bags = bags + ebags
+
+@def mko(i,j):
+  tangle('echo "Compiling '+i+'"')
+  tangle('bin/flx --test --force --echo -c --optimise bagley/felix/'+i)
+
+@def mkr(i,j):
   k = (i+' .................  ')[:20]+' '
-  tangle('/usr/bin/time -f "'+k+' %U" bin/flx --test --optimise bagley/felix/'+i+' '+j+' >bagley/felix/'+i+'.output')
+  tangle('/usr/bin/time -f "'+k+' %U" bin/flx --test bagley/felix/'+i+' '+j+' >bagley/felix/'+i+'.output')
+
 @def mkc(i,j):
-  mk(i,j)
+  tangle('echo "Checking result for '+i+'"')
   tangle('diff -a -b bagley/felix/'+i+'.output bagley/felix/'+i+'.expect')
+
+@select(tangler('bagley/compile.sh','data'))
+@if SUPPORT_DYNAMIC_LOADING:
+  tangle('bin/flx --test --force --optimise -c bagley/felix/plugin_1')
+  tangle('bin/flx --test --force --optimise -c bagley/felix/plugin_2')
+  tangle('bin/flx --test --force --optimise -c bagley/felix/plugin_3')
+@for i,j in bags: mko (i,j)
 
 @select(tangler('bagley/run.sh','data'))
 PLUGIN_DIR=bagley/felix/
 export PLUGIN_DIR
-@if SUPPORT_DYNAMIC_LOADING:
-  tangle('bin/flx --test --optimise -c bagley/felix/plugin_1')
-  tangle('bin/flx --test --optimise -c bagley/felix/plugin_2')
-  tangle('bin/flx --test --optimise -c bagley/felix/plugin_3')
-@for i,j in bags: mk (i,j)
+echo "PLUGIN_DIR=$PLUGIN_DIR"
+LD_LBRARY_PATH=`pwd`/rtl:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH
+echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+@for i,j in bags: mkr (i,j)
 
 @select(tangler('bagley/check.sh','data'))
-PLUGIN_DIR=bagley/felix/
-export PLUGIN_DIR
 @for i,j in bags: mkc (i,j)
 
 @head(2,'Hello World')
@@ -295,9 +311,129 @@ foo (202).222 2222 bar
 foo 211@22222222 bar
 foo (213 222-2222 bar
 foo 214) 222 2222 bar
+@doc() #end of file
+@head(2,'Statistical moments')
+@select(tangler('bagley/felix/moments.flx','data'))
+@setup()
+include "stl";
+// adapted from C solution
 
-@#@select(tangler('bagley/data/moments.flx'))
-@#// to be done
+/* kmedian permutes elements of a to get
+   a[i]<=a[k] for i<k
+   a[i]>=a[k] for i>k
+        See. N. Wirth, Algorithms+data structures = Programs
+*/
+
+open Stl;
+open Stl::Vector;
+
+proc printf: double = 'printf("%f",$1);';
+
+proc kmedian(v: stl_vector[double], mid:int)
+{
+  var a = begin v;
+  var k = mid;
+  var n = len v;
+  whilst true do
+    var j = Cstdlib::rand() % n;
+    b := a.[j];
+    var i = 0;
+    j = n-1;
+    var flag = true;
+    whilst flag do
+      whilst  a.[i] < b do i++; done;
+      whilst  a.[j] > b do j--; done;
+      if i<j do
+        a.[i] <-> a.[j];
+        i++;
+        j--;
+      else
+        if a.[j] < b do j++; done;
+        if a.[i] > b do i--; done;
+        flag = false;
+      done; 
+    done;
+
+    if i<k do
+      k -= i+1;
+      n -= i+1;
+      a += i+1;
+    elif j>k do
+      n=j;
+    else return;
+    done;
+  done; 
+}
+
+fun max(a:stl_vector[double], n:int):double =
+{
+  var temp=a.[0];
+  var j = n-1;
+  until j == 0 do
+    if a.[j]>temp do temp=a.[j]; done;
+    --j;
+  done;
+  return temp;
+}
+
+
+var sum = 0.0;
+var average_deviation = 0.0;
+var standard_deviation = 0.0;
+var variance = 0.0;
+var skew = 0.0;
+var kurtosis = 0.0;
+var median = 0.0;
+var deviation = 0.0;
+
+var nums:stl_vector[double];
+
+var line = Text_file::readln Text_file::stdin;
+until line == "" do
+  v := String::atof line;
+  sum += v;
+  push_back (nums,v);
+  line = Text_file::readln Text_file::stdin;
+done;
+
+m := len nums;
+mean := sum/double_of m;
+var i = 0; until i == m do
+  dev := nums.[i] - mean;
+  dev2 := dev*dev;
+  dev3 := dev2*dev;
+  dev4 := dev3*dev;
+  average_deviation += fabs dev;
+  variance += dev2 /*pow(deviation,2)*/;
+  skew += dev3 /* pow(deviation,3) */;
+  kurtosis += dev4 /* pow(deviation,4) */;
+  ++i;
+done;
+
+average_deviation /= double_of m;
+variance /= double_of (m - 1);
+standard_deviation = sqrt variance;
+if variance != 0.0 do 
+  skew /= double_of m * variance * standard_deviation;
+  kurtosis = kurtosis/(double_of m * variance * variance) - 3.0;
+done;
+
+mid := m / 2;
+kmedian(nums, mid);
+median = 
+  if m % 2 == 1 then nums.[mid]          // odd
+  else (nums.[mid] + max (nums,mid))/2.0 // even
+  endif
+;
+
+print "n:                  "; print m; endl;
+print "median:             "; printf median; endl;
+print "mean:               "; printf mean; endl;
+print "average_deviation:  "; printf average_deviation; endl;
+print "standard_deviation: "; printf standard_deviation; endl;
+print "variance:           "; printf variance; endl;
+print "skew:               "; printf skew; endl;
+print "kurtosis:           "; printf kurtosis; endl;
 
 @select(tangler('bagley/data/moments.data','data'))
 @for i in range(1,501):
@@ -440,7 +576,7 @@ print sum; endl;
 type barry = "char*";
 fun mk_barry : unit -> barry = "(char*)calloc(8193,1)";
 proc free : barry = "free($1);";
-fun subscript: barry * int -> bool = "$1[$2]";
+fun subscript: barry * int -> lvalue[bool] = "$1[$2]";
 
 var prime = mk_barry();
 var i:int;
@@ -993,7 +1129,7 @@ fun gen_random: double -> double
 """;
 typedef darray = C_hack::ptr[double];
 
-fun subscript: darray * int -> double = "$1[$2]";
+fun subscript: darray * int -> lvalue[double] = "$1[$2]";
 
 val cows_jump_over_moon = false;
 
@@ -1052,6 +1188,8 @@ open List;
 
 var prefix = Env::getenv "PLUGIN_DIR";
 if prefix == "" do prefix = "./"; done;
+
+//print "Using plugin directory "; print prefix; endl;
 
 // list of the plugin filenames
 var plugins = List::Empty[string];
@@ -1162,6 +1300,7 @@ struct plugin_com_t
   decoded_num:int;
   success:bool;
 };
+
 
 val zero = '0'.[0];
 val nine = '9'.[0];

@@ -91,12 +91,7 @@ let apl (sri:srcref) (fn : string) (arg:expr_t):expr_t =
 let call1 (op:string) (sr:range_srcref) (sri:srcref) l = 
   `AST_call 
   (
-    sr,
-    `AST_name (slift sri, op,[]),
-    `AST_lvalue (src_of_expr l,l)
-    (* CHANGED TO LVALUE
-    `AST_ref (src_of_expr l,l) 
-    *)
+    sr, `AST_name (slift sri, op,[]), l
   )
 
 (* model unary operator as procedure call *)
@@ -105,14 +100,7 @@ let call2 (op:string) (sr:range_srcref) (sri:srcref) l r =
   (
     sr,
     `AST_name (slift sri, op,[]),
-    `AST_tuple(sr,[
-    `AST_lvalue (src_of_expr l,l);
-    `AST_lvalue (src_of_expr l,l)
-    (*
-    `AST_ref (src_of_expr l,l);
-    `AST_ref (src_of_expr l,l)
-    *)
-    ])
+    `AST_tuple(sr,[l;r])
   )
 
 let mkcurry sr name vs args return_type kind body =
@@ -933,6 +921,8 @@ object_definition:
 parameter:
   | NAME COLON type_expr { snd $1,typecode_of_expr $3 }
   | NAME { snd $1,`TYP_none }
+  | VAR NAME COLON type_expr { snd $2,`TYP_lvalue (typecode_of_expr $4) }
+  | VAR NAME { snd $2,`TYP_lvalue (`TYP_none) }
  
 @doc()
 Flx functions and procedures are first class citizens: the may both be passed
@@ -1832,6 +1822,14 @@ term:
   -x ** -x = -(x**(-x))
 */
 prefixed:
+  | LVAL power
+    { 
+      `AST_lvalue
+      (
+        rsrange (slift $1) (src_of_expr $2), 
+        $2
+      ) 
+    }
   | PLUS power  { apl $1 "pos" $2 }
   | MINUS power { apl $1 "neg" $2 }
   | TILDE power { apl $1 "compl" $2 }

@@ -231,14 +231,7 @@ let assign sr op l r =
   (
     sr,
     `AST_name (sr, op,[]),
-    `AST_tuple 
-    (
-      sr, 
-      [ 
-        `AST_lvalue (src_of_expr l,l); 
-        r
-      ]
-    )
+    `AST_tuple ( sr, [ l; r ])
   )
 
 
@@ -318,6 +311,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_sum _
   | `AST_type_match _
   | `AST_ellipsis _
+  | `AST_lvalue _
     ->
     clierr sr ("[rex] Unexpected " ^ string_of_expr e)
 
@@ -331,10 +325,6 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_ref (sr,e) ->
     let l1,x1 = rex e in
     l1, `AST_ref (sr,x1)
-
-  | `AST_lvalue (sr,e) ->
-    let l1,x1 = rex e in
-    l1, `AST_lvalue (sr,x1)
 
   | `AST_suffix _ -> [],e  (* ?? *)
 
@@ -1119,7 +1109,7 @@ try
   print_endline "//IMPLEMENTATION DESUGARED:";
 
   let counter = ref 1 in
-  let include_dirs =  (Filename.dirname input_file_name) :: compiler_options.include_dirs in
+  let include_dirs =  (* (Filename.dirname input_file_name) :: *) compiler_options.include_dirs in
   let compiler_options = { compiler_options with include_dirs = include_dirs } in
   let syms = { syms with compiler_options = compiler_options } in
   let deblocked = desugar_program syms module_name parse_tree in

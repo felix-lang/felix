@@ -227,7 +227,7 @@ let gen_function syms (child_map,bbdfns) all_closures index id vs bps ret' ts in
   let argtype = tsubst vs ts argtype in
   let ret = lower ret' in
   let ret = tsubst vs ts ret in
-  let funtype = fold (`BTYP_function (argtype, ret)) in
+  let funtype = fold syms.dfns (`BTYP_function (argtype, ret)) in
 
   let argtypename = cpp_typename syms argtype in
   let funtypename = 
@@ -534,7 +534,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
     (*
     let _,t = e in
     let t = 
-      match unfold t with 
+      match unfold syms.dfns t with 
       | `BTYP_sum ls -> nth ls (n-1)
       | _ -> assert false
     in
@@ -561,7 +561,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
     ce_atom (t ^ "(" ^ cstring_of_literal v ^ ")")
     
   | `BEXPR_case (v,t') ->
-    begin match unfold t' with
+    begin match unfold syms.dfns t' with
     | `BTYP_sum ls ->
        let s = 
          let n = length ls in
@@ -1387,7 +1387,7 @@ let gen_function_methods filename syms (child_map,bbdfns) all_closures label_inf
     let argtype = lower (typeof_bparams bps) in
     let argtype = tsubst vs ts argtype in
     let ret = tsubst vs ts (lower ret') in
-    let funtype = fold(`BTYP_function (argtype, ret)) in
+    let funtype = fold syms.dfns (`BTYP_function (argtype, ret)) in
 
     let argtypename = cpp_typename syms argtype in
     let name = cpp_instance_name syms bbdfns index ts in
@@ -1499,7 +1499,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
     );
     let argtype = lower (typeof_bparams bps) in
     let argtype = tsubst vs ts argtype in
-    let funtype = fold(`BTYP_function (argtype, `BTYP_void)) in
+    let funtype = fold syms.dfns (`BTYP_function (argtype, `BTYP_void)) in
 
     let argtypename = cpp_typename syms argtype in
     let name = cpp_instance_name syms bbdfns index ts in
@@ -1850,7 +1850,7 @@ try
     String.sub filebase (!i+1) (n - !i - 1)
   in
 
-  let include_dirs =  (Filename.dirname input_file_name) :: compiler_options.include_dirs in
+  let include_dirs =  (* (Filename.dirname input_file_name) :: *) compiler_options.include_dirs in
   let compiler_options = { compiler_options with include_dirs = include_dirs } in
   let syms = { syms with compiler_options = compiler_options } in
 

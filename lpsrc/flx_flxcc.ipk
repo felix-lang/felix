@@ -62,6 +62,7 @@ type control_t = {
   mutable control_filename: string;
   mutable prein_filename: string;
   mutable preout_filename: string;
+  mutable log_filename: string;
   mutable language: Flx_cil_cabs.lang_t;
   mutable preprocessor: string;
   mutable raw_includes: StringSet.t;
@@ -87,8 +88,9 @@ type control_t = {
 
 let control = {
   control_filename = Sys.argv.(1);
-  prein_filename = "flxcc_prein.h";
-  preout_filename = "flxcc_preout.hhh";
+  prein_filename = Sys.argv.(1) ^ ".h";
+  preout_filename = Sys.argv.(1) ^ ".i";
+  log_filename = Sys.argv.(1) ^ ".log";
   language = `C;
 @tangle('  preprocessor ="'+FLXCC_CPP+'";')
   noincludes = [];
@@ -291,7 +293,7 @@ let rec parse_control_file filename =
             let j = !i in
             while !i < n && line.[!i]<>' ' do incr i done;
             let fn = String.sub line j (!i-j) in
-            control.include_path <- fn :: control.include_path;
+            control.include_path <- control.include_path @ [fn];
             raise Next
 
           | "exclude" ->
@@ -444,7 +446,7 @@ let precmd =
     (
       map 
       (fun s-> "-I"^s^" ")
-      (rev control.include_path)
+      control.include_path
     )
   ) ^ " " ^ !path
   ;
@@ -1614,6 +1616,26 @@ StringSet.iter
 !global_includes
 ;;
 
+StringSet.iter
+(fun s -> 
+   let filename = 
+     if not (Filename.is_relative s) then s else
+     try pathname_of s
+     with Not_found -> 
+       print_endline ( "Can't resolve primary file " ^ s);
+       print_endline ("in path: ");
+       iter
+       (fun s -> print_endline s)
+       control.include_path
+       ;
+       print_endline "Try adding path statement to control file";
+       failwith ("Filename resolution error")
+   in
+     ignore(getstab filename)
+)
+control.raw_includes
+;;
+
 let rec find_macros fname =
   let macros = ref [] in
   begin
@@ -1665,9 +1687,16 @@ let rec find_macros fname =
 exception Equal
 exception Not_equal
 ;;
+let fnames = ref [];;
 Hashtbl.iter
-begin 
-  fun fname stab ->
+(fun f _ -> fnames := f :: !fnames)
+control.stabs
+;;
+let fnames = List.sort compare !fnames
+;;
+iter begin 
+  fun fname ->
+  let stab = Hashtbl.find control.stabs fname in
   let outname = stab.stab_flxfile in
   let mode, outf =
     if Sys.file_exists outname then 
@@ -2204,7 +2233,7 @@ begin
         close_in f2; 
         close_in f1
 end
-control.stabs
+fnames
 ;;
 
 if is_nonempty control.incomplete_types_cache then
@@ -2238,7 +2267,10 @@ let flx f =
   print_endline cmd;
   Unix.system(cmd)
 ;;
-  
+
+let fnames = ref []
+;;
+
 let rec dflx dir =
   try
     let f = Unix.opendir dir in
@@ -2254,13 +2286,8 @@ let rec dflx dir =
           | Unix.S_REG ->
             if Filename.check_suffix path ".flx" then
             let fn = Filename.chop_suffix path ".flx" in
-            let result = flx fn in
-            begin match result with
-            | Unix.WEXITED 0 -> ()
-            | Unix.WEXITED i -> print_endline ("***** Failed, error " ^ string_of_int i)
-            | Unix.WSIGNALED i 
-            | Unix.WSTOPPED i -> failwith ("SIGNAL " ^ string_of_int i)
-            end
+            fnames := fn :: !fnames
+
           | Unix.S_DIR -> 
             if not (isprefix "." m) then dflx path 
           | _ -> ()
@@ -2272,6 +2299,42 @@ let rec dflx dir =
 ;;
 
 dflx control.outdir
+;;
+
+let fnames = List.sort compare !fnames 
+;;
+let faulty = ref [];; 
+let good = ref [];;
+
+iter 
+begin fun fn ->
+  let result = flx fn in
+  match result with
+  | Unix.WEXITED 0 -> good := fn :: !good 
+  | Unix.WEXITED i -> 
+    faulty := fn :: !faulty;
+    print_endline ("***** Failed, error " ^ string_of_int i)
+  | Unix.WSIGNALED i 
+  | Unix.WSTOPPED i -> 
+    failwith ("SIGNAL " ^ string_of_int i)
+end
+fnames
+;;
+
+let f = open_out control.log_filename in
+  iter 
+  (fun fn -> 
+    output_string f ("FAILED   : " ^ fn ^ "\n")
+  ) 
+  (rev !faulty)
+  ;
+  iter 
+  (fun fn -> 
+    output_string f ("SUCCEEDED: " ^ fn ^ "\n")
+  ) 
+  (rev !good)
+  ;
+  close_out f
 ;;
 
 @h=tangler("config/felix.flxcc","data")
@@ -2294,6 +2357,21 @@ rename wchar_t wchar
 @for k in tmap.keys():
   tangle('ignore '+k)
 ignore wchar
+
+@h = tangler("tmp/gnu_c_search_path.flxcc.default","data")
+@select(h)
+path /usr/local/include
+path /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
+path /usr/include
+
+@h = tangler("tmp/gnu_cxx_search_path.flxcc.default","data")
+@select(h)
+path /usr/include/c++/3.2.2
+path /usr/include/c++/3.2.2/i386-redhat-linux
+path /usr/include/c++/3.2.2/backward
+path /usr/local/include
+path /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
+path /usr/include
 
 @h = tangler("tmp/gnu_headers.flxcc.default","data")
 @select(h)
@@ -2485,37 +2563,32 @@ merge /usr/include/bits/xtitypes.h /usr/include/stropts.h
 @select(h)
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
+#include config/gnu_c_search_path.flxcc
 
 outdir c89 
 prefix /usr/include 
 prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
-prein c89.h
-preout c89.hhh
 preprocessor gcc -E -std=c89
 language C
 
 //-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
 
-//incfile assert.h: just macros
+incfile assert.h
 incfile ctype.h
 incfile errno.h
 incfile fenv.h
 incfile float.h
-//incfile inttypes.h: c99 only
 //incfile iso646.h: c99 only
-//incfile limits.h: just macros
+incfile limits.h
 incfile locale.h
 incfile math.h
 incfile setjmp.h
 incfile signal.h
 incfile stdarg.h
-//incfile stdbool.h: c99 only
 incfile stddef.h
-//incfile stdint.h: c99 only
 incfile stdio.h
 incfile stdlib.h
 incfile string.h
-//incfile tgmath.h: c99 only
 incfile time.h
 incfile wchar.h
 incfile wctype.h
@@ -2526,24 +2599,23 @@ rename String String_
 @select(h)
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
+#include config/gnu_c_search_path.flxcc
 
 outdir gnu89 
 prefix /usr/include 
 prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
-prein gnu89.h
-preout gnu89.hhh
 preprocessor gcc -E -std=gnu89
 language C
 //-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
 
-//incfile assert.h: just macros
+incfile assert.h
 incfile ctype.h
 incfile errno.h
 incfile fenv.h
 incfile float.h
 //incfile inttypes.h: c99 only
 //incfile iso646.h: c99 only
-//incfile limits.h: just macros
+incfile limits.h
 incfile locale.h
 incfile math.h
 incfile setjmp.h
@@ -2566,16 +2638,15 @@ rename String String_
 @select(h)
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
+#include config/gnu_c_search_path.flxcc
 
 outdir c99 
 prefix /usr/include 
 prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
-prein c99.h
-preout c99.hhh
 preprocessor gcc -E -std=c99
 language C
 
-//incfile assert.h: just macros
+incfile assert.h
 incfile ctype.h
 incfile complex.h
 incfile errno.h
@@ -2606,17 +2677,16 @@ rename String String_
 @select(h)
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
+#include config/gnu_c_search_path.flxcc
 
 outdir gnu99
 prefix /usr/include 
 prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
-prein gnu99.h
-preout gnu99.hhh
 preprocessor gcc -E -std=gnu99
 language C
 //-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
 
-//incfile assert.h: just macros
+incfile assert.h
 incfile ctype.h
 incfile complex.h
 incfile errno.h
@@ -2647,12 +2717,11 @@ rename String String_
 @select(h)
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
+#include config/gnu_cxx_search_path.flxcc
 
 outdir cxx 
 prefix /usr/include
 prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
-prein cxx.h
-preout cxx.hhh
 preprocessor g++ -E -I/usr/include/g++-3
 language C++
 
@@ -2660,7 +2729,7 @@ language C++
 
 incfile cctype
 incfile cerrno
-incfile cfenv
+//incfile cfenv: cfenv.h is c99, we expect this to come to C++
 incfile cfloat
 incfile climits
 incfile clocale
@@ -2669,13 +2738,49 @@ incfile csetjmp
 incfile csignal
 incfile cstdarg
 incfile cstddef
-incfile cstdint
+//incfile cstdint
 incfile cstdio
 incfile cstdlib
 incfile cstring
 incfile ctime
 incfile cwchar
 incfile cwctype
+
+rename String String_
+
+@h=tangler("tmp/cxx_sys.flxcc.default","data")
+@select(h)
+#include config/felix.flxcc
+#include config/gnu_headers.flxcc
+#include config/gnu_cxx_search_path.flxcc
+
+outdir cxx_sys
+prefix /usr/include
+prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
+preprocessor g++ -E -I/usr/include/g++-3
+language C++
+
+//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
+
+incfile cctype
+incfile cerrno
+//incfile cfenv: cfenv.h is c99, we expect this to come to C++
+incfile cfloat
+incfile climits
+incfile clocale
+incfile cmath
+incfile csetjmp
+incfile csignal
+incfile cstdarg
+incfile cstddef
+//incfile cstdint
+incfile cstdio
+incfile cstdlib
+incfile cstring
+incfile ctime
+incfile cwchar
+incfile cwctype
+incdir /usr/include/sys
 
 rename String String_
 
@@ -2687,8 +2792,6 @@ rename String String_
 outdir gnucxx 
 prefix /usr/include
 prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
-prein gnucxx.h
-preout gnucxx.hhh
 preprocessor g++ -E -I/usr/include/g++-3
 language C++
 
@@ -2704,6 +2807,7 @@ incfile csetjmp
 incfile csignal
 incfile cstdarg
 incfile cstddef
+//incfile cstdint
 incfile cstdio
 incfile cstdlib
 incfile cstring
@@ -2717,16 +2821,13 @@ rename String String_
 @select(h)
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
+#include config/gnu_cxx_search_path.flxcc
 
 outdir flxcc_out
 prefix /usr/include
 prefix /usr/local/include
 prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
 prefix /usr/lib/glib/include/ glib
-prefix /usr/include/sys/time /usr/include/sys/sys_time
-
-prein usr_include.h
-preout usr_include.hhh
 preprocessor gcc -E 
 language C
 
@@ -2773,7 +2874,6 @@ path /usr/kerberos/include
 path /usr/include/orbit-2.0 
 path /usr/include/orbit-2.0/orbit-idl 
 path /usr/include/pango-1.0 
-path /usr/include  
 
 incdir /usr/include
 incdir /usr/include/sys

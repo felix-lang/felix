@@ -152,7 +152,7 @@ let overload
     ;
     print_endline "...";
     *)
-    let mgu = maybe_unification syms.dfns eqns in
+    let mgu = maybe_matches syms.dfns eqns in
     (match mgu with
     | Some mgu -> 
       (*

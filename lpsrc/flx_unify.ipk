@@ -15,12 +15,14 @@ val maybe_unification:
   (btypecode_t * btypecode_t) list ->
   (int * btypecode_t) list option
 
-(** obtain the mgu of a set of type equations *)
-val unification: 
+(** obtain the mgu of a set of type equations,
+for matching parameters against arguments: allows
+special subtyping for lvalues
+*)
+val maybe_matches: 
   symbol_table_t -> (* just for diagnostics *)
-  (btypecode_t * btypecode_t) list -> 
-  IntSet.t -> (* the dependent variables *)
-  (int * btypecode_t) list
+  (btypecode_t * btypecode_t) list ->
+  (int * btypecode_t) list option
 
 (** test if two types unify *)
 val unifies: 
@@ -49,19 +51,38 @@ val do_unify:
 
 (** compare for iso-equality *)
 val type_eq:
+  symbol_table_t ->
   btypecode_t ->
   btypecode_t ->
   bool
+
+(** compare parameter with argument type, 
+  argument may have extra lvalue in it
+*)
+val type_match:
+  symbol_table_t ->
+  btypecode_t ->
+  btypecode_t ->
+  bool
+
+(** [lstrip t] returns t all lvalue combinators elided
+*)
+val lstrip:
+  symbol_table_t ->
+  btypecode_t ->
+  btypecode_t 
 
 (** [unfold t] returns t with each fix variable 
   denoting t replaced with t 
 *)
 val unfold:
+  symbol_table_t ->
   btypecode_t ->
   btypecode_t 
 
 (** undo an unfold *)
 val fold:
+  symbol_table_t ->
   btypecode_t ->
   btypecode_t 
 
@@ -70,6 +91,7 @@ with respect to recursion
 *)
 
 val minimise:
+  symbol_table_t ->
   btypecode_t ->
   btypecode_t 
 
@@ -164,6 +186,7 @@ let rec dual t =
   | `BTYP_array (a,b) -> `BTYP_array (b,a)
 
   | `BTYP_pointer t -> `BTYP_pointer (dual t)
+  | `BTYP_lvalue t -> `BTYP_lvalue (dual t)
   | `BTYP_void -> `BTYP_tuple []
   | t -> t
 
@@ -338,6 +361,7 @@ let fix i t =
     | `BTYP_sum ts -> `BTYP_sum (map aux ts)
     | `BTYP_function (a,b) -> `BTYP_function (aux a, aux b)
     | `BTYP_pointer a -> `BTYP_pointer (aux a)
+    | `BTYP_lvalue a -> `BTYP_lvalue (aux a)
     | `BTYP_array (a,b) -> `BTYP_array (aux a, aux b)
 
     | `BTYP_void
@@ -360,7 +384,7 @@ let var_list_occurs ls t =
   handle any subtyping
 *)
 
-let rec unification dfns eqns (dvars: IntSet.t) : (int * btypecode_t) list = 
+let rec unification allow_lval dfns eqns (dvars: IntSet.t) : (int * btypecode_t) list = 
   (*
   print_endline ( "Dvars = { " ^ catmap ", " si (IntSet.elements dvars) ^ "}");
   *)
@@ -381,6 +405,25 @@ let rec unification dfns eqns (dvars: IntSet.t) : (int * btypecode_t) list =
             s := Some (j,`BTYP_var i)
           else raise Not_found
 
+      | `BTYP_lvalue t1, `BTYP_lvalue t2 ->
+        eqns := (t1,t2) :: !eqns
+
+      (* This says an argument of type lvalue t can match
+        a parameter of type t -- not the other way around tho
+       
+        This must be done FIRST, before matching against
+         `BTYP_var i, t
+       to ensure t can't be an lvalue
+      *)
+      | t1, `BTYP_lvalue t2 when allow_lval ->
+        eqns := (t1,t2) :: !eqns
+      
+      (*
+      | `BTYP_lvalue t1, t2 when allow_lval ->
+        print_endline "WARNING LVALUE ON LEFT UNEXPECTED ..";
+        eqns := (t1,t2) :: !eqns
+      *)
+
       | `BTYP_var i, t
       | t,`BTYP_var i ->
         if not (IntSet.mem i dvars) then raise Not_found;
@@ -393,11 +436,19 @@ let rec unification dfns eqns (dvars: IntSet.t) : (int * btypecode_t) list =
             sbt dfns a ^ " = " ^ sbt dfns b
           );
           s := Some (i, fix i t)
-        end else
+        end else begin
+          let t = match t with 
+            | `BTYP_lvalue t when allow_lval -> 
+              print_endline "WARNING, lvalue binding variable"; 
+              t
+            | _ -> t
+          in
           s := Some (i,t)
+        end
 
       | `BTYP_pointer t1, `BTYP_pointer t2 ->
         eqns := (t1,t2) :: !eqns
+
 
       | `BTYP_array (t11, t12), `BTYP_array (t21, t22)
       | `BTYP_function (t11, t12), `BTYP_function (t21, t22) ->
@@ -483,12 +534,18 @@ let find_vars_eqns eqns =
 let maybe_unification dfns eqns = 
   let l,r = find_vars_eqns eqns in
   let dvars = IntSet.union l r in
-  try Some (unification dfns eqns dvars)
+  try Some (unification false dfns eqns dvars)
+  with Not_found -> None
+
+let maybe_matches dfns eqns = 
+  let l,r = find_vars_eqns eqns in
+  let dvars = IntSet.union l r in
+  try Some (unification true dfns eqns dvars)
   with Not_found -> None
 
 let maybe_specialisation dfns eqns =
   let l,_ = find_vars_eqns eqns in
-  try Some (unification dfns eqns l)
+  try Some (unification true dfns eqns l)
   with Not_found -> None
 
 let unifies dfns t1 t2 =
@@ -532,6 +589,16 @@ let compare_sigs dfns a b =
    variable one .. it must be eliminated, but
    type parameters must not be [since they're
    instantiated to multiple values .. ..])
+
+   The subtyping rule for lvalues also applies
+   here. An lvalue type for a returned expression
+   is compatible with a non-value function return.
+
+   The unification algorithm can account for this,
+   it requires the LHS = RHS equation to support
+   an extra 'lvalue' in the RHS, but not the other
+   way around. So the expression type has to be the RHS
+   and the declared type the LHS.
 *)
 
 let do_unify syms a b =
@@ -547,7 +614,7 @@ let do_unify syms a b =
     (*
     print_endline "Calling unification";
     *)
-    let mgu = unification syms.dfns eqns dvars in
+    let mgu = unification true syms.dfns eqns dvars in
     (*
     print_endline "mgu=";
     iter
@@ -595,11 +662,17 @@ let do_unify syms a b =
 
 let rec memq trail (a,b) = match trail with
   | [] -> false
-  | (_,(i,j))::t -> i == a && j == b || memq t (a,b)
+  | (i,j)::t -> i == a && j == b || memq t (a,b)
 
-let rec type_eq' trail depth t1 t2 = 
+let rec type_eq' dfns allow_lval ltrail ldepth rtrail rdepth trail t1 t2 = 
+  (* print_endline (sbt dfns t1 ^ " =? " ^ sbt dfns t2); *)
   if memq trail (t1,t2) then true
-  else let te a b = type_eq' ((depth,(t1,t2))::trail) (depth+1) a b in
+  else let te a b = type_eq' dfns allow_lval 
+    ((ldepth,t1)::ltrail) (ldepth+1) 
+    ((rdepth,t2)::rtrail) (rdepth+1) 
+    ((t1,t2)::trail)
+    a b 
+  in
   match t1,t2 with
   | `BTYP_inst (i1,ts1),`BTYP_inst (i2,ts2) -> 
     i1 = i2 && 
@@ -624,6 +697,17 @@ let rec type_eq' trail depth t1 t2 =
   | `BTYP_pointer p1,`BTYP_pointer p2 
     -> te p1 p2
 
+  | `BTYP_lvalue p1,`BTYP_lvalue p2 
+    -> te p1 p2
+
+  | p1,(`BTYP_lvalue p2 as lt) when allow_lval
+    -> 
+    type_eq' dfns allow_lval 
+    ltrail ldepth
+    ((rdepth,lt)::rtrail) (rdepth+1) 
+    ((p1,lt)::trail)
+    p1 p2 
+
   | `BTYP_void,`BTYP_void
     -> true
 
@@ -631,17 +715,28 @@ let rec type_eq' trail depth t1 t2 =
     i = j
 
   | `BTYP_fix i,`BTYP_fix j ->
-    i = j
+    let a = assoc (ldepth+i) ltrail in 
+    let b = assoc (rdepth+j) rtrail in 
+    (* print_endline "Matching fixpoints"; *)
+    type_eq' dfns allow_lval ltrail ldepth rtrail rdepth trail a b
 
   | `BTYP_fix i,t ->
-    type_eq' trail depth (fst (assoc (depth+i) trail)) t
+    (* print_endline "LHS fixpoint"; *)
+    let a = assoc (ldepth+i) ltrail in 
+    type_eq' dfns allow_lval ltrail ldepth rtrail rdepth trail a t
 
-  | t,`BTYP_fix i ->
-    type_eq' trail depth t (snd (assoc (depth+i) trail))
+  | t,`BTYP_fix j ->
+    (* print_endline "RHS fixpoint"; *)
+    let b = assoc (rdepth+j) rtrail in 
+    type_eq' dfns allow_lval ltrail ldepth rtrail rdepth trail t b
 
   | _ -> false
 
-let type_eq t1 t2 = type_eq' [] 0 t1 t2
+let type_eq dfns t1 t2 = (* print_endline "TYPE EQ";  *)
+  type_eq' dfns false [] 0 [] 0 [] t1 t2
+
+let type_match dfns t1 t2 = (* print_endline "TYPE MATCH"; *)
+  type_eq' dfns true [] 0 [] 0 [] t1 t2 
 
 (* NOTE: only works on explicit fixpoint operators,
   i.e. it won't work on typedefs: no name lookup,
@@ -649,7 +744,7 @@ let type_eq t1 t2 = type_eq' [] 0 t1 t2
   another view: only works on non-generative types.
 *)
 
-let unfold t =
+let unfold dfns t =
   let rec aux depth t' = 
   let uf t = aux (depth+1) t in
   match t' with 
@@ -658,6 +753,7 @@ let unfold t =
   | `BTYP_array (a,b) -> `BTYP_array (uf a, uf b)
   | `BTYP_function (a,b) -> `BTYP_function (uf a, uf b)
   | `BTYP_pointer a -> `BTYP_pointer (uf a)
+  | `BTYP_lvalue a -> `BTYP_lvalue (uf a)
   | `BTYP_fix i when (-i) = depth -> t
   | `BTYP_fix i when (-i) > depth -> 
     failwith ("[unfold] Fix point outside term, depth="^string_of_int i)
@@ -668,8 +764,8 @@ let unfold t =
 
 exception Found of btypecode_t
 
-(* this undoes an unfold: it won't minimise an arbitrary type *)
-let fold t = 
+(* this undoes an fold: it won't minimise an arbitrary type *)
+let fold dfns t = 
   let rec aux trail depth t' = 
     let ax t = aux ((depth,t')::trail) (depth+1) t in
     match t' with
@@ -681,6 +777,7 @@ let fold t =
     | `BTYP_function (a,b) -> ax a; ax b
 
     | `BTYP_pointer a  -> ax a
+    | `BTYP_lvalue a  -> ax a
 
     | `BTYP_void
 
@@ -691,18 +788,44 @@ let fold t =
       let k = depth + i in
       begin try 
         let t'' = assoc k trail in
-        if type_eq t'' t then raise (Found t'')
+        if type_eq dfns t'' t then raise (Found t'')
       with Not_found -> ()
       end 
-    | _ -> failwith "[unfold] unexpected metatype"
+    | _ -> failwith "[fold] unexpected metatype"
   in
     try aux [] 0 t; t
     with Found t -> t
 
+let lstrip dfns t = 
+  let rec aux trail t' = 
+  let uf t = aux (0::trail) t in
+  match t' with 
+  | `BTYP_sum ls -> `BTYP_sum (map uf ls)
+  | `BTYP_tuple ls -> `BTYP_tuple (map uf ls)
+  | `BTYP_array (a,b) -> `BTYP_array (uf a, uf b)
+  | `BTYP_function (a,b) -> `BTYP_function (uf a, uf b)
+  | `BTYP_pointer a -> `BTYP_pointer (uf a)
+  | `BTYP_lvalue a -> aux (1::trail) a
+  | `BTYP_fix i -> 
+     let k = ref i in
+     let j = ref 0 in
+     let trail = ref trail in
+     while !k < 0 do 
+       j := !j + hd !trail; 
+       trail := tl !trail;
+       incr k
+     done;
+     `BTYP_fix (i + !j)
+
+  | `BTYP_inst (i,ts) -> `BTYP_inst (i,map uf ts)
+  | _ -> t'
+  in aux [] t
+
+
 (* produces a unique minimal representation of a type
 by folding at every node *)
 
-let minimise t = match map_btype fold t with x -> fold x
+let minimise dfns t = match map_btype (fold dfns) t with x -> fold dfns x
 
 let var_occurs t =
   let rec aux t =
@@ -715,6 +838,7 @@ let var_occurs t =
     | `BTYP_function (a,b) -> aux a; aux b
 
     | `BTYP_pointer a  -> aux a
+    | `BTYP_lvalue a  -> aux a
 
     | `BTYP_void
     | `BTYP_fix _ -> ()

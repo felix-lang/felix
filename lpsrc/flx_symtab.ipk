@@ -99,9 +99,18 @@ let add_function syms sr table key value =
   try 
     match Hashtbl.find table key with
     | NonFunctionEntry entry -> 
-      clierr sr 
-      ("[build_tables] Cannot overload " ^ key ^ "<" ^ si value ^
-      "> with non-function" ^ string_of_entry_kind entry)
+      begin
+        match Hashtbl.find syms.dfns entry with
+        { id=id; sr=sr2 } ->
+        clierr2 sr sr2
+        (
+          "[build_tables] Cannot overload " ^ 
+          key ^ "<" ^ si value ^ ">" ^
+          " with non-function " ^ 
+          id ^ "<" ^ si entry ^ ">"
+        )
+      end
+
     | FunctionEntry fs ->
       Hashtbl.remove table key;
       Hashtbl.add table key (FunctionEntry (value :: fs))
@@ -354,7 +363,7 @@ let rec build_tables syms name level parent grandparent root asms =
 
         | `DCL_var t ->       
           let t = if t = `TYP_none then `TYP_var n else t in
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_var (t)}
+          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_var (`TYP_lvalue t)}
           ;
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n

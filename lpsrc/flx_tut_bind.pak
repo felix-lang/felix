@@ -593,7 +593,7 @@ with the same name and given arguments,
 and a const will refer to a C entity of the
 same name.
 
-@select(tangler(tdir+'tut_bind150.flx'))
+@select(tangler(tdir+'tut_bind151.flx'))
 include "std";
 
 body """

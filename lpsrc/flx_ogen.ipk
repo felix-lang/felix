@@ -101,8 +101,9 @@ let comma_sub s =
  
 (* this code handles pointers in types *)
 let rec get_offsets syms bbdfns typ : string list =
+  let typ = lstrip syms.dfns typ in
   let tname = cpp_typename syms typ in
-  match unfold typ with
+  match unfold syms.dfns typ with
   | `BTYP_pointer t -> 
     ["offsetof("^tname^",frame)"]
 
@@ -288,7 +289,7 @@ let gen_offset_tables syms (child_map,bbdfns) all_closures =
   let allocable_types = Hashtbl.create 97 in
   Hashtbl.iter
   (fun btyp index -> 
-    match unfold btyp with
+    match unfold syms.dfns btyp with
     | `BTYP_sum args -> 
       iter 
       (fun t ->
@@ -341,7 +342,7 @@ let gen_offset_tables syms (child_map,bbdfns) all_closures =
     (*
     print_endline ("allocable type --> " ^ string_of_btypecode syms.dfns btyp);
     *)
-    match unfold btyp with
+    match unfold syms.dfns btyp with
     | `BTYP_tuple args ->
       let name = cpp_type_classname syms btyp in
       let offsets = get_offsets syms bbdfns btyp in

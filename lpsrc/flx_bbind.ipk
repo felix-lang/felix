@@ -119,7 +119,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
         Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
         begin
           if not (Hashtbl.mem syms.ticache i) then
-          let t = fold (`BTYP_function (typeoflist ts,brt')) in
+          let t = fold syms.dfns (`BTYP_function (typeoflist ts,brt')) in
           Hashtbl.add syms.ticache i t
         end
         ;
@@ -176,7 +176,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       );
       begin
         if not (Hashtbl.mem syms.ticache i) then
-        let t = fold (`BTYP_function (`BTYP_tuple[],flx_bbool)) in
+        let t = fold syms.dfns (`BTYP_function (`BTYP_tuple[],flx_bbool)) in
         Hashtbl.add syms.ticache i t
       end
       ;
@@ -201,7 +201,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       print_endline ("Binding variable " ^ name ^"<"^ si i ^">");
       *)
       let t = typeofindex syms i in
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_var (vs,t))
+      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_var (vs, t))
       ;
       if syms.compiler_options.print_flag then
       print_endline ("//bound var " ^ name ^ "<"^si i^">" ^
@@ -230,7 +230,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       Hashtbl.add bbdfns i (name,None,sr,bbdcl);
       begin
         if not (Hashtbl.mem syms.ticache i) then
-        let t = fold (`BTYP_function (typeoflist ts,bret)) in
+        let t = fold syms.dfns (`BTYP_function (typeoflist ts,bret)) in
         Hashtbl.add syms.ticache i t
       end
       ;
@@ -450,7 +450,7 @@ try
   print_endline (Flx_print.string_of_compilation_unit parse_tree);
   print_endline "//PARSE OK";
 
-  let include_dirs =  (Filename.dirname input_file_name) :: compiler_options.include_dirs in
+  let include_dirs =  (* (Filename.dirname input_file_name) :: *) compiler_options.include_dirs in
   let compiler_options = { compiler_options with include_dirs = include_dirs } in
   let syms = { syms with compiler_options = compiler_options } in
   let deblocked = desugar_program syms module_name parse_tree in

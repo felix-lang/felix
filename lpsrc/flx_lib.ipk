@@ -190,6 +190,11 @@ namespace flx { namespace rtl { namespace strutil {
     x << t;
     return x.str();
   }
+
+  string atostr(char const *a) {
+    if(a) return a;
+    else return "";
+  }
 }}}
 
 @h=tangler('lib/std.flx','data')
@@ -224,12 +229,12 @@ header flx_strutil '#include "flx_strutil.cpp"';
 
 header string_hxx '#include <string>';
 header complex_hxx '#include <complex>';
-header complex_h '#include <complex.h>';
+header c99_complex_h '#include <complex.h>';
 
 @if HAVE_STDINT:
-  tangle('header stdint_h "#include <stdint.h>";')
+  tangle('header c99_stdint_h "#include <stdint.h>";')
  else:
-  tangle('header stdint_h "";')
+  tangle('header c99_stdint_h "";')
 
 header cstdlib "#include <cstdlib>";
 
@@ -264,14 +269,16 @@ header cstdlib "#include <cstdlib>";
   tangle('  fun eq: '+t+' * '+t+' -> bool = "$1==$2";')
   tangle('  fun ne: '+t+' * '+t+' -> bool = "$1!=$2";')
 
-@def gen_asgn(t):
-  tangle('  proc swap: lvalue['+t+'] * lvalue['+t+'] ="""')
-  tangle('  {')
-  tangle('    '+ tmap[t] + ' tmp=$1;')
-  tangle('    $1=$2;')
-  tangle('    $2=tmp;')
-  tangle('  }""";')
-  gen_eq(t)
+header swapper[t] "void swapper(?1 &a, ?1 &b);";
+body swapper[t] """
+  void swapper(?1 &a, ?1 &b){
+    ?1 tmp = a; a = b; b = tmp;
+  }
+""";
+
+proc _swap[t]: lvalue[t] * lvalue[t] = 
+  "swapper($1,$2);"
+  requires swapper[t];
 
 @def gen_cmp(t):
   for opname,op in [
@@ -305,7 +312,7 @@ publish "Array type"
   typedef array[t,n] = t ^ n;
 
 publish "Lvalue hack"
-  typedef lvalue[t] = t;
+  typedef lvalue[t] = lval t;
 
 publish "Array access: works on LHS of assignment too"
 fun subscript[t,n]: array[t, n] * int -> t = "$1.data[$2]";
@@ -508,8 +515,8 @@ module C_hack
   an lvalue, the result is an lvalue. Assignments
   to const lvalues are trapped by the C/C++ compiler.
   """
-  fun deref[t]: ptr[t] -> t = "*$1";
-  fun deref[t]: cptr[t] -> t = "*$1";
+  fun deref[t]: ptr[t] -> lvalue[t] = "*$1";
+  fun deref[t]: cptr[t] -> lvalue[t] = "*$1";
 
   publish """
   Function to take the address of a C lvalue,
@@ -518,9 +525,9 @@ module C_hack
   containing frame won't be collected. 
   Addresses of temporaries must not be taken.
   """
-  fun addr[t]: t -> ptr[t] = "&$1";
-  fun caddr[t]: t -> cptr[t] ="(?1 const*)&$1";
-  fun address_of[t]: t-> address = "(void*)&$1";
+  fun addr[t]: lvalue[t] -> ptr[t] = "&$1";
+  fun caddr[t]: lvalue[t] -> cptr[t] ="(?1 const*)&$1";
+  fun address_of[t]: lvalue[t]-> address = "(void*)&$1";
   
   publish """
   Polymorphic null pointer constant
@@ -555,7 +562,7 @@ module Carray
   fun array_alloc[t]: int -> ptr[t] = '(?1*)std::malloc(sizeof(?1)*$1)'; 
   fun array_calloc[t]: int -> ptr[t] = '(?1*)std::calloc(sizeof(?1),$1)'; 
   proc free[t]: ptr[t]="std::free($1);";
-  fun subscript[t]: lvalue[ptr[t]] * int -> lvalue[t] = '$1[$2]';
+  fun subscript[t]: ptr[t] * int -> lvalue[t] = '$1[$2]';
 }
 
 publish "System Interface"
@@ -566,14 +573,16 @@ module System
 @tangle('  const felix_version : string = \'std::string("'+flx_version+'")\';')
   fun system: string -> int = "std::system($1.data())"
     requires cstdlib;
-  proc exit: int;
+  proc exit: int = "std::exit($1);";
+  proc abort: 1 = "std::abort($1);";
 }
 
 @#------------- Environment -------------------
 module Env
 {
-  fun getenv:string -> string = "std::string(std::getenv($1.data()))"
-    requires cstdlib;
+  fun getenv:string -> string = 
+    "flx::rtl::strutil::atostr(getenv($1.data()))" 
+    requires flx_strutil, cstdlib;
 }
 
 module Dynlink
@@ -670,6 +679,7 @@ module Dynlink
 @#------------- Text I/O -------------------
 module Text_file
 {
+  requires flx_ioutil;
   fun load: string -> string = "flx::rtl::ioutil::load_file($1)";
 
   pod type text_file = "FILE*"; // its a macro?
@@ -692,7 +702,7 @@ type string = "std::string";
 @for t in ints:
   tangle("module " + string.capitalize(t))
   tangle("{")
-  gen_asgn(t)
+  gen_eq(t)
   gen_cmp(t)
   gen_arith(t)
   if t in uints: gen_uint(t)
@@ -717,7 +727,7 @@ type string = "std::string";
 @for t in floats:
   tangle("module " + string.capitalize(t))
   tangle("{")
-  gen_asgn(t)
+  gen_eq(t)
   gen_cmp(t)
   gen_arith(t)
   gen_arith_assign(t)
@@ -733,7 +743,7 @@ type string = "std::string";
 @#------------- CHARACTER MODULES -------------------
 // ordinary value of chars
 @for t in chars:
-  gen_asgn(t)
+  gen_eq(t)
 
 module Char 
 {
@@ -779,8 +789,8 @@ module String
   proc pluseq: lvalue[string] * string = "$1.append($2);";
   proc pluseq: lvalue[string] * charcp = "$1.append($2);";
   proc pluseq: lvalue[string] * charp = "$1.append($2);";
-  proc make_string: charp -> string = 'std::string($1)';
-  proc make_string: charcp -> string =' std::string($1)';
+  proc str: charp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
+  proc str: charcp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
 
   fun len: string -> int = "$1.size()";
   fun add: string * string -> string = "$1+$2";
@@ -807,11 +817,22 @@ module String
 
   proc print: string = "std::cout << $1;" requires iostream;
   fun atoi: string -> int = "std::atoi($1.data())" requires cstdlib;
+  fun atol: string -> long = "std::atol($1.data())" requires cstdlib;
+  fun atof: string -> double = "std::atof($1.data())" requires cstdlib;
 
   proc reserve: lvalue[string] * int = "$1.reserve($2);";
 
   publish "Unsafe extract buffer pointer"
   fun cstr: string -> C_hack::ptr[char] = "$1.data()";
+}
+
+module Cstdlib
+{
+  requires cstdlib;
+  const RAND_MAX:long;
+
+  proc srand: uint = 'std::srand($1);';
+  fun rand: 1 -> int = 'std::rand()';
 }
 
 type ustring = "basic_string<uint32_t>" requires string_hxx;
@@ -1145,9 +1166,10 @@ header std_stl_queue "#include <queue>";
 header std_stl_set "#include <set>";
 header std_stl_map "#include <map>";
 header std_stl_stack "#include <stack>";
-header ext_hash_set "#include <ext/hash_set>";
-header ext_hash_map "#include <ext/hash_map>";
-header ext_slist "#include <ext/slist>";
+@if HAVE_STL_GNU_CXX:
+  tangle('header ext_hash_set "#include <ext/hash_set>";')
+  tangle('header ext_hash_map "#include <ext/hash_map>";')
+  tangle('header ext_slist "#include <ext/slist>";')
 
 // hash for std::string for use with hash containers
 header ext_string_hash """
@@ -1195,7 +1217,7 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    fun create[t,i] : i * i -> '+c+' = "0,'+ns+'::'+n+'<?1>($1,$2)";')
   gen_pcmp(c)
   gen_peq(c)
-  tangle('    fun size[t]: '+c+'->int = "$1.size()";')
+  tangle('    fun len[t]: '+c+'->int = "$1.size()";')
   tangle('    fun empty[t]: '+c+'->int = "$1.empty()";')
 
   tangle('     type '+it+' = "'+ns+'::'+n+'<?1>::iterator";');
@@ -1246,7 +1268,7 @@ size_t __gnu_cxx::hash<std::string>::
 @def mksub(n):
   c = 'stl_'+n+'[t]'
   it = 'stl_'+n+'_iterator[t]'
-  tangle('    fun subscript[t] : '+c+' * int -> t = "$1.at($2)";')
+  tangle('    fun subscript[t] : '+c+' * int -> lvalue[t] = "$1.at($2)";')
 
 @def mkass(n,ns='std'):
   tangle('    type stl_'+n+'[k,v] = "'+ns+'::'+n+'<?1,?2>";')
@@ -1257,7 +1279,7 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    fun ge[k,v]: stl_'+n+'[k,v] * stl_'+n+'[k,v] -> bool = "int($1>=$2)";')
   tangle('    fun eq[k,v]: stl_'+n+'[k,v] * stl_'+n+'[k,v] -> bool = "$1==$2";')
   tangle('    fun ne[k,v]: stl_'+n+'[k,v] * stl_'+n+'[k,v] -> bool = "$1!=$2";')
-  tangle('    fun size[k,v]: stl_'+n+'[k,v]->int = "$1.size()";')
+  tangle('    fun len[k,v]: stl_'+n+'[k,v]->int = "$1.size()";')
   tangle('    fun empty[k,v]: stl_'+n+'[k,v]->int = "$1.empty()";')
   tangle('    type stl_'+n+'_iterator[k,v] = "'+ns+'::'+n+'<?1,?2>::iterator";')
   tangle('    fun lt[k,v]: stl_'+n+'_iterator[k,v] * stl_'+n+'_iterator[k,v] -> bool = "int($1<$2)";')
@@ -1277,7 +1299,7 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    fun find[k,v] : stl_'+n+'[k,v] * k ->  stl_'+n+'_iterator[k,v] = "$1.find($2)";')
   tangle('    fun mem[k,v] : stl_'+n+'[k,v] * k -> bool = "$1.find($2) != $1.end()";')
    
-  tangle('    fun subscript[k,v]: stl_'+n+'[k,v] * k -> v = "$1[$2]";')
+  tangle('    fun subscript[k,v]: stl_'+n+'[k,v] * k -> lvalue[v] = "$1[$2]";')
 
 module Stl 
 {
@@ -1292,6 +1314,11 @@ module Stl
 @mkfront('vector')
 @mkback('vector')
 @mksub('vector')
+    fun add[t]: stl_vector_iterator[t] * int -> stl_vector_iterator[t] = "$1+$2";
+    fun sub[t]: stl_vector_iterator[t] * int -> stl_vector_iterator[t] = "$1-$2";
+    proc pluseq[t]: lvalue[stl_vector_iterator[t]] * int = "$1+=$2;";
+    proc minuseq[t]: lvalue[stl_vector_iterator[t]] * int -> stl_vector_iterator[t] = "$1-=$2;";
+    fun subscript[t]: stl_vector_iterator[t] * int -> lvalue[t] = "$1[$2]";
   }
   module List
   {
@@ -1360,33 +1387,33 @@ module Stl
     proc insert_after[t] : stl_slist[t] * stl_slist_iterator[t] *  t  = "$1.insert_after($2,$3);";
     proc erase_after[t] : stl_slist[t] * stl_slist_iterator[t] = "$1.erase_after($1);";
   }
-
-// HASHTABLE based containers assume
-// these classes will be added to C++ via TR1 in the future.
-// g++ 3.2.2 at least has these classes
-// The free SGI implementation may suffice as a replacement,
-// this is what my version of g++ uses.
-
-  module HashSet
-  {
-    requires ext_hash_set;
-@mkseq('hash_set','__gnu_cxx')
-  }
-  module HashMultiSet
-  {
-    requires ext_hash_set;
-@mkseq('hash_multiset','__gnu_cxx')
-  }
-  module HashMap
-  {
-    requires ext_hash_map;
-@mkass('hash_map','__gnu_cxx')    
-  }
-  module HashMultiMap
-  {
-    requires ext_hash_map;
-@mkass('hash_multimap','__gnu_cxx')    
-  }
+@if HAVE_STL_GNU_CXX:
+  tangle('// HASHTABLE based containers assume')
+  tangle('// these classes will be added to C++ via TR1 in the future.')
+  tangle('// g++ 3.2.2 at least has these classes')
+  tangle('// The free SGI implementation may suffice as a replacement,')
+  tangle('// this is what my version of g++ uses.')
+  tangle('')
+  tangle('  module HashSet')
+  tangle('  {')
+  tangle('    requires ext_hash_set;')
+  mkseq('hash_set','__gnu_cxx')
+  tangle('  }')
+  tangle('  module HashMultiSet')
+  tangle('  {')
+  tangle('    requires ext_hash_set;')
+  mkseq('hash_multiset','__gnu_cxx')
+  tangle('  }')
+  tangle('  module HashMap')
+  tangle('  {')
+  tangle('    requires ext_hash_map;')
+  mkass('hash_map','__gnu_cxx')    
+  tangle('  }')
+  tangle('  module HashMultiMap')
+  tangle('  {')
+  tangle('    requires ext_hash_map;')
+  mkass('hash_multimap','__gnu_cxx')    
+  tangle('  }')
 }
 
 

@@ -5,12 +5,50 @@
 @head(2,"bagley/felix/ackermann.expect")
 @select(tangler("bagley/felix/ackermann.expect","data"))
 Ack(3,8): 2045
+@head(2,"bagley/felix/except.expect")
+@select(tangler("bagley/felix/except.expect","data"))
+Exceptions: HI=4 / LO=4
 @head(2,"bagley/felix/fibo.expect")
 @select(tangler("bagley/felix/fibo.expect","data"))
 Fib(8): 34
+@head(2,"bagley/felix/heapsort.expect")
+@select(tangler("bagley/felix/heapsort.expect","data"))
+0.9990640718
+@head(2,"bagley/felix/hello.expect")
+@select(tangler("bagley/felix/hello.expect","data"))
+hello world
+@head(2,"bagley/felix/lists.expect")
+@select(tangler("bagley/felix/lists.expect","data"))
+10000
+@head(2,"bagley/felix/matrix.expect")
+@select(tangler("bagley/felix/matrix.expect","data"))
+270165 1061760 1453695 1856025
+@head(2,"bagley/felix/methcall.expect")
+@select(tangler("bagley/felix/methcall.expect","data"))
+true
+true
 @head(2,"bagley/felix/nestedloop.expect")
 @select(tangler("bagley/felix/nestedloop.expect","data"))
 262144
+@head(2,"bagley/felix/objinst.expect")
+@select(tangler("bagley/felix/objinst.expect","data"))
+false
+true
+false
+true
+false
+
+true
+true
+false
+false
+false
+true
+true
+true
+@head(2,"bagley/felix/random.expect")
+@select(tangler("bagley/felix/random.expect","data"))
+8.16329
 @head(2,"bagley/felix/regexmatch.expect")
 @select(tangler("bagley/felix/regexmatch.expect","data"))
 1: (111) 111 1111
@@ -26,19 +64,8 @@ Fib(8): 34
 11: (111) 232 1111
 12: (111) 242 1111
 13: (213) 222 2222
-@head(2,"bagley/felix/random.expect")
-@select(tangler("bagley/felix/random.expect","data"))
-8.16329
-@head(2,"bagley/felix/hello.expect")
-@select(tangler("bagley/felix/hello.expect","data"))
-hello world
-@head(2,"bagley/felix/matrix.expect")
-@select(tangler("bagley/felix/matrix.expect","data"))
-270165 1061760 1453695 1856025
 @head(2,"bagley/felix/reversefile.expect")
 @select(tangler("bagley/felix/reversefile.expect","data"))
-
-
 foo 214) 222 2222 bar
 foo (213 222-2222 bar
 foo 211@22222222 bar
@@ -74,51 +101,34 @@ foo (111) 555 5555
 the following numbers should match:
 
 datafile for regex matching of phone numbers test
-@head(2,"bagley/felix/sumcol.expect")
-@select(tangler("bagley/felix/sumcol.expect","data"))
-500500
 @head(2,"bagley/felix/sieve.expect")
 @select(tangler("bagley/felix/sieve.expect","data"))
 Count: 1028
-@head(2,"bagley/felix/lists.expect")
-@select(tangler("bagley/felix/lists.expect","data"))
-10000
-@head(2,"bagley/felix/objinst.expect")
-@select(tangler("bagley/felix/objinst.expect","data"))
-false
-true
-false
-true
-false
-
-true
-true
-false
-false
-false
-true
-true
-true
-@head(2,"bagley/felix/methcall.expect")
-@select(tangler("bagley/felix/methcall.expect","data"))
-true
-true
 @head(2,"bagley/felix/strcat.expect")
 @select(tangler("bagley/felix/strcat.expect","data"))
 48
-@head(2,"bagley/felix/except.expect")
-@select(tangler("bagley/felix/except.expect","data"))
-Exceptions: HI=4 / LO=4
+@head(2,"bagley/felix/sumcol.expect")
+@select(tangler("bagley/felix/sumcol.expect","data"))
+500500
 @head(2,"bagley/felix/wc.expect")
 @select(tangler("bagley/felix/wc.expect","data"))
-37 100 568
-@head(2,"bagley/felix/heapsort.expect")
-@select(tangler("bagley/felix/heapsort.expect","data"))
-0.9990640718
+35 100 566
 @head(2,"bagley/felix/plugin.expect")
 @select(tangler("bagley/felix/plugin.expect","data"))
-120@head(2,"bagley/felix/plugin.expect")
+120
+@head(2,"bagley/felix/hash.expect")
 @select(tangler("bagley/felix/hash.expect","data"))
 4999
+@head(2,"bagley/felix/hash2.expect")
 @select(tangler("bagley/felix/hash2.expect","data"))
 1 9999 10 99990
+@head(2,"bagley/felix/moments.expect")
+@select(tangler("bagley/felix/moments.expect","data"))
+n:                  500
+median:             250.500000
+mean:               250.500000
+average_deviation:  125.000000
+standard_deviation: 144.481833
+variance:           20875.000000
+skew:               0.000000
+kurtosis:           -1.207202

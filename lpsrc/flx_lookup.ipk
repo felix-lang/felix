@@ -937,15 +937,14 @@ and bind_type'
     | Tfound t -> t
     end
 
-  | `TYP_lvalue t -> bt t
   | `TYP_dual t ->
     let t = bt t in
     dual t
 
   | `TYP_proj (i,t) -> 
     let t = bt t in
-    ignore (try unfold t with _ -> failwith "TYP_proj unfold screwd");
-    begin match unfold t with 
+    ignore (try unfold syms.dfns t with _ -> failwith "TYP_proj unfold screwd");
+    begin match unfold syms.dfns t with 
     | `BTYP_tuple ls ->
       if i < 1 or i>List.length ls
       then 
@@ -967,7 +966,7 @@ and bind_type'
 
   | `TYP_dom t -> 
     let t = bt t in 
-    begin match unfold t with
+    begin match unfold syms.dfns t with
     | `BTYP_function (a,b) -> a
     | _ ->
       clierr sr
@@ -978,7 +977,7 @@ and bind_type'
     end
   | `TYP_cod t -> 
     let t = bt t in 
-    begin match unfold t with
+    begin match unfold syms.dfns t with
     | `BTYP_function (a,b) -> b
     | _ ->
       clierr sr
@@ -990,8 +989,8 @@ and bind_type'
 
   | `TYP_case_arg (i,t) ->
     let t = bt t in
-    ignore (try unfold t with _ -> failwith "TYP_case_arg unfold screwd");
-    begin match unfold t with
+    ignore (try unfold syms.dfns t with _ -> failwith "TYP_case_arg unfold screwd");
+    begin match unfold syms.dfns t with
     | `BTYP_sum ls ->
       if i < 1 or i>List.length ls
       then 
@@ -1069,6 +1068,10 @@ and bind_type'
   | `TYP_pointer t -> 
      let t' = bt t in 
      `BTYP_pointer t'
+
+  | `TYP_lvalue t -> 
+     let t' = bt t in 
+     `BTYP_lvalue t'
 
   | `AST_void _ -> 
     `BTYP_void
@@ -1460,7 +1463,7 @@ and typeofindex
     end
     else 
       let t = inner_typeofindex syms [] [] 0 index in
-      let _ = try unfold t with _ ->
+      let _ = try unfold syms.dfns t with _ ->
         print_endline "typeofindex produced free fixpoint";
         failwith "[typeofindex] free fixpoint constructed"
       in
@@ -1571,9 +1574,10 @@ and inner_typeofindex
 
 and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let rest =
-    match unfold t1 with
+    match unfold syms.dfns t1 with
+    | `BTYP_lvalue (`BTYP_function (argt,rest))
     | `BTYP_function (argt,rest) ->
-      if argt = t2
+      if type_match syms.dfns argt t2
       then rest 
       else
         clierr sr
@@ -1759,7 +1763,7 @@ and lookup_qn_with_sig'
   *)
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
-    begin match unfold t with
+    begin match unfold syms.dfns t with
     | `BTYP_sum ls ->
       if v<1 or v> List.length ls
       then clierr sra "Case index out of range of sum"
@@ -2007,7 +2011,7 @@ and handle_function
         ignore begin
           match t with 
           | `BTYP_fix _ -> raise (Free_fixpoint t)
-          | _ -> try unfold t with
+          | _ -> try unfold syms.dfns t with
           | _ -> raise (Free_fixpoint t)
         end
         ;
@@ -2036,7 +2040,7 @@ and handle_variable syms env index id sr vs ts t t2 =
       if d <> t2 then
       clierr sr
       (
-        "[lookup_name_in_table_dirs_with_sig] Expected variable "^id ^
+        "[handle_variable(1)] Expected variable "^id ^
         "<" ^ si index ^ "> to have function type with signature " ^
         sbt syms.dfns t2 ^
         ", got function type:\n" ^
@@ -2052,10 +2056,12 @@ and handle_variable syms env index id sr vs ts t t2 =
           *)
         )
 
+    | `BTYP_lvalue (`BTYP_inst (i,[]))
     | `BTYP_inst (i,[]) ->
       begin match get_data syms.dfns i  with
       {id=id'} ->
         begin match t2 with
+        | `BTYP_lvalue (`BTYP_inst (j,[]))
         | `BTYP_inst (j,[]) ->
           begin match get_data syms.dfns j with
           {id=id''} ->
@@ -2068,7 +2074,7 @@ and handle_variable syms env index id sr vs ts t t2 =
             | _ ->
               clierr sr
               (
-                "[lookup_name_in_table_dirs_with_sig] expected variable " ^ 
+                "[handle_variable(2)] expected variable " ^ 
                 id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
                 sbt syms.dfns t
               )
@@ -2077,7 +2083,7 @@ and handle_variable syms env index id sr vs ts t t2 =
         | _ ->
           clierr sr
           (
-            "[lookup_name_in_table_dirs_with_sig] expected variable " ^ 
+            "[handle_variable(3)] expected variable " ^ 
             id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
             sbt syms.dfns t
           )
@@ -2086,7 +2092,7 @@ and handle_variable syms env index id sr vs ts t t2 =
     | _ ->
       clierr sr
       (
-        "[lookup_name_in_table_dirs_with_sig] expected variable " ^ 
+        "[handle_variable(4)] expected variable " ^ 
         id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
         sbt syms.dfns t
         
@@ -2389,8 +2395,10 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
 
   | `AST_get_n (sr,(n,e')) -> 
     let expr,typ = be e' in
-    let ctyp = match unfold typ with 
-    | `BTYP_tuple ts -> 
+    let ctyp = match unfold syms.dfns typ with 
+    | `BTYP_tuple ts 
+    | `BTYP_lvalue (`BTYP_tuple ts) 
+      -> 
       let len = List.length ts in
       if n<0 or n>len-1
       then clierr sr
@@ -2417,8 +2425,8 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
 
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
-    ignore (try unfold t with _ -> failwith "AST_typed_case unfold screwd");
-    begin match unfold t with
+    ignore (try unfold syms.dfns t with _ -> failwith "AST_typed_case unfold screwd");
+    begin match unfold syms.dfns t with
     | `BTYP_sum ls ->
       if v<1 or v> List.length ls
       then clierr sr "Case index out of range of sum"
@@ -2546,57 +2554,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
   | `AST_ref (_,(`AST_deref (sr,e))) -> be e
 
   | `AST_lvalue (srr,e) ->
-    let (e',t') as et' = be e in 
-    begin match e' with
-    | `BEXPR_name (index,ts) ->
-      begin match get_data syms.dfns index with
-      {id=id; sr=sr; symdef=entry} ->
-      begin match entry with
-      | `SYMDEF_inherit _ -> clierr srr "Woops, bindexpr yielded inherit"
-      | `SYMDEF_inherit_fun _ -> clierr srr "Woops, bindexpr yielded inherit fun"
-      | `SYMDEF_var _ -> et'
-
-      | `SYMDEF_parameter _ -> 
-         clierr2 srr sr
-        (
-          "[bind_expression] " ^
-          "Use parameter " ^ id ^ " as lvalue " 
-        )
-      | `SYMDEF_const _
-      | `SYMDEF_val _ ->
-        clierr2 srr sr
-        (
-          "[bind_expression] " ^
-          "Use value or const " ^ id ^ " as lvalue " 
-        )
-      | _ -> 
-         clierr2 srr sr
-        (
-          "[bind_expression] " ^
-          "Use non variable " ^ id ^ " as lvalue "
-        )
-      end
-      end
-
-    | `BEXPR_apply_prim (i,_,_) ->
-      begin match get_data syms.dfns i with
-      {id=id; sr=sr; symdef=entry} ->
-      print_endline 
-      (
-        "WARNING: application of primitive '"^id^"' should be an lvalue"
-      )
-      end
-      ;
-      et'
-
-    | _ ->
-       clierr srr 
-        (
-          "[bind_expression:lvalue] " ^
-          "Address non variable"
-        )
-    end
-
+    failwith "WOOPS, lvalue in expression??";
  
   | `AST_ref (sr,(`AST_dot (_,(e,id)))) ->
     let ref_name = "ref_" ^ id in
@@ -2659,13 +2617,21 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
         )
     end
 
-  | `AST_deref (_,`AST_ref (sr,e)) -> be e
+  | `AST_deref (_,`AST_ref (sr,e)) -> 
+    let e,t = be e in
+    let t = 
+      match t with 
+      | `BTYP_lvalue _ -> t
+      | t -> `BTYP_lvalue t
+     in e,t 
 
   | `AST_deref (sr,e) -> 
     let e,t = be e in
-    begin match unfold t with 
-    | `BTYP_pointer t' -> `BEXPR_deref (e,t),t'
-    | _ -> clierr sr "Dereference non pointer"
+    begin match unfold syms.dfns t with 
+    | `BTYP_lvalue (`BTYP_pointer t')
+    | `BTYP_pointer t' 
+      -> `BEXPR_deref (e,t),`BTYP_lvalue t'
+    | _ -> clierr sr "[bind_expression'] Dereference non pointer"
     end
 
   | `AST_literal (sr,v) -> 
@@ -2676,6 +2642,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     let be2,t2 = be e2 in
     let tbe1 = 
       match t2 with
+      | `BTYP_lvalue(`BTYP_inst (index,ts)) 
       | `BTYP_inst (index,ts) ->
         begin match get_data syms.dfns index with
         {id=id; parent=parent;sr=sr;symdef=entry} ->
@@ -2704,12 +2671,15 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     print_endline ("bind apply: "^string_of_expr f'^" sig=" ^ sbt syms.dfns ta);
     *)
     let _ = 
-      try unfold ta
+      try unfold syms.dfns ta
       with _ -> print_endline " .. free fixpoint"; raise (Free_fixpoint ta) 
     in
     let f = lookup sr f' ta in
     begin 
       match f,a with
+      | (_,`BTYP_lvalue (`BTYP_inst (i1,[]))),(_,`BTYP_lvalue(`BTYP_inst (i2,[])))
+      | (_,`BTYP_lvalue (`BTYP_inst (i1,[]))),(_,`BTYP_inst (i2,[])) 
+      | (_,`BTYP_inst (i1,[])),(_,`BTYP_lvalue(`BTYP_inst (i2,[])))
       | (_,`BTYP_inst (i1,[])),(_,`BTYP_inst (i2,[])) ->
         begin
           match get_data syms.dfns i1 with {id=id1; symdef=entry1} ->
@@ -2769,8 +2739,8 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     
   | `AST_case_arg (sr,(v,e)) ->
      let (_,t) as e' = be e in
-    ignore (try unfold t with _ -> failwith "AST_case_arg unfold screwd");
-     begin match unfold t with
+    ignore (try unfold syms.dfns t with _ -> failwith "AST_case_arg unfold screwd");
+     begin match unfold syms.dfns t with
      | `BTYP_sum ls ->
        let n = List.length ls in
        if v<1 or v>n 
@@ -3034,11 +3004,17 @@ and rebind_btype syms env sr ts t: btypecode_t =
   | `BTYP_sum ts -> `BTYP_sum (List.map rbt ts)
   | `BTYP_function (a,r) -> `BTYP_function (rbt a, rbt r) 
   | `BTYP_pointer t -> `BTYP_pointer (rbt t)
+  | `BTYP_lvalue t -> `BTYP_lvalue (rbt t)
   | `BTYP_array (t1,t2) -> `BTYP_array (rbt t1, rbt t2)
   | `BTYP_void -> `BTYP_void
   | `BTYP_fix i -> `BTYP_fix i
   | `BTYP_var i -> clierr sr ("[rebind_type] Unexpected type variable " ^ sbt syms.dfns t)
-  | _ -> clierr sr ("[rebind_type] Unexpected " ^ sbt syms.dfns t)
+  | `BTYP_apply _
+  | `BTYP_typefun _
+  | `BTYP_type
+  | `BTYP_type_tuple _
+  | `BTYP_type_match _
+    -> clierr sr ("[rebind_type] Unexpected metatype " ^ sbt syms.dfns t)
 
 
 and check_module syms name sr entries ts =

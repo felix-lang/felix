@@ -109,3 +109,77 @@ ONE
 @head(2,"test/rt19.expect")
 @select(tangler("test/rt19.expect","data"))
 1
+@head(2,"test/drt20.expect")
+@select(tangler("test/drt20.expect","data"))
+Starting .. 
+10
+10x=1, y=2
+Not hidden: int=1 print:int hides outer
+module A print int=1
+Hello+World
+ello+
+Hello+
+World
+Worl
+Hello+World
+dlroW+olleH
+1
+1
+25
+OK
+1
+1
+true
+false
+closure of add primitive 4
+struct X
+struct X
+struct X: x get projection 42
+struct CX
+struct CX
+union Y
+union U
+2
+1 2 3 
+9 8 7 
+1 2
+1 2 3 4
+1
+1
+1
+ONE
+TWO
+THREE
+FOUR
+FIVE
+SIX
+SEVEN
+EIGHT
+NINE
+TEN
+ELEVEN
+TWELVE
+THIRTEEN
+FOURTEEN
+FIFTEEN
+SIXTEEN
+SEVENTEEN
+EIGHTTEEN
+ONE
+0 -> 66
+1 -> 55
+2 -> 44
+3 -> 33
+4 -> 22
+5 -> 11
+4
+3
+2
+1
+4
+3
+2
+1
+1
+1
+Its run

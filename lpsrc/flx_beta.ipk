@@ -194,6 +194,20 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
   then let beta-reduce find it..
   *)
   match t with
+  | `BTYP_inst (i,ts) -> `BTYP_inst (i,map br ts)
+  | `BTYP_tuple ls -> `BTYP_tuple (map br ls)
+  | `BTYP_array (i,t) -> `BTYP_array (i, br t)
+  | `BTYP_sum ls -> `BTYP_sum (map br ls)
+  | `BTYP_type_tuple ls -> `BTYP_type_tuple (map br ls)
+  | `BTYP_function (a,b) -> `BTYP_function (br a, br b)
+  | `BTYP_pointer a -> `BTYP_pointer (br a)
+  | `BTYP_lvalue a -> `BTYP_lvalue (br a)
+
+  | `BTYP_void -> t
+  | `BTYP_type -> t
+  | `BTYP_fix _ -> t
+  | `BTYP_var _ -> t
+
   | `BTYP_apply (t1,t2) ->
     (*
     print_endline "-----------------------";
@@ -262,12 +276,6 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
       )
     end
 
-  | `BTYP_inst (i,ts) -> `BTYP_inst (i,map br ts)
-  | `BTYP_tuple ls -> `BTYP_tuple (map br ls)
-  | `BTYP_sum ls -> `BTYP_sum (map br ls)
-  | `BTYP_type_tuple ls -> `BTYP_type_tuple (map br ls)
-  | `BTYP_function (a,b) -> `BTYP_function (br a, br b)
-  | `BTYP_pointer a -> `BTYP_pointer (br a)
   | `BTYP_typefun (p,r,b) -> 
     let p' = List.map (fun (i,t) -> (i, br t)) p in
     (*
@@ -312,7 +320,5 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
     with 
     | BTfound t -> t
     end
-
-  | _ -> t
 
 

@@ -1171,6 +1171,17 @@ dead
 @select(tangler("tut/examples/tut301.expect","data"))
 argc=1
 0->./tut/examples/tut301.so
+@head(2,"tut/examples/tut302.expect")
+@select(tangler("tut/examples/tut302.expect","data"))
+1
+2
+3
+2
+23
+423
+0 -> 2
+1 -> 23
+2 -> 423
 @head(2,"tut/examples/tut901.expect")
 @select(tangler("tut/examples/tut901.expect","data"))
 @head(2,"tut/examples/tut_bind130.expect")
@@ -1229,6 +1240,10 @@ A is used
 1.1
 @head(2,"tut/examples/tut_bind150.expect")
 @select(tangler("tut/examples/tut_bind150.expect","data"))
+1 2
+2 1
+@head(2,"tut/examples/tut_bind151.expect")
+@select(tangler("tut/examples/tut_bind151.expect","data"))
 3
 4
 4

@@ -85,7 +85,7 @@ let gen_type_name syms bbdfns (index,typ) =
   let descr = 
     "\n//TYPE "^si index^": " ^ sbt syms.dfns typ ^ "\n" 
   in
-  match unfold typ with
+  match unfold syms.dfns typ with
   | `BTYP_fix i -> ""
   | `BTYP_var i -> failwith "[gen_type_name] Can't gen name of type variable"
 
@@ -200,7 +200,7 @@ let gen_type syms bbdfns (index,typ) =
     sbt syms.dfns typ ^ 
     "\n" 
   in
-  match unfold typ with
+  match unfold syms.dfns typ with
   | `BTYP_var _ -> failwith "[gen_type] can't gen type variable"
   | `BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
 

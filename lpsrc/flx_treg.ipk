@@ -66,7 +66,7 @@ let register_type_nr syms t =
     -> ()
   | _ 
     ->
-    let t = fold t in
+    let t = lstrip syms.dfns (fold syms.dfns t) in
     if not (Hashtbl.mem syms.registry t)
     then
       let () = check_recursion t in
@@ -77,7 +77,7 @@ let register_type_nr syms t =
       Hashtbl.add syms.registry t n
 
 let rec register_type_r ui syms bbdfns exclude sr t =
-  let t = lower t in
+  let t = lower (lstrip syms.dfns t) in
   (*
   let sp = String.make (length exclude * 2) ' ' in
   print_endline (sp ^ "Register type " ^ string_of_btypecode syms.dfns t);
@@ -86,7 +86,7 @@ let rec register_type_r ui syms bbdfns exclude sr t =
   if not (mem t exclude) then
   let rr t' = register_type_r ui syms bbdfns (t :: exclude) sr t' in
   let rnr t = register_type_nr syms t in
-  let t' = unfold t in
+  let t' = unfold syms.dfns t in
   (*
   print_endline (sp ^ "Unfolded type " ^ string_of_btypecode syms.dfns t');
   *)
