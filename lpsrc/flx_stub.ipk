@@ -1,0 +1,9 @@
+@head(1,'Stub mainline')
+Used for misc testing of Ocaml things.
+@h=tangler('src/stub.ml')
+@select(h)
+open Flx_types
+;;
+print_endline "STUB TEST PROGRAM"
+;;
+
