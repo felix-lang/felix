@@ -28636,8 +28636,6 @@ let strexp n = "0" (* cheat *)
 ;;
 let fcount = ref 1
 ;;
-let registry: (typsig, string * string) Hashtbl.t = Hashtbl.create 97 
-;;
 
 let remove_pnames t = match t with
 | TPtr (TFun (t,Some ps,b,a),a') ->
@@ -28645,7 +28643,7 @@ let remove_pnames t = match t with
   TPtr (TFun (t,Some ps,b,a),a')
 | _ -> t
 
-let rec sot t = match t with
+let rec sot registry t = match t with
 | TVoid a -> "void"
 | TInt (ik,a) -> soi ik
 | TFloat (fk,a) -> sof fk
@@ -28668,18 +28666,18 @@ let rec sot t = match t with
     name
   end
    
-| TPtr (t',a) -> cvqual (attrof t') ^ "ptr[" ^ sot t'^ "]"
+| TPtr (t',a) -> cvqual (attrof t') ^ "ptr[" ^ sot registry t'^ "]"
 | TArray (t',Some n,a)-> 
-  cvqual (attrof t') ^ "ptr[" ^ sot t'^ "]"
+  cvqual (attrof t') ^ "ptr[" ^ sot registry t'^ "]"
 
 | TArray (t',None,a)-> 
-  cvqual (attrof t') ^ "ptr[" ^ sot t' ^ "]"
+  cvqual (attrof t') ^ "ptr[" ^ sot registry t' ^ "]"
 
 | TFun (t',Some ps,false,a) ->
-  let ret = sot t'
+  let ret = sot registry t'
   and args = 
     if length ps = 0 then "1" 
-    else String.concat " * " (List.map soa ps) 
+    else String.concat " * " (List.map (soa registry) ps) 
   in args ^ " -> " ^ ret
     
 | TFun (t',_,_,a) -> "CANT HANDLE THIS FUN"
@@ -28692,6 +28690,7 @@ let rec sot t = match t with
 and ptname {tname=tname} = tname
 and ciname {cname=cname} = cname
 and einame {ename=ename} = ename
+and viname {vname=vname} = vname
 
 and pci ci = match ci with
 {cname=cname; cstruct=cstruct} -> 
@@ -28707,17 +28706,17 @@ and pei ei = match ei with
 and pcei ei = match ei with
 {ename=ename} -> "enum " ^ ename
 
-and ptdef ti:string = match ti with
-{ttype=tt} -> sot tt
+and ptdef registry ti:string = match ti with
+{ttype=tt} -> sot registry tt
 
 and pcomp pi = match pi with
 {cname=name} -> name
 
-and soa (name,t,a) = sot t
+and soa registry (name,t,a) = sot registry t
 
-and sov vi = match vi with
+and sov registry vi = match vi with
 {vname=vname; vtype=vtype} ->
-"const " ^ vname ^ ": " ^ sot vtype
+"const " ^ vname ^ ": " ^ sot registry vtype
 
 let pe x = print_endline x
 ;;
@@ -28785,105 +28784,154 @@ let rec isanont t =  match t with
 | TBuiltin_va_list _ -> false
 
 
-let aliases: (string,string) Hashtbl.t = Hashtbl.create 97
-let abstract_types: (string,string) Hashtbl.t = Hashtbl.create 97
-let variables : (string,string) Hashtbl.t = Hashtbl.create 97
-let functions: (string,string * string) Hashtbl.t = Hashtbl.create 97
-let fields: (string,string * string) Hashtbl.t = Hashtbl.create 97
-let procedures: (string,string * string) Hashtbl.t = Hashtbl.create 97
-let enums: (string,unit) Hashtbl.t = Hashtbl.create 97
+
+type stab_t = {
+  aliases: (string,string) Hashtbl.t;
+  struct_aliases: (string,string) Hashtbl.t;
+  abstract_types: (string,string) Hashtbl.t;
+  variables : (string,string) Hashtbl.t;
+  functions: (string,string * string) Hashtbl.t;
+  fields: (string,string * string) Hashtbl.t;
+  procedures: (string,string * string) Hashtbl.t;
+  enums: (string,unit) Hashtbl.t;
+  registry: (typsig, string * string) Hashtbl.t
+}
 ;;
 
+let mk_stab () = {
+  aliases= Hashtbl.create 97;
+  struct_aliases= Hashtbl.create 97;
+  abstract_types= Hashtbl.create 97;
+  variables= Hashtbl.create 97;
+  functions= Hashtbl.create 97;
+  fields= Hashtbl.create 97;
+  procedures= Hashtbl.create 97;
+  enums= Hashtbl.create 97;
+  registry= Hashtbl.create 97
+}
+;;
+let stabs : (string,stab_t) Hashtbl.t = Hashtbl.create 97
+;;
+let getstab s = 
+  try Hashtbl.find stabs s 
+  with Not_found ->
+    let x = mk_stab () in
+    Hashtbl.add stabs s x;
+    x
+;;
+
+let getreg {file=s} = (getstab s).registry
+;;
+let rpl {file=s} which = 
+  let stab = (getstab s) in
+  match which with
+  | `aliases (k,v) -> Hashtbl.replace stab.aliases k v
+  | `struct_aliases(k,v)  -> Hashtbl.replace stab.struct_aliases k v
+  | `abstract_types (k,v)  -> Hashtbl.replace stab.abstract_types k v
+  | `variables(k,v)  ->  Hashtbl.replace stab.variables k v
+  | `functions(k,v)  -> Hashtbl.replace stab.functions k v
+  | `fields(k,v)  -> Hashtbl.replace stab.fields k v
+  | `procedures(k,v)  -> Hashtbl.replace stab.procedures k v
+  | `enums(k)  -> Hashtbl.replace stab.enums k ()
+;;
+
+let ispublic s = String.length s < 2 || String.sub s 0 2 <> "__"
+;;
 List.iter
 (fun g-> match isanon g,flx_name g with
   | _,None | true,_ -> ()
   | false,Some key ->
   match g with
-  | GType (ti,sr) -> 
+  | GType (ti,loc) -> 
+    let registry = getreg loc in
     begin
       match ti with {ttype=ttype} ->
       match  ttype with 
       | TComp (ci,_) -> 
+        let anon= achk (ciname ci) in
         begin match ci with { cfields=cfields } ->
         iter
         (fun {fname=fname; ftype=ftype} -> 
-          if not (isanont ftype) then
-          let t = key ^ " -> " ^ sot ftype in
-          Hashtbl.replace fields ("get_"^fname) (t,"$1."^fname)
+          if not (isanont ftype) && ispublic fname then
+          let t = key ^ " -> " ^ sot registry ftype in
+          rpl loc (`fields (("get_"^fname), (t,"$1."^fname)))
         )
         cfields
         end
         ;
-        if achk (ciname ci) then
-          Hashtbl.replace abstract_types key key
+        if anon then
+          rpl loc (`abstract_types (key, key))
         else
-          Hashtbl.replace aliases key (ptdef ti)
+          let v = ptdef registry ti in
+          rpl loc (`struct_aliases (key, v))
 
 
       | TEnum (ei,_) -> 
         begin match ei with { eitems=eitems } ->
         iter
-        (fun (s,_,_) -> Hashtbl.replace enums s ())
+        (fun (s,_,_) -> if ispublic s then rpl loc (`enums s))
         eitems
         end
         ;
         if achk (einame ei) then
-          Hashtbl.replace abstract_types key key
+          rpl loc (`abstract_types (key, key))
         else
-          Hashtbl.replace aliases key (ptdef ti)
+          rpl loc (`aliases (key, (ptdef registry ti)))
 
 
       | _ ->
-        Hashtbl.replace aliases key (ptdef ti)
+        rpl loc (`aliases (key, ptdef registry ti))
     end
 
-  | GCompTag (ci,sr) -> 
-    Hashtbl.replace abstract_types key (pcci ci);
+  | GCompTag (ci,loc) -> 
+    rpl loc (`abstract_types (key, (pcci ci)));
     begin match ci with { cfields=cfields } ->
     iter
     (fun {fname=fname; ftype=ftype} -> 
-      if not (isanont ftype) then
-      let t = key ^ " -> " ^ sot ftype in
-      Hashtbl.replace fields ("get_"^fname) (t,"$1."^fname)
+      if not (isanont ftype) && ispublic fname then
+      let t = key ^ " -> " ^ sot (getreg loc) ftype in
+      rpl loc (`fields (("get_"^fname), (t,"$1."^fname)))
     )
     cfields
     end
 
     
-  | GCompTagDecl (ci,sr) -> 
-    Hashtbl.replace abstract_types key (pcci ci)
+  | GCompTagDecl (ci,loc) -> 
+    rpl loc (`abstract_types (key, (pcci ci)))
     
-  | GEnumTag (ei,sr) -> 
-    Hashtbl.replace aliases key "int";
+  | GEnumTag (ei,loc) -> 
+    rpl loc (`aliases (key, "int"));
     begin match ei with { eitems=eitems } ->
     iter
-    (fun (s,_,_) -> Hashtbl.replace enums s ())
+    (fun (s,_,_) -> if ispublic s then rpl loc (`enums s))
     eitems
     end
 
-  | GEnumTagDecl (ci,sr) -> Hashtbl.replace aliases key "int"
+  | GEnumTagDecl (ci,loc) -> rpl loc (`aliases (key, "int"))
   
-  | GVar (vi,_,sr) 
-  | GFun ({svar=vi},sr)
-  | GVarDecl (vi,sr) ->
+  | GVar (vi,_,loc) 
+  | GFun ({svar=vi},loc)
+  | GVarDecl (vi,loc) ->
+    let registry = getreg loc in
     let vname, vtype=
       match vi with {vname=vname; vtype=vtype}->vname,vtype 
     in
+    if ispublic vname then
     begin match vtype with
     | TFun (TVoid _,Some ps,false,a) ->
       let args = 
         if length ps = 0 then "1" 
-        else String.concat " * " (List.map soa ps) 
+        else String.concat " * " (List.map (soa registry) ps) 
       in
-      Hashtbl.replace procedures key (args,key^"($a);")
+      rpl loc (`procedures (key, (args,key^"($a);")))
 
     | TFun (TVoid _,Some _,true,a) ->
-      Hashtbl.replace procedures (key^"[t]") ("t",key^"($a);")
+      rpl loc (`procedures ((key^"[t]"), ("t",key^"($a);")))
 
     | TFun (ret,Some ps,false,a) ->
       let ftb,ptb =
-        let ret = sot ret
-        and args = List.map soa ps
+        let ret = sot (getreg loc) ret
+        and args = List.map (soa registry) ps
         in 
         (
           (
@@ -28908,18 +28956,21 @@ List.iter
           "$1="^key^"("^a2^");"
         )
       in 
-        Hashtbl.replace functions key ftb;
-        Hashtbl.replace procedures key ptb
+        rpl loc (`functions (key, ftb))
+        (*
+        ;
+        rpl loc (`procedures (key, ptb))
+        *)
 
     | TFun (ret,Some _,true,a) ->
       let ftb =
-        let ret = sot ret in 
+        let ret = sot (getreg loc) ret in 
         "t -> " ^ ret,key^"($a)"
       in 
-        Hashtbl.replace functions (key^"[t]") ftb;
+        rpl loc (`functions ((key^"[t]"), ftb));
         
     | _ ->
-      Hashtbl.replace variables key (sot vtype)
+      rpl loc (`variables (key, (sot (getreg loc) vtype)))
     end
 
   | GAsm _ -> ()
@@ -28936,78 +28987,124 @@ print_endline "";;
 (* only used by gcc, but harmless even on MSVC *)
 print_endline ("type __builtin_va_list = '__builtin_va_list';");
 print_endline "";
-print_endline "//ABSTRACT TYPES";
-Hashtbl.iter
-(fun k v-> 
-  print_endline ("type " ^ k ^ " = '" ^ v ^ "';")
-)
-abstract_types
-;;
 
-print_endline "";
-print_endline "//C FUNCTION POINTER TYPES";
 Hashtbl.iter
-(fun _ (name,tdef)-> 
-  print_endline ("header '''" ^ tdef ^ "''';");
-  print_endline ("type " ^ name ^ " = '" ^ name ^ "';")
-)
-registry
-;;
+begin 
+  fun fname stab ->
+  print_endline "//----------------------------------";
+  print_endline ("//" ^ fname);
+  if Hashtbl.length stab.abstract_types > 0 then
+  begin
+    print_endline "";
+    print_endline "//ABSTRACT TYPES";
+    Hashtbl.iter
+    (fun k v-> 
+      print_endline ("type " ^ k ^ " = '" ^ v ^ "';")
+    )
+    stab.abstract_types
+  end
+  ;
 
-print_endline "";
-print_endline "//TYPE ALIASES";
-Hashtbl.iter
-(fun k v-> 
-  (* va_list is already defined in the standard library *)
-  if k <> "va_list" then
-  print_endline ("typedef " ^ k ^ " = " ^ v ^ ";")
-)
-aliases
-;;
+  if Hashtbl.length stab.registry > 0 then
+  begin
+    print_endline "";
+    print_endline "//C FUNCTION POINTER TYPES";
+    Hashtbl.iter
+    (fun _ (name,tdef)-> 
+      print_endline ("header '''" ^ tdef ^ "''';");
+      print_endline ("type " ^ name ^ " = '" ^ name ^ "';")
+    )
+    stab.registry
+  end
+  ;
 
-print_endline "";
-print_endline "//VARIABLES";
-Hashtbl.iter
-(fun k v-> 
-  print_endline ("const " ^ k ^ ": " ^v^ " = '" ^ k ^ "';")
-)
-variables
-;;
+  if Hashtbl.length stab.struct_aliases > 0 then
+  begin
+    print_endline "";
+    print_endline "//STRUCT or UNION ALIASES";
+    Hashtbl.iter
+    (fun k v-> 
+      (* va_list is already defined in the standard library *)
+      if k <> "va_list" then
+      print_endline ("typedef " ^ k ^ " = " ^ v ^ ";")
+    )
+    stab.struct_aliases
+  end
+  ;
 
-print_endline "";
-print_endline "//ENUMERATION CONSTANTS";
-Hashtbl.iter
-(fun k _ -> 
-  print_endline ("const " ^ k ^ ": int = '" ^ k ^ "';")
-)
-enums
-;;
+  if Hashtbl.length stab.aliases > 0 then
+  begin
+    print_endline "";
+    print_endline "//TYPE ALIASES";
+    Hashtbl.iter
+    (fun k v-> 
+      (* va_list is already defined in the standard library *)
+      if k <> "va_list" then
+      print_endline ("typedef " ^ k ^ " = " ^ v ^ ";")
+    )
+    stab.aliases
+  end
+  ;
 
-print_endline "";
-print_endline "//PROCEDURES";
-Hashtbl.iter
-(fun k (v,b)-> 
-  print_endline ("proc " ^ k ^ ": " ^v^ " = '"^b^"';")
-)
-procedures
-;;
+  if Hashtbl.length stab.variables > 0 then
+  begin
+    print_endline "";
+    print_endline "//VARIABLES";
+    Hashtbl.iter
+    (fun k v-> 
+      print_endline ("const " ^ k ^ ": " ^v^ " = '" ^ k ^ "';")
+    )
+    stab.variables
+  end
+  ;
 
-print_endline "";
-print_endline "//FUNCTIONS";
-Hashtbl.iter
-(fun k (v,b)-> 
-  print_endline ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
-)
-functions
-;;
+  if Hashtbl.length stab.enums > 0 then
+  begin
+    print_endline "";
+    print_endline "//ENUMERATION CONSTANTS";
+    Hashtbl.iter
+    (fun k _ -> 
+      print_endline ("const " ^ k ^ ": int = '" ^ k ^ "';")
+    )
+    stab.enums
+  end
+  ;
 
-print_endline "";
-print_endline "//STRUCT and UNION FIELDS";
-Hashtbl.iter
-(fun k (v,b)-> 
-  print_endline ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
-)
-fields
-;;
+  if Hashtbl.length stab.procedures > 0 then
+  begin
+    print_endline "";
+    print_endline "//PROCEDURES";
+    Hashtbl.iter
+    (fun k (v,b)-> 
+      print_endline ("proc " ^ k ^ ": " ^v^ " = '"^b^"';")
+    )
+    stab.procedures
+  end
+  ;
 
+  if Hashtbl.length stab.functions > 0 then
+  begin
+    print_endline "";
+    print_endline "//FUNCTIONS";
+    Hashtbl.iter
+    (fun k (v,b)-> 
+      print_endline ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
+    )
+    stab.functions
+  end
+  ;
+
+  if Hashtbl.length stab.fields > 0 then
+  begin
+    print_endline "";
+    print_endline "//STRUCT and UNION FIELDS";
+    Hashtbl.iter
+    (fun k (v,b)-> 
+      print_endline ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
+    )
+    stab.fields
+  end
+end
+stabs
+;;
 
