@@ -2,7 +2,6 @@
 @select(h)
 open Flx_types
 val cpp_name :
-  sym_state_t ->
   fully_bound_symbol_table_t ->
   int ->
   string
@@ -70,7 +69,7 @@ let mangle_cpp_typename ct =
   Buffer.contents buf
 
 (* basic name mangler *)
-let cpp_name syms bbdfns index =
+let cpp_name bbdfns index =
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns index 
     with _ -> failwith ("[cpp_name] Can't find index " ^ si index)
@@ -110,7 +109,7 @@ let cpp_instance_name syms bbdfns index ts =
       ^ (if has_variables then " .. a subscript contains a type variable" else "")
     )
   in
-  "_i" ^ si inst ^ cpp_name syms bbdfns index 
+  "_i" ^ si inst ^ cpp_name bbdfns index 
 
 let rec cpp_type_classname syms t = 
   let registry = syms.registry in
@@ -141,7 +140,7 @@ let rec cpp_type_classname syms t =
 
     
   | `BTYP_inst (i,_) -> 
-    begin match
+    begin try match
       match Hashtbl.find syms.dfns i with 
       { symdef=symdef } -> symdef 
     with
@@ -155,6 +154,9 @@ let rec cpp_type_classname syms t =
         | _ -> "_unk_"
       in 
         prefix ^ si i ^ "t_" ^ si (Hashtbl.find registry t) 
+    with 
+    | Not_found -> 
+       "_unk_" ^ si i ^ "t_" ^ si (Hashtbl.find registry t) 
     end
 
   | _ -> 

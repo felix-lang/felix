@@ -1498,7 +1498,7 @@ and qualified_name_of_index_with_vs dfns index =
         and we don't bother to print its name as a prefix
       *)
 
-and qualified_name_of_index dfns index = 
+and qualified_name_of_index' dfns index = 
   match Hashtbl.find dfns index with 
   | { id=id; parent=parent } ->
     begin match parent with
@@ -1506,6 +1506,10 @@ and qualified_name_of_index dfns index =
     | None -> ""
     end ^
     id
+
+and qualified_name_of_index dfns index = 
+  try qualified_name_of_index' dfns index
+  with Not_found -> "index_"^ si index
 
 (* fixppoint labeller .. very sloppy, ignores precedence .. *)
 and get_label i =

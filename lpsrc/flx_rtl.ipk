@@ -26,19 +26,6 @@ right type by client drivers.
 #endif
 #include <string>
 
-//enable or disable refcounting: off by default
-#ifdef FLX_REFCNT
-#define incref(x) flx::gc::generic::incref(x)
-#define _incref(x) flx::gc::generic::_incref(x)
-#define decref(x) flx::gc::generic::decref(x)
-#define _release_ptr(x) flx::gc::generic::_release_ptr(x)
-#else
-#define incref(x) x
-#define _incref(x) x
-#define decref(x) x
-#define _release_ptr(x) *x = 0
-#endif
-
 namespace flx { namespace rtl {
 
 // CONTINUATION
@@ -70,14 +57,11 @@ struct _ref_
   _ref_(void *f, void *d): frame(f), data(d) {}
   ~_ref_()
   { 
-    //printf("destroy ref decref %p\n", frame);
-    _release_ptr(&frame); 
+    frame=0; 
   }
 
   _ref_(_ref_ const& r) : frame(r.frame), data(r.data) 
   {
-    //printf("copy ref incref %p\n", frame);
-    _incref(frame);
   }
   void operator = (_ref_ const& r);
 };
@@ -132,11 +116,7 @@ void _ref_::operator = (_ref_ const& r)
   {
     if (frame != r.frame)
     {
-      //printf("assign [old frame] ref decref %p\n", frame);
-      decref(frame);
       frame = r.frame;
-      //printf("assign [new frame] ref incref %p\n", frame);
-      _incref(frame);
     }
     data = r.data;
   }
@@ -207,6 +187,12 @@ or even constants which require dynamic initialisation.
 #include <string>
 using namespace std;
 
+#ifndef FLX_STATIC_LINK
+#include <dlfcn.h>
+#define DLSYM(x,y) dlsym(x,#y)
+#else
+#define DLSYM(x,y) (void*)&y
+#endif
 // Utilities to make dynamic linkage and
 // initialisation of Felix modules easier
 //
@@ -329,11 +315,7 @@ private:
 @h = tangler("rtl/flx_dynlink.cpp")
 @select(h)
 #include "flx_dynlink.hpp"
-#ifndef FLX_STATIC_LINK
-#include <dlfcn.h>
-#define dlsym(x,y) dlsym(x,#y)
-#else
-#define dlsym(x,y) (void*)&y
+#ifdef FLX_STATIC_LINK
 extern void *create_global_frame;
 extern void *create_process_frame;
 extern void *create_thread_frame;
@@ -360,38 +342,38 @@ void flx_dynlink_t::link(char const *filename) throw(flx_link_failure_t)
 #endif
 
   global_frame_creator = (global_frame_creator_t)
-    dlsym(library,create_global_frame);
+    DLSYM(library,create_global_frame);
   if(!global_frame_creator) 
     throw(filename,"dlsym","create_global_frame");
 
   process_frame_creator = (process_frame_creator_t)
-    dlsym(library,create_process_frame);
+    DLSYM(library,create_process_frame);
   if(!process_frame_creator)
     throw flx_link_failure_t(filename,"dlsym","create_process_frame");
 
   thread_frame_creator = (thread_frame_creator_t)
-    dlsym(library,create_thread_frame);
+    DLSYM(library,create_thread_frame);
   if(!thread_frame_creator) 
     throw flx_link_failure_t(filename,"dlsym","create_thread_frame");
 
   global_frame_destructor = (global_frame_destructor_t)
-    dlsym(library,destroy_global_frame);
+    DLSYM(library,destroy_global_frame);
   if(!global_frame_destructor) 
     throw flx_link_failure_t(filename,"dlsym","destroy_global_frame");
 
   process_frame_destructor = (process_frame_destructor_t)
-    dlsym(library,destroy_process_frame);
+    DLSYM(library,destroy_process_frame);
   if(!process_frame_destructor) 
     throw flx_link_failure_t(filename,"dlsym","destroy_process_frame");
 
   thread_frame_destructor = (thread_frame_destructor_t)
-    dlsym(library,destroy_thread_frame);
+    DLSYM(library,destroy_thread_frame);
   if(!thread_frame_destructor) 
     throw flx_link_failure_t(filename,"dlsym","destroy_thread_frame");
 
   start = (start_t)
 #ifndef FLX_STATIC_LINK
-    dlsym(library,start);
+    dlsym(library,"start");
 #else
   (void*)&::start;
 #endif

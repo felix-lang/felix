@@ -1879,8 +1879,10 @@ if [ $DEBUG = 1 ]
 then 
   echo "compiling $base.flx"
   VERBOSE="-v"
+  CCFLAGS="-g"
 else
   VERBOSE="-q"
+  CCFLAGS=""
 fi
 
 if [ $INLINE = 1 ]
@@ -1894,7 +1896,7 @@ if [ $STATIC = 0 ]
 then
   if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $base"` 
   then
-    if `echo $CCLINK_DLLIB -I"$INCLUDE_DIR" "$PKGS" "$cpps" "$base.cpp" -o "$base.so"`
+    if `echo $CCLINK_DLLIB $CCFLAGS -I"$INCLUDE_DIR" "$PKGS" "$cpps" "$base.cpp" -o "$base.so"`
     then
       # rm -f "$base.cpp"
       if [ $RUNIT = 1 ]
@@ -1909,7 +1911,7 @@ then
 else
   if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $base"` 
   then
-    if `echo $CCLINK_STATIC -DFLX_STATIC_LINK -I"$INCLUDE_DIR" $FLXBIN/flx_run_static.o "$PKGS" "$cpps" "$base.cpp" $FLXRTL/flx_static.a -o "$base"`
+    if `echo $CCLINK_STATIC $CCFLAGS -DFLX_STATIC_LINK -I"$INCLUDE_DIR" $FLXBIN/flx_run_static.o "$PKGS" "$cpps" "$base.cpp" $FLXRTL/flx_static.a -o "$base"`
     then
       # rm -f "$base.cpp"
       if [ $RUNIT = 1 ]

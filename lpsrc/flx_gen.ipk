@@ -21,7 +21,8 @@ let rec cal_display bbdfns parent display : bid_t list =
   | Some parent ->
   match 
     try Hashtbl.find bbdfns parent 
-    with Not_found -> failwith ("[cal_display] Can't find index " ^ si parent)
+    with Not_found -> 
+      failwith ("[cal_display] Can't find index " ^ si parent)
   with
   | _,parent',sr,`BBDCL_procedure _
   | _,parent',sr,`BBDCL_function _
@@ -33,9 +34,9 @@ let get_display_list bbdfns index : bid_t list =
     try Hashtbl.find bbdfns index 
     with Not_found -> failwith ("[get_display_list] Can't find index " ^ si index)
   with
-  | _,parent,sr,`BBDCL_procedure _
-  | _,parent,sr,`BBDCL_function _
-    -> List.rev (cal_display bbdfns parent [])
+  | id,parent,sr,`BBDCL_procedure _
+  | id,parent,sr,`BBDCL_function _ ->
+    List.rev (cal_display bbdfns parent [])
   | _ -> assert false
 
 @h = tangler('src/flx_ogen.mli')
@@ -972,8 +973,11 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
     in
+    (*
+    Should not be needed now .. 
     let ts = adjust_ts syms index ts' in
-    let ts = map tsub ts in
+    *)
+    let ts = map tsub ts' in
     begin match entry with
     | `BBDCL_function _ 
     | `BBDCL_procedure _ ->
@@ -1540,7 +1544,6 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
     ";\n"
 
 let gen_exes syms bbdfns display label_map counter index exes vs ts =
-  (* print_endline ("// generating exes for index " ^ si index); *)
   cat ""
   (map (gen_exe syms bbdfns label_map counter index vs ts) exes)
 
@@ -1697,8 +1700,7 @@ let gen_procedure_methods syms (child_map,bbdfns) label_map counter index ts ins
     let exe_string =
       gen_exes syms (child_map,bbdfns) display label_map counter index exes vs ts 
     in
-    let cont = "con_t *"
-    in
+    let cont = "con_t *" in
     let arg_sig = 
       match argtype with
       | `BTYP_tuple [] ->
@@ -1757,7 +1759,16 @@ let gen_procedure_methods syms (child_map,bbdfns) label_map counter index ts ins
         "  return new(*ptf->gc,"^name^"_ptr_map) "^name^"(*this);\n" ^
         "}\n"
     in
-      let q = qualified_name_of_index syms.dfns index in
+      let q = 
+        try qualified_name_of_index syms.dfns index 
+        with Not_found -> 
+          si instance_no ^ "=" ^ 
+          id ^ "<" ^si index^">" ^
+          (
+            if length ts = 0 then "" 
+            else "[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]"
+          )
+      in
       "\n//PROC " ^ q ^ "\n" ^
       "//PROC " ^ q ^ ": Constructor\n" ^
       ctor^

@@ -97,7 +97,6 @@ to the client.
 #include <map>
 #include <string.h>
 #include <assert.h>
-#include <dlfcn.h>
 #include <string>
 #include <unistd.h>
 
@@ -109,6 +108,10 @@ using namespace flx::rtl;
 using namespace flx::gc::generic;
 using namespace flx::gc::collector;
 using namespace std;
+
+#ifdef FLX_STATIC_LINK
+extern void *line_handler_creator;
+#endif
 
 typedef string message_t;
 
@@ -122,14 +125,14 @@ struct library_linkage_t : flx_dynlink_t
   );
 
   // interface
-  line_handler_creator_t line_handler_creator;
+  line_handler_creator_t create_line_handler;
   
   // find dlsyms from library
   void usr_link()
   {
-    line_handler_creator = (line_handler_creator_t)
-      dlsym(library,"line_handler_creator");
-    if(!line_handler_creator) {
+    create_line_handler = (line_handler_creator_t)
+      DLSYM(library,line_handler_creator);
+    if(!create_line_handler) {
       printf("Unable to get line handler creator procedure from library\n");
       exit(1);
     }
@@ -160,7 +163,7 @@ int main(int argc, char* argv[])
     collector.add_root(instance.start);
     int gc_counter = 0;
     con_t *top = 
-      library.line_handler_creator(
+      library.create_line_handler(
         instance.global_frame,
         instance.process_frame,
         instance.thread_frame
@@ -284,7 +287,6 @@ messages.
 @select(d)
 #include <time.h>
 #include <unistd.h>
-#include <dlfcn.h>
 
 #include <cstdio>
 #include <cstring>
@@ -304,6 +306,11 @@ using namespace flx::rtl;
 using namespace flx::gc::generic;
 using namespace flx::gc::collector;
 using namespace std;
+
+#ifdef FLX_STATIC_LINK
+extern void *line_handler_creator;
+#endif
+
 
 typedef string message_t;
 int niter = 1000;
@@ -353,14 +360,14 @@ struct library_linkage_t : flx_dynlink_t
   );
 
   // interface
-  line_handler_creator_t line_handler_creator;
+  line_handler_creator_t create_line_handler;
   
   // find dlsyms from library
   void usr_link()
   {
-    line_handler_creator = (line_handler_creator_t)
-      dlsym(library,"line_handler_creator");
-    if(!line_handler_creator) {
+    create_line_handler = (line_handler_creator_t)
+      DLSYM(library,line_handler_creator);
+    if(!create_line_handler) {
       printf("Unable to get line handler creator procedure from library\n");
       exit(1);
     }
@@ -482,7 +489,7 @@ int main(int argc, char* argv[])
           gc_counter = 0;
         }
         con_t *top = 
-          library.line_handler_creator(
+          library.create_line_handler(
             instance.global_frame,
             instance.process_frame,
             instance.thread_frame

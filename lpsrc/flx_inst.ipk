@@ -26,7 +26,7 @@ open Flx_srcref
 open List
 open Flx_unify
 open Flx_treg
-open Flx_generic
+open Flx_exceptions
 
 let add_inst syms ref_insts1 ((i,ts) as x) =
   let has_variables = 
@@ -133,16 +133,14 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
 and process_exes syms bbdfns ref_insts1 ts hvarmap exes = 
   iter (process_exe syms bbdfns ref_insts1 ts hvarmap) exes
 
-and process_function syms bbdfns ref_insts1 index sr argtypes ret exes ts =
+and process_function syms bbdfns hvarmap ref_insts1 index sr argtypes ret exes ts =
   let argtype = typeoflist argtypes in
   let t = `BTYP_function (argtype, ret) in
-  let hvarmap = make_varmap syms index ts in
   let t = varmap_subst hvarmap t in
   register_type_r syms bbdfns [] sr t;
   process_exes syms bbdfns ref_insts1 ts hvarmap exes ;
  
 and process_inst syms bbdfns ref_insts1 i ts inst =
-  (* let sr = match Hashtbl.find syms.dfns i with { sr = sr } -> sr in *)
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns i 
     with Not_found -> failwith ("[process_inst] Can't find index " ^ si i)
@@ -153,25 +151,26 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
   print_endline ("//Instance "^si inst ^ "="^id^"<" ^ si i ^ ">[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]");
   match entry with
   | `BBDCL_function (props,vs,ps,ret,exes) -> 
-    if length vs <> length ts 
-    then begin 
-      print_endline "TS VS length mismatch";
-      print_endline ("Length ts = " ^ si (length ts));
-      print_endline ("Length vs = " ^ si (length vs));
-    end
-    ;
     let argtypes = map (fun x -> snd (snd x)) ps in
-    process_function syms bbdfns ref_insts1 i sr argtypes ret exes ts
+    assert (length vs = length ts);
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let hvarmap = hashtable_of_list vars in
+    process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret exes ts
  
   | `BBDCL_procedure (props,vs,ps, exes) ->
     let argtypes = map (fun x -> snd (snd x)) ps in
-    process_function syms bbdfns ref_insts1 i sr argtypes `BTYP_void exes ts
+    assert (length vs = length ts);
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let hvarmap = hashtable_of_list vars in
+    process_function syms bbdfns hvarmap ref_insts1 i sr argtypes `BTYP_void exes ts
 
   | `BBDCL_union (vs,ps)
   | `BBDCL_struct (vs,ps)
     ->
     let argtypes = map snd ps in
-    let hvarmap = make_varmap syms i ts in
+    assert (length vs = length ts);
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let hvarmap = hashtable_of_list vars in
     let tss = map (varmap_subst hvarmap) argtypes in
     iter rtr tss;
     rtnr (`BTYP_inst (i,ts))
@@ -180,7 +179,16 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
   | `BBDCL_var (vs,t)
   | `BBDCL_const (vs,t,_)
     ->
-    let hvarmap = make_varmap syms i ts in
+    if length vs <> length ts
+    then syserr sr
+    (
+      "ts/vs mismatch index "^si i^", inst "^si inst^": vs = [" ^
+      catmap ";" (fun (s,i)-> s ^"<"^si i^">") vs ^ "], " ^
+      "ts = [" ^
+      catmap ";" (fun t->sbt syms.dfns t) ts ^ "]"
+    );
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let hvarmap = hashtable_of_list vars in
     let t = varmap_subst hvarmap t in
     rtr t
  
@@ -189,10 +197,16 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     -> () (* already handled *)
 
   | `BBDCL_fun (vs,argtypes,ret,_) ->
-    process_function syms bbdfns ref_insts1 i sr argtypes ret [] ts
+    assert (length vs = length ts);
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let hvarmap = hashtable_of_list vars in
+    process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret [] ts
 
   | `BBDCL_proc (vs,argtypes,_) ->
-    process_function syms bbdfns ref_insts1 i sr argtypes `BTYP_void [] ts
+    assert (length vs = length ts);
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let hvarmap = hashtable_of_list vars in
+    process_function syms bbdfns hvarmap ref_insts1 i sr argtypes `BTYP_void [] ts
 
   | `BBDCL_abs _
     -> failwith "Call type" 

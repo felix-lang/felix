@@ -335,50 +335,17 @@ print one; endl;
 print two; endl;
 
 @select(tangler('test/rt12.flx'))
+// generics inlining/call lifting tests
 include "std";
-print "Felix refcnt test"; endl;
 
-header """
-static int counter = 0;
-struct checker
-{
-  int number;
-  checker() { 
-    number = counter++; 
-    std::cout << "ctor " << number << std::endl; 
-  }
-  ~checker() {
-    std::cout << "dtor " << number << std::endl; 
-    --counter; 
-#ifdef FLX_REFCNT    
-    assert (number==counter);
-#endif  
-  }
-};
-""";
-
-ctypes checker;
-fun counter:unit -> int = "counter";
-fun get_key:checker->int = "$1.number";
-
-proc f() {
-  var x:checker;
-  print "F"; print (get_key x); endl;
- proc g() 
- {
-    var x:checker;
-    print "G"; print (get_key x); endl;
- }
- g();
- g();
+proc f[k] (z:k, print:k->void) {
+  fun diag[t] (x:t):t*t = { return x,x; }
+  fun prj1[t1,t2] (x:t1,y:t2):t1 = { return x; }
+  fun prj2[t1,t2] (x:t1,y:t2):t2 = { return y; }
+  print (prj1(diag z)); endl;
 }
 
-print "mainline start "; print (get_key zz); endl;
-f();
-f();
-
-print "mainline end "; print (get_key zz); endl;
-var zz:checker;
+f[int] (1, print of (int));
 
 @head(2,'Bad tests')
 All these should fail gracefully at (felix) compile time. 

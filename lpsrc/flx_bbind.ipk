@@ -190,7 +190,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
     
     | `SYMDEF_const (t,ct) ->
       let t = typeofindex syms [] i in
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_const (vs,t,ct));
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_const (vs,t,ct));
       if syms.compiler_options.print_flag then
       print_endline ("//bound const " ^ name ^ "<"^si i^">:" ^
       sbt syms.dfns t)
@@ -205,7 +205,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
         | _ ->
           `BBDCL_fun (vs, ts,bret,ct)
       in
-      Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
+      Hashtbl.add bbdfns i (name,None,sr,bbdcl);
       begin
         if not (Hashtbl.mem syms.ticache i) then
         let t = fold (`BTYP_function (typeoflist ts,bret)) in
@@ -239,17 +239,17 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       (*
       print_endline ("//Binding abstract type " ^ si i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_abs (vs,complete,ct))
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_abs (vs,complete,ct))
 
     | `SYMDEF_header ct ->
       (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_header ct)
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_header ct)
 
     | `SYMDEF_body ct ->
       (* print_endline ("//Binding body string " ^ si i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_body ct)
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_body ct)
 
     (*
     | x -> 
