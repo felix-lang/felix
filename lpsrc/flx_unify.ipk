@@ -79,6 +79,12 @@ val list_subst:
   btypecode_t ->
   btypecode_t
 
+(** make a varmap using vs and ts list *)
+val mk_varmap:
+  (string * int) list -> (* vs list *)
+  btypecode_t list ->  (* ts list *)
+  (int,btypecode_t) Hashtbl.t
+
 (** replace variables using vs and ts list to
 determine mapping *)
 val tsubst :
@@ -210,10 +216,9 @@ let varmap_subst varmap t =
   vs_i -> ts_i
   where vs_t might be (fred,var j)
 *)
-let tsubst 
+let mk_varmap 
   (vs:(string * int) list) 
   (ts:btypecode_t list)
-  (t:btypecode_t) 
 =
   if length ts <> length vs 
   then 
@@ -225,13 +230,19 @@ let tsubst
       si (length ts)
     )
   ;
-  let tvs = combine vs ts in
   let varmap = Hashtbl.create 97 in
-  iter
-  (fun ((name, varidx),typ) -> Hashtbl.add varmap varidx typ)
-  tvs
+  iter2
+  (fun (_, varidx) typ -> Hashtbl.add varmap varidx typ)
+  vs ts
   ;
-  varmap_subst varmap t
+  varmap
+
+let tsubst 
+  (vs:(string * int) list) 
+  (ts:btypecode_t list)
+  (t:btypecode_t) 
+=
+  varmap_subst (mk_varmap vs ts) t
 
 
 (* returns the most general unifier (mgu)

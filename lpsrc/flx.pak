@@ -450,6 +450,7 @@ Flx_version.version_data := version_data
 @head(2,'The Tests')
 @include_file ('flx_test.ipk')
 @include_file ('flx_regress.ipk')
+@include_file ('flx_bagley.ipk')
 
 @head(2,'Stub mainline')
 This is a just a file for writing

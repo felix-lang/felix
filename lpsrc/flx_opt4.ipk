@@ -38,15 +38,37 @@ open Flx_exceptions
 
 exception Found
 
-let can_stack_func (child_map,bbdfns) i =
-  let children = try Hashtbl.find child_map i with Not_found -> [] in
+(* A function is stackable provided it doesn't return
+  a pointer to itself. There are only two ways this
+  can happen: the function returns the address of
+  a variable, or, it returns the closure of a child.
+
+  We will check the return type for pointer or
+  function types. If its a function, there
+  has to be at least one child to grab our this
+  pointer in its display. If its a pointer,
+  there has to be either a variable, or any
+  non-stackable child function, or any child
+  procedure -- note that the pointer might address
+  a variable in a child function or procedure,
+  however it can't 'get out' of a function except
+  by it being returned.
+  
+  Proposition: type variables cannot carry either
+  pointers to a variable or a child function closure.
+
+  Reason: type variables are all universally quantified
+  and unconstrained. We would have v1 = &v2 for the pointer
+  case, contrary to the current lack of constraints.
+  Smly for functions. So we'll just ignore type variables.
+*)
+
+let has_var bbdfns children =
   try
     iter
     (fun i ->
       let id,parent,sr,entry = Hashtbl.find bbdfns i in
       match entry with 
-      | `BBDCL_procedure _ 
-      | `BBDCL_function _ 
       | `BBDCL_var _  -> raise Found
       | _ -> ()
     )
@@ -54,6 +76,62 @@ let can_stack_func (child_map,bbdfns) i =
     ;
     true
   with Found -> false
+
+let has_fun bbdfns children =
+  try
+    iter
+    (fun i ->
+      let id,parent,sr,entry = Hashtbl.find bbdfns i in
+      match entry with 
+      | `BBDCL_procedure _ 
+      | `BBDCL_function _ -> raise Found
+      | _ -> ()
+    )
+    children
+    ;
+    true
+  with Found -> false
+
+
+(* NOTE: this won't work for abstracted types like unions
+   or structs .. 
+*)
+let has_ptr_fn bbdfns children e = 
+  let rec aux exclude e = match e with
+    | `BTYP_function _ -> 
+      (* if has_fun bbdfns children then *)
+      raise Not_found
+
+    | `BTYP_pointer _ -> 
+      (* encode the more lenient condition here!! *)
+      raise Not_found 
+
+    | `BTYP_inst (i,ts) ->
+      if not (mem i exclude) then
+      let id,parent,sr,entry = Hashtbl.find bbdfns i in
+      begin match entry with
+      | `BBDCL_abs _ -> ()
+      | `BBDCL_union (vs,cs)
+      | `BBDCL_struct (vs,cs)
+      | `BBDCL_cstruct (vs,cs) -> 
+        let varmap = mk_varmap vs ts in
+        iter 
+        (fun (_,t) -> aux (i::exclude) (varmap_subst varmap t)) 
+        cs
+      | _ -> assert false
+      end
+    | x -> iter_btype (aux exclude) x
+
+  in try aux [] e; false with Not_found -> true
+    
+let can_stack_func (child_map,bbdfns) i =
+  let children = try Hashtbl.find child_map i with Not_found -> [] in
+  let id,parent,sr,entry = Hashtbl.find bbdfns i in
+  match entry with
+  | `BBDCL_function (_,_,_,ret,_) -> not (has_ptr_fn bbdfns children ret)
+  | `BBDCL_struct _
+  | `BBDCL_cstruct _ -> false (* hack *)
+  | _ -> failwith ("Unexpected non-function " ^ id)
 
 let tident t = t 
 

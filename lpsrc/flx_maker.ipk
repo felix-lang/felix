@@ -586,6 +586,9 @@ try:
     TESTS = TESTS + glob.glob('test/rt*.flx')
     BAD_TESTS = glob.glob('test/bt*.flx')
 
+  if "bagley" in options:
+    TESTS = TESTS + glob.glob('test/bag*.flx')
+
   if "tutorial" in options:
     TESTS = TESTS + glob.glob('tut/examples/tut*.flx')
     TESTS = TESTS + glob.glob('tut/examples/mac*.flx')
@@ -946,6 +949,9 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('tests.regression: dummy')
 @tangle('\tpython script/maker regression')
+@tangle('')
+@tangle('tests.bagley: dummy')
+@tangle('\tpython script/maker bagley')
 @tangle('')
 @tangle('rtl: dummy')
 @tangle('\tpython script/maker rtl')

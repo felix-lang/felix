@@ -383,14 +383,6 @@ let mk_label_map syms exes =
     iter aux exes;
     h
     
-let mk_tvar_map vs ts =
-  let varmap = Hashtbl.create 97 in (* type variable assignments *)
-  iter2
-  (fun (_,i) t -> Hashtbl.add varmap i t)
-  vs ts
-  ;
-  varmap
-
 (* NOTE: result is in reversed order *)
 let gen_body syms (child_map,bbdfns) id 
   varmap ps relabel revariable exes argument 
@@ -592,7 +584,7 @@ let call_lifting syms (child_map,bbdfns) caller caller_vs callee ts a argument =
     print_endline ("Found procedure "^id^": Inline it!");
     *)
     let relabel = mk_label_map syms exes in
-    let varmap = mk_tvar_map vs ts in
+    let varmap = mk_varmap vs ts in
     let callee_vs_len = length vs in
 
     let revariable = reparent_children 
@@ -652,7 +644,7 @@ let inline_function syms (child_map,bbdfns) caller caller_vs callee ts a varinde
     );
     flush stdout;
     let relabel = mk_label_map syms exes in
-    let varmap = mk_tvar_map vs ts in
+    let varmap = mk_varmap vs ts in
     let callee_vs_len = length vs in
 
     let revariable = reparent_children 
@@ -831,7 +823,7 @@ let heavy_inline_call syms (child_map,bbdfns)
   print_endline ("Found procedure "^id^": Inline it!");
   *)
   let relabel = mk_label_map syms exes in
-  let varmap = mk_tvar_map vs ts in
+  let varmap = mk_varmap vs ts in
   let revariable = reparent_children 
     syms (child_map,bbdfns) 
     caller_vs callee_vs_len callee (Some caller) relabel varmap
