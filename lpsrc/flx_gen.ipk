@@ -200,10 +200,10 @@ let gen_offset_tables syms bbdfns=
   (fun (index,ts) instance ->
   let id,parent,sr,entry = Hashtbl.find bbdfns index in 
   match entry with
-  | `BBDCL_function (vs,ps, ret,_,name_map) -> 
+  | `BBDCL_function (props,vs,ps, ret,_,name_map) -> 
     gen_fun_offsets s syms bbdfns index vs ps ret name_map ts instance
       
-  | `BBDCL_procedure (vs,ps,_,name_map) -> 
+  | `BBDCL_procedure (props,vs,ps,_,name_map) -> 
     gen_fun_offsets s syms bbdfns index vs ps `BTYP_void name_map ts instance
   | _ -> ()
   )
@@ -535,10 +535,10 @@ let get_fun_tn syms vs ps ret ts =
 let get_function_typename syms bbdfns i ts =
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
-  | `BBDCL_function (vs,ps,ret,_,_) ->
+  | `BBDCL_function (props,vs,ps,ret,_,_) ->
      get_fun_tn syms vs ps ret ts
 
-  | `BBDCL_procedure (vs,ps,_,_) ->
+  | `BBDCL_procedure (props,vs,ps,_,_) ->
      get_fun_tn syms vs ps `BTYP_void ts
   | _ -> failwith "[get_function_typename] Expected function"
 
@@ -580,9 +580,9 @@ let get_type bbdfns index =
     with _ -> failwith ("[get_type] Can't find index " ^ si index)
   in
   match entry with
-  | `BBDCL_function (vs,ps,ret,_,_) -> 
+  | `BBDCL_function (props,vs,ps,ret,_,_) -> 
       `BTYP_function (typeof_bparams ps,ret)
-  | `BBDCL_procedure (vs,ps,_,_) -> 
+  | `BBDCL_procedure (props,vs,ps,_,_) -> 
       `BTYP_function (typeof_bparams ps,`BTYP_void)
   | _ -> failwith "Only function and procedure types handles by get_type"
 
@@ -730,13 +730,13 @@ let gen_functions syms bbdfns =
     in
     match Hashtbl.find bbdfns index with (id,parent,sr,entry) -> 
     match entry with
-    | `BBDCL_function (vs,ps, ret, _,_) -> 
+    | `BBDCL_function (props,vs,ps, ret, _,_) -> 
       bcat s ("\n//------------------------------\n");
       bcat s ("//FUNCTION " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
       bcat s 
       (gen_function syms bbdfns index id vs ps ret ts i)
 
-    | `BBDCL_procedure (vs,ps,_,_) -> 
+    | `BBDCL_procedure (props,vs,ps,_,_) -> 
       bcat s ("\n//------------------------------\n");
       bcat s ("//PROC " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
       bcat s 
@@ -1121,7 +1121,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
           "(" ^ csubst sr ct [a] [typ] typ retyp ts ^ ")"
       end
 
-    | `BBDCL_function (vs,ps,retyp,_,_) ->
+    | `BBDCL_function (props,vs,ps,retyp,_,_) ->
       (ge f) ^ "\n      ->apply(" ^ ge_arg a ^ ")"
 
     | `BBDCL_struct (vs,_) ->
@@ -1164,9 +1164,9 @@ let create_label_map bbdfns counter =
   Hashtbl.iter
   (fun index (id,parent,sr,entry) ->
     match entry with
-    | `BBDCL_function (_,_,_,exes,_) -> 
+    | `BBDCL_function (_,_,_,_,exes,_) -> 
       Hashtbl.add label_map index (get_labels bbdfns counter exes)
-    | `BBDCL_procedure (_,_,exes,_) -> 
+    | `BBDCL_procedure (_,_,_,exes,_) -> 
       Hashtbl.add label_map index (get_labels bbdfns counter exes)
     | _ -> ()
   ) 
@@ -1218,8 +1218,8 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
   in
   let our_display = get_display_list syms this in
   let kind = match entry with
-    | `BBDCL_function (_,_,_,_,_) -> Function
-    | `BBDCL_procedure (_,_,_,_) -> Procedure
+    | `BBDCL_function (_,_,_,_,_,_) -> Function
+    | `BBDCL_procedure (_,_,_,_,_) -> Procedure
     | _ -> failwith "Expected executable code to be in function or procedure"
   in let our_level = length our_display in
 
@@ -1270,7 +1270,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
         *)
         s
 
-    | `BBDCL_procedure (vs,ps,bexes,nmap) ->
+    | `BBDCL_procedure (props,vs,ps,bexes,nmap) ->
       if bexes = []
       then 
       "      //call to empty procedure " ^ id ^ " elided\n"
@@ -1392,7 +1392,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
            try Hashtbl.find syms.dfns i 
            with _ -> failwith ("Can't find parent " ^ si i)
          with
-         | {symdef=`SYMDEF_function (_,`AST_void _,_)} ->
+         | {symdef=`SYMDEF_function (_,`AST_void _,_,_)} ->
            let local_map = 
              try Hashtbl.find label_map i 
              with _ -> failwith ("Can't find label map for " ^ si i)
@@ -1659,7 +1659,7 @@ let gen_function_methods syms bbdfns label_map counter index ts instance_no =
     )
   );
   match entry with 
-  | `BBDCL_function (vs,bps,ret',exes,_) ->
+  | `BBDCL_function (props,vs,bps,ret',exes,_) ->
     if length ts <> length vs then 
     failwith 
     (
@@ -1753,7 +1753,7 @@ let gen_procedure_methods syms bbdfns label_map counter index ts instance_no =
     )
   );
   match entry with 
-  | `BBDCL_procedure (vs,bps,exes,_) ->
+  | `BBDCL_procedure (props,vs,bps,exes,_) ->
     if length ts <> length vs then 
     failwith 
     (
@@ -1862,14 +1862,14 @@ let gen_execute_methods syms bbdfns counter bf =
   (fun (index,ts) instance_no -> 
   let id,parent,sr,entry = Hashtbl.find bbdfns index in 
   begin match entry with
-  | `BBDCL_function (vs,ps, ret, _,_) -> 
+  | `BBDCL_function (props,vs,ps, ret, _,_) -> 
     bcat s ("//------------------------------\n");
     bcat s (
       gen_function_methods syms bbdfns label_map counter index ts instance_no
     )
     
     
-  | `BBDCL_procedure (vs,ps,_,_) -> 
+  | `BBDCL_procedure (props,vs,ps,_,_) -> 
     bcat s ("//------------------------------\n");
     bcat s (
       gen_procedure_methods syms bbdfns label_map counter index ts instance_no
@@ -1886,7 +1886,7 @@ let gen_biface_header syms bbdfns biface = match biface with
   | `BIFACE_export_fun (sr,index, export_name) ->
     let id,parent,sr,entry = Hashtbl.find bbdfns index in
     begin match entry with
-    | `BBDCL_function (vs,ps, ret, _,_) ->
+    | `BBDCL_function (props,vs,ps, ret, _,_) ->
       let display = get_display_list syms index in
       if length display <> 0
       then clierr sr "Can't export nested function";
@@ -1903,7 +1903,7 @@ let gen_biface_header syms bbdfns biface = match biface with
       " as " ^ export_name ^ "\n" ^
       "extern \"C\" " ^ rettypename ^" " ^ export_name ^ "(\n" ^ arglist ^ "\n);\n"
 
-    | `BBDCL_procedure (vs,ps, _,_) ->
+    | `BBDCL_procedure (props,vs,ps, _,_) ->
       let display = get_display_list syms index in
       if length display <> 0
       then clierr sr "Can't export nested proc";
@@ -1933,7 +1933,7 @@ let gen_biface_body syms bbdfns biface = match biface with
   | `BIFACE_export_fun (sr,index, export_name) ->
     let id,parent,sr,entry = Hashtbl.find bbdfns index in
     begin match entry with
-    | `BBDCL_function (vs,ps, ret, _,_) ->
+    | `BBDCL_function (props,vs,ps, ret, _,_) ->
       if length vs <> 0
       then clierr sr ("Can't export generic function " ^ id)
       ;
@@ -1958,7 +1958,7 @@ let gen_biface_body syms bbdfns biface = match biface with
       "    ->apply(" ^ cat ", " (map fst ps) ^ ");\n" ^
       "}\n"
 
-    | `BBDCL_procedure (vs,ps,_,_) ->
+    | `BBDCL_procedure (props,vs,ps,_,_) ->
       if length vs <> 0
       then clierr sr ("Can't export generic procedure " ^ id)
       ;

@@ -270,13 +270,13 @@ publish:
     { `AST_private (slift $1, $2) }
 
 declarative:
-  | type_alias { $1 }
   | function_definition { $1 }
   | object_definition { $1 }
   | procedure_definition { $1 }
   | module_definition { $1 }
   | union_decl { $1 }
   | struct_decl { $1 }
+  | type_alias { $1 }
 
 directive:
   | open_decl { $1 }
@@ -672,6 +672,9 @@ fun_arg:
 fun_args:
   | fun_arg fun_args      { $1 :: $2 }
   | fun_arg               { [$1] }
+opt_fun_args:
+  | fun_args { $1 }
+  | { [] }
 
 opt_type_expr:
   | COLON type_expr { typecode_of_expr $2 }
@@ -687,6 +690,17 @@ function_definition:
       and args = List.map snd $4 (* elide srcref *)
       and vs = List.map snd $3
       in mkcurry sr name vs args return_type `Function body
+    }
+
+  | INLINE FUNCTION NAME tvarlist fun_args opt_type_expr EQUAL compound 
+    { 
+      let sr = rsrange (slift $1) (fst $8)
+      and name = snd $3 
+      and return_type = $6
+      and body = snd $8
+      and args = List.map snd $5 (* elide srcref *)
+      and vs = List.map snd $4
+      in mkcurry sr name vs args return_type `InlineFunction body
     }
 
   | FUNCTION NAME tvarlist COLON type_expr EQUAL STRING SEMI 
@@ -721,19 +735,20 @@ function_definition:
     }
 
 procedure_definition:
+  /*
   | PROCEDURE NAME tvarlist compound 
     { 
       let 
         vs = List.map snd $3 and
-        sr =rsrange (slift $1) (fst $4) and
+        sr = rsrange (slift $1) (fst $4) and
         name = snd $2 and
         body = snd $4 and
         args = [] 
       in
       `AST_function (sr, name, vs, args, `AST_void sr,body) 
     }
-
-  | PROCEDURE NAME tvarlist fun_args compound 
+  */
+  | PROCEDURE NAME tvarlist opt_fun_args compound 
     { 
       let sr = rsrange (slift $1) (fst $5) in
       let name = snd $2 
@@ -742,6 +757,17 @@ procedure_definition:
       and body = snd $5
       and args = List.map snd $4 (* elide srcref *)
       in mkcurry sr name vs args return_type `Function body
+    }
+
+  | INLINE PROCEDURE NAME tvarlist fun_args compound 
+    { 
+      let sr = rsrange (slift $1) (fst $6) in
+      let name = snd $3 
+      and vs = List.map snd $4
+      and return_type = `AST_void sr
+      and body = snd $6
+      and args = List.map snd $5 (* elide srcref *)
+      in mkcurry sr name vs args return_type `InlineFunction body
     }
 
   | PROCEDURE NAME tvarlist COLON type_expr EQUAL STRING SEMI 

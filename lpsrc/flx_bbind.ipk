@@ -60,7 +60,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
     | `SYMDEF_typevar _
       -> ()
 
-    | `SYMDEF_function (ps,rt,exes) -> 
+    | `SYMDEF_function (ps,rt,props,exes) -> 
       let bps : (string * (int * btypecode_t)) list = 
         List.map (fun (s,t) -> 
         let i = find_param name_map s in
@@ -74,9 +74,9 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       let bbdcl = 
         match brt' with
         | `BTYP_void ->
-          `BBDCL_procedure (vs,bps,bbexes,name_map)
+          `BBDCL_procedure (props,vs,bps,bbexes,name_map)
         | _ ->
-          `BBDCL_function (vs,bps,brt',bbexes,name_map)
+          `BBDCL_function (props,vs,bps,brt',bbexes,name_map)
       in
         Hashtbl.add bbdfns i (name,parent,sr,bbdcl);
         begin
@@ -134,7 +134,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
         )
       ;
       Hashtbl.add bbdfns i (name,parent,sr,
-        `BBDCL_function (vs,[],flx_bbool,bbexes,name_map)
+        `BBDCL_function ([`Inline],vs,[],flx_bbool,bbexes,name_map)
       );
       begin
         if not (Hashtbl.mem syms.ticache i) then

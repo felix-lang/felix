@@ -363,7 +363,8 @@ and lvalue_t = [
 ]
 and tlvalue_t = lvalue_t * typecode_t option
 
-and funkind_t = [`Object | `Function ]
+and funkind_t = [`Object | `Function | `InlineFunction]
+and property_t = [`Recursive | `Inline]
 
 and statement_t =
   [ 
@@ -375,7 +376,7 @@ and statement_t =
   | `AST_private of range_srcref * statement_t
 
   (* definitions *)
-  | `AST_function of range_srcref * id_t * id_t list * parameter_t list * typecode_t * statement_t list
+  | `AST_function of range_srcref * id_t * id_t list * parameter_t list * typecode_t * property_t list * statement_t list
   | `AST_curry of range_srcref * id_t * id_t list * parameter_t list list * typecode_t * funkind_t * statement_t list
   | `AST_object of range_srcref * id_t * id_t list * parameter_t list * statement_t list
   | `AST_regdef of range_srcref * string * regexp_t
@@ -511,7 +512,7 @@ type dcl_t =
   | `DCL_body of string
 
   (* data structures *)
-  | `DCL_function of     parameter_t list * typecode_t * asm_t list
+  | `DCL_function of     parameter_t list * typecode_t * property_t list * asm_t list
   | `DCL_union of        (id_t * typecode_t) list
   | `DCL_struct of       (id_t * typecode_t) list
   | `DCL_match_check of pattern_t * string
@@ -651,8 +652,8 @@ and bbdcl_t =
   [
   | `BBDCL_header of     string
   | `BBDCL_body of       string
-  | `BBDCL_function of   (string * int) list * bparameter_t list * btypecode_t * bexe_t list * name_map_t
-  | `BBDCL_procedure of  (string * int) list * bparameter_t list * bexe_t list * name_map_t
+  | `BBDCL_function of   property_t list * (string * int) list * bparameter_t list * btypecode_t * bexe_t list * name_map_t
+  | `BBDCL_procedure of  property_t list * (string * int) list * bparameter_t list * bexe_t list * name_map_t
   | `BBDCL_val of        (string * int) list * btypecode_t
   | `BBDCL_var of        (string * int) list * btypecode_t
 
@@ -695,7 +696,7 @@ type symbol_definition_t =
   | `SYMDEF_parameter of  typecode_t
   | `SYMDEF_typevar of typecode_t (* usually type TYPE *)
 
-  | `SYMDEF_function of parameter_t list * typecode_t * sexe_t list
+  | `SYMDEF_function of parameter_t list * typecode_t * property_t list * sexe_t list
 
   | `SYMDEF_match_check of  pattern_t * int 
   | `SYMDEF_module
@@ -980,7 +981,7 @@ let src_of_stmt e = match e with
   | `AST_private (s,_)
   | `AST_label (s,_)
   | `AST_goto (s,_)
-  | `AST_function (s,_, _, _ , _, _)
+  | `AST_function (s,_, _, _ , _, _, _)
   | `AST_curry (s,_, _, _ , _, _,_)
   | `AST_object (s,_, _, _ , _)
   | `AST_name_macro (s, _,_)
@@ -1813,6 +1814,15 @@ and string_of_lvalue (x,t) =
   | None -> ""
   end
 
+and string_of_property = function
+| `Recursive -> "recursive"
+| `Inline -> "inline"
+
+and string_of_properties ps =
+  match ps with 
+  | [] -> ""
+  | ps -> catmap " " string_of_property ps
+  
 and string_of_statement level s = 
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
@@ -1927,15 +1937,20 @@ and string_of_statement level s =
     "noreturn_code \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
     ";\n"
 
-  | `AST_function (_,name, vs, ps, res, ss) -> 
+  | `AST_function (_,name, vs, ps, res, props, ss) -> 
     spaces level ^ 
+    string_of_properties props ^
     "fun " ^ name ^ print_vs vs ^ 
     "("^string_of_parameters ps^"): "^string_of_typecode res^"\n" ^
     string_of_compound level ss
 
   | `AST_curry (_,name, vs, pss, res, kind, ss) -> 
     spaces level ^ 
-    (match kind with | `Function -> "fun " | `Object -> "obj ")
+    (match kind with 
+    | `Function -> "fun " 
+    | `Object -> "obj " 
+    | `InlineFunction -> "inline fun "
+    )
     ^ 
     name ^ print_vs vs ^ 
     catmap " " 
@@ -2170,8 +2185,9 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
     ) ^
     ";"
  
-  | `SYMDEF_function (ps,res,es) -> 
-    "function " ^ name ^ print_ivs vs ^
+  | `SYMDEF_function (ps,res,props, es) -> 
+    string_of_properties props ^
+    "fun " ^ name ^ print_ivs vs ^
     ": " ^ string_of_typecode 
     (
       `TYP_function 
@@ -2454,9 +2470,10 @@ and string_of_dcl level name vs (s:dcl_t) =
      ": " ^ string_of_typecode typ ^ 
      " = "^string_of_string code^ ";" 
 
-  | `DCL_function (ps, res, ss) -> 
+  | `DCL_function (ps, res, props, ss) -> 
     spaces level ^ 
-    "function " ^ name ^ print_vs vs ^
+    string_of_properties props ^
+    "fun " ^ name ^ print_vs vs ^
     "("^ (string_of_parameters ps)^"): "^(string_of_typecode res)^"\n" ^
     string_of_asm_compound level ss
 
@@ -2510,16 +2527,18 @@ and string_of_bbdcl dfns bbdcl index =
   | `BBDCL_header s -> "header " ^ string_of_string s
   | `BBDCL_body s -> "body " ^ string_of_string s
 
-  | `BBDCL_function (vs,ps,res,es,name_map) ->
-    "function " ^ name ^ print_bvs vs ^
+  | `BBDCL_function (props,vs,ps,res,es,name_map) ->
+    string_of_properties props ^
+    "fun " ^ name ^ print_bvs vs ^
     "("^ (string_of_bparameters dfns ps)^"): "^(sobt res) ^
     "{\n" ^
     cat "\n" (List.map (string_of_bexe dfns 1) es) ^
     "}"
 
   
-  | `BBDCL_procedure (vs,ps,es,name_map) ->
-    "procedure " ^ name ^ print_bvs vs ^
+  | `BBDCL_procedure (props,vs,ps,es,name_map) ->
+    string_of_properties props ^
+    "proc " ^ name ^ print_bvs vs ^
     "("^ (string_of_bparameters dfns ps)^")" ^
     "{\n" ^
     cat "\n" (List.map (string_of_bexe dfns 1) es) ^

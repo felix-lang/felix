@@ -448,7 +448,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_public (_,_,st) -> iter tack (ms [st])
   | `AST_private (sr,st) -> 
     iter (fun st -> tack (`AST_private (sr,st))) (ms [st])
-  
+
   | `AST_include (sr, s) -> tack st
 
   (* FIX TO SUPPORT IDENTIFIER RENAMING *)
@@ -533,9 +533,9 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_proc_return (sr)  ->  ctack st; reachable := false
   | `AST_nop (sr, s) ->  ()
 
-  | `AST_function (sr, id, vs, ps, t, sts ) ->
+  | `AST_function (sr, id, vs, ps, t, props, sts ) ->
     let pr = map fst ps in
-    tack(`AST_function (sr, mi sr id, vs, ps, t, msp sr pr sts ))
+    tack(`AST_function (sr, mi sr id, vs, ps, t, props, msp sr pr sts ))
 
   | `AST_curry (sr,id,vs,pss,ret,kind,sts) ->
     let pr = map fst (concat pss) in

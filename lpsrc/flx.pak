@@ -237,7 +237,7 @@ Flx_version.version_data := version_data
     ["incomplete", "INCOMPLETE"],
     ["inf", "INF"],
     ["in", "IN"],
-    ["interface", "INTERFACE"],
+    ["inline", "INLINE"],
     ["jump", "JUMP"],
     ["let", "LET"],
     ["loop", "LOOP"],

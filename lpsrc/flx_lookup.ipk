@@ -1168,7 +1168,9 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth excluded_dirs index args =
   *)
   let env = build_env syms excluded_dirs (Some index) in
   match (get_data syms.dfns index) with
-  | {id=id;sr=sr;parent=parent;vs=vs;privmap=name_map;dirs=dirs;symdef=`SYMDEF_function (ps,rt,exes)} ->
+  | {id=id;sr=sr;parent=parent;vs=vs;privmap=name_map;dirs=dirs;
+     symdef=`SYMDEF_function (ps,rt,props,exes)
+    } ->
     let rt = bind_type' syms env idx_fixlist [] [] expr_fixlist depth excluded_dirs sr rt args in
     let rt = beta_reduce syms [] rt in
     let ret_type = ref rt in
@@ -1392,7 +1394,7 @@ and inner_typeofindex
     t'
   in
   match entry with
-  | `SYMDEF_function (ps, rt,_) -> 
+  | `SYMDEF_function (ps, rt,_,_) -> 
     let pts = List.map snd ps in
     let rt' = 
       try Hashtbl.find syms.varmap index with Not_found ->

@@ -747,9 +747,6 @@ because the desugaring precedes name binding).
 Note: object constructors are not members, because their
 types would be local to the constructor (see above).
 @p()
-Note: There is currently
-no way to make a nested function private.
-@p()
 Note: The name of the type of an object with constructor 'x' is
 '_ot_x': the constructor name prefixed by '_ot_' (Ugly).
 @p()
@@ -759,7 +756,7 @@ a new functional value to the structure component.
 Note: the type of the object is not part of a method 
 signature: their type is as written.
 @p()
-Note: only explicitly declared functions (and procedures)
+Note: only explicitly declared non-private functions (and procedures)
 are taken as methods. Implicit functions such as blocks
 are not taken.
 
@@ -2585,7 +2582,7 @@ print (let ?x = (let ?y = 2 in y + y) in x + x); endl; // 8
 
 @head(2,'Metatyping')
 Felix supports a metatyping or kinding system.
-The reserved identifer TYPE denots the kind of a type.
+The reserved identifer TYPE denotes the kind of a type.
 You can make a function that generates a type from
 other types. Of course, you can pass these functions
 to other type functions, and do currying.

@@ -206,7 +206,7 @@ let rec build_tables syms name level parent grandparent root asms =
           add_tvars privtab
 
 
-        | `DCL_function (ps,t,asms) ->   
+        | `DCL_function (ps,t,props,asms) ->   
           let fun_index = n in
           let t = if t = `TYP_none then `TYP_var fun_index else t in
           let pubtab,privtab, exes, ifaces,dirs =  
@@ -225,7 +225,7 @@ let rec build_tables syms name level parent grandparent root asms =
             ips := (name,typ) :: !ips 
           ) ps
           ; 
-          Hashtbl.add dfns fun_index {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_function (rev !ips, t, exes)};
+          Hashtbl.add dfns fun_index {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_function (rev !ips, t, props, exes)};
           if access = `Public then add_function sr pub_name_map id fun_index;
           add_function sr priv_name_map id fun_index;
           interfaces := !interfaces @ ifaces
@@ -282,7 +282,7 @@ let rec build_tables syms name level parent grandparent root asms =
             build_tables syms id (level+1) 
             (Some fun_index) parent root !new_asms 
           in
-          Hashtbl.add dfns fun_index {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_function ([],`TYP_var fun_index, exes)};
+          Hashtbl.add dfns fun_index {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_function ([],`TYP_var fun_index, [],exes)};
           if access = `Public then add_function sr pub_name_map id fun_index;
           add_function sr priv_name_map id fun_index;
           interfaces := !interfaces @ ifaces
@@ -308,7 +308,7 @@ let rec build_tables syms name level parent grandparent root asms =
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_module};
           let n' = !counter in
           incr counter;
-          let init_def = `SYMDEF_function ( [],`AST_void sr, exes) in
+          let init_def = `SYMDEF_function ( [],`AST_void sr, [],exes) in
           if print_flag then
           print_endline ("//  "^spc ^ si n' ^ " -> _init_  (module "^id^")");
           Hashtbl.add dfns n' {id="_init_";sr=sr;parent=Some n;vs=vs;pubmap=null_tab;privmap=null_tab;dirs=[];symdef=init_def};

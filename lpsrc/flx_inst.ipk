@@ -149,7 +149,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
   if syms.compiler_options.print_flag then
   print_endline ("//Instance "^si inst ^ "="^id^"<" ^ si i ^ ">[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]");
   match entry with
-  | `BBDCL_function (vs,ps,ret,exes, _) -> 
+  | `BBDCL_function (props,vs,ps,ret,exes, _) -> 
     if length vs <> length ts 
     then begin 
       print_endline "TS VS length mismatch";
@@ -160,7 +160,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     let argtypes = map (fun x -> snd (snd x)) ps in
     process_function syms bbdfns ref_insts1 i sr argtypes ret exes ts
  
-  | `BBDCL_procedure (vs,ps, exes, _) ->
+  | `BBDCL_procedure (props,vs,ps, exes, _) ->
     let argtypes = map (fun x -> snd (snd x)) ps in
     process_function syms bbdfns ref_insts1 i sr argtypes `BTYP_void exes ts
 

@@ -167,11 +167,34 @@ let mkcurry seq sr name vs args return_type kind body =
       else name^"_curry_" ^ string_of_int n
     in
     match args with 
-    | [] -> assert false
+    | [] -> 
+        (match kind with
+        | `InlineFunction
+        | `Function ->
+          let props = match kind with
+          | `InlineFunction -> [`Inline]
+          | _ -> []
+          in
+          begin match return_type with
+          | `AST_void _ ->
+            `AST_function (sr, name n, vs, [], return_type, props, body)
+          | _ ->
+            syserr sr "Function with no arguments"
+          end
+
+        | `Object ->
+          `AST_object (sr, name n, vs, [], body)
+        )
+
     | h :: [] -> (* bottom level *)
         (match kind with
+        | `InlineFunction
         | `Function ->
-          `AST_function (sr, name n, vs, h, return_type, body)
+          let props = match kind with
+          | `InlineFunction -> [`Inline]
+          | _ -> []
+          in
+          `AST_function (sr, name n, vs, h, return_type, props, body)
         | `Object ->
           `AST_object (sr, name n, vs, h, body)
         )
@@ -194,7 +217,7 @@ let mkcurry seq sr name vs args return_type kind body =
           )
         ] 
       in
-        `AST_function (sr, name m, vs, h, rettype t, body)
+        `AST_function (sr, name m, vs, h, rettype t, [], body)
    in aux args vs
 
 (* model binary operator as procedure call *)
@@ -226,10 +249,10 @@ let find_methods seq sr sts =
 
     (*
     | `AST_object (sr,mname, vs, ps, sts) ->
-       check (`AST_function (sr,mname,vs,ps,`TYP_none,sts))
+       check (`AST_function (sr,mname,vs,ps,`TYP_none,props,sts))
     *)
 
-    | `AST_function (sr,mname, vs, ps, ret,sts) ->
+    | `AST_function (sr,mname, vs, ps, ret,props,sts) ->
       if vs <> [] then
       clierr sr "[process_object] Object methods may not be generic"
       ;
@@ -366,12 +389,13 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     concat lss,`AST_tuple (sr,xs)
 
   | `AST_lambda (sr,(params,res,sts)) -> 
+    let props = [`Inline] in
     let vs, params = fix_params seq params in
     let n = seq() in
     let name = "_lam_" ^ string_of_int n in
     let argtyp = type_of_argtypes (map snd params) in
     [match res with
-    | _ -> Dcl (sr,name,`Private,vs,`DCL_function (params, res, rsts sts))
+    | _ -> Dcl (sr,name,`Private,vs,`DCL_function (params, res, props, rsts sts))
     ],
     `AST_suffix 
     (
@@ -406,7 +430,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let fname = "regmatch" ^ string_of_int n in
     let l,x = rex e in
     let exes = [Exe(sr,`EXE_regmatch (x,!cls))] in
-    let rfun = Dcl(sr,fname,`Private,[],`DCL_function([],`TYP_none,exes)) in
+    let rfun = Dcl(sr,fname,`Private,[],`DCL_function([],`TYP_none,[],exes)) in
     rfun :: l @ !dcls,
     `AST_apply(sr,(`AST_name(sr,fname,[]),`AST_tuple(sr,[])))
    
@@ -447,6 +471,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
           (
             params,
             `TYP_none,
+            [`Inline],
             [Exe (sr,`EXE_fun_return x)]
            )
         ) 
@@ -471,7 +496,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let l1,x1 = rex p1 in
     let l2,x2 = rex p2 in
     let exes = [Exe(sr,`EXE_reglex (x1,x2,!cls))] in
-    let rfun = Dcl(sr,fname,`Private,[],`DCL_function([],`TYP_none,exes)) in
+    let rfun = Dcl(sr,fname,`Private,[],`DCL_function([],`TYP_none,[],exes)) in
     rfun :: l1 @ l2 @ !dcls,
     `AST_apply(sr,(`AST_name(sr,fname,[]),`AST_tuple(sr,[])))
      
@@ -633,6 +658,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
         (
           [],
           `TYP_none,
+          [`Inline],
           match_function_body
         )
       )
@@ -747,14 +773,14 @@ and rst syms name access st : asm_t list =
     let sts = sts @ [`AST_fun_return (sr,retval)] in
     [
       Dcl (sr,otname,access,vs,`DCL_struct methods);
-      Dcl (sr,name,access,vs,`DCL_function (params,rtyp,rsts name sts))
+      Dcl (sr,name,access,vs,`DCL_function (params,rtyp,[],rsts name sts))
     ]
   
   (* functions *)
-  | `AST_function (sr,name, vs, params, res, sts) -> 
+  | `AST_function (sr,name, vs, params, res, props, sts) -> 
     let vs',params = fix_params seq params in
     let vs = vs @ vs' in
-    [Dcl (sr,name,access,vs,`DCL_function (params, res, rsts name sts))]
+    [Dcl (sr,name,access,vs,`DCL_function (params, res, props, rsts name sts))]
     
   | `AST_fun_decl (sr,name,vs,args,result,code) ->
     let typeoflist lst = match lst with
@@ -797,7 +823,7 @@ and rst syms name access st : asm_t list =
     in
     [
       Dcl (sr,prim_id,access,vs,`DCL_fun (args,result,code));
-      Dcl (sr,name,access,vs,`DCL_function (params,result,body))
+      Dcl (sr,name,access,vs,`DCL_function (params,result,[`Inline],body))
     ]
 
   (* misc *)
