@@ -13,7 +13,7 @@ val call_data:
   fully_bound_symbol_table_t -> usage_t
 
 val print_call_report:
-  fully_bound_symbol_table_t -> string -> unit
+  fully_bound_symbol_table_t -> out_channel -> unit
 
 @h = tangler("src/flx_call.ml")
 @select(h)
@@ -206,10 +206,8 @@ let print_call_report' bbdfns usage f =
     (call_report bbdfns usage f)
     (sort compare (!x))
 
-let print_call_report bbdfns filename =
+let print_call_report bbdfns f =
   let usage = call_data bbdfns in
-  let f = open_out filename in
-  print_call_report' bbdfns usage f;
-  close_out f
+  print_call_report' bbdfns usage f
 
   

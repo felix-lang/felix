@@ -47,6 +47,7 @@ type control_t = {
   mutable control_filename: string;
   mutable prein_filename: string;
   mutable preout_filename: string;
+  mutable language: Flx_cil_cabs.lang_t;
   mutable preprocessor: string;
   mutable raw_includes: StringSet.t;
   mutable raw_include_dirs : StringSet.t;
@@ -71,6 +72,7 @@ let control = {
   control_filename = Sys.argv.(1);
   prein_filename = "flxcc_prein.h";
   preout_filename = "flxcc_preout.hhh";
+  language = `Cxx;
 @tangle('  preprocessor ="'+FLXCC_CPP+'";')
   noincludes = [];
   raw_includes = StringSet.empty;
@@ -148,168 +150,194 @@ let rec glob dir recurse level =
     failwith ("Can't find directory " ^ dir)
 ;;
 
-let f = open_in control.control_filename
-;;
 let pattern = ref "*.h" 
 ;;
 
-let rec aux () =
-  try 
-    let line = input_line f in
-    let n = String.length line in
-    let i = ref 0 in
-    try
-        (* skip white *)
-        while !i < n && line.[!i]=' ' do incr i done;
-        if !i = n then raise Next;
-
-        (* detect C++ style comment *)
-        if isprefix "//" (String.sub line !i (n - !i))
-        then raise Next
-        ;
-        let j = !i in
-        while !i < n && line.[!i]<>' ' do incr i done;
-        let keyword = String.sub line j (!i-j) in
-
-        match keyword with
-        | "outdir" ->
+let rec parse_control_file filename =
+  let f = open_in filename in
+  let rec aux () =
+    try 
+      let line = input_line f in
+      let n = String.length line in
+      let i = ref 0 in
+      try
+          (* skip white *)
           while !i < n && line.[!i]=' ' do incr i done;
-          if !i = n then failwith "outdir statement requires filename";
+          if !i = n then raise Next;
+
+          (* detect C++ style comment *)
+          if isprefix "//" (String.sub line !i (n - !i))
+          then raise Next
+          ;
           let j = !i in
           while !i < n && line.[!i]<>' ' do incr i done;
-          control.outdir <- String.sub line j (!i-j);
-          raise Next
+          let keyword = String.sub line j (!i-j) in
 
-        | "prein" ->
-          while !i < n && line.[!i]=' ' do incr i done;
-          if !i = n then failwith "prein statement requires filename";
-          let j = !i in
-          while !i < n && line.[!i]<>' ' do incr i done;
-          control.prein_filename <- String.sub line j (!i-j);
-          raise Next
+          match keyword with
+          | "#include" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "outdir statement requires filename";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            let fn = String.sub line j (!i-j) in
+            parse_control_file fn;
+            raise Next
 
-        | "preout" ->
-          while !i < n && line.[!i]=' ' do incr i done;
-          if !i = n then failwith "preout statement requires filename";
-          let j = !i in
-          while !i < n && line.[!i]<>' ' do incr i done;
-          control.preout_filename <- String.sub line j (!i-j);
-          raise Next
-        
-        | "preprocessor" ->
-          while !i < n && line.[!i]=' ' do incr i done;
-          if !i = n then failwith "preprocessor statement requires arguments";
-          let j = !i in
-          while !i < n do incr i done;
-          control.preprocessor <- String.sub line j (!i-j);
-          raise Next
+          | "outdir" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "outdir statement requires filename";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            control.outdir <- String.sub line j (!i-j);
+            raise Next
 
-        | "noheader" ->
-          while !i < n && line.[!i]=' ' do incr i done;
-          if !i = n then failwith "noinclude statement requires filename";
-          let j = !i in
-          while !i < n && line.[!i]<>' ' do incr i done;
-          let fn = String.sub line j (!i-j) in
-          control.noincludes <- fn :: control.noincludes;
-          raise Next
+          | "prein" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "prein statement requires filename";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            control.prein_filename <- String.sub line j (!i-j);
+            raise Next
 
-        | "incdir" ->
-          while !i < n && line.[!i]=' ' do incr i done;
-          if !i = n then failwith "incdir statement requires filename";
-          let j = !i in
-          while !i < n && line.[!i]<>' ' do incr i done;
-          let fn = String.sub line j (!i-j) in
-          control.root_includes <- fn :: control.root_includes;
-          raise Next
+          | "preout" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "preout statement requires filename";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            control.preout_filename <- String.sub line j (!i-j);
+            raise Next
 
-        | "incfile" ->
-          while !i < n && line.[!i]=' ' do incr i done;
-          if !i = n then failwith "incfile statement requires filename";
-          let j = !i in
-          while !i < n && line.[!i]<>' ' do incr i done;
-          let fn = String.sub line j (!i-j) in
-          control.raw_includes <- StringSet.add fn control.raw_includes;
-          raise Next
+          | "language" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "preout statement requires filename";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            let x = String.sub line j (!i-j) in
+            control.language <- 
+              (
+                match x with
+                | "C" | "c" -> `C
+                | "C++" | "c++" | "cxx" -> `Cxx
+                | _ -> failwith ("Unknown language " ^ x ^", must be C or C++")
+              )
+            ;
+            raise Next
+          
+          | "preprocessor" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "preprocessor statement requires arguments";
+            let j = !i in
+            while !i < n do incr i done;
+            control.preprocessor <- String.sub line j (!i-j);
+            raise Next
 
-        | "recincdir" ->
-          while !i < n && line.[!i]=' ' do incr i done;
-          if !i = n then failwith "incdir statement requires filename";
-          let j = !i in
-          while !i < n && line.[!i]<>' ' do incr i done;
-          let fn = String.sub line j (!i-j) in
-          control.root_rec_includes <- fn :: control.root_rec_includes;
-          raise Next
+          | "noheader" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "noinclude statement requires filename";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            let fn = String.sub line j (!i-j) in
+            control.noincludes <- fn :: control.noincludes;
+            raise Next
 
-        | "path" ->
-          while !i < n && line.[!i]=' ' do incr i done;
-          if !i = n then failwith "path statement requires filename";
-          let j = !i in
-          while !i < n && line.[!i]<>' ' do incr i done;
-          let fn = String.sub line j (!i-j) in
-          control.include_path <- fn :: control.include_path;
-          raise Next
+          | "incdir" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "incdir statement requires filename";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            let fn = String.sub line j (!i-j) in
+            control.root_includes <- fn :: control.root_includes;
+            raise Next
 
-        | "exclude" ->
-          while !i < n && line.[!i]=' ' do incr i done;
-          if !i = n then failwith "exclude statement requires filename";
-          let j = !i in
-          while !i < n && line.[!i]<>' ' do incr i done;
-          let fn = String.sub line j (!i-j) in
-          control.root_excludes<- fn :: control.root_excludes;
-          raise Next
+          | "incfile" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "incfile statement requires filename";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            let fn = String.sub line j (!i-j) in
+            control.raw_includes <- StringSet.add fn control.raw_includes;
+            raise Next
 
-        | "merge" ->
-          while !i < n && line.[!i]=' ' do incr i done;
-          if !i = n then failwith "merge statement requires filename";
-          let j = !i in
-          while !i < n && line.[!i]<>' ' do incr i done;
-          let fn1 = String.sub line j (!i-j) in
+          | "recincdir" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "incdir statement requires filename";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            let fn = String.sub line j (!i-j) in
+            control.root_rec_includes <- fn :: control.root_rec_includes;
+            raise Next
 
-          while !i < n && line.[!i]=' ' do incr i done;
-          if !i = n then failwith "merge statement requires 2 filenames";
-          let j = !i in
-          while !i < n && line.[!i]<>' ' do incr i done;
-          let fn2 = String.sub line j (!i-j) in
-          Hashtbl.add control.merge_files fn1 fn2;
-          let x = 
-            try Hashtbl.find control.rev_merge_files fn2 
-            with Not_found -> [] 
-          in Hashtbl.replace control.rev_merge_files fn2 (fn1::x)
-          ; 
-          raise Next
+          | "path" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "path statement requires filename";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            let fn = String.sub line j (!i-j) in
+            control.include_path <- fn :: control.include_path;
+            raise Next
 
-        | "rename" ->
-          while !i < n && line.[!i]=' ' do incr i done;
-          if !i = n then failwith "rename statement requires name";
-          let j = !i in
-          while !i < n && line.[!i]<>' ' do incr i done;
-          let fn1 = String.sub line j (!i-j) in
+          | "exclude" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "exclude statement requires filename";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            let fn = String.sub line j (!i-j) in
+            control.root_excludes<- fn :: control.root_excludes;
+            raise Next
 
-          while !i < n && line.[!i]=' ' do incr i done;
-          if !i = n then failwith "rename statement requires 2 names";
-          let j = !i in
-          while !i < n && line.[!i]<>' ' do incr i done;
-          let fn2 = String.sub line j (!i-j) in
-          Hashtbl.add control.replacements fn1 fn2;
-          raise Next
+          | "merge" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "merge statement requires filename";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            let fn1 = String.sub line j (!i-j) in
 
-        | "ignore" ->
-          while !i < n && line.[!i]=' ' do incr i done;
-          if !i = n then failwith "ignore statement requires name";
-          let j = !i in
-          while !i < n && line.[!i]<>' ' do incr i done;
-          let fn = String.sub line j (!i-j) in
-          Hashtbl.add control.rejects fn ();
-          raise Next
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "merge statement requires 2 filenames";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            let fn2 = String.sub line j (!i-j) in
+            Hashtbl.add control.merge_files fn1 fn2;
+            let x = 
+              try Hashtbl.find control.rev_merge_files fn2 
+              with Not_found -> [] 
+            in Hashtbl.replace control.rev_merge_files fn2 (fn1::x)
+            ; 
+            raise Next
 
-        | _ -> failwith ("Unknown keyword " ^keyword^ " in control file")
+          | "rename" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "rename statement requires name";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            let fn1 = String.sub line j (!i-j) in
 
-    with Next -> aux()
-  with End_of_file -> ()
-in aux()
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "rename statement requires 2 names";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            let fn2 = String.sub line j (!i-j) in
+            Hashtbl.add control.replacements fn1 fn2;
+            raise Next
+
+          | "ignore" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "ignore statement requires name";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            let fn = String.sub line j (!i-j) in
+            Hashtbl.add control.rejects fn ();
+            raise Next
+
+          | _ -> failwith ("Unknown keyword " ^keyword^ " in control file")
+
+      with Next -> aux()
+    with End_of_file -> ()
+  in 
+    aux ();
+    close_in f
 ;;
-
-close_in f
+parse_control_file control.control_filename
 ;;
 
 iter
@@ -399,7 +427,7 @@ let compile_start_local_string = format_time compile_start_local ^ " (local)"
 Flx_cil_cil.initCIL()
 ;;
 
-let lexbuf = Flx_cil_clexer.init control.preout_filename;;
+let lexbuf = Flx_cil_clexer.init control.preout_filename control.language;;
 let cabs = Flx_cil_cparser.file Flx_cil_clexer.initial lexbuf
 ;;
 Flx_cil_clexer.finish()
@@ -780,6 +808,7 @@ let module_of_filename fname =
     srepl x ' ' '_';
     srepl x '/' '_';
     srepl x '-' '_';
+    srepl x '+' '_';
   in
   try 
     let x = (chop_extension x) in
@@ -1693,8 +1722,353 @@ let rec dflx dir =
 dflx control.outdir
 ;;
 
+@h=tangler("config/felix.flxcc","data")
+@select(h)
+// Felix: language and core library wrapper control
+//
+// rename Felix keywords
+@for k,j in flx_keywords:
+  tangle('rename '+k+' '+k+'_')
+//
+// We need to rename any C++ keywords too
+rename namespace namespace_
+rename namespace namespace_
+//
+// remap C types to Felix standard library types
+rename size_t size
+rename wchar_t wchar
+
+// ignore definitions of Felix standard library types
+@for k in tmap.keys():
+  tangle('ignore '+k)
+ignore wchar
+
+@h = tangler("config/gnu_headers.flxcc.default","data")
+@select(h)
+noheader /usr/include/bits/byteswap.h
+noheader /usr/include/bits/cmathcalls.h
+noheader /usr/include/bits/confname.h
+noheader /usr/include/bits/dirent.h
+noheader /usr/include/bits/dlfcn.h
+noheader /usr/include/bits/elfclass.h
+noheader /usr/include/bits/endian.h
+noheader /usr/include/bits/environments.h
+noheader /usr/include/bits/fcntl.h
+noheader /usr/include/bits/fenv.h
+noheader /usr/include/bits/huge_val.h
+noheader /usr/include/bits/in.h
+noheader /usr/include/bits/ioctls.h
+noheader /usr/include/bits/ioctl-types.h
+noheader /usr/include/bits/ipc.h
+noheader /usr/include/bits/ipctypes.h
+noheader /usr/include/bits/locale.h
+noheader /usr/include/bits/mathcalls.h
+noheader /usr/include/bits/mathdef.h
+noheader /usr/include/bits/mathinline.h
+noheader /usr/include/bits/mman.h
+noheader /usr/include/bits/msq.h
+noheader /usr/include/bits/nan.h
+noheader /usr/include/bits/netdb.h
+noheader /usr/include/bits/poll.h
+noheader /usr/include/bits/posix1_lim.h
+noheader /usr/include/bits/posix2_lim.h
+noheader /usr/include/bits/pthreadtypes.h
+noheader /usr/include/bits/resource.h
+noheader /usr/include/bits/sched.h
+noheader /usr/include/bits/select.h
+noheader /usr/include/bits/sem.h
+noheader /usr/include/bits/setjmp.h
+noheader /usr/include/bits/shm.h
+//noheader /usr/include/bits/sigset.h
+//noheader /usr/include/bits/sigaction.h
+//noheader /usr/include/bits/sigcontext.h
+//noheader /usr/include/bits/siginfo.h
+//noheader /usr/include/bits/sigstack.h
+//noheader /usr/include/bits/sigthread.h
+noheader /usr/include/bits/sockaddr.h
+noheader /usr/include/bits/socket.h
+noheader /usr/include/bits/statfs.h
+noheader /usr/include/bits/stat.h
+noheader /usr/include/bits/statvfs.h
+noheader /usr/include/bits/stdio.h
+noheader /usr/include/bits/stdio_lim.h
+noheader /usr/include/bits/string2.h
+noheader /usr/include/bits/string.h
+noheader /usr/include/bits/stropts.h
+noheader /usr/include/bits/syscall.h
+noheader /usr/include/bits/sys_errlist.h
+noheader /usr/include/bits/termios.h
+noheader /usr/include/bits/time.h
+noheader /usr/include/bits/types.h
+noheader /usr/include/bits/typesizes.h
+noheader /usr/include/bits/uio.h
+noheader /usr/include/bits/ustat.h
+noheader /usr/include/bits/utmp.h
+noheader /usr/include/bits/utmpx.h
+noheader /usr/include/bits/utsname.h
+noheader /usr/include/bits/waitflags.h
+noheader /usr/include/bits/waitstatus.h
+noheader /usr/include/bits/xopen_lim.h
+noheader /usr/include/bits/xtitypes.h
+
+merge /usr/include/bits/sigset.h /usr/include/signal.h
+merge /usr/include/bits/sigaction.h /usr/include/signal.h
+merge /usr/include/bits/sigcontext.h /usr/include/signal.h
+merge /usr/include/bits/siginfo.h /usr/include/signal.h
+merge /usr/include/bits/sigstack.h /usr/include/signal.h
+merge /usr/include/bits/sigthread.h /usr/include/pthread.h
+merge /usr/include/bits/sched.h /usr/include/sched.h
+merge /usr/include/bits/pthreadtypes.h /usr/include/sys/types.h
+merge /usr/include/bits/confname.h /usr/include/unistd.h
+merge /usr/include/bits/time.h /usr/include/time.h
+
+merge /usr/include/bits/byteswap.h /usr/include/byteswap.h
+merge /usr/include/bits/cmathcalls.h /usr/include/complex.h
+merge /usr/include/bits/dirent.h /usr/include/dirent.h
+merge /usr/include/bits/dlfcn.h /usr/include/dlfcn.h
+merge /usr/include/bits/elfclass.h /usr/include/link.h
+merge /usr/include/bits/endian.h /usr/include/endian.h
+merge /usr/include/bits/errno.h /usr/include/errno.h
+merge /usr/include/bits/environments.h /usr/include/unistd.h
+merge /usr/include/bits/fcntl.h /usr/include/fcntl.h
+merge /usr/include/bits/fenv.h /usr/include/fenv.h
+merge /usr/include/bits/huge_val.h /usr/include/math.h
+merge /usr/include/bits/in.h /usr/include/netinet/in.h
+merge /usr/include/bits/ioctls.h /usr/include/sys/ioctl.h
+merge /usr/include/bits/ioctl-types.h /usr/include/sys/ioctl.h
+merge /usr/include/bits/ipc.h /usr/include/sys/ipc.h
+merge /usr/include/bits/ipctypes.h /usr/include/sys/ipc.h
+merge /usr/include/bits/locale.h /usr/include/locale.h
+merge /usr/include/bits/mathcalls.h /usr/include/math.h
+merge /usr/include/bits/mathdef.h /usr/include/math.h
+merge /usr/include/bits/mathinline.h /usr/include/math.h
+merge /usr/include/bits/mman.h /usr/include/sys/mman.h
+merge /usr/include/bits/msq.h /usr/include/sys/msg.h
+merge /usr/include/bits/nan.h /usr/include/math.h
+merge /usr/include/bits/netdb.h /usr/include/netdb.h
+merge /usr/include/bits/poll.h /usr/include/sys/poll.h
+merge /usr/include/bits/posix1_lim.h /usr/include/limits.h
+merge /usr/include/bits/posix2_lim.h /usr/include/limits.h
+merge /usr/include/bits/resource.h /usr/include/sys/resource.h
+merge /usr/include/bits/select.h /usr/include/sys/select.h
+merge /usr/include/bits/sem.h /usr/include/sys/sem.h
+merge /usr/include/bits/setjmp.h /usr/include/setjmp.h
+merge /usr/include/bits/shm.h /usr/include/sys/shm.h
+merge /usr/include/bits/sockaddr.h /usr/include/sys/socket.h
+merge /usr/include/bits/socket.h /usr/include/sys/socket.h
+merge /usr/include/bits/statfs.h /usr/include/sys/statfs.h
+merge /usr/include/bits/stat.h /usr/include/sys/stat.h
+merge /usr/include/bits/statvfs.h /usr/include/sys/statvfs.h
+merge /usr/include/bits/stdio.h /usr/include/stdio.h
+merge /usr/include/bits/stdio_lim.h /usr/include/stdio.h
+merge /usr/include/bits/string2.h /usr/include/string.h
+merge /usr/include/bits/string.h /usr/include/string.h
+merge /usr/include/bits/stropts.h /usr/include/stropts.h
+merge /usr/include/bits/syscall.h /usr/include/sys/syscall.h
+merge /usr/include/bits/sys_errlist.h /usr/include/stdio.h
+merge /usr/include/bits/termios.h /usr/include/termios.h
+merge /usr/include/bits/types.h /usr/include/sys/types.h
+merge /usr/include/bits/typesizes.h /usr/include/sys/types.h
+merge /usr/include/bits/uio.h /usr/include/sys/uio.h
+merge /usr/include/bits/ustat.h /usr/include/sys/ustat.h
+merge /usr/include/bits/utmp.h /usr/include/utmp.h
+merge /usr/include/bits/utmpx.h /usr/include/utmpx.h
+merge /usr/include/bits/utsname.h /usr/include/sys/utsname.h
+merge /usr/include/bits/waitflags.h /usr/include/sys/wait.h
+merge /usr/include/bits/waitstatus.h /usr/include/sys/wait.h
+merge /usr/include/bits/xopen_lim.h /usr/include/limits.h
+merge /usr/include/bits/xtitypes.h /usr/include/stropts.h
+
+@h=tangler("config/c89.flxcc.default","data")
+@select(h)
+#include config/felix.flxcc
+#include config/gnu_headers.flxcc
+
+outdir c89 
+prein c89.h
+preout c89.hhh
+preprocessor gcc -E -std=c89
+
+//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
+
+//incfile assert.h: just macros
+incfile ctype.h
+incfile errno.h
+incfile fenv.h
+incfile float.h
+//incfile inttypes.h: c99 only
+//incfile iso646.h: c99 only
+//incfile limits.h: just macros
+incfile locale.h
+incfile math.h
+incfile setjmp.h
+incfile signal.h
+incfile stdarg.h
+//incfile stdbool.h: c99 only
+incfile stddef.h
+//incfile stdint.h: c99 only
+incfile stdio.h
+incfile stdlib.h
+incfile string.h
+//incfile tgmath.h: c99 only
+incfile time.h
+incfile wchar.h
+incfile wctype.h
+
+rename String String_
+
+@h=tangler("config/gnu89.flxcc.default","data")
+@select(h)
+#include config/felix.flxcc
+#include config/gnu_headers.flxcc
+
+outdir gnu89 
+prein gnu89.h
+preout gnu89.hhh
+preprocessor gcc -E -std=gnu89
+
+//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
+
+//incfile assert.h: just macros
+incfile ctype.h
+incfile errno.h
+incfile fenv.h
+incfile float.h
+//incfile inttypes.h: c99 only
+//incfile iso646.h: c99 only
+//incfile limits.h: just macros
+incfile locale.h
+incfile math.h
+incfile setjmp.h
+incfile signal.h
+incfile stdarg.h
+//incfile stdbool.h: c99 only
+incfile stddef.h
+//incfile stdint.h: c99 only
+incfile stdio.h
+incfile stdlib.h
+incfile string.h
+//incfile tgmath.h: c99 only
+incfile time.h
+incfile wchar.h
+incfile wctype.h
+
+rename String String_
+
+@h=tangler("config/c99.flxcc.default","data")
+@select(h)
+#include config/felix.flxcc
+#include config/gnu_headers.flxcc
+
+outdir c99 
+prein c99.h
+preout c99.hhh
+preprocessor gcc -E -std=c99
+
+//incfile assert.h: just macros
+incfile ctype.h
+incfile complex.h
+incfile errno.h
+incfile fenv.h
+incfile float.h
+incfile inttypes.h 
+//incfile iso646.h: just macros
+incfile limits.h
+incfile locale.h
+incfile math.h
+incfile setjmp.h
+incfile signal.h
+incfile stdarg.h
+incfile stdbool.h
+incfile stddef.h
+incfile stdint.h
+incfile stdio.h
+incfile stdlib.h
+incfile string.h
+incfile tgmath.h
+incfile time.h
+incfile wchar.h
+incfile wctype.h
+
+rename String String_
+
+@h=tangler("config/gnu99.flxcc.default","data")
+@select(h)
+#include config/felix.flxcc
+#include config/gnu_headers.flxcc
+
+outdir gnu99
+prein gnu99.h
+preout gnu99.hhh
+preprocessor gcc -E -std=gnu99
+
+//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
+
+//incfile assert.h: just macros
+incfile ctype.h
+incfile complex.h
+incfile errno.h
+incfile fenv.h
+incfile float.h
+incfile inttypes.h 
+//incfile iso646.h: just macros
+incfile limits.h
+incfile locale.h
+incfile math.h
+incfile setjmp.h
+incfile signal.h
+incfile stdarg.h
+incfile stdbool.h
+incfile stddef.h
+incfile stdint.h
+incfile stdio.h
+incfile stdlib.h
+incfile string.h
+incfile tgmath.h
+incfile time.h
+incfile wchar.h
+incfile wctype.h
+
+rename String String_
+
+@h=tangler("config/cxx.flxcc.default","data")
+@select(h)
+#include config/felix.flxcc
+#include config/gnu_headers.flxcc
+
+outdir cxx 
+prein cxx.h
+preout cxx.hhh
+preprocessor g++ -E -I/usr/include/g++-3
+
+//-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
+
+incfile cctype
+incfile cerrno
+incfile cfenv
+incfile cfloat
+incfile climits
+incfile clocale
+incfile cmath
+incfile csetjmp
+incfile csignal
+incfile cstdarg
+incfile cstddef
+incfile cstdint
+incfile cstdio
+incfile cstdlib
+incfile cstring
+incfile ctime
+incfile cwchar
+incfile cwctype
+
+rename String String_
+
 @h=tangler("config/usr_include.flxcc.default","data")
 @select(h)
+#include config/felix.flxcc
+#include config/gnu_headers.flxcc
+
 outdir flxcc_out
 prein usr_include.h
 preout usr_include.hhh
@@ -1785,143 +2159,6 @@ exclude /usr/include/libmng.h
 exclude /usr/include/mp.h
 exclude /usr/include/pammap.h
 
-noheader /usr/include/bits/byteswap.h
-noheader /usr/include/bits/cmathcalls.h
-noheader /usr/include/bits/confname.h
-noheader /usr/include/bits/dirent.h
-noheader /usr/include/bits/dlfcn.h
-noheader /usr/include/bits/elfclass.h
-noheader /usr/include/bits/endian.h
-noheader /usr/include/bits/environments.h
-noheader /usr/include/bits/fcntl.h
-noheader /usr/include/bits/fenv.h
-noheader /usr/include/bits/huge_val.h
-noheader /usr/include/bits/in.h
-noheader /usr/include/bits/ioctls.h
-noheader /usr/include/bits/ioctl-types.h
-noheader /usr/include/bits/ipc.h
-noheader /usr/include/bits/ipctypes.h
-noheader /usr/include/bits/locale.h
-noheader /usr/include/bits/mathcalls.h
-noheader /usr/include/bits/mathdef.h
-noheader /usr/include/bits/mathinline.h
-noheader /usr/include/bits/mman.h
-noheader /usr/include/bits/msq.h
-noheader /usr/include/bits/nan.h
-noheader /usr/include/bits/netdb.h
-noheader /usr/include/bits/poll.h
-noheader /usr/include/bits/posix1_lim.h
-noheader /usr/include/bits/posix2_lim.h
-noheader /usr/include/bits/pthreadtypes.h
-noheader /usr/include/bits/resource.h
-noheader /usr/include/bits/sched.h
-noheader /usr/include/bits/select.h
-noheader /usr/include/bits/sem.h
-noheader /usr/include/bits/setjmp.h
-noheader /usr/include/bits/shm.h
-//noheader /usr/include/bits/sigset.h
-//noheader /usr/include/bits/sigaction.h
-//noheader /usr/include/bits/sigcontext.h
-//noheader /usr/include/bits/siginfo.h
-//noheader /usr/include/bits/sigstack.h
-//noheader /usr/include/bits/sigthread.h
-noheader /usr/include/bits/sockaddr.h
-noheader /usr/include/bits/socket.h
-noheader /usr/include/bits/statfs.h
-noheader /usr/include/bits/stat.h
-noheader /usr/include/bits/statvfs.h
-noheader /usr/include/bits/stdio.h
-noheader /usr/include/bits/stdio_lim.h
-noheader /usr/include/bits/string2.h
-noheader /usr/include/bits/string.h
-noheader /usr/include/bits/stropts.h
-noheader /usr/include/bits/syscall.h
-noheader /usr/include/bits/sys_errlist.h
-noheader /usr/include/bits/termios.h
-noheader /usr/include/bits/time.h
-noheader /usr/include/bits/types.h
-noheader /usr/include/bits/typesizes.h
-noheader /usr/include/bits/uio.h
-noheader /usr/include/bits/ustat.h
-noheader /usr/include/bits/utmp.h
-noheader /usr/include/bits/utmpx.h
-noheader /usr/include/bits/utsname.h
-noheader /usr/include/bits/waitflags.h
-noheader /usr/include/bits/waitstatus.h
-noheader /usr/include/bits/xopen_lim.h
-noheader /usr/include/bits/xtitypes.h
-
-merge /usr/include/bits/sigset.h /usr/include/signal.h
-merge /usr/include/bits/sigaction.h /usr/include/signal.h
-merge /usr/include/bits/sigcontext.h /usr/include/signal.h
-merge /usr/include/bits/siginfo.h /usr/include/signal.h
-merge /usr/include/bits/sigstack.h /usr/include/signal.h
-merge /usr/include/bits/sigthread.h /usr/include/pthread.h
-merge /usr/include/bits/sched.h /usr/include/sched.h
-merge /usr/include/bits/pthreadtypes.h /usr/include/sys/types.h
-merge /usr/include/bits/confname.h /usr/include/unistd.h
-merge /usr/include/bits/time.h /usr/include/time.h
-
-merge /usr/include/bits/byteswap.h /usr/include/byteswap.h
-merge /usr/include/bits/cmathcalls.h /usr/include/complex.h
-merge /usr/include/bits/dirent.h /usr/include/dirent.h
-merge /usr/include/bits/dlfcn.h /usr/include/dlfcn.h
-merge /usr/include/bits/elfclass.h /usr/include/link.h
-merge /usr/include/bits/endian.h /usr/include/endian.h
-merge /usr/include/bits/environments.h /usr/include/unistd.h
-merge /usr/include/bits/fcntl.h /usr/include/fcntl.h
-merge /usr/include/bits/fenv.h /usr/include/fenv.h
-merge /usr/include/bits/huge_val.h /usr/include/math.h
-merge /usr/include/bits/in.h /usr/include/netinet/in.h
-merge /usr/include/bits/ioctls.h /usr/include/sys/ioctl.h
-merge /usr/include/bits/ioctl-types.h /usr/include/sys/ioctl.h
-merge /usr/include/bits/ipc.h /usr/include/sys/ipc.h
-merge /usr/include/bits/ipctypes.h /usr/include/sys/ipc.h
-merge /usr/include/bits/locale.h /usr/include/locale.h
-merge /usr/include/bits/mathcalls.h /usr/include/math.h
-merge /usr/include/bits/mathdef.h /usr/include/math.h
-merge /usr/include/bits/mathinline.h /usr/include/math.h
-merge /usr/include/bits/mman.h /usr/include/sys/mman.h
-merge /usr/include/bits/msq.h /usr/include/sys/msg.h
-merge /usr/include/bits/nan.h /usr/include/math.h
-merge /usr/include/bits/netdb.h /usr/include/netdb.h
-merge /usr/include/bits/poll.h /usr/include/sys/poll.h
-merge /usr/include/bits/posix1_lim.h /usr/include/limits.h
-merge /usr/include/bits/posix2_lim.h /usr/include/limits.h
-merge /usr/include/bits/resource.h /usr/include/sys/resource.h
-merge /usr/include/bits/select.h /usr/include/sys/select.h
-merge /usr/include/bits/sem.h /usr/include/sys/sem.h
-merge /usr/include/bits/setjmp.h /usr/include/setjmp.h
-merge /usr/include/bits/shm.h /usr/include/sys/shm.h
-merge /usr/include/bits/sockaddr.h /usr/include/sys/socket.h
-merge /usr/include/bits/socket.h /usr/include/sys/socket.h
-merge /usr/include/bits/statfs.h /usr/include/sys/statfs.h
-merge /usr/include/bits/stat.h /usr/include/sys/stat.h
-merge /usr/include/bits/statvfs.h /usr/include/sys/statvfs.h
-merge /usr/include/bits/stdio.h /usr/include/stdio.h
-merge /usr/include/bits/stdio_lim.h /usr/include/stdio.h
-merge /usr/include/bits/string2.h /usr/include/string.h
-merge /usr/include/bits/string.h /usr/include/string.h
-merge /usr/include/bits/stropts.h /usr/include/stropts.h
-merge /usr/include/bits/syscall.h /usr/include/sys/syscall.h
-merge /usr/include/bits/sys_errlist.h /usr/include/stdio.h
-merge /usr/include/bits/termios.h /usr/include/termios.h
-merge /usr/include/bits/types.h /usr/include/sys/types.h
-merge /usr/include/bits/typesizes.h /usr/include/sys/types.h
-merge /usr/include/bits/uio.h /usr/include/sys/uio.h
-merge /usr/include/bits/ustat.h /usr/include/sys/ustat.h
-merge /usr/include/bits/utmp.h /usr/include/utmp.h
-merge /usr/include/bits/utmpx.h /usr/include/utmpx.h
-merge /usr/include/bits/utsname.h /usr/include/sys/utsname.h
-merge /usr/include/bits/waitflags.h /usr/include/sys/wait.h
-merge /usr/include/bits/waitstatus.h /usr/include/sys/wait.h
-merge /usr/include/bits/xopen_lim.h /usr/include/limits.h
-merge /usr/include/bits/xtitypes.h /usr/include/stropts.h
-@for k,j in flx_keywords+[('String','')]:
-  tangle('rename '+k+' '+k+'_')
-rename size_t size
-rename wchar_t wchar
-@for k in tmap.keys()+['wchar']:
-  tangle('ignore '+k)
+rename String String_
 
 

@@ -2683,6 +2683,12 @@ module R {
   print (R::ff 1); print " "; print (R::gg 1); endl;
 }
 
+module W { 
+  module J { val a:int = 1;} 
+  inherit J;
+  print a; endl;
+}
+print W::a; endl;
 
 @head(2,'Let expression')
 There is a short form for match expressions.

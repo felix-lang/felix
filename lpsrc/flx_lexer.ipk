@@ -772,7 +772,7 @@ let cinclude_directive state sr s pre_flx_lex lexbuf =
   match result with
   | Unix.WEXITED 0 ->
     begin
-      let lexbuf' = Flx_cil_clexer.init tmpfile in
+      let lexbuf' = Flx_cil_clexer.init tmpfile `C in
       let cabs = Flx_cil_cparser.file Flx_cil_clexer.initial lexbuf' in
       Flx_cil_clexer.finish();
       Unix.unlink tmpfile;

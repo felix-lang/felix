@@ -114,7 +114,7 @@ let bind_regex syms env sr be return_count ret_type cls =
   (*
   print_endline "Binding regmatch";
   *) 
-  let bd e = bind_regdef syms env [] [] [] e in
+  let bd e = bind_regdef syms env [] [] e in
 
   (* create a unified regexp using REGEXP_code for expressions *)
   let f (e,c) = REGEXP_seq (e, REGEXP_code c) in
@@ -177,10 +177,10 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     (list_prefix parent_ts (parent_ts_len - n)) @ ts
   in
   let ret_type = ref ret_type in
-  let be e : tbexpr_t = bind_expression syms env [] e in
+  let be e : tbexpr_t = bind_expression syms env e in
   let lun sr n = lookup_name_in_env syms env sr n in
-  let luqn n = lookup_qn_in_env syms env [] n in
-  let bt sr t : btypecode_t = bind_type syms env [] sr t in
+  let luqn n = lookup_qn_in_env syms env n in
+  let bt sr t : btypecode_t = bind_type syms env sr t in
   let return_count = ref 0 in
   let reachable = ref true in
   let proc_return_count = ref 0 in
@@ -239,7 +239,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
          lookup_qn_with_sig 
          syms 
          sr sr 
-         env [] [] 
+         env [] 
          (`AST_name(sr,n,[]) : qualified_name_t)
          t2 
       in  
@@ -259,7 +259,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
            lookup_qn_with_sig 
            syms 
            sr sr 
-           env [] [] 
+           env [] 
            qn t2 
          | _ -> be sn
       in  
@@ -324,7 +324,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         (*
         print_endline "Binding LHS of initialistion with typeofindex";
         *)
-        let lhst = typeofindex_with_ts syms [] index parent_ts in
+        let lhst = typeofindex_with_ts syms index parent_ts in
         let rhst = minimise rhst in
         if type_eq lhst rhst
         then tack (`BEXE_init (sr,index, (e',rhst)))

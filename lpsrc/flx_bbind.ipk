@@ -82,7 +82,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
     let env = build_env syms (Some i) in 
     let bind_reqs reqs = bind_reqs syms env sr reqs in
     let vs = find_vs syms i in
-    let bt t = bind_type syms env [] sr t in
+    let bt t = bind_type syms env sr t in
     match bdcl with
 
     (* Pure declarations of functions, modules, and type
@@ -132,7 +132,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       | Some ip ->
         match Hashtbl.find syms.dfns ip with
         | {symdef=`SYMDEF_function _} ->
-          let t = typeofindex syms [] i in
+          let t = typeofindex syms i in
           Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_val (vs,t));
           Hashtbl.add syms.varmap i t;
 
@@ -145,7 +145,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       end
 
     | `SYMDEF_match_check (pat,mvindex) ->
-      let t = typeofindex syms [] mvindex in
+      let t = typeofindex syms mvindex in
       let name_map = Hashtbl.create 97 in
       let arg,sr = 
         match Hashtbl.find syms.dfns mvindex with 
@@ -182,7 +182,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       )
     
     | `SYMDEF_val (t) -> 
-      let t = typeofindex syms [] i in
+      let t = typeofindex syms i in
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_val (vs,t));
 
       if syms.compiler_options.print_flag then
@@ -194,7 +194,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       (*
       print_endline ("Binding variable " ^ name ^"<"^ si i ^">");
       *)
-      let t = typeofindex syms [] i in
+      let t = typeofindex syms i in
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_var (vs,t))
       ;
       if syms.compiler_options.print_flag then
@@ -203,7 +203,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       sbt syms.dfns t)
     
     | `SYMDEF_const (t,ct,reqs) ->
-      let t = typeofindex syms [] i in
+      let t = typeofindex syms i in
       let reqs = bind_reqs reqs in
       Hashtbl.add bbdfns i (name,None,sr,`BBDCL_const (vs,t,ct,reqs));
       if syms.compiler_options.print_flag then
@@ -337,13 +337,13 @@ let bind_ifaces syms
     (range_srcref * iface_t * int option) list
   )
 = 
-  let luqn env n = lookup_qn_in_env syms env [] n in
+  let luqn env n = lookup_qn_in_env syms env n in
   let bound_ifaces = 
     List.map
     (function 
       | sr,`IFACE_export_fun (sn, cpp_name), parent ->
         let env = build_env syms parent in
-        let index,ts = lookup_sn_in_env syms env [] sn in
+        let index,ts = lookup_sn_in_env syms env sn in
         if length ts = 0 then
           `BIFACE_export_fun (sr,index, cpp_name) 
         else clierr sr 
@@ -354,7 +354,7 @@ let bind_ifaces syms
       
       | sr,`IFACE_export_type (typ, cpp_name), parent ->
         let env = build_env syms parent in
-        let t = bind_type syms env [] dummy_sr typ in
+        let t = bind_type syms env dummy_sr typ in
         if var_occurs t then
         clierr sr 
         (

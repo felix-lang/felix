@@ -2162,8 +2162,13 @@ try
   let bbdfns = !bbdfns in
   let child_map = !child_map in
   
-  (* if compiler_options.print_flag then *)
-  Flx_call.print_call_report bbdfns report_file_name;
+  if compiler_options.print_flag then 
+  begin
+    let f = open_out report_file_name in
+    Flx_call.print_call_report bbdfns f;
+    close_out f
+  end
+  ;
 
   if compiler_options.print_flag 
   then print_endline "//instantiating";
