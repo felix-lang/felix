@@ -283,7 +283,7 @@ Here is an example:
 @select(tangler(tdir+'tut11.flx'))
 #include <std.flx>
 
-struct XY = {
+struct XY {
   x : int;
   y : int;
 }
@@ -649,7 +649,7 @@ print z.y;
 endl;
 
 // part 2
-struct X = {
+struct X {
   x : int;
 }
 val i = X(1);
@@ -1084,4 +1084,414 @@ print (regex_merge rex1 machine_format1 credit_no_2); endl;
 print (regex_merge rex1 human_format1 credit_no_2); endl;
 print (regex_merge rex1 human_format1 credit_no_2); endl;
 
+
+@head(1,'Modules')
+Most modern languages support packaging of related
+specifications into some kind of module, and Felix
+is no exception. Basic module use is quite simple:
+@select(tangler(tdir+'tut27.flx'))
+#include <std.flx>
+val top = 1;
+module A {
+  val a = top + 1;
+  module B {
+    val b = a + 1;
+  }
+}
+
+print top; endl;
+print (::top); endl;
+print A::a; endl;
+print A::B::b; endl;
+@doc()
+
+This example illustrates the simple use of modules,
+including module nesting, and use of qualified names
+to access module components.
+@p()
+You can put anything except export declarations in 
+modules that you can put at the top level, and for a
+very simple reason: the top level is, in fact,
+a module itself.
+@p()
+When qualified name is used, the qualifier specifies
+the module in which the next name must be found.
+Qualification inhibits upscope overloading.
+@p()
+Note the brackets around (::top) which are needed to
+stop the parser thinking you mean 'print::top'.
+
+@head(1,'Koenig Lookup')
+Consider the following example:
+@select(tangler(tdir+'tut28.flx'))
+#include <std.flx>
+
+module A {
+  struct X {
+    x: int;
+  }
+}
+val e = A::X(5);
+print e.x; endl;
+@doc()
+
+There is a subtle point here in this code.
+(Isn't there always?) Recall that
+@begin_displayed_code()
+  e.x
+@end_displayed_code()
+is transformed by desugaring to the function application
+@begin_displayed_code()
+  get_x e
+@end_displayed_code()
+If that is so, how is it that the get_x of (A::X)
+is found, when it is not visible in the top level scope?
+The answer is that I told a white lie before.
+@p()
+What really happens is that e.x is transformed
+into a method application. This is exactly the
+same as a function application, except that
+overloading uses a special kind of lookup
+for the method name, called Koenig Lookup,
+after its inventor, Andrew Koenig.
+@p()
+Koenig lookup works by searching the module
+in which the type of the expression e is 
+defined: in Felix the type must be generative,
+which means it must be a declared type
+such as a named struct or union
+and not an implicitly defined type like a tuple,
+pointer, or function type.
+@p()
+In the example, 'get_x' is defined in the module X,
+because A is defined in the module X, and since
+e has type 'A', Felix looks in module X for 'get_x'.
+@p()
+Koenig lookup only works for method calls, that is,
+when you use the syntax e.x.
+
+@head(1,'Dynamic modules')
+Modules can contain executable code, not just declarations.
+The executable code of a module is wrapped in an
+initialisation function. This function is called
+automatically by Felix, when the enclosing
+scope is initialised. The top level module's
+initialisation routine must be called manually
+by the driver program.
+@p()
+Modules can be nested in functions or procedures. 
+In this case the data lives in the function
+or procedure stack frame, and the module is
+initialised every time the function is called.
+@p()
+[Add more later as features are implemented]
+
+@head(1,'Pointers')
+Felix supports pointers. The type of a pointer to T is
+denoted:
+@begin_displayed_code()
+  &T
+@end_displayed_code()
+A pointer can be created by addressing a variable
+using the notation:
+@begin_displayed_code()
+  &v
+@end_displayed_code()
+Pointers can be dereferenced using the usual syntax:
+@begin_displayed_code()
+  *p
+@end_displayed_code()
+and there is the usual arrow notation:
+@begin_displayed_code()
+  p->x
+@end_displayed_code()
+which means the same as
+@begin_displayed_code()
+  (*p).x
+@end_displayed_code()
+@p()
+Only variables, not values, are addressable.
+Pointers are used to implement assignment.
+You have seen many examples of assignment:
+@begin_displayed_code()
+  var v : T;
+  v = e;
+@end_displayed_code()
+What you didn't know was that the assignment
+operator is just syntactic sugar for
+the procedure call:
+@begin_displayed_code()
+  set(&v,e);
+@end_displayed_code()
+This procedure is defined automatically
+for structs, unions, and function and procedure
+closures, that is, for Felix types; but you must
+define it manually for abstract types including
+primitives. The usual definition is:
+@begin_displayed_code()
+  type T = "T";
+  proc set: &T * t = "*$1=$2;"
+@end_displayed_code()
+Note that all Felix primitives must be C++ assignable
+and implicitly default constructible,
+since in the generated code all values and variables 
+are first declared without an initialiser and 
+then assigned to. A Felix set function, however,
+is not required, and its absence can be used
+to prevent assignment to variables of a Felix type.
+@p()
+It is important to note that in Felix,
+you can take the address of any variable,
+and safely pass the pointer around, without
+fear it will dangle: this includes pointers
+to function and procedure local variables.
+@p()
+This all works because Felix uses a garbage collector,
+but you should note that because the frame containing
+an object must be kept alive if there is a pointer into
+it, returning a pointer to a function local variable
+may prevent other local variables in the same
+frame from being destroyed.
+@p()
+Here is an example:
+
+@select(tangler(tdir+'tut29.flx'))
+#include <std.flx>
+
+fun pone (): &int 
+{
+  var x : int = 1;
+  return &x;
+}
+
+var p1 = pone();
+print (*p1); endl;
+*p1 = 2;
+
+print (*p1); endl;
+
+@doc()
+You should note that Felix pointers consist
+of two C pointers: a pointer to the variable,
+and a pointer to the frame containing the variable.
+It is this frame pointer which the garbage collector
+tracks. Although Felix pointers do not have to
+be initialised, the frame pointer component
+of the representation is always initialised to NULL
+so that the garbage collector doesn't chase off into
+the wild blue yonder.
+
+@head(1,'The ubiquitous goto')
+Felix allows statements to be labelled,
+and provides a goto statement.
+
+@select(tangler(tdir+'tut30.flx'))
+#include <std.flx>
+print "start"; endl;
+var i = 1;
+start_loop:>
+  if (not (i<10)) goto end_loop;
+  print i; endl;
+  i++;
+  goto start_loop;
+end_loop:>
+  print "finished"; endl;
+  
+@doc()
+Note that labels require a terminating :> rather
+that C's plain :. 
+@p()
+The above code is rougly
+what felix generates for the equivalent while loop.
+Goto is not recommended programming style,
+but it is an essential primitive, and it is used
+by the Felix compiler when desugaring control
+structures. 
+@p()
+It is also useful for inventing your own
+control structures: together with higher
+order functions and currying, you can do
+this quite easily in Felix, as we shall soon see.
+@p()
+But first consider the following example:
+
+@select(tangler(tdir+'tut31.flx'))
+#include <std.flx>
+
+var x = 1;
+proc run()
+{
+  proc check()
+  {
+    if(x!=1) goto bad_x;
+  }
+  check();
+  print "good x"; endl;
+  x = 2;
+  check();
+  print "good x"; endl;
+  goto finished;
+
+bad_x:>
+  print "bad_x"; endl;
+
+finished:>
+  print "finished"; endl;
+}
+run();
+
+@doc()
+In this example, you see what is called a non-local
+goto: a jump into an enclosing procedure. Such jumps
+are quite OK.
+@p()
+What you can't do is jump out of a function,
+that is, across a function boundary. 
+[the reason will become clear much later]
+@p()
+There is another interesting fact. A procedure
+nested in a module, including the top level,
+cannot jump to a label in the module.
+The reason is that executable code in a module,
+including any labels, are wrapped in an initialisation
+procedure, which is called where the module
+is defined. That initialisation procedure does not
+have the procedures defined in the module nested in it,
+instead, they're at the same level as the initialisation
+procedure. You can't jump into the initialisation procedure
+because it mightn't be active at the time the other
+procedure is called.
+
+@p()
+[This may change: a better model would be a that a 
+module returns the enities exported
+from it as a tuple: the procedures would
+then be nested in the initialisation routine.
+This would also make modules first class objects,
+with a type described more or less as a tuple.
+In turn this allows dynamic binding.]
+
+@head(1,'Dynamic exception handling using goto')
+Non local gotos are very useful for a form of
+exception handling. Consider the following example:
+
+@select(tangler(tdir+'tut32.flx'))
+#include <std.flx>
+
+proc bad_calc(err: int -> void) 
+{
+  // do some work, detect an error
+  err 1; // throw exception
+}
+
+proc main
+{
+  proc err(errno:int) 
+  {
+    print "error "; print errno;
+    print " -- aborting"; endl;
+    goto resume;
+  }
+  bad_calc err of (int);
+  print "no error"; endl;
+resume:>
+  print "error handled, continuing"; endl;
+}
+main;
+
+@doc()
+Here, we establish a handler for an error,
+which is effectively established at the
+label resume: the handler is passed explicitly
+to the routine which may 'raise' it.
+
+
+@head(1,'Static exception handling using goto')
+Non local gotos are very useful for another form of
+exception handling. Consider the following example:
+
+@select(tangler(tdir+'tut33.flx'))
+#include <std.flx>
+
+proc main
+{
+  // do something
+
+  // raise err1
+  err 1; goto resume;
+ 
+  // do something else
+
+  // exception handlers
+  proc err(errno:int)
+  {
+    print "error "; print errno;
+    print " -- aborting"; endl;
+    goto resume;
+  }
+resume:>
+  print "error handled, continuing"; endl;
+}
+
+@head(1,'Exceptions')
+I've shown you static exception handling using goto
+for a reason: Felix provides syntactic sugar for this.
+Here is the same program, using the sugar:
+
+@select(tangler(tdir+'tut34.flx'))
+#include <std.flx>
+
+proc main
+{
+  attempt
+  {
+    // do something
+
+    raise err 1;
+   
+    // do something else
+
+  }
+  exceptions
+  {
+    err(errno:int)
+    {
+      print "error "; print errno;
+      print " -- aborting"; endl;
+    }
+  }
+  print "error handled, continuing"; endl;
+}
+main;
+
+@doc()
+There's no goto visible, nor a resume label,
+but the effect is the same. It looks like
+exception handling, but its really a kind
+of labelled break. The key difference between
+static and dynamic exception handling is that
+static handlers are bound at compile time:
+no run time type information is required.
+@p()
+Dynamic exception handling is better done using
+the idiom shown earlier in which the handlers
+are passed explicitly.
+@p()
+Naturally, because this is just sugar, you can
+deduce that it is possible to pass arguments
+to handlers, and indeed to overload them,
+indeed it is possible to raise an exception
+which is handled several levels away,
+skipping past exception blocks which do not
+contain a matching handler: the resume point
+is always after the block exceptions block
+containing the handler.
+@p()
+A key property of static exceptions is that
+if there is no matching handler, a compile
+time error resuts, and the handler will always
+be found in a scope enclosing the raise statement,
+or, the exception list following the attempt
+immediately enclosing it: in other words,
+the handler is always 'nearby'.
 

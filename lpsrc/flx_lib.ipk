@@ -21,26 +21,6 @@ namespace boost {
 
 using namespace std;
 
-typedef signed char    _flx_schar;
-typedef unsigned char  _flx_uchar;
-typedef unsigned short _flx_ushort;
-typedef unsigned int   _flx_uint;
-typedef unsigned long  _flx_ulong;
-typedef long long      _flx_vlong;
-typedef unsigned long long _flx_uvlong;
-typedef unsigned char *_flx_address;
-typedef long double    _flx_ldouble;
-
-typedef boost::uint8_t  _flx_uint8_t;
-typedef boost::uint16_t _flx_uint16_t;
-typedef boost::uint32_t _flx_uint32_t;
-typedef boost::uint64_t _flx_uint64_t;
-
-typedef boost::int8_t  _flx_int8_t;
-typedef boost::int16_t _flx_int16_t;
-typedef boost::int32_t _flx_int32_t;
-typedef boost::int64_t _flx_int64_t;
-
 namespace std_flx {
   inline string mul(string s, int n) {
     string r = "";
@@ -69,47 +49,47 @@ namespace std_flx {
 
 @tmap = {
   # addressing
-  "byte"    : "_flx_uchar",
+  "byte"    : "unsigned char",
   "size"    : "size_t",
-  "address" : "_flx_address",
+  "address" : "void *",
   "offset"  : "ptrdiff_t",
   
   #characters
   "char"    : "char",
   "wchar"   : "wchar_t",
-  "uchar"   : "_flx_int32_t", # Unicode/ISO10646, note: SIGNED!
+  "uchar"   : "int32_t", # Unicode/ISO10646, note: SIGNED!
 
   #bool
   "bool"    : "bool",
   
   #signed integers
-  "tiny"    : "_flx_schar",
+  "tiny"    : "signed char",
   "short"   : "short",
   "int"     : "int",
   "long"    : "long",
-  "vlong"   : "_flx_vlong",
+  "vlong"   : "long long",
 
   #unsigned integers
-  "utiny"   : "_flx_uchar",
-  "ushort"  : "_flx_ushort",
-  "uint"    : "_flx_uint",
-  "ulong"   : "_flx_ulong",
-  "uvlong"  : "_flx_uvlong",
+  "utiny"   : "unsigned char",
+  "ushort"  : "unsigned short",
+  "uint"    : "unsigned int",
+  "ulong"   : "unsigned long",
+  "uvlong"  : "unsigned long long",
 
   #exact integers
-  "int8"    : "_flx_int8_t",
-  "int16"   : "_flx_int16_t",
-  "int32"   : "_flx_int32_t",
-  "int64"   : "_flx_int64_t",
-  "uint8"   : "_flx_uint8_t",
-  "uint16"  : "_flx_uint16_t",
-  "uint32"  : "_flx_uint32_t",
-  "uint64"  : "_flx_uint64_t",
+  "int8"    : "boost::int8_t",
+  "int16"   : "boost::int16_t",
+  "int32"   : "boost::int32_t",
+  "int64"   : "boost::int64_t",
+  "uint8"   : "boost::uint8_t",
+  "uint16"  : "boost::uint16_t",
+  "uint32"  : "boost::uint32_t",
+  "uint64"  : "boost::uint64_t",
 
   #floating
   "float"   : "float",
   "double"  : "double",
-  "ldouble"  : "_flx_ldouble",
+  "ldouble"  : "long double",
   }
 
 @chars = ["char", "wchar"]
@@ -288,11 +268,11 @@ proc print: string = "std::cout << $1;";
 // regular expressions
 header """
 #include <boost/regex.hpp>
-typedef boost::regex regex;
+//typedef boost::regex regex;
 """;
 
 
-type regex = "regex";
+type regex = "boost::regex";
 fun regex_of_string : string -> regex = "boost::regex($1)";
 
 type merge_pattern = "string";

@@ -45,9 +45,9 @@ let catmap f l = concat (map f l)
 (* convert an expression into a list of assembly instructions,
    plus an expression: basically, this means removing lambdas
 *)
-let rec rex seq eh_env msgt e = 
-  let rex e = rex seq eh_env msgt e in
-  let rsts sts = catmap (rst seq eh_env msgt) sts in
+let rec rex seq msgt e = 
+  let rex e = rex seq msgt e in
+  let rsts sts = catmap (rst seq msgt) sts in
   match e with
 
   (* these cases should use the source reference for the error *)
@@ -68,6 +68,10 @@ let rec rex seq eh_env msgt e =
     let l1,x1 = rex fn in 
     let l2,x2 = rex arg in
     l1 @ l2, AST_apply (sr,(x1,x2))
+
+  | AST_method_apply (sr,(fn,arg)) -> 
+    let l2,x2 = rex arg in
+    l2, AST_method_apply (sr,(fn,x2))
     
   | AST_tuple (sr,t) -> 
     let lss,xs = split (map rex t) in
@@ -87,8 +91,8 @@ let rec rex seq eh_env msgt e =
     let l1,x1 = rex obj in 
     l1 , AST_dot (sr,(x1,comp))
 
-and split_st seq eh_env msgt sr s : asm_t list * asm_t =
-  match rst seq eh_env msgt s with
+and split_st seq msgt sr s : asm_t list * asm_t =
+  match rst seq msgt s with
   | [] -> [], Exe (generated,EXE_nop "")
   | [x] -> [],x
   | ss ->
@@ -104,31 +108,9 @@ and split_st seq eh_env msgt sr s : asm_t list * asm_t =
 
 (* remove blocks *)
 
-(* the eh environment is a list of exception handling 
-   contexts, each of which consists of a
-   list of eh names, and an associated finally label,
-   which precedes a call to the finally handler
-   of the context:
-
-      attempt_statement();
-   finally_label:
-     call finally_block();
-   
-
-   Raise must search the list for the raised name,
-   and when it finds it, call all the finally
-   handlers up to but excluding the one associated
-   with the context containing the raised name,
-   call the handler procedure, call the associated
-   finally block, and then goto the point
-   after attempt statement which established the
-   context (in the process discarding stack frames).
-
-*)
-
-and rst seq eh_env msgt st : asm_t list = 
-  let rst' st = rst seq eh_env msgt st in
-  let rex x = rex seq eh_env msgt x in
+and rst seq msgt st : asm_t list = 
+  let rst' st = rst seq msgt st in
+  let rex x = rex seq msgt x in
   let rsts' sts = catmap rst' sts in
   
   match st with
@@ -178,7 +160,7 @@ and rst seq eh_env msgt st : asm_t list =
     [Dcl (sr,name,DCL_function (params, res, rsts' sts))]
     
   | AST_procedure (sr,msgt, name, params, sts) -> 
-    let rst' st = rst seq eh_env msgt st in
+    let rst' st = rst seq msgt st in
     let rsts' sts = catmap rst' sts in
     [Dcl (sr,name,DCL_procedure (msgt, params, rsts' sts))]
     
@@ -228,19 +210,19 @@ and rst seq eh_env msgt st : asm_t list =
       | AST_except_handler (sr',name,_,_) -> name
       | _ -> failwith ("System error, expected exception handler")
     in 
+    let finally_seq = seq() in
+    let finally_label = "_finally_label_" ^ string_of_int finally_seq in
     let rh h =
       match h with 
       | AST_except_handler (sr',name,params,sts) -> 
-        Dcl (sr',name,DCL_procedure (msgt,params, rsts' sts))
+        let sts' = sts @ [AST_goto (srf,finally_label)] in
+        Dcl (sr',name,DCL_procedure (msgt,params, rsts' sts'))
       | _ -> failwith "Expected statement to be handler"
     in
     let handlers' = List.map rh handlers in
-    let finally_seq = seq() in
-    let finally_label = "_finally_label_" ^ string_of_int finally_seq in
-    let f_dfs,f_st = split_st seq eh_env msgt srf (AST_block (srf,finally)) in
+    let f_dfs,f_st = split_st seq msgt srf (AST_block (srf,finally)) in
     let handler_names = map name_of_handler handlers in
-    let eh_context = handler_names, finally_label, f_st in
-    let a_dfs,a_st = split_st seq (eh_context::eh_env) msgt sra attempt in
+    let a_dfs,a_st = split_st seq  msgt sra attempt in
       (* 
       Exe (EXE_comment "attempt statement") :: 
       Exe (EXE_comment "handlers") ::
@@ -259,8 +241,8 @@ and rst seq eh_env msgt st : asm_t list =
         Exe (EXE_comment "the attempt");
         *)
         a_st;
+        Exe (srf,EXE_label finally_label);
         (*
-        Exe (EXE_label finally_label);
         Exe (EXE_comment "finally clause");
         *)
         f_st;
@@ -269,21 +251,10 @@ and rst seq eh_env msgt st : asm_t list =
         *)
       ]
     
-  | AST_raise (sr,id,e) ->
-    (* search for id in eh_context *)
-    let rec gen_context level eh = 
-      match eh with
-      | [] -> failwith ("handler " ^ id ^ " not in scope of raise")
-      | (handlers, finally_label, f_st) :: t -> 
-        match List.mem id handlers with
-        | true ->
-          [
-            Exe (sr,EXE_raise (level, id, e))
-          ]
-        | false -> gen_context (level-1) t
-     in 
-       gen_context 0 eh_env
-     
+  | AST_raise (sr,id,e) -> 
+    let name = AST_name(sr,([id],TYP_none)) in
+    [Exe (sr,EXE_call(name,e))]
+
   | AST_match (sr,e,pss) ->
     if List.length pss = 0 then failwith "Empty Pattern";
 
@@ -378,13 +349,13 @@ and rst seq eh_env msgt st : asm_t list =
 
   | AST_if (sr,ifs, (esr,els)) -> 
     let ubc (sr,(e,s)) : asm_t list * (range_srcref * (expr_t * asm_t)) = 
-      match split_st seq eh_env msgt sr s 
+      match split_st seq msgt sr s 
       with ss,s' -> 
         let d,x = rex e in 
         d @ ss,(sr,(x,s')) 
     in
     let ss,ifs' = split (map ubc ifs) 
-    and s',els' = split_st seq eh_env msgt esr els in
+    and s',els' = split_st seq msgt esr els in
     let endif_label = "_endif_" ^ string_of_int (seq()) in
     let ifcase (sr,(e,s)) = 
       let next_label = "_next_" ^ string_of_int (seq()) in
@@ -421,7 +392,7 @@ and rst seq eh_env msgt st : asm_t list =
     let label1 = "_while_" ^ string_of_int (seq()) in
     let label2 = "_end_while_" ^ string_of_int (seq()) in
     let dfs,s' = 
-      split_st seq eh_env msgt (src_of_statement s) s 
+      split_st seq msgt (src_of_statement s) s 
     in
     dfs @ [
       Exe (sr,EXE_label label1);
@@ -442,7 +413,7 @@ let desugar_program counter sts =
       (src_of_statement (list_last sts))
   in
   let seq () = let n = !counter in incr counter; n in
-  rst seq [] TYP_void (AST_module (sr,"",sts))
+  rst seq TYP_void (AST_module (sr,"",sts))
 
 
 @h = tangler("src/flx_desugar.mli")

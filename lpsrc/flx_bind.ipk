@@ -1,24 +1,35 @@
 @head(1,"Name Binding")
-Name binding, pass 1.
+Name binding, pass 2.
+@p()
+This module is responsible for
+converting the raw type 1 symbol table
+into a partially bound symbol table
+of type 2.
+@p()
+All type expressions are bound in this table.
+This is possible because all type names
+and the environment structure are bound in the
+type 1 symbol table.
+@p()
+Because of this, it is also possible to bind
+the types of all functions and procedures,
+since their types must be explicitly specified.
+@p()
+It is not possible to bind the types of all values
+and variables, however, since the type may depend
+on being able to calulcate the type of an expression.
+This in turn may depend on overload resolution,
+which depends on the type of all functions and argument
+values and variables being bound. 
+@p()
+Because this pass is strictly sequential,
+it is possible for an expression to call a function
+which has not yet had its type bound: such calling
+is necessary to support call recursion.
 
 @h = tangler("src/flx_bind.mli")
 @select(h)
 open Flx_types
-val build_tables:
-  bool ->
-  symbol_table_t ->
-  int ref ->
-  string ->
-  int ->
-  int option ->
-  int list ->
-  typecode_t ->
-  asm_t list ->
-  (
-    name_map_t *  
-    exe_t list * 
-    (iface_t * int option) list
-  )
 
 val bind_entry:
   bound_symbol_table_t ->
@@ -51,326 +62,11 @@ open Flx_lookup
 open Flx_ebind
 open Flx_tbind
 
-let split_asms asms : 
-  (range_srcref * id_t * dcl_t) list * 
-  exe_t list *
-  iface_t list
-= 
-  let rec aux asms dcls exes ifaces =
-    match asms with
-    | [] -> (dcls,exes,ifaces)
-    | h :: t -> 
-      match h with 
-      | Exe (sr,exe) -> aux t dcls (exe :: exes) ifaces
-      | Dcl (sr,id,dcl) -> aux t ((sr,id,dcl) :: dcls) exes ifaces
-      | Iface (sr,iface) -> aux t dcls exes (iface :: ifaces)
-  in 
-    aux asms [] [] []
- 
 let get_data table index : symbol_data_t = 
   try Hashtbl.find table index
   with Not_found -> 
     failwith ("[Flx_bind.get_data] No definition of <" ^ string_of_int index ^ ">")
 
-
-let dump_name_to_int_map level name name_map =
-  let spc = spaces level in
-  print_endline (spc ^ "//Name to int map for " ^ name);
-  print_endline (spc ^ "//---------------");
-  Hashtbl.iter
-  (
-    fun id n ->
-      print_endline ( "//" ^ spc ^ id ^ ": " ^ string_of_int n) 
-  ) 
-  name_map
-  ;
-  print_endline ""
-
-  
- 
-let add_unique table key value =
-  try 
-    Hashtbl.find table key;
-    failwith ("Duplicate key " ^ key)
-  with Not_found -> Hashtbl.add table key (NonFunctionEntry value)
-
-let add_function table key value =
-  try 
-    match Hashtbl.find table key with
-    | NonFunctionEntry _ -> 
-      failwith ("Cannot overload " ^ key ^ " with non-function")
-    | FunctionEntry fs ->
-      Hashtbl.remove table key;
-      Hashtbl.add table key (FunctionEntry (value :: fs))
-  with Not_found -> 
-    Hashtbl.add table key (FunctionEntry [value])
-
-(* this routine takes a partially filled unbound definition table,
-  'dfns' and a counter 'counter', and adds entries to the table
-  at locations equal to and above the counter
-*)
-let rec build_tables print_flag dfns counter name level parent display msgt asms = 
-  let dcls,exes,ifaces = split_asms asms in
-  let dcls,exes,ifaces = List.rev dcls,List.rev exes,List.rev ifaces in
-  let ifaces = List.map (fun i-> i,parent) ifaces in
-  let interfaces = ref ifaces in
-  let spc = spaces level in
-  let name_map = Hashtbl.create 97 in
-  begin 
-    List.iter
-    (
-      fun (sr,id,dcl) -> 
-        let n = !counter in 
-        incr counter; 
-        if print_flag then 
-          print_endline 
-          (
-            "//" ^ spc ^ string_of_int n ^ " -> " ^ id ^ 
-            " " ^ short_string_of_src sr
-          )
-        ;
-        begin match dcl with
-        | DCL_match_check (pat,mvname) ->
-          let fun_index = n in
-          let match_var_index = 
-            match Hashtbl.find name_map mvname with
-            | NonFunctionEntry idx -> idx
-            | _ -> assert false
-          in 
-          Hashtbl.add dfns fun_index (id, sr, parent,
-            SYMDEF_match_check (pat, 
-              match_var_index, display
-            )
-          );
-          add_function name_map id fun_index ;
-          interfaces := !interfaces @ ifaces
-        
-        | DCL_match_handler (msgt, pat,mvname,asms) ->
-          let fun_index = n in
-          let table, exes,ifaces = 
-            build_tables print_flag dfns counter id (level+1) 
-            (Some fun_index) (fun_index :: display) msgt asms 
-          in
-          let match_var_index = 
-            match Hashtbl.find name_map mvname with
-            | NonFunctionEntry idx -> idx
-            | _ -> assert false
-          in 
-          Hashtbl.add dfns fun_index (id, sr, parent,
-            SYMDEF_match_handler (msgt, pat, 
-              match_var_index, display, exes, table)
-            )
-          ;
-          add_function name_map id fun_index;
-          interfaces := !interfaces @ ifaces
- 
-        | DCL_header s ->
-          Hashtbl.add dfns n (id,sr,parent,SYMDEF_dcl dcl)
-          ;
-          add_unique name_map id n
-
-        | DCL_module asms ->
-          let table, exes,ifaces = 
-            build_tables print_flag dfns counter id (level+1) (Some n) 
-            display msgt asms
-          in
-          Hashtbl.add dfns n (id, sr,parent,SYMDEF_module table)
-          ;
-          let n' = !counter in
-          incr counter;
-          let init_def = SYMDEF_procedure (TYP_void,[], display, exes, Hashtbl.create 97) in
-          Hashtbl.add dfns n' ("_init_" ^ id,sr,Some n, init_def)
-          ;
-          add_unique name_map id n;
-          add_function table ("_init_"^id) n';
-          interfaces := !interfaces @ ifaces
-        
-        | DCL_function (ps,t,asms) ->   
-          let fun_index = n in
-          let table, exes, ifaces =  
-            build_tables print_flag dfns counter id (level+1) 
-            (Some fun_index) (fun_index :: display) msgt asms 
-          in
-          List.iter (fun (name,typ) -> 
-            let n = !counter in
-            incr counter;
-            if print_flag then
-            print_endline ("//  "^spc ^ string_of_int n ^ " -> " ^ name^ " (parameter)");
-            Hashtbl.add dfns n (name,sr,Some fun_index,SYMDEF_parameter typ);
-            add_unique table name n
-          ) ps
-          ; 
-          Hashtbl.add dfns fun_index (id, sr,parent,
-            SYMDEF_function (ps, t, display, exes, table)
-          )
-          ;
-          add_function name_map id fun_index ;
-          interfaces := !interfaces @ ifaces
-
-        | DCL_procedure (msgt, ps,asms) -> 
-          let fun_index = n in
-          let table, exes,ifaces = 
-            build_tables print_flag dfns counter id 
-            (level+1) (Some fun_index) (fun_index :: display) msgt asms 
-          in
-          List.iter (fun (name,typ) -> 
-            let n = !counter in
-            incr counter;
-            if print_flag
-            then print_endline ("//  "^spc ^ string_of_int n ^ " -> " ^ name^" (parameter)" );
-            Hashtbl.add dfns n (name,sr,Some fun_index,SYMDEF_parameter typ);
-            add_unique table name n
-          ) ps
-          ; 
-          Hashtbl.add dfns fun_index (id, sr,parent,
-            SYMDEF_procedure (msgt, ps, display, exes, table))
-          ;
-          add_function name_map id fun_index;
-          interfaces := !interfaces @ ifaces
-        
-        | DCL_val t ->
-          Hashtbl.add dfns n (id,sr,parent,SYMDEF_dcl dcl)
-          ;
-          add_unique name_map id n
-        | DCL_val_typeof e -> 
-          Hashtbl.add dfns n (id,sr,parent,SYMDEF_dcl dcl)
-          ;
-          add_unique name_map id n
-        | DCL_var t ->       
-          Hashtbl.add dfns n (id,sr,parent,SYMDEF_dcl dcl)
-          ;
-          add_unique name_map id n
-        | DCL_var_typeof e ->
-          Hashtbl.add dfns n (id,sr,parent,SYMDEF_dcl dcl)
-          ;
-          add_unique name_map id n
-        | DCL_type_alias t ->
-          Hashtbl.add dfns n (id,sr,parent,SYMDEF_dcl dcl)
-          ;
-          add_unique name_map id n
-        | DCL_abs c ->
-          Hashtbl.add dfns n (id,sr,parent,SYMDEF_dcl dcl)
-          ;
-          add_unique name_map id n
-        | DCL_const (t,c) ->
-          Hashtbl.add dfns n (id,sr,parent,SYMDEF_dcl dcl)
-          ;
-          add_unique name_map id n
-        | DCL_fun (ts,t,c) ->
-          Hashtbl.add dfns n (id,sr,parent,SYMDEF_dcl dcl)
-          ;
-          add_function name_map id n
-        | DCL_proc (ts,c) ->
-          Hashtbl.add dfns n (id,sr,parent,SYMDEF_dcl dcl)
-          ;
-          add_function name_map id n
-
-        | DCL_union its ->
-          Hashtbl.add dfns n (id,sr,parent,SYMDEF_dcl dcl)
-          ;
-          add_unique name_map id n
-          ;
-          (* assignment *)
-          let asgn_idx = !counter in incr counter;
-          let asgn = "set" in
-          let asgn_dcl = 
-            DCL_proc 
-            (
-              [
-                TYP_pointer (TYP_name [id]);
-                TYP_name [id]
-              ],
-              "*$1=$2;"
-            ) 
-          in
-          Hashtbl.add dfns asgn_idx (asgn,sr,parent,SYMDEF_dcl asgn_dcl);
-          add_function name_map asgn asgn_idx
-          ; 
-          let ccount = ref 0 in (* count component constructors *)
-          List.iter
-          (fun (component_name,t) ->
-            let dfn_idx = !counter in incr counter; (* constructor *)
-            let match_idx = !counter in incr counter; (* matcher *)
-            let ctor_idx = !ccount in incr ccount; (* ctor sequence in union *)
-            let ctor_dcl =
-              match t with
-              | TYP_void -> (* constant constructor *)
-                add_unique name_map component_name dfn_idx;
-                DCL_const (TYP_name [id],
-                  "_uctor_(" ^ string_of_int ctor_idx ^ ",0)"
-                )
-              | TYP_tuple ts -> (* non-constant constructor or 2 or more arguments *)
-                add_function name_map component_name dfn_idx;
-                (* print_endline ("Creating constructor " ^ id ^ " of tuple length " ^ string_of_int (List.length ts)); *)
-                DCL_fun (ts,TYP_name [id],
-                  "_uctor_(" ^ string_of_int ctor_idx ^ 
-                  ", new(gc,@t) #t($t))"
-                )
-              | _ -> (* non-constant constructor of 1 argument *)
-                add_function name_map component_name dfn_idx;
-                (* print_endline ("Creating constructor " ^ id ^ " of non-tuple "); *)
-                DCL_fun ([t],TYP_name [id],
-                  "_uctor_(" ^ string_of_int ctor_idx ^ 
-                  ", new(gc,@1) #1($1))"
-                )
-            in
-              let ctor_match = 
-                DCL_fun (
-                  [TYP_name [id]],
-                  TYP_name ["";"bool"],
-                  "($1.variant==" ^ string_of_int ctor_idx ^")"
-                )
-              and ctor_match_name ="_match_ctor_" ^ component_name 
-              in
-              Hashtbl.add dfns dfn_idx (component_name,sr,parent,SYMDEF_dcl ctor_dcl);
-              Hashtbl.add dfns match_idx (ctor_match_name,sr,parent,SYMDEF_dcl ctor_match);
-              add_function name_map ctor_match_name match_idx;
-
-              (* destructor *)
-              match t with
-              | TYP_void -> ()
-              | _ -> (* non-constant constructor *)
-                let dtor_idx = !counter in incr counter;
-                let dtor = "ctor_arg_" ^ component_name in
-                let dtor_dcl = DCL_fun ([TYP_name [id]],t,"*(#0*)`1.data") in
-                Hashtbl.add dfns dtor_idx (dtor,sr,parent,SYMDEF_dcl dtor_dcl);
-                add_function name_map dtor dtor_idx
-          )
-          its
- 
-        | DCL_struct sts ->
-          Hashtbl.add dfns n (id,sr,parent,SYMDEF_dcl dcl)
-          ;
-          add_unique name_map id n
-          ;
-          List.iter
-          (fun (component_name,t) ->
-            let getn = !counter in incr counter;
-            let get_name = "get_" ^ component_name in
-            let get_dcl = DCL_fun ([TYP_name [id]],t,"$1." ^ component_name) in
-            Hashtbl.add dfns getn (get_name,sr,parent,SYMDEF_dcl get_dcl);
-            add_function name_map get_name getn
-            ;
-
-            let refn = !counter in incr counter;
-            let ref_name = "ref_" ^ component_name in
-            let ref_dcl = DCL_fun (
-              [TYP_pointer (TYP_name [id])],
-              TYP_pointer t,
-              "_make_ref_(`1.frame,&($1->" ^ component_name ^"))"
-            ) 
-            in
-            Hashtbl.add dfns refn (ref_name,sr,parent,SYMDEF_dcl ref_dcl) ;
-            add_function name_map ref_name refn
-          )
-          sts
-          ;
-        end
-    ) 
-    dcls
-  end
-  ;
-  name_map,exes,!interfaces
 
 (* an environment is a list of hastables, mapping
    names to definition indicies. Each entity defining
@@ -429,7 +125,8 @@ let rec bind_entry bdfns dfns index =
     let bdcl = BDCL_val (bt t) in 
     Hashtbl.add bdfns index (id,parent,bdcl)
 
-  | SYMDEF_module table -> ()
+  | SYMDEF_module table -> 
+    Hashtbl.add bdfns index (id,parent, BDCL_module table)
 
   | SYMDEF_procedure (msgt,ps,display,exes,name_map) ->
     let ps' = List.map
@@ -541,7 +238,7 @@ let bind_ifaces dfns bdfns ifaces =
           match entries with
           | FunctionEntry fs ->
             let bound_suffix =  bind_type dfns env [] suf in
-            (match resolve_overload dfns bdfns env fs name bound_suffix with
+            (match resolve_overload dfns bdfns fs name bound_suffix with
             | Some i -> i
             | None -> failwith 
               (

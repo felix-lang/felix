@@ -235,12 +235,13 @@ let mkcurry sr name args return_type body =
 
 %type <Flx_types.compilation_unit_t> compilation_unit
 %type <Flx_types.range_srcref * Flx_types.statement_t list> compound
+%type <Flx_types.range_srcref * Flx_types.id_t> simple_name
+%type <Flx_types.range_srcref * Flx_types.qualified_name_t> qualified_name
+%type <Flx_types.range_srcref * Flx_types.suffixed_name_t> suffixed_name
 %type <Flx_types.statement_t> statement 
 %type <Flx_types.expr_t> expr
 %type <Flx_types.expr_t> rvalue
 
-%type <Flx_types.qualified_name_t> qualified_name
-%type <Flx_types.suffixed_name_t> suffixed_name
 %type <Flx_types.pattern_t> pattern
 
 %start compilation_unit
@@ -339,6 +340,11 @@ struct_decl:
   { 
     AST_struct (rstoken $1 $6, snd $2, $5) 
   }
+  | STRUCT NAME LBRACE struct_component_aster RBRACE 
+  { 
+    AST_struct (rstoken $1 $5, snd $2, $4) 
+  }
+
 @aster("struct_component")
 struct_component:
   | NAME COLON type_expr SEMI { (snd $1,$3) }
@@ -376,7 +382,7 @@ type_alias:
 export_statement:
   | EXPORT suffixed_name AS STRING SEMI 
     { 
-      AST_export (rstoken $1 $5, $2, snd $4) 
+      AST_export (rstoken $1 $5, snd $2, snd $4) 
     }
  
 @head(3,'Function and Procedure Definition')
@@ -414,7 +420,11 @@ function_definition:
     { 
       AST_fun_decl (rstoken $1 $9, snd $2,  $4,  $6,  snd $8) 
     }
-
+  | FUNCTION NAME fun_args compound 
+    {
+      failwith ("Missing return type in declaration of function " ^ snd $2)
+    }
+  
 procedure_definition:
   | PROCEDURE NAME compound 
     { 
@@ -488,6 +498,12 @@ module_definition:
     { 
       AST_module (rsrange (lift $1) (fst $3), snd $2, snd $3) 
     }
+
+  | MODULE NAME EQUAL compound 
+    { 
+      AST_module (rsrange (lift $1) (fst $4), snd $2, snd $4) 
+    }
+
 @commalistof("simple_name")
 
 @head(3,'Variable and Constant Declaration')
@@ -899,7 +915,8 @@ atomic_pattern:
   | LPAR pattern RPAR { $2 }
   | REGEXP STRING LPAR simple_name_comma_list RPAR 
     { 
-      PAT_regexp (rstoken $1 $5, snd $2,$4) 
+      let names = List.map snd $4 in
+      PAT_regexp (rstoken $1 $5, snd $2, names) 
     }
   
 atomic_pattern_list:
@@ -924,11 +941,11 @@ vbar_pattern:
       PAT_nonconst_ctor 
       (
         rsrange (lift $1) (src_of_pattern $3), 
-        $2, 
+        snd $2, 
         $3
       ) 
     }
-  | VBAR srcref_qualified_name 
+  | VBAR qualified_name 
     { 
       PAT_const_ctor 
       (
@@ -994,9 +1011,12 @@ type_atom:
   | LPAR RPAR { TYP_tuple [] }
   | qualified_type_name { TYP_name $1 }
 
-qualified_type_name:
-  | qualified_type_name COLONCOLON NAME { $1 @ [snd $3] }
+relative_type_name:
+  | relative_type_name COLONCOLON NAME { $1 @ [snd $3] }
   | NAME { [snd $1] }
+qualified_type_name:
+  | COLONCOLON relative_type_name { "" :: $2 }
+  | relative_type_name { $1 }
 
 @head(2,'Names')
 The simplest form of a name is an identifier.
@@ -1014,7 +1034,7 @@ Note that the type expression is the domain type,
 not the whole function type.
 
 @select(h)
-srcref_simple_name:
+simple_name:
   | NAME { lift (fst $1), snd $1 }
   | VBAR NAME 
     { 
@@ -1022,33 +1042,33 @@ srcref_simple_name:
       snd $2 
     }
 
-srcref_qualified_name:
-  | srcref_qualified_name COLONCOLON srcref_simple_name
+relative_name:
+  | simple_name COLONCOLON relative_name
     { 
       rsrange (fst $1) (fst $3),
-      snd $1 @ [snd $3] 
+      snd $1 :: snd $3
     }
-  | srcref_simple_name { fst $1, [snd $1] }
+  | simple_name { fst $1, [snd $1] }
 
-srcref_suffixed_name:
-  | srcref_qualified_name OF LPAR type_expr RPAR 
+qualified_name:
+  | COLONCOLON relative_name
+    { 
+      rsrange (lift $1) (fst $2),
+      [""] @ snd $2
+    }
+  | relative_name { $1 }
+
+suffixed_name:
+  | qualified_name OF LPAR type_expr RPAR 
     { 
       fst $1,
       (snd $1, $4)
     }
-  | srcref_qualified_name 
+  | qualified_name 
     { 
       fst $1, 
       (snd $1, TYP_none) 
     }
-
-simple_name: 
-  | srcref_simple_name { snd $1 }
-
-qualified_name:
-  | srcref_qualified_name { snd $1 }
-suffixed_name:
-  | srcref_suffixed_name { snd $1 }
 
 @head(2,'Expressions')
 @select(h)
@@ -1277,10 +1297,10 @@ factor:
 
 
 atom:
-  | LPAR expr RPAR                      { $2 }
-  | LPAR RPAR                           { AST_tuple (rstoken $1 $2,[]) }
-  | srcref_suffixed_name                { AST_name (fst $1,snd $1) }
-  | literal                             { $1 }
+  | LPAR expr RPAR      { $2 }
+  | LPAR RPAR           { AST_tuple (rstoken $1 $2,[]) }
+  | suffixed_name       { AST_name (fst $1,snd $1) }
+  | literal             { $1 }
 
 literal:
   | INTEGER 
@@ -1321,10 +1341,18 @@ let parse_file
         Flx_parse.compilation_unit
         (toker#token_src) 
         (Lexing.from_string "dummy" )
-      with _ -> begin
-        toker#report_syntax_error;
-        raise (Flx_exceptions.ParseError "Parsing File")
-      end
+      with 
+      | Failure s ->
+        begin
+          toker#report_syntax_error;
+          print_endline s;
+          raise (Flx_exceptions.ParseError "Parsing File")
+        end
+      | _ -> 
+        begin
+          toker#report_syntax_error;
+          raise (Flx_exceptions.ParseError "Parsing File")
+        end
       in parse_tree
     end
 

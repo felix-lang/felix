@@ -76,8 +76,16 @@ let rec subst vars e mv =
   | AST_literal _ -> e
   | AST_apply (sr,(f,e)) -> AST_apply (sr,(subst f,subst e))
   | AST_tuple (sr,es) -> AST_tuple (sr,List.map subst es)
-  | AST_dot (sr,(e,id)) -> AST_dot (sr,(subst e, id))
 
+
+  (* Only one of these should occur, but I can't
+     figure out which one at the moment
+  *)
+  | AST_method_apply (sr,(id,e)) -> 
+    AST_method_apply (sr,(id, subst e))
+  | AST_dot (sr,(e,id)) -> 
+    AST_dot (sr,(subst e, id))
+ 
   | AST_lambda _ ->
     failwith "Lambda in 'when' expression not implemented!"
   | AST_match_ctor _ ->
@@ -87,7 +95,6 @@ let rec subst vars e mv =
   | AST_get_n _ ->
     failwith "AST_get_n in 'when' expression not implemented"
 
- 
 (* This routine runs through a pattern looking for
   pattern variables, and adds a record to a hashtable
   keyed by each variable name. The data recorded

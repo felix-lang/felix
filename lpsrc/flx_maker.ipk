@@ -109,6 +109,7 @@ INTERFACES = [
   'flx_parse_ctrl'   ,
   'flx_pat'          , 
   'flx_desugar'      , 
+  'flx_symtab'       , 
   'flx_lookup'       , 
   'flx_overload'     , 
   'flx_tbind'        , 
@@ -140,6 +141,7 @@ IMPLEMENTATIONS = [
   'flx_parse_ctrl'   ,
   'flx_pat'          , 
   'flx_desugar'      , 
+  'flx_symtab'       , 
   'flx_lookup'       , 
   'flx_overload'     , 
   'flx_tbind'        , 
@@ -447,11 +449,16 @@ except MakeError:
 # you need to change the file in two places
 #
 rm -f $1.cpp $1.hpp $1.so
-./bin/flxg -q -Ilib $1
-g++ -Wno-long-long -pedantic -ansi -shared  \
-  boost_1_22_0/libs/regex/build/gcc/libboost_regex.so \
-  -I. -Iboost_1_22_0 -Igc/src $1.cpp \
-  -o $1.so
-./test/flx_run ./$1.so
-
+if 
+  ./bin/flxg -q -Ilib $1
+then
+  if 
+    g++ -Wno-long-long -pedantic -ansi -shared  \
+      boost_1_22_0/libs/regex/build/gcc/libboost_regex.so \
+      -I. -Iboost_1_22_0 -Igc/src $1.cpp \
+      -o $1.so
+  then
+    ./test/flx_run ./$1.so
+  fi
+fi
 @os.system('chmod a+x bin/flx')

@@ -6,7 +6,6 @@ Name binding, pass 1.
 val resolve_overload:
   Flx_types.symbol_table_t ->
   Flx_types.bound_symbol_table_t ->
-  Flx_types.env_t ->
   int list ->  
   Flx_types.id_t -> 
   Flx_types.btypecode_t ->
@@ -21,7 +20,7 @@ open Flx_mtypes
 open Flx_typing
 open List
 
-let rec resolve_overload dfns bdfns env fs name (suf : btypecode_t) =
+let rec resolve_overload dfns bdfns fs name (suf : btypecode_t) =
   let typlist params = List.map snd params in
   let paramtype params = typeoflist (typlist params)
   in let fun_defs = List.map

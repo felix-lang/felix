@@ -98,7 +98,7 @@ let bind_exes dfns bdfns env exes ret_type =
                 match Hashtbl.find htab name with
                 | NonFunctionEntry index -> raise (Found index)
                 | FunctionEntry fs ->
-                  match resolve_overload dfns bdfns env fs name t2 with
+                  match resolve_overload dfns bdfns fs name t2 with
                   | Some i -> raise (Found i)
                   | None ->  ()
               with Not_found -> ()
@@ -144,7 +144,7 @@ let bind_exes dfns bdfns env exes ret_type =
           let index = match luqn sr qn with
             | NonFunctionEntry _ -> failwith "[bind_exes] Expected function"
             | FunctionEntry fs -> 
-              match resolve_overload dfns bdfns env fs name t2 with
+              match resolve_overload dfns bdfns fs name t2 with
               | Some i -> i
               | None -> 
                 failwith 
@@ -196,19 +196,6 @@ let bind_exes dfns bdfns env exes ret_type =
             string_of_btypecode dfns t'^")"
           )
         end
-      | EXE_raise (n,s,e) ->
-        let sr = src_of_expr e in (* HACK! *)
-        match lun sr s with
-        | NonFunctionEntry _ -> failwith "Can't raise non function"
-        | FunctionEntry fs ->
-          let name = s in
-          let e',argtype = be e in
-          let index = 
-            match resolve_overload dfns bdfns env fs name argtype with
-            | Some i -> i
-            | None -> failwith ("Can't find handler " ^ s)
-          in
-          BEXE_raise (n, index, (e',argtype))
     )
     exes
   in 
@@ -227,25 +214,28 @@ let bind_exes dfns bdfns env exes ret_type =
   bound_exes
 
 let bbind counter dfns bdfns = 
-  let bbdefns = Hashtbl.create 97 in
+  let bbdfns = Hashtbl.create 97 in
   let bexes env exes rt = bind_exes dfns bdfns env exes rt in
   let dummy_sr = ("Generated dummy",0,0,0,0) in
   Hashtbl.iter
   (fun i (name, parent, bdcl) -> 
   match bdcl with
+  | BDCL_module table -> 
+    Hashtbl.add bbdfns i (name,parent, BBDCL_module table)
+  
   | BDCL_function (ps,rt,display,exes,name_map) -> 
     (* print_endline ("//Binding function " ^ string_of_int i ^ " --> " ^ name); 
     *)
     let env = build_env dfns (Some i) in 
     let bbexes = bexes env exes rt in
-    Hashtbl.add bbdefns i (name,parent,BBDCL_function (ps,rt,display,bbexes,name_map))
+    Hashtbl.add bbdfns i (name,parent,BBDCL_function (ps,rt,display,bbexes,name_map))
 
   | BDCL_procedure (ps,display,exes,name_map) -> 
     (* print_endline ("//Binding procedure " ^ string_of_int i ^ " --> " ^ name); 
     *)
     let env = build_env dfns (Some i) in 
     let bbexes = bexes env exes BTYP_void in
-    Hashtbl.add bbdefns i (name,parent,BBDCL_procedure (ps,display,bbexes,name_map))
+    Hashtbl.add bbdfns i (name,parent,BBDCL_procedure (ps,display,bbexes,name_map))
   
   | BDCL_match_check (pat,mvindex, display) ->
     (* print_endline ("//Binding match checker " ^ string_of_int i ^ " --> " ^ name); 
@@ -262,7 +252,7 @@ let bbind counter dfns bdfns =
       ] 
     in
     let bbexes = bexes env exes rt in
-    Hashtbl.add bbdefns i (name,parent,
+    Hashtbl.add bbdfns i (name,parent,
       BBDCL_function ([],rt,display,bbexes,name_map));
   
   | BDCL_match_handler (msgt,pat,mvindex,display,exes,name_map) ->
@@ -306,7 +296,7 @@ let bbind counter dfns bdfns =
         BDCL_val_typeof component
       );
       let bvtyp = typeofindex dfns bdfns env [] dummy_sr vid in
-      Hashtbl.add bbdefns vid (vname, Some i, 
+      Hashtbl.add bbdfns vid (vname, Some i, 
         BBDCL_val bvtyp 
       );
       Hashtbl.add (List.hd env) vname (NonFunctionEntry vid);
@@ -317,72 +307,72 @@ let bbind counter dfns bdfns =
     )
     vars;
     let bbexes = bexes env !exes BTYP_void in
-    Hashtbl.add bbdefns i (name,parent,
+    Hashtbl.add bbdfns i (name,parent,
       BBDCL_procedure ([],display,bbexes,name_map))
   
   | BDCL_val t -> 
     (* print_endline ("//Binding value " ^ string_of_int i ^ " --> " ^ name); 
     *)
-    Hashtbl.add bbdefns i (name,parent,BBDCL_val t)
+    Hashtbl.add bbdfns i (name,parent,BBDCL_val t)
 
   | BDCL_var t ->
     (* print_endline ("//Binding variable " ^ string_of_int i ^ " --> " ^ name); 
     *)
-    Hashtbl.add bbdefns i (name,parent,BBDCL_var t)
+    Hashtbl.add bbdfns i (name,parent,BBDCL_var t)
 
   | BDCL_val_typeof e  ->
     (* print_endline ("//Binding value(typeof)" ^ string_of_int i ^ " --> " ^ name); 
     *)
     let env = build_env dfns parent in 
     let _,t = bind_expression dfns bdfns env [] e in
-    Hashtbl.add bbdefns i (name,parent,BBDCL_val t)
+    Hashtbl.add bbdfns i (name,parent,BBDCL_val t)
 
   | BDCL_var_typeof e ->
     (* print_endline ("//Binding variable(typeof) " ^ string_of_int i ^ " --> " ^ name); 
     *)
     let env = build_env dfns parent in 
     let _,t = bind_expression dfns bdfns env [] e in
-    Hashtbl.add bbdefns i (name,parent,BBDCL_var t)
+    Hashtbl.add bbdfns i (name,parent,BBDCL_var t)
 
 
   | BDCL_const (t,ct) ->
     (* print_endline ("//Binding constant " ^ string_of_int i ^ " --> " ^ name); 
     *)
-    Hashtbl.add bbdefns i (name,parent,BBDCL_const (t,ct))
+    Hashtbl.add bbdfns i (name,parent,BBDCL_const (t,ct))
 
   | BDCL_abs ct ->
     (* print_endline ("//Binding abstract type " ^ string_of_int i ^ " --> " ^ name); 
     *)
-    Hashtbl.add bbdefns i (name,parent,BBDCL_abs ct)
+    Hashtbl.add bbdfns i (name,parent,BBDCL_abs ct)
 
   | BDCL_header ct ->
     (* print_endline ("//Binding header string " ^ string_of_int i ^ " --> " ^ name); 
     *)
-    Hashtbl.add bbdefns i (name,parent,BBDCL_header ct)
+    Hashtbl.add bbdfns i (name,parent,BBDCL_header ct)
 
   | BDCL_fun (ts,ret,ct) ->
     (* print_endline ("//Binding primitive function " ^ string_of_int i ^ " --> " ^ name); 
     *)
-    Hashtbl.add bbdefns i (name,parent,BBDCL_fun (ts,ret,ct))
+    Hashtbl.add bbdfns i (name,parent,BBDCL_fun (ts,ret,ct))
 
   | BDCL_proc (ts,ct) ->
     (* print_endline ("//Binding primitive procedure " ^ string_of_int i ^ " --> " ^ name); 
     *)
-    Hashtbl.add bbdefns i (name,parent,BBDCL_proc (ts,ct))
+    Hashtbl.add bbdfns i (name,parent,BBDCL_proc (ts,ct))
 
   | BDCL_union cs ->
     (* print_endline ("//Binding union " ^ string_of_int i ^ " --> " ^ name); 
     *)
-    Hashtbl.add bbdefns i (name,parent,BBDCL_union cs)
+    Hashtbl.add bbdfns i (name,parent,BBDCL_union cs)
 
   | BDCL_struct cs ->
     (* print_endline ("//Binding struct " ^ string_of_int i ^ " --> " ^ name); 
     *)
-    Hashtbl.add bbdefns i (name,parent,BBDCL_struct cs)
+    Hashtbl.add bbdfns i (name,parent,BBDCL_struct cs)
   )
   bdfns
   ;
-  bbdefns
+  bbdfns
 
 @h = tangler("src/flxb.ml")
 @select(h)
@@ -392,6 +382,7 @@ open Flx_bind
 open Flx_bbind
 open Flx_print
 open Flx_types
+open Flx_symtab
 ;;
 
 try

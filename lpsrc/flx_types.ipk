@@ -110,6 +110,7 @@ and expr_t =
   | AST_ref of range_srcref * expr_t
   | AST_literal of range_srcref * literal_t
   | AST_apply of range_srcref * (expr_t * expr_t)
+  | AST_method_apply of range_srcref * (id_t * expr_t)
   | AST_tuple of range_srcref * expr_t list
   | AST_dot of range_srcref * (expr_t * id_t)
   | AST_lambda of range_srcref * (parameter_t list * typecode_t * statement_t list)
@@ -212,7 +213,6 @@ and exe_t =
   | EXE_return of expr_t
   | EXE_nop of string
   | EXE_init of id_t * expr_t 
-  | EXE_raise of int * id_t * expr_t 
 
 and dcl_t = 
   | DCL_header of string
@@ -262,7 +262,6 @@ and bexe_t =
   | BEXE_nop of string
   | BEXE_code of string
   | BEXE_init of bid_t * tbexpr_t 
-  | BEXE_raise of int * bid_t * tbexpr_t 
 
 and bexpr_t =
   | BEXPR_deref of tbexpr_t
@@ -307,6 +306,7 @@ and bdcl_t =
   | BDCL_proc of       btypecode_t list * c_t 
   | BDCL_union of      (id_t * btypecode_t) list
   | BDCL_struct of     (id_t * btypecode_t) list
+  | BDCL_module of     name_map_t
 
 and bbdcl_t = 
   | BBDCL_header of     string
@@ -323,6 +323,8 @@ and bbdcl_t =
   | BBDCL_proc of       btypecode_t list * c_t 
   | BBDCL_union of      (id_t * btypecode_t) list
   | BBDCL_struct of     (id_t * btypecode_t) list
+
+  | BBDCL_module of     name_map_t
 
 and entry_set_t =
   | FunctionEntry of int list
@@ -420,6 +422,7 @@ let src_of_expr e = match e with
   | AST_ref  (s,_) 
   | AST_literal  (s,_) 
   | AST_apply  (s,_) 
+  | AST_method_apply  (s,_) 
   | AST_tuple  (s,_) 
   | AST_dot  (s,_) 
   | AST_lambda  (s,_) 
@@ -597,6 +600,11 @@ and string_of_expression e =
   | AST_literal (_,e) -> string_of_literal e
   | AST_apply  (_,(fn, arg)) -> "(" ^ 
     string_of_expression fn ^ " " ^ 
+    string_of_expression arg ^ 
+    ")"
+
+  | AST_method_apply  (_,(fn, arg)) -> "(" ^ 
+    fn ^ " " ^ 
     string_of_expression arg ^ 
     ")"
 
@@ -929,11 +937,6 @@ and string_of_exe level s =
   match s with
   | EXE_goto s -> spc ^ "goto " ^ s ^ ";"
 
-  | EXE_raise (rel_lvl,name,arg) -> spc ^ 
-    "raise["^string_of_int rel_lvl^"] " ^ 
-    name ^ 
-    string_of_expression arg ^ ";"
-
   | EXE_ifgoto (e,s) -> spc ^ 
      "if(" ^ string_of_expression e ^ ")goto " ^ s ^ ";"
 
@@ -998,11 +1001,6 @@ and string_of_bexe dfns level s =
   let sid n = qualified_name_of_index dfns n in
   match s with
   | BEXE_goto s -> spc ^ "goto " ^ s ^ ";"
-
-  | BEXE_raise (rel_lvl,name,arg) -> spc ^ 
-    "raise["^string_of_int rel_lvl^"] " ^ 
-    sid  name ^
-    se arg ^ ";"
 
   | BEXE_ifgoto (e,s) -> spc ^ 
      "if(" ^ se e ^ ")goto " ^ s ^ ";"
@@ -1136,6 +1134,9 @@ and string_of_bdcl dfns level index s =
   let name = qualified_name_of_index dfns index in
   let string_of_btypecode t = string_of_btypecode dfns t in
   match s with
+  | BDCL_module name_map -> 
+    spaces level ^
+    "module " ^ name ^ ";\n"
 
   | BDCL_match_check (pat,index,display) ->
     (spaces level) ^ 
@@ -1217,6 +1218,7 @@ and string_of_bbdcl dfns bbdcl index =
   let name = qualified_name_of_index dfns index in
   let sobt t = string_of_btypecode dfns t in
   match bbdcl with
+  | BBDCL_module name_map -> "module " ^ name ^ ";"
   | BBDCL_header s -> "header " ^ string_of_string s
   | BBDCL_function (ps,res,display,es,name_map) ->
     "function " ^ name ^ 

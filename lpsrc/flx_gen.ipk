@@ -50,6 +50,7 @@ open Flx_typing
 open Flx_name
 open Flx_tgen
 
+
 let string_of_string = Flx_string.c_quote_of_string
 
 (* HACKERY: this assumes library dependent things:
@@ -92,7 +93,13 @@ let find_references bbdfns name_map =
     | NonFunctionEntry idx ->
     let _,_,bbdfn = 
       try Hashtbl.find bbdfns idx
-      with _ -> failwith ("[find_references] can't find index " ^ string_of_int idx)
+      with Not_found -> 
+        failwith 
+        (
+          "[find_references] can't find index " ^ 
+          string_of_int idx ^
+          " for name '" ^ id ^ "'"
+        )
     in
     match bbdfn with
     | BBDCL_var ((BTYP_pointer _) as t)
@@ -767,7 +774,10 @@ let gen_exe registry dfns bbdfns label_map counter this exe =
     (match kind with
       | Procedure ->
       "    case " ^ string_of_int label_index ^ ":\n" 
-      | Function -> ""
+      | Function -> "" 
+        (* labels mus be allowed in functions, to support
+           local gotos
+        *)
     )
     ^
     "    " ^ s ^ ":;\n"
@@ -795,8 +805,13 @@ let gen_exe registry dfns bbdfns label_map counter this exe =
            begin try i, Hashtbl.find local_map s
            with Not_found -> aux parent
            end
-         | _ -> aux parent
+         | BBDCL_module _ -> aux parent
+         | BBDCL_function _ -> failwith ("goto "^s^" can't out of function")
+         | _ -> failwith "Unknown parent kind"
     in 
+      begin match kind with
+      | Function -> failwith ("goto "^s^": can't jump out of function")
+      | Procedure ->
       let id,parent,entry = 
         try Hashtbl.find bbdfns this 
         with _ -> failwith ("[gen_exe(goto)] Can't find this = " ^ string_of_int this)
@@ -806,10 +821,11 @@ let gen_exe registry dfns bbdfns label_map counter this exe =
         try Hashtbl.find bbdfns frame 
         with _ -> failwith ("[gen_exe(goto)] Can't find frame " ^ string_of_int frame)
       in
-      let frame_ptr = "ptr" ^ cpp_name bbdfns frame in
-      "      // non local goto " ^ s ^ "\n" ^
-      "      " ^ frame_ptr ^ "->pc="^string_of_int pc^";\n" ^
-      "      return " ^ frame_ptr ^ ";\n"
+        let frame_ptr = "ptr" ^ cpp_name bbdfns frame in
+        "      // non local goto " ^ s ^ "\n" ^
+        "      " ^ frame_ptr ^ "->pc="^string_of_int pc^";\n" ^
+        "      return " ^ frame_ptr ^ ";\n"
+      end
 
   (* conditional gotos are always local *)
   | BEXE_ifgoto (e,s) -> "      if(" ^ ge e ^ ")goto " ^ s ^ ";\n"
@@ -934,8 +950,6 @@ let gen_exe registry dfns bbdfns label_map counter this exe =
     " = " ^ 
     ge e ^
     ";\n"
-
-  | BEXE_raise (i,j,e) -> "      // raise\n"
 
 let gen_exes registry dfns bbdfns display label_map counter index exes =
   (* print_endline ("// generating exes for index " ^ string_of_int index);
@@ -1392,6 +1406,7 @@ open Flx_bbind
 open Flx_name
 open Flx_tgen
 open Flx_gen
+open Flx_symtab
 ;;
 
 let get_options argv = 

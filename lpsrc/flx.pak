@@ -29,6 +29,7 @@ C/C++ programmers, together with control inversion.
 @include_file ('flx_tokeniser.ipk')
 @include_file ('flx_pat.ipk')
 @include_file ('flx_desugar.ipk')
+@include_file ('flx_symtab.ipk')
 @include_file ('flx_lookup.ipk')
 @include_file ('flx_overload.ipk')
 @include_file ('flx_tbind.ipk')
