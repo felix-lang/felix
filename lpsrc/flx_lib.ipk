@@ -1,5 +1,5 @@
 @head(1,'Felix Standard Library')
-@h=tangler('lib/std.flx')
+@h=tangler('lib/std.flx','data')
 @select(h)
 header """
 #include <stddef.h>

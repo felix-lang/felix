@@ -1,0 +1,201 @@
+@head(1,'Optimiser')
+@head(2,'Elide unused functions')
+@h = tangler('src/flx_opt.mli')
+@select(h)
+open Flx_types
+
+val optimise_bbdfns:
+  sym_state_t ->
+  type_registry_t ->
+  fully_bound_symbol_table_t ->
+  int ->
+  biface_t list ->
+  fully_bound_symbol_table_t
+
+@doc()
+@h = tangler('src/flx_opt.ml')
+@select(h)
+open Flx_types
+open Flx_typing
+open Flx_treg
+
+(* Find closures .. we need all the callable
+   functions so we can elide the unused ones 
+
+   We use a list to represent a set 
+     -- O(n) performance
+   this needs to be changed later to use an Ocaml set 
+     -- O(log n) performance
+*)
+
+let clos bbdfns i ls =
+  let rec clos (i:int) ls = 
+    if List.mem i ls then ls
+    else begin
+      let _,_,bbdcl = Hashtbl.find bbdfns i in
+      match bbdcl with
+      | `BBDCL_function (_,_,exes,_)
+      | `BBDCL_procedure (_,exes,_) ->
+        scan_exes exes (i::ls)
+      | _ -> i :: ls
+    end
+  and scan_exes exes ls =
+    match exes with
+    | h :: t -> scan_exes t (scan_exe h ls)
+    | [] -> ls
+  and scan_exe (exe:bexe_t) ls =
+    match exe with
+    | `BEXE_ifgoto (x,_) 
+    | `BEXE_ifnotgoto (x,_) 
+    | `BEXE_init (_,x) 
+    | `BEXE_return x
+      -> scan_expr x ls
+    | `BEXE_set (x,y) 
+    | `BEXE_call (x,y) ->
+      scan_expr y (scan_expr x ls)
+    | _ -> ls
+  and scan_expr (x,t) ls =
+    match (t:btypecode_t) with 
+    | `BTYP_tuple [] -> ls
+    | _ ->
+    match (x:bexpr_t) with
+    | `BEXPR_name i
+    | `BEXPR_closure i
+    | `BEXPR_ref i
+      -> clos i ls
+
+    | `BEXPR_apply (x,y) 
+      -> scan_expr y (scan_expr x ls)
+
+    | `BEXPR_tuple xs ->
+      let rec aux xs ls =
+        match xs with
+        | h :: t -> aux t (scan_expr h ls)
+        | [] -> ls
+      in aux xs ls
+
+    | `BEXPR_dot (x,_) 
+    | `BEXPR_deref x
+    | `BEXPR_get_n (_,x)
+    | `BEXPR_coercion (x,_)
+    | `BEXPR_match_case (_,x)
+    | `BEXPR_case_arg (_,x)
+       -> scan_expr x ls
+
+    | `BEXPR_case _
+    | `BEXPR_literal _
+    | `BEXPR_functions _ -> ls
+  in clos i ls
+
+let closure bbdfns closed opn =
+ let rec cls closed opn = 
+   match opn with
+   | h :: t -> clos bbdfns h (cls closed t)
+   | [] -> closed
+ in
+   cls closed opn
+
+(* make a list of all useful stuff: this includes
+   all headers (since we can't tell if C code can
+   reach stuff in them, everything reachable
+   from the _init_ routine of the top level
+   and exported functions
+*)
+
+let useful bbdfns root ifaces = 
+  let accrue_headers ls =
+    let ls = ref ls in
+      Hashtbl.iter
+      (fun i j -> 
+        match j with 
+        | (_,_,`BBDCL_header _) -> ls := i::!ls
+        | _ -> ()
+      )
+      bbdfns
+      ;
+      !ls
+  in
+  let ifuncs = List.map (function `BIFACE_export (i,_) -> i) ifaces in
+  accrue_headers 
+  (
+    closure bbdfns [] (root :: ifuncs)
+  )
+
+@doc()
+We now need to collect the types required for declarations.
+In order to sequence the C++ declarations according to
+dependecies, our recursive analysis takes care only
+to assign an integer to a type when all type on which
+it depends have been processed. 
+@p()
+Note that implicitly declared tuple types should
+still get registered. The reason is that they can't
+be used unless the type is an argument of some 
+function or procedure, which we should pick up here.
+@select(h)
+
+let collect_types sym_state registry bbdfns useful= 
+  let rr t = register_type sym_state registry bbdfns useful t in
+  Hashtbl.iter
+  begin fun index (id,parent,bbdcl) -> 
+    (* if proper_descendant dfns parent
+    then 
+    *)
+    begin
+      (*
+      print_endline (
+        "Collecting BBDCL " ^ id ^ "<" ^ string_of_int index ^ 
+        ">, parent="^
+        match parent with 
+        | Some i ->string_of_int i
+        | None -> "None"
+      );
+      print_endline ("=======>  " ^ string_of_bbdcl dfns bbdcl index);
+      *)
+      match bbdcl with
+      | `BBDCL_abs _ -> rr (`BTYP_name index)
+      | `BBDCL_function (ps,ret,_,_) ->
+        let a = typeoflist (List.map snd ps) in
+        rr (`BTYP_function (a,ret))
+
+      | `BBDCL_fun (ps,ret,_) ->
+        let a = typeoflist ps in
+        rr (`BTYP_function (a,ret))
+
+      | `BBDCL_procedure (ps,_,_) ->
+        let a = typeoflist (List.map snd ps) in
+        rr (`BTYP_function (a,`BTYP_void))
+
+      | `BBDCL_proc (ps,_) ->
+        let a = typeoflist ps in
+        rr (`BTYP_function (a,`BTYP_void))
+
+      | `BBDCL_val t
+      | `BBDCL_var t
+      | `BBDCL_const (t,_) -> rr t
+
+      | `BBDCL_union _
+      | `BBDCL_struct _ -> rr (`BTYP_name index)
+
+      | `BBDCL_header _ -> ()
+    end
+  end
+  useful
+
+
+
+let optimise_bbdfns sym_state registry (bbdfns:fully_bound_symbol_table_t) root ifaces = 
+  let ui = useful bbdfns root ifaces in
+  let bbdfns2 = Hashtbl.create 97 in
+  List.iter
+  (fun k ->
+    let d = Hashtbl.find bbdfns k
+    in Hashtbl.add bbdfns2 k d
+  )
+  ui
+  ;
+  collect_types sym_state registry bbdfns bbdfns2
+  ;
+  bbdfns2
+
+

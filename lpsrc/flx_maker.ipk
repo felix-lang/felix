@@ -107,6 +107,8 @@ INTERFACES = [
   'flx_lookup'       , 
   'flx_bbind'        , 
   'flx_name'         , 
+  'flx_treg'         , 
+  'flx_opt'          , 
   'flx_tgen'         , 
   'flx_csubst'       , 
   'flx_gen'          , 
@@ -136,6 +138,8 @@ IMPLEMENTATIONS = [
   'flx_lookup'       , 
   'flx_bbind'        , 
   'flx_name'         , 
+  'flx_treg'         , 
+  'flx_opt'          , 
   'flx_tgen'         , 
   'flx_csubst'       , 
   'flx_gen'          , 
@@ -148,10 +152,10 @@ CPPTESTS = [
 COBJECTS = {
 }
 # *.so/.a libraries
-CLIBRARIES = ['nums']
+CLIBRARIES = ['unix','nums']
 
 # *.cmxa libraries
-OLIBRARIES = ['nums','flxlib']
+OLIBRARIES = ['unix','nums','flxlib']
 
 
 # target executable programs to produce
@@ -278,34 +282,34 @@ try:
   for cobject in COBJECTS.keys():
     flags = COBJECTS[cobject]
     file = 'src/'+cobject
-    if buildall or filetime(file +".c") > filetime(file +".o"):
+    if buildall or filetime(file +".c") >= filetime(file +".o"):
       xqt(CCOMPILE +" -I "+OCAML_INCLUDE_DIRECTORY+" -I. "+flags+" "+file+".c")
 
   # STEP 2: Generate lexers
   for lex in LEXS:
     file = 'src/'+lex
-    if buildall or filetime(file + '.mll') > filetime(file +'.ml'):
+    if buildall or filetime(file + '.mll') >= filetime(file +'.ml'):
       buildall = 1
       xqt(OCAMLLEX + file + '.mll')
 
   # STEP 3: Generate parsers
   for parse in PARSES:
     file = 'src/'+parse
-    if buildall or filetime(file + '.mly') > filetime(file +'.ml'):
+    if buildall or filetime(file + '.mly') >= filetime(file +'.ml'):
       buildall = 1
       xqt(OCAMLYACC+ ' -v '+ file + '.mly')
 
   # STEP 4: Compile ocaml interfaces
   for interface in INTERFACES:
     file = 'src/'+interface
-    if buildall or filetime(file + '.mli') > filetime(file+'.cmi'):
+    if buildall or filetime(file + '.mli') >= filetime(file+'.cmi'):
       buildall = 1
       xqt(OCAMLC + ' -c '+file+ '.mli')
 
   # STEP 5: Compile ocaml implementations
   for implementation in IMPLEMENTATIONS + EXES:
     file = 'src/'+implementation
-    if buildall or filetime(file+ '.ml') > filetime(file+'.cmx'):
+    if buildall or filetime(file+ '.ml') >= filetime(file+'.cmx'):
       buildall = 1
       xqt(OCAMLOPT + ' -c ' + file +'.ml')
 
@@ -315,7 +319,7 @@ try:
   library_filetime = filetime('src/flxlib.cmxa')
   for implementation in IMPLEMENTATIONS:
     file = 'src/'+implementation
-    if filetime(file+'.cmx') > library_filetime:
+    if filetime(file+'.cmx') >= library_filetime:
       for implementation in IMPLEMENTATIONS:
         file = 'src/'+implementation
         linkstring = linkstring + file + ".cmx "
@@ -330,13 +334,13 @@ try:
 
   # finally, mainline *.cmx files to link to executables
   for exe in EXES:
-    if buildall or filetime(exe + '.cmx') > filetime(exe):
+    if buildall or filetime(exe + '.cmx') >= filetime(exe):
       xqt(OCAMLOPT + LDFLAGS + ' -o bin/'+exe + x + OBJECT_FILES + ' ' + exe + '.cmx')
 
   # COMPILE RUN TIME LIBRARY OBJECTS
 
   for file in RTLOBJS:
-    if buildall or filetime("rtl/"+file+ '.cpp') > filetime("rtl/"+file+'.o'):
+    if buildall or filetime("rtl/"+file+ '.cpp') >= filetime("rtl/"+file+'.o'):
       print 'Compiling RTL file ',file
       try:
         xqt(FLX_CPP_OBJ + " -I. -Itest -Irtl " +
@@ -349,7 +353,7 @@ try:
   # COMPILE STANDARD PROGRAMS
 
   for basename in RTLPRGS:
-    if buildall or filetime("rtl/"+basename+ '.cpp') > filetime("bin/"+basename):
+    if buildall or filetime("rtl/"+basename+ '.cpp') >= filetime("bin/"+basename):
       print 'Compiling standard driver program ',basename
       try:
         xqt(FLX_CPP_LINK + " -I. -Irtl " +
@@ -374,10 +378,10 @@ try:
         basename = string.split(testfile,'.')[0]
         cppfilename = basename + ".cpp"
         if buildall or \
-          filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
-          filetime('bin/flxg')> filetime(basename+'.cpp') or \
-          filetime('lib/std.flx') > filetime(basename+'.cpp') or \
-          filetime('lib/std.flx') > filetime(basename+'.cpp'):
+          filetime(basename+ '.flx') >= filetime(basename+'.cpp') or \
+          filetime('bin/flxg')>= filetime(basename+'.cpp') or \
+          filetime('lib/std.flx') >= filetime(basename+'.cpp') or \
+          filetime('lib/std.flx') >= filetime(basename+'.cpp'):
           try:
             xqt('bin/flxg -q -Ilib ' + basename)
             #print 'TESTFILE -- generated ',basename
@@ -417,9 +421,9 @@ try:
         basename = string.split(testfile,'.')[0]
         cppfilename = basename + ".cpp"
         if buildall or \
-          filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
-          filetime('bin/flxg')> filetime(basename+'.cpp') or \
-          filetime('lib/std.flx') > filetime(basename+'.cpp'):
+          filetime(basename+ '.flx') >= filetime(basename+'.cpp') or \
+          filetime('bin/flxg')>= filetime(basename+'.cpp') or \
+          filetime('lib/std.flx') >= filetime(basename+'.cpp'):
           try:
             xqt('bin/flxg -q -Ilib ' + basename)
             results.append("flxg " + (basename+ ' ' * w)[:w]+ ' OK')
@@ -438,7 +442,7 @@ try:
         #print 'Compiling generated code of ',testfile
         basename = string.split(testfile,'.')[0]
         cppfilename = basename + ".cpp"
-        if buildall or filetime(basename+ '.cpp') > filetime(basename+'.so'):
+        if buildall or filetime(basename+ '.cpp') >= filetime(basename+'.so'):
           try:
             xqt(FLX_CPP_DYNLINK+" -I. "+cppfilename + " -o " + basename + ".so" )
             #print 'TESTFILE -- OK!',basename
@@ -455,7 +459,7 @@ try:
       for testfile in CPPTESTS:
         print 'Compiling driver program ',testfile
         basename = string.split(testfile,'.')[0]
-        if buildall or filetime(basename+ '.cpp') > filetime(basename):
+        if buildall or filetime(basename+ '.cpp') >= filetime(basename):
           try:
             xqt(FLX_CPP_LINK + " -I. -Itest " +
               "rtl/flx_dynlink.o " +
@@ -530,7 +534,7 @@ Here is an example of a C++ binding.
 int = "int";
 .br
 .B fun 
-add: int * int -> int = "$1+$2";
+add: int * int -> int = code "$1+$2";
 .br
 .B proc 
 print: int = 'printf("%d",$1);';
@@ -577,6 +581,12 @@ Felix operators and operator names
 
 A chainable binary operator such as +
 creates a list of subexpressions.
+
+.SH let .. in ..
+A prefix operator with weakest binding power.
+
+.SH lambda
+Lambda expressions have second weakest binding power.
 
 .SH assignment
 Assignment operators are sugar for statements,
@@ -779,13 +789,42 @@ libname
 
 .br
 .B flx
+[--test]
+[--force]
 filebasename
 
 .SH DESCRIPTION
 The 
-.B filebase 
-name must not include an extension, which
-must be '.flx'.
+.B filebasename
+should not include an extension, which
+must be '.flx'. An extension .flx is allowed
+as a special case, and is stripped off:
+this is to support 
+.B #!env flx
+at the start of a script, which allows the script
+to be run directly, here the extension is passed
+by the shell.
+.br
+The 
+.B flx 
+harness tries to locate the felix installation
+by seaching the execution PATH for flxg. The 
+.B --test
+option must be first if used, and forces the script
+to use the tools from the build directory,
+which must be the current directory.
+.br
+The option 
+.B --force 
+forces a full recompilation,
+otherwise the shared library filebasename.so
+is run if it is newer than filebasename.flx,
+otherwise the felix file is compiled to C++
+using flxg, and then g++ invoked to build the shared library
+before it is run.
+.br
+The standard program driver flx_run is used to run
+the shared library.
 .br
 
 .B flxl 
@@ -839,7 +878,7 @@ for rapid prototyping in a scripting style.
 is the standard prgram driver. Its argument
 is a shared library which is passed to 
 dlopen (note you need to use ./lib.so on
-linux to preempt the stanard search path).
+linux to preempt the standard search path).
 
 The driver creates a single thread
 from the libraries main entry point

@@ -730,7 +730,7 @@ and parse_preprocessor = parse
               end else
                 let incdirs = state#get_incdirs in
                 let basedir = Filename.dirname filename in
-                let state = new Flx_lex.lexer_state 
+                let state = new lexer_state 
                   filename basedir incdirs 
                   (state#get_prior_includes) 
                 in

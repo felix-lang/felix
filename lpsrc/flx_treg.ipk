@@ -1,0 +1,140 @@
+@head(1,'The type registry -- construction')
+Flx supports algebraic type expressions. For some of these,
+we need to construct a C++ class type. To ensure the same
+name is provided for each such class, we use a registry
+which maps the (bound) type expression to an integer.
+@p()
+The routine register_type_nr is a non-recursive registration
+procedure.
+@p()
+The routine register_type_r registers types recursively.
+The 'exclude' argument is a list of types which should
+not be registered, this is used to break potential
+infinite recursions. Note carefully that components
+are always registered before the type, so that they'll
+be defined before they're used. There two exceptions:
+for a pointer an incomplete type is sufficient,
+and sometimes necessary to break type recursion;
+and, unions may be recursive, but are represented
+by pointers anyhow.
+@p()
+Note that a function may accept an argument tuple
+one of whose arguments is a pointer to a function
+of the same type.
+@p()
+Note that the types of implicitly declared tuples
+will be caught here, since the only thing you can
+do with a tuple is make it the argument of a function.
+@p()
+Note that we're given a type t we register it,
+but when we decompose it for components, we have to
+unfold it first before decomposition, in case
+the top level term has an implicit fix operator
+surrounding it. (The term representation uses
+a `BTYP_fix i to denote a fixpoint binder -i levels
+up in the term structure).
+
+@h = tangler('src/flx_treg.mli')
+@select(h)
+open Flx_types
+
+val register_type:
+  sym_state_t ->
+  type_registry_t ->
+  fully_bound_symbol_table_t ->
+  fully_bound_symbol_table_t ->
+  btypecode_t ->
+  unit
+
+@h = tangler('src/flx_treg.ml')
+@select(h)
+open Flx_types
+open Flx_typing
+open Flx_print
+open Flx_srcref
+
+let register_type_nr registry counter dfns t =
+  let t = type_fold t in
+  match t with 
+  | `BTYP_tuple [] 
+  | `BTYP_fix _ -> ()
+  | _ ->
+    if not (Hashtbl.mem registry t)
+    then
+      let n = !counter in
+      incr counter;
+      Hashtbl.add registry t n
+
+let rec register_type_r registry counter dfns bbdfns useful exclude t =
+  (*
+  print_endline (string_of_btypecode dfns t);
+  *)
+  let t = lower t in
+  if not (List.mem t exclude) then
+  let rr t' = register_type_r 
+    registry counter dfns bbdfns useful (t :: exclude) t'
+  in
+  let rnr t = register_type_nr registry counter dfns t in
+  match type_unfold t with
+  | `BTYP_void -> ()
+  | `BTYP_none -> ()
+  | `BTYP_fix _ -> ()
+  | `BTYP_function (ps,ret) -> rr ps; rr ret; rnr t
+  | `BTYP_tuple ps -> List.iter rr ps; rnr t
+  | `BTYP_sum ps -> List.iter rr ps; rnr t
+  | `BTYP_pointer t' -> rr t' 
+    (* We don't register pointer types: use _ref_ template! *)
+  | `BTYP_binding (src,dst) -> rr dst
+  | `BTYP_name index ->
+    let d =
+      try Hashtbl.find bbdfns index
+      with Not_found -> 
+        let id,sr,parent,entry= Hashtbl.find dfns index in
+        failwith 
+        (
+          "register_type_r Can't find " ^ 
+          id ^ "[" ^ string_of_int index ^ "]" ^
+          " in fully bound symbol table: " ^
+          short_string_of_src sr
+        )
+    in
+
+    if Hashtbl.mem useful index then () else
+
+    Hashtbl.add useful index d;
+    let id, parent, entry = d in
+    match entry with
+    | `BBDCL_union cs -> 
+      List.iter rr (List.map snd cs);      (* components *)
+      rnr t                                (* the union type *)
+
+    | `BBDCL_struct cs -> 
+      let argt = typeoflist (List.map snd cs) in
+      List.iter rr (List.map snd cs);      (* components *)
+      rnr argt;                            (* argument tuple *)
+      rnr t;                               (* the struct type *)
+      rnr (`BTYP_function (argt,t))         (* constructor *)
+
+    | `BBDCL_abs ct -> rnr t 
+      (*
+      failwith 
+      (
+        "[register_type_r] expected type declaration, got type parameter " ^
+        string_of_bbdcl dfns entry index
+      )
+      *)
+    | _ -> 
+      failwith 
+      (
+        "[register_type_r] expected type declaration, got " ^
+        string_of_bbdcl dfns entry index
+      )
+
+let register_type sym_state registry bbdfns useful t =
+  register_type_r 
+    registry 
+    sym_state.counter 
+    sym_state.dfns 
+    bbdfns useful []  t
+
+
