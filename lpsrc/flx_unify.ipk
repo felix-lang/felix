@@ -1,0 +1,322 @@
+@head(1,'Unification')
+@h=tangler('src/flx_unify.ml')
+@select(h)
+open Flx_types
+open Flx_print
+
+let term_subst t1 i t2 =
+  let rec s t = match t with
+  | `BTYP_var j when i = j -> t2
+  | `BTYP_sum ls -> `BTYP_sum (List.map s ls)
+  | `BTYP_tuple ls -> `BTYP_tuple (List.map s ls)
+  | `BTYP_function (a,b) -> `BTYP_function (s a, s b)
+  | `BTYP_pointer a -> `BTYP_pointer (s a)
+  | `BTYP_binding (a,b) -> `BTYP_binding (s a, s b)
+  | _ -> t
+  in s t1
+
+let varmap_subst varmap t =
+  let rec s t = match t with
+  | `BTYP_var i ->
+    if Hashtbl.mem varmap i
+    then Hashtbl.find varmap i
+    else t
+
+  | `BTYP_sum ls -> `BTYP_sum (List.map s ls)
+  | `BTYP_tuple ls -> `BTYP_tuple (List.map s ls)
+  | `BTYP_function (a,b) -> `BTYP_function (s a, s b)
+  | `BTYP_pointer a -> `BTYP_pointer (s a)
+  | `BTYP_binding (a,b) -> `BTYP_binding (s a, s b)
+  | `BTYP_apply (a,b) -> `BTYP_apply (s a, s b)
+  | `BTYP_typefun (p,r,b) ->
+    let 
+      p = List.map (fun (name,kind) -> (name, s kind)) p and
+      r = s r and
+      b = s b 
+    in
+      `BTYP_typefun (p,r,b)
+
+  | `BTYP_type_tuple ls -> `BTYP_type_tuple (List.map s ls)
+  | _ -> t
+  in s t
+
+
+let rec unification eqns = 
+  let eqns = ref eqns in
+  let mgu = ref [] in
+  let rec loop () : unit =
+    match !eqns with
+    | [] -> ()
+    | h :: t ->
+      eqns := t;
+      let s = ref None in
+      begin match h with
+      | `BTYP_var i, `BTYP_var j ->
+        if i = j then s := None
+        else s := Some (i,`BTYP_var j)
+
+      | `BTYP_var i, t
+      | t,`BTYP_var i ->
+        (* occurs check for recursion here *)
+        s := Some (i,t)
+
+
+      | `BTYP_pointer t2, `BTYP_pointer t1 ->
+        eqns := (t1,t2) :: !eqns
+
+      | `BTYP_binding (t11, t12), `BTYP_binding (t21, t22)
+      | `BTYP_function (t11, t12), `BTYP_function (t21, t22) ->
+        eqns := (t11,t21) :: (t12,t22) :: !eqns
+
+      | _,`BTYP_none
+      | `BTYP_none,_ 
+         -> failwith "unification: unexpected type `BTYP_none"
+
+      | `BTYP_void,`BTYP_void -> ()
+
+      | `BTYP_fix i,`BTYP_fix j
+      | `BTYP_name i, `BTYP_name j ->
+        if i <> j then raise Not_found
+
+      | (`BTYP_tuple ls1, `BTYP_tuple ls2) 
+      | (`BTYP_sum ls1, `BTYP_sum ls2)  ->
+        if List.length ls1 = List.length ls2 then
+        begin
+          let rec merge e a b = match a,b with
+          | [],[] -> e
+          | ah :: at, bh :: bt -> merge ((ah,bh) :: e) at bt
+          | _ -> assert false
+          in 
+            eqns := merge !eqns ls1 ls2;
+            s := None
+        end
+        else raise Not_found
+      | _ -> raise Not_found
+      end 
+      ;
+      begin match !s with
+      | None -> ()
+      | Some (i,t) ->
+        eqns := 
+          List.map 
+          (fun (a,b) -> term_subst a i t, term_subst b i t) 
+          !eqns
+        ;
+        mgu := 
+          (i,t) :: 
+          (List.map 
+            (fun (j,t') -> j,term_subst t' i t) 
+            !mgu
+          )
+      end
+      ;
+      loop ()
+    in 
+      loop (); 
+      !mgu
+
+(* returns true if a and b have an mgu,
+   and also adds each element of the mgu to
+   the varmap if it isn't already present
+*)
+
+let do_unify syms a b =
+  let eqns = 
+    [
+      varmap_subst syms.varmap a, 
+      varmap_subst syms.varmap b
+    ] 
+  in
+  try 
+    (*
+    print_endline "Calling unification";
+    *)
+    let mgu = unification eqns in
+    (*
+    print_endline "mgu=";
+    List.iter
+    (fun (i, t) -> 
+      print_endline (string_of_int i ^ " -> " ^ string_of_btypecode syms.dfns t)
+    )
+    mgu;
+    *)
+    List.iter
+    (fun (i, t) ->
+      if Hashtbl.mem syms.varmap i
+      then 
+        begin
+          (*
+          print_endline "Var already in varmap ..";
+          *)
+          let t' = Hashtbl.find syms.varmap i in
+          if t' <> t then 
+            failwith 
+            (
+               "[do_unify] binding for type variable " ^ string_of_int i ^
+               " is inconsistent\n"
+            )
+          else ()
+        end
+      else 
+        begin
+          (*
+          print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode syms.dfns t);
+          *)
+          Hashtbl.add syms.varmap i t
+        end
+    )
+    mgu
+    ;
+    true
+  with Not_found -> false
+
+let rec memq trail (a,b) = match trail with
+  | [] -> false
+  | (_,(i,j))::t -> i == a && j == b || memq t (a,b)
+
+let rec type_eq' trail depth t1 t2 = 
+  if memq trail (t1,t2) then true
+  else let te a b = type_eq' ((depth,(t1,t2))::trail) (depth+1) a b in
+  match t1,t2 with
+  | `BTYP_name i,`BTYP_name j when i = j -> true
+
+  | `BTYP_sum ts1, `BTYP_sum ts2
+  | `BTYP_tuple ts1,`BTYP_tuple ts2 ->
+    if List.length ts1 = List.length ts2
+    then 
+      List.fold_left2 
+      (fun tr a b -> tr && te a b) 
+      true ts1 ts2
+    else false
+
+  | `BTYP_binding (s1,d1),`BTYP_binding (s2,d2)
+  | `BTYP_function (s1,d1),`BTYP_function (s2,d2) 
+    -> te s1 s2 && te d1 d2
+
+  | `BTYP_pointer p1,`BTYP_pointer p2 
+    -> te p1 p2
+
+  | `BTYP_void,`BTYP_void
+  | `BTYP_none,`BTYP_none 
+    -> true
+
+  | `BTYP_var i, `BTYP_var j ->
+    i = j
+
+  | `BTYP_fix i,`BTYP_fix j ->
+    i = j
+
+  | `BTYP_fix i,t ->
+    type_eq' trail depth (fst (List.assoc (depth+i) trail)) t
+
+  | t,`BTYP_fix i ->
+    type_eq' trail depth t (snd (List.assoc (depth+i) trail))
+
+  | _ -> false
+
+let type_eq t1 t2 = type_eq' [] 0 t1 t2
+
+(* NOTE: only works on explicit fixpoint operators,
+  i.e. it won't work on typedefs: no name lookup,
+  these should be removed first .. 
+  another view: only works on non-generative types.
+*)
+
+let unfold t =
+  let rec aux depth t' = 
+  let uf t = aux (depth+1) t in
+  match t' with 
+  | `BTYP_sum ls -> `BTYP_sum (List.map uf ls)
+  | `BTYP_tuple ls -> `BTYP_tuple (List.map uf ls)
+  | `BTYP_function (a,b) -> `BTYP_function (uf a, uf b)
+  | `BTYP_pointer a -> `BTYP_pointer (uf a)
+  | `BTYP_binding (a,b) -> `BTYP_binding (uf a, uf b)
+  | `BTYP_fix i when (-i) = depth -> t
+  | `BTYP_fix i when (-i) > depth -> 
+    failwith ("Fix point outside term, depth="^string_of_int i)
+
+  | `BTYP_name i -> `BTYP_name i
+  | _ -> t'
+  in aux 0 t
+
+(* this undoes an unfold: it won't minimise an arbitrary type *)
+exception Found of btypecode_t
+
+let fold t = 
+  let rec aux trail depth t' = 
+    let ax t = aux ((depth,t')::trail) (depth+1) t in
+    match t' with
+    | `BTYP_sum ls 
+    | `BTYP_tuple ls -> List.iter ax ls
+
+    | `BTYP_binding (a,b)
+    | `BTYP_function (a,b) -> ax a; ax b
+
+    | `BTYP_pointer a  -> ax a
+
+    | `BTYP_void
+    | `BTYP_none
+    | `BTYP_name _ 
+    | `BTYP_var _ 
+    | `BTYP_fix 0 -> ()
+
+    | `BTYP_fix i ->
+      let k = depth + i in
+      let t'' = List.assoc k trail in
+      if type_eq t'' t then raise (Found t'')
+    | _ -> failwith "unexpected metatype"
+  in
+    try aux [] 0 t; t
+    with Found t -> t
+    
+let var_occurs t =
+  let rec aux t =
+    match t with
+    | `BTYP_sum ls 
+    | `BTYP_tuple ls -> List.iter aux ls
+
+    | `BTYP_binding (a,b)
+    | `BTYP_function (a,b) -> aux a; aux b
+
+    | `BTYP_pointer a  -> aux a
+
+    | `BTYP_void
+    | `BTYP_none
+    | `BTYP_name _ 
+    | `BTYP_fix _ -> ()
+
+    | `BTYP_var _ -> raise Not_found
+    | _ -> failwith "unexpected metatype"
+
+ in try aux t; false with Not_found -> true
+
+@h=tangler('src/flx_unify.mli')
+@select(h)
+open Flx_types
+val do_unify:
+  sym_state_t ->
+  btypecode_t ->
+  btypecode_t ->
+  bool
+
+val type_eq:
+  btypecode_t ->
+  btypecode_t ->
+  bool
+
+val unfold:
+  btypecode_t ->
+  btypecode_t 
+
+val fold:
+  btypecode_t ->
+  btypecode_t 
+
+val varmap_subst:
+  (int,btypecode_t) Hashtbl.t ->
+  btypecode_t ->
+  btypecode_t
+
+val var_occurs:
+  btypecode_t ->
+  bool
