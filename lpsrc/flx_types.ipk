@@ -473,6 +473,7 @@ and property_t = [
   | `Inline 
   | `NoInline 
   | `Inlining_complete
+  | `Generated of string
 ]
 
 and type_qual_t = [
@@ -790,6 +791,8 @@ and bexe_t =
   | `BEXE_nonreturn_code of range_srcref * string
   | `BEXE_assign of range_srcref * tbexpr_t * tbexpr_t 
   | `BEXE_init of range_srcref * bid_t * tbexpr_t 
+  | `BEXE_begin
+  | `BEXE_end
   (*
   | `BEXE_regmatch of range_srcref * tbexpr_t * regular_args_t
   | `BEXE_reglex of range_srcref * tbexpr_t * tbexpr_t * regular_args_t
@@ -833,6 +836,7 @@ and bbdcl_t =
   | `BBDCL_procedure of  property_t list * bvs_t * bparameter_t list * bexe_t list
   | `BBDCL_val of        bvs_t * btypecode_t
   | `BBDCL_var of        bvs_t * btypecode_t
+  | `BBDCL_tmp of        bvs_t * btypecode_t
   | `BBDCL_glr of        bvs_t * btypecode_t * (bproduction_t * bexe_t list)
   | `BBDCL_regmatch of   bvs_t * bparameter_t list * btypecode_t * regular_args_t
   | `BBDCL_reglex of     bvs_t * bparameter_t list * int * btypecode_t * regular_args_t
@@ -927,6 +931,12 @@ val iter_b0type:
 val iter_btype:
   (btypecode_t -> unit) -> btypecode_t -> unit
   
+val iter_tbexpr:
+  (bid_t -> unit) ->
+  (tbexpr_t -> unit) -> 
+  (btypecode_t -> unit) ->
+  tbexpr_t -> unit
+
 val map_tbexpr:
   (bid_t -> bid_t) ->
   (tbexpr_t -> tbexpr_t) -> 
@@ -1093,10 +1103,34 @@ let iter_btype f = function
 
 (* type invariant mapping *)
 
+let iter_tbexpr fi fe ft e = match e with 
+  | `BEXPR_parse (e,iis),t -> fe e; iter fi iis; ft t
+  | `BEXPR_deref e,t -> fe e; ft t
+  | `BEXPR_ref (i,ts),t -> fi i; iter ft ts; ft t
+
+  | `BEXPR_apply (e1,e2),t -> fe e1; fe e2; ft t
+
+  | `BEXPR_apply_prim (i,ts,e2),t -> fi i; iter ft ts, fe e2; ft t
+  | `BEXPR_apply_direct (i,ts,e2),t -> fi i; iter ft ts; fe e2; ft t
+  | `BEXPR_apply_stack (i,ts,e2),t -> fi i; iter ft ts; fe e2; ft t
+  | `BEXPR_tuple  es,t -> iter fe es; ft t
+
+  | `BEXPR_get_n (i,e),t -> fe e; ft t
+
+  | `BEXPR_closure (i,ts),t -> fi i; iter ft ts; ft t
+  | `BEXPR_name (i,ts),t -> fi i, iter ft ts; ft t
+  | `BEXPR_case (i,t'),t -> ft t'; ft t
+  | `BEXPR_match_case (i,e),t -> fe e; ft t
+  | `BEXPR_case_arg (i,e),t -> fe e; ft t
+  | `BEXPR_case_index e,t -> fe e; ft t
+
+  | `BEXPR_literal x,t -> ft t
+  | `BEXPR_expr (s,t1),t2 -> ft t1; ft t2
+
 let map_tbexpr fi fe ft e = match e with 
   | `BEXPR_parse (e,iis),t -> `BEXPR_parse (fe e,map fi iis), ft t
   | `BEXPR_deref e,t -> `BEXPR_deref (fe e),ft t
-  | `BEXPR_ref (i,ts),t -> `BEXPR_ref (i, map ft ts), ft t
+  | `BEXPR_ref (i,ts),t -> `BEXPR_ref (fi i, map ft ts), ft t
 
   | `BEXPR_apply (e1,e2),t -> `BEXPR_apply (fe e1, fe e2), ft t
 
@@ -1175,6 +1209,8 @@ let iter_bexe fi fe ft fl fldef exe =
   | `BEXE_proc_return _
   | `BEXE_comment _
   | `BEXE_nop _
+  | `BEXE_begin
+  | `BEXE_end
     -> ()
 
 
@@ -1251,6 +1287,8 @@ let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
   | `BEXE_proc_return _
   | `BEXE_comment _
   | `BEXE_nop _
+  | `BEXE_begin
+  | `BEXE_end
     -> exe
 
 let ident x = x
@@ -2296,6 +2334,7 @@ and string_of_lvalue (x,t) =
 and string_of_property = function
 | `Recursive -> "recursive"
 | `Inline -> "inline"
+| `Generated s -> "generated " ^ s
 | `NoInline -> "noinline"
 | `Inlining_complete -> "inlining_complete"
 
@@ -3084,6 +3123,8 @@ and string_of_bexe dfns level s =
 
   | `BEXE_init (_,l,r) -> spc ^ 
     sid l ^ " := " ^ se r ^ ";"
+  | `BEXE_begin -> "{//begin"
+  | `BEXE_end -> "}//end"
 
 and string_of_dcl level name seq vs (s:dcl_t) = 
   let se e = string_of_expr e in
@@ -3310,6 +3351,9 @@ and string_of_bbdcl dfns bbdcl index =
 
   | `BBDCL_var (vs,ty) ->
     "var " ^ name ^ print_bvs vs ^ ": " ^ sobt ty ^ ";"
+
+  | `BBDCL_tmp (vs,ty) ->
+    "tmp " ^ name ^ print_bvs vs ^ ": " ^ sobt ty ^ ";"
 
   (* binding structures [prolog] *)
   | `BBDCL_abs (vs,quals,code,reqs) ->

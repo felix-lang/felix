@@ -1,4 +1,116 @@
 @head(1,'Lua')
+
+From: Rici Lake <lua@ricilake.net>
+Date: Sat, 29 Jan 2005 17:22:07 -0500
+To: Lua list <lua@bazar2.conectiva.com.br>
+Subject: Re: Still cryptic OOP syntax
+
+On 29-Jan-05, at 3:46 PM, skaller wrote:
+
+> *** writing a parser in Lua will not be easy,
+> it isn't particularly well suited to that.
+
+Perhaps not, but I managed to do it, at least. It's available
+on LuaForge, and I really have to get around to rewriting it :(
+
+I think you are using the word "ambiguity" when you
+mean something else, possibly "shift-reduce conflict".
+
+There is one ambiguity in the Lua grammar, which was
+introduced in Lua 5.0; a simple example of it is:
+
+   a(b)(c)(d)
+
+which could be one or two function-call statements. In
+general, statements which can end with expressions suffer
+from this ambiguity. I would guess that it would be
+diagnosed as a shift-reduce conflict involving the production
+
+   functioncall -> prefixexp args
+
+Technically, this is not an ambiguity; it is resolved in
+favour of making the expression as long as possible.
+There is a straight-forward grammar transformation which can
+express this condition, although it is a bit tedious; it
+is unnecessary since LALR parser generators like yacc will
+normally resolve shift-reduce conflicts in favour of shift.
+
+Lua also bans functioncalls in which a new-line intervenes
+between the function expression and the argument list.
+(My parser doesn't handle this case, but it could be accomplished
+by having the lexer mark the difference between a '(' which
+is the first token in a line and a '(' which is not.)
+
+The grammar as printed in the reference manual has two additional
+ambiguities. First, it does not reflect operator precedence rules
+(the grammar transformation to deal with this is well-known, and
+I don't think it adds to the readability of grammars; again, parser
+generators like yacc will accept operator precedence declarations
+which are, imho, more readable than writing out a rule for each
+precedence set).
+
+Second, it does not reflect the fact that return (and break)
+statements can only occur at the end of a chunk; if this were
+not the case then
+
+   return a()
+
+would also be ambiguous. (It is interesting that the return
+statement is the only Lua statement which can end with an
+optional expression.)
+
+It would have been more accurate to have written:
+
+   <chunk> -> { <stat> [;] } [ <final-stat> [;] ]
+   <final-stat> -> return [ <explist1> ]
+                 | break
+   <stat> -> -- everything except return and break --
+
+I think this would be useful to put in the printed grammar, and
+this relatively simple change would probably remove one of the
+ambiguities being detected by your parser.
+
+There are some additional ambiguities in the lexical rules,
+which is a suprisingly common occurrence. These are uniformly
+resolved with the normal "greedy lex" algorithm except for the
+lexing of numbers; a strict greedy lexer would resolve
+   3E=7
+as four tokens and
+   3..7
+as two tokens. The Lua lexer generates lexical errors in both
+cases. (Curiously, A=4E=7 is a lexical error whereas A=4F=7 is
+two assignment statements. Personally, I would have gone for
+making them both lexical errors, but that's just me.)
+
+Of course, Lua is not as simple to parse as Forth, Scheme or
+Smalltalk; on the other hand, it is much simpler than Perl,
+Python or C. It can easily be parsed with the combination of
+a recursive descent statement parser and an operator precedence
+expression parser, except for the slight annoyance of table
+constructors which require an additional lookahead token to
+distinguish between {a = 3}  and  {a + 3}.
+
+The complexity of LuaParse is due to a combination of factors:
+
+1) I was experimenting with different writing styles at the
+time, and not all the experiments were successful.
+
+2) I was attempting to do better error recovery than just
+stopping and reporting an error.
+
+3) LuaParse is designed for visual linting and therefore
+preserves comments. (This is not much of a complication
+but it was a bit annoying; in many cases, a parse error
+is discovered after a sequence of comments but the error
+indication needs to go before them.)
+
+4) It does enough semantic analysis to distinguish between
+uses of variables and setting of variables. Really, I'd like
+to do more flow analysis, but that's on the sometime-in-the-misty
+future list.
+
+Even so, it's not that much code.
+
 @h=tangler('lib/lua.flx')
 @select(h)
 include 'std';

@@ -181,6 +181,8 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   | `BEXE_comment _
   | `BEXE_nop _
   | `BEXE_proc_return _
+  | `BEXE_begin
+  | `BEXE_end
     -> ()
 
 and process_exes syms bbdfns ref_insts1 ts hvarmap exes = 
@@ -275,6 +277,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
 
   | `BBDCL_val (vs,t)
   | `BBDCL_var (vs,t)
+  | `BBDCL_tmp (vs,t)
     ->
     (* assert (length vs = length ts); *)
     if length vs <> length ts

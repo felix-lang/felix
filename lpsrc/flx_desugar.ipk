@@ -142,7 +142,7 @@ let arglist x =
   | `AST_tuple (_,ts) -> ts
   | _ -> [x]
 
-let mkcurry seq sr name vs args return_type kind body =
+let mkcurry seq sr name vs args return_type kind body props =
   let vss',args= split (map (fix_params seq) args) in
   let vs = concat (vs :: vss') in
   let mkfuntyp d c = `TYP_function (d,c)
@@ -162,8 +162,8 @@ let mkcurry seq sr name vs args return_type kind body =
     let n = List.length args in
     let name n = 
       if n = arity
-      then name (* top level *)
-      else name^"_curry_" ^ si n
+      then name 
+      else name^"'" ^ si (arity-n+1)
     in
     match args with 
     | [] -> 
@@ -172,9 +172,9 @@ let mkcurry seq sr name vs args return_type kind body =
         | `InlineFunction
         | `Function ->
           let props = match kind with
-          | `InlineFunction -> [`Inline]
-          | `NoInlineFunction -> [`NoInline]
-          | _ -> []
+          | `InlineFunction -> `Inline::props
+          | `NoInlineFunction -> `NoInline::props
+          | _ -> props
           in
           begin match return_type with
           | `AST_void _ ->
@@ -193,9 +193,9 @@ let mkcurry seq sr name vs args return_type kind body =
         | `InlineFunction
         | `Function ->
           let props = match kind with
-          | `InlineFunction -> [`Inline]
-          | `NoInlineFunction -> [`NoInline]
-          | _ -> []
+          | `InlineFunction -> `Inline::props
+          | `NoInlineFunction -> `NoInline::props
+          | _ -> props 
           in
           `AST_function (sr, name n, vs, h, return_type, props, body)
         | `Object ->
@@ -220,7 +220,7 @@ let mkcurry seq sr name vs args return_type kind body =
           )
         ] 
       in
-        `AST_function (sr, name m, vs, h, rettype t, [], body)
+        `AST_function (sr, name m, vs, h, rettype t, [`Generated "curry";`Inline], body)
    in aux args vs
 
 (* model binary operator as procedure call *)
@@ -241,7 +241,7 @@ let find_methods seq sr sts =
   let methods = ref [] in
   let rec check = function 
     | `AST_curry (sr,mname,vs,pss,ret,kind,sts) ->
-      check (mkcurry seq sr mname vs pss ret kind sts)
+      check (mkcurry seq sr mname vs pss ret kind sts [])
 
     (*
     | `AST_object (sr,mname, vs, ps, sts) ->
@@ -352,8 +352,8 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
          (
            e,
            [
-             `PAT_const_ctor (sr,`AST_case_tag (sr,1)),b2;
-             `PAT_const_ctor (sr,`AST_case_tag (sr,2)),b1
+             `PAT_const_ctor (sr,`AST_case_tag (sr,2)),b1; (* true *)
+             `PAT_any sr,b2 (* false *)
            ]
          )
        )
@@ -404,7 +404,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let access = `Private in
     let vs = [] in
     let sts = 
-      rst syms name access [] (mkcurry seq sr name' vs pps ret kind sts)
+      rst syms name access [] (mkcurry seq sr name' vs pps ret kind sts [`Generated "lambda"])
     in
     let e = 
       `AST_suffix 
@@ -493,77 +493,6 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     rfun :: l1 @ l2 @ !dcls,
     `AST_apply(sr,(`AST_index(sr,fname,n),pp))
    
-  (*
-  | `AST_reglex (sr,(p1,p2,cls')) ->
-    let lexer_module = `AST_name(sr,"Lexer",[]) in
-    let iterator_type = 
-      `AST_lookup ( sr, ( lexer_module, "iterator", [])) 
-    in
-    let unit_type = `TYP_tuple [] in
-    let unit_value = `AST_tuple (sr,[]) in
-    let fetcher_type = `TYP_function [unit_type, iterator_type] in
-    let params = 
-      [
-        "lexeme_start",iterator_type;
-        "lexeme_end",iterator_type;
-        "buffer_end",iterator_type
-      ]
-    in
-    let dcls = ref [] in
-    let cls = ref [] in
-    let ls = `AST_expr(sr,"lexeme_start",iterator_type) in
-    let le = `AST_expr (sr,"lexeme_end",iterator_type) in
-    let be = `AST_expr (sr,"buffer_end",iterator_type) in
-    iter 
-    (fun (re,e) -> 
-      let l,x = rex e in
-      dcls := l @ !dcls;
-      let n = seq() in
-      let name = "_lam_" ^ si n in
-      let x = `AST_tuple (sr,[le;x]) in
-      let d = Dcl
-        (
-          sr,
-          name, None,
-          `Private,
-          [],
-          `DCL_function 
-          (
-            params,
-            `TYP_none,
-            [`Inline],
-            [Exe (sr,`EXE_fun_return x)]
-           )
-        ) 
-      in
-      dcls := d :: !dcls;
-      let a = `AST_apply
-        (
-          sr,
-          (
-            `AST_name (sr,name,[]),
-            `AST_tuple (sr,[ls; le; be])
-          )
-        ) 
-      in
-      cls := (re,a) :: !cls
-    )
-    cls'
-    ;
-
-    let n = seq() in
-    let fname = "reglex" ^ si n in
-    let l1,x1 = rex p1 in
-    let l2,x2 = rex p2 in
-    let exes = [Exe(sr,`EXE_reglex (x1,x2,!cls))] in
-    let rfun = Dcl(sr,fname,None,`Private,[],
-      `DCL_function([],`TYP_none,[`NoInline],exes)) 
-    in
-    rfun :: l1 @ l2 @ !dcls,
-    `AST_apply(sr,(`AST_name(sr,fname,[]),`AST_tuple(sr,[])))
-
-    *)
-     
   | `AST_letin (sr,(pat,e1,e2)) ->
     rex (`AST_match (sr,(e1,[pat,e2])))
     
@@ -618,90 +547,110 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     *)
     let matches = ref [Exe (generated,`EXE_comment "begin match")] in
     let match_caseno = ref 1 in
+    let iswild = ref false in
     iter
     (fun (pat,e) -> 
       let n1 = !match_seq in
       let n2 = seq() in
       let mh_idx = seq () in
       let mc_idx = seq () in
+      if !iswild then
+        print_endline "WARNING, matches after wildcard ignored"
+      else begin
+        begin match pat with
+          | `PAT_any _ -> iswild := true
+          | _ -> ()
+        end
+        ;
+        let patsrc = src_of_pat pat in
+        let expr_src = src_of_expr e in
+        let match_checker_id = name ^ "_mc" ^ si n1 in
+        let match_handler_id = name ^ "_mh" ^ si n1 in
+        let match_checker = `AST_index (patsrc,match_checker_id,mc_idx) in
+        let match_handler = `AST_index (expr_src,match_handler_id,mh_idx) in
+        (*
+        print_endline ("Match checker index = " ^ si mc_idx);
+        print_endline ("Match handler index = " ^ si mh_idx);
+        *)
+        let sts,result_expr = rex e in
+        let body = 
+          sts @ 
+          [Exe (expr_src,`EXE_fun_return (result_expr))] 
+        in
+        matches := !matches @
+        [
+          Dcl (patsrc,match_checker_id,Some mc_idx,`Private,[],
+          `DCL_match_check (pat,(match_var_name,match_var_index)));
+          Dcl 
+          (
+            expr_src,
+            match_handler_id,Some mh_idx,
+            `Private,
+            [],
+            `DCL_match_handler 
+            (
+              pat,
+              (match_var_name,match_var_index),
+              body
+            )
+          )
+        ]
+        @
+        [
+        Exe (patsrc,`EXE_comment ("match case " ^ si !match_caseno^":" ^ string_of_pattern pat));
+        Exe (patsrc,`EXE_label ("_ml" ^ si n1))
+        ]
+        @
 
-      let patsrc = src_of_pat pat in
-      let expr_src = src_of_expr e in
-      let match_checker_id = name ^ "_mc" ^ si n1 in
-      let match_handler_id = name ^ "_mh" ^ si n1 in
-      let match_checker = `AST_index (patsrc,match_checker_id,mc_idx) in
-      let match_handler = `AST_index (expr_src,match_handler_id,mh_idx) in
-      (*
-      print_endline ("Match checker index = " ^ si mc_idx);
-      print_endline ("Match handler index = " ^ si mh_idx);
-      *)
-      let sts,result_expr = rex e in
-      let body = 
-        sts @ 
-        [Exe (expr_src,`EXE_fun_return (result_expr))] 
-      in
-      matches := !matches @
-      [
-        Dcl (patsrc,match_checker_id,Some mc_idx,`Private,[],
-        `DCL_match_check (pat,(match_var_name,match_var_index)));
-        Dcl 
-        (
-          expr_src,
-          match_handler_id,Some mh_idx,
-          `Private,
-          [],
-          `DCL_match_handler 
-          (
-            pat,
-            (match_var_name,match_var_index),
-            body
-          )
-        )
-      ]
-      @
-      [
-      Exe (patsrc,`EXE_comment ("match case " ^ si !match_caseno));
-      Exe (patsrc,`EXE_label ("_ml" ^ si n1));
-      Exe 
-      (
-        patsrc,
-        `EXE_ifnotgoto 
-        (
-          `AST_apply 
+        (* This code checks the match condition, it can be
+           elided if the match is wildcard 
+        *)
+        (if !iswild then [] else
+        [
+          Exe 
           (
             patsrc,
+            `EXE_ifnotgoto 
             (
-              match_checker,
-              `AST_tuple (patsrc,[])
+              `AST_apply 
+              (
+                patsrc,
+                (
+                  match_checker,
+                  `AST_tuple (patsrc,[])
+                )
+              ), 
+              "_ml" ^ si n2
             )
-          ), 
-          "_ml" ^ si n2
+          )
+        ]
         )
-      )
-      ;
-      Exe 
-      (
-        patsrc,
-        `EXE_fun_return 
+        @
+        [
+        Exe 
         (
-          `AST_apply 
+          patsrc,
+          `EXE_fun_return 
           (
-            patsrc,
+            `AST_apply 
             (
-              match_handler, 
-              `AST_tuple (patsrc,[])
+              patsrc,
+              (
+                match_handler, 
+                `AST_tuple (patsrc,[])
+              )
             )
           )
         )
-      )
-      (*
-      ;
-      Exe (patsrc,`EXE_goto end_match_label)
-      *)
-      ]
-      ;
-      incr match_caseno;
-      match_seq := n2
+        (*
+        ;
+        Exe (patsrc,`EXE_goto end_match_label)
+        *)
+        ]
+        ;
+        incr match_caseno;
+        match_seq := n2
+      end
     )
     pss
     ;
@@ -714,15 +663,14 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     @
     !matches
     @
-    [
-      Exe (sr,`EXE_comment "match failure");
-      Exe (sr,`EXE_label failure_label);
-      Exe (sr,`EXE_noreturn_code "      assert((\"match failure\",false));\n");
-      (*
-      Exe (sr,`EXE_comment "match exit");
-      Exe (sr,`EXE_label end_match_label)
-      *)
-    ]
+    (if !iswild then [] else
+      let mfmsg = "match failure in " ^ short_string_of_src sr in
+      [
+        Exe (sr,`EXE_comment "match failure");
+        Exe (sr,`EXE_label failure_label);
+        Exe (sr,`EXE_noreturn_code ("      assert((\""^mfmsg^"\",false));\n"));
+      ]
+    )
     in
     [
       Dcl 
@@ -735,7 +683,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
         (
           [],
           `TYP_none,
-          [`Inline],
+          [`Inline;`Generated "desugar:match fun"],
           match_function_body
         )
       )
@@ -893,7 +841,7 @@ and rst syms name access parent_vs st : asm_t list =
   | `AST_inherit_fun (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,`DCL_inherit_fun qn)]
 
   | `AST_curry (sr,name',vs,pps,ret,kind,sts) ->
-    rst syms name access parent_vs (mkcurry seq sr name' vs pps ret kind sts)
+    rst syms name access parent_vs (mkcurry seq sr name' vs pps ret kind sts [])
 
   (* The object *)
   (* THIS IS HACKY AND DOESN'T WORK PROPERLY --

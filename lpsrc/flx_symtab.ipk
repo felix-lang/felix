@@ -387,7 +387,7 @@ let rec build_tables syms name level parent grandparent root asms =
             id=id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;
             dirs=dirs;
-            symdef=`SYMDEF_function ([],`TYP_var fun_index, [],exes)
+            symdef=`SYMDEF_function ([],`TYP_var fun_index, [`Generated "symtab:match handler" ; `Inline],exes)
           };
           if access = `Public then 
             add_function pub_name_map id fun_index;

@@ -95,6 +95,7 @@ let cpp_name bbdfns index =
   | `BBDCL_reglex _  -> "_rl"
   | `BBDCL_var _ -> "_v"
   | `BBDCL_val _ -> "_v"
+  | `BBDCL_tmp _ -> "_tmp"
   | _ -> syserr sr "cpp_name expected func,proc,var or val"
   ) ^ si index ^ "_" ^ cvt id
 

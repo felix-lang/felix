@@ -171,6 +171,7 @@ let tident t = t
 let rec enstack_applies cache syms (child_map, bbdfns) x = 
   let ea e = enstack_applies cache syms (child_map, bbdfns) e in
   match map_tbexpr ident ea tident x with
+  | `BEXPR_apply ((`BEXPR_closure(i,ts),_),b),t 
   | `BEXPR_apply_direct (i,ts,b),t  ->
     if can_stack_func cache syms (child_map, bbdfns) i
     then `BEXPR_apply_stack (i,ts,b),t
@@ -180,6 +181,9 @@ let rec enstack_applies cache syms (child_map, bbdfns) x =
 
 let enstack_calls cache syms (child_map,bbdfns) exes =
   let ea e = enstack_applies cache syms (child_map, bbdfns) e in
+  let id x = x in
+  map (map_bexe id ea id id id) exes
+  (*
   let exes' = ref [] in
   iter
   (fun x -> match x with
@@ -229,8 +233,10 @@ let enstack_calls cache syms (child_map,bbdfns) exes =
   exes
   ;
   rev !exes'
+  *)
 
 let copy_bbdcl cache syms (child_map,bbdfns) bbdfns2 i bbdfn =
+  let ea e = enstack_applies cache syms (child_map, bbdfns) e in
   let data =
     match bbdfn with
     | id,parent,sr,`BBDCL_procedure (props,vs,p,exes) ->
@@ -245,6 +251,18 @@ let copy_bbdcl cache syms (child_map,bbdfns) bbdfns2 i bbdfn =
     | id,parent,sr,`BBDCL_glr (vs,t,(p,exes)) ->
       let exes = enstack_calls cache syms (child_map,bbdfns) exes in
       id,parent,sr,`BBDCL_glr (vs,t,(p,exes))
+
+    | id,parent,sr,`BBDCL_regmatch (vs,p,t,(a,i,h,m)) ->
+      Hashtbl.iter
+      (fun k e -> Hashtbl.replace h k (ea e))
+      h;
+      bbdfn (* mutated *)
+
+    | id,parent,sr,`BBDCL_reglex (vs,p,j,t,(a,i,h,m)) ->
+      Hashtbl.iter
+      (fun k e -> Hashtbl.replace h k (ea e))
+      h;
+      bbdfn (* mutated *)
 
     | x -> x
   in

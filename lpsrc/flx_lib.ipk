@@ -505,11 +505,9 @@ module C_hack
   only useful for C functions that are mainly
   called for side effects.
   """
-  proc ignore[t](x:t){ 
-    code "";  // hack to prevent routine being optimised away
-  }
+  proc ignore[t]:t = "(void)$t;";
   
-  fun cast[dst,src]: src->dst = '(?1)$1';
+  fun cast[dst,src]: src->dst = '(?1)($1)';
   fun static_cast[dst,src]: src->dst = 'static_cast<?1>($1)';
   fun dynamic_cast[dst,src]: src->dst = 'dynamic_cast<?1>($1)';
   fun reinterpret_cast[dst,src]: src->dst = 'reinterpret_cast<?1>($1)';

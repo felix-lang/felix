@@ -103,6 +103,8 @@ let rec isuseless bbdfns exes =
       | `BEXE_nop _
       | `BEXE_comment _
       | `BEXE_proc_return _
+      | `BEXE_begin
+      | `BEXE_end
         -> ()
     )
     exes
@@ -204,7 +206,8 @@ let check_can_inline (child_map, bbdfns) i =
       let id,sr,parent,entry = Hashtbl.find bbdfns i in
       match entry with 
       | `BBDCL_var _
-      | `BBDCL_val _ -> ()
+      | `BBDCL_val _
+      | `BBDCL_tmp _ -> ()
       | _ -> raise Cannot_inline
     end
   children 
@@ -471,6 +474,8 @@ let rec useless_call_elim syms used (child_map,bbdfns) vs' exes index =
   | `BEXE_nonreturn_code _
   | `BEXE_read _
   | `BEXE_halt _
+  | `BEXE_begin
+  | `BEXE_end
     -> exes' := x :: !exes' 
   )
   exes

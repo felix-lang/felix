@@ -63,12 +63,50 @@ open Flx_use
 
 module BidSet = IntSet
 
+let intset_of_list ls = 
+  fold_left (fun s i -> IntSet.add i s) IntSet.empty ls
+  
+(* this only updates the uses table not the usedby table,
+  because inlining changes usage (obviously).
+  we need it in particular for the is_recursive test,
+  so that tail recursions which have been eliminated
+  won't cause the test to return a false positive
+*)
+
+let string_of_intset s =
+  "{ " ^
+  IntSet.fold (fun i x -> x ^ si i ^ " ") s "" ^
+  "}"
+
+let recal_exes_usage uses i exes =
+  (* delete old entry *)
+  (try Hashtbl.remove uses i with Not_found -> ());
+  iter (Flx_call.cal_exe_usage uses i) exes
+
+let is_tailed ps exes =
+  try iter
+  (function 
+    | `BEXE_init(_,i,_) when mem i ps -> raise Not_found 
+    | _ -> ()
+  )
+  exes;
+  false
+  with Not_found -> true
+  
 let find_children childmap parent =
   try Hashtbl.find childmap parent with Not_found -> []
+
+let is_child childmap parent child =
+  mem child (find_children childmap parent)
 
 let add_child childmap parent child =
   let kids = find_children childmap parent in
   Hashtbl.replace childmap parent (child::kids)
+
+let remove_child childmap parent child =
+  let kids = find_children childmap parent in
+  let kids = filter (fun i -> i <> child) kids in
+  Hashtbl.replace childmap parent kids
 
 let string_of_vs vs =
   "[" ^ catmap "," (fun (s,i)->s^"<"^si i^">") vs ^ "]"
@@ -89,6 +127,41 @@ let rec descendants child_map index =
   ;
   !d
 
+let useset uses i =
+  let u = try Hashtbl.find uses i with Not_found -> [] in
+  fold_left (fun s (i,_) -> IntSet.add i s) IntSet.empty u
+  
+(* find all the variables of a function i which
+   are not used by children, this is the kids
+   minus just the union of everything used by the 
+   child functions.
+*)
+let locals child_map uses i =
+  let kids = intset_of_list (find_children child_map i) in
+  let desc = descendants child_map i in
+  let u =
+    IntSet.fold 
+    (fun i s -> 
+      let u = useset uses i in
+      IntSet.union s u
+    )
+    desc
+    IntSet.empty
+  in
+  IntSet.diff kids u
+
+(* remove all uses of j from i *)
+let remove_uses uses i j =
+  try
+    let u = Hashtbl.find uses i in
+    let u = filter (fun (k,sr) -> j <> k) u in
+    Hashtbl.replace uses i u
+  with Not_found -> ()
+
+let add_use uses i j sr =
+  let u = try Hashtbl.find uses i with Not_found -> [] in
+  Hashtbl.replace uses i ((j,sr) :: u)
+  
 let mk_remap counter d =
   let m = Hashtbl.create 97 in
   IntSet.iter
@@ -283,6 +356,9 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   | `BBDCL_val (vs,t) ->
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_val (splice vs,auxt t))
 
+  | `BBDCL_tmp (vs,t) ->
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_tmp (splice vs,auxt t))
+
   | `BBDCL_reglex (vs,ps,i,t,(a,j,h,m)) ->
     let t = auxt t in
     let ps = remap_ps ps in
@@ -290,7 +366,11 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     let i = revar i in
     let h2 = Hashtbl.create 13 in
     Hashtbl.iter (fun x e -> Hashtbl.add h2 x (rexpr e)) h;
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_reglex (vs,ps,i,t,(a,j,h2,m)))
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_reglex (vs,ps,i,t,(a,j,h2,m)));
+    let calls = try Hashtbl.find uses index with Not_found -> [] in
+    let calls = map (fun (j,sr) -> revar j,sr) calls in
+    Hashtbl.add uses k calls
+
 
   | `BBDCL_regmatch (vs,ps,t,(a,j,h,m)) ->
     let t = auxt t in
@@ -298,7 +378,11 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     let vs = splice vs in
     let h2 = Hashtbl.create 13 in
     Hashtbl.iter (fun x e -> Hashtbl.add h2 x (rexpr e)) h;
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_regmatch (vs,ps,t,(a,j,h2,m)))
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_regmatch (vs,ps,t,(a,j,h2,m)));
+    let calls = try Hashtbl.find uses index with Not_found -> [] in
+    let calls = map (fun (j,sr) -> revar j,sr) calls in
+    Hashtbl.add uses k calls
+
   
   | `BBDCL_glr (vs,t,(prd,exes)) -> 
     let t = auxt t in
@@ -437,11 +521,17 @@ let subarg syms bbdfns argmap exe =
 (* NOTE: result is in reversed order *)
 let gen_body syms (uses,child_map,bbdfns) id 
   varmap ps relabel revariable exes argument 
-  sr caller callee vs callee_vs_len inline_method
+  sr caller callee vs callee_vs_len inline_method props
 =
   let argument = reduce_tbexpr bbdfns argument in
+  let psis: int list = map (fun (_,(i,_)) -> i) ps in
   let inline_method = match inline_method with
-  | `Lazy -> if Flx_call.is_recursive uses callee then `Eager else `Lazy
+  | `Lazy -> 
+    if 
+      Flx_call.is_recursive uses callee or 
+      is_tailed psis exes
+    then `Eager 
+    else `Lazy
   | `Eager -> `Eager
   in
   (*
@@ -557,12 +647,32 @@ let gen_body syms (uses,child_map,bbdfns) id
   | `BEXE_nop (sr,s) as x -> [x]
   | `BEXE_halt (sr,s) as x -> [x]
   | `BEXE_label (sr,lab) -> [`BEXE_label (sr, relab lab)]
+  | `BEXE_begin as x -> [x]
+  | `BEXE_end as x -> [x]
   in
     let kind = match inline_method with 
       | `Lazy -> "Lazy " 
       | `Eager -> "Eager " 
     in
-    let b = ref [`BEXE_comment (sr,(kind ^ "inline call to " ^ id))] in
+    let rec fgc props s = 
+      match props with
+      | [] -> String.concat ", " s
+      | `Generated x :: t -> fgc t (x :: s)
+      | _ :: t -> fgc t s
+    in
+    let source = 
+      let x = fgc props [] in
+      if x <> "" then " (Generated "^x^")" else "" 
+    in
+    (* add a comment for non-generated functions .. *)
+    let b = 
+      ref 
+      (
+        if source = "" then 
+          [`BEXE_comment (sr,(kind ^ "inline call to " ^ id ^source))] 
+        else []
+      ) 
+    in
     if inline_method = `Eager then begin
       (* create a variable for the parameter *)
       let parameter = !(syms.counter) in 
@@ -765,7 +875,7 @@ let call_lifting syms (uses,child_map,bbdfns) caller caller_vs callee ts a argum
     (* use the inliner to handle the heavy work *)
     let body =
       gen_body syms (uses,child_map,bbdfns) id varmap ps relabel revariable 
-      exes a sr caller callee caller_vs callee_vs_len `Lazy
+      exes a sr caller callee caller_vs callee_vs_len `Lazy props
     in
 
     (* replace all function returns with tailed calls *)
@@ -826,7 +936,7 @@ let inline_tail_apply syms (uses,child_map,bbdfns) caller caller_vs callee ts a 
     (* use the inliner to handle the heavy work *)
     let body =
       gen_body syms (uses,child_map,bbdfns) id varmap ps relabel revariable 
-      exes a sr caller callee caller_vs callee_vs_len `Lazy
+      exes a sr caller callee caller_vs callee_vs_len `Lazy props
     in
     rev body
 
@@ -858,7 +968,7 @@ let inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a va
     (* use the inliner to handle the heavy work *)
     let body =
       gen_body syms (uses,child_map,bbdfns) id varmap ps relabel revariable 
-      exes a sr caller callee caller_vs callee_vs_len `Lazy
+      exes a sr caller callee caller_vs callee_vs_len `Lazy props
     in
 
     (*
@@ -1017,6 +1127,8 @@ let expand_exe syms bbdfns u exe =
     | `BEXE_comment _
     | `BEXE_nop _
     | `BEXE_halt _
+    | `BEXE_begin
+    | `BEXE_end
       -> [exe]
   in 
     let xs = rev xs in
@@ -1089,21 +1201,70 @@ let heavy_inline_call syms (uses,child_map,bbdfns)
   in
   let xs = gen_body syms (uses,child_map,bbdfns) id 
     varmap ps relabel revariable exes 
-    argument sr caller callee caller_vs callee_vs_len `Lazy
+    argument sr caller callee caller_vs callee_vs_len `Lazy props
   in 
     rev xs (* forward order *)
    
-let tailit syms (child_map,bbdfns) this sr ps vs exes : bexe_t list = 
+let expr_uses syms descend usage restrict e = 
+  let u = ref IntSet.empty in
+  let add u i = u := IntSet.add i !u in
+  let rec fe e = iter_tbexpr (add u) fe ignore e in
+  fe e;
+  
+
+  (*
+  print_string ("Direct usage of expr " ^ sbe syms.dfns e ^ ": ");
+  IntSet.iter (fun i -> print_string (si i^" ")) !u;
+  print_endline "";
+  
+
+  print_string ("Restrict =  ");
+  IntSet.iter (fun i -> print_string (si i^" ")) restrict;
+  print_endline "";
+  *)
+ 
+  let u = IntSet.fold
+    (fun i cls -> IntSet.union cls (
+     let cl = Flx_call.child_use_closure descend usage i in
+     (*
+     print_string ("Closure of " ^ si i ^ " is: ");
+     IntSet.iter (fun i -> print_string (si i ^ " ")) cl;
+     print_endline "";
+     *)
+     cl
+    ))
+    !u
+    !u
+  in let u = IntSet.inter restrict u in
+  (*
+  print_string ("Restricted usage of expr " ^ sbe syms.dfns e ^ ": ");
+  IntSet.iter (fun i -> print_string (si i^" ")) u;
+  print_endline "";
+  *)
+  u
+
+(* Dependency analyser. This should be generalised,
+but for now we only use it in tail calls.
+ 
+We wish to discover what *local* vals an expression e in
+some routine i depends on.
+
+These are (a) the symbols manifestly used in the expression,
+and (b) any variable used by any function that is called.
+
+We can calculate this, expensively as the union of the
+use closures of each symbol in the expression intersected
+with the candidate locals.
+*)
+
+let tailit syms (uses,child_map,bbdfns) this sr ps vs exes : bexe_t list = 
   let ts' = map (fun (_,i) -> `BTYP_var i) vs in
-  let parameter = !(syms.counter) in incr syms.counter;
-  let param_used = ref false in
+  let pset = fold_left (fun s (_,(i,_))-> IntSet.add i s) IntSet.empty ps in
+  let parameters = ref [] in
+  let descend = descendants child_map this in
   let jump_done = ref false in
-  let start_label = "start_" ^ si parameter in
-  let paramtype  =
-    match map (fun (_,(_,t)) -> t) ps with
-    | [x] -> x
-    | x -> `BTYP_tuple x
-  in
+  let lc = !(syms.counter) in incr (syms.counter);
+  let start_label = "start_" ^ si lc in
 
   (* note reverse order *)
   (* Weirdly, this works for BOTH tail calls
@@ -1124,29 +1285,237 @@ let tailit syms (child_map,bbdfns) this sr ps vs exes : bexe_t list =
         `BEXE_comment (sr,"tail rec call (1)")
       ]
     | _ ->
+      let tmps_used = ref false in
+      begin match e with
+      | `BEXPR_tuple ls,_ ->
+        (*
+        print_endline ("TUPLE ASSGN " ^ sbe syms.dfns e);
+        *)
+        (* Parallel Assignment algorithm.
+           Given a set of assignments, xi = ei,
+           we need a sequence of assignments of xi, ei, tj,
+           where tj are fresh variables, xi on left, ei on
+           right, and tj on either side, such that no RHS
+           term depends on a prior LHS term.
 
-      [
-        `BEXE_goto (sr,start_label);
-        `BEXE_comment (sr,"tail rec call (2)")
-      ]
-      @
-      begin
-        param_used := true;
-        let p = `BEXPR_name (parameter,ts'),paramtype in  
-        let n = ref 0 in
-        map
-        (fun (_,(ix,prjt)) ->
-          let prj = reduce_tbexpr bbdfns (`BEXPR_get_n (!n,p),prjt) in
-          incr n;
-          `BEXE_init (sr,ix,prj)
+           A pair x1 = e1, x2 = e2 which are mutually dependent
+           can always by resolved as
+
+           t1 = e1; x2 = e2; x1 = t1
+
+           Here e1 doesn't depend on a prior term, vaccuously,
+           e2 can't depend on t1 since it is fresh, and
+           t1 can't depend on anything, since it just a fresh variable
+
+           Let's start by taking the equations, and making
+           two lists -- a head list and a tail list.
+           Head assignments are done first, tails last,
+           the head list is in reverse order.
+
+           Any equations setting variables no one depends on
+           can be moved into the head list, they can safely
+           be done first.
+
+           Any equations whose RHS depend on nothing are
+           moved into the tail list, its safe to do them last.
+
+           Any dependencies on variables set by equations
+           moved into the tail list can now be removed
+           from the remaining equations, since it is determined
+           now that these variables will be changed after
+           any of the remaining assignments are one.
+
+           Repeat until the set of remaining equations is fixed.
+
+           We can now pick (somehow!!) an equation, and break
+           it into two using a fresh temporary. The temporary
+           assignment goes on the head list, the variable
+           assignment from the temporary on the tail list,
+           and as above, any dependencies on the variable
+           can now be removed from the remaining equations.
+
+           Repeat everything until the set of remaining
+           equations is empty, the result is the reverse
+           of the heap list plus the tail list.
+
+           This process is certain to terminate, since
+           each outer step removes one equation,
+           and it is certain to be correct (obvious).
+
+           What is NOT clear is that the result is minimal.
+           And it is NOT clear how to best 'choose' which
+           equation to split.
+           
+        
+        *)
+        assert (length ls = length ps);
+        let pinits = 
+          map2
+          (fun (name,(i,t)) e ->
+            i,(name,t,e,expr_uses syms descend uses pset e)
+          )
+          ps ls
+        in
+        (* strip trivial assignments like x = x *)
+        let pinits = 
+          filter 
+          (fun (i,(name,t,e,u)) -> 
+            match e with 
+            | `BEXPR_name (j,_),_ when i = j -> false 
+            | _ -> true
+          )
+          pinits 
+        in
+        let fixdeps pinits =
+          let vars = fold_left (fun s (i,_) -> IntSet.add i s) IntSet.empty pinits in
+          map 
+          (fun (i,(name,t,e,u)) -> 
+            let u = IntSet.remove i (IntSet.inter u vars) in
+            i,(name,t,e,u)
+          )
+          pinits
+        in
+        (*
+        iter
+        (fun (i,(name,t,e,u)) -> 
+          print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns e);
+          print_string "  Depends: "; 
+            IntSet.iter (fun i -> print_string (si i ^ ", ")) u;
+          print_endline "";
         )
-        ps
+        pinits;
+        *)
+        (* this function measures if the expression assigning i
+        depends on the old value of j
+        *)
+        let depend pinits i j =
+           let u = match assoc i pinits with _,_,_,u -> u in
+           IntSet.mem j u
+        in
+        (* return true if an assignment in inits depends on j *)
+        let used j inits = 
+          fold_left (fun r (i,_)-> r or depend inits i j) false inits
+        in
+        let rec aux ((head, middle, tail) as arg) = function
+          | [] -> arg
+          | (i,(name,ty,e,u)) as h :: ta ->
+            if IntSet.cardinal u = 0 then
+              aux (head,middle,h::tail) ta
+            else if not (used i (middle @ ta)) then
+              aux (h::head, middle, tail) ta
+            else 
+              aux (head,h::middle,tail) ta
+        in 
+
+        let printem (h,m,t) =
+          print_endline "HEAD:";
+          iter
+          (fun (i,(name,t,e,u)) -> 
+            print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns e)
+          )
+          h;
+
+          print_endline "MIDDLE:";
+          iter
+          (fun (i,(name,t,e,u)) -> 
+            print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns e)
+          )
+          m;
+
+          print_endline "TAIL:";
+          iter
+          (fun (i,(name,t,e,u)) -> 
+            print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns e)
+          )
+          t
+        in
+
+        let rec aux2 (hh,mm,tt) =
+          let h,m,t = aux ([],[],[]) (fixdeps mm) in
+          (* printem (h,m,t); *)
+          (* reached a fixpoint? *)
+          if length h = 0 && length t = 0 then hh,m,tt (* m = mm *)
+          else begin
+            (*
+            print_endline "Recursing on MIDDLE";
+            *)
+            aux2 (h @ hh, m, t @ tt) 
+          end
+        in
+        let temps = ref [] in
+        let rec aux3 (hh,mm,tt) =
+          let h,m,t = aux2 (hh,mm,tt) in
+          (*
+          print_endline "SPLIT STEP result:";
+          printem(h,m,t);
+          *)
+          match m with
+          | [] -> rev h @ t 
+          | [_] -> assert false
+          | (i,(name,ty,e,u)) :: ta ->
+            let k = !(syms.counter) in incr syms.counter;
+            let name2 = "_tmp_" ^ name in
+            parameters := (ty,k) :: !parameters;
+            tmps_used := true;
+            let h' = k,(name2,ty,e,IntSet.empty) in
+            let e' = `BEXPR_name (k,ts'),ty in
+            let t' = i,(name,ty,e',IntSet.empty) in
+            aux3 (h' :: h, ta, t' :: t)
+        in
+        let m = aux3 ([],pinits,[]) in
+        (*
+        print_endline "FINAL SPLIT UP:";
+        iter
+        (fun (i,(name,t,e,u)) -> 
+          print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns e)
+        )
+        m;
+        *)
+        [
+          `BEXE_goto (sr,start_label)
+        ]
+        @
+        (if !tmps_used then [`BEXE_end] else [])
+        @
+        rev_map (fun (i,(name,ty,e,_)) -> `BEXE_init (sr,i,e)) m
+        @
+        (if !tmps_used then [`BEXE_begin] else [])
+        @
+        [
+          `BEXE_comment (sr,"tail rec call (3)")
+        ]
+
+      | _ ->
+        let t = snd e in
+        let pix = 
+          try assoc t !parameters 
+          with Not_found ->
+            let pix = !(syms.counter) in incr syms.counter;
+            parameters := (t,pix) :: !parameters;
+            pix
+        in
+        let p = `BEXPR_name (pix,ts'),t in  
+        let n = ref 0 in
+        let param_decode = 
+          map
+          (fun (_,(ix,prjt)) ->
+            let prj = reduce_tbexpr bbdfns (`BEXPR_get_n (!n,p),prjt) in
+            incr n;
+            `BEXE_init (sr,ix,prj)
+          )
+          ps
+        in
+        [
+          `BEXE_goto (sr,start_label);
+        ]
+        @
+        param_decode
+        @
+        [
+          `BEXE_init (sr,pix,e);
+          `BEXE_comment (sr,"tail rec call (2)")
+        ]
       end
-      @
-      [
-        `BEXE_init (sr,parameter,e);
-        `BEXE_comment (sr,"tail call")
-      ]
   in
   let rec aux tail res = match tail with
   | `BEXE_call_direct (sr,i,ts,a) :: tail 
@@ -1185,18 +1554,19 @@ let tailit syms (child_map,bbdfns) this sr ps vs exes : bexe_t list =
   in 
     let exes = aux exes [] in
 
-    (* if parameter used, create a variable *)
-    if !param_used then
-    begin
-      let entry = `BBDCL_var (vs,paramtype) in
-      let kids = 
-        try Hashtbl.find child_map this
-        with Not_found -> [] 
-      in
-      Hashtbl.replace child_map this (parameter::kids);
-      let id = "_trp_" ^ si  parameter in
-      Hashtbl.add bbdfns parameter (id,Some this,sr,entry);
-    end
+    (* instantiate any parameter temporaries *)
+    iter 
+      (fun (paramtype, parameter) ->
+        let entry = `BBDCL_tmp (vs,paramtype) in
+        let kids = 
+          try Hashtbl.find child_map this
+          with Not_found -> [] 
+        in
+        Hashtbl.replace child_map this (parameter::kids);
+        let id = "_trp_" ^ si  parameter in
+        Hashtbl.add bbdfns parameter (id,Some this,sr,entry);
+      )
+    !parameters
     ;
     (* return with posssible label at start *)
     let exes = 
@@ -1221,10 +1591,14 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
   | ((`BEXPR_apply_direct (callee,ts,a),t) as e)
   | (((`BEXPR_apply(  (`BEXPR_closure (callee,ts),_) ,a)),t) as e)
     when 
-      not (mem callee excludes) && 
-      not (Flx_call.is_recursive uses callee)
+      not (mem callee excludes) 
     ->
       heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
+      if  
+        (Flx_call.is_recursive uses callee) &&
+        not (is_child child_map caller callee)
+      then e 
+      else
       let id,parent,sr,entry = Hashtbl.find bbdfns callee in
       begin match entry with
       | `BBDCL_function (props,vs,ps,ret,exes) ->
@@ -1277,6 +1651,7 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
               | rxs -> 
                 let urvid = "_urv" ^ si urv in
                 add_child child_map caller urv;
+                add_use uses caller urv sr;
                 let entry = `BBDCL_val (caller_vs,t) in
                 Hashtbl.add bbdfns urv (urvid,Some caller,sr,entry);
 
@@ -1294,15 +1669,16 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
    e,!exes'
 
 
-and tail_bbdcl syms (child_map,bbdfns) i =
+(*
+and tail_bbdcl syms (uses,child_map,bbdfns) i =
   match Hashtbl.find bbdfns i with
   | id,parent,sr,`BBDCL_procedure (props,vs,ps,exes) ->
-    let exes = tailit syms (child_map,bbdfns) i sr ps vs exes in
+    let exes = tailit syms (uses,child_map,bbdfns) i sr ps vs exes in
     let data = id,parent,sr,`BBDCL_procedure (props,vs,ps,exes) in
     Hashtbl.replace bbdfns i data
 
   | _ -> ()
-
+*)
 
 and heavy_inline_calls
   syms (uses,child_map,bbdfns)
@@ -1436,6 +1812,7 @@ and heavy_inline_calls
       | _ -> exes' := exe :: !exes'
       end
 
+    | `BEXE_fun_return (sr,(`BEXPR_apply((`BEXPR_closure(callee,ts),_),a),_)) -> assert false
     | `BEXE_fun_return (sr,(`BEXPR_apply_direct (callee,ts,a),_)) 
       when not (mem callee excludes)  ->
       (*
@@ -1524,7 +1901,7 @@ and heavy_inline_applies
           )
         then 
           let xs = 
-             inline_tail_apply syms (uses,child_map,bbdfns) caller caller_vs callee ts a
+            inline_tail_apply syms (uses,child_map,bbdfns) caller caller_vs callee ts a
           in 
             exes' := rev (hia callee xs) @ !exes'
         else
@@ -1538,6 +1915,175 @@ and heavy_inline_applies
   ;
   rev !exes'
 
+and strip_useless syms (uses,child_map,bbdfns) i ps exes =
+  let parms = fold_left (fun s (_,(i,_)) -> IntSet.add i s) IntSet.empty ps in
+  let k = ref (intset_of_list (find_children child_map i)) in
+
+  let rec aux exes =
+    let u = Flx_call.use_closure uses i in
+    let useless = IntSet.diff !k u in
+    let useless = IntSet.diff useless parms in
+    if not (IntSet.is_empty useless) then begin
+      (*
+      print_endline ("Useless: " ^ string_of_intset useless);
+      *)
+      (* Throw out useless stuff *)
+      IntSet.iter
+      (fun j -> 
+        Hashtbl.remove bbdfns j;
+        Hashtbl.remove child_map j;
+        remove_child child_map i j;
+        k := IntSet.remove j !k
+      )
+      useless;
+      (* delete inits of useless stuff *)
+      let exes = 
+        filter 
+        (function 
+          | `BEXE_init (_,j,_) 
+          | `BEXE_assign (_,(`BEXPR_name (j,_),_),_)
+            when IntSet.mem j useless -> false 
+          | _ -> true
+        ) 
+        exes 
+      in
+      recal_exes_usage uses i exes;
+      aux exes
+    end
+    else exes
+  in aux exes
+
+
+and fold_vars syms (uses,child_map,bbdfns) i ps exes =
+  let pset = fold_left (fun s (_,(i,_))-> IntSet.add i s) IntSet.empty ps in
+  let descend = descendants child_map i in
+  let locls = locals child_map uses i in
+  let count = ref 0 in
+  let rec find_tassign inexes outexes =
+    match inexes with
+    | [] -> rev outexes
+    | ((
+      `BEXE_init (_,j,y)
+      | `BEXE_assign (_, (`BEXPR_name (j,_),_),y)
+    ) as x) :: t  when IntSet.mem j locls ->
+
+      (*
+      let id,_,_,_ = Hashtbl.find bbdfns j in
+      print_endline ("CONSIDERING VARIABLE " ^ id ^ "<" ^ si j ^ "> -> " ^ sbe syms.dfns y);
+      *)
+      let luses = try Hashtbl.find uses i with Not_found -> [] in
+      let usecnt = ref 0 in
+      iter (fun (k,sr) -> if k = j then incr usecnt) luses;
+      (*
+      print_endline ("Use count = " ^ si !usecnt);
+      *)
+      let setcnt = ref (if IntSet.mem j pset then 1 else 0) in
+      let sets exe = 
+        match exe with
+         | `BEXE_init (_,k,_) when j = k -> incr setcnt
+         | _ -> ()
+      in
+      iter sets t; iter sets outexes;
+      (*
+      print_endline ("Set count = " ^ si (!setcnt+1));
+      *)
+      let yuses = expr_uses syms descend uses pset y in
+      let delete_var () =
+        let id,_,_,_ = Hashtbl.find bbdfns j in
+        print_endline ("ELIMINATING VARIABLE " ^ id ^ "<" ^ si j ^ "> -> " ^ sbe syms.dfns y);
+        Hashtbl.remove bbdfns j;
+        remove_child child_map i j;
+        remove_uses uses i j;
+        incr count
+      in
+      let isvar = 
+        match Hashtbl.find bbdfns j with
+        | _,_,_,`BBDCL_var _ -> true
+        | _,_,_,(`BBDCL_val _ | `BBDCL_tmp _) -> false
+        | _ -> assert false
+      in
+      begin match isvar,!usecnt,!setcnt with
+        | _,0,_ -> 
+          print_endline "WARNING: unused variable found";
+          delete_var();
+          find_tassign t outexes
+
+        | false,1,0 -> 
+          let rplcnt = ref 0 in
+          let rec subi j y e = 
+            match map_tbexpr ident (subi j y) ident e with
+            | `BEXPR_name (i,_),_ when j = i -> incr rplcnt; y
+            | x -> x
+          in 
+          let elimi j y exe = map_bexe ident (subi j y) ident ident ident exe in
+          let subs = ref true in
+          let elim j y exes = map 
+           (fun exe -> 
+             if !subs then match exe with
+
+             (* terminate substitution, return unmodified instr *)
+             | `BEXE_goto _ 
+             | `BEXE_proc_return _
+             | `BEXE_label _ 
+               -> subs:= false; exe
+
+             (* return unmodified instr *)
+             | `BEXE_begin
+             | `BEXE_end
+             | `BEXE_nop _
+             | `BEXE_code _
+             | `BEXE_nonreturn_code _
+             | `BEXE_comment _
+             | `BEXE_halt _ 
+               -> exe
+
+             (* conditional, check if y depends on init (tail rec) *)
+             
+             | `BEXE_assign (_,(`BEXPR_name (k,_),_),_)
+             | `BEXE_read (_,k)
+             | `BEXE_init (_,k,_) ->
+               subs := not (IntSet.mem k yuses); 
+               elimi j y exe
+             
+             (* return modified instr *)
+             | `BEXE_ifgoto _
+             | `BEXE_ifnotgoto _
+               -> elimi j y exe
+
+             (* terminate substitution, return modified instr *)
+             | `BEXE_assign _
+             | `BEXE_fun_return _
+             | `BEXE_jump _
+             | `BEXE_jump_direct _
+             | `BEXE_loop _
+             | `BEXE_call_prim _
+             | `BEXE_call _
+             | `BEXE_call_direct _
+             | `BEXE_call_stack _
+               -> subs := false; elimi j y exe
+             else exe
+           ) 
+           exes 
+          in
+          let t' = elim j y t in
+          if !rplcnt = 1 then 
+          begin
+            delete_var();
+            find_tassign t' outexes
+          end
+          else 
+            find_tassign t (x::outexes)
+
+        | _ -> find_tassign t (x::outexes)
+      end
+
+    | h::t -> find_tassign t (h::outexes)
+  in 
+  let exes = find_tassign exes [] in
+  if !count > 0 then
+    print_endline ("Elimination complete, removed " ^ si !count ^" variables")
+  ;
+  exes
 
 and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
   match Hashtbl.find bbdfns i with
@@ -1549,11 +2095,13 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       (*
       print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
+      recal_exes_usage uses i exes;
+      let exes = fold_vars syms (uses,child_map,bbdfns) i ps exes in
       let exes = heavy_inline_calls syms (uses,child_map,bbdfns) vs i excludes exes in
       (*
       print_endline (id ^ " After inlining calls:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
-      let exes = tailit syms (child_map,bbdfns) i sr ps vs exes in
+      let exes = tailit syms (uses,child_map,bbdfns) i sr ps vs exes in
       (*
       print_endline (id ^ " After tailing:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
@@ -1564,6 +2112,9 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       let exes = heavy_inline_applies syms (uses,child_map,bbdfns) vs i excludes exes in
       print_endline (id ^ " After inlining applies:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
+      recal_exes_usage uses i exes;
+      let exes = fold_vars syms (uses,child_map,bbdfns) i ps exes in
+      let exes = strip_useless syms (uses,child_map,bbdfns) i ps exes in
       let exes = Flx_cflow.chain_gotos exes in
       let props = `Inlining_complete :: props in
       let data = id,parent,sr,`BBDCL_procedure (props,vs,ps,exes) in
@@ -1581,11 +2132,13 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       (*
       print_endline (id ^ " Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
+      recal_exes_usage uses i exes;
+      let exes = fold_vars syms (uses,child_map,bbdfns) i ps exes in
       let exes = heavy_inline_calls syms (uses,child_map,bbdfns) vs i excludes exes in
       (*
       print_endline (id ^ " After inlining calls:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
-      let exes = tailit syms (child_map,bbdfns) i sr ps vs exes in
+      let exes = tailit syms (uses,child_map,bbdfns) i sr ps vs exes in
       (*
       print_endline (id ^ " After tailing:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
@@ -1601,10 +2154,13 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       *)
       *)
       
-      let exes = tailit syms (child_map,bbdfns) i sr ps vs exes in
+      let exes = tailit syms (uses,child_map,bbdfns) i sr ps vs exes in
       (*
       print_endline (id^ " After tailing(2):\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
+      recal_exes_usage uses i exes;
+      let exes = fold_vars syms (uses,child_map,bbdfns) i ps exes in
+      let exes = strip_useless syms (uses,child_map,bbdfns) i ps exes in
       let exes = Flx_cflow.chain_gotos exes in
       let props = `Inlining_complete :: props in
       let data = id,parent,sr,`BBDCL_function (props,vs,ps,ret,exes) in

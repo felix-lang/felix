@@ -2,6 +2,121 @@
 @FLX_MAKER_CVS_ID='$Id$'
 @print FLX_MAKER_CVS_ID
 
+@h = tangler('script/fcount.py','python')
+@select(h)
+import glob
+import os
+import sys
+try:
+  filename = sys.argv[1]
+except:
+  filename = "fcounts.stats"
+
+try:
+  key = sys.argv[2]
+except:
+  key = "std"
+
+try:
+  globspec = sys.argv[3]
+except:
+  globspec = "tut/examples/*.hpp"
+
+print "function counter: STATS FILE",filename, "KEY", key, "GLOB",globspec
+dict = {}
+try:
+  execfile (filename)
+except:pass
+
+def get_stdout(x):
+  f = os.popen(x,"r")
+  output = f.readlines()
+  result = f.close()
+  return result,output
+
+
+files = glob.glob(globspec)
+
+for file in files:
+  cmd = 'egrep "//PROC|//FUNCTION" ' + file + ' | wc -l'
+  result,output = get_stdout(cmd)
+  output = output[0][:-1]
+  x = int(output)
+  try:
+    d= dict[file]
+  except:
+    dict[file]={}
+    d = dict[file]
+  d[key]=x
+
+f = open(filename,"w")
+f.write("dict="+repr(dict))
+f.close()
+
+@h = tangler('script/pfcount.py','python')
+@select(h)
+import glob
+import os
+import sys
+try:
+  filename = sys.argv[1]
+except:
+  filename = "fcounts.stats"
+
+only_nonopt = 0
+try:
+  x = sys.argv[2]
+except:
+  only_nonopt = 1
+
+dict = {}
+try:
+  execfile (filename)
+except:pass
+
+keys = {}
+i = 0
+for k in dict.keys():
+  i = max(i,len(k))
+  d = dict[k]
+  for key in d.keys():
+    keys[key]=None
+
+keys = keys.keys()
+j=0
+for k in keys:
+  j = max(j,len(k))
+
+print "Function counts for test programs"
+print "================================="
+print
+print ("%-"+str(i+2)+"s") % "File" + "    ",
+for t in keys:
+  print ("%"+str(j+2)+"s") % t,
+print
+print "--------"
+
+skeys = dict.keys()
+skeys.sort()
+
+for k in skeys:
+  d = dict[k]
+  x= ("%-"+str(i+2)+"s") % k + "..  "
+  discard = 0
+  for t in keys:
+    v = d.get(t,-1)
+    if v == -1:
+      v = ""
+    elif (v == 1 or v == 0) and t == "inline" and only_nonopt: 
+      discard = 1
+      break
+    else:
+      v = str(v)
+    v = ("%"+str(j+2)+"s") % v
+    x = x+v
+  if not discard: print x
+
+
 @h = tangler('script/detab.py','python')
 @select(h)
 import string
@@ -2442,7 +2557,7 @@ try:
       xqt(CCOBJ_STATIC_MAIN + "  -Ilua lua/lua.cpp -o lua/lua_static.o")
       xqt(CCLINK_STATIC + " lua/lua_static.o rtl/libflx_static.a -o bin/flx_lua")
       xqt(CCOBJ_STATIC_MAIN + " -Ilua  lua/luac.cpp -o lua/luac_static.o")
-      xqt(CCLINK_STATIC + " lua/luac.o rtl/libflx_static.a -o bin/flx_luac")
+      xqt(CCLINK_STATIC + " lua/luac_static.o rtl/libflx_static.a -o bin/flx_luac")
 
   # COMPILE DRIVER PROGRAMS
   if "drivers" in options:
@@ -2573,6 +2688,22 @@ try:
         if stop_on_error: raise MakeError
         results.append(("Exec",testscript,'ERROR'))
     
+    if "test" in options or "tutorial" in options or "fcount" in options:
+      tkind = "std"
+      if "inline" in options: tkind="inline"
+      stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "tut/examples/*.hpp"'
+      run(stats)
+      stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "test/*.hpp"'
+      run(stats)
+    
+    if "pfcount" in options:
+      stats = 'python script/pfcount.py misc/fcounts.stats'
+      run(stats)
+
+    if "pfcount_all" in options:
+      stats = 'python script/pfcount.py misc/fcounts.stats all'
+      run(stats)
+
     if "performance" in options:
       for driver,testfile,moreargs in SPECIAL_TESTS:
         test_basename = string.split(testfile,'.')[0]
@@ -2705,7 +2836,6 @@ We have no idea if it continues copying.
 @tangle('\tsh bagley/compile.sh')
 @tangle('\tsh bagley/run.sh')
 @tangle('\tsh bagley/check.sh')
-@tangle('\tmake test.lua')
 @tangle('')
 @tangle('test.static: dummy')
 @tangle('\tpython script/maker test static stop_on_error')
@@ -2724,7 +2854,6 @@ We have no idea if it continues copying.
 @tangle('\tsh bagley/compile.sh')
 @tangle('\tsh bagley/run.sh')
 @tangle('\tsh bagley/check.sh')
-@tangle('\tmake test.lua')
 @tangle('')
 @tangle('test.lua: dummy')
 @tangle('\tfor i in misc/lua/*.lua; do bin/flx_lua $$i; done;')
@@ -2751,6 +2880,12 @@ We have no idea if it continues copying.
 @tangle('\tsh bagley/compile.sh')
 @tangle('\tsh bagley/run.sh')
 @tangle('\tsh bagley/check.sh')
+@tangle('')
+@tangle('pfcount.all:')
+@tangle('\tpython script/maker pfcount_all')
+@tangle('')
+@tangle('pfcount:')
+@tangle('\tpython script/maker pfcount')
 @tangle('')
 @tangle('rtl.debug: dummy')
 @tangle('\tpython script/maker rtl debug')

@@ -5,6 +5,7 @@ Name binding pass 2.
 @select(h)
 open Flx_ast
 open Flx_types
+open Flx_mtypes1
 
 type usage_table_t =  (bid_t, (bid_t * range_srcref) list) Hashtbl.t
 type usage_t =  usage_table_t * usage_table_t
@@ -16,6 +17,15 @@ val print_call_report:
   fully_bound_symbol_table_t -> out_channel -> unit
 
 val is_recursive: usage_table_t -> bid_t -> bool
+
+val cal_exe_usage:
+  usage_table_t -> int -> bexe_t -> unit
+
+val use_closure:
+  usage_table_t -> int -> IntSet.t
+
+val child_use_closure:
+  IntSet.t -> usage_table_t -> int -> IntSet.t
 
 @h = tangler("src/flx_call.ml")
 @select(h)
@@ -40,13 +50,9 @@ let add (h:usage_table_t) k j sr =
     )
   )
 
-let add_inst (uses,usedby) k j sr =
-  add uses k j sr;
-  add usedby j k sr
-
 let rec process_expr h k sr ((e,t) as be) =
   let ue e = process_expr h k sr e in
-  let ui i = add_inst h k i sr in
+  let ui i = add h k i sr in
   begin match e with
   | `BEXPR_parse (e,ii) ->
     ue e; iter ui ii
@@ -82,9 +88,9 @@ let rec process_expr h k sr ((e,t) as be) =
   | `BEXPR_expr (_,t) -> ()
   end
 
-and process_exe (h:usage_t) k exe =
+and cal_exe_usage h k exe =
   let ue sr e = process_expr h k sr e in
-  let ui i sr = add_inst h k i sr in
+  let ui i sr = add h k i sr in
   match exe with
   | `BEXE_call_prim (sr,i,ts,e2) 
   | `BEXE_call_direct (sr,i,ts,e2) 
@@ -102,11 +108,12 @@ and process_exe (h:usage_t) k exe =
   | `BEXE_fun_return (sr,e) 
     -> ue sr e
 
-  | `BEXE_init (sr,i,e) -> ui i sr; ue sr e
+  | `BEXE_init (sr,i,e) -> (* ui i sr; *) ue sr e
   | `BEXE_assign (sr,e1,e2) -> ue sr e1; ue sr e2
 
   | `BEXE_read (sr,i) -> ui i sr
 
+  (*
   | `BEXE_regmatch (sr,e,(_,_,h,_)) -> 
     ue sr e;
     Hashtbl.iter
@@ -119,6 +126,7 @@ and process_exe (h:usage_t) k exe =
     Hashtbl.iter
     (fun _ e -> ue sr e)
     h
+  *)
 
   | `BEXE_label _
   | `BEXE_halt _
@@ -128,21 +136,47 @@ and process_exe (h:usage_t) k exe =
   | `BEXE_comment _
   | `BEXE_nop _
   | `BEXE_proc_return _
+  | `BEXE_begin 
+  | `BEXE_end
     -> ()
 
+let uses_production h k sr p =
+  let uses_symbol (_,nt) = match nt with
+  | `Nonterm jj -> iter (fun i -> add h k i sr) jj
+  | `Term _ -> () (* HACK! This is a union constructor name  we need to 'use' the union type!! *)
+  in
+  iter uses_symbol p
 
 let call_data (bbdfns:fully_bound_symbol_table_t):usage_t =
   let uses = Hashtbl.create 97 in
   let usedby = Hashtbl.create 97 in
   let usage = uses,usedby in
   Hashtbl.iter
-  (fun k (_,_,_,entry) -> match entry with
+  (fun k (_,_,sr,entry) -> match entry with
   | `BBDCL_procedure (_,_,_,exes)
   | `BBDCL_function (_,_,_,_,exes) ->
-    iter (process_exe usage k) exes
+    iter (cal_exe_usage uses k) exes
+
+  | `BBDCL_glr (_,_,(p,exes)) ->
+    iter (cal_exe_usage uses k) exes;
+    uses_production uses k sr p
+  
+  | `BBDCL_regmatch (_,_,_,(_,_,h,_))
+  | `BBDCL_reglex (_,_,_,_,(_,_,h,_)) 
+    -> Hashtbl.iter (fun _ e -> process_expr uses k sr e) h
+
   | _ -> () 
   )
   bbdfns
+  ;
+  (* invert uses table to get usedby table *)
+  Hashtbl.iter
+  (fun k ls -> 
+    iter
+    (fun (i,sr) -> add usedby i k sr)
+    ls
+  )
+  uses
   ;
   usage
 
@@ -163,6 +197,42 @@ let cls h i =
     !c
 
 let is_recursive h i = IntSet.mem i (cls h i)
+let use_closure h i = cls h i
+
+(* this calculates the use closure of i, eliminating recursive
+  calls to the base function by restricting references
+  to some set k. Note this means the usage of k is also
+  not included.
+
+  If k is set to the children of some function f,
+  then this routine will not report usage of any
+  variables in f via calls to f, only direct
+  uses in some child which is called; in particular
+  calls to outside the child tree of f are not tracked
+  since they can't call any children of f,
+  so they can only use them via a call to f.
+  This would spawn a new stack frame, and so
+  refer to different copies of variables.
+
+  This routine is used to find which variables
+  in f and expression in f can use via a call to a child.
+*)
+
+let child_use_closure k h i =
+  let c = ref IntSet.empty in
+  let rec add j =
+    if not (IntSet.mem j !c) && IntSet.mem j k then 
+    begin
+      c := IntSet.add j !c;
+      let x = try Hashtbl.find h j with Not_found -> [] in
+      iter (fun (j,_) -> add j) x
+    end
+  in
+    let x = try Hashtbl.find h i with Not_found -> [] in
+    iter (fun (j,_) ->  add j) x
+    ;
+    !c
+
 
 let call_report bbdfns (uses,usedby) f k =
   let si = string_of_int in

@@ -100,7 +100,9 @@ let get_variable_typename syms bbdfns i ts =
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
   | `BBDCL_var (vs,t)
-  | `BBDCL_val (vs,t) ->
+  | `BBDCL_val (vs,t) 
+  | `BBDCL_tmp (vs,t)
+  ->
     let t = lower t in
     if length ts <> length vs then 
     failwith 
@@ -600,9 +602,9 @@ let gen_exe filename syms
     | `BEXE_halt (sr,s) -> 
        "      // halt " ^ s ^ "\n" ^
        "      throw flx::rtl::flx_exec_failure(\n" ^
-       "        \"" ^ filename ^ "\",\n" ^
+       "        \"" ^ Flx_srcref.short_string_of_src sr ^ "\",\n" ^
        "        \"halt\",\n" ^
-       "        " ^ s ^ ",\n" ^
+       "        \"" ^ s ^ "\",\n" ^
        "      );\n"
 
     | `BEXE_goto (sr,s) -> 
@@ -796,15 +798,32 @@ let gen_exe filename syms
       ";\n"
       
     | `BEXE_init (sr,v,e) -> 
-      (*
-      print_endline ("INIT of " ^ si v ^ " inside " ^ si this);
-      *)
-      "      //"^src_str^"\n" ^
-      "      "^
-      get_var_ref syms bbdfns this v ts^ 
-      " = " ^ 
-      ge sr e ^
-      ";\n"
+      let id,_,_,entry = Hashtbl.find bbdfns v in
+      begin match entry with
+        | `BBDCL_tmp _ ->
+        "      //"^src_str^"\n" ^
+        "      "^
+        get_variable_typename syms bbdfns v [] ^
+        " " ^
+        get_var_ref syms bbdfns this v ts^ 
+        " = " ^ 
+        ge sr e ^
+        ";\n"
+        | `BBDCL_val _
+        | `BBDCL_var _ ->
+        (*
+        print_endline ("INIT of " ^ si v ^ " inside " ^ si this);
+        *)
+        "      //"^src_str^"\n" ^
+        "      "^
+        get_var_ref syms bbdfns this v ts^ 
+        " = " ^ 
+        ge sr e ^
+        ";\n"
+        | _ -> assert false
+      end
+    | `BEXE_begin -> "      {\n"
+    | `BEXE_end -> "      }\n"
   in gexe exe
 
 let gen_exes filename syms bbdfns display label_info counter index exes vs ts instance_no =

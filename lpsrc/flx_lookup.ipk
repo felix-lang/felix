@@ -2215,6 +2215,7 @@ and handle_variable syms env index id sr ts t t2 =
     let ts = adjust_ts syms sr index ts in
     let vs = find_vs syms index in
     let t = tsubst vs ts t in
+    let t = match t with | `BTYP_lvalue t -> t | t -> t in
     begin match t with
     | `BTYP_function (d,c) ->
       if not (type_match syms.dfns d t2) then
@@ -2238,7 +2239,6 @@ and handle_variable syms env index id sr ts t t2 =
           *)
         )
 
-    | `BTYP_lvalue (`BTYP_inst (i,[]))
     | `BTYP_inst (i,[]) ->
       begin match get_data syms.dfns i  with
       {id=id'} ->

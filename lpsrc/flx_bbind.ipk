@@ -227,7 +227,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
         )
       ;
       Hashtbl.add bbdfns i (name,true_parent,sr,
-        `BBDCL_function ([`Inline],vs,[],flx_bbool,bbexes)
+        `BBDCL_function ([`Inline; `Generated "bbind: match check"],vs,[],flx_bbool,bbexes)
       );
       begin
         if not (Hashtbl.mem syms.ticache i) then
@@ -242,7 +242,9 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
         sbt syms.dfns (`BTYP_function (`BTYP_tuple[],flx_bbool))
       )
     
+    (*
     | `SYMDEF_regexp _ -> ()
+    *)
 
     | `SYMDEF_regmatch (ps,cls) ->
       let bps : (string * (int * btypecode_t)) list = 
@@ -359,28 +361,6 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       let argt = bt argt in
       let ut = bt ut in
       let bbdcl = `BBDCL_nonconst_ctor (vs,uidx,ut,ctor_idx,argt) in
-      (*
-        match argt with
-        (* non-constant constructor or 2 or more arguments *)
-        (* BUG --> NEED TO HANDLE ARRAYS *)
-        | `BTYP_tuple ts ->
-           `BBDCL_fun 
-           (
-             vs,ts, ut,
-             "_uctor_(" ^ si ctor_idx ^ ", new(gc,@t) #t($t))",[],
-             "primary"
-           )
-        (* non-constant constructor of 1 argument *)
-        | _ ->
-           `BBDCL_fun
-           (
-             vs,[argt], ut,
-             "_uctor_(" ^ si ctor_idx ^ ", new(gc,@1) #1($1))",
-             [],
-             "primary"
-            )
-      in
-      *)
       Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
 
       if syms.compiler_options.print_flag then

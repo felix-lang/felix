@@ -121,6 +121,9 @@ let get_var_frame syms bbdfns this index ts : string =
       then "ptr" ^ cpp_instance_name syms bbdfns i ts
       else "this"
     end
+  | `BBDCL_tmp (vs,t) ->
+     failwith ("[get_var_frame] temporaries aren't framed: " ^ id)
+     
   | _ -> failwith ("[get_var_frame] Expected name "^id^" to be variable or value")
 
 let get_var_ref syms bbdfns this index ts : string =
@@ -148,7 +151,11 @@ let get_var_ref syms bbdfns this index ts : string =
       ) ^
       cpp_instance_name syms bbdfns index ts
     end
-  | _ -> failwith ("[get_var_ref(3)] Expected name "^id^" to be variable or value")
+
+  | `BBDCL_tmp (vs,t) ->
+      cpp_instance_name syms bbdfns index ts
+
+  | _ -> failwith ("[get_var_ref(3)] Expected name "^id^" to be variable, value or temporary")
 
 
 let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
@@ -315,7 +322,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     let ts = map tsub ts' in
     begin match entry with
       | `BBDCL_var (_,t)
-      | `BBDCL_val (_,t) ->
+      | `BBDCL_val (_,t) 
+      | `BBDCL_tmp (_,t) 
+        ->
           ce_atom (get_var_ref syms bbdfns this index ts)
 
       | `BBDCL_const (_,_,ct,_) -> 

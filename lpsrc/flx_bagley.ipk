@@ -1619,8 +1619,6 @@ fun Tak (x:double, y:double, z:double): double =>
 w := double_of n;
 print1 (Tak(w*3.0, w*2.0, w*1.0));
 
-include "std";
-
 @select(tangler('bagley/felix/procinst.flx','data'))
 @setup()
 thread_max := n;  

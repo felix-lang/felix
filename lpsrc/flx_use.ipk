@@ -46,6 +46,27 @@ open Flx_generic
 open Flx_maps
 open Flx_exceptions
 
+
+(* These routines find the absolute use closure of a symbol,
+in particular they include variables which are initialised
+but never used: these routine are intended to be used
+to extract all the bound symbol table entries required
+to process a set of roots.
+
+Contrast with the 'Flx_call' usage routines, which
+find some symbols which are useful, this excludes
+types, and it excludes LHS vals and perhaps vars,
+which are not used in some expression.
+
+It seems a pity these routines are almost identical
+(and the lot gets repeated yet again in the instantiator,
+and weakly in the 'useless call eliminator', we hope
+to find a better code reuse solution.. for now,
+remember to update all three sets of routines when
+changing the data structures.
+
+*)
+
 let nop x = ()
 
 let rec uses_type syms used bbdfns (t:btypecode_t) = 
@@ -69,11 +90,7 @@ and uses_exe syms used bbdfns (exe:bexe_t) =
   let ue e = uses_tbexpr syms used bbdfns e in
   let ui i = uses syms used bbdfns i in
   let ut t = uses_type syms used bbdfns t in
-  match exe with
-  | `BEXE_init (_,i,e) -> 
-    uses syms used bbdfns i; ue e
-
-  | _ -> iter_bexe ui ue ut nop nop exe
+  iter_bexe ui ue ut nop nop exe
 
 
 and uses_tbexpr syms used bbdfns (e,t) =
@@ -153,7 +170,8 @@ and uses syms used bbdfns i =
         iter ut (map snd ps)
                                                                                 
       | `BBDCL_val (_,t)
-      | `BBDCL_var (_,t) -> ut t
+      | `BBDCL_var (_,t) 
+      | `BBDCL_tmp (_,t) -> ut t
 
       | `BBDCL_const (_,t,_,reqs) -> ut t; iter ur reqs
       | `BBDCL_fun (_,ps, ret, _,reqs,_) -> iter ut ps; ut ret; iter ur reqs
