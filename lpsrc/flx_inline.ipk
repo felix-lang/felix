@@ -1141,7 +1141,9 @@ let tailit syms (child_map,bbdfns) this sr ps vs exes : bexe_t list =
   | `BEXE_call_direct (sr,i,ts,a) :: tail 
     when (i,ts)=(this,ts') && tailable exes [] tail
     ->
+     (*
      print_endline ("--> Tail rec call " ^ si this);
+     *)
      jump_done := true;
      let res = cal_tail_call a @ res
      in aux tail res
@@ -1149,7 +1151,9 @@ let tailit syms (child_map,bbdfns) this sr ps vs exes : bexe_t list =
   | `BEXE_fun_return (sr,(`BEXPR_apply_direct(i,ts,a),_)) :: tail 
     when (i,ts)=(this,ts') 
     ->
+     (*
      print_endline ("--> Tail rec apply " ^ si this);
+     *)
      jump_done := true;
      let res = cal_tail_call a @ res
      in aux tail res
@@ -1241,7 +1245,7 @@ let rec heavy_inline_calls
             heavy_inline_call syms (uses,child_map,bbdfns) 
             caller caller_vs callee ts argument id sr (props,vs,ps,exes)
           in 
-            exes' := rev xs @ !exes'
+            exes' := rev (hic callee xs) @ !exes'
         end
         else
           exes' := exe :: !exes'
@@ -1355,7 +1359,7 @@ and heavy_inline_applies
           let xs = 
              inline_tail_apply syms (uses,child_map,bbdfns) caller caller_vs callee ts a
           in 
-            exes' := rev xs @ !exes'
+            exes' := rev (hia callee xs) @ !exes'
         else
           exes' := exe :: !exes'
       | _ -> exes' := exe :: !exes'

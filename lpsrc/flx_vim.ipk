@@ -29,6 +29,9 @@ syn keyword cDefine comment
 syn keyword cDefine publish
 syn keyword cDefine private 
 syn keyword cDefine open
+syn keyword cDefine rename 
+syn keyword cDefine inherit 
+syn keyword cDefine export 
 syn keyword cDefine use
 syn keyword cDefine include
 syn keyword cDefine header

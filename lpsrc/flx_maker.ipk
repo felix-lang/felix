@@ -1033,6 +1033,8 @@ We have no idea if it continues copying.
 @tangle('tests.performance: dummy')
 @tangle('\tpython script/maker performance')
 @tangle('')
+@tangle('performance: tests.performance')
+@tangle('')
 @tangle('tests.regression: dummy')
 @tangle('\tpython script/maker regression')
 @tangle('')

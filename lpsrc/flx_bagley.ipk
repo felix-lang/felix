@@ -8,18 +8,28 @@
 @head(1,'Bagley Language Shootout')
 Temporary script to check the tests work, and also
 to get some times.
+
+@bags = [
+  ('ackermann',' 8'),
+  ('fibo',' 8'),
+  ('nestedloop',' 8'),
+  ('regexmatch',' 8'),
+  ('random',' 1000'),
+  ('hello',' 1'),
+  ('matrix',' 8'),
+  ('reversefile',' 1 < bagley/data/phone_numbers.data'),
+  ('sumcol',' < bagley/data/sumcol.data'),
+  ('sieve',' 8'),
+  ('lists',' 8'),
+  ('objinst',' 8'),
+  ('methcall',' 8')
+ ]
+
+@def mk(i,j):
+  tangle('/usr/bin/time -f "'+i+' User Time: %U" bin/flx --test --echo --optimise bagley/felix/'+i+' '+j)
+
 @select(tangler('bagley/run.sh','data'))
-/usr/bin/time -f "User Time: %U" bin/flx --test --echo --optimise bagley/felix/ackermann 8
-/usr/bin/time -f "User Time: %U" bin/flx --test --echo --optimise bagley/felix/fibo 8
-/usr/bin/time -f "User Time: %U" bin/flx --test --echo --optimise bagley/felix/nestedloop 8
-/usr/bin/time -f "User Time: %U" bin/flx --test --echo --optimise bagley/felix/regexmatch 8 
-/usr/bin/time -f "User Time: %U" bin/flx --test --echo --optimise bagley/felix/random 1000
-/usr/bin/time -f "User Time: %U" bin/flx --test --echo --optimise bagley/felix/hello 1
-/usr/bin/time -f "User Time: %U" bin/flx --test --echo --optimise bagley/felix/matrix 8
-/usr/bin/time -f "User Time: %U" bin/flx --test --echo --optimise bagley/felix/reversefile 1 < bagley/data/phone_numbers.data
-/usr/bin/time -f "User Time: %U" bin/flx --test --echo --optimise bagley/felix/sumcol < bagley/data/sumcol.data
-/usr/bin/time -f "User Time: %U" bin/flx --test --echo --optimise bagley/felix/sieve 8
-/usr/bin/time -f "User Time: %U" bin/flx --test --echo --optimise bagley/felix/lists 8
+@for i,j in bags: mk (i,j)
 
 @head(2,'Hello World')
 @select(tangler('bagley/felix/hello.flx','data'))
@@ -64,18 +74,24 @@ var e:int;
 var f:int;
 var x = 0;
 
-for {a=0;} {a<n} {a++;} {
-  for {b=0;} {b<n} {b++;} {
-    for {c=0;} {c<n} {c++;} {
-      for {d=0;} {d<n} {d++;} {
-        for {e=0;} {e<n} {e++;} {
-          for {f=0;} {f<n} {f++;} {
+a=0; while {a<n} {
+  b=0; while {b<n} {
+    c=0; while {c<n} {
+      d=0; while {d<n} {
+        e=0; while {e<n} {
+          f=0; while {f<n} {
             x++;
+            ++f;
           };
+          ++e;
         };
+        ++d; 
       };
+      ++c;
     };
+    ++b;
   };
+  ++a;
 };
 
 print x; endl;
@@ -380,7 +396,8 @@ while {m>0} {
   for {i=2;} { i <= 8192 } { i++; } { prime.[i] = true; };
   for {i=2;} {i <= 8192} {i++;} {
     if prime.[i] do
-      for {k=i+i;} {k <= 8192} { k+=i; } { prime.[k] = false; };
+      k=i+i;
+      while {k <= 8192} { prime.[k] = false; k+=i; };
       count++;
     done;
   };
@@ -605,4 +622,131 @@ var i:int;
 for {i=0;} {i<n} {++i;} { test_lists(); };
 print result; endl;
 
+@select(tangler('bagley/felix/objinst.flx','data'))
+@setup()
+// Adapted from C++ solution
+
+body """
+class Toggle {
+public:
+    Toggle(bool start_state) : state(start_state) { }
+    virtual ~Toggle() {  }
+    bool value() { return(state); }
+    virtual Toggle* activate() {
+        state = !state;
+        return this;
+    }
+protected:
+    bool state;
+};
+
+class NthToggle : public Toggle {
+public:
+    NthToggle(bool start_state, int max_counter) :
+        Toggle(start_state), count_max(max_counter), counter(0) {
+    }
+    Toggle *activate() {
+        if (++this->counter >= this->count_max) {
+            state = !state;
+            counter = 0;
+        }
+        return this;
+    }
+private:
+    int count_max;
+    int counter;
+};
+""";
+
+pod type toggle =  "class Toggle*";
+
+fun new_toggle: bool -> toggle = "new Toggle($1)";
+fun new_ntoggle: bool * int -> toggle = "new NthToggle($1,$2)";
+proc del: toggle = "delete $1;";
+fun value: toggle -> bool = "$1->value()";
+proc activate: toggle = "$1->activate();";
+proc print (t: toggle) { print (value t); }
+
+proc check(t: toggle, k:int) {
+  var tt = t;
+  var i=k;
+  while {i>0} 
+    { activate tt; print tt; endl; --i; }
+  ;
+  del t;
+}
+
+check(new_toggle true,5);
+
+{
+  var i = n;
+  while {i>0} 
+    { del (new_toggle true); --i; }
+  ;
+  endl;
+};
+
+check (new_ntoggle(true, 3), 8);
+
+{
+  var i = n;
+  while {i>0} 
+    { del (new_ntoggle (true, 3)); --i; }
+  ;
+};
+
+@select(tangler('bagley/felix/methcall.flx','data'))
+@setup()
+// Adapted from C++ solution
+
+body """
+class Toggle {
+public:
+    Toggle(bool start_state) : state(start_state) { }
+    virtual ~Toggle() {  }
+    bool value() { return(state); }
+    virtual Toggle* activate() {
+        state = !state;
+        return this;
+    }
+protected:
+    bool state;
+};
+
+class NthToggle : public Toggle {
+public:
+    NthToggle(bool start_state, int max_counter) :
+        Toggle(start_state), count_max(max_counter), counter(0) {
+    }
+    Toggle *activate() {
+        if (++this->counter >= this->count_max) {
+            state = !state;
+            counter = 0;
+        }
+        return this;
+    }
+private:
+    int count_max;
+    int counter;
+};
+""";
+
+pod type toggle =  "class Toggle*";
+fun new_toggle: bool -> toggle = "new Toggle($1)";
+fun new_ntoggle: bool * int -> toggle = "new NthToggle($1,$2)";
+proc del: toggle = "delete $1;";
+fun value: toggle -> bool = "$1->value()";
+proc activate: toggle = "$1->activate();";
+
+proc check (t:toggle) {
+  var tt = t;
+  var v = true;
+  var i = n;
+  while {i>0} { activate tt; v = value tt; --i; };
+  print v; endl;
+  del t;
+}
+
+check (new_toggle true);
+check (new_ntoggle (true, 3));
 

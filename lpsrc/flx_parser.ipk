@@ -1292,7 +1292,6 @@ ifgoto_stmt:
   | IF expr DO statement_aster DONE SEMI
     { `AST_ifdo (rstoken $1 $5,$2,$4,[]) }
 
-
 @head(3,'Regular expression matching')
 @select(h)
 regmatch_expr:
