@@ -84,6 +84,7 @@ let rec isuseless bbdfns exes =
       | `BEXE_fun_return _ (* returning a value is useful *)
       | `BEXE_reglex _ 
       | `BEXE_regmatch _ 
+      | `BEXE_halt _ 
         -> raise Useful 
 
       (* NOTE: 
@@ -460,6 +461,7 @@ let rec useless_call_elim syms used (child_map,bbdfns) vs' exes index =
   | `BEXE_code _
   | `BEXE_nonreturn_code _
   | `BEXE_read _
+  | `BEXE_halt _
     -> exes' := x :: !exes' 
   )
   exes

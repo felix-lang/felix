@@ -1,0 +1,38 @@
+@head(1,"System dependent path handling")
+@select(tangler('src/flx_filesys.mli'))
+val filetime : string -> float
+val find_file_in_path: 
+  string list -> string -> string
+val find_file:
+  bool -> string list -> string -> string
+
+@select(tangler('src/flx_filesys.ml'))
+exception Found_file of string
+
+let find_file_in_path incdirs f =
+  try
+    List.iter
+    (fun d -> 
+      let f = Filename.concat d f in 
+      if Sys.file_exists f 
+      then raise (Found_file f)
+    )
+    incdirs
+    ;
+    ""
+  with Found_file s -> s 
+
+let find_file lookup incdirs f =
+  if String.length f = 0
+  then failwith "Empty include file name"
+  ;
+  if f.[0] = '/' || not lookup then f 
+  else find_file_in_path incdirs f
+
+let filetime f =
+  if f = "" then 0.0 
+  else 
+    try (Unix.stat f).Unix.st_mtime 
+    with | _ -> 0.0
+
+

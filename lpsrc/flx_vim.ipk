@@ -17,6 +17,9 @@ elseif exists("b:current_syntax")
   finish
 endif
 
+@for k,j in flx_keywords:
+  tangle('syn keyword cStatement '+j)
+
 " C/C++ keywords which are not Felix ones (bad style)
 syn keyword cError continue
 syn keyword cError repeat

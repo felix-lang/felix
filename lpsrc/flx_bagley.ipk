@@ -74,25 +74,31 @@ var e:int;
 var f:int;
 var x = 0;
 
-a=0; while {a<n} {
-  b=0; while {b<n} {
-    c=0; while {c<n} {
-      d=0; while {d<n} {
-        e=0; while {e<n} {
-          f=0; while {f<n} {
+a=0; 
+whilst a<n do
+  b=0; 
+  whilst b<n do
+    c=0; 
+    whilst c<n do
+      d=0; 
+      whilst d<n do
+        e=0; 
+        whilst e<n do
+          f=0; 
+          whilst f<n do
             x++;
             ++f;
-          };
+          done;
           ++e;
-        };
+        done;
         ++d; 
-      };
+      done;
       ++c;
-    };
+    done;
     ++b;
-  };
+  done;
   ++a;
-};
+done;
 
 print x; endl;
 
@@ -171,34 +177,36 @@ finish := Lexer::end_iterator data;
 
 
 var i=n;
-while {i>1} {
-  var current = first;
-  while {current != finish} {
-    def current, val s = lexit(current, finish);
-  };
+var current: iterator;
+var s: string;
+whilst i>1 do 
+  current = first;
+  until current == finish do
+    def current, s = lexit(current, finish);
+  done;
   --i;
-};
+done;
 
 proc print_phone(x:string, j:int) {
   n := len x;
   var s = "";
   var i = 0;
-  while {i<n} {
+  whilst i<n do
     if zero <= ord(x.[i]) &<= nine do 
       s = s + ord(x.[i]); 
     done;
     ++i;
-  };
+  done;
   print j; print ": ";
   print ("("+s.[0 to 3]+") "+s.[3 to 6]+" "+s.[6 to 10]); endl;
 }
 
-var current = first;
+current = first;
 var j = 0;
-while {current != finish} {
- def current, val s = lexit(current, finish);
- if s != "" then { ++j; print_phone (s,j); } else {} endif;
-};
+until current == finish do
+ def current, s = lexit(current, finish);
+ if s != "" do  ++j; print_phone (s,j); done;
+done;
 
 @select(tangler('bagley/data/phone_numbers.data','data'))
 datafile for regex matching of phone numbers test
@@ -274,11 +282,10 @@ open Text_file;
 
 var x = Empty[string];
 var s = readln stdin;
-while { s != "" } 
-{ 
+until s == "" do
   x = Cons (s,x);
   s = readln stdin; 
-};
+done;
 
 proc plist(x:list[string]){
   match x with
@@ -342,10 +349,11 @@ m1 := mkmatrix(SIZE,SIZE);
 m2 := mkmatrix(SIZE,SIZE);
 mm := mkmatrix(SIZE,SIZE);
 
-var i : int;
-for {i=0;} {i<n} {i++;} {
-	mmult(SIZE, SIZE, m1, m2, mm);
-};
+var i = n;
+until i == 0 do
+  mmult(SIZE, SIZE, m1, m2, mm);
+  --i;
+done;
 
 print (get(mm,0,0)); print " "; 
 print (get(mm,2,3)); print " "; 
@@ -364,11 +372,11 @@ open Text_file;
 var sum = 0;
 var line = readln stdin;
 
-while {line != "" } {
+until line == "" do
   word := line.[to -1];
   sum += atoi(word);
   line = readln stdin;
-};
+done;
 
 print sum; endl;
 
@@ -390,18 +398,23 @@ var k: int;
 var count = 0;
 var m = n;
 
-while {m>0} {
+until m == 0 do
   m--;
   count = 0;
   for {i=2;} { i <= 8192 } { i++; } { prime.[i] = true; };
-  for {i=2;} {i <= 8192} {i++;} {
+  i=2;
+  whilst i <= 8192 do
     if prime.[i] do
       k=i+i;
-      while {k <= 8192} { prime.[k] = false; k+=i; };
+      whilst k <= 8192 do 
+        prime.[k] = false; 
+        k+=i; 
+      done;
       count++;
     done;
-  };
-};
+    i++;
+  done;
+done;
 
 free prime;
 
@@ -578,24 +591,25 @@ var result: int;
 proc test_lists() {
     var li1 = list_sequence(1, SIZE);
     var li2 = copy(li1);
+    var x : DLL_item;
     check (li2 == li1) "li2 and li1 are not equal";
 
     // remove each individual item from left side of li2 and
     // append to right side of li3 (preserving order)
     var li3 = list_new();
-    while { non_empty li2 } {
-        val x = pop_head li2;
+    whilst non_empty li2 do
+        x = pop_head li2;
         push_tail(li3, x);
-    };
+    done;
 
     check (empty li2) "li2 should be empty now";
 
     // remove each individual item from right side of li3 and
     // append to right side of li2 (reversing list)
-    while { non_empty li3 } {
-        val x = pop_tail li3;
+    whilst non_empty li3 do
+        x = pop_tail li3;
         push_tail(li2, x);
-    };
+    done; 
 
     check (empty li3) "li3 should be empty now";
 
@@ -618,8 +632,8 @@ proc test_lists() {
     free li3;
 }
 
-var i:int;
-for {i=0;} {i<n} {++i;} { test_lists(); };
+var i = n;
+until i == 0 do test_lists; --i; done;
 print result; endl;
 
 @select(tangler('bagley/felix/objinst.flx','data'))
@@ -670,9 +684,11 @@ proc print (t: toggle) { print (value t); }
 proc check(t: toggle, k:int) {
   var tt = t;
   var i=k;
-  while {i>0} 
-    { activate tt; print tt; endl; --i; }
-  ;
+  until i == 0 do
+    activate tt; 
+    print tt; endl; 
+    --i;
+  done;
   del t;
 }
 
@@ -680,9 +696,10 @@ check(new_toggle true,5);
 
 {
   var i = n;
-  while {i>0} 
-    { del (new_toggle true); --i; }
-  ;
+  until i == 0 do
+    del (new_toggle true); 
+    --i;
+  done;
   endl;
 };
 
@@ -690,9 +707,10 @@ check (new_ntoggle(true, 3), 8);
 
 {
   var i = n;
-  while {i>0} 
-    { del (new_ntoggle (true, 3)); --i; }
-  ;
+  until i == 0 do
+    del (new_ntoggle (true, 3)); 
+    --i;
+  done;
 };
 
 @select(tangler('bagley/felix/methcall.flx','data'))
@@ -742,7 +760,11 @@ proc check (t:toggle) {
   var tt = t;
   var v = true;
   var i = n;
-  while {i>0} { activate tt; v = value tt; --i; };
+  until i == 0 do 
+    activate tt; 
+    v = value tt; 
+    --i; 
+  done;
   print v; endl;
   del t;
 }

@@ -15,6 +15,7 @@ val gen_functions:
   string
 
 val gen_execute_methods:
+  string ->
   sym_state_t ->
   (bid_t, bid_t list) Hashtbl.t *
   fully_bound_symbol_table_t ->
@@ -937,7 +938,7 @@ let gen_prim_call
     let a = ge sr a in
     "      {" ^ csubst sr sr2 ct [a] [typ] typ "Error" ts^ "}\n"
 
-let gen_exe syms (child_map,bbdfns) (label_map,label_usage_map) counter this vs ts instance_no needs_switch (exe:bexe_t) : string =
+let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter this vs ts instance_no needs_switch (exe:bexe_t) : string =
   if length ts <> length vs then 
   failwith 
   (
@@ -1125,6 +1126,15 @@ let gen_exe syms (child_map,bbdfns) (label_map,label_usage_map) counter this vs 
           | `Unused -> ""
           end
       )
+
+    (* FIX THIS TO PUT SOURCE REFERENCE IN *)
+    | `BEXE_halt (sr,s) -> 
+       "      // halt " ^ s ^ "\n" ^
+       "      throw flx::rtl::flx_exec_failure(\n" ^
+       "        \"" ^ filename ^ "\",\n" ^
+       "        \"halt\",\n" ^
+       "        " ^ s ^ ",\n" ^
+       "      );\n"
 
     | `BEXE_goto (sr,s) -> 
       begin match find_label bbdfns label_map this s with
@@ -1324,10 +1334,10 @@ let gen_exe syms (child_map,bbdfns) (label_map,label_usage_map) counter this vs 
       ";\n"
   in gexe exe
 
-let gen_exes syms bbdfns display label_info counter index exes vs ts instance_no =
+let gen_exes filename syms bbdfns display label_info counter index exes vs ts instance_no =
   let needs_switch = ref false in
   let s = cat ""
-    (map (gen_exe syms bbdfns label_info counter index vs ts instance_no needs_switch) exes)
+    (map (gen_exe filename syms bbdfns label_info counter index vs ts instance_no needs_switch) exes)
   in
   s,!needs_switch
 
@@ -1350,7 +1360,7 @@ let gen_exes syms bbdfns display label_info counter index exes vs ts instance_no
   accepts the argument and runs the function.
   The machine stack is used for functions.
 *)
-let gen_function_methods syms (child_map,bbdfns) all_closures label_info counter index ts instance_no = 
+let gen_function_methods filename syms (child_map,bbdfns) all_closures label_info counter index ts instance_no = 
   let id,parent,sr,entry = Hashtbl.find bbdfns index in
   if syms.compiler_options.print_flag then
   print_endline 
@@ -1399,7 +1409,7 @@ let gen_function_methods syms (child_map,bbdfns) all_closures label_info counter
     let params = map (fun (id,(ix,t)) -> ix) bps in
     let exe_string,_ =
       try 
-        gen_exes syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no
+        gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no
       with x -> 
         print_endline (Printexc.to_string x);
         print_endline (catmap "\n" (string_of_bexe syms.dfns 1) exes);
@@ -1461,7 +1471,7 @@ let gen_function_methods syms (child_map,bbdfns) all_closures label_info counter
 
   | _ -> failwith "function expected"
 
-let gen_procedure_methods syms (child_map,bbdfns) 
+let gen_procedure_methods filename syms (child_map,bbdfns) 
   all_closures label_info counter index ts instance_no 
 = 
   let id,parent,sr,entry = Hashtbl.find bbdfns index in (* can't fail *)
@@ -1511,7 +1521,7 @@ let gen_procedure_methods syms (child_map,bbdfns)
     let params = map (fun (id,(ix,t)) -> ix) bps in
 
     let exe_string,needs_switch =
-      gen_exes syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no
+      gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no
     in
     let cont = "con_t *" in
     let arg_sig = 
@@ -1607,7 +1617,7 @@ let gen_procedure_methods syms (child_map,bbdfns)
   | _ -> failwith "procedure expected"
 
 
-let gen_execute_methods syms (child_map,bbdfns) all_closures label_info counter bf =
+let gen_execute_methods filename syms (child_map,bbdfns) all_closures label_info counter bf =
   let s = Buffer.create 2000 in
   Hashtbl.iter
   (fun (index,ts) instance_no -> 
@@ -1616,14 +1626,14 @@ let gen_execute_methods syms (child_map,bbdfns) all_closures label_info counter 
   | `BBDCL_function (props,vs,ps, ret, _) -> 
     bcat s ("//------------------------------\n");
     bcat s (
-      gen_function_methods syms (child_map,bbdfns) all_closures label_info counter index ts instance_no
+      gen_function_methods filename syms (child_map,bbdfns) all_closures label_info counter index ts instance_no
     )
     
     
   | `BBDCL_procedure (props,vs,ps,_) -> 
     bcat s ("//------------------------------\n");
     bcat s (
-      gen_procedure_methods syms (child_map,bbdfns) all_closures label_info counter index ts instance_no
+      gen_procedure_methods filename syms (child_map,bbdfns) all_closures label_info counter index ts instance_no
     )
   | _ -> ()
   end
@@ -2226,7 +2236,7 @@ try
 
   plb "\n//-----------------------------------------";
   plb "//DEFINE FUNCTION CLASS METHODS";
-  gen_execute_methods syms (child_map,bbdfns) all_closures label_info syms.counter bf;
+  gen_execute_methods body_file_name syms (child_map,bbdfns) all_closures label_info syms.counter bf;
 
   if compiler_options.print_flag then print_endline "//GENERATING C++: interface";
   plb "\n//-----------------------------------------";

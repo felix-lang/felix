@@ -158,6 +158,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
     h
 
   | `BEXE_label _
+  | `BEXE_halt _
   | `BEXE_goto _
   | `BEXE_code _
   | `BEXE_nonreturn_code _

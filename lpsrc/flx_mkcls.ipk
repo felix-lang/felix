@@ -156,6 +156,7 @@ let process_exe syms bbdfns all_closures (exe : bexe_t) : bexe_t =
     `BEXE_reglex (sr, ue p1, ue p2, (a,b,h',d))
 
   | `BEXE_label _
+  | `BEXE_halt _
   | `BEXE_goto _
   | `BEXE_code _
   | `BEXE_nonreturn_code _

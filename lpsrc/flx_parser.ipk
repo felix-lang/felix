@@ -300,6 +300,7 @@ executable:
   | read { $1 }
   | return { $1 }
   | ifgoto_stmt { $1 }
+  | whilst_stmt { $1 }
   | todo { $1 }
   | assignment { $1 } 
   | inline_cpp { $1 } 
@@ -1292,6 +1293,13 @@ ifgoto_stmt:
   | IF expr DO statement_aster DONE SEMI
     { `AST_ifdo (rstoken $1 $5,$2,$4,[]) }
 
+whilst_stmt:
+   | WHILST expr DO statement_aster DONE SEMI
+     { `AST_whilst (rstoken $1 $6, $2, $4) }
+
+   | UNTIL expr DO statement_aster DONE SEMI
+     { `AST_until (rstoken $1 $6, $2, $4) }
+   
 @head(3,'Regular expression matching')
 @select(h)
 regmatch_expr:

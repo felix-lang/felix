@@ -1,6 +1,6 @@
 @bc = begin_displayed_code
 @ec = end_displayed_code
-@flx_version = '1.0.10'
+@flx_version = '1.0.11'
 @godi_revision = '0'
 @set_title('Felix '+flx_version)
 @head(1,'Purpose')
@@ -300,7 +300,9 @@ Flx_version.version_data := version_data
     ["val", "VAL"],
     ["var", "VAR"],
     ["when", "WHEN"],
+    ["whilst", "WHILST"],
     ["with", "WITH"],
+    ["until", "UNTIL"],
     ["_", "UNDERSCORE"],
   ]
 
@@ -398,6 +400,7 @@ Flx_version.version_data := version_data
  
 @head(2,'The front end')
 @push_head()
+@include_file ('flx_filesys.ipk')
 @include_file ('flx_util.ipk')
 @include_file ('flx_types.ipk')
 @include_file ('flx_ctypes.ipk')
@@ -423,6 +426,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_bexe.ipk')
 @include_file ('flx_bbind.ipk')
 @include_file ('flx_label.ipk')
+@include_file ('flx_cflow.ipk')
 @include_file ('flx_call.ipk')
 @include_file ('flx_use.ipk')
 @include_file ('flx_useless.ipk')

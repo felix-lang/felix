@@ -713,6 +713,7 @@ module Control
     finish:>
   }
 
+  /* DISABLED: replaced by UNTIL statement until the optimiser is working
   publish """
   C style while loop with reversed condition
   note the until is tested first -- zero iterations are possible
@@ -725,6 +726,7 @@ module Control
       goto repeat;
     finish:>
   }
+  */
 
   publish "do nothing [the name pass comes from Python]"
   proc pass(){}

@@ -590,6 +590,51 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       ctack (`AST_ifgoto (sr, e, mi sr id))
     end
 
+  | `AST_whilst (sr, e , sts) -> 
+    let e = me e in
+    let n = !seq in incr seq;
+    let start = "_" ^ string_of_int n in
+    let n = !seq in incr seq;
+    let fin = "_" ^ string_of_int n in
+    begin match e with
+    | `AST_typed_case (_,c,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) ->
+      if c = 2 then (* infinite loop *)
+      begin
+        ctack (`AST_label(sr,start));
+        iter ctack (ms sts);
+        ctack (`AST_goto (sr,start))
+      end
+
+    | _ ->
+      ctack (`AST_label(sr,start));
+      ctack (`AST_ifnotgoto (sr,e,fin));
+      iter ctack (ms sts);
+      ctack (`AST_label(sr,fin))
+    end
+
+  | `AST_until (sr, e , sts) -> 
+    let e = me e in
+    let n = !seq in incr seq;
+    let start = "_" ^ string_of_int n in
+    let n = !seq in incr seq;
+    let fin = "_" ^ string_of_int n in
+    begin match e with
+    | `AST_typed_case (_,c,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) ->
+      if c = 1 then (* infinite loop *)
+      begin
+        ctack (`AST_label(sr,start));
+        iter ctack (ms sts);
+        ctack (`AST_goto (sr,start))
+      end
+
+    | _ ->
+      ctack (`AST_label(sr,start));
+      ctack (`AST_ifgoto (sr,e,fin));
+      iter ctack (ms sts);
+      ctack (`AST_label(sr,fin))
+    end
+
+
   | `AST_ifnotgoto (sr, e, id) -> 
     let e = me e in
     begin match e with
