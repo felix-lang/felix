@@ -87,7 +87,7 @@ frameworks</LI>
 <UL>
 <LI>All source written using the Literate Programming 
 tool <A HREF=http://interscript.sf.net>interscript</A></LI>
-<LI>Compiler implemented in <A HREF=http://caml.inria.fr>Ocaml 3.04</A></LI>
+<LI>Compiler implemented in <A HREF=http://caml.inria.fr>Ocaml 3.01</A></LI>
 <LI>Generates ISO C++ code</LI>
 </UL>
 <P>
@@ -111,9 +111,9 @@ HREF=http://lists.sourceforge.net/lists/listinfo/felix-impl>implementation</A>
 </P>
 The CVS location is
 <STRONG>cvs.felix.sourceforge.net:/cvsroot/felix</STRONG>
-<P>
+and you need module "lpsrc"<P>
 CVS web access <A
-HREF="http://cvs.sourceforge.net/cgi-bin/cvsweb.cgi/?cvsroot=felix">here</A>
+HREF="http://cvs.sourceforge.net/cgi-bin/viewcvs.cgi/felix">here</A>
 <P>
 <STRONG>Browse</STRONG> the complete documented source code, test suite, etc,
 using <A HREF=doc/en_flx_top.html>frames</A>,
@@ -173,7 +173,7 @@ compiler and run-times for your platform from the extracted sources.
 You don't need interscript for this, the sources are already
 extracted in the tarball.
 but you must first have installed:
-<A HREF=http://caml.inria.fr>Ocaml 3.04</A> to build
+<A HREF=http://caml.inria.fr>Ocaml 3.01</A> to build
 the Felix compiler, and  <A HREF=http://www.python.org>Python</A>
 to run the build scripts.
 </P>
@@ -188,8 +188,10 @@ of Felix is written using the Literate Programming
 tool <A HREF=http://interscript.sf.net>interscript</A>
 which you must also install: interscript is written in Python.
 Then you will need to install
-<A HREF=caml.inria.fr>Ocaml 3.04</A> or better
+<A HREF=caml.inria.fr>Ocaml 3.01</A> 
 to build the Felix compiler, which is written in Ocaml.
+NOTE: due to bugs in ocaml 3.02, 3.03, and 3.04, 
+you MUST use 3.01 to build felix.
 Although the optimising compiler is recommended,
 it should be possible to build a bytecode version of Felix.
 This includes the full interscript sources for the whole
@@ -230,9 +232,10 @@ iscr lpsrc/flx_maker.ipk
 before they'll run.
 
 <H2>Package Changes</H2>
+<P>Ocaml 3.04 doesn't work, Ocaml 3.01 is required</P>
 <P>There are two packages:
 <OL><LI>Source package. Everything except platform specific
-executable binaries. Python, Ocaml 3.04, and g++ are required
+executable binaries. Python, Ocaml 3.01, and g++ are required
 to build the compiler, run time, and tests.</LI>
 <LI>Linux Binary Package. Requires the source tarball.
 Ocaml is not required, python is strongly recommended
@@ -246,6 +249,12 @@ but that file is now packaged in the LP sources.
 </P>
 <H2>Language Changes</H2>
 <H3>Version 1.0a3</H3>
+<P>Match and if/then/else/endif are now expressions.</P>
+
+<P>Function return type are now deduced in many cases,
+they can be left off declarations.</P>
+
+<P>Syntax changes to function declarations</P>
 <P>All standard library types now defined in modules, typing
 of literals is now context sensitive.
 </P>
