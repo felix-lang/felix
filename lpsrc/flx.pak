@@ -48,6 +48,7 @@ C/C++ programmers, together with control inversion.
 
 @head(2,'The Unix Build system')
 @include_file ('flx_maker.ipk')
+@include_file ('flx_vim.ipk')
 
 @head(2,'The tutorial')
 The tutorial is found at
