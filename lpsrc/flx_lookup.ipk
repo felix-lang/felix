@@ -242,7 +242,7 @@ let print_env e =
   let print_entry k v = 
     print_endline 
     (
-      "  " ^ k ^ 
+      "  " ^ k ^ " " ^
       (
         match v with 
         | (NonFunctionEntry (i)) -> string_of_int i
@@ -254,7 +254,12 @@ let print_env e =
     print_endline "--"; Hashtbl.iter print_entry htab
 
   in 
-  let print_level (htab,htabs) = print_table htab in 
+  let print_level (htab,htabs) = 
+    print_table htab;
+    print_endline "OPENS:";
+    List.iter print_table htabs;
+    print_endline "ENDOFOPENS"
+  in 
 
   List.iter print_level e
 
@@ -424,6 +429,24 @@ and lookup_qn_in_env2
   | `AST_lookup (sr,(me,name,ts)) ->
     match eval_module_expr syms env excluded_dirs me with 
     | Simple_module (impl,ts', htab,dirs) ->
+      let _,includes,_ = split_dirs dirs in
+      let opens = uniq_list (map (bind_dir syms env excluded_dirs) includes) in
+      let includes = ref [] in
+      iter (get_includes' syms excluded_dirs includes) opens;
+      let includes = uniq_list !includes in
+      let tables = map (pub_table_dir syms) includes in
+      let result = lookup_name_in_table_dirs htab tables sr name in
+      match result with
+      | Some entry ->
+        resolve_inherits syms excluded_dirs sr entry,
+        ts' @ ts
+      | None ->
+        clierr sr
+        (
+          "[lookup_qn_in_env2] Can't find " ^ name
+        )
+
+      (*
       begin 
       try 
         let entry = Hashtbl.find htab name in
@@ -435,6 +458,7 @@ and lookup_qn_in_env2
           "[lookup_qn_in_env2] Can't find " ^ name
         )
       end
+      *)
 
 and lookup_code_in_env syms env sr qn =
   match lookup_qn_in_env2 syms env [] qn with
@@ -1723,9 +1747,6 @@ and lookup_qn_with_sig'
 
   | `AST_name (sr,name,ts) ->
     let ts = map (bt sr) ts in
-    (*
-    print_endline ("Lookup qn with sig has name " ^ name ^ "["^catmap "," (sbt syms.dfns) ts^"]");
-    *)
     lookup_name_with_sig 
       syms 
       sra srn idx_fixlist expr_fixlist depth excluded_dirs 
@@ -1745,7 +1766,14 @@ and lookup_qn_with_sig'
         (*
         print_endline ("Module " ^ si impl ^ "[" ^ catmap "," (sbt syms.dfns) ts' ^"]");
         *)
-        begin match lookup_name_in_htab htab name with
+        let _,includes,_ = split_dirs dirs in
+        let opens = uniq_list (map (bind_dir syms env excluded_dirs) includes) in
+        let includes = ref [] in
+        iter (get_includes' syms excluded_dirs includes) opens;
+        let includes = uniq_list !includes in
+        let tables = map (pub_table_dir syms) includes in
+        let result = lookup_name_in_table_dirs htab tables sr name in
+        begin match result with
         | None -> 
           clierr sr
           (
@@ -2737,65 +2765,113 @@ and resolve_overload
    'top'->NonFunctionEntry 0. 
 *)
 
+and split_dirs dirs :
+    qualified_name_t list *
+    qualified_name_t list *
+    (string * qualified_name_t) list
+=
+  let opens = 
+     List.concat
+     (
+       List.map
+       (fun x -> match x with 
+         | DIR_open qn -> [qn]
+         | DIR_inject_module qn -> []
+         | DIR_use (n,qn) -> []
+       )
+       dirs
+     )
+  and includes = 
+     List.concat
+     (
+       List.map
+       (fun x -> match x with 
+         | DIR_open qn -> []
+         | DIR_inject_module qn -> [qn]
+         | DIR_use (n,qn) -> []
+       )
+       dirs
+     )
+  and uses = 
+     List.concat
+     (
+       List.map
+       (fun x -> match x with 
+         | DIR_open qn -> []
+         | DIR_inject_module qn -> []
+         | DIR_use (n,qn) -> [n,qn]
+       )
+       dirs
+     )
+  in opens, includes, uses
+
+and  get_includes' syms excluded_dirs includes index =
+  if mem index excluded_dirs then () 
+  else begin
+    assert (not (mem index !includes));
+    includes := index :: !includes;
+    let env = build_env syms (index::excluded_dirs) (Some index) in
+    match Hashtbl.find syms.dfns index with
+    {id=id;sr=sr;parent=parent;vs=vs;pubmap=table;dirs=dirs} ->
+    List.iter
+    (fun x -> match x with 
+      | DIR_open _
+      | DIR_use _ -> ()
+      | DIR_inject_module qn -> 
+        let i,ts =
+          try lookup_qn_in_env syms env (index::excluded_dirs) qn 
+          with Not_found -> failwith "QN NOT FOUND"
+        in 
+          if not (mem i !includes) then
+          get_includes' syms (index::excluded_dirs) includes i
+    )
+    dirs
+  end
+
 and build_env' syms parent : 
   (
     name_map_t * 
     qualified_name_t list *
+    qualified_name_t list *
     (string * qualified_name_t) list
-  ) list =
+  ) list 
+=
   match parent with
   | None -> []
-
   | Some index ->
-     match Hashtbl.find syms.dfns index with
-     {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs} ->
-     let opens = 
-       List.concat
-       (
-         List.map
-         (fun x -> match x with 
-           | DIR_open qn -> [qn]
-           | DIR_use (n,qn) -> []
-         )
-         dirs
-       )
-     and uses = 
-       List.concat
-       (
-         List.map
-         (fun x -> match x with 
-           | DIR_open qn -> []
-           | DIR_use (n,qn) -> [n,qn]
-         )
-         dirs
-       )
-     in
-       (table,opens, uses) :: build_env' syms parent
+    match Hashtbl.find syms.dfns index with
+    {parent=parent;privmap=table;dirs=dirs} ->
+    let a,b,c = split_dirs dirs in
+    (table,a,b,c) :: build_env' syms parent
 
-and map_dir 
+and bind_dir 
   syms 
   (env:env_t)
   excluded_dirs 
   qn 
-: name_map_t =
+: int =
   let sr = ("dummy",0,0,0,0) in
   let result = 
     try lookup_qn_in_env syms env excluded_dirs qn 
     with Not_found -> failwith "QN NOT FOUND"
   in
   match result with
-  | i,ts ->
-    begin match get_data syms.dfns i with
-    | {pubmap=table;symdef=`SYMDEF_module} -> table
-    | _ -> failwith "[map_dir] Expected module"
-    end
+  | i,ts -> i
+
+and pub_table_dir 
+  syms 
+  i 
+: name_map_t =
+  match get_data syms.dfns i with
+  | {pubmap=table;symdef=`SYMDEF_module} -> table
+  | _ -> failwith "[map_dir] Expected module"
 
 and build_env'' syms excluded_dirs parent : env_t =
   let basic_env = build_env' syms parent in
   let rec resolve_dirs env =
     match env with
     | [] -> []
-    | (table,dirs,uses)::tail ->
+    | (table,opens,includes,uses)::tail ->
       let base = resolve_dirs tail in
       let env = (table,[])::base in
       let use_map = Hashtbl.create 97 in
@@ -2822,12 +2898,14 @@ and build_env'' syms excluded_dirs parent : env_t =
       )
       uses 
       ;
-      let bound_dirs = 
-        List.map
-        (map_dir syms env excluded_dirs)
-        dirs
-      in
-        (table,use_map:: bound_dirs) :: base
+      let opens = uniq_list (map (bind_dir syms env excluded_dirs) opens) in
+      let opens = uniq_cat opens (map (bind_dir syms env excluded_dirs) includes) in
+      let includes = ref [] in
+      iter (get_includes' syms excluded_dirs includes) opens;
+      let includes = uniq_list !includes in
+      let tables = map (pub_table_dir syms) includes in
+      let second = use_map::tables in
+      (table,second) :: base
    in 
      resolve_dirs basic_env
 

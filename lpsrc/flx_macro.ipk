@@ -454,6 +454,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   (* FIX TO SUPPORT IDENTIFIER RENAMING *)
   | `AST_open (sr, qn) -> tack st
+  | `AST_inject_module (sr, qn) -> tack st
 
   (* FIX TO SUPPORT IDENTIFIER RENAMING *)
   | `AST_use (sr, id, qn) -> tack (`AST_use (sr,mi sr id,qn))

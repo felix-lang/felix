@@ -2561,20 +2561,20 @@ The first form requires a proper qualified name and is
 equivalent to the second form, where the new_name is the
 last component of the qualified_name.
 
-@head(2,'Inheriting definitions')
+@head(2,'Renaming definitions')
 It is possible to inject a name or family
 of function names defined elsewhere into the
-public interface of a module with the inherit
+public interface of a module with the rename
 statement.
 @p()
-Inherited entities can be found both by
+injected entities can be found both by
 unqualified and qualified lookup as if actually
 defined in the module, however the denoted
 entities are not actually part of the module,
 and in particular they're bound in the context
 in which they're actually defined.
 @p()
-There are two forms of the inherit statement,
+There are two forms of the rename statement,
 one for non-functions and one for functions.
 The non-function form injects a reference to
 a single non-function entity. 
@@ -2597,20 +2597,92 @@ module X {
 }
 
 module Y {
-  inherit y_t = X::x_t;
-  inherit y42=X::x42;
+  rename y_t = X::x_t;
+  rename y42=X::x42;
   proc print:y_t = "std::cout << $1 << std::endl;";
 }
 
 Y::print X::x42;
 Y::print Y::y42;
 
-inherit fun print=Y::print;
-inherit y42=Y::y42;
-inherit x42=X::x42;
+rename fun print=Y::print;
+rename y42=Y::y42;
+rename x42=X::x42;
 
 print x42;
 print y42;
+
+@head(2,'Modular inclusion')
+It is possible to inherit all
+the symbols of a module with the inherit directive.
+Unlike the open directive, inherited symbols
+become part of the public interface of a module,
+as well as it's private interface.
+@p()
+When lookup is performed, entities
+defined in the module are always considered
+before inherited ones. This is to ensure
+a local definition can always be used to
+resolve an ambiguity, and to ensure that
+any binding to a local definition cannot
+be hijacked by a non-local change in another
+module.
+@p()
+Modular inclusion is transitive because
+it is specified to include the whole of
+the public interface of one module in another,
+including any symbols that module inherits.
+@p()
+Note that as usual and unlike other programming
+languages, Felix inheritance is fully recursive:
+a module contains all the symbols it defines
+plus the transitive closure of all inherited
+modules.
+@p()
+In particular, it is quite possible for two modules
+to inherit each other, thereby ensuring they
+publish the same set of names: note however that
+local overrides may mean the definition associated
+with a name is different for each module.
+
+@select(tangler(tdir+'tut207a.flx'))
+header "#include <iostream>";
+header "#include <string>";
+
+type int = "int";
+type string= "std::string";
+proc print:int = "std::cout << $1;";
+proc print:string= "std::cout << $1;";
+proc endl:1 = "std::cout << std::endl;";
+
+module X { 
+  fun f(a:int):int={ return 11; }
+}
+module Y { 
+  fun g(a:int):int={ return 22; }
+}
+module Z { inherit X; inherit Y; }
+
+// check transitivity
+module A {
+  inherit Z;
+  print (f 3); print " "; print (g 5); endl;
+  print (Z::f 3); print " "; print (Z::g 5); endl;
+  print (A::f 3); print " "; print (A::g 5); endl;
+}
+
+
+// check recurisve transitive closure
+module P { inherit Q; fun ff(a:int):int={return 33;}}
+module Q { inherit P; fun gg(a:int):int={return 44;}}
+module R {
+  inherit P;
+  print (ff 1); print " "; print (gg 1); endl;
+  print (P::ff 1); print " "; print (P::gg 1); endl;
+  print (Q::ff 1); print " "; print (Q::gg 1); endl;
+  print (R::ff 1); print " "; print (R::gg 1); endl;
+}
+
 
 @head(2,'Let expression')
 There is a short form for match expressions.

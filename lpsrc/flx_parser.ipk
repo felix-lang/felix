@@ -542,7 +542,7 @@ type_alias:
       mktypefun sr name vs args return_type body
     }
 
-  | INHERIT NAME tvarlist EQUAL qualified_name SEMI 
+  | RENAME NAME tvarlist EQUAL qualified_name SEMI 
     { 
       let sr = rstoken $1 $6
       and name = snd $2 
@@ -552,7 +552,7 @@ type_alias:
       `AST_inherit (sr,name,vs,qn)
     }
   
-  | INHERIT FUNCTION NAME tvarlist EQUAL qualified_name SEMI 
+  | RENAME FUNCTION NAME tvarlist EQUAL qualified_name SEMI 
     { 
       let sr = rstoken $1 $7
       and name = snd $3 
@@ -560,6 +560,14 @@ type_alias:
       and qn = qualified_name_of_expr $6
       in
       `AST_inherit_fun (sr,name,vs,qn)
+    }
+
+  | INHERIT qualified_name SEMI 
+    { 
+      let sr = rstoken $1 $3
+      and qn = qualified_name_of_expr $2
+      in
+      `AST_inject_module (sr,qn)
     }
 
 @head(3,'Export')

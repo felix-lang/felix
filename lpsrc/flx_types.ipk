@@ -58,6 +58,12 @@ val hashtable_of_list:
 val fix:
  (('a -> 'b) -> 'a -> 'b) -> 'a -> 'b
 
+(** add elements to unique list *)
+val uniq_cat: 'a list -> 'a list -> 'a list
+
+(** make a list of unique elements *)
+val uniq_list: 'a list -> 'a list
+
 @h = tangler('src/flx_util.ml')
 @select(h)
 let spaces level = String.make (level*2) ' '
@@ -114,6 +120,15 @@ let hashtable_of_list lst =
   t
 
 let rec fix f x = f (fix f) x
+
+let uniq_cat u nu  =
+  List.fold_left 
+  (fun l i -> if List.mem i l then l else i :: l) 
+  u
+  nu
+
+let uniq_list lst = uniq_cat [] lst
+
 
 @head(1,'AST')
 @h = tangler('src/flx_ast.mli')
@@ -365,6 +380,7 @@ and statement_t =
   [ 
   | `AST_include of range_srcref * string 
   | `AST_open of range_srcref * qualified_name_t
+  | `AST_inject_module of range_srcref * qualified_name_t
   | `AST_use of range_srcref * id_t * qualified_name_t
   | `AST_comment of string (* for documenting generated code *)
   | `AST_public of range_srcref * string * statement_t
@@ -502,6 +518,7 @@ corresponding to a match.
 @select(h)
 type dir_t =
   | DIR_open of qualified_name_t
+  | DIR_inject_module of qualified_name_t
   | DIR_use of id_t * qualified_name_t
 
 type dcl_t = 
@@ -1022,6 +1039,7 @@ let src_of_stmt e = match e with
   | `AST_export_type (s, _,_)
   | `AST_type (s,_,_)
   | `AST_open (s,_)
+  | `AST_inject_module (s,_)
   | `AST_include (s,_)
   | `AST_use (s,_,_)
   | `AST_regdef (s,_,_)
@@ -1856,6 +1874,9 @@ and string_of_statement level s =
   | `AST_open (_,n) -> 
     spaces level ^ "open " ^ sqn n ^ ";"
 
+  | `AST_inject_module (_,n) -> 
+    spaces level ^ "include " ^ sqn n ^ ";"
+
   | `AST_include (_,s) -> 
     spaces level ^ "include " ^ s ^ ";"
   
@@ -2581,6 +2602,9 @@ and string_of_dir level s =
 
   | DIR_use (n,qn) ->
     spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
+
+  | DIR_inject_module qn ->
+    spaces level ^ "include " ^ sqn qn ^ ";"
 
 and string_of_breqs reqs = ""
 
