@@ -177,7 +177,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
 
   | `BBDCL_val (vs,t)
   | `BBDCL_var (vs,t)
-  | `BBDCL_const (vs,t,_)
+  | `BBDCL_const (vs,t,_,_)
     ->
     if length vs <> length ts
     then syserr sr
@@ -196,13 +196,13 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
   | `BBDCL_body _
     -> () (* already handled *)
 
-  | `BBDCL_fun (vs,argtypes,ret,_) ->
+  | `BBDCL_fun (vs,argtypes,ret,_,reqs) ->
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret [] ts
 
-  | `BBDCL_proc (vs,argtypes,_) ->
+  | `BBDCL_proc (vs,argtypes,_,reqs) ->
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in

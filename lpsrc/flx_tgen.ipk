@@ -113,7 +113,7 @@ let gen_type_name syms bbdfns (index,typ) =
       with _ -> failwith ("[gen_type_name] can't find type" ^ si i)
     in
     begin match entry with
-    | `BBDCL_abs (vs,complete,ct) -> 
+    | `BBDCL_abs (vs,complete,ct,_) -> 
       let descr = 
         "\n//"^(if complete then "" else "INCOMPLETE ")^
         "PRIMITIVE "^si i ^" INSTANCE " ^ 
@@ -204,7 +204,7 @@ let gen_type_name syms bbdfns (index,typ) =
         descr ^
         "typedef _uctor_ " ^ tn typ ^ ";\n"
 
-    | `BBDCL_abs (vs,complete,ct) -> 
+    | `BBDCL_abs (vs,complete,ct,_) -> 
       begin match vs with
       | [] -> descr ^ "typedef " ^ ct ^ " " ^ tn typ ^ ";\n" 
       | _ -> 
@@ -335,7 +335,7 @@ let gen_type syms bbdfns (index,typ) =
       with _ -> failwith ("[gen_type_name] can't find type" ^ si i)
     in
     begin match entry with
-    | `BBDCL_abs (vs,complete,ct) -> ""
+    | `BBDCL_abs (vs,complete,ct,_) -> ""
     | `BBDCL_struct (vs,cts) ->
       let cts = map (fun (name,typ) -> name, tsubst vs ts typ) cts in
       let ctss = map (fun (name,typ) -> name, tn typ) cts in
@@ -447,7 +447,7 @@ let gen_type syms bbdfns (index,typ) =
       "};\n"
 
     | `BBDCL_union _ -> "" (* covered by prior typedef of _uctor_ or int *)
-    | `BBDCL_abs (vs,complete,ct) -> ""
+    | `BBDCL_abs (vs,complete,ct,_) -> ""
     | _ -> 
       failwith 
       (

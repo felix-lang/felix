@@ -652,10 +652,11 @@ and bbdcl_t =
   | `BBDCL_var of        (string * int) list * btypecode_t
 
   (* binding structures [prolog] *)
-  | `BBDCL_abs of        (string * int) list * bool * c_t
-  | `BBDCL_const of      (string * int) list * btypecode_t * c_t
-  | `BBDCL_fun of        (string * int) list * btypecode_t list * btypecode_t * c_t 
-  | `BBDCL_proc of       (string * int) list * btypecode_t list * c_t 
+  | `BBDCL_abs of        (string * int) list * bool * c_t * bid_t list
+  | `BBDCL_const of      (string * int) list * btypecode_t * c_t * bid_t list
+  | `BBDCL_fun of        (string * int) list * btypecode_t list * btypecode_t * c_t  * bid_t list
+  | `BBDCL_proc of       (string * int) list * btypecode_t list * c_t  * bid_t list
+  
   | `BBDCL_union of      (string * int) list * (id_t * btypecode_t) list
   | `BBDCL_struct of     (string * int) list * (id_t * btypecode_t) list
   ]
@@ -2557,24 +2558,24 @@ and string_of_bbdcl dfns bbdcl index =
     "var " ^ name ^ print_bvs vs ^ ": " ^ sobt ty ^ ";"
 
   (* binding structures [prolog] *)
-  | `BBDCL_abs (vs,complete,code) ->
+  | `BBDCL_abs (vs,complete,code,reqs) ->
    (if complete then "" else "incomplete ") ^
    "type " ^ name ^  print_bvs vs ^
    " = " ^ string_of_string code ^ ";"
 
-  | `BBDCL_const (vs,ty,code) ->
+  | `BBDCL_const (vs,ty,code,reqs) ->
      "const " ^ name ^ print_bvs vs ^    
      ": " ^ sobt ty ^ 
      " = "^string_of_string code^ ";" 
 
-  | `BBDCL_fun (vs,ps,rt,code) ->
+  | `BBDCL_fun (vs,ps,rt,code,reqs) ->
     "fun " ^ name ^ print_bvs vs ^
     ": " ^ 
     (sobt (typeoflist ps)) ^ " -> " ^
     (sobt rt) ^ 
     " = " ^ string_of_string code ^ ";"
 
-  | `BBDCL_proc (vs, ps,code) ->
+  | `BBDCL_proc (vs, ps,code,reqs) ->
     "proc " ^ name ^ print_bvs vs ^
     ": " ^ 
      (sobt (typeoflist ps)) ^

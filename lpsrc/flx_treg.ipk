@@ -138,7 +138,7 @@ let rec register_type_r syms bbdfns exclude sr t =
       rnr argt;                             (* argument tuple *)
       rnr (`BTYP_function (argt,t))         (* constructor *)
 
-    | `BBDCL_abs (vs,complete,ct) -> 
+    | `BBDCL_abs (vs,complete,ct,_) -> 
       rnr t 
 
     | _ -> 

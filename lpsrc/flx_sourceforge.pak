@@ -151,6 +151,17 @@ to run the build scripts,
 use GNU g++.
 </OL>
 </P>
+<H1>Supported Platforms</H1>
+<P>Currently a Unix like environment is required. Felix 
+has been built on the following platforms:
+<OL>
+<LI>Linux (RH9)
+<LI>OSX (1.3)
+<LI>Solaris (SPARC)
+<LI>Win32 (Cygwin)
+</OL>
+</P>
+
 <H1>Download</H1>
 @tangle("<P> Download developer tarball <A HREF=flx_"+flx_version+"_src.tgz>flx_"+flx_version+"_src.tgz</A> (486391bytes)")
 </P>

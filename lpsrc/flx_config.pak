@@ -215,12 +215,16 @@ def get_stdout(x):
 # we cannot do anything fancy here like redirect
 # stdout/stderr because we don't know what OS we're on
 
-def xqt(x):
-  result = os.system(x + " &>/dev/null")
+def xxqt(x):
+  result = os.system(x)
   if result != 0: 
     print "FAIL:",x
     raise Error
   else: print x
+
+def xqt(x): 
+  xxqt(x + " >/dev/null 2>&1")
+
 
 #---------------------------------------------------
 # discover which ocaml compilers are available
@@ -315,22 +319,22 @@ except:
 # down the track, we should replace these variables
 # with a Python function def, since that's more flexible
 if CYGWIN:
-  CCOBJ_DLLIB = CXX + "-ansi -w -g -c "
-  CCOBJ_DLMAIN = CXX + "-ansi -w -g -c "
-  CCLINK_DLLIB = CXX + "-shared -Wl,--export-all-symbols -Wl,--enable-auto-import "
-  CCLINK_DLMAIN = CXX 
+  CCOBJ_DLLIB = CXX + "-w -g -c "
+  CCOBJ_DLMAIN = CXX + "-w -g -c "
+  CCLINK_DLLIB = CXX + "-w -Wl,--export-all-symbols -Wl,--enable-auto-import "
+  CCLINK_DLMAIN = CXX + "-w "
 else:
-  CCOBJ_DLLIB = CXX + "-ansi -w -g -fPIC -c "
-  CCOBJ_DLMAIN = CXX + "-ansi -w -g -fPIC -c "
-  CCLINK_DLLIB = CXX + "-Wl,-shared -Wl,--export-dynamic "
-  CCLINK_DLMAIN = CXX + "-Wl,-Bdynamic -Wl,--export-dynamic -ldl "
+  CCOBJ_DLLIB = CXX + "-w -g -fPIC -c "
+  CCOBJ_DLMAIN = CXX + "-w -g -fPIC -c "
+  CCLINK_DLLIB = CXX + "-w -Wl,-shared -Wl,--export-dynamic "
+  CCLINK_DLMAIN = CXX + "-w -Wl,-Bdynamic -Wl,--export-dynamic -ldl "
 
-CCOBJ_STATIC_LIB = CXX + "-ansi -w -g -c "
-CCOBJ_STATIC_MAIN = CXX + "-ansi -w -g -c "
+CCOBJ_STATIC_LIB = CXX + "-w -g -c "
+CCOBJ_STATIC_MAIN = CXX + "-w -g -c "
 
 # NOTE: static here means linking felix libraries with drivers
 # it does NOT mean not to do dynamic loading at load time
-CCLINK_STATIC = CXX 
+CCLINK_STATIC = CXX  + "-w "
 
 #check if we can get dlopen to work
 try:
@@ -342,8 +346,8 @@ try:
   SUPPORT_DYNAMIC_LOADING = 1
 except:
   try: #again with --shared
-    CCLINK_DLLIB = CXX + "--shared "
-    CCLINK_DLMAIN = CXX + "-Wl,-Bdynamic -ldl "
+    CCLINK_DLLIB = CXX + "-w --shared "
+    CCLINK_DLMAIN = CXX + "-w -Wl,-Bdynamic -ldl "
     xqt(CCLINK_DLLIB+"tmp/dummy_lib.o -o tmp/dummy_lib.so")
     xqt(CCLINK_DLMAIN+"tmp/dummy_main.o -o tmp/dlmain")
     xqt("tmp/dlmain tmp/dummy_lib.so")
@@ -403,7 +407,7 @@ except:
 # find sizes of ints
 try:
   xqt("g++ -w tmp/intsizes.cxx -o tmp/intsizes")
-  xqt("tmp/intsizes > tmp/intsizes.py")
+  xxqt("tmp/intsizes > tmp/intsizes.py")
   execfile("tmp/intsizes.py")
 except:
   pass
@@ -411,7 +415,7 @@ except:
 # find if we have long long
 try:
   xqt("g++ -w tmp/longlong.cxx -o tmp/longlong")
-  xqt("tmp/longlong >tmp/longlong.py")
+  xxqt("tmp/longlong >tmp/longlong.py")
   execfile("tmp/longlong.py")
   HAVE_LONGLONG=1
 except:
@@ -420,7 +424,7 @@ except:
 # find if we have long double
 try:
   xqt("g++ -w tmp/longdouble.cxx -o tmp/longdouble")
-  xqt("tmp/longdouble >tmp/longdouble.py")
+  xxqt("tmp/longdouble >tmp/longdouble.py")
   execfile("tmp/longdouble.py")
   HAVE_LONGDOUBLE=1
 except:

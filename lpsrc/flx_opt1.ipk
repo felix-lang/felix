@@ -484,6 +484,9 @@ let useless_call_elim syms used (child_map,bbdfns) vs' exes index =
     ;
     !exes''
 
+let uses_code used i =
+  used := PosSet.add i !used
+
 let rec uses_type syms used (child_map,bbdfns) (t:btypecode_t) = 
   let ut t = uses_type syms used (child_map,bbdfns) t in
   match t with
@@ -587,6 +590,7 @@ and uses_tbexpr syms used (child_map,bbdfns) (e,t) =
   | `BEXPR_expr (_,t) -> ut t
 
 and uses syms used (child_map,bbdfns) i =
+  let ur i = uses_code used i in
   let ut t = uses_type syms used (child_map,bbdfns) t in
   let ux x = uses_exes syms used (child_map,bbdfns) x in
   if not (PosSet.mem i !used) then
@@ -613,14 +617,13 @@ and uses syms used (child_map,bbdfns) i =
         iter ut (map snd ps)
                                                                                 
       | `BBDCL_val (vs,t)
-      | `BBDCL_var (vs,t)
-      | `BBDCL_const (vs,t,_)
-        -> ut t
-                                                                                
-      | `BBDCL_fun (_,ps, ret, _) -> iter ut ps; ut ret
-      | `BBDCL_proc (_,ps, _)  -> iter ut ps
+      | `BBDCL_var (vs,t) -> ut t
 
-      | `BBDCL_abs _ 
+      | `BBDCL_const (vs,t,_,reqs) -> ut t; iter ur reqs
+      | `BBDCL_fun (_,ps, ret, _,reqs) -> iter ut ps; ut ret; iter ur reqs
+      | `BBDCL_proc (_,ps, _, reqs)  -> iter ut ps; iter ur reqs
+
+      | `BBDCL_abs (vs,_,_,reqs) -> iter ur reqs
       | `BBDCL_header _
       | `BBDCL_body _ -> ()
       end
@@ -671,11 +674,11 @@ let elide_unused syms
   let bbdfns2 = Hashtbl.create 97 in
   PosSet.iter (copy_bbdcl syms !used (child_map,bbdfns) bbdfns2) !used
   ;
-  (* copy all header and body specs, they're always considered used *)
+  (* copy all anonymous header and body specs, they're always considered used *)
   Hashtbl.iter
   (fun i b -> match b with
-    | _,_,_,`BBDCL_header _
-    | _,_,_,`BBDCL_body _ -> Hashtbl.add bbdfns2 i b
+    | "_root",_,_,`BBDCL_header _
+    | "_root",_,_,`BBDCL_body _ -> Hashtbl.add bbdfns2 i b
     | _ -> ()
   )
   bbdfns

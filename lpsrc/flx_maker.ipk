@@ -609,7 +609,7 @@ try:
         xqt(CCOBJ_DLMAIN + " -I. " + i + ".cpp -o " +i+"_dynamic.o")
 
         if CYGWIN:
-          xqt("g++ -o "+j+" -Lrtl -lflx_dynamic -Wl,--enable-auto-import " + i + "_dynamic.o")
+          xqt("g++ -o "+j+" -Wl,--enable-auto-import " + i + "_dynamic.o -Lrtl -lflx_dynamic")
         else:
           xqt(CCLINK_DLMAIN + " -o "+j+" -Lrtl -lflx_dynamic " +i+"_dynamic.o")
 
@@ -681,13 +681,13 @@ try:
         try:
           if LINK_MODEL == "dynamic":
             if CYGWIN:
-              xqt("g++ -w -ansi -g -o "+basename+SHLX+" -shared -I. "+cppfilename+" -Lrtl -lflx_rtl -Wl,--enable-auto-import")
+              xqt("g++ -w -ansi -g -o "+basename+SHLX+" -shared -I. "+cppfilename+" -Lrtl -lflx_dynamic -Wl,--enable-auto-import")
             else:
               xqt(CCOBJ_DLLIB+" -I. "+cppfilename + " -o " + basename + "_dynamic.o")
               xqt(CCLINK_DLLIB+" -Lrtl -lflx_dynamic -o "+ basename + SHLX + " "+basename+"_dynamic.o")
           else:
             xqt(CCOBJ_STATIC_LIB +" -I. "+cppfilename + " -o " + basename + "_static.o" )
-            xqt(CCLINK_STATIC +" -I. ./bin/flx_run_static.o "+basename+ "_static.o ./rtl/flx_static.a -o " + basename + SHLX )
+            xqt(CCLINK_STATIC +" -I. ./rtl/flx_run_static.o "+basename+ "_static.o -Lrtl -lflx_static -o " + basename + SHLX )
           #print 'TESTFILE -- OK!',basename
           results.append(("g++",basename,'OK'))
         except MakeError:
@@ -829,6 +829,9 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('tests.static: dummy')
 @tangle('\tpython script/maker test static log_output')
+@tangle('')
+@tangle('tests.inline: dummy')
+@tangle('\tpython script/maker inline test log_output')
 @tangle('')
 @tangle('tests.performance: dummy')
 @tangle('\tpython script/maker performance')
@@ -997,8 +1000,8 @@ We have no idea if it continues copying.
 @tangle('\tpython script/maker man')
 @tangle('')
 @tangle('clean: dummy')
-@tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so')
-@tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so')
+@tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.dll')
+@tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so test/rt*.dll')
 @tangle('')
 @tangle('virgin: dummy')
 @tangle('\tcp Makefile Makefile.old')
@@ -1203,15 +1206,8 @@ YOU MAY NEED TO DELETE IT AND RUN 'make boot'
 again to reset to the defaults.
 
 5. Build the compiler
-   For systems where the Ocaml native code compiler
-   is supported:
 
-   make compiler drivers
-
-   Otherwise you need to build a bytecode version
-   of the compiler:
-
-   make compiler.bytecode drivers
+   make compiler rtl drivers
 
 6. Build the documentation and tutorial
 
@@ -1955,5 +1951,5 @@ else
 fi
 
 @os.system('chmod u+x bin/flx')
-@os.system('cp doc/*.css tut/doc &>/dev/null')
+@os.system('cp doc/*.css tut/doc >/dev/null 2>&1')
 

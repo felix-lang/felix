@@ -76,7 +76,7 @@ let include_file syms inspec =
         else pf
       in
         try (* to write Marshalled parse tree out *)
-          let x = open_out pf in
+          let x = open_out_bin pf in
           Marshal.to_channel x (this_version,sts) [];
           close_out x
         with _ -> () (* can't write, don't worry *)
@@ -104,7 +104,7 @@ let include_file syms inspec =
 
       (* -- parsed file is newer or text doesn't exist ------- *)
       else if tf_mt < pf_mt then 
-        let x = open_in pf in
+        let x = open_in_bin pf in
         let (that_version,tree) = Marshal.from_channel x in
         close_in x;
         if this_version = that_version

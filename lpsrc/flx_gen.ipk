@@ -360,7 +360,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
       let name = cpp_typename syms btyp in
       let id,parent,sr,entry = Hashtbl.find bbdfns i in 
       begin match entry with
-      | `BBDCL_abs (_,complete,_) ->
+      | `BBDCL_abs (_,complete,_,_) ->
         if complete then
           if not (Hashtbl.mem primitive_shapes name) then 
           begin
@@ -951,7 +951,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
       | `BBDCL_val (_,t) ->
           get_var_ref syms bbdfns this index ts
 
-      | `BBDCL_const (_,_,ct) -> 
+      | `BBDCL_const (_,_,ct,_) -> 
         let ts = map tn ts in
         csubst sr sr2 ct [] [] "Error" "Error" ts
 
@@ -1070,7 +1070,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
     print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
     *)
     match entry with
-    | `BBDCL_fun (vs,ps,retyp,ct) -> 
+    | `BBDCL_fun (vs,ps,retyp,ct,_) -> 
       if length vs <> length ts then
       failwith 
       (
@@ -1198,7 +1198,7 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
     in
     begin 
     match entry with
-    | `BBDCL_proc (vs,_,ct) -> 
+    | `BBDCL_proc (vs,_,ct,_) -> 
       (*
       print_endline "Handling call to primitive ..";
       *)

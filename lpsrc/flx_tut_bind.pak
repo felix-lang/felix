@@ -430,4 +430,20 @@ append[int](&v,3);
 // print the vector
 vprint[int] v; endl();
 
+@head(2,'Header and body tags')
+Header and body statements may include tag names
+which can be refered to in requires clauses of
+binding definitions.
+@p()
+Untagged headers and bodies are always emitted
+into the generated code. Tagged bodies and headers
+are only emitted if a used primitive type, constant,
+function or procedure requires them.
+
+@select(tangler(tdir+'tut_bind135.flx'))
+body stdio "#include <stdio.h>";
+body printu 'void print(char *s) { printf("%s\\n",s); }';
+
+proc hello:1='print("Hello");' requires stdio, printu;
+hello;
 

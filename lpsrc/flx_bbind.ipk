@@ -58,6 +58,23 @@ let rec find_true_parent dfns child parent =
       | `SYMDEF_function _ -> Some parent
       | _ -> None
     
+let bind_req syms env sr tag =
+  lookup_name_in_env env sr tag
+
+
+let bind_reqs syms env sr reqs : bid_t list =
+  let add lst i = if mem i lst then lst else i :: lst in
+  fold_left 
+  (fun lst tag ->
+    match bind_req syms env sr tag with
+    | NonFunctionEntry _ ->
+      clierr sr "Require code tag"
+    | FunctionEntry entries ->
+      fold_left (fun lst (Simple x) -> add lst x) lst entries
+  ) 
+  [] 
+  reqs
+  
 let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;dirs=dirs;symdef=bdcl} =
   let true_parent = find_true_parent syms.dfns name parent in
   let bexes env exes rt i tvars = bind_exes syms env sr exes rt name i tvars in
@@ -67,6 +84,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
   begin
     (* let env = build_env syms [] parent in  *)
     let env = build_env syms [] (Some i) in 
+    let bind_reqs reqs = bind_reqs syms env sr reqs in
     let vs = find_vs syms i in
     let bt t = bind_type syms env [] sr t in
     match bdcl with
@@ -190,7 +208,8 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
     
     | `SYMDEF_const (t,ct,reqs) ->
       let t = typeofindex syms [] i in
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_const (vs,t,ct));
+      let reqs = bind_reqs reqs in
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_const (vs,t,ct,reqs));
       if syms.compiler_options.print_flag then
       print_endline ("//bound const " ^ name ^ "<"^si i^">:" ^
       sbt syms.dfns t)
@@ -199,11 +218,12 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
     | `SYMDEF_fun (ts,ret,ct,reqs) ->
       let ts = map bt ts in
       let bret = bt ret in
+      let reqs = bind_reqs reqs in
       let bbdcl = match bret with
         | `BTYP_void ->
-          `BBDCL_proc (vs, ts,ct)
+          `BBDCL_proc (vs, ts,ct,reqs)
         | _ ->
-          `BBDCL_fun (vs, ts,bret,ct)
+          `BBDCL_fun (vs, ts,bret,ct,reqs)
       in
       Hashtbl.add bbdfns i (name,None,sr,bbdcl);
       begin
@@ -239,7 +259,8 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       (*
       print_endline ("//Binding abstract type " ^ si i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_abs (vs,complete,ct))
+      let reqs = bind_reqs reqs in
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_abs (vs,complete,ct,reqs))
 
     | `SYMDEF_header ct ->
       (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name); 
