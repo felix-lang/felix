@@ -15,6 +15,8 @@ val call_data:
 val print_call_report:
   fully_bound_symbol_table_t -> out_channel -> unit
 
+val is_recursive: usage_table_t -> bid_t -> bool
+
 @h = tangler("src/flx_call.ml")
 @select(h)
 open Flx_ast

@@ -73,8 +73,6 @@ let rec isuseless bbdfns exes =
         then raise Useful
         else ()
       | _,_,_,`BBDCL_proc _
-      | _,_,_,`BBDCL_val _
-      | _,_,_,`BBDCL_var _
         -> raise Useful
       | _ -> failwith "[isuseless] Expected procedure type"
     with 
@@ -84,17 +82,15 @@ let rec isuseless bbdfns exes =
     iter
     (fun x -> match (x:bexe_t) with
       | `BEXE_call_prim (_,i,_,_)
-      | `BEXE_call_stack (_,i,_,_)
       | `BEXE_call_direct (_,i,_,_)
-      | `BEXE_call (_,(`BEXPR_closure (i,_),_),_) 
-      | `BEXE_call (_,(`BEXPR_name (i,_),_),_) 
-      | `BEXE_jump (_,(`BEXPR_closure (i,_),_),_) 
-      | `BEXE_jump  (_,(`BEXPR_name (i,_),_),_) 
         -> 
          check i
 
+      | `BEXE_call (_,(`BEXPR_closure (_,_),_),_) 
+      | `BEXE_call_stack _
+      | `BEXE_jump _ -> assert false
+
       | `BEXE_assign _
-      | `BEXE_jump _
       | `BEXE_call _ (* assume useful if not call to named useful proc *)
       | `BEXE_read _ (* useful even if local, due to side effect *)
       | `BEXE_code _ 
@@ -420,40 +416,6 @@ let useless_call_elim syms used (child_map,bbdfns) vs' exes index =
 
   | `BEXE_jump _ -> assert false
 
-  (*
-  | `BEXE_jump (sr,((`BEXPR_closure (i,ts),_) as f), b')
-  | `BEXE_jump (sr,((`BEXPR_name (i,ts),_) as f), b')
-    -> (* only keep calls to useful procedures *) 
-      begin match Hashtbl.find bbdfns i with
-      | id,parent,sr2,`BBDCL_procedure (props,vs,ps,inner_exes) ->
-        if not (isuseless bbdfns exes) 
-        then begin
-          match inner_exes with
-          (* inline simple procedures *)
-          | [`BEXE_call (sr3,a,b)]
-          | [`BEXE_call (sr3,a,b); `BEXE_proc_return _]
-          | [`BEXE_jump (sr3,a,b)]
-            ->
-              begin 
-                try
-                  check_can_inline (child_map,bbdfns) i;
-                  let b = param_subst id syms sr3 vs b ps ts b' in
-                  let a = param_subst id syms sr3 vs a ps ts b' in
-                  let a = ia a in
-                  let b = ia b in
-                  exes' := `BEXE_jump (sr,a,b) :: !exes'
-                with 
-                  Cannot_inline -> exes' := `BEXE_jump (sr,f,ia b') :: !exes'
-              end
-          | _ 
-            -> 
-              exes' := `BEXE_jump (sr,f,ia b') :: !exes'
-        end
-        else exes' := `BEXE_proc_return sr :: !exes'
-      | _ -> exes' := `BEXE_jump (sr,f,ia b') :: !exes'
-      end
-  | `BEXE_jump (sr,a,b) -> exes' := `BEXE_jump (sr,ia a,ia b) :: !exes'
-  *)
   | `BEXE_call (sr,a,b) -> 
     let a = ia a in
     begin match a with

@@ -26,6 +26,7 @@ child of any parent.
 open Flx_ast
 open Flx_types
 open Flx_mtypes1
+open Flx_call
 
 val heavy_inlining:
   sym_state_t ->
@@ -781,9 +782,11 @@ let heavy_inline_calls syms (child_map,bbdfns) bbdfns2 vs' exes caller =
   iter
   (fun exe -> 
   match exe with
-  | `BEXE_call_stack (sr,callee,ts,argument)
-  | `BEXE_call_direct (sr,callee,ts,argument)
-  | `BEXE_call (sr,(`BEXPR_closure (callee,ts),_),argument) ->
+  | `BEXE_call_stack (sr,callee,ts,argument) -> assert false
+  | `BEXE_call (sr,(`BEXPR_closure (callee,ts),_),argument) -> assert false
+  | `BEXE_jump _ -> assert false
+
+  | `BEXE_call_direct (sr,callee,ts,argument) ->
     let id,parent,sr,entry = Hashtbl.find bbdfns callee in
     begin match entry with
     | `BBDCL_procedure _ ->
@@ -799,30 +802,6 @@ let heavy_inline_calls syms (child_map,bbdfns) bbdfns2 vs' exes caller =
     | _ ->  exes' := exe :: !exes'
     end
 
-  | `BEXE_jump (sr,(`BEXPR_closure (callee,ts),_),argument) as x ->
-    (*
-    print_endline "INLINE CANDIDATE DETECTED - JUMP";
-    print_endline (string_of_bexe syms.dfns 0 x);
-    *)
-    let id,parent,sr,entry = Hashtbl.find bbdfns callee in
-    begin match entry with
-    | `BBDCL_procedure _ ->
-      let xs = 
-        heavy_inline_call syms (child_map,bbdfns) bbdfns2 caller vs' callee ts argument
-      in 
-        (*
-        print_endline "INLINED EXES ARE:";
-        iter 
-          (fun x-> print_endline (string_of_bexe syms.dfns 0 x)) 
-          (rev xs)
-        ;
-        *)
-        exes' := xs @ !exes'
-
-    | _ ->  exes' := x :: !exes'
-    end
-    ;
-    exes' := `BEXE_proc_return sr :: !exes'
   | `BEXE_call (sr,(`BEXPR_apply((`BEXPR_closure (callee,ts),_),a),_),argument) -> assert false
 
   | `BEXE_call (sr,(`BEXPR_apply_stack (callee,ts,a),_),argument)
@@ -897,6 +876,7 @@ let heavy_inlining syms
   ;
   (* copy used things *)
   let bbdfns2 = Hashtbl.create 97 in
+  let usage = Flx_call.call_data bbdfns in
   BidSet.iter (heavily_inline_bbdcl syms (child_map,bbdfns) bbdfns2) !used
   ;
   (* copy all header and body specs, they're always considered used *)

@@ -133,7 +133,7 @@ struct flx_exec_failure_t {
   #define FLX_SET_PC(x) pc=x;
   #define FLX_CASE_LABEL(x) case x:;
   #define FLX_DECLARE_LABEL(n,i,x)
-  #define FLX_LABEL(n,i,x) x:;
+  #define FLX_LABEL(n,i,x) case n: x:;
   #define FLX_FARTARGET(n,i,x) n
   #define FLX_END_SWITCH }
 #endif
