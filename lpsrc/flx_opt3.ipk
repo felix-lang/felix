@@ -159,7 +159,7 @@ let mk_tvar_map vs ts =
   varmap
 
 (* NOTE: result is in reversed order *)
-let gen_body syms bbdfns bbdfns2 id varmap ps relabel revariable exes argument sr =
+let gen_body syms bbdfns bbdfns2 id varmap ps relabel revariable exes argument sr caller vs =
   let paramtype  =
     let pt = 
       let pts = map (fun (_,(_,t)) -> t) ps in
@@ -200,14 +200,22 @@ let gen_body syms bbdfns bbdfns2 id varmap ps relabel revariable exes argument s
   | `BEXE_call (sr,e1,e2)  -> [`BEXE_call (sr,ge e1, ge e2)]
   | `BEXE_jump (sr,e1,e2)  -> [`BEXE_jump (sr,ge e1, ge e2)]
   | `BEXE_loop (sr,i,e) -> 
-
     (* SPECIAL HANDLING OF LOOP REQUIRED *)
     if i = 0 then begin
       self_loop := true;
-      [
-        `BEXE_init (sr,parameter,ge e);
-        `BEXE_goto (sr,loop_start)
-      ]
+      match length ps with
+      | 0 -> [`BEXE_goto (sr,loop_start)]
+      | 1 ->
+        let (_,(k,_)) = hd ps in
+        [
+          `BEXE_init (sr,revar k,ge e);
+          `BEXE_goto (sr,loop_start)
+        ]
+      | _ ->
+        [
+          `BEXE_init (sr,parameter,ge e);
+          `BEXE_goto (sr,loop_start)
+        ]
     end
     else 
     begin
@@ -256,27 +264,43 @@ let gen_body syms bbdfns bbdfns2 id varmap ps relabel revariable exes argument s
     *)
     if length ps > 0 then
     begin
-      let x = `BEXE_init (sr,parameter,argument) in
+      let x = 
+        if length ps > 1
+        then begin
+          let entry = `BBDCL_var (vs,paramtype) in
+          Hashtbl.add bbdfns2 parameter (id,Some caller,sr,entry);
+          `BEXE_init (sr,parameter,argument)
+        end
+        else 
+          let vid,(k,_) = hd ps in
+          let index = revar k in
+          `BEXE_init (sr,index,argument)
+      in
       b := x :: !b;
-
+     
       (* unpack argument *)
       if length ps > 1 then
       let p = `BEXPR_name (parameter,[]),paramtype in  
-      for i = 1 to length ps do
-        let prjt = snd (snd (List.nth ps (i-1))) in
+      let n = ref 0 in
+      iter 
+      (fun (vid,(ix,prjt)) ->
         let prjt = varmap_subst varmap prjt in
-        let prj = `BEXPR_get_n (i-1,p),prjt in
-        let x = `BEXE_init (sr,parameter + i,prj) in
+        let prj = `BEXPR_get_n (!n,p),prjt in
+        let index = revar ix in
+        let x = `BEXE_init (sr,index,prj) in
         b := x :: !b;
-      done
+        incr n
+      )
+      ps
     end
     ;
-    (* If we loop with a tail call, make an entry point for the jump *)
-    if !self_loop then
-    begin
-      let x = `BEXE_label (sr,loop_start) in
-      b := x :: !b;
-    end
+    (* If we loop with a tail call, 
+      we need to make an entry point for the jump,
+      make it anyhow because it goes at the wrong
+      end of the list .. 
+    *)
+    let x = `BEXE_label (sr,loop_start) in
+    b := x :: !b;
     ;
     iter
     (fun exe -> 
@@ -304,7 +328,7 @@ let heavy_inline_call syms bbdfns bbdfns2 caller vs' callee ts argument =
     let label_map = mk_label_map syms exes in
     let varmap = mk_tvar_map vs ts in
     let var_map = mk_var_map syms varmap caller vs' bbdfns bbdfns2 callee in
-    gen_body syms bbdfns bbdfns2 id varmap ps label_map var_map exes argument sr
+    gen_body syms bbdfns bbdfns2 id varmap ps label_map var_map exes argument sr caller vs
 
   | _ -> assert false
   
@@ -349,7 +373,7 @@ let heavy_inline_calls syms (child_map,bbdfns) bbdfns2 vs' exes caller =
   )
   exes
   ;
-  rev !exes'
+  rev !exes' 
   
 let heavily_inline_bbdcl syms (child_map,bbdfns) bbdfns2 i =
   let data =

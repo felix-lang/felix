@@ -305,7 +305,6 @@ let useless_call_elim syms used (child_map,bbdfns) vs' exes index =
     then
       exes' := `BEXE_init (sr,i,ia b) :: !exes'
 
-
   | `BEXE_assign (sr,a,b) -> exes' := `BEXE_assign (sr,ia a,ia b) :: !exes'
 
   | `BEXE_call (sr,(`BEXPR_closure (i,ts),_),b')

@@ -1278,63 +1278,32 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
     "    " ^ s ^ ":;\n"
 
   | `BEXE_goto (sr,s) -> 
-    let local_labels = 
-      try Hashtbl.find label_map this 
-      with _ -> failwith ("Can't find label map of " ^ si this)
-    in
-    if Hashtbl.mem local_labels s
-    then "      goto " ^ s ^ ";\n"
-    else let rec aux parent =
-      match parent with
-      | None -> syserr sr ("[gen_exe(goto)] In " ^ id ^ ": Can't find label " ^ s)
-      | Some i -> 
-         match  
-           try Hashtbl.find bbdfns i 
-           with _ -> failwith ("Can't find parent " ^ si i)
-         with
-         | id2,parent,_,entry -> match entry with
-           | `BBDCL_procedure _ ->
-             let local_map = 
-               try Hashtbl.find label_map i 
-               with _ -> failwith ("Can't find label map for " ^ si i)
-             in
-             begin 
-               try i, Hashtbl.find local_map s
-               with Not_found -> aux parent
-             end
-           | `BBDCL_function _ ->
-             clierr sr ("goto "^s^" can't jump into function " ^ id2)
-
-           | _ -> assert false
-
-    in 
-      begin match kind with
-      | Function -> clierr sr ("goto "^s^": can't jump out of function")
-      | Procedure ->
-      let id,parent,sr,entry = 
-        try Hashtbl.find bbdfns this 
-        with _ -> failwith ("[gen_exe(goto)] Can't find this = " ^ si this)
-      in
-      let frame, pc = aux parent in
-      let id,_,_,_ =
-        try Hashtbl.find bbdfns frame 
-        with _ -> failwith ("[gen_exe(goto)] Can't find frame " ^ si frame)
-      in
-        let frame_ptr = "ptr" ^ cpp_instance_name syms bbdfns frame ts in
-        "      // non local goto " ^ s ^ "\n" ^
-        "      {\n" ^
-        "        con_t *tmp1 = this;\n" ^
-        "        while(tmp1 && " ^ frame_ptr ^ "!= tmp1)\n" ^
-        "        {\n" ^
-        "          con_t *tmp2 = tmp1->_caller;\n" ^
-        "          tmp1 -> _caller = 0;\n" ^
-        "          decref(tmp1);\n" ^
-        "          tmp1 = tmp2;\n" ^
-        "        }\n" ^
-        "      }\n" ^
-        "      " ^ frame_ptr ^ "->pc="^si pc^";\n" ^
-        "      return " ^ frame_ptr ^ ";\n"
-      end
+    begin match find_label bbdfns label_map this s with
+    | `Local _ -> "      goto " ^ s ^ ";\n"
+    | `Nonlocal (pc,frame) ->
+      (* WHAT THIS CODE DOES: we pop the call stack until
+         we find the first ancestor containing the target label,
+         set the pc there, and return its continuation to the
+         driver; we know the address of this frame because
+         it must be in this function's display.
+      *)
+      let frame_ptr = "ptr" ^ cpp_instance_name syms bbdfns frame ts in
+      "      // non local goto " ^ s ^ "\n" ^
+      "      {\n" ^
+      "        con_t *tmp1 = this;\n" ^
+      "        while(tmp1 && " ^ frame_ptr ^ "!= tmp1)\n" ^
+      "        {\n" ^
+      "          con_t *tmp2 = tmp1->_caller;\n" ^
+      "          tmp1 -> _caller = 0;\n" ^
+      "          decref(tmp1);\n" ^
+      "          tmp1 = tmp2;\n" ^
+      "        }\n" ^
+      "      }\n" ^
+      "      " ^ frame_ptr ^ "->pc="^si pc^";\n" ^
+      "      return " ^ frame_ptr ^ ";\n"
+    | `Unreachable -> 
+      clierr sr ("Unreachable label " ^ s)
+    end
 
   (* conditional gotos are always local *)
   | `BEXE_ifgoto (_,e,s) -> "      if(" ^ ge e ^ ")goto " ^ s ^ ";\n"

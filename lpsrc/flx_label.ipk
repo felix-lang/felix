@@ -4,14 +4,43 @@
 open Flx_ast
 open Flx_types
 
+type label_map_t =
+  (bid_t,(string, int) Hashtbl.t) Hashtbl.t
+
 val create_label_map:
   fully_bound_symbol_table_t ->
   int ref ->
-  (bid_t,(string, int) Hashtbl.t) Hashtbl.t
+  label_map_t
+
+type goto_kind_t = 
+[
+  | `Local of int          (* index *)
+  | `Nonlocal of int * int (* index, parent *)
+  | `Unreachable
+]
+
+val find_label:
+  fully_bound_symbol_table_t ->
+  label_map_t ->
+  int -> 
+  string -> 
+  goto_kind_t
 
 @h = tangler("src/flx_label.ml")
 @select(h)
 open Flx_types
+open Flx_ast
+open Flx_exceptions
+
+type label_map_t =
+  (bid_t,(string, int) Hashtbl.t) Hashtbl.t
+
+type goto_kind_t = 
+[
+  | `Local of int 
+  | `Nonlocal of int * int 
+  | `Unreachable
+]
 
 let get_labels bbdfns counter exes =
   let labels = Hashtbl.create 97 in
@@ -39,4 +68,21 @@ let create_label_map bbdfns counter =
   ;
   label_map
 
+
+let rec find_label bbdfns label_map caller label =
+  let labels = Hashtbl.find label_map caller in
+  try `Local (Hashtbl.find labels label)
+  with Not_found ->
+  let id,parent,sr,entry = Hashtbl.find bbdfns caller in
+  match entry with
+  | `BBDCL_function _ -> `Unreachable
+  | `BBDCL_procedure _ ->
+    begin match parent with None -> `Unreachable
+    | Some parent ->
+      begin match find_label bbdfns label_map parent label with 
+      | `Local i -> `Nonlocal (i,parent)
+      | x -> x
+      end
+    end
+  | _ -> assert false
 
