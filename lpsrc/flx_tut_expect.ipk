@@ -1,0 +1,1235 @@
+@head(1,"Expected outputs for tut/examples")
+@head(2,"tut/examples/mac101.expect")
+@select(tangler("tut/examples/mac101.expect","data"))
+This is mac101
+@head(2,"tut/examples/mac102.expect")
+@select(tangler("tut/examples/mac102.expect","data"))
+This is mac101
+This is mac102
+it should have printed the 101 message too
+@head(2,"tut/examples/mac103.expect")
+@select(tangler("tut/examples/mac103.expect","data"))
+Defining FIRST
+detected FIRST
+@head(2,"tut/examples/mac104.expect")
+@select(tangler("tut/examples/mac104.expect","data"))
+BAD
+@head(2,"tut/examples/mac105.expect")
+@select(tangler("tut/examples/mac105.expect","data"))
+OK
+@head(2,"tut/examples/mac105a.expect")
+@select(tangler("tut/examples/mac105a.expect","data"))
+@head(2,"tut/examples/mac105b.expect")
+@select(tangler("tut/examples/mac105b.expect","data"))
+OK
+@head(2,"tut/examples/mac122.expect")
+@select(tangler("tut/examples/mac122.expect","data"))
+101
+102
+103
+101
+102
+1
+@head(2,"tut/examples/mac123.expect")
+@select(tangler("tut/examples/mac123.expect","data"))
+101
+103
+103
+@head(2,"tut/examples/mac124.expect")
+@select(tangler("tut/examples/mac124.expect","data"))
+1
+2
+1
+2
+1
+15
+1
+@head(2,"tut/examples/mac125.expect")
+@select(tangler("tut/examples/mac125.expect","data"))
+LoadTheLibrary(MyLibrary.lib_ext)
+@head(2,"tut/examples/mac126.expect")
+@select(tangler("tut/examples/mac126.expect","data"))
+1 -> 1
+2 -> 4
+30
+Start dump_s
+1
+2
+End dump_s
+Start dump_e
+1
+2
+End dump_e
+Start dump_s
+Dumped
+End dump_s
+Start dump_e
+Dumped
+End dump_e
+Start dump_s
+66
+End dump_s
+Start dump_e
+66
+End dump_e
+@head(2,"tut/examples/mac126a.expect")
+@select(tangler("tut/examples/mac126a.expect","data"))
+10          
+@head(2,"tut/examples/mac127.expect")
+@select(tangler("tut/examples/mac127.expect","data"))
+2+2 -> 4
+@head(2,"tut/examples/mac128.expect")
+@select(tangler("tut/examples/mac128.expect","data"))
+1
+4
+@head(2,"tut/examples/mac129.expect")
+@select(tangler("tut/examples/mac129.expect","data"))
+Hi there locality!
+Hello locality!
+Hello world!
+Hello world!
+@head(2,"tut/examples/mig01.expect")
+@select(tangler("tut/examples/mig01.expect","data"))
+1
+2
+@head(2,"tut/examples/mig02.expect")
+@select(tangler("tut/examples/mig02.expect","data"))
+1
+2
+@head(2,"tut/examples/mig03.expect")
+@select(tangler("tut/examples/mig03.expect","data"))
+0
+@head(2,"tut/examples/mig04.expect")
+@select(tangler("tut/examples/mig04.expect","data"))
+2 1 
+@head(2,"tut/examples/tut101.expect")
+@select(tangler("tut/examples/tut101.expect","data"))
+Hello World
+@head(2,"tut/examples/tut102.expect")
+@select(tangler("tut/examples/tut102.expect","data"))
+Hello World 42
+@head(2,"tut/examples/tut102a.expect")
+@select(tangler("tut/examples/tut102a.expect","data"))
+2
+3
+0
+-1
+1
+2
+1
+0
+1.24456
+1.24456
+true
+true
+false
+false
+true
+true
+false
+false
+true
+true
+true
+true
+false
+false
+true
+true
+false
+false
+@head(2,"tut/examples/tut103.expect")
+@select(tangler("tut/examples/tut103.expect","data"))
+42
+@head(2,"tut/examples/tut104.expect")
+@select(tangler("tut/examples/tut104.expect","data"))
+42
+@head(2,"tut/examples/tut104a.expect")
+@select(tangler("tut/examples/tut104a.expect","data"))
+1 2 3 4 5 
+@head(2,"tut/examples/tut105.expect")
+@select(tangler("tut/examples/tut105.expect","data"))
+2
+4
+6
+8
+10
+12
+14
+16
+18
+@head(2,"tut/examples/tut105a.expect")
+@select(tangler("tut/examples/tut105a.expect","data"))
+1 2 3 
+9 8 7 
+@head(2,"tut/examples/tut105b.expect")
+@select(tangler("tut/examples/tut105b.expect","data"))
+@head(2,"tut/examples/tut106.expect")
+@select(tangler("tut/examples/tut106.expect","data"))
+3
+@head(2,"tut/examples/tut107.expect")
+@select(tangler("tut/examples/tut107.expect","data"))
+3
+@head(2,"tut/examples/tut108.expect")
+@select(tangler("tut/examples/tut108.expect","data"))
+3355
+@head(2,"tut/examples/tut109.expect")
+@select(tangler("tut/examples/tut109.expect","data"))
+2
+@head(2,"tut/examples/tut110.expect")
+@select(tangler("tut/examples/tut110.expect","data"))
+3
+@head(2,"tut/examples/tut111.expect")
+@select(tangler("tut/examples/tut111.expect","data"))
+0 1 3 4
+@head(2,"tut/examples/tut112.expect")
+@select(tangler("tut/examples/tut112.expect","data"))
+1
+@head(2,"tut/examples/tut113.expect")
+@select(tangler("tut/examples/tut113.expect","data"))
+1
+2
+@head(2,"tut/examples/tut114.expect")
+@select(tangler("tut/examples/tut114.expect","data"))
+1111111
+@head(2,"tut/examples/tut115.expect")
+@select(tangler("tut/examples/tut115.expect","data"))
+1
+2
+@head(2,"tut/examples/tut116.expect")
+@select(tangler("tut/examples/tut116.expect","data"))
+1
+2
+@head(2,"tut/examples/tut117.expect")
+@select(tangler("tut/examples/tut117.expect","data"))
+@head(2,"tut/examples/tut118.expect")
+@select(tangler("tut/examples/tut118.expect","data"))
+Some 1
+@head(2,"tut/examples/tut119.expect")
+@select(tangler("tut/examples/tut119.expect","data"))
+-1
+0
+1
+-1
+0
+1
+-1
+0
+1
+@head(2,"tut/examples/tut120.expect")
+@select(tangler("tut/examples/tut120.expect","data"))
+1, (3, 4)
+@head(2,"tut/examples/tut120a.expect")
+@select(tangler("tut/examples/tut120a.expect","data"))
+1
+2
+@head(2,"tut/examples/tut121.expect")
+@select(tangler("tut/examples/tut121.expect","data"))
+Identifier
+Number
+Neither
+@head(2,"tut/examples/tut121a.expect")
+@select(tangler("tut/examples/tut121a.expect","data"))
+Identifier: A
+White:  
+Identifier: string
+White:  
+Number: 2
+White:  
+Identifier: lex
+Done.
+@head(2,"tut/examples/tut121b.expect")
+@select(tangler("tut/examples/tut121b.expect","data"))
+Lexer here
+Pre:     "#line 936 "lpsrc/flx_tutorial.pak""
+Eol:     "
+"
+Pre:     "#!/bin/env flx"
+Eol:     "
+"
+Id:      "include"
+Other:   " "
+Other:   ""std""
+Sym:     ";"
+Eol:     "
+"
+Id:      "include"
+Other:   " "
+Other:   ""flx_lex""
+Sym:     ";"
+Eol:     "
+"
+Id:      "use"
+Other:   " "
+Id:      "Lexer"
+Sym:     "::"
+Id:      "sub"
+Sym:     ";"
+Eol:     "
+"
+Eol:     "
+"
+Id:      "print"
+Other:   " "
+Other:   ""Lexer here""
+Sym:     ";"
+Other:   " "
+Id:      "endl"
+Sym:     ";"
+Eol:     "
+"
+Eol:     "
+"
+Cc:      "/* some /* commented */ stuffs */"
+Eol:     "
+"
+Eol:     "
+"
+Id:      "val"
+Other:   " "
+Id:      "xx"
+Other:   " "
+Sym:     "="
+Other:   " "
+Other:   "1214"
+Sym:     ";"
+Eol:     "
+"
+Eol:     "
+"
+Cppc:    "//val s = "A string is here == != @@ ";"
+Eol:     "
+"
+Id:      "val"
+Other:   " "
+Id:      "s"
+Other:   " "
+Sym:     "="
+Other:   " "
+Id:      "Text_file"
+Sym:     "::"
+Id:      "load"
+Sym:     "("
+Other:   ""tut/examples/tut121b.flx""
+Sym:     ")"
+Sym:     ";"
+Eol:     "
+"
+Eol:     "
+"
+Cppc:    "//print s; endl;"
+Eol:     "
+"
+Eol:     "
+"
+Id:      "i2"
+Other:   " "
+Sym:     ":="
+Other:   " "
+Id:      "Lexer"
+Sym:     "::"
+Id:      "end_iterator"
+Other:   " "
+Id:      "s"
+Sym:     ";"
+Eol:     "
+"
+Id:      "var"
+Other:   " "
+Id:      "i1"
+Other:   " "
+Sym:     "="
+Other:   " "
+Id:      "Lexer"
+Sym:     "::"
+Id:      "start_iterator"
+Other:   " "
+Id:      "s"
+Sym:     ";"
+Eol:     "
+"
+Eol:     "
+"
+Id:      "proc"
+Other:   " "
+Id:      "print_token"
+Sym:     "("
+Sym:     ")"
+Eol:     "
+"
+Sym:     "{"
+Eol:     "
+"
+Other:   "  "
+Id:      "open"
+Other:   " "
+Id:      "Flx_lex"
+Sym:     ";"
+Eol:     "
+"
+Other:   "  "
+Id:      "def"
+Other:   " "
+Id:      "var"
+Other:   " "
+Id:      "j"
+Sym:     ","
+Other:   " "
+Id:      "var"
+Other:   " "
+Id:      "des"
+Other:   " "
+Sym:     "="
+Other:   " "
+Id:      "pre_flx_lex"
+Other:   " "
+Sym:     "("
+Id:      "i1"
+Sym:     ","
+Other:   " "
+Id:      "i2"
+Sym:     ")"
+Sym:     ";"
+Eol:     "
+"
+Other:   "  "
+Id:      "match"
+Other:   " "
+Id:      "des"
+Other:   " "
+Id:      "with"
+Eol:     "
+"
+Other:   "  "
+Sym:     "|"
+Other:   " "
+Id:      "qQuote"
+Other:   " "
+Sym:     "=>"
+Other:   "        "
+Sym:     "{"
+Other:   " "
+Id:      "j"
+Sym:     ","
+Id:      "des"
+Other:   " "
+Sym:     "="
+Other:   " "
+Id:      "parse_q_string"
+Other:   " "
+Sym:     "("
+Id:      "j"
+Sym:     ","
+Id:      "i2"
+Sym:     ")"
+Sym:     ";"
+Other:   " "
+Sym:     "}"
+Eol:     "
+"
+Other:   "  "
+Sym:     "|"
+Other:   " "
+Id:      "qqqQuote"
+Other:   " "
+Sym:     "=>"
+Other:   "      "
+Sym:     "{"
+Other:   " "
+Id:      "j"
+Sym:     ","
+Id:      "des"
+Other:   " "
+Sym:     "="
+Other:   " "
+Id:      "parse_qqq_string"
+Other:   " "
+Sym:     "("
+Id:      "j"
+Sym:     ","
+Id:      "i2"
+Sym:     ")"
+Sym:     ";"
+Other:   " "
+Sym:     "}"
+Eol:     "
+"
+Other:   "  "
+Sym:     "|"
+Other:   " "
+Id:      "dQuote"
+Other:   " "
+Sym:     "=>"
+Other:   "        "
+Sym:     "{"
+Other:   " "
+Id:      "j"
+Sym:     ","
+Id:      "des"
+Other:   " "
+Sym:     "="
+Other:   " "
+Id:      "parse_d_string"
+Other:   " "
+Sym:     "("
+Id:      "j"
+Sym:     ","
+Id:      "i2"
+Sym:     ")"
+Sym:     ";"
+Other:   " "
+Sym:     "}"
+Eol:     "
+"
+Other:   "  "
+Sym:     "|"
+Other:   " "
+Id:      "dddQuote"
+Other:   " "
+Sym:     "=>"
+Other:   "      "
+Sym:     "{"
+Other:   " "
+Id:      "j"
+Sym:     ","
+Id:      "des"
+Other:   " "
+Sym:     "="
+Other:   " "
+Id:      "parse_ddd_string"
+Other:   " "
+Sym:     "("
+Id:      "j"
+Sym:     ","
+Id:      "i2"
+Sym:     ")"
+Sym:     ";"
+Other:   " "
+Sym:     "}"
+Eol:     "
+"
+Other:   "  "
+Sym:     "|"
+Other:   " "
+Id:      "rqQuote"
+Other:   " "
+Sym:     "=>"
+Other:   "       "
+Sym:     "{"
+Other:   " "
+Id:      "j"
+Sym:     ","
+Id:      "des"
+Other:   " "
+Sym:     "="
+Other:   " "
+Id:      "parse_rq_string"
+Other:   " "
+Sym:     "("
+Id:      "j"
+Sym:     ","
+Id:      "i2"
+Sym:     ")"
+Sym:     ";"
+Other:   " "
+Sym:     "}"
+Eol:     "
+"
+Other:   "  "
+Sym:     "|"
+Other:   " "
+Id:      "rqqqQuote"
+Other:   " "
+Sym:     "=>"
+Other:   "     "
+Sym:     "{"
+Other:   " "
+Id:      "j"
+Sym:     ","
+Id:      "des"
+Other:   " "
+Sym:     "="
+Other:   " "
+Id:      "parse_rqqq_string"
+Other:   " "
+Sym:     "("
+Id:      "j"
+Sym:     ","
+Id:      "i2"
+Sym:     ")"
+Sym:     ";"
+Other:   " "
+Sym:     "}"
+Eol:     "
+"
+Other:   "  "
+Sym:     "|"
+Other:   " "
+Id:      "rdQuote"
+Other:   " "
+Sym:     "=>"
+Other:   "       "
+Sym:     "{"
+Other:   " "
+Id:      "j"
+Sym:     ","
+Id:      "des"
+Other:   " "
+Sym:     "="
+Other:   " "
+Id:      "parse_rd_string"
+Other:   " "
+Sym:     "("
+Id:      "j"
+Sym:     ","
+Id:      "i2"
+Sym:     ")"
+Sym:     ";"
+Other:   " "
+Sym:     "}"
+Eol:     "
+"
+Other:   "  "
+Sym:     "|"
+Other:   " "
+Id:      "rdddQuote"
+Other:   " "
+Sym:     "=>"
+Other:   "     "
+Sym:     "{"
+Other:   " "
+Id:      "j"
+Sym:     ","
+Id:      "des"
+Other:   " "
+Sym:     "="
+Other:   " "
+Id:      "parse_rddd_string"
+Other:   " "
+Sym:     "("
+Id:      "j"
+Sym:     ","
+Id:      "i2"
+Sym:     ")"
+Sym:     ";"
+Other:   " "
+Sym:     "}"
+Eol:     "
+"
+Other:   "  "
+Sym:     "|"
+Other:   " "
+Id:      "Preprocessor"
+Other:   " "
+Sym:     "=>"
+Other:   "  "
+Sym:     "{"
+Other:   " "
+Id:      "j"
+Other:   " "
+Sym:     "="
+Other:   " "
+Id:      "to_eol"
+Sym:     "("
+Id:      "j"
+Sym:     ","
+Id:      "i2"
+Sym:     ")"
+Other:   " "
+Sym:     "-"
+Other:   " "
+Other:   "1"
+Sym:     ";"
+Other:   " "
+Sym:     "}"
+Eol:     "
+"
+Other:   "  "
+Sym:     "|"
+Other:   " "
+Id:      "Cpp_comment"
+Other:   " "
+Sym:     "=>"
+Other:   "   "
+Sym:     "{"
+Other:   " "
+Id:      "j"
+Other:   " "
+Sym:     "="
+Other:   " "
+Id:      "to_eol"
+Sym:     "("
+Id:      "j"
+Sym:     ","
+Id:      "i2"
+Sym:     ")"
+Other:   " "
+Sym:     "-"
+Other:   " "
+Other:   "1"
+Sym:     ";"
+Other:   " "
+Sym:     "}"
+Eol:     "
+"
+Other:   "  "
+Sym:     "|"
+Other:   " "
+Id:      "C_comment"
+Other:   " "
+Sym:     "=>"
+Other:   "     "
+Sym:     "{"
+Other:   " "
+Id:      "j"
+Other:   " "
+Sym:     "="
+Other:   " "
+Id:      "to_end_c_comment"
+Other:   " "
+Sym:     "("
+Id:      "j"
+Sym:     ","
+Id:      "i2"
+Sym:     ")"
+Sym:     ";"
+Other:   " "
+Sym:     "}"
+Eol:     "
+"
+Other:   "  "
+Sym:     "|"
+Other:   " "
+Id:      "_"
+Other:   " "
+Sym:     "=>"
+Other:   " "
+Sym:     "{"
+Sym:     "}"
+Eol:     "
+"
+Other:   "  "
+Id:      "endmatch"
+Sym:     ";"
+Eol:     "
+"
+Other:   "  "
+Id:      "dess"
+Other:   " "
+Sym:     ":="
+Eol:     "
+"
+Other:   "    "
+Id:      "match"
+Other:   " "
+Id:      "des"
+Other:   " "
+Id:      "with"
+Eol:     "
+"
+Other:   "    "
+Sym:     "|"
+Other:   " "
+Id:      "Eol"
+Other:   " "
+Sym:     "=>"
+Other:   " "
+Other:   ""Eol""
+Eol:     "
+"
+Other:   "    "
+Sym:     "|"
+Other:   " "
+Id:      "Ident"
+Other:   " "
+Sym:     "=>"
+Other:   " "
+Other:   ""Id""
+Eol:     "
+"
+Other:   "    "
+Sym:     "|"
+Other:   " "
+Id:      "Sym"
+Other:   " "
+Sym:     "=>"
+Other:   " "
+Other:   ""Sym""
+Eol:     "
+"
+Other:   "    "
+Sym:     "|"
+Other:   " "
+Id:      "Preprocessor"
+Other:   " "
+Sym:     "=>"
+Other:   "  "
+Other:   ""Pre""
+Eol:     "
+"
+Other:   "    "
+Sym:     "|"
+Other:   " "
+Id:      "Cpp_comment"
+Other:   " "
+Sym:     "=>"
+Other:   "   "
+Other:   ""Cppc""
+Eol:     "
+"
+Other:   "    "
+Sym:     "|"
+Other:   " "
+Id:      "C_comment"
+Other:   " "
+Sym:     "=>"
+Other:   "     "
+Other:   ""Cc""
+Eol:     "
+"
+Other:   "    "
+Sym:     "|"
+Other:   " "
+Id:      "_"
+Other:   " "
+Sym:     "=>"
+Other:   " "
+Other:   ""Other""
+Eol:     "
+"
+Other:   "    "
+Id:      "endmatch"
+Eol:     "
+"
+Other:   "  "
+Sym:     ";"
+Eol:     "
+"
+Other:   "  "
+Id:      "print"
+Other:   " "
+Sym:     "("
+Id:      "dess"
+Other:   " "
+Other:   "":       ""
+Sym:     ")"
+Sym:     "."
+Sym:     "["
+Other:   "0"
+Other:   " "
+Id:      "to"
+Other:   " "
+Other:   "9"
+Sym:     "]"
+Sym:     ";"
+Eol:     "
+"
+Other:   "  "
+Id:      "print"
+Other:   " "
+Sym:     "("
+Other:   "'"'"
+Other:   " "
+Sym:     "("
+Id:      "Lexer"
+Sym:     "::"
+Id:      "string_between"
+Sym:     "("
+Id:      "i1"
+Sym:     ","
+Id:      "j"
+Sym:     ")"
+Sym:     ")"
+Other:   " "
+Other:   "'"'"
+Sym:     ")"
+Sym:     ";"
+Eol:     "
+"
+Other:   "  "
+Id:      "endl"
+Sym:     ";"
+Eol:     "
+"
+Other:   "  "
+Id:      "i1"
+Other:   " "
+Sym:     "="
+Other:   " "
+Id:      "j"
+Sym:     ";"
+Eol:     "
+"
+Sym:     "}"
+Eol:     "
+"
+Eol:     "
+"
+Id:      "use"
+Other:   " "
+Id:      "Lexer"
+Sym:     "::"
+Id:      "ne"
+Sym:     ";"
+Eol:     "
+"
+Eol:     "
+"
+Id:      "while"
+Other:   " "
+Sym:     "{"
+Other:   " "
+Id:      "i1"
+Other:   " "
+Sym:     "!="
+Other:   " "
+Id:      "i2"
+Other:   " "
+Sym:     "}"
+Other:   " "
+Sym:     "{"
+Other:   " "
+Id:      "print_token"
+Sym:     ";"
+Other:   " "
+Sym:     "}"
+Sym:     ";"
+Eol:     "
+"
+Eol:     "
+"
+@head(2,"tut/examples/tut135a.expect")
+@select(tangler("tut/examples/tut135a.expect","data"))
+1
+2
+2
+@head(2,"tut/examples/tut135b.expect")
+@select(tangler("tut/examples/tut135b.expect","data"))
+1
+2
+2
+@head(2,"tut/examples/tut135c.expect")
+@select(tangler("tut/examples/tut135c.expect","data"))
+3,4
+3,4
+2,2
+@head(2,"tut/examples/tut135e.expect")
+@select(tangler("tut/examples/tut135e.expect","data"))
+1,2
+@head(2,"tut/examples/tut135f.expect")
+@select(tangler("tut/examples/tut135f.expect","data"))
+1,2
+1
+321
+11
+12
+321Empty
+@head(2,"tut/examples/tut136.expect")
+@select(tangler("tut/examples/tut136.expect","data"))
+200.2 100.1 []
+@head(2,"tut/examples/tut137.expect")
+@select(tangler("tut/examples/tut137.expect","data"))
+List= 1 2 3 4 5 6 7 8 9 10 []
+Reversed= 10 9 8 7 6 5 4 3 2 1 []
+@head(2,"tut/examples/tut138.expect")
+@select(tangler("tut/examples/tut138.expect","data"))
+42
+43
+@head(2,"tut/examples/tut138a.expect")
+@select(tangler("tut/examples/tut138a.expect","data"))
+16
+@head(2,"tut/examples/tut139.expect")
+@select(tangler("tut/examples/tut139.expect","data"))
+10
+10
+10
+10
+10
+10
+10
+@head(2,"tut/examples/tut140.expect")
+@select(tangler("tut/examples/tut140.expect","data"))
+10
+10
+10
+10
+10
+10
+10
+@head(2,"tut/examples/tut140a.expect")
+@select(tangler("tut/examples/tut140a.expect","data"))
+1, 2, 3, 
+3, 2, 1, 
+6
+6
+6
+6
+@head(2,"tut/examples/tut141.expect")
+@select(tangler("tut/examples/tut141.expect","data"))
+1
+1
+2
+3
+@head(2,"tut/examples/tut142.expect")
+@select(tangler("tut/examples/tut142.expect","data"))
+5
+@head(2,"tut/examples/tut143.expect")
+@select(tangler("tut/examples/tut143.expect","data"))
+1
+2
+@head(2,"tut/examples/tut144.expect")
+@select(tangler("tut/examples/tut144.expect","data"))
+start
+1
+2
+3
+4
+5
+6
+7
+8
+9
+finished
+@head(2,"tut/examples/tut145.expect")
+@select(tangler("tut/examples/tut145.expect","data"))
+good x
+bad_x
+finished
+@head(2,"tut/examples/tut146.expect")
+@select(tangler("tut/examples/tut146.expect","data"))
+1
+Zero
+@head(2,"tut/examples/tut147.expect")
+@select(tangler("tut/examples/tut147.expect","data"))
+1
+Zero
+@head(2,"tut/examples/tut148.expect")
+@select(tangler("tut/examples/tut148.expect","data"))
+1
+Zero
+Zero
+@head(2,"tut/examples/tut149.expect")
+@select(tangler("tut/examples/tut149.expect","data"))
+10
+@head(2,"tut/examples/tut149a.expect")
+@select(tangler("tut/examples/tut149a.expect","data"))
+ONE
+@head(2,"tut/examples/tut149b.expect")
+@select(tangler("tut/examples/tut149b.expect","data"))
+ONE
+Not a one ..
+@head(2,"tut/examples/tut149c.expect")
+@select(tangler("tut/examples/tut149c.expect","data"))
+ONE
+TWO
+Not a one ..
+@head(2,"tut/examples/tut149d.expect")
+@select(tangler("tut/examples/tut149d.expect","data"))
+ONE 
+FoundWeird Found
+@head(2,"tut/examples/tut149e.expect")
+@select(tangler("tut/examples/tut149e.expect","data"))
+NOT ONE
+1 TEN
+NOT ONE
+1 TWENTY
+NOT ONE
+1 
+NOT ONE
+2 TWENTY
+NOT ONE
+Dunno .. 
+@head(2,"tut/examples/tut149f.expect")
+@select(tangler("tut/examples/tut149f.expect","data"))
+1
+1
+@head(2,"tut/examples/tut149g.expect")
+@select(tangler("tut/examples/tut149g.expect","data"))
+1
+@head(2,"tut/examples/tut150.expect")
+@select(tangler("tut/examples/tut150.expect","data"))
+@head(2,"tut/examples/tut151.expect")
+@select(tangler("tut/examples/tut151.expect","data"))
+error 1 -- aborting
+error handled, continuing
+@head(2,"tut/examples/tut152.expect")
+@select(tangler("tut/examples/tut152.expect","data"))
+@head(2,"tut/examples/tut154.expect")
+@select(tangler("tut/examples/tut154.expect","data"))
+1
+1
+3
+3
+3
+3
+3
+3
+3
+3
+3
+finished
+@head(2,"tut/examples/tut155.expect")
+@select(tangler("tut/examples/tut155.expect","data"))
+10
+9
+8
+7
+6
+5
+4
+3
+2
+1
+@head(2,"tut/examples/tut156.expect")
+@select(tangler("tut/examples/tut156.expect","data"))
+10
+9
+8
+7
+6
+5
+4
+3
+2
+1
+@head(2,"tut/examples/tut157.expect")
+@select(tangler("tut/examples/tut157.expect","data"))
+2
+@head(2,"tut/examples/tut158.expect")
+@select(tangler("tut/examples/tut158.expect","data"))
+@head(2,"tut/examples/tut159.expect")
+@select(tangler("tut/examples/tut159.expect","data"))
+Hello Hello 
+@head(2,"tut/examples/tut160.expect")
+@select(tangler("tut/examples/tut160.expect","data"))
+Unit circle
+one
+One third
+@head(2,"tut/examples/tut161.expect")
+@select(tangler("tut/examples/tut161.expect","data"))
+@head(2,"tut/examples/tut205.expect")
+@select(tangler("tut/examples/tut205.expect","data"))
+4
+@head(2,"tut/examples/tut206.expect")
+@select(tangler("tut/examples/tut206.expect","data"))
+X1
+X2
+top level
+@head(2,"tut/examples/tut206a.expect")
+@select(tangler("tut/examples/tut206a.expect","data"))
+1
+@head(2,"tut/examples/tut207a.expect")
+@select(tangler("tut/examples/tut207a.expect","data"))
+Case 1 of three
+Case 2 of three
+Case 3 of three
+case 1 33
+case 2 3.3
+case 3 33
+@head(2,"tut/examples/tut207b.expect")
+@select(tangler("tut/examples/tut207b.expect","data"))
+42
+42
+42
+42
+@head(2,"tut/examples/tut207c.expect")
+@select(tangler("tut/examples/tut207c.expect","data"))
+11 22
+11 22
+11 22
+33 44
+33 44
+33 44
+33 44
+1
+1
+@head(2,"tut/examples/tut208.expect")
+@select(tangler("tut/examples/tut208.expect","data"))
+2
+2
+8
+@head(2,"tut/examples/tut209.expect")
+@select(tangler("tut/examples/tut209.expect","data"))
+1
+1
+1
+2
+3
+@head(2,"tut/examples/tut210.expect")
+@select(tangler("tut/examples/tut210.expect","data"))
+Start .. 
+yield
+Hello World
+This is wait
+Felix
+Saying 
+wait
+Bye for now
+dead
+.. OK
+@head(2,"tut/examples/tut301.expect")
+@select(tangler("tut/examples/tut301.expect","data"))
+argc=1
+0->./tut/examples/tut301.so
+@head(2,"tut/examples/tut901.expect")
+@select(tangler("tut/examples/tut901.expect","data"))
+@head(2,"tut/examples/tut_bind130.expect")
+@select(tangler("tut/examples/tut_bind130.expect","data"))
+(1, 2)
+(2, 4)
+(-12, 16)
+400
+@head(2,"tut/examples/tut_bind131.expect")
+@select(tangler("tut/examples/tut_bind131.expect","data"))
+(1, 2)
+(2, 4)
+(4, 16)
+272
+@head(2,"tut/examples/tut_bind131a.expect")
+@select(tangler("tut/examples/tut_bind131a.expect","data"))
+1
+2
+@head(2,"tut/examples/tut_bind132.expect")
+@select(tangler("tut/examples/tut_bind132.expect","data"))
+1
+2
+3
+@head(2,"tut/examples/tut_bind133.expect")
+@select(tangler("tut/examples/tut_bind133.expect","data"))
+1, 2
+1
+@head(2,"tut/examples/tut_bind134.expect")
+@select(tangler("tut/examples/tut_bind134.expect","data"))
+1
+1 2 3 
+@head(2,"tut/examples/tut_bind135.expect")
+@select(tangler("tut/examples/tut_bind135.expect","data"))
+Hello
+@head(2,"tut/examples/tut_bind136.expect")
+@select(tangler("tut/examples/tut_bind136.expect","data"))
+Hello
+@head(2,"tut/examples/tut_bind137.expect")
+@select(tangler("tut/examples/tut_bind137.expect","data"))
+Hello
+@head(2,"tut/examples/tut_bind138.expect")
+@select(tangler("tut/examples/tut_bind138.expect","data"))
+Hello
+@head(2,"tut/examples/tut_bind138a.expect")
+@select(tangler("tut/examples/tut_bind138a.expect","data"))
+TOP
+A will be used
+A is used
+Done
+@head(2,"tut/examples/tut_bind138b.expect")
+@select(tangler("tut/examples/tut_bind138b.expect","data"))
+A is used
+@head(2,"tut/examples/tut_bind138c.expect")
+@select(tangler("tut/examples/tut_bind138c.expect","data"))
+1
+1.1
+@head(2,"tut/examples/tut_bind150.expect")
+@select(tangler("tut/examples/tut_bind150.expect","data"))
+3
+4
+4
+16
