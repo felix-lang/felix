@@ -17,13 +17,23 @@ sourceforge site to link to everything properly.
 <H1>Felix: The power language for C++ programmers</H1>
 @tangle("<H2>Felix Version "+flx_version+"</H1>")
 <P>
+<STRONG>Learn</STRONG> more from the
+@tangle("<A HREF=flx_"+flx_version+"/tut/doc/en_flx_tutorial_top.html>tutorial</A>.")
 <STRONG>Download</STRONG> <A HREF=download.html>felix</A> now! 
-</P>
-Felix is new, high power programming language which
+See <A HREF=developer.html>developer</A> to <STRONG>contribute</STRONG>. 
+</P><P>
+Felix is new, high power, Open Source, community based
+programming language which
 provides an ML style type system with a syntax that C++
 programmers should find easy to learn. It generates 
 C++ and supports both use of C++ types as primitives,
-as well as embedding in existing C++ written architectures.
+as well as embedding in existing C++ written architectures
+in a natural manner.
+</P><P>
+Unlike many other scripting
+languages, Felix boasts <STRONG>seamless integration</STRONG>
+with C and C++ code bases, which it achieves by adopting
+the C/C++ object model directly.
 </P><P>
 <STRONG>Control inversion</STRONG> converts logical threads
 into continuation objects with resume() callback methods, 
@@ -37,6 +47,14 @@ hash tables. Applications include web services,
 telephony, GUI, and other event driven message passing
 systems.
 </P>
+<P>Support for <STRONG>Domain Specific Languages</STRONG>
+is provided by incorporating some of the them directly into 
+the core compiler, with the idea of later providing
+an abstracted extension mechanism. We currently
+support regular matching and lexing, and hope to extend
+this set to include parsing, numerical computation,
+term rewriting, XML processing, and SQL.
+</P><P>
 <STRONG>Language Features</STRONG> include:
 <UL>
 <LI>Algebraic Data Types including
@@ -66,6 +84,7 @@ systems.
 <LI>C99/C++ exact and normal integral types</LI>
 <LI>C99 floats</LI>
 <LI>string(8 bit), ustring(32 bit)</LI>
+<LI>GNU multiple precision arithmetic (gmp) package</LI>
 </UL>
 </UL>
 <STRONG>Architecture</STRONG> support includes:
@@ -166,27 +185,22 @@ has been built on the following platforms:
 <H1>Download</H1>
 @tangle("<P> Download developer tarball <A HREF=flx_"+flx_version+"_src.tgz>flx_"+flx_version+"_src.tgz</A> (486391bytes)")
 </P>
-@tangle("<P> Download end user tarball <A HREF=flx_"+flx_version+"_bin_linux.tgz>flx_"+flx_version+"_bin_linux.tgz</A> (2513039 bytes)")
-This is the same as the developer package except all sources are
-extracted and documentation built.
-</P>
 <H1>Make procedure</H1>
 To bootstrap the build, type
 </P><P><CODE>
 make boot
 </CODE></P><P>
 on the command line to unpack the build scripts and makefile.
-You should now be able to use the commands:
+You may need to edit the file
+<CODE>
+config/config.py
+</CODE>
+to suit your platform.</P><P>
+You should now be able to:
 </P><P>
 <CODE>
-make extract<BR>
-make compiler<BR>
-make rtl<BR>
-make drivers<BR>
-make tests<BR>
+make<BR>
 make doc<BR>
-make man<BR>
-make impldoc
 </CODE></P>
 <P>Become superuser and type
 </P>
@@ -256,8 +270,97 @@ make<BR>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
 </HEAD>
 <BODY>
-<H1>Coding Rules</H1>
-<P>Felix currently requires all original sources
+<H1>Contributing</H1>
+<P>To join this exciting project you need to do the following:</P>
+<P>
+<OL>
+<LI><A HREF=download.html>Build</A> and install felix</LI>
+<LI>Join the <A HREF=http://lists.sourceforge.net/lists/listinfo/felix-language>Language discussion</A>
+mailing list and announce yourself and the result of your build attempt.
+</LI>
+<LI>Let us know what your interest in Felix is,
+how we can help you, and what you might be able to
+do to help us.
+</LI>
+<LI>Contribute something</LI>
+<LI>Request developer status</LI>
+</OL>
+</P>
+<H1>Job List</H1>
+<P>
+Please read <A HREF=jobs.html>Jobs</A>.
+</P>
+<H1>Coding Guide</H1>
+<P>
+Please read <A HREF=coding.html>Coding Guidelines</A>.
+</P>
+</BODY>
+</HTML>
+
+@select(tangler('www/jobs.html','data'))
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+@tangle("<TITLE>Felix Jobs</TITLE>")
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY>
+<H1>Jobs</H1>
+<P>Felix is an open source community based programming language project.
+The community basis leads to a need for considerable 
+administrative, advocacy, diplomatic, and political skills,
+particularly project management at this stage.
+</P><P>
+As a compiler project, a wide range of opporunities
+also exist for improving the compiler and writing
+reference documentation as well as actually deciding what to
+put in, and implementing it.
+<P><EM>Everyone is welcome to contribute to the language design
+process.</EM>
+</P>
+<TABLE>
+<TR><TD>Project manager</TD><TD>Overall activity coordination</TD></TR>
+<TR><TD>Advocate</TD><TD>Publish articles in various media</TD></TR>
+<TR><TD>Web Site designer</TD><TD>Manage the felix.sf.net web site</TD></TR>
+<TR><TD>Build Tester</TD><TD>Check the build on  particular platform</TD></TR>
+<TR><TD>Compiler writer</TD><TD>Implement core <A HREF=compiler.html>compiler</A></TD></TR>
+<TR><TD>Core library Developer</TD><TD>Implement core libraries</TD></TR>
+<TR><TD>Library Developer</TD><TD>Implement Standard library components</TD></TR>
+<TR><TD>Wrapper Library Developer</TD><TD>Develop wrappers for your favourite C or C++ library</TD></TR>
+<TR><TD>Manual writer</TD><TD>Specify language semantics</TD></TR>
+<TR><TD>Manual writer</TD><TD>Write User Guide</TD></TR>
+<TR><TD>Tester</TD><TD>Write unit tests</TD></TR>
+</TABLE>
+</BODY>
+</HTML>
+
+@select(tangler('www/compiler.html','data'))
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+@tangle("<TITLE>Felix Compiler Implementors</TITLE>")
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY>
+<H1>Compiler documentation</H1>
+<P>The ocamldoc generated <A HREF=impldoc/index.html>module reference</A>
+for the modules in the core compiler are useful sometimes.
+</P>
+</BODY>
+</HTML>
+
+
+@select(tangler('www/coding.html','data'))
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+@tangle("<TITLE>Felix Developers Info</TITLE>")
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY>
+<H1>Coding Guidelines</H1>
+<H2>Media</H2>
+<P>Felix currently <EM>requires</EM> all original sources
 to be encapsulated in interscript text files.
 </P><P>
 Files must end in either:
@@ -266,16 +369,35 @@ Files must end in either:
 <LI>ipk for subcomponents of those packages</LI>
 </OL>
 </P><P>If you have a large data file, or one
-which is an authoritative externally sources work
+which is an authoritative externally sourced work
 such as an academic paper or standards data,
 a special exemption may be made to avoid gratuitious 
 wrapping and tangling, whilst alleviating the customer
 of the need to separately download it.
+</P>
+<H2>Character set</H2>
+<P>
+Felix uses UTF-8 encoding of ISO10646/Unicode.
+Try to restrict use to the code points 
+U+20 to U+7E plus U+10 (newline), the graphic
+characters of ASCII plus newline and space.
 </P><P>
-Tabs are not permitted in original sources,
+Although interscript can handle diverse encodings,
+we do not use this facility. Note in particular
+<EM>Latin-1 encoded text is not supported</EM>.
+</P><P>
+Special exception: data files deliberately using
+foreign encodings and character sets for the purpose
+of testing codecs. Note: a few Latin-1 encoded characters
+do appear occasionally in harmless places such as 
+people's names. 
+</P><P>
+<EM>Tabs are not permitted in original sources</EM>,
 and they may not be generated with a single
 exception: makefiles, because they're required.
-</P><P>
+</P>
+<H2>Code layout guidelines</H2>
+<P>
 The standard shiftwidth is 2.
 Indentation must be systematic.
 Extra indentation is not allowed.

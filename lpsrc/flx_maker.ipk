@@ -637,6 +637,11 @@ try:
           ' >' + "htmlman/" + basename+'_1.html'
         )
     except:pass
+  
+  if "doc" in options or "impldoc" in options:
+    xqt('ocamldoc -I src -d impldoc src/*.mli -html')
+    xqt('ocamldoc -I src -o impldoc/flx_impl.tex src/*.mli -latex')
+    xqt('(cd impldoc; latex flx_impl.tex; latex flx_impl.tex; latex flx_impl.tex)')
 
   if "regression" in options:
     TESTS = TESTS + glob.glob('test/rt*.flx')
@@ -951,13 +956,12 @@ We have no idea if it continues copying.
 @tangle('\tpython script/maker compiler')
 @tangle('')
 @tangle('doc: dummy')
-@tangle('\tpython script/maker doc')
+@tangle('\tpython script/maker doc man impldoc')
 @tangle('\tcp doc/*.css tut/doc &>/dev/null')
+@tangle('\tmake impldoc')
 @tangle('')
-@tangle('impldoc: dummy')
-@tangle('\tocamldoc -I src -d impldoc src/*.mli -html')
-@tangle('\tocamldoc -I src -o impldoc/flx_impl.tex src/*.mli -latex')
-@tangle('\t(cd impldoc; latex flx_impl.tex; latex flx_impl.tex; latex flx_impl.tex)')
+@tangle('man: dummy')
+@tangle('\tpython script/maker man')
 @tangle('')
 @tangle('test: dummy')
 @tangle('\tpython script/maker test stop_on_error')
@@ -1143,9 +1147,6 @@ We have no idea if it continues copying.
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_sourceforge.pak')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_web.pak')
 @tangle('')
-@tangle('man: dummy')
-@tangle('\tpython script/maker man')
-@tangle('')
 @tangle('clean: dummy')
 @tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.dll')
 @tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so test/rt*.dll')
@@ -1210,7 +1211,8 @@ We have no idea if it continues copying.
 @tangle('')
 
 @tangle('dummy:')
-@tangle('\t#'+FLX_MAKER_CVS_ID)
+@no_dollars = string.replace(FLX_MAKER_CVS_ID,"$","")
+@tangle('\t#'+no_dollars)
 @tangle('')
 @tangle("# These targets are for SKALLER only")
 @tangle("# they're used to upload stuff to sourceforge")

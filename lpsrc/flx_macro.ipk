@@ -894,7 +894,7 @@ and special_expand_statements recursion_limit local_prefix seq reachable ref_mac
     )
   in
   try
-    for i = 1 to 10000 do
+    for i = 1 to 100000 do
       begin match program.(!pc) with
       | `AST_macro_goto (sr,label) -> 
         begin 

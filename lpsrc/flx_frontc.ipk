@@ -1154,7 +1154,7 @@ let lineDirectiveStyle = ref (Some LinePreprocessorInput)
  
 let print_CIL_Input = ref false
            
-let printFlx_cil_cilAsIs = ref false
+let printCilAsIs = ref false
                       
 (* sm: return the string 's' if we're printing output for gcc, suppres
  * it if we're printing for CIL to parse back in.  the purpose is to
@@ -1896,12 +1896,12 @@ type 'a visitAction =
 
 
 (* sm/gn: cil visitor interface for traversing Flx_cil_cil trees. *)
-(* Use visitFlx_cil_cilStmt and/or visitFlx_cil_cilFile to use this. *)
+(* Use visitCilStmt and/or visitCilFile to use this. *)
 (* Some of the nodes are changed in place if the children are changed. Use 
  * one of Change... actions if you want to copy the node *)
 
 (** A visitor interface for traversing CIL trees. Create instantiations of 
- * this type by specializing the class {!Flx_cil_cil.nopFlx_cil_cilVisitor}. *)
+ * this type by specializing the class {!Flx_cil_cil.nopCilVisitor}. *)
 class type cilVisitor = object
 
   method vvdec: varinfo -> varinfo visitAction  
@@ -1972,7 +1972,7 @@ end
 
 (* the default visitor does nothing at each node, but does *)
 (* not stop; hence they return true *)
-class nopFlx_cil_cilVisitor : cilVisitor = object
+class nopCilVisitor : cilVisitor = object
   method vvrbl (v:varinfo) = DoChildren (* variable *)
   method vvdec (v:varinfo) = DoChildren (* variable 
                                                                * declaration *)
@@ -3019,7 +3019,7 @@ let msvcBuiltins : (string, typ * typ list * bool) H.t =
 
 
 (** A printer interface for CIL trees. Create instantiations of 
- * this type by specializing the class {!Flx_cil_cil.defaultFlx_cil_cilPrinter}. *)
+ * this type by specializing the class {!Flx_cil_cil.defaultCilPrinter}. *)
 class type cilPrinter = object
   method pVDecl: unit -> varinfo -> doc
     (** Invoked for each variable declaration. Note that variable 
@@ -3096,7 +3096,7 @@ class type cilPrinter = object
     (** Print a statement kind. The code to be printed is given in the
      * {!Flx_cil_cil.stmtkind} argument.  The initial {!Flx_cil_cil.stmt} argument
      * records the statement which follows the one being printed;
-     * {!Flx_cil_cil.defaultFlx_cil_cilPrinterClass} uses this information to prettify
+     * {!Flx_cil_cil.defaultCilPrinterClass} uses this information to prettify
      * statement printing in certain special cases. *)
 
   method pExp: unit -> exp -> doc
@@ -3112,7 +3112,7 @@ class type cilPrinter = object
 end
 
 
-class defaultFlx_cil_cilPrinterClass : cilPrinter = object (self)
+class defaultCilPrinterClass : cilPrinter = object (self)
   val mutable currentFormals : varinfo list = []
   method private getLastNamedArgument (s: string) : exp =
     match List.rev currentFormals with 
@@ -3325,20 +3325,20 @@ class defaultFlx_cil_cilPrinterClass : cilPrinter = object (self)
         (* Be nice to some special cases *)
         match e with
           BinOp((PlusA|PlusPI|IndexPI),Lval(lv'),Const(CInt64(one,_,_)),_)
-            when lv == lv' && one = Int64.one && not !printFlx_cil_cilAsIs ->
+            when lv == lv' && one = Int64.one && not !printCilAsIs ->
               self#pLineDirective l
                 ++ self#pLval () lv
                 ++ text (" ++" ^ printInstrTerminator)
 
         | BinOp((MinusA|MinusPI),Lval(lv'),
                 Const(CInt64(one,_,_)), _) 
-            when lv == lv' && one = Int64.one && not !printFlx_cil_cilAsIs ->
+            when lv == lv' && one = Int64.one && not !printCilAsIs ->
                   self#pLineDirective l
                     ++ self#pLval () lv
                     ++ text (" --" ^ printInstrTerminator) 
 
         | BinOp((PlusA|PlusPI|IndexPI),Lval(lv'),Const(CInt64(mone,_,_)),_)
-            when lv == lv' && mone = Int64.minus_one && not !printFlx_cil_cilAsIs ->
+            when lv == lv' && mone = Int64.minus_one && not !printCilAsIs ->
               self#pLineDirective l
                 ++ self#pLval () lv
                 ++ text (" --" ^ printInstrTerminator)
@@ -3365,7 +3365,7 @@ class defaultFlx_cil_cilPrinterClass : cilPrinter = object (self)
        * three-argument call: the last argument is the address of the 
        * destination *)
     | Call(None, Lval(Var vi, NoOffset), [dest; SizeOf t; adest], l) 
-        when vi.vname = "__builtin_va_arg" && not !printFlx_cil_cilAsIs -> 
+        when vi.vname = "__builtin_va_arg" && not !printCilAsIs -> 
           let rec stripCast = function 
               CastE (_, e) -> stripCast e
             | e -> e in
@@ -3389,7 +3389,7 @@ class defaultFlx_cil_cilPrinterClass : cilPrinter = object (self)
       (* In cabs2cil we have dropped the last argument in the call to 
        * __builtin_stdarg_start. *)
     | Call(None, Lval(Var vi, NoOffset), [marker], l) 
-        when vi.vname = "__builtin_stdarg_start" && not !printFlx_cil_cilAsIs -> begin
+        when vi.vname = "__builtin_stdarg_start" && not !printCilAsIs -> begin
           let last = self#getLastNamedArgument vi.vname in
           self#pInstr () (Call(None,Lval(Var vi,NoOffset),[marker; last],l))
         end
@@ -3397,7 +3397,7 @@ class defaultFlx_cil_cilPrinterClass : cilPrinter = object (self)
       (* In cabs2cil we have dropped the last argument in the call to 
        * __builtin_next_arg. *)
     | Call(res, Lval(Var vi, NoOffset), [ ], l) 
-        when vi.vname = "__builtin_next_arg" && not !printFlx_cil_cilAsIs -> begin
+        when vi.vname = "__builtin_next_arg" && not !printCilAsIs -> begin
           let last = self#getLastNamedArgument vi.vname in
           self#pInstr () (Call(res,Lval(Var vi,NoOffset),[last],l))
         end
@@ -3594,7 +3594,7 @@ class defaultFlx_cil_cilPrinterClass : cilPrinter = object (self)
           ++ (docList line (fun i -> self#pInstr () i) () il)
           ++ unalign
 
-    | If(be,t,{bstmts=[];battrs=[]},l) when not !printFlx_cil_cilAsIs ->
+    | If(be,t,{bstmts=[];battrs=[]},l) when not !printCilAsIs ->
         self#pLineDirective l
           ++ text "if"
           ++ (align
@@ -3605,7 +3605,7 @@ class defaultFlx_cil_cilPrinterClass : cilPrinter = object (self)
           
     | If(be,t,{bstmts=[{skind=Goto(gref,_);labels=[]} as s];
                 battrs=[]},l)
-     when !gref == next && not !printFlx_cil_cilAsIs ->
+     when !gref == next && not !printCilAsIs ->
        self#pLineDirective l
          ++ text "if"
          ++ (align
@@ -3614,7 +3614,7 @@ class defaultFlx_cil_cilPrinterClass : cilPrinter = object (self)
                ++ text ") "
                ++ self#pBlock () t)
 
-    | If(be,{bstmts=[];battrs=[]},e,l) when not !printFlx_cil_cilAsIs ->
+    | If(be,{bstmts=[];battrs=[]},e,l) when not !printCilAsIs ->
         self#pLineDirective l
           ++ text "if"
           ++ (align
@@ -3625,7 +3625,7 @@ class defaultFlx_cil_cilPrinterClass : cilPrinter = object (self)
 
     | If(be,{bstmts=[{skind=Goto(gref,_);labels=[]} as s];
            battrs=[]},e,l)
-      when !gref == next && not !printFlx_cil_cilAsIs ->
+      when !gref == next && not !printCilAsIs ->
         self#pLineDirective l
           ++ text "if"
           ++ (align
@@ -3668,7 +3668,7 @@ class defaultFlx_cil_cilPrinterClass : cilPrinter = object (self)
             (* Bill McCloskey: Do not remove the If if it has labels *)
             match skipEmpty b.bstmts with
               {skind=If(e,tb,fb,_); labels=[]} :: rest 
-                                              when not !printFlx_cil_cilAsIs -> begin
+                                              when not !printCilAsIs -> begin
                 match skipEmpty tb.bstmts, skipEmpty fb.bstmts with
                   [], {skind=Break _; labels=[]} :: _  -> e, rest
                 | {skind=Break _; labels=[]} :: _, [] 
@@ -4175,9 +4175,9 @@ class defaultFlx_cil_cilPrinterClass : cilPrinter = object (self)
     else
       text " " ++ res ++ text " "
 
-end (* class defaultFlx_cil_cilPrinterClass *)
+end (* class defaultCilPrinterClass *)
 
-let defaultFlx_cil_cilPrinter = new defaultFlx_cil_cilPrinterClass
+let defaultCilPrinter = new defaultCilPrinterClass
 
 (* Top-level printing functions *)
 let printType (pp: cilPrinter) () (t: typ) : doc = 
@@ -4224,19 +4224,19 @@ let dumpInit (pp: cilPrinter) (out: out_channel) (ind: int) (i: init) : unit =
   pp#dInit out ind i
 
 (* Now define some short cuts *)
-let d_exp () e = printExp defaultFlx_cil_cilPrinter () e
-let d_lval () lv = printLval defaultFlx_cil_cilPrinter () lv
-let d_offset base () off = defaultFlx_cil_cilPrinter#pOffset base off
-let d_init () i = printInit defaultFlx_cil_cilPrinter () i
-let d_type () t = printType defaultFlx_cil_cilPrinter () t
-let d_global () g = printGlobal defaultFlx_cil_cilPrinter () g
-let d_attrlist () a = printAttrs defaultFlx_cil_cilPrinter () a 
-let d_attr () a = printAttr defaultFlx_cil_cilPrinter () a
-let d_attrparam () e = defaultFlx_cil_cilPrinter#pAttrParam () e
-let d_label () l = defaultFlx_cil_cilPrinter#pLabel () l
-let d_stmt () s = printStmt defaultFlx_cil_cilPrinter () s
-let d_block () b = printBlock defaultFlx_cil_cilPrinter () b
-let d_instr () i = printInstr defaultFlx_cil_cilPrinter () i
+let d_exp () e = printExp defaultCilPrinter () e
+let d_lval () lv = printLval defaultCilPrinter () lv
+let d_offset base () off = defaultCilPrinter#pOffset base off
+let d_init () i = printInit defaultCilPrinter () i
+let d_type () t = printType defaultCilPrinter () t
+let d_global () g = printGlobal defaultCilPrinter () g
+let d_attrlist () a = printAttrs defaultCilPrinter () a 
+let d_attr () a = printAttr defaultCilPrinter () a
+let d_attrparam () e = defaultCilPrinter#pAttrParam () e
+let d_label () l = defaultCilPrinter#pLabel () l
+let d_stmt () s = printStmt defaultCilPrinter () s
+let d_block () b = printBlock defaultCilPrinter () b
+let d_instr () i = printInstr defaultCilPrinter () i
 
 let d_shortglobal () = function
     GPragma (Attr(an, _), _) -> dprintf "#pragma %s" an
@@ -4285,13 +4285,13 @@ let dn_instr     = (dn_obj d_instr)
 
 
 (* Now define a cilPlainPrinter *)
-class plainFlx_cil_cilPrinterClass =
+class plainCilPrinterClass =
   (* We keep track of the composite types that we have done to avoid
    * recursion *)
   let donecomps : (int, unit) H.t = H.create 13 in
   object (self)
 
-  inherit defaultFlx_cil_cilPrinterClass as super
+  inherit defaultCilPrinterClass as super
   
   (*** PLAIN TYPES ***)
   method pType (dn: doc option) () (t: typ) = 
@@ -4422,13 +4422,13 @@ class plainFlx_cil_cilPrinterClass =
 
 
 end
-let plainFlx_cil_cilPrinter = new plainFlx_cil_cilPrinterClass
+let plainCilPrinter = new plainCilPrinterClass
 
 (* And now some shortcuts *)
-let d_plainexp () e = plainFlx_cil_cilPrinter#pExp () e
-let d_plaintype () t = plainFlx_cil_cilPrinter#pType None () t
-let d_plaininit () i = plainFlx_cil_cilPrinter#pInit () i
-let d_plainlval () l = plainFlx_cil_cilPrinter#pLval () l
+let d_plainexp () e = plainCilPrinter#pExp () e
+let d_plaintype () t = plainCilPrinter#pType None () t
+let d_plaininit () i = plainCilPrinter#pInit () i
+let d_plainlval () l = plainCilPrinter#pLval () l
 
 let rec d_typsig () = function
     TSArray (ts, eo, al) -> 
@@ -4676,12 +4676,12 @@ let doVisitList  (vis: cilVisitor)
   
 let debugVisit = false
 
-let rec visitFlx_cil_cilExpr (vis: cilVisitor) (e: exp) : exp = 
+let rec visitCilExpr (vis: cilVisitor) (e: exp) : exp = 
   doVisit vis vis#vexpr childrenExp e
 and childrenExp (vis: cilVisitor) (e: exp) : exp = 
-  let vExp e = visitFlx_cil_cilExpr vis e in
-  let vTyp t = visitFlx_cil_cilType vis t in
-  let vLval lv = visitFlx_cil_cilLval vis lv in
+  let vExp e = visitCilExpr vis e in
+  let vTyp t = visitCilType vis t in
+  let vLval lv = visitCilLval vis lv in
   match e with
     Const _ -> e
   | SizeOf t -> 
@@ -4717,12 +4717,12 @@ and childrenExp (vis: cilVisitor) (e: exp) : exp =
       let lv' = vLval lv in
       if lv' != lv then StartOf lv' else e
 
-and visitFlx_cil_cilInit (vis: cilVisitor) (i: init) : init = 
+and visitCilInit (vis: cilVisitor) (i: init) : init = 
   doVisit vis vis#vinit childrenInit i
 and childrenInit (vis: cilVisitor) (i: init) : init = 
-  let fExp e = visitFlx_cil_cilExpr vis e in
-  let fInit i = visitFlx_cil_cilInit vis i in
-  let fTyp t = visitFlx_cil_cilType vis t in
+  let fExp e = visitCilExpr vis e in
+  let fInit i = visitCilInit vis i in
+  let fTyp t = visitCilType vis t in
   match i with
   | SingleInit e -> 
       let e' = fExp e in
@@ -4735,7 +4735,7 @@ and childrenInit (vis: cilVisitor) (i: init) : init =
       (* Keep track whether the list has changed *)
       let hasChanged = ref false in
       let doOneInit ((o, i) as oi) = 
-        let o' = visitFlx_cil_cilInitOffset vis o in    (* use initializer version *)
+        let o' = visitCilInitOffset vis o in    (* use initializer version *)
         let i' = fInit i in
         let newio = 
           if o' != o || i' != i then 
@@ -4764,13 +4764,13 @@ and childrenInit (vis: cilVisitor) (i: init) : init =
       if bt' != bt || initl' != initl then ArrayInit(bt', len, initl') else i
 *)
   
-and visitFlx_cil_cilLval (vis: cilVisitor) (lv: lval) : lval =
+and visitCilLval (vis: cilVisitor) (lv: lval) : lval =
   doVisit vis vis#vlval childrenLval lv
 and childrenLval (vis: cilVisitor) (lv: lval) : lval =  
   (* and visit its subexpressions *)
-  let vExp e = visitFlx_cil_cilExpr vis e in
-  let vTyp t = visitFlx_cil_cilType vis t in
-  let vOff off = visitFlx_cil_cilOffset vis off in
+  let vExp e = visitCilExpr vis e in
+  let vTyp t = visitCilType vis t in
+  let vOff off = visitCilOffset vis off in
   match lv with
     Var v, off ->
       let v'   = doVisit vis vis#vvrbl (fun _ x -> x) v in
@@ -4781,16 +4781,16 @@ and childrenLval (vis: cilVisitor) (lv: lval) : lval =
       let off' = vOff off in
       if e' != e || off' != off then Mem e', off' else lv
 
-and visitFlx_cil_cilOffset (vis: cilVisitor) (off: offset) : offset =
+and visitCilOffset (vis: cilVisitor) (off: offset) : offset =
   doVisit vis vis#voffs childrenOffset off
 and childrenOffset (vis: cilVisitor) (off: offset) : offset =
-  let vOff off = visitFlx_cil_cilOffset vis off in
+  let vOff off = visitCilOffset vis off in
   match off with
     Field (f, o) -> 
       let o' = vOff o in
       if o' != o then Field (f, o') else off
   | Index (e, o) -> 
-      let e' = visitFlx_cil_cilExpr vis e in
+      let e' = visitCilExpr vis e in
       let o' = vOff o in
       if e' != e || o' != o then Index (e', o') else off
   | NoOffset -> off
@@ -4801,10 +4801,10 @@ and childrenOffset (vis: cilVisitor) (off: offset) : offset =
  * is moot according to cil.mli which claims the offsets in 
  * initializers will never recursively contain offsets)
  *)
-and visitFlx_cil_cilInitOffset (vis: cilVisitor) (off: offset) : offset =
+and visitCilInitOffset (vis: cilVisitor) (off: offset) : offset =
   doVisit vis vis#vinitoffs childrenOffset off
 
-and visitFlx_cil_cilInstr (vis: cilVisitor) (i: instr) : instr list =
+and visitCilInstr (vis: cilVisitor) (i: instr) : instr list =
   let oldloc = !currentLoc in
   currentLoc := (get_instrLoc i);
   assertEmptyQueue vis;
@@ -4814,8 +4814,8 @@ and visitFlx_cil_cilInstr (vis: cilVisitor) (i: instr) : instr list =
   vis#unqueueInstr () @ res
 
 and childrenInstr (vis: cilVisitor) (i: instr) : instr =
-  let fExp = visitFlx_cil_cilExpr vis in
-  let fLval = visitFlx_cil_cilLval vis in
+  let fExp = visitCilExpr vis in
+  let fLval = visitCilLval vis in
   match i with
   | Set(lv,e,l) -> 
       let lv' = fLval lv in let e' = fExp e in
@@ -4841,7 +4841,7 @@ and childrenInstr (vis: cilVisitor) (i: instr) : instr =
 
 
 (* visit all nodes in a Flx_cil_cil statement tree in preorder *)
-and visitFlx_cil_cilStmt (vis: cilVisitor) (s: stmt) : stmt =
+and visitCilStmt (vis: cilVisitor) (s: stmt) : stmt =
   let oldloc = !currentLoc in
   currentLoc := (get_stmtLoc s.skind) ;
   assertEmptyQueue vis;
@@ -4859,11 +4859,11 @@ and visitFlx_cil_cilStmt (vis: cilVisitor) (s: stmt) : stmt =
   res
   
 and childrenStmt (toPrepend: instr list ref) (vis:cilVisitor) (s:stmt): stmt =
-  let fExp e = (visitFlx_cil_cilExpr vis e) in
-  let fLval lv = (visitFlx_cil_cilLval vis lv) in
-  let fOff o = (visitFlx_cil_cilOffset vis o) in
-  let fBlock b = visitFlx_cil_cilBlock vis b in
-  let fInst i = visitFlx_cil_cilInstr vis i in
+  let fExp e = (visitCilExpr vis e) in
+  let fLval lv = (visitCilLval vis lv) in
+  let fOff o = (visitCilOffset vis o) in
+  let fBlock b = visitCilBlock vis b in
+  let fInst i = visitCilInstr vis i in
   (* Just change the statement kind *)
   let skind' = 
     match s.skind with
@@ -4938,20 +4938,20 @@ and childrenStmt (toPrepend: instr list ref) (vis:cilVisitor) (s:stmt): stmt =
       
     
  
-and visitFlx_cil_cilBlock (vis: cilVisitor) (b: block) : block = 
+and visitCilBlock (vis: cilVisitor) (b: block) : block = 
   doVisit vis vis#vblock childrenBlock b
 and childrenBlock (vis: cilVisitor) (b: block) : block = 
-  let fStmt s = visitFlx_cil_cilStmt vis s in
+  let fStmt s = visitCilStmt vis s in
   let stmts' = mapNoCopy fStmt b.bstmts in
   if stmts' != b.bstmts then { battrs = b.battrs; bstmts = stmts'} else b
 
 
-and visitFlx_cil_cilType (vis : cilVisitor) (t : typ) : typ =
+and visitCilType (vis : cilVisitor) (t : typ) : typ =
   doVisit vis vis#vtype childrenType t
 and childrenType (vis : cilVisitor) (t : typ) : typ =
   (* look for types referred to inside t's definition *)
-  let fTyp t  = visitFlx_cil_cilType vis t in
-  let fAttr a = visitFlx_cil_cilAttributes vis a in
+  let fTyp t  = visitCilType vis t in
+  let fAttr a = visitCilAttributes vis a in
   match t with
     TPtr(t1, a) -> 
       let t1' = fTyp t1 in
@@ -4963,11 +4963,11 @@ and childrenType (vis : cilVisitor) (t : typ) : typ =
       if t1' != t || a' != a  then TArray(t1', None, a') else t
   | TArray(t1, Some e, a) -> 
       let t1' = fTyp t1 in
-      let e' = visitFlx_cil_cilExpr vis e in
+      let e' = visitCilExpr vis e in
       let a' = fAttr a in
       if t1' != t || e' != e  || a' != a then TArray(t1', Some e', a') else t
 
-      (* DON'T recurse into the compinfo, this is done in visitFlx_cil_cilGlobal.
+      (* DON'T recurse into the compinfo, this is done in visitCilGlobal.
          User can iterate over cinfo.cfields manually, if desired.*)
   | TComp(cinfo, a) ->
       let a' = fAttr a in
@@ -5002,14 +5002,14 @@ and childrenType (vis : cilVisitor) (t : typ) : typ =
 
 (* for declarations, we visit the types inside; but for uses, *)
 (* we just visit the varinfo node *)
-and visitFlx_cil_cilVarDecl (vis : cilVisitor) (v : varinfo) : varinfo =
+and visitCilVarDecl (vis : cilVisitor) (v : varinfo) : varinfo =
   doVisit vis vis#vvdec childrenVarDecl v 
 and childrenVarDecl (vis : cilVisitor) (v : varinfo) : varinfo =
-  v.vtype <- visitFlx_cil_cilType vis v.vtype;
-  v.vattr <- visitFlx_cil_cilAttributes vis v.vattr;  
+  v.vtype <- visitCilType vis v.vtype;
+  v.vattr <- visitCilAttributes vis v.vattr;  
   v
 
-and visitFlx_cil_cilAttributes (vis: cilVisitor) (al: attribute list) : attribute list=
+and visitCilAttributes (vis: cilVisitor) (al: attribute list) : attribute list=
    let al' = 
      mapNoCopyList (doVisitList vis vis#vattr childrenAttribute) al in
    if al' != al then 
@@ -5018,7 +5018,7 @@ and visitFlx_cil_cilAttributes (vis: cilVisitor) (al: attribute list) : attribut
    else
      al
 and childrenAttribute (vis: cilVisitor) (a: attribute) : attribute = 
-  let fTyp t  = visitFlx_cil_cilType vis t in
+  let fTyp t  = visitCilType vis t in
   let rec doarg (aa: attrparam) = 
     match aa with 
       AInt _ | AStr _ -> aa
@@ -5056,23 +5056,23 @@ and childrenAttribute (vis: cilVisitor) (a: attribute) : attribute =
       
 
 
-let rec visitFlx_cil_cilFunction (vis : cilVisitor) (f : fundec) : fundec =
+let rec visitCilFunction (vis : cilVisitor) (f : fundec) : fundec =
   if debugVisit then ignore (E.log "Visiting function %s\n" f.svar.vname);
   doVisit vis vis#vfunc childrenFunction f
 
 and childrenFunction (vis : cilVisitor) (f : fundec) : fundec =
-  f.svar <- visitFlx_cil_cilVarDecl vis f.svar; (* hit the function name *)
+  f.svar <- visitCilVarDecl vis f.svar; (* hit the function name *)
   (* visit local declarations *)
-  f.slocals <- mapNoCopy (visitFlx_cil_cilVarDecl vis) f.slocals;
+  f.slocals <- mapNoCopy (visitCilVarDecl vis) f.slocals;
   (* visit the formals *)
-  let newformals = mapNoCopy (visitFlx_cil_cilVarDecl vis) f.sformals in
+  let newformals = mapNoCopy (visitCilVarDecl vis) f.sformals in
   (* Make sure the type reflects the formals *)
   setFormals f newformals;
-  f.sbody <- visitFlx_cil_cilBlock vis f.sbody;        (* visit the body *)
+  f.sbody <- visitCilBlock vis f.sbody;        (* visit the body *)
   f
 
-let rec visitFlx_cil_cilGlobal (vis: cilVisitor) (g: global) : global list =
-  (*(trace "visit" (dprintf "visitFlx_cil_cilGlobal\n"));*)
+let rec visitCilGlobal (vis: cilVisitor) (g: global) : global list =
+  (*(trace "visit" (dprintf "visitCilGlobal\n"));*)
   let oldloc = !currentLoc in
   currentLoc := (get_globalLoc g) ;
   let res = doVisitList vis vis#vglob childrenGlobal g in
@@ -5081,47 +5081,47 @@ let rec visitFlx_cil_cilGlobal (vis: cilVisitor) (g: global) : global list =
 and childrenGlobal (vis: cilVisitor) (g: global) : global =
   match g with
   | GFun (f, l) -> 
-      let f' = visitFlx_cil_cilFunction vis f in
+      let f' = visitCilFunction vis f in
       if f' != f then GFun (f', l) else g
   | GType(t, l) ->
-      t.ttype <- visitFlx_cil_cilType vis t.ttype;
+      t.ttype <- visitCilType vis t.ttype;
       g
 
   | GEnumTagDecl _ | GCompTagDecl _ -> g (* Nothing to visit *)
   | GEnumTag (enum, _) ->
       (trace "visit" (dprintf "visiting global enum %s\n" enum.ename));
       (* Do the values and attributes of the enumerated items *)
-      let itemVisit (name, exp, loc) = (name, visitFlx_cil_cilExpr vis exp, loc) in
+      let itemVisit (name, exp, loc) = (name, visitCilExpr vis exp, loc) in
       enum.eitems <- mapNoCopy itemVisit enum.eitems;
-      enum.eattr <- visitFlx_cil_cilAttributes vis enum.eattr;
+      enum.eattr <- visitCilAttributes vis enum.eattr;
       g
 
   | GCompTag (comp, _) ->
       (trace "visit" (dprintf "visiting global comp %s\n" comp.cname));
       (* Do the types and attirbutes of the fields *)
       let fieldVisit = fun fi -> 
-        fi.ftype <- visitFlx_cil_cilType vis fi.ftype;
-        fi.fattr <- visitFlx_cil_cilAttributes vis fi.fattr
+        fi.ftype <- visitCilType vis fi.ftype;
+        fi.fattr <- visitCilAttributes vis fi.fattr
       in
       List.iter fieldVisit comp.cfields;
       g
 
   | GVarDecl(v, l) -> 
-      let v' = visitFlx_cil_cilVarDecl vis v in
+      let v' = visitCilVarDecl vis v in
       if v' != v then GVarDecl (v', l) else g
   | GVar (v, inito, l) -> 
-      let v' = visitFlx_cil_cilVarDecl vis v in
+      let v' = visitCilVarDecl vis v in
       (match inito.init with
         None -> ()
-      | Some i -> let i' = visitFlx_cil_cilInit vis i in 
+      | Some i -> let i' = visitCilInit vis i in 
         if i' != i then inito.init <- Some i');
 
       if v' != v then GVar (v', inito, l) else g
 
   | GPragma (a, l) -> begin
-      match visitFlx_cil_cilAttributes vis [a] with
+      match visitCilAttributes vis [a] with
         [a'] -> if a' != a then GPragma (a', l) else g
-      | _ -> E.s (E.unimp "visitFlx_cil_cilAttributes returns more than one attribute")
+      | _ -> E.s (E.unimp "visitCilAttributes returns more than one attribute")
   end
   | _ -> g
 
@@ -5153,18 +5153,18 @@ let foldGlobals (fl: file)
 
 
 (* A visitor for the whole file that does not change the globals *)
-let visitFlx_cil_cilFileSameGlobals (vis : cilVisitor) (f : file) : unit =
-  let fGlob g = visitFlx_cil_cilGlobal vis g in
+let visitCilFileSameGlobals (vis : cilVisitor) (f : file) : unit =
+  let fGlob g = visitCilGlobal vis g in
   iterGlobals f (fun g -> 
     match fGlob g with 
       [g'] when g' == g || g' = g -> () (* Try to do the pointer check first *)
     | gl -> 
-        ignore (E.log "You used visitFlx_cil_cilFilSameGlobals but the global got changed:\n %a\nchanged to %a\n" d_global g (docList line (d_global ())) gl);
+        ignore (E.log "You used visitCilFilSameGlobals but the global got changed:\n %a\nchanged to %a\n" d_global g (docList line (d_global ())) gl);
         ())
 
 (* Be careful with visiting the whole file because it might be huge. *)
-let visitFlx_cil_cilFile (vis : cilVisitor) (f : file) : unit =
-  let fGlob g = visitFlx_cil_cilGlobal vis g in
+let visitCilFile (vis : cilVisitor) (f : file) : unit =
+  let fGlob g = visitCilGlobal vis g in
   (* Scan the globals. Make sure this is tail recursive. *)
   let rec loop (acc: global list) = function
       [] -> f.globals <- List.rev acc
@@ -5175,7 +5175,7 @@ let visitFlx_cil_cilFile (vis : cilVisitor) (f : file) : unit =
   (* the global initializer *)
   (match f.globinit with
     None -> ()
-  | Some g -> f.globinit <- Some (visitFlx_cil_cilFunction vis g))
+  | Some g -> f.globinit <- Some (visitCilFunction vis g))
 
 
 
@@ -6428,7 +6428,7 @@ let uniqueVarNames (f: file) : unit =
 
 (* A visitor that makes a deep copy of a function body *)
 class copyFunctionVisitor (newname: string) = object (self)
-  inherit nopFlx_cil_cilVisitor
+  inherit nopCilVisitor
 
       (* Keep here a maping from locals to their copies *)
   val map : (string, varinfo) H.t = H.create 113 
@@ -6521,14 +6521,14 @@ end
 
 (* We need a function that copies a CIL function. *)
 let copyFunction (f: fundec) (newname: string) : fundec = 
-  visitFlx_cil_cilFunction (new copyFunctionVisitor(newname)) f
+  visitCilFunction (new copyFunctionVisitor(newname)) f
   
 (********* Compute the CFG ********)
 let sid_counter = ref 0 
 let statements : stmt list ref = ref [] 
 (* Clear all info about the CFG in statements *)  
 class clear : cilVisitor = object
-  inherit nopFlx_cil_cilVisitor
+  inherit nopCilVisitor
   method vstmt s = begin
     s.sid <- !sid_counter ;
     incr sid_counter ;
@@ -6762,7 +6762,7 @@ let computeCFGInfo (f : fundec) (global_numbering : bool) : stmt list =
   if not global_numbering then 
     sid_counter := 0 ; 
   statements := [];
-  ignore (visitFlx_cil_cilBlock clear_it f.sbody) ;
+  ignore (visitCilBlock clear_it f.sbody) ;
   f.smaxstmtid <- Some (!sid_counter) ;
   succpred_block f.sbody (None);
   let res = !statements in
@@ -6825,7 +6825,7 @@ let pullTypesForward = true
   
     (* Scan a type and collect the variables that are refered *)
 class getVarsInGlobalClass (pacc: varinfo list ref) = object
-  inherit nopFlx_cil_cilVisitor
+  inherit nopCilVisitor
   method vvrbl (vi: varinfo) = 
     pacc := vi :: !pacc;
     SkipChildren
@@ -6839,7 +6839,7 @@ end
 let getVarsInGlobal (g : global) : varinfo list = 
   let pacc : varinfo list ref = ref [] in
   let v : cilVisitor = new getVarsInGlobalClass pacc in
-  ignore (visitFlx_cil_cilGlobal v g);
+  ignore (visitCilGlobal v g);
   !pacc
 
 let hasPrefix p s = 
@@ -8566,7 +8566,7 @@ type 'a visitAction =
 
 
 (** A visitor interface for traversing CIL trees. Create instantiations of 
- * this type by specializing the class {!Flx_cil_cil.nopFlx_cil_cilVisitor}. Each of the 
+ * this type by specializing the class {!Flx_cil_cil.nopCilVisitor}. Each of the 
  * specialized visiting functions can also call the [queueInstr] to specify 
  * that some instructions should be inserted before the current instruction 
  * or statement. Use syntax like [self#queueInstr] to call a method
@@ -8647,60 +8647,60 @@ class type cilVisitor = object
 end
 
 (** Default Visitor. Traverses the CIL tree without modifying anything *)
-class nopFlx_cil_cilVisitor: cilVisitor
+class nopCilVisitor: cilVisitor
 
 (* other cil constructs *)
 
 (** Visit a file. This will will re-cons all globals TWICE (so that it is 
- * tail-recursive). Use {!Flx_cil_cil.visitFlx_cil_cilFileSameGlobals} if your visitor will 
+ * tail-recursive). Use {!Flx_cil_cil.visitCilFileSameGlobals} if your visitor will 
  * not change the list of globals.  *)
-val visitFlx_cil_cilFile: cilVisitor -> file -> unit
+val visitCilFile: cilVisitor -> file -> unit
 
 (** A visitor for the whole file that does not change the globals (but maybe
  * changes things inside the globals). Use this function instead of
- * {!Flx_cil_cil.visitFlx_cil_cilFile} whenever appropriate because it is more efficient for
+ * {!Flx_cil_cil.visitCilFile} whenever appropriate because it is more efficient for
  * long files. *)
-val visitFlx_cil_cilFileSameGlobals: cilVisitor -> file -> unit
+val visitCilFileSameGlobals: cilVisitor -> file -> unit
 
 (** Visit a global *)
-val visitFlx_cil_cilGlobal: cilVisitor -> global -> global list
+val visitCilGlobal: cilVisitor -> global -> global list
 
 (** Visit a function definition *)
-val visitFlx_cil_cilFunction: cilVisitor -> fundec -> fundec
+val visitCilFunction: cilVisitor -> fundec -> fundec
 
 (* Visit an expression *)
-val visitFlx_cil_cilExpr: cilVisitor -> exp -> exp
+val visitCilExpr: cilVisitor -> exp -> exp
 
 (** Visit an lvalue *)
-val visitFlx_cil_cilLval: cilVisitor -> lval -> lval
+val visitCilLval: cilVisitor -> lval -> lval
 
 (** Visit an lvalue or recursive offset *)
-val visitFlx_cil_cilOffset: cilVisitor -> offset -> offset
+val visitCilOffset: cilVisitor -> offset -> offset
 
 (** Visit an initializer offset *)
-val visitFlx_cil_cilInitOffset: cilVisitor -> offset -> offset
+val visitCilInitOffset: cilVisitor -> offset -> offset
 
 (** Visit an instruction *)
-val visitFlx_cil_cilInstr: cilVisitor -> instr -> instr list
+val visitCilInstr: cilVisitor -> instr -> instr list
 
 (** Visit a statement *)
-val visitFlx_cil_cilStmt: cilVisitor -> stmt -> stmt
+val visitCilStmt: cilVisitor -> stmt -> stmt
 
 (** Visit a block *)
-val visitFlx_cil_cilBlock: cilVisitor -> block -> block
+val visitCilBlock: cilVisitor -> block -> block
 
 (** Visit a type *)
-val visitFlx_cil_cilType: cilVisitor -> typ -> typ
+val visitCilType: cilVisitor -> typ -> typ
 
 (** Visit a variable declaration *)
-val visitFlx_cil_cilVarDecl: cilVisitor -> varinfo -> varinfo
+val visitCilVarDecl: cilVisitor -> varinfo -> varinfo
 
 (** Visit an initializer *)
-val visitFlx_cil_cilInit: cilVisitor -> init -> init
+val visitCilInit: cilVisitor -> init -> init
 
 
 (** Visit a list of attributes *)
-val visitFlx_cil_cilAttributes: cilVisitor -> attribute list -> attribute list
+val visitCilAttributes: cilVisitor -> attribute list -> attribute list
 
 (* And some generic visitors. The above are built with these *)
 
@@ -8738,7 +8738,7 @@ val print_CIL_Input: bool ref
   * print empty "else" blocks, etc. These is one case howewer in which if you 
   * turn this on you will get code that does not compile: if you use varargs 
   * the __builtin_va_arg function will be printed in its internal form. *)
-val printFlx_cil_cilAsIs: bool ref
+val printCilAsIs: bool ref
 
 (** {b Debugging support} *)
 
@@ -8789,7 +8789,7 @@ val d_const: unit -> constant -> Flx_cil_pretty.doc
 
 
 (** A printer interface for CIL trees. Create instantiations of 
- * this type by specializing the class {!Flx_cil_cil.defaultFlx_cil_cilPrinterClass}. *)
+ * this type by specializing the class {!Flx_cil_cil.defaultCilPrinterClass}. *)
 class type cilPrinter = object
   method pVDecl: unit -> varinfo -> Flx_cil_pretty.doc
     (** Invoked for each variable declaration. Note that variable 
@@ -8868,7 +8868,7 @@ class type cilPrinter = object
     (** Print a statement kind. The code to be printed is given in the
      * {!Flx_cil_cil.stmtkind} argument.  The initial {!Flx_cil_cil.stmt} argument
      * records the statement which follows the one being printed;
-     * {!Flx_cil_cil.defaultFlx_cil_cilPrinterClass} uses this information to prettify
+     * {!Flx_cil_cil.defaultCilPrinterClass} uses this information to prettify
      * statement printing in certain special cases. *)
 
   method pExp: unit -> exp -> Flx_cil_pretty.doc
@@ -8883,8 +8883,8 @@ class type cilPrinter = object
      * {!Flx_cil_cil.dumpGlobal} *)
 end
 
-class defaultFlx_cil_cilPrinterClass: cilPrinter
-val defaultFlx_cil_cilPrinter: cilPrinter
+class defaultCilPrinterClass: cilPrinter
+val defaultCilPrinter: cilPrinter
 
 (* Top-level printing functions *)
 (** Print a type given a pretty printer *)
@@ -8935,20 +8935,20 @@ val printInit: cilPrinter -> unit -> init -> Flx_cil_pretty.doc
  * {!Flx_cil_cil.printInit} whenever possible. *)
 val dumpInit: cilPrinter -> out_channel -> int -> init -> unit
 
-(** Flx_cil_pretty-print a type using {!Flx_cil_cil.defaultFlx_cil_cilPrinter} *)
+(** Flx_cil_pretty-print a type using {!Flx_cil_cil.defaultCilPrinter} *)
 val d_type: unit -> typ -> Flx_cil_pretty.doc
 
-(** Flx_cil_pretty-print an expression using {!Flx_cil_cil.defaultFlx_cil_cilPrinter}  *)
+(** Flx_cil_pretty-print an expression using {!Flx_cil_cil.defaultCilPrinter}  *)
 val d_exp: unit -> exp -> Flx_cil_pretty.doc
 
-(** Flx_cil_pretty-print an lvalue using {!Flx_cil_cil.defaultFlx_cil_cilPrinter}   *)
+(** Flx_cil_pretty-print an lvalue using {!Flx_cil_cil.defaultCilPrinter}   *)
 val d_lval: unit -> lval -> Flx_cil_pretty.doc
 
-(** Flx_cil_pretty-print an offset using {!Flx_cil_cil.defaultFlx_cil_cilPrinter}, given the pretty 
+(** Flx_cil_pretty-print an offset using {!Flx_cil_cil.defaultCilPrinter}, given the pretty 
  * printing for the base.   *)
 val d_offset: Flx_cil_pretty.doc -> unit -> offset -> Flx_cil_pretty.doc
 
-(** Flx_cil_pretty-print an initializer using {!Flx_cil_cil.defaultFlx_cil_cilPrinter}.  This can be 
+(** Flx_cil_pretty-print an initializer using {!Flx_cil_cil.defaultCilPrinter}.  This can be 
  * extremely slow (or even overflow the stack) for huge initializers. Use 
  * {!Flx_cil_cil.dumpInit} instead. *)
 val d_init: unit -> init -> Flx_cil_pretty.doc
@@ -8956,33 +8956,33 @@ val d_init: unit -> init -> Flx_cil_pretty.doc
 (** Flx_cil_pretty-print a binary operator *)
 val d_binop: unit -> binop -> Flx_cil_pretty.doc
 
-(** Flx_cil_pretty-print an attribute using {!Flx_cil_cil.defaultFlx_cil_cilPrinter}  *)
+(** Flx_cil_pretty-print an attribute using {!Flx_cil_cil.defaultCilPrinter}  *)
 val d_attr: unit -> attribute -> Flx_cil_pretty.doc
 
-(** Flx_cil_pretty-print an argument of an attribute using {!Flx_cil_cil.defaultFlx_cil_cilPrinter}  *)
+(** Flx_cil_pretty-print an argument of an attribute using {!Flx_cil_cil.defaultCilPrinter}  *)
 val d_attrparam: unit -> attrparam -> Flx_cil_pretty.doc
 
-(** Flx_cil_pretty-print a list of attributes using {!Flx_cil_cil.defaultFlx_cil_cilPrinter}  *)
+(** Flx_cil_pretty-print a list of attributes using {!Flx_cil_cil.defaultCilPrinter}  *)
 val d_attrlist: unit -> attributes -> Flx_cil_pretty.doc 
 
-(** Flx_cil_pretty-print an instruction using {!Flx_cil_cil.defaultFlx_cil_cilPrinter}   *)
+(** Flx_cil_pretty-print an instruction using {!Flx_cil_cil.defaultCilPrinter}   *)
 val d_instr: unit -> instr -> Flx_cil_pretty.doc
 
-(** Flx_cil_pretty-print a label using {!Flx_cil_cil.defaultFlx_cil_cilPrinter} *)
+(** Flx_cil_pretty-print a label using {!Flx_cil_cil.defaultCilPrinter} *)
 val d_label: unit -> label -> Flx_cil_pretty.doc
 
-(** Flx_cil_pretty-print a statement using {!Flx_cil_cil.defaultFlx_cil_cilPrinter}. This can be 
+(** Flx_cil_pretty-print a statement using {!Flx_cil_cil.defaultCilPrinter}. This can be 
  * extremely slow (or even overflow the stack) for huge statements. Use 
  * {!Flx_cil_cil.dumpStmt} instead. *)
 val d_stmt: unit -> stmt -> Flx_cil_pretty.doc
 
-(** Flx_cil_pretty-print a block using {!Flx_cil_cil.defaultFlx_cil_cilPrinter}. This can be 
+(** Flx_cil_pretty-print a block using {!Flx_cil_cil.defaultCilPrinter}. This can be 
  * extremely slow (or even overflow the stack) for huge blocks. Use 
  * {!Flx_cil_cil.dumpBlock} instead. *)
 val d_block: unit -> block -> Flx_cil_pretty.doc
 
 (** Flx_cil_pretty-print the internal representation of a global using 
- * {!Flx_cil_cil.defaultFlx_cil_cilPrinter}. This can be extremely slow (or even overflow the 
+ * {!Flx_cil_cil.defaultCilPrinter}. This can be extremely slow (or even overflow the 
  * stack) for huge globals (such as arrays with lots of initializers). Use 
  * {!Flx_cil_cil.dumpGlobal} instead. *)
 val d_global: unit -> global -> Flx_cil_pretty.doc
@@ -11784,12 +11784,12 @@ open Flx_cil_cil
 (* print a Flx_cil_cil 'file' to stdout *)
 let unparseToStdout (cil : file) : unit =
 begin
-  dumpFile defaultFlx_cil_cilPrinter stdout cil
+  dumpFile defaultCilPrinter stdout cil
 end;;
 
 (* a visitor to unroll all types - may need to do some magic to keep attributes *)
 class unrollVisitorClass = object (self)
-  inherit nopFlx_cil_cilVisitor
+  inherit nopCilVisitor
 
   (* variable declaration *)
   method vvdec (vi : varinfo) : varinfo visitAction = 
@@ -11822,7 +11822,7 @@ let unrollVisitor = new unrollVisitorClass;;
 let parseOneFile (fname: string) : file =
   let ast : file = Flx_cil_frontc.parse fname () in
     begin
-      visitFlx_cil_cilFile unrollVisitor ast;
+      visitCilFile unrollVisitor ast;
       ast
     end
 ;;
@@ -11950,7 +11950,7 @@ let rec processOneFile (cil: C.file) =
     (match !outChannel with
       None -> ()
     | Some c -> Flx_cil_stats.time "printCIL" 
-        (C.dumpFile (C.defaultFlx_cil_cilPrinter) c) cil);
+        (C.dumpFile (C.defaultCilPrinter) c) cil);
 
     if !E.hadErrors then
       E.s (E.error "Flx_cil_cabs2cil has some errors");
@@ -12093,7 +12093,7 @@ let rec theMain () =
     "--commPrintLn", Arg.Unit (fun _ -> Flx_cil_cil.lineDirectiveStyle := Some Flx_cil_cil.LineComment;
                                        Flx_cil_cprint.printLnComment := true),
                "output #line directives as comments";
-    "--printFlx_cil_cilAsIs", Arg.Unit (fun _ -> Flx_cil_cil.printFlx_cil_cilAsIs := true),
+    "--printCilAsIs", Arg.Unit (fun _ -> Flx_cil_cil.printCilAsIs := true),
                "do not try to simplify the CIL when printing";
     "--sliceGlobal", Arg.Unit (fun _ -> Flx_cil_cilutil.sliceGlobal := true),
                "output is the slice of #pragma cilnoremove(sym) symbols";
@@ -12142,7 +12142,7 @@ let rec theMain () =
                 let oldpci = !C.print_CIL_Input in
                 C.print_CIL_Input := true;
                 Flx_cil_stats.time "printMerged"
-                  (C.dumpFile C.defaultFlx_cil_cilPrinter mc) merged;
+                  (C.dumpFile C.defaultCilPrinter mc) merged;
                 C.print_CIL_Input := oldpci
             end);
             merged
@@ -13117,7 +13117,7 @@ let varUsedAlready: (string, unit) H.t = H.create 111
 
 (** A visitor that renames uses of variables and types *)      
 class renameVisitorClass = object (self)
-  inherit nopFlx_cil_cilVisitor 
+  inherit nopCilVisitor 
       
       (* This is either a global variable which we took care of, or a local 
        * variable. Must do its type and attributes. *)
@@ -13153,7 +13153,7 @@ class renameVisitorClass = object (self)
             if debugMerge then 
               ignore (E.log "Renaming use of %s(%d) to %s(%d)\n"
                         ci.cname !currentFidx ci'.cname oldfidx);
-            ChangeTo (TComp (ci', visitFlx_cil_cilAttributes (self :> cilVisitor) a))
+            ChangeTo (TComp (ci', visitCilAttributes (self :> cilVisitor) a))
       end
     | TEnum (ei, a) when not ei.ereferenced -> begin
         match findReplacement true eEq !currentFidx ei.ename with
@@ -13161,16 +13161,16 @@ class renameVisitorClass = object (self)
         | Some (ei', _) -> 
             if ei' == intEnumInfo then 
               (* This is actually our friend intEnumInfo *)
-              ChangeTo (TInt(IInt, visitFlx_cil_cilAttributes (self :> cilVisitor) a))
+              ChangeTo (TInt(IInt, visitCilAttributes (self :> cilVisitor) a))
             else
-              ChangeTo (TEnum (ei', visitFlx_cil_cilAttributes (self :> cilVisitor) a))
+              ChangeTo (TEnum (ei', visitCilAttributes (self :> cilVisitor) a))
       end
 
     | TNamed (ti, a) when not ti.treferenced -> begin
         match findReplacement true tEq !currentFidx ti.tname with
           None -> DoChildren
         | Some (ti', _) -> 
-            ChangeTo (TNamed (ti', visitFlx_cil_cilAttributes (self :> cilVisitor) a))
+            ChangeTo (TNamed (ti', visitCilAttributes (self :> cilVisitor) a))
     end
         
     | _ -> DoChildren
@@ -13219,7 +13219,7 @@ let renameVisitor = new renameVisitorClass
  * and it also renames forward declarations of the inlines to be removed. *)
 
 class renameInlineVisitorClass = object (self)
-  inherit nopFlx_cil_cilVisitor 
+  inherit nopCilVisitor 
       
       (* This is a variable use. See if we must change it *)
   method vvrbl (vi: varinfo) : varinfo visitAction = 
@@ -13470,7 +13470,7 @@ let oneFilePass2 (f: file) =
           else begin
             H.add emittedVarDecls vi'.vname true; (* Remember that we emitted
                                                    * it  *)
-            mergePushGlobals (visitFlx_cil_cilGlobal renameVisitor g)
+            mergePushGlobals (visitCilGlobal renameVisitor g)
           end
 
       | GVar (vi, init, l) as g ->
@@ -13510,7 +13510,7 @@ let oneFilePass2 (f: file) =
           in
 
           if emitIt then
-            mergePushGlobals (visitFlx_cil_cilGlobal renameVisitor (GVar(vi', init, l)))
+            mergePushGlobals (visitCilGlobal renameVisitor (GVar(vi', init, l)))
             
       | GFun (fdec, l) as g -> 
           currentLoc := l;
@@ -13524,7 +13524,7 @@ let oneFilePass2 (f: file) =
           in
           (* Go in there and rename everything as needed *)
           let fdec' = 
-            match visitFlx_cil_cilGlobal renameVisitor g with 
+            match visitCilGlobal renameVisitor g with 
               [GFun(fdec', _)] -> fdec' 
             | _ -> E.s (unimp "renameVisitor for GFun returned something else")
           in
@@ -13707,7 +13707,7 @@ let oneFilePass2 (f: file) =
                 (* Now we should visit the fields as well *)
                 H.add emittedCompDecls ci.cname true; (* Remember that we 
                                                        * emitted it  *)
-                mergePushGlobals (visitFlx_cil_cilGlobal renameVisitor g)
+                mergePushGlobals (visitCilGlobal renameVisitor g)
             | Some (oldci, oldfidx) -> begin
                 (* We are not the representative. Drop this declaration 
                  * because we'll not be using it. *)
@@ -13734,7 +13734,7 @@ let oneFilePass2 (f: file) =
                        let newname, _ = newAlphaName vtAlpha None n in
                        newname, i, loc)
                      ei.eitems;
-                mergePushGlobals (visitFlx_cil_cilGlobal renameVisitor g);
+                mergePushGlobals (visitCilGlobal renameVisitor g);
             | Some (ei', _) -> (* Drop this since we are reusing it from 
                                 * before *)
                 ()
@@ -13774,13 +13774,13 @@ let oneFilePass2 (f: file) =
                 let newname, _ = newAlphaName vtAlpha None ti.tname in
                 ti.tname <- newname;
                 ti.treferenced <- true;
-                mergePushGlobals (visitFlx_cil_cilGlobal renameVisitor g);
+                mergePushGlobals (visitCilGlobal renameVisitor g);
             | Some (ti', _) ->(* Drop this since we are reusing it from 
                 * before *)
                   ()
           end
       end
-      | g -> mergePushGlobals (visitFlx_cil_cilGlobal renameVisitor g)
+      | g -> mergePushGlobals (visitCilGlobal renameVisitor g)
   with e -> begin
     let globStr:string = (P.sprint 1000 (P.dprintf 
       "error when merging global %a: %s"
@@ -13822,7 +13822,7 @@ let oneFilePass2 (f: file) =
     (* Now reprocess them *)
     theFile := savedTheFile;
     List.iter (fun g -> 
-                 theFile := (visitFlx_cil_cilGlobal renameInlinesVisitor g) @ !theFile)
+                 theFile := (visitCilGlobal renameInlinesVisitor g) @ !theFile)
       !theseGlobals;
     (* Now check if we have inlines that we could not remove
     H.iter (fun name _ -> 
@@ -14243,7 +14243,7 @@ let isCompleteProgramRoot global =
 
 (* This visitor recursively marks all reachable types and variables as used. *)
 class markReachableVisitor globalMap = object (self)
-  inherit nopFlx_cil_cilVisitor
+  inherit nopCilVisitor
 
   method vglob = function
     | GType (typeinfo, _) ->
@@ -14280,7 +14280,7 @@ class markReachableVisitor globalMap = object (self)
           begin
             trace (dprintf "descending: global %s\n" name);
             let descend global =
-              ignore (visitFlx_cil_cilGlobal (self :> cilVisitor) global)
+              ignore (visitCilGlobal (self :> cilVisitor) global)
             in
             let globals = Hashtbl.find_all globalMap name in
             List.iter descend globals
@@ -14293,10 +14293,10 @@ class markReachableVisitor globalMap = object (self)
   method vtype typ =
     let old : bool =
       let visitAttrs attrs =
-        ignore (visitFlx_cil_cilAttributes (self :> cilVisitor) attrs)
+        ignore (visitCilAttributes (self :> cilVisitor) attrs)
       in
       let visitType typ =
-        ignore (visitFlx_cil_cilType (self :> cilVisitor) typ)
+        ignore (visitCilType (self :> cilVisitor) typ)
       in
       match typ with
       | TEnum(e, attrs) ->
@@ -14370,7 +14370,7 @@ let markReachable file isRoot =
     if isRoot global then
       begin
         trace (dprintf "traversing root global: %a\n" d_shortglobal global);
-        ignore (visitFlx_cil_cilGlobal visitor global)
+        ignore (visitCilGlobal visitor global)
       end
     else
       trace (dprintf "skipping non-root global: %a\n" d_shortglobal global)
@@ -14413,7 +14413,7 @@ let labelsToKeep (ll: label list) : (string * location * bool) * label list =
   loop ("", locUnknown, false) ll
 
 class markUsedLabels (labelMap: (string, unit) H.t) = object
-  inherit nopFlx_cil_cilVisitor
+  inherit nopCilVisitor
 
   method vstmt (s: stmt) = 
     match s.skind with 
@@ -14434,7 +14434,7 @@ class markUsedLabels (labelMap: (string, unit) H.t) = object
 end
 
 class removeUnusedLabels (labelMap: (string, unit) H.t) = object
-  inherit nopFlx_cil_cilVisitor
+  inherit nopCilVisitor
 
   method vstmt (s: stmt) = 
     let (ln, lloc, lorig), lrest = labelsToKeep s.labels in
@@ -14521,9 +14521,9 @@ let removeUnmarked file =
         (* We also want to remove unused labels. We do it all here, including 
          * marking the used labels *)
         let usedLabels:(string, unit) H.t = H.create 13 in
-        ignore (visitFlx_cil_cilBlock (new markUsedLabels usedLabels) func.sbody);
+        ignore (visitCilBlock (new markUsedLabels usedLabels) func.sbody);
         (* And now we scan again and we remove them *)
-        ignore (visitFlx_cil_cilBlock (new removeUnusedLabels usedLabels) func.sbody);
+        ignore (visitCilBlock (new removeUnusedLabels usedLabels) func.sbody);
         true
 
     (* all other globals are retained *)
@@ -14557,8 +14557,8 @@ let rec removeUnusedTemps ?(isRoot : rootsFilter = isDefaultRoot) file =
       if !E.verboseFlag then 
         ignore (E.log "Removing unused temporaries\n" );
 
-      if Flx_cil_trace.traceActive "printFlx_cil_cilTree" then
-        dumpFile defaultFlx_cil_cilPrinter stdout file;
+      if Flx_cil_trace.traceActive "printCilTree" then
+        dumpFile defaultCilPrinter stdout file;
 
       (* digest any pragmas that would create additional roots *)
       let keepers = categorizePragmas file in
@@ -14996,7 +14996,7 @@ let createFile () =
   in
   (* Print the file *)
   let oc = open_out "testingcil.c" in
-  dumpFile defaultFlx_cil_cilPrinter oc file;
+  dumpFile defaultCilPrinter oc file;
   close_out oc
 
   
@@ -15682,7 +15682,7 @@ let findCompType kind n a =
 
 (* A simple visitor that searchs a statement for labels *)
 class canDropStmtClass pRes = object
-  inherit nopFlx_cil_cilVisitor
+  inherit nopCilVisitor
         
   method vstmt s = 
     if s.labels != [] then 
@@ -15697,7 +15697,7 @@ end
 let canDropStatement (s: stmt) : bool = 
   let pRes = ref true in
   let vis = new canDropStmtClass pRes in
-  ignore (visitFlx_cil_cilStmt vis s);
+  ignore (visitCilStmt vis s);
   !pRes
 
 (**** Occasionally we see structs with no name and no fields *)
@@ -28495,9 +28495,11 @@ let symbolName (id: symbol) : string =
 
 @h= tangler("src/flxcc.ml")
 @select(h)
+open List
+open Flx_util
 
 let filename = Sys.argv.(1);;
-print_endline ("Parsing " ^ filename);;
+print_endline ("//Parsing " ^ filename);;
 
 let lexbuf = Flx_cil_clexer.init filename;;
 let cabs = Flx_cil_cparser.file Flx_cil_clexer.initial lexbuf
@@ -28505,11 +28507,9 @@ let cabs = Flx_cil_cparser.file Flx_cil_clexer.initial lexbuf
 Flx_cil_clexer.finish()
 ;;
 
-print_endline "Parse complete"
-;;
-
-Flx_cil_cprint.print_defs cabs
-;;
+(*
+Flx_cil_cprint.print_defs cabs;;
+*)
 
 open Flx_cil_cabs
 ;;
@@ -28565,15 +28565,449 @@ let rec find_type d = match d with
  | PRAGMA _ 
  | TRANSFORMER _
  | EXPRTRANSFORMER _ -> ()
-in
-List.iter find_type cabs
 ;;
+(*
+List.iter find_type cabs ;;
+*)
 
 let cil = Flx_cil_cabs2cil.convFile (filename, cabs)
 ;;
-print_endline "MADE CIL"
+
+open Flx_cil_cil
 ;;
 
-Flx_cil_cil.dumpFile Flx_cil_cil.defaultFlx_cil_cilPrinter stdout cil
+(*
+dumpFile defaultCilPrinter stdout cil ;;
+*)
+
+let {fileName=f; globals=gs} = cil
 ;;
+print_endline ("//FILE: " ^ f)
+;;
+
+let soi = function
+| IChar -> "char"
+| ISChar -> "tiny"
+| IUChar -> "utiny"
+| IInt -> "int"
+| IUInt -> "uint"
+| IShort -> "short"
+| IUShort -> "ushort"
+| ILong -> "long"
+| IULong -> "ulong"
+| ILongLong -> "vlong"
+| IULongLong -> "uvlong"
+
+let sof = function
+| FFloat -> "float"
+| FDouble -> "double"
+| FLongDouble -> "ldouble"
+
+let cvqual a = 
+  let const = ref false
+  and volatile = ref false
+  in
+  List.iter
+  (fun (Attr (s,_)) -> 
+    if s = "const" then const := true
+    else if s = "volatile" then volatile := true
+  )
+  a
+  ;
+  if !const && !volatile then "cv"
+  else if !const then "c"
+  else if !volatile then "v"
+  else ""
+
+let attrof = function
+| TVoid a
+| TInt (_,a) 
+| TFloat (_,a)
+| TPtr (_,a)
+| TArray (_,_,a)
+| TFun (_,_,_,a) 
+| TNamed (_,a)
+| TComp (_,a) 
+| TEnum (_,a) 
+| TBuiltin_va_list a 
+-> a
+
+let strexp n = "0" (* cheat *)
+;;
+let fcount = ref 1
+;;
+let registry: (typsig, string * string) Hashtbl.t = Hashtbl.create 97 
+;;
+
+let remove_pnames t = match t with
+| TPtr (TFun (t,Some ps,b,a),a') ->
+  let ps = map (fun (_,t,a)->"",t,a) ps in
+  TPtr (TFun (t,Some ps,b,a),a')
+| _ -> t
+
+let rec sot t = match t with
+| TVoid a -> "void"
+| TInt (ik,a) -> soi ik
+| TFloat (fk,a) -> sof fk
+| TPtr (TVoid a',a) -> (cvqual a')^"address"
+| TPtr (TFun _,a) ->
+  let t' = typeSig t in
+  begin try 
+    fst (Hashtbl.find registry t')
+  with
+    Not_found ->
+    let name = "_cft_" ^ si !fcount in
+    incr fcount;
+    let sr = locUnknown in
+    let t = remove_pnames t in
+    let si = {tname=name;ttype=t;treferenced=true } in
+    let gt =  GType (si,sr) in
+    let d = defaultCilPrinter#pGlobal () gt in
+    let s = Flx_cil_pretty.sprint 65 d in
+    Hashtbl.add registry t' (name,s);
+    name
+  end
+   
+| TPtr (t',a) -> cvqual (attrof t') ^ "ptr[" ^ sot t'^ "]"
+| TArray (t',Some n,a)-> 
+  cvqual (attrof t') ^ "ptr[" ^ sot t'^ "]"
+
+| TArray (t',None,a)-> 
+  cvqual (attrof t') ^ "ptr[" ^ sot t' ^ "]"
+
+| TFun (t',Some ps,false,a) ->
+  let ret = sot t'
+  and args = 
+    if length ps = 0 then "1" 
+    else String.concat " * " (List.map soa ps) 
+  in args ^ " -> " ^ ret
+    
+| TFun (t',_,_,a) -> "CANT HANDLE THIS FUN"
+
+| TNamed (ti,a) -> ptname ti
+| TComp (ci,a) ->  pci ci
+| TEnum (ei,a) -> "int"
+| TBuiltin_va_list a -> "__builtin_va_list"
+
+and ptname {tname=tname} = tname
+and ciname {cname=cname} = cname
+and einame {ename=ename} = ename
+
+and pci ci = match ci with
+{cname=cname; cstruct=cstruct} -> 
+(if cstruct then "_struct_" else "_union_") ^ cname
+
+and pcci ci = match ci with
+{cname=cname; cstruct=cstruct} -> 
+(if cstruct then "struct " else " union ") ^ cname
+
+and pei ei = match ei with
+{ename=ename} -> "_enum_" ^ ename
+
+and pcei ei = match ei with
+{ename=ename} -> "enum " ^ ename
+
+and ptdef ti:string = match ti with
+{ttype=tt} -> sot tt
+
+and pcomp pi = match pi with
+{cname=name} -> name
+
+and soa (name,t,a) = sot t
+
+and sov vi = match vi with
+{vname=vname; vtype=vtype} ->
+"const " ^ vname ^ ": " ^ sot vtype
+
+let pe x = print_endline x
+;;
+
+let achk x = 
+  let a = "__anon" in
+  let n = String.length a in
+  String.length x > n &&
+  a = String.sub x 0 n 
+  
+let isanon = function
+  | GType ({tname=tname},_) -> achk tname
+  | GCompTag ({cname=cname},_) -> achk cname
+  | GCompTagDecl ({cname=cname},_) -> achk cname
+  | GEnumTag ({ename=ename},_) -> achk ename
+  | GEnumTagDecl ({ename=ename},_) -> achk ename
+  | GVarDecl ({vname=vname},_) -> false
+  | GVar ({vname=vname},_,_) -> false
+  | GFun (fd,sr) -> false
+  | GAsm _ -> true
+  | GPragma _ -> true
+  | GText _ -> true
+
+
+let flx_name = function
+  | GType ({tname=tname},_) -> Some tname
+  | GCompTag (ci,sr) -> Some (pci ci)
+  | GCompTagDecl (ci,_) -> Some (pci ci)
+  | GEnumTag ({ename=ename},_) -> Some ename
+  | GEnumTagDecl ({ename=ename},_) -> Some ename
+  | GVarDecl ({vname=vname},_) -> Some vname
+  | GVar ({vname=vname},_,_) -> Some vname
+  | GFun ({svar={vname=vname}},sr) -> Some vname
+  | GAsm _ -> None
+  | GPragma _ -> None
+  | GText _ -> None
+
+let c_name = function
+  | GType ({tname=tname},_) -> Some tname
+  | GCompTag (ci,sr) -> Some (pcci ci)
+  | GCompTagDecl (ci,_) -> Some (pcci ci)
+  | GEnumTag (ei,_) -> Some "int"
+  | GEnumTagDecl (ei,_) -> Some "int"
+  | GVarDecl ({vname=vname},_) -> Some vname
+  | GVar ({vname=vname},_,_) -> Some vname
+  | GFun ({svar={vname=vname}},sr) -> Some vname
+  | GAsm _ -> None
+  | GPragma _ -> None
+  | GText _ -> None
+;;
+
+let rec isanont t =  match t with
+| TVoid _
+| TInt _
+| TFloat _ -> false
+| TPtr (t,_) -> isanont t
+| TArray (t,_,_) -> isanont t
+| TFun (t,Some ps,_,_) -> 
+  fold_left (fun b (_,t,_)-> b || isanont t ) (isanont t) ps
+
+| TFun (t,None,_,_) -> isanont t
+| TNamed ({tname=tname},_) -> achk tname
+| TComp ({cname=cname},_) -> achk cname
+| TEnum _ -> false
+| TBuiltin_va_list _ -> false
+
+
+let aliases: (string,string) Hashtbl.t = Hashtbl.create 97
+let abstract_types: (string,string) Hashtbl.t = Hashtbl.create 97
+let variables : (string,string) Hashtbl.t = Hashtbl.create 97
+let functions: (string,string * string) Hashtbl.t = Hashtbl.create 97
+let fields: (string,string * string) Hashtbl.t = Hashtbl.create 97
+let procedures: (string,string * string) Hashtbl.t = Hashtbl.create 97
+let enums: (string,unit) Hashtbl.t = Hashtbl.create 97
+;;
+
+List.iter
+(fun g-> match isanon g,flx_name g with
+  | _,None | true,_ -> ()
+  | false,Some key ->
+  match g with
+  | GType (ti,sr) -> 
+    begin
+      match ti with {ttype=ttype} ->
+      match  ttype with 
+      | TComp (ci,_) -> 
+        begin match ci with { cfields=cfields } ->
+        iter
+        (fun {fname=fname; ftype=ftype} -> 
+          if not (isanont ftype) then
+          let t = key ^ " -> " ^ sot ftype in
+          Hashtbl.replace fields ("get_"^fname) (t,"$1."^fname)
+        )
+        cfields
+        end
+        ;
+        if achk (ciname ci) then
+          Hashtbl.replace abstract_types key key
+        else
+          Hashtbl.replace aliases key (ptdef ti)
+
+
+      | TEnum (ei,_) -> 
+        begin match ei with { eitems=eitems } ->
+        iter
+        (fun (s,_,_) -> Hashtbl.replace enums s ())
+        eitems
+        end
+        ;
+        if achk (einame ei) then
+          Hashtbl.replace abstract_types key key
+        else
+          Hashtbl.replace aliases key (ptdef ti)
+
+
+      | _ ->
+        Hashtbl.replace aliases key (ptdef ti)
+    end
+
+  | GCompTag (ci,sr) -> 
+    Hashtbl.replace abstract_types key (pcci ci);
+    begin match ci with { cfields=cfields } ->
+    iter
+    (fun {fname=fname; ftype=ftype} -> 
+      if not (isanont ftype) then
+      let t = key ^ " -> " ^ sot ftype in
+      Hashtbl.replace fields ("get_"^fname) (t,"$1."^fname)
+    )
+    cfields
+    end
+
+    
+  | GCompTagDecl (ci,sr) -> 
+    Hashtbl.replace abstract_types key (pcci ci)
+    
+  | GEnumTag (ei,sr) -> 
+    Hashtbl.replace aliases key "int";
+    begin match ei with { eitems=eitems } ->
+    iter
+    (fun (s,_,_) -> Hashtbl.replace enums s ())
+    eitems
+    end
+
+  | GEnumTagDecl (ci,sr) -> Hashtbl.replace aliases key "int"
+  
+  | GVar (vi,_,sr) 
+  | GFun ({svar=vi},sr)
+  | GVarDecl (vi,sr) ->
+    let vname, vtype=
+      match vi with {vname=vname; vtype=vtype}->vname,vtype 
+    in
+    begin match vtype with
+    | TFun (TVoid _,Some ps,false,a) ->
+      let args = 
+        if length ps = 0 then "1" 
+        else String.concat " * " (List.map soa ps) 
+      in
+      Hashtbl.replace procedures key (args,key^"($a);")
+
+    | TFun (TVoid _,Some _,true,a) ->
+      Hashtbl.replace procedures (key^"[t]") ("t",key^"($a);")
+
+    | TFun (ret,Some ps,false,a) ->
+      let ftb,ptb =
+        let ret = sot ret
+        and args = List.map soa ps
+        in 
+        (
+          (
+            if length ps = 0 
+            then "1" 
+            else String.concat " * " args
+          ) 
+          ^ 
+          " -> " ^ ret,key^"($a)"
+        ),
+        (String.concat " * " (ret :: args),
+          let a2 = 
+            String.concat "," 
+            (tl (tl 
+              (
+                map 
+                (fun i->"$"^si i) 
+                (nlist ((length ps)+2))
+              )
+            ))
+          in
+          "$1="^key^"("^a2^");"
+        )
+      in 
+        Hashtbl.replace functions key ftb;
+        Hashtbl.replace procedures key ptb
+
+    | TFun (ret,Some _,true,a) ->
+      let ftb =
+        let ret = sot ret in 
+        "t -> " ^ ret,key^"($a)"
+      in 
+        Hashtbl.replace functions (key^"[t]") ftb;
+        
+    | _ ->
+      Hashtbl.replace variables key (sot vtype)
+    end
+
+  | GAsm _ -> ()
+  | GPragma _ -> ()
+  | GText _ -> ()
+)
+gs
+;;
+
+print_endline ("//" ^ filename);
+print_endline ("include 'std';");
+print_endline "open C_hack;";
+print_endline "";;
+(* only used by gcc, but harmless even on MSVC *)
+print_endline ("type __builtin_va_list = '__builtin_va_list';");
+print_endline "";
+print_endline "//ABSTRACT TYPES";
+Hashtbl.iter
+(fun k v-> 
+  print_endline ("type " ^ k ^ " = '" ^ v ^ "';")
+)
+abstract_types
+;;
+
+print_endline "";
+print_endline "//C FUNCTION POINTER TYPES";
+Hashtbl.iter
+(fun _ (name,tdef)-> 
+  print_endline ("header '''" ^ tdef ^ "''';");
+  print_endline ("type " ^ name ^ " = '" ^ name ^ "';")
+)
+registry
+;;
+
+print_endline "";
+print_endline "//TYPE ALIASES";
+Hashtbl.iter
+(fun k v-> 
+  (* va_list is already defined in the standard library *)
+  if k <> "va_list" then
+  print_endline ("typedef " ^ k ^ " = " ^ v ^ ";")
+)
+aliases
+;;
+
+print_endline "";
+print_endline "//VARIABLES";
+Hashtbl.iter
+(fun k v-> 
+  print_endline ("const " ^ k ^ ": " ^v^ " = '" ^ k ^ "';")
+)
+variables
+;;
+
+print_endline "";
+print_endline "//ENUMERATION CONSTANTS";
+Hashtbl.iter
+(fun k _ -> 
+  print_endline ("const " ^ k ^ ": int = '" ^ k ^ "';")
+)
+enums
+;;
+
+print_endline "";
+print_endline "//PROCEDURES";
+Hashtbl.iter
+(fun k (v,b)-> 
+  print_endline ("proc " ^ k ^ ": " ^v^ " = '"^b^"';")
+)
+procedures
+;;
+
+print_endline "";
+print_endline "//FUNCTIONS";
+Hashtbl.iter
+(fun k (v,b)-> 
+  print_endline ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
+)
+functions
+;;
+
+print_endline "";
+print_endline "//STRUCT and UNION FIELDS";
+Hashtbl.iter
+(fun k (v,b)-> 
+  print_endline ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
+)
+fields
+;;
+
 

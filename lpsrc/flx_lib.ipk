@@ -169,6 +169,9 @@ using namespace std;
   # addressing
   "byte"    : "unsigned char",
   "size"    : "size_t",
+  "cvaddress" : "void const volatile*",
+  "vaddress" : "void volatile*",
+  "caddress" : "void const*",
   "address" : "void *",
   "offset"  : "ptrdiff_t",
   "charp"   : "char*",
@@ -248,7 +251,10 @@ using namespace std;
   ]
 @floats = ["float", "double", "ldouble"]
 
-@all = ["byte", "size","address","offset", "charp", "charcp"] + chars + sints + uints + floats
+@all = [
+  "byte", "size","address","caddress","vaddress","cvaddress",
+  "offset", "charp", "charcp"
+  ] + chars + sints + uints + floats
 @ints = uints + sints
 
 @def gen_type(t):
@@ -425,6 +431,9 @@ C_hack module is necessary for interfacing.
 """
 module C_hack
 {
+  publish "standard variable argument list pointer type"
+  type va_list = "va_list";
+
   fun cast[dst,src]: src->dst = '(?1)$1';
   fun static_cast[dst,src]: src->dst = 'static_cast<?1>($1)';
   fun dynamic_cast[dst,src]: src->dst = 'dynamic_cast<?1>($1)';
