@@ -270,6 +270,22 @@ let rec build_tables print_flag dfns counter name level parent display msgt asms
           ;
           add_unique name_map id n
           ;
+          (* assignment *)
+          let asgn_idx = !counter in incr counter;
+          let asgn = "set" in
+          let asgn_dcl = 
+            DCL_proc 
+            (
+              [
+                TYP_pointer (TYP_name [id]);
+                TYP_name [id]
+              ],
+              "*$1=$2;"
+            ) 
+          in
+          Hashtbl.add dfns asgn_idx (asgn,sr,parent,SYMDEF_dcl asgn_dcl);
+          add_function name_map asgn asgn_idx
+          ; 
           let ccount = ref 0 in (* count component constructors *)
           List.iter
           (fun (component_name,t) ->
@@ -283,13 +299,17 @@ let rec build_tables print_flag dfns counter name level parent display msgt asms
                 DCL_const (TYP_name [id],
                   "_uctor_(" ^ string_of_int ctor_idx ^ ",0)"
                 )
-              | _ -> (* non-constant constructor *)
+              | TYP_tuple ts -> (* non-constant constructor or 2 or more arguments *)
                 add_function name_map component_name dfn_idx;
-                let ts = match t with
-                  | TYP_tuple ts -> ts
-                  | t -> [t]
-                in
+                (* print_endline ("Creating constructor " ^ id ^ " of tuple length " ^ string_of_int (List.length ts)); *)
                 DCL_fun (ts,TYP_name [id],
+                  "_uctor_(" ^ string_of_int ctor_idx ^ 
+                  ", new(gc,@t) #t($t))"
+                )
+              | _ -> (* non-constant constructor of 1 argument *)
+                add_function name_map component_name dfn_idx;
+                (* print_endline ("Creating constructor " ^ id ^ " of non-tuple "); *)
+                DCL_fun ([t],TYP_name [id],
                   "_uctor_(" ^ string_of_int ctor_idx ^ 
                   ", new(gc,@1) #1($1))"
                 )
@@ -312,7 +332,7 @@ let rec build_tables print_flag dfns counter name level parent display msgt asms
               | _ -> (* non-constant constructor *)
                 let dtor_idx = !counter in incr counter;
                 let dtor = "ctor_arg_" ^ component_name in
-                let dtor_dcl = DCL_fun ([TYP_name [id]],t,"*(#0*)$1.data") in
+                let dtor_dcl = DCL_fun ([TYP_name [id]],t,"*(#0*)`1.data") in
                 Hashtbl.add dfns dtor_idx (dtor,sr,parent,SYMDEF_dcl dtor_dcl);
                 add_function name_map dtor dtor_idx
           )

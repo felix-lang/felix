@@ -452,7 +452,7 @@ val_def:
 @doc()
 Variables can be declared in both procedures and functions.
 
-@head(3,'Function Return')
+@head(3,'Function or Procedure Return')
 @select(h)
 return:       
   | RETURN expr SEMI          { AST_return (rstoken $1 $3, $2) }

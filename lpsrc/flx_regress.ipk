@@ -22,16 +22,8 @@ Performance tests measure speed. The result
 is an overall time in seconds, which should
 get smaller with each compiler improvement.
 @end_list()
-@class counter:
-  def __init__(self,a):
-    self.s = a
-    self.i = 0
-  def next(self): 
-    self.i = self.i + 1
-    s = self.s % self.i
-    return s
-@rt = counter("test/rt%02d.flx")
-@select(tangler(rt.next()))
+
+@select(tangler('test/rt01.flx'))
 #include <std.flx>
 @xs = [
   "2",
@@ -65,7 +57,7 @@ get smaller with each compiler improvement.
     for s in ss:
       tangle("print("+x+s+" + "+y+s+");") 
 
-@select(tangler(rt.next()))
+@select(tangler('test/rt02'))
 header r"""
 #include <stdio.h>
 typedef char *charp;
@@ -139,7 +131,7 @@ module A
   print "\n";
 }
 
-@select(tangler(rt.next()))
+@select(tangler('test/rt02.flx'))
 // test the string library
 #include <std.flx>
 var x = "Hello";
@@ -167,7 +159,7 @@ while(i <= n) {
 }
 endl;
 
-@select(tangler(rt.next()))
+@select(tangler('test/flx_rt04.flx'))
 // test the chained comparison
 #include <std.flx>
 assert(1<2&<3&<4);

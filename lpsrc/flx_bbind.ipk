@@ -110,7 +110,9 @@ let bind_exes dfns bdfns env exes ret_type =
           | Not_found ->
               failwith 
               (
-                "[flx_bbind.bind_exes|EXE_call] No match for " ^ name ^ " in " ^
+                "[flx_bbind.bind_exes|EXE_call] No match for " ^ 
+                name ^ " of " ^ string_of_btypecode dfns t2 ^ 
+                " in " ^
                  short_string_of_src sr
               )
 
@@ -169,7 +171,13 @@ let bind_exes dfns bdfns env exes ret_type =
       | EXE_return e ->        
         let e',t' = be e in
         if ret_type = t' then BEXE_return (e',t')
-        else failwith "Wrong return type"
+        else failwith 
+        (
+          "Wrong return type: expected " ^ 
+          string_of_btypecode dfns ret_type ^
+          ", got " ^
+          string_of_btypecode dfns t'
+        )
         
       | EXE_nop s ->           BEXE_nop s 
       | EXE_code s ->          BEXE_code s

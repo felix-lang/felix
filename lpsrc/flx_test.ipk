@@ -204,7 +204,7 @@ int main(int argc, char* argv[])
   }
   try 
   {
-    printf("flx_run driver begins\n");
+    //printf("flx_run driver begins\n");
     library_linkage_t library;
     library_init_t instance;
 
@@ -228,7 +228,7 @@ int main(int argc, char* argv[])
     }
 
     instance.destroy();
-    printf("flx_run driver ends normally\n");
+    //printf("flx_run driver ends normally\n");
   }
   catch (...)
   {
@@ -258,7 +258,7 @@ proc print: string = 'printf("%s",$1.c_str());';
 // type int
 type int = "int";
 proc print: int = 'printf("%d",$1);';
-proc incr : &int = "*$1++;";
+proc incr : &int = "(*$1)++;";
 fun eq : int * int -> bool = "$1==$2";
 fun mod: int * int -> int = "$1%$2";
 fun lt : int * int -> bool = "$1<$2";

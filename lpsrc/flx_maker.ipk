@@ -215,6 +215,21 @@ def xqt(x):
   if result:
     raise MakeError
 
+def run(x):
+  print x
+  sys.stdin.flush()
+  result = os.system(x)
+  if result: print "  .. ERROR CODE",hex(result)
+  sys.stdin.flush()
+
+  if result:
+    raise MakeError
+
+def erasefile(f):
+  try:
+    os.unlink(f)
+  except:
+    pass
 # ----------- Here begins the actual build procedure ---------------------
 
 buildall = "clean" in options
@@ -306,52 +321,61 @@ try:
       # GENERATE C++ FROM FELIX SOURCE
       for testfile in TESTS:
         #print 'Running Felix code generator on ',testfile
-        try:
-          basename = string.split(testfile,'.')[0]
-          cppfilename = basename + ".cpp"
-          xqt('bin/flxg -q -Ilib ' + basename)
-          #print 'TESTFILE -- generated ',basename
-          results.append("flxg " + (basename+ ' ' * w)[:w]+ ' OK')
-        except MakeError:
-          print 'TESTFILE -- ERROR!',basename
-          if stop_on_error: raise MakeError
-          results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
+        basename = string.split(testfile,'.')[0]
+        cppfilename = basename + ".cpp"
+        if buildall or \
+          filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
+          filetime('bin/flxg')> filetime(basename+'.cpp'):
+          try:
+            xqt('bin/flxg -q -Ilib ' + basename)
+            #print 'TESTFILE -- generated ',basename
+            results.append("flxg " + (basename+ ' ' * w)[:w]+ ' OK')
+          except MakeError:
+            print 'TESTFILE -- ERROR!',basename
+            erasefile(basename+'.cpp')
+            erasefile(basename+'.hpp')
+            erasefile(basename+'.so')
+            if stop_on_error: raise MakeError
+            results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
 
       # C++ COMPILE SHARED LIBRARIES
       for testfile in TESTS:
         #print 'Compiling generated code of ',testfile
-        try:
-          basename = string.split(testfile,'.')[0]
-          cppfilename = basename + ".cpp"
-          xqt(FLX_CPP_DYNLINK+" -I. -Igc/src "+cppfilename + " -o " + basename + ".so" )
-          #print 'TESTFILE -- OK!',basename
-          results.append("g++  " + (basename + ' ' * w)[:w]+ ' OK')
-        except MakeError:
-          print 'TESTFILE -- ERROR!',basename
-          if stop_on_error: raise MakeError
-          results.append("g++  " + (basename + ' '*w)[:w] + ' ERROR')
+        basename = string.split(testfile,'.')[0]
+        cppfilename = basename + ".cpp"
+        if buildall or filetime(basename+ '.cpp') > filetime(basename+'.so'):
+          try:
+            xqt(FLX_CPP_DYNLINK+" -I. -Igc/src "+cppfilename + " -o " + basename + ".so" )
+            #print 'TESTFILE -- OK!',basename
+            results.append("g++  " + (basename + ' ' * w)[:w]+ ' OK')
+          except MakeError:
+            print 'TESTFILE -- ERROR!',basename
+            erasefile(basename+'.so')
+            if stop_on_error: raise MakeError
+            results.append("g++  " + (basename + ' '*w)[:w] + ' ERROR')
 
 
       # COMPILER DRIVER PROGRAMS
 
       for testfile in CPPTESTS:
         #print 'Compiling driver program ',testfile
-        try:
-          basename = string.split(testfile,'.')[0]
-          xqt(FLX_CPP_LINK + " -I. -Itest -Igc/src gc/src/flx_gc.cpp gc/src/flx_collector.cpp " + basename + ".cpp -o " + basename)
-          #print 'TESTFILE -- OK!',basename
-          results.append("link " + (basename + ' ' * w)[:w]+ ' OK')
-        except MakeError:
-          print 'TESTFILE -- ERROR!',basename
-          if stop_on_error: raise MakeError
-          results.append("link " + (basename + ' '*w)[:w] + ' ERROR')
+        basename = string.split(testfile,'.')[0]
+        if buildall or filetime(basename+ '.cpp') > filetime(basename):
+          try:
+            xqt(FLX_CPP_LINK + " -I. -Itest -Igc/src gc/src/flx_gc.cpp gc/src/flx_collector.cpp " + basename + ".cpp -o " + basename)
+            #print 'TESTFILE -- OK!',basename
+            results.append("link " + (basename + ' ' * w)[:w]+ ' OK')
+          except MakeError:
+            print 'TESTFILE -- ERROR!',basename
+            if stop_on_error: raise MakeError
+            results.append("link " + (basename + ' '*w)[:w] + ' ERROR')
 
       for testfile in TESTS:
         basename = string.split(testfile,'.')[0]
         testscript = "./test/flx_run ./"+basename+".so"
         #print 'Executing ',testscript
         try:
-          xqt(testscript)
+          run(testscript)
           #print 'TESTFILE -- OK!',testscript
           results.append("Exec " + (testscript + ' ' * w)[:w]+ ' OK')
         except MakeError:
@@ -371,3 +395,42 @@ try:
 except MakeError:
   print "Terminating due to error"
 
+@head(1,'Makefile')
+@select(tangler('makefile'))
+@tangle('all: dummy')
+@tangle('\tpython script/maker')
+@tangle('')
+@tangle('doc: dummy')
+@tangle('\tpython script/maker doc')
+@tangle('')
+@tangle('test: dummy')
+@tangle('\tpython script/maker test stop_on_error')
+@tangle('')
+@tangle('linux_binary: dummy')
+@tangle('\ttar -zcvf flx_1.0a1_linux.tgz\\')
+@tangle('\t\tbin/flxg \\')
+@tangle('\t\tbin/flx \\')
+@tangle('\t\ttest/flx_run \\')
+@tangle('\t\tlib/std.flx \\')
+@tangle('\t\tgc/src/*.hpp \\')
+@tangle('\t\tgc/src/*.cpp \\')
+@tangle('\t\ttut/examples/*.flx \\')
+@tangle('\t\ttut/doc/*.html \\')
+@tangle('\t\ttut/doc/*.css ')
+@tangle('')
+@tangle('upload: dummy')
+@tangle('\tscp flx_1.0a1_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('')
+@tangle('dummy:')
+@tangle('\techo "out of date"')
+@tangle('')
+
+@head(1,'Run script')
+@select(tangler('bin/flx'))
+rm -f $1.cpp $1.hpp $1.so
+./bin/flxg -q -Ilib $1
+g++ -Wno-long-long -pedantic -ansi -shared  \
+  -I. -Igc/src $1.cpp -o $1.so
+./test/flx_run ./$1.so
+
+@os.system('chmod a+x bin/flx')

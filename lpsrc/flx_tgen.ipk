@@ -3,12 +3,20 @@
 open Flx_types
 val cpp_typename :
   type_registry_t ->
+  symbol_table_t ->
+  fully_bound_symbol_table_t ->
+  btypecode_t -> string
+
+val cpp_classname :
+  type_registry_t ->
+  symbol_table_t ->
   fully_bound_symbol_table_t ->
   btypecode_t -> string
 
 val collect_types :
   type_registry_t ->
   int ref ->
+  symbol_table_t ->
   fully_bound_symbol_table_t ->
   unit
 
@@ -20,6 +28,7 @@ val gen_types :
 
 val gen_type_names :
   type_registry_t ->
+  symbol_table_t ->
   fully_bound_symbol_table_t ->
   (int * btypecode_t) list -> string
 
@@ -59,20 +68,30 @@ will be caught here, since the only thing you can
 do with a tuple is make it the argument of a function.
 
 @select(h)
-let register_type_nr registry counter t =
+let register_type_nr registry counter dfns t =
   if t <> BTYP_tuple [] then
   if not (Hashtbl.mem registry t)
   then
     let n = !counter in
     incr counter;
     Hashtbl.add registry t n
+    (*
+    ;
+    print_endline 
+    (
+      "Registered type " ^ 
+      string_of_int n ^ 
+      " -> " ^ 
+      string_of_btypecode dfns t
+    )
+    *)
 
-let rec register_type_r registry counter bbdfns exclude t =
+let rec register_type_r registry counter dfns bbdfns exclude t =
   if not (List.mem t exclude) then
   let rr t' = register_type_r 
-    registry counter bbdfns (t :: exclude) t'
+    registry counter dfns bbdfns (t :: exclude) t'
   in
-  let rnr t = register_type_nr registry counter t in
+  let rnr t = register_type_nr registry counter dfns t in
   match t with
   | BTYP_void -> ()
   | BTYP_none -> ()
@@ -86,22 +105,27 @@ let rec register_type_r registry counter bbdfns exclude t =
       with Not_found -> failwith ("register_type_r Can't find index " ^ string_of_int index ^ " in fully bound symbol table")
     in
     match entry with
-    | BBDCL_union cs -> List.iter rr (List.map snd cs); rnr t
+    | BBDCL_union cs -> 
+      List.iter rr (List.map snd cs);      (* components *)
+      rnr t                                (* the union type *)
+
     | BBDCL_struct cs -> 
-      List.iter rr (List.map snd cs); 
-      rnr (typeoflist (List.map snd cs));
-      rnr t
+      let argt = typeoflist (List.map snd cs) in
+      List.iter rr (List.map snd cs);      (* components *)
+      rnr t;                               (* the struct type *)
+      rnr (BTYP_function (argt,t))         (* constructor *)
+
     | BBDCL_abs ct -> ()
     | _ -> failwith "expected type declaration"
 
-let rec cpp_typename registry bbdfns t = 
-  let tn t = cpp_typename registry bbdfns t in
+let rec cpp_typename registry dfns bbdfns t = 
+  let tn t = cpp_typename registry dfns bbdfns t in
   try match t with
   | BTYP_tuple [] -> "unit"
   | BTYP_function (_,BTYP_void) -> 
-    "_procedure_type_" ^ string_of_int (Hashtbl.find registry t)
+    "_procedure_type_" ^ string_of_int (Hashtbl.find registry t) ^ "*"
   | BTYP_function _ -> 
-    "_function_type_" ^ string_of_int (Hashtbl.find registry t) 
+    "_function_type_" ^ string_of_int (Hashtbl.find registry t) ^ "*"
   | BTYP_tuple _ -> "_tuple_type_" ^ string_of_int (Hashtbl.find registry t)
   | BTYP_pointer t' -> "_ref_<"^tn t'^">"
   | BTYP_void -> "void"
@@ -117,7 +141,45 @@ let rec cpp_typename registry bbdfns t =
       | _ -> failwith "expected type declaration"
     end
   
-  with Not_found -> failwith "[cpp_typename] Expected type to be in registry"
+  with Not_found -> 
+    failwith 
+    (
+      "[cpp_typename] Expected type "^ 
+      string_of_btypecode dfns t ^ 
+      " to be in registry"
+    )
+
+let rec cpp_classname registry dfns bbdfns t = 
+  let tn t = cpp_typename registry dfns bbdfns t in
+  try match t with
+  | BTYP_tuple [] -> "unit"
+  | BTYP_void -> failwith "void doesn't have a classname"
+  | BTYP_function (_,BTYP_void) -> 
+    "_procedure_type_" ^ string_of_int (Hashtbl.find registry t)
+  | BTYP_function _ -> 
+    "_function_type_" ^ string_of_int (Hashtbl.find registry t) 
+  | BTYP_tuple _ -> "_tuple_type_" ^ string_of_int (Hashtbl.find registry t)
+  | BTYP_pointer t' -> "_ref_<"^tn t'^">"
+  | BTYP_none -> 
+    failwith "[cpp_typename] Expected real type, got 'none'"
+  | BTYP_name index ->
+    let id,parent,entry = 
+      try Hashtbl.find bbdfns index
+      with Not_found -> failwith ("cpp_classname Can't find index " ^ string_of_int index ^ " in fully bound symbol table")
+    in begin match entry with
+      | BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
+      | BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
+      | BBDCL_abs ct -> ct
+      | _ -> failwith "expected type declaration"
+    end
+  
+  with Not_found -> 
+    failwith 
+    (
+      "[cpp_classname] Expected type "^ 
+      string_of_btypecode dfns t ^ 
+      " to be in registry"
+    )
 
 @doc()
 We now need to collect the types required for declarations.
@@ -125,31 +187,40 @@ In order to sequence the C++ declarations according to
 dependecies, our recursive analysis takes care only
 to assign an integer to a type when all type on which
 it depends have been processed. 
+@p()
+Note that implicitly declared tuple types should
+still get registered. The reason is that they can't
+be used unless the type is an argument of some 
+function or procedure, which we should pick up here.
 @select(h)
-let collect_types registry counter bbdfns = 
-  let rr t = register_type_r registry counter bbdfns [] t in
+let collect_types registry counter dfns bbdfns = 
+  let rr t = register_type_r registry counter dfns bbdfns [] t in
   Hashtbl.iter
   begin fun index (id,parent,bbdcl) -> match bbdcl with
     | BBDCL_function (ps,ret,_,_,_) ->
       let a = typeoflist (List.map snd ps) in
       rr (BTYP_function (a,ret))
 
+    | BBDCL_fun (ps,ret,_) ->
+      let a = typeoflist ps in
+      rr (BTYP_function (a,ret))
+
     | BBDCL_procedure (ps,_,_,_) ->
       let a = typeoflist (List.map snd ps) in
       rr (BTYP_function (a,BTYP_void))
 
-    | BBDCL_val t -> rr t 
-    | BBDCL_var t ->  rr t
-    | BBDCL_abs ct -> ()
-    | BBDCL_const (t,_) -> rr t
-    | BBDCL_fun (ps,ret,_) ->
-      let a = typeoflist ps in
-      rr (BTYP_function (a,ret))
     | BBDCL_proc (ps,_) ->
       let a = typeoflist ps in
       rr (BTYP_function (a,BTYP_void))
-    | BBDCL_union _ -> rr (BTYP_name index)
+
+    | BBDCL_val t
+    | BBDCL_var t
+    | BBDCL_const (t,_) -> rr t
+
+    | BBDCL_union _
     | BBDCL_struct _ -> rr (BTYP_name index)
+
+    | BBDCL_abs _ 
     | BBDCL_header _ -> ()
   end
   bbdfns 
@@ -158,8 +229,8 @@ let collect_types registry counter bbdfns =
 Now some code to generate the bases, given the
 hashtable.
 @select(h)
-let gen_type_name registry bbdfns (index,typ) =
-  let tn t = cpp_typename registry bbdfns t in
+let gen_type_name registry dfns bbdfns (index,typ) =
+  let tn t = cpp_classname registry dfns bbdfns t in
   match typ with
   | BTYP_function _ ->
     let name = tn typ in
@@ -181,18 +252,20 @@ let gen_type_name registry bbdfns (index,typ) =
     match entry with
     | BBDCL_struct cs ->
       "struct " ^ name ^ ";\n"
-    | BBDCL_union _ -> "//UNION " ^ name ^ " by typedef\n"
+    | BBDCL_union _ -> 
+      "typedef _uctor_ " ^ tn typ ^ ";\n"
     | BBDCL_abs ct -> ""
     | _ -> failwith "expected type declaration"
 
 let gen_type registry dfns bbdfns (index,typ) =
   "//TYPE: " ^ string_of_btypecode dfns typ ^ "\n"^
-  let tn t = cpp_typename registry bbdfns t in
+  let tn t = cpp_typename registry dfns bbdfns t in
+  let cn t = cpp_classname registry dfns bbdfns t in
   match typ with
 
   (* PROCEDURE *)
   | BTYP_function (a,BTYP_void) ->
-    let name = tn typ  
+    let name = cn typ  
     and argtype = tn a
     in
     "struct " ^ name ^
@@ -208,7 +281,7 @@ let gen_type registry dfns bbdfns (index,typ) =
 
   (* FUNCTION *)
   | BTYP_function (a,r) ->
-    let name = tn typ  
+    let name = cn typ  
     and argtype = tn a
     and rettype = tn r
     in
@@ -246,7 +319,7 @@ let gen_type registry dfns bbdfns (index,typ) =
     !components) ^ "\n"
     in 
     
-    let name = tn typ in
+    let name = cn typ in
     let ctor = 
       "  " ^ name ^ "\n" ^
       "  (\n" ^
@@ -288,7 +361,7 @@ let gen_type registry dfns bbdfns (index,typ) =
         match List.length cs with
         | 0 -> "" (* just use default ctor *)
         | 1 -> 
-          "  " ^ name ^ "(" ^ tn equiv_tuple_type ^ "const &_arg): " ^
+          "  " ^ name ^ "(" ^ tn equiv_tuple_type ^ " const &_arg): " ^
           fst (List.hd cs) ^ "(_arg) {}\n" 
         | _ ->
           let ctor_inits = ref [] in 
@@ -321,8 +394,7 @@ let gen_type registry dfns bbdfns (index,typ) =
       ) ^
       "};\n"
 
-    | BBDCL_union _ ->
-      "typedef _uctor_ " ^ tn typ ^ ";\n"
+    | BBDCL_union _ -> "" (* covered by prior typedef of _uctor_ *)
 
     | BBDCL_abs ct -> ""
     | _ -> failwith "expected type declaration"
@@ -412,9 +484,9 @@ let get_type bbdfns index =
   | _ -> failwith "Only function and procedure types handles by get_type"
 
 
-let gen_type_names registry bbdfns ts = 
+let gen_type_names registry dfns bbdfns ts = 
   String.concat "" 
-  (List.map (gen_type_name registry bbdfns) ts)
+  (List.map (gen_type_name registry dfns bbdfns) ts)
 
 let gen_types registry dfns bbdfns ts = 
   String.concat "" 

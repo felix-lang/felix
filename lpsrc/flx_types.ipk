@@ -642,6 +642,7 @@ and string_of_btypecode dfns tc =
   | BTYP_tuple ls -> 
     begin match ls with 
     | [] -> "unit" 
+    | [x] -> failwith ("UNEXPECTED TUPLE OF ONE ARGUMENT " ^ sbt x)
     | _ -> "(" ^ (String.concat " * " (List.map sbt ls)) ^")"
     end
 
