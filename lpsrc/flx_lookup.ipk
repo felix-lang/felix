@@ -394,6 +394,7 @@ and map_type
   | `BTYP_none -> `BTYP_none 
   | `BTYP_fix i -> `BTYP_fix i
   | `BTYP_var i -> failwith "Unexpected type variable in map_type"
+  | _ -> failwith "Unexpected metatype"
 
 (* NOTE ON COMPARISONS: 
   We don't allow a val to match a const. Probably,
@@ -1244,7 +1245,7 @@ and eval_module_expr syms env excluded_dirs e : module_rep_t =
       short_string_of_src (src_of_expr e) 
     )
 
-and bind_index syms env exclude fixlist expr_fixlist depth excluded_dirs sr index = 
+and bind_index syms env exclude fixlist expr_fixlist depth excluded_dirs sr index params = 
   (*
   print_endline ("BINDING INDEX " ^ string_of_int index);
   flush stdout;
@@ -1271,7 +1272,7 @@ and bind_index syms env exclude fixlist expr_fixlist depth excluded_dirs sr inde
       (*
       print_endline "GOT A TYPE ALIAS";
       *)
-      bind_type' syms env ((index,depth) :: exclude) fixlist expr_fixlist depth excluded_dirs sr t
+      bind_type' syms env ((index,depth) :: exclude) fixlist expr_fixlist depth excluded_dirs sr t params
 
     | `SYMDEF_if_type -> `BTYP_name index
     | `SYMDEF_dcl (`DCL_abs _) -> `BTYP_name index
@@ -1297,6 +1298,50 @@ and bind_index syms env exclude fixlist expr_fixlist depth excluded_dirs sr inde
       )
   end 
 
+and metatype syms params term =
+  let st t = string_of_btypecode syms.dfns t in
+  let mt t = metatype syms params t in
+  match term with
+  | `BTYP_typefun (a,b,c) ->
+    let ps = List.map snd a in
+    let argt =
+      match ps with
+      | [x] -> x
+      | _ -> `BTYP_tuple ps
+    in 
+      let rt = metatype syms (a @ params) c in
+      if b<>rt
+      then 
+        failwith 
+        (
+          "In abstraction\n" ^
+          st term ^
+          "\nFunction body metatype \n"^
+          st rt^
+          "\ndoesn't agree with declared type \n" ^ 
+          st b
+        )
+      else `BTYP_function (argt,b)
+
+  | `BTYP_type_tuple ts ->
+    `BTYP_tuple (List.map (metatype syms params) ts)
+
+  | `BTYP_apply (a,b) ->
+    begin 
+      let ta = mt a
+      and tb = mt b 
+      in match ta with
+      | `BTYP_function (x,y) ->
+        if x = tb then y
+        else 
+          failwith "Metatype error: function argument wrong metatype"
+      | _ -> failwith "Metatype error: function required for LHS of application"
+    end
+  | `BTYP_var i -> List.assoc i params
+  | _ -> `BTYP_type
+  
+
+
 (* This routine binds a type expression to a bound type expression.
    Note in particular that a type alias is replaced by what
    it as an alias for, recursively so that the result 
@@ -1304,16 +1349,104 @@ and bind_index syms env exclude fixlist expr_fixlist depth excluded_dirs sr inde
 *)
 
 and bind_type syms env expr_fixlist excluded_dirs sr t : btypecode_t =
-  let t' = bind_type' syms env [] [] expr_fixlist 0 excluded_dirs sr t in
+  let t' = bind_type' syms env [] [] expr_fixlist 0 excluded_dirs sr t [] in
   (*
   print_endline ("TYPE  " ^ string_of_typecode t);
   print_endline ("BOUND " ^ string_of_btypecode syms.dfns t');
   *)
-  t'
+  let t'' = beta_reduce syms [] t' in
+  (*
+  if t' <> t'' then begin
+    print_endline ("TYPE  " ^ string_of_typecode t);
+    print_endline ("BOUND " ^ string_of_btypecode syms.dfns t');
+    print_endline ("REDUCED " ^ string_of_btypecode syms.dfns t'')
+  end;
+  *)
+  t''
 
-and bind_type' syms env exclude fixlist expr_fixlist depth excluded_dirs sr t : btypecode_t =
-  let bt t = bind_type' syms env exclude fixlist expr_fixlist (depth+1) excluded_dirs sr t in
-  let bi i = bind_index syms env exclude fixlist expr_fixlist depth excluded_dirs sr i in
+and beta_reduce syms params t = 
+  let br t = beta_reduce syms params t in
+  let st t = string_of_btypecode syms.dfns t in
+  let mt t = metatype syms params t in
+  match t with
+  | `BTYP_apply (t1,t2) ->
+    (*
+    print_endline "-----------------------";
+    print_endline ("Application " ^ st t);
+    print_endline "";
+    print_endline ("Unreduced function is " ^ st t1);
+    print_endline ("Unreduced Argument is " ^ st t2);
+    *)
+    let t2 = br t2 in (* eager evaluation *)
+    let t1 = br t1 in (* eager evaluation *)
+    (*
+    print_endline ("reduced function is " ^ st t1);
+    print_endline ("reduced Argument is " ^ st t2);
+    *)
+    let mt1 = mt t1
+    and mt2 = mt t2 
+    in
+    (*
+    print_endline ("Function metatype is" ^ st mt1);
+    print_endline ("Argument metatype is" ^ st mt2);
+    *)
+    begin match mt1 with
+    | `BTYP_function (a,b) ->
+      if a <> mt2
+      then failwith ("Argument metatype not same as function parameter")
+    | _ -> 
+      failwith ("Expected LHS of application to be function")
+    end
+    ;
+    begin match t1 with
+    | `BTYP_typefun (ps,r,body) ->
+      let v = Hashtbl.create 97 in
+      begin match ps with
+      | [] -> ()
+      | [i,_] -> Hashtbl.add v i t2
+      | _ -> 
+        let ts = match t2 with 
+        | `BTYP_type_tuple ts -> ts 
+        | _ -> assert false 
+        in
+          if List.length ps <> List.length ts
+          then failwith "Wrong number of arguments to typefun"
+          else List.iter2 (fun (i,_) y -> Hashtbl.add v i y) ps ts
+      end
+      ;
+      (*
+      print_endline "Variable assignments are ";
+      Hashtbl.iter
+      (fun i t -> print_endline (string_of_int i ^ " -> " ^ st t))
+      v
+      ;
+      print_endline ("Body is " ^ st body);
+      *)
+      let t = varmap_subst v body in
+      (*
+      print_endline ("Result of application = " ^ st t);
+      *)
+      br t
+
+    | `BTYP_var _ -> t (* can't reduce it yet *)
+    | _ -> failwith "[beta-reduce] Expected type function or variable"
+    end
+
+  | `BTYP_tuple ls -> `BTYP_tuple (List.map br ls)
+  | `BTYP_sum ls -> `BTYP_sum (List.map br ls)
+  | `BTYP_type_tuple ls -> `BTYP_type_tuple (List.map br ls)
+  | `BTYP_function (a,b) -> `BTYP_function (br a, br b)
+  | `BTYP_binding (a,b) -> `BTYP_binding (br a, br b)
+  | `BTYP_pointer a -> `BTYP_pointer (br a)
+  | `BTYP_typefun (p,r,b) -> 
+     let p' = List.map (fun (i,t) -> (i, br t)) p in
+    `BTYP_typefun (p', br r, beta_reduce syms (p' @ params) b)
+
+  | _ -> t
+
+and bind_type' syms env exclude fixlist expr_fixlist depth excluded_dirs sr t params : btypecode_t =
+  let bt t = bind_type' syms env exclude fixlist expr_fixlist (depth+1) excluded_dirs sr t params in
+  let bi i = bind_index syms env exclude fixlist expr_fixlist depth excluded_dirs sr i params in
   (*
   print_endline ("BINDING TYPE " ^ string_of_typecode t);
   flush stdout;
@@ -1395,7 +1528,7 @@ and bind_type' syms env exclude fixlist expr_fixlist depth excluded_dirs sr t : 
   | `TYP_none ->  `BTYP_none
   | `TYP_var i ->  `BTYP_var i
   | `TYP_as (t,s) -> 
-    bind_type' syms env exclude ((s,depth)::fixlist) expr_fixlist depth excluded_dirs sr t
+    bind_type' syms env exclude ((s,depth)::fixlist) expr_fixlist depth excluded_dirs sr t params
 
   | `TYP_typeof e ->
     (*
@@ -1457,9 +1590,40 @@ and bind_type' syms env exclude fixlist expr_fixlist depth excluded_dirs sr t : 
     *)
     `BTYP_void
 
+  | `TYP_typefun (ps,r,body) -> 
+    let data = 
+      List.rev_map 
+      (fun x -> fst x, bt (snd x), let n = !(syms.counter) in incr (syms.counter); n) 
+      ps 
+    in
+    let pnames =  (* reverse order .. *)
+      List.map (fun (n, t, i) -> (n,i)) data 
+    in
+    let bbody = 
+      bind_type' syms env exclude 
+      fixlist expr_fixlist (depth+1) 
+      excluded_dirs sr 
+      body (pnames@params) 
+    in
+      let bparams = (* order as written *)
+        List.rev_map (fun (n,t,i) -> (i,t)) data 
+      in
+      `BTYP_typefun (bparams, bt r, bbody)
+
+  | `TYP_apply (t1,t2) ->
+    `BTYP_apply (bt t1, bt t2)
+
+  | `TYP_type -> `BTYP_type
+
   | `AST_name (sr,s) when List.mem_assoc s fixlist ->
     print_endline ("Binding fixpoint " ^ s);
     `BTYP_fix ((List.assoc s fixlist)-depth)
+
+  | `AST_name (sr,s) when List.mem_assoc s params ->
+    `BTYP_var (List.assoc s params)
+
+  | `TYP_type_tuple ts ->
+    `BTYP_type_tuple (List.map bt ts)
 
   | #qualified_name_t as x -> 
     (* print_endline "BIND TYPE DOING LOOKUP QN IN ENV";
@@ -1505,6 +1669,7 @@ and rebind_btype syms env excluded_dirs sr t: btypecode_t =
   | `BTYP_binding (a,b) -> `BTYP_binding (rbt a,rbt b)
   | `BTYP_fix i -> `BTYP_fix i
   | `BTYP_var i -> failwith "Unexpected type variable in rebind_type"
+  | _ -> failwith "Unexpected metatype in rebind_type"
 
 
 and base_typename_of_literal v = match v with
@@ -1582,7 +1747,8 @@ and cal_ret_type syms exclude expr_fixlist depth excluded_dirs index =
   let env = build_env syms excluded_dirs (Some index) in
   match (Hashtbl.find syms.dfns index) with
   | id,sr,parent,`SYMDEF_function (ps,rt,exes,name_map,dirs) ->
-    let rt = bind_type' syms env [] [] expr_fixlist depth excluded_dirs sr rt in
+    let rt = bind_type' syms env [] [] expr_fixlist depth excluded_dirs sr rt [] in
+    let rt = beta_reduce syms [] rt in
     let ret_type = ref rt in
     let return_counter = ref 0 in
     List.iter
@@ -1642,7 +1808,8 @@ and typeofindex'
   let bt t:btypecode_t = 
     (* print_endline ("TYPEOFINDEX binding type " ^ string_of_typecode t); *)
     flush stdout;
-    let t' = bind_type' syms env [] [] expr_fixlist depth excluded_dirs sr t in
+    let t' = bind_type' syms env [] [] expr_fixlist depth excluded_dirs sr t [] in
+    let t' = beta_reduce syms [] t' in
     (* print_endline "TYPE BOUND"; *)
     t'
   in
@@ -2285,7 +2452,7 @@ and handle_entry syms sra srn env exclude expr_fixlist excluded_dirs entry t2 na
 and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr_t = 
   let be e = bind_expression syms env exclude expr_fixlist (depth+1) excluded_dirs e in
   let lu sr qn = lookup_qn_in_env syms env excluded_dirs qn in
-  let bt sr t = bind_type' syms env [] [] expr_fixlist depth excluded_dirs sr t in
+  let bt sr t = beta_reduce syms [] (bind_type' syms env [] [] expr_fixlist depth excluded_dirs sr t []) in
   let ti i = typeofindex syms exclude expr_fixlist depth excluded_dirs i in
 
   (* model infix operator as function call *)

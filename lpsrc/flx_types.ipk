@@ -7,6 +7,8 @@ val catmap : string -> ('a -> string) -> 'a list -> string
 val (+>) : 'a -> ('a ->'b) -> 'b
 val transpose: 'a list list -> 'a list list
 val list_last: 'a list -> 'a 
+val list_index: 'a list -> 'a -> int option
+val list_omap: ('a -> 'b) -> 'a list -> 'b list
 
 @h = tangler('src/flx_util.ml')
 @select(h)
@@ -22,6 +24,17 @@ let transpose x =
   in List.tl (List.rev (cons [] ([],x)))
 
 let list_last l = List.hd (List.rev l)
+let rec list_index l x = 
+ let rec aux l i =
+   match l with
+   | [] -> None
+   | h::t -> 
+    if x = h then Some i
+    else aux t (i+1)
+  in aux l 0
+
+let list_omap f ls =
+  List.rev (List.rev_map f ls)
 
 @head(1,'Types')
 @h = tangler('src/flx_types.mli')
@@ -109,6 +122,11 @@ and typecode_t =
   | `TYP_cod of typecode_t                      (* codomain *)
   | `TYP_proj of int * typecode_t               (* tuple projection *)
   | `TYP_case_arg of int * typecode_t           (* argument of n'th variant *)
+
+  | `TYP_apply of typecode_t * typecode_t
+  | `TYP_typefun of parameter_t list * typecode_t * typecode_t
+  | `TYP_type
+  | `TYP_type_tuple of typecode_t list
   ]
 
 @head(3,'Literals')
@@ -404,6 +422,12 @@ and btypecode_t =
   | `BTYP_binding of btypecode_t * btypecode_t     (* interface, module *)
   | `BTYP_fix of int                               (* recurse to depth n *)
   | `BTYP_var of int         (* unknown variable or function return type *)
+
+  (* meta type stuff: only need transiently by bind_type .. *)
+  | `BTYP_apply of btypecode_t * btypecode_t
+  | `BTYP_typefun of (int * btypecode_t) list * btypecode_t * btypecode_t
+  | `BTYP_type
+  | `BTYP_type_tuple of btypecode_t list
   ]
 
 and bparameter_t = string * btypecode_t
@@ -902,7 +926,7 @@ and string_of_expr (e:expr_t) =
 *)
 
 
-and st prec tc = 
+and st prec tc : string = 
   let iprec,txt =
     match tc with
     | #qualified_name_t as t -> 0,string_of_qualified_name t
@@ -929,10 +953,27 @@ and st prec tc =
     | `TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
     | `TYP_as (t,s) -> 7,st 7 t ^ " as " ^ s
 
-    | `TYP_proj (i,t) -> 0,"proj_"^string_of_int i^"("^string_of_typecode t^")"
-    | `TYP_dom t -> 0,"dom("^string_of_typecode t^")"
-    | `TYP_cod t -> 0,"cod("^string_of_typecode t^")"
-    | `TYP_case_arg (i,t) -> 0,"case_arg_"^string_of_int i^"("^string_of_typecode t^")"
+    | `TYP_proj (i,t) -> 2,"proj_"^string_of_int i^" "^ st 2 t
+    | `TYP_dom t -> 2,"dom "^ st 2 t
+    | `TYP_cod t -> 2,"cod "^st 2 t
+    | `TYP_case_arg (i,t) -> 2,"case_arg_"^string_of_int i^" "^st 2 t
+
+    | `TYP_apply (t1,t2) -> 2,st 2 t1 ^ " " ^ st 2 t2
+    | `TYP_type -> 0,"TYPE"
+    | `TYP_type_tuple ls ->
+      3, String.concat ", " (List.map (st 3) ls)
+
+    | `TYP_typefun (args,ret,body) -> 
+       7,
+       (
+         "fun(" ^ String.concat ", " 
+         (
+           List.map 
+           (fun (n,t)-> n ^ ": " ^ st 7 t) 
+           args
+         ) ^
+         "): " ^ st 0 ret ^ "=" ^ st 7 body
+       )
   in
     if iprec >= prec 
     then "(" ^ txt ^ ")" 
@@ -1002,6 +1043,23 @@ and sb dfns depth fixlist counter prec tc =
       | `BTYP_pointer t -> 1,"&" ^ sbt 1 t
       | `BTYP_void -> 0,"void"
       | `BTYP_none -> 0,"<none>"
+      
+      | `BTYP_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2
+      | `BTYP_type -> 0,"TYPE"
+      | `BTYP_type_tuple ls ->
+        3, String.concat ", " (List.map (sbt 3) ls)
+
+      | `BTYP_typefun (args,ret,body) -> 
+         7,
+         (
+           "fun (" ^ String.concat ", " 
+           (
+             List.map 
+             (fun (i,t)-> string_of_int i ^ ": " ^ sbt 7 t) 
+             args
+           ) ^
+           "): " ^ sbt 0 ret ^ "=" ^ sbt 7 body
+         )
     in
       let txt,lst = print_fixpoints depth !fixlist in
       fixlist := lst;
@@ -1856,6 +1914,7 @@ let rec lower t = match t with
   | `BTYP_name i -> `BTYP_name i
   | `BTYP_fix i -> `BTYP_fix i
   | `BTYP_var i -> `BTYP_var i
+  | _ -> failwith "Unexpected metatype"
 
 
 let rec lift t = match t with
@@ -1869,6 +1928,7 @@ let rec lift t = match t with
   | `BTYP_name i -> `BTYP_name i
   | `BTYP_fix i -> `BTYP_fix i
   | `BTYP_var i -> `BTYP_var i
+  | _ -> failwith "Unexpected metatype"
 
 let rec unify dfns it mt = 
   let u it mt = unify dfns it mt in
@@ -1976,7 +2036,11 @@ open Flx_srcref
 let rec typecode_of_expr (e:expr_t) :typecode_t = 
   let te e = typecode_of_expr e in
   match e with 
+  | `AST_name (_,"TYPE") -> `TYP_type
   | #qualified_name_t as x -> (x:>typecode_t)
+  | `AST_tuple (sr,ls) ->
+    `TYP_type_tuple (List.map te ls)
+
   | `AST_product (_,ts) -> `TYP_tuple (List.map te ts)
   | `AST_arrow (_,(a,b)) -> `TYP_function (te a, te b)
   | `AST_ref (sr,e) -> `TYP_pointer (te e)
@@ -2057,20 +2121,29 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
           `TYP_case_arg (!acc, arg)
          end
       else 
-        failwith
-        (
-          "unknown type function " ^ string_of_expr e1 ^
-          "at " ^ short_string_of_src sr
-        )
+        `TYP_apply (typecode_of_expr e1,arg)
 
-    | _ -> 
-      failwith 
-      (
-        "type function " ^ string_of_expr e1 ^
-        " must be an identifier\n" ^
-        "at " ^ short_string_of_src sr
-      )
+    | _ ->
+      `TYP_apply (typecode_of_expr e1,typecode_of_expr e2)
     end
+
+  | `AST_lambda (sr,(params,ret,body)) ->
+     begin match body with
+     | [`AST_return (_,e)] -> 
+       `TYP_typefun 
+       ( 
+         params,
+         ret,
+         typecode_of_expr e
+       )
+
+     | _ -> 
+       failwith 
+       (
+         "Type lambda must just be 'return type_expr' in\n" ^
+         short_string_of_src sr
+       )
+     end
 
   | #expr_t -> 
     failwith 

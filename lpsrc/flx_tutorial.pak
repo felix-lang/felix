@@ -2335,6 +2335,84 @@ f i1;
 f i2;
 f i3;
 
+@head(2,'Metatyping')
+Felix supports a metatyping or kinding system.
+The reserved identifer TYPE denots the kind of a type.
+You can make a function that generates a type from
+other types. Of course, you can pass these functions
+to other type functions, and do currying.
+@p()
+The type evaluator is a specialised version of the
+typed lambda calculus using eager evaluation.
+Note that in this calculus, types are values,
+and their type is TYPE, type functions are also
+values, with type TYPE->TYPE. Our calculus
+also supports type tuples of types such as
+@begin_displayed_code()
+TYPE * TYPE 
+@end_displayed_code()
+and values such as
+@begin_displayed_code()
+(int, long)
+@end_displayed_code()
+Note that (unfortunately) in the abstraction form
+@begin_displayed_code()
+  fun (t:TYPE):TYPE = 
+  { 
+    t * t
+  } 
+@end_displayed_code()
+the curly braces are required, and you can even write:
+@begin_displayed_code()
+  fun (t:TYPE):TYPE = 
+  { 
+    return t * t;
+  } 
+@end_displayed_code()
+as for an ordinary function. This is because Felix uses
+precisely the same syntax for type functions and ordinary ones;
+that is, the parser uses the same grammar to build expressions
+and type expresssions (though each imposes constraints).
+
+@select(tangler(tdir+'tut208.flx'))
+#include <std.flx>
+open Long;
+
+typedef fun list (elt:TYPE):TYPE = 1 + elt * list elt;
+
+typedef fun f(t1:TYPE, t2:TYPE->TYPE) (t3:TYPE): TYPE = (t2 t1) * t3;
+
+typedef g = (
+    fun (t1:TYPE, t2:TYPE->TYPE):TYPE->TYPE =  
+    {
+      fun (t3:TYPE):TYPE = 
+      { 
+        (t2 t1) * t3
+      } 
+    } 
+  )
+;
+
+
+// FIXPOINTS NOT WORKING YET
+//val x : list int = case 1 of list int;
+
+typedef fun pair (a:TYPE,b:TYPE):TYPE = a * b;
+//typedef pair = (fun (a:TYPE,b:TYPE):TYPE = {a * b});
+
+val x2 : (pair (int,long)) = (1,1L);
+match x2 with
+| (?a,?b) => { print a; endl; print b; endl; }
+endmatch;
+
+typedef fun twoup (x:TYPE):TYPE = x * x;
+
+// (twoup int) * int = (int * int) * int
+val x3 : (f (int,twoup) (int)) = ((1,2),3);
+match x3 with
+| ((?a,?b),?c) => { print a; endl; print b; endl; print c; endl; } 
+endmatch;
+
 @head(1,'Misc junk')
 Misc weird feature tests .. remove in production
 tutorial.

@@ -223,7 +223,7 @@ let mkcurry sr name args return_type body =
 %token<Flx_types.srcref> DOTDOT SLOSH DOTDOTDOT
 
 /* operator keywords */
-%token<Flx_types.srcref> NOT OR AND LAMBDA LAZY
+%token<Flx_types.srcref> NOT OR AND LAMBDA 
 
 /* patterns */
 %token<Flx_types.srcref> AS ANY REGEXP WHEN ALL
@@ -302,8 +302,6 @@ executable:
   | read { $1 }
   | return { $1 }
   | ifgoto_stmt { $1 }
-/*  | if_stmt { $1 } */
-/*  | while_stmt { $1 } */
   | todo { $1 }
   | attempt_stmt { $1 }
   | raise_stmt { $1 }
@@ -391,6 +389,40 @@ type_alias:
     { 
       `AST_type_alias (rstoken $1 $5, snd $2, typecode_of_expr $4) 
     }
+
+  | TYPEDEF FUNCTION NAME fun_args COLON type_expr EQUAL type_expr SEMI
+    {
+      let sr = rstoken $1 $9
+      and name = snd $3 
+      and return_type = typecode_of_expr $6
+      and body = typecode_of_expr $8
+      and args = List.map snd $4 (* elide srcref *)
+      in 
+        let argtyp t = match t with
+        | [] -> failwith "Lambda abstraction requires nonunit parameter"
+        | [x] -> x
+        | x -> `TYP_type_tuple x
+      in
+      let body = 
+        let p = ref (List.rev args) in
+        let r = ref return_type in
+        let b = ref body in
+        while !p <> [] do
+          let arg = List.hd !p in
+          p := List.tl !p;
+          b := `TYP_typefun (arg, !r, !b);
+          r := `TYP_function(argtyp (List.map snd arg),!r)
+        done;
+        !b
+      in
+      `AST_type_alias
+      (
+        sr,
+        name,
+        body
+      )
+    }
+
 
 @head(3,'Export')
 @select(h)
@@ -833,59 +865,6 @@ of the programmers intentions.
 ifgoto_stmt:
   | IF expr GOTO NAME SEMI
     { `AST_ifgoto (rstoken $1 $5,$2,snd $4) }
-/*
-elif_clause:
-  | ELIF expr THEN statement 
-    { 
-      rsrange (slift $1) (src_of_stmt $4), ($2, $4) 
-    }
-
-else_clause:
-  | ELSE statement 
-    { 
-      rsrange (slift $1) (src_of_stmt $2), $2 
-    }
-
-if_clause:
-  | IF expr THEN statement 
-    { 
-      rsrange (slift $1) (src_of_stmt $4),($2, $4) 
-    } 
-
-elif_clauses:
-  | elif_clause elif_clauses { $1 :: $2 }
-  | elif_clause { [$1] }
-
-ifelif_clause:
-  | if_clause elif_clauses { $1 :: $2 }
-  | if_clause { [$1]}
-
-if_stmt: 
-  | ifelif_clause else_clause ENDIF
-    { 
-      `AST_if 
-      (
-        rsrange (fst (List.hd $1)) (fst $2), 
-        $1, 
-        $2
-      )
-    } 
-  | ifelif_clause ENDIF
-    {  
-      `AST_if 
-      (
-        fst (List.hd $1), 
-        $1, 
-        (generated,`AST_nop (generated,""))
-      ) 
-    } 
-*/
-
-@doc()
-The if/then/elif/else constuction provides conditional execution
-of at most one branch; if the else clause is included, then
-exactly one branch is executed. The conditions are tested
-in order of writing.
 
 @head(3,'Attempt/Raise/Except/Finally')
 @select(h)
@@ -1173,6 +1152,7 @@ rvalue:
 
 lambda:
   | tuple { $1 }
+
   | FUNCTION LPAR parameter_comma_list RPAR COLON type_expr EQUAL compound
     {
       `AST_lambda 
@@ -1181,14 +1161,21 @@ lambda:
         ($3, typecode_of_expr $6, snd $8)
       )
     }
-  | LAZY LPAR expr RPAR 
+
+  | FUNCTION LPAR parameter_comma_list RPAR COLON type_expr EQUAL LBRACE expr RBRACE
     {
-      `AST_lazy
+      let sr = rstoken $1 $10 in
+      `AST_lambda 
       (
-        rstoken $1 $4,
-        $3
+        sr,
+        (
+          $3, 
+          typecode_of_expr $6, 
+          [`AST_return (sr,$9)]
+        )
       )
     }
+
   | PROCEDURE LPAR parameter_comma_list RPAR compound
     {
       let sr = rsrange (slift $1) (fst $5) in
@@ -1491,7 +1478,19 @@ qualified_name:
   | atom { $1 }
 
 atom:
-  | LBRACE expr RBRACE     { `AST_lazy (rstoken $1 $3,$2) }
+  | LBRACE expr RBRACE     
+    { 
+      let sr = rstoken $1 $3 in
+      `AST_lambda 
+      (
+        sr,
+        (
+          [],
+          `TYP_none,
+          [`AST_return (sr,$2)]
+        ) 
+      )
+    }
   | match_expr { $1 }
   | compound            
     {

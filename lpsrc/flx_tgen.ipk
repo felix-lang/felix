@@ -117,7 +117,7 @@ let rec register_type_r registry counter dfns bbdfns exclude t =
           short_string_of_src sr
         )
     in
-    match entry with
+    begin match entry with
     | `BBDCL_union cs -> 
       List.iter rr (List.map snd cs);      (* components *)
       rnr t                                (* the union type *)
@@ -143,6 +143,8 @@ let rec register_type_r registry counter dfns bbdfns exclude t =
         "[register_type_r] expected type declaration, got " ^
         string_of_bbdcl dfns entry index
       )
+    end
+  | _ -> failwith "Unexpected metatype in register type"
 
 let mangle_cpp_typename ct =
   let n = String.length ct in
@@ -198,6 +200,7 @@ let rec cpp_typename registry dfns bbdfns t =
         )
     end
   
+  | _ -> failwith "Unexpected metatype in cpp_typename"
   with Not_found -> 
     failwith 
     (
@@ -239,6 +242,7 @@ let rec cpp_classname registry dfns bbdfns t =
         )
     end
   
+  | _ -> failwith "Unexpected metatype in cpp_classname"
   with Not_found -> 
     failwith 
     (
@@ -354,7 +358,7 @@ let gen_type_name registry dfns bbdfns (index,typ) =
       try Hashtbl.find bbdfns index
       with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_int index)
     in
-    match entry with
+    begin match entry with
     | `BBDCL_struct cs ->
       "struct " ^ name ^ ";\n"
     | `BBDCL_union _ -> 
@@ -366,6 +370,8 @@ let gen_type_name registry dfns bbdfns (index,typ) =
         "[gen_type_name] expected type declaration, got " ^
         string_of_bbdcl dfns entry index
       )
+    end
+  | _ -> failwith "Unexpected metatype in gen_type_name"
 
 let gen_type registry dfns bbdfns (index,typ) =
   (*
@@ -478,7 +484,7 @@ let gen_type registry dfns bbdfns (index,typ) =
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_type] can't find index " ^ string_of_int index)
     in
-    match entry with
+    begin match entry with
     | `BBDCL_struct cs ->
       let ctor = 
         let equiv_tuple_type = typeoflist (List.map snd cs) in
@@ -526,6 +532,8 @@ let gen_type registry dfns bbdfns (index,typ) =
         "[gen_typ] expected type declaration, got " ^
         string_of_bbdcl dfns entry index
       )
+    end
+  | _ -> failwith "Unexpected metatype in gen_type"
 
 let gen_type_names registry dfns bbdfns ts = 
   (* print_endline "GENERATING TYPE NAMES"; *)
