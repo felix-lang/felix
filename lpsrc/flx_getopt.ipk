@@ -1,0 +1,164 @@
+@head(1,'Get options')
+@h=tangler('src/flx_getopt.mli')
+@select(h)
+open Flx_types
+
+val parse_option: string -> (string * string) list
+val parse_options: string array -> (string * string) list
+
+val check_key_value : 
+  (string * string) list -> 
+  string-> string ->
+  bool
+
+val check_key: 
+  (string * string) list -> 
+  string ->
+  bool
+
+val check_keys: 
+  (string * string) list -> 
+  string list ->
+  bool
+
+val get_key_value : 
+  (string * string) list -> 
+  string ->
+  string option
+
+val get_key_values : 
+  (string * string) list -> 
+  string ->
+  string list
+
+val get_keys_values : 
+  (string * string) list -> 
+  string list ->
+  string list
+
+@h=tangler('src/flx_getopt.ml')
+@select(h)
+open List
+open Flx_util
+open Flx_types
+
+let parse_option s =
+  let n = String.length s in
+  if n > 1 && s.[0]='-' then 
+    if n > 2 && s.[1]='-' then 
+    begin
+      let j = ref 2 in
+      while !j < n && s.[!j]<>'=' do incr j done;
+      let key = String.sub s 2 (!j - 2) in
+      let value = 
+        if !j<n && s.[!j]='=' then 
+          String.sub s (!j+1) (n - !j - 1)
+        else 
+          ""
+      in
+        [key,value]
+    end 
+    else
+      [String.sub s 1 1, String.sub s 2 (n-2)]
+  else ["",s]
+
+let parse_options argv = 
+  concat (map parse_option (List.tl (Array.to_list argv)))
+
+let get_key_value options key = 
+  catch_all (assoc key) options
+
+let check_key options key = 
+  is_some (get_key_value options key)
+
+let check_keys options keys = 
+  fold_left 
+    (fun b key -> b && (check_key options key) )
+    true keys
+
+let check_key_value options key value =
+  let keyval = key,value in
+  let rec aux = function
+  | [] -> false
+  | h :: t -> if keyval = h then true else aux t
+  in aux options
+
+let get_key_values options key =
+  let values = ref [] in
+  let rec aux  = function
+  | [] ->  !values
+  | (key',value) :: t -> 
+    if key=key' then values := value :: !values;
+    aux t
+  in rev (aux options)
+
+let get_keys_values options keys =
+  concat (map (get_key_values options) keys)
+
+@select(tangler('src/flx_flxopt.mli'))
+open Flx_types
+val get_felix_options:
+  (string * string) list -> 
+  felix_compiler_options_t
+
+val make_syms:
+  felix_compiler_options_t -> sym_state_t
+
+val print_options:
+  unit -> unit
+
+val print_chosen:
+  (string * string) list ->
+  unit
+
+@select(tangler('src/flx_flxopt.ml'))
+open Flx_types
+open Flx_getopt
+
+let print_chosen options =
+  print_endline 
+  (String.concat ", " 
+    (List.map 
+      (fun (a, b) -> 
+        a ^ "=" ^ b
+      )
+      options
+    )
+  )
+ 
+let get_felix_options options =
+  {
+    optimise    = check_keys options ["opt"; "optimise"];
+    debug       = check_key options "debug";
+    include_dirs= get_keys_values options ["I"; "include"];
+    print_flag  = check_keys options ["v"; "verbose"];
+    trace       = check_keys options ["trace" ];
+    files       = get_key_values options "";
+    raw_options = options;
+    reverse_return_parity = check_key options "e"; 
+  }
+
+let print_options () =
+  print_endline "options:";
+  print_endline "  -h, --help : print this help";
+  print_endline "  --version: print version info";
+  print_endline "  -v, --verbose: print symbol table";
+  print_endline "  -q, --quiet: no stdout";
+  print_endline "  -Idir, --include=dir : append dir to include path"
+
+let make_syms options = 
+  {
+    registry = Hashtbl.create 97;
+    counter = ref 1;
+    freg = Hashtbl.create 97;
+    dfns = Hashtbl.create 97;
+    varmap = Hashtbl.create 97;
+    ticache = Hashtbl.create 97;
+    env_cache = Hashtbl.create 97;
+    prim_inst = Hashtbl.create 97;
+    rev_prim_inst = Hashtbl.create 97;
+    instantiated_types = Hashtbl.create 97;
+    compiler_options = options;
+  }
+
+

@@ -1,0 +1,166 @@
+@head(1,"C/C++ typings")
+@h = tangler("src/flx_ctypes.mli")
+@select(h)
+
+type cexpr_t =
+[
+  | `C_atom of string
+  | `C_postfix of string * cexpr_t
+  | `C_prefix of string  * cexpr_t
+  | `C_infix of string * cexpr_t * cexpr_t
+
+  | `C_call of cexpr_t * cexpr_t list
+  | `C_array of cexpr_t * cexpr_t
+  | `C_new of cexpr_t list * string * cexpr_t list
+  | `C_cast of string * cexpr_t
+  | `C_cond of cexpr_t * cexpr_t * cexpr_t 
+]
+
+@h = tangler("src/flx_cexpr.mli")
+@select(h)
+open Flx_ctypes
+val string_of_cexpr : cexpr_t -> string
+
+@h = tangler("src/flx_cexpr.ml")
+@select(h)
+let iter = List.iter
+let map = List.map
+let find = Hashtbl.find
+let strcat = String.concat
+let add = Hashtbl.add
+
+let precedence = [
+"atom";
+"primary";
+"postfix";
+"unary";
+"cast";
+"pm";
+"mult";
+"add";
+"shift";
+"rel";
+"eq";
+"band";
+"bexor";
+"bor";
+"and";
+"xor";
+"or";
+"cond";
+"assign";
+"comma"
+
+]
+
+let postfix_cops = [
+  "++","postfix";
+  "--","postfix";
+]
+
+let prefix_cops = [
+  "~","primary";
+  "+","unary";
+  "-","unary";
+  "!","unary";
+  "&","unary";
+  "*","unary";
+  "++","unary";
+  "--","unary";
+  "sizeof","unary";
+]
+
+let infix_cops = [
+  "+","add";
+  "-","add";
+  "*","mult";
+  "/","mult";
+  "%","mult";
+  "<<","shift";
+  ">>","shift";
+
+  "&","band";
+  "|","bor";
+  "^","bxor";
+
+  "&&","and";
+  "||","or";
+
+  "+=","assign";
+  "-=","assign";
+  "*=","assign";
+  "/=","assign";
+  "%=","assign";
+  "<<=","assign";
+  ">>=","assign";
+  "&=","assign";
+  "|=","assign";
+  "^=","assign";
+
+  "<","rel";
+  ">","rel";
+  ">=","rel";
+  "<=","rel";
+  "==","eq";
+  "!=","eq";
+
+  ".","postfix";
+  "->","postfix";
+  ".*","pm";
+  "->*","pm";
+  ",","comma";
+]
+;;
+
+let prec = Hashtbl.create 17
+let infix = Hashtbl.create 31
+let prefix = Hashtbl.create 17
+let postfix = Hashtbl.create 17
+let seq = ref 0
+;;
+iter (fun x -> add prec x !seq; incr seq) precedence;
+iter (fun (n,p) -> add infix n (find prec p)) infix_cops;
+iter (fun (n,p) -> add infix n (find prec p)) prefix_cops;
+iter (fun (n,p) -> add infix n (find prec p)) postfix_cops
+;;
+
+let pr cop =
+ match cop with
+  | `C_atom _ -> 0
+  | `C_postfix (s,_) -> find postfix s
+  | `C_prefix (s,_) -> find prefix s
+  | `C_infix (s,_,_) -> find infix s
+
+  | `C_call _ 
+  | `C_array _ -> find prec "postfix"
+
+  | `C_new _ -> find prec "unary"
+  | `C_cast _ -> find prec "cast"
+  | `C_cond _ -> find prec "cond"
+
+let commaprec = find prec "comma"
+let rec comma es = "(" ^ strcat ", " (map (cep commaprec) es) ^ ")" 
+and comma_opt = function | [] -> "" | ps -> comma ps
+and cep cp e = 
+  let ep = pr e in
+  let ce e = cep ep e in
+  let need_brackets = ep < cp in
+  (if need_brackets then "(" else "") 
+  ^
+  begin match e with
+    | `C_atom s ->  s
+    | `C_postfix (s,e) -> ce e ^ s
+    | `C_prefix (s,e) -> s ^ ce e
+    | `C_infix (s,e1,e2) -> ce e1 ^ s ^ ce e2
+
+    | `C_call (f,es) -> ce f ^comma es
+    | `C_array (f,e) ->ce f ^ "["^ce e^"]"
+    | `C_new (ps,cls,args) -> 
+      "new" ^ comma_opt ps ^ " " ^ comma_opt args
+    | `C_cast (cast,e) -> cast ^ ce e
+    | `C_cond (e,e1,e2) -> ce e ^ "?" ^ ce e1 ^ ":" ^ ce e2
+  end
+  ^
+  (if need_brackets then ")" else "")
+
+let string_of_cexpr e = cep 1000 e
