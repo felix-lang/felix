@@ -242,5 +242,52 @@ make<BR>
 <A HREF=mailto:skaller@users.sourceforge.net>John Skaller</A>
 </P>
 
+<H1>See also</H1>
+<A HREF=developer.html>Developer Info</A>
+</P>
+
 </BODY>
+
+@select(tangler('www/developer.html','data'))
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+@tangle("<TITLE>Felix Developers Info</TITLE>")
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY>
+<H1>Coding Rules</H1>
+<P>Felix currently requires all original sources
+to be encapsulated in interscript text files.
+</P><P>
+Files must end in either:
+<OL>
+<LI>pak for top level packages</LI>
+<LI>ipk for subcomponents of those packages</LI>
+</OL>
+</P><P>If you have a large data file, or one
+which is an authoritative externally sources work
+such as an academic paper or standards data,
+a special exemption may be made to avoid gratuitious 
+wrapping and tangling, whilst alleviating the customer
+of the need to separately download it.
+</P><P>
+Tabs are not permitted in original sources,
+and they may not be generated with a single
+exception: makefiles, because they're required.
+</P><P>
+The standard shiftwidth is 2.
+Indentation must be systematic.
+Extra indentation is not allowed.
+Exactly one space should be used in flowing text.
+The exact indentation style is up to the individual developer.
+</P><P>
+Text should be constrained to 65 columns where possible.
+Extremely long lines are not allowed in original source (however
+it is OK to generate long lines). All literate
+programmed code should be preformatted for book pages,
+which have very narrow width.
+</P>
+</BODY>
+</HTML>
 

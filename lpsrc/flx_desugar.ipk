@@ -693,7 +693,6 @@ and rst syms name access st : asm_t list =
   | `AST_goto (sr,s) -> [Exe (sr,`EXE_goto s)]
   | `AST_open (sr,name) -> [Dir (sr,DIR_open name)]
   | `AST_use (sr,n,qn) -> [Dir (sr,DIR_use (n,qn))]
-
   | `AST_comment s -> [Exe (generated,`EXE_comment s)]
 
   (* objects *)
@@ -865,6 +864,10 @@ and rst syms name access st : asm_t list =
 
   | `AST_body (sr,name,s, reqs) -> 
     [Dcl (sr,name,access,[],`DCL_body (s, reqs))]
+
+  | `AST_cabs (sr,filename,cabs) -> 
+    [Dcl (sr,filename,access,[],`DCL_cabs cabs)]
+
 
   (* executable *)
   | `AST_fun_return (sr,e) ->

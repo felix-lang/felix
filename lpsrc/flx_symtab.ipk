@@ -41,6 +41,7 @@ open Flx_srcref
 open List
 open Flx_lookup
 open Flx_exceptions
+open Flx_cil_cabs
 
 let split_asms asms : 
   (range_srcref * id_t * access_t * id_t list * dcl_t) list * 
@@ -104,6 +105,64 @@ let add_function syms sr table key value =
       Hashtbl.add table key (FunctionEntry (value :: fs))
   with Not_found -> 
     Hashtbl.add table key (FunctionEntry [value])
+
+let handle_cabs cabs =
+  let is_complete = function | Some _ -> true | None -> false in
+  let is_def fglo = match is_complete fglo with 
+    | true -> "definition" 
+    | false -> "incomplete"
+  in
+  let type_of_se = function
+    | SpecType ts -> 
+      begin match ts with
+      | Tnamed s -> print_endline ("Alias " ^ s)
+      | Tstruct (s,fglo,_) -> 
+        print_endline ("struct " ^ s ^ " " ^ is_def fglo)
+      | Tunion (s,fglo,_) -> 
+        print_endline ("union " ^ s ^ " " ^ is_def fglo)
+      | Tenum (s,fglo,_) -> 
+        print_endline ("enum " ^ s ^ " " ^ is_def fglo)
+      | _ -> ()
+      end
+    | _ -> ()
+  in
+  let types_in sp = List.iter type_of_se sp in
+
+  let rec find_type d =
+    let ns (s,_,_,_) = s in
+    match d with
+    | FUNDEF ((spec,s),b,_,_) -> 
+      print_endline ("fun " ^ns s);
+      types_in spec
+
+    | DECDEF ((spec,ss),_) -> 
+      List.iter 
+      (fun (s,_)-> print_endline ("Decl " ^ ns s)) 
+      ss
+      ;
+      types_in spec
+
+    | TYPEDEF ((sp,ss),_)-> 
+      List.iter 
+      (fun s -> 
+        print_endline ("typedef " ^ ns s);
+      ) 
+      ss
+      ;
+      types_in sp
+     
+    | LINKAGE (s,_,cabs') ->
+      if s = "C"
+      then List.iter find_type cabs'
+      else print_endline ("Unknown linkage " ^s)
+      
+    | ONLYTYPEDEF (spec,_) -> types_in spec
+    | GLOBASM _  
+    | PRAGMA _ 
+    | TRANSFORMER _
+    | EXPRTRANSFORMER _ -> ()
+  in
+  List.iter find_type cabs
 
 (* this routine takes a partially filled unbound definition table,
   'dfns' and a counter 'counter', and adds entries to the table
@@ -305,6 +364,8 @@ let rec build_tables syms name level parent grandparent root asms =
           };
           if access = `Public then add_function pub_name_map id n;
           add_function priv_name_map id n
+
+        | `DCL_cabs cabs -> handle_cabs cabs
 
         | `DCL_module asms ->
           let pubtab,privtab, exes,ifaces,dirs = 

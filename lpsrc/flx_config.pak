@@ -1,6 +1,6 @@
 @head(1,'Configure')
-@CVS_ID='$Id$'
-@print CVS_ID
+@FLX_CONFIG_CVS_ID='$Id$'
+@print FLX_CONFIG_CVS_ID
 
 @h = tangler("tmp/check_cygwin.cxx",'c++')
 @select(h)
@@ -75,6 +75,14 @@ int main(int,char*[]) {
 #include <stdio.h>
 #include <stddef.h>
 
+enum enum_t {e_tag};
+typedef void (*fp_t)(void);
+
+struct BOOL {
+  char x;
+  bool y;
+};
+
 struct SHORT {
   char x;
   short y;
@@ -105,19 +113,59 @@ struct VOIDP {
   void *y;
 };
 
+struct WCHAR {
+  char x;
+  wchar_t y;
+};
+
+struct ENUM {
+  char x;
+  enum_t y;
+};
+
+struct FUNCP {
+  char x;
+  fp_t y;
+};
+
+union endian_t {
+  unsigned long x;
+  unsigned char y[sizeof(unsigned long)];
+} endian;
+
 int main(int,char*[]) { 
+  printf("SIZEOF_SIZEOF=%d\n",sizeof(sizeof(int)));
+  printf("SIZEOF_BOOL=%d\n",sizeof(bool));
   printf("SIZEOF_SHORT=%d\n",sizeof(short));
   printf("SIZEOF_INT=%d\n",sizeof(int));
   printf("SIZEOF_LONG=%d\n",sizeof(long));
+  printf("SIZEOF_LONGLONG=%d\n",sizeof(long)); // fallback
   printf("SIZEOF_FLOAT=%d\n",sizeof(float));
   printf("SIZEOF_DOUBLE=%d\n",sizeof(double));
+  printf("SIZEOF_LONGDOUBLE=%d\n",sizeof(double)); // fallback
+  printf("SIZEOF_WCHAR=%d\n",sizeof(wchar_t));
+  printf("SIZEOF_ENUM=%d\n",sizeof(enum_t));
   printf("SIZEOF_VOIDP=%d\n",sizeof(void*));
+  printf("SIZEOF_FUNCP=%d\n",sizeof(fp_t));
+
+  printf("ALIGNOF_BOOL=%d\n",offsetof(BOOL,y));
   printf("ALIGNOF_SHORT=%d\n",offsetof(SHORT,y));
   printf("ALIGNOF_INT=%d\n",offsetof(INT,y));
   printf("ALIGNOF_LONG=%d\n",offsetof(LONG,y));
+  printf("ALIGNOF_LONGLONG=%d\n",offsetof(LONG,y)); // fallback
   printf("ALIGNOF_FLOAT=%d\n",offsetof(FLOAT,y));
   printf("ALIGNOF_DOUBLE=%d\n",offsetof(DOUBLE,y));
+  printf("ALIGNOF_LONGDOUBLE=%d\n",offsetof(DOUBLE,y)); // fallback
+  printf("ALIGNOF_WCHAR=%d\n",offsetof(WCHAR,y));
+  printf("ALIGNOF_ENUM=%d\n",offsetof(ENUM,y));
+  printf("ALIGNOF_FUNCP=%d\n",offsetof(FUNCP,y));
   printf("ALIGNOF_VOIDP=%d\n",offsetof(VOIDP,y));
+
+  printf("CHAR_IS_UNSIGNED=%d\n",((char)0xFF)>0?1:0);
+  endian.x = 1ul;
+  printf("LITTLE_ENDIAN=%d\n", endian.y[0]);
+  printf("BIG_ENDIAN=%d\n", endian.y[sizeof(unsigned long)-1]);
+
   return 0;
 }
 
@@ -159,11 +207,12 @@ int main(int,char*[]) {
 # config/config.py
 # YOU SHOULD EDIT THIS FILE TO SUIT YOUR REQUIREMENTS
 
-@tangle("CONFIG_GENERATOR_CVS_ID='"+CVS_ID+"'")
+@tangle("CONFIG_GENERATOR_CVS_ID='"+FLX_CONFIG_CVS_ID+"'")
 print CONFIG_GENERATOR_CVS_ID
 import sys
 import os
 import traceback
+import string
 
 class Error: pass
 this = sys.modules[__name__]
@@ -214,6 +263,7 @@ def get_stdout(x):
   f = os.popen(x,"r")
   output = f.readlines()
   result = f.close()
+  if not result: result = 0
   return result,output
 
 
@@ -296,18 +346,66 @@ OCAML_INCLUDE_DIRECTORY= x[0][0:-1]
 #---------------------------------------------------
 # Discover C/C++ compilers, linker, and other 'binutils'
 
+# find if we have MSVC++
+try:
+  xqt("cl tmp/dummy.cxx /Fetmp/dummy_ms.exe")
+  MSVC="cl "
+  HAVE_MSVC = 1
+except:
+  MSVC="#cl "
+  HAVE_MSVC = 0
+  
+# find if we have cpp
+try:
+  xqt("cpp tmp/dummyc.c tmp/dummy_cpp.out")
+  CPP = "cpp " 
+  HAVE_CPP = 1
+except:
+  HAVE_CPP = 0
+
+# find if we have gcc
+try:
+  xqt("gcc -w -c tmp/dummyc.c -o tmp/dummy.o")
+  GCC = "gcc " 
+  HAVE_GCC = 1
+except:
+  HAVE_GCC = 0
+
 # find if we have g++
 try:
   xqt("g++ -w -c tmp/dummy.cxx -o tmp/dummy.o")
-  CXX = "g++ " 
+  GXX = "g++ " 
+  HAVE_GXX = 1
 except:
-  # just call the system CC if we don't have g++
-  try:
-    xqt("CC -c tmp/dummy.cxx -o tmp/dummy.o")
-    CXX= "CC "
-  except:
-    print "WARNING: CANT FIND C++ COMPILER"
-    CXX="#CC "
+  HAVE_GXX = 0
+
+# find if we have cc
+try:
+  xqt("cc -c tmp/dummyc.c -o tmp/dummy.o")
+  CC = "cc "
+  HAVE_CC=1
+except:
+  HAVE_CC = 0
+
+# find if we have CC (not 'cc' but 'CC')
+try:
+  xqt("CC -c tmp/dummy.cxx -o tmp/dummy.o")
+  CCCC = "CC "
+  HAVE_CCCC=1
+except:
+  HAVE_CCCC = 0
+
+# choose compiler
+if HAVE_MSVC: CXX = MSVC
+elif HAVE_GXX: CXX = GXX
+elif HAVE_CCCC: CXX = CCCC
+else:
+  CXX = "#g++ "
+  print "WARNING: CANT FIND C++ COMPILER"
+
+# set preprocessor
+if not HAVE_CPP:
+  CPP = CXX + "-E "
 
 # find if we have CYGWIN
 try:
@@ -315,6 +413,23 @@ try:
   CYGWIN=1
 except:
   CYGWIN=0
+
+# find if we have pkg-config
+if 1:
+  result,output=get_stdout("pkg-config --list-all")
+  if result==0:
+    HAVE_PKGCONFIG=1
+    PKGCONFIG_PACKAGES = {}
+    for line in output:
+      w = string.index(line,' ')
+      if w != -1:
+        key = line[0:w]
+        data= line[w:-1]
+        data = string.strip(data)
+        PKGCONFIG_PACKAGES[key]=data
+  else:
+    HAVE_PKGCONFIG=0
+    PKGCONFIG_PACKAGES = {}
 
 # set C++ compilation commands
 # for CYGWIN, this isn't enough, it needs to generate
@@ -421,8 +536,9 @@ try:
   xxqt("tmp/intsizes > tmp/intsizes.py")
   execfile("tmp/intsizes.py")
 except:
-  pass
-
+  print "FATAL: can't determine sizes of ints"
+  sys.exit(1)
+  
 # find if we have long long
 try:
   xqt("g++ -w tmp/longlong.cxx -o tmp/longlong")
@@ -459,6 +575,10 @@ def p(f,s):
   x = s + "=" + repr(getattr(this,s))
   pr(f,x)
 
+def pne(f,s):
+  x = s + "=" + repr(getattr(this,s))
+  f.write(x+"\n")
+
 try:
   try: os.mkdir("config")
   except: pass
@@ -477,6 +597,14 @@ try:
   p(f,"OCAML_INCLUDE_DIRECTORY")
   pr(f,"")
   pr(f,"#C++ tools")
+  p(f,"HAVE_CPP")
+  p(f,"HAVE_CC")
+  p(f,"HAVE_CCCC")
+  p(f,"HAVE_MSVC")
+  p(f,"HAVE_GXX")
+  p(f,"HAVE_PKGCONFIG")
+  p(f,"CXX")
+  p(f,"CPP")
   p(f,"STRIP")
   p(f,"AR")
   p(f,"RANLIB")
@@ -491,32 +619,49 @@ try:
   p(f,"CCOPT1")
   p(f,"CCOPT2")
   pr(f,"")
+
   pr(f,"# Data types")
   p(f,"HAVE_STDINT")
   p(f,"HAVE_LONGLONG")
   p(f,"HAVE_LONGDOUBLE")
+
+  p(f,"SIZEOF_SIZEOF")
+  p(f,"SIZEOF_BOOL")
   p(f,"SIZEOF_SHORT")
   p(f,"SIZEOF_INT")
   p(f,"SIZEOF_LONG")
   p(f,"SIZEOF_FLOAT")
   p(f,"SIZEOF_DOUBLE")
   p(f,"SIZEOF_VOIDP")
+  p(f,"SIZEOF_WCHAR")
+  p(f,"SIZEOF_ENUM")
+  p(f,"SIZEOF_FUNCP")
+
+  p(f,"ALIGNOF_BOOL")
   p(f,"ALIGNOF_SHORT")
   p(f,"ALIGNOF_INT")
   p(f,"ALIGNOF_LONG")
   p(f,"ALIGNOF_FLOAT")
   p(f,"ALIGNOF_DOUBLE")
   p(f,"ALIGNOF_VOIDP")
-  if HAVE_LONGLONG:
-    p(f,"SIZEOF_LONGLONG")
-    p(f,"ALIGNOF_LONGLONG")
+  p(f,"ALIGNOF_WCHAR")
+  p(f,"ALIGNOF_ENUM")
+  p(f,"ALIGNOF_FUNCP")
 
-  if HAVE_LONGDOUBLE:
-    p(f,"SIZEOF_LONGDOUBLE")
-    p(f,"ALIGNOF_LONGDOUBLE")
+  p(f,"SIZEOF_LONGLONG")
+  p(f,"ALIGNOF_LONGLONG")
+
+  p(f,"SIZEOF_LONGDOUBLE")
+  p(f,"ALIGNOF_LONGDOUBLE")
 
   p(f,"HAVE_ISNAN_IN_CMATH")
   p(f,"HAVE_ISNANF_IN_IEEEFP")
+
+  p(f,"CHAR_IS_UNSIGNED")
+  p(f,"LITTLE_ENDIAN")
+  p(f,"BIG_ENDIAN")
+  p(f,"HAVE_PKGCONFIG")
+  pne(f,"PKGCONFIG_PACKAGES")
 
   pr(f,"")
   pr(f,"#User configurable section")

@@ -18,6 +18,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | CSTRING (sr,s) -> Flx_string.c_quote_of_string s 
   | WSTRING (sr,s) -> Flx_string.c_quote_of_string s 
   | USTRING (sr,s) -> Flx_string.c_quote_of_string s 
+  | CABS (sr,s,_) -> "#cinclude " ^ s
 
   (* one character tokens *)
   | DOLLAR _ -> "$" 
@@ -119,6 +120,7 @@ let src_of_token t = match t with
   | CSTRING  (s,_)
   | WSTRING  (s,_)
   | USTRING  (s,_)
+  | CABS (s,_,_)
 
   | ERRORTOKEN (s,_) 
 
@@ -714,50 +716,72 @@ let undivert_directive state sr s lexer =
   ;
   []
 
-
-let include_directive is_import state sr s pre_flx_lex lexbuf =
+let find_include_file state s sr =
   if s.[0]<>'"' && s.[0]<>'<'
   then clierr sr "'\"' or '<' required after #include"
-  else begin
-    let rquote = if s.[0]='"' then '"' else '>' in
-    let i = ref 1 in
-    let j = !i in
-    while s.[!i]<>rquote && s.[!i]<>'\n' do incr i done;
+  ;
+  let rquote = if s.[0]='"' then '"' else '>' in
+  let i = ref 1 in
+  let j = !i in
+  while s.[!i]<>rquote && s.[!i]<>'\n' do incr i done
+  ;
 
-    if s.[!i]='\n'
-    then clierr sr "double quote required after filename in #include directive"
-    else begin
-      let filename = String.sub s j (!i-j) in
-      let filename=
-        if rquote = '"'
-        then state#get_relative filename 
-        else state#get_absolute filename
-      in
+  if s.[!i]='\n'
+  then clierr sr "double quote required after filename in #include directive"
+  ;
+  let filename = String.sub s j (!i-j) in
+  let filename=
+    if rquote = '"'
+    then state#get_relative filename 
+    else state#get_absolute filename
+  in
+    (* 
+      print_endline (
+      "//Resolved in path: \"" ^ filename ^ "\""
+    );
+    *)
+    filename
 
-      (* print_endline (
-        "INCLUDING FILE \"" ^ filename ^ "\""
-      );
-      *)
+let include_directive is_import state sr s pre_flx_lex lexbuf =
+  let filename = find_include_file state s sr in
+  let pre_tokens_of_filename filename =
+  let incdirs = state#get_incdirs in
+  let basedir = Filename.dirname filename in
+  let state' = new lexer_state filename basedir incdirs in
+  let infile = open_in filename in
+  let src = Lexing.from_channel infile in
+  let toks = pre_tokens_of_lexbuf pre_flx_lex src state' in
+    close_in infile; 
+    if is_import then begin
+      try state#add_macros state'
+      with Duplicate_macro k -> clierr sr 
+      ("Duplicate Macro " ^ k ^ " imported")
+    end;
+    toks
 
-      let pre_tokens_of_filename filename =
-        let incdirs = state#get_incdirs in
-        let basedir = Filename.dirname filename in
-        let state' = new lexer_state filename basedir incdirs in
-        let infile = open_in filename in
-        let src = Lexing.from_channel infile in
-        let toks = pre_tokens_of_lexbuf pre_flx_lex src state' in
-          close_in infile; 
-          if is_import then begin
-            try state#add_macros state'
-            with Duplicate_macro k -> clierr sr 
-            ("Duplicate Macro " ^ k ^ " imported")
-          end;
-          toks
+ in
+   pre_tokens_of_filename filename
 
-       in
-         pre_tokens_of_filename filename
+let cinclude_directive state sr s pre_flx_lex lexbuf =
+  let filename = find_include_file state s sr in
+  let tmpfile = Filename.temp_file "flx" ".h" in
+  let incdirs = state#get_incdirs in
+  let flags = catmap "" (fun s -> " -I"^s) incdirs in
+@tangle('  let cmd = "'+CPP+'" ^ flags ^ " "^filename^"> " ^ tmpfile in')
+  let result = Unix.system cmd in
+  match result with
+  | Unix.WEXITED 0 ->
+    begin
+      let lexbuf' = Flx_cil_clexer.init tmpfile in
+      let cabs = Flx_cil_cparser.file Flx_cil_clexer.initial lexbuf' in
+      Flx_cil_clexer.finish();
+      Unix.unlink tmpfile;
+      let sr = match sr with (f,l1,c1,l2,c2) -> f,l1,c1,c2 in
+      [CABS (sr,filename,cabs)]
     end
-  end 
+  | _ -> syserr sr ("C preprocessing error: " ^ cmd)
+  
+
 
 } 
 
@@ -1290,6 +1314,13 @@ and parse_preprocessor state = parse
       begin match state#get_condition with
       | `Processing ->
         include_directive is_import state sr s pre_flx_lex lexbuf
+      | _ -> []
+      end
+
+    | "cinclude" -> 
+      begin match state#get_condition with
+      | `Processing ->
+        cinclude_directive state sr s pre_flx_lex lexbuf
       | _ -> []
       end
 

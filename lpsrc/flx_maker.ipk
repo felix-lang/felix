@@ -1,12 +1,113 @@
 @head(1,'Maker')
+@FLX_MAKER_CVS_ID='$Id$'
+@print FLX_MAKER_CVS_ID
+
+@h = tangler('script/detab.py','python')
+@select(h)
+import string
+import sys
+
+f = open(sys.argv[1])
+data = f.readlines()
+f.close()
+f = open(sys.argv[1],"w")
+for line in data:
+  line = string.expandtabs(line)
+  f.write(line)
+f.close()
+
+@h = tangler('script/mkcil.py','python')
+@select(h)
+
+import string
+import os
+
+prefix = '/usr/local/src/cil/'
+files = [
+  'src/check.ml',
+  'src/check.mli',
+  'src/cil.ml',
+  'src/cil.mli',
+  'src/cilutil.ml',
+  'src/clist.ml',
+  'src/clist.mli',
+  'src/escape.ml',
+  'src/escape.mli',
+  'src/formatcil.ml',
+  'src/formatcil.mli',
+  'src/formatlex.mll',
+  'src/formatparse.mly',
+  'src/libmaincil.ml',
+  'src/maincil.ml',
+  'src/mergecil.ml',
+  'src/mergecil.mli',
+  'src/rmtmps.ml',
+  'src/rmtmps.mli',
+  'src/testcil.ml',
+  'src/frontc/cabs2cil.ml',
+  'src/frontc/cabs2cil.mli',
+  'src/frontc/cabs.ml',
+  'src/frontc/cabsvisit.ml',
+  'src/frontc/cabsvisit.mli',
+  'src/frontc/clexer.mli',
+  'src/frontc/clexer.mll',
+  'src/frontc/cparser.mly',
+  'src/frontc/cprint.ml',
+  'src/frontc/frontc.ml',
+  'src/frontc/frontc.mli',
+  'src/frontc/lexerhack.ml',
+  'src/frontc/patch.ml',
+  'src/frontc/patch.mli',
+  'ocamlutil/errormsg.ml',
+  'ocamlutil/errormsg.mli',
+  'ocamlutil/inthash.ml',
+  'ocamlutil/pretty.ml',
+  'ocamlutil/pretty.mli',
+  'ocamlutil/stats.ml',
+  'ocamlutil/stats.mli',
+  'ocamlutil/trace.ml',
+  'ocamlutil/trace.mli',
+  'ocamlutil/util.ml',
+  'ocamlutil/util.mli',
+]
+
+mods = {}
+tgts = [] 
+
+for fn in files:
+  parts = string.split(fn,'/')
+  base = parts[-1]
+  target = 'src/flx_cil_'+base
+  tgts.append((prefix+fn,target))
+  i = string.index(base,'.')
+  m = base[:i]
+  mods[string.capitalize(m)]='Flx_cil_' + m
+
+ms = mods.keys()
+for k in ms:
+  print mods[k]
+
+print "@head(1,'CIL')"
+for fn,tgt in tgts:
+  print "@h=tangler('"+tgt+"')"
+  print "@select(h)"
+  f = open(fn)
+  data = f.readlines()
+  f.close()
+  for line in data:
+    line = string.expandtabs(line)
+    for s in ms:
+      r = mods[s]
+      line = string.replace(line,s,r)
+    print line,
+      
 @h = tangler('script/maker','python')
 @select(h)
 #!/usr/bin/env python
 ###############################################################
 # FELIX MAKE SCRIPT
 ###############################################################
-CVSDATA = '$Header$'
-
+@tangle("FLX_MAKER_CVS_ID='"+FLX_MAKER_CVS_ID+"'")
 import os
 import stat
 import string
@@ -288,25 +389,49 @@ FLX_GC_SRC='src/'
 # ------------------------------------------------
 
 # files containing ocamllex sources
-LEXS = ['flx_clexer','flx_lex']
+LEXS = ['flx_cil_clexer','flx_cil_formatlex','flx_lex']
 
 # files containing ocamlyacc sources
-PARSES = ['flx_cparser','flx_parse']
+PARSES = ['flx_cil_cparser','flx_cil_formatparse','flx_parse']
 
 # ocaml modules = interfaces + implementation files
 
 MODULES = [
   'flx_version'      ,
   'flx_ctype'        ,
-  'flx_frontc_escape' ,
-  'flx_frontc_cprint' ,
-  'flx_frontc_pretty' ,
-  'flx_frontc_errormsg' ,
-  'flx_cabs_helper' ,
-  'flx_cparser'      ,
-  'flx_clexer'       ,
+  'flx_cil_cilversion',
+  'flx_cil_machdep',
+  'flx_cil_pretty',
+  'flx_cil_errormsg',
+  'flx_cil_cabs_helper',
+  'flx_cil_lexerhack',
+  'flx_cil_escape',
+  'flx_cil_cprint',
+  'flx_cil_cparser',
+  'flx_cil_clexer',
+  'flx_cil_stats',
+  'flx_cil_trace',
+  'flx_cil_clist',
+  'flx_cil_cil',
+  'flx_cil_frontc',
+  'flx_cil_rmtmps',
+  'flx_cil_cabsvisit',
+  'flx_cil_inthash',
+  #'flx_cil_testcil',
+  'flx_cil_formatparse',
+  'flx_cil_formatlex',
+  #'flx_cil_libmaincil',
+  'flx_cil_util',
+  'flx_cil_mergecil',
+  'flx_cil_patch',
+  'flx_cil_formatcil',
+  'flx_cil_cilutil',
+  'flx_cil_cabs2cil',
+  #'flx_cil_maincil',
+  'flx_cil_check',
   'flx_util'         ,
   'flx_getopt'       ,
+  'flx_mtypes1'      ,
   'flx_mtypes2'      ,
   'flx_srcref'       ,
   'flx_typing'       ,
@@ -358,16 +483,18 @@ MODULES = [
   'flx_terminate'    , 
 ]
 
-INTERFACES = [
-  'flx_cabs'         ,
-  'flx_mtypes1'      ,
+RAW_INTERFACES = [
+  'flx_cil_machdep_type',
+  'flx_cil_cabs',
   'flx_ast'          ,
   'flx_types'        ,
   'flx_ctypes'       ,
-] + MODULES
+] 
 
-IMPLEMENTATIONS = ['flx_mtypes1'] + MODULES
+INTERFACES = RAW_INTERFACES + MODULES
 
+IMPLEMENTATIONS = INTERFACES
+  
 RTL_CPPS = [
   "rtl/flx_gc",
   "rtl/flx_collector",
@@ -439,8 +566,10 @@ class MakeError: pass
 
 def filetime(f):
   try:
-    return os.stat(f)[stat.ST_MTIME]
-  except: return 0
+    t = os.stat(f)[stat.ST_MTIME]
+  except:
+    t = 0
+  return t
 
 def run(x):
   print x
@@ -465,15 +594,23 @@ buildall = "clean" in options or "force" in options
 stop_on_error = "stop_on_error" in options
 import glob
 
+def copy_mli2ml():
+  for f in RAW_INTERFACES:
+    if filetime("src/"+f+".mli") > filetime("src/"+f+".cmi"):
+      os.system("cp src/"+f+".mli src/"+f+".ml")
+
+
 try:
   # STEP 0: run interscript
   if "doc" in options:
     runISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
+    copy_mli2ml()
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_macro.pak')
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_bind.pak')
   elif "extract" in options:
     runISCR('lpsrc/flx.pak')
+    copy_mli2ml()
     runISCR('lpsrc/flx_tutorial.pak')
     runISCR('lpsrc/flx_tut_macro.pak')
     runISCR('lpsrc/flx_tut_bind.pak')
@@ -1073,7 +1210,7 @@ We have no idea if it continues copying.
 @tangle('')
 
 @tangle('dummy:')
-@tangle('\t#felix make')
+@tangle('\t#'+FLX_MAKER_CVS_ID)
 @tangle('')
 @tangle("# These targets are for SKALLER only")
 @tangle("# they're used to upload stuff to sourceforge")

@@ -293,6 +293,12 @@ publish "Universal type 'x as x'"
 publish "Array type"
   typedef array[t,n] = t ^ n;
 
+publish "Array access: works on LHS of assignment too"
+fun subscript[t,n]: array[t, n] * int -> t = "$1.data[$2]";
+
+publish "Explicit array store function"
+proc store[t,n]: &array[t,n] * int * t = "((?1*)($1.data))[$2]=$3;";
+
 publish "Bool compatible with C"
 module Bool 
 {
