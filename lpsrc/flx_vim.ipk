@@ -20,7 +20,6 @@ endif
 " all the felix keywords ..
 " directives
 syn keyword cDefine open
-syn keyword cDefine define
 syn keyword cDefine use
 syn keyword cDefine include
 syn keyword cDefine header
