@@ -446,7 +446,6 @@ and statement_t =
   | `AST_body of range_srcref * string * string * requirements_t
   | `AST_code of range_srcref * string
   | `AST_noreturn_code of range_srcref * string
-  | `AST_cabs of range_srcref * string * Flx_cil_cabs.definition list
 
   | `AST_export_fun of range_srcref * suffixed_name_t * string
   | `AST_export_type of range_srcref * typecode_t * string
@@ -525,7 +524,6 @@ type dcl_t =
   [
   | `DCL_header of string * requirements_t
   | `DCL_body of string * requirements_t
-  | `DCL_cabs of Flx_cil_cabs.definition list
 
   (* data structures *)
   | `DCL_function of     parameter_t list * typecode_t * property_t list * asm_t list
@@ -984,7 +982,6 @@ let src_of_expr (e : expr_t) = match e with
     -> s
 
 let src_of_stmt e = match e with
-  | `AST_cabs (s,_,_)
   | `AST_public (s,_,_)
   | `AST_private (s,_)
   | `AST_label (s,_)
@@ -1971,10 +1968,6 @@ and string_of_statement level s =
      string_of_reqs reqs ^
     ";\n"
 
-  | `AST_cabs (_,filename,_) ->
-     spaces level ^
-     "#cinclude " ^ filename
-
   | `AST_code (_,s) -> let triple_quote = "\"\"\"" in
     "code \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
     ";\n"
@@ -2479,9 +2472,6 @@ and string_of_bexe dfns level s =
 and string_of_dcl level name vs (s:dcl_t) = 
   let se e = string_of_expr e in
   match s with
-  | `DCL_cabs cabs -> 
-    spaces level ^ "#cinclude " ^ name ^ "\n"
-
   | `DCL_regdef re -> 
     spaces level ^ "regexp " ^ name ^ " = " ^ string_of_re re ^ ";\n"
 

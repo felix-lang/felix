@@ -142,7 +142,6 @@ let mktypefun sr name vs args return_type body =
 @select(h)
 /* special */
 %token<Flx_ast.srcref * string> ERRORTOKEN
-%token<Flx_ast.srcref * string * Flx_cil_cabs.definition list> CABS
 
 /* whitespace */
 %token NEWLINE 
@@ -256,7 +255,6 @@ binding_definition:
   | const_def { $1 }
   | binding_header { $1 }
   | export_statement { $1 }
-  | cabs { $1 }
 
 publish:
   | PUBLISH STRING binding_definition 
@@ -306,13 +304,6 @@ inclusion:
       `AST_include (sr, snd $2) 
     }
  
-cabs:
-  | CABS
-    {
-      match $1 with sr,filename,cabs ->
-      `AST_cabs (slift sr,filename,cabs)
-    }
-
 @head(2,"Regular definitions")
 @select(h)
 

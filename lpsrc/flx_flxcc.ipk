@@ -53,13 +53,14 @@ type control_t = {
   mutable raw_include_dirs : StringSet.t;
   mutable include_path: string list;
   mutable noincludes: string list;
-  merge_files: (string,string) Hashtbl.t;
-  rev_merge_files: (string,string list) Hashtbl.t;
+  mutable merge_files: (string * string) list;
+  mutable rev_merge_files: (string,string list) Hashtbl.t;
   mutable outdir: string;
+  mutable repl_prefix: (string * string) list;
   stabs : (string,stab_t) Hashtbl.t;
   all_types : (string,string) Hashtbl.t;
   incomplete_types_cache: (string,string * string list) Hashtbl.t;
-  files: (string,string) Hashtbl.t;
+  mutable files: StringSet.t;
   replacements : (string,string) Hashtbl.t;
   rejects: (string,unit) Hashtbl.t;
   mutable root_includes: string list;
@@ -72,19 +73,20 @@ let control = {
   control_filename = Sys.argv.(1);
   prein_filename = "flxcc_prein.h";
   preout_filename = "flxcc_preout.hhh";
-  language = `Cxx;
+  language = `C;
 @tangle('  preprocessor ="'+FLXCC_CPP+'";')
   noincludes = [];
   raw_includes = StringSet.empty;
   raw_include_dirs = StringSet.empty;
   include_path = [];
-  merge_files = Hashtbl.create 97;
+  merge_files = [];
   rev_merge_files = Hashtbl.create 97;
   outdir = "flxcc_out";
+  repl_prefix = [];
   stabs  = Hashtbl.create 97;
   all_types = Hashtbl.create 97;
   incomplete_types_cache = Hashtbl.create 97;
-  files = Hashtbl.create 97;
+  files = StringSet.empty;
   replacements = Hashtbl.create 97;
   rejects = Hashtbl.create 97;
   root_rec_includes = [];
@@ -111,11 +113,6 @@ let control = {
   references to non-existent Felix modules.
 *)
 
-let map_filename f = 
-  try Hashtbl.find control.merge_files f 
-  with Not_found -> f
-;;
-
 let rec glob dir recurse level =
   if not (mem dir control.root_excludes) then
   let spaces = String.make level ' ' in
@@ -132,8 +129,11 @@ let rec glob dir recurse level =
           in
           match st.Unix.st_kind with
           | Unix.S_REG ->
-            if not (mem path control.root_excludes) then
-            control.raw_includes <- StringSet.add path control.raw_includes
+            if not (mem path control.root_excludes) 
+            then begin
+              control.raw_includes <- StringSet.add path control.raw_includes;
+              control.files <- StringSet.add path control.files
+            end
             
           | Unix.S_DIR ->
             if recurse then
@@ -285,6 +285,25 @@ let rec parse_control_file filename =
             control.root_excludes<- fn :: control.root_excludes;
             raise Next
 
+          | "prefix" ->
+            while !i < n && line.[!i]=' ' do incr i done;
+            if !i = n then failwith "prefix statement requires filename";
+            let j = !i in
+            while !i < n && line.[!i]<>' ' do incr i done;
+            let fn1 = String.sub line j (!i-j) in
+
+            while !i < n && line.[!i]=' ' do incr i done;
+            let fn2 =
+              if !i = n then "" 
+              else begin
+                let j = !i in
+                while !i < n && line.[!i]<>' ' do incr i done;
+                String.sub line j (!i-j)
+              end
+            in
+            control.repl_prefix <- (fn1, fn2) :: control.repl_prefix;
+            raise Next
+
           | "merge" ->
             while !i < n && line.[!i]=' ' do incr i done;
             if !i = n then failwith "merge statement requires filename";
@@ -297,7 +316,7 @@ let rec parse_control_file filename =
             let j = !i in
             while !i < n && line.[!i]<>' ' do incr i done;
             let fn2 = String.sub line j (!i-j) in
-            Hashtbl.add control.merge_files fn1 fn2;
+            control.merge_files <- (fn1,fn2) :: control.merge_files;
             let x = 
               try Hashtbl.find control.rev_merge_files fn2 
               with Not_found -> [] 
@@ -458,42 +477,6 @@ let type_of_se = function
 let types_in sp = List.iter type_of_se sp
 ;;
 
-let rec find_type d = match d with
- | FUNDEF ((spec,s),b,_,_) -> 
-   print_endline ("fun " ^ns s);
-   types_in spec
-
- | DECDEF ((spec,ss),_) -> 
-   List.iter 
-   (fun (s,_)-> print_endline ("Decl " ^ ns s)) 
-   ss
-   ;
-   types_in spec
-
- | TYPEDEF ((sp,ss),_)-> 
-   List.iter 
-   (fun s -> 
-     print_endline ("typedef " ^ ns s);
-   ) 
-   ss
-   ;
-   types_in sp
-   
- | LINKAGE (s,_,cabs') ->
-   if s = "C"
-   then List.iter find_type cabs'
-   else print_endline ("Unknown linkage " ^s)
-
- | ONLYTYPEDEF (spec,_) -> types_in spec
- | GLOBASM _  
- | PRAGMA _ 
- | TRANSFORMER _
- | EXPRTRANSFORMER _ -> ()
-;;
-(*
-List.iter find_type cabs ;;
-*)
-
 let cil = Flx_cil_cabs2cil.convFile (control.preout_filename, cabs)
 ;;
 
@@ -509,17 +492,6 @@ let {fileName=f; globals=gs} = cil
 let excludes : string list ref = ref
 [
 ]
-;;
-
-let exclude_prefixes = ref [] (*"/usr/include/bits/"; "/usr/include/asm/"] *)
-;;
-let exclude_file f =
-  let rec aux ts = match ts with
-  | [] -> false
-  | h :: t -> if isprefix h f then true else aux t
-  in 
-    aux !exclude_prefixes ||
-    mem f !excludes
 ;;
 
 let rplname s = 
@@ -753,12 +725,88 @@ let rec isanont t =  match t with
 | TBuiltin_va_list _ -> false
 
 
+let chop_extension f =
+  let b = Filename.basename f in
+  let d = Filename.dirname f in
+  let b = try Filename.chop_extension b with _ -> b in
+  if d = "." then b else Filename.concat d b
+;;
 
-let mk_stab cfile flxfile flxinclude flxmodule = {
+let replace_prefix x ls =
+  let x = ref x in
+  iter
+  (fun (a,b) ->
+    if isprefix a !x then
+    let n = String.length a in
+    let m = String.length !x in
+    x := b ^ String.sub !x n (m-n)
+  )
+  ls
+  ;
+  !x
+;;
+let map_filename f = 
+  let f = replace_prefix f control.merge_files in
+  f
+;;
+
+
+let flxinclude_of_cfile cfilename =
+  let x = map_filename cfilename in
+  let x = replace_prefix x control.repl_prefix in
+  let x = chop_extension x ^ "_lib" in
+  let x = if isprefix "/" x then String.sub x 1 (String.length x - 1) else x in
+  let x = if isprefix "." x then String.sub x 1 (String.length x - 1) else x in
+  x
+;;
+
+let flxfile_of_cfile cfilename =
+  let base = flxinclude_of_cfile cfilename in
+  Filename.concat (control.outdir)  (base ^ ".flx")
+;;
+
+let module_of_cfilename s = 
+  let module_of_filename fname =
+    let x = String.copy fname in
+    let srepl s c1 c2 =
+      for i = 0 to String.length s - 1 do
+        if s.[i]=c1 then s.[i] <- c2
+      done
+    in
+    let fixup x =
+      srepl x '.' '_';
+      srepl x ' ' '_';
+      srepl x '/' '_';
+      srepl x '-' '_';
+      srepl x '+' '_';
+    in
+    let mname = 
+      try 
+        let x = (chop_extension x) in
+        let x = 
+          let m = String.length x in
+          if m>0 && x.[0] = '/' then String.sub x 1 (m-1) else x
+        in
+        fixup x;
+        x ^ "_h"
+      with Invalid_argument _ ->
+        print_endline ("Weird (C++??) filename " ^ fname ^ " without extension");
+        fixup x;
+        x
+    in rplname mname (* apply user renaming to modules too *)
+  in
+  let s = map_filename s in
+  let s = replace_prefix s control.repl_prefix in
+  module_of_filename s
+
+;;
+
+let mk_stab cfile = 
+{
   stab_cfile = cfile;
-  stab_flxfile = flxfile;
-  stab_flxinclude = flxinclude;
-  stab_module = flxmodule;
+  stab_flxfile = flxfile_of_cfile cfile;
+  stab_flxinclude = flxinclude_of_cfile cfile;
+  stab_module = module_of_cfilename cfile;
 
   aliases= Hashtbl.create 97;
   struct_aliases= Hashtbl.create 97;
@@ -779,61 +827,12 @@ let mk_stab cfile flxfile flxinclude flxmodule = {
 }
 ;;
 
-let chop_extension f =
-  let b = Filename.basename f in
-  let d = Filename.dirname f in
-  let b = try Filename.chop_extension b with _ -> b in
-  if d = "." then b else Filename.concat d b
-;;
-
-let flxinclude_of_cfile cfilename =
-  let x = chop_extension cfilename ^ "_lib" in
-  String.sub x 1 (String.length x - 1)
-;;
-
-let flxfile_of_cfile cfilename =
-  let base = flxinclude_of_cfile cfilename in
-  Filename.concat (control.outdir)  (base ^ ".flx")
-;;
-
-let module_of_filename fname =
-  let x = String.copy fname in
-  let srepl s c1 c2 =
-    for i = 0 to String.length s - 1 do
-      if s.[i]=c1 then s.[i] <- c2
-    done
-  in
-  let fixup x =
-    srepl x '.' '_';
-    srepl x ' ' '_';
-    srepl x '/' '_';
-    srepl x '-' '_';
-    srepl x '+' '_';
-  in
-  try 
-    let x = (chop_extension x) in
-    let x = 
-      let m = String.length x in
-      if m>0 && x.[0] = '/' then String.sub x 1 (m-1) else x
-    in
-    fixup x;
-    x ^ "_h"
-  with Invalid_argument _ ->
-    print_endline ("Weird (C++??) filename " ^ fname ^ " without extension");
-    fixup x;
-    x
-;;
-
 let getstab s = 
-  let s = map_filename s in
-  try Hashtbl.find control.stabs s 
+  let lfn = map_filename s in
+  try Hashtbl.find control.stabs lfn
   with Not_found ->
-    let x = mk_stab s 
-      (flxfile_of_cfile s) 
-      (flxinclude_of_cfile s) 
-      (module_of_filename s) 
-    in
-    Hashtbl.add control.stabs s x;
+    let x = mk_stab s in
+    Hashtbl.add control.stabs lfn x;
     x
 ;;
 
@@ -844,7 +843,7 @@ let getreg {file=s} =
 
 
 let rpl {file=s} which = 
-  let stab = (getstab s) in
+  let stab = getstab s in
   match which with
   | `aliases (k,v) -> 
     Hashtbl.replace stab.aliases k v;
@@ -872,31 +871,11 @@ let ispublic s =
 
 
 let add_file fname =
-  if not (exclude_file fname) then
-  let m = module_of_filename fname in
-  if not (Hashtbl.mem control.files m) then
-    Hashtbl.add control.files m fname
-  else 
-    let existing_fname = Hashtbl.find control.files m in
-    if not (fname = existing_fname) then 
-    begin
-      print_endline
-      (
-        "Duplicate module name " ^ m ^
-        " for files \n" ^
-        "Existing file: " ^ existing_fname ^ "\n" ^
-        "Excluding new file: " ^ fname ^ "\n"
-      );
-      excludes := fname :: !excludes
-    end
+  control.files <- StringSet.add fname control.files
 ;;
 
 let add_loc {file=fname} = 
   add_file fname
-;;
-
-let filename_of_module m =
-  Hashtbl.find control.files m
 ;;
 
 List.iter
@@ -1013,11 +992,15 @@ List.iter
       in
       rpl loc (`procedures (key, (args,key'^"($a);")))
 
+    | TFun (TVoid _,None,false,a) ->
+      let args = "1" in
+      rpl loc (`procedures (key, (args,key'^"();")))
+
     | TFun (TVoid _,Some _,true,a) ->
       rpl loc (`procedures ((key^"[t]"), ("t",key'^"($a);")))
 
     | TFun (ret,Some ps,false,a) ->
-      let ftb,ptb =
+      let ftb =
         let ret = sot (getreg loc) ret
         and args = List.map (soa registry) ps
         in 
@@ -1029,26 +1012,14 @@ List.iter
           ) 
           ^ 
           " -> " ^ ret,key'^"($a)"
-        ),
-        (String.concat " * " (ret :: args),
-          let a2 = 
-            String.concat "," 
-            (tl (tl 
-              (
-                map 
-                (fun i->"$"^si i) 
-                (nlist ((length ps)+2))
-              )
-            ))
-          in
-          "$1="^key'^"("^a2^");"
         )
       in 
         rpl loc (`functions (key, ftb))
-        (*
-        ;
-        rpl loc (`procedures (key, ptb))
-        *)
+
+    | TFun (ret,None,false,a) ->
+      let ret = sot (getreg loc) ret in
+      let ftb =  "1 -> " ^ ret,key'^"()" in
+      rpl loc (`functions (key, ftb))
 
     | TFun (ret,Some _,true,a) ->
       let ftb =
@@ -1075,35 +1046,6 @@ let is_nonempty h =
    with Not_found -> true
 ;;
 
-(* This routine calculates the transitive closure
-of includes of 'known' C header files, where
-a file is 'known' if the table 'files' contains
-a map from the file's deduced modulename.
-
-This process in bugged in that a file's modulename
-might map to a different file. We always know when
-this happens when adding files during the processing
-of preprocessed C headers because the preprocessor
-has expanded them to absolute pathnames.
-
-Currently, a warning is printed, rather than terminating
-the process: to prevent the subsequent possibly hard to 
-detect faults we should probably turn this warning into
-an error.
-
-Note that the set of known files excludes specifically
-excluded files (as well as any file sharing the modulename
-of an already registered file .. which one is included
-is implementation dependent and thus fragile)
-
-Note that the result found is NOT the intersection
-of the known files with the transitive closure of
-includes, because including a file outside the known
-set, which subsequently includes on inside the known
-set, will not introduce the latter into the closure,
-even though it is actually known.
-*)
-
 exception Found of string
 
 let pathname_of f =
@@ -1120,139 +1062,80 @@ let pathname_of f =
 
 let rec find_includes' includes fname =
   if not (StringSet.mem fname !includes) then
-  let f = open_in fname in
-  includes := StringSet.add fname !includes;
-  try 
-    let rec aux () =
-      let line = input_line f in
-      let n = String.length line in
-      let i = ref 0 in
+  try
+    let f = open_in fname in
+    includes := StringSet.add fname !includes;
+    begin try 
+      let rec aux () =
+        let line = input_line f in
+        let n = String.length line in
+        let i = ref 0 in
 
-      try
-        (* skip white *)
-        while !i < n && line.[!i]=' ' do incr i done;
-        if !i = n then raise Next;
+        try
+          (* skip white *)
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then raise Next;
 
-        (* check # *)
-        if line.[!i]<>'#' then raise Next;
-        incr i;
+          (* check # *)
+          if line.[!i]<>'#' then raise Next;
+          incr i;
 
-        (* skip white *)
-        while !i < n && line.[!i]=' ' do incr i done;
-        if !i = n then raise Next;
+          (* skip white *)
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then raise Next;
 
-        (* check include *)
-        if !i+String.length "include" > n then raise Next;
-        let li = String.length "include" in
-        if (String.sub line !i li)  <> "include" then raise Next;
-        i := !i + li;
+          (* check include *)
+          if !i+String.length "include" > n then raise Next;
+          let li = String.length "include" in
+          if (String.sub line !i li)  <> "include" then raise Next;
+          i := !i + li;
 
-        (* skip white *)
-        while !i < n && line.[!i]=' ' do incr i done;
+          (* skip white *)
+          while !i < n && line.[!i]=' ' do incr i done;
 
-        (* check < or '"' *)
-        if line.[!i]<>'"' && line.[!i]<>'<' then raise Next;
-        incr i;
+          (* check < or '"' *)
+          if line.[!i]<>'"' && line.[!i]<>'<' then raise Next;
+          incr i;
 
-        (* skip to > or '"' *)
-        let j = !i in
-        while !i < n && line.[!i]<>'>' && line.[!i]<>'"' do incr i done;
+          (* skip to > or '"' *)
+          let j = !i in
+          while !i < n && line.[!i]<>'>' && line.[!i]<>'"' do incr i done;
 
-        (* extract filename *)
-        let filename = String.sub line j (!i-j) in
+          (* extract filename *)
+          let filename = String.sub line j (!i-j) in
 
 
-        (* lookup full path name *)
-        let filename = 
-          if not (Filename.is_relative filename) then filename else
-          try pathname_of filename
-          with Not_found -> 
-            (*
-            print_endline 
-            (
-              "[include_file'] Can't resolve " ^ filename ^
-              " included from " ^ fname
-            );
-            *)
-            raise Next
-        in
-        add_file filename;
+          (* lookup full path name *)
+          let filename = 
+            if not (Filename.is_relative filename) then filename else
+            try pathname_of filename
+            with Not_found -> 
+              (*
+              print_endline 
+              (
+                "[include_file'] Can't resolve " ^ filename ^
+                " included from " ^ fname
+              );
+              *)
+              raise Next
+          in
+          add_file filename;
 
-        (* if not already known, put transitive closure in set *)
-        if StringSet.mem filename !includes then raise Next;
-        includes := StringSet.add filename !includes;
-        find_includes' includes filename;
+          (* if not already known, put transitive closure in set *)
+          if StringSet.mem filename !includes then raise Next;
+          includes := StringSet.add filename !includes;
+          find_includes' includes filename;
 
-        (* next line *)
-        raise Next
-      with Next -> aux ()
-    in 
-      aux()
-  with End_of_file -> close_in f
-
-  (* This process calculates all the modules
-  on which the current module depends in two stages.
-  
-  First it finds the transitive closure using
-  the find_includes function.
-
-  Then it augments the set, by looking up every
-  incomplete type registered for that module,
-  and adds to the set the module containing
-  the complete definition.
-
-  We have to do this, because Felix does not
-  permit two abstract types definitions to
-  be unified, even if one or both specify
-  the type is incomplete: abstract type
-  bindings are generative, every specification
-  denotes a distinct type. 
-  
-  This isn't so in C, so we have to try to fix this up.
-  Note that in C some types can remain incomplete.
-  So if we cannot find a complete definition,
-  we have to generate an incomplete abstract type.
-
-  If the type is defined in two places, two distinct
-  types will be generated, which is wrong.
-
-  If the type is, in fact defined completely,
-  but outside the set of files known to flxcc,
-  then again any subsequent separate wrapping
-  will generate a distinct type, which is wrong.
-
-  However, even a human programmer will be hard
-  pressed to tell the difference between such
-  an error, and an accidental use of the same
-  structure tag in two unrelated headers, 
-  which might in fact introduce two incompatible
-  definitions.
-
-  At least with Felix, in the case the wrappings
-  are independent, these incompatible definitions
-  will not clash because they're wrapped in distinct
-  modules .. however complete types will clash
-  if both are actually used in a program because
-  two conflicting C headers will be dragged in.
-
-  This is basically a C problem, it cannot be 
-  circumvented even by manual wrapping, so the
-  failure of flxcc to cope is inevitable and not
-  a design flaw.
-  *)
-
-(* This routine computes the union of transitive
-closures with respect to known inclusion, 
-of a file, and all the files registered to be merged
-into that file. Note that these roots are always
-counted in the transitive closure even if they
-themselves are excluded or not known.
-
-The resultant set is then filtered using the
-filename merge mapping, to remove filenames
-registered to be merged into others, and replace
-them by their merge targets.
-*)
+          (* next line *)
+          raise Next
+        with Next -> aux ()
+      in 
+        aux()
+    with End_of_file -> close_in f
+    end
+  with _ ->
+    failwith ("Can't open " ^ fname);
+;;
 
 let find_includes fname =
   let includes = ref StringSet.empty in
@@ -1272,7 +1155,7 @@ let global_includes = ref StringSet.empty
 Hashtbl.iter
 begin 
   fun fname stab ->
-  let includes = ref (find_includes fname) in
+  let includes = ref (find_includes stab.stab_cfile) in
   let ict = Hashtbl.create 97 in
   let xtyps = Hashtbl.create 97 in
   Hashtbl.iter
@@ -1376,7 +1259,7 @@ exception Not_equal
 Hashtbl.iter
 begin 
   fun fname stab ->
-  let outname = flxfile_of_cfile fname in
+  let outname = stab.stab_flxfile in
   let mode, outf =
     if Sys.file_exists outname then 
       `tmp,open_out "tmp.tmp"
@@ -1427,7 +1310,7 @@ begin
   in
   let module_depends = 
     let x = stringset_map map_filename stab.includes in
-    let x = stringset_map module_of_filename x in
+    let x = stringset_map (fun s -> module_of_cfilename s) x in
     StringSet.remove stab.stab_module x
   in
 
@@ -1489,7 +1372,7 @@ begin
       pe "//EXTERNALLY COMPLETED TYPES";
       Hashtbl.iter
       (fun k v-> 
-        let m = module_of_filename v in
+        let m = module_of_cfilename v in
         pe ("//type " ^ k ^ " defined in "^m^"='" ^ v ^ "';")
       )
       stab.xtyps 
@@ -1581,11 +1464,17 @@ begin
     begin
       pe "";
       pe "//PROCEDURES";
-      Hashtbl.iter
-      (fun k (v,b)-> 
+      let ps = ref [] in
+      Hashtbl.iter 
+      (fun k v -> ps := (k,v):: !ps)
+      stab.procedures
+      ;
+      let ps = sort compare !ps in
+      iter
+      (fun (k, (v,b)) -> 
         pe ("proc " ^ k ^ ": " ^v^ " = '"^b^"';")
       )
-      stab.procedures
+      ps
     end
     ;
 
@@ -1593,11 +1482,17 @@ begin
     begin
       pe "";
       pe "//FUNCTIONS";
+      let ps = ref [] in
       Hashtbl.iter
-      (fun k (v,b)-> 
+      (fun k v -> ps := (k,v):: !ps)
+      stab.functions
+      ;
+      let ps = sort compare !ps in
+      iter
+      (fun (k, (v,b))-> 
         pe ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
       )
-      stab.functions
+      ps
     end
     ;
 
@@ -1811,6 +1706,7 @@ noheader /usr/include/bits/waitstatus.h
 noheader /usr/include/bits/xopen_lim.h
 noheader /usr/include/bits/xtitypes.h
 
+merge /usr/X11R6/include/X11 /usr/include/X11
 merge /usr/include/bits/sigset.h /usr/include/signal.h
 merge /usr/include/bits/sigaction.h /usr/include/signal.h
 merge /usr/include/bits/sigcontext.h /usr/include/signal.h
@@ -1885,9 +1781,12 @@ merge /usr/include/bits/xtitypes.h /usr/include/stropts.h
 #include config/gnu_headers.flxcc
 
 outdir c89 
+prefix /usr/include 
+prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
 prein c89.h
 preout c89.hhh
 preprocessor gcc -E -std=c89
+language C
 
 //-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
 
@@ -1923,10 +1822,12 @@ rename String String_
 #include config/gnu_headers.flxcc
 
 outdir gnu89 
+prefix /usr/include 
+prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
 prein gnu89.h
 preout gnu89.hhh
 preprocessor gcc -E -std=gnu89
-
+language C
 //-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
 
 //incfile assert.h: just macros
@@ -1961,9 +1862,12 @@ rename String String_
 #include config/gnu_headers.flxcc
 
 outdir c99 
+prefix /usr/include 
+prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
 prein c99.h
 preout c99.hhh
 preprocessor gcc -E -std=c99
+language C
 
 //incfile assert.h: just macros
 incfile ctype.h
@@ -1998,10 +1902,12 @@ rename String String_
 #include config/gnu_headers.flxcc
 
 outdir gnu99
+prefix /usr/include 
+prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
 prein gnu99.h
 preout gnu99.hhh
 preprocessor gcc -E -std=gnu99
-
+language C
 //-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
 
 //incfile assert.h: just macros
@@ -2037,9 +1943,12 @@ rename String String_
 #include config/gnu_headers.flxcc
 
 outdir cxx 
+prefix /usr/include
+prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
 prein cxx.h
 preout cxx.hhh
 preprocessor g++ -E -I/usr/include/g++-3
+language C++
 
 //-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
 
@@ -2070,9 +1979,16 @@ rename String String_
 #include config/gnu_headers.flxcc
 
 outdir flxcc_out
+prefix /usr/include
+prefix /usr/local/include
+prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
+prefix /usr/lib/glib/include/ glib
+prefix /usr/include/sys/time /usr/include/sys/sys_time
+
 prein usr_include.h
 preout usr_include.hhh
 preprocessor gcc -E 
+language C
 
 //-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
 
@@ -2084,7 +2000,7 @@ path /usr/include/gal-1.0
 path /usr/include/gconf/2 
 path /usr/include/gtk-2.0 
 path /usr/lib/gtk-2.0/include 
-path /usr/X11R6/include 
+path /usr/include/X11
 path /usr/include/glib-2.0 
 path /usr/lib/glib-2.0/include 
 path /usr/lib/glib/include 
@@ -2124,6 +2040,7 @@ incdir /usr/include/sys
 incdir /usr/include/gtk-2.0/gdk
 incdir /usr/include/gtk-2.0/gdk-pixbuf
 incdir /usr/include/gtkhtml-1.1
+recincdir /usr/include/libIDL-2.0
 
 recincdir /usr/local/include/python2.3
 exclude /usr/include/af_vfs.h
@@ -2136,7 +2053,6 @@ exclude /usr/include/orbit-1.0
 exclude /usr/include/c++
 exclude /usr/include/g++-3
 exclude /usr/include/libglade-1.0
-exclude /usr/include/libIDL-1.0
 exclude /usr/include/gtk-1.2
 exclude /usr/include/glib-2.0/gobject
 exclude /usr/include/FlexLexer.h
@@ -2144,8 +2060,6 @@ exclude /usr/include/swig.h
 exclude /usr/include/Imlib.h
 exclude /usr/include/Imlib_private.h
 exclude /usr/include/Imlib_types.h
-exclude /usr/include/jpeglib.h
-exclude /usr/include/rle.h
 exclude /usr/include/rle_config.h
 exclude /usr/include/md5.h
 exclude /usr/include/pcap-namedb.h
@@ -2153,12 +2067,10 @@ exclude /usr/include/regexp.h
 exclude /usr/include/hmac-md5.h
 exclude /usr/include/jmorecfg.h
 exclude /usr/include/jconfig.h
-exclude /usr/include/resolv.h
 exclude /usr/local/include/python2.3/pymactoolbox.h
 exclude /usr/include/libmng.h
 exclude /usr/include/mp.h
 exclude /usr/include/pammap.h
 
 rename String String_
-
 

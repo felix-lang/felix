@@ -198,10 +198,10 @@ To bootstrap the build, type
 make boot
 </CODE></P><P>
 on the command line to unpack the build scripts and makefile.
-You may need to edit the file
-<CODE>
+You may need to <STRONG>edit</STRONG> the file
+</P><P><CODE>
 config/config.py
-</CODE>
+</CODE></P>
 to suit your platform.</P><P>
 You should now be able to:
 </P><P>
@@ -214,12 +214,49 @@ make doc<BR>
 <P><CODE>
 make install
 </CODE></P><P>
-to install the system in /usr/local/lib/felix,
+to install the system, by default in /usr/local/lib/felix,
 the scripting driver harness in /usr/local/bin,
 and the man pages in /usr/local/man.
 If these install points are not suitable for your
-system, you'll have to edit the config/config.py file.
+system, you'll have to <STRONG>edit</STRONG> the config/config.py file.
 </P>
+<H1>Building your Library</H1>
+<P>Felix only comes with a core service library.
+Instead of providing a more complete library,
+we provide a tool for generating wrappers for
+you complete C environment. Type
+</P><P><CODE>
+make default_wrappers
+</CODE></P><P>
+to copy the wrapper generator control files, found in the 
+<CODE>config</CODE> directory, and
+ending in <CODE>.flxcc.default</CODE>
+to the corresponding files without the <CODE>.default</CODE>
+suffix. You can now <STRONG>edit</STRONG> these <CODE>.flxcc</CODE>
+files as required, they won't be clobbered except by another
+<CODE>make default_wrappers</CODE> command. Type
+</P><P><CODE>
+make wrappers
+</CODE></P><P>
+to generate wrappers for the sample files. After the wrappers
+are generated you can install resulting directory trees
+in an appropriate place such as <CODE>/usr/local/lib/felix/lib</CODE>.
+</P>
+<P><STRONG>DO NOT EXPECT THIS PROCESS TO WORK WITHOUT
+EDITING THE CONTROL FILES</STRONG>. The sample files
+work on my Redhat Linux, version 9, system. Read the
+<A HREF=flxcc.html>flxcc</A> reference material
+for more information. Whilst every effort is made
+to reduce the pain of configuring the wrapper generator,
+<EM>wrapping your whole C environment in one go</EM>
+is an ambitious task. Take the time to build stable
+standard library, because all your subsequent programming
+will depend on it. C++ is the only other programming language
+capable of providing you instant access to your complete
+C programming environment. Flxcc cannot currently wrap C++
+headers.
+</P>
+
 <H1>CVS access</H1>
 To keep up to date,
 you need to connect to the CVS archive, the CVS
@@ -401,6 +438,9 @@ The first thing you need to do is type
 will be clobbered by a new install. Examine the
 file and find some commands:
 </P>
+<P><STRONG>// </STRONG><EM> comment</EM><BR>is a comment line and
+is ignored.</P>
+
 <P><STRONG>outdir</STRONG><CODE> flxcc_out</CODE><BR>specifies the directory
 into which wrappers will be written.</P>
 
@@ -493,6 +533,11 @@ externally defined symbols such as standard library
 names. Uses of the symbol, however, are not affected,
 and so can map onto standard library names.
 </P>
+
+<P><STRONG>#include </STRONG> <EM>filename</EM><BR>
+tells flxcc to parse the denoted file for flxcc
+control statements.
+
 <H2>Generated Output Example</H2>
 <P><CODE><PRE>
 // /usr/include/stdio.h

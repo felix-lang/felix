@@ -18,7 +18,6 @@ let string_of_token (tok :Flx_parse.token): string =
   | CSTRING (sr,s) -> Flx_string.c_quote_of_string s 
   | WSTRING (sr,s) -> Flx_string.c_quote_of_string s 
   | USTRING (sr,s) -> Flx_string.c_quote_of_string s 
-  | CABS (sr,s,_) -> "#cinclude " ^ s
 
   (* one character tokens *)
   | DOLLAR _ -> "$" 
@@ -120,7 +119,6 @@ let src_of_token t = match t with
   | CSTRING  (s,_)
   | WSTRING  (s,_)
   | USTRING  (s,_)
-  | CABS (s,_,_)
 
   | ERRORTOKEN (s,_) 
 
@@ -762,26 +760,6 @@ let include_directive is_import state sr s pre_flx_lex lexbuf =
  in
    pre_tokens_of_filename filename
 
-let cinclude_directive state sr s pre_flx_lex lexbuf =
-  let filename = find_include_file state s sr in
-  let tmpfile = Filename.temp_file "flx" ".h" in
-  let incdirs = state#get_incdirs in
-  let flags = catmap "" (fun s -> " -I"^s) incdirs in
-@tangle('  let cmd = "'+CPP+'" ^ flags ^ " "^filename^"> " ^ tmpfile in')
-  let result = Unix.system cmd in
-  match result with
-  | Unix.WEXITED 0 ->
-    begin
-      let lexbuf' = Flx_cil_clexer.init tmpfile `C in
-      let cabs = Flx_cil_cparser.file Flx_cil_clexer.initial lexbuf' in
-      Flx_cil_clexer.finish();
-      Unix.unlink tmpfile;
-      let sr = match sr with (f,l1,c1,l2,c2) -> f,l1,c1,c2 in
-      [CABS (sr,filename,cabs)]
-    end
-  | _ -> syserr sr ("C preprocessing error: " ^ cmd)
-  
-
 
 } 
 
@@ -1314,13 +1292,6 @@ and parse_preprocessor state = parse
       begin match state#get_condition with
       | `Processing ->
         include_directive is_import state sr s pre_flx_lex lexbuf
-      | _ -> []
-      end
-
-    | "cinclude" -> 
-      begin match state#get_condition with
-      | `Processing ->
-        cinclude_directive state sr s pre_flx_lex lexbuf
       | _ -> []
       end
 

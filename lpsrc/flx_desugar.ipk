@@ -890,10 +890,6 @@ and rst syms name access st : asm_t list =
   | `AST_body (sr,name,s, reqs) -> 
     [Dcl (sr,name,access,[],`DCL_body (s, reqs))]
 
-  | `AST_cabs (sr,filename,cabs) -> 
-    [Dcl (sr,filename,access,[],`DCL_cabs cabs)]
-
-
   (* executable *)
   | `AST_fun_return (sr,e) ->
     let d,x = rex e in d @ [Exe (sr,`EXE_fun_return x)]

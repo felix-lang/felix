@@ -1470,6 +1470,8 @@ and fieldinfo = {
                                           * (not for its type) *)
     mutable floc: location;             (** The location where this field
                                           * is defined *)
+    mutable fstorage: storage;          (** Must be NoStorage or Static,
+                                          * indicates nonstatic or static member *)
 }
 
 
@@ -2581,7 +2583,7 @@ let mkCompInfo
        * the fields. The function can ignore this argument if not 
        * constructing a recursive type.  *)
        (mkfspec: compinfo -> (string * typ * int option * attribute list *
-                             location) list)   
+                             location * storage) list)   
        (a: attribute list) : compinfo =
 
   (* make an new name for anonymous structs *)
@@ -2599,13 +2601,14 @@ let mkCompInfo
    incr nextCompinfoKey;
    let self = ref voidType in
    let flds = 
-       List.map (fun (fn, ft, fb, fa, fl) -> 
+       List.map (fun (fn, ft, fb, fa, fl, fs) -> 
           { fcomp = comp;
             ftype = ft;
             fname = fn;
             fbitfield = fb;
             fattr = fa;
-            floc = fl}) (mkfspec comp) in
+            floc = fl;
+            fstorage = fs}) (mkfspec comp) in
    comp.cfields <- flds;
    if flds <> [] then comp.cdefined <- true;
    comp
@@ -7401,6 +7404,9 @@ and fieldinfo = {
     (** The attributes for this field (not for its type) *)
     mutable floc: location;
     (** The location where this field is defined *)
+    mutable fstorage: storage;          
+    (** Must be NoStorage or Static,
+      * indicates nonstatic or static member *)
 }
 
 
@@ -8263,7 +8269,7 @@ val isSigned: ikind -> bool
 val mkCompInfo: bool ->      (* whether it is a struct or a union *)
                string ->     (* name of the composite type; cannot be empty *)
                (compinfo -> 
-                  (string * typ * int option * attributes * location) list) ->
+                  (string * typ * int option * attributes * location * storage) list) ->
                (* a function that when given a forward 
                   representation of the structure type constructs the type of 
                   the fields. The function can ignore this argument if not 
@@ -16689,8 +16695,8 @@ and makeCompType (isstruct: bool)
     let makeFieldInfo
         (((n,ndt,a,cloc) : A.name), (widtho : A.expression option))
       : fieldinfo = 
-      if sto <> NoStorage || inl then 
-        E.s (error "Storage or inline not allowed for fields");
+      if sto <> NoStorage && sto <> Static || inl then 
+        E.s (error "Non-static Storage or inline not allowed for fields");
       let ftype, nattr = 
         doType (AttrName false) bt (A.PARENTYPE(attrs, ndt, a)) in 
       let width = 
@@ -16724,7 +16730,8 @@ and makeCompType (isstruct: bool)
         ftype     =  ftype;
         fbitfield =  width;
         fattr     =  nattr;
-        floc      =  convLoc cloc
+        floc      =  convLoc cloc;
+        fstorage  = sto
       } 
     in
     List.map makeFieldInfo nl
@@ -19321,6 +19328,16 @@ and doDecl (isglobal: bool) : A.definition -> chunk = function
       if not isglobal then 
         E.s (error "Encountered linkage specification in local scope");
       (* For now drop the linkage on the floor !!! *)
+      List.iter 
+        (fun d -> 
+          let s = doDecl isglobal d in
+          if isNotEmpty s then 
+            E.s (bug "doDecl returns non-empty statement for global"))
+        dl;
+      empty
+
+  | NAMESPACE (n, loc, dl) -> 
+      currentLoc := convLoc loc;
       List.iter 
         (fun d -> 
           let s = doDecl isglobal d in
