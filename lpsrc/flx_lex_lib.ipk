@@ -201,7 +201,9 @@ module Flx_lex
       match 
         reglex j to e with
         | "*" "/" => "end"
+        | "*" => "chars"
         | "/" "*" => "recurse"
+        | "/" => "chars"
         | [^"/" "*"]* => "chars"
         endmatch
       with

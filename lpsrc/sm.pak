@@ -5605,7 +5605,7 @@ public:
 
 
 #endif // STRHASH_H
-@h=tangler('elk/sm_sm_stringset.h')
+@h=tangler('elk/sm_stringset.h')
 @select(h)
 // sm_stringset.h            see license.txt for copyright and terms of use
 // set of character sm_strings
@@ -13077,12 +13077,12 @@ int main(int argc, char **argv)
 }
 
 #endif // TEST_STRHASH
-@h=tangler('elk/sm_sm_stringset.cpp')
+@h=tangler('elk/sm_stringset.cpp')
 @select(h)
 // sm_stringset.cc            see license.txt for copyright and terms of use
 // code for sm_stringset.h
 
-#include "sm_sm_stringset.h"
+#include "sm_stringset.h"
 
 StringSet::~StringSet()
 {}

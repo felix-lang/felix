@@ -73,6 +73,18 @@ struct store_of
   typedef typename aligned_storage<sizeof(T), alignment_of<T>::value>::type type;
 };
 
+// convert an rvalue to an lvalue
+template<typename T> 
+T const &lvalue(T const &x) 
+{ 
+  return x; 
+}
+
+// this reinterpret cast works with rvalues too
+template<typename T, typename U>
+T &reinterpret(U const &x) {
+  return reinterpret_cast<T&>(const_cast<U&>(x));
+}
 #endif
 
 @h = tangler("rtl/flx_rtl_config.hpp")
@@ -124,6 +136,7 @@ right type by client drivers.
 #ifndef FLX_RTL
 #define FLX_RTL
 #include "flx_rtl_config.hpp"
+#include "flx_meta.hpp"
 #ifndef FLX_GC
 #include "flx_gc.hpp"
 #endif

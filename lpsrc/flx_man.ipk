@@ -1201,6 +1201,10 @@ filebasename
 libname
 
 .br
+.B flx_doc
+--outdir=docidr filename ..
+
+.br
 .B flx
 [--version] [--help] [--test] [--force] [--echo] [--time]
 [--inline] [--static] [--optimise] [--optimize]
@@ -1249,6 +1253,17 @@ reads a preprocessed C header file and writes
 Felix wrapper bindings to out. The command 
 accepts an argument which specifies wrapper
 generation configuration parameters.
+
+.br
+.B flx_doc
+Felix documentation generator. The --outdir=dirname option
+specifies the directory into which to put documentation.
+Defaults to out_doc. Each of the subsequently listed
+filenames should be a Felix (*.flx) file, which is treated
+as a library. The documentation processor produces a set
+of HTML files documenting the interface. Comments specified
+with either the publish prefix or comment statement are 
+also emitted into the documentation.
 
 .br
 .B flxg
@@ -1376,6 +1391,11 @@ for rapid prototyping in a scripting style.
 
 .B flxcc
 is the wrapper generator for C headers.
+
+.B flx_doc
+is the documentation generator. It can be used to
+create HTML pages documenting any Felix code files.
+
 
 .SH DRIVERS
 .B flx_run

@@ -827,6 +827,7 @@ module String
   proc pluseq: lvalue[string] * string = "$1.append($2);";
   proc pluseq: lvalue[string] * charcp = "$1.append($2);";
   proc pluseq: lvalue[string] * charp = "$1.append($2);";
+  proc pluseq: lvalue[string] * char = "$1 += $2;";
   proc str: charp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
   proc str: charcp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
 

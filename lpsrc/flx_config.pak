@@ -1201,8 +1201,8 @@ flx_2_char_syms = [
     ("LSQANGLE","[<"),
     ("RSQANGLE",">]"),
 
-    ("LSQBAR","[<"),
-    ("RSQBAR",">]"),
+    ("LSQBAR","[|"),
+    ("RSQBAR","|]"),
   ]
 
 flx_3_char_syms = [

@@ -675,6 +675,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
   | `BEXPR_case_index e ->
     let _,t = e in
+    let t = lstrip syms.dfns t in
     begin match t with
     |`BTYP_sum _
     | `BTYP_unitsum _ ->
@@ -916,14 +917,14 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
     (* not sure whether these will be prims or directs or what .. *)
     | `BBDCL_cstruct (vs,_) ->
-     ce_atom ("(*("^ id ^"*)(void*)&(" ^ ge a ^ "))")
+      ce_atom ("reinterpret<"^ id ^">(" ^ ge a ^ ")")
        
     (* not sure whether these will be prims or directs or what .. *)
     | `BBDCL_struct (vs,cts) ->
       let name = tn (`BTYP_inst (index,ts)) in
       if length cts > 1 then
         (* argument must be an lvalue *)
-        ce_atom ("(*("^ name ^"*)(void*)&(" ^ ge a ^ "))")
+       ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
       else
         ce_atom (name ^ "(" ^ ge a ^ ")")
 
@@ -965,13 +966,13 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       )
 
     | `BBDCL_cstruct (vs,_) ->
-      ce_atom ( "(*("^ id ^"*)(void*)&(" ^ ge a ^ "))")
+      ce_atom ("reinterpret<"^ id ^">(" ^ ge a ^ ")")
        
     | `BBDCL_struct (vs,cts) ->
       let name = tn (`BTYP_inst (index,ts)) in
       if length cts > 1 then 
         (* argument must be an lvalue *)
-        ce_atom ("(*("^ name ^"*)(void*)&(" ^ ge a ^ "))")
+        ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
       else
         ce_atom (name ^ "(" ^ ge a ^ ")")
 
@@ -1026,15 +1027,13 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       in ce_atom s
 
     | `BBDCL_cstruct (vs,_) ->
-       ce_atom (
-         "(*("^ id ^"*)(void*)&(" ^ ge a ^ "))"
-       )
+      ce_atom ("reinterpret<"^ id ^">(" ^ ge a ^ ")")
        
     | `BBDCL_struct (vs,cts) ->
       let name = tn (`BTYP_inst (index,ts)) in
       if length cts > 1 then
         (* argument must be an lvalue *)
-        ce_atom ("(*("^ name ^"*)(void*)&(" ^ ge a ^ "))")
+        ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
       else
         ce_atom (name ^ "(" ^ ge a ^ ")")
 

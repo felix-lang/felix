@@ -2624,14 +2624,15 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
 
   | `AST_case_index (sr,e) -> 
     let (e',t) as e  = be e in
-    begin match t with
+    begin match lstrip syms.dfns t with
+    | `BTYP_unitsum _ -> ()
     | `BTYP_sum _ -> ()
     | `BTYP_inst (i,_) ->
       begin match Hashtbl.find syms.dfns i with
       | {symdef=`SYMDEF_union _} -> ()
-      | {id=id} -> clierr sr "Argument of caseno must be sum or union type"
+      | {id=id} -> clierr sr ("Argument of caseno must be sum or union type, got type " ^ id)
       end
-    | _ -> clierr sr "Argument of caseno must be sum or union type"
+    | _ -> clierr sr ("Argument of caseno must be sum or union type, got " ^ sbt syms.dfns t)
     end
     ;
     let int_t = bt sr (`AST_name (sr,"int",[])) in

@@ -827,6 +827,31 @@ function_definition:
         )
     }
 
+  | adjectives FUNCTION NAME tvarlist COLON type_expr EQUAL matchings SEMI
+    { 
+      let kind = match $1 with
+        | [] -> `Function
+        | h :: t -> snd h
+      in
+      let sr = rstoken $2 $9 in
+      let name = snd $3 in
+      let vs = List.map snd $4 in
+      let t = typecode_of_expr $6 in
+      match t with
+      | `TYP_function (argt, return_type) ->
+        let args = [["_a",argt]] in 
+        let match_expr = `AST_match (sr,(`AST_name (sr,"_a",[]),$8)) in
+        let body = [`AST_fun_return (sr,match_expr)] in
+        mkcurry sr name vs args return_type kind body
+      | _ -> 
+        failwith 
+        (
+          "Function '"^name^"' requires function type, got " ^
+          string_of_typecode t ^ " in " ^
+          short_string_of_src sr
+        )
+    }
+
 procedure_definition:
   | PROCEDURE NAME tvarlist opt_fun_args compound 
     { 
