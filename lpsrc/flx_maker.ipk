@@ -722,6 +722,9 @@ try:
 
   if "regression" in options:
     TESTS = TESTS + glob.glob('test/rt*.flx')
+    if LINK_MODEL == "dynamic":
+      TESTS = TESTS + glob.glob('test/drt*.flx')
+
     BAD_TESTS = glob.glob('test/bt*.flx')
 
   if "tutorial" in options:
@@ -1103,6 +1106,7 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('tests.bagley: dummy')
 @tangle('\tpython script/maker bagley')
+@tangle('\tsh bagley/run.sh')
 @tangle('\tsh bagley/check.sh')
 @tangle('')
 @tangle('rtl: dummy')

@@ -190,7 +190,7 @@ native Win32 using MSVC++.
 </P>
 
 <H1>Download</H1>
-@keep=['1.0.11','1.0.10','1.0.9','1.0.8','1.0.7']
+@keep=['1.0.12','1.0.11','1.0.10','1.0.9','1.0.8','1.0.7']
 @tangle("<P> Download developer tarball <A HREF=flx_"+flx_version+"_src.tgz>flx_"+flx_version+"_src.tgz</A></P><P>")
 @for k in keep:
   tangle('Old Version <A HREF=flx_'+k+'_src.tgz>flx_'+k+'_src.tgz</A><BR>') 

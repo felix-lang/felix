@@ -694,7 +694,7 @@ let fold t =
         if type_eq t'' t then raise (Found t'')
       with Not_found -> ()
       end 
-    | _ -> failwith "unexpected metatype"
+    | _ -> failwith "[unfold] unexpected metatype"
   in
     try aux [] 0 t; t
     with Found t -> t
@@ -720,7 +720,7 @@ let var_occurs t =
     | `BTYP_fix _ -> ()
 
     | `BTYP_var _ -> raise Not_found
-    | _ -> failwith "unexpected metatype"
+    | _ -> failwith "[var_occurs] unexpected metatype"
 
  in try aux t; false with Not_found -> true
 

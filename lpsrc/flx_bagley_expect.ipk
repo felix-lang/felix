@@ -117,4 +117,8 @@ Exceptions: HI=4 / LO=4
 0.9990640718
 @head(2,"bagley/felix/plugin.expect")
 @select(tangler("bagley/felix/plugin.expect","data"))
-120
+120@head(2,"bagley/felix/plugin.expect")
+@select(tangler("bagley/felix/hash.expect","data"))
+4999
+@select(tangler("bagley/felix/hash2.expect","data"))
+1 9999 10 99990

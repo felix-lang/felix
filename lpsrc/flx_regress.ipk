@@ -535,7 +535,7 @@ fun f(x:int)=>
  
 print (f 10); endl;
 
-@select(tangler('test/rt20.flx'))
+@select(tangler('test/drt20.flx'))
 // plugin loader test
 include "std";
 

@@ -1,6 +1,6 @@
 @bc = begin_displayed_code
 @ec = end_displayed_code
-@flx_version = '1.0.12'
+@flx_version = '1.0.15'
 @godi_revision = '0'
 @set_title('Felix '+flx_version)
 @head(1,'Purpose')

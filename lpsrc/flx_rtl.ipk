@@ -11,6 +11,38 @@ The code all lives in directory rtl, the run time
 library support directory. The symbols are defined
 in namespace flx::rtl, except as noted.
 
+@h = tangler("rtl/flx_rtl_config.hpp")
+@select(h)
+#ifndef FLX_RTL_GNU
+@if HAVE_GXX:
+  tangle('#define HAVE_GXX')
+
+@if HAVE_GXX_X86:
+  tangle('#define HAVE_GXX_X86')
+
+@if HAVE_CGOTO:
+  tangle("#define FLX_HAVE_CGOTO")
+
+@if HAVE_ASM_LABELS:
+  tangle("#define FLX_HAVE_ASM_LABELS")
+//
+#if defined(FLX_HAVE_CGOTO) && defined(FLX_HAVE_ASM_LABELS)
+#define FLX_CGOTO
+#endif
+
+#ifdef HAVE_GXX
+#define FLX_ALWAYS_INLINE __attribute__ ((always_inline))
+#define FLX_NOINLINE __attribute__ ((noinline))
+#define FLX_CONST __attribute__ ((const))
+#define FLX_PURE __attribute__ ((pure))
+#else
+#define FLX_ALWAYS_INLINE
+#define FLX_NOINLINE 
+#define FLX_CONST
+#define FLX_PURE 
+#endif
+#endif
+
 @head(2,"Procedure Continuation Abstraction")
 The heart of the driver/library interface
 is the continuation class. Note the message pointer
@@ -21,19 +53,11 @@ right type by client drivers.
 @select(h)
 #ifndef FLX_RTL
 #define FLX_RTL
+#include "flx_rtl_config.hpp"
 #ifndef FLX_GC
 #include "flx_gc.hpp"
 #endif
 #include <string>
-
-@if HAVE_CGOTO:
-  tangle("#define FLX_HAVE_CGOTO")
-@if HAVE_ASM_LABELS:
-  tangle("#define FLX_HAVE_ASM_LABELS")
-//
-#if defined(FLX_HAVE_CGOTO) && defined(FLX_HAVE_ASM_LABELS)
-#define FLX_CGOTO
-#endif
 
 // for declarations in header file 
 #define FLX_FMEM_DECL \
@@ -454,7 +478,7 @@ void flx_dynlink_t::unlink()
   if(refcnt == 0) {
     //fprintf(stderr,"closing library\n");
 #ifndef FLX_STATIC_LINK
-    //dlclose(library);
+    dlclose(library);
 #endif
   }
 }
@@ -527,14 +551,10 @@ shared library name are not passed.
 
 #include <string>
 #include <unistd.h>
+#include "flx_rtl.hpp"
+
 #include "flx_collector.hpp"
 #include "flx_dynlink.hpp"
-@if HAVE_GXX:
-  tangle('#define HAVE_GXX')
-
-@if HAVE_GXX_X86:
-  tangle('#define HAVE_GXX_X86')
-
 using namespace std;
 using namespace flx::rtl;
 #ifdef HAVE_GXX_X86

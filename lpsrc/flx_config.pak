@@ -610,7 +610,8 @@ if CYGWIN:
 else:
   CCOBJ_DLLIB = CXX + "-w "+FORCE_DEBUG+"-fPIC -c "
   CCOBJ_DLMAIN = CXX + "-w "+FORCE_DEBUG+"-fPIC -c "
-  CCLINK_DLLIB = CXX + "-w -Wl,-shared -Wl,--export-dynamic "
+#  CCLINK_DLLIB = CXX + "-w -Wl,-shared -Wl,--export-dynamic "
+  CCLINK_DLLIB = CXX + "-w -shared  "
   CCLINK_DLMAIN = CXX + "-w -Wl,-Bdynamic -Wl,--export-dynamic "
 
 CCOBJ_STATIC_LIB = CXX + "-w "+FORCE_DEBUG+"-c "
@@ -753,7 +754,6 @@ PYTHON_OS_NAME=os.name
 PYTHON_OS_CURDIR=os.curdir
 PYTHON_OS_PARDIR=os.pardir
 PYTHON_OS_SEP=os.sep
-PYTHON_OS_EXTSEP=os.extsep
 PYTHON_OS_PATHSEP=os.pathsep
 
 print "ESTABLISHED CONFIGURATION"
@@ -917,7 +917,6 @@ try:
   p(f,"PYTHON_OS_CURDIR")
   p(f,"PYTHON_OS_PARDIR")
   p(f,"PYTHON_OS_SEP")
-  p(f,"PYTHON_OS_EXTSEP")
   p(f,"PYTHON_OS_PATHSEP")
   f.close()
 

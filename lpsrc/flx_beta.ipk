@@ -166,7 +166,11 @@ and beta_reduce syms (btvars:(int * btypecode_t) list) t =
   (*
   print_endline ("Beta reduce " ^ sbt syms.dfns t);
   *)
-  let t = beta_reduce' syms btvars [] t in
+  let t = 
+  try
+  beta_reduce' syms btvars [] t 
+  with _ -> failwith ("beta-reduce failed in " ^ sbt syms.dfns t)
+  in
   (*
   print_endline ("  reduced= " ^ sbt syms.dfns t);
   *)

@@ -2034,7 +2034,7 @@ try
   plh "//FELIX RUNTIME";
   plh "#include \"flx_rtl.hpp\"";
   plh "using namespace flx::rtl;";
-  plh "#include \"flx_collector.hpp\"";
+  plh "#include \"flx_gc.hpp\"";
   plh "using namespace flx::gc::generic;";
   plh "";
 

@@ -9,19 +9,20 @@
 Temporary script to check the tests work, and also
 to get some times.
 
-@bags = [
+@sbags = [
   ('array',' 1000'),
   ('ackermann',' 8'),
   ('except',' 8'),
   ('fibo',' 8'),
   ('heapsort',' 1000'),
   ('hello',' 1'),
+  ('hash',' 20000'),
+  ('hash2',' 10'),
   ('lists',' 8'),
   ('matrix',' 8'),
   ('methcall',' 8'),
   ('nestedloop',' 8'),
   ('objinst',' 8'),
-  ('plugin',' 20'),
   ('random',' 1000'),
   ('regexmatch',' 8'),
   ('reversefile',' 1 < bagley/data/phone_numbers.data'),
@@ -30,6 +31,15 @@ to get some times.
   ('sumcol',' < bagley/data/sumcol.data'),
   ('wc',' < bagley/data/phone_numbers.data'), 
  ]
+
+@dbags = [
+  ('plugin',' 20'),
+ ]
+
+@if SUPPORT_DYNAMIC_LOADING:
+  bags = sbags + dbags
+ else:
+  bags = sbags
 
 @def mk(i,j):
   k = (i+' .................  ')[:20]+' '
@@ -41,9 +51,10 @@ to get some times.
 @select(tangler('bagley/run.sh','data'))
 PLUGIN_DIR=bagley/felix/
 export PLUGIN_DIR
-bin/flx --test --optimise -c bagley/felix/plugin_1
-bin/flx --test --optimise -c bagley/felix/plugin_2
-bin/flx --test --optimise -c bagley/felix/plugin_3
+@if SUPPORT_DYNAMIC_LOADING:
+  tangle('bin/flx --test --optimise -c bagley/felix/plugin_1')
+  tangle('bin/flx --test --optimise -c bagley/felix/plugin_2')
+  tangle('bin/flx --test --optimise -c bagley/felix/plugin_3')
 @for i,j in bags: mk (i,j)
 
 @select(tangler('bagley/check.sh','data'))
@@ -222,7 +233,7 @@ var s: string;
 whilst i>1 do 
   current = first;
   until current == finish do
-    def current, s = lexit(current, finish);
+    current, s = lexit(current, finish);
   done;
   --i;
 done;
@@ -244,7 +255,7 @@ proc print_phone(x:string, j:int) {
 current = first;
 var j = 0;
 until current == finish do
- def current, s = lexit(current, finish);
+ current, s = lexit(current, finish);
  if s != "" do  ++j; print_phone (s,j); done;
 done;
 
@@ -1229,6 +1240,68 @@ proc plugin (p:address) {
 }
 
 export fun plugin of (address) as "plugin";
+
+
+@select(tangler('bagley/felix/hash.flx','data'))
+@setup()
+include "stl";
+open Stl;
+open Stl::HashMap;
+
+requires ext_string_hash;
+
+body hexer """ 
+string hex(int x) { char buf[20]; sprintf(buf,"%x",x); return buf; }
+""";
+
+fun hex: int -> string requires hexer;
+
+var hm = HashMap::create[string,int]();
+
+var i = n; until i == 0 do 
+  insert(hm,hex i,i); 
+  --i; 
+done;
+
+var c = 0;
+i = n; until i == 0 do 
+  if mem (hm,str i) do c++; done;
+  --i;
+done;
+
+print c; endl;
+
+ 
+@select(tangler('bagley/felix/hash2.flx','data'))
+@setup()
+include "stl";
+open Stl;
+open Stl::HashMap;
+
+requires ext_string_hash;
+
+var h1 = HashMap::create[string,int]();
+   
+var i = 1; until i == 10000 do
+  s := "foo_" + str i;
+  insert (h1, s, i);
+  ++i;
+done;
+
+var h2 = HashMap::create[string,int]();
+
+i=n; until i == 0 do
+  var j = begin h1; until j == end h1 do
+    k, v := deref j;
+    h2.[k] = h2.[k] + v; 
+    ++j;
+  done;
+  --i;
+done;
+
+print h1.["foo_1"]; print " "; print h1.["foo_9999"]; print " " ; 
+print h2.["foo_1"]; print " "; print h2.["foo_9999"]; endl;
+
 
 
 
