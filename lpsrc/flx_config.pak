@@ -50,23 +50,89 @@ int main(int,char*[]) {
   return 0;
 }
 
-@h = tangler("tmp/longlong.cxx",'c++')
-@select(h)
-#include <stdio.h>
-int main(int,char*[]) { 
-  printf("SIZEOF_LONGLONG=%d\n",sizeof(long long));
-  return 0;
-}
-
 @h = tangler("tmp/intsizes.cxx",'c++')
 @select(h)
 #include <stdio.h>
+#include <stddef.h>
+
+struct SHORT {
+  char x;
+  short y;
+};
+
+struct INT {
+  char x;
+  int y;
+};
+
+struct LONG {
+  char x;
+  long y;
+};
+
+struct FLOAT {
+  char x;
+  float y;
+};
+
+struct DOUBLE {
+  char x;
+  double y;
+};
+
+struct VOIDP {
+  char x;
+  void *y;
+};
+
 int main(int,char*[]) { 
   printf("SIZEOF_SHORT=%d\n",sizeof(short));
   printf("SIZEOF_INT=%d\n",sizeof(int));
   printf("SIZEOF_LONG=%d\n",sizeof(long));
+  printf("SIZEOF_FLOAT=%d\n",sizeof(float));
+  printf("SIZEOF_DOUBLE=%d\n",sizeof(double));
+  printf("SIZEOF_VOIDP=%d\n",sizeof(void*));
+  printf("ALIGNOF_SHORT=%d\n",offsetof(SHORT,y));
+  printf("ALIGNOF_INT=%d\n",offsetof(INT,y));
+  printf("ALIGNOF_LONG=%d\n",offsetof(LONG,y));
+  printf("ALIGNOF_FLOAT=%d\n",offsetof(FLOAT,y));
+  printf("ALIGNOF_DOUBLE=%d\n",offsetof(DOUBLE,y));
+  printf("ALIGNOF_VOIDP=%d\n",offsetof(VOIDP,y));
   return 0;
 }
+
+@h = tangler("tmp/longlong.cxx",'c++')
+@select(h)
+#include <stdio.h>
+#include <stddef.h>
+
+struct LONGLONG {
+  char x;
+  long long y;
+};
+
+int main(int,char*[]) { 
+  printf("SIZEOF_LONGLONG=%d\n",sizeof(long long));
+  printf("ALIGNOF_LONGLONG=%d\n",offsetof(LONGLONG,y));
+  return 0;
+}
+
+@h = tangler("tmp/longdouble.cxx",'c++')
+@select(h)
+#include <stdio.h>
+#include <stddef.h>
+
+struct LONGDOUBLE {
+  char x;
+  long double y;
+};
+
+int main(int,char*[]) { 
+  printf("SIZEOF_LONGDOUBLE=%d\n",sizeof(long double));
+  printf("ALIGNOF_LONGDOUBLE=%d\n",offsetof(LONGDOUBLE,y));
+  return 0;
+}
+
 @h = tangler("script/make_config.py")
 @select(h)
 # THIS PROGRAM CREATES THE DEFAULT CONFIGURATION FILE
@@ -283,6 +349,15 @@ try:
 except:
   HAVE_LONGLONG=0
 
+# find if we have long double
+try:
+  xqt("g++ -w tmp/longdouble.cxx -o tmp/longdouble")
+  xqt("tmp/longdouble >tmp/longdouble.py")
+  execfile("tmp/longdouble.py")
+  HAVE_LONGDOUBLE=1
+except:
+  HAVE_LONGDOUBLE=0
+
 DEBUG_SYMBOLS = "-g "
 CCOPT1 = "-O1 -DNDEBUG "
 CCOPT2 = "-O3 --inline -DNDEBUG "
@@ -329,11 +404,26 @@ try:
   p(f,"HAVE_ISNANF_IN_IEEEFP")
   p(f,"HAVE_STDINT")
   p(f,"HAVE_LONGLONG")
+  p(f,"HAVE_LONGDOUBLE")
   p(f,"SIZEOF_SHORT")
   p(f,"SIZEOF_INT")
   p(f,"SIZEOF_LONG")
+  p(f,"SIZEOF_FLOAT")
+  p(f,"SIZEOF_DOUBLE")
+  p(f,"SIZEOF_VOIDP")
+  p(f,"ALIGNOF_SHORT")
+  p(f,"ALIGNOF_INT")
+  p(f,"ALIGNOF_LONG")
+  p(f,"ALIGNOF_FLOAT")
+  p(f,"ALIGNOF_DOUBLE")
+  p(f,"ALIGNOF_VOIDP")
   if HAVE_LONGLONG:
     p(f,"SIZEOF_LONGLONG")
+    p(f,"ALIGNOF_LONGLONG")
+
+  if HAVE_LONGDOUBLE:
+    p(f,"SIZEOF_LONGDOUBLE")
+    p(f,"ALIGNOF_LONGDOUBLE")
 
   p(f,"SUPPORT_DYNAMIC_LOADING")
   pr(f,"SUPPORT_STATIC_LINKAGE = 1")

@@ -53,6 +53,14 @@ val find_thread_vars_with_type:
   fully_bound_symbol_table_t ->
   (bid_t * btypecode_t) list
 
+val find_references:
+  sym_state_t ->
+  (bid_t, bid_t list) Hashtbl.t *
+  fully_bound_symbol_table_t ->
+  bid_t ->
+  btypecode_t list ->
+  (bid_t * btypecode_t) list
+
 @h = tangler('src/flx_ogen.ml')
 @select(h)
 open Flx_util
@@ -418,10 +426,6 @@ val gen_biface_bodies:
   biface_t list ->
   string
   
-val find_thread_vars:
-  fully_bound_symbol_table_t ->
-  bid_t list
-
 val format_vars:
   sym_state_t ->
   fully_bound_symbol_table_t ->
@@ -484,9 +488,6 @@ let cstring_of_literal e = match e with
   | `AST_cstring s -> string_of_string s
   | `AST_wstring s -> "L" ^ string_of_string s
   | `AST_ustring s -> "L" ^ string_of_string s
-
-let find_thread_vars bbdfns = 
-  map fst (find_thread_vars_with_type bbdfns)
 
 let find_variable_indices syms (child_map,bbdfns) index = 
   let children = 
@@ -667,8 +668,6 @@ let gen_function syms (child_map,bbdfns) index id vs bps ret' ts instance_no =
     frame_dcls ^
     "  //display\n" ^
     display_string ^ "\n" ^
-    "  //return address\n" ^
-    "  con_t *_caller;\n" ^
     members ^
     "  //constructor\n" ^
     ctor ^
@@ -751,7 +750,7 @@ let gen_functions syms (child_map,bbdfns) =
   ;
   Buffer.contents s
 
-let gen_ctor syms bbdfns name display ts =
+let gen_ctor syms bbdfns name display funs ts =
   name^"::"^name^
   "\n  (\n" ^
   cat ",\n"
@@ -775,6 +774,13 @@ let gen_ctor syms bbdfns name display ts =
       "  ptr" ^ instname ^ "(pptr"^instname^")"
     )
     display
+    @
+    map 
+    (fun (index,t)-> 
+      cpp_instance_name syms bbdfns index ts
+      ^ "(0)"
+    )
+    funs
   ) ^ 
   " {}\n"
 
@@ -1599,7 +1605,17 @@ let gen_function_methods syms (child_map,bbdfns) label_map counter index ts inst
     let display = get_display_list bbdfns index in
 
     let rettypename = cpp_typename syms ret in
-    let ctor = gen_ctor syms bbdfns name display ts in
+
+    let ctor = 
+      let vars =  find_references syms (child_map,bbdfns) index ts in
+      let funs = filter 
+        (fun (i,t) -> match t with 
+        | `BTYP_function _ -> true 
+        | _ -> false
+        ) vars 
+      in
+      gen_ctor syms bbdfns name display funs ts 
+    in
     let dtor = gen_dtor syms bbdfns name display ts in
     let params = map (fun (id,(ix,t)) -> ix) bps in
     let exe_string =
@@ -1691,7 +1707,17 @@ let gen_procedure_methods syms (child_map,bbdfns) label_map counter index ts ins
 
     let display = get_display_list bbdfns index in
 
-    let ctor = gen_ctor syms bbdfns name display ts in
+    let ctor = 
+      let vars =  find_references syms (child_map,bbdfns) index ts in
+      let funs = filter 
+        (fun (i,t) -> match t with 
+        | `BTYP_function _ -> true 
+        | _ -> false
+        ) vars 
+      in
+      gen_ctor syms bbdfns name display funs ts 
+    in
+
     let dtor = gen_dtor syms bbdfns name display ts in
     let ps = map (fun (id,(ix,t)) -> id,t) bps in
     let params = map (fun (id,(ix,t)) -> ix) bps in
@@ -1938,6 +1964,7 @@ open Flx_getopt
 open Flx_version
 open Flx_exceptions
 open Flx_flxopt
+open Flx_ogen
 ;;
 
 let print_help () = print_options(); exit(0)
@@ -2258,6 +2285,9 @@ try
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASSES";
   plh  (gen_functions syms (child_map,bbdfns));
+
+  let topvars_with_type = find_thread_vars_with_type bbdfns in
+  let topvars = List.map fst topvars_with_type in
   List.iter plh 
   [
   "struct thread_frame_t {";
@@ -2265,22 +2295,14 @@ try
   "  process_frame_t *process_frame;";
   "  collector_t *gc;";
   "  thread_frame_t(";
-  "    global_frame_t *global_frame_a,";
-  "    process_frame_t *process_frame_a,";
-  "    collector_t *gc_a";
-  "  ) : ";
-  "    process_frame(process_frame_a),";
-  "    global_frame(global_frame_a),";
-  "    gc(gc_a)";
-  "  {}"
-  ];
-  (*
-  print_endline "Finding top level variables";
-  *)
-  let topvars = find_thread_vars bbdfns in
+  "    global_frame_t*,";
+  "    process_frame_t*,";
+  "    collector_t*";
+  "  );";
+  ]
+  ;
   plh (format_vars syms bbdfns topvars []);
   plh "};";
-
 
   (* BODY *)
   if compiler_options.print_flag then 
@@ -2312,6 +2334,45 @@ try
   )
   (List.sort compare !dfnlist)
   ;
+
+  plb "\n//-----------------------------------------";
+  plb "//Thread Frame Constructor";
+
+  let topfuns = List.filter 
+    (fun (i,t) -> match t with 
+    | `BTYP_function _ -> true 
+    | _ -> false
+    ) topvars_with_type
+  in
+  let topfuns = List.map fst topfuns in
+  let topinits =
+    [
+      "  process_frame(pf_a)";
+      "  global_frame(gf_a)";
+      "  gc(gc_a)"
+    ]
+    @
+    List.map
+    (fun index -> 
+      "  " ^ 
+      cpp_instance_name syms bbdfns index [] ^ 
+      "(0)"
+    )
+    topfuns
+  in
+  let topinits = String.concat ",\n" topinits in
+  List.iter plb
+  [
+  "thread_frame_t::thread_frame_t(";
+  "  global_frame_t *gf_a,";
+  "  process_frame_t *pf_a,";
+  "  collector_t *gc_a";
+  ") :";
+  topinits;
+  "{}"
+  ];
+
+
 
   plb "\n//-----------------------------------------";
   plb "//DEFINE OFFSET tables for GC";
