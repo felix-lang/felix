@@ -791,7 +791,8 @@ Note that when the returned function or procedure
 is called later, the values of variables may have
 changed since the time the it was passed.
 @p()
-Here is an example:
+Here is an example, beware this example
+contains quite a lot of subtle features!
 
 @select(tangler(tdir+'tut21.flx'))
 #include <std.flx>
@@ -799,12 +800,191 @@ Here is an example:
 var j = 2;
 
 fun get_printer(i:int): unit->void  {
-  proc p() { print (i+j); }
-  return p of (unit);
+  proc print() { print (i+j); }
+  return print of (unit);
 }
 
 val print_i = get_printer(40);
 print_i(); endl;
 j = 3;
 print_i(); endl;
+
+@doc()
+There are a couple of things to notice.
+The function return type is given as
+
+@begin_displayed_code()
+  unit->void
+@end_displayed_code()
+
+This is the notation for a procedure type accepting
+a unit argument. 
+@p()
+Notice also that the return value is
+
+@begin_displayed_code()
+  print of (unit)
+@end_displayed_code()
+
+This is the name of the function called 'print' 
+which accepts a unit argument. Felix can perform
+overload resolution when a function name is applied
+to an argument, by inspecting the type of the argument.
+@p()
+In other circumstances, you have to specify the type
+of the argument.
+@p()
+There is a subtle point of the overloading system
+here. The procedure 'print of (unit)' actually
+calls the procedure 'print of (int)'. Now if you are
+used to C++, you may wonder how this would work:
+the search for 'print of (int)' stats by finding
+'print of (unit)', and in C++ it would stop right there
+and report an error. In Felix, if overload resolution
+for an unqualified function or procedure name fails,
+the enclosing scope is examined. This 'overloading
+across scopes' is allows you to extend an overload
+set locally. The special rule does not apply
+to qualified names (where the name must be found
+in the designated scope). [I may change this!]
+@p()
+Another thing to notice is that
+the call to print_i cannot be abbreviated by leaving
+the () off. This is because print_i is a function
+value, not the name of a function. 
+@p()
+More precisely, the function specification for p of (unit)
+is used to build a function closure: this consists of the
+code body of the function, together with the environment
+at the point of definition and the time the closure
+is created: it binds to the current 'activation record'
+or 'stack frame' of the enclosing function 'get_printer'.
+And because that environment contains the value 'i'
+initialised to 30, and the variable 'j', it will
+print 40 + j as an answer when called. This is 42
+the first time, since at that time j is 2, and 43 the
+second time, since j is then 3.
+
+@head(1,'Currying')
+Consider the following example:
+@select(tangler(tdir+'tut22.flx'))
+#include <std.flx>
+
+fun f4(i4:int): int->int->int->int  {
+  fun f3(i3:int): int->int->int {
+    fun f2(i2:int): int->int {
+      fun f1(i1:int): int {
+        return i1+i2+i3+i4;
+      }
+      return f1 of (int);
+    }
+    return f2 of (int);
+  }
+  return f3 of (int);
+}
+
+print (f4 1 2 3 4); endl;
+print ((f4 1 2 3) 4); endl;
+print ((f4 1 2) 3 4); endl;
+print ((f4 1) 2 3 4); endl;
+print (((f4 1) 2 3) 4); endl;
+print (((f4 1 2) 3) 4); endl;
+
+val curry = f4 1 2;
+print (curry 3 4); endl;
+
+@doc()
+You should note that -> is right associative,
+so that
+
+@begin_displayed_code()
+  int->int->int->int
+@end_displayed_code()
+is equivalent to
+@begin_displayed_code()
+  int->(int->(int->int))
+@end_displayed_code()
+On the other hand, application is left associative,
+so that
+@begin_displayed_code()
+  f4 1 2 3 4
+@end_displayed_code()
+is equivalent to
+@begin_displayed_code()
+  (((f4 1) 2) 3) 4
+@end_displayed_code()
+
+Note that the 'partial' applications such as
+shown by the brackets, are of course closures
+of the inner functions, and you can use them
+to initialise values, assign them to variables
+or pass them to functions. Such 'partial'
+application is called currying (after the mathematician
+Howard Curry, who invented the lambda calculus).
+@p()
+While this is a perfectly good defintion,
+but there is a lot of housekeeping going on.
+Felix provides syntactic sugar that makes it easier
+to declare functions suitable for currying.
+Here is the equivalent code, using this sugar:
+
+@select(tangler(tdir+'tut23.flx'))
+#include <std.flx>
+
+fun f4(i4:int) (i3:int) (i2:int) (i1:int): int {
+  return i1+i2+i3+i4;
+}
+
+print (f4 1 2 3 4); endl;
+print ((f4 1 2 3) 4); endl;
+print ((f4 1 2) 3 4); endl;
+print ((f4 1) 2 3 4); endl;
+print (((f4 1) 2 3) 4); endl;
+print (((f4 1 2) 3) 4); endl;
+
+val curry = f4 1 2;
+print (curry 3 4); endl;
+
+@doc()
+You may remember eariler I said that
+all Felix accepted exactly one argument,
+with one exception: tuple constructors.
+@p()
+It is conventional to say that a function like
+'f4' above has 4 arguments. Of course,
+you know that this isn't the case: it really
+has one argument and returns a function.
+It is also sometimes said that f4 has arity 4,
+meaning you can chain applications 4 times,
+until you get a non-function result.
+@p()
+Note that the notation above can be used for
+procedures as well: of course, all the partial
+applications except the last return functions,
+and the last one returns a procedure.
+@p()
+It is a matter of style whether you write
+functions in the curried form or not.
+Any function accepting a tuple can be changed
+to a currified function accepting the components
+in sequence. This is conventional in some
+functional programming languages (like Ocaml),
+but is less heavily used in others (like SML).
+@p()
+In the current implementation of Felix, currified
+functions are more expensive than ones accepting
+tuples, but the currified version is easier to
+curry :-)
+@p()
+As an exercise, write a function that given an
+arbitrary function f accepting a tuple of 3 ints,
+returns an equivalent currified version of it
+that accepts 3 arguments.
+@p()
+What you have done is called eta-expansion.
+It is necessary even for currified functions
+if you want to fix the first argument, but
+leave the second free. There's a more elegant
+way to do this using labelled arguments, 
+as we shall see. [Maybe?]
 

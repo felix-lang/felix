@@ -102,6 +102,57 @@ let call1 (op:string) (sr:range_srcref) (sri:srcref) l =
     AST_name (lift sri, ([op], TYP_none)),
     AST_ref (src_of_expr l,l)
   )
+
+let mkcurry sr name args return_type body =
+  let mkfuntyp d c = TYP_function (d,c)
+  and typeoflist lst = match lst with
+    | [x] -> x
+    | _ -> TYP_tuple lst
+  in 
+  let mkret arg ret = mkfuntyp (typeoflist (List.map snd arg)) ret in
+  let arity = List.length args in
+  let rettype args = List.fold_right mkret args return_type in
+
+  let rec aux args =  
+    let n = List.length args in
+    let name n = 
+      if n = arity
+      then name (* top level *)
+      else "_curry_" ^ string_of_int n
+    in
+    match args with 
+    | [] -> assert false
+    | h :: [] -> (* bottom level *)
+      (match return_type with
+      | TYP_void -> 
+        AST_procedure (sr, TYP_void, name n, h, body) 
+        (* Note that this 'TYP_void' is supposed to be
+           the type of the message: unused at present!
+        *)
+      | _ -> 
+        AST_function (sr, name n, h, return_type, body)
+      )
+    | h :: t ->
+      let m = List.length args in
+      let body = 
+        [
+          aux t;
+          AST_return 
+          (
+            sr,
+            AST_name 
+            (
+              sr,
+              (
+                [name (m-1)],
+                typeoflist (List.map snd (List.hd args))
+              )
+            )
+          )
+        ] 
+      in
+        AST_function (sr, name m, h, rettype t, body)
+   in aux args
 %}
 
 @head(2,'Tokens')
@@ -337,11 +388,24 @@ pparams:
   | pparam STAR pparams { $1 :: $3 }
   | pparam { [$1] }
 
+fun_arg:
+  | LPAR parameter_comma_list RPAR { rstoken $1 $3,$2 }
+
+fun_args:
+  | fun_arg fun_args      { $1 :: $2 }
+  | fun_arg               { [$1] }
+
 function_definition:
-  | FUNCTION NAME LPAR parameter_comma_list RPAR COLON type_expr compound 
+  | FUNCTION NAME fun_args COLON type_expr compound 
     { 
-      AST_function (rsrange (lift $1) (fst $8), snd $2, $4, $7, snd $8) 
+      let sr = rsrange (lift $1) (fst $6)
+      and name = snd $2 
+      and return_type = $5
+      and body = snd $6
+      and args = List.map snd $3 (* elide srcref *)
+      in mkcurry sr name args return_type body
     }
+
   | FUNCTION NAME COLON UNIT RIGHTARROW type_expr EQUAL STRING SEMI 
     { 
       AST_fun_decl (rstoken $1 $9, snd $2, [],  $6,  snd $8) 
@@ -356,9 +420,14 @@ procedure_definition:
     { 
       AST_procedure (rsrange (lift $1) (fst $3), TYP_void, snd $2, [], snd $3) 
     }
-  | PROCEDURE NAME LPAR parameter_comma_list RPAR compound 
+  | PROCEDURE NAME fun_args compound 
     { 
-      AST_procedure (rsrange (lift $1) (fst $6), TYP_void, snd $2, $4, snd $6) 
+      let sr = rsrange (lift $1) (fst $4)
+      and name = snd $2 
+      and return_type = TYP_void
+      and body = snd $4
+      and args = List.map snd $3 (* elide srcref *)
+      in mkcurry sr name args return_type body
     }
   | PROCEDURE NAME COLON UNIT EQUAL STRING SEMI 
     { 
@@ -902,11 +971,12 @@ pattern:
 type_expr:
   | type_arrow { $1 }
 
-/* arrow has the lowest precedence, and associates left */
+/* arrow has the lowest precedence, and associates right */
 type_arrow:
-  | type_arrow RIGHTARROW type_product { TYP_function ($1,$3) }
+  | type_product RIGHTARROW type_arrow { TYP_function ($1,$3) }
   | type_product { $1 }
 
+/* star is left associative */
 type_product:
   | type_pointer STAR type_product_list { TYP_tuple ($1 :: $3) }
   | type_pointer{ $1 }
