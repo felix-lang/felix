@@ -3,6 +3,8 @@
 @select(h)
 val src_of_token : Flx_parse.token -> Flx_ast.srcref
 val string_of_token : Flx_parse.token -> string
+val name_of_token : Flx_parse.token -> string
+
 @h = tangler('src/flx_prelex.ml')
 @select(h)
 open Flx_parse
@@ -19,93 +21,54 @@ let string_of_token (tok :Flx_parse.token): string =
   | WSTRING (sr,s) -> Flx_string.c_quote_of_string s 
   | USTRING (sr,s) -> Flx_string.c_quote_of_string s 
 
-  (* one character tokens *)
-  | DOLLAR _ -> "$" 
-  | QUEST _ -> "?" 
-  | EXCLAMATION _ -> "!" 
-  | LPAR _ -> "(" 
-  | RPAR _ -> ")" 
-  | LSQB _ -> "["
-  | RSQB _ -> "]"
-  | LBRACE _ -> "{"
-  | RBRACE _ -> "}"
-  | COLON _ -> ":"
-  | COMMA _ -> ","
-  | SEMI _ -> ";"
-  | PLUS _ -> "+"
-  | MINUS _ -> "-"
-  | STAR _ -> "*"
-  | SLASH _ -> "/"
-  | VBAR _ -> "|"
-  | AMPER _ -> "&"
-  | LESS _ -> "<"
-  | GREATER _ -> ">"
-  | EQUAL _ -> "="
-  | DOT _ -> "."
-  | PERCENT _ -> "%"
+@for k,s in flx_1_char_syms:
+  tangle('  | '+k+' _ -> "'+s+'"',inhibit_sref=1)
 
-  | BACKQUOTE _ -> "`"
-  | TILDE _ -> "~"
-  | CIRCUMFLEX _ -> "^"
+@for k,s in flx_2_char_syms:
+  tangle('  | '+k+' _ -> "'+s+'"',inhibit_sref=1)
 
-  (* two character tokens *)
-  | ANDLESS _ -> "&<"
-  | ANDGREATER _ -> "&>"
-  | EQEQUAL _ -> "=="
-  | NOTEQUAL _ -> "!="
-  | LESSEQUAL _ -> "<="
-  | GREATEREQUAL _ -> ">="
-  | LEFTSHIFT _ -> "<<"
-  | RIGHTSHIFT _ -> ">>"
-  | DOUBLESTAR _ -> "**"
-  | STARSTAR _ -> "<POW>**"
-  | LESSCOLON _ -> "<:"
-  | COLONGREATER _ -> ":>"
-  | DOTDOT _ -> ".."
-  | COLONCOLON _ -> "::"
+@for k,s in flx_3_char_syms:
+  tangle('  | '+k+' _ -> "'+s+'"',inhibit_sref=1)
 
-  | PLUSPLUS _ -> "++"
-  | MINUSMINUS _ -> "--"
-  | PLUSEQUAL _ -> "+="
-  | MINUSEQUAL _ -> "-="
-  | STAREQUAL _ -> "*="
-  | SLASHEQUAL _ -> "/="
-  | PERCENTEQUAL _ -> "%="
-  | CARETEQUAL _ -> "^="
-  | VBAREQUAL _ -> "|="
-  | AMPEREQUAL _ -> "&="
-  | TILDEEQUAL _ -> "~="
-  | COLONEQUAL _ -> ":="
-  | RIGHTARROW _ -> "->"
-  | EQRIGHTARROW _ -> "=>"
-  | LEFTARROW _ -> "<-"
-  | LSQANGLE _ -> "[<"
-  | RSQANGLE _ -> ">]"
-
-  | LSQBAR _ -> "[<"
-  | RSQBAR _ -> ">]"
-
-  | LEFTSHIFTEQUAL _ -> "<<="
-  | RIGHTSHIFTEQUAL _ -> ">>="
-  | LEFTRIGHTARROW _ -> "<->"
-  | ANDEQEQUAL _ -> "&=="
-  | ANDNOTEQUAL _ -> "&!="
-  | ANDLESSEQUAL _ -> "&<="
-  | ANDGREATEREQUAL _ -> "&>="
-  | DOTDOTDOT _ -> "..."
-
-  (* keywords *)
-@for n,t in flx_keywords: tangle('  |  '+t+' _ -> "'+n+'"')
-
-  (* special things *)
-  | SLOSH _ -> "\\" (* "\"" *) 
-
+@for n,t in flx_keywords: 
+  tangle('  |  '+t+' _ -> "'+n+'"',inhibit_sref=1)
+@#
   | COMMENT s -> s (* C style comment, includes the /* */ pair *)
   | COMMENT_NEWLINE s -> "// " ^ s ^ "<NEWLINE>"
   | WHITE i -> String.make i ' '
   | NEWLINE -> "<NEWLINE>"
   | ENDMARKER -> "<<EOF>>"
   | ERRORTOKEN (sref,s) -> "<<ERROR '"^ s ^"'>>"
+
+let name_of_token (tok :Flx_parse.token): string =
+  match tok with
+  | NAME (sr,s) -> "NAME"
+  | INTEGER (sr,t,i) -> "INTEGER"
+  | FLOAT (sr,t,v) -> "FLOAT"
+  | STRING (sr,s) -> "STRING"
+  | CSTRING (sr,s) -> "CSTRING"
+  | WSTRING (sr,s) -> "WSTRING"
+  | USTRING (sr,s) -> "USTRING"
+
+@for k,s in flx_1_char_syms:
+  tangle('  | '+k+' _ -> "'+k+'"',inhibit_sref=1)
+
+@for k,s in flx_2_char_syms:
+  tangle('  | '+k+' _ -> "'+k+'"',inhibit_sref=1)
+
+@for k,s in flx_3_char_syms:
+  tangle('  | '+k+' _ -> "'+k+'"',inhibit_sref=1)
+
+@for n,t in flx_keywords: 
+  tangle('  |  '+t+' _ -> "'+t+'"',inhibit_sref=1)
+@#
+
+  | COMMENT s -> "COMMENT"
+  | COMMENT_NEWLINE s -> "COMMENT_NEWLINE"
+  | WHITE i -> "WHITE"
+  | NEWLINE -> "NEWLINE"
+  | ENDMARKER -> "ENDMARKER"
+  | ERRORTOKEN (sref,s) -> "ERRORTOKEN"
 
 let src_of_token t = match t with
   | NEWLINE 
@@ -125,7 +88,7 @@ let src_of_token t = match t with
 
   | ERRORTOKEN (s,_) 
 
-@for n,t in flx_keywords: tangle('  | '+t+' s')
+@for n,t in flx_keywords: tangle('  | '+t+' s',inhibit_sref=1)
 
   | EQUAL s 
   | PLUS s 
@@ -171,7 +134,6 @@ let src_of_token t = match t with
   | LEFTSHIFT s 
   | RIGHTSHIFT s 
   | LEFTRIGHTARROW s 
-  | DOUBLESTAR s 
   | PLUSPLUS s 
   | MINUSMINUS s 
   | PLUSEQUAL s 
@@ -193,7 +155,6 @@ let src_of_token t = match t with
   | LESSCOLON s 
   | COLONCOLON s 
   | DOTDOT s 
-  | SLOSH s 
   | DOTDOTDOT s 
     -> s
 
@@ -263,7 +224,11 @@ class file_control
     method set_line n = line_no <- n
     method set_filename f = filename <- f
     method get_relative f = 
-      Filename.concat basedir f
+      let fn = Filename.concat basedir f in
+      if not (Sys.file_exists fn) then
+        failwith ("Relative include file \""^f^ "\" not found in "^basedir)
+      else fn
+      
     method get_absolute f = 
       try
         List.iter
@@ -1786,81 +1751,15 @@ and pre_flx_lex state = parse
       [FLOAT (state#get_srcref lexbuf,"double",strip_us str)]
   }
 
-(* one character sequences *)
-| "$" { state#inbody; [DOLLAR        (state#get_srcref lexbuf)] }
-| "(" { state#inbody; [LPAR          (state#get_srcref lexbuf)] }
-| ")" { state#inbody; [RPAR          (state#get_srcref lexbuf)] }
-| "[" { state#inbody; [LSQB          (state#get_srcref lexbuf)] }
-| "]" { state#inbody; [RSQB          (state#get_srcref lexbuf)] }
-| "{" { state#inbody; [LBRACE        (state#get_srcref lexbuf)] }
-| "}" { state#inbody; [RBRACE        (state#get_srcref lexbuf)] }
-| "!" { state#inbody; [EXCLAMATION   (state#get_srcref lexbuf)] }
-| ":" { state#inbody; [COLON         (state#get_srcref lexbuf)] }
-| "," { state#inbody; [COMMA         (state#get_srcref lexbuf)] }
-| ";" { state#inbody; [SEMI          (state#get_srcref lexbuf)] }
-| "+" { state#inbody; [PLUS          (state#get_srcref lexbuf)] }
-| "-" { state#inbody; [MINUS         (state#get_srcref lexbuf)] }
-| "*" { state#inbody; [STAR          (state#get_srcref lexbuf)] }
-| "/" { state#inbody; [SLASH         (state#get_srcref lexbuf)] }
-| "|" { state#inbody; [VBAR          (state#get_srcref lexbuf)] }
-| "&" { state#inbody; [AMPER         (state#get_srcref lexbuf)] }
-| "<" { state#inbody; [LESS          (state#get_srcref lexbuf)] }
-| ">" { state#inbody; [GREATER       (state#get_srcref lexbuf)] }
-| "=" { state#inbody; [EQUAL         (state#get_srcref lexbuf)] }
-| "." { state#inbody; [DOT           (state#get_srcref lexbuf)] }
-| "%" { state#inbody; [PERCENT       (state#get_srcref lexbuf)] }
-| "`" { state#inbody; [BACKQUOTE     (state#get_srcref lexbuf)] }
-| "~" { state#inbody; [TILDE         (state#get_srcref lexbuf)] }
-| "^" { state#inbody; [CIRCUMFLEX    (state#get_srcref lexbuf)] }
-| "!" { state#inbody; [EXCLAMATION   (state#get_srcref lexbuf)] }
-| "?" { state#inbody; [QUEST         (state#get_srcref lexbuf)] }
+@for k,s in flx_1_char_syms:
+  tangle('| "'+s+'" { state#inbody; ['+k+'  (state#get_srcref lexbuf)] }',inhibit_sref=1)
 
-(* two character sequences *)
-| "=>" { state#inbody; [EQRIGHTARROW (state#get_srcref lexbuf)] }
-| "&<" { state#inbody; [ANDLESS      (state#get_srcref lexbuf)] }
-| "&>" { state#inbody; [ANDGREATER   (state#get_srcref lexbuf)] }
-| ".." { state#inbody; [DOTDOT       (state#get_srcref lexbuf)] }
-| "::" { state#inbody; [COLONCOLON   (state#get_srcref lexbuf)] }
-| "==" { state#inbody; [EQEQUAL      (state#get_srcref lexbuf)] }
-| "<>" 
-| "!=" { state#inbody; [NOTEQUAL     (state#get_srcref lexbuf)] }
-| "<=" { state#inbody; [LESSEQUAL    (state#get_srcref lexbuf)] }
-| ">=" { state#inbody; [GREATEREQUAL (state#get_srcref lexbuf)] }
-| "<<" { state#inbody; [LEFTSHIFT    (state#get_srcref lexbuf)] }
-| ">>" { state#inbody; [RIGHTSHIFT   (state#get_srcref lexbuf)] }
-| "**" { state#inbody; [STARSTAR     (state#get_srcref lexbuf)] }
-| "\\" { state#inbody; [SLOSH        (state#get_srcref lexbuf)] }
-| "++" { state#inbody; [PLUSPLUS     (state#get_srcref lexbuf)] }
-| "--" { state#inbody; [MINUSMINUS   (state#get_srcref lexbuf)] }
-| "+=" { state#inbody; [PLUSEQUAL    (state#get_srcref lexbuf)] }
-| "-=" { state#inbody; [MINUSEQUAL   (state#get_srcref lexbuf)] }
-| "*=" { state#inbody; [STAREQUAL    (state#get_srcref lexbuf)] }
-| "/=" { state#inbody; [SLASHEQUAL   (state#get_srcref lexbuf)] }
-| "%=" { state#inbody; [PERCENTEQUAL (state#get_srcref lexbuf)] }
-| "^=" { state#inbody; [CARETEQUAL   (state#get_srcref lexbuf)] }
-| "|=" { state#inbody; [VBAREQUAL    (state#get_srcref lexbuf)] }
-| "&=" { state#inbody; [AMPEREQUAL   (state#get_srcref lexbuf)] }
-| "~=" { state#inbody; [TILDEEQUAL   (state#get_srcref lexbuf)] }
-| ":=" { state#inbody; [COLONEQUAL   (state#get_srcref lexbuf)] }
-| "<-" { state#inbody; [LEFTARROW    (state#get_srcref lexbuf)] }
-| "->" { state#inbody; [RIGHTARROW   (state#get_srcref lexbuf)] }
-| "<:" { state#inbody; [LESSCOLON    (state#get_srcref lexbuf)] }
-| ":>" { state#inbody; [COLONGREATER (state#get_srcref lexbuf)] }
-| "[<" { state#inbody; [LSQANGLE     (state#get_srcref lexbuf)] }
-| ">]" { state#inbody; [RSQANGLE     (state#get_srcref lexbuf)] }
-| "[|" { state#inbody; [LSQBAR       (state#get_srcref lexbuf)] }
-| "|]" { state#inbody; [RSQBAR       (state#get_srcref lexbuf)] }
+@for k,s in flx_2_char_syms:
+  tangle('| "'+s+'" { state#inbody; ['+k+'  (state#get_srcref lexbuf)] }',inhibit_sref=1)
 
-(* three character sequences *)
-| "<<=" { state#inbody; [LEFTSHIFTEQUAL (state#get_srcref lexbuf)] }
-| ">>=" { state#inbody; [RIGHTSHIFTEQUAL(state#get_srcref lexbuf)] }
-| "..." { state#inbody; [DOTDOTDOT      (state#get_srcref lexbuf)] }
-| "<->" { state#inbody; [LEFTRIGHTARROW (state#get_srcref lexbuf)] }
-| "&==" { state#inbody; [ANDEQEQUAL      (state#get_srcref lexbuf)] }
-| "&<>" 
-| "&!=" { state#inbody; [ANDNOTEQUAL     (state#get_srcref lexbuf)] }
-| "&<=" { state#inbody; [ANDLESSEQUAL    (state#get_srcref lexbuf)] }
-| "&>=" { state#inbody; [ANDGREATEREQUAL (state#get_srcref lexbuf)] }
+@for k,s in flx_3_char_syms:
+  tangle('| "'+s+'" { state#inbody; ['+k+'  (state#get_srcref lexbuf)] }',inhibit_sref=1)
+@#
 
 (* Python strings *)
 | quote  { state#inbody; parse_qstring state lexbuf }
@@ -1971,3 +1870,4 @@ val parse_line :
   Flx_lexstate.lexer_state -> 
   Lexing.lexbuf -> 
   string
+

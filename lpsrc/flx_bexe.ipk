@@ -335,6 +335,25 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       reachable := false; 
       tack (`BEXE_nonreturn_code (sr,s))
 
+    | `EXE_iinit ((s,index),e) -> 
+        let e',rhst = be e in
+        let lhst = typeofindex_with_ts syms sr index parent_ts in
+        let rhst = minimise syms.dfns rhst in
+        let lhst = match lhst with |`BTYP_lvalue t -> t | t -> t in
+        if type_match syms.dfns lhst rhst
+        then tack (`BEXE_init (sr,index, (e',rhst)))
+        else clierr sr
+        (
+          "[bind_exe] LHS["^s^"<"^si index^">]:\n"^
+          string_of_btypecode syms.dfns lhst^
+          "\n of initialisation must have same type as RHS:\n"^
+          string_of_btypecode syms.dfns rhst^
+          "\nunfolded LHS = " ^ sbt syms.dfns (unfold syms.dfns lhst) ^ 
+          "\nenvironment type variables are " ^
+          print_vs parent_vs
+          
+        )
+
     | `EXE_init (s,e) -> 
       begin match lun sr s with
       | FunctionEntry _ -> clierr sr "Can't init function constant"

@@ -390,6 +390,36 @@ let var_list_occurs ls t =
   let yes = ref false in
   iter (fun i -> yes := !yes || var_i_occurs i t) ls;
   !yes
+
+let lstrip dfns t = 
+  let rec aux trail t' = 
+  let uf t = aux (0::trail) t in
+  match t' with 
+  | `BTYP_sum ls -> `BTYP_sum (map uf ls)
+  | `BTYP_tuple ls -> `BTYP_tuple (map uf ls)
+  | `BTYP_array (a,b) -> `BTYP_array (uf a, uf b)
+
+  (* I think this is WRONG .. *)
+  | `BTYP_function (a,b) -> `BTYP_function (uf a, uf b)
+
+  | `BTYP_pointer a -> `BTYP_pointer (uf a)
+  | `BTYP_lvalue a -> aux (1::trail) a
+  | `BTYP_fix i -> 
+     let k = ref i in
+     let j = ref 0 in
+     let trail = ref trail in
+     while !k < 0 do 
+       j := !j + hd !trail; 
+       trail := tl !trail;
+       incr k
+     done;
+     `BTYP_fix (i + !j)
+
+  | `BTYP_inst (i,ts) -> `BTYP_inst (i,map uf ts)
+  | _ -> t'
+  in aux [] t
+
+
   
 (* NOTE: this algorithm unifies EQUATIONS 
   not inequations, therefore it doesn't
@@ -449,12 +479,7 @@ let rec unification allow_lval dfns eqns (dvars: IntSet.t) : (int * btypecode_t)
           );
           s := Some (i, fix i t)
         end else begin
-          let t = match t with 
-            | `BTYP_lvalue t when allow_lval -> 
-              print_endline "WARNING, lvalue binding variable"; 
-              t
-            | _ -> t
-          in
+          let t = lstrip dfns t in
           s := Some (i,t)
         end
 
@@ -666,6 +691,7 @@ let do_unify syms a b =
       else 
         begin
           match Hashtbl.find syms.dfns i with
+          | { symdef=`SYMDEF_glr _ }
           | { symdef=`SYMDEF_function _ } ->
             (*
             print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode syms.dfns t);
@@ -836,32 +862,6 @@ let fold dfns t =
   in
     try aux [] 0 t; t
     with Found t -> t
-
-let lstrip dfns t = 
-  let rec aux trail t' = 
-  let uf t = aux (0::trail) t in
-  match t' with 
-  | `BTYP_sum ls -> `BTYP_sum (map uf ls)
-  | `BTYP_tuple ls -> `BTYP_tuple (map uf ls)
-  | `BTYP_array (a,b) -> `BTYP_array (uf a, uf b)
-  | `BTYP_function (a,b) -> `BTYP_function (uf a, uf b)
-  | `BTYP_pointer a -> `BTYP_pointer (uf a)
-  | `BTYP_lvalue a -> aux (1::trail) a
-  | `BTYP_fix i -> 
-     let k = ref i in
-     let j = ref 0 in
-     let trail = ref trail in
-     while !k < 0 do 
-       j := !j + hd !trail; 
-       trail := tl !trail;
-       incr k
-     done;
-     `BTYP_fix (i + !j)
-
-  | `BTYP_inst (i,ts) -> `BTYP_inst (i,map uf ts)
-  | _ -> t'
-  in aux [] t
-
 
 (* produces a unique minimal representation of a type
 by folding at every node *)

@@ -415,6 +415,9 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     let qn = Flx_typing.qualified_name_of_expr (me (qn:>expr_t)) in
     `AST_the (sr,qn)
 
+  (* the name here is just for diagnostics *)
+  | `AST_index (sr, n, i) -> `AST_index (sr,n,i)
+
   | `AST_lookup (sr, (e1, name,ts)) -> `AST_lookup (sr,(me e1, mi sr name,ts))
 
   | `AST_case_tag (sr, i) -> e
@@ -445,6 +448,12 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   | `AST_get_n (sr, (i, e1)) ->  `AST_get_n (sr,(i,me e1))
   | `AST_as (sr, (e1, id)) ->  `AST_as (sr,(me e1, mi sr id))
+
+  | `AST_parse (sr, e1, ms) -> 
+    let ms = map (fun (sr,p,e) -> sr,p,me e) ms in
+    `AST_parse (sr, me e1, ms)
+
+  | `AST_sparse _ -> assert false
 
   | `AST_match (sr, (e1, pes)) -> 
     let pes = 
@@ -521,6 +530,11 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   (* IDENTIFIER RENAMING NOT SUPPORTED IN REGDEF *)
   | `AST_regdef (sr, id, re)  ->  tack st
+
+  | `AST_glr (sr, id, t, ms )  -> 
+    (* add protection code later .. see AST_match *)
+    let ms = map (fun (sr',p,e) -> sr',p,me e) ms in
+    tack (`AST_glr (sr, mi sr id, mt sr t, ms ))
 
   | `AST_union (sr, id, vs, idts ) ->  
     let idts = map (fun (id,t) -> id,mt sr t) idts in

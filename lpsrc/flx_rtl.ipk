@@ -126,13 +126,31 @@ right type by client drivers.
 #endif
 #include <string>
 
+#if defined(FLX_PTF_STATIC_STRUCT)
+#define PTF ptf.
+#elif defined(FLX_PTF_STATIC_POINTER)
+#define PTF ptf->
+#else
+#define PTF ptf->
+#endif
+
 // for declarations in header file 
-#define FLX_FMEM_DECL \
-  thread_frame_t *ptf;
-
-#define FLX_FPAR_DECL \
-    thread_frame_t *_ptf
-
+#if defined(FLX_PTF_STATIC_STRUCT)
+#define FLX_FMEM_DECL
+#define FLX_FPAR_DECL_ONLY
+#define FLX_FPAR_DECL
+#define FLX_DCL_THREAD_FRAME extern thread_frame_t ptf;
+#elif defined(FLX_PTF_STATIC_POINTER)
+#define FLX_FMEM_DECL
+#define FLX_FPAR_DECL_ONLY
+#define FLX_FPAR_DECL
+#define FLX_DCL_THREAD_FRAME extern thread_frame_t *ptf;
+#else
+#define FLX_FMEM_DECL thread_frame_t *ptf;
+#define FLX_FPAR_DECL_ONLY thread_frame_t *_ptf
+#define FLX_FPAR_DECL thread_frame_t *_ptf,
+#define FLX_DCL_THREAD_FRAME
+#endif
 
 namespace flx { namespace rtl {
 
@@ -238,9 +256,7 @@ struct flx_exec_failure_t {
   _caller = 0; \
   return tmp; \
 }
-  
-#define FLX_FMEM_INIT ptf(_ptf)
-#define FLX_FPAR_PASS ptf
+
 #define FLX_NEWP(x) new(gc,x##_ptr_map)x
 
 #define FLX_FINALISER(x) \
@@ -248,6 +264,57 @@ static void x##_finaliser(collector_t *, void *p){\
   ((x*)p)->~x();\
 }
 
+
+#if defined(FLX_PTF_STATIC_STRUCT)
+#define FLX_FMEM_INIT_ONLY
+#define FLX_FMEM_INIT :
+#define FLX_FPAR_PASS_ONLY
+#define FLX_FPAR_PASS
+#define _PTF _ptf.
+#define _PTFV
+#define FLX_PASS_PTF 0
+#define FLX_EAT_PTF(x)
+#define FLX_DEF_THREAD_FRAME thread_frame_t ptf;
+#elif defined(FLX_PTF_STATIC_POINTER)
+#define FLX_FMEM_INIT_ONLY
+#define FLX_FMEM_INIT :
+#define FLX_FPAR_PASS_ONLY
+#define FLX_FPAR_PASS
+#define _PTF _ptf->
+#define _PTFV
+#define FLX_PASS_PTF 0
+#define FLX_EAT_PTF(x)
+#define FLX_DEF_THREAD_FRAME thread_frame_t *ptf=0;
+#else
+#define FLX_FMEM_INIT_ONLY : ptf(_ptf)
+#define FLX_FMEM_INIT : ptf(_ptf),
+#define FLX_FPAR_PASS_ONLY ptf
+#define FLX_FPAR_PASS ptf,
+#define _PTF _ptf->
+#define _PTFV _ptf
+#define FLX_PASS_PTF 1
+#define FLX_EAT_PTF(x) x
+#define FLX_DEF_THREAD_FRAME
+#endif
+
+#if defined(FLX_PTF_STATIC_STRUCT)
+#define FLX_FRAME_WRAPPERS \
+extern "C" thread_frame_t *create_thread_frame(\
+  collector_t *gc\
+) {\
+  ptf.gc = gc;\
+  return &ptf;\
+}
+#elif defined(FLX_PTF_STATIC_POINTER)
+#define FLX_FRAME_WRAPPERS \
+extern "C" thread_frame_t *create_thread_frame(\
+  collector_t *gc\
+) {\
+  thread_frame_t *p = new(*gc,thread_frame_t_ptr_map) thread_frame_t(gc);\
+  ptf = p;\
+  return p;\
+}
+#else
 #define FLX_FRAME_WRAPPERS \
 extern "C" thread_frame_t *create_thread_frame(\
   collector_t *gc\
@@ -255,7 +322,33 @@ extern "C" thread_frame_t *create_thread_frame(\
   thread_frame_t *p = new(*gc,thread_frame_t_ptr_map) thread_frame_t(gc);\
   return p;\
 }
+#endif
 
+#if defined(FLX_PTF_STATIC_STRUCT)
+#define FLX_START_WRAPPER(x)\
+extern "C" con_t *flx_start(\
+  thread_frame_t *ptf,\
+  int argc,\
+  char **argv\
+) {\
+  ptf->argc = argc;\
+  ptf->argv = argv;\
+  return (new(*ptf->gc,x##_ptr_map) \
+    x()) ->call(0);\
+}
+#elif defined(FLX_PTF_STATIC_POINTER)
+#define FLX_START_WRAPPER(x)\
+extern "C" con_t *flx_start(\
+  thread_frame_t *ptf,\
+  int argc,\
+  char **argv\
+) {\
+  ptf->argc = argc;\
+  ptf->argv = argv;\
+  return (new(*ptf->gc,x##_ptr_map) \
+    x()) ->call(0);\
+}
+#else 
 #define FLX_START_WRAPPER(x)\
 extern "C" con_t *flx_start(\
   thread_frame_t *ptf,\
@@ -267,7 +360,7 @@ extern "C" con_t *flx_start(\
   return (new(*ptf->gc,x##_ptr_map) \
     x(ptf)) ->call(0);\
 }
-
+#endif
 
 #endif
 
@@ -609,6 +702,7 @@ shared library name are not passed.
 
 @h = tangler('rtl/flx_run.cpp')
 @select(h)
+#include <cstdlib>
 #include <stdio.h>
 #include <vector>
 #include <list>
@@ -633,6 +727,7 @@ static void *sp = 0;
 int main(int argc, char** argv)
 {
 #ifndef FLX_STATIC_LINK  
+  bool static_link = false;
   if (argc<2) 
   {
     printf("usage: flx_run [--debug] dll_filename options ..\n");
@@ -654,13 +749,25 @@ int main(int argc, char** argv)
     ++flx_argv;
   }
 #else
+  bool static_link = true;
   char *filename = argv[0];
   char **flx_argv = argv;
   int flx_argc = argc;
   bool debug = false;
 //  printf("Statically linked Felix program running\n");
 #endif
+  char *debug_env = std::getenv("FLX_DEBUG");
+  debug = debug || debug_env != 0;
+  if(debug)
+  {
+    fprintf(stderr,"Debug enabled for %s link program\n",static_link?"static":"dynamic");
+  }
+  char *finalise_env= std::getenv("FLX_FINALISE");
+  bool finalise = finalise_env != 0;
+  if(debug) 
+    fprintf(stderr,"Finalisation %s\n",finalise? "Enabled" : "Disabled");
 #ifdef HAVE_GXX
+    if(debug) fprintf(stderr, "Compiled by g++\n");
     static void *init_sp = sp;
     static void *init_fframe = __builtin_frame_address(0);
     static void *init_ret = __builtin_return_address(0);
@@ -670,7 +777,8 @@ int main(int argc, char** argv)
     fprintf(stderr,"flx_argv[%d]->%s\n",i,flx_argv[i]);
   try 
   {
-    if(debug)fprintf(stderr,"flx_run driver begins %s\n",flx_argv[0]);
+    if(debug)
+      fprintf(stderr,"flx_run driver begins %s\n",flx_argv[0]);
     flx_dynlink_t library;
     flx_libinit_t instance;
 
@@ -678,12 +786,17 @@ int main(int argc, char** argv)
     flx::gc::collector::malloc_free allocator;
     flx::gc::collector::flx_collector_t collector(&allocator);
     instance.create(&library, &collector,flx_argc,flx_argv);
- 
+    if(debug) {
+      fprintf(stderr,"loaded library %s at %p\n",filename,library.library);
+      fprintf(stderr,"thread frame at %p\n",instance.thread_frame);
+      fprintf(stderr,"initial continuation at %p\n",instance.start_proc);
+    } 
     int gc_counter = 0;
     con_t *top = instance.start_proc;
     collector.add_root(top);
     con_t *old_root = top;
 
+    unsigned long collections = 0;
     while( top && top->action == con_t::yield_action)
     {
       try {
@@ -700,40 +813,69 @@ int main(int argc, char** argv)
           if(old_root) collector.remove_root(old_root);
           old_root = top;
         }
+        ++collections;
         unsigned long n = collector.collect();
-        if(debug)printf("collected %ld\n",n);
+        if(debug)fprintf(stderr,"collected %ld objects\n",n);
       }
     }
-    if(old_root) collector.remove_root(old_root);
+    if(debug){
+      unsigned long uncollected = collector.get_allocation_count();
+      unsigned long roots = collector.get_root_count();
+      fprintf(stderr,"program finished, %ld collections, %ld uncollected objects, roots %ld\n",collections,uncollected,roots);
+    }
+    if(finalise)
     {
+      if(debug) fprintf(stderr,"Finalising\n");
+      if(old_root) {
+        if(debug)fprintf(stderr,"removing top frame %p\n",old_root);
+        collector.remove_root(old_root);
+      }
+      {
+        if(debug)
+          fprintf(stderr,"Data collection starts ..\n");
+        unsigned long n = collector.collect();
+        unsigned long a = collector.get_allocation_count();
+        if(debug)
+          fprintf(stderr,"flx_run collected %ld objects, %ld left\n",n,a);
+      }
+      if(debug)
+        fprintf(stderr,"Destroying program instance\n");
+      instance.destroy();
+
+      if(debug)
+        fprintf(stderr,"Final collection starts ..\n");
       unsigned long n = collector.collect();
       unsigned long a = collector.get_allocation_count();
-      //if(a!=0)
-      //  fprintf(stderr,"flx_run %ld uncollected objects!\n",a);
+      if(debug)
+        fprintf(stderr,"Collected %ld objects, %ld left (should be 0)\n",n,a);
+      if(a!=0){
+        fprintf(stderr,"flx_run %ld uncollected objects, should be zero!!\n",a);
+        return 5;
+      }
+      if(debug)
+        fprintf(stderr,"Libref cnt = %ld\n",library.refcnt);
+      if(library.refcnt >0)
+      {
+        if(debug)
+          fprintf(stderr,"flx_run %p library still referenced %ld times (expected 1)\n",library.library,library.refcnt);
+      }
+      if(debug)
+        fprintf(stderr,"Unlinking library ..\n");
+      library.unlink();
+      if(library.refcnt >0)
+      {
+        fprintf(stderr,"flx_run %p library still referenced %ld times?!\n",library.library,library.refcnt);
+        return 6;
+      }
+      if(debug)
+        fprintf(stderr,"flx_run driver ends with finalisation complete, collected %ld,left=%ld\n",n,a);
     }
-    //fprintf(stderr,"Destroying instance ..\n");
-    instance.destroy();
-    //fprintf(stderr,"Collecting ..\n");
-    unsigned long n = collector.collect();
-    unsigned long a = collector.get_allocation_count();
-    //fprintf(stderr,"Collecting done ..\n");
-    if(a!=0){
-      fprintf(stderr,"flx_run %ld uncollected objects!\n",a);
-      return 5;
+    else {
+      if(debug) {
+        unsigned long a = collector.get_allocation_count();
+        fprintf(stderr,"flx_run driver ends with finalisation skipped, %ld uncollected objects\n",a);
+      }
     }
-    //fprintf(stderr,"Libref cnt = %ld\n",library.refcnt);
-    //if(library.refcnt >0)
-    //{
-    //  fprintf(stderr,"flx_run %p library still referenced %ld times (expected 1)\n",library.library,library.refcnt);
-    //}
-    //fprintf(stderr,"Unlinking library ..\n");
-    library.unlink();
-    if(library.refcnt >0)
-    {
-      fprintf(stderr,"flx_run %p library still referenced %ld times?!\n",library.library,library.refcnt);
-      return 6;
-    }
-    if(debug)fprintf(stderr,"flx_run driver ends normally, collected %ld,left=%ld\n",n,a);
   }
   catch (flx_link_failure_t x)
   {

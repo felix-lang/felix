@@ -139,16 +139,13 @@ let mktypefun sr name vs args return_type body =
 @select(h)
 /* special */
 %token<Flx_ast.srcref * string> ERRORTOKEN
+%token ENDMARKER
 
-/* whitespace */
+/* whitespace and comments */
 %token NEWLINE 
 %token<string> COMMENT 
 %token<string> COMMENT_NEWLINE
 %token<int> WHITE 
-
-
-/* constants */
-%token ENDMARKER
 
 /* literals */
 %token<Flx_ast.srcref * string> NAME
@@ -159,50 +156,17 @@ let mktypefun sr name vs args return_type body =
 %token<Flx_ast.srcref * string> WSTRING
 %token<Flx_ast.srcref * string> USTRING
 
-/* operators and punctuation */
+@for k,v in flx_1_char_syms:
+  tangle("%token<Flx_ast.srcref> " + k,inhibit_sref=1)
 
-/* assignment */
-%token<Flx_ast.srcref> EQUAL
+@for k,v in flx_2_char_syms:
+  tangle("%token<Flx_ast.srcref> " + k,inhibit_sref=1)
 
-/* math */
-%token<Flx_ast.srcref> PLUS MINUS STAR SLASH PERCENT STARSTAR 
-
-/* comparison */
-
-/* logic */
-%token<Flx_ast.srcref> AMPER VBAR PERCENT
-%token<Flx_ast.srcref> EXCLAMATION
-
-/* brackets */
-%token<Flx_ast.srcref> LPAR RPAR 
-%token<Flx_ast.srcref> LSQB RSQB 
-%token<Flx_ast.srcref> LBRACE RBRACE  
-%token<Flx_ast.srcref> LSQANGLE RSQANGLE
-%token<Flx_ast.srcref> LSQBAR RSQBAR
-
-/* terminal */
-%token<Flx_ast.srcref> COLON COMMA SEMI DOT BACKQUOTE
-
-/* comparison */
-%token<Flx_ast.srcref> LESS GREATER EQEQUAL NOTEQUAL LESSEQUAL GREATEREQUAL 
-%token<Flx_ast.srcref> ANDLESS ANDGREATER ANDEQEQUAL ANDNOTEQUAL ANDLESSEQUAL ANDGREATEREQUAL 
-
-/* bitwise */
-%token<Flx_ast.srcref> TILDE CIRCUMFLEX LEFTSHIFT RIGHTSHIFT DOUBLESTAR
-
-/* read-modify-write */
-%token<Flx_ast.srcref> PLUSPLUS MINUSMINUS PLUSEQUAL MINUSEQUAL STAREQUAL SLASHEQUAL PERCENTEQUAL
-%token<Flx_ast.srcref> CARETEQUAL VBAREQUAL AMPEREQUAL TILDEEQUAL COLONEQUAL
-%token<Flx_ast.srcref> LEFTSHIFTEQUAL RIGHTSHIFTEQUAL LEFTARROW RIGHTARROW COLONGREATER LESSCOLON
-%token<Flx_ast.srcref> LEFTRIGHTARROW 
-
-/* other */
-%token<Flx_ast.srcref> COLONCOLON
-%token<Flx_ast.srcref> DOTDOT SLOSH DOTDOTDOT
-%token<Flx_ast.srcref> DOLLAR QUEST EQRIGHTARROW
+@for k,v in flx_3_char_syms:
+  tangle("%token<Flx_ast.srcref> " + k,inhibit_sref=1)
 
 @for n,t in flx_keywords:
-  tangle("%token<Flx_ast.srcref> " + t)
+  tangle("%token<Flx_ast.srcref> " + t,inhibit_sref=1)
 
 %type <Flx_ast.range_srcref * Flx_ast.statement_t list> compound
 %type <Flx_ast.statement_t> statement 
@@ -244,6 +208,7 @@ statement:
   | directive { $1 }
   | publish { $1}
   | comment { $1 }
+  | null_statement { $1 }
 
 comment:
   | COMMENT_KEYWORD STRING SEMI { `AST_nop (rstoken $1 $3, snd $2) }
@@ -280,6 +245,7 @@ directive:
   | open_decl { $1 }
   | use_decl { $1 }
   | regdef { $1 }
+  | glr_production { $1 }
   | macro_definition { $1 }
 
 executable:
@@ -295,6 +261,9 @@ executable:
   | inline_cpp { $1 } 
   | goto_statement { $1 }
   | label_statement { $1 }
+
+null_statement:
+  | SEMI                    { `AST_nop (rstoken $1 $1,"") }
 
 inclusion:
   | INCLUDE STRING SEMI
@@ -1260,7 +1229,6 @@ a call to that procedure with the unit argument.
 todo:         
   | TODO STRING SEMI        { `AST_nop (rstoken $1 $3, snd $2) }
   | TODO SEMI               { `AST_nop (rstoken $1 $2, "") }
-  | SEMI                    { `AST_nop (rstoken $1 $1,"") }
 
 @doc()
 The placed holder is used to denote an incomplete section of code.
@@ -1363,6 +1331,7 @@ matchings:
   | matching { [$1] }
 matching:
   | VBAR pattern EQRIGHTARROW expr { $2, $4 }
+  | VBAR EQRIGHTARROW expr { let sr = rstoken $1 $2 in `PAT_none sr, $3 }
 
 @doc()
 The pattern matching statment analyses the shape and contents of
@@ -1397,7 +1366,7 @@ as_pattern:
 variant_pattern:
   | tuple_pattern { $1 }
 tuple_pattern:
-  | atomic_pattern_list 
+  | coercive_pattern_list 
     { 
       match $1 with 
       | [x] -> x 
@@ -1408,9 +1377,18 @@ tuple_pattern:
         )
     }
 
-atomic_pattern_list:
-  | atomic_pattern COMMA atomic_pattern_list { $1 :: $3 }
-  | atomic_pattern { [$1] }
+coercive_pattern_list:
+  | coercive_pattern COMMA coercive_pattern_list { $1 :: $3 }
+  | coercive_pattern { [$1] }
+
+coercive_pattern:
+  | atomic_pattern COLON type_expr 
+    { 
+      let sr = rsrange (src_of_pat $1) (src_of_expr $3) in
+      let t = typecode_of_expr $3 in
+      `PAT_coercion (sr,$1,t) 
+    }
+  | atomic_pattern { $1 }
 
 atomic_pattern:
   /* constants */
@@ -1513,7 +1491,8 @@ floating:
   | INF { slift $1, Float_inf }
   | MINUS INF { slift $1, Float_minus_inf }
 
-basic_name: NAME { $1 }
+basic_name: 
+  | NAME { $1 }
 @commalistof("basic_name")
 
 @head(2,'Type match')
@@ -1578,6 +1557,39 @@ type_matchings:
 type_matching:
   | VBAR tpattern EQRIGHTARROW type_expr { $2, typecode_of_expr $4 }
 
+@head(2,'Grammar Expressions')
+@select(h)
+glr_entry:
+  | NAME COLON qualified_name { Some (snd $1), qualified_name_of_expr $3 }
+  | qualified_name { None, qualified_name_of_expr $1 }
+  
+glr_entries:
+  | glr_entry glr_entries { $1 :: $2 }
+  | glr_entry { [$1] }
+
+glr_matching:
+  | VBAR glr_entries EQRIGHTARROW expr { rstoken $1 $3, $2 , $4 }
+  | VBAR EQRIGHTARROW expr { rstoken $1 $2, [] , $3 }
+
+glr_matchings:
+  | glr_matching glr_matchings { $1 :: $2 }
+  | glr_matching { [$1] }
+
+glr_production:
+  | NONTERM NAME COLON type_expr EQUAL glr_matchings SEMI
+  {
+    let sr = rstoken $1 $7 in
+    let t = typecode_of_expr $4 in
+    `AST_glr (sr,snd $2, t, $6)
+  }
+
+glr_parse:
+  | PARSE expr WITH glr_matchings ENDMATCH 
+  {
+    let sr = rstoken $1 $5 in
+    `AST_parse (sr,$2,$4)
+  }
+  
 @head(2,'Executable Expressions')
 @select(h)
 expr: 
@@ -1746,7 +1758,15 @@ comparison:
       )
     }
   | sum cmp_op sum                      { apl2 (snd $2) (fst $2) [$1; $3] }
-  | arrow                               { $1 }
+  | as_expr                             { $1 }
+
+as_expr:
+  | as_expr AS NAME
+    { 
+      let sr = rsrange (src_of_expr $1) (slift (fst $3)) in
+      `AST_as (sr,($1,snd $3))
+    }
+  | type_expr { $1 }
 
 /* arrow is right associative */
 @commalistof('type_expr')
@@ -1872,7 +1892,7 @@ refr:
         $2
       ) 
     }
-  | application                         { $1 }
+  | application { $1 }
 
 /* applications is left associative */
 application:
@@ -1921,11 +1941,6 @@ factor:
         in
           let sr = rsrange (src_of_expr $1) (slift $5) in
           `AST_get_n (sr, (n,$1)) 
-    }
-  | factor AS NAME
-    { 
-      let sr = rsrange (src_of_expr $1) (slift (fst $3)) in
-      `AST_as (sr,($1,snd $3))
     }
 
 dollar_name:
@@ -2044,6 +2059,7 @@ atom:
         ) 
       )
     }
+  | glr_parse { $1 }
   | match_expr { $1 }
   | regmatch_expr { $1 }
   | compound            

@@ -1,6 +1,6 @@
 @bc = begin_displayed_code
 @ec = end_displayed_code
-@flx_version = '1.0.18'
+@flx_version = '1.0.19'
 @godi_revision = '0'
 @set_title('Felix '+flx_version)
 @head(1,'Purpose')
@@ -139,7 +139,7 @@ and thread frames at present).
 There is a separate package "flx_config.pak" which should
 be used to create the configuration creator script.
 @try:
-    execfile("config/config.py")
+    execfile("config/flx_data.py")
  except:
     print "ERROR IN config/config.py"
     print "You must either"
@@ -225,206 +225,8 @@ let version_data: version_data_t =
 Flx_version.version_data := version_data
 ;;
 
-@flx_keywords = [
-    ["all", "ALL"],
-    ["and", "AND"],
-    ["as", "AS"],
-    ["body", "BODY"],
-    ["call", "CALL"],
-    ["case", "CASE"],
-    ["class", "CLASS"],
-    ["code", "CODE"],
-    ["comment", "COMMENT_KEYWORD"],
-    ["const", "CONST"],
-    ["cstruct", "CSTRUCT"],
-    ["ctypes", "CTYPES"],
-    ["def", "DEF"],
-    ["do", "DO"],
-    ["done", "DONE"],
-    ["elif", "ELIF"],
-    ["else", "ELSE"],
-    ["endif", "ENDIF"],
-    ["endmatch", "ENDMATCH"],
-    ["enum", "ENUM"],
-    ["export", "EXPORT"],
-    ["forget", "FORGET"],
-    ["fork", "FORK"],
-    ["functor", "FUNCTOR"],
-    ["fun", "FUNCTION"],
-    ["goto", "GOTO"],
-    ["header", "HEADER"],
-    ["ident", "IDENT"],
-    ["if", "IF"],
-    ["include","INCLUDE"],
-    ["incomplete", "INCOMPLETE"],
-    ["inf", "INF"],
-    ["in", "IN"],
-    ["is", "IS"],
-    ["inherit", "INHERIT"],
-    ["inline", "INLINE"],
-    ["jump", "JUMP"],
-    ["let", "LET"],
-    ["loop", "LOOP"],
-    ["lval", "LVAL"],
-    ["macro", "MACRO"],
-    ["match", "MATCH"],
-    ["module", "MODULE"],
-    ["NaN", "NAN"],
-    ["new", "NEW"],
-    ["noinline", "NOINLINE"],
-    ["noreturn", "NORETURN"],
-    ["not", "NOT"],
-    ["obj", "OBJECT"],
-    ["of", "OF"],
-    ["open","OPEN"],
-    ["or", "OR"],
-    ["pod", "POD"],
-    ["private", "PRIVATE"],
-    ["proc", "PROCEDURE"],
-    ["public", "PUBLIC"],
-    ["publish", "PUBLISH"],
-    ["read", "READ"],
-    ["regexp", "REGEXP"],
-    ["reglex", "REGLEX"],
-    ["regmatch", "REGMATCH"],
-    ["rename", "RENAME"],
-    ["requires", "REQUIRES"],
-    ["return", "RETURN"],
-    ["set","SET"],
-    ["struct", "STRUCT"],
-    ["the", "THE"],
-    ["then", "THEN"],
-    ["todo", "TODO"],
-    ["to", "TO"],
-    ["typedef", "TYPEDEF"],
-    ["typematch", "TYPEMATCH"],
-    ["type", "TYPE"],
-    ["union", "UNION"],
-    ["use","USE"],
-    ["val", "VAL"],
-    ["var", "VAR"],
-    ["when", "WHEN"],
-    ["whilst", "WHILST"],
-    ["with", "WITH"],
-    ["until", "UNTIL"],
-    ["_", "UNDERSCORE"],
-  ]
+@execfile('config/flx_data.py')
 
-@rmap = {}
-
-@tmap = {
-  # addressing
-  "byte"    : "unsigned char",
-  "size"    : "size_t",
-  "cvaddress" : "void const volatile*",
-  "vaddress" : "void volatile*",
-  "caddress" : "void const*",
-  "address" : "void *",
-  "offset"  : "ptrdiff_t",
-  "charp"   : "char*",
-  "charcp"  : "char const*",
-  
-  #characters
-  "char"    : "char",
-  "wchar"   : "wchar_t",
-
-  #signed integers
-  "tiny"    : "signed char",
-  "short"   : "short",
-  "int"     : "int",
-  "long"    : "long",
-
-  #unsigned integers
-  "utiny"   : "unsigned char",
-  "ushort"  : "unsigned short",
-  "uint"    : "unsigned int",
-  "ulong"   : "unsigned long",
-
-  #floating
-  "float"   : "float",
-  "double"  : "double",
-  "ldouble"  : "long double"
- }
-
-@if HAVE_COMPLEX:
-  tmap["imaginary"]="float _Imaginary"
-  tmap["dimaginary"]="double _Imaginary"
-  tmap["limaginary"]="long double _Imaginary"
-  tmap["complex" ]="float _Complex"
-  tmap["dcomplex"]="double _Complex"
-  tmap["lcomplex"]="long double _Complex"
-
-  rmap["imaginary" ]="c99_complex_h"
-  rmap["dimaginary" ]="c99_complex_h"
-  rmap["limaginary" ]="c99_complex_h"
-  rmap["complex" ]="c99_complex_h"
-  rmap["dcomplex"]="c99_complex_h"
-  rmap["lcomplex"]="c99_complex_h"
- else:
-  tmap["imaginary"]="float"
-  tmap["dimaginary"]="double"
-  tmap["limaginary"]="long double"
-  tmap["complex" ]="std::complex<float>"
-  tmap["dcomplex"]="std::complex<double>"
-  tmap["lcomplex"]="std::complex<long double>"
-
-  rmap["complex" ]="complex_hxx"
-  rmap["dcomplex"]="complex_hxx"
-  rmap["lcomplex"]="complex_hxx"
-
-@if HAVE_LONGDOUBLE:
-   tmap["ldouble"]="long double"
- else:
-   tmap["ldouble"]="double"
-
-@if HAVE_LONGLONG:
-   tmap["vlong"]="long long"
-   tmap["uvlong"]="unsigned long long"
- else:
-   tmap["vlong"]="long"
-   tmap["uvlong"]="unsigned long"
-
-@if HAVE_STDINT:
-   tmap["int8"]="int8_t"
-   tmap["uint8"]="uint8_t"
-   tmap["int16"]="int16_t"
-   tmap["uint16"]="uint16_t"
-   tmap["int32"]="int32_t"
-   tmap["uint32"]="uint32_t"
-   tmap["int64"]="int64_t"
-   tmap["uint64"]="uint64_t"
-
-   # requirements
-   rmap["int8"]="c99_stdint_h"
-   rmap["uint8"]="c99_stdint_h"
-   rmap["int16"]="c99_stdint_h"
-   rmap["uint16"]="c99_stdint_h"
-   rmap["int32"]="c99_stdint_h"
-   rmap["uint32"]="c99_stdint_h"
-   rmap["int64"]="c99_stdint_h"
-   rmap["uint64"]="c99_stdint_h"
- else:
-   tmap["int8"]="signed char"
-   tmap["uint8"]="unsigned char"
-   sizes = { 
-     SIZEOF_SHORT*8 : "short",
-     SIZEOF_INT*8: "int",
-     SIZEOF_LONG*8 : "long",
-   }
-   if HAVE_LONGLONG:
-     sizes[SIZEOF_LONGLONG*8]="long long"
-   for size in [16,32,64]:
-     try:
-       t = sizes[size]
-       tmap["int"+str(size)]=t
-       tmap["uint"+str(size)]="unsigned " + t
-     except:
-       tmap["int"+str(size)]="emul_int"+str(size)
-       tmap["uint"+str(size)]="emul_uint"+str(size)
-
-@tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
-
- 
 @head(2,'The front end')
 @push_head()
 @include_file ('flx_filesys.ipk')

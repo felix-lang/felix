@@ -212,6 +212,483 @@ for k in sys.argv[1:]:
     for l in f: print l,
     f.close()
 
+@h = tangler('script/elk_flx_grgen','python')
+@select(h)
+import string
+import sys
+
+ts ={}
+nt = ""
+d = {}
+
+def isterminal(w):
+  return w[0] in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+def isnonterminal(w): 
+  return not isterminal(w)
+
+def check_symbol(w):
+  if isterminal(w): ts[w]=1
+
+def cvt_symbol(w):
+  if isterminal(w):
+    return "TOK_" + w
+  else:
+    return w
+
+def handle_line(l):
+  global nt
+  if l == '  | /* empty */':
+    d[nt]=d[nt]+[[]]
+  elif l[0]<>' ':
+    nt = l[:-1]
+    d[nt]=[]
+  else:
+    x = string.split(l)[1:]
+    for w in x: check_symbol(w)
+    d[nt]=d[nt]+[x]
+
+
+f = open(sys.argv[1])
+state = 1
+for l in f:
+  if l[:2] == '/*' and l[-3:-1]=='*/': 
+    #print "skipping",l,
+    pass
+  else:
+    if l[:2]=='/*': state = 0
+    if state: 
+      if l <> "\n":
+        handle_line(l[:-1])
+    else: 
+      #print "skippy",l,
+      pass
+    if l[:2]=='*/': state = 1
+f.close()
+
+ts['WSTRING']=1
+ts['USTRING']=1
+ts = ts.keys()
+ts.sort()
+print "terminals {"
+print "   0 : TOK_EOF;"
+j = 1
+for k in ts:
+  print ' ',"%4d" % j,': TOK_'+k,';'
+  j = j + 1
+print
+attrtoks = ["CSTRING","STRING","WSTRING","USTRING","NAME","FLOAT","INTEGER"]
+for k in attrtoks:
+  print "  token(void*) TOK_"+k+";"
+
+print "}"
+print 
+ 
+print "context_class Flx_Elk_Parser : public UserActions {};"
+print
+print "nonterm(void*) top {"
+print "  -> _1:compilation_unit { return _1; }"
+print "}"
+print
+ntno = 1
+for k in d.keys():
+  print "nonterm(void*)",k," {"
+  v = d[k]
+  for p in v:
+    print "  -> ",
+    acnt = 0
+    for w in p:
+      s = cvt_symbol(w)
+      if w in attrtoks or not isterminal(s):
+        acnt = acnt + 1
+        print "_"+str(acnt)+":"+s,
+      else:
+        print cvt_symbol(w),
+    print "  {"
+    print "     void **data = (void**)malloc(sizeof(void*)*"+str(acnt+1)+");"
+    print "     data[0] = (void*)"+str(acnt)+";"
+    for i in range(1,acnt+1):
+      print "     data["+str(i)+"] = _"+str(i)+";"
+    print "     return (void*)data;"
+    print "  }"
+  print "}"
+  print
+ 
+@h = tangler('script/flx_flx_grgen','python')
+@select(h)
+import string
+import sys
+
+ts ={}
+nt = ""
+d = {}
+
+def isterminal(w):
+  return w[0] in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+def isnonterminal(w): 
+  return not isterminal(w)
+
+def check_symbol(w):
+  if isterminal(w): ts[w]=1
+
+def cvt_symbol(w):
+  if isterminal(w):
+    return "TOK_" + w
+  else:
+    return w
+
+def cvt_symbol2(w):
+  if isterminal(w):
+    return "TOK_" + w
+  else:
+    return "nt_"+w
+
+def handle_line(l):
+  global nt
+  if l == '  | /* empty */':
+    d[nt]=d[nt]+[[]]
+  elif l[0]<>' ':
+    nt = l[:-1]
+    d[nt]=[]
+  else:
+    x = string.split(l)[1:]
+    for w in x: check_symbol(w)
+    d[nt]=d[nt]+[x]
+
+
+f = open(sys.argv[1])
+state = 1
+for l in f:
+  if l[:2] == '/*' and l[-3:-1]=='*/': 
+    #print "skipping",l,
+    pass
+  else:
+    if l[:2]=='/*': state = 0
+    if state: 
+      if l <> "\n":
+        handle_line(l[:-1])
+    else: 
+      #print "skippy",l,
+      pass
+    if l[:2]=='*/': state = 1
+f.close()
+
+attrtok_map = {
+  "CSTRING":'string',
+  "STRING":'string',
+  "WSTRING":'string',
+  "USTRING":'string',
+  "NAME":'string',
+  "FLOAT":'string',
+  "INTEGER":'(string * string)',
+}
+attrtoks = attrtok_map.keys()
+
+ts['WSTRING']=1
+ts['USTRING']=1
+ts = ts.keys()
+ts.sort()
+print 'include "std";'
+print 
+print 'module flx_grammar'
+print '{'
+
+print "  union flx_token_t = "
+print "    | TOK_EOF                                 //0"
+j = 1
+for k in ts:
+  s = '  | TOK_'+k
+  if k in attrtoks:
+    s = s + " of " + attrtok_map[k]
+  print '  '+(s  + " " *45)[:45]+'//'+str(j)
+  j = j + 1
+print '  '+";"
+print 
+ 
+print '  '+"nonterm top:compilation_unit_t ="
+print '  '+"  | _1:nt_compilation_unit =>  _1 "
+print '  '+";"
+print
+for k in d.keys():
+  print '  '+"union",k+"_t ="
+  v = d[k]
+  pno = 0
+  nps = len(v)
+  for p in v:
+    pno = pno + 1
+    s = "  |  "
+    acnt = 0
+    l = len (p)
+    j = 0
+    s= "  | " + k+"_"+str(pno)
+    lead = " of "
+    for w in p:
+      ss = cvt_symbol(w)
+      if w in attrtoks:
+        s = s + lead +attrtok_map[w]
+        lead = " * "
+      elif not isterminal(w):
+        acnt = acnt + 1
+        s=s+ lead + ss+ "_t"
+        lead = " * "
+      j = j + 1
+    print '  '+s
+  print '  '+";"
+  print
+
+  print '  '+"nonterm nt_"+k,":",k+"_t ="
+  v = d[k]
+  pno = 0
+  nps = len(v)
+  for p in v:
+    pno = pno + 1
+    s = "  |  "
+    acnt = 0
+    l = len (p)
+    j = 0
+    for w in p:
+      ss = cvt_symbol2(w)
+      if w in attrtoks or not isterminal(w):
+        acnt = acnt + 1
+        s=s+ "_"+str(acnt)+":"+ss
+      else:
+        s=s+ss
+      j = j + 1
+      if j != l:
+        s=s+" "
+    print '  '+s
+
+    s= "    => " + k+"_"+str(pno)
+    if acnt > 0: s=s+"("
+    for i in range(1,acnt+1):
+      s = s + "_"+str(i)
+      if i != acnt:
+        s= s + ", "
+    if acnt > 0: s=s+")"
+    print '  '+s
+    if pno != nps: print
+  print '  '+";"
+  print
+print "}" 
+
+@h = tangler('script/elk_flx_lexgen','python')
+@select(h)
+import string
+import sys
+
+ts ={}
+nt = ""
+d = {}
+
+def check_symbol(w):
+  if w[0] in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+    ts[w]=1
+
+def cvt_symbol(w):
+  if w[0] in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+    return "TOK_" + w
+  else:
+    return w
+
+def handle_line(l):
+  global nt
+  if l == '  | /* empty */':
+    d[nt]=d[nt]+[[]]
+  elif l[0]<>' ':
+    nt = l[:-1]
+    d[nt]=[]
+  else:
+    x = string.split(l)[1:]
+    for w in x: check_symbol(w)
+    d[nt]=d[nt]+[x]
+
+
+f = open(sys.argv[1])
+state = 1
+for l in f:
+  if l[:2] == '/*' and l[-3:-1]=='*/': 
+    #print "skipping",l,
+    pass
+  else:
+    if l[:2]=='/*': state = 0
+    if state: 
+      if l <> "\n":
+        handle_line(l[:-1])
+    else: 
+      #print "skippy",l,
+      pass
+    if l[:2]=='*/': state = 1
+f.close()
+
+ts['WSTRING']=1
+ts['USTRING']=1
+ts = ts.keys()
+ts.sort()
+print '#include "elk_flx_lexer.h"'
+print '#include "stdio.h"'
+print '#include "string.h"'
+print
+print "enum Elk_Flx_Lexcode {"
+print "  TOK_EOF,                    //0"
+j=1
+for k in ts:
+    print ('  TOK_'+k+',                        ')[:30]+'//'+str(j)
+    j = j + 1
+print "};"
+print 
+
+print "char *Elk_Flx_Lexcode_Desc[] = {"
+print '  "TOK_EOF",                    //0'
+j=1
+for k in ts:
+  print ('  "TOK_'+k+'",                        ')[:30]+'//'+str(j)
+  j = j + 1
+print "};"
+print 
+
+n = len(ts)+1
+print "static int const ntoks = "+str(n)+";"
+
+
+print r"""
+string Elk_Flx_Lexer::tokenDesc() const
+{
+  switch (type) {
+    case TOK_NAME:   
+    case TOK_INTEGER:   
+    case TOK_FLOAT:   
+    case TOK_STRING:   
+    case TOK_CSTRING:   
+    case TOK_WSTRING:   
+    case TOK_USTRING:   
+    {
+      char buffer[200];
+      strcpy(buffer,tokenKindDesc(type));
+      strcat(buffer,"=");
+      strcat(buffer,(char*)sval);
+      return buffer;
+    }
+    default:               return tokenKindDesc(type);
+  }
+}
+
+string Elk_Flx_Lexer::tokenKindDesc(int kind) const {
+  return Elk_Flx_Lexcode_Desc[kind];
+}
+
+void Elk_Flx_Lexer::nextToken(LexerInterface *lex) {
+  char buffer[100];
+  if (fgets(buffer,100,stdin)) {
+    int n = strlen(buffer) - 1; //skip the newline
+    memmove(buffer+4,buffer,n); 
+    memcpy(buffer,"TOK_",4);
+    n+=4;
+    buffer[n]=0;
+    buffer[n+1]=0;
+    char *extra = buffer;
+    // skip non white
+    while(*extra && *extra != ' ')++extra;
+    
+    // terminate token
+    *extra++ = 0;
+
+    // skip white
+    while(*extra && *extra == ' ')++extra;
+    
+    int k;
+    for(k=0; k<ntoks; ++k)
+      if(strcmp(Elk_Flx_Lexcode_Desc[k],buffer)==0)
+        break;
+    if(k==ntoks) {
+      printf("Invalid token '%s'",buffer); 
+      abort();
+    }
+    lex->type = k;
+    lex->sval = (SemanticValue)extra;
+  }
+  else {
+    lex->type = TOK_EOF;
+    lex->sval = NULL;
+  }
+  return;
+}
+
+
+#ifdef TEST_LEXER
+int main()
+{
+  Elk_Flx_Lexer lexer;
+  for (;;) {
+    lexer.getTokenFunc()(&lexer);    // first call yields a function pointer
+                                                                                
+    // print the returned token
+    string desc = lexer.tokenDesc();
+    printf("%s\n", (char const*)desc);
+                                                                                
+    if (lexer.type == TOK_ENDMARKER) {
+      break;
+    }
+  }
+                                                                                
+  return 0;
+}
+#endif // TEST_LEXER
+"""
+
+@h = tangler('misc/elk_flx_lexer.h')
+@select(h)
+#ifndef ELK_FLX_LEXER
+#define ELK_FLX_LEXER
+
+#include "lexerint.h"
+// read characters from stdin, yield tokens for the parser
+class Elk_Flx_Lexer : public LexerInterface {
+public:
+  // function that retrieves the next token from
+  // the input stream
+  static void nextToken(LexerInterface *lex);
+  virtual NextTokenFunc getTokenFunc() const
+    { return &Elk_Flx_Lexer::nextToken; }
+ 
+  // debugging assistance functions
+  string tokenDesc() const;
+  string tokenKindDesc(int kind) const;
+};
+
+#endif
+
+@h = tangler('misc/elk_flx_parse_driver.cc')
+@select(h)
+#include "elk_flx_lexer.h"     // Lexer
+#include "elk_flx_gr.h"     // Lexer
+#include "glr.h" 
+
+int main()
+{
+  // create and initialize the lexer
+  Elk_Flx_Lexer lexer;
+  lexer.nextToken(&lexer);
+
+  // create the parser context object
+  Flx_Elk_Parser gcom;
+
+  // initialize the parser
+  GLR glr(&gcom, gcom.makeTables());
+
+  // parse the input
+  SemanticValue result;
+  if (!glr.glrParse(lexer, result)) {
+    printf("parse error\n");
+    return 2;
+  }
+
+  // print result
+  printf("result: %p\n", (void*)result);
+
+  return 0;
+}
+
 @h = tangler('script/get_grammar','python')
 @select(h)
 import string
@@ -318,6 +795,10 @@ def nxqt(x):
 # ------------------------------------------------
 
 options = sys.argv[1:]
+CCMACS=""
+for i in options:
+  if i[0:2]=="-D": CCMACS=CCMACS+i+" "
+
 if "silent" in options: 
   options.append("quiet")
 
@@ -456,6 +937,12 @@ elif "optimise" in options:
   CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-O "
   CCOBJ_DLLIB = CCOBJ_DLLIB + "-O "
   CCOBJ_DLMAIN = CCOBJ_DLMAIN + "-O "
+
+
+CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + ' ' + CCMACS
+CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + ' ' + CCMACS
+CCOBJ_DLLIB = CCOBJ_DLLIB + ' ' + CCMACS
+CCOBJ_DLMAIN = CCOBJ_DLMAIN + ' '+CCMACS
 
 
 # ------------------------------------------------
@@ -1140,6 +1627,7 @@ we fix it. If it hits a subdirectory it gives an error.
 We have no idea if it continues copying.
 
 @select(tangler('Makefile','data'))
+@tangle('CONFIG_ARGS=')
 @tangle('PREFIX='+PREFIX)
 @tangle('SHLIB_DIR=${PREFIX}/lib')
 @tangle('SHINC_DIR=${PREFIX}/include')
@@ -1177,6 +1665,9 @@ We have no idea if it continues copying.
 @tangle('\tpython script/get_grammar src/flx_parse.mly >misc/flx_parse.grammar')
 @tangle('\tpython script/get_grammar src/flx_cil_cparser.mly >misc/flx_cil_cparser.grammar')
 @tangle('\tpython script/get_grammar src/parse_fish.mly >misc/parse_fish.grammar')
+@tangle('\tpython script/elk_flx_grgen misc/flx_parse.grammar >misc/elk_flx_gr.gr')
+@tangle('\tpython script/flx_flx_grgen misc/flx_parse.grammar >misc/flx_flx_gr.flx')
+@tangle('\tpython script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
 @tangle('')
 @tangle('compiler: dummy')
 @tangle('\tpython script/maker compiler')
@@ -1200,6 +1691,9 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('test.static: dummy')
 @tangle('\tpython script/maker test static stop_on_error')
+@tangle('')
+@tangle('test.flx_ptf_static_pointer: dummy')
+@tangle('\tpython script/maker test -DFLX_PTF_STATIC_POINTER stop_on_error')
 @tangle('')
 @tangle('test.inline: dummy')
 @tangle('\tpython script/maker inline test stop_on_error')
@@ -1390,6 +1884,7 @@ We have no idea if it continues copying.
 @tangle('\trm -rf tut rtl test www src misc man script bin doc lib impldoc htmlman tmp tmp.tmp')
 @tangle('\trm -rf flxcc_out c89 c99 cxx gnu89 gnu99 gnucxx cxx_sys')
 @tangle('\trm -rf bagley')
+@tangle('\trm -rf fish meta licences')
 @tangle('\trm -rf lpsrc/*.cache')
 @tangle('\trm -rf interscript/*.pyc')
 @tangle('\trm -rf interscript/*.pyo')
@@ -1406,7 +1901,7 @@ We have no idea if it continues copying.
 
 @tangle('config: dummy')
 @tangle('\t${BUILTIN_ISCR} lpsrc/flx_config.pak')
-@tangle('\tpython -O script/make_config.py --quiet --prefix=${PREFIX}')
+@tangle('\tpython -O script/make_config.py --quiet --prefix=${PREFIX} ${CONFIG_ARGS}')
 @tangle('')
 @tangle('config/config.py: config')
 @tangle('')
@@ -1500,6 +1995,8 @@ echo "Configuring Felix"
 grab=1
 
 PREFIX=$PREFIX
+ARGS=""
+
 while (( "$grab" == "1" ));
 do
   case x$1 in
@@ -1514,16 +2011,23 @@ do
     shift
   ;;
 
-  x) 
+  x)
     grab=0
   ;;
+
+  x*)
+    ARGS="${ARGS} $1"
+    shift
+  ;;
+
+
   esac
 done
 
 echo "Installing at PREFIX=$PREFIX"
-make PREFIX=$PREFIX config
-make PREFIX=$PREFIX boot
-make grammar
+make PREFIX=$PREFIX CONFIG_ARGS="$ARGS" config &&\
+make PREFIX=$PREFIX boot &&\
+make grammar &&\
 make extract
 
 @head(1,'README')
@@ -2106,7 +2610,7 @@ TIME=0
    tangle("STATIC=1")
 
 RUNIT=1
-cpps=""
+CCFLAGS=""
 
 grab=1
 
@@ -2153,31 +2657,31 @@ do
 
   x--opt=1)
     INLINE=1
-    cpps="-O1 $cpps"
+    CCFLAGS="-O1 $CCFLAGS"
     shift
   ;;
 
   x--opt=2)
     INLINE=1
-    cpps="-O2 $cpps"
+    CCFLAGS="-O2 $CCFLAGS"
     shift
   ;;
 
   x--opt=3)
     INLINE=1
-    cpps="-O3 $cpps"
+    CCFLAGS="-O3 $CCFLAGS"
     shift
   ;;
 
   x--optimise)
     INLINE=1
-    cpps="-O3 -fomit-frame-pointer -finline $cpps"
+    CCFLAGS="-O3 -fomit-frame-pointer -finline $CCFLAGS"
     shift
   ;;
 
   x--optimize)
     INLINE=1
-    cpps="-O3 -fomit-frame-pointer -finline $cpps"
+    CCFLAGS="-O3 -fomit-frame-pointer -finline $CCFLAGS"
     shift
   ;;
 
@@ -2215,6 +2719,8 @@ fi
 
 # make a list of any *.cpp files (or other g++ options ..)
 
+cpps=""
+cppos=""
 grab=1
 pkgs=""
 while (( "$grab" == "1" ));
@@ -2222,26 +2728,29 @@ do
   case "$1" in
     *.cpp)
       cpps="$cpps $1"
+      cppos="$cppos `dirname $1`/`basename $1 .cpp`.o"
       shift
     ;;
 
     *.cxx)
       cpps="$cpps $1"
+      cppos="$cppos `dirname $1`/`basename $1 .cxx`.o"
       shift
     ;;
 
     *.c)
       cpps="$cpps $1"
+      cppos="$cppos `dirname $1`/`basename $1 .c`.o"
       shift
     ;;
-     
+
     *.o)
-      cpps="$cpps $1"
+      cppos="$cppos `dirname $1`/`basename $1 .cpp`.o"
       shift
     ;;
 
     *.a)
-      cpps="$cpps $1"
+      cppos="$cppos $1"
       shift
     ;;
 
@@ -2249,25 +2758,27 @@ do
       pkgs=" `echo \"$1\" | sed 's/--pkg=\(.*\)/\\1/'`"
       shift
     ;;
-    
+
+# unknown flag .. pass to both compile and link
     -*)
       cpps="$cpps $1"
+      cppos="$cppos $1"
       shift
     ;;
-   
+
     *)
       grab=0
     ;;
   esac
 done
 
-if [ "x$pkgs" = "x" ] 
+if [ "x$pkgs" = "x" ]
 then
   PKGS=""
 else
   PKGS=`pkg-config --cflags --libs $pkgs`
 fi
- 
+
 if [ "x$1" = "x" ]
 then
   echo "usage: flx filename"
@@ -2283,7 +2794,7 @@ case "$1" in
     arg="`echo $1 | sed 's/\.flx$//'`"
     is_flx=1
   ;;
-  
+
   *.so)
     arg="`echo $1 | sed 's/\.so$//'`"
     is_so=1
@@ -2331,7 +2842,7 @@ args=""
 while (( "$grab" == "1" ));
 do
   case "x$1" in
-    x)  
+    x)
       grab=0
     ;;
 
@@ -2370,6 +2881,9 @@ else
   FLXRTL="$prefix/lib/felix/rtl"
   FLXBIN="$prefix/bin"
 fi
+if [ "$DEBUG" = "1" ]; then FLXRUN="$FLXRUN --debug"; fi
+STATIC_ENV=""
+if [ "$DEBUG" = "1" ]; then STATIC_ENV="env FLX_DEBUG=1 "; fi
 
 # No need to compile, just run it
 if [ $STATIC = 0 ]
@@ -2389,7 +2903,7 @@ else
     if [ $ECHO = 1 ]; then echo "running $base"; fi
     if [ $RUNIT = 1 ]
     then
-      `echo "$base $args"`
+      `echo "$STATIC_ENV $base $args"`
     fi
     exit $?
   fi
@@ -2398,17 +2912,16 @@ fi
 # Need Felix and c++ compile, then run it
 
 if [ $ECHO = 1 ]
-then 
+then
   echo "compiling $base.flx"
 fi
 
 if [ $DEBUG = 1 ]
-then 
+then
   VERBOSE="-v"
-  CCFLAGS="-g"
+  CCFLAGS="$CCFLAGS -g"
 else
   VERBOSE="-q"
-  CCFLAGS=""
 fi
 
 if [ $INLINE = 1 ]
@@ -2420,52 +2933,58 @@ fi
 
 if [ $STATIC = 0 ]
 then
-  if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"` 
+  if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"`
   then
-    CMD=`echo $CCLINK_DLLIB $CCFLAGS -I"$INCLUDE_DIR" "$INCLUDE_DIRS" "$PKGS" "$cpps" "$base.cpp" -o "$base.so"`
-    if [ $ECHO = 1 ] 
-    then 
-      echo "$CMD"
-    fi
-    if `$CMD`
+    CCMD=`echo $CCOBJ_DLLIB $CCFLAGS -I"$INCLUDE_DIR" "$INCLUDE_DIRS" "$PKGS" "$cpps" "$base.cpp" -o "$base.o"`
+    LCMD=`echo $CCLINK_DLLIB $CCFLAGS "$PKGS" "$cppos" "$base.o" -o "$base.so"`
+    if [ $ECHO = 1 ]; then echo "$CCMD"; fi
+    if `$CCMD`
     then
-      # rm -f "$base.cpp"
-      if [ $RUNIT = 1 ]
+      if [ $ECHO = 1 ]; then echo "$LCMD"; fi
+      if `$LCMD`
       then
-        if [ $TIME = 1 ]
+        if [ $RUNIT = 1 ]
         then
-          `echo "time $FLXRUN" "$base.so" $args`
-        else
-          `echo "$FLXRUN" "$base.so" $args`
+          if [ $TIME = 1 ]
+          then
+            `echo "time $FLXRUN" "$base.so" $args`
+          else
+            `echo "$FLXRUN" "$base.so" $args`
+          fi
         fi
+        exit $?
+      else
+        exit $?
       fi
-      exit $?
     else
       exit $?
     fi
   fi
 else
-  if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"` 
+  if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"`
   then
-    CMD=`echo $CCLINK_STATIC $CCFLAGS -DFLX_STATIC_LINK -I"$INCLUDE_DIR" "$INCLUDE_DIRS" $FLXRTL/flx_run_static.o "$PKGS" "$cpps" "$base.cpp" $FLXRTL/libflx_static.a -o "$base"`
-    if [ $ECHO = 1 ] 
-    then 
-      echo "$CMD"
-    fi
-
-    if `$CMD`
+    CCMD=`echo $CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I"$INCLUDE_DIR" "$INCLUDE_DIRS" "$PKGS" "$cpps" "$base.cpp" -o "$base.o"`
+    LCMD=`echo $CCLINK_STATIC $FLXRTL/flx_run_static.o "$PKGS" "$cppos" "$base.o" $FLXRTL/libflx_static.a -o "$base"`
+    if [ $ECHO = 1 ]; then echo "$CCMD"; fi
+    if `$CCMD`
     then
-      # rm -f "$base.cpp"
-      if [ $RUNIT = 1 ]
+      if [ $ECHO = 1 ]; then echo "$LCMD"; fi
+      if `$LCMD`
       then
-        if [ $TIME ]
+        # rm -f "$base.cpp"
+        if [ $RUNIT = 1 ]
         then
-          `echo time $base $args`
-        else
-          `echo $base $args`
+          if [ $TIME = 1 ]
+          then
+            `echo time $STATIC_ENV $base $args`
+          else
+            `echo $STATIC_ENV $base $args`
+          fi
         fi
+        exit $?
+      else
+        exit $?
       fi
-      exit $?
     else
       exit $?
     fi

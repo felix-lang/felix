@@ -377,6 +377,9 @@ def has_prefix(prefix,v):
   return prefix == v[:n]
   
 quiet = 0
+force = 0
+upgrade = 0
+refresh = 0
 default_prefix='/usr/local'
 
 DEBIAN=0
@@ -387,9 +390,15 @@ PREFIX=os.getenv("PREFIX",default=default_prefix)
 
 i = 1
 while(i < len (sys.argv)):
-  arg = sys.argv[1]
+  arg = sys.argv[i]
   if arg == "--quiet":
     quiet = 1
+  elif arg == "--force":
+    force = 1
+  elif arg == "--refresh":
+    refresh = 1
+  elif arg == "--upgrade":
+    upgrade = 1
   elif has_prefix("--prefix=", arg):
     maybe_prefix=arg[9:]
     if maybe_prefix !=  '': PREFIX=maybe_prefix
@@ -401,13 +410,28 @@ while(i < len (sys.argv)):
 if PREFIX=='': PREFIX=default_prefix
 
 if file_exists("config/config.py"):
-  if not quiet:
-    print "config/config.py already exists"
-    print "It is assumed to container client configuration data"
-    print "and so will not be clobbered."
-    print "To recreate the default configuration"
-    print "you must delete config/config.py and rerun the config script"
-  sys.exit(0)
+  if force or upgrade:
+    print "**** upgrading configuration"
+  elif refresh:
+    print "**** CLOBBERING old configuration"
+  else:
+    print "**** using old configuration!"
+    if not quiet:
+      print "*** config/config.py already exists"
+      print "*** It is assumed to container client configuration data"
+      print "*** and so will not be clobbered."
+      print
+      print "*** To upgrade the configuration use the --force option"
+      print
+      print "*** To recreate the default configuration"
+      print "*** delete config/config.py first"
+    sys.exit(0)
+else:
+  if upgrade:
+    print "**** Can't upgrade non-existent configuration"
+    sys.exit(1)
+  else:
+    print "**** creating new configuration"
 
 # We're screwed if popen doesn't work ..
 def get_stdout(x):
@@ -801,10 +825,12 @@ vbls = [
   ("ALIGNOF_VOIDP","void*"),
   ]
 
+MAX_ALIGN = 1
 aligns = {}
 for k,t in vbls:
   v = eval(k)
   aligns[v]=t
+  if v > MAX_ALIGN: MAX_ALIGN = v
 aligns[1]="char"
 
 DEBUG_SYMBOLS = "-g "
@@ -823,7 +849,13 @@ PYTHON_OS_PARDIR=os.pardir
 PYTHON_OS_SEP=os.sep
 PYTHON_OS_PATHSEP=os.pathsep
 
-print "ESTABLISHED CONFIGURATION"
+print "ESTABLISHED DEFAULT CONFIGURATION"
+
+# attempt to clobber the configuration with old values
+if not refresh:
+  try:
+    execfile("config.py")
+  except: pass
 
 def pr(f,x):
   print x
@@ -908,6 +940,7 @@ try:
   p(f,"ALIGNOF_WCHAR")
   p(f,"ALIGNOF_ENUM")
   p(f,"ALIGNOF_FUNCP")
+  p(f,"MAX_ALIGN")
 
   pr(f,"flx_aligns = "+repr(aligns))
 
@@ -1014,3 +1047,287 @@ print "Created config/config.py"
 print "Edit this file to set your preferences"
 print "This file will not be clobbered by the Felix build process"
 
+@h = tangler('config/flx_data.py')
+@select(h)
+execfile('config/config.py')
+
+flx_keywords = [
+    ("all", "ALL"),
+    ("and", "AND"),
+    ("as", "AS"),
+    ("body", "BODY"),
+    ("call", "CALL"),
+    ("case", "CASE"),
+    ("class", "CLASS"),
+    ("code", "CODE"),
+    ("comment", "COMMENT_KEYWORD"),
+    ("const", "CONST"),
+    ("cstruct", "CSTRUCT"),
+    ("ctypes", "CTYPES"),
+    ("def", "DEF"),
+    ("do", "DO"),
+    ("done", "DONE"),
+    ("elif", "ELIF"),
+    ("else", "ELSE"),
+    ("endif", "ENDIF"),
+    ("endmatch", "ENDMATCH"),
+    ("enum", "ENUM"),
+    ("export", "EXPORT"),
+    ("forget", "FORGET"),
+    ("fork", "FORK"),
+    ("functor", "FUNCTOR"),
+    ("fun", "FUNCTION"),
+    ("goto", "GOTO"),
+    ("header", "HEADER"),
+    ("ident", "IDENT"),
+    ("if", "IF"),
+    ("include","INCLUDE"),
+    ("incomplete", "INCOMPLETE"),
+    ("inf", "INF"),
+    ("in", "IN"),
+    ("is", "IS"),
+    ("inherit", "INHERIT"),
+    ("inline", "INLINE"),
+    ("jump", "JUMP"),
+    ("let", "LET"),
+    ("loop", "LOOP"),
+    ("lval", "LVAL"),
+    ("macro", "MACRO"),
+    ("match", "MATCH"),
+    ("module", "MODULE"),
+    ("NaN", "NAN"),
+    ("new", "NEW"),
+    ("noinline", "NOINLINE"),
+    ("nonterm", "NONTERM"),
+    ("noreturn", "NORETURN"),
+    ("not", "NOT"),
+    ("obj", "OBJECT"),
+    ("of", "OF"),
+    ("open","OPEN"),
+    ("or", "OR"),
+    ("parse", "PARSE"),
+    ("pod", "POD"),
+    ("private", "PRIVATE"),
+    ("proc", "PROCEDURE"),
+    ("public", "PUBLIC"),
+    ("publish", "PUBLISH"),
+    ("read", "READ"),
+    ("regexp", "REGEXP"),
+    ("reglex", "REGLEX"),
+    ("regmatch", "REGMATCH"),
+    ("rename", "RENAME"),
+    ("requires", "REQUIRES"),
+    ("return", "RETURN"),
+    ("set","SET"),
+    ("struct", "STRUCT"),
+    ("the", "THE"),
+    ("then", "THEN"),
+    ("todo", "TODO"),
+    ("to", "TO"),
+    ("typedef", "TYPEDEF"),
+    ("typematch", "TYPEMATCH"),
+    ("type", "TYPE"),
+    ("union", "UNION"),
+    ("use","USE"),
+    ("val", "VAL"),
+    ("var", "VAR"),
+    ("when", "WHEN"),
+    ("whilst", "WHILST"),
+    ("with", "WITH"),
+    ("until", "UNTIL"),
+    ("_", "UNDERSCORE"),
+  ]
+
+flx_1_char_syms = [
+    ("DOLLAR","$"),
+    ("QUEST","?"),
+    ("EXCLAMATION","!"),
+    ("LPAR","("),
+    ("RPAR",")"),
+    ("LSQB","["),
+    ("RSQB","]"),
+    ("LBRACE","{"),
+    ("RBRACE","}"),
+    ("COLON",":"),
+    ("COMMA",","),
+    ("SEMI",";"),
+    ("PLUS","+"),
+    ("MINUS","-"),
+    ("STAR","*"),
+    ("SLASH","/"),
+    ("VBAR","|"),
+    ("AMPER","&"),
+    ("LESS","<"),
+    ("GREATER",">"),
+    ("EQUAL","="),
+    ("DOT","."),
+    ("PERCENT","%"),
+    ("BACKQUOTE","`"),
+    ("TILDE","~"),
+    ("CIRCUMFLEX","^"),
+  ]
+
+flx_2_char_syms = [
+    ("ANDLESS","&<"),
+    ("ANDGREATER","&>"),
+    ("EQEQUAL","=="),
+    ("NOTEQUAL","!="),
+    ("LESSEQUAL","<="),
+    ("GREATEREQUAL",">="),
+    ("LEFTSHIFT","<<"),
+    ("RIGHTSHIFT",">>"),
+    ("STARSTAR","**"),
+    ("LESSCOLON","<:"),
+    ("COLONGREATER",":>"),
+    ("DOTDOT",".."),
+    ("COLONCOLON","::"),
+
+    ("PLUSPLUS","++"),
+    ("MINUSMINUS","--"),
+    ("PLUSEQUAL","+="),
+    ("MINUSEQUAL","-="),
+    ("STAREQUAL","*="),
+    ("SLASHEQUAL","/="),
+    ("PERCENTEQUAL","%="),
+    ("CARETEQUAL","^="),
+    ("VBAREQUAL","|="),
+    ("AMPEREQUAL","&="),
+    ("TILDEEQUAL","~="),
+    ("COLONEQUAL",":="),
+    ("RIGHTARROW","->"),
+    ("EQRIGHTARROW","=>"),
+    ("LEFTARROW","<-"),
+    ("LSQANGLE","[<"),
+    ("RSQANGLE",">]"),
+
+    ("LSQBAR","[<"),
+    ("RSQBAR",">]"),
+  ]
+
+flx_3_char_syms = [
+    ("LEFTSHIFTEQUAL","<<="),
+    ("RIGHTSHIFTEQUAL",">>="),
+    ("LEFTRIGHTARROW","<->"),
+    ("ANDEQEQUAL","&=="),
+    ("ANDNOTEQUAL","&!="),
+    ("ANDLESSEQUAL","&<="),
+    ("ANDGREATEREQUAL","&>="),
+    ("DOTDOTDOT","..."),
+  ]
+
+
+rmap = {}
+
+tmap = {
+  # addressing
+  "byte"    : "unsigned char",
+  "size"    : "size_t",
+  "cvaddress" : "void const volatile*",
+  "vaddress" : "void volatile*",
+  "caddress" : "void const*",
+  "address" : "void *",
+  "offset"  : "ptrdiff_t",
+  "charp"   : "char*",
+  "charcp"  : "char const*",
+  
+  #characters
+  "char"    : "char",
+  "wchar"   : "wchar_t",
+
+  #signed integers
+  "tiny"    : "signed char",
+  "short"   : "short",
+  "int"     : "int",
+  "long"    : "long",
+
+  #unsigned integers
+  "utiny"   : "unsigned char",
+  "ushort"  : "unsigned short",
+  "uint"    : "unsigned int",
+  "ulong"   : "unsigned long",
+
+  #floating
+  "float"   : "float",
+  "double"  : "double",
+  "ldouble"  : "long double"
+ }
+
+if HAVE_COMPLEX:
+  tmap["imaginary"]="float _Imaginary"
+  tmap["dimaginary"]="double _Imaginary"
+  tmap["limaginary"]="long double _Imaginary"
+  tmap["complex" ]="float _Complex"
+  tmap["dcomplex"]="double _Complex"
+  tmap["lcomplex"]="long double _Complex"
+
+  rmap["imaginary" ]="c99_complex_h"
+  rmap["dimaginary" ]="c99_complex_h"
+  rmap["limaginary" ]="c99_complex_h"
+  rmap["complex" ]="c99_complex_h"
+  rmap["dcomplex"]="c99_complex_h"
+  rmap["lcomplex"]="c99_complex_h"
+else:
+  tmap["imaginary"]="float"
+  tmap["dimaginary"]="double"
+  tmap["limaginary"]="long double"
+  tmap["complex" ]="std::complex<float>"
+  tmap["dcomplex"]="std::complex<double>"
+  tmap["lcomplex"]="std::complex<long double>"
+
+  rmap["complex" ]="complex_hxx"
+  rmap["dcomplex"]="complex_hxx"
+  rmap["lcomplex"]="complex_hxx"
+
+if HAVE_LONGDOUBLE:
+   tmap["ldouble"]="long double"
+else:
+   tmap["ldouble"]="double"
+
+if HAVE_LONGLONG:
+   tmap["vlong"]="long long"
+   tmap["uvlong"]="unsigned long long"
+else:
+   tmap["vlong"]="long"
+   tmap["uvlong"]="unsigned long"
+
+if HAVE_STDINT:
+   tmap["int8"]="int8_t"
+   tmap["uint8"]="uint8_t"
+   tmap["int16"]="int16_t"
+   tmap["uint16"]="uint16_t"
+   tmap["int32"]="int32_t"
+   tmap["uint32"]="uint32_t"
+   tmap["int64"]="int64_t"
+   tmap["uint64"]="uint64_t"
+
+   # requirements
+   rmap["int8"]="c99_stdint_h"
+   rmap["uint8"]="c99_stdint_h"
+   rmap["int16"]="c99_stdint_h"
+   rmap["uint16"]="c99_stdint_h"
+   rmap["int32"]="c99_stdint_h"
+   rmap["uint32"]="c99_stdint_h"
+   rmap["int64"]="c99_stdint_h"
+   rmap["uint64"]="c99_stdint_h"
+else:
+   tmap["int8"]="signed char"
+   tmap["uint8"]="unsigned char"
+   sizes = { 
+     SIZEOF_SHORT*8 : "short",
+     SIZEOF_INT*8: "int",
+     SIZEOF_LONG*8 : "long",
+   }
+   if HAVE_LONGLONG:
+     sizes[SIZEOF_LONGLONG*8]="long long"
+   for size in [16,32,64]:
+     try:
+       t = sizes[size]
+       tmap["int"+str(size)]=t
+       tmap["uint"+str(size)]="unsigned " + t
+     except:
+       tmap["int"+str(size)]="emul_int"+str(size)
+       tmap["uint"+str(size)]="emul_uint"+str(size)
+
+tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
+
+ 

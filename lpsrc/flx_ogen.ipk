@@ -198,11 +198,17 @@ let rec get_offsets syms bbdfns typ : string list =
   | `BTYP_type_tuple _
   | `BTYP_type_match _ -> assert false
 
-let gen_offset_data s n name offsets =
+let gen_offset_data s n name offsets isfun =
   if n <> 0 then
   begin
-    bcat s ("static std::size_t " ^ name ^ "_offsets["^si n^"]={\n");
-    bcat s ("  " ^ cat ",\n  " offsets);
+    bcat s ("static std::size_t " ^ name ^ 
+      "_offsets["^
+      (
+        if isfun then si (n-1)^"+FLX_PASS_PTF"
+        else si n
+      )^
+      "]={\n");
+    bcat s ("  " ^ cat "\n  " offsets);
     bcat s ("\n" ^  "};\n");
   end;
   bcat s ("FLX_FINALISER("^name^")\n");
@@ -216,16 +222,16 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance =
   let name = cpp_instance_name syms bbdfns index ts in
   let display = Flx_display.get_display_list bbdfns index in
   let offsets = 
-    ("offsetof(" ^ name ^ ",ptf)") ::
+    ("FLX_EAT_PTF(offsetof(" ^ name ^ ",ptf)comma)") ::
     (match ret with 
-      | `BTYP_void -> [ ("offsetof(" ^ name ^ ",_caller)")  ] 
+      | `BTYP_void -> [ ("offsetof(" ^ name ^ ",_caller),")  ] 
       | _ -> []
     ) 
     @
     map
     (fun (didx, vslen) ->
     let dptr = "ptr" ^ cpp_instance_name syms bbdfns didx (list_prefix ts vslen) in
-    "offsetof("^name^","^dptr^")"
+    "offsetof("^name^","^dptr^"),"
     )
     display
     @
@@ -237,7 +243,7 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance =
         let offsets = get_offsets syms bbdfns typ in
         map 
         (fun offset ->
-          "offsetof("^name^","^mem^")+" ^ offset
+          "offsetof("^name^","^mem^")+" ^ offset^","
         )
         offsets 
       )
@@ -251,7 +257,7 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance =
     (match ret with |`BTYP_void -> "procedure " | _ -> "function ") ^ 
     name ^ "\n"
   );
-  gen_offset_data s n name offsets
+  gen_offset_data s n name offsets true
 
 let gen_thread_frame_offsets s syms bbdfns =
   let vars = find_thread_vars_with_type bbdfns in
@@ -266,7 +272,7 @@ let gen_thread_frame_offsets s syms bbdfns =
         let offsets = get_offsets syms bbdfns typ in
         map 
         (fun offset ->
-          "offsetof("^name^","^mem^")+" ^ offset
+          "offsetof("^name^","^mem^")+" ^ offset ^ ","
         )
         offsets 
       )
@@ -278,7 +284,7 @@ let gen_thread_frame_offsets s syms bbdfns =
   (
     "\n//OFFSETS for "^ name ^ "\n"
   );
-  gen_offset_data s n name offsets
+  gen_offset_data s n name offsets false
 
 let gen_offset_tables syms (child_map,bbdfns) all_closures =
   let primitive_shapes = Hashtbl.create 97 in
@@ -383,7 +389,7 @@ let gen_offset_tables syms (child_map,bbdfns) all_closures =
       let n = length offsets in 
       let classname = cpp_type_classname syms btyp in
       bcat s ("\n//OFFSETS for tuple type " ^ si index ^ "\n");
-      gen_offset_data s n name offsets
+      gen_offset_data s n name offsets false
 
     (* for an array, we only have offsets for the first element *)
     | `BTYP_array (t,i) ->

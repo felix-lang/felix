@@ -54,7 +54,7 @@ let get_data table index : symbol_data_t =
   with Not_found -> 
     failwith ("[Flx_lookup.get_data] No definition of <" ^ string_of_int index ^ ">")
 
-let sig_of_symdef symdef name = match symdef with 
+let sig_of_symdef symdef sr name = match symdef with 
   | `SYMDEF_match_check (_) 
     -> `TYP_tuple[]
 
@@ -68,6 +68,9 @@ let sig_of_symdef symdef name = match symdef with
   | `SYMDEF_cstruct ls
   | `SYMDEF_struct ls ->
     typeof_list (map snd ls)
+
+  | `SYMDEF_const_ctor _ -> `AST_void sr
+  | `SYMDEF_nonconst_ctor (_,_,_,t) -> t
 
   | symdef -> 
     failwith (
@@ -97,7 +100,7 @@ let overload
     match get_data syms.dfns i with 
     {id=id; sr=sr;parent=parent;privmap=table;dirs=dirs;symdef=symdef} ->
     let pvs,vs = find_split_vs syms i in
-    id,sr,parent,i,vs,pvs,sig_of_symdef symdef id
+    id,sr,parent,i,vs,pvs,sig_of_symdef symdef sr id
   in
   let sign = lift suf in
   let consider i =

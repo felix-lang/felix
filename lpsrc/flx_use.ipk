@@ -84,6 +84,7 @@ and uses_tbexpr syms used bbdfns (e,t) =
   ut t;
 
   match e with
+  | `BEXPR_parse (e,ii)          -> ue e; iter ui ii
   | `BEXPR_deref e
   | `BEXPR_get_n (_,e)
   | `BEXPR_match_case (_,e)
@@ -93,7 +94,6 @@ and uses_tbexpr syms used bbdfns (e,t) =
   | `BEXPR_apply_stack (i,ts,e2)-> ui i; iter ut ts; ue e2
   | `BEXPR_apply_direct (i,ts,e2)-> ui i; iter ut ts; ue e2
   | `BEXPR_tuple es              -> iter ue es 
-  | `BEXPR_coercion (e,t)        -> ue e; ut t
   | `BEXPR_case (_,t)            -> ut t
   | `BEXPR_ref (i,ts)
   | `BEXPR_name (i,ts)
@@ -106,6 +106,7 @@ and uses syms used bbdfns i =
   let ut t = uses_type syms used bbdfns t in
   let ur (i,ts) = ui i; iter ut ts in
   let ux x = uses_exes syms used bbdfns x in
+  let ue e = uses_tbexpr syms used bbdfns e in
   if not (IntSet.mem i !used) then
   begin
     match
@@ -123,7 +124,10 @@ and uses syms used bbdfns i =
       | `BBDCL_procedure (props,_,ps, exes) ->
         iter ut (map (fun x -> snd (snd x)) ps);
         ux exes
-                                                                                
+
+      | `BBDCL_glr (t,(p,e)) ->
+        ut t; ux e
+
       | `BBDCL_union (_,ps)
       | `BBDCL_struct (_,ps)
       | `BBDCL_cstruct (_,ps)
@@ -158,7 +162,7 @@ let find_roots syms bbdfns
   (function
      | `BIFACE_export_fun (_,x,_) -> roots := IntSet.add x !roots
      | `BIFACE_export_type (_,t,_) -> 
-        Flx_use.uses_type syms roots bbdfns t
+        uses_type syms roots bbdfns t
   )
   bifaces
   ;

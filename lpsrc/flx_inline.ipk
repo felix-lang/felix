@@ -1399,20 +1399,90 @@ let heavy_inlining syms
   (bifaces:biface_t list) 
 =
   (* make set of used things, initially empty *)
-  let used = ref BidSet.empty in
+  let used = ref IntSet.empty in
 
   let use i = Flx_use.uses syms used bbdfns i in
 
+  (*
   (* add root items to set, then add items it uses *)
-  BidSet.iter use !(syms.roots)
+  IntSet.iter use !(syms.roots)
   ;
+  *)
+
+  used := !(syms.roots);
   
   let (uses,usedby) = Flx_call.call_data bbdfns in
   (*
   print_endline "Inlining heavy pass1";
   *)
-  BidSet.iter (fun i->
+  while not (IntSet.is_empty !used) do
+    let i = IntSet.choose !used in
+    used := IntSet.remove i !used;
     heavily_inline_bbdcl syms (uses,child_map,bbdfns) [i] i
-  ) 
-  !used;
+  done;
 
+(* NOTES: this algorithm ONLY WORKS if inlining is attempted
+in the corect order. Attempting to inline into children
+before parents, when they're mutually recursive, spawns
+clones infinitely, because we end up cloning a function
+on the exclusion list, but not adding the clone to it.
+
+So we end up recursing into the clone, and inlining
+into it, which spawns more clones which are not
+excluded, and haven't been inlined into yet.
+
+This needs to be fixed so the algorithm is proven
+to terminate and also be complete.
+
+What we need (and is NOT implemented) is something like this:
+
+Cloning nested functions is should not be needed in general.
+If we proceed from leaves towards the root, we can eliminate
+from each function any nested children, by simply inlining
+them. So only variable children need cloning.
+
+Two things stop this working: 
+
+(a) non-inline functions and
+(b) recursion.
+
+The current algorithm has been hacked to only handle the
+call graph from the roots. It used to consider the useage
+closure, however that started to fail when I added 
+'pre-assigned' slot numbers (AST_index). Doing that meant
+the natural order of the set wasn't a topological sort
+of the parent-child order.
+
+Unfortunately, the remaining recursive descent doesn't
+proceed into noinline functions. Although these shouldn't
+be inlined into their caller, that doesn't mean functions
+shouldn't be inlined into them. Iterating over the usage
+closure ensured noinline functions would still be inlined
+into.
+
+Recursive functions are a bit different: they currently
+allow inlining, with a recursion stopper preventing
+infinite recursion.
+
+Unfortunately with a double nesting like this:
+
+  fun f() { fun g() { fun h() { f(); } h(); } g(); }
+
+trying to inline g into f causes h to be cloned.
+But trying to inline f into the clone of h retriggers
+the descent, causing the clone to be recloned, and 
+the recursion stopper doesn't prevent this, since it
+isn't the same routine being inlined twice (just a clone
+of it ..)
+
+The thing is.. we HAVE to inline the original routine
+AND the clone for completeness, since both may be
+called independently, so even if we could clone the
+recursion stoppers, it wouldn't work.
+
+The only solution I can think of is to guarrantee that
+you can only clone a routine that is inlined into
+already (as fas as possible) so that no attempt will
+be made to inline into the clone either.
+
+*)

@@ -231,22 +231,102 @@ val parse_tokens:
 @head(1, 'Lexer test harness')
 @h = tangler('src/flxl.ml')
 @select(h)
+open Flx_mtypes2
+open Flx_flxopt
+open Flx_getopt
+open Flx_parse
+open Flx_prelex
+;;
 
-(* just lex a file *)
+let print_elkhound_tokens toks =
+  let nt x = name_of_token x in
+  List.iter
+  (
+    fun x -> 
+      match x with
+      | NAME (s,id) ->
+        print_endline (nt x ^ " " ^ id)
+      | INTEGER (s,t,v) ->
+        print_endline (nt x ^ " " ^
+          t^","^Big_int.string_of_big_int v
+        )
+      | FLOAT (s,t,v) -> 
+        print_endline (nt x ^ " " ^ 
+          t^","^v
+        )
+      | STRING (sr,s) -> 
+        print_endline (nt x ^ " " ^
+          Flx_string.c_quote_of_string s 
+        )
+      | CSTRING (sr,s) -> 
+        print_endline (nt x ^ " " ^
+          Flx_string.c_quote_of_string s 
+        )
+      | WSTRING (sr,s) -> 
+        print_endline (nt x ^ " " ^
+          Flx_string.c_quote_of_string s 
+        )
+      | USTRING (sr,s) -> 
+        print_endline (nt x ^ " " ^
+          Flx_string.c_quote_of_string s 
+        )
+      | _ ->
+        print_endline (Flx_prelex.name_of_token x)
+  )
+  toks
+;;
 
-let filename = Sys.argv.(1) ^ ".flx";;
-print_endline "---------------------------------------";;
-print_endline ("Lexing " ^ filename);;
-print_endline "---------------------------------------";;
+let run() = 
+  let raw_options = parse_options Sys.argv in
+  let compiler_options = get_felix_options raw_options in
+  if compiler_options.print_flag then begin
+    print_string "//Include directories = ";
+    List.iter (fun d -> print_string (d ^ " "))
+    compiler_options.include_dirs;
+    print_endline ""
+  end
+  ;
 
-print_endline "Pre tokens";;
-let pretokens = (Flx_pretok.pre_tokens_of_filename filename "" []);;
-Flx_tok.print_pre_tokens  pretokens;;
-print_endline "---------------------------------------";;
+  let elkhound_test = check_key raw_options "elkhound" in
+  let filename = 
+    match get_key_value raw_options "" with
+    | Some s -> s
+    | None -> exit 0
+  in
+  let filebase = filename in
+  let input_file_name = filebase ^ ".flx" in
 
-print_endline "Tokens";;
-let tokens = Flx_lex1.translate pretokens;;
-Flx_tok.print_tokens tokens;;
-print_endline "---------------------------------------";;
+  if compiler_options.print_flag then begin
+    print_endline "---------------------------------------";
+    print_endline ("Lexing " ^ input_file_name);
+    print_endline "---------------------------------------";
+    print_endline "Pre tokens"
+  end;
 
+  let pretokens = 
+    Flx_pretok.pre_tokens_of_filename 
+    input_file_name 
+    (Filename.dirname input_file_name) 
+    [] 
+  in
+  if compiler_options.print_flag then begin
+    Flx_tok.print_pre_tokens  pretokens;
+    print_endline "---------------------------------------";
+    print_endline "Tokens"
+  end
+  ;
+  let tokens = Flx_lex1.translate pretokens in
+  if not elkhound_test || compiler_options.print_flag then
+    Flx_tok.print_tokens tokens;
+  if compiler_options.print_flag then begin
+    print_endline "---------------------------------------"
+  end
+  ;
+  if elkhound_test then begin
+    print_elkhound_tokens tokens;
+  end
+
+in 
+  run()
+;;
 

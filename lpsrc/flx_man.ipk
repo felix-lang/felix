@@ -938,81 +938,20 @@ Felix grammar summary.
 @select(tangler('man/man1/flx_key.1','data'))
 @mh('FELIX KEYWORDS')
 .SH NAME
-Felix keywords and operator symbols
+Felix keywords and symbols
 
 .SH Keywords
 
 @for n,t in flx_keywords: tangle(n)
 .br
 
-.SH operator symbols
-( 
-) 
-[ 
-] 
-
-} 
-! 
-: 
-, 
-; 
-+ 
-- 
-* 
-/ 
-| 
-& 
-< 
-> 
-= 
-. 
-% 
-` 
-~ 
-^ 
-! 
-? 
-=> 
-&< 
-&> 
-.. 
-:: 
-== 
-<> 
-!= 
-<= 
->= 
-<< 
->> 
-** 
-\\ 
-++ 
--- 
-+= 
--= 
-*= 
-/= 
-%= 
-^= 
-|= 
-&= 
-~= 
-:= 
-<- 
--> 
-<: 
-:> 
-[< 
->] 
-<<= 
->>= 
-... 
-<-> 
-&== 
-&<> 
-&!= 
-&<= 
-&>= 
+.SH symbols
+@for k,s in flx_1_char_syms: tangle (s)
+.br
+@for k,s in flx_2_char_syms: tangle (s)
+.br
+@for k,s in flx_3_char_syms: tangle (s)
+.br
 
 @tangle(manfoot)
 

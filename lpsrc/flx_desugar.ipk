@@ -163,7 +163,7 @@ let mkcurry seq sr name vs args return_type kind body =
     let name n = 
       if n = arity
       then name (* top level *)
-      else name^"_curry_" ^ string_of_int n
+      else name^"_curry_" ^ si n
     in
     match args with 
     | [] -> 
@@ -300,6 +300,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   let seq () = let n = !(syms.counter) in incr (syms.counter); n in
   match e with
 
+  | `AST_sparse _ 
   | `AST_match_ctor _ 
   | `AST_match_case _ 
   | `AST_ctor_arg _ 
@@ -330,6 +331,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_suffix _ -> [],e  (* ?? *)
 
   | `AST_the (_,_) -> [],e
+  | `AST_index (_,_,_) -> [],e
   
   | `AST_lookup (sr,(e,id,ts)) ->
     let l1,x1 = rex e in
@@ -394,7 +396,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_lambda (sr,(pps,ret,sts)) -> 
     let kind = `InlineFunction in
     let n = seq() in
-    let name' = "_lam_" ^ string_of_int n in
+    let name' = "_lam_" ^ si n in
     let access = `Private in
     let vs = [] in
     let sts = 
@@ -419,7 +421,27 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_coercion (sr,(e,t)) ->
     let l1,x1 = rex e in 
     l1, `AST_coercion (sr,(x1,t))
-
+  
+  | `AST_parse (sr,e,ms) ->
+    (* SIMPLIFY TO ONE SYMBOL PLUS DUMMY NONTERMS *)
+    let l,e = rex e in
+    let n = seq() in
+    let nt = "_nt_"^si n in
+    let nt_name = `AST_index (sr,nt,n) in
+    let l,ps = 
+      fold_left 
+      (fun (ll,ps) (sr,p,e) -> 
+        let l,x = rex e in
+        let t = `TYP_typeof e in
+        let n' = seq() in
+        Dcl(sr,nt,Some n',`Private,[],`DCL_glr(t,(p,e))) :: l @ ll,
+        n'::ps
+      )
+      (l,[])
+      ms
+    in
+    l,`AST_sparse (sr,e,nt,ps)
+  
   | `AST_regmatch (sr,(e,cls')) ->
     let dcls = ref [] in
     let cls = ref [] in
@@ -433,10 +455,10 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     ;
 
     let n = seq() in
-    let fname = "regmatch" ^ string_of_int n in
+    let fname = "regmatch" ^ si n in
     let l,x = rex e in
     let exes = [Exe(sr,`EXE_regmatch (x,!cls))] in
-    let rfun = Dcl(sr,fname,`Private,[],
+    let rfun = Dcl(sr,fname,None,`Private,[],
       `DCL_function([],`TYP_none,[`NoInline],exes)) 
     in
     rfun :: l @ !dcls,
@@ -472,7 +494,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
       let d = Dcl
         (
           sr,
-          name,
+          name, None,
           `Private,
           [],
           `DCL_function 
@@ -500,11 +522,11 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     ;
 
     let n = seq() in
-    let fname = "reglex" ^ string_of_int n in
+    let fname = "reglex" ^ si n in
     let l1,x1 = rex p1 in
     let l2,x2 = rex p2 in
     let exes = [Exe(sr,`EXE_reglex (x1,x2,!cls))] in
-    let rfun = Dcl(sr,fname,`Private,[],
+    let rfun = Dcl(sr,fname,None,`Private,[],
       `DCL_function([],`TYP_none,[`NoInline],exes)) 
     in
     rfun :: l1 @ l2 @ !dcls,
@@ -525,17 +547,23 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
      
      match x with | A x | B x => x endmatch
   *)
-  
+
+ 
   | `AST_match (sr,(e,pss)) ->
     if length pss = 0 then clierr sr "Empty Pattern";
 
     (* step 1: evaluate e *)
     let d,x = rex e in
     let match_function_index = seq() in
+    let match_var_index = seq() in
+    (*
+    print_endline ("Match function index = " ^ si match_function_index );
+    print_endline ("Match variable index = " ^ si match_var_index );
+    *)
 
-    let match_var_name = name^ "_mv_"^string_of_int match_function_index in
-    let match_function_id = name^ "_mf_"^ string_of_int match_function_index in
-    let match_function = `AST_name (sr,match_function_id,[]) in
+    let match_var_name = name^ "_mv_"^si match_function_index in
+    let match_function_id = name^ "_mf_"^ si match_function_index in
+    let match_function = `AST_index (sr,match_function_id,match_function_index) in
     let match_seq = ref (seq()) in
 
     let expr_src = src_of_expr e in
@@ -545,8 +573,8 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     *)
     let evl = 
       [
-        Dcl (expr_src,match_var_name,`Private,[],`DCL_val (`TYP_typeof x));
-        Exe (expr_src,`EXE_init (match_var_name,x))
+        Dcl (expr_src,match_var_name,Some match_var_index,`Private,[],`DCL_val (`TYP_typeof x));
+        Exe (expr_src,`EXE_iinit ((match_var_name,match_var_index),x))
       ]
     in
     let pats,_ = split pss in
@@ -554,7 +582,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     ;
     let ematch_seq = seq() in
     (*
-    let end_match_label = "_em" ^ string_of_int ematch_seq in
+    let end_match_label = "_em" ^ si ematch_seq in
     *)
     let matches = ref [Exe (generated,`EXE_comment "begin match")] in
     let match_caseno = ref 1 in
@@ -562,13 +590,19 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     (fun (pat,e) -> 
       let n1 = !match_seq in
       let n2 = seq() in
+      let mh_idx = seq () in
+      let mc_idx = seq () in
+
       let patsrc = src_of_pat pat in
       let expr_src = src_of_expr e in
-      let match_checker_id = name ^ "_mc" ^ string_of_int n1 in
-      let match_handler_id = name ^ "_mh" ^ string_of_int n1 in
-      let match_checker = `AST_name (patsrc,match_checker_id,[]) in
-      let match_handler = `AST_name (expr_src,match_handler_id,[]) in
-
+      let match_checker_id = name ^ "_mc" ^ si n1 in
+      let match_handler_id = name ^ "_mh" ^ si n1 in
+      let match_checker = `AST_index (patsrc,match_checker_id,mc_idx) in
+      let match_handler = `AST_index (expr_src,match_handler_id,mh_idx) in
+      (*
+      print_endline ("Match checker index = " ^ si mc_idx);
+      print_endline ("Match handler index = " ^ si mh_idx);
+      *)
       let sts,result_expr = rex e in
       let body = 
         sts @ 
@@ -576,25 +610,26 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
       in
       matches := !matches @
       [
-        Dcl (patsrc,match_checker_id,`Private,[],`DCL_match_check (pat,match_var_name));
+        Dcl (patsrc,match_checker_id,Some mc_idx,`Private,[],
+        `DCL_match_check (pat,(match_var_name,match_var_index)));
         Dcl 
         (
           expr_src,
-          match_handler_id,
+          match_handler_id,Some mh_idx,
           `Private,
           [],
           `DCL_match_handler 
           (
             pat,
-            match_var_name,
+            (match_var_name,match_var_index),
             body
           )
         )
       ]
       @
       [
-      Exe (patsrc,`EXE_comment ("match case " ^ string_of_int !match_caseno));
-      Exe (patsrc,`EXE_label ("_ml" ^ string_of_int n1));
+      Exe (patsrc,`EXE_comment ("match case " ^ si !match_caseno));
+      Exe (patsrc,`EXE_label ("_ml" ^ si n1));
       Exe 
       (
         patsrc,
@@ -608,7 +643,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
               `AST_tuple (patsrc,[])
             )
           ), 
-          "_ml" ^ string_of_int n2
+          "_ml" ^ si n2
         )
       )
       ;
@@ -638,7 +673,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     )
     pss
     ;
-    let failure_label = "_ml" ^ string_of_int !match_seq in
+    let failure_label = "_ml" ^ si !match_seq in
 
     let match_function_body =
     d
@@ -661,7 +696,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
       Dcl 
       (
         sr,
-        match_function_id,
+        match_function_id,Some match_function_index,
         `Private,
         [],
         `DCL_function 
@@ -708,7 +743,7 @@ and rst syms name access parent_vs st : asm_t list =
     let ts = map (fun s-> `AST_name (sr,s,[])) parent_vs in
     let us = `AST_name (sr,"_rqs_" ^ name,ts) in
     let body = `DCL_body ("",[us]) in
-    Dcl (sr,"_rqs_"^n,`Public,[],body)
+    Dcl (sr,"_rqs_"^n,None,`Public,[],body)
   in
 
   (* rename _root requirements *)
@@ -728,6 +763,7 @@ and rst syms name access parent_vs st : asm_t list =
 
   (* name literal requirements *)
   let mkreqs sr rqs : asm_t list * named_reqs_t =
+    let ix = None in
     let rec aux rqs dcls nrqs =
       match rqs with 
       | [] -> rev dcls, nrqs
@@ -735,13 +771,13 @@ and rst syms name access parent_vs st : asm_t list =
       | `Body_req s -> 
         let n = !(syms.counter) in incr syms.counter;
         let n = "_req_" ^ si n in
-        let dcl = Dcl (sr,n,access,[],`DCL_body (s,[])) in
+        let dcl = Dcl (sr,n,ix,access,[],`DCL_body (s,[])) in
         aux t ( dcl :: dcls) ( `AST_name (sr,n,parent_ts sr) :: nrqs)
 
       | `Header_req s -> 
         let n = !(syms.counter) in incr syms.counter;
         let n = "_req_" ^ si n in
-        let dcl = Dcl (sr,n,access,[],`DCL_header (s,[])) in
+        let dcl = Dcl (sr,n,ix,access,[],`DCL_header (s,[])) in
         aux t ( dcl :: dcls) ( `AST_name (sr,n,parent_ts sr) :: nrqs)
 
       | `Named_req n -> aux t dcls (n::nrqs)
@@ -766,7 +802,7 @@ and rst syms name access parent_vs st : asm_t list =
     rsts name parent_vs  sts
 
   | `AST_regdef (sr,name,regexp) -> 
-    [Dcl (sr,name,access,[],`DCL_regdef regexp)]
+    [Dcl (sr,name,None,access,[],`DCL_regdef regexp)]
   | `AST_label (sr,s) -> [Exe (sr,`EXE_label s)]
   | `AST_proc_return sr -> [Exe (sr,`EXE_proc_return)]
   | `AST_goto (sr,s) -> [Exe (sr,`EXE_goto s)]
@@ -786,11 +822,11 @@ and rst syms name access parent_vs st : asm_t list =
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,access,vs,`DCL_var t); Exe (sr,`EXE_init (name,x))]
+      d @ [Dcl (sr,name,None,access,vs,`DCL_var t); Exe (sr,`EXE_init (name,x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,access,vs,`DCL_var (`TYP_typeof x)); Exe (sr,`EXE_init (name,x))]
-    | Some t,None -> [Dcl (sr,name,access,vs,`DCL_var t)]
+      d @ [Dcl (sr,name,None,access,vs,`DCL_var (`TYP_typeof x)); Exe (sr,`EXE_init (name,x))]
+    | Some t,None -> [Dcl (sr,name,None,access,vs,`DCL_var t)]
     | None,None -> failwith "Expected variable to have type or initialiser"
     end
 
@@ -798,31 +834,31 @@ and rst syms name access parent_vs st : asm_t list =
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,access,vs,`DCL_val t); Exe (sr,`EXE_init (name,x))]
+      d @ [Dcl (sr,name,None,access,vs,`DCL_val t); Exe (sr,`EXE_init (name,x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,access,vs,`DCL_val (`TYP_typeof x)); Exe (sr,`EXE_init (name,x))]
-    | Some t, None -> [Dcl (sr,name,access,vs,`DCL_val t)] (* allowed in interfaces *)
+      d @ [Dcl (sr,name,None,access,vs,`DCL_val (`TYP_typeof x)); Exe (sr,`EXE_init (name,x))]
+    | Some t, None -> [Dcl (sr,name,None,access,vs,`DCL_val t)] (* allowed in interfaces *)
     | None,None -> failwith "Expected value to have type or initialiser"
     end
 
   | `AST_const_decl (sr,name, vs,typ, s, reqs) -> 
     let dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,name,access,vs,`DCL_const (typ,s, map_reqs sr reqs))
+    Dcl (sr,name,None,access,vs,`DCL_const (typ,s, map_reqs sr reqs))
     :: dcls
 
   (* types *)
   | `AST_abs_decl (sr,name,vs,quals,str, reqs) -> 
     let dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,name,access,vs,`DCL_abs (quals,str,map_reqs sr reqs))
+    Dcl (sr,name,None,access,vs,`DCL_abs (quals,str,map_reqs sr reqs))
     :: dcls
   
-  | `AST_union (sr,name, vs, components) -> [Dcl (sr,name,access,vs,`DCL_union (components))]
-  | `AST_struct (sr,name, vs, components) ->  [Dcl (sr,name,access,vs,`DCL_struct (components))]
-  | `AST_cstruct (sr,name, vs, components) ->  [Dcl (sr,name,access,vs,`DCL_cstruct (components))]
-  | `AST_type_alias (sr,name,vs,typ) -> [Dcl (sr,name,access,vs,`DCL_type_alias (typ))]
-  | `AST_inherit (sr,name,vs,qn) -> [Dcl (sr,name,access,vs,`DCL_inherit qn)]
-  | `AST_inherit_fun (sr,name,vs,qn) -> [Dcl (sr,name,access,vs,`DCL_inherit_fun qn)]
+  | `AST_union (sr,name, vs, components) -> [Dcl (sr,name,None,access,vs,`DCL_union (components))]
+  | `AST_struct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,`DCL_struct (components))]
+  | `AST_cstruct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,`DCL_cstruct (components))]
+  | `AST_type_alias (sr,name,vs,typ) -> [Dcl (sr,name,None,access,vs,`DCL_type_alias (typ))]
+  | `AST_inherit (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,`DCL_inherit qn)]
+  | `AST_inherit_fun (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,`DCL_inherit_fun qn)]
 
   | `AST_curry (sr,name',vs,pps,ret,kind,sts) ->
     rst syms name access parent_vs (mkcurry seq sr name' vs pps ret kind sts)
@@ -862,8 +898,8 @@ and rst syms name access parent_vs st : asm_t list =
     let asms = rsts name [] sts in
     let asms = bridge name sr :: asms in
     [
-      Dcl (sr,otname,access,vs,`DCL_struct methods);
-      Dcl (sr,name,access,vs,`DCL_function (params,rtyp,[],asms))
+      Dcl (sr,otname,None,access,vs,`DCL_struct methods);
+      Dcl (sr,name,None,access,vs,`DCL_function (params,rtyp,[],asms))
     ]
   
   (* functions *)
@@ -873,14 +909,14 @@ and rst syms name access parent_vs st : asm_t list =
     let asms = rsts name' [] sts in
     let asms = bridge name' sr :: asms in
     [
-      Dcl (sr,name',access,vs, 
+      Dcl (sr,name',None,access,vs, 
         `DCL_function (params, res, props, asms)
       )
     ]
     
   | `AST_fun_decl (sr,name',vs,args,result,code, reqs,prec) ->
     let dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,name',access,vs,
+    Dcl (sr,name',None,access,vs,
       `DCL_fun (args,result,code,map_reqs sr reqs,prec))
     :: dcls
 
@@ -889,7 +925,7 @@ and rst syms name access parent_vs st : asm_t list =
     let asms = rsts name' (parent_vs @ vs') sts in
     let asms = bridge name' sr :: asms in
     let mdcl =
-      [ Dcl (sr,name',access,vs', `DCL_module asms) ]
+      [ Dcl (sr,name',None,access,vs', `DCL_module asms) ]
     in
       (* HACK !!!! *)
     if vs' = [] then
@@ -922,12 +958,12 @@ and rst syms name access parent_vs st : asm_t list =
 
   | `AST_header (sr,name',vs,s,reqs) -> 
     let dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,map_req name',access,vs,`DCL_header (s, map_reqs sr reqs))
+    Dcl (sr,map_req name',None,access,vs,`DCL_header (s, map_reqs sr reqs))
     :: dcls
 
   | `AST_body (sr,name',vs,s, reqs) -> 
     let dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,map_req name',access,vs,`DCL_body (s, map_reqs sr reqs))
+    Dcl (sr,map_req name',None,access,vs,`DCL_body (s, map_reqs sr reqs))
     :: dcls
 
   (* executable *)
@@ -1021,19 +1057,9 @@ and rst syms name access parent_vs st : asm_t list =
     d2 @ [Exe (sr,`EXE_loop (proc,x2))]
 
   | `AST_ifgoto (sr,e,lab)->
-    let next = "_skip_" ^ string_of_int (seq()) in
     let d,x = rex e in
-    d @ 
-    [
-      (* we have to do this, in case the clients
-        goto is non-local
-      *)
-      Exe (sr,`EXE_ifnotgoto (x,next));
-      Exe (sr,`EXE_goto lab);
-      Exe (sr,`EXE_label next)
-    ]
+    d @ [Exe (sr,`EXE_ifgoto (x,lab))]
 
-  (* client can't write this one *)
   | `AST_ifnotgoto (sr,e,lab)->
     let d,x = rex e in
     d @ [Exe (sr,`EXE_ifnotgoto (x,lab))]
@@ -1043,6 +1069,37 @@ and rst syms name access parent_vs st : asm_t list =
   | `AST_code (sr,s) -> [Exe (sr,`EXE_code s)]
   | `AST_noreturn_code (sr,s) -> [Exe (sr,`EXE_noreturn_code s)]
 
+  (* split into multiple declarations *)
+  | `AST_glr (sr, id, t, ms )  -> 
+    let rec aux dcls ms = match ms with
+    | [] ->dcls
+    | (sr',p,e)::ta -> 
+      let l,x = rex e in
+        let dcl =   `DCL_glr (t,(p,x)) in
+        let dcl =   Dcl (sr',id,None,`Public,[],dcl) in
+        aux (dcl :: l @ dcls) ta
+    in aux [] ms
+
+  | `AST_ctypes _ 
+  | `AST_expr_macro _ 
+  | `AST_ifdo _ 
+  | `AST_ifreturn _ 
+  | `AST_macro_assign _
+  | `AST_macro_forget _ 
+  | `AST_macro_goto _ 
+  | `AST_macro_ifgoto _ 
+  | `AST_macro_label _
+  | `AST_macro_proc_return _ 
+  | `AST_macro_val _ 
+  | `AST_macro_var _ 
+  | `AST_name_macro _
+  | `AST_public _ 
+  | `AST_stmt_macro _ 
+  | `AST_until _ 
+  | `AST_whilst _
+    -> assert false
+ 
+  (*
   | st ->
     let sr = src_of_stmt st in
     clierr sr 
@@ -1050,7 +1107,7 @@ and rst syms name access parent_vs st : asm_t list =
       "[desugar] Unexpected statment\n" ^
       string_of_statement 0 st
     )
-
+  *)
 let typeofargs a = 
       match map snd a with
       | [x] -> x
@@ -1144,7 +1201,6 @@ try
   print_endline "//----------------------------";
   print_endline "//IMPLEMENTATION DESUGARED:";
 
-  let counter = ref 1 in
   let include_dirs =  (* (Filename.dirname input_file_name) :: *) compiler_options.include_dirs in
   let compiler_options = { compiler_options with include_dirs = include_dirs } in
   let syms = { syms with compiler_options = compiler_options } in

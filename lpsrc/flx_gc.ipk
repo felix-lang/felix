@@ -125,11 +125,7 @@ for the best. Change this figure for your machine
 if necessary.
 
 @select(h)
-// ----------------------------------------------------
-// WARNING: MACHINE DEPENDENT HACKERY
-// YOU MUST CHANGE THIS VALUE TO SUIT YOUR SYSTEM
-
-#define _MAX_ALIGN 16
+@tangle('#define _MAX_ALIGN '+str(MAX_ALIGN))
 
 // ----------------------------------------------------
 

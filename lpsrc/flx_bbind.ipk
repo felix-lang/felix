@@ -91,6 +91,9 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
   begin
     (* let env = build_env syms parent in  *)
     let env = build_env syms (Some i) in 
+    let be e = bind_expression syms env e in
+    let luqn n = lookup_qn_in_env syms env n in
+    let luqn2 n = lookup_qn_in_env2 syms env n in
     let vs = find_vs syms i in
     let bt t = bind_type syms env sr t in
     let bind_reqs reqs = bind_reqs bt syms env sr reqs in
@@ -157,16 +160,12 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
         | _ -> failwith "[bbind_sym] expected parameter to have function or functor parent"
       end
 
-    | `SYMDEF_match_check (pat,mvindex) ->
+    | `SYMDEF_match_check (pat,(mvname,mvindex)) ->
       let t = typeofindex syms mvindex in
       let name_map = Hashtbl.create 97 in
-      let arg,sr = 
-        match Hashtbl.find syms.dfns mvindex with 
-        {id=id;sr=sr}->id,sr
-      in
       let exes = 
         [
-        sr,`EXE_fun_return (gen_match_check pat (`AST_name (sr,arg,[])))
+        sr,`EXE_fun_return (gen_match_check pat (`AST_index (sr,mvname,mvindex)))
         ] 
       in
       let brt',bbexes = bexes env exes flx_bbool i [] in
@@ -194,6 +193,88 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
         sbt syms.dfns (`BTYP_function (`BTYP_tuple[],flx_bbool))
       )
     
+    | `SYMDEF_glr (t,(p,exes)) ->
+      (*
+      print_endline ("Binding nonterm " ^ name ^"<"^ si i ^">");
+      *)
+      (*
+      let brt = bt t in
+      *)
+
+      let brt = `BTYP_var i in (* hack .. *)
+
+      (* FIX! This expression needs context from the pattern *)
+      let bn q = 
+        (* we have to check this .. *)
+        match luqn2 q with 
+        | FunctionEntry ii,[] -> `Nonterm ii
+        | NonFunctionEntry i,[] -> `Term i
+        | _,ts -> clierr sr "Unexpected type variables"
+      in
+      let bp p = map (fun (n,q) -> n,bn q) p in
+      let p = bp p in
+      let brt',bbexes = bexes env exes brt i vs in
+      let bbdcl = `BBDCL_glr (brt',(p, bbexes)) in
+      Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
+
+      if syms.compiler_options.print_flag then
+      print_endline ("//bound glr " ^ name ^ "<"^si i^">" )
+
+    | `SYMDEF_const_ctor (uidx,ut,ctor_idx) ->
+      let unit_sum = 
+        match Hashtbl.find syms.dfns uidx with
+        | {symdef=`SYMDEF_union its} ->
+          fold_left 
+          (fun v (_,t) -> 
+            v && (match t with `AST_void _ -> true | _ -> false) 
+          )
+          true 
+          its
+        | _ -> assert false
+      in
+      let t = typeofindex syms i in
+      let ut = bt ut in
+      let ct = 
+        if unit_sum then si ctor_idx 
+        else "_uctor_(" ^ si ctor_idx ^ ",0)"
+      in
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_const (vs,t,ct,[]));
+
+      if syms.compiler_options.print_flag then
+      print_endline ("//bound const " ^ name ^ "<"^si i^">:" ^
+      sbt syms.dfns t)
+
+    | `SYMDEF_nonconst_ctor (uidx,ut,ctor_idx,argt) ->
+      let t = typeofindex syms i in
+      let argt = bt argt in
+      let ut = bt ut in
+      let bbdcl = 
+        match argt with
+        (* non-constant constructor or 2 or more arguments *)
+        (* BUG --> NEED TO HANDLE ARRAYS *)
+        | `BTYP_tuple ts ->
+           `BBDCL_fun 
+           (
+             vs,ts, ut,
+             "_uctor_(" ^ si ctor_idx ^ ", new(gc,@t) #t($t))",[],
+             "primary"
+           )
+        (* non-constant constructor of 1 argument *)
+        | _ ->
+           `BBDCL_fun
+           (
+             vs,[argt], ut,
+             "_uctor_(" ^ si ctor_idx ^ ", new(gc,@1) #1($1))",
+             [],
+             "primary"
+            )
+      in
+      Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
+
+      if syms.compiler_options.print_flag then
+      print_endline ("//bound fun " ^ name ^ "<"^si i^">:" ^
+      sbt syms.dfns t)
+
     | `SYMDEF_val (t) -> 
       let t = typeofindex syms i in
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_val (vs,t));

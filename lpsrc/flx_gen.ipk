@@ -155,7 +155,7 @@ let get_variable_typename syms bbdfns i ts =
       ", got ts=" ^ 
       si (length ts)
     );
-    let t = reduce_type (tsubst vs ts t) in
+    let t = reduce_type (lstrip syms.dfns (tsubst vs ts t)) in
     cpp_typename syms t
 
   | _ -> 
@@ -225,9 +225,9 @@ let gen_function syms (child_map,bbdfns) all_closures index id vs bps ret' ts in
     ", got ts=" ^ 
     si (length ts)
   );
-  let argtype = reduce_type (tsubst vs ts argtype) in
+  let argtype = reduce_type (lstrip syms.dfns (tsubst vs ts argtype)) in
   let ret = lower ret' in
-  let ret = reduce_type (tsubst vs ts ret) in
+  let ret = reduce_type (lstrip syms.dfns (tsubst vs ts ret)) in
   let funtype = fold syms.dfns (`BTYP_function (argtype, ret)) in
 
   let argtypename = cpp_typename syms argtype in
@@ -257,10 +257,13 @@ let gen_function syms (child_map,bbdfns) all_closures index id vs bps ret' ts in
       )
   and ctor_dcl name =  
     "  " ^name^
+    (if length display = 0 
+    then "(FLX_FPAR_DECL_ONLY);\n"
+    else (
     "  (\n" ^
+    "    FLX_FPAR_DECL\n " ^
     cat ",\n"
       (
-        "    FLX_FPAR_DECL " ::
         map 
         (
           fun (i,vslen) -> 
@@ -270,6 +273,7 @@ let gen_function syms (child_map,bbdfns) all_closures index id vs bps ret' ts in
         display
       )^
       "\n  );\n" 
+    ))
   (*
   and dtor_dcl name =
     "  ~" ^ name ^"();\n"
@@ -384,10 +388,13 @@ let gen_functions syms (child_map,bbdfns) all_closures =
 
 let gen_ctor syms bbdfns name display funs ts =
   name^"::"^name^
+  (if length display = 0 then
+  "(FLX_FPAR_DECL_ONLY)"
+  else
   "\n  (\n" ^
+  "    FLX_FPAR_DECL\n" ^
   cat ",\n"
   (
-    "    FLX_FPAR_DECL" ::
     map 
     (
       fun (i,vslen) -> 
@@ -396,10 +403,14 @@ let gen_ctor syms bbdfns name display funs ts =
     )
     display
   )^
-  "\n  ):\n" ^
+  "\n  )\n" 
+  )
+  ^
+  (if length display + length funs = 0 then "FLX_FMEM_INIT_ONLY"
+  else
+  "FLX_FMEM_INIT " ^
   cat ",\n"
   (
-    "  FLX_FMEM_INIT" ::
     map 
     (
       fun (i,vslen) -> let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
@@ -413,7 +424,7 @@ let gen_ctor syms bbdfns name display funs ts =
       ^ "(0)"
     )
     funs
-  ) ^ 
+  )) ^ 
   " {}\n"
 
 (*
@@ -447,7 +458,7 @@ let get_var_ref syms bbdfns this index ts : string =
   | `BBDCL_var (vs,t) ->
     begin match parent with
     | None -> (* print_endline "No parent ...?"; *)
-      "ptf->" ^ cpp_instance_name syms bbdfns index ts
+      "PTF " ^ cpp_instance_name syms bbdfns index ts
     | Some i -> 
       (*
       print_endline ("Parent " ^ si i);
@@ -478,30 +489,45 @@ let get_var_frame syms bbdfns this index ts : string =
     end
   | _ -> failwith ("[get_var_frame] Expected name "^id^" to be variable or value")
 
+(* NOTE: it isn't possible to pass an explicit tuple as a single 
+argument to a primitive, nor a single value of tuple/array type.
+In the latter case a cast/abstraction can defeat this, for the
+former you'll need to make a dummy variable.
+*)
+
 let gen_prim_call 
-  syms bbdfns tn ge ct ts (arg,argt as a) ret sr sr2 prec
+  syms bbdfns tsub ge ct ts (arg,argt as a) ret sr sr2 prec
 =
   (*
   print_endline ("ts= "^catmap "," (sbt syms.dfns) ts);
   print_endline ("argt = " ^ sbt syms.dfns argt);
   *)
-  let ts = map tn ts in
+  let tn t = cpp_typename syms t in
+  let rt t = reduce_type (lstrip syms.dfns (tsub t)) in
+  let rtn t = tn (rt t) in
+
+  let ts = map rtn ts in
+  let argt = rt argt in
+  let tt = tn argt in
+
   match arg,argt with
-  | (`BEXPR_tuple es,t) ->
+
+  (* the argument is explicitly a tuple *)
+  | (`BEXPR_tuple es,_) ->
     let ess = map (ge sr) es in
     let ets = 
-      match t with
-      | `BTYP_tuple typs -> map (cpp_typename syms) typs
+      match argt with
+      | `BTYP_tuple typs -> map rtn typs
       | `BTYP_array (t,`BTYP_unitsum n) ->
         let t = tn t in rev_map (fun _ -> t) (nlist n)
       | _ -> assert false
     in
-    let tt = tn t in
     csubst sr sr2 ct ess ets tt ret ts prec
   
-  (* this case is needed for a primitive value of tuple type *)
+  (* the argument isnt a tuple, but the type is *)
   | (_,`BTYP_tuple typs) as x ->
     let n = length typs in
+    let typs = map rt typs in
     let es = 
       map2 
       (fun i t -> `BEXPR_get_n (i,x),t) 
@@ -509,12 +535,12 @@ let gen_prim_call
     in
     let ess = map (ge sr) es in
     let ets = map tn typs in
-    let tt = tn (`BTYP_tuple typs) in
     csubst sr sr2 ct ess ets tt ret ts prec
 
-  (* this case is needed for a primitive value of array type *)
+  (* the argument isnt a tuple, but the type is an array *)
   | (_,(`BTYP_array(t,`BTYP_unitsum n) as ta)) as x ->
-    let typs = map (fun _ -> t) (nlist n) in
+    let t = rt t in
+    let typs = map (fun _ -> rt t) (nlist n) in
     let es = 
       map 
       (fun i -> `BEXPR_get_n (i,x),t) 
@@ -522,15 +548,20 @@ let gen_prim_call
     in
     let ess = map (ge sr) es in
     let ets = map tn typs in
-    let tt = tn ta in
     csubst sr sr2 ct ess ets tt ret ts prec
 
-
-  (* this case is needed for a singleton type *)
+  (* the argument isn't an explicit tuple, and the type
+     is neither an array nor tuple
+  *)
   | (_,typ) -> 
-    let typ = tn typ in
     let a = ge sr a in
-    csubst sr sr2 ct [a] [typ] typ ret ts prec
+    csubst sr sr2 ct [a] [tt] tt ret ts prec
+
+let strd the_display =
+  if length the_display = 0 then
+  "(FLX_FPAR_PASS_ONLY)"
+  else
+  "(FLX_FPAR_PASS " ^ cat ", " the_display ^ ")"
 
 let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   (*
@@ -564,12 +595,10 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   let rt t = reduce_type (lstrip syms.dfns (tsub t)) in
   let t = rt t in
   match e with
+  | `BEXPR_parse (e,ii) -> failwith "Can't handle parse yet"
+
   | `BEXPR_expr (s,_) -> ce_top s
 
-  | `BEXPR_coercion (e,t) -> 
-    (* generate a function style cast *)
-    ce_call (ce_atom (tn t)) [ge' e]
-    
   | `BEXPR_get_n (n,(e',t as e)) -> 
     begin match rt t with
     | `BTYP_array (_,`BTYP_unitsum _) -> 
@@ -708,9 +737,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       in
       let name = cpp_instance_name syms bbdfns index ts in
       ce_atom (
-      "(FLX_NEWP("^name^")"^
-      "(" ^ cat ", " ("FLX_FPAR_PASS" :: the_display) ^
-      "))"
+      "(FLX_NEWP("^name^")" ^ strd the_display ^")"
       )
 
     | `BBDCL_cstruct _ 
@@ -789,9 +816,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         si (length ts)
       );
       let ts = map tsub ts in
-      let retyp = reduce_type (tsubst vs ts retyp) in
+      let retyp = reduce_type (lstrip syms.dfns (tsubst vs ts retyp)) in
       let retyp = tn retyp in
-      gen_prim_call syms bbdfns tn ge'' ct ts (arg,argt) retyp sr sr2 prec
+      gen_prim_call syms bbdfns tsub ge'' ct ts (arg,argt) retyp sr sr2 prec
 
     (* not sure whether these will be prims or directs or what .. *)
     | `BBDCL_cstruct (vs,_) ->
@@ -835,10 +862,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       in
       let name = cpp_instance_name syms bbdfns index ts in
       ce_atom (
-        "(FLX_NEWP("^name^")"^
-        "(" ^ cat ", " ("FLX_FPAR_PASS" :: the_display) ^
-        "))" ^
-        "\n      ->apply(" ^ ge_arg a ^ ")"
+      "(FLX_NEWP("^name^")"^ strd the_display ^")"^
+      "\n      ->apply(" ^ ge_arg a ^ ")"
       )
 
     | `BBDCL_cstruct (vs,_) ->
@@ -882,9 +907,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       in
       let name = cpp_instance_name syms bbdfns index ts in
       let s = 
-      "("^name^
-      "(" ^ cat ", " ("FLX_FPAR_PASS" :: the_display) ^
-      "))" ^
+      name^ strd the_display 
+      ^
       "\n      .apply(" ^ ge_arg a ^ ")"
       in ce_atom s
 
@@ -1015,7 +1039,7 @@ let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter
       if length vs <> length ts then
       clierr sr "[gen_prim_call] Wrong number of type arguments"
       ;
-      let s = gen_prim_call syms bbdfns tn ge' ct ts a "Error" sr sr2 "atom" in
+      let s = gen_prim_call syms bbdfns tsub ge' ct ts a "Error" sr sr2 "atom" in
       let s = sc "expr" s in
       "      // " ^ src_str ^ "\n" ^
       sub_start ^
@@ -1068,17 +1092,15 @@ let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter
             "      {\n" ^
             subs ^
             "      con_t *_p =\n" ^
-            "      (FLX_NEWP(" ^ name ^ ")"^
-            "(" ^ cat ",\n      " ("FLX_FPAR_PASS":: the_display) ^ "))\n"^
+            "      (FLX_NEWP(" ^ name ^ ")" ^ strd the_display ^ ")\n" ^
             "      ->call(" ^ args ^ ");\n" ^
             "      while(_p) _p=_p->resume();\n" ^
             "      }\n"
 
           | Procedure ->
             let call_string =
-              "      return (FLX_NEWP(" ^ name ^ 
-              ")(" ^ cat ",\n      " ("FLX_FPAR_PASS":: the_display) ^
-              "))\n      ->call(" ^ args ^ ");\n"
+              "      return (FLX_NEWP(" ^ name ^ ")"^strd the_display ^ ")" ^
+              "\n      ->call(" ^ args ^ ");\n"
             in
             if is_jump
             then
@@ -1109,6 +1131,31 @@ let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter
         string_of_bbdcl syms.dfns entry index 
       )
     end
+  in
+  let gen_nonlocal_goto pc frame s =
+    (* WHAT THIS CODE DOES: we pop the call stack until
+       we find the first ancestor containing the target label,
+       set the pc there, and return its continuation to the
+       driver; we know the address of this frame because
+       it must be in this function's display.
+    *)
+    let target_instance = 
+      try Hashtbl.find syms.instances (frame, ts) 
+      with Not_found -> failwith "Woops, bugged code, wrong type arguments for instance?"
+    in
+    let frame_ptr = "ptr" ^ cpp_instance_name syms bbdfns frame ts in
+    "      // non local goto " ^ s ^ "\n" ^
+    "      {\n" ^
+    "        con_t *tmp1 = this;\n" ^
+    "        while(tmp1 && " ^ frame_ptr ^ "!= tmp1)\n" ^
+    "        {\n" ^
+    "          con_t *tmp2 = tmp1->_caller;\n" ^
+    "          tmp1 -> _caller = 0;\n" ^
+    "          tmp1 = tmp2;\n" ^
+    "        }\n" ^
+    "      }\n" ^
+    "      " ^ frame_ptr ^ "->pc = FLX_FARTARGET("^si pc^","^si target_instance^","^s^");\n" ^
+    "      return " ^ frame_ptr ^ ";\n"
   in
   let rec gexe exe = 
     match exe with
@@ -1157,43 +1204,45 @@ let gen_exe filename syms (child_map,bbdfns) (label_map,label_usage_map) counter
     | `BEXE_goto (sr,s) -> 
       begin match find_label bbdfns label_map this s with
       | `Local _ -> "      goto " ^ s ^ ";\n"
-      | `Nonlocal (pc,frame) ->
-        (* WHAT THIS CODE DOES: we pop the call stack until
-           we find the first ancestor containing the target label,
-           set the pc there, and return its continuation to the
-           driver; we know the address of this frame because
-           it must be in this function's display.
-        *)
-        let target_instance = 
-          try Hashtbl.find syms.instances (frame, ts) 
-          with Not_found -> failwith "Woops, bugged code, wrong type arguments for instance?"
-        in
-        let frame_ptr = "ptr" ^ cpp_instance_name syms bbdfns frame ts in
-        "      // non local goto " ^ s ^ "\n" ^
-        "      {\n" ^
-        "        con_t *tmp1 = this;\n" ^
-        "        while(tmp1 && " ^ frame_ptr ^ "!= tmp1)\n" ^
-        "        {\n" ^
-        "          con_t *tmp2 = tmp1->_caller;\n" ^
-        "          tmp1 -> _caller = 0;\n" ^
-        "          tmp1 = tmp2;\n" ^
-        "        }\n" ^
-        "      }\n" ^
-        "      " ^ frame_ptr ^ "->pc = FLX_FARTARGET("^si pc^","^si target_instance^","^s^");\n" ^
-        "      return " ^ frame_ptr ^ ";\n"
+      | `Nonlocal (pc,frame) -> gen_nonlocal_goto pc frame s
       | `Unreachable -> 
         clierr sr ("Jump to unreachable label " ^ s)
       end
 
-    (* conditional gotos are always local *)
     | `BEXE_ifgoto (sr,e,s) -> 
-      "      if(" ^ ge sr e ^ ")goto " ^ s ^ ";\n"
+      begin match find_label bbdfns label_map this s with
+      | `Local _ -> 
+        "      if(" ^ ge sr e ^ ")goto " ^ s ^ ";\n"
+      | `Nonlocal (pc,frame) ->
+        let skip = "_" ^ si !(syms.counter) in
+        incr syms.counter;
+        let not_e = ce_prefix "!" (ge' sr e) in
+        let not_e = string_of_cexpr not_e in
+        "      if("^not_e^")goto " ^ skip ^ ";\n"  ^
+        gen_nonlocal_goto pc frame s ^
+        "    " ^ skip ^ ":;\n"
+         
+      | `Unreachable -> 
+        clierr sr ("Jump to unreachable label " ^ s)
+      end
 
     | `BEXE_ifnotgoto (sr,e,s) ->
-      let not_e = ce_prefix "!" (ge' sr e) in
-      let not_e = string_of_cexpr not_e in
-      "      if("^not_e^")goto " ^ s ^ ";\n" 
-    
+      begin match find_label bbdfns label_map this s with
+      | `Local _ -> 
+        let not_e = ce_prefix "!" (ge' sr e) in
+        let not_e = string_of_cexpr not_e in
+        "      if("^not_e^")goto " ^ s ^ ";\n" 
+
+      | `Nonlocal (pc,frame) ->
+        let skip = "_" ^ si !(syms.counter) in
+        incr syms.counter;
+        "      if(" ^ ge sr e ^ ")goto " ^ skip ^ ";\n" ^
+        gen_nonlocal_goto pc frame  s ^
+        "    " ^ skip ^ ":;\n"
+
+      | `Unreachable -> 
+        clierr sr ("Jump to unreachable label " ^ s)
+      end 
       
     (* Hmmm .. stack calls ?? *)
     | `BEXE_call_stack (sr,index,ts,a)  -> assert false
@@ -1446,7 +1495,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
       then ""
       else argtypename ^" const &_arg ")^
       "){\n" ^
-      "  collector_t &gc = *ptf->gc;\n" ^
+      "  collector_t &gc = *PTF gc;\n" ^
       (
         match length params with
         | 0 -> ""
@@ -1478,7 +1527,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
       "}\n"
     and clone =
       "  " ^ name ^ "* "^name^"::clone()const {\n"^
-      "  return new(*ptf->gc,"^name^"_ptr_map) "^name^"(*this);\n"^
+      "  return new(*PTF gc,"^name^"_ptr_map) "^name^"(*this);\n"^
       "}\n"
     in
       let q = qualified_name_of_index syms.dfns index in
@@ -1602,7 +1651,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
         "}\n"
       else
         cont^name^"::resume(){\n"^
-        "  collector_t &gc = *ptf->gc;\n" ^
+        "  collector_t &gc = *PTF gc;\n" ^
         (if needs_switch then 
         "  FLX_START_SWITCH\n" else ""
         ) ^
@@ -1614,7 +1663,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
         "}\n" 
     and clone =
       "  " ^name^"* "^name^"::clone()const {\n" ^
-        "  return new(*ptf->gc,"^name^"_ptr_map) "^name^"(*this);\n" ^
+        "  return new(*PTF gc,"^name^"_ptr_map) "^name^"(*this);\n" ^
         "}\n"
     in
       let q = 
@@ -1685,7 +1734,11 @@ let gen_biface_header syms bbdfns biface = match biface with
         (fun (_,(_,x)) -> cpp_typename syms x) 
         ps 
       in
-      let arglist = "  " ^ cat ",\n  " ("FLX_FPAR_DECL":: argtypes) in
+      let arglist = "  " ^ 
+        (if length argtypes = 0 then "FLX_FPAR_DECL_ONLY"
+        else "FLX_FPAR_DECL\n" ^ cat ",\n  " argtypes
+        ) 
+      in
       let rettypename = cpp_typename syms ret in
 
       "//EXPORT FUNCTION " ^ cpp_instance_name syms bbdfns index [] ^ 
@@ -1702,9 +1755,11 @@ let gen_biface_header syms bbdfns biface = match biface with
         (fun (_,(_,x)) -> cpp_typename syms x) 
         ps 
       in
-      let arglist = 
-        "  " ^ cat ",\n  " ("FLX_FPAR_DECL"::argtypes) 
-      in 
+      let arglist = "  " ^ 
+        (if length argtypes = 0 then "FLX_FPAR_DECL_ONLY"
+        else "FLX_FPAR_DECL\n" ^ cat ",\n  " argtypes
+        ) 
+      in
       
       "//EXPORT PROCEDURE " ^ cpp_instance_name syms bbdfns index [] ^ 
       " as " ^ export_name ^ "\n" ^
@@ -1735,15 +1790,19 @@ let gen_biface_body syms bbdfns biface = match biface with
         (fun (id,(ix,t)) -> cpp_typename syms t ^ " " ^ id) 
         ps 
       in
-      let arglist = "  " ^ cat ",\n  " ("FLX_FPAR_DECL":: argtypes) in
+      let arglist = "  " ^ 
+        (if length argtypes = 0 then "FLX_FPAR_DECL_ONLY"
+        else "FLX_FPAR_DECL\n" ^ cat ",\n  " argtypes
+        ) 
+      in
       let rettypename = cpp_typename syms ret in
       let class_name = cpp_instance_name syms bbdfns index [] in
 
       "//EXPORT FUNCTION " ^ cpp_instance_name syms bbdfns index [] ^ 
       " as " ^ export_name ^ "\n" ^
       rettypename ^" " ^ export_name ^ "(\n" ^ arglist ^ "\n){\n" ^
-      "  return (new(*_ptf->gc,"^class_name^"_ptr_map)\n" ^
-      "    " ^ class_name ^ "(_ptf))\n" ^
+      "  return (new(*_PTF gc,"^class_name^"_ptr_map)\n" ^
+      "    " ^ class_name ^ "(_PTFV))\n" ^
       "    ->apply(" ^ cat ", " (map fst ps) ^ ");\n" ^
       "}\n"
 
@@ -1760,14 +1819,18 @@ let gen_biface_body syms bbdfns biface = match biface with
         (fun (id,(_,t)) -> cpp_typename syms t ^ " " ^ id) 
         ps 
       in
-      let arglist = "  " ^ cat ",\n  " ("FLX_FPAR_DECL" ::argtypes) in
+      let arglist = "  " ^ 
+        (if length argtypes = 0 then "FLX_FPAR_DECL_ONLY"
+        else "FLX_FPAR_DECL\n" ^ cat ",\n  " argtypes
+        ) 
+      in
       let class_name = cpp_instance_name syms bbdfns index [] in
 
       "//EXPORT PROC " ^ cpp_instance_name syms bbdfns index [] ^ 
       " as " ^ export_name ^ "\n" ^
       "con_t *" ^ export_name ^ "(\n" ^ arglist ^ "\n){\n" ^
-      "  return (new(*_ptf->gc,"^class_name^"_ptr_map)\n" ^
-      "    " ^ class_name ^ "(_ptf))" ^
+      "  return (new(*_PTF gc,"^class_name^"_ptr_map)\n" ^
+      "    " ^ class_name ^ "(_PTFV))" ^
       "\n      ->call(" ^ cat ", " ("0"::(map fst ps)) ^ ");\n" ^
       "}\n"
 
@@ -1996,6 +2059,10 @@ try
 
   if compiler_options.print_flag 
   then print_endline "//Calculating stackable calls";
+  let label_map = Flx_label.create_label_map bbdfns syms.counter in
+  let label_usage = Flx_label.create_label_usage bbdfns label_map in
+  let label_info = label_map, label_usage in
+
   let bbdfns = Flx_stack_calls.make_stack_calls syms (child_map,bbdfns) in
 
   let opt_time = tim() in
@@ -2161,6 +2228,9 @@ try
   ;
   plh (format_vars syms bbdfns topvars []);
   plh "};";
+  plh "";
+  plh "FLX_DCL_THREAD_FRAME";
+  plh "";
 
   (* BODY *)
   if compiler_options.print_flag then 
@@ -2210,6 +2280,7 @@ try
   ;
 
   plb "\n//-----------------------------------------";
+  plb "FLX_DEF_THREAD_FRAME";
   plb "//Thread Frame Constructor";
 
   let topfuns = List.filter 
@@ -2248,10 +2319,6 @@ try
   plb "//DEFINE OFFSET tables for GC";
 
   plb (Flx_ogen.gen_offset_tables syms (child_map,bbdfns) all_closures);
-
-  let label_map = Flx_label.create_label_map bbdfns syms.counter in
-  let label_usage = Flx_label.create_label_usage bbdfns label_map in
-  let label_info = label_map, label_usage in
 
   plb "\n//-----------------------------------------";
   plb "#ifdef FLX_CGOTO";

@@ -148,15 +148,15 @@ module Flx_lex
   /* string tail lexers */
 
 @def lexstr(x):
-  tangle('  fun parse_'+x+'_string(s:Lexer::iterator, e:Lexer::iterator) =' )
-  tangle('  {')
-  tangle('    return')
-  tangle('      reglex s to e with')
-  tangle('      | '+x+'_string => '+x+'Quote' )
-  tangle('      | _ =>  Error' )
-  tangle('      endmatch')
-  tangle('    ;')
-  tangle('  }')
+  tangle('  fun parse_'+x+'_string(s:Lexer::iterator, e:Lexer::iterator) =',inhibit_sref=1 )
+  tangle('  {',inhibit_sref=1)
+  tangle('    return',inhibit_sref=1)
+  tangle('      reglex s to e with',inhibit_sref=1)
+  tangle('      | '+x+'_string => '+x+'Quote',inhibit_sref=1 )
+  tangle('      | _ =>  Error' ,inhibit_sref=1)
+  tangle('      endmatch',inhibit_sref=1)
+  tangle('    ;',inhibit_sref=1)
+  tangle('  }',inhibit_sref=1)
 
 @qtypes=[
   'q',
@@ -222,7 +222,6 @@ module Flx_lex
     | C_comment
     | Cpp_comment
     | Preprocessor
-    | Sym
     | White
     | Eol
     | Error
@@ -246,6 +245,11 @@ module Flx_lex
     | rqqqQuote
     | rdQuote
     | rdddQuote
+
+@for k,s in flx_1_char_syms: tangle('    | ' +k,inhibit_sref=1)
+@for k,s in flx_2_char_syms: tangle('    | ' +k,inhibit_sref=1)
+@for k,s in flx_3_char_syms: tangle('    | ' +k,inhibit_sref=1)
+
   ;
     
   fun pre_flx_lex(s:Lexer::iterator, e:Lexer::iterator) =
@@ -281,81 +285,10 @@ module Flx_lex
     | ('r'|'R') d_quote       => rdQuote
     | ('r'|'R') ddd_quote     => rdddQuote
 
-
-    /* one character sequences */
-    | "$" => Sym
-    | "(" => Sym
-    | ")" => Sym
-    | "[" => Sym
-    | "]" => Sym
-    | "{" => Sym
-    | "}" => Sym
-    | "!" => Sym
-    | ":" => Sym
-    | "," => Sym
-    | ";" => Sym
-    | "+" => Sym
-    | "-" => Sym
-    | "*" => Sym
-    | "/" => Sym
-    | "|" =>Sym
-    | "&" =>Sym
-    | "<" =>Sym
-    | ">" =>Sym
-    | "=" =>Sym
-    | "." =>Sym
-    | "%" =>Sym
-    | "`" =>Sym
-    | "~" =>Sym
-    | "^" =>Sym
-    | "!" =>Sym
-    | "?" =>Sym
-
-    /* two character sequences */
-    | "=>" =>Sym
-    | "&<" =>Sym
-    | "&>" =>Sym
-    | ".." =>Sym
-    | "::" =>Sym
-    | "==" =>Sym
-    | "<>" =>Sym
-    | "!=" =>Sym
-    | "<=" =>Sym
-    | ">=" =>Sym
-    | "<<" =>Sym
-    | ">>" =>Sym
-    | "**" =>Sym
-    | "\\" =>Sym
-    | "++" =>Sym
-    | "--" =>Sym
-    | "+=" =>Sym
-    | "-=" =>Sym
-    | "*=" =>Sym
-    | "/=" =>Sym
-    | "%=" =>Sym
-    | "^=" =>Sym
-    | "|=" =>Sym
-    | "&=" =>Sym
-    | "~=" =>Sym
-    | ":=" =>Sym
-    | "<-" =>Sym
-    | "->" =>Sym
-    | "<:" =>Sym
-    | ":>" =>Sym
-    | "[<" =>Sym
-    | ">]" =>Sym
-
-    /* three character sequences */
-    | "<<=" => Sym
-    | ">>=" =>Sym
-    | "..." =>Sym
-    | "<->" =>Sym
-    | "&==" =>Sym
-    | "&<>" => Sym
-    | "&!=" =>Sym
-    | "&<=" =>Sym
-    | "&>=" =>Sym
-
+@for k,s in flx_1_char_syms: tangle('  | "' +s+'" => '+k,inhibit_sref=1)
+@for k,s in flx_2_char_syms: tangle('  | "' +s+'" => '+k,inhibit_sref=1)
+@for k,s in flx_3_char_syms: tangle('  | "' +s+'" => '+k,inhibit_sref=1)
+ 
     /* whitespace */
     | white + => White
 

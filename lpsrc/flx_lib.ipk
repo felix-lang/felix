@@ -303,6 +303,7 @@ header """
 using namespace std;
 """;
 
+
 header flx_ioutil '#include "flx_ioutil.hpp"';
 header flx_dynlink '#include "flx_dynlink.hpp"';
 header flx_i18n '#include "flx_i18n.hpp"';
@@ -315,6 +316,7 @@ header flx_i18n '#include "flx_i18n.hpp"';
 
 header flx_strutil '#include "flx_strutil.cpp"';
 
+header cctype_hxx '#include <cctype>';
 header string_hxx '#include <string>';
 header complex_hxx '#include <complex>';
 header c99_complex_h '#include <complex.h>';
@@ -440,7 +442,7 @@ proc store[t,n]: &array[t,n] * int * t = "((?1*)($1.data))[$2]=$3;";
   elif HAVE_ISNANF_IN_IEEEFP:
     tangle('  fun isnan: '+t+' -> bool = "isnanf'+fc[t]+'($1)" is postfix requires cmath;')
   else:
-    tangle('  fun isnan: '+t+' -> bool = "!($1==$1)" is prefix requires cmath;')
+    tangle('  fun isnan: '+t+' -> bool = "!($1==$1)" is unary requires cmath;')
 
  
 @#------------- TYPING ---------------------------
@@ -1265,17 +1267,38 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    fun len: '+c+' -> int = "$1.size()";')
   tangle('    fun empty: '+c+' -> int = "$1.empty()";')
 
-  tangle('     type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1>::iterator";');
+  tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1>::iterator";');
   gen_pcmp(it)
 
   tangle('    gen_forward '+it+';')
-  tangle('    fun deref : '+it+' ->  t  = "*$1";')
+  tangle('    fun deref : '+it+' ->  lvalue[t]  = "*$1";')
 
   tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
   tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
   tangle('    proc erase : '+c+' * '+it+' = "$1.erase($1);";')
   tangle('    proc erase : '+c+' * '+it+' * '+it+' = "$1.erase($1,$2);";')
   tangle('    proc clear : '+c+' = "$1.clear();";')
+
+  tangle('    proc pre_incr : lvalue['+it+'] = "++$1;";')
+  tangle('    proc post_incr : '+it+' = "++$1;";')
+  tangle('    proc pre_decr : lvalue['+it+'] = "--$1;";')
+  tangle('    proc post_decr : '+it+' = "--$1;";')
+
+@def mkrseq(n,ns='std'):
+  mkseq(n,ns)
+  c = 'stl_'+n+'[t]'
+  rit = 'stl_'+n+'_reverse_iterator[t]'
+  tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1>::reverse_iterator";');
+  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
+  tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
+  tangle('    fun deref : '+rit+' ->  lvalue[t]  = "*$1";')
+  gen_pcmp(rit)
+  tangle('    proc pre_incr : lvalue['+rit+'] = "++$1;";')
+  tangle('    proc post_incr : '+rit+' = "++$1;";')
+  tangle('    proc pre_decr: lvalue['+rit+'] = "--$1;";')
+  tangle('    proc post_decr : '+rit+' = "--$1;";')
+
+
 
 @def mkinsat(n):
   c = 'stl_'+n+'[t]'
@@ -1314,18 +1337,32 @@ size_t __gnu_cxx::hash<std::string>::
 @def mkset(n,ns='std'):
   c = 'stl_'+n+'[t]'
   it = 'stl_'+n+'_iterator[t]'
+  rit = 'stl_'+n+'_reverse_iterator[t]'
   tangle('    type stl_'+n+' = "'+ns+'::'+n+'<?1>";')
-  tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1,?2>::iterator";')
+  tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1>::iterator";')
+  tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1>::reverse_iterator";')
   tangle('    fun create : unit -> '+c+' = "(0,'+ns+'::'+n+'<?1>())";')
   tangle('    gen_cmp '+c+';')
   tangle('    fun len: '+c+'->int = "$1.size()";')
   tangle('    fun empty: '+c+'->int = "$1.empty()";')
   tangle('    gen_cmp '+it+';')
+  tangle('    gen_cmp '+rit+';')
   tangle('    proc pre_incr : lvalue['+it+'] = "++$1;";')
   tangle('    proc post_incr : '+it+' = "++$1;";')
-  tangle('    fun deref : '+it+' ->  t  = "*(#0*)(&*$1)";')
+  tangle('    proc pre_incr : lvalue['+rit+'] = "++$1;";')
+  tangle('    proc post_incr : '+rit+' = "++$1;";')
+  tangle('    proc pre_decr : lvalue['+it+'] = "--$1;";')
+  tangle('    proc post_decr : '+it+' = "--$1;";')
+  tangle('    proc pre_decr: lvalue['+rit+'] = "--$1;";')
+  tangle('    proc post_decr : '+rit+' = "--$1;";')
+  tangle('    fun deref : '+it+' ->  t  = "*(#0*)&*$1:unary" is unary;')
+  tangle('    fun deref : '+rit+' ->  t  = "*(#0*)&*$1:unary" is unary;')
+
   tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
   tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
+  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
+  tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
+
   tangle('    proc insert : '+c+' * t = "$1.insert($2);";')
   tangle('    proc erase : '+c+' * '+it+' = "$1.erase($1);";')
   tangle('    proc clear : '+c+' = "$1.clear();";')
@@ -1335,18 +1372,31 @@ size_t __gnu_cxx::hash<std::string>::
 @def mkass(n,ns='std'):
   c = 'stl_'+n+'[k,v]'
   it = 'stl_'+n+'_iterator[k,v]'
+  rit = 'stl_'+n+'_reverse_iterator[k,v]'
   tangle('    type stl_'+n+' = "'+ns+'::'+n+'<?1,?2>";')
   tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1,?2>::iterator";')
+  tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1,?2>::reverse_iterator";')
+
   tangle('    fun create : unit -> '+c+' = "(0,'+ns+'::'+n+'<?1,?2>())";')
   tangle('    gen_cmp '+c+';')
   tangle('    fun len: '+c+'->int = "$1.size()";')
   tangle('    fun empty: '+c+'->int = "$1.empty()";')
   tangle('    gen_cmp '+it+';')
+  tangle('    gen_cmp '+rit+';')
   tangle('    proc pre_incr : '+it+' = "++$1;";')
   tangle('    proc post_incr : '+it+' = "++$1;";')
-  tangle('    fun deref : '+it+' ->  k * v  = "*(#0*)(&*$1)";')
+  tangle('    proc pre_incr : '+rit+' = "++$1;";')
+  tangle('    proc post_incr : '+rit+' = "++$1;";')
+  tangle('    proc pre_decr : '+it+' = "--$1;";')
+  tangle('    proc post_decr : '+it+' = "--$1;";')
+  tangle('    proc pre_decr : '+rit+' = "--$1;";')
+  tangle('    proc post_decr : '+rit+' = "--$1;";')
+  tangle('    fun deref : '+it+' ->  k * lvalue[v]  = "*(#0*)&*$1:unary" is unary;')
   tangle('    fun begin : '+c+'-> '+it+'= "$1.begin()";')
   tangle('    fun end : '+c+'-> '+it+'= "$1.end()";')
+  tangle('    fun deref : '+rit+' ->  k * lvalue[v]  = "*(#0*)&*$1:unary" is unary;')
+  tangle('    fun rbegin : '+c+'-> '+rit+'= "$1.rbegin()";')
+  tangle('    fun rend : '+c+'-> '+rit+'= "$1.rend()";')
   tangle('    proc insert : '+c+' * k * v = "$1.insert(std::make_pair($2,$3));";')
   tangle('    proc erase : '+c+' * '+it+' = "$1.erase($1);";')
   tangle('    proc clear : '+c+' = "$1.clear();";')
@@ -1363,7 +1413,7 @@ module Stl
   module Vector[t]
   {
     requires std_stl_vector;
-@mkseq('vector')
+@mkrseq('vector')
 @mkinsat('vector')
 @mkpub('vector')
 @mkfront('vector')
@@ -1378,7 +1428,7 @@ module Stl
   module List[t]
   {
     requires std_stl_list;
-@mkseq('list')
+@mkrseq('list')
 @mkinsat('list')
 @mkpuf('list')
 @mkpub('list')
@@ -1395,7 +1445,7 @@ module Stl
   module Deque[t]
   {
     requires std_stl_deque;
-@mkseq('deque')
+@mkrseq('deque')
 @mkinsat('deque')
 @mkpuf('deque')
 @mkpub('deque')
@@ -1423,7 +1473,7 @@ module Stl
   module MultiSet[t]
   {
     requires std_stl_set;
-@mkseq('multiset')
+@mkset('multiset')
   }
   module Map[k,v]
   {

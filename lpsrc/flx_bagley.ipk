@@ -22,14 +22,18 @@ to get some times.
   ('methcall',' 8'),
   ('nestedloop',' 8'),
   ('objinst',' 8'),
+  ('procinst',' 10 10'),
+  ('prodcons',' 1000'),
   ('random',' 1000'),
   ('regexmatch',' 8 < bagley/data/phone_numbers.data'),
   ('reversefile',' 1 < bagley/data/phone_numbers.data'),
   ('sieve',' 8'),
   ('spellcheck',' < bagley/data/spellcheck.data'),
   ('strcat',' 8'),
+  ('takfp',' 10'),
   ('sumcol',' < bagley/data/sumcol.data'),
   ('wc',' < bagley/data/phone_numbers.data'), 
+  ('wordfreq',' 1 < bagley/data/wordfreq.data'), 
  ]
 
 @dbags = [
@@ -54,6 +58,7 @@ to get some times.
 
 @def mkr(i,j):
   k = (i+' .................  ')[:20]+' '
+  tangle('rm -f bagley/felix/'+i+'.output')
   tangle('/usr/bin/time -f "'+k+' %U" bin/flx --test bagley/felix/'+i+' '+j+' >bagley/felix/'+i+'.output')
 
 @def mkc(i,j):
@@ -269,7 +274,7 @@ proc print_phone(x:string, j:int) {
     ++i;
   done;
   print j; print ": ";
-  print ("("+s.[0 to 3]+") "+s.[3 to 6]+" "+s.[6 to 10]); endl;
+  print ("("+s.[0 to 3]+") "+s.[3 to 6]+"-"+s.[6 to 10]); endl;
 }
 
 current = first;
@@ -1476,10 +1481,32 @@ done;
 include "stl";
 open Stl;
 open Stl::HashMap;
+open Stl::Set;
 open Text_file;
 open Lexer;
 
+body lt_cmp[t] """
+  namespace std {
+    template<> 
+    bool less<?1> :: operator()(?1 const &a, ?1 const &b)const {
+     return a.mem_0 == b.mem_0 ?? a.mem_1 < b.mem_1 : a.mem_0 > b.mem_0;
+    }
+  }
+""";
+
+proc tolower : lvalue[string] = "tol($1);" requires 
+  body """
+    void tol(std::string &x) {
+      std::string::iterator e = x.end();
+      for(std::string::iterator i = x.begin(); i != e; ++i)
+        *i = tolower (*i);
+    }
+  """,
+  cctype_hxx
+;
+
 requires ext_string_hash;
+requires lt_cmp[int * string];
 
 regexp upper = ["ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
 regexp lower = ["abcdefghijklmnopqrstuvwxyz"];
@@ -1495,35 +1522,145 @@ fun lexit (start:iterator, finish:iterator): iterator * bool =>
 var dict = HashMap::create[string,int]();
 proc add_word(s:iterator, e:iterator)
 {
-  word := string_between(s,e);
+  var word = string_between(s,e);
+  tolower word;
   p := find (dict,word);
   if p == end dict do
     insert (dict,word,1);
   else 
     k,j := deref p;
-    insert (dict, word, j + 1);
+    (deref p).(1) ++;
+  done;
+};
+
+{
+  var data = readln stdin;
+  until data == "" do
+    first := start_iterator data;
+    last := end_iterator data;
+
+    var current = first;
+    var next = first;
+    var isword : bool;
+    until current == last do
+      next, isword = lexit(current, last);
+      if isword do 
+        add_word(current,next); 
+        current = next; 
+      else 
+        ++current; 
+      done;
+    done;
+    data = readln stdin;
+  done;
+};
+
+var wmap = Set::create[int * string] ();
+{
+  var cur = begin dict;
+  dlast := end dict;
+  until cur == dlast do
+    word, count := deref cur;
+    insert (wmap,(count,word));
+    ++cur;
+  done;
+};
+
+{
+  var cur = begin wmap;
+  last := end wmap;
+  until cur == last do
+    count, word := deref cur;
+    print ("       " + str count).[-7 to]; print " "; print word; endl;
+    ++cur;
+  done;
+};
+
+@select(tangler('bagley/felix/prodcons.flx','data'))
+@setup()
+var produced = 0;
+var consumed = 0;
+
+proc consumer() {
+  until consumed == n do
+    var x:int; read x;
+    ++consumed;
   done;
 }
 
-var data = readln stdin;
-until data == "" do
-  first := start_iterator data;
-  last := end_iterator data;
+proc producer() {
+  var i = 1;
+  until produced == n do
+    ++produced; 
+    send[int] (&con) i;
+    ++i;
+  done;
+}
 
-  var current = first;
-  var next = first;
-  var isword : bool;
-  until current == last do
-    next, isword = lexit(current, last);
-    if isword do 
-      add_word(current,next); 
-      current = next; 
-    else 
-      ++current; 
+var con = start the consumer ();
+var prod= start the producer ();
+run prod;
+
+print produced; print " "; print consumed; endl;
+
+@select(tangler('bagley/felix/takfp.flx','data'))
+@setup()
+proc print1: double = 'printf("%.1f\\n",$1);';
+
+fun Tak (x:double, y:double, z:double): double =>
+  if (y >= x) then z
+  else Tak(Tak(x-1.0,y,z), Tak(y-1.0,z,x), Tak(z-1.0,x,y))
+  endif
+;
+ 
+w := double_of n;
+print1 (Tak(w*3.0, w*2.0, w*1.0));
+
+include "std";
+
+@select(tangler('bagley/felix/procinst.flx','data'))
+@setup()
+thread_max := n;  
+message_max := atoi(System::argv 2);
+
+var thread_count = thread_max; 
+var message_count = message_max;
+
+proc final() {
+  var msg:int;
+  var total = 0;
+  whilst true do
+    read msg;
+    total += msg;
+
+    if message_count == 0 do
+      print total; endl;
     done;
   done;
-  data = readln stdin;
+}
+
+proc agent() {
+  us := thread_count;
+  --thread_count;
+  var next = 
+    if us > 1 then start the agent ()
+    else start the final () endif
+  ;
+  var msg:int;
+  whilst true do
+    read msg;
+    send[int] (&next) (msg+1);
+  done;
+}
+
+var first = start the agent ();
+
+whilst message_count >0 do
+  --message_count;
+  send[int] (&first) 0;
+  //collect();
 done;
+
 
 @select(tangler('bagley/data/Usr.Dict.Words','data'))
 aback
@@ -1594,3 +1731,51 @@ abbreviates
 abbreviating
 zuul
 abasements
+@select(tangler('bagley/data/wordfreq.data','data'))
+                                      1515
+                                   THE PRINCE
+                             by Nicolo Machiavelli
+                          translated by W. K. Marriott
+                              CHAPTER I
+             HOW MANY KINDS OF PRINCIPALITIES THERE ARE,
+                 AND BY WHAT MEANS THEY ARE ACQUIRED
+
+  ALL STATES, all powers, that have held and hold rule over men have
+been and are either republics or principalities.
+  Principalities are either hereditary, in which the family has been
+long established; or they are new.
+  The new are either entirely new, as was Milan to Francesco Sforza,
+or they are, as it were, members annexed to the hereditary state of
+the prince who has acquired them, as was the kingdom of Naples to that
+of the King of Spain.
+  Such dominions thus acquired are either accustomed to live under a
+prince, or to live in freedom; and are acquired either by the arms
+of the prince himself, or of others, or else by fortune or by ability.
+                              CHAPTER II
+                 CONCERNING HEREDITARY PRINCIPALITIES
+
+  I WILL leave out all discussion on republics, inasmuch as in another
+place I have written of them at length, and will address myself only
+to principalities. In doing so I will keep to the order indicated
+above, and discuss how such principalities are to be ruled and
+preserved.
+  I say at once there are fewer difficulties in holding hereditary
+states, and those long accustomed to the family of their prince,
+than new ones; for it is sufficient only not to transgress the customs
+of his ancestors, and to deal prudently with circumstances as they
+arise, for a prince of average powers to maintain himself in his
+state, unless he be deprived of it by some extraordinary and excessive
+force; and if he should be so deprived of it, whenever anything
+sinister happens to the usurper, he will regain it.
+  We have in Italy, for example, the Duke of Ferrara, who could not
+have withstood the attacks of the Venetians in '84, nor those of
+Pope Julius in '10, unless he had been long established in his
+dominions. For the hereditary prince has less cause and less necessity
+to offend; hence it happens that he will be more loved; and unless
+extraordinary vices cause him to be hated, it is reasonable to
+expect that his subjects will be naturally well disposed towards
+him; and in the antiquity and duration of his rule the memories and
+motives that make for change are lost, for one change always leaves
+the toothing for another.
+
+

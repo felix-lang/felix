@@ -48,6 +48,9 @@ let rec process_expr h k sr ((e,t) as be) =
   let ue e = process_expr h k sr e in
   let ui i = add_inst h k i sr in
   begin match e with
+  | `BEXPR_parse (e,ii) ->
+    ue e; iter ui ii
+  
   | `BEXPR_deref e
   | `BEXPR_get_n (_,e)
   | `BEXPR_match_case (_,e)
@@ -64,8 +67,6 @@ let rec process_expr h k sr ((e,t) as be) =
 
   | `BEXPR_tuple es -> iter ue es 
   | `BEXPR_array es -> iter ue es 
-     
-  | `BEXPR_coercion (e,_) -> ue e
      
   | `BEXPR_case (_,t) -> ()
 
