@@ -122,6 +122,9 @@ let mkcurry sr name vs args return_type kind body =
 
 (* model binary operator as procedure call *)
 let assign sr op l r = 
+  match op with
+  | "_set" -> `AST_cassign (sr,l,r)
+  | _ ->
   `AST_call 
   (
     sr,
@@ -348,12 +351,16 @@ let rec rex name include_dirs seq (e:expr_t) : asm_t list * expr_t =
     in
     let dcls = ref [] in
     let cls = ref [] in
+    let ls = `AST_expr(sr,"lexeme_start",iterator_type) in
+    let le = `AST_expr (sr,"lexeme_end",iterator_type) in
+    let be = `AST_expr (sr,"buffer_end",iterator_type) in
     iter 
     (fun (re,e) -> 
       let l,x = rex e in
       dcls := l @ !dcls;
       let n = seq() in
       let name = "_lam_" ^ si n in
+      let x = `AST_tuple (sr,[le;x]) in
       let d = Dcl
         (
           sr,
@@ -368,9 +375,6 @@ let rec rex name include_dirs seq (e:expr_t) : asm_t list * expr_t =
         ) 
       in
       dcls := d :: !dcls;
-      let ls = `AST_expr(sr,"lexeme_start",iterator_type) in
-      let le = `AST_expr (sr,"lexeme_end",iterator_type) in
-      let be = `AST_expr (sr,"buffer_end",iterator_type) in
       let a = `AST_apply
         (
           sr,
@@ -861,26 +865,74 @@ and rst name include_dirs seq st : asm_t list =
   
   | `AST_nop _ -> []
 
+  | `AST_cassign (sr,l,r) ->
+     let l1,x1 = rex l in
+     let l2,x2 = rex r in
+     l1 @ l2 @ [Exe (sr,`EXE_assign (x1,x2))]
+     
   | `AST_assign (sr,fid,l,r) ->
-    let sts = 
+    let rec aux (l,t) r =
       match l with
-      | `AST_tuple (_,ls) ->
-        let n = seq() in
-        let vn = "_" ^ si n in
-        let sts = ref [`AST_val_decl (sr,vn,[],None,Some r)] in
-        let count = ref 0 in
-        iter
-        (fun l ->
-          let r' = `AST_get_n (sr,(!count,r)) in
-          let asg = assign sr fid l r' in
-          sts := asg :: !sts;
-          incr count
-        )
-        ls
-        ;
-        rev !sts
-      | _ -> [assign sr fid l r]
+      | `Expr (sr,e) -> 
+        begin match e with
+        | `AST_tuple (_,ls) ->
+          let n = seq() in
+          let vn = "_" ^ si n in
+          let sts = ref [] in
+          let count = ref 0 in
+          iter
+          (fun l ->
+            let r' = `AST_get_n (sr,(!count,`AST_name (sr,vn,[]))) in
+            let l' = `Expr (sr,l),None in
+            let asg = aux l' r' in
+            sts := !sts @ asg;
+            incr count
+          )
+          ls
+          ;
+          `AST_val_decl (sr,vn,[],t,Some r) :: !sts
+        | _ -> 
+          if fid = "_init"
+          then
+            match e with
+            | `AST_coercion (_,(`AST_name (_,n,[]),t')) ->
+              let t = match t with 
+                | None -> Some t'
+                | t -> t
+              in
+              [`AST_val_decl (sr,n,[],t,Some r)]
+
+            | `AST_name (_,n,[]) ->
+              [`AST_val_decl (sr,n,[],t,Some r)]
+            | _ -> clierr sr "identifier required in val init"
+          else
+            [assign sr fid e r]
+        end
+      | `Val (sr,n) ->
+          [`AST_val_decl (sr,n,[],t,Some r)]
+      | `Var (sr,n) ->
+          [`AST_var_decl (sr,n,[],t,Some r)]
+      | `Skip (sr) ->  []
+      | `Name (sr,n) -> 
+        let n = `AST_name(sr,n,[]) in
+          [assign sr fid n r]
+      | `List ls ->
+          let n = seq() in
+          let vn = "_" ^ si n in
+          let sts = ref [] in
+          let count = ref 0 in
+          iter
+          (fun l ->
+            let r' = `AST_get_n (sr,(!count,`AST_name (sr,vn,[]))) in
+            let asg = aux l r' in
+            sts := !sts @ asg;
+            incr count
+          )
+          ls
+          ;
+          `AST_val_decl (sr,vn,[],t,Some r) :: !sts
     in
+      let sts = aux l r in
       rsts name sts
 
   | `AST_call (sr,proc, arg) ->

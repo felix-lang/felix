@@ -159,8 +159,22 @@ and, as we will see later, they cannot be addressed.
 This means the compiler is free to load the value into a register
 or perform other optimisations (including elide the storage
 for the value entirely).
+@p()
+There is a shortcut form for declaring variables
+using the := operator:
+@select(tangler(tdir+'tut104a.flx'))
+include "std";
+a := 1; 
+b:int := 2; 
 
+c:int,(d,e) := 3,(4,5);
 
+print a; print " ";
+print b; print " ";
+print c; print " ";
+print d; print " ";
+print e; print " ";
+endl;
 @head(2,'Variable declaration')
 Felix also support mutable variables, which are
 declared with the 'var' keyword.
@@ -196,12 +210,39 @@ and the condition is given in curly brackets.
 We'll find out exactly why later, but here is a hint:
 there is no while statement in Felix!
 
+@head(2,'Lvalue patterns')
+@select(tangler(tdir+'tut105a.flx'))
+include "std";
+
+var a:int;
+var b:int;
+var c:int;
+
+a,(b,c) = 1,(2,3);
+
+print a; print " ";
+print b; print " ";
+print c; print " ";
+endl;
+
+def a = 1;
+def val x = 2;
+def var y = 3;
+
+def (a, val d), var e = (9,8),7;
+
+print a; print " ";
+print d; print " ";
+print e; print " ";
+endl;
+
+
 @head(2,'Mutators')
 Felix provides a range of mutators, 
 these being assignment operators and counting operators.
 Below is a list of operators and equivalent procedure names.
 
-@select(tangler(tdir+'tut105a.flx'))
+@select(tangler(tdir+'tut105b.flx'))
 include "std";
 open Uint;
 
@@ -213,9 +254,11 @@ var v: uint;
 
 // operator    procedure
 // generic
-i =   1;       set          (&i,1);
-u =   1u;      set          (&u,1u);
-i <-> j;       swap         (&i,&j);
+//k :=  1;       _init         (&i,1);
+//i <-  1;       _move         (&i,1);
+i =   1;       _set          (&i,1);
+u =   1u;      _set          (&u,1u);
+//i <-> j;       _swap         (&i,&j);
 
 // integral
 i +=  1;       pluseq       (&i,1);
@@ -392,6 +435,84 @@ doesn't get confused with floating point.
 The notation is ugly and not recommended ..
 there is a better way called pattern matching
 which you will learn about soon.
+
+@head(2,'Pattern Matching Tuples')
+It is also possible to pattern match tuples.
+Here is an example:
+@select(tangler(tdir+'tut120.flx'))
+include "std";
+val x = 1,2,(3,4);
+match (x) with
+  | (?x,_,?z) =>
+  {
+    print x; 
+    print ", ";
+    match (z) with
+      | (?a,?b) =>
+      {
+        print "(";
+        print a; 
+        print ", ";
+        print b; 
+        print ")";
+      }
+    endmatch;
+  }
+endmatch;
+endl;
+@doc()
+Notice the use of the special pattern '_', which matches
+something without naming it. The ?x designation
+in a pattern introduces a variable.
+
+@head(2,'Numbered unions')
+Numbered unions are algebraic types used to 
+represent alternative cases. The infix
+operator + is the type combinator used
+to denote them.
+
+@select(tangler(tdir+'tut207.flx'))
+include "std";
+open Long;
+
+typedef three = unit +  unit + unit;
+typedef four = 4;
+typedef nu = int + double + long;
+
+
+val x1 = case 1 of (1+1+1);
+val x2 = case 2 of 3;
+
+proc g(x:three) {
+  print "Case ";
+  match x with
+  | case 1 => { print 1; }
+  | case 2 => { print 2; }
+  | case 3 => { print 3; }
+  endmatch;
+  print " of three\n";
+}
+
+g x1;
+g x2;
+g (case 3 of three);
+
+proc f(x:nu) {
+  match x with
+  | case 1 ?z => { print "case 1 "; print z; }
+  | case 2 ?z => { print "case 2 "; print z; }
+  | case 3 ?z => { print "case 3 "; print z; }
+  endmatch;
+  print "\n";
+}
+ 
+val i1 = (case 1 of nu) 33;
+val i2 = (case 2 of nu) 3.3;
+val i3 = (case 3 of nu) 33L;
+f i1;
+f i2;
+f i3;
+
 
 @head(2,'Structs')
 Felix supports C like structs. A struct, like a tuple,
@@ -594,34 +715,6 @@ The conditional expression is merely
 a shortcut for a match, as shown in the
 third sign function.
 
-@head(2,'Pattern Matching Tuples')
-It is also possible to match tuples.
-Here is an example:
-@select(tangler(tdir+'tut120.flx'))
-include "std";
-val x = 1,2,(3,4);
-match (x) with
-  | (?x,_,?z) =>
-  {
-    print x; 
-    print ", ";
-    match (z) with
-      | (?a,?b) =>
-      {
-        print "(";
-        print a; 
-        print ", ";
-        print b; 
-        print ")";
-      }
-    endmatch;
-  }
-endmatch;
-endl;
-@doc()
-Notice the use of the special pattern '_', which matches
-something without naming it.
-
 @head(2,'Objects')
 Felix provides a way of making objects from functions.
 An object is just a struct whose members are functions
@@ -786,22 +879,19 @@ regexp space = " ";
 regexp white = space +;
 
 fun lexit(start:iterator, finish:iterator): 
-  string * string * iterator  
+  iterator * (string * string)
 =
 {
   return 
     reglex start to finish with
     | digit+ => "Number", 
-      string_between(lexeme_start,lexeme_end), 
-      lexeme_end
+      string_between(lexeme_start,lexeme_end)
       
     | alpha+ =>  "Identifier", 
-      string_between(lexeme_start,lexeme_end), 
-      lexeme_end
+      string_between(lexeme_start,lexeme_end)
       
     | white =>  "White", 
-      string_between(lexeme_start,lexeme_end), 
-      lexeme_end
+      string_between(lexeme_start,lexeme_end)
     endmatch
   ;
 }
@@ -814,11 +904,14 @@ var current = start;
 
 while { current != finish }
 {
-  val result = lexit(current, finish);
-  val kind = result.(0);
-  val lexeme = result.(1);
-  current = result.(2);
-  print kind; print ": "; print lexeme; endl;
+    match lexit(current, finish) with
+    | ?next,(?kind,?lexeme) =>
+    {
+      current = next;
+      print kind; print ": "; print lexeme; endl;
+    }
+    endmatch
+  ;
 };
 print "Done.\n";
 
@@ -892,380 +985,6 @@ make a statement by adding a semi-colon,
 which has the effect of invoking it due to the
 short cut rule.
 
-@head(2,'Expression Macro Facility')
-Felix provides an powerful and dangerous 
-expression macro facility. Felix macros 
-generally respect scope, so any definitions
-nested in a function or module, for example,
-will not be visible outside that scope.
-@p()
-Expresion symbols only expand inside expressions.
-
-@head(3,'Macro values')
-The macro val statement defines a LHS symbol
-as the expansion of the RHS. The same
-value can be defined any number of times,
-a redefinition hides the preceding defintion
-until the end of the scope.
-
-@select(tangler(tdir+'tut122.flx'))
-include "std";
-macro val mx1 = 1+y;
-macro val mx2 = 2+y;
-val y = 100;
-print mx1; endl; // 101
-print mx2; endl; // 102
-{
-  macro val mx1 = 3+y; // 103
-  print mx1; endl;
-  macro val mx2 = mx2 + 10; // 112
-};
-print mx1; endl; // 101
-print mx2; endl; // 102
-
-// illustration of rescanning 
-macro val r1 = y1;
-macro val r2 = y2;
-macro val y1 = print;
-macro val y2 = 1;
-
-r1 r2; // print 1
-
-@head(3,'Macro variables')
-The macro var statement defines a LHS symbol
-as the expansion of the RHS. The same
-value can be defined any number of times,
-a redefinition hides the preceding defintion
-until the end of the scope.
-@p()
-Macro variables can be assigned a new value.
-
-@select(tangler(tdir+'tut123.flx'))
-include "std";
-macro var mx1 = 1+y;
-val y = 100;
-print mx1; endl; // 101
-{
-  macro mx1 = 3+y; // 103 [assignment!]
-  print mx1; endl;
-};
-print mx1; endl; // 103 [uses assigned value]
-
-
-@head(3,'Macro functions')
-You can also define a macro function.
-The expansion rules are: the body
-is not expanded during definition.
-At the point of call, the arguments
-are expanded and then substituted into
-the body, then the body is expanded.
-
-@select(tangler(tdir+'tut124.flx'))
-include "std";
-
-// a basic expression macro without parameters
-macro fun x() =  {print 1; endl;};
-x;
-
-// an expression macro with one argument
-macro fun h(z) = z + z;
-print (h 1); endl;
-
-// an expression macro denoting a procedure
-macro fun f(a) = { print a; endl; };
-f 1;
-f 2;
-
-// nastier example of rescanning
-macro fun a() = b c;
-macro fun b(x) = f;
-a() 1;
-// (b c) 1;
-// f 1;
-// { print 1; endl; };
-// call {print 1; endl; } ();
-
-// finally: recursion
-macro fun j(i) = 
-   if(i>0) then i + j(i-1)
-   else 0 endif;
-print  (j 5); // 5 + 4 + 3 + 2 + 1 = 16
-endl;
-
-val q=1;
-macro fun z(q) = q;
-print (z q); endl;
-
-@doc()
-It is vital to understand that macros cannot break
-syntactically established precedence rules.
-In the last example, a 1 expands to (b c) 1,
-which expands to f 1. Substitutions are implemented
-by manipulation of the abstract syntax tree (AST),
-not token pasting or string manipulation.
-
-@head(2,'Constant Expression Folding')
-The Felix macro processor also performs constant folding;
-that is, evaluation of certain expressions involving 
-only literals. The following operations are folded:
-@begin_table("op","descr")
-@table_row('+int','')
-@table_row('-int','')
-@table_row('int+int','')
-@table_row('int-int','')
-@table_row('int*int','')
-@table_row('int/int','')
-@table_row('int%int','')
-@table_row('int<int','')
-@table_row('int>int','')
-@table_row('int<=int','')
-@table_row('int>=int','')
-@table_row('int==int','')
-@table_row('int!=int','')
-@table_row('string+string','')
-@table_row('string==string','')
-@table_row('string!=string','')
-@table_row('string*int','cat n copies')
-@table_row('string string','cat')
-@table_row('string int','cat ISO10646')
-@table_row('not bool','')
-@table_row('bool && bool','')
-@table_row('bool or bool','')
-@table_row('bool == bool','')
-@table_row('bool != bool','')
-@table_row('if bool then expr1 else expr2 endif','')
-@end_table()
-@p()
-The critical operation here is that a conditional
-with a constant first argument is replaced by one
-of the two expressions, and the other is elided.
-See the example for an application: the implication
-is that the elided expression, whilst it must be
-well formed syntactically, does not need to be
-type correct, nor do symbols in it need to be defined.
-@p()
-Note that the fold uses compiler intrinsic operations
-on integers, bools, and strings: user defined functions
-are not applied and do not need to be defined.
-Consequently, the result may disagree with a user
-defined function applied at run time.  If necessary,
-constant folding can be blocked with the noexpand mark $.
-@p()
-Note: the expressions
-@begin_displayed_code()
-  "" 999
-  u"" 999
-@end_displayed_code()
-are semantically, but not physically equivalent.
-The first operation is the UTF-8 representation
-of 999, whilst the second is the UCS-32 value 999.
-
-@select(tangler(tdir+'tut125.flx'))
-include "std";
-header '''
-#define unix 0
-#define windows 0
-#define testhook 1
-#if unix
-#include <dlopen.h>
-#elif windows
-#include <windows.h>
-#else
-#include <stdio.h>
-#endif
-''';
-macro val unix = case 1 of 2;
-macro val windows = case 1 of 2;
-
-fun dlopen:string -> address = 'dlopen($1.data())';
-fun LoadLibrary:string -> int = 'LoadLibrary($.data())';
-fun testhook:string -> int = 'printf("LoadTheLibrary(%s)\n",$1.data())';
-
-macro val openlib = 
-  if unix then dlopen 
-  elif windows then LoadLibrary 
-  else testhook endif
-;
-
-macro val ext = 
-  if unix then ".so" 
-  elif windows then ".DLL"
-  else ".lib_ext" endif
-;
-// conditional compilation
-val lib = openlib ("MyLibrary" ext);
-
-@head(2,'Procedure Macros')
-A procedure macro represents a list of statements.
-Macros defined in macro procedures are exported
-to the surrounding scope so that macro procedures
-can be used to package up a set of macro definitions.
-This represents a special exception to the rule
-that macros respect scope.
-
-@select(tangler(tdir+'tut126.flx'))
-include "std";
-// procedure macro
-macro proc k ()
-{
-  val yy = xx * xx;
-  print xx; print " -> "; print yy; endl;
-}
-
-{
-  val xx = 1;
-  k();
-};
-{
-  val xx = 2;
-  k();
-};
-
-macro proc pkg (x)
-{
-  macro proc printxy (y) { print (x+y); endl; }
-  macro val doublex = x + x;
-}
-
-pkg 10;
-printxy doublex; // prints 30
-
-macro proc dump_s (sts:proc)
-{
-  print "Start dump_s"; endl;
-  sts;
-  print "End dump_s"; endl;
-}
-
-macro proc dump_e (sts:fun)
-{
-  print "Start dump_e"; endl;
-  sts;
-  print "End dump_e"; endl;
-}
-
-dump_s { print 1; endl; print 2; endl; };
-dump_e { val x = 1; print x; endl; print 2; endl; };
-
-macro proc todump () { print "Dumped"; endl; }
-dump_s todump;
-dump_e todump;
-
-macro proc todump_wa (x) { print x; endl; }
-dump_s (todump_wa 66);
-dump_e (todump_wa 66);
-
-@doc()
-Note there is a crucial difference between procedure
-and expressions macros. In the above example,
-dump requires a proc argument. When the parameter
-is expanded, the list of statements it represented
-is produced. Had this been a function macro,
-the result would have been an the call executable lambda
-expression applied to unit argument. The difference
-is in the handling of any variable declarations:
-they'd be exposed in the first case, but not the second.
-
-@head(2,'Advanced Procedure Macro Programming')
-Felix procedure macros also contain rudimentary
-control structures: you can encode labels, unconditional
-jumps, conditional jumps, and returns. Note the conditional
-goto requires the condition resolve to a constant expression.
-Of course, the value can change with time, since it can
-depend on macro variables.
-
-@select(tangler(tdir+'tut126a.flx'))
-include "std";
-macro proc print_alot () 
-{
-  macro var count = 10;
-  macro start:>
-    print count; print " ";
-    macro count = count - 1;
-    macro if count > 0 goto start;
-  endl;
-}
-
-print_alot();
-
-@head(2,'Expansion Barrier')
-The symbol '$' can be used to block expansion.
-@select(tangler(tdir+'tut127.flx'))
-include "std";
-// expansion barrier
-macro val x = 1;
-macro proc k ()
-{
-  val yy = $x + x; // x + 1
-  print $x; print "+"; print x; print " -> "; print yy; endl;
-}
-macro ident x = x; // blocks x
-{
-  val x = 2;
-  k();
-};
-
-@head(2,'Identifier Macros')
-A identifier macros represent names. They replace names 
-in expressions and most declarations, including the
-name of a function or variable being defined.
-Names are not replaced in type expressions, patterns,
-or regular expressions.
-@p()
-The special form in which the RHS name is called 'new'
-creates a fresh, previously unused name.
-@p()
-Unlike other macros, the RHS name of an ident macro
-is not expanded at the point of definition.
-@p()
-On use, the value of an ident macro is the first
-name in the chain which is not an ident macro,
-or which recurs.
-
-@select(tangler(tdir+'tut128.flx'))
-include "std";
-
-macro ident oldname = newname;
-fun oldname(x:int):int = { return x; }
-print (newname 1); endl;
-
-macro proc make_ints ()
-{
-  macro ident vnew = new;
-  val vnew = vold+1;
-  macro vold = vnew;
-}
-
-val x = 1;
-
-macro var vold = x;
-make_ints;
-make_ints;
-make_ints;
-print vold; endl;
-
-@head(3,'Forgetting Macros')
-You can forget macros defined in the current scope with
-the forget statement. If no arguments are given,
-all macros defined in the current scope are forgotten. 
-
-@select(tangler(tdir+'tut129.flx'))
-include "std";
-macro val hello = "Hello";
-macro val place = "world";
-macro fun greet() = hello " " place "!\n";
-{
-  macro val hello = "Hi there";
-  macro val place = "locality";
-  print (greet());
-  macro forget place;
-  print (greet());
-  macro forget;
-  print (greet());
-};
-
-print (greet());
-
 @head(2,'Basic Bindings')
 In the previous examples, we've use the Felix standard
 library. It's time to look at how it works.
@@ -1303,7 +1022,7 @@ struct gauss {
 
 // Now the Felix binding
 type gauss = "gauss";
-proc set : &gauss * gauss = "*$1 = $2;";
+proc _set : &gauss * gauss = "*$1 = $2;";
 fun add: gauss * gauss -> gauss = "$1 + $2";
 fun mul: gauss * gauss -> gauss = "$1 * $2";
 fun mkgauss: int * int -> gauss = "gauss($1,$2)";
@@ -1374,7 +1093,7 @@ or procedure name, a type, and the C++ code to
 generate when the function or procedure is called.
 
 @begin_displayed_code()
-proc set : &gauss * gauss = "*$1 = $2;";
+proc _set : &gauss * gauss = "*$1 = $2;";
 fun add: gauss * gauss -> gauss = "$1 + $2";
 fun mul: gauss * gauss -> gauss = "$1 * $2";
 fun mkgauss: int * int -> gauss = "gauss($1,$2)";
@@ -1419,7 +1138,7 @@ struct gauss = {
   y : int;
 }
 
-proc set ( lhs: &gauss, rhs: gauss )
+proc _set ( lhs: &gauss, rhs: gauss )
 {
   (*lhs).x = rhs.x;
   (*lhs).y = rhs.y;
@@ -2317,7 +2036,7 @@ define it manually for abstract types including
 primitives. The usual definition is:
 @begin_displayed_code()
   type T = "T";
-  proc set: &T * t = "*$1=$2;"
+  proc _set: &T * t = "*$1=$2;"
 @end_displayed_code()
 If you don't define a set method for a primitive
 type, Felix assumes the C++ assignment operator
@@ -3360,57 +3079,6 @@ You can see the two forms of the use directive:
 The first form requires a proper qualified name and is 
 equivalent to the second form, where the new_name is the
 last component of the qualified_name.
-
-@head(2,'Numbered unions')
-We'll take a break from the module system to 
-consider numbered sums. A numbered union is
-to a named unions, as a tuple is to a struct:
-its an anonymous non-generative type with
-non-negative case tags deduced positionally
-from the type. The infix + is used non-associatively
-to specify numbered unions.
-
-@select(tangler(tdir+'tut207.flx'))
-include "std";
-open Long;
-
-typedef three = unit +  unit + unit;
-typedef four = 4;
-typedef nu = int + double + long;
-
-
-val x1 = case 1 of (1+1+1);
-val x2 = case 2 of 3;
-
-proc g(x:three) {
-  print "Case ";
-  match x with
-  | case 1 => { print 1; }
-  | case 2 => { print 2; }
-  | case 3 => { print 3; }
-  endmatch;
-  print " of three\n";
-}
-
-g x1;
-g x2;
-g (case 3 of three);
-
-proc f(x:nu) {
-  match x with
-  | case 1 ?z => { print "case 1 "; print z; }
-  | case 2 ?z => { print "case 2 "; print z; }
-  | case 3 ?z => { print "case 3 "; print z; }
-  endmatch;
-  print "\n";
-}
- 
-val i1 = (case 1 of nu) 33;
-val i2 = (case 2 of nu) 3.3;
-val i3 = (case 3 of nu) 33L;
-f i1;
-f i2;
-f i3;
 
 @head(2,'Let expression')
 There is a short form for match expressions.

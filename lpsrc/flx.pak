@@ -21,8 +21,14 @@ a blend of Pascal, C, C++, and ML syntax in the hope
 that the power of the ML system can be provided to
 C/C++ programmers, together with control inversion.
 
-@head(1,'Implementation')
-@head(2,'The Felix Compiler')
+@head(1,'The tutorial')
+The tutorial is found at
+@cite_url('../tut/doc/en_flx_tutorial_top.html')
+@p()
+The macro processor now has a separate tutorial at
+@cite_url('../tut/doc/en_flx_mtutorial_top.html')
+
+@head(1,'The Felix Compiler')
 Basic phase diagram:
 @begin_displayed_code()
   Lexer -> 
@@ -195,6 +201,10 @@ let version_data: version_data_t =
 Flx_version.version_data := version_data
 ;;
 
+@head(2,'Tools')
+@include_file ('ulex.pak')
+
+@head(2,'The front end')
 @push_head()
 @include_file ('flx_util.ipk')
 @include_file ('flx_types.ipk')
@@ -203,7 +213,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_parser.ipk')
 @include_file ('flx_string.ipk')
 @include_file ('flx_keywords.ipk')
-@#include_file ('flx_ulex.ipk')
+@include_file ('flx_ulex.ipk')
 @include_file ('flx_lexer.ipk')
 @include_file ('flx_tokeniser.ipk')
 @include_file ('flx_pat.ipk')
@@ -220,9 +230,14 @@ Flx_version.version_data := version_data
 @include_file ('flx_bbind.ipk')
 @include_file ('flx_opt1.ipk')
 @include_file ('flx_inst.ipk')
+@pop_head()
+
+@head(2,'The back end')
+@push_head()
 @include_file ('flx_name.ipk')
 @include_file ('flx_tgen.ipk')
 @include_file ('flx_csubst.ipk')
+@include_file ('flx_regexp.ipk')
 @include_file ('flx_regen.ipk')
 @include_file ('flx_gen.ipk')
 @include_file ('flx_getopt.ipk')
@@ -236,10 +251,11 @@ Flx_version.version_data := version_data
 @include_file ('flx_test.ipk')
 @include_file ('flx_regress.ipk')
 
-@head(2,'The lexer generator')
-@include_file ('flx_regexp.ipk')
-
 @head(2,'Stub mainline')
+This is a just a file for writing
+mini tests of various ocaml functions
+of the compiler. I should probably 
+create a file here for unit tests.
 @include_file ('flx_stub.ipk')
 
 @head(2,'The Unix Build system')
@@ -247,7 +263,4 @@ Flx_version.version_data := version_data
 @include_file ('flx_maker.ipk')
 @include_file ('flx_vim.ipk')
 
-@head(2,'The tutorial')
-The tutorial is found at
-@cite_url('../tut/doc/en_flx_tutorial_top.html')
 

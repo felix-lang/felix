@@ -287,6 +287,32 @@ fun two (): int = { return code[int]x + code[int]'x'; }
 proc print:int = 'std::cout << $1 << std::endl;';
 print (two());
 
+@select(tangler('test/rt10.flx'))
+//multiple assignment
+include "std";
+var a:int;
+var b:int;
+var c:int;
+
+a,(b,c) = 1,(2,3);
+
+print a; print " ";
+print b; print " ";
+print c; print " ";
+endl;
+
+def a = 1;
+def val x = 2;
+def var y = 3;
+
+def a, val d, var e = 9,8,7;
+
+print a; print " ";
+print d; print " ";
+print e; print " ";
+endl;
+
+
 @head(2,'Bad tests')
 All these should fail gracefully at (felix) compile time. 
 Run the compiler with the -e option to invert

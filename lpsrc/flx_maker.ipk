@@ -90,7 +90,7 @@ if "help" in options:
   print "debug - build debugging versions of targets"
   print "optimise - build high performance versions of targets"
   print "refcnt - generate reference counting instructions"
-  print "doc - build all documentation"
+  print "doc - build all user documentation"
   print "vim=gvim - set gvim as the vim editor"
   print "vimserver=FLX - set FLX as the editor server name"
   print "editor=vim - set vim as the editor class"
@@ -247,9 +247,13 @@ if "compiler" in options or "bytecode" in options:
   else:
     OCAML_OBJECT_EXTENSION = '.cmo'
     OCAML_LIB_EXTENSION = '.cma'
-
+  
+  OCAMLC = OCAMLC + "-I ulex "
+  OCAMLOPT = OCAMLOPT + "-I ulex "
   # where the ocaml is installed
-  #OCAML_INCLUDE_DIRECTORY='/usr/local/lib/ocaml'
+  result,x = get_stdout(OCAMLC + " -where")
+  OCAML_INCLUDE_DIRECTORY= x[0][0:-1]
+  print "OCAML at",OCAML_INCLUDE_DIRECTORY
 
 # where gnu readline header files are
 #READLINE_INCLUDE_DIRECTORY='/usr/include/readline'
@@ -290,6 +294,14 @@ FLX_GC_SRC='src/'
 # BEGIN IMPLEMENTOR CONFIGURABLE SECTION
 # ------------------------------------------------
 
+P4S = [
+  (
+    'src/flx_ulex.mlp4',
+    'src/flx_ulex.ml',
+    'camlp4o ./ulex/pa_ulex.cma pr_o.cmo -impl src/flx_ulex.mlp4 -o src/flx_ulex.ml'
+  )
+]
+
 # files containing ocamllex sources
 LEXS = ['flx_lex']
 
@@ -297,6 +309,7 @@ LEXS = ['flx_lex']
 PARSES = ['flx_parse']
 
 # ocaml modules = interfaces + implementation files
+
 MODULES = [
   'flx_version'      ,
   'flx_util'         ,
@@ -315,7 +328,7 @@ MODULES = [
   'flx_parse'        ,
   'flx_keywords'     ,
   'flx_lex'          ,
-#  'flx_ulex'        ,
+  'flx_ulex'         ,
   'flx_pretok'       ,
   'flx_lex1'         ,
   'flx_tok'          ,
@@ -445,9 +458,11 @@ try:
   if "doc" in options:
     ISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
     ISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
+    ISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_mtutorial.pak')
   elif "extract" in options:
     ISCR('lpsrc/flx.pak')
     ISCR('lpsrc/flx_tutorial.pak')
+    ISCR('lpsrc/flx_mtutorial.pak')
   os.system('rm -f tmp.tmp')
 
   if "doc" in options or "man" in options:
@@ -478,9 +493,13 @@ try:
 
   if "tutorial" in options:
     TESTS = TESTS + glob.glob('tut/examples/tut*.flx')
+    TESTS = TESTS + glob.glob('tut/examples/mac*.flx')
 
   TESTS.sort()
   BAD_TESTS.sort()
+
+  if "ulex" in options:
+    xqt("(cd ulex; make all)")
 
   if "compiler" in options:
     # STEP 1: Compile all copiler support C files
@@ -497,6 +516,11 @@ try:
         buildall = 1
         xqt(OCAMLLEX + file + '.mll')
 
+    for inp,oup,cmd in P4S:
+      if buildall or filetime (inp) > filetime (oup):
+        buildall = 1
+        xqt(cmd)
+
     # STEP 3: Generate parsers
     for parse in PARSES:
       file = 'src/'+parse
@@ -510,20 +534,14 @@ try:
       file = 'src/'+interface
       if buildall or filetime(file + '.mli') > filetime(file+'.cmi'):
         buildall = 1
-        if interface == 'flx_ulex':
-          xqt(OCAMLC + ' -I /usr/local/lib/ocaml/site-lib/ulex -c '+file+ '.mli')
-        else:
-          xqt(OCAMLC + ' -c '+file+ '.mli')
+        xqt(OCAMLC + ' -c '+file+ '.mli')
 
     # STEP 5: Compile ocaml implementations
     for implementation in IMPLEMENTATIONS + EXES:
       file = 'src/'+implementation
       if buildall or filetime(file+ '.ml') > filetime(file+OCAML_OBJECT_EXTENSION):
         buildall = 1
-        if implementation == 'flx_ulex':
-          xqt(OCAMLOPT + " -pp 'camlp4o /usr/local/lib/ocaml/site-lib/ulex/pa_ulex.cma' -I /usr/local/lib/ocaml/site-lib/ulex -c "+file+ ".ml")
-        else:
-          xqt(OCAMLOPT + ' -c ' + file +'.ml')
+        xqt(OCAMLOPT + ' -c ' + file +'.ml')
 
 
     # STEP 6: Build FELIX Library
@@ -722,6 +740,9 @@ We have no idea if it continues copying.
 @tangle('extract: dummy')
 @tangle('\tpython script/maker extract')
 @tangle('')
+@tangle('ulex: dummy')
+@tangle('\tpython script/maker ulex')
+@tangle('')
 @tangle('tut: dummy')
 @tangle('\tpython script/maker tutorial')
 @tangle('')
@@ -735,7 +756,7 @@ We have no idea if it continues copying.
 @tangle('impldoc: dummy')
 @tangle('\tocamldoc -I src -d impldoc src/*.mli -html')
 @tangle('\tocamldoc -I src -o impldoc/flx_impl.tex src/*.mli -latex')
-@tangle('\t(cd impldoc; latex flx_impl.tex)')
+@tangle('\t(cd impldoc; latex flx_impl.tex; latex flx_impl.tex; latex flx_impl.tex)')
 @tangle('')
 @tangle('test: dummy')
 @tangle('\tpython script/maker test stop_on_error')
@@ -893,6 +914,7 @@ We have no idea if it continues copying.
 @tangle('boot: dummy')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx.pak')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_tutorial.pak')
+@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_mtutorial.pak')
 @tangle('')
 
 @tangle('test_lex: dummy')

@@ -17,7 +17,7 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "include",(fun s -> INCLUDE s);
     "open",(fun s -> OPEN s);
     "use",(fun s -> USE s);
-    "define",(fun s -> DEFINE s);
+    "set",(fun s -> SET s);
     "interface", (fun s ->  INTERFACE s);
     "functor", (fun s ->  FUNCTOR s);
     "not", (fun s ->  NOT s);
@@ -66,6 +66,7 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "match", (fun s ->  MATCH s);
     "var", (fun s ->  VAR s);
     "val", (fun s ->  VAL s);
+    "def", (fun s ->  DEF s);
     "union", (fun s ->  UNION s);
     "class", (fun s ->  CLASS s);
     "module", (fun s ->  MODULE s);

@@ -1200,7 +1200,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
             let ess = map ge es in
             let ets = map tn typs in
             let tt = tn (`BTYP_tuple typs) in
-            "      //call multi (or no) -arg primitive " ^ src_str ^ "\n" ^
+            "      // " ^ src_str ^ "\n" ^
             "      {" ^ csubst ct ess ets tt "Error" ts^ "}\n"
           | (_,typ) -> 
             (*
@@ -1211,7 +1211,7 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
             print_endline (" .. C++ type name is " ^ typ);
             *)
             let a = ge a in
-            "      //call single-arg primitive " ^ src_str ^ "\n" ^
+            "      // " ^ src_str ^ "\n" ^
             "      {" ^ csubst ct [a] [typ] typ "Error" ts^ "}\n"
           end
           ^
@@ -1486,8 +1486,14 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
     "      //" ^ src_str ^ "\n" ^
     "      return "^ge e^";\n"
   | `BEXE_nop s -> "      //Nop: " ^ s ^ "\n"
+
+  | `BEXE_assign (e1,e2) ->
+    "      //"^src_str^"\n" ^
+    "      "^ ge e1 ^ " = " ^ ge e2 ^
+    ";\n"
+    
   | `BEXE_init (v,e) -> 
-    "      //initialisation "^src_str^"\n" ^
+    "      //"^src_str^"\n" ^
     "      "^
     get_var_ref syms bbdfns this v ts^ 
     " = " ^ 

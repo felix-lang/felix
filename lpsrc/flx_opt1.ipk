@@ -59,7 +59,7 @@ let rec isuseless bbdfns exes =
   in
   try
     iter
-    (fun x -> match x with
+    (fun x -> match (x:bexe_t) with
       | `BEXE_call ((`BEXPR_closure (i,_),_),_) 
       | `BEXE_call ((`BEXPR_name (i,_),_),_) 
       | `BEXE_jump ((`BEXPR_closure (i,_),_),_) 
@@ -67,19 +67,30 @@ let rec isuseless bbdfns exes =
         -> 
          check i
 
+      | `BEXE_assign _
       | `BEXE_jump _
       | `BEXE_call _ (* assume useful if not call to named useful proc *)
       | `BEXE_read _ (* useful even if local, due to side effect *)
       | `BEXE_code _ 
+      | `BEXE_ifgoto _ (* assume a non-local goto here *)
+      | `BEXE_ifnotgoto _ (* assume a non-local goto here *)
       | `BEXE_goto _ (* assume a non-local goto here *)
       | `BEXE_fun_return _ (* returning a value is useful *)
+      | `BEXE_reglex _ 
+      | `BEXE_regmatch _ 
         -> raise Useful 
 
       (* NOTE: 
         BEXE_init always inits a local variable which isn't useful by itself 
         BEXE_loop isn't useful by itself
       *)
-      | _ -> () 
+      | `BEXE_init _ 
+      | `BEXE_loop _
+      | `BEXE_label _
+      | `BEXE_nop _
+      | `BEXE_comment _
+      | `BEXE_proc_return 
+        -> ()
     )
     exes
     ;
@@ -270,6 +281,7 @@ let useless_call_elim syms bbdfns vs' exes =
   iter
   (fun x -> match x with
   | `BEXE_init (i,b) -> exes' := `BEXE_init (i,ia b) :: !exes'
+  | `BEXE_assign (a,b) -> exes' := `BEXE_assign (ia a,ia b) :: !exes'
 
   | `BEXE_call ((`BEXPR_closure (i,ts),_),b')
   | `BEXE_call ((`BEXPR_name (i,ts),_),b')
@@ -484,6 +496,7 @@ and uses_exe syms used bbdfns (exe:bexe_t) =
   | `BEXE_fun_return e 
     -> ue e
 
+  | `BEXE_assign (e1,e2) -> ue e1; ue e2
   | `BEXE_init (i,e) -> uses syms used bbdfns i; ue e
   | `BEXE_read i -> uses syms used bbdfns i
 
@@ -500,7 +513,13 @@ and uses_exe syms used bbdfns (exe:bexe_t) =
     (fun _ e  -> ue e)
     h
 
-  | _ -> ()
+  | `BEXE_code _ 
+  | `BEXE_goto _ 
+  | `BEXE_proc_return  
+  | `BEXE_comment _ 
+  | `BEXE_nop _ 
+  | `BEXE_label _ 
+    -> ()
 
 and uses_tbexpr syms used bbdfns (e,t) =
   let ue e = uses_tbexpr syms used bbdfns e in

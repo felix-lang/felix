@@ -480,7 +480,7 @@ let rec build_tables syms name level parent grandparent root asms =
           ;
           (* assignment *)
           let asgn_idx = !counter in incr counter;
-          let asgn_name = "set" in
+          let asgn_name = "_set" in
           let asgn_dcl = 
             `SYMDEF_fun
             (
@@ -596,7 +596,7 @@ let rec build_tables syms name level parent grandparent root asms =
           ;
           (* assignment *)
           let asgn_idx = !counter in incr counter;
-          let asgn_name = "set" in
+          let asgn_name = "_set" in
           let asgn_dcl = 
             `SYMDEF_fun
             (

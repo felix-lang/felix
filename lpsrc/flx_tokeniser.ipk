@@ -171,11 +171,12 @@ let string_of_token (tok :Flx_parse.token): string =
   | VAR _ -> "var"
   | CLASS _ -> "class"
   | VAL _ -> "val"
+  | DEF _ -> "def"
   | MODULE _ -> "module"
   | GOTO _ -> "goto"
   | TO _ -> "to"
   | EXPORT _ -> "export"
-  | DEFINE _ -> "define"
+  | SET _ -> "set"
 
   (* special things *)
   | SLOSH _ -> "\\" (* "\"" *) 
@@ -322,9 +323,10 @@ let src_of_token t = match t with
   | CONST s 
   | STRUCT s 
   | VAL s 
+  | DEF s 
   | TYPEDEF s 
   | TO s
-  | DEFINE s
+  | SET s
   | OPEN s
   | INCLUDE s
   | USE s

@@ -321,6 +321,15 @@ and macro_parameter_type_t =
   | Expr 
   | Stmt
 and macro_parameter_t = id_t * macro_parameter_type_t
+and lvalue_t = [ 
+  | `Val of range_srcref * string
+  | `Var of range_srcref * string
+  | `Name of range_srcref * string
+  | `Skip of range_srcref 
+  | `List of tlvalue_t list
+  | `Expr of range_srcref * expr_t
+]
+and tlvalue_t = lvalue_t * typecode_t option
 
 and funkind_t = [`Object | `Function ]
 
@@ -375,7 +384,8 @@ and statement_t =
   | `AST_ifgoto of range_srcref * expr_t *id_t
   | `AST_ifnotgoto of range_srcref * expr_t * id_t
   | `AST_call of range_srcref * expr_t * expr_t 
-  | `AST_assign of range_srcref * string * expr_t * expr_t 
+  | `AST_assign of range_srcref * string * tlvalue_t * expr_t 
+  | `AST_cassign of range_srcref * expr_t * expr_t 
   | `AST_jump of range_srcref * expr_t * expr_t 
   | `AST_loop of range_srcref * id_t * expr_t 
   | `AST_read of range_srcref * id_t
@@ -416,6 +426,7 @@ and exe_t =
   | `EXE_proc_return
   | `EXE_nop of string
   | `EXE_init of id_t * expr_t 
+  | `EXE_assign of expr_t * expr_t 
   | `EXE_regmatch of (expr_t * (regexp_t * expr_t) list)
   | `EXE_reglex of (expr_t * expr_t * (regexp_t * expr_t) list)
   ]
@@ -585,6 +596,7 @@ and bexe_t =
   | `BEXE_proc_return 
   | `BEXE_nop of string
   | `BEXE_code of string
+  | `BEXE_assign of tbexpr_t * tbexpr_t 
   | `BEXE_init of bid_t * tbexpr_t 
   | `BEXE_regmatch of tbexpr_t * regular_args_t
   | `BEXE_reglex of tbexpr_t * tbexpr_t * regular_args_t
@@ -947,6 +959,7 @@ let src_of_stmt e = match e with
   | `AST_nop (s, _) 
 
   | `AST_assign (s, _, _,_ ) 
+  | `AST_cassign (s, _,_ ) 
   | `AST_call (s, _, _ ) 
   | `AST_jump (s, _, _ ) 
   | `AST_loop (s, _, _ ) 
@@ -1656,6 +1669,21 @@ and print_inst dfns = function
     ) ^
     "]"
 
+and sl x = string_of_lvalue x 
+and string_of_lvalue (x,t) = 
+  begin match x with
+  | `Val (sr,x) -> "val " ^ x
+  | `Var (sr,x) -> "var " ^ x
+  | `Name (sr,x) -> x
+  | `Skip (sr) -> "_"
+  | `List ls -> "(" ^ catmap ", " sl ls ^ ")"
+  | `Expr (sr,e) -> string_of_expr e
+  end ^
+  begin match t with
+  | Some t -> ":" ^ string_of_typecode t
+  | None -> ""
+  end
+
 and string_of_statement level s = 
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
@@ -1927,7 +1955,11 @@ and string_of_statement level s =
 
   | `AST_assign (_,name,l,r) ->
     spaces level
-    ^ "call " ^ name ^ "(" ^ se l ^ "," ^se r^");"
+    ^ "call " ^ name ^ "(" ^ sl l ^ "," ^se r^");"
+
+  | `AST_cassign (_,l,r) ->
+    spaces level ^
+    se l ^ " = " ^ se r ^ ";"
 
   | `AST_jump (_,pr, args) ->
     spaces level
@@ -2149,6 +2181,9 @@ and string_of_exe level s =
   | `EXE_init (l,r) -> spc ^ 
     l ^ " := " ^ se r ^ ";"
 
+  | `EXE_assign (l,r) -> spc ^ 
+    se l ^ " = " ^ se r ^ ";"
+
 and sbe dfns e = string_of_bound_expression dfns e 
 and tsbe dfns e = string_of_bound_expression_with_type dfns e 
 
@@ -2257,6 +2292,9 @@ and string_of_bexe dfns level s =
 
   | `BEXE_code s -> spc ^ 
     "code " ^ string_of_string s 
+
+  | `BEXE_assign (l,r) -> spc ^ 
+    se l ^ " = " ^ se r ^ ";"
 
   | `BEXE_init (l,r) -> spc ^ 
     sid l ^ " := " ^ se r ^ ";"

@@ -441,8 +441,14 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   (* FIX TO SUPPORT IDENTIFIER RENAMING *)
   | `AST_use (sr, id, qn) -> tack (`AST_use (sr,mi sr id,qn))
 
+  | `AST_cassign (sr,l,r) -> tack (`AST_cassign (sr, me l, me r))
+
   | `AST_assign (sr,name,l,r) ->
-    tack (`AST_assign (sr, name, me l, me r))
+    let l = match l with
+      | `Expr (sr,e),t -> `Expr (sr,me e),t
+      | l -> l
+    in
+    tack (`AST_assign (sr, name, l, me r))
 
   | `AST_comment _  ->  tack st
 

@@ -1765,10 +1765,9 @@ and lookup_qn_with_sig'
              )
 
           | None -> 
-            failwith 
+            clierr sra
             (
-              "[lookup_qn_with_sig] (Simple module) Unable to resolve overload in\n" ^
-              short_string_of_src sra
+              "[lookup_qn_with_sig] (Simple module) Unable to resolve overload of " ^ name 
             )
         end
 

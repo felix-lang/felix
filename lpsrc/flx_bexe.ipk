@@ -307,6 +307,9 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       | NonFunctionEntry _ -> failwith "Not expecting bound entry"
       end
 
+    | `EXE_assign (l,r) -> 
+      tack (`BEXE_assign (be l, be r))
+
     | `EXE_reglex (p1,p2,cls) ->
       reachable := false;
       let p1 = be p1 in
