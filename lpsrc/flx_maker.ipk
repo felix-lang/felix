@@ -940,7 +940,7 @@ d = {}
 def isterminal(w):
   return w[0] in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-def isnonterminal(w): 
+def isnonterminal(w):
   return not isterminal(w)
 
 def check_symbol(w):
@@ -974,15 +974,15 @@ def handle_line(l):
 f = open(sys.argv[1])
 state = 1
 for l in f:
-  if l[:2] == '/*' and l[-3:-1]=='*/': 
+  if l[:2] == '/*' and l[-3:-1]=='*/':
     #print "skipping",l,
     pass
   else:
     if l[:2]=='/*': state = 0
-    if state: 
+    if state:
       if l <> "\n":
         handle_line(l[:-1])
-    else: 
+    else:
       #print "skippy",l,
       pass
     if l[:2]=='*/': state = 1
@@ -999,27 +999,15 @@ attrtok_map = {
 }
 attrtoks = attrtok_map.keys()
 
-ts['WSTRING']=1
-ts['USTRING']=1
-ts = ts.keys()
-ts.sort()
 print 'include "std";'
-print 
+print 'include "flx_token";'
+print
 print 'module flx_grammar'
 print '{'
+print '  open flx_token;'
 
-print "  union flx_token_t = "
-print "    | TOK_EOF                                 //0"
-j = 1
-for k in ts:
-  s = '  | TOK_'+k
-  if k in attrtoks:
-    s = s + " of " + attrtok_map[k]
-  print '  '+(s  + " " *45)[:45]+'//'+str(j)
-  j = j + 1
-print '  '+";"
-print 
- 
+print
+
 print '  '+"nonterm top:compilation_unit_t ="
 print '  '+"  | _1:nt_compilation_unit =>  _1 "
 print '  '+";"
@@ -1084,6 +1072,106 @@ for k in d.keys():
     if pno != nps: print
   print '  '+";"
   print
+print "}"
+
+@h = tangler('script/flx_tokgen','python')
+@select(h)
+import string
+import sys
+execfile ("config/flx_data.py")
+ts ={}
+for k,t in flx_keywords: ts[t]=1
+for t,l in flx_1_char_syms: ts[t]=1
+for t,l in flx_2_char_syms: ts[t]=1
+for t,l in flx_3_char_syms: ts[t]=1
+ts['ERROR']=1
+
+nt = ""
+d = {}
+
+def isterminal(w):
+  return w[0] in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+def isnonterminal(w): 
+  return not isterminal(w)
+
+def check_symbol(w):
+  if isterminal(w): ts[w]=1
+
+def cvt_symbol(w):
+  if isterminal(w):
+    return "TOK_" + w
+  else:
+    return w
+
+def cvt_symbol2(w):
+  if isterminal(w):
+    return "TOK_" + w
+  else:
+    return "nt_"+w
+
+def handle_line(l):
+  global nt
+  if l == '  | /* empty */':
+    d[nt]=d[nt]+[[]]
+  elif l[0]<>' ':
+    nt = l[:-1]
+    d[nt]=[]
+  else:
+    x = string.split(l)[1:]
+    for w in x: check_symbol(w)
+    d[nt]=d[nt]+[x]
+
+
+f = open(sys.argv[1])
+state = 1
+for l in f:
+  if l[:2] == '/*' and l[-3:-1]=='*/': 
+    #print "skipping",l,
+    pass
+  else:
+    if l[:2]=='/*': state = 0
+    if state: 
+      if l <> "\n":
+        handle_line(l[:-1])
+    else: 
+      #print "skippy",l,
+      pass
+    if l[:2]=='*/': state = 1
+f.close()
+
+attrtok_map = {
+  "ERROR":'string',
+  "CSTRING":'string',
+  "STRING":'string',
+  "WSTRING":'string',
+  "USTRING":'string',
+  "NAME":'string',
+  "FLOAT":'string',
+  "INTEGER":'(string * string)',
+}
+attrtoks = attrtok_map.keys()
+
+ts['WSTRING']=1
+ts['USTRING']=1
+ts = ts.keys()
+ts.sort()
+print 'include "std";'
+print 
+print 'module flx_token'
+print '{'
+
+print "  union flx_token_t = "
+print "    | TOK_EOF                                 //0"
+j = 1
+for k in ts:
+  s = '  | TOK_'+k
+  if k in attrtoks:
+    s = s + " of " + attrtok_map[k]
+  print '  '+(s  + " " *45)[:45]+'//'+str(j)
+  j = j + 1
+print '  '+";"
+print 
 print "}" 
 
 @h = tangler('script/elk_flx_lexgen','python')
@@ -1272,37 +1360,6 @@ public:
 
 #endif
 
-@h = tangler('misc/elk_flx_parse_driver.cc')
-@select(h)
-#include "elk_flx_lexer.h"     // Lexer
-#include "elk_flx_gr.h"     // Lexer
-#include "glr.h" 
-
-int main()
-{
-  // create and initialize the lexer
-  Elk_Flx_Lexer lexer;
-  lexer.nextToken(&lexer);
-
-  // create the parser context object
-  Flx_Elk_Parser gcom;
-
-  // initialize the parser
-  GLR glr(&gcom, gcom.makeTables());
-
-  // parse the input
-  SemanticValue result;
-  if (!glr.glrParse(lexer, result)) {
-    printf("parse error\n");
-    return 2;
-  }
-
-  // print result
-  printf("result: %p\n", (void*)result);
-
-  return 0;
-}
-
 @h = tangler('script/get_grammar','python')
 @select(h)
 import string
@@ -1375,7 +1432,6 @@ def get_stdout(x):
 def get_stdouterr(x):
   return get_stdout(x+" 2>&1")
 
-# define our version of C's system() function
 def xqt(x):
   if "silent" not in options: print x
   try: sys.stdin.flush()
@@ -1390,7 +1446,11 @@ def xqt(x):
   if result:
     raise MakeError
 
+ENV = 'env PATH=bin:$PATH LD_LIBRARY_PATH=rtl:$LD_LIBRARY_PATH '
+def exqt(x): xqt(ENV+x)
+
 def nxqt(x):
+  x = ENV+x
   if "silent" not in options: print x
   try: sys.stdin.flush()
   except: pass
@@ -1455,7 +1515,8 @@ if "help" in options:
   print "tests- regression and tutorial combined"
   print "clean - remove generated C++ and binaries from test locations"
   print "debug - build debugging versions of targets"
-  print "optimise - build high performance versions of targets"
+  print "optimise_c - build high performance versions of c++ targets"
+  print "optimise_felix - build high performance versions of ocaml targets NOT RECOMMENDED!"
   print "doc - build all user documentation"
 
 if "clean" in options:
@@ -1468,7 +1529,7 @@ if "tests" in options or "test" in options:
 
 def flxg(x,basename):
   x = './bin/flxg ' + x
-  xqt(x)
+  exqt(x)
 
 # ------------------------------------------------
 # BEGIN USER CONFIGURABLE SECTION
@@ -1500,8 +1561,8 @@ if "compiler" in options or "bytecode" in options or "olink" in options:
   if "debug" in options:
     OCAMLOPT = OCAMLOPT + '-g '
 
-  if "optimise" in options:
-    OCAMLOPT = OCAMLOPT + "-unsafe -noassert -inline 5 "
+  if "optimise_felix" in options:
+    OCAMLOPT = OCAMLOPT + " -unsafe -noassert -inline 5 "
 
   if BYTECODE == 0:
     OCAML_OBJECT_EXTENSION = '.cmx'
@@ -1541,11 +1602,18 @@ else:
   SHLX = ""
 
 # for compiling mainlines
-if "optimise" in options:
+if "optimise_c" in options:
   CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + "-O3 -fomit-frame-pointer "
   CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-O3 -fomit-frame-pointer "
   CCOBJ_DLLIB = CCOBJ_DLLIB + "-O3 -fomit-frame-pointer "
   CCOBJ_DLMAIN = CCOBJ_DLMAIN + "-O3 -fomit-frame-pointer "
+
+if "debug" in options:
+  CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + " -g "
+  CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + " -g "
+  CCOBJ_DLLIB = CCOBJ_DLLIB + " -g "
+  CCOBJ_DLMAIN = CCOBJ_DLMAIN + " -g "
+
 
 
 CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + ' ' + CCMACS
@@ -1564,10 +1632,6 @@ TUTORIAL_DIRECTORY='tut/'
 TUTORIAL_DOC=TUTORIAL_DIRECTORY+'doc/'
 TUTORIAL_EXAMPLES=TUTORIAL_DIRECTORY+'examples/'
 
-# where the garbage collector sources are
-# (the collector is now a separate package)
-FLX_GC_SRC='src/'
-
 # -------------------------------------------------
 # BEGIN IMPLEMENTOR CONFIGURABLE SECTION
 # ------------------------------------------------
@@ -1575,11 +1639,11 @@ FLX_GC_SRC='src/'
 # Elkhound stuffs
 
 SMBASE = [
-  'sm_malloc_stub',
 ]
 
 # These are the files actually needed at run time by Felix
 SMRTL = [
+  'sm_malloc_stub',
   'sm_nonport',
   'sm_autofile',
   'sm_bflatten',
@@ -1655,6 +1719,26 @@ ELKRTL = [
   'elk_useract',
   'elk_ptreenode',
   'elk_ptreeact',
+]
+
+ELKRTL_INTERFACES = [
+  'sm_array.h',
+  'sm_objpool.h',
+  'sm_sobjlist.h',
+  'sm_trdelete.h',
+  'sm_voidlist.h',
+  'sm_macros.h',
+  'sm_srcloc.h', 
+  'sm_typ.h',
+  'sm_xassert.h',
+  'sm_objlist.h',
+  'sm_str.h',
+  'elk_lexerint.h',
+  'elk_glrconfig.h',
+  'elk_parsetables.h',
+  'elk_glr.h',
+  'elk_rcptr.h',
+  'elk_useract.h',
 ]
 
 # files containing ocamllex sources
@@ -1956,7 +2040,7 @@ def run(x):
   print x
   try: sys.stdin.flush()
   except: pass
-  result = os.system(x)
+  result = os.system(ENV+x)
   if result: print "  .. ERROR CODE",hex(result)
   try: sys.stdin.flush()
   except: pass
@@ -1980,6 +2064,11 @@ def copy_mli2ml():
     if filetime("src/"+f+".mli") > filetime("src/"+f+".ml"):
       os.system("cp src/"+f+".mli src/"+f+".ml")
 
+def copy_elk2rtl():
+  for f in ELKRTL_INTERFACES:
+    if filetime("elk/"+f) > filetime("rtl/"+f):
+      os.system("cp elk/"+f+" rtl/"+f)
+
 
 try:
   # STEP 0: run interscript
@@ -1996,6 +2085,7 @@ try:
     runISCR('lpsrc/ast.pak')
     runISCR('lpsrc/elk.pak')
     copy_mli2ml()
+    copy_elk2rtl()
     runISCR('lpsrc/flx_tutorial.pak')
     runISCR('lpsrc/flx_tut_macro.pak')
     runISCR('lpsrc/flx_tut_bind.pak')
@@ -2151,6 +2241,7 @@ try:
         xqt(CCOBJ_DLLIB + " -D__UNIX__ -Ielk elk/" + x + ".cpp -o rtl/" +x+"_static.o")
       xqt(AR + " rtl/libflx_static.a " + ars)
       xqt(RANLIB + " rtl/libflx_static.a")
+    xqt("rm rtl/*.o")
 
   if "elkhound" in options:
     ars = ""
@@ -2298,7 +2389,7 @@ try:
         test_basename = string.split(testfile,'.')[0]
         drv_basename = string.split(driver,'.')[0]
         if LINK_MODEL == "dynamic":
-          testscript = "env LD_LIBRARY_PATH=./rtl:$LD_LIBRARY_PATH time ./"+drv_basename+ " ./"+test_basename+SHLX+" " + moreargs
+          testscript = "time ./"+drv_basename+ " ./"+test_basename+SHLX+" " + moreargs
         else:
           testscript = "time ./"+test_basename+SHLX+" " + moreargs
         #print 'Executing ',testscript
@@ -2354,7 +2445,7 @@ We have no idea if it continues copying.
 @tangle('BUILTIN_ISCR=env PYTHONPATH=. python -O interscript/bin/iscr.py --nocache')
 @tangle('')
 @tangle('all: dummy')
-@tangle('\tpython script/maker extract compiler rtl elkhound drivers test log_output check_output optimise')
+@tangle('\tpython script/maker extract compiler rtl elkhound drivers test log_output check_output optimise_c')
 @tangle('')
 
 @tangle('profile: dummy')
@@ -2386,9 +2477,10 @@ We have no idea if it continues copying.
 @tangle('\tpython script/get_grammar src/flx_parse.mly >misc/flx_parse.grammar')
 @tangle('\tpython script/get_grammar src/flx_cil_cparser.mly >misc/flx_cil_cparser.grammar')
 @tangle('\tpython script/get_grammar src/parse_fish.mly >misc/parse_fish.grammar')
-@tangle('\tpython script/elk_flx_grgen misc/flx_parse.grammar >misc/elk_flx_gr.gr')
+#@tangle('\tpython script/elk_flx_grgen misc/flx_parse.grammar >misc/elk_flx_gr.gr')
 @tangle('\tpython script/flx_flx_grgen misc/flx_parse.grammar >lib/flx_grammar.flx')
-@tangle('\tpython script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
+#@tangle('\tpython script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
+@tangle('\tpython script/flx_tokgen misc/flx_parse.grammar >lib/flx_token.flx')
 @tangle('')
 @tangle('compiler: dummy')
 @tangle('\tpython script/maker compiler')
@@ -2450,11 +2542,17 @@ We have no idea if it continues copying.
 @tangle('\tsh bagley/run.sh')
 @tangle('\tsh bagley/check.sh')
 @tangle('')
+@tangle('rtl.debug: dummy')
+@tangle('\tpython script/maker rtl debug')
+@tangle('')
 @tangle('rtl: dummy')
-@tangle('\tpython script/maker rtl optimise')
+@tangle('\tpython script/maker rtl')
+@tangle('')
+@tangle('rtl.optimise: dummy')
+@tangle('\tpython script/maker rtl optimise_c')
 @tangle('')
 @tangle('elkhound: dummy')
-@tangle('\tpython script/maker elkhound optimise')
+@tangle('\tpython script/maker elkhound optimise_c')
 @tangle('')
 @tangle('expect.bagley: clean')
 @tangle('\tpython script/maker bagley')
@@ -2491,7 +2589,6 @@ We have no idea if it continues copying.
 @tangle('\t#type "make test" to build and execute all the tests')
 @tangle('\t#including all the tutorial examples')
 @tangle('\t#REQUIRES Felix')
-@tangle('\t#REQUIRES g++ 2.96 or better')
 @tangle('\t#')
 @tangle('\t#type "make doc" to typeset the original sources')
 @tangle('\t#')
@@ -2715,7 +2812,6 @@ We have no idea if it continues copying.
 @tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('')
 @tangle('upload: dummy')
-@tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
 @tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('\tscp flx_'+flx_version+'_bin_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('')

@@ -55,6 +55,7 @@ let rec process_expr h k sr ((e,t) as be) =
   | `BEXPR_get_n (_,e)
   | `BEXPR_match_case (_,e)
   | `BEXPR_case_arg (_,e)
+  | `BEXPR_case_index e
     -> ue e
     
   | `BEXPR_apply_prim (i,ts,e2) 

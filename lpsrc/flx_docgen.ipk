@@ -1,0 +1,162 @@
+@head(1,"Documentation generator")
+Parse and print doco.
+@h=tangler("bin/flx_doc.flx")
+@select(h)
+include "std";
+include "flx_lex";
+include "flx_token";
+include "flx_grammar";
+use Lexer::sub;
+open flx_token;
+
+print "Starting"; endl;
+filename := System::argv 1;
+print "Filename "; print filename; endl;
+data := Text_file::load filename;
+
+i2 := Lexer::end_iterator data;
+var i1 = Lexer::start_iterator data;
+
+keywords := 
+@for k,t in flx_keywords:
+  tangle('("'+k+'",TOK_'+t+'),',inhibit_sref=1)
+@#
+  ("",TOK_EOF) // terminal
+;
+
+fun find_keyword(k:string) = 
+{
+  var i=0;
+  var key = keywords.[i];
+  until key.(0) == k or key.(0) == "" do 
+    ++i;
+    key = keywords.[i];
+  done;
+  return key.(1);
+}
+
+fun get_pretoken() = 
+{
+  open Flx_lex;
+  def var j, var des = pre_flx_lex (i1, i2);
+  match des with
+  | qQuote =>        { j,des = parse_q_string (j,i2); }
+  | qqqQuote =>      { j,des = parse_qqq_string (j,i2); }
+  | dQuote =>        { j,des = parse_d_string (j,i2); }
+  | dddQuote =>      { j,des = parse_ddd_string (j,i2); }
+  | rqQuote =>       { j,des = parse_rq_string (j,i2); }
+  | rqqqQuote =>     { j,des = parse_rqqq_string (j,i2); }
+  | rdQuote =>       { j,des = parse_rd_string (j,i2); }
+  | rdddQuote =>     { j,des = parse_rddd_string (j,i2); }
+  | Preprocessor =>  { j = to_eol(j,i2) - 1; }
+  | Cpp_comment =>   { j = to_eol(j,i2) - 1; }
+  | C_comment =>     { j = to_end_c_comment (j,i2); }
+  | _ => {}
+  endmatch;
+  lexeme := Lexer::string_between(i1,j);
+  i1 = j;
+  return
+    match des with
+    | Eol => TOK_EOF
+    | Ident => 
+      match find_keyword lexeme with
+      | TOK_EOF => TOK_NAME lexeme
+      | ?k => k
+      endmatch
+
+    // not really right, we should get the string
+    // but enough for documentation processor,
+    // since we ignore the string anyhow
+
+    | qQuote => TOK_STRING lexeme
+    | qqqQuote => TOK_STRING lexeme
+    | dQuote => TOK_STRING lexeme
+    | dddQuote => TOK_STRING lexeme
+
+    | wqQuote => TOK_STRING lexeme
+    | wqqqQuote => TOK_STRING lexeme
+    | wdQuote => TOK_STRING lexeme
+    | wdddQuote => TOK_STRING lexeme
+
+    | uqQuote => TOK_STRING lexeme
+    | uqqqQuote => TOK_STRING lexeme
+    | udQuote => TOK_STRING lexeme
+    | udddQuote => TOK_STRING lexeme
+
+    | rqQuote => TOK_STRING lexeme
+    | rqqqQuote => TOK_STRING lexeme
+    | rdQuote => TOK_STRING lexeme
+    | rdddQuote => TOK_STRING lexeme
+
+   
+@for k,s in flx_1_char_syms:
+  tangle('    | ' + k + ' => TOK_'+k,inhibit_sref=1)
+
+@for k,s in flx_2_char_syms:
+  tangle('    | ' + k + ' => TOK_'+k,inhibit_sref=1)
+
+@for k,s in flx_3_char_syms:
+  tangle('    | ' + k + ' => TOK_'+k,inhibit_sref=1)
+@#
+    | Preprocessor =>  TOK_EOF
+    | Cpp_comment =>   TOK_EOF
+    | C_comment =>     TOK_EOF
+    | White => TOK_EOF
+
+    // cheat again
+    | Int => TOK_INTEGER (lexeme,"")
+    | Float => TOK_FLOAT lexeme
+    | _ => TOK_ERROR lexeme
+    endmatch
+  ;
+}
+
+use Lexer::eq;
+
+var eof = false;
+fun get_token(): flx_token_t = 
+{
+retry:>
+  if i1 == i2 do
+    if eof do 
+      return TOK_EOF; 
+    else
+      eof = true; 
+      return TOK_ENDMARKER;
+    done;
+  else
+    t := get_pretoken();
+    if caseno t == caseno TOK_EOF goto retry;
+    return t;
+  done;
+}
+
+print "Preparing"; endl;
+
+endmarker := caseno TOK_ENDMARKER;
+
+/*
+next:>
+  x := get_token();
+  j := caseno x; 
+  print j; endl;
+  if   j != endmarker goto next;
+
+print "Done"; endl;
+*/
+
+var x = 
+  parse the get_token with
+  | cu: flx_grammar::top => cu
+  endmatch
+;
+
+d :=
+  match x with
+  | case 1 => "Failure"
+  | case 2 _ => "Success"
+  endmatch
+;
+ 
+print d; endl;
+

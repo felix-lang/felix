@@ -75,6 +75,7 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   | `BEXPR_get_n (_,e)
   | `BEXPR_match_case (_,e)
   | `BEXPR_case_arg (_,e)
+  | `BEXPR_case_index e
     -> ue e
     
   | `BEXPR_apply_prim (index,ts,a)
@@ -189,9 +190,9 @@ and process_function syms bbdfns hvarmap ref_insts1 index sr argtypes ret exes t
   *)
   process_exes syms bbdfns ref_insts1 ts hvarmap exes ;
 
-and process_production syms bbdfns ref_insts1 p =
+and process_production syms bbdfns ref_insts1 p ts =
   let uses_symbol (_,nt) = match nt with
-  | `Nonterm ii -> iter (fun i -> add_inst syms ref_insts1 (i,[])) ii
+  | `Nonterm ii -> iter (fun i -> add_inst syms ref_insts1 (i,ts)) ii
   | `Term i -> () (* HACK! This is a union constructor name  we need to 'use' the union type!! *)
   in
   iter uses_symbol p
@@ -211,10 +212,12 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
   if syms.compiler_options.print_flag then
   print_endline ("//Instance "^si inst ^ "="^id^"<" ^ si i ^ ">[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]");
   match entry with
-  | `BBDCL_glr (ret, (p,exes)) ->
-    assert (length ts = 0);
+  | `BBDCL_glr (vs,ret, (p,exes)) ->
+    assert (length vs = length ts);
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let hvarmap = hashtable_of_list vars in
     process_function syms bbdfns null_table ref_insts1 i sr [] ret exes ts;
-    process_production syms bbdfns ref_insts1 p
+    process_production syms bbdfns ref_insts1 p ts
  
  
   | `BBDCL_function (props,vs,ps,ret,exes) -> 

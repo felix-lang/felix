@@ -197,11 +197,13 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       (*
       print_endline ("Binding nonterm " ^ name ^"<"^ si i ^">");
       *)
+      let brt = if t = `TYP_none then `BTYP_var i else bt t in
       (*
-      let brt = bt t in
+      print_endline ("Specified type " ^ sbt syms.dfns brt);
       *)
-
+      (*
       let brt = `BTYP_var i in (* hack .. *)
+      *)
 
       let bn q = 
         (* we have to check this .. *)
@@ -226,7 +228,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       let bp p = map (fun (n,q) -> n,bn q) p in
       let p = bp p in
       let brt',bbexes = bexes env exes brt i vs in
-      let bbdcl = `BBDCL_glr (brt',(p, bbexes)) in
+      let bbdcl = `BBDCL_glr (vs,brt',(p, bbexes)) in
       Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
 
       if syms.compiler_options.print_flag then

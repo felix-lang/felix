@@ -237,9 +237,9 @@ let copy_bbdcl cache syms (child_map,bbdfns) bbdfns2 i bbdfn =
       let exes = enstack_calls cache syms (child_map,bbdfns) exes in
       id,parent,sr,`BBDCL_function (props,vs,p,ret,exes)
 
-    | id,parent,sr,`BBDCL_glr (t,(p,exes)) ->
+    | id,parent,sr,`BBDCL_glr (vs,t,(p,exes)) ->
       let exes = enstack_calls cache syms (child_map,bbdfns) exes in
-      id,parent,sr,`BBDCL_glr (t,(p,exes))
+      id,parent,sr,`BBDCL_glr (vs,t,(p,exes))
 
     | x -> x
   in

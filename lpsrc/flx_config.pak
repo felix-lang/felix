@@ -1058,6 +1058,7 @@ flx_keywords = [
     ("body", "BODY"),
     ("call", "CALL"),
     ("case", "CASE"),
+    ("caseno", "CASENO"),
     ("class", "CLASS"),
     ("code", "CODE"),
     ("comment", "COMMENT_KEYWORD"),

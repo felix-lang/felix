@@ -88,6 +88,7 @@ and uses_tbexpr syms used bbdfns (e,t) =
   | `BEXPR_deref e
   | `BEXPR_get_n (_,e)
   | `BEXPR_match_case (_,e)
+  | `BEXPR_case_index e
   | `BEXPR_case_arg (_,e)        -> ue e
   | `BEXPR_apply (e1,e2)         -> ue e1; ue e2
   | `BEXPR_apply_prim (i,ts,e2)-> ui i; iter ut ts; ue e2
@@ -132,7 +133,7 @@ and uses syms used bbdfns i =
         iter ut (map (fun x -> snd (snd x)) ps);
         ux exes
 
-      | `BBDCL_glr (t,(p,e)) ->
+      | `BBDCL_glr (_,t,(p,e)) ->
         ut t; ux e;
         uses_production syms used bbdfns p
 

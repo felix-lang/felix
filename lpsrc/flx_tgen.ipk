@@ -170,12 +170,12 @@ let gen_type_name syms bbdfns (index,typ) =
       descr ^
       let lss = map snd ls in
       let lss = map (tsubst vs ts) lss in
+      let len = si (length lss) in
       if all_voids lss
       then
-        "typedef int " ^ name ^ ";\n"
+        "typedef int " ^ name ^ "; //ncases="^len^"\n"
       else
-        descr ^
-        "typedef _uctor_ " ^ name ^ ";\n"
+        "typedef _uctor_ " ^ name ^ "; //ncases="^len^"\n"
 
 
     | _ -> 

@@ -422,7 +422,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   | `AST_case_tag (sr, i) -> e
   | `AST_typed_case (sr, i, t) -> e
-
+  | `AST_case_index (sr,e) -> `AST_case_index (sr,me e)
 
   | `AST_tuple (sr, es) -> `AST_tuple (sr, map me es)
   | `AST_arrayof (sr, es) -> `AST_arrayof (sr, map me es)

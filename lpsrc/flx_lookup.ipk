@@ -1173,11 +1173,17 @@ and bind_type'
     t
 
 and cal_glr_attr_type'' syms sr i t =
-  try Hashtbl.find syms.ticache i
+  try Hashtbl.find syms.glr_cache i
   with Not_found ->
+  try Hashtbl.find syms.varmap i
+  with Not_found ->
+  match t with 
+  | `TYP_none -> `BTYP_var i
+  | _ ->
     let env = build_env syms (Some i) in
     let t = bind_type syms env sr t in
-    Hashtbl.add syms.ticache i t;
+    Hashtbl.add syms.glr_cache i t;
+    Hashtbl.add syms.varmap i t;
     t
  
 and cal_glr_attr_type' syms sr i =
@@ -1192,7 +1198,12 @@ and cal_glr_attr_type' syms sr i =
   | {symdef=`SYMDEF_const_ctor (_,_,_)} -> 
     `Term, `BTYP_void 
 
-  | _ -> clierr sr "Expected glr nonterminal or token (union constructor with argument)"
+  | {id=id;symdef=symdef} -> 
+    clierr sr (
+      "[cal_glr_attr_type'] Expected glr nonterminal or token "^
+      "(union constructor with argument), got\n" ^
+      string_of_symdef symdef id []
+    )
 
 and cal_glr_attr_type syms sr ii =
   match ii with
@@ -2134,7 +2145,8 @@ and handle_function
     privmap=tabl;dirs=dirs;
     symdef=entry
   }
-  -> match entry with
+  -> 
+  match entry with
   | `SYMDEF_match_check _
   | `SYMDEF_function _
   | `SYMDEF_fun _
@@ -2142,12 +2154,13 @@ and handle_function
   | `SYMDEF_cstruct _
   | `SYMDEF_nonconst_ctor _
     ->
-    `BEXPR_closure (index,ts),
-    (
-      match inner_typeofindex_with_ts syms sr 
+    let t = inner_typeofindex_with_ts syms sr 
         idx_fixlist expr_fixlist depth 
         index ts 
-      with
+    in
+    `BEXPR_closure (index,ts),
+    (
+      match t with
       | `BTYP_function (s,d) as t -> t
       | t -> 
         ignore begin
@@ -2159,8 +2172,8 @@ and handle_function
         ;
         clierr sra
         (
-          "[handle_function]: closure operator expected '"^name^"' to be function definition, got '"^
-          sbt syms.dfns t
+          "[handle_function]: closure operator expected '"^name^"' to have function type, got '"^
+          sbt syms.dfns t ^ "'"
         )
     )
   | _ -> 
@@ -2521,10 +2534,14 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
 
   | `AST_sparse (sr,e,nt,nts) ->
     let e = be e in
+    (*
     print_endline ("Calculating AST_parse, symbol " ^ nt);
+    *)
     let t = cal_glr_attr_type syms sr nts in
+    (*
     print_endline (".. DONE: Calculating AST_parse, type=" ^ sbt syms.dfns t);
-    `BEXPR_parse (e,nts),t
+    *)
+    `BEXPR_parse (e,nts),`BTYP_sum [unit_t;t]
     
   | `AST_expr (sr,s,t) -> 
     let t = bt sr t in 
@@ -2605,6 +2622,27 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     in 
       `BEXPR_get_n (n, (expr,typ)), ctyp
 
+  | `AST_case_index (sr,e) -> 
+    let (e',t) as e  = be e in
+    begin match t with
+    | `BTYP_sum _ -> ()
+    | `BTYP_inst (i,_) ->
+      begin match Hashtbl.find syms.dfns i with
+      | {symdef=`SYMDEF_union _} -> ()
+      | {id=id} -> clierr sr "Argument of caseno must be sum or union type"
+      end
+    | _ -> clierr sr "Argument of caseno must be sum or union type"
+    end
+    ;
+    let int_t = bt sr (`AST_name (sr,"int",[])) in
+    begin match e' with 
+    | `BEXPR_case (i,_) -> 
+      `BEXPR_literal (`AST_int ("",Big_int.big_int_of_int i))
+    | _ -> `BEXPR_case_index e
+    end
+    ,
+    int_t
+    
   | `AST_case_tag (sr,v) ->
      clierr sr "plain case tag not allowed in expression (only in pattern)"
 
@@ -2953,7 +2991,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
   | `AST_case_arg (sr,(v,e)) ->
      let (_,t) as e' = be e in
     ignore (try unfold syms.dfns t with _ -> failwith "AST_case_arg unfold screwd");
-     begin match unfold syms.dfns t with
+     begin match lstrip syms.dfns (unfold syms.dfns t) with
      | `BTYP_unitsum n ->
        if v<1 or v>n 
        then clierr sr "Invalid sum index"
@@ -2967,7 +3005,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
        else let t = nth ls (v-1) in
        `BEXPR_case_arg (v, e'),t
 
-     | _ -> clierr sr "Expected sum type"
+     | _ -> clierr sr ("Expected sum type, got " ^ sbt syms.dfns t)
      end 
 
   | `AST_ctor_arg (sr,(qn,e)) ->

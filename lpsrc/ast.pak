@@ -1,4 +1,39 @@
 @head(1,'ast')
+@h=tangler('licences/ast_licence.txt','data')
+@select(h)
+The ast software
+Copyright (c) 2002, Regents of the University of California
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above 
+      copyright notice, this list of conditions and the following 
+      disclaimer in the documentation and/or other materials provided 
+      with the distribution.
+
+    * Neither the name of the University of California, Berkeley nor 
+      the names of its contributors may be used to endorse or promote 
+      products derived from this software without specific prior 
+      written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 @h=tangler('elk/ast_agramlex.lex')
 @select(h)
 /* agrammar.lex            see license.txt for copyright and terms of use
@@ -56,7 +91,7 @@ DIGIT     [0-9]
 /* double-quote */
 DQUOTE    "\""
 
-/* character that can appear in a quoted string */
+/* character that can appear in a quoted sm_string */
 /* (I currently don't have any backslash codes, but I want to
  * leave open that possibility, for now backslashes are illegal) */
 STRCHR    [^\n\\\"]
@@ -406,16 +441,16 @@ bool isAGramlexEmbed(int code)
   TF_class *tfClass;
   ASTList<CtorArg> *ctorArgList;
   ASTList<Annotation> *userDeclList;
-  string *str;
+  sm_string *str;
   enum AccessCtl accessCtl;
   AccessMod *accessMod;
   ToplevelForm *verbatim;
   Annotation *annotation;
   TF_option *tfOption;
-  ASTList<string> *stringList;
+  ASTList<sm_string> *sm_stringList;
   TF_enum *tfEnum;
-  ASTList<string> *enumeratorList;
-  string *enumerator;
+  ASTList<sm_string> *enumeratorList;
+  sm_string *enumerator;
   ASTList<BaseClass> *baseClassList;
   BaseClass *baseClass;
 }
@@ -431,7 +466,7 @@ bool isAGramlexEmbed(int code)
 %type <verbatim> Verbatim
 %type <annotation> Annotation
 %type <tfOption> Option
-%type <stringList> StringList OptionArgs
+%type <sm_stringList> StringList OptionArgs
 %type <tfEnum> Enum
 %type <enumeratorList> EnumeratorSeq
 %type <enumerator> Enumerator
@@ -515,7 +550,7 @@ CtorArgsOpt
 CtorArgs: Arg
             { $$ = new ASTList<CtorArg>;
               {
-                string tmp = unbox($1);
+                sm_string tmp = unbox($1);
                 $$->append(parseCtorArg(tmp));
               }
             }
@@ -523,14 +558,14 @@ CtorArgs: Arg
             { ($$=$1)->append(parseCtorArg(unbox($3))); }
         ;
 
-/* yields string */
+/* yields sm_string */
 Arg: ArgWord
        { $$ = $1; }
    | Arg ArgWord
        { $$ = appendStr($1, $2); }   // dealloc's $1, $2
    ;
 
-/* yields string */
+/* yields sm_string */
 ArgWord
   : TOK_NAME         { $$ = appendStr($1, box(" ")); }
   | TOK_INTLIT       { $$ = appendStr($1, box(" ")); }
@@ -541,7 +576,7 @@ ArgWord
   | TOK_CLASS        { $$ = box("class "); }    /* special b/c is ast spec keyword */
   ;
 
-/* yields string, and may have commas inside */
+/* yields sm_string, and may have commas inside */
 ArgList: Arg
            { $$ = $1; }
        | Arg "," ArgList
@@ -566,7 +601,7 @@ Annotation
       { $$ = new CustomCode(unbox($2), unbox($3)); }
   ;
 
-/* yields string */
+/* yields sm_string */
 Embedded
   : TOK_EMBEDDED_CODE ";"
       { $$ = $1; }
@@ -591,9 +626,9 @@ AccessMod: Public
              { $$ = new AccessMod($1, $3); }
          ;
 
-/* yield ASTList<string> */
+/* yield ASTList<sm_string> */
 StringList: TOK_NAME
-              { $$ = new ASTList<string>($1); }
+              { $$ = new ASTList<sm_string>($1); }
           | StringList "," TOK_NAME
               { ($$=$1)->append($3); }
           ;
@@ -610,9 +645,9 @@ Option: "option" TOK_NAME OptionArgs ";"
           { $$ = new TF_option(unbox($2), $3); }
       ;
       
-/* yields ASTList<string> */
+/* yields ASTList<sm_string> */
 OptionArgs: /*empty*/
-              { $$ = new ASTList<string>; }
+              { $$ = new ASTList<sm_string>; }
           | OptionArgs TOK_NAME
               { ($$=$1)->append($2); }
           ;
@@ -624,14 +659,14 @@ Enum: "enum" TOK_NAME "{" EnumeratorSeq "}"
         { $$ = new TF_enum(unbox($2), $4); }
     ;
 
-/* yields ASTList<string> */
+/* yields ASTList<sm_string> */
 EnumeratorSeq: Enumerator
-                 { $$ = new ASTList<string>($1); }
+                 { $$ = new ASTList<sm_string>($1); }
              | EnumeratorSeq "," Enumerator
                  { ($$=$1)->append($3); }
              ;
 
-/* yields string */
+/* yields sm_string */
 Enumerator: TOK_NAME
               { $$ = $1; }
           ;
@@ -743,15 +778,15 @@ extern int yydebug;
 
 // ---------- parser's view of the rest of the program -----------
 // return contents of 's', which is then deallocated
-string unbox(string *s);
+sm_string unbox(sm_string *s);
 
-// box 's' as a string object
-string *box(char const *s);
+// box 's' as a sm_string object
+sm_string *box(char const *s);
 
-// return concatenation of two strings; source strings are deallocated
-string *appendStr(string *left, string *right);
+// return concatenation of two sm_strings; source sm_strings are deallocated
+sm_string *appendStr(sm_string *left, sm_string *right);
 
-// parse a string into components
+// parse a sm_string into components
 CtorArg *parseCtorArg(char const *str);
 
 // error routine
@@ -784,16 +819,16 @@ typedef union YYSTYPE {
   TF_class *tfClass;
   ASTList<CtorArg> *ctorArgList;
   ASTList<Annotation> *userDeclList;
-  string *str;
+  sm_string *str;
   enum AccessCtl accessCtl;
   AccessMod *accessMod;
   ToplevelForm *verbatim;
   Annotation *annotation;
   TF_option *tfOption;
-  ASTList<string> *stringList;
+  ASTList<sm_string> *sm_stringList;
   TF_enum *tfEnum;
-  ASTList<string> *enumeratorList;
-  string *enumerator;
+  ASTList<sm_string> *enumeratorList;
+  sm_string *enumerator;
   ASTList<BaseClass> *baseClassList;
   BaseClass *baseClass;
 } yystype;
@@ -917,10 +952,10 @@ public:      // funcs
 
 class TF_verbatim : public ToplevelForm {
 public:      // data
-  string code;
+  sm_string code;
 
 public:      // funcs
-  TF_verbatim(string _code) : ToplevelForm(), code(_code) {
+  TF_verbatim(sm_string _code) : ToplevelForm(), code(_code) {
   }
   virtual ~TF_verbatim();
 
@@ -935,10 +970,10 @@ public:      // funcs
 
 class TF_impl_verbatim : public ToplevelForm {
 public:      // data
-  string code;
+  sm_string code;
 
 public:      // funcs
-  TF_impl_verbatim(string _code) : ToplevelForm(), code(_code) {
+  TF_impl_verbatim(sm_string _code) : ToplevelForm(), code(_code) {
   }
   virtual ~TF_impl_verbatim();
 
@@ -973,11 +1008,11 @@ public:      // funcs
 
 class TF_option : public ToplevelForm {
 public:      // data
-  string name;
-  ASTList <string > args;
+  sm_string name;
+  ASTList <sm_string > args;
 
 public:      // funcs
-  TF_option(string _name, ASTList <string > *_args) : ToplevelForm(), name(_name), args(_args) {
+  TF_option(sm_string _name, ASTList <sm_string > *_args) : ToplevelForm(), name(_name), args(_args) {
   }
   virtual ~TF_option();
 
@@ -992,11 +1027,11 @@ public:      // funcs
 
 class TF_enum : public ToplevelForm {
 public:      // data
-  string name;
-  ASTList <string > enumerators;
+  sm_string name;
+  ASTList <sm_string > enumerators;
 
 public:      // funcs
-  TF_enum(string _name, ASTList <string > *_enumerators) : ToplevelForm(), name(_name), enumerators(_enumerators) {
+  TF_enum(sm_string _name, ASTList <sm_string > *_enumerators) : ToplevelForm(), name(_name), enumerators(_enumerators) {
   }
   virtual ~TF_enum();
 
@@ -1014,13 +1049,13 @@ public:      // funcs
 // *** DO NOT EDIT ***
 class ASTClass {
 public:      // data
-  string name;
+  sm_string name;
   ASTList <CtorArg > args;
   ASTList <BaseClass > bases;
   ASTList <Annotation > decls;
 
 public:      // funcs
-  ASTClass(string _name, ASTList <CtorArg > *_args, ASTList <BaseClass > *_bases, ASTList <Annotation > *_decls) : name(_name), args(_args), bases(_bases), decls(_decls) {
+  ASTClass(sm_string _name, ASTList <CtorArg > *_args, ASTList <BaseClass > *_bases, ASTList <Annotation > *_decls) : name(_name), args(_args), bases(_bases), decls(_decls) {
   }
   ~ASTClass();
 
@@ -1030,7 +1065,7 @@ public:      // funcs
 
   void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
 
-  public:  string classKindName() const;
+  public:  sm_string classKindName() const;
 };
 
 
@@ -1050,17 +1085,17 @@ public:      // funcs
     NUM_ACCESSCTLS
   };
 
-  // map the enum value to a string like "public"
-  string toString(AccessCtl acc);      // defined in ast.cc
+  // map the enum value to a sm_string like "public"
+  sm_string toString(AccessCtl acc);      // defined in ast.cc
 
 // *** DO NOT EDIT ***
 class AccessMod {
 public:      // data
   AccessCtl acc;
-  ASTList <string > mods;
+  ASTList <sm_string > mods;
 
 public:      // funcs
-  AccessMod(AccessCtl _acc, ASTList <string > *_mods) : acc(_acc), mods(_mods) {
+  AccessMod(AccessCtl _acc, ASTList <sm_string > *_mods) : acc(_acc), mods(_mods) {
   }
   ~AccessMod();
 
@@ -1102,11 +1137,11 @@ public:      // funcs
 class UserDecl : public Annotation {
 public:      // data
   AccessMod *amod;
-  string code;
-  string init;
+  sm_string code;
+  sm_string init;
 
 public:      // funcs
-  UserDecl(AccessMod *_amod, string _code, string _init) : Annotation(), amod(_amod), code(_code), init(_init) {
+  UserDecl(AccessMod *_amod, sm_string _code, sm_string _init) : Annotation(), amod(_amod), code(_code), init(_init) {
   }
   virtual ~UserDecl();
 
@@ -1122,11 +1157,11 @@ public:      // funcs
 
 class CustomCode : public Annotation {
 public:      // data
-  string qualifier;
-  string code;
+  sm_string qualifier;
+  sm_string code;
 
 public:      // funcs
-  CustomCode(string _qualifier, string _code) : Annotation(), qualifier(_qualifier), code(_code) {
+  CustomCode(sm_string _qualifier, sm_string _code) : Annotation(), qualifier(_qualifier), code(_code) {
      used=false;
   }
   virtual ~CustomCode();
@@ -1147,12 +1182,12 @@ public:      // funcs
 class CtorArg {
 public:      // data
   bool isOwner;
-  string type;
-  string name;
-  string defaultValue;
+  sm_string type;
+  sm_string name;
+  sm_string defaultValue;
 
 public:      // funcs
-  CtorArg(bool _isOwner, string _type, string _name, string _defaultValue) : isOwner(_isOwner), type(_type), name(_name), defaultValue(_defaultValue) {
+  CtorArg(bool _isOwner, sm_string _type, sm_string _name, sm_string _defaultValue) : isOwner(_isOwner), type(_type), name(_name), defaultValue(_defaultValue) {
   }
   ~CtorArg();
 
@@ -1170,10 +1205,10 @@ public:      // funcs
 class BaseClass {
 public:      // data
   AccessCtl access;
-  string name;
+  sm_string name;
 
 public:      // funcs
-  BaseClass(AccessCtl _access, string _name) : access(_access), name(_name) {
+  BaseClass(AccessCtl _access, sm_string _name) : access(_access), name(_name) {
   }
   ~BaseClass();
 
@@ -1249,10 +1284,10 @@ public:
 
 class TF_verbatim : public ToplevelForm {
 public:
-  string code;
+  sm_string code;
 
 public:
-  TF_verbatim(string _code)
+  TF_verbatim(sm_string _code)
     : code(_code) 
   {}
   virtual ~TF_verbatim() {}
@@ -1265,13 +1300,13 @@ public:
 
 class ASTClass : public ToplevelForm {
 public:
-  string name;
+  sm_string name;
   ASTList<CtorArg> superCtor;
   ASTList<UserDecl> decls;
   ASTList<ASTCtor> ctors;
 
 public:
-  ASTClass(string _name, ASTList<CtorArg> *_superCtor,
+  ASTClass(sm_string _name, ASTList<CtorArg> *_superCtor,
            ASTList<UserDecl> *_decls, ASTList<ASTCtor> *_ctors) :
     name(_name), superCtor(_superCtor), decls(_decls), ctors(_ctors)
   {}
@@ -1287,16 +1322,16 @@ public:
 
 
   enum AccessCtl { AC_PUBLIC, AC_PRIVATE, AC_PROTECTED };
-  string toString(AccessCtl acc);      // defined in ast.cc
+  sm_string toString(AccessCtl acc);      // defined in ast.cc
 
 
 class UserDecl {
 public:
   AccessCtl access;
-  string code;
+  sm_string code;
 
 public:
-  UserDecl(AccessCtl _access, string _code)
+  UserDecl(AccessCtl _access, sm_string _code)
     : access(_access), code(_code)
   {}
   ~UserDecl() {}
@@ -1307,30 +1342,30 @@ public:
 
 class ASTCtor {
 public:
-  string name;
+  sm_string name;
   ASTList<CtorArg> args;
   ASTList<UserDecl> decls;
 
 public:
-  ASTCtor(string _name, ASTList<CtorArg> *_args, ASTList<UserDecl> *_decls)
+  ASTCtor(sm_string _name, ASTList<CtorArg> *_args, ASTList<UserDecl> *_decls)
     : name(_name), args(_args), decls(_decls)
   {}
   ~ASTCtor() {}
 
   void debugPrint(ostream &os, int indent) const;
   
-  public: string kindName() const;
+  public: sm_string kindName() const;
 };
 
 
 class CtorArg {
 public:
   bool owner;
-  string type;
-  string name;
+  sm_string type;
+  sm_string name;
 
 public:
-  CtorArg(bool _owner, string _type, string _name)
+  CtorArg(bool _owner, sm_string _type, sm_string _name)
     : owner(_owner),
       type(_type),
       name(_name)
@@ -1487,7 +1522,7 @@ ostream &ind(ostream &os, int indent);
 #define PRINT_STRING(var) \
   debugPrintStr(var, #var, os, indent)    /* user ; */
 
-void debugPrintStr(string const &s, char const *name,
+void debugPrintStr(sm_string const &s, char const *name,
                    ostream &os, int indent);
 
 
@@ -1503,13 +1538,13 @@ void debugPrintList(ASTList<T> const &list, char const *name,
   {
     FOREACH_ASTLIST(T, list, iter) {
       iter.data()->debugPrint(os, indent+2,
-        stringc << name << "[" << ct++ << "]");
+        sm_stringc << name << "[" << ct++ << "]");
     }
   }
 }
 
-// provide explicit specialization for strings
-void debugPrintList(ASTList<string> const &list, char const *name,
+// provide explicit specialization for sm_strings
+void debugPrintList(ASTList<sm_string> const &list, char const *name,
                     ostream &os, int indent);
 void debugPrintList(ASTList<LocString> const &list, char const *name,
                     ostream &os, int indent);
@@ -1527,13 +1562,13 @@ void debugPrintFakeList(FakeList<T> const *list, char const *name,
   {
     FAKELIST_FOREACH(T, list, iter) {
       iter->debugPrint(os, indent+2,
-        stringc << name << "[" << ct++ << "]");
+        sm_stringc << name << "[" << ct++ << "]");
     }
   }
 }
 
-// note that we never make FakeLists of strings, since of course
-// strings do not have a 'next' pointer
+// note that we never make FakeLists of sm_strings, since of course
+// sm_strings do not have a 'next' pointer
 
 
 #define PRINT_SUBTREE(tree)                     \
@@ -1568,7 +1603,7 @@ void debugPrintFakeList(FakeList<T> const *list, char const *name,
 #define XMLPRINT_STRING(var)                                \
   xmlPrintStr(var, #var, os, indent) /* user ; */
 
-void xmlPrintStr(string const &s, char const *name,
+void xmlPrintStr(sm_string const &s, char const *name,
                  ostream &os, int indent);
 
 
@@ -1588,8 +1623,8 @@ void xmlPrintList(ASTList<T> const &list, char const *name,
   ind(os, indent) << "</member>\n";
 }
 
-// provide explicit specialization for strings
-void xmlPrintList(ASTList<string> const &list, char const *name,
+// provide explicit specialization for sm_strings
+void xmlPrintList(ASTList<sm_string> const &list, char const *name,
                     ostream &os, int indent);
 void xmlPrintList(ASTList<LocString> const &list, char const *name,
                     ostream &os, int indent);
@@ -1611,8 +1646,8 @@ void xmlPrintFakeList(FakeList<T> const *list, char const *name,
   ind(os, indent) << "</member>\n";
 }
 
-// note that we never make FakeLists of strings, since of course
-// strings do not have a 'next' pointer
+// note that we never make FakeLists of sm_strings, since of course
+// sm_strings do not have a 'next' pointer
 
 
 #define XMLPRINT_SUBTREE(tree)                         \
@@ -1706,7 +1741,7 @@ class CCSubstrate : public EmbeddedLang {
 private:
   enum State {
     ST_NORMAL,       // normal text
-    ST_STRING,       // inside a string literal
+    ST_STRING,       // inside a sm_string literal
     ST_CHAR,         // inside a char literal
     ST_SLASH,        // from ST_NORMAL, just saw a slash
     ST_C_COMMENT,    // inside a C comment
@@ -1729,8 +1764,8 @@ public:
   virtual void reset(int initNest = 0);
   virtual void handle(char const *str, int len, char finalDelim);
   virtual bool zeroNesting() const;
-  virtual string getFuncBody() const;
-  virtual string getDeclName() const;
+  virtual sm_string getFuncBody() const;
+  virtual sm_string getDeclName() const;
 };
 
 #endif // CCSSTR_H
@@ -1754,7 +1789,7 @@ public:
   // embedded code; clients will call 'handle' a
   // bunch of times and then expect to retrieve
   // the text from here
-  stringBuilder text;
+  sm_stringBuilder text;
 
   // when true (set by the lexer), the 'text' is to
   // be interpreted as an expression, rather than a
@@ -1773,24 +1808,24 @@ public:
   // start from scratch
   virtual void reset(int initNest = 0) = 0;
 
-  // process the given string of characters, as source text in
+  // process the given sm_string of characters, as source text in
   // the embedded language; 'finalDelim' is provided for printing
   // informative error messages
   virtual void handle(char const *str, int len, char finalDelim) = 0;
 
   // return true if we're at a nesting level of zero
-  // and not in a string, etc. -- characters at this
+  // and not in a sm_string, etc. -- characters at this
   // level have "usual" meaning
   virtual bool zeroNesting() const = 0;
 
   // return the body of the embedded function; should
   // always return a complete function body, even when
   // exprOnly is true (by adding to 'text' if necessary)
-  virtual string getFuncBody() const = 0;
+  virtual sm_string getFuncBody() const = 0;
 
   // return the name of the declared function, assuming
   // that is the context in which 'text' was collected
-  virtual string getDeclName() const = 0;
+  virtual sm_string getDeclName() const = 0;
 };
 
 #endif // EMBEDDED_H
@@ -2078,14 +2113,14 @@ public:      // data
   // todo: can eliminate commentStartLine in favor of tokenStartLoc?
   //int commentStartLine;            // for reporting unterminated C comments
   int integerLiteral;              // to store number literal value
-  StringRef stringLiteral;         // string in quotes, minus the quotes
+  StringRef sm_stringLiteral;         // sm_string in quotes, minus the quotes
   StringRef includeFileName;       // name in an #include directive
 
   // defined in the base class, FlexLexer:
   //   const char *YYText();           // start of matched text
   //   int YYLeng();                   // number of matched characters
 
-  StringTable &strtable;           // string table
+  StringTable &strtable;           // sm_string table
 
   // count of errors encountered
   int errors;
@@ -2102,7 +2137,7 @@ private:     // funcs
   void newLine()
     { fileState.loc = sourceLocManager->advLine(fileState.loc); }
   
-  // adds a string with only the specified # of chars; writes (but
+  // adds a sm_string with only the specified # of chars; writes (but
   // then restores) a null terminator if necessary, so 'str' isn't const
   StringRef addString(char *str, int len) const;
                                         
@@ -2121,7 +2156,7 @@ public:      // funcs
   // clean up
   ~GrammarLexer();
 
-  // get current token as a string
+  // get current token as a sm_string
   StringRef curToken() const;
   int curLen() const { return const_cast<GrammarLexer*>(this)->YYLeng(); }
 
@@ -2154,7 +2189,7 @@ public:      // funcs
   int curCol() const 
     { return sourceLocManager->getCol(tokenStartLoc); }
   SourceLoc curLoc() const { return tokenStartLoc; }
-  string curLocStr() const;    // string with file/line/col
+  sm_string curLocStr() const;    // sm_string with file/line/col
 
   // error reporting; called by the lexer code
   void err(char const *msg) { reportError(msg); }     // msg should not include a newline
@@ -2180,7 +2215,7 @@ public:      // funcs
 @h=tangler('elk/ast_locstr.h')
 @select(h)
 // locstr.h            see license.txt for copyright and terms of use
-// location & string table reference
+// location & sm_string table reference
 
 #ifndef LOCSTR_H
 #define LOCSTR_H
@@ -2214,33 +2249,33 @@ public:    // funcs
   LocString& operator= (LocString const &obj)
     { loc = obj.loc; str = obj.str; return *this; }
 
-  // string with location info
-  string locString() const { return toString(loc); }
+  // sm_string with location info
+  sm_string locString() const { return toString(loc); }
 
-  // (read-only) string-like behavior
+  // (read-only) sm_string-like behavior
   friend ostream& operator<< (ostream &os, LocString const &loc)
     { return os << loc.str; }
-  friend stringBuilder& operator<< (stringBuilder &sb, LocString const &loc)
+  friend sm_stringBuilder& operator<< (sm_stringBuilder &sb, LocString const &loc)
     { return sb << loc.str; }
   StringRef strref() const { return str; }
   operator StringRef () const { return str; }
   char operator [] (int index) const { return str[index]; }
-  bool equals(char const *other) const;    // string comparison
+  bool equals(char const *other) const;    // sm_string comparison
   int length() const { return strlen(str); }
 
   // experimenting with allowing 'str' to be null, which is convenient
-  // when the string table isn't available
+  // when the sm_string table isn't available
   bool isNull() const { return str == NULL; }
   bool isNonNull() const { return !isNull(); }
   
   bool validLoc() const { return loc != SL_UNKNOWN; }
 };
 
-// yields simply the string, no location info
-string toString(LocString const &s);
+// yields simply the sm_string, no location info
+sm_string toString(LocString const &s);
 
 
-// useful for constructing literal strings in source code
+// useful for constructing literal sm_strings in source code
 #define LITERAL_LOCSTRING(str)                                   \
   LocString(HERE_SOURCELOC, str)
 
@@ -2289,7 +2324,7 @@ extern SilentReportError silentReportError;
 @h=tangler('elk/ast_strtable.h')
 @select(h)
 // strtable.h            see license.txt for copyright and terms of use
-// implements a collection of immutable strings with unique representatives
+// implements a collection of immutable sm_strings with unique representatives
 
 #ifndef STRTABLE_H
 #define STRTABLE_H
@@ -2299,17 +2334,17 @@ extern SilentReportError silentReportError;
 // fwd
 class Flatten;
 
-// global string table for use during flattening/unflattening;
+// global sm_string table for use during flattening/unflattening;
 // it's up to clients to manage this ptr, as this module doesn't
 // do anything besides define it into existence
 // (this isn't the ideal solution..)
 extern class StringTable *flattenStrTable;
 
 
-// the type of references to strings in a string table; the pointer
+// the type of references to sm_strings in a sm_string table; the pointer
 // can be used directly in equality comparisons, because several calls
 // to 'add' return the same pointer; and it points to the represented
-// string (null-terminated), so it can be printed directly, etc.
+// sm_string (null-terminated), so it can be printed directly, etc.
 typedef char const *StringRef;
 
 
@@ -2318,14 +2353,14 @@ private:    // types
   // constants
   enum {
     rackSize = 16000,      // size of one rack
-    longThreshold = 1000,  // minimum length of a "long" string
+    longThreshold = 1000,  // minimum length of a "long" sm_string
   };
 
-  // some of the strings stored in the table
+  // some of the sm_strings stored in the table
   struct Rack {
     Rack *next;            // (owner) next rack, if any; for deallocation
     int usedBytes;         // # of bytes of 'data' that are used
-    char data[rackSize];   // data where strings are stored
+    char data[rackSize];   // data where sm_strings are stored
 
   public:
     Rack(Rack *n) : next(n), usedBytes(0) {}
@@ -2333,26 +2368,26 @@ private:    // types
     char *nextByte() { return data + usedBytes; }
   };
 
-  // stores long strings
+  // stores long sm_strings
   struct LongString {
-    LongString *next;      // (owner) next long string
-    char *data;            // (owner) string data, any length (null terminated)
+    LongString *next;      // (owner) next long sm_string
+    char *data;            // (owner) sm_string data, any length (null terminated)
 
   public:
     LongString(LongString *n, char *d) : next(n), data(d) {}
   };
 
 private:    // data
-  // hash table mapping strings to pointers into one
-  // of the string racks
+  // hash table mapping sm_strings to pointers into one
+  // of the sm_string racks
   StringHash hash;
 
   // linked list of racks; only walked at dealloc time; we add new
-  // strings to the first rack, and prepend a new one if necessary;
+  // sm_strings to the first rack, and prepend a new one if necessary;
   // 'racks' is never null
   Rack *racks;
 
-  // similar for long strings
+  // similar for long sm_strings
   LongString *longStrings;
 
 private:    // funcs
@@ -2373,7 +2408,7 @@ public:     // funcs
 
   // add 'src' to the table, if it isn't already there; return a
   // unique representative, such that multiple calls to 'add' with
-  // the same string contents will always yield the same value
+  // the same sm_string contents will always yield the same value
   StringRef add(char const *src);
 
   // some syntactic sugar
@@ -2383,7 +2418,7 @@ public:     // funcs
   // return NULL
   StringRef get(char const *src) const;
 
-  // similar functions for strings with specified lengths
+  // similar functions for sm_strings with specified lengths
   // this doesn't work because the underlying hash table interface needs null terminators..
   //StringRef add(char const *src, int len);
   //StringRef get(char const *src, int len) const;
@@ -2534,7 +2569,7 @@ void TF_option::debugPrint(ostream &os, int indent, char const *subtreeName) con
   ToplevelForm::debugPrint(os, indent, subtreeName);
 
   PRINT_STRING(name);
-  PRINT_LIST(string, args);
+  PRINT_LIST(sm_string, args);
 }
 
 TF_option *TF_option::clone() const
@@ -2562,7 +2597,7 @@ void TF_enum::debugPrint(ostream &os, int indent, char const *subtreeName) const
   ToplevelForm::debugPrint(os, indent, subtreeName);
 
   PRINT_STRING(name);
-  PRINT_LIST(string, enumerators);
+  PRINT_LIST(sm_string, enumerators);
 }
 
 TF_enum *TF_enum::clone() const
@@ -2620,7 +2655,7 @@ void AccessMod::debugPrint(ostream &os, int indent, char const *subtreeName) con
   PRINT_HEADER(subtreeName, AccessMod);
 
   PRINT_GENERIC(acc);
-  PRINT_LIST(string, mods);
+  PRINT_LIST(sm_string, mods);
 }
 
 AccessMod *AccessMod::clone() const
@@ -2759,7 +2794,7 @@ BaseClass *BaseClass::clone() const
 
 #include "sm_strutil.h"
 
-string toString(AccessCtl acc)
+sm_string toString(AccessCtl acc)
 {
   char const *arr[] = {
     "public",
@@ -2771,12 +2806,12 @@ string toString(AccessCtl acc)
   };
   STATIC_ASSERT(TABLESIZE(arr) == NUM_ACCESSCTLS);
   xassert((unsigned)acc < NUM_ACCESSCTLS);
-  return string(arr[acc]);
+  return sm_string(arr[acc]);
 }
 
-string ASTClass::classKindName() const
+sm_string ASTClass::classKindName() const
 {
-  string ret = stringToupper(name);
+  sm_string ret = sm_stringToupper(name);
   if (ret == name) {
     // this simplemindedly avoids collisions with itself, and I think
     // it even avoids collisions with other classes, since if they would
@@ -2789,7 +2824,7 @@ string ASTClass::classKindName() const
 
 bool AccessMod::hasMod(char const *mod) const
 {
-  FOREACH_ASTLIST(string, mods, iter) {
+  FOREACH_ASTLIST(sm_string, mods, iter) {
     if (iter.data()->equals(mod)) {
       return true;
     }
@@ -2817,7 +2852,7 @@ ostream &ind(ostream &os, int indent)
 }
 
 
-void debugPrintStr(string const &s, char const *name,
+void debugPrintStr(sm_string const &s, char const *name,
                    ostream &os, int indent)
 {
   ind(os, indent) << name << " = " << quoted(s) << "\n";
@@ -2842,7 +2877,7 @@ void debugPrintStringList(ASTList<STR> const &list, char const *name,
 }
 
 
-void debugPrintList(ASTList<string> const &list, char const *name,
+void debugPrintList(ASTList<sm_string> const &list, char const *name,
                     ostream &os, int indent)
 {
   debugPrintStringList(list, name, os, indent);
@@ -2856,12 +2891,12 @@ void debugPrintList(ASTList<LocString> const &list, char const *name,
 
 
 // ----------- xmlPrint helpers -----------------------
-void xmlPrintStr(string const &s, char const *name,
+void xmlPrintStr(sm_string const &s, char const *name,
                  ostream &os, int indent)
 {
-  ind(os, indent) << "<member type=string name = \"" << name << "\">\n";
+  ind(os, indent) << "<member type=sm_string name = \"" << name << "\">\n";
   // dsw: quoted might add another layer of quotes.
-  ind(os, indent+2) << "<value type=string val=\"" << quoted(s) << "\" />\n";
+  ind(os, indent+2) << "<value type=sm_string val=\"" << quoted(s) << "\" />\n";
   ind(os, indent) << "</member>\n";
 }
 
@@ -2870,18 +2905,18 @@ template <class STR>
 void xmlPrintStringList(ASTList<STR> const &list, char const *name,
                         ostream &os, int indent)
 {
-  ind(os, indent) << "<member type=stringList name = \"" << name << "\">\n";
+  ind(os, indent) << "<member type=sm_stringList name = \"" << name << "\">\n";
   {
     FOREACH_ASTLIST(STR, list, iter) {
       // dsw: quoted might add another layer of quotes.
-      ind(os, indent+2) << "<object type=string val=\"" << quoted(*( iter.data() )) << "\" />\n";
+      ind(os, indent+2) << "<object type=sm_string val=\"" << quoted(*( iter.data() )) << "\" />\n";
     }
   }
   ind(os, indent) << "</member>\n";
 }
 
 
-void xmlPrintList(ASTList<string> const &list, char const *name,
+void xmlPrintList(ASTList<sm_string> const &list, char const *name,
                   ostream &os, int indent)
 {
   xmlPrintStringList(list, name, os, indent);
@@ -2945,7 +2980,7 @@ void CCSubstrate::handle(char const *str, int len, char finalDelim)
           case ')':
           case ']':
             if (nesting == 0) {
-              err->reportError(stringc
+              err->reportError(sm_stringc
                 << "unexpected closing delimiter `" << *str
                 << "' -- probably due to missing `" << finalDelim << "'");
             }
@@ -2979,7 +3014,7 @@ void CCSubstrate::handle(char const *str, int len, char finalDelim)
             backslash = true;
           }
           else if (*str == '\n') {
-            err->reportError("unterminated string or char literal");
+            err->reportError("unterminated sm_string or char literal");
           }
         }
         else {
@@ -3035,7 +3070,7 @@ bool CCSubstrate::zeroNesting() const
 }
 
 
-string CCSubstrate::getFuncBody() const
+sm_string CCSubstrate::getFuncBody() const
 {
   if (isDeclaration) {
     // I used to be appending ';' here, but now I need the flexibility to
@@ -3044,7 +3079,7 @@ string CCSubstrate::getFuncBody() const
     return text;
   }
   else if (exprOnly) {
-    return stringc << "return " << text << ";";
+    return sm_stringc << "return " << text << ";";
   }
   else {
     return text;
@@ -3052,7 +3087,7 @@ string CCSubstrate::getFuncBody() const
 }
 
 
-string CCSubstrate::getDeclName() const
+sm_string CCSubstrate::getDeclName() const
 {
   // go with the rather inelegant heuristic that the word
   // just before the first '(' is the function's name
@@ -3083,7 +3118,7 @@ string CCSubstrate::getDeclName() const
   p++;    // move back to most recent legal char
   
   // done
-  return string(p, nameEnd-p);
+  return sm_string(p, nameEnd-p);
 }
 
 
@@ -3132,7 +3167,7 @@ void Test::test(char const *src, CC::State state, int nesting, bool flag)
          cc.nesting == nesting &&
          (state==CC::ST_C_COMMENT? cc.star==flag :
                                    cc.backslash==flag) )) {
-    xfailure(stringc << "failed on src: " << src);
+    xfailure(sm_stringc << "failed on src: " << src);
   }
 }
 
@@ -3147,7 +3182,7 @@ void Test::str(char const *src, int nesting, bool bs)
   test(src, CC::ST_STRING, nesting, bs);
 
   // repeat the test with single-tick
-  string another = replace(src, "\"", "\'");
+  sm_string another = replace(src, "\"", "\'");
   test(another, CC::ST_CHAR, nesting, bs);
 }
 
@@ -3358,7 +3393,7 @@ GrammarLexer::GrammarLexer(isEmbedTok test, StringTable &strtbl,
     prevState(0),       // same as INITIAL, but this value isn't used
     prevToken(0),       // hack..
     integerLiteral(0),
-    stringLiteral(""),
+    sm_stringLiteral(""),
     includeFileName(""),
     strtable(strtbl),
     errors(0)
@@ -3413,12 +3448,12 @@ int GrammarLexer::yylexInc()
 
   // include processing
   if (code == TOK_INCLUDE) {
-    string fname = includeFileName;
+    sm_string fname = includeFileName;
 
     // 'in' will be deleted in ~GrammarLexer
     ifstream *in = new ifstream(fname);
     if (!*in) {
-      err(stringc << "unable to open include file `" << fname << "'");
+      err(sm_stringc << "unable to open include file `" << fname << "'");
     }
     else {
       recursivelyProcess(fname, in);
@@ -3492,7 +3527,7 @@ StringRef GrammarLexer::curDeclName() const
 }
 
 
-string GrammarLexer::curLocStr() const
+sm_string GrammarLexer::curLocStr() const
 {
   return toString(curLoc());
 }
@@ -3523,18 +3558,18 @@ void GrammarLexer::printWarning(SourceLoc loc, char const *msg)
 
 void GrammarLexer::errorUnterminatedComment()
 {
-  err(stringc << "unterminated comment, beginning on line " //<< commentStartLine);
+  err(sm_stringc << "unterminated comment, beginning on line " //<< commentStartLine);
               << sourceLocManager->getLine(tokenStartLoc));
 }
 
 void GrammarLexer::errorMalformedInclude()
 {
-  err(stringc << "malformed include");
+  err(sm_stringc << "malformed include");
 }
 
 void GrammarLexer::errorIllegalCharacter(char ch)
 {
-  err(stringc << "illegal character: `" << ch << "'");
+  err(sm_stringc << "illegal character: `" << ch << "'");
 }
 
 
@@ -3647,7 +3682,7 @@ int main(int argc)
 
 LocString::LocString()
   : loc(SL_UNKNOWN),
-    str(NULL)           // problem with "" is we don't have the string table here..
+    str(NULL)           // problem with "" is we don't have the sm_string table here..
 {}
 
 LocString::LocString(LocString const &obj)
@@ -3702,9 +3737,9 @@ bool LocString::equals(char const *other) const
   }
 }
 
-string toString(LocString const &s)
+sm_string toString(LocString const &s)
 {
-  return string(s.str);
+  return sm_string(s.str);
 }
 @h=tangler('elk/ast_reporterr.cpp')
 @select(h)
@@ -3803,13 +3838,13 @@ StringRef StringTable::add(char const *src)
 
   int len = strlen(src)+1;     // include null terminator
 
-  // is it a long string?
+  // is it a long sm_string?
   if (len >= longThreshold) {
     char *d = new char[len];
     ret = d;
     memcpy(d, src, len);
 
-    // prepend a new long-string entry
+    // prepend a new long-sm_string entry
     longStrings = new LongString(longStrings, d);
   }
 
@@ -3821,7 +3856,7 @@ StringRef StringTable::add(char const *src)
       racks = new Rack(racks);     // prepend new rack
     }
 
-    // add the string to the last rack
+    // add the sm_string to the last rack
     ret = racks->nextByte();
     memcpy(racks->nextByte(), src, len);
     racks->usedBytes += len;
@@ -3844,7 +3879,7 @@ StringRef StringTable::get(char const *src) const
 void StringTable::xfer(Flatten &flat, StringRef &ref)
 {
   if (flat.reading()) {
-    // read the string
+    // read the sm_string
     char *str;
     flat.xferCharString(str);
 
@@ -3852,7 +3887,7 @@ void StringTable::xfer(Flatten &flat, StringRef &ref)
       // add to table
       ref = add(str);
 
-      // delete string's storage
+      // delete sm_string's storage
       delete str;
     }
     else {

@@ -3180,6 +3180,181 @@ var i = begin m; until i == end m do
   print k; print " -> "; print vl; endl; ++i;
 done;
 
+@head(1,"GLR parsing")
+Felix contains a builtin parser generator. This is roughly
+like a builtin yacc or bison facility, but it differs in
+a significant way which makes it vastly more usable.
+@p()
+Yacc traditionally supports only a very specialised
+subset of grammars -- LALR1 with some weak static ambiguity
+resolution strategies.
+@p()
+The Felix system is based on Scott McPeaks Elkhound,
+which is a Generalised LR, or GLR, parser. This system
+support all grammars, whilst parsing SLR grammars 
+just as efficiently as Yacc (namely, in linear space
+and time).
+@p()
+GLR handles ambiguity by spawning multiple concurrent
+threads for all alternatives wherever the SLR(1) 
+prediction is inadequate. These threads process the
+token stream sychronously, so there is never any backtracking.
+Instead, alternatives which would be tried in sequence
+by a backtracking algorithm are all tried at once.
+@p()
+Consequently, GLR can eat up exponentially large
+amounts of memory, and finally return all possible
+parse trees.
+@p()
+In practice, this doesn't happen. First, one of the threads
+can reach an impasse where it can't handle the next
+token, and it is automatically dropped as an alternative,
+in the same way a failure in a backtracking algorithm
+drops the current parse -- however unlike backtracking,
+that's the end of it: the viable alternatives are
+already being parsed in parallel.
+@p()
+For many nonterminals, two alternative productions
+are encoded precisely to handle the union of
+two sets of cases. At some point during the parse then,
+one of the productions must fail on for any input
+not in the common subset of the cases. In that case,
+GLR drops the failed parse attempt automatically.
+@p()
+When the input is in the common subset, however,
+the algorithm cannot know what to do. By default,
+both parses will be continued, causing a bifurcation
+in the parse of a production trying to process that
+symbol during *its* parse.
+@p()
+That divergence can only be eliminated automatically
+if the whole containing production is subsequently
+failed, in which case both subparses will be dropped.
+@p()
+For this reason, at the end of the parsing of a
+a non-terminal, the client has an oppotunity to
+pick between the parses.
+
+@head(2,"top level parser")
+@select(tangler(tdir+'tut310.flx'))
+include "std";
+ 
+// the input string
+data := "1+2+3$";
+ 
+// a type for tokens
+union token_t =
+  | TOK_EOF
+  | TOK_PLUS
+  | TOK_INT of int
+;
+ 
+// a token stream generator
+var i = 0;
+fun get_token():token_t =
+{
+  ch := data.[i to i+1];
+  ++i;
+  tok :=
+    match ch with
+    | "$" => TOK_EOF
+    | "+" => TOK_PLUS
+    | "1" => TOK_INT 1
+    | "2" => TOK_INT 2
+    | "3" => TOK_INT 3
+    endmatch
+  ;
+  return tok;
+}
+ 
+// a type for expression terms
+union expr_t =
+  | Integer of int
+;
+ 
+// a grammar for expressions
+nonterm expr : expr_t =
+| xx:expr TOK_PLUS y:TOK_INT =>
+  match xx with
+  | Integer ?i => Integer (i+y)
+  endmatch
+ 
+| y:TOK_INT => Integer y
+;
+ 
+// a parser for our example
+var z : 1 + int =
+  parse (the get_token) with
+  | e: expr => match e with | Integer ?i => i endmatch
+  endmatch
+;
+ 
+// print the result
+match z with
+| case 1 => { print "Error"; }
+| case 2 (?i) => { print i; }
+endmatch;
+endl;
+
+@head(2,"nested parser")
+@select(tangler(tdir+'tut311.flx'))
+include "std";
+
+data := "1+2+3$";
+
+union token_t = 
+  | TOK_EOF
+  | TOK_PLUS
+  | TOK_INT of int
+;
+
+var i = 0;
+
+fun get_token():token_t = 
+{
+  ch := data.[i to i+1];
+  ++i;
+  tok := 
+    match ch with
+    | "$" => TOK_EOF
+    | "+" => TOK_PLUS
+    | "1" => TOK_INT 1
+    | "2" => TOK_INT 2
+    | "3" => TOK_INT 3
+    endmatch
+  ;
+  return tok;
+}
+
+union expr_t = 
+  | Integer of int
+;
+
+nonterm expr : expr_t = 
+| xx:expr TOK_PLUS y:TOK_INT => 
+  match xx with 
+  | Integer ?i => Integer (i+y)
+  endmatch
+
+| y:TOK_INT => Integer y
+;
+
+proc try_parse() {
+  var z : 1 + int = 
+    parse (the get_token) with 
+    | e: expr => match e with | Integer ?i => i endmatch
+    endmatch
+  ;
+
+  match z with
+  | case 1 => { print "Error"; }
+  | case 2 (?i) => { print i; }
+  endmatch;
+  endl;
+}
+
+try_parse();
+
 @head(1,'Misc junk')
 Misc weird feature tests .. remove in production
 tutorial.
@@ -3200,4 +3375,5 @@ fun f(a:x):x =
   return b;
 }
 */
+
 

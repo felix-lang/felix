@@ -379,10 +379,13 @@ and expr_t =
   | `AST_method_apply of range_srcref * (id_t * expr_t)
   | `AST_dot of range_srcref * (expr_t * id_t)
   | `AST_lambda of range_srcref * (parameter_t list list * typecode_t * statement_t list)
+
   | `AST_match_ctor of range_srcref * (qualified_name_t * expr_t)
   | `AST_match_case of range_srcref * (int * expr_t)
   | `AST_ctor_arg of range_srcref * (qualified_name_t * expr_t)
   | `AST_case_arg of range_srcref * (int * expr_t)
+  | `AST_case_index of range_srcref * expr_t (* the zero origin variant index *)
+
   | `AST_letin of range_srcref * (pattern_t * expr_t * expr_t)
 
   | `AST_get_n of range_srcref * (int * expr_t) (* get n'th component of a tuple *)
@@ -792,6 +795,7 @@ and bexpr_t =
   | `BEXPR_case of int * btypecode_t
   | `BEXPR_match_case of int * tbexpr_t
   | `BEXPR_case_arg of int * tbexpr_t
+  | `BEXPR_case_index of tbexpr_t
   | `BEXPR_expr of string * btypecode_t
   ]
 
@@ -811,7 +815,7 @@ and bbdcl_t =
   | `BBDCL_procedure of  property_t list * bvs_t * bparameter_t list * bexe_t list
   | `BBDCL_val of        bvs_t * btypecode_t
   | `BBDCL_var of        bvs_t * btypecode_t
-  | `BBDCL_glr of        btypecode_t * (bproduction_t * bexe_t list)
+  | `BBDCL_glr of        bvs_t * btypecode_t * (bproduction_t * bexe_t list)
 
   (* binding structures [prolog] *)
   | `BBDCL_abs of        bvs_t * type_qual_t list * c_t * breqs_t
@@ -1086,6 +1090,7 @@ let map_tbexpr fi fe ft e = match e with
   | `BEXPR_case (i,t'),t -> `BEXPR_case (i, ft t'),ft t
   | `BEXPR_match_case (i,e),t -> `BEXPR_match_case (i, fe e),ft t
   | `BEXPR_case_arg (i,e),t -> `BEXPR_case_arg (i, fe e),ft t
+  | `BEXPR_case_index e,t -> `BEXPR_case_index (fe e),ft t
 
   | `BEXPR_literal x,t -> `BEXPR_literal x, ft t
   | `BEXPR_expr (s,t1),t2 -> `BEXPR_expr (s, ft t1), ft t2
@@ -1340,6 +1345,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_match_case (s,_)
   | `AST_ctor_arg  (s,_) 
   | `AST_case_arg  (s,_) 
+  | `AST_case_index (s,_) 
   | `AST_get_n  (s,_) 
   | `AST_coercion (s,_)
   | `AST_as (s,_)
@@ -1760,6 +1766,9 @@ and string_of_expr (e:expr_t) =
   | `AST_case_arg (_,(n,e)) ->
     "case_arg " ^ si n ^ "(" ^
     se e ^ ")"
+
+  | `AST_case_index (_,e) ->
+    "caseno (" ^ se e ^ ")"
 
   | `AST_match_ctor (_,(cn,e)) ->
     "match_ctor " ^ sqn cn ^ "(" ^
@@ -2924,8 +2933,13 @@ and string_of_bound_expression dfns e =
 
   | `BEXPR_match_case (v,e) -> 
     "(match case " ^ si v ^ ")(" ^ se e ^ ")"
+
   | `BEXPR_case_arg (v,e) ->
     "(arg of case " ^ si v ^ " of " ^ se e ^ ")"
+
+  | `BEXPR_case_index e ->
+    "caseno (" ^ se e ^ ")"
+
   | `BEXPR_expr (s,t) ->
     "code ["^string_of_btypecode dfns t^"]" ^ "'" ^ s ^ "'"
 
@@ -3299,8 +3313,8 @@ and string_of_bbdcl dfns bbdcl index =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     "}"
 
-  | `BBDCL_glr (t,(p,bexes)) ->
-    "  " ^ "nonterm " ^ name ^ " : " ^sobt t ^
+  | `BBDCL_glr (vs,t,(p,bexes)) ->
+    "  " ^ "nonterm " ^ name ^ print_bvs vs ^ " : " ^sobt t ^
     "   | " ^
     string_of_bproduction dfns p ^
     " => " ^
@@ -3470,6 +3484,7 @@ type sym_state_t =
   counter : int ref;
   varmap : typevarmap_t;
   ticache : (int, btypecode_t) Hashtbl.t;
+  glr_cache : (int, btypecode_t) Hashtbl.t;
   env_cache : (int, env_t) Hashtbl.t;
   registry : type_registry_t;
   compiler_options : felix_compiler_options_t;
@@ -3550,6 +3565,7 @@ type sym_state_t =
   counter : int ref;
   varmap : typevarmap_t;
   ticache : (int, btypecode_t) Hashtbl.t;
+  glr_cache : (int, btypecode_t) Hashtbl.t;
   env_cache : (int, env_t) Hashtbl.t;
   registry : type_registry_t;
   compiler_options : felix_compiler_options_t;
@@ -3776,9 +3792,12 @@ let rec cmp_tbexpr (a,_) (b,_) =
      fold_left2 (fun r a b -> r && ecmp a b) true ls ls'
 
   | `BEXPR_case_arg (i,e),`BEXPR_case_arg (i',e')
+
   | `BEXPR_match_case (i,e),`BEXPR_match_case (i',e')
   | `BEXPR_get_n (i,e),`BEXPR_get_n (i',e') ->
     i = i' && ecmp e e'
+
+  | `BEXPR_case_index e,`BEXPR_case_index e' -> ecmp e e'
 
   | `BEXPR_case (i,t),`BEXPR_case (i',t') -> i = i' && t = t'
   | `BEXPR_expr (s,t),`BEXPR_expr (s',t') -> s = s' && t = t'

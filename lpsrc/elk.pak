@@ -1,4 +1,39 @@
 @head(1,'elkhound')
+@h=tangler('licences/elk_licence.txt','data')
+@select(h)
+The elkhound software
+Copyright (c) 2002, Regents of the University of California
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above 
+      copyright notice, this list of conditions and the following 
+      disclaimer in the documentation and/or other materials provided 
+      with the distribution.
+
+    * Neither the name of the University of California, Berkeley nor 
+      the names of its contributors may be used to endorse or promote 
+      products derived from this software without specific prior 
+      written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 @h=tangler('elk/elk_gramexpl.cpp')
 @select(h)
 // gramexpl.cc            see license.txt for copyright and terms of use
@@ -207,7 +242,7 @@ DIGIT     [0-9]
 /* double-quote */
 DQUOTE    "\""
 
-/* character that can appear in a quoted string */
+/* character that can appear in a quoted sm_string */
 /* (I currently don't have any backslash codes, but I want to
  * leave open that possibility, so for now backslashes are illegal) */
 STRCHR    [^\n\\\"]
@@ -433,7 +468,7 @@ SLWHITE   [ \t]
   }
 
   <<EOF>> {
-    err(stringc << "hit end of file while looking for final `"
+    err(sm_stringc << "hit end of file while looking for final `"
                 << embedFinish << "'");
     yyterminate();
   }
@@ -474,7 +509,7 @@ SLWHITE   [ \t]
     char *rightq = strchr(leftq+1, '"');
     xassert(leftq && rightq);
 
-    /* extract filename string */
+    /* extract filename sm_string */
     includeFileName = addString(leftq+1, rightq-leftq-1);
 
     /* go back to normal processing */
@@ -522,10 +557,10 @@ SLWHITE   [ \t]
   return TOK_INTEGER;
 }
 
-  /* ----------- string literal ----- */
+  /* ----------- sm_string literal ----- */
 {DQUOTE}{STRCHR}*{DQUOTE} {
   TOK_UPD_COL;
-  stringLiteral = addString(yytext+1, yyleng-2);        // strip quotes
+  sm_stringLiteral = addString(yytext+1, yyleng-2);        // strip quotes
   return TOK_STRING;
 }
 
@@ -585,16 +620,16 @@ bool isGramlexEmbed(int code)
 // grab the parameter
 #define PARAM ((ParseParams*)parseParam)
 
-// return a locstring for 'str' with no location information
+// return a locsm_string for 'str' with no location information
 #define noloc(str)                                                    \
   new LocString(SL_UNKNOWN,      /* unknown location */               \
                 PARAM->lexer.strtable.add(str))
                 
-// locstring for NULL, with no location
+// locsm_string for NULL, with no location
 #define nolocNULL()                                                   \
   new LocString(SL_UNKNOWN, NULL)
 
-// return a locstring with same location info as something else
+// return a locsm_string with same location info as something else
 // (passed as a pointer to a SourceLocation)
 #define sameloc(otherLoc, str)                                        \
   new LocString(otherLoc->loc, PARAM->lexer.strtable.add(str))
@@ -662,7 +697,7 @@ AssocKind whichKind(LocString * /*owner*/ kind);
 
   ASTList<SpecFunc> *specFuncs;
   SpecFunc *specFunc;
-  ASTList<LocString> *stringList;
+  ASTList<LocString> *sm_stringList;
 
   ASTList<ProdDecl> *prodDecls;
   ProdDecl *prodDecl;
@@ -681,12 +716,12 @@ AssocKind whichKind(LocString * /*owner*/ kind);
 %type <termTypes> TermTypes
 %type <termType> TermType
 %type <precSpecs> Precedence PrecSpecs
-%type <stringList> NameOrStringList
+%type <sm_stringList> NameOrStringList
 %type <str> NameOrString
 
 %type <specFuncs> SpecFuncs
 %type <specFunc> SpecFunc
-%type <stringList> FormalsOpt Formals Subsets
+%type <sm_stringList> FormalsOpt Formals Subsets
 
 %type <prodDecls> Productions
 %type <prodDecl> Production
@@ -869,9 +904,9 @@ RHSElt: TOK_NAME                { $$ = new RH_name(sameloc($1, ""), $1); }
           /* name (only) */
       | TOK_NAME ":" TOK_NAME   { $$ = new RH_name($1, $3); }
           /* tag : name */
-      | TOK_STRING              { $$ = new RH_string(sameloc($1, ""), $1); }
+      | TOK_STRING              { $$ = new RH_sm_string(sameloc($1, ""), $1); }
           /* mnemonic terminal */
-      | TOK_NAME ":" TOK_STRING { $$ = new RH_string($1, $3); }
+      | TOK_NAME ":" TOK_STRING { $$ = new RH_sm_string($1, $3); }
           /* tagged terminal */
       | TOK_PRECEDENCE "(" NameOrString ")"
                                 { $$ = new RH_prec($3); }
@@ -901,7 +936,7 @@ AssocKind whichKind(LocString * /*owner*/ kind)
   CHECK("assoc_split", AK_SPLIT);
   #undef CHECK
 
-  xbase(stringc << kind->locString()
+  xbase(sm_stringc << kind->locString()
                 << ": invalid associativity kind: " << *kind);
 }
 @h=tangler('elk/elk_asockind.h')
@@ -927,7 +962,7 @@ enum AssocKind {
   NUM_ASSOC_KINDS
 };
 
-string toString(AssocKind k);
+sm_string toString(AssocKind k);
 
 #endif // ASOCKIND_H
 @h=tangler('elk/elk_cyctimer.h')
@@ -947,7 +982,7 @@ public:
   
 public:
   CycleTimer();            // starts timer
-  string elapsed() const;  // formats elapsed time as "NN ms, NN_NNNNNN cycles"
+  sm_string elapsed() const;  // formats elapsed time as "NN ms, NN_NNNNNN cycles"
 };
 
 #endif // CYCTIMER_H
@@ -963,32 +998,32 @@ public:
 #include "sm_str.h"
 #include "sm_srcloc.h"
 
-class EmitCode : public stringBuilder {
+class EmitCode : public sm_stringBuilder {
 private:     // data
   ofstream os;         // stream to write to
-  string fname;        // filename for emitting #line
+  sm_string fname;        // filename for emitting #line
   int line;            // current line number
 
 public:      // funcs
   EmitCode(char const *fname);
   ~EmitCode();
 
-  string const &getFname() const { return fname; }
+  sm_string const &getFname() const { return fname; }
 
   // get current line number; flushes internally
   int getLine();
 
-  // flush data in stringBuffer to 'os'
+  // flush data in sm_stringBuffer to 'os'
   void flush();
 };
 
 
 // return a #line directive for the given location
-string lineDirective(SourceLoc loc);  
+sm_string lineDirective(SourceLoc loc);  
 
 // emit a #line directive to restore reporting to the
 // EmitCode file itself (the 'sb' argument must be an EmitFile object)
-stringBuilder &restoreLine(stringBuilder &sb);
+sm_stringBuilder &restoreLine(sm_stringBuilder &sb);
 
 
 #endif // EMITCODE_H
@@ -1831,7 +1866,7 @@ public:
 
   // ---- debugging trace ----
   // these are computed during GLR::GLR since the profiler reports
-  // there is significant expense to computing the debug strings
+  // there is significant expense to computing the debug sm_strings
   // (that are then usually not printed)
   bool trParse;                             // tracingSys("parse")
   ostream &trsParse;                        // trace("parse")
@@ -1889,9 +1924,9 @@ private:    // funcs
 
   void configCheck(char const *option, bool core, bool table);
 
-  string stackSummary() const;
-  void nodeSummary(stringBuilder &sb, StackNode const *node) const;
-  void innerStackSummary(stringBuilder &sb,
+  sm_string stackSummary() const;
+  void nodeSummary(sm_stringBuilder &sb, StackNode const *node) const;
+  void innerStackSummary(sm_stringBuilder &sb,
                          SObjList<StackNode const> &printed,
                          StackNode const *node) const;
 
@@ -1950,7 +1985,7 @@ class GrammarAnalysis;
 
 // ---------------- DottedProduction --------------------
 // a production, with an indicator that says how much of this
-// production has been matched by some part of the input string
+// production has been matched by some part of the input sm_string
 // (exactly which part of the input depends on where this appears
 // in the algorithm's data structures)
 class DottedProduction {
@@ -1971,7 +2006,7 @@ public:     // data
   TerminalSet firstSet;
   
   // also computed by computeDProdFirsts, this is true if the
-  // sentential form can derive epsilon (the empty string)
+  // sentential form can derive epsilon (the empty sm_string)
   bool canDeriveEmpty;
 
   // during item set closure, I need a way to map from dotted prods to
@@ -2525,8 +2560,8 @@ public:     // funcs
   bool followIncludes(Nonterminal const *NT, Terminal const *term) const;
 
   // ---- sample inputs and contexts ----
-  string sampleInput(ItemSet const *state) const;
-  string leftContextString(ItemSet const *state) const;
+  sm_string sampleInput(ItemSet const *state) const;
+  sm_string leftContextString(ItemSet const *state) const;
   
   // ---- moved out of private ----
   void itemSetClosure(ItemSet &itemSet);
@@ -2565,7 +2600,7 @@ class SpecFunc;
 class ProdDecl;
 class RHSElt;
 class RH_name;
-class RH_string;
+class RH_sm_string;
 class RH_prec;
 
 
@@ -2851,7 +2886,7 @@ public:      // funcs
   char const *kindName() const { return kindNames[kind()]; }
 
   DECL_AST_DOWNCASTS(RH_name, RH_NAME)
-  DECL_AST_DOWNCASTS(RH_string, RH_STRING)
+  DECL_AST_DOWNCASTS(RH_sm_string, RH_STRING)
   DECL_AST_DOWNCASTS(RH_prec, RH_PREC)
 
   virtual RHSElt *clone() const=0;
@@ -2879,22 +2914,22 @@ public:      // funcs
 
 };
 
-class RH_string : public RHSElt {
+class RH_sm_string : public RHSElt {
 public:      // data
   LocString tag;
   LocString str;
 
 public:      // funcs
-  RH_string(LocString *_tag, LocString *_str) : RHSElt(), tag(_tag), str(_str) {
+  RH_sm_string(LocString *_tag, LocString *_str) : RHSElt(), tag(_tag), str(_str) {
   }
-  virtual ~RH_string();
+  virtual ~RH_sm_string();
 
   virtual Kind kind() const { return RH_STRING; }
   enum { TYPE_TAG = RH_STRING };
 
   virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
 
-  virtual RH_string *clone() const;
+  virtual RH_sm_string *clone() const;
 
 };
 
@@ -3126,11 +3161,11 @@ bool Terminal::anyDDM() const
 }
 
 
-string Terminal::toString(bool quoteAliases) const
+sm_string Terminal::toString(bool quoteAliases) const
 {
   if (alias.length() > 0) {
     if (quoteAliases) {
-      return stringc << "\"" << ::toString(alias) << "\"";
+      return sm_stringc << "\"" << ::toString(alias) << "\"";
     }
     else {
       return ::toString(alias);
@@ -3550,7 +3585,7 @@ void Production::computeDerived()
 
 
 // basically strcmp but without the segfaults when s1 or s2
-// is null; return true if strings are equal
+// is null; return true if sm_strings are equal
 // update: now that they're StringRef, simple "==" suffices
 bool tagCompare(StringRef s1, StringRef s2)
 {
@@ -3575,25 +3610,25 @@ int Production::findTag(StringRef tag) const
 
 
 // assemble a possibly tagged name for printing
-string taggedName(char const *name, char const *tag)
+sm_string taggedName(char const *name, char const *tag)
 {
   if (tag == NULL || tag[0] == 0) {
-    return string(name);
+    return sm_string(name);
   }
   else {
-    return stringb(tag << ":" << name);
+    return sm_stringb(tag << ":" << name);
   }
 }
 
 
-string Production::symbolTag(int index) const
+sm_string Production::symbolTag(int index) const
 {
   // no longer have tags for LHS
   xassert(index != 0);
 
   // find index in RHS list
   index--;
-  return string(right.nthC(index)->tag);
+  return sm_string(right.nthC(index)->tag);
 }
 
 
@@ -3625,10 +3660,10 @@ void Production::print(ostream &os) const
 }
 
 
-string Production::toString(bool printType, bool printIndex) const
+sm_string Production::toString(bool printType, bool printIndex) const
 {
   // LHS "->" RHS
-  stringBuilder sb;
+  sm_stringBuilder sb;
   if (printIndex) {
     sb << "[" << prodIndex << "] ";
   }
@@ -3647,9 +3682,9 @@ string Production::toString(bool printType, bool printIndex) const
 }
 
 
-string Production::rhsString(bool printTags, bool quoteAliases) const
+sm_string Production::rhsString(bool printTags, bool quoteAliases) const
 {
-  stringBuilder sb;
+  sm_stringBuilder sb;
 
   if (right.isNotEmpty()) {
     // print the RHS symbols
@@ -3661,7 +3696,7 @@ string Production::rhsString(bool printTags, bool quoteAliases) const
         sb << " ";
       }
 
-      string symName;
+      sm_string symName;
       if (elt.sym->isNonterminal()) {
         symName = elt.sym->name;
       }
@@ -3689,9 +3724,9 @@ string Production::rhsString(bool printTags, bool quoteAliases) const
 }
 
 
-string Production::toStringMore(bool printCode) const
+sm_string Production::toStringMore(bool printCode) const
 {
-  stringBuilder sb;
+  sm_stringBuilder sb;
   sb << toString();
 
   if (printCode && !action.isNull()) {
@@ -3875,13 +3910,13 @@ void Grammar::checkWellFormed() const
 
 
 // syntax for identifying tokens in Bison output
-string bisonTokenName(Terminal const *t)
+sm_string bisonTokenName(Terminal const *t)
 {
   // this worked with older versions of Bison
-  //return stringc << "\"" << t->name << "\"";
+  //return sm_stringc << "\"" << t->name << "\"";
 
   // but the newer ones don't like quoted terminal names..
-  return string(t->name.str);
+  return sm_string(t->name.str);
 }
 
 // print the grammar in a form that Bison likes
@@ -4120,9 +4155,9 @@ int Grammar::getProductionIndex(Production const *prod) const
 }
 
 
-string symbolSequenceToString(SymbolList const &list)
+sm_string symbolSequenceToString(SymbolList const &list)
 {
-  stringBuilder sb;   // collects output
+  sm_stringBuilder sb;   // collects output
 
   bool first = true;
   SFOREACH_SYMBOL(list, sym) {
@@ -4143,7 +4178,7 @@ string symbolSequenceToString(SymbolList const &list)
 }
 
 
-string terminalSequenceToString(TerminalList const &list)
+sm_string terminalSequenceToString(TerminalList const &list)
 {
   // this works because access is read-only
   return symbolSequenceToString(reinterpret_cast<SymbolList const&>(list));
@@ -4229,7 +4264,7 @@ typedef LocString LiteralCode;
 
 
 // everywhere in the Grammar specification we have a StringRef, it
-// refers to this string table
+// refers to this sm_string table
 extern StringTable grammarStringTable;
 
 
@@ -4302,7 +4337,7 @@ public:      // funcs
   // true if any of the handlers were specified
   virtual bool anyDDM() const;
 
-  virtual string toString() const { return string(name); }
+  virtual sm_string toString() const { return sm_string(name); }
 };
 
 // I have several needs for serf lists of symbols, so let's use this for now
@@ -4316,7 +4351,7 @@ typedef SObjListMutator<Symbol> SymbolListMutator;
 #define SMUTATE_EACH_SYMBOL(list, iter) SMUTATE_EACH_OBJLIST(Symbol, list, iter)
 
 // format: "s1 s2 s3"
-string symbolSequenceToString(SymbolList const &list);
+sm_string symbolSequenceToString(SymbolList const &list);
 
 
 // ---------------- Terminal --------------------
@@ -4375,7 +4410,7 @@ public:     // funcs
   virtual bool anyDDM() const;
 
   // return alias if defined, name otherwise
-  virtual string toString(bool quoteAliases = false) const;
+  virtual sm_string toString(bool quoteAliases = false) const;
 };
 
 typedef SObjList<Terminal> TerminalList;
@@ -4391,7 +4426,7 @@ inline ObjList<Symbol> const &toObjList(ObjList<Terminal> const &list)
   { return reinterpret_cast< ObjList<Symbol>const& >(list); }
 
 // format: "t1 t2 t3"
-string terminalSequenceToString(TerminalList const &list);
+sm_string terminalSequenceToString(TerminalList const &list);
 
 
 // ----------------- TerminalSet -------------------
@@ -4485,8 +4520,8 @@ public:     // funcs
 public:     // data
   int ntIndex;           // nonterminal index; see Grammar::computeWhatCanDeriveWhat
   bool cyclic;           // true if this can derive itself in 1 or more steps
-  TerminalSet first;     // set of terminals that can be start of a string derived from 'this'
-  TerminalSet follow;    // set of terminals that can follow a string derived from 'this'
+  TerminalSet first;     // set of terminals that can be start of a sm_string derived from 'this'
+  TerminalSet follow;    // set of terminals that can follow a sm_string derived from 'this'
   Nonterminal *superset; // inverse of 'subsets'
 };
 
@@ -4573,7 +4608,7 @@ public:     // funcs
 
   // given an index as returned by 'findTaggedSymbol', translate that
   // back into a tag
-  string symbolTag(int symbolIndex) const;
+  sm_string symbolTag(int symbolIndex) const;
 
   // or translate a symbol index into a symbol
   Symbol const *symbolByIndexC(int symbolIndex) const;
@@ -4588,17 +4623,17 @@ public:     // funcs
   #endif // 0
 
   // print 'A -> B c D' (no newline)
-  string toString(bool printType = true, bool printIndex = true) const;
+  sm_string toString(bool printType = true, bool printIndex = true) const;
 
   // this one prints 'B c D' for above example rule
-  string rhsString(bool printTags = true, bool quoteAliases = false) const;
+  sm_string rhsString(bool printTags = true, bool quoteAliases = false) const;
 
   void print(ostream &os) const;
   OSTREAM_OPERATOR(Production)
 
   // print entire input syntax, with newlines, e.g.
   //   A -> B c D { return foo; }
-  string toStringMore(bool printCode) const;
+  sm_string toStringMore(bool printCode) const;
 
 // ------ annotation ------
 private:    // data
@@ -4632,7 +4667,7 @@ public:     // data
   ObjList<Production> productions;      // (owner list)
   Nonterminal *startSymbol;             // (serf) a particular nonterminal
 
-  // the special terminal for the empty string; does not appear in the
+  // the special terminal for the empty sm_string; does not appear in the
   // list of nonterminals or terminals for a grammar, but can be
   // referenced by productions, etc.; the decision to explicitly have
   // such a symbol, instead of letting it always be implicit, is
@@ -4657,7 +4692,7 @@ public:     // data
 
   // ---- declarative options ----
   // name of the target language; nominally "C++"
-  string targetLang;
+  sm_string targetLang;
 
   // when true, the default dup/del is what's expected for a
   // garbage-collected system: dup() is the identity function,
@@ -4893,10 +4928,10 @@ public:    // data
   LocString failToken;
 
   // what is wrong
-  string message;
+  sm_string message;
 
 private:   // funcs
-  static string constructMsg(LocString const &tok, char const *msg);
+  static sm_string constructMsg(LocString const &tok, char const *msg);
 
 public:    // funcs
   XASTParse(LocString const &tok, char const *msg);
@@ -4927,7 +4962,7 @@ typedef union YYSTYPE {
 
   ASTList<SpecFunc> *specFuncs;
   SpecFunc *specFunc;
-  ASTList<LocString> *stringList;
+  ASTList<LocString> *sm_stringList;
 
   ASTList<ProdDecl> *prodDecls;
   ProdDecl *prodDecl;
@@ -5038,13 +5073,13 @@ public:     // funcs
   // then the 'type' field above might have been changed by the
   // parser, in which case this function should ideally print
   // a description which takes the new type into account
-  virtual string tokenDesc() const=0;
+  virtual sm_string tokenDesc() const=0;
 
   // describe a token kind; this is different from tokenDesc(), since
   // it need not correspond to the token kind that was just yielded,
   // and hence any related lexeme data cannot be assumed to be
   // available; this is used during error diagnosis
-  virtual string tokenKindDesc(int kind) const=0;
+  virtual sm_string tokenKindDesc(int kind) const=0;
 };
 
 #endif // LEXERINT_H
@@ -5065,7 +5100,7 @@ class MLSubstrate : public EmbeddedLang {
 private:
   enum State {
     ST_NORMAL,       // normal text
-    ST_STRING,       // inside a string literal
+    ST_STRING,       // inside a sm_string literal
     ST_CHAR,         // inside a char literal
     ST_COMMENT,      // inside a comment
     NUM_STATES
@@ -5086,8 +5121,8 @@ public:
   virtual void reset(int initNest = 0);
   virtual void handle(char const *str, int len, char finalDelim);
   virtual bool zeroNesting() const;
-  virtual string getFuncBody() const;
-  virtual string getDeclName() const;
+  virtual sm_string getFuncBody() const;
+  virtual sm_string getDeclName() const;
 };
 
 #endif // MLSSTR_H
@@ -5718,8 +5753,8 @@ public:
   virtual NextTokenFunc getTokenFunc() const
     { return &ParseTreeLexer::nextToken; }
 
-  virtual string tokenDesc() const;
-  virtual string tokenKindDesc(int kind) const;
+  virtual sm_string tokenDesc() const;
+  virtual sm_string tokenKindDesc(int kind) const;
 };
 
 
@@ -6059,8 +6094,8 @@ public:
 
   // descriptions of symbols with their semantic values; this is useful
   // for the ACTION_TRACE function of the parser
-  virtual string terminalDescription(int termId, SemanticValue sval)=0;
-  virtual string nonterminalDescription(int nontermId, SemanticValue sval)=0;
+  virtual sm_string terminalDescription(int termId, SemanticValue sval)=0;
+  virtual sm_string nonterminalDescription(int nontermId, SemanticValue sval)=0;
 
   // get static names for all of the symbols
   virtual char const *terminalName(int termId)=0;
@@ -6096,8 +6131,8 @@ public:
                                                                        \
   virtual ReclassifyFunc getReclassifier();                            \
                                                                        \
-  virtual string terminalDescription(int termId, SemanticValue sval);  \
-  virtual string nonterminalDescription(int nontermId, SemanticValue sval);  \
+  virtual sm_string terminalDescription(int termId, SemanticValue sval);  \
+  virtual sm_string nonterminalDescription(int nontermId, SemanticValue sval);  \
                                                                        \
   virtual char const *terminalName(int termId);                        \
   virtual char const *nonterminalName(int termId);
@@ -6167,13 +6202,13 @@ inline T *transferOwnership(T *&ptr)
 #include "elk_asockind.h"
 #include "sm_xassert.h"
 
-string toString(AssocKind k)
+sm_string toString(AssocKind k)
 {
   static char const * const arr[NUM_ASSOC_KINDS] = {
     "AK_LEFT", "AK_RIGHT", "AK_NONASSOC"
   };
   xassert((unsigned)k < NUM_ASSOC_KINDS);
-  return string(arr[k]);
+  return sm_string(arr[k]);
 }
 @h=tangler('elk/elk_cyctimer.cpp')
 @select(h)
@@ -6198,7 +6233,7 @@ CycleTimer::CycleTimer()
 }
 
 
-string CycleTimer::elapsed() const
+sm_string CycleTimer::elapsed() const
 {
   unsigned long long cycles = getCycles_ll() - startCycles;
   unsigned long ms = getMilliseconds() - startMilliseconds;
@@ -6211,7 +6246,7 @@ string CycleTimer::elapsed() const
   sprintf(buf, "%lu ms, %llu_%06llu cycles",
                ms, cycles/1000000, cycles%1000000);
 
-  return string(buf);     // makes a copy
+  return sm_string(buf);     // makes a copy
 }
 
 
@@ -6224,21 +6259,21 @@ int main()
 {
   {
     CycleTimer timer;
-    string s = timer.elapsed();
+    sm_string s = timer.elapsed();
     printf("short time: %s\n", s.pcharc());
   }
 
   {
     CycleTimer timer;
     sleep(1);
-    string s = timer.elapsed();
+    sm_string s = timer.elapsed();
     printf("one second: %s\n", s.pcharc());
   }
   
   {
     CycleTimer timer;
     sleep(2);
-    string s = timer.elapsed();
+    sm_string s = timer.elapsed();
     printf("two seconds: %s\n", s.pcharc());
   }
 
@@ -6258,7 +6293,7 @@ int main()
 #include "sm_trace.h"
 
 EmitCode::EmitCode(char const *f)
-  : stringBuilder(),
+  : sm_stringBuilder(),
     os(f),
     fname(f),
     line(1)
@@ -6310,16 +6345,16 @@ char const *hashLine()
 
 
 // note that #line must be preceeded by a newline
-string lineDirective(SourceLoc loc)
+sm_string lineDirective(SourceLoc loc)
 {
   char const *fname;
   int line, col;
   sourceLocManager->decodeLineCol(loc, fname, line, col);
 
-  return stringc << hashLine() << line << " \"" << fname << "\"\n";
+  return sm_stringc << hashLine() << line << " \"" << fname << "\"\n";
 }
 
-stringBuilder &restoreLine(stringBuilder &sb)
+sm_stringBuilder &restoreLine(sm_stringBuilder &sb)
 {
   // little hack..
   EmitCode &os = (EmitCode&)sb;
@@ -6373,9 +6408,9 @@ void emitMLSwitchCode(Grammar const &g, EmitCode &out,
 #if 0   // not needed
 // yield the name of the inline function for this production; naming
 // design motivated by desire to make debugging easier
-string actionFuncName(Production const &prod)
+sm_string actionFuncName(Production const &prod)
 {
-  return stringc << "action" << prod.prodIndex
+  return sm_stringc << "action" << prod.prodIndex
                  << "_" << prod.left->name;
 }                    
 #endif // 0
@@ -6611,7 +6646,7 @@ void emitMLDescriptions(GrammarAnalysis const &g, EmitCode &out)
 {
   // emit a map of terminal ids to their names
   {
-    out << "let termNamesArray: string array = [|\n";
+    out << "let termNamesArray: sm_string array = [|\n";
     for (int code=0; code < g.numTerminals(); code++) {
       Terminal const *t = g.getTerminal(code);
       if (!t) {
@@ -6636,7 +6671,7 @@ void emitMLDescriptions(GrammarAnalysis const &g, EmitCode &out)
   //
   // ML: I could do something like this using Obj, but I'd rather
   // not abuse that interface unnecessarily.
-  out << "let terminalDescriptionFunc (termId:int) (sval:tSemanticValue) : string =\n"
+  out << "let terminalDescriptionFunc (termId:int) (sval:tSemanticValue) : sm_string =\n"
       << "begin\n"
       << "  termNamesArray.(termId)\n"
       << "end\n"
@@ -6646,7 +6681,7 @@ void emitMLDescriptions(GrammarAnalysis const &g, EmitCode &out)
 
   // emit a map of nonterminal ids to their names
   {
-    out << "let nontermNamesArray: string array = [|\n";
+    out << "let nontermNamesArray: sm_string array = [|\n";
     for (int code=0; code < g.numNonterminals(); code++) {
       Nonterminal const *nt = g.getNonterminal(code);
       if (!nt) {
@@ -6664,7 +6699,7 @@ void emitMLDescriptions(GrammarAnalysis const &g, EmitCode &out)
 
   // and a function to describe nonterminals also
   out << "let nonterminalDescriptionFunc (nontermId:int) (sval:tSemanticValue)\n"
-      << "  : string =\n"
+      << "  : sm_string =\n"
       << "begin\n"
       << "  nontermNamesArray.(nontermId)\n"
       << "end\n"
@@ -6673,12 +6708,12 @@ void emitMLDescriptions(GrammarAnalysis const &g, EmitCode &out)
       ;
 
   // emit functions to get access to the static maps
-  out << "let terminalNameFunc (termId:int) : string =\n"
+  out << "let terminalNameFunc (termId:int) : sm_string =\n"
       << "begin\n"
       << "  termNamesArray.(termId)\n"
       << "end\n"
       << "\n"
-      << "let nonterminalNameFunc (nontermId:int) : string =\n"
+      << "let nonterminalNameFunc (nontermId:int) : sm_string =\n"
       << "begin\n"
       << "  nontermNamesArray.(nontermId)\n"
       << "end\n"
@@ -6864,7 +6899,7 @@ void emitMLDDMInlines(Grammar const &g, EmitCode &out, EmitCode &dcl,
 
   if (sym.dupCode) {
     emitMLFuncDecl(g, out, dcl, sym.type,
-      stringc << "dup_" << sym.name
+      sm_stringc << "dup_" << sym.name
               << " (" << sym.dupParam << ": " << sym.type << ") ");
     emitMLUserCode(out, sym.dupCode);
     out << "\n";
@@ -6872,7 +6907,7 @@ void emitMLDDMInlines(Grammar const &g, EmitCode &out, EmitCode &dcl,
 
   if (sym.delCode) {
     emitMLFuncDecl(g, out, dcl, "unit",
-      stringc << "del_" << sym.name
+      sm_stringc << "del_" << sym.name
               << " (" << (sym.delParam? sym.delParam : "_")
               << ": " << sym.type << ") ");
     emitMLUserCode(out, sym.delCode);
@@ -6881,7 +6916,7 @@ void emitMLDDMInlines(Grammar const &g, EmitCode &out, EmitCode &dcl,
 
   if (nonterm && nonterm->mergeCode) {
     emitMLFuncDecl(g, out, dcl, notVoid(sym.type),
-      stringc << "merge_" << sym.name
+      sm_stringc << "merge_" << sym.name
               << " (" << nonterm->mergeParam1 << ": " << notVoid(sym.type) << ") "
               << " (" << nonterm->mergeParam2 << ": " << notVoid(sym.type) << ") ");
     emitMLUserCode(out, nonterm->mergeCode);
@@ -6890,7 +6925,7 @@ void emitMLDDMInlines(Grammar const &g, EmitCode &out, EmitCode &dcl,
 
   if (nonterm && nonterm->keepCode) {
     emitMLFuncDecl(g, out, dcl, "bool",
-      stringc << "keep_" << sym.name
+      sm_stringc << "keep_" << sym.name
               << " (" << nonterm->keepParam << ": " << sym.type << ") ");
     emitMLUserCode(out, nonterm->keepCode);
     out << "\n";
@@ -6898,7 +6933,7 @@ void emitMLDDMInlines(Grammar const &g, EmitCode &out, EmitCode &dcl,
 
   if (term && term->classifyCode) {
     emitMLFuncDecl(g, out, dcl, "int",
-      stringc << "classify_" << sym.name
+      sm_stringc << "classify_" << sym.name
               << " (" << term->classifyParam << ": " << sym.type << ") ");
     emitMLUserCode(out, term->classifyCode);
     out << "\n";
@@ -7000,13 +7035,13 @@ void emitMLTable(EmitCode &out, EltType const *table, int size, int rowLength,
     }
   }
 
-  int rowNumWidth = stringf("%d", size / rowLength /*round down*/).length();
+  int rowNumWidth = sm_stringf("%d", size / rowLength /*round down*/).length();
 
   out << "  " << tableName << " = [|           (* " << size << " elements *)";
   int row = 0;
   for (int i=0; i<size; i++) {
     if (i % rowLength == 0) {    // one row per state
-      out << stringf("\n    (*%*d*) ", rowNumWidth, row++);
+      out << sm_stringf("\n    (*%*d*) ", rowNumWidth, row++);
     }
 
     #if 0
@@ -7016,7 +7051,7 @@ void emitMLTable(EmitCode &out, EltType const *table, int size, int rowLength,
     #endif // 0
 
     if (printHex) {
-      out << stringf("0x%02X", table[i]);    // ML: not used
+      out << sm_stringf("0x%02X", table[i]);    // ML: not used
     }
     else if (sizeof(table[i]) == 1) {
       // little bit of a hack to make sure 'unsigned char' gets
@@ -7042,7 +7077,7 @@ void emitMLTable(EmitCode &out, EltType const *table, int size, int rowLength,
 
 #if 0   // not used
 // used to emit the elements of the prodInfo table
-stringBuilder& operator<< (stringBuilder &sb, ParseTables::ProdInfo const &info)
+sm_stringBuilder& operator<< (sm_stringBuilder &sb, ParseTables::ProdInfo const &info)
 {
   sb << "{" << (int)info.rhsLen << "," << (int)info.lhsIndex << "}";
   return sb;
@@ -7054,7 +7089,7 @@ template <class EltType>
 void emitMLTable2(EmitCode &out, EltType const *table, int size, int rowLength,
                   char const *typeName, char const *tableName)
 {
-  string tempName = stringc << tableName << "_static";
+  sm_string tempName = sm_stringc << tableName << "_static";
   emitMLTable(out, table, size, rowLength, typeName, tempName);
   out << "  " << tableName << " = const_cast<" << typeName << "*>("
       << tempName << ");\n\n";
@@ -7091,7 +7126,7 @@ void emitMLOffsetTable(EmitCode &out, EltType **table, EltType *base, int size,
   if (size > 0) {
     out << "  " << tableName << " = new " << typeName << " [" << size << "];\n";
 
-    emitTable(out, (int*)offsets, size, 16, "int", stringc << tableName << "_offsets");
+    emitTable(out, (int*)offsets, size, 16, "int", sm_stringc << tableName << "_offsets");
 
     // at run time, interpret the offsets table
     out << "  for (int i=0; i < " << size << "; i++) {\n"
@@ -7428,8 +7463,8 @@ enum {
 
 // ------------- front ends to user code ---------------
 // given a symbol id (terminal or nonterminal), and its associated
-// semantic value, yield a description string
-string symbolDescription(SymbolId sym, UserActions *user, 
+// semantic value, yield a description sm_string
+sm_string symbolDescription(SymbolId sym, UserActions *user, 
                          SemanticValue sval)
 {
   if (symIsTerm(sym)) {
@@ -7809,7 +7844,7 @@ GLR::GLR(UserActions *user, ParseTables *t)
 void GLR::configCheck(char const *option, bool core, bool table)
 {
   if (core != table) {
-    xfailure(stringc
+    xfailure(sm_stringc
       << "The GLR parser core was compiled with " << option
       << (core? " enabled" : " disabled")
       << ", but the parse tables generated by Elkhound have it "
@@ -8204,10 +8239,10 @@ STATICDEF bool GLR
           // optimizer and -Werror are on, because it provokes a warning
           TRSPARSE_DECL( int startStateId = parser->state; )
           
-          // if we're tracing actions, I'm going to build a string 
+          // if we're tracing actions, I'm going to build a sm_string 
           // that describes all of the RHS symbols
           ACTION( 
-            string rhsDescription("");
+            sm_string rhsDescription("");
             if (rhsLen == 0) {
               // print something anyway
               rhsDescription = " empty";
@@ -8222,7 +8257,7 @@ STATICDEF bool GLR
           //toPass.ensureIndexDoubler(rhsLen-1);
           xassertdb(rhsLen <= MAX_RHSLEN);
 
-          // we will manually string the stack nodes together onto
+          // we will manually sm_string the stack nodes together onto
           // the free list in 'stackNodePool', and 'prev' will point
           // to the head of the current list; at the end, we'll
           // install the final value of 'prev' back into
@@ -8245,7 +8280,7 @@ STATICDEF bool GLR
                 SiblingLink &sib = parser->firstSib;
                 toPass[0] = sib.sval;
                 ACTION( rhsDescription =
-                  stringc << " "
+                  sm_stringc << " "
                           << symbolDescription(parser->getSymbolC(), userAct, sib.sval)
                           << rhsDescription; )
                 SOURCELOC(
@@ -8290,7 +8325,7 @@ STATICDEF bool GLR
 
             // when tracing actions, continue building rhs desc
             ACTION( rhsDescription = 
-              stringc << " "
+              sm_stringc << " "
                       << symbolDescription(parser->getSymbolC(), userAct, sib.sval)
                       << rhsDescription; )
 
@@ -8422,7 +8457,7 @@ STATICDEF bool GLR
           #if USE_KEEP
             // see if the user wants to keep this reduction
             if (!userAct->keepNontermValue(prodInfo.lhsIndex, sval)) {
-              ACTION( string lhsDesc =
+              ACTION( sm_string lhsDesc =
                         userAct->nonterminalDescription(prodInfo.lhsIndex, sval); )
               TRSACTION("    CANCELLED " << lhsDesc);
               glr.printParseErrorMessage(newNode->state);
@@ -8527,10 +8562,10 @@ STATICDEF bool GLR
 // diagnostic/debugging function: yield sequence of
 // states represented by 'parser'; in the case of
 // ambiguity, just show one...
-string stackTraceString(StackNode *parser)
+sm_string stackTraceString(StackNode *parser)
 {
   // hmm.. what to do about cyclic stacks?
-  return string("need to think about this some more..");
+  return sm_string("need to think about this some more..");
 }
 
 
@@ -8761,7 +8796,7 @@ StackNode *GLR::findTopmostParser(StateId state)
 // graph visualization tool of some sort
 void GLR::dumpGSS(int tokenNumber) const
 {
-  FILE *dest = fopen(stringc << "gss." << tokenNumber << ".g", "w");
+  FILE *dest = fopen(sm_stringc << "gss." << tokenNumber << ".g", "w");
 
   // list of nodes we've already printed, to avoid printing any
   // node more than once
@@ -8811,10 +8846,10 @@ void GLR::dumpGSSEdge(FILE *dest, StackNode const *src,
 }
 
 
-// alternative to above: stack info in a single string
-string GLR::stackSummary() const
+// alternative to above: stack info in a single sm_string
+sm_string GLR::stackSummary() const
 {
-  stringBuilder sb;
+  sm_stringBuilder sb;
 
   // list of nodes we've already printed, to avoid printing any
   // node more than once
@@ -8829,12 +8864,12 @@ string GLR::stackSummary() const
   return sb;
 }
 
-void GLR::nodeSummary(stringBuilder &sb, StackNode const *node) const
+void GLR::nodeSummary(sm_stringBuilder &sb, StackNode const *node) const
 {
   sb << node->state << "[" << node->referenceCount << "]";
 }
 
-void GLR::innerStackSummary(stringBuilder &sb, SObjList<StackNode const> &printed,
+void GLR::innerStackSummary(sm_stringBuilder &sb, SObjList<StackNode const> &printed,
                             StackNode const *node) const
 {
   if (printed.contains(node)) {
@@ -9045,7 +9080,7 @@ void GLR::rwlProcessWorklist()
 
     // build description of rhs for tracing
     ACTION(
-      string rhsDescription("");
+      sm_string rhsDescription("");
       if (rhsLen == 0) {
         // print something anyway
         rhsDescription = " empty";
@@ -9064,7 +9099,7 @@ void GLR::rwlProcessWorklist()
 
       // continue building rhs desc
       ACTION( rhsDescription =
-        stringc << symbolDescription(path->symbols[i], userAct, sib->sval)
+        sm_stringc << symbolDescription(path->symbols[i], userAct, sib->sval)
                 << " "
                 << rhsDescription;
       )
@@ -9094,7 +9129,7 @@ void GLR::rwlProcessWorklist()
                         SOURCELOCARG( leftEdge ) );
 
     // emit tracing diagnostics for this reduction
-    ACTION( string lhsDesc =
+    ACTION( sm_string lhsDesc =
               userAct->nonterminalDescription(prodInfo.lhsIndex, sval); )
     TRSACTION("  " << lhsDesc << " ->" << rhsDescription);
 
@@ -9182,8 +9217,8 @@ SiblingLink *GLR::rwlShiftNonterminal(StackNode *leftSibling, int lhsIndex,
 
       // remember descriptions of the values before they are merged
       ACTION(
-        string leftDesc = userAct->nonterminalDescription(lhsIndex, sibLink->sval);
-        string rightDesc = userAct->nonterminalDescription(lhsIndex, sval);
+        sm_string leftDesc = userAct->nonterminalDescription(lhsIndex, sibLink->sval);
+        sm_string rightDesc = userAct->nonterminalDescription(lhsIndex, sval);
       )
 
       // call the user's code to merge, and replace what we have
@@ -9531,11 +9566,11 @@ void GLR::rwlShiftTerminals()
 // ------------------ stuff for outputting raw graphs ------------------
 #if 0   // disabled for now
 // name for graphs (can't have any spaces in the name)
-string stackNodeName(StackNode const *sn)
+sm_string stackNodeName(StackNode const *sn)
 {
   Symbol const *s = sn->getSymbolC();
   char const *symName = (s? s->name.pcharc() : "(null)");
-  return stringb(sn->stackNodeId
+  return sm_stringb(sn->stackNodeId
               << ":col="  << sn->tokenColumn
               << ",st=" << sn->state->id
               << ",sym=" << symName);
@@ -9543,9 +9578,9 @@ string stackNodeName(StackNode const *sn)
 
 // name for rules; 'rn' is the 'ruleNo'-th rule in 'sn'
 // (again, no spaces allowed)
-string reductionName(StackNode const *sn, int ruleNo, Reduction const *red)
+sm_string reductionName(StackNode const *sn, int ruleNo, Reduction const *red)
 {
-  return stringb(sn->stackNodeId << "/" << ruleNo << ":"
+  return sm_stringb(sn->stackNodeId << "/" << ruleNo << ":"
               << replace(red->production->toString(), " ", "_"));
 }                                                            
 
@@ -9563,9 +9598,9 @@ string reductionName(StackNode const *sn, int ruleNo, Reduction const *red)
 // unreadable...
 void GLR::writeParseGraph(char const *fname) const
 {
-  FILE *out = fopen(stringb("graphs/" << fname), "w");
+  FILE *out = fopen(sm_stringb("graphs/" << fname), "w");
   if (!out) {
-    xsyserror("fopen", stringb("opening file `graphs/" << fname << "'"));
+    xsyserror("fopen", sm_stringb("opening file `graphs/" << fname << "'"));
   }
 
   // header info
@@ -9577,13 +9612,13 @@ void GLR::writeParseGraph(char const *fname) const
   // for each stack node
   FOREACH_OBJLIST(StackNode, allStackNodes, stackNodeIter) {
     StackNode const *stackNode = stackNodeIter.data();
-    string myName = stackNodeName(stackNode);
+    sm_string myName = stackNodeName(stackNode);
 
     // visual delimiter
-    fputs(stringb("\n# ------ node: " << myName << " ------\n"), out);
+    fputs(sm_stringb("\n# ------ node: " << myName << " ------\n"), out);
 
     // write info for the node itself
-    fputs(stringb("n " << myName << "\n\n"), out);
+    fputs(sm_stringb("n " << myName << "\n\n"), out);
 
     // for all sibling links
     int ruleNo=0;
@@ -9591,7 +9626,7 @@ void GLR::writeParseGraph(char const *fname) const
       SiblingLink const *link = sibIter.data();
 
       // write the sibling link
-      fputs(stringb("e " << myName << " "
+      fputs(sm_stringb("e " << myName << " "
                          << stackNodeName(link->sib) << "\n"), out);
 
       // ideally, we'd attach the reduction nodes directly to the
@@ -9606,19 +9641,19 @@ void GLR::writeParseGraph(char const *fname) const
           Reduction const *red = redIter.data();
           ruleNo++;
 
-          string ruleName = reductionName(stackNode, ruleNo, red);
+          sm_string ruleName = reductionName(stackNode, ruleNo, red);
 
           // write info for the rule node
-          fputs(stringb("n " << ruleName << "\n"), out);
+          fputs(sm_stringb("n " << ruleName << "\n"), out);
 
           // put the link from the stack node to the rule node
-          fputs(stringb("e " << myName << " " << ruleName << "\n"), out);
+          fputs(sm_stringb("e " << myName << " " << ruleName << "\n"), out);
 
           // write all child links
           // ACK!  until my graph format is better, this is almost impossible
           #if 0
           SFOREACH_OBJLIST(StackNode, rule->children, child) {
-            fputs(stringb("e " << ruleName << " "
+            fputs(sm_stringb("e " << ruleName << " "
                                << stackNodeName(child.data()) << "\n"), out);
           }
           #endif // 0
@@ -9640,15 +9675,15 @@ void GLR::writeParseGraph(char const *fname) const
 
 
 // --------------------- testing ------------------------
-// read an entire file into a single string
+// read an entire file into a single sm_string
 // currenty is *not* pipe-friendly because it must seek
 // (candidate for adding to 'str' module)
-string readFileIntoString(char const *fname)
+sm_string readFileIntoString(char const *fname)
 {
   // open file
   FILE *fp = fopen(fname, "r");
   if (!fp) {
-    xsyserror("fopen", stringb("opening `" << fname << "' for reading"));
+    xsyserror("fopen", sm_stringb("opening `" << fname << "' for reading"));
   }
 
   // determine file's length
@@ -9664,7 +9699,7 @@ string readFileIntoString(char const *fname)
   }
 
   // allocate a sufficiently large buffer
-  string ret(len);
+  sm_string ret(len);
   
   // read the file into that buffer
   if (fread(ret.pchar(), 1, len, fp) < (size_t)len) {
@@ -9676,7 +9711,7 @@ string readFileIntoString(char const *fname)
     xsyserror("fclose");
   }
 
-  // return the new string
+  // return the new sm_string
   return ret;
 }
 
@@ -10923,7 +10958,7 @@ void GrammarAnalysis::computeIndexedTerms()
        !sym.isDone(); sym.adv()) {
     int index = sym.data()->termIndex;   // map: symbol to index
     if (indexedTerms[index] != NULL) {
-      xfailure(stringc << "terminal index collision at index " << index);
+      xfailure(sm_stringc << "terminal index collision at index " << index);
     }
     indexedTerms[index] = sym.data();    // map: index to symbol
   }
@@ -11100,7 +11135,7 @@ void GrammarAnalysis::computeWhatCanDeriveWhat()
            !rightSym.isDone(); rightSym.adv()) {
 
         if (rightSym.data()->sym->isTerminal()) {
-          // if prod->left derives a string containing a terminal,
+          // if prod->left derives a sm_string containing a terminal,
           // then it can't derive any nontermial alone (using this
           // production, at least) -- empty is considered a nonterminal
           break;
@@ -11128,7 +11163,7 @@ void GrammarAnalysis::computeWhatCanDeriveWhat()
             if (afterRightSym.data()->sym->isTerminal()  ||
                   // if it's a terminal, it can't derive emptyString
                 !canDeriveEmpty(&( afterRightSym.data()->sym->asNonterminalC() ))) {
-                  // this symbol can't derive empty string (or, we don't
+                  // this symbol can't derive empty sm_string (or, we don't
                   // yet know that it can), so we conclude that prod->left
                   // can't derive rightSym
               restDeriveEmpty = false;
@@ -11225,7 +11260,7 @@ void GrammarAnalysis::computeSupersets()
 
       // for now, only handle 'super' as a partial function      
       if (sub->superset != NULL) {
-        xfailure(stringc << sub->name << " has more than one superset");
+        xfailure(sm_stringc << sub->name << " has more than one superset");
       }
       sub->superset = super;
     }
@@ -13131,11 +13166,11 @@ SymbolId encodeSymbolId(Symbol const *sym)
 // --------------- sample inputs -------------------
 // yield a sequence of names of symbols (terminals and nonterminals) that
 // will lead to the given state, from the start state
-string GrammarAnalysis::leftContextString(ItemSet const *state) const
+sm_string GrammarAnalysis::leftContextString(ItemSet const *state) const
 {
   SymbolList ctx;
   leftContext(ctx, state);                // get as list
-  return symbolSequenceToString(ctx);     // convert to string
+  return symbolSequenceToString(ctx);     // convert to sm_string
 }
 
 
@@ -13187,7 +13222,7 @@ int priorityFewer(int a_dominant, int b_dominant,
 
 
 // sample input (terminals only) that can lead to a state
-string GrammarAnalysis::sampleInput(ItemSet const *state) const
+sm_string GrammarAnalysis::sampleInput(ItemSet const *state) const
 {
   // get left-context as terminals and nonterminals
   SymbolList symbols;
@@ -13196,10 +13231,10 @@ string GrammarAnalysis::sampleInput(ItemSet const *state) const
   // reduce the nonterminals to terminals
   TerminalList terminals;
   if (!rewriteAsTerminals(terminals, symbols)) {
-    return string("(failed to reduce!!)");
+    return sm_string("(failed to reduce!!)");
   }
   
-  // convert to a string
+  // convert to a sm_string
   return terminalSequenceToString(terminals);
 }
 
@@ -13509,7 +13544,7 @@ void GrammarAnalysis::addTreebuildingActions()
     verbatim.prepend(new LITERAL_LOCSTRING(extra));
   }
 
-  // get handles to the strings we want to emit
+  // get handles to the sm_strings we want to emit
   LocString param = STR("n");
   LocString dupCode = STR("return n;");    // dup is identity
   LocString delCode = STR("");             // del is no-op
@@ -13542,7 +13577,7 @@ void GrammarAnalysis::addTreebuildingActions()
     Production *p = prodIter.data();
 
     // build up the code
-    stringBuilder code;
+    sm_stringBuilder code;
     code << "return new PTreeNode(\"" << p->left->name << " -> "
          << encodeWithEscapes(p->rhsString(false /*printTags*/, 
                                            true /*quoteAliases*/))
@@ -13555,7 +13590,7 @@ void GrammarAnalysis::addTreebuildingActions()
       // connect nonterminal subtrees; drop lexemes on the floor
       if (elt->sym->isNonterminal()) {
         // use a generic tag
-        string tag = stringc << "t" << ct++;
+        sm_string tag = sm_stringc << "t" << ct++;
         elt->tag = STR(tag);
 
         code << ", " << tag;
@@ -13841,9 +13876,9 @@ void emitSwitchCode(Grammar const &g, EmitCode &out,
 
 // yield the name of the inline function for this production; naming
 // design motivated by desire to make debugging easier
-string actionFuncName(Production const &prod)
+sm_string actionFuncName(Production const &prod)
 {
-  return stringc << "action" << prod.prodIndex
+  return sm_stringc << "action" << prod.prodIndex
                  << "_" << prod.left->name;
 }
 
@@ -13857,8 +13892,8 @@ void emitActionCode(GrammarAnalysis const &g, char const *hFname,
     throw_XOpen(hFname);
   }
 
-  string latchName = replace(replace(replace(
-                       stringToupper(hFname),
+  sm_string latchName = replace(replace(replace(
+                       sm_stringToupper(hFname),
                          ".", "_"),
                          "/", "_"),
                          "-", "_");
@@ -13938,7 +13973,7 @@ void emitActionCode(GrammarAnalysis const &g, char const *hFname,
     out << "// GLR source location information is enabled\n";
   #endif
   out << "\n";
-  out << "#include \"" << hFname << "\"     // " << g.actionClassName << "\n";
+  out << "#include \"" << sm_basename(hFname).pchar() << "\"     // " << g.actionClassName << "\n";
   out << "#include \"elk_parsetables.h\" // ParseTables\n";
   out << "#include \"sm_srcloc.h\"      // SourceLoc\n";
   out << "\n";
@@ -14029,7 +14064,7 @@ char const *notVoid(char const *type)
 char const *typeString(char const *type, LocString const &tag)
 {
   if (!type) {
-    xbase(stringc << tag.locString() << ": Production tag \"" << tag
+    xbase(sm_stringc << tag.locString() << ": Production tag \"" << tag
                   << "\" on a symbol with no type.\n");
     return NULL;     // silence warning
   }
@@ -14071,10 +14106,10 @@ void emitDescriptions(GrammarAnalysis const &g, EmitCode &out)
   // use the information easily available the synthesize one;
   // I print "sval % 100000" so I get a 5-digit number, which is
   // easy for me to compare for equality without adding much clutter
-  out << "string " << g.actionClassName
+  out << "sm_string " << g.actionClassName
       << "::terminalDescription(int termId, SemanticValue sval)\n"
       << "{\n"
-      << "  return stringc << termNames[termId]\n"
+      << "  return sm_stringc << termNames[termId]\n"
       << "                 << \"(\" << (sval % 100000) << \")\";\n"
       << "}\n"
       << "\n"
@@ -14099,10 +14134,10 @@ void emitDescriptions(GrammarAnalysis const &g, EmitCode &out)
   }
 
   // and a function to describe nonterminals also
-  out << "string " << g.actionClassName
+  out << "sm_string " << g.actionClassName
       << "::nonterminalDescription(int nontermId, SemanticValue sval)\n"
       << "{\n"
-      << "  return stringc << nontermNames[nontermId]\n"
+      << "  return sm_stringc << nontermNames[nontermId]\n"
       << "                 << \"(\" << (sval % 100000) << \")\";\n"
       << "}\n"
       << "\n"
@@ -14371,14 +14406,14 @@ void emitDDMInlines(Grammar const &g, EmitCode &out, EmitCode &dcl,
 
   if (sym.dupCode) {
     emitFuncDecl(g, out, dcl, sym.type,
-      stringc << "dup_" << sym.name
+      sm_stringc << "dup_" << sym.name
               << "(" << sym.type << " " << sym.dupParam << ") ");
     emitUserCode(out, sym.dupCode);
   }
 
   if (sym.delCode) {
     emitFuncDecl(g, out, dcl, "void",
-      stringc << "del_" << sym.name
+      sm_stringc << "del_" << sym.name
               << "(" << sym.type << " "
               << (sym.delParam? sym.delParam : "") << ") ");
     emitUserCode(out, sym.delCode);
@@ -14386,7 +14421,7 @@ void emitDDMInlines(Grammar const &g, EmitCode &out, EmitCode &dcl,
 
   if (nonterm && nonterm->mergeCode) {
     emitFuncDecl(g, out, dcl, notVoid(sym.type),
-      stringc << "merge_" << sym.name
+      sm_stringc << "merge_" << sym.name
               << "(" << notVoid(sym.type) << " " << nonterm->mergeParam1
               << ", " << notVoid(sym.type) << " " << nonterm->mergeParam2 << ") ");
     emitUserCode(out, nonterm->mergeCode);
@@ -14394,14 +14429,14 @@ void emitDDMInlines(Grammar const &g, EmitCode &out, EmitCode &dcl,
 
   if (nonterm && nonterm->keepCode) {
     emitFuncDecl(g, out, dcl, "bool",
-      stringc << "keep_" << sym.name
+      sm_stringc << "keep_" << sym.name
               << "(" << sym.type << " " << nonterm->keepParam << ") ");
     emitUserCode(out, nonterm->keepCode);
   }
 
   if (term && term->classifyCode) {
     emitFuncDecl(g, out, dcl, "int",
-      stringc << "classify_" << sym.name
+      sm_stringc << "classify_" << sym.name
               << "(" << sym.type << " " << term->classifyParam << ") ");
     emitUserCode(out, term->classifyCode);
   }
@@ -14518,7 +14553,7 @@ int inner_entry(int argc, char **argv)
 
   // as long as this remains 0-length, it means to use
   // the default naming scheme
-  string prefix;
+  sm_string prefix;
 
   // true to use ML, false to use C
   bool useML = false;
@@ -14584,7 +14619,7 @@ int inner_entry(int argc, char **argv)
   SourceLocManager mgr;
 
   // parse the grammar
-  string grammarFname = argv[0];
+  sm_string grammarFname = argv[0];
   SHIFT;
   Owner<GrammarAST> ast(parseGrammarFile(grammarFname, useML));
 
@@ -14612,7 +14647,7 @@ int inner_entry(int argc, char **argv)
   }
   g.printProductions(trace("grammar") << endl);
 
-  string setsFname = stringc << prefix << ".out";
+  sm_string setsFname = sm_stringc << prefix << ".out";
   g.runAnalyses(tracingSys("lrtable")? setsFname.pcharc() : NULL);
   if (g.errors) {
     return 2;
@@ -14620,8 +14655,8 @@ int inner_entry(int argc, char **argv)
 
   if (!useML) {
     // emit some C++ code
-    string hFname = stringc << prefix << ".h";
-    string ccFname = stringc << prefix << ".cc";
+    sm_string hFname = sm_stringc << prefix << ".h";
+    sm_string ccFname = sm_stringc << prefix << ".cc";
     traceProgress() << "emitting C++ code to " << ccFname
                     << " and " << hFname << " ...\n";
 
@@ -14629,20 +14664,20 @@ int inner_entry(int argc, char **argv)
   }
   else {
     // emit some ML code
-    string mliFname = stringc << prefix << ".mli";
-    string mlFname = stringc << prefix << ".ml";
+    sm_string mliFname = sm_stringc << prefix << ".mli";
+    sm_string mlFname = sm_stringc << prefix << ".ml";
     traceProgress() << "emitting OCaml code to " << mlFname 
                     << " and " << mliFname << " ...\n";
 
     emitMLActionCode(g, mliFname, mlFname, grammarFname);
   }
 
-  // before using 'xfer' we have to tell it about the string table
+  // before using 'xfer' we have to tell it about the sm_string table
   flattenStrTable = &grammarStringTable;
 
   // write it in a bison-compatible format as well
   if (tracingSys("bison")) {
-    string bisonFname = stringc << prefix << ".y";
+    sm_string bisonFname = sm_stringc << prefix << ".y";
     traceProgress() << "writing bison-compatible grammar to " << bisonFname << endl;
     ofstream out(bisonFname);
     g.printAsBison(out);
@@ -14997,7 +15032,7 @@ RHSElt::~RHSElt()
 
 char const * const RHSElt::kindNames[RHSElt::NUM_KINDS] = {
   "RH_name",
-  "RH_string",
+  "RH_sm_string",
   "RH_prec",
 };
 
@@ -15030,15 +15065,15 @@ RH_name *RH_name::clone() const
   return ret;
 }
 
-DEFN_AST_DOWNCASTS(RHSElt, RH_string, RH_STRING)
+DEFN_AST_DOWNCASTS(RHSElt, RH_sm_string, RH_STRING)
 
-RH_string::~RH_string()
+RH_sm_string::~RH_sm_string()
 {
 }
 
-void RH_string::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void RH_sm_string::debugPrint(ostream &os, int indent, char const *subtreeName) const
 {
-  PRINT_HEADER(subtreeName, RH_string);
+  PRINT_HEADER(subtreeName, RH_sm_string);
 
   RHSElt::debugPrint(os, indent, subtreeName);
 
@@ -15046,9 +15081,9 @@ void RH_string::debugPrint(ostream &os, int indent, char const *subtreeName) con
   PRINT_GENERIC(str);
 }
 
-RH_string *RH_string::clone() const
+RH_sm_string *RH_sm_string::clone() const
 {
-  RH_string *ret = new RH_string(
+  RH_sm_string *ret = new RH_sm_string(
     tag.clone(),
     str.clone()
   );
@@ -15562,7 +15597,7 @@ static yyconst short int yy_chk[273] =
 /* starting character in a name */
 /* starting character in a numeric literal */
 /* double-quote */
-/* character that can appear in a quoted string */
+/* character that can appear in a quoted sm_string */
 /* (I currently don't have any backslash codes, but I want to
  * leave open that possibility, so for now backslashes are illegal) */
 /* horizontal whitespace */
@@ -16051,7 +16086,7 @@ YY_RULE_SETUP
         YY_BREAK
 case YY_STATE_EOF(LITCODE):
 {
-    err(stringc << "hit end of file while looking for final `"
+    err(sm_stringc << "hit end of file while looking for final `"
                 << embedFinish << "'");
     yyterminate();
   }
@@ -16096,7 +16131,7 @@ YY_RULE_SETUP
     char *rightq = strchr(leftq+1, '"');
     xassert(leftq && rightq);
 
-    /* extract filename string */
+    /* extract filename sm_string */
     includeFileName = addString(leftq+1, rightq-leftq-1);
 
     /* go back to normal processing */
@@ -16154,12 +16189,12 @@ YY_RULE_SETUP
   return TOK_INTEGER;
 }
         YY_BREAK
-/* ----------- string literal ----- */
+/* ----------- sm_string literal ----- */
 case 38:
 YY_RULE_SETUP
 {
   TOK_UPD_COL;
-  stringLiteral = addString(yytext+1, yyleng-2);        // strip quotes
+  sm_stringLiteral = addString(yytext+1, yyleng-2);        // strip quotes
   return TOK_STRING;
 }
         YY_BREAK
@@ -17039,15 +17074,15 @@ Environment::~Environment()
 
 
 // -------------------- XASTParse --------------------
-STATICDEF string XASTParse::
+STATICDEF sm_string XASTParse::
   constructMsg(LocString const &tok, char const *msg)
 {
   if (tok.validLoc()) {
-    return stringc << tok.locString() << ": near " << tok
+    return sm_stringc << tok.locString() << ": near " << tok
                    << ", " << msg;
   }
   else {
-    return string(msg);
+    return sm_string(msg);
   }
 }
 
@@ -17162,7 +17197,7 @@ LocString extractActionClassName(LocString const &body)
   while (isalnum(*p) || *p=='_') p++;
   
   // yield that, with the same source location
-  return LocString(body.loc, grammarStringTable.add(string(start, p-start)));
+  return LocString(body.loc, grammarStringTable.add(sm_string(start, p-start)));
 }
 
 
@@ -17379,7 +17414,7 @@ void astParseTerminals(Environment &env, TF_terminals const &terms)
     for (int i=0; i<maxCode; i++) {
       if (!codeHasTerm[i].b) {
         LocString dummy(dummyLoc, grammarStringTable.add(
-          stringc << "__dummy_filler_token" << i));
+          sm_stringc << "__dummy_filler_token" << i));
         env.g.declareToken(dummy, i, dummy);
       }
     }
@@ -17420,7 +17455,7 @@ void astParseTerminals(Environment &env, TF_terminals const &terms)
         Terminal *t = astParseToken(env, tokName);
         if (t->precedence) {
           astParseError(tokName,
-            stringc << tokName << " already has a specified precedence");
+            sm_stringc << tokName << " already has a specified precedence");
         }
 
         if (spec.prec == 0) {
@@ -17525,7 +17560,7 @@ void astParseDDM(Environment &env, Symbol *sym,
 
     else {
       astParseError(func.name,
-        stringc << "unrecognized spec function \"" << func.name << "\"");
+        sm_stringc << "unrecognized spec function \"" << func.name << "\"");
     }
   }
 }
@@ -17578,7 +17613,7 @@ void addDefaultTypesActions(Grammar &g, GrammarAST *ast)
             ASTCASE(RH_name, n)
               n->tag.str = empty;
 
-            ASTNEXT(RH_string, s)
+            ASTNEXT(RH_sm_string, s)
               s->tag.str = empty;
             
             ASTENDCASED
@@ -17696,7 +17731,7 @@ void astParseProduction(Environment &env, Nonterminal *nonterm,
         symTag = tname->tag;
       }
 
-      ASTNEXTC(RH_string, ts) {
+      ASTNEXTC(RH_sm_string, ts) {
         symName = ts->str;
         symTag = ts->tag;
         isString = true;
@@ -17805,7 +17840,7 @@ int grampar_yylex(YYSTYPE *lvalp, void *parseParam)
         break;
 
       case TOK_STRING:
-        lvalp->str = new LocString(lexer.curLoc(), lexer.stringLiteral);
+        lvalp->str = new LocString(lexer.curLoc(), lexer.sm_stringLiteral);
         break;
 
       case TOK_NAME:
@@ -17955,8 +17990,8 @@ bool equalRHSElt(RHSElt const *elt1, RHSElt const *elt2)
   if (elt1->isRH_name()) {
     return elt1->asRH_nameC()->name.str == elt2->asRH_nameC()->name.str;
   }
-  if (elt1->isRH_string()) {
-    return elt1->asRH_stringC()->str.str == elt2->asRH_stringC()->str.str;
+  if (elt1->isRH_sm_string()) {
+    return elt1->asRH_sm_stringC()->str.str == elt2->asRH_sm_stringC()->str.str;
   }
   if (elt1->isRH_prec()) {
     // this means you can't change the precedence..
@@ -18099,7 +18134,7 @@ GrammarAST *parseGrammarFile(char const *fname, bool useML)
   else {
     in = new ifstream(fname);
     if (!*in) {
-      xsyserror("open", stringc << "error opening input file " << fname);
+      xsyserror("open", sm_stringc << "error opening input file " << fname);
     }
   }
 
@@ -18221,7 +18256,7 @@ int main(int argc, char **argv)
     system("cat grammar.g1.tmp");
   //}
 
-  // before using 'xfer' we have to tell it about the string table
+  // before using 'xfer' we have to tell it about the sm_string table
   flattenStrTable = &grammarStringTable;
 
   // write it to a binary file
@@ -18250,7 +18285,7 @@ int main(int argc, char **argv)
   }
 
   // compare the two written files
-  int result = system(stringc << "diff " << g1Fname << " " << g2Fname);
+  int result = system(sm_stringc << "diff " << g1Fname << " " << g2Fname);
   if (result != 0) {
     cout << "the two ascii representations differ!!\n";
     return 4;
@@ -18333,16 +18368,16 @@ int main(int argc, char **argv)
 // grab the parameter
 #define PARAM ((ParseParams*)parseParam)
 
-// return a locstring for 'str' with no location information
+// return a locsm_string for 'str' with no location information
 #define noloc(str)                                                    \
   new LocString(SL_UNKNOWN,      /* unknown location */               \
                 PARAM->lexer.strtable.add(str))
                 
-// locstring for NULL, with no location
+// locsm_string for NULL, with no location
 #define nolocNULL()                                                   \
   new LocString(SL_UNKNOWN, NULL)
 
-// return a locstring with same location info as something else
+// return a locsm_string with same location info as something else
 // (passed as a pointer to a SourceLocation)
 #define sameloc(otherLoc, str)                                        \
   new LocString(otherLoc->loc, PARAM->lexer.strtable.add(str))
@@ -18367,7 +18402,7 @@ typedef union YYSTYPE {
 
   ASTList<SpecFunc> *specFuncs;
   SpecFunc *specFunc;
-  ASTList<LocString> *stringList;
+  ASTList<LocString> *sm_stringList;
 
   ASTList<ProdDecl> *prodDecls;
   ProdDecl *prodDecl;
@@ -19372,13 +19407,13 @@ case 27:
 { yyval.precSpecs = new ASTList<PrecSpec>; ;
     break;}
 case 28:
-{ (yyval.precSpecs=yyvsp[-4].precSpecs)->append(new PrecSpec(whichKind(yyvsp[-3].str), yyvsp[-2].num, yyvsp[-1].stringList)); ;
+{ (yyval.precSpecs=yyvsp[-4].precSpecs)->append(new PrecSpec(whichKind(yyvsp[-3].str), yyvsp[-2].num, yyvsp[-1].sm_stringList)); ;
     break;}
 case 29:
-{ yyval.stringList = new ASTList<LocString>; ;
+{ yyval.sm_stringList = new ASTList<LocString>; ;
     break;}
 case 30:
-{ (yyval.stringList=yyvsp[-1].stringList)->append(yyvsp[0].str); ;
+{ (yyval.sm_stringList=yyvsp[-1].sm_stringList)->append(yyvsp[0].str); ;
     break;}
 case 31:
 { yyval.str = yyvsp[0].str; ;
@@ -19393,26 +19428,26 @@ case 34:
 { (yyval.specFuncs=yyvsp[-1].specFuncs)->append(yyvsp[0].specFunc); ;
     break;}
 case 35:
-{ yyval.specFunc = new SpecFunc(yyvsp[-4].str, yyvsp[-2].stringList, yyvsp[0].str); ;
+{ yyval.specFunc = new SpecFunc(yyvsp[-4].str, yyvsp[-2].sm_stringList, yyvsp[0].str); ;
     break;}
 case 36:
-{ yyval.stringList = new ASTList<LocString>; ;
+{ yyval.sm_stringList = new ASTList<LocString>; ;
     break;}
 case 37:
-{ yyval.stringList = yyvsp[0].stringList; ;
+{ yyval.sm_stringList = yyvsp[0].sm_stringList; ;
     break;}
 case 38:
-{ yyval.stringList = new ASTList<LocString>(yyvsp[0].str); ;
+{ yyval.sm_stringList = new ASTList<LocString>(yyvsp[0].str); ;
     break;}
 case 39:
-{ (yyval.stringList=yyvsp[-2].stringList)->append(yyvsp[0].str); ;
+{ (yyval.sm_stringList=yyvsp[-2].sm_stringList)->append(yyvsp[0].str); ;
     break;}
 case 40:
 { yyval.topForm = new TF_nonterm(yyvsp[-1].str, yyvsp[-2].str, new ASTList<SpecFunc>,
                                      new ASTList<ProdDecl>(yyvsp[0].prodDecl), NULL); ;
     break;}
 case 41:
-{ yyval.topForm = new TF_nonterm(yyvsp[-5].str, yyvsp[-6].str, yyvsp[-3].specFuncs, yyvsp[-2].prodDecls, yyvsp[-1].stringList); ;
+{ yyval.topForm = new TF_nonterm(yyvsp[-5].str, yyvsp[-6].str, yyvsp[-3].specFuncs, yyvsp[-2].prodDecls, yyvsp[-1].sm_stringList); ;
     break;}
 case 42:
 { yyval.prodDecls = new ASTList<ProdDecl>; ;
@@ -19442,19 +19477,19 @@ case 50:
 { yyval.rhsElt = new RH_name(yyvsp[-2].str, yyvsp[0].str); ;
     break;}
 case 51:
-{ yyval.rhsElt = new RH_string(sameloc(yyvsp[0].str, ""), yyvsp[0].str); ;
+{ yyval.rhsElt = new RH_sm_string(sameloc(yyvsp[0].str, ""), yyvsp[0].str); ;
     break;}
 case 52:
-{ yyval.rhsElt = new RH_string(yyvsp[-2].str, yyvsp[0].str); ;
+{ yyval.rhsElt = new RH_sm_string(yyvsp[-2].str, yyvsp[0].str); ;
     break;}
 case 53:
 { yyval.rhsElt = new RH_prec(yyvsp[-1].str); ;
     break;}
 case 54:
-{ yyval.stringList = NULL; ;
+{ yyval.sm_stringList = NULL; ;
     break;}
 case 55:
-{ yyval.stringList = yyvsp[-1].stringList; ;
+{ yyval.sm_stringList = yyvsp[-1].sm_stringList; ;
     break;}
 }
 
@@ -19706,7 +19741,7 @@ AssocKind whichKind(LocString * /*owner*/ kind)
   CHECK("assoc_split", AK_SPLIT);
   #undef CHECK
 
-  xbase(stringc << kind->locString()
+  xbase(sm_stringc << kind->locString()
                 << ": invalid associativity kind: " << *kind);
 }
 @h=tangler('elk/elk_mlsstr.cpp')
@@ -19762,7 +19797,7 @@ void MLSubstrate::handle(char const *str, int len, char finalDelim)
           case ')':
           case ']':
             if (nesting == 0) {
-              err->reportError(stringc
+              err->reportError(sm_stringc
                 << "unexpected closing delimiter `" << *str
                 << "' -- probably due to missing `" << finalDelim << "'");
             }
@@ -19803,7 +19838,7 @@ void MLSubstrate::handle(char const *str, int len, char finalDelim)
             state = ST_NORMAL;
           }
           else if (*str == '\n') {
-            err->reportError("unterminated string or char literal");
+            err->reportError("unterminated sm_string or char literal");
           }
         }
         break;
@@ -19842,7 +19877,7 @@ bool MLSubstrate::zeroNesting() const
 }
 
 
-string MLSubstrate::getFuncBody() const
+sm_string MLSubstrate::getFuncBody() const
 {
   return text;
 }
@@ -19850,7 +19885,7 @@ string MLSubstrate::getFuncBody() const
 
 // 4/29/04: I have no idea if this is right or not.. this is the
 // definition from ccsstr.cc.
-string MLSubstrate::getDeclName() const
+sm_string MLSubstrate::getDeclName() const
 {
   // go with the rather inelegant heuristic that the word
   // just before the first '(' is the function's name
@@ -19881,7 +19916,7 @@ string MLSubstrate::getDeclName() const
   p++;    // move back to most recent legal char
   
   // done
-  return string(p, nameEnd-p);
+  return sm_string(p, nameEnd-p);
 }
 
 
@@ -19931,7 +19966,7 @@ void Test::test(char const *src, ML::State state, int nesting,
   if (!( ml.state == state &&
          ml.nesting == nesting &&
          ml.prev == prev )) {
-    xfailure(stringc << "failed on src: " << src);
+    xfailure(sm_stringc << "failed on src: " << src);
   }
 }
 
@@ -19947,7 +19982,7 @@ void Test::str(char const *src, int nesting, bool bs)
   test(src, ML::ST_STRING, nesting, 0, prev);
 
   // repeat the test with single-tick
-  string another = replace(src, "\"", "\'");
+  sm_string another = replace(src, "\"", "\'");
   test(another, ML::ST_CHAR, nesting, 0, prev);
 }
 
@@ -21146,7 +21181,7 @@ void emitTable(EmitCode &out, EltType const *table, int size, int rowLength,
     }
   }
 
-  int rowNumWidth = stringf("%d", size / rowLength /*round down*/).length();
+  int rowNumWidth = sm_stringf("%d", size / rowLength /*round down*/).length();
 
   // I make tables 'const' because that way the OS loader might be
   // smart enough to share them (on a read-only basis) across multiple
@@ -21159,7 +21194,7 @@ void emitTable(EmitCode &out, EltType const *table, int size, int rowLength,
   int row = 0;
   for (int i=0; i<size; i++) {
     if (i % rowLength == 0) {    // one row per state
-      out << stringf("\n    /""*%*d*""/ ", rowNumWidth, row++);
+      out << sm_stringf("\n    /""*%*d*""/ ", rowNumWidth, row++);
     }
 
     if (needCast) {
@@ -21167,7 +21202,7 @@ void emitTable(EmitCode &out, EltType const *table, int size, int rowLength,
     }
 
     if (printHex) {
-      out << stringf("0x%02X, ", table[i]);
+      out << sm_stringf("0x%02X, ", table[i]);
     }
     else if (sizeof(table[i]) == 1) {
       // little bit of a hack to make sure 'unsigned char' gets
@@ -21186,7 +21221,7 @@ void emitTable(EmitCode &out, EltType const *table, int size, int rowLength,
 }
 
 // used to emit the elements of the prodInfo table
-stringBuilder& operator<< (stringBuilder &sb, ParseTables::ProdInfo const &info)
+sm_stringBuilder& operator<< (sm_stringBuilder &sb, ParseTables::ProdInfo const &info)
 {
   sb << "{" << (int)info.rhsLen << "," << (int)info.lhsIndex << "}";
   return sb;
@@ -21198,7 +21233,7 @@ template <class EltType>
 void emitTable2(EmitCode &out, EltType const *table, int size, int rowLength,
                 char const *typeName, char const *tableName)
 {
-  string tempName = stringc << tableName << "_static";
+  sm_string tempName = sm_stringc << tableName << "_static";
   emitTable(out, table, size, rowLength, typeName, tempName);
   out << "  " << tableName << " = const_cast<" << typeName << "*>(" 
       << tempName << ");\n\n";
@@ -21235,7 +21270,7 @@ void emitOffsetTable(EmitCode &out, EltType **table, EltType *base, int size,
   if (size > 0) {
     out << "  " << tableName << " = new " << typeName << " [" << size << "];\n";
 
-    emitTable(out, (int*)offsets, size, 16, "int", stringc << tableName << "_offsets");
+    emitTable(out, (int*)offsets, size, 16, "int", sm_stringc << tableName << "_offsets");
 
     // at run time, interpret the offsets table
     out << "  for (int i=0; i < " << size << "; i++) {\n"
@@ -21443,12 +21478,12 @@ void ParseTreeLexer::copyFields()
 }
 
 
-string ParseTreeLexer::tokenDesc() const
+sm_string ParseTreeLexer::tokenDesc() const
 {
   return underlying->tokenDesc();
 }
 
-string ParseTreeLexer::tokenKindDesc(int kind) const
+sm_string ParseTreeLexer::tokenKindDesc(int kind) const
 {
   return underlying->tokenKindDesc(kind);
 }
@@ -21569,7 +21604,7 @@ void PTreeNode::innerPrintTree(ostream &out, int indentation,
                                PrintFlags pf) const
 {
   int alts = 1;
-  string LHS;
+  sm_string LHS;
 
   if (merged) {
     // this is an ambiguity node
@@ -21582,7 +21617,7 @@ void PTreeNode::innerPrintTree(ostream &out, int indentation,
       LHS = type;     // no space, use whole thing
     }
     else {
-      LHS = string(type, firstSpace-type);
+      LHS = sm_string(type, firstSpace-type);
     }
 
     indentation += INDENT_INC;
@@ -21728,11 +21763,11 @@ STATICDEF int TrivialUserActions::reclassifyToken(UserActions *,
   int oldTokenType, SemanticValue )
   { return oldTokenType; }
 
-string TrivialUserActions::terminalDescription(int, SemanticValue)
-  { return string(""); }
+sm_string TrivialUserActions::terminalDescription(int, SemanticValue)
+  { return sm_string(""); }
 
-string TrivialUserActions::nonterminalDescription(int, SemanticValue)
-  { return string(""); }
+sm_string TrivialUserActions::nonterminalDescription(int, SemanticValue)
+  { return sm_string(""); }
   
 char const *TrivialUserActions::terminalName(int)
   { return ""; }

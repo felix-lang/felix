@@ -104,7 +104,8 @@ let comma_sub s =
 let rec get_offsets' syms bbdfns typ : string list =
   let typ = reduce_type (lstrip syms.dfns typ) in
   let tname = cpp_typename syms typ in
-  match unfold syms.dfns typ with
+  let t' = unfold syms.dfns typ in
+  match t' with
   | `BTYP_pointer t -> 
     ["offsetof("^tname^",frame)"]
 
@@ -147,8 +148,8 @@ let rec get_offsets' syms bbdfns typ : string list =
   | `BTYP_array (t,`BTYP_unitsum k) -> 
     let toffsets = get_offsets' syms bbdfns t in
     if toffsets = [] then [] else 
-    if k> 20 then 
-      failwith "[get_offsets] Too many elements in array for shape"
+    if k> 100 then 
+      failwith ("[get_offsets] Too many elements in array for shape, type " ^ sbt syms.dfns t')
     else begin
       let eltype = cpp_typename syms t in
       fold_left 

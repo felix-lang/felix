@@ -32,6 +32,10 @@ val cpp_ltypename :
   string
 
 
+(** mangle a Felix identifier to a C one *)
+val cid_of_flxid:  
+ string-> string
+
 @h = tangler('src/flx_name.ml')
 @select(h)
 open Flx_types
@@ -52,6 +56,8 @@ let cvt s =
     | x -> Buffer.add_char id x
   done;
   Buffer.contents id
+
+let cid_of_flxid s = cvt s
 
 (* mangle a C++ type name into an identifier *)
 let mangle_cpp_typename ct =

@@ -8,44 +8,38 @@ val get_display_list:
   bid_t ->
   (bid_t * int) list
 
+val cal_display:
+  fully_bound_symbol_table_t ->
+  bid_t option ->
+  (bid_t * int) list
 
 @h = tangler('src/flx_display.ml')
 @select(h)
 open Flx_ast
 open Flx_types
 open Flx_util
+open List
 
-let rec cal_display bbdfns parent display : bid_t list =
-  match parent with 
-  | None -> display
-  | Some parent ->
-  match 
-    try Hashtbl.find bbdfns parent 
-    with Not_found -> 
-      failwith ("[cal_display] Can't find index " ^ si parent)
-  with
-  | _,parent',sr,`BBDCL_procedure _
-  | _,parent',sr,`BBDCL_function _
-    -> cal_display bbdfns parent' (parent::display)
-  | _ -> assert false
+(* inner most at head of list *)
+let cal_display bbdfns parent : (bid_t *int) list =
+  let rec aux parent display =
+    match parent with 
+    | None -> rev display
+    | Some parent ->
+    match 
+      try Hashtbl.find bbdfns parent 
+      with Not_found -> 
+        failwith ("[cal_display] Can't find index " ^ si parent)
+    with
+    | _,parent',sr,`BBDCL_procedure (_,vs,_,_)
+    | _,parent',sr,`BBDCL_function (_,vs,_,_,_)
+    | _,parent',sr,`BBDCL_glr (vs,_,_)
+      -> aux parent' ((parent,length vs)::display)
+    | _ -> assert false
+  in aux parent []
 
-let get_display_list' bbdfns index : bid_t list =
-  match 
-    try Hashtbl.find bbdfns index 
-    with Not_found -> failwith ("[get_display_list] Can't find index " ^ si index)
-  with
-  | id,parent,sr,`BBDCL_procedure _
-  | id,parent,sr,`BBDCL_function _ ->
-    List.rev (cal_display bbdfns parent [])
-  | _ -> assert false
-
+(* inner most at head of list *)
 let get_display_list bbdfns index : (bid_t * int) list =
-  List.map
-  (fun i -> match Hashtbl.find bbdfns i with
-  | _,_,_,`BBDCL_procedure (_,vs,_,_) -> i,List.length vs
-  | _,_,_,`BBDCL_function (_,vs,_,_,_) -> i,List.length vs
-  | _ -> assert false
-  )
-  (get_display_list' bbdfns index)
+  tl (cal_display bbdfns (Some index))
 
 

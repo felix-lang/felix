@@ -1906,6 +1906,10 @@ application:
       `AST_map (rsrange (slift $1) (src_of_expr $3), $2, $3)
     }
 */
+  | CASENO coercion { 
+      let sr = rsrange (slift $1) (src_of_expr $2) in
+      `AST_case_index (sr,$2) 
+    }
   | coercion { $1 }
 
 coercion:

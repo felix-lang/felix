@@ -1,4 +1,9 @@
 @head(1,'smbase')
+@h=tangler('licences/sm_licence.txt','data')
+@select(h)
+All of the modules in the sm system are
+hereby placed in the public domain.
+
 @h=tangler('elk/sm_malloc_stub.cpp')
 @select(h)
 // malloc_stub.h            see license.txt for copyright and terms of use
@@ -1191,11 +1196,11 @@ public:     // funcs
 class BoxPrint;
 
 
-// manages the process of rendering a boxprint tree to a string
+// manages the process of rendering a boxprint tree to a sm_string
 class BPRender {
 public:
-  // output string
-  stringBuilder sb;
+  // output sm_string
+  sm_stringBuilder sb;
 
   // right margin column; defaults to 72
   int margin;
@@ -1206,7 +1211,7 @@ public:
 
   // text to begin every line with; not counted towards column
   // counts; defaults to ""
-  string lineStartText;
+  sm_string lineStartText;
 
 public:
   BPRender();
@@ -1225,10 +1230,10 @@ public:
   // add a newline, plus indentation to get to column 'ind'
   void breakLine(int ind);
 
-  // take the string out of the rendering engine, replacing it
-  // with the empty string
-  string takeString() {
-    string ret(sb);
+  // take the sm_string out of the rendering engine, replacing it
+  // with the empty sm_string
+  sm_string takeString() {
+    sm_string ret(sb);
     reset();
     return ret;
   }
@@ -1237,9 +1242,9 @@ public:
   // manually after changing 'lineStartText'
   void reset();
 
-  // take the tree out of a boxprint builder, convert it to a string,
+  // take the tree out of a boxprint builder, convert it to a sm_string,
   // and delete the tree
-  string takeAndRender(BoxPrint &bld);
+  sm_string takeAndRender(BoxPrint &bld);
 };
 
 
@@ -1249,7 +1254,7 @@ public:
   // if no breaks are taken, compute the # of columns
   virtual int oneLineWidth()=0;
 
-  // render this element as a string with newlines, etc.
+  // render this element as a sm_string with newlines, etc.
   virtual void render(BPRender &mgr)=0;
 
   // true if this element is a BPBreak and is enabled; returns false
@@ -1268,7 +1273,7 @@ public:
 // leaf in the tree: text to print
 class BPText : public BPElement {
 public:
-  string text;
+  sm_string text;
 
 public:
   BPText(char const *t);
@@ -1739,7 +1744,7 @@ public:       // funcs
 #include <iostream.h>    // ostream
 
 // forward declarations
-class stringBuilder;
+class sm_stringBuilder;
 
 
 // by using this macro, the debugger gets a shot before the stack is unwound
@@ -1773,7 +1778,7 @@ bool unwinding_other(xBase const &x);
 // -------------------- xBase ------------------
 // intent is to derive all exception objects from this
 class xBase {
-  string msg;
+  sm_string msg;
     // the human-readable description of the exception
 
 public:
@@ -1806,8 +1811,8 @@ void xbase(char const *msg) NORETURN;
 // thrown by _xassert_fail, declared in xassert.h
 // throwing this corresponds to detecting a bug in the program
 class x_assert : public xBase {
-  string condition;          // text of the failed condition
-  string filename;           // name of the source file
+  sm_string condition;          // text of the failed condition
+  sm_string filename;           // name of the source file
   int lineno;                // line number
 
 public:
@@ -1826,7 +1831,7 @@ public:
 // in some input data; the program cannot process it, but it
 // is not a bug in the program
 class xFormat : public xBase {
-  string condition;          // what is wrong with the input
+  sm_string condition;          // what is wrong with the input
 
 public:
   xFormat(char const *cond);
@@ -1854,7 +1859,7 @@ void formatAssert_fail(char const *cond, char const *file, int line) NORETURN;
 // thrown when we fail to open a file
 class XOpen : public xBase {
 public:
-  string filename;
+  sm_string filename;
   
 public:
   XOpen(char const *fname);
@@ -2037,12 +2042,12 @@ private:    // types
 private:    // data
   // name of the pp file; this is needed for queries to lines
   // before any #line is encountered
-  string ppFname;
+  sm_string ppFname;
 
   // map for canonical storage of orig filenames; I don't rely on
-  // an external string table because I don't want the extra
+  // an external sm_string table because I don't want the extra
   // dependency
-  StringObjDict<string> filenames;
+  StringObjDict<sm_string> filenames;
 
   // growable array of HashLine objects
   ArrayStack<HashLine> directives;
@@ -2690,7 +2695,7 @@ void applyToDirContents(char const *dirName,
                         PerFileFunc func, void *extra=NULL);
 
 
-// return true if the given string names a directory
+// return true if the given sm_string names a directory
 bool isDirectory(char const *path);
 
 
@@ -2714,7 +2719,7 @@ void portableSleep(unsigned seconds);
 void getCurrentUsername(char *buffer, int buflen);
 
 
-// read a string from the console, with no echo
+// read a sm_string from the console, with no echo
 void readNonechoString(char *buffer, int buflen, char const *prompt);
 
 
@@ -3732,10 +3737,10 @@ typedef TPoint<int> point;
 typedef TPoint<double> fpoint;
 
 
-// and we can then define stringBuilder output ops for them
-class stringBuilder;
-stringBuilder& operator<< (stringBuilder &sb, point const &pt);
-stringBuilder& operator<< (stringBuilder &sb, fpoint const &pt);
+// and we can then define sm_stringBuilder output ops for them
+class sm_stringBuilder;
+sm_stringBuilder& operator<< (sm_stringBuilder &sb, point const &pt);
+sm_stringBuilder& operator<< (sm_stringBuilder &sb, fpoint const &pt);
 
 
 // iterate: 0,0    1,0    2,0    ... x-1,0    and then
@@ -3797,9 +3802,9 @@ public:
 };
 
 class PPrintStringOut : public PPrintOut {
-  stringBuilder &sb;
+  sm_stringBuilder &sb;
 public:
-  PPrintStringOut(stringBuilder &s) : sb(s) {}
+  PPrintStringOut(sm_stringBuilder &s) : sb(s) {}
   virtual void write(char const *text);
 };
 
@@ -3821,7 +3826,7 @@ private:     // types
     PPrint &pprint;
 
     // emitted text in the current line
-    stringBuilder curLine;
+    sm_stringBuilder curLine;
 
     // indentation used for 'curLine'
     int curLineInd;
@@ -3915,7 +3920,7 @@ public:      // funcs
 
 class PPrintToString : public PPrint {
 public:
-  stringBuilder sb;            // output (set) lines accumulate here
+  sm_stringBuilder sb;            // output (set) lines accumulate here
   PPrintStringOut sbOut;       // helper
 
 public:
@@ -4312,7 +4317,7 @@ public:      // types
   enum CFlags {
     C_NONE     = 0x00,         // no flags
     ICASE      = 0x02,         // case insensitive
-    NOSUB      = 0x08,         // substring matches are not needed
+    NOSUB      = 0x08,         // subsm_string matches are not needed
     //NEWLINE                  // still not sure what this really means
   };
 
@@ -4346,10 +4351,10 @@ ENUM_BITWISE_OR(Regexp::CFlags)
 ENUM_BITWISE_OR(Regexp::EFlags)
 
 
-// TODO: Add support for substring matches by building a class to
-// remember the substring offsets (enable 'numLParens' above)
+// TODO: Add support for subsm_string matches by building a class to
+// remember the subsm_string offsets (enable 'numLParens' above)
 // efficiently.  Major question: do I always make an internal copy of
-// the string in which we searched?  Leaning towards yes...
+// the sm_string in which we searched?  Leaning towards yes...
 
 
 
@@ -4885,7 +4890,7 @@ public:      // types
     // file name; we consider two files to be the same if and only
     // if their names are equal, i.e. there is no checking done to
     // see if their names happen to be aliases in the filesystem
-    string name;
+    sm_string name;
 
     // start offset in the SourceLoc space
     SourceLoc startLoc;
@@ -4963,7 +4968,7 @@ public:      // types
   // information stored, and incremental update is impossible
   class StaticLoc {
   public:
-    string name;      // file name
+    sm_string name;      // file name
     int offset;       // char offset
     int line, col;    // line,col
               
@@ -5083,11 +5088,11 @@ public:      // funcs
   File *getInternalFile(char const *fname)
     { return getFile(fname); }
 
-  // render as string in "file:line:col" format
-  string getString(SourceLoc loc);
+  // render as sm_string in "file:line:col" format
+  sm_string getString(SourceLoc loc);
 
   // "line:col" format
-  string getLCString(SourceLoc loc);
+  sm_string getLCString(SourceLoc loc);
 };
 
 
@@ -5097,15 +5102,15 @@ extern SourceLocManager *sourceLocManager;
 // dsw: So that gdb can find it please DO NOT inline this; also the
 // unique public name is intensional: I don't want gdb doing
 // overloading and sometimes getting it wrong, which it does
-string locToStr(SourceLoc sl);
+sm_string locToStr(SourceLoc sl);
 
-inline string toString(SourceLoc sl)
+inline sm_string toString(SourceLoc sl)
   { return locToStr(sl); }
 
-inline stringBuilder& operator<< (stringBuilder &sb, SourceLoc sl)
+inline sm_stringBuilder& operator<< (sm_stringBuilder &sb, SourceLoc sl)
   { return sb << toString(sl); }
 
-inline string toLCString(SourceLoc sl)
+inline sm_string toLCString(SourceLoc sl)
   { return sourceLocManager->getLCString(sl); }
 
 
@@ -5130,7 +5135,7 @@ inline SourceLoc advText(SourceLoc base, char const *text, int textLen)
 @h=tangler('elk/sm_strdict.h')
 @select(h)
 // strdict.h            see license.txt for copyright and terms of use
-// string dictionary
+// sm_string dictionary
 // (c) Scott McPeak, 2000
 
 // entire module is case sensitive
@@ -5149,7 +5154,7 @@ private:    // types
   class Node {
   public:
     Node *next;
-    string key, value;
+    sm_string key, value;
 
   public:
     Node(char const *k, char const *v, Node *n = NULL)
@@ -5175,8 +5180,8 @@ public:     // types
     Iter& next() { xassert(current); current = current->next; return *this; }
       // 'next' returns a value primarily to allow use in for-loop comma exprs
 
-    string& key() const { return current->key; }
-    string& value() const { return current->value; }
+    sm_string& key() const { return current->key; }
+    sm_string& value() const { return current->value; }
   };
   friend class Iter;
 
@@ -5193,8 +5198,8 @@ public:     // types
     Iter::next;
 
     // others must be const-ified
-    string const &key() const { return Iter::key(); }
-    string const &value() const { return Iter::value(); }
+    sm_string const &key() const { return Iter::key(); }
+    sm_string const &value() const { return Iter::value(); }
   };
 
 private:    // data
@@ -5231,11 +5236,11 @@ public:
   bool isNotEmpty() const
     { return !isEmpty(); }
 
-  bool query(char const *key, string &value) const;
+  bool query(char const *key, sm_string &value) const;
     // if 'key' is mapped to a value, put it into 'value' and return true;
     // otherwise, return false
 
-  string queryf(char const *key) const;
+  sm_string queryf(char const *key) const;
     // return the value corresponding to 'key', or throw an exception of it's
     // not mapped
 
@@ -5270,14 +5275,14 @@ public:
 
   // ------------ misc --------------
   INSERT_OSTREAM(StringDict)
-  string toString() const;
+  sm_string toString() const;
 };
 
 #endif // __STRDICT_H
 @h=tangler('elk/sm_str.h')
 @select(h)
 // str.h            see license.txt for copyright and terms of use
-// a string class
+// a sm_string class
 // the representation uses just one char*, so that a smart compiler
 //   can pass the entire object as a single word
 // Scott McPeak, 1995-2000  This file is public domain.
@@ -5291,24 +5296,10 @@ public:
 
 class Flatten;           // flatten.h
 
-// certain unfortunate implementation decisions by some compilers
-// necessitate avoiding the name 'string'
-//
-// 9/19/04: I originally made this definition to work around a problem
-// with Borland C++ 4.5.  It causes a problem when using the new
-// standard library, since the name clashes with std::string.  A
-// simple solution is to remove the #definition and let namespaces do
-// their job.  Since Intel's headers are the only ones that provoke
-// the problem I'll confine it to that case for now.  Eventually I
-// will do the same for gcc.
-#if !defined(__INTEL_COMPILER)
-  #define string mystring
-#endif
-
-class string {
+class sm_string {
 protected:     // data
   // 10/12/00: switching to never letting s be NULL
-  char *s;                             // string contents; never NULL
+  char *s;                             // sm_string contents; never NULL
   static char * const empty;           // a global ""; should never be modified
 
 protected:     // funcs
@@ -5316,19 +5307,19 @@ protected:     // funcs
   void kill();                         // dealloc if str != 0
 
 public:        // funcs
-  string(string const &src) { dup(src.s); }
-  string(char const *src) { dup(src); }
-  string(char const *src, int length);    // grab a substring
-  string(int length) { s=empty; setlength(length); }
-  string() { s=empty; }
+  sm_string(sm_string const &src) { dup(src.s); }
+  sm_string(char const *src) { dup(src); }
+  sm_string(char const *src, int length);    // grab a subsm_string
+  sm_string(int length) { s=empty; setlength(length); }
+  sm_string() { s=empty; }
 
-  ~string() { kill(); }
+  ~sm_string() { kill(); }
 
-  string(Flatten&);
+  sm_string(Flatten&);
   void xfer(Flatten &flat);
 
   // simple queries
-  int length() const;           // returns number of non-null chars in the string; length of "" is 0
+  int length() const;           // returns number of non-null chars in the sm_string; length of "" is 0
   bool isempty() const { return s[0]==0; }
   bool contains(char c) const;
 
@@ -5336,8 +5327,8 @@ public:        // funcs
   char& operator[] (int i) { return s[i]; }
   char operator[] (int i) const { return s[i]; }
 
-  // substring
-  string substring(int startIndex, int length) const;
+  // subsm_string
+  sm_string subsm_string(int startIndex, int length) const;
 
   // conversions
   //operator char* () { return s; }      // ambiguities...
@@ -5346,24 +5337,24 @@ public:        // funcs
   char const *pcharc() const { return s; }
 
   // assignment
-  string& operator=(string const &src)
+  sm_string& operator=(sm_string const &src)
     { if (&src != this) { kill(); dup(src.s); } return *this; }
-  string& operator=(char const *src)
+  sm_string& operator=(char const *src)
     { if (src != s) { kill(); dup(src); } return *this; }
 
   // allocate 'newlen' + 1 bytes (for null); initial contents is ""
-  string& setlength(int newlen);
+  sm_string& setlength(int newlen);
 
   // comparison; return value has same meaning as strcmp's return value:
   //   <0   if   *this < src
   //   0    if   *this == src
   //   >0   if   *this > src
-  int compareTo(string const &src) const;
+  int compareTo(sm_string const &src) const;
   int compareTo(char const *src) const;
   bool equals(char const *src) const { return compareTo(src) == 0; }
 
   #define MAKEOP(op)                                                             \
-    bool operator op (string const &src) const { return compareTo(src) op 0; }   \
+    bool operator op (sm_string const &src) const { return compareTo(src) op 0; }   \
     /*bool operator op (const char *src) const { return compareTo(src) op 0; }*/ \
     /* killed stuff with char* because compilers are too flaky; use compareTo */
   MAKEOP(==)  MAKEOP(!=)
@@ -5371,15 +5362,15 @@ public:        // funcs
   MAKEOP(<=)  MAKEOP(<)
   #undef MAKEOP
 
-  // concatenation (properly handles string growth)
+  // concatenation (properly handles sm_string growth)
   // uses '&' instead of '+' to avoid char* coercion problems
-  string operator& (string const &tail) const;
-  string& operator&= (string const &tail);
+  sm_string operator& (sm_string const &tail) const;
+  sm_string& operator&= (sm_string const &tail);
 
   // input/output
-  friend istream& operator>> (istream &is, string &obj)
+  friend istream& operator>> (istream &is, sm_string &obj)
     { obj.readline(is); return is; }
-  friend ostream& operator<< (ostream &os, string const &obj)
+  friend ostream& operator<< (ostream &os, sm_string const &obj)
     { obj.write(os); return os; }
 
   // note: the read* functions are currently implemented in a fairly
@@ -5387,7 +5378,7 @@ public:        // funcs
 
   void readdelim(istream &is, char const *delim);
     // read from is until any character in delim is encountered; consumes that
-    // character, but does not put it into the string; if delim is null or
+    // character, but does not put it into the sm_string; if delim is null or
     // empty, reads until EOF
 
   void readall(istream &is) { readdelim(is, NULL); }
@@ -5395,7 +5386,7 @@ public:        // funcs
 
   void readline(istream &is) { readdelim(is, "\n"); }
     // read a line from input stream; consumes the \n, but doesn't put it into
-    // the string
+    // the sm_string
 
   void write(ostream &os) const;
     // writes all stored characters (but not '\0')
@@ -5410,10 +5401,10 @@ public:        // funcs
 
 
 // this class is specifically for appending lots of things
-class stringBuilder : public string {
+class sm_stringBuilder : public sm_string {
 protected:
   enum { EXTRA_SPACE = 30 };    // extra space allocated in some situations
-  char *end;          // current end of the string (points to the NUL character)
+  char *end;          // current end of the sm_string (points to the NUL character)
   int size;           // amount of space (in bytes) allocated starting at 's'
 
 protected:
@@ -5421,72 +5412,72 @@ protected:
   void dup(char const *src);
 
 public:
-  stringBuilder(int length=0);    // creates an empty string
-  stringBuilder(char const *str);
-  stringBuilder(char const *str, int length);
-  stringBuilder(string const &str) { dup((char const*)str); }
-  stringBuilder(stringBuilder const &obj) { dup((char const*)obj); }
-  ~stringBuilder() {}
+  sm_stringBuilder(int length=0);    // creates an empty sm_string
+  sm_stringBuilder(char const *str);
+  sm_stringBuilder(char const *str, int length);
+  sm_stringBuilder(sm_string const &str) { dup((char const*)str); }
+  sm_stringBuilder(sm_stringBuilder const &obj) { dup((char const*)obj); }
+  ~sm_stringBuilder() {}
 
-  stringBuilder& operator= (char const *src);
-  stringBuilder& operator= (string const &s) { return operator= ((char const*)s); }
-  stringBuilder& operator= (stringBuilder const &s) { return operator= ((char const*)s); }
+  sm_stringBuilder& operator= (char const *src);
+  sm_stringBuilder& operator= (sm_string const &s) { return operator= ((char const*)s); }
+  sm_stringBuilder& operator= (sm_stringBuilder const &s) { return operator= ((char const*)s); }
 
   int length() const { return end-s; }
   bool isempty() const { return length()==0; }
 
-  stringBuilder& setlength(int newlen);    // change length, forget current data
+  sm_stringBuilder& setlength(int newlen);    // change length, forget current data
 
   // make sure we can store 'someLength' non-null chars; grow if necessary
   void ensure(int someLength) { if (someLength >= size) { grow(someLength); } }
 
-  // grow the string's length (retaining data); make sure it can hold at least
+  // grow the sm_string's length (retaining data); make sure it can hold at least
   // 'newMinLength' non-null chars
   void grow(int newMinLength);
 
-  // this can be useful if you modify the string contents directly..
+  // this can be useful if you modify the sm_string contents directly..
   // it's not really the intent of this class, though
   void adjustend(char* newend);
 
-  // make the string be the empty string, but don't change the
+  // make the sm_string be the empty sm_string, but don't change the
   // allocated space
   void clear() { adjustend(s); }
 
   // concatenation, which is the purpose of this class
-  stringBuilder& operator&= (char const *tail);
+  sm_stringBuilder& operator&= (char const *tail);
 
-  // useful for appending substrings or strings with NUL in them
+  // useful for appending subsm_strings or sm_strings with NUL in them
   void append(char const *tail, int length);
 
   // append a given number of spaces; meant for contexts where we're
-  // building a multi-line string; returns '*this'
-  stringBuilder& indent(int amt);
+  // building a multi-line sm_string; returns '*this'
+  sm_stringBuilder& indent(int amt);
 
   // sort of a mixture of Java compositing and C++ i/o strstream
   // (need the coercion versions (like int) because otherwise gcc
   // spews mountains of f-ing useless warnings)
-  stringBuilder& operator << (char const *text) { return operator&=(text); }
-  stringBuilder& operator << (char c);
-  stringBuilder& operator << (unsigned char c) { return operator<<((char)c); }
-  stringBuilder& operator << (long i);
-  stringBuilder& operator << (unsigned long i);
-  stringBuilder& operator << (int i) { return operator<<((long)i); }
-  stringBuilder& operator << (unsigned i) { return operator<<((unsigned long)i); }
-  stringBuilder& operator << (short i) { return operator<<((long)i); }
-  stringBuilder& operator << (unsigned short i) { return operator<<((long)i); }
-  stringBuilder& operator << (double d);
-  stringBuilder& operator << (void *ptr);     // inserts address in hex
+  sm_stringBuilder& operator << (char const *text) { return operator&=(text); }
+  sm_stringBuilder& operator << (char c);
+  sm_stringBuilder& operator << (unsigned char c) { return operator<<((char)c); }
+  sm_stringBuilder& operator << (long i);
+  sm_stringBuilder& operator << (unsigned long i);
+  sm_stringBuilder& operator << (int i) { return operator<<((long)i); }
+  sm_stringBuilder& operator << (unsigned i) { return operator<<((unsigned long)i); }
+  sm_stringBuilder& operator << (short i) { return operator<<((long)i); }
+  sm_stringBuilder& operator << (unsigned short i) { return operator<<((long)i); }
+  sm_stringBuilder& operator << (double d);
+  sm_stringBuilder& operator << (void *ptr);     // inserts address in hex
   #ifndef LACKS_BOOL
-    stringBuilder& operator << (bool b) { return operator<<((long)b); }
+    sm_stringBuilder& operator << (bool b) { return operator<<((long)b); }
   #endif // LACKS_BOOL
 
   // useful in places where long << expressions make it hard to
   // know when arguments will be evaluated, but order does matter
-  typedef stringBuilder& (*Manipulator)(stringBuilder &sb);
-  stringBuilder& operator<< (Manipulator manip);
+  typedef sm_stringBuilder& (*Manipulator)(sm_stringBuilder &sb);
+  sm_stringBuilder& operator<< (Manipulator manip);
 
   // stream readers
-  friend istream& operator>> (istream &is, stringBuilder &sb)
+  friend istream& operator>> (istream &is, sm_stringBuilder &sb)
     { sb.readline(is); return is; }
   void readall(istream &is) { readdelim(is, NULL); }
   void readline(istream &is) { readdelim(is, "\n"); }
@@ -5502,43 +5493,43 @@ public:
     Hex(unsigned long v) : value(v) {}
     Hex(Hex const &obj) : value(obj.value) {}
   };
-  stringBuilder& operator<< (Hex const &h);
-  #define SBHex stringBuilder::Hex
+  sm_stringBuilder& operator<< (Hex const &h);
+  #define SBHex sm_stringBuilder::Hex
 };
 
 
-// the real strength of this entire module: construct strings in-place
+// the real strength of this entire module: construct sm_strings in-place
 // using the same syntax as C++ iostreams.  e.g.:
-//   puts(stringb("x=" << x << ", y=" << y));
-#define stringb(expr) (stringBuilder() << expr)
+//   puts(sm_stringb("x=" << x << ", y=" << y));
+#define sm_stringb(expr) (sm_stringBuilder() << expr)
 
 // experimenting with dropping the () in favor of <<
 // (the "c" can be interpreted as "constructor", or maybe just
 // the successor to "b" above)
-#define stringc stringBuilder()
+#define sm_stringc sm_stringBuilder()
 
 
 // experimenting with using toString as a general method for datatypes
-string toString(int i);
-string toString(unsigned i);
-string toString(char c);
-string toString(long i);
-string toString(char const *str);
-string toString(float f);
+sm_string toString(int i);
+sm_string toString(unsigned i);
+sm_string toString(char c);
+sm_string toString(long i);
+sm_string toString(char const *str);
+sm_string toString(float f);
 
 
-// printf-like construction of a string; often very convenient, since
+// printf-like construction of a sm_string; often very convenient, since
 // you can use any of the formatting characters (like %X) that your
 // libc's sprintf knows about
-string stringf(char const *format, ...);
-string vstringf(char const *format, va_list args);
+sm_string sm_stringf(char const *format, ...);
+sm_string vsm_stringf(char const *format, va_list args);
 
 
 #endif // STR_H
 @h=tangler('elk/sm_strhash.h')
 @select(h)
 // strhash.h            see license.txt for copyright and terms of use
-// hash table mapping strings to arbitrary pointers, where
+// hash table mapping sm_strings to arbitrary pointers, where
 // the stored pointers can be used to derive the key, and
 // cannot be NULL
 
@@ -5614,10 +5605,10 @@ public:
 
 
 #endif // STRHASH_H
-@h=tangler('elk/sm_stringset.h')
+@h=tangler('elk/sm_sm_stringset.h')
 @select(h)
-// stringset.h            see license.txt for copyright and terms of use
-// set of character strings
+// sm_stringset.h            see license.txt for copyright and terms of use
+// set of character sm_strings
 
 #ifndef STRINGSET_H
 #define STRINGSET_H
@@ -5656,7 +5647,7 @@ public:      // funcs
 @h=tangler('elk/sm_strobjdict.h')
 @select(h)
 // strobjdict.h            see license.txt for copyright and terms of use
-// dictionary of objects, indexed by string (case-sensitive)
+// dictionary of objects, indexed by sm_string (case-sensitive)
 // (c) Scott McPeak, 2000
 
 #ifndef __STROBJDICT_H
@@ -5667,14 +5658,14 @@ public:      // funcs
 
 // the dictionary object is considered to own all of the things
 // contained, so constness means constness of the contained objects
-// as well as the mapping from strings to them
+// as well as the mapping from sm_strings to them
 
 template <class T>
 class StringObjDict {
 public:     // types
   // 'foreach' iterator functions
-  typedef bool (*ForeachCFn)(string const &key, T const *value, void *extra);
-  typedef bool (*ForeachFn)(string const &key, T * /*serf*/ value, void *extra);
+  typedef bool (*ForeachCFn)(sm_string const &key, T const *value, void *extra);
+  typedef bool (*ForeachFn)(sm_string const &key, T * /*serf*/ value, void *extra);
 
   // external iterator
   class Iter {
@@ -5689,7 +5680,7 @@ public:     // types
     bool isDone() const { return iter.isDone(); }
     Iter& next() { iter.next(); return *this; }
 
-    string const &key() const { return iter.key(); }
+    sm_string const &key() const { return iter.key(); }
     T const *&value() const { return (T const *&)iter.value(); }
   };
   friend class Iter;
@@ -5755,7 +5746,7 @@ STATICDEF void StringObjDict<T>::deleteObject(T *obj)
 @h=tangler('elk/sm_strsobjdict.h')
 @select(h)
 // strsobjdict.h            see license.txt for copyright and terms of use
-// dictionary of *serf* pointers to objects, indexed by string (case-sensitive)
+// dictionary of *serf* pointers to objects, indexed by sm_string (case-sensitive)
 // (c) Scott McPeak, 2000
 
 // created by copying strobjdict and modifying.. nonideal..
@@ -5775,7 +5766,7 @@ template <class T>
 class StringSObjDict {
 public:     // types
   // 'foreach' iterator functions
-  typedef bool (*ForeachFn)(string const &key, T *value, void *extra);
+  typedef bool (*ForeachFn)(sm_string const &key, T *value, void *extra);
 
   // external iterator
   class Iter {
@@ -5790,7 +5781,7 @@ public:     // types
     bool isDone() const { return iter.isDone(); }
     Iter& next() { iter.next(); return *this; }
 
-    string const &key() const { return iter.key(); }
+    sm_string const &key() const { return iter.key(); }
     T *&value() const { return (T *&)iter.value(); }
 
     int private_getCurrent() const { return iter.private_getCurrent(); }
@@ -5809,7 +5800,7 @@ public:     // types
     bool isDone() const { return iter.isDone(); }
     IterC& next() { iter.next(); return *this; }
 
-    string const &key() const { return iter.key(); }
+    sm_string const &key() const { return iter.key(); }
     T *value() const { return (T *)iter.value(); }
 
     int private_getCurrent() const { return iter.private_getCurrent(); }
@@ -5869,7 +5860,7 @@ public:     // funcs
 @h=tangler('elk/sm_strtokp.h')
 @select(h)
 // strtokp.h            see license.txt for copyright and terms of use
-// using strtok to parse an entire string at once
+// using strtok to parse an entire sm_string at once
 // Scott McPeak, 1997  This file is public domain.
 
 #ifndef __STRTOKP_H
@@ -5879,7 +5870,7 @@ public:     // funcs
 #include <string.h>    // strlen
 
 class StrtokParse {
-  string buf;          // locally allocated storage
+  sm_string buf;          // locally allocated storage
   int _tokc;           // # of tokens found
   char **_tokv;        // array of tokens themselves
 
@@ -5902,19 +5893,19 @@ public:
   char const* operator[] (int which) const { return tokv(which); }
     // access to tokens; must make local copies to modify
 
-  string reassemble(int firstTok, int lastTok, char const *originalString) const;
-    // return the substring of the original string spanned by the
+  sm_string reassemble(int firstTok, int lastTok, char const *originalString) const;
+    // return the subsm_string of the original sm_string spanned by the
     // given range of tokens; if firstTok==lastTok, only that token is
     // returned (without any separators); must be that firstTok <=
     // lastTok
 
-  string join(int firstTok, int lastTok, char const *separator) const;
-    // return a string created by concatenating the given range of tokens
+  sm_string join(int firstTok, int lastTok, char const *separator) const;
+    // return a sm_string created by concatenating the given range of tokens
     // together with 'separator' in between them
 
   int offset(int which) const;
     // return a value that, when added to the original 'str' parameter,
-    // yields a pointer to where tokv(which) is, as a substring, in that string
+    // yields a pointer to where tokv(which) is, as a subsm_string, in that sm_string
 
   int offsetAfter(int which) const
     { return offset(which) + strlen(tokv(which)); }
@@ -5933,7 +5924,7 @@ public:
 @h=tangler('elk/sm_strutil.h')
 @select(h)
 // strutil.h            see license.txt for copyright and terms of use
-// various string utilities built upon the 'str' module
+// various sm_string utilities built upon the 'str' module
 // Scott McPeak, July 2000
 
 #ifndef STRUTIL_H
@@ -5942,60 +5933,60 @@ public:
 #include "sm_str.h"
 #include <stdio.h>    // FILE
 
-// direct string replacement, replacing instances of oldstr with newstr
+// direct sm_string replacement, replacing instances of oldstr with newstr
 // (newstr may be "")
-string replace(char const *src, char const *oldstr, char const *newstr);
+sm_string replace(char const *src, char const *oldstr, char const *newstr);
 
-// works like unix "tr": the source string is translated character-by-character,
+// works like unix "tr": the source sm_string is translated character-by-character,
 // with occurrences of 'srcchars' replaced by corresponding characters from
 // 'destchars'; further, either set may use the "X-Y" notation to denote a
 // range of characters from X to Y
-string translate(char const *src, char const *srcchars, char const *destchars);
+sm_string translate(char const *src, char const *srcchars, char const *destchars);
 
 // a simple example of using translate; it was originally inline, but a bug
 // in egcs made me move it out of line
-string stringToupper(char const *src);
+sm_string sm_stringToupper(char const *src);
 //  { return translate(src, "a-z", "A-Z"); }
 
 
-// remove any whitespace at the beginning or end of the string
-string trimWhitespace(char const *str);
+// remove any whitespace at the beginning or end of the sm_string
+sm_string trimWhitespace(char const *str);
 
 
-// encode a block of bytes as a string with C backslash escape
+// encode a block of bytes as a sm_string with C backslash escape
 // sequences (but without the opening or closing quotes)
-string encodeWithEscapes(char const *src, int len);
+sm_string encodeWithEscapes(char const *src, int len);
 
 // safe when the text has no NUL characters
-string encodeWithEscapes(char const *src);
+sm_string encodeWithEscapes(char const *src);
 
 // adds the quotes too
-string quoted(char const *src);
+sm_string quoted(char const *src);
 
 
-// decode an escaped string; throw xFormat if there is a problem
+// decode an escaped sm_string; throw xFormat if there is a problem
 // with the escape syntax; if 'delim' is specified, it will also
 // make sure there are no unescaped instances of that
-void decodeEscapes(string &dest, int &destLen, char const *src,
+void decodeEscapes(sm_string &dest, int &destLen, char const *src,
                    char delim = 0, bool allowNewlines=false);
 
-// given a string with quotes and escapes, yield just the string;
+// given a sm_string with quotes and escapes, yield just the sm_string;
 // works if there are no escaped NULs
-string parseQuotedString(char const *text);
+sm_string parseQuotedString(char const *text);
 
 
 // this probably belongs in a dedicated module for time/date stuff..
 // returns asctime(localtime(time))
-string localTimeString();
+sm_string localTimeString();
 
 
 // given a directory name like "a/b/c", return "c"
-// renamed from 'basename' because of conflict with something in string.h
-string sm_basename(char const *src);
+// renamed from 'basename' because of conflict with something in sm_string.h
+sm_string sm_basename(char const *src);
 
 // given a directory name like "a/b/c", return "a/b"; if 'src' contains
 // no slashes at all, return "."
-string dirname(char const *src);
+sm_string dirname(char const *src);
 
 
 // return 'prefix', pluralized if n!=1; for example
@@ -6003,15 +5994,15 @@ string dirname(char const *src);
 //   plural(2, "egg") yields "eggs";
 // it knows about a few irregular pluralizations (see the source),
 // and the expectation is I'll add more irregularities as I need them
-string plural(int n, char const *prefix);
+sm_string plural(int n, char const *prefix);
 
-// same as 'plural', but with the stringized version of the number:
+// same as 'plural', but with the sm_stringized version of the number:
 //   pluraln(1, "egg") yields "1 egg", and
 //   pluraln(2, "eggs") yields "2 eggs"
-string pluraln(int n, char const *prefix);
+sm_string pluraln(int n, char const *prefix);
 
 
-// Sometimes it's useful to store a string value in a static buffer;
+// Sometimes it's useful to store a sm_string value in a static buffer;
 // most often this is so 'gdb' can see the result.  This function just
 // copies its input into a static buffer (of unspecified length, but
 // it checks bounds internally), and returns a pointer to that buffer.
@@ -6025,26 +6016,26 @@ bool prefixEquals(char const *str, char const *prefix);
 bool suffixEquals(char const *str, char const *suffix);
 
 
-// read/write strings <-> files
+// read/write sm_strings <-> files
 void writeStringToFile(char const *str, char const *fname);
-string readStringFromFile(char const *fname);
+sm_string readStringFromFile(char const *fname);
 
 
 // read the next line from a FILE* (e.g. an AutoFILE); the
 // newline is returned if it is present (you can use 'chomp'
 // to remove it); returns false (and "") on EOF
-bool readLine(string &dest, FILE *fp);
+bool readLine(sm_string &dest, FILE *fp);
 
 
 // like perl 'chomp': remove a final newline if there is one
-string chomp(char const *src);
+sm_string chomp(char const *src);
 
 
 #endif // STRUTIL_H
 @h=tangler('elk/sm_svdict.h')
 @select(h)
 // svdict.h            see license.txt for copyright and terms of use
-// dictionary of void*, indexed by string (case-sensitive)
+// dictionary of void*, indexed by sm_string (case-sensitive)
 // (c) Scott McPeak, 2000
 
 // created by modifying strdict; at some point strdict should
@@ -6061,7 +6052,7 @@ string chomp(char const *src);
 #include "sm_strhash.h"
   
 
-// constness: for this class, 'const' means the *mapping* from string
+// constness: for this class, 'const' means the *mapping* from sm_string
 // to void* won't change; but I don't prevent the thing pointed-at
 // by the void* from changing (would like multiple levels of constness..)
 
@@ -6073,7 +6064,7 @@ private:    // types
   class Node {
   public:
     Node *next;
-    string key;
+    sm_string key;
     void *value;
 
   public:
@@ -6087,7 +6078,7 @@ private:    // types
 public:     // types
   // function for general foreach; return false to continue,
   // true to stop iterating
-  typedef bool (*ForeachFn)(string const &key, void *value, void *extra);
+  typedef bool (*ForeachFn)(sm_string const &key, void *value, void *extra);
 
   // function type to delete void*s while emptying
   typedef void (*DelFn)(void *value);
@@ -6109,7 +6100,7 @@ public:     // types
     Iter& next() { xassert(current); current = current->next; return *this; }
       // 'next' returns a value primarily to allow use in for-loop comma exprs
 
-    string &key() const { return current->key; }
+    sm_string &key() const { return current->key; }
     void *&value() const { return current->value; }
     
     int private_getCurrent() const { return (int)current; }
@@ -6130,7 +6121,7 @@ public:     // types
     Iter::private_getCurrent;
 
     // others must be const-ified
-    string const &key() const { return Iter::key(); }
+    sm_string const &key() const { return Iter::key(); }
     void const *&value() const { return (void const *&)Iter::value(); }
   };
 
@@ -6223,7 +6214,7 @@ public:
 
   // ------------ misc --------------
   INSERT_OSTREAM(StringVoidDict)
-  string toString() const;
+  sm_string toString() const;
   
   // debugging...
   int private_getTopAddr() const { return (int)top; }
@@ -6246,7 +6237,7 @@ public:
 
 class xSysError : public xBase {
 private:    // data
-  // error strings for Reasons
+  // error sm_strings for Reasons
   static char const * const reasonStrings[];
 
 public:     // data
@@ -6271,21 +6262,21 @@ public:     // data
     NUM_REASONS          // (must be last item in list)
   } reason;
 
-  // reason string that corresponds to 'reason'
+  // reason sm_string that corresponds to 'reason'
   char const * const reasonString;
 
   // nonportable error code (errno on Unix, GetLastError() on Windows)
   // (value is 0 when we don't have this information)
   int sysErrorCode;
 
-  // reason string given by the OS, if any (might be NULL)
-  string sysReasonString;
+  // reason sm_string given by the OS, if any (might be NULL)
+  sm_string sysReasonString;
 
   // name of syscall or API function name
-  string syscallName;
+  sm_string syscallName;
 
   // error context; what was being done (e.g., "opening an.important.file")
-  string context;
+  sm_string context;
 
 public:    // funcs
   xSysError(Reason r, int sysCode, char const *sysReason,
@@ -6298,20 +6289,20 @@ public:    // funcs
     // retrieve the error code used by local convention
     // [nonportable implementation]
 
-  static Reason portablize(int sysErrorCode, string &sysReason);
+  static Reason portablize(int sysErrorCode, sm_string &sysReason);
     // return a portable equivalent of a system error code;
     // returns R_UNKNOWN if the code is esoteric or invalid;
-    // sets 'sysmsg' to the system's message string, if possible
+    // sets 'sysmsg' to the system's message sm_string, if possible
     // [nonportable implementation]
 
   static char const *getReasonString(Reason r);
-    // translate a Reason into a string (if r is invalid, a string
+    // translate a Reason into a sm_string (if r is invalid, a sm_string
     // saying to will be returned)
 
-  static string constructWhyString(Reason r, char const *sysReason,
+  static sm_string constructWhyString(Reason r, char const *sysReason,
                                    char const *syscall, char const *ctx);
-    // construct the string we throw as the 'why' of xBase; if ctx is NULL,
-    // the string doesn't include it
+    // construct the sm_string we throw as the 'why' of xBase; if ctx is NULL,
+    // the sm_string doesn't include it
 
   static void xsyserror(char const *syscallName, char const *context);
     // does the throw
@@ -6325,11 +6316,11 @@ inline void xsyserror(char const *syscallName, char const *context = NULL)
 }
 
 
-// get a representative string, for logging etc.
-string sysErrorCodeString(int systemErrorCode, char const *syscallName,
+// get a representative sm_string, for logging etc.
+sm_string sysErrorCodeString(int systemErrorCode, char const *syscallName,
                                                char const *context=NULL);
 
-inline string sysErrorString(char const *syscallName, char const *context=NULL)
+inline sm_string sysErrorString(char const *syscallName, char const *context=NULL)
 {
   return sysErrorCodeString(xSysError::getSystemErrorCode(),
                             syscallName, context);
@@ -6670,7 +6661,7 @@ void traceRemoveAll();
 // method, it is up to you to put the newline
 ostream &trace(char const *sysName);
 
-// give an entire string to trace; do *not* put a newline in it
+// give an entire sm_string to trace; do *not* put a newline in it
 // (the tracer will do that)
 void trstr(char const *sysName, char const *traceString);
 
@@ -7492,10 +7483,10 @@ void x_assert_fail(char const *cond, char const *file, int line) NORETURN;
 
 // Quick note: one prominent book on writing code recommends that
 // assertions *not* include the failure condition, since the file
-// and line number are sufficient, and the condition string uses
+// and line number are sufficient, and the condition sm_string uses
 // memory.  The problem is that sometimes a compiled binary is
 // out of date w/respect to the code, and line numbers move, so
-// the condition string provides a good way to find the right
+// the condition sm_string provides a good way to find the right
 // assertion.
 
 
@@ -8068,7 +8059,7 @@ void entry()
 {                    
   // make up some data
   int x = 9, y = 22;
-  string s("foo bar");
+  sm_string s("foo bar");
   int *px = &x, *py = &y;
 
   // open a file for writing them
@@ -8085,7 +8076,7 @@ void entry()
 
   // place to put the data we read
   int x2, y2;
-  string s2;
+  sm_string s2;
   int *px2, *py2;
 
   // read them back
@@ -8426,11 +8417,11 @@ void BPRender::breakLine(int ind)
 }
 
 
-string BPRender::takeAndRender(BoxPrint &bld)
+sm_string BPRender::takeAndRender(BoxPrint &bld)
 {
   BPBox* /*owner*/ tree = bld.takeTree();
   tree->render(*this);
-  string ret(sb);
+  sm_string ret(sb);
   sb.clear();
   delete tree;
   return ret;
@@ -8664,7 +8655,7 @@ void BoxPrint::append(BPElement *elt)
 
 BoxPrint& BoxPrint::operator<< (int i)
 {
-  return operator<< (stringc << i);
+  return operator<< (sm_stringc << i);
 }
 
 BoxPrint& BoxPrint::operator<< (char const *s)
@@ -9114,7 +9105,7 @@ struct parameters
     #define RIGHT_JUSTIFY 2
     #define ZERO_PAD      4
     #define CAPITAL_HEX   8
-  short edited_string_length;
+  short edited_sm_string_length;
   short leading_zeros;
   int (*output_function)(void *, int);
   void *output_pointer;
@@ -9133,7 +9124,7 @@ static void output_and_count(struct parameters *p, int c)
 static void output_field(struct parameters *p, char const *s)
 {
   short justification_length =
-    p->minimum_field_width - p->leading_zeros - p->edited_string_length;
+    p->minimum_field_width - p->leading_zeros - p->edited_sm_string_length;
   if (p->options & MINUS_SIGN)
   {
     if (p->options & ZERO_PAD)
@@ -9147,7 +9138,7 @@ static void output_field(struct parameters *p, char const *s)
     output_and_count(p, '-');
   while (--p->leading_zeros >= 0)
     output_and_count(p, '0');
-  while (--p->edited_string_length >= 0)
+  while (--p->edited_sm_string_length >= 0)
     output_and_count(p, *s++);
   while (--justification_length >= 0)
     output_and_count(p, ' ');
@@ -9156,7 +9147,7 @@ static void output_field(struct parameters *p, char const *s)
 
 int general_vprintf(Gprintf_output_function output_function, 
                     void *output_pointer,
-                    const char *control_string, 
+                    const char *control_sm_string, 
                     va_list argument_pointer)
 {
   struct parameters p;
@@ -9164,7 +9155,7 @@ int general_vprintf(Gprintf_output_function output_function,
   p.number_of_output_chars = 0;
   p.output_function = output_function;
   p.output_pointer = output_pointer;
-  control_char = *control_string++;
+  control_char = *control_sm_string++;
   while (control_char != '\0')
   {
     if (control_char == '%')
@@ -9172,24 +9163,24 @@ int general_vprintf(Gprintf_output_function output_function,
       short precision = -1;
       short long_argument = 0;
       short base = 0;
-      control_char = *control_string++;
+      control_char = *control_sm_string++;
       p.minimum_field_width = 0;
       p.leading_zeros = 0;
       p.options = RIGHT_JUSTIFY;
       if (control_char == '-')
       {
         p.options = 0;
-        control_char = *control_string++;
+        control_char = *control_sm_string++;
       }
       if (control_char == '0')
       {
         p.options |= ZERO_PAD;
-        control_char = *control_string++;
+        control_char = *control_sm_string++;
       }
       if (control_char == '*')
       {
         p.minimum_field_width = va_arg(argument_pointer, int);
-        control_char = *control_string++;
+        control_char = *control_sm_string++;
       }
       else
       {
@@ -9197,16 +9188,16 @@ int general_vprintf(Gprintf_output_function output_function,
         {
           p.minimum_field_width =
             p.minimum_field_width * 10 + control_char - '0';
-          control_char = *control_string++;
+          control_char = *control_sm_string++;
         }
       }
       if (control_char == '.')
       {
-        control_char = *control_string++;
+        control_char = *control_sm_string++;
         if (control_char == '*')
         {
           precision = va_arg(argument_pointer, int);
-          control_char = *control_string++;
+          control_char = *control_sm_string++;
         }
         else
         {
@@ -9214,14 +9205,14 @@ int general_vprintf(Gprintf_output_function output_function,
           while ('0' <= control_char && control_char <= '9')
           {
             precision = precision * 10 + control_char - '0';
-            control_char = *control_string++;
+            control_char = *control_sm_string++;
           }
         }
       }
       if (control_char == 'l')
       {
         long_argument = 1;
-        control_char = *control_string++;
+        control_char = *control_sm_string++;
       }
       if (control_char == 'd')
         base = 10;
@@ -9271,15 +9262,15 @@ int general_vprintf(Gprintf_output_function output_function,
              * up to 30 characters of decimal part are supported (this
              * is checked with the assertion above). */
             if (precision == -1) {
-              p.edited_string_length = 20 + 6;    /* 6 is default precision for 'f' */
+              p.edited_sm_string_length = 20 + 6;    /* 6 is default precision for 'f' */
             }
             else {
-              p.edited_string_length = 20 + precision;
+              p.edited_sm_string_length = 20 + precision;
             }
             output_field(&p, XXX);
           #endif
 
-          control_char = *control_string++;
+          control_char = *control_sm_string++;
         }
       }
       else
@@ -9288,25 +9279,25 @@ int general_vprintf(Gprintf_output_function output_function,
         {                
           /* 'char' is passed as 'int' through '...' */
           char c = (char)va_arg(argument_pointer, int);
-          p.edited_string_length = 1;
+          p.edited_sm_string_length = 1;
           output_field(&p, &c);
         }
         else if (base == -2)  /* conversion type s */
         {
-          char *string;
-          p.edited_string_length = 0;
-          string = va_arg(argument_pointer, char*);
-          while (string[p.edited_string_length] != 0)
-            p.edited_string_length++;
-          if (precision >= 0 && p.edited_string_length > precision)
-            p.edited_string_length = precision;
-          output_field(&p, string);
+          char *sm_string;
+          p.edited_sm_string_length = 0;
+          sm_string = va_arg(argument_pointer, char*);
+          while (sm_string[p.edited_sm_string_length] != 0)
+            p.edited_sm_string_length++;
+          if (precision >= 0 && p.edited_sm_string_length > precision)
+            p.edited_sm_string_length = precision;
+          output_field(&p, sm_string);
         }
         else  /* conversion type d, b, o or x */
         {
           unsigned long x;
           char buffer[BITS_PER_BYTE * sizeof(unsigned long) + 1];
-          p.edited_string_length = 0;
+          p.edited_sm_string_length = 0;
           if (long_argument) 
           {
             x = va_arg(argument_pointer, unsigned long);
@@ -9331,20 +9322,20 @@ int general_vprintf(Gprintf_output_function output_function,
               else
                 c += 'a'-'9'-1;
             }
-            buffer[sizeof(buffer) - 1 - p.edited_string_length++] = c;
+            buffer[sizeof(buffer) - 1 - p.edited_sm_string_length++] = c;
           }
           while ((x/=base) != 0);
-          if (precision >= 0 && precision > p.edited_string_length)
-            p.leading_zeros = precision - p.edited_string_length;
-          output_field(&p, buffer + sizeof(buffer) - p.edited_string_length);
+          if (precision >= 0 && precision > p.edited_sm_string_length)
+            p.leading_zeros = precision - p.edited_sm_string_length;
+          output_field(&p, buffer + sizeof(buffer) - p.edited_sm_string_length);
         }
-        control_char = *control_string++;
+        control_char = *control_sm_string++;
       }
     }
     else
     {
       output_and_count(&p, control_char);
-      control_char = *control_string++;
+      control_char = *control_sm_string++;
     }
   }
   return p.number_of_output_chars;
@@ -9373,7 +9364,7 @@ int general_printf(Gprintf_output_function output,
 #include <stdlib.h>    /* exit */
 
 
-int string_output(void *extra, int ch)
+int sm_string_output(void *extra, int ch)
 {                          
   /* the 'extra' argument is a pointer to a pointer to the
    * next character to write */
@@ -9390,7 +9381,7 @@ int general_vsprintf(char *dest, char const *format, va_list args)
   char *s = dest;
   int ret;
 
-  ret = general_vprintf(string_output, &s, format, args);
+  ret = general_vprintf(sm_string_output, &s, format, args);
   *s = 0;
 
   return ret;
@@ -9562,10 +9553,10 @@ void HashLineMap::addHashLine(int ppLine, int origLine, char const *origFname)
   prev_ppLine = ppLine;
 
   // map 'origFname' to a canonical reference
-  string *canon = filenames.queryif(origFname);
+  sm_string *canon = filenames.queryif(origFname);
   if (!canon) {
     // add a new one
-    canon = new string(origFname);
+    canon = new sm_string(origFname);
     filenames.add(origFname, canon);
   }
   origFname = canon->pcharc();
@@ -10226,7 +10217,7 @@ int main()
       buf[len++] = '\n';
     }
     buf[len] = 0;
-    printf("error string: %s", buf);   // should include newline from perror
+    printf("error sm_string: %s", buf);   // should include newline from perror
 
     close(in);
     close(out);
@@ -10258,7 +10249,7 @@ int main()
       buf[len++] = '\n';
     }
     buf[len] = 0;
-    printf("error string: %s", buf);   // should include newline from perror
+    printf("error sm_string: %s", buf);   // should include newline from perror
 
     close(in);
     close(out);
@@ -10500,12 +10491,12 @@ int main()
 #include "sm_point.h"
 #include "sm_str.h"
 
-stringBuilder& operator<< (stringBuilder &sb, point const &pt)
+sm_stringBuilder& operator<< (sm_stringBuilder &sb, point const &pt)
 {
   return sb << "(" << pt.x << ", " << pt.y << ")";
 }
 
-stringBuilder& operator<< (stringBuilder &sb, fpoint const &pt)
+sm_stringBuilder& operator<< (sm_stringBuilder &sb, fpoint const &pt)
 {
   return sb << "(" << pt.x << ", " << pt.y << ")";
 }
@@ -10898,15 +10889,15 @@ int main()
 #endif
 
 
-// get an error string
-static string regexpErrorString(regex_t const *pat, int code)
+// get an error sm_string
+static sm_string regexpErrorString(regex_t const *pat, int code)
 {
-  // find out how long the error string is; this size
+  // find out how long the error sm_string is; this size
   // includes the final NUL byte
   int size = regerror(code, pat, NULL, 0);
 
-  // get the string
-  string ret(size);
+  // get the sm_string
+  sm_string ret(size);
   regerror(code, pat, ret.pchar(), size);
 
   return ret;
@@ -10947,7 +10938,7 @@ Regexp::Regexp(char const *exp, CFlags flags)
   int code = regcomp(PAT, exp, f);
   if (code) {
     // deallocate the pattern buffer before throwing the exception
-    string msg = regexpErrorString(PAT, code);
+    sm_string msg = regexpErrorString(PAT, code);
     delete PAT;
     xbase(msg);
   }
@@ -11709,26 +11700,26 @@ int SourceLocManager::getCol(SourceLoc loc)
 }
 
 
-string SourceLocManager::getString(SourceLoc loc)
+sm_string SourceLocManager::getString(SourceLoc loc)
 {
   char const *name;
   int line, col;
   decodeLineCol(loc, name, line, col);
 
-  return stringc << name << ":" << line << ":" << col;
+  return sm_stringc << name << ":" << line << ":" << col;
 }
 
-string SourceLocManager::getLCString(SourceLoc loc)
+sm_string SourceLocManager::getLCString(SourceLoc loc)
 {
   char const *name;
   int line, col;
   decodeLineCol(loc, name, line, col);
 
-  return stringc << line << ":" << col;
+  return sm_stringc << line << ":" << col;
 }
 
 
-string locToStr(SourceLoc sl)
+sm_string locToStr(SourceLoc sl)
 {
   return sourceLocManager->getString(sl);
 }
@@ -11882,9 +11873,9 @@ EXPANDER
 
 
 // should this be exported?
-string locString(char const *fname, int line, int col)
+sm_string locString(char const *fname, int line, int col)
 {
-  return stringc << fname << ":" << line << ":" << col;
+  return sm_stringc << fname << ":" << line << ":" << col;
 }
 
 
@@ -11923,7 +11914,7 @@ void testHashMap()
 
       int origLine = atoi(tok[1]);
       char const *tok2 = tok[2];
-      string origFname = string(tok2+1, strlen(tok2)-2);  // remove quotes
+      sm_string origFname = sm_string(tok2+1, strlen(tok2)-2);  // remove quotes
       pp->addHashLine(ppLine, origLine, origFname);
     }
     pp->doneAdding();
@@ -12130,7 +12121,7 @@ int StringDict::size() const
 }
 
 
-bool StringDict::query(char const *key, string &value) const
+bool StringDict::query(char const *key, sm_string &value) const
 {
   FOREACH_ITERC(*this, entry) {
     if (0==strcmp(entry.key(), key)) {
@@ -12143,9 +12134,9 @@ bool StringDict::query(char const *key, string &value) const
 }
 
 
-string StringDict::queryf(char const *key) const
+sm_string StringDict::queryf(char const *key) const
 {
-  string ret;
+  sm_string ret;
   bool ok = query(key, ret);
   xassert(ok);
   return ret;
@@ -12154,7 +12145,7 @@ string StringDict::queryf(char const *key) const
 
 bool StringDict::isMapped(char const *key) const
 {
-  string dummy;
+  sm_string dummy;
   return query(key, dummy);
 }
 
@@ -12342,9 +12333,9 @@ void StringDict::insertOstream(ostream &os) const
 }
 
 
-string StringDict::toString() const
+sm_string StringDict::toString() const
 {
-  stringBuilder sb;
+  sm_stringBuilder sb;
   sb << "{";
   int count=0;
   FOREACH_ITERC(*this, entry) {
@@ -12371,21 +12362,21 @@ char randChar()
   return (char)(myrandom(127-32+1)+32);
 }
 
-string randString(int len)
+sm_string randString(int len)
 {
-  stringBuilder str;
+  sm_stringBuilder str;
   loopj(len) {
     str << randChar();
   }
   return str;
 }
 
-string randStringRandLen(int maxlen)
+sm_string randStringRandLen(int maxlen)
 {
   return randString(myrandom(maxlen)+1);
 }
 
-string randKey(StringDict const &dict)
+sm_string randKey(StringDict const &dict)
 {
   int size = dict.size();
   xassert(size > 0);
@@ -12409,8 +12400,8 @@ void entry()
     switch (myrandom(6)) {
       case 0: {
         // insert a random element
-        string key = randStringRandLen(10);
-        string value = randStringRandLen(30);
+        sm_string key = randStringRandLen(10);
+        sm_string value = randStringRandLen(30);
 
         if (!dict.isMapped(key)) {
           dict.add(key, value);
@@ -12428,7 +12419,7 @@ void entry()
           break;
         }
 
-        string key = randKey(dict);
+        sm_string key = randKey(dict);
         dict.remove(key);
         size--;
         break;
@@ -12436,7 +12427,7 @@ void entry()
 
       case 2: {
         // check a random element that should not be there
-        string key = randStringRandLen(10);
+        sm_string key = randStringRandLen(10);
         if (dict.isMapped(key)) {
           collisions++;
         }
@@ -12457,8 +12448,8 @@ void entry()
 
         // modify it, then verify inequality
         if (!dict2.isEmpty()) {
-          string key = randKey(dict2);
-          string value = dict2.queryf(key);
+          sm_string key = randKey(dict2);
+          sm_string value = dict2.queryf(key);
 
           if (myrandom(2) == 0) {
             dict2.remove(key);
@@ -12475,7 +12466,7 @@ void entry()
       case 5: {
         // random modification
         if (!dict.isEmpty()) {
-          string key = randKey(dict);
+          sm_string key = randKey(dict);
           dict.modify(key, randStringRandLen(30));
         }
         break;
@@ -12507,7 +12498,7 @@ USUAL_MAIN
 
 #include <string.h>      // strcmp
 
-// notes on string hash functions ****************
+// notes on sm_string hash functions ****************
 
 // We need to test the various hash functions versus each other for
 // randomness.  Scott suggests simply hashing the same data and
@@ -12523,10 +12514,10 @@ USUAL_MAIN
 
 // 1) Does not work on architectures other than 32 bit.
 
-// 2) Will not work well or at all if the strings do not start on
+// 2) Will not work well or at all if the sm_strings do not start on
 // 32-bit aligned boundaries.
 
-// 3) Could be made to work faster if the strings start AND end on
+// 3) Could be made to work faster if the sm_strings start AND end on
 // 32-bit aligned boundaries and are padded out with NUL-s.  Actually,
 // if we do this trick, then the code becomes portable with no
 // #ifdef-s !  All you do is cast the array to an array of ints and
@@ -12577,7 +12568,7 @@ STATICDEF unsigned StringHash::coreHash(char const *key)
 
   // http://mail.python.org/pipermail/python-dev/2004-April/044235.html
   //
-  // Start of a discussion thread about changing the string hash
+  // Start of a discussion thread about changing the sm_string hash
   // in Python.
 
 
@@ -12608,7 +12599,7 @@ STATICDEF unsigned StringHash::coreHash(char const *key)
     #warning hash function 1: Nelson 
   #endif // SAY_STRHASH_ALG
   // this one is supposed to be better
-  /* An excellent string hashing function.
+  /* An excellent sm_string hashing function.
      Adapted from glib's g_str_hash().
      Investigation by Karl Nelson <kenelson@ece.ucdavis.edu>.
      Do a web search for "g_str_hash X31_HASH" if you want to know more. */
@@ -12623,7 +12614,7 @@ STATICDEF unsigned StringHash::coreHash(char const *key)
     // otherwise the last byte has no hope of modifying the high order
     // bits
     //
-    // sm: I'm not convinced it's better.  For short strings, say less
+    // sm: I'm not convinced it's better.  For short sm_strings, say less
     // than 6 characters, the arithmetic won't overflow a 32-bit
     // register.  In that case, by multiplying last, the hash value is
     // always a multiple of 31 and hence will suffer many more
@@ -12669,10 +12660,10 @@ STATICDEF unsigned StringHash::coreHash(char const *key)
   unsigned h = primeA;
 
   // Stride a word at a time.  Note that this works best (or works at
-  // all) if the string is 32-bit aligned.  This initial 'if' block is
+  // all) if the sm_string is 32-bit aligned.  This initial 'if' block is
   // to prevent an extra unneeded rotate.
   //
-  // FIX: this would be even faster if all strings were NUL-padded in
+  // FIX: this would be even faster if all sm_strings were NUL-padded in
   // length to a multiple of 4; we could then omit all but the last
   // 'if' and the ragged end after the loop (it doesn't matter if you
   // tile a few extra NULs into your value).
@@ -12690,7 +12681,7 @@ STATICDEF unsigned StringHash::coreHash(char const *key)
     if (!key[2]) {h = ROTATE(h, 5); goto end2;}
     if (!key[3]) {h = ROTATE(h, 5); goto end3;}
     h = ROTATE(h, 5);
-    // FIX: if the start of the string is not 4-byte aligned then this
+    // FIX: if the start of the sm_string is not 4-byte aligned then this
     // will be slower on x86 and I think even illegal on MIPS and
     // perhaps others.  To be portable we should ensure this.
     h += *( (unsigned *) key ); // on my machine plus is faster than xor
@@ -12821,7 +12812,7 @@ char *randomString()
   return ret;
 }
 
-// fill a table with random strings
+// fill a table with random sm_strings
 void makeRandomData(int numRandStrs) {
   dataArray = new StringArray(numRandStrs);
   {loopi(dataArray->tableSize) {
@@ -12830,7 +12821,7 @@ void makeRandomData(int numRandStrs) {
 }
 
 
-// file the data array with whitespace-delimited strings from a file
+// file the data array with whitespace-delimited sm_strings from a file
 void readDataFromFile(char *inFileName) {
   dataArray = new StringArray(0);
   char *delim = " \t\n\r\v\f";
@@ -12838,11 +12829,11 @@ void readDataFromFile(char *inFileName) {
   fb.open (inFileName, ios::in);
   istream in(&fb);
   while(true) {
-    stringBuilder s;
+    sm_stringBuilder s;
     s.readdelim(in, delim);
 //      cout << ":" << s->pcharc() << ":" << endl;
     if (in.eof()) break;
-//      // don't insert 0 length strings
+//      // don't insert 0 length sm_strings
 //      if (s->length() == 0) continue;
     dataArray->append(strdup(s.pcharc()));
   }
@@ -12856,7 +12847,7 @@ void writeData(ostream &out) {
 }
 
 // dsw: what is the point of this?
-// dealloc the test strings
+// dealloc the test sm_strings
 //  void deleteData() {
 //    {loopi(dataArray->tableSize) {
 //      delete[] dataArray->table[i];
@@ -12944,14 +12935,14 @@ bool testPerf = true;
 int numPerfRuns = 10000;
 
 void usage() {
-  cout << "Test the string hashing module strhash.cc\n"
+  cout << "Test the sm_string hashing module strhash.cc\n"
        << "  --help / -h     : print this message\n"
        << "  --[no-]testCor  : run the correctness tests\n"
-       << "                    will fail if data has duplicate strings (?!)\n"
+       << "                    will fail if data has duplicate sm_strings (?!)\n"
        << "  --[no-]testPerf : run the performance tests\n"
        << "  --numPerfRuns N : loop over data N times during performance run\n"
-       << "  --file FILE     : use the whitespace-delimited string contents of FILE\n"
-       << "  --random N      : use N internally generated random strings of length 10;\n"
+       << "  --file FILE     : use the whitespace-delimited sm_string contents of FILE\n"
+       << "  --random N      : use N internally generated random sm_strings of length 10;\n"
        << "                    N should be even\n"
        << "  --dump          : dump out the data after generating/reading it\n"
        << "The default is '--random 300 --testCor --testPerf --numPerfRuns 10000'."
@@ -13057,7 +13048,7 @@ int main(int argc, char **argv)
     makeRandomData(numRandStrs);
   } else if (inFileName) {
     if (testCor) {
-      cout << "Warning: The correctness test fails if strings are duplicated "
+      cout << "Warning: The correctness test fails if sm_strings are duplicated "
         "and you are reading data from a file." << endl;
     }
     readDataFromFile(inFileName);
@@ -13086,12 +13077,12 @@ int main(int argc, char **argv)
 }
 
 #endif // TEST_STRHASH
-@h=tangler('elk/sm_stringset.cpp')
+@h=tangler('elk/sm_sm_stringset.cpp')
 @select(h)
-// stringset.cc            see license.txt for copyright and terms of use
-// code for stringset.h
+// sm_stringset.cc            see license.txt for copyright and terms of use
+// code for sm_stringset.h
 
-#include "sm_stringset.h"
+#include "sm_sm_stringset.h"
 
 StringSet::~StringSet()
 {}
@@ -13127,27 +13118,27 @@ void StringSet::remove(char const *elt)
 
 
 // replace all instances of oldstr in src with newstr, return result
-string replace(char const *src, char const *oldstr, char const *newstr)
+sm_string replace(char const *src, char const *oldstr, char const *newstr)
 {
-  stringBuilder ret("");
+  sm_stringBuilder ret("");
 
   while (*src) {
     char const *next = strstr(src, oldstr);
     if (!next) {
-      ret &= string(src);
+      ret &= sm_string(src);
       break;
     }
 
-    // make a substring out of the characters between src and next
-    string upto(src, next-src);
+    // make a subsm_string out of the characters between src and next
+    sm_string upto(src, next-src);
 
-    // add it to running string
+    // add it to running sm_string
     ret &= upto;
 
-    // add the replace-with string
-    ret &= string(newstr);
+    // add the replace-with sm_string
+    ret &= sm_string(newstr);
 
-    // move src to beyond replaced substring
+    // move src to beyond replaced subsm_string
     src += (next-src) + strlen(oldstr);
   }
 
@@ -13155,9 +13146,9 @@ string replace(char const *src, char const *oldstr, char const *newstr)
 }
 
 
-string expandRanges(char const *chars)
+sm_string expandRanges(char const *chars)
 {
-  stringBuilder ret;
+  sm_stringBuilder ret;
   
   while (*chars) {
     if (chars[1] == '-' && chars[2] != 0) {
@@ -13182,11 +13173,11 @@ string expandRanges(char const *chars)
 }
 
 
-string translate(char const *src, char const *srcchars, char const *destchars)
+sm_string translate(char const *src, char const *srcchars, char const *destchars)
 {
   // first, expand range notation in the specification sequences
-  string srcSpec = expandRanges(srcchars);
-  string destSpec = expandRanges(destchars);
+  sm_string srcSpec = expandRanges(srcchars);
+  sm_string destSpec = expandRanges(destchars);
 
   // build a translation map
   char map[256];
@@ -13195,13 +13186,13 @@ string translate(char const *src, char const *srcchars, char const *destchars)
     map[i] = i;
   }
 
-  // excess characters from either string are ignored ("SysV" behavior)
+  // excess characters from either sm_string are ignored ("SysV" behavior)
   for (i=0; i < srcSpec.length() && i < destSpec.length(); i++) {
     map[(unsigned char)( srcSpec[i] )] = destSpec[i];
   }
 
   // run through 'src', applying 'map'
-  string ret(strlen(src));
+  sm_string ret(strlen(src));
   char *dest = ret.pchar();
   while (*src) {
     *dest = map[(unsigned char)*src];
@@ -13215,11 +13206,11 @@ string translate(char const *src, char const *srcchars, char const *destchars)
 
 
 // why is this necessary?
-string stringToupper(char const *src)
+sm_string sm_stringToupper(char const *src)
   { return translate(src, "a-z", "A-Z"); }
 
 
-string trimWhitespace(char const *str)
+sm_string trimWhitespace(char const *str)
 {
   // trim leading whitespace
   while (isspace(*str)) {
@@ -13234,13 +13225,13 @@ string trimWhitespace(char const *str)
   }
 
   // return it
-  return string(str, end-str);
+  return sm_string(str, end-str);
 }
 
 
 // table of escape codes
 static struct Escape {
-  char actual;      // actual character in string
+  char actual;      // actual character in sm_string
   char escape;      // char that follows backslash to produce 'actual'
 } const escapes[] = {
   { '\0', '0' },  // nul
@@ -13257,9 +13248,9 @@ static struct Escape {
 };
 
 
-string encodeWithEscapes(char const *p, int len)
+sm_string encodeWithEscapes(char const *p, int len)
 {
-  stringBuilder sb;
+  sm_stringBuilder sb;
 
   for (; len>0; len--, p++) {
     // look for an escape code
@@ -13290,33 +13281,33 @@ string encodeWithEscapes(char const *p, int len)
 }
 
 
-string encodeWithEscapes(char const *p)
+sm_string encodeWithEscapes(char const *p)
 {
   return encodeWithEscapes(p, strlen(p));
 }
 
 
-string quoted(char const *src)
+sm_string quoted(char const *src)
 {
-  return stringc << "\""
+  return sm_stringc << "\""
                  << encodeWithEscapes(src, strlen(src))
                  << "\"";
 }
 
 
-void decodeEscapes(string &dest, int &destLen, char const *src,
+void decodeEscapes(sm_string &dest, int &destLen, char const *src,
                    char delim, bool allowNewlines)
 {
-  // place to collect the string characters
-  stringBuilder sb;
+  // place to collect the sm_string characters
+  sm_stringBuilder sb;
   destLen = 0;
 
   while (*src != '\0') {
     if (*src == '\n' && !allowNewlines) {
-      xformat("unescaped newline (unterminated string)");
+      xformat("unescaped newline (unterminated sm_string)");
     }
     if (*src == delim) {
-      xformat(stringc << "unescaped delimiter (" << delim << ")");
+      xformat(sm_stringc << "unescaped delimiter (" << delim << ")");
     }
 
     if (*src != '\\') {
@@ -13348,7 +13339,7 @@ void decodeEscapes(string &dest, int &destLen, char const *src,
     }
     
     if (*src == '\0') {
-      xformat("backslash at end of string");
+      xformat("backslash at end of sm_string");
     }
 
     if (*src == '\n') {
@@ -13363,7 +13354,7 @@ void decodeEscapes(string &dest, int &destLen, char const *src,
     if (*src == 'x' || isdigit(*src)) {
       // hexadecimal or octal char (it's unclear to me exactly how to
       // parse these since it's supposedly legal to have e.g. "\x1234"
-      // mean a one-char string.. whatever)
+      // mean a one-char sm_string.. whatever)
       bool hex = (*src == 'x');
       if (hex) {
         src++;
@@ -13409,94 +13400,94 @@ void decodeEscapes(string &dest, int &destLen, char const *src,
 }
 
 
-string parseQuotedString(char const *text)
+sm_string parseQuotedString(char const *text)
 {
   if (!( text[0] == '"' &&
          text[strlen(text)-1] == '"' )) {
-    xformat(stringc << "quoted string is missing quotes: " << text);
+    xformat(sm_stringc << "quoted sm_string is missing quotes: " << text);
   }
 
   // strip the quotes
-  string noQuotes = string(text+1, strlen(text)-2);
+  sm_string noQuotes = sm_string(text+1, strlen(text)-2);
   
   // decode escapes
-  string ret;
+  sm_string ret;
   int dummyLen;
   decodeEscapes(ret, dummyLen, noQuotes, '"');
   return ret;
 }
 
 
-string localTimeString()
+sm_string localTimeString()
 {
   time_t t = time(NULL);
   char const *p = asctime(localtime(&t));
-  return string(p, strlen(p) - 1);     // strip final newline
+  return sm_string(p, strlen(p) - 1);     // strip final newline
 }
 
 
-string sm_basename(char const *src)
+sm_string sm_basename(char const *src)
 {
   char const *sl = strrchr(src, '/');   // locate last slash
   if (sl && sl[1] == 0) {
     // there is a slash, but it is the last character; ignore it
     // (this behavior is what /bin/basename does)
-    return sm_basename(string(src, strlen(src)-1));
+    return sm_basename(sm_string(src, strlen(src)-1));
   }
 
   if (sl) {
-    return string(sl+1);     // everything after the slash
+    return sm_string(sl+1);     // everything after the slash
   }
   else {
-    return string(src);      // entire string if no slashes
+    return sm_string(src);      // entire sm_string if no slashes
   }
 }
 
-string dirname(char const *src)
+sm_string dirname(char const *src)
 {
   char const *sl = strrchr(src, '/');   // locate last slash
   if (sl == src) {
     // last slash is leading slash
-    return string("/");
+    return sm_string("/");
   }
 
   if (sl && sl[1] == 0) {
     // there is a slash, but it is the last character; ignore it
     // (this behavior is what /bin/dirname does)
-    return dirname(string(src, strlen(src)-1));
+    return dirname(sm_string(src, strlen(src)-1));
   }
 
   if (sl) {
-    return string(src, sl-src);     // everything before slash
+    return sm_string(src, sl-src);     // everything before slash
   }
   else {
-    return string(".");
+    return sm_string(".");
   }
 }
 
 
 // I will expand this definition as I go to get more knowledge about
 // English irregularities as I need it
-string plural(int n, char const *prefix)
+sm_string plural(int n, char const *prefix)
 {
   if (n==1) {
-    return string(prefix);
+    return sm_string(prefix);
   }
 
   if (0==strcmp(prefix, "was")) {
-    return string("were");
+    return sm_string("were");
   }
   if (prefix[strlen(prefix)-1] == 'y') {
-    return stringc << string(prefix, strlen(prefix)-1) << "ies";
+    return sm_stringc << sm_string(prefix, strlen(prefix)-1) << "ies";
   }
   else {
-    return stringc << prefix << "s";
+    return sm_stringc << prefix << "s";
   }
 }
 
-string pluraln(int n, char const *prefix)
+sm_string pluraln(int n, char const *prefix)
 {
-  return stringc << n << " " << plural(n, prefix);
+  return sm_stringc << n << " " << plural(n, prefix);
 }
 
 
@@ -13541,11 +13532,11 @@ void writeStringToFile(char const *str, char const *fname)
 }
 
 
-string readStringFromFile(char const *fname)
+sm_string readStringFromFile(char const *fname)
 {
   AutoFILE fp(fname, "r");
 
-  stringBuilder sb;
+  sm_stringBuilder sb;
 
   char buf[4096];
   for (;;) {
@@ -13564,7 +13555,7 @@ string readStringFromFile(char const *fname)
 }
 
 
-bool readLine(string &dest, FILE *fp)
+bool readLine(sm_string &dest, FILE *fp)
 {
   char buf[80];
 
@@ -13578,8 +13569,8 @@ bool readLine(string &dest, FILE *fp)
     return true;
   }
 
-  // only got part of the string; need to iteratively construct
-  stringBuilder sb;
+  // only got part of the sm_string; need to iteratively construct
+  sm_stringBuilder sb;
   while (buf[strlen(buf)-1] != '\n') {
     sb << buf;
     if (!fgets(buf, 80, fp)) {
@@ -13594,13 +13585,13 @@ bool readLine(string &dest, FILE *fp)
 }
 
 
-string chomp(char const *src)
+sm_string chomp(char const *src)
 {
   if (src && src[strlen(src)-1] == '\n') {
-    return string(src, strlen(src)-1);
+    return sm_string(src, strlen(src)-1);
   }
   else {
-    return string(src);
+    return sm_string(src);
   }
 }
 
@@ -13614,21 +13605,21 @@ string chomp(char const *src)
 void expRangeVector(char const *in, char const *out)
 {
   printf("expRangeVector(%s, %s)\n", in, out);
-  string result = expandRanges(in);
+  sm_string result = expandRanges(in);
   xassert(result.equals(out));
 }
 
 void trVector(char const *in, char const *srcSpec, char const *destSpec, char const *out)
 {
   printf("trVector(%s, %s, %s, %s)\n", in, srcSpec, destSpec, out);
-  string result = translate(in, srcSpec, destSpec);
+  sm_string result = translate(in, srcSpec, destSpec);
   xassert(result.equals(out));
 }
 
 void decodeVector(char const *in, char const *out, int outLen)
 {
   printf("decodeVector: \"%s\"\n", in);
-  string dest;
+  sm_string dest;
   int destLen;
   decodeEscapes(dest, destLen, in, '\0' /*delim, ignored*/, false /*allowNewlines*/);
   xassert(destLen == outLen);
@@ -13638,21 +13629,21 @@ void decodeVector(char const *in, char const *out, int outLen)
 void basenameVector(char const *in, char const *out)
 {
   printf("basenameVector(%s, %s)\n", in, out);
-  string result = sm_basename(in);
+  sm_string result = sm_basename(in);
   xassert(result.equals(out));
 }
 
 void dirnameVector(char const *in, char const *out)
 {
   printf("dirnameVector(%s, %s)\n", in, out);
-  string result = dirname(in);
+  sm_string result = dirname(in);
   xassert(result.equals(out));
 }
 
 void pluralVector(int n, char const *in, char const *out)
 {
   printf("pluralVector(%d, %s, %s)\n", n, in, out);
-  string result = plural(n, in);
+  sm_string result = plural(n, in);
   xassert(result.equals(out));
 }
 
@@ -14069,9 +14060,9 @@ void StringVoidDict::insertOstream(ostream &os) const
 }
 
 
-string StringVoidDict::toString() const
+sm_string StringVoidDict::toString() const
 {
-  stringBuilder sb;
+  sm_stringBuilder sb;
   sb << "{";
   int count=0;
   FOREACH_ITERC(*this, entry) {
@@ -14098,21 +14089,21 @@ char randChar()
   return (char)(myrandom(127-32+1)+32);
 }
 
-string randString(int len)
+sm_string randString(int len)
 {
-  stringBuilder str;
+  sm_stringBuilder str;
   loopj(len) {
     str << randChar();
   }
   return str;
 }
 
-string randStringRandLen(int maxlen)
+sm_string randStringRandLen(int maxlen)
 {
   return randString(myrandom(maxlen)+1);
 }
 
-string randKey(StringVoidDict const &dict)
+sm_string randKey(StringVoidDict const &dict)
 {
   int size = dict.size();
   xassert(size > 0);
@@ -14141,7 +14132,7 @@ void entry()
     switch (myrandom(6)) {
       case 0: {
         // insert a random element
-        string key = randStringRandLen(10);
+        sm_string key = randStringRandLen(10);
         void *value = randVoidPtr();
 
         if (!dict.isMapped(key)) {
@@ -14160,7 +14151,7 @@ void entry()
           break;
         }
 
-        string key = randKey(dict);
+        sm_string key = randKey(dict);
         dict.remove(key);
         size--;
         break;
@@ -14168,7 +14159,7 @@ void entry()
 
       case 2: {
         // check a random element that should not be there
-        string key = randStringRandLen(10);
+        sm_string key = randStringRandLen(10);
         if (dict.isMapped(key)) {
           collisions++;
         }
@@ -14189,7 +14180,7 @@ void entry()
 
         // modify it, then verify inequality
         if (!dict2.isEmpty()) {
-          string key = randKey(dict2);
+          sm_string key = randKey(dict2);
           void *value = dict2.queryf(key);
 
           if (myrandom(2) == 0) {
@@ -14207,7 +14198,7 @@ void entry()
       case 5: {
         // random modification
         if (!dict.isEmpty()) {
-          string key = randKey(dict);
+          sm_string key = randKey(dict);
           dict.modify(key, randVoidPtr());
         }
         break;
@@ -14248,7 +14239,7 @@ USUAL_MAIN
 static bool inited = false;
 
 // list of active tracers, initially empty
-static ObjList<string> tracers;
+static ObjList<sm_string> tracers;
 
 // stream connected to /dev/null
 ofstream devNullObj("/dev/null");
@@ -14276,7 +14267,7 @@ void traceAddSys(char const *sysName)
 {
   init();
 
-  tracers.prepend(new string(sysName));
+  tracers.prepend(new sm_string(sysName));
 }
 
 
@@ -14284,7 +14275,7 @@ void traceRemoveSys(char const *sysName)
 {
   init();
 
-  MUTATE_EACH_OBJLIST(string, tracers, mut) {
+  MUTATE_EACH_OBJLIST(sm_string, tracers, mut) {
     if (mut.data()->compareTo(sysName) == 0) {
       mut.deleteIt();
       return;
@@ -14298,7 +14289,7 @@ bool tracingSys(char const *sysName)
 {
   init();
 
-  FOREACH_OBJLIST(string, tracers, iter) {
+  FOREACH_OBJLIST(sm_string, tracers, iter) {
     if (iter.data()->compareTo(sysName) == 0) {
       return true;
     }
@@ -14577,7 +14568,7 @@ int main()
 #include <sys/types.h>  // select
 #include <unistd.h>     // select
 #include <stdio.h>      // perror
-
+#include <sys/select.h> // FD_ZERO etc
 
 int writeAll(int fd, void const *buf, int len)
 {
@@ -14884,7 +14875,7 @@ void *VoidList::nth(int which) const
     p = p->next;
   }
   if (p == NULL) {
-    xfailure(stringc << "asked for list element "
+    xfailure(sm_stringc << "asked for list element "
                      << (count()+which) << " (0-based) but list only has "
                      << count() << " elements");
   }
@@ -16540,7 +16531,7 @@ void DataBlock::setFromString(char const *srcString)
 {
   SELFCHECK();
   int len = strlen(srcString)+1;
-    // a string is its contents and the null terminator
+    // a sm_string is its contents and the null terminator
   setFromBlock((byte const*)srcString, len);
   SELFCHECK();
 }
@@ -16896,7 +16887,7 @@ void xbase(char const *msg)
 
 // ------------------- x_assert -----------------
 x_assert::x_assert(char const *cond, char const *fname, int line)
-  : xBase(stringb(
+  : xBase(sm_stringb(
       "Assertion failed: " << cond <<
       ", file " << fname <<
       " line " << line)),
@@ -16925,7 +16916,7 @@ void x_assert_fail(char const *cond, char const *file, int line)
 
 // --------------- xFormat ------------------
 xFormat::xFormat(char const *cond)
-  : xBase(stringb("Formatting error: " << cond)),
+  : xBase(sm_stringb("Formatting error: " << cond)),
     condition(cond)
 {}
 
@@ -16946,7 +16937,7 @@ void xformat(char const *condition)
 
 void formatAssert_fail(char const *cond, char const *file, int line)
 {
-  xFormat x(stringc << "format assertion failed, " 
+  xFormat x(sm_stringc << "format assertion failed, " 
                     << file << ":" << line << ": "
                     << cond);
   THROW(x);
@@ -16955,7 +16946,7 @@ void formatAssert_fail(char const *cond, char const *file, int line)
 
 // -------------------- XOpen -------------------
 XOpen::XOpen(char const *fname)
-  : xBase(stringc << "failed to open file: " << fname),
+  : xBase(sm_stringc << "failed to open file: " << fname),
     filename(fname)
 {}
 
@@ -17599,7 +17590,7 @@ int vnprintf(char const *format, va_list args)
     return vsnprintf(NULL, 0, format, args);
 
   #else
-    // conservatively interpret the format string using gprintf
+    // conservatively interpret the format sm_string using gprintf
     int count = 0;
     general_vprintf(counting_output_function, &count, format, args);
     return count;
@@ -17907,15 +17898,15 @@ void limitFileAccess(char const *fname)
 #include "sm_unixutil.h"
 
 
-// ----------------------- string ---------------------
+// ----------------------- sm_string ---------------------
 // ideally the compiler would arrange for 'empty', and the
 // "" it points to, to live in a read-only section of mem..;
 // but I can't declare it 'char const *' because I assign
 // it to 's' in many places..
-char * const string::empty = "";
+char * const sm_string::empty = "";
 
 
-string::string(char const *src, int length)
+sm_string::sm_string(char const *src, int length)
 {
   s=empty;
   setlength(length);       // setlength already has the +1; sets final NUL
@@ -17923,7 +17914,7 @@ string::string(char const *src, int length)
 }
 
 
-void string::dup(char const *src)
+void sm_string::dup(char const *src)
 {
   if (!src || src[0]==0) {
     s = empty;
@@ -17935,7 +17926,7 @@ void string::dup(char const *src)
   }
 }
 
-void string::kill()
+void sm_string::kill()
 {
   if (s != empty) {
     delete s;
@@ -17943,40 +17934,40 @@ void string::kill()
 }
 
 
-string::string(Flatten&)
+sm_string::sm_string(Flatten&)
   : s(empty)
 {}
 
-void string::xfer(Flatten &flat)
+void sm_string::xfer(Flatten &flat)
 {
   flat.xferCharString(s);
 }
 
 
-int string::length() const
+int sm_string::length() const
 {
   xassert(s);
   return strlen(s);
 }
 
-bool string::contains(char c) const
+bool sm_string::contains(char c) const
 {
   xassert(s);
   return !!strchr(s, c);
 }
 
 
-string string::substring(int startIndex, int len) const
+sm_string sm_string::subsm_string(int startIndex, int len) const
 {
   xassert(startIndex >= 0 &&
           len >= 0 &&
           startIndex + len <= length());
 
-  return string(s+startIndex, len);
+  return sm_string(s+startIndex, len);
 }
 
 
-string &string::setlength(int length)
+sm_string &sm_string::setlength(int length)
 {
   kill();
   if (length > 0) {
@@ -17993,12 +17984,12 @@ string &string::setlength(int length)
 }
 
 
-int string::compareTo(string const &src) const
+int sm_string::compareTo(sm_string const &src) const
 {
   return compareTo(src.s);
 }
 
-int string::compareTo(char const *src) const
+int sm_string::compareTo(char const *src) const
 {
   if (src == NULL) {
     src = empty;
@@ -18007,35 +17998,35 @@ int string::compareTo(char const *src) const
 }
 
 
-string string::operator&(string const &tail) const
+sm_string sm_string::operator&(sm_string const &tail) const
 {
-  string dest(length() + tail.length());
+  sm_string dest(length() + tail.length());
   strcpy(dest.s, s);
   strcat(dest.s, tail.s);
   return dest;
 }
 
-string& string::operator&=(string const &tail)
+sm_string& sm_string::operator&=(sm_string const &tail)
 {
   return *this = *this & tail;
 }
 
 
-void string::readdelim(istream &is, char const *delim)
+void sm_string::readdelim(istream &is, char const *delim)
 {
-  stringBuilder sb;
+  sm_stringBuilder sb;
   sb.readdelim(is, delim);
   operator= (sb);
 }
 
 
-void string::write(ostream &os) const
+void sm_string::write(ostream &os) const
 {
   os << s;     // standard char* writing routine
 }
 
 
-void string::selfCheck() const
+void sm_string::selfCheck() const
 { 
   if (s != empty) {
     checkHeapNode(s);
@@ -18043,22 +18034,22 @@ void string::selfCheck() const
 }
 
 
-// --------------------- stringBuilder ------------------
-stringBuilder::stringBuilder(int len)
+// --------------------- sm_stringBuilder ------------------
+sm_stringBuilder::sm_stringBuilder(int len)
 {
   init(len);
 }
 
-void stringBuilder::init(int initSize)
+void sm_stringBuilder::init(int initSize)
 {
-  size = initSize + EXTRA_SPACE + 1;     // +1 to be like string::setlength
+  size = initSize + EXTRA_SPACE + 1;     // +1 to be like sm_string::setlength
   s = new char[size];
   end = s;
   end[initSize] = 0;
 }
 
 
-void stringBuilder::dup(char const *str)
+void sm_stringBuilder::dup(char const *str)
 {
   int len = strlen(str);
   init(len);
@@ -18067,13 +18058,13 @@ void stringBuilder::dup(char const *str)
 }
 
 
-stringBuilder::stringBuilder(char const *str)
+sm_stringBuilder::sm_stringBuilder(char const *str)
 {
   dup(str);
 }
 
 
-stringBuilder::stringBuilder(char const *str, int len)
+sm_stringBuilder::sm_stringBuilder(char const *str, int len)
 {
   init(len);
   memcpy(s, str, len);
@@ -18081,7 +18072,7 @@ stringBuilder::stringBuilder(char const *str, int len)
 }
 
 
-stringBuilder& stringBuilder::operator=(char const *src)
+sm_stringBuilder& sm_stringBuilder::operator=(char const *src)
 {
   if (s != src) {
     kill();
@@ -18091,7 +18082,7 @@ stringBuilder& stringBuilder::operator=(char const *src)
 }
 
 
-stringBuilder& stringBuilder::setlength(int newlen)
+sm_stringBuilder& sm_stringBuilder::setlength(int newlen)
 {
   kill();
   init(newlen);
@@ -18099,7 +18090,7 @@ stringBuilder& stringBuilder::setlength(int newlen)
 }
 
 
-void stringBuilder::adjustend(char* newend) 
+void sm_stringBuilder::adjustend(char* newend) 
 {
   xassert(s <= newend  &&  newend < s + size);
 
@@ -18108,13 +18099,13 @@ void stringBuilder::adjustend(char* newend)
 }
 
 
-stringBuilder& stringBuilder::operator&= (char const *tail)
+sm_stringBuilder& sm_stringBuilder::operator&= (char const *tail)
 {
   append(tail, strlen(tail));
   return *this;
 }
 
-void stringBuilder::append(char const *tail, int len)
+void sm_stringBuilder::append(char const *tail, int len)
 {
   ensure(length() + len);
 
@@ -18124,7 +18115,7 @@ void stringBuilder::append(char const *tail, int len)
 }
 
 
-stringBuilder& stringBuilder::indent(int amt)
+sm_stringBuilder& sm_stringBuilder::indent(int amt)
 {
   xassert(amt >= 0);
   ensure(length() + amt);
@@ -18137,7 +18128,7 @@ stringBuilder& stringBuilder::indent(int amt)
 }
 
 
-void stringBuilder::grow(int newMinLength)
+void sm_stringBuilder::grow(int newMinLength)
 {
   // I want at least EXTRA_SPACE extra
   int newMinSize = newMinLength + EXTRA_SPACE + 1;         // compute resulting allocated size
@@ -18164,7 +18155,7 @@ void stringBuilder::grow(int newMinLength)
 }
 
 
-stringBuilder& stringBuilder::operator<< (char c)
+sm_stringBuilder& sm_stringBuilder::operator<< (char c)
 {
   ensure(length() + 1);
   *(end++) = c;
@@ -18174,7 +18165,7 @@ stringBuilder& stringBuilder::operator<< (char c)
 
 
 #define MAKE_LSHIFT(Argtype, fmt)                        \
-  stringBuilder& stringBuilder::operator<< (Argtype arg) \
+  sm_stringBuilder& sm_stringBuilder::operator<< (Argtype arg) \
   {                                                      \
     char buf[60];      /* big enough for all types */    \
     int len = sprintf(buf, fmt, arg);                    \
@@ -18192,8 +18183,8 @@ MAKE_LSHIFT(void*, "%p")
 #undef MAKE_LSHIFT
 
 
-stringBuilder& stringBuilder::operator<< (
-  stringBuilder::Hex const &h)
+sm_stringBuilder& sm_stringBuilder::operator<< (
+  sm_stringBuilder::Hex const &h)
 {
   char buf[32];        // should only need 19 for 64-bit word..
   int len = sprintf(buf, "0x%lX", h.value);
@@ -18209,14 +18200,14 @@ stringBuilder& stringBuilder::operator<< (
 }
 
 
-stringBuilder& stringBuilder::operator<< (Manipulator manip)
+sm_stringBuilder& sm_stringBuilder::operator<< (Manipulator manip)
 {
   return manip(*this);
 }
 
 
 // slow but reliable
-void stringBuilder::readdelim(istream &is, char const *delim)
+void sm_stringBuilder::readdelim(istream &is, char const *delim)
 {
   char c;
   is.get(c);
@@ -18230,9 +18221,9 @@ void stringBuilder::readdelim(istream &is, char const *delim)
 
 // ---------------------- toString ---------------------
 #define TOSTRING(type)        \
-  string toString(type val)   \
+  sm_string toString(type val)   \
   {                           \
-    return stringc << val;    \
+    return sm_stringc << val;    \
   }
 
 TOSTRING(int)
@@ -18243,39 +18234,39 @@ TOSTRING(float)
 
 #undef TOSTRING
 
-// this one is more liberal than 'stringc << null' because it gets
+// this one is more liberal than 'sm_stringc << null' because it gets
 // used by the PRINT_GENERIC macro in my astgen tool
-string toString(char const *str)
+sm_string toString(char const *str)
 {
   if (!str) {
-    return string("(null)");
+    return sm_string("(null)");
   }
   else {
-    return string(str);
+    return sm_string(str);
   }
 }
 
 
-// ------------------- stringf -----------------
-string stringf(char const *format, ...)
+// ------------------- sm_stringf -----------------
+sm_string sm_stringf(char const *format, ...)
 {
   va_list args;
   va_start(args, format);
-  string ret = vstringf(format, args);
+  sm_string ret = vsm_stringf(format, args);
   va_end(args);
   return ret;
 }
  
 
-string vstringf(char const *format, va_list args)
+sm_string vsm_stringf(char const *format, va_list args)
 {                                  
-  // estimate string length
+  // estimate sm_string length
   int est = vnprintf(format, args);
                     
   // allocate space
-  string ret(est+1);
+  sm_string ret(est+1);
   
-  // render the string
+  // render the sm_string
   int len = vsprintf(ret.pchar(), format, args);
 
   // check the estimate, and fail *hard* if it was low, to avoid any
@@ -18303,9 +18294,9 @@ string vstringf(char const *format, va_list args)
 
 void test(unsigned long val)
 {
-  //cout << stringb(val << " in hex: 0x" << stringBuilder::Hex(val)) << endl;
+  //cout << sm_stringb(val << " in hex: 0x" << sm_stringBuilder::Hex(val)) << endl;
 
-  cout << stringb(val << " in hex: " << SBHex(val)) << endl;
+  cout << sm_stringb(val << " in hex: " << SBHex(val)) << endl;
 }
 
 int main()
@@ -18317,7 +18308,7 @@ int main()
   test((unsigned long)(-1));
   test(1);
 
-  cout << "stringf: " << stringf("int=%d hex=%X str=%s char=%c float=%f",
+  cout << "sm_stringf: " << sm_stringf("int=%d hex=%X str=%s char=%c float=%f",
                                  5, 0xAA, "hi", 'f', 3.4) << endl;            
 
   cout << "tests passed\n";
@@ -18403,20 +18394,20 @@ char const *StrtokParse::tokv(int which) const
 }
 
 
-string StrtokParse::
+sm_string StrtokParse::
   reassemble(int firstTok, int lastTok, char const *original) const
 {
   int left = offset(firstTok);
   int right = offset(lastTok) + strlen(tokv(lastTok));
 
-  return string(original + left, right-left);
+  return sm_string(original + left, right-left);
 }
 
 
-string StrtokParse::
+sm_string StrtokParse::
   join(int firstTok, int lastTok, char const *separator) const
 {
-  stringBuilder sb;
+  sm_stringBuilder sb;
   
   for (int i=firstTok; i<=lastTok; i++) {
     if (i > firstTok) {
@@ -18464,7 +18455,7 @@ char const * const xSysError::reasonStrings[] = {
 STATICDEF char const *xSysError::
   getReasonString(xSysError::Reason r)
 {
-  // at compile-time, verify consistency between enumeration and string array
+  // at compile-time, verify consistency between enumeration and sm_string array
   // (it's in here because, at least on Borland, the preprocessor respects
   // the member access rules (strangely..))
   #ifdef __BORLANDC__
@@ -18494,17 +18485,17 @@ xSysError::xSysError(xSysError::Reason r, int sysCode, char const *sysReason,
 {}
 
 
-STATICDEF string xSysError::
+STATICDEF sm_string xSysError::
   constructWhyString(xSysError::Reason r, char const *sysReason,
                      char const *syscall, char const *ctx)
 {
   xassert(syscall);
 
-  // build string; start with syscall that failed
-  stringBuilder sb;
+  // build sm_string; start with syscall that failed
+  sm_stringBuilder sb;
   sb << syscall << ": ";
 
-  // now a failure reason string
+  // now a failure reason sm_string
   if (r != R_UNKNOWN) {
     sb << getReasonString(r);
   }
@@ -18512,7 +18503,7 @@ STATICDEF string xSysError::
     sb << sysReason;
   }
   else {
-    // no useful info, use the R_UNKNOWN string
+    // no useful info, use the R_UNKNOWN sm_string
     sb << getReasonString(r);
   }
 
@@ -18547,7 +18538,7 @@ STATICDEF void xSysError::
   int code = getSystemErrorCode();
 
   // translate it into one of ours
-  string sysMsg;
+  sm_string sysMsg;
   Reason r = portablize(code, sysMsg);
 
   // construct an object to throw
@@ -18558,10 +18549,10 @@ STATICDEF void xSysError::
 }
 
 
-string sysErrorCodeString(int systemErrorCode, char const *syscallName,
+sm_string sysErrorCodeString(int systemErrorCode, char const *syscallName,
                                                char const *context)
 {
-  string sysMsg;
+  sm_string sysMsg;
   xSysError::Reason r = xSysError::portablize(systemErrorCode, sysMsg);
   return xSysError::constructWhyString(
            r, sysMsg,
@@ -18611,13 +18602,13 @@ STATICDEF int xSysError::getSystemErrorCode()
 }
 
 
-STATICDEF xSysError::Reason xSysError::portablize(int sysErrorCode, string &sysMsg)
+STATICDEF xSysError::Reason xSysError::portablize(int sysErrorCode, sm_string &sysMsg)
 {
   // I'd like to put this into a static class member, but then
   // the table would have to prepend R_ constants with xSysError::,
   // which is a pain.
 
-  // Q: how to get a string from win32?
+  // Q: how to get a sm_string from win32?
   //if (sysMsg != NULL) {
     sysMsg = NULL;
   //}
@@ -18685,7 +18676,7 @@ STATICDEF int xSysError::getSystemErrorCode()
 }
 
 
-STATICDEF xSysError::Reason xSysError::portablize(int sysErrorCode, string &sysMsg)
+STATICDEF xSysError::Reason xSysError::portablize(int sysErrorCode, sm_string &sysMsg)
 {
   sysMsg = strerror(sysErrorCode);
     // operator= copies to local storage
@@ -18843,7 +18834,7 @@ void defaultWarningLogger(WarnLevel /*level*/, char const *message)
       time_t t;
       time(&t);
       int len = fprintf(logfile, "\nLog started at %s", ctime(&t));
-        // note: astonishingly (bad), the string returned by ctime() has
+        // note: astonishingly (bad), the sm_string returned by ctime() has
         //       a newline at the end!
 
       while (len--) {

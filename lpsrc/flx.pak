@@ -1,6 +1,6 @@
 @bc = begin_displayed_code
 @ec = end_displayed_code
-@flx_version = '1.0.20'
+@flx_version = '1.0.21'
 @godi_revision = '0'
 @set_title('Felix '+flx_version)
 @head(1,'Purpose')
@@ -306,8 +306,9 @@ of the compiler. I should probably
 create a file here for unit tests.
 @include_file ('flx_stub.ipk')
 
-@head(2,'Wrapper generator mainline')
+@head(2,'Tools')
 @include_file ('flx_flxcc.ipk')
+@include_file ('flx_docgen.ipk')
 
 @head(2,'The Unix Build system')
 @include_file ('flx_man.ipk')
