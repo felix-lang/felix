@@ -242,7 +242,7 @@ let overload
   it are vacuously incomparable. It follows either
   the candidate is not less than all the list,
   or not less than all the list: that is, there cannot
-  be two element a,b sch that a < c < b, since by
+  be two element a,b such that a < c < b, since by
   transitivity a < c would follow, contradicting
   the assumption the list contains no ordered pairs.
 
@@ -255,7 +255,7 @@ let overload
 
   let candidates = fold_left
   (fun oc r ->
-     match r with Unique (_,c,_,_) -> 
+     match r with Unique (j,c,_,_) -> 
      (*
      print_endline ("Considering candidate sig " ^ sbt syms.dfns c);
      *)
@@ -278,7 +278,9 @@ let overload
            *)
            lhs @ rhs (* keep whole list, discard c *) 
          | `Equal -> 
-           clierr call_sr 
+           let sr = match Hashtbl.find syms.dfns i with {sr=sr} -> sr in
+           let sr2 = match Hashtbl.find syms.dfns j with {sr=sr} -> sr in
+           clierrn [call_sr; sr2; sr]
            "[resolve_overload] Ambiguous call: Not expecting equal signatures"
 
          | `Greater -> 

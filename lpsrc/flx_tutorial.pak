@@ -2561,6 +2561,57 @@ The first form requires a proper qualified name and is
 equivalent to the second form, where the new_name is the
 last component of the qualified_name.
 
+@head(2,'Inheriting definitions')
+It is possible to inject a name or family
+of function names defined elsewhere into the
+public interface of a module with the inherit
+statement.
+@p()
+Inherited entities can be found both by
+unqualified and qualified lookup as if actually
+defined in the module, however the denoted
+entities are not actually part of the module,
+and in particular they're bound in the context
+in which they're actually defined.
+@p()
+There are two forms of the inherit statement,
+one for non-functions and one for functions.
+The non-function form injects a reference to
+a single non-function entity. 
+@p()
+The function form injects a complete overload set.
+Additional overloads can be added to the set,
+either by local definitions, or further inherit
+statements.
+@p()
+Note that unlike open or use directives, injected
+names have the same priority as other names defined
+in the module: any collision with a locally defined
+function is final, and cannot be resolved.
+
+@select(tangler(tdir+'tut207.flx'))
+header "#include <iostream>";
+module X {
+  type x_t = "int";
+  const x42 : x_t = "42";
+}
+
+module Y {
+  inherit y_t = X::x_t;
+  inherit y42=X::x42;
+  proc print:y_t = "std::cout << $1 << std::endl;";
+}
+
+Y::print X::x42;
+Y::print Y::y42;
+
+inherit fun print=Y::print;
+inherit y42=Y::y42;
+inherit x42=X::x42;
+
+print x42;
+print y42;
+
 @head(2,'Let expression')
 There is a short form for match expressions.
 An expression of the form:

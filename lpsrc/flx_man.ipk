@@ -10,6 +10,9 @@ for a language introduction and man page index
 .B flx(1) 
 for a list of the tools.
 .br
+.B flxcc(1) 
+for a description of the wrapper generator tool.
+.br
 .B flx_lit(1)
 for a description of literals
 .br
@@ -36,10 +39,10 @@ for a list of binding statements
 .br
 .SH WEB SITE
 See 
-.B http://felix.sf.net
+.B http://felix.sourceforge.net
 .br
 .SH AUTHOR
-John Maxwell Skaller, mailto:skaller@users.sourceforge.org
+John Maxwell Skaller, mailto:skaller@users.sourceforge.net
 """
 //
 
@@ -124,6 +127,59 @@ C++ header files
 
 .B std.flx
 is the standard library.
+@tangle(manfoot)
+
+@head(2,'felix:wrapper generatoroverview')
+@select(tangler('man/man1/flxcc.1','data'))
+@mh('FELIX WRAPPER-GENERATOR')
+.SH NAME
+Felix Wrapper Generator
+.SH SYNOPSIS
+.br
+.B flxcc control-filename
+
+.SH OPERATION
+flxcc reads the specified control file to obtain
+configuration and control data. It then reads and
+parses a preprocessed C header file, partitioning
+the definitions it discovers according to their
+original location.
+.br
+Next, it examines the original C header files
+for #include statements and matches them up
+with the pathnames found in the preprocessed
+input, so as to determine dependencies.
+.br
+Then it emits a Felix wrapper file for each
+of the C include files which contributed a definition,
+placing the wrappers for each definition in the appropriate
+Felix wrapper file.
+.br
+Each wrapper usually embeds the original C #include
+statement to haul in the required C definitions,
+includes each Felix include file on which it depends.
+.br
+Flxcc then emits a module statement consisting
+of an open directive for each dependent module,
+followed by Felix wrapper defintions corresponding
+to the contents of the original C include file.
+
+.SH Control Commands
+.B data filename
+.br
+The data command specifies the name of the
+preprocessed C header file which flxcc should
+use as its stream of definitions.
+
+.B noinclude filename
+.br
+The noinclude command specifies that the
+Felix wrapper file should not embed a
+C #include for the file from which it was
+generated. This is necessary for some include
+files which are not intended to be included
+directly.
+
 @tangle(manfoot)
 
 @head(2,'felix:Literals')
@@ -783,6 +839,13 @@ Define a function. The return type is optional.
 .br
 Define a procedure. 
 
+.B inherit <identifier> = <qualified_name>;
+.br
+.B inherit fun <identifier> = <qualified_name>;
+.br
+Inject the name of an entity or function set
+into the public interface of a module.
+
 .B <identifier> :>
 .br
 Specify a label.
@@ -954,7 +1017,7 @@ filebasename
 
 .br
 .B flxcc
-filename
+control-filename
 
 .br
 .B flxg 
@@ -974,17 +1037,6 @@ libname
 [<file>.o] 
 [<file>.a] 
 [<linkops>]..]
-filebasename
-.br
-.B lexl
-filebasename
-
-.br
-.B lexp
-filebasename
-
-.br
-.B lexd
 filebasename
 
 .SH DESCRIPTION
@@ -1021,7 +1073,9 @@ the bindings to  standard output
 .br
 .B flxcc
 reads a preprocessed C header file and writes
-Felix wrapper bindings to standard output.
+Felix wrapper bindings to out. The command 
+accepts an argument which specifies wrapper
+generation configuration parameters.
 
 .br
 .B flxg
@@ -1147,6 +1201,20 @@ newline character. A zero length line
 is passed at end of file. The message 
 types is 
 .B std::basic_string<char>
+
+.SH FILE EXTENSIONS
+.B *.flx
+.br 
+Felix input files.
+
+.B *.cpp *.hpp
+.br 
+Generated C++ output files.
+
+.B *.par
+.br 
+Precompiled header file.
+
 
 @tangle(manfoot)
 

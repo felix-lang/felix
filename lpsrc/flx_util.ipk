@@ -45,6 +45,16 @@ let terminate rrp = let return_parity = not rrp in function
     print_endline ("In " ^ long_string_of_src sr);
     exit (if return_parity then 1 else 0)
 
+  | ClientErrorn (srs,s) ->
+    flush stdout; print_endline "CLIENT ERROR";
+    print_endline s;
+    List.iter (fun sr ->
+      print_endline ("See: " ^ long_string_of_src sr)
+    )
+    srs
+    ;
+    exit (if return_parity then 1 else 0)
+
   | ClientError2 (sr,sr2,s) ->
     flush stdout; print_endline "CLIENT ERROR";
     print_endline s;

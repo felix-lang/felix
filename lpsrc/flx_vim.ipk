@@ -29,6 +29,9 @@ syn keyword cDefine header
 syn keyword cDefine body
 syn keyword cDefine macro
 
+" actually this is a statement, but the directive colour seems best..
+syn keyword cDefine inherit
+
 " special identifiers
 syn keyword cDefine root
 syn keyword cDefine parent

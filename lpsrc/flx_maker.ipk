@@ -999,28 +999,6 @@ We have no idea if it continues copying.
 @tangle('drivers.debug: dummy')
 @tangle('\tpython script/maker drivers debug')
 @tangle('')
-
-@try:
-  if getattr(sys.modules["__main__"],"SWIGDEVDIR"):
-    tangle('swig: dummy')
-    tangle('\texport SWIGDEVDIR')
-    tangle('\t${MAKE} -C swig')
-    tangle('')
-
-    tangle('swig.wrap: dummy')
-    tangle('\t${MAKE} -C swig -f makewrap')
-    tangle('')
-
-    tangle('swig.clean: dummy')
-    tangle('\t${MAKE} -C swig -f makewrap clean')
-    tangle('')
-
-    tangle('swig.test : dummy')
-    tangle('\t${MAKE} -C swig -f makewrap test')
-    tangle('')
- except:
-   pass
-
 @tangle('help: dummy')
 @tangle('\t#type "make virgin" to wipe out the whole development system')
 @tangle('\t#other than the orginal sources, this makefile, and any user config data')
@@ -1115,15 +1093,6 @@ We have no idea if it continues copying.
 @tangle('\t\tflx_'+flx_version+'/bin/flx \\')
 @tangle('\t\tflx_'+flx_version+'/bin/flxg \\')
 @tangle('\t\tflx_'+flx_version+'/bin/flx_run \\')
-@tangle('\t\tflx_'+flx_version+'/swig/*.swg \\')
-@tangle('\t\tflx_'+flx_version+'/swig/*.i \\')
-@tangle('\t\tflx_'+flx_version+'/swig/*.flx \\')
-@tangle('\t\tflx_'+flx_version+'/swig/makefile \\')
-@tangle('\t\tflx_'+flx_version+'/swig/makewrap \\')
-@tangle('\t\tflx_'+flx_version+'/swig/CONTENTS \\')
-@tangle('\t\tflx_'+flx_version+'/swig/INSTALL \\')
-@tangle('\t\tflx_'+flx_version+'/swig/preprocessor.patch \\')
-@tangle('\t\tflx_'+flx_version+'/swig/swigmain.cxx \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/bin/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/compilers/*.py \\')
@@ -1153,7 +1122,7 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('virgin: dummy')
 @tangle('\tcp Makefile Makefile.old')
-@tangle('\trm -rf tut rtl test www src misc man script bin doc lib impldoc htmlman swig tmp.tmp')
+@tangle('\trm -rf tut rtl test www src misc man script bin doc lib impldoc htmlman tmp.tmp')
 @tangle('\trm -rf lpsrc/*.cache')
 @tangle('\trm -rf interscript/*.pyc')
 @tangle('\trm -rf interscript/*.pyo')
@@ -1321,7 +1290,6 @@ The directories are:
   man    -- man pages for tools and some language features
   bin    -- compiler tools directory
   rtl    -- C++ run time library sources
-  swig   -- Simplified Wrapper and Interface Generator for felix
 
 @head(1,'LICENSE')
 @select(tangler('LICENSE'))
