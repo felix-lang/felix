@@ -44,20 +44,23 @@ let cal_loop dfns sr (p,pt) e this =
   | `BTYP_function (_, `BTYP_void) -> 
     begin match p with
     | `BEXPR_closure (i,ts) ->
-      let id,sr,parent,vs,_,_,entry = Hashtbl.find dfns i in
+      begin match Hashtbl.find dfns i with
+      {id=id;sr=sr}->
       print_endline ("In function " ^ si this ^ " loop to " ^ id ^ "[" ^ si i ^"]");
       let j = ref 0 in 
       let rec aux k = 
         if k <> i
         then
-          let id,sr,parent,_,_,_,_ = Hashtbl.find dfns k in
-          match parent with
-          | Some k -> incr j; aux k
-          | None -> clierr sr "[cal_loop] Loop target must be self or parent"
+          match Hashtbl.find dfns k with
+          | {parent=Some k} -> incr j; aux k
+          | {parent=None; sr=sr'} -> 
+            clierr2 sr sr' 
+            "[cal_loop] Loop target must be self or parent"
       in 
         aux this;
         print_endline ("loop " ^ si !j);
         `BEXE_loop (sr,!j, e)
+      end
 
     | _ -> 
       clierr sr (
@@ -364,14 +367,14 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     (
       "WARNING: procedure " ^id^" has no explicit return and doesn't drop thru end," ^
       "\npossible infinite loop in\n" ^
-      short_string_of_src sr
+      long_string_of_src sr
     )
   | _ ->
     if !reachable 
     then print_endline 
     (
       "WARNING: function "^id^" drops off end, possible missing return statement in\n" ^
-      short_string_of_src sr
+      long_string_of_src sr
     );
   end
   ;

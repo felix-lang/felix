@@ -18,22 +18,20 @@ let rec cal_display dfns parent display : bid_t list =
   match parent with 
   | None -> display
   | Some parent ->
-  let id,sr,parent',vs,_,_,entry = Hashtbl.find dfns parent in
-  match entry with
-  | `SYMDEF_function _
-  | `SYMDEF_match_check _
+  match Hashtbl.find dfns parent with
+  | {parent=parent';symdef=`SYMDEF_function _}
+  | {parent=parent';symdef=`SYMDEF_match_check _}
     -> cal_display dfns parent' (parent::display)
-  | _ -> cal_display dfns parent' display
+  | {parent=parent'} -> cal_display dfns parent' display
    
 let get_display_list syms index : bid_t list =
   let dfns = syms.dfns in
-  let id,sr,parent,vs,_,_,entry = Hashtbl.find dfns index in
-  match entry with
-  | `SYMDEF_function _
-  | `SYMDEF_match_check _
+  match Hashtbl.find dfns index with
+  | {parent=parent;symdef=`SYMDEF_function _}
+  | {parent=parent;symdef=`SYMDEF_match_check _}
     -> List.rev (cal_display dfns parent [])
 
-  | _ -> 
+  | {id=id;vs=vs;symdef=entry} -> 
     failwith 
     (
       "Only functions and procedures have a display, got: " ^
@@ -445,7 +443,8 @@ let dummy_name_map = Hashtbl.create 97
   have a second name, and so occurs twice
   in the name->index map
 
-  we need to use a SET here, not a list
+  we need to use a member SET here, not a list
+  of names for lookup purposes .. change is coming ..
 *)
 
 let find_variable_indices syms index = 
@@ -458,9 +457,11 @@ let find_variable_indices syms index =
       | NonFunctionEntry (Bound _) ->
         failwith "Not expecting bound entry"
       | NonFunctionEntry (Simple idx) ->
-      let id2,_,parent',vs,name_map2,_,symdef = 
-        try Hashtbl.find syms.dfns idx 
+      let id2,parent',vs,name_map2,symdef = 
+        match try Hashtbl.find syms.dfns idx 
         with _ -> failwith ("[find_variable_indices(2)] can't find index " ^ si index)
+        with {id=id;parent=parent;vs=vs;privmap=table;symdef=entry} ->
+        id,parent,vs,table,entry
       in
 
       (* make sure the entity is actually a child of index,
@@ -492,11 +493,10 @@ let find_variable_indices syms index =
     ;
     !variables
   in 
-  let id,_,_,_,name_map,_,symdef = 
+    match
     try Hashtbl.find syms.dfns index 
     with _ -> failwith ("[find_variable_indices(1)] Can't find index " ^ si index)
-  in
-  extract (Some index) name_map 
+  with {privmap=name_map} -> extract (Some index) name_map 
 
 let get_variable_typename syms bbdfns i ts =
   let id,parent,entry = Hashtbl.find bbdfns i in
@@ -807,10 +807,10 @@ let is_closure_var bbdfns index =
   | _ -> false
   
 let get_var_ref syms bbdfns this index ts : string =
-  let id,sr,parent,vs,_,_,entry = 
+  match 
     try Hashtbl.find syms.dfns index 
     with _ -> failwith ("[get_var_ref] Can't find index " ^ si index)
-  in  
+  with {id=id; sr=sr; parent=parent;vs=vs;symdef=entry} ->
   (*
   print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode syms.dfns) ts^"]");
   *)
@@ -822,10 +822,11 @@ let get_var_ref syms bbdfns this index ts : string =
       match parent with
       | None -> "ptf->" ^ cpp_instance_name syms bbdfns index ts
       | Some i ->
-        let _,sr,parent,_,_,_,entry = 
+        match 
           try Hashtbl.find syms.dfns i 
           with _ -> failwith ( "[get_var_ref(1)] Can't find index " ^ si i)
-        in
+        with {sr=sr; parent=parent; symdef=entry} 
+        ->
         match entry with
         | `SYMDEF_function _
           ->
@@ -839,10 +840,10 @@ let get_var_ref syms bbdfns this index ts : string =
   | _ -> failwith ("[get_var_ref(3)] Expected name "^id^" to be variable or value")
 
 let get_var_frame syms bbdfns this index ts : string =
-  let id,sr,parent,vs,_,_,entry = 
+    match 
     try Hashtbl.find syms.dfns index 
     with _ -> failwith ("[get_var_frame(1)] Can't find index " ^ si index)
-  in
+  with {id=id; sr=sr; parent=parent;vs=vs;symdef=entry} ->
   match entry with
   | `SYMDEF_parameter _
   | `SYMDEF_var _
@@ -852,14 +853,13 @@ let get_var_frame syms bbdfns this index ts : string =
       match parent with
       | None -> "0"
       | Some i ->
-        let _,sr,parent,vs,_,_,entry = Hashtbl.find syms.dfns i in
-        match entry with
-        | `SYMDEF_function _
+        match Hashtbl.find syms.dfns i with
+        | {symdef=`SYMDEF_function _}
           ->
           if i <> this
           then "ptr" ^ cpp_instance_name syms bbdfns i ts
           else "this"
-        | `SYMDEF_module -> chase_tail parent
+        | {parent=parent;symdef=`SYMDEF_module} -> chase_tail parent
         | _ -> failwith "[get_var_frame] Expected variable to live in procedure or function"
     in
       chase_tail parent
@@ -965,8 +965,8 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
     let id,parent,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> 
-        let id,sr,parent,vs,_,_,entry = Hashtbl.find syms.dfns index in
-        syserr sr
+        match Hashtbl.find syms.dfns index with
+        {id=id; sr=sr} -> syserr sr
         ("[gen_expr(name)] Can't find "^ id ^ "<" ^ si index ^ ">")
     in
     let ts = map tsub ts' in
@@ -1174,12 +1174,12 @@ let get_parameters syms index : int list =
   let variables = find_variable_indices syms index in
   let params = 
     filter
-    (fun i -> let id,sr,parent,vs,_,_,entry = 
-      try Hashtbl.find syms.dfns i 
-      with _ -> failwith ("[get_parameters] Can't find index " ^ si i)
-      in
-      match entry with 
-      | `SYMDEF_parameter _ -> true
+    (fun i ->
+      match 
+        try Hashtbl.find syms.dfns i 
+        with _ -> failwith ("[get_parameters] Can't find index " ^ si i)
+      with
+      | {symdef=`SYMDEF_parameter _} -> true
       | _ -> false
     )
     variables
@@ -1384,12 +1384,11 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
       match parent with
       | None -> failwith ("[gen_exe(goto)] In " ^ id ^ ": Can't find label " ^ s)
       | Some i -> 
-         let id, sr, parent, vs,_,_,entry = 
+         match  
            try Hashtbl.find syms.dfns i 
            with _ -> failwith ("Can't find parent " ^ si i)
-         in
-         match entry with
-         | `SYMDEF_function (_,`AST_void _,_) ->
+         with
+         | {symdef=`SYMDEF_function (_,`AST_void _,_)} ->
            let local_map = 
              try Hashtbl.find label_map i 
              with _ -> failwith ("Can't find label map for " ^ si i)
@@ -1397,8 +1396,10 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
            begin try i, Hashtbl.find local_map s
            with Not_found -> aux parent
            end
-         | `SYMDEF_module  -> aux parent
-         | `SYMDEF_function _ -> failwith ("goto "^s^" can't out of function " ^ id)
+         | {parent=parent; symdef=`SYMDEF_module}  -> aux parent
+         | {id=id;sr=sr; symdef=`SYMDEF_function _} -> 
+           clierr sr ("goto "^s^" can't out of function " ^ id)
+
          | _ -> failwith "Unknown parent kind"
     in 
       begin match kind with
@@ -2131,7 +2132,7 @@ try
   if compiler_options.print_flag 
   then print_endline "//BUILDING TABLES";
 
-  let table, exes, ifaces,dirs = 
+  let pubtab, _, exes, ifaces,dirs = 
     build_tables syms "<top level>" 0 None None root deblocked 
   in
   let build_table_time = tim() in
@@ -2153,7 +2154,7 @@ try
   then print_endline "//CHECKING ROOT";
 
   let root_proc = 
-    let id,sr,parent,vs,name_map,_,entry = 
+    match 
       try Hashtbl.find syms.dfns root 
       with Not_found ->
         failwith 
@@ -2161,7 +2162,7 @@ try
           "Can't find root module " ^ si root ^
           " in symbol table?"
         )
-    in
+    with {id=id; sr=sr; parent=parent;vs=vs;pubmap=name_map;symdef=entry} ->
     begin match entry with
       | `SYMDEF_module -> ()
       | _ -> failwith "Expected to find top level module ''"

@@ -19,6 +19,9 @@ endif
 
 " all the felix keywords ..
 " directives
+syn keyword cDefine comment
+syn keyword cDefine publish
+syn keyword cDefine private 
 syn keyword cDefine open
 syn keyword cDefine use
 syn keyword cDefine include
@@ -141,6 +144,8 @@ syn keyword cType uchar
 syn keyword cType string
 syn keyword cType wstring
 syn keyword cType ustring
+
+syn keyword cType cont
 
 syn keyword cConstant true false
 

@@ -496,7 +496,7 @@ let do_unify syms a b =
       else 
         begin
           match Hashtbl.find syms.dfns i with
-          | id,sr,parent,vs,table,dirs,`SYMDEF_function _ ->
+          | { symdef=`SYMDEF_function _ } ->
             (*
             print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode syms.dfns t);
             *)

@@ -415,3 +415,27 @@ val bb = aa + 1;
 type int = "int";
 fun neg(a:int) = { return -a; }
 
+@select(tangler('test/bt06.flx'))
+// privacy violation 1
+include "std";
+
+module X 
+{
+  fun f:int -> int = "$1";
+  val x = f 1;
+}
+val x = X::f 1;
+
+@select(tangler('test/bt06.flx'))
+// privacy violation 1
+include "std";
+
+module X 
+{
+  fun f:int -> int = "$1";
+  val x = f 1;
+}
+open X;
+val x = f 1;
+
+

@@ -243,19 +243,19 @@ using namespace std;
     tangle('  fun '+opname+': '+t+' * '+t+' -> bool = "int($1'+op+'$2)";')
 
 
-public "Empty sum"
+publish "Empty sum"
   typedef void = 0;
 
-public "Unit type"
+publish "Unit type"
   typedef unit = 1;
 
-public "Boolean"
+publish "Boolean"
   typedef bool = 2;
 
-public "Universal type 'x as x'"
+publish "Universal type 'x as x'"
   typedef any = any;
 
-public "Compatible with C"
+publish "Compatible with C"
 module Bool 
 {
 
@@ -540,7 +540,7 @@ module Control
   }
 
   // C style while loop with reversed condition
-  // not the until is tested first -- zero iterations are possible
+  // note the until is tested first -- zero iterations are possible
   proc until(cond:unit->bool) (bdy:unit->void)
   {
     repeat:>
@@ -614,6 +614,7 @@ module Control
 }
 
 @#------------- List -------------------
+publish "List manipulation"
 module List
 {
   union list[T] = | Empty | Cons of T * list[T];
@@ -689,6 +690,7 @@ module List
    }
 }
 
+publish "Association Lists (lists of pairs)"
 module Assoc_list
 {
   typedef assoc_list[A,B] = List::list[(A,B)];
@@ -698,6 +700,18 @@ module Assoc_list
 module Text_file
 {
   fun load: string -> string = "flx::rtl::ioutil::load_file($1)";
+
+  type text_file = "FILE*";
+
+  fun fopen_input: string -> text_file = 'fopen($1.data(),"rt")';
+  fun fopen_output: string -> text_file = 'fopen($1.data(),"wt")';
+  proc fclose: text_file = '(void)fclose($1);';
+}
+
+@#------------- Environment -------------------
+module Env
+{
+  fun getenv:string -> string = "std::string(std::getenv($1.data()))";
 }
 
 @#------------- Lexer -------------------

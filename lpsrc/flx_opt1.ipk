@@ -198,10 +198,8 @@ let check_can_inline syms bbdfns nm =
         try Hashtbl.find bbdfns i 
         with Not_found -> 
         match Hashtbl.find syms.dfns i with
-        | id,sr,parent,vs,dirs,table,entry ->
-        match entry with
-        | `SYMDEF_typevar _ -> raise Not_found
-        | _ ->
+        | {symdef=`SYMDEF_typevar _} -> raise Not_found
+        | {vs=vs; symdef=entry}  ->
         failwith 
         (
           "[check_can_inline] Cant find index " ^ si i ^ " = " ^

@@ -91,7 +91,8 @@ let cpp_instance_name syms bbdfns index ts =
         let id,parent,entry = Hashtbl.find bbdfns index in id
       with Not_found -> 
       try
-        let id,sr,parent,vs,table,dirs,entry = Hashtbl.find syms.dfns index in id ^ "[unbound]"
+        match Hashtbl.find syms.dfns index with
+        {id=id} -> id ^ "[unbound]"
       with Not_found -> 
       "unknown"
     in
@@ -140,12 +141,11 @@ let rec cpp_type_classname syms t =
 
     
   | `BTYP_inst (i,_) -> 
-    let id,sr,parent,vs,tabl,dirs,entry = Hashtbl.find syms.dfns i in
     let prefix =
-      match entry with
-      | `SYMDEF_struct _  -> "_s"
-      | `SYMDEF_union _  -> "_u"
-      | `SYMDEF_abs _ -> "_a"
+      match Hashtbl.find syms.dfns i with
+      | { symdef=`SYMDEF_struct _ } -> "_s"
+      | { symdef=`SYMDEF_union _  } -> "_u"
+      | { symdef=`SYMDEF_abs _ } -> "_a"
       | _ -> "_unk_"
     in 
       prefix ^ si i ^ "t_" ^ si (Hashtbl.find registry t) 

@@ -534,10 +534,12 @@ type dcl_t =
   | `DCL_regdef of      regexp_t
   ]
 
+and access_t = [`Private | `Public ]
+
 and asm_t = 
   
   | Exe of range_srcref * exe_t 
-  | Dcl of range_srcref * id_t * id_t list * dcl_t 
+  | Dcl of range_srcref * id_t * access_t * id_t list * dcl_t 
   | Iface of range_srcref * iface_t
   | Dir of range_srcref * dir_t
  
@@ -718,7 +720,17 @@ type symbol_definition_t =
   | `SYMDEF_type_alias of   typecode_t
   ]
 
-type symbol_data_t = string * range_srcref * int option * vs_list_t * name_map_t * dir_t list * symbol_definition_t 
+type symbol_data_t = {
+  id:string;
+  sr:range_srcref;
+  parent:int option;
+  vs:vs_list_t;
+  pubmap:name_map_t;
+  privmap:name_map_t;
+  dirs:dir_t list;
+  symdef:symbol_definition_t;
+}
+
 type symbol_table_t = (int, symbol_data_t) Hashtbl.t
 
 type symbol_data3_t = string * int option * bbdcl_t 
@@ -1503,8 +1515,8 @@ and string_of_typecode tc = st 99 tc
 and qualified_name_of_index dfns index = 
   match Hashtbl.find dfns index with 
   (* don't print top level module name at present *)
-  | (id,sr,None,vs,_,_,_) -> (* id ^ "<" ^ si index ^ ">" *) ""
-  | (id,sr,Some index',vs,_,_,_) -> 
+  | { parent=None } -> (* id ^ "<" ^ si index ^ ">" *) ""
+  | { id=id; parent=Some index' } -> 
     let prefix = qualified_name_of_index dfns index' in
     (if prefix <> "" then prefix ^ "::" else "")
       ^ id (* ^ "<" ^ si index ^ ">" *)
@@ -2539,7 +2551,12 @@ and string_of_dcl level name vs (s:dcl_t) =
 
 and string_of_asm level s =
   match s with
-  | Dcl (sr,name,vs, d) -> string_of_dcl level name vs d
+  | Dcl (sr,name,access,vs, d) -> 
+    (match access with
+    | `Private -> "private "
+    | `Public -> ""
+    ) ^
+    string_of_dcl level name vs d
   | Exe (sr,s) -> string_of_exe level s
   | Iface (sr,s) -> string_of_iface level s
   | Dir (sr,s) -> string_of_dir level s
@@ -2625,7 +2642,7 @@ and string_of_bbdcl dfns bbdcl index =
 
 let string_of_dfn dfns i =
   match Hashtbl.find dfns i with
-  id,sr,parent,vs,table,dirs,entry ->
+  | { id=id; sr=sr; vs=vs; symdef=entry } ->
   string_of_symdef entry id vs
   ^ " defined at " ^ short_string_of_src sr
 

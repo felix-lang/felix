@@ -166,6 +166,114 @@ let strip_us s =
   done;
   Buffer.contents x
 
+
+let line_directive state s lexbuf =
+  let i = ref 0 in
+  let a = 
+    let a = ref 0 in
+    while is_digit s.[!i] do
+      a := !a * 10 + dec_char2int s.[!i];
+      incr i
+    done;
+    !a
+  in
+  if !i = 0 
+  then begin
+    print_endline (state#string_of_srcref lexbuf);
+    print_endline "PREPROCESSING ERROR: digits required after #line, IGNORING DIRECTIVE";
+  end else begin
+    while is_white s.[!i] do incr i done;
+    if s.[!i] <> '\n'
+    then begin
+      if s.[!i]<>'"'
+      then begin
+        print_endline (state#string_of_srcref lexbuf);
+        print_endline (
+          "PREPROCESSING ERROR: double quote required after #line " ^ 
+          string_of_int a ^ ": IGNORING DIRECTIVE"
+        )
+      end else begin
+        incr i;
+        let j = !i in
+        while s.[!i]<>'"' && s.[!i]<>'\n' do incr i done;
+
+        if s.[!i]='\n'
+        then begin
+          print_endline (state#string_of_srcref lexbuf);
+          print_endline
+            "PREPROCESSING ERROR: double quote required after filename in #line directive"
+        end else begin
+          let filename = String.sub s j (!i-j) in
+          state#set_filename filename;
+          state#set_line (a-1)
+        end
+      end
+    end else begin
+      (* print_endline ("SETTING LINE " ^ string_of_int a); *)
+      state#set_line (a-1)
+    end
+  end;
+  state#newline lexbuf;
+  [NEWLINE]
+
+let include_directive state s pre_flx_lex lexbuf =
+  if s.[0]<>'"' && s.[0]<>'<'
+  then begin
+    print_endline (state#string_of_srcref lexbuf);
+    print_endline (
+      "PREPROCESSING ERROR: '\"' or '<' required after #include: IGNORING DIRECTIVE"
+    );
+    state#newline lexbuf;
+    [NEWLINE]
+  end else begin
+    let rquote = if s.[0]='"' then '"' else '>' in
+    let i = ref 1 in
+    let j = !i in
+    while s.[!i]<>rquote && s.[!i]<>'\n' do incr i done;
+
+    if s.[!i]='\n'
+    then begin
+      print_endline (state#string_of_srcref lexbuf);
+      print_endline
+        "PREPROCESSING ERROR: double quote required after filename in #include directive";
+      state#newline lexbuf;
+      [NEWLINE]
+    end else begin
+      let filename = String.sub s j (!i-j) in
+      let filename=
+        if rquote = '"'
+        then state#get_relative filename 
+        else state#get_absolute filename
+      in
+
+      (* print_endline (
+        "INCLUDING FILE \"" ^ filename ^ "\""
+      );
+      *)
+
+      let pre_tokens_of_lexbuf buf state =
+        let rec get lst = 
+          let ts = pre_flx_lex state buf in 
+          match ts with
+          | [Flx_parse.ENDMARKER] -> lst
+          | _ -> get (List.rev_append ts lst)
+        in List.rev (get [])
+      in
+      let pre_tokens_of_filename filename =
+        let incdirs = state#get_incdirs in
+        let basedir = Filename.dirname filename in
+        let state = new lexer_state filename basedir incdirs in
+        let infile = open_in filename in
+        let src = Lexing.from_channel infile in
+        let toks = pre_tokens_of_lexbuf src state in
+          close_in infile; 
+          toks
+       in
+         state#newline lexbuf;
+         pre_tokens_of_filename filename
+    end
+  end 
+
 } 
 
 (* ====================== REGULAR DEFINITIONS ============================ *)
@@ -290,9 +398,8 @@ let quoted_filename = dquote (ordinary | quote | white | slosh)+ dquote
 
 (* ====================== PARSERS ============================ *)
 (* string lexers *)
-rule parse_qstring = parse
+rule parse_qstring state = parse
 | qstring { 
-    fun state -> 
       state#inbody;
       [STRING (
         state#get_srcref lexbuf, 
@@ -300,16 +407,14 @@ rule parse_qstring = parse
       )] 
   }
 | _ { 
-  fun state -> 
     [ERRORTOKEN (
       state#get_srcref lexbuf, 
       "' string"
     )] 
   }
 
-and parse_dqstring = parse
+and parse_dqstring state = parse
 | dqstring {
-    fun state -> 
       state#inbody;
       [STRING (
         state#get_srcref lexbuf, 
@@ -317,7 +422,6 @@ and parse_dqstring = parse
       )] 
   }
 | _ { 
-  fun state ->
     state#inbody; 
     [ERRORTOKEN (
       state#get_srcref lexbuf, 
@@ -325,9 +429,8 @@ and parse_dqstring = parse
     )]
   }
 
-and parse_qqqstring = parse
+and parse_qqqstring state = parse
 | qqqstring { 
-    fun state -> 
       state#inbody;
       [STRING (
         state#get_srcref lexbuf, 
@@ -335,7 +438,6 @@ and parse_qqqstring = parse
       )] 
   }
 | _ { 
-  fun state -> 
     state#inbody;
     [ERRORTOKEN (
       state#get_srcref lexbuf, 
@@ -343,9 +445,8 @@ and parse_qqqstring = parse
     )] 
   }
 
-and parse_dddstring = parse
+and parse_dddstring state = parse
 | dddstring { 
-    fun state -> 
       state#inbody;
       [STRING (
         state#get_srcref lexbuf,
@@ -353,7 +454,6 @@ and parse_dddstring = parse
       )] 
   }
 | _ { 
-  fun state -> 
     state#inbody;
     [ERRORTOKEN (
       state#get_srcref lexbuf,
@@ -361,9 +461,8 @@ and parse_dddstring = parse
     )] 
   }
 
-and parse_wqstring = parse
+and parse_wqstring state = parse
 | qstring { 
-    fun state -> 
       state#inbody;
       [WSTRING (
         state#get_srcref lexbuf, 
@@ -371,16 +470,14 @@ and parse_wqstring = parse
       )] 
   }
 | _ { 
-  fun state -> 
     [ERRORTOKEN (
       state#get_srcref lexbuf, 
       "' string"
     )] 
   }
 
-and parse_wdqstring = parse
+and parse_wdqstring state = parse
 | dqstring {
-    fun state -> 
       state#inbody;
       [WSTRING (
         state#get_srcref lexbuf, 
@@ -388,7 +485,6 @@ and parse_wdqstring = parse
       )] 
   }
 | _ { 
-  fun state ->
     state#inbody; 
     [ERRORTOKEN (
       state#get_srcref lexbuf, 
@@ -396,9 +492,8 @@ and parse_wdqstring = parse
     )]
   }
 
-and parse_wqqqstring = parse
+and parse_wqqqstring state = parse
 | qqqstring { 
-    fun state -> 
       state#inbody;
       [WSTRING (
         state#get_srcref lexbuf, 
@@ -406,7 +501,6 @@ and parse_wqqqstring = parse
       )] 
   }
 | _ { 
-  fun state -> 
     state#inbody;
     [ERRORTOKEN (
       state#get_srcref lexbuf, 
@@ -414,9 +508,8 @@ and parse_wqqqstring = parse
     )] 
   }
 
-and parse_wdddstring = parse
+and parse_wdddstring state = parse
 | dddstring { 
-    fun state -> 
       state#inbody;
       [WSTRING (
         state#get_srcref lexbuf,
@@ -424,7 +517,6 @@ and parse_wdddstring = parse
       )] 
   }
 | _ { 
-  fun state -> 
     state#inbody;
     [ERRORTOKEN (
       state#get_srcref lexbuf,
@@ -432,9 +524,8 @@ and parse_wdddstring = parse
     )] 
   }
 
-and parse_uqstring = parse
+and parse_uqstring state = parse
 | qstring { 
-    fun state -> 
       state#inbody;
       [WSTRING (
         state#get_srcref lexbuf, 
@@ -442,16 +533,14 @@ and parse_uqstring = parse
       )] 
   }
 | _ { 
-  fun state -> 
     [ERRORTOKEN (
       state#get_srcref lexbuf, 
       "' string"
     )] 
   }
 
-and parse_udqstring = parse
+and parse_udqstring state = parse
 | dqstring {
-    fun state -> 
       state#inbody;
       [USTRING (
         state#get_srcref lexbuf, 
@@ -459,7 +548,6 @@ and parse_udqstring = parse
       )] 
   }
 | _ { 
-  fun state ->
     state#inbody; 
     [ERRORTOKEN (
       state#get_srcref lexbuf, 
@@ -467,9 +555,8 @@ and parse_udqstring = parse
     )]
   }
 
-and parse_uqqqstring = parse
+and parse_uqqqstring state = parse
 | qqqstring { 
-    fun state -> 
       state#inbody;
       [USTRING (
         state#get_srcref lexbuf, 
@@ -477,7 +564,6 @@ and parse_uqqqstring = parse
       )] 
   }
 | _ { 
-  fun state -> 
     state#inbody;
     [ERRORTOKEN (
       state#get_srcref lexbuf, 
@@ -485,9 +571,8 @@ and parse_uqqqstring = parse
     )] 
   }
 
-and parse_udddstring = parse
+and parse_udddstring state = parse
 | dddstring { 
-    fun state -> 
       state#inbody;
       [USTRING (
         state#get_srcref lexbuf,
@@ -495,7 +580,6 @@ and parse_udddstring = parse
       )] 
   }
 | _ { 
-  fun state -> 
     state#inbody;
     [ERRORTOKEN (
       state#get_srcref lexbuf,
@@ -503,9 +587,8 @@ and parse_udddstring = parse
     )] 
   }
 
-and parse_raw_qstring = parse
+and parse_raw_qstring state = parse
 | raw_qstring { 
-    fun state -> 
       state#inbody;
       [STRING (
         state#get_srcref lexbuf,
@@ -513,16 +596,14 @@ and parse_raw_qstring = parse
       )] 
   }
 | _ { 
-  fun state -> 
     state#inbody;
     [ERRORTOKEN (
      state#get_srcref lexbuf,
     "raw ' string")] 
   }
 
-and parse_raw_dqstring = parse
+and parse_raw_dqstring state = parse
 | raw_dqstring { 
-    fun state -> 
       state#inbody;
       [STRING (
         state#get_srcref lexbuf,
@@ -530,7 +611,6 @@ and parse_raw_dqstring = parse
       )]
   }
 | _ { 
-  fun state -> 
     state#inbody;
     [ERRORTOKEN (
       state#get_srcref lexbuf,
@@ -538,23 +618,21 @@ and parse_raw_dqstring = parse
     )]
   }
 
-and parse_raw_qqqstring = parse
+and parse_raw_qqqstring state = parse
 | raw_qqqstring { 
-    fun state -> 
       state#inbody;
       [STRING (
         state#get_srcref lexbuf,
         state#decode decode_raw_qqqstring (lexeme lexbuf)
       )]
   }
-| _ { fun state -> state#inbody; 
+| _ { state#inbody; 
   [ERRORTOKEN (
     state#get_srcref lexbuf,
     "raw ''' string")] }
 
-and parse_raw_dddstring = parse
+and parse_raw_dddstring state = parse
 | raw_dddstring { 
-    fun state -> 
       state#inbody;
       [STRING (
         state#get_srcref lexbuf,
@@ -562,16 +640,25 @@ and parse_raw_dddstring = parse
       )] 
   }
 | _ { 
-   fun state -> 
      [ERRORTOKEN (
        state#get_srcref lexbuf,
        lexeme lexbuf)
      ] 
    }
 
-and parse_cpp_comment = parse 
+and parse_cpp_comment state = parse 
 | [^'\n'] * newline {
-    fun state ->
+      state#newline lexbuf;
+      let lex = lexeme lexbuf in
+      let n = String.length lex in
+      [COMMENT_NEWLINE  (String.sub lex 0 (n-1))]
+  }
+| _ { [ERRORTOKEN (
+        state#get_srcref lexbuf,
+  lexeme lexbuf)] }
+
+and parse_hashbang state = parse 
+| [^'\n'] * newline {
     begin
       state#newline lexbuf;
       let lex = lexeme lexbuf in
@@ -579,64 +666,37 @@ and parse_cpp_comment = parse
       [COMMENT_NEWLINE  (String.sub lex 0 (n-1))]
     end
   }
-| _ { fun state -> [ERRORTOKEN (
+| _ { [ERRORTOKEN (
         state#get_srcref lexbuf,
   lexeme lexbuf)] }
 
-and parse_hashbang = parse 
-| [^'\n'] * newline {
-    fun state ->
-    begin
-      state#newline lexbuf;
-      let lex = lexeme lexbuf in
-      let n = String.length lex in
-      [COMMENT_NEWLINE  (String.sub lex 0 (n-1))]
-    end
-  }
-| _ { fun state -> [ERRORTOKEN (
-        state#get_srcref lexbuf,
-  lexeme lexbuf)] }
-
-and parse_C_comment = parse 
+and parse_C_comment state = parse 
 | "/*" { 
-    fun state -> 
-    begin
       state#append_comment (lexeme lexbuf);
       state#incr_comment; 
-      parse_C_comment lexbuf state
-    end
+      parse_C_comment state lexbuf
   }
 | newline {
-    fun state -> 
-    begin
       state#newline lexbuf;
       state#append_comment (lexeme lexbuf);
-      parse_C_comment lexbuf state
-    end
+      parse_C_comment state lexbuf
   }
 | "*/" { 
-    fun state ->
-    begin
       state#append_comment (lexeme lexbuf); 
       state#decr_comment; 
       if state#comment_level > 0 
-      then parse_C_comment lexbuf state 
+      then parse_C_comment state lexbuf 
       else ()
       ;
       state#inbody
-    end
   }
 | _ {
-    fun state ->
-    begin
       state#append_comment (lexeme lexbuf);
-      parse_C_comment lexbuf state 
-    end
+      parse_C_comment state lexbuf 
   }
 
-and parse_preprocessor = parse
+and parse_preprocessor state = parse
 | not_newline * newline {
-    fun state -> 
       let ident,s =
         let s = lexeme lexbuf in
         let i = ref 0 in
@@ -662,111 +722,10 @@ and parse_preprocessor = parse
         [NEWLINE]
         
       | "line" ->
-        let i = ref 0 in
-        let a = 
-          let a = ref 0 in
-          while is_digit s.[!i] do
-            a := !a * 10 + dec_char2int s.[!i];
-            incr i
-          done;
-          !a
-        in
-        if !i = 0 
-        then begin
-          print_endline (state#string_of_srcref lexbuf);
-          print_endline "PREPROCESSING ERROR: digits required after #line, IGNORING DIRECTIVE";
-        end else begin
-          while is_white s.[!i] do incr i done;
-          if s.[!i] <> '\n'
-          then begin
-            if s.[!i]<>'"'
-            then begin
-              print_endline (state#string_of_srcref lexbuf);
-              print_endline (
-                "PREPROCESSING ERROR: double quote required after #line " ^ 
-                string_of_int a ^ ": IGNORING DIRECTIVE"
-              )
-            end else begin
-              incr i;
-              let j = !i in
-              while s.[!i]<>'"' && s.[!i]<>'\n' do incr i done;
-
-              if s.[!i]='\n'
-              then begin
-                print_endline (state#string_of_srcref lexbuf);
-                print_endline
-                  "PREPROCESSING ERROR: double quote required after filename in #line directive"
-              end else begin
-                let filename = String.sub s j (!i-j) in
-                state#set_filename filename;
-                state#set_line (a-1)
-              end
-            end
-          end else begin
-            (* print_endline ("SETTING LINE " ^ string_of_int a); *)
-            state#set_line (a-1)
-          end
-        end;
-        state#newline lexbuf;
-        [NEWLINE]
+        line_directive state s lexbuf
 
       | "include" -> 
-        if s.[0]<>'"' && s.[0]<>'<'
-        then begin
-          print_endline (state#string_of_srcref lexbuf);
-          print_endline (
-            "PREPROCESSING ERROR: '\"' or '<' required after #include: IGNORING DIRECTIVE"
-          );
-          state#newline lexbuf;
-          [NEWLINE]
-        end else begin
-          let rquote = if s.[0]='"' then '"' else '>' in
-          let i = ref 1 in
-          let j = !i in
-          while s.[!i]<>rquote && s.[!i]<>'\n' do incr i done;
-
-          if s.[!i]='\n'
-          then begin
-            print_endline (state#string_of_srcref lexbuf);
-            print_endline
-              "PREPROCESSING ERROR: double quote required after filename in #include directive";
-            state#newline lexbuf;
-            [NEWLINE]
-          end else begin
-            let filename = String.sub s j (!i-j) in
-            let filename=
-              if rquote = '"'
-              then state#get_relative filename 
-              else state#get_absolute filename
-            in
-
-            (* print_endline (
-              "INCLUDING FILE \"" ^ filename ^ "\""
-            );
-            *)
-
-            let pre_tokens_of_lexbuf buf state =
-              let rec get lst = 
-                let ts = pre_flx_lex buf state in 
-                match ts with
-                | [Flx_parse.ENDMARKER] -> lst
-                | _ -> get (List.rev_append ts lst)
-              in List.rev (get [])
-            in
-            let pre_tokens_of_filename filename =
-              let incdirs = state#get_incdirs in
-              let basedir = Filename.dirname filename in
-              let state = new lexer_state filename basedir incdirs in
-              let infile = open_in filename in
-              let src = Lexing.from_channel infile in
-              let toks = pre_tokens_of_lexbuf src state in
-                close_in infile; 
-                toks
-             in
-               state#newline lexbuf;
-               pre_tokens_of_filename filename
-          end
-        end 
+        include_directive state s pre_flx_lex lexbuf
 
       | _ -> 
         print_endline (state#string_of_srcref lexbuf);
@@ -780,24 +739,18 @@ and parse_preprocessor = parse
   }
 
 
-and pre_flx_lex = parse
+and pre_flx_lex state = parse
 | "//" 
   { 
-    fun (state : lexer_state) -> 
-    parse_cpp_comment lexbuf state 
+    parse_cpp_comment state lexbuf 
   }
 | "/*" { 
-    fun state ->
-    begin
       state#set_comment (lexeme lexbuf);
-      parse_C_comment lexbuf state; 
+      parse_C_comment state lexbuf; 
       [COMMENT (state#get_comment)]
-    end
   }
 
 | identifier { 
-    fun state ->
-    begin
       state#inbody;
       let s = lexeme lexbuf in
       let s' = Flx_id.utf8_to_ucn s in
@@ -805,12 +758,9 @@ and pre_flx_lex = parse
         (state#get_srcref lexbuf) 
         s'
       ]
-    end
   } 
 
 | int_lit { 
-    fun state ->
-    begin
       state#inbody;
       let sr = state#get_srcref lexbuf in
       let s = lexeme lexbuf in
@@ -871,11 +821,9 @@ and pre_flx_lex = parse
       let d = String.sub s first (!k-first) in
       let v = converter d in
         [INTEGER (sr, t, v)]
-    end
   }
 
 | floating_literal { 
-  fun state -> 
     state#inbody;
     let str = lexeme lexbuf in
     let n = String.length str in
@@ -890,107 +838,105 @@ and pre_flx_lex = parse
   }
 
 (* one character sequences *)
-| "$" { fun state -> state#inbody; [DOLLAR        (state#get_srcref lexbuf)] }
-| "(" { fun state -> state#inbody; [LPAR          (state#get_srcref lexbuf)] }
-| ")" { fun state -> state#inbody; [RPAR          (state#get_srcref lexbuf)] }
-| "[" { fun state -> state#inbody; [LSQB          (state#get_srcref lexbuf)] }
-| "]" { fun state -> state#inbody; [RSQB          (state#get_srcref lexbuf)] }
-| "{" { fun state -> state#inbody; [LBRACE        (state#get_srcref lexbuf)] }
-| "}" { fun state -> state#inbody; [RBRACE        (state#get_srcref lexbuf)] }
-| "!" { fun state -> state#inbody; [EXCLAMATION   (state#get_srcref lexbuf)] }
-| ":" { fun state -> state#inbody; [COLON         (state#get_srcref lexbuf)] }
-| "," { fun state -> state#inbody; [COMMA         (state#get_srcref lexbuf)] }
-| ";" { fun state -> state#inbody; [SEMI          (state#get_srcref lexbuf)] }
-| "+" { fun state -> state#inbody; [PLUS          (state#get_srcref lexbuf)] }
-| "-" { fun state -> state#inbody; [MINUS         (state#get_srcref lexbuf)] }
-| "*" { fun state -> state#inbody; [STAR          (state#get_srcref lexbuf)] }
-| "/" { fun state -> state#inbody; [SLASH         (state#get_srcref lexbuf)] }
-| "|" { fun state -> state#inbody; [VBAR          (state#get_srcref lexbuf)] }
-| "&" { fun state -> state#inbody; [AMPER         (state#get_srcref lexbuf)] }
-| "<" { fun state -> state#inbody; [LESS          (state#get_srcref lexbuf)] }
-| ">" { fun state -> state#inbody; [GREATER       (state#get_srcref lexbuf)] }
-| "=" { fun state -> state#inbody; [EQUAL         (state#get_srcref lexbuf)] }
-| "." { fun state -> state#inbody; [DOT           (state#get_srcref lexbuf)] }
-| "%" { fun state -> state#inbody; [PERCENT       (state#get_srcref lexbuf)] }
-| "`" { fun state -> state#inbody; [BACKQUOTE     (state#get_srcref lexbuf)] }
-| "~" { fun state -> state#inbody; [TILDE         (state#get_srcref lexbuf)] }
-| "^" { fun state -> state#inbody; [CIRCUMFLEX    (state#get_srcref lexbuf)] }
-| "!" { fun state -> state#inbody; [EXCLAMATION   (state#get_srcref lexbuf)] }
-| "?" { fun state -> state#inbody; [QUEST         (state#get_srcref lexbuf)] }
+| "$" { state#inbody; [DOLLAR        (state#get_srcref lexbuf)] }
+| "(" { state#inbody; [LPAR          (state#get_srcref lexbuf)] }
+| ")" { state#inbody; [RPAR          (state#get_srcref lexbuf)] }
+| "[" { state#inbody; [LSQB          (state#get_srcref lexbuf)] }
+| "]" { state#inbody; [RSQB          (state#get_srcref lexbuf)] }
+| "{" { state#inbody; [LBRACE        (state#get_srcref lexbuf)] }
+| "}" { state#inbody; [RBRACE        (state#get_srcref lexbuf)] }
+| "!" { state#inbody; [EXCLAMATION   (state#get_srcref lexbuf)] }
+| ":" { state#inbody; [COLON         (state#get_srcref lexbuf)] }
+| "," { state#inbody; [COMMA         (state#get_srcref lexbuf)] }
+| ";" { state#inbody; [SEMI          (state#get_srcref lexbuf)] }
+| "+" { state#inbody; [PLUS          (state#get_srcref lexbuf)] }
+| "-" { state#inbody; [MINUS         (state#get_srcref lexbuf)] }
+| "*" { state#inbody; [STAR          (state#get_srcref lexbuf)] }
+| "/" { state#inbody; [SLASH         (state#get_srcref lexbuf)] }
+| "|" { state#inbody; [VBAR          (state#get_srcref lexbuf)] }
+| "&" { state#inbody; [AMPER         (state#get_srcref lexbuf)] }
+| "<" { state#inbody; [LESS          (state#get_srcref lexbuf)] }
+| ">" { state#inbody; [GREATER       (state#get_srcref lexbuf)] }
+| "=" { state#inbody; [EQUAL         (state#get_srcref lexbuf)] }
+| "." { state#inbody; [DOT           (state#get_srcref lexbuf)] }
+| "%" { state#inbody; [PERCENT       (state#get_srcref lexbuf)] }
+| "`" { state#inbody; [BACKQUOTE     (state#get_srcref lexbuf)] }
+| "~" { state#inbody; [TILDE         (state#get_srcref lexbuf)] }
+| "^" { state#inbody; [CIRCUMFLEX    (state#get_srcref lexbuf)] }
+| "!" { state#inbody; [EXCLAMATION   (state#get_srcref lexbuf)] }
+| "?" { state#inbody; [QUEST         (state#get_srcref lexbuf)] }
 
 (* two character sequences *)
-| "=>" { fun state -> state#inbody; [EQRIGHTARROW (state#get_srcref lexbuf)] }
-| "&<" { fun state -> state#inbody; [ANDLESS      (state#get_srcref lexbuf)] }
-| "&>" { fun state -> state#inbody; [ANDGREATER   (state#get_srcref lexbuf)] }
-| ".." { fun state -> state#inbody; [DOTDOT       (state#get_srcref lexbuf)] }
-| "::" { fun state -> state#inbody; [COLONCOLON   (state#get_srcref lexbuf)] }
-| "==" { fun state -> state#inbody; [EQEQUAL      (state#get_srcref lexbuf)] }
+| "=>" { state#inbody; [EQRIGHTARROW (state#get_srcref lexbuf)] }
+| "&<" { state#inbody; [ANDLESS      (state#get_srcref lexbuf)] }
+| "&>" { state#inbody; [ANDGREATER   (state#get_srcref lexbuf)] }
+| ".." { state#inbody; [DOTDOT       (state#get_srcref lexbuf)] }
+| "::" { state#inbody; [COLONCOLON   (state#get_srcref lexbuf)] }
+| "==" { state#inbody; [EQEQUAL      (state#get_srcref lexbuf)] }
 | "<>" 
-| "!=" { fun state -> state#inbody; [NOTEQUAL     (state#get_srcref lexbuf)] }
-| "<=" { fun state -> state#inbody; [LESSEQUAL    (state#get_srcref lexbuf)] }
-| ">=" { fun state -> state#inbody; [GREATEREQUAL (state#get_srcref lexbuf)] }
-| "<<" { fun state -> state#inbody; [LEFTSHIFT    (state#get_srcref lexbuf)] }
-| ">>" { fun state -> state#inbody; [RIGHTSHIFT   (state#get_srcref lexbuf)] }
-| "**" { fun state -> state#inbody; [STARSTAR     (state#get_srcref lexbuf)] }
-| "\\" { fun state -> state#inbody; [SLOSH        (state#get_srcref lexbuf)] }
-| "++" { fun state -> state#inbody; [PLUSPLUS     (state#get_srcref lexbuf)] }
-| "--" { fun state -> state#inbody; [MINUSMINUS   (state#get_srcref lexbuf)] }
-| "+=" { fun state -> state#inbody; [PLUSEQUAL    (state#get_srcref lexbuf)] }
-| "-=" { fun state -> state#inbody; [MINUSEQUAL   (state#get_srcref lexbuf)] }
-| "*=" { fun state -> state#inbody; [STAREQUAL    (state#get_srcref lexbuf)] }
-| "/=" { fun state -> state#inbody; [SLASHEQUAL   (state#get_srcref lexbuf)] }
-| "%=" { fun state -> state#inbody; [PERCENTEQUAL (state#get_srcref lexbuf)] }
-| "^=" { fun state -> state#inbody; [CARETEQUAL   (state#get_srcref lexbuf)] }
-| "|=" { fun state -> state#inbody; [VBAREQUAL    (state#get_srcref lexbuf)] }
-| "&=" { fun state -> state#inbody; [AMPEREQUAL   (state#get_srcref lexbuf)] }
-| "~=" { fun state -> state#inbody; [TILDEEQUAL   (state#get_srcref lexbuf)] }
-| ":=" { fun state -> state#inbody; [COLONEQUAL   (state#get_srcref lexbuf)] }
-| "<-" { fun state -> state#inbody; [LEFTARROW    (state#get_srcref lexbuf)] }
-| "->" { fun state -> state#inbody; [RIGHTARROW   (state#get_srcref lexbuf)] }
-| "<:" { fun state -> state#inbody; [LESSCOLON    (state#get_srcref lexbuf)] }
-| ":>" { fun state -> state#inbody; [COLONGREATER (state#get_srcref lexbuf)] }
-| "[<" { fun state -> state#inbody; [LSQANGLE     (state#get_srcref lexbuf)] }
-| ">]" { fun state -> state#inbody; [RSQANGLE     (state#get_srcref lexbuf)] }
+| "!=" { state#inbody; [NOTEQUAL     (state#get_srcref lexbuf)] }
+| "<=" { state#inbody; [LESSEQUAL    (state#get_srcref lexbuf)] }
+| ">=" { state#inbody; [GREATEREQUAL (state#get_srcref lexbuf)] }
+| "<<" { state#inbody; [LEFTSHIFT    (state#get_srcref lexbuf)] }
+| ">>" { state#inbody; [RIGHTSHIFT   (state#get_srcref lexbuf)] }
+| "**" { state#inbody; [STARSTAR     (state#get_srcref lexbuf)] }
+| "\\" { state#inbody; [SLOSH        (state#get_srcref lexbuf)] }
+| "++" { state#inbody; [PLUSPLUS     (state#get_srcref lexbuf)] }
+| "--" { state#inbody; [MINUSMINUS   (state#get_srcref lexbuf)] }
+| "+=" { state#inbody; [PLUSEQUAL    (state#get_srcref lexbuf)] }
+| "-=" { state#inbody; [MINUSEQUAL   (state#get_srcref lexbuf)] }
+| "*=" { state#inbody; [STAREQUAL    (state#get_srcref lexbuf)] }
+| "/=" { state#inbody; [SLASHEQUAL   (state#get_srcref lexbuf)] }
+| "%=" { state#inbody; [PERCENTEQUAL (state#get_srcref lexbuf)] }
+| "^=" { state#inbody; [CARETEQUAL   (state#get_srcref lexbuf)] }
+| "|=" { state#inbody; [VBAREQUAL    (state#get_srcref lexbuf)] }
+| "&=" { state#inbody; [AMPEREQUAL   (state#get_srcref lexbuf)] }
+| "~=" { state#inbody; [TILDEEQUAL   (state#get_srcref lexbuf)] }
+| ":=" { state#inbody; [COLONEQUAL   (state#get_srcref lexbuf)] }
+| "<-" { state#inbody; [LEFTARROW    (state#get_srcref lexbuf)] }
+| "->" { state#inbody; [RIGHTARROW   (state#get_srcref lexbuf)] }
+| "<:" { state#inbody; [LESSCOLON    (state#get_srcref lexbuf)] }
+| ":>" { state#inbody; [COLONGREATER (state#get_srcref lexbuf)] }
+| "[<" { state#inbody; [LSQANGLE     (state#get_srcref lexbuf)] }
+| ">]" { state#inbody; [RSQANGLE     (state#get_srcref lexbuf)] }
 
 (* three character sequences *)
-| "<<=" { fun state -> state#inbody; [LEFTSHIFTEQUAL (state#get_srcref lexbuf)] }
-| ">>=" { fun state -> state#inbody; [RIGHTSHIFTEQUAL(state#get_srcref lexbuf)] }
-| "..." { fun state -> state#inbody; [DOTDOTDOT      (state#get_srcref lexbuf)] }
-| "<->" { fun state -> state#inbody; [LEFTRIGHTARROW (state#get_srcref lexbuf)] }
-| "&==" { fun state -> state#inbody; [ANDEQEQUAL      (state#get_srcref lexbuf)] }
+| "<<=" { state#inbody; [LEFTSHIFTEQUAL (state#get_srcref lexbuf)] }
+| ">>=" { state#inbody; [RIGHTSHIFTEQUAL(state#get_srcref lexbuf)] }
+| "..." { state#inbody; [DOTDOTDOT      (state#get_srcref lexbuf)] }
+| "<->" { state#inbody; [LEFTRIGHTARROW (state#get_srcref lexbuf)] }
+| "&==" { state#inbody; [ANDEQEQUAL      (state#get_srcref lexbuf)] }
 | "&<>" 
-| "&!=" { fun state -> state#inbody; [ANDNOTEQUAL     (state#get_srcref lexbuf)] }
-| "&<=" { fun state -> state#inbody; [ANDLESSEQUAL    (state#get_srcref lexbuf)] }
-| "&>=" { fun state -> state#inbody; [ANDGREATEREQUAL (state#get_srcref lexbuf)] }
+| "&!=" { state#inbody; [ANDNOTEQUAL     (state#get_srcref lexbuf)] }
+| "&<=" { state#inbody; [ANDLESSEQUAL    (state#get_srcref lexbuf)] }
+| "&>=" { state#inbody; [ANDGREATEREQUAL (state#get_srcref lexbuf)] }
 
 (* Python strings *)
-| quote  { fun state -> state#inbody; parse_qstring lexbuf state }
-| qqq    { fun state -> state#inbody; parse_qqqstring lexbuf state }
-| dquote { fun state -> state#inbody; parse_dqstring lexbuf state }
-| ddd    { fun state -> state#inbody; parse_dddstring lexbuf state }
+| quote  { state#inbody; parse_qstring state lexbuf }
+| qqq    { state#inbody; parse_qqqstring state lexbuf }
+| dquote { state#inbody; parse_dqstring state lexbuf }
+| ddd    { state#inbody; parse_dddstring state lexbuf }
 
 (* wide strings *)
-| ('w' | 'W') quote  { fun state -> state#inbody; parse_wqstring lexbuf state }
-| ('w' | 'W') qqq    { fun state -> state#inbody; parse_wqqqstring lexbuf state }
-| ('w' | 'W') dquote { fun state -> state#inbody; parse_wdqstring lexbuf state }
-| ('w' | 'W') ddd    { fun state -> state#inbody; parse_wdddstring lexbuf state }
+| ('w' | 'W') quote  { state#inbody; parse_wqstring state lexbuf }
+| ('w' | 'W') qqq    { state#inbody; parse_wqqqstring state lexbuf }
+| ('w' | 'W') dquote { state#inbody; parse_wdqstring state lexbuf }
+| ('w' | 'W') ddd    { state#inbody; parse_wdddstring state lexbuf }
 
 (* UTF32 strings *)
-| ('u' | 'U') quote  { fun state -> state#inbody; parse_uqstring lexbuf state }
-| ('u' | 'U') qqq    { fun state -> state#inbody; parse_uqqqstring lexbuf state }
-| ('u' | 'U') dquote { fun state -> state#inbody; parse_udqstring lexbuf state }
-| ('u' | 'U') ddd    { fun state -> state#inbody; parse_udddstring lexbuf state }
+| ('u' | 'U') quote  { state#inbody; parse_uqstring state lexbuf }
+| ('u' | 'U') qqq    { state#inbody; parse_uqqqstring state lexbuf }
+| ('u' | 'U') dquote { state#inbody; parse_udqstring state lexbuf }
+| ('u' | 'U') ddd    { state#inbody; parse_udddstring state lexbuf }
 
 (* Python raw strings *)
-| ('r'|'R') quote  { fun state -> state#inbody; parse_raw_qstring lexbuf state }
-| ('r'|'R') qqq    { fun state -> state#inbody; parse_raw_qqqstring lexbuf state }
-| ('r'|'R') dquote { fun state -> state#inbody; parse_raw_dqstring lexbuf state }
-| ('r'|'R') ddd    { fun state -> state#inbody; parse_raw_dddstring lexbuf state }
+| ('r'|'R') quote  { state#inbody; parse_raw_qstring state lexbuf }
+| ('r'|'R') qqq    { state#inbody; parse_raw_qqqstring state lexbuf }
+| ('r'|'R') dquote { state#inbody; parse_raw_dqstring state lexbuf }
+| ('r'|'R') ddd    { state#inbody; parse_raw_dddstring state lexbuf }
 
 (* whitespace *)
 | white + { 
-    fun state ->
-    begin
       (* we do NOT say 'inbody' here: we want to accept
          #directives with leading spaces
       *)
@@ -1003,14 +949,12 @@ and pre_flx_lex = parse
         | _ -> raise (Failure "Error in lexer, bad white space character")
       done;
       [WHITE  (!column)]
-    end
   }
 
 (* Preprocessor Directive *)
 | "#!" {
-  fun state ->
     if state#is_at_line_start
-    then parse_hashbang lexbuf state
+    then parse_hashbang state lexbuf
     else [
       ERRORTOKEN 
       (state#get_srcref lexbuf,
@@ -1019,9 +963,8 @@ and pre_flx_lex = parse
   }
 
 | "#" {
-  fun state ->
     if state#is_at_line_start
-    then parse_preprocessor lexbuf state
+    then parse_preprocessor state lexbuf
     else [
       ERRORTOKEN 
       (state#get_srcref lexbuf,
@@ -1031,21 +974,17 @@ and pre_flx_lex = parse
 
 (* end of line *)
 | newline {
-  fun state ->
-    begin 
       state#newline lexbuf; 
       [NEWLINE ]
-    end
   }
 
 (* end of file *)
 | eof { 
-  fun state -> [ENDMARKER] 
+  [ENDMARKER] 
   }
   
 (* Anything else is an error *)
 | _ { 
-  fun state -> 
     state#inbody; 
     [
       ERRORTOKEN 
@@ -1122,7 +1061,7 @@ class lexer_state :
   end
 
 val pre_flx_lex : 
-  Lexing.lexbuf -> 
   lexer_state -> 
+  Lexing.lexbuf -> 
   Flx_parse.token list
 

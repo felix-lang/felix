@@ -31,16 +31,14 @@ open Flx_generic
 
 let rec proper_descendant dfns parent =
   match parent with
-  | Some parent -> 
-    let _,_,parent,vs,_,_,entry = Hashtbl.find dfns parent in
-    begin match entry with
-    | `SYMDEF_interface  
-    | `SYMDEF_typed_functor _
-    | `SYMDEF_untyped_functor _ 
-      -> false
-    | _ -> proper_descendant dfns parent 
-    end
   | None -> true
+  | Some parent -> 
+    match Hashtbl.find dfns parent with
+    | {symdef=`SYMDEF_interface  }
+    | {symdef=`SYMDEF_typed_functor _}
+    | {symdef=`SYMDEF_untyped_functor _ }
+      -> false
+    | {parent=parent} -> proper_descendant dfns parent 
 
 let find_param name_map s =
   match Hashtbl.find name_map s with
@@ -51,7 +49,7 @@ let print_vs vs =
   if length vs = 0 then "" else
   "[" ^ catmap "," (fun (s,i) -> s ^ "<"^si i^">") vs^ "]"
 
-let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
+let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;dirs=dirs;symdef=bdcl} =
   let bexes env exes rt i tvars = bind_exes syms env sr exes rt name i tvars in
   (*
   print_endline ("Parent is " ^ (match parent with | None -> "none" | Some i -> si i));
@@ -114,11 +112,10 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
       begin match parent with 
       | None -> failwith "[bbind_sym] expected parameter to have a parent" 
       | Some ip ->
-        let id2,sr,parent2,_,_,_,entry2 = Hashtbl.find syms.dfns ip in
-        match entry2 with
-        | `SYMDEF_function _
-        | `SYMDEF_typed_functor _
-        | `SYMDEF_untyped_functor _ ->
+        match Hashtbl.find syms.dfns ip with
+        | {symdef=`SYMDEF_function _}
+        | {symdef=`SYMDEF_typed_functor _}
+        | {symdef=`SYMDEF_untyped_functor _}->
           let t = typeofindex syms [] i in
           Hashtbl.add bbdfns i (name,parent,`BBDCL_val (vs,t));
           Hashtbl.add syms.varmap i t;
@@ -134,7 +131,10 @@ let bbind_sym syms bbdfns i (name,sr,parent,vs,name_map,dirs,bdcl) =
     | `SYMDEF_match_check (pat,mvindex) ->
       let t = typeofindex syms [] mvindex in
       let name_map = Hashtbl.create 97 in
-      let arg,sr = match Hashtbl.find syms.dfns mvindex with id,sr,_,_,_,_,_ -> id,sr in
+      let arg,sr = 
+        match Hashtbl.find syms.dfns mvindex with 
+        {id=id;sr=sr}->id,sr
+      in
       let exes = 
         [
         sr,`EXE_fun_return (gen_match_check pat (`AST_name (sr,arg,[])))
@@ -414,7 +414,7 @@ try
   let deblocked = desugar_program syms module_name parse_tree in
 
   let root = !(syms.counter) in
-  let table, exes, ifaces,dirs = 
+  let table, _, exes, ifaces,dirs = 
     build_tables syms "<top level>" 0 None None root deblocked 
   in
     print_endline "//BINDING EXECUTABLE CODE";
@@ -424,7 +424,7 @@ try
     print_endline "//Binding complete";
 
     let root_proc = 
-      let id,sr,parent,vs,name_map,_,entry = 
+      match 
         try Hashtbl.find syms.dfns root 
         with Not_found ->
           failwith 
@@ -432,7 +432,7 @@ try
             "Can't find root module " ^ si root ^
             " in symbol table?"
           )
-      in
+      with {id=id; sr=sr; parent=parent;vs=vs;pubmap=name_map;symdef=entry} ->
       begin match entry with
         | `SYMDEF_module -> ()
         | _ -> failwith "Expected to find top level module ''"

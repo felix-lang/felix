@@ -263,8 +263,7 @@ let find_methods sr sts =
 
 let rec rex syms name (e:expr_t) : asm_t list * expr_t = 
   let rex e = rex syms name e in
-  let rst x = rst syms name x in
-  let rsts sts = concat (map rst sts) in
+  let rsts sts = concat (map (rst syms name `Private) sts) in
   let sr = src_of_expr e in
   let seq () = let n = !(syms.counter) in incr (syms.counter); n in
   match e with
@@ -353,7 +352,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let name = "_lam_" ^ string_of_int n in
     let argtyp = type_of_argtypes (map snd params) in
     [match res with
-    | _ -> Dcl (sr,name,[],`DCL_function (params, res, rsts sts))
+    | _ -> Dcl (sr,name,`Private,[],`DCL_function (params, res, rsts sts))
     ],
     `AST_suffix 
     (
@@ -388,7 +387,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let fname = "regmatch" ^ string_of_int n in
     let l,x = rex e in
     let exes = [Exe(sr,`EXE_regmatch (x,!cls))] in
-    let rfun = Dcl(sr,fname,[],`DCL_function([],`TYP_none,exes)) in
+    let rfun = Dcl(sr,fname,`Private,[],`DCL_function([],`TYP_none,exes)) in
     rfun :: l @ !dcls,
     `AST_apply(sr,(`AST_name(sr,fname,[]),`AST_tuple(sr,[])))
    
@@ -423,6 +422,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
         (
           sr,
           name,
+          `Private,
           [],
           `DCL_function 
           (
@@ -452,7 +452,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let l1,x1 = rex p1 in
     let l2,x2 = rex p2 in
     let exes = [Exe(sr,`EXE_reglex (x1,x2,!cls))] in
-    let rfun = Dcl(sr,fname,[],`DCL_function([],`TYP_none,exes)) in
+    let rfun = Dcl(sr,fname,`Private,[],`DCL_function([],`TYP_none,exes)) in
     rfun :: l1 @ l2 @ !dcls,
     `AST_apply(sr,(`AST_name(sr,fname,[]),`AST_tuple(sr,[])))
      
@@ -491,7 +491,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     *)
     let evl = 
       [
-        Dcl (expr_src,match_var_name,[],`DCL_val (`TYP_typeof x));
+        Dcl (expr_src,match_var_name,`Private,[],`DCL_val (`TYP_typeof x));
         Exe (expr_src,`EXE_init (match_var_name,x))
       ]
     in
@@ -522,11 +522,13 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
       in
       matches := !matches @
       [
-        Dcl (patsrc,match_checker_id,[],`DCL_match_check (pat,match_var_name));
+        Dcl (patsrc,match_checker_id,`Private,[],`DCL_match_check (pat,match_var_name));
         Dcl 
         (
           expr_src,
-          match_handler_id,[],
+          match_handler_id,
+          `Private,
+          [],
           `DCL_match_handler 
           (
             pat,
@@ -605,7 +607,9 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
       Dcl 
       (
         sr,
-        match_function_id,[],
+        match_function_id,
+        `Private,
+        [],
         `DCL_function 
         (
           [],
@@ -625,18 +629,21 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     )
 
 (* remove blocks *)
-and rst syms name st : asm_t list = 
+and rst syms name access st : asm_t list = 
   let rex x = rex syms name x in
-  let rst name x = rst syms name x in
-  let rsts name sts = concat (map (rst name) sts) in
+  let rsts name sts = concat (map (rst syms name access) sts) in
   let seq () = let n = !(syms.counter) in incr (syms.counter); n in
 
   match st with
+  | `AST_private (sr,st) ->
+     rst syms name `Private st
+     
   | `AST_include (sr,inspec) ->
     let sts = include_file syms inspec in
     rsts name sts
 
-  | `AST_regdef (sr,name,regexp) -> [Dcl (sr,name,[],`DCL_regdef regexp)]
+  | `AST_regdef (sr,name,regexp) -> 
+    [Dcl (sr,name,access,[],`DCL_regdef regexp)]
   | `AST_label (sr,s) -> [Exe (sr,`EXE_label s)]
   | `AST_proc_return sr -> [Exe (sr,`EXE_proc_return)]
   | `AST_goto (sr,s) -> [Exe (sr,`EXE_goto s)]
@@ -653,11 +660,11 @@ and rst syms name st : asm_t list =
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,vs,`DCL_var t); Exe (sr,`EXE_init (name,x))]
+      d @ [Dcl (sr,name,access,vs,`DCL_var t); Exe (sr,`EXE_init (name,x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,vs,`DCL_var (`TYP_typeof x)); Exe (sr,`EXE_init (name,x))]
-    | Some t,None -> [Dcl (sr,name,vs,`DCL_var t)]
+      d @ [Dcl (sr,name,access,vs,`DCL_var (`TYP_typeof x)); Exe (sr,`EXE_init (name,x))]
+    | Some t,None -> [Dcl (sr,name,access,vs,`DCL_var t)]
     | None,None -> failwith "Expected variable to have type or initialiser"
     end
 
@@ -665,27 +672,36 @@ and rst syms name st : asm_t list =
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,vs,`DCL_val t); Exe (sr,`EXE_init (name,x))]
+      d @ [Dcl (sr,name,access,vs,`DCL_val t); Exe (sr,`EXE_init (name,x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,vs,`DCL_val (`TYP_typeof x)); Exe (sr,`EXE_init (name,x))]
-    | Some t, None -> [Dcl (sr,name,vs,`DCL_val t)] (* allowed in interfaces *)
+      d @ [Dcl (sr,name,access,vs,`DCL_val (`TYP_typeof x)); Exe (sr,`EXE_init (name,x))]
+    | Some t, None -> [Dcl (sr,name,access,vs,`DCL_val t)] (* allowed in interfaces *)
     | None,None -> failwith "Expected value to have type or initialiser"
     end
 
-  | `AST_const_decl (sr,name, vs,typ, s) -> [Dcl (sr,name,vs,`DCL_const (typ,s))]
+  | `AST_const_decl (sr,name, vs,typ, s) -> [Dcl (sr,name,access,vs,`DCL_const (typ,s))]
 
   (* types *)
-  | `AST_abs_decl (sr,name,vs,str) -> [Dcl (sr,name,vs,`DCL_abs (str))]
-  | `AST_union (sr,name, vs, components) -> [Dcl (sr,name,vs,`DCL_union (components))]
-  | `AST_struct (sr,name, vs, components) ->  [Dcl (sr,name,vs,`DCL_struct (components))]
-  | `AST_type_alias (sr,name,vs,typ) -> [Dcl (sr,name,vs,`DCL_type_alias (typ))]
-  | `AST_type (sr,name,vs) -> [Dcl (sr,name,vs,`DCL_type)]
+  | `AST_abs_decl (sr,name,vs,str) -> [Dcl (sr,name,access,vs,`DCL_abs (str))]
+  | `AST_union (sr,name, vs, components) -> [Dcl (sr,name,access,vs,`DCL_union (components))]
+  | `AST_struct (sr,name, vs, components) ->  [Dcl (sr,name,access,vs,`DCL_struct (components))]
+  | `AST_type_alias (sr,name,vs,typ) -> [Dcl (sr,name,access,vs,`DCL_type_alias (typ))]
+  | `AST_type (sr,name,vs) -> [Dcl (sr,name,access,vs,`DCL_type)]
 
   | `AST_curry (sr,name',vs,pps,ret,kind,sts) ->
-    rst name (mkcurry sr name' vs pps ret kind sts)
+    rst syms name access (mkcurry sr name' vs pps ret kind sts)
 
   (* The object *)
+  (* THIS IS HACKY AND DOESN'T WORK PROPERLY --
+    need a real object construction --
+    the constructor name and object type should
+    be the same .. at present the exported type
+    may refer to typedefs in the constructor function,
+    and these cant be found by lookup .. really
+    we need to use a proper construction that will
+    be bound correctly without lookup
+  *)
   | `AST_object (sr,name,vs,params,sts) -> 
     let methods = find_methods sr sts in
     let mtuple =  
@@ -707,16 +723,16 @@ and rst syms name st : asm_t list =
     let retval:expr_t = `AST_apply (sr,(rtyp, mtuple)) in
     let sts = sts @ [`AST_fun_return (sr,retval)] in
     [
-      Dcl (sr,otname,vs,`DCL_struct methods);
-      Dcl (sr,name,vs,`DCL_function (params,rtyp,rsts name sts))
+      Dcl (sr,otname,access,vs,`DCL_struct methods);
+      Dcl (sr,name,access,vs,`DCL_function (params,rtyp,rsts name sts))
     ]
   
   (* functions *)
   | `AST_function (sr,name, vs, params, res, sts) -> 
-    [Dcl (sr,name,vs,`DCL_function (params, res, rsts name sts))]
+    [Dcl (sr,name,access,vs,`DCL_function (params, res, rsts name sts))]
     
   | `AST_function_decl (sr,name,vs,typ) ->
-    [Dcl (sr,name,vs,`DCL_if_fun typ)]
+    [Dcl (sr,name,access,vs,`DCL_if_fun typ)]
 
   | `AST_fun_decl (sr,name,vs,args,result,code) ->
     let n = length args in
@@ -752,19 +768,19 @@ and rst syms name st : asm_t list =
         ]
     in
     [
-      Dcl (sr,prim_id,vs,`DCL_fun (args,result,code));
-      Dcl (sr,name,vs,`DCL_function (params,result,body))
+      Dcl (sr,prim_id,access,vs,`DCL_fun (args,result,code));
+      Dcl (sr,name,access,vs,`DCL_function (params,result,body))
     ]
 
   (* misc *)
   | `AST_interface (sr,name,vs,sts) ->
     [
-      Dcl (sr,name,vs,`DCL_interface (rsts name sts))
+      Dcl (sr,name,access,vs,`DCL_interface (rsts name sts))
     ]
 
   | `AST_untyped_module (sr,name, vs, sts) -> 
     [
-      Dcl (sr,name,vs,`DCL_module (rsts name sts))
+      Dcl (sr,name,access,vs,`DCL_module (rsts name sts))
     ]
     @
       (* HACK !!!! *)
@@ -808,8 +824,8 @@ and rst syms name st : asm_t list =
     ) 
     in
     [
-      Dcl (sr,mname,vs,`DCL_module (rsts mname sts));
-      Dcl (sr,name,vs,`DCL_module_binding mexpr)
+      Dcl (sr,mname,access,vs,`DCL_module (rsts mname sts));
+      Dcl (sr,name,access,vs,`DCL_module_binding mexpr)
     ] 
     @
     (if vs = [] then [
@@ -840,27 +856,27 @@ and rst syms name st : asm_t list =
 
   | `AST_typed_functor (sr,name,vs,ps,typ,sts) ->
     [
-      Dcl (sr,name,vs,`DCL_typed_functor (ps,typ,rsts name sts));
+      Dcl (sr,name,access,vs,`DCL_typed_functor (ps,typ,rsts name sts));
     ]
 
   | `AST_untyped_functor (sr,name,vs,ps,sts) ->
     [
-      Dcl (sr,name,vs,`DCL_untyped_functor (ps,rsts name sts));
+      Dcl (sr,name,access,vs,`DCL_untyped_functor (ps,rsts name sts));
     ]
 
   | `AST_module_binding (sr,name,vs,mexpr) ->
-    [Dcl (sr,name,vs,`DCL_module_binding mexpr)]
+    [Dcl (sr,name,access,vs,`DCL_module_binding mexpr)]
 
 
   | `AST_header (sr,s) -> 
     let n = seq() in 
     let name = "_header_" ^ string_of_int n in 
-    [Dcl (sr,name,[],`DCL_header s)]
+    [Dcl (sr,name,access,[],`DCL_header s)]
 
   | `AST_body (sr,s) -> 
     let n = seq() in 
     let name = "_body_" ^ string_of_int n in 
-    [Dcl (sr,name,[],`DCL_body s)]
+    [Dcl (sr,name,access,[],`DCL_body s)]
 
   (* executable *)
   | `AST_fun_return (sr,e) ->
@@ -1031,7 +1047,7 @@ let desugar_program syms name sts =
       (src_of_stmt (list_last sts))
   in
   let sts = expand_macros name 5000 sts in
-  rst syms "top" (`AST_untyped_module (sr,name,[],sts))
+  rst syms "top" `Public (`AST_untyped_module (sr,name,[],sts))
 
 @h = tangler("src/flxd.ml")
 @select(h)

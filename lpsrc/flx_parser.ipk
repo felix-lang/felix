@@ -211,7 +211,7 @@ let mktypefun sr name vs args return_type body =
 
 /* statement keywords */
 %token<Flx_ast.srcref> IF THEN ELSE ENDIF ELIF 
-%token<Flx_ast.srcref> OF VAR UNION CLASS GOTO EXPORT PUBLIC PRIVATE
+%token<Flx_ast.srcref> OF VAR UNION CLASS GOTO EXPORT PUBLIC PRIVATE PUBLISH COMMENT_KEYWORD
 
 %token<Flx_ast.srcref> MATCH WITH ENDMATCH CASE REGMATCH REGLEX TYPEMATCH
 %token<Flx_ast.srcref> HEADER BODY MODULE CODE LET IN
@@ -257,6 +257,10 @@ statement:
   | inclusion { $1 }
   | directive { $1 }
   | publish { $1}
+  | comment { $1 }
+
+comment:
+  | COMMENT_KEYWORD STRING SEMI { `AST_nop (rstoken $1 $3, snd $2) }
 
 binding_definition:
   | abstract_type { $1 }
@@ -265,10 +269,10 @@ binding_definition:
   | export_statement { $1 }
 
 publish:
-  | PUBLIC STRING binding_definition 
+  | PUBLISH STRING binding_definition 
     { `AST_public (slift $1, snd $2, $3) }
 
-  | PUBLIC STRING declarative 
+  | PUBLISH STRING declarative 
     { `AST_public (slift $1, snd $2, $3) }
 
   | PRIVATE declarative 

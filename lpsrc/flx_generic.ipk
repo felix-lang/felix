@@ -78,7 +78,7 @@ call calls upscope using an unindexed name.
 
 let rec find_vs syms i =
   match Hashtbl.find syms.dfns i with
-  id,sr,parent,vs,table,dirs,entry ->
+  {parent=parent;vs=vs} ->
   match parent with
   | Some i -> find_vs syms i @ vs
   | None -> vs

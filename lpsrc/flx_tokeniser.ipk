@@ -176,6 +176,8 @@ let string_of_token (tok :Flx_parse.token): string =
   | DEF _ -> "def"
   | MODULE _ -> "module"
   | GOTO _ -> "goto"
+  | COMMENT_KEYWORD _ -> "comment"
+  | PUBLISH _ -> "publish"
   | PUBLIC _ -> "public"
   | PRIVATE _ -> "private"
   | TO _ -> "to"
@@ -186,7 +188,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | SLOSH _ -> "\\" (* "\"" *) 
 
   | COMMENT s -> s (* C style comment, includes the /* */ pair *)
-  | COMMENT_NEWLINE s -> "#" ^ s ^ "<NEWLINE>"
+  | COMMENT_NEWLINE s -> "// " ^ s ^ "<NEWLINE>"
   | WHITE i -> String.make i ' '
   | NEWLINE -> "<NEWLINE>"
   | ENDMARKER -> "<<EOF>>"
@@ -200,6 +202,7 @@ let src_of_token t = match t with
   | ENDMARKER
     -> ("",0,0,0)
 
+  | COMMENT_KEYWORD s
   | NAME    (s,_)
   | INTEGER (s,_,_)
   | FLOAT   (s,_,_)
@@ -297,6 +300,7 @@ let src_of_token t = match t with
   | CLASS s 
   | GOTO s 
   | PUBLIC s 
+  | PUBLISH s 
   | PRIVATE s 
   | EXPORT s 
   | TYPEMATCH s 
@@ -345,7 +349,7 @@ let src_of_token t = match t with
 
 let pre_tokens_of_lexbuf buf state =
   let rec get lst = 
-    let t = Flx_lex.pre_flx_lex buf state in 
+    let t = Flx_lex.pre_flx_lex state buf in 
     match t with
     | [Flx_parse.ENDMARKER] ->
       [Flx_parse.ENDMARKER] @ lst
