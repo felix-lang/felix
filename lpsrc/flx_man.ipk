@@ -1,0 +1,903 @@
+@head(1,'Man pages')
+@python('//')
+manfoot = r"""
+.SH SEE ALSO
+.B felix(1)
+for a language introduction and man page index
+
+.SH WEB SITE
+See 
+.B http://felix.sf.net
+
+.SH AUTHOR
+John Maxwell Skaller, mailto:skaller@ozemail.com.au
+"""
+//
+
+@head(2,'felix:language overview')
+@select(tangler('man/man1/felix.1'))
+.TH FELIX LANGUAGE "2003 Jan 1"
+.SH NAME
+Felix language
+.SH SYNOPSIS
+.br
+.B Felix
+is a modern statically typed, modular programming language
+which targets shared libraries rather than programs.
+It features automatic generation of event driven, cooperatively
+multitasked programs written in algorithmic style.
+It is hybrid functional, procedural
+and object oriented system
+
+.SH TECHNOLOGY
+.B Felix
+generates C++ which is then built into a shared library
+and dynamically loaded by a client written architectural
+framework, which is also responsible for feeding an appropriate
+Felix coroutine messages.
+.br
+.B Felix
+provides no primitive types. Instead, it provides
+powerful type combinators, and a facility for
+binding C++ types to Felix ones. A set of basic
+primitive types are provided in the standard library.
+
+.SH C++ bindings 
+Here is an example of a C++ binding.
+
+.B type
+int = "int";
+.br
+.B fun 
+add: int * int -> int = "$1+$2";
+.br
+.B proc 
+print: int = 'printf("%d",$1);';
+
+.SH Exporting symbols
+Symbols are exported by the export statement.
+.B export
+add of int * int as "add_int";
+.br
+.B export
+int as "flx_int";
+
+.SH FILES
+.B *.flx
+are Felix input files
+.br
+.B *.cpp
+generated 
+C++ implementation files
+.B *.hpp
+generated 
+C++ header files
+
+.B std.flx
+is the standard library.
+.SH SEE ALSO
+.B flx(1) 
+for a list of the tools.
+.br
+.B flx_op(1)
+for a list of operators
+.br
+.B flx_key(1)
+for a list of keywords
+.br
+.B flx_lib_typ(1)
+for a list of library types 
+.br
+.B flx_dir(1)
+for a list of directives
+.br
+.B flx_exec(1)
+for a list of executable statements
+.br
+.B flx_decl(1)
+for a list of declarative statements
+.br
+.B flx_bind(1)
+for a list of binding statements
+.br
+.SH WEB SITE
+See 
+.B http://felix.sf.net
+
+.SH AUTHOR
+John Maxwell Skaller, mailto:skaller@ozemail.com.au
+
+@head(2,'felix:operator summary')
+@select(tangler('man/man1/flx_op.1'))
+.TH FELIX OPERATORS "2003 April 11"
+.SH NAME
+Felix operators and operator names
+(these need to be checked!).
+
+A chainable binary operator such as +
+creates a list of subexpressions.
+
+.SH assignment
+Assignment operators are sugar for statements,
+so only one is allowed.
+
+.B = asgn  
+.br
+.B <- asgn 
+.br
+.B := asgn 
+.br
+.B += pluseq
+.br
+.B -= minuseq
+.br
+.B *= muleq
+.br
+.B /= diveq
+.br
+.B %= modeq
+.br
+.B |= oreq
+.br
+.B ^= xoreq
+.br
+.B &= andeq
+.br
+
+.SH let/in
+.B let <expr> in <expr>
+prefix
+.br
+
+.SH tuple
+.B , chain
+.br
+
+.SH logic 
+Note that "shortcut" doesn't apply in Felix since
+expressions are purely functional.
+
+.B || lor 
+chain
+.br
+.B && land 
+chain
+.br
+.B ! lnot 
+prefix
+.br
+
+.SH comparison
+.B == eq 
+binary
+.br
+.B <= le 
+chain
+.br
+.B < lt 
+chain
+.br
+.B >= ge 
+chain
+.br
+.B > gt 
+chain
+.br
+.B <> ne 
+chain
+.br
+.B != ne 
+chain
+.br
+
+.B -> arrow
+left assoc
+.br
+
+.B case <int> of <int>
+unassoc
+.br
+
+.SH numeric
+Note that + has a lower precedence than -,
+and * has a lower precedence than / which is
+unusual.
+
+.B - sub 
+left assoc
+.br
+.B + add 
+chain
+.br
+.B * mul 
+chain
+.br
+.B / div 
+left assoc
+.br
+.B % mod 
+left assoc
+.br
+.B - sub 
+prefix 
+.br
+.B + sub 
+prefix 
+.br
+.B ** 
+pow
+right (special prec rules)
+.br
+
+.SH addressing
+.B & 
+prefix 
+.br
+.B * 
+prefix
+.br
+
+.SH bitwise 
+.B | bor 
+chain
+.br
+.B ^ xor 
+chain
+.br
+.B & band 
+chain
+.br
+.B ~ bnot 
+prefix
+.br
+
+.SH application
+.B (juxtaposition) 
+left assoc
+
+.SH coercion
+.B :
+left assoc
+
+.SH component
+.B . 
+left assoc
+.br
+
+.SH qualified name
+.B :: 
+left assoc
+.br
+
+.SH suffixed name
+.B of
+left assoc
+
+.SH atomic
+.B if/then/else/endif
+.br
+
+.B match <expr> with 
+.br
+.B | <pattern> => <expr>
+.br
+.B ...
+.br
+.B endmatch
+.br
+
+.B regmatch <expr> with 
+.br
+.B | <regexp> => <expr>
+.br
+.B ...
+.br
+.B endmatch
+.br
+
+.B (fun (<arglist>):<type> = { <expr> })
+.br
+.B (fun (<arglist>):<type> = { <statements> })
+.br
+.B { <expr> }
+.br
+Lambda function. The return type is optional.
+The third form is short for 
+.B (fun () = { <expr> })
+.br
+
+.B (proc (<arglist>){ <statements> })
+.br
+.B { <statements> }
+.br
+Lambda procedure.
+The second form is short for 
+.B (proc () = { <statements> })
+.br
+@tangle(manfoot)
+
+@head(2,'felix:directive summary')
+@select(tangler('man/man1/flx_dir.1'))
+.TH FELIX DIRECTIVES "2003 April 11"
+.SH NAME
+Felix statements and directives
+(these need to be checked!).
+
+.SH Directives
+.B #include <string>
+.br
+Preprocessor include like C, except that only the first
+occurence of an include directive causes inclusion.
+.br
+
+.B header <string>;
+.br
+Includes C++ literally neat top of header file.
+.br
+
+.B body <string>;
+.br
+Includes C++ literally near top of body file.
+.br
+
+.B code <string>;
+.br
+Includes C++ literally in body file ay point of writing.
+.br
+
+.B open <name>;
+.br
+Makes identifiers in the specified module available for use
+without qualification.
+.br
+
+.B use <name>::identifier;
+.br
+.B use <identifier>=<name>;
+.br
+Makes the specified identifier available for use
+without qualification.
+.br
+
+@tangle(manfoot)
+
+@head(2,'felix:binding summary')
+@select(tangler('man/man1/flx_bind.1'))
+.TH FELIX BINDING DEFINITIONS "2003 April 11"
+.SH NAME
+Felix binding definitons 
+(these need to be checked!).
+
+.SH Binding defintions 
+
+.B type <identifier> = string>;
+.br
+.B type <identifier> [<identlist>]= string>;
+.br
+Define function by C++ expression. 
+In the second form a parameterised type is defined.
+.br
+
+.B const <identifier>: <type> = <string>;
+.br
+Define constant by C++ expression. 
+.br
+
+.B fun <identifier> type>=<string>;
+.br
+.B fun <identifier> [<identlist>]<type>=<string>;
+.br
+Define function by C++ expression.
+In the second form a parameterised function is defined.
+.br
+
+.B proc <identifier> <type>=<string>;
+.br
+.B proc <identifier> [<identlist>]<type>=<string>;
+.br
+Define procedure by C++ statements.
+In the second form a parameterised procedure is defined.
+.br
+
+.SH Argument Encoding
+.br
+.B $<n>
+Specifies n'th argument (1 origin), data pointer
+only for pointer types
+
+.B $a
+Specifies all arguments, short hand for $1, $2, $3 ...
+
+.B $t
+pass argument tuple as a tuple object
+
+.B #<n>
+Specifies type of n'th argment (1 origin)
+
+.B #0 
+Return type
+
+.B `<n>
+Specifies n'th component (1 origin) including
+frame pointer for pointer types
+
+.B @n
+reference to shape object of n'th argument type
+
+.B ?<n>
+Specifies n'th type argument (1 origin)
+
+.B ?a
+Short hand for ?1,?2,?3 ...
+
+.B ??
+Question mark character ? emitted.
+
+@tangle(manfoot)
+
+@head(2,'felix:keyword summary')
+@select(tangler('man/man1/flx_key.1'))
+.TH FELIX KEYWORDS "2003 April 11"
+.SH NAME
+Felix keywords and operator symbols
+
+.SH Keywords
+_
+all
+and
+as
+attempt
+body
+call
+case
+class
+code
+const
+define
+elif
+else
+endattempt
+endif
+endmatch
+except
+exceptions
+export
+finally
+fork
+fun
+function
+functor
+goto
+header
+if
+in
+inf
+interface
+lambda
+let
+match
+module
+NaN
+not
+not
+of
+open
+or
+proc
+procedure
+raise
+read
+regexp
+regmatch
+return
+struct
+then
+to
+todo
+type
+typedef
+union
+use
+val
+var
+when
+with
+.br
+
+.SH operator symbols
+( 
+) 
+[ 
+] 
+
+} 
+! 
+: 
+, 
+; 
++ 
+- 
+* 
+/ 
+| 
+& 
+< 
+> 
+= 
+. 
+% 
+` 
+~ 
+^ 
+! 
+? 
+=> 
+&< 
+&> 
+.. 
+:: 
+== 
+<> 
+!= 
+<= 
+>= 
+<< 
+>> 
+** 
+\\ 
+++ 
+-- 
++= 
+-= 
+*= 
+/= 
+%= 
+^= 
+|= 
+&= 
+~= 
+:= 
+<- 
+-> 
+<: 
+:> 
+[< 
+>] 
+<<= 
+>>= 
+... 
+<-> 
+&== 
+&<> 
+&!= 
+&<= 
+&>= 
+
+@tangle(manfoot)
+
+@head(2,'felix:declarations and definitions')
+@select(tangler('man/man1/flx_decl.1'))
+.TH FELIX Declarations "2003 April 11"
+.SH NAME
+Felix declarations and definitons 
+(these need to be checked!).
+
+.SH declarations and defintions 
+
+.B struct <identifier> { <identifier>: <type>  ... };
+.br
+Define a struct. 
+.br
+
+.B union <identifier> = | <identifier> of <type>  ...;
+.br
+Define a union.  The of <type> part is optional.
+.br
+
+.B module <identifier> { <statements> } 
+.br
+Define a module.
+.br
+
+.B fun <identifier> (<arglist>):<type>= { <statements> };
+.br
+Define a function. The return type is optional.
+
+.B proc <identifier> (<arglist>) { <statements> };
+.br
+Define a procedure. 
+
+.B <identifier> :>
+.br
+Specify a label.
+.br
+
+@tangle(manfoot)
+
+@head(2,'felix:Executable statements')
+@select(tangler('man/man1/flx_exec.1'))
+.TH FELIX Executable statements "2003 April 11"
+.SH NAME
+Felix executable statements 
+(these need to be checked!).
+
+.SH Executable Statements
+
+.B goto <label>;
+.br
+unconditional jump
+.br
+
+.B if <expr> goto <label>;
+.br
+conditional jump
+.br
+
+.B call <expr><expr>;
+.br
+.B <expr><expr>;
+.br
+.B call <expr>;
+.br
+.B <expr>;
+.br
+Procedure call. The third and fourth forms call <expr> ().
+.br
+
+.B jump <expr>;
+.br
+Explicit tail call: same as 
+.B call <expr>; return;
+.br
+
+.B loop <ident><expr>;
+.br
+Explicit tail call of parent <ident> which reuses its frame object.
+.br
+
+.B read <identifier>;
+.br
+blocking read of message into variable.
+.br
+
+.B todo <string>;
+.br
+No operation. Use to make incomplete program parts
+in a way that is easy to search for.
+.br
+
+@tangle(manfoot)
+
+@head(2,'felix:Standard library:types')
+@select(tangler('man/man1/flx_lib_typ.1'))
+.TH FELIX STANDARD LIBRARY - TYPES "2003 April 11"
+.SH NAME
+Standard library types
+(these need to be checked!).
+
+.SH Integers
+
+.B tiny short int long vlong
+.br
+Signed integers corresponding to char, int, short, long and long long in C.
+.br
+
+.B utiny ushort uint ulong uvlong
+.br
+Signed integers corresponding to unsigned char, unsigned short, unsigned int, 
+unsigned long and unsigned long long in C.
+.br
+
+.B int8 int16 int32 int64
+.br
+Signed two's complement integers of exact size.
+.br
+
+.B uint8 uint16 uint32 uint64
+.br
+Signed two's complement integers of exact size.
+.br
+
+.SH Floats
+.B float double ldouble
+.br
+Floats corresponding to  float, double and long double in C.
+.br
+
+.B float32 float64 float80
+.br
+IEEE floats
+.br
+
+.SH chars
+.B char wchar uchar
+.br
+character types corresponding to char, wchar_t in C, and an ISO10646 
+code point type (guarrateed to be at at least 24 bits).
+.br
+
+.SH strings
+.B string wstring ustring 
+.br
+string types corresponding to char, wchar and uchar 
+.br
+
+.SH sums
+.br
+.B void unit bool
+.br
+Equal to types 0, 1, and 2: anonymous 
+unit sums of no, one, and two cases.
+
+.SH any
+.B any
+.br
+Any type. Only useful for unused parameters.
+Defined as the fixpoint of the type equation "typedef x = x;".
+
+.SH misc
+.B address
+.be
+Machine address, void* in C.
+.br
+.B byte
+Unit of memory store, unisgned char in C.
+
+@tangle(manfoot)
+
+@head(2,'felix:command line tools')
+@select(tangler('man/man1/flx.1'))
+.TH FELIX TOOLS "2003 April 11"
+.SH NAME
+Felix tools
+.SH SYNOPSIS
+.br
+.B flxl 
+[-Iinclude-dir]
+filebasename
+
+.br
+.B flxp 
+[-Iinclude-dir]
+filebasename
+
+.br
+.B flxm
+[-Iinclude-dir]
+filebasename
+
+.br
+.B flxd 
+[-Iinclude-dir]
+filebasename
+
+.br
+.B flxb 
+[-Iinclude-dir]
+filebasename
+
+.br
+.B flxg 
+[-v]
+[-Iinclude-dir]
+filebasename
+
+.br
+.B flx_run 
+libname
+
+.br
+.B flx
+filebasename
+
+.br
+.B lexl
+filebasename
+
+.br
+.B lexp
+filebasename
+
+.br
+.B lexd
+filebasename
+
+.SH DESCRIPTION
+The 
+.B filebase 
+name must not include an extension, which
+must be '.flx'.
+.br
+
+.B flxl 
+lexes the input and prints the token list to standard output
+
+.br
+.B flxp
+lexes and parses the input and prints the parse tree to standard output
+
+.br
+.B flxm
+lexes, parses, folds constants and performs
+macro expansion of the input and prints the
+AST tree to standard output
+
+.br
+.B flxd
+lexes, parses and
+desugars the the input and prints the desugared 
+AST tree to standard output
+
+.br
+.B flxb
+lexes, parses, desugars and binds identifiers and prints
+the bindings to  standard output
+
+.br
+.B flxg
+lexes, parses, desugars, binds, and generates C++ code.
+Two files,
+.B filebase.cpp
+and
+.B filebase.hpp
+are created. Use the 
+.B -v 
+option for verbose output.
+
+.br
+.B flx 
+is a load and go test harness which compiles its
+argument to C++, compiles and links the C++ using gcc,
+then executes the resulting library using flx_run.
+
+.SH USE
+.B flxg
+is the compiler proper. flx[lpmdb] are provided to
+aid in debugging, and perform successive phases of
+the compilation process.
+
+.B flx
+is a script which combines felix compilation,
+C++ compilation of the output, and execution
+using the standard program driver,
+for rapid prototyping in a scripting style.
+
+.B flx_run
+is the standard prgram driver. Its argument
+is a shared library which is passed to 
+dlopen (note you need to use ./lib.so on
+linux to preempt the stanard search path).
+
+The driver creates a single thread
+from the libraries main entry point
+.B _init_
+and runs the thread until it terminates,
+then exits. The message type here is 
+.B void
+and the driver exists with an error
+diagnostic if the thread tries to read
+any messages.
+
+.B flx_sif
+is like 
+.B flx_run
+except that it reads standard input
+and passes lines to the single instance
+thread. The lines include terminating
+newline character. A zero length line
+is passed at end of file. The message 
+types is 
+.B std::basic_string<char>
+
+.B lexl
+Lexer generator (lex/flex equivalent for felix) lexer.
+
+.B lexp
+Lexer generator (lex/flex equivalent for felix) parser.
+
+.B lexd
+Lexer generator (lex/flex equivalent for felix).
+
+@tangle(manfoot)
+
+
