@@ -28,6 +28,8 @@ type stab_t = {
   functions: (string * typsig list * string,string * string) Hashtbl.t;
   fields: (string,string * string) Hashtbl.t;
   procedures: (string * typsig list * string,string * string) Hashtbl.t;
+  callback_types: (string,typ * int) Hashtbl.t;
+  callback_clients: (string,typ * string * int * int) Hashtbl.t;
   enums: (string,string) Hashtbl.t;
   registry: (typsig, string * string) Hashtbl.t;
   mutable includes: StringSet.t;
@@ -564,6 +566,26 @@ let remove_pnames t = match t with
   TPtr (TFun (t,Some ps,b,a),a')
 | _ -> t
 
+(* strip multiple spaces and newlines out *)
+let reformatc s = 
+  let s' = ref "" in
+  let n = String.length s in
+  for i=0 to n - 1 do
+    let 
+      ch = s.[i] and 
+      ch2 = if i < n-2 then s.[i+1] else '\000' 
+    in
+    if 
+      ch = ' ' && 
+        (ch2=' ' ||ch2=',' || ch2=';' || ch2=')' || ch2='\n') 
+    then ()
+    else if ch='\n' then s' := !s' ^ " "
+    else s' := !s' ^ String.make 1 ch
+  done;
+  let n = ref (String.length !s' - 1) in
+  while !n >= 0 && !s'.[!n]=' ' do decr n done;
+  String.sub !s' 0 (!n+1)
+  
 let rec sot ((registry,counter,modulename,used_types) as reg) t = 
 match t with
 | TVoid a -> "void_t"
@@ -584,6 +606,7 @@ match t with
     let gt =  GType (si,sr) in
     let d = defaultCilPrinter#pGlobal () gt in
     let s = Flx_cil_pretty.sprint 65 d in
+    let s = reformatc s in
     Hashtbl.add registry t' (name,s);
     name
   end
@@ -819,6 +842,8 @@ let mk_stab cfile =
   functions= Hashtbl.create 97;
   fields= Hashtbl.create 97;
   procedures= Hashtbl.create 97;
+  callback_types = Hashtbl.create 97;
+  callback_clients = Hashtbl.create 97;
   enums= Hashtbl.create 97;
   registry= Hashtbl.create 97;
   includes = StringSet.empty;
@@ -941,6 +966,13 @@ let rpl {file=s} which =
   | `enums(k,v)  -> 
     let k = fixsym k in
     Hashtbl.replace stab.enums k v
+
+  | `callback_type (s,(t,i))  -> 
+    Hashtbl.replace stab.callback_types s (t,i)
+
+  | `callback_client (s,(t,cbt,i,j))  -> 
+    Hashtbl.replace stab.callback_clients s (t,cbt,i,j)
+
 ;;
 
 let ispublic s = 
@@ -956,11 +988,157 @@ let add_loc {file=fname} =
   add_file fname
 ;;
 
+(* find all the void* in an argument list *)
+let find_voidps ps = 
+  let voids = ref [] in
+  let i = ref 0 in
+  List.iter
+  (fun t ->
+    (match t with 
+    | _,TPtr (TVoid _,_),_ -> voids := !i :: !voids 
+    | _ -> ()
+    ); 
+    incr i
+  )
+  ps
+  ;
+  !voids
+
+(* check if a function pointer is a callback, by
+seeing if it contains exactly one void * argument 
+*)
+let is_callbackp t = 
+  match t with
+  | TPtr (TFun (_,Some ps,false,_),_) ->
+    List.length (find_voidps ps) = 1
+  | _ -> false
+
+(* Find all the arguments which are callbacks *)
+let find_callbackps ps =
+  let callbacks = ref [] in
+  let i = ref 0 in
+  List.iter
+  (fun (_,t,_) -> 
+    if is_callbackp t 
+    then callbacks := !i :: !callbacks
+    ;
+    incr i
+  )
+  ps
+  ;
+  !callbacks
+
+(* get the indices in an argument list of the callback
+and client data pointer, and the index of the client
+data pointer in the callback type as well, return None
+if they can't be uniquely identified
+*)
+
+let get_callback_data ps =
+  let callbacks = find_callbackps ps in
+  let voids = find_voidps ps in
+  match callbacks, voids with
+  | [cbc_i], [cbc_adri] -> 
+    begin match List.nth ps cbc_i with
+    | _,TPtr (TFun (_,Some ps,false,_),_),_ ->
+      begin match find_voidps ps with
+      | [cbi] -> Some (cbc_i,cbc_adri,cbi)
+      | _ -> assert false
+      end
+    | _ -> assert false
+    end
+  | _ -> None
+
+let check_callback t = match t with
+  | TFun (_,Some ps,false,_) ->
+    begin match get_callback_data ps with
+    | Some (cbc_i, cbc_adri,cbi) ->
+      let _,cbt,_ = List.nth ps cbc_i in
+      Some (cbc_i, cbc_adri,cbi, cbt)
+    | None -> None
+    end
+  | TFun _ -> None
+  | _ -> failwith "Check for callbacks in non-function"
+
+let handle_callback_maybe ft registry key key' fname loc =
+  match check_callback ft with
+  | None -> ()
+  | Some (cbc_i, cbc_adri, cbi, cbt) ->
+    (*
+    print_endline 
+    (
+      "Found callback client " ^ fname ^
+      "\n  callback index = " ^ string_of_int cbc_i ^ 
+      "\n  client data index = " ^ string_of_int cbc_adri ^
+      "\n  callback type = " ^ sot registry cbt ^
+      "\n  callback type client data index = " ^ string_of_int cbi
+    )
+    ;
+    *)
+    let s = sot registry cbt in
+    rpl loc (`callback_type (s,(cbt,cbi)));
+    rpl loc (`callback_client (fname,(ft,s,cbc_i,cbc_adri)))
+
 let ptr key a =
   cvqual a ^ "ptr[" ^ key ^ "]"
 
+let handle_global_fun ft registry key key' fname loc =
+  handle_callback_maybe ft registry key key' fname loc; 
+  match ft with
+  | TFun (TVoid _,Some ps,false,a) ->
+    let tsig = map (fun (_,t,a) -> typeSig t) ps in
+    let args = 
+      if length ps = 0 then "1" 
+      else String.concat " * " (List.map (soa registry) ps) 
+    in
+    let cv = cvqual a in
+    rpl loc (`procedures ((key,tsig,cv), (args,key'^"($a);")))
 
-let handle_method ft registry key fname ftype loc =
+  | TFun (TVoid _,None,false,a) ->
+    let args = "1" in
+    let cv = cvqual a in
+    rpl loc (`procedures ((key,[],cv), (args,key'^"();")))
+
+  | TFun (TVoid _,Some _,true,a) ->
+    let cv = cvqual a in
+    rpl loc (`procedures ((key^"[t]",[],cv), ("t",key'^"($a);")))
+
+  | TFun (ret,Some ps,false,a) ->
+    let ftb =
+      let ret = sot (getreg loc) ret
+      and args = List.map (soa registry) ps
+      in 
+      (
+        (
+          if length ps = 0 
+          then "1" 
+          else String.concat " * " args
+        ) 
+        ^ 
+        " -> " ^ ret,key'^"($a)"
+      )
+    in 
+      let tsig = map (fun (_,t,a) -> typeSig t) ps in
+      let cv = cvqual a in
+      rpl loc (`functions ((key,tsig,cv), ftb))
+
+  | TFun (ret,None,false,a) ->
+    let ret = sot (getreg loc) ret in
+    let ftb =  "1 -> " ^ ret,key'^"()" in
+    let cv = cvqual a in
+    rpl loc (`functions ((key,[],cv), ftb))
+
+  | TFun (ret,Some _,true,a) ->
+    let ftb =
+      let ret = sot (getreg loc) ret in 
+      "t -> " ^ ret,key'^"($a)"
+    in 
+      let cv = cvqual a in
+      rpl loc (`functions ((key^"[t]",[],cv), ftb))
+
+  | _ -> assert false
+
+let handle_method ft registry key fname loc =
   match ft with
   (* procedures *)
   | (TVoid _,Some ps,false,a) ->
@@ -1030,7 +1208,7 @@ let handle_method ft registry key fname ftype loc =
 
 let handle_field registry key fname ftype loc =
   match ftype with
-  | TFun (a,b,c,d) -> handle_method (a,b,c,d) registry key fname ftype loc
+  | TFun (a,b,c,d) -> handle_method (a,b,c,d) registry key fname loc
 
   | _ ->
     let t = key ^ " -> " ^ sot registry ftype in
@@ -1141,57 +1319,7 @@ let handle_global g =  let loc = get_globalLoc g in
     in
     if ispublic vname then
     begin match vtype with
-    | TFun (TVoid _,Some ps,false,a) ->
-      let tsig = map (fun (_,t,a) -> typeSig t) ps in
-      let args = 
-        if length ps = 0 then "1" 
-        else String.concat " * " (List.map (soa registry) ps) 
-      in
-      let cv = cvqual a in
-      rpl loc (`procedures ((key,tsig,cv), (args,key'^"($a);")))
-
-    | TFun (TVoid _,None,false,a) ->
-      let args = "1" in
-      let cv = cvqual a in
-      rpl loc (`procedures ((key,[],cv), (args,key'^"();")))
-
-    | TFun (TVoid _,Some _,true,a) ->
-      let cv = cvqual a in
-      rpl loc (`procedures ((key^"[t]",[],cv), ("t",key'^"($a);")))
-
-    | TFun (ret,Some ps,false,a) ->
-      let ftb =
-        let ret = sot (getreg loc) ret
-        and args = List.map (soa registry) ps
-        in 
-        (
-          (
-            if length ps = 0 
-            then "1" 
-            else String.concat " * " args
-          ) 
-          ^ 
-          " -> " ^ ret,key'^"($a)"
-        )
-      in 
-        let tsig = map (fun (_,t,a) -> typeSig t) ps in
-        let cv = cvqual a in
-        rpl loc (`functions ((key,tsig,cv), ftb))
-
-    | TFun (ret,None,false,a) ->
-      let ret = sot (getreg loc) ret in
-      let ftb =  "1 -> " ^ ret,key'^"()" in
-      let cv = cvqual a in
-      rpl loc (`functions ((key,[],cv), ftb))
-
-    | TFun (ret,Some _,true,a) ->
-      let ftb =
-        let ret = sot (getreg loc) ret in 
-        "t -> " ^ ret,key'^"($a)"
-      in 
-        let cv = cvqual a in
-        rpl loc (`functions ((key^"[t]",[],cv), ftb));
-        
+    | TFun _ -> handle_global_fun vtype registry key key' vname loc
     | _ ->
       rpl loc (`variables (key, (sot (getreg loc) vtype)))
     end
@@ -1658,6 +1786,227 @@ begin
         pe ("fun " ^ k ^ ": " ^v^ " = '" ^ b ^ "';")
       )
       ps
+    end
+    ;
+
+    if is_nonempty stab.callback_types then
+    begin
+      let reg = (stab.registry,stab.counter,stab.stab_module,stab.used_types) in
+      let sot t = sot reg t in
+      let soa a = soa reg a in
+      pe "";
+      pe "//CALLBACK TYPE WRAPPERS";
+      Hashtbl.iter
+      (fun tname (t, cbi)-> 
+        pe ("//callback type " ^ tname ^ ", client data at " ^ string_of_int cbi);
+        let ccbt = "_ccbt_" ^ tname in
+        let fcbt = "_fcbt_" ^ tname in
+        let fcbat = "_fcbat_" ^ tname in
+        let fcbw = "_fcbw_" ^ tname in
+        match t with
+        | TPtr (TFun (ret,Some ps, false,a),_) ->
+          (* fix arg names *)
+          let i = ref 0 in
+          let ps = 
+            map
+            (fun (_,t,a) -> 
+              incr i;
+              let pn = "a"^ string_of_int !i in
+              pn,t,a
+            )
+            ps
+          in
+          let t' = TFun (ret,Some ps, false,a) in
+          (* get the non-client data arguments *)
+          let ps' = ref [] in
+          let i = ref 0 in
+          iter
+          (fun x -> if cbi = !i then () else ps' := x :: !ps'; incr i)
+          ps
+          ;
+          let ps' = rev !ps' in
+          (* make a typedef for the felix callback type 
+          mainly as documentation [since the client will
+          declare a function of this type, the actual
+          typedef isn't that useful]
+          *)
+
+          begin match ret with
+          | TVoid _ -> 
+            let args = 
+             if length ps' = 0 then "1" 
+            else String.concat " * " (List.map soa ps') 
+            in
+            pe ("typedef " ^ fcbat ^ " = " ^ args ^ "; ");
+            pe ("export type (" ^ fcbat ^ ") as \""^fcbat^"\";");
+            pe ("typedef " ^ fcbt ^ " = " ^ args ^ " -> void; ");
+            pe ("export type (" ^ fcbt ^ ") as \""^fcbt^"\";");
+            let sr = {line=0;file="";byte=0} in
+            let vi = 
+              {
+                vname=fcbw; vtype=t'; vattr=[]; vglob=true;
+                vinline=false; vdecl=sr; vid=0; vaddrof=false;
+                vreferenced=true; vstorage=NoStorage
+              } 
+            in
+            let g =  GVarDecl (vi,sr) in
+            let d = defaultCilPrinter#pGlobal () g in
+            let s = Flx_cil_pretty.sprint 65 d in
+            let s = reformatc s in
+            pe ("header '''" ^ s ^ "''';\n");
+            pe ("const "^fcbw^": " ^ tname ^ " = \"" ^ fcbw ^ "\";");
+
+            (* hack: elide trailing semicolon *)
+            let s = String.sub s 0 (String.length s - 1) in
+            pe ("body '''\n  " ^ s ^ "{");
+            let oargs = ref [] in
+            iter 
+            (fun i -> if i <> cbi then 
+              oargs := ("a" ^ string_of_int (i+1)) :: !oargs
+            )
+            (nlist (length ps))
+            ;
+            pe (
+              "  con_t *p  = (("^fcbt^")a" ^ string_of_int (cbi+1) ^
+              ")->call(" ^
+              if List.length !oargs > 1 then 
+                "0, " ^fcbat^"(" ^ String.concat ", " (rev !oargs)^"));"
+              else
+                String.concat ", " ("0" :: rev !oargs)^");"
+            );
+            pe ("  while(p) p=p->resume();");
+            pe ("}''';\n");
+
+          | _ -> 
+            let args = 
+             if length ps' = 0 then "1" 
+            else String.concat " * " (List.map soa ps') 
+            in
+            let args = 
+             if length ps' = 0 then "1" 
+            else String.concat " * " (List.map soa ps') 
+            in
+            pe ("typedef " ^ fcbat ^ " = "^ args ^ ";");
+            pe ("export type (" ^ fcbat ^ ") as \""^fcbat^"\";");
+            pe ("typedef " ^ fcbt ^ " = "^ args ^ " -> "^sot ret^"; ");
+            pe ("export type (" ^ fcbt ^ ") as \""^fcbt^"\";");
+            let sr = {line=0;file="";byte=0} in
+            let vi = 
+              {
+                vname=fcbw; vtype=t'; vattr=[]; vglob=true;
+                vinline=false; vdecl=sr; vid=0; vaddrof=false;
+                vreferenced=true; vstorage=NoStorage
+              } 
+            in
+            let g =  GVarDecl (vi,sr) in
+            let d = defaultCilPrinter#pGlobal () g in
+            let s = Flx_cil_pretty.sprint 65 d in
+            let s = reformatc s in
+            pe ("header '''" ^ s ^ "''';\n");
+            pe ("const "^fcbw^": " ^ tname ^ " = \"" ^ fcbw ^ "\";");
+            
+            (* hack: elide trailing semicolon *)
+            let s = String.sub s 0 (String.length s - 1) in
+            pe ("body '''\n  " ^ s ^ "{");
+            let oargs = ref [] in
+            iter 
+            (fun i -> if i <> cbi then 
+              oargs := ("a" ^ string_of_int (i+1)) :: !oargs
+            )
+            (nlist (length ps))
+            ;
+            pe (
+              "  return (("^fcbt^")a" ^ string_of_int (cbi+1) ^
+              ")->apply(" ^
+              if List.length !oargs > 1 then 
+                fcbat^"(" ^
+                String.concat ", " (rev !oargs)^"));"
+              else  
+                String.concat ", " (rev !oargs)^");"
+            );
+            pe ("}''';\n");
+
+          end
+          ;
+        | _ -> assert false
+      )
+      stab.callback_types
+    end
+    ;
+
+    if is_nonempty stab.callback_clients then
+    begin
+      let reg = (stab.registry,stab.counter,stab.stab_module,stab.used_types) in
+      let sot t = sot reg t in
+      let soa a = soa reg a in
+      pe "";
+      pe "//CALLBACK CLIENT WRAPPERS";
+      Hashtbl.iter
+      (fun fname (t, cbt, cbi,adri)-> 
+        pe ("//callback client " ^ fname ^ ", client data at " ^ string_of_int cbi ^ ", callback at " ^ string_of_int adri);
+        match t with
+        | TFun (ret,Some ps, false,a) ->
+          (* fix arg names *)
+          let i = ref 0 in
+          let args = ref [] in
+          iter
+          (fun (_,t,a) -> 
+            if !i <> adri then begin
+              let pn = "a"^ string_of_int (!i+1) in
+              let t = 
+                if !i = cbi then "_fcbt_" ^ sot t 
+                else sot t 
+              in
+              args := (pn,t) :: !args
+            end
+            ;
+            incr i
+          )
+          ps
+          ;
+          let args = rev !args in
+          let params = 
+            catmap ", " 
+            (fun (n,t) -> n ^ ": " ^ t) 
+            args 
+          in
+          let call_args = ref [] in
+          let i = ref 0 in
+          for j = 0 to length ps - 1 do
+            call_args := 
+              begin 
+                if j = adri then 
+                  ("C_hack::cast[address]a"^ string_of_int (cbi+1))
+                else if j = cbi then 
+                  ("_fcbw_" ^ cbt)
+                else begin
+                  while !i=cbi || !i=adri do incr i done;
+                  let a = "a"^ string_of_int (!i+1) in
+                  incr i;
+                  a
+                end
+              end 
+            :: 
+            !call_args
+          done
+          ;
+          begin match ret with
+          | TVoid _ -> 
+            pe ("proc wrapper_" ^ fname ^ "(" ^ params ^ ") {");
+            pe ("  " ^fname^"(" ^ String.concat ", " (rev !call_args) ^ ");");
+            pe ("}")
+
+          | ret -> 
+            let ret = sot ret in
+            pe ("fun wrapper_" ^ fname ^ "(" ^ params ^ "): "^ret^"= {");
+            pe ("  return " ^fname^"(" ^ String.concat ", " (rev !call_args) ^ ");");
+            pe ("}")
+
+          end
+
+        | _ -> assert false
+      )
+      stab.callback_clients
     end
     ;
 
