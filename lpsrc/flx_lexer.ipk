@@ -14,6 +14,7 @@ let hash_table_from_list n lst =
 
 let flx_keyword_table =          (* 97 is a prime larger than table size *)
   hash_table_from_list 97 [  
+    "include",(fun s -> INCLUDE s);
     "open",(fun s -> OPEN s);
     "use",(fun s -> USE s);
     "define",(fun s -> DEFINE s);
@@ -26,6 +27,7 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "fun", (fun s ->  FUNCTION s);
     "proc", (fun s ->  PROCEDURE s);
     "macro", (fun s ->  MACRO s);
+    "forget", (fun s ->  FORGET s);
     "ident", (fun s ->  IDENT s);
     "new", (fun s ->  NEW s);
     "if", (fun s ->  IF s);

@@ -89,7 +89,6 @@ let bind_exes syms env sr exes ret_type id index =
   let lun sr n = lookup_name_in_env env sr n in
   let luqn n = lookup_qn_in_env syms env [] n in
   let bt sr t = bind_type syms env [] [] sr t in
-  let dummy_sr = ("bind exes",0,0,0,0) in
   let return_count = ref 0 in
   let reachable = ref true in
 
@@ -146,7 +145,7 @@ let bind_exes syms env sr exes ret_type id index =
       let tbe1 =
          lookup_qn_with_sig 
          syms 
-         dummy_sr dummy_sr 
+         sr sr 
          env [] [] 
          (`AST_name(sr,n) : qualified_name_t)
          [] t2 
@@ -171,7 +170,7 @@ let bind_exes syms env sr exes ret_type id index =
       let tbe1 =
         lookup_qn_with_sig 
         syms 
-        dummy_sr dummy_sr 
+        sr sr 
         env [] [] 
         qn ts t2 
       in  
@@ -182,6 +181,7 @@ let bind_exes syms env sr exes ret_type id index =
         tack (cal_call syms.dfns tbe1 (be2,t2))
 
     | `EXE_call (#suffixed_name_t as sn, e2) -> (* OVERLOADING *)
+      let sr = src_of_expr sn in
       (*
       print_endline "Handling call of suffixed name";
       flush stdout;
@@ -196,7 +196,7 @@ let bind_exes syms env sr exes ret_type id index =
          | #qualified_name_t as qn ->
            lookup_qn_with_sig 
            syms 
-           dummy_sr dummy_sr 
+           sr sr 
            env [] [] 
            qn [] t2 
          | _ -> be sn
@@ -212,6 +212,7 @@ let bind_exes syms env sr exes ret_type id index =
       tack (cal_call syms.dfns (p', pt') (e', et'))
 
     | `EXE_read s ->          
+      let dummy_sr = ("bind exes",0,0,0,0) in
       begin match lun dummy_sr s with
       | NonFunctionEntry (Simple index) -> tack (`BEXE_read index)
       | NonFunctionEntry _ -> failwith "not expecting bound entry"
@@ -383,7 +384,6 @@ let rec proper_descendant dfns parent =
  
 let bbind_sym syms bbdfns i (name,sr,parent,bdcl) =
   let bexes env exes rt i = bind_exes syms env sr exes rt name i in
-  let dummy_sr = ("Generated dummy",0,0,0,0) in
   (*
   print_endline ("binding symbol " ^ name);
   print_endline ("Parent is " ^ (match parent with | None -> "none" | Some i -> string_of_int i));
@@ -749,7 +749,8 @@ try
       instantiated_types = Hashtbl.create 97;
     } 
   in
-  let deblocked = desugar_program "DUMMY" (syms.counter) parse_tree in
+  let include_dirs = (Filename.dirname input_file_name) :: !include_dirs in
+  let deblocked = desugar_program include_dirs "DUMMY" (syms.counter) parse_tree in
   print_endline (Flx_print.string_of_desugared deblocked);
   print_endline "----------------------------";
 

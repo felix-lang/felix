@@ -1858,10 +1858,9 @@ try
   let plh s = psh s; psh  "\n" in
   let plb s = psb s; psb "\n" in
   if !print_flag then print_endline ("//Parsing " ^ filebase);
-  
   let parse_tree = 
     Flx_parse_ctrl.parse_file 
-      input_file_name 
+      input_file_name
       (Filename.dirname input_file_name)
       !include_dirs 
   in
@@ -1881,7 +1880,8 @@ try
       instantiated_types = Hashtbl.create 97;
     }
   in
-  let deblocked = desugar_program module_name syms.counter parse_tree in
+  let include_dirs = (Filename.dirname input_file_name) :: !include_dirs in
+  let deblocked = desugar_program include_dirs module_name syms.counter parse_tree in
   if !print_flag then print_endline "//BUILDING TABLES";
   let root = !(syms.counter) in (* hackery .. *)
   let table, exes, ifaces,dirs = 

@@ -244,6 +244,7 @@ and macro_parameter_type_t =
 and macro_parameter_t = id_t * macro_parameter_type_t
 and statement_t =
   [ 
+  | `AST_include of range_srcref * string 
   | `AST_open of range_srcref * qualified_name_t
   | `AST_use of range_srcref * id_t * qualified_name_t
   | `AST_comment of string (* for documenting generated code *)
@@ -260,6 +261,11 @@ and statement_t =
   | `AST_macro_val  of range_srcref * id_t * expr_t
   | `AST_macro_var  of range_srcref * id_t * expr_t
   | `AST_macro_assign of range_srcref * id_t * expr_t
+  | `AST_macro_forget of range_srcref * id_t list
+  | `AST_macro_label of range_srcref * id_t
+  | `AST_macro_goto of range_srcref * id_t
+  | `AST_macro_ifgoto of range_srcref * expr_t * id_t
+  | `AST_macro_proc_return of range_srcref
 
   (* types *)
   | `AST_union of range_srcref * id_t * (id_t * typecode_t) list
@@ -705,6 +711,11 @@ let src_of_stmt e = match e with
   | `AST_macro_val (s,_,_)
   | `AST_macro_var (s, _,_)
   | `AST_macro_assign (s,_,_)
+  | `AST_macro_forget (s,_)
+  | `AST_macro_label (s,_)
+  | `AST_macro_goto (s,_)
+  | `AST_macro_ifgoto (s,_,_)
+  | `AST_macro_proc_return s
 
   | `AST_val_decl (s, _, _, _) 
   | `AST_var_decl (s, _, _, _) 
@@ -741,6 +752,7 @@ let src_of_stmt e = match e with
   | `AST_function_decl (s,_,_)
   | `AST_type (s,_)
   | `AST_open (s,_)
+  | `AST_include (s,_)
   | `AST_use (s,_,_)
   | `AST_regdef (s,_,_)
     -> s
@@ -1012,9 +1024,12 @@ and string_of_expr (e:expr_t) =
   | `AST_dot (_,(e,n)) ->  "get_" ^ n ^ "(" ^ se e ^ ")"
 
   | `AST_lambda (_,(params,ret, sts)) -> 
-    "(lambda(" ^ string_of_parameters params ^ "): " ^ 
-    string_of_typecode ret ^
-    string_of_compound 0 sts
+    "(fun(" ^ string_of_parameters params ^ ") " ^ 
+    (match ret with
+    | `TYP_none -> ""
+    | _ -> ": " ^string_of_typecode ret) ^ 
+    " = " ^
+    string_of_compound 0 sts ^ ")"
 
   | `AST_ctor_arg (_,(cn,e)) ->
     "ctor_arg " ^ sqn cn ^ "(" ^
@@ -1364,6 +1379,9 @@ and string_of_statement level s =
 
   | `AST_open (_,n) -> 
     spaces level ^ "open " ^ sqn n ^ ";"
+
+  | `AST_include (_,s) -> 
+    spaces level ^ "include " ^ s ^ ";"
   
   | `AST_use (_,n,qn) -> 
     spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
@@ -1444,19 +1462,24 @@ and string_of_statement level s =
     spaces level ^ 
      "const " ^ name ^ 
      ": " ^ string_of_typecode typ ^ 
-     " = "^string_of_string code^ ";" 
+     " = "^string_of_string code^ 
+     ";" 
 
   | `AST_header (_,s) -> let triple_quote = "\"\"\"" in
-    "header \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote
+    "header \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
+    ";\n"
 
   | `AST_body (_,s) -> let triple_quote = "\"\"\"" in
-    "body \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote
+    "body \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
+    ";\n"
 
   | `AST_code (_,s) -> let triple_quote = "\"\"\"" in
-    "code \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote
+    "code \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
+    ";\n"
 
   | `AST_noreturn_code (_,s) -> let triple_quote = "\"\"\"" in
-    "noreturn_code \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote
+    "noreturn_code \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
+    ";\n"
 
   | `AST_function (_,name, ps, res, ss) -> 
     spaces level ^ 
@@ -1473,22 +1496,27 @@ and string_of_statement level s =
   | `AST_macro_val (_,name, e) ->
     spaces level ^ 
     "macro val " ^ name ^ " = " ^
-    se e
+    se e ^
+    ";"
 
   | `AST_macro_var (_,name, e) ->
     spaces level ^ 
     "macro var " ^ name ^ " = " ^
-    se e
+    se e ^
+    ";"
 
   | `AST_macro_assign (_,name, e) ->
     spaces level ^ 
     "macro " ^ name ^ " = " ^
-    se e
+    se e ^
+    ";\n"
 
   | `AST_name_macro (_,lname, rname) ->
     spaces level ^ 
     "macro ident " ^ lname ^ " = " ^
-    (match rname with | "" -> "new" | _ -> rname)
+    (match rname with | "" -> "new" | _ -> rname) ^
+    ";"
+    
 
   | `AST_expr_macro (_,name, ps, e) -> 
     let sps = 
@@ -1499,7 +1527,8 @@ and string_of_statement level s =
     spaces level ^ 
     "macro fun " ^ name ^ 
     "("^ String.concat ", " sps ^") = " ^
-    se e
+    se e ^
+    ";"
 
   | `AST_stmt_macro (_,name, ps, ss) -> 
     let sps = 
@@ -1511,6 +1540,29 @@ and string_of_statement level s =
     "macro proc " ^ name ^ 
     "("^ String.concat ", " sps ^") " ^
     short_string_of_compound level ss
+
+  | `AST_macro_forget (_,names) ->
+    spaces level ^ 
+    "macro forget" ^
+    (
+      match names with
+      | [] -> ""
+      | _ -> " "
+    ) ^
+    String.concat ", " names ^ 
+    ";"
+
+  | `AST_macro_label (_,id) ->
+    "macro " ^ id ^ ":>\n"
+
+  | `AST_macro_goto (_,id) ->
+    "macro goto " ^ id ^ ";\n"
+
+  | `AST_macro_ifgoto (_,e,id) ->
+    "macro if "^se e^" goto " ^ id ^ ";\n"
+
+  | `AST_macro_proc_return (_) ->
+    "macro return;\n"
 
   | `AST_procedure_decl (_, name,t) ->
     spaces level ^

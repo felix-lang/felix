@@ -38,7 +38,7 @@ There is no better introduction to a programming
 language than the infamous hello-world program.
 
 @select(tangler(tdir+'tut101.flx'))
-#include <std.flx>
+include "std";
 print "Hello World\n";
 @doc()
 and the Felix version is simplicity itself.
@@ -68,7 +68,7 @@ we'll make a small modification to the hello
 world program. You can compile and run the
 program as before, just change the example number.
 @select(tangler(tdir+'tut102.flx'))
-#include <std.flx>
+include "std";
 print "Hello World ";
 print 42;
 print "\n";
@@ -86,7 +86,7 @@ overload matching must be exact.
 Felix allows values to be declared using the 'val'
 keyword.
 @select(tangler(tdir+'tut103.flx'))
-#include <std.flx>
+include "std";
 val i = 40;
 val j = 2;
 val k = i + j;
@@ -105,7 +105,7 @@ value for you. You can declare the type of a variable
 if you want: the following program is equivalent
 to the one above:
 @select(tangler(tdir+'tut104.flx'))
-#include <std.flx>
+include "std";
 val i : int = 40;
 val j : int = 2;
 val k : int = i + j;
@@ -127,7 +127,7 @@ for the value entirely).
 Felix also support mutable variables, which are
 declared with the 'var' keyword.
 @select(tangler(tdir+'tut105.flx'))
-#include <std.flx>
+include "std";
 var i = 1;
 var j : int;
 while {i < 10}
@@ -163,7 +163,7 @@ Felix allows you to define functions,
 although the syntax is different from C.
 Here is an example:
 @select(tangler(tdir+'tut106.flx'))
-#include <std.flx>
+include "std";
 fun mid(a:int, b:int):int =
 {
   val c = (a + b) / 2;
@@ -185,8 +185,8 @@ that is, may contain and mutate local variables.
 Whilst in the above example the return type of the
 function is clearly given, it is not necessary,
 as illustrated by the next example:
-@select(tangler(tdir+'tut106a.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut107.flx'))
+include "std";
 fun mid(a:int, b:int) =
 {
   val c = (a + b) / 2;
@@ -201,8 +201,8 @@ must be given.
 @head(2,'Lazy expressions')
 There is a function which is so useful, there
 is a special syntax for it: the lazy expression.
-@select(tangler(tdir+'tut106b.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut108.flx'))
+include "std";
 var x = 1;
 var y = 2;
 
@@ -226,8 +226,8 @@ is the type of the expression.
 @p()
 You can also put statements inside curly brackets
 to define a lazy function:
-@select(tangler(tdir+'tut106c.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut109.flx'))
+include "std";
 val x = 1;
 val f = { val y = x + 1; return y; };
 val eol = { endl; };
@@ -263,8 +263,8 @@ when I said the function mid only had a single
 argument. If not, you get another chance,
 studying this example, which is equivalent
 to example 106.
-@select(tangler(tdir+'tut107.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut110.flx'))
+include "std";
 fun mid(a:int, b:int):int =
 {
   val c = (a + b) / 2;
@@ -309,8 +309,8 @@ is the exception.
 @p()
 You can get at tuple components using a suffixed
 dot followed a zero origin integer in brackets:
-@select(tangler(tdir+'tut108.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut111.flx'))
+include "std";
 val x = (0,1,(3,4));
 print x.(0); print " ";
 print x.(1); print " ";
@@ -332,8 +332,8 @@ dispatch queue (which you will learn about much later).
 @p()
 Here is an example of a procedure definition
 and use:
-@select(tangler(tdir+'tut109.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut112.flx'))
+include "std";
 proc print_newline (a:int)
 {
   print a;
@@ -344,8 +344,8 @@ print_newline 1;
 There is a special short cut for calling procedures
 with unit argument: if the procedure is called
 by its name, the () can be elided:
-@select(tangler(tdir+'tut110.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut113.flx'))
+include "std";
 print 1; endl();
 print 2; endl;
 @doc()
@@ -362,8 +362,8 @@ There is a procedure which is so useful, there
 is a special syntax for it, as described above in
 the section on lazy things: the block.
 
-@select(tangler(tdir+'tut110a.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut114.flx'))
+include "std";
 var x = 1;
 val p1 = { print x; };
 proc p2() { print x; }; // equivalent to p1 (almost)
@@ -394,8 +394,8 @@ its members are mutable.
 @p()
 Struct members can be used with C style dot notation.
 Here is an example:
-@select(tangler(tdir+'tut111.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut115.flx'))
+include "std";
 
 struct XY {
   x : int;
@@ -412,8 +412,8 @@ The name of a struct is also the name of a function
 which constructs an object of the struct type
 from a tuple consisting of values to initialise
 the members in sequence. For example:
-@select(tangler(tdir+'tut112.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut116.flx'))
+include "std";
 
 struct XY = {
   x : int;
@@ -433,8 +433,8 @@ type unification. An object of a union type
 consists of a tag, identifying what type
 the component has, and the actual component.
 Here are some examples of unions.
-@select(tangler(tdir+'tut113.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut117.flx'))
+include "std";
 
 union parity =
   | Odd
@@ -474,8 +474,8 @@ unlike struct component names.
 @head(2,'Pattern Matching Unions')
 The only way to get at the current component
 of a union is by pattern matching. Here is an example: 
-@select(tangler(tdir+'tut114.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut118.flx'))
+include "std";
 union int_option =
   | Some of int
   | None
@@ -523,8 +523,8 @@ returns a procedure which could print something.
 @head(2,'The Conditional Expression')
 Felix supports the conditional expression as shown:
 
-@select(tangler(tdir+'tut114a.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut119.flx'))
+include "std";
 
 fun sign1(x:int):int = 
 {
@@ -590,8 +590,8 @@ third sign function.
 @head(2,'Pattern Matching Tuples')
 It is also possible to match tuples.
 Here is an example:
-@select(tangler(tdir+'tut115.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut120.flx'))
+include "std";
 val x = 1,2,(3,4);
 match (x) with
   | (?x,_,?z) =>
@@ -655,9 +655,9 @@ The usual notation for character sets is employed:
 @end_table()
 Note that a char is represented by a one character string.
 
-@h= tangler(tdir+'tut115a.flx')
+@h= tangler(tdir+'tut121.flx')
 @select(h)
-#include <std.flx>
+include "std";
 regexp lower = ["abcdefghijklmnopqrstuvwxyz"];
 regexp upper = ["ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
 regexp digit = ["0123456789"];
@@ -746,8 +746,8 @@ value can be defined any number of times,
 a redefinition hides the preceding defintion
 until the end of the scope.
 
-@select(tangler(tdir+'tut115b1.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut122.flx'))
+include "std";
 macro val mx1 = 1+y;
 macro val mx2 = 2+y;
 val y = 100;
@@ -761,6 +761,14 @@ print mx2; endl; // 102
 print mx1; endl; // 101
 print mx2; endl; // 102
 
+// illustration of rescanning 
+macro val r1 = y1;
+macro val r2 = y2;
+macro val y1 = print;
+macro val y2 = 1;
+
+r1 r2; // print 1
+
 @head(3,'Macro variables')
 The macro var statement defines a LHS symbol
 as the expansion of the RHS. The same
@@ -770,8 +778,8 @@ until the end of the scope.
 @p()
 Macro variables can be assigned a new value.
 
-@select(tangler(tdir+'tut115b1.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut123.flx'))
+include "std";
 macro var mx1 = 1+y;
 val y = 100;
 print mx1; endl; // 101
@@ -790,11 +798,11 @@ At the point of call, the arguments
 are expanded and then substituted into
 the body, then the body is expanded.
 
-@select(tangler(tdir+'tut115b3.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut124.flx'))
+include "std";
 
 // a basic expression macro without parameters
-macro fun x =  {print 1; endl;};
+macro fun x() =  {print 1; endl;};
 x;
 
 // an expression macro with one argument
@@ -806,18 +814,14 @@ macro fun f(a) = { print a; endl; };
 f 1;
 f 2;
 
-// illustration of rescanning 
-macro fun r1 = y1;
-macro fun r2 = y2;
-macro fun y1 = print;
-macro fun y2 = 1;
-
-r1 r2;
-
 // nastier example of rescanning
-macro fun a = b c;
+macro fun a() = b c;
 macro fun b(x) = f;
-a 1;
+a() 1;
+// (b c) 1;
+// f 1;
+// { print 1; endl; };
+// call {print 1; endl; } ();
 
 // finally: recursion
 macro fun j(i) = 
@@ -894,8 +898,8 @@ are semantically, but not physically equivalent.
 The first operation is the UTF-8 representation
 of 999, whilst the second is the UCS-32 value 999.
 
-@select(tangler(tdir+'tut115c.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut125.flx'))
+include "std";
 header '''
 #define unix 0
 #define windows 0
@@ -908,20 +912,20 @@ header '''
 #include <stdio.h>
 #endif
 ''';
-macro fun unix = case 1 of 2;
-macro fun windows = case 1 of 2;
+macro val unix = case 1 of 2;
+macro val windows = case 1 of 2;
 
 fun dlopen:string -> address = 'dlopen($1.data())';
 fun LoadLibrary:string -> int = 'LoadLibrary($.data())';
 fun testhook:string -> int = 'printf("LoadTheLibrary(%s)\n",$1.data())';
 
-macro fun openlib = 
+macro val openlib = 
   if unix then dlopen 
   elif windows then LoadLibrary 
   else testhook endif
 ;
 
-macro fun ext = 
+macro val ext = 
   if unix then ".so" 
   elif windows then ".DLL"
   else ".lib_ext" endif
@@ -937,10 +941,10 @@ can be used to package up a set of macro definitions.
 This represents a special exception to the rule
 that macros respect scope.
 
-@select(tangler(tdir+'tut115d.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut126.flx'))
+include "std";
 // procedure macro
-macro proc k 
+macro proc k ()
 {
   val yy = xx * xx;
   print xx; print " -> "; print yy; endl;
@@ -966,22 +970,22 @@ printxy doublex; // prints 30
 
 macro proc dump_s (sts:proc)
 {
-  print "Start"; endl;
+  print "Start dump_s"; endl;
   sts;
-  print "End"; endl;
+  print "End dump_s"; endl;
 }
 
 macro proc dump_e (sts:fun)
 {
-  print "Start"; endl;
+  print "Start dump_e"; endl;
   sts;
-  print "End"; endl;
+  print "End dump_e"; endl;
 }
 
 dump_s { print 1; endl; print 2; endl; };
 dump_e { val x = 1; print x; endl; print 2; endl; };
 
-macro proc todump { val dd = 1; print "Dumped"; endl; }
+macro proc todump () { print "Dumped"; endl; }
 dump_s todump;
 dump_e todump;
 
@@ -1000,13 +1004,35 @@ expression applied to unit argument. The difference
 is in the handling of any variable declarations:
 they'd be exposed in the first case, but not the second.
 
+@head(2,'Advanced Procedure Macro Programming')
+Felix procedure macros also contain rudimentary
+control structures: you can encode labels, unconditional
+jumps, conditional jumps, and returns. Note the conditional
+goto requires the condition resolve to a constant expression.
+Of course, the value can change with time, since it can
+depend on macro variables.
+
+@select(tangler(tdir+'tut126a.flx'))
+include "std";
+macro proc print_alot () 
+{
+  macro var count = 10;
+  macro start:>
+    print count; print " ";
+    macro count = count - 1;
+    macro if count > 0 goto start;
+  endl;
+}
+
+print_alot();
+
 @head(2,'Expansion Barrier')
 The symbol '$' can be used to block expansion.
-@select(tangler(tdir+'tut115e.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut127.flx'))
+include "std";
 // expansion barrier
-macro fun x = 1;
-macro proc k 
+macro val x = 1;
+macro proc k ()
 {
   val yy = $x + x; // x + 1
   print $x; print "+"; print x; print " -> "; print yy; endl;
@@ -1034,14 +1060,14 @@ On use, the value of an ident macro is the first
 name in the chain which is not an ident macro,
 or which recurs.
 
-@select(tangler(tdir+'tut115f.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut128.flx'))
+include "std";
 
 macro ident oldname = newname;
 fun oldname(x:int):int = { return x; }
 print (newname 1); endl;
 
-macro proc make_ints
+macro proc make_ints ()
 {
   macro ident vnew = new;
   val vnew = vold+1;
@@ -1056,6 +1082,28 @@ make_ints;
 make_ints;
 print vold; endl;
 
+@head(3,'Forgetting Macros')
+You can forget macros defined in the current scope with
+the forget statement. If no arguments are given,
+all macros defined in the current scope are forgotten. 
+
+@select(tangler(tdir+'tut129.flx'))
+include "std";
+macro val hello = "Hello";
+macro val place = "world";
+macro fun greet() = hello " " place "!\n";
+{
+  macro val hello = "Hi there";
+  macro val place = "locality";
+  print (greet());
+  macro forget place;
+  print (greet());
+  macro forget;
+  print (greet());
+};
+
+print (greet());
+
 @head(2,'Basic Bindings')
 In the previous examples, we've use the Felix standard
 library. It's time to look at how it works.
@@ -1067,8 +1115,8 @@ abstract primitive data types, and bind them to
 concrete C++ data type.
 @p()
 Here is an example of a binding. 
-@select(tangler(tdir+'tut116.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut130.flx'))
+include "std";
 header """
 // This is C++ code!
 class gauss;
@@ -1202,8 +1250,8 @@ What this means is that the boundary between C++ and Felix
 code is fluid. To illustrate this, lets consider
 a version of the above code written entirely in Felix.
 
-@select(tangler(tdir+'tut117.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut131.flx'))
+include "std";
 struct gauss = {
   x : int;
   y : int;
@@ -1293,12 +1341,12 @@ statement to embed C++ definitons
 in the body file Felix generates. Header text is concatenated
 and emitted in the header file after Felix standard definitions
 but before any bindings, and so is often used to 
-embed #include directives.
+embed include directives.
 @p()
 Body code is also collected and emitted at the top of 
 the body (.cpp) file.
 @p()
-It is also possible to use the i
+It is also possible to use the
 @begin_code()
 code
 @end_code()
@@ -1307,8 +1355,8 @@ This is much the same as the body statement, except
 that it is an executable Felix statement, and is emitted
 in the place it is written.
 For example:
-@select(tangler(tdir+'tut117a.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut132.flx'))
+include "std";
 header "#include<stdio.h>";
 print 1; endl;
 code 'printf("%d\n",2);';
@@ -1331,8 +1379,8 @@ function application:
 To illustrate this is really the case,
 consider the following example.
 
-@select(tangler(tdir+'tut118.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut133.flx'))
+include "std";
 
 // part 1
 header """
@@ -1403,7 +1451,7 @@ although that isn't the only use.
 @p()
 Here is a simple example illustrating
 generic primitive bindings.
-@select(tangler(tdir+'tut118a.flx'))
+@select(tangler(tdir+'tut134.flx'))
 
 // include STL vector template
 header """
@@ -1479,7 +1527,7 @@ correct number of type arguments, if any. Then it checks
 if an instantiation matches the use. If not, the next
 outermost scope is searched.
 
-@select(tangler(tdir+'tut118b.flx'))
+@select(tangler(tdir+'tut135.flx'))
 type int = "int";
 proc endl:1= "cout << endl;";
 proc print[t]: t = 'cout << $1 << " A1";';
@@ -1495,8 +1543,8 @@ proc print[t1,t2]: t1 = 'cout << $1 << " A2";';
 Felix supports inductive types such as lists.
 Here is a list of ints.
 
-@select(tangler(tdir+'tut119.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut136.flx'))
+include "std";
 
 union float_list =
   | Empty
@@ -1528,8 +1576,8 @@ A more interesting example is now given.
 Here, we use a recursive routine to build the list,
 and an iterative routine to reverse it.
 
-@select(tangler(tdir+'tut120.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut137.flx'))
+include "std";
 
 union int_list =
   | Empty
@@ -1600,8 +1648,8 @@ changed since the time that it was passed.
 Here is an example, beware this example
 contains quite a lot of subtle features!
 
-@select(tangler(tdir+'tut121.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut138.flx'))
+include "std";
 
 var j = 2;
 
@@ -1683,8 +1731,8 @@ as well (even though they're utterly different beasts).
 
 @head(2,'Currying')
 Consider the following example:
-@select(tangler(tdir+'tut122.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut139.flx'))
+include "std";
 
 fun f4(i4:int): int->int->int->int = {
   fun f3(i3:int): int->int->int = {
@@ -1744,8 +1792,8 @@ Felix provides syntactic sugar that makes it easier
 to declare functions suitable for currying.
 Here is the equivalent code, using this sugar:
 
-@select(tangler(tdir+'tut123.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut140.flx'))
+include "std";
 
 fun f4(i4:int) (i3:int) (i2:int) (i1:int): int = {
   return i1+i2+i3+i4;
@@ -1807,8 +1855,8 @@ leave the first free.
 Most modern languages support packaging of related
 specifications into some kind of module, and Felix
 is no exception. Basic module use is quite simple:
-@select(tangler(tdir+'tut127.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut141.flx'))
+include "std";
 val top = 1;
 module A {
   val a = top + 1;
@@ -1862,8 +1910,8 @@ in order of writing.
 
 @head(2,'Koenig Lookup')
 Consider the following example:
-@select(tangler(tdir+'tut128.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut142.flx'))
+include "std";
 
 module A {
   struct X {
@@ -2001,8 +2049,8 @@ frame from being destroyed.
 @p()
 Here is an example:
 
-@select(tangler(tdir+'tut129.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut143.flx'))
+include "std";
 
 fun pone (): &int = 
 {
@@ -2031,8 +2079,8 @@ the wild blue yonder.
 Felix allows statements to be labelled,
 and provides a conditional and unconditional goto statement.
 
-@select(tangler(tdir+'tut130.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut144.flx'))
+include "std";
 print "start"; endl;
 var i = 1;
 start_loop:>
@@ -2059,8 +2107,8 @@ this quite easily in Felix, as we shall soon see.
 @p()
 But first consider the following example:
 
-@select(tangler(tdir+'tut131.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut145.flx'))
+include "std";
 
 var x = 1;
 proc run()
@@ -2118,8 +2166,8 @@ In turn this allows dynamic binding.]
 @head(2,'Procedure return')
 A procedure can be terminated by a goto to a label
 at the end of the procedure:
-@select(tangler(tdir+'tut131a.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut146.flx'))
+include "std";
 
 proc f(x:int) 
 {
@@ -2136,8 +2184,8 @@ f(0);
 @doc()
 A slightly more structured way of doing this
 involves the procedural return statement:
-@select(tangler(tdir+'tut131b.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut147.flx'))
+include "std";
 
 proc f(x:int) 
 {
@@ -2153,8 +2201,8 @@ f(0);
 
 @doc()
 This can also be shortened by using a the jump statement:
-@select(tangler(tdir+'tut131c.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut148.flx'))
+include "std";
 
 proc f(x:int) 
 {
@@ -2195,8 +2243,8 @@ Loops are automatically detected in some cases
 by the compiler. An explicit loop statement
 may also be used:
 
-@select(tangler(tdir+'tut131c.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut149.flx'))
+include "std";
 
 proc f(x:int) 
 {
@@ -2215,8 +2263,8 @@ given. A C++ exception is thrown. It cannot
 be caught by the Felix program (although
 it can be caught by the driver).
 
-@select(tangler(tdir+'tut131d.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut150.flx'))
+include "std";
 // uncomment to test 
 //fail "Aborted";
 
@@ -2224,8 +2272,8 @@ it can be caught by the driver).
 Non local gotos are very useful for a form of
 exception handling. Consider the following example:
 
-@select(tangler(tdir+'tut132.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut151.flx'))
+include "std";
 
 proc bad_calc(err: int -> void) 
 {
@@ -2259,8 +2307,8 @@ to the routine which may 'raise' it.
 Non local gotos are very useful for another form of
 exception handling. Consider the following example:
 
-@select(tangler(tdir+'tut133.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut152.flx'))
+include "std";
 
 proc main
 {
@@ -2287,8 +2335,8 @@ I've shown you static exception handling using goto
 for a reason: Felix provides syntactic sugar for this.
 Here is the same program, using the sugar:
 
-@select(tangler(tdir+'tut134.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut153.flx'))
+include "std";
 
 proc main
 {
@@ -2352,8 +2400,8 @@ to define anonymous procedure and function values
 literally, as in the next example,
 they're called lambdas, after the lambda calculus:
 
-@select(tangler(tdir+'tut135.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut154.flx'))
+include "std";
 val f = fun(a:int):int = { return a * a; };
 
 print (f 1); 
@@ -2405,8 +2453,8 @@ It's a library routine!
 Here is the while procedure from
 the standard library, renamed While
 to avoid a clash:
-@select(tangler(tdir+'tut137.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut155.flx'))
+include "std";
 proc While (cond:unit->bool) (bdy:unit->void)
 {
   repeat:>
@@ -2446,8 +2494,8 @@ is a match statement when actually there isn't.
 @head(2,'Lambda expressions')
 Felix allows a function to be specified in an expression,
 this is called a lambda expression:
-@select(tangler(tdir+'tut137a.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut156.flx'))
+include "std";
 var x = 10;
 while 
   (fun ():bool = { return x>0; })
@@ -2458,8 +2506,8 @@ Of course, we have already used lambdas in the short form,
 by enclosing expressions in curley braces;
 this example shows the long form. Lambdas of course
 may have arguments:
-@select(tangler(tdir+'tut137b.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut157.flx'))
+include "std";
 fun f(g:int->int,x:int) = { return g x; }
 print 
 (
@@ -2521,8 +2569,8 @@ the numeric types, but the lexicology is a sanitised
 version of that used by C. Note in particular
 that 010 is decimal ten in Felix!
 
-@select(tangler(tdir+'tut138.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut158.flx'))
+include "std";
 
 // radix
 {
@@ -2629,8 +2677,8 @@ remodelled as a concatenation, and the second as the concatenation
 of the string and the ISO-10646 code point the integer represents.
 Note that if the string is 8 bit, UTF-8 encoding will be applied.
 
-@select(tangler(tdir+'tut138a.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut159.flx'))
+include "std";
 var s = "Hello" 32; // add a space after "Hello"
 s = s s; // says "Hello Hello "
 print s; endl;
@@ -2641,8 +2689,8 @@ floating point. Here are some examples:
 [This will change, the need for overlapping
 ranges is too ugly ..]
 
-@select(tangler(tdir+'tut139.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut160.flx'))
+include "std";
 
 match (1.0) with
   | NaN => { print "Not a Number"; }
@@ -2707,8 +2755,8 @@ These consist of a \uXXXX or \UXXXXXXXX where the
 X's are hex digits. Felix normalises all such
 encodings so identifiers match properly.
 
-@select(tangler(tdir+'tut140.flx'))
-#include <std.flx>
+@select(tangler(tdir+'tut161.flx'))
+include "std";
 
 val x_y_7' = 1;
 val Y_can't_U_do_this_in_C'' : double = 2.0;
@@ -2727,7 +2775,7 @@ interface, more precisely, the module's
 default interface must be subtype of the
 specified interface. Here's an example.
 @select(tangler(tdir+'tut201.flx'))
-#include <std.flx>
+include "std";
 
 interface group
 {
@@ -2776,7 +2824,7 @@ Felix provides syntact sugar which allows
 you to define a module and bind it to
 an interface in the same definition:
 @select(tangler(tdir+'tut202.flx'))
-#include <std.flx>
+include "std";
 interface group
 {
   type t;
@@ -2817,7 +2865,7 @@ can be parameterized by other modules.
 Lets look at an example.
 
 @select(tangler(tdir+'tut203.flx'))
-#include <std.flx>
+include "std";
 
 interface list_req
 {
@@ -2928,7 +2976,7 @@ the type Int_req::element.
 It is, of course, possible to nest functors.
 
 @select(tangler(tdir+'tut204.flx'))
-#include <std.flx>
+include "std";
 interface I 
 { 
   type t; 
@@ -2970,7 +3018,7 @@ can be accesses without using qualified names.
 Here's a simple example:
 
 @select(tangler(tdir+'tut205.flx'))
-#include <std.flx>
+include "std";
 module X {
   proc print_endl (a:int) { print a; endl; }
   fun square (a:int):int = { return a * a; }
@@ -3016,7 +3064,7 @@ open directives. Alternatively, you can use
 a qualified name.
 
 @select(tangler(tdir+'tut206.flx'))
-#include <std.flx>
+include "std";
 module X1 {
   proc printme() { print "X1"; endl; }
 }
@@ -3087,7 +3135,7 @@ from the type. The infix + is used non-associatively
 to specify numbered unions.
 
 @select(tangler(tdir+'tut207.flx'))
-#include <std.flx>
+include "std";
 open Long;
 
 typedef three = unit +  unit + unit;
@@ -3142,7 +3190,7 @@ The let expression is, in effect, a prefix operator with
 the lowest precedence. 
 
 @select(tangler(tdir+'tut208.flx'))
-#include <std.flx>
+include "std";
 print (match 1 with | ?x =>  x + x endmatch); endl;
 print (let ?z = 1 in z + z); endl;
 print (let ?x = (let ?y = 2 in y + y) in x + x); endl; // 8
@@ -3187,7 +3235,7 @@ that is, the parser uses the same grammar to build expressions
 and type expresssions (though each imposes constraints).
 
 @select(tangler(tdir+'tut209.flx'))
-#include <std.flx>
+include "std";
 open Long;
 
 typedef fun list (elt:TYPE):TYPE = 1 + elt * list elt;
@@ -3229,7 +3277,7 @@ endmatch;
 Misc weird feature tests .. remove in production
 tutorial.
 @select(tangler(tdir+'tut901.flx'))
-#include <std.flx>
+include "std";
 // recursive typedefs
 
 //typedef y = &int + long * (float + long);

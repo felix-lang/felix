@@ -137,7 +137,7 @@ COBJECTS = {
 CLIBRARIES = ['nums']
 
 # *.cmxa libraries
-OLIBRARIES = ['nums','flxlib']
+OLIBRARIES = ['nums','unix','flxlib']
 
 
 # target executable programs to produce

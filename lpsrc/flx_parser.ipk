@@ -238,12 +238,12 @@ let mkcurry sr name args return_type body =
 %token<Flx_types.srcref> HEADER BODY MODULE CODE LET IN
 %token<Flx_types.srcref> CALL PROCEDURE FUNCTION FUNCTOR JUMP LOOP
 %token<Flx_types.srcref> RETURN FORK 
-%token<Flx_types.srcref> TO OPEN EQRIGHTARROW USE
+%token<Flx_types.srcref> TO OPEN EQRIGHTARROW USE INCLUDE
 %token<Flx_types.srcref> TODO INTERFACE DEFINE
 %token<Flx_types.srcref> TYPE READ CONST STRUCT 
 %token<Flx_types.srcref> RAISE ATTEMPT FINALLY EXCEPT VAL TYPEDEF ENDATTEMPT
 %token<Flx_types.srcref> QUEST
-%token<Flx_types.srcref> MACRO IDENT NEW 
+%token<Flx_types.srcref> MACRO IDENT NEW FORGET
 
 %type <Flx_types.compilation_unit_t> compilation_unit
 %type <Flx_types.range_srcref * Flx_types.statement_t list> compound
@@ -274,22 +274,14 @@ statement:
   | binding_definition { $1 }
   | declarative { $1 }
   | executable { $1 }
+  | inclusion { $1 }
 
-@doc()
-There are three rough categories of statements.
-
-@select(h)
 binding_definition:
   | abstract_type { $1 }
   | const_def { $1 }
   | binding_header { $1 }
   | export_statement { $1 }
 
-@doc()
-A binding definition is used to bind a entity to the implementation
-language.
- 
-@select(h)
 declarative:
   | type_alias { $1 }
   | function_definition { $1 }
@@ -317,6 +309,16 @@ executable:
   | inline_cpp { $1 } 
   | goto_statement { $1 }
   | label_statement { $1 }
+
+inclusion:
+  | INCLUDE STRING SEMI
+    { 
+      let sr = rstoken $1 $3 in 
+      `AST_include (sr, snd $2) 
+    }
+  
+@head(2,"Regular definitions")
+@select(h)
 
 regdef:
   | REGEXP NAME EQUAL re1 SEMI      
@@ -523,13 +525,12 @@ mac_arg:
   | NAME                   { snd $1, Expr }
 
 mac_args:
-  | mac_arg COMMA mac_args       { $1 :: $3 }
+  | mac_arg COMMA mac_args { $1 :: $3 }
   | mac_arg                { [$1] }
 
 mac_arg_list:
   | LPAR mac_args RPAR     { $2 }
   | LPAR RPAR              { [] }
-  |                        { [] }
 
 macro_definition:
   | MACRO IDENT NAME EQUAL NAME SEMI
@@ -604,7 +605,34 @@ macro_definition:
       in
       `AST_stmt_macro (sr,name,args,sts)
     }
+    
+  | MACRO FORGET macro_names SEMI
+    {
+      let sr = rstoken $1 $4 in
+      `AST_macro_forget (sr,$3)
+    }
 
+  | MACRO GOTO NAME SEMI
+    { 
+      `AST_macro_goto (rstoken $1 $4, snd $3) 
+    }
+
+  | MACRO NAME COLONGREATER 
+    { 
+      `AST_macro_label (rstoken $1 $3, snd $2) 
+    }
+
+  | MACRO IF expr GOTO NAME SEMI
+    { `AST_macro_ifgoto (rstoken $1 $6,$3,snd $5) }
+
+ 
+macro_name_list:
+  | macro_name_list NAME { snd $2 :: $1 }
+  | NAME { [snd $1] }
+macro_names:
+  | macro_name_list { List.rev $1 }
+  | { [] }
+  
 @head(3,'Function and Procedure Definition')
 @select(h)
 fun_arg:
@@ -1345,7 +1373,6 @@ floating:
 
 basic_name: NAME { $1 }
 @commalistof("basic_name")
-
 
 @head(2,'Executable Expressions')
 @select(h)

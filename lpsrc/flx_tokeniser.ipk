@@ -120,6 +120,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | DOTDOTDOT _ -> "..."
 
   (* keywords *)
+  | INCLUDE _ -> "include"
   | OPEN _ -> "open"
   | USE _ -> "use"
   | INTERFACE _ -> "interface"
@@ -130,6 +131,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | FUNCTION _ -> "fun" 
   | PROCEDURE _ -> "proc" 
   | MACRO _ -> "macro" 
+  | FORGET _ -> "forget" 
   | IDENT _ -> "ident"
   | NEW _ -> "new"
   | IF _ -> "if" 
@@ -313,6 +315,7 @@ let src_of_token t = match t with
   | PROCEDURE s 
   | FUNCTION s 
   | MACRO s 
+  | FORGET s 
   | IDENT s 
   | NEW s 
   | RETURN s 
@@ -331,6 +334,7 @@ let src_of_token t = match t with
   | TO s
   | DEFINE s
   | OPEN s
+  | INCLUDE s
   | USE s
   | UNDERSCORE s
     -> s

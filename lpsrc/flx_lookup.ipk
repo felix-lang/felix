@@ -1237,10 +1237,9 @@ and eval_module_expr syms env excluded_dirs e : module_rep_t =
       | Simple_module (index,table,dirs) ->
         begin match lookup_name_in_htab table name with
         | Some x -> x
-        | None -> failwith 
+        | None -> clierr sr 
           (
-            "Can't find " ^ name ^ " in module in\n"  ^ 
-            short_string_of_src sr 
+            "Can't find " ^ name ^ " in module"
           )
         end
 
@@ -1251,10 +1250,9 @@ and eval_module_expr syms env excluded_dirs e : module_rep_t =
           begin match lookup_name_in_htab table name with
           | Some x ->
             make_bound binding x
-          | None -> failwith 
+          | None -> clierr sr
             (
-              "Can't find " ^ name ^ " in module in\n"  ^ 
-              short_string_of_src sr 
+              "Can't find " ^ name ^ " in module" 
             )
           end
 
@@ -2254,10 +2252,9 @@ and koenig_lookup syms sra exclude excluded_dirs id' name_map fn t2 =
         let n = ref 0 
         in Hashtbl.iter (fun _ _ -> incr n) name_map; 
         print_endline ("module defines " ^ string_of_int !n^ " entries");
-        failwith 
+        clierr sra
         (
-          "[flx_ebind] Koenig lookup: Can't find match for " ^ fn ^ " in " ^
-          short_string_of_src sra
+          "[flx_ebind] Koenig lookup: Can't find match for " ^ fn
         )
     end
   | NonFunctionEntry _ -> failwith "Koenig lookup expected function"
@@ -2312,10 +2309,9 @@ and lookup_qn_with_sig
       | (Simple_module (impl, htab,dirs)) ->
         begin match lookup_name_in_htab htab name with
         | None -> 
-          failwith
+          clierr sr
           (
-            "Can't find name " ^ name ^ " in\n" ^
-            short_string_of_src sr
+            "Can't find name " ^ name
           )
         | Some x -> match x with 
         | NonFunctionEntry (Simple index) ->
@@ -2394,10 +2390,9 @@ and lookup_qn_with_sig
           let table' = apply_binding table binding in
           begin match lookup_name_in_htab table' name with
           | None -> 
-            failwith 
+            clierr sra
             (
-              "Can't find name " ^ name ^ " in\n" ^
-              short_string_of_src sra
+              "Can't find name " ^ name
             )
           | Some x -> match x with
           | NonFunctionEntry (Simple index) ->
