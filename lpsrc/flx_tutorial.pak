@@ -30,12 +30,14 @@ expecially libraries. The strong integration
 provided by LP is likely to challange corporate 
 procedures. And they surely need it.
 
-@head(1,'Basic Felix')
+@head(1,'Basic Felix 101')
+This section deals with the basic concepts in Felix.
+
 @head(2,'Hello Felix')
 There is no better introduction to a programming
 language than the infamous hello-world program.
 
-@select(tangler(tdir+'tut01.flx'))
+@select(tangler(tdir+'tut101.flx'))
 #include <std.flx>
 print "Hello World\n";
 @doc()
@@ -50,13 +52,13 @@ To run the example, make sure you are in the
 directory containing the Felix demo package,
 then type:
 @begin_displayed_code()
-  bin/flx tut/examples/tut01
+  bin/flx tut/examples/tut101
 @end_displayed_code()
 This produces three files:
 @begin_displayed_code()
-  tut/examples/tut01.hpp
-  tut/examples/tut01.cpp
-  tut/examples/tut01.so
+  tut/examples/tut101.hpp
+  tut/examples/tut101.cpp
+  tut/examples/tut101.so
 @end_displayed_code()
 We'll learn more about their structure later.
 
@@ -65,7 +67,7 @@ Felix supports overloading. To demonstrate this,
 we'll make a small modification to the hello
 world program. You can compile and run the
 program as before, just change the example number.
-@select(tangler(tdir+'tut02.flx'))
+@select(tangler(tdir+'tut102.flx'))
 #include <std.flx>
 print "Hello World ";
 print 42;
@@ -83,7 +85,7 @@ overload matching must be exact.
 @head(2,'Value declaration')
 Felix allows values to be declared using the 'val'
 keyword.
-@select(tangler(tdir+'tut03.flx'))
+@select(tangler(tdir+'tut103.flx'))
 #include <std.flx>
 val i = 40;
 val j = 2;
@@ -102,7 +104,7 @@ the compiler works out the type from the initial
 value for you. You can declare the type of a variable
 if you want: the following program is equivalent
 to the one above:
-@select(tangler(tdir+'tut04.flx'))
+@select(tangler(tdir+'tut104.flx'))
 #include <std.flx>
 val i : int = 40;
 val j : int = 2;
@@ -120,7 +122,7 @@ and, as we will see later, they cannot be addressed.
 @head(2,'Variable declaration')
 Felix also support mutable variables, which are
 declared with the 'var' keyword.
-@select(tangler(tdir+'tut05.flx'))
+@select(tangler(tdir+'tut105.flx'))
 #include <std.flx>
 var i = 1;
 var j : int;
@@ -154,7 +156,7 @@ We'll find out why later.
 Felix allows you to define functions,
 although the syntax is different from C.
 Here is an example:
-@select(tangler(tdir+'tut06.flx'))
+@select(tangler(tdir+'tut106.flx'))
 #include <std.flx>
 fun mid(a:int, b:int):int
 {
@@ -193,7 +195,7 @@ when I said the function mid only had a single
 argument. If not, you get another chance,
 studying this example, which is equivalent
 to example 6.
-@select(tangler(tdir+'tut07.flx'))
+@select(tangler(tdir+'tut107.flx'))
 #include <std.flx>
 fun mid(a:int, b:int):int
 {
@@ -238,7 +240,7 @@ is the exception.
 @p()
 You can get at tuple components using a suffixed
 dot followed a zero origin integer in brackets:
-@select(tangler(tdir+'tut08.flx'))
+@select(tangler(tdir+'tut108.flx'))
 #include <std.flx>
 val x = (0,1,(3,4));
 print x.(0); print " ";
@@ -258,7 +260,7 @@ dispatch queue.
 @p()
 Here is an example of a procedure definition
 and use:
-@select(tangler(tdir+'tut09.flx'))
+@select(tangler(tdir+'tut109.flx'))
 #include <std.flx>
 proc print_newline (a:int)
 {
@@ -270,7 +272,7 @@ print_newline 1;
 There is a special short cut for calling procedures
 with unit argument: if the procedure is called
 by its name, the () can be elided:
-@select(tangler(tdir+'tut10.flx'))
+@select(tangler(tdir+'tut110.flx'))
 #include <std.flx>
 print 1; endl();
 print 2; endl;
@@ -285,7 +287,7 @@ its members are mutable.
 @p()
 Struct members can be used with C style dot notation.
 Here is an example:
-@select(tangler(tdir+'tut11.flx'))
+@select(tangler(tdir+'tut111.flx'))
 #include <std.flx>
 
 struct XY {
@@ -303,7 +305,7 @@ The name of a struct is also the name of a function
 which constructs an object of the struct type
 from a tuple consisting of values to initialise
 the members in sequence. For example:
-@select(tangler(tdir+'tut12.flx'))
+@select(tangler(tdir+'tut112.flx'))
 #include <std.flx>
 
 struct XY = {
@@ -323,7 +325,7 @@ a single type. An object of a union type
 consists of a tag, identifying what type
 the component has, and the actual component.
 Here are some examples of unions.
-@select(tangler(tdir+'tut13.flx'))
+@select(tangler(tdir+'tut113.flx'))
 #include <std.flx>
 
 union parity =
@@ -364,7 +366,7 @@ unlike struct component names.
 @head(2,'Pattern Matching Unions')
 The only way to get at the current component
 of a union is by pattern matching. Here is an example: 
-@select(tangler(tdir+'tut14.flx'))
+@select(tangler(tdir+'tut114.flx'))
 #include <std.flx>
 union int_option =
   | Some of int
@@ -372,7 +374,6 @@ union int_option =
 ;
 
 val y = Some 1;
-val i = 0;
 
 match (y) 
 {
@@ -384,7 +385,6 @@ match (y)
   | None: 
     {
       print "None"; 
-      print i;
     };
 }
 endl;
@@ -406,7 +406,7 @@ it never falls through.
 @head(2,'Pattern Matching Tuples')
 It is also possible to match tuples.
 Here is an example:
-@select(tangler(tdir+'tut15.flx'))
+@select(tangler(tdir+'tut115.flx'))
 #include <std.flx>
 val x = 1,2,(3,4);
 match (x) 
@@ -429,6 +429,9 @@ match (x)
   };
 }
 endl;
+@doc()
+Notice the use of the special pattern '_', which matches
+something without naming it.
 
 @head(2,'Basic Bindings')
 In the previous examples, we've use the Felix standard
@@ -441,9 +444,10 @@ abstract primitive data types, and bind them to
 concrete C++ data type.
 @p()
 Here is an example of a binding. 
-@select(tangler(tdir+'tut16.flx'))
+@select(tangler(tdir+'tut116.flx'))
 #include <std.flx>
 header """
+// This is C++ code!
 class gauss;
 
 struct gauss {
@@ -464,6 +468,7 @@ struct gauss {
 };
 """;
 
+// Now the Felix binding
 type gauss = "gauss";
 proc set : &gauss * gauss = "*$1 = $2;";
 fun add: gauss * gauss -> gauss = "$1 + $2";
@@ -472,6 +477,7 @@ fun mkgauss: int * int -> gauss = "gauss($1,$2)";
 fun real: gauss -> int = "$1.x";
 fun imag: gauss -> int = "$1.y";
 
+// Now a pure Felix procedure
 proc print(z:gauss) { 
   print "(";
   print (real z);
@@ -480,6 +486,7 @@ proc print(z:gauss) {
   print ")";
 }
 
+// And two pure Felix functions
 fun sqr(z:gauss):gauss {
   return z * z;
 }
@@ -490,6 +497,7 @@ fun norm(z:gauss): int {
   ;
 }
 
+// Finally, some test code
 val z1 = mkgauss(1,2);
 val z2 = z1 + z1;
 val z3 = sqr z2;
@@ -501,12 +509,24 @@ print n; endl;
 
 @doc()
 There are lots of things to note here.
-First, the header command specifies text to
+@p()
+First, the header command 
+
+@begin_displayed_code()
+  header """ .... """
+@end_displayed_code()
+
+specifies text to
 be emitted literally in the generated C++.
 In this case, we emit a C++ class defining
 a basic gaussian integer type.
 @p()
 Next, we define the felix type gauss.
+
+@begin_displayed_code()
+  type gauss = "gauss";
+@end_displayed_code()
+
 The definition specifies the Felix name, gauss,
 and then the C++ name, which also happens to be
 gauss.
@@ -516,7 +536,16 @@ by primitive functions and procedures which allow
 us to manipulate it. Theses consists of a function
 or procedure name, a type, and the C++ code to
 generate when the function or procedure is called.
-@p()
+
+@begin_displayed_code()
+proc set : &gauss * gauss = "*$1 = $2;";
+fun add: gauss * gauss -> gauss = "$1 + $2";
+fun mul: gauss * gauss -> gauss = "$1 * $2";
+fun mkgauss: int * int -> gauss = "gauss($1,$2)";
+fun real: gauss -> int = "$1.x";
+fun imag: gauss -> int = "$1.y";
+@end_displayed_code()
+
 In the definition string, $1 means the first argument
 of the argument tuple, and $2 means the second, etc.
 @p()
@@ -547,7 +576,7 @@ What this means is that the boundary between C++ and Felix
 code is fluid. To illustrate this, lets consider
 a version of the above code written entirely in Felix.
 
-@select(tangler(tdir+'tut17.flx'))
+@select(tangler(tdir+'tut117.flx'))
 #include <std.flx>
 struct gauss = {
   x : int;
@@ -610,6 +639,15 @@ the semantics in C++.
 As you can guess, the whole of the program
 could have been written in C++ rather than 
 Felix.
+@p()
+It's up to you to choose what parts of your Felix
+program are written directly in C++, and which parts
+are written in Felix: since Felix is a C++ code generator,
+it all ends up as C++ anyhow.
+@p()
+Usually, you'll write Felix, except when you have 
+an existing code base containing useful types
+you need to work with. 
 
 @head(2,'Operator dot')
 It may look as if Felix knows how to access
@@ -627,7 +665,7 @@ function application:
 To illustrate this is really the case,
 consider the following example.
 
-@select(tangler(tdir+'tut18.flx'))
+@select(tangler(tdir+'tut118.flx'))
 #include <std.flx>
 
 // part 1
@@ -693,7 +731,7 @@ as the Felix name]
 Felix supports inductive types such as lists.
 Here is a list of ints.
 
-@select(tangler(tdir+'tut19.flx'))
+@select(tangler(tdir+'tut119.flx'))
 #include <std.flx>
 
 union float_list =
@@ -727,7 +765,7 @@ A more interesting example is now given.
 Here, we use a recursive routine to build the list,
 and an iterative routine to reverse it.
 
-@select(tangler(tdir+'tut20.flx'))
+@select(tangler(tdir+'tut120.flx'))
 #include <std.flx>
 
 union int_list =
@@ -794,12 +832,12 @@ it is returned by it.
 @p()
 Note that when the returned function or procedure
 is called later, the values of variables may have
-changed since the time the it was passed.
+changed since the time that it was passed.
 @p()
 Here is an example, beware this example
 contains quite a lot of subtle features!
 
-@select(tangler(tdir+'tut21.flx'))
+@select(tangler(tdir+'tut121.flx'))
 #include <std.flx>
 
 var j = 2;
@@ -872,7 +910,7 @@ second time, since j is then 3.
 
 @head(2,'Currying')
 Consider the following example:
-@select(tangler(tdir+'tut22.flx'))
+@select(tangler(tdir+'tut122.flx'))
 #include <std.flx>
 
 fun f4(i4:int): int->int->int->int  {
@@ -933,7 +971,7 @@ Felix provides syntactic sugar that makes it easier
 to declare functions suitable for currying.
 Here is the equivalent code, using this sugar:
 
-@select(tangler(tdir+'tut23.flx'))
+@select(tangler(tdir+'tut123.flx'))
 #include <std.flx>
 
 fun f4(i4:int) (i3:int) (i2:int) (i1:int): int {
@@ -988,16 +1026,14 @@ that accepts 3 arguments.
 @p()
 What you have done is called eta-expansion.
 It is necessary even for currified functions
-if you want to fix the first argument, but
-leave the second free. There's a more elegant
-way to do this using labelled arguments, 
-as we shall see. [Maybe?]
+if you want to fix the second argument, but
+leave the first free.
 
 @head(2,'Regular expressions')
 The standard library contains types and functions
 for regular expression matching. Here's an example:
 
-@select(tangler(tdir+'tut24.flx'))
+@select(tangler(tdir+'tut124.flx'))
 #include <std.flx>
 #include <boost.flx>
 
@@ -1021,7 +1057,7 @@ Now you've got that to work, lets look at currying.
 There is a currified version of regex_match in the boost
 library. Here's why it is useful:
 
-@select(tangler(tdir+'tut25.flx'))
+@select(tangler(tdir+'tut125.flx'))
 #include <std.flx>
 #include <boost.flx>
 
@@ -1061,7 +1097,7 @@ raw strings. Strings prefixed by an r are called raw strings,
 slosh escapes are not processed. This makes it easier
 to define regular expressions. For example:
 
-@select(tangler(tdir+'tut26.flx'))
+@select(tangler(tdir+'tut126.flx'))
 #include <std.flx>
 #include <boost.flx>
 val rex = regex_of_string("\\A(\\d{3,4})[- ]?(\\d{4})[- ]?(\\d{4})[- ]?(\\d{4})\\z");
@@ -1094,7 +1130,7 @@ print (regex_merge rex1 human_format1 credit_no_2); endl;
 Most modern languages support packaging of related
 specifications into some kind of module, and Felix
 is no exception. Basic module use is quite simple:
-@select(tangler(tdir+'tut27.flx'))
+@select(tangler(tdir+'tut127.flx'))
 #include <std.flx>
 val top = 1;
 module A {
@@ -1123,12 +1159,12 @@ When qualified name is used, the qualifier specifies
 the module in which the next name must be found.
 Qualification inhibits upscope overloading.
 @p()
-Note the brackets around (::top) which are needed to
-stop the parser thinking you mean 'print::top'.
+Note the keyword 'root' is used to name the top-level
+module.
 
 @head(2,'Koenig Lookup')
 Consider the following example:
-@select(tangler(tdir+'tut28.flx'))
+@select(tangler(tdir+'tut128.flx'))
 #include <std.flx>
 
 module A {
@@ -1260,7 +1296,7 @@ frame from being destroyed.
 @p()
 Here is an example:
 
-@select(tangler(tdir+'tut29.flx'))
+@select(tangler(tdir+'tut129.flx'))
 #include <std.flx>
 
 fun pone (): &int 
@@ -1290,7 +1326,7 @@ the wild blue yonder.
 Felix allows statements to be labelled,
 and provides a goto statement.
 
-@select(tangler(tdir+'tut30.flx'))
+@select(tangler(tdir+'tut130.flx'))
 #include <std.flx>
 print "start"; endl;
 var i = 1;
@@ -1320,7 +1356,7 @@ this quite easily in Felix, as we shall soon see.
 @p()
 But first consider the following example:
 
-@select(tangler(tdir+'tut31.flx'))
+@select(tangler(tdir+'tut131.flx'))
 #include <std.flx>
 
 var x = 1;
@@ -1380,7 +1416,7 @@ In turn this allows dynamic binding.]
 Non local gotos are very useful for a form of
 exception handling. Consider the following example:
 
-@select(tangler(tdir+'tut32.flx'))
+@select(tangler(tdir+'tut132.flx'))
 #include <std.flx>
 
 proc bad_calc(err: int -> void) 
@@ -1415,7 +1451,7 @@ to the routine which may 'raise' it.
 Non local gotos are very useful for another form of
 exception handling. Consider the following example:
 
-@select(tangler(tdir+'tut33.flx'))
+@select(tangler(tdir+'tut133.flx'))
 #include <std.flx>
 
 proc main
@@ -1443,7 +1479,7 @@ I've shown you static exception handling using goto
 for a reason: Felix provides syntactic sugar for this.
 Here is the same program, using the sugar:
 
-@select(tangler(tdir+'tut34.flx'))
+@select(tangler(tdir+'tut134.flx'))
 #include <std.flx>
 
 proc main
@@ -1507,7 +1543,7 @@ to define anonymous procedure and function values
 literally, as in the next example,
 they're called lambdas, after the lambda calculus:
 
-@select(tangler(tdir+'tut35.flx'))
+@select(tangler(tdir+'tut135.flx'))
 #include <std.flx>
 val f = fun(a:int):int { return a * a; };
 
@@ -1559,7 +1595,7 @@ It's a library routine!
 @head(2,'Lazy Evaluation')
 To define the while loop, we need lazy evaluation.
 Lets try to define it:
-@select(tangler(tdir+'tut36.flx'))
+@select(tangler(tdir+'tut136.flx'))
 #include <std.flx>
 proc While (cond: unit->bool) (body:unit->void)
 {
@@ -1580,7 +1616,7 @@ While (fun():bool { return i < 10; })
 @doc()
 Well that works fine, except for the ugly lambda.
 Here's the first shortcut:
-@select(tangler(tdir+'tut37.flx'))
+@select(tangler(tdir+'tut137.flx'))
 #include <std.flx>
 proc While (cond: unit->bool) (body:unit->void)
 {
@@ -1612,88 +1648,10 @@ means exactly the same as
 where T is the type of the expression expr.
 Well, we're not quite there syntactically!
 
-@head(1,'Intermediate')
-@head(2,'Module Interfaces')
-Felix allows you to specify the interface
-of a module with an interface specification.
-You can constrain access to the module with
-an interface. The module must match the
-interface, more precisely, the module's
-default interface must be subtype of the
-specified interface. Here's an example.
-@select(tangler(tdir+'tut38.flx'))
-#include <std.flx>
-
-interface group
-{
-  type t;
-  proc print: t;
-  fun add: t * t -> t;
-  fun inv: t -> t;
-}
-
-module number {
-  typedef t = int;
-  fun add(a:t, b:t):t { return a + b; }
-  fun inv(a:t):t { return -a; }
-}
-
-module NUMBER = number : group;
-
-@doc()
-Note that the representation of t by an int
-is hidden by the interface: you can't
-multiply these numbers.
-
-@head(2,'Functors')
-You may have been wondering how Felix handles
-genericity. 
-Felix supports modules which
-can be parameterized by other modules.
-Lets look at an example.
-@select(tangler(tdir+'tut39.flx'))
-#include <std.flx>
-
-interface list_req
-{
-  type element;
-  proc print_element: element;
-}
-
-functor List (req:list_req)
-{
-  union list =
-    | Empty
-    | Cons of req::element * list
-  ;
-  proc print (a: list) 
-  {
-    match (a) 
-    {
-      | Empty: print "[]";
-      | Cons (i,tail): 
-        {
-          req::print_element i; 
-          print " "; 
-          print tail;
-        };
-    }
-  }
-}
-
-module int_list = List int;
-
-val t0 = int_list::Empty;
-val nxt = (100.1,t0);
-val t1 = int_list::Cons nxt;
-val t2 = int_list::Cons (200.2,t1);
-print t2; endl;
-
-
 @head(2,'Numeric Lexemes')
 Here is a more comprehensive set of examples
 of Felix numeric lexicology.
-@select(tangler(tdir+'tut45.flx'))
+@select(tangler(tdir+'tut138.flx'))
 #include <std.flx>
 #include <boost.flx>
 
@@ -1764,7 +1722,7 @@ of Felix numeric lexicology.
 @head(2,'Floating matches')
 Felix provides special matching for
 floating point. Here are some examples:
-@select(tangler(tdir+'tut46.flx'))
+@select(tangler(tdir+'tut139.flx'))
 #include <std.flx>
 
 match (1.0)
@@ -1833,11 +1791,117 @@ These consist of a \uXXXX or \UXXXXXXXX where the
 X's are hex digits. Felix normalises all such
 encodings so identifiers match properly.
 
-@select(tangler(tdir+'tut47.flx'))
+@select(tangler(tdir+'tut140.flx'))
 #include <std.flx>
 
 val x_y_7' = 1;
 val Y_can't_U_do_this_in_C'' : double = 2.0;
 val x\u05d0= 1; // x,Hebrew  aleph
 val zz = x\U000005D0; // x,Hebrew aleph
+
+@head(1,'Intermediate Felix 201')
+This section mainly deals with the Felix module system.
+
+@head(2,'Module Interfaces')
+Felix allows you to specify the interface
+of a module with an interface specification.
+You can constrain access to the module with
+an interface. The module must match the
+interface, more precisely, the module's
+default interface must be subtype of the
+specified interface. Here's an example.
+@select(tangler(tdir+'tut201.flx'))
+#include <std.flx>
+
+interface group
+{
+  type t;
+  proc print: t;
+  fun add: t * t -> t;
+  fun neg: t -> t;
+  val zero:t;
+}
+
+module number {
+  typedef t = int;
+  fun add(a:t, b:t):t { return a + b; }
+  fun neg(a:t):t { return -a; }
+  val zero = 0;
+  proc print (a:int) { root::print a; }
+}
+
+module NUMBER = number : group;
+
+val one = NUMBER::zero;
+
+@doc()
+Note that the representation of t by an int
+is hidden by the interface: you can't
+multiply these numbers.
+
+@head(2,'Functors')
+You may have been wondering how Felix handles
+genericity. 
+Felix supports modules which
+can be parameterized by other modules.
+Lets look at an example.
+@select(tangler(tdir+'tut202.flx'))
+#include <std.flx>
+
+interface list_req
+{
+  type element;
+  proc print_element: element;
+}
+
+functor List (req:list_req)
+{
+  union list =
+    | Empty
+    | Cons of req::element * list
+  ;
+  proc print (a: list) 
+  {
+    match (a) 
+    {
+      | Empty: print "[]";
+      | Cons (i,tail): 
+        {
+          req::print_element i; 
+          print " "; 
+          print tail;
+        };
+    }
+  }
+}
+
+module Int 
+{ 
+  typedef element = int;
+  proc print_element (a:int) { print a; }
+}
+
+module Int_req = Int : list_req;
+
+module int_list = List Int_req;
+
+val t0 = int_list::Empty;
+val nxt = (100 : Int_req::element, t0);
+val t1 = int_list::Cons nxt;
+val t2 = int_list::Cons (200 : Int_req::element, t1);
+int_list::print t2; endl;
+
+
+@doc()
+The first thing we do is define an interface
+which specifies the requirements for a list:
+@begin_displayed_code()
+interface list_req
+{
+  type element;
+  proc print_element: element;
+}
+@end_displayed_code()
+A list is built of elements of some type,
+a routine to print an element is required.
 

@@ -108,6 +108,8 @@ its type variables.
 and expr_t =
   | AST_deref of range_srcref * expr_t
   | AST_name of range_srcref * suffixed_name_t
+  | AST_index of range_srcref * bid_t
+  | AST_bound_module of range_srcref * (bid_t * index_map_t)
   | AST_ref of range_srcref * expr_t
   | AST_literal of range_srcref * literal_t
   | AST_apply of range_srcref * (expr_t * expr_t)
@@ -171,7 +173,7 @@ and statement_t =
 
   (* definitions *)
   | AST_function of range_srcref * id_t * parameter_t list * typecode_t * statement_t list
-  | AST_procedure of range_srcref * typecode_t * id_t * parameter_t list * statement_t list
+  | AST_procedure of range_srcref * id_t * parameter_t list * statement_t list
 
   (* types *)
   | AST_union of range_srcref * id_t * (id_t * typecode_t) list
@@ -189,7 +191,7 @@ and statement_t =
   | AST_interface of range_srcref * id_t * statement_t list
   | AST_type of range_srcref * id_t
   | AST_function_decl of range_srcref * id_t * typecode_t
-  | AST_procedure_decl of range_srcref * typecode_t * id_t * typecode_t
+  | AST_procedure_decl of range_srcref * id_t * typecode_t
 
  
   (* control structures: primitives *)
@@ -246,11 +248,11 @@ and dcl_t =
   (* data structures *)
   | DCL_function of    parameter_t list * typecode_t * asm_t list
   | DCL_lazy of        expr_t
-  | DCL_procedure of   typecode_t * parameter_t list * asm_t list
+  | DCL_procedure of   parameter_t list * asm_t list
   | DCL_union of       (id_t * typecode_t) list
   | DCL_struct of      (id_t * typecode_t) list
   | DCL_match_check of pattern_t * string
-  | DCL_match_handler of typecode_t * pattern_t * string * asm_t list
+  | DCL_match_handler of pattern_t * string * asm_t list
   
   (* variables *)
   | DCL_val of         typecode_t
@@ -266,7 +268,7 @@ and dcl_t =
   | DCL_interface of   asm_t list
 
   (* interface elements *)
-  | DCL_if_proc of     typecode_t * typecode_t
+  | DCL_if_proc of     typecode_t
   | DCL_if_fun of      typecode_t
   | DCL_type
   
@@ -326,44 +328,17 @@ and btypecode_t =
   | BTYP_binding of bid_t * btypecode_t           (* interface, module *)
 
 and bparameter_t = string * btypecode_t
-and bdcl_t = 
-  | BDCL_header of     string
-  | BDCL_function of   bparameter_t list * btypecode_t * int list * exe_t list * name_map_t
-  | BDCL_procedure of  bparameter_t list * int list * exe_t list * name_map_t 
-  | BDCL_if_fun of     btypecode_t * int list
-  | BDCL_if_proc of    btypecode_t * btypecode_t * int list
-  
-  | BDCL_match_check of pattern_t * int * int list
-  | BDCL_match_handler of btypecode_t * pattern_t * int * int list * exe_t list * name_map_t
-
-  | BDCL_val of        btypecode_t
-  | BDCL_var of        btypecode_t
-
-  | BDCL_val_typeof of expr_t
-  | BDCL_var_typeof of expr_t 
-  | BDCL_lazy of       int list * expr_t
-
-  (* binding structures [prolog] *)
-  | BDCL_abs of        c_t
-  | BDCL_const of      btypecode_t * c_t
-  | BDCL_fun of        btypecode_t list * btypecode_t * c_t 
-  | BDCL_proc of       btypecode_t list * c_t 
-  | BDCL_union of      (id_t * btypecode_t) list
-  | BDCL_struct of     (id_t * btypecode_t) list
-  | BDCL_module of     name_map_t
-  | BDCL_interface of  name_map_t
-  | BDCL_functor of    bparameter_t list * btypecode_t * exe_t list * name_map_t
-  | BDCL_type_parameter
-  | BDCL_binding of    bid_t * bid_t
-  
 and bbdcl_t = 
   | BBDCL_header of     string
-  | BBDCL_function of   bparameter_t list * btypecode_t * int list * bexe_t list * name_map_t
+  | BBDCL_function of   bparameter_t list * btypecode_t * bexe_t list * name_map_t
+  (* 
   | BBDCL_functor  of   bparameter_t list * btypecode_t * name_map_t
-  | BBDCL_procedure of  bparameter_t list * int list * bexe_t list * name_map_t
-  | BBDCL_if_fun of     btypecode_t * int list
-  | BBDCL_if_proc of    btypecode_t * btypecode_t * int list
-  
+  *)
+  | BBDCL_procedure of  bparameter_t list * bexe_t list * name_map_t
+  (*
+  | BBDCL_if_fun of     btypecode_t 
+  | BBDCL_if_proc of    btypecode_t
+  *) 
   | BBDCL_val of        btypecode_t
   | BBDCL_var of        btypecode_t
 
@@ -374,11 +349,6 @@ and bbdcl_t =
   | BBDCL_proc of       btypecode_t list * c_t 
   | BBDCL_union of      (id_t * btypecode_t) list
   | BBDCL_struct of     (id_t * btypecode_t) list
-
-  | BBDCL_module of     name_map_t
-  | BBDCL_interface of  name_map_t
-  | BBDCL_type_parameter
-  | BBDCL_binding of    bid_t * bid_t
 
 and entry_kind_t = 
   | Simple of int
@@ -391,35 +361,48 @@ and entry_set_t =
 and module_rep_t = 
   | Simple_module of name_map_t
   | Bound_module of bid_t * index_map_t
- 
+  | Functor_set of bid_t list
+  | Module_product of module_rep_t list
+
 and name_map_t = (string, entry_set_t) Hashtbl.t
 and index_map_t = (int,int) Hashtbl.t
+and instantiation_registry_t = 
+  (
+    int *                         (* functor index *)
+    module_rep_t,                 (* argument list *) 
+    int                           (* instantiated functor = module index *)
+  ) Hashtbl.t
+and functor_arg_binding_t = 
+  (
+    id_t *                        (* argument name *)
+    (
+      bid_t *                     (* interface *)
+      index_map_t                 (* interface->module binding map *)
+    )
+  ) list
 
 type env_t = name_map_t list
 type symbol_definition_t =
   | SYMDEF_parameter of typecode_t
-  | SYMDEF_function of parameter_t list * typecode_t * int list * exe_t list * name_map_t
-  | SYMDEF_lazy of int list * expr_t 
-  | SYMDEF_match_check of pattern_t * int * int list
-  | SYMDEF_match_handler of typecode_t * pattern_t * int * int list * exe_t list * name_map_t
+  | SYMDEF_function of parameter_t list * typecode_t * exe_t list * name_map_t
+  | SYMDEF_lazy of expr_t 
+  | SYMDEF_match_check of pattern_t * int 
+  | SYMDEF_match_handler of pattern_t * int * exe_t list * name_map_t
 
   | SYMDEF_interface of name_map_t
-  | SYMDEF_functor of parameter_t list * typecode_t * int list * exe_t list * name_map_t
+  | SYMDEF_functor of parameter_t list * typecode_t * exe_t list * name_map_t
   | SYMDEF_module of name_map_t
   | SYMDEF_if_type
-  | SYMDEF_if_proc of typecode_t * typecode_t * int list
-  | SYMDEF_if_fun of typecode_t * int list
-  | SYMDEF_procedure of typecode_t * 
-     parameter_t list * int list * exe_t list * name_map_t
+  | SYMDEF_if_proc of typecode_t 
+  | SYMDEF_if_fun of typecode_t
+  | SYMDEF_procedure of  
+     parameter_t list * exe_t list * name_map_t
   
   | SYMDEF_module_binding of expr_t
   | SYMDEF_dcl of dcl_t
 
 type symbol_data_t = string * range_srcref * int option * symbol_definition_t 
 type symbol_table_t = (int, symbol_data_t) Hashtbl.t
-
-type symbol_data2_t = string * int option * bdcl_t 
-type bound_symbol_table_t = (int, symbol_data2_t) Hashtbl.t
 
 type symbol_data3_t = string * int option * bbdcl_t 
 type fully_bound_symbol_table_t = (int, symbol_data3_t) Hashtbl.t
@@ -439,7 +422,7 @@ Source reference manipulators.
 open Flx_types
 val rstoken: srcref -> srcref -> range_srcref
 val rsrange: range_srcref -> range_srcref -> range_srcref
-val lift: srcref -> range_srcref
+val slift: srcref -> range_srcref
 
 val rsexpr: expr_t -> expr_t -> range_srcref
 val rslist: expr_t list -> range_srcref
@@ -478,7 +461,7 @@ let rsrange (f1,sl1,sc1,el1,ec1) (f2,sl2,sc2,el2,ec2) =
   (f1,sl1,sc1,el2,ec2)
 
 (* lift token source to range *)
-let lift (f,l,s,e) = (f,l,s,l,e)
+let slift (f,l,s,e) = (f,l,s,l,e)
 
 (* axiom: rstoken a b = rsrange (lift a) (lift b) *)
 
@@ -502,6 +485,8 @@ let src_of_expr e = match e with
   | AST_get_n  (s,_) 
   | AST_lazy (s,_)
   | AST_coercion (s,_)
+  | AST_index (s,_)
+  | AST_bound_module (s,_)
     -> s 
 (* get range from first and last expressions *)
 let rsexpr a b = rsrange (src_of_expr a) (src_of_expr b)
@@ -518,7 +503,7 @@ let src_of_statement s = match s with
   | AST_goto (s,_)
   
   | AST_function (s, _, _ , _, _)
-  | AST_procedure (s, _, _, _ , _)
+  | AST_procedure (s, _, _ , _)
 
   | AST_val_decl (s, _, _, _) 
   | AST_var_decl (s, _, _, _) 
@@ -541,14 +526,14 @@ let src_of_statement s = match s with
   | AST_abs_decl (s, _, _) 
   | AST_const_decl (s, _, _, _) 
   | AST_fun_decl (s, _, _ , _, _ ) 
-  | AST_proc_decl (s, _, _ , _ ) 
+  | AST_proc_decl (s,_, _ , _ ) 
   | AST_header (s,_) 
   | AST_code (s, _) 
   | AST_union (s, _, _ ) 
   | AST_struct (s, _, _)
   | AST_module (s, _,_)
   | AST_export (s, _,_)
-  | AST_procedure_decl (s,_,_,_)
+  | AST_procedure_decl (s,_,_)
   | AST_function_decl (s,_,_)
   | AST_type (s,_)
     -> s
@@ -613,7 +598,6 @@ val string_of_desugared : asm_t list -> string
 val string_of_suffixed_name : suffixed_name_t -> string
 val string_of_qualified_name : qualified_name_t -> string
 val string_of_dcl : int -> id_t -> dcl_t -> string
-val string_of_bdcl : symbol_table_t -> int -> int -> bdcl_t -> string
 val string_of_bexe : symbol_table_t -> int -> bexe_t -> string
 val string_of_exe : int -> exe_t -> string
 val qualified_name_of_index : symbol_table_t -> int -> string
@@ -633,6 +617,7 @@ open Flx_util
 open Flx_types
 open Flx_srcref
 open Big_int
+open Flx_typing
 
 let string_of_string = Flx_string.c_quote_of_string
 
@@ -685,6 +670,8 @@ and string_of_literal e = match e with
 and string_of_expression e = 
   let se e = se e in
   match e with
+  | AST_index (sr,i) -> "(index " ^ string_of_int i ^ ")"
+  | AST_bound_module (sr,(iface,binding)) -> "(module_binding)"
   | AST_coercion (_,(e,t)) -> 
     "(" ^ se e ^ ":" ^ 
     string_of_typecode t ^ ")"
@@ -953,13 +940,13 @@ and string_of_statement level s =
     "("^ (string_of_parameters ps)^"): "^(string_of_typecode res)^"\n" ^
     string_of_compound level ss
 
-  | AST_procedure (_,msgt, name, ps, ss) -> 
+  | AST_procedure (_,name, ps, ss) -> 
     spaces level ^ 
-    "procedure ("^string_of_typecode msgt^") " ^ name ^ 
+    "procedure " ^ name ^ 
     "("^ (string_of_parameters ps)^")" ^
     short_string_of_compound level ss
 
-  | AST_procedure_decl (_,msgt, name,t) ->
+  | AST_procedure_decl (_, name,t) ->
     spaces level ^
     "procedure " ^ name ^ ": " ^ string_of_typecode t ^ ";\n"
 
@@ -1082,7 +1069,7 @@ and string_of_symdef entry name = match entry with
   | SYMDEF_parameter t -> 
     "parameter " ^ string_of_typecode t ^ ";"
     
-  | SYMDEF_function (ps,res,d,es,nm) -> 
+  | SYMDEF_function (ps,res,es,nm) -> 
     "function " ^ name ^ ": " ^ string_of_typecode 
     (
       TYP_function 
@@ -1098,19 +1085,19 @@ and string_of_symdef entry name = match entry with
     ) ^
     ";"
     
-  | SYMDEF_lazy (d,e) -> 
+  | SYMDEF_lazy (e) -> 
     "lazy " ^ name ^ ";"
     
-  | SYMDEF_match_check (pat,i,d)-> 
+  | SYMDEF_match_check (pat,i)-> 
     "match_check " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
   
-  | SYMDEF_match_handler (t,pat,i,d,es,nm) ->
+  | SYMDEF_match_handler (pat,i,es,nm) ->
     "match_handler " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
 
   | SYMDEF_interface nm ->
     "interface " ^ name ^ ";"
 
-  | SYMDEF_functor (ps,ret,d,es,nm) ->
+  | SYMDEF_functor (ps,ret,es,nm) ->
     "functor " ^ name ^ ";"
 
   | SYMDEF_module table -> 
@@ -1119,13 +1106,13 @@ and string_of_symdef entry name = match entry with
   | SYMDEF_if_type -> 
     "abstract_type " ^ name ^ ";"
     
-  | SYMDEF_if_proc (msgt,t,d) -> 
+  | SYMDEF_if_proc t -> 
     "abstract_proc " ^ name ^ ": " ^ string_of_typecode t ^ ";"
 
-  | SYMDEF_if_fun (t,d) ->
+  | SYMDEF_if_fun t ->
     "abstract_function  " ^ name ^ string_of_typecode t ^ ";"
 
-  | SYMDEF_procedure (msgt,ps,d,es,nm) ->
+  | SYMDEF_procedure (ps,es,nm) ->
     "procedure " ^ name ^ ";"  
   
   | SYMDEF_module_binding e ->
@@ -1244,7 +1231,7 @@ and string_of_bexe dfns level s =
 and string_of_dcl level name s = match s with
   | DCL_type -> spaces level ^ "type " ^ name ^ ";\n"
 
-  | DCL_if_proc (_,t) ->
+  | DCL_if_proc (t) ->
     spaces level ^ "procedure " ^ name ^ ": " ^ string_of_typecode t
 
   | DCL_if_fun t ->
@@ -1296,14 +1283,14 @@ and string_of_dcl level name s = match s with
   | DCL_fun (args, result, code) ->
     spaces level ^ 
      "fun " ^ name ^ ": " ^ 
-     (string_of_typecode (TYP_tuple args)) ^ " -> " ^
+     (string_of_typecode (type_of_argtypes args)) ^ " -> " ^
      (string_of_typecode result) ^ 
      " = " ^ string_of_string code ^ ";"
 
   | DCL_proc (args, code) ->
     spaces level ^ 
     "proc " ^ name ^ ": " ^ 
-     (string_of_typecode (TYP_tuple args)) ^
+     (string_of_typecode (type_of_argtypes args)) ^
      " = " ^ string_of_string code ^ ";"
 
   | DCL_const (typ, code) ->
@@ -1325,9 +1312,9 @@ and string_of_dcl level name s = match s with
     string_of_asm_compound level ss
 
 
-  | DCL_procedure (msgt, ps, ss) -> 
+  | DCL_procedure (ps, ss) -> 
     spaces level ^ 
-    "procedure ("^string_of_typecode msgt^") " ^ name ^ 
+    "procedure " ^ name ^ 
     "("^ (string_of_parameters ps)^")" ^
     short_string_of_asm_compound level ss
 
@@ -1337,7 +1324,7 @@ and string_of_dcl level name s = match s with
     s ^ " matches " ^ string_of_pattern pat ^
     " }"
 
-  | DCL_match_handler (_,pat,e, ss) ->
+  | DCL_match_handler (pat,e, ss) ->
     spaces level ^ 
     "procedure " ^ name ^ 
     "() //pattern: " ^ string_of_pattern pat ^ "\n" ^
@@ -1366,143 +1353,13 @@ and string_of_asm level s =
   | Exe (sr,s) -> string_of_exe level s
   | Iface (sr,s) -> string_of_iface level s
 
-and string_of_bdcl dfns level index s = 
-  let name = qualified_name_of_index dfns index in
-  let string_of_btypecode t = string_of_btypecode dfns t in
-  match s with
-  | BDCL_binding (src,dst) ->
-    spaces level ^
-    "binding " ^ string_of_int src ^ 
-    " -> " ^ string_of_int dst ^ ";\n"
-
-  | BDCL_type_parameter -> 
-    spaces level ^
-    "type " ^ name ^ ";\n"
-    
-  | BDCL_functor (ps,res,_,_) ->
-    spaces level ^
-    "functor " ^ name ^ 
-    "("^ (string_of_bparameters dfns ps)^")" ^
-    (match res with
-    | BTYP_none -> ""
-    | _ -> ": "^(string_of_btypecode res)
-    )^
-    "\n" 
-
-  | BDCL_if_proc (_,t,_) ->
-    spaces level ^ 
-    "procedure " ^ name ^ ": " ^ string_of_btypecode t ^ ";\n"
-
-  | BDCL_if_fun (t,_) ->
-    spaces level ^ 
-    "function " ^ name ^ ": " ^ string_of_btypecode t ^ ";\n"
-
-  | BDCL_interface name_map ->
-    spaces level ^
-    "interface " ^ name ^ ";\n"
-
-  | BDCL_lazy (_,e) -> "lazy(" ^ se e ^ ")"
-
-  | BDCL_module name_map -> 
-    spaces level ^
-    "module " ^ name ^ ";\n"
-
-  | BDCL_match_check (pat,index,display) ->
-    spaces level ^ 
-    "_match_var_"^string_of_int index ^ " matches " ^ string_of_pattern pat
-
-  | BDCL_match_handler (msgt, pat,idx, display,exes,_) ->
-    spaces level ^ 
-    "match_proc (" ^ string_of_pattern pat ^ ")" 
-
-  | BDCL_header s -> "header " ^ string_of_string s
-
-  | BDCL_struct (cs) -> 
-    let string_of_struct_component (name,ty) =
-      (spaces (level+1)) ^ name ^ ": " ^ string_of_btypecode ty ^ ";"
-    in
-    spaces level ^ "struct " ^ name ^ " = " ^
-    spaces level ^ "{\n" ^
-    catmap "\n" string_of_struct_component cs ^ "\n" ^
-    spaces level ^ "}"
-
-  | BDCL_union (cs) -> 
-    let string_of_union_component (name,ty) =
-      (spaces (level+1)) ^ "|" ^ name ^ special_string_of_btypecode dfns ty
-    in
-    spaces level ^ "union " ^ name ^ " = " ^
-    spaces level ^ "{\n" ^
-    catmap ";\n" string_of_union_component cs ^ "\n" ^
-    spaces level ^ "}"
-
-  | BDCL_abs (code) -> spaces level ^ 
-   "type " ^ name ^ " = " ^ string_of_string code ^ ";"
-
-  | BDCL_fun (args, result, code) ->
-    spaces level ^ 
-     "fun " ^ name ^ ": " ^ 
-     (string_of_btypecode (BTYP_tuple args)) ^ " -> " ^
-     (string_of_btypecode result) ^ 
-     " = " ^ string_of_string code ^ ";"
-
-  | BDCL_proc (args, code) ->
-    spaces level ^ 
-    "proc " ^ name ^ ": " ^ 
-     (string_of_btypecode (BTYP_tuple args)) ^
-     " = " ^ string_of_string code ^ ";"
-
-  | BDCL_const (typ, code) ->
-    spaces level ^ 
-     "const " ^ name ^ 
-     ": " ^ string_of_btypecode typ ^ 
-     " = "^string_of_string code^ ";" 
-
-  | BDCL_function (ps, res,display,exes,_) -> 
-    spaces level ^ 
-    "function " ^ name ^ 
-    "("^ (string_of_bparameters dfns ps)^"): "^(string_of_btypecode res)^"\n" 
-
-  | BDCL_procedure (ps,display,exes,_) -> 
-    spaces level ^ 
-    "procedure " ^ name ^ 
-    "("^ (string_of_bparameters dfns ps)^")"
-
-  | BDCL_val (ty) ->
-    spaces level ^ 
-    "val " ^ name ^ ": " ^ string_of_btypecode ty ^ ";"
-
-  | BDCL_var (ty) ->
-    spaces level ^ 
-    "var " ^ name ^ ": " ^ string_of_btypecode ty ^ ";"
-
-  | BDCL_val_typeof (e) ->
-    spaces level ^ 
-    "val " ^ name ^ ": typeof(" ^ se e ^ ");"
-
-  | BDCL_var_typeof (e) ->
-    spaces level ^ 
-    "var " ^ name ^ ": typeof(" ^ se e ^ ");"
-
 and string_of_bbdcl dfns bbdcl index = 
   let name = qualified_name_of_index dfns index in
   let sobt t = string_of_btypecode dfns t in
   let se e = string_of_bound_expression dfns e in
   match bbdcl with
-  | BBDCL_type_parameter -> "type " ^ name ^ ";"
-  | BBDCL_module name_map -> "module " ^ name ^ ";"
-  | BBDCL_interface name_map -> "interface " ^ name ^ ";"
-  | BBDCL_functor (ps,res,name_map) ->
-    "functor " ^ name ^ 
-    "("^ (string_of_bparameters dfns ps)^"): "^(sobt res) ^ ";"
-   
-  | BBDCL_if_fun (t,_) -> 
-    "function " ^ name ^ ": " ^ sobt t ^ ";\n"
-
-  | BBDCL_if_proc (_,t,_) -> 
-    "procedure " ^ name ^ ": " ^ sobt t ^ ";\n"
-
   | BBDCL_header s -> "header " ^ string_of_string s
-  | BBDCL_function (ps,res,display,es,name_map) ->
+  | BBDCL_function (ps,res,es,name_map) ->
     "function " ^ name ^ 
     "("^ (string_of_bparameters dfns ps)^"): "^(sobt res) ^
     "{\n" ^
@@ -1510,7 +1367,7 @@ and string_of_bbdcl dfns bbdcl index =
     "}"
 
   
-  | BBDCL_procedure (ps,display,es,name_map) ->
+  | BBDCL_procedure (ps,es,name_map) ->
     "procedure " ^ name ^ 
     "("^ (string_of_bparameters dfns ps)^")" ^
     "{\n" ^
@@ -1534,13 +1391,13 @@ and string_of_bbdcl dfns bbdcl index =
 
   | BBDCL_fun (ps,rt,code) ->
      "fun " ^ name ^ ": " ^ 
-     (sobt (BTYP_tuple ps)) ^ " -> " ^
+     (sobt (typeoflist ps)) ^ " -> " ^
      (sobt rt) ^ 
      " = " ^ string_of_string code ^ ";"
 
   | BBDCL_proc (ps,code) ->
     "proc " ^ name ^ ": " ^ 
-     (sobt (BTYP_tuple ps)) ^
+     (sobt (typeoflist ps)) ^
      " = " ^ string_of_string code ^ ";"
 
   | BBDCL_union cs ->
@@ -1560,12 +1417,6 @@ and string_of_bbdcl dfns bbdcl index =
     "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     "}"
-
-  | BBDCL_binding (src,dst) ->
-    "binding " ^ string_of_int src ^ 
-    " -> " ^ string_of_int dst ^ ";\n"
-
-
 
 @h = tangler('src/flx_mtypes.ml')
 @select(h)
@@ -1646,14 +1497,18 @@ exception TokenError of string
 //
 @h = tangler('src/flx_exceptions.ml')
 @select(h)
+open Flx_types
 @tangle(exceptions)
 @h = tangler('src/flx_exceptions.mli')
 @select(h)
+open Flx_types
 @tangle(exceptions)
 
 @h = tangler('src/flx_typing.ml')
 @select(h)
 open Flx_types
+open Flx_print
+exception UnificationError of btypecode_t * btypecode_t
 
 (* unbound type *)
 let type_of_argtypes ls = match ls with
@@ -1668,22 +1523,73 @@ module FuntypeSet = Set.Make(
 
 (* bound type! *)
 let typeoflist typlist = match typlist with
-  | [] -> BTYP_tuple []
   | [t] -> t
   | _ -> BTYP_tuple typlist
+
+let rec lower t = match t with
+  | BTYP_binding (i,t) -> t
+  | BTYP_pointer t -> BTYP_pointer (lower t)
+  | BTYP_tuple ts -> BTYP_tuple (List.map lower ts)
+  | BTYP_none -> BTYP_none
+  | BTYP_void -> BTYP_void
+  | BTYP_function (a,b) -> BTYP_function (lower a, lower b)
+  | BTYP_name i -> BTYP_name i
+
+
+let rec lift t = match t with
+  | BTYP_binding (i,t) -> BTYP_name i
+  | BTYP_pointer t -> BTYP_pointer (lift t)
+  | BTYP_tuple ts -> BTYP_tuple (List.map lift ts)
+  | BTYP_none -> BTYP_none
+  | BTYP_void -> BTYP_void
+  | BTYP_function (a,b) -> BTYP_function (lift a, lift b)
+  | BTYP_name i -> BTYP_name i
+
+let rec unify dfns it mt = 
+  let u it mt = unify dfns it mt in
+  match it,mt with
+  | BTYP_name index,t -> BTYP_binding (index,t)
+  
+  | BTYP_function (a,b), BTYP_function(c,d) ->
+    BTYP_function (u a c, u b d)
+
+  | BTYP_pointer a, BTYP_pointer b ->
+    BTYP_pointer (u a b)
+
+  | BTYP_tuple a, BTYP_tuple b ->
+    BTYP_tuple (List.map2 u a b)
+
+  | BTYP_void, BTYP_void -> BTYP_void
+  | BTYP_none, BTYP_none -> BTYP_none
+
+  | _ -> raise (UnificationError (it,mt))
 
 
 @h = tangler('src/flx_typing.mli')
 @select(h)
+open Flx_types
+exception UnificationError of btypecode_t * btypecode_t
 val type_of_argtypes : 
-  Flx_types.typecode_t list -> 
-  Flx_types.typecode_t
+  typecode_t list -> 
+  typecode_t
   
 val funparamtype : 'a * 'b -> 'b
 
 val typeoflist:
-  Flx_types.btypecode_t list ->
-  Flx_types.btypecode_t
+  btypecode_t list ->
+  btypecode_t
+
+val unify:
+  symbol_table_t ->
+  btypecode_t ->
+  btypecode_t ->
+  btypecode_t
+
+val lift:
+  btypecode_t -> btypecode_t
+
+val lower:
+  btypecode_t -> btypecode_t
 
 module FuntypeSet :
   sig

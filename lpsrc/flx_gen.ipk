@@ -44,7 +44,6 @@ val gen_biface_bodies:
 @h = tangler('src/flx_gen.ml')
 @select(h)
 open Flx_types
-open Flx_bind
 open Flx_print
 open Flx_typing
 open Flx_name
@@ -108,30 +107,38 @@ let find_references bbdfns name_map =
     in
     match bbdfn with
     | BBDCL_var ((BTYP_pointer _) as t)
-      -> references := (idx,t) :: !references
+      -> references := (idx,lower t) :: !references
     | BBDCL_val ((BTYP_pointer _) as t)
-      -> references := (idx,t) :: !references
+      -> references := (idx,lower t) :: !references
     | _ -> ()
   ) 
   name_map
   ;
   !references
 
+let dummy_name_map = Hashtbl.create 97
+
+let get_name_map symdef name = match symdef with 
+    | SYMDEF_function (_,_,_,name_map) -> name_map
+    | SYMDEF_procedure (_,_,name_map) -> name_map
+    | SYMDEF_module name_map -> name_map
+    | SYMDEF_interface name_map -> name_map
+    | SYMDEF_match_handler (_,_,_,name_map) -> name_map
+    | SYMDEF_lazy _
+    | SYMDEF_match_check _ -> dummy_name_map
+    | _ -> 
+      failwith 
+      (
+        "[get_name_map] Expected entity with scope, got " ^
+        string_of_symdef symdef name
+      )
+
 let find_variable_indices dfns index = 
-  let _,_,_,symdef = 
+  let id,_,_,symdef = 
     try Hashtbl.find dfns index 
     with _ -> failwith ("[find_variable_indices(1)] Can't find index " ^ string_of_int index)
   in
-  let name_map = match symdef with 
-    | SYMDEF_function (_,_,_,_,name_map) -> name_map
-    | SYMDEF_procedure (_,_,_,_,name_map) -> name_map
-    | SYMDEF_module name_map -> name_map
-    | SYMDEF_interface name_map -> name_map
-    | SYMDEF_match_handler (_,_,_,_,_,name_map) -> name_map
-    | SYMDEF_lazy _
-    | SYMDEF_match_check _ -> Hashtbl.create 97 
-    | _ -> failwith "[find variable indicies] Expected function definition"
-  in
+  let name_map = get_name_map symdef id in
   let rec extract name_map = 
     let variables = ref [] in
     Hashtbl.iter
@@ -141,21 +148,24 @@ let find_variable_indices dfns index =
       | NonFunctionEntry (Bound _) ->
         failwith "Not expecting bound entry"
       | NonFunctionEntry (Simple idx) ->
-      let _,_,_,symdef = 
+      let _,_,parent,symdef = 
         try Hashtbl.find dfns idx 
         with _ -> failwith ("[find_variable_indices(2)] can't find index " ^ string_of_int index)
       in
-      match symdef with
-      | SYMDEF_parameter _
-      | SYMDEF_dcl (DCL_var _) 
-      | SYMDEF_dcl (DCL_var_typeof _) 
-      | SYMDEF_dcl (DCL_val _) 
-      | SYMDEF_dcl (DCL_val_typeof _) 
-        -> variables := idx :: !variables
-      | SYMDEF_module table
-      | SYMDEF_interface table 
-        -> variables := extract table @ !variables
-      | _ -> ()
+      (*
+      if proper_descendant dfns parent
+      then
+      *)
+        match symdef with
+        | SYMDEF_parameter _
+        | SYMDEF_dcl (DCL_var _) 
+        | SYMDEF_dcl (DCL_var_typeof _) 
+        | SYMDEF_dcl (DCL_val _) 
+        | SYMDEF_dcl (DCL_val_typeof _) 
+          -> variables := idx :: !variables
+        | SYMDEF_module table
+          -> variables := extract table @ !variables
+        | _ -> ()
     ) 
     name_map
     ;
@@ -163,6 +173,7 @@ let find_variable_indices dfns index =
   in extract name_map
 
 let find_members registry dfns bbdfns index = 
+  (* print_endline ("Finding members of index " ^ string_of_int index); *)
   let variables = find_variable_indices dfns index in
   let members = 
   String.concat ""
@@ -176,7 +187,15 @@ let find_members registry dfns bbdfns index =
       match entry with
       | BBDCL_var t
       | BBDCL_val t ->
-        let typename = cpp_typename registry dfns bbdfns t in
+        (*
+        print_endline 
+        (
+          "Found variable or value " ^
+          id ^ 
+          " of (lowered) type " ^ string_of_btypecode dfns (lower t)
+        );
+        *)
+        let typename = cpp_typename registry dfns bbdfns (lower t) in
         "  " ^ typename ^ " " ^ cpp_name bbdfns idx ^ ";\n"
       | _ -> failwith "[find members] Expected variable or value"
     )
@@ -185,15 +204,36 @@ let find_members registry dfns bbdfns index =
   in if members <> "" then "  //variables\n" ^ members
   else ""
 
-let get_display_list bbdfns index =
-  let id,parent,entry = 
-    try Hashtbl.find bbdfns index 
-    with _ -> failwith ("[get_display_list] Can't find index " ^ string_of_int index)
-  in
+let rec cal_display dfns parent display : bid_t list =
+  match parent with 
+  | None -> display
+  | Some parent ->
+  let id,sr,parent',entry = Hashtbl.find dfns parent in
   match entry with
-  | BBDCL_function (_,_,display,_,_) -> display
-  | BBDCL_procedure (_,display,_,_) -> display
-  | _ -> failwith "Only functions and procedures have a display"
+  | SYMDEF_function _
+  | SYMDEF_procedure _
+  | SYMDEF_match_handler _
+  | SYMDEF_match_check _
+  | SYMDEF_lazy _
+    -> cal_display dfns parent' (parent::display)
+  | _ -> cal_display dfns parent' display
+   
+let get_display_list dfns index : bid_t list =
+  let id,sr,parent,entry = Hashtbl.find dfns index in
+  match entry with
+  | SYMDEF_function _
+  | SYMDEF_procedure _
+  | SYMDEF_match_handler _
+  | SYMDEF_match_check _
+  | SYMDEF_lazy _
+    -> List.rev (cal_display dfns parent [])
+
+  | _ -> 
+    failwith 
+    (
+      "Only functions and procedures have a display, got: " ^
+      string_of_symdef entry id
+    )
 
 let get_type bbdfns index = 
   let id,parent,entry = 
@@ -201,19 +241,21 @@ let get_type bbdfns index =
     with _ -> failwith ("[get_type] Can't find index " ^ string_of_int index)
   in
   match entry with
-  | BBDCL_function (ps,ret,_,_,_) -> 
+  | BBDCL_function (ps,ret,_,_) -> 
       BTYP_function (typeoflist (List.map snd ps),ret)
-  | BBDCL_procedure (ps,_,_,_) -> 
+  | BBDCL_procedure (ps,_,_) -> 
       BTYP_function (typeoflist (List.map snd ps),BTYP_void)
   | _ -> failwith "Only function and procedure types handles by get_type"
 
 
-let gen_function registry (dfns : symbol_table_t) bbdfns index id ps ret =
-  let argtype = typeoflist (List.map snd ps) in
+let gen_function registry (dfns : symbol_table_t) bbdfns index id ps ret' =
+  (* print_endline ("generating function " ^ id ^ "[" ^string_of_int index^"]");  *)
+  let argtype = lower(typeoflist (List.map snd ps)) in
+  let ret = lower ret' in
   let funtype = BTYP_function (argtype, ret) in
   let argtypename = cpp_typename registry dfns bbdfns argtype
   and funtypename = cpp_classname registry dfns bbdfns funtype
-  and display = get_display_list bbdfns index 
+  and display = get_display_list dfns index 
   and frame_dcls = 
     "  //OS frames\n" ^
     "  global_frame_t *pgf;\n" ^
@@ -227,7 +269,8 @@ let gen_function registry (dfns : symbol_table_t) bbdfns index id ps ret =
       String.concat "" 
       (
         List.map
-        (fun i-> let name = cpp_name bbdfns i in
+        (fun i-> 
+         let name = cpp_name bbdfns i in
          "  " ^ name ^ " *ptr" ^ name ^ ";\n"
          )
         display
@@ -249,6 +292,7 @@ let gen_function registry (dfns : symbol_table_t) bbdfns index id ps ret =
       )^
       "\n  );\n" 
   in
+  let members = find_members registry dfns bbdfns index in
   match ret with
   | BTYP_void ->
     let name = cpp_name bbdfns index in
@@ -266,13 +310,14 @@ let gen_function registry (dfns : symbol_table_t) bbdfns index id ps ret =
     display_string ^ "\n" ^
     "  //constructor\n" ^
     ctor_dcl name ^
-    find_members registry dfns bbdfns index ^
+    members ^
     "};\n"
 
   | _ ->
     let name = cpp_name bbdfns index
     and rettypename = cpp_typename registry dfns bbdfns ret
     in
+    let ctor = ctor_dcl name in
     "struct " ^ name ^
     ": "^funtypename^" {\n" ^
     "  "^rettypename^" apply(" ^
@@ -282,8 +327,8 @@ let gen_function registry (dfns : symbol_table_t) bbdfns index id ps ret =
     frame_dcls ^
     display_string ^ "\n" ^
     "  //constructor\n" ^
-    ctor_dcl name ^
-    find_members registry dfns bbdfns index ^
+    ctor ^
+    members ^
     "};\n"
 
 
@@ -291,7 +336,10 @@ let gen_function registry (dfns : symbol_table_t) bbdfns index id ps ret =
 let gen_functions registry dfns bbdfns = 
   let xxdfns = ref [] in
   Hashtbl.iter
-  (fun index data -> xxdfns := index :: !xxdfns)
+  (fun index (id,parent,entry) -> 
+    (* if proper_descendant dfns parent then  *)
+    xxdfns := index :: !xxdfns
+  )
   bbdfns
   ;
   
@@ -300,12 +348,12 @@ let gen_functions registry dfns bbdfns =
   (fun index ->
     match Hashtbl.find bbdfns index with (id,parent,entry) -> 
     match entry with
-    | BBDCL_function (ps, ret,_, _,_) -> 
+    | BBDCL_function (ps, ret, _,_) -> 
       Buffer.add_string s ("//------------------------------\n");
       Buffer.add_string s ("//FUNCTION " ^ id ^ "\n");
       Buffer.add_string s 
       (gen_function registry dfns bbdfns index id ps ret)
-    | BBDCL_procedure (ps,_,_,_) -> 
+    | BBDCL_procedure (ps,_,_) -> 
       Buffer.add_string s ("//------------------------------\n");
       Buffer.add_string s ("//PROCEDURE " ^ id ^ "\n");
       Buffer.add_string s 
@@ -374,7 +422,7 @@ let subst registry (dfns:symbol_table_t) bbdfns ct args typs retyp =
       | Backquote -> failwith "`t undefined"
       | Dollar -> 
           s := !s ^ 
-          cpp_typename registry dfns bbdfns (typeoflist typs) ^
+          cpp_typename registry dfns bbdfns (lower (typeoflist typs)) ^
           "(" ^
           String.concat "," args ^
           ")";
@@ -382,12 +430,12 @@ let subst registry (dfns:symbol_table_t) bbdfns ct args typs retyp =
           
       | Hash ->
           s := !s ^ 
-          cpp_typename registry dfns bbdfns (typeoflist typs);
+          cpp_typename registry dfns bbdfns (lower (typeoflist typs));
           mode := Normal
 
       | Earhole ->
           s := !s ^ 
-          cpp_typename registry dfns bbdfns (typeoflist typs) ^ 
+          cpp_typename registry dfns bbdfns (lower (typeoflist typs)) ^ 
           "_ptr_map";
           mode := Normal
 
@@ -436,12 +484,12 @@ let subst registry (dfns:symbol_table_t) bbdfns ct args typs retyp =
             mode := Normal
           | Hash ->
             if j = 0 
-            then s := !s ^ cpp_typename registry dfns bbdfns retyp
-            else s := !s ^ cpp_typename registry dfns bbdfns (List.nth typs (j-1));
+            then s := !s ^ cpp_typename registry dfns bbdfns (lower retyp)
+            else s := !s ^ cpp_typename registry dfns bbdfns (lower (List.nth typs (j-1)));
             mode := Normal
           | Earhole ->
             if j == 0 then failwith "[subst] 0 not valid argument number";
-            s := !s ^ cpp_typename registry dfns bbdfns (List.nth typs (j-1)) ^ "_ptr_map";
+            s := !s ^ cpp_typename registry dfns bbdfns (lower (List.nth typs (j-1))) ^ "_ptr_map";
             mode := Normal
           | Normal -> failwith "Expected non-normal mode"
         end 
@@ -531,6 +579,7 @@ let get_var_frame dfns bbdfns this index =
 
 
 let rec gen_expr registry dfns bbdfns this (e,t) =
+  (* print_endline ("Gen expr " ^ string_of_bound_expression dfns (e,t)); *)
   let ge e = gen_expr registry dfns bbdfns this e in
   let ge_arg a = 
     match a with
@@ -541,19 +590,19 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
     try Hashtbl.find bbdfns this 
     with _ -> failwith ("[gen_expr] Can't find this = " ^ string_of_int this)
   in
-  let our_display = match entry with
-    | BBDCL_function (_,_,display,_,_) -> display
-    | BBDCL_procedure (_,display,_,_) -> display
-    | _ -> failwith "[gen_expr] Expected executable code to be in function or procedure"
-  in let our_level = List.length our_display in
+  let our_display = get_display_list dfns this in
+  let our_level = List.length our_display in
   match e with
-  | BEXPR_coercion _ -> failwith "gen_expr: can't generate coercion!"
+  | BEXPR_coercion (e,t) -> 
+    (* generate a function style cast *)
+    cpp_typename registry dfns bbdfns (lower t) ^ "(" ^ ge e ^ ")"
+    
   | BEXPR_get_n (n,e) -> "(" ^ ge e ^ ").mem_" ^ string_of_int n
   | BEXPR_deref ((BEXPR_ref index),BTYP_pointer t) -> 
     ge (BEXPR_name index,t)
   | BEXPR_deref e -> "*(" ^ ge e ^ ".data)"
   | BEXPR_literal v ->
-    let t = cpp_typename registry dfns bbdfns t in
+    let t = cpp_typename registry dfns bbdfns (lower t) in
     t ^ "(" ^ cstring_of_literal v ^ ")"
 
   | BEXPR_name index -> 
@@ -574,9 +623,18 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
       | BBDCL_procedure _ 
       | BBDCL_fun _
       | BBDCL_proc _ ->
-         failwith ("[gen_expr: name] Open function '" ^ id ^ "' in expression")
+         failwith 
+         (
+           "[gen_expr: name] Open function '" ^ 
+           id ^ "'<"^string_of_int index^
+           "> in expression (closure required)"
+         )
       | _ -> 
-        failwith ("[gen_expr: name] Cannot use this kind of name '"^id^"' in expression")
+        failwith 
+        (
+          "[gen_expr: name] Cannot use this kind of name '"^
+          id^"' in expression"
+        )
     end
 
   | BEXPR_closure index -> 
@@ -589,7 +647,7 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
       let the_display = 
         let d' = 
           List.map (fun i-> "ptr"^ cpp_name bbdfns i)
-          (get_display_list bbdfns index)
+          (get_display_list dfns index)
         in 
           if List.length d' > our_level
           then "this" :: List.tl d'
@@ -609,7 +667,7 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
       let the_display = 
         let d' = 
           List.map (fun i-> "ptr"^ cpp_name bbdfns i)
-          (get_display_list bbdfns index)
+          (get_display_list dfns index)
         in 
           if List.length d' > our_level
           then "this" :: List.tl d'
@@ -633,7 +691,7 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
     end
 
   | BEXPR_ref index -> 
-    let ref_type = cpp_typename registry dfns bbdfns t in
+    let ref_type = cpp_typename registry dfns bbdfns (lower t) in
     let var_ptr = "&(" ^ get_var_ref dfns bbdfns this index ^ ")" in
     let frame_ptr = get_var_frame dfns bbdfns this index in
     let reference = ref_type ^ 
@@ -671,7 +729,7 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
         "(" ^ subst registry dfns bbdfns ct [ge a] [typ] retyp ^ ")"
       end
 
-    | BBDCL_function (ps,_,_,_,_) ->
+    | BBDCL_function (ps,_,_,_) ->
       (ge f) ^ "->apply(" ^ ge_arg a ^ ")"
     
    
@@ -691,7 +749,6 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
       with _ -> failwith ("[gen_expr(apply)] Can't find index " ^ string_of_int index)
     in
     begin 
-    (* print_endline ("apply name "^ id ); *)
     match entry with
     | BBDCL_struct _ ->
       let name = cpp_typename registry dfns bbdfns (BTYP_name index) in
@@ -706,7 +763,7 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
     
   | BEXPR_tuple es ->
     (* just apply the tuple type ctor to the arguments *)
-    let ctyp = cpp_typename registry dfns bbdfns t in
+    let ctyp = cpp_typename registry dfns bbdfns (lower t) in
     ctyp ^ "(" ^
     String.concat ", " (List.map ge es) ^
     ")"
@@ -733,9 +790,9 @@ let create_label_map bbdfns counter =
   Hashtbl.iter
   (fun index (id,parent,entry) ->
     match entry with
-    | BBDCL_function (_,_,_,exes,_) -> 
+    | BBDCL_function (_,_,exes,_) -> 
       Hashtbl.add label_map index (get_labels bbdfns counter exes)
-    | BBDCL_procedure (_,_,exes,_) -> 
+    | BBDCL_procedure (_,exes,_) -> 
       Hashtbl.add label_map index (get_labels bbdfns counter exes)
     | _ -> ()
   ) 
@@ -762,14 +819,16 @@ let get_parameters dfns index =
 type kind_t = Function | Procedure
 
 let gen_exe registry dfns bbdfns label_map counter this exe =
+  (* print_endline ("generating exe " ^ string_of_bexe dfns 0 exe); *)
   let ge e = gen_expr registry dfns bbdfns this e in
   let id,parent,entry = 
     try Hashtbl.find bbdfns this 
     with _ -> failwith ("[gen_exe] Can't find this " ^ string_of_int this)
   in
-  let our_display,kind = match entry with
-    | BBDCL_function (_,_,display,_,_) -> display,Function
-    | BBDCL_procedure (_,display,_,_) -> display,Procedure
+  let our_display = get_display_list dfns this in
+  let kind = match entry with
+    | BBDCL_function (_,_,_,_) -> Function
+    | BBDCL_procedure (_,_,_) -> Procedure
     | _ -> failwith "Expected executable code to be in function or procedure"
   in let our_level = List.length our_display in
   match exe with
@@ -805,12 +864,12 @@ let gen_exe registry dfns bbdfns label_map counter this exe =
       match parent with
       | None -> failwith ("[gen_exe(goto)] Can't find label " ^ s)
       | Some i -> 
-         let id, parent, entry = 
-           try Hashtbl.find bbdfns i 
+         let id, sr, parent, entry = 
+           try Hashtbl.find dfns i 
            with _ -> failwith ("Can't find parent " ^ string_of_int i)
          in
          match entry with
-         | BBDCL_procedure _ ->
+         | SYMDEF_procedure _ ->
            let local_map = 
              try Hashtbl.find label_map i 
              with _ -> failwith ("Can't find label map for " ^ string_of_int i)
@@ -818,8 +877,8 @@ let gen_exe registry dfns bbdfns label_map counter this exe =
            begin try i, Hashtbl.find local_map s
            with Not_found -> aux parent
            end
-         | BBDCL_module  _ -> aux parent
-         | BBDCL_function _ -> failwith ("goto "^s^" can't out of function")
+         | SYMDEF_module  _ -> aux parent
+         | SYMDEF_function _ -> failwith ("goto "^s^" can't out of function")
          | _ -> failwith "Unknown parent kind"
     in 
       begin match kind with
@@ -856,7 +915,7 @@ let gen_exe registry dfns bbdfns label_map counter this exe =
       let the_display = 
         let d' = 
           List.map (fun i -> "ptr"^cpp_name bbdfns i)
-          (get_display_list bbdfns index)
+          (get_display_list dfns index)
         in 
           if List.length d' > our_level
           then "this" :: List.tl d'
@@ -965,8 +1024,7 @@ let gen_exe registry dfns bbdfns label_map counter this exe =
     ";\n"
 
 let gen_exes registry dfns bbdfns display label_map counter index exes =
-  (* print_endline ("// generating exes for index " ^ string_of_int index);
-  *)
+  (* print_endline ("// generating exes for index " ^ string_of_int index); *)
   String.concat ""
   (List.map (gen_exe registry dfns bbdfns label_map counter index) exes)
 
@@ -991,15 +1049,18 @@ let gen_exes registry dfns bbdfns display label_map counter index exes =
 *)
 let gen_function_methods registry dfns bbdfns label_map counter index = 
   let id,parent,entry = Hashtbl.find bbdfns index in
+  (* print_endline ("Generating body for " ^ id ^ "<"^string_of_int index^">"); *)
   match entry with 
-  | BBDCL_function (ps,ret,display,exes,_) ->
+  | BBDCL_function (ps,ret',exes,_) ->
     let name = cpp_name bbdfns index 
-    and display = get_display_list bbdfns index
-    and argtype = typeoflist (List.map snd ps) in
+    and display = get_display_list dfns index
+    and argtype = lower (typeoflist (List.map snd ps))
+    and ret = lower ret' in
     let argtypename = cpp_typename registry dfns bbdfns argtype 
     and rettypename = cpp_typename registry dfns bbdfns ret
     and ctor = gen_ctor bbdfns name display 
     and params = get_parameters dfns index in
+    (* print_endline "GOT TYPE NAMES"; *)
     let apply =
       rettypename^ " " ^name^
       "::apply("^
@@ -1033,10 +1094,10 @@ let gen_function_methods registry dfns bbdfns label_map counter index =
 let gen_procedure_methods registry dfns bbdfns label_map counter index = 
   let id,parent,entry = Hashtbl.find bbdfns index in (* can't fail *)
   match entry with 
-  | BBDCL_procedure (ps,display,exes,_) ->
+  | BBDCL_procedure (ps,exes,_) ->
     let name = cpp_name bbdfns index  
-    and display = get_display_list bbdfns index 
-    and argtype = typeoflist (List.map snd ps) in
+    and display = get_display_list dfns index 
+    and argtype = lower (typeoflist (List.map snd ps)) in
     let argtypename = cpp_typename registry dfns bbdfns argtype 
     and ctor = gen_ctor bbdfns name display 
     and params = get_parameters dfns index 
@@ -1100,15 +1161,16 @@ let gen_execute_methods registry dfns bbdfns counter =
   let s = Buffer.create 2000 in
   Hashtbl.iter
   (fun index (id,parent,entry) -> 
-  (* print_endline ("//generating methods for " ^ id ^ "<"^string_of_int index^">");
-  *)
+  
   match entry with
-  | BBDCL_function (ps, ret,display, _,_) -> 
+  | BBDCL_function (ps, ret, _,_) -> 
+    (* print_endline ("//generating methods for " ^ id ^ "<"^string_of_int index^">"); *)
     Buffer.add_string s ("//------------------------------\n");
     Buffer.add_string s (
       gen_function_methods registry dfns bbdfns label_map counter index
     )
-  | BBDCL_procedure (ps,display,_,_) -> 
+  | BBDCL_procedure (ps,_,_) -> 
+    (* print_endline ("//generating methods for " ^ id ^ "<"^string_of_int index^">"); *)
     Buffer.add_string s ("//------------------------------\n");
     Buffer.add_string s (
       gen_procedure_methods registry dfns bbdfns label_map counter index
@@ -1151,7 +1213,7 @@ let gen_offset_tables registry dfns bbdfns =
   let s = Buffer.create 2000 in
   Hashtbl.iter
   (fun index (id,parent,entry) -> match entry with
-  | BBDCL_function (ps, ret,_, _,name_map) -> 
+  | BBDCL_function (ps, ret,_,name_map) -> 
     let refnames = 
       List.map 
       (fun (index,t)-> 
@@ -1161,7 +1223,7 @@ let gen_offset_tables registry dfns bbdfns =
       (find_references bbdfns name_map)
     in
     let name = cpp_name bbdfns index in
-    let display = get_display_list bbdfns index in
+    let display = get_display_list dfns index in
     let offsets = 
       List.map
       (fun didx ->
@@ -1185,7 +1247,7 @@ let gen_offset_tables registry dfns bbdfns =
     Buffer.add_string s ("  sizeof("^name^"),\n  0,\n  "^string_of_int n^",\n  "^name^"_offsets\n");
     Buffer.add_string s ");\n"
 
-  | BBDCL_procedure (ps,_,_,name_map) -> 
+  | BBDCL_procedure (ps,_,name_map) -> 
     let refnames = 
       List.map 
       (fun (index,t)-> 
@@ -1195,7 +1257,7 @@ let gen_offset_tables registry dfns bbdfns =
       (find_references bbdfns name_map)
     in
     let name = cpp_name bbdfns index in
-    let display = get_display_list bbdfns index in
+    let display = get_display_list dfns index in
     let offsets = ("offsetof(" ^ name ^ ",_caller)") :: 
       List.map
       (fun didx ->
@@ -1296,7 +1358,8 @@ let gen_biface_header registry dfns bbdfns biface = match biface with
   | BIFACE_export (index, export_name) ->
     let id,parent,entry = Hashtbl.find bbdfns index in
     match entry with
-    | BBDCL_function (ps, ret, display,_,_) ->
+    | BBDCL_function (ps, ret, _,_) ->
+      let display = get_display_list dfns index in
       if List.length display <> 0
       then failwith "Can't export nested function";
 
@@ -1318,7 +1381,8 @@ let gen_biface_header registry dfns bbdfns biface = match biface with
       " as " ^ export_name ^ "\n" ^
       "extern \"C\" " ^ rettypename ^" " ^ export_name ^ "(\n" ^ arglist ^ "\n);\n"
 
-    | BBDCL_procedure (ps, display,_,_) ->
+    | BBDCL_procedure (ps, _,_) ->
+      let display = get_display_list dfns index in
       if List.length display <> 0
       then failwith "Can't export nested reader";
 
@@ -1347,7 +1411,8 @@ let gen_biface_body registry dfns bbdfns biface = match biface with
   | BIFACE_export (index, export_name) ->
     let id,parent,entry = Hashtbl.find bbdfns index in
     match entry with
-    | BBDCL_function (ps, ret, display,_,_) ->
+    | BBDCL_function (ps, ret, _,_) ->
+      let display = get_display_list dfns index in
       if List.length display <> 0
       then failwith "Can't export nested function";
 
@@ -1374,7 +1439,8 @@ let gen_biface_body registry dfns bbdfns biface = match biface with
       "->apply(" ^ String.concat ", " (List.map fst ps) ^ ");\n" ^
       "}\n"
 
-    | BBDCL_procedure (ps, display,_,_) ->
+    | BBDCL_procedure (ps,_,_) ->
+      let display = get_display_list dfns index in
       if List.length display <> 0
       then failwith "Can't export nested function";
 
@@ -1414,7 +1480,6 @@ open Flx_util
 open Flx_types
 open Flx_print
 open Flx_desugar
-open Flx_bind
 open Flx_bbind
 open Flx_name
 open Flx_tgen
@@ -1456,10 +1521,13 @@ let print_help () =
   print_endline "  -v, --verbose: print symbol table";
   print_endline "  -q, --quiet: no stdout";
   print_endline "  -Idir, --include=dir : append dir to include path";
+  print_endline "  -e: return 0 if error, 1 if no error";
   exit(0)
 ;;
 
-let version_string = "1.0.0"
+let version_string = "1.0.1"
+;;
+let return_parity = ref true
 ;;
 
 try
@@ -1485,6 +1553,9 @@ try
 
     else if key = "version" 
     then (print_endline ("Felix Version " ^ version_string))
+
+    else if key = "e"
+    then return_parity := false
   )
   options
   ;
@@ -1497,6 +1568,7 @@ try
   ;
 
   let filebase = Sys.argv.(argc-1) in
+  if filebase.[0] = '-' then failwith "No filename";
   let input_file_name = filebase ^ ".flx" in
   let header_file_name = filebase ^ ".hpp" in
   let body_file_name = filebase ^ ".cpp" in
@@ -1531,9 +1603,8 @@ try
   let deblocked = desugar_program module_name counter parse_tree in
   if !print_flag then print_endline "//BUILDING TABLES";
   let dfns = Hashtbl.create 97 in
-  let display = [] in
   let table, exes, ifaces = 
-    build_tables !print_flag dfns counter "<top level>" 0 None display TYP_none deblocked 
+    build_tables !print_flag dfns counter "<top level>" 0 None deblocked 
   in
     if !print_flag then
     Hashtbl.iter 
@@ -1562,14 +1633,17 @@ try
     if !print_flag 
     then print_endline ("//Top level module ''"^module_name^" has index " ^ string_of_int top_level_index);
     if !print_flag then print_endline "//BINDING ENTRIES";
+    (*
     let bdfns = Hashtbl.create 97 in
     Hashtbl.iter
     (fun index _ -> bind_entry counter bdfns dfns index)
     dfns
     ;
+    *)
+    let freg = Hashtbl.create 97 in
     if !print_flag then print_endline "//BINDING EXECUTABLE CODE";
-    let bbdfns = bbind counter dfns bdfns in
-    let bifaces = bind_ifaces dfns bdfns ifaces in
+    let bbdfns = bbind dfns counter freg in
+    let bifaces = bind_ifaces dfns counter freg ifaces in
 
     if !print_flag then print_endline "//GENERATING C++: user headers";
     plh "//COLLECTOR";
@@ -1699,7 +1773,13 @@ try
     "    process_frame(process_frame_a),";
     "    global_frame(global_frame_a),";
     "    gc(gc_a)";
-    "  {}";
+    "  {}"
+    ];
+    (*
+    print_endline "Finding top level variables";
+    *)
+    List.iter plh
+    [
     (find_members registry dfns bbdfns top_level_index);
     "};"
     ];
@@ -1792,17 +1872,17 @@ try
 
     close_out hf;
     close_out bf;
-    exit 0
+    exit (if !return_parity then 0 else 1)
 
 with 
   | Failure s -> 
     flush stdout; print_endline "FAILURE";
     print_endline s;
-    exit 1
+    exit (if !return_parity then 1 else 0)
 
   | x -> 
     flush stdout; print_endline "EXCEPTION"; 
     print_endline (Printexc.to_string x);
-    exit 1
+    exit (if !return_parity then 1 else 0)
 ;;
 

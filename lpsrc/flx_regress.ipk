@@ -13,7 +13,7 @@ several things tested.
 Bad tests check the compiler issues
 a diagnostic. Usually, they have just one
 error.
-@item('ct')
+@item('bt')
 Nasty tests should crash. These are typically
 things I'd like to catch with an improved
 version of the compiler or run time.
@@ -22,6 +22,9 @@ Performance tests measure speed. The result
 is an overall time in seconds, which should
 get smaller with each compiler improvement.
 @end_list()
+
+@select(tangler('test/bt01.flx'))
+basic parser error
 
 @select(tangler('test/rt01.flx'))
 #include <std.flx>

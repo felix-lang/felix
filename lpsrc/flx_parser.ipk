@@ -65,7 +65,7 @@ let apl2 (sri:srcref) (fn : string) (tup:expr_t list) =
   (
     sr, 
     (
-      AST_name (lift sri,([fn],TYP_none)), 
+      AST_name (slift sri,([fn],TYP_none)), 
       AST_tuple (sr,tup)
     )
   )
@@ -77,7 +77,7 @@ let apl (sri:srcref) (fn : string) (arg:expr_t):expr_t =
   (
     sr, 
     (
-      AST_name (lift sri, ([fn],TYP_none)),
+      AST_name (slift sri, ([fn],TYP_none)),
       arg
     )
   )
@@ -87,7 +87,7 @@ let assign (op:string) (sr:range_srcref) (sri:srcref) l r =
   AST_call 
   (
     sr,
-    AST_name (lift sri, ([op], TYP_none)),
+    AST_name (slift sri, ([op], TYP_none)),
     AST_tuple 
     (
       sr, 
@@ -100,7 +100,7 @@ let call1 (op:string) (sr:range_srcref) (sri:srcref) l =
   AST_call 
   (
     sr,
-    AST_name (lift sri, ([op], TYP_none)),
+    AST_name (slift sri, ([op], TYP_none)),
     AST_ref (src_of_expr l,l)
   )
 
@@ -126,7 +126,7 @@ let mkcurry sr name args return_type body =
     | h :: [] -> (* bottom level *)
       (match return_type with
       | TYP_void -> 
-        AST_procedure (sr, TYP_void, name n, h, body) 
+        AST_procedure (sr, name n, h, body) 
         (* Note that this 'TYP_void' is supposed to be
            the type of the message: unused at present!
         *)
@@ -406,7 +406,7 @@ fun_args:
 function_definition:
   | FUNCTION NAME fun_args COLON type_expr compound 
     { 
-      let sr = rsrange (lift $1) (fst $6)
+      let sr = rsrange (slift $1) (fst $6)
       and name = snd $2 
       and return_type = $5
       and body = snd $6
@@ -450,15 +450,20 @@ function_definition:
 procedure_definition:
   | PROCEDURE NAME compound 
     { 
-      AST_procedure (rsrange (lift $1) (fst $3), TYP_void, snd $2, [], snd $3) 
+      AST_procedure (rsrange (slift $1) (fst $3), snd $2, [], snd $3) 
     }
   | PROCEDURE NAME COLON type_expr SEMI
     {
-      AST_procedure_decl (rstoken $1 $5,TYP_void,snd $2, $4);
+      AST_procedure_decl 
+      (
+        rstoken $1 $5,
+        snd $2, 
+        $4
+      );
     }
   | PROCEDURE NAME fun_args compound 
     { 
-      let sr = rsrange (lift $1) (fst $4)
+      let sr = rsrange (slift $1) (fst $4)
       and name = snd $2 
       and return_type = TYP_void
       and body = snd $4
@@ -529,7 +534,7 @@ module_definition:
     { 
       AST_module 
       (
-        rsrange (lift $1) (fst $3), 
+        rsrange (slift $1) (fst $3), 
         snd $2, 
         snd $3
       ) 
@@ -537,28 +542,22 @@ module_definition:
 
   | FUNCTOR NAME fun_args compound
     {
-      let sr = rsrange (lift $1) (fst $4)
+      let sr = rsrange (slift $1) (fst $4)
       and name = snd $2 
       and return_type = TYP_none
       and body = snd $4
       and args = List.map snd $3 (* elide srcref *)
-      in match args with
-      | [x] ->
-        AST_functor (sr, name, x, return_type, body)
-      | _ -> failwith "Can't handle functor of more than one arg"
+      in AST_functor (sr, name, List.hd args, return_type, body)
     }
 
   | FUNCTOR NAME fun_args COLON type_expr EQUAL compound
     {
-      let sr = rsrange (lift $1) (fst $7)
+      let sr = rsrange (slift $1) (fst $7)
       and name = snd $2 
       and return_type = $5
       and body = snd $7
       and args = List.map snd $3 (* elide srcref *)
-      in match args with
-      | [x] ->
-        AST_functor (sr, name, x, return_type, body)
-      | _ -> failwith "Can't handle functor of more than one arg"
+      in AST_functor (sr, name, List.hd args, return_type, body)
     }
 
   | MODULE NAME EQUAL expr SEMI
@@ -576,7 +575,7 @@ interface_decl:
     {
       AST_interface
       (
-        rsrange (lift $1) (fst $3),
+        rsrange (slift $1) (fst $3),
         snd $2,
         snd $3
       )
@@ -586,7 +585,7 @@ interface_decl:
     {
       AST_interface
       (
-        rsrange (lift $1) (fst $4),
+        rsrange (slift $1) (fst $4),
         snd $2,
         snd $4
       )
@@ -677,10 +676,10 @@ call:
   | application SEMI {
     match $1 with 
     | AST_apply (s,(proc, arg)) -> 
-      AST_call (rsrange s (lift $2), proc, arg)
+      AST_call (rsrange s (slift $2), proc, arg)
 
     | AST_name (s,name) as proc ->
-      AST_call (rsrange s (lift $2), proc, AST_tuple (lift $2, []))
+      AST_call (rsrange s (slift $2), proc, AST_tuple (slift $2, []))
 
     | AST_lambda(sr,([],TYP_void,stmts)) ->
       AST_block (sr,stmts)
@@ -695,7 +694,7 @@ call:
   | CALL application SEMI {
     match $2 with 
     | AST_apply (s,(proc, arg)) -> 
-      AST_call (rsrange s (lift $3), proc, arg)
+      AST_call (rsrange s (slift $3), proc, arg)
     | _ -> failwith "Procedure call requires application"
   }
 
@@ -724,19 +723,19 @@ assignment:
   | expr assignop expr SEMI 
     { 
       let src,sname = $2 in
-      let sr = rsrange (src_of_expr $1) (lift $4) in
+      let sr = rsrange (src_of_expr $1) (slift $4) in
       assign sname sr src $1 $3 
     }
   | expr incrop SEMI 
     {
       let src,sname = $2 in
-      let sr = rsrange (src_of_expr $1) (lift $3) in
+      let sr = rsrange (src_of_expr $1) (slift $3) in
       call1 ("post_" ^ sname) sr src $1
     }
   | incrop expr SEMI
     {
       let src,sname = $1 in
-      let sr = rsrange (lift src) (lift $3) in
+      let sr = rsrange (slift src) (slift $3) in
       call1 ("pre_" ^ sname) sr src $2
     }
 
@@ -764,13 +763,13 @@ of the programmers intentions.
 while_stmt:   
   | WHILE LPAR expr RPAR statement      
     { 
-      AST_while (rsrange (lift $1) (src_of_statement $5), $3,$5) 
+      AST_while (rsrange (slift $1) (src_of_statement $5), $3,$5) 
     }
   | LOOP statement                      
     { 
-      let dummy = lift $1 in
+      let dummy = slift $1 in
       AST_while (
-        rsrange (lift $1) (src_of_statement $2),
+        rsrange (slift $1) (src_of_statement $2),
         AST_literal (dummy,(AST_bool true)), 
         $2
       ) 
@@ -784,19 +783,19 @@ The condition is tested before executing the loop body.
 elif_clause:
   | ELIF LPAR expr RPAR statement 
     { 
-      rsrange (lift $1) (src_of_statement $5), ($3, $5) 
+      rsrange (slift $1) (src_of_statement $5), ($3, $5) 
     }
 
 else_clause:
   | ELSE statement 
     { 
-      rsrange (lift $1) (src_of_statement $2), $2 
+      rsrange (slift $1) (src_of_statement $2), $2 
     }
 
 if_clause:
   | IF LPAR expr RPAR statement 
     { 
-      rsrange (lift $1) (src_of_statement $5),($3, $5) 
+      rsrange (slift $1) (src_of_statement $5),($3, $5) 
     } 
 
 elif_clauses:
@@ -890,7 +889,7 @@ attempt_stmt:
 attempt_clause: 
   ATTEMPT statement 
   { 
-    rsrange (lift $1) (src_of_statement $2), 
+    rsrange (slift $1) (src_of_statement $2), 
     $2 
   }
 except_clause:  
@@ -902,7 +901,7 @@ except_clause:
 finally_clause: 
   FINALLY compound 
   { 
-    rsrange (lift $1) (fst $2), 
+    rsrange (slift $1) (fst $2), 
     snd $2 
   }
 
@@ -911,7 +910,7 @@ exception_clause:
     { 
       AST_except_handler 
       (
-        rsrange (lift (fst $1)) (fst $5), 
+        rsrange (slift (fst $1)) (fst $5), 
         snd $1, 
         $3, 
         snd $5
@@ -921,7 +920,7 @@ exception_clause:
     { 
       AST_except_handler 
       (
-        rsrange (lift (fst $1)) (fst $2),
+        rsrange (slift (fst $1)) (fst $2),
         snd $1, 
         [], 
         snd $2
@@ -970,7 +969,7 @@ a value and selects the first matching case from the matching body.
 @select(h)
 /* patterns */
 integral:
-  | INTEGER { let sr,t,v = $1 in lift sr, t, v }
+  | INTEGER { let sr,t,v = $1 in slift sr, t, v }
   | MINUS INTEGER 
     { 
       let sr,t,v = $2 in 
@@ -981,25 +980,25 @@ floating:
   | FLOAT 
     { 
       let sr,t,v = $1 in
-      lift sr, Float_plus (t,v) 
+      slift sr, Float_plus (t,v) 
     }
   | MINUS FLOAT 
     {
       let sr,t,v = $2 in
       rstoken $1 sr, Float_minus (t,v) 
     }
-  | INF { lift $1, Float_inf }
-  | MINUS INF { lift $1, Float_minus_inf }
+  | INF { slift $1, Float_inf }
+  | MINUS INF { slift $1, Float_minus_inf }
 
 atomic_pattern:
   /* constants */
-  | STRING { PAT_string (lift (fst $1), snd $1) }
+  | STRING { PAT_string (slift (fst $1), snd $1) }
   | integral 
     { 
       let sr,t,v = $1 in
       PAT_int (sr,t,v) 
     }
-  | NAN { PAT_nan (lift $1) }
+  | NAN { PAT_nan (slift $1) }
   
   /* ranges */
   | STRING DOTDOT STRING 
@@ -1027,8 +1026,8 @@ atomic_pattern:
     }
 
   /* other */
-  | NAME { PAT_name (lift (fst $1), snd $1) }
-  | ANY { PAT_any (lift $1) }
+  | NAME { PAT_name (slift (fst $1), snd $1) }
+  | ANY { PAT_any (slift $1) }
   | LPAR pattern RPAR { $2 }
   | REGEXP STRING LPAR simple_name_comma_list RPAR 
     { 
@@ -1058,7 +1057,7 @@ vbar_pattern:
     { 
       PAT_nonconst_ctor 
       (
-        rsrange (lift $1) (src_of_pattern $3), 
+        rsrange (slift $1) (src_of_pattern $3), 
         snd $2, 
         $3
       ) 
@@ -1067,7 +1066,7 @@ vbar_pattern:
     { 
       PAT_const_ctor 
       (
-        rsrange (lift $1) (fst $2), 
+        rsrange (slift $1) (fst $2), 
         snd $2 
       )
     }
@@ -1081,7 +1080,7 @@ as_pattern:
     { 
       PAT_as 
       (
-        rsrange (src_of_pattern $1) (lift (fst $3)), 
+        rsrange (src_of_pattern $1) (slift (fst $3)), 
         $1, 
         snd $3
       ) 
@@ -1153,10 +1152,10 @@ not the whole function type.
 
 @select(h)
 simple_name:
-  | NAME { lift (fst $1), snd $1 }
+  | NAME { slift (fst $1), snd $1 }
   | VBAR NAME 
     { 
-      rsrange (lift $1) (lift (fst $2)), 
+      rsrange (slift $1) (slift (fst $2)), 
       snd $2 
     }
 
@@ -1171,7 +1170,7 @@ relative_name:
 qualified_name:
   | ROOT COLONCOLON relative_name
     { 
-      rsrange (lift $1) (fst $3),
+      rsrange (slift $1) (fst $3),
       [""] @ snd $3
     }
   | relative_name { $1 }
@@ -1202,7 +1201,7 @@ lambda:
     {
       AST_lambda 
       (
-        rsrange (lift $1) (fst $7),
+        rsrange (slift $1) (fst $7),
         ($3, $6, snd $7)
       )
     }
@@ -1218,7 +1217,7 @@ lambda:
     {
       AST_lambda 
       (
-        rsrange (lift $1) (fst $5),
+        rsrange (slift $1) (fst $5),
         ($3, TYP_void, snd $5)
       )
     }
@@ -1227,7 +1226,7 @@ lambda:
     {
       AST_lambda 
       (
-        rsrange (lift $1) (fst $2),
+        rsrange (slift $1) (fst $2),
         ([], TYP_void, snd $2)
       )
     }
@@ -1300,11 +1299,11 @@ comparison:
         match lst with
         | [] -> [] 
         | ((op,opsrc),ex) :: t ->
-           AST_val_decl(lift opsrc,"_t"^si (n+1), None, Some ex)
+           AST_val_decl(slift opsrc,"_t"^si (n+1), None, Some ex)
            ::
            AST_val_decl
            (
-             lift opsrc,
+             slift opsrc,
              "_r"^si (n+1),
              None,
              Some 
@@ -1381,7 +1380,7 @@ refr:
     { 
       AST_ref 
       (
-        rsrange (lift $1) (src_of_expr $2), 
+        rsrange (slift $1) (src_of_expr $2), 
         $2
       ) 
     }
@@ -1389,7 +1388,7 @@ refr:
     { 
       AST_deref 
       (
-        rsrange (lift $1) (src_of_expr $2), 
+        rsrange (slift $1) (src_of_expr $2), 
         $2
       ) 
     }
@@ -1408,7 +1407,7 @@ coercion:
     { 
       AST_coercion 
       (
-        rsrange (src_of_expr $1) (lift $2),
+        rsrange (src_of_expr $1) (slift $2),
         (
           $1,$3
         )
@@ -1421,10 +1420,10 @@ factor:
   | factor LSQB expr TO expr RSQB    { apl2 $2 "substring" [$1; $3; $5] }
   | factor LSQB expr TO RSQB         { apl2 $2 "copyfrom" [$1; $3] }
   | factor LSQB TO expr RSQB         { apl2 $2 "copyto" [$1; $4] } 
-  | factor DOT NAME                     { AST_dot (lift $2, ($1, snd $3)) }
+  | factor DOT NAME                     { AST_dot (slift $2, ($1, snd $3)) }
   | factor RIGHTARROW NAME              
     { 
-      AST_dot (lift $2, (AST_deref (lift $2,$1), snd $3)) 
+      AST_dot (slift $2, (AST_deref (slift $2,$1), snd $3)) 
     }
   | factor DOT LPAR INTEGER RPAR
     { 
@@ -1438,10 +1437,10 @@ factor:
               "[parser] Tuple index " ^
               Big_int.string_of_big_int v ^
               " too big in " ^ 
-              short_string_of_src (lift sr)
+              short_string_of_src (slift sr)
              )
         in
-          let sr = rsrange (src_of_expr $1) (lift $5) in
+          let sr = rsrange (src_of_expr $1) (slift $5) in
           AST_get_n (sr, (n,$1)) 
     }
   | atom { $1 }
@@ -1466,17 +1465,17 @@ atom:
 literal:
   | INTEGER 
     { let sr,t,v = $1 in
-      AST_literal (lift sr, AST_int (t,v)) 
+      AST_literal (slift sr, AST_int (t,v)) 
     }
   | FLOAT   
     { 
       let sr,t,v = $1 in
-      AST_literal (lift sr, AST_float (t,v)) 
+      AST_literal (slift sr, AST_float (t,v)) 
     }
   | STRING  
     { 
       let sr,s = $1 in
-      AST_literal (lift sr, AST_string s) 
+      AST_literal (slift sr, AST_string s) 
     }
 
 

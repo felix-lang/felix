@@ -20,6 +20,13 @@ val typeofindex :
   int ->
   btypecode_t
 
+val unify:
+  symbol_table_t ->
+  bound_symbol_table_t ->
+  btypecode_t ->
+  btypecode_t ->
+  btypecode_t
+
 @h = tangler("src/flx_ebind.ml")
 @select(h)
 open Flx_util
@@ -33,26 +40,6 @@ open Flx_lookup
 open List
 open Flx_srcref
 open Flx_env
-
-let base_typename_of_literal v = match v with
-  | AST_int (t,_) -> t
-  | AST_float (t,_) -> t
-  | AST_string _ -> "string"
-  | AST_bool _ -> "bool"
-
-let qualified_typename_of_literal v =
-  [""; base_typename_of_literal v]
-
-let typeof_literal dfns env sr v : btypecode_t = 
-  let t = qualified_typename_of_literal v in
-  match lookup_qn_in_env dfns env sr t with
-  | NonFunctionEntry (Simple index) -> BTYP_name index
-  | _ -> failwith (
-      "[type_of_literal] Expected " ^ 
-      string_of_qualified_name t ^ 
-      " to be simple non function " ^
-      short_string_of_src sr
-    )
 
 let rec cal_apply dfns tbe1 tbe2 : tbexpr_t =
   match tbe1,tbe2 with (_,t1),(_,t2) ->
@@ -93,88 +80,6 @@ let rec cal_apply dfns tbe1 tbe2 : tbexpr_t =
   );
   *)
   BEXPR_apply (tbe1, tbe2),rest
-
-and typeofindex dfns bdfns exclude sr index = 
-  let id,parent,entry = Hashtbl.find bdfns index in
-  if List.mem index exclude
-  then failwith ("Recursive type dependency for " ^ id)
-  else match entry with
-  | BDCL_type_parameter ->
-    failwith ("Abstract type '"^id^"' has no type!")
-
-  | BDCL_binding (src,dst) ->
-    print_endline "EXAMINIG TYPE OF A BINDING";
-    typeofindex dfns bdfns exclude sr src
-
-  | BDCL_function (ps, rt,_,_,_) -> 
-    let pts = List.map snd ps in
-    BTYP_function (typeoflist pts, rt)
-
-  | BDCL_functor (ps,rt,_,_) ->
-    let pts = List.map snd ps in
-    BTYP_function (typeoflist pts, rt)
-
-  | BDCL_procedure(ps,_,_,_) -> 
-    let pts = List.map snd ps in
-    BTYP_function (typeoflist pts, BTYP_void)
-
-  | BDCL_if_proc (_,t,_) -> t
-  | BDCL_if_fun (t,_) ->
-    print_endline 
-    (
-      "Type of interface function is " ^
-      string_of_btypecode dfns t
-    )
-    ;
-    t
-
-  | BDCL_val t 
-  | BDCL_var t -> t
-
-  | BDCL_val_typeof e -> 
-    (* print_endline ("Binding type for val_typeof " ^ string_of_expression e);
-    *)
-    let env = build_env dfns parent in 
-    snd (bind_expression dfns bdfns env (index::exclude) e)
-  | BDCL_var_typeof e -> 
-    let env = build_env dfns parent in 
-    snd (bind_expression dfns bdfns env (index::exclude) e)
-
-  | BDCL_lazy (d,e) -> 
-    let env = build_env dfns parent in 
-    let rt = snd (bind_expression dfns bdfns env (index::exclude) e) in
-    BTYP_function (BTYP_tuple [],rt)
-
-
-  | BDCL_match_check _ -> 
-    let env = build_env dfns parent in 
-    BTYP_function (BTYP_tuple [], typeof_literal dfns env sr (AST_bool true))
-  | BDCL_match_handler _ ->
-    BTYP_function (BTYP_tuple [],BTYP_void)
-
-  | BDCL_const (t,_) -> t
-  | BDCL_fun (pts,rt,_) -> BTYP_function (typeoflist pts,rt)
-  | BDCL_proc (pts,_) -> BTYP_function (typeoflist pts, BTYP_void)
-  | BDCL_union _ -> BTYP_name index
-
-
-  (* NOTE: PROBLEMATIC: A structure has TWO types:
-    either the type of the structure, or the type
-    of its constructor
-  *)
-  | BDCL_struct _ -> BTYP_name index
-  | BDCL_interface _ -> BTYP_name index
-  | BDCL_module _ -> BTYP_name index
-  | BDCL_abs _ -> 
-    failwith 
-    (
-      "[typeofindex] Expected expression term, got abstract type " ^ id
-    )
-  | BDCL_header _ -> 
-    failwith 
-    (
-      "[typeofindex] Expected expression term, got header"
-    )
 
 and unify dfns bdfns it mt = 
   let u it mt = unify dfns bdfns it mt in
@@ -218,7 +123,7 @@ and koenig_lookup dfns bdfns sra exclude id' name_map fn t2 =
   match entries with
   | FunctionEntry fs ->
     (* print_endline ("Got candidates: "); List.iter (fun x -> print_endline ("  " ^ string_of_int x)) fs ; *)
-    begin match resolve_overload dfns bdfns fs fn t2 with
+    begin match resolve_overload dfns fs fn t2 with
     | Some (Simple index'') ->
       (* print_endline "Overload resolution OK"; *)
       BEXPR_closure index'',
@@ -301,10 +206,31 @@ and bind_expression dfns bdfns env exclude e : tbexpr_t =
     | TYP_none ->
       begin match lu sr qn with
       | NonFunctionEntry (Simple index) -> 
-        BEXPR_name index,
-        typeofindex dfns bdfns exclude sr index
-      | NonFunctionEntry _ ->
-        failwith "[ebind:bind_expression] expected simple nonfunction"
+        let t = typeofindex dfns bdfns exclude sr index in
+        (*
+        print_endline 
+        (
+          "Name " ^ string_of_qualified_name qn ^ 
+          " has simple type " ^
+          string_of_btypecode dfns t 
+        );
+        *)
+        BEXPR_name index, t
+
+      | NonFunctionEntry Bound(i,m) ->
+        let it = typeofindex dfns bdfns exclude sr i in
+        let mt = typeofindex dfns bdfns exclude sr m in
+        let t = unify dfns bdfns it mt in
+        (*
+        print_endline 
+        (
+          "Name " ^ string_of_qualified_name qn ^ 
+          " has bound type " ^
+          string_of_btypecode dfns t 
+        );
+        *)
+        BEXPR_name m, t
+
 
       | FunctionEntry _ -> 
         (* This case should have been handled by bind_expression,
@@ -326,7 +252,7 @@ and bind_expression dfns bdfns env exclude e : tbexpr_t =
         let name = string_of_qualified_name qn in
         let suf' = bt suf in
         let index = 
-          match resolve_overload dfns bdfns fs name suf' with
+          match resolve_overload dfns fs name suf' with
           | Some (Simple i) -> i
           | Some (Bound _) -> failwith "[bind_expression:name] Can't handle bound result, yett"
           | None -> 
@@ -475,7 +401,7 @@ and bind_expression dfns bdfns env exclude e : tbexpr_t =
 
         | FunctionEntry fs -> 
           (* print_endline ("Simple overload: function "^name^" found"); *)
-          match resolve_overload dfns bdfns fs name t2 with
+          match resolve_overload dfns fs name t2 with
           | Some (Bound (i,j) ) -> 
             print_endline "[bind_expression:apply] handle opaque function";
             let it =

@@ -91,8 +91,8 @@ INTERFACES = [
   'flx_util'         ,
   'flx_types'        ,
   'flx_mtypes'       ,
-  'flx_typing'       ,
   'flx_exceptions'   ,
+  'flx_typing'       ,
   'flx_string'       ,
   'flx_id'           ,
   'flx_print'        ,
@@ -109,9 +109,6 @@ INTERFACES = [
   'flx_symtab'       , 
   'flx_env'          , 
   'flx_lookup'       , 
-  'flx_overload'     , 
-  'flx_ebind'        , 
-  'flx_bind'         , 
   'flx_mbind'        , 
   'flx_bbind'        , 
   'flx_name'         , 
@@ -141,9 +138,6 @@ IMPLEMENTATIONS = [
   'flx_symtab'       , 
   'flx_env'          , 
   'flx_lookup'       , 
-  'flx_overload'     , 
-  'flx_ebind'        , 
-  'flx_bind'         , 
   'flx_mbind'        , 
   'flx_bbind'        , 
   'flx_name'         , 
@@ -252,9 +246,11 @@ try:
 
   if do_tests:
     REGRESSION_TESTS = glob.glob('test/rt*.flx')
+    BAD_TESTS = glob.glob('test/bt*.flx')
     TUTORIAL_TESTS = glob.glob('tut/examples/tut*.flx')
     TESTS = TESTS + REGRESSION_TESTS + TUTORIAL_TESTS
     TESTS.sort()
+    BAD_TESTS.sort()
 
   # STEP 1: Compile all C files
   for cobject in COBJECTS.keys():
@@ -337,6 +333,31 @@ try:
             results.append("flxg " + (basename+ ' ' * w)[:w]+ ' OK')
           except MakeError:
             print 'TESTFILE -- ERROR!',basename
+            erasefile(basename+'.cpp')
+            erasefile(basename+'.hpp')
+            erasefile(basename+'.so')
+            if stop_on_error: raise MakeError
+            results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
+
+      # FAILURE TESTS 
+      for testfile in BAD_TESTS:
+        #print 'Running Felix code generator on ',testfile
+        basename = string.split(testfile,'.')[0]
+        cppfilename = basename + ".cpp"
+        if buildall or \
+          filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
+          filetime('bin/flxg')> filetime(basename+'.cpp') or \
+          filetime('lib/std.flx') > filetime(basename+'.cpp') or \
+          filetime('lib/regex.flx') > filetime(basename+'.cpp'):
+          try:
+            xqt('bin/flxg -e -Ilib ' + basename)
+            #print 'TESTFILE -- failed as expected',basename
+            results.append("flxg " + (basename+ ' ' * w)[:w]+ ' OK')
+            erasefile(basename+'.cpp')
+            erasefile(basename+'.hpp')
+            erasefile(basename+'.so')
+          except MakeError:
+            print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
             erasefile(basename+'.cpp')
             erasefile(basename+'.hpp')
             erasefile(basename+'.so')

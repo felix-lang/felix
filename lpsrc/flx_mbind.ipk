@@ -29,10 +29,7 @@ open Flx_types
 open Flx_print
 open Flx_mtypes
 open Flx_typing
-open Flx_bind
-open Flx_overload
 open Flx_lookup
-open Flx_ebind
 open Flx_srcref
 
 (* the extractor is a function to be applied to
@@ -71,6 +68,7 @@ let rec subst vars e mv =
       gen_extractor extractor mv
     else e
     
+  | AST_index _ -> e
   | AST_name _ -> e
   | AST_ref (sr,e') -> AST_ref (sr,subst e')
   | AST_literal _ -> e
@@ -88,6 +86,7 @@ let rec subst vars e mv =
  
   | AST_lazy _ -> assert false 
   | AST_lambda _ -> assert false
+  | AST_bound_module _ -> assert false
 
   | AST_match_ctor _ ->
     failwith "AST_match_ctor in 'when' expression not implemented"

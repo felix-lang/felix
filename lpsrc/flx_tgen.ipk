@@ -32,12 +32,13 @@ val gen_type_names :
   fully_bound_symbol_table_t ->
   (int * btypecode_t) list -> string
 
+
 @h = tangler('src/flx_tgen.ml')
 @select(h)
 open Flx_types
-open Flx_bind
 open Flx_print
 open Flx_typing
+open Flx_srcref
 
 @head(2,'The type registry')
 Flx supports algebraic type expressions. For some of these,
@@ -68,15 +69,6 @@ will be caught here, since the only thing you can
 do with a tuple is make it the argument of a function.
 
 @select(h)
-let rec lower t = match t with
-  | BTYP_binding (i,t) -> t
-  | BTYP_pointer t -> BTYP_pointer (lower t)
-  | BTYP_tuple ts -> BTYP_tuple (List.map lower ts)
-  | BTYP_none -> BTYP_none
-  | BTYP_void -> BTYP_void
-  | BTYP_function (a,b) -> BTYP_function (lower a, lower b)
-  | BTYP_name i -> BTYP_name i
-
 let register_type_nr registry counter dfns t =
   if t <> BTYP_tuple [] then
   if not (Hashtbl.mem registry t)
@@ -86,6 +78,9 @@ let register_type_nr registry counter dfns t =
     Hashtbl.add registry t n
 
 let rec register_type_r registry counter dfns bbdfns exclude t =
+  (*
+  print_endline (string_of_btypecode dfns t);
+  *)
   let t = lower t in
   if not (List.mem t exclude) then
   let rr t' = register_type_r 
@@ -103,7 +98,15 @@ let rec register_type_r registry counter dfns bbdfns exclude t =
   | BTYP_name index ->
     let id, parent, entry = 
       try Hashtbl.find bbdfns index 
-      with Not_found -> failwith ("register_type_r Can't find index " ^ string_of_int index ^ " in fully bound symbol table")
+      with Not_found -> 
+        let id,sr,parent,entry= Hashtbl.find dfns index in
+        failwith 
+        (
+          "register_type_r Can't find " ^ 
+          id ^ "[" ^ string_of_int index ^ "]" ^
+          " in fully bound symbol table: " ^
+          short_string_of_src sr
+        )
     in
     match entry with
     | BBDCL_union cs -> 
@@ -118,9 +121,6 @@ let rec register_type_r registry counter dfns bbdfns exclude t =
       rnr (BTYP_function (argt,t))         (* constructor *)
 
     | BBDCL_abs ct -> rnr t 
-    | BBDCL_interface _ -> ()
-    | BBDCL_module _  -> ()
-    | BBDCL_type_parameter ->  ()
       (*
       failwith 
       (
@@ -172,12 +172,6 @@ let rec cpp_typename registry dfns bbdfns t =
       | BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
       | BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
       | BBDCL_abs ct -> "_abs_" ^ string_of_int index ^ "_" ^ mangle_cpp_typename ct
-      | BBDCL_type_parameter -> 
-        failwith 
-        (
-          "[cpp_typename] expected type declaration, got type parameter " ^
-          string_of_bbdcl dfns entry index
-        )
       | _ -> 
         failwith 
         (
@@ -197,6 +191,7 @@ let rec cpp_typename registry dfns bbdfns t =
 let rec cpp_classname registry dfns bbdfns t = 
   let tn t = cpp_typename registry dfns bbdfns t in
   try match t with
+  | BTYP_binding _ -> failwith "[cpp_classname] Unexpected binding type"
   | BTYP_tuple [] -> "unit"
   | BTYP_void -> failwith "void doesn't have a classname"
   | BTYP_function (_,BTYP_void) -> 
@@ -215,12 +210,6 @@ let rec cpp_classname registry dfns bbdfns t =
       | BBDCL_union _ -> "_union_" ^ string_of_int index ^ "_" ^ id
       | BBDCL_struct _ ->"_struct_" ^ string_of_int index ^ "_" ^id
       | BBDCL_abs ct -> "_abs_" ^ string_of_int index ^ "_" ^ mangle_cpp_typename ct
-      | BBDCL_type_parameter ->
-        failwith 
-        (
-          "[cpp_classname] expected type declaration, got type parameter " ^
-          string_of_bbdcl dfns entry index
-        )
       | _ -> 
         failwith 
         (
@@ -249,44 +238,53 @@ still get registered. The reason is that they can't
 be used unless the type is an argument of some 
 function or procedure, which we should pick up here.
 @select(h)
+
 let collect_types registry counter dfns bbdfns = 
   let rr t = register_type_r registry counter dfns bbdfns [] t in
   let rnr t = register_type_nr registry counter dfns t in
   Hashtbl.iter
-  begin fun index (id,parent,bbdcl) -> match bbdcl with
-    | BBDCL_function (ps,ret,_,_,_) ->
-      let a = typeoflist (List.map snd ps) in
-      rr (BTYP_function (a,ret))
+  begin fun index (id,parent,bbdcl) -> 
+    (* if proper_descendant dfns parent
+    then 
+    *)
+    begin
+      (*
+      print_endline (
+        "Collecting BBDCL " ^ id ^ "<" ^ string_of_int index ^ 
+        ">, parent="^
+        match parent with 
+        | Some i ->string_of_int i
+        | None -> "None"
+      );
+      print_endline ("=======>  " ^ string_of_bbdcl dfns bbdcl index);
+      *)
+      match bbdcl with
+      | BBDCL_abs _ -> rnr (BTYP_name index)
+      | BBDCL_function (ps,ret,_,_) ->
+        let a = typeoflist (List.map snd ps) in
+        rr (BTYP_function (a,ret))
 
-    | BBDCL_fun (ps,ret,_) ->
-      let a = typeoflist ps in
-      rr (BTYP_function (a,ret))
+      | BBDCL_fun (ps,ret,_) ->
+        let a = typeoflist ps in
+        rr (BTYP_function (a,ret))
 
-    | BBDCL_procedure (ps,_,_,_) ->
-      let a = typeoflist (List.map snd ps) in
-      rr (BTYP_function (a,BTYP_void))
+      | BBDCL_procedure (ps,_,_) ->
+        let a = typeoflist (List.map snd ps) in
+        rr (BTYP_function (a,BTYP_void))
 
-    | BBDCL_proc (ps,_) ->
-      let a = typeoflist ps in
-      rr (BTYP_function (a,BTYP_void))
+      | BBDCL_proc (ps,_) ->
+        let a = typeoflist ps in
+        rr (BTYP_function (a,BTYP_void))
 
-    | BBDCL_val t
-    | BBDCL_var t
-    | BBDCL_const (t,_) -> rr t
+      | BBDCL_val t
+      | BBDCL_var t
+      | BBDCL_const (t,_) -> rr t
 
-    | BBDCL_union _
-    | BBDCL_struct _ -> rr (BTYP_name index)
+      | BBDCL_union _
+      | BBDCL_struct _ -> rr (BTYP_name index)
 
-    | BBDCL_if_fun (t,_) -> () (* rr t *)
-    | BBDCL_if_proc (msgt,t,_) -> () (* rr t *)
-
-    | BBDCL_type_parameter -> ()
-    | BBDCL_binding _ -> ()
-    | BBDCL_abs _ -> ()
-    | BBDCL_header _ -> ()
-    | BBDCL_module _ -> ()
-    | BBDCL_interface _ -> ()
-    | BBDCL_functor _ -> ()
+      | BBDCL_header _ -> ()
+    end
   end
   bbdfns 
 
@@ -297,6 +295,7 @@ hashtable. We also mangle c++ abstract type names.
 let gen_type_name registry dfns bbdfns (index,typ) =
   let tn t = cpp_classname registry dfns bbdfns t in
   match typ with
+  | BTYP_binding _ -> failwith "[gen_type_name] Unexpected binding type"
   | BTYP_function _ ->
     let name = tn typ in
     "struct " ^ name ^ ";\n"
@@ -320,15 +319,6 @@ let gen_type_name registry dfns bbdfns (index,typ) =
     | BBDCL_union _ -> 
       "typedef _uctor_ " ^ tn typ ^ ";\n"
     | BBDCL_abs ct -> "typedef " ^ ct ^ " " ^ tn typ ^ ";\n" 
-    | BBDCL_module _ -> "//module " ^ name ^ ";\n"
-    | BBDCL_interface _ -> "//interface " ^ name ^ ";\n"
-    | BBDCL_type_parameter ->
-      failwith 
-      (
-        "[gen_type_name] expected type declaration, got type parameter " ^
-        string_of_bbdcl dfns entry index
-      )
-
     | _ -> 
       failwith 
       (
@@ -348,6 +338,8 @@ let gen_type registry dfns bbdfns (index,typ) =
   let tn t = cpp_typename registry dfns bbdfns t in
   let cn t = cpp_classname registry dfns bbdfns t in
   match typ with
+
+  | BTYP_binding _ -> failwith ("gen_type] Unexpected binding type")
 
   (* PROCEDURE *)
   | BTYP_function (a,BTYP_void) ->
@@ -481,8 +473,6 @@ let gen_type registry dfns bbdfns (index,typ) =
       "};\n"
 
     | BBDCL_union _ -> "" (* covered by prior typedef of _uctor_ *)
-    | BBDCL_module _ -> ""
-    | BBDCL_interface _ -> ""
     | BBDCL_abs ct -> ""
     | _ -> 
       failwith 
@@ -490,96 +480,6 @@ let gen_type registry dfns bbdfns (index,typ) =
         "[gen_typ] expected type declaration, got " ^
         string_of_bbdcl dfns entry index
       )
-
-let find_references bbdfns name_map = 
-  let references = ref [] in
-  Hashtbl.iter
-  (fun id entryset -> 
-    match entryset with
-    | FunctionEntry _ -> ()
-    | NonFunctionEntry (Bound _) -> failwith "Not expecting Bound entry"
-    | NonFunctionEntry (Simple idx) ->
-    let _,_,bbdfn = 
-      try Hashtbl.find bbdfns idx
-      with _ -> failwith ("[find_references] can't find index " ^ string_of_int idx)
-    in
-    match bbdfn with
-    | BBDCL_var ((BTYP_pointer _) as t)
-      -> references := (idx,t) :: !references
-    | BBDCL_val ((BTYP_pointer _) as t)
-      -> references := (idx,t) :: !references
-    | _ -> ()
-  ) 
-  name_map
-  ;
-  !references
-
-let find_variable_indices dfns index = 
-  let _,_,symdef = 
-    try Hashtbl.find dfns index 
-    with _ -> failwith ("[find_variable_indices(1)] Can't find index " ^ string_of_int index)
-  in
-  let name_map = match symdef with 
-    | SYMDEF_function (_,_,_,_,name_map) -> name_map
-    | SYMDEF_procedure (_,_,_,_,name_map) -> name_map
-    | SYMDEF_module name_map -> name_map
-    | SYMDEF_interface name_map -> name_map
-    | SYMDEF_match_handler (_,_,_,_,_,name_map) -> name_map
-    | SYMDEF_lazy _ 
-    | SYMDEF_match_check _ -> Hashtbl.create 97 
-    | _ -> failwith "[find variable indicies] Expected function definition"
-  in
-  let rec extract name_map = 
-    let variables = ref [] in
-    Hashtbl.iter
-    (fun id entryset -> 
-      match entryset with
-      | FunctionEntry _ -> ()
-      | NonFunctionEntry (Bound _) ->
-        failwith "Not expecting Bound Entry"
-      | NonFunctionEntry (Simple idx) ->
-      let _,_,symdef = 
-        try Hashtbl.find dfns idx 
-        with _ -> failwith ("[find_variable_indices(2)] can't find index " ^ string_of_int index)
-      in
-      match symdef with
-      | SYMDEF_parameter _
-      | SYMDEF_dcl (DCL_var _) 
-      | SYMDEF_dcl (DCL_var_typeof _) 
-      | SYMDEF_dcl (DCL_val _) 
-      | SYMDEF_dcl (DCL_val_typeof _) 
-        -> variables := idx :: !variables
-      | SYMDEF_module table -> 
-        variables := extract table @ !variables
-      | _ -> ()
-    ) 
-    name_map
-    ;
-    !variables
-  in extract name_map
-
-let get_display_list bbdfns index =
-  let id,parent,entry = 
-    try Hashtbl.find bbdfns index 
-    with _ -> failwith ("[get_display_list] Can't find index " ^ string_of_int index)
-  in
-  match entry with
-  | BBDCL_function (_,_,display,_,_) -> display
-  | BBDCL_procedure (_,display,_,_) -> display
-  | _ -> failwith "Only functions and procedures have a display"
-
-let get_type bbdfns index = 
-  let id,parent,entry = 
-    try Hashtbl.find bbdfns index 
-    with _ -> failwith ("[get_type] Can't find index " ^ string_of_int index)
-  in
-  match entry with
-  | BBDCL_function (ps,ret,_,_,_) -> 
-      BTYP_function (typeoflist (List.map snd ps),ret)
-  | BBDCL_procedure (ps,_,_,_) -> 
-      BTYP_function (typeoflist (List.map snd ps),BTYP_void)
-  | _ -> failwith "Only function and procedure types handles by get_type"
-
 
 let gen_type_names registry dfns bbdfns ts = 
   (* print_endline "GENERATING TYPE NAMES"; *)

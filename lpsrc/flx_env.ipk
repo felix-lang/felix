@@ -47,13 +47,13 @@ let rec build_env dfns parent =
       match entry with
       | SYMDEF_module table -> table
       | SYMDEF_interface table -> table
-      | SYMDEF_function (ps,t,d,e,table) -> table
-      | SYMDEF_match_handler (_,pat,ex,d,e,table) -> table
-      | SYMDEF_procedure (_,ps,d,e,table) -> table
+      | SYMDEF_function (ps,t,e,table) -> table
+      | SYMDEF_match_handler (pat,ex,e,table) -> table
+      | SYMDEF_procedure (ps,e,table) -> table
       | SYMDEF_lazy _ -> Hashtbl.create 97
       | SYMDEF_match_check _ -> Hashtbl.create 97 
 
-      | SYMDEF_functor _ -> failwith "Can't handle functor"
+      | SYMDEF_functor (_,_,_,table) -> table
       | SYMDEF_module_binding _ -> failwith "[build_env] Can't handle module binding"
       | SYMDEF_if_fun _ -> failwith "Can't look into function dcl"
       | SYMDEF_if_proc _ -> failwith "Can't look into proc dcl"

@@ -61,9 +61,9 @@ let catmap f l = concat (map f l)
 (* convert an expression into a list of assembly instructions,
    plus an expression: basically, this means removing lambdas
 *)
-let rec rex seq msgt e = 
-  let rex e = rex seq msgt e in
-  let rsts sts = catmap (rst seq msgt) sts in
+let rec rex seq e = 
+  let rex e = rex seq e in
+  let rsts sts = catmap (rst seq) sts in
   match e with
 
   (* these cases should use the source reference for the error *)
@@ -71,7 +71,11 @@ let rec rex seq msgt e =
     -> failwith "[rex] not expecting union component constructor matcher"
   | AST_ctor_arg _ 
     -> failwith "[rex] not expecting union component destructor"
-    
+  | AST_index _ 
+    -> failwith "[rex] not expecting AST_index "
+  | AST_bound_module _
+    -> failwith "[rex] not expecting AST_bound_module"
+
   | AST_deref _ -> [],e
   | AST_name _ -> [],e
   | AST_ref _ -> [],e
@@ -99,7 +103,7 @@ let rec rex seq msgt e =
     let name = "_lambda_" ^ string_of_int n in
     let argtyp = type_of_argtypes (map snd params) in
     [match res with
-    | TYP_void -> Dcl (sr,name,DCL_procedure (msgt, params, rsts sts))
+    | TYP_void -> Dcl (sr,name,DCL_procedure (params, rsts sts))
     | _ -> Dcl (sr,name,DCL_function (params, res, rsts sts))
     ],
     AST_name (generated,([name], type_of_argtypes (map snd params)))
@@ -121,14 +125,14 @@ let rec rex seq msgt e =
     l1, AST_coercion (sr,(x1,t))
 
 
-and split_st seq msgt sr s : asm_t list * asm_t =
-  match rst seq msgt s with
+and split_st seq sr s : asm_t list * asm_t =
+  match rst seq s with
   | [] -> [], Exe (generated,EXE_nop "")
   | [x] -> [],x
   | ss ->
     let name = "_block_" ^ string_of_int (seq()) in
     [
-      Dcl (sr,name,DCL_procedure (msgt, [], ss))
+      Dcl (sr,name,DCL_procedure ([], ss))
     ]
     ,
     Exe (sr,EXE_call (
@@ -139,20 +143,12 @@ and split_st seq msgt sr s : asm_t list * asm_t =
     
 (* remove blocks *)
 
-and rst seq msgt st : asm_t list = 
-  let rst' st = rst seq msgt st in
-  let rex x = rex seq msgt x in
+and rst seq st : asm_t list = 
+  let rst' st = rst seq st in
+  let rex x = rex seq x in
   let rsts' sts = catmap rst' sts in
   
   match st with
-  | AST_functor (sr,name,ps,typ,sts) ->
-    [
-      Dcl (sr,name,DCL_functor (ps,typ,rsts' sts));
-    ]
-
-  | AST_module_binding (sr,name,mexpr) ->
-    [Dcl (sr,name,DCL_module_binding mexpr)]
-
   | AST_label (sr,s) -> [Exe (sr,EXE_label s)]
   | AST_goto (sr,s) -> [Exe (sr,EXE_goto s)]
 
@@ -182,8 +178,8 @@ and rst seq msgt st : asm_t list =
     | None, Some e ->
       let d,x = rex e in
       d @ [Dcl (sr,name,DCL_val_typeof x); Exe (sr,EXE_init (name,x))]
-    | Some _,None 
-    | None,None -> failwith "Expected value to have initialiser"
+    | Some t, None -> [Dcl (sr,name,DCL_val t)] (* allowed in interfaces *)
+    | None,None -> failwith "Expected value to have type or initialiser"
     end
 
   | AST_const_decl (sr,name, typ, s) -> [Dcl (sr,name,DCL_const (typ,s))]
@@ -199,13 +195,13 @@ and rst seq msgt st : asm_t list =
   | AST_function (sr,name, params, res, sts) -> 
     [Dcl (sr,name,DCL_function (params, res, rsts' sts))]
     
-  | AST_procedure (sr,msgt, name, params, sts) -> 
-    let rst' st = rst seq msgt st in
+  | AST_procedure (sr,name, params, sts) -> 
+    let rst' st = rst seq st in
     let rsts' sts = catmap rst' sts in
-    [Dcl (sr,name,DCL_procedure (msgt, params, rsts' sts))]
+    [Dcl (sr,name,DCL_procedure (params, rsts' sts))]
     
-  | AST_procedure_decl (sr,msgt,name,typ) ->
-    [Dcl (sr,name,DCL_if_proc (msgt,typ))]
+  | AST_procedure_decl (sr,name,typ) ->
+    [Dcl (sr,name,DCL_if_proc (typ))]
 
   | AST_function_decl (sr,name,typ) ->
     [Dcl (sr,name,DCL_if_fun typ)]
@@ -217,7 +213,7 @@ and rst seq msgt st : asm_t list =
     | _ ->
     let name = "_block_" ^ string_of_int (seq()) in
     [
-      Dcl (sr,name,DCL_procedure (msgt,[], rsts' sts)); 
+      Dcl (sr,name,DCL_procedure ([], rsts' sts)); 
       Exe (sr,EXE_call (AST_name (generated,([name],TYP_tuple [])),AST_tuple (generated,[])))
     ]
     end
@@ -250,6 +246,15 @@ and rst seq msgt st : asm_t list =
       )
     ]
 
+  | AST_functor (sr,name,ps,typ,sts) ->
+    [
+      Dcl (sr,name,DCL_functor (ps,typ,rsts' sts));
+    ]
+
+  | AST_module_binding (sr,name,mexpr) ->
+    [Dcl (sr,name,DCL_module_binding mexpr)]
+
+
   | AST_header (sr,s) -> 
     let n = seq() in 
     let name = "_ header_" ^ string_of_int n in 
@@ -267,13 +272,13 @@ and rst seq msgt st : asm_t list =
       match h with 
       | AST_except_handler (sr',name,params,sts) -> 
         let sts' = sts @ [AST_goto (srf,finally_label)] in
-        Dcl (sr',name,DCL_procedure (msgt,params, rsts' sts'))
+        Dcl (sr',name,DCL_procedure (params, rsts' sts'))
       | _ -> failwith "Expected statement to be handler"
     in
     let handlers' = List.map rh handlers in
-    let f_dfs,f_st = split_st seq msgt srf (AST_block (srf,finally)) in
+    let f_dfs,f_st = split_st seq srf (AST_block (srf,finally)) in
     let handler_names = map name_of_handler handlers in
-    let a_dfs,a_st = split_st seq  msgt sra attempt in
+    let a_dfs,a_st = split_st seq  sra attempt in
       (* 
       Exe (EXE_comment "attempt statement") :: 
       Exe (EXE_comment "handlers") ::
@@ -340,7 +345,7 @@ and rst seq msgt st : asm_t list =
       matches := !matches @
       [
         Dcl (patsrc,match_checker_id,DCL_match_check (pat,match_var_name));
-        Dcl (stsrc,match_handler_id,DCL_match_handler (msgt,pat,match_var_name,rst' st))
+        Dcl (stsrc,match_handler_id,DCL_match_handler (pat,match_var_name,rst' st))
       ]
       @
       [
@@ -400,13 +405,13 @@ and rst seq msgt st : asm_t list =
 
   | AST_if (sr,ifs, (esr,els)) -> 
     let ubc (sr,(e,s)) : asm_t list * (range_srcref * (expr_t * asm_t)) = 
-      match split_st seq msgt sr s 
+      match split_st seq sr s 
       with ss,s' -> 
         let d,x = rex e in 
         d @ ss,(sr,(x,s')) 
     in
     let ss,ifs' = split (map ubc ifs) 
-    and s',els' = split_st seq msgt esr els in
+    and s',els' = split_st seq esr els in
     let endif_label = "_endif_" ^ string_of_int (seq()) in
     let ifcase (sr,(e,s)) = 
       let next_label = "_next_" ^ string_of_int (seq()) in
@@ -443,7 +448,7 @@ and rst seq msgt st : asm_t list =
     let label1 = "_while_" ^ string_of_int (seq()) in
     let label2 = "_end_while_" ^ string_of_int (seq()) in
     let dfs,s' = 
-      split_st seq msgt (src_of_statement s) s 
+      split_st seq (src_of_statement s) s 
     in
     dfs @ [
       Exe (sr,EXE_label label1);
@@ -476,12 +481,11 @@ let rec build_if d = match d with
       )
     ]
 
-  | AST_procedure (sr,msgt,name,ps,_) ->
+  | AST_procedure (sr,name,ps,_) ->
     [
       AST_procedure_decl 
       (
         sr,
-        msgt,
         name,
         TYP_function 
         (
@@ -517,7 +521,7 @@ let desugar_program name counter sts =
       (src_of_statement (list_last sts))
   in
   let seq () = let n = !counter in incr counter; n in
-  rst seq TYP_void (AST_module (sr,name,sts))
+  rst seq (AST_module (sr,name,sts))
 
 @h = tangler("src/flxd.ml")
 @select(h)
