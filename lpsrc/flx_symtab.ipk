@@ -36,7 +36,6 @@ open Flx_util
 open Flx_ast
 open Flx_types
 open Flx_print
-open Flx_mtypes
 open Flx_typing
 open Flx_srcref
 open List
@@ -80,8 +79,8 @@ let add_unique syms sr table key value =
   try 
     let entry = Hashtbl.find table key in
     match entry with 
-    | NonFunctionEntry (Simple idx) 
-    | FunctionEntry (Simple idx :: _ ) ->
+    | NonFunctionEntry (idx) 
+    | FunctionEntry (idx :: _ ) ->
        (match Hashtbl.find syms.dfns idx  with 
        | { sr=sr2 } ->
          clierr2 sr sr2 
@@ -91,7 +90,7 @@ let add_unique syms sr table key value =
        clierr sr ("[build_tables] Duplicate non-function name declared " ^ key)
 
   with Not_found -> 
-    Hashtbl.add table key (NonFunctionEntry (Simple value))
+    Hashtbl.add table key (NonFunctionEntry (value))
 
 let add_function syms sr table key value =
   try 
@@ -102,9 +101,9 @@ let add_function syms sr table key value =
       "> with non-function" ^ string_of_entry_kind entry)
     | FunctionEntry fs ->
       Hashtbl.remove table key;
-      Hashtbl.add table key (FunctionEntry (Simple value :: fs))
+      Hashtbl.add table key (FunctionEntry (value :: fs))
   with Not_found -> 
-    Hashtbl.add table key (FunctionEntry [Simple value])
+    Hashtbl.add table key (FunctionEntry [value])
 
 (* this routine takes a partially filled unbound definition table,
   'dfns' and a counter 'counter', and adds entries to the table
@@ -151,7 +150,7 @@ let rec build_tables syms name level parent grandparent root asms =
     end
   end
   ;
-  Hashtbl.add priv_name_map "root" (NonFunctionEntry (Simple root))
+  Hashtbl.add priv_name_map "root" (NonFunctionEntry (root))
   ;
   begin 
     iter
@@ -239,7 +238,7 @@ let rec build_tables syms name level parent grandparent root asms =
           let fun_index = n in
           let match_var_index = 
             match Hashtbl.find priv_name_map mvname with
-            | NonFunctionEntry (Simple idx) -> idx
+            | NonFunctionEntry (idx) -> idx
             | _ -> assert false
           in 
           Hashtbl.add dfns fun_index {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_match_check (pat, match_var_index)};
@@ -293,13 +292,17 @@ let rec build_tables syms name level parent grandparent root asms =
           add_tvars privtab
 
 
-        | `DCL_header s ->
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_header s};
+        | `DCL_header (s,reqs) ->
+          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=`SYMDEF_header (s,reqs)
+          };
           if access = `Public then add_function pub_name_map id n;
           add_function priv_name_map id n
 
-        | `DCL_body s ->
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_body s} ;
+        | `DCL_body (s,reqs) ->
+          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=`SYMDEF_body (s,reqs)
+          };
           if access = `Public then add_function pub_name_map id n;
           add_function priv_name_map id n
 

@@ -26,7 +26,6 @@ open Flx_ast
 open Flx_types
 open Flx_print
 open Flx_exceptions
-open Flx_mtypes
 open Flx_typing
 open Flx_typing2
 open List
@@ -213,13 +212,9 @@ let overload
     )
   in
   let rec aux i =  
-    match i with
-    | Simple i -> 
-      (match consider i with
-      | Some x -> Unique x
-      | None -> Fail
-      )
-
+    match consider i with
+    | Some x -> Unique x
+    | None -> Fail
   in
   let fun_defs = List.map aux fs in
   let candidates = 
@@ -304,7 +299,7 @@ let overload
   candidates in
   match candidates with
   | [Unique (i,t,mgu,ts)] -> 
-    Some (Simple i,t,mgu,ts)
+    Some (i,t,mgu,ts)
 
   | [] -> None
   | _ -> 

@@ -20,7 +20,7 @@ val print_call_report:
 open Flx_ast
 open Flx_types
 open Flx_srcref
-open Flx_mtypes
+open Flx_mtypes1
 open List
 open Flx_exceptions
 
@@ -130,11 +130,11 @@ let call_data (bbdfns:fully_bound_symbol_table_t):usage_t =
 
 (* closure of i, excluding i unless it is recursive! *)
 let cls h i =
-  let c = ref PosSet.empty in
+  let c = ref IntSet.empty in
   let rec add j =
-    if not (PosSet.mem j !c) then 
+    if not (IntSet.mem j !c) then 
     begin
-      c := PosSet.add j !c;
+      c := IntSet.add j !c;
       let x = try Hashtbl.find h j with Not_found -> [] in
       iter (fun (j,_) -> add j) x
     end
@@ -144,7 +144,7 @@ let cls h i =
     ;
     !c
 
-let is_recursive h i = PosSet.mem i (cls h i)
+let is_recursive h i = IntSet.mem i (cls h i)
 
 let call_report bbdfns (uses,usedby) f k =
   let si = string_of_int in

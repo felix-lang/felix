@@ -300,7 +300,7 @@ MODULES = [
   'flx_ctype'        ,
   'flx_util'         ,
   'flx_getopt'       ,
-  'flx_mtypes'       ,
+  'flx_mtypes2'      ,
   'flx_srcref'       ,
   'flx_typing'       ,
   'flx_exceptions'   ,
@@ -352,12 +352,13 @@ MODULES = [
 ]
 
 INTERFACES = [
-  'flx_ast'        ,
+  'flx_mtypes1'      ,
+  'flx_ast'          ,
   'flx_types'        ,
-  'flx_ctypes'        ,
+  'flx_ctypes'       ,
 ] + MODULES
 
-IMPLEMENTATIONS = MODULES
+IMPLEMENTATIONS = ['flx_mtypes1'] + MODULES
 
 RTL_CPPS = [
   "rtl/flx_gc",

@@ -501,8 +501,8 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_fun_decl (sr, id, vs, ts, t, c, reqs) -> 
      tack (`AST_fun_decl (sr, mi sr id, vs, ts, t, c, reqs))
     
-  | `AST_header (sr, n, s) ->  tack st
-  | `AST_body (sr, n, s) ->  tack st
+  | `AST_header (sr, n, s,reqs) ->  tack st
+  | `AST_body (sr, n, s, reqs) ->  tack st
 
     (* 
       NOTE: c code is embedded even  though it isn't

@@ -214,7 +214,6 @@ open Flx_ast
 open Flx_types
 open Flx_print
 open Flx_exceptions
-open Flx_mtypes
 open Flx_typing
 open Flx_typing2
 open List
@@ -237,7 +236,7 @@ let print_env e =
       "  " ^ k ^ 
       (
         match v with 
-        | (NonFunctionEntry (Simple i)) -> " Simple " ^ string_of_int i
+        | (NonFunctionEntry (i)) -> string_of_int i
         | _ -> ""
       )
     )
@@ -301,11 +300,11 @@ let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
   | FunctionEntry ls :: rest ->
     Some (FunctionEntry (merge_functions opens name))
 
-  | (NonFunctionEntry (Simple i)) as some ::_ -> 
+  | (NonFunctionEntry (i)) as some ::_ -> 
     if 
       fold_left 
         (function t -> function
-          | NonFunctionEntry (Simple j) when i = j -> t
+          | NonFunctionEntry (j) when i = j -> t
           | _ -> false
         )
         true
@@ -403,7 +402,7 @@ and lookup_sn_in_env
     begin match
       lookup_qn_in_env syms env excluded_dirs x
     with
-    | Simple index,ts -> index,map bt ts
+    | index,ts -> index,map bt ts
     end
 
   | `AST_suffix (sr,(qn,suf)) ->
@@ -1009,7 +1008,7 @@ and bind_type'
     print_endline ("Matched qualified name " ^ string_of_qualified_name x);
     *)
     match lookup_qn_in_env syms env excluded_dirs x with
-    | Simple i,ts ->
+    | i,ts ->
       let ts = map bt ts in
       (*
       print_endline ("Qualified name lookup finds index " ^ si i ^
@@ -1122,7 +1121,7 @@ and  typeof_literal syms env sr v : btypecode_t =
   let root,_ = List.hd (List.rev env) in
   let name = base_typename_of_literal v in
   match lookup_name_in_env env dummy_sr name with
-  | NonFunctionEntry (Simple index) -> 
+  | NonFunctionEntry (index) -> 
     `BTYP_inst (index,[])
   | _ -> 
     failwith 
@@ -1558,7 +1557,7 @@ and koenig_lookup syms sra excluded_dirs id' name_map fn t2 ts =
     print_endline ("Got candidates: " ^ string_of_entry_set entries);
     *)
     begin match resolve_overload syms excluded_dirs sra fs fn t2 ts with
-    | Some (Simple index'',t,mgu,ts) ->
+    | Some (index'',t,mgu,ts) ->
       (* print_endline "Overload resolution OK"; *)
       `BEXPR_closure (index'',ts),
        typeofindex_with_ts syms excluded_dirs index'' ts
@@ -1674,7 +1673,7 @@ and lookup_qn_with_sig'
             "[lookup_qn_with_sig] AST_lookup: Simple_module: Can't find name " ^ name
           )
         | Some entries -> match entries with 
-        | NonFunctionEntry (Simple index) ->
+        | NonFunctionEntry (index) ->
           begin match get_data syms.dfns index with 
           {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=entry} 
           ->
@@ -1783,7 +1782,7 @@ and lookup_qn_with_sig'
             resolve_overload
             syms excluded_dirs sra fs name sign ts
           with
-          | Some (Simple index,t,mgu,ts) ->
+          | Some (index,t,mgu,ts) ->
             (*
             print_endline ("Resolved overload for " ^ name);
             print_endline ("ts = [" ^ catmap ", " (sbt syms.dfns) ts ^ "]");
@@ -1848,7 +1847,7 @@ and handle_function
 : tbexpr_t 
 =
   match overload with
-    | Simple index -> 
+    | index -> 
         begin 
           match get_data syms.dfns index with 
           {id=id;sr=sr;vs=vs;parent=parent;privmap=tabl;dirs=dirs;symdef=entry}
@@ -1982,7 +1981,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     | None -> FunctionEntry []
   in
   match result with
-  | NonFunctionEntry (Simple index) ->
+  | NonFunctionEntry (index) ->
     begin match get_data syms.dfns index with
     {id=id;sr=sr;parent=parent;vs=vs;symdef=entry}->
     begin match entry with
@@ -1993,7 +1992,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         *)
         let ro = 
           resolve_overload 
-          syms excluded_dirs sra [Simple index] name t2 ts
+          syms excluded_dirs sra [index] name t2 ts
         in
           begin match ro with 
           | Some (index,t,mgu,ts) ->
@@ -2100,7 +2099,7 @@ and bind_regdef syms env idx_fixlist excluded_dirs regexp_exclude e =
   | REGEXP_aster e -> REGEXP_aster (bd e)
   | REGEXP_name qn ->
     begin match lookup_qn_in_env syms env excluded_dirs qn with
-    | Simple i,_ ->
+    | i,_ ->
       if List.mem i regexp_exclude
       then 
         failwith
@@ -2308,7 +2307,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
     *)
     let ts = map (bt sr) ts in
     begin match lookup_name_in_env env sr name with
-    | NonFunctionEntry (Simple index) -> 
+    | NonFunctionEntry (index) -> 
       (*
       print_endline ("[bind_expression] FOUND INDEX " ^ si index);
       *)
@@ -2346,7 +2345,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
       begin match entry with
       | Some entry -> 
         begin match entry with
-        | NonFunctionEntry (Simple i) ->  
+        | NonFunctionEntry (i) ->  
           let ts = adjust_ts syms i ts in
           `BEXPR_name (i,ts), 
           ti i ts
@@ -2690,7 +2689,7 @@ and map_dir
     with Not_found -> failwith "QN NOT FOUND"
   in
   match result with
-  | Simple i,ts ->
+  | i,ts ->
     begin match get_data syms.dfns i with
     | {pubmap=table;symdef=`SYMDEF_module} -> table
     | _ -> failwith "[map_dir] Expected module"
@@ -2783,7 +2782,7 @@ and rebind_btype syms env excluded_dirs sr ts t: btypecode_t =
 
 and check_module syms excluded_dirs sr entries ts =
     begin match entries with
-    | NonFunctionEntry (Simple index) ->
+    | NonFunctionEntry (index) ->
       begin match get_data syms.dfns index with
       | {dirs=dirs;pubmap=table;symdef=`SYMDEF_module} -> 
         Simple_module (index,ts,table,dirs)

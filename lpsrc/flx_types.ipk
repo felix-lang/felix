@@ -359,6 +359,7 @@ and tlvalue_t = lvalue_t * typecode_t option
 
 and funkind_t = [`Object | `Function | `InlineFunction]
 and property_t = [`Recursive | `Inline]
+and requirements_t = string list
 
 and statement_t =
   [ 
@@ -416,15 +417,15 @@ and statement_t =
   | `AST_nop of range_srcref * string
 
   (* binding structures [prolog] *)
-  | `AST_abs_decl of range_srcref * id_t * id_t list * bool * c_t * string list
-  | `AST_ctypes of range_srcref * (srcref * id_t) list * string list
-  | `AST_incomplete of range_srcref * (srcref * id_t) list * string list
-  | `AST_const_decl of range_srcref * id_t * id_t list * typecode_t * c_t * string list
-  | `AST_fun_decl of range_srcref * id_t * id_t list * typecode_t list * typecode_t * c_t  * string list
+  | `AST_abs_decl of range_srcref * id_t * id_t list * bool * c_t * requirements_t
+  | `AST_ctypes of range_srcref * (srcref * id_t) list * requirements_t 
+  | `AST_incomplete of range_srcref * (srcref * id_t) list * requirements_t
+  | `AST_const_decl of range_srcref * id_t * id_t list * typecode_t * c_t * requirements_t
+  | `AST_fun_decl of range_srcref * id_t * id_t list * typecode_t list * typecode_t * c_t  * requirements_t
 
   (* embedding *)
-  | `AST_header of range_srcref * string * string
-  | `AST_body of range_srcref * string * string
+  | `AST_header of range_srcref * string * string * requirements_t
+  | `AST_body of range_srcref * string * string * requirements_t
   | `AST_code of range_srcref * string
   | `AST_noreturn_code of range_srcref * string
 
@@ -502,8 +503,8 @@ type dir_t =
 
 type dcl_t = 
   [
-  | `DCL_header of string
-  | `DCL_body of string
+  | `DCL_header of string * requirements_t
+  | `DCL_body of string * requirements_t
 
   (* data structures *)
   | `DCL_function of     parameter_t list * typecode_t * property_t list * asm_t list
@@ -521,9 +522,9 @@ type dcl_t =
   | `DCL_module of       asm_t list  
 
   (* binding structures [prolog] *)
-  | `DCL_abs of          bool * c_t * string list (* bool is completeness flag *)
-  | `DCL_const of        typecode_t * c_t * string list
-  | `DCL_fun of          typecode_t list * typecode_t * c_t * string list
+  | `DCL_abs of          bool * c_t * requirements_t (* bool is completeness flag *)
+  | `DCL_const of        typecode_t * c_t * requirements_t
+  | `DCL_fun of          typecode_t list * typecode_t * c_t * requirements_t
   | `DCL_regdef of      regexp_t
   ]
 
@@ -536,8 +537,7 @@ and asm_t =
   | Iface of range_srcref * iface_t
   | Dir of range_srcref * dir_t
  
-and entry_kind_t = 
-  | Simple of int
+and entry_kind_t = int
 
 and entry_set_t =
   | FunctionEntry of entry_kind_t list
@@ -642,20 +642,22 @@ and bexpr_t =
 and tbexpr_t = bexpr_t * btypecode_t
 
 and bparameter_t = string * (int * btypecode_t)
+and brequirements_t = bid_t list
+
 and bbdcl_t = 
   [
-  | `BBDCL_header of     string
-  | `BBDCL_body of       string
+  | `BBDCL_header of     string * brequirements_t
+  | `BBDCL_body of       string * brequirements_t
   | `BBDCL_function of   property_t list * (string * int) list * bparameter_t list * btypecode_t * bexe_t list
   | `BBDCL_procedure of  property_t list * (string * int) list * bparameter_t list * bexe_t list
   | `BBDCL_val of        (string * int) list * btypecode_t
   | `BBDCL_var of        (string * int) list * btypecode_t
 
   (* binding structures [prolog] *)
-  | `BBDCL_abs of        (string * int) list * bool * c_t * bid_t list
-  | `BBDCL_const of      (string * int) list * btypecode_t * c_t * bid_t list
-  | `BBDCL_fun of        (string * int) list * btypecode_t list * btypecode_t * c_t  * bid_t list
-  | `BBDCL_proc of       (string * int) list * btypecode_t list * c_t  * bid_t list
+  | `BBDCL_abs of        (string * int) list * bool * c_t * brequirements_t
+  | `BBDCL_const of      (string * int) list * btypecode_t * c_t * brequirements_t
+  | `BBDCL_fun of        (string * int) list * btypecode_t list * btypecode_t * c_t  * brequirements_t
+  | `BBDCL_proc of       (string * int) list * btypecode_t list * c_t  * brequirements_t
   
   | `BBDCL_union of      (string * int) list * (id_t * btypecode_t) list
   | `BBDCL_struct of     (string * int) list * (id_t * btypecode_t) list
@@ -667,10 +669,10 @@ type env_t = (name_map_t * name_map_t list) list
 
 type symbol_definition_t =
   [
-  | `SYMDEF_abs of bool * c_t * string list
+  | `SYMDEF_abs of bool * c_t * requirements_t
   | `SYMDEF_regdef of regexp_t
-  | `SYMDEF_header of string
-  | `SYMDEF_body of string
+  | `SYMDEF_header of string * requirements_t
+  | `SYMDEF_body of string * requirements_t
 
   | `SYMDEF_parameter of  typecode_t
   | `SYMDEF_typevar of typecode_t (* usually type TYPE *)
@@ -680,10 +682,10 @@ type symbol_definition_t =
   | `SYMDEF_match_check of  pattern_t * int 
   | `SYMDEF_module
   
-  | `SYMDEF_const of typecode_t * c_t * string list
+  | `SYMDEF_const of typecode_t * c_t * requirements_t
   | `SYMDEF_var of  typecode_t
   | `SYMDEF_val of  typecode_t
-  | `SYMDEF_fun of typecode_t list * typecode_t * c_t  * string list
+  | `SYMDEF_fun of typecode_t list * typecode_t * c_t  * requirements_t
   | `SYMDEF_union of  (id_t * typecode_t) list
   | `SYMDEF_struct of  (id_t * typecode_t) list
   | `SYMDEF_type_alias of   typecode_t
@@ -997,8 +999,8 @@ let src_of_stmt e = match e with
   | `AST_incomplete (s,_,_) 
   | `AST_const_decl (s,_,_,_,_,_) 
   | `AST_fun_decl (s,_,_,_,_,_,_ ) 
-  | `AST_header (s,_,_) 
-  | `AST_body (s,_,_) 
+  | `AST_header (s,_,_,_) 
+  | `AST_body (s,_,_,_) 
   | `AST_code (s, _) 
   | `AST_noreturn_code (s, _) 
   | `AST_union (s, _,_, _ ) 
@@ -1916,12 +1918,14 @@ and string_of_statement level s =
      string_of_reqs reqs ^
      ";" 
 
-  | `AST_header (_,n,s) -> let triple_quote = "\"\"\"" in
+  | `AST_header (_,n,s, reqs) -> let triple_quote = "\"\"\"" in
     "header "^n^"\n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
+     string_of_reqs reqs ^
     ";\n"
 
-  | `AST_body (_,n,s) -> let triple_quote = "\"\"\"" in
+  | `AST_body (_,n,s, reqs) -> let triple_quote = "\"\"\"" in
     "body "^n^"\n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
+     string_of_reqs reqs ^
     ";\n"
 
   | `AST_code (_,s) -> let triple_quote = "\"\"\"" in
@@ -2125,11 +2129,15 @@ and string_of_iface level s =
 
 and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t) 
 = match entry with
-  | `SYMDEF_header s -> 
-    "header " ^ name ^ " "^ string_of_string s ^ ";\n"
+  | `SYMDEF_header (s,reqs) -> 
+    "header " ^ name ^ " "^ string_of_string s ^ 
+     string_of_reqs reqs ^
+    ";\n"
     
-  | `SYMDEF_body s -> 
-    "body " ^ name ^ " "^ string_of_string s ^ ";\n"
+  | `SYMDEF_body (s,reqs) -> 
+    "body " ^ name ^ " "^ string_of_string s ^ 
+     string_of_reqs reqs ^
+    ";\n"
 
   | `SYMDEF_regdef re ->
     "regexp " ^ name ^ " = " ^ string_of_re re ^ ";\n"
@@ -2421,8 +2429,13 @@ and string_of_dcl level name vs (s:dcl_t) =
   | `DCL_regdef re -> 
     spaces level ^ "regexp " ^ name ^ " = " ^ string_of_re re ^ ";\n"
 
-  | `DCL_header s -> "header " ^ name ^ " "^ string_of_string s
-  | `DCL_body s -> "body " ^ name ^ " "^ string_of_string s
+  | `DCL_header (s,reqs) -> 
+    "header " ^ name ^ " "^ string_of_string s ^
+    string_of_reqs reqs
+    
+  | `DCL_body (s,reqs) -> 
+    "body " ^ name ^ " "^ string_of_string s ^
+     string_of_reqs reqs
 
   | `DCL_type_alias (t2) ->
     spaces level ^ "typedef " ^ name ^ print_vs vs ^
@@ -2526,13 +2539,20 @@ and string_of_dir level s =
   | DIR_use (n,qn) ->
     spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
 
+and string_of_breqs reqs = ""
+
 and string_of_bbdcl dfns bbdcl index = 
   let name = qualified_name_of_index dfns index in
   let sobt t = string_of_btypecode dfns t in
   let se e = string_of_bound_expression dfns e in
   match bbdcl with
-  | `BBDCL_header s -> "header " ^ name^ " "^ string_of_string s
-  | `BBDCL_body s -> "body " ^ name^ " "^ string_of_string s
+  | `BBDCL_header (s,reqs) -> 
+    "header " ^ name^ " "^ string_of_string s ^
+    string_of_breqs reqs
+
+  | `BBDCL_body (s,reqs) -> 
+    "body " ^ name^ " "^ string_of_string s ^
+    string_of_breqs reqs
 
   | `BBDCL_function (props,vs,ps,res,es) ->
     string_of_properties props ^
@@ -2566,20 +2586,26 @@ and string_of_bbdcl dfns bbdcl index =
   | `BBDCL_const (vs,ty,code,reqs) ->
      "const " ^ name ^ print_bvs vs ^    
      ": " ^ sobt ty ^ 
-     " = "^string_of_string code^ ";" 
+     " = "^string_of_string code^ 
+     string_of_breqs reqs ^
+     ";" 
 
   | `BBDCL_fun (vs,ps,rt,code,reqs) ->
     "fun " ^ name ^ print_bvs vs ^
     ": " ^ 
     (sobt (typeoflist ps)) ^ " -> " ^
     (sobt rt) ^ 
-    " = " ^ string_of_string code ^ ";"
+    " = " ^ string_of_string code ^ 
+     string_of_breqs reqs ^
+    ";"
 
   | `BBDCL_proc (vs, ps,code,reqs) ->
     "proc " ^ name ^ print_bvs vs ^
     ": " ^ 
      (sobt (typeoflist ps)) ^
-     " = " ^ string_of_string code ^ ";"
+     " = " ^ string_of_string code ^ 
+     string_of_breqs reqs ^
+     ";"
 
   | `BBDCL_union (vs,cs) ->
     let string_of_union_component (name,ty) =
@@ -2605,11 +2631,10 @@ let string_of_dfn dfns i =
   string_of_symdef entry id vs
   ^ " defined at " ^ short_string_of_src sr
 
-let full_string_of_entry_kind dfns = function 
-  | Simple i -> string_of_dfn dfns i
+let full_string_of_entry_kind dfns i =
+  string_of_dfn dfns i
 
-let string_of_entry_kind = function 
-  | Simple i -> si i
+let string_of_entry_kind i = si i
 
 let string_of_entry_set = function
   | NonFunctionEntry x -> string_of_entry_kind x
@@ -2628,10 +2653,115 @@ let full_string_of_entry_set dfns = function
 let string_of_varlist dfns varlist =
   catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt dfns t) varlist
 
-@h = tangler('src/flx_mtypes.ml')
+@h = tangler('src/flx_mtypes1.ml')
 @select(h)
-module VarMap = Map.Make(struct type t = string let compare = compare end);;
-type varmap_t = string VarMap.t
+module StringMap = Map.Make(
+  struct 
+    type t = string 
+    let compare = compare 
+  end
+)
+;;
+
+type string_string_map_t = string StringMap.t
+
+module IntSet = Set.Make (
+  struct 
+    type t = int 
+    let compare=compare 
+  end
+);;
+
+(* set of IntSet's *)
+module IntSetSet = Set.Make (
+  struct 
+    type t = IntSet.t 
+    let compare=compare 
+  end
+);;
+
+@h = tangler('src/flx_mtypes1.mli')
+@select(h)
+module StringMap :
+  sig
+    type key = string
+    and 'a t
+    val empty : 'a t
+    val add : key -> 'a -> 'a t -> 'a t
+    val find : key -> 'a t -> 'a
+    val remove : key -> 'a t -> 'a t
+    val mem : key -> 'a t -> bool
+    val iter : (key -> 'a -> unit) -> 'a t -> unit
+    val map : ('a -> 'b) -> 'a t -> 'b t
+    val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
+    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  end
+
+type string_string_map_t = string StringMap.t
+
+module IntSet :
+  sig
+    type elt = int
+    and t
+    val empty : t
+    val is_empty : t -> bool
+    val mem : elt -> t -> bool
+    val add : elt -> t -> t
+    val singleton : elt -> t
+    val remove : elt -> t -> t
+    val union : t -> t -> t
+    val inter : t -> t -> t
+    val diff : t -> t -> t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val subset : t -> t -> bool
+    val iter : (elt -> unit) -> t -> unit
+    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val for_all : (elt -> bool) -> t -> bool
+    val exists : (elt -> bool) -> t -> bool
+    val filter : (elt -> bool) -> t -> t
+    val partition : (elt -> bool) -> t -> t * t
+    val cardinal : t -> int
+    val elements : t -> elt list
+    val min_elt : t -> elt
+    val max_elt : t -> elt
+    val choose : t -> elt
+  end
+  
+module IntSetSet :
+  sig
+    type elt = IntSet.t
+    and t
+    val empty : t
+    val is_empty : t -> bool
+    val mem : elt -> t -> bool
+    val add : elt -> t -> t
+    val singleton : elt -> t
+    val remove : elt -> t -> t
+    val union : t -> t -> t
+    val inter : t -> t -> t
+    val diff : t -> t -> t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val subset : t -> t -> bool
+    val iter : (elt -> unit) -> t -> unit
+    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val for_all : (elt -> bool) -> t -> bool
+    val exists : (elt -> bool) -> t -> bool
+    val filter : (elt -> bool) -> t -> t
+    val partition : (elt -> bool) -> t -> t * t
+    val cardinal : t -> int
+    val elements : t -> elt list
+    val min_elt : t -> elt
+    val max_elt : t -> elt
+    val choose : t -> elt
+  end
+
+@h = tangler('src/flx_mtypes2.ml')
+@select(h)
+open Flx_mtypes1
+module VarMap = StringMap
+type varmap_t = string_string_map_t
 
 module TypecodeSet = Set.Make(
   struct type t = Flx_ast.typecode_t let compare = compare end
@@ -2649,15 +2779,11 @@ let typecodeset_map f x = typecodeset_of_list (List.map f (TypecodeSet.elements 
 (* for regular expressions *)
 
 (* PosSet -- set of positions in regular expression, used for followpos *)
-module PosSet = Set.Make (struct type t = int let compare=compare end);;
+module PosSet = IntSet
+module PosSetSet = IntSetSet
+module CharSet = IntSet
 
-(* set of PosSet's *)
-module PosSetSet = Set.Make (struct type t = PosSet.t let compare=compare end);;
-
-(* character set [char type is 'int'] *)
-module CharSet = Set.Make (struct type t = int let compare=compare end);;
-
-@h = tangler('src/flx_mtypes.mli')
+@h = tangler('src/flx_mtypes2.mli')
 @select(h)
 module VarMap :
   sig

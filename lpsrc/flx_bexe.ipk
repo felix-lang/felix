@@ -21,7 +21,7 @@ open Flx_util
 open Flx_ast
 open Flx_types
 open Flx_print
-open Flx_mtypes
+open Flx_mtypes2
 open Flx_typing
 open Flx_lookup
 open Flx_mbind
@@ -272,7 +272,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     | `EXE_read s ->          
       let dummy_sr = ("bind exes",0,0,0,0) in
       begin match lun dummy_sr s with
-      | NonFunctionEntry (Simple index) -> tack (`BEXE_read (sr,index))
+      | NonFunctionEntry (index) -> tack (`BEXE_read (sr,index))
       | FunctionEntry _ -> failwith "Can't read function!"
       end
 
@@ -315,7 +315,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     | `EXE_init (s,e) -> 
       begin match lun sr s with
       | FunctionEntry _ -> clierr sr "Can't init function constant"
-      | NonFunctionEntry (Simple index) -> 
+      | NonFunctionEntry (index) -> 
         (*
         print_endline "Binding RHS of initialisation with bind_expression";
         *)

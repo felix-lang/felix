@@ -439,11 +439,49 @@ Untagged headers and bodies are always emitted
 into the generated code. Tagged bodies and headers
 are only emitted if a used primitive type, constant,
 function or procedure requires them.
+@p()
+The same tag can be used on more than one code insertion
+statements: this is typically useful on a header-body pair.
 
 @select(tangler(tdir+'tut_bind135.flx'))
-body stdio "#include <stdio.h>";
-body printu 'void print(char *s) { printf("%s\\n",s); }';
+body "#include <stdio.h>";
+body xprint "void printx(char *fmt, char *s) { printf(fmt,s);}";
+body printu 'void print(char *s) { printx("%s\\n",s); }';
 
-proc hello:1='print("Hello");' requires stdio, printu;
+proc hello:1='print("Hello");' requires xprint, printu;
 hello;
+
+@doc()
+Header and body statements can also have requirements.
+We can reorganise the previous example using this fact.
+
+@select(tangler(tdir+'tut_bind136.flx'))
+body "#include <stdio.h>";
+body xprint "void printx(char *fmt, char *s) { printf(fmt,s);}";
+body printu 'void print(char *s) { printx("%s\\n",s); }' 
+  requires xprint;
+
+proc hello:1='print("Hello");' requires printu;
+hello;
+
+@doc()
+Naked requires clauses can be use to set requirements
+on all primitives which can see the requires clause.
+Note that as usual, Felix identifiers are visible
+in the whole of a containing module.
+@p()
+Requirements are not exported by open directives.
+Tags cannot be used by the use directive.
+
+@select(tangler(tdir+'tut_bind137.flx'))
+body "#include <stdio.h>";
+body xprint "void printx(char *fmt, char *s) { printf(fmt,s);}";
+body printu 'void print(char *s) { printx("%s\\n",s); }';
+requires xprint;
+
+
+proc hello:1='print("Hello");' requires printu;
+hello;
+
+
 

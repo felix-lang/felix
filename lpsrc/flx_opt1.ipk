@@ -5,7 +5,7 @@ Name binding pass 2.
 @select(h)
 open Flx_ast
 open Flx_types
-open Flx_mtypes
+open Flx_mtypes1
 
 val elide_unused:
   sym_state_t ->
@@ -17,7 +17,7 @@ val elide_unused:
 
 val uses_type:
   sym_state_t ->
-  PosSet.t ref ->
+  IntSet.t ref ->
   (bid_t, bid_t list) Hashtbl.t *
   fully_bound_symbol_table_t ->
   btypecode_t -> 
@@ -25,7 +25,7 @@ val uses_type:
 
 val uses:
   sym_state_t ->
-  PosSet.t ref ->
+  IntSet.t ref ->
   (bid_t, bid_t list) Hashtbl.t *
   fully_bound_symbol_table_t ->
   int ->
@@ -37,7 +37,7 @@ open Flx_util
 open Flx_ast
 open Flx_types
 open Flx_print
-open Flx_mtypes
+open Flx_mtypes1
 open Flx_typing
 open Flx_mbind
 open Flx_srcref
@@ -301,7 +301,7 @@ let useless_call_elim syms used (child_map,bbdfns) vs' exes index =
   (fun x -> match x with
   | `BEXE_init (sr,i,b) -> 
     (* Elide initialisation of unused variables *)
-    if PosSet.mem i used
+    if IntSet.mem i used
     then
       exes' := `BEXE_init (sr,i,ia b) :: !exes'
 
@@ -484,9 +484,6 @@ let useless_call_elim syms used (child_map,bbdfns) vs' exes index =
     ;
     !exes''
 
-let uses_code used i =
-  used := PosSet.add i !used
-
 let rec uses_type syms used (child_map,bbdfns) (t:btypecode_t) = 
   let ut t = uses_type syms used (child_map,bbdfns) t in
   match t with
@@ -590,17 +587,17 @@ and uses_tbexpr syms used (child_map,bbdfns) (e,t) =
   | `BEXPR_expr (_,t) -> ut t
 
 and uses syms used (child_map,bbdfns) i =
-  let ur i = uses_code used i in
+  let ur i = uses syms used (child_map,bbdfns) i in
   let ut t = uses_type syms used (child_map,bbdfns) t in
   let ux x = uses_exes syms used (child_map,bbdfns) x in
-  if not (PosSet.mem i !used) then
+  if not (IntSet.mem i !used) then
   begin
     match
       try Some (Hashtbl.find bbdfns i)
       with Not_found -> None
     with
     | Some (id,_,_,bbdcl) ->
-      used := PosSet.add i !used;
+      used := IntSet.add i !used;
       begin match bbdcl with
       | `BBDCL_function (props,_,ps,ret,exes) ->
         iter ut (map (fun x -> snd (snd x)) ps);
@@ -611,21 +608,21 @@ and uses syms used (child_map,bbdfns) i =
         iter ut (map (fun x -> snd (snd x)) ps);
         ux exes
                                                                                 
-      | `BBDCL_union (vs,ps)
-      | `BBDCL_struct (vs,ps)
+      | `BBDCL_union (_,ps)
+      | `BBDCL_struct (_,ps)
         ->
         iter ut (map snd ps)
                                                                                 
-      | `BBDCL_val (vs,t)
-      | `BBDCL_var (vs,t) -> ut t
+      | `BBDCL_val (_,t)
+      | `BBDCL_var (_,t) -> ut t
 
-      | `BBDCL_const (vs,t,_,reqs) -> ut t; iter ur reqs
+      | `BBDCL_const (_,t,_,reqs) -> ut t; iter ur reqs
       | `BBDCL_fun (_,ps, ret, _,reqs) -> iter ut ps; ut ret; iter ur reqs
       | `BBDCL_proc (_,ps, _, reqs)  -> iter ut ps; iter ur reqs
 
       | `BBDCL_abs (vs,_,_,reqs) -> iter ur reqs
-      | `BBDCL_header _
-      | `BBDCL_body _ -> ()
+      | `BBDCL_header (_,reqs)  
+      | `BBDCL_body (_,reqs) -> iter ur reqs
       end
     | None -> ()
   end
@@ -650,38 +647,37 @@ let elide_unused syms
   (bifaces:biface_t list) 
 =
   (* make set of used things, initially empty *)
-  let used = ref PosSet.empty in
+  let used = ref IntSet.empty in
 
   (* make a list of the root and all exported functions,
   add exported types and components thereof into the used
   set now too
   *)
-  let roots = ref [root] in
+  let roots = ref (IntSet.singleton root) in
   iter
   (function
-     | `BIFACE_export_fun (_,x,_) -> roots := x :: !roots
+     | `BIFACE_export_fun (_,x,_) -> roots := IntSet.add x !roots
      | `BIFACE_export_type (_,t,_) -> 
         uses_type syms used (child_map,bbdfns) t
   )
   bifaces
   ;
-  let uses i = uses syms used (child_map,bbdfns) i in
-
-  (* add root items to set, then add items it uses *)
-  iter uses !roots
-  ;
-  (* copy used things *)
-  let bbdfns2 = Hashtbl.create 97 in
-  PosSet.iter (copy_bbdcl syms !used (child_map,bbdfns) bbdfns2) !used
-  ;
-  (* copy all anonymous header and body specs, they're always considered used *)
   Hashtbl.iter
   (fun i b -> match b with
     | "_root",_,_,`BBDCL_header _
-    | "_root",_,_,`BBDCL_body _ -> Hashtbl.add bbdfns2 i b
+    | "_root",_,_,`BBDCL_body _ -> roots := IntSet.add i !roots
     | _ -> ()
   )
   bbdfns
+  ;
+  let uses i = uses syms used (child_map,bbdfns) i in
+
+  (* add root items to set, then add items it uses *)
+  IntSet.iter uses !roots
+  ;
+  (* copy used things *)
+  let bbdfns2 = Hashtbl.create 97 in
+  IntSet.iter (copy_bbdcl syms !used (child_map,bbdfns) bbdfns2) !used
   ;
   bbdfns2
 

@@ -9,7 +9,6 @@ val validate_patterns:
 open Flx_util
 open Flx_ast
 open Flx_print
-open Flx_mtypes
 open Flx_typing
 open List
 open Flx_srcref

@@ -1,8 +1,6 @@
 @head(1,'Configure')
 @CVS_ID='$Id$'
-@CVS_DATE='$Date$'
-@CVS_REVISION='$Revision$'
-@print 'CVS_REVISION='+CVS_REVISION+' on ' + CVS_DATE + ' UTC'
+@print CVS_ID
 
 @h = tangler("tmp/check_cygwin.cxx",'c++')
 @select(h)
@@ -161,6 +159,8 @@ int main(int,char*[]) {
 # config/config.py
 # YOU SHOULD EDIT THIS FILE TO SUIT YOUR REQUIREMENTS
 
+@tangle("CONFIG_GENERATOR_CVS_ID='"+CVS_ID+"'")
+print CONFIG_GENERATOR_CVS_ID
 import sys
 import os
 import traceback
@@ -463,6 +463,7 @@ try:
   try: os.mkdir("config")
   except: pass
   f = open("config/config.py","w")
+  p(f,"CONFIG_GENERATOR_CVS_ID")
   pr(f,"#Interscript support")
   p(f,"ISCR")
   pr(f,"")

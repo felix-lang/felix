@@ -2122,7 +2122,7 @@ try
         failwith "Can't find name _init_ in top level module's name map"
     in
     let index = match entry with
-      | FunctionEntry [Simple x] -> x
+      | FunctionEntry [x] -> x
       | FunctionEntry [] -> failwith "Couldn't find '_init_'"
       | FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
       | NonFunctionEntry _ -> failwith "_init_ found but not procedure"
@@ -2221,7 +2221,7 @@ try
     match Hashtbl.find bbdfns index 
     with (id,parent,sr,entry) ->
     match entry with
-    | `BBDCL_header s -> plh s
+    | `BBDCL_header (s,_) -> plh s
     | _ -> ()
   )
   (List.sort compare !dfnlist)
@@ -2329,7 +2329,7 @@ try
     match Hashtbl.find bbdfns index 
     with (id,parent,sr,entry) ->
     match entry with
-    | `BBDCL_body s -> plb s
+    | `BBDCL_body (s,_) -> plb s
     | _ -> ()
   )
   (List.sort compare !dfnlist)

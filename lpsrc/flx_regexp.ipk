@@ -1,7 +1,7 @@
 @head(1,'DFA')
 @select(tangler('src/flx_dfa.mli'))
 open Flx_ast
-open Flx_mtypes
+open Flx_mtypes2
 
 val process_regexp:
   regexp_t ->
@@ -15,7 +15,7 @@ val process_regexp:
 *)
 open Flx_ast
 open Flx_print
-open Flx_mtypes
+open Flx_mtypes2
 
 let hashtbl_length h = 
   let n = ref 0 in

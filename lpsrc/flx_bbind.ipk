@@ -27,7 +27,6 @@ open Flx_util
 open Flx_types
 open Flx_ast
 open Flx_print
-open Flx_mtypes
 open Flx_typing
 open Flx_lookup
 open Flx_mbind
@@ -40,7 +39,7 @@ open Flx_generic
 
 let find_param name_map s =
   match Hashtbl.find name_map s with
-  | NonFunctionEntry (Simple i) -> i
+  | NonFunctionEntry (i) -> i
   | _ -> failwith ("[find_param] Can't find parameter " ^ s )
 
 let print_vs vs =
@@ -70,7 +69,7 @@ let bind_reqs syms env sr reqs : bid_t list =
     | NonFunctionEntry _ ->
       clierr sr "Require code tag"
     | FunctionEntry entries ->
-      fold_left (fun lst (Simple x) -> add lst x) lst entries
+      fold_left (fun lst (x) -> add lst x) lst entries
   ) 
   [] 
   reqs
@@ -262,15 +261,17 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       let reqs = bind_reqs reqs in
       Hashtbl.add bbdfns i (name,None,sr,`BBDCL_abs (vs,complete,ct,reqs))
 
-    | `SYMDEF_header ct ->
+    | `SYMDEF_header (ct,reqs) ->
       (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_header ct)
+      let reqs = bind_reqs reqs in
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_header (ct,reqs))
 
-    | `SYMDEF_body ct ->
+    | `SYMDEF_body (ct,reqs) ->
       (* print_endline ("//Binding body string " ^ si i ^ " --> " ^ name); 
       *)
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_body ct)
+      let reqs = bind_reqs reqs in
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_body (ct,reqs))
 
     (*
     | x -> 
@@ -480,7 +481,7 @@ try
           failwith "Can't find name _init_ in top level module's name map"
       in
       let index = match entry with
-        | FunctionEntry [Simple x] -> x
+        | FunctionEntry [x] -> x
         | FunctionEntry [] -> failwith "Couldn't find '_init_'"
         | FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
         | NonFunctionEntry _ -> failwith "_init_ found but not procedure"
