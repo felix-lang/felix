@@ -1,0 +1,71 @@
+@head(1,'Build environment')
+@h = tangler("src/flx_env.mli")
+@select(h)
+open Flx_types
+
+val build_env:
+  symbol_table_t ->
+  int option ->
+  env_t
+
+@h = tangler("src/flx_env.ml")
+@select(h)
+open Flx_util
+open Flx_types
+open Flx_print
+open Flx_mtypes
+open Flx_typing
+open Flx_srcref
+open List
+
+let get_data table index : symbol_data_t = 
+  try Hashtbl.find table index
+  with Not_found -> 
+    failwith ("[Flx_bind.get_data] No definition of <" ^ string_of_int index ^ ">")
+
+
+(* an environment is a list of hastables, mapping
+   names to definition indicies. Each entity defining
+   a scope contains one hashtable, and a pointer to
+   its parent, if any. The name 'top' is special,
+   it is the name of the single top level module
+   created by the desugaring phase. We have to be
+   able to find this name, so if when we run out
+   of parents, which is when we hit the top module,
+   we create a parent name map with a single entry
+   'top'->NonFunctionEntry 0. 
+*)
+let rec build_env dfns parent =
+  match parent with
+  | None -> []
+
+  | Some index ->
+  match get_data dfns index with
+  | (id,sr,parent,entry) ->
+    (* print_endline ("build_env '" ^ id ^ "'") ; *)
+    let table = 
+      match entry with
+      | SYMDEF_module table -> table
+      | SYMDEF_function (ps,t,d,e,table) -> table
+      | SYMDEF_match_handler (_,pat,ex,d,e,table) -> table
+      | SYMDEF_procedure (_,ps,d,e,table) -> table
+      | SYMDEF_lazy _ -> Hashtbl.create 97
+      | SYMDEF_match_check _ -> Hashtbl.create 97 
+      | SYMDEF_parameter _ -> 
+        failwith 
+        (
+          "[build_env] " ^
+          short_string_of_src sr ^
+          ": Lookup function, procedure or module as parent, got parameter "^id^"??"
+        )
+      | SYMDEF_dcl d -> 
+        failwith 
+        (
+          "[build_env] " ^
+          short_string_of_src sr ^
+          ": Lookup of requires function, procedure or module as parent, got " ^ id
+        )
+    in 
+        table :: build_env dfns parent
+   
+
