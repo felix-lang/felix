@@ -640,18 +640,18 @@ let doVisitList (vis: cabsVisitor)
       | _ -> nodespost
 
             
-let rec visitFlx_cil_cabsTypeSpecifier (vis: cabsVisitor) (ts: typeSpecifier) = 
+let rec visit_cabsTypeSpecifier (vis: cabsVisitor) (ts: typeSpecifier) = 
   doVisit vis vis#vtypespec childrenTypeSpecifier ts
     
 and childrenTypeSpecifier vis ts = 
   let childrenFieldGroup ((s, nel) as input) = 
-    let s' = visitFlx_cil_cabsSpecifier vis s in
+    let s' = visit_cabsSpecifier vis s in
     let doOneField ((n, eo) as input) = 
-      let n' = visitFlx_cil_cabsName vis NField s' n in
+      let n' = visit_cabsName vis NField s' n in
       let eo' = 
         match eo with
           None -> None
-        | Some e -> let e' = visitFlx_cil_cabsExpression vis e in
+        | Some e -> let e' = visit_cabsExpression vis e in
           if e' != e then Some e' else eo
       in
       if n' != n || eo' != eo then (n', eo') else input
@@ -669,7 +669,7 @@ and childrenTypeSpecifier vis ts =
       if fg' != fg then Tunion( n, Some fg', extraAttrs) else ts
   | Tenum (n, Some ei, extraAttrs) ->
       let doOneEnumItem ((s, e, loc) as ei) =
-        let e' = visitFlx_cil_cabsExpression vis e in
+        let e' = visit_cabsExpression vis e in
         if e' != e then (s, e', loc) else ei
       in
       vis#vEnterScope ();
@@ -677,11 +677,11 @@ and childrenTypeSpecifier vis ts =
       vis#vExitScope();
       if ei' != ei then Tenum( n, Some ei', extraAttrs) else ts
   | TtypeofE e ->
-      let e' = visitFlx_cil_cabsExpression vis e in   
+      let e' = visit_cabsExpression vis e in   
       if e' != e then TtypeofE e' else ts
   | TtypeofT (s, dt) -> 
-      let s' = visitFlx_cil_cabsSpecifier vis s in
-      let dt' = visitFlx_cil_cabsDeclType vis false dt in
+      let s' = visit_cabsSpecifier vis s in
+      let dt' = visit_cabsDeclType vis false dt in
       if s != s' || dt != dt' then TtypeofT (s', dt') else ts
   | ts -> ts
         
@@ -690,44 +690,44 @@ and childrenSpecElem (vis: cabsVisitor) (se: spec_elem) : spec_elem =
     SpecTypedef | SpecInline | SpecStorage _ | SpecPattern _ -> se
   | SpecCV _ -> se    (* cop out *)
   | SpecAttr a -> begin
-      let al' = visitFlx_cil_cabsAttribute vis a in
+      let al' = visit_cabsAttribute vis a in
       match al' with
         [a''] when a'' == a -> se
       | [a''] -> SpecAttr a''
-      | _ -> E.s (E.unimp "childrenSpecElem: visitFlx_cil_cabsAttribute returned a list")
+      | _ -> E.s (E.unimp "childrenSpecElem: visit_cabsAttribute returned a list")
   end
   | SpecType ts -> 
-      let ts' = visitFlx_cil_cabsTypeSpecifier vis ts in
+      let ts' = visit_cabsTypeSpecifier vis ts in
       if ts' != ts then SpecType ts' else se
         
-and visitFlx_cil_cabsSpecifier (vis: cabsVisitor) (s: specifier) : specifier = 
+and visit_cabsSpecifier (vis: cabsVisitor) (s: specifier) : specifier = 
   doVisit vis vis#vspec childrenSpec s
 and childrenSpec vis s = mapNoCopy (childrenSpecElem vis) s 
     
 
-and visitFlx_cil_cabsDeclType vis (isfundef: bool) (dt: decl_type) : decl_type = 
+and visit_cabsDeclType vis (isfundef: bool) (dt: decl_type) : decl_type = 
   doVisit vis vis#vdecltype (childrenDeclType isfundef) dt
 and childrenDeclType isfundef vis dt = 
   match dt with
     JUSTBASE -> dt
   | PARENTYPE (prea, dt1, posta) -> 
-      let prea' = mapNoCopyList (visitFlx_cil_cabsAttribute vis)  prea in
-      let dt1' = visitFlx_cil_cabsDeclType vis isfundef dt1 in
-      let posta'= mapNoCopyList (visitFlx_cil_cabsAttribute vis)  posta in
+      let prea' = mapNoCopyList (visit_cabsAttribute vis)  prea in
+      let dt1' = visit_cabsDeclType vis isfundef dt1 in
+      let posta'= mapNoCopyList (visit_cabsAttribute vis)  posta in
       if prea' != prea || dt1' != dt1 || posta' != posta then 
         PARENTYPE (prea', dt1', posta') else dt
   | ARRAY (dt1, al, e) -> 
-      let dt1' = visitFlx_cil_cabsDeclType vis isfundef dt1 in
+      let dt1' = visit_cabsDeclType vis isfundef dt1 in
       let al' = mapNoCopy (childrenAttribute vis) al in
-      let e'= visitFlx_cil_cabsExpression vis e in
+      let e'= visit_cabsExpression vis e in
       if dt1' != dt1 || al' != al || e' != e then ARRAY(dt1', al', e') else dt
   | PTR (al, dt1) -> 
       let al' = mapNoCopy (childrenAttribute vis) al in
-      let dt1' = visitFlx_cil_cabsDeclType vis isfundef dt1 in
+      let dt1' = visit_cabsDeclType vis isfundef dt1 in
       if al' != al || dt1' != dt1 then PTR(al', dt1') else dt
   | PROTO (dt1, snl, b) ->
       (* Do not propagate isfundef further *)
-      let dt1' = visitFlx_cil_cabsDeclType vis false dt1 in
+      let dt1' = visit_cabsDeclType vis false dt1 in
       let _ = vis#vEnterScope () in
       let snl' = mapNoCopy (childrenSingleName vis NVar) snl in
       (* Exit the scope only if not in a function definition *)
@@ -736,92 +736,92 @@ and childrenDeclType isfundef vis dt =
          
 
 and childrenNameGroup vis (kind: nameKind) ((s, nl) as input) = 
-  let s' = visitFlx_cil_cabsSpecifier vis s in
-  let nl' = mapNoCopy (visitFlx_cil_cabsName vis kind s') nl in
+  let s' = visit_cabsSpecifier vis s in
+  let nl' = mapNoCopy (visit_cabsName vis kind s') nl in
   if s' != s || nl' != nl then (s', nl') else input
 
     
 and childrenInitNameGroup vis ((s, inl) as input) = 
-  let s' = visitFlx_cil_cabsSpecifier vis s in
+  let s' = visit_cabsSpecifier vis s in
   let inl' = mapNoCopy (childrenInitName vis s') inl in
   if s' != s || inl' != inl then (s', inl') else input
     
-and visitFlx_cil_cabsName vis (k: nameKind) (s: specifier) 
+and visit_cabsName vis (k: nameKind) (s: specifier) 
                       (n: name) : name = 
   doVisit vis (vis#vname k s) (childrenName s k) n
 and childrenName (s: specifier) (k: nameKind) vis (n: name) : name = 
   let (sn, dt, al, loc) = n in
-  let dt' = visitFlx_cil_cabsDeclType vis (k = NFun) dt in
+  let dt' = visit_cabsDeclType vis (k = NFun) dt in
   let al' = mapNoCopy (childrenAttribute vis) al in
   if dt' != dt || al' != al then (sn, dt', al', loc) else n
     
 and childrenInitName vis (s: specifier) (inn: init_name) : init_name = 
   let (n, ie) = inn in
-  let n' = visitFlx_cil_cabsName vis NVar s n in
-  let ie' = visitFlx_cil_cabsInitExpression vis ie in
+  let n' = visit_cabsName vis NVar s n in
+  let ie' = visit_cabsInitExpression vis ie in
   if n' != n || ie' != ie then (n', ie') else inn
     
 and childrenSingleName vis (k: nameKind) (sn: single_name) : single_name =
   let s, n = sn in
-  let s' = visitFlx_cil_cabsSpecifier vis s in
-  let n' = visitFlx_cil_cabsName vis k s' n in
+  let s' = visit_cabsSpecifier vis s in
+  let n' = visit_cabsName vis k s' n in
   if s' != s || n' != n then (s', n') else sn
     
-and visitFlx_cil_cabsDefinition vis (d: definition) : definition list = 
+and visit_cabsDefinition vis (d: definition) : definition list = 
   doVisitList vis vis#vdef childrenDefinition d
 and childrenDefinition vis d = 
   match d with 
     FUNDEF (sn, b, l, lend) -> 
       let sn' = childrenSingleName vis NFun sn in
-      let b' = visitFlx_cil_cabsBlock vis b in
+      let b' = visit_cabsBlock vis b in
       (* End the scope that was started by childrenFunctionName *)
       vis#vExitScope ();
       if sn' != sn || b' != b then FUNDEF (sn', b', l, lend) else d
         
   | DECDEF ((s, inl), l) -> 
-      let s' = visitFlx_cil_cabsSpecifier vis s in
+      let s' = visit_cabsSpecifier vis s in
       let inl' = mapNoCopy (childrenInitName vis s') inl in
       if s' != s || inl' != inl then DECDEF ((s', inl'), l) else d
   | TYPEDEF (ng, l) -> 
       let ng' = childrenNameGroup vis NType ng in
       if ng' != ng then TYPEDEF (ng', l) else d
   | ONLYTYPEDEF (s, l) -> 
-      let s' = visitFlx_cil_cabsSpecifier vis s in
+      let s' = visit_cabsSpecifier vis s in
       if s' != s then ONLYTYPEDEF (s', l) else d
   | GLOBASM _ -> d
   | PRAGMA (e, l) -> 
-      let e' = visitFlx_cil_cabsExpression vis e in
+      let e' = visit_cabsExpression vis e in
       if e' != e then PRAGMA (e', l) else d
   | LINKAGE (n, l, dl) -> 
-      let dl' = mapNoCopyList (visitFlx_cil_cabsDefinition vis) dl in
+      let dl' = mapNoCopyList (visit_cabsDefinition vis) dl in
       if dl' != dl then LINKAGE (n, l, dl') else d
 
   | NAMESPACE (n, l, dl) -> 
-      let dl' = mapNoCopyList (visitFlx_cil_cabsDefinition vis) dl in
+      let dl' = mapNoCopyList (visit_cabsDefinition vis) dl in
       if dl' != dl then NAMESPACE (n, l, dl') else d
 
   | TRANSFORMER _ -> d
   | EXPRTRANSFORMER _ -> d
         
-and visitFlx_cil_cabsBlock vis (b: block) : block = 
+and visit_cabsBlock vis (b: block) : block = 
   doVisit vis vis#vblock childrenBlock b
 
 and childrenBlock vis (b: block) : block = 
   let _ = vis#vEnterScope () in
-  let battrs' = mapNoCopyList (visitFlx_cil_cabsAttribute vis) b.battrs in
-  let bstmts' = mapNoCopyList (visitFlx_cil_cabsStatement vis) b.bstmts in
+  let battrs' = mapNoCopyList (visit_cabsAttribute vis) b.battrs in
+  let bstmts' = mapNoCopyList (visit_cabsStatement vis) b.bstmts in
   let _ = vis#vExitScope () in
   if battrs' != b.battrs || bstmts' != b.bstmts then 
     { blabels = b.blabels; battrs = battrs'; bstmts = bstmts' }
   else
     b
     
-and visitFlx_cil_cabsStatement vis (s: statement) : statement list = 
+and visit_cabsStatement vis (s: statement) : statement list = 
   doVisitList vis vis#vstmt childrenStatement s
 and childrenStatement vis s = 
-  let ve e = visitFlx_cil_cabsExpression vis e in
+  let ve e = visit_cabsExpression vis e in
   let vs l s = 
-    match visitFlx_cil_cabsStatement vis s with
+    match visit_cabsStatement vis s with
       [s'] -> s'
     | sl -> BLOCK ({blabels = []; battrs = []; bstmts = sl }, l)
   in
@@ -831,7 +831,7 @@ and childrenStatement vis s =
       let e' = ve e in
       if e' != e then COMPUTATION (e', l) else s
   | BLOCK (b, l) -> 
-      let b' = visitFlx_cil_cabsBlock vis b in
+      let b' = visit_cabsBlock vis b in
       if b' != b then BLOCK (b', l) else s
   | SEQUENCE (s1, s2, l) -> 
       let s1' = vs l s1 in
@@ -859,9 +859,9 @@ and childrenStatement vis s =
             if e1' != e1 then FC_EXP e1' else fc1
         | FC_DECL d1 -> 
             let d1' = 
-              match visitFlx_cil_cabsDefinition vis d1 with
+              match visit_cabsDefinition vis d1 with
                 [d1'] -> d1'
-              | _ -> E.s (E.unimp "visitFlx_cil_cabs: for can have only one definition")
+              | _ -> E.s (E.unimp "visit_cabs: for can have only one definition")
             in
             if d1' != d1 then FC_DECL d1' else fc1
       in
@@ -899,7 +899,7 @@ and childrenStatement vis s =
       let e' = ve e in
       if e' != e then COMPGOTO (e', l) else s
   | DEFINITION d -> begin
-      match visitFlx_cil_cabsDefinition vis d with
+      match visit_cabsDefinition vis d with
           [d'] when d' == d -> s
         | dl -> let l = get_definitionloc d in
           let dl' = List.map (fun d' -> DEFINITION d') dl in
@@ -915,20 +915,20 @@ and childrenStatement vis s =
       if inl' != inl || outl' != outl then 
         ASM (sl, b, inl', outl', clobs, l) else s
   | TRY_FINALLY (b1, b2, l) -> 
-      let b1' = visitFlx_cil_cabsBlock vis b1 in
-      let b2' = visitFlx_cil_cabsBlock vis b2 in
+      let b1' = visit_cabsBlock vis b1 in
+      let b2' = visit_cabsBlock vis b2 in
       if b1' != b1 || b2' != b2 then TRY_FINALLY(b1', b2', l) else s
   | TRY_EXCEPT (b1, e, b2, l) -> 
-      let b1' = visitFlx_cil_cabsBlock vis b1 in
-      let e' = visitFlx_cil_cabsExpression vis e in
-      let b2' = visitFlx_cil_cabsBlock vis b2 in
+      let b1' = visit_cabsBlock vis b1 in
+      let e' = visit_cabsExpression vis e in
+      let b2' = visit_cabsBlock vis b2 in
       if b1' != b1 || e' != e || b2' != b2 then TRY_EXCEPT(b1', e', b2', l) else s
       
           
-and visitFlx_cil_cabsExpression vis (e: expression) : expression = 
+and visit_cabsExpression vis (e: expression) : expression = 
   doVisit vis vis#vexpr childrenExpression e
 and childrenExpression vis e = 
-  let ve e = visitFlx_cil_cabsExpression vis e in
+  let ve e = visit_cabsExpression vis e in
   match e with 
     NOTHING | LABELADDR _ -> e
   | UNARY (uo, e1) -> 
@@ -945,9 +945,9 @@ and childrenExpression vis e =
       if e1' != e1 || e2' != e2 || e3' != e3 then 
         QUESTION (e1', e2', e3') else e
   | CAST ((s, dt), ie) -> 
-      let s' = visitFlx_cil_cabsSpecifier vis s in
-      let dt' = visitFlx_cil_cabsDeclType vis false dt in
-      let ie' = visitFlx_cil_cabsInitExpression vis ie in
+      let s' = visit_cabsSpecifier vis s in
+      let dt' = visit_cabsDeclType vis false dt in
+      let ie' = visit_cabsInitExpression vis ie in
       if s' != s || dt' != dt || ie' != ie then CAST ((s', dt'), ie') else e
   | CALL (f, el) -> 
       let f' = ve f in
@@ -964,15 +964,15 @@ and childrenExpression vis e =
       let e1' = ve e1 in
       if e1' != e1 then EXPR_SIZEOF (e1') else e
   | TYPE_SIZEOF (s, dt) -> 
-      let s' = visitFlx_cil_cabsSpecifier vis s in
-      let dt' = visitFlx_cil_cabsDeclType vis false dt in
+      let s' = visit_cabsSpecifier vis s in
+      let dt' = visit_cabsDeclType vis false dt in
       if s' != s || dt' != dt then TYPE_SIZEOF (s' ,dt') else e
   | EXPR_ALIGNOF (e1) -> 
       let e1' = ve e1 in
       if e1' != e1 then EXPR_ALIGNOF (e1') else e
   | TYPE_ALIGNOF (s, dt) -> 
-      let s' = visitFlx_cil_cabsSpecifier vis s in
-      let dt' = visitFlx_cil_cabsDeclType vis false dt in
+      let s' = visit_cabsSpecifier vis s in
+      let dt' = visit_cabsDeclType vis false dt in
       if s' != s || dt' != dt then TYPE_ALIGNOF (s' ,dt') else e
   | INDEX (e1, e2) -> 
       let e1' = ve e1 in
@@ -985,11 +985,11 @@ and childrenExpression vis e =
       let e1' = ve e1 in
       if e1' != e1 then MEMBEROFPTR (e1', n) else e
   | GNU_BODY b -> 
-      let b' = visitFlx_cil_cabsBlock vis b in
+      let b' = visit_cabsBlock vis b in
       if b' != b then GNU_BODY b' else e
   | EXPR_PATTERN _ -> e
         
-and visitFlx_cil_cabsInitExpression vis (ie: init_expression) : init_expression = 
+and visit_cabsInitExpression vis (ie: init_expression) : init_expression = 
   doVisit vis vis#vinitexpr childrenInitExpression ie
 and childrenInitExpression vis ie = 
   let rec childrenInitWhat iw = 
@@ -999,41 +999,41 @@ and childrenInitExpression vis ie =
         let iw1' = childrenInitWhat iw1 in
         if iw1' != iw1 then INFIELD_INIT (n, iw1') else iw
     | ATINDEX_INIT (e, iw1) -> 
-        let e' = visitFlx_cil_cabsExpression vis e in
+        let e' = visit_cabsExpression vis e in
         let iw1' = childrenInitWhat iw1 in
         if e' != e || iw1' != iw1 then ATINDEX_INIT (e', iw1') else iw
     | ATINDEXRANGE_INIT (e1, e2) -> 
-        let e1' = visitFlx_cil_cabsExpression vis e1 in
-        let e2' = visitFlx_cil_cabsExpression vis e2 in
+        let e1' = visit_cabsExpression vis e1 in
+        let e2' = visit_cabsExpression vis e2 in
         if e1' != e1 || e2' != e2 then ATINDEXRANGE_INIT (e1, e2) else iw
   in
   match ie with 
     NO_INIT -> ie
   | SINGLE_INIT e -> 
-      let e' = visitFlx_cil_cabsExpression vis e in
+      let e' = visit_cabsExpression vis e in
       if e' != e then SINGLE_INIT e' else ie
   | COMPOUND_INIT il -> 
       let childrenOne ((iw, ie) as input) = 
         let iw' = childrenInitWhat iw in
-        let ie' = visitFlx_cil_cabsInitExpression vis ie in
+        let ie' = visit_cabsInitExpression vis ie in
         if iw' != iw || ie' != ie then (iw', ie') else input
       in
       let il' = mapNoCopy childrenOne il in
       if il' != il then COMPOUND_INIT il' else ie
         
 
-and visitFlx_cil_cabsAttribute vis (a: attribute) : attribute list = 
+and visit_cabsAttribute vis (a: attribute) : attribute list = 
   doVisitList vis vis#vattr childrenAttribute a
 
 and childrenAttribute vis ((n, el) as input) = 
-  let el' = mapNoCopy (visitFlx_cil_cabsExpression vis) el in
+  let el' = mapNoCopy (visit_cabsExpression vis) el in
   if el' != el then (n, el') else input
     
-and visitFlx_cil_cabsAttributes vis (al: attribute list) : attribute list = 
-  mapNoCopyList (visitFlx_cil_cabsAttribute vis) al
+and visit_cabsAttributes vis (al: attribute list) : attribute list = 
+  mapNoCopyList (visit_cabsAttribute vis) al
 
-let visitFlx_cil_cabsFile (vis: cabsVisitor) ((fname, f): file) : file =  
-  (fname, mapNoCopyList (visitFlx_cil_cabsDefinition vis) f)
+let visit_cabsFile (vis: cabsVisitor) ((fname, f): file) : file =  
+  (fname, mapNoCopyList (visit_cabsDefinition vis) f)
 
     (* end of file *)
     
@@ -1096,23 +1096,23 @@ end
 class nopFlx_cil_cabsVisitor: cabsVisitor
 
 
-val visitFlx_cil_cabsTypeSpecifier: cabsVisitor -> 
+val visit_cabsTypeSpecifier: cabsVisitor -> 
                             Flx_cil_cabs.typeSpecifier -> Flx_cil_cabs.typeSpecifier
-val visitFlx_cil_cabsSpecifier: cabsVisitor -> Flx_cil_cabs.specifier -> Flx_cil_cabs.specifier
+val visit_cabsSpecifier: cabsVisitor -> Flx_cil_cabs.specifier -> Flx_cil_cabs.specifier
 
 (** Visits a decl_type. The bool argument is saying whether we are ina 
   * function definition and thus the scope in a PROTO should extend until the 
   * end of the function *)
-val visitFlx_cil_cabsDeclType: cabsVisitor -> bool -> Flx_cil_cabs.decl_type -> Flx_cil_cabs.decl_type
-val visitFlx_cil_cabsDefinition: cabsVisitor -> Flx_cil_cabs.definition -> Flx_cil_cabs.definition list
-val visitFlx_cil_cabsBlock: cabsVisitor -> Flx_cil_cabs.block -> Flx_cil_cabs.block
-val visitFlx_cil_cabsStatement: cabsVisitor -> Flx_cil_cabs.statement -> Flx_cil_cabs.statement list
-val visitFlx_cil_cabsExpression: cabsVisitor -> Flx_cil_cabs.expression -> Flx_cil_cabs.expression
-val visitFlx_cil_cabsAttributes: cabsVisitor -> Flx_cil_cabs.attribute list 
+val visit_cabsDeclType: cabsVisitor -> bool -> Flx_cil_cabs.decl_type -> Flx_cil_cabs.decl_type
+val visit_cabsDefinition: cabsVisitor -> Flx_cil_cabs.definition -> Flx_cil_cabs.definition list
+val visit_cabsBlock: cabsVisitor -> Flx_cil_cabs.block -> Flx_cil_cabs.block
+val visit_cabsStatement: cabsVisitor -> Flx_cil_cabs.statement -> Flx_cil_cabs.statement list
+val visit_cabsExpression: cabsVisitor -> Flx_cil_cabs.expression -> Flx_cil_cabs.expression
+val visit_cabsAttributes: cabsVisitor -> Flx_cil_cabs.attribute list 
                                      -> Flx_cil_cabs.attribute list
-val visitFlx_cil_cabsName: cabsVisitor -> nameKind 
+val visit_cabsName: cabsVisitor -> nameKind 
                    -> Flx_cil_cabs.specifier -> Flx_cil_cabs.name -> Flx_cil_cabs.name
-val visitFlx_cil_cabsFile: cabsVisitor -> Flx_cil_cabs.file -> Flx_cil_cabs.file
+val visit_cabsFile: cabsVisitor -> Flx_cil_cabs.file -> Flx_cil_cabs.file
 
 
 
@@ -1293,6 +1293,8 @@ let cxx_extra_keywords = [
 ]
 
 let lexicon = H.create 211
+let class_list = ref [""] 
+
 let init_lexicon (langind : Flx_cil_cabs.lang_t) =
   H.clear lexicon;
   List.iter 
@@ -1303,7 +1305,11 @@ let init_lexicon (langind : Flx_cil_cabs.lang_t) =
    List.iter 
     (fun (key, builder) -> H.add lexicon key builder)
     cxx_extra_keywords
-;;
+  ;
+  class_list := [""]
+
+let push_class s = class_list := s :: !class_list
+let pop_class () = class_list := List.tl !class_list
 
 (* Mark an identifier as a type name. The old mapping is preserved and will 
  * be reinstated when we exit this context *)
@@ -1341,9 +1347,14 @@ let add_identifier name =
 *)
 let scan_ident id =
   let here = currentLoc () in
-  try (H.find lexicon id) here
+  let s = ref "" in
+  for i = 0 to String.length id - 1 do
+    let ch = id.[i] in
+    if ch > ' ' then s := !s ^ String.make 1 ch
+  done;
+  try (H.find lexicon !s) here
   (* default to variable name, as opposed to type *)
-  with Not_found -> dbgToken (IDENT (id, here))
+  with Not_found -> dbgToken (IDENT (!s, here))
 
 
 (*
@@ -1361,7 +1372,11 @@ let init ~(filename: string) ~(lang: Flx_cil_cabs.lang_t) : Lexing.lexbuf =
   Flx_cil_lexerhack.add_type := add_type;
   Flx_cil_lexerhack.push_context := push_context;
   Flx_cil_lexerhack.pop_context := pop_context;
+  Flx_cil_lexerhack.push_class:= push_class;
+  Flx_cil_lexerhack.pop_class := pop_class;
   Flx_cil_lexerhack.add_identifier := add_identifier;
+  let get_lang () = lang in
+  Flx_cil_lexerhack.get_lang := get_lang;
   E.startParsing filename
 
 
@@ -1508,9 +1523,20 @@ let floatnum = (decfloat | hexfloat) floatsuffix?
 let ident = (letter|'_')(letter|decdigit|'_')* 
 let attribident = (letter|'_')(letter|decdigit|'_'|':')
 let blank = [' ' '\t' '\012' '\r']+
+let spaces = [' ' '\t' '\012' '\r']*
 let escape = '\\' _
 let hex_escape = '\\' ['x' 'X'] hexdigit+
 let oct_escape = '\\' octdigit octdigit? octdigit? 
+let sym = 
+  "<<=" | ">>=" | 
+  "<<" | ">>" | "==" | "!=" | "<=" | ">=" | 
+  "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "->" |
+  "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "!" | "~" | "="
+  
+
+let operator = "operator" spaces sym
+let oident = operator | ident
+let qualified_name = ("::" spaces)?oident (spaces "::" spaces oident)*
 
 rule initial = parse   
 | "/*"                    { let _ = comment lexbuf in initial lexbuf}
@@ -1617,7 +1643,10 @@ with C++ class base list/unnamed bitfield *)
 (* __extension__ is a black. The parser runs into some conflicts if we let it
  * pass *)
 |               "__extension__"         {initial lexbuf }
-|               ident                   {scan_ident (Lexing.lexeme lexbuf)}
+|              qualified_name 
+               {
+                 scan_ident (Lexing.lexeme lexbuf)
+               }
 |               eof                     {EOF}
 |               _                       {E.parse_error
                                                 "Invalid symbol"
@@ -2072,9 +2101,11 @@ global:
    * specification *)*/
 | EXTERN string_constant declaration    { LINKAGE (fst $2, snd $2, [ $3 ]) }
 | EXTERN string_constant LBRACE globals RBRACE 
-                                        { LINKAGE (fst $2, snd $2, $4)  }
+  { LINKAGE (fst $2, snd $2, $4)  }
+
 | NAMESPACE IDENT LBRACE globals RBRACE 
-                                        { NAMESPACE (fst $2, snd $2, $4)  }
+  { NAMESPACE (fst $2, snd $2, $4)  }
+
 | ASM LPAREN string_constant RPAREN SEMICOLON
                                         { GLOBASM (fst $3, $1) }
 | PRAGMA attr PRAGMA_EOL                { PRAGMA ($2, $1) }
@@ -2084,6 +2115,7 @@ global:
 /* (* Old-style function prototype. This should be somewhere else, like in
     * "declaration". For now we keep it at global scope only because in local
     * scope it looks too much like a function call  *) */
+
 | IDENT LPAREN old_parameter_list_ne RPAREN old_pardef_list SEMICOLON
                            { (* Convert pardecl to new style *)
                              let pardecl, isva = doOldParDecl $3 $5 in 
@@ -2113,7 +2145,7 @@ global:
 ;
 
 id_or_typename:
-    IDENT                               {fst $1}
+|   IDENT                               {fst $1}
 |   NAMED_TYPE                          {fst $1}
 |   AT_NAME LPAREN IDENT RPAREN         { "@name(" ^ fst $3 ^ ")" }     /* pattern variable name */
 ;
@@ -2612,6 +2644,7 @@ struct_decl_list: /* (* ISO 6.7.2. Except that we allow empty structs. We
                       * also allow missing field names. *)
                    */
    /* empty */                           { [] }
+
 |  decl_spec_list                 SEMICOLON struct_decl_list
    { `Fields (fst $1, [(missingFieldDecl, None)]) :: $3 }
 
@@ -2639,7 +2672,6 @@ struct_decl_list: /* (* ISO 6.7.2. Except that we allow empty structs. We
 | PUBLIC COLON struct_decl_list { `Access_public :: $3 }
 | PROTECTED COLON struct_decl_list { `Access_protected :: $3 }
 | PRIVATE COLON struct_decl_list {`Access_private :: $3 }
-
 |  error                          SEMICOLON struct_decl_list
    { $3 } 
 ;
@@ -2678,8 +2710,10 @@ enumerator:
 
 declarator:  /* (* ISO 6.7.5. Plus Microsoft declarators.*) */
    pointer_opt direct_decl attributes_with_asm
-                                         { let (n, decl) = $2 in
-                                           (n, applyPointer (fst $1) decl, $3, snd $1) }
+    { 
+      let (n, decl) = $2 in
+      (n, applyPointer (fst $1) decl, $3, snd $1) 
+    }
 ;
 
 
@@ -4355,10 +4389,13 @@ val parse: string -> Flx_cil_cabs.lang_t -> (unit -> Flx_cil_cil.file)
 
 @h=tangler('src/flx_cil_lexerhack.mli')
 @select(h)
+val get_lang : (unit -> Flx_cil_cabs.lang_t) ref
 val add_identifier : (string -> unit) ref
 val add_type : (string -> unit) ref
 val push_context : (unit -> unit) ref
 val pop_context : (unit -> unit) ref
+val push_class: (string-> unit) ref
+val pop_class : (unit -> unit) ref
 val currentPattern : string ref
 
 @h=tangler('src/flx_cil_lexerhack.ml')
@@ -4381,6 +4418,14 @@ let push_context: (unit -> unit) ref =
 let pop_context: (unit -> unit) ref = 
   ref (fun _ -> E.s (E.bug "You called an uninitialized pop_context")) 
 
+let push_class: (string -> unit) ref = 
+  ref (fun _ -> E.s (E.bug "You called an uninitialized push_class")) 
+
+let pop_class : (unit -> unit) ref = 
+  ref (fun _ -> E.s (E.bug "You called an uninitialized pop_class")) 
+
+let get_lang: (unit -> Flx_cil_cabs.lang_t) ref =
+  ref (fun _ -> E.s (E.bug "You called an uninitialized get_lang")) 
 
 (* Keep here the current pattern for formatparse *)
 let currentPattern = ref ""

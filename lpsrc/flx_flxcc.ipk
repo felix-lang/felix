@@ -25,9 +25,9 @@ type stab_t = {
   mutable ict: (string,string) Hashtbl.t;
   used_types: (string,unit) Hashtbl.t;
   variables : (string,string) Hashtbl.t;
-  functions: (string,string * string) Hashtbl.t;
+  functions: (string * typsig list * string,string * string) Hashtbl.t;
   fields: (string,string * string) Hashtbl.t;
-  procedures: (string,string * string) Hashtbl.t;
+  procedures: (string * typsig list * string,string * string) Hashtbl.t;
   enums: (string,string) Hashtbl.t;
   registry: (typsig, string * string) Hashtbl.t;
   mutable includes: StringSet.t;
@@ -765,20 +765,22 @@ let flxfile_of_cfile cfilename =
   Filename.concat (control.outdir)  (base ^ ".flx")
 ;;
 
+let srepl s c1 c2 =
+  for i = 0 to String.length s - 1 do
+    if s.[i]=c1 then s.[i] <- c2
+  done
+;;
+
 let module_of_cfilename s = 
   let module_of_filename fname =
     let x = String.copy fname in
-    let srepl s c1 c2 =
-      for i = 0 to String.length s - 1 do
-        if s.[i]=c1 then s.[i] <- c2
-      done
-    in
     let fixup x =
       srepl x '.' '_';
       srepl x ' ' '_';
       srepl x '/' '_';
       srepl x '-' '_';
       srepl x '+' '_';
+      srepl x ':' '_';
     in
     let mname = 
       try 
@@ -841,28 +843,104 @@ let getreg {file=s} =
   stab.registry,stab.counter,stab.stab_module,stab.used_types
 ;;
 
+let oplist = [
+  "+","add";
+  "-","sub";
+  "*","mul";
+  "/","div";
+  "%","mod";
+
+  "<","lt";
+  ">","gt";
+  "<=","le";
+  ">=","ge";
+  "==","eq";
+  "!=","ne";
+
+  "=","_set";
+
+  "||","lor";
+  "&&","land";
+  "!","lnot";
+
+  "^","bxor";
+  "|","bor";
+  "&","band";
+  "~","compl";
+
+  "+=","pluseq";
+  "-=","minuseq";
+  "*=","muleq";
+  "/=","diveq";
+  "%=","modeq";
+  "^=","careteq";
+  "|=","vbareq";
+  "&=","ampereq";
+  "~=","tildeeq";
+  "<<=","leftshifteq";
+  ">>=","rightshifteq";
+
+  "++","incr";
+  "--","decr";
+  "[]","subscript";
+]
+;;
+let operators = Hashtbl.create 97
+;;
+List.iter
+(fun (k,v)-> Hashtbl.add operators ("operator"^k) v)
+oplist
+;;
+
+let fixsym k = 
+  try  (* hackery .. won't work with qualified names *)
+    Hashtbl.find operators k 
+  with Not_found ->
+    let k = String.copy k in
+    srepl k ':' '_';
+    k
 
 let rpl {file=s} which = 
   let stab = getstab s in
   match which with
   | `aliases (k,v) -> 
+    let k = fixsym k in
     Hashtbl.replace stab.aliases k v;
     Hashtbl.replace control.all_types k s
   
   | `struct_aliases(k,v)  -> 
+    let k = fixsym k in
     Hashtbl.replace stab.struct_aliases k v;
     Hashtbl.replace control.all_types k s
 
   | `abstract_types (k,v)  -> 
+    let k = fixsym k in
     Hashtbl.replace stab.abstract_types k v;
     Hashtbl.replace control.all_types k s
 
-  | `incomplete_types (k,v)  -> Hashtbl.replace stab.incomplete_types k v
-  | `variables(k,v)  ->  Hashtbl.replace stab.variables k v
-  | `functions(k,v)  -> Hashtbl.replace stab.functions k v
-  | `fields(k,v)  -> Hashtbl.replace stab.fields k v
-  | `procedures(k,v)  -> Hashtbl.replace stab.procedures k v
-  | `enums(k,v)  -> Hashtbl.replace stab.enums k v
+  | `incomplete_types (k,v)  -> 
+    let k = fixsym k in
+    Hashtbl.replace stab.incomplete_types k v
+
+  | `variables(k,v)  ->  
+    let k = fixsym k in
+    Hashtbl.replace stab.variables k v
+
+  | `functions((k,ts,cv),v)  -> 
+    let k = fixsym k in
+    Hashtbl.replace stab.functions (k,ts,cv) v
+
+  | `fields(k,v)  -> 
+    let k = fixsym k in
+    Hashtbl.replace stab.fields k v
+
+  | `procedures((k,ts,cv),v)  -> 
+    let k = fixsym k in
+    Hashtbl.replace stab.procedures (k,ts,cv) v
+
+  | `enums(k,v)  -> 
+    let k = fixsym k in
+    Hashtbl.replace stab.enums k v
 ;;
 
 let ispublic s = 
@@ -878,8 +956,87 @@ let add_loc {file=fname} =
   add_file fname
 ;;
 
-List.iter
-(fun g-> let loc = get_globalLoc g in 
+let ptr key a =
+  cvqual a ^ "ptr[" ^ key ^ "]"
+
+
+let handle_method ft registry key fname ftype loc =
+  match ft with
+  (* procedures *)
+  | (TVoid _,Some ps,false,a) ->
+    let key = ptr (fixsym key) a in
+    let args = 
+      if length ps = 0 then key 
+      else String.concat " * " (key :: (List.map (soa registry) ps)) 
+    in
+      let tsig = map (fun (_,t,a) -> typeSig t) ps in
+      let cv = cvqual a in
+      rpl loc (`procedures ((fname,tsig,cv), (args,"$1->"^fname^"($b);")))
+
+  (* no type arg = void *)
+  | (TVoid _,None,false,a) ->
+    let key = ptr key a in
+    let args = key in
+    let cv = cvqual a in
+    rpl loc (`procedures ((fname,[],cv), (args,"$1->"^fname^"();")))
+
+  (* variadic *)
+  | (TVoid _,Some t,true,a) ->
+    let key = ptr key a in
+    let cv = cvqual a in
+    rpl loc (`procedures ((fname^"[t]",[],cv), ("t","$1->"^fname^"($b);")))
+
+  (* functions *)
+  | (ret,Some ps,false,a) ->
+    let key = ptr key a in
+    let ftb =
+      let ret = sot (getreg loc) ret
+      and args = List.map (soa registry) ps
+      in 
+      (
+        (
+          if length ps = 0 
+          then key 
+          else String.concat " * " (key :: args)
+        ) 
+        ^ 
+        " -> " ^ ret,"$1->"^fname^"($a)"
+      )
+    in 
+      let tsig = map (fun (_,t,a) -> typeSig t) ps in
+      let cv = cvqual a in
+      rpl loc (`functions ((fname,tsig,cv), ftb))
+
+  (* no type arg = void *)
+  | (ret,None,false,a) ->
+    let key = ptr key a in
+    let ret = sot (getreg loc) ret in
+    let ftb =  key ^ " -> " ^ ret,"$1->"^fname^"()" in
+    let cv = cvqual a in
+    rpl loc (`functions ((fname,[],cv), ftb))
+
+  (* variadic *)
+  | (ret,Some _,true,a) ->
+    let key = ptr key a in
+    let ftb =
+      let ret = sot (getreg loc) ret in 
+      "t -> " ^ ret,"$1->"^fname^"($b)"
+    in 
+      let cv = cvqual a in
+      rpl loc (`functions ((fname^"[t]",[],cv), ftb))
+
+  (* can't be both variadic and have no arguments *)
+  | (_,None,true,_) -> assert false
+
+let handle_field registry key fname ftype loc =
+  match ftype with
+  | TFun (a,b,c,d) -> handle_method (a,b,c,d) registry key fname ftype loc
+
+  | _ ->
+    let t = key ^ " -> " ^ sot registry ftype in
+    rpl loc (`fields (("get_"^fname), (t,"$1->"^fname)))
+
+let handle_global g =  let loc = get_globalLoc g in 
   add_loc loc;
   match isanon g,flx_name g,flx_name' g with
   | _,None,_ 
@@ -909,12 +1066,11 @@ List.iter
       match  ttype with 
       | TComp (ci,_) -> 
         let anon= achk (ciname ci) in
-        begin match ci with { cfields=cfields } ->
+        begin match ci with { cname=cname; cfields=cfields } ->
         iter
         (fun {fname=fname; ftype=ftype} -> 
           if not (isanont ftype) && ispublic fname then
-          let t = key ^ " -> " ^ sot registry ftype in
-          rpl loc (`fields (("get_"^fname), (t,"$1."^fname)))
+          handle_field registry key fname ftype loc
         )
         cfields
         end
@@ -951,13 +1107,13 @@ List.iter
     end
 
   | GCompTag (ci,loc) -> 
+    let registry = getreg loc in
     rpl loc (`abstract_types (key, (pcci ci)));
-    begin match ci with { cfields=cfields } ->
+    begin match ci with { cname=cname; cfields=cfields } ->
     iter
     (fun {fname=fname; ftype=ftype} -> 
       if not (isanont ftype) && ispublic fname then
-      let t = key ^ " -> " ^ sot (getreg loc) ftype in
-      rpl loc (`fields (("get_"^fname), (t,"$1."^fname)))
+      handle_field registry key fname ftype loc
     )
     cfields
     end
@@ -986,18 +1142,22 @@ List.iter
     if ispublic vname then
     begin match vtype with
     | TFun (TVoid _,Some ps,false,a) ->
+      let tsig = map (fun (_,t,a) -> typeSig t) ps in
       let args = 
         if length ps = 0 then "1" 
         else String.concat " * " (List.map (soa registry) ps) 
       in
-      rpl loc (`procedures (key, (args,key'^"($a);")))
+      let cv = cvqual a in
+      rpl loc (`procedures ((key,tsig,cv), (args,key'^"($a);")))
 
     | TFun (TVoid _,None,false,a) ->
       let args = "1" in
-      rpl loc (`procedures (key, (args,key'^"();")))
+      let cv = cvqual a in
+      rpl loc (`procedures ((key,[],cv), (args,key'^"();")))
 
     | TFun (TVoid _,Some _,true,a) ->
-      rpl loc (`procedures ((key^"[t]"), ("t",key'^"($a);")))
+      let cv = cvqual a in
+      rpl loc (`procedures ((key^"[t]",[],cv), ("t",key'^"($a);")))
 
     | TFun (ret,Some ps,false,a) ->
       let ftb =
@@ -1014,19 +1174,23 @@ List.iter
           " -> " ^ ret,key'^"($a)"
         )
       in 
-        rpl loc (`functions (key, ftb))
+        let tsig = map (fun (_,t,a) -> typeSig t) ps in
+        let cv = cvqual a in
+        rpl loc (`functions ((key,tsig,cv), ftb))
 
     | TFun (ret,None,false,a) ->
       let ret = sot (getreg loc) ret in
       let ftb =  "1 -> " ^ ret,key'^"()" in
-      rpl loc (`functions (key, ftb))
+      let cv = cvqual a in
+      rpl loc (`functions ((key,[],cv), ftb))
 
     | TFun (ret,Some _,true,a) ->
       let ftb =
         let ret = sot (getreg loc) ret in 
         "t -> " ^ ret,key'^"($a)"
       in 
-        rpl loc (`functions ((key^"[t]"), ftb));
+        let cv = cvqual a in
+        rpl loc (`functions ((key^"[t]",[],cv), ftb));
         
     | _ ->
       rpl loc (`variables (key, (sot (getreg loc) vtype)))
@@ -1035,8 +1199,9 @@ List.iter
   | GAsm _ -> print_endline "GASM"
   | GPragma _ -> print_endline "PRAGMA"
   | GText _ -> print_endline "TEXT"
-)
-gs
+;;
+
+List.iter handle_global gs
 ;;
 
 let is_nonempty h = 
@@ -1466,7 +1631,7 @@ begin
       pe "//PROCEDURES";
       let ps = ref [] in
       Hashtbl.iter 
-      (fun k v -> ps := (k,v):: !ps)
+      (fun (k,_,_) v -> ps := (k,v):: !ps)
       stab.procedures
       ;
       let ps = sort compare !ps in
@@ -1484,7 +1649,7 @@ begin
       pe "//FUNCTIONS";
       let ps = ref [] in
       Hashtbl.iter
-      (fun k v -> ps := (k,v):: !ps)
+      (fun (k,_,_) v -> ps := (k,v):: !ps)
       stab.functions
       ;
       let ps = sort compare !ps in

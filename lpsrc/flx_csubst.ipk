@@ -26,6 +26,7 @@ open Flx_exceptions
 (* substitution encoding:
    $n: n'th component of argument tuple, 1 origin!
    $a: expands to $1, $2, .. $n
+   $b: expands to $2, .. $n
    `n: n'th component of argument tuple, reference kind
 
    #n: type of n'th component of argument tuple (1 origin)
@@ -111,6 +112,10 @@ let csubst sr sr2 ct args typs argtyp retyp gargs =
       begin match ch with
       | 'a' ->
         bcat (cat ", " args);
+        mode := Normal
+
+      | 'b' ->
+        bcat (cat ", " (List.tl args));
         mode := Normal
 
       | 't' ->

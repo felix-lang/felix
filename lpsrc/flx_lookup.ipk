@@ -464,7 +464,8 @@ and lookup_qn_in_env
   match lookup_qn_in_env2 syms env qn with
     | NonFunctionEntry x,ts -> x,ts
     | FunctionEntry _,_ ->
-      failwith 
+      let sr = src_of_expr (qn:>expr_t) in
+      clierr sr
       (
         "[lookup_qn_in_env] Not expecting " ^ 
         string_of_qualified_name qn ^
@@ -899,10 +900,9 @@ and bind_type'
     | `BTYP_tuple ls ->
       if i < 1 or i>List.length ls
       then 
-        failwith 
+       clierr sr 
         (
-          short_string_of_src sr ^
-          "\nproduct type projection index " ^ 
+          "product type projection index " ^ 
           string_of_int i ^ 
           " out of range 1 to " ^
           string_of_int (List.length ls)
@@ -910,9 +910,8 @@ and bind_type'
       else List.nth ls (i-1)
 
     | _ -> 
-      failwith 
+      clierr sr 
       (
-        short_string_of_src sr ^
         "\ntype projection requires product type"
       )
     end
@@ -922,7 +921,7 @@ and bind_type'
     begin match unfold t with
     | `BTYP_function (a,b) -> a
     | _ ->
-      failwith 
+      clierr sr
       (
         short_string_of_src sr ^
         "\ntype domain requires function" 
@@ -933,7 +932,7 @@ and bind_type'
     begin match unfold t with
     | `BTYP_function (a,b) -> b
     | _ ->
-      failwith 
+      clierr sr
       (
         short_string_of_src sr ^
         "\ntype codomain requires function" 
@@ -947,10 +946,9 @@ and bind_type'
     | `BTYP_sum ls ->
       if i < 1 or i>List.length ls
       then 
-        failwith 
+        clierr sr
         (
-          short_string_of_src sr ^
-          "\nsum type extraction index " ^ 
+          "sum type extraction index " ^ 
           string_of_int i ^ 
           " out of range 1 to " ^
           string_of_int (List.length ls)
@@ -958,10 +956,9 @@ and bind_type'
       else List.nth ls (i-1)
 
     | _ -> 
-      failwith 
+      clierr sr
       (
-        short_string_of_src sr ^
-        "\nsum type extraction requires sum type"
+        "sum type extraction requires sum type"
       )
     end
 
@@ -1173,10 +1170,9 @@ and bind_type_index syms
 
 
     | _ -> 
-      failwith 
+      clierr sr
       (
         "[bind_type_index] Type " ^ id ^ 
-        " defined at " ^ short_string_of_src sr ^
         " must be a type [alias, abstract, union, struct], got:\n" ^
         string_of_symdef entry id vs
       )
@@ -1198,7 +1194,7 @@ and  typeof_literal syms env sr v : btypecode_t =
   | NonFunctionEntry (index) -> 
     `BTYP_inst (index,[])
   | _ -> 
-    failwith 
+    clierr sr
     (
       "Unable to find simple definition of type " ^ 
       name ^ " of literal " ^
@@ -1292,7 +1288,7 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth index args =
          then 
            ret_type := varmap_subst syms.varmap !ret_type
          else 
-           failwith 
+           clierr sr
            (
               "Inconsistent return type of " ^ id ^ "<"^string_of_int index^">"
            )
@@ -1334,7 +1330,7 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth index args =
               "Inconsistent return type of " ^ id ^ "<"^string_of_int index^">"
             )
             ;
-            failwith 
+            clierr sr
             (
               "Inconsistent return type of " ^ id ^ "<"^string_of_int index^">"
             )
@@ -1502,7 +1498,7 @@ and inner_typeofindex
     bt t
     
   | `SYMDEF_union _ ->
-    failwith ("Union "^id^" doesn't have a type")
+    clierr sr ("Union "^id^" doesn't have a type")
 
   (* struct as function *)
   | `SYMDEF_struct (ls) -> 
@@ -1517,11 +1513,10 @@ and inner_typeofindex
     t
 
   | _ ->
-    failwith 
+    clierr sr
     (
-      "[typeofindex] Expected declaration of typed entity for index "^string_of_int index^", got " ^
-      id ^ " declared at " ^
-      short_string_of_src sr
+      "[typeofindex] Expected declaration of typed entity for index "^
+      string_of_int index^", got " ^ id 
     )
 
 and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
@@ -1613,7 +1608,7 @@ and koenig_lookup syms sra id' name_map fn t2 ts =
   let entries =  
     try Hashtbl.find name_map fn 
     with Not_found -> 
-      failwith 
+      clierr sra
       (
         "Koenig lookup: can't find name "^
         fn^ " in " ^ 
@@ -1647,7 +1642,7 @@ and koenig_lookup syms sra id' name_map fn t2 ts =
           "\ncandidates are: " ^ full_string_of_entry_set syms.dfns entries
         )
     end
-  | NonFunctionEntry _ -> failwith "Koenig lookup expected function"
+  | NonFunctionEntry _ -> clierr sra "Koenig lookup expected function"
 
 (* this routine has to return a function or procedure .. *)
 and lookup_qn_with_sig
@@ -1686,9 +1681,9 @@ and lookup_qn_with_sig'
     *)
     bind_type syms env sr t in
   match qn with
-  | `AST_void _ -> failwith "qualified-name is void"
+  | `AST_void _ -> clierr sra "qualified-name is void"
 
-  | `AST_case_tag _ -> failwith "Can't lookup case tag here"
+  | `AST_case_tag _ -> clierr sra "Can't lookup case tag here"
 
   (* WEIRD .. this is a qualified name syntactically ..
     but semantically it belongs in bind_expression
@@ -1699,7 +1694,7 @@ and lookup_qn_with_sig'
     begin match unfold t with
     | `BTYP_sum ls ->
       if v<1 or v> List.length ls
-      then failwith "Case index out of range of sum"
+      then clierr sra "Case index out of range of sum"
       else let vt = List.nth ls (v-1) in
       let ct = `BTYP_function (vt,t) in
       `BEXPR_case (v,t), ct
@@ -1745,10 +1740,10 @@ and lookup_qn_with_sig'
           ->
             begin match entry with
             | `SYMDEF_inherit_fun qn ->
-                failwith "Chasing functional inherit in lookup_qn_with_sig'";
+                clierr sr "Chasing functional inherit in lookup_qn_with_sig'";
 
             | `SYMDEF_inherit qn ->
-                failwith "Chasing inherit in lookup_qn_with_sig'";
+                clierr sr "Chasing inherit in lookup_qn_with_sig'";
 
             | `SYMDEF_struct _ ->
               (*
@@ -1946,15 +1941,14 @@ and handle_function
           | _ -> raise (Free_fixpoint t)
         end
         ;
-        failwith 
+        clierr sra
         (
           "[handle_function]: closure operator expected '"^name^"' to be function definition, got '"^
           sbt syms.dfns t
-          ^"', " ^ short_string_of_src sra
         )
     )
   | _ -> 
-    failwith 
+    clierr sra
     (
       "[handle_function] Expected function"
     )
@@ -2054,9 +2048,9 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     {id=id;sr=sr;parent=parent;vs=vs;symdef=entry}->
     begin match entry with
     | `SYMDEF_inherit _ -> 
-      failwith "Woops found inherit in lookup_name_in_table_dirs_with_sig"
+      clierr sra "Woops found inherit in lookup_name_in_table_dirs_with_sig"
     | `SYMDEF_inherit_fun _ -> 
-      failwith "Woops found inherit function in lookup_name_in_table_dirs_with_sig"
+      clierr sra "Woops found inherit function in lookup_name_in_table_dirs_with_sig"
 
     | `SYMDEF_struct _
       ->
@@ -2086,7 +2080,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
       -> handle_variable syms env index id srn vs ts t t2
     | _ 
       -> 
-        failwith 
+        clierr sra 
         (
           "Expected " ^id^
           " to be struct or variable of function type, got " ^ 
@@ -2175,7 +2169,8 @@ and bind_regdef syms env idx_fixlist regexp_exclude e =
     | i,_ ->
       if List.mem i regexp_exclude
       then 
-        failwith
+        let sr = src_of_expr (qn:>expr_t) in
+        clierr sr
         (
           "[bind_regdef] Regdef " ^ string_of_qualified_name qn ^
           " depends on itself"
@@ -2188,7 +2183,8 @@ and bind_regdef syms env idx_fixlist regexp_exclude e =
           | `SYMDEF_regdef e ->
             bind_regdef syms env idx_fixlist (i::regexp_exclude) e
           | _ -> 
-            failwith 
+            let sr = src_of_expr (qn:>expr_t) in
+            clierr sr
             (
               "[bind_regdef] Expected " ^ string_of_qualified_name qn ^
               " to be regdef"
@@ -2218,7 +2214,7 @@ and handle_map sr (f,ft) (a,at) =
       applies ((map[i] f) a) where map[i] denotes
       the map function generated for data structure i
       *)
-      failwith "NOT  IMPLEMENTED"
+      failwith "MAP NOT IMPLEMENTED"
  
 and bind_expression' syms env idx_fixlist expr_fixlist depth e 
 : tbexpr_t = 
@@ -2305,14 +2301,14 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     begin let mksum a b = apl2 sri "add" [a;b] in
     match ls with 
     | h::t -> be (List.fold_left mksum h t)
-    | [] -> failwith "Not expecting empty product (unit)"
+    | [] -> clierr sri "Not expecting empty product (unit)"
     end
     
   | `AST_product (sri,ls) ->
     begin let mkprod a b = apl2 sri "mul" [a;b] in
     match ls with 
     | h::t -> be (List.fold_left mkprod h t)
-    | [] -> failwith "Not expecting empty sum (void)"
+    | [] -> clierr sri "Not expecting empty sum (void)"
     end
 
   | `AST_coercion (sr,(m,t)) -> 
@@ -2326,31 +2322,27 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     | `BTYP_tuple ts -> 
       let len = List.length ts in
       if n<0 or n>len-1
-      then failwith 
+      then clierr sr
         (
           "[bind_expression] Tuple index " ^ 
           string_of_int n ^
           " out of range 0.." ^
-          string_of_int (len-1) ^
-          " in " ^
-          short_string_of_src sr
+          string_of_int (len-1)
         )
       else List.nth ts n
     | _ -> 
-      failwith 
+      clierr sr 
       (
         "[bind_expression] Expected tuple " ^ 
         string_of_expr e' ^ 
         " to have tuple type, got " ^ 
-        sbt syms.dfns typ ^
-        " in " ^
-        short_string_of_src sr
+        sbt syms.dfns typ
       )
     in 
       `BEXPR_get_n (n, (expr,typ)), ctyp
 
   | `AST_case_tag (sr,v) ->
-     failwith "plain case tag not allowed in expression (only in pattern)"
+     clierr sr "plain case tag not allowed in expression (only in pattern)"
 
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
@@ -2358,7 +2350,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     begin match unfold t with
     | `BTYP_sum ls ->
       if v<1 or v> List.length ls
-      then failwith "Case index out of range of sum"
+      then clierr sr "Case index out of range of sum"
       else let vt = List.nth ls (v-1) in
       let ct = 
         match vt with
@@ -2440,10 +2432,9 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
         end
 
       | None ->
-        failwith
+        clierr sr
         (
-          "Can't find " ^ name ^ " in\n" ^
-          short_string_of_src sr
+          "Can't find " ^ name
         )
       end
 
@@ -2474,8 +2465,8 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
       begin match get_data syms.dfns index with
       {id=id; sr=sr; symdef=entry} ->
       begin match entry with
-      | `SYMDEF_inherit _ -> failwith "Woops, bindexpr yielded inherit"
-      | `SYMDEF_inherit_fun _ -> failwith "Woops, bindexpr yielded inherit fun"
+      | `SYMDEF_inherit _ -> clierr srr "Woops, bindexpr yielded inherit"
+      | `SYMDEF_inherit_fun _ -> clierr srr "Woops, bindexpr yielded inherit fun"
       | `SYMDEF_var _
       | `SYMDEF_parameter (`TYP_pointer _) -> 
         `BEXPR_ref (index,ts), 
@@ -2545,7 +2536,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
         begin match get_data syms.dfns index with
         {id=id; parent=parent;sr=sr;symdef=entry} ->
         match parent with
-        | None -> failwith "Koenig lookup: No parent for method apply (can't handle global yet)"
+        | None -> clierr sra "Koenig lookup: No parent for method apply (can't handle global yet)"
         | Some index' ->
           match get_data syms.dfns index' with
           {id=id';sr=sr';parent=parent';vs=vs';pubmap=name_map;dirs=dirs;symdef=entry'}
@@ -2663,38 +2654,34 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     end
 
   | `AST_regmatch (sr,(e,cls)) ->
-    failwith 
+    syserr sr
     (
-      "[bind_expression] " ^
-      short_string_of_src sr ^
-      "\n[Compiler error] Unexpected regmatch when binding expression (should have been lifted out)" ^
+      "[bind_expression] "  ^
+      "Unexpected regmatch when binding expression (should have been lifted out)" ^
       string_of_expr e
     )
 
   | `AST_reglex (sr,(p1,p2,cls)) ->
-    failwith 
+    syserr sr
     (
       "[bind_expression] " ^
-      short_string_of_src sr ^
-      "\n[Compiler error] Unexpected reglex when binding expression (should have been lifted out)" ^
+      "Unexpected reglex when binding expression (should have been lifted out)" ^
       string_of_expr e
     )
 
   | `AST_lambda (sr,_) -> 
-    failwith 
+    syserr sr
     (
       "[bind_expression] " ^
-      short_string_of_src sr ^
-      "\n[Compiler error] Unexpected lambda when binding expression (should have been lifted out)" ^
+      "Unexpected lambda when binding expression (should have been lifted out)" ^
       string_of_expr e
     )
 
   | `AST_match (sr,_) -> 
-    failwith 
+    clierr sr
     (
       "[bind_expression] " ^
-      short_string_of_src sr ^
-      "[Compiler error] Unexpected match when binding expression (should have been lifted out)"
+      "Unexpected match when binding expression (should have been lifted out)"
     )
 
 and resolve_overload
@@ -2804,8 +2791,8 @@ and pub_table_dir
   i 
 : name_map_t =
   match get_data syms.dfns i with
-  | {pubmap=table;symdef=`SYMDEF_module} -> table
-  | _ -> failwith "[map_dir] Expected module"
+  | {sr=sr; pubmap=table;symdef=`SYMDEF_module} -> table
+  | {sr=sr} -> clierr sr "[map_dir] Expected module"
 
 
 and get_pub_tables syms env dirs =
@@ -2918,8 +2905,8 @@ and rebind_btype syms env sr ts t: btypecode_t =
   | `BTYP_array (t1,t2) -> `BTYP_array (rbt t1, rbt t2)
   | `BTYP_void -> `BTYP_void
   | `BTYP_fix i -> `BTYP_fix i
-  | `BTYP_var i -> failwith "Unexpected type variable in rebind_type"
-  | _ -> failwith ("[rebind_type] Unexpected " ^ sbt syms.dfns t)
+  | `BTYP_var i -> clierr sr ("[rebind_type] Unexpected type variable " ^ sbt syms.dfns t)
+  | _ -> clierr sr ("[rebind_type] Unexpected " ^ sbt syms.dfns t)
 
 
 and check_module syms sr entries ts =
@@ -2929,7 +2916,7 @@ and check_module syms sr entries ts =
       | {dirs=dirs;pubmap=table;symdef=`SYMDEF_module} -> 
         Simple_module (index,ts,table,dirs)
       | {id=id;sr=sr'} -> 
-        failwith 
+        clierr sr
         (
           "Expected '" ^ id ^ "' to be module in: " ^
           short_string_of_src sr ^ ", found: " ^
@@ -2975,11 +2962,11 @@ and eval_module_expr syms env e : module_rep_t =
     end 
 
   | _ ->
-    failwith 
+    let sr = src_of_expr e in
+    clierr sr
     (
       "Invalid module expression " ^ 
-      string_of_expr e ^ " in\n" ^
-      short_string_of_src (src_of_expr e) 
+      string_of_expr e
     )
 
 

@@ -15618,40 +15618,46 @@ let makeGlobalVarinfo (isadef: bool) (vi: varinfo) : varinfo * bool =
        * local. This can happen when we declare an extern variable with 
        * global scope but we are in a local scope. *)
     let oldvi, oldloc = lookupGlobalVar vi.vname in
-    (* It was already defined. We must reuse the varinfo. But clean up the 
-     * storage.  *)
-    let newstorage =
-      match oldvi.vstorage, vi.vstorage with
-      | Extern, other
-      | NoStorage, other
-      | other, Extern
-      | other, NoStorage ->
-          other
-      | _ ->
-          if vi.vstorage != oldvi.vstorage then
-            ignore (warn
-                      "Inconsistent storage specification for %s. Previous declaration: %a" 
-                      vi.vname d_loc oldloc);
-          vi.vstorage
-    in
-    oldvi.vinline <- oldvi.vinline || vi.vinline;
-    oldvi.vstorage <- newstorage;
-    (* Union the attributes *)
-    oldvi.vattr <- cabsAddAttributes oldvi.vattr vi.vattr;
     begin 
       try
         oldvi.vtype <- 
            combineTypes 
              (if isadef then CombineFundef else CombineOther) 
-             oldvi.vtype vi.vtype;
+             oldvi.vtype vi.vtype
+         ;
+        (* It was already defined. We must reuse the varinfo. 
+         * But clean up the storage.  *)
+        let newstorage =
+          match oldvi.vstorage, vi.vstorage with
+          | Extern, other
+          | NoStorage, other
+          | other, Extern
+          | other, NoStorage ->
+              other
+          | _ ->
+              if vi.vstorage != oldvi.vstorage then
+                ignore (warn
+                          "Inconsistent storage specification for %s. Previous declaration: %a" 
+                          vi.vname d_loc oldloc);
+              vi.vstorage
+        in
+        oldvi.vinline <- oldvi.vinline || vi.vinline;
+        oldvi.vstorage <- newstorage;
+        oldvi.vattr <- cabsAddAttributes oldvi.vattr vi.vattr;
+        oldvi, true
+
       with Failure reason -> 
         ignore (E.log "old type = %a\n" d_plaintype oldvi.vtype);
         ignore (E.log "new type = %a\n" d_plaintype vi.vtype);
-        E.s (error "Declaration of %s does not match previous declaration from %a (%s)." 
+        if !Flx_cil_lexerhack.get_lang () =`C then
+          E.s (error "Declaration of %s does not match previous declaration from %a (%s)." 
                vi.vname d_loc oldloc reason)
+        else begin
+          ignore (E.log "[Overload] %s." vi.vname);
+          vi, false
+        end
     end;
       
-    oldvi, true
       
   with Not_found -> begin (* A new one.  *)
     (* Announce the name to the alpha conversion table. This will not 
@@ -20088,7 +20094,7 @@ begin
   (printExpr expr);
 
   (* apply the transformation *)
-  let result = (visitFlx_cil_cabsExpression (new substitutor bindings :> cabsVisitor) expr) in
+  let result = (visit_cabsExpression (new substitutor bindings :> cabsVisitor) expr) in
   (printExpr result);
 
   result
@@ -20204,7 +20210,7 @@ begin
                      loc.lineno d_loc (get_definitionloc d)));
 
         (* walk around in 'd' looking for expressions to modify *)
-        let dList = (visitFlx_cil_cabsDefinition
+        let dList = (visit_cabsDefinition
                       ((new exprTransformer srcpattern destpattern
                                             loc.lineno (get_definitionloc d))
                        :> cabsVisitor)
@@ -20212,7 +20218,7 @@ begin
                     ) in
 
         (* recursively invoke myself to try additional patches *)
-        (* since visitFlx_cil_cabsDefinition might return a list, I'll try my *)
+        (* since visit_cabsDefinition might return a list, I'll try my *)
         (* addtional patches on every yielded definition, then collapse *)
         (* all of them into a single list *)
         (List.flatten (List.map (fun d -> (patchDefn rest d)) dList))
@@ -20653,7 +20659,7 @@ begin
   (printDefn defn);
 
   (* apply the transformation *)
-  match (visitFlx_cil_cabsDefinition (new substitutor bindings :> cabsVisitor) defn) with
+  match (visit_cabsDefinition (new substitutor bindings :> cabsVisitor) defn) with
   | [d] -> d    (* expect a singleton list *)
   | _ -> (failwith "didn't get a singleton list where I expected one")
 end
