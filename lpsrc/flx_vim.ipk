@@ -17,6 +17,12 @@ elseif exists("b:current_syntax")
   finish
 endif
 
+" C/C++ keywords which are not Felix ones (bad style)
+syn keyword cError continue
+syn keyword cError repeat
+syn keyword cError until
+syn keyword cError break
+
 " all the felix keywords ..
 " directives
 syn keyword cDefine comment
@@ -28,14 +34,18 @@ syn keyword cDefine include
 syn keyword cDefine header
 syn keyword cDefine body
 syn keyword cDefine macro
+syn keyword cDefine pod
+syn keyword cDefine inline
+syn keyword cDefine noinline
+syn keyword cDefine incomplete 
 
 " actually this is a statement, but the directive colour seems best..
 syn keyword cDefine inherit
 
 " special identifiers
 syn keyword cDefine root
-syn keyword cDefine parent
 syn keyword cDefine self
+syn keyword cDefine this
 
 " to do stuff
 syn keyword cToDo todo
@@ -44,7 +54,6 @@ syn keyword cToDo todo
 syn keyword cStatement interface
 syn keyword cStatement functor
 syn keyword cStatement fun
-syn keyword cStatement inline
 syn keyword cStatement obj
 syn keyword cStatement def
 syn keyword cStatement proc
@@ -74,6 +83,8 @@ syn keyword cStatement endmatch
 syn keyword cStatement except
 syn keyword cStatement finally
 syn keyword cStatement raise
+syn keyword cStatement do
+syn keyword cStatement done
 
 " operators
 syn keyword cStatement not

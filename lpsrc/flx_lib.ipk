@@ -82,6 +82,8 @@ namespace flx { namespace rtl { namespace i18n {
 namespace flx { namespace rtl { namespace ioutil {
   std::string load_file (std::string);
   std::string readln(std::FILE*);
+  void write (std::FILE *, std::string);
+  void writeln (std::FILE *, std::string);
 }}}
 #endif
 
@@ -133,6 +135,21 @@ namespace flx { namespace rtl { namespace ioutil {
     }
     else return "";
   }
+
+  void write (FILE *fi, string s)
+  {
+    fwrite(s.data(),s.size(),1,fi);
+  }
+
+  void writeln (FILE *fi, string s)
+  {
+    static char *eol = "\n";
+    static int n = 0;
+    if(n==0)n=strlen(eol);
+    fwrite(s.data(),s.size(),1,fi);
+    fwrite(eol,n,1,fi);
+  }
+
 }}}
 
 @h=tangler('rtl/flx_strutil.cpp')
@@ -486,6 +503,7 @@ module System
 @tangle('  const felix_version : string = \'std::string("'+flx_version+'")\';')
   fun system: string -> int = "std::system($1.data())"
     requires cstdlib;
+  proc exit: int;
 }
 
 @#------------- Environment -------------------
@@ -506,6 +524,8 @@ module Text_file
   fun fopen_output: string -> text_file = 'std::fopen($1.data(),"wt")';
   proc fclose: text_file = '(void)std::fclose($1);';
   fun readln: text_file -> string ="flx::rtl::ioutil::readln($1)";
+  proc writeln : text_file * string ="flx::rtl::ioutil::writeln($1,$2);";
+  proc write : text_file * string ="flx::rtl::ioutil::write($1,$2);";
 
   const stdin: text_file = "stdin";
   const stdout: text_file = "stdout";

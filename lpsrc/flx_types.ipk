@@ -445,6 +445,8 @@ and statement_t =
   | `AST_label of range_srcref * id_t
   | `AST_goto of range_srcref * id_t 
   | `AST_ifgoto of range_srcref * expr_t *id_t
+  | `AST_ifreturn of range_srcref * expr_t
+  | `AST_ifdo of range_srcref * expr_t * statement_t list * statement_t list
   | `AST_ifnotgoto of range_srcref * expr_t * id_t
   | `AST_call of range_srcref * expr_t * expr_t 
   | `AST_assign of range_srcref * string * tlvalue_t * expr_t 
@@ -1200,6 +1202,8 @@ let src_of_stmt e = match e with
   | `AST_fun_return (s, _) 
   | `AST_proc_return s 
   | `AST_ifgoto (s,_,_)
+  | `AST_ifreturn (s,_)
+  | `AST_ifdo (s,_,_,_)
   | `AST_ifnotgoto (s,_,_)
   | `AST_abs_decl (s,_,_, _,_,_) 
   | `AST_ctypes (s,_,_,_) 
@@ -2331,7 +2335,19 @@ and string_of_statement level s =
 
   | `AST_ifgoto (_,e,lab) ->
     spaces level ^
-    "if("^string_of_expr e^")goto " ^ lab
+    "if("^string_of_expr e^")goto " ^ lab ^ ";"
+
+  | `AST_ifreturn (_,e) ->
+    spaces level ^
+    "if("^string_of_expr e^")return;" 
+
+  | `AST_ifdo (_,e,ss1,ss2) ->
+    spaces level ^
+    "if("^string_of_expr e^")do\n" ^
+    catmap "\n" (string_of_statement (level+1)) ss1 ^
+    spaces level ^ "else\n" ^
+    catmap "\n" (string_of_statement (level+1)) ss2 ^
+    spaces level ^ "done;"
     
   | `AST_ifnotgoto (_,e,lab) ->
     spaces level ^
@@ -3686,7 +3702,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | `AST_literal (sr,`AST_int (enc,v)) ->
     if enc <> "int" 
     then 
-      failwith 
+      clierr sr
       (
         "Only plain integer can be used as a type, code= '" ^ 
         enc ^
@@ -3695,11 +3711,11 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
     else 
     let v = ref 
       begin try Big_int.int_of_big_int v
-      with _ -> failwith ("Integer used as type out of range")
+      with _ -> clierr sr "Integer used as type out of range"
       end
     in
-      if !v <0 then failwith "Negative int not allowed as type"
-      else if !v >=2000 then failwith "Int used as type must be <2000"
+      if !v <0 then clierr sr "Negative int not allowed as type"
+      else if !v >=2000 then clierr sr "Int used as type must be <2000"
       else if !v = 0 then ((`AST_void sr) :> typecode_t)
       else if !v = 1 then `TYP_tuple[]
       else begin 
@@ -3727,7 +3743,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
           if name.[i] <= '9' && name.[i] >='0'
           then acc := 10 * !acc + Char.code (name.[i]) - Char.code '0'
           else
-            failwith 
+            clierr sr 
             (
               "Digits expected in name '" ^ name ^ "' in\n" ^
               short_string_of_src sr
@@ -3744,7 +3760,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
           if name.[i] <= '9' && name.[i] >='0'
           then acc := 10 * !acc + Char.code (name.[i]) - Char.code '0'
           else
-            failwith 
+            clierr sr
             (
               "Digits expected in name '" ^ name ^ "' in\n" ^
               short_string_of_src sr
@@ -3791,11 +3807,8 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
     `TYP_type_match (e,ps)
 
   | #expr_t -> 
-    failwith 
-    (
-      "Type expression expected in\n" ^
-      short_string_of_src (src_of_expr e)
-    )
+    let sr = src_of_expr e in
+    clierr sr "Type expression expected"
     
 @head(1,'Charset')
 @select(tangler('src/flx_charset.mli'))

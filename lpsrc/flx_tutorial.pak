@@ -1998,6 +1998,145 @@ zero:>
 
 f(10);
 
+@head(2,'Conditional Statements')
+Felix supports a traditional procedural if chain.
+Here is a simple if/do/done:
+
+@select(tangler(tdir+'tut149a.flx'))
+include "std";
+// procedural if
+proc f(x:int) {
+  if x == 1 do print "ONE"; endl; done;
+}
+
+f 1;
+f 2;
+
+@doc()
+
+You can also have an else clause:
+@select(tangler(tdir+'tut149b.flx'))
+include "std";
+// procedural if/else
+proc f(x:int) {
+  if x == 1 do print "ONE"; endl; 
+  else print "Not a one .."; endl;
+  done;
+}
+
+f 1;
+f 2;
+
+@doc()
+
+and even elif clauses:
+@select(tangler(tdir+'tut149c.flx'))
+include "std";
+// procedural if/do/elif/else
+proc f(x:int) {
+  if x == 1 do print "ONE"; endl; 
+  elif x == 2 do print "TWO"; endl; 
+  else print "Not a one .."; endl;
+  done;
+}
+
+f 1;
+f 2;
+f 3;
+
+@doc()
+
+Any number of statements can be used, including none.
+You can also use a conditional return or goto instead
+of the do part:
+@select(tangler(tdir+'tut149d.flx'))
+include "std";
+// procedural if
+proc f(x:int) {
+  if x == 1 do print "ONE "; endl; 
+  elif x == 2 return;
+  else print "Weird ";
+  done;
+  print "Found";
+}
+
+f 1;
+f 2;
+f 3;
+
+@head(2,'More on Conditionals')
+Of course conditional statements can be nested.
+@p()
+Also, like C, you can jump into conditionals,
+although this practice isn't recommended.
+This is because conditionals are just
+shorthand for a web of labels and conditional gotos,
+so adding extra labels can gotos is possible.
+
+@select(tangler(tdir+'tut149e.flx'))
+include "std";
+
+inline proc f(x:int) (y:int) {
+  print "NOT ONE"; endl;
+  if x == 1 do 
+    print 1; print " ";
+    if y == 20 goto twenty;
+    if y == 10 do print "TEN"; else done;
+  elif x == 2 do 
+    print 2; print " ";
+    if y == 20 do 
+twenty:> 
+      print "TWENTY"; 
+    done;
+  else print "Dunno .. ";
+  done;
+  endl;
+}
+
+f 1 10;
+f 1 20;
+f 1 40;
+f 2 20;
+f 3 30;
+
+@doc()
+Conditionals are primarily a convenient shorthand for 
+conditional expressions with procedural arguments.
+Conditional expresssions always have an else part,
+so that f1 and f2 below are equivalent:
+
+@select(tangler(tdir+'tut149f.flx'))
+include "std";
+
+proc f1(x:int) {
+  if x == 1 then { print 1; endl; } 
+  else {} endif;
+}
+
+proc f2(x:int) {
+  if x == 1 do print 1; endl; done;
+}
+
+f1 1;
+f2 1;
+
+@doc()
+You can see we avoid the messy 'else {}'.
+@p()
+Conditionals may contain declarations.
+However the bodies are not blocks, and the declared
+symbols are not local to the conditional bodies.
+@p()
+The macro processor can fold
+conditional statements, in particular it can
+choose between two declarations.
+
+@select(tangler(tdir+'tut149g.flx'))
+include "std";
+macro val x = 1;
+if x == 1 do val y = 1; else val y = "ONE"; done;
+print y; endl;
+
 @head(2,'Failure')
 The fail construction is used to abort a
 task with prejudice. A string argument may be

@@ -586,7 +586,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
         reachable := false
       )
     | _ ->
-      ctack (`AST_ifgoto (sr, me e, mi sr id))
+      ctack (`AST_ifgoto (sr, e, mi sr id))
     end
 
   | `AST_ifnotgoto (sr, e, id) -> 
@@ -599,8 +599,48 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
         reachable := false
       )
     | _ ->
-      ctack (`AST_ifnotgoto (sr, me e, mi sr id))
+      ctack (`AST_ifnotgoto (sr, e, mi sr id))
     end
+  
+  | `AST_ifreturn (sr, e) -> 
+    let e = me e in
+    begin match e with
+    | `AST_typed_case (_,c,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) ->
+      if c = 2 then 
+      ( 
+        ctack (`AST_proc_return sr);
+        reachable := false
+      )
+    | _ ->
+      let n = !seq in incr seq;
+      let lab = "_" ^ string_of_int n in
+      ctack (`AST_ifnotgoto (sr, e, lab));
+      ctack (`AST_proc_return sr);
+      ctack (`AST_label (sr,lab))
+    end
+
+  | `AST_ifdo (sr, e, sts1, sts2) -> 
+    let e = me e in
+    begin match e with
+    | `AST_typed_case (_,c,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) ->
+      if c = 2 then
+        iter ctack (ms sts1)
+      else
+        iter ctack (ms sts2)
+
+    | _ ->
+      let n1 = !seq in incr seq;
+      let n2 = !seq in incr seq;
+      let lab1 = "_" ^ string_of_int n1 in
+      let lab2 = "_" ^ string_of_int n2 in
+      ctack (`AST_ifnotgoto (sr, e, lab1));
+      iter ctack (ms sts1);
+      ctack (`AST_goto (sr,lab2));
+      ctack (`AST_label (sr,lab1));
+      iter ctack (ms sts2);
+      ctack (`AST_label (sr,lab2))
+    end
+
 
   | `AST_jump (sr, e1, e2) ->
     ctack (`AST_jump (sr, me e1, me e2));
@@ -752,8 +792,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     let id2 = 
       match id2 with 
       | "" -> 
-        let n = !seq in 
-        incr seq; 
+        let n = !seq in incr seq; 
         "_" ^ local_prefix^ "_" ^ string_of_int n
       | _ -> id2
     in

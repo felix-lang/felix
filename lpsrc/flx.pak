@@ -239,6 +239,8 @@ Flx_version.version_data := version_data
     ["cstruct", "CSTRUCT"],
     ["ctypes", "CTYPES"],
     ["def", "DEF"],
+    ["do", "DO"],
+    ["done", "DONE"],
     ["elif", "ELIF"],
     ["else", "ELSE"],
     ["endif", "ENDIF"],

@@ -188,7 +188,13 @@ let parse_tokens (parser:'a parser_t) (tokens: Flx_parse.token list) =
   let toker = (new tokeniser tokens) in
   try 
     parser (toker#token_src) (Lexing.from_string "dummy" )
-  with _ ->
+  with 
+  | Flx_exceptions.ClientError _ 
+  | Flx_exceptions.ClientError2 _ 
+  | Flx_exceptions.ClientErrorn _ as x -> 
+    toker#report_syntax_error;
+    raise x
+  | _ ->
     toker#report_syntax_error;
     raise (Flx_exceptions.ParseError "Parsing Tokens")
 

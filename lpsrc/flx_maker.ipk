@@ -988,7 +988,7 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('tests.bagley: dummy')
 @tangle('\tpython script/maker bagley')
-@tangle('\tsh bagley/run.sh')
+@tangle('\tsh -x bagley/run.sh')
 @tangle('')
 @tangle('rtl: dummy')
 @tangle('\tpython script/maker rtl')
