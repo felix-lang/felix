@@ -152,25 +152,22 @@ let bind_exes syms env exes ret_type id =
         print_endline ("Expression is " ^ string_of_expr e);
         *)
         let e',t' = be e in
-        begin 
-          try 
-            (*
-            print_endline ("Starting ret type is " ^ string_of_btypecode syms.dfns !ret_type);
-            print_endline ("Expression type is   " ^ string_of_btypecode syms.dfns t');
-            *)
-            let mgu = do_unify syms !ret_type t' in
-            ret_type := varmap_subst syms.varmap !ret_type;
-            `BEXE_return (e',lower t')
-          with 
-            Not_found ->
-              failwith 
-              (
-                "Wrong return type,\nexpected : " ^ 
-                string_of_btypecode syms.dfns !ret_type ^
-                "\nbut we got " ^
-                string_of_btypecode syms.dfns t'
-              )
-        end
+        (*
+          print_endline ("Starting ret type is " ^ string_of_btypecode syms.dfns !ret_type);
+          print_endline ("Expression type is   " ^ string_of_btypecode syms.dfns t');
+        *)
+        if do_unify syms !ret_type t' then begin
+          ret_type := varmap_subst syms.varmap !ret_type;
+          `BEXE_return (e',lower t')
+        end 
+        else
+          failwith 
+          (
+            "Wrong return type,\nexpected : " ^ 
+            string_of_btypecode syms.dfns !ret_type ^
+            "\nbut we got " ^
+            string_of_btypecode syms.dfns t'
+          )
 
       | `EXE_nop s ->           `BEXE_nop s 
       | `EXE_code s ->          `BEXE_code s
@@ -192,7 +189,49 @@ let bind_exes syms env exes ret_type id =
           )
         | NonFunctionEntry _ -> failwith "Not expecting bound entry"
         end
-        
+
+      | `EXE_regmatch (e,cls) ->  
+        (*
+        print_endline "Binding regmatch";
+        *) 
+        reachable := false;
+        let e = be e in
+        let bd e = bind_regdef syms env [] [] [] e in
+
+        (* create a unified regexp using REGEXP_code for expressions *)
+        let f (e,c) = REGEXP_seq (e, REGEXP_code c) in
+        let re = List.map f cls in
+        let alt r1 r2 = REGEXP_alt (r1,r2) in
+        let re = List.fold_right alt re REGEXP_sentinel in
+
+        (* do lookups *)
+        let re = bd re in
+
+        (* generate transition matrix *)
+        let alphabet, nstates, code_table, matrix = Flx_dfa.process_regexp re in
+        let alphabet = CharSet.elements alphabet in
+
+        (* bind RHS expressions *)
+        let bcode = Hashtbl.create 97 in
+        Hashtbl.iter
+        (fun i c -> 
+          let _,t as bt = be c in
+          Hashtbl.add bcode i bt;
+          incr return_count;
+          if do_unify syms !ret_type t then
+            ret_type := varmap_subst syms.varmap !ret_type
+          else 
+            failwith 
+            (
+              "Wrong return type,\nexpected : " ^ 
+              string_of_btypecode syms.dfns !ret_type ^
+              "\nbut we got " ^
+              string_of_btypecode syms.dfns t
+            )
+        )
+        code_table
+        ;
+        `BEXE_regmatch (e,alphabet,nstates, bcode,matrix)
     )
     exes
   in 
@@ -210,12 +249,18 @@ let bind_exes syms env exes ret_type id =
   *)
 
   (* No return statements found: it must be a procedure,
-     so unify void
+     so unify void [just a comparison with void .. heh!]
   *)
   if !return_count = 0 then
   begin
-    let mgu = do_unify syms !ret_type `BTYP_void in
-    ret_type := varmap_subst syms.varmap !ret_type;
+    if do_unify syms !ret_type `BTYP_void 
+    then
+      ret_type := varmap_subst syms.varmap !ret_type
+    else
+      failwith 
+      (
+        "procedure " ^id^" has non-void return type"
+      )
   end
   ;
 
@@ -310,6 +355,7 @@ let bbind_sym syms bbdfns i (name,sr,parent,bdcl) =
       (name,parent,`BBDCL_function ([],rt',bbexes,Hashtbl.create 97))
 
 
+
     | `SYMDEF_procedure (ps,exes,name_map,dirs) -> 
       (*
       print_endline ("//Binding procedure " ^ string_of_int i ^ " --> " ^ name); 
@@ -383,6 +429,8 @@ let bbind_sym syms bbdfns i (name,sr,parent,bdcl) =
     (* ugly special handling of DCLs *)
 
     | `DCL_type -> ()
+
+    | `DCL_regdef _ -> ()
     | `DCL_type_alias _ -> ()
 
 
@@ -441,6 +489,7 @@ let bbind_sym syms bbdfns i (name,sr,parent,bdcl) =
     | `DCL_match_handler _ -> failwith "[bind_entry] Unexpected match handler"
     | `DCL_match_check _ -> failwith "[bind_entry] Unexpected match checker"
     | `DCL_lazy _ -> failwith "[bind_entry] Unexpected lazy"
+    | `DCL_regmatch _ -> failwith "[bind_entry] Unexpected regmatch"
     end
     end
     (*

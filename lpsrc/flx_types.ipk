@@ -44,6 +44,7 @@ and provide routines to dump them to a string for debugging purposes.
 Provides a reference to the original source.
 @select(h)
 open Big_int
+
 type srcref = 
   string * (* filename *)
   int * (* line number, 1 origin *)
@@ -89,6 +90,16 @@ and suffixed_name_t =
   | `AST_lookup of range_srcref * (expr_t * string)
   | `AST_suffix of range_srcref * (qualified_name_t * typecode_t)
   ]
+
+and regexp_t =
+  | REGEXP_seq of regexp_t * regexp_t
+  | REGEXP_alt of regexp_t * regexp_t
+  | REGEXP_aster of regexp_t
+  | REGEXP_name of qualified_name_t
+  | REGEXP_string of string
+  | REGEXP_epsilon
+  | REGEXP_sentinel
+  | REGEXP_code of expr_t
 
 @head(3,'Type sublanguage')
 Terms of the type sublanguage. The encoding '`TYP_none' is 
@@ -175,9 +186,9 @@ and expr_t =
   | `AST_letin of range_srcref * (pattern_t * expr_t * expr_t)
 
   | `AST_get_n of range_srcref * (int * expr_t) (* get n'th component of a tuple *)
-  | `AST_lazy of range_srcref * expr_t
   | `AST_as of range_srcref * (expr_t * string)
   | `AST_match of range_srcref * (expr_t * (pattern_t * expr_t) list)
+  | `AST_regmatch of range_srcref * (expr_t * (regexp_t * expr_t) list)
   | `AST_typeof of range_srcref * expr_t
   | `AST_cond of range_srcref * (expr_t * expr_t * expr_t)
   ]
@@ -236,7 +247,8 @@ and statement_t =
   (* definitions *)
   | `AST_function of range_srcref * id_t * parameter_t list * typecode_t * statement_t list
   | `AST_procedure of range_srcref * id_t * parameter_t list * statement_t list
-
+  | `AST_regdef of range_srcref * string * regexp_t
+  
   (* types *)
   | `AST_union of range_srcref * id_t * (id_t * typecode_t) list
   | `AST_struct of range_srcref * id_t * (id_t * typecode_t) list
@@ -313,6 +325,7 @@ and exe_t =
   | `EXE_return of expr_t
   | `EXE_nop of string
   | `EXE_init of id_t * expr_t 
+  | `EXE_regmatch of (expr_t * (regexp_t * expr_t) list)
   ]
 
 and dir_t =
@@ -325,13 +338,12 @@ and dcl_t =
 
   (* data structures *)
   | `DCL_function of    parameter_t list * typecode_t * asm_t list
-  | `DCL_lazy of        expr_t
   | `DCL_procedure of   parameter_t list * asm_t list
   | `DCL_union of       (id_t * typecode_t) list
   | `DCL_struct of      (id_t * typecode_t) list
   | `DCL_match_check of pattern_t * string
   | `DCL_match_handler of pattern_t * string * asm_t list
-  
+ 
   (* variables *)
   | `DCL_val of         typecode_t
   | `DCL_var of         typecode_t
@@ -354,6 +366,8 @@ and dcl_t =
   | `DCL_const of       typecode_t * c_t
   | `DCL_fun of         typecode_t list * typecode_t * c_t 
   | `DCL_proc of        typecode_t list * c_t 
+
+  | `DCL_regdef of      regexp_t
   ]
 
 and asm_t = 
@@ -389,6 +403,12 @@ and bexe_t =
   | `BEXE_nop of string
   | `BEXE_code of string
   | `BEXE_init of bid_t * tbexpr_t 
+  | `BEXE_regmatch of 
+    tbexpr_t * (* argument *)
+    int list * (* alphabet *)
+    int *      (* state count *)
+    (int, tbexpr_t) Hashtbl.t * (* state->expression map *)
+    (int * int, int) Hashtbl.t (* transition matrix *)
   ]
 
 and bexpr_t =
@@ -501,7 +521,6 @@ type symbol_definition_t =
     name_map_t * 
     dir_t list
 
-  | `SYMDEF_lazy of expr_t 
   | `SYMDEF_match_check of pattern_t * int 
   | `SYMDEF_interface of name_map_t * dir_t list
   | `SYMDEF_typed_functor of 
@@ -640,10 +659,10 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_ctor_arg  (s,_) 
   | `AST_case_arg  (s,_) 
   | `AST_get_n  (s,_) 
-  | `AST_lazy (s,_)
   | `AST_coercion (s,_)
   | `AST_as (s,_)
   | `AST_match (s, _) 
+  | `AST_regmatch (s, _) 
   | `AST_typeof (s, _) 
   | `AST_cond (s,_)
   | `AST_letin (s,_)
@@ -695,6 +714,7 @@ let src_of_stmt e = match e with
   | `AST_function_decl (s,_,_)
   | `AST_type (s,_)
   | `AST_open (s,_)
+  | `AST_regdef (s,_,_)
     -> s
   | `AST_comment _ 
     -> ("Generated",0,0,0,0)
@@ -780,7 +800,14 @@ open Flx_typing
 
 let rec string_of_string s = Flx_string.c_quote_of_string s
 
-and suffix_of_type s = match s with
+let string_of_char c =
+  if c = -1 then "<<EOF>>" else
+  if c < 32 || c > 126
+  then "\\x" ^ Flx_string.hex2 c
+  else String.make 1 (Char.chr c)
+
+
+let suffix_of_type s = match s with
   | "tiny" -> "t"
   | "short" -> "s"
   | "int" -> ""
@@ -805,12 +832,12 @@ and suffix_of_type s = match s with
   | _ -> failwith ("[suffix_of_type] Unexpected Type " ^ s)
 
  
-and string_of_literal e = match e with
+let string_of_literal e = match e with
   | `AST_int (s,i) -> (string_of_big_int i)^suffix_of_type s 
   | `AST_float (t,v) -> v ^ suffix_of_type t
   | `AST_string s -> string_of_string s
   
-and string_of_qualified_name (n:qualified_name_t) =
+let rec string_of_qualified_name (n:qualified_name_t) =
   let se e = string_of_expr e in
   match n with
   | `AST_void _ -> "void"
@@ -828,6 +855,26 @@ and string_of_suffixed_name (n:suffixed_name_t) =
   | #qualified_name_t as n -> string_of_qualified_name n
   | `AST_suffix (_,(name,suf)) ->
     string_of_qualified_name name ^ " of (" ^ string_of_typecode suf ^ ")"
+
+and string_of_re re =
+  match re with
+  | REGEXP_seq (r1,r2) -> string_of_re r1 ^ " " ^ string_of_re r2
+  | REGEXP_alt (r1,r2) -> string_of_re r1 ^ " | " ^ string_of_re r2
+  | REGEXP_aster r -> "(" ^ string_of_re r ^ ")*"
+  | REGEXP_name s -> string_of_qualified_name s
+  | REGEXP_string s ->
+    let ss=Buffer.create (String.length s) in
+    Buffer.add_char ss '"';
+    for i = 0 to String.length s - 1 do
+      Buffer.add_string ss (string_of_char (Char.code s.[i]))
+    done;
+    Buffer.add_char ss '"';
+    Buffer.contents ss
+
+
+  | REGEXP_epsilon -> "epsilon"
+  | REGEXP_sentinel -> "sentinel"
+  | REGEXP_code e -> "<CODE " ^ string_of_expr e ^ ">"
 
 and string_of_expr (e:expr_t) = 
   let se e = string_of_expr e 
@@ -852,7 +899,6 @@ and string_of_expr (e:expr_t) =
     " endif"
 
   | `AST_typeof (_,e) -> "typeof("^se e^")"
-  | `AST_lazy (_,e) -> "lazy(" ^ se e ^ ")"
   | `AST_as (_,(e1, name)) -> "(" ^ se e1 ^ ") as " ^ name  
   | `AST_get_n (_,(n,e)) -> "get (" ^ string_of_int n ^ ", " ^se e^")"
   | `AST_deref (_,e) -> "*(" ^ se e ^ ")"
@@ -905,6 +951,19 @@ and string_of_expr (e:expr_t) =
     (fun (p,e')->
       " | " ^
       string_of_pattern p ^
+      " => " ^
+      string_of_expr e'
+    )
+    ps
+    ^
+    " endmatch"
+
+  | `AST_regmatch (_,(e, ps)) ->
+    "regmatch " ^ se e ^ " with " ^
+    catmap "\n"
+    (fun (p,e')->
+      " | " ^
+      string_of_re p ^
       " => " ^
       string_of_expr e'
     )
@@ -1210,6 +1269,9 @@ and string_of_statement level s =
   | `AST_open (_,n) -> 
     spaces level ^ "open " ^ string_of_qualified_name n ^ ";"
   
+  | `AST_regdef (_,n,r) -> 
+    spaces level ^ "regdef " ^ n ^ " = " ^string_of_re r^";"
+  
 
   | `AST_type_alias (_,t1,t2) ->
     spaces level ^ "type " ^ t1 ^ " = " ^ string_of_typecode t2 ^ ";"
@@ -1444,9 +1506,6 @@ and string_of_symdef entry name = match entry with
     ) ^
     ";"
     
-  | `SYMDEF_lazy (e) -> 
-    "lazy " ^ name ^ ";"
-    
   | `SYMDEF_match_check (pat,i)-> 
     "match_check " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
   
@@ -1485,6 +1544,21 @@ and string_of_exe level s =
   and se e = string_of_expr e 
   in
   match s with
+  | `EXE_regmatch (e,cls) ->
+    spc ^
+    "regmatch " ^ se e ^ " with " ^
+    catmap "\n"
+    (fun (p,e')->
+      " | " ^
+      string_of_re p ^
+      " => " ^
+      string_of_expr e'
+    )
+    cls 
+    ^
+    " endmatch;"
+
+
   | `EXE_goto s -> spc ^ "goto " ^ s ^ ";"
 
   | `EXE_ifgoto (e,s) -> spc ^ 
@@ -1525,6 +1599,7 @@ and string_of_bound_expression dfns e =
   let se e = string_of_bound_expression dfns e in
   let sid n = qualified_name_of_index dfns n in
   match fst e with
+   
   | `BEXPR_functions (name,fs) -> name ^ "<functions>"
   | `BEXPR_coercion (m,t) -> 
     "(" ^ 
@@ -1568,6 +1643,11 @@ and string_of_bexe dfns level s =
   let se e = string_of_bound_expression dfns e in
   let sid n = qualified_name_of_index dfns n in
   match s with
+  | `BEXE_regmatch (e,alphabet, nstates, termcodes,matrix) -> 
+    spc ^ "regmatch " ^ se e ^ " with " ^
+    "<TRANSITION MATRIX of "^string_of_int nstates^" states> " ^
+    "endmatch;"
+
   | `BEXE_goto s -> spc ^ "goto " ^ s ^ ";"
 
   | `BEXE_ifgoto (e,s) -> spc ^ 
@@ -1604,6 +1684,9 @@ and string_of_bexe dfns level s =
 and string_of_dcl level name s = 
   let se e = string_of_expr e in
   match s with
+  | `DCL_regdef re -> 
+    spaces level ^ "regexp " ^ name ^ " = " ^ string_of_re re ^ ";\n"
+
   | `DCL_type -> spaces level ^ "type " ^ name ^ ";\n"
 
   | `DCL_if_proc (t) ->
@@ -1615,8 +1698,6 @@ and string_of_dcl level name s =
   | `DCL_module_binding expr -> 
     spaces level ^
     "module " ^ name ^ " = "^se expr^" ;\n"
-
-  | `DCL_lazy e -> "val "^name^"= lazy(" ^ se e ^ ");\n"
 
   | `DCL_header s -> "header " ^ string_of_string s
   | `DCL_body s -> "body " ^ string_of_string s
@@ -2259,5 +2340,92 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
 open Flx_types
 val typecode_of_expr:
   expr_t -> typecode_t
+
+@head(1,'Charset')
+@select(tangler('src/flx_charset.mli'))
+open Flx_types
+type charset_t
+val charset_of_string: string -> charset_t
+val charset_of_int_range: int -> int -> charset_t
+val charset_of_range: string -> string -> charset_t
+val charset_union: charset_t -> charset_t -> charset_t
+val charset_inv: charset_t -> charset_t
+val regexp_of_charset: charset_t -> regexp_t
+val regexp_underscore: regexp_t
+val eol: int
+val regexp_dot: regexp_t
+
+@select(tangler('src/flx_charset.ml'))
+open Flx_types
+type charset_t = bool array
+
+let charset_of_string s = 
+  let x = Array.make 256 false in
+  for i  = 0 to String.length s - 1 do
+    x.(Char.code s.[i]) <- true
+  done;
+  x
+
+
+let charset_of_int_range x1 x2 =
+  let x = Array.make 256 false in
+  for i = x1 to x2 do
+    x.(i) <- true 
+  done
+  ;
+  x
+
+let charset_of_range s1 s2 =
+  if String.length s1 <> 1 
+  then
+    failwith "Charset range(first) requires string length 1"
+  ;
+  if String.length s2 <> 1 
+  then
+    failwith "Charset range(last) requires string length 1"
+  ;
+  let x1 = Char.code (s1.[0])
+  and x2 = Char.code (s2.[0])
+  in 
+    charset_of_int_range x1 x2
+
+let charset_union x1 x2 = 
+  let x = Array.make 256 false in
+  for i = 0 to 255 do
+    x.(i) <- x1.(i) || x2.(i)
+  done;
+  x
+
+let charset_inv y =
+  let x = Array.make 256 false in
+  for i = 0 to 255 do
+    x.(i) <- not y.(i)
+  done;
+  x
+
+let regexp_of_charset y =
+  let res = ref REGEXP_epsilon in
+  for i = 0 to 255 do
+    if y.(i) then res := 
+      let r = REGEXP_string (String.make 1 (Char.chr i)) in
+      if !res = REGEXP_epsilon 
+      then r 
+      else REGEXP_alt ( !res, r)
+  done
+  ;
+  !res
+
+let regexp_underscore = 
+  regexp_of_charset (charset_of_int_range 0 255)
+
+let eol = Char.code '\n'
+
+let regexp_dot = 
+  regexp_of_charset 
+  (
+    charset_union 
+      (charset_of_int_range 0 (eol - 1))
+      (charset_of_int_range (eol + 1) 255)
+  )
 
 

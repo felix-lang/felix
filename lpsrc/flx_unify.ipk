@@ -41,6 +41,12 @@ let varmap_subst varmap t =
   in s t
 
 
+(* returns the most general unifier (mgu)
+  of a set of type equations as a list
+  of variable assignments i -> t
+  or raises Not_found if there is no solution
+*)
+
 let rec unification eqns = 
   let eqns = ref eqns in
   let mgu = ref [] in

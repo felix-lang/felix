@@ -124,7 +124,6 @@ let get_name_map symdef name = match symdef with
     | `SYMDEF_procedure (_,_,name_map,dirs) -> name_map
     | `SYMDEF_module (name_map,dirs) -> name_map
     | `SYMDEF_interface (name_map,dirs) -> name_map
-    | `SYMDEF_lazy _
     | `SYMDEF_match_check _ -> dummy_name_map
     | _ -> 
       failwith 
@@ -221,7 +220,6 @@ let rec cal_display dfns parent display : bid_t list =
   | `SYMDEF_function _
   | `SYMDEF_procedure _
   | `SYMDEF_match_check _
-  | `SYMDEF_lazy _
     -> cal_display dfns parent' (parent::display)
   | _ -> cal_display dfns parent' display
    
@@ -231,7 +229,6 @@ let get_display_list dfns index : bid_t list =
   | `SYMDEF_function _
   | `SYMDEF_procedure _
   | `SYMDEF_match_check _
-  | `SYMDEF_lazy _
     -> List.rev (cal_display dfns parent [])
 
   | _ -> 
@@ -758,7 +755,7 @@ let rec gen_expr sym_state bbdfns this (e,t) =
        of the component are the same
     *)
     (* "(" ^ ge e ^ ")." ^ name *)
-    
+
 let get_labels bbdfns counter exes =
   let labels = Hashtbl.create 97 in
   List.iter
@@ -990,6 +987,93 @@ let gen_exe sym_state bbdfns label_map counter this (exe:bexe_t) =
     "      return this;\n" ^
     "    case " ^ string_of_int n ^ ":\n"
 
+    
+  | `BEXE_regmatch (e,alpha,nstates,cases,matrix) ->
+    let b = Buffer.create 500 in
+    let tack s = Buffer.add_string b s in
+
+    tack ("  // regmatch: nstates= "^string_of_int nstates^"\n");
+
+    (* alphabet: char -> pos *)
+    let a = Array.make 256 (-1) in
+    let k = ref 0 in
+    List.iter
+    (fun ch ->
+      a.(ch) <- !k;
+      incr k;
+    )
+    alpha
+    ;
+    tack "  static int alpha[256] =\n";
+    tack "  {\n";
+    for i = 0 to 15 do
+      tack "    ";
+      for j = 0 to 15 do
+        let s = "   " ^ (string_of_int (a.(i * 16 + j)+1)) in
+        let n = String.length s in
+        let s = String.sub s (n-3) 3 in
+        tack s;
+        if i <> 15 || j <> 15 then tack ", ";
+      done;
+      tack "\n"
+    done;
+    tack "  };\n\n";
+
+    (* transition matrix *)
+    let k = !k in (* width *)
+    let d = Array.make_matrix nstates (k+1) (-1) in
+    Hashtbl.iter
+    (fun (c,s1) s2 -> 
+      let ix = a.(c) in
+      d.(s1).(ix) <- s2
+    )
+    matrix
+    ;
+    tack ("  static int matrix["^string_of_int nstates^"]["^string_of_int (k+1) ^ "] =\n");
+    tack "  {\n";
+    for i = 0 to nstates - 1 do
+      tack "    {\n";
+      tack "     0,\n";
+      for j = 0 to k - 1 do
+        if j mod 16 = 0 then tack "      ";
+        let s = "     " ^ (string_of_int (d.(i).(j)+1)) in
+        let n = String.length s in
+        let s = String.sub s (n-3) 3 in
+        tack s;
+        if j <> k - 1 then tack ", ";
+        if j mod 16 = 15 then tack "\n"
+      done;
+      if k mod 16 <> 0 then tack "\n";
+      tack "    }";
+      if i <> nstates - 1 then tack ",";
+      tack "\n"
+    done;
+    tack "  };\n\n";
+
+    (* eval argument as a C++ string *)
+    tack "  string s = ";
+    tack (ge e);
+    tack ";\n";
+    tack "  char *start = s.begin();\n";
+    tack "  char *end = s.end();\n";
+    tack "  int state = 1;\n";
+    
+    tack "  while(state && start != end)\n";
+    tack "    state = matrix[state-1][alpha[*start++]];\n";
+    
+    tack "  switch (state)\n";
+    tack "  {\n";
+    Hashtbl.iter
+    (fun state expr ->
+      tack ("    case " ^ string_of_int (state + 1)^ ": return " ^ ge expr ^ ";\n")
+    )
+    cases 
+    ;
+    tack "    case 0: assert((\"regmatch failure\",0));\n";
+    tack "    default: assert((\"system failure in regmatch\",0));\n";
+    tack "  }\n";
+
+    Buffer.contents b
     
   | `BEXE_return e -> "      return "^ge e^";\n"
   | `BEXE_nop s -> "      //Nop: " ^ s ^ "\n"

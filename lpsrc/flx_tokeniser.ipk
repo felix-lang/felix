@@ -66,13 +66,12 @@ let string_of_token (tok :Flx_parse.token): string =
   | GREATER _ -> ">"
   | EQUAL _ -> "="
   | DOT _ -> "."
-  | DOTDOT _ -> ".."
-  | DOTDOTDOT _ -> "..."
   | PERCENT _ -> "%"
+
   | BACKQUOTE _ -> "`"
   | TILDE _ -> "~"
   | CIRCUMFLEX _ -> "^"
-  | COLONCOLON _ -> "::"
+  | UNDERSCORE _ -> "_"
 
   (* two character tokens *)
   | ANDLESS _ -> "&<"
@@ -87,6 +86,8 @@ let string_of_token (tok :Flx_parse.token): string =
   | STARSTAR _ -> "<POW>**"
   | LESSCOLON _ -> "<:"
   | COLONGREATER _ -> ":>"
+  | DOTDOT _ -> ".."
+  | COLONCOLON _ -> "::"
 
   | PLUSPLUS _ -> "++"
   | MINUSMINUS _ -> "--"
@@ -105,14 +106,15 @@ let string_of_token (tok :Flx_parse.token): string =
   | LEFTARROW _ -> "<-"
   | LSQANGLE _ -> "[<"
   | RSQANGLE _ -> ">]"
+
   | LEFTSHIFTEQUAL _ -> "<<="
   | RIGHTSHIFTEQUAL _ -> ">>="
   | LEFTRIGHTARROW _ -> "<->"
-
   | ANDEQEQUAL _ -> "&=="
   | ANDNOTEQUAL _ -> "&!="
   | ANDLESSEQUAL _ -> "&<="
   | ANDGREATEREQUAL _ -> "&>="
+  | DOTDOTDOT _ -> "..."
 
   (* keywords *)
   | OPEN _ -> "open"
@@ -122,18 +124,15 @@ let string_of_token (tok :Flx_parse.token): string =
   | AND _ ->  "and"
   | NOT _ -> "not"
   | OR _ -> "or"
-  | SERVICE _ -> "service" 
-  | COMMAND _ -> "command" 
   | FUNCTION _ -> "function" 
   | PROCEDURE _ -> "procedure" 
-  | READER _ -> "reader" 
-  | HANDLER _ -> "handler" 
   | IF _ -> "if" 
   | THEN _ -> "then" 
   | ELSE _ -> "else" 
   | ENDIF _ -> "endif" 
   | ELIF _ -> "elif" 
   | CALL _ -> "call"
+  | REGMATCH _ -> "regmatch"
   | MATCH _ -> "match"
   | WITH _ -> "with"
   | CASE _ -> "case"
@@ -167,7 +166,6 @@ let string_of_token (tok :Flx_parse.token): string =
   | AS _ -> "as"
   | ALL _ -> "as"
   | REGEXP _ -> "regexp"
-  | ANY _ -> "_"
   | VAR _ -> "var"
   | EXCEPTIONS _ -> "exceptions"
   | CLASS _ -> "class"
@@ -281,7 +279,6 @@ let src_of_token t = match t with
   | LAMBDA s 
   | AS s 
   | ALL s 
-  | ANY s 
   | REGEXP s 
   | WHEN s 
   | IF s 
@@ -298,6 +295,7 @@ let src_of_token t = match t with
   | EXCEPTIONS s 
   | GOTO s 
   | EXPORT s 
+  | REGMATCH s 
   | MATCH s 
   | WITH s 
   | ENDMATCH s 
@@ -308,13 +306,9 @@ let src_of_token t = match t with
   | BODY s 
   | MODULE s 
   | CODE s 
-  | SERVICE s 
-  | COMMAND s 
-  | HANDLER s 
   | CALL s 
   | PROCEDURE s 
   | FUNCTION s 
-  | READER s 
   | RETURN s 
   | FORK s 
   | WHILE s 
@@ -336,6 +330,7 @@ let src_of_token t = match t with
   | DEFINE s
   | OVERLOAD s
   | OPEN s
+  | UNDERSCORE s
     -> s
 
 

@@ -24,12 +24,8 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "and", (fun s ->  AND s);
     "not", (fun s ->  NOT s);
     "or", (fun s ->  OR s);
-    "service", (fun s ->  SERVICE s);
-    "command", (fun s ->  COMMAND s);
     "function", (fun s ->  FUNCTION s);
     "procedure", (fun s ->  PROCEDURE s);
-    "reader", (fun s ->  READER s);
-    "handler", (fun s ->  HANDLER s);
     "if", (fun s ->  IF s);
     "then", (fun s ->  THEN s);
     "else", (fun s ->  ELSE s);
@@ -58,13 +54,14 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "except", (fun s ->  EXCEPT s);
     "finally", (fun s ->  FINALLY s);
     "raise", (fun s ->  RAISE s);
-    "_", (fun s ->  ANY s);
+    "_", (fun s ->  UNDERSCORE s);
     "when", (fun s ->  WHEN s);
     "as", (fun s ->  AS s);
     "all", (fun s ->  ALL s);
     "case", (fun s ->  CASE s);
     "with", (fun s ->  WITH s);
     "regexp", (fun s ->  REGEXP s);
+    "regmatch", (fun s ->  REGMATCH s);
     "match", (fun s ->  MATCH s);
     "var", (fun s ->  VAR s);
     "val", (fun s ->  VAL s);

@@ -202,24 +202,6 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
       )
     )
 
-  | `AST_lazy (sr,e) ->
-    let asms,e = rex e in
-    let n = seq() in
-    let name = "_lazy_" ^ string_of_int n in
-    asms
-    @
-    [
-      Dcl (sr,name,`DCL_lazy e)
-    ],
-    `AST_suffix 
-    (
-      generated,
-      (
-        `AST_name (generated,name),
-        `TYP_tuple []
-      )
-    )
-
   | `AST_dot (sr,(obj,comp)) -> 
     let l1,x1 = rex obj in 
     l1 , `AST_dot (sr,(x1,comp))
@@ -228,6 +210,26 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
     let l1,x1 = rex e in 
     l1, `AST_coercion (sr,(x1,t))
 
+  | `AST_regmatch (sr,(e,cls')) ->
+    let dcls = ref [] in
+    let cls = ref [] in
+    List.iter 
+    (fun (re,e) -> 
+      let l,x = rex e in
+      dcls := l @ !dcls;
+      cls := (re,x) :: !cls
+    )
+    cls'
+    ;
+
+    let n = seq() in
+    let fname = "regmatch" ^ string_of_int n in
+    let l,x = rex e in
+    let exes = [Exe(sr,`EXE_regmatch (x,!cls))] in
+    let rfun = Dcl(sr,fname,`DCL_function([],`TYP_none,exes)) in
+    rfun :: l @ !dcls,
+    `AST_apply(sr,(`AST_name(sr,fname),`AST_tuple(sr,[])))
+     
   | `AST_letin (sr,(pat,e1,e2)) ->
     rex (`AST_match (sr,(e1,[pat,e2])))
     
@@ -427,6 +429,7 @@ and rst seq st : asm_t list =
   let rsts' sts = catmap rst' sts in
   
   match st with
+  | `AST_regdef (sr,name,regexp) -> [Dcl (sr,name,`DCL_regdef regexp)]
   | `AST_label (sr,s) -> [Exe (sr,`EXE_label s)]
   | `AST_goto (sr,s) -> [Exe (sr,`EXE_goto s)]
   | `AST_open (sr,name) -> [Dir (sr,DIR_open name)]

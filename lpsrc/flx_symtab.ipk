@@ -116,6 +116,12 @@ let rec build_tables print_flag dfns counter name level parent asms =
           )
         ;
         begin match dcl with
+        | `DCL_regdef re ->
+          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
+          ;
+          add_unique name_map id n
+
+
         | `DCL_module_binding e -> 
           Hashtbl.add dfns n (id, sr, parent,
             `SYMDEF_module_binding e 
@@ -329,15 +335,6 @@ let rec build_tables print_flag dfns counter name level parent asms =
           print_endline ("//  "^spc ^ string_of_int n' ^ " -> _init_ (interface "^id^")");
           add_unique name_map id n;
           add_function table ("_init_") n';
-          interfaces := !interfaces @ ifaces
-
-        | `DCL_lazy e ->   
-          let fun_index = n in
-          Hashtbl.add dfns fun_index (id, sr,parent,
-            `SYMDEF_lazy (e)
-          )
-          ;
-          add_function name_map id fun_index ;
           interfaces := !interfaces @ ifaces
 
         | `DCL_procedure (ps,asms) -> 

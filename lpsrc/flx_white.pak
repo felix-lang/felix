@@ -3,7 +3,7 @@
 Felix is a new programming language which is designed
 to overcome serious limitiations in C and C++
 for high level programming by adopting some
-of the technology of functional programming,
+of the technology of functional programming and scripting languages,
 whilst retaining a form of compatibility to 
 support reuse of existing C and C++ codes.
 @p()
@@ -93,10 +93,12 @@ construction of functional programming:
   x + yz;
 @end_displayed_code()
 @p()
-Type inference for functions is not supported.
+Deduction of function types is not supported.
 There are two reasons: error messages tend
 to be obscure, and overloading cannot easily
-be supported.
+be supported. Deduction of return types of functions, however,
+is supported for all non-recursive functions, and most 
+recursive ones.
 
 @head(2,'Functions and tuples')
 In Felix, functions always have exactly one
@@ -309,4 +311,23 @@ shared library object which is used by a driver
 program hand crafted in C++ by the programmer.
 This choice permits embedding Felix libraries in
 a wide variety of existing application frameworks.
+
+@head(2,'Security')
+Most programming languages provide no, or highly contrived
+security models. C for example provides little or no
+security, whilst TCL and Python, for example, provide
+simplistic restricted execution environments. Java provides
+a more sophisticated security model which unfortunately
+is fundamentally flawed because whilst it provides
+secure transmission of codes, it fails to provide
+any way of verifying the semantics.
+@p()
+The Felix solution provides total and configurable
+security by two mechanisms. Firstly, felix codes
+constitute libraries run by user written drivers
+which have as much control over the environment in which
+the codes run as the driver's author desires. Secondly,
+the transmission medium is intrinically based on human readable
+source codes, ensuring the suitability of the software
+can be examined by a client.
 

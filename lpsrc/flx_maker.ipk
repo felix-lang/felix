@@ -77,10 +77,10 @@ FLX_GC_SRC='src/'
 # ------------------------------------------------
 
 # files containing ocamllex sources
-LEXS = ['flx_lex', 'lex_lex']
+LEXS = ['flx_lex']
 
 # files containing ocamlyacc sources
-PARSES = ['flx_parse', 'lex_parse']
+PARSES = ['flx_parse']
 
 # ocaml modules = interfaces + implementation files
 MODULES = [
@@ -94,25 +94,17 @@ MODULES = [
   'flx_string'       ,
   'flx_id'           ,
   'flx_print'        ,
-  'lex_print'        ,
   'flx_typing2'      ,
   'flx_unify'        ,
+  'flx_charset'      ,
   'flx_parse'        ,
-  'lex_parse'        ,
   'flx_keywords'     ,
-  'lex_keywords'     ,
   'flx_lex'          ,
-  'lex_lex'          ,
   'flx_pretok'       ,
-  'lex_pretok'       ,
   'flx_lex1'         ,
-  'lex_lex1'         ,
   'flx_tok'          ,
-  'lex_tok'          ,
   'flx_parse_ctrl'   ,
-  'lex_parse_ctrl'   ,
-  'lex_dfa'          ,
-  'lex_pdtran_c'     ,
+  'flx_dfa'     ,
   'flx_pat'          , 
   'flx_desugar'      , 
   'flx_mbind'        , 
@@ -154,10 +146,6 @@ EXES = [
   'flxd',
   'flxb',
   'flxg',
-  # lexer tools
-  'lexl',
-  'lexp',
-  'lexd',
 ]
 
 if 1:
@@ -883,9 +871,6 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('\t\tdoc/*.tex \\')
 @tangle('\t\tbin/flx \\')
 @tangle('\t\tbin/flxg \\')
-@tangle('\t\tbin/lexl \\')
-@tangle('\t\tbin/lexp \\')
-@tangle('\t\tbin/lexd \\')
 @tangle('\t\tbin/flx_run \\')
 @tangle('')
 @tangle('www: dummy')

@@ -83,6 +83,8 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_match _  -> failwith "Not expecting match in when part of pattern"
                      (* this one really SHOULD work! *)
 
+  | `AST_regmatch _  -> failwith "Not expecting regmatch in when part of pattern"
+
   | `AST_root _ -> e
   | `AST_lookup _ -> e
   | `AST_suffix _ -> e
@@ -114,7 +116,6 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_dot (sr,(e,id)) -> 
     `AST_dot (sr,(subst e, id))
  
-  | `AST_lazy _ -> assert false 
   | `AST_lambda _ -> assert false
   | `AST_bound_module _ -> assert false
 

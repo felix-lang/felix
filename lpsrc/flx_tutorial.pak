@@ -521,6 +521,121 @@ endl;
 Notice the use of the special pattern '_', which matches
 something without naming it.
 
+@head(2,'Regular Matching')
+Felix provides support for matching strings
+against regular expressions.
+@p()
+Unlike commonly used regexp libraries,
+regular expressions are not strings: instead a first class
+syntax is used to define them.
+@p()
+Felix allows you to name regular expressions with
+the syntax:
+@begin_displayed_code()
+  regexp <name> = <regexp> ;
+@end_displayed_code()
+The name is an identifier. A string used in a regexp stands
+for a match of each character of the string in sequence.
+The following symbols are special, and are given from weakest
+to strongest binding order:
+
+@begin_table("symbol","syntax","meaning")
+@table_row("|","infix","alternatives")
+@table_row("*","postfix","0 or more occurences")
+@table_row("+","postfix","1 or more occurences")
+@table_row("?","postfix","0 or 1 occurences")
+@table_row("<juxtaposition>","infix","concatenation")
+@table_row("<name>","atomic","re denoted by the name in a REGEXP definition")
+@table_row("<string>","atomic","sequence of chars of the string")
+@table_row("[<charset>]","atomic","any char of the charset")
+@table_row("[^<charset>]","atomic","any char not in the charset")
+@table_row(".","atomic","any char other than end of line")
+@table_row("_","atomic","any char")
+@table_row("eof","atomic","end marker")
+@table_row("(<regexp>)","atomic","brackets")
+@end_table()
+The usual notation for character sets is employed:
+@begin_table("symbol","meaning")
+@table_row("<string>","any character in the string")
+@table_row("<char>-<char>","any between or including the two chars")
+@end_table()
+Note that a char is represented by a one character string.
+
+@h= tangler(tdir+'tut115a.flx')
+@select(h)
+#include <std.flx>
+regexp lower = ["abcdefghijklmnopqrstuvwxyz"];
+regexp upper = ["ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
+regexp digit = ["0123456789"];
+regexp alpha = lower | upper | "_";
+regexp ident = alpha (alpha | digit) *;
+
+@doc()
+Regular expressions are used in regular match expressions.
+These are like ordinary matches, except that the pattern
+is a regular expression, and the argument must be a string.
+@select(h)
+print 
+  regmatch "identifier" with
+  | digit+ => "Number"
+  | ident =>  "Identifier"
+  endmatch
+; 
+endl;
+
+print 
+  regmatch "9999" with
+  | digit+ => "Number"
+  | ident =>  "Identifier"
+  endmatch
+; 
+endl;
+
+/* both these cases causes assertion failures 
+print 
+  regmatch "999xxx" with
+  | digit+ => "Number"
+  | ident =>  "Identifier"
+  endmatch
+; 
+endl;
+
+
+print 
+  regmatch "????" with
+  | digit+ => "Number"
+  | ident =>  "Identifier"
+  endmatch
+; 
+endl;
+*/
+
+print 
+  regmatch "999xxx" with
+  | digit+ => "Number"
+  | ident =>  "Identifier"
+  | _* => "Neither"
+  endmatch
+; 
+endl;
+
+
+@doc()
+Note that whilst conceptually regular matches are applied
+first to last, the actual implementation uses a finite state
+machine and guarranteed to be linear in the length of the input,
+and, in particular independent of the number of regular expressions.
+Each character is processed at most once.
+@p()
+Note also that the whole string must be matched.
+@p()
+[The construction will be upgraded later to support
+input iterators with comparable value types]
+@p()
+[The construction will be upgraded later to support
+finding the longest matching prefix, which requires
+forward iterators]
+
 @head(2,'Basic Bindings')
 In the previous examples, we've use the Felix standard
 library. It's time to look at how it works.

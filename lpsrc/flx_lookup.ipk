@@ -94,6 +94,15 @@ val lookup_qn_with_sig:
 val print_env: (* debugging *)
   env_t -> unit
 
+val bind_regdef:
+  sym_state_t ->
+  env_t ->
+  int list ->
+  int list ->
+  int list ->
+  regexp_t ->
+  regexp_t
+
 @h = tangler("src/flx_lookup.ml")
 @select(h)
 open Flx_util
@@ -1746,7 +1755,6 @@ and  typlist params = List.map snd params
 and  paramtype params = typeof_list (typlist params)
 
 and  sig_of_symdef symdef name = match symdef with 
-  | `SYMDEF_lazy (_) 
   | `SYMDEF_match_check (_) 
     -> `TYP_tuple[]
 
@@ -1797,25 +1805,75 @@ and cal_ret_type syms exclude expr_fixlist depth excluded_dirs index =
     let rt = bind_type' syms env [] [] expr_fixlist depth excluded_dirs sr rt [] in
     let rt = beta_reduce syms [] rt in
     let ret_type = ref rt in
-    let return_counter = ref 0 in
-    List.iter
-    (fun exe -> match exe with
-    | `EXE_return e ->
-      incr return_counter;
-      begin try
-        let t = snd (bind_expression syms env (index::exclude) expr_fixlist depth excluded_dirs e) in
-        let mgu = do_unify syms t !ret_type in
+
+    begin match exes with
+    (* a bit hacky: in principle this is a multi-branch return statement,
+      so it could be used wherever a return statement is used, however
+      really regmatch is a function, but we use a normal function wrapper
+      and a special instruction because the processing is lighter
+    *)
+    | [`EXE_regmatch (_,cls)] ->
+      (*
+      print_endline 
+      (
+       "Calc ret type of regmatch, initially " ^
+       string_of_btypecode syms.dfns !ret_type
+      );
+      *)
+
+      List.iter
+      (
+       fun (re,e) ->
+         let t = snd (bind_expression syms env (index::exclude) expr_fixlist depth excluded_dirs e) in
+         (*
+         print_endline 
+         (
+           "regmatch instance " ^ string_of_expr e ^ ", type " ^ 
+           string_of_btypecode syms.dfns t
+         );
+         *)
+         if do_unify syms t !ret_type 
+         then 
+           ret_type := varmap_subst syms.varmap !ret_type
+         else 
+           failwith 
+           (
+              "Inconsistent return type of " ^ id ^ "<"^string_of_int index^">"
+           )
+      )
+      cls
+      (*
+      ;
+      print_endline ("type is " ^ string_of_btypecode syms.dfns !ret_type)
+      *)
+        
+    | _ ->
+      let return_counter = ref 0 in
+      List.iter
+      (fun exe -> match exe with
+      | `EXE_return e ->
+        incr return_counter;
+        begin try
+          let t = snd (bind_expression syms env (index::exclude) expr_fixlist depth excluded_dirs e) in
+          if do_unify syms t !ret_type 
+          then 
+            ret_type := varmap_subst syms.varmap !ret_type
+          else 
+            failwith 
+            (
+              "Inconsistent return type of " ^ id ^ "<"^string_of_int index^">"
+            )
+        with _ -> ()
+        end
+      | _ -> ()
+      )
+      exes
+      ;
+      if !return_counter = 0 then (* it's a procedure .. *)
+      begin 
+        let mgu = do_unify syms `BTYP_void !ret_type in
         ret_type := varmap_subst syms.varmap !ret_type
-      with _ -> ()
       end
-    | _ -> ()
-    )
-    exes
-    ;
-    if !return_counter = 0 then (* it's a procedure .. *)
-    begin 
-      let mgu = do_unify syms `BTYP_void !ret_type in
-      ret_type := varmap_subst syms.varmap !ret_type
     end
     ;
     if var_occurs !ret_type
@@ -1826,6 +1884,7 @@ and cal_ret_type syms exclude expr_fixlist depth excluded_dirs index =
       )
     ;
     !ret_type
+
   | _ -> assert false
 
   
@@ -1897,11 +1956,6 @@ and typeofindex'
 
   | `SYMDEF_if_fun (t) ->
     bt t
-
-  | `SYMDEF_lazy (e) -> 
-    let rt = snd (bind_expression syms env (index::exclude) expr_fixlist depth excluded_dirs e) in
-    `BTYP_function (`BTYP_tuple [],rt)
-
 
   | `SYMDEF_match_check _ ->
     `BTYP_function (`BTYP_tuple [], bool_t)
@@ -2336,7 +2390,6 @@ and handle_function
         | `SYMDEF_dcl(`DCL_proc _ )
         | `SYMDEF_dcl(`DCL_fun _)
         | `SYMDEF_procedure _ 
-        | `SYMDEF_lazy _
           ->
           (*
           print_endline ("closure of " ^ name);
@@ -2485,6 +2538,40 @@ and handle_entry syms sra srn env exclude expr_fixlist excluded_dirs entry t2 na
       )
     | None -> None
 
+and bind_regdef syms env exclude excluded_dirs regexp_exclude e =
+  let bd e = bind_regdef syms env exclude excluded_dirs regexp_exclude e in
+  match e with
+  | REGEXP_seq (e1,e2) -> REGEXP_seq (bd e1, bd e2)
+  | REGEXP_alt (e1,e2) -> REGEXP_alt (bd e1, bd e2)
+  | REGEXP_aster e -> REGEXP_aster (bd e)
+  | REGEXP_name qn ->
+    begin match lookup_qn_in_env syms env excluded_dirs qn with
+    | Bound _ -> failwith "[bind_regdef] Unexpected bound entry"
+    | Simple i ->
+      if List.mem i regexp_exclude
+      then 
+        failwith
+        (
+          "[bind_regdef] Regdef " ^ string_of_qualified_name qn ^
+          " depends on itself"
+        )
+      else
+        begin
+          let id,sr,parent,entry = Hashtbl.find syms.dfns i in
+          match entry with
+          | `SYMDEF_dcl (`DCL_regdef e) ->
+            bind_regdef syms env exclude excluded_dirs (i::regexp_exclude) e
+          | _ -> 
+            failwith 
+            (
+              "[bind_regdef] Expected " ^ string_of_qualified_name qn ^
+              " to be regdef"
+            ) 
+        end
+    end 
+
+  | x -> x
+  
 and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr_t = 
   let be e = bind_expression syms env exclude expr_fixlist (depth+1) excluded_dirs e in
   let lu sr qn = lookup_qn_in_env syms env excluded_dirs qn in
@@ -2545,7 +2632,6 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
     let t' = bt sr t in
     `BEXPR_coercion (m',t'),t'
 
-  | `AST_lazy _ -> assert false
   | `AST_get_n (sr,(n,e')) -> 
     let expr,typ = be e' in
     let ctyp = match typ with 
@@ -2910,6 +2996,15 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
     | _ -> failwith "Expected variant constructor name in union dtor"
     end
 
+  | `AST_regmatch (sr,(e,cls)) ->
+    failwith 
+    (
+      "[bind_expression] " ^
+      short_string_of_src sr ^
+      "\n[Compiler error] Unexpected regmatch when binding expression (should have been lifted out)" ^
+      string_of_expr e
+    )
+
   | `AST_lambda (sr,_) -> 
     failwith 
     (
@@ -2988,7 +3083,6 @@ and get_table_dirs_of_index dfns index =
       | `SYMDEF_interface (table,dirs) -> table,dirs
       | `SYMDEF_function (ps,t,e,table,dirs) -> table,dirs
       | `SYMDEF_procedure (ps,e,table,dirs) -> table,dirs
-      | `SYMDEF_lazy _ -> Hashtbl.create 97,[]
       | `SYMDEF_match_check _ -> Hashtbl.create 97,[]
 
       | `SYMDEF_typed_functor (_,_,_,table,dirs) -> table,dirs
