@@ -39,6 +39,7 @@ syn keyword cToDo todo
 syn keyword cStatement interface
 syn keyword cStatement functor
 syn keyword cStatement fun
+syn keyword cStatement obj
 syn keyword cStatement proc
 syn keyword cStatement call
 syn keyword cStatement jump

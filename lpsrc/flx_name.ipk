@@ -88,8 +88,12 @@ let cpp_instance_name syms bbdfns index ts =
     with Not_found -> 
     let id = 
       try 
-        let id,_,_ = Hashtbl.find bbdfns index in id
-      with Not_found -> "unknown"
+        let id,parent,entry = Hashtbl.find bbdfns index in id
+      with Not_found -> 
+      try
+        let id,sr,parent,vs,table,dirs,entry = Hashtbl.find syms.dfns index in id ^ "[unbound]"
+      with Not_found -> 
+      "unknown"
     in
     let has_variables = 
       fold_left 

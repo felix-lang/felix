@@ -42,7 +42,7 @@ let precedence = [
 "rel";
 "eq";
 "band";
-"bexor";
+"bxor";
 "bor";
 "and";
 "xor";
@@ -118,10 +118,10 @@ let prefix = Hashtbl.create 17
 let postfix = Hashtbl.create 17
 let seq = ref 0
 ;;
-iter (fun x -> add prec x !seq; incr seq) precedence;
+iter (fun x -> add prec x !seq; incr seq; incr seq) precedence;
 iter (fun (n,p) -> add infix n (find prec p)) infix_cops;
-iter (fun (n,p) -> add infix n (find prec p)) prefix_cops;
-iter (fun (n,p) -> add infix n (find prec p)) postfix_cops
+iter (fun (n,p) -> add prefix n (find prec p)) prefix_cops;
+iter (fun (n,p) -> add postfix n (find prec p)) postfix_cops
 ;;
 
 let pr cop =
@@ -141,26 +141,36 @@ let pr cop =
 let commaprec = find prec "comma"
 let rec comma es = "(" ^ strcat ", " (map (cep commaprec) es) ^ ")" 
 and comma_opt = function | [] -> "" | ps -> comma ps
+
+(* we need brackets if the binding looseness if higher
+than or equal to the context.
+
+But due associativity, (x+y)+z = x+y+z, and we make that
+happen by making the context of the LHS subexpression 
+slightly higher.
+*)
 and cep cp e = 
   let ep = pr e in
-  let ce e = cep ep e in
-  let need_brackets = ep < cp in
+  let rce e = cep ep e and lce e = cep (ep+1) e in
+  let need_brackets = ep >= cp in
   (if need_brackets then "(" else "") 
   ^
   begin match e with
     | `C_atom s ->  s
-    | `C_postfix (s,e) -> ce e ^ s
-    | `C_prefix (s,e) -> s ^ ce e
-    | `C_infix (s,e1,e2) -> ce e1 ^ s ^ ce e2
+    | `C_postfix (s,e) -> rce e ^ s
+    | `C_prefix (s,e) -> s ^ rce e
+    | `C_infix (s,e1,e2) -> lce e1 ^ s ^ rce e2
 
-    | `C_call (f,es) -> ce f ^comma es
-    | `C_array (f,e) ->ce f ^ "["^ce e^"]"
+    | `C_call (f,es) -> rce f ^comma es
+    | `C_array (f,e) -> rce f ^ "["^lce e^"]"
     | `C_new (ps,cls,args) -> 
       "new" ^ comma_opt ps ^ " " ^ comma_opt args
-    | `C_cast (cast,e) -> cast ^ ce e
-    | `C_cond (e,e1,e2) -> ce e ^ "?" ^ ce e1 ^ ":" ^ ce e2
+    | `C_cast (cast,e) -> cast ^ rce e
+    | `C_cond (e,e1,e2) -> lce e ^ "?" ^ rce e1 ^ ":" ^ rce e2
   end
   ^
   (if need_brackets then ")" else "")
 
 let string_of_cexpr e = cep 1000 e
+
+

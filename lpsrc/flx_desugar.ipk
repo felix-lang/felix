@@ -68,6 +68,104 @@ let arglist x =
   | `AST_tuple (_,ts) -> ts
   | _ -> [x]
 
+let mkcurry sr name vs args return_type kind body =
+  let mkfuntyp d c = `TYP_function (d,c)
+  and typeoflist lst = match lst with
+    | [x] -> x
+    | _ -> `TYP_tuple lst
+  in 
+  let mkret arg ret = mkfuntyp (typeoflist (List.map snd arg)) ret in
+  let arity = List.length args in
+  let rettype args = 
+    match return_type with
+    | `TYP_none -> `TYP_none
+    | _ -> List.fold_right mkret args return_type 
+  in
+
+  let rec aux args vs =  
+    let n = List.length args in
+    let name n = 
+      if n = arity
+      then name (* top level *)
+      else name^"_curry_" ^ string_of_int n
+    in
+    match args with 
+    | [] -> assert false
+    | h :: [] -> (* bottom level *)
+        (match kind with
+        | `Function ->
+          `AST_function (sr, name n, vs, h, return_type, body)
+        | `Object ->
+          `AST_object (sr, name n, vs, h, body)
+        )
+    | h :: t ->
+      let m = List.length args in
+      let body = 
+        [
+          aux t [];
+          `AST_fun_return 
+          (
+            sr,
+            `AST_suffix
+            (
+              sr,
+              (
+                `AST_name (sr,name (m-1),[]),
+                typeoflist (List.map snd (List.hd t))
+              )
+            )
+          )
+        ] 
+      in
+        `AST_function (sr, name m, vs, h, rettype t, body)
+   in aux args vs
+
+(* model binary operator as procedure call *)
+let assign sr op l r = 
+  `AST_call 
+  (
+    sr,
+    `AST_name (sr, op,[]),
+    `AST_tuple 
+    (
+      sr, 
+      [ 
+        `AST_ref (src_of_expr l,l); 
+        r
+      ]
+    )
+  )
+
+
+
+let find_methods sr sts =
+  let methods = ref [] in
+  let rec check = function 
+    | `AST_curry (sr,mname,vs,pss,ret,kind,sts) ->
+      check (mkcurry sr mname vs pss ret kind sts)
+
+    (*
+    | `AST_object (sr,mname, vs, ps, sts) ->
+       check (`AST_function (sr,mname,vs,ps,`TYP_none,sts))
+    *)
+
+    | `AST_function (sr,mname, vs, ps, ret,sts) ->
+      if vs <> [] then
+      clierr sr "[process_object] Object methods may not be generic"
+      ;
+      let argtyp = match map snd ps with 
+        | [] -> `TYP_tuple []
+        | [a] -> a
+        | x -> `TYP_tuple x
+      in
+      let typ = `TYP_function (argtyp, ret) in
+      methods := (mname, typ) :: !methods
+    | _ -> ()
+  in
+  iter check sts
+  ;
+  rev !methods
+
 (* split lambdas out. Each lambda is replaced by a
    reference to a synthesised name in the original
    statement, which is prefixed by the definition.
@@ -146,6 +244,8 @@ let rec rex name include_dirs seq (e:expr_t) : asm_t list * expr_t =
   | `AST_typed_case _ -> [],e
   | `AST_literal _ -> [],e
 
+  | `AST_expr _ -> [],e
+
   | `AST_cond (sr,(e,b1,b2)) ->
      rex 
      (
@@ -189,7 +289,7 @@ let rec rex name include_dirs seq (e:expr_t) : asm_t list * expr_t =
 
   | `AST_lambda (sr,(params,res,sts)) -> 
     let n = seq() in
-    let name = "_lambda_" ^ string_of_int n in
+    let name = "_lam_" ^ string_of_int n in
     let argtyp = type_of_argtypes (map snd params) in
     [match res with
     | _ -> Dcl (sr,name,[],`DCL_function (params, res, rsts sts))
@@ -231,24 +331,67 @@ let rec rex name include_dirs seq (e:expr_t) : asm_t list * expr_t =
     rfun :: l @ !dcls,
     `AST_apply(sr,(`AST_name(sr,fname,[]),`AST_tuple(sr,[])))
    
-  | `AST_reglex (sr,(e,cls')) ->
+  | `AST_reglex (sr,(p1,p2,cls')) ->
+    let lexer_module = `AST_name(sr,"Lexer",[]) in
+    let iterator_type = 
+      `AST_lookup ( sr, ( lexer_module, "iterator", [])) 
+    in
+    let unit_type = `TYP_tuple [] in
+    let unit_value = `AST_tuple (sr,[]) in
+    let fetcher_type = `TYP_function [unit_type, iterator_type] in
+    let params = 
+      [
+        "lexeme_start",iterator_type;
+        "lexeme_end",iterator_type;
+        "buffer_end",iterator_type
+      ]
+    in
     let dcls = ref [] in
     let cls = ref [] in
     iter 
     (fun (re,e) -> 
       let l,x = rex e in
       dcls := l @ !dcls;
-      cls := (re,x) :: !cls
+      let n = seq() in
+      let name = "_lam_" ^ si n in
+      let d = Dcl
+        (
+          sr,
+          name,
+          [],
+          `DCL_function 
+          (
+            params,
+            `TYP_none,
+            [Exe (sr,`EXE_fun_return x)]
+           )
+        ) 
+      in
+      dcls := d :: !dcls;
+      let ls = `AST_expr(sr,"lexeme_start",iterator_type) in
+      let le = `AST_expr (sr,"lexeme_end",iterator_type) in
+      let be = `AST_expr (sr,"buffer_end",iterator_type) in
+      let a = `AST_apply
+        (
+          sr,
+          (
+            `AST_name (sr,name,[]),
+            `AST_tuple (sr,[ls; le; be])
+          )
+        ) 
+      in
+      cls := (re,a) :: !cls
     )
     cls'
     ;
 
     let n = seq() in
     let fname = "reglex" ^ string_of_int n in
-    let l,x = rex e in
-    let exes = [Exe(sr,`EXE_reglex (x,!cls))] in
+    let l1,x1 = rex p1 in
+    let l2,x2 = rex p2 in
+    let exes = [Exe(sr,`EXE_reglex (x1,x2,!cls))] in
     let rfun = Dcl(sr,fname,[],`DCL_function([],`TYP_none,exes)) in
-    rfun :: l @ !dcls,
+    rfun :: l1 @ l2 @ !dcls,
     `AST_apply(sr,(`AST_name(sr,fname,[]),`AST_tuple(sr,[])))
      
   | `AST_letin (sr,(pat,e1,e2)) ->
@@ -295,7 +438,7 @@ let rec rex name include_dirs seq (e:expr_t) : asm_t list * expr_t =
     ;
     let ematch_seq = seq() in
     (*
-    let end_match_label = "_end_match_" ^ string_of_int ematch_seq in
+    let end_match_label = "_em" ^ string_of_int ematch_seq in
     *)
     let matches = ref [Exe (generated,`EXE_comment "begin match")] in
     let match_caseno = ref 1 in
@@ -305,8 +448,8 @@ let rec rex name include_dirs seq (e:expr_t) : asm_t list * expr_t =
       let n2 = seq() in
       let patsrc = src_of_pat pat in
       let expr_src = src_of_expr e in
-      let match_checker_id = name ^ "_match_checker_" ^ string_of_int n1 in
-      let match_handler_id = name ^ "_match_handler_" ^ string_of_int n1 in
+      let match_checker_id = name ^ "_mc" ^ string_of_int n1 in
+      let match_handler_id = name ^ "_mh" ^ string_of_int n1 in
       let match_checker = `AST_name (patsrc,match_checker_id,[]) in
       let match_handler = `AST_name (expr_src,match_handler_id,[]) in
 
@@ -333,7 +476,7 @@ let rec rex name include_dirs seq (e:expr_t) : asm_t list * expr_t =
       @
       [
       Exe (patsrc,`EXE_comment ("match case " ^ string_of_int !match_caseno));
-      Exe (patsrc,`EXE_label ("_match_label_" ^ string_of_int n1));
+      Exe (patsrc,`EXE_label ("_ml" ^ string_of_int n1));
       Exe 
       (
         patsrc,
@@ -347,7 +490,7 @@ let rec rex name include_dirs seq (e:expr_t) : asm_t list * expr_t =
               `AST_tuple (patsrc,[])
             )
           ), 
-          "_match_label_" ^ string_of_int n2
+          "_ml" ^ string_of_int n2
         )
       )
       ;
@@ -377,7 +520,7 @@ let rec rex name include_dirs seq (e:expr_t) : asm_t list * expr_t =
     )
     pss
     ;
-    let failure_label = "_match_label_" ^ string_of_int !match_seq in
+    let failure_label = "_ml" ^ string_of_int !match_seq in
 
     let match_function_body =
     d
@@ -418,7 +561,6 @@ let rec rex name include_dirs seq (e:expr_t) : asm_t list * expr_t =
         `AST_tuple (sr,[])
       )
     )
-
 
 (* remove blocks *)
 and rst name include_dirs seq st : asm_t list = 
@@ -533,6 +675,35 @@ and rst name include_dirs seq st : asm_t list =
   | `AST_type_alias (sr,name,vs,typ) -> [Dcl (sr,name,vs,`DCL_type_alias (typ))]
   | `AST_type (sr,name,vs) -> [Dcl (sr,name,vs,`DCL_type)]
 
+  | `AST_curry (sr,name',vs,pps,ret,kind,sts) ->
+    rst name (mkcurry sr name' vs pps ret kind sts)
+
+  (* The object *)
+  | `AST_object (sr,name,vs,params,sts) -> 
+    let methods = find_methods sr sts in
+    let mtuple =  
+      `AST_tuple 
+      (
+        sr,
+        map 
+          (fun (n,t) ->
+            match t with 
+            | `TYP_function (d,_) ->
+              `AST_suffix ( sr, ( `AST_name (sr,n,[]), d))
+            | _ -> assert false
+          )
+          methods
+      ) 
+    in
+    let otname = "_ot_" ^ name in
+    let rtyp = `AST_name (sr,otname,[]) in
+    let retval:expr_t = `AST_apply (sr,(rtyp, mtuple)) in
+    let sts = sts @ [`AST_fun_return (sr,retval)] in
+    [
+      Dcl (sr,otname,vs,`DCL_struct methods);
+      Dcl (sr,name,vs,`DCL_function (params,rtyp,rsts name sts))
+    ]
+  
   (* functions *)
   | `AST_function (sr,name, vs, params, res, sts) -> 
     [Dcl (sr,name,vs,`DCL_function (params, res, rsts name sts))]
@@ -540,8 +711,43 @@ and rst name include_dirs seq st : asm_t list =
   | `AST_function_decl (sr,name,vs,typ) ->
     [Dcl (sr,name,vs,`DCL_if_fun typ)]
 
-  | `AST_fun_decl (sr,name,vs,args,result,code) -> 
-    [Dcl (sr,name,vs,`DCL_fun (args,result,code))]
+  | `AST_fun_decl (sr,name,vs,args,result,code) ->
+    let n = length args in
+    let prim_id = "_prim_" ^ name in
+    let type_args = map (fun t -> `AST_name (sr,t,[])) vs in
+    let prim_name = `AST_name (sr,prim_id,type_args) in
+    let param_names = map (fun i -> "_a" ^ si i) (nlist n) in
+    let params = combine param_names args in
+    let argument =
+      match param_names with
+      | [x] -> `AST_name (sr,x,[]) 
+      | _ -> 
+        let ps = map (fun x -> `AST_name (sr,x,[])) param_names in
+        `AST_tuple (sr,ps) 
+    in
+    let body = 
+      match result with
+      | `AST_void _ ->
+        [
+          Exe (sr,`EXE_call (prim_name, argument)); 
+          Exe (sr,`EXE_proc_return) 
+        ]
+      | _ ->
+        [
+          Exe 
+          (
+            sr,
+            `EXE_fun_return 
+            (
+              `AST_apply(sr,(prim_name, argument))
+            )
+          )
+        ]
+    in
+    [
+      Dcl (sr,prim_id,vs,`DCL_fun (args,result,code));
+      Dcl (sr,name,vs,`DCL_function (params,result,body))
+    ]
 
   (* misc *)
   | `AST_interface (sr,name,vs,sts) ->
@@ -655,6 +861,28 @@ and rst name include_dirs seq st : asm_t list =
   
   | `AST_nop _ -> []
 
+  | `AST_assign (sr,fid,l,r) ->
+    let sts = 
+      match l with
+      | `AST_tuple (_,ls) ->
+        let n = seq() in
+        let vn = "_" ^ si n in
+        let sts = ref [`AST_val_decl (sr,vn,[],None,Some r)] in
+        let count = ref 0 in
+        iter
+        (fun l ->
+          let r' = `AST_get_n (sr,(!count,r)) in
+          let asg = assign sr fid l r' in
+          sts := asg :: !sts;
+          incr count
+        )
+        ls
+        ;
+        rev !sts
+      | _ -> [assign sr fid l r]
+    in
+      rsts name sts
+
   | `AST_call (sr,proc, arg) ->
     let d1,x1 = rex proc in
     let d2,x2 = rex arg in
@@ -734,7 +962,6 @@ let rec build_if d = match d with
   | `AST_struct _
   | `AST_const_decl _
   | `AST_fun_decl _
-  | `AST_proc_decl _ 
   | `AST_abs_decl _ 
     -> [d]
   | _ -> [] 

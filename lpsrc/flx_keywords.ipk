@@ -25,6 +25,7 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "not", (fun s ->  NOT s);
     "or", (fun s ->  OR s);
     "fun", (fun s ->  FUNCTION s);
+    "obj", (fun s ->  OBJECT s);
     "proc", (fun s ->  PROCEDURE s);
     "macro", (fun s ->  MACRO s);
     "forget", (fun s ->  FORGET s);

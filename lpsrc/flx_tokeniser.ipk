@@ -129,6 +129,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | NOT _ -> "not"
   | OR _ -> "or"
   | FUNCTION _ -> "fun" 
+  | OBJECT _ -> "obj" 
   | PROCEDURE _ -> "proc" 
   | MACRO _ -> "macro" 
   | FORGET _ -> "forget" 
@@ -308,6 +309,7 @@ let src_of_token t = match t with
   | LOOP s 
   | PROCEDURE s 
   | FUNCTION s 
+  | OBJECT s 
   | MACRO s 
   | FORGET s 
   | IDENT s 

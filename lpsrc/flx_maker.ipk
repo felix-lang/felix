@@ -208,13 +208,13 @@ if "compiler" in options or "bytecode" in options:
         if "debug" in options:
           OCAMLCC = 'ocamlc -g '
         OCAMLLEX = 'ocamllex '
+        BYTECODE = 1
         OCAMLYACC = 'ocamlyacc '
       except:
         BYTECODE = -1
         OCAMLCC = '#ocamlc '
         OCAMLLEX = '#ocamllex '
         OCAMLYACC = '#ocamlyacc '
-        BYTECODE = 1
 
   try:
     xqt('ocamlc.opt')
@@ -315,7 +315,7 @@ MODULES = [
   'flx_parse'        ,
   'flx_keywords'     ,
   'flx_lex'          ,
-  'flx_ulex'          ,
+#  'flx_ulex'        ,
   'flx_pretok'       ,
   'flx_lex1'         ,
   'flx_tok'          ,
@@ -335,11 +335,13 @@ MODULES = [
   'flx_lookup'       , 
   'flx_bexe'         , 
   'flx_bbind'        , 
+  'flx_use'          , 
   'flx_inst'         , 
   'flx_cexpr'        ,
   'flx_tgen'         , 
   'flx_display'      , 
   'flx_ogen'         , 
+  'flx_regen'        ,
   'flx_gen'          , 
   'flx_flxopt'       , 
   'flx_terminate'    , 
@@ -854,7 +856,8 @@ We have no idea if it continues copying.
 @tangle('\t\tflx_'+flx_version+'/interscript/weavers/*.py \\')
 @tangle('')
 @tangle('www: dummy')
-@tangle('\tiscr lpsrc/flx_sourceforge.pak')
+@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_sourceforge.pak')
+@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_web.pak')
 @tangle('')
 @tangle('man: dummy')
 @tangle('\tpython script/maker man')

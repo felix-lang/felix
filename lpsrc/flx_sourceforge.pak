@@ -3,7 +3,7 @@ These HTML pages are manually prepared.
 The output lives in the subdirectory www,
 but the files must be at the top level on the
 sourceforge site to link to everything properly.
-@select(tangler('www/index.html'))
+@select(tangler('www/index.html','data'))
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <HTML>
 <HEAD>
@@ -115,11 +115,11 @@ HREF=//interscript.sf.net>interscript</A>.
 </BODY>
 </HTML>
 
-@select(tangler('www/download.html'))
+@select(tangler('www/download.html','data'))
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <HTML>
 <HEAD>
-<TITLE>Felix Download Felix 1.0.2</TITLE>
+<TITLE>Felix Download Felix 1.0.3</TITLE>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
 </HEAD>
 <BODY>
@@ -136,9 +136,9 @@ use GNU g++.
 </OL>
 </P>
 <H1>Download</H1>
-<P> Download developer tarball <A HREF=flx_1.0.2_src.tgz>flx_1.0.2_src.tgz</A> (424713 bytes)
+<P> Download developer tarball <A HREF=flx_1.0.3_src.tgz>flx_1.0.3_src.tgz</A> (437174 bytes)
 </P>
-<P> Download end user tarball <A HREF=flx_1.0.2_bin_linux.tgz>flx_1.0.2_bin_linux.tgz</A> (2073632 bytes)
+<P> Download end user tarball <A HREF=flx_1.0.3_bin_linux.tgz>flx_1.0.3_bin_linux.tgz</A> (2083967 bytes)
 This is the same as the developer package except all sources are
 extracted and documentation built.
 </P>
@@ -153,7 +153,7 @@ see
 <P><OL>
 <LI>
 <A HREF=http://lists.sourceforge.net/lists/listinfo/felix-language>Language discussion</A>
-<LI><A HREF=http://lists.sourceforge.net/lists/listinfo/felix-language>Compiler implementation discussion</A>
+<LI><A HREF=http://lists.sourceforge.net/lists/listinfo/felix-impl>Compiler implementation discussion</A>
 </OL><P>
 
 <H1>Make procedure</H1>

@@ -85,19 +85,6 @@ let apl (sri:srcref) (fn : string) (arg:expr_t):expr_t =
     )
   )
 
-(* model binary operator as procedure call *)
-let assign (op:string) (sr:range_srcref) (sri:srcref) l r = 
-  `AST_call 
-  (
-    sr,
-    `AST_name (slift sri, op,[]),
-    `AST_tuple 
-    (
-      sr, 
-      [ `AST_ref (src_of_expr l,l); r]
-    )
-  )
-
 (* model unary operator as procedure call *)
 let call1 (op:string) (sr:range_srcref) (sri:srcref) l = 
   `AST_call 
@@ -107,52 +94,20 @@ let call1 (op:string) (sr:range_srcref) (sri:srcref) l =
     `AST_ref (src_of_expr l,l)
   )
 
-let mkcurry sr name vs args return_type body =
-  let mkfuntyp d c = `TYP_function (d,c)
-  and typeoflist lst = match lst with
-    | [x] -> x
-    | _ -> `TYP_tuple lst
-  in 
-  let mkret arg ret = mkfuntyp (typeoflist (List.map snd arg)) ret in
-  let arity = List.length args in
-  let rettype args = 
-    match return_type with
-    | `TYP_none -> `TYP_none
-    | _ -> List.fold_right mkret args return_type 
-  in
+(* model unary operator as procedure call *)
+let call2 (op:string) (sr:range_srcref) (sri:srcref) l r = 
+  `AST_call 
+  (
+    sr,
+    `AST_name (slift sri, op,[]),
+    `AST_tuple(sr,[
+    `AST_ref (src_of_expr l,l);
+    `AST_ref (src_of_expr l,l)
+    ])
+  )
 
-  let rec aux args vs =  
-    let n = List.length args in
-    let name n = 
-      if n = arity
-      then name (* top level *)
-      else name^"_curry_" ^ string_of_int n
-    in
-    match args with 
-    | [] -> assert false
-    | h :: [] -> (* bottom level *)
-        `AST_function (sr, name n, vs, h, return_type, body)
-    | h :: t ->
-      let m = List.length args in
-      let body = 
-        [
-          aux t [];
-          `AST_fun_return 
-          (
-            sr,
-            `AST_suffix
-            (
-              sr,
-              (
-                `AST_name (sr,name (m-1),[]),
-                typeoflist (List.map snd (List.hd t))
-              )
-            )
-          )
-        ] 
-      in
-        `AST_function (sr, name m, vs, h, rettype t, body)
-   in aux args vs
+let mkcurry sr name vs args return_type kind body =
+  `AST_curry (sr,name,vs,args,return_type,kind,body)
 
 (* handle curried type functions *)
 let mktypefun sr name vs args return_type body =
@@ -260,7 +215,7 @@ let mktypefun sr name vs args return_type body =
 
 %token<Flx_ast.srcref> MATCH WITH ENDMATCH CASE REGMATCH REGLEX
 %token<Flx_ast.srcref> HEADER BODY MODULE CODE LET IN
-%token<Flx_ast.srcref> CALL PROCEDURE FUNCTION FUNCTOR JUMP LOOP
+%token<Flx_ast.srcref> CALL PROCEDURE FUNCTION FUNCTOR JUMP LOOP OBJECT
 %token<Flx_ast.srcref> RETURN FORK 
 %token<Flx_ast.srcref> TO OPEN EQRIGHTARROW USE INCLUDE
 %token<Flx_ast.srcref> TODO INTERFACE DEFINE
@@ -278,6 +233,7 @@ let mktypefun sr name vs args return_type body =
 %type <Flx_ast.pattern_t> pattern
 
 %start compilation_unit
+
 %%
 /* empty: { [] } */
 
@@ -309,6 +265,7 @@ binding_definition:
 declarative:
   | type_alias { $1 }
   | function_definition { $1 }
+  | object_definition { $1 }
   | procedure_definition { $1 }
   | module_definition { $1 }
   | union_decl { $1 }
@@ -669,7 +626,7 @@ function_definition:
       and body = snd $7
       and args = List.map snd $4 (* elide srcref *)
       and vs = List.map snd $3
-      in mkcurry sr name vs args return_type body
+      in mkcurry sr name vs args return_type `Function body
     }
 
   | FUNCTION NAME tvarlist COLON type_expr EQUAL STRING SEMI 
@@ -744,7 +701,7 @@ procedure_definition:
       and return_type = `AST_void sr
       and body = snd $5
       and args = List.map snd $4 (* elide srcref *)
-      in mkcurry sr name vs args return_type body
+      in mkcurry sr name vs args return_type `Function body
     }
 
   | PROCEDURE NAME tvarlist COLON type_expr EQUAL STRING SEMI 
@@ -762,6 +719,21 @@ procedure_definition:
       in
       `AST_fun_decl (sr,name,vs, ts,`AST_void sr, ct) 
     }
+
+@head(3,'Object')
+@select(h)
+object_definition:
+  | OBJECT NAME tvarlist fun_args compound 
+    { 
+      let sr = rsrange (slift $1) (fst $5)
+      and name = snd $2 
+      and return_type = `TYP_none
+      and body = snd $5
+      and args = List.map snd $4 (* elide srcref *)
+      and vs = List.map snd $3
+      in mkcurry sr name vs args return_type `Object body
+    }
+
 
 
 @commalistof("parameter")
@@ -1021,10 +993,6 @@ call:
       | `AST_apply (_,(proc, arg)) -> 
         `AST_call (sr, proc, arg)
 
-      (*
-      | `AST_lambda(_,([],`AST_void _,stmts)) ->
-        `AST_block (sr,stmts)
-      *)
       | proc -> 
        let u = `AST_tuple (slift $2, []) in
        `AST_call (sr, proc, u)
@@ -1037,11 +1005,6 @@ call:
       | `AST_apply (sr,(proc, arg)) -> 
         `AST_call (sr, proc, arg)
       
-      (*
-      | `AST_lambda(sr,([],`AST_void _,stmts)) ->
-        `AST_block (sr,stmts)
-      *)
-
       | proc -> 
         let u = `AST_tuple (slift $3, []) in
        `AST_call (rstoken $1 $3, proc, u)
@@ -1054,11 +1017,6 @@ call:
       | `AST_apply (sr,(proc, arg)) -> 
         `AST_jump (sr, proc, arg)
       
-      (*
-      | `AST_lambda(sr,([],`AST_void _,stmts)) ->
-        `AST_block (sr,stmts)
-      *)
-
       | proc -> 
         let u = `AST_tuple (slift $3, []) in
        `AST_call (sr, proc, u)
@@ -1092,6 +1050,8 @@ assignop:
   | VBAREQUAL       { $1,"vbareq" }
   | AMPEREQUAL      { $1,"ampereq" }
   | TILDEEQUAL      { $1,"tildeeq" }
+
+swapop:
   | LEFTRIGHTARROW  { $1,"swap" }
 
 incrop:
@@ -1099,11 +1059,18 @@ incrop:
   | MINUSMINUS      { $1, "decr" }
 
 assignment: 
+  | expr swapop expr SEMI 
+    { 
+      let srop,sname = $2 in
+      let sr = rsrange (src_of_expr $1) (slift $4) in
+      call2 sname sr srop $1 $3
+    }
+
   | expr assignop expr SEMI 
     { 
       let srop,sname = $2 in
       let sr = rsrange (src_of_expr $1) (slift $4) in
-      assign sname sr srop $1 $3 
+      `AST_assign (sr,sname,$1, $3)
     }
   | expr incrop SEMI 
     {
@@ -1152,9 +1119,9 @@ regmatch_expr:
     `AST_regmatch (rstoken $1 $5,($2,$4))
   }
 
-  | REGLEX expr WITH regmatch_alternatives ENDMATCH
+  | REGLEX expr TO expr WITH regmatch_alternatives ENDMATCH
   {
-    `AST_reglex (rstoken $1 $5,($2,$4))
+    `AST_reglex (rstoken $1 $7,($2,$4,$6))
   }
 
 regmatch_alternatives:
@@ -1396,16 +1363,22 @@ tuple_suffix:
   | COMMA or_condition tuple_suffix     { $2 :: $3 }
   | COMMA or_condition                  { [$2] }
 
+orop:
+  | OR {$1}
 or_condition:
-  | or_condition OR and_condition       { apl2 $2 "lor" [$1; $3] }
+  | or_condition orop and_condition     { apl2 $2 "lor" [$1; $3] }
   | and_condition                       { $1 }
 
+andop:
+  | AND {$1}
 and_condition:
-  | and_condition AND not_condition     { apl2 $2 "land" [$1; $3] }
+  | and_condition andop not_condition   { apl2 $2 "land" [$1; $3] }
   | not_condition                       { $1 }
 
+notop:
+  | NOT {$1}
 not_condition:
-  | NOT not_condition                   { apl $1 "lnot" $2 }
+  | notop not_condition                 { apl $1 "lnot" $2 }
   | comparison                          { $1 }
 
 chain_cmp_op:
@@ -1579,7 +1552,7 @@ product_list:
 term:
   | term SLASH power                    { apl2 $2 "div" [$1; $3] }
   | term PERCENT power                  { apl2 $2 "mod" [$1; $3] }
-  | prefixed                            { $1 }
+  | prefixed { $1 }
 
 /* note weird recursion here: we need to support
   -x ** -x = -(x**(-x))
@@ -1714,7 +1687,30 @@ dollar_atom:
     }
   | atom { $1}
   
+expr_code_prefix:
+  | CODE LSQB type_expr RSQB 
+    {
+     $1,
+     typecode_of_expr $3
+    }
+
 atom:
+  | expr_code_prefix NAME
+    {
+      let sr = rstoken (fst $1) (fst $2) in
+      let s = snd $2 in
+      let t = snd $1 in
+      `AST_expr (sr,s,t)
+    }
+
+  | expr_code_prefix STRING
+    {
+      let sr = rstoken (fst $1) (fst $2) in
+      let s = snd $2 in
+      let t = snd $1 in
+      `AST_expr (sr,s,t)
+    }
+
   | LBRACE expr RBRACE     
     { 
       let sr = rstoken $1 $3 in
@@ -1792,8 +1788,6 @@ suffixed_name:
         (qualified_name_of_expr $1, typecode_of_expr $4)
       )
     }
-
-
 
 %%
 (* trailer *)

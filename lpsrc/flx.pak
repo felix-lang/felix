@@ -1,6 +1,6 @@
 @bc = begin_displayed_code
 @ec = end_displayed_code
-@flx_version = '1.0.2'
+@flx_version = '1.0.3'
 @set_title('Felix '+flx_version)
 @head(1,'Purpose')
 Felix is a procedural language designed to implement
@@ -203,7 +203,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_parser.ipk')
 @include_file ('flx_string.ipk')
 @include_file ('flx_keywords.ipk')
-@include_file ('flx_ulex.ipk')
+@#include_file ('flx_ulex.ipk')
 @include_file ('flx_lexer.ipk')
 @include_file ('flx_tokeniser.ipk')
 @include_file ('flx_pat.ipk')
@@ -218,10 +218,12 @@ Flx_version.version_data := version_data
 @include_file ('flx_mbind.ipk')
 @include_file ('flx_bexe.ipk')
 @include_file ('flx_bbind.ipk')
+@include_file ('flx_opt1.ipk')
 @include_file ('flx_inst.ipk')
 @include_file ('flx_name.ipk')
 @include_file ('flx_tgen.ipk')
 @include_file ('flx_csubst.ipk')
+@include_file ('flx_regen.ipk')
 @include_file ('flx_gen.ipk')
 @include_file ('flx_getopt.ipk')
 @pop_head()

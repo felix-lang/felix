@@ -327,6 +327,7 @@ open Flx_getopt
 open Flx_version
 open Flx_flxopt
 open Flx_exceptions
+open Flx_use
 ;;
 
 let print_help () = print_options(); exit(0)
@@ -407,11 +408,10 @@ try
     close_out h
   end
   ;
-  let counter = ref 1 in
   let include_dirs =  (Filename.dirname input_file_name) :: compiler_options.include_dirs in
   let compiler_options = { compiler_options with include_dirs = include_dirs } in
   let syms = { syms with compiler_options = compiler_options } in
-  let deblocked = desugar_program include_dirs module_name counter parse_tree in
+  let deblocked = desugar_program include_dirs module_name syms.counter parse_tree in
 
   let root = !(syms.counter) in
   let table, exes, ifaces,dirs = 
@@ -422,6 +422,38 @@ try
     let bbdfns = bbind syms in
     let bifaces = bind_ifaces syms ifaces in
     print_endline "//Binding complete";
+
+    let root_proc = 
+      let id,sr,parent,vs,name_map,_,entry = 
+        try Hashtbl.find syms.dfns root 
+        with Not_found ->
+          failwith 
+          (
+            "Can't find root module " ^ si root ^
+            " in symbol table?"
+          )
+      in
+      begin match entry with
+        | `SYMDEF_module -> ()
+        | _ -> failwith "Expected to find top level module ''"
+      end
+      ;
+      let entry = 
+        try Hashtbl.find name_map "_init_" 
+        with Not_found ->
+          failwith "Can't find name _init_ in top level module's name map"
+      in
+      let index = match entry with
+        | FunctionEntry [Simple x] -> x
+        | FunctionEntry [] -> failwith "Couldn't find '_init_'"
+        | FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
+        | NonFunctionEntry _ -> failwith "_init_ found but not procedure"
+      in 
+      if compiler_options.print_flag 
+      then print_endline ("//root module's init procedure has index " ^ si index);
+      index
+    in
+
     Hashtbl.iter
     (fun index (name,parent,entry) -> print_endline
       (
@@ -430,6 +462,19 @@ try
       )
     )
     bbdfns
+    ;
+    print_endline "//OPTIMISING";
+    print_endline "//----------";
+    let bbdfns = elide_unused syms bbdfns root_proc bifaces in
+    Hashtbl.iter
+    (fun index (name,parent,entry) -> print_endline
+      (
+        si index ^ " --> " ^
+        string_of_bbdcl syms.dfns entry index
+      )
+    )
+    bbdfns
+
    
 with x -> Flx_terminate.terminate !reverse_return_parity x
 ;;

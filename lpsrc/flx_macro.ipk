@@ -352,6 +352,8 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       `AST_cond (sr,(cond,me e2,me e3))
     end
 
+  | `AST_expr (sr,s,t) -> `AST_expr (sr,s,t)
+
   (* Lambda hook *)
   | `AST_lambda (sr, (ps, t, sts)) -> 
     let pr = map fst ps in
@@ -407,9 +409,9 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     let res = map (fun (rexp,e) -> rexp, me e) res in
     `AST_regmatch (sr,(me e1, res))
 
-  | `AST_reglex (sr, (e1, res)) -> 
+  | `AST_reglex (sr, (e1, e2, res)) -> 
     let res = map (fun (rexp,e) -> rexp, me e) res in
-    `AST_reglex (sr,(me e1, res))
+    `AST_reglex (sr,(me e1, me e2, res))
 
   | `AST_typeof (sr, e1) -> `AST_typeof(sr, me e1)
 
@@ -439,6 +441,8 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   (* FIX TO SUPPORT IDENTIFIER RENAMING *)
   | `AST_use (sr, id, qn) -> tack (`AST_use (sr,mi sr id,qn))
 
+  | `AST_assign (sr,name,l,r) ->
+    tack (`AST_assign (sr, name, me l, me r))
 
   | `AST_comment _  ->  tack st
 
@@ -498,6 +502,14 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_function (sr, id, vs, ps, t, sts ) ->
     let pr = map fst ps in
     tack(`AST_function (sr, mi sr id, vs, ps, t, msp sr pr sts ))
+
+  | `AST_curry (sr,id,vs,pss,ret,kind,sts) ->
+    let pr = map fst (concat pss) in
+    tack(`AST_curry(sr, mi sr id, vs, pss, ret,kind, msp sr pr sts ))
+
+  | `AST_object (sr, id, vs, ps, sts ) ->
+    let pr = map fst ps in
+    tack(`AST_object (sr, mi sr id, vs, ps, msp sr pr sts ))
 
   | `AST_val_decl (sr, id, vs, optt, opte) -> 
     let opte = match opte with
@@ -580,6 +592,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_fun_return (sr, e)  ->
     ctack (`AST_fun_return (sr, me e));
     reachable := false
+
   | st -> failwith ("[subst_or_expand] Unhandled case " ^ string_of_statement 0 st)
   end
   ;

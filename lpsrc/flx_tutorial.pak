@@ -82,6 +82,44 @@ overloaded, as does C++. However, unlike C++,
 Felix has no automatic conversions, and
 overload matching must be exact.
 
+@head(2,'Expressions')
+Felix provides many of the operators found
+in C. Here is are some examples with equivalent 
+function calls. Note: there are no shift operators,
+although there are equivalent functions.
+[The symbols are too useful to waste for an infrequently
+used facility]. There are no bitwise operators,
+because both & and | have different uses.
+
+@select(tangler(tdir+'tut102a.flx'))
+include "std";
+// arith
+print (1 + 1); endl; print (add (1,2)); endl;
+print (1 - 1); endl; print (sub (1,2)); endl;
+print (1 * 1); endl; print (mul (1,2)); endl;
+print (1 / 1); endl; print (div (1,2)); endl;
+
+print (1.2 ** 1.2); endl;
+print (pow  (1.2,1.2)); endl;
+
+// boolean
+print (not false); endl;      
+print (lnot false); endl;
+
+print (true and false); endl; 
+print (land (true,false)); endl;
+
+print (true or false); endl; 
+print (lor  (true,false)); endl;
+
+// comparison
+print (1 == 2); endl; print (eq (1,2)); endl;
+print (1 != 2); endl; print (ne (1,2)); endl;
+print (1 < 2); endl; print (lt (1,2)); endl;
+print (1 > 2); endl; print (gt (1,2)); endl;
+print (1 <= 2); endl; print (le (1,2)); endl;
+print (1 >= 2); endl; print (ge (1,2)); endl;
+
 @head(2,'Value declaration')
 Felix allows values to be declared using the 'val'
 keyword.
@@ -158,6 +196,45 @@ and the condition is given in curly brackets.
 We'll find out exactly why later, but here is a hint:
 there is no while statement in Felix!
 
+@head(2,'Mutators')
+Felix provides a range of mutators, 
+these being assignment operators and counting operators.
+Below is a list of operators and equivalent procedure names.
+
+@select(tangler(tdir+'tut105a.flx'))
+include "std";
+open Uint;
+
+var i:int;
+var j:int;
+
+var u: uint;
+var v: uint;
+
+// operator    procedure
+// generic
+i =   1;       set          (&i,1);
+u =   1u;      set          (&u,1u);
+i <-> j;       swap         (&i,&j);
+
+// integral
+i +=  1;       pluseq       (&i,1);
+i -=  1;       minuseq      (&i,1);
+i *=  1;       muleq        (&i,1);
+i /=  1;       diveq        (&i,1);
+
+// bitwise: unsigned only
+u ^=  1u;       careteq      (&u,1u);
+u |=  1u;       vbareq       (&u,1u);
+u &=  1u;       ampereq      (&u,1u);
+
+
+// counting
+++i;           pre_incr (&i);
+i++;           post_incr (&i);
+--i;           pre_decr (&i);
+i--;           post_decr (&i);
+
 @head(2,'Functions')
 Felix allows you to define functions,
 although the syntax is different from C.
@@ -198,46 +275,39 @@ which is equivalent to the one above.
 Note however that the types of the arguments
 must be given.
 
-@head(2,'Lazy expressions')
-There is a function which is so useful, there
-is a special syntax for it: the lazy expression.
-@select(tangler(tdir+'tut108.flx'))
-include "std";
-var x = 1;
-var y = 2;
-
-val f1 = {x + y}; // lazy expression
-fun f2():int = { return x + y; } // equivalent
-
-print (f1 ());
-print (f2 ());
-
-x = 2; // change value of variables
-y = 3;
-
-print (f1 ());
-print (f2 ());
-
-@doc()
-The curly brackets denote a lazy expression, it is
-a function which evaluates the expression when passed
-the special unit value () explained below, the return type
-is the type of the expression.
+@head(2,'Procedures')
+Felix allows you to define procedures.
+They're like functions, but they can't return values.
+On the other hand, procedures may have side effects,
+and they may read input from the driver's message
+dispatch queue (which you will learn about much later).
 @p()
-You can also put statements inside curly brackets
-to define a lazy function:
-@select(tangler(tdir+'tut109.flx'))
+Here is an example of a procedure definition
+and use:
+@select(tangler(tdir+'tut112.flx'))
 include "std";
-val x = 1;
-val f = { val y = x + 1; return y; };
-val eol = { endl; };
-
-print (f ()); eol;
-
+proc print_newline (a:int)
+{
+  print a;
+  print "\n";
+}
+print_newline 1;
 @doc()
-If there is no return statement, a block procedure is denoted,
-otherwise the return type is the type of the return
-statement arguments, which must all be the same.
+There is a special short cut for calling procedures
+with unit argument: if the procedure is called
+by its name, the () can be elided:
+@select(tangler(tdir+'tut113.flx'))
+include "std";
+print 1; endl();
+print 2; endl;
+@doc()
+More precisely, a statement consisting
+of an (almost) atomic expression
+is taken to be a call to a procedure with
+unit argument. Note there is no confusion
+with the use of a procedure name as an expression,
+that always represents the closure of the procedure
+at the point of writing.
 
 @head(2,'Tuples')
 As you might guess from the title, Felix has
@@ -322,69 +392,6 @@ doesn't get confused with floating point.
 The notation is ugly and not recommended ..
 there is a better way called pattern matching
 which you will learn about soon.
-
-@head(2,'Procedures')
-Felix allows you to define procedures.
-They're like functions, but they can't return values.
-On the other hand, procedures may have side effects,
-and they may read input from the driver's message
-dispatch queue (which you will learn about much later).
-@p()
-Here is an example of a procedure definition
-and use:
-@select(tangler(tdir+'tut112.flx'))
-include "std";
-proc print_newline (a:int)
-{
-  print a;
-  print "\n";
-}
-print_newline 1;
-@doc()
-There is a special short cut for calling procedures
-with unit argument: if the procedure is called
-by its name, the () can be elided:
-@select(tangler(tdir+'tut113.flx'))
-include "std";
-print 1; endl();
-print 2; endl;
-@doc()
-More precisely, a statement consisting
-of an (almost) atomic expression
-is taken to be a call to a procedure with
-unit argument. Note there is no confusion
-with the use of a procedure name as an expression,
-that always represents the closure of the procedure
-at the point of writing.
-
-@head(2,'The block procedure')
-There is a procedure which is so useful, there
-is a special syntax for it, as described above in
-the section on lazy things: the block.
-
-@select(tangler(tdir+'tut114.flx'))
-include "std";
-var x = 1;
-val p1 = { print x; };
-proc p2() { print x; }; // equivalent to p1 (almost)
-
-// all these calls have the same behaviour
-p1();
-p1;
-p2();
-p2;
-{ print x; }();
-{ print x; };
-print x;
-
-@doc()
-The block is a procedure taking a unit argument.
-So when you write one as a statement, it just gets
-called: note that unlike C, that thing in 
-curley braces is an expression, and you must 
-make a statement by adding a semi-colon,
-which has the effect of invoking it due to the
-short cut rule.
 
 @head(2,'Structs')
 Felix supports C like structs. A struct, like a tuple,
@@ -615,6 +622,49 @@ endl;
 Notice the use of the special pattern '_', which matches
 something without naming it.
 
+@head(2,'Objects')
+Felix provides a way of making objects from functions.
+An object is just a struct whose members are functions
+nested in the scope of the object constructor function.
+Variables in the constructor are hidden. 
+@p()
+Note: the type of a member function must not depend
+on a name or type defined in the object (this constraint is
+because the desugaring precedes name binding).
+@p()
+Note: object constructors are not members, because their
+types would be local to the constructor (see above).
+@p()
+Note: There is currently
+no way to make a nested function private.
+@p()
+Note: The name of the type of an object with constructor 'x' is
+'_ot_x': the constructor name prefixed by '_ot_' (Ugly).
+@p()
+Note: you can change the methods of an object by assigning
+a new functional value to the structure component.
+@p()
+Note: the type of the object is not part of a method 
+signature: their type is as written.
+@p()
+Note: only explicitly declared functions (and procedures)
+are taken as methods. Implicit functions such as blocks
+are not taken.
+
+@h= tangler(tdir+'tut120a.flx')
+@select(h)
+include "std";
+obj a(x:int) {
+  var v = x;
+  fun fetch ():int = { return v; }
+  proc store (y:int) { v = y; }
+}
+
+val z = a(1);
+print (z.fetch()); endl;
+z.store(2);
+print (z.fetch()); endl;
+
 @head(2,'Regular Matching')
 Felix provides support for matching strings
 against regular expressions.
@@ -670,18 +720,6 @@ These are like ordinary matches, except that the pattern
 is a regular expression, and the argument must be a string.
 If more than one pattern matches the string, the first
 one is used.
-@p()
-There is a also a related reglex constructions, which
-matches a prefix of the string. Of all possible matches,
-reglex chooses the longest match. As for regmatch, if
-more than one regexp matches, the first written is used.
-@p()
-Note: in its current form reglex is a precursor
-to a richer construction which splits the argument
-into the matched prefix and remained of the string,
-allowing the construction to be used to tokenise
-a string.
-
 @select(h)
 print 
   regmatch "identifier" with
@@ -693,14 +731,6 @@ endl;
 
 print 
   regmatch "9999" with
-  | digit+ => "Number"
-  | id =>  "Identifier"
-  endmatch
-; 
-endl;
-
-print 
-  reglex "9999XXXXX" with
   | digit+ => "Number"
   | id =>  "Identifier"
   endmatch
@@ -731,6 +761,136 @@ here is the generated code for the inner loop of a regmatch:
   while(state && start != end)
     state = matrix[*start++][state];
 @end_displayed_code()
+
+@head(2,'Lexing')
+Felix provides a mechanism for constructing lexers.
+The reglex construction matches a prefix of the string. 
+Of all possible matches, reglex chooses the longest match. 
+As for regmatch, if
+more than one regexp matches, the first written is used.
+@p()
+The expression for each regexp has access to three
+values of type iterator: lexeme_start, lexeme_end and
+buffer_end.
+
+@h= tangler(tdir+'tut121a.flx')
+@select(h)
+include "std";
+open Lexer;
+
+regexp lower = ["abcdefghijklmnopqrstuvwxyz"];
+regexp upper = ["ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
+regexp digit = ["0123456789"];
+regexp alpha = lower | upper | "_";
+regexp space = " ";
+regexp white = space +;
+
+fun lexit(start:iterator, finish:iterator): 
+  string * string * iterator  
+=
+{
+  return 
+    reglex start to finish with
+    | digit+ => "Number", 
+      string_between(lexeme_start,lexeme_end), 
+      lexeme_end
+      
+    | alpha+ =>  "Identifier", 
+      string_between(lexeme_start,lexeme_end), 
+      lexeme_end
+      
+    | white =>  "White", 
+      string_between(lexeme_start,lexeme_end), 
+      lexeme_end
+    endmatch
+  ;
+}
+
+
+val s = "A string 2 lex";
+val start = start_iterator s;
+val finish = end_iterator s;
+var current = start;
+
+while { current != finish }
+{
+  val result = lexit(current, finish);
+  val kind = result.(0);
+  val lexeme = result.(1);
+  current = result.(2);
+  print kind; print ": "; print lexeme; endl;
+};
+print "Done.\n";
+
+@head(2,'Lazy expressions')
+There is a function which is so useful, there
+is a special syntax for it: the lazy expression.
+@select(tangler(tdir+'tut108.flx'))
+include "std";
+var x = 1;
+var y = 2;
+
+val f1 = {x + y}; // lazy expression
+fun f2():int = { return x + y; } // equivalent
+
+print (f1 ());
+print (f2 ());
+
+x = 2; // change value of variables
+y = 3;
+
+print (f1 ());
+print (f2 ());
+
+@doc()
+The curly brackets denote a lazy expression, it is
+a function which evaluates the expression when passed
+the special unit value () explained below, the return type
+is the type of the expression.
+@p()
+You can also put statements inside curly brackets
+to define a lazy function:
+@select(tangler(tdir+'tut109.flx'))
+include "std";
+val x = 1;
+val f = { val y = x + 1; return y; };
+val eol = { endl; };
+
+print (f ()); eol;
+
+@doc()
+If there is no return statement, a block procedure is denoted,
+otherwise the return type is the type of the return
+statement arguments, which must all be the same.
+
+@head(2,'The block procedure')
+There is a procedure which is so useful, there
+is a special syntax for it, as described above in
+the section on lazy things: the block.
+
+@select(tangler(tdir+'tut114.flx'))
+include "std";
+var x = 1;
+val p1 = { print x; };
+proc p2() { print x; }; // equivalent to p1 (almost)
+
+// all these calls have the same behaviour
+p1();
+p1;
+p2();
+p2;
+{ print x; }();
+{ print x; };
+print x;
+
+@doc()
+The block is a procedure taking a unit argument.
+So when you write one as a statement, it just gets
+called: note that unlike C, that thing in 
+curley braces is an expression, and you must 
+make a statement by adding a semi-colon,
+which has the effect of invoking it due to the
+short cut rule.
 
 @head(2,'Expression Macro Facility')
 Felix provides an powerful and dangerous 
@@ -1520,28 +1680,6 @@ append[int](&v,3);
 // print the vector
 vprint[int] v; endl();
 
-
-@head(2,'Overloading Generics')
-Generic functions and procedures overload much as
-if they were the family of their instances.
-@p()
-For an unqualified name, the lookup finds only generics with the 
-correct number of type arguments, if any. Then it checks
-if an instantiation matches the use. If not, the next
-outermost scope is searched.
-
-@select(tangler(tdir+'tut135.flx'))
-header "#include <iostream>";
-type int = "int";
-proc endl:1= "std::cout << std::endl;";
-proc print[t]: t = 'std::cout << $1 << " A1";';
-proc print[t1,t2]: t1 = 'std::cout << $1 << " A2";';
-
-{
-  proc print[t]: t = 'std::cout << $1 << " B1";';
-  print[int] 1; endl; // B1
-  print[int,int] 1; endl; // A2
-};
 
 @head(2,'Generic Functions')
 Felix functions and procedures can be generic too.
@@ -2934,7 +3072,7 @@ interface group
 module NUMBER: group = {
   typedef t = int;
   fun add(a:t, b:t):t = { return Int::add(a, b); }
-  fun neg(a:t):t = { return -a; }
+  fun neg(a:t):t = { return Int::neg a; }
   val zero = 0;
   proc print (a:int) { Int::print a; }
 }

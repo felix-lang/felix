@@ -267,11 +267,13 @@ and expr_t =
   | `AST_as of range_srcref * (expr_t * string)
   | `AST_match of range_srcref * (expr_t * (pattern_t * expr_t) list)
   | `AST_regmatch of range_srcref * (expr_t * (regexp_t * expr_t) list)
-  | `AST_reglex of range_srcref * (expr_t * (regexp_t * expr_t) list)
+  | `AST_reglex of range_srcref * (expr_t * expr_t * (regexp_t * expr_t) list)
   | `AST_typeof of range_srcref * expr_t
   | `AST_cond of range_srcref * (expr_t * expr_t * expr_t)
 
+  | `AST_expr of range_srcref * string * typecode_t
 
+   
   (* hacks .. *)
   | `AST_bound_module of range_srcref * (bid_t * bid_t * index_map_t)
   ]
@@ -320,6 +322,8 @@ and macro_parameter_type_t =
   | Stmt
 and macro_parameter_t = id_t * macro_parameter_type_t
 
+and funkind_t = [`Object | `Function ]
+
 and statement_t =
   [ 
   | `AST_include of range_srcref * string 
@@ -329,6 +333,8 @@ and statement_t =
 
   (* definitions *)
   | `AST_function of range_srcref * id_t * id_t list * parameter_t list * typecode_t * statement_t list
+  | `AST_curry of range_srcref * id_t * id_t list * parameter_t list list * typecode_t * funkind_t * statement_t list
+  | `AST_object of range_srcref * id_t * id_t list * parameter_t list * statement_t list
   | `AST_regdef of range_srcref * string * regexp_t
 
   (* macros *)
@@ -369,6 +375,7 @@ and statement_t =
   | `AST_ifgoto of range_srcref * expr_t *id_t
   | `AST_ifnotgoto of range_srcref * expr_t * id_t
   | `AST_call of range_srcref * expr_t * expr_t 
+  | `AST_assign of range_srcref * string * expr_t * expr_t 
   | `AST_jump of range_srcref * expr_t * expr_t 
   | `AST_loop of range_srcref * id_t * expr_t 
   | `AST_read of range_srcref * id_t
@@ -380,7 +387,6 @@ and statement_t =
   | `AST_abs_decl of range_srcref * id_t * id_t list * c_t
   | `AST_const_decl of range_srcref * id_t * id_t list * typecode_t * c_t
   | `AST_fun_decl of range_srcref * id_t * id_t list * typecode_t list * typecode_t * c_t 
-  | `AST_proc_decl of range_srcref * id_t * id_t list *  typecode_t list * c_t 
 
   (* embedding *)
   | `AST_header of range_srcref * string
@@ -411,7 +417,7 @@ and exe_t =
   | `EXE_nop of string
   | `EXE_init of id_t * expr_t 
   | `EXE_regmatch of (expr_t * (regexp_t * expr_t) list)
-  | `EXE_reglex of (expr_t * (regexp_t * expr_t) list)
+  | `EXE_reglex of (expr_t * expr_t * (regexp_t * expr_t) list)
   ]
 
 @doc()
@@ -559,7 +565,6 @@ type b0typecode_t = 't b0typecode_t' as 't
 type btypecode_t = 't btypecode_t' as 't
 
 type regular_args_t =
-    tbexpr_t * (* argument *)
     int list * (* alphabet *)
     int *      (* state count *)
     (int, tbexpr_t) Hashtbl.t * (* state->expression map *)
@@ -581,8 +586,8 @@ and bexe_t =
   | `BEXE_nop of string
   | `BEXE_code of string
   | `BEXE_init of bid_t * tbexpr_t 
-  | `BEXE_regmatch of regular_args_t
-  | `BEXE_reglex of regular_args_t
+  | `BEXE_regmatch of tbexpr_t * regular_args_t
+  | `BEXE_reglex of tbexpr_t * tbexpr_t * regular_args_t
   ]
 
 and bexpr_t =
@@ -593,13 +598,13 @@ and bexpr_t =
   | `BEXPR_literal of literal_t 
   | `BEXPR_apply of tbexpr_t * tbexpr_t 
   | `BEXPR_tuple of tbexpr_t list
-  | `BEXPR_dot of tbexpr_t * bid_t
   | `BEXPR_get_n of int * tbexpr_t
   | `BEXPR_closure of bid_t * btypecode_t list
   | `BEXPR_coercion of tbexpr_t * btypecode_t
   | `BEXPR_case of int * btypecode_t
   | `BEXPR_match_case of int * tbexpr_t
   | `BEXPR_case_arg of int * tbexpr_t
+  | `BEXPR_expr of string * btypecode_t
   ]
 
 and tbexpr_t = bexpr_t * btypecode_t
@@ -730,6 +735,11 @@ val iter_b0type:
 val iter_btype:
   (btypecode_t -> unit) -> btypecode_t -> unit
   
+val map_tbexpr:
+  (tbexpr_t -> tbexpr_t) -> 
+  (btypecode_t -> btypecode_t) ->
+  tbexpr_t -> tbexpr_t
+
 @h = tangler('src/flx_maps.ml')
 @select(h)
 open Flx_ast
@@ -789,6 +799,26 @@ let iter_btype f = function
   | `BTYP_type_tuple ts -> iter f ts
   | x -> iter_b0type f x
 
+(* type invariant mapping *)
+
+let map_tbexpr fe ft = function
+  | `BEXPR_deref e,t -> `BEXPR_deref (fe e),ft t
+  | `BEXPR_apply (e1,e2),t -> `BEXPR_apply (fe e1, fe e2),ft t
+  | `BEXPR_tuple  es,t -> `BEXPR_tuple (map fe es),ft t
+  | `BEXPR_get_n (i,e),t -> `BEXPR_get_n (i, fe e),ft t
+  | `BEXPR_coercion (e,t'),t -> `BEXPR_coercion (fe e,ft t'),ft t
+
+  | `BEXPR_ref (i,ts),t -> `BEXPR_ref (i, map ft ts), ft t
+  | `BEXPR_closure (i,ts),t -> `BEXPR_closure (i, map ft ts),ft t
+  | `BEXPR_name (i,ts),t -> `BEXPR_name (i, map ft ts), ft t
+  | `BEXPR_case (i,t'),t -> `BEXPR_case (i, ft t'),ft t
+  | `BEXPR_match_case (i,e),t -> `BEXPR_match_case (i, fe e),ft t
+  | `BEXPR_case_arg (i,e),t -> `BEXPR_case_arg (i, fe e),ft t
+
+  | `BEXPR_literal x,t -> `BEXPR_literal x, ft t
+  | `BEXPR_expr (s,t1),t2 -> `BEXPR_expr (s, ft t1), ft t2
+
+
 @head(1,'Routines to extract source reference from terms')
 Source reference manipulators.
 @h = tangler('src/flx_srcref.mli')
@@ -817,19 +847,23 @@ Note the special hack of forgetting the second
 filename when creating a range: the alternative
 would be to record a complete list of lines.
 @select(h)
-(* get source range from source references of first
+(** axiom: rstoken a b = rsrange (lift a) (lift b) *)
+
+(** get source range from source references of first
    and last tokens 
 *)
 let rstoken (f1,l1,s1,e1) (f2,l2,s2,e2) = (f1,l1,s1,l2,e2)
 
-(* get range from first and last ranges *)
+(** get range from first and last ranges *)
 let rsrange (f1,sl1,sc1,el1,ec1) (f2,sl2,sc2,el2,ec2) =
   (f1,sl1,sc1,el2,ec2)
 
-(* lift token source to range *)
+(** lift token source to range for token without attribute*)
 let slift (f,l,s,e) = (f,l,s,l,e)
 
-(* axiom: rstoken a b = rsrange (lift a) (lift b) *)
+(** lift token source to range for tokens with attribute*)
+let sliftfst x = slift (fst x)
+
 
 @doc()
 Type specific operations.
@@ -877,6 +911,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_reglex (s, _) 
   | `AST_typeof (s, _) 
   | `AST_cond (s,_)
+  | `AST_expr (s,_,_)
   | `AST_letin (s,_)
 
   | `AST_bound_module (s,_)
@@ -890,6 +925,8 @@ let src_of_stmt e = match e with
   | `AST_label (s,_)
   | `AST_goto (s,_)
   | `AST_function (s,_, _, _ , _, _)
+  | `AST_curry (s,_, _, _ , _, _,_)
+  | `AST_object (s,_, _, _ , _)
   | `AST_name_macro (s, _,_)
   | `AST_expr_macro (s,_, _,_)
   | `AST_stmt_macro (s,_, _,_)
@@ -909,6 +946,7 @@ let src_of_stmt e = match e with
   | `AST_type_alias (s,_,_,_) 
   | `AST_nop (s, _) 
 
+  | `AST_assign (s, _, _,_ ) 
   | `AST_call (s, _, _ ) 
   | `AST_jump (s, _, _ ) 
   | `AST_loop (s, _, _ ) 
@@ -920,7 +958,6 @@ let src_of_stmt e = match e with
   | `AST_abs_decl (s,_,_, _) 
   | `AST_const_decl (s,_,_,_,_) 
   | `AST_fun_decl (s,_,_,_,_,_ ) 
-  | `AST_proc_decl (s,_,_,_,_ ) 
   | `AST_header (s,_) 
   | `AST_body (s,_) 
   | `AST_code (s, _) 
@@ -1205,6 +1242,10 @@ and string_of_expr (e:expr_t) =
     "(" ^ sme e ^ ":" ^ 
     string_of_typecode t ^ ")"
 
+  | `AST_expr (_,s,t) -> 
+    "code ["^string_of_typecode t^"]" ^
+    "'" ^ s ^ "'"
+    
   | `AST_cond (_,(e,b1,b2)) -> 
     "if " ^ se e ^ 
     " then " ^ se b1 ^ 
@@ -1287,8 +1328,8 @@ and string_of_expr (e:expr_t) =
     ^
     " endmatch"
 
-  | `AST_reglex (_,(e, ps)) ->
-    "reglex " ^ se e ^ " with " ^
+  | `AST_reglex (_,(p1, p2, ps)) ->
+    "reglex " ^ se p1 ^ " to " ^ se p2 ^ " with " ^
     catmap "\n"
     (fun (p,e')->
       " | " ^
@@ -1328,6 +1369,7 @@ and st prec tc : string =
     | `TYP_sum ls ->
       begin match ls with 
       | [] -> 0,"void" 
+      | [`TYP_tuple[];`TYP_tuple[]] -> 0,"bool" 
       | _ -> 4,cat " * " (List.map (st 4) ls)
       end
 
@@ -1434,6 +1476,7 @@ and sb dfns depth fixlist counter prec tc =
       | `BTYP_sum ls -> 
         begin match ls with 
         | [] -> 9,"UNEXPECTED EMPTY SUM = void" 
+        | [`BTYP_tuple[]; `BTYP_tuple[]] -> 0,"bool"
         | [x] -> (* failwith *) (9,"UNEXPECTED SUM OF ONE ARGUMENT " ^ sbt 9 x)
         | _ -> 4,cat " + " (List.map (sbt 4) ls)
         end
@@ -1721,13 +1764,6 @@ and string_of_statement level s =
     (string_of_typecode result) ^ 
     " = " ^ string_of_string code ^ ";"
 
-  | `AST_proc_decl (_,name,vs,args, code) ->
-    spaces level ^ 
-    "proc " ^ name ^ print_vs vs ^
-    ": " ^ 
-    (string_of_typecode (`TYP_tuple args)) ^
-    " = " ^ string_of_string code ^ ";"
-
   | `AST_const_decl (_,name,vs,typ, code) ->
     spaces level ^ 
      "const " ^ name ^ 
@@ -1753,8 +1789,28 @@ and string_of_statement level s =
 
   | `AST_function (_,name, vs, ps, res, ss) -> 
     spaces level ^ 
-    "function " ^ name ^ print_vs vs ^ 
+    "fun " ^ name ^ print_vs vs ^ 
     "("^string_of_parameters ps^"): "^string_of_typecode res^"\n" ^
+    string_of_compound level ss
+
+  | `AST_curry (_,name, vs, pss, res, kind, ss) -> 
+    spaces level ^ 
+    (match kind with | `Function -> "fun " | `Object -> "obj ")
+    ^ 
+    name ^ print_vs vs ^ 
+    catmap " " 
+    (fun ps ->
+      "("^string_of_parameters ps^")"
+    )
+    pss
+    ^ 
+    ": "^string_of_typecode res^"\n" ^
+    string_of_compound level ss
+
+  | `AST_object (_,name, vs, ps, ss) -> 
+    spaces level ^ 
+    "object " ^ name ^ print_vs vs ^ 
+    "("^string_of_parameters ps^")\n" ^
     string_of_compound level ss
 
   | `AST_macro_val (_,name, e) ->
@@ -1868,6 +1924,10 @@ and string_of_statement level s =
   | `AST_call (_,pr, args) ->
     spaces level
     ^ "call " ^ se pr ^ " " ^ se args ^ ";"
+
+  | `AST_assign (_,name,l,r) ->
+    spaces level
+    ^ "call " ^ name ^ "(" ^ se l ^ "," ^se r^");"
 
   | `AST_jump (_,pr, args) ->
     spaces level
@@ -2025,9 +2085,9 @@ and string_of_exe level s =
     ^
     " endmatch;"
 
-  | `EXE_reglex (e,cls) ->
+  | `EXE_reglex (p1,p2,cls) ->
     spc ^
-    "reglex " ^ se e ^ " with " ^
+    "reglex " ^ se p1 ^ " to " ^ se p2 ^ " with " ^
     catmap "\n"
     (fun (p,e')->
       " | " ^
@@ -2121,7 +2181,6 @@ and string_of_bound_expression dfns e =
     ")"
 
   | `BEXPR_tuple t -> "(" ^ catmap ", " se t ^ ")"
-  | `BEXPR_dot (e,n) ->  "get_<" ^ si n ^ ">(" ^ se e ^ ")"
   | `BEXPR_case (v,t) -> 
     "case " ^ si v ^ " of " ^ string_of_btypecode dfns t
 
@@ -2129,6 +2188,8 @@ and string_of_bound_expression dfns e =
     "(match case " ^ si v ^ ")(" ^ se e ^ ")"
   | `BEXPR_case_arg (v,e) ->
     "(arg of case " ^ si v ^ " of " ^ se e ^ ")"
+  | `BEXPR_expr (s,t) ->
+    "code ["^string_of_btypecode dfns t^"]" ^ "'" ^ s ^ "'"
 
 and string_of_biface dfns level s = 
   let spc = spaces level in
@@ -2144,13 +2205,13 @@ and string_of_bexe dfns level s =
   let se e = string_of_bound_expression dfns e in
   let sid n = qualified_name_of_index dfns n in
   match s with
-  | `BEXE_regmatch (e,alphabet, nstates, termcodes,matrix) -> 
+  | `BEXE_regmatch (e,(alphabet, nstates, termcodes,matrix)) -> 
     spc ^ "regmatch " ^ se e ^ " with " ^
     "<TRANSITION MATRIX of "^si nstates^" states> " ^
     "endmatch;"
 
-  | `BEXE_reglex (e,alphabet, nstates, termcodes,matrix) -> 
-    spc ^ "reglex " ^ se e ^ " with " ^
+  | `BEXE_reglex (p1,p2,(alphabet, nstates, termcodes,matrix)) -> 
+    spc ^ "reglex " ^ se p1 ^ " to " ^ se p2 ^ " with " ^
     "<TRANSITION MATRIX of "^si nstates^" states> " ^
     "endmatch;"
 
@@ -2594,6 +2655,8 @@ module CharSet :
 @head(1,'Compile time exceptions')
 @python('//')
 exceptions = """
+open Flx_ast
+open Flx_types
 exception SyntaxError of string
 exception ParseError of string
 exception LexError of string
@@ -2603,11 +2666,13 @@ exception ClientError2 of range_srcref * range_srcref * string
 exception SystemError of range_srcref * string
 exception Exit of int
 exception Bad_recursion
+exception Expr_recursion of expr_t
+exception Free_fixpoint of btypecode_t 
+exception Unresolved_return of range_srcref * string
 """
 //
 @h = tangler('src/flx_exceptions.ml')
 @select(h)
-open Flx_ast
 @tangle(exceptions)
 let clierr2 sr sr2 s = raise (ClientError2 (sr,sr2,s))
 let clierr sr s = raise (ClientError (sr,s))
@@ -2616,7 +2681,6 @@ let catch s f = try f() with _ -> failwith s
 
 @h = tangler('src/flx_exceptions.mli')
 @select(h)
-open Flx_ast
 @tangle(exceptions)
 val clierr: range_srcref -> string -> 'a
 val clierr2: range_srcref -> range_srcref -> string -> 'a

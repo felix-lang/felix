@@ -86,6 +86,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_noexpand _ -> failwith "Not expecting noexpand in pattern"
   | `AST_letin _ -> failwith "Not expecting conditional in when part of pattern (should be replaced by match)"
   | `AST_cond _ -> failwith "Not expecting conditional in when part of pattern (should be replaced by match)"
+  | `AST_expr _ -> failwith "Not expecting expr in when part of pattern (should be replaced by match)"
   | `AST_typeof _ -> failwith "Not expecting typeof in when part of pattern"
   | `AST_product _ -> failwith "Not expecting product in when part of pattern"
   | `AST_void _ -> failwith "Not expecting void in when part of pattern"

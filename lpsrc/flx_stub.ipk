@@ -7,72 +7,42 @@ open Flx_types
 print_endline "STUB TEST PROGRAM"
 ;;
 
-(* test fold unfold *)
+open Flx_ctypes
+open Flx_cexpr
 
-open Flx_unify
-open Flx_print
-open Flx_flxopt
-open Flx_getopt
-open Flx_maps
-open List
-    
-let t1 =  `BTYP_tuple [`BTYP_name 1; `BTYP_fix (-1)]
-let t2 = `BTYP_tuple [`BTYP_name 1; unfold t1]
-
-let x1 = `BTYP_tuple [`BTYP_name 1; `BTYP_pointer (`BTYP_fix (-2))]
-let x2 = unfold x1
-let z = 
-`BTYP_tuple [`BTYP_name 1; `BTYP_pointer (
-`BTYP_tuple [`BTYP_name 1; `BTYP_pointer (
-`BTYP_tuple [`BTYP_name 1; `BTYP_pointer (
-`BTYP_tuple [`BTYP_name 1; `BTYP_pointer (
-`BTYP_tuple [`BTYP_name 1; `BTYP_pointer (
- `BTYP_fix (-2)
-)]
-)]
-)]
-)]
-)]
-
-
-(* let minimise t = match map_btype fold t with x -> fold x
-*)
-
-let types =
-  [
-  t1; 
-  t2;
-  `BTYP_tuple [`BTYP_name 2; `BTYP_fix (-1); t2];
-  x1;
-  x2;
-  z
-  ]
-;;
-
-try
-  let raw_options = parse_options Sys.argv in
-  let compiler_options = get_felix_options raw_options in
-  let syms = make_syms compiler_options in
-
-  let syms = make_syms compiler_options in
-  let p t = print_endline (string_of_btypecode syms.dfns t) in
-
-  iter 
-  (fun t ->
-    print_string "Original type "; p t;
-    (*
-    let ut = unfold t in 
-    print_string "Unfolded type "; p ut;
-    *)
-    let ft = fold t in 
-    print_string "folded type "; p ft;
-    let ft = minimise t in 
-    print_string "minimised type "; p ft;
-    print_endline "---";
+let e1 =
+  `C_infix ("*",
+    `C_infix ("+",`C_atom "x",`C_atom "y"),
+    `C_infix ("*",`C_atom "x",`C_atom "y")
   )
-  types;
-  
-
-  exit 0
-with x -> Flx_terminate.terminate true x
 ;;
+let e2 =
+  `C_infix ("-",
+    `C_infix ("+",`C_atom "x",`C_atom "y"),
+    `C_infix ("-",`C_atom "x",`C_atom "y")
+  )
+;;
+let e3 =
+  `C_infix ("-",
+    `C_infix ("*",`C_atom "x",`C_atom "y"),
+    `C_infix ("/",`C_atom "x",`C_atom "y")
+  )
+;;
+
+let e4 =
+  `C_infix ("-",
+    `C_infix ("-",`C_atom "x",`C_atom "y"),
+    `C_atom "z"
+  )
+;;
+let e5 =
+  `C_infix ("-",
+    `C_atom "x",
+    `C_infix ("-",`C_atom "y",`C_atom "z")
+  )
+;;
+print_endline (string_of_cexpr e1) ;;
+print_endline (string_of_cexpr e2) ;;
+print_endline (string_of_cexpr e3) ;;
+print_endline (string_of_cexpr e4) ;;
+print_endline (string_of_cexpr e5) ;;

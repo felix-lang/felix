@@ -462,10 +462,10 @@ and lookup_sn_in_env
     let bsuf = bind_type syms env excluded_dirs sr suf in
     (* OUCH HACKERY *)
     let (be,t) = 
-      lookup_qn_with_sig
+      lookup_qn_with_sig'
       syms 
       sr sr 
-      env [] excluded_dirs 
+      env [] [] 0 excluded_dirs 
       qn bsuf
     in match be with
     | `BEXPR_name (index,ts) -> 
@@ -502,7 +502,7 @@ and lookup_sn_in_env
 *)
 and bind_type syms env excluded_dirs sr t : btypecode_t =
   (*
-  print_endline ("Binding type " ^ string_of_typecode t);
+  print_endline ("[bind_type] " ^ string_of_typecode t);
   *)
   let t:btypecode_t = 
     bind_type' syms env [] [] [] [] 0 excluded_dirs sr 
@@ -702,10 +702,23 @@ and bind_type'
   excluded_dirs 
   sr t params
 : btypecode_t =
-  let bt t = bind_type' syms env idx_fixlist type_alias_fixlist as_fixlist expr_fixlist (depth+1) excluded_dirs sr t params in
-  let bi i ts = bind_type_index syms idx_fixlist type_alias_fixlist as_fixlist expr_fixlist depth excluded_dirs sr i ts in
+  let bt t = bind_type' syms env 
+    idx_fixlist type_alias_fixlist as_fixlist expr_fixlist (depth+1) 
+    excluded_dirs sr t params 
+  in
+  let bi i ts = bind_type_index syms 
+    idx_fixlist type_alias_fixlist as_fixlist expr_fixlist depth 
+    excluded_dirs sr i ts 
+  in
   (*
-  print_string ("BINDING TYPE' " ^ string_of_typecode t);
+  print_endline ("[bind_type'] " ^ string_of_typecode t);
+  print_endline ("expr_fixlist is " ^ 
+    catmap ","
+    (fun (e,d) -> string_of_expr e ^ " [depth " ^si d^"]") 
+    expr_fixlist
+  );
+  *)
+  (*
   if length params <> 0 then
   begin
     print_endline ("  [" ^
@@ -796,7 +809,10 @@ and bind_type'
 
   | `TYP_var i ->  `BTYP_var i
   | `TYP_as (t,s) -> 
-    bind_type' syms env idx_fixlist type_alias_fixlist ((s,depth)::as_fixlist) expr_fixlist depth excluded_dirs sr t params
+    bind_type' syms env 
+    idx_fixlist type_alias_fixlist 
+    ((s,depth)::as_fixlist) expr_fixlist depth 
+    excluded_dirs sr t params
 
   | `TYP_typeof e ->
     (*
@@ -815,8 +831,7 @@ and bind_type'
         `BTYP_fix fixdepth
       end
       else 
-        (* NOTE: depth is not increase here, typeof is not a real term *)
-        snd(bind_expression' syms env [] ((e,depth)::expr_fixlist) (depth) excluded_dirs e)
+        snd(bind_expression' syms env [] expr_fixlist depth excluded_dirs e)
     in 
       (*
       print_endline ("typeof --> " ^ sbt syms.dfns t);
@@ -973,7 +988,8 @@ and bind_type_index syms
       let params = make_params syms index ts in
       let env:env_t = build_env syms [] (Some index) in
       let t = 
-        bind_type' syms env idx_fixlist ((index,depth) :: type_alias_fixlist) as_fixlist expr_fixlist (depth:int) (excluded_dirs:int list) (sr:range_srcref) (t:typecode_t) params 
+        bind_type' syms env idx_fixlist ((index,depth) :: type_alias_fixlist) as_fixlist 
+        expr_fixlist depth excluded_dirs sr t params 
       in
         (*
         print_endline ("Unravelled and bound is " ^ sbt syms.dfns t);
@@ -1101,7 +1117,12 @@ and typeofindex_with_ts
 (* args is string,btype list *)
 and cal_ret_type syms idx_fixlist expr_fixlist depth excluded_dirs index args =
   (*
-  print_endline ("Cal ret type index " ^ si index);
+  print_endline ("[cal_ret_type] index " ^ si index);
+  print_endline ("expr_fixlist is " ^ 
+    catmap ","
+    (fun (e,d) -> string_of_expr e ^ " [depth " ^si d^"]") 
+    expr_fixlist
+  );
   *)
   let env = build_env syms excluded_dirs (Some index) in
   match (get_data syms.dfns index) with
@@ -1124,7 +1145,7 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth excluded_dirs index args =
       really regmatch is a function, but we use a normal function wrapper
       and a special instruction because the processing is lighter
     *)
-    | [`EXE_reglex (_,cls)] 
+    | [`EXE_reglex (_,_,cls)] 
     | [`EXE_regmatch (_,cls)] ->
       (*
       print_endline 
@@ -1174,38 +1195,42 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth excluded_dirs index args =
         incr return_counter;
         (*
         print_endline ("  .. Handling return of " ^ string_of_expr e);
-        *) 
+        *)
         begin try
           let t = 
             (* this is bad code .. we lose detection
             of errors other than recursive dependencies ..
             which shouldn't be errors anyhow ..
             *)
-            try 
               snd 
               (
                 bind_expression' syms env 
                 (index::idx_fixlist) expr_fixlist depth 
                 excluded_dirs e
               ) 
-            with x ->
-              (*
-              print_endline (Printexc.to_string x);
-              *)
-              raise x
           in
           if do_unify syms !ret_type t (* the argument order is crucial *)
           then 
             ret_type := varmap_subst syms.varmap !ret_type
-          else 
+          else begin
+            print_endline 
+            (
+              "Inconsistent return type of " ^ id ^ "<"^string_of_int index^">"
+            )
+            ;
             failwith 
             (
               "Inconsistent return type of " ^ id ^ "<"^string_of_int index^">"
             )
-        with _ -> 
-          (*
+          end
+        with 
+          | Stack_overflow -> failwith "[cal_ret_type] Stack overflow"
+          | Expr_recursion e -> () 
+          | Free_fixpoint t -> () 
+          | Unresolved_return (sr,s) -> () 
+          | x -> 
           print_endline ("  .. Unable to compute type of " ^ string_of_expr e);
-          *)
+          print_endline ("Reason: " ^ Printexc.to_string x);
           ()
         end
       | _ -> ()
@@ -1294,7 +1319,14 @@ and inner_typeofindex
   (excluded_dirs:int list)
   (index:int)
 : btypecode_t = 
-
+  (*
+  print_endline ("[inner_type_of_index] " ^ si index);
+  print_endline ("expr_fixlist is " ^ 
+    catmap ","
+    (fun (e,d) -> string_of_expr e ^ " [depth " ^si d^"]") 
+    expr_fixlist
+  );
+  *)
   (* check the cache *)
   try Hashtbl.find syms.ticache index
   with Not_found ->   
@@ -1319,19 +1351,21 @@ and inner_typeofindex
     let pts = List.map snd ps in
     let rt' = 
       try Hashtbl.find syms.varmap index with Not_found ->
-      cal_ret_type syms idx_fixlist expr_fixlist depth excluded_dirs index [] 
+      cal_ret_type syms (index::idx_fixlist) expr_fixlist depth excluded_dirs index [] 
     in 
       (* this really isn't right .. need a better way to 
         handle indeterminate result .. hmm .. 
       *)
       if var_i_occurs index rt' then 
-        syserr sr 
+        raise (Unresolved_return (sr,
         (
           "[typeofindex'] " ^ 
           "function "^id^"<"^string_of_int index^
-          ">: return type is not resolved, got: " ^ 
-          sbt syms.dfns rt'
-        )
+          ">: Can't resolve return type, got : " ^ 
+          sbt syms.dfns rt' ^ 
+          "\nPossibly each returned expression depends on the return type" ^
+          "\nTry adding an explicit return type annotation"
+        )))
       else
         let t = `BTYP_function (bt (typeof_list pts), rt') in
         t
@@ -1517,14 +1551,40 @@ and koenig_lookup syms sra excluded_dirs id' name_map fn t2 ts =
   | NonFunctionEntry _ -> failwith "Koenig lookup expected function"
 
 (* this routine has to return a function or procedure .. *)
-and lookup_qn_with_sig 
+and lookup_qn_with_sig
   syms 
   sra srn 
   env idx_fixlist excluded_dirs 
   (qn:qualified_name_t)
   (sign:btypecode_t)
+=
+lookup_qn_with_sig'
+  syms 
+  sra srn 
+  env idx_fixlist [] 0 excluded_dirs 
+  qn
+  sign
+
+and lookup_qn_with_sig'
+  syms 
+  sra srn 
+  env idx_fixlist expr_fixlist depth excluded_dirs 
+  (qn:qualified_name_t)
+  (sign:btypecode_t)
 : tbexpr_t =    
-  let bt sr t = bind_type syms env excluded_dirs sr t in
+  (*
+  print_endline ("[lookup_qn_with_sig] " ^ string_of_qualified_name qn);
+  print_endline ("expr_fixlist is " ^ 
+    catmap ","
+    (fun (e,d) -> string_of_expr e ^ " [depth " ^si d^"]") 
+    expr_fixlist
+  );
+  *)
+  let bt sr t = 
+    (*
+    print_endline "NON PROPAGATING BIND TYPE";
+    *)
+    bind_type syms env excluded_dirs sr t in
   match qn with
   | `AST_void _ -> failwith "qualified-name is void"
 
@@ -1559,7 +1619,7 @@ and lookup_qn_with_sig
     *)
     lookup_name_with_sig 
       syms 
-      sra srn idx_fixlist excluded_dirs 
+      sra srn idx_fixlist expr_fixlist depth excluded_dirs 
       env name ts sign
 
   | `AST_lookup (sr,(qn',name,ts)) -> 
@@ -1784,13 +1844,13 @@ and lookup_qn_with_sig
 and lookup_name_with_sig 
   syms 
   sra srn 
-  idx_fixlist excluded_dirs env 
+  idx_fixlist expr_fixlist depth excluded_dirs env 
   (name : string)
   (ts : btypecode_t list)
   (t2:btypecode_t) 
 : tbexpr_t =
   (*
-  print_endline ("Lookup_name_with_sig: " ^ name ^ " of " ^ sbt syms.dfns t2);
+  print_endline ("[lookup_name_with_sig] " ^ name ^ " of " ^ sbt syms.dfns t2);
   *)
   match env with
   | [] -> 
@@ -1803,8 +1863,8 @@ and lookup_name_with_sig
     match 
       lookup_name_in_table_dirs_with_sig 
       (table, dirs) 
-      syms 
-      env idx_fixlist excluded_dirs 
+      syms env 
+      idx_fixlist expr_fixlist depth excluded_dirs
       sra srn name ts t2 
     with
     | Some result -> (result:>tbexpr_t)
@@ -1813,13 +1873,13 @@ and lookup_name_with_sig
         lookup_name_with_sig 
           syms 
           sra srn 
-          idx_fixlist excluded_dirs 
+          idx_fixlist expr_fixlist depth excluded_dirs 
           tail name ts t2
        in (tbx:>tbexpr_t)
         
 and handle_function 
   syms 
-  env idx_fixlist excluded_dirs 
+  env idx_fixlist expr_fixlist depth excluded_dirs 
   sra srn 
   name 
   ts
@@ -1872,9 +1932,19 @@ and handle_function
             *)
             `BEXPR_closure (index,ts),
             (
-              match typeofindex_with_ts syms excluded_dirs index ts with
+              match inner_typeofindex_with_ts syms 
+                idx_fixlist expr_fixlist depth excluded_dirs 
+                index ts 
+              with
               | `BTYP_function (s,d) as t -> t
               | t -> 
+                ignore begin
+                  match t with 
+                  | `BTYP_fix _ -> raise (Free_fixpoint t)
+                  | _ -> try unfold t with
+                  | _ -> raise (Free_fixpoint t)
+                end
+                ;
                 failwith 
                 (
                   "[handle_function]: closure operator expected '"^name^"' to be function definition, got '"^
@@ -1891,7 +1961,7 @@ and handle_function
   
 and lookup_name_in_table_dirs_with_sig (table, dirs) 
   syms 
-  env idx_fixlist excluded_dirs 
+  env idx_fixlist expr_fixlist depth excluded_dirs 
   sra srn name ts t2 
 : tbexpr_t option
 =
@@ -1903,7 +1973,13 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     "] IN TABLE DIRS WITH SIG " ^ sbt syms.dfns t2
   ); 
   *)
-  let bt sr t = bind_type syms env excluded_dirs sr t in
+  (* DOES NOT PROPAGATE EXPR FIXLIST .. *)
+  let bt sr t = 
+    (*
+    print_endline "LOSING EXPR FIXLIST ..";
+    *)
+    bind_type syms env excluded_dirs sr t in
+
   let result:entry_set_t =
     match lookup_name_in_htab table name  with
     | Some x -> x
@@ -1927,7 +2003,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
             let tb : tbexpr_t =
               handle_function 
               syms 
-              env idx_fixlist excluded_dirs 
+              env idx_fixlist expr_fixlist depth excluded_dirs 
               sra srn name ts index
             in 
               Some tb 
@@ -2032,7 +2108,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         let ((_,tt) as tb) =
           handle_function 
           syms 
-          env idx_fixlist excluded_dirs 
+          env idx_fixlist expr_fixlist depth excluded_dirs 
           sra srn name ts index
         in 
           (*
@@ -2075,7 +2151,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
             let tb : tbexpr_t = 
               handle_function 
               syms 
-              env idx_fixlist excluded_dirs 
+              env idx_fixlist expr_fixlist depth excluded_dirs 
               sra srn name ts result
             in 
               Some tb
@@ -2121,24 +2197,41 @@ and bind_regdef syms env idx_fixlist excluded_dirs regexp_exclude e =
 
 and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e 
 : tbexpr_t = 
+  (*
+  print_endline ("[bind_expression'] " ^ string_of_expr e);
+  print_endline ("expr_fixlist is " ^ 
+    catmap ","
+    (fun (e,d) -> string_of_expr e ^ " [depth " ^si d^"]") 
+    expr_fixlist
+  );
+  *)
+  if List.mem_assq e expr_fixlist
+  then raise (Expr_recursion e)
+  ;
   let be e' = bind_expression' syms env idx_fixlist ((e,depth)::expr_fixlist) (depth+1) excluded_dirs e' in
   let bt sr t = 
     (* we're really wanting to call bind type and propagate depth ? *)
-    let t = bind_type' syms env idx_fixlist [] [] expr_fixlist (depth+1) excluded_dirs sr t [] in
+    let t = bind_type' syms env 
+      idx_fixlist [] [] ((e,depth)::expr_fixlist) (depth+1) 
+      excluded_dirs 
+      sr t [] 
+    in
     let t = beta_reduce syms [] t in
     t
   in
-  let ti i ts = inner_typeofindex_with_ts syms idx_fixlist expr_fixlist depth excluded_dirs i ts in
+  let ti i ts = inner_typeofindex_with_ts syms 
+    idx_fixlist ((e,depth)::expr_fixlist) depth excluded_dirs i ts 
+  in
 
   let lookup sr f (sign:btypecode_t) =
     match f with
       
     | #qualified_name_t as name -> 
       let srn = src_of_expr name in
-      lookup_qn_with_sig 
+      lookup_qn_with_sig'
         syms 
         sr srn env 
-        idx_fixlist excluded_dirs 
+        idx_fixlist ((e,depth)::expr_fixlist) depth excluded_dirs 
         name sign
 
     | e -> be e
@@ -2168,6 +2261,10 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
   | `AST_cond _ -> failwith "[bind_expression] Unexpected conditional expression (should be replaced by match)"
   | `AST_typeof (sr,e) -> failwith "[bind_expression] Unexpected 'typeof' in expression"
   | `AST_as (sr, (e1,e2)) -> failwith "[bind_expression] Unexpected 'as' in expression" 
+
+  | `AST_expr (sr,s,t) -> 
+    let t = bt sr t in 
+    `BEXPR_expr (s,t),t
 
   | `AST_sum (sri,ls) -> 
     begin let mksum a b = apl2 sri "add" [a;b] in
@@ -2367,7 +2464,13 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
       | `SYMDEF_var _
       | `SYMDEF_parameter (`TYP_pointer _) -> 
         `BEXPR_ref (index,ts), 
-        `BTYP_pointer (inner_typeofindex_with_ts syms idx_fixlist ((e,depth)::expr_fixlist) (depth+1) excluded_dirs index ts)
+        `BTYP_pointer 
+        (
+          inner_typeofindex_with_ts syms 
+          idx_fixlist ((e,depth)::expr_fixlist) 
+          (depth+1) excluded_dirs 
+         index ts
+        )
 
       | `SYMDEF_parameter _ -> 
          clierr srr 
@@ -2542,7 +2645,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
       string_of_expr e
     )
 
-  | `AST_reglex (sr,(e,cls)) ->
+  | `AST_reglex (sr,(p1,p2,cls)) ->
     failwith 
     (
       "[bind_expression] " ^

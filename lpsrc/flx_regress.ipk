@@ -23,17 +23,8 @@ is an overall time in seconds, which should
 get smaller with each compiler improvement.
 @end_list()
 
-@select(tangler('test/bt01.flx'))
-basic parser error
 
-@select(tangler('test/bt02.flx'))
-module X { proc p(){} }
-module Y { proc p(){} }
-open X;
-open Y;
-p; // ambiguous
-
-
+@head(2,'Good tests')
 @select(tangler('test/rt01.flx'))
 #include <std.flx>
 open Tiny;
@@ -215,18 +206,6 @@ module B = M:I;
 open B;
 print_endl 1;
 
-@select(tangler('test/bt03.flx'))
-// open depends on self
-#include <std.flx>
-interface I { proc print_endl:int; }
-module X {
-  module M { proc print_endl (a:int) { print a; endl; } }
-  module B = M:I;
-}
-open X;
-open B;
-print_endl 1;
-
 @select(tangler('test/rt07.flx'))
 header "#include <stdio.h>";
 
@@ -298,10 +277,50 @@ proc print(y:U) { print "union U"; }
 print (exec2(B, 1)); endl;
 */
 
+@select(tangler('test/rt09.flx'))
+// code insertion
+body "#include <iostream>";
+code 'static int x = 1;';
+type int = "int";
+fun add:int * int -> int = "$1 + $2";
+fun two (): int = { return code[int]x + code[int]'x'; }
+proc print:int = 'std::cout << $1 << std::endl;';
+print (two());
+
+@head(2,'Bad tests')
+All these should fail gracefully at (felix) compile time. 
+Run the compiler with the -e option to invert
+the return code parity.
+@select(tangler('test/bt01.flx'))
+basic parser error
+
+@select(tangler('test/bt02.flx'))
+module X { proc p(){} }
+module Y { proc p(){} }
+open X;
+open Y;
+p; // ambiguous
+
+@select(tangler('test/bt03.flx'))
+// open depends on self
+#include <std.flx>
+interface I { proc print_endl:int; }
+module X {
+  module M { proc print_endl (a:int) { print a; endl; } }
+  module B = M:I;
+}
+open X;
+open B;
+print_endl 1;
+
 @select(tangler('test/bt04.flx'))
 #include <std.flx>
 // these now fail OK: (should yield 'any' .. then fail overload :-)
 val aa = bb + 1;
 val bb = aa + 1;
 
+@select(tangler('test/bt05.flx'))
+// impossible recursion
+type int = "int";
+fun neg(a:int) = { return -a; }
 

@@ -69,22 +69,20 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap ((e,t) as be) =
     ue e1; ue e2
 
   | `BEXPR_tuple es -> iter ue es 
-  | `BEXPR_dot (e,i) -> ue e
      
   | `BEXPR_coercion (e,t) -> ue e; ut (vs t)
      
   | `BEXPR_case (_,t) -> ut (vs t)
 
-  | `BEXPR_name (i,ts) -> 
-    let ts = map vs ts in
-    ui i ts; iter ut ts
-
+  | `BEXPR_ref (i,ts) 
+  | `BEXPR_name (i,ts)
   | `BEXPR_closure (i,ts)
     -> 
     let ts = map vs ts in
     ui i ts; iter ut ts
 
-  | _ -> ()
+  | `BEXPR_literal _ -> ()
+  | `BEXPR_expr (_,t) -> ut t
   end
 
 and process_exe syms bbdfns ref_insts1 ts hvarmap exe =
@@ -108,6 +106,21 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap exe =
   | `BEXE_init (i,e) -> ui i; ue e
 
   | `BEXE_read i -> ui i 
+
+  | `BEXE_regmatch (e,(_,_,h,_)) -> 
+    ue e;
+    Hashtbl.iter
+    (fun _ e -> ue e)
+    h
+
+  | `BEXE_reglex (p1,p2,(_,_,h,_)) -> 
+    ue p1; 
+    ue p2;
+    Hashtbl.iter
+    (fun _ e -> ue e)
+    h
+
+
   | _ -> ()
 
 

@@ -73,6 +73,49 @@ exception Found of int
 let print_vs vs =
   catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs
 
+let bind_regex syms env sr be return_count ret_type cls =
+  (*
+  print_endline "Binding regmatch";
+  *) 
+  let bd e = bind_regdef syms env [] [] [] e in
+
+  (* create a unified regexp using REGEXP_code for expressions *)
+  let f (e,c) = REGEXP_seq (e, REGEXP_code c) in
+  let re = List.map f cls in
+  let alt r1 r2 = REGEXP_alt (r1,r2) in
+  let re = List.fold_right alt re REGEXP_sentinel in
+
+  (* do lookups *)
+  let re = bd re in
+
+  (* generate transition matrix *)
+  let alphabet, nstates, code_table, matrix = Flx_dfa.process_regexp re in
+  let alphabet = CharSet.elements alphabet in
+
+  (* bind RHS expressions *)
+  let bcode = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun i c -> 
+    let sr = src_of_expr c in
+    let _,t as bt = be c in
+    Hashtbl.add bcode i bt;
+    incr return_count;
+    if do_unify syms !ret_type t then
+      ret_type := varmap_subst syms.varmap !ret_type
+    else 
+      clierr sr 
+      (
+        "Wrong return type,\nexpected : " ^ 
+        string_of_btypecode syms.dfns !ret_type ^
+        "\nbut we got " ^
+        string_of_btypecode syms.dfns t ^ " in\n" ^
+        short_string_of_src sr
+      )
+  )
+  code_table
+  ;
+  alphabet,nstates, bcode,matrix
+
 let bind_exes syms env sr exes ret_type id index parent_vs = 
   (*
   print_endline ("bind_exes.. env depth="^ string_of_int (List.length env));
@@ -103,6 +146,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
   let bt sr t : btypecode_t = bind_type syms env [] sr t in
   let return_count = ref 0 in
   let reachable = ref true in
+  let proc_return_count = ref 0 in
 
   let bound_exes = ref [] in
   let tack x = bound_exes := x :: !bound_exes in
@@ -165,6 +209,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         tack (cal_loop syms.dfns tbe1 (be2,t2) index)
 
     | `EXE_jump (a,b) ->
+      incr proc_return_count;
       bind_exe (`EXE_call (a,b));
       bind_exe  (`EXE_proc_return)
 
@@ -196,6 +241,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       end
 
     | `EXE_proc_return ->
+      incr proc_return_count;
       reachable := false;
       if do_unify syms !ret_type `BTYP_void 
       then 
@@ -261,57 +307,19 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       | NonFunctionEntry _ -> failwith "Not expecting bound entry"
       end
 
-    | `EXE_reglex (e,cls)
+    | `EXE_reglex (p1,p2,cls) ->
+      reachable := false;
+      let p1 = be p1 in
+      let p2 = be p2 in
+      let regex_args = bind_regex syms env sr be return_count ret_type cls in
+      tack (`BEXE_reglex (p1,p2,regex_args))
+
     | `EXE_regmatch (e,cls) ->  
-      (*
-      print_endline "Binding regmatch";
-      *) 
       reachable := false;
       let e = be e in
-      let bd e = bind_regdef syms env [] [] [] e in
+      let regex_args = bind_regex syms env sr be return_count ret_type cls in
+      tack (`BEXE_regmatch (e,regex_args))
 
-      (* create a unified regexp using REGEXP_code for expressions *)
-      let f (e,c) = REGEXP_seq (e, REGEXP_code c) in
-      let re = List.map f cls in
-      let alt r1 r2 = REGEXP_alt (r1,r2) in
-      let re = List.fold_right alt re REGEXP_sentinel in
-
-      (* do lookups *)
-      let re = bd re in
-
-      (* generate transition matrix *)
-      let alphabet, nstates, code_table, matrix = Flx_dfa.process_regexp re in
-      let alphabet = CharSet.elements alphabet in
-
-      (* bind RHS expressions *)
-      let bcode = Hashtbl.create 97 in
-      Hashtbl.iter
-      (fun i c -> 
-        let sr = src_of_expr c in
-        let _,t as bt = be c in
-        Hashtbl.add bcode i bt;
-        incr return_count;
-        if do_unify syms !ret_type t then
-          ret_type := varmap_subst syms.varmap !ret_type
-        else 
-          clierr sr 
-          (
-            "Wrong return type,\nexpected : " ^ 
-            string_of_btypecode syms.dfns !ret_type ^
-            "\nbut we got " ^
-            string_of_btypecode syms.dfns t ^ " in\n" ^
-            short_string_of_src sr
-          )
-      )
-      code_table
-      ;
-      begin match x with 
-      | `EXE_regmatch _ ->
-        tack (`BEXE_regmatch (e,alphabet,nstates, bcode,matrix))
-      | `EXE_reglex _ ->
-        tack (`BEXE_reglex (e,alphabet,nstates, bcode,matrix))
-      | _ -> assert false
-      end
   in 
   List.iter bind_exe exes;
   let bound_exes = List.rev !bound_exes in 
@@ -328,7 +336,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
   ;
   *)
 
-  (* No return statements found: it must be a procedure,
+  (* No function return statements found: it must be a procedure,
      so unify void [just a comparison with void .. heh!]
   *)
   if !return_count = 0 then
@@ -346,10 +354,11 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
 
   begin match !ret_type with
   | `BTYP_void ->
-    if not !reachable
+    if not !reachable && !proc_return_count = 0
     then print_endline 
     (
-      "WARNING: procedure " ^id^" doesn't drop thru end, possible infinite loop in\n" ^
+      "WARNING: procedure " ^id^" has no explicit return and doesn't drop thru end," ^
+      "\npossible infinite loop in\n" ^
       short_string_of_src sr
     )
   | _ ->

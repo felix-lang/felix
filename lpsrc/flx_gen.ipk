@@ -850,6 +850,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
   let our_display = get_display_list syms this in
   let our_level = length our_display in
   match e with
+  | `BEXPR_expr (s,_) -> s
   | `BEXPR_coercion (e,t) -> 
     (* generate a function style cast *)
     tn t ^ "(" ^ ge e ^ ")"
@@ -1100,43 +1101,6 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
     cat ", " (map ge es) ^
     ")"
 
-  | `BEXPR_dot (e,index) -> "Can't handle unions yet"
-    (* structure component: the Felix and C++ names
-       of the component are the same
-    *)
-    (* "(" ^ ge e ^ ")." ^ name *)
-
-  (*
-  | `BEXPR_name (index,ts) ->
-    let id,parent,entry = 
-      try Hashtbl.find bbdfns index 
-      with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
-    in
-    begin match entry with
-    | `BBDCL_function _ 
-    | `BBDCL_procedure _ ->
-      let the_display = 
-        let d' = 
-          map (fun i-> "ptr"^ cpp_instance_name syms bbdfns i ts)
-          (get_display_list syms index)
-        in 
-          if length d' > our_level
-          then "this" :: tl d'
-          else d'
-      in
-      let name = cpp_instance_name syms bbdfns index ts in
-      let ptr_map = name ^ name^"_ptr_map"in
-      "(new(gc,"^ptr_map^")\n        " ^ name ^ 
-      "(" ^ cat ", " ("FLX_FPAR_PASS" :: the_display) ^
-      "))"
-
-    | `BBDCL_struct _ 
-    | `BBDCL_fun _
-    | `BBDCL_proc _ ->
-      failwith ("[gen_expr: closure] Can't wrap primitive proc, fun, or struct '"^id^"' yet")
-    | _ -> failwith "[gen_expr: closure] Cannot use this kind of name '"^id^"' in expression"
-    end
-  *)
 
 let get_labels bbdfns counter exes =
   let labels = Hashtbl.create 97 in
@@ -1428,14 +1392,6 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
   | `BEXE_ifgoto (e,s) -> "      if(" ^ ge e ^ ")goto " ^ s ^ ";\n"
   | `BEXE_ifnotgoto (e,s) ->"      if(!("^ge e^"))goto " ^ s ^ ";\n" 
   
-  (*
-  | `BEXE_jump ((`BEXPR_name (index,ts),_) as f,a) ->
-    handle_ginst true index ts a
-
-  | `BEXE_call ((`BEXPR_name (index,ts),_) as f,a) ->
-    handle_ginst false index ts a
-  *)
-
   | `BEXE_jump ((`BEXPR_closure (index,ts),_) as f,a) ->
     let ts = map tsub ts in
     handle_closure true index ts a
@@ -1466,22 +1422,6 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
      to its on previous state; that is, simply continue on:
      there's only one frame
    *)
-
-  (* SEE HANDLE GINST ... *)
-  (*
-  | `BEXE_call ((`BEXPR_name (index,ts),`BTYP_function _) as p,a) ->
-    let args = match a with
-      | _,`BTYP_tuple [] -> "this"
-      | _ -> "this, " ^ ge a
-    in
-    let n = !counter in
-    incr counter;
-    "// VARIABLE OF TYPE FUNCTION: NEED INCREF HERE\n" ^
-    "      //"^ src_str ^ "\n" ^
-    "      pc = " ^ si n ^ ";\n" ^
-    "      return incref(" ^ ge p ^ ")->call(" ^ args ^");\n" ^
-    "    case " ^ si n ^ ":\n"
-  *)
 
   | `BEXE_call (p,a) ->
     let args = match a with
@@ -1532,129 +1472,14 @@ let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
     "    case " ^ si n ^ ":\n"
 
     
-  | `BEXE_reglex (e,alpha,nstates,cases,matrix)
-  | `BEXE_regmatch (e,alpha,nstates,cases,matrix) ->
+  | `BEXE_regmatch (e,reargs) ->
     let b = Buffer.create 500 in
-    let tack s = bcat b s in
+    Flx_regen.regen b reargs (`regmatch e) ge;
+    Buffer.contents b
 
-    tack ("  // regmatch/lex: error state=0, start state=1, valid states=1 to "^si nstates^"\n");
-
-    (* transition matrix *)
-    let d = Array.make_matrix 256 nstates (-1) in
-    Hashtbl.iter
-    (fun (c,s1) s2 -> 
-      d.(c).(s1) <- s2
-    )
-    matrix
-    ;
-    begin match exe with | `BEXE_reglex _ ->
-    tack ("  // accepting states\n");
-    tack ("  static int accept["^si (nstates+1)^"]={\n");
-    tack (
-      "    0," ^
-      catmap "," 
-      (fun i -> match Hashtbl.mem cases i with
-      | true -> "1" | false -> "0"
-      )
-      (nlist nstates)
-    );
-    tack "\n  };\n";
-    | _ -> ()
-    end
-    ;
-    (* find equivalent chars *)
-    tack "  // state->state transition vectors for canonical characters\n";
-    let canon = Array.make 256 0 in
-    for i = 0 to 255 do
-      try
-        for j = 0 to i do
-          if d.(i) = d.(j) then 
-          begin
-            canon.(i) <- j;
-            if i = j then
-            begin
-              tack("  static int s"^si i^"["^si (nstates+1)^"]=\n");
-              tack "  {0, // error\n"
-              ;
-              for state = 0 to nstates - 1 do
-                if state mod 16 = 0 then tack "      ";
-                let s = "     " ^ si (d.(i).(state)+1) in
-                let n = String.length s in
-                let s = String.sub s (n-3) 3 in
-                tack s;
-                if state <> nstates - 1 then tack ", ";
-                if state mod 16 = 15 then tack "\n"
-              done
-              ;
-              tack "\n";
-              tack "  };\n"
-            end;
-            raise Not_found;
-          end
-        done (* j *)
-      with Not_found -> ()
-    done (* i *)
-    ;
-    tack ("  //char -> (state->state) lookup\n");
-    tack ("  static int *matrix[256] =\n");
-    tack "  {\n";
-    for i = 0 to 255 do
-      if i mod 16 = 0 then tack "      ";
-      let s = "     s" ^ si canon.(i) in
-      let n = String.length s in
-      let s = String.sub s (n-4) 4 in
-      tack s;
-      if i <> 255 then tack ", ";
-      if i mod 16 = 15 then tack "\n"
-    done;
-    tack "  };\n\n";
-
-    (* eval argument as a C++ string *)
-    tack "  string s = ";
-    tack (ge e);
-    tack ";\n";
-    tack "  char const *start = s.data();\n";
-    tack "  char const *end = start + s.size();\n";
-    begin match exe with
-    | `BEXE_regmatch _ ->
-      tack "  int state = 1;\n";
-      tack "  while(state && start != end)\n";
-      tack "    state = matrix[*start++][state];\n";
-      tack "  switch (state)\n"
-    | `BEXE_reglex _ ->
-      tack "  int state = 1;\n";
-      tack "  int last_state = 0;\n";
-      tack "  char const *last_ptr = NULL;\n";
-      tack "  if(accept[state]){\n";
-      tack "    last_state = state;\n";
-      tack "    last_ptr = start;\n";
-      tack "  }\n";
-      tack "  while(state && start != end) {\n";
-      tack "    state = matrix[*start++][state];\n";
-      tack "    if(accept[state]){\n";
-      tack "      last_state = state;\n";
-      tack "      last_ptr = start;\n";
-      tack "    }\n";
-      tack "  }\n";
-      tack "  switch (last_state)\n"
-    | _ -> assert false 
-    end
-    ;
-    tack "  {\n";
-    Hashtbl.iter
-    (fun state expr ->
-      tack 
-      (
-        "    case " ^ si (state + 1)^ ":"^
-        " return " ^ ge expr ^ ";\n"
-      )
-    )
-    cases 
-    ;
-    tack "    case 0: assert((\"regmatch failure\",0));\n";
-    tack "    default: assert((\"system failure in regmatch\",0));\n";
-    tack "  }\n";
-
+  | `BEXE_reglex (p1,p2,reargs) ->
+    let b = Buffer.create 500 in
+    Flx_regen.regen b reargs (`reglex (p1,p2)) ge;
     Buffer.contents b
     
   | `BEXE_fun_return e -> 
@@ -1734,6 +1559,7 @@ let gen_function_methods syms bbdfns label_map counter index ts instance_no =
         gen_exes syms bbdfns display label_map counter index exes vs ts
       with x -> 
         print_endline (Printexc.to_string x);
+        print_endline (catmap "\n" (string_of_bexe syms.dfns 1) exes);
         failwith "Can't gen exes .."
     in
     let apply =
@@ -1750,6 +1576,7 @@ let gen_function_methods syms bbdfns label_map counter index ts instance_no =
         | 1 -> 
           let i = hd params in
           if Hashtbl.mem syms.instances (i, ts)
+          && not (argtype = `BTYP_tuple [])
           then
             "  " ^ cpp_instance_name syms bbdfns i ts ^ " = _arg;\n"
           else ""
@@ -1834,6 +1661,7 @@ let gen_procedure_methods syms bbdfns label_map counter index ts instance_no =
         | 1 -> 
           let i = hd params in
           if Hashtbl.mem syms.instances (i,ts)
+          && not (argtype = `BTYP_tuple[])
           then
             "  " ^ cpp_instance_name syms bbdfns i ts ^ " = _arg;\n"
           else ""
@@ -2042,7 +1870,20 @@ let tim() =
   elapsed
 ;;
 
+let format_time tm = 
+  si (tm.Unix.tm_year + 1900) ^ "/" ^
+  si (tm.Unix.tm_mon + 1) ^ "/" ^
+  si tm.Unix.tm_mday ^ " " ^
+  si tm.Unix.tm_hour ^ ":" ^
+  si tm.Unix.tm_min ^ ":" ^
+  si tm.Unix.tm_sec 
+;;
 try
+  let compile_start = Unix.time () in
+  let compile_start_gm = Unix.gmtime compile_start in
+  let compile_start_local = Unix.localtime compile_start in
+  let compile_start_gm_string = format_time compile_start_gm ^ " UTC" in
+  let compile_start_local_string = format_time compile_start_local ^ " (local)" in
   let argc = Array.length Sys.argv in
   if argc <= 1 
   then begin
@@ -2200,6 +2041,11 @@ try
   in
 
   if compiler_options.print_flag 
+  then print_endline "//OPTIMISING";
+  let bbdfns = Flx_use.elide_unused syms bbdfns root_proc bifaces in
+  let bbdfns = Flx_use.elide_unused syms bbdfns root_proc bifaces in
+
+  if compiler_options.print_flag 
   then print_endline "//instantiating";
 
   Flx_inst.instantiate syms bbdfns root_proc bifaces;
@@ -2225,10 +2071,12 @@ try
   if compiler_options.print_flag 
   then print_endline "//GENERATING C++: user headers";
   
-  plh ("#ifndef " ^ module_name);
-  plh ("#define " ^ module_name);
-  plh ("//" ^ input_file_name);
+  plh ("#ifndef _FLX_GUARD_" ^ module_name);
+  plh ("#define _FLX_GUARD_" ^ module_name);
+  plh ("//Input file: " ^ input_file_name);
   plh ("//Generated by Felix Version " ^ !version_data.version_string);
+  plh ("//Timestamp: " ^ compile_start_gm_string);
+  plh ("//Timestamp: " ^ compile_start_local_string);
   plh "";
   plh "//FELIX RUNTIME";
   plh "#include \"rtl/flx_rtl.hpp\"";
@@ -2353,6 +2201,11 @@ try
   (* BODY *)
   if compiler_options.print_flag then 
   print_endline "//GENERATING C++: GC ptr maps & offsets";
+
+  plb ("//Input file: " ^ input_file_name);
+  plb ("//Generated by Felix Version " ^ !version_data.version_string);
+  plb ("//Timestamp: " ^ compile_start_gm_string);
+  plb ("//Timestamp: " ^ compile_start_local_string);
 
   plb ("#include \"" ^ module_name ^ ".hpp\"");
   plb "#include <stdio.h>"; (* for diagnostics *)

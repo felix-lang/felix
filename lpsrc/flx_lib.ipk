@@ -102,7 +102,8 @@ namespace flx { namespace lib {
 
 }}
 
-@h=tangler('lib/std.flx')
+@h=tangler('lib/std.flx','data')
+@# use data tangler to prevent line number generation
 @select(h)
 header """
 #include <cstdio>
@@ -186,6 +187,12 @@ using namespace std;
 
 @def gen_asgn(t):
   tangle('  proc set: &'+t+' * '+t+' = "*('+tmap[t]+'*)($1.data)=$2;";')
+  tangle('  proc swap: &'+t+' * &'+t+' ="""')
+  tangle('  {')
+  tangle('    '+ tmap[t] + ' tmp=*('+tmap[t]+'*)($1.data);')
+  tangle('    *('+tmap[t]+'*)($1.data)=*('+tmap[t]+'*)($2.data);')
+  tangle('    *('+tmap[t]+'*)($2.data)=tmp;')
+  tangle('  }""";')
   tangle('  fun eq: '+t+' * '+t+' -> bool = "$1==$2";')
   tangle('  fun ne: '+t+' * '+t+' -> bool = "$1!=$2";')
 
@@ -239,6 +246,33 @@ module Bool
   ]:
     tangle('  fun '+opname+': '+t+' * '+t+' -> '+t+' = "$1'+op+'$2";')
 
+@def gen_uint(t):
+  for opname,op in [
+    ("caret","^"),
+    ("vbar","|"),
+    ("amper","&"),
+  ]:
+    tangle('  fun '+opname+': '+t+' * '+t+' -> '+t+' = "$1'+op+'$2";')
+  tangle('  fun bnot: '+t+' -> '+t+' = "~$1";')
+
+
+@def gen_arith_assign(t):
+  for opname,op in [
+    ("pluseq","+="),
+    ("minuseq","-="),
+    ("muleq","*="),
+    ("diveq","/=")
+  ]:
+    tangle('  proc '+opname+': &'+t+' * '+t+' = "*('+tmap[t]+'*)($1.data)'+op+'$2;";')
+
+@def gen_uint_assign(t):
+  for opname,op in [
+    ("careteq","^="),
+    ("vbareq","|="),
+    ("ampereq","&=")
+  ]:
+    tangle('  proc '+opname+': &'+t+' * '+t+' = "*('+tmap[t]+'*)($1.data)'+op+'$2;";')
+
 @def gen_mod(t):
   for opname,op in [
     ("mod","%")
@@ -288,6 +322,9 @@ type string = "std::string";
   gen_asgn(t)
   gen_cmp(t)
   gen_arith(t)
+  if t in uints: gen_uint(t)
+  gen_arith_assign(t)
+  if t in uints: gen_uint_assign(t)
   gen_mod(t)
   gen_neg(t)
   gen_inc(t)
@@ -307,6 +344,7 @@ type string = "std::string";
   gen_asgn(t)
   gen_cmp(t)
   gen_arith(t)
+  gen_arith_assign(t)
   gen_neg(t)
   gen_pow(t)
   gen_trig(t)
@@ -564,6 +602,30 @@ module Assoc_list
   typedef assoc_list[A,B] = List::list[(A,B)];
 }
 
+// This module provides functions to 
+// use in conjunction with the reglex construction
+module Lexer
+{
+  type iterator = "char const*";
+  fun start_iterator : string -> iterator = "$1.data()";
+  fun end_iterator: string -> iterator = "$1.data()+$1.size()";
+  fun string_between: iterator * iterator -> string =
+   "std::string($1,$2)";
+
+  fun lexeme_start : unit -> iterator = "lexeme_start";
+  fun lexeme_end : unit -> iterator = "lexeme_end";
+  fun lexeme: unit -> string = "std::string(lexeme_start,lexeme_end)";
+  fun buffer_end : unit -> iterator = "buffer_end";
+
+  fun eq:iterator * iterator -> bool = "$1==$2";
+  fun ne:iterator * iterator -> bool = "$1!=$2";
+  fun lt:iterator * iterator -> bool = "$1<$2";
+  fun le:iterator * iterator -> bool = "$1<=$2";
+  fun ge:iterator * iterator -> bool = "$1>=$2";
+  fun gt:iterator * iterator -> bool = "$1>$2";
+  proc set: &iterator * iterator = "*(char const**)$1.data = $2;";
+}
+
 // ------ Open common modules -------------
 open Bool;
 open Int;
@@ -650,4 +712,172 @@ module Stl
     type stl_stack_const_iterator[t] = "std::stack<`1>::const_iterator";
   }
 }
+
+@head(1,'Felix lexerlibrary')
+@h=tangler('lib/flx_lex.flx')
+@select(h)
+
+/* ====================== REGULAR DEFINITIONS ============================ */
+module Flx_lex
+{
+/* special characters */
+regexp quote = '\'';
+regexp dquote = '"'
+regexp slosh = '\\'
+regexp linefeed = '\n'
+regexp tab = '\t';
+regexp space = ' ';
+regexp formfeed = '\012';
+regexp vtab = '\011';
+regexp carriage_return = '\013';
+regexp underscore = '_';
+
+/* character sets */
+regexp bindigit = ['0'-'1'];
+regexp octdigit = ['0'-'7'];
+regexp digit = ['0'-'9'];
+regexp hexdigit = digit | ['A'-'F'] | ['a'-'f'];
+regexp lower = ['a'-'z'];
+regexp upper = ['A'-'Z'];
+/* regexp letter = lower | upper */
+regexp letter = lower | upper;
+regexp hichar = ['\128'-'\255'];
+regexp white = space | tab;
+
+/* nasty: form control characters */
+regexp form_control = linefeed | carriage_return | vtab | formfeed;
+regexp newline_prefix = linefeed | carriage_return;
+regexp newline = formfeed | linefeed  | carriage_return linefeed;
+/* regexp newline = newline_prefix form_control * */
+
+regexp ordinary = letter | digit | hichar |
+  '!' | '#' | '$' | '%' | '&' | '(' | ')' | '*' |
+  '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' |
+  '=' | '>' | '?' | '@' | '[' | ']' | '^' | '_' |
+  '`' | '{' | '|' | '}' | '~'
+;
+
+regexp printable = ordinary | quote | dquote | slosh;
+
+/* identifiers */
+regexp ucn = 
+    "\\u" hexdigit hexdigit hexdigit hexdigit 
+  | "\\U" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit
+;
+
+regexp prime = '\''
+regexp idletter = letter | underscore | hichar | ucn;
+regexp identifier = idletter (idletter | digit | prime )*;
+
+/* integers */
+regexp bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +;
+regexp oct_lit  = '0' ('o' | 'O') (underscore? octdigit) +;
+regexp dec_lit  = ('0' ('d' | 'D'))? digit (underscore? digit) *;
+regexp hex_lit  = '0' ('x' | 'X') (underscore? hexdigit)  +;
+regexp type_suffix = 
+  't'|'T'|'s'|'S'|'i'|'I'|'l'|'L'|'v'|'V'|"ll"|"LL"
+  | "i8" | "i16" | "i32" | "i64"
+  | "u8" | "u16" | "u32" | "u64"
+  | "I8" | "I16" | "I32" | "I64"
+  | "U8" | "U16" | "U32" | "U64"
+;
+regexp signind = 'u' | 'U';
+regexp suffix = type_suffix? signind? | signind? type_suffix?;
+regexp int_lit = (bin_lit | oct_lit | dec_lit | hex_lit) suffix;
+
+/* floats: Follows ISO C89, except that we allow underscores */
+regexp decimal_string = digit (underscore? digit) *;
+regexp hexadecimal_string = hexdigit (underscore? hexdigit) *;
+
+regexp decimal_fractional_constant = 
+  decimal_string '.' decimal_string?
+  | '.' decimal_string
+; 
+
+regexp hexadecimal_fractional_constant = 
+  ("0x" |"0X")
+  (hexadecimal_string '.' hexadecimal_string?
+  | '.' hexadecimal_string)
+;
+
+regexp decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string;
+regexp binary_exponent = ('P'|'p') ('+'|'-')? decimal_string;
+
+regexp floating_suffix = 'L' | 'l' | 'F' | 'f' | 'D' | 'd';
+regexp floating_literal = 
+  (
+    decimal_fractional_constant decimal_exponent? |
+    hexadecimal_fractional_constant binary_exponent?
+  )
+  floating_suffix?
+;
+
+/* Python strings */
+regexp qqq = quote quote quote;
+regexp ddd = dquote dquote dquote ;
+
+regexp escape = slosh _ ;
+
+regexp dddnormal = ordinary | quote | escape | white | newline;
+regexp dddspecial = dddnormal | dquote dddnormal | dquote dquote dddnormal;
+
+regexp qqqnormal = ordinary | dquote | escape | white | newline;
+regexp qqqspecial = qqqnormal | quote qqqnormal | quote quote qqqnormal;
+
+regexp raw_dddnormal = ordinary | quote | slosh | white | newline;
+regexp raw_dddspecial = raw_dddnormal | dquote raw_dddnormal | dquote dquote raw_dddnormal;
+
+regexp raw_qqqnormal = ordinary | dquote | slosh | space | newline;
+regexp raw_qqqspecial = raw_qqqnormal | quote raw_qqqnormal | quote quote raw_qqqnormal;
+
+regexp qstring = (ordinary | dquote | escape | white) * quote;
+regexp dqstring = (ordinary | quote | escape | white) * dquote;
+regexp qqqstring = qqqspecial * qqq;
+regexp dddstring = dddspecial * ddd;
+
+regexp raw_qstring = (ordinary | dquote | escape | white) * quote;
+regexp raw_dqstring =  (ordinary | quote | escape | white) * dquote;
+
+regexp raw_qqqstring = raw_qqqspecial * qqq;
+regexp raw_dddstring = raw_dddspecial * ddd;
+
+regexp not_newline_or_slosh = ordinary | quote | dquote | white;
+regexp not_newline = not_newline_or_slosh | slosh;
+regexp quoted_filename = dquote (ordinary | quote | white | slosh)+ dquote;
+
+/* ====================== PARSERS ============================ */
+/* string tail lexers */
+
+@def lexstr(x):
+  tangle('fun parse_'+x+'string(s:iterator, e:iterator) =' )
+  tangle('{')
+  tangle('return')
+  tangle('reglex s to e with')
+  tangle('| '+x+'string => "'+x+'string"' )
+  tangle('| _ =>  "ERRORTOKEN"' )
+  tangle('endmatch')
+  tangle(';')
+  tangle('}')
+
+@qtypes=[
+  'q',
+  'dq',
+  'qqq',
+  'ddd',
+  'wq',
+  'wdq',
+  'wqqq',
+  'wddd',
+  'uq',
+  'uqd',
+  'uqddd',
+  'uqqq',
+  'ddd',
+  'dq',
+  'raw_dq',
+  'raw_qq',
+  'raw_ddd'
+ ]
+
+@for i in qtypes: lexstr(i)
 
