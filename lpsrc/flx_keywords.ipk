@@ -1,0 +1,85 @@
+@head(1,'Keywords')
+@h = tangler('src/flx_keywords.ml')
+@select(h)
+
+open Flx_parse
+
+let hash_table_from_list n lst =
+  let tbl = Hashtbl.create n
+  in let addEntry (s,kw) = Hashtbl.add tbl s kw
+  in 
+  List.iter addEntry lst;
+  tbl
+
+
+let flx_keyword_table =          (* 97 is a prime larger than table size *)
+  hash_table_from_list 97 [  
+    "include",(fun s -> INCLUDE s);
+    "open",(fun s -> OPEN s);
+    "use",(fun s -> USE s);
+    "define",(fun s -> DEFINE s);
+    "interface", (fun s ->  INTERFACE s);
+    "functor", (fun s ->  FUNCTOR s);
+    "not", (fun s ->  NOT s);
+    "and", (fun s ->  AND s);
+    "not", (fun s ->  NOT s);
+    "or", (fun s ->  OR s);
+    "fun", (fun s ->  FUNCTION s);
+    "proc", (fun s ->  PROCEDURE s);
+    "macro", (fun s ->  MACRO s);
+    "forget", (fun s ->  FORGET s);
+    "ident", (fun s ->  IDENT s);
+    "new", (fun s ->  NEW s);
+    "if", (fun s ->  IF s);
+    "then", (fun s ->  THEN s);
+    "else", (fun s ->  ELSE s);
+    "elif", (fun s ->  ELIF s);
+    "endif", (fun s ->  ENDIF s);
+    "call", (fun s ->  CALL s);
+    "jump", (fun s ->  JUMP s);
+    "loop", (fun s ->  LOOP s);
+    "type", (fun s ->  TYPE s);
+    "typedef", (fun s ->  TYPEDEF s);
+    "read", (fun s ->  READ s);
+    "return", (fun s ->  RETURN s);
+    "const", (fun s ->  CONST s);
+    "struct", (fun s ->  STRUCT s);
+    "header", (fun s ->  HEADER s);
+    "body", (fun s ->  BODY s);
+    "code", (fun s ->  CODE s);
+    "fork", (fun s ->  FORK s);
+    "todo", (fun s ->  TODO s);
+    "of", (fun s ->  OF s);
+    "endmatch", (fun s ->  ENDMATCH s);
+    "let", (fun s ->  LET s);
+    "in", (fun s ->  IN s);
+    "_", (fun s ->  UNDERSCORE s);
+    "when", (fun s ->  WHEN s);
+    "as", (fun s ->  AS s);
+    "all", (fun s ->  ALL s);
+    "case", (fun s ->  CASE s);
+    "with", (fun s ->  WITH s);
+    "regexp", (fun s ->  REGEXP s);
+    "regmatch", (fun s ->  REGMATCH s);
+    "reglex", (fun s ->  REGLEX s);
+    "match", (fun s ->  MATCH s);
+    "var", (fun s ->  VAR s);
+    "val", (fun s ->  VAL s);
+    "union", (fun s ->  UNION s);
+    "class", (fun s ->  CLASS s);
+    "module", (fun s ->  MODULE s);
+    "goto", (fun s ->  GOTO s);
+    "export", (fun s ->  EXPORT s);
+    "inf", (fun s -> INF s);
+    "NaN", (fun s -> NAN s);
+    "to", (fun s -> TO s);
+]
+
+let map_flx_keywords srcref lex_item = 
+  try (Hashtbl.find flx_keyword_table lex_item) srcref
+  with Not_found -> NAME (srcref, lex_item)
+
+@h = tangler('src/flx_keywords.mli')
+@select(h)
+val map_flx_keywords : Flx_ast.srcref -> string -> Flx_parse.token
+
