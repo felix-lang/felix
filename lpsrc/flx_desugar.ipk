@@ -94,6 +94,12 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
   | `AST_arrow _ 
     -> failwith "[rex] not expecting `AST_arrow"
 
+  | `AST_domain _ 
+    -> failwith "[rex] not expecting `AST_domain"
+
+  | `AST_codomain _ 
+    -> failwith "[rex] not expecting `AST_codomain"
+
   | `AST_product (sr,xs) ->
     let mul = `AST_name (sr,"mul") in
     let x = 
@@ -140,6 +146,10 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
   | `AST_ref _ -> [],e
   | `AST_literal _ -> [],e
 
+  | `AST_typeof (sr,e') ->
+    let l1,x1 = rex e' in
+    l1, `AST_typeof (sr,x1)
+
 
   | `AST_get_n (sr,(n,e')) ->
     let l1,x1 = rex e' in
@@ -169,7 +179,7 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
        let l1,x1 = rex e1 in
        let l2 = 
          [
-           Dcl (sr,name,`DCL_val_typeof x1);
+           Dcl (sr,name,`DCL_val (`TYP_typeof x1));
            Exe (sr,`EXE_comment ("as variable '"^name^"'init"));
            Exe (sr,`EXE_init (name,x1))
          ] 
@@ -204,7 +214,8 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
     [match res with
     | `AST_void _ ->
       Dcl (sr,name,`DCL_procedure (params, rsts sts))
-    | _ -> Dcl (sr,name,`DCL_function (params, res, rsts sts))
+    | _ -> 
+      Dcl (sr,name,`DCL_function (params, res, rsts sts))
     ],
     `AST_suffix 
     (
@@ -245,109 +256,169 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
     if List.length pss = 0 then failwith "Empty Pattern";
     (* step 1: evaluate e *)
     let d,x = rex e in
- 
-    let match_var_name = "_match_var_"^string_of_int (seq()) in
-    let match_result_name = match_var_name ^ "_result" in
-    let match_seq = ref (seq()) in
-
-    let expr_src = src_of_expr e in
-
-    (* WOE. The expr may contain a lambda, which stuffs up
-       bind_expression which is called by bind_type ..
-    *)
-    let evl = 
-      [
-        Dcl (expr_src,match_var_name,`DCL_val_typeof(x));
-        Exe (expr_src,`EXE_init (match_var_name,x))
-      ]
+    let match_seq = seq() in
+    let match_fun_name = "_match_" ^ string_of_int match_seq in
+    let match_arg_type = `TYP_typeof x in
+    let match_dcls = 
+      gen_match_fun sr
+        match_seq seq match_arg_type pss 
     in
+    d @ match_dcls,
+    `AST_apply (sr,(`AST_name (sr,match_fun_name),x))
+
+and gen_match_fun match_sr match_seq seq atyp pss =
+    let match_var_name = "_match_var_" ^ string_of_int match_seq in
     let pats,_ = List.split pss in
     Flx_pat.validate_patterns pats
     ;
-    let ematch_seq = seq() in
-    let end_match_label = "_end_match_" ^ string_of_int ematch_seq in
-    let matches = ref [Exe (generated,`EXE_comment "begin match")] in
+    let body = ref [Exe (generated,`EXE_comment "begin match")] in
     let match_caseno = ref 1 in
-    List.iter
-    (fun (pat,e) -> 
-      let n1 = !match_seq in
-      let n2 = seq() in
-      let patsrc = src_of_pat pat in
-      let expr_src = src_of_expr e in
-      let match_checker_id = "_match_checker_" ^ string_of_int n1 in
-      let match_handler_id = "_match_handler_" ^ string_of_int n1 in
-      let match_checker = `AST_name (patsrc,match_checker_id) in
-      let match_handler = `AST_name (expr_src,match_handler_id) in
-
-      let sts,result_expr = rex e in
-      let body = 
-        sts @ 
-        [Exe (expr_src,`EXE_init (match_result_name,result_expr))] 
-      in
-      matches := !matches @
-      [
-        Dcl (patsrc,match_checker_id,`DCL_match_check (pat,match_var_name));
-        Dcl 
-        (
-          expr_src,
-          match_handler_id,
-          `DCL_match_handler 
-          (
-            pat,
-            match_var_name,
-            body
-          )
-        )
-      ]
-      @
-      [
-      Exe (patsrc,`EXE_comment ("match case " ^ string_of_int !match_caseno));
-      Exe (patsrc,`EXE_label ("_match_label_" ^ string_of_int n1));
-      Exe 
-      (
-        patsrc,
-        `EXE_ifnotgoto 
-        (
-          `AST_apply 
-          (
-            patsrc,
-            (match_checker,`AST_tuple (patsrc,[]))
-          ), 
-          "_match_label_" ^ string_of_int n2
-        )
-      )
-      ;
-      Exe 
-      (
-        patsrc,
-        `EXE_call (match_handler, `AST_tuple (patsrc,[]))
-      )
-      ;
-      Exe (patsrc,`EXE_goto end_match_label)
-      ]
-      ;
-      incr match_caseno;
-      match_seq := n2
+    List.iter 
+    (
+      fun (pat, e) -> 
+        body := !body @ gen_case_code seq match_seq !match_caseno pat e;
+        incr match_caseno
     )
     pss
     ;
-    let failure_label = "_match_label_" ^ string_of_int !match_seq in
-
-    d
-    @
-    evl
-    @
-    !matches
+    let 
+      failure_label = 
+        "_match_" ^ string_of_int match_seq ^ 
+        "_case_" ^ string_of_int !match_caseno
+    in
+    let fail_mesg = "\"match failure in " ^ short_string_of_src match_sr ^ "\"" in
+    let fail_mesg = Flx_string.c_quote_of_string fail_mesg in
+    body := !body
     @
     [
-      Exe (sr,`EXE_comment "match failure");
-      Exe (sr,`EXE_label failure_label);
-      Exe (sr,`EXE_code "      assert((\"match failure\",false));\n");
-      Exe (sr,`EXE_comment "match exit");
-      Exe (sr,`EXE_label end_match_label)
+      Exe (match_sr,`EXE_comment "match failure");
+      Exe (match_sr,`EXE_label failure_label);
+      Exe (match_sr,`EXE_code ("      assert(("^fail_mesg^",false));\n"));
+      Exe (match_sr,`EXE_goto failure_label)
     ]
-    ,
-    `AST_name (sr,match_result_name)
+    ;
+    let match_name = "_match_" ^ string_of_int match_seq in
+    [
+      Dcl 
+      (
+        match_sr,
+        match_name, 
+        `DCL_function ([match_var_name,atyp],`TYP_none,!body)
+       )
+     ]
+
+and gen_case_code seq nmatch ncase pat e =
+  let match_var_id = "_match_var_" ^ string_of_int nmatch in
+  let case_ident =
+    "_match_" ^ string_of_int nmatch ^ 
+    "_case_" ^ string_of_int ncase
+  and next_ident =
+    "_match_" ^ string_of_int nmatch ^ 
+    "_case_" ^ string_of_int (ncase+1)
+  
+  and patsrc = src_of_pat pat
+  and expr_src = src_of_expr e 
+  in
+  let match_checker_id = "_check_" ^ case_ident 
+  and match_handler_id = "_handler_" ^ case_ident 
+  in
+  let match_checker = `AST_name (patsrc,match_checker_id) 
+  and match_handler = `AST_name (expr_src,match_handler_id) 
+  in
+  let sts,x = rex seq e in
+
+  (* UNRAVELLER *)
+  let vars = Hashtbl.create 97 in
+  Flx_mbind.get_pattern_vars vars pat [];
+  (*
+  print_endline ("PATTERN IS " ^ string_of_pattern pat ^ ", VARIABLE=" ^ match_var_id);
+  print_endline "VARIABLES ARE";
+  Hashtbl.iter 
+  (
+    fun vname (sr,extractor) ->
+      let component = 
+        Flx_mbind.gen_extractor extractor (`AST_name (sr,match_var_id)) 
+      in
+      print_endline ("  " ^ vname ^ " := " ^ string_of_expr component);
+  ) 
+  vars
+  ;
+  *)
+  let unravel = ref [] in
+  Hashtbl.iter
+  (fun vname (sr,extractor) ->
+    let component = 
+      Flx_mbind.gen_extractor extractor 
+      (`AST_name (sr,match_var_id)) 
+    in
+    unravel := !unravel @
+    [
+      Dcl (patsrc,vname,`DCL_val (`TYP_typeof component));
+      Exe (patsrc,`EXE_init (vname,component))
+    ]
+  )
+  vars;
+
+  let body = 
+    !unravel
+    @
+    sts 
+    @ 
+    [
+      Exe (src_of_expr e,`EXE_return x)
+    ]
+  in
+  [
+    Dcl 
+    (
+      patsrc,
+      match_checker_id,
+      `DCL_match_check (pat,match_var_id)
+    )
+  ;
+    Dcl 
+    (
+      expr_src,
+      match_handler_id,
+      `DCL_function
+      (
+        [],
+        `TYP_none, (* defer return type computation *)
+        body
+      )
+    )
+  ]
+  @
+  [
+    Exe (patsrc,`EXE_label case_ident)
+  ;
+    Exe 
+    (
+      patsrc,
+      `EXE_ifnotgoto 
+      (
+        `AST_apply 
+        (
+          patsrc,
+          (match_checker,`AST_tuple (patsrc,[]))
+        ), 
+        next_ident
+      )
+    )
+  ;
+    Exe 
+    (
+      patsrc,
+      `EXE_return 
+      (
+        `AST_apply
+        (
+          expr_src,
+          (match_handler, `AST_tuple (patsrc,[]))
+        )
+      )
+    )
+  ]
 
 and split_st seq sr s : asm_t list * asm_t =
   match rst seq s with
@@ -380,8 +451,24 @@ and rst seq st : asm_t list =
   let rsts' sts = catmap rst' sts in
   
   match st with
+  | `AST_typeassert (sr,e) -> [Dir (sr,DIR_typeassert e)]
+  | `AST_typeaxiom (sr,e) -> [Dir (sr,DIR_typeaxiom e)]
+
   | `AST_label (sr,s) -> [Exe (sr,`EXE_label s)]
   | `AST_goto (sr,s) -> [Exe (sr,`EXE_goto s)]
+  | `AST_ifgoto (sr,e,s) -> 
+    let skiplab = "lab_" ^ string_of_int (seq()) in
+    let l,x = rex e in
+    l @ 
+    [
+      (* hackery because if(not)goto doesn't support
+        non-local jumps, while goto does
+      *)
+      Exe (sr,`EXE_ifnotgoto (x,skiplab));
+      Exe (sr,`EXE_goto s);
+      Exe (sr,`EXE_label skiplab)
+    ]
+
   | `AST_open (sr,name) -> [Dir (sr,DIR_open name)]
   | `AST_set (sr, (e1, e2)) -> [Exe (sr,`EXE_set (e1,e2))]
 
@@ -398,7 +485,9 @@ and rst seq st : asm_t list =
       d @ [Dcl (sr,name,`DCL_var t); Exe (sr,`EXE_init (name,x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,`DCL_var_typeof x); Exe (sr,`EXE_init (name,x))]
+      (* d @ [Dcl (sr,name,`DCL_var_typeof x); Exe (sr,`EXE_init (name,x))] *)
+      d @ [Dcl (sr,name,`DCL_var (`TYP_typeof x)); Exe (sr,`EXE_init (name,x))] 
+
     | Some t,None -> [Dcl (sr,name,`DCL_var t)]
     | None,None -> failwith "Expected variable to have type or initialiser"
     end
@@ -410,7 +499,8 @@ and rst seq st : asm_t list =
       d @ [Dcl (sr,name,`DCL_val t); Exe (sr,`EXE_init (name,x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,`DCL_val_typeof x); Exe (sr,`EXE_init (name,x))]
+      (* d @ [Dcl (sr,name,`DCL_val_typeof x); Exe (sr,`EXE_init (name,x))] *)
+      d @ [Dcl (sr,name,`DCL_val (`TYP_typeof x)); Exe (sr,`EXE_init (name,x))]
     | Some t, None -> [Dcl (sr,name,`DCL_val t)] (* allowed in interfaces *)
     | None,None -> failwith "Expected value to have type or initialiser"
     end
@@ -568,7 +658,11 @@ and rst seq st : asm_t list =
     let rh h =
       match h with 
       | `AST_except_handler (sr',name,params,sts) -> 
-        let sts' = sts @ [`AST_goto (srf,finally_label)] in
+        let sts' = sts @ [
+          `AST_goto (srf,finally_label); 
+          `AST_label (srf, "unreachable") (* hack to fool flow control checks *)
+          ] 
+        in
         Dcl (sr',name,`DCL_procedure (params, rsts' sts'))
       | _ -> failwith "Expected statement to be handler"
     in

@@ -124,7 +124,9 @@ let get_name_map symdef name = match symdef with
     | `SYMDEF_procedure (_,_,name_map,dirs) -> name_map
     | `SYMDEF_module (name_map,dirs) -> name_map
     | `SYMDEF_interface (name_map,dirs) -> name_map
+    (*
     | `SYMDEF_match_handler (_,_,_,name_map,dirs) -> name_map
+    *)
     | `SYMDEF_lazy _
     | `SYMDEF_match_check _ -> dummy_name_map
     | _ -> 
@@ -159,11 +161,8 @@ let find_variable_indices dfns index =
       *)
         match symdef with
         | `SYMDEF_parameter _
-        | `SYMDEF_match_result _
         | `SYMDEF_dcl (`DCL_var _) 
-        | `SYMDEF_dcl (`DCL_var_typeof _) 
         | `SYMDEF_dcl (`DCL_val _) 
-        | `SYMDEF_dcl (`DCL_val_typeof _) 
           -> variables := idx :: !variables
         | `SYMDEF_module (table,dirs)
           -> variables := extract table @ !variables
@@ -214,7 +213,9 @@ let rec cal_display dfns parent display : bid_t list =
   match entry with
   | `SYMDEF_function _
   | `SYMDEF_procedure _
+  (*
   | `SYMDEF_match_handler _
+  *)
   | `SYMDEF_match_check _
   | `SYMDEF_lazy _
     -> cal_display dfns parent' (parent::display)
@@ -225,7 +226,9 @@ let get_display_list dfns index : bid_t list =
   match entry with
   | `SYMDEF_function _
   | `SYMDEF_procedure _
+  (*
   | `SYMDEF_match_handler _
+  *)
   | `SYMDEF_match_check _
   | `SYMDEF_lazy _
     -> List.rev (cal_display dfns parent [])
@@ -524,10 +527,8 @@ let get_var_ref (dfns:symbol_table_t) bbdfns this index : string =
   match entry with
   | `SYMDEF_parameter _
   | `SYMDEF_dcl (`DCL_var _)
-  | `SYMDEF_dcl (`DCL_var_typeof _)
   | `SYMDEF_dcl (`DCL_val _)
-  | `SYMDEF_dcl (`DCL_val_typeof _)
-  | `SYMDEF_match_result _ ->
+  ->
     let rec chase_tail parent =
       match parent with
       | None -> "ptf->" ^ cpp_name bbdfns  index
@@ -539,7 +540,10 @@ let get_var_ref (dfns:symbol_table_t) bbdfns this index : string =
         match entry with
         | `SYMDEF_function _
         | `SYMDEF_procedure _ 
-        | `SYMDEF_match_handler _ ->
+        (*
+        | `SYMDEF_match_handler _ 
+        *)
+          ->
           (if i <> this
           then 
             "ptr" ^ cpp_name bbdfns i ^ "->"
@@ -559,10 +563,7 @@ let get_var_frame (dfns: symbol_table_t) bbdfns this index : string =
   match entry with
   | `SYMDEF_parameter _
   | `SYMDEF_dcl (`DCL_var _)
-  | `SYMDEF_dcl (`DCL_var_typeof _)
   | `SYMDEF_dcl (`DCL_val _)
-  | `SYMDEF_dcl (`DCL_val_typeof _) 
-  | `SYMDEF_match_result _
   ->
     let rec chase_tail parent =
       match parent with
@@ -572,7 +573,10 @@ let get_var_frame (dfns: symbol_table_t) bbdfns this index : string =
         match entry with
         | `SYMDEF_function _
         | `SYMDEF_procedure _ 
-        | `SYMDEF_match_handler _ ->
+        (*
+        | `SYMDEF_match_handler _ 
+        *)
+          ->
           if i <> this
           then "ptr" ^ cpp_name bbdfns i
           else "this"
@@ -843,7 +847,10 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
         ge_arg a ^
         ")"
     *)
-    | _ -> failwith ("[gen_expr] Expected '"^id^"' to be function constant or variable")
+    | _ -> 
+      print_endline ("Found " ^ string_of_bbdcl dfns entry index);
+
+      failwith ("[gen_expr] Expected '"^id^"' to be function constant or variable")
     end
   | `BEXPR_apply ((`BEXPR_name index,_) as f,a) ->
     let id,parent,entry = 
@@ -1643,7 +1650,7 @@ let print_help () =
   exit(0)
 ;;
 
-let version_string = "1.0.1"
+let version_string = "1.0a4"
 ;;
 let return_parity = ref true
 ;;
@@ -1715,15 +1722,24 @@ try
       (Filename.dirname input_file_name)
       !include_dirs 
   in
+
+  Gc.full_major();
+
   if !print_flag then print_endline "//DESUGARING";
 
   let counter = ref 1 in 
   let deblocked = desugar_program module_name counter parse_tree in
+
+  Gc.full_major();
+
   if !print_flag then print_endline "//BUILDING TABLES";
   let dfns = Hashtbl.create 97 in
   let table, exes, ifaces,dirs = 
     build_tables !print_flag dfns counter "<top level>" 0 None deblocked 
   in
+  
+    Gc.full_major();
+  
     if !print_flag then
     Hashtbl.iter 
     (fun name entry ->  
@@ -1756,6 +1772,9 @@ try
     (*
     print_endline "BINDING IS DONE"; flush stdout;
     *)
+    
+    Gc.full_major();
+    
     let bifaces = bind_ifaces dfns counter freg ifaces in
 
     if !print_flag then print_endline "//GENERATING C++: user headers";

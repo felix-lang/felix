@@ -23,15 +23,27 @@ is an overall time in seconds, which should
 get smaller with each compiler improvement.
 @end_list()
 
-@select(tangler('test/bt01.flx'))
+@select(tangler('test/dt01.flx'))
 basic parser error
 
-@select(tangler('test/bt02.flx'))
+@select(tangler('test/dt02.flx'))
 module X { proc p(){} }
 module Y { proc p(){} }
 open X;
 open Y;
 p; // ambiguous
+
+@select(tangler('test/dt03.flx'))
+// open depends on self
+#include <std.flx>
+interface I { proc print_endl:int; }
+module X {
+  module M { proc print_endl (a:int) { print a; endl; } }
+  module B = M:I;
+}
+open X;
+open B;
+print_endl 1;
 
 
 @select(tangler('test/rt01.flx'))
@@ -97,22 +109,23 @@ type string = "charp";
 proc print: string = 'printf("%s",$1);';
 proc print: int = 'printf("%d",$1);';
 
-fun sub: int * int -> int = "$1 - $2";
-fun mul: int * int -> int = "$1 * $2";
-fun gt: int * int -> bool = "$1 > $2";
-fun eq: int * int -> bool = "$1 == $2";
+fun sub: int * int -> int = code "$1 - $2";
+fun mul: int * int -> int = code "$1 * $2";
+fun gt: int * int -> bool = code "$1 > $2";
+fun eq: int * int -> bool = code "$1 == $2";
 proc assert:bool = "assert($1);";
 
 // test some recursion
-fun fact(a:int): int =
+fun fact(a:int): int do
 {
-  fun f (a:int, p:int) : int = {
-    if a>1 
-    then 
-      return f(a-1, p*a);
-    else 
-      return p; 
-    endif
+  fun f (a:int, p:int) : int do {
+    return 
+      if a>1 
+      then 
+        f(a-1, p*a)
+      else 
+        p
+      endif;
   }
   return f(a,1);
 }
@@ -217,16 +230,18 @@ module B = M:I;
 open B;
 print_endl 1;
 
-@select(tangler('test/bt03.flx'))
-// open depends on self
+@select(tangler('test/rt07.flx'))
+// include a file twice
 #include <std.flx>
-interface I { proc print_endl:int; }
+#include <std.flx>
+
+@select(tangler('test/rt08.flx'))
+//Duplicated Open
+type int = "int";
 module X {
-  module M { proc print_endl (a:int) { print a; endl; } }
-  module B = M:I;
+  proc f(a:int) {}
 }
 open X;
-open B;
-print_endl 1;
-
+open X;
+f 1; // should work ..
 

@@ -38,8 +38,46 @@ exception Found of int
 
 let bool_t = `BTYP_sum [`BTYP_tuple[]; `BTYP_tuple []]
 
-let bind_exes dfns counter freg env exes ret_type = 
+(* This function takes some unbound executables and a 
+   bound return type, and if everything works,
+   returns a bound return type and bound executable code.
+
+   The type `BTYP_none can be used if the return type
+   is unknown. Here are the rules:
+
+   1) If a return type other than void is specified,
+   there must be at least one return statement,
+   and the type of every return must match the specified type.
+
+   2) if void is specified, there must not be any return statements.
+
+   3) if none is specified, there must be at least one
+   return statement, and the type of every return statement
+   must agree, this type is returned.
+  
+
+   THIS ROUTINE IS SOMEWHAT BRAIN DEAD--
+   IT DOESN'T UNDERSTAND GOTOS.
+
+   WE SHOULD:
+     (a) check for unreachable code
+     (b) check for tail recursion
+     (c) check functions can't drop off the end:
+         they must end in 
+         1. an unconditional goto, 
+         2. a return
+         3. a call to a non-returning procedure or function 
+
+  This latter case is nasty because we can't tell
+  if a procedure returns or not... this must be fixed.
+  NOTE: a procedure may be either non-terminating (infinite loop)
+  or it may terminate with an abnormal exit (non-local goto)
+
+*)
+
+let bind_exes dfns counter freg env id sr index exes in_ret = 
   (*
+  print_endline ("Binding exes of " ^ id ^ "<"^string_of_int index^">");
   print_endline ("bind_exes.. env depth="^ string_of_int (List.length env));
   print_endline "Dumping Source Executables";
   print_endline "--------------------------";
@@ -54,23 +92,35 @@ let bind_exes dfns counter freg env exes ret_type =
   print_endline "Binding Executables";
   print_endline "-------------------";
   *)
+
+  (* initialise calculated return type to void, since
+     we haven't seen any return statements yet
+  *)
+  let cal_ret = ref `BTYP_none in
   let be e = bind_expression dfns counter freg env [] [] e in
   let lun sr n = lookup_name_in_env env sr n in
   let luqn n = lookup_qn_in_env dfns counter freg env [] n in
   let bt sr t = bind_type dfns counter freg env [] sr t in
-  let dummy_sr = ("bind exes",0,0,0,0) in
 
   (* this routine isn't really recursive, just a hack
      to make EXE_set easier to code ..
   *)
+  let reachable = ref true in
+  let return_count = ref 0 in
   let rec bind_exe (x:exe_t) = 
     (*
     print_endline (string_of_exe 1 x);
     *)
-     match x with
+
+    match x with
     | `EXE_comment s ->       `BEXE_comment s
-    | `EXE_label s ->         `BEXE_label s
-    | `EXE_goto s ->          `BEXE_goto s
+    | `EXE_label s ->         reachable := true; `BEXE_label s
+    | `EXE_nop s ->           `BEXE_nop s
+    | _ when not !reachable -> 
+       print_endline "UNREACHABLE CODE .. IGNORED";
+       `BEXE_nop "Unreachable"
+
+    | `EXE_goto s ->          reachable := false; `BEXE_goto s
     | `EXE_ifgoto (e,s) ->    
       let e',t = be e in
       if t = bool_t
@@ -98,6 +148,7 @@ let bind_exes dfns counter freg env exes ret_type =
       print_endline "Handling call of suffixed name";
       flush stdout;
       *)
+      let sr = src_of_expr sn in
       let be2,t2 = be e2 in
       (*
       print_endline "Argument bound";
@@ -108,7 +159,7 @@ let bind_exes dfns counter freg env exes ret_type =
          | #qualified_name_t as qn ->
            lookup_qn_with_sig 
            dfns counter freg 
-           dummy_sr dummy_sr 
+           sr sr 
            env [] [] 
            qn t2 
          | _ -> be sn
@@ -124,35 +175,59 @@ let bind_exes dfns counter freg env exes ret_type =
       cal_call dfns (p', pt') (e', et')
 
     | `EXE_read s ->          
-      begin match lun dummy_sr s with
+      begin match lun sr s with
       | NonFunctionEntry (Simple index) -> `BEXE_read index
       | NonFunctionEntry _ -> failwith "not expecting bound entry"
       | FunctionEntry _ -> failwith "Can't read function!"
       end
 
     | `EXE_return e ->        
-      let e',t' = be e in
-      if ret_type <> `BTYP_none && 
-      not (type_eq ret_type t') (* equi-recursive comparison .. ?? *)
-      then
+      reachable := false;
+      incr return_count;
+      if in_ret = `BTYP_void then 
         failwith 
         (
-          "Wrong return type,\nexpected : " ^ 
-          string_of_btypecode dfns ret_type ^
-          "\nbut we got " ^
-          string_of_btypecode dfns t'
+          "Procedure "^id^" has value return, in:\n" ^
+          short_string_of_src sr
         )
-      else
-        if t' <> ret_type
-        then print_endline 
-        (
-          "Equi-recursive equality ..\n" ^
-          string_of_btypecode dfns t' ^ " == " ^
-          string_of_btypecode dfns ret_type
-        );
-        `BEXE_return (e',lower t')
+      else 
+      let e',t' = be e in
+        if in_ret <> `BTYP_none then 
+          begin 
+            if not (type_eq in_ret t') then
+              failwith 
+              (
+                "In " ^ short_string_of_src sr ^ "\n" ^
+                "Function "^id^" has wrong return type,\nexpected : " ^ 
+                string_of_btypecode dfns in_ret ^
+                "\nbut we got " ^
+                string_of_btypecode dfns t'
+              )
+          end 
+        else 
+          begin
+            if !cal_ret <> `BTYP_none then 
+              if not (type_eq !cal_ret t') then 
+                failwith 
+                (
+                  "In " ^ short_string_of_src sr ^ "\n" ^
+                  "Function "^id^" has inconsistent return type,\nexpected : " ^ 
+                  string_of_btypecode dfns !cal_ret ^
+                  "\nbut we got " ^
+                  string_of_btypecode dfns t'
+                )
+          end
+      ;
+      if !cal_ret = `BTYP_none then cal_ret := t'
+      ; 
+      begin match e' with
+      | `BEXPR_apply ((`BEXPR_closure index',_) ,a) when index = index' ->
+         print_endline "POSSIBLE TAIL RECURSION ..[closure]" 
+      | _ -> ()
+      end
+      ;
+      `BEXE_return (e',lower t')
 
-    | `EXE_nop s ->           `BEXE_nop s 
     | `EXE_code s ->          `BEXE_code s
 
     | `EXE_init (s,e) -> 
@@ -162,7 +237,9 @@ let bind_exes dfns counter freg env exes ret_type =
       | NonFunctionEntry (Simple index) -> 
         let e',rhst = be e in
         let lhst = typeofindex dfns counter freg [] [] index in
-        if lhst = rhst
+
+        (* EQUI RECURSIVE COMPARISON NOW .. *)
+        if type_eq lhst rhst
         then `BEXE_init (index, (e',rhst))
         else failwith (
           "LHS["^s^"]("^string_of_btypecode dfns lhst^
@@ -185,7 +262,7 @@ let bind_exes dfns counter freg env exes ret_type =
 
   in
   let bound_exes = 
-    List.map bind_exe exes
+    list_omap bind_exe exes
   in 
   (*
   print_endline ""
@@ -199,7 +276,73 @@ let bind_exes dfns counter freg env exes ret_type =
   print_endline "BINDING COMPLETE"
   ;
   *)
-  bound_exes
+
+  (* if we reach the end, its a procedure *)
+  if !reachable && !return_count = 0
+  then begin 
+    if !cal_ret = `BTYP_none
+    then cal_ret := `BTYP_void
+    else assert false
+  end
+  ;
+
+  (* if there is a specified non-void return type, 
+     there should be
+     at least one return statement
+  *)
+  if in_ret <> `BTYP_void && in_ret <> `BTYP_none && !return_count = 0
+  then
+    failwith 
+    (
+      "in " ^ short_string_of_src sr ^ "\n" ^
+      "Function "^id^" doesn't return a value"
+    )
+  ;
+
+  (* if its a procedure, the end must be reachable *)
+  if in_ret = `BTYP_void && not !reachable
+  then
+    failwith 
+    (
+      "in " ^ short_string_of_src sr ^ "\n" ^
+      "Procedure "^id^" can't reach end\n" ^
+      "WORKAROUND: if this is meant to be an infinite loop\n" ^
+      "put a dummy label at the end of the procedure"
+    )
+  ;
+
+  (* if its a function, the end must not be reachable *)
+  if in_ret <> `BTYP_void && in_ret <> `BTYP_none
+  || !return_count <> 0
+  then if !reachable then
+    failwith
+    (
+      "in " ^ short_string_of_src sr ^ "\n" ^
+      "Function "^id^" may reach end\n" ^
+      "WORKAROUND: if the function finished by \n" ^
+      "calling a non-returning procedure\n" ^
+      "(such as an error handler)\n"^
+      "put a dummy infinite loop at the end like:\n" ^
+      "label:> goto label;"
+    )
+  ;
+
+  (* return with specified return type, if it exists,
+     otherwise the calculated one, if it exists
+     otherwise report an error
+  *)
+  if in_ret <> `BTYP_none then
+    in_ret,bound_exes
+  else if !cal_ret <> `BTYP_none then 
+    !cal_ret,bound_exes
+  else 
+    failwith
+    (
+      "in " ^ short_string_of_src sr ^ "\n" ^
+      "Can't calculate return type of "^id ^"\n" ^
+      "WORKAROUND: please specify one explicitly!"
+    )
+
 
 let rec proper_descendant dfns parent =
   match parent with
@@ -214,12 +357,50 @@ let rec proper_descendant dfns parent =
     end
   | None -> true
 
+let check_type_asserts dfns counter freg env dirs =
+  let bt sr t = bind_type dfns counter freg env [] sr t in
+  let ctas (e:expr_t) = 
+    print_endline ("Type assert " ^ string_of_expr e);
+    match e with
+    | `AST_apply (sr,(predicate, argument)) ->
+       begin match predicate with
+       | `AST_name (sr,("eq")) ->
+         begin match argument with
+         | `AST_tuple (sr,[t1; t2]) ->
+            let t1' = bt sr (typecode_of_expr t1)
+            and t2' = bt sr (typecode_of_expr t2)
+            in if not (type_eq t1' t2')
+            then failwith
+            (
+              "Type assertion failed"
+            )
+         | _ -> 
+           failwith 
+           (
+             "Type equality expects 2 arguments"
+           )
+         end
+       | _ -> 
+         failwith 
+         (
+           "Can't handle type assertion other than equality yet" 
+         )
+       end
+    | _ -> failwith "Type assertion must be application"
+  in
+  let ctax e = print_endline ("Type axiom " ^ string_of_expr e) in
+  List.iter (function 
+    | DIR_typeassert e -> ctas e 
+    | DIR_typeaxiom e -> ctax e
+    | _ -> ()
+  )
+  dirs
 
 let bbind dfns counter freg = 
   let bbdfns = Hashtbl.create 97 in
-  let bexes env exes rt = bind_exes dfns counter freg env exes rt in
+  let bexes env id sr exes rt = bind_exes dfns counter freg env id sr exes rt in
   let dummy_sr = ("Generated dummy",0,0,0,0) in
-
+  let cta env dirs = check_type_asserts dfns counter freg env dirs in
   (* added a cache to speed up processing .. didn't
     make much difference ..
   *)
@@ -233,9 +414,9 @@ let bbind dfns counter freg =
   in
   Hashtbl.iter
   (fun i (name, sr,parent, bdcl) -> 
-  (*
+    (*
     print_endline ("binding " ^ name ^ "<" ^ string_of_int i ^ ">");
-  *)
+    *)
   if proper_descendant dfns parent
   then begin
     let env = get_env parent in
@@ -248,22 +429,37 @@ let bbind dfns counter freg =
     | `SYMDEF_interface _
     | `SYMDEF_if_fun _ 
     | `SYMDEF_if_proc _
-    | `SYMDEF_module _
     | `SYMDEF_typed_functor _
     | `SYMDEF_untyped_functor _
     | `SYMDEF_module_binding _
     | `SYMDEF_if_type  -> ()
 
+    | `SYMDEF_module (nmap,dirs) ->
+       let env = get_env (Some i) in
+       cta env dirs
+
     | `SYMDEF_function (ps,rt,exes,name_map,dirs) -> 
-      (* 
-      print_endline ("//Binding function " ^ string_of_int i ^ " --> " ^ name); 
+      (* print_endline ("//Binding function " ^ string_of_int i ^ " --> " ^ name);  *)
+      (* this is here, so we can fail on an attempt to bind
+         `TYP_none .. `BTYP_none should always be constructed
+         manually when needed, since `BTYP_none isn't a type
       *)
-      let brt = bt rt in
+      let brt = 
+        match rt with 
+        | `TYP_none -> `BTYP_none 
+        | t -> bt t 
+      in
       let bps = List.map (fun (name,t) -> (name, bt t)) ps in
       let env' = get_env (Some i) in
-      let bbexes = bexes env' exes brt in
-      Hashtbl.add bbdfns i 
-      (name,parent,`BBDCL_function (bps,brt,bbexes,name_map))
+      let cal_ret,bbexes = bexes env' name sr i exes brt in
+      let bbdcl = 
+        if cal_ret = `BTYP_void then 
+          `BBDCL_procedure (bps,bbexes,name_map)
+         else
+          `BBDCL_function (bps,cal_ret,bbexes,name_map)
+      in 
+      Hashtbl.add bbdfns i (name,parent,bbdcl);
+      cta env' dirs
 
     | `SYMDEF_parameter t -> 
       Hashtbl.add bbdfns i (name,parent,`BBDCL_val (bt t))
@@ -289,7 +485,7 @@ let bbind dfns counter freg =
       print_endline "Procedure environment built";
       flush stdout;
       *)
-      let bbexes = bexes env' exes `BTYP_void in
+      let _,bbexes = bexes env' name sr i exes `BTYP_void in
       (*
       print_endline "Exes bound";
       flush stdout;
@@ -299,43 +495,38 @@ let bbind dfns counter freg =
       (*
       print_endline "procedure bound";
       *)
+      cta env' dirs
 
-    | `SYMDEF_match_check (pat,mvindex) ->
+    | `SYMDEF_match_check (pat,mvname) ->
       (*
       print_endline ("//Binding match checker " ^ string_of_int i ^ " --> " ^ name); 
       *)
-      let t = typeofindex dfns counter freg [] [] mvindex in
       let name_map = Hashtbl.create 97 in
-      let arg,sr = match Hashtbl.find dfns mvindex with id,sr,_,_ -> id,sr in
       let exes = 
         [
-        `EXE_return (gen_match_check pat (`AST_name (sr,arg)))
+        `EXE_return (gen_match_check pat (`AST_name (sr,mvname)))
         ] 
       in
-      let bbexes = bexes env exes bool_t in
+      let _,bbexes = bexes env name sr i exes bool_t in
       Hashtbl.add bbdfns i (name,parent,
         `BBDCL_function ([],bool_t,bbexes,name_map));
     
-    | `SYMDEF_match_handler (pat,mvindex,exes,name_map,dirs) ->
-      (* print_endline ("//Binding match handler " ^ string_of_int i ^ " --> " ^ name); 
-      *)
+    (*
+    | `SYMDEF_match_handler (pat,mvname,exes,name_map,dirs) ->
+      print_endline ("//Binding match handler " ^ string_of_int i ^ " --> " ^ name); 
       let env = get_env (Some i) in 
-      let mvname,sr = 
-        match Hashtbl.find dfns mvindex 
-        with name,sr,_,_ -> name,sr
-      in
+
       (* INSERT MATCH VARIABLE ASSIGNMENTS HERE *)
       let vars = Hashtbl.create 97 in
       Flx_mbind.get_pattern_vars vars pat [];
-      (* print_endline ("PATTERN IS " ^ string_of_pattern pat ^ ", VARIABLE=" ^ mvname);
+      print_endline ("PATTERN IS " ^ string_of_pattern pat ^ ", VARIABLE=" ^ mvname);
       print_endline "VARIABLES ARE";
       Hashtbl.iter (fun vname (sr,extractor) ->
         let component = 
           Flx_mbind.gen_extractor extractor (`AST_name (sr,mvname)) 
         in
-        print_endline ("  " ^ vname ^ " := " ^ string_of_expression component);
+        print_endline ("  " ^ vname ^ " := " ^ string_of_expr component);
       ) vars;
-      *)
       (* Now, add the variables to the environment
        and initialise them 
       *)
@@ -351,7 +542,7 @@ let bbind dfns counter freg =
         (* print_endline ("//adding match variable component value "^string_of_int vid^" --> " ^ vname);
         *)
         Hashtbl.add dfns vid (vname, sr,Some i, 
-          `SYMDEF_dcl (`DCL_val_typeof component)
+          `SYMDEF_dcl (`DCL_val (`TYP_typeof component))
         );
         let bvtyp = typeofindex dfns counter freg [] [] vid in
         Hashtbl.add bbdfns vid (vname, Some i, 
@@ -365,13 +556,14 @@ let bbind dfns counter freg =
         exes := instr :: !exes;
       )
       vars;
-      let bbexes = bexes env !exes `BTYP_void in
+      let _,bbexes = bexes env name sr !exes `BTYP_void in
       Hashtbl.add bbdfns i (name,parent,
         `BBDCL_procedure ([],bbexes,name_map))
     
     | `SYMDEF_match_result _ ->
       let t = typeofindex dfns counter freg [] [] i in
       Hashtbl.add bbdfns i (name,parent,`BBDCL_val t)
+    *)
 
     | `SYMDEF_dcl dcl -> match dcl with
 
@@ -389,27 +581,6 @@ let bbind dfns counter freg =
       (* print_endline ("//Binding variable " ^ string_of_int i ^ " --> " ^ name); 
       *)
       Hashtbl.add bbdfns i (name,parent,`BBDCL_var (bt t))
-
-    | `DCL_val_typeof e  ->
-      (*
-      print_endline ("//Binding value(typeof)" ^ string_of_int i ^ " --> " ^ name ^ " = " ^ string_of_expression e); 
-      print_endline ("Parent is " ^ match parent with |Some i-> string_of_int i | None -> "none");
-      *)
-      (*
-      print_endline "Now binding ..";
-      *)
-      let _,t = bind_expression dfns counter freg env [] [] e in
-      (*
-      print_endline "Binding done";
-      *)
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_val t)
-
-    | `DCL_var_typeof e ->
-      (* print_endline ("//Binding variable(typeof) " ^ string_of_int i ^ " --> " ^ name); 
-      *)
-      let _,t = bind_expression dfns counter freg env [] [] e in
-      Hashtbl.add bbdfns i (name,parent,`BBDCL_var t)
-
 
     | `DCL_const (t,ct) ->
       (* print_endline ("//Binding constant " ^ string_of_int i ^ " --> " ^ name); 
@@ -456,7 +627,9 @@ let bbind dfns counter freg =
     | `DCL_function _ -> failwith "[bind_entry] Unexpected function"
     | `DCL_procedure  _ -> failwith "[bind_entry] Unexpected procedure"
     | `DCL_module _ -> failwith "[bind_entry] Unexpected module"
+    (*
     | `DCL_match_handler _ -> failwith "[bind_entry] Unexpected match handler"
+    *)
     | `DCL_match_check _ -> failwith "[bind_entry] Unexpected match checker"
     | `DCL_lazy _ -> failwith "[bind_entry] Unexpected lazy"
     end

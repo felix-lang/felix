@@ -225,58 +225,34 @@ let rec build_tables print_flag dfns counter name level parent asms =
 
 
         | `DCL_match_check (pat,mvname) ->
+          (*
+          print_endline "adding match check to symbol table";
+          print_endline ("Match variable name is " ^ mvname);
+          *)
           let fun_index = n in
-          let match_var_index = 
-            match Hashtbl.find name_map mvname with
-            | NonFunctionEntry (Simple idx) -> idx
-            | _ -> assert false
-          in 
           Hashtbl.add dfns fun_index (id, sr, parent,
-            `SYMDEF_match_check (pat, match_var_index)
+            `SYMDEF_match_check (pat, mvname)
           );
           add_function name_map id fun_index ;
           interfaces := !interfaces @ ifaces
         
+        (*
         | `DCL_match_handler (pat,mvname,asms) ->
+          print_endline "adding match handler to symbol table";
           let fun_index = n in
           let table, exes,ifaces,dirs = 
             build_tables print_flag dfns counter id (level+1) 
             (Some fun_index) asms 
           in
-          let match_var_index = 
-            match Hashtbl.find name_map mvname with
-            | NonFunctionEntry (Simple idx) -> idx
-            | _ -> assert false
-          in 
           Hashtbl.add dfns fun_index (id, sr, parent,
             `SYMDEF_match_handler (pat, 
-              match_var_index, exes, table, dirs)
+              mvname, exes, table, dirs)
             )
           ;
           add_function name_map id fun_index;
           interfaces := !interfaces @ ifaces
-          ;
 
-          (* add the match result here if not already done ..
-             its a bit hacky .. oh well ..
-          *)
-
-          let match_result_name = mvname ^ "_result" in
-          let match_result_index = !counter in
-          incr counter;
-
-          if not (Hashtbl.mem name_map match_result_name)
-          then begin
-            Hashtbl.add dfns match_result_index
-            (
-              match_result_name,sr,parent,
-              `SYMDEF_match_result fun_index
-            )
-            ;
-            add_unique name_map match_result_name match_result_index;
-
-          end
-
+        *)
         | `DCL_header s ->
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
           ;
@@ -375,25 +351,24 @@ let rec build_tables print_flag dfns counter name level parent asms =
           ;
           add_unique name_map id n
 
+        (*
         | `DCL_val_typeof e -> 
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
           ;
           add_unique name_map id n
+        *)
 
         | `DCL_var t ->       
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
           ;
           add_unique name_map id n
 
+        (*
         | `DCL_var_typeof e ->
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
           ;
           add_unique name_map id n
-
-        | `DCL_match_result i ->
-          Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
-          ;
-          add_unique name_map id n
+        *)
 
         | `DCL_type_alias t ->
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)

@@ -516,11 +516,13 @@ and compare_defn
     let it = rmb it and mt = mbt mt in
     it = mt
 
+  (*
   | `SYMDEF_dcl (`DCL_var it), `SYMDEF_dcl (`DCL_var_typeof e)
   | `SYMDEF_dcl (`DCL_val it), `SYMDEF_dcl (`DCL_val_typeof e) ->
     let mt = snd (bind_expression dfns counter freg menv [] excluded_dirs e)
     and it = rmb it in
     it = mt
+  *)
 
   | `SYMDEF_dcl (`DCL_union ics), `SYMDEF_dcl (`DCL_union mcs)
   | `SYMDEF_dcl (`DCL_struct ics), `SYMDEF_dcl (`DCL_struct mcs) ->
@@ -967,10 +969,11 @@ and copy_entry dfns counter parent binding_list index =
       let table' = copy_table dfns counter (Some index') [] table in
       Other,`SYMDEF_procedure (ps,es,table',dirs)
 
+    (*
     | `SYMDEF_match_handler (p,u,es,table,dirs) ->
       let table' = copy_table dfns counter (Some index') [] table in
       Other,`SYMDEF_match_handler (p,u,es,table',dirs)
-
+    *)
     | `SYMDEF_typed_functor (ps,t,es,table,dirs) ->
       let table' = copy_table dfns counter (Some index') [] table in
       Other,`SYMDEF_typed_functor (ps,t,es,table',dirs)
@@ -1330,12 +1333,13 @@ and bind_index dfns counter freg env exclude depth excluded_dirs sr index =
 *)
 
 and bind_type dfns counter freg env excluded_dirs sr t : btypecode_t =
+  (* print_endline ("try to bind TYPE  " ^ string_of_typecode t); *)
   let t' = bind_type' dfns counter freg env [] [] 0 excluded_dirs sr t in
   (*
   print_endline ("TYPE  " ^ string_of_typecode t);
   print_endline ("BOUND " ^ string_of_btypecode dfns t');
   *)
-  type_fold t'
+  (* type_fold *) t'
 
 and bind_type' dfns counter freg env exclude fixnames depth excluded_dirs sr t : btypecode_t =
   let bt t = bind_type' dfns counter freg env exclude fixnames (depth+1) excluded_dirs sr t in
@@ -1345,8 +1349,74 @@ and bind_type' dfns counter freg env exclude fixnames depth excluded_dirs sr t :
   flush stdout;
   *)
   match t with
+  | `TYP_proj_n (n,t) -> 
+     begin match type_unfold (bt t) with
+     | `BTYP_tuple ts ->
+       if n<1 or List.length ts < n
+       then 
+         failwith 
+         (
+           "Type projection index "^string_of_int n ^
+           " out of range 1.." ^ string_of_int (List.length ts)
+         )
+       else type_fold (List.nth ts (n-1))
+     | _ -> failwith "Apply type projection to non-product"
+     end
+
+  | `TYP_case_arg (n,t) -> 
+     begin match type_unfold (bt t) with
+     | `BTYP_sum ts ->
+       if n<1 or List.length ts < n
+       then
+         failwith 
+         (
+           "Sum destructor index "^string_of_int n ^
+           " out of range 1.." ^ string_of_int (List.length ts)
+         )
+
+       else type_fold(List.nth ts (n-1))
+     | _ -> failwith "Apply type sum destructor to non-sum"
+     end
+
+  | `TYP_ctor_arg (n,t) -> 
+     begin match type_unfold (bt t) with
+     | `BTYP_name index ->
+       begin match Hashtbl.find dfns index with
+       id,sr,parent,entry -> match entry with
+       | `SYMDEF_dcl (`DCL_union cs) ->
+         if List.mem_assoc n cs then
+           let t = List.assoc n cs in
+           let env:env_t = build_env dfns counter freg excluded_dirs parent in 
+           bind_type dfns counter freg env excluded_dirs sr t
+         else failwith "Union constructor name not found"
+       | _ -> failwith "Apply type union destructor to non-union"
+       end
+     | _ -> failwith "Apply type union destructor to non-union"
+     end
+
+  | `TYP_domain t ->
+     begin match type_unfold (bt t) with
+     | `BTYP_function(d,c) -> type_fold d
+     | _ -> failwith "type domain requires function type argument"
+     end
+
+  | `TYP_codomain t ->
+     begin match type_unfold (bt t) with
+     | `BTYP_function(d,c) -> type_fold c
+     | _ -> failwith "type codomain requires function type argument"
+     end
+
+  | `TYP_deref t ->
+     begin match type_unfold (bt t) with
+     | `BTYP_pointer t -> type_fold t
+     | _ -> failwith "type deref requires pointer type argument"
+     end
+
   | `AST_root _ -> failwith "Not expecting root in bind type"
-  | `TYP_none ->  `BTYP_none
+  | `TYP_typeof e ->
+    snd(bind_expression dfns counter freg env [] excluded_dirs e)
+
+  | `TYP_none ->  failwith "Bind type None"
   | `TYP_all (t,s) -> failwith "Can't bind type scheme yet" 
   | `TYP_as (t,s) ->
      (* note depth is not incremented .. "x as x" yields `BTYP_fix 0 *)
@@ -1357,11 +1427,11 @@ and bind_type' dfns counter freg env exclude fixnames depth excluded_dirs sr t :
 
   | `TYP_tuple ts -> 
     let ts' =List.map bt ts  in
-    `BTYP_tuple ts'
+    type_fold (`BTYP_tuple ts')
 
   | `TYP_sum ts -> 
     let ts' =List.map bt ts  in
-    `BTYP_sum ts'
+    type_fold (`BTYP_sum ts')
 
   | `TYP_function (d,c) -> 
     let 
@@ -1372,7 +1442,7 @@ and bind_type' dfns counter freg env exclude fixnames depth excluded_dirs sr t :
       print_endline "DONE (function type)";
       flush stdout;
       *)
-      `BTYP_function (bt d, bt c)
+      type_fold (`BTYP_function (bt d, bt c))
 
   | `TYP_pointer t -> 
      let t' = bt t in 
@@ -1380,7 +1450,7 @@ and bind_type' dfns counter freg env exclude fixnames depth excluded_dirs sr t :
      print_endline "Done (pointer type)"; 
      flush stdout; 
      *)
-     `BTYP_pointer t'
+     type_fold (`BTYP_pointer t')
 
   | `AST_void _ -> 
     (*
@@ -1443,11 +1513,11 @@ and base_typename_of_literal v = match v with
   | `AST_string _ -> "string"
 
 and  typeof_literal dfns counter freg env sr v : btypecode_t = 
-  let root,_ = List.hd (List.rev env) in
+  (* let root,_ = List.hd (List.rev env) in *)
   let name = base_typename_of_literal v in
-  match lookup_name_in_env env dummy_sr name with
+  match lookup_name_in_env env sr name with
   | NonFunctionEntry (Simple index) -> 
-    `BTYP_name index
+    bind_index dfns counter freg env [] 0 [] sr index 
   | _ -> 
     failwith 
     (
@@ -1466,7 +1536,10 @@ and  paramtype params = typeof_list (typlist params)
 and  sig_of_symdef symdef name = match symdef with 
   | `SYMDEF_lazy (_) 
   | `SYMDEF_match_check (_) 
-  | `SYMDEF_match_handler (_,_,_,_,_) -> `TYP_tuple[]
+  (*
+  | `SYMDEF_match_handler (_,_,_,_,_) 
+  *)
+  -> `TYP_tuple[]
 
   (* primitives *)
   | `SYMDEF_dcl (`DCL_fun (ps,_,_))
@@ -1489,6 +1562,59 @@ and  sig_of_symdef symdef name = match symdef with
       ^" to be function or procedure, got " ^
      string_of_symdef symdef name 
     )    
+
+
+and cal_ret_type dfns counter freg exclude excluded_dirs index id sr exes =
+  (*
+  print_endline "Unknown return type in function dcl ..";
+  print_endline "Try binding the return value in the context of the function ..";
+  *)
+  let retexpr = ref [] in
+  List.iter (function 
+    | `EXE_return e -> retexpr := e :: !retexpr
+    | _ -> ()
+  ) exes;
+
+  (*
+  print_endline ("Found " ^ string_of_int (List.length !retexpr) ^ " return statements");
+  *)
+  match !retexpr with
+  | [] -> `BTYP_void
+    (*
+    failwith 
+    (
+      "[typeofindex] No return statement found in function" ^ id ^ ":\n" ^
+      short_string_of_src sr
+    );
+    *)
+  | rts -> 
+    let env = build_env dfns counter freg excluded_dirs (Some index) in
+    let ft e = snd (bind_expression dfns counter freg env (index::exclude) excluded_dirs e) in
+    let rec aux rt = function 
+      | [] -> rt
+      | head::tail ->
+        let rt' = 
+          try Some (ft head) 
+          with _ -> None
+        in match rt,rt' with
+        | None,None
+        | Some _, None -> aux rt tail
+        | None, Some _ -> aux rt' tail
+        | (Some t1, Some t2) when type_eq t1 t2 -> aux rt tail
+        | _ ->
+          failwith 
+          (
+            "Unable to deduce return type of function " ^ id ^ 
+            " in\n" ^ short_string_of_src sr
+          )
+    in match aux None rts with
+    | Some t -> t
+    | None -> 
+      failwith 
+      (
+        "Unable to deduce return type of function " ^ id ^ 
+        " in\n" ^ short_string_of_src sr
+      )
 
 and typeofindex 
   (dfns:symbol_table_t) 
@@ -1527,91 +1653,29 @@ and typeofindex
     *)
   match entry with
 
-  | `SYMDEF_function (ps, rt,_,_,_) -> 
+  | `SYMDEF_function (ps, rt,exes,_,_) -> 
     let pts = List.map snd ps in
-    bt (`TYP_function (typeof_list pts, rt))
+    let domain = typeof_list pts in
+    begin match rt with 
+      | `TYP_none ->
+        let rt = 
+          cal_ret_type dfns counter freg exclude excluded_dirs index id sr exes
+        in
+            type_fold (`BTYP_function (bt domain, rt))
+
+      | _ -> bt (`TYP_function (domain, rt))
+    end
 
   | `SYMDEF_procedure(ps,_,_,_) -> 
-    (*
-    print_endline "typeofindex finds PROCEDURE";
-    flush stdout;
-    *)
     let pts = List.map snd ps in
     bt (`TYP_function (typeof_list pts, `AST_void sr))
 
-  | `SYMDEF_if_proc (t) -> 
-    bt (`TYP_function (t,`AST_void sr))
-
-  | `SYMDEF_dcl (`DCL_const (t,_)) ->
-    (*
-    print_endline "Found const";
-    print_endline (":--->" ^ string_of_symdef entry id);
-    flush stdout;
-    *)
-    bt t
-
-  | `SYMDEF_parameter t ->
-    (*
-    print_endline "Found param";
-    print_endline (":--->" ^ string_of_symdef entry id);
-    flush stdout;
-    *)
-    bt t
-
-  | `SYMDEF_if_fun (t) ->
-    (*
-    print_endline "Found if_fun";
-    print_endline (":--->" ^ string_of_symdef entry id);
-    flush stdout;
-    *)
-    bt t
-
-  | `SYMDEF_dcl (`DCL_val t) ->
-    (*
-    print_endline "Found val";
-    print_endline (":--->" ^ string_of_symdef entry id);
-    flush stdout;
-    *)
-    bt t
-
-  | `SYMDEF_dcl (`DCL_var t) -> 
-    (*
-    print_endline "Found var";
-    print_endline (":--->" ^ string_of_symdef entry id);
-    flush stdout;
-    *)
-    bt t
-
-  | `SYMDEF_dcl (`DCL_val_typeof e)
-  | `SYMDEF_dcl (`DCL_var_typeof e) ->
-    (*
-    print_endline "CALLING BIND EXPRESSION.. (possible recursion)";
-    flush stdout;
-
-    ARGG! This is bugged. The expression e might contain a lambda,
-    which bind_expression rejects ..
-
-    Worse, the expression sometimes need to be
-    evaluated in an unavailable context .. for example,
-    match x with | y -> 1+y
-
-    is transformed to have an initialisation
-
-    e = 1 + y
-
-    and y isn't visible where e is declared ..
-
-    .. basically, requiring the user to declared the return type
-    of a function won't stick .. too many constructions map
-    to functions whose type must be deduced ..
-
-    Unfortunately, the DCL is generated before there is
-    a hashtable representing the environment .. so there 
-    is no way to specify the environment in which the expression
-    is to be evaluated .. or is it .. ??
-    *)
-
-    snd(bind_expression dfns counter freg env (index::exclude) excluded_dirs e)
+  | `SYMDEF_if_proc (t) -> bt (`TYP_function (t,`AST_void sr))
+  | `SYMDEF_dcl (`DCL_const (t,_)) -> bt t
+  | `SYMDEF_parameter t -> bt t
+  | `SYMDEF_if_fun (t) -> bt t
+  | `SYMDEF_dcl (`DCL_val t) -> bt t
+  | `SYMDEF_dcl (`DCL_var t) -> bt t
 
   | `SYMDEF_lazy (e) -> 
     let rt = snd (bind_expression dfns counter freg env (index::exclude) excluded_dirs e) in
@@ -1621,31 +1685,16 @@ and typeofindex
   | `SYMDEF_match_check _ ->
     `BTYP_function (`BTYP_tuple [], bool_t)
 
-  | `SYMDEF_match_handler _ ->
-    `BTYP_function (`BTYP_tuple [],`BTYP_void)
-
-  | `SYMDEF_match_result handler_index ->
-    let handler = Hashtbl.find dfns handler_index in
-    begin 
-      match handler with (id,sr,parent,sym) ->
-      match sym with `SYMDEF_match_handler (pat,mvindex,exes,nmap,dirs) ->
-      begin
-         let mvname = 
-           match Hashtbl.find dfns mvindex with (id,_,_,_) -> id
-         in
-         let last_instr = list_last exes in
-         match last_instr with
-         | `EXE_init (match_result_name, e) ->
-            assert (match_result_name = mvname ^ "_result");
-            (* We need the environment to be the handler body .. *)
-            let env:env_t = build_env dfns counter freg excluded_dirs (Some handler_index) in 
-            (* print_endline ("Trying to bind expression " ^ string_of_expr e); *)
-            snd(bind_expression dfns counter freg env (index::exclude) excluded_dirs e)
-         | _ -> assert false
-      end
-      | _ -> assert false
-    end
-    
+  (*
+  | `SYMDEF_match_handler (pat,mvname,exes,nmap,dirs) ->
+     (* This aint going to woirk!! Cause, the exes don't
+        have the unravelling code in em yet
+     *)
+     let rt = 
+       cal_ret_type dfns counter freg exclude excluded_dirs index id sr exes
+     in
+    `BTYP_function (`BTYP_tuple [],rt)
+  *)
   | `SYMDEF_dcl (`DCL_fun (pts,rt,_)) -> 
     (* print_endline "Found function primitive";
     flush stdout;
@@ -2058,7 +2107,9 @@ and handle_function
         | `SYMDEF_dcl(`DCL_proc _ )
         | `SYMDEF_dcl(`DCL_fun _)
         | `SYMDEF_procedure _ 
+        (*
         | `SYMDEF_match_handler _ 
+        *)
         | `SYMDEF_lazy _
           ->
           (*
@@ -2234,6 +2285,9 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
   print_endline "==";
   *)
   match e with
+  | `AST_domain _ -> failwith "Unexpected 'dom' operator in expression"
+  | `AST_codomain _ -> failwith "Unexpected 'cod' operator in expression"
+  
   | `AST_as (sr, (e1,e2)) -> failwith "Unexpected 'as' in expression" 
   | `AST_all (sr, (e1,e2)) -> failwith "Unexpected 'all' in expression" 
 
@@ -2447,7 +2501,7 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
       let id,sr,parent,entry = Hashtbl.find dfns index in
       begin match entry with
       | `SYMDEF_dcl (`DCL_var _)
-      | `SYMDEF_dcl (`DCL_var_typeof _)
+      (* | `SYMDEF_dcl (`DCL_var_typeof _) *)
       | `SYMDEF_parameter (`TYP_pointer _) -> 
         `BEXPR_ref index, 
         `BTYP_pointer (typeofindex dfns counter freg exclude excluded_dirs index)
@@ -2459,8 +2513,8 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
           ": Address value parameter " ^ id ^ " defined at " ^
           short_string_of_src sr
         )
-      | `SYMDEF_dcl (`DCL_val _)
-      | `SYMDEF_dcl (`DCL_val_typeof _) ->
+      (* | `SYMDEF_dcl (`DCL_val_typeof _) *)
+      | `SYMDEF_dcl (`DCL_val _) ->
         failwith 
         (
           "[bind_expression] " ^
@@ -2651,6 +2705,14 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
       "[Compiler error] Unexpected match when binding expression (should have been lifted out)"
     )
 
+  | `AST_typeof (sr,e) ->
+    failwith 
+    (
+      "[bind_expression] " ^
+      short_string_of_src sr ^
+      "Unexpected typeof while binding expression"
+    )
+
 
 and resolve_overload 
   dfns counter freg 
@@ -2682,14 +2744,24 @@ and resolve_overload
     (fun result -> match result with
       | Unique (_,t) 
       | Pair ((_,t),_) -> 
-        lift t = lift_suf
+        (* lift t = lift_suf *)
+        (* EQUIRECURSIVE COMPARE *)
+        type_eq (lift t) lift_suf
     ) 
     fun_defs
   with 
-  | [Unique (i,_)] -> Some (Simple i)
-  | [Pair ((i,_),j)] -> Some (Bound (i,j))
   | [] -> None
-  | _ -> failwith ("Too many candidates match in overloading " ^ name)
+  | h::t -> 
+    let rec all_same t =
+      match t with
+      | [] -> true
+      | h'::t -> h = h' && all_same t
+    in 
+      if all_same t 
+      then match h with
+      | Unique (i,_) -> Some (Simple i)
+      | Pair ((i,_),j) -> Some (Bound (i,j))
+      else failwith ("Too many candidates match in overloading " ^ name)
   
 
 (* an environment is a list of hastables, mapping
@@ -2711,7 +2783,9 @@ and get_table_dirs_of_index dfns index =
       | `SYMDEF_module (table,dirs) -> table,dirs
       | `SYMDEF_interface (table,dirs) -> table,dirs
       | `SYMDEF_function (ps,t,e,table,dirs) -> table,dirs
+      (*
       | `SYMDEF_match_handler (pat,ex,e,table,dirs) -> table,dirs
+      *)
       | `SYMDEF_procedure (ps,e,table,dirs) -> table,dirs
       | `SYMDEF_lazy _ -> Hashtbl.create 97,[]
       | `SYMDEF_match_check _ -> Hashtbl.create 97,[]
@@ -2722,7 +2796,6 @@ and get_table_dirs_of_index dfns index =
       | `SYMDEF_if_fun _ -> failwith "Can't look into function dcl"
       | `SYMDEF_if_proc _ -> failwith "Can't look into proc dcl"
       | `SYMDEF_if_type -> failwith "Can't look into type"
-      | `SYMDEF_match_result _  -> failwith "Can't look into match variable"
       | `SYMDEF_parameter _ -> 
         failwith 
         (
@@ -2751,6 +2824,7 @@ and build_env' dfns counter freg parent : (name_map_t * qualified_name_t list) l
          List.map
          (fun x -> match x with 
            | DIR_open qn -> [qn]
+           | _ -> []
          )
          dirs
        )

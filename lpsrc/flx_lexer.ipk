@@ -39,7 +39,6 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "type", (fun s ->  TYPE s);
     "typedef", (fun s ->  TYPEDEF s);
     "fun", (fun s ->  FUNCTION s);
-    "unit", (fun s ->  UNIT s);
     "read", (fun s ->  READ s);
     "return", (fun s ->  RETURN s);
     "proc", (fun s ->  PROCEDURE s);
@@ -48,10 +47,6 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "header", (fun s ->  HEADER s);
     "code", (fun s ->  CODE s);
     "fork", (fun s ->  FORK s);
-    (*
-    "while", (fun s ->  WHILE s);
-    "loop", (fun s ->  LOOP s);
-    *)
     "todo", (fun s ->  TODO s);
     "of", (fun s ->  OF s);
     "attempt", (fun s ->  ATTEMPT s);
@@ -77,12 +72,19 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "module", (fun s ->  MODULE s);
     "lambda", (fun s ->  LAMBDA s);
     "lazy", (fun s ->  LAZY s);
-    "void", (fun s ->  VOID s);
     "goto", (fun s ->  GOTO s);
     "export", (fun s ->  EXPORT s);
     "inf", (fun s -> INF s);
     "NaN", (fun s -> NAN s);
     "to", (fun s -> TO s);
+    "typeof", (fun s -> TYPEOF s);
+    "let", (fun s -> LET s);
+    "in", (fun s -> IN s);
+    "typeassert", (fun s -> TYPEASSERT s);
+    "typeaxiom", (fun s -> TYPEAXIOM s);
+    "dom", (fun s -> DOMAIN s);
+    "cod", (fun s -> CODOMAIN s);
+    "do", (fun s -> DO s);
 ]
 
 let map_flx_keywords srcref lex_item = 
@@ -101,6 +103,10 @@ open Flx_parse
 open Flx_string
 open Big_int
 
+@head(2,'Comment state')
+This small class is used to track nested comments.
+
+@select(h)
 class comment_control = 
   object (self)
     val mutable nesting_level = 0
@@ -117,6 +123,15 @@ class comment_control =
 
 exception Found_file of string
 
+@head(2,'File state')
+This class is used to manage source references.
+It records the filename, directory of the file,
+current position in the file, and position
+in the original source (which is the same as the
+position in the current file until a #line directive
+resets it).
+
+@select(h)
 class file_control 
   (filename' : string) 
   (basedir': string) 
@@ -166,8 +181,17 @@ class file_control
     method get_incdirs = incdirs
   end
 
-class lexer_state filename basedir incdirs = 
+@head(2,'Lexer control master')
+This class retains all our lexer state data.
+
+@select(h)
+class lexer_state filename basedir incdirs inclist = 
   object (self)
+    val include_list = inclist
+    method already_included filename = List.mem filename !inclist
+    method get_prior_includes =  include_list
+    initializer include_list := filename :: !include_list
+
     val comment_ctrl = new comment_control
     val file_ctrl = new file_control filename basedir incdirs 
     val mutable at_line_start = true
@@ -217,9 +241,11 @@ class lexer_state filename basedir incdirs =
     method get_incdirs = file_ctrl#get_incdirs
     method get_relative f = file_ctrl#get_relative f
     method get_absolute f = file_ctrl#get_absolute f
+
   end
 
-
+@head(2,'Lexer utilities')
+@select(h)
 let lexeme = Lexing.lexeme
 let lexeme_start = Lexing.lexeme_start
 let lexeme_end = Lexing.lexeme_end
@@ -262,6 +288,8 @@ let strip_us s =
 
 } 
 
+@head(2,'Regular Definitions')
+@select(h)
 (* ====================== REGULAR DEFINITIONS ============================ *)
 (* special characters *)
 let quote = '\''
@@ -382,6 +410,8 @@ let not_newline_or_slosh = ordinary | quote | dquote | white
 let not_newline = not_newline_or_slosh | slosh
 let quoted_filename = dquote (ordinary | quote | white | slosh)+ dquote
 
+@head(2,'String Automata')
+@select(h)
 (* ====================== PARSERS ============================ *)
 (* string lexers *)
 rule parse_qstring = parse
@@ -572,6 +602,8 @@ and parse_C_comment = parse
     end
   }
 
+@head(2,'Preprocessor directives')
+@select(h)
 and parse_preprocessor = parse
 | not_newline * newline {
     fun state -> 
@@ -691,14 +723,22 @@ and parse_preprocessor = parse
               in get ()
             in
             let pre_tokens_of_filename filename =
-              let incdirs = state#get_incdirs in
-              let basedir = Filename.dirname filename in
-              let state = new Flx_lex.lexer_state filename basedir incdirs in
-              let infile = open_in filename in
-              let src = Lexing.from_channel infile in
-              let toks = pre_tokens_of_lexbuf src state in
-                close_in infile; 
-                toks
+              if state#already_included filename
+              then begin
+                print_endline ("Second #include of " ^ filename ^ " ignored");
+                []
+              end else
+                let incdirs = state#get_incdirs in
+                let basedir = Filename.dirname filename in
+                let state = new Flx_lex.lexer_state 
+                  filename basedir incdirs 
+                  (state#get_prior_includes) 
+                in
+                let infile = open_in filename in
+                let src = Lexing.from_channel infile in
+                let toks = pre_tokens_of_lexbuf src state in
+                  close_in infile; 
+                  toks
              in
                state#newline lexbuf;
                pre_tokens_of_filename filename
@@ -717,6 +757,8 @@ and parse_preprocessor = parse
   }
 
 
+@head(2,'Master Lexer Automata')
+@select(h)
 and pre_flx_lex = parse
 | "//" 
   { 
@@ -992,9 +1034,13 @@ class lexer_state :
   string ->
   string ->
   string list ->
+  string list ref ->
   object
     val comment_ctrl : comment_control
     val file_ctrl : file_control
+    val include_list : string list ref
+    method already_included : string -> bool 
+    method get_prior_includes : string list ref
     method adj : int -> unit
     method append_comment : string -> unit
     method comment_level : int

@@ -1,5 +1,5 @@
 @head(1,'Maker')
-@flx_version = '1.0a2'
+@flx_version = '1.0a3'
 @h = tangler('script/maker','python')
 @select(h)
 #!/usr/bin/env python
@@ -36,7 +36,7 @@ use_interscript = "noiscr" not in options
 # invoke ocaml interface compiler
 OCAMLBINPREFIX=''
 OCAML_OBJDIR='src'
-OCAMLC=OCAMLBINPREFIX+'ocamlc.opt -I '+OCAML_OBJDIR+' -rectypes '
+OCAMLC=OCAMLBINPREFIX+'ocamlc.opt -I '+OCAML_OBJDIR+' '
 
 # where the ocaml is installed
 #OCAML_INCLUDE_DIRECTORY='/usr/local/lib/ocaml'
@@ -58,7 +58,7 @@ FLX_CPP_DYNLINK = "g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared -I"+BOOST_DIRE
 #-------------------------------------------------
 
 # invoke ocaml implementation compiler
-OCAMLOPT=OCAMLBINPREFIX+'ocamlopt.opt -I '+OCAML_OBJDIR+' -rectypes '
+OCAMLOPT=OCAMLBINPREFIX+'ocamlopt.opt -I '+OCAML_OBJDIR+' '
 
 # invoke ocaml yacc parser generator
 OCAMLYACC = OCAMLBINPREFIX+'ocamlyacc '
@@ -105,10 +105,10 @@ INTERFACES = [
   'flx_tok'          ,
   'flx_parse_ctrl'   ,
   'flx_pat'          , 
+  'flx_mbind'        , 
   'flx_desugar'      , 
   'flx_symtab'       , 
   'flx_lookup'       , 
-  'flx_mbind'        , 
   'flx_bbind'        , 
   'flx_name'         , 
   'flx_tgen'         , 
@@ -133,10 +133,10 @@ IMPLEMENTATIONS = [
   'flx_tok'          ,
   'flx_parse_ctrl'   ,
   'flx_pat'          , 
+  'flx_mbind'        , 
   'flx_desugar'      , 
   'flx_symtab'       , 
   'flx_lookup'       , 
-  'flx_mbind'        , 
   'flx_bbind'        , 
   'flx_name'         , 
   'flx_tgen'         , 
@@ -197,23 +197,29 @@ def filetime(f):
     return os.stat(f)[stat.ST_MTIME]
   except: return 0
 
-def xqt(x):
+def xqt(x,always_output=0, never_output=0):
   print x
   sys.stdin.flush()
   f = os.popen(x + " 2>&1","r")
   output = f.readlines()
   result = f.close()
   if result: print "  .. ERROR CODE",hex(result)
-  if output: print string.join(output,"")
+  if not never_output:
+    if output:
+      if always_output or result:
+        print string.join(output,"")
   sys.stdin.flush()
 
   if result:
     raise MakeError
 
-def run(x):
+def run(x, no_output=0):
   print x
   sys.stdin.flush()
-  result = os.system(x)
+  if no_output:
+    result = os.system(x + " >/dev/null 2>/dev/null")
+  else:
+    result = os.system(x)
   if result: print "  .. ERROR CODE",hex(result)
   sys.stdin.flush()
 
@@ -229,6 +235,7 @@ def erasefile(f):
 
 buildall = "clean" in options
 stop_on_error = "stop_on_error" in options
+quiet = "no_output" in options
 import glob
 
 try:
@@ -244,6 +251,7 @@ try:
 
   if do_tests:
     REGRESSION_TESTS = glob.glob('test/rt*.flx')
+    DIAG_TESTS = glob.glob('test/dt*.flx')
     BAD_TESTS = glob.glob('test/bt*.flx')
     TUTORIAL_TESTS = glob.glob('tut/examples/tut*.flx')
     if "test" in options:
@@ -255,6 +263,7 @@ try:
         TESTS = TESTS + REGRESSION_TESTS
     TESTS.sort()
     BAD_TESTS.sort()
+    DIAG_TESTS.sort()
 
   # STEP 1: Compile all C files
   for cobject in COBJECTS.keys():
@@ -344,29 +353,47 @@ try:
             results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
 
       # FAILURE TESTS 
-      if "bt" in options:
-        for testfile in BAD_TESTS:
-          #print 'Running Felix code generator on ',testfile
-          basename = string.split(testfile,'.')[0]
-          cppfilename = basename + ".cpp"
-          if buildall or \
-            filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
-            filetime('bin/flxg')> filetime(basename+'.cpp') or \
-            filetime('lib/std.flx') > filetime(basename+'.cpp'):
-            try:
-              xqt('bin/flxg -e -Ilib ' + basename)
-              #print 'TESTFILE -- failed as expected',basename
-              results.append("flxg " + (basename+ ' ' * w)[:w]+ ' OK')
-              erasefile(basename+'.cpp')
-              erasefile(basename+'.hpp')
-              erasefile(basename+'.so')
-            except MakeError:
-              print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
-              erasefile(basename+'.cpp')
-              erasefile(basename+'.hpp')
-              erasefile(basename+'.so')
-              if stop_on_error: raise MakeError
-              results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
+
+      # COMPILE TIME ERROR EXPECTED
+      for testfile in DIAG_TESTS:
+        #print 'Running Felix code generator on ',testfile
+        basename = string.split(testfile,'.')[0]
+        try:
+          xqt('bin/flxg -e -Ilib ' + basename)
+          #print 'TESTFILE -- failed as expected',basename
+          results.append("flxg " + (basename+ ' ' * w)[:w]+ ' OK')
+          erasefile(basename+'.cpp')
+          erasefile(basename+'.hpp')
+          erasefile(basename+'.so')
+        except MakeError:
+          print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
+          erasefile(basename+'.cpp')
+          erasefile(basename+'.hpp')
+          erasefile(basename+'.so')
+          if stop_on_error: raise MakeError
+          results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
+
+      # RUN TIME ERROR EXPECTED
+      for testfile in BAD_TESTS:
+        #print 'Running Felix code generator on ',testfile
+        basename = string.split(testfile,'.')[0]
+        cppfilename = basename + ".cpp"
+        if buildall or \
+          filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
+          filetime('bin/flxg')> filetime(basename+'.cpp') or \
+          filetime('lib/std.flx') > filetime(basename+'.cpp'):
+          try:
+            xqt('bin/flxg -q -Ilib ' + basename)
+            results.append("flxg " + (basename+ ' ' * w)[:w]+ ' OK')
+            erasefile(basename+'.cpp')
+            erasefile(basename+'.hpp')
+            erasefile(basename+'.so')
+          except MakeError:
+            erasefile(basename+'.cpp')
+            erasefile(basename+'.hpp')
+            erasefile(basename+'.so')
+            if stop_on_error: raise MakeError
+            results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
 
       # C++ COMPILE SHARED LIBRARIES
       for testfile in TESTS:
@@ -409,7 +436,7 @@ try:
         testscript = "./test/flx_run ./"+basename+".so"
         #print 'Executing ',testscript
         try:
-          run(testscript)
+          run(testscript, quiet)
           #print 'TESTFILE -- OK!',testscript
           results.append("Exec " + (testscript + ' ' * w)[:w]+ ' OK')
         except MakeError:
@@ -824,8 +851,19 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('test: dummy')
 @tangle('\tpython script/maker test stop_on_error')
 @tangle('')
+@tangle('test_all: dummy')
+@tangle('\tpython script/maker test')
+@tangle('')
+@tangle('test_all_no_output: dummy')
+@tangle('\tpython script/maker test no_output')
+@tangle('')
 @tangle('tarball: dummy')
-@tangle('\ttar -zcvf flx_'+flx_version+'_linux.tgz\\')
+@tangle('\tstrip bin/flxg')
+@tangle('\ttar -zcvf flx_'+flx_version+'_bin_linux.tgz\\')
+@tangle('\t\tbin/flxg \\')
+@tangle('\t\ttest/flx_run \\')
+@tangle('')
+@tangle('\ttar -zcvf flx_'+flx_version+'_src.tgz\\')
 @tangle('\t\tmakefile README CONTENTS INSTALL VERSION  \\')
 @tangle('\t\tlpsrc/*.ipk \\')
 @tangle('\t\tlpsrc/*.pak \\')
@@ -834,6 +872,8 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('\t\tsrc/*.mli \\')
 @tangle('\t\tsrc/*.mly \\')
 @tangle('\t\tsrc/*.mll \\')
+@tangle('\t\tsrc/*.hpp\\')
+@tangle('\t\tsrc/*.cpp\\')
 @tangle('\t\tlib/*.flx \\')
 @tangle('\t\ttest/*.flx \\')
 @tangle('\t\ttest/*.cpp \\')
@@ -847,8 +887,9 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('\t\tdoc/*.css \\')
 @tangle('\t\tdoc/*.tex \\')
 @tangle('\t\tbin/flx \\')
-@tangle('\t\tbin/flxg \\')
-@tangle('\t\ttest/flx_run \\')
+@tangle('\t\tmisc/felix.vim \\')
+@tangle('\t\tman/* \\')
+@tangle('\t\twww/* \\')
 @tangle('')
 @tangle('www: dummy')
 @tangle('\tiscr lpsrc/flx_sourceforge.pak')
@@ -858,20 +899,21 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('')
 @tangle('upload: dummy')
 @tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
-@tangle('\tscp flx_'+flx_version+'_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('\tscp flx_'+flx_version+'_bin_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('')
 @tangle('test_clean: dummy')
-@tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so')
-@tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so')
+@tangle('\trm -rf tut/examples/*')
+@tangle('\trm -rf test/*')
 @tangle('')
 @tangle('really_clean: dummy')
-@tangle('\trm -rf tut test www src misc man script boost bin doc lib tmp.tmp')
+@tangle('\trm -rf tut test www src misc man script boost bin doc lib tmp.tmp lpsrc/*.cache')
 @tangle('')
 @tangle('boot: dummy')
 @tangle('\tiscr lpsrc/flx.pak')
 @tangle('')
 @tangle('dummy:')
-@tangle('\techo "out of date"')
+@tangle('\t')
 @tangle('')
 
 @head(1,'README')

@@ -141,8 +141,6 @@ let string_of_token (tok :Flx_parse.token): string =
   | TYPE _ -> "type"
   | TYPEDEF _ -> "typedef"
   | FUN _ -> "fun"
-  | UNIT _ -> "unit"
-  | VOID _ -> "void"
   | READ _ -> "read"
   | RETURN _ -> "return"
   | CONST _ -> "const"
@@ -151,8 +149,6 @@ let string_of_token (tok :Flx_parse.token): string =
   | HEADER _ -> "header"
   | CODE _ -> "code"
   | FORK _ -> "fork"
-  | WHILE _ -> "while"
-  | LOOP _ -> "loop"
   | TODO _ -> "todo"
   | OF _ -> "of" 
   | ATTEMPT _ -> "attempt"
@@ -179,6 +175,14 @@ let string_of_token (tok :Flx_parse.token): string =
   | EXPORT _ -> "export"
   | DEFINE _ -> "define"
   | OVERLOAD _ -> "overload"
+  | TYPEOF _ -> "typeof"
+  | LET _  -> "let"
+  | IN _ -> "in"
+  | TYPEASSERT _ -> "typeassert"
+  | TYPEAXIOM _ -> "typeaxiom"
+  | DOMAIN _ -> "dom"
+  | CODOMAIN _ -> "cod"
+  | DO _ -> "do"
 
   (* special things *)
   | SLOSH _ -> "\\" (* "\"" *) 
@@ -313,12 +317,8 @@ let src_of_token t = match t with
   | PROCEDURE s 
   | FUNCTION s 
   | READER s 
-  | UNIT s 
   | RETURN s 
   | FORK s 
-  | VOID s 
-  | WHILE s 
-  | LOOP s 
   | TODO s 
   | TYPE s 
   | FUN s 
@@ -336,9 +336,15 @@ let src_of_token t = match t with
   | DEFINE s
   | OVERLOAD s
   | OPEN s
+  | TYPEOF s
+  | LET s 
+  | IN s
+  | TYPEASSERT s
+  | TYPEAXIOM s
+  | DOMAIN s
+  | CODOMAIN s
+  | DO s
     -> s
-
-
 
 let pre_tokens_of_lexbuf buf state =
   let lex_it() = Flx_lex.pre_flx_lex buf state in
@@ -355,7 +361,7 @@ let pre_tokens_of_lexbuf buf state =
   in get ()
 
 let pre_tokens_of_filename filename dirname incdirs =
-  let state = new Flx_lex.lexer_state filename dirname incdirs in
+  let state = new Flx_lex.lexer_state filename dirname incdirs (ref []) in
   let infile = open_in filename in
   let src = Lexing.from_channel infile in
   let toks = pre_tokens_of_lexbuf src state in
@@ -363,7 +369,7 @@ let pre_tokens_of_filename filename dirname incdirs =
     toks
 
 let pre_tokens_of_string s filename =
-  let state = new Flx_lex.lexer_state filename "" [] in
+  let state = new Flx_lex.lexer_state filename "" [] (ref []) in
   pre_tokens_of_lexbuf (Lexing.from_string s) state
 
 

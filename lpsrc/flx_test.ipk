@@ -248,15 +248,17 @@ header r"""
 using namespace std;
 """;
 
+typedef void = 0;
+typedef unit = 1;
 typedef bool = 2;
 val false:bool = case 1 of 2;
 val true:bool = case 2 of 2;
-fun lnot:bool->bool = "!$1";
+fun lnot:bool->bool = code "!$1";
 
 proc while (cond:unit->bool) (body:unit->void)
 {
   repeat:>
-    if not (cond()) then goto finished; endif;
+    if not (cond()) goto finished;
     body();
     goto repeat;
   finished:>
@@ -269,9 +271,9 @@ proc print: string = 'printf("%s",$1.c_str());';
 type int = "int";
 proc print: int = 'printf("%d",$1);';
 proc incr : &int = "(*$1)++;";
-fun eq : int * int -> bool = "$1==$2";
-fun mod: int * int -> int = "$1%$2";
-fun lt : int * int -> bool = "$1<$2";
+fun eq : int * int -> bool = code "$1==$2";
+fun mod: int * int -> int = code "$1%$2";
+fun lt : int * int -> bool = code "$1<$2";
 proc set : & int * int = "*$1 = $2;";
 
 union parity = Even | Odd;
@@ -279,13 +281,15 @@ union parity = Even | Odd;
 procedure fire()
 {
   var i : int = 0;
-  function get_parity(): parity =
+  function get_parity(): parity do
   {
-    if(i%2==0) then return Even;
-    else return Odd;
-    endif
+    return 
+      if(i%2==0) then Even
+      else Odd
+      endif
+    ;
   }
-  while [ i < 10]
+  while [i < 10]
   {
     print i; print " ";
 
@@ -343,7 +347,7 @@ proc print: string = 'printf("%s",$1.c_str());';
 type int = "int";
 proc print: int = 'printf("%d",$1);';
 proc incr : &int = "(*$1)++;";
-fun eq : int * int -> bool = "$1==$2";
+fun eq : int * int -> bool = code "$1==$2";
 proc set : & int * int = "*$1 = $2;";
 var counter : int = 0;
 var counter2 : int = 0;

@@ -118,6 +118,18 @@ and issue an error message if the types don't agree.
 @p()
 Values are constants: they cannot be modified,
 and, as we will see later, they cannot be addressed.
+@p()
+The Felix type language also supports the popular 
+but ugly typeof operator. You can ensure some values all have the same 
+type, for example:
+@select(tangler(tdir+'tut104a.flx'))
+#include <std.flx>
+val i = 1;
+val j : typeof(i) = 2;
+@doc()
+although there are usually better ways to do this.
+Note that recursive typing isn't allowed: the type
+of j can't depend on the type of j.
 
 @head(2,'Variable declaration')
 Felix also support mutable variables, which are
@@ -160,7 +172,7 @@ although the syntax is different from C.
 Here is an example:
 @select(tangler(tdir+'tut106.flx'))
 #include <std.flx>
-fun mid(a:int, b:int):int =
+fun mid(a:int, b:int):int do
 {
   val c = (a + b) / 2;
   return c;
@@ -177,16 +189,35 @@ Function in Felix may not have any side effects,
 except for diagnostic outputs.  Note however that
 functions may modify their own private data,
 that is, may contain and mutate local variables.
+@p()
+It is possible to elide the return type of
+a function in some cases, for example:
+
+@select(tangler(tdir+'tut106a.flx'))
+#include <std.flx>
+fun mid(a:int, b:int) do
+{
+  val c = (a + b) / 2;
+  return c;
+}
+print (mid(2,4)); print "\n";
+@doc()
+This always works for non-recursive functions,
+and usually for recursive ones: it fails when
+the type of the return value of every return statement
+in the function depends directly or indirectly
+on the return type of the function itself,
+and that often indicates an infinite recursion.
 
 @head(2,'The lazy expression')
 There is a function which is so useful, there
 is a special syntax for it: the lazy expression.
-@select(tangler(tdir+'tut106a.flx'))
+@select(tangler(tdir+'tut106b.flx'))
 #include <std.flx>
 var x = 1;
 var y = 2;
 val f1 = [x + y]; // lazy expression
-fun f2():int = { return x + y; } // equivalent
+fun f2():int do { return x + y; } // equivalent
 print (f1 ());
 print (f2 ());
 x = 2;
@@ -197,6 +228,32 @@ print (f2 ());
 The square brackets denote a lazy expression, it is
 a function which evaluates the expression when passed
 the special unit value () explained below.
+
+@head(2,'The conditonal expression')
+Felix provides and if/then/else/endif expression,
+much like C's operator ?:. It is very useful
+in conjunction with lazy expressions and procedures.
+The argument must be of type bool, which has
+two values, true and false.
+
+@select(tangler(tdir+'tut106c.flx'))
+#include <std.flx>
+var cond = true;
+/*
+var result = if cond then 1 else 2 endif;
+print result; endl;
+
+cond = false;
+result = if cond then 1 else 2 endif;
+print result; endl;
+
+fun f()= if cond then 1 else 2 endif;
+print (f()); endl;
+
+cond = true;
+print (f()); endl;
+*/
+
 
 @head(2,'Tuples')
 As you might guess from the title, Felix has
@@ -224,7 +281,7 @@ studying this example, which is equivalent
 to example 6.
 @select(tangler(tdir+'tut107.flx'))
 #include <std.flx>
-fun mid(a:int, b:int):int =
+fun mid(a:int, b:int):int do
 {
   val c = (a + b) / 2;
   return c;
@@ -313,7 +370,7 @@ of an (almost) atomic expression
 is taken to be a call to a procedure with
 unit argument.
 
-@head(2,'The block procedure')
+@head(2,'The block')
 There is a procedure which is so useful, there
 is a special syntax for it: the block.
 @select(tangler(tdir+'tut110a.flx'))
@@ -334,10 +391,48 @@ print x;
 @doc()
 The block is a procedure taking a unit argument.
 So when you write one as a statement, it just gets
-called: note that unlike C, that thing in 
-curley braces is an expression, and you must 
+called: note that unlike C, the block, including the
+curley braces, is an expression, and you must 
 make a statement by adding a semi-colon,
 which has the effect of invoking it.
+@p()
+A block can also be a function. Here is an example:
+@select(tangler(tdir+'tut110a.flx'))
+#include <std.flx>
+
+// here f is the closure of a function of type unit->int
+val f = { return 1; };
+print (f()); endl;
+
+@doc()
+Whether a block is a function or procedure
+depends on whether it has a return statement
+in it which returns a value. If not, it is a procedure,
+otherwise it is a function returning the type
+of all the return expressions, which of course
+must agree.
+
+@head(2,'Conditional statement')
+You should examine the following
+code closely to see that there is no
+if/then/else statement in Felix, even
+though it looks like there is.
+
+@select(tangler(tdir+'tut110b.flx'))
+#include <std.flx>
+
+var cond = true;
+if cond 
+then { print "True"; }
+else { print "False"; }
+endif;
+
+@doc()
+The secret is that the curly brace blocks
+are actually procedures which are returned
+by the conditional expression, and then
+which ever one is returned is executed
+by the trailing semicolon. 
 
 @head(2,'Structs')
 Felix supports C like structs. A struct, like a tuple,
@@ -465,6 +560,9 @@ it never falls through.
 @p()
 The question mark is used to indicate a pattern
 variable.
+@p()
+Note that the match construction is an expression.
+
 @head(2,'Pattern Matching Tuples')
 It is also possible to match tuples.
 Here is an example:
@@ -491,7 +589,75 @@ endmatch;
 endl;
 @doc()
 Notice the use of the special pattern '_', which matches
-something without naming it.
+something without naming it. You can also use '?'
+for the same purpose.
+
+@head(2,'More on matching')
+The match construction is an expression.
+@select(tangler(tdir+'tut114a.flx'))
+#include <std.flx>
+val x = match 1,2 with | ?a, ?b => a endmatch;
+print x; endl;
+
+@head(2,"Let/in expresssion")
+Felix supports the traditional let/in construction
+of functional programming languages. Here is an 
+example:
+@select(tangler(tdir+'tut114b.flx'))
+#include <std.flx>
+val x = 
+  let a = 1 in
+  let b = 2 in
+  let d,e = (a+1,b+1) in
+  d * e + b
+;
+val y = 
+  let x = 1 in
+  let x = x+1 in x
+;
+
+print x; print y; endl;
+
+@doc()
+The let expression is just a sugared version of the
+match expression. The let pattern can be an identifier,
+a wildcard (? or _), a comma separated list of
+let patterns, a let pattern followed by the 'as'
+keyword and an identifier, or a let pattern in brackets.
+@p()
+The value of a let expression is the expression
+after the 'in' keyword, which is evaluated
+in the environment of the let expression,
+enriched by the bindings created by matching the
+pattern on  the left of the equal sign with the
+value on the right hand side which is evaluated
+in the enclosing environment.
+@p()
+Note carefully that you cannot bind functions
+with a let binding. You can, of course, bind
+function closures because they're ordinary values.
+Binding functions would require type unification
+to determine the type of the function, Felix
+doesn't use type unification, because of the
+difficulty of understanding error messages,
+and also because it supports overloading.
+Thus you can write:
+
+@select(tangler(tdir+'tut114c.flx'))
+#include <std.flx>
+fun sin: double -> double = code "sin($1)";
+print (
+  let sin2 = 
+    fun (x:double):double do { 
+      return let z = sin x in z * z;
+    }
+  in sin2 0.5
+);
+@doc()
+Although this restriction seems innocuous,
+it is in fact quite severe: recursion across
+the equal sign of a let binding in Felix is
+not possible, as it is in ML or Ocaml.
 
 @head(2,'Basic Bindings')
 In the previous examples, we've use the Felix standard
@@ -531,11 +697,11 @@ struct gauss {
 // Now the Felix binding
 type gauss = "gauss";
 proc set : &gauss * gauss = "*$1 = $2;";
-fun add: gauss * gauss -> gauss = "$1 + $2";
-fun mul: gauss * gauss -> gauss = "$1 * $2";
-fun mkgauss: int * int -> gauss = "gauss($1,$2)";
-fun real: gauss -> int = "$1.x";
-fun imag: gauss -> int = "$1.y";
+fun add: gauss * gauss -> gauss = code "$1 + $2";
+fun mul: gauss * gauss -> gauss = code "$1 * $2";
+fun mkgauss: int * int -> gauss = code "gauss($1,$2)";
+fun real: gauss -> int = code "$1.x";
+fun imag: gauss -> int = code "$1.y";
 
 // Now a pure Felix procedure
 proc print(z:gauss) { 
@@ -547,11 +713,11 @@ proc print(z:gauss) {
 }
 
 // And two pure Felix functions
-fun sqr(z:gauss):gauss = {
+fun sqr(z:gauss):gauss do {
   return z * z;
 }
 
-fun norm(z:gauss): int = {
+fun norm(z:gauss): int do {
   return 
     real z * real z + imag z * imag z
   ;
@@ -650,17 +816,17 @@ proc set ( lhs: &gauss, rhs: gauss )
   (*lhs).y = rhs.y;
 }
 
-fun add (a:gauss, b:gauss): gauss = {
+fun add (a:gauss, b:gauss): gauss do {
   return gauss(a.x+b.x, a.y+b.y);
 }
 
-fun mul (a:gauss, b:gauss): gauss = {
+fun mul (a:gauss, b:gauss): gauss do {
   return gauss(a.x+b.x - a.y+b.y, a.x*b.y + a.y*b.x);
 }
 
-fun mkgauss (a:int,b:int):gauss = { return gauss(a,b); }
-fun real (z:gauss):int = { return z.x; } 
-fun imag (z:gauss):int = { return z.y; }
+fun mkgauss (a:int,b:int):gauss do { return gauss(a,b); }
+fun real (z:gauss):int do { return z.x; } 
+fun imag (z:gauss):int do { return z.y; }
 
 proc print(z:gauss) { 
   print "(";
@@ -670,11 +836,11 @@ proc print(z:gauss) {
   print ")";
 }
 
-fun sqr(z:gauss):gauss = {
+fun sqr(z:gauss):gauss do {
   return z * z;
 }
 
-fun norm(z:gauss): int = {
+fun norm(z:gauss): int do {
   return 
     real z * real z + imag z * imag z
   ;
@@ -742,9 +908,9 @@ struct gauss
 """;
 
 type gauss = "gauss";
-fun get_x: gauss -> int = "$1.x";
-fun get_y: gauss -> int = "$1.y";
-fun mkgauss: int * int -> gauss = "gauss($1,$2)";
+fun get_x: gauss -> int = code "$1.x";
+fun get_y: gauss -> int = code "$1.y";
+fun mkgauss: int * int -> gauss = code "gauss($1,$2)";
 
 val z = mkgauss(1,2);
 print z.x;
@@ -847,17 +1013,15 @@ proc print (a: int_list)
 }
 
 fun mk(i: int, tl:int_list):int_list =
-{
   if(i>0) then
-    return mk(i-1,Cons(i,tl));
-  else return tl;
+    mk(i-1,Cons(i,tl))
+  else tl
   endif;
-}
 
 val a = mk(10,Empty);
 print "List= "; print a; endl;
 
-fun rev(lst:int_list):int_list =
+fun rev(lst:int_list):int_list do
 {
   var result = Empty;
   proc aux(lst:int_list)
@@ -901,7 +1065,7 @@ contains quite a lot of subtle features!
 
 var j = 2;
 
-fun get_printer(i:int): unit->void  = {
+fun get_printer(i:int): unit->void  do {
   proc print() { print (i+j); }
   return print of (unit);
 }
@@ -982,10 +1146,10 @@ Consider the following example:
 @select(tangler(tdir+'tut122.flx'))
 #include <std.flx>
 
-fun f4(i4:int): int->int->int->int = {
-  fun f3(i3:int): int->int->int = {
-    fun f2(i2:int): int->int = {
-      fun f1(i1:int): int = {
+fun f4(i4:int): int->int->int->int do {
+  fun f3(i3:int): int->int->int do {
+    fun f2(i2:int): int->int do {
+      fun f1(i1:int): int do {
         return i1+i2+i3+i4;
       }
       return f1 of (int);
@@ -1043,7 +1207,7 @@ Here is the equivalent code, using this sugar:
 @select(tangler(tdir+'tut123.flx'))
 #include <std.flx>
 
-fun f4(i4:int) (i3:int) (i2:int) (i1:int): int = {
+fun f4(i4:int) (i3:int) (i2:int) (i1:int): int do {
   return i1+i2+i3+i4;
 }
 
@@ -1394,7 +1558,7 @@ Here is an example:
 @select(tangler(tdir+'tut129.flx'))
 #include <std.flx>
 
-fun pone (): &int = 
+fun pone (): &int do 
 {
   var x : int = 1;
   return &x;
@@ -1419,14 +1583,17 @@ the wild blue yonder.
 
 @head(2,'The ubiquitous goto')
 Felix allows statements to be labelled,
-and provides a goto statement.
+and provides a goto and conditional goto
+statement. Don't confuse the conditional
+goto if .. goto with the if/then/else/endif
+expression!
 
 @select(tangler(tdir+'tut130.flx'))
 #include <std.flx>
 print "start"; endl;
 var i = 1;
 start_loop:>
-  if (not (i<10)) then goto end_loop; endif;
+  if not (i<10) goto end_loop;
   print i; endl;
   i++;
   goto start_loop;
@@ -1459,7 +1626,7 @@ proc run()
 {
   proc check()
   {
-    if(x!=1) then goto bad_x; endif;
+    if x!=1 goto bad_x;
   }
   check();
   print "good x"; endl;
@@ -1518,6 +1685,7 @@ proc bad_calc(err: int -> void)
 {
   // do some work, detect an error
   err 1; // throw exception
+unreachable:>
 }
 
 proc main
@@ -1527,6 +1695,7 @@ proc main
     print "error "; print errno;
     print " -- aborting"; endl;
     goto resume;
+  unreachable:>
   }
   bad_calc err of (int);
   print "no error"; endl;
@@ -1540,7 +1709,15 @@ Here, we establish a handler for an error,
 which is effectively established at the
 label resume: the handler is passed explicitly
 to the routine which may 'raise' it.
-
+@p()
+Note the "unreachable" label, which is needed
+at present to fool the compiler into thinking
+that the end of bad_calc is reachable.
+Felix does basic flow control checking
+to prevent gratuitous infinite loops,
+or falling off the end of functions.
+But it isn't smart enough to know about
+non-returning procedures .. yet.
 
 @head(2,'Static exception handling using goto')
 Non local gotos are very useful for another form of
@@ -1564,6 +1741,7 @@ proc main
     print "error "; print errno;
     print " -- aborting"; endl;
     goto resume;
+  unreachable:>
   }
 resume:>
   print "error handled, continuing"; endl;
@@ -1632,7 +1810,7 @@ or, the exception list following the attempt
 immediately enclosing it: in other words,
 the handler is always 'nearby'.
 
-@head(2,'Procedure Values Again')
+@head(2,'Functional Values Again')
 We've seen the advantages of higher order 
 functions and procedures. It is possible
 to define anonymous procedure and function values
@@ -1641,14 +1819,15 @@ they're called lambdas, after the lambda calculus:
 
 @select(tangler(tdir+'tut135.flx'))
 #include <std.flx>
-val f = fun(a:int):int = { return a * a; };
+val f = fun(a:int):int do { return a * a; };
+val g = fun(a:int) do { return a * a; };
 
-print (f 1); 
-endl;
+print (f 1); endl;
+print (g 1); endl;
 
 print 
 (
-  (fun(a:int):int = { return a * a; })
+  (fun(a:int):int do { return a * a; })
   1
 ); 
 endl;
@@ -1697,7 +1876,7 @@ to avoid a clash:
 proc While (cond:unit->bool) (body:unit->void)
 {
   repeat:>
-    if not (cond()) then goto finished; endif;
+    if not (cond()) goto finished; 
     body();
     goto repeat;
   finished:>
@@ -1777,6 +1956,25 @@ that 010 is decimal ten in Felix!
 
 @select(tangler(tdir+'tut138.flx'))
 #include <std.flx>
+open Tiny;
+open Short;
+open Long;
+open Vlong;
+open Utiny;
+open Ushort;
+open Uint;
+open Ulong;
+open Uvlong;
+open Int8;
+open Int16;
+open Int32;
+open Int64;
+open Uint8;
+open Uint16;
+open Uint32;
+open Uint64;
+open Float;
+open Ldouble;
 
 // radix
 {
@@ -1890,12 +2088,12 @@ characters. The first character must be a letter
 or underscore, subsequent characters may be one of a
 letter, underscore, apostrophe or digit.
 @p()
-Certain identifiers are reserved as keywords.
+Certain identifiers are reserved.
 Identifiers beginning with an underscore are 
 reserved to Felix. Identifiers containing
 more than one underscore in a row are
 reserved to Felix. Reserved identifiers may
-be used by progrogrammers, but not defined.
+be used by programmers, but not defined.
 @p()
 The letters referred to consist of the usual
 A-Z and a-z, but also include any Unicode/ISO10646
@@ -1944,8 +2142,8 @@ interface group
 
 module number {
   typedef t = int;
-  fun add(a:t, b:t):t = { return Int::add(a,b); }
-  fun neg(a:t):t = { return Int::neg a; }
+  fun add(a:t, b:t):t do { return Int::add(a,b); }
+  fun neg(a:t):t do { return Int::neg a; }
   val zero = 0;
   proc print (a:int) { Int::print a; }
 }
@@ -1992,8 +2190,8 @@ interface group
 
 module NUMBER: group = {
   typedef t = int;
-  fun add(a:t, b:t):t = { return Int::add(a, b); }
-  fun neg(a:t):t = { return -a; }
+  fun add(a:t, b:t):t do { return Int::add(a, b); }
+  fun neg(a:t):t do { return -a; }
   val zero = 0;
   proc print (a:int) { Int::print a; }
 }
@@ -2150,10 +2348,7 @@ functor F(i:I)
 {
   functor G(j:I)
   {
-    fun swap (a: i::t, b: j::t): j::t * i::t =
-    { 
-      return (b,a);
-    }
+    fun swap (a: i::t, b: j::t): j::t * i::t = (b,a);
     proc print (b: j::t, a: i::t)
     {
       j::print b; print ","; i::print a; endl;
@@ -2177,7 +2372,7 @@ Here's a simple example:
 #include <std.flx>
 module X {
   proc print_endl (a:int) { print a; endl; }
-  fun square (a:int):int = { return a * a; }
+  fun square (a:int):int = a * a;
 }
 
 open X;
@@ -2294,7 +2489,7 @@ f i1;
 f i2;
 f i3;
 
-@head(1,'Type recursion over numbered unions')
+@head(2,'Type recursion over numbered unions')
 It is possible to specify a list
 using a recursive numbered union.
 @select(tangler(tdir+'tut208.flx'))
@@ -2303,7 +2498,7 @@ using a recursive numbered union.
 
 typedef list = 1 + int * list;
 
-fun cons(a:int, b:list):list = 
+fun cons(a:int, b:list):list do
 { 
   val z = (case 2 of list) (a,b);
   return z;
@@ -2323,7 +2518,7 @@ val c = cons(2,b);
 
 print c;
 
-@head(1,'Type recursion in functions')
+@head(2,'Type recursion in functions')
 Here is another classic use of type recursion:
 a function which returns itself. Don't try this
 in C.
@@ -2334,15 +2529,12 @@ in C.
 // requires equi-recursive type comparison 
 typedef selfun  = unit -> selfun;
 
-fun myself():selfun = 
-{ 
-  return myself of (unit);
-}
+fun myself():selfun = myself of (unit);
 
 var f1 = myself();
 f1 = f1 ();
 
-@head(1,'Fixpoint binder')
+@head(2,'Fixpoint binder')
 In the previous examples, we used a typedef to
 provide an alias for a type, and then used that
 name within the type's definition. This equational
@@ -2370,7 +2562,7 @@ the left unless brackets are used to restrict its scope.
 
 typedef list = 1 + int * x as x;
 
-fun cons(a:int, b:list):list = 
+fun cons(a:int, b:list):list do
 { 
   val z = (case 2 of list) (a,b);
   return z;
@@ -2402,4 +2594,21 @@ You must use pointers instead, as in C.
 
 //typedef circ = int * circ; // useless type
 //var c: circ; // compiler will crash ?
+
+typedef list = 1 + int * x as x;
+typedef list2 = 1 + int * list;
+typedef list3 = 1 + int * list2;
+
+proc print(a:list)
+{
+  match a with
+  | case 1 => { print "NIL"; }
+  | case 2 (?h,?t) => { print h; print ", "; print t; }
+  endmatch;
+}
+
+val x = case 1 of list;
+val y : list3 = x;
+
+print y; endl;
 
