@@ -933,7 +933,7 @@ while { current != finish }
 };
 print "Done.\n";
 
-@h= tangler(tdir+'tut121b.flx')
+@h= tangler(tdir+'tut121b.flx','data')
 @select(h)
 #!/bin/env flx
 include "std";
@@ -3355,25 +3355,144 @@ proc try_parse() {
 
 try_parse();
 
-@head(1,'Misc junk')
-Misc weird feature tests .. remove in production
-tutorial.
-@select(tangler(tdir+'tut901.flx'))
+@head(2,"Parser shortcuts")
+The Felix parser system actually accepts
+so-called meta-grammars.
+@p()
+You can have an anonymous sequence
+of symbols or set of alternatives,
+simply by enclosing them in parentheses.
+The implementation declares a dummy nonterminal
+for such groups, and replaces the group with 
+the name of the dummy non-terminal.
+@p()
+You can also apply the postfix operators "*", "+" and "?"
+to any symbol or group. Curley brackets { .. } can also
+be used and are equivalent to ( ..) *. Note you can't
+use [..] notation for optional constructions, since
+this conflicts with the use of [] for type subscripts.
+@p()
+Note: although it makes sense at present anonymous
+nonterminal specifications can't contain names
+or client code.
+@p()
+Note: restriction: at present each dummy is distinct,
+so any anonymous expression occuring more than
+once will lead to a reduce/reduce conflict.
+@p()
+Note: restriction: all the anonymous symbols must have attributes.
+
+@select(tangler(tdir+'tut312.flx'))
 include "std";
-// recursive typedefs
-
-//typedef y = &int + long * (float + long);
-//fun k(a:y):y = { return 1; };
-
-/*
-typedef x = 1 + x * int;
-//union x = Empty | Cons of x * int;
-fun f(a:x):x = 
-{ 
-  val b = (case 2 of x) (a,2);
-  //val b = Cons (a,2);
-  return b;
+ 
+// the input string
+data := "1+22+33$";
+ 
+// a type for tokens
+union token_t =
+  | TOK_EOF
+  | TOK_PLUS
+  | TOK_INT of int
+;
+ 
+// a token stream generator
+var i = 0;
+fun get_token():token_t =
+{
+  ch := data.[i to i+1];
+  ++i;
+  tok :=
+    match ch with
+    | "$" => TOK_EOF
+    | "+" => TOK_PLUS
+    | "1" => TOK_INT 1
+    | "2" => TOK_INT 2
+    | "3" => TOK_INT 3
+    endmatch
+  ;
+  return tok;
 }
-*/
+ 
+// a type for expression terms
+union expr_t =
+  | Integer of int
+;
+ 
+// a grammar for expressions
+nonterm expr : expr_t =
+| xx:expr TOK_PLUS y:TOK_INT* =>
+  match xx with
+  | Integer ?i => Integer (i+y)
+  endmatch
+ 
+| y:TOK_INT => Integer y
+;
+ 
+// a parser for our example
+var z : 1 + int =
+  parse (the get_token) with
+  | e: expr => match e with | Integer ?i => i endmatch
+  endmatch
+;
+ 
+// print the result
+match z with
+| case 1 => { print "Error"; }
+| case 2 (?i) => { print i; }
+endmatch;
+endl;
+
+@head(1,"Lua integration")
+Felix contains Lua (version 5.0.2).
+There is an interface to the Lua CAPI in module Lua
+of the file lib/lua.flx, its use is illustrated here.
+See
+@cite_url("http://www.lua.org")
+for information about Lua.
+
+@select(tangler(tdir+'tut330.flx'))
+include "std";
+include "lua";
+
+open String;
+open Lua;
+open Text_file;
+
+proc perr(L:lua_t)
+{
+  s := str (lua_tostring(L, -1));
+
+  writeln (stderr, s);
+  lua_pop(L, 1);  /* pop error message from the stack */
+}
+
+L := lua_open();   /* opens Lua */
+C_hack::ignore(luaopen_base(L));  /* opens the basic library */
+C_hack::ignore(luaopen_table(L)); /* opens the table library */
+C_hack::ignore(luaopen_io(L));    /* opens the I/O library */
+C_hack::ignore(luaopen_string(L));/* opens the string lib. */
+C_hack::ignore(luaopen_math(L));  /* opens the math lib. */
+    
+lines := 'print "Hello"', 'print (1)';
+
+var i = 0; 
+until i == 2 do
+  s:= lines.[i];
+  l := C_hack::enconst[char] (cstr s);
+  n := C_hack::size_of (len s);
+  line := C_hack::enconst[char] c"line";
+  var error = luaL_loadbuffer(L, l, n, line);
+  if error != 0 do 
+    perr L;
+  else
+    error = lua_pcall(L, 0, 0, 0);
+    if error != 0 do
+      perr L;
+    done;
+  done;
+  ++i;
+done;
+
+lua_close(L);
 
 

@@ -677,7 +677,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     let _,t = e in
     let t = lstrip syms.dfns t in
     begin match t with
-    |`BTYP_sum _
+    | `BTYP_sum _
     | `BTYP_unitsum _ ->
       if is_unitsum t then ge' e
       else ce_dot (ge' e) "variant"
@@ -703,6 +703,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     end
 
   | `BEXPR_match_case (n,((e',t') as e)) -> 
+    let t' = reduce_type (lstrip syms.dfns t') in
     if is_unitsum t' then
       ce_infix "==" (ge' e) (ce_atom (si (n-1)))
     else
@@ -855,6 +856,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     in
     ce_atom reference
 
+  (* Hackery -- we allow a constructor with no
+     arguments to be applied to a unit anyhow
+  *)
   | `BEXPR_apply 
      (
        (`BEXPR_case (v,t),t'),
@@ -873,7 +877,12 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
          "new (gc, "^arg_typename^"_ptr_map) " ^
          arg_typename ^ "(" ^ ge (a,t'') ^ ")"
        in
-       let uval = "_uctor_(" ^ si (v-1) ^ ", " ^ aval ^")" in
+       let uval = 
+         if is_unitsum t then
+           si (v-1) 
+         else
+         "_uctor_(" ^ si (v-1) ^ ", " ^ aval ^")" 
+       in
        let s = "(" ^ union_typename ^ ")" ^ uval in
        ce_atom s
 
@@ -1383,7 +1392,11 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
         ps display_string;
         pe ctor_dcl;
         pe ("  collector_t &gc;");
-        pe "  _uctor_ apply(LexerInterface *lex);";
+        pe 
+        (
+          (if t = `BTYP_tuple [] then "int" else "_uctor_") ^
+          " apply(LexerInterface *lex);"
+        );
         pe "};";
         pe "";
         pe "impl_verbatim {";
@@ -1395,7 +1408,13 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
         pe "// This returns a polymorphic option";
         pe "// case 0- Parse failed";
         pe "// case 1- Argument contains parser result";
-        pe ("_uctor_ Elk"^parser_name^"::apply(LexerInterface *lex) {");
+        pe ("// Type of parser result is " ^ sbt syms.dfns t);
+        
+        pe 
+        (
+          (if t = `BTYP_tuple [] then "int" else "_uctor_") ^
+          " Elk"^parser_name^"::apply(LexerInterface *lex) {"
+        );
         pe "  _uctor_ result(0,0);";
         pe "  SemanticValue p=(SemanticValue)(void*)0;";
         pe "  GLR glr(this,this->makeTables());";
@@ -1403,12 +1422,18 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
         pe "  result.variant = glr.glrParse(*lex,p);";
         pe "";
         pe "  if(result.variant==1)";
+        
+        if t = `BTYP_tuple [] then begin
+        pe "  delete (void*)p;";
+        pe "  return result.variant;";
+        end else begin
         pe ("    result.data =");
         pe ("      new(gc,"^shape_of bbdfns tn t^")");
         pe ("      "^result_type^"(*("^result_type^"*)(void*)p)");
         pe ("  ;");
         pe "  delete (void*)p;";
         pe "  return result;";
+        end;
         pe "}";
         pe "}";
         pe "";

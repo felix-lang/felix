@@ -226,6 +226,7 @@ struct _uctor_
 
 extern flx::gc::generic::gc_shape_t _uctor_ptr_map;
 extern flx::gc::generic::gc_shape_t _int_ptr_map;
+extern flx::gc::generic::gc_shape_t unit_ptr_map;
 
 // UNIT
 struct unit {};
@@ -446,6 +447,15 @@ flx::gc::generic::gc_shape_t _int_ptr_map (
   "int",
   1,
   sizeof(int),
+  0,
+  0,
+  0
+);
+
+flx::gc::generic::gc_shape_t unit_ptr_map (
+  "unit",
+  1,
+  sizeof(unit),
   0,
   0,
   0

@@ -437,8 +437,8 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
       (fun (ll,glr_ixs) (sr,p,e) -> 
         let t = `TYP_none in
         let glr_idx = seq() in
-        let d,dcl = handle_glr seq rex sr p e glr_idx t nt in
-        d :: dcl :: l @ ll,
+        let dcls = handle_glr seq rex sr p e glr_idx t nt in
+        dcls @ l @ ll,
         (*
         Dcl(sr,nt,Some n',`Private,[],`DCL_glr(t,(p,x))) :: l @ ll,
         *)
@@ -1082,8 +1082,8 @@ and rst syms name access parent_vs st : asm_t list =
     | [] ->dcls
     | (sr',p,e)::ta -> 
        let glr_idx = seq() in
-       let d,dcl = handle_glr seq rex sr' p e glr_idx t id in
-       aux (d:: dcl :: dcls) ta
+       let dcls' = handle_glr seq rex sr' p e glr_idx t id in
+       aux (dcls' @ dcls) ta
     in aux [] ms
 
   | `AST_ctypes _ 
@@ -1106,12 +1106,186 @@ and rst syms name access parent_vs st : asm_t list =
     -> assert false
 
 and handle_glr seq rex sr' p e glr_idx t nt_id =
- (* we turn the expression into a call to a function
+  (* p can contain expressions now, we have to
+    create dummy glr's for them
+  *)
+  let new_glrs = ref [] in
+  let new_ast (qn:qualified_name_t) : qualified_name_t =
+    (* qs = qn qs | epsilon -- right recursive *)
+    let qt = `TYP_glr_attr_type qn in
+    let typ = 
+      `TYP_as 
+      (
+        `TYP_sum 
+        [
+          `TYP_tuple []; 
+          `TYP_tuple [qt; `AST_name (sr',"__fix__",[])]
+        ],
+        "__fix__"
+      )
+    in
+    let glr_idx = seq() in
+    let nt_id = "_ast_" ^ si glr_idx in
+    let nt_name = `AST_name (sr',nt_id,[]) in
+    let p = [(Some "_1",qn); (Some "_2",nt_name)] in
+    let e = 
+      `AST_apply 
+      (sr',
+        (
+         `AST_typed_case (sr',2,typ),
+         `AST_tuple 
+           (
+             sr',
+             [
+               `AST_name (sr',"_1",[]); 
+               `AST_name (sr',"_2",[])
+             ]
+          )
+        )
+      )
+    in
+    new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
+
+    let e = `AST_typed_case (sr',1,typ) in
+    let p = [] in
+    let glr_idx = seq() in
+    new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
+    `AST_name (sr',nt_id,[])
+  in
+  let new_plus (qn:qualified_name_t) : qualified_name_t =
+    (* qs = qn qs | qn -- right recursive *)
+    let qt = `TYP_glr_attr_type qn in
+    let typ = 
+      `TYP_as 
+      (
+        `TYP_sum 
+        [
+          `TYP_tuple []; 
+          `TYP_tuple [qt; `AST_name (sr',"__fix__",[])]
+        ],
+        "__fix__"
+      )
+    in
+    let glr_idx = seq() in
+    let nt_id = "_plus_" ^ si glr_idx in
+    let nt_name = `AST_name (sr',nt_id,[]) in
+    let p = [(Some "_1",qn); (Some "_2",nt_name)] in
+    let e = 
+      `AST_apply 
+      (sr',
+        (
+         `AST_typed_case (sr',2,typ),
+         `AST_tuple 
+           (
+             sr',
+             [
+               `AST_name (sr',"_1",[]); 
+               `AST_name (sr',"_2",[])
+             ]
+          )
+        )
+      )
+    in
+    new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
+
+    let e =
+      `AST_apply 
+      (sr',
+        (
+         `AST_typed_case (sr',2,typ),
+         `AST_tuple 
+           (
+             sr',
+             [
+               `AST_name (sr',"_1",[]); 
+               `AST_typed_case (sr',1,typ)
+             ]
+          )
+        )
+      )
+    in
+
+    let p = [(Some "_1",qn)] in
+    let glr_idx = seq() in
+    new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
+    `AST_name (sr',nt_id,[])
+  in
+  let new_opt (qn:qualified_name_t) : qualified_name_t =
+    (* qs = qn | epsilon *)
+    let qt = `TYP_glr_attr_type qn in
+    let typ = `TYP_sum [ `TYP_tuple []; qt] in
+    let glr_idx = seq() in
+    let nt_id = "_opt_" ^ si glr_idx in
+    let nt_name = `AST_name (sr',nt_id,[]) in
+    let p = [(Some "_1",qn)] in
+    let e = 
+      `AST_apply 
+      (sr',
+        (
+         `AST_typed_case (sr',2,typ),
+         `AST_name (sr',"_1",[])
+        )
+      )
+    in
+    new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
+
+    let e = `AST_typed_case (sr',1,typ) in
+    let p = [] in
+    let glr_idx = seq() in
+    new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
+    `AST_name (sr',nt_id,[])
+  in
+
+  let new_seq (qs:qualified_name_t list) : qualified_name_t =
+    let n = length qs in
+    let typ = `TYP_tuple (map (fun qn -> `TYP_glr_attr_type qn) qs) in
+    let glr_idx = seq() in
+    let nt_id = "_seq_" ^ si glr_idx in
+    let nt_name = `AST_name (sr',nt_id,[]) in
+    let p = combine (map (fun n -> Some ("_"^ si n)) (nlist n)) qs in
+    let e = 
+      `AST_tuple 
+      (
+        sr', 
+        map 
+        (fun n -> `AST_name (sr',"_"^si n,[]))
+        (nlist n)
+      ) 
+    in
+    new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
+    `AST_name (sr',nt_id,[])
+  in
+
+  let new_alt t = failwith "can't handle glr alt yet" in
+  let rec unravel t: qualified_name_t = match t with
+  | `GLR_name qn -> qn
+  | `GLR_ast t -> new_ast (unravel t)
+  | `GLR_plus t -> new_plus (unravel t)
+  | `GLR_opt t -> new_opt (unravel t)
+  | `GLR_seq ts -> new_seq (map unravel ts)
+  | `GLR_alt ts -> new_alt (map unravel ts)
+  in
+  let p = map (fun (name,t) -> name,unravel t) p in
+  let dcls = inner_handle_glr seq rex sr' p e glr_idx t nt_id in
+  dcls @
+  concat 
+  (
+    map
+    (fun (p,e,glr_idx,t,nt_id) ->
+      inner_handle_glr seq rex sr' p e glr_idx t nt_id 
+    )
+    !new_glrs
+  )
+
+
+and inner_handle_glr seq rex sr' p e glr_idx t nt_id =
+   (* we turn the expression into a call to a function
     so any lambdas lifted out are nested in the
     function, and rely on the call to bind to the
     arguments, and we mark the function noinline,
     to stop it being inlined into the C wrapper code
   *)
+
   let fun_idx = seq() in
   let fun_id = nt_id ^ "_" ^ si fun_idx in
   let fun_ref = `AST_index (sr',fun_id,fun_idx) in
@@ -1144,7 +1318,7 @@ and handle_glr seq rex sr' p e glr_idx t nt_id =
   let invoke = `AST_apply(sr',(fun_ref,`AST_tuple (sr',args))) in 
   let dcl =   `DCL_glr (t,(p,invoke)) in
   let dcl =   Dcl (sr',nt_id,Some glr_idx,`Public,[],dcl) in
-  d,dcl
+  [d; dcl]
 
 let typeofargs a = 
       match map snd a with

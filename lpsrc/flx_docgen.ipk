@@ -9,7 +9,7 @@ a:active {color : Red; text-decoration : underline; }
 .dcl { font-weight : bold ; color : Maroon }
 body { margin-left : 20px; margin-right: 20px }
 body .desc { color : Blue ; margin-bottom : 30px; margin-left: 20px }
-div.topentry {  margin-bottom : 0.2em; margin-left: margin-top : 0.2em }
+div.topentry {  margin-bottom : 0.2em; margin-left: 20px; margin-top : 0.2em }
 div.subentry { margin-left: 4ex; margin-bottom : 0.1em }
 div.topentry div.desc { color : Purple; margin-bottom : 5px; margin-left: 20px }
 .keyword { font-weight : bold ; color : Red }
@@ -17,7 +17,16 @@ div.topentry div.desc { color : Purple; margin-bottom : 5px; margin-left: 20px }
 .keywordsign { color : #C04600 }
 .superscript { font-size : 4 }
 .subscript { font-size : 4 }
-.comment { color : Green }
+.comment { font-size : 14pt ;  border: 1px solid #000000;  
+  margin-top: 5px; margin-bottom: 2px; 
+  margin-left -20px;
+  margin-right 20px;
+  text-align: left; 
+  background-color: #90EDFF; 
+  padding: 2px; 
+  padding-left: 20px;
+}
+
 .constructor { color : Blue }
 .type { color : #5C6585 }
 .string { color : Maroon }
@@ -340,7 +349,7 @@ proc handle_statement (f:text_file, s:statement_t,desc:string) {
   | statement_6 ?s => { handle_publish (f,s); }
   | statement_7 ?s => 
     let comment_1 ?s = s in 
-    { writeln(f,'<span class="desc">' s '</span>'); }
+    { writeln(f,'<div class="comment">' s '</div>'); }
 
   | statement_8 ?s => {} // null
   endmatch;
@@ -882,180 +891,135 @@ fun html(s:string):string =
 
 //-----------------------------------------------
 // strings representing small sub-terms
-fun str (t:expr_t)=>
-  match t with
+fun str : expr_t -> string =
   | expr_1 (?p,?e1,?e2) => "let <pattern> = " + str e1 " in " + str e2
   | expr_2 ?r => let rvalue_1 ?l = r in str l
-  endmatch
 ;
 
-fun str (t:lambda_t)=>
-  match t with
+fun str : lambda_t -> string =
   | lambda_1 ?t => str t
   | lambda_2 _ => "(fun ...)"
   | lambda_3 _ => "(fun ...)"
   | lambda_4 _ => "(fun ...)"
   | lambda_5 ?c => "{ ... }" 
-  endmatch
 ;
 
-fun str (t:tuple_t)=>
-  match t with
+fun str : tuple_t -> string =
   | tuple_1 (?o,?t) => str o + str t
   | tuple_2 ?o => str o 
-  endmatch
 ;
 
-fun str (t:tuple_suffix_t)=>
-  match t with
+fun str : tuple_suffix_t -> string =
   | tuple_suffix_1 (?o,?t) => ", " + str o + str t
   | tuple_suffix_2 ?o => ", " + str o
-  endmatch
 ;
 
-fun str (t:or_condition_t)=>
-  match t with
+fun str : or_condition_t -> string =
   | or_condition_1 (?o,_,?a) => str o +" or "+ str a
   | or_condition_2 ?a => str a 
-  endmatch
 ;
 
-fun str (t:and_condition_t)=>
-  match t with
+fun str : and_condition_t -> string =
   | and_condition_1 (?a,_,?n) => str a +" and "+ str n
   | and_condition_2 ?n => str n 
-  endmatch
 ;
 
-fun str (t:not_condition_t)=>
-  match t with
+fun str : not_condition_t -> string =
   | not_condition_1 (_,?a) => " not "+ str a
   | not_condition_2 ?a => str a 
-  endmatch
 ;
 
-fun str (t:comparison_t) => 'comparison .. endcomparison';
+fun str (t:comparison_t)=> 'comparison .. endcomparison';
 
-fun str(ote:opt_type_expr_t) =>
-  match ote with
+fun str: opt_type_expr_t -> string =
   | opt_type_expr_1 ?t => " : " + str t
   | opt_type_expr_2 => ""
-  endmatch
 ;
 
-fun str (t:type_expr_t):string => 
+fun str (t: type_expr_t):string =>
   let type_expr_1 ?t = t in str t
 ;
 
-fun str (t:arrow_t):string =>
-  match t with
+fun str : arrow_t -> string =
   | arrow_1 (?cl,?a) => str cl + " &rarr; "+str a
   | arrow_2 ?cl => str cl
-  endmatch
 ;
 
-fun str (t:case_literal_t) : string =>
-  match t with
+fun str : case_literal_t -> string =
   | case_literal_1 ?i => "case " + strint i
   | case_literal_2 (?i,?s) => "case " + strint i + str s
   | case_literal_3 ?s => str s
-  endmatch
 ;
 
-fun str (t:sum_t) =>
-  match t with
+fun str : sum_t -> string =
   | sum_1 (?s,?sl) => str s + " + " + str sl
   | sum_2 ?s => str s
-  endmatch
 ;
 
-fun str (t:sum_list_t) =>
-  match t with
+fun str : sum_list_t -> string =
   | sum_list_1 (?s,?sl) => str s + " + " + str sl
   | sum_list_2 ?s => str s
-  endmatch
 ;
 
-fun str(t:subtraction_t)=>
-  match t with
+fun str: subtraction_t -> string =
   | subtraction_1 (?s,?p) => str s + " - " + str p
   | subtraction_2 ?p => str p
-  endmatch
 ;
 
-fun str (t:product_t) =>
-  match t with
+fun str : product_t -> string =
   | product_1 (?s,?sl) => str s + " * " + str sl
   | product_2 ?s => str s
-  endmatch
 ;
 
-fun str (t:product_list_t) =>
-  match t with
+fun str : product_list_t -> string =
   | product_list_1 (?s,?sl) => str s + " * " + str sl
   | product_list_2 ?s => str s
-  endmatch
 ;
 
-fun str (t:term_t) =>
-  match t with
+fun str : term_t -> string =
   | term_1 (?t,?p) => str t + " / " + str p
   | term_2 (?t,?p) => str t + " % " + str p
   | term_3 ?pr => str pr
-  endmatch
 ;
 
-fun str (t:power_t) =>
-  match t with
+fun str : power_t -> string =
   | power_1( ?ss, ?pr) => str ss + " ** " + str pr
   | power_2 ?ss => str ss 
-  endmatch
 ;
 
-fun str (t:prefixed_t) =>
-  match t with
+fun str : prefixed_t -> string =
   | prefixed_1 ?p => "lvalue[" + str p + "]"
   | prefixed_2 ?p => "+"+str p
   | prefixed_3 ?p => "-"+str p
   | prefixed_4 ?p => "~"+str p
   | prefixed_5 ?p => str p
-  endmatch
 ;
 
-fun str (t:superscript_t)=>
-  match t with
+fun str : superscript_t -> string =
   | superscript_1 (?s,?r) => str s + " ^ " + str r
   | superscript_2 ?r => str r
-  endmatch
 ;
 
-fun str (t:refr_t)=>
-  match t with
+fun str : refr_t -> string =
   | refr_1 ?r => "&" + str r
   | refr_2 ?r => "*" + str r
   | refr_3 ?a => str a
-  endmatch
 ;
 
-fun str (t:application_t)=>
-  match t with
+fun str : application_t -> string =
   | application_1 (?a,?c) => str a + " " + str c
   | application_2 ?c => "caseno " + str c
   | application_3 ?c => str c
-  endmatch
 ;
 
-fun str (t:coercion_t)=>
-  match t with
+fun str : coercion_t -> string =
   | coercion_1 (?c,?f) => str c + " : " + str f
   | coercion_2 ?sn => str sn 
   | coercion_3 ?f => str f
-  endmatch
 ;
 
 
-fun str (t:factor_t)=>
-  match t with
+fun str : factor_t -> string =
   | factor_1 ?dn => str dn
   | factor_2 (?f,?e) => str f + ".["+str e+"]"
   | factor_3 (?f,?e1,?e2) => str f + ".["+str e1+" to "+str e2+"]"
@@ -1063,54 +1027,36 @@ fun str (t:factor_t)=>
   | factor_5 (?f,?e) =>str f + ".[to "+str e+"]"
   | factor_6 (?f,?s) => str f + "." + str s
   | factor_7 (?f,(?s1,?s2)) => str f ".(" + s1+s2+")"
-  endmatch
 ;
 
-fun str (t:dollar_name_t)=>
-  match t with
+fun str : dollar_name_t -> string =
   | dollar_name_1 ?qn => "$" + str qn
   | dollar_name_2 ?qn => "the " + str qn
   | dollar_name_3 ?qn => str qn
-  endmatch
+  | dollar_name_4 ?atom => str atom
 ;
 
-fun str (t:qname_t)=>
-  match t with
-  | qname_1 ?qn => str qn
-  | qname_2 ?a => str a
-  endmatch
-;
-
-fun str(t:qualified_name_t)=>
-  match t with
+fun str: qualified_name_t -> string =
   | qualified_name_1 (?qn,?snp) => str qn + "::" + str snp
   | qualified_name_2 ?snp => str snp
-  endmatch
 ;
 
-fun str (t:simple_name_parts_t)=>
-  match t with
+fun str : simple_name_parts_t -> string =
   | simple_name_parts_1 (?s,?ts) => s + "[" + str ts + "]"
   | simple_name_parts_2 ?s => s
-  endmatch
 ;
 
-fun str (t:type_expr_comma_list_t) =>
-  match t with
+fun str : type_expr_comma_list_t -> string =
   | type_expr_comma_list_1 (?t,?ts) => str t + ", " + str ts
   | type_expr_comma_list_2 ?t => str t
   | type_expr_comma_list_3 => ""
-  endmatch
 ;
 
-fun str (t:suffixed_name_t)=>
-  match t with
+fun str : suffixed_name_t -> string =
   | suffixed_name_1 (?qn,?t) => str qn + " of (" + str t + ")"
-  endmatch
 ;
 
-fun str (t:atom_t) : string =>
-  match t with
+fun str : atom_t -> string =
   | atom_1 => "..."
   | atom_2 _ => "typematch .. endmatch"
   | atom_3 (?e,?s) => "code["+str e + "] "+s
@@ -1125,140 +1071,108 @@ fun str (t:atom_t) : string =>
   | atom_12 => "()"
   | atom_13 ?e => str e
   | atom_14 _ => "if .. endif"
-  endmatch
 ;
 
-fun str (t:expr_code_prefix_t):string=>
+fun str (t:expr_code_prefix_t):string =>
   let expr_code_prefix_1 ?e = t in str e
 ;
 
-fun str (t:literal_t) =>
-  match t with
+fun str : literal_t -> string =
   | literal_1 (?s1,?s2) => s1 + s2
   | literal_2 ?s => s
   | literal_3 ?s => str s
   | literal_4 ?s => "c"+str s
-  endmatch
 ;
 
-fun str(s:string)=> '"' + s '"'; // hacky .. fix
+fun str (s:string):string => '"' + s '"'; // hacky .. fix
 
 fun strint(i:string * string):string =>
   let ?i,?j = i in i+j
 ;
 
-fun str(t:opt_fun_args_t) =>
-  match t with
+fun str: opt_fun_args_t -> string =
   | opt_fun_args_1 ?a => str a
   | opt_fun_args_2 => "()"
-  endmatch
 ;
   
-fun str(args:fun_args_t) =>
-  match args with
+fun str: fun_args_t -> string =
   | fun_args_1 (?a,?args) => "(" (str a)  ") &rarr; " + str args
   | fun_args_2 ?a =>  str a 
-  endmatch
 ;
 
-fun str(arg:fun_arg_t) =>
-  match arg with
+fun str: fun_arg_t -> string =
   | fun_arg_1 ?ps => str ps
   | fun_arg_2 ?s => s
-  endmatch
 ;
 
-fun str(ps:parameter_comma_list_t) =>
-  match ps with
+fun str: parameter_comma_list_t -> string =
   | parameter_comma_list_1 (?a,?ps) => str a + " * " + str ps
   | parameter_comma_list_2 ?p => str p
   | parameter_comma_list_3 => ""
-  endmatch
 ;
 
-fun str(p:parameter_t)=>
-  match p with
+fun str: parameter_t -> string =
   | parameter_1 (?name,?t) => str t
   | parameter_2 ?name => "'" + name
   | parameter_3 (?name,?t) => "var " + str t
   | parameter_4 ?name => "var " + "'" + name
-  endmatch
 ;
 
-fun str(q:type_qual_t) =>
-  match q with
+fun str: type_qual_t -> string =
   | type_qual_1 => "incomplete "
   | type_qual_2 => "pod "
-  endmatch
 ;
 
-fun str(qs:type_quals_t) =>
-  match qs with
+fun str: type_quals_t -> string =
   | type_quals_1 (?q,?qs') => str q + str qs'
   | type_quals_2 => ""
-  endmatch
 ;
 
-fun str(name:basic_name_t)=> 
-  let basic_name_1 ?name' = name in name'
+fun str (name:basic_name_t): string =>
+  let basic_name_1 ?name = name in name
 ;
 
-fun str(bncl: basic_name_comma_list_t) =>
-  match bncl with
-  | basic_name_comma_list_1 (?name,?bncl') => 
-        str name + ", " + str bncl'
+fun str :  basic_name_comma_list_t -> string =
+  | basic_name_comma_list_1 (?name,?bncl) => 
+        str name + ", " + str bncl
   | basic_name_comma_list_2 ?name => str name
   | basic_name_comma_list_3 => ""
-  endmatch
 ;
 
-fun str (tvs:tvarlist_t) => 
-  match tvs with 
+fun str : tvarlist_t -> string = 
   | tvarlist_1 ?bncl => "[" + str bncl + "]"
   | tvarlist_2 => ""
-  endmatch
 ;
 
-fun str (adjs:adjectives_t) =>
-  match adjs with
+fun str : adjectives_t -> string =
   | adjectives_1 (?adj,?adjs) => str adj + str adjs
   | adjectives_2 => ""
-  endmatch
 ;
 
-fun str (adj:adjective_t) =>
-  match adj with
+fun str : adjective_t -> string =
   | adjective_1 => "inline "
   | adjective_2 => "noinline "
-  endmatch
 ;
 
 // regexps
-fun str (t:re1_t)=> // alternatives
-  match t with
+fun str : re1_t -> string = // alternatives
   | re1_1 (?r1,?r2) => str r1 + " | " + str r2
   | re1_2 ?r => str r
-  endmatch
 ;
 
-fun str (t:re2_t)=> // concatenation
-  match t with
+fun str : re2_t -> string = // concatenation
   | re2_1 (?r1,?r2) => str r1 + " " + str r2
   | re2_2 ?r => str r
-  endmatch
 ;
 
-fun str (t:re3_t)=> // postfix
-  match t with
+fun str : re3_t -> string = // postfix
   | re3_1 ?r => str r + "*"
   | re3_2 ?r => str r + "+"
   | re3_3 ?r => str r + "?"
   | re3_4 ?r => str r
-  endmatch
 ;
 
-fun str (t:re4_t)=> // regexp atom
-  match t with
+fun str : re4_t -> string =  // regexp atom
   | re4_1 ?s => str s
   | re4_2 => '_'
   | re4_3 => '.'
@@ -1266,43 +1180,41 @@ fun str (t:re4_t)=> // regexp atom
   | re4_5 ?cs => '[' + str cs + ']'
   | re4_6 ?cs => '[^' + str cs + ']'
   | re4_7 ?name => str name
-  endmatch
 ;
 
-fun str (t:re_name_t)=>
-  match t with
+fun str : re_name_t -> string =
   | re_name_1 (?r,?s) => str r + "::" + str s
   | re_name_2 ?s => s
-  endmatch
 ;
 
-fun str (t:charset_t)=>
-  match t with
+fun str: charset_t -> string =
   | charset_1 (?cs,?cs0) => str cs + " " + str cs0
   | charset_2 ?cs0 => str cs0
-  endmatch
 ;
 
-fun str (t:charset0_t)=>
-  match t with
+fun str: charset0_t -> string =
   | charset0_1 (?i1,?i2) => strint i1 + " - " + strint i2
   | charset0_2 (?s1,?s2) => str s1 + " - " + str s2
   | charset0_3 ?s => str s
   | charset0_4 ?i => strint i
-  endmatch
 ;
 
-fun str (t:glr_entries_t)=>
-  match t with
+fun str: glr_entries_t -> string =
   | glr_entries_1 (?g,?gs) => str g + " " + str gs
   | glr_entries_2 ?g => str g
-  endmatch
 ;
 
-fun str (t:glr_entry_t)=>
-  match t with
+fun str: glr_entry_t -> string =
   | glr_entry_1 (?name,?nt) => name + " : " + str nt
   | glr_entry_2 ?qn => str qn
-  endmatch
+;
+
+fun str: glr_term_t -> string =
+  | glr_term_1 ?qn => str qn
+  | glr_term_2 ?alts => "(" + "..." + "}"
+  | glr_term_3 ?seq => "(" + "..." + ")"
+  | glr_term_4 ?quest => "(" + str quest+ ")?"
+  | glr_term_5 ?star => "(" + str star + ")*"
+  | glr_term_6 ?plus => "(" + str plus + ")+"
 ;
 

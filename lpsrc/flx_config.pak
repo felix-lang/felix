@@ -691,6 +691,7 @@ CCOBJ_STATIC_MAIN = CXX + "-w "+FORCE_DEBUG+"-c "
 CCLINK_STATIC = CXX  + "-w "
 
 #check if we can get dlopen to work without -ldl (BSD doesn't need)
+HAVE_DLOPEN = 0
 try:
   xqt(CCOBJ_DLLIB+"tmp/dummy_lib.cxx -o tmp/dummy_lib.o")
   xqt(CCOBJ_DLMAIN+"tmp/dummy_main.cxx -o tmp/dummy_main.o")
@@ -698,11 +699,13 @@ try:
   xqt(CCLINK_DLMAIN+"tmp/dummy_main.o -o tmp/dlmain")
   xqt("tmp/dlmain tmp/dummy_lib.so")
   SUPPORT_DYNAMIC_LOADING = 1
+  HAVE_DLOPEN = 1
 except:
   try: # nope, try with -ldl
     CCLINK_DLMAIN = CCLINK_DLMAIN + "-ldl "
     xqt(CCLINK_DLMAIN+"tmp/dummy_main.o -o tmp/dlmain")
     xqt("tmp/dlmain tmp/dummy_lib.so")
+    HAVE_DLOPEN = 1
     SUPPORT_DYNAMIC_LOADING = 1
   except:
     try: #again with --shared
@@ -711,6 +714,7 @@ except:
       xqt(CCLINK_DLLIB+"tmp/dummy_lib.o -o tmp/dummy_lib.so")
       xqt(CCLINK_DLMAIN+"tmp/dummy_main.o -o tmp/dlmain")
       xqt("tmp/dlmain tmp/dummy_lib.so")
+      HAVE_DLOPEN = 1
       SUPPORT_DYNAMIC_LOADING = 1
     except:
       SUPPORT_DYNAMIC_LOADING = 0
@@ -976,6 +980,7 @@ try:
   p(f,"HAVE_ASM_LABELS")
   p(f,"HAVE_INCLASS_MEMBER_INITIALIZATION")
   p(f,"HAVE_PKGCONFIG")
+  p(f,"HAVE_DLOPEN")
   p(f,"CXX")
   p(f,"CPP")
   p(f,"FLXCC_CPP")
@@ -1228,8 +1233,6 @@ tmap = {
   "caddress" : "void const*",
   "address" : "void *",
   "offset"  : "ptrdiff_t",
-  "charp"   : "char*",
-  "charcp"  : "char const*",
   
   #characters
   "char"    : "char",

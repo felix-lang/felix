@@ -247,9 +247,6 @@ Done.
 @head(2,"tut/examples/tut121b.expect")
 @select(tangler("tut/examples/tut121b.expect","data"))
 Lexer here
-Pre:     "#line 938 "lpsrc/flx_tutorial.pak""
-Eol:     "
-"
 Pre:     "#!/bin/env flx"
 Eol:     "
 "
@@ -1320,7 +1317,7 @@ Id:      "LSQBAR"
 White:   " "
 =>:      "=>"
 White:   " "
-Other:   ""[<""
+Other:   ""[|""
 Eol:     "
 "
 White:   "    "
@@ -1330,7 +1327,7 @@ Id:      "RSQBAR"
 White:   " "
 =>:      "=>"
 White:   " "
-Other:   "">]""
+Other:   ""|]""
 Eol:     "
 "
 White:   "    "
@@ -1411,9 +1408,6 @@ White:   " "
 =>:      "=>"
 White:   " "
 Other:   ""...""
-Eol:     "
-"
-Pre:     "#line 988 "lpsrc/flx_tutorial.pak""
 Eol:     "
 "
 White:   "    "
@@ -1885,6 +1879,10 @@ argc=1
 @head(2,"tut/examples/tut311.expect")
 @select(tangler("tut/examples/tut311.expect","data"))
 6
+@head(2,"tut/examples/tut330.expect")
+@select(tangler("tut/examples/tut330.expect","data"))
+Hello
+1
 @head(2,"tut/examples/tut901.expect")
 @select(tangler("tut/examples/tut901.expect","data"))
 @head(2,"tut/examples/tut_bind130.expect")

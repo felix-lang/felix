@@ -345,7 +345,7 @@ header cstdlib "#include <cstdlib>";
 
 @all = [
   "byte", "size","address","caddress","vaddress","cvaddress",
-  "offset", "charp", "charcp"
+  "offset", 
   ] + chars + sints + uints + floats + complex + imaginary
 
 @ints = uints + sints
@@ -369,6 +369,9 @@ proc _swap[t]: lvalue[t] * lvalue[t] =
 
 @for t in all:
   gen_type(t)
+
+typedef charp = C_hack::ptr[char];
+typedef charcp = C_hack::cptr[char];
 
 publish "Empty sum"
   typedef void = 0;
@@ -512,6 +515,7 @@ module C_hack
   fun reinterpret_cast[dst,src]: src->dst = 'reinterpret_cast<?1>($1)';
   const sizeof[t]:size = 'sizeof(?1)';
   fun int_of:size->int='$1';
+  fun size_of:int->size='$1';
 
   publish "Abstract type for C pointer"
   pod type ptr[t]="?1 *";
@@ -828,8 +832,9 @@ module String
   proc pluseq: lvalue[string] * charcp = "$1.append($2);";
   proc pluseq: lvalue[string] * charp = "$1.append($2);";
   proc pluseq: lvalue[string] * char = "$1 += $2;";
-  proc str: charp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
-  proc str: charcp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
+
+  fun str: charp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
+  fun str: charcp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
 
   fun len: string -> int = "$1.size()";
   fun add: string * string -> string = "$1+$2";

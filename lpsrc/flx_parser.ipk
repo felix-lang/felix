@@ -1584,9 +1584,34 @@ type_matching:
 
 @head(2,'Grammar Expressions')
 @select(h)
+glr_term:
+  | qualified_name { `GLR_name (qualified_name_of_expr $1) }
+  /* | LSQB glr_alts RSQB { `GLR_opt $1 }  */
+  | LBRACE glr_alternatives RBRACE { `GLR_ast $2 } 
+  | LPAR glr_alternatives RPAR { $2 }
+  | glr_term QUEST { `GLR_opt $1 } 
+  | glr_term STAR { `GLR_ast $1 } 
+  | glr_term PLUS  { `GLR_plus $1 }
+
+glr_alternatives:
+  | glr_sequence VBAR glr_alts { `GLR_alt ( $1::$3) }
+  | glr_sequence { $1 }
+
+glr_alts:
+  | glr_sequence VBAR glr_alts { $1 :: $3 }
+  | glr_sequence { [$1] }
+  
+glr_sequence:
+  | glr_term glr_seqs { `GLR_seq ($1::$2) }
+  | glr_term { $1 }
+
+glr_seqs:
+  | glr_term glr_seqs { $1 :: $2 }
+  | glr_term { [$1] }
+
 glr_entry:
-  | NAME COLON qualified_name { Some (snd $1), qualified_name_of_expr $3 }
-  | qualified_name { None, qualified_name_of_expr $1 }
+  | NAME COLON glr_term { Some (snd $1), $3 }
+  | glr_term { None, $1 }
   
 glr_entries:
   | glr_entry glr_entries { $1 :: $2 }
@@ -1973,24 +1998,25 @@ factor:
     }
 
 dollar_name:
-  | DOLLAR qname
+  | DOLLAR qualified_name
     { 
       let e = ($2:>expr_t) in
       let sr = src_of_expr e in
       let sr = rsrange (slift $1) sr in
       `AST_noexpand (sr,e) 
     }
-  | THE qname 
+  | THE qualified_name
   { 
     let sr = src_of_expr $2 in 
     let sr = rsrange (slift $1) sr in
     let qn = qualified_name_of_expr $2 in
     (`AST_the (sr,qn))
   }
-  | qname { $1 }
+  | qualified_name{ $1 }
+  | atom { $1 }
 
 qualified_name:
-  | qname COLONCOLON simple_name_parts
+  | qualified_name COLONCOLON simple_name_parts
     { 
       match $3 with sr,name,ts ->
       let sr = rsrange (src_of_expr $1) sr in
@@ -2002,10 +2028,6 @@ qualified_name:
       match $1 with sr,name,ts -> 
       (`AST_name (sr,name,ts):>expr_t) 
     }
-
-qname:
-  | qualified_name { $1 }
-  | atom { $1 }
 
 elif:
   | ELIF expr THEN expr { $2,$4 }

@@ -1206,6 +1206,7 @@ and cal_glr_attr_type' syms sr i =
     )
 
 and cal_glr_attr_type syms sr ii =
+  let idof i = match Hashtbl.find syms.dfns i with {id=id} -> id in
   match ii with
   | [] -> syserr sr "Unexpected empty FunctonEntry"
   | h :: tts -> 
@@ -1217,7 +1218,11 @@ and cal_glr_attr_type syms sr ii =
       | `Nonterm,`Nonterm 
       | `Term,`Term  ->
         if not (type_eq syms.dfns t t') then
-        clierr sr "Expected same type for glr symbols"
+        clierr sr 
+        ("Expected same type for glr symbols,\n" ^ 
+          idof h ^ " has type " ^ sbt syms.dfns t ^ "\n" ^
+          idof i ^ " has type " ^ sbt syms.dfns t'
+        )
 
       | `Nonterm,`Term -> clierr sr "Expected glr nonterminal argument"
       | `Term,`Nonterm -> clierr sr "Token: Expected union constructor with argument"
@@ -1328,16 +1333,9 @@ and base_typename_of_literal v = match v with
 and  typeof_literal syms env sr v : btypecode_t = 
   let _,_,root,_ = hd (rev env) in
   let name = base_typename_of_literal v in
-  match lookup_name_in_env syms env dummy_sr name with
-  | NonFunctionEntry (index) -> 
-    `BTYP_inst (index,[])
-  | _ -> 
-    clierr sr
-    (
-      "Unable to find simple definition of type " ^ 
-      name ^ " of literal " ^
-      string_of_literal v
-    )
+  let t = `AST_name (sr,name,[]) in
+  let bt = bind_type syms env sr t in
+  bt
   
 and typeofindex_with_ts
   syms sr

@@ -489,9 +489,21 @@ and requirement_t = [
 and requirements_t = requirement_t list
 and named_reqs_t = qualified_name_t list
 and prec_t = string
-and glr_entry_t = string option * qualified_name_t
+and glr_term_t = 
+[
+  | `GLR_name of qualified_name_t
+  | `GLR_opt of glr_term_t
+  | `GLR_ast of glr_term_t
+  | `GLR_plus of glr_term_t
+  | `GLR_alt of glr_term_t list
+  | `GLR_seq of glr_term_t list
+]
+
+and glr_entry_t = string option * glr_term_t
 and production_t = glr_entry_t list
 
+and reduced_glr_entry_t = string option * qualified_name_t
+and reduced_production_t = reduced_glr_entry_t list
 
 and statement_t =
   [ 
@@ -656,7 +668,7 @@ type dcl_t =
   | `DCL_cstruct of      (id_t * typecode_t) list
   | `DCL_match_check of pattern_t * (string * int)
   | `DCL_match_handler of pattern_t * (string * int) * asm_t list
-  | `DCL_glr of          typecode_t * (production_t * expr_t)
+  | `DCL_glr of          typecode_t * (reduced_production_t * expr_t)
  
   (* variables *)
   | `DCL_val of          typecode_t
@@ -839,7 +851,7 @@ type symbol_definition_t =
   [
   | `SYMDEF_abs of type_qual_t list * c_t * named_reqs_t
   | `SYMDEF_regdef of regexp_t
-  | `SYMDEF_glr of typecode_t * (production_t * sexe_t list) 
+  | `SYMDEF_glr of typecode_t * (reduced_production_t * sexe_t list) 
 
   | `SYMDEF_parameter of  typecode_t
   | `SYMDEF_typevar of typecode_t (* usually type TYPE *)
@@ -2682,7 +2694,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
 
   | `SYMDEF_glr(t,(p,sexes)) ->
     "nonterm " ^ name ^ " : " ^string_of_typecode t ^ " = | " ^
-    string_of_production p ^
+    string_of_reduced_production p ^
     " => " ^ " <exes> " ^
     ";"
 
@@ -3157,7 +3169,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
   | `DCL_glr (t,(p,e')) ->
     spaces level ^ "nonterm " ^ name^seq ^ " : " ^string_of_typecode t ^
     spaces (level + 1) ^ " | " ^
-    string_of_production p ^
+    string_of_reduced_production p ^
     " => " ^
     string_of_expr e' ^
     ";"
@@ -3197,13 +3209,30 @@ and string_of_dir level s =
 and string_of_breq dfns (i,ts) = "rq<"^si i^">" ^ print_inst dfns ts
 and string_of_breqs dfns reqs = catmap ", " (string_of_breq dfns) reqs
 and string_of_production p = catmap " " string_of_glr_entry p
+and string_of_reduced_production p = catmap " " string_of_reduced_glr_entry p
 and string_of_bproduction dfns p = catmap " " (string_of_bglr_entry dfns) p
-and string_of_glr_entry (name,nonterm) = 
+
+and string_of_glr_term t = match t with
+  | `GLR_name qn -> string_of_qualified_name qn
+  | `GLR_opt t  -> "[" ^ string_of_glr_term t ^ "]"
+  | `GLR_ast t -> "{" ^ string_of_glr_term t ^ "}"
+  | `GLR_plus t -> "(" ^ string_of_glr_term t ^ ")+"
+  | `GLR_alt ts -> catmap " | " string_of_glr_term ts
+  | `GLR_seq ts -> catmap " " string_of_glr_term ts
+  
+and string_of_glr_entry (name,t) = 
   (match name with 
   | Some n -> n ^ ":"
   | None -> ""
   )^
-  string_of_qualified_name nonterm
+  string_of_glr_term t
+
+and string_of_reduced_glr_entry (name,t) = 
+  (match name with 
+  | Some n -> n ^ ":"
+  | None -> ""
+  )^
+  string_of_qualified_name t
 
 and string_of_bglr_entry dfns (name,symbol) = 
   (match name with 

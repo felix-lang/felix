@@ -4030,7 +4030,7 @@ class PtrSet : private PtrMap<KEY, KEY> {
 
 
 #endif // PTRMAP_H
-@h=tangler('elk/sm_sm_flexlexer.h')
+@h=tangler('elk/sm_flexlexer.h')
 @select(h)
 // sm_flexlexer.h
 // a layer of indirection to try to work with different
@@ -4145,7 +4145,8 @@ class PtrSet : private PtrMap<KEY, KEY> {
 #define __FLEX_LEXER_H
 #include <iostream.h>
 
-extern "C++" {
+// FELIX: always C++ compiles anyhow
+//extern "C++" {
 
 struct yy_buffer_state;
 typedef int yy_state_type;
@@ -4190,7 +4191,9 @@ protected:
         int yy_flex_debug;      // only has effect with -d or "%option debug"
 };
 
-}
+//FELIX: always C++
+//}
+
 #endif
 
 #if defined(yyFlexLexer) || ! defined(yyFlexLexerOnce)
@@ -4285,7 +4288,7 @@ protected:
 #endif
 
 #endif // 0, from top of file
-@h=tangler('elk/sm_smregexp.h')
+@h=tangler('elk/sm_regexp.h')
 @select(h)
 // smregexp.h
 // regular expression matching, etc.
@@ -10865,12 +10868,12 @@ int main()
 
 
 #endif // TEST_PPRINT
-@h=tangler('elk/sm_smregexp.cpp')
+@h=tangler('elk/sm_regexp.cpp')
 @select(h)
 // smregexp.cc
 // code for smregexp.h
 
-#include "sm_smregexp.h"
+#include "sm_regexp.h"
 #include "sm_str.h"
 #include "sm_exc.h"
 
