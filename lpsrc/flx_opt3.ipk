@@ -990,10 +990,26 @@ let rec heavy_inline_calls
   ;
   !exes'
    
+(* tell whether there is any reachable executable code here:
+  if not, a previous call is a tail call
+*)
+let tailable tail =
+  let rec aux tail = match tail with
+  | [] -> true
+  | h :: t -> match h with
+    | `BEXE_proc_return _
+    | `BEXE_comment _
+    | `BEXE_label _
+    | `BEXE_nop _
+      -> aux t
+    | _ -> false 
+  in aux tail
+
 let tailit syms (child_map,bbdfns) this sr ps vs exes : bexe_t list = 
   let ts' = map (fun (_,i) -> `BTYP_var i) vs in
   let parameter = !(syms.counter) in incr syms.counter;
   let param_used = ref false in
+  let jump_done = ref false in
   let start_label = "start_" ^ si parameter in
   let paramtype  =
     match map (fun (_,(_,t)) -> t) ps with
@@ -1001,6 +1017,7 @@ let tailit syms (child_map,bbdfns) this sr ps vs exes : bexe_t list =
     | x -> `BTYP_tuple x
   in
   let cal_tail_call e = 
+    jump_done := true;
     match length ps with
     | 0 -> [`BEXE_goto (sr,start_label)]
     | 1 ->
@@ -1030,8 +1047,8 @@ let tailit syms (child_map,bbdfns) this sr ps vs exes : bexe_t list =
       end
   in
   let rec aux exes res = match exes with
-  | `BEXE_call_direct (sr,i,ts,a) :: `BEXE_proc_return _ :: tail 
-    when (i,ts)=(this,ts') 
+  | `BEXE_call_direct (sr,i,ts,a) :: tail 
+    when (i,ts)=(this,ts') && tailable tail
     ->
      print_endline ("--> Tail loop " ^ si this);
      let res = cal_tail_call a @ res
@@ -1056,10 +1073,17 @@ let tailit syms (child_map,bbdfns) this sr ps vs exes : bexe_t list =
     end
     ;
     (* return with posssible label at start *)
-    if !param_used 
-    then `BEXE_label (sr,start_label) :: exes
-    else exes
-  
+    let exes = 
+      if !jump_done
+      then `BEXE_label (sr,start_label) :: exes
+      else exes
+    in
+      (*
+      print_endline ("Tailed exes = ");
+      iter (fun exe -> print_endline (string_of_bexe syms.dfns 0 exe)) exes;
+      *)
+      exes
+      
 let tail_bbdcl syms (child_map,bbdfns) i =
   match Hashtbl.find bbdfns i with
   | id,parent,sr,`BBDCL_procedure (props,vs,ps,exes) ->
@@ -1140,37 +1164,32 @@ let heavy_inlining syms
   (* make set of used things, initially empty *)
   let used = ref BidSet.empty in
 
-  (* make a list of the root and all exported functions,
-  add exported types and components thereof into the used
-  set now too
-  *)
-  let roots = ref (BidSet.singleton root) in
-  iter
-  (function
-     | `BIFACE_export_fun (_,x,_) -> roots := BidSet.add x !roots
-     | _ -> ()
-  )
-  bifaces
-  ;
-  let uses i = Flx_use.uses syms used (child_map,bbdfns) i in
+  let uses i = Flx_use.uses syms used bbdfns i in
 
   (* add root items to set, then add items it uses *)
-  BidSet.iter uses !roots
+  BidSet.iter uses !(syms.roots)
   ;
   
   (*
   print_endline "Inlining heavy pass1";
   *)
   BidSet.iter (tail_bbdcl syms (child_map,bbdfns)) !used;
+  (*
   BidSet.iter (heavily_inline_bbdcl syms (child_map,bbdfns)) !used;
+  *)
   (*
   print_endline "Unravelling";
   *)
+  (*
   BidSet.iter (unravel_bbdcl syms (child_map,bbdfns)) !used;
+  *)
   (*
   print_endline "Inlining heavy pass2";
   *)
+  (*
   BidSet.iter (heavily_inline_bbdcl syms (child_map,bbdfns)) !used;
+  *)
   (*
   print_endline "Inlining done"
   *)
+

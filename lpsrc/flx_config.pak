@@ -536,19 +536,22 @@ if HAVE_PKGCONFIG:
 #
 # down the track, we should replace these variables
 # with a Python function def, since that's more flexible
+#FORCE_DEBUG="-g "
+FORCE_DEBUG=""
+
 if CYGWIN:
-  CCOBJ_DLLIB = CXX + "-w -g -c "
-  CCOBJ_DLMAIN = CXX + "-w -g -c "
+  CCOBJ_DLLIB = CXX + "-w "+FORCE_DEBUG+"-c "
+  CCOBJ_DLMAIN = CXX + "-w "+FORCE_DEBUG+"-c "
   CCLINK_DLLIB = CXX + "-w -Wl,-shared -Wl,--export-all-symbols -Wl,--enable-auto-import "
   CCLINK_DLMAIN = CXX + "-w "
 else:
-  CCOBJ_DLLIB = CXX + "-w -g -fPIC -c "
-  CCOBJ_DLMAIN = CXX + "-w -g -fPIC -c "
+  CCOBJ_DLLIB = CXX + "-w "+FORCE_DEBUG+"-fPIC -c "
+  CCOBJ_DLMAIN = CXX + "-w "+FORCE_DEBUG+"-fPIC -c "
   CCLINK_DLLIB = CXX + "-w -Wl,-shared -Wl,--export-dynamic "
   CCLINK_DLMAIN = CXX + "-w -Wl,-Bdynamic -Wl,--export-dynamic "
 
-CCOBJ_STATIC_LIB = CXX + "-w -g -c "
-CCOBJ_STATIC_MAIN = CXX + "-w -g -c "
+CCOBJ_STATIC_LIB = CXX + "-w "+FORCE_DEBUG+"-c "
+CCOBJ_STATIC_MAIN = CXX + "-w "+FORCE_DEBUG+"-c "
 
 # NOTE: static here means linking felix libraries with drivers
 # it does NOT mean not to do dynamic loading at load time

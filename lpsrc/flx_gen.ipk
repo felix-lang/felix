@@ -1482,7 +1482,7 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts instance_no (ex
         "      " ^ frame_ptr ^ "->pc = FLX_FARTARGET("^si pc^","^si target_instance^","^s^");\n" ^
         "      return " ^ frame_ptr ^ ";\n"
       | `Unreachable -> 
-        clierr sr ("Unreachable label " ^ s)
+        clierr sr ("Jump to unreachable label " ^ s)
       end
 
     (* conditional gotos are always local *)
@@ -2229,10 +2229,11 @@ try
 
   if compiler_options.print_flag 
   then print_endline "//OPTIMISING";
-  let bbdfns = Flx_useless.elide_unused syms (child_map,bbdfns) root_proc bifaces in
+  let () = Flx_use.find_roots syms bbdfns root_proc bifaces in
+  let bbdfns = Flx_useless.elide_unused syms (child_map,bbdfns) in
   let child_map = cal_children syms bbdfns in
   (*
-  let bbdfns = Flx_useless.elide_unused syms (child_map,bbdfns) root_proc bifaces in
+  let bbdfns = Flx_useless.elide_unused syms (child_map,bbdfns) in
   let child_map = cal_children syms bbdfns in
   *)
 
@@ -2244,7 +2245,7 @@ try
     print_endline "//INLINING";
     Flx_inline.heavy_inlining syms (!child_map,!bbdfns) root_proc bifaces;
     child_map := cal_children syms !bbdfns;
-    bbdfns := Flx_useless.elide_unused syms (!child_map,!bbdfns) root_proc bifaces;
+    bbdfns := Flx_useless.elide_unused syms (!child_map,!bbdfns);
     child_map := cal_children syms !bbdfns
   end
   ;
@@ -2254,7 +2255,13 @@ try
   if compiler_options.print_flag 
   then print_endline "//Calculating stackable calls";
   let bbdfns = Flx_stack_calls.make_stack_calls syms (child_map,bbdfns) in
-  
+
+
+  if compiler_options.print_flag 
+  then print_endline "//Generating primitive wrapper closures";
+  Flx_mkcls.make_closures syms bbdfns; 
+  let child_map = cal_children syms bbdfns in
+
   if compiler_options.print_flag then 
   begin
     let f = open_out report_file_name in

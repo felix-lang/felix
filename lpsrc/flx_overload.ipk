@@ -154,6 +154,9 @@ let overload
     let mgu = maybe_unification syms.dfns eqns in
     (match mgu with
     | Some mgu -> 
+      (*
+      print_endline (" .. mgu = " ^ string_of_varlist syms.dfns mgu);
+      *)
       (* each universally quantified variable must be fixed
         by the mgu .. if it doesn't its an error .. hmmm
       *)
@@ -284,7 +287,11 @@ let overload
            let sr = match Hashtbl.find syms.dfns i with {sr=sr} -> sr in
            let sr2 = match Hashtbl.find syms.dfns j with {sr=sr} -> sr in
            clierrn [call_sr; sr2; sr]
-           "[resolve_overload] Ambiguous call: Not expecting equal signatures"
+           (
+             "[resolve_overload] Ambiguous call: Not expecting equal signatures" ^
+             "\n(1) " ^ sbt syms.dfns typ ^
+             "\n(2) " ^ sbt syms.dfns c
+           )
 
          | `Greater -> 
            (*

@@ -11,8 +11,6 @@ val elide_unused:
   sym_state_t ->
   (bid_t, bid_t list) Hashtbl.t *
   fully_bound_symbol_table_t ->
-  bid_t ->
-  biface_t list ->
   fully_bound_symbol_table_t
 
 @h = tangler("src/flx_useless.ml")
@@ -476,37 +474,13 @@ let copy_bbdcl syms used (child_map,bbdfns) bbdfns2 i =
 
 let elide_unused syms  
   (child_map, bbdfns) 
-  (root:bid_t) 
-  (bifaces:biface_t list) 
 =
   (* make set of used things, initially empty *)
   let used = ref IntSet.empty in
-
-  (* make a list of the root and all exported functions,
-  add exported types and components thereof into the used
-  set now too
-  *)
-  let roots = ref (IntSet.singleton root) in
-  iter
-  (function
-     | `BIFACE_export_fun (_,x,_) -> roots := IntSet.add x !roots
-     | `BIFACE_export_type (_,t,_) -> 
-        Flx_use.uses_type syms used (child_map,bbdfns) t
-  )
-  bifaces
-  ;
-  Hashtbl.iter
-  (fun i b -> match b with
-    | "_root",_,_,`BBDCL_header _
-    | "_root",_,_,`BBDCL_body _ -> roots := IntSet.add i !roots
-    | _ -> ()
-  )
-  bbdfns
-  ;
-  let uses i = Flx_use.uses syms used (child_map,bbdfns) i in
+  let uses i = Flx_use.uses syms used bbdfns i in
 
   (* add root items to set, then add items it uses *)
-  IntSet.iter uses !roots
+  IntSet.iter uses !(syms.roots)
   ;
   (* copy used things *)
   let bbdfns2 = Hashtbl.create 97 in

@@ -300,7 +300,7 @@ and expr_t =
   | `AST_ref of range_srcref * expr_t
   | `AST_method_apply of range_srcref * (id_t * expr_t)
   | `AST_dot of range_srcref * (expr_t * id_t)
-  | `AST_lambda of range_srcref * (parameter_t list * typecode_t * statement_t list)
+  | `AST_lambda of range_srcref * (parameter_t list list * typecode_t * statement_t list)
   | `AST_match_ctor of range_srcref * (qualified_name_t * expr_t)
   | `AST_match_case of range_srcref * (int * expr_t)
   | `AST_ctor_arg of range_srcref * (qualified_name_t * expr_t)
@@ -1403,8 +1403,11 @@ and string_of_expr (e:expr_t) =
   | `AST_tuple (_,t) -> "(" ^ catmap ", " sme t ^ ")"
   | `AST_dot (_,(e,n)) ->  "get_" ^ n ^ "(" ^ se e ^ ")"
 
-  | `AST_lambda (_,(params,ret, sts)) -> 
-    "(fun(" ^ string_of_parameters params ^ ") " ^ 
+  | `AST_lambda (_,(paramss,ret, sts)) -> 
+    "(fun " ^
+    catmap " "  
+    (fun ps -> "(" ^ string_of_parameters ps ^ ")") paramss
+    ^ 
     (match ret with
     | `TYP_none -> ""
     | _ -> ": " ^string_of_typecode ret) ^ 
@@ -2898,6 +2901,8 @@ type sym_state_t =
   compiler_options : felix_compiler_options_t;
   instances : instance_registry_t;
   include_files : string list ref;
+  roots : IntSet.t ref;
+  wrappers : (int, int) Hashtbl.t;
 }
 
 
@@ -3042,6 +3047,8 @@ type sym_state_t =
   compiler_options : felix_compiler_options_t;
   instances : instance_registry_t;
   include_files : string list ref;
+  roots : IntSet.t ref;
+  wrappers : (int, int) Hashtbl.t;
 }
 
 @h = tangler('src/flx_mtypes2.ml')
@@ -3486,6 +3493,7 @@ open Flx_ast
 open Flx_types
 open Flx_print
 open Flx_srcref
+open Flx_exceptions
 
 let typeof_list = function 
   | [x] -> x 
@@ -3591,22 +3599,32 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
       `TYP_apply (typecode_of_expr e1,typecode_of_expr e2)
     end
 
-  | `AST_lambda (sr,(params,ret,body)) ->
-     begin match body with
-     | [`AST_fun_return (_,e)] -> 
-       `TYP_typefun 
-       ( 
-         params,
-         ret,
-         typecode_of_expr e
-       )
+  | `AST_lambda (sr,(paramss,ret,body)) ->
+     begin match paramss with
+     | [params] ->
+       begin match body with
+       | [`AST_fun_return (_,e)] -> 
+         begin 
+           try
+             let t = typecode_of_expr e in
+            `TYP_typefun 
+            ( 
+              params,
+              ret,
+              t
+            )
+           with _ -> 
+             clierr sr 
+             "Type lambda must return type expression"
+         end
 
+       | _ -> 
+         clierr sr
+         "Type lambda must just be 'return type_expr'"
+       end
      | _ -> 
-       failwith 
-       (
-         "Type lambda must just be 'return type_expr' in\n" ^
-         short_string_of_src sr
-       )
+       clierr sr
+       "Type lambda only allowed one argument (arity=1)"
      end
 
   | `AST_type_match (sr,(e,ps)) ->

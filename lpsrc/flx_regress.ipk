@@ -247,28 +247,49 @@ print (if 1==0 then "true" else "false" endif); eol;
 #include <std.flx>
 // closure formation test
 
+// primitive function
+fun appl(x:int, f:int * int -> int):int = {
+  return f (x,x);
+}
+
+print "closure of add primitive ";
+print (appl (2, add of (int*int))); endl;
+
 // struct as function
-/*
 struct X { x:int; }
 fun execX(p:int->X):X = { return p(1); }
 proc print(x:X){ print "struct X"; }
 print (execX (X of (int))); endl;
 print (execX (X)); endl;
-*/
 
-/*
+// struct get projection as function
+fun execx(p:X->int,a:X):int => p a;
+proc pprint(x:int){ print "struct X: x get projection "; print x; }
+pprint (execx (get_x of (X), X(42))); endl;
+
+// C struct as function
+header """
+struct CX {int x; };
+""";
+
+cstruct CX { x:int; }
+fun execCX(p:int->CX):CX = { return p(1); }
+proc print(x:CX){ print "struct CX"; }
+print (execCX (CX of (int))); endl;
+print (execCX (CX)); endl;
+
+
+// anonymous variant type constructor as function
 typedef Y = 1 + int;
 fun exec2(y2:int->Y,a:int):Y= { return  y2 a; }
 proc print(y:Y) { print "union Y"; }
 print (exec2(case 2 of Y, 1)); endl;
-*/
 
-/*
+// named variant type constructor as function
 union U = | A | B of int;
 fun exec3(y2:int->U,a:int):U= { return  y2 a; }
 proc print(y:U) { print "union U"; }
-print (exec2(B, 1)); endl;
-*/
+print (exec3(B of (int), 1)); endl;
 
 @select(tangler('test/rt09.flx'))
 // code insertion
@@ -390,18 +411,6 @@ print "TWO\n";
 print "THREE\n";
 f[int]();
 
-var x = 4;
-proc recur ()
-{
-  if x == 0 goto endoff;
-  print x; endl;
-  --x;
-  recur();
-endoff:>
-}
-
-recur();
-
 @select(tangler('test/rt14.flx'))
 //call inlining
 include "std";
@@ -421,6 +430,64 @@ else
 }
 endif
 ;
+
+@select(tangler('test/rt15.flx'))
+// more generic stuff
+include "std";
+open List;
+
+fun snd(x,y)=>y;
+fun fst(x,y)=>x;
+
+fun index[t] (l:list[t]) = {
+  fun f(il:int * list [int * t]) (e: t) =>
+    match il with
+    | ?i,?l => i+1, Cons ((i, e),l)
+    endmatch
+  ;
+  return
+    rev (snd ( fold_left
+      f of (int * list[int *t])
+      (0, Empty[int * t]) 
+      l
+    ))
+  ;
+}
+
+var x = Empty[int];
+x = Cons(11,x);
+x = Cons(22,x);
+x = Cons(33,x);
+x = Cons(44,x);
+x = Cons(55,x);
+x = Cons(66,x);
+
+val z = index x;
+iter 
+  (proc (x:int,y:int)
+    {
+      print x; print " -> "; print y; endl;
+    }
+  )
+  z
+;
+
+@select(tangler('test/rt16.flx'))
+include "std";
+// self-tail rec test (inspect output)
+var x = 4;
+proc recur ()
+{
+  if x == 0 goto endoff;
+  print x; endl;
+  --x;
+  recur();
+endoff:>
+}
+
+recur();
+
+
 
 @head(2,'Bad tests')
 All these should fail gracefully at (felix) compile time. 

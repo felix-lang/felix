@@ -416,23 +416,26 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let lss,xs = split (map rex t) in
     concat lss,`AST_tuple (sr,xs)
 
-  | `AST_lambda (sr,(params,res,sts)) -> 
-    let props = [`Inline] in
-    let vs, params = fix_params seq params in
+  | `AST_lambda (sr,(pps,ret,sts)) -> 
+    let kind = `InlineFunction in
     let n = seq() in
-    let name = "_lam_" ^ string_of_int n in
-    let argtyp = type_of_argtypes (map snd params) in
-    [match res with
-    | _ -> Dcl (sr,name,`Private,vs,`DCL_function (params, res, props, rsts sts))
-    ],
-    `AST_suffix 
-    (
-      generated,
+    let name' = "_lam_" ^ string_of_int n in
+    let access = `Private in
+    let vs = [] in
+    let sts = 
+      rst syms name access (mkcurry seq sr name' vs pps ret kind sts)
+    in
+    let e = 
+      `AST_suffix 
       (
-        `AST_name (generated,name,[]), 
-        type_of_argtypes (map snd params)
+        sr,
+        (
+          `AST_name (sr,name',[]), 
+          type_of_argtypes (map snd (hd pps))
+        )
       )
-    )
+    in
+    sts,e
 
   | `AST_dot (sr,(obj,comp)) -> 
     let l1,x1 = rex obj in 
@@ -857,8 +860,11 @@ and rst syms name access st : asm_t list =
         ]
     in
     [
+      Dcl (sr,name,access,vs,`DCL_fun (args,result,code,reqs))
+      (*
       Dcl (sr,prim_id,access,vs,`DCL_fun (args,result,code,reqs));
       Dcl (sr,name,access,vs,`DCL_function (params,result,[`Inline],body))
+      *)
     ]
 
   (* misc *)

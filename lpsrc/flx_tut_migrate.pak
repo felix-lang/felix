@@ -1,0 +1,224 @@
+@set_title('Felix For C++ Programmers')
+@tdir = "tut/examples/"
+@head(1,"Introduction")
+Felix is a new programming language with special support for
+for C/C++ integration. This document highlights some of 
+the similarities and differences between Felix and C/C++.
+
+@head(1,'General Features')
+A brief comparison of C++ and Felix reveals the
+following key similarities and differences:
+
+@begin_list("keyed")
+@item("primitive types")
+C++ has a fixed set of standardised primitive
+types built in. The Felix core language
+has no primitive types. It does, however, 
+have a complete set of standard types defined in 
+the standard library.
+
+@item("classes")
+Felix does not have classes. However C style structs,
+and an object construction, are supported.
+New abstract types can be introduced into 
+Felix by binding to any copyable C or C++ type.
+
+@item("polymorphism")
+C++ allows polymorphic functions and classes using
+templates, Felix also allows polymorphic typedefs
+and modules.
+
+@item("overloading")
+Both C++ and Felix support overloading in a similar
+style, including for generic functions. However,
+in C++ hiding is based only on the name, whereas
+in Felix the parameter type is also taken into account.
+
+@item("functions")
+Felix functions are first class and can be passed
+as arguments to other functions. Functions may
+also be nested in other functions, and then
+have access to all the symbols of that function.
+
+@item("modules")
+Felix modules are similar to C++ namespaces
+except that they cannot be extended, however
+they may be polymorphic.
+
+@item("tuples")
+Felix supports a first class tuple kind.
+A tuple is just a canonical immutable struct.
+
+@item("arrays")
+Felix supports a first class fixed length array kind.
+
+@item("procedures")
+Felix actually supports two kinds of executable
+objects: functions and procedures. Unlike C++
+functions may not have side effects. A procedure
+is like a function that returns no value, and may
+have side effects. Procedures may also read a value
+from the central event queue.
+
+@item("pointers")
+Felix supports pointers to variables.
+Values cannot be addressed. Pointers to local
+variables, however, are supported and will not
+dangle, even after the function exits.
+
+@item("memory management")
+Felix uses an exact garbage collector which supports
+finalisation. Destructors of any embedded C++ 
+types will be correctly executed, but at an indeterminate
+time and in an indeterminate order. Therefore the
+Resource Acquisition Is Initialisation (RAII) paradigm
+should not be used in Felix when synchronous well ordered
+resource management is required.
+
+@end_list()
+
+@head(1,'Overloading')
+Both C++ and Felix support overloading, including
+overloading of generic functions. The overloading
+rules differ in several key aspects.
+
+@head(2,'Automatic Conversions')
+Felix does not provide any automatic conversions.
+
+@head(2,'Exact matching rule')
+For non-generic functionbs, Felix only supports exact 
+matches when overloading, whereas C++ rules are more relaxed. 
+@p()
+It is therefore much easier to determine exactly which function
+will be chosen from an overload set in Felix,
+and once a particular function is selected
+the choice is stable: the only way to change the choice
+of function is to add a function which hides the selected
+one, or remove the selected function -- adding a function
+in the same scope with the same signature will lead
+to an ambiguity.
+
+@head(2,'Function hiding rule')
+For the purpose of overloading, a non-generic
+function in Felix only hides another if they have
+the same signature. For example:
+
+@select(tangler(tdir+"mig01.flx"))
+include "std";
+proc f(x:int){ print 1; endl; }
+module X {
+  proc f(x:double) { print 2; endl; }
+  f 1; // calls f of (int)
+  f 1.2; // calls X::f of (double)
+}
+
+@doc()
+In C++, in the first case the outer f would have been hidden 
+by the inner one, and f(double) called, with an automatic
+conversion from 1 to 1.0.
+
+@head(2,'Generic functions')
+Like C++, Felix supports template style generic functions.
+The rule for selection of a function in the presence
+of generics is a generalisation of the rules for
+generic functions. Note that we use the term 'type variable'
+instead of 'template type parameter'.
+@p()
+Felix first looks in the current scope to see if
+an function matches the call. A call matches a generic
+function if there is a binding to the type variables
+of the generic function such that the argument of the
+call matches the function parameter type exactly: 
+this reduces to the exact match rule when there are
+no type variables.
+@p()
+If there are no matches, Felix proceeds to the next
+outermost scope and tries again, until there is no
+such scope.
+@p()
+If there are more than one match, then Felix chooses
+the most specialised function if there is one,
+otherwise the call is ambiguous. A function is more
+specialised than another if every argument it accepts
+is also accepted by the other, and the other also accepts
+at least one additional argument. For example:
+
+@select(tangler(tdir+"mig02.flx"))
+include "std";
+fun f[t,u] (x:t,y:u)=> 1; //1
+fun f[v] (x:v,y:v)=>2; //2: specialises 1
+
+print (f (1,2.0)); endl; //calls 1
+print (f (1,2)); endl; //calls 2
+
+@doc()
+Note however that the innermost matching function
+is still called, even if a specialisation is present
+in an outer scope.
+@p()
+The algorithm which determines whether an argument
+matches a generic function's parameter, and also
+whether a function is more specialised than another,
+is known as the unification algorithm, and the process
+of matching is known as unification.
+
+@head(2,'Deduction of type variables')
+As in C++: when a generic function is called,
+it must be possible to determine bindings for
+all its type variables. As in C++, leading type
+variables may be given explicitly, and the ones
+not given deduced from the function argument.
+
+@head(1,'Scope')
+Unlike C++, the scope of an identifier is the
+whole of the construction containing it, just
+like labels. In particular, all functions in
+the same scope are mutually recursive: a function
+can be called before it is defined without a
+forward declaration.
+
+@select(tangler(tdir+"mig03.flx"))
+include "std";
+fun f(x:int) => g(x-1); 
+fun g(x:int) => if x>0 then f(x-1) else 0 endif;
+print (g 10); endl;
+
+@doc()
+In particular this rule also applies to types,
+allowing recursive types to be easily defined:
+
+@select(tangler(tdir+"mig04.flx"))
+include "std";
+union ilist = empty | cons of int * ilist;
+var x = empty;
+x = cons (1,x);
+x = cons (2,x);
+
+proc print(x:ilist) { 
+  match x with
+  | empty => {}
+  | cons (?h,?t) => { print h; print " "; print t; }
+  endmatch;
+}
+
+print x; endl;
+@head(1,'Type system')
+Felix types and their annotations are quite different
+to C++. Felix currenty supports tuple types, anonymous
+sum types, a struct type like C, and a union type,
+first class function types, first class array types,
+and a pointer type. 
+@p()
+There is no notion of 'const'
+or 'volatile' supported by the type system.
+@p()
+All types support support recursion and polymorphism.
+@()
+In addition, an arbitrary family of abstract types
+can be created on the fly, by lifting any existing
+first class C or C++ type using a binding construction.
+Abstract types may also be polymorphic.
+
+[A lot more is needed here]
+
+

@@ -7,10 +7,15 @@ open Flx_ast
 open Flx_types
 open Flx_mtypes1
 
+val find_roots:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  bid_t ->
+  biface_t list -> unit
+
 val uses_type:
   sym_state_t ->
   IntSet.t ref ->
-  (bid_t, bid_t list) Hashtbl.t *
   fully_bound_symbol_table_t ->
   btypecode_t -> 
   unit
@@ -18,7 +23,6 @@ val uses_type:
 val uses:
   sym_state_t ->
   IntSet.t ref ->
-  (bid_t, bid_t list) Hashtbl.t *
   fully_bound_symbol_table_t ->
   int ->
   unit
@@ -42,15 +46,15 @@ open Flx_exceptions
 
 let nop x = ()
 
-let rec uses_type syms used (child_map,bbdfns) (t:btypecode_t) = 
-  let ut t = uses_type syms used (child_map,bbdfns) t in
+let rec uses_type syms used bbdfns (t:btypecode_t) = 
+  let ut t = uses_type syms used bbdfns t in
   match t with
   | `BTYP_name i 
-    -> uses syms used (child_map,bbdfns) i
+    -> uses syms used bbdfns i
 
   | `BTYP_inst (i,ts)
     -> 
-      uses syms used (child_map,bbdfns) i;
+      uses syms used bbdfns i;
       iter ut ts
 
   | `BTYP_type 
@@ -59,23 +63,24 @@ let rec uses_type syms used (child_map,bbdfns) (t:btypecode_t) =
 
   | _ -> iter_btype ut t
 
-and uses_exes syms used (child_map,bbdfns) exes =
-  iter (uses_exe syms used (child_map,bbdfns)) exes
+and uses_exes syms used bbdfns exes =
+  iter (uses_exe syms used bbdfns) exes
 
-and uses_exe syms used (child_map,bbdfns) (exe:bexe_t) =
-  let ue e = uses_tbexpr syms used (child_map,bbdfns) e in
-  let ui i = uses syms used (child_map,bbdfns) i in
+and uses_exe syms used bbdfns (exe:bexe_t) =
+  let ue e = uses_tbexpr syms used bbdfns e in
+  let ui i = uses syms used bbdfns i in
+  let ut t = uses_type syms used bbdfns t in
   match exe with
   | `BEXE_init (_,i,e) -> 
-    (* uses syms used (child_map,bbdfns) i; *) ue e
+    (* uses syms used bbdfns i; *) ue e
 
-  | _ -> iter_bexe ui ue nop nop nop exe
+  | _ -> iter_bexe ui ue ut nop nop exe
 
 
-and uses_tbexpr syms used (child_map,bbdfns) (e,t) =
-  let ue e = uses_tbexpr syms used (child_map,bbdfns) e in
-  let ut t = uses_type syms used (child_map,bbdfns) t in
-  let ui i = uses syms used (child_map,bbdfns) i in
+and uses_tbexpr syms used bbdfns (e,t) =
+  let ue e = uses_tbexpr syms used bbdfns e in
+  let ut t = uses_type syms used bbdfns t in
+  let ui i = uses syms used bbdfns i in
 
   ut t;
 
@@ -97,10 +102,10 @@ and uses_tbexpr syms used (child_map,bbdfns) (e,t) =
   | `BEXPR_literal _ -> ()
   | `BEXPR_expr (_,t) -> ut t
 
-and uses syms used (child_map,bbdfns) i =
-  let ur i = uses syms used (child_map,bbdfns) i in
-  let ut t = uses_type syms used (child_map,bbdfns) t in
-  let ux x = uses_exes syms used (child_map,bbdfns) x in
+and uses syms used bbdfns i =
+  let ur i = uses syms used bbdfns i in
+  let ut t = uses_type syms used bbdfns t in
+  let ux x = uses_exes syms used bbdfns x in
   if not (IntSet.mem i !used) then
   begin
     match
@@ -138,4 +143,33 @@ and uses syms used (child_map,bbdfns) i =
       end
     | None -> ()
   end
+
+let find_roots syms bbdfns
+  (root:bid_t) 
+  (bifaces:biface_t list) 
+=
+
+  (* make a list of the root and all exported functions,
+  add exported types and components thereof into the used
+  set now too
+  *)
+  let roots = ref (IntSet.singleton root) in
+  iter
+  (function
+     | `BIFACE_export_fun (_,x,_) -> roots := IntSet.add x !roots
+     | `BIFACE_export_type (_,t,_) -> 
+        Flx_use.uses_type syms roots bbdfns t
+  )
+  bifaces
+  ;
+  Hashtbl.iter
+  (fun i b -> match b with
+    | "_root",_,_,`BBDCL_header _
+    | "_root",_,_,`BBDCL_body _ -> roots := IntSet.add i !roots
+    | _ -> ()
+  )
+  bbdfns
+  ;
+  syms.roots := !roots
+
 

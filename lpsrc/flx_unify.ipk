@@ -18,6 +18,7 @@ val maybe_unification:
 val unification: 
   symbol_table_t -> (* just for diagnostics *)
   (btypecode_t * btypecode_t) list -> 
+  IntSet.t -> (* the dependent variables *)
   (int * btypecode_t) list
 
 (** test if two types unify *)
@@ -306,6 +307,14 @@ let var_i_occurs i t =
      false 
    with Not_found -> true
 
+let rec vars_in t =
+  let vs = ref IntSet.empty in
+  let add_var i = vs := IntSet.add i !vs in
+  let rec aux t = match t with
+    | `BTYP_var i -> add_var i
+    | _ -> iter_btype aux t
+  in aux t; !vs
+
 let fix i t =
   let rec aux n t = 
     let aux t = aux (n - 1) t in 
@@ -338,7 +347,11 @@ let var_list_occurs ls t =
   not inequations, therefore it doesn't
   handle any subtyping
 *)
-let rec unification dfns eqns: (int * btypecode_t) list = 
+
+let rec unification dfns eqns (dvars: IntSet.t) : (int * btypecode_t) list = 
+  (*
+  print_endline ( "Dvars = { " ^ catmap ", " si (IntSet.elements dvars) ^ "}");
+  *)
   let eqns = ref eqns in
   let mgu = ref [] in
   let rec loop () : unit =
@@ -349,10 +362,16 @@ let rec unification dfns eqns: (int * btypecode_t) list =
       let s = ref None in
       begin match h with
       | `BTYP_var i, `BTYP_var j ->
-        if i <> j then s := Some (i,`BTYP_var j)
+        if i <> j then 
+          if IntSet.mem i dvars then
+            s := Some (i,`BTYP_var j)
+          else if IntSet.mem j dvars then
+            s := Some (j,`BTYP_var i)
+          else raise Not_found
 
       | `BTYP_var i, t
       | t,`BTYP_var i ->
+        if not (IntSet.mem i dvars) then raise Not_found;
         if var_i_occurs i t
         then begin
           print_endline 
@@ -419,7 +438,10 @@ let rec unification dfns eqns: (int * btypecode_t) list =
       | Some (i,t) ->
         eqns := 
           map 
-          (fun (a,b) -> term_subst a i t, term_subst b i t) 
+          (fun (a,b) -> 
+            term_subst a i t, 
+            term_subst b i t
+          ) 
           !eqns
         ;
         assert(not (mem_assoc i !mgu));
@@ -436,36 +458,55 @@ let rec unification dfns eqns: (int * btypecode_t) list =
       loop (); 
       !mgu
 
+let find_vars_eqns eqns = 
+  let lhs_vars = ref IntSet.empty in
+  let rhs_vars = ref IntSet.empty in
+  iter (fun (l,r) -> 
+    lhs_vars := IntSet.union !lhs_vars (vars_in l);
+    rhs_vars := IntSet.union !rhs_vars (vars_in r)
+  )
+  eqns
+  ;
+  !lhs_vars,!rhs_vars
+ 
 let maybe_unification dfns eqns = 
-  try Some (unification dfns eqns)
+  let l,r = find_vars_eqns eqns in
+  let dvars = IntSet.union l r in
+  try Some (unification dfns eqns dvars)
+  with Not_found -> None
+
+let maybe_specialisation dfns eqns =
+  let l,_ = find_vars_eqns eqns in
+  try Some (unification dfns eqns l)
   with Not_found -> None
 
 let unifies dfns t1 t2 =
-  try ignore(unification dfns [t1,t2]); true
-  with Not_found -> false
+  let eqns = [t1,t2] in
+  match maybe_unification dfns eqns with
+  | None -> false
+  | Some _ -> true
 
-(* a < b means a is more specialised than b *)
-let compare_sigs dfns a b =
+let ge dfns a b =
   (*
-  print_endline ("Compare " ^ sbt dfns a ^ " with " ^ sbt dfns b);
+  print_endline ("Compare terms " ^ sbt dfns a ^ " >? " ^ sbt dfns b);
   *)
-  match maybe_unification dfns [a,b] with
-  | None -> `Incomparable
-  | Some [] -> `Equal
-  | Some mgu ->
-    let left = ref 0 and right = ref 0 in
-    iter (fun (i,t) ->
-      match t with `BTYP_var _ -> () | _ ->
-      if var_i_occurs i a then incr left
-      else incr right
-    )
-    mgu
-    ;
-    match !left,!right with
-    | 0,0 -> `Equal
-    | 0,_ -> `Less 
-    | _,0 -> `Greater
-    | _ -> `Incomparable
+  match maybe_specialisation dfns [a,b] with
+  | None -> false
+  | Some mgu -> 
+    (*
+    print_endline ("MGU from specialisation = ");
+    iter (fun (i, t) -> print_endline (si i ^ " --> " ^ sbt dfns t)) mgu;
+    print_endline "";
+    *)
+    true
+
+let compare_sigs dfns a b =
+  match ge dfns a b, ge dfns b a with
+  | true, true -> `Equal
+  | false, false -> `Incomparable
+  | true, false -> `Greater
+  | false, true -> `Less 
+  
 
 (* returns true if a and b have an mgu,
    and also adds each element of the mgu to
@@ -489,11 +530,13 @@ let do_unify syms a b =
       varmap_subst syms.varmap b
     ] 
   in
+  let l,r = find_vars_eqns eqns in
+  let dvars = IntSet.union l r in
   try 
     (*
     print_endline "Calling unification";
     *)
-    let mgu = unification syms.dfns eqns in
+    let mgu = unification syms.dfns eqns dvars in
     (*
     print_endline "mgu=";
     iter

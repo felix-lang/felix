@@ -2757,13 +2757,8 @@ typedef fun list (elt:TYPE):TYPE = 1 + elt * list elt;
 typedef fun f(t1:TYPE, t2:TYPE->TYPE) (t3:TYPE): TYPE = (t2 t1) * t3;
 
 typedef g = (
-    fun (t1:TYPE, t2:TYPE->TYPE):TYPE->TYPE =  
-    {
-      fun (t3:TYPE):TYPE = 
-      { 
-        (t2 t1) * t3
-      } 
-    } 
+    fun (t1:TYPE, t2:TYPE->TYPE):TYPE->TYPE =>
+      ( fun (t3:TYPE):TYPE => (t2 t1) * t3 )
   )
 ;
 

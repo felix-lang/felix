@@ -744,6 +744,17 @@ opt_type_expr:
   | { `TYP_none }
 
 function_definition:
+  | FUNCTION NAME tvarlist fun_args opt_type_expr EQRIGHTARROW expr SEMI
+    { 
+      let sr = rstoken $1 $8 in
+      let name = snd $2 
+      and return_type = $5
+      and body = [`AST_fun_return (sr,$7)]
+      and args = List.map snd $4 (* elide srcref *)
+      and vs = List.map snd $3
+      in mkcurry sr name vs args return_type `Function body
+    }
+
   | FUNCTION NAME tvarlist fun_args opt_type_expr EQUAL compound 
     { 
       let sr = rsrange (slift $1) (fst $7)
@@ -1469,50 +1480,45 @@ expr:
 rvalue:
   | lambda { $1 }
 
+lambda_fun_arg:
+  | LPAR parameter_comma_list RPAR { rstoken $1 $3,$2 }
+
+lambda_fun_args:
+  | lambda_fun_arg lambda_fun_args      { $1 :: $2 }
+  | lambda_fun_arg               { [$1] }
+
 lambda:
   | tuple { $1 }
 
-  | FUNCTION LPAR parameter_comma_list RPAR COLON type_expr EQUAL compound
-    {
-      `AST_lambda 
-      (
-        rsrange (slift $1) (fst $8),
-        ($3, typecode_of_expr $6, snd $8)
-      )
-    }
-
-  | FUNCTION LPAR parameter_comma_list RPAR COLON type_expr EQUAL LBRACE expr RBRACE
-    {
-      let sr = rstoken $1 $10 in
-      `AST_lambda 
-      (
-        sr,
-        (
-          $3, 
-          typecode_of_expr $6, 
-          [`AST_fun_return (sr,$9)]
-        )
-      )
-    }
-
-  | PROCEDURE LPAR parameter_comma_list RPAR compound
+  | FUNCTION lambda_fun_args opt_type_expr EQUAL compound
     {
       let sr = rsrange (slift $1) (fst $5) in
-      `AST_lambda 
-      (
-        sr,
-        ($3, `AST_void sr, snd $5)
-      )
+      let args = List.map snd $2 in
+      let ret = $3 in
+      let body = snd $5 in
+      `AST_lambda ( sr,(args, ret, body))
+    }
+
+  | FUNCTION lambda_fun_args opt_type_expr EQRIGHTARROW expr
+    {
+      let sr = rsrange (slift $1) (src_of_expr $5) in
+      let args = List.map snd $2 in
+      let body = [`AST_fun_return (sr,$5)] in
+      let ret = $3 in
+      `AST_lambda (sr, (args, ret, body))
+    }
+
+  | PROCEDURE lambda_fun_args compound
+    {
+      let sr = rsrange (slift $1) (fst $3) in
+      let args = List.map snd $2 in
+      `AST_lambda ( sr, (args, `AST_void sr, snd $3))
     }
 
   | PROCEDURE compound
     {
       let sr = rsrange (slift $1) (fst $2) in
-      `AST_lambda 
-      (
-        sr,
-        ([], `AST_void sr, snd $2)
-      )
+      `AST_lambda ( sr, ([[]], `AST_void sr, snd $2))
     }
 
 tuple:
@@ -1633,7 +1639,7 @@ comparison:
       (
         sr,
         (
-          `AST_lambda (sr,([],flx_bool, stmts)),
+          `AST_lambda (sr,([[]],flx_bool, stmts)),
           unit_tuple
         )
       )
@@ -1909,7 +1915,7 @@ atom:
       (
         sr,
         (
-          [],
+          [[]],
           `TYP_none,
           [`AST_fun_return (sr,$2)]
         ) 
@@ -1923,7 +1929,7 @@ atom:
       `AST_lambda 
       (
         sr,
-        ([], `TYP_none, stmts)
+        ([[]], `TYP_none, stmts)
       )
     
     }

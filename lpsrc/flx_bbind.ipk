@@ -281,13 +281,6 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       let reqs = bind_reqs reqs in
       Hashtbl.add bbdfns i (name,None,sr,`BBDCL_body (ct,reqs))
 
-    (*
-    | x -> 
-      failwith
-      (
-      "[bind_entry] Unexpected entry " ^ string_of_symdef x name vs 
-      )
-    *) 
     end
     (*
     ;
@@ -511,7 +504,8 @@ try
     ;
     print_endline "//OPTIMISING -- pass 1";
     print_endline "//---------------------";
-    let bbdfns = Flx_useless.elide_unused syms (child_map,bbdfns) root_proc bifaces in
+    let () = Flx_use.find_roots syms bbdfns root_proc bifaces in
+    let bbdfns = Flx_useless.elide_unused syms (child_map,bbdfns) in
     let child_map = cal_children syms bbdfns in
     Hashtbl.iter
     (fun index (name,parent,sr,entry) -> print_endline
@@ -524,7 +518,7 @@ try
     ;
     print_endline "//OPTIMISING -- pass 2";
     print_endline "//---------------------";
-    let bbdfns = Flx_useless.elide_unused syms (child_map,bbdfns) root_proc bifaces in
+    let bbdfns = Flx_useless.elide_unused syms (child_map,bbdfns) in
     Hashtbl.iter
     (fun index (name,parent,sr,entry) -> print_endline
       (
