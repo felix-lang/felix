@@ -326,8 +326,8 @@ let decimal_fractional_constant =
   
 let hexadecimal_fractional_constant = 
   ("0x" |"0X")
-  hexadecimal_string '.' hexadecimal_string?
-  | '.' hexadecimal_string
+  (hexadecimal_string '.' hexadecimal_string?
+  | '.' hexadecimal_string)
 
 let decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string
 let binary_exponent = ('P'|'p') ('+'|'-')? decimal_string

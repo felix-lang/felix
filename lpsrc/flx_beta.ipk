@@ -27,9 +27,11 @@ open Flx_typing
 open List
 open Flx_srcref
 open Flx_unify
+open Flx_maps
 
 (* params is list of string * bound_typecode *)
 let rec metatype syms params term =
+  print_endline ("Metatype: " ^ string_of_btypecode syms.dfns term);
   let st t = string_of_btypecode syms.dfns t in
   let mt t = metatype syms params t in
   match term with
@@ -93,7 +95,7 @@ let rec metatype syms params term =
           )
     end
 
-  | _ -> `BTYP_type
+  | _ -> `BTYP_type (* THIS ISN'T RIGHT *)
   
 
 
@@ -111,19 +113,12 @@ and fixup ps body =
  in
  let rec aux term depth =
    let fx t = aux t (depth+1) in
-   match term with
+   match map_btype fx term with
    | `BTYP_apply (`BTYP_fix i, arg) 
      when arg = param 
      && i + depth +1  = 0 (* looking inside application, one more level *)
      -> `BTYP_fix (i+2) (* elide application AND skip under lambda abstraction *)
 
-   | `BTYP_tuple ls -> `BTYP_tuple (List.map fx ls)
-   | `BTYP_sum ls -> `BTYP_sum (List.map fx ls)
-   | `BTYP_type_tuple ls -> `BTYP_type_tuple (List.map fx ls)
-   | `BTYP_function (a,b) -> `BTYP_function (fx a, fx b)
-   | `BTYP_binding (a,b) -> `BTYP_binding (fx a, fx b)
-   | `BTYP_pointer a -> `BTYP_pointer (fx a)
-   | `BTYP_apply(a,b) -> `BTYP_apply (fx a, fx b)
    | `BTYP_typefun (a,b,c) ->
       (* NOTE we have to add 2 to depth here, an extra
       level for the lambda binder.
@@ -132,7 +127,7 @@ and fixup ps body =
       *)
 
       `BTYP_typefun (a, fx b, aux c (depth + 2))
-   | _ -> term
+   | x -> x
  in 
    (* note depth 1: we seek a fix to an abstraction
    of which we're given only the body, that's an 
@@ -164,7 +159,10 @@ and beta_reduce syms (btvars:(int * btypecode_t) list) t =
   let br t = beta_reduce syms btvars t in
   let st t = string_of_btypecode syms.dfns t in
   let mt t = metatype syms btvars t in
-  match t with
+  (*
+  print_endline ("BETA REDUCE " ^ string_of_btypecode syms.dfns t);
+  *)
+  match unfold t with
   | `BTYP_apply (t1,t2) ->
     (*
     print_endline "-----------------------";
@@ -219,9 +217,7 @@ and beta_reduce syms (btvars:(int * btypecode_t) list) t =
       print_endline ("Body is " ^ st body);
       *)
       let t = varmap_subst v body in
-      (*
       print_endline ("Result of application = " ^ st t);
-      *)
       br t
 
     | `BTYP_var _ -> t (* can't reduce it yet *)

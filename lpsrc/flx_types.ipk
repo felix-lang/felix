@@ -1024,6 +1024,7 @@ open Flx_ast
 open Flx_types
 val string_of_typecode : typecode_t -> string
 val string_of_btypecode : symbol_table_t -> btypecode_t -> string
+val sbt: symbol_table_t -> btypecode_t -> string
 val special_string_of_typecode : typecode_t -> string
 val string_of_expr : expr_t -> string
 val string_of_bound_expression : 
@@ -1056,8 +1057,14 @@ val string_of_symdef :
 val string_of_entry_kind:
   entry_kind_t -> string
 
+val full_string_of_entry_kind:
+  symbol_table_t -> entry_kind_t -> string
+
 val string_of_entry_set:
   entry_set_t -> string
+
+val full_string_of_entry_set:
+  symbol_table_t -> entry_set_t -> string
 
 @h = tangler('src/flx_print.ml')
 @select(h)
@@ -1416,7 +1423,7 @@ and sb dfns depth fixlist counter prec tc =
            "fun (" ^ cat ", " 
            (
              List.map 
-             (fun (i,t)-> si i ^ ": " ^ sbt 7 t) 
+             (fun (i,t)-> "T"^si i ^ ": " ^ sbt 7 t) 
              args
            ) ^
            "): " ^ sbt 0 ret ^ "=" ^ sbt 7 body
@@ -1439,7 +1446,9 @@ and string_of_btypecode (dfns:symbol_table_t) tc =
     | [] -> assert false
   done;
   term ^ !bad
-  
+
+and sbt a b = string_of_btypecode a b
+
 and string_of_parameters ps = 
   cat 
     ", " 
@@ -2344,6 +2353,16 @@ and string_of_bbdcl dfns bbdcl index =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     "}"
 
+let string_of_dfn dfns i =
+  match Hashtbl.find dfns i with
+  id,sr,parent,vs,table,dirs,entry ->
+  string_of_symdef entry id vs
+  ^ " defined at " ^ short_string_of_src sr
+
+let full_string_of_entry_kind dfns = function 
+  | Simple i -> string_of_dfn dfns i
+  | Bound (i,j) -> "("^si i^","^si j^")"
+
 let string_of_entry_kind = function 
   | Simple i -> si i
   | Bound (i,j) -> "("^si i^","^si j^")"
@@ -2354,6 +2373,13 @@ let string_of_entry_set = function
     "{" ^
       catmap "," string_of_entry_kind ls ^
     "}"
+
+let full_string_of_entry_set dfns = function
+  | NonFunctionEntry x -> full_string_of_entry_kind dfns x
+  | FunctionEntry ls -> if length ls = 0 then "{}" else
+    "{\n" ^
+      catmap "\n" (full_string_of_entry_kind dfns) ls ^
+    "\n}"
 
 @h = tangler('src/flx_mtypes.ml')
 @select(h)

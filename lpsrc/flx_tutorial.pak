@@ -1550,7 +1550,7 @@ Here is a simple example.
 @select(tangler(tdir+'tut135a.flx'))
 header "#include <iostream>";
 type int = "int";
-proc print[T]:T="std::cout << $1 << endl;";
+proc print[T]:T="std::cout << $1 << std::endl;";
 fun fst[T,U](x:T,y:U): T ={ return x; }
 fun snd[T,U](x:T,y:U): U ={ return y; }
 

@@ -466,7 +466,7 @@ let rec build_tables syms name level parent grandparent root asms =
           add_tvars table
 
         | `DCL_union (its) ->
-          let tvars = map (fun (_,i)-> `TYP_var i) vs in
+          let tvars = map (fun (s,_)-> `AST_name (sr,s,[])) vs in
           let utype = `AST_name(sr,id, tvars) in
           Hashtbl.add dfns n (id,sr,parent,vs,table,dirs,`SYMDEF_union (its))
           ;
@@ -582,12 +582,28 @@ let rec build_tables syms name level parent grandparent root asms =
           add_tvars table
  
         | `DCL_struct (sts) ->
-          let tvars = map (fun (_,i)-> `TYP_var i) vs in
+          let tvars = map (fun (s,_)-> `AST_name (sr,s,[])) vs in
           let stype = `AST_name(sr,id,tvars) in
           Hashtbl.add dfns n (id,sr,parent,vs,table,dirs,`SYMDEF_struct (sts))
           ;
           add_unique name_map id n
           ;
+          (* assignment *)
+          let asgn_idx = !counter in incr counter;
+          let asgn_name = "set" in
+          let asgn_dcl = 
+            `SYMDEF_fun
+            (
+              [ `TYP_pointer stype; stype ],
+              `AST_void sr,
+              "*$1=$2;"
+            ) 
+          in
+          if print_flag then print_endline ("//  " ^ spc ^ si asgn_idx ^ " -> " ^ asgn_name); 
+          Hashtbl.add dfns asgn_idx (asgn_name,sr,parent,vs,table,dirs,asgn_dcl);
+          add_function name_map asgn_name asgn_idx
+          ; 
+          (* projections *)
           List.iter
           (fun (component_name,t) ->
             let getn = !counter in incr counter;
@@ -596,7 +612,8 @@ let rec build_tables syms name level parent grandparent root asms =
             Hashtbl.add dfns getn (get_name,sr,parent,vs,table,dirs,get_dcl);
             add_function name_map get_name getn
             ;
-
+            if print_flag then print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name)
+            ; 
             let refn = !counter in incr counter;
             let ref_name = "ref_" ^ component_name in
             let ref_dcl = `SYMDEF_fun (
@@ -607,10 +624,17 @@ let rec build_tables syms name level parent grandparent root asms =
             in
             Hashtbl.add dfns refn (ref_name,sr,parent,vs,table,dirs,ref_dcl) ;
             add_function name_map ref_name refn
+            ;
+            if print_flag then print_endline ("//  " ^ spc ^ si refn ^ " -> " ^ ref_name)
           )
           sts
           ;
           add_tvars table
+
+          (* NOTE: we don't add a type constructor, because 
+          it would have the same name as the struct type ..
+          we just check this case as required ..
+          *)
         end
     ) 
     dcls

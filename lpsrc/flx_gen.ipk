@@ -453,7 +453,9 @@ let find_variable_indices syms index =
           | `SYMDEF_var _ 
           | `SYMDEF_val _
             -> 
-      (* print_endline (si index ^ ": " ^id ^"="^id2^ "<" ^ si idx ^">"^" member parent=" ^sp parent'); *)
+      (*
+      print_endline (si index ^ ": " ^id ^"="^id2^ "<" ^ si idx ^">"^" member parent=" ^sp parent'); 
+      *)
               variables := idx :: !variables
 
           (* variables of a nested module are lifted into the function *)
@@ -472,8 +474,7 @@ let find_variable_indices syms index =
     try Hashtbl.find syms.dfns index 
     with _ -> failwith ("[find_variable_indices(1)] Can't find index " ^ si index)
   in
-  (* print_endline ("Finding members of " ^ id ^ " index " ^ si index); *)
-  extract (Some index) name_map
+  extract (Some index) name_map 
 
 let get_variable_typename syms bbdfns i ts =
   let id,parent,entry = Hashtbl.find bbdfns i in
@@ -511,15 +512,20 @@ let find_members syms bbdfns index ts =
     map 
     (fun idx -> 
       try
-        let typename = get_variable_typename syms bbdfns idx ts in
         let instname = cpp_instance_name syms bbdfns idx ts in
+        let typename = get_variable_typename syms bbdfns idx ts in
         "  " ^ typename ^ " " ^ instname ^ ";\n"
-      with _ -> "" (* ignore unused variables *)
+      with _ -> 
+        "" (* ignore unused variables *)
     )
     variables
   )
-  in if members <> "" then "  //variables\n" ^ members
-  else ""
+  in 
+    let member_string =
+      if members <> "" then "  //variables\n" ^ members
+      else ""
+    in
+      member_string
 
 let typeof_bparams ps: btypecode_t  = 
   typeoflist 
@@ -720,6 +726,9 @@ let get_var_ref syms bbdfns this index ts : string =
     try Hashtbl.find syms.dfns index 
     with _ -> failwith ("[get_var_ref] Can't find index " ^ si index)
   in  
+  (*
+  print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode syms.dfns) ts^"]");
+  *)
   match entry with
   | `SYMDEF_parameter t
   | `SYMDEF_var (t)
@@ -780,7 +789,6 @@ let is_unitsum (t:btypecode_t) = match t with
   | _ -> false
 
 let rec gen_expr syms bbdfns this (e,t) vs ts =
-  (* print_endline ("Gen expr " ^ string_of_bound_expression dfns (e,t)); *)
   let ge e = gen_expr syms bbdfns this e vs ts in
   let tn t = cpp_typename syms (tsubst vs ts (lower t)) in
   let ge_arg a = 
@@ -863,7 +871,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
     | _ -> failwith "Case tag must have sum type"
     end 
    
-  | `BEXPR_name (index,ts) -> 
+  | `BEXPR_name (index,ts') -> 
     let id,parent,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> 
@@ -871,6 +879,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
         syserr sr
         ("[gen_expr(name)] Can't find "^ id ^ "<" ^ si index ^ ">")
     in
+    let ts = map (tsubst vs ts) ts' in
     begin match entry with
       | `BBDCL_var (_,t)
       | `BBDCL_val (_,t) ->
@@ -897,11 +906,12 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
         )
     end
 
-  | `BEXPR_closure (index,ts) -> 
+  | `BEXPR_closure (index,ts') -> 
     let id,parent,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
     in
+    let ts = map (tsubst vs ts) ts' in
     begin match entry with
     | `BBDCL_function _ 
     | `BBDCL_procedure _ ->
@@ -926,7 +936,8 @@ let rec gen_expr syms bbdfns this (e,t) vs ts =
     | _ -> failwith "[gen_expr: closure] Cannot use this kind of name '"^id^"' in expression"
     end
 
-  | `BEXPR_ref (index,ts) -> 
+  | `BEXPR_ref (index,ts') -> 
+    let ts = map (tsubst vs ts) ts' in
     let t = lower t in
     let ref_type = tn (lower t) in
     let var_ptr = "&(" ^ get_var_ref syms bbdfns this index ts ^ ")" in
@@ -1165,9 +1176,11 @@ type kind_t = Function | Procedure
 let gen_exe syms bbdfns label_map counter this vs ts (exe:bexe_t) : string =
   let sr = ("dummy",0,0,0,0) in
   let src_str = string_of_bexe syms.dfns 0 exe in
+  (*
   print_endline ("generating exe " ^ string_of_bexe syms.dfns 0 exe);
   print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs);
   print_endline ("ts = " ^ catmap ","  (string_of_btypecode syms.dfns) ts);
+  *)
   let ret_string = "      FLX_RETURN\n" in
   let ge e : string = gen_expr syms bbdfns this e vs ts in
   let tn t : string = cpp_typename syms (tsubst vs ts (lower t)) in

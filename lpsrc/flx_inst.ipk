@@ -34,16 +34,15 @@ let add_inst syms ref_insts1 x =
   then ref_insts1 := FunInstSet.add x !ref_insts1
 
 let rec process_expr syms bbdfns ref_insts1 hvarmap ((e,t) as be) =
-  let vlist = ref [] in
-  Hashtbl.iter
-  (fun i t -> vlist := (i,t)::!vlist)
-  hvarmap
-  ;
+  (*
+  print_endline ("Process expr " ^ string_of_bound_expression syms.dfns be ^ " .. raw type " ^ string_of_btypecode syms.dfns t);
+  print_endline (" .. instantiated type " ^ string_of_btypecode syms.dfns (varmap_subst hvarmap t));
+  *)
   let ue e = process_expr syms bbdfns ref_insts1 hvarmap e in
   let ui i ts = add_inst syms ref_insts1 (i,ts) in
   let ut t = register_type_r syms bbdfns [] t in
-  let t = varmap_subst hvarmap t in
-  ut t
+  let vs t = varmap_subst hvarmap t in
+  ut (vs t)
   ;
   begin match e with
   | `BEXPR_deref e
@@ -54,19 +53,19 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap ((e,t) as be) =
     
   | `BEXPR_apply (e1,e2) -> ue e1; ue e2
   | `BEXPR_tuple es -> iter ue es 
-  | `BEXPR_dot (e,i)
-     -> ue e
+  | `BEXPR_dot (e,i) -> ue e
      
-  | `BEXPR_coercion (e,t)
-     -> ue e; ut t
+  | `BEXPR_coercion (e,t) -> ue e; ut (vs t)
      
-  | `BEXPR_case (_,t)
-    -> ut t
+  | `BEXPR_case (_,t) -> ut (vs t)
 
-  | `BEXPR_name (i,ts)
+  | `BEXPR_name (i,ts) -> 
+    let ts = map (varmap_subst hvarmap) ts in
+    ui i ts; iter ut ts
+
   | `BEXPR_closure (i,ts)
     -> 
-    let ts = map (varmap_subst hvarmap) ts in 
+    let ts = map (varmap_subst hvarmap) ts in
     ui i ts; iter ut ts
 
   | _ -> ()
@@ -75,6 +74,9 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap ((e,t) as be) =
 and process_exe syms bbdfns ref_insts1 ts hvarmap exe =
   let ue e = process_expr syms bbdfns ref_insts1 hvarmap e in
   let ui i = add_inst syms ref_insts1 (i,ts) in
+  (*
+  print_endline ("processing exe " ^ string_of_bexe syms.dfns 0 exe);
+  *)
   match exe with
   | `BEXE_call (e1,e2) 
   | `BEXE_jump (e1,e2) 
@@ -86,7 +88,9 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap exe =
   | `BEXE_fun_return e 
     -> ue e
 
+  (* this is wrong: initialisation is not use .. *)
   | `BEXE_init (i,e) -> ui i; ue e
+
   | `BEXE_read i -> ui i 
   | _ -> ()
 
@@ -107,7 +111,8 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
   let rtnr t = register_type_nr syms t in
   let id,parent,entry = Hashtbl.find bbdfns i in 
   if syms.compiler_options.print_flag then
-  print_endline ("instance "^si inst ^ "="^id^"<" ^ si i ^ ">[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]");
+  print_endline ("//Instance "^si inst ^ "="^id^"<" ^ si i ^ ">[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]");
+  let ts = adjust_ts syms i ts in
   match entry with
   | `BBDCL_function (vs,ps,ret,exes, _) -> 
     let argtypes = map (fun x -> snd (snd x)) ps in
@@ -120,7 +125,6 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
   | `BBDCL_union (vs,ps)
   | `BBDCL_struct (vs,ps)
     ->
-    let ts = adjust_ts syms i ts in
     let argtypes = map snd ps in
     let hvarmap = make_varmap syms i ts in
     let tss = map (varmap_subst hvarmap) argtypes in
@@ -135,7 +139,6 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     print_endline "Processing variable";
     print_endline ("type " ^ string_of_btypecode syms.dfns t);
     *)
-    let ts = adjust_ts syms i ts in
     let hvarmap = make_varmap syms i ts in
     let t = varmap_subst hvarmap t in
     (*

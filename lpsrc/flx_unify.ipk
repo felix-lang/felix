@@ -8,6 +8,11 @@ and utilities
 open Flx_types
 
 (** obtain the mgu of a set of type equations *)
+val maybe_unification: 
+  (btypecode_t * btypecode_t) list ->
+  (int * btypecode_t) list option
+
+(** obtain the mgu of a set of type equations *)
 val unification: 
   (btypecode_t * btypecode_t) list ->
   (int * btypecode_t) list
@@ -51,6 +56,13 @@ val fold:
   btypecode_t 
 
 (** replace variables in the term using
+the mapping in a list *)
+val list_subst:
+  (int * btypecode_t) list ->
+  btypecode_t ->
+  btypecode_t
+
+(** replace variables in the term using
 the mapping in the hashtable 
 *)
 val varmap_subst:
@@ -84,12 +96,15 @@ open Flx_maps
 open Flx_util
 open List
 
-let term0_subst t1 i t2 =
+let term_subst t1 i t2 =
   let rec s t = match map_btype s t with
   | `BTYP_var j when i = j -> t2
-  | _ -> t
+  | t -> t
   in s t1
 
+let list_subst x t1 = 
+  fold_left (fun t1 (i,t2) -> term_subst t1 i t2) t1 x
+  
 let varmap0_subst varmap t =
   let rec s t = match map_btype s t with
   | `BTYP_var i as x ->
@@ -267,13 +282,14 @@ let rec unification eqns: (int * btypecode_t) list =
       | Some (i,t) ->
         eqns := 
           map 
-          (fun (a,b) -> term0_subst a i t, term0_subst b i t) 
+          (fun (a,b) -> term_subst a i t, term_subst b i t) 
           !eqns
         ;
+        assert(not (mem_assoc i !mgu));
         mgu := 
           (i,t) :: 
           (map 
-            (fun (j,t') -> j,term0_subst t' i t) 
+            (fun (j,t') -> j,term_subst t' i t) 
             !mgu
           )
       end
@@ -282,6 +298,10 @@ let rec unification eqns: (int * btypecode_t) list =
     in 
       loop (); 
       !mgu
+
+let maybe_unification eqns = 
+  try Some (unification eqns)
+  with Not_found -> None
 
 let unifies t1 t2 =
   try ignore(unification [t1,t2]); true
@@ -422,7 +442,7 @@ let unfold t =
   | `BTYP_binding (a,b) -> `BTYP_binding (uf a, uf b)
   | `BTYP_fix i when (-i) = depth -> t
   | `BTYP_fix i when (-i) > depth -> 
-    failwith ("Fix point outside term, depth="^string_of_int i)
+    failwith ("[unfold] Fix point outside term, depth="^string_of_int i)
 
   | `BTYP_inst (i,ts) -> `BTYP_inst (i,map uf ts)
   | `BTYP_name i -> `BTYP_name i

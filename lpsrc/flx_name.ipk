@@ -80,10 +80,10 @@ let cpp_name syms bbdfns index =
     with _ -> failwith ("[cpp_name] Can't find index " ^ si index)
   in
   (match entry with
-  | `BBDCL_function _ -> "_fun_"   
-  | `BBDCL_procedure _  -> "_proc_"
-  | `BBDCL_var _ -> "_var_"
-  | `BBDCL_val _ -> "_val_"
+  | `BBDCL_function _ -> "_f_"   
+  | `BBDCL_procedure _  -> "_p_"
+  | `BBDCL_var _ -> "_v_"
+  | `BBDCL_val _ -> "_v_"
   | _ -> failwith "cpp_name expected func,proc,var or val"
   ) ^ si index ^ "_" ^ cvt id
 
@@ -102,7 +102,7 @@ let cpp_instance_name syms bbdfns index ts =
       "<" ^ si index ^ ">[" ^catmap ", " (string_of_btypecode syms.dfns) ts ^ "]"
     )
   in
-  "_inst_" ^ si inst ^ "_" ^ cpp_name syms bbdfns index 
+  "_i" ^ si inst ^ "_" ^ cpp_name syms bbdfns index 
 
 let rec cpp_type_classname syms t = 
   let registry = syms.registry in
@@ -115,31 +115,31 @@ let rec cpp_type_classname syms t =
   | `BTYP_tuple [] -> "unit"
 
   | `BTYP_pointer t' -> 
-    "_ref_" ^ cpp_type_classname syms t' 
+    "_rt" ^ cpp_type_classname syms t' 
 
   | `BTYP_function (_,`BTYP_void) -> 
-    "_proc_type_" ^ si (Hashtbl.find registry t) 
+    "_pt" ^ si (Hashtbl.find registry t) 
 
   | `BTYP_function _ -> 
-    "_fun_type_" ^ si (Hashtbl.find registry t)
+    "_ft" ^ si (Hashtbl.find registry t)
 
   | `BTYP_tuple _ -> 
-    "_tuple_type_" ^ si (Hashtbl.find registry t)
+    "_tt" ^ si (Hashtbl.find registry t)
   
   | `BTYP_sum _ -> 
-    "_sum_type_" ^ si (Hashtbl.find registry t)
+    "_st" ^ si (Hashtbl.find registry t)
 
     
   | `BTYP_inst (i,_) -> 
     let id,sr,parent,vs,tabl,dirs,entry = Hashtbl.find syms.dfns i in
     let prefix =
       match entry with
-      | `SYMDEF_struct _  -> "_struct_"
-      | `SYMDEF_union _  -> "_union_"
-      | `SYMDEF_abs _ -> "_abs_"
+      | `SYMDEF_struct _  -> "_s"
+      | `SYMDEF_union _  -> "_u"
+      | `SYMDEF_abs _ -> "_a"
       | _ -> "_unk_"
     in 
-      prefix ^ si i ^ "_type_" ^ si (Hashtbl.find registry t) 
+      prefix ^ si i ^ "t_" ^ si (Hashtbl.find registry t) 
 
   | _ -> 
     failwith 
