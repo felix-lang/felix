@@ -1,0 +1,215 @@
+@head(1,"Optimisation stuff")
+Name binding pass 2.
+
+@h = tangler("src/flx_call.mli")
+@select(h)
+open Flx_ast
+open Flx_types
+
+type usage_table_t =  (bid_t, (bid_t * range_srcref) list) Hashtbl.t
+type usage_t =  usage_table_t * usage_table_t
+
+val call_data:
+  fully_bound_symbol_table_t -> usage_t
+
+val print_call_report:
+  fully_bound_symbol_table_t -> string -> unit
+
+@h = tangler("src/flx_call.ml")
+@select(h)
+open Flx_ast
+open Flx_types
+open Flx_srcref
+open Flx_mtypes
+open List
+open Flx_exceptions
+
+type usage_table_t =  (bid_t, (bid_t * range_srcref) list) Hashtbl.t
+type usage_t =  usage_table_t * usage_table_t
+
+let add (h:usage_table_t) k j sr = 
+  Hashtbl.replace h k
+  (
+    (j,sr) 
+    ::
+    (
+      try Hashtbl.find h k 
+      with Not_found -> []
+    )
+  )
+
+let add_inst (uses,usedby) k j sr =
+  add uses k j sr;
+  add usedby j k sr
+
+let rec process_expr h k sr ((e,t) as be) =
+  let ue e = process_expr h k sr e in
+  let ui i = add_inst h k i sr in
+  begin match e with
+  | `BEXPR_deref e
+  | `BEXPR_get_n (_,e)
+  | `BEXPR_match_case (_,e)
+  | `BEXPR_case_arg (_,e)
+    -> ue e
+    
+  | `BEXPR_apply (e1,e2) -> 
+    ue e1; ue e2
+
+  | `BEXPR_tuple es -> iter ue es 
+     
+  | `BEXPR_coercion (e,_) -> ue e
+     
+  | `BEXPR_case (_,t) -> ()
+
+  | `BEXPR_ref (i,_) 
+  | `BEXPR_name (i,_)
+  | `BEXPR_closure (i,_)
+    -> 
+    (* substitute out display variables *)
+    ui i
+
+  | `BEXPR_literal _ -> ()
+  | `BEXPR_expr (_,t) -> ()
+  end
+
+and process_exe (h:usage_t) k exe =
+  let ue sr e = process_expr h k sr e in
+  let ui i sr = add_inst h k i sr in
+  match exe with
+  | `BEXE_call (sr,e1,e2) 
+  | `BEXE_jump (sr,e1,e2) 
+    -> ue sr e1; ue sr e2
+    
+  | `BEXE_loop (sr,_,e)
+  | `BEXE_ifgoto (sr,e,_)
+  | `BEXE_ifnotgoto (sr,e,_)
+  | `BEXE_fun_return (sr,e) 
+    -> ue sr e
+
+  | `BEXE_init (sr,i,e) -> ui i sr; ue sr e
+  | `BEXE_assign (sr,e1,e2) -> ue sr e1; ue sr e2
+
+  | `BEXE_read (sr,i) -> ui i sr
+
+  | `BEXE_regmatch (sr,e,(_,_,h,_)) -> 
+    ue sr e;
+    Hashtbl.iter
+    (fun _ e -> ue sr e)
+    h
+
+  | `BEXE_reglex (sr,p1,p2,(_,_,h,_)) -> 
+    ue sr p1; 
+    ue sr  p2;
+    Hashtbl.iter
+    (fun _ e -> ue sr e)
+    h
+
+  | `BEXE_label _
+  | `BEXE_goto _
+  | `BEXE_code _
+  | `BEXE_comment _
+  | `BEXE_nop _
+  | `BEXE_proc_return _
+    -> ()
+
+
+let call_data (bbdfns:fully_bound_symbol_table_t):usage_t =
+  let uses = Hashtbl.create 97 in
+  let usedby = Hashtbl.create 97 in
+  let usage = uses,usedby in
+  Hashtbl.iter
+  (fun k (_,_,_,entry) -> match entry with
+  | `BBDCL_procedure (_,_,_,exes)
+  | `BBDCL_function (_,_,_,_,exes) ->
+    iter (process_exe usage k) exes
+  | _ -> () 
+  )
+  bbdfns
+  ;
+  usage
+
+(* closure of i, excluding i unless it is recursive! *)
+let cls h i =
+  let c = ref PosSet.empty in
+  let rec add j =
+    if not (PosSet.mem j !c) then 
+    begin
+      c := PosSet.add j !c;
+      let x = try Hashtbl.find h j with Not_found -> [] in
+      iter (fun (j,_) -> add j) x
+    end
+  in
+    let x = try Hashtbl.find h i with Not_found -> [] in
+    iter (fun (j,_) -> add j) x
+    ;
+    !c
+
+let is_recursive h i = PosSet.mem i (cls h i)
+
+let call_report bbdfns (uses,usedby) f k =
+  let si = string_of_int in
+  let catmap = Flx_util.catmap in
+  let w s = output_string f s in
+  let isr = is_recursive uses k in
+  let id,_,sr,entry = Hashtbl.find bbdfns k in
+  w (si k ^ ": ");
+  w (if isr then "recursive " else "");
+  w
+    begin match entry with
+    | `BBDCL_function _ -> "fun "
+    | `BBDCL_procedure _ -> "proc "
+    | `BBDCL_var _ -> "var "
+    | `BBDCL_val _ -> "val "
+    | _ -> assert false
+    end
+  ;
+  w (id ^ " uses: ");
+  let u = try Hashtbl.find uses k with Not_found -> [] in
+  let x = ref [] in
+  iter 
+  (fun (i,_) -> 
+    if not (mem i !x) then 
+    try match Hashtbl.find bbdfns i with
+      | _,_,_,`BBDCL_procedure _
+      | _,_,_,`BBDCL_function _
+      | _,_,_,`BBDCL_var _
+      | _,_,_,`BBDCL_val _ -> x := i::!x
+      | _ -> ()
+    with Not_found -> ()
+  ) 
+  u;
+  let u = sort compare !x in
+  w (catmap "," si u);
+  w "; usedby: ";
+  let u = try Hashtbl.find usedby k with Not_found -> [] in
+  let x = ref [] in
+  iter (fun (i,_) -> if not (mem i !x) then x := i::!x) u;
+  let u = sort compare !x in
+  w (catmap "," si u);
+  w "\n"
+
+let print_call_report' bbdfns usage f =
+  let x = ref [] in
+  Hashtbl.iter
+  (fun k (id,_,sr,entry) ->
+    match entry with
+    | `BBDCL_procedure _
+    | `BBDCL_function _
+    | `BBDCL_var _
+    | `BBDCL_val _
+      -> x := k :: !x
+    | _ -> ()
+  )
+  bbdfns
+  ;
+  iter
+    (call_report bbdfns usage f)
+    (sort compare (!x))
+
+let print_call_report bbdfns filename =
+  let usage = call_data bbdfns in
+  let f = open_out filename in
+  print_call_report' bbdfns usage f;
+  close_out f
+
+  

@@ -1,0 +1,414 @@
+@head(1,"Elide unused entries")
+Name binding pass 2.
+
+@h = tangler("src/flx_inline.mli")
+@select(h)
+open Flx_ast
+open Flx_types
+
+val heavy_inlining:
+  sym_state_t ->
+  (bid_t, bid_t list) Hashtbl.t *
+  fully_bound_symbol_table_t ->
+  bid_t ->
+  biface_t list ->
+  fully_bound_symbol_table_t
+
+@h = tangler("src/flx_inline.ml")
+@select(h)
+open Flx_util
+open Flx_ast
+open Flx_types
+open Flx_print
+open Flx_mtypes
+open Flx_typing
+open Flx_mbind
+open Flx_srcref
+open List
+open Flx_unify
+open Flx_treg
+open Flx_generic
+open Flx_maps
+open Flx_exceptions
+open Flx_use
+
+module BidSet = PosSet
+
+exception Found
+let has_nested_funs (child_map,bbdfns) i =
+  let children = try Hashtbl.find child_map i with Not_found -> [] in
+  try
+    iter
+    (fun i ->
+      let id,parent,sr,entry = Hashtbl.find bbdfns i in
+      match entry with 
+      | `BBDCL_procedure _ 
+      | `BBDCL_function _  -> raise Found
+      | _ -> ()
+    )
+    children
+    ;
+    false
+  with Found -> true
+    
+(* Heavy inlining routine. This routine can inline
+any procedure. The basic operation is emit the body
+of the target procedure. We have to do the following to
+make it all work.
+
+(1) Each declared label is replaced by a fresh one,
+and all jumps to these labels modified accordingly.
+
+(2) Variables are replaced by fresh ones. This requires
+making additions to the output bound tables. References
+to the variables are modified. Note the parent is the
+caller now.
+
+(3) Paremeters are replaced like variables, initialised
+by the arguments.
+
+(4) Any type variables instantiated by the call must
+also be instantiated in body expressions, as well as
+the typing of any generated variables.
+
+(5) If the procedure has any nested procedures, they
+also must be replaced in toto by fresh ones, reparented
+to the caller so that any calls to them will access
+the fresh variables in the caller.
+
+Note that the cache of children of the caller will
+be wrong after the inlining (it may have acquired new
+variables or procedure children).
+
+Note that this inlining procedure is NOT recursive!
+Its a flat one level inlining. This ensures recursive
+calls don't cause an infinite unrolling, and hopefully
+prevent gross bloat.
+*)
+
+let mk_label_map syms exes = 
+  let h = Hashtbl.create 97 in
+  let aux = function
+  | `BEXE_label (sr,s) -> 
+    let n = !(syms.counter) in
+    incr syms.counter;
+    let s' =  "_" ^ si n in
+    Hashtbl.add h s s'
+  | _ -> ()
+  in
+    iter aux exes;
+    h
+    
+let mk_var_map syms varmap new_parent vs' bbdfns bbdfns2 k =
+  let h = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun i (id,parent,sr,entry) ->
+    if parent = Some k then
+    match entry with
+    | `BBDCL_var (vs,t) 
+    | `BBDCL_val (vs,t) ->
+      let n = !(syms.counter) in
+      incr syms.counter;
+
+      let t = varmap_subst varmap t in
+      let entry = match entry with 
+        | `BBDCL_var _ -> `BBDCL_var (vs',t) 
+        | `BBDCL_val _ -> `BBDCL_val (vs',t) 
+        | _ -> assert false
+      in
+      Hashtbl.add bbdfns2 n (id,Some new_parent,sr,entry);
+      Hashtbl.add h i n;
+
+      (* slightly hacky .. *)
+      let symdat = Hashtbl.find syms.dfns i in
+      let symdat = { symdat with parent = Some new_parent } in
+      Hashtbl.add syms.dfns n symdat
+
+
+    | _ -> ()
+  )
+  bbdfns
+  ;
+  h
+
+let gen_expr syms varmap revariable e = 
+  let auxt t = varmap_subst varmap t in
+  let rec aux e = match map_tbexpr aux auxt e with
+  | (`BEXPR_name (i,ts) as x,t) ->
+    let ts' = map auxt ts in
+    let j = try Hashtbl.find revariable i with Not_found -> i in
+    `BEXPR_name (j,ts'), auxt t
+  | (`BEXPR_ref (i,ts) as x,t) ->
+    let ts' = map auxt ts in
+    let j = try Hashtbl.find revariable i with Not_found -> i in
+    `BEXPR_ref (j,ts'), auxt t
+  | x -> x
+  in
+    let a = aux e in
+    (*
+    print_endline ("replace " ^ sbe syms.dfns e ^ "-->" ^ sbe syms.dfns a);
+    *)
+    a
+
+let mk_tvar_map vs ts =
+  let varmap = Hashtbl.create 97 in (* type variable assignments *)
+  iter2
+  (fun (_,i) t -> Hashtbl.add varmap i t)
+  vs ts
+  ;
+  varmap
+
+(* NOTE: result is in reversed order *)
+let gen_body syms bbdfns bbdfns2 id varmap ps relabel revariable exes argument sr =
+  let paramtype  =
+    let pt = 
+      let pts = map (fun (_,(_,t)) -> t) ps in
+      match pts with
+      | [x] -> x
+      | x -> `BTYP_tuple x
+    in
+      varmap_subst varmap pt
+  in
+ 
+  let ge e = gen_expr syms varmap revariable e in
+  let relab s = try Hashtbl.find relabel s with Not_found -> s in
+  let revar i = try Hashtbl.find revariable i with Not_found -> i in
+  let self_loop = ref false in
+  let end_label_used = ref false in
+
+  (* create a variable for the parameter *)
+  let parameter = !(syms.counter) in 
+  incr syms.counter; 
+  (*
+  print_endline ("Parameter assigned index " ^ si parameter);
+  *)
+
+  (* create an end label using the parameter index as id *)
+  let end_label = "_end_" ^ (si parameter) in 
+
+  (* create variables for parameter components *)
+  if length ps > 1 then 
+  for i = 1 to length ps do incr syms.counter done;
+  
+  (* create a possible label for a tail call *)
+  let loop_start = 
+    let n = !(syms.counter) in 
+    incr syms.counter;
+    "loop_" ^ si n 
+  in
+  let remap: bexe_t -> bexe_t list =  function
+  | `BEXE_call (sr,e1,e2)  -> [`BEXE_call (sr,ge e1, ge e2)]
+  | `BEXE_jump (sr,e1,e2)  -> [`BEXE_jump (sr,ge e1, ge e2)]
+  | `BEXE_loop (sr,i,e) -> 
+
+    (* SPECIAL HANDLING OF LOOP REQUIRED *)
+    if i = 0 then begin
+      self_loop := true;
+      [
+        `BEXE_init (sr,parameter,ge e);
+        `BEXE_goto (sr,loop_start)
+      ]
+    end
+    else 
+    begin
+      failwith "Loop to non-self unimplemented in inliner";
+      (* this is probably right sometimes .. need to check *)
+      [`BEXE_loop (sr,i-1,ge e)]
+    end
+
+  | `BEXE_ifgoto (sr,e,lab) -> [`BEXE_ifgoto (sr,ge e, relab lab)]
+  | `BEXE_ifnotgoto (sr,e,lab) -> [`BEXE_ifnotgoto (sr,ge e, relab lab)]
+  | `BEXE_fun_return (sr,e) -> [`BEXE_fun_return (sr, ge e)]
+  | `BEXE_assign (sr,e1,e2) -> [`BEXE_assign (sr, ge e1, ge e2)]
+  | `BEXE_init (sr,i,e) -> [`BEXE_init (sr,revar i, ge e)]
+  | `BEXE_read (sr,i)  -> [`BEXE_read (sr, revar i)]
+
+  | `BEXE_regmatch (sr,e,(a,sc,h,tr)) ->
+    let h' = Hashtbl.create 97 in
+    Hashtbl.iter 
+    (fun k v -> Hashtbl.add h' k (ge v))
+    h
+    ;
+    [`BEXE_regmatch (sr, ge e,(a,sc,h',tr))]
+    
+  | `BEXE_reglex (sr,p1,p2,(a,sc,h,tr)) ->
+    let h' = Hashtbl.create 97 in
+    Hashtbl.iter 
+    (fun k v -> Hashtbl.add h' k (ge v))
+    h
+    ;
+    [`BEXE_reglex (sr, ge p1, ge p2,(a,sc,h',tr))]
+
+  | `BEXE_code (sr,s)  as x -> [x]
+  | `BEXE_goto (sr,lab) -> [`BEXE_goto (sr, relab lab)]
+  | `BEXE_proc_return sr as x -> 
+    end_label_used := true;
+    [`BEXE_goto (sr,end_label)]
+
+  | `BEXE_comment (sr,s) as x -> [x]
+  | `BEXE_nop (sr,s) as x -> [x]
+  | `BEXE_label (sr,lab) -> [`BEXE_label (sr, relab lab)]
+  in
+    let b = ref [`BEXE_comment (sr,("Inline call to " ^ id))] in
+
+    (* Initialise parameter to argument, but only if
+       the argument is not unit
+    *)
+    if length ps > 0 then
+    begin
+      let x = `BEXE_init (sr,parameter,argument) in
+      b := x :: !b;
+
+      (* unpack argument *)
+      if length ps > 1 then
+      let p = `BEXPR_name (parameter,[]),paramtype in  
+      for i = 1 to length ps do
+        let prjt = snd (snd (List.nth ps (i-1))) in
+        let prjt = varmap_subst varmap prjt in
+        let prj = `BEXPR_get_n (i-1,p),prjt in
+        let x = `BEXE_init (sr,parameter + i,prj) in
+        b := x :: !b;
+      done
+    end
+    ;
+    (* If we loop with a tail call, make an entry point for the jump *)
+    if !self_loop then
+    begin
+      let x = `BEXE_label (sr,loop_start) in
+      b := x :: !b;
+    end
+    ;
+    iter
+    (fun exe -> 
+      iter 
+      (fun x -> b := x :: !b) 
+      (remap exe)
+    )
+    exes
+    ;
+    if !end_label_used then 
+      b := (`BEXE_label (sr,end_label)) :: !b
+    ;
+    !b
+
+let heavy_inline_call syms bbdfns bbdfns2 caller vs' callee ts argument =
+  (*
+  print_endline ("Examining call to " ^ si callee);
+  *)
+  let id,parent,sr,entry = Hashtbl.find bbdfns callee in
+  match entry with 
+  | `BBDCL_procedure (props,vs,ps,exes) ->
+    (*
+    print_endline ("Found procedure "^id^": Inline it!");
+    *)
+    let label_map = mk_label_map syms exes in
+    let varmap = mk_tvar_map vs ts in
+    let var_map = mk_var_map syms varmap caller vs' bbdfns bbdfns2 callee in
+    gen_body syms bbdfns bbdfns2 id varmap ps label_map var_map exes argument sr
+
+  | _ -> assert false
+  
+
+let heavy_inline_calls syms (child_map,bbdfns) bbdfns2 vs' exes caller =
+  let exes' = ref [] in
+  iter
+  (function 
+  | `BEXE_call (sr,(`BEXPR_closure (callee,ts),_),argument) as x ->
+     let id,parent,sr,entry = Hashtbl.find bbdfns callee in
+     begin match entry with
+     | `BBDCL_procedure _ ->
+       if not (has_nested_funs (child_map,bbdfns) callee) then
+       let xs = 
+         heavy_inline_call syms bbdfns bbdfns2 caller vs' callee ts argument
+       in 
+         exes' := xs @ !exes'
+       else
+         exes' := x :: !exes'
+
+     | _ ->  exes' := x :: !exes'
+     end
+
+  | `BEXE_jump (sr,(`BEXPR_closure (callee,ts),_),argument) as x ->
+     let id,parent,sr,entry = Hashtbl.find bbdfns callee in
+     begin match entry with
+     | `BBDCL_procedure _ ->
+       if not (has_nested_funs (child_map,bbdfns) callee) then
+       let xs = 
+         heavy_inline_call syms bbdfns bbdfns2 caller vs' callee ts argument
+       in 
+         exes' := xs @ !exes'
+       else
+         exes' := x :: !exes'
+
+     | _ ->  exes' := x :: !exes'
+     end
+     ;
+     exes' := `BEXE_proc_return sr :: !exes'
+
+  | x -> exes' := x :: !exes'
+  )
+  exes
+  ;
+  rev !exes'
+  
+let heavily_inline_bbdcl syms (child_map,bbdfns) bbdfns2 i =
+  let data =
+    match Hashtbl.find bbdfns i with
+    | id,parent,sr,`BBDCL_procedure (props,vs,p,exes) ->
+      (*
+      print_endline ("Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
+      *)
+      let exes = heavy_inline_calls syms (child_map,bbdfns) bbdfns2 vs exes i in
+      id,parent,sr,`BBDCL_procedure (props,vs,p,exes)
+
+    | id,parent,sr,`BBDCL_function (props,vs,p,ret,exes) ->
+      (*
+      print_endline ("Examining function " ^ id ^"<" ^ si i ^ "> for inlinable calls");
+      *)
+      let exes = heavy_inline_calls syms (child_map,bbdfns) bbdfns2 vs exes i in
+      id,parent,sr,`BBDCL_function (props,vs,p,ret,exes)
+    | x -> x
+  in
+    Hashtbl.add bbdfns2 i data
+
+let heavy_inlining syms  
+  (child_map,bbdfns)
+  (root:bid_t) 
+  (bifaces:biface_t list) 
+=
+  (* make set of used things, initially empty *)
+  let used = ref BidSet.empty in
+
+  (* make a list of the root and all exported functions,
+  add exported types and components thereof into the used
+  set now too
+  *)
+  let roots = ref [root] in
+  iter
+  (function
+     | `BIFACE_export_fun (_,x,_) -> roots := x :: !roots
+     | `BIFACE_export_type (_,t,_) -> 
+        uses_type syms used (child_map,bbdfns) t
+  )
+  bifaces
+  ;
+  let uses i = uses syms used (child_map,bbdfns) i in
+
+  (* add root items to set, then add items it uses *)
+  iter uses !roots
+  ;
+  (* copy used things *)
+  let bbdfns2 = Hashtbl.create 97 in
+  BidSet.iter (heavily_inline_bbdcl syms (child_map,bbdfns) bbdfns2) !used
+  ;
+  (* copy all header and body specs, they're always considered used *)
+  Hashtbl.iter
+  (fun i b -> match b with
+    | _,_,_,`BBDCL_header _
+    | _,_,_,`BBDCL_body _ -> Hashtbl.add bbdfns2 i b
+    | _ -> ()
+  )
+  bbdfns
+  ;
+  bbdfns2
+
