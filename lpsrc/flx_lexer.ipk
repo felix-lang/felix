@@ -53,6 +53,8 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "attempt", (fun s ->  ATTEMPT s);
     "endattempt", (fun s ->  ENDATTEMPT s);
     "endmatch", (fun s ->  ENDMATCH s);
+    "let", (fun s ->  LET s);
+    "in", (fun s ->  IN s);
     "except", (fun s ->  EXCEPT s);
     "finally", (fun s ->  FINALLY s);
     "raise", (fun s ->  RAISE s);
@@ -165,6 +167,7 @@ class lexer_state filename basedir incdirs =
     val comment_ctrl = new comment_control
     val file_ctrl = new file_control filename basedir incdirs 
     val mutable at_line_start = true
+    val slosh_mode = Dec
     method is_at_line_start = at_line_start
 
     method inbody = at_line_start <- false
@@ -203,7 +206,7 @@ class lexer_state filename basedir incdirs =
         !n
       in 
         file_ctrl#incr (lfcount s); 
-        decoder s
+        decoder slosh_mode s
 
     method set_line n = file_ctrl#set_line n
     method set_filename f = file_ctrl#set_filename f
@@ -221,15 +224,16 @@ let lexeme_end = Lexing.lexeme_end
 let substr = String.sub
 let len = String.length
 
-let decode_qstring s = let n = len s in unescape (substr s 0 (n-1)) 
-let decode_dqstring s = let n = len s in unescape (substr s 0 (n-1)) 
-let decode_qqqstring s = let n = len s in unescape (substr s 0 (n-3)) 
-let decode_dddstring s = let n = len s in unescape (substr s 0 (n-3)) 
+(* string parsers *)
+let decode_qstring slosh_mode s = let n = len s in unescape slosh_mode (substr s 0 (n-1)) 
+let decode_dqstring slosh_mode s = let n = len s in unescape slosh_mode (substr s 0 (n-1)) 
+let decode_qqqstring slosh_mode s = let n = len s in unescape slosh_mode (substr s 0 (n-3)) 
+let decode_dddstring slosh_mode s = let n = len s in unescape slosh_mode (substr s 0 (n-3)) 
 
-let decode_raw_qstring s = let n = len s in substr s 0 (n-1) 
-let decode_raw_dqstring s = let n = len s in substr s 0 (n-1) 
-let decode_raw_qqqstring s = let n = len s in substr s 0 (n-3) 
-let decode_raw_dddstring s = let n = len s in substr s 0 (n-3) 
+let decode_raw_qstring slosh_mode s = let n = len s in substr s 0 (n-1) 
+let decode_raw_dqstring slosh_mode s = let n = len s in substr s 0 (n-1) 
+let decode_raw_qqqstring slosh_mode s = let n = len s in substr s 0 (n-3) 
+let decode_raw_dddstring slosh_mode s = let n = len s in substr s 0 (n-3)
 
 (* WARNING: hackery: adjust this when lex expression 'white'
    is adjutsed
@@ -946,6 +950,8 @@ and pre_flx_lex = parse
 @h = tangler('src/flx_lex.mli')
 @select(h)
 open Flx_types
+open Flx_string
+
 class comment_control :
   object
     val mutable nesting_level : int
@@ -987,7 +993,7 @@ class lexer_state :
     method adj : int -> unit
     method append_comment : string -> unit
     method comment_level : int
-    method decode : (string -> string) -> string -> string
+    method decode : (slosh_mode_t -> string -> string) -> string -> string
     method decr_comment : unit
     method get_comment : string
     method get_srcref : Lexing.lexbuf -> srcref

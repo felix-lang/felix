@@ -2335,6 +2335,25 @@ f i1;
 f i2;
 f i3;
 
+@head(2,'Let expression')
+There is a short form for match expressions.
+An expression of the form:
+@begin_displayed_code()
+  let letpat = expr1 in expr2
+@end_displayed_code()
+is equivalent to
+@begin_displayed_code()
+  match expr1 with letpat => expr2 endmatch
+@end_displayed_code()
+The let expression is, in effect, a prefix operator with
+the lowest precedence. 
+
+@select(tangler(tdir+'tut208.flx'))
+#include <std.flx>
+print (match 1 with | ?x =>  x + x endmatch); endl;
+print (let ?z = 1 in z + z); endl;
+print (let ?x = (let ?y = 2 in y + y) in x + x); endl; // 8
+
 @head(2,'Metatyping')
 Felix supports a metatyping or kinding system.
 The reserved identifer TYPE denots the kind of a type.
@@ -2374,7 +2393,7 @@ precisely the same syntax for type functions and ordinary ones;
 that is, the parser uses the same grammar to build expressions
 and type expresssions (though each imposes constraints).
 
-@select(tangler(tdir+'tut208.flx'))
+@select(tangler(tdir+'tut209.flx'))
 #include <std.flx>
 open Long;
 

@@ -138,6 +138,8 @@ let string_of_token (tok :Flx_parse.token): string =
   | WITH _ -> "with"
   | CASE _ -> "case"
   | ENDMATCH _ -> "endmatch"
+  | LET _ -> "let"
+  | IN _ -> "in"
   | TYPE _ -> "type"
   | TYPEDEF _ -> "typedef"
   | FUN _ -> "fun"
@@ -300,6 +302,8 @@ let src_of_token t = match t with
   | WITH s 
   | ENDMATCH s 
   | CASE s 
+  | LET s
+  | IN s
   | HEADER s 
   | BODY s 
   | MODULE s 

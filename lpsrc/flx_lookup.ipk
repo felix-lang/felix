@@ -945,10 +945,6 @@ and copy_entry syms parent binding_list index =
       let table' = copy_table syms (Some index') [] table in
       Other,`SYMDEF_procedure (ps,es,table',dirs)
 
-    | `SYMDEF_match_handler (p,u,es,table,dirs) ->
-      let table' = copy_table syms (Some index') [] table in
-      Other,`SYMDEF_match_handler (p,u,es,table',dirs)
-
     | `SYMDEF_typed_functor (ps,t,es,table,dirs) ->
       let table' = copy_table syms (Some index') [] table in
       Other,`SYMDEF_typed_functor (ps,t,es,table',dirs)
@@ -1752,7 +1748,7 @@ and  paramtype params = typeof_list (typlist params)
 and  sig_of_symdef symdef name = match symdef with 
   | `SYMDEF_lazy (_) 
   | `SYMDEF_match_check (_) 
-  | `SYMDEF_match_handler (_,_,_,_,_) -> `TYP_tuple[]
+    -> `TYP_tuple[]
 
   (* primitives *)
   | `SYMDEF_dcl (`DCL_fun (ps,_,_))
@@ -1909,16 +1905,6 @@ and typeofindex'
 
   | `SYMDEF_match_check _ ->
     `BTYP_function (`BTYP_tuple [], bool_t)
-
-  | `SYMDEF_match_handler (pat,mvar,exes,name_map,dirs) ->
-    let env = build_env syms excluded_dirs (Some index) in
-    let last_exe = list_last exes in
-    begin match last_exe with
-    | `EXE_return e ->
-      let rt = snd (bind_expression syms env (index::exclude) expr_fixlist depth excluded_dirs e) in
-      `BTYP_function (`BTYP_tuple [],rt)
-    | _ -> failwith ("Expected match_handler to end in return statement")
-    end
 
   | `SYMDEF_dcl (`DCL_fun (pts,rt,_)) -> 
     (* print_endline "Found function primitive";
@@ -2350,7 +2336,6 @@ and handle_function
         | `SYMDEF_dcl(`DCL_proc _ )
         | `SYMDEF_dcl(`DCL_fun _)
         | `SYMDEF_procedure _ 
-        | `SYMDEF_match_handler _ 
         | `SYMDEF_lazy _
           ->
           (*
@@ -2525,6 +2510,7 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
   print_endline "==";
   *)
   match e with
+  | `AST_letin _ -> failwith "Unexpected letin"
   | `AST_cond _ -> failwith "Unexpected conditional expression (should be replaced by match)"
   | `AST_typeof (sr,e) -> failwith "Unexpected 'typeof' in expression"
   | `AST_as (sr, (e1,e2)) -> failwith "Unexpected 'as' in expression" 
@@ -3001,7 +2987,6 @@ and get_table_dirs_of_index dfns index =
       | `SYMDEF_module (table,dirs) -> table,dirs
       | `SYMDEF_interface (table,dirs) -> table,dirs
       | `SYMDEF_function (ps,t,e,table,dirs) -> table,dirs
-      | `SYMDEF_match_handler (pat,ex,e,table,dirs) -> table,dirs
       | `SYMDEF_procedure (ps,e,table,dirs) -> table,dirs
       | `SYMDEF_lazy _ -> Hashtbl.create 97,[]
       | `SYMDEF_match_check _ -> Hashtbl.create 97,[]

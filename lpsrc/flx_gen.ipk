@@ -89,28 +89,33 @@ let find_references bbdfns name_map =
   let references = ref [] in
   Hashtbl.iter
   (fun id entryset -> 
-    match entryset with
-    | FunctionEntry _ -> ()
-    | NonFunctionEntry (Bound _) -> 
-      failwith "Not expecting bound entry"
+    try
+      match entryset with
+      | FunctionEntry _ -> ()
+      | NonFunctionEntry (Bound _) -> 
+        failwith "Not expecting bound entry"
 
-    | NonFunctionEntry (Simple idx) ->
-    let _,_,bbdfn = 
-      try Hashtbl.find bbdfns idx
-      with Not_found -> 
-        failwith 
-        (
-          "[find_references] can't find index " ^ 
-          string_of_int idx ^
-          " for name '" ^ id ^ "'"
-        )
-    in
-    match bbdfn with
-    | `BBDCL_var ((`BTYP_pointer _) as t)
-      -> references := (idx,lower t) :: !references
-    | `BBDCL_val ((`BTYP_pointer _) as t)
-      -> references := (idx,lower t) :: !references
-    | _ -> ()
+      | NonFunctionEntry (Simple idx) ->
+      let _,_,bbdfn = 
+        (* try *)
+        Hashtbl.find bbdfns idx
+        (*
+        with Not_found -> 
+          failwith 
+          (
+            "[find_references] can't find index " ^ 
+            string_of_int idx ^
+            " for name '" ^ id ^ "'"
+          )
+        *)
+      in
+      match bbdfn with
+      | `BBDCL_var ((`BTYP_pointer _) as t)
+        -> references := (idx,lower t) :: !references
+      | `BBDCL_val ((`BTYP_pointer _) as t)
+        -> references := (idx,lower t) :: !references
+      | _ -> ()
+    with Not_found -> ()
   ) 
   name_map
   ;
@@ -124,7 +129,6 @@ let get_name_map symdef name = match symdef with
     | `SYMDEF_procedure (_,_,name_map,dirs) -> name_map
     | `SYMDEF_module (name_map,dirs) -> name_map
     | `SYMDEF_interface (name_map,dirs) -> name_map
-    | `SYMDEF_match_handler (_,_,_,name_map,dirs) -> name_map
     | `SYMDEF_lazy _
     | `SYMDEF_match_check _ -> dummy_name_map
     | _ -> 
@@ -179,24 +183,34 @@ let find_members registry dfns bbdfns index =
   (
     List.map 
     (fun idx -> 
-      let id,parent,entry = 
-        try Hashtbl.find bbdfns idx 
-        with _ -> failwith ("[find_members] Can't find index " ^ string_of_int idx)
-      in
-      match entry with
-      | `BBDCL_var t
-      | `BBDCL_val t ->
-        (*
-        print_endline 
-        (
-          "Found variable or value " ^
-          id ^ 
-          " of (lowered) type " ^ string_of_btypecode dfns (lower t)
-        );
-        *)
-        let typename = cpp_typename registry dfns bbdfns (lower t) in
-        "  " ^ typename ^ " " ^ cpp_name bbdfns idx ^ ";\n"
-      | _ -> failwith "[find members] Expected variable or value"
+      try
+        let id,parent,entry = 
+          (* try  *)
+            Hashtbl.find bbdfns idx 
+          (*
+          with _ -> 
+            failwith 
+            (
+              "[find_members] Can't find index " ^ string_of_int idx ^ 
+              " member of " ^ string_of_int index
+            )
+          *)
+        in
+        match entry with
+        | `BBDCL_var t
+        | `BBDCL_val t ->
+          (*
+          print_endline 
+          (
+            "Found variable or value " ^
+            id ^ 
+            " of (lowered) type " ^ string_of_btypecode dfns (lower t)
+          );
+          *)
+          let typename = cpp_typename registry dfns bbdfns (lower t) in
+          "  " ^ typename ^ " " ^ cpp_name bbdfns idx ^ ";\n"
+        | _ -> failwith "[find members] Expected variable or value"
+      with Not_found -> "" (* ignore unused variables *)
     )
     variables
   )
@@ -211,7 +225,6 @@ let rec cal_display dfns parent display : bid_t list =
   match entry with
   | `SYMDEF_function _
   | `SYMDEF_procedure _
-  | `SYMDEF_match_handler _
   | `SYMDEF_match_check _
   | `SYMDEF_lazy _
     -> cal_display dfns parent' (parent::display)
@@ -222,7 +235,6 @@ let get_display_list dfns index : bid_t list =
   match entry with
   | `SYMDEF_function _
   | `SYMDEF_procedure _
-  | `SYMDEF_match_handler _
   | `SYMDEF_match_check _
   | `SYMDEF_lazy _
     -> List.rev (cal_display dfns parent [])
@@ -533,7 +545,7 @@ let get_var_ref (dfns:symbol_table_t) bbdfns this index : string =
         match entry with
         | `SYMDEF_function _
         | `SYMDEF_procedure _ 
-        | `SYMDEF_match_handler _ ->
+          ->
           (if i <> this
           then 
             "ptr" ^ cpp_name bbdfns i ^ "->"
@@ -563,7 +575,7 @@ let get_var_frame (dfns: symbol_table_t) bbdfns this index : string =
         match entry with
         | `SYMDEF_function _
         | `SYMDEF_procedure _ 
-        | `SYMDEF_match_handler _ ->
+          ->
           if i <> this
           then "ptr" ^ cpp_name bbdfns i
           else "this"
@@ -1166,12 +1178,20 @@ let gen_function_methods registry dfns bbdfns label_map counter index =
       (
         match List.length params with
         | 0 -> ""
-        | 1 -> "  " ^ cpp_name bbdfns (List.hd params) ^ " = _arg;\n"
+        | 1 -> 
+          let i = List.hd params in
+          if Hashtbl.mem bbdfns i 
+          then
+            "  " ^ cpp_name bbdfns i ^ " = _arg;\n"
+          else ""
         | _ -> 
           let counter = ref 0 in List.fold_left 
           (fun s i -> 
             let n = !counter in incr counter; 
-            s ^ "  " ^ cpp_name bbdfns i ^ " = _arg.mem_"^ string_of_int n ^";\n"
+            if Hashtbl.mem bbdfns i
+            then 
+              s ^ "  " ^ cpp_name bbdfns i ^ " = _arg.mem_"^ string_of_int n ^";\n"
+            else s (* elide initialisation of elided variable *)
           )
           "" params 
       )^
@@ -1216,11 +1236,20 @@ let gen_procedure_methods registry dfns bbdfns label_map counter index =
         "  _caller = _ptr_caller;\n" ^
         (match List.length params with
         | 0 -> ""
-        | 1 -> "  " ^ cpp_name bbdfns (List.hd params) ^ " = _arg;\n"
+        | 1 -> 
+          let i = List.hd params in
+          if Hashtbl.mem bbdfns i 
+          then
+            "  " ^ cpp_name bbdfns i ^ " = _arg;\n"
+          else ""
+
         | _ -> let counter = ref 0 in List.fold_left 
           (fun s i -> 
             let n = !counter in incr counter; 
-            s ^ "  " ^ cpp_name bbdfns i ^ " = _arg.mem_"^ string_of_int n ^";\n"
+            if Hashtbl.mem bbdfns i
+            then
+              s ^ "  " ^ cpp_name bbdfns i ^ " = _arg.mem_"^ string_of_int n ^";\n"
+            else s (* elide initialisation of elided variables *)
           )
           "" params
           ) ^
@@ -1600,33 +1629,8 @@ open Flx_name
 open Flx_tgen
 open Flx_gen
 open Flx_symtab
-;;
-
-let get_options argv = 
-  let options = ref [] in
-  for i = 1 to Array.length argv - 2 do
-    let s = argv.(i) in
-    let n = String.length s in
-    if n > 1 && s.[0]='-' then 
-      if s.[1]='-' then 
-      begin
-        let j = ref 2 in
-        while !j < n && s.[!j]<>'=' do incr j done;
-        let key = String.sub s 2 (!j - 2) in
-        let value = 
-          if s.[!j]='=' then 
-            String.sub s (!j+1) (n - !j - 1)
-          else 
-            ""
-        in
-          options := !options @ [key,value]
-      end 
-      else
-        options := !options @ [String.sub s 1 1, String.sub s 2 (n-2)]
-    else 
-      print_endline ("Option '"^s^"' must start with '-': ignored")
-  done;
-  !options
+open Flx_getopt
+open Flx_version
 ;;
 
 let print_help () =
@@ -1640,8 +1644,6 @@ let print_help () =
   exit(0)
 ;;
 
-let version_string = "1.0.1"
-;;
 let return_parity = ref true
 ;;
 
@@ -1682,8 +1684,9 @@ try
   end
   ;
 
+  if argc = 0 then exit(0);
   let filebase = Sys.argv.(argc-1) in
-  if filebase.[0] = '-' then failwith "No filename";
+  if filebase.[0] = '-' then exit(0);
   let module_name = 
     let n = String.length filebase in 
     let i = ref n in 
@@ -1762,6 +1765,23 @@ try
     print_endline "BINDING IS DONE"; flush stdout;
     *)
     let bifaces = bind_ifaces syms ifaces in
+
+    let top_class, root_proc = 
+      let id,sr,parent,entry = Hashtbl.find syms.dfns top_level_index in
+      let name_map = match entry with
+        | `SYMDEF_module (table,dirs) -> table
+        | _ -> failwith "Expected to find top level module ''"
+      in let entry = Hashtbl.find name_map "_init_" in
+      let index = match entry with
+        | FunctionEntry [Simple x] -> x
+        | FunctionEntry [] -> failwith "Couldn't find '_init_'"
+        | FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
+        | NonFunctionEntry _ -> failwith "_init_found but not procedure"
+      in cpp_name bbdfns index, index
+    in
+
+    if !print_flag then print_endline "//Eliding useless things";
+    let bbdfns = Flx_use.elide_unused bbdfns root_proc bifaces in
 
     if !print_flag then print_endline "//GENERATING C++: user headers";
     plh "#include \"rtl/flx_rtl.hpp\"";
@@ -1939,19 +1959,6 @@ try
     plb "  delete tf;";
     plb "}";
 
-    let top_class = 
-      let id,sr,parent,entry = Hashtbl.find syms.dfns top_level_index in
-      let name_map = match entry with
-        | `SYMDEF_module (table,dirs) -> table
-        | _ -> failwith "Expected to find top level module ''"
-      in let entry = Hashtbl.find name_map "_init_" in
-      let index = match entry with
-        | FunctionEntry [Simple x] -> x
-        | FunctionEntry [] -> failwith "Couldn't find '_init_'"
-        | FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
-        | NonFunctionEntry _ -> failwith "_init_found but not procedure"
-      in cpp_name bbdfns index
-    in
     plb "extern \"C\" continuation_t *start(";
     plb "  global_frame_t *gf,";
     plb "  process_frame_t *pf,";

@@ -172,6 +172,7 @@ and expr_t =
   | `AST_match_case of range_srcref * (int * expr_t)
   | `AST_ctor_arg of range_srcref * (qualified_name_t * expr_t)
   | `AST_case_arg of range_srcref * (int * expr_t)
+  | `AST_letin of range_srcref * (pattern_t * expr_t * expr_t)
 
   | `AST_get_n of range_srcref * (int * expr_t) (* get n'th component of a tuple *)
   | `AST_lazy of range_srcref * expr_t
@@ -502,13 +503,6 @@ type symbol_definition_t =
 
   | `SYMDEF_lazy of expr_t 
   | `SYMDEF_match_check of pattern_t * int 
-  | `SYMDEF_match_handler of 
-    pattern_t * 
-    int *
-    exe_t list * 
-    name_map_t * 
-    dir_t list
-
   | `SYMDEF_interface of name_map_t * dir_t list
   | `SYMDEF_typed_functor of 
     parameter_t list * 
@@ -651,6 +645,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_match (s, _) 
   | `AST_typeof (s, _) 
   | `AST_cond (s,_)
+  | `AST_letin (s,_)
     -> s
 
 let src_of_stmt e = match e with
@@ -841,6 +836,8 @@ and string_of_expr (e:expr_t) =
   match e with
   | #suffixed_name_t as n -> string_of_suffixed_name n
 
+  | `AST_letin (sr,(pat,e1, e2)) ->
+    "let " ^ string_of_letpat pat ^ " = " ^ se e1 ^ " in " ^ se e2
   | `AST_index (sr,i) -> "(index " ^ string_of_int i ^ ")"
   | `AST_bound_module (sr,(iface,impl,binding)) -> "(module_binding)"
   | `AST_coercion (_,(e,t)) -> 
@@ -1128,6 +1125,16 @@ and string_of_pattern p =
   | `PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_pattern p
   | `PAT_as (_,p,n) -> "(" ^ string_of_pattern p ^ " as " ^ n ^ ")"
   | `PAT_when (_,p,e) -> "(" ^ string_of_pattern p ^ " when " ^ se e ^ ")"
+
+and string_of_letpat p = 
+  match p with
+  | `PAT_name (_,s) -> s
+  | `PAT_tuple (_,ps) -> "(" ^ catmap ", "  string_of_letpat ps ^ ")"
+  | `PAT_any _ -> "_"
+  | `PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s 
+  | `PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_letpat p
+  | `PAT_as (_,p,n) -> "(" ^ string_of_pattern p ^ " as " ^ n ^ ")"
+  | _ -> failwith "unexpected pattern kind in let/in pattern" 
  
 and string_of_compound level ss = 
   spaces level ^ "{\n" ^
@@ -1442,9 +1449,6 @@ and string_of_symdef entry name = match entry with
   | `SYMDEF_match_check (pat,i)-> 
     "match_check " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
   
-  | `SYMDEF_match_handler (pat,i,es,_,dir) ->
-    "match_handler " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
-
   | `SYMDEF_interface (nm,dir) ->
     "interface " ^ name ^ ";"
 
@@ -1812,6 +1816,18 @@ let typecodeset_of_list x =
 
 let typecodeset_map f x = typecodeset_of_list (List.map f (TypecodeSet.elements x))
 
+(* for regular expressions *)
+
+(* PosSet -- set of positions in regular expression, used for followpos *)
+module PosSet = Set.Make (struct type t = int let compare=compare end);;
+
+(* set of PosSet's *)
+module PosSetSet = Set.Make (struct type t = PosSet.t let compare=compare end);;
+
+(* character set [char type is 'int'] *)
+module CharSet = Set.Make (struct type t = int let compare=compare end);;
+
+
 @h = tangler('src/flx_mtypes.mli')
 @select(h)
 module VarMap :
@@ -1861,6 +1877,91 @@ type typecodeset_t = TypecodeSet.t
 val typecodeset_of_list : TypecodeSet.elt list -> TypecodeSet.t
 val typecodeset_map :
   (TypecodeSet.elt -> TypecodeSet.elt) -> TypecodeSet.t -> TypecodeSet.t
+
+module PosSet :
+  sig
+    type elt = int
+    and t
+    val empty : t
+    val is_empty : t -> bool
+    val mem : elt -> t -> bool
+    val add : elt -> t -> t
+    val singleton : elt -> t
+    val remove : elt -> t -> t
+    val union : t -> t -> t
+    val inter : t -> t -> t
+    val diff : t -> t -> t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val subset : t -> t -> bool
+    val iter : (elt -> unit) -> t -> unit
+    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val for_all : (elt -> bool) -> t -> bool
+    val exists : (elt -> bool) -> t -> bool
+    val filter : (elt -> bool) -> t -> t
+    val partition : (elt -> bool) -> t -> t * t
+    val cardinal : t -> int
+    val elements : t -> elt list
+    val min_elt : t -> elt
+    val max_elt : t -> elt
+    val choose : t -> elt
+  end
+module PosSetSet :
+  sig
+    type elt = PosSet.t
+    and t
+    val empty : t
+    val is_empty : t -> bool
+    val mem : elt -> t -> bool
+    val add : elt -> t -> t
+    val singleton : elt -> t
+    val remove : elt -> t -> t
+    val union : t -> t -> t
+    val inter : t -> t -> t
+    val diff : t -> t -> t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val subset : t -> t -> bool
+    val iter : (elt -> unit) -> t -> unit
+    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val for_all : (elt -> bool) -> t -> bool
+    val exists : (elt -> bool) -> t -> bool
+    val filter : (elt -> bool) -> t -> t
+    val partition : (elt -> bool) -> t -> t * t
+    val cardinal : t -> int
+    val elements : t -> elt list
+    val min_elt : t -> elt
+    val max_elt : t -> elt
+    val choose : t -> elt
+  end
+module CharSet :
+  sig
+    type elt = int
+    and t
+    val empty : t
+    val is_empty : t -> bool
+    val mem : elt -> t -> bool
+    val add : elt -> t -> t
+    val singleton : elt -> t
+    val remove : elt -> t -> t
+    val union : t -> t -> t
+    val inter : t -> t -> t
+    val diff : t -> t -> t
+    val compare : t -> t -> int
+    val equal : t -> t -> bool
+    val subset : t -> t -> bool
+    val iter : (elt -> unit) -> t -> unit
+    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val for_all : (elt -> bool) -> t -> bool
+    val exists : (elt -> bool) -> t -> bool
+    val filter : (elt -> bool) -> t -> t
+    val partition : (elt -> bool) -> t -> t * t
+    val cardinal : t -> int
+    val elements : t -> elt list
+    val min_elt : t -> elt
+    val max_elt : t -> elt
+    val choose : t -> elt
+  end
 
 @head(1,'Compile time exceptions')
 @python('//')

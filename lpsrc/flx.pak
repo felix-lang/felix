@@ -1,6 +1,7 @@
 @bc = begin_displayed_code
 @ec = end_displayed_code
-@set_title('Felix')
+@flx_version = '1.0a5'
+@set_title('Felix '+flx_version)
 @head(1,'Purpose')
 Felix is a procedural language designed to implement
 ultra lightweight threads. An ultra-lightweight thread
@@ -23,6 +24,18 @@ C/C++ programmers, together with control inversion.
 @head(1,'Implementation')
 @head(2,'The Felix Compiler')
 @push_head()
+@h=tangler('src/flx_version.mli')
+@select(h)
+val version_string : string
+
+@h=tangler('src/flx_version.ml')
+@select(h)
+@tangle('let version_string = "'+flx_version+'"')
+@f = open ("VERSION","w")
+@f.write(flx_version+"\n")
+@f.close()
+
+@include_file ('flx_util.ipk')
 @include_file ('flx_types.ipk')
 @include_file ('flx_unify.ipk')
 @include_file ('flx_parser.ipk')
@@ -35,6 +48,7 @@ C/C++ programmers, together with control inversion.
 @include_file ('flx_lookup.ipk')
 @include_file ('flx_mbind.ipk')
 @include_file ('flx_bbind.ipk')
+@include_file ('flx_use.ipk')
 @include_file ('flx_name.ipk')
 @include_file ('flx_tgen.ipk')
 @include_file ('flx_gen.ipk')
@@ -47,6 +61,9 @@ C/C++ programmers, together with control inversion.
 @include_file ('flx_lib.ipk')
 @include_file ('flx_test.ipk')
 @include_file ('flx_regress.ipk')
+
+@head(2,'The lexer generator')
+@include_file ('flx_regexp.ipk')
 
 @head(2,'The Unix Build system')
 @include_file ('flx_maker.ipk')

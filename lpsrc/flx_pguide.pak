@@ -1,4 +1,4 @@
-@title("Felix Programmers Guide")
+@set_title("Felix Programmers Guide")
 @head(1,"Audience")
 This document is for programmers who need to understand
 how to bind Felix to C/C++. It explains the data structures

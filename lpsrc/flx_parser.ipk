@@ -231,7 +231,7 @@ let mkcurry sr name args return_type body =
 /* statement keywords */
 %token<Flx_types.srcref> IF THEN ELSE ENDIF ELIF OF VAR UNION CLASS CATEGORY EXCEPTIONS GOTO EXPORT
 
-%token<Flx_types.srcref> MATCH WITH ENDMATCH CASE HEADER BODY MODULE CODE
+%token<Flx_types.srcref> MATCH WITH ENDMATCH CASE HEADER BODY MODULE CODE LET IN
 %token<Flx_types.srcref> SERVICE COMMAND HANDLER CALL PROCEDURE FUNCTION READER FUNCTOR
 %token<Flx_types.srcref> RETURN FORK 
 %token<Flx_types.srcref> WHILE LOOP TO OPEN EQRIGHTARROW
@@ -684,6 +684,7 @@ val_def:
         Some $4
       ) 
     }
+
   | VAL NAME COLON type_expr EQUAL expr SEMI  
     { 
       `AST_val_decl 
@@ -1145,8 +1146,13 @@ basic_name: NAME { $1 }
 @head(2,'Executable Expressions')
 @select(h)
 expr: 
+  | LET pattern EQUAL expr IN expr 
+    { 
+      let sr = rsrange (slift $1) (src_of_expr $6) in
+      `AST_letin (sr,($2,$4,$6)) 
+    }
   | rvalue { $1 }
-
+  
 rvalue:
   | lambda { $1 }
 

@@ -71,6 +71,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
      name the types of the arguments now)
   *)
   match e with
+  | `AST_letin _ -> failwith "Not expecting conditional in when part of pattern (should be replaced by match)"
   | `AST_cond _ -> failwith "Not expecting conditional in when part of pattern (should be replaced by match)"
   | `AST_typeof _ -> failwith "Not expecting typeof in when part of pattern"
   | `AST_product _ -> failwith "Not expecting product in when part of pattern"

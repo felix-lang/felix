@@ -1,0 +1,2007 @@
+@head(1,'Types')
+@select(tangler('src/lex_types.mli'))
+type srcref = 
+  string * (* filename *)
+  int * (* line number, 1 origin *)
+  int * (* starting column, 1 origin *)
+  int   (* ending column, 1 origin *)
+
+type regexp_t = 
+  | REGEXP_seq of regexp_t * regexp_t
+  | REGEXP_alt of regexp_t * regexp_t
+  | REGEXP_aster of regexp_t
+  | REGEXP_name of string
+  | REGEXP_string of string
+  | REGEXP_epsilon 
+  | REGEXP_sentinel
+  | REGEXP_code of string
+  | REGEXP_eof
+
+type lexitem_t = 
+  | REGEXP_regdef of string * regexp_t
+  | REGEXP_rule of string * (regexp_t * string) list
+
+type regspec_t = lexitem_t list
+type lexspec_t = string * regspec_t * string
+
+@head(1,'Print')
+@select(tangler('src/lex_print.ml'))
+open Lex_types
+
+let string_of_char c = 
+  if c = -1 then "<<EOF>>" else
+  if c < 32 || c > 126
+  then "\\x" ^ Flx_string.hex2 c
+  else String.make 1 (Char.chr c)
+
+
+let rec string_of_re re = 
+  match re with
+  | REGEXP_seq (r1,r2) -> string_of_re r1 ^ " " ^ string_of_re r2
+  | REGEXP_alt (r1,r2) -> string_of_re r1 ^ " | " ^ string_of_re r2
+  | REGEXP_aster r -> "(" ^ string_of_re r ^ ")*"
+  | REGEXP_name s -> s
+  | REGEXP_string s -> 
+    let ss=Buffer.create (String.length s) in
+    Buffer.add_char ss '"';
+    for i = 0 to String.length s - 1 do
+      Buffer.add_string ss (string_of_char (Char.code s.[i]))
+    done;
+    Buffer.add_char ss '"';
+    Buffer.contents ss
+
+
+  | REGEXP_epsilon -> "epsilon"
+  | REGEXP_sentinel -> "sentinel"
+  | REGEXP_code s -> "{"^s^"}"
+  | REGEXP_eof -> "eof"
+
+let string_of_alt (re,code) =
+    "  | " ^ string_of_re re ^ " {" ^code^ "}"
+
+let string_of_lexitem item =
+  match item with
+  | REGEXP_regdef (s,re) ->
+    "let " ^ s ^ " = " ^ string_of_re re 
+  | REGEXP_rule (s,alts) ->
+    "rule " ^ s ^ " = \n" ^ 
+    String.concat "\n" (List.map string_of_alt alts) ^ 
+    "\n"
+   
+let string_of_regspec l =
+  String.concat "\n" (List.map string_of_lexitem l)
+
+let string_of_lexspec (u,l,f) =
+   "{" ^ u ^ "}" ^
+   string_of_regspec l ^
+   "{" ^ f ^ "}"
+
+@select(tangler('src/lex_print.mli'))
+val string_of_lexspec:
+  Lex_types.lexspec_t -> string
+
+val string_of_regspec:
+  Lex_types.regspec_t -> string
+
+val string_of_re:
+  Lex_types.regexp_t -> string
+
+val string_of_char:
+  int -> string
+
+@head(1,'Parser')
+@# define meta operators:
+@#  aster: t*
+@#  plus:  t+
+@#  quest: t?
+@# commalistof:  (t (,t)*)?
+@def plus(s):
+  for line in [
+    s + "_plus:",
+    "  | " + s + " " + s+ "_plus { $1 :: $2 }",
+    "  | " + s + " {[$1]}",
+  ]: tangle (line)
+  # begin_bold()
+  # weave("    " + s + "_plus: " + s + "+\n")
+  # end_bold()
+@def aster(s):
+  for line in [
+    s + "_aster:",
+    "  | " + s + " " + s+ "_aster { $1 :: $2 }",
+    "  | { [] }"
+  ]: tangle (line)
+  # begin_bold()
+  # weave("    " + s + "_aster: " + s + "*\n")
+  # end_bold()
+@def opt(s):
+  for line in [
+    s+"_opt:",
+    "  | " + s + " { Some $1 }",
+    "  | { None }"
+  ]: tangle (line)
+  # begin_bold()
+  # weave("    " + s + "_opt: " + s + "?\n")
+  # end_bold()
+
+@select(tangler('src/lex_parse.mly'))
+%{
+exception EndOfInput
+open Lex_types
+
+let charset_of_string s = 
+  let x = Array.make 256 false in
+  for i  = 0 to String.length s - 1 do
+    x.(Char.code s.[i]) <- true
+  done;
+  x
+
+
+let charset_of_int_range x1 x2 =
+  let x = Array.make 256 false in
+  for i = x1 to x2 do
+    x.(i) <- true 
+  done
+  ;
+  x
+
+let charset_of_range s1 s2 =
+  if String.length s1 <> 1 
+  then
+    failwith "Charset range(first) requires string length 1"
+  ;
+  if String.length s2 <> 1 
+  then
+    failwith "Charset range(last) requires string length 1"
+  ;
+  let x1 = Char.code (s1.[0])
+  and x2 = Char.code (s2.[0])
+  in 
+    charset_of_int_range x1 x2
+
+let charset_union x1 x2 = 
+  let x = Array.make 256 false in
+  for i = 0 to 255 do
+    x.(i) <- x1.(i) || x2.(i)
+  done;
+  x
+
+let charset_inv y =
+  let x = Array.make 256 false in
+  for i = 0 to 255 do
+    x.(i) <- not y.(i)
+  done;
+  x
+
+let regexp_of_charset y =
+  let res = ref REGEXP_epsilon in
+  for i = 0 to 255 do
+    if y.(i) then res := 
+      let r = REGEXP_string (String.make 1 (Char.chr i)) in
+      if !res = REGEXP_epsilon 
+      then r 
+      else REGEXP_alt ( !res, r)
+  done
+  ;
+  !res
+
+let regexp_underscore = 
+  regexp_of_charset (charset_of_int_range 0 255)
+
+let eol = Char.code '\n'
+
+let regexp_dot = 
+  regexp_of_charset 
+  (
+    charset_union 
+      (charset_of_int_range 0 (eol - 1))
+      (charset_of_int_range (eol + 1) 255)
+  )
+
+%}
+
+%token<string> ERRORTOKEN
+%token NEWLINE
+%token<int> WHITE
+%token<string> COMMENT 
+%token<string> COMMENT_NEWLINE
+%token ENDMARKER
+%token EQUAL
+%token LET RULE PARSE AND
+
+%token <string> NAME
+%token <string> STRING
+%token LBRA RBRA PLUS ASTER QUEST VBAR LBRACE RBRACE LSQ RSQ 
+%token DASH CARET EOF UNDERSCORE DOT
+%token<string> USERCODE
+
+%type<Lex_types.regexp_t> re1 re2 re3 re4
+%type<Lex_types.lexitem_t list> regitem
+%type<Lex_types.lexspec_t> lexspec
+%type<Lex_types.regspec_t> regspec
+%start lexspec
+
+%%
+lexspec:
+  | header regspec footer ENDMARKER 
+    { $1, $2, $3 }
+
+header:
+  | USERCODE { $1 }
+  | { "" }
+
+footer:
+  | USERCODE { $1 }
+  | { "" }
+
+regspec:
+  | regspeci { List.rev $1 }
+
+regspeci:
+  | regspeci regitem { $2 @ $1 }
+  | regitem { $1 }
+
+regitem:
+  | rules   { $1 }
+  | regdef { [$1] }
+
+rules:
+  | RULE rule andrules { $2 :: $3 }
+  | RULE rule  { [$2] }
+
+andrules:
+  | AND rule andrules { $2 :: $3 }
+  | AND rule { [$2] }
+
+rule:
+  | NAME EQUAL PARSE alternatives
+  {
+    REGEXP_rule ($1,List.rev $4)
+  }
+
+alternatives:
+  | alternatives alternative { $2 :: $1 }
+  | alternative { [$1] }
+
+alternative:
+  | VBAR re1 USERCODE { $2,$3 }
+  | re1 USERCODE { $1,$2 }
+
+
+regdef:
+  | LET NAME EQUAL re1       { REGEXP_regdef ($2,$4) }
+  
+re1:
+  | re1 VBAR re2             { REGEXP_alt ($1, $3) }
+  | re2                      { $1 }
+
+re2:
+  | re2 re3                  { REGEXP_seq ($1, $2) }
+  | re3                      { $1 }
+
+re3:
+  | re4 ASTER                { REGEXP_aster $1 }
+  | re4 PLUS                 { REGEXP_seq ($1,REGEXP_aster $1) }
+  | re4 QUEST                { REGEXP_alt (REGEXP_epsilon, $1) }
+  | re4                      { $1 }
+
+re4:
+  | STRING                  { REGEXP_string $1 }
+  | EOF                     { REGEXP_eof }
+  | UNDERSCORE              { regexp_underscore }
+  | DOT                     { regexp_dot }
+  | NAME                    { REGEXP_name $1 }
+  | LBRA re1 RBRA           { $2 }
+  | LSQ charset RSQ         { regexp_of_charset $2 }
+  | LSQ CARET charset RSQ   { regexp_of_charset (charset_inv $3) }
+
+charset0:
+  | STRING DASH STRING      { charset_of_range $1 $3 }
+  | STRING                  { charset_of_string $1 }
+charset:
+  | charset charset0        { charset_union $1 $2 }
+  | charset0                { $1 }
+  
+%%
+(* trailer *)
+
+@h = tangler('src/lex_keywords.ml')
+@select(h)
+
+open Lex_parse
+
+let hash_table_from_list n lst =
+  let tbl = Hashtbl.create n
+  in let addEntry (s,kw) = Hashtbl.add tbl s kw
+  in 
+  List.iter addEntry lst;
+  tbl
+
+
+let lex_keyword_table =          (* 97 is a prime larger than table size *)
+  hash_table_from_list 97 [  
+    "let",LET;
+    "rule",RULE;
+    "parse",PARSE;
+    "and",AND;
+    "eof",EOF;
+    "_",UNDERSCORE;
+]
+
+let map_lex_keywords lex_item = 
+  try (Hashtbl.find lex_keyword_table lex_item)
+  with Not_found -> NAME lex_item
+
+@h = tangler('src/lex_keywords.mli')
+@select(h)
+val map_lex_keywords : string -> Lex_parse.token
+
+
+@head(1,'Lexer')
+@select(tangler('src/lex_lex.mll'))
+{
+open Lex_parse
+open Lex_types
+open Flx_string
+open Flx_id
+
+class comment_control = 
+  object (self)
+    val mutable nesting_level = 0
+    val mutable text = ""
+
+    method set_text s = text <- s; nesting_level <- 1
+    method append s = text <- text ^ s
+    method get_comment = text
+
+    method incr = nesting_level <- nesting_level + 1
+    method decr = nesting_level <- nesting_level - 1
+    method get_nesting_level = nesting_level
+  end
+
+exception Found_file of string
+
+class file_control 
+  (filename' : string) 
+  (basedir': string) 
+  (incdirs': string list) 
+= 
+  object(self)
+    val mutable buf_pos =  0
+    val mutable last_buf_pos =  0
+    val mutable line_no =  0
+    val original_filename = filename'
+    val incdirs = incdirs'
+    val basedir = basedir'
+    val mutable filename = filename'
+
+    method incr_lex_counters lexbuf =
+      line_no <- line_no + 1;
+      last_buf_pos <- buf_pos;
+      buf_pos <- Lexing.lexeme_end lexbuf
+
+    method set_buf_pos x = buf_pos <- x
+    method get_buf_pos = buf_pos
+    method get_srcref lexbuf = 
+      filename, 
+      line_no + 1, 
+      Lexing.lexeme_start lexbuf - buf_pos + 1, 
+      Lexing.lexeme_end lexbuf - buf_pos 
+
+    method incr n = line_no <- line_no + n
+
+    method set_line n = line_no <- n
+    method set_filename f = filename <- f
+    method get_relative f = 
+      Filename.concat basedir f
+    method get_absolute f = 
+      try
+        List.iter
+        (fun d -> 
+          let f = Filename.concat d f in 
+          if Sys.file_exists f 
+          then raise (Found_file f)
+        )
+        incdirs
+        ;
+        failwith ("Library File <" ^ f ^ "> not found in path")
+      with Found_file s -> s 
+
+    method get_incdirs = incdirs
+  end
+
+class lexer_state filename basedir incdirs = 
+  object (self)
+    val comment_ctrl = new comment_control
+    val file_ctrl = new file_control filename basedir incdirs 
+    val mutable at_line_start = true
+    val slosh_mode = Dec
+    method is_at_line_start = at_line_start
+
+    method inbody = at_line_start <- false
+    method get_srcref lexbuf = file_ctrl#get_srcref lexbuf
+    method string_of_srcref lexbuf =
+      match self#get_srcref lexbuf with
+      (filename, lineno, scol,ecol) ->
+      "File \"" ^ filename ^ "\"" ^
+      ", Line " ^ string_of_int lineno ^
+      ", Columns " ^ string_of_int scol ^
+      "-" ^ string_of_int ecol
+
+    (* comments *)
+    method comment_level = comment_ctrl#get_nesting_level
+    method incr_comment = comment_ctrl#incr
+    method decr_comment = comment_ctrl#decr
+
+    method set_comment text = comment_ctrl#set_text text
+    method append_comment text = comment_ctrl#append text
+    method get_comment = comment_ctrl#get_comment
+
+    (* line counting *)
+    method newline lexbuf = 
+      at_line_start <- true;
+      file_ctrl#incr_lex_counters lexbuf
+
+    method adj n = file_ctrl#incr n
+
+    (* string decoders *)
+    method decode decoder (s : string) : string = 
+      let lfcount s = 
+        let n = ref 0 in
+        for i = 0 to (String.length s) - 1 do
+          if s.[i] = '\n' then incr n
+        done;
+        !n
+      in 
+        file_ctrl#incr (lfcount s); 
+        decoder slosh_mode s
+
+    method set_line n = file_ctrl#set_line n
+    method set_filename f = file_ctrl#set_filename f
+
+    method get_incdirs = file_ctrl#get_incdirs
+    method get_relative f = file_ctrl#get_relative f
+    method get_absolute f = file_ctrl#get_absolute f
+  end
+
+
+
+let lexeme = Lexing.lexeme
+let lexeme_start = Lexing.lexeme_start
+let lexeme_end = Lexing.lexeme_end
+
+let substr = String.sub
+let len = String.length
+
+(* string parsers *)
+let decode_qstring slosh_mode s = let n = len s in unescape slosh_mode (substr s 0 (n-1)) 
+let decode_dqstring slosh_mode s = let n = len s in unescape slosh_mode (substr s 0 (n-1)) 
+let decode_qqqstring slosh_mode s = let n = len s in unescape slosh_mode (substr s 0 (n-3)) 
+let decode_dddstring slosh_mode s = let n = len s in unescape slosh_mode (substr s 0 (n-3)) 
+
+let decode_raw_qstring slosh_mode s = let n = len s in substr s 0 (n-1) 
+let decode_raw_dqstring slosh_mode s = let n = len s in substr s 0 (n-1) 
+let decode_raw_qqqstring slosh_mode s = let n = len s in substr s 0 (n-3) 
+let decode_raw_dddstring slosh_mode s = let n = len s in substr s 0 (n-3)
+
+}
+let quote = '\''
+let dquote = '"'
+let slosh = '\\'
+let linefeed = '\n'
+let tab = '\t'
+let space = ' '
+let formfeed = '\012'
+let vtab = '\011'
+let carriage_return = '\013'
+let underscore = '_'
+
+(* character sets *)
+let bindigit = ['0'-'1']
+let octdigit = ['0'-'7'] 
+let digit = ['0'-'9']
+let hexdigit = digit | ['A'-'F'] | ['a'-'f']
+let lower = ['a'-'z']
+let upper = ['A'-'Z']
+(* let letter = lower | upper *)
+let letter = lower | upper
+let hichar = ['\128'-'\255']
+let white = space | tab
+
+(* nasty: form control characters *)
+let form_control = linefeed | carriage_return | vtab | formfeed
+let newline_prefix = linefeed | carriage_return
+let newline = formfeed | linefeed  | carriage_return linefeed
+(* let newline = newline_prefix form_control * *)
+
+let ordinary = letter | digit | hichar |
+  '!' | '#' | '$' | '%' | '&' | '(' | ')' | '*' |
+  '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' |
+  '=' | '>' | '?' | '@' | '[' | ']' | '^' | '_' |
+  '`' | '{' | '|' | '}' | '~'
+
+let printable = ordinary | quote | dquote | slosh
+
+(* identifiers *)
+let ucn = 
+    "\\u" hexdigit hexdigit hexdigit hexdigit 
+  | "\\U" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit
+
+let prime = '\''
+let idletter = letter | underscore | hichar | ucn
+let identifier = idletter (idletter | digit | prime )* 
+
+(* python strings *)
+let qqq = quote quote quote
+let ddd = dquote dquote dquote 
+
+let escape = slosh _ 
+
+let dddnormal = ordinary | quote | escape | white | newline
+let dddspecial = dddnormal | dquote dddnormal | dquote dquote dddnormal
+
+let qqqnormal = ordinary | dquote | escape | white | newline
+let qqqspecial = qqqnormal | quote qqqnormal | quote quote qqqnormal
+
+let raw_dddnormal = ordinary | quote | slosh | white | newline
+let raw_dddspecial = raw_dddnormal | dquote raw_dddnormal | dquote dquote raw_dddnormal
+
+let raw_qqqnormal = ordinary | dquote | slosh | space | newline
+let raw_qqqspecial = raw_qqqnormal | quote raw_qqqnormal | quote quote raw_qqqnormal
+
+let qstring = (ordinary | dquote | escape | white) * quote
+let dqstring = (ordinary | quote | escape | white) * dquote
+let qqqstring = qqqspecial * qqq
+let dddstring = dddspecial * ddd
+
+let raw_qstring = (ordinary | dquote | escape | white) * quote
+let raw_dqstring =  (ordinary | quote | escape | white) * dquote
+
+let raw_qqqstring = raw_qqqspecial * qqq
+let raw_dddstring = raw_dddspecial * ddd
+
+let not_newline_or_slosh = ordinary | quote | dquote | white
+let not_newline = not_newline_or_slosh | slosh
+let quoted_filename = dquote (ordinary | quote | white | slosh)+ dquote
+
+
+(* string lexers *)
+rule parse_qstring = parse
+| qstring { 
+    fun state -> 
+      state#inbody;
+      [STRING (
+        state#decode decode_qstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state -> 
+    [ERRORTOKEN (
+      "' string"
+    )] 
+  }
+
+and parse_dqstring = parse
+| dqstring {
+    fun state -> 
+      state#inbody;
+      [STRING (
+        state#decode decode_dqstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state ->
+    state#inbody; 
+    [ERRORTOKEN (
+      "\" string"
+    )]
+  }
+
+and parse_qqqstring = parse
+| qqqstring { 
+    fun state -> 
+      state#inbody;
+      [STRING (
+        state#decode decode_qqqstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state -> 
+    state#inbody;
+    [ERRORTOKEN (
+      "''' string"
+    )] 
+  }
+
+and parse_dddstring = parse
+| dddstring { 
+    fun state -> 
+      state#inbody;
+      [STRING (
+        state#decode decode_dddstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state -> 
+    state#inbody;
+    [ERRORTOKEN (
+      "\"\"\" string"
+    )] 
+  }
+
+and parse_raw_qstring = parse
+| raw_qstring { 
+    fun state -> 
+      state#inbody;
+      [STRING (
+        state#decode decode_raw_qstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state -> 
+    state#inbody;
+    [ERRORTOKEN (
+    "raw ' string")] 
+  }
+
+and parse_raw_dqstring = parse
+| raw_dqstring { 
+    fun state -> 
+      state#inbody;
+      [STRING (
+        state#decode decode_raw_dqstring (lexeme lexbuf)
+      )]
+  }
+| _ { 
+  fun state -> 
+    state#inbody;
+    [ERRORTOKEN (
+        "raw \" string"
+    )]
+  }
+
+and parse_raw_qqqstring = parse
+| raw_qqqstring { 
+    fun state -> 
+      state#inbody;
+      [STRING (
+        state#decode decode_raw_qqqstring (lexeme lexbuf)
+      )]
+  }
+| _ { fun state -> state#inbody; 
+  [ERRORTOKEN (
+    "raw ''' string")] }
+
+and parse_raw_dddstring = parse
+| raw_dddstring { 
+    fun state -> 
+      state#inbody;
+      [STRING (
+        state#decode decode_raw_dddstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+   fun state -> 
+     [ERRORTOKEN (
+       lexeme lexbuf)
+     ] 
+   }
+
+and parse_cpp_comment = parse 
+| [^'\n'] * newline {
+    fun state ->
+    begin
+      state#newline lexbuf;
+      let lex = lexeme lexbuf in
+      let n = String.length lex in
+      [COMMENT_NEWLINE  (String.sub lex 0 (n-1))]
+    end
+  }
+| _ { fun state -> [ERRORTOKEN ( lexeme lexbuf)] }
+
+and parse_user_code = parse 
+| "{" { 
+    fun state -> 
+    begin
+      state#append_comment (lexeme lexbuf);
+      state#incr_comment; 
+      parse_user_code lexbuf state
+    end
+  }
+| newline {
+    fun state -> 
+    begin
+      state#newline lexbuf;
+      state#append_comment (lexeme lexbuf);
+      parse_user_code lexbuf state
+    end
+  }
+| "}" { 
+    fun state ->
+    begin
+      state#decr_comment; 
+      if state#comment_level > 0 
+      then begin
+        state#append_comment (lexeme lexbuf); 
+        parse_user_code lexbuf state 
+      end
+      else ()
+      ;
+      state#inbody
+    end
+  }
+| _ {
+    fun state ->
+    begin
+      state#append_comment (lexeme lexbuf);
+      parse_user_code lexbuf state 
+    end
+  }
+
+and parse_C_comment = parse 
+| "/*" { 
+    fun state -> 
+    begin
+      state#append_comment (lexeme lexbuf);
+      state#incr_comment; 
+      parse_C_comment lexbuf state
+    end
+  }
+| newline {
+    fun state -> 
+    begin
+      state#newline lexbuf;
+      state#append_comment (lexeme lexbuf);
+      parse_C_comment lexbuf state
+    end
+  }
+| "*/" { 
+    fun state ->
+    begin
+      state#append_comment (lexeme lexbuf); 
+      state#decr_comment; 
+      if state#comment_level > 0 
+      then parse_C_comment lexbuf state 
+      else ()
+      ;
+      state#inbody
+    end
+  }
+| _ {
+    fun state ->
+    begin
+      state#append_comment (lexeme lexbuf);
+      parse_C_comment lexbuf state 
+    end
+  }
+
+and parse_ml_comment = parse 
+| "(*" { 
+    fun state -> 
+    begin
+      state#append_comment (lexeme lexbuf);
+      state#incr_comment; 
+      parse_ml_comment lexbuf state
+    end
+  }
+| newline {
+    fun state -> 
+    begin
+      state#newline lexbuf;
+      state#append_comment (lexeme lexbuf);
+      parse_ml_comment lexbuf state
+    end
+  }
+| "*)" { 
+    fun state ->
+    begin
+      state#append_comment (lexeme lexbuf); 
+      state#decr_comment; 
+      if state#comment_level > 0 
+      then parse_ml_comment lexbuf state 
+      else ()
+      ;
+      state#inbody
+    end
+  }
+| _ {
+    fun state ->
+    begin
+      state#append_comment (lexeme lexbuf);
+      parse_ml_comment lexbuf state 
+    end
+  }
+
+and pre_lex_lex = parse
+| "//" 
+  { 
+    fun (state : lexer_state) -> 
+    parse_cpp_comment lexbuf state 
+  }
+
+| "/*" { 
+    fun state ->
+    begin
+      state#set_comment (lexeme lexbuf);
+      parse_C_comment lexbuf state; 
+      [COMMENT (state#get_comment)]
+    end
+  }
+
+
+| "(*" { 
+    fun state ->
+    begin
+      state#set_comment (lexeme lexbuf);
+      parse_ml_comment lexbuf state; 
+      [COMMENT (state#get_comment)]
+    end
+  }
+
+| "{" { 
+    fun state ->
+    begin
+      state#set_comment "";
+      parse_user_code lexbuf state; 
+      [USERCODE (state#get_comment)]
+    end
+  }
+
+| identifier { 
+    fun state ->
+    begin
+      state#inbody;
+      let s = lexeme lexbuf in
+      let s' = Flx_id.utf8_to_ucn s in
+      [Lex_keywords.map_lex_keywords s']
+    end
+  } 
+
+| "[" { fun state -> state#inbody; [LSQ] }
+| "]" { fun state -> state#inbody; [RSQ] }
+| "-" { fun state -> state#inbody; [DASH] }
+| "^" { fun state -> state#inbody; [CARET] }
+| "(" { fun state -> state#inbody; [LBRA] }
+| ")" { fun state -> state#inbody; [RBRA] }
+| "*" { fun state -> state#inbody; [ASTER] }
+| "+" { fun state -> state#inbody; [PLUS] }
+| "?" { fun state -> state#inbody; [QUEST] }
+| "=" { fun state -> state#inbody; [EQUAL] }
+| "|" { fun state -> state#inbody; [VBAR] }
+| "_" { fun state -> state#inbody; [UNDERSCORE] }
+| "." { fun state -> state#inbody; [DOT] }
+
+| quote  { fun state -> state#inbody; parse_qstring lexbuf state }
+| qqq    { fun state -> state#inbody; parse_qqqstring lexbuf state }
+| dquote { fun state -> state#inbody; parse_dqstring lexbuf state }
+| ddd    { fun state -> state#inbody; parse_dddstring lexbuf state }
+
+| ('r'|'R') quote  { fun state -> state#inbody; parse_raw_qstring lexbuf state }
+| ('r'|'R') qqq    { fun state -> state#inbody; parse_raw_qqqstring lexbuf state }
+| ('r'|'R') dquote { fun state -> state#inbody; parse_raw_dqstring lexbuf state }
+| ('r'|'R') ddd    { fun state -> state#inbody; parse_raw_dddstring lexbuf state }
+
+| white + { 
+    fun state ->
+    begin
+      (* we do NOT say 'inbody' here: we want to accept
+         #directives with leading spaces
+      *)
+      let spaces=lexeme lexbuf in
+      let column = ref 0 in
+      let n = String.length spaces in
+      for i=0 to n-1 do match spaces.[i] with
+        | '\t' -> column := ((!column + 8) / 8) * 8
+        | ' ' -> incr column
+        | _ -> raise (Failure "Error in lexer, bad white space character")
+      done;
+      [WHITE  (!column)]
+    end
+  }
+
+| newline {
+  fun state ->
+    begin 
+      state#newline lexbuf; 
+      [NEWLINE ]
+    end
+  }
+| eof { fun state -> [ENDMARKER] }
+| _ { fun state -> state#inbody; 
+   [ERRORTOKEN (
+    lexeme lexbuf)]}
+
+{
+}
+
+
+@h = tangler('src/lex_lex.mli')
+@select(h)
+open Lex_types
+open Flx_string
+
+class comment_control :
+  object
+    val mutable nesting_level : int
+    val mutable text : string
+    method append : string -> unit
+    method decr : unit
+    method get_comment : string
+    method get_nesting_level : int
+    method incr : unit
+    method set_text : string -> unit
+  end
+class file_control :
+  string ->
+  string ->
+  string list ->
+  object
+    val mutable buf_pos : int
+    val filename : string
+    val mutable last_buf_pos : int
+    val mutable line_no : int
+    method get_buf_pos : int
+    method get_srcref : Lexing.lexbuf -> srcref
+    method incr : int -> unit
+    method incr_lex_counters : Lexing.lexbuf -> unit
+    method set_buf_pos : int -> unit
+    method set_line : int -> unit
+    method set_filename : string -> unit
+    method get_relative : string -> string
+    method get_incdirs : string list
+    method get_absolute : string -> string
+  end
+class lexer_state :
+  string ->
+  string ->
+  string list ->
+  object
+    val comment_ctrl : comment_control
+    val file_ctrl : file_control
+    val slosh_mode : slosh_mode_t
+    method adj : int -> unit
+    method append_comment : string -> unit
+    method comment_level : int
+    method decode : (slosh_mode_t -> string -> string) -> string -> string
+    method decr_comment : unit
+    method get_comment : string
+    method get_srcref : Lexing.lexbuf -> srcref
+    method incr_comment : unit
+    method newline : Lexing.lexbuf -> unit
+    method set_comment : string -> unit
+    method is_at_line_start : bool
+    method inbody: unit
+    method string_of_srcref : Lexing.lexbuf -> string
+    method set_line : int -> unit
+    method set_filename : string -> unit
+    method get_incdirs : string list
+    method get_relative : string -> string
+    method get_absolute : string -> string
+  end
+
+val pre_lex_lex : 
+  Lexing.lexbuf -> 
+  lexer_state -> 
+  Lex_parse.token list
+
+
+@head(1,'Pre token filters')
+@h = tangler('src/lex_lex1.ml')
+@select(h)
+
+open Lex_parse
+open Flx_exceptions
+
+(* 1: remove comments *)
+
+let filter_comments x =
+  let rec filter x' =
+    match x' with 
+    | COMMENT_NEWLINE _ :: t-> filter t
+    | COMMENT _ :: t -> filter t
+    | NEWLINE :: t -> filter t
+    | WHITE _ :: t -> filter t
+    | h :: t -> h :: filter t
+    | [] -> []
+  in filter x
+
+let translate ts = 
+  let filters = [
+    (* 1 *) filter_comments
+    ] 
+  and reverse_apply dat fn = fn dat 
+  in List.fold_left reverse_apply ts filters
+
+@h = tangler('src/lex_lex1.mli')
+@select(h)
+val translate : Lex_parse.token list -> Lex_parse.token list
+
+@head(1,'Pre token printer')
+@h = tangler('src/lex_pretok.ml')
+@select(h)
+open Lex_parse
+let string_of_string s = "\"" ^  Flx_string.c_quote_of_string s ^ "\""
+
+let string_of_token (tok :Lex_parse.token): string =
+  match tok with
+  | NAME s -> s
+  | STRING s -> Flx_string.c_quote_of_string s 
+
+  (* one character tokens *)
+  | VBAR -> "|" 
+  | ASTER -> "*" 
+  | PLUS -> "+" 
+  | QUEST -> "?" 
+  | LBRA -> "(" 
+  | RBRA -> ")" 
+  | LSQ -> "[" 
+  | RSQ -> "]" 
+  | LBRACE -> "{"
+  | RBRACE -> "}"
+  | DASH -> "-"
+  | CARET -> "^"
+  | EQUAL -> "="
+  | USERCODE s -> "{ "^s^" }"
+  | DOT -> "."
+
+  (* keywords *)
+  | LET -> "let"
+  | RULE -> "rule"
+  | AND -> "and"
+  | PARSE -> "parse"
+  | EOF -> "eof"
+  | UNDERSCORE -> "_"
+
+  | COMMENT s -> s (* C style comment, includes the /* */ pair *)
+  | COMMENT_NEWLINE s -> "#" ^ s ^ "<NEWLINE>"
+  | WHITE i -> String.make i ' '
+  | NEWLINE -> "<NEWLINE>"
+  | ENDMARKER -> "<<EOF>>"
+  | ERRORTOKEN s -> "<<ERROR '"^ s ^"'>>"
+
+
+let pre_tokens_of_lexbuf buf state =
+  let lex_it() = Lex_lex.pre_lex_lex buf state in
+  let run = ref true in
+  let rec get () = 
+    if !run 
+    then let t = lex_it () in
+      match t with
+      | [Lex_parse.ENDMARKER] -> 
+        run := false;
+        [Lex_parse.ENDMARKER]
+      | _ -> t @ get()
+    else [Lex_parse.ENDMARKER]
+  in get ()
+
+let pre_tokens_of_filename filename dirname incdirs =
+  let state = new Lex_lex.lexer_state filename dirname incdirs in
+  let infile = open_in filename in
+  let src = Lexing.from_channel infile in
+  let toks = pre_tokens_of_lexbuf src state in
+    close_in infile; 
+    toks
+
+let pre_tokens_of_string s filename =
+  let state = new Lex_lex.lexer_state filename "" [] in
+  pre_tokens_of_lexbuf (Lexing.from_string s) state
+
+
+let print_pre_token t = 
+  let emit t = print_string (string_of_token t) in
+    begin match t with
+    | Lex_parse.COMMENT_NEWLINE s -> 
+      print_endline ("//" ^ s); 
+
+    | Lex_parse.NEWLINE -> 
+      print_endline ""
+
+    | Lex_parse.ENDMARKER -> print_endline "<<EOF>>" 
+    | _ -> emit t
+    end;
+    flush stdout
+
+let print_pre_tokens ts = 
+  if (List.length ts) = 0
+  then print_string "<Empty pretoken list>";
+  List.iter print_pre_token ts
+
+@h = tangler('src/lex_pretok.mli')
+@select(h)
+open Lex_parse
+val string_of_token : token -> string
+val pre_tokens_of_filename : string -> string -> string list -> token list
+val pre_tokens_of_string : string -> string -> token list
+val print_pre_tokens : token list -> unit
+
+@head(1, 'Tokeniser')
+@h = tangler('src/lex_tok.ml')
+@select(h)
+let print_tokens ts = 
+  let indent = ref 0 in
+  let emit t = 
+    print_string ((Lex_pretok.string_of_token t) ^ " ") 
+  and emit_eol t = 
+    print_endline "";
+    print_string t;
+  in
+  let print_token t =  
+    begin match t with
+    | Lex_parse.NEWLINE  -> 
+      emit_eol ""
+    | Lex_parse.ENDMARKER -> emit_eol "#<<EOF>>\n"
+    | Lex_parse.LET -> emit_eol "let "
+    | Lex_parse.RULE -> emit_eol "rule "
+    | _ -> emit t
+    end;
+    flush stdout
+  in 
+    List.iter print_token ts
+;;
+
+class tokeniser t = 
+object
+  val mutable tokens = []
+  val mutable tokens_copy = []
+  val mutable current_token_index = 0
+  initializer tokens  <- t; tokens_copy <- t
+
+  method token_src (dummy :Lexing.lexbuf) =
+    let tmp = List.hd tokens in
+    tokens <- List.tl tokens;
+    current_token_index <- current_token_index + 1;
+    tmp
+
+  method report_syntax_error = 
+    print_endline "";
+    print_endline "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+    let n = List.length tokens_copy in
+    let first = max 0 (current_token_index - 20)
+    and last = min (n-1) (current_token_index + 20)
+    and slist = ref [] in
+    for i = first to current_token_index-1 do
+      slist := List.concat [!slist; [List.nth tokens_copy i]]
+    done;
+    print_tokens !slist;
+    print_endline "";
+    
+    let token = List.nth tokens_copy
+      begin 
+        if List.length tokens_copy = current_token_index
+        then begin
+          print_string "Unexpected End Of File";
+          current_token_index - 1
+        end else begin
+          print_string "Syntax Error before token ";
+          print_string (string_of_int current_token_index);
+          current_token_index
+        end
+      end
+    in 
+    print_endline ""; 
+    slist := [];
+    for i = current_token_index to last do
+      slist := List.concat [!slist; [List.nth tokens_copy i]]
+    done;
+    print_tokens !slist;
+    print_endline "";
+    print_endline "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+    flush stdout
+end
+;;
+
+
+@h = tangler('src/lex_tok.mli')
+@select(h)
+
+val print_tokens : Lex_parse.token list -> unit
+class tokeniser :
+  Lex_parse.token list ->
+  object
+    val mutable current_token_index : int
+    val mutable tokens : Lex_parse.token list
+    val mutable tokens_copy : Lex_parse.token list
+    method report_syntax_error : unit
+    method token_src : Lexing.lexbuf -> Lex_parse.token
+  end
+
+@head(1, 'Lexer test harness')
+@h = tangler('src/lexl.ml')
+@select(h)
+
+(* just lex a file *)
+
+let filename = Sys.argv.(1) ^ ".lex";;
+print_endline "---------------------------------------";;
+print_endline ("Lexing " ^ filename);;
+print_endline "---------------------------------------";;
+
+print_endline "Pre tokens";;
+let pretokens = (Lex_pretok.pre_tokens_of_filename filename "" []);;
+Lex_pretok.print_pre_tokens  pretokens;;
+print_endline "---------------------------------------";;
+
+print_endline "Tokens";;
+let tokens = Lex_lex1.translate pretokens;;
+Lex_tok.print_tokens tokens;;
+print_endline "---------------------------------------";;
+
+@head(1,'Parser object')
+@h = tangler('src/lex_parse_ctrl.ml')
+@select(h)
+
+open Lex_types
+open Flx_exceptions
+open Lex_parse
+
+let parse_file 
+  (filename : string) 
+  (basedir :string) 
+  (include_dirs : string list) 
+= 
+  let pre_tokens  = 
+    Lex_pretok.pre_tokens_of_filename 
+      filename 
+      basedir
+      include_dirs 
+  in
+  let tokens  = Lex_lex1.translate pre_tokens in
+    begin
+      let toker = (new Lex_tok.tokeniser tokens) in
+      let parse_tree = 
+      try 
+        Lex_parse.lexspec
+        (toker#token_src) 
+        (Lexing.from_string "dummy" )
+      with 
+      | Failure s ->
+        begin
+          toker#report_syntax_error;
+          print_endline s;
+          raise (Flx_exceptions.ParseError "[Lex]Parsing File")
+        end
+      | _ -> 
+        begin
+          toker#report_syntax_error;
+          raise (Flx_exceptions.ParseError "[Lex]Parsing File")
+        end
+      in parse_tree
+    end
+
+let parse_string (data : string) (filename : string) = 
+  let pre_tokens  = 
+    Lex_pretok.pre_tokens_of_string data filename 
+  in
+  let tokens  = Lex_lex1.translate pre_tokens in
+    begin
+      let toker = (new Lex_tok.tokeniser tokens) in
+      try 
+        Lex_parse.lexspec
+        (toker#token_src) 
+        (Lexing.from_string "dummy" )
+      with _ -> begin
+        toker#report_syntax_error;
+        raise (Flx_exceptions.ParseError "[Lex]Parsing String")
+      end
+    end
+
+
+@h = tangler('src/lex_parse_ctrl.mli')
+@select(h)
+val parse_file : 
+  string -> 
+  string ->
+  string list ->
+  Lex_types.lexspec_t
+
+val parse_string : 
+  string -> 
+  string -> 
+  Lex_types.lexspec_t
+  
+@head(1,'Parser test harness')
+@h = tangler('src/lexp.ml')
+@select(h)
+let filename = Sys.argv.(1) ^ ".lex";;
+print_endline ("Parsing " ^ filename);;
+let parse_tree = Lex_parse_ctrl.parse_file filename "" [];;
+print_endline (Lex_print.string_of_lexspec parse_tree);;
+print_endline "PARSE OK";;
+flush stdout
+
+
+@select(tangler('test_lex.lex'))
+{
+#include <stdio.h>
+}
+let ident = "a" | "b"
+let idents = ident *
+let aorb = "a" | "b"
+let aorbabb = aorb * "a" "b" "b"
+
+rule fred =  parse
+ | "?" { printf("fred1\n");}
+ | aorbabb { printf("fred2\n"); }
+ | ("a"|"b")*"abb" { printf("fred3\n");}
+
+and x = parse
+  | ("a" | "b") * "abb" { printf("abb!\n"); }
+  | ("x" | "y") * "xyy" { printf("xyy!\n"); }
+
+{
+  void test1() 
+  {
+    char *p = "aaaabababaabb";
+    int state = 0;
+    char ch;
+    void (*x)(char*,char*);
+    while (ch=*p++)
+    {
+      int charclass = x_charmap[ch];
+      printf("char ='%c'",ch);
+      if( charclass == -1 ) { printf("Invalid character\n"); exit(1); }
+      printf("Charclass = %d\n",charclass);
+      state = x_dtran[state][charclass];
+      if(state == -1) { printf("Error state\n"); exit(1); }
+      printf("State = %d\n", state);
+    }
+    printf("String is prefix of regexp ..\n");
+    x = x_toks[state];
+    if(x){
+     printf("String is token!\n");
+    }
+    else {
+     printf("String is not token!\n");
+    }
+  }
+
+  void test2() 
+  {
+    char *p = "aaaabababaabbxyxyxyyabbabb";
+    void (*the_token)(char*,char*) = NULL;
+    char *end_pos;
+    char *start_pos = p;
+
+    while (*start_pos)
+    {
+      int state = 0;
+      char ch;
+      void (*x)(char*,char*);
+      int charclass;
+
+      p = start_pos;
+      the_token = NULL;
+
+      while (1)
+      {
+        /* check for accepting state */
+        x = x_toks[state];
+        if(x) {
+          the_token = x;
+          end_pos = p;
+        }
+
+        /* check for end of string */
+        ch = *p;
+        if(ch == 0)break;
+
+        /* do transition */
+        charclass = x_charmap[ch];
+        printf("char ='%c'",ch);
+        if( charclass == -1 ) { printf("Invalid character\n"); exit(1); }
+        printf("Charclass = %d\n",charclass);
+        state = x_dtran[state][charclass];
+        printf("goto state=%d\n", state);
+        if(state == -1) break;
+
+        /* advance */
+        p++;
+      }
+      if(the_token)
+      {
+        printf("Lexeme: '");
+        for(p=start_pos; p != end_pos; ++p) printf("%c",*p);
+        printf("'\n");
+        start_pos = end_pos; /* backtrack */
+      }
+      else {
+        printf("No token found\n"); exit(1);
+      }
+    }
+  }
+
+  main(){
+    test1();
+    test2();
+  }
+}
+@head(1,'DFA')
+@select(tangler('src/lex_dfa.ml'))
+open Lex_types
+open Lex_print
+open Flx_mtypes
+
+let hashtbl_length h = 
+  let n = ref 0 in
+  Hashtbl.iter (fun _ _ -> incr n) h;
+  !n
+
+let mktable regdefs =
+  let h = Hashtbl.create 97 in
+  List.iter (fun (name,re)  -> Hashtbl.add h name re) regdefs;
+  h
+
+
+let rec split_regspec regspec regdefs rules =
+  match regspec with
+  | [] -> mktable regdefs, List.rev rules
+  | REGEXP_rule (name,rule) :: t -> split_regspec t regdefs ((name,rule)::rules)
+  | REGEXP_regdef (name,re) :: t -> split_regspec t ((name,re)::regdefs) rules
+
+let rec split_lexspec (h, l, f) = h, split_regspec l [] [], f
+
+let augment re = REGEXP_seq (re,REGEXP_sentinel)
+
+type annotation_t = 
+ { 
+   nullable: bool;
+   firstpos: PosSet.t;
+   lastpos: PosSet.t
+ } 
+
+let fp_get followpos i =
+  try Hashtbl.find followpos i
+  with Not_found -> PosSet.empty
+
+let fp_add followpos i j =
+  Hashtbl.replace followpos i (PosSet.add j (fp_get followpos i))
+
+let fp_union followpos i x =
+  Hashtbl.replace followpos i (PosSet.union (fp_get followpos i) x)
+
+let rec annotate regdefs counter followpos posmap codemap re =
+  let a r = annotate regdefs counter followpos posmap codemap r in
+  match re with
+  | REGEXP_seq (r1,r2) ->
+    let a1 = a r1 and a2 = a r2 in
+    let au = 
+    {
+      nullable = a1.nullable && a2.nullable;
+      firstpos = 
+        if a1.nullable 
+        then PosSet.union a1.firstpos a2.firstpos
+        else a1.firstpos;
+      lastpos = 
+        if a2.nullable 
+        then PosSet.union a1.lastpos a2.lastpos
+        else a2.lastpos;
+    }
+    in
+      PosSet.iter
+      (fun i -> fp_union followpos i a2.firstpos)
+      a1.lastpos
+      ;
+      au
+
+  | REGEXP_alt (r1,r2) ->
+    let a1 = a r1 and a2 = a r2 in
+    {
+      nullable = a1.nullable || a2.nullable;
+      firstpos = 
+        PosSet.union a1.firstpos a2.firstpos;
+      lastpos = 
+        PosSet.union a1.lastpos a2.lastpos
+    }
+
+  | REGEXP_aster r1 ->
+    let a1 = a r1 in
+    let au = 
+    {
+      nullable = true;
+      firstpos = a1.firstpos;
+      lastpos = a1.lastpos
+    }
+    in
+      PosSet.iter
+      (fun i -> fp_union followpos i a1.firstpos)
+      a1.lastpos
+      ;
+      au
+
+  | REGEXP_name s -> 
+    let x = 
+      try Hashtbl.find regdefs s
+      with Not_found -> failwith ("Can't find regular definition " ^ s)
+    in a x
+
+  | REGEXP_string s ->
+    let n = String.length s in
+    if n = 0
+    then (a REGEXP_epsilon)
+    else 
+      begin
+        let start = !counter in
+        counter := start + n;
+        let last = !counter - 1 in
+        let au =
+        {
+          nullable = false;
+          firstpos = PosSet.singleton start;
+          lastpos = PosSet.singleton last
+        }
+        in
+          for i = start to last-1 do
+            fp_add followpos i (i+1);
+            Hashtbl.add posmap i (Char.code s.[i-start])
+          done
+          ;
+          Hashtbl.add posmap last (Char.code s.[last-start])
+          ;
+          au
+      end
+
+  | REGEXP_epsilon ->
+    {
+      nullable = true;
+      firstpos = PosSet.empty;
+      lastpos = PosSet.empty
+    }
+
+  | REGEXP_code s ->
+    Hashtbl.add codemap !counter s;
+    let u = 
+    {
+      nullable = false;
+      firstpos = PosSet.singleton !counter;
+      lastpos = PosSet.singleton !counter
+    }
+    in 
+      incr counter;
+      u
+
+  | REGEXP_eof ->
+    let u =
+     {
+       nullable = false;
+       firstpos = PosSet.singleton !counter;
+       lastpos = PosSet.singleton !counter
+     }
+     in
+       Hashtbl.add posmap !counter (-1);
+       fp_add followpos !counter (!counter+1);
+       incr counter;
+       u
+   
+  | REGEXP_sentinel ->
+    let u = 
+    {
+      nullable = false;
+      firstpos = PosSet.singleton !counter;
+      lastpos = PosSet.singleton !counter;
+    }
+    in  
+      Hashtbl.add followpos !counter PosSet.empty;
+      u
+
+let list_of_set x =
+  let lst = ref [] in
+  PosSet.iter
+  (fun i -> lst := i :: !lst)
+  x
+  ;
+  !lst
+
+let string_of_set x =
+  "{" ^
+  String.concat ", " (List.map string_of_int (list_of_set x)) ^
+  "}"
+
+let print_followpos followpos =
+  Hashtbl.iter
+  (fun i fp -> 
+    print_endline (
+      (string_of_int i) ^
+      " -> " ^
+      string_of_set fp
+    )
+  )
+  followpos
+
+let print_int_set s =
+  print_string "{";
+  PosSet.iter 
+  (fun i -> print_string (string_of_int i ^ ", "))
+  s
+  ;
+  print_string "}"
+
+exception Found of int
+;;
+
+let process_regexp regdefs (re,code) =
+    (*
+    print_endline ("  | " ^ Lex_print.string_of_re re);
+    *)
+    let are = augment re in
+    let followpos = Hashtbl.create 97 in
+    let codemap = Hashtbl.create 97 in
+    let posmap = Hashtbl.create 97 in
+    let counter = ref 1 in
+    let root = annotate regdefs counter followpos posmap codemap are in
+    let posarray = Array.make !counter 0 in
+    let alphabet = ref CharSet.empty in
+    Hashtbl.iter
+    (fun i c -> 
+      posarray.(i-1) <- c; 
+      alphabet := CharSet.add c !alphabet
+    )
+    posmap;
+    (*
+    print_endline "Followpos:";
+    print_followpos followpos;
+    print_endline ("Charpos '" ^ posarray ^ "'");
+    print_endline ("Codepos: ");
+    Hashtbl.iter
+    (fun i c -> 
+      print_endline ((string_of_int i) ^ " -> " ^ c)
+    )
+    codemap
+    ;
+    print_string "alphabet '"; 
+    CharSet.iter
+    (fun c -> print_char c)
+    !alphabet;
+    print_endline "'";
+    *)
+    let marked_dstates = ref PosSetSet.empty in
+    let unmarked_dstates = ref (PosSetSet.singleton root.firstpos) in
+    let find_char c t =
+      try 
+        PosSet.iter 
+        (fun i -> if posarray.(i-1) = c then raise (Found i))
+        t
+        ;
+        print_endline ("Can't find char '" ^ String.make 1 (Char.chr c) ^ "'")
+        ;
+        raise Not_found
+      with Found p -> p
+    in
+    let state_counter = ref 1 in
+    let state_map = Hashtbl.create 97 in
+    let inv_state_map = Hashtbl.create 97 in
+
+    let dtran = Hashtbl.create 97 in
+    Hashtbl.add state_map 0 root.firstpos;
+    Hashtbl.add inv_state_map root.firstpos 0;
+    (*
+    print_endline "Root is";
+    print_int_set root.firstpos;
+    print_endline "";
+    *)
+    while not (PosSetSet.is_empty !unmarked_dstates) do
+      let t = PosSetSet.choose !unmarked_dstates in
+      unmarked_dstates := PosSetSet.remove t !unmarked_dstates;
+      marked_dstates := PosSetSet.add t !marked_dstates;
+      let src_state_index = 
+        try
+          let state_index = Hashtbl.find inv_state_map t in
+          (*
+          print_endline ("src_state = " ^ string_of_int state_index);
+          *)
+          state_index
+        with Not_found ->
+          print_endline "Can't find "; print_int_set t;
+          print_endline "";
+          raise Not_found
+      in
+
+      CharSet.iter
+      (fun c ->
+        let u = ref (PosSet.empty) in
+        PosSet.iter
+        (fun i -> 
+          if posarray.(i-1) = c 
+          then begin
+            u := PosSet.union !u (try Hashtbl.find followpos i with 
+            Not_found -> failwith ("Can't find followpos of index " ^ string_of_int i))
+          end
+        )
+        t
+        ;
+        if not (PosSet.is_empty !u)
+        then 
+          let dst_state_index =
+            if not (PosSetSet.mem !u !marked_dstates)
+            && not (PosSetSet.mem !u !unmarked_dstates)
+            then begin
+              let state_index = !state_counter in
+              incr state_counter
+              ;
+              (*
+              print_string ("Adding new state " ^ string_of_int state_index ^ " = ");
+              print_int_set !u;
+              print_endline "";
+              *)
+              Hashtbl.add state_map state_index !u;
+              Hashtbl.add inv_state_map !u state_index;
+              let n1 = PosSetSet.cardinal !unmarked_dstates in
+              unmarked_dstates := PosSetSet.add !u !unmarked_dstates;
+              assert(n1 <> PosSetSet.cardinal !unmarked_dstates);
+              state_index
+            end
+            else 
+              try Hashtbl.find inv_state_map !u with Not_found -> failwith "ERROR 2"
+          in
+          Hashtbl.add dtran (c,src_state_index) dst_state_index
+      )
+      !alphabet
+    done;
+    (*
+    print_endline "states:";
+    PosSetSet.iter
+    (fun s -> print_int_set s; print_endline "")
+    !marked_dstates
+    ;
+    print_endline "";
+
+    print_endline "states:";
+    Hashtbl.iter
+    (fun idx state -> 
+      print_string (string_of_int idx ^ " -> ");
+      print_int_set state;
+      print_endline ""
+    )
+    state_map 
+    ;
+    *)
+
+    let term_codes = Hashtbl.create 97 in
+    Hashtbl.iter
+    (fun idx state -> 
+      try
+        PosSet.iter
+        (fun i ->
+          if Hashtbl.mem codemap i
+          then raise (Found i)
+        )
+        state
+        ;
+        raise Not_found
+      with 
+      | Found i -> 
+        let code = Hashtbl.find codemap i in
+        Hashtbl.add term_codes idx code
+      |  Not_found -> ()
+    )
+    state_map 
+    ;
+
+    !alphabet,state_map, term_codes, dtran
+
+@select(tangler('src/lex_pdtran_c.ml'))
+open Lex_types
+open Lex_dfa
+open Lex_print 
+open Flx_mtypes
+
+let print_dtran f (alphabet, state_map, dtran) =
+  let n = CharSet.cardinal alphabet in
+  output_string f "/*             ";
+  CharSet.iter
+  (fun x ->
+    output_string f (string_of_char x ^ "     ")
+  )
+  alphabet
+  ;
+  output_string f " */\n";
+  output_string f "{\n";
+  let fint k i = 
+    let s = "       " ^ string_of_int i in
+    let m = String.length s in
+    String.sub s (m-k) k
+  in
+  Hashtbl.iter
+  (fun idx state -> 
+    output_string f ("/*" ^ fint 4 idx ^ " */ {");
+    CharSet.iter
+    (fun x ->
+      output_string f 
+      (
+        fint 4
+        (
+          try 
+            Hashtbl.find dtran (x,idx)
+          with Not_found -> -1
+         ) 
+      );
+      output_string f ", ";
+    )
+    alphabet
+    ;
+    output_string f "},\n"
+  )
+  state_map 
+  ;
+  output_string f "\n";
+  output_string f "};\n"
+
+let process_rule f regdefs (name,res) =
+  (*
+  print_endline ("Processing rule " ^ name);
+  *)
+  (*
+  List.iter (process_regexp regdefs) res
+  ;
+  *)
+  let full_regexp = 
+  match res with
+  | []-> REGEXP_epsilon
+  | (re,code) :: t ->
+    List.fold_left 
+    (fun h (re,code) -> 
+      REGEXP_alt 
+      (
+        h, 
+        REGEXP_seq (re, REGEXP_code code)
+      )
+    )
+    (REGEXP_seq (re, REGEXP_code code))
+    t
+  in
+  let res = full_regexp, "TERMINAL" in
+  (*
+  print_endline ("REGEXP=" ^ string_of_re full_regexp);
+  *)
+
+  let (alphabet,statemap,term_codes, d) = process_regexp regdefs res in
+  let n = CharSet.cardinal alphabet and
+  m = hashtbl_length statemap in
+  output_string f
+  (
+    "int " ^ name ^ "_dtran["^
+    string_of_int m^"]["^
+    string_of_int n^
+    "] =\n"
+  );
+  print_dtran f (alphabet,statemap,d);
+  let charmap = Array.make 256 (-1) in
+  let next = ref 0 in
+  CharSet.iter
+  (fun i -> charmap.(i) <- !next; incr next)
+  alphabet;
+  output_string f
+  (
+    "int " ^ name ^ "_charmap[256]={\n";
+  );
+
+  for i = 0 to 255 do
+    if i <> 0 then output_string f ", ";
+    output_string f (string_of_int charmap.(i))
+  done;
+
+  output_string f
+  (
+    "};\n"
+  );
+  
+  Hashtbl.iter
+  (fun state code ->
+    output_string f
+    (
+      "void " ^ name ^ "_fn_" ^ string_of_int state ^
+      "(char *start, char *end) {\n" ^
+      code ^
+      "\n}\n"
+    )
+  )
+  term_codes
+  ;
+  output_string f
+  (
+    "void (*" ^ name ^ "_toks[" ^ string_of_int m ^ "])(char*,char*)={\n"
+  );
+  for state = 0 to m - 1 do
+    output_string f 
+    (
+      (
+        if 
+          Hashtbl.mem term_codes state
+        then
+          name ^ "_fn_" ^ string_of_int state
+        else
+          "NULL"
+      )
+      ^ ", "
+    )
+  done;
+  output_string f "\n};\n"
+
+@select(tangler('src/lex_dfa.mli'))
+open Flx_mtypes
+
+val hashtbl_length : ('a, 'b) Hashtbl.t -> int
+val mktable : ('a * 'b) list -> ('a, 'b) Hashtbl.t
+val split_regspec :
+  Lex_types.lexitem_t list ->
+  (string * Lex_types.regexp_t) list ->
+  (string * (Lex_types.regexp_t * string) list) list ->
+  (string, Lex_types.regexp_t) Hashtbl.t *
+  (string * (Lex_types.regexp_t * string) list) list
+val split_lexspec :
+  'a * Lex_types.lexitem_t list * 'b ->
+  'a *
+  ((string, Lex_types.regexp_t) Hashtbl.t *
+   (string * (Lex_types.regexp_t * string) list) list) *
+  'b
+val augment : Lex_types.regexp_t -> Lex_types.regexp_t
+type annotation_t = {
+  nullable : bool;
+  firstpos : PosSet.t;
+  lastpos : PosSet.t;
+} 
+val fp_get : ('a, PosSet.t) Hashtbl.t -> 'a -> PosSet.t
+val fp_add : ('a, PosSet.t) Hashtbl.t -> 'a -> PosSet.elt -> unit
+val fp_union : ('a, PosSet.t) Hashtbl.t -> 'a -> PosSet.t -> unit
+val annotate :
+  (string, Lex_types.regexp_t) Hashtbl.t ->
+  PosSet.elt ref ->
+  (PosSet.elt, PosSet.t) Hashtbl.t ->
+  (PosSet.elt, int) Hashtbl.t ->
+  (PosSet.elt, string) Hashtbl.t -> Lex_types.regexp_t -> annotation_t
+val list_of_set : PosSet.t -> PosSet.elt list
+val string_of_set : PosSet.t -> string
+val print_followpos : (int, PosSet.t) Hashtbl.t -> unit
+val print_int_set : PosSet.t -> unit
+
+exception Found of int
+val process_regexp :
+  (string, Lex_types.regexp_t) Hashtbl.t ->
+  Lex_types.regexp_t * 'a ->
+  CharSet.t * (int, PosSetSet.elt) Hashtbl.t * (int, string) Hashtbl.t *
+  (CharSet.elt * int, int) Hashtbl.t
+
+@select(tangler('src/lex_pdtran_c.mli'))
+open Lex_types
+open Lex_dfa
+open Flx_mtypes
+
+val print_dtran :
+  out_channel ->
+  CharSet.t * (int, string) Hashtbl.t * 
+  (CharSet.elt * int, int) Hashtbl.t ->
+  unit
+
+val process_rule :
+  out_channel ->
+  (string, Lex_types.regexp_t) Hashtbl.t ->
+  string * 
+  (Lex_types.regexp_t * string) list -> 
+  unit
+
+
+@select(tangler('src/lexd.ml'))
+
+open Lex_dfa
+open Lex_pdtran_c
+
+let filename = Sys.argv.(1) ^ ".lex";;
+(* print_endline ("Parsing " ^ filename);; *)
+let parse_tree = Lex_parse_ctrl.parse_file filename "" [];;
+(*
+print_endline (Lex_print.string_of_lexspec parse_tree);;
+print_endline "PARSE OK";;
+flush stdout;;
+*)
+
+ 
+let header, (regdefs, rules), footer = split_lexspec parse_tree
+
+let outfile = Sys.argv.(1) ^ ".dtran";;
+let f = open_out outfile;;
+output_string f header;;
+List.iter
+(process_rule f regdefs)
+rules
+;;
+output_string f footer;;
+close_out f;;
+

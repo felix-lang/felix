@@ -1,6 +1,8 @@
 @head(1,'String handling')
 @h = tangler('src/flx_string.ml')
 @select(h)
+type slosh_mode_t = Oct | Dec
+
 let hexchar_of_int i = 
   if i < 10 
   then char_of_int (i + (int_of_char '0'))
@@ -286,7 +288,7 @@ let utf8_of_int i =
     chr(0x80 lor ((i lsr 6) land 0x3F)) ^
     chr(0x80 lor (i land 0x3F))
 
-let unescape s = 
+let unescape slosh_mode s = 
   let hex_limit = 2 in
   let n = len s in
   let s' = Buffer.create 1000 in
@@ -431,9 +433,12 @@ let unescape s =
       | '4' 
       | '5' 
       | '6' 
-      | '7' ->
-        begin 
-          let j = ref 0 and value = ref 0 in
+      | '7' 
+      | '8'
+      | '9'
+        -> let j = ref 0 and value = ref 0 in
+        begin match slosh_mode with
+        | Oct ->
           while 
             (!i < n) & 
             (!j < 3) &
@@ -441,9 +446,19 @@ let unescape s =
             value := !value * 8 + (oct_char2int s.[!i]); 
             incr i;
             incr j
-          done;
-          tack_utf8 !value
+          done
+        | Dec ->
+          while 
+            (!i < n) & 
+            (!j < 3) &
+            (String.contains "0123456789" s.[!i]) do
+            value := !value * 10 + (dec_char2int s.[!i]); 
+            incr i;
+            incr j
+          done
         end
+        ;
+        tack_char (Char.chr !value)
 
 
       | x -> tack_char '\\'; tack_char x;
@@ -467,8 +482,16 @@ let unescape s =
    for all codes in the range 0-1F, and >80
 *)
 
+(* this routine converts strings containing
+   utf8 and/or \U \u escapes to a normalised
+   ASCII form using \U and \u escapes
+   for all codes in the range 0-1F, and >80
+*)
+
 @h = tangler('src/flx_string.mli')
 @select(h)
+type slosh_mode_t = Oct | Dec
+
 val bin_char2int : char -> int
 val oct_char2int : char -> int
 val dec_char2int : char -> int
@@ -486,7 +509,8 @@ val hexbig_int_of_string : string -> Big_int.big_int
 
 val floating_of_string : string -> float
 
-val unescape : string -> string
+val unescape : slosh_mode_t -> string -> string
+
 val escape_of_string : char -> string -> string
 val py_dquote_of_string : string -> string
 val py_quote_of_string : string -> string

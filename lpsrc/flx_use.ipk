@@ -1,0 +1,165 @@
+@head(1,"Elide unused entries")
+Name binding pass 2.
+
+@h = tangler("src/flx_use.mli")
+@select(h)
+open Flx_types
+val elide_unused:
+  fully_bound_symbol_table_t ->
+  bid_t ->
+  biface_t list ->
+  fully_bound_symbol_table_t
+
+@h = tangler("src/flx_use.ml")
+@select(h)
+open Flx_util
+open Flx_types
+open Flx_print
+open Flx_mtypes
+open Flx_typing
+open Flx_mbind
+open Flx_srcref
+
+module BidSet = PosSet
+
+let rec uses_type used bbdfns t = 
+  let ut t = uses_type used bbdfns t in
+  match t with
+  | `BTYP_name i -> uses used bbdfns i
+  | `BTYP_tuple ts
+  | `BTYP_sum ts
+  | `BTYP_type_tuple ts
+    -> List.iter ut ts
+
+  | `BTYP_function (t1, t2)
+  | `BTYP_apply (t1, t2)
+  | `BTYP_binding (t1, t2)
+    -> ut t1; ut t2
+    
+  | `BTYP_pointer t -> ut t
+  | `BTYP_typefun (ts, t1, t2) 
+    ->
+      List.iter ut (List.map snd ts);
+      ut t1; ut t2
+  | _ -> ()
+
+and uses_exes used bbdfns exes =
+  List.iter (uses_exe used bbdfns) exes
+
+and uses_exe used bbdfns (exe:bexe_t) =
+  let ue e = uses_tbexpr used bbdfns e in
+  match exe with
+  | `BEXE_call (e1,e2) -> ue e1; ue e2
+    
+  | `BEXE_ifgoto (e,_)
+  | `BEXE_ifnotgoto (e,_)
+  | `BEXE_return e 
+    -> ue e
+
+  | `BEXE_init (i,e) -> uses used bbdfns i; ue e
+  | `BEXE_read i -> uses used bbdfns i
+  | _ -> ()
+
+and uses_tbexpr used bbdfns (e,t) =
+  let ue e = uses_tbexpr used bbdfns e in
+  let ut t = uses_type used bbdfns t in
+  let ui i = uses used bbdfns i in
+
+  ut t;
+
+  match e with
+  | `BEXPR_deref e
+  | `BEXPR_get_n (_,e)
+  | `BEXPR_match_case (_,e)
+  | `BEXPR_case_arg (_,e)
+    -> ue e
+    
+  | `BEXPR_name i
+  | `BEXPR_closure i
+    -> ui i
+    
+  | `BEXPR_apply (e1,e2) -> ue e1; ue e2
+  | `BEXPR_tuple es -> List.iter ue es 
+  | `BEXPR_dot (e,i)
+     -> ui i; ue e
+     
+  | `BEXPR_coercion (e,t)
+     -> ue e; ut t
+     
+  | `BEXPR_case (_,t)
+    -> ut t
+  | _ -> ()
+
+and uses used bbdfns i =
+  let ut t = uses_type used bbdfns t in
+  let ux x = uses_exes used bbdfns x in
+  if not (BidSet.mem i !used) then
+  begin 
+    match 
+      try Some (Hashtbl.find bbdfns i)
+      with Not_found -> None
+    with 
+    | Some (_,_,bbdcl) ->
+      used := BidSet.add i !used;
+      begin match bbdcl with
+      | `BBDCL_function (ps,ret,exes, _) -> 
+        List.iter ut (List.map snd ps);
+        ut ret;
+        ux exes
+      
+      | `BBDCL_procedure (ps, exes, _) ->
+        List.iter ut (List.map snd ps);
+        ux exes
+
+      | `BBDCL_union ps 
+      | `BBDCL_struct ps 
+        ->
+        List.iter ut (List.map snd ps)
+
+      | `BBDCL_val t
+      | `BBDCL_var t
+      | `BBDCL_const (t,_)
+        -> ut t
+      
+      | `BBDCL_fun (ps, ret, _) -> List.iter ut ps; ut ret 
+      | `BBDCL_proc (ps, _)  -> List.iter ut ps
+      
+      | _ -> ()
+      end
+    | None -> ()
+  end
+
+let copy_bbdcl bbdfns bbdfns2 i =
+  Hashtbl.add bbdfns2 i (Hashtbl.find bbdfns i)
+
+let elide_unused (bbdfns:fully_bound_symbol_table_t) (root:bid_t) (bifaces:biface_t list) =
+  (* make a list of the root and all exported things *)
+  let roots : bid_t list = root :: 
+  (
+    List.map  (function `BIFACE_export (x,_) -> x) bifaces
+  ) 
+  in
+
+  (* make set of used things, initially empty *)
+  let used = ref BidSet.empty in
+
+  let uses i = uses used bbdfns i in
+
+  (* add root item to set, then add items it uses *)
+  List.iter uses roots
+  ;
+  (* copy used things *)
+  let bbdfns2 = Hashtbl.create 97 in
+  BidSet.iter (copy_bbdcl bbdfns bbdfns2) !used
+  ;
+  (* copy all header and body specs, they're always considered used *)
+  Hashtbl.iter 
+  (fun i b -> match b with
+    | _,_,`BBDCL_header _
+    | _,_,`BBDCL_body _ -> Hashtbl.add bbdfns2 i b
+    | _ -> ()
+  )
+  bbdfns
+  ;
+  bbdfns2
+

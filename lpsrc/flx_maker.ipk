@@ -1,5 +1,4 @@
 @head(1,'Maker')
-@flx_version = '1.0a4'
 @h = tangler('script/maker','python')
 @select(h)
 #!/usr/bin/env python
@@ -78,71 +77,59 @@ FLX_GC_SRC='src/'
 # ------------------------------------------------
 
 # files containing ocamllex sources
-LEXS = ['flx_lex']
+LEXS = ['flx_lex', 'lex_lex']
 
 # files containing ocamlyacc sources
-PARSES = ['flx_parse']
+PARSES = ['flx_parse', 'lex_parse']
 
-# ocaml interface files
+# ocaml modules = interfaces + implementation files
+MODULES = [
+  'flx_version'      ,
+  'flx_getopt'       ,
+  'flx_util'         ,
+  'flx_mtypes'       ,
+  'flx_srcref'       ,
+  'flx_typing'       ,
+  'flx_exceptions'   ,
+  'flx_string'       ,
+  'flx_id'           ,
+  'flx_print'        ,
+  'lex_print'        ,
+  'flx_typing2'      ,
+  'flx_unify'        ,
+  'flx_parse'        ,
+  'lex_parse'        ,
+  'flx_keywords'     ,
+  'lex_keywords'     ,
+  'flx_lex'          ,
+  'lex_lex'          ,
+  'flx_pretok'       ,
+  'lex_pretok'       ,
+  'flx_lex1'         ,
+  'lex_lex1'         ,
+  'flx_tok'          ,
+  'lex_tok'          ,
+  'flx_parse_ctrl'   ,
+  'lex_parse_ctrl'   ,
+  'lex_dfa'          ,
+  'lex_pdtran_c'     ,
+  'flx_pat'          , 
+  'flx_desugar'      , 
+  'flx_mbind'        , 
+  'flx_symtab'       , 
+  'flx_lookup'       , 
+  'flx_bbind'        , 
+  'flx_use'          , 
+  'flx_name'         , 
+  'flx_tgen'         , 
+  'flx_gen'          , 
+]
+
 INTERFACES = [
-  'flx_util'         ,
   'flx_types'        ,
-  'flx_mtypes'       ,
-  'flx_exceptions'   ,
-  'flx_srcref'       ,
-  'flx_typing'       ,
-  'flx_string'       ,
-  'flx_id'           ,
-  'flx_print'        ,
-  'flx_typing2'      ,
-  'flx_unify'        ,
-  'flx_parse'        ,
-  'flx_keywords'     ,
-  'flx_lex'          ,
-  'flx_pretok'       ,
-  'flx_lex1'         ,
-  'flx_tok'          ,
-  'flx_parse_ctrl'   ,
-  'flx_pat'          , 
-  'flx_desugar'      , 
-  'flx_symtab'       , 
-  'flx_lookup'       , 
-  'flx_mbind'        , 
-  'flx_bbind'        , 
-  'flx_name'         , 
-  'flx_tgen'         , 
-  'flx_gen'          , 
-]
+] + MODULES
 
-# ocaml implementation files
-IMPLEMENTATIONS = [
-  'flx_util'         ,
-  'flx_mtypes'       ,
-  'flx_srcref'       ,
-  'flx_typing'       ,
-  'flx_exceptions'   ,
-  'flx_string'       ,
-  'flx_id'           ,
-  'flx_print'        ,
-  'flx_typing2'      ,
-  'flx_unify'        ,
-  'flx_parse'        ,
-  'flx_keywords'     ,
-  'flx_lex'          ,
-  'flx_pretok'       ,
-  'flx_lex1'         ,
-  'flx_tok'          ,
-  'flx_parse_ctrl'   ,
-  'flx_pat'          , 
-  'flx_desugar'      , 
-  'flx_symtab'       , 
-  'flx_lookup'       , 
-  'flx_mbind'        , 
-  'flx_bbind'        , 
-  'flx_name'         , 
-  'flx_tgen'         , 
-  'flx_gen'          , 
-]
+IMPLEMENTATIONS = MODULES
 
 DRIVERS = [
   'flx_run',
@@ -160,11 +147,16 @@ OLIBRARIES = ['nums','flxlib']
 
 # target executable programs to produce
 EXES = [
+  # compiler tools
   'flxl',
   'flxp',
   'flxd',
   'flxb',
   'flxg',
+  # lexer tools
+  'lexl',
+  'lexp',
+  'lexd',
 ]
 
 if 1:
@@ -713,6 +705,18 @@ libname
 .B flx
 filebasename
 
+.br
+.B lexl
+filebasename
+
+.br
+.B lexp
+filebasename
+
+.br
+.B lexd
+filebasename
+
 .SH DESCRIPTION
 The 
 .B filebase 
@@ -794,6 +798,15 @@ is passed at end of file. The message
 types is 
 .B std::basic_string<char>
 
+.B lexl
+Lexer generator (lex/flex equivalent for felix) lexer.
+
+.B lexp
+Lexer generator (lex/flex equivalent for felix) parser.
+
+.B lexd
+Lexer generator (lex/flex equivalent for felix).
+
 .SH WEB SITE
 See 
 .B http://felix.sf.net
@@ -847,6 +860,9 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('\t\tdoc/*.tex \\')
 @tangle('\t\tbin/flx \\')
 @tangle('\t\tbin/flxg \\')
+@tangle('\t\tbin/lexl \\')
+@tangle('\t\tbin/lexp \\')
+@tangle('\t\tbin/lexd \\')
 @tangle('\t\tbin/flx_run \\')
 @tangle('')
 @tangle('www: dummy')
@@ -872,6 +888,12 @@ John Maxwell Skaller, mailto:skaller@ozemail.com.au
 @tangle('dummy:')
 @tangle('\techo "out of date"')
 @tangle('')
+
+@tangle('test_lex:')
+@tangle('\t  ./lexl test_lex')
+@tangle('\t  ./lexp test_lex')
+@tangle('\t  ./lexd test_lex')
+
 
 @head(1,'README')
 @select(tangler('README'))
@@ -912,10 +934,6 @@ The directories are:
   lib    -- felix standard library
   man    -- man pages for tools and some language features
   bin    -- compiler tools directory
-
-@head(1,'VERSION')
-@select(tangler('VERSION'))
-@tangle('This is Felix version '+flx_version)
 
 @head(1,'LICENSE')
 @select(tangler('LICENSE'))
@@ -1322,24 +1340,131 @@ DIV.DIFF_SECTION_HEAD EM, DIV.DIFF_SECTION_FOOT EM {
 
 @head(1,'Run script')
 @select(tangler('bin/flx'))
-#/bin/env sh
-if [ "$1.flx" -nt "$1.so" ];
+#!/bin/sh
+# flx - felix script harness
+
+# g++ compilation string
+GPP="g++ -Wno-long-long -D_GNU_SOURCE -ansi"
+
+# check for test mode: this argument must come first
+
+if [ "x$1" = "x--test" ]
 then
-  rm -f $1.cpp $1.hpp $1.so
-  if 
-    ./bin/flxg -q -Ilib $1
-  then
-    if 
-      g++ -Wno-long-long -D_GNU_SOURCE -ansi -shared  \
-        $1.cpp \
-        -o $1.so
-    then
-      ./bin/flx_run ./$1.so
-    fi
-  fi
+  TESTMODE=1
+  shift
 else
-  ./bin/flx_run ./$1.so
+  TESTMODE=0
 fi
+
+# check for forced recompile
+if [ "x$1" = "x--force" ]
+then
+  RECOMPILE=1
+  shift
+else
+  RECOMPILE=0
+fi
+
+if [ "$TESTMODE" = "1" ]
+then
+  echo "TESTMODE: running felix from current directory"
+fi
+
+# Strip trailing .flx or .so
+# users should type 'flx file' without extension,
+# but #! interpreter always passes extension ..
+
+case "$1" in
+  *.flx)
+    arg="`echo $1 | sed 's/\.flx$//'`"
+    is_flx=1
+    ;;
+  *.so)
+    arg="`echo $1 | sed 's/\.so$//'`"
+    is_so=1
+    ;;
+  *)
+    arg="$1"
+esac
+
+# Find absolute pathname
+
+base=""
+
+case "$arg" in
+  /*)
+    base="$arg"
+    ;;
+  [^/]*/*)
+    base="`pwd`/$arg"
+    ;;
+  *)
+    for dir in `echo .:$PATH | sed 's/:/ /g'`
+    do
+      dir=$dir
+      if [ -r "$dir/$arg.so" -o -r "$dir/$arg.flx" ]
+      then
+        base="$dir/$arg"
+        break
+      fi
+    done
+    ;;
+esac
+
+if [ "x$base" = "x" ]
+then
+  echo "No such felix program: $arg" >&2
+  exit 1
+fi
+
+if [ "$TESTMODE" = "1" ]
+then
+  INCLUDE_DIR="."
+  FLXG="./bin/flxg"
+  FLXLIB="./lib"
+  FLXRUN="./bin/flx_run"
+else
+  # Locate the felix installation
+  prefix=""
+  for dir in `echo $PATH | sed 's/:/ /g'`
+  do
+    dir=$dir
+    if [ -x "$dir/flxg" ]
+    then
+      prefix="$dir/flxg"
+      break
+    fi
+  done
+  prefix="`echo $prefix | sed 's/\/bin\/flxg$//'`"
+  INCLUDE_DIR="$prefix/lib/felix"
+  FLXG="$prefix/bin/flxg"
+  FLXRUN="$prefix/bin/flx_run"
+  FLXLIB="$prefix/lib/felix/lib"
+fi
+
+# No need to compile, just run it
+
+if [ $RECOMPILE = 0 -a -r "$base.so" -a "(" ! -r "$base.flx" -o "$base.so" -nt "$base.flx" ")" ]
+then
+  "$FLXRUN" "$base.so"
+  exit $?
+fi
+
+# Need to compile, then run it
+
+
+if "$FLXG" -q -I"$FLXLIB" "$base"
+then
+  if $GPP -shared -I"$INCLUDE_DIR" "$base.cpp" -o "$base.so"
+  then
+    # rm -f "$base.cpp"
+    "$FLXRUN" "$base.so"
+    exit $?
+  else
+    exit $?
+  fi
+fi
+
 
 @os.system('chmod a+x bin/flx')
 @os.system('cp doc/*.css tut/doc')

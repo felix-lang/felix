@@ -239,21 +239,41 @@ let rec build_tables print_flag dfns counter name level parent asms =
           interfaces := !interfaces @ ifaces
         
         | `DCL_match_handler (pat,mvname,asms) ->
+          let vars = Hashtbl.create 97 in
+          Flx_mbind.get_pattern_vars vars pat [];
+          (*
+          print_endline ("PATTERN IS " ^ string_of_pattern pat ^ ", VARIABLE=" ^ mvname);
+          print_endline "VARIABLES ARE";
+          Hashtbl.iter (fun vname (sr,extractor) ->
+            let component = 
+              Flx_mbind.gen_extractor extractor (`AST_name (sr,mvname)) 
+            in
+            print_endline ("  " ^ vname ^ " := " ^ string_of_expr component);
+          ) vars;
+          *)
+
+          let new_asms = ref asms in
+          Hashtbl.iter
+          (fun vname (sr,extractor) ->
+            let component = 
+              Flx_mbind.gen_extractor extractor 
+              (`AST_name (sr,mvname)) 
+            in
+            let dcl = Dcl (sr, vname, `DCL_val (`TYP_typeof (component))) 
+            and instr = Exe (sr, `EXE_init (vname, component)) 
+            in
+              new_asms := dcl :: instr :: !new_asms;
+          )
+          vars;
+
           let fun_index = n in
           let table, exes,ifaces,dirs = 
             build_tables print_flag dfns counter id (level+1) 
-            (Some fun_index) asms 
+            (Some fun_index) !new_asms 
           in
-          let match_var_index = 
-            match Hashtbl.find name_map mvname with
-            | NonFunctionEntry (Simple idx) -> idx
-            | _ -> assert false
-          in 
           Hashtbl.add dfns fun_index (id, sr, parent,
-            `SYMDEF_match_handler (pat, 
-              match_var_index, exes, table, dirs)
-            )
-          ;
+            `SYMDEF_function ([],`TYP_var fun_index, exes, table, dirs)
+          );
           add_function name_map id fun_index;
           interfaces := !interfaces @ ifaces
 

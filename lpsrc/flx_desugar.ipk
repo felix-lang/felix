@@ -228,6 +228,9 @@ let rec rex seq (e:expr_t) : asm_t list * expr_t =
     let l1,x1 = rex e in 
     l1, `AST_coercion (sr,(x1,t))
 
+  | `AST_letin (sr,(pat,e1,e2)) ->
+    rex (`AST_match (sr,(e1,[pat,e2])))
+    
   | `AST_match (sr,(e,pss)) ->
     if List.length pss = 0 then failwith "Empty Pattern";
 
@@ -787,33 +790,8 @@ open Flx_util
 open Flx_desugar
 open Flx_print
 open Flx_types
-;;
-
-let get_options argv = 
-  let options = ref [] in
-  for i = 1 to Array.length argv - 2 do
-    let s = argv.(i) in
-    let n = String.length s in
-    if n > 1 && s.[0]='-' then 
-      if s.[1]='-' then 
-      begin
-        let j = ref 2 in
-        while !j < n && s.[!j]<>'=' do incr j done;
-        let key = String.sub s 2 (!j - 2) in
-        let value = 
-          if s.[!j]='=' then 
-            String.sub s (!j+1) (n - !j - 1)
-          else 
-            ""
-        in
-          options := !options @ [key,value]
-      end 
-      else
-        options := !options @ [String.sub s 1 1, String.sub s 2 (n-2)]
-    else 
-      print_endline ("Option '"^s^"' must start with '-': ignored")
-  done;
-  !options
+open Flx_getopt
+open Flx_version
 ;;
 
 let print_help () =
@@ -824,9 +802,6 @@ let print_help () =
   print_endline "  -q, --quiet: no stdout";
   print_endline "  -Idir, --include=dir : append dir to include path";
   exit(0)
-;;
-
-let version_string = "1.0.0"
 ;;
 
 try
@@ -867,19 +842,10 @@ try
   let input_file_name = filebase ^ ".flx" 
   and iface_file_name = filebase ^ ".fix"
   and module_name = 
-    let s = Buffer.create 50 in
-    begin 
-      try 
-        let i = ref (String.length filebase) in 
-        while !i>0 do
-          if filebase.[!i-1] = '/'
-          then raise Not_found;
-          Buffer.add_char s filebase.[!i-1];
-          decr i
-        done
-      with _ -> ()
-    end;
-    Buffer.contents s
+    let n = String.length filebase in 
+    let i = ref (n-1) in
+    while !i <> -1 && filebase.[!i] <> '/' do decr i done;
+    String.sub filebase (!i+1) (n - !i - 1)
   in
 
   let have_interface = Sys.file_exists iface_file_name in

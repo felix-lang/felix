@@ -29,7 +29,10 @@ let cal_call dfns (p,pt) e =
   match lower pt with
   | `BTYP_function (_, `BTYP_void) -> 
     `BEXE_call ((p,lower pt), e)
-  | _ -> failwith ("call non procedure, type=" ^ string_of_btypecode dfns pt)
+  | _ -> 
+    failwith ("call non procedure, "^
+    string_of_bound_expression dfns (p,pt)
+    ^"\ntype=" ^ string_of_btypecode dfns pt)
 
 exception Found of int
 
@@ -364,74 +367,6 @@ let bbind_sym syms bbdfns i (name,sr,parent,bdcl) =
       Hashtbl.add bbdfns i (name,parent,
         `BBDCL_function ([],bool_t,bbexes,name_map));
     
-    | `SYMDEF_match_handler (pat,mvindex,exes,name_map,dirs) ->
-      (*
-      print_endline ("//Binding match handler " ^ string_of_int i ^ " --> " ^ name); 
-      *)
-      let env = build_env syms [] (Some i) in 
-      let mvname,sr = 
-        match Hashtbl.find syms.dfns mvindex 
-        with name,sr,_,_ -> name,sr
-      in
-      (* INSERT MATCH VARIABLE ASSIGNMENTS HERE *)
-      let vars = Hashtbl.create 97 in
-      Flx_mbind.get_pattern_vars vars pat [];
-      (* print_endline ("PATTERN IS " ^ string_of_pattern pat ^ ", VARIABLE=" ^ mvname);
-      print_endline "VARIABLES ARE";
-      Hashtbl.iter (fun vname (sr,extractor) ->
-        let component = 
-          Flx_mbind.gen_extractor extractor (`AST_name (sr,mvname)) 
-        in
-        print_endline ("  " ^ vname ^ " := " ^ string_of_expression component);
-      ) vars;
-      *)
-      (* Now, add the variables to the environment
-       and initialise them 
-      *)
-      let exes = ref exes in
-      Hashtbl.iter
-      (fun vname (sr,extractor) ->
-        let component = 
-          Flx_mbind.gen_extractor extractor 
-          (`AST_name (sr,mvname)) 
-        in
-        let vid = !(syms.counter) in
-        incr (syms.counter);
-        (* print_endline ("//adding match variable component value "^string_of_int vid^" --> " ^ vname);
-        *)
-        Hashtbl.add syms.dfns vid (vname, sr,Some i, 
-          (*
-          `SYMDEF_val (`TYP_var vid)
-          *)
-          `SYMDEF_val (`TYP_typeof component)
-        );
-        let bvtyp = typeofindex syms [] [] 0 [] vid in
-        Hashtbl.add bbdfns vid (vname, Some i, 
-          `BBDCL_val bvtyp 
-        );
-        let top_table,_ = List.hd env in
-        Hashtbl.add top_table vname (NonFunctionEntry (Simple vid));
-        let instr = `EXE_init (vname, component) in
-        (* print_endline (string_of_exe 1 instr);
-        *)
-        exes := instr :: !exes;
-      )
-      vars;
-      let brt',bbexes = bexes env !exes (`BTYP_var i) in
-      if brt' = `BTYP_void
-      then 
-        failwith 
-        (
-          "expected non-void return from function " ^ name ^ " in\n" ^
-          short_string_of_src sr
-        )
-      ;
-      (*
-      print_endline ("Return type is " ^ string_of_btypecode syms.dfns brt');
-      *)
-      Hashtbl.add bbdfns i (name,parent,
-        `BBDCL_function ([],brt',bbexes,name_map))
-    
     | `SYMDEF_val t -> 
       (*
       print_endline ("//Binding value " ^ string_of_int i ^ " --> " ^ name); 
@@ -556,19 +491,72 @@ open Flx_bbind
 open Flx_print
 open Flx_types
 open Flx_symtab
+open Flx_getopt
+open Flx_version
+;;
+
+let print_help () =
+  print_endline "options:";
+  print_endline "  -h, --help : print this help";
+  print_endline "  --version: print version info";
+  print_endline "  -v, --verbose: print symbol table";
+  print_endline "  -q, --quiet: no stdout";
+  print_endline "  -Idir, --include=dir : append dir to include path";
+  exit(0)
 ;;
 
 try
-  let filebase = Sys.argv.(1) in
-  let filename = filebase ^ ".flx" in
-  print_endline ("Parsing " ^ filename);
+  let argc = Array.length Sys.argv in
+  if argc <= 1 
+  then begin
+    print_endline "usage: flxg --key=value ... filename; -h for help";
+    exit 0
+  end
+  ;
+  let options = get_options Sys.argv in
+  let include_dirs = ref [] in
+  let print_flag = ref false in
+  List.iter (fun (key,value) ->
+    if key = "include" || key = "I"
+    then include_dirs := !include_dirs @ [value]
 
-  let parse_tree = 
-    Flx_parse_ctrl.parse_file 
-      filename 
-      (Filename.dirname filename)
-      []
+    else if key = "verbose" || key = "v"
+    then print_flag := true
+
+    else if key = "help" || key = "h"
+    then print_help ()
+
+    else if key = "version" 
+    then (print_endline ("Felix Version " ^ version_string))
+  )
+  options
+  ;
+  if !print_flag then begin
+    print_string "//Include directories = ";
+    List.iter (fun d -> print_string (d ^ " "))
+    !include_dirs;
+    print_endline ""
+  end
+  ;
+
+  let filebase = Sys.argv.(argc-1) in
+  let input_file_name = filebase ^ ".flx" 
+  and iface_file_name = filebase ^ ".fix"
+  and module_name = 
+    let n = String.length filebase in 
+    let i = ref (n-1) in
+    while !i <> -1 && filebase.[!i] <> '/' do decr i done;
+    String.sub filebase (!i+1) (n - !i - 1)
   in
+
+  print_endline ("Parsing " ^ input_file_name);
+  let parse_tree =
+    Flx_parse_ctrl.parse_file 
+      input_file_name 
+      (Filename.dirname input_file_name)
+      !include_dirs 
+  in
+
   print_endline (Flx_print.string_of_compilation_unit parse_tree);
   print_endline "PARSE OK";
 
