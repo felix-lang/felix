@@ -13,17 +13,60 @@ int main(int,char*[]) {
    if(!lib) exit(1);
    void *fred = dlsym(lib,"fred");
    if(!fred) exit(1);
-   exit(0);   
+   return 0;
 }
 
 @h = tangler("tmp/dummy_nan.cxx",'c++')
 @select(h)
-#include <math.h>
+#include <cmath>
 
 int main(int,char*[]) { 
-  isnan(0.0);
+  std::isnan(0.0);
+  return 0;
 }
 
+@h = tangler("tmp/dummy_nan2.cxx",'c++')
+@select(h)
+#include <ieeefp.h>
+
+int main(int,char*[]) { 
+  isnanf(0.0);
+  return 0;
+}
+
+@h = tangler("tmp/dummy_stdint.cxx",'c++')
+@select(h)
+#include <stdint.h>
+
+int main(int,char*[]) { 
+  {int8_t i;}
+  {int16_t i;}
+  {int32_t i;}
+  {int64_t i;}
+  {uint8_t i;}
+  {uint16_t i;}
+  {uint32_t i;}
+  {uint64_t i;}
+  return 0;
+}
+
+@h = tangler("tmp/longlong.cxx",'c++')
+@select(h)
+#include <stdio.h>
+int main(int,char*[]) { 
+  printf("SIZEOF_LONGLONG=%d\n",sizeof(long long));
+  return 0;
+}
+
+@h = tangler("tmp/intsizes.cxx",'c++')
+@select(h)
+#include <stdio.h>
+int main(int,char*[]) { 
+  printf("SIZEOF_SHORT=%d\n",sizeof(short));
+  printf("SIZEOF_INT=%d\n",sizeof(int));
+  printf("SIZEOF_LONG=%d\n",sizeof(long));
+  return 0;
+}
 @h = tangler("script/make_config.py")
 @select(h)
 # THIS PROGRAM CREATES THE DEFAULT CONFIGURATION FILE
@@ -202,12 +245,43 @@ try:
 except:
   ISCR='env PYTHONPATH=. python -O interscript/bin/iscr.py '
 
-# find if we have BSD isnan in math.h (NAUGHTY!)
+# find if we have BSD isnan in <cmath> (NAUGHTY!)
 try:
   xqt("g++ -w -c tmp/dummy_nan.cxx -o tmp/dummy_nan.o")
-  HAVE_ISNAN=1
+  HAVE_ISNAN_IN_CMATH=1
 except:
-  HAVE_ISNAN=0
+  HAVE_ISNAN_IN_CMATH=0
+
+# find if we have BSD isnanf in <ieeefp.h> (NAUGHTY!)
+try:
+  xqt("g++ -w -c tmp/dummy_nan2.cxx -o tmp/dummy_nan2.o")
+  HAVE_ISNANF_IN_IEEEFP=1
+except:
+  HAVE_ISNANF_IN_IEEEFP=0
+
+# find if we have stdint.h
+try:
+  xqt("g++ -w -c tmp/dummy_stdint.cxx -o tmp/dummy_stdint.o")
+  HAVE_STDINT=1
+except:
+  HAVE_STDINT=0
+
+# find sizes of ints
+try:
+  xqt("g++ -w tmp/intsizes.cxx -o tmp/intsizes")
+  xqt("tmp/intsizes > tmp/intsizes.py")
+  execfile("tmp/intsizes.py")
+except:
+  pass
+
+# find if we have long long
+try:
+  xqt("g++ -w tmp/longlong.cxx -o tmp/longlong")
+  xqt("tmp/longlong >tmp/longlong.py")
+  execfile("tmp/longlong.py")
+  HAVE_LONGLONG=1
+except:
+  HAVE_LONGLONG=0
 
 DEBUG_SYMBOLS = "-g "
 CCOPT1 = "-O1 -DNDEBUG "
@@ -251,7 +325,15 @@ try:
   p(f,"CCOPT1")
   p(f,"CCOPT2")
   p(f,"OCAML_INCLUDE_DIRECTORY")
-  p(f,"HAVE_ISNAN")
+  p(f,"HAVE_ISNAN_IN_CMATH")
+  p(f,"HAVE_ISNANF_IN_IEEEFP")
+  p(f,"HAVE_STDINT")
+  p(f,"HAVE_LONGLONG")
+  p(f,"SIZEOF_SHORT")
+  p(f,"SIZEOF_INT")
+  p(f,"SIZEOF_LONG")
+  if HAVE_LONGLONG:
+    p(f,"SIZEOF_LONGLONG")
 
   p(f,"SUPPORT_DYNAMIC_LOADING")
   pr(f,"SUPPORT_STATIC_LINKAGE = 1")
