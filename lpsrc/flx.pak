@@ -134,6 +134,22 @@ functions to construct and destroy the
 instance frame objects (global, process,
 and thread frames at present).
 
+@head(2,'Configuration loader')
+There is a separate package "flx_config.pak" which should
+be used to create the configuration creator script.
+@try:
+    execfile("config/config.py")
+ except:
+    print "ERROR IN config/config.py"
+    print "You must either"
+    print "(a) edit config/config.py and fix the error, or,"
+    print "(b) i) delete it, and,"
+    print "    ii) run 'python script/make_config.py'"
+    print "       again to reset it:"
+    print "       this is done automatically by 'make boot'"
+    sys.exit(1)
+
+
 @head(2,'Version control')
 We need a special hack for version control.
 Since every build results in a changed
@@ -170,7 +186,7 @@ let version_data = ref
 @select(h)
 @python("//")
 def get_buildno():
-  fname = "buildno.txt"
+  fname = "config/buildno.txt"
   try:
     f = open(fname)
     s = f.readline()
@@ -180,6 +196,8 @@ def get_buildno():
   except:
     i = 1
   s = str(i)
+  try: os.mkdir("config")
+  except: pass
   f = open(fname,"w")
   f.write("%d\n" % i)
   f.close()

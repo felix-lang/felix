@@ -1,59 +1,36 @@
 @head(1,'Maker')
-@h = tangler('script/maker.in','python')
+@h = tangler('script/maker','python')
 @select(h)
 #!/usr/bin/env python
 ###############################################################
 # FELIX MAKE SCRIPT
 ###############################################################
 CVSDATA = '$Header$'
-#--------------------------------------------------------------
-# Autoconf section
-# @configure_input@
-#--------------------------------------------------------------
 
-CFLAGS = '@CFLAGS@'
-CPPFLAGS = '@CPPFLAGS@'
-CXXFLAGS = '@CXXFLAGS@'
-DEFS = '@DEFS@'
-LDFLAGS = '@LDFLAGS@'
-LIBS = '@LIBS@'
-BUILDDIR = '@builddir@'
-ABS_BUILDDIR = '@abs_builddir@'
-TOP_BUILDDIR = '@top_builddir@'
-ABS_TOP_BUILDDIR = '@abs_top_builddir@'
-SRCDIR = '@srcdir@'
-ABS_SRCDIR = '@abs_srcdir@'
-TOP_SRCDIR = '@top_srcdir@'
-ABS_TOP_SRCDIR = '@abs_top_srcdir@'
-
-OCAMLCC = '@OCAMLCC@'
-OCAMLC = '@OCAMLC@'
-OCAMLYACC = '@OCAMLYACC@'
-OCAMLLEX = '@OCAMLLEX@'
-LEDIT = '@LEDIT@'
-OCAMLFIND = '@OCAMLFIND@'
-CAMLP4 = '@CAMLP4@'
-OCAMLDOC = '@OCAMLDOC@'
-OCAMLDEP = '@OCAMLDEP@'
-
-TEX = '@TEX@'
-LATEX = '@LATEX@'
-AMSTEX = '@AMSTEX@'
-ISCR = '@ISCR@'
-if ISCR=='':
-  ISCR='env PYTHONPATH=. python -O interscript/bin/iscr.py'
-
-FLXFLAGS = ""
-
-# --------------------------------------------------
-# IMPORT UTILITY RESOURCES
-# ---------------------------------------------------
 import os
 import stat
 import string
 import sys
 import re
 
+
+try:
+  execfile("config/config.py")
+except:
+  print "ERROR IN config/config.py"
+  print "You must either"
+  print "(a) edit config/config.py and fix the error, or,"
+  print "(b) i) delete it, and,"
+  print "    ii) run 'python script/make_config.py'"
+  print "       again to reset it:"
+  print "       this is done automatically by 'make boot'"
+  sys.exit(1)
+
+FLXFLAGS = ""
+
+# --------------------------------------------------
+# IMPORT UTILITY RESOURCES
+# ---------------------------------------------------
 def get_stdout(x):
   f = os.popen(x,"r")
   output = f.readlines()
@@ -66,23 +43,27 @@ def get_stdouterr(x):
 # define our version of C's system() function
 def xqt(x):
   if "silent" not in options: print x
-  sys.stdin.flush()
+  try: sys.stdin.flush()
+  except: pass
   result,output = get_stdouterr(x)
   if "quiet" not in options:
     if result: print "  .. ERROR CODE",hex(result)
     if output: print string.join(output,"")
-  sys.stdin.flush()
+  try: sys.stdin.flush()
+  except: pass
 
   if result:
     raise MakeError
 
 def nxqt(x):
   if "silent" not in options: print x
-  sys.stdin.flush()
+  try: sys.stdin.flush()
+  except: pass
   result,output = get_stdouterr(x)
   if "quiet" not in options:
     if output: print string.join(output,"")
-  sys.stdin.flush()
+  try: sys.stdin.flush()
+  except: pass
 
   if not result:
     raise MakeError
@@ -483,10 +464,12 @@ def filetime(f):
 
 def run(x):
   print x
-  sys.stdin.flush()
+  try: sys.stdin.flush()
+  except: pass
   result = os.system(x)
   if result: print "  .. ERROR CODE",hex(result)
-  sys.stdin.flush()
+  try: sys.stdin.flush()
+  except: pass
 
   if result:
     raise MakeError
@@ -772,57 +755,17 @@ If it hits a an empty file set it gives an error:
 we fix it. If it hits a subdirectory it gives an error.
 We have no idea if it continues copying.
 
-@select(tangler('Makefile.in','data'))
-#--------------------------------------------------------------
-# Autoconf section
-# @configure_input@
-#--------------------------------------------------------------
-# Variable set by autoconf
-
-CFLAGS = @CFLAGS@
-CPPFLAGS = @CPPFLAGS@
-CXXFLAGS = @CXXFLAGS@
-DEFS = @DEFS@
-LDFLAGS = @LDFLAGS@
-LIBS = @LIBS@
-
-builddir = @builddir@
-abs_builddir= @abs_builddir@
-top_builddir= @top_builddir@
-abs_top_builddir= @abs_top_builddir@
-srcdir = @srcdir@
-abs_srcdir = @abs_srcdir@
-top_srcdir = @top_srcdir@
-abs_top_srcdir = @abs_top_srcdir@
-
-bindir=@bindir@
-datadir=@datadir@
-exec_prefix=@exec_prefix@
-includedir=@includedir@
-infodir=@infodir@
-libdir=@libdir@
-libexecdir=@libexecdir@
-localstatedir=@localstatedir@
-mandir=@mandir@
-prefix=@prefix@
-sbindir=@sbindir@
-sharedstatedir=@sharedstatedir@
-sysconfdir=@sysconfdir@
-
-#----------------------
-@tangle('INSTALL_DIR=${libdir}')
-@tangle('EXEC_DIR=${bindir}')
-@tangle('MAN_DIR=${mandir}')
-@tangle('SWIGDEVDIR=/usr/local/src/cvsswig/SWIG/')
-@tangle('CAMLGET=/usr/local/src/caml-get-1.0/src')
+@select(tangler('Makefile','data'))
+@tangle('PREFIX='+PREFIX)
+@tangle('INSTALL_DIR=${PREFIX}/felix/lib')
+@tangle('EXEC_DIR=${PREFIX}/bin')
+@tangle('MAN_DIR=${PREFIX}/man')
+@try:
+   tangle('SWIGDEVDIR='+SWIGDEVDIR)
+ except: pass
 @tangle('')
 @tangle('all: dummy')
 @tangle('\tpython script/maker extract compiler drivers test')
-@tangle('')
-@tangle('config: dummy')
-@tangle('\tautoheader')
-@tangle('\tautoconf')
-@tangle('\t./configure')
 @tangle('')
 
 @tangle('bytecode: dummy')
@@ -836,7 +779,6 @@ sysconfdir=@sysconfdir@
 @tangle('')
 @tangle('extract: dummy')
 @tangle('\tpython script/maker extract')
-@tangle('\t./config.status')
 @tangle('')
 @tangle('tut: dummy')
 @tangle('\tpython script/maker tutorial')
@@ -893,39 +835,36 @@ sysconfdir=@sysconfdir@
 @tangle('\tpython script/maker drivers debug')
 @tangle('')
 
-@tangle('swig: dummy')
-@tangle('\texport SWIGDEVDIR')
-@tangle('\t${MAKE} -C swig')
-@tangle('')
+@try:
+  if getattr(sys.modules["__main__"],"SWIGDEVDIR"):
+    tangle('swig: dummy')
+    tangle('\texport SWIGDEVDIR')
+    tangle('\t${MAKE} -C swig')
+    tangle('')
 
-@tangle('swig.wrap: dummy')
-@tangle('\t${MAKE} -C swig -f makewrap')
-@tangle('')
+    tangle('swig.wrap: dummy')
+    tangle('\t${MAKE} -C swig -f makewrap')
+    tangle('')
 
-@tangle('swig.clean: dummy')
-@tangle('\t${MAKE} -C swig -f makewrap clean')
-@tangle('')
+    tangle('swig.clean: dummy')
+    tangle('\t${MAKE} -C swig -f makewrap clean')
+    tangle('')
 
-@tangle('swig.test : dummy')
-@tangle('\t${MAKE} -C swig -f makewrap test')
-@tangle('')
-
-@tangle('caml-get: dummy')
-@tangle('\tocamldoc -I src -g ${CAMLGET}/odoc_ar.cma -keep-code -o misc/myarchive.cga src/*.mli src/*.ml ')
-@tangle('')
+    tangle('swig.test : dummy')
+    tangle('\t${MAKE} -C swig -f makewrap test')
+    tangle('')
+ except:
+   pass
 
 @tangle('help: dummy')
 @tangle('\t#type "make virgin" to wipe out the whole development system')
-@tangle('\t#other than the orginal sources and this makefile')
-@tangle('\t#DONT DO THIS UNLESS YOU HAVE PYTHON INSTALLED AND WORKING')
-@tangle('\t#DONT DO THIS UNLESS YOU HAVE OCAML INSTALLED AND WORKING')
-@tangle('\t#DONT DO THIS UNLESS YOU HAVE g++ INSTALLED AND WORKING')
+@tangle('\t#other than the orginal sources, this makefile, and any user config data')
 @tangle('\t#')
 @tangle('\t#type "make boot" to extract the dervied sources')
 @tangle('\t#from the original sources, including the tutorial')
 @tangle('\t#')
 @tangle('\t#type "make" to build the felix compiler and runtime')
-@tangle('\t#REQUIRES OCAML 3.06 or better')
+@tangle('\t#REQUIRES OCAML 3.07 or better')
 @tangle('\t#REQUIRES g++ 2.96 or better')
 @tangle('\t#')
 @tangle('\t#type "make test" to build and execute all the tests')
@@ -935,12 +874,9 @@ sysconfdir=@sysconfdir@
 @tangle('\t#')
 @tangle('\t#type "make doc" to typeset the original sources')
 @tangle('\t#')
-@tangle('\t#EDIT THIS MAKEFILE TO SET INSTALLATION DIRECTORIES')
-@tangle('\t#SEE THE TOP OF THE MAKEFILE')
 @tangle('\t#Obtain the required priviledges to install into the chosen directories')
 @tangle('\t#or ask someone who has the to do it for you')
 @tangle('\t#type "make install" to install Felix')
-@tangle('\t#or ask the priviledged person to do it for you')
 @tangle('')
 
 @tangle('tarball: dummy')
@@ -979,10 +915,6 @@ sysconfdir=@sysconfdir@
 @tangle('\t\tflx_'+flx_version+'/interscript/weavers/*.py \\')
 @tangle('')
 @tangle('\ttar -zcvf flx_'+flx_version+'_bin_linux.tgz\\')
-@tangle('\t\tflx_'+flx_version+'/boot-sh\\')
-@tangle('\t\tflx_'+flx_version+'/configure.ac\\')
-@tangle('\t\tflx_'+flx_version+'/configure\\')
-@tangle('\t\tflx_'+flx_version+'/Makefile.in\\')
 @tangle('\t\tflx_'+flx_version+'/Makefile\\')
 @tangle('\t\tflx_'+flx_version+'/README \\')
 @tangle('\t\tflx_'+flx_version+'/CONTENTS \\')
@@ -1064,12 +996,6 @@ sysconfdir=@sysconfdir@
 @tangle('\trm -rf interscript/*.pyc')
 @tangle('\trm -rf interscript/*.pyo')
 @tangle('\trm -f README LICENSE VERSION CONTENTS INSTALL AUTHORS NEWS COPYING ChangeLog')
-@tangle('\trm -f config* Makefile.in')
-@tangle('\trm -rf autom4te.cache')
-@tangle('\trm -f aclocal.m4')
-@tangle('\trm -f ltmain.sh')
-@tangle('\trm -f install-sh')
-@tangle('\trm -f missing')
 @tangle('')
 
 @tangle('backup: dummy')
@@ -1081,13 +1007,8 @@ sysconfdir=@sysconfdir@
 @tangle('')
 
 @tangle('boot: dummy')
+@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_config.pak')
 @tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx.pak')
-@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_tutorial.pak')
-@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_tut_macro.pak')
-@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_tut_bind.pak')
-@tangle('\tautoheader')
-@tangle('\tautoconf')
-@tangle('\techo "run ./configure now"')
 @tangle('')
 
 @tangle('install: dummy')
@@ -1122,12 +1043,6 @@ sysconfdir=@sysconfdir@
 @tangle('\tscp flx_'+flx_version+'_bin_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('')
 
-@head(1,'Bootstrapper')
-@select(tangler('boot-sh','data'))
-env PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx.pak
-autoheader
-autoconf
-
 @head(1,'README')
 @select(tangler('README'))
 This will be the readme file one day ..
@@ -1144,12 +1059,12 @@ the Authors.
 @head(1,'ChangeLog')
 @select(tangler('ChangeLog'))
 Well, this file shouldn't be here, it should
-be generated by something .. [needed to shut auto tools up]
+be generated by something .. 
 
 @head(1,'NEWS')
 @select(tangler('NEWS'))
 Well, this file shouldn't be here, it should
-be generated by something .. [needed to shut auto tools up]
+be generated by something .. 
 
 
 @head(1,'CONTENTS')
@@ -1166,8 +1081,6 @@ and program driver.
 Top level files:
 
 @tangle('  VERSION   current version number, should be '+flx_version)
-            DO NOT CHANGE THIS FILE, it might be used as input
-            so the format has to be right
   CONTENTS  (this file)
   README    the usual readme file
   INSTALL   how to install and build felix
@@ -1176,38 +1089,26 @@ Top level files:
   NEWS      handy place to plug Felix
   ChangeLog where change info should go but doesn't
 
-  buildno.txt contains the build sequence number
+  config/buildno.txt contains the build sequence number
             this must differ between builds in case
             Marshalled data format changes
             it may not exist when you start,
             the script/maker script creates it
             when necessary
  
-  boot-sh   shell script to start everything rolling
-            run this first:
-
-            sh boot-sh
-
-  configure.ac  autoconf input file
-  configure     what autoconf generates
-
-
-  rtl/config.h.in   input for config.h file, created by autoheader
-  rt/config.h      generated from config.h.in by configure
-  Makefile.in   input for configure
-  Makefile      generated by configure from Makefile.in
+  Makefile   the makefile, mainly hooks into script/maker
  
-  script/maker.in input for configure 
-  script/maker  what configure makes from srcipt/maker.in
-                This is the main make script, written in Python
-  install-sh   autoconf macro AC_CHECK_INSTALL needs this,
-               its a replacement for broken or missing
-               system install program
+  script/maker  This is the main make script, written in Python
 
 The directories are:
 
+  config  -- user configuration data
+
   lpsrc   -- LP original sources, contains EVERYTHING you need
              if you have the full tool chain installed
+
+  lpbackup -- backup of LP sources (make backups with 'make backup' :)
+
   interscript -- the complete interscript package
   src     -- ocaml source code for the compiler
   test    -- regression tests and driver programs
@@ -1248,10 +1149,6 @@ FULL BUILD.
     http://www.python.org
     http://python.sourceforge.net
 
-3. Download and install gnu autoconf
-
-    http://www.gnu.org
-
 3. Download the Felix tarball (this package)
    and unpack it in your workspace
    
@@ -1260,37 +1157,17 @@ FULL BUILD.
 
 4. Bootstrap the system.
 
-   sh boot-sh
+  make boot
 
-  This extracts the basic sources from the
-  LP archive, and invokes GNU autoconf
-  to build a configure script.
+EDIT THE FILE
 
-  IF YOU LOSE THIS FILE: you will have
-  to extract the sources by hand.
-  Here's what's in the boot-sh shell script:
+  config/config.py
 
-  env PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx.pak
-  autoheader
-  autoconf
+TO SUIT YOUR TASTES. THIS FILE IS NOT CLOBBERED.
+YOU MAY NEED TO DELETE IT AND RUN 'make boot'
+again to reset to the defaults.
 
-5. Configure the system
-
-   ./configure
-
-   This uses the default install points.
-   There will be some options added soon
-   to help locate the numerous packages
-   we will try to build wrappers for using SWIG.
-
-   At the moment on the default gnu options
-
-   --prefix, --exec_prefix 
-
-   are supported.
-
-   
-6. Build the compiler
+5. Build the compiler
    For systems where the Ocaml native code compiler
    is supported:
 
@@ -1301,7 +1178,7 @@ FULL BUILD.
 
    make compiler.bytecode drivers
 
-7. Build the documentation and tutorial
+6. Build the documentation and tutorial
 
    make doc 
 
@@ -1309,7 +1186,7 @@ FULL BUILD.
 
    make impldoc
 
-8. Test the compiler
+7. Test the compiler
 
    make test
 
@@ -1319,7 +1196,7 @@ FULL BUILD.
 
    to run the force all the tests to run
    
-9. Install the compiler
+8. Install the compiler
 
    Become super user if necessary, then:
 
@@ -1332,9 +1209,6 @@ REBUILD
                         except the Makefile
 
   make boot          -- use this to reextract after a make virgin
-                        it also runs autoconf again
-
-  ./configure        -- to reconfigure the system
 
   make clean         -- use this to delete all output from
                         test runs
@@ -1369,454 +1243,6 @@ make a sample program mytest.flx:
 and then run it:
   
   flx -Ilib mytest
-
-@head(1,'install-sh')
-@select(tangler('install-sh','data'))
-#!/bin/sh
-# install - install a program, script, or datafile
-
-scriptversion=2003-09-24.23
-
-# This originates from X11R5 (mit/util/scripts/install.sh), which was
-# later released in X11R6 (xc/config/util/install.sh) with the
-# following copyright and license.
-#
-# Copyright (C) 1994 X Consortium
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to
-# deal in the Software without restriction, including without limitation the
-# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-# sell copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-# X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
-# AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNEC-
-# TION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
-# Except as contained in this notice, the name of the X Consortium shall not
-# be used in advertising or otherwise to promote the sale, use or other deal-
-# ings in this Software without prior written authorization from the X Consor-
-# tium.
-#
-#
-# FSF changes to this file are in the public domain.
-#
-# Calling this script install-sh is preferred over install.sh, to prevent
-# `make' implicit rules from creating a file called install from it
-# when there is no Makefile.
-#
-# This script is compatible with the BSD install script, but was written
-# from scratch.  It can only install one file at a time, a restriction
-# shared with many OS's install programs.
-
-# set DOITPROG to echo to test this script
-
-# Don't use :- since 4.3BSD and earlier shells don't like it.
-doit="${DOITPROG-}"
-
-# put in absolute paths if you don't have them in your path; or use env. vars.
-
-mvprog="${MVPROG-mv}"
-cpprog="${CPPROG-cp}"
-chmodprog="${CHMODPROG-chmod}"
-chownprog="${CHOWNPROG-chown}"
-chgrpprog="${CHGRPPROG-chgrp}"
-stripprog="${STRIPPROG-strip}"
-rmprog="${RMPROG-rm}"
-mkdirprog="${MKDIRPROG-mkdir}"
-
-transformbasename=
-transform_arg=
-instcmd="$mvprog"
-chmodcmd="$chmodprog 0755"
-chowncmd=
-chgrpcmd=
-stripcmd=
-rmcmd="$rmprog -f"
-mvcmd="$mvprog"
-src=
-dst=
-dir_arg=
-
-usage="Usage: $0 [OPTION]... SRCFILE DSTFILE
-   or: $0 -d DIR1 DIR2...
-
-In the first form, install SRCFILE to DSTFILE, removing SRCFILE by default.
-In the second, create the directory path DIR.
-
-Options:
--b=TRANSFORMBASENAME
--c         copy source (using $cpprog) instead of moving (using $mvprog).
--d         create directories instead of installing files.
--g GROUP   $chgrp installed files to GROUP.
--m MODE    $chmod installed files to MODE.
--o USER    $chown installed files to USER.
--s         strip installed files (using $stripprog).
--t=TRANSFORM
---help     display this help and exit.
---version  display version info and exit.
-
-Environment variables override the default commands:
-  CHGRPPROG CHMODPROG CHOWNPROG CPPROG MKDIRPROG MVPROG RMPROG STRIPPROG
-"
-
-while test -n "$1"; do
-  case $1 in
-    -b=*) transformbasename=`echo $1 | sed 's/-b=//'`
-        shift
-        continue;;
-
-    -c) instcmd=$cpprog
-        shift
-        continue;;
-
-    -d) dir_arg=true
-        shift
-        continue;;
-
-    -g) chgrpcmd="$chgrpprog $2"
-        shift
-        shift
-        continue;;
-
-    --help) echo "$usage"; exit 0;;
-
-    -m) chmodcmd="$chmodprog $2"
-        shift
-        shift
-        continue;;
-
-    -o) chowncmd="$chownprog $2"
-        shift
-        shift
-        continue;;
-
-    -s) stripcmd=$stripprog
-        shift
-        continue;;
-
-    -t=*) transformarg=`echo $1 | sed 's/-t=//'`
-        shift
-        continue;;
-
-    --version) echo "$0 $scriptversion"; exit 0;;
-
-    *)  if test -z "$src"; then
-          src=$1
-        else
-          # this colon is to work around a 386BSD /bin/sh bug
-          :
-          dst=$1
-        fi
-        shift
-        continue;;
-  esac
-done
-
-if test -z "$src"; then
-  echo "$0: no input file specified." >&2
-  exit 1
-fi
-
-# Protect names starting with `-'.
-case $src in
-  -*) src=./$src ;;
-esac
-
-if test -n "$dir_arg"; then
-  dst=$src
-  src=
-
-  if test -d "$dst"; then
-    instcmd=:
-    chmodcmd=
-  else
-    instcmd=$mkdirprog
-  fi
-else
-  # Waiting for this to be detected by the "$instcmd $src $dsttmp" command
-  # might cause directories to be created, which would be especially bad
-  # if $src (and thus $dsttmp) contains '*'.
-  if test ! -f "$src" && test ! -d "$src"; then
-    echo "$0: $src does not exist." >&2
-    exit 1
-  fi
-
-  if test -z "$dst"; then
-    echo "$0: no destination specified." >&2
-    exit 1
-  fi
-
-  # Protect names starting with `-'.
-  case $dst in
-    -*) dst=./$dst ;;
-  esac
-
-  # If destination is a directory, append the input filename; won't work
-  # if double slashes aren't ignored.
-  if test -d "$dst"; then
-    dst=$dst/`basename "$src"`
-  fi
-fi
-
-# This sed command emulates the dirname command.
-dstdir=`echo "$dst" | sed -e 's,[^/]*$,,;s,/$,,;s,^$,.,'`
-
-# Make sure that the destination directory exists.
-
-# Skip lots of stat calls in the usual case.
-if test ! -d "$dstdir"; then
-  defaultIFS='
-	'
-  IFS="${IFS-$defaultIFS}"
-
-  oIFS=$IFS
-  # Some sh's can't handle IFS=/ for some reason.
-  IFS='%'
-  set - `echo "$dstdir" | sed -e 's@/@%@g' -e 's@^%@/@'`
-  IFS=$oIFS
-
-  pathcomp=
-
-  while test $# -ne 0 ; do
-    pathcomp=$pathcomp$1
-    shift
-    test -d "$pathcomp" || $mkdirprog "$pathcomp"
-    pathcomp=$pathcomp/
-  done
-fi
-
-if test -n "$dir_arg"; then
-  $doit $instcmd "$dst" \
-    && { test -z "$chowncmd" || $doit $chowncmd "$dst"; } \
-    && { test -z "$chgrpcmd" || $doit $chgrpcmd "$dst"; } \
-    && { test -z "$stripcmd" || $doit $stripcmd "$dst"; } \
-    && { test -z "$chmodcmd" || $doit $chmodcmd "$dst"; }
-
-else
-  # If we're going to rename the final executable, determine the name now.
-  if test -z "$transformarg"; then
-    dstfile=`basename "$dst"`
-  else
-    dstfile=`basename "$dst" $transformbasename \
-             | sed $transformarg`$transformbasename
-  fi
-
-  # don't allow the sed command to completely eliminate the filename.
-  test -z "$dstfile" && dstfile=`basename "$dst"`
-
-  # Make a couple of temp file names in the proper directory.
-  dsttmp=$dstdir/_inst.$$_
-  rmtmp=$dstdir/_rm.$$_
-
-  # Trap to clean up those temp files at exit.
-  trap 'status=$?; rm -f "$dsttmp" "$rmtmp" && exit $status' 0
-  trap '(exit $?); exit' 1 2 13 15
-
-  # Move or copy the file name to the temp name
-  $doit $instcmd "$src" "$dsttmp" &&
-
-  # and set any options; do chmod last to preserve setuid bits.
-  #
-  # If any of these fail, we abort the whole thing.  If we want to
-  # ignore errors from any of these, just make sure not to ignore
-  # errors from the above "$doit $instcmd $src $dsttmp" command.
-  #
-  { test -z "$chowncmd" || $doit $chowncmd "$dsttmp"; } \
-    && { test -z "$chgrpcmd" || $doit $chgrpcmd "$dsttmp"; } \
-    && { test -z "$stripcmd" || $doit $stripcmd "$dsttmp"; } \
-    && { test -z "$chmodcmd" || $doit $chmodcmd "$dsttmp"; } &&
-
-  # Now remove or move aside any old file at destination location.  We
-  # try this two ways since rm can't unlink itself on some systems and
-  # the destination file might be busy for other reasons.  In this case,
-  # the final cleanup might fail but the new file should still install
-  # successfully.
-  {
-    if test -f "$dstdir/$dstfile"; then
-      $doit $rmcmd -f "$dstdir/$dstfile" 2>/dev/null \
-      || $doit $mvcmd -f "$dstdir/$dstfile" "$rmtmp" 2>/dev/null \
-      || {
-	  echo "$0: cannot unlink or rename $dstdir/$dstfile" >&2
-	  (exit 1); exit
-      }
-    else
-      :
-    fi
-  } &&
-
-  # Now rename the file to the real destination.
-  $doit $mvcmd "$dsttmp" "$dstdir/$dstfile"
-fi &&
-
-# The final little trick to "correctly" pass the exit status to the exit trap.
-{
-  (exit 0); exit
-}
-
-# Local variables:
-# eval: (add-hook 'write-file-hooks 'time-stamp)
-# time-stamp-start: "scriptversion="
-# time-stamp-format: "%:y-%02m-%02d.%02H"
-# time-stamp-end: "$"
-# End:
-@head(1,'configure.ac')
-This is input to autoconf.
-@select(tangler('configure.ac','data'))
-#                                               -*- Autoconf -*-
-# Process this file with autoconf to produce a configure script.
-
-@tangle("AC_MSG_NOTICE([*** felix "+flx_version+" configure script])")
-AC_PREREQ(2.57)
-@tangle("AC_INIT(felix, ["+flx_version+"], [felix-impl@lists.sf.net])")
-AC_REVISION($Revision$)
-
-#This is clever .. search for felix and set the install
-#point to where it is found .. EXCEPT some idiot
-#user might add the development directory bin to their path
-#and then we'd be installing on top of ourself:(
-#AC_PREFIX(flx)
-
-#------------------------------------------
-AC_MSG_NOTICE([**********************************])
-AC_MSG_NOTICE([*** Checking for system program variants])
-AC_PROG_CXX
-AC_PROG_CC
-AC_PROG_LN_S
-AC_PROG_AWK
-AC_PROG_EGREP
-AC_PROG_FGREP
-AC_PROG_INSTALL
-AC_PROG_RANLIB
-
-AC_MSG_NOTICE([*** Checking for Python])
-AC_CHECK_PROGS(PYTHON,[python])
-if test "$PYTHON" != "python"; 
-then
-  AC_MSG_ERROR([What? No Python?]);
-else
-  set python_version=`python -V 2>&1`
-  echo "$python_version"
-fi
-
-AC_MSG_NOTICE([*** Checking for Ocaml tools])
-AC_CHECK_PROGS(OCAMLCC,[ocamlopt.opt ocamlopt ocamlc.opt ocamlc])
-AC_CHECK_PROGS(OCAMLC,[ocamlc.opt ocamlc])
-AC_CHECK_PROGS(OCAMLYACC,[ocamlyacc])
-AC_CHECK_PROGS(OCAMLLEX,[ocamllex])
-AC_CHECK_PROGS(LEDIT,ledit)
-AC_CHECK_PROGS(OCAMLFIND,ocamlfind)
-AC_CHECK_PROGS(CAMLP4,camlp4)
-AC_CHECK_PROGS(OCAMLDOC,ocamldoc)
-AC_CHECK_PROGS(OCAMLDEP,ocamldep)
-
-AC_MSG_NOTICE([*** Checking for TeX tools])
-AC_CHECK_PROGS(TEX,tex)
-AC_CHECK_PROGS(LATEX,latex,latex2e)
-AC_CHECK_PROGS(AMSTEX,amstex)
-
-AC_MSG_NOTICE([*** Checking if Felix is already installed])
-AC_CHECK_PROGS(FELIX,flx)
-
-AC_MSG_NOTICE([*** Checking for swig])
-AC_CHECK_PROGS(SWIG,swig)
-
-AC_MSG_NOTICE([*** Checking for interscript])
-AC_CHECK_PROGS(ISCR,iscr)
-
-#------------------------------------------
-AC_MSG_NOTICE([**********************************])
-AC_MSG_NOTICE([*** Checking for core libraries])
-AC_CHECK_LIB([dl], [dlopen])
-AC_CHECK_LIB([gmp], [__gmpz_abs])
-
-AC_MSG_NOTICE([*** Checking for archaic libraries])
-AC_CHECK_LIB([curses], [resize_term])
-AC_CHECK_LIB([readline], [rl_kill_word])
-
-AC_MSG_NOTICE([*** Checking for GTK and friends version 2])
-AC_CHECK_LIB([glib-2.0], [g_hash_table_new])
-AC_CHECK_LIB([gdk-x11-2.0], [gdk_image_get_pixel])
-AC_CHECK_LIB([gtk-x11-2.0], [gtk_box_get_type])
-
-AC_MSG_NOTICE([*** Checking for networking libraries])
-AC_CHECK_LIB([pthread], [pthread_cancel])
-AC_CHECK_LIB([ssl], [SSL_library_init])
-AC_CHECK_LIB([crypt], [crypt])
-AC_CHECK_LIB([crypto], [CRYPTO_add_lock])
-
-
-AC_MSG_NOTICE([*** Checking for unix data stores])
-AC_CHECK_LIB([gdbm], [gdbm_open])
-
-AC_MSG_NOTICE([*** Checking for Raf's libslack])
-AC_CHECK_LIB([slack],[agent_cancel])
-
-AC_MSG_NOTICE([*** Checking for image processing libraries])
-AC_CHECK_LIB([png], [png_get_rows])
-
-#------------------------------------------
-AC_MSG_NOTICE([**********************************])
-AC_MSG_NOTICE([*** Checking for almost standard header files])
-AC_HEADER_STDC
-AC_HEADER_DIRENT
-AC_CHECK_HEADERS([stdint.h unistd.h])
-AC_HEADER_SYS_WAIT
-
-#------------------------------------------
-AC_MSG_NOTICE([*** Checking for C stuff])
-AC_HEADER_STDBOOL
-AC_C_CONST
-AC_FUNC_OBSTACK
-AC_TYPE_SIZE_T
-
-#------------------------------------------
-AC_MSG_NOTICE([*** Checking for Core unix functions])
-AC_FUNC_MALLOC
-AC_FUNC_ALLOCA
-AC_FUNC_MMAP
-
-AC_CHECK_FUNCS([memset])
-
-AC_MSG_NOTICE([**********************************])
-#------------------------------------------
-AC_MSG_NOTICE([*** Checking C compiler characteristics])
-AC_CHECK_SIZEOF(char)
-AC_CHECK_SIZEOF(short)
-AC_CHECK_SIZEOF(int)
-AC_CHECK_SIZEOF(long)
-AC_CHECK_SIZEOF(long long)
-AC_CHECK_SIZEOF(float)
-AC_CHECK_SIZEOF(double)
-AC_CHECK_SIZEOF(long double)
-AC_CHECK_SIZEOF([void*])
-AC_CHECK_SIZEOF([wchar_t])
-AC_CHECK_SIZEOF([ptrdiff_t])
-AC_C_BIGENDIAN
-AC_C_CHAR_UNSIGNED
-AC_C_LONG_DOUBLE
-AC_SYS_LARGEFILE
-
-AC_MSG_NOTICE([**********************************])
-#------------------------------------------
-AC_MSG_NOTICE([*** Checking for X Windows])
-AC_PATH_XTRA
-
-#------------------------------------------
-AC_MSG_NOTICE([**********************************])
-AC_MSG_NOTICE([*** Configuring])
-AC_CONFIG_HEADERS([rtl/config.h])
-AC_CONFIG_FILES([Makefile])
-AC_CONFIG_FILES([script/maker])
-AC_OUTPUT
-
 
 @head(1,'.cvsignore')
 This is actually put in the lpsrc directory to tell
@@ -2392,7 +1818,5 @@ fi
 
 
 @os.system('chmod u+x bin/flx')
-@os.system('chmod u+x install-sh')
-@os.system('chmod u+x boot-sh')
 @os.system('cp doc/*.css tut/doc &>/dev/null')
 

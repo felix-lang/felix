@@ -424,7 +424,7 @@ val x = f 1;
 #define FIRST
 #define FIRST
 
-@select(tangler('test/bt08.imp'))
+@select(tangler('test/bt08.imp','data'))
 #define FIRST
 
 @select(tangler('test/bt08.flx'))

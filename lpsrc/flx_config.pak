@@ -1,0 +1,49 @@
+@head(1,'Configure')
+
+@h = tangler("script/make_config.py")
+@select(h)
+# THIS PROGRAM CREATES THE DEFAULT CONFIGURATION FILE
+# config/config.py
+# YOU SHOULD EDIT THIS FILE TO SUIT YOUR REQUIREMENTS
+
+import sys
+import os
+
+def file_exists(f):
+  try:
+    os.stat(f)
+    return 1
+  except: return 0
+
+quiet = 0
+if len(sys.argv) > 1:
+  if sys.argv[1] == "quiet":
+    quiet = 1
+    
+
+if file_exists("config/config.py"):
+  if not quiet:
+    print "config/config.py already exists"
+    print "It is assumed to container client configuration data"
+    print "and so will not be clobbered."
+    print "To recreate the default configuration"
+    print "you must delete config/config.py and rerun this"
+    print "script/make_config.py script"
+  sys.exit(1)
+
+try:
+  f = open("config/config.py","w")
+  f.write("SUPPORT_DYNAMIC_LOADING = 1\n")
+  f.write("SUPPORT_STATIC_LINKAGE = 1\n")
+  f.write('PREFIX = "/usr/local/"\n')
+  f.write("ISCR='env PYTHONPATH=. python -O interscript/bin/iscr.py'\n")
+  f.close()
+except:
+  print "Unable to create config/config.py"
+
+print "Created config/config.py"
+print "Edit this file to set your preferences"
+print "This file will not be clobbered by the Felix build process"
+
+@del h
+@os.system("python script/make_config.py quiet")
