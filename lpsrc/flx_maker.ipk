@@ -711,6 +711,90 @@ for fn,tgt in tgts:
     line = string.expandtabs(line)
     print line,
  
+@h = tangler('script/mklua.py','python')
+@select(h)
+
+import string
+import os
+
+prefix = '/usr/local/src/lua-5.0.2/src/'
+
+files = [
+  'lapi.c',
+  'lapi.h',
+  'lcode.c',
+  'lcode.h',
+  'ldebug.c',
+  'ldebug.h',
+  'ldo.c',
+  'ldo.h',
+  'ldump.c',
+  'lfunc.c',
+  'lfunc.h',
+  'lgc.c',
+  'lgc.h',
+  'llex.c',
+  'llex.h',
+  'llimits.h',
+  'lmem.c',
+  'lmem.h',
+  'lobject.c',
+  'lobject.h',
+  'lopcodes.c',
+  'lopcodes.h',
+  'lparser.c',
+  'lparser.h',
+  'lstate.c',
+  'lstate.h',
+  'lstring.c',
+  'lstring.h',
+  'ltable.c',
+  'ltable.h',
+  'ltests.c',
+  'ltm.c',
+  'ltm.h',
+  'lundump.c',
+  'lundump.h',
+  'lvm.c',
+  'lvm.h',
+  'lzio.c',
+  'lzio.h',
+  'lib/lauxlib.c',
+  'lib/lbaselib.c',
+  'lib/ldblib.c',
+  'lib/liolib.c',
+  'lib/lmathlib.c',
+  'lib/loadlib.c',
+  'lib/lstrlib.c',
+  'lib/ltablib.c',
+  'luac/luac.c',
+  'lua/lua.c',
+]
+
+mods = {}
+tgts = [] 
+
+for fn in files:
+  parts = string.split(fn,'/')
+  base = parts[-1]
+  if base[-1]=='c' :
+    target = 'lua/'+base+'pp'
+  else:
+    target = 'lua/'+base
+  tgts.append((prefix+fn,target))
+  i = string.index(base,'.')
+
+print "@head(1,'Lua')"
+for fn,tgt in tgts:
+  print "@h=tangler('"+tgt+"')"
+  print "@select(h)"
+  f = open(fn)
+  data = f.readlines()
+  f.close()
+  for line in data:
+    line = string.expandtabs(line)
+    print line,
+ 
 @h = tangler('script/mkcil.py','python')
 @select(h)
 
@@ -1741,6 +1825,38 @@ ELKRTL_INTERFACES = [
   'elk_useract.h',
 ]
 
+LUARTL = [
+  'lapi',
+  'lcode',
+  'ldebug',
+  'ldo',
+  'ldump',
+  'lfunc',
+  'lgc',
+  'llex',
+  'lmem',
+  'lobject',
+  'lopcodes',
+  'lparser',
+  'lstate',
+  'lstring',
+  'ltable',
+  'ltests',
+  'ltm',
+  'lundump',
+  'lvm',
+  'lzio',
+  'lauxlib',
+  'lbaselib',
+  'ldblib',
+  'liolib',
+  'lmathlib',
+  'loadlib',
+  'lstrlib',
+  'ltablib',
+  'luac',
+]
+
 # files containing ocamllex sources
 LEXS = [
   'lex_fish',
@@ -2084,6 +2200,7 @@ try:
     runISCR('lpsrc/sm.pak')
     runISCR('lpsrc/ast.pak')
     runISCR('lpsrc/elk.pak')
+    runISCR('lpsrc/lua.pak')
     copy_mli2ml()
     copy_elk2rtl()
     runISCR('lpsrc/flx_tutorial.pak')
@@ -2209,14 +2326,26 @@ try:
   if "rtl" in options:
     if SUPPORT_DYNAMIC_LOADING:
       ars = ""
+
+      # FELIX SUBLIBRARY
       for x in RTL_CPPS:
         print 'Compiling rtl object',x
         ars = ars + x + "_dynamic.o "
         xqt(CCOBJ_DLLIB + " -Irtl " + x + ".cpp -o " +x+"_dynamic.o")
+
+      # LUA SUBLIBRARY
+      for x in LUARTL:
+        print 'Compiling lua rtl object',x
+        ars = ars + "rtl/lua_" + x + "_dynamic.o "
+        xqt(CCOBJ_DLLIB + " -Ilua lua/" + x + ".cpp -o rtl/lua_" +x+"_dynamic.o")
+
+      #ELKHOUND SUBLIBRARY
       for x in SMRTL+ELKRTL:
         print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_dynamic.o "
         xqt(CCOBJ_DLLIB + " -D__UNIX__ -Ielk elk/" + x + ".cpp -o rtl/" +x+"_dynamic.o")
+
+      # LINK RTL
       xqt(AR + " rtl/libflx_dynamic.a " + ars)
       xqt(RANLIB + " rtl/libflx_dynamic.a")
 
@@ -2235,15 +2364,21 @@ try:
         print 'Compiling rtl object',x
         ars = ars + x + "_static.o "
         xqt(CCOBJ_STATIC_LIB + " -Irtl " + x + ".cpp -o " +x+"_static.o")
+      for x in LUARTL:
+        print 'Compiling lua rtl object',x
+        ars = ars + "rtl/lua_" + x + "_static.o "
+        xqt(CCOBJ_DLLIB + " -Ilua lua/" + x + ".cpp -o rtl/lua_" +x+"_static.o")
       for x in SMRTL+ELKRTL:
         print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_static.o "
         xqt(CCOBJ_DLLIB + " -D__UNIX__ -Ielk elk/" + x + ".cpp -o rtl/" +x+"_static.o")
       xqt(AR + " rtl/libflx_static.a " + ars)
       xqt(RANLIB + " rtl/libflx_static.a")
+    xqt("rm rtl/lua_*.o")
     xqt("rm rtl/sm_*.o")
     xqt("rm rtl/elk_*.o")
-
+  
+  # elkhound executable
   if "elkhound" in options:
     ars = ""
     for x in SMBASE + SMRTL + ASTGEN + ELKHOUND + ELKRTL:
@@ -2252,10 +2387,16 @@ try:
       xqt(CCOBJ_STATIC_LIB + " -D__UNIX__ -Ielk elk/" + x + ".cpp -o elk/" +x+"_static.o")
     xqt(AR + " elk/libelk_static.a " + ars)
     xqt(RANLIB + " elk/libelk_static.a")
-
     xqt(CCOBJ_STATIC_MAIN + " -DGRAMANL_MAIN elk/elk_gramanl.cpp -o elk/elkhound.o")
     xqt(CCLINK_STATIC + " elk/elkhound.o elk/libelk_static.a -o bin/flx_elkhound")
  
+  # lua executable
+  if "lua" in options:
+    xqt(CCOBJ_STATIC_MAIN + "  lua/lua.cpp -o lua/lua.o")
+    xqt(CCLINK_STATIC + " lua/lua.o rtl/libflx_static.a -o bin/flx_lua")
+    xqt(CCOBJ_STATIC_MAIN + "  lua/luac.cpp -o lua/luac.o")
+    xqt(CCLINK_STATIC + " lua/luac.o rtl/libflx_static.a -o bin/flx_luac")
+
   # COMPILE DRIVER PROGRAMS
   if "drivers" in options:
     if SUPPORT_STATIC_LINKAGE:
@@ -2719,6 +2860,7 @@ We have no idea if it continues copying.
 @tangle('\trm -rf elk')
 @tangle('\trm -rf flxcc_out c89 c99 cxx gnu89 gnu99 gnucxx cxx_sys')
 @tangle('\trm -rf bagley')
+@tangle('\trm -rf doc_out libdoc lua tools')
 @tangle('\trm -rf fish meta licences')
 @tangle('\trm -rf lpsrc/*.cache')
 @tangle('\trm -rf interscript/*.pyc')
@@ -3697,7 +3839,7 @@ done
 if [ "$TESTMODE" = "1" ]
 then
   INCLUDE_DIR="./rtl"
-  FLXG="./bin/flxg"
+  FLXG="env PATH=./bin:\$PATH ./bin/flxg"
   FLXLIB="./lib"
   FLXRUN="env LD_LIBRARY_PATH=./rtl:\$LD_LIBRARY_PATH ./bin/flx_run"
   FLXRTL="./rtl"
@@ -3752,11 +3894,6 @@ fi
 
 # Need Felix and c++ compile, then run it
 
-if [ $ECHO = 1 ]
-then
-  echo "compiling $base.flx"
-fi
-
 if [ $DEBUG = 1 ]
 then
   VERBOSE="-v"
@@ -3774,15 +3911,17 @@ fi
 
 if [ $STATIC = 0 ]
 then
-  if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"`
+  FCMD="$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"
+  if [ $ECHO = 1 ]; then echo "$FCMD"; fi
+  if `echo $FCMD`
   then
-    CCMD=`echo $CCOBJ_DLLIB $CCFLAGS -I"$INCLUDE_DIR" "$INCLUDE_DIRS" "$PKGS" "$cpps" "$base.cpp" -o "$base.o"`
-    LCMD=`echo $CCLINK_DLLIB $CCFLAGS "$PKGS" "$cppos" "$base.o" -o "$base.so"`
+    CCMD="$CCOBJ_DLLIB $CCFLAGS -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp -o $base.o"
+    LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base.o -o $base.so"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
-    if `$CCMD`
+    if `echo $CCMD`
     then
       if [ $ECHO = 1 ]; then echo "$LCMD"; fi
-      if `$LCMD`
+      if `echo $LCMD`
       then
         if [ $RUNIT = 1 ]
         then
@@ -3802,15 +3941,17 @@ then
     fi
   fi
 else
-  if `echo "$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"`
+  FCMD="$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"
+  if [ $ECHO = 1 ]; then echo "$FCMD"; fi
+  if `echo $FCMD`
   then
-    CCMD=`echo $CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I"$INCLUDE_DIR" "$INCLUDE_DIRS" "$PKGS" "$cpps" "$base.cpp" -o "$base.o"`
-    LCMD=`echo $CCLINK_STATIC $FLXRTL/flx_run_static.o "$PKGS" "$cppos" "$base.o" $FLXRTL/libflx_static.a -o "$base"`
+    CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp -o $base.o"
+    LCMD="$CCLINK_STATIC $FLXRTL/flx_run_static.o $PKGS $cppos $base.o $FLXRTL/libflx_static.a -o $base"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
-    if `$CCMD`
+    if `echo $CCMD`
     then
       if [ $ECHO = 1 ]; then echo "$LCMD"; fi
-      if `$LCMD`
+      if `echo $LCMD`
       then
         # rm -f "$base.cpp"
         if [ $RUNIT = 1 ]
