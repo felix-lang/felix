@@ -231,7 +231,16 @@ let bbind counter dfns bdfns =
     *)
     let env = build_env dfns (Some i) in 
     let bbexes = bexes env exes rt in
-    Hashtbl.add bbdfns i (name,parent,BBDCL_function (ps,rt,display,bbexes,name_map))
+    Hashtbl.add bbdfns i 
+    (name,parent,BBDCL_function (ps,rt,display,bbexes,name_map))
+
+  | BDCL_lazy (display,e) ->
+    let env = build_env dfns (Some i) in 
+    let e',rt' = bind_expression dfns bdfns env [] e in
+    let bbexes = [BEXE_return (e',rt')] in
+    Hashtbl.add bbdfns i 
+    (name,parent,BBDCL_function ([],rt',display,bbexes,Hashtbl.create 97))
+
 
   | BDCL_procedure (ps,display,exes,name_map) -> 
     (*

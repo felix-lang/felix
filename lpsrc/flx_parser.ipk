@@ -153,6 +153,7 @@ let mkcurry sr name args return_type body =
       in
         AST_function (sr, name m, h, rettype t, body)
    in aux args
+
 %}
 
 @head(2,'Tokens')
@@ -173,9 +174,11 @@ let mkcurry sr name args return_type body =
 /* literals */
 %token<Flx_types.srcref * string> NAME
 %token<Flx_types.srcref * string * Big_int.big_int> INTEGER
-%token<Flx_types.srcref * float> FLOAT
-%token<Flx_types.srcref * float * float> COMPLEX
+%token<Flx_types.srcref * string * string > FLOAT
 %token<Flx_types.srcref * string> STRING
+%token<Flx_types.srcref> INF
+%token<Flx_types.srcref> NAN 
+%token<Flx_types.srcref> ROOT
 
 /* operators and punctuation */
 
@@ -226,10 +229,10 @@ let mkcurry sr name args return_type body =
 %token<Flx_types.srcref> IF THEN ELSE ENDIF ELIF OF VAR UNION CLASS CATEGORY EXCEPTIONS GOTO EXPORT
 
 %token<Flx_types.srcref> MATCH WITH ENDMATCH CASE HEADER MODULE CODE
-%token<Flx_types.srcref> SERVICE COMMAND HANDLER CALL PROCEDURE FUNCTION SLP READER
+%token<Flx_types.srcref> SERVICE COMMAND HANDLER CALL PROCEDURE FUNCTION SLP READER FUNCTOR
 %token<Flx_types.srcref> UNIT RETURN FORK VOID
 %token<Flx_types.srcref> WHILE LOOP
-%token<Flx_types.srcref> TODO 
+%token<Flx_types.srcref> TODO INTERFACE
 %token<Flx_types.srcref> TYPE FUN READ PROC CONST STRUCT RAISE ATTEMPT FINALLY EXCEPT VAL TYPEDEF
 
 
@@ -238,8 +241,11 @@ let mkcurry sr name args return_type body =
 %type <Flx_types.range_srcref * Flx_types.id_t> simple_name
 %type <Flx_types.range_srcref * Flx_types.qualified_name_t> qualified_name
 %type <Flx_types.range_srcref * Flx_types.suffixed_name_t> suffixed_name
+%type <Flx_types.range_srcref * Flx_types.suffixed_mname_t> suffixed_mname
 %type <Flx_types.statement_t> statement 
 %type <Flx_types.expr_t> expr
+%type <Flx_types.mexpr_t> mexpr
+%type <Flx_types.mexpr_t> mapplication
 %type <Flx_types.expr_t> rvalue
 
 %type <Flx_types.pattern_t> pattern
@@ -288,6 +294,7 @@ declarative:
   | module_definition { $1 }
   | union_decl { $1 }
   | struct_decl { $1 }
+  | interface_decl { $1 }
   
 executable:
   | var_def { $1 }
@@ -295,7 +302,7 @@ executable:
   | call { $1 }
   | read { $1 }
   | return { $1 }
-  | block { $1 }
+/*  | block { $1 } */
   | if_stmt { $1 }
   | while_stmt { $1 }
   | todo { $1 }
@@ -492,19 +499,201 @@ placed in the variable by the dispatcher.
 
 @head(3,'Module Definition')
 @select(h)
+@commalistof("mparameter")
+mparameter:
+  | NAME COLON mtype_expr { snd $1,$3 }
+
+/*
+mpparam:
+  | NAME { MTYP_name [snd $1] }
+  | AMPER NAME { MTYP_pointer (MTYP_name [snd $2]) }
+mpparams:
+  | mpparam STAR mpparams { $1 :: $3 }
+  | mpparam { [$1] }
+*/
+
+mfun_arg:
+  | LPAR mparameter_comma_list RPAR { rstoken $1 $3,$2 }
+
+mfun_args:
+  | mfun_arg mfun_args      { $1 :: $2 }
+  | mfun_arg               { [$1] }
+
 
 module_definition:
   | MODULE NAME compound 
     { 
-      AST_module (rsrange (lift $1) (fst $3), snd $2, snd $3) 
+      AST_module 
+      (
+        rsrange (lift $1) (fst $3), 
+        snd $2, 
+        snd $2, 
+        snd $3
+      ) 
+    }
+
+  | MODULE NAME COLON NAME compound 
+    { 
+      AST_module 
+      (
+        rsrange (lift $1) (fst $5), 
+        snd $2, 
+        snd $4, 
+        snd $5
+      ) 
+    }
+
+  | MODULE NAME COLON NAME EQUAL compound 
+    { 
+      AST_module 
+      (
+        rsrange (lift $1) (fst $6), 
+        snd $2, 
+        snd $4, 
+        snd $6
+      ) 
     }
 
   | MODULE NAME EQUAL compound 
     { 
-      AST_module (rsrange (lift $1) (fst $4), snd $2, snd $4) 
+      AST_module 
+      (
+        rsrange (lift $1) (fst $4), 
+        snd $2, 
+        snd $2, 
+        snd $4
+      ) 
     }
 
-@commalistof("simple_name")
+  | FUNCTOR NAME mfun_args COLON mtype_expr compound
+    {
+      let sr = rsrange (lift $1) (fst $6)
+      and name = snd $2 
+      and return_type = $5
+      and body = snd $6
+      and args = List.map snd $3 (* elide srcref *)
+      in match args with
+      | [x] ->
+        AST_functor (sr, name, x, return_type, body)
+      | _ -> failwith "Can't handle functor of more than one arg"
+    }
+
+  | MODULE NAME EQUAL mexpr SEMI
+    {
+      AST_module_binding 
+      (
+        rsrange (lift $1) (lift $5), 
+        snd $2, 
+        $4 
+      )
+    }
+
+interface_entry:
+  | TYPE NAME SEMI                  { IAST_type (snd $2); }
+  | VAL NAME COLON type_expr SEMI  { IAST_val (snd $2, $4); }
+  | VAR NAME COLON type_expr SEMI  { IAST_var (snd $2, $4); }
+  | PROCEDURE NAME COLON type_expr SEMI  { IAST_procedure (snd $2, $4); }
+  | FUNCTION NAME COLON type_expr SEMI  { IAST_function (snd $2, $4); }
+  
+interface_decl:
+  | INTERFACE NAME LBRACE interface_entry_aster RBRACE
+    {
+      AST_interface
+      (
+        rstoken $1 $5,
+        snd $2,
+        $4
+      )
+    }
+
+  | INTERFACE NAME EQUAL LBRACE interface_entry_aster RBRACE
+    {
+      AST_interface
+      (
+        rstoken $1 $6,
+        snd $2,
+        $5
+      )
+    }
+
+@aster("interface_entry")
+
+@head(3,'Module expression')
+@select(h)
+mexpr:
+  | mtuple { $1 }
+  
+mtuple:
+  | mapplication_comma_list 
+    { 
+      let lst = $1 in 
+      MAST_tuple ( rsmlist lst, lst) 
+    }
+
+mapplication:
+  | mapplication mfactor                  
+    { 
+      MAST_apply (rsmexpr $1 $2, ($1, $2)) 
+    }
+  | mfactor              { $1 }
+
+
+mfactor:
+  | mfactor DOT NAME     { MAST_dot (lift $2, ($1, snd $3)) }
+  | matom                { $1 }
+
+matom:
+  | LPAR mexpr RPAR      { $2 }
+  | suffixed_mname       { MAST_name (fst $1,snd $1) }
+
+suffixed_mname:
+  | qualified_name OF LPAR mtype_expr RPAR 
+    { 
+      fst $1,
+      (snd $1, $4)
+    }
+  | qualified_name 
+    { 
+      fst $1, 
+      (snd $1, MTYP_none) 
+    }
+
+@commalistof("mapplication")
+
+@head(2,'Module Type Grammar')
+@select(h)
+/* MODULE TYPE GRAMMAR */
+mtype_expr:
+  | mtype_arrow { $1 }
+
+/* arrow has the lowest precedence, and associates right */
+mtype_arrow:
+  | mtype_product RIGHTARROW mtype_arrow { MTYP_function ($1,$3) }
+  | mtype_product { $1 }
+
+/* star is left associative */
+mtype_product:
+  | mtype_pointer STAR mtype_product_list { MTYP_tuple ($1 :: $3) }
+  | mtype_pointer{ $1 }
+mtype_product_list:
+  | mtype_pointer STAR mtype_product_list { $1 :: $3 }
+  | mtype_pointer { [$1] }
+
+mtype_pointer:
+  | AMPER mtype_atom { MTYP_pointer $2 }
+  | mtype_atom { $1 }
+mtype_atom:
+  | LPAR mtype_expr RPAR { $2 }
+  | UNIT { MTYP_tuple [] }
+  | LPAR RPAR { MTYP_tuple [] }
+  | qualified_mtype_name { MTYP_name $1 }
+
+relative_mtype_name:
+  | relative_mtype_name COLONCOLON NAME { $1 @ [snd $3] }
+  | NAME { [snd $1] }
+qualified_mtype_name:
+  | COLONCOLON relative_mtype_name { "" :: $2 }
+  | relative_mtype_name { $1 }
 
 @head(3,'Variable and Constant Declaration')
 @select(h)
@@ -550,8 +739,10 @@ in a function.
 compound:     
   | LBRACE statement_aster RBRACE  { rstoken $1 $3, $2 }
 
+/*
 block:        
   | compound { AST_block (fst $1, snd $1) }
+*/
 
 @doc()
 A procedure call looks like a function application,
@@ -599,7 +790,14 @@ call:
     | AST_name (s,name) as proc ->
       AST_call (rsrange s (lift $2), proc, AST_tuple (lift $2, []))
 
-    | _ -> failwith "Procedure call requires application"
+    | AST_lambda(sr,([],TYP_void,stmts)) ->
+      AST_block (sr,stmts)
+
+    | _ -> failwith 
+    (
+      "Procedure call requires application, got " ^
+      Flx_print.string_of_expression $1
+    )
   }
 
   | CALL application SEMI {
@@ -662,6 +860,7 @@ The assignment statement 'v <- e;' is syntact sugar for 'set(&v,e);'.
 todo:         
   | TODO STRING SEMI        { AST_nop (rstoken $1 $3, snd $2) }
   | TODO SEMI               { AST_nop (rstoken $1 $2, "") }
+  | SEMI                    { AST_nop (rstoken $1 $1,"") }
 
 @doc()
 The placed holder is used to denote an incomplete section of code.
@@ -879,22 +1078,37 @@ a value and selects the first matching case from the matching body.
 @select(h)
 /* patterns */
 integral:
-  | INTEGER { let sr,t,v = $1 in lift sr, v }
+  | INTEGER { let sr,t,v = $1 in lift sr, t, v }
   | MINUS INTEGER 
     { 
       let sr,t,v = $2 in 
-      rstoken $1 sr, Big_int.minus_big_int v 
+      rstoken $1 sr, t, Big_int.minus_big_int v 
     }
 
 floating:
-  | FLOAT { lift (fst $1), snd $1 }
-  | MINUS FLOAT { rstoken $1 (fst $2), -. (snd $2) }
+  | FLOAT 
+    { 
+      let sr,t,v = $1 in
+      lift sr, Float_plus (t,v) 
+    }
+  | MINUS FLOAT 
+    {
+      let sr,t,v = $2 in
+      rstoken $1 sr, Float_minus (t,v) 
+    }
+  | INF { lift $1, Float_inf }
+  | MINUS INF { lift $1, Float_minus_inf }
 
 atomic_pattern:
   /* constants */
   | STRING { PAT_string (lift (fst $1), snd $1) }
-  | integral { PAT_int (fst $1, snd $1) }
-
+  | integral 
+    { 
+      let sr,t,v = $1 in
+      PAT_int (sr,t,v) 
+    }
+  | NAN { PAT_nan (lift $1) }
+  
   /* ranges */
   | STRING DOTDOT STRING 
     { 
@@ -902,11 +1116,22 @@ atomic_pattern:
     }
   | integral DOTDOT integral 
     { 
-      PAT_int_range (rsrange (fst $1) (fst $3), snd $1, snd $3)  
+      let sr1,t1,v1 = $1
+      and sr2,t2,v2 = $3
+      in
+      PAT_int_range (rsrange sr1 sr2, t1,v1,t2,v2)  
     }
-  | floating DOTDOT floating 
+
+| floating DOTDOT floating 
     { 
-      PAT_float_range (rsrange (fst $1) (fst $3), snd $1, snd $3) 
+      let sr1,v1 = $1
+      and sr2,v2 = $3
+      in
+      PAT_float_range 
+      (
+       rsrange sr1 sr2, 
+       v1, v2
+      ) 
     }
 
   /* other */
@@ -918,7 +1143,8 @@ atomic_pattern:
       let names = List.map snd $4 in
       PAT_regexp (rstoken $1 $5, snd $2, names) 
     }
-  
+@commalistof("simple_name")
+
 atomic_pattern_list:
   | atomic_pattern COMMA atomic_pattern_list { $1 :: $3 }
   | atomic_pattern { [$1] }
@@ -1051,10 +1277,10 @@ relative_name:
   | simple_name { fst $1, [snd $1] }
 
 qualified_name:
-  | COLONCOLON relative_name
+  | ROOT COLONCOLON relative_name
     { 
-      rsrange (lift $1) (fst $2),
-      [""] @ snd $2
+      rsrange (lift $1) (fst $3),
+      [""] @ snd $3
     }
   | relative_name { $1 }
 
@@ -1088,12 +1314,29 @@ lambda:
         ($3, $6, snd $7)
       )
     }
+  | LAZY LPAR expr RPAR 
+    {
+      AST_lazy
+      (
+        rstoken $1 $4,
+        $3
+      )
+    }
   | PROCEDURE LPAR parameter_comma_list RPAR compound
     {
       AST_lambda 
       (
         rsrange (lift $1) (fst $5),
         ($3, TYP_void, snd $5)
+      )
+    }
+
+  | PROCEDURE compound
+    {
+      AST_lambda 
+      (
+        rsrange (lift $1) (fst $2),
+        ([], TYP_void, snd $2)
       )
     }
 
@@ -1297,6 +1540,16 @@ factor:
 
 
 atom:
+  | compound            
+    {
+      let sr, stmts = $1 in
+      AST_lambda 
+      (
+        sr,
+        ([], TYP_void, stmts)
+      )
+    
+    }
   | LPAR expr RPAR      { $2 }
   | LPAR RPAR           { AST_tuple (rstoken $1 $2,[]) }
   | suffixed_name       { AST_name (fst $1,snd $1) }
@@ -1307,8 +1560,16 @@ literal:
     { let sr,t,v = $1 in
       AST_literal (lift sr, AST_int (t,v)) 
     }
-  | FLOAT   { AST_literal (lift (fst $1), AST_float (snd $1)) }
-  | STRING  { AST_literal (lift (fst $1), AST_string (snd $1)) }
+  | FLOAT   
+    { 
+      let sr,t,v = $1 in
+      AST_literal (lift sr, AST_float (t,v)) 
+    }
+  | STRING  
+    { 
+      let sr,s = $1 in
+      AST_literal (lift sr, AST_string s) 
+    }
 
 
 %%

@@ -8,6 +8,17 @@ val cpp_name :
 @h = tangler('src/flx_name.ml')
 @select(h)
 open Flx_types
+let cvt s = 
+  let n = String.length s in
+  let id = Buffer.create (n+10) in
+  for i=0 to n - 1 do
+    match s.[i] with
+    | '\'' -> Buffer.add_string id "__p"
+    | '\\' -> Buffer.add_string id "__"
+    | x -> Buffer.add_char id x
+  done;
+  Buffer.contents id
+
 let cpp_name bbdfns index =
   let id,parent,entry = 
     try Hashtbl.find bbdfns index 
@@ -19,6 +30,6 @@ let cpp_name bbdfns index =
   | BBDCL_var _ -> "_var_"
   | BBDCL_val _ -> "_val_"
   | _ -> failwith "cpp_name expected func,proc,var or val"
-  ) ^ string_of_int index ^ "_" ^ id
+  ) ^ string_of_int index ^ "_" ^ cvt id
 
 

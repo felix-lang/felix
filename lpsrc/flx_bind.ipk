@@ -108,6 +108,9 @@ let rec bind_entry bdfns dfns index =
       BDCL_function (ps',ret',display,exes,name_map)
     )
 
+  | SYMDEF_lazy (display,e) -> let bdcl = BDCL_lazy (display,e) in
+    Hashtbl.add bdfns index (id,parent,bdcl)
+
   | SYMDEF_dcl dcl -> 
     match dcl with
 
@@ -144,20 +147,27 @@ let rec bind_entry bdfns dfns index =
        not be possible, if the expression depends on an as yet
        unbound variable or type.
     *)
+    
     | DCL_val_typeof e -> 
       let bdcl = 
+        (*
         try BDCL_val (snd (
           bind_expression dfns bdfns env [] e 
         ))
-        with _ -> BDCL_val_typeof e
+        with _ ->
+        *)
+        BDCL_val_typeof e
       in
       Hashtbl.add bdfns index (id,parent,bdcl)
     | DCL_var_typeof e -> 
       let bdcl = 
+        (*
         try BDCL_var (snd (
           bind_expression dfns bdfns env [] e
         ))
-        with _ -> BDCL_var_typeof e
+        with _ -> 
+        *)
+        BDCL_var_typeof e
       in
       Hashtbl.add bdfns index (id,parent,bdcl)
     | DCL_type_alias _ -> ()
@@ -168,7 +178,7 @@ let rec bind_entry bdfns dfns index =
     | DCL_module _ -> failwith "Unexpected module"
     | DCL_match_handler _ -> failwith "Unexpected match handler"
     | DCL_match_check _ -> failwith "Unexpected match checker"
-
+    | DCL_lazy _ -> failwith "Unexpected lazy"
  
 
 let bind_ifaces dfns bdfns ifaces = 

@@ -60,6 +60,7 @@ let rec rex seq msgt e =
   | AST_name _ -> [],e
   | AST_ref _ -> [],e
   | AST_literal _ -> [],e
+
   | AST_get_n (sr,(n,e')) ->
     let l1,x1 = rex e' in
     l1, AST_get_n (sr,(n,x1))
@@ -86,6 +87,14 @@ let rec rex seq msgt e =
     | _ -> Dcl (sr,name,DCL_function (params, res, rsts sts))
     ],
     AST_name (generated,([name], type_of_argtypes (map snd params)))
+
+  | AST_lazy (sr,e) ->
+    let n = seq() in
+    let name = "_lazy_" ^ string_of_int n in
+    [
+      Dcl (sr,name,DCL_lazy e)
+    ],
+    AST_name (generated,([name], TYP_tuple []))
 
   | AST_dot (sr,(obj,comp)) -> 
     let l1,x1 = rex obj in 
@@ -114,6 +123,19 @@ and rst seq msgt st : asm_t list =
   let rsts' sts = catmap rst' sts in
   
   match st with
+  | AST_functor (sr,name,ps,typ,sts) ->
+    [
+      Dcl (sr,name,DCL_functor (ps,typ,rsts' sts));
+    ]
+
+  | AST_interface (sr,name,mifentries) ->
+    [
+      Dcl (sr,name,DCL_interface mifentries)
+    ]
+
+  | AST_module_binding (sr,name,mexpr) ->
+    [Dcl (sr,name,DCL_module_binding mexpr)]
+
   | AST_label (sr,s) -> [Exe (sr,EXE_label s)]
   | AST_goto (sr,s) -> [Exe (sr,EXE_goto s)]
 
@@ -185,15 +207,15 @@ and rst seq msgt st : asm_t list =
     [Dcl (sr,name,DCL_proc(args,code))]
 
   (* misc *)
-  | AST_module (sr,name, sts) -> 
+  | AST_module (sr,name, iface,sts) -> 
     [
-      Dcl (sr,name,DCL_module (rsts' sts));
+      Dcl (sr,name,DCL_module (iface,rsts' sts));
       Exe 
       (
         sr,
         EXE_call 
           (
-            AST_name (sr,([name;"_init_"^name],TYP_tuple [])),
+            AST_name (sr,([name;"_init_"],TYP_tuple [])),
             AST_tuple (generated,[])
           )
       )
@@ -413,8 +435,7 @@ let desugar_program counter sts =
       (src_of_statement (list_last sts))
   in
   let seq () = let n = !counter in incr counter; n in
-  rst seq TYP_void (AST_module (sr,"",sts))
-
+  rst seq TYP_void (AST_module (sr,"","",sts))
 
 @h = tangler("src/flx_desugar.mli")
 @select(h)

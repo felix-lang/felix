@@ -26,16 +26,17 @@ let rec resolve_overload dfns bdfns fs name (suf : btypecode_t) =
   in let fun_defs = List.map
     (fun i ->
       match Hashtbl.find bdfns i with
-      | (id,parent,(BDCL_function (ps,t,_,_,_))) -> i,paramtype ps,t
-      | (id, parent,(BDCL_match_check (_,_,_))) ->
-        i,BTYP_tuple [],BTYP_none 
+      | (_,_,(BDCL_function (ps,t,_,_,_))) -> i,paramtype ps
+      | (_,_,(BDCL_lazy (_,_))) -> i,BTYP_tuple []
+      | (_,_,(BDCL_match_check (_,_,_))) ->
+        i,BTYP_tuple []
 
-      | (id, parent,(BDCL_match_handler (_,_,_,_,_,_))) ->
-        i,BTYP_tuple[],BTYP_none 
+      | (_,_,(BDCL_match_handler (_,_,_,_,_,_))) ->
+        i,BTYP_tuple[]
 
-      | (id,parent,(BDCL_fun (ps,t,_))) -> i,typeoflist ps,t
-      | (id,parent,(BDCL_procedure (ps,_,_,_))) -> i,paramtype ps,BTYP_void
-      | (id,parent,(BDCL_proc (ps,_))) -> i,typeoflist ps,BTYP_void
+      | (_,_,(BDCL_fun (ps,t,_))) -> i,typeoflist ps
+      | (_,_,(BDCL_procedure (ps,_,_,_))) -> i,paramtype ps
+      | (_,_,(BDCL_proc (ps,_))) -> i,typeoflist ps
       | _ -> 
         failwith (
           "[resolve_overload] Expected "^
@@ -45,10 +46,10 @@ let rec resolve_overload dfns bdfns fs name (suf : btypecode_t) =
     )
     fs
   in match List.filter 
-    (fun (i,ps,t) -> ps = suf) 
+    (fun (i,ps) -> ps = suf) 
     fun_defs
   with 
-  | [i,_,_] -> Some i
+  | [i,_] -> Some i
   | [] -> None
   | _ -> failwith ("Too many candidates match in overloading " ^ name)
   

@@ -75,15 +75,17 @@ let csuffix_of_type s = match s with
   | "uint16" -> "u"
   | "uint32" -> "lu"
   | "uint64" -> "llu"
-  | _ -> failwith ("[csuffix_of_type]: Unexpected Integer Type " ^ s)
+  | "double" -> ""
+  | "float" -> "f"
+  | "ldouble" -> "l"
+  | _ -> failwith ("[csuffix_of_type]: Unexpected Type " ^ s)
 
 let cstring_of_literal e = match e with
   | AST_bool i -> (match i with | true -> "true" | false -> "false")
   | AST_int (s,i) -> (Big_int.string_of_big_int i)^csuffix_of_type s 
-  | AST_float x -> string_of_float x
+  | AST_float (s,x) -> x ^ csuffix_of_type s
   | AST_string s -> string_of_string s
 
- 
 let find_references bbdfns name_map = 
   let references = ref [] in
   Hashtbl.iter
@@ -122,6 +124,7 @@ let find_variable_indices dfns index =
     | SYMDEF_procedure (_,_,_,_,name_map) -> name_map
     | SYMDEF_module name_map -> name_map
     | SYMDEF_match_handler (_,_,_,_,_,name_map) -> name_map
+    | SYMDEF_lazy _
     | SYMDEF_match_check _ -> Hashtbl.create 97 
     | _ -> failwith "[find variable indicies] Expected function definition"
   in
@@ -519,6 +522,11 @@ let get_var_frame dfns bbdfns this index =
 
 let rec gen_expr registry dfns bbdfns this (e,t) =
   let ge e = gen_expr registry dfns bbdfns this e in
+  let ge_arg a = 
+    match a with
+    | _,BTYP_tuple [] -> ""
+    | x -> ge x 
+  in
   let id,parent,entry = 
     try Hashtbl.find bbdfns this 
     with _ -> failwith ("[gen_expr] Can't find this = " ^ string_of_int this)
@@ -652,14 +660,8 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
         "(" ^ subst registry dfns bbdfns ct [ge a] [typ] retyp ^ ")"
       end
 
-    (* special case: unit argument is not passed *)
-    | BBDCL_function ([],_,_,_,_) ->
-      (* print_endline "--- CASE OF FUNCTION, no args"; *)
-      (ge f) ^ "->apply()"
-
     | BBDCL_function (ps,_,_,_,_) ->
-      (* print_endline "--- CASE OF FUNCTION with args"; *)
-      (ge f) ^ "->apply(" ^ ge a ^ ")"
+      (ge f) ^ "->apply(" ^ ge_arg a ^ ")"
     
    
     (*
@@ -667,7 +669,7 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
     | BBDCL_var _ ->
         (get_var_ref dfns bbdfns this index) ^ 
         ".data->apply(" ^
-        ge a ^
+        ge_arg a ^
         ")"
     *)
     | _ -> failwith ("[gen_expr] Expected '"^id^"' to be function constant or variable")
@@ -684,12 +686,12 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
       let name = cpp_typename registry dfns bbdfns (BTYP_name index) in
       name ^ "(" ^ ge a ^ ")"
     | _ ->
-      (ge f) ^ "->apply(" ^ ge a ^ ")"
+      (ge f) ^ "->apply(" ^ ge_arg a ^ ")"
     end
 
   (* General application*)
   | BEXPR_apply (f,a) ->
-    (ge f) ^ "->apply(" ^ ge a ^ ")"
+    (ge f) ^ "->apply(" ^ ge_arg a ^ ")"
     
   | BEXPR_tuple es ->
     (* just apply the tuple type ctor to the arguments *)
@@ -1735,8 +1737,8 @@ try
       let index = match entry with
         | FunctionEntry [x] -> x
         | FunctionEntry [] -> failwith "Couldn't find '_init_'"
-        | FunctionEntry _ -> failwith "Too many top level procedures called '_init_top'"
-        | NonFunctionEntry _ -> failwith "_init_top found but not procedure"
+        | FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
+        | NonFunctionEntry _ -> failwith "_init_found but not procedure"
       in cpp_name bbdfns index
     in
     plb "extern \"C\" continuation_t *start(";
@@ -1756,8 +1758,15 @@ try
     close_out bf;
     exit 0
 
-with x -> flush stdout; print_endline "EXCEPTION"; 
-  print_endline (Printexc.to_string x);
-  exit 1
+with 
+  | Failure s -> 
+    flush stdout; print_endline "FAILURE";
+    print_endline s;
+    exit 1
+
+  | x -> 
+    flush stdout; print_endline "EXCEPTION"; 
+    print_endline (Printexc.to_string x);
+    exit 1
 ;;
 

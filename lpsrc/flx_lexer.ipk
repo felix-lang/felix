@@ -14,6 +14,9 @@ let hash_table_from_list n lst =
 
 let flx_keyword_table =          (* 97 is a prime larger than table size *)
   hash_table_from_list 97 [  
+    "root", (fun s ->  ROOT s);
+    "functor", (fun s ->  FUNCTOR s);
+    "not", (fun s ->  NOT s);
     "and", (fun s ->  AND s);
     "not", (fun s ->  NOT s);
     "or", (fun s ->  OR s);
@@ -67,6 +70,8 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "void", (fun s ->  VOID s);
     "goto", (fun s ->  GOTO s);
     "export", (fun s ->  EXPORT s);
+    "inf", (fun s -> INF s);
+    "NaN", (fun s -> NAN s);
 ]
 
 let map_flx_keywords srcref lex_item = 
@@ -234,6 +239,16 @@ let is_in_string s ch =
 let is_white = is_in_string " \t"
 let is_digit = is_in_string "0123456789"
 
+let strip_us s = 
+  let n = String.length s in
+  let x = Buffer.create n in
+  for i=0 to n - 1 do
+    match s.[i] with 
+    | '_' -> ()
+    | c -> Buffer.add_char x c
+  done;
+  Buffer.contents x
+
 } 
 
 (* ====================== REGULAR DEFINITIONS ============================ *)
@@ -276,9 +291,13 @@ let ordinary = letter | digit | hichar |
 let printable = ordinary | quote | dquote | slosh
 
 (* identifiers *)
+let ucn = 
+    "\\u" hexdigit hexdigit hexdigit hexdigit 
+  | "\\U" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit
+
 let prime = '\''
-let idletter = letter | underscore | hichar
-let identifier = idletter (idletter | digit)* prime *
+let idletter = letter | underscore | hichar | ucn
+let identifier = idletter (idletter | digit | prime )* 
 
 (* integers *)
 let bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +
@@ -295,12 +314,29 @@ let signind = 'u' | 'U'
 let suffix = type_suffix? signind? | signind? type_suffix?
 let int_lit = (bin_lit | oct_lit | dec_lit | hex_lit) suffix
 
-(* floats *)
+(* floats: Follows ISO C89, except that we allow underscores *)
 let decimal_string = digit (underscore? digit) *
-let fixed_literal = decimal_string ? '.' decimal_string | 
+let hexadecimal_string = hexdigit (underscore? hexdigit) *
+
+let decimal_fractional_constant = 
   decimal_string '.' decimal_string?
-let exponent = 'E' ('+'|'-')? decimal_string
-let floating_literal = fixed_literal exponent? | decimal_string exponent
+  | '.' decimal_string
+  
+let hexadecimal_fractional_constant = 
+  ("0x" |"0X")
+  hexadecimal_string '.' hexadecimal_string?
+  | '.' hexadecimal_string
+
+let decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string
+let binary_exponent = ('P'|'p') ('+'|'-')? decimal_string
+
+let floating_suffix = 'L' | 'l' | 'F' | 'f'
+let floating_literal = 
+  (
+    decimal_fractional_constant decimal_exponent? |
+    hexadecimal_fractional_constant binary_exponent?
+  )
+  floating_suffix?
 
 (* Python strings *)
 let qqq = quote quote quote
@@ -689,9 +725,11 @@ and pre_flx_lex = parse
     fun state ->
     begin
       state#inbody;
+      let s = lexeme lexbuf in
+      let s' = Flx_id.utf8_to_ucn s in
       [Flx_keywords.map_flx_keywords 
         (state#get_srcref lexbuf) 
-        (lexeme lexbuf)
+        s'
       ]
     end
   } 
@@ -765,29 +803,16 @@ and pre_flx_lex = parse
 | floating_literal { 
   fun state -> 
     state#inbody;
-    [FLOAT (state#get_srcref lexbuf, floating_of_string (lexeme lexbuf))]
-  }
-
-| floating_literal ("J"|"j") { 
-    fun state ->
-    begin
-      state#inbody;
-      let s = lexeme lexbuf in
-      let n = String.length s in
-      let d = String.sub s 0 (n-1) in
-      [COMPLEX (state#get_srcref lexbuf, 0.0, floating_of_string d)]
-    end
-  }
-
-| decimal_string ("J"|"j") { 
-    fun state ->
-    begin
-      state#inbody;
-      let s = lexeme lexbuf in
-      let n = String.length s in
-      let d = String.sub s 0 (n-1) in
-      [COMPLEX (state#get_srcref lexbuf, 0.0, floating_of_string d)]
-    end
+    let str = lexeme lexbuf in
+    let n = String.length str in
+    let last_char = str.[n-1] in
+    match last_char with
+    | 'l'|'L' ->
+      [FLOAT (state#get_srcref lexbuf,"ldouble", strip_us (String.sub str 0 (n-1)))]
+    | 'f'|'F' ->
+      [FLOAT (state#get_srcref lexbuf,"float",strip_us (String.sub str 0 (n-1)))]
+    | _ ->
+      [FLOAT (state#get_srcref lexbuf,"double",strip_us str)]
   }
 
 (* one character sequences *)

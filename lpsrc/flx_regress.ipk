@@ -149,14 +149,14 @@ var n = len x;
 while(i < n) {
   print x[i];
   ++i;
-}
+};
 endl;
 
 i = 1;
 while(i <= n) {
   print x[-i];
   ++i;
-}
+};
 endl;
 
 @select(tangler('test/flx_rt04.flx'))

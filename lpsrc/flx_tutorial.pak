@@ -128,7 +128,7 @@ while (i < 10)
   j = i + i;
   print j; print "\n";
   ++i;
-}
+};
 @doc()
 Like value declarations, the type of a variable
 does not need to be declared if it is initialised.
@@ -145,7 +145,9 @@ or assigned to before they are used, as in C.
 @p()
 You will also have noticed the 'while' loop,
 one of the control structures Felix provides:
-it works the same way as a 'while' loop in C.
+it appears to work the same way as a 'while' loop in C,
+except that a trailing ; is strangely required.
+We'll find out why later.
 
 @head(1,'Functions')
 Felix allows you to define functions,
@@ -270,7 +272,9 @@ by its name, the () can be elided:
 @select(tangler(tdir+'tut10.flx'))
 #include <std.flx>
 print 1; endl();
-print 1; endl;
+print 2; endl;
+@doc()
+There's another special shortcut, but we'll meet it later.
 
 @head(1,'Structs')
 Felix supports C like structs. A struct, like a tuple,
@@ -375,12 +379,12 @@ match (y)
     {
       print "Some "; 
       print i; 
-    }
+    };
   | None: 
     {
       print "None"; 
       print i;
-    }
+    };
 }
 endl;
 
@@ -419,9 +423,9 @@ match (x)
         print ", ";
         print b; 
         print ")";
-      }
+      };
     }
-  }
+  };
 }
 endl;
 
@@ -693,7 +697,7 @@ Here is a list of ints.
 
 union float_list =
   | Empty
-  | Cons of float * float_list
+  | Cons of double * float_list
 ;
 
 val t0 = Empty;
@@ -711,7 +715,7 @@ proc print (a: float_list)
         print i; 
         print " "; 
         print tail;
-      }
+      };
   }
 }
 
@@ -740,7 +744,7 @@ proc print (a: int_list)
         print i; 
         print " "; 
         print tail;
-      }
+      };
   }
 }
 
@@ -761,12 +765,12 @@ fun rev(lst:int_list):int_list
   {
     match(lst)
     {
-      | Empty: {} 
+      | Empty: {} ;
       | Cons (head,tail): 
         {
           result = Cons(head,result); 
           aux(tail);
-        } 
+        };
     }
   }
   aux(lst);
@@ -1027,7 +1031,7 @@ print (matchit "No match"); endl;
 
 proc print_if_matches(matcher:string->bool) (s:string)
 {
-  if (matcher s) { print s; endl; }
+  if (matcher s) { print s; endl; };
 }
 
 val p = print_if_matches matchit;
@@ -1100,7 +1104,7 @@ module A {
 }
 
 print top; endl;
-print (::top); endl;
+print (root::top); endl;
 print A::a; endl;
 print A::B::b; endl;
 @doc()
@@ -1451,7 +1455,7 @@ proc main
    
     // do something else
 
-  }
+  };
   exceptions
   {
     err(errno:int)
@@ -1494,4 +1498,342 @@ be found in a scope enclosing the raise statement,
 or, the exception list following the attempt
 immediately enclosing it: in other words,
 the handler is always 'nearby'.
+
+@head(1,'Procedure Values Again')
+We've seen the advantages of higher order 
+functions and procedures. It is possible
+to define anonymous procedure and function values
+literally, as in the next example,
+they're called lambdas, after the lambda calculus:
+
+@select(tangler(tdir+'tut35.flx'))
+#include <std.flx>
+val f = fun(a:int):int { return a * a; };
+
+print (f 1); 
+endl;
+
+print 
+(
+  (fun(a:int):int { return a * a; })
+  1
+); 
+endl;
+
+proc thrice(p:unit->void) { p(); p(); p(); }
+thrice ( proc() { print 3; endl; } );
+thrice ( proc   { print 3; endl; } );
+thrice          { print 3; endl; };
+{ print "finished"; endl; };
+
+@doc()
+Mickey Mouse! Checkout the shortcut on the
+second last line. You can just write
+statements in curly brackets for an
+anonymous procedure taking unit argument,
+you can leave off the
+@begin_displayed_code()
+  proc() // or
+  proc
+@end_displayed_code()
+But why does the last line work?
+The answer is: this is a special shortcut.
+A statement consisting of an anonymous
+procedure taking unit, and a semicolon ;
+is a shortcut for a call:
+@begin_displayed_code()
+  { print 1; }; // is a shortcut for ..
+  { print 1; } (); 
+@end_displayed_code()
+much the same as
+@begin_displayed_code()
+  endl; // is a shortcut for ..
+  endl (); 
+@end_displayed_code()
+Now, remember those ugly semicolons at the end
+of the while statement? Are you getting a glimmer?
+Hint: Felix doesn't have a while statement.
+It's a library routine!
+
+@head(1,'Lazy Evaluation')
+To define the while loop, we need lazy evaluation.
+Lets try to define it:
+@select(tangler(tdir+'tut36.flx'))
+#include <std.flx>
+proc While (cond: unit->bool) (body:unit->void)
+{
+  repeat:>
+    if (not(cond())) goto finished;
+    body();
+    goto repeat;
+  finished:>
+}
+
+var i = 0;
+While (fun():bool { return i < 10; })
+{
+  print i; endl;
+  i++;
+};
+
+@doc()
+Well that works fine, except for the ugly lambda.
+Here's the first shortcut:
+@select(tangler(tdir+'tut37.flx'))
+#include <std.flx>
+proc While (cond: unit->bool) (body:unit->void)
+{
+  repeat:>
+    if (not(cond())) goto finished;
+    body();
+    goto repeat;
+  finished:>
+}
+
+var i = 0;
+val x : unit -> int = lazy (i+1);
+print (x());
+While (lazy ( i < 10))
+{
+  print i; endl;
+  i++;
+};
+
+@doc()
+The keyword lazy denotes a lazy expression:
+@begin_displayed_code()
+  lazy (expr)
+@end_displayed_code()
+means exactly the same as
+@begin_displayed_code()
+  fun():T { return expr; }
+@end_displayed_code()
+where T is the type of the expression expr.
+Well, we're not quite there syntactically!
+
+@head(1,'Module Interfaces')
+Felix allows you to specify the interface
+of a module with an interface specification.
+You can constrain access to the module with
+an interface. The module must match the
+interface, more precisely, the module's
+default interface must be subtype of the
+specified interface. Here's an example.
+@select(tangler(tdir+'tut38.flx'))
+#include <std.flx>
+
+interface group
+{
+  type t;
+  proc print: t;
+  fun add: t * t -> t;
+  fun inv: t -> t;
+}
+
+module number: group {
+  typedef t = int;
+  fun add(a:t, b:t):t { return a + b; }
+  fun inv(a:t):t { return -a; }
+}
+
+@doc()
+Note that the representation of t by an int
+is hidden by the interface: you can't
+multiply these numbers.
+
+@head(1,'Functors')
+You may have been wondering how Felix handles
+genericity. 
+Felix supports modules which
+can be parameterized by other modules.
+Lets look at an example.
+@select(tangler(tdir+'tut39.flx'))
+#include <std.flx>
+
+interface list_req
+{
+  type element;
+  proc print_element: element;
+}
+
+functor List (req:list_req)
+{
+  union list =
+    | Empty
+    | Cons of req::element * list
+  ;
+  proc print (a: list) 
+  {
+    match (a) 
+    {
+      | Empty: print "[]";
+      | Cons (i,tail): 
+        {
+          req::print_element i; 
+          print " "; 
+          print tail;
+        };
+    }
+  }
+}
+
+module int_list = List int;
+
+val t0 = int_list::Empty;
+val nxt = (100.1,t0);
+val t1 = int_list::Cons nxt;
+val t2 = int_list::Cons (200.2,t1);
+print t2; endl;
+
+
+@head(1,'Numeric Lexemes')
+Here is a more comprehensive set of examples
+of Felix numeric lexicology.
+@select(tangler(tdir+'tut45.flx'))
+#include <std.flx>
+#include <boost.flx>
+
+// radix
+{
+  val i1 = 999;      // decimal
+  val i2 = 0b1111;   // binary
+  val i3 = 0o7777;   // octal
+  val i4 = 0d9999;   // decimal
+  val i5 = 0xF1_F2;  // hex
+};
+
+// underscores
+{
+  val i1 = 123_456; 
+  val i2 = 0x_FF_FFu;
+};
+
+// normal signed integers
+{
+  val i1 : tiny = 1t;
+  val i2 : short = 1s;       
+  val i3 : int = 1; // default
+  val i4 : int = 1i;
+  val i5 : long = 1l;
+  val i6 : vlong = 1ll;
+};
+
+// normal unsigned integers
+{
+  val i1 : utiny = 1tu;
+  val i2 : utiny = 1ut; // u may be first or last
+  val i3 : ushort = 1su;
+  val i4 : uint = 1u; // default
+  val i5 : uint = 1iu;
+  val i6 : ulong = 1lu;
+  val i7 : uvlong = 1vu;
+  val i8 : uvlong = 1llu; // alternate
+};
+
+// exact signed integers
+{
+  val i1 : int8 = 1i8;
+  val i2 : int16 = 1i16;       
+  val i3 : int32 = 1i32;
+  val i4 : int64 = 1i64;
+};
+
+// exact unsigned integers
+{
+  val i1 : uint8 = 1u8; // 1iu8 not allowed
+  val i2 : uint16 = 1u16;       
+  val i3 : uint32 = 1u32;
+  val i4 : uint64 = 1u64;
+};
+
+// floats obey C99 rules, except we allow underscores
+{
+  val x1 : float = 2.2f;
+  val x2 : double = 2.2;
+  val x3 : ldouble = 2.2l;
+  val x4 : double = 22_345.78;
+  // val x5 : float = 0xFFFF.FFp4f; // doesn't work on g++ 2.95.3
+  val x6 : double = 2.2e4;
+  val x7 : float = 2.2e4f;
+};
+
+@head(1,'Floating matches')
+Felix provides special matching for
+floating point. Here are some examples:
+@select(tangler(tdir+'tut46.flx'))
+#include <std.flx>
+
+match (1.0)
+{
+  case NaN: print "Not a Number";
+  case -inf .. -0.999: print "lt -1";
+  case -1.001 .. 1.001: print "Unit circle";
+  case 0.999 .. inf: print "Greater than 1";
+}
+endl;
+
+match (1.0) 
+{
+  case 0.999 .. 1.001: print "one";
+}
+endl;
+
+match (1.0/3.0)
+{
+ case 0.3333 .. 0.3334: print "One third";
+}
+
+@doc()
+Things to note are: if there is NaN test,
+it must be the first test. If there is
+a test -inf .. inf, it tests for a non-NaN,
+and must be the last test. A NaN will fail
+all tests other than a test for NaN.
+@p()
+A range test is neither inclusive nor exclusive!
+That's why there is no test for a particular float,
+and why the ranges above overlap.
+Welcome to constructive mathematics!
+@p()
+Note that _floating_ point provides exact
+comparisons, however, the patterns above
+apply to constructive reals. The last
+example explains this best: you can't do
+non-constructive matches. [Use IEEE type
+for exact FP?]
+
+@head(1,'Identifiers')
+Felix identifiers consists of a string of
+characters. The first character must be a letter
+or underscore, subsequent characters may be one of a
+letter, underscore, apostrophe or digit.
+@p()
+Certain identifiers are reserved as keywords.
+Identifiers beginning with an underscore are 
+reserved to Felix. Identifiers containing
+more than one underscore in a row are
+reserved to Felix. Reserved identifiers may
+be used by progrogrammers, but not defined.
+@p()
+The letters referred to consist of the usual
+A-Z and a-z, but also include any Unicode/ISO10646
+code point recommended as a letter for the purpose
+of use in identifiers of programming languages
+by ISO/IEC PDTR 10176, as adopted by ISO C++.
+A full table can be found in the reference manual,
+Felix Standard, and source code.
+@p()
+These code points must be represented using UTF-8,
+or by embedded Universal Character Names (ucns).
+These consist of a \uXXXX or \UXXXXXXXX where the
+X's are hex digits. Felix normalises all such
+encodings so identifiers match properly.
+
+@select(tangler(tdir+'tut47.flx'))
+#include <std.flx>
+
+val x_y_7' = 1;
+val Y_can't_U_do_this_in_C'' : double = 2.0;
+val x\u05d0= 1; // x,Hebrew  aleph
+val zz = x\U000005D0; // x,Hebrew aleph
 

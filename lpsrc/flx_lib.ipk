@@ -195,6 +195,9 @@ proc assert: bool = "assert($1);";
     ]:
     tangle('fun '+op+': '+t+' -> '+t+' = "'+op+fc[t]+'($1)";')
 
+// R -> bool
+@for t in floats:
+  tangle('fun isnan: '+t+' -> bool = "isnan'+fc[t]+'($1)";')
 
 //
 // increment, decrement

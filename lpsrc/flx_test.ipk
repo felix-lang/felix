@@ -283,7 +283,7 @@ procedure fire()
       case |Odd: print "Odd\n";
     }
     incr (&i); 
-  }
+  };
 }
 
 print "Felix test_library1 initialising\n";

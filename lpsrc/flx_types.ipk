@@ -57,6 +57,7 @@ type c_t = string     (* C++ code as a string *)
 type id_t = string
 and qualified_name_t = id_t list      (* module nesting *)
 and suffixed_name_t = qualified_name_t * typecode_t  (* overload disambiguation *)
+and suffixed_mname_t = qualified_name_t * mtypecode_t
 
 @head(3,'Type sublanguage')
 Terms of the type sublanguage. The encoding 'TYP_none' is 
@@ -76,14 +77,53 @@ and typecode_t =
   | TYP_void                                   (* void type *)
   | TYP_none                                   (* special hack for 'no type' *)
 
+@head(3,'Module Type sublanguage')
+Module types are just signatures.
+Felix provides module products and functors.
+Products are somewhat unusual, but make it easier
+to build functors, and allow a syntactic symmetry
+between functions and functors.
+@p()
+Module pointers are a Felix speciality.
+A module pointer type refers to a dynamically loaded
+module, and is used for dynamic binding.
+@select(h)
+and mtypecode_t = 
+  | MTYP_name of qualified_name_t                (* named type *)
+  | MTYP_tuple of mtypecode_t list               (* product type *)
+  | MTYP_function of mtypecode_t * mtypecode_t   (* functor type *)
+  | MTYP_pointer  of mtypecode_t                 (* pointer type *)
+  | MTYP_none
+
+@head(3,'Module Expressions')
+These are module names, tuples, and functor applications.
+Functors can be overloaded just like functions.
+@select(h)
+and mexpr_t = 
+  | MAST_tuple of range_srcref * mexpr_t list
+  | MAST_name of range_srcref * suffixed_mname_t
+  | MAST_apply of range_srcref * (mexpr_t * mexpr_t)
+  | MAST_dot of range_srcref * (mexpr_t * id_t)
+
+@head(3,'Interfaces')
+Module interfaces.
+@select(h)
+and mifentry_t = 
+  | IAST_type of id_t
+  | IAST_val of id_t * typecode_t
+  | IAST_var of id_t * typecode_t
+  | IAST_function of id_t * typecode_t
+  | IAST_procedure of id_t * typecode_t
+  
 @head(3,'Literals')
 Literals recognized by the lexer.
 @select(h)
 and literal_t =
-  | AST_int of string * big_int
-  | AST_float of float
-  | AST_string of string
   | AST_bool of bool
+  | AST_int of string * big_int
+  | AST_string of string
+  | AST_float of string * string
+                 (* basetype (i,j,k etc) value *)
 
 @head(3,'Expressions')
 Expressions; that is, the functional calculator subsystem.
@@ -117,19 +157,28 @@ and expr_t =
   | AST_match_ctor of range_srcref * (qualified_name_t * expr_t)
   | AST_ctor_arg of range_srcref * (qualified_name_t * expr_t)
   | AST_get_n of range_srcref * (int * expr_t) (* get n'th component of a tuple *)
-  
+  | AST_lazy of range_srcref * expr_t
+
 @head(3,'Pattern')
 Patterns; used for matching variants in match statements.
 @select(h)
+and float_pat = 
+  | Float_plus of string * string (* type, value *)
+  | Float_minus of string * string
+  | Float_inf 
+  | Float_minus_inf
+
 and pattern_t =
+  | PAT_nan of range_srcref
+
   (* constants *)
-  | PAT_int of range_srcref * big_int
+  | PAT_int of range_srcref * string * big_int
   | PAT_string of range_srcref * string
 
   (* ranges *)
-  | PAT_int_range of range_srcref * big_int * big_int
+  | PAT_int_range of range_srcref * string * big_int * string * big_int
   | PAT_string_range of range_srcref * string * string
-  | PAT_float_range of range_srcref * float * float
+  | PAT_float_range of range_srcref * float_pat * float_pat 
 
   (* other *)
   | PAT_name of range_srcref * id_t 
@@ -154,40 +203,53 @@ and extract_t =
 Statements; that is, the procedural sequence control system.
 @select(h)
 and parameter_t = id_t * typecode_t
+and mparameter_t = id_t * mtypecode_t
 and statement_t =
-  | AST_label of range_srcref * id_t (* for testing the code generator! *)
-  | AST_goto of range_srcref * id_t (* for testing the code generator! *)
-  
+ 
   | AST_comment of string (* for documenting generated code *)
   (* definitions *)
   | AST_function of range_srcref * id_t * parameter_t list * typecode_t * statement_t list
   | AST_procedure of range_srcref * typecode_t * id_t * parameter_t list * statement_t list
 
+  (* types *)
+  | AST_union of range_srcref * id_t * (id_t * typecode_t) list
+  | AST_struct of range_srcref * id_t * (id_t * typecode_t) list
+  | AST_type_alias of range_srcref * id_t * typecode_t
+
+  (* variables *)
   | AST_val_decl of range_srcref * id_t * typecode_t option * expr_t option
   | AST_var_decl of range_srcref * id_t * typecode_t option * expr_t option
-
-  | AST_type_alias of range_srcref * id_t * typecode_t
-  | AST_except_handler of range_srcref * id_t * parameter_t list * statement_t list
-  
-  (* control structures *)
+ 
+  (* module system *)
+  | AST_module of range_srcref * id_t * id_t * statement_t list  
+  | AST_module_binding of range_srcref * id_t * mexpr_t
+  | AST_functor of range_srcref * id_t * mparameter_t list * mtypecode_t * statement_t list
+  | AST_interface of range_srcref * id_t * mifentry_t list
+ 
+  (* control structures: primitives *)
+  | AST_label of range_srcref * id_t (* for testing the code generator! *)
+  | AST_goto of range_srcref * id_t (* for testing the code generator! *)
   | AST_call of range_srcref * expr_t * expr_t 
   | AST_read of range_srcref * id_t
   | AST_return of range_srcref * expr_t
-  | AST_block of range_srcref * statement_t list
   | AST_nop of range_srcref * string
+
+  | AST_match of range_srcref * expr_t * (pattern_t * statement_t) list
+  | AST_block of range_srcref * statement_t list
   | AST_if of 
     range_srcref * 
     (range_srcref * (expr_t * statement_t)) list * 
     (range_srcref * statement_t)
   | AST_while of range_srcref * expr_t * statement_t
+
+  (* exceptions *)
   | AST_attempt of 
     range_srcref *
     (range_srcref * statement_t) *         (* the attempt *)
     (range_srcref * statement_t list) *    (* the handlers *)
     (range_srcref * statement_t list)      (* the finally block *)
-
+  | AST_except_handler of range_srcref * id_t * parameter_t list * statement_t list
   | AST_raise of range_srcref * id_t * expr_t
-  | AST_match of range_srcref * expr_t * (pattern_t * statement_t) list
 
   (* binding structures [prolog] *)
   | AST_abs_decl of range_srcref * id_t * c_t
@@ -196,9 +258,7 @@ and statement_t =
   | AST_proc_decl of range_srcref * id_t * typecode_t list * c_t 
   | AST_header of range_srcref * string
   | AST_code of range_srcref * string
-  | AST_union of range_srcref * id_t * (id_t * typecode_t) list
-  | AST_struct of range_srcref * id_t * (id_t * typecode_t) list
-  | AST_module of range_srcref * id_t * statement_t list  
+
   | AST_export of range_srcref * suffixed_name_t * string
 
 and exe_t =
@@ -217,6 +277,8 @@ and exe_t =
 and dcl_t = 
   | DCL_header of string
   | DCL_function of   parameter_t list * typecode_t * asm_t list
+  | DCL_functor of    mparameter_t list * mtypecode_t * asm_t list
+  | DCL_lazy of       expr_t
   | DCL_procedure of  typecode_t * parameter_t list * asm_t list
   
   | DCL_match_check of pattern_t * string
@@ -227,6 +289,8 @@ and dcl_t =
   | DCL_var of        typecode_t
   | DCL_var_typeof of expr_t
   | DCL_type_alias of typecode_t
+  | DCL_module_binding of mexpr_t
+  | DCL_interface of  mifentry_t list
 
   (* binding structures [prolog] *)
   | DCL_abs of        c_t
@@ -235,7 +299,7 @@ and dcl_t =
   | DCL_proc of       typecode_t list * c_t 
   | DCL_union of      (id_t * typecode_t) list
   | DCL_struct of     (id_t * typecode_t) list
-  | DCL_module of     asm_t list  
+  | DCL_module of     id_t * asm_t list  
 
 and asm_t = 
   | Exe of range_srcref * exe_t 
@@ -298,6 +362,7 @@ and bdcl_t =
 
   | BDCL_val_typeof of expr_t
   | BDCL_var_typeof of expr_t 
+  | BDCL_lazy of       int list * expr_t
 
   (* binding structures [prolog] *)
   | BDCL_abs of        c_t
@@ -335,13 +400,23 @@ and name_map_t = (string, entry_set_t) Hashtbl.t
 
 type env_t = name_map_t list
 type symbol_definition_t =
+  | SYMDEF_functor of parameter_t list * mtypecode_t * int list * exe_t list * name_map_t
   | SYMDEF_module of name_map_t
   | SYMDEF_parameter of typecode_t
   | SYMDEF_function of parameter_t list * typecode_t * int list * exe_t list * name_map_t
+  | SYMDEF_lazy of int list * expr_t 
   | SYMDEF_match_check of pattern_t * int * int list
   | SYMDEF_match_handler of typecode_t * pattern_t * int * int list * exe_t list * name_map_t
+  | SYMDEF_interface of name_map_t
+
+  | SYMDEF_if_val of typecode_t
+  | SYMDEF_if_type
+  | SYMDEF_if_proc of typecode_t
+  | SYMDEF_if_fun of typecode_t
+
   | SYMDEF_procedure of typecode_t * 
      parameter_t list * int list * exe_t list * name_map_t
+
   | SYMDEF_dcl of dcl_t
 
 type symbol_data_t = string * range_srcref * int option * symbol_definition_t 
@@ -371,7 +446,9 @@ val rsrange: range_srcref -> range_srcref -> range_srcref
 val lift: srcref -> range_srcref
 
 val rsexpr: expr_t -> expr_t -> range_srcref
+val rsmexpr: mexpr_t -> mexpr_t -> range_srcref
 val rslist: expr_t list -> range_srcref
+val rsmlist: mexpr_t list -> range_srcref
 
 val src_of_expr : expr_t -> range_srcref
 val src_of_statement: statement_t -> range_srcref
@@ -429,15 +506,29 @@ let src_of_expr e = match e with
   | AST_match_ctor  (s,_) 
   | AST_ctor_arg  (s,_) 
   | AST_get_n  (s,_) 
+  | AST_lazy (s,_)
+    -> s 
+let src_of_mexpr e = match e with
+  | MAST_name  (s,_) 
+  | MAST_apply  (s,_) 
+  | MAST_tuple  (s,_) 
+  | MAST_dot  (s,_) 
     -> s 
 (* get range from first and last expressions *)
 let rsexpr a b = rsrange (src_of_expr a) (src_of_expr b)
+let rsmexpr a b = rsrange (src_of_mexpr a) (src_of_mexpr b)
 
 (* get source range of non-empty list of expressions *)
 let rslist lst = 
   rsexpr (List.hd lst) (list_last lst)
 
+let rsmlist lst = 
+  rsmexpr (List.hd lst) (list_last lst)
+
 let src_of_statement s = match s with
+  | AST_interface (s,_,_)
+  | AST_module_binding (s,_,_)
+  | AST_functor (s,_,_,_,_)
   | AST_label (s,_)
   | AST_goto (s,_)
   
@@ -470,7 +561,7 @@ let src_of_statement s = match s with
   | AST_code (s, _) 
   | AST_union (s, _, _ ) 
   | AST_struct (s, _, _)
-  | AST_module (s, _, _ )
+  | AST_module (s, _, _,_)
   | AST_export (s, _,_)
     -> s
 
@@ -478,11 +569,12 @@ let src_of_statement s = match s with
 
 let src_of_pattern p = match p with
   (* constants *)
-  | PAT_int (s, _)
+  | PAT_nan s
+  | PAT_int (s,_,_)
   | PAT_string (s, _)
 
   (* ranges *)
-  | PAT_int_range (s, _, _)
+  | PAT_int_range (s,_,_,_,_)
   | PAT_string_range (s, _, _)
   | PAT_float_range (s, _,_)
 
@@ -516,6 +608,7 @@ Routines to print various terms.
 @select(h)
 open Flx_types
 val string_of_typecode : typecode_t -> string
+val string_of_mtypecode : mtypecode_t -> string
 val string_of_btypecode : symbol_table_t -> btypecode_t -> string
 val special_string_of_typecode : typecode_t -> string
 val string_of_expression : expr_t -> string
@@ -562,6 +655,16 @@ and string_of_suffixed_name (name,typ) =
   | TYP_none -> ""
   | _ -> " of (" ^ string_of_typecode typ ^ ")"
 
+and string_of_qualified_mname name =
+  String.concat "::"  name
+
+and string_of_suffixed_mname (name,typ) =
+  string_of_qualified_mname name
+  ^
+  match typ with
+  | MTYP_none -> ""
+  | _ -> " of (" ^ string_of_mtypecode typ ^ ")"
+
 and suffix_of_type s = match s with
   | "tiny" -> "t"
   | "short" -> "s"
@@ -581,18 +684,22 @@ and suffix_of_type s = match s with
   | "uint16" -> "u16"
   | "uint32" -> "u32"
   | "uint64" -> "u64"
-  | _ -> failwith ("[suffix_of_type] Unexpected Integer Type " ^ s)
+  | "float" -> "f"
+  | "double" -> ""
+  | "ldouble" -> "l"
+  | _ -> failwith ("[suffix_of_type] Unexpected Type " ^ s)
 
  
 and string_of_literal e = match e with
   | AST_bool i -> (match i with | true -> "true" | false -> "false")
   | AST_int (s,i) -> (string_of_big_int i)^suffix_of_type s 
-  | AST_float x -> string_of_float x
+  | AST_float (t,v) -> v ^ suffix_of_type t
   | AST_string s -> string_of_string s
-
+  
 and string_of_expression e = 
   let se e = string_of_expression e in
   match e with
+  | AST_lazy (_,e) -> "lazy(" ^ string_of_expression e ^ ")"
   | AST_get_n (_,(n,e)) -> "get (" ^ string_of_int n ^ ", " ^se e^")"
   | AST_deref (_,e) -> "*(" ^ se e ^ ")"
   | AST_name (_,name) -> string_of_suffixed_name name
@@ -636,6 +743,20 @@ and string_of_typecode tc = match tc with
   | TYP_void -> "void"
   | TYP_none -> "<none>"
 
+and string_of_mtypecode tc = match tc with
+  | MTYP_name name -> string_of_qualified_name name
+  | MTYP_tuple ls -> 
+    begin match ls with 
+    | [] -> "unit" 
+    | _ -> "(" ^ (String.concat " * " (List.map string_of_mtypecode ls)) ^")"
+    end
+
+  | MTYP_function (args, result) ->  
+    "(" ^ (string_of_mtypecode args) ^ " -> " ^ (string_of_mtypecode result) ^ ")"
+  | MTYP_pointer t -> "&(" ^ (string_of_mtypecode t) ^ ")"
+
+  | MTYP_none -> "<none>"
+
 and qualified_name_of_index dfns index = 
   match Hashtbl.find dfns index with 
   | (id,sr,None,_) -> (* id ^ "<" ^ string_of_int index ^ ">" *) ""
@@ -666,6 +787,11 @@ and string_of_parameters ps =
     ", " 
     (List.map (fun (x,y)-> x ^ ": "^(string_of_typecode y)) ps)
 
+and string_of_mparameters ps = 
+  String.concat 
+    ", " 
+    (List.map (fun (x,y)-> x ^ ": "^(string_of_mtypecode y)) ps)
+
 and string_of_bparameters dfns ps = 
   String.concat 
     ", " 
@@ -678,15 +804,25 @@ and string_of_arguments ass =
 and string_of_component level (name, typ) = 
    (spaces level) ^ name ^ ": " ^ (string_of_typecode typ)
 
+and string_of_float_pat = function
+  | Float_plus (t,v) -> v ^ t
+  | Float_minus (t,v) -> "-" ^ v ^ t
+  | Float_inf -> "inf"
+  | Float_minus_inf -> "-inf"
+
 and string_of_pattern p = match p with
-  | PAT_int (_,i) -> string_of_big_int i
-  | PAT_int_range (_,i1,i2) -> 
-    string_of_big_int i1 ^ " .. " ^ string_of_big_int i2
+  | PAT_nan _ -> "NaN"
+  | PAT_int (_,t,i) -> string_of_big_int i ^ suffix_of_type t
+  | PAT_int_range (_,t1,i1,t2,i2) -> 
+    string_of_big_int i1 ^ suffix_of_type t1 ^
+    " .. " ^ 
+    string_of_big_int i2 ^ suffix_of_type t2
+    
   | PAT_string (_,s) -> string_of_string s
   | PAT_string_range (_,s1, s2) -> 
     string_of_string s1 ^ " .. " ^ string_of_string s2
   | PAT_float_range (_,x1, x2) -> 
-    string_of_float x1 ^ " .. " ^ string_of_float x2
+    string_of_float_pat x1 ^ " .. " ^ string_of_float_pat x2
   | PAT_name (_,s) -> s
   | PAT_tuple (_,ps) -> "(" ^ catmap ", "  string_of_pattern ps ^ ")"
   | PAT_any _ -> "any"
@@ -728,9 +864,51 @@ and special_string_of_btypecode dfns ty =  (* used for constructors *)
   | BTYP_tuple [] -> ""
   | _ -> " of " ^ string_of_btypecode dfns ty
 
+and string_of_mexpr e = 
+  match e with
+  | MAST_tuple (sr,lst) ->
+    "(" ^ catmap ", " string_of_mexpr lst ^ ")"
+  | MAST_dot (sr,(e, name)) ->
+    "(" ^ string_of_mexpr e ^ ")." ^ name
+  | MAST_name (_,name) -> string_of_suffixed_mname name
+  | MAST_apply (_,(a,b)) -> 
+    "(" ^ string_of_mexpr a ^ " " ^ string_of_mexpr b ^ ")"
 
+and string_of_ifmentry level s = 
+  spaces level ^
+  (
+    match s with
+    | IAST_type name -> "type " ^ name
+    | IAST_val (name,t) -> "val " ^ name ^ " = " ^ string_of_typecode t
+    | IAST_var (name,t) -> "var " ^ name ^ " = " ^ string_of_typecode t
+    | IAST_function (name,t) -> "fun " ^ name ^ ": " ^ string_of_typecode t
+    | IAST_procedure (name,t) -> "proc " ^ name ^ ": " ^ string_of_typecode t
+  ) ^ ";"
+  
 and string_of_statement level s = 
   match s with 
+  | AST_interface (_,name, entries) ->
+    spaces level ^
+    "interface " ^ name ^ "{\n" ^
+    (
+      catmap "\n"
+      (string_of_ifmentry (level+1))
+      entries
+    ) ^ "\n" ^
+    spaces level ^ "}\n"
+    
+  | AST_module_binding (_,name,mexpr) ->
+    spaces level ^
+    "module " ^ name ^ " = " ^
+    string_of_mexpr mexpr ^ ";\n";
+
+  | AST_functor (_,name,ps,res,ss) ->
+    (spaces level) ^ 
+    "functor " ^ name ^ 
+    "("^ (string_of_mparameters ps)^"): "^(string_of_mtypecode res)^"\n" ^
+    string_of_compound level ss
+
+
   | AST_export (_,flx_name,cpp_name) -> 
     spaces level ^ "export " ^ 
     string_of_suffixed_name flx_name ^ 
@@ -744,8 +922,9 @@ and string_of_statement level s =
   | AST_type_alias (_,t1,t2) ->
     spaces level ^ "type " ^ t1 ^ " = " ^ string_of_typecode t2 ^ ";"
 
-  | AST_module (_,name, sts)  -> 
-    (spaces level) ^ "module " ^ name ^
+  | AST_module (_,name, interface, sts)  -> 
+    (spaces level) ^ "module " ^ name ^ 
+    ": " ^ interface ^ " = " ^
     "\n" ^ 
     string_of_compound level sts
 
@@ -1034,12 +1213,27 @@ and string_of_bexe dfns level s =
     sid l ^ " := " ^ se r ^ ";"
 
 and string_of_dcl level name s = match s with
+  | DCL_interface entries ->
+    spaces level ^
+    "interface " ^ name ^ "{\n" ^
+    (
+      catmap "\n"
+      (string_of_ifmentry (level+1))
+      entries
+    ) ^ "\n" ^
+    spaces level ^ "}\n"
+
+  | DCL_module_binding mexpr -> 
+    spaces level ^
+    "module " ^ name ^ " = "^string_of_mexpr mexpr^" ;\n"
+
+  | DCL_lazy e -> "val "^name^"= lazy(" ^ string_of_expression e ^ ");\n"
   | DCL_header s -> "header " ^ string_of_string s
   | DCL_type_alias (t2) ->
     spaces level ^ "type " ^ name ^ " = " ^ string_of_typecode t2 ^ ";"
 
-  | DCL_module (sts)  -> 
-    (spaces level) ^ "module " ^ name ^
+  | DCL_module (iface, sts)  -> 
+    (spaces level) ^ "module " ^ name ^ ": " ^ iface ^ " = " ^
     "\n" ^ 
     string_of_asm_compound level sts
 
@@ -1089,6 +1283,13 @@ and string_of_dcl level name s = match s with
     "("^ (string_of_parameters ps)^"): "^(string_of_typecode res)^"\n" ^
     string_of_asm_compound level ss
 
+  | DCL_functor (ps, res, ss) ->
+    (spaces level) ^ 
+    "function " ^ name ^ 
+    "("^ (string_of_mparameters ps)^"): "^(string_of_mtypecode res)^"\n" ^
+    string_of_asm_compound level ss
+
+
   | DCL_procedure (msgt, ps, ss) -> 
     (spaces level) ^ 
     "procedure ("^string_of_typecode msgt^") " ^ name ^ 
@@ -1134,6 +1335,8 @@ and string_of_bdcl dfns level index s =
   let name = qualified_name_of_index dfns index in
   let string_of_btypecode t = string_of_btypecode dfns t in
   match s with
+  | BDCL_lazy (_,e) -> "lazy(" ^ string_of_expression e ^ ")"
+
   | BDCL_module name_map -> 
     spaces level ^
     "module " ^ name ^ ";\n"
@@ -1350,7 +1553,6 @@ exceptions = """
 exception SyntaxError of string
 exception ParseError of string
 exception LexError of string
-exception Bad_letter_in_identifier of int 
 exception TokenError of string
 """
 //

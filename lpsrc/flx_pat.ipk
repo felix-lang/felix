@@ -59,6 +59,7 @@ and check_match_string pats =
 
 and check_match_float pats =
   let rec check pat = match pat with
+  | PAT_nan _
   | PAT_any _
   | PAT_float_range _
   | PAT_name _ -> ()
@@ -153,6 +154,7 @@ and renaming pats = ()
    ]
 *)
 and find_match_type pat = match pat with
+  | PAT_nan _ -> check_match_float
   | PAT_int _ -> check_match_int 
   | PAT_string _ -> check_match_string
 
@@ -176,8 +178,24 @@ and find_match_type pat = match pat with
 *)
 
 let rec check_terminal pat = match pat with
-  | PAT_any _ -> failwith "'Any' pattern must be last in match"
-  | PAT_name _ -> failwith "'Name' pattern must be last in match"
+  | PAT_any sr -> 
+    failwith 
+    (
+      "'Any' pattern '_' must be last in match in " ^ 
+      short_string_of_src sr
+    )
+  | PAT_name (sr,x) -> 
+    failwith 
+    (
+      "'Name' pattern '"^x^"' must be last in match in " ^
+      short_string_of_src sr
+    )
+  | PAT_float_range (sr, Float_minus_inf, Float_inf) ->
+    failwith 
+    (
+      "Whole floating range must be last in match in " ^ 
+      short_string_of_src sr
+    )
   | PAT_as (_,pat,_) -> check_terminal pat
   | _ -> ()
   
@@ -187,5 +205,15 @@ let validate_patterns pats =
   let hpat = List.hd pats in
   let checker = find_match_type hpat in
   checker pats;
-  List.iter check_terminal (List.tl (List.rev pats))
-
+  List.iter check_terminal (List.tl (List.rev pats));
+  List.iter 
+  (fun x -> match x with
+    | PAT_nan sr ->
+      failwith 
+      (
+        "NaN test must be first in match in " ^
+        short_string_of_src sr
+      )
+    | _ -> ()
+  )
+  (List.tl pats)

@@ -72,6 +72,5 @@ let rec bind_type dfns env exclude t : btypecode_t =
   | TYP_pointer t -> BTYP_pointer (bt t)
   | TYP_void -> BTYP_void
   | TYP_none -> BTYP_none
-  
  
 

@@ -37,7 +37,7 @@ open Flx_env
 
 let base_typename_of_literal v = match v with
   | AST_int (t,_) -> t
-  | AST_float _ -> "float"
+  | AST_float (t,_) -> t
   | AST_string _ -> "string"
   | AST_bool _ -> "bool"
 
@@ -89,6 +89,12 @@ let rec typeofindex dfns bdfns exclude sr index =
     let env = build_env dfns parent in 
     snd (bind_expression dfns bdfns env (index::exclude) e)
 
+  | BDCL_lazy (d,e) -> 
+    let env = build_env dfns parent in 
+    let rt = snd (bind_expression dfns bdfns env (index::exclude) e) in
+    BTYP_function (BTYP_tuple [],rt)
+
+
   | BDCL_match_check _ -> 
     let env = build_env dfns parent in 
     BTYP_function (BTYP_tuple [], typeof_literal dfns env sr (AST_bool true))
@@ -117,6 +123,7 @@ and bind_expression dfns bdfns env exclude e : tbexpr_t =
   print_endline ("Binding expression " ^ string_of_expression e);
   *)
   match e with
+  | AST_lazy _ -> assert false
   | AST_get_n (sr,(n,e')) -> 
     let expr,typ = be e' in
     let ctyp = match typ with 
@@ -179,7 +186,17 @@ and bind_expression dfns bdfns env exclude e : tbexpr_t =
             failwith 
             (
               "[flx_ebind] Can't find match for " ^ string_of_qualified_name qn ^ " in " ^
-              short_string_of_src sr
+              short_string_of_src sr ^ 
+              "\nCandidates are " ^
+              (String.concat "\n"
+                (List.map
+                  (fun i ->
+                    string_of_int i ^ "==> " ^ 
+                    string_of_btypecode dfns (typeofindex dfns bdfns [] sr i)
+                  )
+                  fs
+                )
+              )
             )
         in
         BEXPR_closure index, typeofindex dfns bdfns exclude sr index

@@ -440,6 +440,7 @@ let find_variable_indices dfns index =
     | SYMDEF_procedure (_,_,_,_,name_map) -> name_map
     | SYMDEF_module name_map -> name_map
     | SYMDEF_match_handler (_,_,_,_,_,name_map) -> name_map
+    | SYMDEF_lazy _ 
     | SYMDEF_match_check _ -> Hashtbl.create 97 
     | _ -> failwith "[find variable indicies] Expected function definition"
   in

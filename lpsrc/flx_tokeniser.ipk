@@ -18,29 +18,9 @@ let filter_comments x =
     | [] -> []
   in filter x
 
-(* check identifiers for compliance to PDTR 10176 compliance. 
-  Don't call this routine, if an 8 bit character set is used
-  (eg Latin-1)
-*)
-let special_id_chars = [
-  int_of_char '_';
-  int_of_char '\''
-]
-
-let check_id x =
-  let rec filter x' =
-    match x' with 
-    | NAME (sr,x) :: t -> 
-      Ucs_id.check_string special_id_chars x; 
-      NAME (sr,x) :: filter t
-    | h :: t -> h :: filter t
-    | [] -> []
-  in filter x
-
 let translate ts = 
   let filters = [
-    (* 1 *) filter_comments; 
-    (* 1u *) check_id; 
+    (* 1 *) filter_comments
     ] 
   and reverse_apply dat fn = fn dat 
   in List.fold_left reverse_apply ts filters
@@ -58,9 +38,10 @@ let string_of_string s = "\"" ^  Flx_string.c_quote_of_string s ^ "\""
 let string_of_token (tok :Flx_parse.token): string =
   match tok with
   | NAME (sr,s) -> s
+  | NAN _ -> "NaN"
+  | INF _ -> "inf"
   | INTEGER (sr,t,i) -> Big_int.string_of_big_int i
-  | FLOAT (sr,f) -> (string_of_float f)
-  | COMPLEX (sr, r,i)  -> "(" ^ (string_of_float r) ^ ", " ^ (string_of_float i) ^ ")"
+  | FLOAT (sr,t,v) -> v
   | STRING (sr,s) -> Flx_string.c_quote_of_string s 
 
   (* one character tokens *)
@@ -130,7 +111,11 @@ let string_of_token (tok :Flx_parse.token): string =
   | ANDNOTEQUAL _ -> "&!="
   | ANDLESSEQUAL _ -> "&<="
   | ANDGREATEREQUAL _ -> "&>="
-(* keywords *)
+
+  (* keywords *)
+  | INTERFACE _ -> "interface"
+  | ROOT _ -> "root"
+  | FUNCTOR _ -> "functor"
   | AND _ ->  "and"
   | NOT _ -> "not"
   | OR _ -> "or"
@@ -206,133 +191,138 @@ let src_of_token t = match t with
   | ENDMARKER
     -> ("",0,0,0)
 
-  | NAME    (s,_)  -> s
-  | INTEGER (s,_,_) -> s 
-  | FLOAT   (s,_) -> s 
-  | COMPLEX (s,_,_) -> s 
-  | STRING  (s,_) -> s 
+  | NAME    (s,_)
+  | INTEGER (s,_,_)
+  | FLOAT   (s,_,_)
+  | INF s 
+  | NAN s
+  | STRING  (s,_)
 
-  | ERRORTOKEN (s,_) -> s
+  | ERRORTOKEN (s,_) 
 
-  | EQUAL s -> s
-  | PLUS s -> s
-  | MINUS s -> s
-  | STAR s -> s
-  | SLASH s -> s
-  | PERCENT s -> s
-  | STARSTAR s -> s
-  | AMPER s -> s
-  | VBAR s -> s
-  | EXCLAMATION s -> s
-  | LPAR s -> s
-  | RPAR s -> s
-  | LSQB s -> s
-  | RSQB s -> s
-  | LBRACE s -> s
-  | RBRACE s -> s
-  | LSQANGLE s -> s
-  | RSQANGLE s -> s
-  | COLON s -> s
-  | COMMA s -> s
-  | SEMI s -> s
-  | DOT s -> s
-  | BACKQUOTE s -> s
-  | LESS s -> s
-  | GREATER s -> s
-  | EQEQUAL s -> s
-  | NOTEQUAL s -> s
-  | LESSEQUAL s -> s
-  | GREATEREQUAL s -> s
-  | ANDLESS s -> s
-  | ANDGREATER s -> s
-  | ANDEQEQUAL s -> s
-  | ANDNOTEQUAL s -> s
-  | ANDLESSEQUAL s -> s
-  | ANDGREATEREQUAL s -> s
-  | TILDE s -> s
-  | CIRCUMFLEX s -> s
-  | LEFTSHIFT s -> s
-  | RIGHTSHIFT s -> s
-  | LEFTRIGHTARROW s -> s
-  | DOUBLESTAR s -> s
-  | PLUSPLUS s -> s
-  | MINUSMINUS s -> s
-  | PLUSEQUAL s -> s
-  | MINUSEQUAL s -> s
-  | STAREQUAL s -> s
-  | SLASHEQUAL s -> s
-  | PERCENTEQUAL s -> s
-  | CARETEQUAL s -> s
-  | VBAREQUAL s -> s
-  | AMPEREQUAL s -> s
-  | TILDEEQUAL s -> s
-  | COLONEQUAL s -> s
-  | LEFTSHIFTEQUAL s -> s
-  | RIGHTSHIFTEQUAL s -> s
-  | LEFTARROW s -> s
-  | RIGHTARROW s -> s
-  | COLONGREATER s -> s
-  | LESSCOLON s -> s
-  | COLONCOLON s -> s
-  | DOTDOT s -> s
-  | SLOSH s -> s
-  | DOTDOTDOT s -> s
-  | NOT s -> s
-  | OR s -> s
-  | AND s -> s
-  | LAMBDA s -> s
-  | LAZY s -> s
-  | AS s -> s
-  | ANY s -> s
-  | REGEXP s -> s
-  | WHEN s -> s
-  | IF s -> s
-  | THEN s -> s
-  | ELSE s -> s
-  | ENDIF s -> s
-  | ELIF s -> s
-  | OF s -> s
-  | VAR s -> s
-  | UNION s -> s
-  | CLASS s -> s
-  | CATEGORY s -> s
-  | EXCEPTIONS s -> s
-  | GOTO s -> s
-  | EXPORT s -> s
-  | MATCH s -> s
-  | WITH s -> s
-  | ENDMATCH s -> s
-  | CASE s -> s
-  | HEADER s -> s
-  | MODULE s -> s
-  | CODE s -> s
-  | SERVICE s -> s
-  | COMMAND s -> s
-  | HANDLER s -> s
-  | CALL s -> s
-  | PROCEDURE s -> s
-  | FUNCTION s -> s
-  | SLP s -> s
-  | READER s -> s
-  | UNIT s -> s
-  | RETURN s -> s
-  | FORK s -> s
-  | VOID s -> s
-  | WHILE s -> s
-  | LOOP s -> s
-  | TODO s -> s
-  | TYPE s -> s
-  | FUN s -> s
-  | READ s -> s
-  | PROC s -> s
-  | CONST s -> s
-  | STRUCT s -> s
-  | RAISE s -> s
-  | ATTEMPT s -> s
-  | FINALLY s -> s
-  | EXCEPT s -> s
-  | VAL s -> s
-  | TYPEDEF s -> s
+  | ROOT s
+  | INTERFACE s
+  | FUNCTOR s
+  | EQUAL s 
+  | PLUS s 
+  | MINUS s 
+  | STAR s 
+  | SLASH s 
+  | PERCENT s 
+  | STARSTAR s 
+  | AMPER s 
+  | VBAR s 
+  | EXCLAMATION s 
+  | LPAR s 
+  | RPAR s 
+  | LSQB s 
+  | RSQB s 
+  | LBRACE s 
+  | RBRACE s 
+  | LSQANGLE s 
+  | RSQANGLE s 
+  | COLON s 
+  | COMMA s 
+  | SEMI s 
+  | DOT s 
+  | BACKQUOTE s 
+  | LESS s 
+  | GREATER s 
+  | EQEQUAL s 
+  | NOTEQUAL s 
+  | LESSEQUAL s 
+  | GREATEREQUAL s 
+  | ANDLESS s 
+  | ANDGREATER s 
+  | ANDEQEQUAL s 
+  | ANDNOTEQUAL s 
+  | ANDLESSEQUAL s 
+  | ANDGREATEREQUAL s 
+  | TILDE s 
+  | CIRCUMFLEX s 
+  | LEFTSHIFT s 
+  | RIGHTSHIFT s 
+  | LEFTRIGHTARROW s 
+  | DOUBLESTAR s 
+  | PLUSPLUS s 
+  | MINUSMINUS s 
+  | PLUSEQUAL s 
+  | MINUSEQUAL s 
+  | STAREQUAL s 
+  | SLASHEQUAL s 
+  | PERCENTEQUAL s 
+  | CARETEQUAL s 
+  | VBAREQUAL s 
+  | AMPEREQUAL s 
+  | TILDEEQUAL s 
+  | COLONEQUAL s 
+  | LEFTSHIFTEQUAL s 
+  | RIGHTSHIFTEQUAL s 
+  | LEFTARROW s 
+  | RIGHTARROW s 
+  | COLONGREATER s 
+  | LESSCOLON s 
+  | COLONCOLON s 
+  | DOTDOT s 
+  | SLOSH s 
+  | DOTDOTDOT s 
+  | NOT s 
+  | OR s 
+  | AND s 
+  | LAMBDA s 
+  | LAZY s 
+  | AS s 
+  | ANY s 
+  | REGEXP s 
+  | WHEN s 
+  | IF s 
+  | THEN s 
+  | ELSE s 
+  | ENDIF s 
+  | ELIF s 
+  | OF s 
+  | VAR s 
+  | UNION s 
+  | CLASS s 
+  | CATEGORY s 
+  | EXCEPTIONS s 
+  | GOTO s 
+  | EXPORT s 
+  | MATCH s 
+  | WITH s 
+  | ENDMATCH s 
+  | CASE s 
+  | HEADER s 
+  | MODULE s 
+  | CODE s 
+  | SERVICE s 
+  | COMMAND s 
+  | HANDLER s 
+  | CALL s 
+  | PROCEDURE s 
+  | FUNCTION s 
+  | SLP s 
+  | READER s 
+  | UNIT s 
+  | RETURN s 
+  | FORK s 
+  | VOID s 
+  | WHILE s 
+  | LOOP s 
+  | TODO s 
+  | TYPE s 
+  | FUN s 
+  | READ s 
+  | PROC s 
+  | CONST s 
+  | STRUCT s 
+  | RAISE s 
+  | ATTEMPT s 
+  | FINALLY s 
+  | EXCEPT s 
+  | VAL s 
+  | TYPEDEF s 
+    -> s
 
 
 
@@ -451,9 +441,19 @@ object
     print_tokens !slist;
     print_endline "";
     
-    print_string "Syntax Error before token ";
-    print_string (string_of_int current_token_index);
-    let token = List.nth tokens_copy current_token_index in
+    let token = List.nth tokens_copy
+      begin 
+        if List.length tokens_copy = current_token_index
+        then begin
+          print_string "Unexpected End Of File";
+          current_token_index - 1
+        end else begin
+          print_string "Syntax Error before token ";
+          print_string (string_of_int current_token_index);
+          current_token_index
+        end
+      end
+    in 
     let file,line,scol,ecol = Flx_pretok.src_of_token token in
     print_endline 
     (
