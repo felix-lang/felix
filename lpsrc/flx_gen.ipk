@@ -2489,6 +2489,7 @@ try
   let code_generation_time = tim() in
   if compiler_options.print_flag then 
   print_endline ("//code generation time " ^ string_of_float code_generation_time);
+
   let total_time = 
     parse_time +.
     desugar_time +.
@@ -2499,6 +2500,45 @@ try
   in  
   if compiler_options.print_flag then 
   print_endline ("//Felix compiler time " ^ string_of_float total_time);
+  let fname = "flxg_stats.txt" in
+  let 
+    old_parse_time,
+    old_desugar_time,
+    old_build_table_time,
+    old_binding_time,
+    old_instantiation_time,
+    old_code_generation_time,
+    old_total_time
+  = 
+  let zeroes = 0.0,0.0,0.0,0.0,0.0,0.0,0.0 in
+  let f = try Some (open_in fname) with _ -> None in
+  begin match f with
+  | None -> zeroes
+  | Some f ->
+    let x =
+      try
+        let id x1 x2 x3 x4 x5 x6 x7 = x1, x2, x3, x4, x5, x6, x7 in
+        Scanf.fscanf f 
+        "parse=%f desugar=%f build=%f bind=%f inst=%f gen=%f tot=%f"
+        id
+      with _ -> zeroes
+    in close_in f; x
+  end
+  in
+    let f = open_out fname in
+    Printf.fprintf 
+      f
+      "parse=%f\ndesugar=%f\nbuild=%f\nbind=%f\ninst=%f\ngen=%f\ntot=%f\n"
+      (old_parse_time +. parse_time)
+      (old_desugar_time +. desugar_time)
+      (old_build_table_time +. build_table_time)
+      (old_binding_time +. binding_time)
+      (old_instantiation_time +. instantiation_time)
+      (old_code_generation_time +. code_generation_time)
+      (old_total_time +. total_time)
+    ;
+    close_out f
+  ;
   exit (if compiler_options.reverse_return_parity then 1 else 0)
 
 with x -> Flx_terminate.terminate !reverse_return_parity x
