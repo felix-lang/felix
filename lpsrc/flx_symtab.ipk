@@ -151,9 +151,16 @@ let rec build_tables syms name level parent grandparent root asms =
     | [x] -> ()
     | _ -> failwith "Expected top level to contain exactly one module declaration"
     end
+    ;
+    if name <> "root" 
+    then failwith 
+      ("Expected top level to be called root, got " ^ name)
   end
-  ;
-  Hashtbl.add priv_name_map "root" (NonFunctionEntry (root))
+  else 
+    if name = "root" 
+    then failwith ("Can't name non-toplevel module 'root'")
+    else
+      Hashtbl.add priv_name_map "root" (NonFunctionEntry (root))
   ;
   begin 
     iter

@@ -1068,7 +1068,9 @@ let tailit syms (child_map,bbdfns) this sr ps vs exes : bexe_t list =
   | `BEXE_call_direct (sr,i,ts,a) :: tail 
     when (i,ts)=(this,ts') && Flx_cflow.tailable exes [] tail
     ->
+     (*
      print_endline ("--> Tail rec call " ^ si this);
+     *)
      jump_done := true;
      let res = cal_tail_call a @ res
      in aux tail res
@@ -1076,7 +1078,9 @@ let tailit syms (child_map,bbdfns) this sr ps vs exes : bexe_t list =
   | `BEXE_fun_return (sr,(`BEXPR_apply_direct(i,ts,a),_)) :: tail 
     when (i,ts)=(this,ts') 
     ->
+     (*
      print_endline ("--> Tail rec apply " ^ si this);
+     *)
      jump_done := true;
      let res = cal_tail_call a @ res
      in aux tail res

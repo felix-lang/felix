@@ -29,6 +29,8 @@ open Flx_exceptions
    $b: expands to $2, .. $n
    `n: n'th component of argument tuple, reference kind
 
+   #x: expands to #x for all 'x' other than those below
+
    #n: type of n'th component of argument tuple (1 origin)
    #0: return type
    @n: reference to shape object
@@ -205,7 +207,7 @@ let csubst sr sr2 ct args typs argtyp retyp gargs =
         digits := Char.code ch - Char.code '0'; 
         mode := HashDigits
 
-      | _ -> serr i "Expected 't' or digit after #"
+      | x -> chcat '#'; chcat x; mode:= Normal
       end
 
     | DollarDigits ->

@@ -454,12 +454,15 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
 
   begin match !ret_type with
   | `BTYP_void ->
-    if not !reachable && !proc_return_count = 0
+    if 
+      not !reachable && 
+      !proc_return_count = 0 && 
+      syms.compiler_options.print_flag
     then print_endline 
     (
-      "WARNING: procedure " ^id^" has no explicit return and doesn't drop thru end," ^
-      "\npossible infinite loop in\n" ^
-      long_string_of_src sr
+      "WARNING: procedure " ^id^
+      " has no explicit return and doesn't drop thru end," ^
+      "\npossible infinite loop"
     )
   | _ ->
     if !reachable 

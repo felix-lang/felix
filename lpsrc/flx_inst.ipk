@@ -57,7 +57,7 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   *)
   let ue e = process_expr syms bbdfns ref_insts1 hvarmap sr e in
   let ui i ts = add_inst syms ref_insts1 (i,ts) in
-  let ut t = register_type_r syms bbdfns [] sr t in
+  let ut t = register_type_r ui syms bbdfns [] sr t in
   let vs t = varmap_subst hvarmap t in
   ut (vs t)
   ;
@@ -112,7 +112,8 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
 
 and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   let ue sr e = process_expr syms bbdfns ref_insts1 hvarmap sr e in
-  let ui i = add_inst syms ref_insts1 (i,ts) in
+  let uis i ts = add_inst syms ref_insts1 (i,ts) in
+  let ui i = uis i ts in
   (*
   print_endline ("processing exe " ^ string_of_bexe syms.dfns 0 exe);
   *)
@@ -121,7 +122,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   | `BEXE_call_direct (sr,i,ts,e2) 
   | `BEXE_call_stack (sr,i,ts,e2) 
     -> 
-    let ut t = register_type_r syms bbdfns [] sr t in
+    let ut t = register_type_r uis syms bbdfns [] sr t in
     let vs t = varmap_subst hvarmap t in
     let ts = map vs ts in
     iter ut ts;
@@ -175,16 +176,19 @@ and process_function syms bbdfns hvarmap ref_insts1 index sr argtypes ret exes t
   let argtype = typeoflist argtypes in
   let t = `BTYP_function (argtype, ret) in
   let t = varmap_subst hvarmap t in
-  register_type_r syms bbdfns [] sr t;
+  register_type_r ui syms bbdfns [] sr t;
   *)
   process_exes syms bbdfns ref_insts1 ts hvarmap exes ;
- 
+
 and process_inst syms bbdfns ref_insts1 i ts inst =
+  let uis i ts = add_inst syms ref_insts1 (i,ts) in
+  let ui i = uis i ts in
+  let do_reqs reqs = iter ui reqs in
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns i 
     with Not_found -> failwith ("[process_inst] Can't find index " ^ si i)
   in 
-  let rtr t = register_type_r syms bbdfns [] sr t in
+  let rtr t = register_type_r uis syms bbdfns [] sr t in
   let rtnr t = register_type_nr syms t in
   if syms.compiler_options.print_flag then
   print_endline ("//Instance "^si inst ^ "="^id^"<" ^ si i ^ ">[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]");
@@ -217,7 +221,6 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
 
   | `BBDCL_val (vs,t)
   | `BBDCL_var (vs,t)
-  | `BBDCL_const (vs,t,_,_)
     ->
     if length vs <> length ts
     then syserr sr
@@ -232,24 +235,52 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     let t = varmap_subst hvarmap t in
     rtr t
  
-  | `BBDCL_header _
-  | `BBDCL_body _
-    -> () (* already handled *)
+  | `BBDCL_const (vs,t,_,reqs) ->
+    if length vs <> length ts
+    then syserr sr
+    (
+      "ts/vs mismatch index "^si i^", inst "^si inst^": vs = [" ^
+      catmap ";" (fun (s,i)-> s ^"<"^si i^">") vs ^ "], " ^
+      "ts = [" ^
+      catmap ";" (fun t->sbt syms.dfns t) ts ^ "]"
+    );
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let hvarmap = hashtable_of_list vars in
+    let t = varmap_subst hvarmap t in
+    rtr t;
+    do_reqs reqs
+ 
+  (* shortcut -- header and body can only require other header and body *)
+  | `BBDCL_header (s,reqs)
+  | `BBDCL_body (s,reqs)
+    -> 
+    (*
+    print_endline ("Handling requirements of header/body " ^ s);
+    *)
+    do_reqs reqs
 
   | `BBDCL_fun (vs,argtypes,ret,_,reqs) ->
+    (*
+    print_endline ("Handling requirements of fun " ^ id);
+    *)
+    do_reqs reqs;
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret [] ts
 
   | `BBDCL_proc (vs,argtypes,_,reqs) ->
+    (*
+    print_endline ("Handling requirements of proc " ^ id);
+    *)
+    do_reqs reqs;
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes `BTYP_void [] ts
 
-  | `BBDCL_abs _
-    -> failwith "Call type" 
+  | `BBDCL_abs (_,_,_,reqs)
+    -> do_reqs reqs
 (* 
   This routine creates the instance tables.
   There are 2 tables: instance types and function types (including procs)
@@ -297,11 +328,12 @@ let instantiate syms bbdfns (root:bid_t) (bifaces:biface_t list) =
     add_cand root [];
 
     (* add exported functions, and register exported types *)
+    let ui i ts = add_inst syms insts1 (i,ts) in
     iter 
     (function 
       | `BIFACE_export_fun (_,x,_) -> add_cand x []
       | `BIFACE_export_type (sr,t,_) ->
-        register_type_r syms bbdfns [] sr t
+        register_type_r ui syms bbdfns [] sr t
     ) 
     bifaces
   end
@@ -314,15 +346,6 @@ let instantiate syms bbdfns (root:bid_t) (bifaces:biface_t list) =
     n
   in
 
-  (* add header and body items *)
-  Hashtbl.iter 
-  (fun i b -> match b with
-    | _,_,_,`BBDCL_header _
-    | _,_,_,`BBDCL_body _ -> ignore(add_instance i [])
-    | _ -> ()
-  )
-  bbdfns
-  ;
   while not (FunInstSet.is_empty !insts1) do
     let (index,vars) as x = FunInstSet.choose !insts1 in
     insts1 := FunInstSet.remove x !insts1;
@@ -331,4 +354,5 @@ let instantiate syms bbdfns (root:bid_t) (bifaces:biface_t list) =
   done
 
 
+(* BUG!!!!! Abstract type requirements aren't handled!! *)
 

@@ -71,15 +71,21 @@ let rec retarget exes exe exclude : bexe_t =
     | Some tail -> 
       match skip_white tail with
       | [] -> 
+         (*
          print_endline ("Retargetting " ^ label ^ " to tail");
+        *)
         `BEXE_proc_return sr
       | h :: t -> 
         match h with
         | `BEXE_proc_return _ -> 
+          (*
           print_endline ("Retargetting " ^ label ^ " to return");
+          *)
           h
         | `BEXE_goto (_,s) -> 
+          (*
           print_endline ("Retargetting " ^ label ^ " to " ^ s);
+          *)
           if mem s exclude then `BEXE_halt (sr,"infinite loop")
           else retarget exes h (s::exclude)
         | _ -> exe

@@ -395,7 +395,14 @@ and type_qual_t = [
   | `Pod
 ]
 
-and requirements_t = qualified_name_t list
+and requirement_t = [
+  | `Named_req of qualified_name_t 
+  | `Body_req of string
+  | `Header_req of string
+]
+
+and requirements_t = requirement_t list
+and named_reqs_t = qualified_name_t list
 
 and statement_t =
   [ 
@@ -549,8 +556,8 @@ type dir_t =
 
 type dcl_t = 
   [
-  | `DCL_header of string * requirements_t
-  | `DCL_body of string * requirements_t
+  | `DCL_header of string * named_reqs_t
+  | `DCL_body of string * named_reqs_t
 
   (* data structures *)
   | `DCL_function of     parameter_t list * typecode_t * property_t list * asm_t list
@@ -571,9 +578,9 @@ type dcl_t =
   | `DCL_module of       asm_t list  
 
   (* binding structures [prolog] *)
-  | `DCL_abs of          type_qual_t list * c_t * requirements_t
-  | `DCL_const of        typecode_t * c_t * requirements_t
-  | `DCL_fun of          typecode_t list * typecode_t * c_t * requirements_t
+  | `DCL_abs of          type_qual_t list * c_t * named_reqs_t
+  | `DCL_const of        typecode_t * c_t * named_reqs_t
+  | `DCL_fun of          typecode_t list * typecode_t * c_t * named_reqs_t
   | `DCL_regdef of      regexp_t
   ]
 
@@ -726,10 +733,10 @@ type env_t = (bid_t * id_t * name_map_t * name_map_t list) list
 
 type symbol_definition_t =
   [
-  | `SYMDEF_abs of type_qual_t list * c_t * requirements_t
+  | `SYMDEF_abs of type_qual_t list * c_t * named_reqs_t
   | `SYMDEF_regdef of regexp_t
-  | `SYMDEF_header of string * requirements_t
-  | `SYMDEF_body of string * requirements_t
+  | `SYMDEF_header of string * named_reqs_t
+  | `SYMDEF_body of string * named_reqs_t
 
   | `SYMDEF_parameter of  typecode_t
   | `SYMDEF_typevar of typecode_t (* usually type TYPE *)
@@ -739,10 +746,10 @@ type symbol_definition_t =
   | `SYMDEF_match_check of  pattern_t * int 
   | `SYMDEF_module
   
-  | `SYMDEF_const of typecode_t * c_t * requirements_t
+  | `SYMDEF_const of typecode_t * c_t * named_reqs_t
   | `SYMDEF_var of  typecode_t
   | `SYMDEF_val of  typecode_t
-  | `SYMDEF_fun of typecode_t list * typecode_t * c_t  * requirements_t
+  | `SYMDEF_fun of typecode_t list * typecode_t * c_t  * named_reqs_t
   | `SYMDEF_union of  (id_t * typecode_t) list
   | `SYMDEF_struct of  (id_t * typecode_t) list
   | `SYMDEF_cstruct of  (id_t * typecode_t) list
@@ -2030,7 +2037,18 @@ and string_of_properties ps =
   | [] -> ""
   | ps -> catmap " " string_of_property ps
   
-and string_of_reqs = function | [] -> ""
+and string_of_reqs = function 
+  | [] -> ""
+  | x -> 
+    "requires " ^ catmap ", " 
+    (function 
+      | `Named_req s -> string_of_qualified_name s
+      | `Body_req s -> "body \"" ^ s ^ "\""
+      | `Header_req s -> "header \"" ^ s ^ "\""
+    )
+    x
+
+and string_of_named_reqs = function | [] -> ""
  | x -> "requires " ^ catmap ", " string_of_qualified_name x
 
 and string_of_qual = function 
@@ -2165,11 +2183,13 @@ and string_of_statement level s =
      ";" 
 
   | `AST_header (_,n,s, reqs) -> let triple_quote = "\"\"\"" in
+    spaces level ^
     "header "^n^"\n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
      string_of_reqs reqs ^
     ";\n"
 
   | `AST_body (_,n,s, reqs) -> let triple_quote = "\"\"\"" in
+    spaces level ^
     "body "^n^"\n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
      string_of_reqs reqs ^
     ";\n"
@@ -2401,12 +2421,12 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
 = match entry with
   | `SYMDEF_header (s,reqs) -> 
     "header " ^ name ^ " "^ string_of_string s ^ 
-     string_of_reqs reqs ^
+     string_of_named_reqs reqs ^
     ";\n"
     
   | `SYMDEF_body (s,reqs) -> 
     "body " ^ name ^ " "^ string_of_string s ^ 
-     string_of_reqs reqs ^
+     string_of_named_reqs reqs ^
     ";\n"
 
   | `SYMDEF_regdef re ->
@@ -2425,7 +2445,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ name ^ print_ivs vs ^
     " = " ^ string_of_string code ^ 
-    string_of_reqs reqs ^
+    string_of_named_reqs reqs ^
     ";"
 
   | `SYMDEF_var (t) -> 
@@ -2443,7 +2463,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
   | `SYMDEF_const (t,ct, reqs) -> 
     "const " ^ name ^ print_ivs vs ^":"^ 
     string_of_typecode t ^ " = '" ^ct^"'"^
-    string_of_reqs reqs ^
+    string_of_named_reqs reqs ^
     ";"
     
   | `SYMDEF_union (cts) -> 
@@ -2469,7 +2489,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
         res
       )
     ) ^
-    string_of_reqs reqs ^
+    string_of_named_reqs reqs ^
     ";"
  
   | `SYMDEF_function (ps,res,props, es) -> 
@@ -2743,12 +2763,12 @@ and string_of_dcl level name vs (s:dcl_t) =
     spaces level ^ "regexp " ^ name ^ " = " ^ string_of_re re ^ ";\n"
 
   | `DCL_header (s,reqs) -> 
-    "header " ^ name ^ " "^ string_of_string s ^
-    string_of_reqs reqs
+    spaces level ^ "header " ^ name ^ " "^ string_of_string s ^
+    string_of_named_reqs reqs
     
   | `DCL_body (s,reqs) -> 
-    "body " ^ name ^ " "^ string_of_string s ^
-     string_of_reqs reqs
+    spaces level ^ "body " ^ name ^ " "^ string_of_string s ^
+     string_of_named_reqs reqs
 
   | `DCL_type_alias (t2) ->
     spaces level ^ "typedef " ^ name ^ print_vs vs ^
@@ -2799,7 +2819,7 @@ and string_of_dcl level name vs (s:dcl_t) =
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ name ^ print_vs vs ^
     " = " ^ string_of_string code ^ 
-    string_of_reqs reqs ^
+    string_of_named_reqs reqs ^
     ";"
 
   | `DCL_fun (args, result, code, reqs) ->
@@ -2809,7 +2829,7 @@ and string_of_dcl level name vs (s:dcl_t) =
     "fun " ^ name ^ print_vs vs ^
     ": " ^ string_of_typecode t ^
     " = " ^ string_of_string code ^ 
-    string_of_reqs reqs ^
+    string_of_named_reqs reqs ^
     ";"
 
   | `DCL_const (typ, code, reqs) ->
@@ -2817,7 +2837,7 @@ and string_of_dcl level name vs (s:dcl_t) =
      "const " ^ name ^print_vs vs ^  
      ": " ^ string_of_typecode typ ^ 
      " = "^string_of_string code^ 
-    string_of_reqs reqs ^
+    string_of_named_reqs reqs ^
      ";" 
 
   | `DCL_function (ps, res, props, ss) -> 

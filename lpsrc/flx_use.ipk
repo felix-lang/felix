@@ -137,8 +137,12 @@ and uses syms used bbdfns i =
       | `BBDCL_proc (_,ps, _, reqs)  -> iter ut ps; iter ur reqs
 
       | `BBDCL_abs (vs,_,_,reqs) -> iter ur reqs
-      | `BBDCL_header (_,reqs)  
-      | `BBDCL_body (_,reqs) -> iter ur reqs
+      | `BBDCL_header (s,reqs)  
+      | `BBDCL_body (s,reqs) -> 
+        (*
+        if s <> "" then print_endline ("Using " ^ s);
+        *)
+        iter ur reqs
       end
     | None -> ()
   end
@@ -160,14 +164,6 @@ let find_roots syms bbdfns
         Flx_use.uses_type syms roots bbdfns t
   )
   bifaces
-  ;
-  Hashtbl.iter
-  (fun i b -> match b with
-    | "_root",_,_,`BBDCL_header _
-    | "_root",_,_,`BBDCL_body _ -> roots := IntSet.add i !roots
-    | _ -> ()
-  )
-  bbdfns
   ;
   syms.roots := !roots
 

@@ -117,7 +117,7 @@ let gen_type_name syms bbdfns (index,typ) =
     in
     begin match entry with
     | `BBDCL_abs (vs,quals,ct,_) -> 
-      let complete = mem `Incomplete quals in
+      let complete = not (mem `Incomplete quals) in
       let descr = 
         "\n//"^(if complete then "" else "INCOMPLETE ")^
         "PRIMITIVE "^si i ^" INSTANCE " ^ 

@@ -2950,7 +2950,7 @@ and rebind_btype syms env sr ts t: btypecode_t =
   | _ -> clierr sr ("[rebind_type] Unexpected " ^ sbt syms.dfns t)
 
 
-and check_module syms sr entries ts =
+and check_module syms name sr entries ts =
     begin match entries with
     | NonFunctionEntry (index) ->
       begin match get_data syms.dfns index with
@@ -2967,7 +2967,7 @@ and check_module syms sr entries ts =
     | _ -> 
       failwith
       (
-        "Expected non function entry"
+        "Expected non function entry for " ^ name
       )
     end
 
@@ -2981,7 +2981,7 @@ and eval_module_expr syms env e : module_rep_t =
   match e with
   | `AST_name (sr,name,ts) ->
     let entries = lookup_name_in_env syms env sr name in
-    check_module syms sr entries ts
+    check_module syms name sr entries ts
 
   | `AST_lookup (sr,(e,name,ts)) ->
     let result = eval_module_expr syms env e in
@@ -2992,7 +2992,7 @@ and eval_module_expr syms env e : module_rep_t =
       let result = lookup_name_in_table_dirs htab tables sr name in
         begin match result with
         | Some x -> 
-          check_module syms sr x (ts' @ ts)
+          check_module syms name sr x (ts' @ ts)
 
         | None -> clierr sr 
           (

@@ -363,7 +363,6 @@ let gen_functions syms (child_map,bbdfns) all_closures =
   syms.instances
   ;
   
-  flush stdout;
   let s = Buffer.create 2000 in
   iter
   (fun (i,(index,ts)) ->
@@ -1887,7 +1886,7 @@ try
   then print_endline "//BUILDING TABLES";
 
   let pubtab, _, exes, ifaces,dirs = 
-    build_tables syms "<top level>" 0 None None root deblocked 
+    build_tables syms "root" 0 None None root deblocked 
   in
   let build_table_time = tim() in
   if compiler_options.print_flag 
@@ -2035,20 +2034,35 @@ try
   plh "\n//-----------------------------------------";
   plh "//USER HEADERS";
   (* These must be in order: build a list and sort it *)
-  let dfnlist = ref [] in
-  Hashtbl.iter
-  (fun index data -> dfnlist := index :: !dfnlist)
-  bbdfns
-  ;
-  List.iter 
-  (fun index ->
-    match Hashtbl.find bbdfns index 
-    with (id,parent,sr,entry) ->
-    match entry with
-    | `BBDCL_header (s,_) -> plh s
-    | _ -> ()
-  )
-  (List.sort compare !dfnlist)
+  begin
+    let dfnlist = ref [] in
+    Hashtbl.iter
+    (fun (i,ts) _ -> dfnlist := (i,ts) :: !dfnlist)
+    syms.instances
+    ;
+    let insts = Hashtbl.create 97 in
+    List.iter 
+    (fun (i,ts)->
+      match Hashtbl.find bbdfns i
+      with (id,parent,sr,entry) ->
+      match entry with
+      | `BBDCL_header (s,_) -> 
+        if s <> "" then 
+        begin
+          (* do we need tsubst vs ts t? *)
+          let tn t = cpp_typename syms (Flx_typing.lower t) in
+          let ts = List.map tn ts in
+          let s = Flx_csubst.csubst sr sr s [] [] "Error" "Error" ts in
+          if not (Hashtbl.mem insts s) then
+          begin
+            Hashtbl.add insts s ();
+            plh s
+          end
+        end
+      | _ -> ()
+    )
+    (List.sort compare !dfnlist)
+  end
   ;
 
   plh "\n//-----------------------------------------";
@@ -2145,20 +2159,35 @@ try
   plb "\n//-----------------------------------------";
   plb "//EMIT USER BODY CODE";
   (* These must be in order: build a list and sort it *)
-  let dfnlist = ref [] in
-  Hashtbl.iter
-  (fun index data -> dfnlist := index :: !dfnlist)
-  bbdfns
-  ;
-  List.iter 
-  (fun index ->
-    match Hashtbl.find bbdfns index 
-    with (id,parent,sr,entry) ->
-    match entry with
-    | `BBDCL_body (s,_) -> plb s
-    | _ -> ()
-  )
-  (List.sort compare !dfnlist)
+  begin
+    let dfnlist = ref [] in
+    Hashtbl.iter
+    (fun (i,ts) _ -> dfnlist := (i,ts) :: !dfnlist)
+    syms.instances
+    ;
+    let insts = Hashtbl.create 97 in
+    List.iter 
+    (fun (i,ts) ->
+      match Hashtbl.find bbdfns i
+      with (id,parent,sr,entry) ->
+      match entry with
+      | `BBDCL_body (s,_) -> 
+        if s <> "" then 
+        begin
+          (* do we need tsubst vs ts t? *)
+          let tn t = cpp_typename syms (Flx_typing.lower t) in
+          let ts = List.map tn ts in
+          let s = Flx_csubst.csubst sr sr s [] [] "Error" "Error" ts in
+          if not (Hashtbl.mem insts s) then
+          begin
+            Hashtbl.add insts s ();
+            plb s
+          end
+        end
+      | _ -> ()
+    )
+    (List.sort compare !dfnlist)
+  end
   ;
 
   plb "\n//-----------------------------------------";

@@ -196,16 +196,30 @@ header cmath """
 header """
 #include <cstdio>
 #include <cstddef>
-#include <string>
 #include <cassert>
 #include <climits>
-@if HAVE_STDINT:
-  tangle("#include <stdint.h>")
-#include "flx_i18n.hpp"
 #include "flx_ioutil.hpp"
-#include "flx_strutil.cpp"
 using namespace std;
 """;
+
+header flx_i18n '#include "flx_i18n.hpp"';
+
+// note -- this code is templated, we include
+// it in the header file because that's where
+// most C++ compilers need it (ISO requires
+// separate compilation of templates but most
+// compilers as at 2004 don't implement it)
+
+header flx_strutil '#include "flx_strutil.cpp"';
+
+header string_hxx '#include <string>';
+header complex_hxx '#include <complex>';
+header complex_h '#include <complex.h>';
+
+@if HAVE_STDINT:
+  tangle('header stdint_h "#include <stdint.h>";')
+ else:
+  tangle('header stdint_h "";')
 
 header cstdlib "#include <cstdlib>";
 
@@ -230,7 +244,11 @@ header cstdlib "#include <cstdlib>";
 @ints = uints + sints
 
 @def gen_type(t):
-  tangle('pod type '+t+' = "'+tmap[t]+'";')
+  d = rmap.get(t,None)
+  if d:
+    tangle('pod type '+t+' = "'+tmap[t]+'" requires '+d+';')
+  else:
+    tangle('pod type '+t+' = "'+tmap[t]+'";')
 
 @def gen_asgn(t):
   tangle('  proc swap: lvalue['+t+'] * lvalue['+t+'] ="""')
@@ -611,6 +629,7 @@ macro proc print_line (x) { print x; Stdout::endl; }
 @#------------- STRING MODULES -------------------
 module String
 {
+  requires string_hxx;
   open Bool;
   open Char;
   open Int;
@@ -622,18 +641,18 @@ module String
 
   fun len: string -> int = "$1.size()";
   fun add: string * string -> string = "$1+$2";
-  fun add: string * int -> string = "$1+flx::rtl::i18n::utf8($2)";
-  fun mul: string * int -> string = "flx::rtl::strutil::mul($1,$2)";
+  fun add: string * int -> string = "$1+flx::rtl::i18n::utf8($2)" requires flx_i18n;
+  fun mul: string * int -> string = "flx::rtl::strutil::mul($1,$2)" requires flx_strutil;
   fun mul: char * int -> string = "std::string($2,$1)";
 
   fun subscript: string * int -> char = 
     "$1[$2<0??$1.size()+$2:$2]";
   fun copyfrom: string * int -> string = 
-    "flx::rtl::strutil::substr($1,$2,$1.size())";
+    "flx::rtl::strutil::substr($1,$2,$1.size())" requires flx_strutil;
   fun copyto: string * int -> string = 
-    "flx::rtl::strutil::substr($1,0,$2)";
+    "flx::rtl::strutil::substr($1,0,$2)" requires flx_strutil;
   fun substring: string * int * int -> string = 
-    "flx::rtl::strutil::substr($1,$2,$3)";
+    "flx::rtl::strutil::substr($1,$2,$3)" requires flx_strutil;
 
   // comparisons
   fun eq: string * string -> bool = "$1==$2";
@@ -652,7 +671,7 @@ module String
   fun cstr: string -> C_hack::ptr[char] = "$1.data()";
 }
 
-type ustring = "basic_string<uint32_t>";
+type ustring = "basic_string<uint32_t>" requires string_hxx;
 module Ustring
 {
   open Bool;

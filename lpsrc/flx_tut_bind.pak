@@ -435,10 +435,25 @@ Header and body statements may include tag names
 which can be refered to in requires clauses of
 binding definitions.
 @p()
-Untagged headers and bodies are always emitted
-into the generated code. Tagged bodies and headers
+Tagged bodies and headers
 are only emitted if a used primitive type, constant,
 function or procedure requires them.
+@p()
+Untagged headers and bodies are tagged with the 
+synthesised name _root.
+Every primitive function, procedure, type, or constant
+requires all visible untagged headers and bodies, that is,
+they all implicitly require _root.
+@p()
+Root requirements are inherited: each untagged header
+or body requires its parents _root (if it has one).
+@p()
+The effect is that if no primitives are used, no
+header or body code will be generated. If you really
+need to unconditionally force execution of
+some C code, you should be using the 'code' primitive.
+Header and body statements are intended for declarations
+and definitions.
 @p()
 The same tag can be used on more than one code insertion
 statements: this is typically useful on a header-body pair.
@@ -494,6 +509,58 @@ requires xprint;
 proc hello:1='print("Hello");' requires fred::printu;
 hello;
 
+@doc()
+The next example demonstrates untagged bodies at work.
+@select(tangler(tdir+'tut_bind138a.flx'))
+include "std";
+
+body top 'int ptop() { printf("TOP\\n"); return 1; }';
+body 'int top = ptop();' requires top;
+
+proc f() {
+  body pf 'int pf(){ printf("f used\\n"); return 1;}';
+  body 'int x = pf();' requires pf;
+  print "Using f"; endl; 
+}
+
+module A {
+  body p 'int p() { printf("A will be used\\n"); return 1;}';
+  body 'int y = p();' requires p;
+  proc f: unit = 'printf("A is used\\n");';
+}
+
+module B {
+  body p 'int p() { printf("B will be used\\n"); return 1;}';
+  body 'int y = p();' requires p;
+  proc f: unit = 'printf("B is used\\n");';
+}
+
+A::f(); 
+print "Done"; endl;
+// B is not used .. (would cause y,p to be defined twice)
+
+@doc()
+Here you can see that insertions can be given
+literally too:
+@select(tangler(tdir+'tut_bind138b.flx'))
+
+proc f: 1 = 'printf("A is used\\n");'
+  requires header '#include <stdio.h>';
+
+f();
+
+@doc()
+Here's an example demonstrating polymorphic insertions.
+@select(tangler(tdir+'tut_bind138c.flx'))
+pod type int="int";
+pod type double="double";
+
+body prb "void pr(?1 x) { std::cout << x << std::endl; }"
+  requires header "#include <iostream>";
+
+proc pr[t]:t = "pr($1);" requires prb[t];
+pr 1; pr 1.1;
+
 @head(2,'cstruct declaration')
 The cstruct keyword can be used like struct,
 and has the same effect, except that no struct
@@ -516,4 +583,33 @@ val x:X = X(1,2);
 print x.a; print " "; print x.b; endl;
 val y:X = rev x;
 print y.a; print " "; print y.b; endl;
+
+@head(2,'bodyless fun, proc, const declarations')
+It is allowed to omit the C definition of
+primitive functions, procedures, and constants.
+Felix will generate the body for a function
+or procedure to call the C function or procedure
+with the same name and given arguments,
+and a const will refer to a C entity of the
+same name.
+
+@select(tangler(tdir+'tut_bind150.flx'))
+include "std";
+
+body """
+int n = 3;
+void f() { n++; }
+int g(int a) { return a * a; }
+#define N 4
+""";
+
+proc f: unit;
+fun g: int-> int;
+const n:int;
+const N:int;
+
+print n; endl;
+f();  print n; endl;
+print N; endl;
+print (g N); endl;
 

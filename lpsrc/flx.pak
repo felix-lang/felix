@@ -306,6 +306,8 @@ Flx_version.version_data := version_data
     ["_", "UNDERSCORE"],
   ]
 
+@rmap = {}
+
 @tmap = {
   # addressing
   "byte"    : "unsigned char",
@@ -347,6 +349,13 @@ Flx_version.version_data := version_data
   tmap["complex" ]="float _Complex"
   tmap["dcomplex"]="double _Complex"
   tmap["lcomplex"]="long double _Complex"
+
+  rmap["imaginary" ]="complex_h"
+  rmap["dimaginary" ]="complex_h"
+  rmap["limaginary" ]="complex_h"
+  rmap["complex" ]="complex_h"
+  rmap["dcomplex"]="complex_h"
+  rmap["lcomplex"]="complex_h"
  else:
   tmap["imaginary"]="float"
   tmap["dimaginary"]="double"
@@ -354,6 +363,10 @@ Flx_version.version_data := version_data
   tmap["complex" ]="std::complex<float>"
   tmap["dcomplex"]="std::complex<double>"
   tmap["lcomplex"]="std::complex<long double>"
+
+  rmap["complex" ]="complex_hxx"
+  rmap["dcomplex"]="complex_hxx"
+  rmap["lcomplex"]="complex_hxx"
 
 @if HAVE_LONGDOUBLE:
    tmap["ldouble"]="long double"
@@ -376,6 +389,16 @@ Flx_version.version_data := version_data
    tmap["uint32"]="uint32_t"
    tmap["int64"]="int64_t"
    tmap["uint64"]="uint64_t"
+
+   # requirements
+   rmap["int8"]="stdint_h"
+   rmap["uint8"]="stdint_h"
+   rmap["int16"]="stdint_h"
+   rmap["uint16"]="stdint_h"
+   rmap["int32"]="stdint_h"
+   rmap["uint32"]="stdint_h"
+   rmap["int64"]="stdint_h"
+   rmap["uint64"]="stdint_h"
  else:
    tmap["int8"]="signed char"
    tmap["uint8"]="unsigned char"
