@@ -2612,7 +2612,7 @@ rename x42=X::x42;
 print x42;
 print y42;
 
-@head(2,'Modular inclusion')
+@head(2,'Modular inheritance')
 It is possible to inherit all
 the symbols of a module with the inherit directive.
 Unlike the open directive, inherited symbols
