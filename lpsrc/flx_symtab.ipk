@@ -416,24 +416,6 @@ let rec build_tables syms name level parent grandparent root asms =
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n
           ;
-          (* ASSIGNMENT NOT REQUIRED NOW
-          (* assignment *)
-          let asgn_idx = !counter in incr counter;
-          let asgn_name = "_set" in
-          let asgn_dcl = 
-            `SYMDEF_fun
-            (
-              [ `TYP_pointer utype; utype ],
-              `AST_void sr,
-              "*$1=$2;",[]
-            ) 
-          in
-          if print_flag then print_endline ("//  " ^ spc ^ si asgn_idx ^ " -> " ^ asgn_name); 
-          Hashtbl.add dfns asgn_idx {id=asgn_name;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=asgn_dcl};
-          if access = `Public then add_function pub_name_map asgn_name asgn_idx;
-          add_function priv_name_map asgn_name asgn_idx
-          ; 
-          *)
 
           let unit_sum = 
             fold_left 

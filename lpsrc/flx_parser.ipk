@@ -1204,8 +1204,6 @@ assignment:
 @doc()
 Note that a block is an anonymous procedure defintion together with
 a call to that procedure with the unit argument.
-@p()
-The assignment statement 'v <- e;' is syntact sugar for 'set(&v,e);'.
 
 @head(3,'Place Holder')
 @select(h)

@@ -508,6 +508,7 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
 
   | `BEXPR_case_arg (n,e) ->
     (* NOTE that the index is not used ... *)
+    (*
     let _,t = e in
     let t = 
       match unfold t with 
@@ -515,16 +516,15 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
       | _ -> assert false
     in
       let t = tn t in
+    *)
       (* really ugly brackets .. *)
-      "(*("^t^"*)((" ^ ge e ^ ").data))"
+      "*("^tn t^"*)(" ^ ge e ^ ".data)"
      
   | `BEXPR_deref ((`BEXPR_ref index),`BTYP_pointer t) -> 
     ge (`BEXPR_name index,t)
 
   | `BEXPR_deref e -> 
-    begin match e with (_,t) ->
     "*("^tn t^"*)(" ^ ge e ^ ".data)"
-    end
 
   | `BEXPR_literal v ->
     let t = tn t in

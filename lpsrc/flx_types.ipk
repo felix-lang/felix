@@ -1037,6 +1037,12 @@ let reduce_tbexpr bbdfns e =
     match map_tbexpr ident aux ident e with
     | `BEXPR_apply((`BEXPR_closure (i,ts),_),a),t ->
       `BEXPR_apply_direct (i,ts,a),t
+    
+    | `BEXPR_get_n (n,((`BEXPR_tuple ls),_)),_ ->
+      List.nth ls n
+
+    | `BEXPR_deref (`BEXPR_ref (i,ts),_),t -> 
+      `BEXPR_name (i,ts),t
 
     | x -> x
   in aux e

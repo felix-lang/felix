@@ -30,38 +30,22 @@ type reg_kind_t =
 ]
 
 
-let regen b (alpha, nstates, cases, matrix) kind ge =
-  let tack s = bcat b s in
-
-  tack ("  // regmatch/lex: error state=0, start state=1, valid states=1 to "^si nstates^"\n");
-
+let make_dtran nchars nstates matrix =
   (* transition matrix *)
-  let d = Array.make_matrix 256 nstates (-1) in
+  let d = Array.make_matrix nchars nstates (-1) in
   Hashtbl.iter
   (fun (c,s1) s2 -> 
     d.(c).(s1) <- s2
   )
   matrix
   ;
-  begin match kind with | `reglex _ ->
-  tack ("  // accepting states\n");
-  tack ("  static int accept["^si (nstates+1)^"]={\n");
-  tack (
-    "    0," ^
-    catmap "," 
-    (fun i -> match Hashtbl.mem cases i with
-    | true -> "1" | false -> "0"
-    )
-    (nlist nstates)
-  );
-  tack "\n  };\n";
-  | _ -> ()
-  end
-  ;
+  d
+
+let emit_matrix tack nchars nstates d =
   (* find equivalent chars *)
   tack "  // state->state transition vectors for canonical characters\n";
-  let canon = Array.make 256 0 in
-  for i = 0 to 255 do
+  let canon = Array.make nchars 0 in
+  for i = 0 to nchars - 1 do
     try
       for j = 0 to i do
         if d.(i) = d.(j) then 
@@ -92,19 +76,44 @@ let regen b (alpha, nstates, cases, matrix) kind ge =
   done (* i *)
   ;
   tack ("  //char -> (state->state) lookup\n");
-  tack ("  static int *matrix[256] =\n");
+  tack ("  static int *matrix["^si nchars^"] =\n");
   tack "  {\n";
-  for i = 0 to 255 do
+  for i = 0 to nchars - 1  do
     if i mod 16 = 0 then tack "      ";
     let s = "     s" ^ si canon.(i) in
     let n = String.length s in
     let s = String.sub s (n-4) 4 in
     tack s;
-    if i <> 255 then tack ", ";
+    if i <> nchars - 1 then tack ", ";
     if i mod 16 = 15 then tack "\n"
   done;
-  tack "  };\n\n";
+  tack "  };\n\n"
+  
 
+let regen b (alpha, nstates, cases, matrix) kind ge =
+  let nchars = 256 in
+  let tack s = bcat b s in
+
+  tack ("  // regmatch/lex: error state=0, start state=1, valid states=1 to "^si nstates^"\n");
+
+  let d = make_dtran nchars nstates matrix in
+  begin match kind with | `reglex _ ->
+  tack ("  // accepting states\n");
+  tack ("  static int accept["^si (nstates+1)^"]={\n");
+  tack (
+    "    0," ^
+    catmap "," 
+    (fun i -> match Hashtbl.mem cases i with
+    | true -> "1" | false -> "0"
+    )
+    (nlist nstates)
+  );
+  tack "\n  };\n";
+  | _ -> ()
+  end
+  ;
+  emit_matrix tack nchars nstates d
+  ;
   begin match kind with
   | `regmatch e ->
     (* eval argument as a C++ string *)

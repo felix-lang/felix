@@ -849,6 +849,11 @@ let inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a va
 
   | _ -> assert false
 
+(* this routine changes direct applications into a named
+  value plus an initialisation of that value: the argument
+  should have already been processed bottom up, ie. already
+  be in canonical form
+*)
 let bunravel syms bbdfns ts e = 
   let counter = syms.counter in 
   let vars = ref [] in
@@ -900,8 +905,9 @@ let xmap_bexe syms (child_map,bbdfns) caller vs exe : bexe_t list =
       `BEXE_call_direct (sr,i,ts,e) :: xs
    
     | `BEXE_assign (sr,e1,e2) ->
-      let e,xs = u sr e2 in
-      `BEXE_assign (sr,e1,e) :: xs
+      let e1,xs = u sr e1 in
+      let e2,xs = u sr e2 in
+      `BEXE_assign (sr,e1,e2) :: xs
 
     (* preserve call lift pattern ??*)
     | `BEXE_call (sr,(`BEXPR_apply_direct(i,ts,e1),t),e2) ->
@@ -942,7 +948,6 @@ let xmap_bexe syms (child_map,bbdfns) caller vs exe : bexe_t list =
       `BEXE_fun_return (sr,e) :: xs
    
     | `BEXE_init (sr,i,e) ->
-      (* NOTE: will generate gratuitous variable .. *)
       let e,xs = u sr e in
       `BEXE_init (sr,i,e) :: xs
     

@@ -2528,16 +2528,14 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
       begin match entry with
       | `SYMDEF_inherit _ -> clierr srr "Woops, bindexpr yielded inherit"
       | `SYMDEF_inherit_fun _ -> clierr srr "Woops, bindexpr yielded inherit fun"
-      | `SYMDEF_var _
-      | `SYMDEF_parameter (`TYP_pointer _) -> 
-        `BEXPR_ref (index,ts), 
-        `BTYP_pointer 
-        (
+      | `SYMDEF_var _ ->
+        let vtype = 
           inner_typeofindex_with_ts syms 
           idx_fixlist ((e,depth)::expr_fixlist) 
           (depth+1) 
          index ts
-        )
+        in
+          `BEXPR_ref (index,ts), `BTYP_pointer vtype
 
       | `SYMDEF_parameter _ -> 
          clierr2 srr sr
@@ -2573,7 +2571,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
   | `AST_deref (sr,e) -> 
     let e,t = be e in
     begin match unfold t with 
-    | `BTYP_pointer t -> `BEXPR_deref (e,t),t
+    | `BTYP_pointer t' -> `BEXPR_deref (e,t),t'
     | _ -> clierr sr "Dereference non pointer"
     end
 
