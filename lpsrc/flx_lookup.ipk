@@ -40,7 +40,6 @@ val bind_type:
   int ref ->
   instantiation_registry_t ->
   env_t ->
-  int list -> (* excluded type *)
   int list -> (* excluded modules *)
   range_srcref ->
   typecode_t ->
@@ -119,6 +118,8 @@ open Flx_mtypes
 open Flx_typing
 open List
 open Flx_srcref
+
+let bool_t = `BTYP_sum [`BTYP_tuple[]; `BTYP_tuple[]];
 
 exception Found of int
 
@@ -366,7 +367,7 @@ and lookup_sn_in_env
     end
 
   | `AST_suffix (sr,(qn,suf)) ->
-    let bsuf = bind_type dfns counter freg env [] excluded_dirs sr suf in
+    let bsuf = bind_type dfns counter freg env excluded_dirs sr suf in
     let be,t = 
       lookup_qn_with_sig
       dfns counter freg 
@@ -399,15 +400,16 @@ and map_type
         mmap ienv binding index excluded_dirs 
         isr msr
     )
-  | `BTYP_function (a, r) ->
-    `BTYP_function (map a, map r)
+  | `BTYP_function (a, r) -> `BTYP_function (map a, map r)
   | `BTYP_tuple ls -> `BTYP_tuple (List.map map ls)
   | `BTYP_sum ls -> `BTYP_sum (List.map map ls)
   | `BTYP_pointer t -> `BTYP_pointer (map t)
-  | `BTYP_void -> `BTYP_void
-  | `BTYP_none -> `BTYP_none 
   | `BTYP_binding (a,b) ->
     failwith "[map type] Unexpected type binding"
+
+  | `BTYP_void -> `BTYP_void
+  | `BTYP_none -> `BTYP_none 
+  | `BTYP_fix i -> `BTYP_fix i
  
 (* NOTE ON COMPARISONS: 
   We don't allow a val to match a const. Probably,
@@ -443,7 +445,7 @@ and compare_defn
     string_of_symdef mentry name ^ "'"
   );
   *)
-  let ibt t: btypecode_t = bind_type dfns counter freg ienv [] excluded_dirs isr t in
+  let ibt t: btypecode_t = bind_type dfns counter freg ienv excluded_dirs isr t in
   let rt t: btypecode_t= rebind_btype dfns counter freg menv excluded_dirs msr t in 
   let mt t: btypecode_t = 
     map_type iface 
@@ -454,7 +456,7 @@ and compare_defn
     t
   in
   let rmb t: btypecode_t = rt (mt (ibt t)) in
-  let mbt t: btypecode_t = bind_type dfns counter freg menv [] excluded_dirs msr t in
+  let mbt t: btypecode_t = bind_type dfns counter freg menv excluded_dirs msr t in
     
   match ientry,mentry with
   | `SYMDEF_if_type,`SYMDEF_dcl (`DCL_type_alias _)
@@ -768,7 +770,7 @@ and apply_binding imap binding : name_map_t = (* reverse polish *)
 and handle_coercion dfns counter freg env sr excluded_dirs  m t : module_rep_t =
   (* print_endline "HANDLING COERCION"; *)
   let m' = eval_module_expr dfns counter freg env excluded_dirs m in
-  let t' = bind_type dfns counter freg env [] excluded_dirs sr t in
+  let t' = bind_type dfns counter freg env excluded_dirs sr t in
   handle_module_coercion dfns counter freg env sr excluded_dirs m' t' 
 
 and handle_module_coercion dfns counter freg env sr excluded_dirs m t =
@@ -933,7 +935,7 @@ and resolve_functor_overload dfns counter freg env excluded_dirs sr ls m' =
         | [x] -> x
         | x -> `TYP_tuple x
       in
-      let t = bind_type dfns counter freg env [] excluded_dirs sr t
+      let t = bind_type dfns counter freg env excluded_dirs sr t
       in 
         (* print_endline ("Type of functor signature is " ^ string_of_btypecode dfns t); *)
         compare_module_expr_with_type dfns counter freg excluded_dirs sr t m'
@@ -943,7 +945,7 @@ and resolve_functor_overload dfns counter freg env excluded_dirs sr ls m' =
         | [x] -> x
         | x -> `TYP_tuple x
       in
-      let t = bind_type dfns counter freg env [] excluded_dirs sr t
+      let t = bind_type dfns counter freg env excluded_dirs sr t
       in 
         (* print_endline ("Type of functor signature is " ^ string_of_btypecode dfns t); *)
         compare_module_expr_with_type dfns counter freg excluded_dirs sr t m'
@@ -1065,7 +1067,7 @@ and instantiate_functor
     | Simple_module (impl,mmap,dirs) -> 
       begin match ps with
       | [x] ->
-        let t = bind_type dfns counter freg env [] excluded_dirs sr (snd x) in
+        let t = bind_type dfns counter freg env excluded_dirs sr (snd x) in
         begin match handle_module_coercion dfns counter freg env sr excluded_dirs m t with
         | Bound_module (iindex,impl,binding)  -> 
           [fst x, (iindex,impl,binding)]
@@ -1266,44 +1268,57 @@ and eval_module_expr dfns counter freg env excluded_dirs e : module_rep_t =
       short_string_of_src (src_of_expr e) 
     )
 
-and bind_index dfns counter freg env exclude excluded_dirs sr index = 
-  (* print_endline "BINDING INDEX";*)
+and bind_index dfns counter freg env exclude depth excluded_dirs sr index = 
+  (*
+  print_endline ("BINDING INDEX " ^ string_of_int index);
   flush stdout;
-  if List.mem index exclude 
-  then failwith (
-    "Recursive type alias " ^
-    (
-      match get_data dfns index with id,sr,_,_ -> 
-        id ^ " defined at " ^
-        short_string_of_src sr
-    )
-  )
+  *)
+  if List.mem_assoc index exclude 
+  then begin
+    print_endline (
+      "Recursive type alias " ^
+      (
+        match get_data dfns index with id,sr,_,_ -> 
+          id ^ " defined at " ^
+          short_string_of_src sr
+      )
+    );
+    `BTYP_fix ((List.assoc index exclude)-depth)
+  end  
   else begin match get_data dfns index with
-  | _,_,_,`SYMDEF_dcl (`DCL_type_alias t) -> 
-    bind_type dfns counter freg env (index :: exclude) excluded_dirs sr t
+  | id,sr,_,entry-> 
+    (*
+    print_endline (string_of_symdef entry id);
+    *)
+    match entry with
+    | `SYMDEF_dcl (`DCL_type_alias t) -> 
+      (*
+      print_endline "GOT A TYPE ALIAS";
+      *)
+      bind_type' dfns counter freg env ((index,depth) :: exclude) depth excluded_dirs sr t
 
-  | _,_,_,`SYMDEF_if_type -> `BTYP_name index
-  | _,_,_,`SYMDEF_dcl (`DCL_abs _) -> `BTYP_name index
-  | _,_,_,`SYMDEF_dcl (`DCL_union _) -> `BTYP_name index
-  | _,_,_,`SYMDEF_dcl (`DCL_struct _) -> `BTYP_name index
-  | _,_,_,`SYMDEF_interface _ -> `BTYP_name index
-  | _,_,_,`SYMDEF_module_binding e ->
-    let e' = 
-      eval_module_expr dfns counter freg env excluded_dirs e
-    in 
-    begin match e' with
-    | Bound_module (iface,impl,binding) -> 
-      `BTYP_binding (`BTYP_name iface, `BTYP_name impl)
-    | _ -> failwith "Expected module binding expression to be bound module"
-    end
-  | id,sr,_,entry -> 
-    failwith 
-    (
-      "[bind_index] Type " ^ id ^ 
-      " defined at " ^ short_string_of_src sr ^
-      " must be abstract, union or struct, got:\n" ^
-      string_of_symdef entry id
-    )
+    | `SYMDEF_if_type -> `BTYP_name index
+    | `SYMDEF_dcl (`DCL_abs _) -> `BTYP_name index
+    | `SYMDEF_dcl (`DCL_union _) -> `BTYP_name index
+    | `SYMDEF_dcl (`DCL_struct _) -> `BTYP_name index
+    | `SYMDEF_interface _ -> `BTYP_name index
+    | `SYMDEF_module_binding e ->
+      let e' = 
+        eval_module_expr dfns counter freg env excluded_dirs e
+      in 
+      begin match e' with
+      | Bound_module (iface,impl,binding) -> 
+        `BTYP_binding (`BTYP_name iface, `BTYP_name impl)
+      | _ -> failwith "Expected module binding expression to be bound module"
+      end
+    | _ -> 
+      failwith 
+      (
+        "[bind_index] Type " ^ id ^ 
+        " defined at " ^ short_string_of_src sr ^
+        " must be abstract, union or struct, got:\n" ^
+        string_of_symdef entry id
+      )
   end 
 
 (* This routine binds a type expression to a bound type expression.
@@ -1312,11 +1327,21 @@ and bind_index dfns counter freg env exclude excluded_dirs sr index =
    globally unique
 *)
 
-and bind_type dfns counter freg env exclude excluded_dirs sr t : btypecode_t =
-  let bt t = bind_type dfns counter freg env exclude excluded_dirs sr t in
-  let bi i = bind_index dfns counter freg env exclude excluded_dirs sr i in
-  (* print_endline ("BINDING TYPE " ^ string_of_typecode t);*)
+and bind_type dfns counter freg env excluded_dirs sr t : btypecode_t =
+  let t' = bind_type' dfns counter freg env [] 0 excluded_dirs sr t in
+  (*
+  print_endline ("TYPE  " ^ string_of_typecode t);
+  print_endline ("BOUND " ^ string_of_btypecode dfns t');
+  *)
+  t'
+
+and bind_type' dfns counter freg env exclude depth excluded_dirs sr t : btypecode_t =
+  let bt t = bind_type' dfns counter freg env exclude (depth+1) excluded_dirs sr t in
+  let bi i = bind_index dfns counter freg env exclude depth excluded_dirs sr i in
+  (*
+  print_endline ("BINDING TYPE " ^ string_of_typecode t);
   flush stdout;
+  *)
   match t with
   | `AST_root _ -> failwith "Not expecting root in bind type"
   | `TYP_none ->  `BTYP_none
@@ -1369,7 +1394,8 @@ and bind_type dfns counter freg env exclude excluded_dirs sr t : btypecode_t =
       `BTYP_binding (bi i, bi m)
 
     | Simple index -> 
-      (* print_endline "Lookup returns simple index";
+      (*
+      print_endline ("Lookup returns simple index " ^ string_of_int index);
       flush stdout; 
       *)
       bi index
@@ -1378,7 +1404,7 @@ and bind_type dfns counter freg env exclude excluded_dirs sr t : btypecode_t =
    of the bound type, by again factoring out type aliases.
    The type aliases can get reintroduced by map_type,
    if an abstract type is mapped to a typedef, so we have
-   to factor them out again
+   to factor them out again .. YUK!!
 *)
    
 and rebind_btype dfns counter freg env excluded_dirs sr t: btypecode_t =
@@ -1388,7 +1414,7 @@ and rebind_btype dfns counter freg env excluded_dirs sr t: btypecode_t =
     let id,sr,parent,entry = Hashtbl.find dfns i in
     begin match entry with
     | `SYMDEF_dcl (`DCL_type_alias t') ->
-      bind_type dfns counter freg env [] excluded_dirs sr t'
+      bind_type dfns counter freg env excluded_dirs sr t'
     | _ -> t
     end
   | `BTYP_tuple ts -> `BTYP_tuple (List.map rbt ts)
@@ -1398,13 +1424,13 @@ and rebind_btype dfns counter freg env excluded_dirs sr t: btypecode_t =
   | `BTYP_void -> `BTYP_void
   | `BTYP_none -> `BTYP_none
   | `BTYP_binding (a,b) -> `BTYP_binding (rbt a,rbt b)
+  | `BTYP_fix i -> `BTYP_fix i
 
 
 and base_typename_of_literal v = match v with
   | `AST_int (t,_) -> t
   | `AST_float (t,_) -> t
   | `AST_string _ -> "string"
-  | `AST_bool _ -> "bool"
 
 and  typeof_literal dfns counter freg env sr v : btypecode_t = 
   let root,_ = List.hd (List.rev env) in
@@ -1478,7 +1504,10 @@ and typeofindex
   let bt t:btypecode_t = 
     (* print_endline ("TYPEOFINDEX binding type " ^ string_of_typecode t); *)
     flush stdout;
-    let t' = bind_type dfns counter freg env (index::exclude) excluded_dirs sr t in
+    (*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    let t' = bind_type' dfns counter freg env (index::exclude) 0 excluded_dirs sr t in
+    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *)
+    let t' = bind_type dfns counter freg env excluded_dirs sr t in
     (* print_endline "TYPE BOUND"; *)
     t'
   in
@@ -1580,7 +1609,6 @@ and typeofindex
 
 
   | `SYMDEF_match_check _ ->
-    let bool_t = typeof_literal dfns counter freg env sr (`AST_bool true) in
     `BTYP_function (`BTYP_tuple [], bool_t)
 
   | `SYMDEF_match_handler _ ->
@@ -2141,7 +2169,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
 and handle_entry dfns counter freg sra srn env exclude excluded_dirs entry t2 name =
   let be e = bind_expression dfns counter freg env exclude excluded_dirs e in
   let lu sr qn = lookup_qn_in_env dfns counter freg env excluded_dirs qn in
-  let bt t = bind_type dfns counter freg env [] excluded_dirs sra t in
+  let bt t = bind_type dfns counter freg env excluded_dirs sra t in
   match entry with
   | NonFunctionEntry (Simple index) ->
     Some
@@ -2173,7 +2201,7 @@ and handle_entry dfns counter freg sra srn env exclude excluded_dirs entry t2 na
 and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t = 
   let be e = bind_expression dfns counter freg env exclude excluded_dirs e in
   let lu sr qn = lookup_qn_in_env dfns counter freg env excluded_dirs qn in
-  let bt sr t = bind_type dfns counter freg env [] excluded_dirs sr t in
+  let bt sr t = bind_type dfns counter freg env excluded_dirs sr t in
   let ti i = typeofindex dfns counter freg exclude excluded_dirs i in
 
   (* model infix operator as function call *)
@@ -2547,7 +2575,6 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
     be (`AST_method_apply (sr,(get_name,e)))
 
   | `AST_match_case (sr,(v,e)) ->
-     let bool_t = typeof_literal dfns counter freg env sr (`AST_bool true) in
      `BEXPR_match_case (v,be e),bool_t
 
   | `AST_match_ctor (sr,(qn,e)) ->
@@ -2575,7 +2602,7 @@ and bind_expression dfns counter freg env exclude excluded_dirs e : tbexpr_t =
        if v<1 or v>n 
        then failwith "Invalid sum index"
        else let t = List.nth ls (v-1) in
-       `BEXPR_case_arg (n, e'),t
+       `BEXPR_case_arg (v, e'),t
      | _ -> failwith "Expected sum type"
      end 
 
@@ -2628,13 +2655,13 @@ and resolve_overload
     | Simple i -> 
       let p,i,t = resolve i in
       let env = build_env dfns counter freg excluded_dirs p in
-      let t = bind_type dfns counter freg env [] excluded_dirs sr t in
+      let t = bind_type dfns counter freg env excluded_dirs sr t in
       Unique (i,t)
 
     | Bound (i,j) ->
       let p,i,t = resolve i in
       let env = build_env dfns counter freg excluded_dirs p in
-      let t = bind_type dfns counter freg env [] excluded_dirs sr t in
+      let t = bind_type dfns counter freg env excluded_dirs sr t in
       Pair ((i,t),j)
   in
   let fun_defs = List.map aux fs in

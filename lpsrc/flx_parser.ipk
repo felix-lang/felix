@@ -300,7 +300,7 @@ executable:
   | read { $1 }
   | return { $1 }
   | if_stmt { $1 }
-  | while_stmt { $1 }
+/*  | while_stmt { $1 } */
   | todo { $1 }
   | attempt_stmt { $1 }
   | raise_stmt { $1 }
@@ -823,28 +823,29 @@ The placed holder is used to denote an incomplete section of code.
 A string may be included after the 'todo' keyword to serve as a reminder
 of the programmers intentions.
 
-@head(3,'Loop Statements')
-@select(h)
-while_stmt:   
-  | WHILE LPAR expr RPAR statement      
-    { 
-      `AST_while (rsrange (slift $1) (src_of_stmt $5), $3,$5) 
-    }
-  | LOOP statement                      
-    { 
-      let dummy = slift $1 in
-      `AST_while (
-        rsrange (slift $1) (src_of_stmt $2),
-        `AST_literal (dummy,(`AST_bool true)), 
-        $2
-      ) 
-    }
-@doc()
-The while statement provides a loop terminated by a condition.
-The condition is tested before executing the loop body.
-@p()
-ELIDED. Use the standard library. The identifiers 'while'
-and 'loop' are no longer recognized by the lexer.
+
+@# @head(3,'Loop Statements')
+@# @select(h)
+@# while_stmt:   
+@#   | WHILE LPAR expr RPAR statement      
+@#     { 
+@#       `AST_while (rsrange (slift $1) (src_of_stmt $5), $3,$5) 
+@#     }
+@#   | LOOP statement                      
+@#     { 
+@#       let dummy = slift $1 in
+@#       `AST_while (
+@#         rsrange (slift $1) (src_of_stmt $2),
+@#         `AST_literal (dummy,(`AST_bool true)), 
+@#         $2
+@#       ) 
+@#     }
+@# @doc()
+@# The while statement provides a loop terminated by a condition.
+@# The condition is tested before executing the loop body.
+@# @p()
+@# ELIDED. Use the standard library. The identifiers 'while'
+@# and 'loop' are no longer recognized by the lexer.
 
 @head(3,'If/Then/Elif/Else')
 @select(h)

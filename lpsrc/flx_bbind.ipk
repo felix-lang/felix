@@ -36,6 +36,7 @@ let cal_call dfns (p,pt) e =
 
 exception Found of int
 
+let bool_t = `BTYP_sum [`BTYP_tuple[]; `BTYP_tuple []]
 
 let bind_exes dfns counter freg env exes ret_type = 
   (*
@@ -56,9 +57,8 @@ let bind_exes dfns counter freg env exes ret_type =
   let be e = bind_expression dfns counter freg env [] [] e in
   let lun sr n = lookup_name_in_env env sr n in
   let luqn n = lookup_qn_in_env dfns counter freg env [] n in
-  let bt sr t = bind_type dfns counter freg env [] [] sr t in
+  let bt sr t = bind_type dfns counter freg env [] sr t in
   let dummy_sr = ("bind exes",0,0,0,0) in
-  let bool_type = bt dummy_sr flx_bool in
 
   let bound_exes = 
     List.map
@@ -72,14 +72,25 @@ let bind_exes dfns counter freg env exes ret_type =
       | `EXE_goto s ->          `BEXE_goto s
       | `EXE_ifgoto (e,s) ->    
         let e',t = be e in
-        if t = bool_type 
+        if t = bool_t
         then `BEXE_ifgoto ((e',t), s)
-        else failwith "Conditional requires bool argument"
+        else 
+          failwith 
+          (
+            "[bind_exes:ifgoto] Conditional requires bool argument, got " ^
+            string_of_btypecode dfns t
+          )
+
       | `EXE_ifnotgoto (e,s) -> 
         let e',t = be e in
-        if t = bool_type 
+        if t = bool_t
         then `BEXE_ifnotgoto ((e',t), s)
-        else failwith "Conditional requires bool argument"
+        else 
+          failwith 
+          (
+            "[bind_exes:ifnotgoto] Conditional requires bool argument, got " ^
+            string_of_btypecode dfns t
+          )
 
       | `EXE_call (#suffixed_name_t as sn, e2) -> (* OVERLOADING *)
         (*
@@ -201,7 +212,7 @@ let bbind dfns counter freg =
     (*
     print_endline "Building ENV Complete";
     *)
-    let bt t = bind_type dfns counter freg env [] [] sr t in
+    let bt t = bind_type dfns counter freg env [] sr t in
     (*
     print_endline ("BINDING " ^ name ^ "<" ^ string_of_int i ^ ">");
     *)
@@ -270,8 +281,6 @@ let bbind dfns counter freg =
       print_endline ("//Binding match checker " ^ string_of_int i ^ " --> " ^ name); 
       *)
       let t = typeofindex dfns counter freg [] [] mvindex in
-      let true_val = `AST_name (dummy_sr,"true") in
-      let _,rt = bind_expression dfns counter freg env [] [] true_val in
       let name_map = Hashtbl.create 97 in
       let arg,sr = match Hashtbl.find dfns mvindex with id,sr,_,_ -> id,sr in
       let exes = 
@@ -279,9 +288,9 @@ let bbind dfns counter freg =
         `EXE_return (gen_match_check pat (`AST_name (sr,arg)))
         ] 
       in
-      let bbexes = bexes env exes rt in
+      let bbexes = bexes env exes bool_t in
       Hashtbl.add bbdfns i (name,parent,
-        `BBDCL_function ([],rt,bbexes,name_map));
+        `BBDCL_function ([],bool_t,bbexes,name_map));
     
     | `SYMDEF_match_handler (pat,mvindex,exes,name_map,dirs) ->
       (* print_endline ("//Binding match handler " ^ string_of_int i ^ " --> " ^ name); 

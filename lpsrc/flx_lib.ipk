@@ -60,7 +60,8 @@ namespace std_flx {
   "uchar"   : "int32_t", # Unicode/ISO10646, note: SIGNED!
 
   #bool
-  "bool"    : "bool",
+  # !!! EXPERIMENT !!! GET RID OF BOOL 
+  #"bool"    : "bool",
   
   #signed integers
   "tiny"    : "signed char",
@@ -103,7 +104,8 @@ namespace std_flx {
   ]
 @floats = ["float", "double", "ldouble"]
 
-@all = ["byte", "size","address","offset","bool"] + chars + sints + uints + floats
+// @all = ["byte", "size","address","offset","bool"] + chars + sints + uints + floats
+@all = ["byte", "size","address","offset"] + chars + sints + uints + floats
 @ints = uints + sints
 
 @def gen_type(t):
@@ -124,12 +126,30 @@ namespace std_flx {
     ("gt",">"),
     ("ge",">=")
   ]:
-    tangle('  fun '+opname+': '+t+' * '+t+' -> bool = "$1'+op+'$2";')
+    tangle('  fun '+opname+': '+t+' * '+t+' -> bool = "int($1'+op+'$2)";')
+
+
+// !!!!! NEW DEFINITION OF BOOL !!!!!
+typedef bool = 2;
 
 module Bool 
 {
-  const true : bool = "true";
-  const false : bool = "false";
+//  const true : bool = "true";
+//  const false : bool = "false";
+
+// !!!!! NEW DEFN OF true and false ..
+// the order is CRITICAL for C/C++ compatibility
+// We're cheating: we know bool will be optimised
+// to an int by the compiler, and an int can
+// suffice for a bool in C/C++
+//
+// NOTE!!!! if ANY bad naughty functions generate
+// a boolean result which is other than 0 or 1 we have
+// a catastrophy
+
+  val false : bool = case 1 of 2;
+  val true : bool = case 2 of 2;
+
   fun land: bool * bool -> bool = "$1 && $2";
   fun nand: bool * bool -> bool = "!($1 && $2)";
   fun lor: bool * bool -> bool = "$1 || $2";

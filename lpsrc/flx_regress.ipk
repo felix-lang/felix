@@ -27,7 +27,6 @@ get smaller with each compiler improvement.
 basic parser error
 
 @select(tangler('test/bt02.flx'))
-type bool = "bool";
 module X { proc p(){} }
 module Y { proc p(){} }
 open X;
@@ -91,7 +90,7 @@ header r"""
 typedef char *charp;
 """;
 
-type bool = "bool";
+typedef bool = 2;
 type int = "int";
 type string = "charp";
 

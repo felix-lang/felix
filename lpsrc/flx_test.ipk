@@ -248,9 +248,9 @@ header r"""
 using namespace std;
 """;
 
-type bool = "bool";
-const true:bool = "true";
-const false:bool = "false";
+typedef bool = 2;
+val false:bool = case 1 of 2;
+val true:bool = case 2 of 2;
 fun lnot:bool->bool = "!$1";
 
 proc while (cond:unit->bool) (body:unit->void)

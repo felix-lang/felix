@@ -80,7 +80,7 @@ let csuffix_of_type s = match s with
   | _ -> failwith ("[csuffix_of_type]: Unexpected Type " ^ s)
 
 let cstring_of_literal e = match e with
-  | `AST_bool i -> (match i with | true -> "true" | false -> "false")
+(*   | `AST_bool i -> (match i with | true -> "true" | false -> "false") *)
   | `AST_int (s,i) -> (Big_int.string_of_big_int i)^csuffix_of_type s 
   | `AST_float (s,x) -> x ^ csuffix_of_type s
   | `AST_string s -> string_of_string s
@@ -582,6 +582,13 @@ let get_var_frame (dfns: symbol_table_t) bbdfns this index : string =
       chase_tail parent
   | _ -> failwith ("[get_var_frame] Expected name "^id^" to be variable or value")
 
+let is_unitsum (t:btypecode_t) = match t with
+  | `BTYP_sum ls -> 
+    List.fold_left 
+    (fun acc t -> acc && (t = `BTYP_tuple []))
+    true ls
+
+  | _ -> false
 
 let rec gen_expr registry dfns bbdfns this (e,t) =
   (* print_endline ("Gen expr " ^ string_of_bound_expression dfns (e,t)); *)
@@ -606,8 +613,11 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
   | `BEXPR_get_n (n,e) -> 
     "(" ^ ge e ^ ").mem_" ^ string_of_int n
     
-  | `BEXPR_match_case (n,e) -> 
-    "((" ^ ge e ^ ").variant == " ^ string_of_int (n-1) ^ ")"
+  | `BEXPR_match_case (n,((e',t') as e)) -> 
+    if is_unitsum t' then
+      "((" ^ ge e ^ ") == " ^ string_of_int (n-1) ^ ")"
+    else
+      "((" ^ ge e ^ ").variant == " ^ string_of_int (n-1) ^ ")"
 
   | `BEXPR_case_arg (n,e) ->
     (* NOTE that the index is not used ... *)
@@ -645,7 +655,10 @@ let rec gen_expr registry dfns bbdfns this (e,t) =
        else let t' = List.nth ls (v-1) in
        if t' = `BTYP_tuple []
        then
-         "_uctor_(" ^ string_of_int (v-1) ^ ",0)"
+         if is_unitsum t then
+           string_of_int (v-1)
+         else
+           "_uctor_(" ^ string_of_int (v-1) ^ ",0)"
        else 
          failwith 
          ( 
@@ -1009,55 +1022,59 @@ let gen_exe registry dfns bbdfns label_map counter this (exe:bexe_t) =
         "      {" ^ subst registry dfns bbdfns ct [ge a] [typ] `BTYP_void ^ "}\n"
       end
 
-    | `BBDCL_procedure _ ->
-      let n = !counter in
-      incr counter;
-      let the_display = 
-        let d' = 
-          List.map (fun i -> "ptr"^cpp_name bbdfns i)
-          (get_display_list dfns index)
-        in 
-          if List.length d' > our_level
-          then "this" :: List.tl d'
-          else d'
-      and os_frames = [
-        "pgf";
-        "ppf";
-        "ptf"
-      ]
-      in
-      (* if we're calling from inside a function,
-         we pass a 0 continuation as the caller 'return address'
-         otherwise pass 'this' as the caller 'return address'
-      *)
-      let this = match kind with
-      | Function -> "0"
-      | Procedure -> "this"
-      in
-      let args = match a with
-      | _,`BTYP_tuple [] -> this
-      | _ -> this ^ ", " ^ ge a
-      in
-      let name = cpp_name bbdfns index in
-      "      //call procedure " ^ id ^ "\n" ^
-      (match kind with
-      | Function ->
-        "      continuation_t *_p =\n" ^
-        "      (new(gc,"^ name^"_ptr_map)\n" ^ 
-        "      " ^ name ^
-        "(" ^ String.concat ",\n      " (os_frames @ the_display) ^
-        "))->call(\n      " ^ args ^ "\n      );\n" ^
-        "      while(_p) _p=_p->resume();\n"
+    | `BBDCL_procedure (ps,bexes,nmap) ->
+      if bexes = []
+      then 
+      "      //call to empty procedure " ^ id ^ " elided\n"
+      else begin
+        let n = !counter in
+        incr counter;
+        let the_display = 
+          let d' = 
+            List.map (fun i -> "ptr"^cpp_name bbdfns i)
+            (get_display_list dfns index)
+          in 
+            if List.length d' > our_level
+            then "this" :: List.tl d'
+            else d'
+        and os_frames = [
+          "pgf";
+          "ppf";
+          "ptf"
+        ]
+        in
+        (* if we're calling from inside a function,
+           we pass a 0 continuation as the caller 'return address'
+           otherwise pass 'this' as the caller 'return address'
+        *)
+        let this = match kind with
+        | Function -> "0"
+        | Procedure -> "this"
+        in
+        let args = match a with
+        | _,`BTYP_tuple [] -> this
+        | _ -> this ^ ", " ^ ge a
+        in
+        let name = cpp_name bbdfns index in
+        "      //call procedure " ^ id ^ "\n" ^
+        (match kind with
+        | Function ->
+          "      continuation_t *_p =\n" ^
+          "      (new(gc,"^ name^"_ptr_map)\n" ^ 
+          "      " ^ name ^
+          "(" ^ String.concat ",\n      " (os_frames @ the_display) ^
+          "))->call(\n      " ^ args ^ "\n      );\n" ^
+          "      while(_p) _p=_p->resume();\n"
 
-      | Procedure ->
-        "      pc = " ^ string_of_int n ^ ";\n" ^
-        "      return (new(gc,"^ name^"_ptr_map)\n" ^ 
-        "      " ^ name ^
-        "(" ^ String.concat ",\n      " (os_frames @ the_display) ^
-        "))->call(\n      " ^ args ^ "\n      );\n" ^
-        "    case " ^ string_of_int n ^ ":\n"
-      )
-
+        | Procedure ->
+          "      pc = " ^ string_of_int n ^ ";\n" ^
+          "      return (new(gc,"^ name^"_ptr_map)\n" ^ 
+          "      " ^ name ^
+          "(" ^ String.concat ",\n      " (os_frames @ the_display) ^
+          "))->call(\n      " ^ args ^ "\n      );\n" ^
+          "    case " ^ string_of_int n ^ ":\n"
+        )
+      end
 
     | _ -> 
       failwith 
@@ -1208,28 +1225,36 @@ let gen_procedure_methods registry dfns bbdfns label_map counter index =
       )^
       "}\n"
     and resume = 
-      cont^name^"::resume(){\n"^
-      "  flx::gc::generic::collector_t &gc = *ptf->gc;\n" ^
-      "  switch(pc){\n" ^
-      "    case 0:\n" ^
-      gen_exes registry dfns bbdfns display label_map counter index exes ^
-      "    default: {\n" ^
-      "      continuation_t *tmp = _caller;\n" ^
-      "      _caller = 0; // make caller unreachable from here\n" ^ 
-      "      return tmp;\n" ^
-      "    }\n" ^
-      "  }\n" ^
-      "}\n"
+      if exes = []
+      then
+        cont^name^"::resume(){//empty\n"^
+        "      continuation_t *tmp = _caller;\n" ^
+        "      _caller = 0; // make caller unreachable from here\n" ^ 
+        "      return tmp;\n" ^
+        "}\n"
+      else
+        cont^name^"::resume(){\n"^
+        "  flx::gc::generic::collector_t &gc = *ptf->gc;\n" ^
+        "  switch(pc){\n" ^
+        "    case 0:\n" ^
+        gen_exes registry dfns bbdfns display label_map counter index exes ^
+        "    default: {\n" ^
+        "      continuation_t *tmp = _caller;\n" ^
+        "      _caller = 0; // make caller unreachable from here\n" ^ 
+        "      return tmp;\n" ^
+        "    }\n" ^
+        "  }\n" ^
+        "}\n"
     in
-      "\n//READER " ^ id ^ "\n" ^
-      "//READER " ^ id ^ ": Constructor\n" ^
+      "\n//PROC " ^ id ^ "\n" ^
+      "//PROC " ^ id ^ ": Constructor\n" ^
       ctor^
-      "\n//READER " ^ id ^ ": Call method\n" ^
+      "\n//PROC " ^ id ^ ": Call method\n" ^
       call^
-      "\n//READER " ^ id ^ ": Resume method\n" ^
+      "\n//PROC " ^ id ^ ": Resume method\n" ^
       resume
 
-  | _ -> failwith "prcoedure or reader expected"
+  | _ -> failwith "prcoedure expected"
 
 
 let gen_execute_methods registry dfns bbdfns counter =
@@ -1460,7 +1485,7 @@ let gen_biface_header registry dfns bbdfns biface = match biface with
     | `BBDCL_procedure (ps, _,_) ->
       let display = get_display_list dfns index in
       if List.length display <> 0
-      then failwith "Can't export nested reader";
+      then failwith "Can't export nested proc";
 
       let argtypes = 
         List.map 
@@ -1534,7 +1559,7 @@ let gen_biface_body registry dfns bbdfns biface = match biface with
       let arglist = "  " ^ String.concat ",\n  " (fixed_args @ argtypes) in
       let class_name = cpp_name bbdfns index in
 
-      "//EXPORT READER " ^ cpp_name bbdfns index ^ 
+      "//EXPORT PROC " ^ cpp_name bbdfns index ^ 
       " as " ^ export_name ^ "\n" ^
       "continuation_t *" ^ export_name ^ "(\n" ^ arglist ^ "\n){\n" ^
       "  return (new(*tf->gc,"^class_name^"_ptr_map)\n" ^

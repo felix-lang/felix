@@ -90,6 +90,7 @@ let rec register_type_r registry counter dfns bbdfns exclude t =
   match t with
   | `BTYP_void -> ()
   | `BTYP_none -> ()
+  | `BTYP_fix _ -> ()
   | `BTYP_function (ps,ret) -> rr ps; rr ret; rnr t
   | `BTYP_tuple ps -> List.iter rr ps; rnr t
   | `BTYP_sum ps -> List.iter rr ps; rnr t
@@ -155,6 +156,7 @@ let mangle_cpp_typename ct =
 let rec cpp_typename registry dfns bbdfns t = 
   let tn t = cpp_typename registry dfns bbdfns t in
   try match t with
+  | `BTYP_fix i ->  failwith "Can't name type fixpoint"
   | `BTYP_tuple [] -> "unit"
   | `BTYP_function (_,`BTYP_void) -> 
     "_procedure_type_" ^ string_of_int (Hashtbl.find registry t) ^ "*"
@@ -194,6 +196,7 @@ let rec cpp_typename registry dfns bbdfns t =
 let rec cpp_classname registry dfns bbdfns t = 
   let tn t = cpp_typename registry dfns bbdfns t in
   try match t with
+  | `BTYP_fix i -> failwith "Can't name type fixpoint"
   | `BTYP_binding _ -> failwith "[cpp_classname] Unexpected binding type"
   | `BTYP_tuple [] -> "unit"
   | `BTYP_void -> failwith "void doesn't have a classname"
@@ -296,9 +299,18 @@ let collect_types registry counter dfns bbdfns =
 Now some code to generate the bases, given the
 hashtable. We also mangle c++ abstract type names.
 @select(h)
+let is_unitsum (t:btypecode_t) = match t with
+  | `BTYP_sum ls -> 
+    List.fold_left 
+    (fun acc t -> acc && (t = `BTYP_tuple []))
+    true ls
+
+  | _ -> false
+
 let gen_type_name registry dfns bbdfns (index,typ) =
   let tn t = cpp_classname registry dfns bbdfns t in
   match typ with
+  | `BTYP_fix i -> ""
   | `BTYP_binding _ -> failwith "[gen_type_name] Unexpected binding type"
   | `BTYP_function _ ->
     let name = tn typ in
@@ -308,7 +320,11 @@ let gen_type_name registry dfns bbdfns (index,typ) =
     "struct " ^ name ^ ";\n"
 
   | `BTYP_sum ts ->
-    "typedef _uctor_ " ^ tn typ ^ ";\n"
+    if is_unitsum typ
+    then
+      "typedef int " ^ tn typ ^ ";\n"
+    else
+      "typedef _uctor_ " ^ tn typ ^ ";\n"
 
   | `BTYP_void -> ""
   | `BTYP_none -> ""
@@ -346,6 +362,7 @@ let gen_type registry dfns bbdfns (index,typ) =
   let cn t = cpp_classname registry dfns bbdfns t in
   match typ with
 
+  | `BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
   | `BTYP_binding _ -> failwith ("gen_type] Unexpected binding type")
 
   (* PROCEDURE *)

@@ -2299,37 +2299,14 @@ Misc weird feature tests .. remove in production
 tutorial.
 @select(tangler(tdir+'tut901.flx'))
 #include <std.flx>
-val x = (1 + 2) as y, y;
-match x with
-| (?a,?b) =>
-{
-  print "(";
-  print a; 
-  print ", ";
-  print b; 
-  print ")\n";
-  print y; print "\n";
+// recursive typedefs
+
+//typedef x = 1 + x * int;
+union x = Empty | Cons of x * int;
+fun f(a:x):x = 
+{ 
+  //val b = (case 2 of x) (a,2);
+  val b = Cons (a,2);
+  return b;
 }
-endmatch;
-
-@select(tangler(tdir+'tut902.flx'))
-#include <std.flx>
-proc While(cond:unit->bool) (body:unit->void)
-{
-  start_loop:>
-    if cond() then
-    {
-      body();
-      goto start_loop;
-    };
-    else todo "";
-    endif;
-}
-
-var x = 10;
-
-While [x>0] { 
-  print x; endl;
-  x = x - 1;
-};
 

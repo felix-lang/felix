@@ -109,7 +109,6 @@ Literals recognized by the lexer.
 @select(h)
 and literal_t =
   [
-  | `AST_bool of bool
   | `AST_int of string * big_int
   | `AST_string of string
   | `AST_float of string * string
@@ -390,6 +389,7 @@ and btypecode_t =
   | `BTYP_void                                     (* void type *)
   | `BTYP_none                                     (* special hack for 'no type' *)
   | `BTYP_binding of btypecode_t * btypecode_t     (* interface, module *)
+  | `BTYP_fix of int                               (* recurse to depth n *)
   ]
 
 and bparameter_t = string * btypecode_t
@@ -755,7 +755,6 @@ and suffix_of_type s = match s with
 
  
 and string_of_literal e = match e with
-  | `AST_bool i -> (match i with | true -> "true" | false -> "false")
   | `AST_int (s,i) -> (string_of_big_int i)^suffix_of_type s 
   | `AST_float (t,v) -> v ^ suffix_of_type t
   | `AST_string s -> string_of_string s
@@ -883,37 +882,43 @@ and qualified_name_of_index dfns index =
     qualified_name_of_index dfns index' ^ "::" ^
     id ^ "<" ^ string_of_int index ^ ">"
 
-and string_of_btypecode dfns tc = 
-  let sbt t = string_of_btypecode dfns t in
-  match tc with
-  | `BTYP_binding (a,b) -> 
-    "binding (" ^ 
-    sbt a ^
-    " => " ^
-    sbt b ^
-    ")"
+and string_of_btypecode dfns tc = sb dfns 0 tc
+and sb dfns depth tc = 
+  let sbt t = sb dfns (depth+1) t in
+  string_of_int depth ^ ":<" ^ 
+    begin match tc with
+    | `BTYP_fix i -> "<fix " ^ string_of_int i ^" (rel)->" ^ string_of_int (depth+i) ^ " (abs)>"
+    | `BTYP_binding (a,b) -> 
+      "binding (" ^ 
+      sbt a ^
+      " => " ^
+      sbt b ^
+      ")"
 
-  | `BTYP_name n -> qualified_name_of_index dfns n
-  | `BTYP_tuple ls -> 
-    begin match ls with 
-    | [] -> "unit" 
-    | [x] -> failwith ("UNEXPECTED TUPLE OF ONE ARGUMENT " ^ sbt x)
-    | _ -> "(" ^ (String.concat " * " (List.map sbt ls)) ^")"
-    end
+    | `BTYP_name n -> qualified_name_of_index dfns n
+    | `BTYP_tuple ls -> 
+      begin match ls with 
+      | [] -> "unit" 
+      | [x] -> failwith ("UNEXPECTED TUPLE OF ONE ARGUMENT " ^ sbt x)
+      | _ -> "(" ^ (String.concat " * " (List.map sbt ls)) ^")"
+      end
 
-  | `BTYP_sum ls -> 
-    begin match ls with 
-    | [] -> "UNEXPECTED EMPTY SUM = void" 
-    | [x] -> (* failwith *) ("UNEXPECTED SUM OF ONE ARGUMENT " ^ sbt x)
-    | _ -> "(" ^ (String.concat " + " (List.map sbt ls)) ^")"
-    end
+    | `BTYP_sum ls -> 
+      begin match ls with 
+      | [] -> "UNEXPECTED EMPTY SUM = void" 
+      | [x] -> (* failwith *) ("UNEXPECTED SUM OF ONE ARGUMENT " ^ sbt x)
+      | _ -> "(" ^ (String.concat " + " (List.map sbt ls)) ^")"
+      end
 
-  | `BTYP_function (args, result) ->  
-    "(" ^ (sbt args) ^ " -> " ^ (sbt result) ^ ")"
+    | `BTYP_function (args, result) ->  
+      "(" ^ (sbt args) ^ " -> " ^ (sbt result) ^ ")"
 
-  | `BTYP_pointer t -> "&(" ^ (sbt t) ^ ")"
-  | `BTYP_void -> "void"
-  | `BTYP_none -> "<none>"
+    | `BTYP_pointer t -> "&(" ^ (sbt t) ^ ")"
+    | `BTYP_void -> "void"
+    | `BTYP_none -> "<none>"
+    end 
+    ^ 
+    ">"
 
 and string_of_parameters ps = 
   String.concat 
@@ -1735,6 +1740,7 @@ let rec lower t = match t with
   | `BTYP_void -> `BTYP_void
   | `BTYP_function (a,b) -> `BTYP_function (lower a, lower b)
   | `BTYP_name i -> `BTYP_name i
+  | `BTYP_fix i -> `BTYP_fix i
 
 
 let rec lift t = match t with
@@ -1746,10 +1752,12 @@ let rec lift t = match t with
   | `BTYP_void -> `BTYP_void
   | `BTYP_function (a,b) -> `BTYP_function (lift a, lift b)
   | `BTYP_name i -> `BTYP_name i
+  | `BTYP_fix i -> `BTYP_fix i
 
 let rec unify dfns it mt = 
   let u it mt = unify dfns it mt in
   match it,mt with
+  | (`BTYP_fix i, `BTYP_fix j) when i = j -> `BTYP_fix i
   | `BTYP_function (a,b), `BTYP_function(c,d) ->
     `BTYP_function (u a c, u b d)
 
@@ -1766,35 +1774,9 @@ let rec unify dfns it mt =
   | `BTYP_none, `BTYP_none -> `BTYP_none
   | i,m -> `BTYP_binding (i,m)
 
-let rec type_eq a b = 
-  match (a,b) with
-  | `BTYP_binding (i,j), `BTYP_binding (i',j')
-  | `BTYP_function (i,j), `BTYP_function (i',j')
-    -> type_eq i i' && type_eq j j'
-
-  | `BTYP_pointer t, `BTYP_pointer t' 
-    -> type_eq t t'
-
-  | `BTYP_tuple ts, `BTYP_tuple ts'
-  | `BTYP_sum ts, `BTYP_sum ts' 
-     -> 
-       List.fold_left2
-       (fun b i j -> b && type_eq i j)
-       true
-       ts
-       ts'
-
-  | `BTYP_none, `BTYP_none
-  | `BTYP_void, `BTYP_void 
-     -> true 
-
-  | `BTYP_name i, `BTYP_name i' 
-     -> i = i'
-  | _ -> false
-  
 let dummy_sr = ("generated",0,0,0,0)
-let flx_bool =
-  (`AST_lookup (dummy_sr,(`AST_root dummy_sr,"bool")) :> typecode_t)
+let flx_bool = 
+ `TYP_sum [`TYP_tuple[]; `TYP_tuple []]
 
 let rec typecode_of_expr (e:expr_t) :typecode_t = 
   let te e = typecode_of_expr e in
