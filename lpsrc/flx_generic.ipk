@@ -1,0 +1,100 @@
+@head(1,'Generic support')
+@h = tangler('src/flx_generic.mli')
+@select(h)
+open Flx_types
+val find_vs:
+  sym_state_t ->
+  int ->
+  (string * int) list
+
+val adjust_ts:
+  sym_state_t ->
+  int ->
+  btypecode_t list ->
+  btypecode_t list
+
+val adjust_vs_ts:
+  sym_state_t ->
+  int ->
+  (string * int) list ->
+  btypecode_t list ->
+  btypecode_t list
+
+val make_params:
+  sym_state_t ->
+  int ->
+  btypecode_t list ->
+  (string * btypecode_t) list
+
+val make_varmap:
+  sym_state_t ->
+  int ->
+  btypecode_t list ->
+  (int, btypecode_t) Hashtbl.t
+
+@h = tangler('src/flx_generic.ml')
+@select(h)
+open Flx_types
+open Flx_util
+open List
+
+(* Adjustment of type argument lists works much
+like the activation record display, so well call
+it the type display: it is just a list of all
+the type variables bound by upscope quantifiers
+(which should be all of them :-)
+
+For a name without any subscripts, a sibling call, 
+or upscope call is possible, and just takes the head of the
+type display corresponding to the call depth.
+
+For a downscope call (eg referencing an element of
+a contained module ..) additional type must be given.
+
+However, sibling and upscope calls can also be made
+with subscripts, replacing the trailing default
+values of the current display.
+
+So: the given subscripts can vary from 0 to the number
+of variables at the call level, with the remaining head
+variables defaulted from the calling environment, unless
+the call depth is deeper in which case the trailing
+values must be given
+
+Actually the algorithm is simpler: just get
+the default display for the target, and splice
+its head with the given subscript list to get a 
+list the same length, if the target is longer
+than the list, otherwise just take the head of the
+subscript list -- this can happen when an instantiated
+call calls upscope using an unindexed name.
+*)
+
+let rec find_vs syms i =
+  match Hashtbl.find syms.dfns i with
+  id,sr,parent,vs,table,dirs,entry ->
+  match parent with
+  | Some i -> find_vs syms i @ vs
+  | None -> vs
+  
+let adjust_vs_ts syms index vs ts =
+  let ts0:btypecode_t list = map (fun (s,i) -> `BTYP_var i) vs in
+  let n = length vs and m = length ts in
+  if m > n then list_prefix ts m
+  else list_prefix ts0 (n-m) @ ts
+
+let adjust_ts syms index ts =
+  let vs = find_vs syms index in
+  adjust_vs_ts syms index vs ts
+
+let make_params syms i ts =
+  let vs = find_vs syms i in
+  let ts = adjust_vs_ts syms i vs ts in
+  map2 (fun (s,i) t -> s,t) vs ts
+
+let make_varmap syms i ts =
+  let vs = find_vs syms i in
+  let ts = adjust_vs_ts syms i vs ts in
+  let vars = map2 (fun (s,i) t -> i,t) vs ts in
+  hashtable_of_list vars
+

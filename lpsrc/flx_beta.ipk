@@ -1,0 +1,287 @@
+@head(1,"Meta typing and Beta reduction")
+@h = tangler("src/flx_beta.mli")
+@select(h)
+open Flx_types
+
+val metatype:
+  sym_state_t ->
+  (int * btypecode_t) list ->
+  btypecode_t -> 
+  btypecode_t
+
+val beta_reduce:
+  sym_state_t ->
+  (int * btypecode_t) list ->
+  btypecode_t -> 
+  btypecode_t
+
+@h = tangler("src/flx_beta.ml")
+@select(h)
+open Flx_util
+open Flx_ast
+open Flx_types
+open Flx_print
+open Flx_exceptions
+open Flx_mtypes
+open Flx_typing
+open List
+open Flx_srcref
+open Flx_unify
+
+(* params is list of string * bound_typecode *)
+let rec metatype syms params term =
+  let st t = string_of_btypecode syms.dfns t in
+  let mt t = metatype syms params t in
+  match term with
+  | `BTYP_typefun (a,b,c) ->
+    let ps = List.map snd a in
+    let argt =
+      match ps with
+      | [x] -> x
+      | _ -> `BTYP_tuple ps
+    in 
+      let rt = metatype syms (a @ params) c in
+      if b<>rt
+      then 
+        failwith 
+        (
+          "In abstraction\n" ^
+          st term ^
+          "\nFunction body metatype \n"^
+          st rt^
+          "\ndoesn't agree with declared type \n" ^ 
+          st b
+        )
+      else `BTYP_function (argt,b)
+
+  | `BTYP_type_tuple ts ->
+    `BTYP_tuple (List.map (metatype syms params) ts)
+
+  | `BTYP_apply (a,b) ->
+    begin 
+      let ta = mt a
+      and tb = mt b 
+      in match ta with
+      | `BTYP_function (x,y) ->
+        if x = tb then y
+        else 
+          failwith "Metatype error: function argument wrong metatype"
+      | _ -> failwith "Metatype error: function required for LHS of application"
+    end
+  | `BTYP_var i -> 
+    begin try 
+      List.assoc i params 
+      with 
+        Not_found -> 
+          print_endline "assoc list = ";
+          List.iter
+          (fun (i,s) -> 
+            print_string 
+            (
+              string_of_int i ^ 
+              ": " ^ 
+              string_of_btypecode syms.dfns s ^ 
+              " "
+            )
+          )
+          params
+          ;
+          print_endline "";
+          failwith 
+          (
+            "[metatype] Can't find index " ^ string_of_int i ^ " in generic assoc list"
+          )
+    end
+
+  | _ -> `BTYP_type
+  
+
+
+(* fixpoint reduction: reduce
+   Fix f. Lam x. e ==> Lam x. Fix z. e [f x -> z]
+   to replace a recursive function
+   with a recursive data structure
+*)
+
+and fixup ps body =
+ let param = match ps with
+   | [] -> assert false
+   | [i,_] -> `BTYP_var i
+   | x -> `BTYP_type_tuple (List.map (fun (i,_) -> `BTYP_var i) x)
+ in
+ let rec aux term depth =
+   let fx t = aux t (depth+1) in
+   match term with
+   | `BTYP_apply (`BTYP_fix i, arg) 
+     when arg = param 
+     && i + depth +1  = 0 (* looking inside application, one more level *)
+     -> `BTYP_fix (i+2) (* elide application AND skip under lambda abstraction *)
+
+   | `BTYP_tuple ls -> `BTYP_tuple (List.map fx ls)
+   | `BTYP_sum ls -> `BTYP_sum (List.map fx ls)
+   | `BTYP_type_tuple ls -> `BTYP_type_tuple (List.map fx ls)
+   | `BTYP_function (a,b) -> `BTYP_function (fx a, fx b)
+   | `BTYP_binding (a,b) -> `BTYP_binding (fx a, fx b)
+   | `BTYP_pointer a -> `BTYP_pointer (fx a)
+   | `BTYP_apply(a,b) -> `BTYP_apply (fx a, fx b)
+   | `BTYP_typefun (a,b,c) ->
+      (* NOTE we have to add 2 to depth here, an extra
+      level for the lambda binder.
+      NOTE also: this is NOT a recusive call to fixup!
+      It doesn't fixup this function.
+      *)
+
+      `BTYP_typefun (a, fx b, aux c (depth + 2))
+   | _ -> term
+ in 
+   (* note depth 1: we seek a fix to an abstraction
+   of which we're given only the body, that's an 
+   extra level in the term structure 
+   *)
+   aux body 1
+
+and mk_prim_type_inst syms i args =
+  print_endline "MK_PRIM_TYPE";
+  let t = `BTYP_inst (i,args) in
+  (*
+  let _,t' = normalise_type t in
+  let args = match t' with
+    | `BTYP_inst (_,args) -> args
+    | _ -> assert false 
+  in
+  if not (Hashtbl.mem syms.prim_inst (i,args))
+  then begin
+    let n = !(syms.counter) in
+    incr (syms.counter);
+    Hashtbl.add syms.prim_inst (i, args) n;
+    Hashtbl.add syms.rev_prim_inst n (i, args)
+  end;
+  *)
+  t  
+
+
+and beta_reduce syms (btvars:(int * btypecode_t) list) t = 
+  let br t = beta_reduce syms btvars t in
+  let st t = string_of_btypecode syms.dfns t in
+  let mt t = metatype syms btvars t in
+  match t with
+  | `BTYP_apply (t1,t2) ->
+    (*
+    print_endline "-----------------------";
+    print_endline ("Application " ^ st t);
+    print_endline "";
+    print_endline ("Unreduced function is " ^ st t1);
+    print_endline ("Unreduced Argument is " ^ st t2);
+    *)
+    let t2 = br t2 in (* eager evaluation *)
+    let t1 = br t1 in (* eager evaluation *)
+    (*
+    print_endline ("reduced function is " ^ st t1);
+    print_endline ("reduced Argument is " ^ st t2);
+    *)
+    let mt1 = mt t1
+    and mt2 = mt t2 
+    in
+    (*
+    print_endline ("Function metatype is" ^ st mt1);
+    print_endline ("Argument metatype is" ^ st mt2);
+    *)
+    begin match mt1 with
+    | `BTYP_function (a,b) ->
+      if a <> mt2
+      then failwith ("Argument metatype not same as function parameter")
+    | _ -> 
+      failwith ("[beta_reduce] Expected LHS of application to be type function, got\n" ^ st t1)
+    end
+    ;
+    begin match t1 with
+    | `BTYP_typefun (ps,r,body) ->
+      let v = Hashtbl.create 97 in
+      begin match ps with
+      | [] -> ()
+      | [i,_] -> Hashtbl.add v i t2
+      | _ -> 
+        let ts = match t2 with 
+        | `BTYP_type_tuple ts -> ts 
+        | _ -> assert false 
+        in
+          if List.length ps <> List.length ts
+          then failwith "Wrong number of arguments to typefun"
+          else List.iter2 (fun (i,_) y -> Hashtbl.add v i y) ps ts
+      end
+      ;
+      (*
+      print_endline "Variable assignments are ";
+      Hashtbl.iter
+      (fun i t -> print_endline (string_of_int i ^ " -> " ^ st t))
+      v
+      ;
+      print_endline ("Body is " ^ st body);
+      *)
+      let t = varmap_subst v body in
+      (*
+      print_endline ("Result of application = " ^ st t);
+      *)
+      br t
+
+    | `BTYP_var _ -> t (* can't reduce it yet *)
+
+    | `BTYP_name i -> failwith "Betareduce unexpected BTYP_name"
+    (*
+      let id,sr,parent,vs,_,_,dcl = Hashtbl.find syms.dfns i in
+      let brd n =
+        print_endline ("BETAREDUCE " ^ string_of_symdef dcl id vs);
+        begin
+          match t2 with
+          | `BTYP_type_tuple args ->
+            if List.length args = n 
+            then
+              mk_prim_type_inst syms i args
+            else
+              failwith "[beta-reduce] wrong number of arguments to generic type"
+          | _ ->
+            if n = 1 
+            then
+              mk_prim_type_inst syms i [t2]
+            else 
+              failwith "[beta-reduce wrong number of arguments to generic type"
+        end
+      in
+      begin
+        match dcl with
+        | `SYMDEF_union _
+        | `SYMDEF_struct _ -> brd (length vs)
+        | `SYMDEF_abs _ -> brd (length vs)
+
+        | _ -> failwith "[beta_reduce] Expected generic primitve, struct, or union type"
+      end
+    *)
+    | _ -> failwith 
+      (
+        "[beta-reduce] Expected type function or variable, got " ^ 
+        string_of_btypecode syms.dfns t1
+      )
+    end
+
+  | `BTYP_inst (i,ts) -> `BTYP_inst (i,map br ts)
+  | `BTYP_tuple ls -> `BTYP_tuple (map br ls)
+  | `BTYP_sum ls -> `BTYP_sum (map br ls)
+  | `BTYP_type_tuple ls -> `BTYP_type_tuple (map br ls)
+  | `BTYP_function (a,b) -> `BTYP_function (br a, br b)
+  | `BTYP_binding (a,b) -> `BTYP_binding (br a, br b)
+  | `BTYP_pointer a -> `BTYP_pointer (br a)
+  | `BTYP_typefun (p,r,b) -> 
+    let p' = List.map (fun (i,t) -> (i, br t)) p in
+    (*
+    print_endline ("fixing up function " ^ st t);
+    print_endline ("body is " ^ st b);
+    *)
+    let b = fixup p b in
+    (*
+    print_endline ("After fixup body is " ^ st b);
+    *)
+    `BTYP_typefun (p', br r, beta_reduce syms (p' @ btvars) b)
+
+  | _ -> t
+
+

@@ -1,0 +1,351 @@
+@head(1,'Bind executable statements')
+@h = tangler("src/flx_bexe.mli")
+@select(h)
+open Flx_ast
+open Flx_types
+
+val bind_exes:
+  sym_state_t ->
+  env_t ->
+  range_srcref -> 
+  exe_t list ->
+  btypecode_t ->
+  string ->
+  bid_t ->
+  (string * int) list ->
+  btypecode_t * bexe_t list
+
+@h = tangler("src/flx_bexe.ml")
+@select(h)
+open Flx_util
+open Flx_ast
+open Flx_types
+open Flx_print
+open Flx_mtypes
+open Flx_typing
+open Flx_lookup
+open Flx_mbind
+open Flx_srcref
+open Flx_unify
+open Flx_exceptions
+open List
+
+let cal_call dfns (p,pt) e =
+  match lower pt with
+  | `BTYP_function (_, `BTYP_void) -> 
+    `BEXE_call ((p,lower pt), e)
+  | _ -> 
+    failwith ("[cal_call] call non procedure, "^
+    string_of_bound_expression dfns (p,pt)
+    ^"\ntype=" ^ string_of_btypecode dfns pt)
+
+let cal_loop dfns (p,pt) e this =
+  match lower pt with
+  | `BTYP_function (_, `BTYP_void) -> 
+    begin match p with
+    | `BEXPR_closure (i,ts) ->
+      let id,sr,parent,vs,_,_,entry = Hashtbl.find dfns i in
+      let j = ref 0 in 
+      let rec aux k = 
+        if k <> this
+        then
+          let id,sr,parent,_,_,_,_ = Hashtbl.find dfns k in
+          match parent with
+          | Some k -> incr j; aux k
+          | None -> failwith "[cal_loop] Loop target must be self or parent"
+      in 
+        aux this;
+        `BEXE_loop (!j, e)
+
+    | _ -> 
+      failwith (
+        "[cal_loop] Expected procedure closure, got "^
+        string_of_bound_expression dfns (p,pt)
+      )
+    end
+  | _ -> 
+    failwith ("[cal_loop] loop to non procedure, "^
+    string_of_bound_expression dfns (p,pt)
+    ^"\ntype=" ^ string_of_btypecode dfns pt)
+
+exception Found of int
+
+let bind_exes syms env sr exes ret_type id index parent_vs = 
+  (*
+  print_endline ("bind_exes.. env depth="^ string_of_int (List.length env));
+  print_endline "Dumping Source Executables";
+  print_endline "--------------------------";
+  let soe e = Flx_print.string_of_expr e in
+  List.iter 
+    (fun x -> print_endline (string_of_exe 1 x))
+    exes
+  ;
+  print_endline ""
+  ;
+
+  print_endline "Binding Executables";
+  print_endline "-------------------";
+  *)
+
+  let parent_ts = map (fun (s,i) -> `BTYP_var i) parent_vs in
+  let parent_ts_len = length parent_ts in
+  let resolve_tvars ts =
+    let n = length ts in
+    (list_prefix parent_ts (parent_ts_len - n)) @ ts
+  in
+  let ret_type = ref ret_type in
+  let be e : tbexpr_t = bind_expression syms env [] [] 0 [] e in
+  let lun sr n = lookup_name_in_env env sr n in
+  let luqn n = lookup_qn_in_env syms env [] n in
+  let bt sr t : btypecode_t = bind_type syms env [] [] sr t in
+  let return_count = ref 0 in
+  let reachable = ref true in
+
+  let bound_exes = ref [] in
+  let tack x = bound_exes := x :: !bound_exes in
+  let rec bind_exe x = 
+    (*
+    print_endline (string_of_exe 1 x);
+    *)
+    if not !reachable then 
+    begin 
+      match x with 
+      | `EXE_label _ -> ()
+      | `EXE_comment _ -> ()
+      | `EXE_nop _ -> ()
+      | _ -> print_endline 
+        (
+          "WARNING: Unreachable code in "^id^": " ^ 
+          string_of_exe 1 x ^ " in\n" ^ 
+          short_string_of_src sr
+        );
+    end
+    ;
+    match x with
+    | `EXE_comment s ->       tack (`BEXE_comment s)
+    | `EXE_label s ->         reachable := true; tack (`BEXE_label s)
+    | `EXE_goto s ->          reachable := false; tack (`BEXE_goto s)
+
+    | `EXE_ifgoto (e,s) ->    
+      let e',t = be e in
+      if t = flx_bbool
+      then tack (`BEXE_ifgoto ((e',t), s))
+      else 
+        clierr (src_of_expr e)
+        (
+          "[bind_exes:ifgoto] Conditional requires bool argument, got " ^
+          string_of_btypecode syms.dfns t
+        )
+
+    | `EXE_ifnotgoto (e,s) -> 
+      let e',t = be e in
+      if t = flx_bbool
+      then tack (`BEXE_ifnotgoto ((e',t), s))
+      else 
+        clierr (src_of_expr e)
+        (
+          "[bind_exes:ifnotgoto] Conditional requires bool argument, got " ^
+          string_of_btypecode syms.dfns t ^ " in\n" ^
+          short_string_of_src sr
+        )
+
+    | `EXE_loop (n,e2) ->
+      let be2,t2 = be e2 in
+      let tbe1 =
+         lookup_qn_with_sig 
+         syms 
+         sr sr 
+         env [] [] 
+         (`AST_name(sr,n,[]) : qualified_name_t)
+         t2 
+      in  
+        tack (cal_loop syms.dfns tbe1 (be2,t2) index)
+
+    | `EXE_jump (a,b) ->
+      bind_exe (`EXE_call (a,b));
+      bind_exe  (`EXE_proc_return)
+
+    | `EXE_call (#suffixed_name_t as sn, e2) -> (* OVERLOADING *)
+      let sr = src_of_expr sn in
+      let be2,t2 = be e2 in
+      let (be1,t1) as tbe1 =
+         match sn with
+         | #qualified_name_t as qn ->
+           lookup_qn_with_sig 
+           syms 
+           sr sr 
+           env [] [] 
+           qn t2 
+         | _ -> be sn
+      in  
+        tack (cal_call syms.dfns tbe1 (be2,t2))
+
+    | `EXE_call (p,e) ->
+      let p',pt' = be p and e',et' = be e in
+      tack (cal_call syms.dfns (p', pt') (e', et'))
+
+    | `EXE_read s ->          
+      let dummy_sr = ("bind exes",0,0,0,0) in
+      begin match lun dummy_sr s with
+      | NonFunctionEntry (Simple index) -> tack (`BEXE_read index)
+      | NonFunctionEntry _ -> failwith "not expecting bound entry"
+      | FunctionEntry _ -> failwith "Can't read function!"
+      end
+
+    | `EXE_proc_return ->
+      reachable := false;
+      if do_unify syms !ret_type `BTYP_void 
+      then 
+        begin
+          ret_type := varmap_subst syms.varmap !ret_type;
+          tack (`BEXE_proc_return)
+        end
+      else
+        clierr sr 
+        (
+          "function " ^id^" has void return type"
+        )
+
+    | `EXE_fun_return e ->        
+      reachable := false;
+      incr return_count;
+      let e',t' = be e in
+      if do_unify syms !ret_type t' then begin
+        ret_type := varmap_subst syms.varmap !ret_type;
+        tack (`BEXE_fun_return (e',lower t'))
+      end 
+      else
+        clierr sr
+        (
+          "Wrong return type,\nexpected : " ^ 
+          string_of_btypecode syms.dfns !ret_type ^
+          "\nbut we got " ^
+          string_of_btypecode syms.dfns t'
+        )
+
+    | `EXE_nop s ->           tack (`BEXE_nop s )
+    | `EXE_code s ->          tack (`BEXE_code s)
+    | `EXE_noreturn_code s ->  reachable := false; tack (`BEXE_code s)
+
+    | `EXE_init (s,e) -> 
+      let sr = src_of_expr e in (* HACK! *)
+      begin match lun sr s with
+      | FunctionEntry _ -> clierr sr "Can't init function constant"
+      | NonFunctionEntry (Simple index) -> 
+        let e',rhst = be e in
+        let lhst = typeofindex syms [] [] 0 [] index parent_ts in
+        if type_eq lhst rhst
+        then tack (`BEXE_init (index, (e',rhst)))
+        else clierr sr
+        (
+          "LHS["^s^"]("^string_of_btypecode syms.dfns lhst^
+          ") of initialisation must have same type as RHS("^
+          string_of_btypecode syms.dfns rhst^
+          ")"
+        )
+      | NonFunctionEntry _ -> failwith "Not expecting bound entry"
+      end
+
+    | `EXE_reglex (e,cls)
+    | `EXE_regmatch (e,cls) ->  
+      (*
+      print_endline "Binding regmatch";
+      *) 
+      reachable := false;
+      let e = be e in
+      let bd e = bind_regdef syms env [] [] [] e in
+
+      (* create a unified regexp using REGEXP_code for expressions *)
+      let f (e,c) = REGEXP_seq (e, REGEXP_code c) in
+      let re = List.map f cls in
+      let alt r1 r2 = REGEXP_alt (r1,r2) in
+      let re = List.fold_right alt re REGEXP_sentinel in
+
+      (* do lookups *)
+      let re = bd re in
+
+      (* generate transition matrix *)
+      let alphabet, nstates, code_table, matrix = Flx_dfa.process_regexp re in
+      let alphabet = CharSet.elements alphabet in
+
+      (* bind RHS expressions *)
+      let bcode = Hashtbl.create 97 in
+      Hashtbl.iter
+      (fun i c -> 
+        let sr = src_of_expr c in
+        let _,t as bt = be c in
+        Hashtbl.add bcode i bt;
+        incr return_count;
+        if do_unify syms !ret_type t then
+          ret_type := varmap_subst syms.varmap !ret_type
+        else 
+          clierr sr 
+          (
+            "Wrong return type,\nexpected : " ^ 
+            string_of_btypecode syms.dfns !ret_type ^
+            "\nbut we got " ^
+            string_of_btypecode syms.dfns t ^ " in\n" ^
+            short_string_of_src sr
+          )
+      )
+      code_table
+      ;
+      begin match x with 
+      | `EXE_regmatch _ ->
+        tack (`BEXE_regmatch (e,alphabet,nstates, bcode,matrix))
+      | `EXE_reglex _ ->
+        tack (`BEXE_reglex (e,alphabet,nstates, bcode,matrix))
+      | _ -> assert false
+      end
+  in 
+  List.iter bind_exe exes;
+  let bound_exes = List.rev !bound_exes in 
+  (*
+  print_endline ""
+  ;
+  List.iter 
+    (fun x -> print_endline (string_of_bexe syms.dfns 1 x)) 
+    bound_exes
+  ;
+  print_endline ""
+  ;
+  print_endline "BINDING COMPLETE"
+  ;
+  *)
+
+  (* No return statements found: it must be a procedure,
+     so unify void [just a comparison with void .. heh!]
+  *)
+  if !return_count = 0 then
+  begin
+    if do_unify syms !ret_type `BTYP_void 
+    then
+      ret_type := varmap_subst syms.varmap !ret_type
+    else
+      clierr sr 
+      (
+        "procedure " ^id^" has non-void return type"
+      )
+  end
+  ;
+
+  begin match !ret_type with
+  | `BTYP_void ->
+    if not !reachable
+    then print_endline 
+    (
+      "WARNING: procedure " ^id^" doesn't drop thru end, possible infinite loop in\n" ^
+      short_string_of_src sr
+    )
+  | _ ->
+    if !reachable 
+    then print_endline 
+    (
+      "WARNING: function "^id^" drops off end, possible missing return statement in\n" ^
+      short_string_of_src sr
+    );
+  end
+  ;
+  !ret_type,bound_exes
+
+
