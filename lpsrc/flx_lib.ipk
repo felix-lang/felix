@@ -345,7 +345,10 @@ module Bool
     tangle('  fun '+op+': '+t+' -> '+t+' = "'+op+fc[t]+'($1)";')
 
 @def gen_nan(t):
-  tangle('  fun isnan: '+t+' -> bool = "isnan'+fc[t]+'($1)";')
+  if HAVE_ISNAN:
+    tangle('  fun isnan: '+t+' -> bool = "isnan'+fc[t]+'($1)";')
+  else:
+    tangle('  fun isnan: '+t+' -> bool = "!($1==$1)";')
 
 @def gen_inc(t):
   tangle('  proc pre_incr:  &'+t+' = "++*('+tmap[t]+'*)($1.data);";')

@@ -888,6 +888,7 @@ We have no idea if it continues copying.
 @tangle('\trm -f flx_'+flx_version)
 @tangle('\tln -s . flx_'+flx_version)
 @tangle('\ttar -zcvf flx_'+flx_version+'_src.tgz\\')
+@tangle('\t\tflx_'+flx_version+'/Makefile\\')
 @tangle('\t\tflx_'+flx_version+'/README \\')
 @tangle('\t\tflx_'+flx_version+'/CONTENTS \\')
 @tangle('\t\tflx_'+flx_version+'/INSTALL \\')
@@ -1030,6 +1031,7 @@ We have no idea if it continues copying.
 @tangle('\tinstall -d ${INSTALL_DIR}/htmlman')
 @tangle('\t(install lib/* ${INSTALL_DIR}/lib || exit 0) &> /dev/null')
 @tangle('\t(install rtl/* ${INSTALL_DIR}/rtl || exit 0) &> /dev/null')
+@tangle('\t('+RANLIB+' ${INSTALL_DIR}/rtl/flx_static.a || exit 0) &> /dev/null')
 @tangle('\t(install doc/* ${INSTALL_DIR}/doc || exit 0) &> /dev/null')
 @tangle('\t(install impldoc/* ${INSTALL_DIR}/impldoc || exit 0) &> /dev/null')
 @tangle('\t(install htmlman/* ${INSTALL_DIR}/htmlman || exit 0) &> /dev/null')
@@ -1630,7 +1632,11 @@ TESTMODE=0
 RECOMPILE=0
 DEBUG=0
 INLINE=0
-STATIC=0
+@if DEFAULT_LINK_MODEL=="dynamic":
+   tangle("STATIC=0")
+ else:
+   tangle("STATIC=1")
+
 RUNIT=1
 
 grab=1

@@ -16,6 +16,14 @@ int main(int,char*[]) {
    exit(0);   
 }
 
+@h = tangler("tmp/dummy_nan.cxx",'c++')
+@select(h)
+#include <math.h>
+
+int main(int,char*[]) { 
+  isnan(0.0);
+}
+
 @h = tangler("script/make_config.py")
 @select(h)
 # THIS PROGRAM CREATES THE DEFAULT CONFIGURATION FILE
@@ -194,6 +202,13 @@ try:
 except:
   ISCR='env PYTHONPATH=. python -O interscript/bin/iscr.py '
 
+# find if we have BSD isnan in math.h (NAUGHTY!)
+try:
+  xqt("g++ -w -c tmp/dummy_nan.cxx -o tmp/dummy_nan.o")
+  HAVE_ISNAN=1
+except:
+  HAVE_ISNAN=0
+
 DEBUG_SYMBOLS = "-g "
 CCOPT1 = "-O1 -DNDEBUG "
 CCOPT2 = "-O3 --inline -DNDEBUG "
@@ -236,6 +251,7 @@ try:
   p(f,"CCOPT1")
   p(f,"CCOPT2")
   p(f,"OCAML_INCLUDE_DIRECTORY")
+  p(f,"HAVE_ISNAN")
 
   p(f,"SUPPORT_DYNAMIC_LOADING")
   pr(f,"SUPPORT_STATIC_LINKAGE = 1")

@@ -680,7 +680,7 @@ namespace std {
 #ifndef BOOST_CSTDINT_HPP
 #define BOOST_CSTDINT_HPP
 
-#include "boost_config.hpp"
+#include "rtl/boost_config.hpp"
 
 
 #ifdef BOOST_SYSTEM_HAS_STDINT_H
