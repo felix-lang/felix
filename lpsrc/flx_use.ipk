@@ -35,7 +35,7 @@ let rec isuseless bbdfns exes =
   let check i =         
     try 
       match Hashtbl.find bbdfns i with 
-      | _,_,`BBDCL_procedure (_,exes,_) -> 
+      | _,_,`BBDCL_procedure (_,_,exes,_) -> 
         if not (isuseless bbdfns exes) 
         then raise Useful
         else ()
@@ -86,7 +86,7 @@ let useless_call_elim bbdfns exes =
   | `BEXE_call ((`BEXPR_name i,_),_)
     -> (* only keep calls to useful procedures *) 
       begin match Hashtbl.find bbdfns i with
-      | id,parent,`BBDCL_procedure (ps,exes,nm) ->
+      | id,parent,`BBDCL_procedure (_,ps,exes,nm) ->
         if not (isuseless bbdfns exes) then exes' := x :: !exes'
       | _ -> exes' := x :: !exes'
       end
@@ -95,7 +95,7 @@ let useless_call_elim bbdfns exes =
   | `BEXE_jump ((`BEXPR_name i,_),_)
     -> (* only keep calls to useful procedures *) 
       begin match Hashtbl.find bbdfns i with
-      | id,parent,`BBDCL_procedure (ps,exes,nm) ->
+      | id,parent,`BBDCL_procedure (_,ps,exes,nm) ->
         if not (isuseless bbdfns exes) then exes' := x :: !exes'
         else exes' := `BEXE_proc_return :: !exes'
         
@@ -250,13 +250,13 @@ and uses used bbdfns i =
     | Some (_,_,bbdcl) ->
       used := BidSet.add i !used;
       begin match bbdcl with
-      | `BBDCL_function (ps,ret,exes, _) -> 
-        List.iter ut (List.map snd ps);
+      | `BBDCL_function (_,ps,ret,exes, _) -> 
+        List.iter ut (List.map (fun x -> snd (snd x)) ps);
         ut ret;
         ux exes
       
-      | `BBDCL_procedure (ps, exes, _) ->
-        List.iter ut (List.map snd ps);
+      | `BBDCL_procedure (_,ps, exes, _) ->
+        List.iter ut (List.map (fun x -> snd (snd x)) ps);
         ux exes
 
       | `BBDCL_union ps 
@@ -280,9 +280,9 @@ and uses used bbdfns i =
 let copy_bbdcl bbdfns bbdfns2 i =
   let data = 
     match Hashtbl.find bbdfns i with
-    | id,parent,`BBDCL_procedure (p,exes,names) ->
+    | id,parent,`BBDCL_procedure (vs,p,exes,names) ->
       let exes = useless_call_elim bbdfns exes in
-      id,parent,`BBDCL_procedure (p,exes,names)
+      id,parent,`BBDCL_procedure (vs,p,exes,names)
     | x -> x
   in
     Hashtbl.add bbdfns2 i data

@@ -76,11 +76,11 @@ open Flx_types
 open Flx_print
 open Flx_exceptions
 open List
+open Flx_typing
 
-let bool_t = `TYP_sum [`TYP_tuple[]; `TYP_tuple []]
 let truth sr r = 
   let r = if r then 2 else 1 in
-  `AST_typed_case (sr,r,bool_t)
+  `AST_typed_case (sr,r,flx_bool)
 
 let const_fold' e sr name arg = match name, arg with
   (* integers *)

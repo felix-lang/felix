@@ -1,6 +1,9 @@
 @h = tangler('src/flx_tgen.mli')
 @select(h)
 open Flx_types
+val gen_tuples:
+  sym_state_t -> string
+
 val collect_types :
   sym_state_t ->
   fully_bound_symbol_table_t ->
@@ -16,8 +19,12 @@ val gen_type_names :
   fully_bound_symbol_table_t ->
   (int * btypecode_t) list -> string
 
+val template_header:
+  string list -> string -> string
+
 @h = tangler('src/flx_tgen.ml')
 @select(h)
+open Flx_util
 open Flx_types
 open Flx_print
 open Flx_typing
@@ -25,6 +32,7 @@ open Flx_srcref
 open Flx_unify
 open Flx_name
 open Flx_csubst
+open List
 
 @head(2,'The type registry')
 Flx supports algebraic type expressions. For some of these,
@@ -62,6 +70,7 @@ let register_type_nr syms t =
     -> ()
   | _ 
     ->
+    let _, t = normalise_type t in
     if not (Hashtbl.mem syms.registry t)
     then
       let n = !(syms.counter) in
@@ -73,23 +82,25 @@ let rec register_type_r syms bbdfns exclude t =
   print_endline (string_of_btypecode dfns t);
   *)
   let t = lower t in
-  if not (List.mem t exclude) then
+  if not (mem t exclude) then
   let rr t' = register_type_r 
     syms bbdfns (t :: exclude) t'
   in
   let rnr t = register_type_nr syms t in
-  match unfold t with
+  let t' = unfold t in
+  match t' with
   | `BTYP_void -> ()
   | `BTYP_fix _ -> ()
-  | `BTYP_var _ -> failwith "Attempt to register type variable"
+  | `BTYP_var _ -> () (* failwith "Attempt to register type variable" *)
   | `BTYP_function (ps,ret) -> rr ps; rr ret; rnr t
-  | `BTYP_tuple ps -> List.iter rr ps; rnr t
-  | `BTYP_sum ps -> List.iter rr ps; rnr t
+  | `BTYP_tuple ps -> iter rr ps; rnr t
+  | `BTYP_sum ps -> iter rr ps; rnr t
   | `BTYP_pointer t' -> rr t' 
+
     (* We don't register pointer types: use _ref_ template! *)
   | `BTYP_binding (src,dst) -> rr dst
   | `BTYP_inst (i,ts)->
-     List.iter rr ts;
+     iter rr ts;
      rnr t
 
   | `BTYP_name index ->
@@ -100,19 +111,19 @@ let rec register_type_r syms bbdfns exclude t =
         failwith 
         (
           "register_type_r Can't find " ^ 
-          id ^ "[" ^ string_of_int index ^ "]" ^
+          id ^ "[" ^ si index ^ "]" ^
           " in fully bound symbol table: " ^
           short_string_of_src sr
         )
     in
     begin match entry with
     | `BBDCL_union cs -> 
-      List.iter rr (List.map snd cs);      (* components *)
+      iter rr (map snd cs);      (* components *)
       rnr t                                (* the union type *)
 
     | `BBDCL_struct cs -> 
-      let argt = typeoflist (List.map snd cs) in
-      List.iter rr (List.map snd cs);      (* components *)
+      let argt = typeoflist (map snd cs) in
+      iter rr (map snd cs);      (* components *)
       rnr argt;                            (* argument tuple *)
       rnr t;                               (* the struct type *)
       rnr (`BTYP_function (argt,t))         (* constructor *)
@@ -171,41 +182,33 @@ let collect_types syms bbdfns =
     begin
       (*
       print_endline (
-        "Collecting BBDCL " ^ id ^ "<" ^ string_of_int index ^ 
+        "Collecting BBDCL " ^ id ^ "<" ^ si index ^ 
         ">, parent="^
         match parent with 
-        | Some i ->string_of_int i
+        | Some i ->si i
         | None -> "None"
       );
       print_endline ("=======>  " ^ string_of_bbdcl syms.dfns bbdcl index);
       *)
       match bbdcl with
       | `BBDCL_abs (vs,_) -> 
-        if List.length vs = 0
-        then rnr (`BTYP_name index)
-        (* ignore generic types *)
+        rnr (`BTYP_name index)
 
-      | `BBDCL_function (ps,ret,_,_) ->
-        let a = typeoflist (List.map snd ps) in
+      | `BBDCL_function (vs, ps,ret,_,_) ->
+        let a = typeoflist (map (fun x-> snd (snd x)) ps) in
         rr (`BTYP_function (a,ret))
 
       | `BBDCL_fun (vs,ps,ret,_) ->
-        if List.length vs = 0
-        then
-          let a = typeoflist ps in
-          rr (`BTYP_function (a,ret))
-        (* ignore generic functions *)
+        let a = typeoflist ps in
+        rr (`BTYP_function (a,ret))
 
-      | `BBDCL_procedure (ps,_,_) ->
-        let a = typeoflist (List.map snd ps) in
+      | `BBDCL_procedure (vs,ps,_,_) ->
+        let a = typeoflist (map (fun x->snd (snd x)) ps) in
         rr (`BTYP_function (a,`BTYP_void))
 
       | `BBDCL_proc (vs,ps,_) ->
-        if List.length vs = 0
-        then
-          let a = typeoflist ps in
-          rr (`BTYP_function (a,`BTYP_void))
-        (* ignore generic procedures *)
+        let a = typeoflist ps in
+        rr (`BTYP_function (a,`BTYP_void))
 
       | `BBDCL_val t
       | `BBDCL_var t
@@ -229,12 +232,12 @@ Now some code to generate the bases, given the
 hashtable. We also mangle c++ abstract type names.
 @select(h)
 let all_voids ls =    
-    List.fold_left 
+    fold_left 
     (fun acc t -> acc && (t = `BTYP_void))
     true ls
 
 let all_units ls =    
-    List.fold_left 
+    fold_left 
     (fun acc t -> acc && (t = `BTYP_tuple []))
     true ls
 
@@ -242,22 +245,105 @@ let is_unitsum (t:btypecode_t) = match t with
   | `BTYP_sum ls ->  all_units ls
   | _ -> false
 
+(* makes string 'template<typename U, typename V .. >' *)
+let template_header vars trailer = 
+  if length vars = 0 then ""
+  else 
+    "template<" ^ 
+    catmap ", "(fun x -> "typename " ^ x)  vars ^ 
+    ">" ^ 
+    trailer
+
+let gen_tuple n =
+  let name = "_tuple"^ si n in
+  let vars = map (fun i-> "T" ^ si i) (nlist n) in
+  template_header vars "\n"^
+  "struct " ^ name ^ " {\n" ^
+  catmap "" 
+  (fun i -> "  T"^si i ^ " mem_" ^ si i ^ ";\n")
+  (nlist n)
+  ^
+  "  " ^ name ^ "(" ^
+  catmap ", " 
+  (fun i -> "T"^si i ^ " a" ^ si i) 
+  (nlist n) ^
+  "):\n    " ^ 
+   catmap ", " 
+  (fun i -> "mem_"^si i ^ "(a" ^ si i^")") 
+  (nlist n) ^
+  "{}\n" ^
+  "  " ^ name ^ "(){}\n" ^
+  "};"
+
+
+let find_max_tuple syms =
+  let n = ref 0 in
+  Hashtbl.iter
+  (fun t _ -> 
+    match t with 
+    | `BTYP_tuple ts -> 
+      let m = length ts in 
+      if m > !n then n := m
+    | _ -> ()
+  )
+  syms.registry
+  ;
+  !n
+
+let gen_tuples syms =
+  let b = Buffer.create 20000 in
+  for i = 2 to find_max_tuple syms do
+    Buffer.add_string b (gen_tuple i)
+  done
+  ;
+  Buffer.contents b
+
+(* this routine generates a typedef 
+which names the type. If the type has
+type variables, a class template is used.
+
+This routine generates INCOMPLETE types for classes
+to provide forward references that subsequent
+complete type definitions can use.
+*)
+
 let gen_type_name syms bbdfns (index,typ) =
-  let tn t = cpp_classname syms bbdfns t in
+  let cn t = cpp_type_classname syms bbdfns t in
+  let tn t = cpp_typename syms bbdfns t in
+  let tni vs t = cpp_type_instance syms bbdfns t vs in
+  let varmap,typ = normalise_type typ in
+  let count = length varmap in
+  let vars = map (fun i-> "T" ^ si i) (nlist count) in
+  let template = template_header vars "\n  " in
+  let descr = 
+    "\n//"^(if count = 0 then "" else "GENERIC ")^
+    "TYPE "^si index^": " ^ string_of_btypecode syms.dfns typ ^ "\n" 
+  in
   match typ with
   | `BTYP_fix i -> ""
   | `BTYP_var i -> failwith "[gen_type_name] Can't gen name of type variable"
   | `BTYP_binding _ -> failwith "[gen_type_name] Unexpected binding type"
   | `BTYP_function _ ->
-    let name = tn typ in
+    descr ^
+    let name = cn typ in
+    template ^
     "struct " ^ name ^ ";\n"
 
   | `BTYP_tuple [] -> ""
   | `BTYP_tuple ts ->
-    let name = tn typ in
-    "struct " ^ name ^ ";\n"
+    print_endline descr;
+    descr ^
+    let name = cn typ in
+    let typedef = 
+      "typedef _tuple" ^ si (length ts) ^
+      template_args (map tn ts)
+    in 
+      if count = 0 then typedef ^ " " ^ name ^ ";\n"
+      else template ^ "struct " ^ name ^ " { " ^ typedef ^ " t; };\n"
+
 
   | `BTYP_sum ts ->
+    descr ^
     if is_unitsum typ
     then
       "typedef int " ^ tn typ ^ ";\n"
@@ -265,14 +351,16 @@ let gen_type_name syms bbdfns (index,typ) =
       "typedef _uctor_ " ^ tn typ ^ ";\n"
 
   | `BTYP_void -> ""
-  | `BTYP_pointer t -> "//Pointer by template"
+  | `BTYP_pointer t -> ""
 
   | `BTYP_inst (i,vs) ->
+    descr ^
+    (* THIS ROUTINE WILL CHANGE TO USE TEMPLATES *)
     let sr,id,parent,dcl = Hashtbl.find syms.dfns i in
     let ct = 
       match dcl with
       | `SYMDEF_dcl (`DCL_abs (_,ct)) -> ct
-      | _ -> failwith "Expected primitive type"
+      | _ -> failwith "[gen_type] Expected primitive type"
     in
     let name = tn typ in
     let dummy_ge = fun _ -> (assert false) in
@@ -280,17 +368,18 @@ let gen_type_name syms bbdfns (index,typ) =
     "typedef " ^ s ^ " " ^ name ^ ";\n"
 
   | `BTYP_name index ->
-    let name = tn typ in
+    descr ^
+    let name = cn typ in
     let id,parent,entry = 
       try Hashtbl.find bbdfns index
-      with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_int index)
+      with _ -> failwith ("[gen_type_name] can't find type" ^ si index)
     in
     begin match entry with
     | `BBDCL_struct cs ->
       "struct " ^ name ^ ";\n"
 
     | `BBDCL_union ls -> 
-      if all_voids (List.map snd ls)
+      if all_voids (map snd ls)
       then
         "typedef int " ^ tn typ ^ ";\n"
       else
@@ -310,28 +399,43 @@ let gen_type_name syms bbdfns (index,typ) =
     end
   | _ -> failwith "Unexpected metatype in gen_type_name"
 
+(* This routine generates complete types when needed *)
 let gen_type syms bbdfns (index,typ) =
-  (*
   print_endline (
     "GENERATING TYPE " ^
-    string_of_int index^": " ^ 
-    string_of_btypecode dfns typ
+    si index^": " ^ 
+    string_of_btypecode syms.dfns typ
   );
-  *)
-  "//TYPE "^string_of_int index^": " ^ string_of_btypecode syms.dfns typ ^ "\n"^
   let tn t = cpp_typename syms bbdfns t in
-  let cn t = cpp_classname syms bbdfns t in
+  let cn t = cpp_type_classname syms bbdfns t in
+  let varmap,typ = normalise_type typ in
+  let count = length varmap in
+  let vars = map (fun i-> "T" ^ si i) (nlist count) in
+  let template = template_header vars "\n" in
+  let descr = 
+    "\n//" ^ 
+    (
+      if count =0 then "" 
+      else "GENERIC "
+    )^
+    "TYPE "^
+    si index^
+    ": " ^ 
+    string_of_btypecode syms.dfns typ ^ 
+    "\n" 
+  in
   match unfold typ with
-
   | `BTYP_var _ -> failwith "[gen_type] can't gen type variable"
   | `BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
   | `BTYP_binding _ -> failwith ("gen_type] Unexpected binding type")
 
   (* PROCEDURE *)
   | `BTYP_function (a,`BTYP_void) ->
+    descr ^
     let name = cn typ  
     and argtype = tn a
     in
+    template ^ 
     "struct " ^ name ^
     ": con_t {\n" ^
     (if a <> `BTYP_tuple [] 
@@ -345,10 +449,12 @@ let gen_type syms bbdfns (index,typ) =
 
   (* FUNCTION *)
   | `BTYP_function (a,r) ->
+    descr ^
     let name = cn typ  
     and argtype = tn a
     and rettype = tn r
     in
+    template ^
     "struct " ^ name ^ " {\n" ^
     "  virtual "^rettype^" apply("^
     (if a = `BTYP_tuple []
@@ -360,47 +466,7 @@ let gen_type syms bbdfns (index,typ) =
   | `BTYP_sum _ -> "" (* union typedef *)
 
   | `BTYP_tuple [] -> "" 
-  | `BTYP_tuple ts ->
-    let components = ref [] in
-    let counter = ref 0 in
-    List.iter 
-    (fun t -> 
-      components := !components @ [!counter, t]; 
-      incr counter
-    )
-    ts
-    ;
-    let mem_dcls = String.concat "" (List.map 
-    (fun (i,t) ->
-      "  " ^ tn t ^ " " ^
-      "mem_" ^ string_of_int i ^ ";\n"
-    )
-    !components)
-
-    and param_dcls =  String.concat ",\n" (List.map
-    (fun (i,t) -> "    " ^ tn t ^ " arg_" ^ string_of_int i)
-    !components) ^ "\n"
-    
-    and ctor_inits = String.concat ",\n" (List.map
-    (fun (i,t) -> "    mem_" ^ string_of_int i ^ "(arg_" ^ string_of_int i ^ ")")
-    !components) ^ "\n"
-    in 
-    
-    let name = cn typ in
-    let ctor = 
-      "  " ^ name ^ "\n" ^
-      "  (\n" ^
-      param_dcls ^
-      "  ) :\n" ^
-      ctor_inits ^
-      "  {}\n"
-    in
-    "struct " ^ name ^ " {\n" ^
-    mem_dcls^
-    "  " ^ name ^ "(){}\n"^
-    ctor ^
-    "};\n"
-
+  | `BTYP_tuple ts -> ""
   | `BTYP_void -> ""
   | `BTYP_pointer t -> failwith "Generate pointer type: should use template"
     (*
@@ -420,31 +486,32 @@ let gen_type syms bbdfns (index,typ) =
     let name = tn typ in
     let id,parent,entry = 
       try Hashtbl.find bbdfns index 
-      with _ -> failwith ("[gen_type] can't find index " ^ string_of_int index)
+      with _ -> failwith ("[gen_type] can't find index " ^ si index)
     in
     begin match entry with
     | `BBDCL_struct cs ->
+      descr ^
       let ctor = 
-        let equiv_tuple_type = typeoflist (List.map snd cs) in
-        match List.length cs with
+        let equiv_tuple_type = typeoflist (map snd cs) in
+        match length cs with
         | 0 -> "" (* just use default ctor *)
         | 1 -> 
           "  " ^ name ^ "(" ^ tn equiv_tuple_type ^ " const &_arg): " ^
-          fst (List.hd cs) ^ "(_arg) {}\n" 
+          fst (hd cs) ^ "(_arg) {}\n" 
         | _ ->
           let ctor_inits = ref [] in 
           let counter = ref 0 in
-          List.iter 
+         iter 
           (fun (name,typ) -> 
             let n = !counter in incr counter; 
             ctor_inits :=
-              (name ^ "(_arg.mem_"^string_of_int n ^")")
+              (name ^ "(_arg.mem_"^si n ^")")
               :: !ctor_inits
           )
           cs
           ;
           "  " ^ name ^ "(" ^ tn equiv_tuple_type ^ " const &_arg) :\n" ^
-          "    " ^ String.concat ",\n    " (List.rev !ctor_inits) ^
+          "    " ^ String.concat ",\n    " (rev !ctor_inits) ^
           "\n  {}\n" 
       in
       "struct " ^ name ^ "{\n" ^
@@ -452,7 +519,7 @@ let gen_type syms bbdfns (index,typ) =
       ctor ^
       String.concat "" 
       (
-        List.map 
+       map 
         (
           fun (name,typ) -> "  " ^ tn typ ^ 
           " " ^
@@ -463,7 +530,7 @@ let gen_type syms bbdfns (index,typ) =
       "};\n"
 
     | `BBDCL_union _ -> "" (* covered by prior typedef of _uctor_ or int *)
-    | `BBDCL_abs (vs,ct) -> ""
+    | `BBDCL_abs (vs,ct) -> "" (* THIS WILL MAKE A TEMPLATE SOON *)
     | _ -> 
       failwith 
       (
@@ -476,16 +543,20 @@ let gen_type syms bbdfns (index,typ) =
 let gen_type_names syms bbdfns ts = 
   (* print_endline "GENERATING TYPE NAMES"; *)
   let s = Buffer.create 100 in
-  List.iter 
-  (fun t -> Buffer.add_string s (gen_type_name syms bbdfns t))
+ iter 
+  (fun t -> 
+    Buffer.add_string s (gen_type_name syms bbdfns t)
+  )
   ts;
   Buffer.contents s
 
 let gen_types syms bbdfns ts = 
   (* print_endline "GENERATING TYPES"; *)
   let s = Buffer.create 100 in
-  List.iter 
-  (fun t -> Buffer.add_string s (gen_type syms bbdfns t))
+  iter 
+  (fun t -> 
+    Buffer.add_string s (gen_type syms bbdfns t)
+  )
   ts;
   Buffer.contents s
 

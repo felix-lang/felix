@@ -165,8 +165,32 @@ or even constants which require dynamic initialisation.
 #define FLX_DYNLINK
 #ifndef FLX_RTL
 #include "flx_rtl.hpp"
+#include "flx_gc.hpp"
 #endif
 #include <string>
+
+// Utilities to make dynamic linkage and
+// initialisation of Felix modules easier
+//
+// We provide a standard exception to report
+// link failure (missing symbol).
+//
+// We provide a a class flx_dynlink_t which
+// opens a Felix shared library given a filename,
+// and links the mandatory symbols
+// The user may derive from this class to add
+// linkage for extra symbols
+//
+// We provide a class flx_libinit_t which
+// initialises and terminates a Felix module
+// The user may derive from this class to add
+// extra initialisation or termination processing.
+//
+// [Note: the virtuals are *deliberately* private. 
+// Be sure to make your overrides private too,
+// so they cannot be called:
+// they're dispatched automatically by wrappers
+// defined in the base]
 
 namespace flx { namespace rtl {
 
@@ -221,6 +245,44 @@ struct flx_dynlink_t
   // routines
   void link(char const *filename) throw(flx_link_failure_t);
   void unlink();
+
+private:
+  // the user should override this procedure to
+  // link any extra symbols.
+  // on error, throw a flx_link_failure_t,
+  // otherwise your exception will be dishonoured
+  // and a generic link_failure_t thrown anyhow
+
+  virtual void usr_link();
+    // called after mandatory symbols are linked
+};
+
+struct flx_libinit_t 
+{
+  global_frame_t *global_frame;
+  process_frame_t *process_frame;
+  thread_frame_t *thread_frame;
+  con_t *start;
+  flx_dynlink_t *lib;
+
+  void create
+  (
+    flx_dynlink_t *lib_a, 
+    flx::gc::generic::collector_t *collector
+  );
+
+  void destroy ();
+
+private:
+  // the user can override these procedures
+  // to perform any additional initialisation
+  // and termination required.
+  
+  virtual void usr_create(); 
+    // called after standard init completes
+    
+  virtual void usr_destroy(); 
+    // called before standard destroy starts
 };
 
 }} // namespaces
@@ -278,12 +340,55 @@ void flx_dynlink_t::link(char const *filename) throw(flx_link_failure_t)
     dlsym(library,"start");
   if(!start) 
     throw flx_link_failure_t(filename,"dlsym","start");
+
+  try { usr_link(); }
+  catch (flx_link_failure_t &) { throw; }
+  catch (...) { 
+    throw flx_link_failure_t
+    (
+      filename,
+      "usr_link()",
+      "Unknown user exception"
+    );
+  }
 }
 
 void flx_dynlink_t::unlink()
 {
   dlclose(library);
 }
+  
+void flx_dynlink_t::usr_link(){}
+
+void flx_libinit_t::create
+(
+  flx_dynlink_t *lib_a, 
+  flx::gc::generic::collector_t *collector
+)
+{
+  lib = lib_a;
+  global_frame = lib->global_frame_creator();
+  process_frame = lib->process_frame_creator(global_frame);
+  thread_frame = lib->thread_frame_creator(
+    global_frame, 
+    process_frame, 
+    collector 
+  );
+  start = lib->start(global_frame, process_frame, thread_frame);
+  usr_create();
+}
+
+void flx_libinit_t::usr_create(){}
+
+void flx_libinit_t::destroy () {
+  usr_destroy();
+  lib->thread_frame_destructor(thread_frame);
+  lib->process_frame_destructor(process_frame);
+  lib->global_frame_destructor(global_frame);
+}
+
+void flx_libinit_t::usr_destroy (){}
+
 
 }} // namespaces
 
@@ -311,38 +416,6 @@ program must not read any messages.
 using namespace std;
 using namespace flx::rtl;
 
-struct library_init_t 
-{
-  global_frame_t *global_frame;
-  process_frame_t *process_frame;
-  thread_frame_t *thread_frame;
-  con_t *start;
-  flx_dynlink_t *lib;
-
-  void create
-  (
-    flx_dynlink_t *lib_a, 
-    flx::gc::generic::collector_t *collector
-  )
-  {
-    lib = lib_a;
-    global_frame = lib->global_frame_creator();
-    process_frame = lib->process_frame_creator(global_frame);
-    thread_frame = lib->thread_frame_creator(
-      global_frame, 
-      process_frame, 
-      collector 
-    );
-    start = lib->start(global_frame, process_frame, thread_frame);
-  }
-
-  void destroy () {
-    lib->thread_frame_destructor(thread_frame);
-    lib->process_frame_destructor(process_frame);
-    lib->global_frame_destructor(global_frame);
-  }
-};
-
 int main(int argc, char* argv[])
 {
  
@@ -355,12 +428,12 @@ int main(int argc, char* argv[])
   {
     //printf("flx_run driver begins\n");
     flx_dynlink_t library;
-    library_init_t instance;
+    flx_libinit_t instance;
 
     library.link(argv[1]);
     //printf("Linked %s\n",argv[1]);
 
-    flx::gc::generic::malloc_free allocator;
+    flx::gc::collector::malloc_free allocator;
     flx::gc::collector::flx_collector_t collector(&allocator);
     instance.create(&library, &collector);
     

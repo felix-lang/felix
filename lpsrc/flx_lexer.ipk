@@ -331,7 +331,7 @@ let hexadecimal_fractional_constant =
 let decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string
 let binary_exponent = ('P'|'p') ('+'|'-')? decimal_string
 
-let floating_suffix = 'L' | 'l' | 'F' | 'f'
+let floating_suffix = 'L' | 'l' | 'F' | 'f' | 'D' | 'd'
 let floating_literal = 
   (
     decimal_fractional_constant decimal_exponent? |

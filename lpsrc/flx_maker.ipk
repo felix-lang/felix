@@ -13,16 +13,25 @@ import os
 import stat
 import string
 import sys
+import re
+
+def get_stdout(x):
+  f = os.popen(x,"r")
+  output = f.readlines()
+  result = f.close()
+  return result,output
+
+def get_stdouterr(x):
+  return get_stdout(x+" 2>&1")
 
 # define our version of C's system() function
 def xqt(x):
-  print x
+  if "silent" not in options: print x
   sys.stdin.flush()
-  f = os.popen(x + " 2>&1","r")
-  output = f.readlines()
-  result = f.close()
-  if result: print "  .. ERROR CODE",hex(result)
-  if output: print string.join(output,"")
+  result,output = get_stdouterr(x)
+  if "quiet" not in options:
+    if result: print "  .. ERROR CODE",hex(result)
+    if output: print string.join(output,"")
   sys.stdin.flush()
 
   if result:
@@ -34,8 +43,28 @@ def xqt(x):
 # ------------------------------------------------
 
 options = sys.argv[1:]
+if "silent" in options: 
+  options.append("quiet")
+
 if options:
   print "OPTIONS: ", options
+
+keyopt = {}
+for o in options:
+  try:
+    key,value = string.split(o,"+=")
+    old = keyopt.get(key,[])
+    if type(old) == type(""): old = [old]
+    keyopt[key] = old + [value]
+  except:
+    try:
+      key,value = string.split(o,"=")
+      keyopt[key]=value
+    except: pass
+
+USER_TESTS = keyopt.get("flx",[])
+if type(USER_TESTS) == type(""):
+  USER_TESTS = [USER_TESTS]
 
 if "help" in options:
   print "extract - extract sources"
@@ -46,18 +75,96 @@ if "help" in options:
   print "performance - run performance tests"
   print "tutorial - run tutorial examples"
   print "tests- regression and tutorial combined"
-  print "clean - remove generated files"
+  print "clean - remove generated C++ and binaries from test locations"
   print "debug - build debugging versions of targets"
   print "optimise - build high performance versions of targets"
   print "refcnt - generate reference counting instructions"
   print "doc - build all documentation"
+  print "vim=gvim - set gvim as the vim editor"
+  print "vimserver=FLX - set FLX as the editor server name"
+  print "editor=vim - set vim as the editor class"
+  print "editor=emacs - set emacs as the editor class"
+  print "edit -- edit a file containing an error"
 
-  
+VIMSERVER = keyopt.get("vimserver","")
+VIM = keyopt.get("vim","gvim")
+EMACS = keyopt.get("emacs","xemacs")
+EDITORCLASS = keyopt.get("editorclass","vim")
+if EDITORCLASS == "vim":
+  EDITOR = VIM
+elif EDITORCLASS == "emacs":
+  EDITOR = EMACS
+else:
+  EDITOR = EDITORCLASS
+
 if "clean" in options:
-    os.system("rm -f tmp/* src/* test/* lpsrc/*.cache")
+  os.system("rm -rf test/*.cpp test/*.hpp test/*.so")
+  os.system("rm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so")
 
-if "tests" in options:
+if "tests" in options or "test" in options:
   options = options + ["regression","tutorial"]
+
+# this command takes flxg output and looks for errors
+# no action is taken if there are no errors
+# if an error is found, and an original source
+# reference is detected, the file is edited
+#
+# For vim the processs is:
+# 1. get a list of servers
+# 2. check if the nominated server is in the list
+# 3. if it isn't, create it
+# 4. tell the server to edit the file
+
+def vimedit(file,line1,column1,line2,column2):
+  SNAME = VIMSERVER
+  if SNAME == "": SNAME = file
+  os.system(VIM + " --servername " + SNAME + " --remote +" + str(line1) + " " + file)
+
+def edit(*args):
+  if EDITORCLASS == "vim": apply(vimedit,args)
+  else: os.system(EDITOR + " " + args[0])
+
+errpos_single = re.compile('In (.*): line (.*), cols (.*) to (.*)\\n')
+errpos_multiple = re.compile('In (.*): line (.*) col (.*) to  line (.*) col (.*)\\n')
+
+def find_src(s,file):
+  m = errpos_single.match(s)
+  if m:
+    print "Matched single"
+    f,l1,c1,c2 = m.group(1,2,3,4)
+    l1=int(l1)
+    c1=int(c1)
+    l2=int(l1)
+    c2=int(c2)
+  else:
+    m = errpos_multiple.match(s)
+    if m:
+      print "Matched multiple"
+      f,l1,c1,l2,c2 = m.group(1,2,3,4,5)
+      l1=int(l1)
+      c1=int(c1)
+      l2=int(l2)
+      c2=int(c2)
+    else:
+      f,l1,c1,l2,c2="generated",0,0,0,0
+  if f == "generated": f = file
+  return f,l1,c1,l2,c2
+
+def flxg(x,basename):
+  x = './bin/flxg ' + x
+  if "edit" in options:
+    try: 
+      xqt(x)
+    except:
+      x = x + ' | grep -x "In.*: line.*"'
+      result,output = get_stdouterr(x)
+      try:
+        f,l1,c1,l2,c2 = find_src(output[0],basename+'.flx')
+        edit(f,l1,c1,l2,c2)
+      except:
+        edit(basename+'.flx',0,0,0,0)
+  else: 
+    xqt(x)
 
 # ------------------------------------------------
 # BEGIN USER CONFIGURABLE SECTION
@@ -188,6 +295,7 @@ MODULES = [
   'flx_string'       ,
   'flx_id'           ,
   'flx_print'        ,
+  'flx_maps'         ,
   'flx_typing2'      ,
   'flx_unify'        ,
   'flx_charset'      ,
@@ -206,6 +314,7 @@ MODULES = [
   'flx_mbind'        , 
   'flx_symtab'       , 
   'flx_lookup'       , 
+  'flx_bexe'         , 
   'flx_bbind'        , 
   'flx_use'          , 
   'flx_name'         , 
@@ -251,6 +360,7 @@ EXES = [
   'flxd',
   'flxb',
   'flxg',
+  'stub',
 ]
 
 if 1:
@@ -268,7 +378,7 @@ if 1:
   OBJECT_FILES = o
   del o
 
-TESTS=[]
+TESTS= USER_TESTS
 BAD_TESTS = []
 
 SPECIAL_TESTS = [
@@ -422,13 +532,13 @@ try:
             "rtl/flx_gc.cpp " +
             "rtl/flx_collector.cpp " +
             "rtl/flx_rtl.cpp " +
+            "rtl/flx_dynlink.cpp " +
             "rtl/flx_i18n.cpp " +
              testfile + ".cpp -o "+outbin)
         except MakeError:
           print "Unable to build driver"
           raise MakeError
 
-  w = 50
   # run tests
   try:
     results = []
@@ -447,7 +557,7 @@ try:
         filetime('lib/std.flx') > filetime(basename+'.cpp') or \
         filetime('lib/std.flx') > filetime(basename+'.cpp'):
         try:
-          xqt('bin/flxg -q -Ilib ' + basename)
+          flxg('-Ilib ' + basename,basename)
           #print 'TESTFILE -- generated ',basename
           results.append(("flxg",basename,'OK'))
         except MakeError:
@@ -469,7 +579,7 @@ try:
           filetime('bin/flxg')> filetime(basename+'.cpp') or \
           filetime('lib/std.flx') > filetime(basename+'.cpp'):
           try:
-            xqt('bin/flxg -e -Ilib ' + basename)
+            xqt('bin/flxg -e -Ilib ' + basename + " 2>&1 >/dev/null")
             #print 'TESTFILE -- failed as expected',basename
             results.append(("flxg",basename,'OK'))
             erasefile(basename+'.cpp')
@@ -506,6 +616,8 @@ try:
     for testfile in TESTS:
       basename = string.split(testfile,'.')[0]
       testscript = "./bin/flx_run ./"+basename+".so"
+      if "log_output" in options:
+        testscript = testscript + " >" + basename + ".output"
       #print 'Executing ',testscript
       try:
         run(testscript)
@@ -532,6 +644,7 @@ try:
           results.append(("Exec Special",testscript,'ERROR'))
 
     print "RUN COMPLETE"
+
   finally:
     # REPORT FINAL RESULTS
     print
@@ -545,14 +658,19 @@ try:
       else:
         bad = bad + 1
         print x,y,z
-    if bad == 0: 
-      print "ALL",total,"PASSED"
-    else:
-      print "Bad",bad,"/",total
+    if total <> 0:
+      if bad == 0: 
+        print "ALL",total,"PASSED"
+      else:
+        print "Bad",bad,"/",total
     print '**********************************'
+    sys.exit(bad)
+
+  sys.exit(0)
 
 except MakeError:
   print "Terminating due to error"
+  sys.exit(1)
 
 @head(1,'Makefile')
 We attempt to fix the brain dead install command.
@@ -596,7 +714,7 @@ We have no idea if it continues copying.
 @tangle('\tpython script/maker test stop_on_error')
 @tangle('')
 @tangle('tests: dummy')
-@tangle('\tpython script/maker test')
+@tangle('\tpython script/maker test log_output')
 @tangle('')
 @tangle('tests.performance: dummy')
 @tangle('\tpython script/maker performance')
@@ -639,51 +757,76 @@ We have no idea if it continues copying.
 @tangle('\t#or ask the priviledged person to do it for you')
 @tangle('')
 @tangle('tarball: dummy')
-@tangle('\ttar -zcvf flx_'+flx_version+'_linux.tgz\\')
-@tangle('\t\tmakefile README CONTENTS INSTALL VERSION LICENSE \\')
-@tangle('\t\tlpsrc/*.ipk \\')
-@tangle('\t\tlpsrc/*.pak \\')
-@tangle('\t\tscript/maker \\')
-@tangle('\t\tsrc/*.ml \\')
-@tangle('\t\tsrc/*.mli \\')
-@tangle('\t\tsrc/*.mly \\')
-@tangle('\t\tsrc/*.mll \\')
-@tangle('\t\trtl/*.cpp\\')
-@tangle('\t\trtl/*.hpp\\')
-@tangle('\t\tlib/*.flx \\')
-@tangle('\t\ttest/*.flx \\')
-@tangle('\t\ttest/*.cpp \\')
-@tangle('\t\ttut/examples/*.flx \\')
-@tangle('\t\ttut/doc/*.html \\')
-@tangle('\t\ttut/doc/*.css \\')
-@tangle('\t\ttut/doc/*.tex \\')
-@tangle('\t\tdoc/*.html \\')
-@tangle('\t\tdoc/*.css \\')
-@tangle('\t\tdoc/*.tex \\')
-@tangle('\t\thtmlman/*.html \\')
-@tangle('\t\tman/man1/*.1 \\')
-@tangle('\t\timpldoc/*.html \\')
-@tangle('\t\tbin/flx \\')
-@tangle('\t\tbin/flxg \\')
-@tangle('\t\tbin/flx_run \\')
-@tangle('\t\tinterscript/*.py \\')
-@tangle('\t\tinterscript/bin/*.py \\')
-@tangle('\t\tinterscript/compilers/*.py \\')
-@tangle('\t\tinterscript/core/*.py \\')
-@tangle('\t\tinterscript/drivers/*.py \\')
-@tangle('\t\tinterscript/drivers/sinks/*.py \\')
-@tangle('\t\tinterscript/drivers/sources/*.py \\')
-@tangle('\t\tinterscript/drivers/storage/*.py \\')
-@tangle('\t\tinterscript/encoding/*.py \\')
-@tangle('\t\tinterscript/encoding/*.dat \\')
-@tangle('\t\tinterscript/frames/*.py \\')
-@tangle('\t\tinterscript/frames/platform/*.py \\')
-@tangle('\t\tinterscript/languages/*.py \\')
-@tangle('\t\tinterscript/parsers/*.py \\')
-@tangle('\t\tinterscript/tanglers/*.py \\')
-@tangle('\t\tinterscript/tokenisers/*.py \\')
-@tangle('\t\tinterscript/utilities/*.py \\')
-@tangle('\t\tinterscript/weavers/*.py \\')
+@tangle('\trm -f flx_'+flx_version)
+@tangle('\tln -s . flx_'+flx_version)
+@tangle('\ttar -zcvf flx_'+flx_version+'_src.tgz\\')
+@tangle('\t\tflx_'+flx_version+'/makefile flx_'+flx_version+'/README flx_'+flx_version+'/CONTENTS flx_'+flx_version+'/INSTALL flx_'+flx_version+'/VERSION flx_'+flx_version+'/LICENSE \\')
+@tangle('\t\tflx_'+flx_version+'/lpsrc/*.ipk\\')
+@tangle('\t\tflx_'+flx_version+'/lpsrc/*.pak\\')
+@tangle('\t\tflx_'+flx_version+'/interscript/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/bin/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/compilers/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/core/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/drivers/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/drivers/sinks/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/drivers/sources/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/drivers/storage/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/encoding/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/encoding/*.dat \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/frames/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/frames/platform/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/languages/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/parsers/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/tanglers/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/tokenisers/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/utilities/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/weavers/*.py \\')
+@tangle('')
+@tangle('\ttar -zcvf flx_'+flx_version+'_bin_linux.tgz\\')
+@tangle('\t\tflx_'+flx_version+'/makefile flx_'+flx_version+'/README flx_'+flx_version+'/CONTENTS flx_'+flx_version+'/INSTALL flx_'+flx_version+'/VERSION flx_'+flx_version+'/LICENSE \\')
+@tangle('\t\tflx_'+flx_version+'/lpsrc/*.ipk \\')
+@tangle('\t\tflx_'+flx_version+'/lpsrc/*.pak \\')
+@tangle('\t\tflx_'+flx_version+'/script/maker \\')
+@tangle('\t\tflx_'+flx_version+'/src/*.ml \\')
+@tangle('\t\tflx_'+flx_version+'/src/*.mli \\')
+@tangle('\t\tflx_'+flx_version+'/src/*.mly \\')
+@tangle('\t\tflx_'+flx_version+'/src/*.mll \\')
+@tangle('\t\tflx_'+flx_version+'/rtl/*.cpp\\')
+@tangle('\t\tflx_'+flx_version+'/rtl/*.hpp\\')
+@tangle('\t\tflx_'+flx_version+'/lib/*.flx \\')
+@tangle('\t\tflx_'+flx_version+'/test/*.flx \\')
+@tangle('\t\tflx_'+flx_version+'/test/*.cpp \\')
+@tangle('\t\tflx_'+flx_version+'/tut/examples/*.flx \\')
+@tangle('\t\tflx_'+flx_version+'/tut/doc/*.html \\')
+@tangle('\t\tflx_'+flx_version+'/tut/doc/*.css \\')
+@tangle('\t\tflx_'+flx_version+'/tut/doc/*.tex \\')
+@tangle('\t\tflx_'+flx_version+'/doc/*.html \\')
+@tangle('\t\tflx_'+flx_version+'/doc/*.css \\')
+@tangle('\t\tflx_'+flx_version+'/doc/*.tex \\')
+@tangle('\t\tflx_'+flx_version+'/htmlman/*.html \\')
+@tangle('\t\tflx_'+flx_version+'/man/man1/*.1 \\')
+@tangle('\t\tflx_'+flx_version+'/impldoc/*.html \\')
+@tangle('\t\tflx_'+flx_version+'/bin/flx \\')
+@tangle('\t\tflx_'+flx_version+'/bin/flxg \\')
+@tangle('\t\tflx_'+flx_version+'/bin/flx_run \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/bin/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/compilers/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/core/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/drivers/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/drivers/sinks/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/drivers/sources/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/drivers/storage/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/encoding/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/encoding/*.dat \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/frames/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/frames/platform/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/languages/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/parsers/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/tanglers/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/tokenisers/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/utilities/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/interscript/weavers/*.py \\')
 @tangle('')
 @tangle('www: dummy')
 @tangle('\tiscr lpsrc/flx_sourceforge.pak')
@@ -696,9 +839,10 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('upload: dummy')
 @tangle('\tscp www/*.html skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/www')
-@tangle('\tscp flx_'+flx_version+'_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('\tscp flx_'+flx_version+'_bin_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('')
-@tangle('tests.clean: dummy')
+@tangle('clean: dummy')
 @tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so')
 @tangle('\trm -rf test/rt*.cpp test/rt*.hpp test/rt*.so')
 @tangle('')
@@ -803,33 +947,11 @@ is not misrepresented in any way.
 
 @head(1,'INSTALL')
 @select(tangler('INSTALL'))
-LINUX
------
-
-You don't need to build anything, though you can.
-The compiler binary and run time are already
-packaged in this tarball. You can just run
-
-  make test
-
-immediately.
-
-UNIX SOURCE BUILD
------------------
-
-You need ocaml and Python as described in the full
-build below, but interscript is not required,
-since all the extracted sources and documentation
-are already included in this tarball. You can just
-
-   make
-   make test
-
 
 FULL BUILD.
 -----------
 
-1. Download, build, and install Ocaml (3.04 or greater)
+1. Download, build, and install Ocaml (3.06 or greater)
    if you don't have it already
 
    http://caml.inria.fr
@@ -841,70 +963,88 @@ FULL BUILD.
     http://python.sourceforge.net
 
 3. Download the Felix tarball (this package)
-   and unpack it into a clean directory (the felix directory)
+   and unpack it in your workspace
+   
+@tangle('   tar -zxvf felix_'+flx_version+'_src.tgz')
+@tangle('   cd felix_'+flx_version)
 
-@tangle('   tar -zxvf felix_'+flx_version+'_linux.tgz')
+   make help -- gives help on make targets
+   
+for a quick build type:
 
-   Don't worry about the "linux" part of the name.
-   Some binaries are installed which are ready to
-   go on Linux, but the build will replace them
+  make virgin boot compiler drivers doc tests
 
-   Heh. Until you get this step, you can't read
-   this INSTALL file anyhow :-)
+  [does all the steps below except install]
+  
+4. Perform the initial source extraction:
 
+   make boot
+   
 5. Build the compiler
+   For systems where the Ocaml native code compiler
+   is supported:
 
-   make
+   make compiler drivers
+
+   Otherwise you need to build a bytecode version
+   of the compiler:
+
+   make compiler.bytecode drivers
 
 6. Build the documentation and tutorial
 
-   make doc
+   make doc 
+
+   developers can also do:
+
+   make impldoc
 
 7. Test the compiler
 
    make test
 
-IF IT DOESN'T WORK
-------------------
+   This stops on the first error. Use
 
-The build as described will NOT work on non-Unix systems,
-and it will NOT work unless you have gcc.
+   make tests
 
-You will need to edit 'script/maker' and 'bin/flx'
-scripts to change the compiler and/or compiler options.
-It is essential to edit the LP sources in the file
+   to run the force all the tests to run
+   
+8. Install the compiler
 
-  lpsrc/flx_maker.ipk
+   EDIT THE MAKEFILE TO SET THE INSTALL POINTS
 
-if you want these changes to persist, since the next
-LP extract (tangle) process will replace these files
-with one generated from the LP sources.
+   By default, Felix installs in:
 
-On Windows: for non Cygwin systems, you will have to
-modify the driver programs, since they use
-Unix dlopen/dlsym to open shared libraries.
+   /usr/local/bin/ -- the compiler executable
+   /usr/local/man/ -- the man pages
+   /usr/local/lib/ -- the rest of the package
+   
+   become super user if necessary, then:
 
-On Mac: Ocaml doesn't provide an optimising
-compiler for this platform. You will need to change
-the ocaml compiler from 'ocamlopt.opt' to just 'ocamlc'.
-This will make a bytecode version of the felix compiler,
-which should work just fine. It is unlikely that Felix
-can run using shared libraries on a Mac, other than the
-OSX platform (latest iMac) which is a FreeBSD Unix variant.
+   make install -- installs felix
 
 REBUILD
 -------
 
-Normally, 'make' and 'make test' should be sensitive
-to source code changes, but sometimes this doesn't
-work. You will need:
+  make virgin        -- this deletes EVERYTHING generated
+                        except the makefile
 
-  make test_clean    -- delete all C/C++ generated from felix files
-                        to force the felix compiler to rebuild them
+  make boot          -- use this to reextract after a make virgin
 
-  make virgin        -- this deletes EVERYTHING except the LP sources
+  make clean         -- use this to delete all output from
+                        test runs
 
-  make boot          -- use this to rebuild after a make virgin
+PERFORMANCE TEST
+----------------
+
+  make performance    -- takes a few minutes to run
+
+This test flogs the cooperative mult-tasking system
+by generating 1 million threads and sending each
+of them two messages: its a rough guide to how much
+overhead there would be handling, say, 1 million
+concurrent phone calls, web connections, or sprites
+in a game.
 
 LOST THE MAKEFILE?
 ------------------
@@ -913,6 +1053,17 @@ LOST THE MAKEFILE?
   
                      -- re-extract sources, including makefile
 
+HOW TO USE IT
+-------------
+
+make a sample program mytest.flx:
+
+  include "std";
+  print "It works!"; endl;
+
+and then run it:
+  
+  flx -Ilib mytest
 
 @head(1,'Ocamldoc Latex Style')
 Taken from the distribution because ocamldoc

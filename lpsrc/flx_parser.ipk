@@ -106,7 +106,7 @@ let call1 (op:string) (sr:range_srcref) (sri:srcref) l =
     `AST_ref (src_of_expr l,l)
   )
 
-let mkcurry sr name args return_type body =
+let mkcurry sr name vs args return_type body =
   let mkfuntyp d c = `TYP_function (d,c)
   and typeoflist lst = match lst with
     | [x] -> x
@@ -127,13 +127,12 @@ let mkcurry sr name args return_type body =
     | [] -> assert false
     | h :: [] -> (* bottom level *)
       (match return_type with
+      (*
       | `AST_void _ -> 
-        `AST_procedure (sr, name n, h, body) 
-        (* Note that this '`TYP_void' is supposed to be
-           the type of the message: unused at present!
-        *)
+        `AST_procedure (sr, name n, vs, h, body) 
+      *)
       | _ -> 
-        `AST_function (sr, name n, h, return_type, body)
+        `AST_function (sr, name n, vs, h, return_type, body)
       )
     | h :: t ->
       let m = List.length args in
@@ -154,7 +153,7 @@ let mkcurry sr name args return_type body =
           )
         ] 
       in
-        `AST_function (sr, name m, h, rettype t, body)
+        `AST_function (sr, name m, vs, h, rettype t, body)
    in aux args
 
 %}
@@ -645,14 +644,15 @@ opt_type_expr:
   | { `TYP_none }
 
 function_definition:
-  | FUNCTION NAME fun_args opt_type_expr EQUAL compound 
+  | FUNCTION NAME tvarlist fun_args opt_type_expr EQUAL compound 
     { 
-      let sr = rsrange (slift $1) (fst $6)
+      let sr = rsrange (slift $1) (fst $7)
       and name = snd $2 
-      and return_type = $4
-      and body = snd $6
-      and args = List.map snd $3 (* elide srcref *)
-      in mkcurry sr name args return_type body
+      and return_type = $5
+      and body = snd $7
+      and args = List.map snd $4 (* elide srcref *)
+      and vs = List.map snd $3
+      in mkcurry sr name vs args return_type body
     }
 
   | FUNCTION NAME tvarlist COLON type_expr EQUAL STRING SEMI 
@@ -681,32 +681,59 @@ function_definition:
     }
   | FUNCTION NAME tvarlist COLON type_expr SEMI
     {
-      `AST_function_decl (rstoken $1 $6, snd $2,  typecode_of_expr $5) 
+      `AST_function_decl (rstoken $1 $6, snd $2, typecode_of_expr $5) 
     }
 
 procedure_definition:
-  | PROCEDURE NAME compound 
+  | PROCEDURE NAME tvarlist compound 
     { 
-      `AST_procedure (rsrange (slift $1) (fst $3), snd $2, [], snd $3) 
+      let 
+        vs = List.map snd $3 and
+        sr =rsrange (slift $1) (fst $4) and
+        name = snd $2 and
+        body = snd $4 and
+        args = [] 
+      in
+      (*
+      `AST_procedure (sr, name, vs, args, body) 
+      *)
+      `AST_function (sr, name, vs, args, `AST_void sr,body) 
     }
+
   | PROCEDURE NAME tvarlist COLON type_expr SEMI
     {
+      (*
       `AST_procedure_decl 
       (
         rstoken $1 $6,
         snd $2, 
         typecode_of_expr $5
       );
+      *)
+      let sr = rstoken $1 $6 in
+      `AST_function_decl 
+      (
+        sr,
+        snd $2, 
+        `TYP_function 
+        (
+          typecode_of_expr $5,
+          `AST_void sr
+        )
+      )
     }
-  | PROCEDURE NAME fun_args compound 
+
+  | PROCEDURE NAME tvarlist fun_args compound 
     { 
-      let sr = rsrange (slift $1) (fst $4) in
+      let sr = rsrange (slift $1) (fst $5) in
       let name = snd $2 
+      and vs = List.map snd $3
       and return_type = `AST_void sr
-      and body = snd $4
-      and args = List.map snd $3 (* elide srcref *)
-      in mkcurry sr name args return_type body
+      and body = snd $5
+      and args = List.map snd $4 (* elide srcref *)
+      in mkcurry sr name vs args return_type body
     }
+
   | PROCEDURE NAME tvarlist COLON type_expr EQUAL STRING SEMI 
     { 
       let sr = rstoken $1 $8 
@@ -720,7 +747,10 @@ procedure_definition:
         | `TYP_tuple lst -> lst
         | x -> [x]
       in
+      (*
       `AST_proc_decl (sr,name,vs, ts,ct) 
+      *)
+      `AST_fun_decl (sr,name,vs, ts,`AST_void sr, ct) 
     }
 
 

@@ -182,9 +182,9 @@ let rec build_tables syms name level parent grandparent root asms =
           let n' = !counter in
           incr counter;
           let init_def = 
-            `SYMDEF_procedure 
+            `SYMDEF_function
             (
-              [], 
+              [],[], `AST_void sr,
               exes, 
               Hashtbl.create 97,
               [] 
@@ -218,12 +218,12 @@ let rec build_tables syms name level parent grandparent root asms =
           ) ps
           ;
 
-          let n' = !counter in
+         let n' = !counter in
           incr counter;
           let init_def = 
-            `SYMDEF_procedure 
+            `SYMDEF_function
             (
-              [], 
+              [],[], `AST_void sr,
               exes, 
               Hashtbl.create 97,
               [] 
@@ -238,24 +238,29 @@ let rec build_tables syms name level parent grandparent root asms =
           add_function name_map id fun_index ;
           interfaces := !interfaces @ ifaces
 
-        | `DCL_function (ps,t,asms) ->   
+        | `DCL_function (vs,ps,t,asms) ->   
           let fun_index = n in
           let t = if t = `TYP_none then `TYP_var fun_index else t in
           let table, exes, ifaces,dirs =  
             build_tables syms id (level+1) 
             (Some fun_index) parent root asms 
           in
+          let ips = ref [] in
           List.iter (fun (name,typ) -> 
             let n = !counter in
             incr counter;
             if print_flag then
             print_endline ("//  "^spc ^ string_of_int n ^ " -> " ^ name^ " (parameter)");
             Hashtbl.add dfns n (name,sr,Some fun_index,`SYMDEF_parameter typ);
-            add_unique table name n
+            add_unique table name n;
+            ips := (name,typ) :: !ips 
           ) ps
           ; 
+          let vs = 
+            List.map (fun x-> let n = !counter in incr counter; x,n) vs
+          in
           Hashtbl.add dfns fun_index (id, sr,parent,
-            `SYMDEF_function (ps, t, exes, table, dirs)
+            `SYMDEF_function (vs, List.rev !ips, t, exes, table, dirs)
           )
           ;
           add_function name_map id fun_index ;
@@ -309,7 +314,7 @@ let rec build_tables syms name level parent grandparent root asms =
             (Some fun_index) parent root !new_asms 
           in
           Hashtbl.add dfns fun_index (id, sr, parent,
-            `SYMDEF_function ([],`TYP_var fun_index, exes, table, dirs)
+            `SYMDEF_function ([],[],`TYP_var fun_index, exes, table, dirs)
           );
           add_function name_map id fun_index;
           interfaces := !interfaces @ ifaces
@@ -334,9 +339,9 @@ let rec build_tables syms name level parent grandparent root asms =
           let n' = !counter in
           incr counter;
           let init_def = 
-            `SYMDEF_procedure 
+            `SYMDEF_function
             (
-              [], 
+              [],[], `AST_void sr,
               exes, 
               Hashtbl.create 97,
               []
@@ -359,7 +364,7 @@ let rec build_tables syms name level parent grandparent root asms =
           let n' = !counter in
           incr counter;
           let init_def = 
-            `SYMDEF_if_proc ( `TYP_tuple []) 
+            `SYMDEF_if_fun ( `TYP_function (`TYP_tuple [], `AST_void sr))
           in
           Hashtbl.add dfns n' ("_init_",sr,Some n, init_def);
           if print_flag then
@@ -368,36 +373,47 @@ let rec build_tables syms name level parent grandparent root asms =
           add_function table ("_init_") n';
           interfaces := !interfaces @ ifaces
 
-        | `DCL_procedure (ps,asms) -> 
+        (*
+        | `DCL_procedure (vs,ps,asms) -> 
           let fun_index = n in
           let table, exes,ifaces,dirs = 
             build_tables syms id 
             (level+1) (Some fun_index) parent root asms 
           in
+          let ips = ref [] in
           List.iter (fun (name,typ) -> 
             let n = !counter in
             incr counter;
             if print_flag
             then print_endline ("//  "^spc ^ string_of_int n ^ " -> " ^ name^" (parameter)" );
             Hashtbl.add dfns n (name,sr,Some fun_index,`SYMDEF_parameter typ);
-            add_unique table name n
+            add_unique table name n;
+            ips := (name,(n,typ)) :: !ips 
           ) ps
           ; 
+
+          let vs = 
+            List.map (fun x-> let n = !counter in incr counter; x,n) vs
+          in
+
           Hashtbl.add dfns fun_index (id, sr,parent,
-            `SYMDEF_procedure (ps, exes, table, dirs))
+            `SYMDEF_procedure (vs,List.rev !ips, exes, table, dirs))
           ;
           add_function name_map id fun_index;
           interfaces := !interfaces @ ifaces
-        
+        *)
+
         | `DCL_if_fun t ->
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_if_fun t)
           ;
           add_function name_map id n
           
+        (*
         | `DCL_if_proc (t) ->
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_if_proc t)
           ;
           add_function name_map id n
+        *)
 
         | `DCL_type ->
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_if_type)
@@ -433,11 +449,12 @@ let rec build_tables syms name level parent grandparent root asms =
           ;
           add_function name_map id n
 
+        (*
         | `DCL_proc (vs,ts,c) ->
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
           ;
           add_function name_map id n
-
+        *)
 
         | `DCL_union its ->
           Hashtbl.add dfns n (id,sr,parent,`SYMDEF_dcl dcl)
@@ -448,13 +465,14 @@ let rec build_tables syms name level parent grandparent root asms =
           let asgn_idx = !counter in incr counter;
           let asgn_name = "set" in
           let asgn_dcl = 
-            `DCL_proc 
+            `DCL_fun
             (
               [],
               [
                 `TYP_pointer (`AST_name (sr,id));
                 `AST_name (sr,id)
               ],
+              `AST_void sr,
               "*$1=$2;"
             ) 
           in

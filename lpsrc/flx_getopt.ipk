@@ -73,8 +73,8 @@ let check_key options key =
 
 let check_keys options keys = 
   fold_left 
-    (fun b key -> b && (check_key options key) )
-    true keys
+    (fun b key -> b || (check_key options key) )
+    false keys
 
 let check_key_value options key value =
   let keyval = key,value in

@@ -4,11 +4,37 @@ manfoot = r"""
 .SH SEE ALSO
 .B felix(1)
 for a language introduction and man page index
-
+.B flx(1) 
+for a list of the tools.
+.br
+.B flx_lit(1)
+for a description of literals
+.br
+.B flx_op(1)
+for a list of operators
+.br
+.B flx_key(1)
+for a list of keywords
+.br
+.B flx_lib_typ(1)
+for a list of library types 
+.br
+.B flx_dir(1)
+for a list of directives
+.br
+.B flx_exec(1)
+for a list of executable statements
+.br
+.B flx_decl(1)
+for a list of declarative statements
+.br
+.B flx_bind(1)
+for a list of binding statements
+.br
 .SH WEB SITE
 See 
 .B http://felix.sf.net
-
+.br
 .SH AUTHOR
 John Maxwell Skaller, mailto:skaller@ozemail.com.au
 """
@@ -75,37 +101,216 @@ C++ header files
 
 .B std.flx
 is the standard library.
-.SH SEE ALSO
-.B flx(1) 
-for a list of the tools.
-.br
-.B flx_op(1)
-for a list of operators
-.br
-.B flx_key(1)
-for a list of keywords
-.br
-.B flx_lib_typ(1)
-for a list of library types 
-.br
-.B flx_dir(1)
-for a list of directives
-.br
-.B flx_exec(1)
-for a list of executable statements
-.br
-.B flx_decl(1)
-for a list of declarative statements
-.br
-.B flx_bind(1)
-for a list of binding statements
-.br
-.SH WEB SITE
-See 
-.B http://felix.sf.net
+@tangle(manfoot)
 
-.SH AUTHOR
-John Maxwell Skaller, mailto:skaller@ozemail.com.au
+@head(2,'felix:Literals')
+@select(tangler('man/man1/flx_lit.1'))
+.TH FELIX LITERALS "2003 April 11"
+.SH NAME
+Felix literals.
+
+.SH Integers
+Digits may be separated by an underscore.
+Prefix and suffix letters may be upper or lower case.
+
+.B Prefix 
+denotes radix, default decimal:
+.br
+.B 0b
+binary
+.br
+
+.B 0o
+octal
+.br
+
+.B 0d
+decimal
+.br
+
+.B 0x
+hexadecimal
+.br
+
+.B Suffix
+denotes type, default int:
+.br
+
+.B t
+tiny (C char)
+.br
+
+.B s
+short (C short)
+.br
+
+.B i
+int (C int)
+.br
+
+.B l
+long (C long)
+.br
+
+.B v
+vlong (C long long)
+.br
+
+.B u
+unsigned, with one of above
+.br
+
+.B i8 u8
+8 bit (C99 int8_t)
+.br
+
+.B i16 u16
+16 bit (C99 int16_t)
+.br
+
+.B i32 u32
+32 bit (C99 int32_t)
+.br
+
+.B i64 u64
+64 bit (C99 int64_t)
+.br
+
+Subexpressions involving the operators:
+.br
+
+.B unary + 
+identity
+.br
+
+.B unary -
+negation
+.br
+
+.B binary + 
+addition
+.br
+
+.B binary -
+suibtraction
+.br
+
+.B binary *
+suibtraction
+.br
+
+.B binary /
+quotient
+.br
+
+.B binary %
+remainder
+.br
+
+.B binary < <= == != => ?
+comparison
+.br
+
+and integral literals of type int, are calculated
+at compile time (constant folding).
+
+.SH Strings
+Python style strings may use single or double quotes, singly
+or tripled:
+.br
+
+.B ' .. '
+.br
+
+.B ''' .. '''
+spans lines
+.br
+
+.B \(dq .. \(dq
+.br
+
+.B  \(dq\(dq\(dq .. \(dq\(dq\(dq 
+spans lines
+.br
+
+.B Prefix:
+.br
+.B r
+raw string, no escape processing
+.br
+
+.B u
+UCS-4 (32 bit) string
+.br
+
+.B Escapes:
+.br
+
+.B \\n \\r \\b \\t \\v \\f
+Newline, return, bell, tab, vertical tab, formfeed: as in C.
+.br
+
+.B \\uXXXX \\UXXXXXXXX
+.br
+ISO-10646/Unicode code point, given in hex.
+For 8 bit strings, replaced with UTF-8 encoding.
+.br
+Note: no \\999 or \\xXX escapes are supported.
+,br
+Note: there are no character literals.
+
+.B Special concatenation forms.
+.br
+Note these apply to string expressions,
+not just literals; if literals are used, concatenation is
+done at compile time (constant folding).
+
+.B <string> <string> ...
+.br
+concatenate strings.
+
+.B <string> <integer> ...
+.br
+append ISO-10646 code point, use UTF-8 encoding for
+8 bit strings.
+
+.SH Floats
+Floats consist of two digit strings separated by a decimal point,
+and possibly an exponent. The digit strings may be separated by 
+single underscores. An exponent is the letter E or e followed
+by a decimal digit string, underscores are not allowed, however
+an underscore may separate the mantissa from exponent.
+.br
+Suffix denotes type, default double:
+.br
+.B f 
+float
+.br
+
+.B d
+double
+.br
+
+.B l
+ldouble
+.br
+
+Exponent kind:
+.br
+.B e 
+power of 10
+.br
+
+.B p 
+power of 2
+.br
+
+Prefix denotes radix, default decimal:
+.br
+.B x
+Hexadecimal 
+
+@tangle(manfoot)
 
 @head(2,'felix:operator summary')
 @select(tangler('man/man1/flx_op.1'))

@@ -44,8 +44,6 @@ open Flx_srcref
 
 exception Macro_return
 
-let bool_t = `TYP_sum [`TYP_tuple[]; `TYP_tuple []]
-
 let truthof x = match x with
   | `AST_typed_case (_,1,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) -> Some false
   | `AST_typed_case (_,2,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) -> Some true
@@ -451,9 +449,11 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_fun_decl (sr, id, ss, ts, t, c) -> 
      tack (`AST_fun_decl (sr, mi sr id, ss, ts, t, c))
     
+  (*
   | `AST_proc_decl (sr, id, ss,  ts, c) -> 
      tack (`AST_proc_decl (sr,mi sr id, ss, ts, c))
-    
+  *) 
+
   | `AST_header (sr, s) ->  tack st
   | `AST_body (sr, s) ->  tack st
 
@@ -476,7 +476,9 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   (* IDENTIFIER RENAMING NOT SUPPORTED IN TYPES *)
   | `AST_type (sr, id)  ->  tack st
   | `AST_function_decl (sr, id, t) ->  tack (`AST_function_decl (sr,mi sr id, t))
+  (*
   | `AST_procedure_decl (sr, id, t) -> tack (`AST_procedure_decl (sr, mi sr id, t))
+  *)
 
   | `AST_label (sr, id) ->  
     reachable:=true; 
@@ -490,13 +492,15 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_proc_return (sr)  ->  ctack st; reachable := false
   | `AST_nop (sr, s) ->  ()
 
-  | `AST_function (sr, id, ps, t, sts ) ->
+  | `AST_function (sr, id, vs, ps, t, sts ) ->
     let pr = map fst ps in
-    tack(`AST_function (sr, mi sr id, ps, t, msp sr pr sts ))
+    tack(`AST_function (sr, mi sr id, vs, ps, t, msp sr pr sts ))
 
-  | `AST_procedure (sr, id, ps, sts) ->
+  (*
+  | `AST_procedure (sr, id, vs, ps, sts) ->
     let pr = map fst ps in
-    tack (`AST_procedure (sr, id, ps, msp sr pr sts))
+    tack (`AST_procedure (sr, id, vs, ps, msp sr pr sts))
+  *)
 
   | `AST_val_decl (sr, id, optt, opte) -> 
     let opte = match opte with

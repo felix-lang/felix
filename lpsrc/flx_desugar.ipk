@@ -208,9 +208,11 @@ let rec rex include_dirs seq (e:expr_t) : asm_t list * expr_t =
     let name = "_lambda_" ^ string_of_int n in
     let argtyp = type_of_argtypes (map snd params) in
     [match res with
+    (*
     | `AST_void _ ->
-      Dcl (sr,name,`DCL_procedure (params, rsts sts))
-    | _ -> Dcl (sr,name,`DCL_function (params, res, rsts sts))
+      Dcl (sr,name,`DCL_procedure ([],params, rsts sts))
+    *)
+    | _ -> Dcl (sr,name,`DCL_function ([],params, res, rsts sts))
     ],
     `AST_suffix 
     (
@@ -245,7 +247,7 @@ let rec rex include_dirs seq (e:expr_t) : asm_t list * expr_t =
     let fname = "regmatch" ^ string_of_int n in
     let l,x = rex e in
     let exes = [Exe(sr,`EXE_regmatch (x,!cls))] in
-    let rfun = Dcl(sr,fname,`DCL_function([],`TYP_none,exes)) in
+    let rfun = Dcl(sr,fname,`DCL_function([],[],`TYP_none,exes)) in
     rfun :: l @ !dcls,
     `AST_apply(sr,(`AST_name(sr,fname),`AST_tuple(sr,[])))
      
@@ -401,7 +403,7 @@ let rec rex include_dirs seq (e:expr_t) : asm_t list * expr_t =
         match_function_id,
         `DCL_function 
         (
-          [],
+          [],[],
           `TYP_none,
           match_function_body
         )
@@ -533,22 +535,28 @@ and rst include_dirs seq st : asm_t list =
   | `AST_type (sr,name) -> [Dcl (sr,name,`DCL_type)]
 
   (* functions *)
-  | `AST_function (sr,name, params, res, sts) -> 
-    [Dcl (sr,name,`DCL_function (params, res, rsts sts))]
+  | `AST_function (sr,name, vs, params, res, sts) -> 
+    [Dcl (sr,name,`DCL_function (vs, params, res, rsts sts))]
     
-  | `AST_procedure (sr,name, params, sts) -> 
-    [Dcl (sr,name,`DCL_procedure (params, rsts sts))]
+  (*
+  | `AST_procedure (sr,name, vs, params, sts) -> 
+    [Dcl (sr,name,`DCL_procedure (vs, params, rsts sts))]
+  *)
     
+  (*
   | `AST_procedure_decl (sr,name,typ) ->
     [Dcl (sr,name,`DCL_if_proc (typ))]
+  *)
 
   | `AST_function_decl (sr,name,typ) ->
     [Dcl (sr,name,`DCL_if_fun typ)]
 
   | `AST_fun_decl (sr,name,vs,args,result,code) -> 
     [Dcl (sr,name,`DCL_fun (vs,args,result,code))]
+  (*
   | `AST_proc_decl (sr,name,vs,args,code) -> 
     [Dcl (sr,name,`DCL_proc(vs,args,code))]
+  *)
 
   (* misc *)
   | `AST_interface (sr,name,sts) ->
@@ -702,7 +710,7 @@ let typeofargs a =
       | lst -> `TYP_tuple lst
 
 let rec build_if d = match d with
-  | `AST_function  (sr,name,ps,ret,_) -> 
+  | `AST_function  (sr,name,vs, ps,ret,_) -> 
     [
       `AST_function_decl 
       (
@@ -716,7 +724,8 @@ let rec build_if d = match d with
       )
     ]
 
-  | `AST_procedure (sr,name,ps,_) ->
+  (*
+  | `AST_procedure (sr,name,vs, ps,_) ->
     [
       `AST_procedure_decl 
       (
@@ -729,6 +738,7 @@ let rec build_if d = match d with
         )
       )
     ]
+  *)
 
   | `AST_typed_module (sr,name,typ,sts) -> 
     [`AST_typed_module (sr,name,typ,build_interface sts)]

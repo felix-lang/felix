@@ -47,7 +47,7 @@ let terminate rrp = let return_parity = not rrp in function
 
   | SystemError (sr,s) ->
     flush stdout; print_endline "FELIX COMPILER ERROR";
-    print_endline ("In " ^ short_string_of_src sr);
+    print_endline ("In " ^ long_string_of_src sr);
     print_endline s;
     exit (if return_parity then 1 else 0)
 
