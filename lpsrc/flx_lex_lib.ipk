@@ -1,0 +1,372 @@
+@head(1,'Felix lexerlibrary')
+@h=tangler('lib/flx_lex.flx')
+@select(h)
+include "std";
+/* ====================== REGULAR DEFINITIONS ============================ */
+module Flx_lex
+{
+  /* special characters */
+  regexp quote = '\'';
+  regexp dquote = '"';
+  regexp slosh = '\\';
+  regexp linefeed = '\n';
+  regexp tab = '\t';
+  regexp space = ' ';
+  regexp formfeed = [12];
+  regexp vtab = [11];
+  regexp carriage_return = [13];
+  regexp underscore = '_';
+
+  /* character sets */
+  regexp bindigit = ['0'-'1'];
+  regexp octdigit = ['0'-'7'];
+  regexp digit = ['0'-'9'];
+  regexp hexdigit = digit | ['A'-'F'] | ['a'-'f'];
+  regexp lower = ['a'-'z'];
+  regexp upper = ['A'-'Z'];
+  regexp letter = lower | upper;
+  regexp hichar = [128-255];
+  regexp white = space | tab;
+
+  /* nasty: form control characters */
+  regexp form_control = linefeed | carriage_return | vtab | formfeed;
+  regexp newline_prefix = linefeed | carriage_return;
+  regexp newline = formfeed | linefeed  | carriage_return linefeed;
+  /* regexp newline = newline_prefix form_control * */
+
+  regexp ordinary = letter | digit | hichar |
+    '!' | '#' | '$' | '%' | '&' | '(' | ')' | '*' |
+    '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' |
+    '=' | '>' | '?' | '@' | '[' | ']' | '^' | '_' |
+    '`' | '{' | '|' | '}' | '~'
+  ;
+
+  regexp printable = ordinary | quote | dquote | slosh;
+
+  /* identifiers */
+  regexp ucn = 
+      "\\u" hexdigit hexdigit hexdigit hexdigit 
+    | "\\U" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit
+  ;
+
+  regexp prime = '\'';
+  regexp idletter = letter | underscore | hichar | ucn;
+  regexp identifier = idletter (idletter | digit | prime )*;
+
+  /* integers */
+  regexp bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +;
+  regexp oct_lit  = '0' ('o' | 'O') (underscore? octdigit) +;
+  regexp dec_lit  = ('0' ('d' | 'D'))? digit (underscore? digit) *;
+  regexp hex_lit  = '0' ('x' | 'X') (underscore? hexdigit)  +;
+  regexp type_suffix = 
+    't'|'T'|'s'|'S'|'i'|'I'|'l'|'L'|'v'|'V'|"ll"|"LL"
+    | "i8" | "i16" | "i32" | "i64"
+    | "u8" | "u16" | "u32" | "u64"
+    | "I8" | "I16" | "I32" | "I64"
+    | "U8" | "U16" | "U32" | "U64"
+  ;
+  regexp signind = 'u' | 'U';
+  regexp suffix = type_suffix? signind? | signind? type_suffix?;
+  regexp int_lit = (bin_lit | oct_lit | dec_lit | hex_lit) suffix;
+
+  /* floats: Follows ISO C89, except that we allow underscores */
+  regexp decimal_string = digit (underscore? digit) *;
+  regexp hexadecimal_string = hexdigit (underscore? hexdigit) *;
+
+  regexp decimal_fractional_constant = 
+    decimal_string '.' decimal_string?
+    | '.' decimal_string
+  ; 
+
+  regexp hexadecimal_fractional_constant = 
+    ("0x" |"0X")
+    (hexadecimal_string '.' hexadecimal_string?
+    | '.' hexadecimal_string)
+  ;
+
+  regexp decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string;
+  regexp binary_exponent = ('P'|'p') ('+'|'-')? decimal_string;
+
+  regexp floating_suffix = 'L' | 'l' | 'F' | 'f' | 'D' | 'd';
+  regexp floating_literal = 
+    (
+      decimal_fractional_constant decimal_exponent? |
+      hexadecimal_fractional_constant binary_exponent?
+    )
+    floating_suffix?
+  ;
+
+  /* Python strings */
+  regexp qqq = quote quote quote;
+  regexp ddd = dquote dquote dquote ;
+
+  regexp escape = slosh _ ;
+
+  regexp dddnormal = ordinary | quote | escape | white | newline;
+  regexp dddspecial = dddnormal | dquote dddnormal | dquote dquote dddnormal;
+
+  regexp qqqnormal = ordinary | dquote | escape | white | newline;
+  regexp qqqspecial = qqqnormal | quote qqqnormal | quote quote qqqnormal;
+
+  regexp raw_dddnormal = ordinary | quote | slosh | white | newline;
+  regexp raw_dddspecial = raw_dddnormal | dquote raw_dddnormal | dquote dquote raw_dddnormal;
+
+  regexp raw_qqqnormal = ordinary | dquote | slosh | space | newline;
+  regexp raw_qqqspecial = raw_qqqnormal | quote raw_qqqnormal | quote quote raw_qqqnormal;
+
+  regexp q_string = (ordinary | dquote | escape | white) * quote;
+  regexp d_string = (ordinary | quote | escape | white) * dquote;
+  regexp qqq_string = qqqspecial * qqq;
+  regexp ddd_string = dddspecial * ddd;
+
+  regexp rq_string = (ordinary | dquote | escape | white) * quote;
+  regexp rd_string =  (ordinary | quote | escape | white) * dquote;
+
+  regexp rqqq_string = raw_qqqspecial * qqq;
+  regexp rddd_string = raw_dddspecial * ddd;
+
+  regexp wq_string = q_string;
+  regexp wqqq_string = qqq_string;
+  regexp wd_string = d_string;
+  regexp wddd_string = ddd_string;
+
+  regexp uq_string = q_string;
+  regexp uqqq_string = qqq_string;
+  regexp ud_string = d_string;
+  regexp uddd_string = ddd_string;
+ 
+  regexp q_quote = quote;
+  regexp d_quote = dquote;
+  regexp qqq_quote = qqq;
+  regexp ddd_quote = ddd;
+
+  regexp not_newline_or_slosh = ordinary | quote | dquote | white;
+  regexp not_newline = not_newline_or_slosh | slosh;
+  regexp quoted_filename = dquote (ordinary | quote | white | slosh)+ dquote;
+
+  /* ====================== PARSERS ============================ */
+  /* string tail lexers */
+
+@def lexstr(x):
+  tangle('  fun parse_'+x+'_string(s:Lexer::iterator, e:Lexer::iterator) =' )
+  tangle('  {')
+  tangle('    return')
+  tangle('      reglex s to e with')
+  tangle('      | '+x+'_string => '+x+'Quote' )
+  tangle('      | _ =>  Error' )
+  tangle('      endmatch')
+  tangle('    ;')
+  tangle('  }')
+
+@qtypes=[
+  'q',
+  'qqq',
+  'd',
+  'ddd',
+  'wq',
+  'wqqq',
+  'wd',
+  'wddd',
+  'uq',
+  'uqqq',
+  'ud',
+  'uddd',
+  'rq',
+  'rqqq',
+  'rd',
+  'rddd'
+ ]
+
+@for i in qtypes: lexstr(i)
+
+  fun to_eol(s:Lexer::iterator, e:Lexer::iterator) =
+  {
+    return 
+      match 
+        reglex s to e with
+        | .* "\n" => ()
+        endmatch
+      with 
+      | ?p,_ => p
+      endmatch
+    ; 
+  }
+
+  fun to_end_c_comment(s:Lexer::iterator, e:Lexer::iterator) =
+  {
+    var j = s;
+    var again = true;
+    while { again }
+    {
+      match 
+        reglex j to e with
+        | "*" "/" => "end"
+        | "/" "*" => "recurse"
+        | [^"/" "*"]* => "chars"
+        endmatch
+      with
+        | ?p,"end" => { j = p; again = false; }
+        | ?p,"recurse" => { j = to_end_c_comment(p,e); }
+        | ?p,"chars" => { j = p; }
+      endmatch
+      ;
+    }
+    ;
+    return j;
+  }
+
+  union pretoken_k = // k for "kind"
+    | Ident
+    | Int
+    | Float
+    | C_comment
+    | Cpp_comment
+    | Preprocessor
+    | Sym
+    | White
+    | Eol
+    | Error
+    
+    | qQuote
+    | qqqQuote
+    | dQuote
+    | dddQuote
+    
+    | wqQuote
+    | wqqqQuote
+    | wdQuote
+    | wdddQuote
+    
+    | uqQuote
+    | uqqqQuote
+    | udQuote
+    | udddQuote
+
+    | rqQuote
+    | rqqqQuote
+    | rdQuote
+    | rdddQuote
+  ;
+    
+  fun pre_flx_lex(s:Lexer::iterator, e:Lexer::iterator) =
+  {
+    return reglex s to e with
+    | "//" => Cpp_comment
+    | "/*" => C_comment
+    | identifier => Ident
+    | int_lit => Int
+    | floating_literal => Float
+
+    /* Python strings */
+    | q_quote                 => qQuote
+    | qqq_quote               => qqqQuote
+    | d_quote                 => dQuote
+    | ddd_quote               => dddQuote
+
+    /* wide strings */
+    | ('w' | 'W') q_quote     => wqQuote
+    | ('w' | 'W') qqq_quote   => wqqqQuote
+    | ('w' | 'W') d_quote     => wdQuote
+    | ('w' | 'W') ddd_quote   => wdddQuote
+
+    /* UTF32 strings */
+    | ('u' | 'U') q_quote     => uqQuote
+    | ('u' | 'U') qqq_quote   => uqqqQuote
+    | ('u' | 'U') d_quote     => udQuote
+    | ('u' | 'U') ddd_quote   => udddQuote
+
+    /* Python raw strings */
+    | ('r'|'R') q_quote       => rqQuote
+    | ('r'|'R') qqq_quote     => rqqqQuote
+    | ('r'|'R') d_quote       => rdQuote
+    | ('r'|'R') ddd_quote     => rdddQuote
+
+
+    /* one character sequences */
+    | "$" => Sym
+    | "(" => Sym
+    | ")" => Sym
+    | "[" => Sym
+    | "]" => Sym
+    | "{" => Sym
+    | "}" => Sym
+    | "!" => Sym
+    | ":" => Sym
+    | "," => Sym
+    | ";" => Sym
+    | "+" => Sym
+    | "-" => Sym
+    | "*" => Sym
+    | "/" => Sym
+    | "|" =>Sym
+    | "&" =>Sym
+    | "<" =>Sym
+    | ">" =>Sym
+    | "=" =>Sym
+    | "." =>Sym
+    | "%" =>Sym
+    | "`" =>Sym
+    | "~" =>Sym
+    | "^" =>Sym
+    | "!" =>Sym
+    | "?" =>Sym
+
+    /* two character sequences */
+    | "=>" =>Sym
+    | "&<" =>Sym
+    | "&>" =>Sym
+    | ".." =>Sym
+    | "::" =>Sym
+    | "==" =>Sym
+    | "<>" =>Sym
+    | "!=" =>Sym
+    | "<=" =>Sym
+    | ">=" =>Sym
+    | "<<" =>Sym
+    | ">>" =>Sym
+    | "**" =>Sym
+    | "\\" =>Sym
+    | "++" =>Sym
+    | "--" =>Sym
+    | "+=" =>Sym
+    | "-=" =>Sym
+    | "*=" =>Sym
+    | "/=" =>Sym
+    | "%=" =>Sym
+    | "^=" =>Sym
+    | "|=" =>Sym
+    | "&=" =>Sym
+    | "~=" =>Sym
+    | ":=" =>Sym
+    | "<-" =>Sym
+    | "->" =>Sym
+    | "<:" =>Sym
+    | ":>" =>Sym
+    | "[<" =>Sym
+    | ">]" =>Sym
+
+    /* three character sequences */
+    | "<<=" => Sym
+    | ">>=" =>Sym
+    | "..." =>Sym
+    | "<->" =>Sym
+    | "&==" =>Sym
+    | "&<>" => Sym
+    | "&!=" =>Sym
+    | "&<=" =>Sym
+    | "&>=" =>Sym
+
+    /* whitespace */
+    | white + => White
+
+    /* Preprocessor Directive */
+    | "#" => Preprocessor
+
+    | newline => Eol
+
+    /* Anything else is an error */
+    | _ => Error
+    endmatch
+    ;
+  }
+}
