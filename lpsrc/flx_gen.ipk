@@ -75,6 +75,8 @@ let find_references syms (child_map,bbdfns) index ts =
       match bbdfn with
       | `BBDCL_var (vs,(`BTYP_pointer _ as t))
       | `BBDCL_val (vs,(`BTYP_pointer _ as t))
+      | `BBDCL_var (vs,(`BTYP_function _ as t))
+      | `BBDCL_val (vs,(`BTYP_function _ as t))
         -> 
         if length ts <> length vs then 
         failwith 
@@ -145,13 +147,34 @@ let gen_offset_data s n name offsets =
   bcat s ( ");\n")
 
 let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance = 
+  let vars =  (find_references syms (child_map,bbdfns) index ts) in
+  let refs = filter 
+    (fun (i,t) -> match t with 
+    | `BTYP_pointer _ -> true 
+    | _ -> false
+    ) vars 
+  in
+  let funs = filter 
+    (fun (i,t) -> match t with 
+    | `BTYP_function _ -> true 
+    | _ -> false
+    ) vars 
+  in
   let refnames = 
     map 
     (fun (index,t)-> 
       cpp_instance_name syms bbdfns index ts,
       cpp_typename syms t
     )
-    (find_references syms (child_map,bbdfns) index ts)
+    refs
+  in
+  let funnames = 
+    map 
+    (fun (index,t)-> 
+      cpp_instance_name syms bbdfns index ts,
+      cpp_typename syms t
+    )
+    funs
   in
   let name = cpp_instance_name syms bbdfns index ts in
   let display = Flx_display.get_display_list bbdfns index in
@@ -173,6 +196,12 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance =
       "offsetof("^name^","^mem^")" ^
       "+offsetof("^comma_sub reftyp^",frame)") 
     refnames
+    @
+    map 
+    (fun (mem,reftyp)->
+      "offsetof("^name^","^mem^")"
+    )
+    funnames
   in
   let n = length offsets in
   bcat s 

@@ -487,6 +487,12 @@ int main(int argc, char* argv[])
         collector.remove_root(top);
         top = new_top;
       }
+      gc_counter++;
+      if(gc_counter == 100)
+      {
+        gc_counter = 0;
+        collector.collect();
+      }
     }
 
     instance.destroy();
