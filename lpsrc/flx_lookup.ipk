@@ -1490,7 +1490,7 @@ and beta_reduce syms params t =
     let b = fixup p b in
     (*
     print_endline ("After fixup body is " ^ st b);
-    (_
+    *)
     `BTYP_typefun (p', br r, beta_reduce syms (p' @ params) b)
 
   | _ -> t
