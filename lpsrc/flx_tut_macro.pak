@@ -1,0 +1,378 @@
+@set_title('Felix Tutorial: Syntax Macros')
+@tdir = 'tut/examples/'
+@head(1,'The Syntax Macro Processor')
+@head(2,'Expression Macro Facility')
+Felix provides an powerful and dangerous 
+expression macro facility. Felix macros 
+generally respect scope, so any definitions
+nested in a function or module, for example,
+will not be visible outside that scope.
+@p()
+Expresion symbols only expand inside expressions.
+
+@head(3,'Macro values')
+The macro val statement defines a LHS symbol
+as the expansion of the RHS. The same
+value can be defined any number of times,
+a redefinition hides the preceding defintion
+until the end of the scope.
+
+@select(tangler(tdir+'mac122.flx'))
+include "std";
+macro val mx1 = 1+y;
+macro val mx2 = 2+y;
+val y = 100;
+print mx1; endl; // 101
+print mx2; endl; // 102
+{
+  macro val mx1 = 3+y; // 103
+  print mx1; endl;
+  macro val mx2 = mx2 + 10; // 112
+};
+print mx1; endl; // 101
+print mx2; endl; // 102
+
+// illustration of rescanning 
+macro val r1 = y1;
+macro val r2 = y2;
+macro val y1 = print;
+macro val y2 = 1;
+
+r1 r2; // print 1
+
+@head(3,'Macro variables')
+The macro var statement defines a LHS symbol
+as the expansion of the RHS. The same
+value can be defined any number of times,
+a redefinition hides the preceding defintion
+until the end of the scope.
+@p()
+Macro variables can be assigned a new value.
+
+@select(tangler(tdir+'mac123.flx'))
+include "std";
+macro var mx1 = 1+y;
+val y = 100;
+print mx1; endl; // 101
+{
+  macro mx1 = 3+y; // 103 [assignment!]
+  print mx1; endl;
+};
+print mx1; endl; // 103 [uses assigned value]
+
+
+@head(3,'Macro functions')
+You can also define a macro function.
+The expansion rules are: the body
+is not expanded during definition.
+At the point of call, the arguments
+are expanded and then substituted into
+the body, then the body is expanded.
+
+@select(tangler(tdir+'mac124.flx'))
+include "std";
+
+// a basic expression macro without parameters
+macro fun x() =  {print 1; endl;};
+x;
+
+// an expression macro with one argument
+macro fun h(z) = z + z;
+print (h 1); endl;
+
+// an expression macro denoting a procedure
+macro fun f(a) = { print a; endl; };
+f 1;
+f 2;
+
+// nastier example of rescanning
+macro fun a() = b c;
+macro fun b(x) = f;
+a() 1;
+// (b c) 1;
+// f 1;
+// { print 1; endl; };
+// call {print 1; endl; } ();
+
+// finally: recursion
+macro fun j(i) = 
+   if(i>0) then i + j(i-1)
+   else 0 endif;
+print  (j 5); // 5 + 4 + 3 + 2 + 1 = 16
+endl;
+
+val q=1;
+macro fun z(q) = q;
+print (z q); endl;
+
+@doc()
+It is vital to understand that macros cannot break
+syntactically established precedence rules.
+In the last example, a 1 expands to (b c) 1,
+which expands to f 1. Substitutions are implemented
+by manipulation of the abstract syntax tree (AST),
+not token pasting or string manipulation.
+
+@head(2,'Constant Expression Folding')
+The Felix macro processor also performs constant folding;
+that is, evaluation of certain expressions involving 
+only literals. The following operations are folded:
+@begin_table("op","descr")
+@table_row('+int','')
+@table_row('-int','')
+@table_row('int+int','')
+@table_row('int-int','')
+@table_row('int*int','')
+@table_row('int/int','')
+@table_row('int%int','')
+@table_row('int<int','')
+@table_row('int>int','')
+@table_row('int<=int','')
+@table_row('int>=int','')
+@table_row('int==int','')
+@table_row('int!=int','')
+@table_row('string+string','')
+@table_row('string==string','')
+@table_row('string!=string','')
+@table_row('string*int','cat n copies')
+@table_row('string string','cat')
+@table_row('string int','cat ISO10646')
+@table_row('not bool','')
+@table_row('bool && bool','')
+@table_row('bool or bool','')
+@table_row('bool == bool','')
+@table_row('bool != bool','')
+@table_row('if bool then expr1 else expr2 endif','')
+@end_table()
+@p()
+The critical operation here is that a conditional
+with a constant first argument is replaced by one
+of the two expressions, and the other is elided.
+See the example for an application: the implication
+is that the elided expression, whilst it must be
+well formed syntactically, does not need to be
+type correct, nor do symbols in it need to be defined.
+@p()
+Note that the fold uses compiler intrinsic operations
+on integers, bools, and strings: user defined functions
+are not applied and do not need to be defined.
+Consequently, the result may disagree with a user
+defined function applied at run time.  If necessary,
+constant folding can be blocked with the noexpand mark $.
+@p()
+Note: the expressions
+@begin_displayed_code()
+  "" 999
+  u"" 999
+@end_displayed_code()
+are semantically, but not physically equivalent.
+The first operation is the UTF-8 representation
+of 999, whilst the second is the UCS-32 value 999.
+
+@select(tangler(tdir+'mac125.flx'))
+include "std";
+header '''
+#define unix 0
+#define windows 0
+#define testhook 1
+#if unix
+#include <dlopen.h>
+#elif windows
+#include <windows.h>
+#else
+#include <stdio.h>
+#endif
+''';
+macro val unix = case 1 of 2;
+macro val windows = case 1 of 2;
+
+fun dlopen:string -> address = 'dlopen($1.data())';
+fun LoadLibrary:string -> int = 'LoadLibrary($.data())';
+fun testhook:string -> int = 'printf("LoadTheLibrary(%s)\n",$1.data())';
+
+macro val openlib = 
+  if unix then dlopen 
+  elif windows then LoadLibrary 
+  else testhook endif
+;
+
+macro val ext = 
+  if unix then ".so" 
+  elif windows then ".DLL"
+  else ".lib_ext" endif
+;
+// conditional compilation
+val lib = openlib ("MyLibrary" ext);
+
+@head(2,'Procedure Macros')
+A procedure macro represents a list of statements.
+Macros defined in macro procedures are exported
+to the surrounding scope so that macro procedures
+can be used to package up a set of macro definitions.
+This represents a special exception to the rule
+that macros respect scope.
+
+@select(tangler(tdir+'mac126.flx'))
+include "std";
+// procedure macro
+macro proc k ()
+{
+  val yy = xx * xx;
+  print xx; print " -> "; print yy; endl;
+}
+
+{
+  val xx = 1;
+  k();
+};
+{
+  val xx = 2;
+  k();
+};
+
+macro proc pkg (x)
+{
+  macro proc printxy (y) { print (x+y); endl; }
+  macro val doublex = x + x;
+}
+
+pkg 10;
+printxy doublex; // prints 30
+
+macro proc dump_s (sts:proc)
+{
+  print "Start dump_s"; endl;
+  sts;
+  print "End dump_s"; endl;
+}
+
+macro proc dump_e (sts:fun)
+{
+  print "Start dump_e"; endl;
+  sts;
+  print "End dump_e"; endl;
+}
+
+dump_s { print 1; endl; print 2; endl; };
+dump_e { val x = 1; print x; endl; print 2; endl; };
+
+macro proc todump () { print "Dumped"; endl; }
+dump_s todump;
+dump_e todump;
+
+macro proc todump_wa (x) { print x; endl; }
+dump_s (todump_wa 66);
+dump_e (todump_wa 66);
+
+@doc()
+Note there is a crucial difference between procedure
+and expressions macros. In the above example,
+dump requires a proc argument. When the parameter
+is expanded, the list of statements it represented
+is produced. Had this been a function macro,
+the result would have been an the call executable lambda
+expression applied to unit argument. The difference
+is in the handling of any variable declarations:
+they'd be exposed in the first case, but not the second.
+
+@head(2,'Advanced Procedure Macro Programming')
+Felix procedure macros also contain rudimentary
+control structures: you can encode labels, unconditional
+jumps, conditional jumps, and returns. Note the conditional
+goto requires the condition resolve to a constant expression.
+Of course, the value can change with time, since it can
+depend on macro variables.
+
+@select(tangler(tdir+'mac126a.flx'))
+include "std";
+macro proc print_alot () 
+{
+  macro var count = 10;
+  macro start:>
+    print count; print " ";
+    macro count = count - 1;
+    macro if count > 0 goto start;
+  endl;
+}
+
+print_alot();
+
+@head(2,'Expansion Barrier')
+The symbol '$' can be used to block expansion.
+@select(tangler(tdir+'mac127.flx'))
+include "std";
+// expansion barrier
+macro val x = 1;
+macro proc k ()
+{
+  val yy = $x + x; // x + 1
+  print $x; print "+"; print x; print " -> "; print yy; endl;
+}
+macro ident x = x; // blocks x
+{
+  val x = 2;
+  k();
+};
+
+@head(2,'Identifier Macros')
+A identifier macros represent names. They replace names 
+in expressions and most declarations, including the
+name of a function or variable being defined.
+Names are not replaced in type expressions, patterns,
+or regular expressions.
+@p()
+The special form in which the RHS name is called 'new'
+creates a fresh, previously unused name.
+@p()
+Unlike other macros, the RHS name of an ident macro
+is not expanded at the point of definition.
+@p()
+On use, the value of an ident macro is the first
+name in the chain which is not an ident macro,
+or which recurs.
+
+@select(tangler(tdir+'mac128.flx'))
+include "std";
+
+macro ident oldname = newname;
+fun oldname(x:int):int = { return x; }
+print (newname 1); endl;
+
+macro proc make_ints ()
+{
+  macro ident vnew = new;
+  val vnew = vold+1;
+  macro vold = vnew;
+}
+
+val x = 1;
+
+macro var vold = x;
+make_ints;
+make_ints;
+make_ints;
+print vold; endl;
+
+@head(3,'Forgetting Macros')
+You can forget macros defined in the current scope with
+the forget statement. If no arguments are given,
+all macros defined in the current scope are forgotten. 
+
+@select(tangler(tdir+'mac129.flx'))
+include "std";
+macro val hello = "Hello";
+macro val place = "world";
+macro fun greet() = hello " " place "!\n";
+{
+  macro val hello = "Hi there";
+  macro val place = "locality";
+  print (greet());
+  macro forget place;
+  print (greet());
+  macro forget;
+  print (greet());
+};
+
+print (greet());
+
+
