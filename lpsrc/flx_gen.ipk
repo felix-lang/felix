@@ -901,8 +901,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr =
     ")"
     )
 
-and gen_expr syms bbdfns this (e,t) vs ts sr =
-  let s = gen_expr' syms bbdfns this (e,t) vs ts sr  in
+and gen_expr syms bbdfns this e vs ts sr =
+  let e = Flx_maps.reduce_tbexpr bbdfns e in
+  let s = gen_expr' syms bbdfns this e vs ts sr  in
   string_of_cexpr s
 
 type kind_t = Function | Procedure

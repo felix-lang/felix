@@ -439,6 +439,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   let recurion_limit = recursion_limit - 1 in
   let me e = expand_expr recursion_limit local_prefix seq macros e in
   let ms s = recurse recursion_limit local_prefix seq (ref true) macros s in
+  let ms' reachable s = recurse recursion_limit local_prefix seq reachable macros s in
   let msp sr ps ss = 
     let pr = protect sr ps in
     recurse recursion_limit local_prefix seq (ref true) (pr @ macros) ss 
@@ -634,11 +635,12 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       let lab1 = "_" ^ string_of_int n1 in
       let lab2 = "_" ^ string_of_int n2 in
       ctack (`AST_ifnotgoto (sr, e, lab1));
-      iter ctack (ms sts1);
-      ctack (`AST_goto (sr,lab2));
+      let r = ref true in
+      iter ctack (ms' r sts1);
+      if !r then ctack (`AST_goto (sr,lab2));
       ctack (`AST_label (sr,lab1));
       iter ctack (ms sts2);
-      ctack (`AST_label (sr,lab2))
+      if !r then ctack (`AST_label (sr,lab2))
     end
 
 

@@ -246,7 +246,7 @@ let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len ex
 let remap_exes syms bbdfns relabel varmap revariable caller_vars callee_vs_len exes =
   map (remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len) exes
 
-let reparent1 (syms:sym_state_t) (child_map,bbdfns )
+let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   relabel varmap revariable 
   caller_vs callee_vs_len index parent
 =
@@ -284,14 +284,20 @@ let reparent1 (syms:sym_state_t) (child_map,bbdfns )
   | `BBDCL_procedure (props,vs,ps,exes) ->
     let exes = remap_exes syms bbdfns relabel varmap revariable caller_vars callee_vs_len exes in
     let ps = remap_ps ps in
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_procedure (props,splice vs,ps,exes))
-    
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_procedure (props,splice vs,ps,exes));
+    let calls = try Hashtbl.find uses index with Not_found -> [] in
+    let calls = map (fun (j,sr) -> revar j,sr) calls in
+    Hashtbl.add uses k calls
+     
   | `BBDCL_function (props, vs, ps, ret, exes) ->
     let ps = remap_ps ps in
     let exes = remap_exes syms bbdfns relabel varmap revariable caller_vars callee_vs_len exes in
     let ret = auxt ret in
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_function (props,splice vs,ps,ret,exes))
-
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_function (props,splice vs,ps,ret,exes));
+    let calls = try Hashtbl.find uses index with Not_found -> [] in
+    let calls = map (fun (j,sr) -> revar j,sr) calls in
+    Hashtbl.add uses k calls
+ 
   | `BBDCL_var (vs,t) ->
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_var (splice vs,auxt t))
 
@@ -304,7 +310,7 @@ let reparent1 (syms:sym_state_t) (child_map,bbdfns )
   parent which is i to the given new parent
 *)
 
-let reparent_children syms (child_map,bbdfns) 
+let reparent_children syms (uses,child_map,bbdfns) 
   caller_vs callee_vs_len index parent relabel varmap 
 =
   let pp p = match p with None -> "NONE" | Some i -> si i in
@@ -335,7 +341,7 @@ let reparent_children syms (child_map,bbdfns)
         if p = index then parent
         else Some (Hashtbl.find revariable p)
     in
-    reparent1 syms (child_map,bbdfns) relabel varmap revariable 
+    reparent1 syms (uses,child_map,bbdfns) relabel varmap revariable 
     caller_vs callee_vs_len i new_parent
   )
   closure
@@ -452,7 +458,7 @@ let gen_body syms (uses,child_map,bbdfns) id
   let ge e = remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e in
   let relab s = try Hashtbl.find relabel s with Not_found -> s in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
-  let end_label_used = ref false in
+  let end_label_uses = ref 0 in
   let end_label = 
     let end_index = !(syms.counter) in 
     incr syms.counter; 
@@ -520,7 +526,7 @@ let gen_body syms (uses,child_map,bbdfns) id
   | `BEXE_nonreturn_code (sr,s)  as x -> [x]
   | `BEXE_goto (sr,lab) -> [`BEXE_goto (sr, relab lab)]
   | `BEXE_proc_return sr as x -> 
-    end_label_used := true;
+    incr end_label_uses;
     [`BEXE_goto (sr,end_label)]
 
   | `BEXE_comment (sr,s) as x -> [x]
@@ -542,10 +548,12 @@ let gen_body syms (uses,child_map,bbdfns) id
       *)
 
       (* create variables for parameter components *)
+      (* Whaaa??
       if length ps > 1 then 
       for i = 1 to length ps do incr syms.counter done;
        (* Initialise parameter to argument, but only if
          the argument is not unit
+      *)
       *)
       if length ps > 0 then
       begin
@@ -670,7 +678,14 @@ let gen_body syms (uses,child_map,bbdfns) id
       end
     end
     ;
-    if !end_label_used then 
+    let trail_jump = match !b with
+      | `BEXE_goto (_,lab)::_ when lab = end_label -> true
+      | _ -> false
+    in
+    if trail_jump then 
+      (b := tl !b; decr end_label_uses)
+    ;
+    if !end_label_uses > 0 then
       b := (`BEXE_label (sr,end_label)) :: !b
     ;
     (*
@@ -719,7 +734,7 @@ let call_lifting syms (uses,child_map,bbdfns) caller caller_vs callee ts a argum
     let callee_vs_len = length vs in
 
     let revariable = reparent_children 
-      syms (child_map,bbdfns) 
+      syms (uses,child_map,bbdfns) 
       caller_vs callee_vs_len callee (Some caller) relabel varmap
     in
     (* use the inliner to handle the heavy work *)
@@ -779,7 +794,7 @@ let inline_tail_apply syms (uses,child_map,bbdfns) caller caller_vs callee ts a 
     let callee_vs_len = length vs in
 
     let revariable = reparent_children 
-      syms (child_map,bbdfns) 
+      syms (uses,child_map,bbdfns) 
       caller_vs callee_vs_len callee (Some caller) relabel varmap
     in
 
@@ -811,7 +826,7 @@ let inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a va
     let callee_vs_len = length vs in
 
     let revariable = reparent_children 
-      syms (child_map,bbdfns) 
+      syms (uses,child_map,bbdfns) 
       caller_vs callee_vs_len callee (Some caller) relabel varmap
     in
 
@@ -828,18 +843,27 @@ let inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a va
     let body2 = ref [] in
     let n = !(syms.counter) in incr (syms.counter);
     let end_label = "_end_inline_" ^ id ^ "_"^ si n in
-    body2 := `BEXE_label (sr,end_label) :: !body2;
     let t = ref None in
+    let end_label_used = ref false in
     iter
       (function 
       | `BEXE_fun_return (sr,((_,t') as e)) ->
         t := Some t';
+        if not (!body2 == []) then begin
+          body2 := `BEXE_goto (sr,end_label) :: !body2;
+          end_label_used := true
+        end
+        ;
         let call_instr = `BEXE_init (sr,varindex,e) in
-        body2 := `BEXE_goto (sr,end_label) :: !body2;
         body2 := call_instr :: !body2;
+
       | x -> body2 := x::!body2
       )
       body
+    ;
+    (* Ugghhh *)
+    if !end_label_used then
+      body2 := !body2 @ [`BEXE_label (sr,end_label)]
     ;
     (*
     print_endline (
@@ -1010,7 +1034,7 @@ let heavy_inline_call syms (uses,child_map,bbdfns)
   let relabel = mk_label_map syms exes in
   let varmap = mk_varmap vs ts in
   let revariable = reparent_children 
-    syms (child_map,bbdfns) 
+    syms (uses,child_map,bbdfns) 
     caller_vs callee_vs_len callee (Some caller) relabel varmap
   in
   let xs = gen_body syms (uses,child_map,bbdfns) id 
@@ -1284,6 +1308,10 @@ and heavy_inline_applies
   syms (uses,child_map,bbdfns)
   caller_vs caller excludes exes 
 =
+  let hia callee exes = heavy_inline_applies 
+    syms (uses,child_map,bbdfns)
+    caller_vs caller (callee::excludes) exes 
+  in
   let exes' = ref [] in (* reverse order *)
   iter 
   (fun exe ->
@@ -1304,6 +1332,7 @@ and heavy_inline_applies
           let xs = 
              inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a i
           in 
+            let xs = hia callee xs in
             exes' := rev xs @ !exes'
         else
           exes' := exe :: !exes'
@@ -1347,23 +1376,25 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
     if not (mem `Inlining_complete props) then begin
       (*
       print_endline ("HIB: Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
+      *)
+      (*
       print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
       let exes = heavy_inline_calls syms (uses,child_map,bbdfns) vs i excludes exes in
       (*
-      print_endline ("After inlining calls:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+      print_endline (id ^ " After inlining calls:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
       let exes = tailit syms (child_map,bbdfns) i sr ps vs exes in
       (*
-      print_endline ("After tailing:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+      print_endline (id ^ " After tailing:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
       let exes = unravel syms (child_map,bbdfns) i vs exes in
       (*
-      print_endline ("After unravelling:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+      print_endline (id ^ " After unravelling:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
       let exes = heavy_inline_applies syms (uses,child_map,bbdfns) vs i excludes exes in
       (*
-      print_endline ("After inlining applies:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+      print_endline (id ^ " After inlining applies:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
       let props = `Inlining_complete :: props in
       let data = id,parent,sr,`BBDCL_procedure (props,vs,ps,exes) in
@@ -1377,27 +1408,29 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
     if not (mem `Inlining_complete props) then begin
       (*
       print_endline ("HIB:Examining function " ^ id ^"<" ^ si i ^ "> for inlinable calls");
-      print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+      *)
+      (*
+      print_endline (id ^ " Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
       let exes = heavy_inline_calls syms (uses,child_map,bbdfns) vs i excludes exes in
       (*
-      print_endline ("After inlining calls:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+      print_endline (id ^ " After inlining calls:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
       let exes = tailit syms (child_map,bbdfns) i sr ps vs exes in
       (*
-      print_endline ("After tailing:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+      print_endline (id ^ " After tailing:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
       let exes = unravel syms (child_map,bbdfns) i vs exes in
       (*
-      print_endline ("After unravelling:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+      print_endline (id ^ " After unravelling:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
       let exes = heavy_inline_applies syms (uses,child_map,bbdfns) vs i excludes exes in
       (*
-      print_endline ("After inlining applies:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+      print_endline (id ^ " After inlining applies:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
       let exes = tailit syms (child_map,bbdfns) i sr ps vs exes in
       (*
-      print_endline ("After tailing(2):\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+      print_endline (id^ " After tailing(2):\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
       let props = `Inlining_complete :: props in
       let data = id,parent,sr,`BBDCL_function (props,vs,ps,ret,exes) in

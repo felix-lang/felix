@@ -2271,7 +2271,7 @@ rename wchar_t wchar
   tangle('ignore '+k)
 ignore wchar
 
-@h = tangler("config/gnu_headers.flxcc.default","data")
+@h = tangler("tmp/gnu_headers.flxcc.default","data")
 @select(h)
 // This file contains annotations to control
 // use of GNU system header files, and some other
@@ -2457,7 +2457,7 @@ merge /usr/include/bits/waitstatus.h /usr/include/sys/wait.h
 merge /usr/include/bits/xopen_lim.h /usr/include/limits.h
 merge /usr/include/bits/xtitypes.h /usr/include/stropts.h
 
-@h=tangler("config/c89.flxcc.default","data")
+@h=tangler("tmp/c89.flxcc.default","data")
 @select(h)
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
@@ -2498,7 +2498,7 @@ incfile wctype.h
 
 rename String String_
 
-@h=tangler("config/gnu89.flxcc.default","data")
+@h=tangler("tmp/gnu89.flxcc.default","data")
 @select(h)
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
@@ -2538,7 +2538,7 @@ incfile wctype.h
 
 rename String String_
 
-@h=tangler("config/c99.flxcc.default","data")
+@h=tangler("tmp/c99.flxcc.default","data")
 @select(h)
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
@@ -2578,7 +2578,7 @@ incfile wctype.h
 
 rename String String_
 
-@h=tangler("config/gnu99.flxcc.default","data")
+@h=tangler("tmp/gnu99.flxcc.default","data")
 @select(h)
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
@@ -2619,7 +2619,7 @@ incfile wctype.h
 
 rename String String_
 
-@h=tangler("config/cxx.flxcc.default","data")
+@h=tangler("tmp/cxx.flxcc.default","data")
 @select(h)
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
@@ -2655,7 +2655,7 @@ incfile cwctype
 
 rename String String_
 
-@h=tangler("config/gnucxx.flxcc.default","data")
+@h=tangler("tmp/gnucxx.flxcc.default","data")
 @select(h)
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc
@@ -2689,7 +2689,7 @@ incfile cwctype
 
 rename String String_
 
-@h=tangler("config/usr_include.flxcc.default","data")
+@h=tangler("tmp/usr_include.flxcc.default","data")
 @select(h)
 #include config/felix.flxcc
 #include config/gnu_headers.flxcc

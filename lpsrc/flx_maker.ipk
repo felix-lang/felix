@@ -101,6 +101,21 @@ for fn,tgt in tgts:
       line = string.replace(line,s,r)
     print line,
       
+@h = tangler('script/mk_fish','python')
+@select(h)
+import glob
+glob = glob.glob
+
+for i in glob("*.mli")+glob("*.mll")+glob("*.mly")+glob("*.ml"):
+  if i not in ["parse_fish.ml","lex_fish.ml"]:
+    print '@head(2,"'+i+'")'
+    print i+"."
+    print '@select(tangler("src/'+i+'"))'
+    f = open(i)
+    for j in f: print j,
+    f.close()
+    print
+
 @h = tangler('script/maker','python')
 @select(h)
 #!/usr/bin/env python
@@ -334,10 +349,20 @@ FLX_GC_SRC='src/'
 # ------------------------------------------------
 
 # files containing ocamllex sources
-LEXS = ['flx_cil_clexer','flx_cil_formatlex','flx_lex']
+LEXS = [
+  'lex_fish',
+  'flx_cil_clexer',
+  'flx_cil_formatlex',
+  'flx_lex'
+]
 
 # files containing ocamlyacc sources
-PARSES = ['flx_cil_cparser','flx_cil_formatparse','flx_parse']
+PARSES = [
+  'parse_fish',
+  'flx_cil_cparser',
+  'flx_cil_formatparse',
+  'flx_parse'
+]
 
 # ocaml modules = interfaces + implementation files
 
@@ -436,6 +461,25 @@ FLX_MODULES = [
   'flx_terminate'    , 
 ]
 
+FISH_MODULES = [
+  'primitive_fish'     ,
+  'types_fish'         ,
+  'terms_fish'         ,
+  'sugar_fish'         ,
+  'environments_fish'  ,
+  'type_subs_fish'     ,
+  'substitution_fish'  ,
+  'pretty_fish'        ,
+  'util_fish'          ,
+  'parse_fish'         ,
+  'lex_fish'           ,
+  'unify_fish'         ,
+  'infer_fish'         ,
+  'partial_ev_fish'    ,
+  'turbot2C_fish'      ,
+  'hook_fish'      ,
+]
+
 CIL_RAW_INTERFACES = [
   'flx_cil_machdep_type',
   'flx_cil_cabs',
@@ -447,15 +491,20 @@ FLX_RAW_INTERFACES = [
   'flx_ctypes'       ,
 ] 
 
+FISH_RAW_INTERFACES = [
+]
+
 FLX_INTERFACES = FLX_MODULES
 CIL_INTERFACES = CIL_MODULES
+FISH_INTERFACES = FISH_MODULES
 
 FLX_IMPLEMENTATIONS = FLX_INTERFACES
 CIL_IMPLEMENTATIONS = CIL_INTERFACES
+FISH_IMPLEMENTATIONS = FISH_INTERFACES
   
-IMPLEMENTATIONS = CIL_IMPLEMENTATIONS + FLX_IMPLEMENTATIONS
-INTERFACES = CIL_INTERFACES + FLX_INTERFACES
-RAW_INTERFACES = CIL_RAW_INTERFACES + FLX_RAW_INTERFACES
+IMPLEMENTATIONS = CIL_IMPLEMENTATIONS + FLX_IMPLEMENTATIONS + FISH_IMPLEMENTATIONS
+INTERFACES = CIL_INTERFACES + FLX_INTERFACES + FISH_INTERFACES
+RAW_INTERFACES = CIL_RAW_INTERFACES + FLX_RAW_INTERFACES + FISH_RAW_INTERFACES
 
 RTL_CPPS = [
   "rtl/flx_gc",
@@ -482,16 +531,18 @@ CLIBRARIES = ['nums']
 # and some hackery so we can if the source doesn't need
 # ocaml-fileutils we can still build if it isn't found
 OCAML_INCLUDES = ""
-OLIBRARIES = ['nums','unix','flxlib','cillib']
+OLIBRARIES = ['nums','unix','flxlib','cillib','fishlib']
 
 LIBS = [
   ('flxlib',FLX_IMPLEMENTATIONS),
-  ('cillib',CIL_IMPLEMENTATIONS)
+  ('cillib',CIL_IMPLEMENTATIONS),
+  ('fishlib',FISH_IMPLEMENTATIONS)
 ]
 
 # target executable programs to produce
 EXES = [
   # compiler tools
+  'fish',
   'flxl',
   'flxp',
   'flxm',
@@ -653,7 +704,8 @@ try:
       if buildall or filetime(file + '.mly') > filetime(file +'.ml'):
         buildall = 1
         xqt(OCAMLYACC+ ' -v '+ file + '.mly')
-        nxqt("grep conflict " + file + ".output")
+        if file <> "src/parse_fish":
+          nxqt("grep conflict " + file + ".output")
 
     # STEP 4: Compile ocaml interfaces
     for interface in INTERFACES:
@@ -916,9 +968,7 @@ We have no idea if it continues copying.
 @tangle('INSTALL_DIR=${PREFIX}/lib/felix')
 @tangle('EXEC_DIR=${PREFIX}/bin')
 @tangle('MAN_DIR=${PREFIX}/man')
-@try:
-   tangle('SWIGDEVDIR='+SWIGDEVDIR)
- except: pass
+@tangle('BUILTIN_ISCR=env PYTHONPATH=. python -O interscript/bin/iscr.py --nocache')
 @tangle('')
 @tangle('all: dummy')
 @tangle('\tpython script/maker extract compiler rtl drivers test')
@@ -1007,8 +1057,8 @@ We have no idea if it continues copying.
 @tangle('\t#from the original sources, including the tutorial')
 @tangle('\t#')
 @tangle('\t#type "make" to build the felix compiler and runtime')
-@tangle('\t#REQUIRES OCAML 3.07 or better')
-@tangle('\t#REQUIRES g++ 2.96 or better')
+@tangle('\t#REQUIRES OCAML 3.08.1 or better')
+@tangle('\t#REQUIRES g++ 3.xx or better')
 @tangle('\t#')
 @tangle('\t#type "make test" to build and execute all the tests')
 @tangle('\t#including all the tutorial examples')
@@ -1114,8 +1164,8 @@ We have no idea if it continues copying.
 @tangle('\t\tflx_'+flx_version+'/interscript/weavers/*.py \\')
 @tangle('')
 @tangle('www: dummy')
-@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_sourceforge.pak')
-@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_web.pak')
+@tangle('\t${BUILTIN_ISCR} lpsrc/flx_sourceforge.pak')
+@tangle('\t${BUILTIN_ISCR} lpsrc/flx_web.pak')
 @tangle('')
 @tangle('clean: dummy')
 @tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.dll tut/examples/*.par tut/examples/*.o')
@@ -1143,20 +1193,29 @@ We have no idea if it continues copying.
 @tangle('')
 
 @tangle('config: dummy')
-@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_config.pak')
+@tangle('\t${BUILTIN_ISCR} lpsrc/flx_config.pak')
 @tangle('\tpython -O script/make_config.py --quiet --prefix=${PREFIX}')
 @tangle('')
-
-@tangle('boot: dummy')
-@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx_config.pak')
-@tangle('\tpython -O script/make_config.py --quiet --prefix=${PREFIX}')
-@tangle('\tenv PYTHONPATH=. python -O interscript/bin/iscr.py --nocache lpsrc/flx.pak')
+@tangle('config/config.py: config')
+@tangle('')
+@tangle('boot: config/config.py')
+@tangle('\t${BUILTIN_ISCR} lpsrc/flx.pak')
+@for i in [
+  'flx_cil_machdep_type',
+  'flx_cil_cabs',
+  'flx_ast'          ,
+  'flx_types'        ,
+  'flx_ctypes'       ,
+  ]:
+  tangle('\tcp src/'+i+'.mli src/'+i+'.ml')
 @tangle('')
 @tangle('default_wrappers:')
-@tangle('\tfor i in config/*.default; do cp $$i config/`basename $$i .default`; done')
+@tangle('\tfor i in tmp/*.default; do cp $$i config/`basename $$i .default`; done')
 @tangle('')
 @tangle('wrappers.clean:')
 @tangle('\trm -rf flxcc_out c89 c99 cxx gnu89 gnu99 gnucxx')
+@tangle('')
+@tangle('config/cxx.flxcc: default_wrappers')
 @tangle('')
 @tangle('wrappers:')
 @tangle('\tbin/flxcc config/c89.flxcc')
@@ -1226,7 +1285,23 @@ We have no idea if it continues copying.
 A shell script to run the config step.
 @select(tangler('configure'))
 echo "Configuring Felix"
-make config
+grab=1
+PREFIX=$PREFIX
+while (( "$grab" == "1" ));
+do
+  case x$1 in
+  x--prefix=*)
+     PREFIX="`echo \"$1\" | sed 's/--prefix=\(.*\)/\\1'`"
+     shift
+  ;;
+  x) 
+    grab=0
+  ;;
+  esac
+done
+
+echo "Installing at PREFIX=$PREFIX"
+make PREFIX=$PREFIX config
 make boot
 make extract
 
@@ -1253,7 +1328,8 @@ written by Hugues Cassé
 @head(1,'COPYING')
 @select(tangler('COPYING'))
 Felix is free for any use. Just don't misrepresent
-the Authors.
+the Authors. The C parser is derived from
+FrontC/CIL which is has BSD licence.
 
 @head(1,'ChangeLog')
 @select(tangler('ChangeLog'))
@@ -1319,6 +1395,7 @@ The directories are:
   www    -- the top level of the sourceforge web site
   script -- python build script
   misc   -- misc files including vim syntax colouring file
+  meta   -- contains various package manager meta-data files
   lib    -- felix standard library
   man    -- man pages for tools and some language features
   bin    -- compiler tools directory
@@ -1332,9 +1409,11 @@ are not misrepresented in any way.
 
 Parts of this code, included in the file 
 
-lpsrc/flx_frontc.ipk
 
-are covered by this copyright notice:
+lpsrc/flx_frontc.ipk
+lpsrc/flx_cil.ipk
+
+are covered by a BSD Licence, here is the copyright notice:
 (*
  *
  * Copyright (c) 2001 by
@@ -1374,7 +1453,7 @@ are covered by this copyright notice:
 FULL BUILD.
 -----------
 
-1. Download, build, and install Ocaml (3.07 or greater)
+1. Download, build, and install Ocaml (3.08.1 or greater)
    if you don't have it already
 
    http://caml.inria.fr
@@ -1388,16 +1467,22 @@ FULL BUILD.
 3. Download the Felix tarball (this package)
    and unpack it in your workspace
    
-@tangle('   tar -zxvf felix_'+flx_version+'_src.tgz')
+@tangle('   tar -zxvf flx_'+flx_version+'_src.tgz')
 @tangle('   cd felix_'+flx_version)
 
 4. Bootstrap the system.
 
-  make boot
+  ./configure
 
-EDIT THE FILE
+OR type
 
-  config/config.py
+   make config
+   make boot
+   make extract
+
+EDIT THE FILES
+
+  config/*.py
 
 TO SUIT YOUR TASTES. THIS FILE IS NOT CLOBBERED.
 YOU MAY NEED TO DELETE IT AND RUN 'make boot'
@@ -1405,27 +1490,13 @@ again to reset to the defaults.
 
 5. Build the compiler
 
-   make compiler rtl drivers
+   make 
 
 6. Build the documentation and tutorial
 
    make doc 
 
-   developers can also do:
-
-   make impldoc
-
-7. Test the compiler
-
-   make test
-
-   This stops on the first error. Use
-
-   make tests
-
-   to run the force all the tests to run
-   
-8. Install the compiler
+7. Install the compiler
 
    Become super user if necessary, then:
 
@@ -2147,8 +2218,9 @@ godiva may not handle all the options
 we need -- so the generated makefile
 is included as well.
 
-@select(tangler('meta/godiva/flx.spec'))
+@select(tangler('meta/godiva/flx.godiva','data'))
 Package: apps-felix
+@tangle('Version: '+flx_version)
 Revision: 0
 Depends:
 Build-depends: godi-ocaml (> 3.08) 
@@ -2156,14 +2228,51 @@ Build-depends: godi-ocaml (> 3.08)
 @tangle('Unpacks-To: flx_'+flx_version)
 Bytecode-Target: all
 Opt-Target: all
+Homepage: http://felix.sf.net
 Maintainer: John Skaller <skaller@users.sf.net>
 Options: configure
 Description: Felix Compiler
+Felix Compiler
+.
 
-@select(tangler('meta/godi/DESCR'))
+@select(tangler('meta/godiva/flx.godiva_camlsyntax','data'))
+name = "felix";
+version = "1.0.10";
+revision = 0;
+category = `apps;
+depends = [];
+build_depends = [`godi,"ocaml", Some (`gt, "3.08")];
+sources_site ="http://felix.sf.net/";
+@tangle('sources_basename= "flx_'+flx_version+'_src";')
+sources_extension = ".tgz";
+@tangle('sources_unpacksto = "flx_'+flx_version+'";')
+all_target= "all";
+opt_target= "all";
+homepage= "http://felix.sf.net";
+maintainer = "John Skaller <skaller@users.sf.net>";
+options= [`configure];
+short_desc = "Felix Compiler";
+long_desc = "Felix Compiler";
+confopts = [
+  { 
+    name = "SUPPORT_DYNAMIC_LOADING";
+    default = "1";
+    description = "Whether to support dlopen loading";
+    implementation = `configarg "--SUPPORT_DYNAMIC_LOADING"
+  }
+];
+specfile = "meta/godiva/flx.godiva_camlsyntax";
+patches = [];
+filesdir = None;
+
+@select(tangler('meta/godi/DESCR','data'))
 Felix Compiler and tools.
 
-@select(tangler('meta/godi/Makefile'))
+@doc()
+This makefile only here for reference (don't use it,
+it should be generated).
+
+@select(tangler('meta/godi/Makefile','data'))
 # This file was automatically generated by GODIVA
 .include "../../mk/bsd.prefs.mk"
 .include "../../mk/godi.pkg.mk"
@@ -2190,7 +2299,7 @@ MAKE_FLAGS=     PREFIX=${PREFIX}
 
 PATH:=          ${LOCALBASE}/bin:${PATH}
 HAS_CONFIGURE = yes
-CONFIGURE_ARGS+= --prefix ${PREFIX}
+CONFIGURE_ARGS+= --prefix=${PREFIX}
 CONFIGURE_ENV+= ${BUILD_OCAMLFIND_ENV}
 USE_GMAKE = yes
 

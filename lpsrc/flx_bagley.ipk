@@ -168,10 +168,9 @@ proc print_phone(x:string, j:int) {
   var s = "";
   var i = 0;
   while {i<n} {
-    if zero <= ord(x.[i]) &<= nine 
-    then { s = s + ord(x.[i]); }
-    else {}
-    endif;
+    if zero <= ord(x.[i]) &<= nine do 
+      s = s + ord(x.[i]); 
+    done;
     ++i;
   };
   print j; print ": ";
@@ -234,7 +233,7 @@ foo 214) 222 2222 bar
 Copied from the Ocaml code.
 @select(tangler('bagley/felix/random.flx','data'))
 @setup()
-
+//adapted from Ocaml solution
 im := 139968;
 ia := 3877;
 ic := 29573;
@@ -380,12 +379,10 @@ while {m>0} {
   count = 0;
   for {i=2;} { i <= 8192 } { i++; } { prime.[i] = true; };
   for {i=2;} {i <= 8192} {i++;} {
-    if prime.[i] then {
+    if prime.[i] do
       for {k=i+i;} {k <= 8192} { k+=i; } { prime.[k] = false; };
       count++;
-    }
-    else {}
-    endif;
+    done;
   };
 };
 
