@@ -22,6 +22,11 @@ val bind_type:
   typecode_t ->
   btypecode_t
 
+val eval_module_expr:
+  symbol_table_t ->
+  env_t ->
+  expr_t ->
+  module_rep_t
 
 @h = tangler("src/flx_lookup.ml")
 @select(h)
@@ -74,11 +79,12 @@ let rec lookup_qn_in_htab dfns htab sr qn : entry_set_t =
           " got overload set: " ^
           short_string_of_src sr
         )
-      | NonFunctionEntry index -> index
+      | NonFunctionEntry (Simple index) -> index
+      | NonFunctionEntry _ -> assert false
+
     in match get_data dfns index with
     | (id,_,_,SYMDEF_module htab) -> 
       assert (id = h);
-      (* failwith ("Qualified name lookup found module, interface required"); *)
       lookup_qn_in_htab dfns htab sr t
       
     | (id,_,_,SYMDEF_interface htab) -> 
@@ -157,16 +163,62 @@ let rec lookup_qn_in_env dfns env sr qn : entry_set_t =
             " got overload set :" ^
             short_string_of_src sr
           )
-        | NonFunctionEntry index -> index
+        | NonFunctionEntry (Simple index) -> index
+        | NonFunctionEntry _ -> assert false
+
       in match get_data dfns index with
       | (id,_,_,SYMDEF_module htab) ->
         assert (id = h);
         lookup_qn_in_htab dfns htab sr t
 
       | (id,_,_,SYMDEF_module_binding e) ->
-        let htab = eval_module_expr dfns env e in
-        lookup_qn_in_htab dfns htab sr t
+        begin match eval_module_expr dfns env e with 
+        | Simple_module htab ->
+          lookup_qn_in_htab dfns htab sr t
 
+        | Bound_module (iface,binding) ->
+          print_endline ("[luqn in env] Lookup finds bound_module : " ^ id);
+          match Hashtbl.find dfns iface with
+          | (_,_,_,SYMDEF_interface table) ->
+
+            (* ******* PROBLEM HERE ****** *)
+            let src = lookup_qn_in_htab dfns table sr t  in
+            begin match src with
+            | NonFunctionEntry (Simple ix) ->
+              let dst = Hashtbl.find binding ix in
+              print_endline 
+              (
+                "Actually got NonFunction binding " ^
+                string_of_int ix ^ " ==> " ^ string_of_int dst
+              );
+              NonFunctionEntry (Bound (ix,dst))
+   
+            | NonFunctionEntry _ ->
+              failwith
+              (
+                "[lookup_qn_in_env: Bound_module] Expected simple nonfunction entry got binding"
+              )
+            | FunctionEntry ls ->
+              print_endline ("Actually got Function bindings:");
+              let ns = ref [] in
+              List.iter
+              (fun ix ->
+                match ix with
+                | Simple ix ->
+                  let dst = Hashtbl.find binding ix in
+                  ns := Bound (ix,dst) :: !ns;
+                  print_endline (string_of_int ix ^ " ==> " ^ string_of_int dst)
+                | _ -> failwith "Woops, expected Simple"
+              )
+              ls
+              ;
+              FunctionEntry !ns
+            end
+
+          | _ -> 
+            failwith "Lookup in bound module expected interface"
+        end
+        
       | (id,_,_,SYMDEF_interface htab) ->
         assert (id = h);
         print_endline ("[luqn in env] Look finds interface : " ^ id);
@@ -187,7 +239,7 @@ and map_type iface dfns mmap ienv binding t =
   let map t = map_type iface dfns mmap ienv binding t in
   match t with
   | BTYP_name index ->
-    BTYP_name 
+    BTYP_name
     (
       get_unique_binding iface dfns mmap ienv binding index
     )
@@ -197,14 +249,18 @@ and map_type iface dfns mmap ienv binding t =
   | BTYP_pointer t -> BTYP_pointer (map t)
   | BTYP_void -> BTYP_void
   | BTYP_none -> BTYP_none 
+  | BTYP_binding (a,b) ->
+    failwith "[map type] Unexpected type binding"
   
 and compare_defn iface dfns mmap name ienv ientry menv mentry binding =
+  (*
   print_endline 
   (
-    "comparing iface element " ^ string_of_symdef ientry name ^ 
-    " with module element "  ^
-    string_of_symdef mentry name
+    "comparing iface element '" ^ string_of_symdef ientry name ^ "'" ^
+    "\n with module element '"  ^
+    string_of_symdef mentry name ^ "'"
   );
+  *)
   match ientry,mentry with
   | SYMDEF_if_type,SYMDEF_dcl (DCL_type_alias _)
   | SYMDEF_if_type,SYMDEF_dcl (DCL_abs _)
@@ -262,14 +318,14 @@ and compare_defn iface dfns mmap name ienv ientry menv mentry binding =
    These semantics to support binding a a type in
    the interface down to a type in the module
 *)
-and get_unique_binding iface dfns mmap ienv binding iindex =
+and get_unique_binding iface dfns mmap ienv (binding: index_map_t) iindex : bid_t =
   try Hashtbl.find binding iindex
   with Not_found ->
     let iid,isr,iparent,isymdef = Hashtbl.find dfns iindex in
     if iparent <> Some iface then iindex
     else begin try
       match Hashtbl.find mmap iid with
-      | NonFunctionEntry mindex ->
+      | NonFunctionEntry (Simple mindex) ->
         let mid,msr,mparent,msymdef = Hashtbl.find dfns mindex in
         assert(iid=mid);
         let menv = build_env dfns mparent in
@@ -285,6 +341,11 @@ and get_unique_binding iface dfns mmap ienv binding iindex =
             "interface entry '"^ iid ^ 
             "' doesn't match the one in the module"
           )
+      | NonFunctionEntry _ ->
+        failwith
+        (
+          "Expected Simple non function entry, got binding"
+        )
       | FunctionEntry _ ->
         failwith 
         (
@@ -300,83 +361,89 @@ and get_unique_binding iface dfns mmap ienv binding iindex =
     end
 
 and match_interface_entry iface dfns mmap ienv binding name ientry =
+  (*
   print_endline ("matching interface name " ^ name);
+  *)
   match ientry with
-  | NonFunctionEntry iindex ->
+  | NonFunctionEntry (Simple iindex) ->
     ignore(get_unique_binding iface dfns mmap ienv binding iindex)
-
+  | NonFunctionEntry _ ->
+    failwith
+    (
+      "Expected simple Nonfunction entry, got binding"
+    )
   | FunctionEntry ls ->
     List.iter
     (fun iindex ->
-      let iid,isr,iparent,isymdef = Hashtbl.find dfns iindex in
-      begin try
-        match Hashtbl.find mmap name with
-        | NonFunctionEntry _ ->
-          failwith
-          (
-            "Function entry '" ^
-            name ^
-            "' in interface , found non function in module"
-          )
-        | FunctionEntry ls ->
-          begin try List.iter
-          (fun mindex ->
-            let mid,msr,mparent,msymdef = Hashtbl.find dfns mindex in
-            let menv = build_env dfns mparent in
-            if (compare_defn iface dfns mmap name ienv isymdef menv msymdef binding)
-            then raise (Found mindex);
-          )
-          ls
-          ;
-          failwith 
-          (
-            "interface entry '"^
-            name^
-            "' doesn't match the any one in the module"
-          )
-          with Found mindex-> 
-            Hashtbl.add binding iindex mindex
-          end
-      with 
-        | Not_found -> 
-          failwith 
-          (
-            "Name " ^ name ^ " of interface not found in module"
-          )
-      end
+      match iindex with
+      | Simple iindex ->
+        let iid,isr,iparent,isymdef = Hashtbl.find dfns iindex in
+        begin try
+          match Hashtbl.find mmap name with
+          | NonFunctionEntry _ ->
+            failwith
+            (
+              "Function entry '" ^
+              name ^
+              "' in interface , found non function in module"
+            )
+          | FunctionEntry ls ->
+            begin try List.iter
+            (fun mindex ->
+              match mindex with
+              | Simple mindex ->
+                let mid,msr,mparent,msymdef = Hashtbl.find dfns mindex in
+                let menv = build_env dfns mparent in
+                if (compare_defn iface dfns mmap name ienv isymdef menv msymdef binding)
+                then raise (Found mindex);
+              | _ -> failwith "Expected Simple"
+            )
+            ls
+            ;
+            failwith 
+            (
+              "interface entry '"^
+              name^
+              "' doesn't match the any one in the module"
+            )
+            with Found mindex-> 
+              Hashtbl.add binding iindex mindex
+            end
+        with 
+          | Not_found -> 
+            failwith 
+            (
+              "Name " ^ name ^ " of interface not found in module"
+            )
+        end
+      | _ -> 
+        failwith
+        (
+          "Expected simple entry, got binding"
+        )
     )
     ls
-
+  
 and match_interface iface dfns mmap ienv imap =
   let binding = Hashtbl.create 97 in
-  Hashtbl.iter
-  (match_interface_entry iface dfns mmap ienv binding)
-  imap
-  ;
-  print_endline "Module matches interface OK";
-  print_endline "Binding is:";
-  Hashtbl.iter
-  (fun i j -> 
-    print_endline 
-    (
-      let iid,_,_,ie = Hashtbl.find dfns i 
-      and mid,_,_,me = Hashtbl.find dfns j
-      in
-      iid ^
-      "[" ^ string_of_int i ^ "] -> " ^
-      mid ^
-      "[" ^ string_of_int j ^ "]"
-    )
-  )
-  binding
-  ;
-  failwith "Done"
-
+  try 
+    Hashtbl.iter
+    (match_interface_entry iface dfns mmap ienv binding)
+    imap
+    ;
+    Some binding
+  with 
+    | Failure x -> 
+      print_endline ("WARNING: interface doesn't match module: " ^ x);
+      None
+  
 and eval_module_expr dfns env e = 
+  (*
   print_endline ("Handling module expression '"^string_of_expression e^"'");
+  *)
   match e with
   | AST_coercion (sr,(m,t)) ->
-    let module_map = eval_module_expr dfns env m in
+    let m' = eval_module_expr dfns env m in
     let t' = bind_type dfns env [] t in
     begin match t' with
     | BTYP_name index ->
@@ -384,7 +451,48 @@ and eval_module_expr dfns env e =
       let ienv = build_env dfns (Some index) in
       begin match symdef with
       | SYMDEF_interface imap ->
-        match_interface index dfns module_map ienv imap
+        begin match m' with
+        | Simple_module module_map ->
+          begin match
+            match_interface index dfns module_map ienv imap
+          with
+            | Some binding ->
+              Bound_module (index,binding)
+            | None -> failwith "Module doesn't match interface"
+          end
+        | Bound_module (iface,_) ->
+          let _,_,_,ientry = Hashtbl.find dfns iface in
+          begin match ientry with
+          | SYMDEF_interface module_map ->
+            begin match
+              match_interface index dfns module_map ienv imap
+            with
+              | Some binding ->
+                print_endline ("Interface matches interface '"^id^"' OK");
+                print_endline "Binding is:";
+                Hashtbl.iter
+                (fun i j -> 
+                  print_endline 
+                  (
+                    let iid,_,_,ie = Hashtbl.find dfns i 
+                    and mid,_,_,me = Hashtbl.find dfns j
+                    in
+                    iid ^
+                    "[" ^ string_of_int i ^ "] -> " ^
+                    mid ^
+                    "[" ^ string_of_int j ^ "]"
+                  )
+                )
+                binding
+                ;
+                Bound_module (index,binding)
+
+              | None -> failwith "Interface doesn't match interface"
+            end
+          | _ -> failwith "Expected interface"
+          end
+        end
+
       | x -> 
         failwith 
         (
@@ -399,7 +507,7 @@ and eval_module_expr dfns env e =
         string_of_btypecode dfns t'
       )
     end
-
+     
   | AST_apply (sr,(f,m)) ->
     failwith "Can't handle functor application in lookup yet"
 
@@ -413,10 +521,10 @@ and eval_module_expr dfns env e =
         "' to be module, got function overload set in : " ^
         short_string_of_src sr
       )
-    | NonFunctionEntry index ->
+    | NonFunctionEntry (Simple index) ->
       let id,sr',parent,entry = Hashtbl.find dfns index in
       begin match entry with
-      | SYMDEF_module table -> table
+      | SYMDEF_module table -> Simple_module table
       | _ -> 
         failwith 
         (
@@ -425,61 +533,72 @@ and eval_module_expr dfns env e =
           short_string_of_src sr'
         )
       end
+    | _ -> 
+      failwith
+      (
+        "Expected simple non function entry, got binding"
+      )
     end
 
   | _ ->
     failwith "Invalid module expression"
 
+and bind_index dfns env exclude index = 
+  if List.mem index exclude 
+  then failwith (
+    "Recursive type alias " ^
+    (
+      match get_data dfns index with id,sr,_,_ -> 
+        id ^ " defined at " ^
+        short_string_of_src sr
+    )
+  )
+  else begin match get_data dfns index with
+  | _,_,_,SYMDEF_dcl (DCL_type_alias t) -> 
+    bind_type dfns env (index :: exclude) t
+
+  | _,_,_,SYMDEF_if_type -> BTYP_name index
+  | _,_,_,SYMDEF_dcl (DCL_abs _) -> BTYP_name index
+  | _,_,_,SYMDEF_dcl (DCL_union _) -> BTYP_name index
+  | _,_,_,SYMDEF_dcl (DCL_struct _) -> BTYP_name index
+  | _,_,_,SYMDEF_interface _ -> BTYP_name index
+  | id,sr,_,_ -> 
+    failwith 
+    (
+      "[bind_type] Type " ^ id ^ 
+      " defined at " ^ short_string_of_src sr ^
+      " must be abstract, union or struct"
+    )
+  end 
 
 and bind_type dfns env exclude t : btypecode_t =
   let bt t = bind_type dfns env exclude t in
   let dummy_sr = ("type binding",0,0,0,0) in
   let lu qn = lookup_qn_in_env dfns env dummy_sr qn in
   match t with
-  | TYP_name qn ->
-    let index = match lu qn with
-      | NonFunctionEntry index -> index
-      | FunctionEntry _ -> 
-        failwith 
-        (
-          "[bind_types] Expected "^
-          string_of_qualified_name qn^
-          " to be a type, got function overload set"
-        )
-    in
-    if List.mem index exclude 
-    then failwith (
-      "Recursive type alias " ^
-      (
-        match get_data dfns index with id,sr,_,_ -> 
-          id ^ " defined at " ^
-          short_string_of_src sr
-      )
-    )
-    else begin match get_data dfns index with
-    | _,_,_,SYMDEF_dcl (DCL_type_alias t) -> bind_type dfns env (index :: exclude) t
-    | _,_,_,SYMDEF_dcl (DCL_abs _) -> BTYP_name index
-    | _,_,_,SYMDEF_dcl (DCL_union _) -> BTYP_name index
-    | _,_,_,SYMDEF_dcl (DCL_struct _) -> BTYP_name index
-    | _,_,_,SYMDEF_dcl (DCL_interface _) -> BTYP_name index
-    | _,_,_,SYMDEF_if_type -> BTYP_name index 
-    | _,_,_,SYMDEF_interface _ -> BTYP_name index
-    | id,sr,_,_ -> 
-      failwith 
-      (
-        "[bind_type] Type " ^ id ^ 
-        " defined at " ^ short_string_of_src sr ^
-        " must be abstract, union or struct"
-      )
-    end 
   | TYP_tuple ts -> BTYP_tuple (List.map bt ts)
   | TYP_function (d,c) -> BTYP_function (bt d, bt c)
   | TYP_pointer t -> BTYP_pointer (bt t)
   | TYP_void -> BTYP_void
   | TYP_none -> BTYP_none
- 
+  | TYP_name qn ->
+    match lu qn with
+    | NonFunctionEntry (Bound (i,m)) -> 
+      let t' = bind_index dfns env exclude m in
+      BTYP_binding (i,t')
 
-and rebind_btype dfns env t =
+    | FunctionEntry _ -> 
+      failwith 
+      (
+        "[bind_types] Expected "^
+        string_of_qualified_name qn^
+        " to be a type, got function overload set"
+      )
+
+    | NonFunctionEntry (Simple index) ->
+      bind_index dfns env exclude index
+
+and rebind_btype dfns env t: btypecode_t =
   let rbt t = rebind_btype dfns env t in
   match t with
   | BTYP_name i ->
@@ -494,5 +613,5 @@ and rebind_btype dfns env t =
   | BTYP_pointer t -> BTYP_pointer (rbt t)
   | BTYP_void -> BTYP_void
   | BTYP_none -> BTYP_none
-
+  | BTYP_binding (a,b) -> BTYP_binding (a,rbt b)
 

@@ -56,7 +56,8 @@ let bind_exes dfns bdfns env exes ret_type =
   let bool_entry = luqn dummy_sr ["";"bool"] in
   let bool_index = match bool_entry with
     | FunctionEntry _ -> failwith "bool cannot be function"
-    | NonFunctionEntry index -> index
+    | NonFunctionEntry (Simple index) -> index
+    | _ -> failwith "bool cannot be abstract"
   in let bool_type = BTYP_name bool_index in
 
   let bound_exes = 
@@ -98,10 +99,12 @@ let bind_exes dfns bdfns env exes ret_type =
             (fun htab ->
               try 
                 match Hashtbl.find htab name with
-                | NonFunctionEntry index -> raise (Found index)
+                | NonFunctionEntry (Simple index) -> raise (Found index)
+                | NonFunctionEntry _ -> failwith "No expect bound entry"
                 | FunctionEntry fs ->
                   match resolve_overload dfns bdfns fs name t2 with
-                  | Some i -> raise (Found i)
+                  | Some (Bound _) -> failwith "Can't handle bound result"
+                  | Some (Simple i) -> raise (Found i)
                   | None ->  ()
               with Not_found -> ()
             )
@@ -147,7 +150,8 @@ let bind_exes dfns bdfns env exes ret_type =
             | NonFunctionEntry _ -> failwith "[bind_exes] Expected function"
             | FunctionEntry fs -> 
               match resolve_overload dfns bdfns fs name t2 with
-              | Some i -> i
+              | Some (Simple i) -> i
+              | Some (Bound _) -> failwith "Can't handle bound result"
               | None -> 
                 failwith 
                 (
@@ -166,7 +170,8 @@ let bind_exes dfns bdfns env exes ret_type =
 
       | EXE_read s ->          
         begin match lun dummy_sr s with
-        | NonFunctionEntry index -> BEXE_read index
+        | NonFunctionEntry (Simple index) -> BEXE_read index
+        | NonFunctionEntry _ -> failwith "not expecting bound entry"
         | FunctionEntry _ -> failwith "Can't read function!"
         end
 
@@ -187,17 +192,19 @@ let bind_exes dfns bdfns env exes ret_type =
         let sr = src_of_expr e in (* HACK! *)
         begin match lun sr s with
         | FunctionEntry _ -> failwith "Can't init function constant"
-        | NonFunctionEntry index -> 
-          let e',t' = be e in
-          let t = typeofindex dfns bdfns [] sr index in
-          if t = t'
-          then BEXE_init (index, (e',t'))
+        | NonFunctionEntry (Simple index) -> 
+          let e',rhst = be e in
+          let lhst = typeofindex dfns bdfns [] sr index in
+          if lhst = rhst
+          then BEXE_init (index, (e',rhst))
           else failwith (
-            "LHS["^s^"]("^string_of_btypecode dfns t^
+            "LHS["^s^"]("^string_of_btypecode dfns lhst^
             ") of initialisation must have same type as RHS("^
-            string_of_btypecode dfns t'^")"
+            string_of_btypecode dfns rhst^")"
           )
+        | NonFunctionEntry _ -> failwith "Not expecting bound entry"
         end
+        
     )
     exes
   in 
@@ -222,6 +229,9 @@ let bbind counter dfns bdfns =
   Hashtbl.iter
   (fun i (name, parent, bdcl) -> 
   match bdcl with
+  | BDCL_binding (src,dst) ->
+    Hashtbl.add bbdfns i (name,parent, BBDCL_binding (src,dst))
+
   | BDCL_type_parameter ->
     Hashtbl.add bbdfns i (name,parent, BBDCL_type_parameter)
 
@@ -237,11 +247,6 @@ let bbind counter dfns bdfns =
   | BDCL_module table -> 
     Hashtbl.add bbdfns i (name,parent, BBDCL_module table)
   
-  | BDCL_module_binding e ->
-    let env = build_env dfns parent in 
-    let et = bind_expression dfns bdfns env [] e in
-    Hashtbl.add bbdfns i (name,parent, BBDCL_module_binding et)
-    
   | BDCL_function (ps,rt,display,exes,name_map) -> 
     (* print_endline ("//Binding function " ^ string_of_int i ^ " --> " ^ name); 
     *)
@@ -339,7 +344,7 @@ let bbind counter dfns bdfns =
       Hashtbl.add bbdfns vid (vname, Some i, 
         BBDCL_val bvtyp 
       );
-      Hashtbl.add (List.hd env) vname (NonFunctionEntry vid);
+      Hashtbl.add (List.hd env) vname (NonFunctionEntry (Simple vid));
       let instr = EXE_init (vname, component) in
       (* print_endline (string_of_exe 1 instr);
       *)
@@ -463,7 +468,7 @@ try
   in
     let bdfns = Hashtbl.create 97 in
     Hashtbl.iter
-    (fun index _ -> bind_entry bdfns dfns index)
+    (fun index _ -> bind_entry counter bdfns dfns index)
     dfns
     ;
     Hashtbl.iter

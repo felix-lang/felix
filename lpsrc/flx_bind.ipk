@@ -32,6 +32,7 @@ is necessary to support call recursion.
 open Flx_types
 
 val bind_entry:
+  int ref ->
   bound_symbol_table_t ->
   symbol_table_t ->
   int -> 
@@ -62,7 +63,7 @@ let get_data table index : symbol_data_t =
   with Not_found -> 
     failwith ("[Flx_bind.get_data] No definition of <" ^ string_of_int index ^ ">")
 
-let rec bind_entry bdfns dfns index =  
+let rec bind_entry counter bdfns dfns index =  
   match get_data dfns index with id,sr,parent,dfn ->
   let env = build_env dfns parent in
   let bt t = bind_type dfns env [] t in 
@@ -71,27 +72,83 @@ let rec bind_entry bdfns dfns index =
     let bdcl = BDCL_if_fun (bt t,display) in
     Hashtbl.add bdfns index (id,parent,bdcl)
 
-  | SYMDEF_if_proc (msgt,t,display) ->
+  | SYMDEF_if_proc (msgt,t,display) -> ()
+    (*
     let bdcl = BDCL_if_proc (bt msgt, bt t,display) in
     Hashtbl.add bdfns index (id,parent,bdcl)
+    *)
 
-  | SYMDEF_module_binding e ->
-    let bdcl = BDCL_module_binding e in
-    Hashtbl.add bdfns index (id,parent,bdcl)
+  | SYMDEF_module_binding e -> ()
+    (* do we need this at all??
+    begin match eval_module_expr dfns env e with
+    | Simple_module table ->
+      let bdcl = BDCL_module table in
+      Hashtbl.add bdfns index (id,parent,bdcl)
 
-  | SYMDEF_if_type ->
+    | Bound_module (iface,imap) ->
+      let iid,sr,pa,ientry = Hashtbl.find dfns iface in
+      begin match ientry with
+      | SYMDEF_interface itable ->
+        print_endline ("CREATING BINDINGS FOR " ^ id);
+        let binding_map = Hashtbl.create 97 in
+        Hashtbl.iter
+        (fun name entry ->
+          match entry with
+          | NonFunctionEntry (Simple src) ->
+            let n = !counter in
+            incr counter;
+            let dst = Hashtbl.find imap src in
+            let bdcl = BDCL_binding (src, dst) in
+            Hashtbl.add bdfns n (name,None,bdcl);
+            Hashtbl.add binding_map name (NonFunctionEntry (Simple n))
+          | NonFunctionEntry _ ->
+            failwith "expected simple"
+
+          | FunctionEntry srcs ->
+            let ns = ref [] in
+            List.iter
+            (fun src ->
+              match src with 
+              | Simple src ->
+                let n = !counter in
+                incr counter;
+                let dst = Hashtbl.find imap src in
+                let bdcl = BDCL_binding (src, dst) in
+                Hashtbl.add bdfns n (name,None,bdcl);
+                ns := Simple n :: !ns
+              | Bound (src,dst) -> 
+                failwith "[bind] bound entry not expected"
+            )
+            srcs
+            ;
+            Hashtbl.add binding_map name (FunctionEntry !ns)
+        )
+        itable
+        ;
+        let bdcl = BDCL_module (binding_map) in
+        Hashtbl.add bdfns index (id,parent,bdcl)
+
+      | _ -> assert false
+      end
+    end
+    *)
+
+  | SYMDEF_if_type -> 
+    (* STUB for register type *)
     let bdcl = BDCL_type_parameter in 
     Hashtbl.add bdfns index (id,parent,bdcl)
 
-  | SYMDEF_functor (ps,ret,display,exes,name_map) ->
+  | SYMDEF_functor (ps,ret,display,exes,name_map) -> ()
+    (*
     let ps' = List.map
       (fun (name,t) -> (name, bt t))
     ps
     in 
-    let ret' = bind_type dfns env [] ret in
+    let ret' = bt ret in
     Hashtbl.add bdfns index (id,parent,
       BDCL_functor (ps',ret',exes,name_map)
     )
+    *)
 
   | SYMDEF_parameter t ->
     let bdcl = BDCL_val (bt t) in 
@@ -101,6 +158,7 @@ let rec bind_entry bdfns dfns index =
     Hashtbl.add bdfns index (id,parent, BDCL_module table )
 
   | SYMDEF_interface table -> 
+    (* STUB for register_type *)
     Hashtbl.add bdfns index (id,parent, BDCL_interface table)
 
   | SYMDEF_procedure (msgt,ps,display,exes,name_map) ->
@@ -131,7 +189,7 @@ let rec bind_entry bdfns dfns index =
       (fun (name,t) -> (name, bt t))
     ps
     in 
-    let ret' = bind_type dfns env [] ret in
+    let ret' = bt ret in
     Hashtbl.add bdfns index (id,parent,
       BDCL_function (ps',ret',display,exes,name_map)
     )
@@ -230,13 +288,15 @@ let bind_ifaces dfns bdfns ifaces =
           | FunctionEntry fs ->
             let bound_suffix =  bind_type dfns env [] suf in
             (match resolve_overload dfns bdfns fs name bound_suffix with
-            | Some i -> i
+            | Some (Simple i) -> i
+            | Some (Bound _) -> failwith "[bind_ifaces] Can't handle bound result"
             | None -> failwith 
               (
                 "[flx_bbind] Can't find match to export " ^ name
               )
             )
-          | NonFunctionEntry index -> index
+          | NonFunctionEntry (Simple index) -> index
+          | NonFunctionEntry _ -> failwith "Not expecteding bound entry"
         in BIFACE_export (index, cpp_name) 
      )
      ifaces

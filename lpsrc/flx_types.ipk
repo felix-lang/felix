@@ -323,6 +323,7 @@ and btypecode_t =
   | BTYP_pointer  of btypecode_t                  (* pointer type *)
   | BTYP_void                                     (* void type *)
   | BTYP_none                                     (* special hack for 'no type' *)
+  | BTYP_binding of bid_t * btypecode_t           (* interface, module *)
 
 and bparameter_t = string * btypecode_t
 and bdcl_t = 
@@ -353,7 +354,7 @@ and bdcl_t =
   | BDCL_interface of  name_map_t
   | BDCL_functor of    bparameter_t list * btypecode_t * exe_t list * name_map_t
   | BDCL_type_parameter
-  | BDCL_module_binding of expr_t
+  | BDCL_binding of    bid_t * bid_t
   
 and bbdcl_t = 
   | BBDCL_header of     string
@@ -375,14 +376,22 @@ and bbdcl_t =
   | BBDCL_struct of     (id_t * btypecode_t) list
 
   | BBDCL_module of     name_map_t
-  | BBDCL_interface of     name_map_t
+  | BBDCL_interface of  name_map_t
   | BBDCL_type_parameter
-  | BBDCL_module_binding of tbexpr_t
+  | BBDCL_binding of    bid_t * bid_t
+
+and entry_kind_t = 
+  | Simple of int
+  | Bound of int * int
 
 and entry_set_t =
-  | FunctionEntry of int list
-  | NonFunctionEntry of int
+  | FunctionEntry of entry_kind_t list
+  | NonFunctionEntry of entry_kind_t
   
+and module_rep_t = 
+  | Simple_module of name_map_t
+  | Bound_module of bid_t * index_map_t
+ 
 and name_map_t = (string, entry_set_t) Hashtbl.t
 and index_map_t = (int,int) Hashtbl.t
 
@@ -734,6 +743,13 @@ and qualified_name_of_index dfns index =
 and string_of_btypecode dfns tc = 
   let sbt t = string_of_btypecode dfns t in
   match tc with
+  | BTYP_binding (a,b) -> 
+    "binding (" ^ 
+    qualified_name_of_index dfns a ^
+    " => " ^
+    sbt b ^
+    ")"
+
   | BTYP_name n -> qualified_name_of_index dfns n
   | BTYP_tuple ls -> 
     begin match ls with 
@@ -1354,10 +1370,10 @@ and string_of_bdcl dfns level index s =
   let name = qualified_name_of_index dfns index in
   let string_of_btypecode t = string_of_btypecode dfns t in
   match s with
-  | BDCL_module_binding e ->
+  | BDCL_binding (src,dst) ->
     spaces level ^
-    "module " ^ name ^ " = " ^ 
-     string_of_expression e ^ ";\n"
+    "binding " ^ string_of_int src ^ 
+    " -> " ^ string_of_int dst ^ ";\n"
 
   | BDCL_type_parameter -> 
     spaces level ^
@@ -1472,9 +1488,6 @@ and string_of_bbdcl dfns bbdcl index =
   let sobt t = string_of_btypecode dfns t in
   let se e = string_of_bound_expression dfns e in
   match bbdcl with
-  | BBDCL_module_binding te -> 
-    "module " ^ name ^ " = " ^ se te ^ ";\n"
-    
   | BBDCL_type_parameter -> "type " ^ name ^ ";"
   | BBDCL_module name_map -> "module " ^ name ^ ";"
   | BBDCL_interface name_map -> "interface " ^ name ^ ";"
@@ -1547,6 +1560,11 @@ and string_of_bbdcl dfns bbdcl index =
     "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     "}"
+
+  | BBDCL_binding (src,dst) ->
+    "binding " ^ string_of_int src ^ 
+    " -> " ^ string_of_int dst ^ ";\n"
+
 
 
 @h = tangler('src/flx_mtypes.ml')

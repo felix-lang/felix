@@ -77,7 +77,7 @@ let add_unique table key value =
   try 
     Hashtbl.find table key;
     failwith ("Duplicate key " ^ key)
-  with Not_found -> Hashtbl.add table key (NonFunctionEntry value)
+  with Not_found -> Hashtbl.add table key (NonFunctionEntry (Simple value))
 
 let add_function table key value =
   try 
@@ -86,9 +86,9 @@ let add_function table key value =
       failwith ("Cannot overload " ^ key ^ " with non-function")
     | FunctionEntry fs ->
       Hashtbl.remove table key;
-      Hashtbl.add table key (FunctionEntry (value :: fs))
+      Hashtbl.add table key (FunctionEntry (Simple value :: fs))
   with Not_found -> 
-    Hashtbl.add table key (FunctionEntry [value])
+    Hashtbl.add table key (FunctionEntry [Simple value])
 
 (* this routine takes a partially filled unbound definition table,
   'dfns' and a counter 'counter', and adds entries to the table
@@ -129,7 +129,7 @@ let rec build_tables print_flag dfns counter name level parent display msgt asms
           let fun_index = n in
           let match_var_index = 
             match Hashtbl.find name_map mvname with
-            | NonFunctionEntry idx -> idx
+            | NonFunctionEntry (Simple idx) -> idx
             | _ -> assert false
           in 
           Hashtbl.add dfns fun_index (id, sr, parent,
@@ -148,7 +148,7 @@ let rec build_tables print_flag dfns counter name level parent display msgt asms
           in
           let match_var_index = 
             match Hashtbl.find name_map mvname with
-            | NonFunctionEntry idx -> idx
+            | NonFunctionEntry (Simple idx) -> idx
             | _ -> assert false
           in 
           Hashtbl.add dfns fun_index (id, sr, parent,

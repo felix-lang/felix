@@ -92,7 +92,10 @@ let find_references bbdfns name_map =
   (fun id entryset -> 
     match entryset with
     | FunctionEntry _ -> ()
-    | NonFunctionEntry idx ->
+    | NonFunctionEntry (Bound _) -> 
+      failwith "Not expecting bound entry"
+
+    | NonFunctionEntry (Simple idx) ->
     let _,_,bbdfn = 
       try Hashtbl.find bbdfns idx
       with Not_found -> 
@@ -135,7 +138,9 @@ let find_variable_indices dfns index =
     (fun id entryset -> 
       match entryset with
       | FunctionEntry _ -> ()
-      | NonFunctionEntry idx ->
+      | NonFunctionEntry (Bound _) ->
+        failwith "Not expecting bound entry"
+      | NonFunctionEntry (Simple idx) ->
       let _,_,_,symdef = 
         try Hashtbl.find dfns idx 
         with _ -> failwith ("[find_variable_indices(2)] can't find index " ^ string_of_int index)
@@ -1538,7 +1543,8 @@ try
         "//TOPLEVEL:'" ^ 
         name ^ "'->" ^ 
         match entry with
-        | NonFunctionEntry index -> string_of_int index
+        | NonFunctionEntry (Simple index) -> string_of_int index
+        | NonFunctionEntry _ -> "UNEXPECTED BOUND ENTRY"
         | FunctionEntry _ -> "UNEXPECTED FUNCTION SET"
       )
     )
@@ -1547,9 +1553,9 @@ try
     let top_level_index = 
       try 
         match Hashtbl.find table module_name with
-        | NonFunctionEntry index -> index
+        | NonFunctionEntry (Simple index) -> index
         | _ -> 
-          failwith ("Expected '"^module_name^"' to be non function")
+          failwith ("Expected '"^module_name^"' to be simple non function")
       with Not_found -> 
         failwith ("Unable to find top level '"^module_name^"'")
     in
@@ -1558,7 +1564,7 @@ try
     if !print_flag then print_endline "//BINDING ENTRIES";
     let bdfns = Hashtbl.create 97 in
     Hashtbl.iter
-    (fun index _ -> bind_entry bdfns dfns index)
+    (fun index _ -> bind_entry counter bdfns dfns index)
     dfns
     ;
     if !print_flag then print_endline "//BINDING EXECUTABLE CODE";
@@ -1641,10 +1647,12 @@ try
       ) 
       !types
     in
+    (*
     List.iter
     (fun (_,t) -> print_endline (string_of_btypecode dfns t))
     types
     ;
+    *)
     plh "//REFERENCE TEMPLATE";
     plh "template<class T> struct _ref_";
     plh "{";
@@ -1763,7 +1771,7 @@ try
         | _ -> failwith "Expected to find top level module ''"
       in let entry = Hashtbl.find name_map "_init_" in
       let index = match entry with
-        | FunctionEntry [x] -> x
+        | FunctionEntry [Simple x] -> x
         | FunctionEntry [] -> failwith "Couldn't find '_init_'"
         | FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
         | NonFunctionEntry _ -> failwith "_init_found but not procedure"
