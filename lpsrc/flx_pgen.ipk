@@ -1,0 +1,142 @@
+@head(1,'C++ Code generator')
+@h = tangler('src/flx_pgen.mli')
+@select(h)
+open Flx_ast
+open Flx_types
+open Flx_mtypes1
+open Flx_mtypes2
+open Flx_label
+open Flx_ctypes
+
+val gen_prim_call :
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  (btypecode_t -> btypecode_t) ->
+  (range_srcref -> tbexpr_t -> cexpr_t) ->
+  string ->
+  btypecode_t list ->
+  tbexpr_t ->
+  string ->
+  range_srcref ->
+  range_srcref ->
+  string ->
+  cexpr_t
+  
+val shape_of:
+  fully_bound_symbol_table_t ->
+  (btypecode_t -> string) ->
+  btypecode_t ->
+  string
+  
+@h = tangler('src/flx_pgen.ml')
+@select(h)
+open Flx_util
+open Flx_ast
+open Flx_types
+open Flx_mtypes1
+open Flx_mtypes2
+open Flx_print
+open Flx_typing
+open Flx_name
+open Flx_tgen
+open Flx_unify
+open Flx_csubst
+open Flx_exceptions
+open Flx_display
+open List
+open Flx_generic
+open Flx_label
+open Flx_ctypes
+open Flx_cexpr
+open Flx_maps
+
+let shape_of bbdfns tn t =
+  match t with
+  | `BTYP_inst (i,ts) ->
+    let id,parent,sr,entry = Hashtbl.find bbdfns i in
+    begin match entry with
+    | `BBDCL_union (vs,idts) ->
+      let varmap = mk_varmap vs ts in
+      let cpts = map (fun (_,t) -> varmap_subst varmap t) idts in
+      if all_voids cpts then "_int_ptr_map"
+      else "_uctor_ptr_map"
+     | _ -> tn t ^ "_ptr_map"
+     end
+  | `BTYP_pointer _ -> "_ref_ptr_map"
+  | _ -> tn t ^ "_ptr_map"
+ 
+let gen_prim_call 
+  syms 
+  (bbdfns:fully_bound_symbol_table_t) 
+  (tsub:btypecode_t -> btypecode_t) 
+  ge 
+  (ct:string) 
+  (ts:btypecode_t list) 
+  ((arg,argt as a) : tbexpr_t)
+  ret sr sr2 prec
+=
+  (*
+  print_endline ("ts= "^catmap "," (sbt syms.dfns) ts);
+  print_endline ("argt = " ^ sbt syms.dfns argt);
+  *)
+  let tn t = cpp_typename syms t in
+  let rt t = reduce_type (lstrip syms.dfns (tsub t)) in
+  let rtn t = tn (rt t) in
+
+  let ts = map rtn ts in
+  let argt = rt argt in
+  let tt = tn argt in
+  let sh t = shape_of bbdfns tn t in
+  let ashape = sh argt in
+
+  match arg,argt with
+
+  (* the argument is explicitly a tuple *)
+  | (`BEXPR_tuple es,_) ->
+    let ess = map (ge sr) es in
+    let ets,ashapes = 
+      match argt with
+      | `BTYP_tuple typs -> map rtn typs, map sh typs
+      | `BTYP_array (t,`BTYP_unitsum n) ->
+        let t = tn t 
+        and s = sh t
+        in rev_map (fun _ -> t) (nlist n), rev_map (fun _ -> s) (nlist n)
+      | _ -> assert false
+    in
+    csubst sr sr2 ct ess ets tt ret ts prec ashape ashapes
+  
+  (* the argument isnt a tuple, but the type is *)
+  | (_,`BTYP_tuple typs) as x ->
+    let n = length typs in
+    let typs = map rt typs in
+    let es = 
+      map2 
+      (fun i t -> `BEXPR_get_n (i,x),t) 
+      (nlist n) typs
+    in
+    let ess = map (ge sr) es in
+    let ets = map tn typs in
+    csubst sr sr2 ct ess ets tt ret ts prec ashape (map sh typs)
+
+  (* the argument isnt a tuple, but the type is an array *)
+  | (_,(`BTYP_array(t,`BTYP_unitsum n) as ta)) as x ->
+    let t = rt t in
+    let typs = map (fun _ -> rt t) (nlist n) in
+    let es = 
+      map 
+      (fun i -> `BEXPR_get_n (i,x),t) 
+      (nlist n)
+    in
+    let ess = map (ge sr) es in
+    let ets = map tn typs in
+    csubst sr sr2 ct ess ets tt ret ts prec ashape (map sh typs)
+
+  (* the argument isn't an explicit tuple, and the type
+     is neither an array nor tuple
+  *)
+  | (_,typ) -> 
+    let a = ge sr a in
+    csubst sr sr2 ct [a] [tt] tt ret ts prec ashape [ashape]
+
+
+
