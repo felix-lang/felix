@@ -122,6 +122,13 @@ val lookup_sn_in_env :
   suffixed_name_t -> 
   int * btypecode_t list
 
+val lookup_code_in_env:
+  sym_state_t ->
+  env_t ->
+  range_srcref ->
+  qualified_name_t -> 
+  entry_kind_t list
+
 (** This routine takes an unbound type term 
 and binds it. The term may contain explicit
 type variables. If the term denotes a generative
@@ -352,9 +359,9 @@ let rec lookup_qn_in_env2
   : entry_set_t * typecode_t list
 =
   match qn with
-  | `AST_void _ -> failwith "[lookup_qn_in_env2] qualified name is void"
-  | `AST_case_tag _ -> failwith "[lookup_qn_in_env2] Can't lookup a case tag"
-  | `AST_typed_case _ -> failwith "[lookup_qn_in_env2] Can't lookup a typed case tag"
+  | `AST_void sr -> clierr sr "[lookup_qn_in_env2] qualified name is void"
+  | `AST_case_tag (sr,_) -> clierr sr "[lookup_qn_in_env2] Can't lookup a case tag"
+  | `AST_typed_case (sr,_,_) -> clierr sr "[lookup_qn_in_env2] Can't lookup a typed case tag"
 
   | `AST_name (sr,name,ts) -> 
     lookup_name_in_env env sr name, ts
@@ -364,12 +371,23 @@ let rec lookup_qn_in_env2
     | Simple_module (impl,ts', htab,dirs) ->
       begin try Hashtbl.find htab name, ts' @ ts
       with Not_found -> 
-        failwith
+        clierr sr
         (
-          "[lookup_qn_in_env2] Can't find " ^ name ^ " in\n" ^
-          short_string_of_src sr
+          "[lookup_qn_in_env2] Can't find " ^ name
         )
       end
+
+and lookup_code_in_env syms env sr qn =
+  match lookup_qn_in_env2 syms env [] qn with
+    | NonFunctionEntry x,ts -> 
+      clierr sr 
+      (
+        "[lookup_qn_in_env] Not expecting " ^ 
+        string_of_qualified_name qn ^
+        " to be non-function (code insertions use function entries) "
+      )
+    | FunctionEntry x,ts -> x
+
 
 and lookup_qn_in_env 
   syms

@@ -301,6 +301,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_util.ipk')
 @include_file ('flx_types.ipk')
 @include_file ('flx_ctypes.ipk')
+@include_file ('flx_frontc.ipk')
 @include_file ('flx_unify.ipk')
 @include_file ('flx_parser.ipk')
 @include_file ('flx_string.ipk')

@@ -465,22 +465,33 @@ proc hello:1='print("Hello");' requires printu;
 hello;
 
 @doc()
-Naked requires clauses can be use to set requirements
-on all primitives which can see the requires clause.
-Note that as usual, Felix identifiers are visible
-in the whole of a containing module.
-@p()
-Requirements are not exported by open directives.
-Tags cannot be used by the use directive.
+Naked requires clauses can also be used.
+They can define dependencies, or simply specify
+existing tagged requirements are roots.
 
 @select(tangler(tdir+'tut_bind137.flx'))
 body "#include <stdio.h>";
 body xprint "void printx(char *fmt, char *s) { printf(fmt,s);}";
 body printu 'void print(char *s) { printx("%s\\n",s); }';
 requires xprint;
+xxxx requires printu;
 
+proc hello:1='print("Hello");' requires xxxx;
+hello;
 
-proc hello:1='print("Hello");' requires printu;
+@doc()
+You can also use qualified names to refer to tags defined
+inside modules, unless they're marked private of course.
+
+@select(tangler(tdir+'tut_bind138.flx'))
+body "#include <stdio.h>";
+body xprint "void printx(char *fmt, char *s) { printf(fmt,s);}";
+module fred {
+  body printu 'void print(char *s) { printx("%s\\n",s); }';
+}
+requires xprint;
+
+proc hello:1='print("Hello");' requires fred::printu;
 hello;
 
 

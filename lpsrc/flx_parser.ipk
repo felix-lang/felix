@@ -488,18 +488,18 @@ binding_header:
   { 
     `AST_body (rstoken $1 $5, snd $2, snd $3, $4) 
   }
-  | REQUIRES basic_name_comma_list SEMI 
+  | REQUIRES qualified_name_comma_list SEMI 
   { 
-    `AST_body (rstoken $1 $3, "_root", "", List.map snd $2) 
+    `AST_body (rstoken $1 $3, "_root", "", List.map qualified_name_of_expr $2) 
   }
 
-  | NAME REQUIRES basic_name_comma_list SEMI 
+  | NAME REQUIRES qualified_name_comma_list SEMI 
   { 
-    `AST_body (rstoken (fst $1) $4, snd $1, "", List.map snd $3) 
+    `AST_body (rstoken (fst $1) $4, snd $1, "", List.map qualified_name_of_expr $3) 
   }
 
 requires_clause:
-  | REQUIRES basic_name_comma_list { List.map snd $2 }
+  | REQUIRES qualified_name_comma_list { List.map qualified_name_of_expr $2 }
   | {[]}
 
 @head(3,'Inline C++ Code Definition')
@@ -1790,6 +1790,7 @@ dollar_name:
     }
   | qname { $1 }
 
+@commalistof("qualified_name")
 qualified_name:
   | qname COLONCOLON simple_name_parts
     { 

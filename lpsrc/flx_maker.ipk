@@ -288,16 +288,23 @@ FLX_GC_SRC='src/'
 # ------------------------------------------------
 
 # files containing ocamllex sources
-LEXS = ['flx_lex']
+LEXS = ['flx_clexer','flx_lex']
 
 # files containing ocamlyacc sources
-PARSES = ['flx_parse']
+PARSES = ['flx_cparser','flx_parse']
 
 # ocaml modules = interfaces + implementation files
 
 MODULES = [
   'flx_version'      ,
   'flx_ctype'        ,
+  'flx_frontc_escape' ,
+  'flx_frontc_cprint' ,
+  'flx_frontc_pretty' ,
+  'flx_frontc_errormsg' ,
+  'flx_cabs_helper' ,
+  'flx_cparser'      ,
+  'flx_clexer'       ,
   'flx_util'         ,
   'flx_getopt'       ,
   'flx_mtypes2'      ,
@@ -352,6 +359,7 @@ MODULES = [
 ]
 
 INTERFACES = [
+  'flx_cabs'         ,
   'flx_mtypes1'      ,
   'flx_ast'          ,
   'flx_types'        ,
@@ -394,6 +402,7 @@ EXES = [
   'flxd',
   'flxb',
   'flxg',
+  'flxcc',
   'stub',
 ]
 
@@ -1090,6 +1099,16 @@ please see the INSTALL file
 John (Max) Skaller skaller at users dot sourceforge dot net
 Peter Jolly helped do the Cygwin build
 
+The version of frontc C parser was taken from
+work by:
+
+George C. Necula    necula at cs dot berkeley dot edu
+Scott McPeak        smcpeak at cs dot berkeley dot edu
+Wes Weimer          weimer at cs dot berkeley dot edu
+
+which was in turned modified from the original parser
+written by Hugues Cassé
+
 @head(1,'COPYING')
 @select(tangler('COPYING'))
 Felix is free for any use. Just don't misrepresent
@@ -1170,6 +1189,44 @@ The directories are:
 @tangle('Version ' + flx_version + ' of Felix')
 is free for any use, provided the authors
 are not misrepresented in any way.
+
+Parts of this code, included in the file 
+
+lpsrc/flx_frontc.ipk
+
+are covered by this copyright notice:
+(*
+ *
+ * Copyright (c) 2001 by
+ *  George C. Necula        necula@cs.berkeley.edu
+ *  Scott McPeak        smcpeak@cs.berkeley.edu
+ *  Wes Weimer          weimer@cs.berkeley.edu
+ *   
+ * All rights reserved.  Permission to use, copy, modify and distribute
+ * this software for research purposes only is hereby granted, 
+ * provided that the following conditions are met: 
+ * 1. Redistributions of source code must retain the above copyright notice, 
+ * this list of conditions and the following disclaimer. 
+ * 2. Redistributions in binary form must reproduce the above copyright notice, 
+ * this list of conditions and the following disclaimer in the documentation 
+ * and/or other materials provided with the distribution. 
+ * 3. The name of the authors may not be used to endorse or promote products 
+ * derived from  this software without specific prior written permission. 
+ *
+ * DISCLAIMER:
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR 
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+ * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS 
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *)
+
 
 @head(1,'INSTALL')
 @select(tangler('INSTALL'))

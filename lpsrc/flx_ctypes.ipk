@@ -151,15 +151,6 @@ let string_of_cdecl_type n t =
   | `Cdt_vref t -> aux t ("volatile &"^n)
   | `Cdt_cvref t -> aux t ("const volatile &"^n)
  
-@h = tangler("src/flx_ctparse.mly","data")
-@select(h)
-%{
-open flx_ctypes
-%}
-
-{
-}
-
 @h = tangler("src/flx_cexpr.mli")
 @select(h)
 open Flx_ctypes

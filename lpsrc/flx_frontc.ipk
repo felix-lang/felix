@@ -1,0 +1,4639 @@
+@head(1,'FrontC package')
+The copyright following applies to this sub-package.
+@begin_displayed_code()
+(*
+ *
+ * Copyright (c) 2001 by
+ *  George C. Necula        necula@cs.berkeley.edu
+ *  Scott McPeak        smcpeak@cs.berkeley.edu
+ *  Wes Weimer          weimer@cs.berkeley.edu
+ *   
+ * All rights reserved.  Permission to use, copy, modify and distribute
+ * this software for research purposes only is hereby granted, 
+ * provided that the following conditions are met: 
+ * 1. Redistributions of source code must retain the above copyright notice, 
+ * this list of conditions and the following disclaimer. 
+ * 2. Redistributions in binary form must reproduce the above copyright notice, 
+ * this list of conditions and the following disclaimer in the documentation 
+ * and/or other materials provided with the distribution. 
+ * 3. The name of the authors may not be used to endorse or promote products 
+ * derived from  this software without specific prior written permission. 
+ *
+ * DISCLAIMER:
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR 
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+ * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS 
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *)
+@end_displayed_code()
+
+
+@h = tangler("src/flx_frontc_pretty.mli")
+@select(h)
+
+(** Utility functions for pretty-printing. The major features provided by 
+    this module are 
+- An [fprintf]-style interface with support for user-defined printers
+- The printout is fit to a width by selecting some of the optional newlines
+- Constructs for alignment and indentation
+- Print ellipsis starting at a certain nesting depth
+- Constructs for printing lists and arrays
+
+ Pretty-printing occurs in two stages:
+- Construct a {!Flx_frontc_pretty.doc} object that encodes all of the elements to be 
+  printed 
+  along with alignment specifiers and optional and mandatory newlines
+- Format the {!Flx_frontc_pretty.doc} to a certain width and emit it as a string, to an 
+  output stream or pass it to a user-defined function
+
+ The formatting algorithm is not optimal but it does a pretty good job while 
+ still operating in linear time. The original version was based on a pretty 
+ printer by Philip Wadler which turned out to not scale to large jobs. 
+*)
+
+(** API *)
+
+(** The type of unformated documents. Elements of this type can be 
+ * constructed in two ways. Either with a number of constructor shown below, 
+ * or using the {!Pretty.dprintf} function with a [printf]-like interface. 
+ * The {!Pretty.dprintf} method is slightly slower so we do not use it for 
+ * large jobs such as the output routines for a compiler. But we use it for 
+ * small jobs such as logging and error messages. *)
+type doc
+
+
+
+(** Constructors for the doc type. *)
+
+
+
+
+(** Constructs an empty document *)
+val nil          : doc
+
+
+(** Concatenates two documents. This is an infix operator that associates to 
+    the left. *)
+val (++)         : doc -> doc -> doc 
+
+
+(** A document that prints the given string *)
+val text         : string -> doc
+
+
+(** A document that prints an integer in decimal form *)
+val num          : int    -> doc
+
+
+(** A document that prints a real number *)
+val real         : float  -> doc
+
+(** A document that prints a character. This is just like {!Pretty.text}
+    with a one-character string. *)
+val chr          : char   -> doc
+
+
+(** A document that consists of a mandatory newline. This is just like [(text
+    "\n")]. The new line will be indented to the current indentation level,
+    unless you use {!Pretty.leftflush} right after this. *)
+val line         : doc
+
+(** Use after a {!Pretty.line} to prevent the indentation. Whatever follows 
+ * next will be flushed left. Indentation resumes on the next line. *)
+val leftflush    : doc
+
+
+(** A document that consists of either a space or a line break. Also called
+    an optional line break. Such a break will be
+    taken only if necessary to fit the document in a given width. If the break
+    is not taken a space is printed instead. *)
+val break: doc
+
+(** Mark the current column as the current indentation level. Does not print
+    anything. All taken line breaks will align to this column. The previous
+    alignment level is saved on a stack. *)
+val align: doc
+
+(** Reverts to the last saved indentation level. *)
+val unalign: doc
+
+
+
+(************* Now some syntactic sugar *****************)
+(** Syntactic sugar *)
+
+(** Indents the document. Same as [((text "  ") ++ align ++ doc ++ unalign)],
+    with the specified number of spaces. *)
+val indent: int -> doc -> doc
+
+(** Formats a sequence. [sep] is a separator, [doit] is a function that 
+ * converts an element to a document. *)
+val seq: sep:doc -> doit:('a ->doc) -> elements:'a list -> doc
+
+
+(** An alternative function for printing a list. The [unit] argument is there 
+ * to make this function more easily usable with the {!Pretty.dprintf} 
+ * interface. *)
+val docList: doc -> ('a -> doc) -> unit -> 'a list -> doc
+
+(** sm: Yet another list printer.  This one accepts the same kind of
+  * printing function that {!Pretty.dprintf} does, and itself works 
+  * in the dprintf context.  Also accepts
+  * a string as the separator since that's by far the most common.  *)
+val d_list: string -> (unit -> 'a -> doc) -> unit -> 'a list -> doc
+
+(** Formats an array. A separator and a function that prints an array
+    element *)
+val docArray: doc -> (int -> 'a -> doc) -> unit -> 'a array -> doc
+ 
+(** Prints an ['a option] with [None] or [Some] *)
+val docOpt: (unit -> 'a -> doc) -> unit -> 'a option -> doc
+
+
+(** A function that is useful with the [printf]-like interface *)
+val insert       : unit -> doc -> doc
+
+val dprintf: ('a, unit, doc) format -> 'a  
+(** This function provides an alternative method for constructing 
+    [doc] objects. The first argument for this function is a format string 
+    argument (of type [('a, unit, doc) format]; if you insist on 
+    understanding what that means see the module [Printf]). The format string 
+    is like that for the [printf] function in C, except that it understands a 
+    few more formatting controls, all starting with the @ character. 
+
+ The following special formatting characters are understood (these do not 
+ correspond to arguments of the function):
+-  @\[ Inserts an {!Pretty.align}. Every format string must have matching 
+        {!Pretty.align} and {!Pretty.unalign}. 
+-  @\] Inserts an {!Pretty.unalign}.
+-  @!  Inserts a {!Pretty.line}. Just like "\n"
+-  @?  Inserts a {!Pretty.break}.
+-  @<  Inserts a {!Pretty.leftflush}. 
+       Should be used immediately after @! or "\n"
+-  @@ : inserts a @ character
+
+ In addition to the usual [printf] % formatting characters the following two 
+ new characters are supported:
+- %t Corresponds to an argument of type [unit -> doc]. This argument is 
+     invoked to produce a document
+- %a Corresponds to {b two} arguments. The first of type [unit -> 'a -> doc] 
+     and the second of type ['a]. (The extra [unit] is do to the 
+     peculiarities of the built-in support for format strings in Ocaml. It 
+     turns out that it is not a major problem.) Here is an example of how 
+     you use this:
+
+{v dprintf "Name=%s, SSN=%7d, Children=\@\[%a\@\]\n"
+             pers.name pers.ssn (docList (chr ',' ++ break) text)
+             pers.children v}
+
+ The result of [dprintf] is a {!Flx_frontc_pretty.doc}. You can format the document and 
+ emit it using the functions {!Pretty.fprint} and {!Pretty.sprint}.
+
+*)
+
+(** Format the document to the given width and emit it to the given channel *)
+val fprint: out_channel -> width:int -> doc -> unit
+
+(** Format the document to the given width and emit it as a string *)
+val sprint: width:int -> doc -> string
+
+(** Like {!Pretty.dprintf} followed by {!Pretty.fprint} *)
+val fprintf: out_channel -> ('a, unit, doc) format -> 'a  
+
+(** Like {!Pretty.fprintf} applied to [stdout] *)
+val printf: ('a, unit, doc) format -> 'a 
+
+(** Like {!Pretty.fprintf} applied to [stderr] *)
+val eprintf: ('a, unit, doc) format -> 'a 
+
+(** Like {!Pretty.dprintf} but more general. It also takes a function that is 
+ * invoked on the constructed document but before any formatting is done. *) 
+val gprintf: (doc -> doc) -> ('a, unit, doc) format -> 'a
+                                                                     
+(* sm: arg!  why can't I write this function?! *)
+(* * Like {!Pretty.dprintf} but yielding a string with no newlines *)
+(*val sprintf: (doc, unit, doc) format -> string*)
+
+(* sm: different tack.. *)
+(* doesn't work either.  well f it anyway *)
+(*val failwithf: ('a, unit, doc) format -> 'a*)
+
+
+(** Invokes a thunk, with printDepth temporarily set to the specified value *)
+val withPrintDepth : int -> (unit -> unit) -> unit
+
+(** The following variables can be used to control the operation of the printer *)
+
+(** Specifies the nesting depth of the [align]/[unalign] pairs at which 
+    everything is replaced with ellipsis *)
+val printDepth   : int ref
+
+val printIndent  : bool ref  (** If false then does not indent *)
+
+
+(** If set to [true] then optional breaks are taken only when the document 
+    has exceeded the given width. This means that the printout will looked 
+    more ragged but it will be faster *)
+val fastMode  : bool ref 
+
+val flushOften   : bool ref  (** If true the it flushes after every print *)
+
+
+(** Keep a running count of the taken newlines. You can read and write this 
+  * from the client code if you want *)
+val countNewLines : int ref
+
+
+@h = tangler("src/flx_frontc_pretty.ml")
+@select(h)
+
+(******************************************************************************)
+(* Pretty printer 
+   This module contains several fast, but sub-optimal heuristics to pretty-print 
+   structured text. 
+*)
+
+let debug =  false
+
+(* Choose an algorithm *)
+type algo = George | Aman | Gap
+let  algo = George
+let fastMode       = ref false
+
+
+(** Whether to print identation or not (for faster printing and smaller 
+  * output) *)
+let printIndent = ref true
+
+(******************************************************************************)        
+(* The doc type and constructors *)
+
+type doc = 
+    Nil
+  | Text     of string
+  | Concat   of doc * doc
+  | CText    of doc * string
+  | Break
+  | Line 
+  | LeftFlush
+  | Align
+  | Unalign  
+
+(* Break a string at \n *)
+let rec breakString (acc: doc) (str: string) : doc = 
+  try
+    (* Printf.printf "breaking string %s\n" str; *)
+    let r = String.index str '\n' in
+    (* Printf.printf "r=%d\n" r; *)
+    let len = String.length str in
+    if r > 0 then begin
+      (* Printf.printf "Taking %s\n" (String.sub str 0 r); *)
+      let acc' = Concat(CText (acc, String.sub str 0 r), Line) in
+      if r = len - 1 then (* The last one *)
+        acc'
+      else begin
+        (* Printf.printf "Continuing with %s\n" (String.sub str (r + 1) (len - r - 1)); *)
+        breakString acc'
+          (String.sub str (r + 1) (len - r - 1))
+      end
+    end else (* The first is a newline *)
+      breakString (Concat(acc, Line))
+        (String.sub str (r + 1) (len - r - 1))
+  with Not_found -> 
+    if acc = Nil then Text str else CText (acc, str)
+
+let nil           = Nil
+let text s        = breakString nil s
+let num  i        = text (string_of_int i)
+let real f        = text (string_of_float f)
+let chr  c        = text (String.make 1 c) 
+let align         = Align
+let unalign       = Unalign
+let line          = Line
+let leftflush     = LeftFlush
+let break         = Break  
+
+(* Note that all infix operators in Ocaml are left-associative. This means 
+ * that if you have a long list of ++ then the whole thing is very unbalanced 
+ * towards the left side. This is the worst possible case since scanning the 
+ * left side of a Concat is the non-tail recursive case. *)
+
+let (++) d1 d2 = Concat (d1, d2)
+
+(* Ben Liblit fix *)
+let indent n d = text (String.make n ' ') ++ (align ++ (d ++ unalign))
+
+
+
+(* Format a sequence. The first argument is a separator *)
+let seq ~(sep:doc)  ~(doit:'a -> doc) ~(elements: 'a list) = 
+  let rec loop (acc: doc) = function
+      []     -> acc
+    | h :: t -> 
+        let fh = doit h in  (* Make sure this is done first *)
+        loop (acc ++ sep ++ fh) t
+  in
+  (match elements with
+    [] -> nil
+  | h :: t -> 
+      let fh = doit h in loop fh t)
+
+
+let docArray (sep:doc) (doit:int -> 'a -> doc) () (elements:'a array) = 
+  let len = Array.length elements in
+  if len = 0 then 
+    nil
+  else
+    let rec loop (acc: doc) i =
+      if i >= len then acc else
+      let fi = doit i elements.(i) in (* Make sure this is done first *)
+      loop (acc ++ sep ++ fi) (i + 1)
+    in
+    let f0 = doit 0 elements.(0) in
+    loop f0 1
+
+let docOpt delem () = function
+    None -> text "None"
+  | Some e -> text "Some(" ++ (delem () e) ++ chr ')'
+
+
+
+let docList (sep:doc) (doit:'a -> doc) () (elements:'a list) = 
+  seq sep doit elements
+
+let insert () d = d
+
+
+let d_list (sep:string) (doit:unit -> 'a -> doc) () (elts:'a list) : doc =
+  (* thunk 'doit' to match docList's interface *)
+  let internalDoit (elt:'a) =
+    (doit () elt) in
+  (docList (text sep) internalDoit () elts)
+
+
+(******************************************************************************)        
+(* Some debugging stuff *)
+
+let dbgprintf x = Printf.fprintf stderr x
+
+let rec dbgPrintDoc = function
+    Nil -> dbgprintf "(Nil)"
+  | Text s -> dbgprintf "(Text %s)" s
+  | Concat (d1,d2) -> dbgprintf ""; dbgPrintDoc  d1; dbgprintf " ++\n "; 
+      dbgPrintDoc  d2; dbgprintf ""
+  | CText (d,s) -> dbgPrintDoc  d; dbgprintf " ++ \"%s\"" s; 
+  | Break -> dbgprintf "(Break)" 
+  | Line -> dbgprintf "(Line)"
+  | LeftFlush -> dbgprintf "(LeftFlush)"
+  | Align -> dbgprintf "(Align)"
+  | Unalign -> dbgprintf "(Unalign)"
+
+
+(******************************************************************************)        
+(* The "george" algorithm *)
+
+(* When we construct documents, most of the time they are heavily unbalanced 
+ * towards the left. This is due to the left-associativity of ++ and also to 
+ * the fact that constructors such as docList construct from the let of a 
+ * sequence. We would prefer to shift the imbalance to the right to avoid 
+ * consuming a lot of stack when we traverse the document *)
+let rec flatten (acc: doc) = function
+  | Concat (d1, d2) -> flatten (flatten acc d2) d1
+  | CText (d, s) -> flatten (Concat(Text s, acc)) d
+  | Nil -> acc (* Get rid of Nil *)
+  | d -> Concat(d, acc)
+
+(* We keep a stack of active aligns. *)
+type align = 
+    { mutable gainBreak: int;  (* This is the gain that is associated with 
+                                 * taking the break associated with this 
+                                 * alignment mark. If this is 0, then there 
+                                 * is no break associated with the mark *)
+      mutable isTaken: bool ref; (* If breakGain is > 0 then this is a ref 
+                                  * cell that must be set to true when the 
+                                  * break is taken. These ref cells are also 
+                                  * int the "breaks" list  *)
+            deltaFromPrev: int ref; (* The column of this alignment mark - 
+                                     * the column of the previous mark. 
+                                     * Shared with the deltaToNext of the 
+                                     * previous active align  *)
+             deltaToNext: int ref  (* The column of the next alignment mark - 
+                                    * the columns of this one. Shared with 
+                                    * deltaFromPrev of the next active align *)
+    } 
+      
+(* We use references to avoid the need to pass data around all the time *)
+let aligns: align list ref =  (* The current stack of active alignment marks, 
+                               * with the top at the head. Never empty.  *)
+  ref [{ gainBreak = 0; isTaken = ref false; 
+         deltaFromPrev = ref 0; deltaToNext = ref 0; }]
+
+let topAlignAbsCol = ref 0 (* The absolute column of the top alignment *)
+
+let pushAlign (abscol: int) = 
+  let topalign = List.hd !aligns in
+  let res = 
+    { gainBreak = 0; isTaken = ref false; 
+      deltaFromPrev = topalign.deltaToNext; (* Share with the previous *)
+      deltaToNext = ref 0; (* Allocate a new ref *)} in
+  aligns := res :: !aligns;
+  res.deltaFromPrev := abscol - !topAlignAbsCol;
+  topAlignAbsCol := abscol
+
+let popAlign () = 
+  match !aligns with
+    top :: t when t != [] -> 
+      aligns := t; 
+      topAlignAbsCol := !topAlignAbsCol - !(top.deltaFromPrev)
+  | _ -> failwith "Unmatched unalign\n"
+
+
+(* Keep a list of ref cells for the breaks, in the same order that we see 
+ * them in the document *)
+let breaks: bool ref list ref = ref []
+
+(* The maximum column that we should use *)
+let maxCol = ref 0
+
+(* Sometimes we take all the optional breaks *)
+let breakAllMode = ref false
+
+(* We are taking a newline and moving left *)
+let newline () =
+  let topalign = List.hd !aligns in (* aligns is never empty *)
+  if debug then
+    dbgprintf "Taking a newline: reseting gain of %d\n" topalign.gainBreak;
+  topalign.gainBreak <- 0;        (* Erase the current break info *)
+  if !breakAllMode && !topAlignAbsCol < !maxCol then 
+    breakAllMode := false;
+  !topAlignAbsCol                          (* This is the new column *)
+
+
+
+(* Choose the align with the best gain. We outght to find a better way to 
+ * keep the aligns sorted, especially since they gain never changes (when the 
+ * align is the top align) *)
+let chooseBestGain () : align option =        
+  let bestGain = ref 0 in
+  let rec loop (breakingAlign: align option) = function
+      [] -> breakingAlign
+    | a :: resta -> 
+        if debug then dbgprintf "Looking at align with gain %d\n" a.gainBreak;
+        if a.gainBreak > !bestGain then begin
+          bestGain := a.gainBreak;
+          loop (Some a) resta
+        end else
+          loop breakingAlign resta
+  in
+  loop None !aligns
+
+
+(* Another one that chooses the break associated with the current align only *)
+let chooseLastGain () : align option = 
+  let topalign = List.hd !aligns in
+  if topalign.gainBreak > 0 then Some topalign else None
+
+(* We have just advanced to a new column. See if we must take a line break *)
+let movingRight (abscol: int) : int = 
+  (* Keep taking the best break until we get back to the left of maxCol or no 
+   * more are left *)
+  let rec tryAgain abscol = 
+    if abscol <= !maxCol then abscol else 
+    begin
+      if debug then
+        dbgprintf "Looking for a break to take in column %d\n" abscol;
+      (* Find the best gain there is out there *)
+      match if !fastMode then None else chooseBestGain () with 
+        None -> begin
+          (* No breaks are available. Take all breaks from now on *)
+          breakAllMode := true;
+          if debug then
+            dbgprintf "Can't find any breaks\n";
+          abscol
+        end 
+      | Some breakingAlign -> begin
+          let topalign = List.hd !aligns in
+          let theGain = breakingAlign.gainBreak in
+          assert (theGain > 0);
+          if debug then dbgprintf "Taking break at %d. gain=%d\n" abscol theGain;
+          breakingAlign.isTaken := true;
+          breakingAlign.gainBreak <- 0;
+          if breakingAlign != topalign then begin
+            breakingAlign.deltaToNext := 
+               !(breakingAlign.deltaToNext) - theGain;
+            topAlignAbsCol := !topAlignAbsCol - theGain
+          end;
+          tryAgain (abscol - theGain)
+      end
+    end
+  in
+  tryAgain abscol
+
+
+(* Keep track of nested align in gprintf. Each gprintf format string must 
+ * have properly nested align/unalign pairs. When the nesting depth surpasses 
+ * !printDepth then we print ... and we skip until the matching unalign *)
+let printDepth = ref 10000000 (* WRW: must see whole thing *)
+let alignDepth = ref 0
+
+let useAlignDepth = true
+
+(** Start an align. Return true if we ahve just passed the threshhold *)
+let enterAlign () = 
+  incr alignDepth;
+  useAlignDepth && !alignDepth = !printDepth + 1
+
+(** Exit an align *)
+let exitAlign () = 
+  decr alignDepth
+
+(** See if we are at a low-enough align level (and we should be printing 
+ * normally) *)
+let shallowAlign () = 
+  not useAlignDepth || !alignDepth <= !printDepth
+
+
+(* Pass the current absolute column and compute the new column *)
+let rec scan (abscol: int) (d: doc) : int = 
+  match d with 
+    Nil -> abscol
+  | Concat (d1, d2) -> scan (scan abscol d1) d2
+  | Text s when shallowAlign () -> 
+      let sl = String.length s in 
+      if debug then 
+        dbgprintf "Done string: %s from %d to %d\n" s abscol (abscol + sl);
+      movingRight (abscol + sl)
+  | CText (d, s) -> 
+      let abscol' = scan abscol d in
+      if shallowAlign () then begin
+        let sl = String.length s in 
+        if debug then 
+          dbgprintf "Done string: %s from %d to %d\n" s abscol' (abscol' + sl);
+        movingRight (abscol' + sl)
+      end else
+        abscol'
+
+  | Align -> 
+      pushAlign abscol; 
+      if enterAlign () then 
+        movingRight (abscol + 3) (* "..." *)
+      else
+        abscol
+
+  | Unalign -> exitAlign (); popAlign (); abscol 
+
+  | Line when shallowAlign () -> (* A forced line break *) newline ()
+
+  | LeftFlush when shallowAlign ()  -> (* Keep cursor left-flushed *) 0
+
+  | Break when shallowAlign () -> (* An optional line break. Always a space followed by an 
+              * optional line break  *)
+      let takenref = ref false in
+      breaks := takenref :: !breaks;
+      let topalign = List.hd !aligns in (* aligns is never empty *)
+      if !breakAllMode then begin
+        takenref := true;
+        newline ()
+      end else begin
+        (* If there was a previous break there it stays not taken, forever. 
+         * So we overwrite it. *)
+        topalign.isTaken <- takenref;
+        topalign.gainBreak <- 1 + abscol - !topAlignAbsCol;
+        if debug then
+          dbgprintf "Registering a break at %d with gain %d\n" 
+            (1 + abscol) topalign.gainBreak;
+        movingRight (1 + abscol)
+      end
+  | _ -> (* Align level is too deep *) abscol
+    
+
+(** Keep a running counter of the newlines we are taking. You can read and 
+  * reset this from user code, if you want *)
+let countNewLines = ref 0
+
+(* The actual function that takes a document and prints it *)
+let emitDoc 
+    (emitString: string -> int -> unit) (* emit a number of copies of a 
+                                         * string *)
+    (d: doc) = 
+  let aligns: int list ref = ref [0] in (* A stack of alignment columns *)
+
+  let wantIndent = ref false in
+  (* Use this function to take a newline *)
+  (* AB: modified it to flag wantIndent. The actual indentation is done only 
+     if leftflush is not encountered *)
+  let newline () =
+    match !aligns with
+      [] -> failwith "Ran out of aligns"
+    | x :: _ ->
+        emitString "\n" 1;
+        incr countNewLines;
+        wantIndent := true;
+        x
+  in
+  (* Print indentation if wantIndent was previously flagged ; reset this flag *)
+  let indentIfNeeded () =
+    if !printIndent && !wantIndent then ignore (
+      match !aligns with
+        [] -> failwith "Ran out of aligns"
+      | x :: _ -> 
+          if x > 0 then emitString " "  x;
+          x);
+    wantIndent := false          
+  in
+  (* A continuation passing style loop *)
+  let rec loopCont (abscol: int) (d: doc) (cont: int -> unit) : unit 
+      (* the new column *) =
+    match d with
+      Nil -> cont abscol
+    | Concat (d1, d2) -> 
+        loopCont abscol d1 (fun abscol' -> loopCont abscol' d2 cont)
+
+    | Text s when shallowAlign () -> 
+        let sl = String.length s in
+        indentIfNeeded ();
+        emitString s 1;
+        cont (abscol + sl)
+
+    | CText (d, s) -> 
+        loopCont abscol d 
+          (fun abscol' -> 
+            if shallowAlign () then 
+              let sl = String.length s in
+              indentIfNeeded ();
+              emitString s 1; 
+              cont (abscol' + sl)
+            else
+              cont abscol')
+
+    | Align -> 
+        aligns := abscol :: !aligns;
+        if enterAlign () then begin
+          indentIfNeeded ();
+          emitString "..." 1;
+          cont (abscol + 3)
+        end else
+          cont abscol
+
+    | Unalign -> begin
+        match !aligns with
+          [] -> failwith "Unmatched unalign"
+        | _ :: rest -> 
+            exitAlign ();
+            aligns := rest; cont abscol
+    end
+    | Line when shallowAlign ()  -> cont (newline ())
+    | LeftFlush when shallowAlign () -> wantIndent := false;  cont (0)
+    | Break when shallowAlign () -> begin
+        match !breaks with
+          [] -> failwith "Break without a takenref"
+        | istaken :: rest -> 
+            breaks := rest; (* Consume the break *)
+            if !istaken then cont (newline ())
+            else begin
+              indentIfNeeded ();
+              emitString " " 1; 
+              cont (abscol + 1)
+            end
+    end
+    | _ -> (* Align is too deep *)
+        cont abscol
+  in
+
+  loopCont 0 d (fun x -> ()) 
+
+
+(* Print a document on a channel *)
+let fprint (chn: out_channel) ~(width: int) doc =
+  maxCol := width;
+  breaks := [];
+  alignDepth := 0;
+  ignore (scan 0 doc);
+  breaks := List.rev !breaks;
+  alignDepth := 0;
+  ignore (emitDoc 
+            (fun s nrcopies -> 
+              for i = 1 to nrcopies do
+                output_string chn s
+              done) doc);
+  breaks := [] (* We must do this especially if we don't do emit (which 
+                * consumes breaks) because otherwise we waste memory *)
+
+(* Print the document to a string *)
+let sprint ~(width : int)  doc : string = 
+  maxCol := width;
+  breaks := [];
+  alignDepth := 0;
+  ignore (scan 0 doc);
+  breaks := List.rev !breaks;
+  let buf = Buffer.create 1024 in
+  let rec add_n_strings str num =
+    if num <= 0 then ()
+    else begin Buffer.add_string buf str; add_n_strings str (num - 1) end
+  in
+  alignDepth := 0;
+  emitDoc add_n_strings doc;
+  breaks  := [];
+  Buffer.contents buf
+
+let a =3    
+
+(* The rest is based on printf.ml *)
+
+(* JMS: HACKED *)
+let format_int (fmt:string) (x:int) =
+  string_of_int x
+
+let format_float (fmt:string) (x:float)=
+  string_of_float x
+
+
+    
+let gprintf (finish : doc -> doc)  
+    (format : ('a, unit, doc) format) : 'a =
+  let format = (Obj.magic format : string) in
+
+  (* Record the starting align depth *)
+  let startAlignDepth = !alignDepth in
+  (* Special concatenation functions *)
+  let dconcat (acc: doc) (another: doc) = 
+    if !alignDepth > !printDepth then acc else acc ++ another in
+  let dctext1 (acc: doc) (str: string) = 
+    if !alignDepth > !printDepth then acc else 
+    CText(acc, str)
+  in
+  (* Special finish function *)
+  let dfinish dc = 
+    if !alignDepth <> startAlignDepth then
+      prerr_string ("Unmatched align/unalign in " ^ format ^ "\n");
+    finish dc
+  in
+  let flen    = String.length format in
+                                        (* Reading a format character *)
+  let fget    = String.unsafe_get format in
+                                        (* Output a literal sequence of 
+                                         * characters, starting at i. The 
+                                         * character at i does not need to be 
+                                         * checked.  *) 
+  let rec literal acc i = 
+    let rec skipChars j = 
+      if j >= flen || 
+      (match fget j with 
+        '%' -> true 
+      | '@' -> true 
+      | '\n' -> true
+      | _ -> false) then
+        collect (dctext1 acc (String.sub format i (j-i))) j
+      else
+        skipChars (succ j)
+    in
+    skipChars (succ i)
+                                        (* the main collection function *)
+  and collect (acc: doc) (i: int) = 
+    if i >= flen then begin
+      Obj.magic (dfinish acc) 
+    end else begin
+      let c = fget i in
+      if c = '%' then begin
+        let j = skip_args (succ i) in
+        match fget j with
+          '%' -> literal acc j 
+        | 's' ->
+            Obj.magic(fun s ->
+              let str = 
+                if j <= i+1 then
+                  s
+                else
+                  let sl = String.length s in
+                  let p =
+                    try
+                      int_of_string (String.sub format (i+1) (j-i-1))
+                    with _ ->
+                      invalid_arg "fprintf: bad %s format" in
+                  if p > 0 && sl < p then
+                    (String.make (p - sl) ' ') ^ s
+                  else if p < 0 && sl < -p then
+                    s ^ (String.make (-p - sl) ' ')
+                  else
+                    s
+              in
+              collect (breakString acc str) (succ j))
+        | 'c' ->
+            Obj.magic(fun c ->
+              collect (dctext1 acc (String.make 1 c)) (succ j))
+        | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+            Obj.magic(fun n ->
+              collect (dctext1 acc
+                         (format_int (String.sub format i 
+                                                  (j-i+1)) n))
+                (succ j))
+    (* L, l, and n are the Int64, Int32, and Nativeint modifiers to the integer
+       formats d,i,o,x,X,u.  For example, %Lo means print an Int64 in octal.*)
+        | 'L' ->
+            if j != i + 1 then  (*Int64.format handles simple formats like %d.
+                     * Any special flags eaten by skip_args will confuse it. *)
+              invalid_arg ("dprintf: unimplemented format " 
+                           ^ (String.sub format i (j-i+1)));
+            let j' = succ j in (* eat the d,i,x etc. *)
+            let format_spec = "% " in
+            String.set format_spec 1 (fget j'); (* format_spec = "%x", etc. *)
+            Obj.magic(fun n ->
+              collect (dctext1 acc
+                         (Int64.format format_spec n))
+                (succ j'))
+        | 'l' ->
+            if j != i + 1 then invalid_arg ("dprintf: unimplemented format " 
+                                            ^ (String.sub format i (j-i+1)));
+            let j' = succ j in (* eat the d,i,x etc. *)
+            let format_spec = "% " in
+            String.set format_spec 1 (fget j'); (* format_spec = "%x", etc. *)
+            Obj.magic(fun n ->
+              collect (dctext1 acc
+                         (Int32.format format_spec n))
+                (succ j'))
+        | 'n' ->
+            if j != i + 1 then invalid_arg ("dprintf: unimplemented format " 
+                                            ^ (String.sub format i (j-i+1)));
+            let j' = succ j in (* eat the d,i,x etc. *)
+            let format_spec = "% " in
+            String.set format_spec 1 (fget j'); (* format_spec = "%x", etc. *)
+            Obj.magic(fun n ->
+              collect (dctext1 acc
+                         (Nativeint.format format_spec n))
+                (succ j'))
+        | 'f' | 'e' | 'E' | 'g' | 'G' ->
+            Obj.magic(fun f ->
+              collect (dctext1 acc
+                         (format_float (String.sub format i (j-i+1)) f))
+                (succ j))
+        | 'b' ->
+            Obj.magic(fun b ->
+              collect (dctext1 acc (string_of_bool b)) (succ j))
+        | 'a' ->
+            Obj.magic(fun pprinter arg ->
+              collect (dconcat acc (pprinter () arg)) (succ j))
+        | 't' ->
+            Obj.magic(fun pprinter ->
+              collect (dconcat acc (pprinter ())) (succ j))
+        | c ->
+            invalid_arg ("dprintf: unknown format %s" ^ String.make 1 c)
+
+      end else if c = '@' then begin
+        if i + 1 < flen then begin
+          match fget (succ i) with
+
+                                        (* Now the special format characters *)
+            '[' ->                      (* align *)
+              let newacc = 
+                if !alignDepth > !printDepth then
+                  acc
+                else if !alignDepth = !printDepth then
+                  CText(acc, "...")
+                else
+                  acc ++ align
+              in
+              incr alignDepth;
+              collect newacc (i + 2)
+                
+          | ']' ->                        (* unalign *)
+              decr alignDepth;
+              let newacc = 
+                if !alignDepth >= !printDepth then
+                  acc
+                else
+                  acc ++ unalign
+              in
+              collect newacc (i + 2)
+          | '!' ->                        (* hard-line break *)
+              collect (dconcat acc line) (i + 2)
+          | '?' ->                        (* soft line break *)
+              collect (dconcat acc (break)) (i + 2)
+          | '<' ->                        (* left-flushed *)
+              collect (dconcat acc (leftflush)) (i + 2)
+          | '@' -> 
+              collect (dctext1 acc "@") (i + 2)
+          | c ->
+              invalid_arg ("dprintf: unknown format @" ^ String.make 1 c)
+        end else
+          invalid_arg "dprintf: incomplete format @"
+      end else if c = '\n' then begin
+        collect (dconcat acc line) (i + 1)
+      end else
+        literal acc i
+    end
+
+  and skip_args j =
+    match String.unsafe_get format j with
+      '0' .. '9' | ' ' | '.' | '-' -> skip_args (succ j)
+    | c -> j
+
+  in
+  collect Nil 0
+
+let withPrintDepth dp thunk = 
+  let opd = !printDepth in
+  printDepth := dp;
+  thunk ();
+  printDepth := opd
+
+
+
+let flushOften = ref false
+
+let dprintf format     = gprintf (fun x -> x) format
+let fprintf chn format = 
+  let f d = fprint chn 80 d; d in
+        (* weimeric hack begins -- flush output to streams *)
+  let res = gprintf f format in
+        (* save the value we would have returned, flush the channel and then 
+         * return it -- this allows us to see debug input near infinite loops 
+         * *)
+  if !flushOften then flush chn;
+  res
+        (* weimeric hack ends *)
+
+let printf format = fprintf stdout format
+let eprintf format = fprintf stderr format
+
+
+
+(******************************************************************************)
+let getAlgoName = function
+    George -> "George"
+  | Aman   -> "Aman"
+  | Gap    -> "Gap"
+
+let getAboutString () : string =
+  "(Pretty: ALGO=" ^ (getAlgoName algo) ^ ")"
+
+
+@h = tangler("src/flx_frontc_errormsg.mli")
+@select(h)
+
+(** Utilities for error reporting. *)
+
+(* The parsing info *)
+type parseinfo
+
+val newline: unit -> unit  (* Call this function to announce a new line *)
+
+
+val parse_error: string -> (* A message *) 
+                 'a
+
+type parseWhat = 
+    ParseString of string
+  | ParseFile of string
+
+val startParsing: parseWhat -> Lexing.lexbuf (* Call this function to start 
+                                              * parsing  *)
+val finishParsing: unit -> unit (* Call this function to finish parsing and 
+                                 * close the input channel *)
+
+val setCurrentLine: int -> unit
+val setCurrentFile: string -> unit
+
+(* Will keep here the pattern for the Formatlex *)
+val currentPattern: string ref
+
+
+val getPosition: unit -> int * string * int (* Line number, file name, 
+                                               current byte count in file *)
+
+
+
+(* The parser needs to access functions in the lexer. But since the lexer 
+ * depends on the parser module we store here the pointers *)
+val push_context: (unit -> unit) ref (* Start a context *)
+val add_type: (string -> unit) ref (* Add a new string as a type name *)
+val add_identifier: (string -> unit) ref (* Add a new string as a variable 
+                                          * name  *)
+val pop_context: (unit -> unit) ref (* Remove all names added in this context 
+                                     * *)
+
+
+(** A channel for printing log messages *)
+val logChannel : out_channel ref
+
+(** If set then print debugging info *)
+val debugFlag  : bool ref               
+
+val verboseFlag : bool ref
+
+(** Set to true if you want to see all warnings. *)
+val warnFlag: bool ref
+
+val theLexbuf     : Lexing.lexbuf ref
+
+(** Error reporting functions raise this exception *)
+exception Error
+
+
+   (* Error reporting. All of these functions take same arguments as a 
+    * Pretty.eprintf. They raise the exception Error after they print their 
+    * stuff. However, their type indicates that they return a "Flx_frontc_pretty.doc" 
+    * (due to the need to use the built-in type "format") return a doc. Thus 
+    * use as follows:  E.s (E.bug "different lengths (%d != %d)" l1 l2)
+     *)
+
+(** Prints an error message of the form [Error: ...] and then raises the 
+    exception [Error]. Use in conjunction with s, for example: [E.s (E.error 
+    ... )]. *)
+val error         : ('a,unit,Flx_frontc_pretty.doc) format -> 'a
+
+(** Similar to [error] except that its output has the form [Bug: ...] *)
+val bug           : ('a,unit,Flx_frontc_pretty.doc) format -> 'a
+
+(** Similar to [error] except that its output has the form [Unimplemented: ...] *)
+val unimp         : ('a,unit,Flx_frontc_pretty.doc) format -> 'a
+
+val s             : Flx_frontc_pretty.doc -> 'a
+
+(** This is set whenever one of the above error functions are called. It must
+    be cleared manually *)
+val hadErrors : bool ref  
+
+(** Like {!Errormsg.error} but does not raise the {!Errormsg.Error} 
+ * exception. Use: [ignore (E.warn ...)] *)
+val warn:    ('a,unit,Flx_frontc_pretty.doc) format -> 'a
+
+(** Like {!Errormsg.warn} but optional. Printed only if the 
+ * {!Errormsg.warnFlag} is set *)
+val warnOpt: ('a,unit,Flx_frontc_pretty.doc) format -> 'a
+
+(** Print something to [logChannel] *)
+val log           : ('a,unit,Flx_frontc_pretty.doc) format -> 'a
+
+   (* All of the error and warning reporting functions can also print a 
+    * context. To register a context printing function use "pushContext". To 
+    * remove the last registered one use "popContext". If one of the error 
+    * reporting functions is called it will invoke all currently registered 
+    * context reporting functions in the reverse order they were registered. *)
+
+(** Registers a context printing function *)
+val pushContext  : (unit -> Flx_frontc_pretty.doc) -> unit
+
+(** Removes the last registered context printing function *)
+val popContext   : unit -> unit
+
+(** Show the context stack to stderr *)
+val showContext : unit -> unit
+
+(** To ensure that the context is registered and removed properly, use the 
+    function below *)
+val withContext  : (unit -> Flx_frontc_pretty.doc) -> ('a -> 'b) -> 'a -> 'b
+
+@h = tangler("src/flx_frontc_errormsg.ml")
+@select(h)
+open Flx_frontc_pretty
+
+type info =
+    { mutable  linenum: int      ;
+      mutable  linepos: int list ;
+      fileName        : string   ;
+      mutable   errors: bool     }
+      
+let current : info ref = 
+  ref 
+    { linenum  = 1 ;
+      linepos  = [1] ;
+      fileName = "" ;
+      errors   = false }
+
+let fileName i = i.fileName
+
+let startFile fname =
+  current := { linenum  = 1 ;
+               linepos  = [0] ;
+               fileName = fname ; 
+               errors   = false ; }
+
+
+let startNewline n =
+  let i = !current in
+  begin
+    i.linenum <- i.linenum + 1 ;
+    i.linepos <- n :: i.linepos
+  end
+
+let getLineCol (i : info) pos = 
+  let rec look n = function
+      a::_ when (a<=pos) -> (n, pos - a)
+    | _::rest -> look (n - 1) rest
+    | _ -> (0, 0)
+  in
+  let (lin,col) = look i.linenum i.linepos in
+  Printf.sprintf "%d.%d" lin col
+
+let debugFlag  = ref false              (* If set then print debugging info *)
+let verboseFlag = ref false
+
+(**** Error reporting ****)  
+exception Error
+let s (d : doc) = raise Error
+
+let hadErrors = ref false
+
+let errorContext = ref []
+let pushContext f = errorContext := f :: (!errorContext)
+let popContext () = 
+  match !errorContext with 
+    _ :: t -> errorContext := t
+  | [] -> s (eprintf "Bug: cannot pop error context")
+
+
+let withContext ctx f x = 
+  pushContext ctx;
+  try
+    let res = f x in
+    popContext ();
+    res
+  with e -> begin
+    popContext ();
+    raise e
+  end
+  
+                                        (* Make sure that showContext calls 
+                                         * each f with its appropriate 
+                                         * errorContext as it was when it was 
+                                         * pushed *)
+let showContext () = 
+  let rec loop = function
+      [] -> ()
+    | f :: rest -> (errorContext := rest; (* Just in case f raises an error *)
+                    ignore (eprintf "  Context : %t@!" f);
+                    loop rest)
+  in
+  let old = !errorContext in
+  try 
+    loop old;
+    errorContext := old
+  with e -> begin
+    errorContext := old;
+    raise e
+  end
+
+let contextMessage name d = 
+  ignore (eprintf "@!%s: %a@!" name insert d);
+  showContext ()
+
+let warnFlag = ref false
+
+let bug (fmt : ('a,unit,doc) format) : 'a = 
+  let f d =  hadErrors := true; contextMessage "Bug" d; raise Error in
+  Flx_frontc_pretty.gprintf f fmt
+
+let error (fmt : ('a,unit,doc) format) : 'a = 
+  let f d = hadErrors := true; contextMessage "Error" d; raise Error in
+  Flx_frontc_pretty.gprintf f fmt
+
+let unimp (fmt : ('a,unit,doc) format) : 'a = 
+  let f d = hadErrors := true; contextMessage "Unimplemented" d; raise Error in
+  Flx_frontc_pretty.gprintf f fmt
+
+let warn (fmt : ('a,unit,doc) format) : 'a = 
+  let f d = contextMessage "Warning" d; nil in
+  Flx_frontc_pretty.gprintf f fmt
+
+let warnOpt (fmt : ('a,unit,doc) format) : 'a = 
+  let f d = 
+    if !warnFlag then contextMessage "Warning" d; 
+    nil in
+  Flx_frontc_pretty.gprintf f fmt
+
+
+let logChannel : out_channel ref = ref stderr
+
+let log (fmt : ('a,unit,doc) format) : 'a = 
+  let f d = fprint !logChannel 80 d; flush !logChannel; d in
+  Flx_frontc_pretty.gprintf f fmt
+
+
+
+let theLexbuf = ref (Lexing.from_string "")
+
+let fail format = Flx_frontc_pretty.gprintf (fun x -> Flx_frontc_pretty.fprint stderr 80 x; 
+                                           raise (Failure "")) format
+
+(***** Handling parsing errors ********)
+type parseinfo =
+    { mutable  linenum: int      ; (* Current line *)
+      mutable  linestart: int    ; (* The position in the buffer where the 
+                                    * current line starts *)
+      mutable fileName  : string   ; (* Current file *)
+      lexbuf          : Lexing.lexbuf;
+      inchan          : in_channel option;
+      mutable   num_errors : int;  (* Errors so far *)
+    }
+      
+let dummyinfo = 
+    { linenum   = 1;
+      linestart = 0;
+      fileName  = "" ;
+      lexbuf    = Lexing.from_string "";
+      inchan    = None;
+      num_errors    = 0;
+    }
+
+type parseWhat = 
+    ParseString of string
+  | ParseFile of string
+
+let current = ref dummyinfo
+
+
+
+(* Change \ into / in file names. To avoid complications with escapes *)
+let cleanFileName str = 
+  (* ignore (log "cleanFilename(%s)\n" str);  *)
+  let l = String.length str in
+  let rec loop (copyto: int) (i: int) = 
+     if i >= l then 
+         String.sub str 0 copyto
+     else 
+       let c = String.get str i in
+       if c <> '\\' then begin
+          String.set str copyto c; loop (copyto + 1) (i + 1)
+       end else begin
+          String.set str copyto '/';
+          if i < l - 2 && String.get str (i + 1) = '\\' then
+              loop (copyto + 1) (i + 2)
+          else 
+              loop (copyto + 1) (i + 1)
+       end
+  in
+  loop 0 0
+
+let startParsing (fname: parseWhat) = 
+  let inchan, fileName, lexbuf = 
+    match fname with 
+      ParseString s ->
+        None, "<string>", Lexing.from_string s
+    | ParseFile fname ->  
+        let inchan = 
+          try open_in fname with 
+            _ -> s (error "Cannot find input file %s" fname) in
+        let lexbuf = Lexing.from_channel inchan in
+        Some inchan, cleanFileName fname, lexbuf
+  in
+  let i = 
+    { linenum = 1; linestart = 0; 
+      fileName = fileName;
+      lexbuf = lexbuf; inchan = inchan;
+      num_errors = 0 } in
+  current := i;
+  lexbuf
+
+let finishParsing () = 
+  let i = !current in
+  (match i.inchan with 
+    Some inch -> close_in inch | _ -> ());
+  current := dummyinfo
+
+
+(* Call this function to announce a new line *)
+let newline () = 
+  let i = !current in
+  i.linenum <- 1 + i.linenum;
+  i.linestart <- Lexing.lexeme_start i.lexbuf
+
+
+let setCurrentLine (i: int) = 
+  !current.linenum <- i
+
+let setCurrentFile (n: string) = 
+  !current.fileName <- cleanFileName n
+
+
+let max_errors = 20  (* Stop after 20 errors *)
+
+let parse_error (msg: string) : 'a =
+  (* Sometimes the Ocaml parser raises errors in symbol_start and symbol_end *)
+  let token_start, token_end = 
+    try Parsing.symbol_start (), Parsing.symbol_end ()
+    with e -> begin 
+      (* ignore (warn "Parsing raised %s\n" (Printexc.to_string e)); *)
+      0, 0
+    end
+  in
+  let i = !current in
+  let adjStart = 
+    if token_start < i.linestart then 0 else token_start - i.linestart in
+  let adjEnd = 
+    if token_end < i.linestart then 0 else token_end - i.linestart in
+  output_string 
+    stderr
+    (i.fileName ^ "[" ^ (string_of_int i.linenum) ^ ":" 
+                        ^ (string_of_int adjStart) ^ "-" 
+                        ^ (string_of_int adjEnd) 
+                  ^ "]"
+     ^ " : " ^ msg);
+  output_string stderr "\n";
+  flush stderr ;
+  i.num_errors <- i.num_errors + 1;
+  if i.num_errors > max_errors then begin
+    output_string stderr "Too many errors. Aborting.\n" ;
+    exit 1 
+  end;
+  raise Parsing.Parse_error
+
+
+
+(* Keep here the current pattern for formatparse *)
+let currentPattern = ref ""
+
+
+(* More parsing support functions: line, file, char count *)
+let getPosition () : int * string * int = 
+  let i = !current in 
+  i.linenum, i.fileName, Lexing.lexeme_start i.lexbuf
+
+
+(* Keep here some pointers to lexer functions *)
+let push_context = 
+    ref (fun _ -> raise (Failure "Errormsg.push_context not set"))
+let add_type = 
+    ref (fun _ -> raise (Failure "Errormsg.add_type not set"))
+let add_identifier = 
+    ref (fun _ -> raise (Failure "Errormsg.add_identifier not set"))
+let pop_context = 
+    ref (fun _ -> raise (Failure "Errormsg.pop_context not set"))
+
+@h = tangler("src/flx_cabs.mli")
+@select(h)
+(* cabs -- abstract syntax for FrontC                                 
+**
+** Project:        frontc
+** File:        cabs.ml
+** Version:        2.1
+** Date:        4.7.99
+** Author:        Hugues Cassé
+**
+** 1.0        2.19.99        Hugues Cassé        First version.
+** 2.0        3.22.99        Hugues Cassé        Generalization of typed names.
+** 2.1        4.7.99        Hugues Cassé        GNU Statement embedded in expressions managed.
+*)
+
+(*
+** Types
+*)
+
+type cabsloc = {
+ lineno : int;
+ filename: string;
+ byteno: int;
+
+}                                                                     
+
+type typeSpecifier = (* Merge all specifiers into one type *)
+    Tvoid                             (* Type specifier ISO 6.7.2 *)
+  | Tchar
+  | Tshort
+  | Tint
+  | Tlong
+  | Tint64
+  | Tfloat
+  | Tdouble
+  | Tsigned
+  | Tunsigned
+  | Tnamed of string
+  (* each of the following three kinds of specifiers contains a field 
+   * or item list iff it corresponds to a definition (as opposed to
+   * a forward declaration or simple reference to the type); they
+   * also have a list of __attribute__s that appeared between the
+   * keyword and the type name (definitions only) *)
+  | Tstruct of string * field_group list option * attribute list
+  | Tunion of string * field_group list option * attribute list
+  | Tenum of string * enum_item list option * attribute list
+  | TtypeofE of expression                      (* GCC __typeof__ *)
+  | TtypeofT of specifier * decl_type       (* GCC __typeof__ *)
+
+and storage =
+    NO_STORAGE | AUTO | STATIC | EXTERN | REGISTER
+
+and funspec = 
+    INLINE | VIRTUAL | EXPLICIT
+
+and cvspec =
+    CV_CONST | CV_VOLATILE | CV_RESTRICT
+
+(* Type specifier elements. These appear at the start of a declaration *)
+(* Everywhere they appear in this file, they appear as a 'spec_elem list', *)
+(* which is not interpreted by cabs -- rather, this "word soup" is passed *)
+(* on to the compiler.  Thus, we can represent e.g. 'int long float x' even *)
+(* though the compiler will of course choke. *)
+and spec_elem =
+    SpecTypedef          
+  | SpecCV of cvspec            (* const/volatile *)
+  | SpecAttr of attribute       (* __attribute__ *)
+  | SpecStorage of storage
+  | SpecInline
+  | SpecType of typeSpecifier
+  | SpecPattern of string       (* specifier pattern variable *)
+
+(* decided to go ahead and replace 'spec_elem list' with specifier *)
+and specifier = spec_elem list
+
+
+(* Declarator type. They modify the base type given in the specifier. Keep
+ * them in the order as they are printed (this means that the top level
+ * constructor for ARRAY and PTR is the inner-level in the meaning of the
+ * declared type) *)
+and decl_type =
+ | JUSTBASE                               (* Prints the declared name *)
+ | PARENTYPE of attribute list * decl_type * attribute list
+                                          (* Prints "(attrs1 decl attrs2)".
+                                           * attrs2 are attributes of the
+                                           * declared identifier and it is as
+                                           * if they appeared at the very end
+                                           * of the declarator. attrs1 can
+                                           * contain attributes for the
+                                           * identifier or attributes for the
+                                           * enclosing type.  *)
+ | ARRAY of decl_type * attribute list * expression
+                                          (* Prints "decl [ attrs exp ]".
+                                           * decl is never a PTR. *)
+ | PTR of attribute list * decl_type      (* Prints "* attrs decl" *)
+ | PROTO of decl_type * single_name list * bool 
+                                          (* Prints "decl (args[, ...])".
+                                           * decl is never a PTR.*)
+
+(* The base type and the storage are common to all names. Each name might
+ * contain type or storage modifiers *)
+(* e.g.: int x, y; *)
+and name_group = specifier * name list
+
+(* The optional expression is the bitfield *)
+and field_group = specifier * (name * expression option) list
+
+(* like name_group, except the declared variables are allowed to have initializers *)
+(* e.g.: int x=1, y=2; *)
+and init_name_group = specifier * init_name list
+
+(* The decl_type is in the order in which they are printed. Only the name of
+ * the declared identifier is pulled out. The attributes are those that are
+ * printed after the declarator *)
+(* e.g: in "int *x", "*x" is the declarator; "x" will be pulled out as *)
+(* the string, and decl_type will be PTR([], JUSTBASE) *)
+and name = string * decl_type * attribute list * cabsloc
+
+(* A variable declarator ("name") with an initializer *)
+and init_name = name * init_expression
+
+(* Single names are for declarations that cannot come in groups, like
+ * function parameters and functions *)
+and single_name = specifier * name
+
+
+and enum_item = string * expression * cabsloc
+
+(*
+** Declaration definition (at toplevel)
+*)
+and definition =
+   FUNDEF of single_name * block * cabsloc * cabsloc
+ | DECDEF of init_name_group * cabsloc        (* global variable(s), or function prototype *)
+ | TYPEDEF of name_group * cabsloc
+ | ONLYTYPEDEF of specifier * cabsloc
+ | GLOBASM of string * cabsloc
+ | PRAGMA of expression * cabsloc
+ (* toplevel form transformer, from the first definition to the *)
+ (* second group of definitions *)
+ | TRANSFORMER of definition * definition list * cabsloc
+ (* expression transformer: source and destination *)
+ | EXPRTRANSFORMER of expression * expression * cabsloc
+
+
+(* the string is a file name, and then the list of toplevel forms *)
+and file = string * definition list
+
+
+(*
+** statements
+*)
+
+(* A block contains a list of local label declarations ( GCC's ({ __label__ 
+ * l1, l2; ... }) ) , a list of definitions and a list of statements  *)
+and block = 
+    { blabels: string list;
+      battrs: attribute list;
+      bdefs: definition list;
+      bstmts: statement list 
+    } 
+
+and statement =
+   NOP of cabsloc
+ | COMPUTATION of expression * cabsloc
+ | BLOCK of block * cabsloc
+ | SEQUENCE of statement * statement * cabsloc
+ | IF of expression * statement * statement * cabsloc
+ | WHILE of expression * statement * cabsloc
+ | DOWHILE of expression * statement * cabsloc
+ | FOR of for_clause * expression * expression * statement * cabsloc
+ | BREAK of cabsloc
+ | CONTINUE of cabsloc
+ | RETURN of expression * cabsloc
+ | SWITCH of expression * statement * cabsloc
+ | CASE of expression * statement * cabsloc
+ | CASERANGE of expression * expression * statement * cabsloc
+ | DEFAULT of statement * cabsloc
+ | LABEL of string * statement * cabsloc
+ | GOTO of string * cabsloc
+ | COMPGOTO of expression * cabsloc (* GCC's "goto *exp" *)
+
+ | ASM of attribute list * (* typically only volatile and const *)
+         string list * (* template *)
+       (string * expression) list * (* list of constraints and expressions for 
+                                   * outputs *)
+       (string * expression) list * (* same for inputs *)
+       string list * (* clobbered registers *)
+       cabsloc
+       
+and for_clause = 
+   FC_EXP of expression
+ | FC_DECL of definition
+
+(*
+** Expressions
+*)
+and binary_operator =
+    ADD | SUB | MUL | DIV | MOD
+  | AND | OR
+  | BAND | BOR | XOR | SHL | SHR
+  | EQ | NE | LT | GT | LE | GE
+  | ASSIGN
+  | ADD_ASSIGN | SUB_ASSIGN | MUL_ASSIGN | DIV_ASSIGN | MOD_ASSIGN
+  | BAND_ASSIGN | BOR_ASSIGN | XOR_ASSIGN | SHL_ASSIGN | SHR_ASSIGN
+
+and unary_operator =
+    MINUS | PLUS | NOT | BNOT | MEMOF | ADDROF
+  | PREINCR | PREDECR | POSINCR | POSDECR
+
+and expression =
+    NOTHING
+  | UNARY of unary_operator * expression
+  | LABELADDR of string  (* GCC's && Label *)
+  | BINARY of binary_operator * expression * expression
+  | QUESTION of expression * expression * expression
+
+   (* A CAST can actually be a constructor expression *)
+  | CAST of (specifier * decl_type) * init_expression
+
+    (* There is a special form of CALL in which the function called is
+       __builtin_va_arg and the second argument is sizeof(T). This 
+       should be printed as just T *)
+  | CALL of expression * expression list
+  | COMMA of expression list
+  | CONSTANT of constant
+  | VARIABLE of string
+  | EXPR_SIZEOF of expression
+  | TYPE_SIZEOF of specifier * decl_type
+  | EXPR_ALIGNOF of expression
+  | TYPE_ALIGNOF of specifier * decl_type
+  | INDEX of expression * expression
+  | MEMBEROF of expression * string
+  | MEMBEROFPTR of expression * string
+  | GNU_BODY of block
+  | EXPR_PATTERN of string     (* pattern variable, and name *)
+
+and constant =
+  | CONST_INT of string   (* the textual representation *)
+  | CONST_FLOAT of string (* the textual representaton *)
+  | CONST_CHAR of int64 list
+  | CONST_WCHAR of int64 list
+  | CONST_STRING of string
+  | CONST_WSTRING of int64 list (* List of wide characters.  Since characters
+      * may have 16- or 32-bit values, we can't use a string to represent
+      * this constant.  The last element in the list is the terminating nul for
+      * this literal. *)
+
+and init_expression =
+  | NO_INIT
+  | SINGLE_INIT of expression
+  | COMPOUND_INIT of (initwhat * init_expression) list
+
+and initwhat =
+    NEXT_INIT
+  | INFIELD_INIT of string * initwhat
+  | ATINDEX_INIT of expression * initwhat
+  | ATINDEXRANGE_INIT of expression * expression
+
+
+                                        (* Each attribute has a name and some
+                                         * optional arguments *)
+and attribute = string * expression list
+                                              
+@h = tangler("src/flx_cabs_helper.mli")
+@select(h)
+
+val version : string
+val cabslu : Flx_cabs.cabsloc
+val missingFieldDecl :
+  string * Flx_cabs.decl_type * 'a list * Flx_cabs.cabsloc
+val isStatic : Flx_cabs.spec_elem list -> bool
+val isExtern : Flx_cabs.spec_elem list -> bool
+val isInline : Flx_cabs.spec_elem list -> bool
+val isTypedef : Flx_cabs.spec_elem list -> bool
+val get_statementloc : Flx_cabs.statement -> Flx_cabs.cabsloc
+val get_definitionloc : Flx_cabs.definition -> Flx_cabs.cabsloc
+val explodeStringToInts : string -> int64 list
+val valueOfDigit : char -> int64
+val d_cabsloc : unit -> Flx_cabs.cabsloc -> Flx_frontc_pretty.doc
+
+@h = tangler("src/flx_cabs_helper.ml")
+@select(h)
+open Flx_cabs
+
+(*********** HELPER FUNCTIONS **********)
+
+let version = "Cabs 2.1 4.7.99 Hugues Cassé"
+let cabslu = {lineno = -10; filename = "cabs loc unknown"; byteno = -10;}
+
+
+
+let missingFieldDecl = ("___missing_field_name", JUSTBASE, [], cabslu)
+
+let rec isStatic = function
+    [] -> false
+  | (SpecStorage STATIC) :: _ -> true
+  | _ :: rest -> isStatic rest
+
+let rec isExtern = function
+    [] -> false
+  | (SpecStorage EXTERN) :: _ -> true
+  | _ :: rest -> isExtern rest
+
+let rec isInline = function
+    [] -> false
+  | SpecInline :: _ -> true
+  | _ :: rest -> isInline rest
+
+let rec isTypedef = function
+    [] -> false
+  | SpecTypedef :: _ -> true
+  | _ :: rest -> isTypedef rest
+
+
+let get_statementloc (s : statement) : cabsloc =
+begin
+  match s with
+  | NOP(loc) -> loc
+  | COMPUTATION(_,loc) -> loc
+  | BLOCK(_,loc) -> loc
+  | SEQUENCE(_,_,loc) -> loc
+  | IF(_,_,_,loc) -> loc
+  | WHILE(_,_,loc) -> loc
+  | DOWHILE(_,_,loc) -> loc
+  | FOR(_,_,_,_,loc) -> loc
+  | BREAK(loc) -> loc
+  | CONTINUE(loc) -> loc
+  | RETURN(_,loc) -> loc
+  | SWITCH(_,_,loc) -> loc
+  | CASE(_,_,loc) -> loc
+  | CASERANGE(_,_,_,loc) -> loc
+  | DEFAULT(_,loc) -> loc
+  | LABEL(_,_,loc) -> loc
+  | GOTO(_,loc) -> loc
+  | COMPGOTO (_, loc) -> loc
+  | ASM(_,_,_,_,_,loc) -> loc
+end
+
+let get_definitionloc (d : definition) : cabsloc =
+begin
+  match d with
+  | FUNDEF(_, _, l, _) -> l
+  | DECDEF(_, l) -> l
+  | TYPEDEF(_, l) -> l
+  | ONLYTYPEDEF(_, l) -> l
+  | GLOBASM(_, l) -> l
+  | PRAGMA(_, l) -> l
+  | TRANSFORMER(_, _, l) -> l
+  | EXPRTRANSFORMER(_, _, l) -> l
+end
+
+let explodeStringToInts (s: string) : int64 list =  
+  let rec allChars i acc = 
+    if i < 0 then acc
+    else allChars (i - 1) (Int64.of_int (Char.code (String.get s i)) :: acc)
+  in
+  allChars (-1 + String.length s) []
+
+let valueOfDigit chr =
+  let int_value = 
+    match chr with
+      '0'..'9' -> (Char.code chr) - (Char.code '0')
+    | 'a'..'z' -> (Char.code chr) - (Char.code 'a') + 10
+    | 'A'..'Z' -> (Char.code chr) - (Char.code 'A') + 10
+    | _ -> Flx_frontc_errormsg.s (Flx_frontc_errormsg.bug "not a digit") in
+  Int64.of_int int_value
+  
+    
+open Flx_frontc_pretty
+let d_cabsloc () cl = 
+  text cl.filename ++ text ":" ++ num cl.lineno
+
+@h = tangler("src/flx_frontc_escape.mli")
+@select(h)
+
+(*
+ * Character and string escaping utilities
+ *)
+
+(** OCaml types used to represent wide characters and strings *)
+type wchar = int64
+type wstring = wchar list
+
+(** escape various constructs in accordance with C lexical rules *)
+val escape_char : char -> string
+val escape_string : string -> string
+val escape_wchar : wchar -> string
+val escape_wstring : wstring -> string
+
+@h = tangler("src/flx_frontc_escape.ml")
+@select(h)
+
+
+(** OCaml types used to represent wide characters and strings *)
+type wchar = int64
+type wstring = wchar list
+
+
+let escape_char = function
+  | '\007' -> "\\a"
+  | '\b' -> "\\b"
+  | '\t' -> "\\t"
+  | '\n' -> "\\n"
+  | '\011' -> "\\v"
+  | '\012' -> "\\f"
+  | '\r' -> "\\r"
+  | '"' -> "\\\""
+  | '\'' -> "\\'"
+  | '\\' -> "\\\\"
+  | ' ' .. '~' as printable -> String.make 1 printable
+  | unprintable -> Printf.sprintf "\\%03o" (Char.code unprintable)
+
+let escape_string str =
+  let length = String.length str in
+  let buffer = Buffer.create length in
+  for index = 0 to length - 1 do
+    Buffer.add_string buffer (escape_char (String.get str index))
+  done;
+  Buffer.contents buffer
+
+(* a wide char represented as an int64 *)
+let escape_wchar =
+  (* limit checks whether upper > probe *)
+  let limit upper probe = (Int64.to_float (Int64.sub upper probe)) > 0.5 in
+  let fits_byte = limit (Int64.of_int 0x100) in
+  let fits_octal_escape = limit (Int64.of_int 0o1000) in
+  let fits_universal_4 = limit (Int64.of_int 0x10000) in
+  let fits_universal_8 = limit (Int64.of_string "0x100000000") in
+  fun charcode ->
+    if fits_byte charcode then
+      escape_char (Char.chr (Int64.to_int charcode))
+    else if fits_octal_escape charcode then
+      Printf.sprintf "\\%03Lo" charcode
+    else if fits_universal_4 charcode then
+      Printf.sprintf "\\u%04Lx" charcode
+    else if fits_universal_8 charcode then
+      Printf.sprintf "\\u%04Lx" charcode
+    else
+      invalid_arg "Cprint.escape_string_intlist"
+
+(* a wide string represented as a list of int64s *)
+let escape_wstring (str : int64 list) =
+  let length = List.length str in
+  let buffer = Buffer.create length in
+  let append charcode =
+    let addition = escape_wchar charcode in
+    Buffer.add_string buffer addition
+  in
+  List.iter append str;
+  Buffer.contents buffer
+
+@h = tangler("src/flx_frontc_cprint.mli")
+@select(h)
+
+val version : string
+type loc = { line : int; file : string; }
+val lu : loc
+val cabslu : Flx_cabs.cabsloc
+val curLoc : Flx_cabs.cabsloc ref
+val msvcMode : bool ref
+val printLn : bool ref
+val printLnComment : bool ref
+val printCounters : bool ref
+val printComments : bool ref
+val out : out_channel ref
+val width : int ref
+val tab : int ref
+val max_indent : int ref
+val line : string ref
+val line_len : int ref
+val current : string ref
+val current_len : int ref
+val spaces : int ref
+val follow : int ref
+val roll : int ref
+val print_tab : int -> unit
+val flush : 'a -> unit
+val commit : 'a -> unit
+val addline : unit -> unit
+val new_line : 'a -> unit
+val force_new_line : 'a -> unit
+val indent : 'a -> unit
+val indentline : 'a -> unit
+val unindent : 'a -> unit
+val space : 'a -> unit
+val print : string -> unit
+val print_unescaped_string : string -> unit
+val setLoc : Flx_cabs.cabsloc -> unit
+val print_list : (unit -> unit) -> ('a -> 'b) -> 'a list -> unit
+val print_commas : bool -> ('a -> 'b) -> 'a list -> unit
+val print_string : string -> unit
+val print_wstring : Flx_frontc_escape.wstring -> unit
+val print_specifiers : Flx_cabs.specifier -> unit
+val print_type_spec : Flx_cabs.typeSpecifier -> unit
+val print_struct_name_attr :
+  string -> string -> Flx_cabs.attribute list -> unit
+val print_decl : string -> Flx_cabs.decl_type -> unit
+val print_fields : Flx_cabs.field_group list -> unit
+val print_enum_items : Flx_cabs.enum_item list -> unit
+val print_onlytype : Flx_cabs.specifier * Flx_cabs.decl_type -> unit
+val print_name : Flx_cabs.name -> unit
+val print_init_name : Flx_cabs.init_name -> unit
+val print_name_group : Flx_cabs.name_group -> unit
+val print_field_group : Flx_cabs.field_group -> unit
+val print_field : Flx_cabs.name * Flx_cabs.expression option -> unit
+val print_init_name_group : Flx_cabs.init_name_group -> unit
+val print_single_name : Flx_cabs.single_name -> unit
+val print_params : Flx_cabs.single_name list -> bool -> unit
+val print_old_params : string list -> bool -> unit
+val get_operator : Flx_cabs.expression -> string * int
+val print_comma_exps : Flx_cabs.expression list -> unit
+val print_init_expression : Flx_cabs.init_expression -> unit
+val print_expression : Flx_cabs.expression -> int -> unit
+val print_statement : Flx_cabs.statement -> unit
+val print_block : Flx_cabs.block -> unit
+val print_substatement : Flx_cabs.statement -> unit
+val print_attribute : Flx_cabs.attribute -> unit
+val print_attributes : Flx_cabs.attribute list -> unit
+val print_defs : Flx_cabs.definition list -> unit
+val print_def : Flx_cabs.definition -> unit
+val comprint : string -> unit
+val comstring : string -> string
+val printFile : out_channel -> Flx_cabs.file -> unit
+val set_tab : int -> unit
+val set_width : int -> unit
+
+@h = tangler("src/flx_frontc_cprint.ml")
+@select(h)
+(* cprint -- pretty printer of C program from abstract syntax
+**
+** Project:        FrontC
+** File:        cprint.ml
+** Version:        2.1e
+** Date:        9.1.99
+** Author:        Hugues Cassé
+**
+**        1.0                2.22.99        Hugues Cassé        First version.
+**        2.0                3.18.99        Hugues Cassé        Compatible with Frontc 2.1, use of CAML
+**                                                                        pretty printer.
+**        2.1                3.22.99        Hugues Cassé        More efficient custom pretty printer used.
+**        2.1a        4.12.99        Hugues Cassé        Correctly handle:
+**                                                                        char *m, *m, *p; m + (n - p)
+**        2.1b        4.15.99        Hugues Cassé        x + (y + z) stays x + (y + z) for
+**                                                                        keeping computation order.
+**        2.1c        7.23.99        Hugues Cassé        Improvement of case and default display.
+**        2.1d        8.25.99        Hugues Cassé        Rebuild escape sequences in string and
+**                                                                        characters.
+**        2.1e        9.1.99        Hugues Cassé        Fix, recognize and correctly display '\0'.
+*)
+
+(* George Necula: I changed this pretty dramatically since CABS changed *)
+open Flx_cabs
+open Flx_frontc_escape
+
+let version = "Cprint 2.1e 9.1.99 Hugues Cassé"
+
+type loc = { line : int; file : string }
+
+let lu = {line = -1; file = "loc unknown";}
+let cabslu = {lineno = -10; filename = "cabs loc unknown"; byteno = -10;}
+
+let curLoc = ref cabslu
+
+let msvcMode = ref false
+
+let printLn = ref true
+let printLnComment = ref false
+
+let printCounters = ref false
+let printComments = ref false
+
+(*
+** FrontC Pretty printer
+*)
+let out = ref stdout
+let width = ref 80
+let tab = ref 2
+let max_indent = ref 60
+
+let line = ref ""
+let line_len = ref 0
+let current = ref ""
+let current_len = ref 0
+let spaces = ref 0
+let follow = ref 0
+let roll = ref 0
+
+let print_tab size =
+        for i = 1 to size / 8 do
+                output_char !out '\t'
+        done;
+        for i  = 1 to size mod 8 do
+                output_char !out ' '
+        done
+
+let flush _ =
+        if !line <> "" then begin
+                print_tab (!spaces + !follow);
+                output_string !out !line;
+                line := "";
+                line_len := 0
+        end
+
+let commit _ =
+  if !current <> "" then begin
+    if !line = "" then begin
+      line := !current;
+      line_len := !current_len
+    end else begin
+      line := (!line ^ " " ^ !current);
+      line_len := !line_len + 1 + !current_len
+    end;
+    current := "";
+    current_len := 0
+  end
+
+
+let addline () =
+  curLoc := {lineno = !curLoc.lineno+1;
+              filename = !curLoc.filename;
+              byteno = -1; (*sfg: can we do better than this?*) }
+       
+       
+let new_line _ =
+  commit ();
+  if !line <> "" then begin
+    flush ();
+    addline();
+    output_char !out '\n'
+  end;
+  follow := 0
+       
+let force_new_line _ =
+  commit ();
+  flush ();
+  addline();
+  output_char !out '\n';
+  follow := 0
+       
+let indent _ =
+  new_line ();
+  spaces := !spaces + !tab;
+  if !spaces >= !max_indent then begin
+    spaces := !tab;
+    roll := !roll + 1
+  end
+      
+let indentline _ =
+  new_line ();
+  if !spaces >= !max_indent then begin
+    spaces := !tab;
+    roll := !roll + 1
+  end
+      
+let unindent _ =
+  new_line ();
+  spaces := !spaces - !tab;
+  if (!spaces <= 0) && (!roll > 0) then begin
+    spaces := ((!max_indent - 1) / !tab) * !tab;
+    roll := !roll - 1
+  end
+      
+let space _ = commit ()
+
+let print str =
+  current := !current ^ str;
+  current_len := !current_len + (String.length str);
+  if (!spaces + !follow + !line_len + 1 + !current_len) > !width
+  then begin
+    if !line_len = 0 then commit ();
+    flush ();
+    addline();
+    output_char !out '\n';
+    if !follow = 0 then follow := !tab
+  end
+
+(* sm: for some reason I couldn't just call print from frontc.... ? *)
+let print_unescaped_string str = print str
+
+let setLoc (l : cabsloc) =
+  let tempcur = current in
+  if !printLn then  
+    if (l.lineno <> !curLoc.lineno) || l.filename <> !curLoc.filename then 
+      begin
+        let oldspaces = !spaces in
+        (* sm: below, we had '//#' instead of '#', which means printLnComment was disregarded *)
+        if !printLnComment then print "//" else print "#";
+        if !msvcMode then print "line";
+        print " ";
+        print (string_of_int l.lineno);
+        if (l.filename <> !curLoc.filename) then begin
+          print (" \"" ^ l.filename ^ "\"")
+        end;
+        spaces := oldspaces;
+        new_line();
+        curLoc := l
+      end
+
+
+
+(*
+** Useful primitives
+*)
+let print_list print_sep print_elt lst = 
+  let _ = List.fold_left
+      (fun com elt ->
+        if com then print_sep ();
+        print_elt elt;
+        true)
+      false
+      lst in
+  ()
+
+let print_commas nl fct lst =
+  print_list (fun () -> print ","; if nl then new_line() else space()) fct lst
+        
+let print_string (s:string) =
+  print ("\"" ^ escape_string s ^ "\"")
+
+let print_wstring (s: int64 list) =
+  print ("L\"" ^ escape_wstring s ^ "\"")
+
+(*
+** Base Type Printing
+*)
+
+let rec print_specifiers (specs: spec_elem list) =
+  comprint "specifier(";
+  let print_spec_elem = function
+      SpecTypedef -> print "typedef "
+    | SpecInline -> print "__inline "
+    | SpecStorage sto ->
+        print (match sto with
+          NO_STORAGE -> (comstring "/*no storage*/")
+        | AUTO -> "auto "
+        | STATIC -> "static "
+        | EXTERN -> "extern "
+        | REGISTER -> "register ")
+    | SpecCV cv -> 
+        print (match cv with
+        | CV_CONST -> "const "
+        | CV_VOLATILE -> "volatile "
+        | CV_RESTRICT -> "restrict ")
+    | SpecAttr al -> print_attribute al; space ()
+    | SpecType bt -> print_type_spec bt
+    | SpecPattern name -> print ("@specifier(" ^ name ^ ") ")
+  in
+  List.iter print_spec_elem specs
+  ;comprint ")"
+
+
+and print_type_spec = function
+    Tvoid -> print "void "
+  | Tchar -> print "char "
+  | Tshort -> print "short "
+  | Tint -> print "int "
+  | Tlong -> print "long "
+  | Tint64 -> print "__int64 "
+  | Tfloat -> print "float "
+  | Tdouble -> print "double "
+  | Tsigned -> print "signed "
+  | Tunsigned -> print "unsigned "
+  | Tnamed s -> comprint "tnamed"; print s; space ();
+  | Tstruct (n, None, _) -> print ("struct " ^ n ^ " ")
+  | Tstruct (n, Some flds, extraAttrs) ->
+      (print_struct_name_attr "struct" n extraAttrs);
+      (print_fields flds)
+  | Tunion (n, None, _) -> print ("union " ^ n ^ " ")
+  | Tunion (n, Some flds, extraAttrs) ->
+      (print_struct_name_attr "union" n extraAttrs);
+      (print_fields flds)
+  | Tenum (n, None, _) -> print ("enum " ^ n ^ " ")
+  | Tenum (n, Some enum_items, extraAttrs) ->
+      (print_struct_name_attr "enum" n extraAttrs);
+      (print_enum_items enum_items)
+  | TtypeofE e -> print "__typeof__("; print_expression e 1; print ") "
+  | TtypeofT (s,d) -> print "__typeof__("; print_onlytype (s, d); print ") "
+
+
+(* print "struct foo", but with specified keyword and a list of
+ * attributes to put between keyword and name *)
+and print_struct_name_attr (keyword: string) (name: string) (extraAttrs: attribute list) =
+begin
+  if extraAttrs = [] then
+    print (keyword ^ " " ^ name)
+  else begin
+    (print (keyword ^ " "));
+    (print_attributes extraAttrs);    (* prints a final space *)
+    (print name);
+  end
+end
+
+
+(* This is the main printer for declarations. It is easy bacause the 
+ * declarations are laid out as they need to be printed. *)
+and print_decl (n: string) = function
+    JUSTBASE -> if n <> "___missing_field_name" then 
+                  print n
+                else
+                  comprint "missing field name"
+  | PARENTYPE (al1, d, al2) ->
+      print "(";
+      print_attributes al1; space ();
+      print_decl n d; space ();
+      print_attributes al2; print ")"
+  | PTR (al, d) ->
+      print "* ";
+      print_attributes al; space ();
+      print_decl n d
+  | ARRAY (d, al, e) ->
+      print_decl n d;
+      print "[";
+      print_attributes al;
+      if e <> NOTHING then print_expression e 1;
+      print "]"
+  | PROTO(d, args, isva) ->
+      comprint "proto(";
+      print_decl n d;
+      print "(";
+      print_params args isva;
+      print ")";
+      comprint ")"
+
+
+and print_fields (flds : field_group list) =
+  if flds = [] then print " { } "
+  else begin
+    print " {";
+    indent ();
+    List.iter
+      (fun fld -> print_field_group fld; print ";"; new_line ())
+      flds;
+    unindent ();
+    print "} "
+  end
+
+and print_enum_items items =
+  if items = [] then print " { } "
+  else begin
+    print " {";
+    indent ();
+    print_commas
+      true
+      (fun (id, exp, loc) -> print id;
+        if exp = NOTHING then ()
+        else begin
+          space ();
+          print "= ";
+          print_expression exp 1
+        end)
+      items;
+    unindent ();
+    print "} ";
+  end
+
+  
+and print_onlytype (specs, dt) =
+  print_specifiers specs;
+  print_decl "" dt
+    
+and print_name ((n, decl, attrs, _) : name) =
+  print_decl n decl;
+  space ();
+  print_attributes attrs
+
+and print_init_name ((n, i) : init_name) =
+  print_name n;
+  if i <> NO_INIT then begin
+    space ();
+    print "= ";
+    print_init_expression i
+  end
+            
+and print_name_group (specs, names) =
+  print_specifiers specs;
+  print_commas false print_name names
+    
+and print_field_group (specs, fields) =
+  print_specifiers specs;
+  print_commas false print_field fields
+    
+
+and print_field (name, widtho) = 
+  print_name name;
+  (match widtho with 
+    None -> ()
+  | Some w -> print " : ";  print_expression w 1)
+
+and print_init_name_group (specs, names) =
+  print_specifiers specs;
+  print_commas false print_init_name names
+    
+and print_single_name (specs, name) =
+  print_specifiers specs;
+  print_name name
+
+and print_params (pars : single_name list) (ell : bool) =
+  print_commas false print_single_name pars;
+  if ell then print (if pars = [] then "..." else ", ...") else ()
+    
+and print_old_params pars ell =
+  print_commas false (fun id -> print id) pars;
+  if ell then print (if pars = [] then "..." else ", ...") else ()
+    
+
+(*
+** Expression printing
+**                Priorities
+**                16        variables
+**                15        . -> [] call()
+**                14  ++, -- (post)
+**                13        ++ -- (pre) ~ ! - + & *(cast)
+**                12        * / %
+**                11        + -
+**                10        << >>
+**                9        < <= > >=
+**                8        == !=
+**                7        &
+**                6        ^
+**                5        |
+**                4        &&
+**                3        ||
+**                2        ? :
+**                1        = ?=
+**                0        ,                                
+*)
+and get_operator exp =
+  match exp with
+    NOTHING -> ("", 16)
+  | UNARY (op, _) ->
+      (match op with
+        MINUS -> ("-", 13)
+      | PLUS -> ("+", 13)
+      | NOT -> ("!", 13)
+      | BNOT -> ("~", 13)
+      | MEMOF -> ("*", 13)
+      | ADDROF -> ("&", 13)
+      | PREINCR -> ("++", 13)
+      | PREDECR -> ("--", 13)
+      | POSINCR -> ("++", 14)
+      | POSDECR -> ("--", 14))
+  | LABELADDR s -> ("", 16)  (* Like a constant *)
+  | BINARY (op, _, _) ->
+      (match op with
+        MUL -> ("*", 12)
+      | DIV -> ("/", 12)
+      | MOD -> ("%", 12)
+      | ADD -> ("+", 11)
+      | SUB -> ("-", 11)
+      | SHL -> ("<<", 10)
+      | SHR -> (">>", 10)
+      | LT -> ("<", 9)
+      | LE -> ("<=", 9)
+      | GT -> (">", 9)
+      | GE -> (">=", 9)
+      | EQ -> ("==", 8)
+      | NE -> ("!=", 8)
+      | BAND -> ("&", 7)
+      | XOR -> ("^", 6)
+      | BOR -> ("|", 5)
+      | AND -> ("&&", 4)
+      | OR -> ("||", 3)
+      | ASSIGN -> ("=", 1)
+      | ADD_ASSIGN -> ("+=", 1)
+      | SUB_ASSIGN -> ("-=", 1)
+      | MUL_ASSIGN -> ("*=", 1)
+      | DIV_ASSIGN -> ("/=", 1)
+      | MOD_ASSIGN -> ("%=", 1)
+      | BAND_ASSIGN -> ("&=", 1)
+      | BOR_ASSIGN -> ("|=", 1)
+      | XOR_ASSIGN -> ("^=", 1)
+      | SHL_ASSIGN -> ("<<=", 1)
+      | SHR_ASSIGN -> (">>=", 1))
+  | QUESTION _ -> ("", 2)
+  | CAST _ -> ("", 13)
+  | CALL _ -> ("", 15)
+  | COMMA _ -> ("", 0)
+  | CONSTANT _ -> ("", 16)
+  | VARIABLE name -> ("", 16)
+  | EXPR_SIZEOF exp -> ("", 16)
+  | TYPE_SIZEOF _ -> ("", 16)
+  | EXPR_ALIGNOF exp -> ("", 16)
+  | TYPE_ALIGNOF _ -> ("", 16)
+  | INDEX (exp, idx) -> ("", 15)
+  | MEMBEROF (exp, fld) -> ("", 15)
+  | MEMBEROFPTR (exp, fld) -> ("", 15)
+  | GNU_BODY _ -> ("", 17)
+  | EXPR_PATTERN _ -> ("", 16)     (* sm: not sure about this *)
+
+and print_comma_exps exps =
+  print_commas false (fun exp -> print_expression exp 1) exps
+    
+and print_init_expression (iexp: init_expression) : unit = 
+  match iexp with 
+    NO_INIT -> ()
+  | SINGLE_INIT e -> print_expression e 1
+  | COMPOUND_INIT  initexps ->
+      let doinitexp = function
+          NEXT_INIT, e -> print_init_expression e
+        | i, e -> 
+            let rec doinit = function
+                NEXT_INIT -> ()
+              | INFIELD_INIT (fn, i) -> print ("." ^ fn); doinit i
+              | ATINDEX_INIT (e, i) -> 
+                  print "[";
+                  print_expression e 1;
+                  print "]";
+                  doinit i
+              | ATINDEXRANGE_INIT (s, e) -> 
+                  print "["; 
+                  print_expression s 1;
+                  print " ... ";
+                  print_expression e 1;
+                  print "]"
+                in
+            doinit i; print " = "; 
+            print_init_expression e
+      in
+      print "{";
+      print_commas false doinitexp initexps;
+      print "}"
+
+
+and print_expression (exp : expression) (lvl : int) =
+  let (txt, lvl') = get_operator exp in
+  let _ = if lvl > lvl' then print "(" else () in
+  let _ = match exp with
+    NOTHING -> ()
+  | UNARY (op, exp') ->
+      (match op with
+        POSINCR | POSDECR ->
+          print_expression exp' lvl';
+          print txt
+      | _ ->
+          print txt; space (); (* Print the space to avoid --5 *)
+          print_expression exp' lvl')
+  | LABELADDR l -> print ("&& " ^ l)
+  | BINARY (op, exp1, exp2) ->
+                        (*if (op = SUB) && (lvl <= lvl') then print "(";*)
+      print_expression exp1 lvl';
+      space ();
+      print txt;
+      space ();
+                        (*print_expression exp2 (if op = SUB then (lvl' + 1) else lvl');*)
+      print_expression exp2 (lvl' + 1)
+                        (*if (op = SUB) && (lvl <= lvl') then print ")"*)
+  | QUESTION (exp1, exp2, exp3) ->
+      print_expression exp1 2;
+      space ();
+      print "? ";
+      print_expression exp2 2;
+      space ();
+      print ": ";
+      print_expression exp3 2;
+  | CAST (typ, iexp) ->
+      print "(";
+      print_onlytype typ;
+      print ")"; 
+     (* Always print parentheses. In a small number of cases when we print 
+      * constants we don't need them  *)
+      (match iexp with
+        SINGLE_INIT e -> print_expression e 15
+      | COMPOUND_INIT _ -> (* print "("; *) 
+          print_init_expression iexp 
+          (* ; print ")" *)
+      | NO_INIT -> print "<NO_INIT in cast. Should never arise>")
+
+  | CALL (VARIABLE "__builtin_va_arg", [arg; TYPE_SIZEOF (bt, dt)]) -> 
+      comprint "variable";
+      print "__builtin_va_arg";
+      print "(";
+      print_expression arg 1;
+      print ",";
+      print_onlytype (bt, dt);
+      print ")"
+  | CALL (exp, args) ->
+      print_expression exp 16;
+      print "(";
+      print_comma_exps args;
+      print ")"
+  | COMMA exps ->
+      print_comma_exps exps
+  | CONSTANT cst ->
+      (match cst with
+        CONST_INT i -> print i
+      | CONST_FLOAT r -> print r
+      | CONST_CHAR c -> print ("'" ^ escape_wstring c ^ "'")
+      | CONST_WCHAR c -> print ("L'" ^ escape_wstring c ^ "'")
+      | CONST_STRING s -> print_string s
+      | CONST_WSTRING ws -> print_wstring ws)
+  | VARIABLE name ->
+      comprint "variable";
+      print name
+  | EXPR_SIZEOF exp ->
+      print "sizeof(";
+      print_expression exp 0;
+      print ")"
+  | TYPE_SIZEOF (bt,dt) ->
+      print "sizeof(";
+      print_onlytype (bt, dt);
+      print ")"
+  | EXPR_ALIGNOF exp ->
+      print "__alignof__(";
+      print_expression exp 0;
+      print ")"
+  | TYPE_ALIGNOF (bt,dt) ->
+      print "__alignof__(";
+      print_onlytype (bt, dt);
+      print ")"
+  | INDEX (exp, idx) ->
+      print_expression exp 16;
+      print "[";
+      print_expression idx 0;
+      print "]"
+  | MEMBEROF (exp, fld) ->
+      print_expression exp 16;
+      print ("." ^ fld)
+  | MEMBEROFPTR (exp, fld) ->
+      print_expression exp 16;
+      print ("->" ^ fld)
+  | GNU_BODY (blk) ->
+      print "(";
+      print_block blk;
+      print ")"
+  | EXPR_PATTERN (name) ->
+      print ("@expr(" ^ name ^ ") ")
+  in
+  if lvl > lvl' then print ")" else ()
+    
+
+(*
+** Statement printing
+*)
+and print_statement stat =
+  match stat with
+    NOP (loc) ->
+      setLoc(loc);
+      print ";";
+      new_line ()
+  | COMPUTATION (exp, loc) ->
+      setLoc(loc);
+      print_expression exp 0;
+      print ";";
+      new_line ()
+  | BLOCK (blk, loc) -> print_block blk
+
+  | SEQUENCE (s1, s2, loc) ->
+      setLoc(loc);
+      print_statement s1;
+      print_statement s2;
+  | IF (exp, s1, s2, loc) ->
+      setLoc(loc);
+      print "if(";
+      print_expression exp 0;
+      print ")";
+      print_substatement s1;
+      (match s2 with
+      | NOP(_) -> ()
+      | _ -> begin
+          print "else";
+          print_substatement s2;
+        end)
+  | WHILE (exp, stat, loc) ->
+      setLoc(loc);
+      print "while(";
+      print_expression exp 0;
+      print ")";
+      print_substatement stat
+  | DOWHILE (exp, stat, loc) ->
+      setLoc(loc);
+      print "do";
+      print_substatement stat;
+      print "while(";
+      print_expression exp 0;
+      print ");";
+      new_line ();
+  | FOR (fc1, exp2, exp3, stat, loc) ->
+      setLoc(loc);
+      print "for(";
+      (match fc1 with
+        FC_EXP exp1 -> print_expression exp1 0; print ";"
+      | FC_DECL dec1 -> print_def dec1);
+      space ();
+      print_expression exp2 0;
+      print ";";
+      space ();
+      print_expression exp3 0;
+      print ")";
+      print_substatement stat
+  | BREAK (loc)->
+      setLoc(loc);
+      print "break;"; new_line ()
+  | CONTINUE (loc) ->
+      setLoc(loc);
+      print "continue;"; new_line ()
+  | RETURN (exp, loc) ->
+      setLoc(loc);
+      print "return";
+      if exp = NOTHING
+      then ()
+      else begin
+        print " ";
+        print_expression exp 1
+      end;
+      print ";";
+      new_line ()
+  | SWITCH (exp, stat, loc) ->
+      setLoc(loc);
+      print "switch(";
+      print_expression exp 0;
+      print ")";
+      print_substatement stat
+  | CASE (exp, stat, loc) ->
+      setLoc(loc);
+      unindent ();
+      print "case ";
+      print_expression exp 1;
+      print ":";
+      indent ();
+      print_substatement stat
+  | CASERANGE (expl, exph, stat, loc) ->
+      setLoc(loc);
+      unindent ();
+      print "case ";
+      print_expression expl 1;
+      print " ... ";
+      print_expression exph 1;
+      print ":";
+      indent ();
+      print_substatement stat
+  | DEFAULT (stat, loc) ->
+      setLoc(loc);
+      unindent ();
+      print "default :";
+      indent ();
+      print_substatement stat
+  | LABEL (name, stat, loc) ->
+      setLoc(loc);
+      print (name ^ ":");
+      space ();
+      print_substatement stat
+  | GOTO (name, loc) ->
+      setLoc(loc);
+      print ("goto " ^ name ^ ";");
+      new_line ()
+  | COMPGOTO (exp, loc) -> 
+      setLoc(loc);
+      print ("goto *"); print_expression exp 1; print ";"; new_line ()
+  | ASM (attrs, tlist, outs, ins, clobs, loc) ->
+      setLoc(loc);
+      let print_asm_operand (cnstr, e) =
+        print_string cnstr; space (); print_expression e 100
+      in
+      if !msvcMode then begin
+        print "__asm {";
+        print_list (fun () -> new_line()) print tlist; (* templates *)
+        print "};"
+      end else begin
+        print "__asm__ "; 
+        print_attributes attrs;
+        print "(";
+        print_list (fun () -> new_line()) print_string tlist; (* templates *)
+        if outs <> [] || ins <> [] || clobs <> [] then begin
+          print ":"; space ();
+          print_commas false print_asm_operand outs;
+          if ins <> [] || clobs <> [] then begin
+            print ":"; space ();
+            print_commas false print_asm_operand ins;
+            if clobs <> [] then begin
+              print ":"; space ();
+              print_commas false print_string clobs
+            end;                          
+          end
+        end;      
+        print ");"
+      end;
+      new_line ()
+
+and print_block blk = 
+  new_line();
+  print "{";
+  indent ();
+  if blk.blabels <> [] then begin
+    print "__label__ ";
+    print_commas false print blk.blabels;
+    print ";";
+    new_line ();
+  end;
+  if blk.battrs <> [] then begin
+    List.iter print_attribute blk.battrs;
+    new_line ();
+  end;
+  List.iter print_def blk.bdefs;
+  List.iter print_statement blk.bstmts;
+  unindent ();
+  print "}";
+  new_line ()
+  
+and print_substatement stat =
+  match stat with
+    IF _
+  | SEQUENCE _
+  | DOWHILE _ ->
+      new_line ();
+      print "{";
+      indent ();
+      print_statement stat;
+      unindent ();
+      print "}";
+      new_line ();
+  | BLOCK _ ->
+      print_statement stat
+  | _ ->
+      indent ();
+      print_statement stat;
+      unindent ()
+
+
+(*
+** GCC Attributes
+*)
+and print_attribute (name,args) = 
+  if args = [] then print (
+    match name with 
+      "restrict" -> "__restrict" 
+      (* weimer: Fri Dec  7 17:12:35  2001
+       * must not print 'restrict' and the code below does allows some
+       * plain 'restrict's to slip though! *)
+    | x -> x)
+  else begin
+    print name;
+    print "("; if name = "__attribute__" then print "(";
+    (match args with
+      [VARIABLE "aconst"] -> print "const"
+    | [VARIABLE "restrict"] -> print "__restrict"
+    | _ -> print_commas false (fun e -> print_expression e 1) args);
+    print ")"; if name = "__attribute__" then print ")"
+  end
+
+(* Print attributes. *)
+and print_attributes attrs =
+  List.iter (fun a -> print_attribute a; space ()) attrs
+
+(*
+** Declaration printing
+*)
+and print_defs defs =
+  let prev = ref false in
+  List.iter
+    (fun def ->
+      (match def with
+        DECDEF _ -> prev := false
+      | _ ->
+          if not !prev then force_new_line ();
+          prev := true);
+      print_def def)
+    defs
+
+and print_def def =
+  match def with
+    FUNDEF (proto, body, loc, _) ->
+      comprint "fundef";
+      if !printCounters then begin
+        try
+          let fname =
+            match proto with
+              (_, (n, _, _, _)) -> n
+          in
+          print_def (DECDEF (([SpecType Tint],
+                              [(fname ^ "__counter", JUSTBASE, [], cabslu),
+                                NO_INIT]), loc));
+        with Not_found -> print "/* can't print the counter */"
+      end;
+      setLoc(loc);
+      print_single_name proto;
+      print_block body;
+      force_new_line ();
+
+  | DECDEF (names, loc) ->
+      comprint "decdef";
+      setLoc(loc);
+      print_init_name_group names;
+      print ";";
+      new_line ()
+
+  | TYPEDEF (names, loc) ->
+      comprint "typedef";
+      setLoc(loc);
+      print_name_group names;
+      print ";";
+      new_line ();
+      force_new_line ()
+
+  | ONLYTYPEDEF (specs, loc) ->
+      comprint "onlytypedef";
+      setLoc(loc);
+      print_specifiers specs;
+      print ";";
+      new_line ();
+      force_new_line ()
+
+  | GLOBASM (asm, loc) ->
+      setLoc(loc);
+      print "__asm__ (";  print_string asm; print ");";
+      new_line ();
+      force_new_line ()
+
+  | PRAGMA (a,loc) ->
+      setLoc(loc);
+      force_new_line ();
+      print "#pragma ";
+      let oldwidth = !width in
+      width := 1000000;  (* Do not wrap pragmas *)
+      print_expression a 1;
+      width := oldwidth;
+      force_new_line ()
+
+  | TRANSFORMER(srcdef, destdeflist, loc) ->
+      setLoc(loc);
+      print "@transform {";
+      force_new_line();
+      print "{";
+        force_new_line();
+        indent ();
+        print_def srcdef;
+        unindent();
+      print "}";
+      force_new_line();
+      print "to {";
+        force_new_line();
+        indent();
+        List.iter print_def destdeflist;
+        unindent();
+      print "}";
+      force_new_line()
+
+  | EXPRTRANSFORMER(srcexpr, destexpr, loc) ->
+      setLoc(loc);
+      print "@transformExpr { ";
+      print_expression srcexpr 1;
+      print " } to { ";
+      print_expression destexpr 1;
+      print " }";
+      force_new_line()
+
+
+(* sm: print a comment if the printComments flag is set *)
+and comprint (str : string) : unit =
+begin
+  if (!printComments) then (
+    print "/*";
+    print str;
+    print "*/ "
+  )
+  else
+    ()
+end
+
+(* sm: yield either the given string, or "", depending on printComments *)
+and comstring (str : string) : string =
+begin
+  if (!printComments) then
+    str
+  else
+    ""
+end
+
+
+(*  print abstrac_syntax -> ()
+**                Pretty printing the given abstract syntax program.
+*)
+let printFile (result : out_channel) ((fname, defs) : file) =
+  out := result;
+  print_defs defs;
+  flush ()     (* sm: should do this here *)
+
+let set_tab t = tab := t
+let set_width w = width := w
+
+
+@h = tangler("src/flx_clexer.mli")
+@select(h)
+
+exception Eof
+exception InternalError of string
+
+val currentLoc : unit -> Flx_cabs.cabsloc
+val lexicon : (string, Flx_cabs.cabsloc -> Flx_cparser.token) Hashtbl.t
+val init_lexicon : 'a -> unit
+val add_type : string -> unit
+val context : string list list ref
+val push_context : 'a -> unit
+val pop_context : 'a -> unit
+val add_identifier : string -> unit
+val scan_ident : string -> Flx_cparser.token
+val attribDepth : int ref
+val init : filename:string -> Lexing.lexbuf
+val finish : unit -> unit
+val error : string -> 'a
+val scan_escape : char -> int64
+val scan_hex_escape : string -> int64
+val scan_oct_escape : string -> int64
+val lex_hex_escape :
+  (Lexing.lexbuf -> int64 list) -> Lexing.lexbuf -> int64 list
+val lex_oct_escape :
+  (Lexing.lexbuf -> int64 list) -> Lexing.lexbuf -> int64 list
+val lex_simple_escape :
+  (Lexing.lexbuf -> int64 list) -> Lexing.lexbuf -> int64 list
+val lex_unescaped :
+  (Lexing.lexbuf -> int64 list) -> Lexing.lexbuf -> int64 list
+val make_char : int64 -> char
+val pragmaLine : bool ref
+val initial : Lexing.lexbuf -> Flx_cparser.token
+val comment : Lexing.lexbuf -> unit
+val hash : Lexing.lexbuf -> Flx_cparser.token
+val file : Lexing.lexbuf -> Flx_cparser.token
+val endline : Lexing.lexbuf -> Flx_cparser.token
+val pragma : Lexing.lexbuf -> string
+val str : Lexing.lexbuf -> int64 list
+val chr : Lexing.lexbuf -> int64 list
+val msasm : Lexing.lexbuf -> string
+val msasminbrace : Lexing.lexbuf -> string
+val msasmnobrace : Lexing.lexbuf -> string
+val attribute : Lexing.lexbuf -> Flx_cparser.token
+
+@h = tangler("src/flx_clexer.mll")
+@select(h)
+(* FrontC -- lexical analyzer
+**
+** 1.0        3.22.99        Hugues Cassé        First version.
+** 2.0  George Necula 12/12/00: Many extensions
+*)
+{
+open Flx_cparser
+exception Eof
+exception InternalError of string
+module E = Flx_frontc_errormsg
+module H = Hashtbl
+
+let currentLoc () = 
+  let l, f, c = E.getPosition () in
+  { Flx_cabs.lineno   = l;
+    Flx_cabs.filename = f;
+    Flx_cabs.byteno   = c; }
+
+(*
+** Keyword hashtable
+*)
+let lexicon = H.create 211
+let init_lexicon _ =
+  H.clear lexicon;
+  List.iter 
+    (fun (key, builder) -> H.add lexicon key builder)
+    [ ("auto", fun loc -> AUTO loc);
+      ("const", fun loc -> CONST loc);
+      ("__const", fun loc -> CONST loc);
+      ("__const__", fun loc -> CONST loc);
+      ("static", fun loc -> STATIC loc);
+      ("extern", fun loc -> EXTERN loc);
+      ("long", fun loc -> LONG loc);
+      ("short", fun loc -> SHORT loc);
+      ("register", fun loc -> REGISTER loc);
+      ("signed", fun loc -> SIGNED loc);
+      ("__signed", fun loc -> SIGNED loc);
+      ("unsigned", fun loc -> UNSIGNED loc);
+      ("volatile", fun loc -> VOLATILE loc);
+      ("__volatile", fun loc -> VOLATILE loc);
+      (* WW: see /usr/include/sys/cdefs.h for why __signed and __volatile
+       * are accepted GCC-isms *)
+      ("char", fun loc -> CHAR loc);
+      ("int", fun loc -> INT loc);
+      ("float", fun loc -> FLOAT loc);
+      ("double", fun loc -> DOUBLE loc);
+      ("void", fun loc -> VOID loc);
+      ("enum", fun loc -> ENUM loc);
+      ("struct", fun loc -> STRUCT loc);
+      ("typedef", fun loc -> TYPEDEF loc);
+      ("union", fun loc -> UNION loc);
+      ("break", fun loc -> BREAK loc);
+      ("continue", fun loc -> CONTINUE loc);
+      ("goto", fun loc -> GOTO loc); 
+      ("return", fun loc -> RETURN loc);
+      ("switch", fun loc -> SWITCH loc);
+      ("case", fun loc -> CASE loc); 
+      ("default", fun loc -> DEFAULT loc);
+      ("while", fun loc -> WHILE loc);  
+      ("do", fun loc -> DO loc);  
+      ("for", fun loc -> FOR loc);
+      ("if", fun loc -> IF loc);
+      ("else", fun _ -> ELSE);
+      (*** Implementation specific keywords ***)
+      ("__signed__", fun loc -> SIGNED loc);
+      ("__inline__", fun loc -> INLINE loc);
+      ("inline", fun loc -> INLINE loc); 
+      ("__inline", fun loc -> INLINE loc);
+      ("_inline", fun loc -> INLINE loc);
+      ("__attribute__", fun loc -> ATTRIBUTE loc);
+      ("__attribute", fun loc -> ATTRIBUTE loc);
+      ("__blockattribute__", fun _ -> BLOCKATTRIBUTE);
+      ("__blockattribute", fun _ -> BLOCKATTRIBUTE);
+      ("__asm__", fun loc -> ASM loc);
+      ("asm", fun loc -> ASM loc);
+      ("__typeof__", fun loc -> TYPEOF loc);
+      ("__typeof", fun loc -> TYPEOF loc);
+      ("typeof", fun loc -> TYPEOF loc); 
+      ("__alignof", fun loc -> ALIGNOF loc);
+      ("__alignof__", fun loc -> ALIGNOF loc);
+      ("__volatile__", fun loc -> VOLATILE loc);
+      ("__volatile", fun loc -> VOLATILE loc);
+
+      ("__FUNCTION__", fun loc -> FUNCTION__ loc);
+      ("__func__", fun loc -> FUNCTION__ loc); (* ISO 6.4.2.2 *)
+      ("__PRETTY_FUNCTION__", fun loc -> PRETTY_FUNCTION__ loc);
+      ("__label__", fun _ -> LABEL__);
+      (*** weimer: GCC arcana ***)
+      ("__restrict", fun loc -> RESTRICT loc);
+      ("restrict", fun loc -> RESTRICT loc);
+(*      ("__extension__", EXTENSION); *)
+      (**** MS VC ***)
+      ("__int64", fun _ -> INT64 (currentLoc ()));
+      ("__int32", fun loc -> INT loc);
+      ("_cdecl",  fun _ -> MSATTR ("_cdecl", currentLoc ())); 
+      ("__cdecl", fun _ -> MSATTR ("__cdecl", currentLoc ()));
+      ("_stdcall", fun _ -> MSATTR ("_stdcall", currentLoc ())); 
+      ("__stdcall", fun _ -> MSATTR ("__stdcall", currentLoc ()));
+      ("_fastcall", fun _ -> MSATTR ("_fastcall", currentLoc ())); 
+      ("__fastcall", fun _ -> MSATTR ("__fastcall", currentLoc ()));
+      ("__declspec", fun loc -> DECLSPEC loc);
+      (* weimer: some files produced by 'GCC -E' expect this type to be
+       * defined *)
+      ("__builtin_va_list", 
+       fun _ -> NAMED_TYPE ("__builtin_va_list", currentLoc ()));
+      ("__builtin_va_arg", fun loc -> BUILTIN_VA_ARG loc);
+      ("__thread", fun loc -> THREAD loc);
+    ]
+
+(* Mark an identifier as a type name. The old mapping is preserved and will 
+ * be reinstated when we exit this context *)
+let add_type name =
+   (* ignore (print_string ("adding type name " ^ name ^ "\n"));  *)
+   H.add lexicon name (fun loc -> NAMED_TYPE (name, loc))
+
+let context : string list list ref = ref []
+
+let push_context _ = context := []::!context
+
+let pop_context _ = 
+  match !context with
+    [] -> raise (InternalError "Empty context stack")
+  | con::sub ->
+                (context := sub;
+                List.iter (fun name -> 
+                           (* ignore (print_string ("removing lexicon for " ^ name ^ "\n")); *)
+                            H.remove lexicon name) con)
+
+(* Mark an identifier as a variable name. The old mapping is preserved and 
+ * will be reinstated when we exit this context  *)
+let add_identifier name =
+  match !context with
+    [] -> () (* Just ignore raise (InternalError "Empty context stack") *)
+  | con::sub ->
+      (context := (name::con)::sub;
+       (*                print_string ("adding IDENT for " ^ name ^ "\n"); *)
+       H.add lexicon name (fun loc -> IDENT (name, loc)))
+
+
+(*
+** Useful primitives
+*)
+let scan_ident id =
+  let here = currentLoc () in
+  try (H.find lexicon id) here
+  (* default to variable name, as opposed to type *)
+  with Not_found -> IDENT (id, here)
+
+
+(*
+** Buffer processor
+*)
+ 
+let attribDepth = ref 0 (* Remembers the nesting level when parsing 
+                         * attributes *)
+
+
+let init ~(filename: string) : Lexing.lexbuf =
+  attribDepth := 0;
+  init_lexicon ();
+  (* Inititialize the pointer in Errormsg *)
+  E.add_type := add_type;
+  E.push_context := push_context;
+  E.pop_context := pop_context;
+  E.add_identifier := add_identifier;
+  E.startParsing (E.ParseFile filename)
+
+
+let finish () = 
+  E.finishParsing ()
+
+(*** Error handling ***)
+let error msg =
+  E.parse_error msg
+
+
+(*** escape character management ***)
+let scan_escape char =
+  let result = match char with
+    'n' -> '\n'
+  | 'r' -> '\r'
+  | 't' -> '\t'
+  | 'b' -> '\b'
+  | 'f' -> '\012'  (* ASCII code 12 *)
+  | 'v' -> '\011'  (* ASCII code 11 *)
+  | 'a' -> '\007'  (* ASCII code 7 *)
+  | 'e' -> '\027'  (* ASCII code 27. This is a GCC extension *)
+  | '\'' -> '\''    
+  | '"'-> '"'     (* '"' *)
+  | '?' -> '?'
+  | '\\' -> '\\' 
+  | other -> error ("Unrecognized escape sequence: \\" ^ (String.make 1 other))
+  in
+  Int64.of_int (Char.code result)
+
+let scan_hex_escape str =
+  let radix = Int64.of_int 16 in
+  let the_value = ref Int64.zero in
+  (* start at character 2 to skip the \x *)
+  for i = 2 to (String.length str) - 1 do
+    let thisDigit = Flx_cabs_helper.valueOfDigit (String.get str i) in
+    (* the_value := !the_value * 16 + thisDigit *)
+    the_value := Int64.add (Int64.mul !the_value radix) thisDigit
+  done;
+  !the_value
+
+let scan_oct_escape str =
+  let radix = Int64.of_int 8 in
+  let the_value = ref Int64.zero in
+  (* start at character 1 to skip the \x *)
+  for i = 1 to (String.length str) - 1 do
+    let thisDigit = Flx_cabs_helper.valueOfDigit (String.get str i) in
+    (* the_value := !the_value * 8 + thisDigit *)
+    the_value := Int64.add (Int64.mul !the_value radix) thisDigit
+  done;
+  !the_value
+
+let lex_hex_escape remainder lexbuf =
+  let prefix = scan_hex_escape (Lexing.lexeme lexbuf) in
+  prefix :: remainder lexbuf
+
+let lex_oct_escape remainder lexbuf =
+  let prefix = scan_oct_escape (Lexing.lexeme lexbuf) in
+  prefix :: remainder lexbuf
+
+let lex_simple_escape remainder lexbuf =
+  let lexchar = Lexing.lexeme_char lexbuf 1 in
+  let prefix = scan_escape lexchar in
+  prefix :: remainder lexbuf
+
+let lex_unescaped remainder lexbuf =
+  let prefix = Int64.of_int (Char.code (Lexing.lexeme_char lexbuf 0)) in
+  prefix :: remainder lexbuf
+
+let make_char (i:int64):char =
+  let min_val = Int64.zero in
+  let max_val = Int64.of_int 255 in
+  (* if i < 0 || i > 255 then error*)
+  if compare i min_val < 0 || compare i max_val > 0 then begin
+    let msg = Printf.sprintf "character 0x%Lx too big" i in
+    error msg
+  end;
+  Char.chr (Int64.to_int i)
+
+
+(* ISO standard locale-specific function to convert a wide character
+ * into a sequence of normal characters. Here we work on strings. 
+ * We convert L"Hi" to "H\000i\000" 
+  matth: this seems unused.
+let wbtowc wstr =
+  let len = String.length wstr in 
+  let dest = String.make (len * 2) '\000' in 
+  for i = 0 to len-1 do 
+    dest.[i*2] <- wstr.[i] ;
+  done ;
+  dest
+*)
+
+(* This function converst the "Hi" in L"Hi" to { L'H', L'i', L'\0' }
+  matth: this seems unused.
+let wstr_to_warray wstr =
+  let len = String.length wstr in
+  let res = ref "{ " in
+  for i = 0 to len-1 do
+    res := !res ^ (Printf.sprintf "L'%c', " wstr.[i])
+  done ;
+  res := !res ^ "}" ;
+  !res
+*)
+
+(* Pragmas get explicit end-of-line tokens.
+ * Elsewhere they are silently discarded as whitespace. *)
+let pragmaLine = ref false
+
+}
+
+let decdigit = ['0'-'9']
+let octdigit = ['0'-'7']
+let hexdigit = ['0'-'9' 'a'-'f' 'A'-'F']
+let letter = ['a'- 'z' 'A'-'Z']
+
+
+let usuffix = ['u' 'U']
+let lsuffix = "l"|"L"|"ll"|"LL"
+let intsuffix = lsuffix | usuffix | usuffix lsuffix | lsuffix usuffix
+
+let hexprefix = '0' ['x' 'X']
+
+let intnum = decdigit+ intsuffix?
+let octnum = '0' octdigit+ intsuffix?
+let hexnum = hexprefix hexdigit+ intsuffix?
+
+let exponent = ['e' 'E']['+' '-']? decdigit+
+let fraction  = '.' decdigit+
+let decfloat = (intnum? fraction)
+              |(intnum exponent)
+              |(intnum? fraction exponent)
+              | (intnum '.') 
+              | (intnum '.' exponent) 
+
+let hexfraction = hexdigit* '.' hexdigit+ | hexdigit+
+let binexponent = ['p' 'P'] ['+' '-']? decdigit+
+let hexfloat = hexprefix hexfraction binexponent
+             | hexprefix hexdigit+   binexponent
+
+let floatsuffix = ['f' 'F' 'l' 'L']
+let floatnum = (decfloat | hexfloat) floatsuffix?
+
+let ident = (letter|'_')(letter|decdigit|'_')* 
+let attribident = (letter|'_')(letter|decdigit|'_'|':')
+let blank = [' ' '\t' '\012' '\r']+
+let escape = '\\' _
+let hex_escape = '\\' ['x' 'X'] hexdigit+
+let oct_escape = '\\' octdigit octdigit? octdigit? 
+
+rule initial =
+        parse         "/*"                        { let _ = comment lexbuf in 
+                                          initial lexbuf}
+|               "//"                    { endline lexbuf }
+|                blank                        {initial lexbuf}
+|               '\n'                    { E.newline ();
+                                          if !pragmaLine then
+                                            begin
+                                              pragmaLine := false;
+                                              PRAGMA_EOL
+                                            end
+                                          else
+                                            initial lexbuf }
+|                '#'                        { hash lexbuf}
+|               "_Pragma"                 { PRAGMA (currentLoc ()) }
+|                '\''                        { CST_CHAR (chr lexbuf, currentLoc ())}
+|                "L'"                        { CST_WCHAR (chr lexbuf, currentLoc ()) }
+|                '"'                        { (* '"' *)
+(* matth: BUG:  this could be either a regular string or a wide string.
+ *  e.g. if it's the "world" in 
+ *     L"Hello, " "world"
+ *  then it should be treated as wide even though there's no L immediately
+ *  preceding it.  See test/small1/wchar5.c for a failure case. *)
+                                          try CST_STRING (str lexbuf, currentLoc ())
+                                          with e -> 
+                                             raise (InternalError 
+                                                     ("str: " ^ 
+                                                      Printexc.to_string e))}
+|                "L\""                        { (* weimer: wchar_t string literal *)
+                                          try CST_WSTRING(str lexbuf, currentLoc ())
+                                          with e -> 
+                                             raise (InternalError 
+                                                     ("wide string: " ^ 
+                                                      Printexc.to_string e))}
+|                floatnum                {CST_FLOAT (Lexing.lexeme lexbuf, currentLoc ())}
+|                hexnum                        {CST_INT (Lexing.lexeme lexbuf, currentLoc ())}
+|                octnum                        {CST_INT (Lexing.lexeme lexbuf, currentLoc ())}
+|                intnum                        {CST_INT (Lexing.lexeme lexbuf, currentLoc ())}
+|                "!quit!"                {EOF}
+|                "..."                        {ELLIPSIS}
+|                "+="                        {PLUS_EQ}
+|                "-="                        {MINUS_EQ}
+|                "*="                        {STAR_EQ}
+|                "/="                        {SLASH_EQ}
+|                "%="                        {PERCENT_EQ}
+|                "|="                        {PIPE_EQ}
+|                "&="                        {AND_EQ}
+|                "^="                        {CIRC_EQ}
+|                "<<="                        {INF_INF_EQ}
+|                ">>="                        {SUP_SUP_EQ}
+|                "<<"                        {INF_INF}
+|                ">>"                        {SUP_SUP}
+|                 "=="                        {EQ_EQ}
+|                 "!="                        {EXCLAM_EQ}
+|                "<="                        {INF_EQ}
+|                ">="                        {SUP_EQ}
+|                "="                                {EQ}
+|                "<"                                {INF}
+|                ">"                                {SUP}
+|                "++"                        {PLUS_PLUS (currentLoc ())}
+|                "--"                        {MINUS_MINUS (currentLoc ())}
+|                "->"                        {ARROW}
+|                '+'                                {PLUS (currentLoc ())}
+|                '-'                                {MINUS (currentLoc ())}
+|                '*'                                {STAR (currentLoc ())}
+|                '/'                                {SLASH}
+|                '%'                                {PERCENT}
+|                '!'                                {EXCLAM (currentLoc ())}
+|                "&&"                        {AND_AND (currentLoc ())}
+|                "||"                        {PIPE_PIPE}
+|                '&'                                {AND (currentLoc ())}
+|                '|'                                {PIPE}
+|                '^'                                {CIRC}
+|                '?'                                {QUEST}
+|                ':'                                {COLON}
+|                '~'                                {TILDE (currentLoc ())}
+        
+|                '{'                                {LBRACE (currentLoc ())}
+|                '}'                                {RBRACE (currentLoc ())}
+|                '['                                {LBRACKET}
+|                ']'                                {RBRACKET}
+|                '('                                {LPAREN (currentLoc ())}
+|                ')'                                {RPAREN}
+|                ';'                                {SEMICOLON (currentLoc ())}
+|                ','                                {COMMA}
+|                '.'                                {DOT}
+|                "sizeof"                {SIZEOF (currentLoc ())}
+|               "__asm"                 { if !Flx_frontc_cprint.msvcMode then 
+                                             MSASM (msasm lexbuf, currentLoc ()) 
+                                          else (ASM (currentLoc ())) }
+      
+(* sm: tree transformation keywords *)
+|               "@transform"            {AT_TRANSFORM (currentLoc ())}
+|               "@transformExpr"        {AT_TRANSFORMEXPR (currentLoc ())}
+|               "@specifier"            {AT_SPECIFIER (currentLoc ())}
+|               "@expr"                 {AT_EXPR (currentLoc ())}
+|               "@name"                 {AT_NAME}
+
+(* __extension__ is a black. The parser runs into some conflicts if we let it
+ * pass *)
+|               "__extension__"         {initial lexbuf }
+|                ident                        {scan_ident (Lexing.lexeme lexbuf)}
+|                eof                        {EOF}
+|                _                        {E.parse_error
+                                                "Invalid symbol"
+                                                (Lexing.lexeme_start lexbuf)
+                                                (Lexing.lexeme_end lexbuf);
+                                                initial lexbuf}
+and comment =
+    parse         
+      "*/"                                { () }
+|     '\n'                              { E.newline (); comment lexbuf }
+|                 _                         { comment lexbuf }
+
+(* # <line number> <file name> ... *)
+and hash = parse
+  '\n'                { E.newline (); initial lexbuf}
+| blank                { hash lexbuf}
+| intnum        { (* We are seeing a line number. This is the number for the 
+                   * next line *)
+                  E.setCurrentLine (int_of_string (Lexing.lexeme lexbuf) - 1);
+                  (* A file name must follow *)
+                  file lexbuf }
+| "line"        { hash lexbuf } (* MSVC line number info *)
+| "pragma"      { pragmaLine := true; PRAGMA (currentLoc ()) }
+| _                { endline lexbuf}
+
+and file =  parse 
+        '\n'                        {E.newline (); initial lexbuf}
+|        blank                        {file lexbuf}
+|        '"' [^ '\012' '\t' '"']* '"'         { (* '"' *)
+                                   let n = Lexing.lexeme lexbuf in
+                                   let n1 = String.sub n 1 
+                                       ((String.length n) - 2) in
+                                   E.setCurrentFile n1;
+                                 endline lexbuf}
+
+|        _                        {endline lexbuf}
+
+and endline = parse 
+        '\n'                         { E.newline (); initial lexbuf}
+|   eof                         { EOF }
+|        _                        { endline lexbuf}
+
+and pragma = parse
+   '\n'                 { E.newline (); "" }
+|   _                   { let cur = Lexing.lexeme lexbuf in 
+                          cur ^ (pragma lexbuf) }  
+
+and str = parse
+        '"'             {[]} (* no nul terminiation in CST_STRING *)
+|        hex_escape        {lex_hex_escape str lexbuf}
+|        oct_escape        {lex_oct_escape str lexbuf}
+|        escape                {lex_simple_escape str lexbuf}
+|        _                {lex_unescaped str lexbuf}
+
+and chr =  parse
+        '\''                {[]}
+|        hex_escape        {lex_hex_escape chr lexbuf}
+|        oct_escape        {lex_oct_escape chr lexbuf}
+|        escape                {lex_simple_escape chr lexbuf}
+|        _                {lex_unescaped chr lexbuf}
+        
+and msasm = parse
+    blank               { msasm lexbuf }
+|   '{'                 { msasminbrace lexbuf }
+|   _                   { let cur = Lexing.lexeme lexbuf in 
+                          cur ^ (msasmnobrace lexbuf) }
+
+and msasminbrace = parse
+    '}'                 { "" }
+|   _                   { let cur = Lexing.lexeme lexbuf in 
+                          cur ^ (msasminbrace lexbuf) }  
+and msasmnobrace = parse
+   ['}' ';' '\n']       { lexbuf.Lexing.lex_curr_pos <- 
+                               lexbuf.Lexing.lex_curr_pos - 1;
+                          "" }
+|  "__asm"              { lexbuf.Lexing.lex_curr_pos <- 
+                               lexbuf.Lexing.lex_curr_pos - 5;
+                          "" }
+|  _                    { let cur = Lexing.lexeme lexbuf in 
+
+                          cur ^ (msasmnobrace lexbuf) }
+
+and attribute = parse
+   '\n'                 { E.newline (); attribute lexbuf }
+|  blank                { attribute lexbuf }
+|  '('                  { incr attribDepth; LPAREN (currentLoc ()) }
+|  ')'                  { decr attribDepth;
+                          if !attribDepth = 0 then
+                            initial lexbuf (* Skip the last closed paren *)
+                          else
+                            RPAREN }
+|  attribident          { IDENT (Lexing.lexeme lexbuf, currentLoc ()) }
+
+|  '\''                        { CST_CHAR (chr lexbuf, currentLoc ())}
+|  '"'                        { (* '"' *)
+                                          try CST_STRING (str lexbuf, currentLoc ())
+                                          with e -> 
+                                             raise (InternalError "str")}
+|  floatnum                {CST_FLOAT (Lexing.lexeme lexbuf, currentLoc ())}
+|  hexnum                {CST_INT (Lexing.lexeme lexbuf, currentLoc ())}
+|  octnum                {CST_INT (Lexing.lexeme lexbuf, currentLoc ())}
+|  intnum                {CST_INT (Lexing.lexeme lexbuf, currentLoc ())}
+
+
+{
+
+}
+
+@h = tangler("src/flx_cparser.mly")
+@select(h)
+/*(* NOTE: This parser is based on a parser written by Hugues Casse. Since
+   * then I have changed it in numerous ways to the point where it probably
+   * does not resemble Hugues's original one at all  *)*/
+%{
+open Flx_cabs
+open Flx_cabs_helper
+
+module E = Flx_frontc_errormsg
+
+let parse_error msg : unit =       (* sm: c++-mode highlight hack: -> ' <- *)
+  E.parse_error
+    msg
+
+let print = print_string
+
+
+let currentLoc () = 
+  let l, f, c = E.getPosition () in
+  { lineno   = l; filename = f; byteno   = c; }
+
+let cabslu = {lineno = -10; filename = "cabs loc unknown"; byteno = -10;}
+
+(*
+** Expression building
+*)
+let smooth_expression lst =
+  match lst with
+    [] -> NOTHING
+  | [expr] -> expr
+  | _ -> COMMA (lst)
+
+
+let currentFunctionName = ref "<outside any function>"
+    
+let announceFunctionName ((n, decl, _, _):name) =
+  !E.add_identifier n;
+  (* Start a context that includes the parameter names and the whole body. 
+   * Will pop when we finish parsing the function body *)
+  !E.push_context ();
+  (* Go through all the parameter names and mark them as identifiers *)
+  let rec findProto = function
+      PROTO (d, args, _) when isJUSTBASE d -> 
+        List.iter (fun (_, (an, _, _, _)) -> !E.add_identifier an) args
+
+    | PROTO (d, _, _) -> findProto d
+    | PARENTYPE (_, d, _) -> findProto d
+    | PTR (_, d) -> findProto d
+    | ARRAY (d, _, _) -> findProto d
+    | _ -> parse_error "Cannot find the prototype in a function definition";
+           raise Parsing.Parse_error 
+
+  and isJUSTBASE = function
+      JUSTBASE -> true
+    | PARENTYPE (_, d, _) -> isJUSTBASE d
+    | _ -> false
+  in
+  findProto decl;
+  currentFunctionName := n
+
+
+
+let applyPointer (ptspecs: attribute list list) (dt: decl_type)  
+       : decl_type = 
+  (* Outer specification first *)
+  let rec loop = function
+      [] -> dt
+    | attrs :: rest -> PTR(attrs, loop rest)
+  in
+  loop ptspecs
+
+let doDeclaration (loc: cabsloc) (specs: spec_elem list) (nl: init_name list) : definition = 
+  if isTypedef specs then begin
+    (* Tell the lexer about the new type names *)
+    List.iter (fun ((n, _, _, _), _) -> !E.add_type n) nl;
+    TYPEDEF ((specs, List.map (fun (n, _) -> n) nl), loc)
+  end else
+    if nl = [] then
+      ONLYTYPEDEF (specs, loc)
+    else begin
+      (* Tell the lexer about the new variable names *)
+      List.iter (fun ((n, _, _, _), _) -> !E.add_identifier n) nl;
+      DECDEF ((specs, nl), loc)  
+    end
+
+
+let doFunctionDef (loc: cabsloc)
+                  (lend: cabsloc)
+                  (specs: spec_elem list) 
+                  (n: name) 
+                  (b: block) : definition = 
+  let fname = (specs, n) in
+  FUNDEF (fname, b, loc, lend)
+
+
+let doOldParDecl (names: string list)
+                 ((pardefs: name_group list), (isva: bool)) 
+    : single_name list * bool =
+  let findOneName n =
+    (* Search in pardefs for the definition for this parameter *)
+    let rec loopGroups = function
+        [] -> ([SpecType Tint], (n, JUSTBASE, [], cabslu))
+      | (specs, names) :: restgroups ->
+          let rec loopNames = function
+              [] -> loopGroups restgroups
+            | ((n',_, _, _) as sn) :: _ when n' = n -> (specs, sn)
+            | _ :: restnames -> loopNames restnames
+          in
+          loopNames names
+    in
+    loopGroups pardefs
+  in
+  let args = List.map findOneName names in
+  (args, isva)
+
+let checkConnective (s : string) : unit =
+begin
+  (* checking this means I could possibly have more connectives, with *)
+  (* different meaning *)
+  if (s <> "to") then (
+    parse_error "transformer connective must be 'to'";
+    raise Parsing.Parse_error
+  )
+  else ()
+end
+
+(* takes a not-nul-terminated list, and converts it to a string. *)
+let rec intlist_to_string (str: int64 list):string =
+  match str with
+    [] -> ""  (* add nul-termination *)
+  | value::rest ->
+      let this_char = 
+        if (compare value (Int64.of_int 255) > 0) 
+           || (compare value Int64.zero < 0)
+        then begin
+          let msg = Printf.sprintf "character 0x%Lx too big" value in
+          parse_error msg;
+          raise Parsing.Parse_error
+        end 
+        else 
+          String.make 1 (Char.chr (Int64.to_int value))
+      in
+      this_char ^ (intlist_to_string rest)
+
+let fst3 (result, _, _) = result
+let snd3 (_, result, _) = result
+let trd3 (_, _, result) = result
+
+(* for collecting declarations and statements uniformly *)
+type blockElement =
+  BE_Decl of definition
+| BE_Stmt of statement
+
+(* extract the declarations *)
+let rec filterBEDecls (elts : blockElement list) : definition list =
+  match elts with
+  | [] -> []
+  | BE_Decl(d) :: rest -> d :: (filterBEDecls rest)
+  | BE_Stmt(_) :: rest -> (filterBEDecls rest)
+
+(* extract the statments *)
+let rec filterBEStmts (elts : blockElement list) : statement list =
+  match elts with
+  | [] -> []
+  | BE_Decl(_) :: rest -> (filterBEStmts rest)
+  | BE_Stmt(s) :: rest -> s :: (filterBEStmts rest)
+
+%}
+
+%token <string * Flx_cabs.cabsloc> IDENT
+%token <int64 list * Flx_cabs.cabsloc> CST_CHAR
+%token <int64 list * Flx_cabs.cabsloc> CST_WCHAR
+%token <string * Flx_cabs.cabsloc> CST_INT
+%token <string * Flx_cabs.cabsloc> CST_FLOAT
+%token <string * Flx_cabs.cabsloc> NAMED_TYPE
+
+/* Each character is its own list element, and the terminating nul is not
+   included in this list. */
+%token <int64 list * Flx_cabs.cabsloc> CST_STRING   
+%token <int64 list * Flx_cabs.cabsloc> CST_WSTRING
+
+%token EOF
+%token<Flx_cabs.cabsloc> CHAR INT DOUBLE FLOAT VOID INT64 INT32
+%token<Flx_cabs.cabsloc> ENUM STRUCT TYPEDEF UNION
+%token<Flx_cabs.cabsloc> SIGNED UNSIGNED LONG SHORT
+%token<Flx_cabs.cabsloc> VOLATILE EXTERN STATIC CONST RESTRICT AUTO REGISTER
+%token<Flx_cabs.cabsloc> THREAD
+
+%token<Flx_cabs.cabsloc> SIZEOF ALIGNOF
+
+%token EQ PLUS_EQ MINUS_EQ STAR_EQ SLASH_EQ PERCENT_EQ
+%token AND_EQ PIPE_EQ CIRC_EQ INF_INF_EQ SUP_SUP_EQ
+%token ARROW DOT
+
+%token EQ_EQ EXCLAM_EQ INF SUP INF_EQ SUP_EQ
+%token<Flx_cabs.cabsloc> PLUS MINUS STAR
+%token SLASH PERCENT
+%token<Flx_cabs.cabsloc> TILDE AND
+%token PIPE CIRC
+%token<Flx_cabs.cabsloc> EXCLAM AND_AND
+%token PIPE_PIPE
+%token INF_INF SUP_SUP
+%token<Flx_cabs.cabsloc> PLUS_PLUS MINUS_MINUS
+
+%token RPAREN 
+%token<Flx_cabs.cabsloc> LPAREN RBRACE
+%token<Flx_cabs.cabsloc> LBRACE
+%token LBRACKET RBRACKET
+%token COLON
+%token<Flx_cabs.cabsloc> SEMICOLON
+%token COMMA ELLIPSIS QUEST
+
+%token<Flx_cabs.cabsloc> BREAK CONTINUE GOTO RETURN
+%token<Flx_cabs.cabsloc> SWITCH CASE DEFAULT
+%token<Flx_cabs.cabsloc> WHILE DO FOR
+%token<Flx_cabs.cabsloc> IF
+%token ELSE
+
+%token<Flx_cabs.cabsloc> ATTRIBUTE INLINE ASM TYPEOF FUNCTION__ PRETTY_FUNCTION__
+%token LABEL__
+%token<Flx_cabs.cabsloc> BUILTIN_VA_ARG
+%token BUILTIN_VA_LIST
+%token BLOCKATTRIBUTE
+%token<Flx_cabs.cabsloc> DECLSPEC
+%token<string * Flx_cabs.cabsloc> MSASM MSATTR
+%token<Flx_cabs.cabsloc> PRAGMA
+%token PRAGMA_EOL
+
+/* sm: cabs tree transformation specification keywords */
+%token<Flx_cabs.cabsloc> AT_TRANSFORM AT_TRANSFORMEXPR AT_SPECIFIER AT_EXPR
+%token AT_NAME
+
+/* operator precedence */
+%nonassoc         IF
+%nonassoc         ELSE
+
+
+%left        COMMA
+%right        EQ PLUS_EQ MINUS_EQ STAR_EQ SLASH_EQ PERCENT_EQ
+                AND_EQ PIPE_EQ CIRC_EQ INF_INF_EQ SUP_SUP_EQ
+%right        QUEST COLON
+%left        PIPE_PIPE
+%left        AND_AND
+%left        PIPE
+%left         CIRC
+%left        AND
+%left        EQ_EQ EXCLAM_EQ
+%left        INF SUP INF_EQ SUP_EQ
+%left        INF_INF SUP_SUP
+%left        PLUS MINUS
+%left        STAR SLASH PERCENT CONST RESTRICT VOLATILE
+%right        EXCLAM TILDE PLUS_PLUS MINUS_MINUS CAST RPAREN ADDROF SIZEOF ALIGNOF
+%left         LBRACKET
+%left        DOT ARROW LPAREN LBRACE
+%right  NAMED_TYPE     /* We'll use this to handle redefinitions of
+                        * NAMED_TYPE as variables */
+%left   IDENT
+
+/* Non-terminals informations */
+%start interpret file
+%type <Flx_cabs.definition list> file interpret globals
+
+%type <Flx_cabs.definition> global
+
+
+%type <Flx_cabs.attribute list> attributes attributes_with_asm asmattr
+%type <Flx_cabs.statement> statement
+%type <Flx_cabs.constant * cabsloc> constant
+%type <string * cabsloc> string_constant
+%type <Flx_cabs.expression * cabsloc> expression
+%type <Flx_cabs.expression> opt_expression
+%type <Flx_cabs.init_expression> init_expression
+%type <Flx_cabs.expression list * cabsloc> comma_expression
+%type <Flx_cabs.expression list * cabsloc> paren_comma_expression
+%type <Flx_cabs.expression list> arguments
+%type <Flx_cabs.expression list> bracket_comma_expression
+%type <int64 list * cabsloc> string_list 
+%type <int64 list * cabsloc> wstring_list
+
+%type <Flx_cabs.initwhat * Flx_cabs.init_expression> initializer
+%type <(Flx_cabs.initwhat * Flx_cabs.init_expression) list> initializer_list
+%type <Flx_cabs.initwhat> init_designators init_designators_opt
+
+%type <spec_elem list * cabsloc> decl_spec_list
+%type <typeSpecifier * cabsloc> type_spec
+%type <Flx_cabs.field_group list> struct_decl_list
+
+
+%type <Flx_cabs.name> old_proto_decl
+%type <Flx_cabs.single_name> parameter_decl
+%type <Flx_cabs.enum_item> enumerator
+%type <Flx_cabs.enum_item list> enum_list
+%type <Flx_cabs.definition> declaration function_def
+%type <cabsloc * spec_elem list * name> function_def_start
+%type <Flx_cabs.spec_elem list * Flx_cabs.decl_type> type_name
+%type <Flx_cabs.block * cabsloc * cabsloc> block
+%type <blockElement list> block_element_list
+%type <string list> local_labels local_label_names
+%type <string list> old_parameter_list_ne
+
+%type <Flx_cabs.init_name> init_declarator
+%type <Flx_cabs.init_name list> init_declarator_list
+%type <Flx_cabs.name> declarator
+%type <Flx_cabs.name * expression option> field_decl
+%type <(Flx_cabs.name * expression option) list> field_decl_list
+%type <string * Flx_cabs.decl_type> direct_decl
+%type <Flx_cabs.decl_type> abs_direct_decl abs_direct_decl_opt
+%type <Flx_cabs.decl_type * Flx_cabs.attribute list> abstract_decl
+%type <attribute list list * cabsloc> pointer pointer_opt /* Each element is a "* <type_quals_opt>" */
+%type <Flx_cabs.cabsloc> location
+%type <Flx_cabs.spec_elem * cabsloc> cvspec
+%%
+
+interpret:
+  file EOF                                {$1}
+;
+file: globals                                {$1}
+;
+globals:
+  /* empty */                           { [] }
+| global globals                        { $1 :: $2 }
+| SEMICOLON globals                     { $2 }
+;
+
+location:
+   /* empty */                        { currentLoc () }  %prec IDENT
+
+
+/*** Global Definition ***/
+global:
+| declaration                           { $1 }
+| function_def                          { $1 } 
+| ASM LPAREN string_constant RPAREN SEMICOLON
+                                        { GLOBASM (fst $3, $1) }
+| PRAGMA attr PRAGMA_EOL                { PRAGMA ($2, $1) }
+| PRAGMA attr SEMICOLON PRAGMA_EOL        { PRAGMA ($2, $1) }
+/* (* Old-style function prototype. This should be somewhere else, like in
+    * "declaration". For now we keep it at global scope only because in local
+    * scope it looks too much like a function call  *) */
+| IDENT LPAREN old_parameter_list_ne RPAREN old_pardef_list SEMICOLON
+                           { (* Convert pardecl to new style *)
+                             let pardecl, isva = doOldParDecl $3 $5 in
+                             (* Make the function declarator *)
+                             doDeclaration (snd $1) []
+                               [((fst $1, PROTO(JUSTBASE, pardecl,isva), [], cabslu),
+                                 NO_INIT)]
+                            }
+/* (* Old style function prototype, but without any arguments *) */
+| IDENT LPAREN RPAREN  SEMICOLON
+                           { (* Make the function declarator *)
+                             doDeclaration (snd $1) []
+                               [((fst $1, PROTO(JUSTBASE,[],false), [], cabslu),
+                                 NO_INIT)]
+                            }
+/* transformer for a toplevel construct */
+| AT_TRANSFORM LBRACE global RBRACE  IDENT/*to*/  LBRACE globals RBRACE {
+    checkConnective(fst $5);
+    TRANSFORMER($3, $7, $1)
+  }
+/* transformer for an expression */
+| AT_TRANSFORMEXPR LBRACE expression RBRACE  IDENT/*to*/  LBRACE expression RBRACE {
+    checkConnective(fst $5);
+    EXPRTRANSFORMER(fst $3, fst $7, $1)
+  }
+| location error SEMICOLON { PRAGMA (VARIABLE "parse_error", $1) }
+;
+
+id_or_typename:
+    IDENT                                {fst $1}
+|   NAMED_TYPE                                {fst $1}
+|   AT_NAME LPAREN IDENT RPAREN         { "@name(" ^ fst $3 ^ ")" }     /* pattern variable name */
+;
+
+maybecomma:
+   /* empty */                          { () }
+|  COMMA                                { () }
+;
+
+/* *** Expressions *** */
+
+
+expression:
+                constant
+                        {CONSTANT (fst $1), snd $1}
+|                IDENT
+                        {VARIABLE (fst $1), snd $1}
+|                SIZEOF expression
+                        {EXPR_SIZEOF (fst $2), $1}
+|                 SIZEOF LPAREN type_name RPAREN
+                        {let b, d = $3 in TYPE_SIZEOF (b, d), $1}
+|                ALIGNOF expression
+                        {EXPR_ALIGNOF (fst $2), $1}
+|                 ALIGNOF LPAREN type_name RPAREN
+                        {let b, d = $3 in TYPE_ALIGNOF (b, d), $1}
+|                PLUS expression
+                        {UNARY (PLUS, fst $2), $1}
+|                MINUS expression
+                        {UNARY (MINUS, fst $2), $1}
+|                STAR expression
+                        {UNARY (MEMOF, fst $2), $1}
+|                AND expression                                %prec ADDROF
+                        {UNARY (ADDROF, fst $2), $1}
+|                EXCLAM expression
+                        {UNARY (NOT, fst $2), $1}
+|                TILDE expression
+                        {UNARY (BNOT, fst $2), $1}
+|                PLUS_PLUS expression                    %prec CAST
+                        {UNARY (PREINCR, fst $2), $1}
+|                expression PLUS_PLUS
+                        {UNARY (POSINCR, fst $1), snd $1}
+|                MINUS_MINUS expression                  %prec CAST
+                        {UNARY (PREDECR, fst $2), $1}
+|                expression MINUS_MINUS
+                        {UNARY (POSDECR, fst $1), snd $1}
+|                expression ARROW id_or_typename
+                        {MEMBEROFPTR (fst $1, $3), snd $1}
+|                expression DOT id_or_typename
+                        {MEMBEROF (fst $1, $3), snd $1}
+|                LPAREN block RPAREN
+                        { GNU_BODY (fst3 $2), $1 }
+|                paren_comma_expression
+                        {smooth_expression (fst $1), snd $1}
+|                expression LPAREN arguments RPAREN
+                        {CALL (fst $1, $3), snd $1}
+|               BUILTIN_VA_ARG LPAREN expression COMMA type_name RPAREN
+                        { let b, d = $5 in
+                          CALL (VARIABLE "__builtin_va_arg", 
+                                [fst $3; TYPE_SIZEOF (b, d)]), $1 }
+|                expression bracket_comma_expression
+                        {INDEX (fst $1, smooth_expression $2), snd $1}
+|                expression QUEST opt_expression COLON expression
+                        {QUESTION (fst $1, $3, fst $5), snd $1}
+|                expression PLUS expression
+                        {BINARY(ADD, fst $1, fst $3), snd $1}
+|                expression MINUS expression
+                        {BINARY(SUB, fst $1, fst $3), snd $1}
+|                expression STAR expression
+                        {BINARY(MUL, fst $1, fst $3), snd $1}
+|                expression SLASH expression
+                        {BINARY(DIV, fst $1, fst $3), snd $1}
+|                expression PERCENT expression
+                        {BINARY(MOD, fst $1, fst $3), snd $1}
+|                expression AND_AND expression
+                        {BINARY(AND, fst $1, fst $3), snd $1}
+|                expression PIPE_PIPE expression
+                        {BINARY(OR, fst $1, fst $3), snd $1}
+|                expression AND expression
+                        {BINARY(BAND, fst $1, fst $3), snd $1}
+|                expression PIPE expression
+                        {BINARY(BOR, fst $1, fst $3), snd $1}
+|                expression CIRC expression
+                        {BINARY(XOR, fst $1, fst $3), snd $1}
+|                expression EQ_EQ expression
+                        {BINARY(EQ, fst $1, fst $3), snd $1}
+|                expression EXCLAM_EQ expression
+                        {BINARY(NE, fst $1, fst $3), snd $1}
+|                expression INF expression
+                        {BINARY(LT, fst $1, fst $3), snd $1}
+|                expression SUP expression
+                        {BINARY(GT, fst $1, fst $3), snd $1}
+|                expression INF_EQ expression
+                        {BINARY(LE, fst $1, fst $3), snd $1}
+|                expression SUP_EQ expression
+                        {BINARY(GE, fst $1, fst $3), snd $1}
+|                expression  INF_INF expression
+                        {BINARY(SHL, fst $1, fst $3), snd $1}
+|                expression  SUP_SUP expression
+                        {BINARY(SHR, fst $1, fst $3), snd $1}
+|                expression EQ expression
+                        {BINARY(ASSIGN, fst $1, fst $3), snd $1}
+|                expression PLUS_EQ expression
+                        {BINARY(ADD_ASSIGN, fst $1, fst $3), snd $1}
+|                expression MINUS_EQ expression
+                        {BINARY(SUB_ASSIGN, fst $1, fst $3), snd $1}
+|                expression STAR_EQ expression
+                        {BINARY(MUL_ASSIGN, fst $1, fst $3), snd $1}
+|                expression SLASH_EQ expression
+                        {BINARY(DIV_ASSIGN, fst $1, fst $3), snd $1}
+|                expression PERCENT_EQ expression
+                        {BINARY(MOD_ASSIGN, fst $1, fst $3), snd $1}
+|                expression AND_EQ expression
+                        {BINARY(BAND_ASSIGN, fst $1, fst $3), snd $1}
+|                expression PIPE_EQ expression
+                        {BINARY(BOR_ASSIGN, fst $1, fst $3), snd $1}
+|                expression CIRC_EQ expression
+                        {BINARY(XOR_ASSIGN, fst $1, fst $3), snd $1}
+|                expression INF_INF_EQ expression        
+                        {BINARY(SHL_ASSIGN, fst $1, fst $3), snd $1}
+|                expression SUP_SUP_EQ expression
+                        {BINARY(SHR_ASSIGN, fst $1, fst $3), snd $1}
+|                LPAREN type_name RPAREN expression
+                         { CAST($2, SINGLE_INIT (fst $4)), $1 }
+/* (* We handle GCC constructor expressions *) */
+|                LPAREN type_name RPAREN LBRACE initializer_list_opt RBRACE
+                         { CAST($2, COMPOUND_INIT $5), $1 }
+/* (* GCC's address of labels *)  */
+|               AND_AND IDENT  { LABELADDR (fst $2), $1 }
+|               AT_EXPR LPAREN IDENT RPAREN         /* expression pattern variable */
+                         { EXPR_PATTERN(fst $3), $1 }
+;
+
+constant:
+    CST_INT                                {CONST_INT (fst $1), snd $1}
+|   CST_FLOAT                                {CONST_FLOAT (fst $1), snd $1}
+|   CST_CHAR                                {CONST_CHAR (fst $1), snd $1}
+|   CST_WCHAR                                {CONST_WCHAR (fst $1), snd $1}
+|   string_constant                        {CONST_STRING (fst $1), snd $1}
+/*add a nul to strings.  We do this here (rather than in the lexer) to make
+  concatenation easy below.*/
+|   wstring_list                        {CONST_WSTRING (fst $1 @ [Int64.zero]), snd $1}
+;
+
+string_constant:
+/* Now that we know this constant isn't part of a wstring, convert it
+   back to a string for easy viewing. */
+    string_list                         {intlist_to_string (fst $1), snd $1 }
+;
+one_string_constant:
+/* Don't concat multiple strings.  For asm templates. */
+    CST_STRING                          {intlist_to_string (fst $1) }
+;
+string_list:
+    one_string                          { $1 }
+|   string_list one_string              { (fst $1) @ (fst $2), snd $1 }
+;
+
+wstring_list:
+    CST_WSTRING                         { $1 }
+|   wstring_list one_string             { (fst $1) @ (fst $2), snd $1 }
+|   wstring_list CST_WSTRING            { (fst $1) @ (fst $2), snd $1 }
+/* Only the first string in the list needs an L, so L"a" "b" is the same
+ * as L"ab" or L"a" L"b". */
+
+one_string: 
+    CST_STRING                                {$1}
+|   FUNCTION__                          {(Flx_cabs_helper.explodeStringToInts 
+                                            !currentFunctionName), $1}
+|   PRETTY_FUNCTION__                   {(Flx_cabs_helper.explodeStringToInts 
+                                            !currentFunctionName), $1}
+;    
+
+init_expression:
+     expression         { SINGLE_INIT (fst $1) }
+|    LBRACE initializer_list_opt RBRACE
+                        { COMPOUND_INIT $2}
+
+initializer_list:    /* ISO 6.7.8. Allow a trailing COMMA */
+    initializer                             { [$1] }
+|   initializer COMMA initializer_list_opt  { $1 :: $3 }
+;
+initializer_list_opt:
+    /* empty */                             { [] }
+|   initializer_list                        { $1 }
+;
+initializer: 
+    init_designators eq_opt init_expression { ($1, $3) }
+|   gcc_init_designators init_expression { ($1, $2) }
+|                       init_expression { (NEXT_INIT, $1) }
+;
+eq_opt: 
+   EQ                        { () }
+   /*(* GCC allows missing = *)*/
+|  /*(* empty *)*/               { () }
+;
+init_designators: 
+    DOT id_or_typename init_designators_opt      { INFIELD_INIT($2, $3) }
+|   LBRACKET  expression RBRACKET init_designators_opt
+                                        { ATINDEX_INIT(fst $2, $4) }
+|   LBRACKET  expression ELLIPSIS expression RBRACKET
+                                        { ATINDEXRANGE_INIT(fst $2, fst $4) }
+;         
+init_designators_opt:
+   /* empty */                          { NEXT_INIT }
+|  init_designators                     { $1 }
+;
+
+gcc_init_designators:  /*(* GCC supports these strange things *)*/
+   id_or_typename COLON                 { INFIELD_INIT($1, NEXT_INIT) }
+;
+
+arguments: 
+                /* empty */         { [] }
+|               comma_expression    { fst $1 }
+;
+
+opt_expression:
+                /* empty */
+                        {NOTHING}
+|                comma_expression
+                        {smooth_expression (fst $1)}
+;
+
+comma_expression:
+                expression                        {[fst $1], snd $1}
+|               expression COMMA comma_expression { fst $1 :: fst $3, snd $1 }
+|               error COMMA comma_expression      { $3 }
+;
+
+comma_expression_opt:
+                /* empty */         { NOTHING }
+|               comma_expression    { smooth_expression (fst $1) }
+;
+
+paren_comma_expression:
+  LPAREN comma_expression RPAREN                   { $2 }
+| LPAREN error RPAREN                              { [], $1 }
+;
+
+bracket_comma_expression:
+  LBRACKET comma_expression RBRACKET                   { fst $2 }
+| LBRACKET error RBRACKET                              { [] }
+;
+
+
+/*** statements ***/
+block: /* ISO 6.8.2 */
+    block_begin local_labels block_attrs block_element_list RBRACE
+                                         {!E.pop_context();
+                                          { blabels = $2;
+                                            battrs = $3;
+                                            bdefs = filterBEDecls($4);
+                                            bstmts = filterBEStmts($4); },
+                                            $1, $5
+                                         } 
+|   error location RBRACE                { { blabels = [];
+                                             battrs  = [];
+                                             bdefs   = [];
+                                             bstmts  = [] },
+                                             $2, $3
+                                         }
+;
+block_begin:
+    LBRACE                               {!E.push_context (); $1}
+;
+
+block_attrs:
+   /* empty */                                              { [] }
+|  BLOCKATTRIBUTE paren_attr_list_ne
+                                        { [("__blockattribute__", $2)] }
+;
+
+/* statements and declarations in a block, in any order (for C99 support) */
+block_element_list:
+    /* empty */                          { [] }
+|   declaration block_element_list       { BE_Decl($1) :: $2 }
+|   statement block_element_list         { BE_Stmt($1) :: $2 }
+/*(* GCC accepts a label at the end of a block *)*/
+|   IDENT COLON                                 { [ BE_Stmt(LABEL (fst $1, NOP (snd $1), snd $1))] }
+;
+
+local_labels:
+   /* empty */                                       { [] }
+|  LABEL__ local_label_names SEMICOLON local_labels  { $2 @ $4 }
+;
+local_label_names: 
+   IDENT                                 { [ fst $1 ] }
+|  IDENT COMMA local_label_names         { fst $1 :: $3 }
+;
+
+
+
+statement:
+    SEMICOLON                {NOP $1 }
+|   comma_expression SEMICOLON
+                        {COMPUTATION (smooth_expression (fst $1), snd $1)}
+|   block               {BLOCK (fst3 $1, snd3 $1)}
+|   IF paren_comma_expression statement                    %prec IF
+                        {IF (smooth_expression (fst $2), $3, NOP $1, $1)}
+|   IF paren_comma_expression statement ELSE statement
+                        {IF (smooth_expression (fst $2), $3, $5, $1)}
+|   SWITCH paren_comma_expression statement
+                        {SWITCH (smooth_expression (fst $2), $3, $1)}
+|   WHILE paren_comma_expression statement
+                        {WHILE (smooth_expression (fst $2), $3, $1)}
+|   DO statement WHILE paren_comma_expression SEMICOLON
+                                 {DOWHILE (smooth_expression (fst $4), $2, $1)}
+|   FOR LPAREN for_clause opt_expression
+                SEMICOLON opt_expression RPAREN statement
+                                 {FOR ($3, $4, $6, $8, $1)}
+|   IDENT COLON statement
+                                 {LABEL (fst $1, $3, snd $1)}
+|   CASE expression COLON
+                                 {CASE (fst $2, NOP $1, $1)}
+|   CASE expression ELLIPSIS expression COLON
+                                 {CASERANGE (fst $2, fst $4, NOP $1, $1)}
+|   DEFAULT COLON
+                                 {DEFAULT (NOP $1, $1)}
+|   RETURN SEMICOLON                 {RETURN (NOTHING, $1)}
+|   RETURN comma_expression SEMICOLON
+                                 {RETURN (smooth_expression (fst $2), $1)}
+|   BREAK SEMICOLON     {BREAK $1}
+|   CONTINUE SEMICOLON         {CONTINUE $1}
+|   GOTO IDENT SEMICOLON
+                                 {GOTO (fst $2, $1)}
+|   GOTO STAR comma_expression SEMICOLON 
+                                 { COMPGOTO (smooth_expression (fst $3), $1) }
+|   ASM asmattr LPAREN asmtemplate asmoutputs RPAREN SEMICOLON
+                        { let (outs,ins,clobs) = $5 in
+                          ASM ($2, $4, outs, ins, clobs, $1) }
+|   MSASM               { ASM ([], [fst $1], [], [], [], snd $1)}
+|   error location   SEMICOLON   { (NOP $2)}
+;
+
+
+for_clause: 
+    opt_expression SEMICOLON     { FC_EXP $1 }
+|   declaration                  { FC_DECL $1 }
+;
+
+declaration:                                /* ISO 6.7.*/
+    decl_spec_list init_declarator_list SEMICOLON
+                                       { doDeclaration (snd $1) (fst $1) $2 }
+|   decl_spec_list SEMICOLON               { doDeclaration (snd $1) (fst $1) [] }
+;
+init_declarator_list:                       /* ISO 6.7 */
+    init_declarator                              { [$1] }
+|   init_declarator COMMA init_declarator_list   { $1 :: $3 }
+
+;
+init_declarator:                             /* ISO 6.7 */
+    declarator                          { ($1, NO_INIT) }
+|   declarator EQ init_expression
+                                        { ($1, $3) }
+;
+
+decl_spec_list:                         /* ISO 6.7 */
+                                        /* ISO 6.7.1 */
+|   TYPEDEF decl_spec_list_opt          { SpecTypedef :: $2, $1  }    
+|   EXTERN decl_spec_list_opt           { SpecStorage EXTERN :: $2, $1 }
+|   STATIC  decl_spec_list_opt          { SpecStorage STATIC :: $2, $1 }
+|   AUTO   decl_spec_list_opt           { SpecStorage AUTO :: $2, $1 }
+|   REGISTER decl_spec_list_opt         { SpecStorage REGISTER :: $2, $1}
+                                        /* ISO 6.7.2 */
+|   type_spec decl_spec_list_opt_no_named { SpecType (fst $1) :: $2, snd $1 }
+                                        /* ISO 6.7.4 */
+|   INLINE decl_spec_list_opt           { SpecInline :: $2, $1 }
+|   cvspec decl_spec_list_opt           { (fst $1) :: $2, snd $1 }
+|   attribute_nocv decl_spec_list_opt   { SpecAttr (fst $1) :: $2, snd $1 }
+/* specifier pattern variable (must be last in spec list) */
+|   AT_SPECIFIER LPAREN IDENT RPAREN    { [ SpecPattern(fst $3) ], $1 }
+;
+/* (* In most cases if we see a NAMED_TYPE we must shift it. Thus we declare 
+    * NAMED_TYPE to have right associativity  *) */
+decl_spec_list_opt: 
+    /* empty */                         { [] } %prec NAMED_TYPE
+|   decl_spec_list                      { fst $1 }
+;
+/* (* We add this separate rule to handle the special case when an appearance 
+    * of NAMED_TYPE should not be considered as part of the specifiers but as 
+    * part of the declarator. IDENT has higher precedence than NAMED_TYPE  *)
+ */
+decl_spec_list_opt_no_named: 
+    /* empty */                         { [] } %prec IDENT
+|   decl_spec_list                      { fst $1 }
+;
+type_spec:   /* ISO 6.7.2 */
+    VOID            { Tvoid, $1}
+|   CHAR            { Tchar, $1 }
+|   SHORT           { Tshort, $1 }
+|   INT             { Tint, $1 }
+|   LONG            { Tlong, $1 }
+|   INT64           { Tint64, $1 }
+|   FLOAT           { Tfloat, $1 }
+|   DOUBLE          { Tdouble, $1 }
+|   SIGNED          { Tsigned, $1 }
+|   UNSIGNED        { Tunsigned, $1 }
+|   STRUCT                 id_or_typename
+                                                   { Tstruct ($2, None,    []), $1 }
+|   STRUCT                 id_or_typename LBRACE struct_decl_list RBRACE
+                                                   { Tstruct ($2, Some $4, []), $1 }
+|   STRUCT                                LBRACE struct_decl_list RBRACE
+                                                   { Tstruct ("", Some $3, []), $1 }
+|   STRUCT just_attributes id_or_typename LBRACE struct_decl_list RBRACE
+                                                   { Tstruct ($3, Some $5, $2), $1 }
+|   STRUCT just_attributes                LBRACE struct_decl_list RBRACE
+                                                   { Tstruct ("", Some $4, $2), $1 }
+|   UNION                  id_or_typename
+                                                   { Tunion  ($2, None,    []), $1 }
+|   UNION                  id_or_typename LBRACE struct_decl_list RBRACE
+                                                   { Tunion  ($2, Some $4, []), $1 }
+|   UNION                                 LBRACE struct_decl_list RBRACE
+                                                   { Tunion  ("", Some $3, []), $1 }
+|   UNION  just_attributes id_or_typename LBRACE struct_decl_list RBRACE
+                                                   { Tunion  ($3, Some $5, $2), $1 }
+|   UNION  just_attributes                LBRACE struct_decl_list RBRACE
+                                                   { Tunion  ("", Some $4, $2), $1 }
+|   ENUM                   id_or_typename
+                                                   { Tenum   ($2, None,    []), $1 }
+|   ENUM                   id_or_typename LBRACE enum_list maybecomma RBRACE
+                                                   { Tenum   ($2, Some $4, []), $1 }
+|   ENUM                                  LBRACE enum_list maybecomma RBRACE
+                                                   { Tenum   ("", Some $3, []), $1 }
+|   ENUM   just_attributes id_or_typename LBRACE enum_list maybecomma RBRACE
+                                                   { Tenum   ($3, Some $5, $2), $1 }
+|   ENUM   just_attributes                LBRACE enum_list maybecomma RBRACE
+                                                   { Tenum   ("", Some $4, $2), $1 }
+|   NAMED_TYPE      { Tnamed (fst $1), snd $1 }
+|   TYPEOF LPAREN expression RPAREN     { TtypeofE (fst $3), $1 }
+|   TYPEOF LPAREN type_name RPAREN      { let s, d = $3 in
+                                          TtypeofT (s, d), $1 }
+;
+struct_decl_list: /* (* ISO 6.7.2. Except that we allow empty structs. We 
+                      * also allow missing field names. *)
+                   */
+   /* empty */                           { [] }
+|  decl_spec_list                 SEMICOLON struct_decl_list
+                                         { (fst $1, 
+                                            [(missingFieldDecl, None)]) :: $3 }
+|  decl_spec_list field_decl_list SEMICOLON struct_decl_list
+                                          { (fst $1, $2) 
+                                            :: $4 }
+|  error                          SEMICOLON struct_decl_list
+                                          { $3 } 
+;
+field_decl_list: /* (* ISO 6.7.2 *) */
+    field_decl                           { [$1] }
+|   field_decl COMMA field_decl_list     { $1 :: $3 }
+;
+field_decl: /* (* ISO 6.7.2. Except that we allow unnamed fields. *) */
+|   declarator                      { ($1, None) }
+|   declarator COLON expression     { ($1, Some (fst $3)) }    
+|              COLON expression     { (missingFieldDecl, Some (fst $2)) }
+;
+
+enum_list: /* (* ISO 6.7.2.2 *) */
+    enumerator                                {[$1]}
+|   enum_list COMMA enumerator                {$1 @ [$3]}
+|   enum_list COMMA error               { $1 } 
+;
+enumerator:        
+    IDENT                        {(fst $1, NOTHING, snd $1)}
+|   IDENT EQ expression                {(fst $1, fst $3, snd $1)}
+;
+
+
+declarator:  /* (* ISO 6.7.5. Plus Microsoft declarators.*) */
+   pointer_opt direct_decl attributes_with_asm
+                                         { let (n, decl) = $2 in
+                                           (n, applyPointer (fst $1) decl, $3, snd $1) }
+;
+
+
+direct_decl: /* (* ISO 6.7.5 *) */
+                                   /* (* We want to be able to redefine named
+                                    * types as variable names *) */
+|   id_or_typename                 { ($1, JUSTBASE) }
+
+|   LPAREN attributes declarator RPAREN
+                                   { let (n,decl,al,loc) = $3 in
+                                     (n, PARENTYPE($2,decl,al)) }
+
+|   direct_decl LBRACKET attributes comma_expression_opt RBRACKET
+                                   { let (n, decl) = $1 in
+                                     (n, ARRAY(decl, $3, $4)) }
+|   direct_decl LBRACKET attributes error RBRACKET
+                                   { let (n, decl) = $1 in
+                                     (n, ARRAY(decl, $3, NOTHING)) }
+|   direct_decl parameter_list_startscope rest_par_list RPAREN
+                                   { let (n, decl) = $1 in
+                                     let (params, isva) = $3 in
+                                     !E.pop_context ();
+                                     (n, PROTO(decl, params, isva))
+                                   }
+;
+parameter_list_startscope: 
+    LPAREN                         { !E.push_context () }
+;
+rest_par_list:
+|   /* empty */                    { ([], false) }
+|   parameter_decl rest_par_list1  { let (params, isva) = $2 in 
+                                     ($1 :: params, isva) 
+                                   }
+;
+rest_par_list1: 
+    /* empty */                         { ([], false) }
+|   COMMA ELLIPSIS                      { ([], true) }
+|   COMMA parameter_decl rest_par_list1 { let (params, isva) = $3 in 
+                                          ($2 :: params, isva)
+                                        }  
+;    
+
+
+parameter_decl: /* (* ISO 6.7.5 *) */
+   decl_spec_list declarator              { (fst $1, $2) }
+|  decl_spec_list abstract_decl           { let d, a = $2 in
+                                            (fst $1, ("", d, a, cabslu)) }
+|  decl_spec_list                         { (fst $1, ("", JUSTBASE, [], cabslu)) }
+|  LPAREN parameter_decl RPAREN           { $2 } 
+;
+
+/* (* Old style prototypes. Like a declarator *) */
+old_proto_decl:
+  pointer_opt direct_old_proto_decl   { let (n, decl, a) = $2 in
+                                          (n, applyPointer (fst $1) decl, a, snd $1) }
+;
+direct_old_proto_decl:
+  direct_decl LPAREN old_parameter_list_ne RPAREN old_pardef_list
+                                   { let par_decl, isva = doOldParDecl $3 $5 in
+                                     let n, decl = $1 in
+                                     (n, PROTO(decl, par_decl, isva), [])
+                                   }
+| direct_decl LPAREN                       RPAREN
+                                   { let n, decl = $1 in
+                                     (n, PROTO(decl, [], false), [])
+                                   }
+;
+
+old_parameter_list_ne:
+|  IDENT                                       { [fst $1] }
+|  IDENT COMMA old_parameter_list_ne           { let rest = $3 in
+                                                 (fst $1 :: rest) }
+;
+
+old_pardef_list: 
+   /* empty */                            { ([], false) }
+|  decl_spec_list old_pardef SEMICOLON ELLIPSIS
+                                          { ([(fst $1, $2)], true) }  
+|  decl_spec_list old_pardef SEMICOLON old_pardef_list  
+                                          { let rest, isva = $4 in
+                                            ((fst $1, $2) :: rest, isva) 
+                                          }
+;
+
+old_pardef: 
+   declarator                             { [$1] }
+|  declarator COMMA old_pardef            { $1 :: $3 }
+|  error                                  { [] }
+;
+
+
+pointer: /* (* ISO 6.7.5 *) */ 
+   STAR attributes pointer_opt  { $2 :: fst $3, $1 }
+;
+pointer_opt:
+   /**/                          { [], currentLoc () }
+|  pointer                           { $1 }
+;
+
+type_name: /* (* ISO 6.7.6 *) */
+  decl_spec_list abstract_decl { let d, a = $2 in
+                                 if a <> [] then begin
+                                   parse_error "attributes in type name";
+                                   raise Parsing.Parse_error
+                                 end;
+                                 (fst $1, d) 
+                               }
+| decl_spec_list               { (fst $1, JUSTBASE) }
+;
+abstract_decl: /* (* ISO 6.7.6. *) */
+  pointer_opt abs_direct_decl attributes  { applyPointer (fst $1) $2, $3 }
+| pointer                                 { applyPointer (fst $1) JUSTBASE, [] }
+;
+
+abs_direct_decl: /* (* ISO 6.7.6. We do not support optional declarator for 
+                     * functions. Plus Microsoft attributes. See the 
+                     * discussion for declarator. *) */
+|   LPAREN attributes abstract_decl RPAREN
+                                   { let d, a = $3 in
+                                     PARENTYPE ($2, d, a)
+                                   }
+            
+|   LPAREN error RPAREN
+                                   { JUSTBASE } 
+            
+|   abs_direct_decl_opt LBRACKET comma_expression_opt RBRACKET
+                                   { ARRAY($1, [], $3) }
+/*(* The next shoudl be abs_direct_decl_opt but we get conflicts *)*/
+|   abs_direct_decl  parameter_list_startscope rest_par_list RPAREN
+                                   { let (params, isva) = $3 in
+                                     !E.pop_context ();
+                                     PROTO ($1, params, isva)
+                                   } 
+;
+abs_direct_decl_opt:
+    abs_direct_decl                 { $1 }
+|   /* empty */                     { JUSTBASE }
+;
+function_def:  /* (* ISO 6.9.1 *) */
+  function_def_start block   
+          { let (loc, specs, decl) = $1 in
+            currentFunctionName := "<__FUNCTION__ used outside any functions>";
+            !E.pop_context (); (* The context pushed by 
+                                    * announceFunctionName *)
+            doFunctionDef loc (trd3 $2) specs decl (fst3 $2)
+          } 
+
+
+function_def_start:  /* (* ISO 6.9.1 *) */
+  decl_spec_list declarator   
+                            { announceFunctionName $2;
+                              (snd $1, fst $1, $2)
+                            } 
+
+/* (* Old-style function prototype *) */
+| decl_spec_list old_proto_decl 
+                            { announceFunctionName $2;
+                              (snd $1, fst $1, $2)
+                            } 
+/* (* New-style function that does not have a return type *) */
+| IDENT parameter_list_startscope rest_par_list RPAREN 
+                           { let (params, isva) = $3 in
+                             let fdec = 
+                               (fst $1, PROTO(JUSTBASE, params, isva), [], snd $1) in
+                             announceFunctionName fdec;
+                             (* Default is int type *)
+                             let defSpec = [SpecType Tint] in
+                             (snd $1, defSpec, fdec)
+                           }
+
+/* (* No return type and old-style parameter list *) */
+| IDENT LPAREN old_parameter_list_ne RPAREN old_pardef_list
+                           { (* Convert pardecl to new style *)
+                             let pardecl, isva = doOldParDecl $3 $5 in
+                             (* Make the function declarator *)
+                             let fdec = (fst $1,
+                                         PROTO(JUSTBASE, pardecl,isva), 
+                                         [], snd $1) in
+                             announceFunctionName fdec;
+                             (* Default is int type *)
+                             let defSpec = [SpecType Tint] in
+                             (snd $1, defSpec, fdec) 
+                            }
+/* (* No return type and no parameters *) */
+| IDENT LPAREN                      RPAREN
+                           { (* Make the function declarator *)
+                             let fdec = (fst $1,
+                                         PROTO(JUSTBASE, [], false), 
+                                         [], snd $1) in
+                             announceFunctionName fdec;
+                             (* Default is int type *)
+                             let defSpec = [SpecType Tint] in
+                             (snd $1, defSpec, fdec)
+                            }
+;
+
+/* const/volatile as type specifier elements */
+cvspec:
+    CONST                               { SpecCV(CV_CONST), $1 }
+|   VOLATILE                            { SpecCV(CV_VOLATILE), $1 }
+|   RESTRICT                            { SpecCV(CV_RESTRICT), $1 }
+;
+
+/*** GCC attributes ***/
+attributes:
+    /* empty */                                { []}
+|   attribute attributes                { fst $1 :: $2 }
+;
+
+/* (* In some contexts we can have an inline assembly to specify the name to 
+    * be used for a global. We treat this as a name attribute *) */
+attributes_with_asm:
+    /* empty */                         { [] }
+|   attribute attributes_with_asm       { fst $1 :: $2 }
+|   ASM LPAREN string_constant RPAREN attributes        
+                                        { ("__asm__", 
+                                           [CONSTANT(CONST_STRING (fst $3))]) :: $5 }
+;
+
+/* things like __attribute__, but no const/volatile */
+attribute_nocv:
+    ATTRIBUTE LPAREN paren_attr_list_ne RPAREN        
+                                        { ("__attribute__", $3), $1 }
+|   DECLSPEC paren_attr_list_ne         { ("__declspec", $2), $1 }
+|   MSATTR                              { (fst $1, []), snd $1 }
+                                        /* ISO 6.7.3 */
+|   THREAD                              { ("__thread",[]), $1 }
+;
+
+/* __attribute__ plus const/volatile */
+attribute:
+    attribute_nocv                      { $1 }
+|   CONST                               { ("const", []), $1 }
+|   RESTRICT                            { ("restrict",[]), $1 }
+|   VOLATILE                            { ("volatile",[]), $1 }
+;
+
+/* sm: I need something that just includes __attribute__ and nothing more,
+ * to support them appearing between the 'struct' keyword and the type name */
+just_attribute:
+    ATTRIBUTE LPAREN paren_attr_list_ne RPAREN
+                                        { ("__attribute__", $3) }
+;
+
+/* this can't be empty, b/c I folded that possibility into the calling
+ * productions to avoid some S/R conflicts */
+just_attributes:
+    just_attribute                      { [$1] }
+|   just_attribute just_attributes      { $1 :: $2 }
+;
+
+/** (* PRAGMAS and ATTRIBUTES *) ***/
+/* (* We want to allow certain strange things that occur in pragmas, so we 
+    * cannot use directly the language of expressions *) */ 
+attr: 
+|   id_or_typename                       { VARIABLE $1 }
+|   IDENT IDENT                          { CALL(VARIABLE (fst $1), [VARIABLE (fst $2)]) }
+|   IDENT COLON CST_INT                  { VARIABLE (fst $1 ^ ":" ^ fst $3) }
+|   DEFAULT COLON CST_INT                { VARIABLE ("default:" ^ fst $3) }
+                                         /* (* use a VARIABLE "" so that the 
+                                             * parentheses are printed *) */
+|   IDENT LPAREN  RPAREN                 { CALL(VARIABLE (fst $1), [VARIABLE ""]) }
+|   IDENT paren_attr_list_ne             { CALL(VARIABLE (fst $1), $2) }
+
+|   CST_INT                              { CONSTANT(CONST_INT (fst $1)) }
+|   string_constant                      { CONSTANT(CONST_STRING (fst $1)) }
+                                           /*(* Const when it appears in 
+                                            * attribute lists, is translated 
+                                            * to aconst *)*/
+|   CONST                                { VARIABLE "aconst" }
+|   SIZEOF expression                     {EXPR_SIZEOF (fst $2)}
+|   SIZEOF LPAREN type_name RPAREN
+                                         {let b, d = $3 in TYPE_SIZEOF (b, d)}
+
+|   ALIGNOF expression                   {EXPR_ALIGNOF (fst $2)}
+|   ALIGNOF LPAREN type_name RPAREN      {let b, d = $3 in TYPE_ALIGNOF (b, d)}
+|   PLUS expression                             {UNARY (PLUS, fst $2)}
+|   MINUS expression                         {UNARY (MINUS, fst $2)}
+|   STAR expression                        {UNARY (MEMOF, fst $2)}
+|   AND expression                                                 %prec ADDROF
+                                        {UNARY (ADDROF, fst $2)}
+|   EXCLAM expression                        {UNARY (NOT, fst $2)}
+|   TILDE expression                        {UNARY (BNOT, fst $2)}
+|   attr PLUS attr                      {BINARY(ADD ,$1 , $3)} 
+|   attr MINUS attr                     {BINARY(SUB ,$1 , $3)}
+|   attr STAR expression                {BINARY(MUL ,$1 , fst $3)}
+|   attr SLASH attr                        {BINARY(DIV ,$1 , $3)}
+|   attr PERCENT attr                        {BINARY(MOD ,$1 , $3)}
+|   attr AND_AND attr                        {BINARY(AND ,$1 , $3)}
+|   attr PIPE_PIPE attr                        {BINARY(OR ,$1 , $3)}
+|   attr AND attr                        {BINARY(BAND ,$1 , $3)}
+|   attr PIPE attr                        {BINARY(BOR ,$1 , $3)}
+|   attr CIRC attr                        {BINARY(XOR ,$1 , $3)}
+|   attr EQ_EQ attr                        {BINARY(EQ ,$1 , $3)}
+|   attr EXCLAM_EQ attr                        {BINARY(NE ,$1 , $3)}
+|   attr INF attr                        {BINARY(LT ,$1 , $3)}
+|   attr SUP attr                        {BINARY(GT ,$1 , $3)}
+|   attr INF_EQ attr                        {BINARY(LE ,$1 , $3)}
+|   attr SUP_EQ attr                        {BINARY(GE ,$1 , $3)}
+|   attr INF_INF attr                        {BINARY(SHL ,$1 , $3)}
+|   attr SUP_SUP attr                        {BINARY(SHR ,$1 , $3)}
+|   attr ARROW id_or_typename           {MEMBEROFPTR ($1, $3)} 
+|   attr DOT id_or_typename             {MEMBEROF ($1, $3)}  
+|   LPAREN attr RPAREN                  { $2 } 
+;
+
+attr_list_ne:
+|  attr                                  { [$1] }
+|  attr COMMA attr_list_ne               { $1 :: $3 }
+|  error COMMA attr_list_ne              { $3 }
+;
+paren_attr_list_ne: 
+   LPAREN attr_list_ne RPAREN            { $2 }
+|  LPAREN error RPAREN                   { [] }
+;
+/*** GCC ASM instructions ***/
+asmattr:
+     /* empty */                        { [] }
+|    VOLATILE  asmattr                  { ("volatile", []) :: $2 }
+|    CONST asmattr                      { ("const", []) :: $2 } 
+;
+asmtemplate: 
+    one_string_constant                          { [$1] }
+|   one_string_constant asmtemplate              { $1 :: $2 }
+;
+asmoutputs: 
+  /* empty */           { ([], [], []) }
+| COLON asmoperands asminputs
+                        { let (ins, clobs) = $3 in
+                          ($2, ins, clobs) }
+;
+asmoperands:
+     /* empty */                        { [] }
+|    asmoperandsne                      { List.rev $1 }
+;
+asmoperandsne:
+     asmoperand                         { [$1] }
+|    asmoperandsne COMMA asmoperand     { $3 :: $1 }
+;
+asmoperand:
+     string_constant LPAREN expression RPAREN    { (fst $1, fst $3) }
+|    string_constant LPAREN error RPAREN         { (fst $1, NOTHING ) } 
+; 
+asminputs: 
+  /* empty */                { ([], []) }
+| COLON asmoperands asmclobber
+                        { ($2, $3) }
+;
+asmclobber:
+    /* empty */                         { [] }
+| COLON asmcloberlst_ne                 { $2 }
+;
+asmcloberlst_ne:
+   one_string_constant                           { [$1] }
+|  one_string_constant COMMA asmcloberlst_ne     { $1 :: $3 }
+;
+  
+%%
+
+
+@h= tangler("src/flxcc.ml")
+@select(h)
+
+let filename = Sys.argv.(1);;
+print_endline ("Parsing " ^ filename);;
+
+let lexbuf = Flx_clexer.init filename;;
+let cabs = Flx_cparser.file Flx_clexer.initial lexbuf
+;;
+Flx_clexer.finish()
+;;
+
+print_endline "Parse complete"
+;;
+
+Flx_frontc_cprint.print_defs cabs
+;;
+

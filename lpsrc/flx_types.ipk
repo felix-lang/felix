@@ -359,7 +359,7 @@ and tlvalue_t = lvalue_t * typecode_t option
 
 and funkind_t = [`Object | `Function | `InlineFunction]
 and property_t = [`Recursive | `Inline]
-and requirements_t = string list
+and requirements_t = qualified_name_t list
 
 and statement_t =
   [ 
@@ -1809,7 +1809,7 @@ and string_of_properties ps =
   | ps -> catmap " " string_of_property ps
   
 and string_of_reqs = function | [] -> ""
- | x -> "requires " ^ cat ", " x
+ | x -> "requires " ^ catmap ", " string_of_qualified_name x
 
 and string_of_statement level s = 
   let se e = string_of_expr e in
