@@ -268,6 +268,17 @@ int main(int,char*[]) {
   return 0;
 }
 
+@h = tangler("tmp/cgoto.cxx",'c++')
+@select(h)
+int main(int argc, char*argv[]) { 
+  void *label = &&label2;
+  goto *label;
+  label1: 
+    return 1;
+  label2:
+    return 0; 
+}
+
 @h=tangler("tmp/fileutils_check.ml")
 @select(h)
 open FilePath.AbstractDefaultPath
@@ -502,6 +513,14 @@ try:
   HAVE_GXX = 1
 except:
   HAVE_GXX = 0
+
+# find if we have g++ supporting computed jumps
+try:
+  xqt("g++ tmp/cgoto.cxx -o tmp/cgoto")
+  xqt("tmp/cgoto")
+  HAVE_CGOTO = 1
+except:
+  HAVE_CGOTO = 0
 
 # find if we have cc
 try:
@@ -821,6 +840,7 @@ try:
   p(f,"HAVE_CCCC")
   p(f,"HAVE_MSVC")
   p(f,"HAVE_GXX")
+  p(f,"HAVE_CGOTO")
   p(f,"HAVE_PKGCONFIG")
   p(f,"CXX")
   p(f,"CPP")

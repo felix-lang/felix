@@ -247,12 +247,17 @@ that requires rescanning the result of inlining.
 
 let tident t = t 
 
-let rec inline_applies syms (child_map, bbdfns) x = 
-  let ia x = inline_applies syms (child_map,bbdfns) x in
-  match map_tbexpr ia tident x with
+ 
+let rec inline_applies syms (child_map, bbdfns) exclude x = 
+  let iai i x = inline_applies syms (child_map,bbdfns) (i::exclude) x in
+  let ia x = inline_applies syms (child_map,bbdfns) exclude x in
+  let x = map_tbexpr ia tident x in
+  match x with
+  | `BEXPR_apply ((`BEXPR_closure (i,ts),_),b'),t -> assert false
+
   | `BEXPR_apply_stack (i,ts,b'),t 
   | `BEXPR_apply_direct (i,ts,b'),t 
-  | `BEXPR_apply ((`BEXPR_closure (i,ts),_),b'),t ->
+    when not (mem i exclude) ->
     begin 
       match Hashtbl.find bbdfns i 
       with id,parent,sr2,bbdcl -> 
@@ -263,15 +268,18 @@ let rec inline_applies syms (child_map, bbdfns) x =
           begin 
             try 
               check_can_inline (child_map, bbdfns) i;
+              (* POSSIBLE INFINITE RECURSE .. *)
+              let b = iai i b in
               let a = param_subst id syms sr3 vs b ps ts b' in
               a
-            with Cannot_inline -> x
+            with Cannot_inline -> 
+              x
           end
         | _ -> x
         end
       | _ -> x
     end
-  | x -> x
+  | _ -> x
 
 (* NOTES ON INLINING.
   In general, any call can be replaced by the body
@@ -300,7 +308,7 @@ let rec inline_applies syms (child_map, bbdfns) x =
 *)
 
 let useless_call_elim syms used (child_map,bbdfns) vs' exes index =
-  let ia x = inline_applies syms (child_map,bbdfns) x in
+  let ia x = inline_applies syms (child_map,bbdfns) [] x in
   let exes' = ref [] in
   iter
   (fun x -> match x with
