@@ -688,6 +688,33 @@ let endif_directive state sr lexbuf =
     state#pop_condition;
     []
 
+let get_ident_opt cmd state sr s lexer =
+  let toks = pre_tokens_of_string lexer s "DUMMY FILE NAME" in
+  let toks = List.rev (ENDMARKER :: List.rev toks) in
+  let toks = Flx_lex1.translate toks in
+  match toks with
+  | NAME (sr,name) :: [ENDMARKER] -> Some name
+  | [ENDMARKER] ->  None
+  | _ ->
+    clierr sr ("#" ^ cmd ^ " requires identifier")
+ 
+let divert_directive state sr s lexer =
+  begin match get_ident_opt "divert" state sr s lexer with
+  | Some name -> print_endline ("Divert " ^ name)
+  | None -> print_endline "Divert <none>"
+  end
+  ;
+  []
+
+let undivert_directive state sr s lexer =
+  begin match get_ident_opt "undivert" state sr s lexer with
+  | Some name -> print_endline ("UNDivert " ^ name)
+  | None -> print_endline "UNDivert <none>"
+  end
+  ;
+  []
+
+
 let include_directive is_import state sr s pre_flx_lex lexbuf =
   if s.[0]<>'"' && s.[0]<>'<'
   then clierr sr "'\"' or '<' required after #include"
@@ -1297,6 +1324,13 @@ and parse_preprocessor state = parse
 
     | "endif" -> 
       endif_directive state sr lexbuf
+    
+    | "divert" -> 
+      divert_directive state sr s pre_flx_lex
+
+    | "undivert" -> 
+      undivert_directive state sr s pre_flx_lex
+
 
     | _ -> 
       print_endline (state#string_of_srcref lexbuf);

@@ -118,7 +118,6 @@ let rec cpp_type_classname syms t =
   try match unfold t with
   | `BTYP_var i -> failwith ("[cpp_type_classname] Can't name type variable " ^ si i) 
   | `BTYP_fix i -> failwith "[cpp_type_classname] Can't name type fixpoint"
-  | `BTYP_binding _ -> failwith "[cpp_type_classname] Unexpected binding type"
   | `BTYP_void -> failwith "void doesn't have a classname"
   | `BTYP_tuple [] -> "unit"
 

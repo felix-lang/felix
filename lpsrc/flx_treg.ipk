@@ -103,7 +103,6 @@ let rec register_type_r syms bbdfns exclude sr t =
   *)
 
   | `BTYP_pointer ts -> rnr t; rr ts
-  | `BTYP_binding (src,dst) -> rr dst
   | `BTYP_inst (i,ts)->
      iter rr ts;
 

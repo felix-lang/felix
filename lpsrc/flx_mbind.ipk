@@ -139,7 +139,6 @@ let rec subst vars (e:expr_t) mv : expr_t =
     `AST_dot (sr,(subst e, id))
  
   | `AST_lambda _ -> assert false
-  | `AST_bound_module _ -> assert false
 
   | `AST_match_case _ 
   | `AST_ctor_arg _ 

@@ -201,8 +201,7 @@ let param_subst id syms sr vs b ps ts b' =
 let check_can_inline syms bbdfns nm =
   Hashtbl.iter
     begin fun name es -> try if name <> "root" then match es with
-    | FunctionEntry _ 
-    | NonFunctionEntry (Bound _) -> raise Cannot_inline
+    | FunctionEntry _ -> raise Cannot_inline
     | NonFunctionEntry (Simple i) ->
       let id,sr,parent,entry = 
         try Hashtbl.find bbdfns i 
@@ -505,7 +504,6 @@ let rec uses_type syms used bbdfns (t:btypecode_t) =
   | `BTYP_array (t1, t2)
   | `BTYP_function (t1, t2)
   | `BTYP_apply (t1, t2)
-  | `BTYP_binding (t1, t2)
     -> ut t1; ut t2
     
   | `BTYP_pointer t -> ut t

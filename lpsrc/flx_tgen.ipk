@@ -85,7 +85,6 @@ let gen_type_name syms bbdfns (index,typ) =
   match unfold typ with
   | `BTYP_fix i -> ""
   | `BTYP_var i -> failwith "[gen_type_name] Can't gen name of type variable"
-  | `BTYP_binding _ -> failwith "[gen_type_name] Unexpected binding type"
 
   | `BTYP_tuple [] -> "" (* unit *)
 
@@ -240,7 +239,6 @@ let gen_type syms bbdfns (index,typ) =
   match unfold typ with
   | `BTYP_var _ -> failwith "[gen_type] can't gen type variable"
   | `BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
-  | `BTYP_binding _ -> failwith ("gen_type] Unexpected binding type")
 
   (* PROCEDURE *)
   | `BTYP_function (a,`BTYP_void) ->

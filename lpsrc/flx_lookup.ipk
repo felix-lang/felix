@@ -315,12 +315,6 @@ let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
     else
       clierr sr ("Conflicting values for "^name ^" found in open modules")
   
-  | (NonFunctionEntry (Bound (i,j)))::_ -> 
-    (* FIX: it might not be so! Could be two typedefs
-      of the same thing, later, when I implement it,
-      injected names
-    *)
-    clierr sr ("Conflicting values for "^name ^" found in open modules")
   | [] -> None
 
 let lookup_name_in_env (env:env_t) sr name : entry_set_t =
@@ -346,44 +340,6 @@ let lookup_name_in_env (env:env_t) sr name : entry_set_t =
         string_of_int (List.length env)^ ")" 
       )
 
-let lookup_in_bound_module 
-  dfns iface binding sr 
-  (t:string) 
-: entry_set_t option  =
-  match get_data dfns iface with
-  | { pubmap=table;dirs=dirs;symdef=`SYMDEF_interface} ->
-    let src = lookup_name_in_htab table t  in
-    begin match src with
-    | None -> None
-    | Some x -> match x with
-    | NonFunctionEntry (Simple ix) ->
-      let dst = Hashtbl.find binding ix in
-      Some (NonFunctionEntry (Bound (ix,dst)))
-
-    | NonFunctionEntry _ ->
-      failwith
-      (
-        "[lookup_qn_in_bound_module] Expected simple nonfunction entry got binding"
-      )
-    | FunctionEntry ls ->
-      let ns = ref [] in
-      List.iter
-      (fun ix ->
-        match ix with
-        | Simple ix ->
-          let dst = Hashtbl.find binding ix in
-          ns := Bound (ix,dst) :: !ns;
-          (* print_endline (string_of_int ix ^ " ==> " ^ string_of_int dst) *)
-        | _ -> failwith "Woops, expected Simple"
-      )
-      ls
-      ;
-      Some (FunctionEntry !ns)
-    end
-
-  | _ -> 
-    failwith "Lookup in bound module expected interface"
-
 (* This routine looks up a qualified name in the
    environment and returns an entry_set_t:
    can be either non-function or function set
@@ -406,12 +362,6 @@ let rec lookup_qn_in_env2
 
   | `AST_lookup (sr,(me,name,ts)) ->
     match eval_module_expr syms env excluded_dirs me with 
-    | Module_product _ ->
-      failwith "Unexpected module product"
-
-    | Functor_set _ ->
-      failwith "Unexpected Functor"
-
     | Simple_module (impl,ts', htab,dirs) ->
       begin try Hashtbl.find htab name, ts' @ ts
       with Not_found -> 
@@ -421,18 +371,6 @@ let rec lookup_qn_in_env2
           short_string_of_src sr
         )
       end
-
-    | Bound_module (iface,impl,binding) ->
-      match lookup_in_bound_module syms.dfns iface binding sr name with
-      | None -> 
-        failwith 
-        (
-          "[lookup_qn_in_env2] Can't find " ^ 
-          string_of_qualified_name qn ^
-          " in\n" ^
-          short_string_of_src sr
-        )
-      | Some x -> x,ts
 
 and lookup_qn_in_env 
   syms
@@ -466,7 +404,6 @@ and lookup_sn_in_env
       lookup_qn_in_env syms env excluded_dirs x
     with
     | Simple index,ts -> index,map bt ts
-    | Bound _,_ -> failwith "Expecting simple entry"
     end
 
   | `AST_suffix (sr,(qn,suf)) ->
@@ -1072,10 +1009,6 @@ and bind_type'
     print_endline ("Matched qualified name " ^ string_of_qualified_name x);
     *)
     match lookup_qn_in_env syms env excluded_dirs x with
-    | Bound (i,m),ts -> 
-      let ts = map bt ts in
-      `BTYP_binding (bi i ts, bi m ts)
-
     | Simple i,ts ->
       let ts = map bt ts in
       (*
@@ -1157,10 +1090,6 @@ and bind_type_index syms
         t
 
 
-    | `SYMDEF_interface 
-    | `SYMDEF_if_type 
-      -> `BTYP_inst (index,[]) (* temporary hack *)
-
     | `SYMDEF_abs _ -> 
       `BTYP_inst (index,ts)
 
@@ -1170,16 +1099,6 @@ and bind_type_index syms
       `BTYP_inst (index,ts)
 
 
-    | `SYMDEF_module_binding e ->
-      let e' = 
-        let env = build_env syms [] parent in (* parent?? *)
-        eval_module_expr syms env excluded_dirs e
-      in 
-      begin match e' with
-      | Bound_module (iface,impl,binding) -> 
-        `BTYP_binding (`BTYP_inst (iface,ts), `BTYP_inst (impl,ts))
-      | _ -> failwith "Expected module binding expression to be bound module"
-      end
     | _ -> 
       failwith 
       (
@@ -1496,9 +1415,6 @@ and inner_typeofindex
         let t = `BTYP_function (bt (typeof_list pts), rt') in
         t
 
-  | `SYMDEF_if_fun (t) 
-    -> bt t
-
   | `SYMDEF_const (t,_)
   | `SYMDEF_parameter (t)
   | `SYMDEF_val (t)
@@ -1551,24 +1467,6 @@ and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
           "\napplied to argument " ^
           sbe syms.dfns tbe2 ^
           "\n of type " ^
-          sbt syms.dfns t2 ^
-          "\nwhich doesn't agree with parameter type\n" ^
-          sbt syms.dfns argt 
-        )
-
-    | `BTYP_binding (
-        `BTYP_function (argt,rest),
-        `BTYP_function (argt',rest')
-      ) ->
-      if argt = lift t2 
-      && argt' = lower t2
-      then `BTYP_binding (rest, rest')
-      else 
-        clierr sr
-        (
-          "[cal_apply] Function argument " ^
-          sbe syms.dfns tbe2 ^
-          " has type\n" ^
           sbt syms.dfns t2 ^
           "\nwhich doesn't agree with parameter type\n" ^
           sbt syms.dfns argt 
@@ -1664,7 +1562,6 @@ and koenig_lookup syms sra excluded_dirs id' name_map fn t2 ts =
        typeofindex_with_ts syms excluded_dirs index'' ts
 
 
-    | Some (Bound _,_,_,_ ) -> failwith "[koenig lookup] Can't handle bound result yet"
     | None ->
         (*
         let n = ref 0 
@@ -1763,12 +1660,6 @@ and lookup_qn_with_sig'
       env excluded_dirs 
       qn'
     with 
-      | (Module_product _) ->
-        failwith "Unexpected module product"
-
-      | (Functor_set _) ->
-        failwith "Unexpected Functor"
-
       | (Simple_module (impl, ts',htab,dirs)) ->
         let ts' = map (bt sr) ts' in
         (*
@@ -1885,9 +1776,6 @@ and lookup_qn_with_sig'
             end
           end
 
-        | NonFunctionEntry (Bound (i,j)) ->
-          failwith "[lookup_qn_with_sig] Can't handle bound result yet"
-
         | FunctionEntry fs ->
           match
             resolve_overload
@@ -1902,14 +1790,6 @@ and lookup_qn_with_sig'
             `BEXPR_closure (index,ts),
              typeofindex_with_ts syms excluded_dirs index ts
 
-          | Some (Bound (iface,impl),t,mgu,ts) -> 
-             `BEXPR_closure (impl,ts),
-             `BTYP_binding
-             (
-               typeofindex_with_ts syms excluded_dirs iface ts,
-               typeofindex_with_ts syms excluded_dirs impl ts
-             )
-
           | None -> 
             clierr sra
             (
@@ -1918,79 +1798,6 @@ and lookup_qn_with_sig'
               " of (" ^ sbt syms.dfns sign ^")\n" ^
               "candidates are: " ^ full_string_of_entry_set syms.dfns entries
             )
-        end
-
-      | (Bound_module (iface,impl,binding)) ->
-        begin match get_data syms.dfns iface with
-        {id=id;vs=vs;pubmap=table;dirs=dirs;symdef=entry}
-        ->
-        begin match entry with 
-        | `SYMDEF_interface ->
-          let table' = apply_binding table binding in
-          begin match lookup_name_in_htab table' name with
-          | None -> 
-            clierr sra
-            (
-              "[lookup_qn_with_sig] AST_lookup: bound_module: Can't find name " ^ name
-            )
-          | Some x -> match x with
-          | NonFunctionEntry (Simple index) ->
-            let t = typeofindex_with_ts syms excluded_dirs index ts in
-            begin match t with
-            | `BTYP_function (a,b) ->
-               if a <> sign  (* WE NEED TO DO A LIFT HERE *)
-               then 
-                 failwith
-                 (
-                   "Non function entry has wrong type"
-                 )
-               else begin 
-                 (`BEXPR_name (index,ts),
-                 typeofindex_with_ts syms excluded_dirs index ts
-                 )
-               end
-
-            | _ -> 
-              failwith
-                 (
-                   "Non function entry not function type"
-                 )
-            end
-          | NonFunctionEntry (Bound (i,j)) ->
-            failwith
-            (
-              "Can't handle bound non-function result yet"
-            )
-
-          | FunctionEntry fs ->
-            match
-              resolve_overload
-              syms excluded_dirs sra fs name sign ts
-            with
-            | Some (Simple index,t,mgu,ts) ->
-              let ts = adjust_ts syms index ts in
-              `BEXPR_closure (index,ts),
-              typeofindex_with_ts syms excluded_dirs index ts
-
-
-            | Some (Bound (iface,impl),t,mgu,ts) -> 
-              `BEXPR_closure (impl,ts),
-              `BTYP_binding
-              (
-                 typeofindex_with_ts syms excluded_dirs iface ts,
-                 typeofindex_with_ts syms excluded_dirs impl ts
-              )
-
-            | None -> 
-              failwith 
-              (
-                "[Bound module] Unable to resolve overload in\n" ^
-                short_string_of_src sra
-              )
-
-          end
-        | _ -> failwith "Expected interface"
-        end
         end
 
 and lookup_name_with_sig 
@@ -2039,36 +1846,6 @@ and handle_function
 : tbexpr_t 
 =
   match overload with
-    | Bound (i,j) -> 
-      (*
-      print_endline "[handle_function] handle opaque function"; 
-      *)
-      let it =
-        match typeofindex_with_ts syms excluded_dirs i ts with
-        | `BTYP_function _ as t -> t
-        | t -> 
-          failwith 
-          (
-            "[handle_function]: closure operator expected '"^
-            name^"' to be function definition, got '"^
-            sbt syms.dfns t
-            ^"', " ^ short_string_of_src sra
-          )
-      and mt =
-        match typeofindex_with_ts syms excluded_dirs j ts with
-        | `BTYP_function _ as t -> t
-        | t -> 
-          failwith 
-          (
-            "[handle_function]: closure operator expected '"^
-            name^"' to be function definition, got '"^
-            sbt syms.dfns t
-            ^"', " ^ short_string_of_src sra
-          )
-      in
-        `BEXPR_closure (j,ts),
-        unify syms.dfns it mt
-      
     | Simple index -> 
         begin 
           match get_data syms.dfns index with 
@@ -2113,6 +1890,76 @@ and handle_function
             )
         end 
   
+and handle_variable syms env excluded_dirs index id sr vs ts t t2 = 
+  let bt sr t = 
+    bind_type syms env excluded_dirs sr t 
+  in
+
+    (* we have to check the variable is the right type *) 
+    let t = bt sr t in
+    let t = tsubst vs ts t in
+    begin match t with
+    | `BTYP_function (d,c) ->
+      if d <> t2 then
+      clierr sr
+      (
+        "[lookup_name_in_table_dirs_with_sig] Expected variable "^id ^
+        "<" ^ si index ^ "> to have function type with signature " ^
+        sbt syms.dfns t2 ^
+        ", got function type:\n" ^
+        sbt syms.dfns t
+      )
+      else
+        let ts = adjust_ts syms index ts in
+        Some
+        (
+          `BEXPR_name (index, ts),t
+          (* should equal t ..
+          typeofindex_with_ts syms excluded_dirs index ts
+          *)
+        )
+
+    | `BTYP_inst (i,[]) ->
+      begin match get_data syms.dfns i  with
+      {id=id'} ->
+        begin match t2 with
+        | `BTYP_inst (j,[]) ->
+          begin match get_data syms.dfns j with
+          {id=id''} ->
+            begin match id',id'' with
+            | "string","string" 
+            | "ustring","ustring" 
+            | "string","int"
+            | "ustring","int" -> 
+              Some (`BEXPR_name (index, ts),t)
+            | _ ->
+              clierr sr
+              (
+                "[lookup_name_in_table_dirs_with_sig] expected variable " ^ 
+                id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
+                sbt syms.dfns t
+              )
+            end
+          end
+        | _ ->
+          clierr sr
+          (
+            "[lookup_name_in_table_dirs_with_sig] expected variable " ^ 
+            id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
+            sbt syms.dfns t
+          )
+        end
+      end
+    | _ ->
+      clierr sr
+      (
+        "[lookup_name_in_table_dirs_with_sig] expected variable " ^ 
+        id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
+        sbt syms.dfns t
+        
+      )
+    end
+
 and lookup_name_in_table_dirs_with_sig (table, dirs) 
   syms 
   env idx_fixlist expr_fixlist depth excluded_dirs 
@@ -2127,13 +1974,6 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     "] IN TABLE DIRS WITH SIG " ^ sbt syms.dfns t2
   ); 
   *)
-  (* DOES NOT PROPAGATE EXPR FIXLIST .. *)
-  let bt sr t = 
-    (*
-    print_endline "LOSING EXPR FIXLIST ..";
-    *)
-    bind_type syms env excluded_dirs sr t in
-
   let result:entry_set_t =
     match lookup_name_in_htab table name  with
     | Some x -> x
@@ -2169,71 +2009,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_var t
     | `SYMDEF_val t 
     | `SYMDEF_parameter t
-      ->
-      (* we have to check the variable is the right type *) 
-      let t = bt sr t in
-      let t = tsubst vs ts t in
-      begin match t with
-      | `BTYP_function (d,c) ->
-        if d <> t2 then
-        clierr srn
-        (
-          "[lookup_name_in_table_dirs_with_sig] Expected variable "^id ^
-          "<" ^ si index ^ "> to have function type with signature " ^
-          sbt syms.dfns t2 ^
-          ", got function type:\n" ^
-          sbt syms.dfns t
-        )
-        else
-          let ts = adjust_ts syms index ts in
-          Some
-          (
-            `BEXPR_name (index, ts),t
-            (* should equal t ..
-            typeofindex_with_ts syms excluded_dirs index ts
-            *)
-          )
-
-      | `BTYP_inst (i,[]) ->
-        begin match get_data syms.dfns i  with
-        {id=id'} ->
-        begin match t2 with
-        | `BTYP_inst (j,[]) ->
-          begin match get_data syms.dfns j with
-          {id=id''} ->
-          begin match id',id'' with
-          | "string","string" 
-          | "ustring","ustring" 
-          | "string","int"
-          | "ustring","int" -> 
-            Some (`BEXPR_name (index, ts),t)
-          | _ ->
-            clierr srn
-            (
-              "[lookup_name_in_table_dirs_with_sig] expected variable " ^ 
-              id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
-              sbt syms.dfns t
-            )
-          end
-          end
-        | _ ->
-          clierr srn
-          (
-            "[lookup_name_in_table_dirs_with_sig] expected variable " ^ 
-            id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
-            sbt syms.dfns t
-          )
-        end
-        end
-      | _ ->
-        clierr srn
-        (
-          "[lookup_name_in_table_dirs_with_sig] expected variable " ^ 
-          id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
-          sbt syms.dfns t
-          
-        )
-      end
+      -> handle_variable syms env excluded_dirs index id srn vs ts t t2
     | _ 
       -> 
         failwith 
@@ -2244,9 +2020,6 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         )
     end
     end
-
-  | NonFunctionEntry _ ->
-    failwith "[lookup_name_in_table_dirs_with_sig] expected simple nonfunction entry"
 
   | FunctionEntry fs ->
     let ro = 
@@ -2325,7 +2098,6 @@ and bind_regdef syms env idx_fixlist excluded_dirs regexp_exclude e =
   | REGEXP_aster e -> REGEXP_aster (bd e)
   | REGEXP_name qn ->
     begin match lookup_qn_in_env syms env excluded_dirs qn with
-    | Bound _,_ -> failwith "[bind_regdef] Unexpected bound entry"
     | Simple i,_ ->
       if List.mem i regexp_exclude
       then 
@@ -2446,7 +2218,6 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
   | `AST_void _
   | `AST_arrow _ 
   | `AST_superscript _ 
-  | `AST_bound_module _ 
   | `AST_ellipsis _ 
     -> 
       clierr sr 
@@ -2548,13 +2319,6 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
       *)
       t
 
-    | NonFunctionEntry Bound(i,m) ->
-      let it = ti i ts in
-      let mt = ti m ts in
-      let t = unify syms.dfns it mt in
-      let ts = [] in (* HACK *)
-      `BEXPR_name (m,ts), t
-
     | FunctionEntry fs -> 
       clierr sr
       (
@@ -2573,25 +2337,9 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
           env excluded_dirs 
           e 
       with 
-      | (Module_product _) ->
-        failwith "Unexpected module product"
-
-      | (Functor_set _) ->
-        failwith "Unexpected Functor"
-
       | (Simple_module (impl, ts, htab,dirs)) ->
         lookup_name_in_htab htab name
 
-      | (Bound_module (iface,impl,binding)) ->
-        match get_data syms.dfns iface with
-        {vs=vs;pubmap=table;dirs=dirs;symdef=entry}
-        ->
-        begin match entry with 
-        | `SYMDEF_interface ->
-          let table' = apply_binding table binding in
-          lookup_name_in_htab table' name
-        | _ -> failwith "Expected interface"
-        end
     in 
       begin match entry with
       | Some entry -> 
@@ -2601,10 +2349,6 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
           `BEXPR_name (i,ts), 
           ti i ts
           
-        | NonFunctionEntry (Bound (i,j)) -> 
-          `BEXPR_name (j,ts), 
-          `BTYP_binding (ti i ts, ti j ts)
-
         | FunctionEntry fs ->
           failwith 
           (
@@ -2725,9 +2469,6 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth excluded_dirs e
           ->
           match entry' with
           | `SYMDEF_module ->
-            koenig_lookup syms sra excluded_dirs id' name_map fn t2 ts
-
-          | `SYMDEF_interface ->
             koenig_lookup syms sra excluded_dirs id' name_map fn t2 ts
 
           | _ -> clierr sra ("Koenig lookup: parent for method apply not module")
@@ -2950,41 +2691,8 @@ and map_dir
   | Simple i,ts ->
     begin match get_data syms.dfns i with
     | {pubmap=table;symdef=`SYMDEF_module} -> table
-    | {id=id;symdef=`SYMDEF_module_binding e} -> 
-      if not (List.mem i excluded_dirs)
-      then
-        begin 
-        let me = 
-          try 
-            eval_module_expr syms env (i::excluded_dirs) e 
-          with _ -> failwith "Module expression eval failed"
-        in
-        match me with 
-        | Module_product _ ->
-          failwith "Unexpected module product"
-
-        | Functor_set _ ->
-          failwith "Unexpected Functor"
-
-        | Simple_module (impl, ts, htab,dirs) ->
-          htab
-        | Bound_module (iface,impl,binding) ->
-          begin match get_data syms.dfns iface with
-          {pubmap=table;symdef=entry} ->
-          match entry with 
-          | `SYMDEF_interface ->
-            apply_binding table binding
-          | _ -> failwith "Expected interface"
-          end
-        end
-      else begin
-        (* print_endline ("DUMMY TABLE CREATED FOR EXCLUDED OPEN " ^ string_of_int i); *)
-        Hashtbl.create 97
-      end
-
     | _ -> failwith "[map_dir] Expected module"
     end
-  | _ -> failwith "Expected module!"
 
 and build_env'' syms excluded_dirs parent : env_t =
   let basic_env = build_env' syms parent in
@@ -3066,840 +2774,17 @@ and rebind_btype syms env excluded_dirs sr ts t: btypecode_t =
   | `BTYP_pointer t -> `BTYP_pointer (rbt t)
   | `BTYP_array (t1,t2) -> `BTYP_array (rbt t1, rbt t2)
   | `BTYP_void -> `BTYP_void
-  | `BTYP_binding (a,b) -> `BTYP_binding (rbt a,rbt b)
   | `BTYP_fix i -> `BTYP_fix i
   | `BTYP_var i -> failwith "Unexpected type variable in rebind_type"
   | _ -> failwith ("[rebind_type] Unexpected " ^ sbt syms.dfns t)
 
 
-(* this routine takes a bound type from an interface,
-   and applies the binding functor to produce a bound
-   type in the functors domain, which is a module.
-   Note that the target might be a typedef, so the result
-   is not necessarily unique. Rebind_type must be applied
-   to factor out the typedefs again.
-*)
-and map_type 
-  iface 
-  syms 
-  mmap ienv binding excluded_dirs isr msr ts t
-: btypecode_t = 
-  let mt t = map_type iface syms mmap ienv binding excluded_dirs isr msr ts t in
-  match t with
-  | `BTYP_inst (index,ts) ->
-    `BTYP_inst
-    (
-      get_unique_binding iface syms 
-        mmap ienv binding index excluded_dirs 
-        isr msr ts
-      ,
-      ts
-    )
-  | `BTYP_function (a, r) -> `BTYP_function (mt a, mt r)
-  | `BTYP_tuple ls -> `BTYP_tuple (map mt ls)
-  | `BTYP_sum ls -> `BTYP_sum (map mt ls)
-  | `BTYP_pointer t -> `BTYP_pointer (mt t)
-  | `BTYP_array (t1,t2) -> `BTYP_array (mt t1, mt t2)
-  | `BTYP_binding (a,b) ->
-    failwith "[map type] Unexpected type binding"
-
-  | `BTYP_void -> `BTYP_void
-  | `BTYP_fix i -> `BTYP_fix i
-  | `BTYP_var i -> failwith "Unexpected type variable in map_type"
-  | _ -> failwith ("[map_type] Unexpected " ^ sbt syms.dfns t)
-
-(* NOTE ON COMPARISONS: 
-  We don't allow a val to match a const. Probably,
-  we should: they're both 'constants', the only difference
-  is the form of initialisation: we'd write
-  val x:int = "1"; instead of const x:int = 1;
-  except that the initialiser of the first form looks
-  like a string. 
- 
-  Note that there IS a difference: 'consts' live 
-  in the global frame, values live in the thread frame.
-  This is ad hoc'ery: C++ constants can be initialised
-  independently of each other, Felix values can't.
-  
-  Note that we DO allow an function declaration to match
-  either a Felix function or a primitive function.
-*)
-
-and compare_defn 
-  iface 
-  syms 
-  mmap name 
-  ienv ientry 
-  menv mentry 
-  binding excluded_dirs 
-  isr msr (ts: btypecode_t list)
-=
-  (*
-  print_endline 
-  (
-    "comparing iface element '" ^ string_of_symdef ientry name [] ^ "'" ^
-    "\n with module element '"  ^
-    string_of_symdef mentry name [] ^ "'"
-  );
-  *)
-  let ibt t: btypecode_t = bind_type syms ienv excluded_dirs isr t in
-  let rt t: btypecode_t= rebind_btype syms menv excluded_dirs msr ts t in 
-  let mt t: btypecode_t = 
-    map_type iface 
-    syms 
-    mmap ienv binding 
-    excluded_dirs 
-    isr msr 
-    ts t
-  in
-  let rmb t: btypecode_t = rt (mt (ibt t)) in
-  let mbt t: btypecode_t = bind_type syms menv excluded_dirs msr t in
-    
-  match ientry,mentry with
-  | `SYMDEF_if_type,`SYMDEF_type_alias _
-  | `SYMDEF_if_type,`SYMDEF_abs _
-  | `SYMDEF_if_type,`SYMDEF_union _
-  | `SYMDEF_if_type,`SYMDEF_struct _
-  | `SYMDEF_if_type,`SYMDEF_if_type
-    ->   true
-
-  | `SYMDEF_fun (ips,iret,ict),`SYMDEF_fun (mps,mret,mct) ->
-    let it = `TYP_function ( typeof_list ips , iret) in
-    let mt = `TYP_function ( typeof_list mps , mret) in
-    let it = rmb it and mt = mbt mt in
-    ict = mct && 
-    it = mt
- 
-  | `SYMDEF_if_fun (it),`SYMDEF_fun (ps,ret,mct)  ->
-    let mt = `TYP_function ( typeof_list ps , ret) in
-    let it = rmb it and mt = mbt mt in
-    it = mt
-  
-  | `SYMDEF_if_fun (it),`SYMDEF_if_fun (mt) 
-    ->
-    let it = rmb it and mt = mbt mt in
-    it = mt
-    
-  | `SYMDEF_if_fun (it),`SYMDEF_function (ps,ret,_) ->
-    let mt = `TYP_function ( paramtype ps , ret) in
-    let it = rmb it and mt = mbt mt in
-    it = mt
-
-  | `SYMDEF_const (it,ict), `SYMDEF_const (mt,mct) ->
-    let it = rmb it and mt = mbt mt in
-    it = mt &&
-    ict = mct
-
-
-  | `SYMDEF_val (it), `SYMDEF_val (mt) 
-  | `SYMDEF_var (it), `SYMDEF_var (mt) ->
-    let it = rmb it and mt = mbt mt in
-    it = mt
-
-  | `SYMDEF_union (ics), `SYMDEF_union (mcs)
-  | `SYMDEF_struct (ics), `SYMDEF_struct (mcs) ->
-    List.fold_left2
-    (fun b (iname,it) (mname,mt) ->
-      let it = rmb it and mt = mbt mt in
-      b &&
-      iname = mname &&
-      it = mt
-    )
-    true ics mcs
-
-  | it,mt -> 
-    failwith 
-    (
-      "Unexpected pair matching interface to module:" ^
-      "\nIface  " ^ string_of_symdef it name [] ^
-      "\nModule " ^ string_of_symdef mt name [] 
-    )
-
-(* GIVEN an index, if the index refers to an entity
-   declared in the interface, return what it binds
-   to in the module,
-   otherwise just return it
-
-   These semantics to support binding a a type in
-   the interface down to a type in the module
-*)
-and get_unique_binding iface syms 
-  mmap ienv (binding: index_map_t) iindex excluded_dirs 
-  isr msr ts
-: bid_t 
-=
-  try Hashtbl.find binding iindex
-  with Not_found ->
-    match get_data syms.dfns iindex with
-    {id=iid;sr=isr;parent=iparent;vs=ivs;symdef=isymdef} ->
-    (*
-    print_endline ("get binding for " ^ iid ^ "<"^string_of_int iindex^">");
-    *)
-    if iparent <> Some iface 
-    then 
-    begin
-      (*
-      print_endline "Woops, the parent of the interface element isn't the interface";
-      *)
-      iindex 
-    end
-    else begin try
-      match Hashtbl.find mmap iid with
-      | NonFunctionEntry (Simple mindex) ->
-
-        (* NOTE: I'm not sure this is sound!
-           We insert the binding first, THEN check it,
-           to prevent infinite recursion with recursive
-           union and struct types -- this causes the
-           initial lookup in this routine to succeed
-           the second time around.
-        *)
-        Hashtbl.add binding iindex mindex;
-        begin match get_data syms.dfns mindex with
-        {id=mid;sr=msr;parent=mparent;vs=mvs;symdef=msymdef}->
-        assert(iid=mid);
-        (* print_endline "BUILD ENV, GET UNIQUE BINDING"; *)
-        let menv = build_env syms excluded_dirs mparent in
-        if 
-        (
-          compare_defn iface syms 
-          mmap mid ienv isymdef menv msymdef binding excluded_dirs
-          isr msr ts
-        )
-        then mindex
-        else 
-          failwith 
-          (
-            "interface entry '"^ iid ^ 
-            "' doesn't match the one in the module"
-          )
-        end
-
-      | NonFunctionEntry _ ->
-        failwith
-        (
-          "Expected Simple non function entry, got binding"
-        )
-      | FunctionEntry _ ->
-        failwith 
-        (
-          "Non function entry '" ^ iid ^ 
-          "' in interface, found functions in module"
-        )
-    with 
-      | Not_found -> 
-        failwith 
-        (
-          "Name " ^ iid ^ " of interface not found in module"
-        )
-    end
-
-and match_interface_entry 
-  iface ts syms 
-  mmap ienv binding excluded_dirs 
-  isr msr
-  name ientry 
-=
-  match ientry with
-  | NonFunctionEntry (Simple iindex) ->
-    let binds_to =
-      get_unique_binding iface syms mmap ienv binding iindex 
-      excluded_dirs isr msr []
-    in
-      (*
-      print_endline ("binding " ^ si iindex ^ " -> " ^ si binds_to);
-      *)
-      ()
-
-  | NonFunctionEntry _ ->
-    failwith
-    (
-      "Expected simple Nonfunction entry, got binding"
-    )
-  | FunctionEntry ls ->
-    List.iter
-    (fun iindex ->
-      match iindex with
-      | Simple iindex ->
-        begin match get_data syms.dfns iindex with
-        {id=iid;sr=iesr;parent=iparent;vs=ivs;symdef=isymdef} ->
-        try
-          match Hashtbl.find mmap name with
-          | NonFunctionEntry _ ->
-            failwith
-            (
-              "Function entry '" ^
-              name ^
-              "' in interface , found non function in module"
-            )
-          | FunctionEntry ls ->
-            begin try List.iter
-            (fun mindex ->
-              match mindex with
-              | Simple mindex ->
-                begin match get_data syms.dfns mindex with
-                {id=mid;sr=mesr;parent=mparent;vs=mvs;symdef=msymdef} ->
-                (* print_endline "BUILD ENV, MATCH INTERFACE ENTRY"; *)
-                let menv = build_env syms excluded_dirs mparent in
-                if 
-                (
-                  compare_defn iface syms 
-                  mmap name ienv isymdef menv msymdef binding excluded_dirs
-                  iesr mesr ts
-                )
-                then raise (Found mindex)
-                end
-              | _ -> failwith "Expected Simple"
-            )
-            ls
-            ;
-            failwith 
-            (
-              "interface entry '"^
-              string_of_symdef isymdef name ivs ^ "' in\n" ^
-              short_string_of_src iesr ^
-              "\ndoesn't match any one in the module\n" ^
-              short_string_of_src msr ^
-              "\nCandidates are\n" ^
-              String.concat "\n"
-              (
-                List.map 
-                (fun x -> match x with 
-                  | Simple index ->
-                    begin match get_data syms.dfns index with
-                    {vs=mvs;symdef=msymdef} -> string_of_symdef msymdef name mvs
-                    end
-                  | Bound (i,j) -> 
-                    "binding "  ^ 
-                    string_of_int i ^ 
-                    " => " ^
-                    string_of_int j
-                )
-                ls
-              )
-            )
-            with Found mindex-> 
-              (*
-              print_endline ("binding " ^ si iindex ^ " -> " ^ si mindex);
-              *)
-              Hashtbl.add binding iindex mindex
-            end
-        with 
-          | Not_found -> 
-            failwith 
-            (
-              "Name " ^ name ^ " of interface not found in module"
-            )
-        end
-      | _ -> 
-        failwith
-        (
-          "Expected simple entry, got binding"
-        )
-    )
-    ls
-  
-and match_interface 
-  (iface:int) (ts:btypecode_t list)
-  syms
-  (mmap:name_map_t)
-  (ienv:env_t)
-  (imap:name_map_t)
-  (excluded_dirs:int list)
-  isr msr
-=
-  (*
-  print_endline ("match interface " ^ string_of_int iface);
-  *)
-  let binding = Hashtbl.create 97 in
-  try 
-    Hashtbl.iter
-    (match_interface_entry iface ts
-      syms mmap ienv binding excluded_dirs 
-      isr msr
-    )
-    imap
-    ;
-    Some binding
-  with 
-    | Failure x -> 
-      print_endline ("WARNING: interface doesn't match module:\n" ^ x);
-      None
-
-and compose_bindings b1 b2 = (* reverse polish: b(i)= b2(b1(i)) *)
-  let b = Hashtbl.create 97 in
-  Hashtbl.iter
-  (fun i j ->
-    let k = Hashtbl.find b2 j in
-    Hashtbl.add b i k
-  )
-  b1
-  ;
-  b
-
-and rebind_entry binding v =
-  let apply ix = 
-    try 
-      Hashtbl.find binding ix 
-    with Not_found ->
-      failwith ("[rebind_entry] Can't find index " ^ string_of_int ix ^ " in module binding")
-  in
-  match v with
-  | NonFunctionEntry (Simple iix) ->
-    let bix = apply iix in
-    NonFunctionEntry (Bound (iix,bix))
-
-  | NonFunctionEntry _ -> 
-    failwith "Expected Simple interface entry"
-
-  | FunctionEntry ls ->
-    let ls' = 
-      List.map
-      (fun entry -> match entry with
-        | Simple iix ->
-          let bix = apply iix in
-          Bound (iix,bix)
-        | _ -> failwith "Expected Simple interface entry"
-      )
-      ls 
-    in
-    FunctionEntry ls'
-
-and apply_binding imap binding : name_map_t = (* reverse polish *)
-  let bmap = Hashtbl.create 97 in
-  let add k v = Hashtbl.add bmap k v in
-  Hashtbl.iter 
-  (fun k v -> 
-    (* print_endline ("Binding name " ^ k); *)
-    if k <> "root"
-    then
-      add k (rebind_entry binding v)
-  )
-  imap
-  ;
-  bmap
-
-and handle_coercion syms env sr excluded_dirs  m t : module_rep_t =
-  (* print_endline "HANDLING COERCION"; *)
-  let m' = eval_module_expr syms env excluded_dirs m in
-  let t' = bind_type syms env excluded_dirs sr t in
-  handle_module_coercion syms env sr excluded_dirs m' t'
-
-and handle_module_coercion syms env sr excluded_dirs m t =
-  match t with
-  | `BTYP_var i -> failwith "Unexpected type variable in handle_module_coercion"
-  | `BTYP_sum _ -> failwith "Can't handle module sums yet"
-  | `BTYP_tuple typs ->
-    begin match m with
-    | Module_product ms ->
-      let nms = List.length ms and ntyps = List.length typs in
-      if nms <> ntyps then 
-        Module_product 
-        (
-          List.map2 
-          (handle_module_coercion syms env sr excluded_dirs) 
-          ms typs
-        )
-      else failwith 
-      (
-        "Can't coerce product of " ^ string_of_int nms ^ " modules " ^
-        "with " ^ string_of_int ntyps ^ " interfaces"
-      )
-    | _ -> 
-      failwith 
-      (
-        "Coercion to interface tuple requires module tuple"
-      )
-    end
-
-  | `BTYP_inst (index,ts') ->
-    if length ts' <> 0 
-    then failwith "Can't handle generic modules yet"
-    ;
-
-    begin match get_data syms.dfns index with
-    {id=id;sr=isr;parent=parent;vs=vs;pubmap=imap;dirs=dirs;symdef=symdef}->
-
-    (* print_endline "BUILD_ENV, MODULE COERCION"; *)
-    let ienv = build_env syms excluded_dirs (Some index) in
-    begin match symdef with
-    | `SYMDEF_interface  ->
-      begin match m with
-      | Functor_set _ ->
-        failwith "Can't coerce functor (yet)"
-
-      | Module_product _ ->
-        failwith "Can't coerce module product to single interface"
-        
-      | Simple_module (impl,ts, module_map,dirs) ->
-        begin match
-          match_interface index ts'
-          syms 
-          module_map ienv imap 
-          excluded_dirs 
-          isr sr
-        with
-          | Some binding ->
-            Bound_module (index,impl,binding)
-          | None -> failwith "Module doesn't match interface"
-        end
-      | Bound_module (iface,impl,binding) ->
-        begin match get_data syms.dfns iface with
-        {sr=isr;pubmap=module_map;dirs=dirs;symdef=ientry} ->
-        match ientry with
-        | `SYMDEF_interface ->
-          begin match
-            match_interface index ts'
-              syms 
-              module_map 
-              ienv imap 
-              excluded_dirs 
-              isr sr
-          with
-            | Some binding' ->
-              print_endline ("Interface matches interface '"^id^"' OK");
-              let binding=compose_bindings binding' binding in
-              print_endline "Binding is:";
-              Hashtbl.iter
-              (fun i j -> 
-                print_endline 
-                (
-                  match get_data syms.dfns i with {id=iid;symdef=ie} ->
-                  match get_data syms.dfns j with {id=mid;symdef=me} ->
-                  iid ^
-                  "[" ^ string_of_int i ^ "] -> " ^
-                  mid ^
-                  "[" ^ string_of_int j ^ "]"
-                )
-              )
-              binding
-              ;
-              Bound_module (index,impl,binding)
-
-            | None -> failwith "Interface doesn't match interface"
-          end
-        | _ -> failwith "Expected interface"
-        end
-      end
-
-    | x -> 
-      failwith 
-      (
-        "[eval_module_expr]: Expected interface, got: " ^ 
-        string_of_symdef x id vs
-      )
-    end
-    end
-
-  | _ -> 
-    failwith 
-    (
-      "Expected module type to be an interface name (functors later), got: " ^
-      sbt syms.dfns t
-    )
-
-and compare_module_expr_with_type syms excluded_dirs sr t m =
-  match m with
-  | Module_product ls -> 
-    begin match t with
-    | `BTYP_tuple ts ->
-      if List.length ts = List.length ls
-      then
-        List.fold_left2
-        (fun b t m -> b && 
-          (
-            compare_module_expr_with_type 
-            syms excluded_dirs sr t m
-          )
-        )
-        true ts ls
-      else false
-    | _ -> false
-    end
- | Bound_module (index,_,_) ->
-   begin match t with
-   | `BTYP_inst (index2,ts) -> index = index2
-   | _ -> false
-   end
- | Simple_module (impl,ts, mmap,dirs) ->
-   begin match t with
-   | `BTYP_inst (iface,ts) ->
-     begin match get_data syms.dfns iface with
-     {sr=isr;parent=p;vs=vs;pubmap=imap;dirs=dirs;symdef=ientry} ->
-     match ientry with
-     | `SYMDEF_interface ->
-       begin match
-         (* print_endline "BUILD ENV, COMPARE MODULE EXPR"; *)
-         let ienv = build_env syms excluded_dirs p in
-         match_interface iface ts
-         syms 
-         mmap ienv imap 
-         excluded_dirs isr sr
-       with
-        | Some binding' -> true
-        | None -> false
-       end
-     | _ -> failwith "Expected interface"
-     end
-   | _ -> false
-   end
- | Functor_set _ -> failwith "Can't compare functor set with single type"
- 
-and resolve_functor_overload syms env excluded_dirs sr ls m' =
-  (* print_endline "RESOLVING FUNCTOR OVERLOAD"; *)
-  let ts = [] in (* KLUDGE *)
-  List.filter
-  (fun index -> 
-    match get_data syms.dfns index with
-    {id=id;sr=sr;parent=parent;vs=vs;pubmap=nm;dirs=dirs;symdef=entry} ->
-    match entry with 
-    | `SYMDEF_typed_functor (ps,t,e) ->
-      let t = 
-        match List.map snd ps  with
-        | [x] -> x
-        | x -> `TYP_tuple x
-      in
-      let t = bind_type syms env excluded_dirs sr t 
-      in 
-        (* print_endline ("Type of functor signature is " ^ sbt syms.dfns t); *)
-        compare_module_expr_with_type syms excluded_dirs sr t m'
-    | `SYMDEF_untyped_functor (ps,e) ->
-      let t = 
-        match List.map snd ps  with
-        | [x] -> x
-        | x -> `TYP_tuple x
-      in
-      let t = bind_type syms env excluded_dirs sr t 
-      in 
-        (* print_endline ("Type of functor signature is " ^ sbt syms.dfns t); *)
-        compare_module_expr_with_type syms excluded_dirs sr t m'
-    | _ -> failwith "Expected FUnctor"
-  )
-  ls
-
-
-and copy_entry syms parent binding_list index =
-  let index' = !(syms.counter) in incr (syms.counter);
-  match get_data syms.dfns index with
-  {id=id;sr=sr;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=entry}->
-  let privtab' = copy_table syms (Some index') [] privtab in
-  let pubtab' = Hashtbl.copy privtab' in (* HACKED!!!!! *)
-  (*
-  let ps = 
-    List.map 
-    (
-      fun (s,(i,t)) -> 
-        let i'= !(syms.counter) in 
-        incr (syms.counter); 
-         Hashtbl.add syms.dfns i' (s,sr,Some index',`SYMDEF_parameter t)
-        (s,(i',t))
-    ) 
-    ps 
-  in
-  *)
-  let kind,symdef = 
-    match entry with
-    | `SYMDEF_function (ps,t,es) ->
-      Other,`SYMDEF_function (ps,t,es)
-      
-    | `SYMDEF_typed_functor (ps,t,es) ->
-      Other,`SYMDEF_typed_functor (ps,t,es)
-
-    | `SYMDEF_untyped_functor (ps,es) ->
-      Other,`SYMDEF_untyped_functor (ps,es)
-
-    | `SYMDEF_parameter _ ->
-      begin try
-        let iidx,midx,binding = List.assoc id binding_list in
-        Parameter,`SYMDEF_module_binding 
-        (
-          `AST_bound_module (sr,(iidx,midx,binding))
-        ) 
-      with Not_found -> Other,entry
-      end
-    | _ -> Other,entry
-  in
-    if syms.compiler_options.print_flag then
-    print_endline 
-    (
-      "//   " ^ string_of_int index' ^ 
-      " -> " ^
-      (match kind with 
-        | Other -> "copyof " 
-        | Parameter -> "binding "
-      )^ 
-      id ^ "["^string_of_int index^"]: " ^ 
-      short_string_of_src sr
-    );
-    Hashtbl.add syms.dfns index' 
-    {
-      id=id;sr=sr;parent=parent;vs=vs;
-      pubmap=pubtab';
-      privmap=privtab';
-      dirs=dirs;
-      symdef=symdef
-    }
-    ;
-    index'
-
-and copy_table syms parent binding_list name_map =
-  let name_map' = Hashtbl.create 97 in
-  Hashtbl.iter
-  (fun k v -> 
-    (* KLUDGE *)
-    if k <> "root"
-    then
-    match v with
-    | NonFunctionEntry (Simple i) ->
-      let i' = copy_entry syms parent binding_list i in
-      Hashtbl.add name_map' k (NonFunctionEntry (Simple i'))
-      
-    | NonFunctionEntry _ -> 
-      failwith "instantiate not expecting bound entry"
-    | FunctionEntry ls ->
-      let fs = 
-        List.map
-        (fun e -> match e with
-          | Simple i ->
-            Simple (copy_entry syms parent binding_list i)
-          | _ -> 
-            failwith "instantiate not expecting bound entry"
-        )
-        ls
-      in
-        Hashtbl.add name_map' k (FunctionEntry fs)
-  )
-  name_map
-  ;
-  name_map'
-
-and instantiate_functor syms
-  sr excluded_dirs findex (m: module_rep_t) 
-: module_rep_t =
-  (* print_endline "CHECKING FOR FUNCTOR INSTANTIATION"; *)
-  try 
-    let afidx = Hashtbl.find syms.freg (findex, m) in
-    match get_data syms.dfns afidx with
-    | {pubmap=name_map;dirs=dirs;symdef=`SYMDEF_module} -> Simple_module (afidx,[],name_map,dirs)
-    | _ -> failwith "Expected instantiation to be simple module"
-  with Not_found ->
-  (* print_endline "INSTANTIATING FUNCTOR"; *)
-  match get_data syms.dfns findex with
-  {parent=parent;vs=vs;pubmap=name_map;dirs=dirs;symdef=entry} ->
-  let ps,asms= 
-    match entry with 
-    | `SYMDEF_typed_functor (ps,rt,asms) -> ps,asms
-    | `SYMDEF_untyped_functor (ps,asms) -> ps,asms
-    | _ -> failwith "Expected functor"
-  in
-  let env = build_env syms excluded_dirs parent in (* parent?? *)
-
-  let rec aux ps (m:module_rep_t) : functor_arg_binding_t =
-    match m with
-    | Bound_module (iindex,impl,binding) ->
-      begin match ps with
-      | [x] -> [fst x,(iindex,impl,binding)]
-      | _ -> failwith "Multiple parameters require module product argument"
-      end
-
-    | Simple_module (impl,ts,mmap,dirs) -> 
-      begin match ps with
-      | [x] ->
-        let ts = [] in (* KLUDGE *)
-        let t = bind_type syms env excluded_dirs sr (snd x) in
-        begin match handle_module_coercion syms env sr excluded_dirs m t with
-        | Bound_module (iindex,impl,binding)  -> 
-          [fst x, (iindex,impl,binding)]
-        | _ -> failwith "Expected bound module result" 
-        end
-      | _ -> failwith "Multiple parameters require module product argument"
-      end
-
-    | Functor_set _ -> failwith "Expected bound module, got Functor set"
-    | Module_product ls -> 
-      if List.length ls = List.length ps 
-      then List.concat ( List.map2 (fun p m -> aux [p] m) ps ls)
-      else failwith "Module product wrong length"
-
-  in 
-    let binding = aux ps m in
-    let mindex = !(syms.counter) in incr (syms.counter); 
-    let mname = "_module_" ^ string_of_int mindex in 
-    (*
-    print_endline 
-    (
-      "// " ^ string_of_int mindex ^ 
-      " -> instance " ^ mname ^ ": " ^ 
-      short_string_of_src sr
-    );
-    *)
-    Hashtbl.add syms.freg (findex,m) mindex; 
-    let mtable = copy_table syms (Some mindex) binding name_map in
-    Hashtbl.add syms.dfns mindex 
-    {
-      id=mname;sr=sr;parent=parent;
-      vs=vs;pubmap=mtable;privmap=mtable;
-      dirs=dirs;symdef=`SYMDEF_module
-    }; 
-    if syms.compiler_options.print_flag then
-    begin
-      print_endline "Instantiated Functor has table:";
-      Hashtbl.iter
-      (fun k v -> 
-        print_endline (" " ^ k ^ " -> " ^ string_of_entry_set v)
-      )
-      mtable
-    end
-    ;
-    Simple_module (mindex,[],mtable,dirs)
-
-and handle_functor_application syms env sr excluded_dirs f m =
-  (* print_endline "HANDLING FUNCTOR APPLICATION"; *)
-  let m' = eval_module_expr syms env excluded_dirs m in
-  let f' = eval_module_expr syms env excluded_dirs f in
-  match f' with
-  | Functor_set ls ->
-    let matches = resolve_functor_overload syms env excluded_dirs sr ls m' in
-    begin match matches with
-    | [index] -> 
-        instantiate_functor syms sr excluded_dirs index m'
-    | [] -> failwith "No match overloading functor"
-    | _ -> failwith "Too many matches overloading functor"
-    end
-
-  | _ -> failwith "Expected functor"
-
-
 and check_module syms excluded_dirs sr entries ts =
     begin match entries with
-    | FunctionEntry ls -> 
-      let ls = 
-        List.map
-        (function 
-          | Simple index -> 
-            begin match get_data syms.dfns index with
-            | {symdef=`SYMDEF_typed_functor _} -> index
-            | {symdef=`SYMDEF_untyped_functor _} -> index
-            | {id=id;vs=vs;sr=sr;symdef=entry} -> 
-              failwith 
-              (
-                "Expected Functor, got : " ^
-                string_of_symdef entry id vs ^ "\nin "^
-                short_string_of_src sr
-              )
-            end
-          | Bound _ -> failwith "Not expecting bound entry for functor"
-        )
-        ls
-      in Functor_set ls
-
     | NonFunctionEntry (Simple index) ->
       begin match get_data syms.dfns index with
       | {dirs=dirs;pubmap=table;symdef=`SYMDEF_module} -> 
         Simple_module (index,ts,table,dirs)
-      | {parent=parent;symdef=`SYMDEF_module_binding e} ->
-        let env' = build_env syms excluded_dirs parent in
-        eval_module_expr syms env' excluded_dirs e
       | {id=id;sr=sr'} -> 
         failwith 
         (
@@ -3915,18 +2800,6 @@ and check_module syms excluded_dirs sr entries ts =
       )
     end
 
-and make_bound binding x = 
-  let bi i = Bound (i, Hashtbl.find binding i) in
-  let be e = 
-    match e with 
-    | Simple i -> bi i
-    | Bound _ -> failwith "Entry already bound!"
-  in
-  match x with
-  | NonFunctionEntry e -> NonFunctionEntry (be e)
-  | FunctionEntry fs -> FunctionEntry (List.map be fs)
-
-
 (* the top level table only has a single entry,
   the root module, which is the whole file
 
@@ -3938,20 +2811,6 @@ and eval_module_expr syms env excluded_dirs e : module_rep_t =
   print_endline ("Handling module expression '"^string_of_expr e^"'"); 
   *)
   match e with
-  | `AST_tuple (sr,es) ->
-    Module_product (List.map (eval_module_expr syms env excluded_dirs) es)
-
-  | `AST_coercion (sr,(m,t)) ->
-    handle_coercion syms env sr excluded_dirs m t
-
-  | `AST_bound_module (sr,(iface,impl,binding)) ->
-    Bound_module (iface,impl,binding)
-
-  | `AST_apply (sr,(f,m)) ->
-    let x = handle_functor_application syms env sr excluded_dirs f m in
-    (* print_endline "FUNCTOR APPLIED"; *)
-    x
-
   | `AST_name (sr,name,ts) ->
     let entries = lookup_name_in_env env sr name in
     check_module syms excluded_dirs sr entries ts
@@ -3970,26 +2829,6 @@ and eval_module_expr syms env excluded_dirs e : module_rep_t =
           )
         end
 
-      | Bound_module (iface,impl,binding) ->
-        begin match get_data syms.dfns iface with
-        { id=id;sr=sr;pubmap=table;symdef=`SYMDEF_interface}  ->
-          begin match lookup_name_in_htab table name with
-          | Some x -> 
-            let entries = make_bound binding x in
-            check_module syms excluded_dirs sr entries ts
-
-          | None -> 
-            clierr sr
-            (
-              "Can't find " ^ name ^ " in module" 
-            )
-          end
-
-        | _ -> failwith "Expected interface"
-        end
-
-      | Functor_set _ -> failwith "Can't lookup in functor set"
-      | Module_product _ -> failwith "Can't lookup in module product"
     end 
 
   | _ ->

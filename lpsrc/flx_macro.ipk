@@ -372,8 +372,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   | `AST_case_tag (sr, i) -> e
   | `AST_typed_case (sr, i, t) -> e
-  | `AST_bound_module _ -> failwith "Unexpected bound module"
-
 
   | `AST_ellipsis (sr) -> failwith "Unexpected ellipsis ..."
 
@@ -478,7 +476,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   (* IDENTIFIER RENAMING NOT SUPPORTED IN TYPES *)
   | `AST_type_alias (sr, id, vs, t) ->  tack st
-
+ 
   | `AST_ctypes (sr, ids) ->  
     iter 
     (fun (sr,id) -> 
@@ -522,12 +520,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   (* IDENTIFIER RENAMING NOT SUPPORTED IN EXPORT *)
   | `AST_export_fun (sr, sn, s) ->  tack st
   | `AST_export_type (sr, sn, s) ->  tack st
-
-  (* IDENTIFIER RENAMING NOT SUPPORTED IN TYPES *)
-  | `AST_type (sr, id, vs)  ->  tack st
-
-  | `AST_function_decl (sr, id, vs, t) ->  
-    tack (`AST_function_decl (sr,mi sr id, vs, t))
 
   | `AST_label (sr, id) ->  
     reachable:=true; 
@@ -582,21 +574,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_untyped_module (sr, id, vs, sts) ->
     tack (`AST_untyped_module (sr, mi sr id, vs, ms sts))
 
-  | `AST_typed_module (sr, id, vs, t, sts) ->
-    tack (`AST_typed_module (sr, mi sr id, vs, t, ms sts))
-
-  | `AST_module_binding (sr, id, vs, e) ->
-    tack (`AST_module_binding (sr, mi sr id, vs, me e))
-
-  | `AST_typed_functor (sr, id, vs, ps, t, sts) ->
-    tack (`AST_typed_functor (sr, mi sr id, vs, ps, t, ms sts))
-
-  | `AST_untyped_functor (sr, id, vs, ps, sts) ->
-    tack (`AST_untyped_functor (sr, mi sr id, vs, ps, ms sts))
-
-  | `AST_interface (sr, id, vs, sts) ->
-    tack (`AST_interface (sr, mi sr id, vs, ms sts))
-  
   | `AST_ifgoto (sr, e , id) -> 
     let e = me e in
     begin match e with

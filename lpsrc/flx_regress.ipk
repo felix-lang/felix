@@ -198,15 +198,6 @@ endl;
 assert(1<2&<3&<4);
 
 
-@select(tangler('test/rt06.flx'))
-// open bound module
-#include <std.flx>
-interface I { proc print_endl:int; }
-module M { proc print_endl (a:int) { print a; endl; } }
-module B = M:I;
-open B;
-print_endl 1;
-
 @select(tangler('test/rt07.flx'))
 header "#include <stdio.h>";
 header "#include <assert.h>";

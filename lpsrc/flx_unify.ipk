@@ -312,7 +312,6 @@ let fix i t =
     | `BTYP_inst (k,ts) -> `BTYP_inst (k, map aux ts)
     | `BTYP_tuple ts -> `BTYP_tuple (map aux ts)
     | `BTYP_sum ts -> `BTYP_sum (map aux ts)
-    | `BTYP_binding (a,b) -> `BTYP_binding (aux a, aux b)
     | `BTYP_function (a,b) -> `BTYP_function (aux a, aux b)
     | `BTYP_pointer a -> `BTYP_pointer (aux a)
     | `BTYP_array (a,b) -> `BTYP_array (aux a, aux b)
@@ -367,7 +366,6 @@ let rec unification dfns eqns: (int * btypecode_t) list =
       | `BTYP_pointer t1, `BTYP_pointer t2 ->
         eqns := (t1,t2) :: !eqns
 
-      | `BTYP_binding (t11, t12), `BTYP_binding (t21, t22)
       | `BTYP_array (t11, t12), `BTYP_array (t21, t22)
       | `BTYP_function (t11, t12), `BTYP_function (t21, t22) ->
         eqns := (t11,t21) :: (t12,t22) :: !eqns
@@ -566,7 +564,6 @@ let rec type_eq' trail depth t1 t2 =
       true ts1 ts2
     else false
 
-  | `BTYP_binding (s1,d1),`BTYP_binding (s2,d2)
   | `BTYP_array (s1,d1),`BTYP_array (s2,d2) 
   | `BTYP_function (s1,d1),`BTYP_function (s2,d2) 
     -> te s1 s2 && te d1 d2
@@ -608,7 +605,6 @@ let unfold t =
   | `BTYP_array (a,b) -> `BTYP_array (uf a, uf b)
   | `BTYP_function (a,b) -> `BTYP_function (uf a, uf b)
   | `BTYP_pointer a -> `BTYP_pointer (uf a)
-  | `BTYP_binding (a,b) -> `BTYP_binding (uf a, uf b)
   | `BTYP_fix i when (-i) = depth -> t
   | `BTYP_fix i when (-i) > depth -> 
     failwith ("[unfold] Fix point outside term, depth="^string_of_int i)
@@ -629,7 +625,6 @@ let fold t =
     | `BTYP_inst (_,ls)
     | `BTYP_tuple ls -> iter ax ls
 
-    | `BTYP_binding (a,b)
     | `BTYP_array (a,b)
     | `BTYP_function (a,b) -> ax a; ax b
 
@@ -665,7 +660,6 @@ let var_occurs t =
     | `BTYP_inst (_,ls)
     | `BTYP_tuple ls -> iter aux ls
 
-    | `BTYP_binding (a,b)
     | `BTYP_array (a,b)
     | `BTYP_function (a,b) -> aux a; aux b
 

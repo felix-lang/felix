@@ -66,9 +66,6 @@ let find_references bbdfns name_map ts =
     try
       match entryset with
       | FunctionEntry _ -> ()
-      | NonFunctionEntry (Bound _) -> 
-        failwith "Not expecting bound entry"
-
       | NonFunctionEntry (Simple idx) ->
       let _,_,_,bbdfn = 
         (* try *)
@@ -458,8 +455,6 @@ let find_variable_indices syms index =
     (fun id entryset -> 
       match entryset with
       | FunctionEntry _ -> ()
-      | NonFunctionEntry (Bound _) ->
-        failwith "Not expecting bound entry"
       | NonFunctionEntry (Simple idx) ->
       let id2,parent',vs,name_map2,symdef = 
         match try Hashtbl.find syms.dfns idx 
@@ -2109,27 +2104,6 @@ try
   let parse_time = tim() in
   if compiler_options.print_flag
   then print_endline ("//PARSE OK time " ^ string_of_float parse_time);
-
-  (* IF THERE WAS NO INTERFACE FILE, GENERATE ONE *)
-  if not have_interface 
-  then begin
-
-    if compiler_options.print_flag
-    then print_endline "//No interface file found: generating one";
-    let h = open_out iface_file_name in
-    let iface = build_interface parse_tree in
-    List.iter 
-    (
-      fun x->
-        output_string h
-        (
-          (string_of_statement 0 x)^"\n"
-        )
-    ) 
-    iface;
-    close_out h
-  end
-  ;
 
   if compiler_options.print_flag 
   then print_endline "//DESUGARING";

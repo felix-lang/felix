@@ -32,17 +32,6 @@ open Flx_bexe
 open List
 open Flx_generic
 
-let rec proper_descendant dfns parent =
-  match parent with
-  | None -> true
-  | Some parent -> 
-    match Hashtbl.find dfns parent with
-    | {symdef=`SYMDEF_interface  }
-    | {symdef=`SYMDEF_typed_functor _}
-    | {symdef=`SYMDEF_untyped_functor _ }
-      -> false
-    | {parent=parent} -> proper_descendant dfns parent 
-
 let find_param name_map s =
   match Hashtbl.find name_map s with
   | NonFunctionEntry (Simple i) -> i
@@ -57,8 +46,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
   (*
   print_endline ("Parent is " ^ (match parent with | None -> "none" | Some i -> si i));
   *) 
-  if proper_descendant syms.dfns parent
-  then begin
+  begin
     (* let env = build_env syms [] parent in  *)
     let env = build_env syms [] (Some i) in 
     let vs = find_vs syms i in
@@ -68,14 +56,9 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
     (* Pure declarations of functions, modules, and type
        don't generate anything. Variable dcls do, however.
     *)
-    | `SYMDEF_interface
-    | `SYMDEF_if_fun _ 
     | `SYMDEF_module
-    | `SYMDEF_typed_functor _
-    | `SYMDEF_untyped_functor _
-    | `SYMDEF_module_binding _
     | `SYMDEF_typevar _
-    | `SYMDEF_if_type  -> ()
+      -> ()
 
     | `SYMDEF_function (ps,rt,exes) -> 
       let bps : (string * (int * btypecode_t)) list = 
@@ -116,9 +99,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       | None -> failwith "[bbind_sym] expected parameter to have a parent" 
       | Some ip ->
         match Hashtbl.find syms.dfns ip with
-        | {symdef=`SYMDEF_function _}
-        | {symdef=`SYMDEF_typed_functor _}
-        | {symdef=`SYMDEF_untyped_functor _}->
+        | {symdef=`SYMDEF_function _} ->
           let t = typeofindex syms [] i in
           Hashtbl.add bbdfns i (name,parent,sr,`BBDCL_val (vs,t));
           Hashtbl.add syms.varmap i t;
@@ -404,24 +385,6 @@ try
   print_endline (Flx_print.string_of_compilation_unit parse_tree);
   print_endline "//PARSE OK";
 
-  (* IF THERE WAS NO INTERFACE FILE, GENERATE ONE *)
-  if not have_interface 
-  then begin
-    print_endline "//No interface file found: generating one";
-    let h = open_out iface_file_name in
-    let iface = build_interface parse_tree in
-    List.iter 
-    (
-      fun x->
-        output_string h
-        (
-          (string_of_statement 0 x)^"\n"
-        )
-    ) 
-    iface;
-    close_out h
-  end
-  ;
   let include_dirs =  (Filename.dirname input_file_name) :: compiler_options.include_dirs in
   let compiler_options = { compiler_options with include_dirs = include_dirs } in
   let syms = { syms with compiler_options = compiler_options } in

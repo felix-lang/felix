@@ -241,7 +241,6 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       let dummy_sr = ("bind exes",0,0,0,0) in
       begin match lun dummy_sr s with
       | NonFunctionEntry (Simple index) -> tack (`BEXE_read (sr,index))
-      | NonFunctionEntry _ -> failwith "not expecting bound entry"
       | FunctionEntry _ -> failwith "Can't read function!"
       end
 
@@ -308,7 +307,6 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
           print_vs parent_vs
           
         )
-      | NonFunctionEntry _ -> failwith "Not expecting bound entry"
       end
 
     | `EXE_assign (l,r) -> 

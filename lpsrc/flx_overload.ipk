@@ -44,7 +44,6 @@ type overload_result =
 
 type result = 
   | Unique of overload_result
-  | Pair of overload_result * int
   | Fail
 
 
@@ -63,12 +62,6 @@ let sig_of_symdef symdef name = match symdef with
 
   | `SYMDEF_function (ps,r,_)
     -> paramtype ps
-
-  | `SYMDEF_if_fun (t) -> 
-    begin match t with
-    | `TYP_function (a,r) -> a
-    | _ -> failwith "[sig_of_symdef] Expected function to have function type"
-    end
 
   | `SYMDEF_struct ls ->
     typeof_list (map snd ls)
@@ -227,11 +220,6 @@ let overload
       | None -> Fail
       )
 
-    | Bound (i,j) ->
-      (match consider i with
-      | Some x -> Pair (x,j)
-      | None -> Fail
-      )
   in
   let fun_defs = List.map aux fs in
   let candidates = 
@@ -239,7 +227,6 @@ let overload
     List.filter 
     (fun result -> match result with
       | Unique _ -> true
-      | Pair _ -> true
       | Fail -> false
     ) 
     fun_defs
@@ -273,7 +260,7 @@ let overload
 
   let candidates = fold_left
   (fun oc r ->
-     match r with Unique (_,c,_,_) | Pair ((_,c,_,_),_) -> 
+     match r with Unique (_,c,_,_) -> 
      (*
      print_endline ("Considering candidate sig " ^ sbt syms.dfns c);
      *)
@@ -285,7 +272,6 @@ let overload
          *)
          r::lhs (* return all non-greater elements plus candidate *)
        | (Unique(i,typ,mgu,ts) as x)::t 
-       | (Pair((i,typ,mgu,ts),_) as x) ::t 
        ->
          (*
          print_endline (" .. comparing with " ^ sbt syms.dfns typ);
@@ -320,8 +306,6 @@ let overload
   | [Unique (i,t,mgu,ts)] -> 
     Some (Simple i,t,mgu,ts)
 
-  | [Pair ((i,t,mgu,ts),j)] -> 
-    Some (Bound (i,j),t,mgu,ts)
   | [] -> None
   | _ -> 
     clierr sr 
@@ -330,8 +314,7 @@ let overload
       " with argument type " ^ sbt syms.dfns sign ^
       "\nOf the matching candidates, the following are most specialised ones are incomparable\n" ^
       catmap "\n" (function 
-        | Unique (i,t,_,_) 
-        | Pair ((i,t,_,_),_) ->
+        | Unique (i,t,_,_) ->
           qualified_name_of_index syms.dfns i ^ "<" ^ si i ^ "> sig " ^ sbt syms.dfns t
         | Fail -> assert false
       ) 

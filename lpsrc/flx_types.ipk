@@ -308,8 +308,6 @@ and expr_t =
 
   | `AST_type_match of range_srcref * (typecode_t * (tpattern_t * typecode_t) list)
    
-  (* hacks .. *)
-  | `AST_bound_module of range_srcref * (bid_t * bid_t * index_map_t)
   ]
 
 @head(3,'Pattern')
@@ -406,13 +404,6 @@ and statement_t =
  
   (* module system *)
   | `AST_untyped_module of range_srcref * id_t * id_t list * statement_t list  
-  | `AST_typed_module of range_srcref * id_t * id_t list * typecode_t * statement_t list  
-  | `AST_module_binding of range_srcref * id_t * id_t list * expr_t
-  | `AST_typed_functor of range_srcref * id_t * id_t list * parameter_t list * typecode_t * statement_t list
-  | `AST_untyped_functor of range_srcref * id_t * id_t list * parameter_t list * statement_t list
-  | `AST_interface of range_srcref * id_t * id_t list * statement_t list
-  | `AST_type of range_srcref * id_t * id_t list 
-  | `AST_function_decl of range_srcref * id_t * id_t list * typecode_t
  
   (* control structures: primitives *)
   | `AST_label of range_srcref * id_t
@@ -533,15 +524,7 @@ type dcl_t =
 
   (* module system *)
   | `DCL_module of       asm_t list  
-  | `DCL_typed_functor of      parameter_t list * typecode_t * asm_t list
-  | `DCL_untyped_functor of    parameter_t list * asm_t list
-  | `DCL_module_binding of expr_t
-  | `DCL_interface of    asm_t list
 
-  (* interface elements *)
-  | `DCL_if_fun of       typecode_t
-  | `DCL_type
-  
   (* binding structures [prolog] *)
   | `DCL_abs of          bool * c_t (* bool is completeness flag *)
   | `DCL_const of        typecode_t * c_t
@@ -560,7 +543,6 @@ and asm_t =
  
 and entry_kind_t = 
   | Simple of int
-  | Bound of int * int
 
 and entry_set_t =
   | FunctionEntry of entry_kind_t list
@@ -568,9 +550,6 @@ and entry_set_t =
   
 and module_rep_t = 
   | Simple_module of bid_t * typecode_t list * name_map_t * dir_t list
-  | Bound_module of bid_t * bid_t * index_map_t
-  | Functor_set of bid_t list
-  | Module_product of module_rep_t list
 
 and name_map_t = (string, entry_set_t) Hashtbl.t
 
@@ -591,7 +570,6 @@ type 't b0typecode_t' =
   | `BTYP_pointer  of 't 
   | `BTYP_array of 't * 't 
   | `BTYP_void                       
-  | `BTYP_binding of 't * 't 
   | `BTYP_fix of int      
   | `BTYP_var of int     
   ]
@@ -720,14 +698,8 @@ type symbol_definition_t =
   | `SYMDEF_function of parameter_t list * typecode_t * sexe_t list
 
   | `SYMDEF_match_check of  pattern_t * int 
-  | `SYMDEF_interface 
-  | `SYMDEF_typed_functor of parameter_t list * typecode_t * sexe_t list
-  | `SYMDEF_untyped_functor of parameter_t list * sexe_t list 
   | `SYMDEF_module
-  | `SYMDEF_if_type
-  | `SYMDEF_if_fun of typecode_t
   
-  | `SYMDEF_module_binding of expr_t
   | `SYMDEF_const of typecode_t * c_t
   | `SYMDEF_var of  typecode_t
   | `SYMDEF_val of  typecode_t
@@ -848,7 +820,6 @@ let map_b0type f = function
   | `BTYP_function (a,b) -> `BTYP_function (f a, f b)
   | `BTYP_pointer t->  `BTYP_pointer (f t)
   | `BTYP_array (t1,t2)->  `BTYP_array (f t1, f t2)
-  | `BTYP_binding (a,b) -> `BTYP_binding (f a, f b)
   | x -> x
 
 let map_btype f = function
@@ -869,7 +840,6 @@ let iter_b0type f = function
   | `BTYP_function (a,b) -> f a; f b
   | `BTYP_pointer t->  f t
   | `BTYP_array (t1,t2)->  f t1; f t2
-  | `BTYP_binding (a,b) -> f a; f b
   | x -> ()
 
 let iter_btype f = function
@@ -1003,16 +973,11 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_expr (s,_,_)
   | `AST_letin (s,_)
 
-  | `AST_bound_module (s,_)
     -> s
 
 let src_of_stmt e = match e with
   | `AST_public (s,_,_)
   | `AST_private (s,_)
-  | `AST_interface (s,_,_,_)
-  | `AST_module_binding (s,_,_,_)
-  | `AST_typed_functor (s,_,_,_,_,_)
-  | `AST_untyped_functor (s,_,_,_,_)
   | `AST_label (s,_)
   | `AST_goto (s,_)
   | `AST_function (s,_, _, _ , _, _)
@@ -1058,11 +1023,9 @@ let src_of_stmt e = match e with
   | `AST_noreturn_code (s, _) 
   | `AST_union (s, _,_, _ ) 
   | `AST_struct (s,_, _, _)
-  | `AST_typed_module (s,_, _,_,_)
   | `AST_untyped_module (s,_,_,_)
   | `AST_export_fun (s, _,_)
   | `AST_export_type (s, _,_)
-  | `AST_function_decl (s,_,_,_)
   | `AST_type (s,_,_)
   | `AST_open (s,_)
   | `AST_include (s,_)
@@ -1334,7 +1297,6 @@ and string_of_expr (e:expr_t) =
 
   | `AST_letin (sr,(pat,e1, e2)) ->
     "let " ^ string_of_letpat pat ^ " = " ^ se e1 ^ " in " ^ se e2
-  | `AST_bound_module (sr,(iface,impl,binding)) -> "(module_binding)"
   | `AST_coercion (_,(e,t)) -> 
     "(" ^ sme e ^ ":" ^ 
     string_of_typecode t ^ ")"
@@ -1604,12 +1566,6 @@ and sb dfns depth fixlist counter prec tc =
            lab 
        )
 
-    | `BTYP_binding (a,b) -> 
-      7,
-      sbt 7 a ^
-      " => " ^
-      sbt 7 b
-
     | `BTYP_var i -> 0,"<T" ^ si i ^ ">"
     | `BTYP_inst (i,ts) -> 
       0,qualified_name_of_index dfns i ^ 
@@ -1870,35 +1826,6 @@ and string_of_statement level s =
     spaces level ^ "private " ^
     string_of_statement 0 st
 
-  | `AST_interface (_,name, vs, entries) ->
-    spaces level ^
-    "interface " ^ name ^ "{\n" ^
-    (
-      catmap "\n"
-      (string_of_statement (level+1))
-      entries
-    ) ^ "\n" ^
-    spaces level ^ "}\n"
-    
-  | `AST_module_binding (_,name,vs,e) ->
-    spaces level ^
-    "module " ^ name ^ print_vs vs ^ 
-    " = " ^
-    se e ^ ";\n";
-
-  | `AST_typed_functor (_,name,vs,ps,res,ss) ->
-    spaces level ^ 
-    "functor " ^ name ^ 
-    "("^ (string_of_parameters ps)^"): "^(string_of_typecode res)^"\n" ^
-    string_of_compound level ss
-
-  | `AST_untyped_functor (_,name,vs,ps,ss) ->
-    spaces level ^ 
-    "functor " ^ name ^ 
-    "("^ (string_of_parameters ps)^")\n" ^
-    string_of_compound level ss
-
-
   | `AST_export_fun (_,flx_name,cpp_name) -> 
     spaces level ^ 
     "export fun " ^ 
@@ -1934,18 +1861,8 @@ and string_of_statement level s =
     " = " ^ 
     string_of_typecode t2 ^ ";"
 
-  | `AST_type (_,t,vs) ->
-    spaces level ^ "type " ^ t ^ ";"
-
   | `AST_untyped_module (_,name, vs,sts)  -> 
     spaces level ^ "module " ^ name ^ 
-    " = " ^
-    "\n" ^ 
-    string_of_compound level sts
-
-  | `AST_typed_module (_,name, vs,typ, sts)  -> 
-    spaces level ^ "module " ^ name ^ ":" ^ 
-    string_of_typecode typ ^ 
     " = " ^
     "\n" ^ 
     string_of_compound level sts
@@ -2106,10 +2023,6 @@ and string_of_statement level s =
 
   | `AST_macro_proc_return (_) ->
     "macro return;\n"
-
-  | `AST_function_decl (_,name,vs,t) ->
-    spaces level ^
-    "function " ^ name ^ ": " ^ string_of_typecode t ^ ";\n"
 
   | `AST_val_decl (_,name, vs,ty, value) ->
     spaces level ^ 
@@ -2277,27 +2190,9 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
   | `SYMDEF_match_check (pat,i)-> 
     "match_check " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
   
-  | `SYMDEF_interface ->
-    "interface " ^ name ^ ";"
-
-  | `SYMDEF_typed_functor (ps,ret,es) ->
-    "functor " ^ name ^ ";"
-
-  | `SYMDEF_untyped_functor (ps,es) ->
-    "functor " ^ name ^ ";"
-
   | `SYMDEF_module -> 
     "module " ^ name ^ ";"
     
-  | `SYMDEF_if_type -> 
-    "abstract_type " ^ name ^ ";"
-    
-  | `SYMDEF_if_fun (t) ->
-    "abstract_function  " ^ name ^ string_of_typecode t ^ ";"
-
-  | `SYMDEF_module_binding e ->
-    "module_binding " ^ string_of_expr e ^ ";"
-
 and string_of_exe level s = 
   let spc = spaces level
   and se e = string_of_expr e 
@@ -2509,15 +2404,6 @@ and string_of_dcl level name vs (s:dcl_t) =
   | `DCL_regdef re -> 
     spaces level ^ "regexp " ^ name ^ " = " ^ string_of_re re ^ ";\n"
 
-  | `DCL_type -> spaces level ^ "type " ^ name ^ print_vs vs ^ ";\n"
-
-  | `DCL_if_fun (t) ->
-    spaces level ^ "function " ^ name ^ print_vs vs ^ ": " ^ string_of_typecode t
-  
-  | `DCL_module_binding expr -> 
-    spaces level ^
-    "module " ^ name ^ " = "^se expr^" ;\n"
-
   | `DCL_header s -> "header " ^ string_of_string s
   | `DCL_body s -> "body " ^ string_of_string s
 
@@ -2529,12 +2415,6 @@ and string_of_dcl level name vs (s:dcl_t) =
     spaces level ^ "module " ^ name ^ print_vs vs ^ " = " ^
     "\n" ^ 
     string_of_asm_compound level asms 
-
-  | `DCL_interface (asms) ->
-    spaces level ^ "interface " ^ name ^ print_vs vs ^ " = " ^
-    "\n" ^ 
-    string_of_asm_compound level asms
-
 
   | `DCL_struct (cs) -> 
     let string_of_struct_component (name,ty) =
@@ -2578,18 +2458,6 @@ and string_of_dcl level name vs (s:dcl_t) =
     spaces level ^ 
     "function " ^ name ^ print_vs vs ^
     "("^ (string_of_parameters ps)^"): "^(string_of_typecode res)^"\n" ^
-    string_of_asm_compound level ss
-
-  | `DCL_typed_functor (ps, res, ss) ->
-    spaces level ^ 
-    "functor " ^ name ^print_vs vs ^  
-    "("^ (string_of_parameters ps)^"): "^(string_of_typecode res)^"\n" ^
-    string_of_asm_compound level ss
-
-  | `DCL_untyped_functor (ps, ss) ->
-    spaces level ^ 
-    "functor " ^ name ^ print_vs vs ^
-    "("^ (string_of_parameters ps)^")\n" ^
     string_of_asm_compound level ss
 
 
@@ -2713,11 +2581,9 @@ let string_of_dfn dfns i =
 
 let full_string_of_entry_kind dfns = function 
   | Simple i -> string_of_dfn dfns i
-  | Bound (i,j) -> "("^si i^","^si j^")"
 
 let string_of_entry_kind = function 
   | Simple i -> si i
-  | Bound (i,j) -> "("^si i^","^si j^")"
 
 let string_of_entry_set = function
   | NonFunctionEntry x -> string_of_entry_kind x
@@ -2962,15 +2828,9 @@ val typeoflist:
 
 val lift:
   btypecode_t -> btypecode_t
-
+                                                                         
 val lower:
   btypecode_t -> btypecode_t
-
-val unify:
-  symbol_table_t ->
-  btypecode_t -> 
-  btypecode_t ->
-  btypecode_t 
 
 val qualified_name_of_expr:
   expr_t -> qualified_name_t
@@ -3089,57 +2949,9 @@ let typeoflist typlist = match typlist with
   | [t] -> t
   | _ -> `BTYP_tuple typlist
 
-let rec lower t = match t with
-  | `BTYP_binding (i,t) -> t
-  | `BTYP_pointer t -> `BTYP_pointer (lower t)
-  | `BTYP_array (t1,t2) -> `BTYP_array (lower t1, lower t2)
-  | `BTYP_tuple ts -> `BTYP_tuple (List.map lower ts)
-  | `BTYP_sum ts -> `BTYP_sum (List.map lower ts)
-  | `BTYP_void -> `BTYP_void
-  | `BTYP_function (a,b) -> `BTYP_function (lower a, lower b)
-  | `BTYP_name i -> `BTYP_name i
-  | `BTYP_fix i -> `BTYP_fix i
-  | `BTYP_var i -> `BTYP_var i
-  | `BTYP_inst (i,ts) -> `BTYP_inst (i, List.map lower ts)
-  | _ -> failwith "Unexpected metatype"
 
-
-let rec lift t = match t with
-  | `BTYP_binding (i,t) -> i
-  | `BTYP_pointer t -> `BTYP_pointer (lift t)
-  | `BTYP_array (t1,t2) -> `BTYP_array (lift t1, lift t2)
-  | `BTYP_tuple ts -> `BTYP_tuple (List.map lift ts)
-  | `BTYP_sum ts -> `BTYP_sum (List.map lift ts)
-  | `BTYP_void -> `BTYP_void
-  | `BTYP_function (a,b) -> `BTYP_function (lift a, lift b)
-  | `BTYP_name i -> `BTYP_name i
-  | `BTYP_fix i -> `BTYP_fix i
-  | `BTYP_var i -> `BTYP_var i
-  | `BTYP_inst (i,ts) -> `BTYP_inst (i, List.map lift ts)
-  | _ -> failwith "Unexpected metatype"
-
-let rec unify dfns it mt = 
-  let u it mt = unify dfns it mt in
-  match it,mt with
-  | (`BTYP_fix i, `BTYP_fix j) when i = j -> `BTYP_fix i
-  | `BTYP_function (a,b), `BTYP_function(c,d) ->
-    `BTYP_function (u a c, u b d)
-
-  | `BTYP_pointer a, `BTYP_pointer b ->
-    `BTYP_pointer (u a b)
-
-  | `BTYP_tuple a, `BTYP_tuple b ->
-    `BTYP_tuple (List.map2 u a b)
-
-  | `BTYP_sum a, `BTYP_sum b ->
-    `BTYP_sum (List.map2 u a b)
-
-  | `BTYP_void, `BTYP_void -> `BTYP_void
-  | (`BTYP_var i, `BTYP_var j) when i = j -> `BTYP_var i
-  | (`BTYP_inst (i1,ts1), `BTYP_inst (i2,ts2)) when i1 = i2 -> 
-    `BTYP_inst (i1,List.map2 u ts1 ts2)
-    
-  | i,m -> `BTYP_binding (i,m)
+let lift t = t
+let lower t = t (* CHANGE THIS WHEN ABSTRACT TYPES IMPLEMENTED *)
 
 let dummy_sr = ("generated",0,0,0,0)
 let flx_bool = `TYP_sum [`TYP_tuple[]; `TYP_tuple []]

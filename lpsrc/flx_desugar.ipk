@@ -12,10 +12,6 @@ val desugar_program:
   statement_t list -> 
   asm_t list
 
-val build_interface:
-  statement_t list ->
-  statement_t list
-
 @h = tangler("src/flx_desugar.ml")
 @select(h)
 open Flx_util
@@ -289,7 +285,6 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_match_case _ 
   | `AST_ctor_arg _ 
   | `AST_case_arg _ 
-  | `AST_bound_module _
   | `AST_void _ 
   | `AST_arrow _ 
   | `AST_superscript _ 
@@ -714,7 +709,6 @@ and rst syms name access st : asm_t list =
   | `AST_union (sr,name, vs, components) -> [Dcl (sr,name,access,vs,`DCL_union (components))]
   | `AST_struct (sr,name, vs, components) ->  [Dcl (sr,name,access,vs,`DCL_struct (components))]
   | `AST_type_alias (sr,name,vs,typ) -> [Dcl (sr,name,access,vs,`DCL_type_alias (typ))]
-  | `AST_type (sr,name,vs) -> [Dcl (sr,name,access,vs,`DCL_type)]
 
   | `AST_curry (sr,name',vs,pps,ret,kind,sts) ->
     rst syms name access (mkcurry seq sr name' vs pps ret kind sts)
@@ -762,9 +756,6 @@ and rst syms name access st : asm_t list =
     let vs = vs @ vs' in
     [Dcl (sr,name,access,vs,`DCL_function (params, res, rsts name sts))]
     
-  | `AST_function_decl (sr,name,vs,typ) ->
-    [Dcl (sr,name,access,vs,`DCL_if_fun typ)]
-
   | `AST_fun_decl (sr,name,vs,args,result,code) ->
     let typeoflist lst = match lst with
       | [x] -> x
@@ -810,11 +801,6 @@ and rst syms name access st : asm_t list =
     ]
 
   (* misc *)
-  | `AST_interface (sr,name,vs,sts) ->
-    [
-      Dcl (sr,name,access,vs,`DCL_interface (rsts name sts))
-    ]
-
   | `AST_untyped_module (sr,name, vs, sts) -> 
     [
       Dcl (sr,name,access,vs,`DCL_module (rsts name sts))
@@ -848,62 +834,6 @@ and rst syms name access st : asm_t list =
         )
       )
     ] else []
-
-  | `AST_typed_module (sr,name, vs, typ, sts) -> 
-    let mname = name ^ "_impl_" in
-    let mexpr = `AST_coercion 
-    (
-      sr,
-      (
-        `AST_name (sr,mname,[]), 
-        typ
-      )
-    ) 
-    in
-    [
-      Dcl (sr,mname,access,vs,`DCL_module (rsts mname sts));
-      Dcl (sr,name,access,vs,`DCL_module_binding mexpr)
-    ] 
-    @
-    (if vs = [] then [
-      Exe 
-      (
-        sr,
-        `EXE_call 
-        (
-          `AST_suffix 
-          (sr,
-            (
-              `AST_lookup
-              (
-                sr,
-                (
-                  `AST_name (sr,name,[]),
-                  "_init_",
-                  []
-                )
-              ),
-              `TYP_tuple []
-            )
-          ),
-          `AST_tuple (generated,[])
-        )
-      )
-    ] else [])
-
-  | `AST_typed_functor (sr,name,vs,ps,typ,sts) ->
-    [
-      Dcl (sr,name,access,vs,`DCL_typed_functor (ps,typ,rsts name sts));
-    ]
-
-  | `AST_untyped_functor (sr,name,vs,ps,sts) ->
-    [
-      Dcl (sr,name,access,vs,`DCL_untyped_functor (ps,rsts name sts));
-    ]
-
-  | `AST_module_binding (sr,name,vs,mexpr) ->
-    [Dcl (sr,name,access,vs,`DCL_module_binding mexpr)]
-
 
   | `AST_header (sr,s) -> 
     let n = seq() in 
@@ -1041,42 +971,7 @@ let typeofargs a =
       | [x] -> x
       | lst -> `TYP_tuple lst
 
-let rec build_if d = match d with
-  | `AST_function  (sr,name,vs, ps,ret,_) -> 
-    [
-      `AST_function_decl 
-      (
-        sr,
-        name,
-        vs,
-        `TYP_function 
-        (
-          typeofargs ps,
-          ret
-        )
-      )
-    ]
 
-  | `AST_typed_module (sr,name,vs,typ,sts) -> 
-    [`AST_typed_module (sr,name,vs,typ,build_interface sts)]
-  | `AST_untyped_module (sr,name,vs,sts) -> 
-    [`AST_untyped_module (sr,name,vs,build_interface sts)]
-
-  | `AST_var_decl _
-  | `AST_val_decl _
-
-  | `AST_type_alias _
-  | `AST_union _
-  | `AST_struct _
-  | `AST_const_decl _
-  | `AST_fun_decl _
-  | `AST_abs_decl _ 
-    -> [d]
-  | _ -> [] 
-
-and build_interface m =
- concat (map build_if m)
- 
 let desugar_program syms name sts =
   let sts = match sts with
     | [] -> [`AST_nop (generated, "empty module")]
@@ -1159,25 +1054,6 @@ try
   let have_interface = Sys.file_exists iface_file_name in
   print_endline (Flx_print.string_of_compilation_unit parse_tree);
   print_endline "//PARSE OK";
-
-  (* IF THERE WAS NO INTERFACE FILE, GENERATE ONE *)
-  if not have_interface 
-  then begin
-    print_endline "//No interface file found: generating one";
-    let h = open_out iface_file_name in
-    let iface = build_interface parse_tree in
-    List.iter 
-    (
-      fun x->
-        output_string h
-        (
-          (string_of_statement 0 x)^"\n"
-        )
-    ) 
-    iface;
-    close_out h
-  end
-  ;
 
   print_endline "//----------------------------";
   print_endline "//IMPLEMENTATION DESUGARED:";

@@ -277,7 +277,6 @@ declarative:
   | module_definition { $1 }
   | union_decl { $1 }
   | struct_decl { $1 }
-  | interface_decl { $1 }
 
 directive:
   | open_decl { $1 }
@@ -394,11 +393,6 @@ abstract_type:
   | INCOMPLETE TYPE NAME tvarlist EQUAL STRING SEMI 
     { 
       `AST_abs_decl (rstoken $1 $7, snd $3, List.map snd $4, false, snd $6) 
-    }
-
-  | TYPE NAME tvarlist SEMI 
-    { 
-      `AST_type (rstoken $1 $4, snd $2, List.map snd $3) 
     }
 
 @head(3,'Union Binding')
@@ -709,16 +703,6 @@ function_definition:
           short_string_of_src sr
         )
     }
-  | FUNCTION NAME tvarlist COLON type_expr SEMI
-    {
-      `AST_function_decl 
-      (
-        rstoken $1 $6, 
-        snd $2, 
-        List.map snd $3, 
-        typecode_of_expr $5
-      ) 
-    }
 
 procedure_definition:
   | PROCEDURE NAME tvarlist compound 
@@ -731,22 +715,6 @@ procedure_definition:
         args = [] 
       in
       `AST_function (sr, name, vs, args, `AST_void sr,body) 
-    }
-
-  | PROCEDURE NAME tvarlist COLON type_expr SEMI
-    {
-      let sr = rstoken $1 $6 in
-      `AST_function_decl 
-      (
-        sr,
-        snd $2, 
-        List.map snd $3,
-        `TYP_function 
-        (
-          typecode_of_expr $5,
-          `AST_void sr
-        )
-      )
     }
 
   | PROCEDURE NAME tvarlist fun_args compound 
@@ -852,73 +820,6 @@ module_definition:
         List.map snd $3,
         snd $4
       ) 
-    }
-
-  | MODULE NAME tvarlist COLON type_expr EQUAL compound 
-    { 
-      `AST_typed_module 
-      (
-        rsrange (slift $1) (fst $7), 
-        snd $2, 
-        List.map snd $3,
-        typecode_of_expr $5,
-        snd $7
-      ) 
-    }
-
-  | FUNCTOR NAME tvarlist fun_args compound
-    {
-      let sr = rsrange (slift $1) (fst $5)
-      and name = snd $2 
-      and vs = List.map snd $3
-      and body = snd $5
-      and args = List.map snd $4 (* elide srcref *)
-      in `AST_untyped_functor (sr, name, vs, List.hd args, body)
-    }
-
-  | FUNCTOR NAME tvarlist fun_args COLON type_expr EQUAL compound
-    {
-      let sr = rsrange (slift $1) (fst $8)
-      and name = snd $2 
-      and vs = List.map snd $3
-      and return_type = typecode_of_expr $6
-      and body = snd $8
-      and args = List.map snd $4 (* elide srcref *)
-      in `AST_typed_functor (sr, name, vs, List.hd args, return_type, body)
-    }
-
-  | MODULE NAME tvarlist EQUAL expr SEMI
-    {
-      `AST_module_binding 
-      (
-        rstoken $1 $6, 
-        snd $2, 
-        List.map snd $3,
-        $5 
-      )
-    }
- 
-interface_decl:
-  | INTERFACE NAME tvarlist compound
-    {
-      `AST_interface
-      (
-        rsrange (slift $1) (fst $4),
-        snd $2,
-        List.map snd $3,
-        snd $4
-      )
-    }
-
-  | INTERFACE NAME tvarlist EQUAL compound 
-    {
-      `AST_interface
-      (
-        rsrange (slift $1) (fst $5),
-        snd $2,
-        List.map snd $3,
-        snd $5
-      )
     }
 
 @head(3,'Variable and Constant Declaration')

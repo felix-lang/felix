@@ -206,90 +206,6 @@ let rec build_tables syms name level parent grandparent root asms =
           add_tvars privtab
 
 
-        | `DCL_module_binding (e) -> 
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_module_binding e};
-          if access = `Public then add_unique pub_name_map id n;
-          add_unique priv_name_map id n;
-          interfaces := !interfaces @ ifaces
-          ;
-          add_tvars privtab
-
-        | `DCL_typed_functor (ps,ret,asms) -> 
-          let fun_index = n in
-          let pubtab,privtab,exes,ifaces,dirs = 
-            build_tables syms id (level+1) (Some n) parent root
-            asms
-          in
-          Hashtbl.add dfns fun_index {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_typed_functor (ps,ret,exes)};
-          iter (fun (name,typ) -> 
-            let n = !counter in
-            incr counter;
-            if print_flag then
-            print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
-            let vs = [] in (* KLUDGE *)
-            Hashtbl.add dfns n {id=name;sr=sr;parent=Some fun_index;vs=vs;pubmap=null_tab;privmap=null_tab;dirs=[];symdef=`SYMDEF_parameter (typ)};
-            if access = `Public then add_unique pubtab name n;
-            add_unique privtab name n
-          ) ps
-          ;
-
-          let n' = !counter in
-          incr counter;
-          let init_def = 
-            `SYMDEF_function
-            (
-              [], `AST_void sr,
-              exes
-            ) 
-          in
-          Hashtbl.add dfns n' {id="_init_";sr=sr;parent=Some fun_index;vs=vs;pubmap=null_tab;privmap=null_tab;dirs=[];symdef=init_def};
-          if print_flag then
-          print_endline ("//  "^spc ^ si n' ^ " -> _init_ (functor "^id^")");
-          (* NOTE: NO CALL TO INIT ROUTINE HERE! *)
-          if access = `Public then add_function sr pubtab ("_init_") n';
-          add_function sr privtab ("_init_") n';
-
-          if access = `Public then add_function sr pub_name_map id fun_index ;
-          add_function sr priv_name_map id fun_index ;
-          interfaces := !interfaces @ ifaces
-          ;
-          add_tvars privtab
-
-        | `DCL_untyped_functor (ps,asms) -> 
-          let fun_index = n in
-          let pubtab,privtab, exes,ifaces,dirs = 
-            build_tables syms id (level+1) (Some n) parent root
-            asms
-          in
-          Hashtbl.add dfns fun_index {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_untyped_functor (ps,exes)};
-          iter (fun (name,typ) -> 
-            let n = !counter in
-            incr counter;
-            if print_flag then
-            print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
-            let vs = [] in (* KLUDGE *)
-            Hashtbl.add dfns n {id=name;sr=sr;parent=Some fun_index;vs=vs;pubmap=null_tab;privmap=null_tab;dirs=[];symdef=`SYMDEF_parameter (typ)};
-            if access = `Public then add_unique pubtab name n;
-            add_unique privtab name n
-          ) ps
-          ;
-
-         let n' = !counter in
-          incr counter;
-          let init_def = `SYMDEF_function ( [], `AST_void sr, exes) in
-          Hashtbl.add dfns n' {id="_init_";sr=sr;parent=Some fun_index;vs=vs;pubmap=null_tab;privmap=null_tab;dirs=[];symdef=init_def};
-          if print_flag then
-          print_endline ("//  "^spc ^ si n' ^ " -> _init_ (functor "^id^")");
-          (* NOTE: NO CALL TO INIT ROUTINE HERE! *)
-          if access = `Public then add_function sr pubtab ("_init_") n';
-          add_function sr privtab ("_init_") n';
-
-          if access = `Public then add_function sr pub_name_map id fun_index ;
-          add_function sr priv_name_map id fun_index ;
-          interfaces := !interfaces @ ifaces
-          ;
-          add_tvars privtab
-
         | `DCL_function (ps,t,asms) ->   
           let fun_index = n in
           let t = if t = `TYP_none then `TYP_var fun_index else t in
@@ -405,44 +321,6 @@ let rec build_tables syms name level parent grandparent root asms =
           ;
           add_tvars privtab
         
-        | `DCL_interface asms ->
-          let pubtab,privtab, exes,ifaces,dirs = 
-            build_tables syms id (level+1) (Some n) parent root
-            asms
-          in
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_interface};
-          let n' = !counter in
-          incr counter;
-          let init_def = 
-            `SYMDEF_if_fun ( `TYP_function (`TYP_tuple [], `AST_void sr))
-          in
-          Hashtbl.add dfns n' {id="_init_";sr=sr;parent=Some n;vs=vs;pubmap=null_tab;privmap=null_tab; dirs=[];symdef=init_def};
-          if print_flag then
-          print_endline ("//  "^spc ^ si n' ^ " -> _init_ (interface "^id^")");
-          if access = `Public then add_unique pub_name_map id n;
-          add_unique priv_name_map id n;
-          if access = `Public then add_function sr pubtab ("_init_") n';
-          add_function sr privtab ("_init_") n';
-          interfaces := !interfaces @ ifaces
-          ;
-          add_tvars privtab
-
- 
-        | `DCL_if_fun t ->
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_if_fun t};
-          if access = `Public then add_function sr pub_name_map id n;
-          add_function sr priv_name_map id n
-          ;
-          add_tvars privtab
-          
-        | `DCL_type ->
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_if_type}
-          ;
-          if access = `Public then add_unique pub_name_map id n;
-          add_unique priv_name_map id n
-          ;
-          add_tvars privtab
-
         | `DCL_val t ->
           let t = match t with | `TYP_none -> `TYP_var n | _ -> t in
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_val (t)}
