@@ -32,7 +32,6 @@ open Flx_name
    #t: the type of the argument tuple
    @t: the shape of the argument tuple
 
-   (* YET TO DO .. *)
    ??: expands to ?
    ?n: the n'th generic type argument ..
    ?a: expands to ?1,?2, ...

@@ -100,10 +100,6 @@ and regexp_t =
   | REGEXP_code of expr_t
 
 @head(3,'Type sublanguage')
-Terms of the type sublanguage. The encoding '`TYP_none' is 
-a hack which allows the suffixed name representation
-to work for unsuffixed names. 
-@p()
 The encoding '`TYP_void'
 is the categorical initial: the type of an empty
 union, and the type ordinary procedure types return.
@@ -144,6 +140,8 @@ and literal_t =
   [
   | `AST_int of string * big_int
   | `AST_string of string
+  | `AST_wstring of string
+  | `AST_ustring of string
   | `AST_float of string * string
   ]
 
@@ -153,6 +151,7 @@ Raw expression terms.
 @select(h)
 and expr_t =
   [
+  | `AST_noexpand of range_srcref * expr_t
   | `AST_name of range_srcref * string
   | `AST_case_tag of range_srcref * int
   | `AST_typed_case of range_srcref * int * typecode_t
@@ -238,6 +237,11 @@ and extract_t =
 Statements; that is, the procedural sequence control system.
 @select(h)
 and parameter_t = id_t * typecode_t
+and macro_parameter_type_t = 
+  | Ident 
+  | Expr 
+  | Stmt
+and macro_parameter_t = id_t * macro_parameter_type_t
 and statement_t =
   [ 
   | `AST_open of range_srcref * qualified_name_t
@@ -248,7 +252,15 @@ and statement_t =
   | `AST_function of range_srcref * id_t * parameter_t list * typecode_t * statement_t list
   | `AST_procedure of range_srcref * id_t * parameter_t list * statement_t list
   | `AST_regdef of range_srcref * string * regexp_t
-  
+
+  (* macros *)
+  | `AST_name_macro of range_srcref * id_t * id_t 
+  | `AST_expr_macro of range_srcref * id_t * macro_parameter_t list * expr_t
+  | `AST_stmt_macro of range_srcref * id_t * macro_parameter_t list * statement_t list
+  | `AST_macro_val  of range_srcref * id_t * expr_t
+  | `AST_macro_var  of range_srcref * id_t * expr_t
+  | `AST_macro_assign of range_srcref * id_t * expr_t
+
   (* types *)
   | `AST_union of range_srcref * id_t * (id_t * typecode_t) list
   | `AST_struct of range_srcref * id_t * (id_t * typecode_t) list
@@ -276,8 +288,11 @@ and statement_t =
   | `AST_ifgoto of range_srcref * expr_t *id_t
   | `AST_ifnotgoto of range_srcref * expr_t * id_t
   | `AST_call of range_srcref * expr_t * expr_t 
+  | `AST_jump of range_srcref * expr_t * expr_t 
+  | `AST_loop of range_srcref * id_t * expr_t 
   | `AST_read of range_srcref * id_t
-  | `AST_return of range_srcref * expr_t
+  | `AST_fun_return of range_srcref * expr_t
+  | `AST_proc_return of range_srcref 
   | `AST_nop of range_srcref * string
 
   | `AST_block of range_srcref * statement_t list
@@ -321,8 +336,11 @@ and exe_t =
   | `EXE_ifgoto of expr_t * string  (* for internal use only *)
   | `EXE_ifnotgoto of expr_t * string  (* for internal use only *)
   | `EXE_call of expr_t * expr_t 
+  | `EXE_jump of expr_t * expr_t 
+  | `EXE_loop of id_t * expr_t 
   | `EXE_read of id_t
-  | `EXE_return of expr_t
+  | `EXE_fun_return of expr_t
+  | `EXE_proc_return
   | `EXE_nop of string
   | `EXE_init of id_t * expr_t 
   | `EXE_regmatch of (expr_t * (regexp_t * expr_t) list)
@@ -399,8 +417,11 @@ and bexe_t =
   | `BEXE_ifgoto of tbexpr_t * string  (* for internal use only *)
   | `BEXE_ifnotgoto of tbexpr_t * string  (* for internal use only *)
   | `BEXE_call of tbexpr_t * tbexpr_t 
+  | `BEXE_jump of tbexpr_t * tbexpr_t 
+  | `BEXE_loop of int * tbexpr_t 
   | `BEXE_read of bid_t
-  | `BEXE_return of tbexpr_t
+  | `BEXE_fun_return of tbexpr_t
+  | `BEXE_proc_return 
   | `BEXE_nop of string
   | `BEXE_code of string
   | `BEXE_init of bid_t * tbexpr_t 
@@ -441,7 +462,6 @@ and btypecode_t =
   | `BTYP_function of btypecode_t * btypecode_t    (* function type *)
   | `BTYP_pointer  of btypecode_t                  (* pointer type *)
   | `BTYP_void                                     (* void type *)
-  | `BTYP_none                                     (* special hack for 'no type' *)
   | `BTYP_binding of btypecode_t * btypecode_t     (* interface, module *)
   | `BTYP_fix of int                               (* recurse to depth n *)
   | `BTYP_var of int         (* unknown variable or function return type *)
@@ -594,6 +614,7 @@ val src_of_qualified_name : qualified_name_t -> range_srcref
 val src_of_suffixed_name: suffixed_name_t -> range_srcref
 
 val short_string_of_src: range_srcref -> string
+val long_string_of_src: range_srcref -> string
 
 @h = tangler('src/flx_srcref.ml')
 @doc()
@@ -636,6 +657,7 @@ let src_of_suffixed_name (e : suffixed_name_t) = match e with
 
 let src_of_expr (e : expr_t) = match e with
   | #suffixed_name_t as x -> src_of_suffixed_name x
+  | `AST_noexpand (s,_)
   | `AST_texpr (s,_)
   | `AST_product (s,_)
   | `AST_sum (s,_)
@@ -677,6 +699,13 @@ let src_of_stmt e = match e with
   | `AST_function (s, _, _ , _, _)
   | `AST_procedure (s, _, _ , _)
 
+  | `AST_name_macro (s, _,_)
+  | `AST_expr_macro (s,_, _,_)
+  | `AST_stmt_macro (s,_, _,_)
+  | `AST_macro_val (s,_,_)
+  | `AST_macro_var (s, _,_)
+  | `AST_macro_assign (s,_,_)
+
   | `AST_val_decl (s, _, _, _) 
   | `AST_var_decl (s, _, _, _) 
 
@@ -684,13 +713,13 @@ let src_of_stmt e = match e with
   | `AST_except_handler (s, _, _, _ ) 
   
   | `AST_call (s, _, _ ) 
+  | `AST_jump (s, _, _ ) 
+  | `AST_loop (s, _, _ ) 
   | `AST_read (s, _) 
-  | `AST_return (s, _) 
+  | `AST_fun_return (s, _) 
+  | `AST_proc_return s 
   | `AST_block (s, _ ) 
   | `AST_nop (s, _) 
-  (*
-  | `AST_if (s, _ , _) 
-  *)
   | `AST_ifgoto (s,_,_)
   | `AST_ifnotgoto (s,_,_)
   | `AST_attempt (s,_,_,_)
@@ -752,6 +781,57 @@ let short_string_of_src (f,l1,c1,l2,c2) =
     f ^ ": line " ^ string_of_int l1 ^ 
     " col " ^ string_of_int c1 ^ " to " ^ 
     " line " ^ string_of_int l2 ^ " col " ^ string_of_int c2
+
+let get_lines f context l1' l2' c1 c2 = (* first line is line 1 *)
+  let l1 = max 1 (l1'-context) in
+  let l2 = l2' + context in
+  let n = String.length (string_of_int l2) in
+  let fmt i = 
+    let s ="    " ^ string_of_int i in
+    let m = String.length s in
+    String.sub s (m-n) n
+  in
+  try
+    let buf = Buffer.create ((l2-l1+4) * 80) in
+    let spc () = Buffer.add_char buf ' ' in
+    let star() = Buffer.add_char buf '*' in
+    let nl() = Buffer.add_char buf '\n' in
+    let f = open_in f in
+    for i = 1 to l1-1 do ignore(input_line f) done;
+    begin
+      try
+        for i = l1 to l2 do 
+          Buffer.add_string buf (fmt i ^": ");
+          begin
+            try
+              Buffer.add_string buf (input_line f)
+            with _ -> 
+              Buffer.add_string buf "<eof>\n"; 
+              raise Not_found
+          end
+          ;
+          nl();
+          if i = l1' && l1' = l2' then
+          begin
+            for i = 1 to n + 2 do spc() done;
+            for i = 1 to c1 - 1 do spc() done;
+            for i = c1 to c2 do star() done;
+            nl()
+          end
+        done
+      with Not_found -> ()
+    end
+    ;
+    close_in f;
+    Buffer.contents buf
+  with _ -> 
+    "*** Can't read file " ^ f ^ 
+    " lines " ^ fmt l1 ^ " thru " ^ fmt l2 ^ "\n"
+
+let long_string_of_src (f,l1,c1,l2,c2) =
+  short_string_of_src (f,l1,c1,l2,c2) ^
+  "\n" ^
+  get_lines f 1 l1 l2 c1 c2
 
 @head(1,'Print module')
 Routines to print various terms.
@@ -835,6 +915,8 @@ let string_of_literal e = match e with
   | `AST_int (s,i) -> (string_of_big_int i)^suffix_of_type s 
   | `AST_float (t,v) -> v ^ suffix_of_type t
   | `AST_string s -> string_of_string s
+  | `AST_wstring s -> string_of_string s
+  | `AST_ustring s -> string_of_string s
   
 let rec string_of_qualified_name (n:qualified_name_t) =
   let se e = string_of_expr e in
@@ -881,6 +963,7 @@ and string_of_expr (e:expr_t) =
   in
   match e with
   | #suffixed_name_t as n -> string_of_suffixed_name n
+  | `AST_noexpand (sr,e) -> "$(" ^ string_of_expr e ^ ")"
   | `AST_texpr (sr,e) -> "[" ^ se e ^ "]"
   | `AST_ginst (sr,(e1,ts)) -> 
     "(" ^ se e1 ^ ")" ^
@@ -991,8 +1074,7 @@ and st prec tc : string =
   let iprec,txt =
     match tc with
     | #qualified_name_t as t -> 0,string_of_qualified_name t
-    | `TYP_none -> (* print_endline ("NONE DETECTED"); *)
-       0,"Unknown"
+    | `TYP_none -> 0,"<none>"
     | `TYP_var i -> 0,"<var " ^ string_of_int i ^ ">"
     | `TYP_tuple ls ->
       begin match ls with 
@@ -1106,7 +1188,6 @@ and sb dfns depth fixlist counter prec tc =
 
       | `BTYP_pointer t -> 1,"&" ^ sbt 1 t
       | `BTYP_void -> 0,"void"
-      | `BTYP_none -> 0,"<none>"
       
       | `BTYP_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2
       | `BTYP_type -> 0,"TYPE"
@@ -1233,6 +1314,11 @@ and special_string_of_btypecode dfns ty =  (* used for constructors *)
   | `BTYP_tuple [] -> ""
   | _ -> " of " ^ string_of_btypecode dfns ty
 
+and string_of_macro_parameter_type = function
+  | Expr -> "fun"
+  | Ident -> "ident"
+  | Stmt -> "proc"
+
 and string_of_statement level s = 
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
@@ -1266,7 +1352,8 @@ and string_of_statement level s =
 
 
   | `AST_export (_,flx_name,cpp_name) -> 
-    spaces level ^ "export " ^ 
+    spaces level ^ 
+    "export " ^ 
     string_of_suffixed_name flx_name ^ 
     " as \"" ^ cpp_name ^ "\";"
 
@@ -1374,13 +1461,55 @@ and string_of_statement level s =
   | `AST_function (_,name, ps, res, ss) -> 
     spaces level ^ 
     "function " ^ name ^ 
-    "("^ (string_of_parameters ps)^"): "^(string_of_typecode res)^"\n" ^
+    "("^string_of_parameters ps^"): "^string_of_typecode res^"\n" ^
     string_of_compound level ss
 
   | `AST_procedure (_,name, ps, ss) -> 
     spaces level ^ 
     "procedure " ^ name ^ 
     "("^ (string_of_parameters ps)^")" ^
+    short_string_of_compound level ss
+
+  | `AST_macro_val (_,name, e) ->
+    spaces level ^ 
+    "macro val " ^ name ^ " = " ^
+    se e
+
+  | `AST_macro_var (_,name, e) ->
+    spaces level ^ 
+    "macro var " ^ name ^ " = " ^
+    se e
+
+  | `AST_macro_assign (_,name, e) ->
+    spaces level ^ 
+    "macro " ^ name ^ " = " ^
+    se e
+
+  | `AST_name_macro (_,lname, rname) ->
+    spaces level ^ 
+    "macro ident " ^ lname ^ " = " ^
+    (match rname with | "" -> "new" | _ -> rname)
+
+  | `AST_expr_macro (_,name, ps, e) -> 
+    let sps = 
+      List.map 
+      (fun (p,t) -> p ^ ":" ^ string_of_macro_parameter_type t) 
+      ps 
+    in
+    spaces level ^ 
+    "macro fun " ^ name ^ 
+    "("^ String.concat ", " sps ^") = " ^
+    se e
+
+  | `AST_stmt_macro (_,name, ps, ss) -> 
+    let sps = 
+      List.map 
+      (fun (p,t) -> p ^ ":" ^ string_of_macro_parameter_type t) 
+      ps 
+    in
+    spaces level ^ 
+    "macro proc " ^ name ^ 
+    "("^ String.concat ", " sps ^") " ^
     short_string_of_compound level ss
 
   | `AST_procedure_decl (_, name,t) ->
@@ -1429,6 +1558,14 @@ and string_of_statement level s =
   | `AST_call (_,pr, args) ->
     spaces level
     ^ "call " ^ se pr ^ " " ^ se args ^ ";"
+
+  | `AST_jump (_,pr, args) ->
+    spaces level
+    ^ "call " ^ se pr ^ " " ^ se args ^ ";"
+
+  | `AST_loop (_,pr, args) ->
+    spaces level
+    ^ "call " ^ pr ^ " " ^ se args ^ ";"
 
   | `AST_nop (_,s) -> spaces level ^ "{/*"^s^"*/;}"
 
@@ -1488,8 +1625,11 @@ and string_of_statement level s =
     end ^ 
     ";"
 
-  | `AST_return (_,e) -> 
+  | `AST_fun_return (_,e) -> 
     spaces level ^ "return " ^ (se e) ^ ";"
+
+  | `AST_proc_return _ -> 
+    spaces level ^ "return;"
     
   | `AST_read (_,name) ->
     spaces level ^ "read " ^ name ^ ";"
@@ -1604,11 +1744,24 @@ and string_of_exe level s =
     se p ^ " " ^ 
     se a ^ ";"
 
+  | `EXE_jump (p,a) -> spc ^ 
+    "jump " ^ 
+    se p ^ " " ^ 
+    se a ^ ";"
+
+  | `EXE_loop (p,a) -> spc ^ 
+    "loop " ^ 
+    p ^ " " ^ 
+    se a ^ ";"
+
   | `EXE_read v -> spc ^ 
     "read " ^ v
 
-  | `EXE_return x -> spc ^ 
+  | `EXE_fun_return x -> spc ^ 
     "return " ^ se x ^ ";"
+
+  | `EXE_proc_return -> spc ^ 
+    "return;"
 
   | `EXE_nop s -> spc ^ 
     "/*" ^ s ^ "*/"
@@ -1698,11 +1851,24 @@ and string_of_bexe dfns level s =
     se p ^ " " ^ 
     se a ^ ";"
 
+  | `BEXE_jump (p,a) -> spc ^ 
+    "tail call " ^ 
+    se p ^ " " ^ 
+    se a ^ ";"
+
+  | `BEXE_loop (p,a) -> spc ^ 
+    "loop<" ^ 
+    string_of_int p ^ "> " ^ 
+    se a ^ ";"
+
   | `BEXE_read v -> spc ^ 
     "read " ^ sid v 
 
-  | `BEXE_return x -> spc ^ 
+  | `BEXE_fun_return x -> spc ^ 
     "return " ^ se x ^ ";"
+
+  | `BEXE_proc_return -> spc ^ 
+    "return;"
 
   | `BEXE_nop s -> spc ^ 
     "/*" ^ s ^ "*/"
@@ -2135,6 +2301,7 @@ exception ParseError of string
 exception LexError of string
 exception TokenError of string
 exception ClientError of range_srcref * string
+exception SystemError of range_srcref * string
 """
 //
 @h = tangler('src/flx_exceptions.ml')
@@ -2142,12 +2309,14 @@ exception ClientError of range_srcref * string
 open Flx_types
 @tangle(exceptions)
 let clierr sr s = raise (ClientError (sr,s))
+let syserr sr s = raise (SystemError (sr,s))
 
 @h = tangler('src/flx_exceptions.mli')
 @select(h)
 open Flx_types
 @tangle(exceptions)
 val clierr: range_srcref -> string -> 'a
+val syserr: range_srcref -> string -> 'a
 
 @h = tangler('src/flx_typing.ml')
 @select(h)
@@ -2177,7 +2346,6 @@ let rec lower t = match t with
   | `BTYP_pointer t -> `BTYP_pointer (lower t)
   | `BTYP_tuple ts -> `BTYP_tuple (List.map lower ts)
   | `BTYP_sum ts -> `BTYP_sum (List.map lower ts)
-  | `BTYP_none -> `BTYP_none
   | `BTYP_void -> `BTYP_void
   | `BTYP_function (a,b) -> `BTYP_function (lower a, lower b)
   | `BTYP_name i -> `BTYP_name i
@@ -2192,7 +2360,6 @@ let rec lift t = match t with
   | `BTYP_pointer t -> `BTYP_pointer (lift t)
   | `BTYP_tuple ts -> `BTYP_tuple (List.map lift ts)
   | `BTYP_sum ts -> `BTYP_sum (List.map lift ts)
-  | `BTYP_none -> `BTYP_none
   | `BTYP_void -> `BTYP_void
   | `BTYP_function (a,b) -> `BTYP_function (lift a, lift b)
   | `BTYP_name i -> `BTYP_name i
@@ -2218,7 +2385,6 @@ let rec unify dfns it mt =
     `BTYP_sum (List.map2 u a b)
 
   | `BTYP_void, `BTYP_void -> `BTYP_void
-  | `BTYP_none, `BTYP_none -> `BTYP_none
   | (`BTYP_var i, `BTYP_var j) when i = j -> `BTYP_var i
   | (`BTYP_inst (i1,ts1), `BTYP_inst (i2,ts2)) when i1 = i2 -> 
     `BTYP_inst (i1,List.map2 u ts1 ts2)
@@ -2404,7 +2570,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
 
   | `AST_lambda (sr,(params,ret,body)) ->
      begin match body with
-     | [`AST_return (_,e)] -> 
+     | [`AST_fun_return (_,e)] -> 
        `TYP_typefun 
        ( 
          params,

@@ -398,7 +398,6 @@ and map_type
     failwith "[map type] Unexpected type binding"
 
   | `BTYP_void -> `BTYP_void
-  | `BTYP_none -> `BTYP_none 
   | `BTYP_fix i -> `BTYP_fix i
   | `BTYP_var i -> failwith "Unexpected type variable in map_type"
   | _ -> failwith "Unexpected metatype"
@@ -1102,12 +1101,14 @@ and instantiate_functor syms
     let binding = aux ps m in
     let mindex = !(syms.counter) in incr (syms.counter); 
     let mname = "_module_" ^ string_of_int mindex in 
+    (*
     print_endline 
     (
       "// " ^ string_of_int mindex ^ 
       " -> instance " ^ mname ^ ": " ^ 
       short_string_of_src sr
     );
+    *)
     Hashtbl.add syms.freg (findex,m) mindex; 
     let mtable = copy_table syms (Some mindex) binding name_map in
     Hashtbl.add syms.dfns mindex (mname,sr,parent, (`SYMDEF_module (mtable,dirs))); 
@@ -1716,7 +1717,9 @@ and bind_type' syms env exclude fixlist expr_fixlist depth excluded_dirs sr t pa
     end
 
  
-  | `TYP_none ->  `BTYP_none
+  | `TYP_none ->  
+    failwith "Unexpected `TYP_none in bind type"
+
   | `TYP_var i ->  `BTYP_var i
   | `TYP_as (t,s) -> 
     bind_type' syms env exclude ((s,depth)::fixlist) expr_fixlist depth excluded_dirs sr t params
@@ -1852,7 +1855,6 @@ and rebind_btype syms env excluded_dirs sr t: btypecode_t =
   | `BTYP_function (a,r) -> `BTYP_function (rbt a, rbt r) 
   | `BTYP_pointer t -> `BTYP_pointer (rbt t)
   | `BTYP_void -> `BTYP_void
-  | `BTYP_none -> `BTYP_none
   | `BTYP_binding (a,b) -> `BTYP_binding (rbt a,rbt b)
   | `BTYP_fix i -> `BTYP_fix i
   | `BTYP_var i -> failwith "Unexpected type variable in rebind_type"
@@ -1863,6 +1865,8 @@ and base_typename_of_literal v = match v with
   | `AST_int (t,_) -> t
   | `AST_float (t,_) -> t
   | `AST_string _ -> "string"
+  | `AST_wstring _ -> "wstring"
+  | `AST_ustring _ -> "string"
 
 and  typeof_literal syms env sr v : btypecode_t = 
   let root,_ = List.hd (List.rev env) in
@@ -1982,10 +1986,12 @@ and cal_ret_type syms exclude expr_fixlist depth excluded_dirs index =
       let return_counter = ref 0 in
       List.iter
       (fun exe -> match exe with
-      | `EXE_return e ->
+      | `EXE_fun_return e ->
         incr return_counter;
         begin try
-          let t = snd (bind_expression syms env (index::exclude) expr_fixlist depth excluded_dirs e) in
+          let t = 
+            snd (bind_expression syms env (index::exclude) expr_fixlist depth excluded_dirs e) 
+          in
           if do_unify syms t !ret_type 
           then 
             ret_type := varmap_subst syms.varmap !ret_type
@@ -2008,11 +2014,17 @@ and cal_ret_type syms exclude expr_fixlist depth excluded_dirs index =
     end
     ;
     if var_occurs !ret_type
-    then 
-      failwith 
-      (
-        "Unable to resolve return type of " ^ id ^ "<"^string_of_int index^">"
-      )
+    then
+      begin (* HACK! *)
+        print_endline 
+        (
+          "[cal_ret_type] WARNING: Unable to resolve return type of " ^ 
+          id ^ "<"^string_of_int index^">, got:\n" ^
+          string_of_btypecode syms.dfns !ret_type ^
+          "\nusing type 'any' (assume fun can't return)"
+        );
+        ret_type := `BTYP_fix 0
+      end
     ;
     !ret_type
 
@@ -2456,11 +2468,10 @@ and lookup_name_with_sig
   *)
   match env with
   | [] -> 
-    failwith 
+    clierr srn
     (
       "[lookup_name_with_sig] Can't find " ^ name ^ 
-      " of " ^ string_of_btypecode syms.dfns t2 ^ "\n" ^
-      "in " ^ short_string_of_src srn
+      " of " ^ string_of_btypecode syms.dfns t2
     )
   | (table,dirs)::tail ->
     match 
@@ -2498,11 +2509,7 @@ and mk_ginst syms exclude excluded_dirs index ts =
         `BEXPR_ginst (index,ts),
         (
           match typeofindex' syms exclude [] 0 excluded_dirs index tvars with
-          | `BTYP_function (s,d) as t -> 
-            begin match d with
-            | `BTYP_none -> failwith "[mk_ginst] Can't handle Unknown"
-            | _ -> t
-            end
+          | `BTYP_function (s,d) as t -> t
           | t -> 
             failwith 
             (
@@ -2533,7 +2540,9 @@ and handle_function
   let n = List.length ts in
   match overload with
     | Bound (i,j) -> 
+      (*
       print_endline "[handle_function] handle opaque function"; 
+      *)
       let it =
         match typeofindex syms exclude [] 0 excluded_dirs i with
         | `BTYP_function _ as t -> t
@@ -2583,11 +2592,7 @@ and handle_function
             `BEXPR_closure index,
             (
               match typeofindex syms exclude [] 0 excluded_dirs index with
-              | `BTYP_function (s,d) as t -> 
-                begin match d with
-                | `BTYP_none -> failwith "Can't handle Unknown type in handle_function"
-                | _ -> t
-                end
+              | `BTYP_function (s,d) as t -> t
               | t -> 
                 failwith 
                 (
@@ -2861,6 +2866,7 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
   print_endline "==";
   *)
   match e with
+  | `AST_noexpand(sr,e) -> syserr sr "[bind_expression] Unexpected $"
   | `AST_ginst (sr,(_,ts)) ->
     failwith 
     (
@@ -2869,11 +2875,11 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
       "\n in " ^ short_string_of_src sr
       
     )
-  | `AST_texpr (sr,t) -> failwith "Unexpected type expression"
-  | `AST_letin _ -> failwith "Unexpected letin"
-  | `AST_cond _ -> failwith "Unexpected conditional expression (should be replaced by match)"
-  | `AST_typeof (sr,e) -> failwith "Unexpected 'typeof' in expression"
-  | `AST_as (sr, (e1,e2)) -> failwith "Unexpected 'as' in expression" 
+  | `AST_texpr (sr,t) -> failwith "[bind_expression] Unexpected type expression"
+  | `AST_letin _ -> failwith "[bind_expression] Unexpected letin"
+  | `AST_cond _ -> failwith "[bind_expression] Unexpected conditional expression (should be replaced by match)"
+  | `AST_typeof (sr,e) -> failwith "[bind_expression] Unexpected 'typeof' in expression"
+  | `AST_as (sr, (e1,e2)) -> failwith "[bind_expression] Unexpected 'as' in expression" 
 
   | `AST_sum (sri,ls) -> 
     begin let mksum a b = apl2 sri "add" [a;b] in
@@ -3126,10 +3132,26 @@ and bind_expression syms env exclude expr_fixlist depth excluded_dirs e : tbexpr
     in
       cal_apply syms tbe1 (be2, t2)
 
-  | `AST_apply (sr,(f,a)) ->
-    let (ba, ta) as a = be a in
-    let f = lookup sr f ta in
-    cal_apply syms f a
+  (* Note special case: apply(s1,s2) -> concat (s1,s2) *)
+  | `AST_apply (sr,(f',a')) ->
+    let (ba, ta) as a = be a' in
+    let f = lookup sr f' ta in
+    begin 
+      match f,a with
+      | (_,`BTYP_name i),(_,`BTYP_name j) when i = j ->
+        let id,_,_,entry = get_data syms.dfns i in
+        if id = "string" 
+        then
+          match entry with
+          | `SYMDEF_dcl (`DCL_abs _) ->
+            be (`AST_apply (sr,(`AST_name (sr,"add"),`AST_tuple (sr,[f';a']))))
+          | _ ->
+            cal_apply syms f a
+        else
+          cal_apply syms f a
+      | _ ->
+        cal_apply syms f a
+    end
 
   | `AST_tuple (_,es) -> 
     let bets = List.map be es in

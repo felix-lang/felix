@@ -17,27 +17,29 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "open",(fun s -> OPEN s);
     "use",(fun s -> USE s);
     "define",(fun s -> DEFINE s);
-    "overload",(fun s -> OVERLOAD s);
     "interface", (fun s ->  INTERFACE s);
     "functor", (fun s ->  FUNCTOR s);
     "not", (fun s ->  NOT s);
     "and", (fun s ->  AND s);
     "not", (fun s ->  NOT s);
     "or", (fun s ->  OR s);
-    "function", (fun s ->  FUNCTION s);
-    "procedure", (fun s ->  PROCEDURE s);
+    "fun", (fun s ->  FUNCTION s);
+    "proc", (fun s ->  PROCEDURE s);
+    "macro", (fun s ->  MACRO s);
+    "ident", (fun s ->  IDENT s);
+    "new", (fun s ->  NEW s);
     "if", (fun s ->  IF s);
     "then", (fun s ->  THEN s);
     "else", (fun s ->  ELSE s);
     "elif", (fun s ->  ELIF s);
     "endif", (fun s ->  ENDIF s);
     "call", (fun s ->  CALL s);
+    "jump", (fun s ->  JUMP s);
+    "loop", (fun s ->  LOOP s);
     "type", (fun s ->  TYPE s);
     "typedef", (fun s ->  TYPEDEF s);
-    "fun", (fun s ->  FUNCTION s);
     "read", (fun s ->  READ s);
     "return", (fun s ->  RETURN s);
-    "proc", (fun s ->  PROCEDURE s);
     "const", (fun s ->  CONST s);
     "struct", (fun s ->  STRUCT s);
     "header", (fun s ->  HEADER s);
@@ -67,7 +69,6 @@ let flx_keyword_table =          (* 97 is a prime larger than table size *)
     "val", (fun s ->  VAL s);
     "union", (fun s ->  UNION s);
     "class", (fun s ->  CLASS s);
-    "category", (fun s ->  CATEGORY s);
     "exceptions", (fun s ->  EXCEPTIONS s);
     "module", (fun s ->  MODULE s);
     "lambda", (fun s ->  LAMBDA s);
@@ -118,7 +119,7 @@ class file_control
   object(self)
     val mutable buf_pos =  0
     val mutable last_buf_pos =  0
-    val mutable line_no =  0
+    val mutable line_no =  1
     val original_filename = filename'
     val incdirs = incdirs'
     val basedir = basedir'
@@ -133,7 +134,7 @@ class file_control
     method get_buf_pos = buf_pos
     method get_srcref lexbuf = 
       filename, 
-      line_no + 1, 
+      line_no, 
       Lexing.lexeme_start lexbuf - buf_pos + 1, 
       Lexing.lexeme_end lexbuf - buf_pos 
 
@@ -164,7 +165,6 @@ class lexer_state filename basedir incdirs =
     val comment_ctrl = new comment_control
     val file_ctrl = new file_control filename basedir incdirs 
     val mutable at_line_start = true
-    val slosh_mode = Dec
     method is_at_line_start = at_line_start
 
     method inbody = at_line_start <- false
@@ -203,7 +203,7 @@ class lexer_state filename basedir incdirs =
         !n
       in 
         file_ctrl#incr (lfcount s); 
-        decoder slosh_mode s
+        decoder s
 
     method set_line n = file_ctrl#set_line n
     method set_filename f = file_ctrl#set_filename f
@@ -222,15 +222,15 @@ let substr = String.sub
 let len = String.length
 
 (* string parsers *)
-let decode_qstring slosh_mode s = let n = len s in unescape slosh_mode (substr s 0 (n-1)) 
-let decode_dqstring slosh_mode s = let n = len s in unescape slosh_mode (substr s 0 (n-1)) 
-let decode_qqqstring slosh_mode s = let n = len s in unescape slosh_mode (substr s 0 (n-3)) 
-let decode_dddstring slosh_mode s = let n = len s in unescape slosh_mode (substr s 0 (n-3)) 
+let decode_qstring s = let n = len s in unescape (substr s 0 (n-1)) 
+let decode_dqstring s = let n = len s in unescape (substr s 0 (n-1)) 
+let decode_qqqstring s = let n = len s in unescape (substr s 0 (n-3)) 
+let decode_dddstring s = let n = len s in unescape (substr s 0 (n-3)) 
 
-let decode_raw_qstring slosh_mode s = let n = len s in substr s 0 (n-1) 
-let decode_raw_dqstring slosh_mode s = let n = len s in substr s 0 (n-1) 
-let decode_raw_qqqstring slosh_mode s = let n = len s in substr s 0 (n-3) 
-let decode_raw_dddstring slosh_mode s = let n = len s in substr s 0 (n-3)
+let decode_raw_qstring s = let n = len s in substr s 0 (n-1) 
+let decode_raw_dqstring s = let n = len s in substr s 0 (n-1) 
+let decode_raw_qqqstring s = let n = len s in substr s 0 (n-3) 
+let decode_raw_dddstring s = let n = len s in substr s 0 (n-3)
 
 (* WARNING: hackery: adjust this when lex expression 'white'
    is adjutsed
@@ -450,6 +450,148 @@ and parse_dddstring = parse
     )] 
   }
 
+and parse_wqstring = parse
+| qstring { 
+    fun state -> 
+      state#inbody;
+      [WSTRING (
+        state#get_srcref lexbuf, 
+        state#decode decode_qstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state -> 
+    [ERRORTOKEN (
+      state#get_srcref lexbuf, 
+      "' string"
+    )] 
+  }
+
+and parse_wdqstring = parse
+| dqstring {
+    fun state -> 
+      state#inbody;
+      [WSTRING (
+        state#get_srcref lexbuf, 
+        state#decode decode_dqstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state ->
+    state#inbody; 
+    [ERRORTOKEN (
+      state#get_srcref lexbuf, 
+      "\" string"
+    )]
+  }
+
+and parse_wqqqstring = parse
+| qqqstring { 
+    fun state -> 
+      state#inbody;
+      [WSTRING (
+        state#get_srcref lexbuf, 
+        state#decode decode_qqqstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state -> 
+    state#inbody;
+    [ERRORTOKEN (
+      state#get_srcref lexbuf, 
+      "''' string"
+    )] 
+  }
+
+and parse_wdddstring = parse
+| dddstring { 
+    fun state -> 
+      state#inbody;
+      [WSTRING (
+        state#get_srcref lexbuf,
+        state#decode decode_dddstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state -> 
+    state#inbody;
+    [ERRORTOKEN (
+      state#get_srcref lexbuf,
+      "\"\"\" string"
+    )] 
+  }
+
+and parse_uqstring = parse
+| qstring { 
+    fun state -> 
+      state#inbody;
+      [WSTRING (
+        state#get_srcref lexbuf, 
+        state#decode decode_qstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state -> 
+    [ERRORTOKEN (
+      state#get_srcref lexbuf, 
+      "' string"
+    )] 
+  }
+
+and parse_udqstring = parse
+| dqstring {
+    fun state -> 
+      state#inbody;
+      [USTRING (
+        state#get_srcref lexbuf, 
+        state#decode decode_dqstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state ->
+    state#inbody; 
+    [ERRORTOKEN (
+      state#get_srcref lexbuf, 
+      "\" string"
+    )]
+  }
+
+and parse_uqqqstring = parse
+| qqqstring { 
+    fun state -> 
+      state#inbody;
+      [USTRING (
+        state#get_srcref lexbuf, 
+        state#decode decode_qqqstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state -> 
+    state#inbody;
+    [ERRORTOKEN (
+      state#get_srcref lexbuf, 
+      "''' string"
+    )] 
+  }
+
+and parse_udddstring = parse
+| dddstring { 
+    fun state -> 
+      state#inbody;
+      [USTRING (
+        state#get_srcref lexbuf,
+        state#decode decode_dddstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+  fun state -> 
+    state#inbody;
+    [ERRORTOKEN (
+      state#get_srcref lexbuf,
+      "\"\"\" string"
+    )] 
+  }
+
 and parse_raw_qstring = parse
 | raw_qstring { 
     fun state -> 
@@ -587,7 +729,13 @@ and parse_preprocessor = parse
         ident,rest
       in
       match ident with
-      | "warn" -> print_string (lexeme lexbuf); []
+
+      (* print a warning *)
+      | "warn" -> 
+        print_string (lexeme lexbuf); 
+        state#newline lexbuf; 
+        [NEWLINE]
+        
       | "line" ->
         let i = ref 0 in
         let a = 
@@ -601,7 +749,7 @@ and parse_preprocessor = parse
         if !i = 0 
         then begin
           print_endline (state#string_of_srcref lexbuf);
-          print_endline "PREPROCESSING ERROR: digits required after #line, IGNORING DIRECTIVE"
+          print_endline "PREPROCESSING ERROR: digits required after #line, IGNORING DIRECTIVE";
         end else begin
           while is_white s.[!i] do incr i done;
           if s.[!i] <> '\n'
@@ -630,7 +778,7 @@ and parse_preprocessor = parse
               end
             end
           end else begin
-            print_endline ("SETTING LINE " ^ string_of_int a);
+            (* print_endline ("SETTING LINE " ^ string_of_int a); *)
             state#set_line (a-1)
           end
         end;
@@ -817,6 +965,7 @@ and pre_flx_lex = parse
   }
 
 (* one character sequences *)
+| "$" { fun state -> state#inbody; [DOLLAR        (state#get_srcref lexbuf)] }
 | "(" { fun state -> state#inbody; [LPAR          (state#get_srcref lexbuf)] }
 | ")" { fun state -> state#inbody; [RPAR          (state#get_srcref lexbuf)] }
 | "[" { fun state -> state#inbody; [LSQB          (state#get_srcref lexbuf)] }
@@ -889,16 +1038,31 @@ and pre_flx_lex = parse
 | "&<=" { fun state -> state#inbody; [ANDLESSEQUAL    (state#get_srcref lexbuf)] }
 | "&>=" { fun state -> state#inbody; [ANDGREATEREQUAL (state#get_srcref lexbuf)] }
 
+(* Python strings *)
 | quote  { fun state -> state#inbody; parse_qstring lexbuf state }
 | qqq    { fun state -> state#inbody; parse_qqqstring lexbuf state }
 | dquote { fun state -> state#inbody; parse_dqstring lexbuf state }
 | ddd    { fun state -> state#inbody; parse_dddstring lexbuf state }
 
+(* wide strings *)
+| ('w' | 'W') quote  { fun state -> state#inbody; parse_wqstring lexbuf state }
+| ('w' | 'W') qqq    { fun state -> state#inbody; parse_wqqqstring lexbuf state }
+| ('w' | 'W') dquote { fun state -> state#inbody; parse_wdqstring lexbuf state }
+| ('w' | 'W') ddd    { fun state -> state#inbody; parse_wdddstring lexbuf state }
+
+(* UTF32 strings *)
+| ('u' | 'U') quote  { fun state -> state#inbody; parse_uqstring lexbuf state }
+| ('u' | 'U') qqq    { fun state -> state#inbody; parse_uqqqstring lexbuf state }
+| ('u' | 'U') dquote { fun state -> state#inbody; parse_udqstring lexbuf state }
+| ('u' | 'U') ddd    { fun state -> state#inbody; parse_udddstring lexbuf state }
+
+(* Python raw strings *)
 | ('r'|'R') quote  { fun state -> state#inbody; parse_raw_qstring lexbuf state }
 | ('r'|'R') qqq    { fun state -> state#inbody; parse_raw_qqqstring lexbuf state }
 | ('r'|'R') dquote { fun state -> state#inbody; parse_raw_dqstring lexbuf state }
 | ('r'|'R') ddd    { fun state -> state#inbody; parse_raw_dddstring lexbuf state }
 
+(* whitespace *)
 | white + { 
     fun state ->
     begin
@@ -917,6 +1081,7 @@ and pre_flx_lex = parse
     end
   }
 
+(* Preprocessor Directive *)
 | "#" {
   fun state ->
     if state#is_at_line_start
@@ -928,6 +1093,7 @@ and pre_flx_lex = parse
      ]
   }
 
+(* end of line *)
 | newline {
   fun state ->
     begin 
@@ -935,11 +1101,23 @@ and pre_flx_lex = parse
       [NEWLINE ]
     end
   }
-| eof { fun state -> [ENDMARKER] }
-| _ { fun state -> state#inbody; 
-   [ERRORTOKEN (
-    state#get_srcref lexbuf,
-    lexeme lexbuf)]}
+
+(* end of file *)
+| eof { 
+  fun state -> [ENDMARKER] 
+  }
+  
+(* Anything else is an error *)
+| _ { 
+  fun state -> 
+    state#inbody; 
+    [
+      ERRORTOKEN 
+      (
+        state#get_srcref lexbuf, lexeme lexbuf
+      )
+    ]
+  }
 
 {
 }
@@ -990,7 +1168,7 @@ class lexer_state :
     method adj : int -> unit
     method append_comment : string -> unit
     method comment_level : int
-    method decode : (slosh_mode_t -> string -> string) -> string -> string
+    method decode : (string -> string) -> string -> string
     method decr_comment : unit
     method get_comment : string
     method get_srcref : Lexing.lexbuf -> srcref

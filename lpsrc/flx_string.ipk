@@ -1,8 +1,37 @@
 @head(1,'String handling')
+@h = tangler('src/flx_string.mli')
+@select(h)
+val bin_char2int : char -> int
+val oct_char2int : char -> int
+val dec_char2int : char -> int
+val hex_char2int : char -> int
+
+val binint_of_string : string -> int
+val octint_of_string : string -> int
+val decint_of_string : string -> int
+val hexint_of_string : string -> int
+
+val binbig_int_of_string : string -> Big_int.big_int 
+val octbig_int_of_string : string -> Big_int.big_int 
+val decbig_int_of_string : string -> Big_int.big_int 
+val hexbig_int_of_string : string -> Big_int.big_int 
+
+val floating_of_string : string -> float
+
+val unescape : string -> string
+
+val escape_of_string : char -> string -> string
+val py_dquote_of_string : string -> string
+val py_quote_of_string : string -> string
+val c_quote_of_string : string -> string
+val utf8_of_int : int -> string
+val parse_utf8 : string -> int -> int * int
+val hex2 : int -> string
+val hex4 : int -> string
+val hex8 : int -> string
+
 @h = tangler('src/flx_string.ml')
 @select(h)
-type slosh_mode_t = Oct | Dec
-
 let hexchar_of_int i = 
   if i < 10 
   then char_of_int (i + (int_of_char '0'))
@@ -288,7 +317,7 @@ let utf8_of_int i =
     chr(0x80 lor ((i lsr 6) land 0x3F)) ^
     chr(0x80 lor (i land 0x3F))
 
-let unescape slosh_mode s = 
+let unescape s = 
   let hex_limit = 2 in
   let n = len s in
   let s' = Buffer.create 1000 in
@@ -426,40 +455,6 @@ let unescape slosh_mode s =
           done;
           tack_utf8 !value
         end
-      | '0' 
-      | '1' 
-      | '2' 
-      | '3' 
-      | '4' 
-      | '5' 
-      | '6' 
-      | '7' 
-      | '8'
-      | '9'
-        -> let j = ref 0 and value = ref 0 in
-        begin match slosh_mode with
-        | Oct ->
-          while 
-            (!i < n) & 
-            (!j < 3) &
-            (String.contains "01234567" s.[!i]) do
-            value := !value * 8 + (oct_char2int s.[!i]); 
-            incr i;
-            incr j
-          done
-        | Dec ->
-          while 
-            (!i < n) & 
-            (!j < 3) &
-            (String.contains "0123456789" s.[!i]) do
-            value := !value * 10 + (dec_char2int s.[!i]); 
-            incr i;
-            incr j
-          done
-        end
-        ;
-        tack_char (Char.chr !value)
-
 
       | x -> tack_char '\\'; tack_char x;
         incr i;
@@ -487,39 +482,6 @@ let unescape slosh_mode s =
    ASCII form using \U and \u escapes
    for all codes in the range 0-1F, and >80
 *)
-
-@h = tangler('src/flx_string.mli')
-@select(h)
-type slosh_mode_t = Oct | Dec
-
-val bin_char2int : char -> int
-val oct_char2int : char -> int
-val dec_char2int : char -> int
-val hex_char2int : char -> int
-
-val binint_of_string : string -> int
-val octint_of_string : string -> int
-val decint_of_string : string -> int
-val hexint_of_string : string -> int
-
-val binbig_int_of_string : string -> Big_int.big_int 
-val octbig_int_of_string : string -> Big_int.big_int 
-val decbig_int_of_string : string -> Big_int.big_int 
-val hexbig_int_of_string : string -> Big_int.big_int 
-
-val floating_of_string : string -> float
-
-val unescape : slosh_mode_t -> string -> string
-
-val escape_of_string : char -> string -> string
-val py_dquote_of_string : string -> string
-val py_quote_of_string : string -> string
-val c_quote_of_string : string -> string
-val utf8_of_int : int -> string
-val parse_utf8 : string -> int -> int * int
-val hex2 : int -> string
-val hex4 : int -> string
-val hex8 : int -> string
 
 @head(1,'Internationalised Identifier support')
 @h = tangler('src/flx_id.ml')

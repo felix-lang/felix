@@ -256,10 +256,10 @@ proc set : & int * int = "*$1 = $2;";
 
 union parity = Even | Odd;
 
-procedure fire()
+proc fire()
 {
   var i : int = 0;
-  function get_parity(): parity =
+  fun get_parity(): parity =
   {
     return
       if(i%2==0) then Even
@@ -330,7 +330,7 @@ var counter : int = 0;
 var counter2 : int = 0;
 proc eol : unit = 'printf("\n");';
 
-procedure handle_line()
+proc handle_line()
 {
   var checker : check;
   var line : string;
@@ -682,7 +682,7 @@ var counter : int = 0;
 var counter2 : int = 0;
 proc eol : unit = 'printf("\n");';
 
-procedure handle_line()
+proc handle_line()
 {
   var checker : check;
   var line : string;

@@ -43,6 +43,8 @@ val version_string : string
 @include_file ('flx_lexer.ipk')
 @include_file ('flx_tokeniser.ipk')
 @include_file ('flx_pat.ipk')
+@include_file ('flx_constfld.ipk')
+@include_file ('flx_macro.ipk')
 @include_file ('flx_desugar.ipk')
 @include_file ('flx_symtab.ipk')
 @include_file ('flx_lookup.ipk')

@@ -2,8 +2,9 @@
 @head(1,'Origins')
 Felix is a new programming language which is designed
 to overcome serious limitiations in C and C++
-for high level programming by adopting some
-of the technology of functional programming and scripting languages,
+for high level programming, without loss of efficiency,
+by adopting some of the ideas of 
+functional programming and scripting languages,
 whilst retaining a form of compatibility to 
 support reuse of existing C and C++ codes.
 @p()
@@ -42,10 +43,7 @@ and write. It prevents simple parsing by both
 common machine parsing techniques, and also
 by human readers.
 @p()
-Felix uses an LL(1) grammar which is unambiguous
-except for a small number of constructions including
-the 'if/else' ambguity. The ambiguity is tolerated
-so as to support C/C++ compatible syntax.
+Felix uses an LALR(1) unambiguous yaccable grammar.
 @p()
 Felix uses an ML style type grammar.
 @p()
@@ -53,13 +51,17 @@ As an example we exhibit a variable definition:
 @begin_displayed_code()
   var x : int = 1;
 @end_displayed_code()
-and a function definition:
+and a function definition and variable:
 @begin_displayed_code()
-  function sum(a:int, b:int):int 
+  function sum(a:int, b:int):int =
   {
     return a + b;
   }
+  var f : int * int -> int = sum of (int * int);
 @end_displayed_code()
+The suffix (int * int) here is used to chose
+a particular function from a potential overload
+set.
 
 @head(2,'Type inference')
 In C/C++ serial decomposition of expressions
@@ -93,12 +95,17 @@ construction of functional programming:
   x + yz;
 @end_displayed_code()
 @p()
-Deduction of function types is not supported.
-There are two reasons: error messages tend
+Deduction of function return types is also supported.
+@p()
+Deduction of function parameter types is not supported.
+There are two main reasons: error messages tend
 to be obscure, and overloading cannot easily
-be supported. Deduction of return types of functions, however,
-is supported for all non-recursive functions, and most 
-recursive ones.
+be supported. There is a third reason too: Hindly-Milner
+type inference is an NP-hard.
+@p()
+In summary we can say Felix provides bottom (synthetic)
+type deduction, but not full inference in the 
+ML (Hindly-Milner) style.
 
 @head(2,'Functions and tuples')
 In Felix, functions always have exactly one
@@ -121,16 +128,22 @@ to apply a function, although they can always be given.
 Unlike ML style languages, Felix supports
 overloaded functions and procedures.
 Unlike C++, overloading requires an exact match.
-Felix does not support any implicit conversions.
+Felix does not support any implicit type conversions.
 Overloading, type inference and automatic conversions
 do not fit well together.
+@p()
+There are some implicit kinding conversions though:
+when a function is used, a closure is implicitly
+constructed: in terms of the representation,
+a function is a class, whilst a closure is an
+instance of it; that is, an object.
 
 @head(2,'Nesting')
 Felix constructions, including functions, procedures
 and modules, all nest. Note that there is a constraint
 on calling procedures in functions: the procedure
 may modify the data of the function enclosing
-it, but not any enclosing scope. This localised
+it, but not any enclosing scope. This localises
 side effects. Such procedure calls can always be
 executed using the machine stack: they do not go through 
 the usual control inversion mechanism. 

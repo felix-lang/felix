@@ -44,6 +44,7 @@ open Flx_name
 open Flx_tgen
 open Flx_unify
 open Flx_csubst
+open Flx_exceptions
 
 let string_of_string = Flx_string.c_quote_of_string
 
@@ -75,10 +76,11 @@ let csuffix_of_type s = match s with
   | _ -> failwith ("[csuffix_of_type]: Unexpected Type " ^ s)
 
 let cstring_of_literal e = match e with
-(*   | `AST_bool i -> (match i with | true -> "true" | false -> "false") *)
   | `AST_int (s,i) -> (Big_int.string_of_big_int i)^csuffix_of_type s 
   | `AST_float (s,x) -> x ^ csuffix_of_type s
   | `AST_string s -> string_of_string s
+  | `AST_wstring s -> "L" ^ string_of_string s
+  | `AST_ustring s -> "L" ^ string_of_string s
 
 let find_references bbdfns name_map = 
   let references = ref [] in
@@ -872,9 +874,17 @@ let get_parameters dfns index =
 type kind_t = Function | Procedure
 
 let gen_exe sym_state bbdfns label_map counter this (exe:bexe_t) =
+  let sr = ("dummy",0,0,0,0) in
   (*
   print_endline ("generating exe " ^ string_of_bexe dfns 0 exe);
   *)
+  let ret_string =          
+    "      {\n" ^
+    "        continuation_t *tmp = _caller;\n" ^
+    "        _caller=0;\n" ^
+    "        return tmp;\n" ^
+    "      }\n"
+  in
   let ge e = gen_expr sym_state bbdfns this e in
   let id,parent,entry = 
     try Hashtbl.find bbdfns this 
@@ -886,6 +896,142 @@ let gen_exe sym_state bbdfns label_map counter this (exe:bexe_t) =
     | `BBDCL_procedure (_,_,_) -> Procedure
     | _ -> failwith "Expected executable code to be in function or procedure"
   in let our_level = List.length our_display in
+  let handle_ginst is_jump index ts a =
+    let id,parent,entry = 
+      try Hashtbl.find bbdfns index 
+      with _ -> failwith ("[gen_exe(call)] Can't find index " ^ string_of_int index)
+    in
+    begin match entry with
+    | `BBDCL_proc (vs,_,ct) -> 
+      if List.length vs = List.length ts 
+      then
+        begin match a with
+        | (`BEXPR_tuple es,`BTYP_tuple typs) ->
+          let args = List.map ge es in
+          "      //call multi (or no) -arg generic primitive " ^ id ^ "\n" ^
+          "      {" ^ csubst sym_state bbdfns ct args typs `BTYP_void ts^ "}\n"
+        | (_,typ) -> 
+          "      //call single-arg generic primitive " ^ id ^ "\n" ^
+          "      {" ^ csubst sym_state bbdfns ct [ge a] [typ] `BTYP_void ts^ "}\n"
+        end
+        ^ 
+        begin
+          if is_jump then ret_string
+          else ""
+        end
+      else failwith "Generic procedure has wrong number of type arguments"
+    | _ -> failwith "Expected generic instance procedure"
+    end
+  and handle_closure is_jump index a =
+    let id,parent,entry = 
+      try Hashtbl.find bbdfns index 
+      with _ -> failwith ("[gen_exe(call)] Can't find index " ^ string_of_int index)
+    in
+    begin 
+    
+    match entry with
+    | `BBDCL_proc (vs,_,ct) -> 
+      if List.length vs = 0
+      then 
+        begin match a with
+        | (`BEXPR_tuple es,`BTYP_tuple typs) ->
+          let args = List.map ge es in
+          "      //call multi (or no) -arg primitive " ^ id ^ "\n" ^
+          "      {" ^ csubst sym_state bbdfns ct args typs `BTYP_void []^ "}\n"
+        | (_,typ) -> 
+          "      //call single-arg primitive " ^ id ^ "\n" ^
+          "      {" ^ csubst sym_state bbdfns ct [ge a] [typ] `BTYP_void []^ "}\n"
+        end
+        ^
+        begin
+          if is_jump then ret_string
+          else ""
+        end
+      else failwith "Generic procedure requires type arguments"
+
+    | `BBDCL_procedure (ps,bexes,nmap) ->
+      if bexes = []
+      then 
+      "      //call to empty procedure " ^ id ^ " elided\n"
+      else begin
+        let n = !counter in
+        incr counter;
+        let the_display = 
+          let d' = 
+            List.map (fun i -> "ptr"^cpp_name bbdfns i)
+            (get_display_list sym_state.dfns index)
+          in 
+            if List.length d' > our_level
+            then "this" :: List.tl d'
+            else d'
+        and os_frames = [
+          "pgf";
+          "ppf";
+          "ptf"
+        ]
+        in
+        (* if we're calling from inside a function,
+           we pass a 0 continuation as the caller 'return address'
+           otherwise pass 'this' as the caller 'return address'
+        *)
+        let this = match kind with
+          | Function -> 
+            if is_jump 
+            then 
+              clierr sr "can't jump inside function" 
+            else "0"
+          | Procedure -> 
+            if is_jump then "tmp"
+            else "this"
+        in
+
+        let args = match a with
+          | _,`BTYP_tuple [] -> this
+          | _ -> this ^ ", " ^ ge a
+        in
+
+        let name = cpp_name bbdfns index in
+        "      //call procedure " ^ id ^ "\n" 
+        ^
+        begin 
+          match kind with
+          | Function ->
+            "      continuation_t *_p =\n" ^
+            "      (new(gc,"^ name^"_ptr_map)\n" ^ 
+            "      " ^ name ^
+            "(" ^ String.concat ",\n      " (os_frames @ the_display) ^
+            "))->call(\n      " ^ args ^ "\n      );\n" ^
+            "      while(_p) _p=_p->resume();\n"
+
+          | Procedure ->
+            let call_string =
+              "      return (new(gc,"^ name^"_ptr_map)\n" ^ 
+              "      " ^ name ^
+              "(" ^ String.concat ",\n      " (os_frames @ the_display) ^
+              "))->call(\n      " ^ args ^ "\n      );\n"
+            in
+            if is_jump
+            then
+              "     {\n" ^
+              "       continuation_t *tmp = _caller;\n" ^
+              "       _caller = 0;\n" ^
+              call_string ^
+              "      }\n"
+            else
+              "      pc = " ^ string_of_int n ^ ";\n" ^
+              call_string ^
+              "    case " ^ string_of_int n ^ ":\n"
+        end
+      end
+
+    | _ -> 
+      failwith 
+      (
+        "[gen_exe] Expected '"^id^"' to be procedure constant, got " ^
+        string_of_bbdcl sym_state.dfns entry index 
+      )
+    end
+  in
   match exe with
   | `BEXE_code s -> s
   | `BEXE_comment s -> "\n/*" ^ s ^ "*/\n"
@@ -908,6 +1054,7 @@ let gen_exe sym_state bbdfns label_map counter this (exe:bexe_t) =
     )
     ^
     "    " ^ s ^ ":;\n"
+
   | `BEXE_goto s -> 
     let local_labels = 
       try Hashtbl.find label_map this 
@@ -958,110 +1105,39 @@ let gen_exe sym_state bbdfns label_map counter this (exe:bexe_t) =
   | `BEXE_ifgoto (e,s) -> "      if(" ^ ge e ^ ")goto " ^ s ^ ";\n"
   | `BEXE_ifnotgoto (e,s) ->"      if(!("^ge e^"))goto " ^ s ^ ";\n" 
   
+  | `BEXE_jump ((`BEXPR_ginst (index,ts),_) as f,a) ->
+    handle_ginst true index ts a
+
   | `BEXE_call ((`BEXPR_ginst (index,ts),_) as f,a) ->
-    let id,parent,entry = 
-      try Hashtbl.find bbdfns index 
-      with _ -> failwith ("[gen_exe(call)] Can't find index " ^ string_of_int index)
-    in
-    begin match entry with
-    | `BBDCL_proc (vs,_,ct) -> 
-      if List.length vs = List.length ts 
-      then
-        begin match a with
-        | (`BEXPR_tuple es,`BTYP_tuple typs) ->
-          let args = List.map ge es in
-          "      //call multi (or no) -arg generic primitive " ^ id ^ "\n" ^
-          "      {" ^ csubst sym_state bbdfns ct args typs `BTYP_void ts^ "}\n"
-        | (_,typ) -> 
-          "      //call single-arg generic primitive " ^ id ^ "\n" ^
-          "      {" ^ csubst sym_state bbdfns ct [ge a] [typ] `BTYP_void ts^ "}\n"
-        end
-      else failwith "Generic procedure has wrong number of type arguments"
-    | _ -> failwith "Expected generic instance procedure"
-    end
- 
+    handle_ginst false index ts a
+    
+  | `BEXE_jump ((`BEXPR_closure index,_) as f,a) ->
+    handle_closure true index a
+    
   | `BEXE_call ((`BEXPR_closure index,_) as f,a) ->
-    let id,parent,entry = 
-      try Hashtbl.find bbdfns index 
-      with _ -> failwith ("[gen_exe(call)] Can't find index " ^ string_of_int index)
+    handle_closure false index a
+
+  | `BEXE_loop (i,a) ->
+    let ptr = 
+      if i = 0 then "this"
+      else 
+        let k = List.nth our_display (i-1) in 
+        "ptr"^cpp_name bbdfns k
     in
-    begin match entry with
-    | `BBDCL_proc (vs,_,ct) -> 
-      if List.length vs = 0
-      then
-        begin match a with
-        | (`BEXPR_tuple es,`BTYP_tuple typs) ->
-          let args = List.map ge es in
-          "      //call multi (or no) -arg primitive " ^ id ^ "\n" ^
-          "      {" ^ csubst sym_state bbdfns ct args typs `BTYP_void []^ "}\n"
-        | (_,typ) -> 
-          "      //call single-arg primitive " ^ id ^ "\n" ^
-          "      {" ^ csubst sym_state bbdfns ct [ge a] [typ] `BTYP_void []^ "}\n"
-        end
-      else failwith "Generic procedure requires type arguments"
-
-    | `BBDCL_procedure (ps,bexes,nmap) ->
-      if bexes = []
-      then 
-      "      //call to empty procedure " ^ id ^ " elided\n"
-      else begin
-        let n = !counter in
-        incr counter;
-        let the_display = 
-          let d' = 
-            List.map (fun i -> "ptr"^cpp_name bbdfns i)
-            (get_display_list sym_state.dfns index)
-          in 
-            if List.length d' > our_level
-            then "this" :: List.tl d'
-            else d'
-        and os_frames = [
-          "pgf";
-          "ppf";
-          "ptf"
-        ]
-        in
-        (* if we're calling from inside a function,
-           we pass a 0 continuation as the caller 'return address'
-           otherwise pass 'this' as the caller 'return address'
-        *)
-        let this = match kind with
-        | Function -> "0"
-        | Procedure -> "this"
-        in
-        let args = match a with
-        | _,`BTYP_tuple [] -> this
-        | _ -> this ^ ", " ^ ge a
-        in
-        let name = cpp_name bbdfns index in
-        "      //call procedure " ^ id ^ "\n" ^
-        (match kind with
-        | Function ->
-          "      continuation_t *_p =\n" ^
-          "      (new(gc,"^ name^"_ptr_map)\n" ^ 
-          "      " ^ name ^
-          "(" ^ String.concat ",\n      " (os_frames @ the_display) ^
-          "))->call(\n      " ^ args ^ "\n      );\n" ^
-          "      while(_p) _p=_p->resume();\n"
-
-        | Procedure ->
-          "      pc = " ^ string_of_int n ^ ";\n" ^
-          "      return (new(gc,"^ name^"_ptr_map)\n" ^ 
-          "      " ^ name ^
-          "(" ^ String.concat ",\n      " (os_frames @ the_display) ^
-          "))->call(\n      " ^ args ^ "\n      );\n" ^
-          "    case " ^ string_of_int n ^ ":\n"
-        )
-      end
-
-    | _ -> 
-      failwith 
-      (
-        "[gen_exe] Expected '"^id^"' to be procedure constant, got " ^
-        string_of_bbdcl sym_state.dfns entry index 
-      )
-    end
-
+      print_endline ("Looping to " ^ ptr);
+      let args = match a with
+        | _,`BTYP_tuple [] -> "_caller"
+        | _ -> "_caller, " ^ ge a
+      in
+      "        return " ^ ptr ^ "->call(" ^ args ^");\n"
+      
+  (* BUG?!? if p is a variable containing a closure,
+     and p recursively invokes the same closure,
+     then the program counter and other state 
+     of the closure is lost: the closure will return
+     to its on previous state; that is, simply continue on:
+     there's only one frame
+   *)
   | `BEXE_call (p,a) ->
     let args = match a with
       | _,`BTYP_tuple [] -> "this"
@@ -1072,7 +1148,20 @@ let gen_exe sym_state bbdfns label_map counter this (exe:bexe_t) =
     "      pc = " ^ string_of_int n ^ ";\n" ^
     "      return " ^ ge p ^ "->call(" ^ args ^");\n" ^
     "    case " ^ string_of_int n ^ ":\n"
-    
+
+  | `BEXE_jump (p,a) ->
+    let args = match a with
+      | _,`BTYP_tuple [] -> "tmp"
+      | _ -> "tmp, " ^ ge a
+    in
+    "      {\n" ^
+    "        continuation_t *tmp = _caller;\n" ^
+    "        _caller=0;\n" ^
+    "        return " ^ ge p ^ "->call(" ^ args ^");\n" ^
+    "      }\n"
+
+  | `BEXE_proc_return -> ret_string
+
   | `BEXE_read index -> 
     let n = !counter in
     incr counter;
@@ -1169,7 +1258,7 @@ let gen_exe sym_state bbdfns label_map counter this (exe:bexe_t) =
 
     Buffer.contents b
     
-  | `BEXE_return e -> "      return "^ge e^";\n"
+  | `BEXE_fun_return e -> "      return "^ge e^";\n"
   | `BEXE_nop s -> "      //Nop: " ^ s ^ "\n"
   | `BEXE_init (v,e) -> 
     "      //initialisation "^string_of_bexe sym_state.dfns 0 exe ^"\n" ^
@@ -2055,6 +2144,12 @@ with
 
   | ClientError (sr,s) ->
     flush stdout; print_endline "CLIENT ERROR";
+    print_endline s;
+    print_endline ("In " ^ long_string_of_src sr);
+    exit (if !return_parity then 1 else 0)
+
+  | SystemError (sr,s) ->
+    flush stdout; print_endline "FELIX COMPILER ERROR";
     print_endline ("In " ^ short_string_of_src sr);
     print_endline s;
     exit (if !return_parity then 1 else 0)

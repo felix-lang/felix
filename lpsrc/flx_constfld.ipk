@@ -1,0 +1,292 @@
+@head(1,'Constant folding')
+These routines provide constant folding.
+Felix recognizes plain integers, strings, and boolean
+values as constants, and folds expressions involving
+all the basic operations on them as follows:
+@begin_displayed_code()
+  // integers
+  -x, neg x
+  +x, pos x
+  abs x
+  x+y, add (x,y)
+  x-y, sub(x,y)
+  x*y, mul(x,y)
+  x/y, div(x,y)
+  x % y, mod(x,y)
+  x ** y, pow(x,y)
+  x<y, lt(x,y)
+  x>y, gt(x,y)
+  x<=y, le(x,y)
+  x>=y, ge(x,y)
+  x=y, eq(x,y)
+  x!=y, x<>y,ne(x,y)
+
+  // strings
+  x+y, add
+  x*n, mul(x,n) // concatenate n copies of x
+  x=y, eq(x,y)
+  x!=y, x<>y,ne(x,y)
+  x n // append the utf8 encoding of n to x
+
+  // ustrings
+  x+y, add
+  x*n, mul(x,n) // concatenate n copies of x
+  x=y, eq(x,y)
+  x!=y, x<>y,ne(x,y)
+  x n // append the char of code value n to x
+
+  // bool
+  not x, lnot(x,y)
+  x or y, lor(x,y)
+  x and y, land(x,y)
+  x=y, eq(x,y)
+  x!=y, x<>y,ne(x,y)
+
+  // conditional
+  if c then e1 else e2 endif // compile time shortcut
+@end_displayed_code()
+@p()
+Note the conditional fold, which replaces the
+conditional with either e1 or e2 if c is a boolean
+constant expression.
+@p()
+Note the string formation forms:
+@begin_displayed_code()
+ "" 27 987
+ u"" 27 987
+@end_displayed_code()
+have the same ISO-10646 interpretation, however
+the first string is 8 bit, and the 987 is replaced
+by its UTF-8 encoding, whilst the second string
+is 32 bit, and the integral value is represented
+directly.
+@p()
+Implementation note: both string types are represented
+internally by 8 bit UTF-8 encoded strings.
+
+@h = tangler('src/flx_constfld.mli')
+@select(h)
+open Flx_types
+val const_fold:
+  expr_t -> expr_t
+
+@h = tangler('src/flx_constfld.ml')
+@select(h)
+open Flx_types
+open Flx_print
+open Flx_exceptions
+open List
+
+let bool_t = `TYP_sum [`TYP_tuple[]; `TYP_tuple []]
+let truth sr r = 
+  let r = if r then 2 else 1 in
+  `AST_typed_case (sr,r,bool_t)
+
+let const_fold' e sr name arg = match name, arg with
+  (* integers *)
+  (* -x *)
+  | "neg", `AST_literal (_,`AST_int ("int",x))
+    -> 
+    `AST_literal (sr,`AST_int ("int",Big_int.minus_big_int x))
+
+  (* +x *)
+  | "pos", `AST_literal (_,`AST_int ("int",x))
+    -> 
+    `AST_literal (sr,`AST_int ("int", x))
+
+  (* abs x *)
+  | "abs", `AST_literal (_,`AST_int ("int",x))
+    -> 
+    `AST_literal (sr,`AST_int ("int", Big_int.abs_big_int x))
+
+  (* x+y *)
+  | "add", `AST_tuple ( _, [
+           `AST_literal (_,`AST_int ("int",x));
+           `AST_literal (_,`AST_int ("int",y))
+          ])
+    -> 
+    `AST_literal (sr,`AST_int ("int",Big_int.add_big_int x y))
+
+  (* x-y *)
+  | "sub", `AST_tuple ( _, [
+           `AST_literal (_,`AST_int ("int",x));
+           `AST_literal (_,`AST_int ("int",y))
+          ])
+    -> 
+    `AST_literal (sr,`AST_int ("int",Big_int.sub_big_int x y))
+
+  (* x*y *)
+  | "mul", `AST_tuple ( _, [
+           `AST_literal (_,`AST_int ("int",x));
+           `AST_literal (_,`AST_int ("int",y))
+          ])
+    -> 
+    `AST_literal (sr,`AST_int ("int",Big_int.mult_big_int x y))
+
+  (* x/y *)
+  | "div", `AST_tuple ( _, [
+           `AST_literal (_,`AST_int ("int",x));
+           `AST_literal (_,`AST_int ("int",y))
+          ])
+    -> 
+    `AST_literal (sr,`AST_int ("int",Big_int.div_big_int x y))
+
+  (* x mod y *)
+  | "mod", `AST_tuple ( _, [
+           `AST_literal (_,`AST_int ("int",x));
+           `AST_literal (_,`AST_int ("int",y))
+          ])
+    -> 
+    `AST_literal (sr,`AST_int ("int",Big_int.mod_big_int x y))
+
+  (* x ** y *)
+  | "pow", `AST_tuple ( _, [
+           `AST_literal (_,`AST_int ("int",x));
+           `AST_literal (_,`AST_int ("int",y))
+          ])
+    -> 
+    `AST_literal (sr,`AST_int ("int",Big_int.power_big_int_positive_big_int x y))
+
+  (* x < y *)
+  | "lt", `AST_tuple ( _, [
+           `AST_literal (_,`AST_int ("int",x));
+           `AST_literal (_,`AST_int ("int",y))
+          ])
+    -> 
+    truth sr (Big_int.lt_big_int x y)
+
+  (* x > y *)
+  | "gt", `AST_tuple ( _, [
+           `AST_literal (_,`AST_int ("int",x));
+           `AST_literal (_,`AST_int ("int",y))
+          ])
+    -> 
+    truth sr (Big_int.gt_big_int x y)
+
+  (* x <= y *)
+  | "le", `AST_tuple ( _, [
+           `AST_literal (_,`AST_int ("int",x));
+           `AST_literal (_,`AST_int ("int",y))
+          ])
+    -> 
+    truth sr (Big_int.le_big_int x y)
+
+  (* x >= y *)
+  | "ge", `AST_tuple ( _, [
+           `AST_literal (_,`AST_int ("int",x));
+           `AST_literal (_,`AST_int ("int",y))
+          ])
+    -> 
+    truth sr (Big_int.ge_big_int x y)
+
+  (* x == y *)
+  | "eq", `AST_tuple ( _, [
+           `AST_literal (_,`AST_int ("int",x));
+           `AST_literal (_,`AST_int ("int",y))
+          ])
+    -> 
+    truth sr (Big_int.eq_big_int x y)
+
+  (* x != y *)
+  | "ne", `AST_tuple ( _, [
+           `AST_literal (_,`AST_int ("int",x));
+           `AST_literal (_,`AST_int ("int",y))
+          ])
+    -> 
+    truth sr (not (Big_int.eq_big_int x y))
+
+  (* strings *)
+  (* x+y *)
+  | "add", `AST_tuple ( _, [
+           `AST_literal (_,`AST_string x);
+           `AST_literal (_,`AST_string y)
+          ])
+    -> 
+    `AST_literal (sr,`AST_string (String.concat "" [x; y]))
+
+  (* x*y *)
+  | "mul", `AST_tuple ( _, [
+           `AST_literal (_,`AST_string x);
+           `AST_literal (_,`AST_int ("int",y))
+          ])
+    -> 
+    let y = 
+      try 
+        Big_int.int_of_big_int y 
+      with _ -> clierr sr "String repeat count too large"
+    in
+    let s = Buffer.create (String.length x * y) in
+    for i = 1 to y do
+      Buffer.add_string s x
+    done;
+    `AST_literal (sr,`AST_string (Buffer.contents s))
+
+  (* x == y *)
+  | "eq", `AST_tuple ( _, [
+           `AST_literal (_,`AST_string x);
+           `AST_literal (_,`AST_string y)
+          ])
+    -> 
+    truth sr (x = y)
+
+  (* x != y *)
+  | "ne", `AST_tuple ( _, [
+           `AST_literal (_,`AST_string x);
+           `AST_literal (_,`AST_string y)
+          ])
+    -> 
+    truth sr (x <> y)
+
+  
+  (* bool *)
+  (* not x *)
+  | "lnot", `AST_tuple ( _, [
+           `AST_typed_case (_,x,`TYP_sum [`TYP_tuple[];`TYP_tuple[]])
+          ])
+    -> truth sr (x=0)
+
+  (* x or y *)
+  | "lor", `AST_tuple ( _, [
+           `AST_typed_case (_,x,`TYP_sum [`TYP_tuple[];`TYP_tuple[]]);
+           `AST_typed_case (_,y,`TYP_sum [`TYP_tuple[];`TYP_tuple[]])
+          ])
+    -> truth sr (x=1 or y=1)
+
+  (* x and y *)
+  | "land", `AST_tuple ( _, [
+           `AST_typed_case (_,x,`TYP_sum [`TYP_tuple[];`TYP_tuple[]]);
+           `AST_typed_case (_,y,`TYP_sum [`TYP_tuple[];`TYP_tuple[]])
+          ])
+    -> truth sr (x=1 && y=1)
+
+  (* x eq y *)
+  | "eq", `AST_tuple ( _, [
+           `AST_typed_case (_,x,`TYP_sum [`TYP_tuple[];`TYP_tuple[]]);
+           `AST_typed_case (_,y,`TYP_sum [`TYP_tuple[];`TYP_tuple[]])
+          ])
+    -> truth sr (x=y)
+
+  (* x ne y *)
+  | "ne", `AST_tuple ( _, [
+           `AST_typed_case (_,x,`TYP_sum [`TYP_tuple[];`TYP_tuple[]]);
+           `AST_typed_case (_,y,`TYP_sum [`TYP_tuple[];`TYP_tuple[]])
+          ])
+    -> truth sr (x<>y)
+
+  | _ -> e
+
+let const_fold e = 
+  match e with
+  | `AST_apply (sr, (`AST_name (_,name),arg)) ->
+    const_fold' e sr name arg
+
+  | `AST_apply ( sr, ( 
+           `AST_literal (_,`AST_string x),
+           `AST_literal (_,`AST_string y)
+          ))
+    -> 
+    `AST_literal (sr,`AST_string (String.concat "" [x; y]))
+
+  | _ -> e
+
+

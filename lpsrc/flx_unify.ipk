@@ -45,8 +45,90 @@ let varmap_subst varmap t =
   of a set of type equations as a list
   of variable assignments i -> t
   or raises Not_found if there is no solution
+
+  HOW IT WORKS:
+
+  We start with some set of type equations
+  t1 = t2
+  t3 = t4  (1)
+  ...
+
+  in which the LHS and RHS are general terms that 
+  may contain type variables.
+
+  We want to say whether the equations are consistent,
+  and if so, to return a solution of the form
+  of a set of equations:
+
+  v1 = u1
+  v2 = u2   (2)
+
+  where v1 .. vn are type variable
+  which do not occur in any of the
+  terms u1 .. un
+
+  Such a set is a solution if by replacing v1 with u1,
+  v2 with u2 .. vn with un,
+  everywhere they occur in t1, t2 .... tn,
+  the original equations are reduced to
+  equations terms which are structurally equal 
+
+  The technique is to pick one equation,
+  and match up the outermost structure,
+  making new equations out of the pieces in the middle,
+  or failing if the outer structure does not match.
+
+  We discard the original equation,
+  add the new equations to the set,
+  and then for any variable assignments of form (2)
+  found, we eliminate that variable in the
+  all the other equations by substitution.
+
+
+  At the end we are guarrateed to either have found
+  the equations have no solution, or computed one,
+  although it may be that the terms u1 .. u2 ..
+  contain some type variables.
+
+  There is a caveat though: we may obtain
+  an equation 
+
+    v = t
+
+  where v occurs in t, that is, a recursive equation.
+  If that happens, we eliminate the occurences
+  of v in t before replacement in other equations:
+  we do this by replacing the RHS occurences of
+  v with a fixpoint operator.
+
 *)
 
+
+let var_i_occurs i t =
+  let rec aux t =
+    match t with
+    | `BTYP_sum ls 
+    | `BTYP_inst (_,ls)
+    | `BTYP_tuple ls -> List.iter aux ls
+
+    | `BTYP_binding (a,b)
+    | `BTYP_function (a,b) -> aux a; aux b
+
+    | `BTYP_pointer a  -> aux a
+
+    | `BTYP_void
+    | `BTYP_name _ 
+    | `BTYP_fix _ -> ()
+
+    | `BTYP_var i -> raise Not_found
+    | _ -> failwith "unexpected metatype"
+
+ in try aux t; false with Not_found -> true
+
+(* NOTE: this algorithm unifies EQUATIONS 
+  not inequations, therefore it doesn't
+  handle any subtyping
+*)
 let rec unification eqns = 
   let eqns = ref eqns in
   let mgu = ref [] in
@@ -58,14 +140,15 @@ let rec unification eqns =
       let s = ref None in
       begin match h with
       | `BTYP_var i, `BTYP_var j ->
-        if i = j then s := None
-        else s := Some (i,`BTYP_var j)
+        if i <> j then s := Some (i,`BTYP_var j)
 
       | `BTYP_var i, t
       | t,`BTYP_var i ->
-        (* occurs check for recursion here *)
-        s := Some (i,t)
-
+        if var_i_occurs i t
+        then 
+          failwith "Unexpected recursion in unification"
+        else
+          s := Some (i,t)
 
       | `BTYP_pointer t2, `BTYP_pointer t1 ->
         eqns := (t1,t2) :: !eqns
@@ -73,10 +156,6 @@ let rec unification eqns =
       | `BTYP_binding (t11, t12), `BTYP_binding (t21, t22)
       | `BTYP_function (t11, t12), `BTYP_function (t21, t22) ->
         eqns := (t11,t21) :: (t12,t22) :: !eqns
-
-      | _,`BTYP_none
-      | `BTYP_none,_ 
-         -> failwith "unification: unexpected type `BTYP_none"
 
       | `BTYP_void,`BTYP_void -> ()
 
@@ -94,6 +173,9 @@ let rec unification eqns =
             s := None
         end
 
+      | `BTYP_fix 0,_
+      | _,`BTYP_fix 0 -> ()
+        
       | `BTYP_fix i,`BTYP_fix j
       | `BTYP_name i, `BTYP_name j ->
         if i <> j then raise Not_found
@@ -225,7 +307,6 @@ let rec type_eq' trail depth t1 t2 =
     -> te p1 p2
 
   | `BTYP_void,`BTYP_void
-  | `BTYP_none,`BTYP_none 
     -> true
 
   | `BTYP_var i, `BTYP_var j ->
@@ -285,7 +366,6 @@ let fold t =
     | `BTYP_pointer a  -> ax a
 
     | `BTYP_void
-    | `BTYP_none
     | `BTYP_name _ 
 
     | `BTYP_var _ 
@@ -313,7 +393,6 @@ let var_occurs t =
     | `BTYP_pointer a  -> aux a
 
     | `BTYP_void
-    | `BTYP_none
     | `BTYP_name _ 
     | `BTYP_fix _ -> ()
 
@@ -350,5 +429,10 @@ val varmap_subst:
   btypecode_t
 
 val var_occurs:
+  btypecode_t ->
+  bool
+
+val var_i_occurs:
+  int ->
   btypecode_t ->
   bool

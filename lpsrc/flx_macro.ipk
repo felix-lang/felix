@@ -1,0 +1,716 @@
+@head(1,'Macro Expansion')
+@head(2,'Notes')
+Felix macros have 3 flavours:
+@begin_table('keyword','kind','subst')
+@table_row('ident','name','exe expr+dcl')
+@table_row('fun','expr','exe expr')
+@table_row('proc','statement','exe stmt')
+@end_table()
+@p()
+Name macros allow renaming of functions, procedures,
+values, consts, variables, the body must be an identifier
+or the keyword new.
+Expression macros replace applications in expressions.
+Statement macros replace call statement.
+@p()
+Macros are expanded by evaluating the arguments if any,
+substituting the arguments into the body,
+and then evaluating the body.
+@p()
+Evaluation is by recursive descent with rescanning.
+@p()
+Note: name macros replace names in executable code,
+including macro bodies, but they cannot be used
+to rename macros.
+
+@head(2,'Implementation')
+@h = tangler('src/flx_macro.mli')
+@select(h)
+open Flx_types
+val expand_macros:
+  int -> statement_t list -> statement_t list
+
+@h = tangler('src/flx_macro.ml')
+@select(h)
+open Flx_types
+open Flx_print
+open Flx_exceptions
+open List
+open Flx_constfld
+
+(* 
+ There are no type macros: use typedef facility.
+ There are no regexp macros: use regdef facility.
+*)
+
+type macro_t = 
+ | MVar of expr_t ref
+ | MExpr of macro_parameter_t list * expr_t 
+ | MStmt of macro_parameter_t list * statement_t list
+ | MName of id_t
+
+type macro_dfn_t = id_t * macro_t
+
+(* ident expansion: guarranteed to terminate,
+  expansion of x given x -> x is just x
+*)
+let rec expand_ident sr macros noexpand id =
+  try 
+    if mem id noexpand then id else
+    match assoc id macros with
+    | MName id2 -> expand_ident sr macros (id::noexpand) id2
+    | _ -> clierr sr "[expand_ident] Wrong argument type, require identifier"
+  with Not_found -> id
+ 
+(* Find variable names in patterns so as to protect them *)
+let rec get_pattern_vars pat =
+  match pat with
+  | `PAT_name (_,v) -> [v]
+  | `PAT_as (_,p,v) -> v :: get_pattern_vars p
+  | `PAT_when (_,p,_) -> get_pattern_vars p
+  | `PAT_nonconst_ctor (_,_,p) -> get_pattern_vars p
+  | `PAT_tuple (_,ps) -> concat (map get_pattern_vars ps)
+  | _ -> []
+  
+(* Permanently protect parameter names, to prevent
+  gratuitous substitions
+*)
+
+let protect sr (ps:id_t list) : macro_dfn_t list =
+  let rec aux t macs = 
+    match t with
+    | [] -> macs 
+    | h :: t -> 
+      let mac = h, MExpr ([],`AST_noexpand (sr,`AST_name(sr,h))) in
+      aux t (mac::macs)
+  in 
+    aux ps []
+
+let build_args sr ps args =
+  map2
+  (fun (p,t) a ->
+    match t with
+    | Ident -> 
+      begin match a with
+      | `AST_name (_,name) -> (p,MName name)
+      | _ -> clierr sr "Wrong argument type, expected Identifier"
+      end
+
+    | Expr -> (p,MExpr ([],a))
+    | Stmt ->
+      begin match a with
+      | `AST_lambda (_,(_,_,sts)) ->
+        (p,MStmt ([],sts))
+      | _ -> clierr sr "Wrong argument type, expected {} enclosed statement list"
+      end
+  )
+  ps args
+
+(* alpha convert parameter names *)
+let rec alpha_expr sr seq ps e =
+  let psn, pst = split ps in
+  let psn' =  (* new parameter names *)
+    map 
+    (fun _ -> let b = !seq in incr seq; "_" ^ string_of_int b) 
+    psn
+  in
+  let remap = 
+    map2
+    (fun x y -> (x,MName y))
+    psn psn'
+  in
+    let e = expand_expr 50 seq remap e in
+    let ps = combine psn' pst in
+    ps,e
+
+and alpha_stmts sr seq ps sts =
+  let psn, pst = split ps in
+  let psn' =  (* new parameter names *)
+    map 
+    (fun _ -> let b = !seq in incr seq; "_" ^ string_of_int b) 
+    psn
+  in
+  let remap = 
+    map2
+    (fun x y -> (x,MName y))
+    psn psn'
+  in
+    let sts = subst_statements 50 seq remap sts in
+    let ps = combine psn' pst in
+    ps,sts
+  
+(* expand expression *)
+and expand_expr recursion_limit seq (macros:macro_dfn_t list) (e:expr_t):expr_t =
+  if recursion_limit < 1 
+  then failwith "Recursion limit exceeded expanding macros";
+  let recursion_limit = recursion_limit - 1 in
+  let me e = expand_expr recursion_limit seq macros e in
+  let mi sr i = expand_ident sr macros [] i in
+  let cf e = const_fold e in
+  let e = cf e in
+  match e with
+
+  (* Expansion block: don't even fold constants *)
+  | `AST_noexpand _ -> e 
+
+  (* Sum desugaring: x+y+z+ ... *)
+  | `AST_sum (sr, es) ->  
+    begin match es with
+    | [] -> failwith "Unexpected empty addition"
+    | h::t ->
+      List.fold_left
+      (fun x y ->
+        me 
+        (
+          `AST_apply
+          (
+            sr,
+            (
+              `AST_name ( sr,"add"),
+              `AST_tuple (sr,[me x; me y])
+            )
+          )
+        )
+      )
+      h t
+    end
+        
+  (* Product desugaring: x*y*z* ... *)
+  | `AST_product (sr, es) ->
+    begin match es with
+    | [] -> failwith "Unexpected empty multiply"
+    | h::t ->
+      List.fold_left
+      (fun x y ->
+        me 
+        (
+          `AST_apply
+          (
+            sr,
+            (
+              `AST_name ( sr,"mul"), 
+              `AST_tuple (sr,[me x; me y])
+            )
+          )
+        )
+      )
+      h t
+    end
+ 
+  (* Name expansion *)
+  | `AST_name (sr, name) ->
+    begin try 
+      match List.assoc name macros with
+      | MVar b -> me !b
+      | MExpr(ps,b) ->
+        let np = length ps in
+        if np = 0 then me b
+        else e
+      | MName _ -> `AST_name (sr,mi sr name)
+      | _ -> e
+    with 
+    | Not_found -> e
+    end
+
+   (* Name application *)
+   (* NOTE: Felix doesn't support shortcut applications
+      for executable expressions, however these
+      ARE available for macro expansion: this is in
+      fact completely basic: the expression
+        id
+      is indeed expanded and is of course
+      equivalent to
+        id ()
+   *)
+   | `AST_apply (sr, (`AST_name(srn,name), e2)) -> 
+    let e1 = `AST_name(srn,name) in
+    begin try 
+      match List.assoc name macros with
+      | MName b ->
+        `AST_apply(sr,(`AST_name (srn, mi srn name), me e2))
+      
+      | MVar b -> me !b
+
+      | MExpr(ps,b) ->
+        let args = 
+          match e2 with
+          | `AST_tuple (_,ls) -> ls
+          | x -> [x]
+        in
+        let np = length ps and na = length args in
+        if na = np 
+        then
+          begin
+            let args = map me args in
+            let args = build_args sr ps args in
+            let b = expand_expr recursion_limit (ref 0) args b in
+            me b 
+          end
+        else if np = 0 
+        then 
+            me (`AST_apply(sr,(me b, me e2)))
+        else 
+          clierr sr 
+          (
+            "[expand_expr:apply] Macro "^name^
+            " requires "^string_of_int np^" arguments," ^
+            " got " ^ string_of_int na
+          )
+       | _ -> e
+    with 
+    | Not_found ->
+      cf (`AST_apply(sr,(e1, me e2)))
+    end
+
+  (* General application *)
+  | `AST_apply (sr, (e1, e2)) -> `AST_apply (sr, (me e1, me e2))
+
+  | `AST_cond (sr, (e1, e2, e3)) -> 
+    let cond = me e1 in
+    begin match cond with
+    | `AST_typed_case (_,c,`TYP_sum [`TYP_tuple[]; `TYP_tuple[]]) ->
+      if c=2 then me e2 else me e3
+    | _ ->
+      `AST_cond (sr,(cond,me e2,me e3))
+    end
+
+  (* Lambda hook *)
+  | `AST_lambda (sr, (ps, t, sts)) -> 
+    let pr = List.map fst ps in
+    let pr = protect sr pr in
+    let sts = expand_statements recursion_limit seq (pr @ macros) sts in
+    `AST_lambda (sr, (ps, t, sts))
+
+  (* Name lookup *)
+  | `AST_lookup (sr, (e1, name)) -> `AST_lookup (sr,(me e1, mi sr name))
+
+  | `AST_case_tag (sr, i) -> e
+  | `AST_typed_case (sr, i, t) -> e
+  | `AST_index (sr, bid) -> e
+  | `AST_bound_module _ -> failwith "Unexpected bound module"
+
+
+  | `AST_tuple (sr, es) -> `AST_tuple (sr, map me es)
+  | `AST_coercion (sr, (e1, t)) -> `AST_coercion (sr, (me e1,t)) 
+  | `AST_suffix (sr, (qn, t)) -> 
+    let qn = Flx_typing.qualified_name_of_expr (me (qn:>expr_t)) in
+    `AST_suffix (sr, (qn,t)) 
+
+  | `AST_void sr -> e
+  | `AST_arrow (sr, (e1, e2)) ->  `AST_arrow (sr,(me e1, me e2))
+
+  | `AST_literal (sr, literal) ->  e
+  | `AST_deref (sr, e1) -> `AST_deref (sr, me e1)
+  | `AST_ref (sr, e1) ->  `AST_ref (sr, me e1)
+  | `AST_method_apply (sr, (id, e1)) -> `AST_method_apply (sr,(mi sr id, me e1))
+  | `AST_dot (sr, (e1, id)) ->  `AST_dot (sr,(me e1,mi sr id))
+  | `AST_match_ctor (sr, (qn, e1)) -> `AST_match_ctor (sr,(qn,me e1))
+  | `AST_match_case (sr, (i, e1)) ->  `AST_match_case (sr,(i, me e1))
+  | `AST_ctor_arg (sr, (qn, e1)) -> `AST_ctor_arg (sr,(qn, me e1))
+  | `AST_case_arg (sr, (i, e1)) ->  `AST_case_arg (sr,(i,me e1))
+  | `AST_letin (sr, (pat, e1, e2)) -> `AST_letin (sr, (pat, me e1, me e2))
+
+  | `AST_get_n (sr, (i, e1)) ->  `AST_get_n (sr,(i,me e1))
+  | `AST_as (sr, (e1, id)) ->  `AST_as (sr,(me e1, mi sr id))
+
+  | `AST_match (sr, (e1, pes)) -> 
+    let pes = 
+      map 
+      (fun (pat,e) -> 
+        pat, 
+        let pvs = get_pattern_vars pat in
+        let pr = protect sr pvs in
+        expand_expr recursion_limit seq (pr @ macros) e
+      ) 
+      pes 
+    in
+    `AST_match (sr,(me e1, pes))
+    
+  | `AST_regmatch (sr, (e1, res)) -> 
+    let res = map (fun (rexp,e) -> rexp, me e) res in
+    `AST_regmatch (sr,(me e1, res))
+
+  | `AST_typeof (sr, e1) -> `AST_typeof(sr, me e1)
+
+  | `AST_texpr (sr, e1) -> e
+  | `AST_ginst (sr, (e1, ts)) -> `AST_ginst (sr, (me e1, ts))
+
+(* expand, without defining new macros *)
+and subst_statement recursion_limit seq macros (st:statement_t):statement_t = 
+  if recursion_limit < 1 
+  then failwith "Recursion limit exceeded expanding macros";
+  let recurion_limit = recursion_limit - 1 in
+  let me e = expand_expr recursion_limit seq macros e in
+  let ms ss = subst_statements recursion_limit seq macros ss in
+  let msp sr ps ss = subst_statements recursion_limit seq (protect sr ps @ macros) ss in
+  let mi sr id = expand_ident sr macros [] id in
+
+  begin match st with
+  | `AST_expr_macro (sr, id, ps, e) ->
+    let ps,e = alpha_expr sr seq ps e in
+    let e = expand_expr recursion_limit seq macros e in
+    `AST_expr_macro (sr, id, ps, e)
+    
+  | `AST_stmt_macro (sr, id, ps, sts) ->
+    let ps,sts = alpha_stmts sr seq ps sts in
+    let sts = expand_statements recursion_limit seq macros sts in
+    `AST_stmt_macro (sr,id,ps,sts)
+
+  | `AST_name_macro (sr, id1, id2) ->
+    `AST_name_macro (sr, id1, mi sr id2)
+
+  | `AST_macro_val (sr, id, e) ->
+    let e = expand_expr recursion_limit seq macros e in
+    `AST_macro_val (sr, id, e)
+
+  | `AST_macro_var (sr, id, e) ->
+    let e = expand_expr recursion_limit seq macros e in
+    `AST_macro_var (sr, id, e)
+
+  | `AST_macro_assign (sr, id, e) ->
+    let e = expand_expr recursion_limit seq macros e in
+    `AST_macro_assign (sr, id, e)
+
+  (* invariants *)
+  (* FIX TO SUPPORT IDENTIFIER RENAMING *)
+  | `AST_open (sr, qn) ->  st
+
+
+  (* FIX TO SUPPORT IDENTIFIER RENAMING *)
+  | `AST_use (sr, id, qn) ->  (`AST_use (sr,mi sr id,qn))
+
+
+  | `AST_comment _  ->  st
+
+  (* IDENTIFIER RENAMING NOT SUPPORTED IN REGDEF *)
+  | `AST_regdef (sr, id, re)  ->  st
+
+  | `AST_union (sr, id, idts ) ->  (`AST_union (sr, mi sr id, idts))
+  | `AST_struct (sr, id, idts) ->  (`AST_struct (sr, mi sr id, idts))
+
+  (* IDENTIFIER RENAMING NOT SUPPORTED IN TYPES *)
+  | `AST_type_alias (sr, id, t) ->  st
+
+  | `AST_abs_decl (sr, id, ids, c) ->  st
+  | `AST_const_decl (sr, id, t, c) -> 
+     (`AST_const_decl (sr, mi sr id, t, c))
+    
+  | `AST_fun_decl (sr, id, ss, ts, t, c) -> 
+     (`AST_fun_decl (sr, mi sr id, ss, ts, t, c))
+    
+  | `AST_proc_decl (sr, id, ss,  ts, c) -> 
+     (`AST_proc_decl (sr,mi sr id, ss, ts, c))
+    
+  | `AST_header (sr, s) ->  st
+  | `AST_body (sr, s) ->  st
+  | `AST_code (sr, s) ->  st
+  | `AST_noreturn_code (sr, s) ->  st
+
+  (* IDENTIFIER RENAMING NOT SUPPORTED IN EXPORT *)
+  | `AST_export (sr, sn, s) ->  st
+
+  (* IDENTIFIER RENAMING NOT SUPPORTED IN TYPES *)
+  | `AST_type (sr, id)  ->  st
+  | `AST_function_decl (sr, id, t) ->  (`AST_function_decl (sr,mi sr id, t))
+  | `AST_procedure_decl (sr, id, t) ->   (`AST_procedure_decl (sr, mi sr id, t))
+  | `AST_label (sr, id) ->  (`AST_label (sr, mi sr id))
+  | `AST_goto (sr, id) ->  (`AST_goto (sr, mi sr id))
+  | `AST_read (sr, id) ->  (`AST_read (sr, mi sr id))
+  | `AST_proc_return (sr)  ->  st
+  | `AST_nop (sr, s) ->  st
+
+  | `AST_function (sr, id, ps, t, sts ) ->
+     (`AST_function (sr, mi sr id, ps, t, ms sts ))
+
+  | `AST_procedure (sr, id, ps, sts) ->
+     (`AST_procedure (sr, id, ps, ms sts))
+
+  | `AST_val_decl (sr, id, optt, opte) -> 
+    let opte = match opte with
+    | Some x -> Some (me x)
+    | None -> None 
+    in
+     (`AST_val_decl (sr, mi sr id, optt, opte))
+  
+  | `AST_var_decl (sr, id, optt, opte) -> 
+    let opte = match opte with
+    | Some x -> Some (me x)
+    | None -> None 
+    in
+     (`AST_var_decl (sr, mi sr id, optt, opte))
+  
+  | `AST_untyped_module (sr, id, sts) ->
+     (`AST_untyped_module (sr, mi sr id, ms sts))
+
+  | `AST_typed_module (sr, id, t, sts) ->
+     (`AST_typed_module (sr, mi sr id, t, ms sts))
+
+  | `AST_module_binding (sr, id, e) ->
+     (`AST_module_binding (sr, mi sr id, me e))
+
+  | `AST_typed_functor (sr, id, ps, t, sts) ->
+     (`AST_typed_functor (sr, mi sr id, ps, t, ms sts))
+
+  | `AST_untyped_functor (sr, id, ps, sts) ->
+     (`AST_untyped_functor (sr, mi sr id, ps, ms sts))
+
+  | `AST_interface (sr, id, sts) ->
+     (`AST_interface (sr, mi sr id, ms sts))
+  
+  | `AST_ifgoto (sr, e , id) -> 
+     (`AST_ifgoto (sr, me e, mi sr id))
+
+  | `AST_ifnotgoto (sr, e, id) -> 
+     (`AST_ifnotgoto (sr, me e, mi sr id))
+
+  | `AST_call (sr, e1, e2) ->
+     (`AST_call (sr, me e1, me e2))
+  
+  | `AST_jump (sr, e1, e2) ->
+     (`AST_jump (sr, me e1, me e2))
+  
+  | `AST_loop (sr, id, e2) ->
+     (`AST_loop (sr, mi sr id, me e2))
+
+  | `AST_fun_return (sr, e)  ->
+     (`AST_fun_return (sr, me e))
+
+  | `AST_block (sr, sts) ->
+     (`AST_block (sr, ms sts))
+
+  | `AST_attempt (sr, (sr1, st), (sr2, sts2), (sr3, sts3)) ->
+    let st =
+      match ms [st] with
+      | [] -> `AST_nop (sr1,"empty attempt")
+      | [st] -> st
+      | sts -> `AST_block (sr1,sts)
+    in
+      `AST_attempt 
+      (
+        sr, 
+        (sr1, st), 
+        (sr2, ms sts2), 
+        (sr3, ms sts3)
+      )
+
+  | `AST_except_handler (sr, id, ps, sts ) ->
+     (`AST_except_handler (sr, mi sr id, ps, ms sts ))
+
+  | `AST_raise (sr, id, e) ->
+     (`AST_raise (sr, mi sr id, me e))
+  end
+
+and subst_statements recursion_limit seq macros (ss:statement_t list) =
+  List.map (subst_statement recursion_limit seq macros) ss
+
+(* expand statement *)
+and expand_statement recursion_limit seq ref_macros (st:statement_t) = 
+  if recursion_limit < 1 
+  then failwith "Recursion limit exceeded expanding macros";
+  let recurion_limit = recursion_limit - 1 in
+  let me e = expand_expr recursion_limit seq !ref_macros e in
+  let ms ss = expand_statements recursion_limit seq !ref_macros ss in
+  let mi sr id = expand_ident sr !ref_macros [] id in
+  let result = ref [] in
+  let tack x = result := x :: !result in
+  begin match st with
+  | `AST_expr_macro (sr, id, ps, e) ->
+    let ps,e = alpha_expr sr seq ps e in
+    ref_macros := (id,MExpr (ps, e)) :: !ref_macros
+
+  | `AST_macro_val (sr, id, e) ->
+    ref_macros := (id,MExpr ([], me e)) :: !ref_macros
+
+  | `AST_macro_var (sr, id, e) ->
+    ref_macros := (id,MVar (ref (me e))) :: !ref_macros
+
+  | `AST_macro_assign (sr, id, e) ->
+    begin 
+      try 
+        let r = assoc id !ref_macros in
+        match r with
+        | MVar p -> p := me e
+        | _ -> clierr sr "Assignment to wrong kind of macro"
+      with Not_found -> clierr sr "Assignment requires macro var"
+    end
+      
+  | `AST_stmt_macro (sr, id, ps, sts) ->
+    let ps,sts = alpha_stmts sr seq ps sts in
+    ref_macros := (id, MStmt (ps,sts)) :: !ref_macros
+
+  | `AST_name_macro (sr, id1, id2) ->
+    ref_macros := (id2,MName id2) :: !ref_macros
+
+
+  | `AST_call (sr, `AST_name(srn,name), e2) ->
+    (* UGLY:
+       This case is almost the same as an application,
+       BUT there is extra hacker to support the call short cut
+       atom -> atom ()
+    *) 
+    let e1 = `AST_name(srn,name) in
+    begin try 
+      match List.assoc name !ref_macros with
+      | MName b ->
+        let name = mi sr name in
+        tack (`AST_call (sr, `AST_name(srn,name), me e2))
+ 
+      | MVar b ->
+        let b = me !b in
+        let u = `AST_tuple (sr,[]) in
+        tack (`AST_call (sr,b,u))
+
+      | MExpr(ps,b) ->
+        let args = 
+          match e2 with
+          | `AST_tuple (_,ls) -> ls
+          | x -> [x]
+        in
+        let np = length ps and na = length args in
+        if na = np 
+        then 
+          begin
+            let args = map me args in
+            let args = build_args sr ps args in
+            let b = expand_expr recursion_limit (ref 0) args b in
+            let b = me b in
+            let u = `AST_tuple (sr,[]) in
+            tack (`AST_call (sr,b,u))
+          end
+        else if np = 0 
+        then
+          let sts = [`AST_call (sr, me b, me e2)] in
+          iter tack (expand_statements recursion_limit seq !ref_macros sts)
+        else 
+          clierr sr 
+          (
+            "[expand_expr:call] Expression Macro "^name^
+            " requires "^string_of_int np^" arguments," ^
+            " got " ^ string_of_int na
+          )
+
+      | MStmt(ps,b) ->
+        let args = 
+          match e2 with
+          | `AST_tuple (_,ls) -> ls
+          | x -> [x]
+        in
+        let np = length ps and na = length args in
+        if na = np 
+        then 
+          begin
+            let args= map me args in
+            let args = build_args sr ps args in
+            let p = expand_statements recursion_limit seq (args @ !ref_macros) b in
+            iter tack p
+          end
+        else 
+          clierr sr 
+          (
+            "[expand_expr:call] Statement Macro "^name^
+            " requires "^string_of_int np^" arguments," ^
+            " got " ^ string_of_int na
+          )
+    with 
+    | Not_found ->
+      tack (`AST_call (sr, e1, me e2))
+    end
+  | st -> tack (subst_statement recursion_limit seq !ref_macros st)
+  end
+  ;
+  rev !result
+
+
+and expand_statements recursion_limit seq macros (ss:statement_t list) =
+  let macros = ref macros in
+  List.concat (List.map (expand_statement recursion_limit seq macros) ss)
+
+and expand_macros recursion_limit ss = 
+  expand_statements recursion_limit (ref 1) [] ss
+
+@h = tangler("src/flxm.ml")
+@select(h)
+open Flx_util
+open Flx_macro
+open Flx_print
+open Flx_types
+open Flx_getopt
+open Flx_version
+;;
+
+let print_help () =
+  print_endline "options:";
+  print_endline "  -h, --help : print this help";
+  print_endline "  --version: print version info";
+  print_endline "  -v, --verbose: print symbol table";
+  print_endline "  -q, --quiet: no stdout";
+  print_endline "  -Idir, --include=dir : append dir to include path";
+  exit(0)
+;;
+
+try
+  let argc = Array.length Sys.argv in
+  if argc <= 1 
+  then begin
+    print_endline "usage: flxg --key=value ... filename; -h for help";
+    exit 0
+  end
+  ;
+  let options = get_options Sys.argv in
+  let include_dirs = ref [] in
+  let print_flag = ref false in
+  List.iter (fun (key,value) ->
+    if key = "include" || key = "I"
+    then include_dirs := !include_dirs @ [value]
+
+    else if key = "verbose" || key = "v"
+    then print_flag := true
+
+    else if key = "help" || key = "h"
+    then print_help ()
+
+    else if key = "version" 
+    then (print_endline ("Felix Version " ^ version_string))
+  )
+  options
+  ;
+  if !print_flag then begin
+    print_string "//Include directories = ";
+    List.iter (fun d -> print_string (d ^ " "))
+    !include_dirs;
+    print_endline ""
+  end
+  ;
+
+  let filebase = Sys.argv.(argc-1) in
+  let input_file_name = filebase ^ ".flx" 
+  and iface_file_name = filebase ^ ".fix"
+  and module_name = 
+    let n = String.length filebase in 
+    let i = ref (n-1) in
+    while !i <> -1 && filebase.[!i] <> '/' do decr i done;
+    String.sub filebase (!i+1) (n - !i - 1)
+  in
+
+  (* PARSE THE IMPLEMENTATION FILE *)
+  print_endline ("//Parsing Implementation " ^ input_file_name);
+  let parse_tree =
+    Flx_parse_ctrl.parse_file 
+      input_file_name 
+      (Filename.dirname input_file_name)
+      !include_dirs 
+  in
+  print_endline (Flx_print.string_of_compilation_unit parse_tree);
+  print_endline "//PARSE OK";
+
+  print_endline "//----------------------------";
+  print_endline "//IMPLEMENTATION EXPANDED:";
+
+  let expanded = expand_macros 5000 parse_tree in
+  print_endline (Flx_print.string_of_compilation_unit expanded);
+  print_endline "//----------------------------";
+
+with x -> flush stdout; print_endline "EXCEPTION"; 
+  print_endline (Printexc.to_string x)
+;;
+

@@ -32,34 +32,44 @@ which are unused, by first eliding the call.
 
 exception Useful
 let rec isuseless bbdfns exes = 
+  let check i =         
+    try 
+      match Hashtbl.find bbdfns i with 
+      | _,_,`BBDCL_procedure (_,exes,_) -> 
+        if not (isuseless bbdfns exes) 
+        then raise Useful
+        else ()
+      | _,_,`BBDCL_proc _
+      | _,_,`BBDCL_val _
+      | _,_,`BBDCL_var _
+        -> raise Useful
+      | _ -> failwith "[isuseless] Expected procedure type"
+    with 
+      Not_found -> ()
+  in
   try
     List.iter
     (fun x -> match x with
       | `BEXE_call ((`BEXPR_closure i,_),_) 
       | `BEXE_call ((`BEXPR_name i,_),_) 
       | `BEXE_call ((`BEXPR_ginst (i,_),_),_) 
-        ->
-        begin try 
-          match Hashtbl.find bbdfns i with 
-          | _,_,`BBDCL_procedure (_,exes,_) -> 
-            if not (isuseless bbdfns exes) 
-            then raise Useful
-            else ()
-          | _,_,`BBDCL_proc _
-          | _,_,`BBDCL_val _
-          | _,_,`BBDCL_var _
-            -> raise Useful
-          | _ -> failwith "[isuseless] Expected procedure type"
-        with 
-          Not_found -> ()
-        end
-      | `BEXE_call _ (* assume useful if not call to name useful proc *)
+      | `BEXE_jump ((`BEXPR_closure i,_),_) 
+      | `BEXE_jump  ((`BEXPR_name i,_),_) 
+      | `BEXE_jump  ((`BEXPR_ginst (i,_),_),_) 
+        -> 
+         check i
+
+      | `BEXE_jump _
+      | `BEXE_call _ (* assume useful if not call to named useful proc *)
       | `BEXE_read _ (* useful even if local, due to side effect *)
       | `BEXE_code _ 
       | `BEXE_goto _ (* assume a non-local goto here *)
+      | `BEXE_fun_return _ (* returning a value is useful *)
         -> raise Useful 
+
       (* NOTE: 
         BEXE_init always inits a local variable which isn't useful by itself 
+        BEXE_loop isn't useful by itself
       *)
       | _ -> () 
     )
@@ -78,6 +88,17 @@ let useless_call_elim bbdfns exes =
       begin match Hashtbl.find bbdfns i with
       | id,parent,`BBDCL_procedure (ps,exes,nm) ->
         if not (isuseless bbdfns exes) then exes' := x :: !exes'
+      | _ -> exes' := x :: !exes'
+      end
+
+  | `BEXE_jump ((`BEXPR_closure i,_),_)
+  | `BEXE_jump ((`BEXPR_name i,_),_)
+    -> (* only keep calls to useful procedures *) 
+      begin match Hashtbl.find bbdfns i with
+      | id,parent,`BBDCL_procedure (ps,exes,nm) ->
+        if not (isuseless bbdfns exes) then exes' := x :: !exes'
+        else exes' := `BEXE_proc_return :: !exes'
+        
       | _ -> exes' := x :: !exes'
       end
 
@@ -102,7 +123,43 @@ let useless_call_elim bbdfns exes =
   )
   exes
   ;
-  List.rev !exes'
+
+  (* replace call/return with jump *)
+  let exes'' = ref [] in
+  let tack x = exes'' := x :: !exes'' in
+  let rec tail_check (lst: bexe_t list) = 
+    match lst with
+    | [] -> ()
+    | `BEXE_proc_return :: `BEXE_proc_return :: t ->
+      tail_check (`BEXE_proc_return :: t)
+      
+    | `BEXE_proc_return :: `BEXE_call (p,a) :: t ->
+      begin 
+        match p with
+        | (`BEXPR_closure i,_) 
+        | (`BEXPR_ginst (i,_),_) ->
+          begin 
+            match Hashtbl.find bbdfns i with
+            | id,parent,`BBDCL_proc _ ->
+              tack `BEXE_proc_return;
+              tack (`BEXE_call (p,a));
+              tail_check t
+
+            | _ -> 
+              tack (`BEXE_jump (p,a));
+              tail_check t
+          end
+        | _ -> 
+          tack (`BEXE_jump (p,a)); 
+          tail_check t
+      end
+
+    | h :: t -> 
+      tack h; 
+      tail_check t
+  in
+    tail_check (`BEXE_proc_return :: !exes');
+    !exes''
 
 let rec uses_type used bbdfns t = 
   let ut t = uses_type used bbdfns t in
@@ -133,11 +190,14 @@ and uses_exes used bbdfns exes =
 and uses_exe used bbdfns (exe:bexe_t) =
   let ue e = uses_tbexpr used bbdfns e in
   match exe with
-  | `BEXE_call (e1,e2) -> ue e1; ue e2
+  | `BEXE_call (e1,e2) 
+  | `BEXE_jump (e1,e2) 
+    -> ue e1; ue e2
     
+  | `BEXE_loop (_,e)
   | `BEXE_ifgoto (e,_)
   | `BEXE_ifnotgoto (e,_)
-  | `BEXE_return e 
+  | `BEXE_fun_return e 
     -> ue e
 
   | `BEXE_init (i,e) -> uses used bbdfns i; ue e

@@ -92,7 +92,6 @@ let rec cpp_typename  syms bbdfns t =
 
   | `BTYP_pointer t' -> "_ref_<"^tn t'^">"
   | `BTYP_void -> "void"
-  | `BTYP_none -> failwith "[cpp_typename] Expected real type, got 'none'"
   | `BTYP_binding (_,t) -> tn t
   | `BTYP_inst (i,ts)-> 
     let index = Hashtbl.find syms.prim_inst (i,ts) in
@@ -143,8 +142,6 @@ let rec cpp_classname syms bbdfns t =
   | `BTYP_tuple _ -> "_tuple_type_" ^ string_of_int (Hashtbl.find registry t)
   | `BTYP_sum _ -> "_sum_type_" ^ string_of_int (Hashtbl.find registry t)
   | `BTYP_pointer t' -> "_ref_<"^tn t'^">"
-  | `BTYP_none -> 
-    failwith "[cpp_typename] Expected real type, got 'none'"
   | `BTYP_inst (i,ts) -> 
     let index = Hashtbl.find syms.prim_inst (i,ts) in
     "_type_inst_" ^ string_of_int index

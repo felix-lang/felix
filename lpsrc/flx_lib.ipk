@@ -31,7 +31,8 @@ namespace std_flx {
   // normalise string positions Python style
   // note substr requires 0<=b<=size, 0<=n,
   // however n>size is OK
-  inline string substr(string const &s, int b, int e)
+  template<class T>
+  inline basic_string<T> substr(basic_string<T> const &s, int b, int e)
   {
     int n = s.size();
     if(b<0)  b=b+n;
@@ -261,9 +262,9 @@ module Wchar
 
 module Unicode
 {
-  open Int32;
-  fun ord: uchar -> int32 ="$1";
-  fun uchr: int32 -> uchar = "$1";
+  open Uint32;
+  fun ord: uchar -> uint32 ="$1";
+  fun uchr: uint32 -> uchar = "$1";
   //this needs to be fixed!
   //proc print: uchar = "std::cout<<$1;";
 }
@@ -275,6 +276,7 @@ module Stdout
   proc endl: unit = "std::cout << endl;";
   proc space: int = "std::cout << ' ';";
 }
+macro proc print_line (x) { print x; Stdout::endl; }
 
 @#------------- STRING MODULES -------------------
 module String
@@ -308,6 +310,40 @@ module String
   fun ge: string * string -> bool = "$1>=$2";
 
   proc print: string = "std::cout << $1;";
+}
+
+type ustring = "basic_string<uint32_t>";
+module Ustring
+{
+  open Bool;
+  open Char;
+  open Int;
+  proc set: &ustring * ustring = "$1->assign($1);";
+  proc pluseq: &ustring * ustring = "$1->append($2);";
+
+  fun len: ustring -> int = "$1.size()";
+  fun add: ustring * ustring -> ustring = "$1+$2";
+  fun mul: ustring * int -> ustring = "std_flx::mul($1,$2)";
+  fun mul: char * int -> ustring = "ustring($2,$1)";
+
+  fun subscript: ustring * int -> char = 
+    "$1[$2<0??$1.size()+$2:$2]";
+  fun copyfrom: ustring * int -> ustring = 
+    "std_flx::substr($1,$2,$1.size())";
+  fun copyto: ustring * int -> ustring = 
+    "std_flx::substr($1,0,$2)";
+  fun subustring: ustring * int * int -> ustring = 
+    "std_flx::substr($1,$2,$3)";
+
+  // comparisons
+  fun eq: ustring * ustring -> bool = "$1==$2";
+  fun ne: ustring * ustring -> bool = "$1!=$2";
+  fun lt: ustring * ustring -> bool = "$1<$2";
+  fun le: ustring * ustring -> bool = "$1<=$2";
+  fun gt: ustring * ustring -> bool = "$1>$2";
+  fun ge: ustring * ustring -> bool = "$1>=$2";
+
+  proc print: ustring = "std::cout << $1;";
 }
 
 module Arith_casts
@@ -385,7 +421,7 @@ module Stl
 module Control 
 {
   // infinite loop
-  proc loop (bdy:unit->void)
+  proc forever (bdy:unit->void)
   {
     repeat:>
       bdy();
@@ -432,6 +468,10 @@ module Control
       goto repeat;
     finish:>
   }
+
+  proc fail:string = 'throw std::exception ($1);';
+  fun fail_fun[t]:1->t = 'throw std::exception (""),*(?1*)0';
+  fun fail_fun[t]:string->t = 'throw std::exception ($1),*(?1*)0';
 }
 
 // ------ Open common modules -------------

@@ -520,6 +520,73 @@ It is important to note that the match expression is
 purely functional! It doesn't print anything, it just
 returns a procedure which could print something.
 
+@head(2,'The Conditional Expression')
+Felix supports the conditional expression as shown:
+
+@select(tangler(tdir+'tut114a.flx'))
+#include <std.flx>
+
+fun sign1(x:int):int = 
+{
+  return
+    if x < 0 then -1
+    else
+      if x == 0 then 0
+      else 1
+      endif
+    endif
+  ;
+}
+
+print (sign1 (-20)); endl;
+print (sign1 0); endl;
+print (sign1 20); endl;
+
+fun sign2(x:int):int = 
+{
+  return
+    if x < 0 then -1
+    elif x == 0 then 0
+    else 1
+    endif
+  ;
+}
+
+print (sign2 (-20)); endl;
+print (sign2 0); endl;
+print (sign2 20); endl;
+
+
+fun sign3(x:int):int = 
+{
+  return
+    match x < 0 with
+    | case 2 => -1 // true
+    | case 1 =>    // false
+      match x == 0 with
+      | case 2 =>  0 // true
+      | case 1 =>  1 // false
+      endmatch
+    endmatch
+  ;
+}
+
+print (sign3 (-20)); endl;
+print (sign3 0); endl;
+print (sign3 20); endl;
+
+
+@doc()
+In the conditional construction, one or more
+elif clauses may be give, however the
+else clause is required. The elif clause
+is used reduce the need for terminating
+endif keywords.
+@p()
+The conditional expression is merely
+a shortcut for a match, as shown in the
+third sign function.
+
 @head(2,'Pattern Matching Tuples')
 It is also possible to match tuples.
 Here is an example:
@@ -595,7 +662,7 @@ regexp lower = ["abcdefghijklmnopqrstuvwxyz"];
 regexp upper = ["ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
 regexp digit = ["0123456789"];
 regexp alpha = lower | upper | "_";
-regexp ident = alpha (alpha | digit) *;
+regexp id = alpha (alpha | digit) *;
 
 @doc()
 Regular expressions are used in regular match expressions.
@@ -605,7 +672,7 @@ is a regular expression, and the argument must be a string.
 print 
   regmatch "identifier" with
   | digit+ => "Number"
-  | ident =>  "Identifier"
+  | id =>  "Identifier"
   endmatch
 ; 
 endl;
@@ -613,7 +680,7 @@ endl;
 print 
   regmatch "9999" with
   | digit+ => "Number"
-  | ident =>  "Identifier"
+  | id =>  "Identifier"
   endmatch
 ; 
 endl;
@@ -622,7 +689,7 @@ endl;
 print 
   regmatch "999xxx" with
   | digit+ => "Number"
-  | ident =>  "Identifier"
+  | id =>  "Identifier"
   endmatch
 ; 
 endl;
@@ -631,7 +698,7 @@ endl;
 print 
   regmatch "????" with
   | digit+ => "Number"
-  | ident =>  "Identifier"
+  | id =>  "Identifier"
   endmatch
 ; 
 endl;
@@ -640,7 +707,7 @@ endl;
 print 
   regmatch "999xxx" with
   | digit+ => "Number"
-  | ident =>  "Identifier"
+  | id =>  "Identifier"
   | _* => "Neither"
   endmatch
 ; 
@@ -662,6 +729,273 @@ input iterators with comparable value types]
 [The construction will be upgraded later to support
 finding the longest matching prefix, which requires
 forward iterators]
+
+@head(2,'Expression Macros')
+Felix provides an powerful and dangerous 
+expression macro facility. Expression macros
+allow you to define a name for an expression,
+possibly parameterised, so that each use of
+the name is replace by its definition, 
+after replacement of any parameters with
+actual argumets.
+@p()
+This facility loosly resembles C's #define
+mechanism but differs in many important respects.
+@p()
+@begin_list("number")
+@item()
+Felix expression macros define 
+executable expressions.
+@item()
+Felix expression macros can only be used in
+executable expressions.
+@item()
+Felix macros respect scope.
+@item()
+After replacement the resulting expression
+is rescanned until no more replacement 
+is possible.
+@item()
+If a macro has no arguments, a call
+is replaced immediately.
+@item()
+If a macro has parameters, the actual arguments are
+expanded first, and then the call or application 
+is replaced with the body expanded in the context
+enriched by definition of the parameters as macros
+with bodies the expanded arguments.
+@item()
+If a macro has arguments, but none are given,
+the macro is not expanded immediately. It may,
+however, be exanded later in a rescan.
+@item()
+A macro can be defined any number of times,
+only the latest in scope definition is used.
+@end_list()
+@p()
+Below are some simple examples.
+You should note that whilst macros
+are always expressions, they can be expressions
+denoting a procedure.
+@p()
+A more precise statement of expansion rules is:
+macros are expanded by a recursive descent algorithm
+which proceeds depth first top down. Expansion
+occurs both on the way down and on the way up.
+
+@select(tangler(tdir+'tut115b.flx'))
+#include <std.flx>
+
+// a basic expression macro without parameters
+macro fun x =  {print 1; endl;};
+x;
+
+// an expression macro with one argument
+macro fun h(z) = z + z;
+print (h 1); endl;
+
+// an expression macro denoting a procedure
+macro fun f(a) = { print a; endl; };
+f 1;
+f 2;
+
+// illustration of rescanning 
+macro fun r1 = y1;
+macro fun r2 = y2;
+macro fun y1 = print;
+macro fun y2 = 1;
+
+r1 r2;
+
+// nastier example of rescanning
+macro fun a = b c;
+macro fun b(x) = f;
+a 1;
+
+// finally: recursion
+macro fun j(i) = 
+   if(i>0) then i + j(i-1)
+   else 0 endif;
+print  (j 5); // 5 + 4 + 3 + 2 + 1 = 16
+endl;
+
+val q=1;
+macro fun z(q) = q;
+print (z q); endl;
+
+@doc()
+It is vital to understand that macros cannot break
+syntactically established precedence rules.
+In the last example, a 1 expands to (b c) 1,
+which expands to f 1. Substitutions are implemented
+by manipulation of the abstract syntax tree (AST),
+not token pasting or string manipulation.
+
+@head(2,'Constant Expression Folding')
+The Felix macro processor also performs constant folding;
+that is, evaluation of certain expressions involving 
+only literals. The following operations are folded:
+@begin_table("op","descr")
+@table_row('+int','')
+@table_row('-int','')
+@table_row('int+int','')
+@table_row('int-int','')
+@table_row('int*int','')
+@table_row('int/int','')
+@table_row('int%int','')
+@table_row('int<int','')
+@table_row('int>int','')
+@table_row('int<=int','')
+@table_row('int>=int','')
+@table_row('int==int','')
+@table_row('int!=int','')
+@table_row('string+string','')
+@table_row('string==string','')
+@table_row('string!=string','')
+@table_row('string*int','cat n copies')
+@table_row('string string','cat')
+@table_row('string int','cat ISO10646')
+@table_row('not bool','')
+@table_row('bool && bool','')
+@table_row('bool or bool','')
+@table_row('bool == bool','')
+@table_row('bool != bool','')
+@table_row('if bool then expr1 else expr2 endif','')
+@end_table()
+@p()
+The critical operation here is that a conditional
+with a constant first argument is replaced by one
+of the two expressions, and the other is elided.
+See the example for an application: the implication
+is that the elided expression, whilst it must be
+well formed syntactically, does not need to be
+type correct, nor do symbols in it need to be defined.
+@p()
+Note that the fold uses compiler intrinsic operations
+on integers, bools, and strings: user defined functions
+are not applied and do not need to be defined.
+Consequently, the result may disagree with a user
+defined function applied at run time.  If necessary,
+constant folding can be blocked with the noexpand mark $.
+@p()
+Note: the expressions
+@begin_displayed_code()
+  "" 999
+  u"" 999
+@end_displayed_code()
+are semantically, but not physically equivalent.
+The first operation is the UTF-8 representation
+of 999, whilst the second is the UCS-32 value 999.
+
+@select(tangler(tdir+'tut115c.flx'))
+#include <std.flx>
+header '''
+#define unix 0
+#define windows 0
+#define testhook 1
+#if unix
+#include <dlopen.h>
+#elif windows
+#include <windows.h>
+#else
+#include <stdio.h>
+#endif
+''';
+macro fun unix = case 1 of 2;
+macro fun windows = case 1 of 2;
+
+fun dlopen:string -> address = 'dlopen($1.data())';
+fun LoadLibrary:string -> int = 'LoadLibrary($.data())';
+fun testhook:string -> int = 'printf("LoadTheLibrary(%s)\n",$1.data())';
+
+macro fun openlib = 
+  if unix then dlopen 
+  elif windows then LoadLibrary 
+  else testhook endif
+;
+
+macro fun ext = 
+  if unix then ".so" 
+  elif windows then ".DLL"
+  else ".lib_ext" endif
+;
+// conditional compilation
+val lib = openlib ("MyLibrary" ext);
+
+@head(2,'Procedure Macros')
+A procedure macro represents a list of statements.
+@select(tangler(tdir+'tut115d.flx'))
+#include <std.flx>
+// procedure macro
+macro proc k 
+{
+  val yy = xx * xx;
+  print xx; print " -> "; print yy; endl;
+}
+
+{
+  val xx = 1;
+  k();
+};
+{
+  val xx = 2;
+  k();
+};
+
+@head(2,'Expansion Barrier')
+The symbol '$' can be used to block expansion.
+@select(tangler(tdir+'tut115e.flx'))
+#include <std.flx>
+// expansion barrier
+macro fun x = 1;
+macro proc k 
+{
+  val yy = $x + x; // x + 1
+  print $x; print "+"; print x; print " -> "; print yy; endl;
+}
+macro ident x = x; // blocks x
+{
+  val x = 2;
+  k();
+};
+
+@head(2,'Identifier Macros')
+A identifier macros represent names. They replace names 
+in expressions and most declarations, including the
+name of a function or variable being defined.
+Names are not replaced in type expressions, patterns,
+or regular expressions.
+@p()
+The special form in which the RHS name is called 'new'
+creates a fresh, previously unused name.
+@p()
+Unlike other macros, the RHS name of an ident macro
+is not expanded at the point of definition.
+@p()
+On use, the value of an ident macro is the first
+name in the chain which is not an ident macro,
+or which recurs.
+
+@select(tangler(tdir+'tut115f.flx'))
+#include <std.flx>
+macro ident oldname = newname;
+fun oldname(x:int):int = { return x; }
+print (newname 1); endl;
+
+macro proc make_ints
+{
+  macro ident old = v;
+  macro ident v = new;
+  val v = old+1;
+}
+
+val x = 1;
+
+macro ident v = x;
+make_ints;
+make_ints;
+make_ints;
+print v; endl;
 
 @head(2,'Basic Bindings')
 In the previous examples, we've use the Felix standard
@@ -881,6 +1215,46 @@ it all ends up as C++ anyhow.
 Usually, you'll write Felix, except when you have 
 an existing code base containing useful types
 you need to work with. 
+
+@head(2,'Embedding C++')
+We have seen that we can use binding definitions to
+embed C++ constants, expressions, and procedures
+into Felix code, and we can use the 
+@begin_code()
+header
+@end_code()
+statement
+to embed header text in the header (.hpp) file generated by Felix.
+@p()
+You can also use the 
+@begin_code()
+body
+@end_code()
+statement to embed C++ definitons
+in the body file Felix generates. Header text is concatenated
+and emitted in the header file after Felix standard definitions
+but before any bindings, and so is often used to 
+embed #include directives.
+@p()
+Body code is also collected and emitted at the top of 
+the body (.cpp) file.
+@p()
+It is also possible to use the i
+@begin_code()
+code
+@end_code()
+statement to embed statements directly in procedures.
+This is much the same as the body statement, except
+that it is an executable Felix statement, and is emitted
+in the place it is written.
+For example:
+@select(tangler(tdir+'tut117a.flx'))
+#include <std.flx>
+header "#include<stdio.h>";
+print 1; endl;
+code 'printf("%d\n",2);';
+print 3; endl;
+
 
 @head(2,'Operator dot')
 It may look as if Felix knows how to access
@@ -1369,106 +1743,6 @@ It is necessary even for currified functions
 if you want to fix the second argument, but
 leave the first free.
 
-@# @head(2,'Regular expressions')
-@# The standard library contains types and functions
-@# for regular expression matching. Here's an example:
-@# 
-@# @select(tangler(tdir+'tut124.flx'))
-@# #include <std.flx>
-@# #include <boost.flx>
-@# 
-@# val rex = regex_of_string("(a|b)*abb");
-@# val matched = regex_match(rex,"aabbabababb");
-@# print matched; endl;
-@# 
-@# @doc()
-@# Note that to make this work, you must edit the
-@# bin/flx script so that the directory containing
-@# the boost library is set correctly. The binary
-@# package provided with this demo uses boost_1_22_0,
-@# you must use that version of boost. You must build
-@# the shared version of the regex library using
-@# @begin_displayed_code()
-@#   cd boost_1_22_0/libs/regex/build/
-@#   make -f gcc-shared.mak
-@# @end_displayed_code()
-@# 
-@# Now you've got that to work, lets look at currying.
-@# There is a currified version of regex_match in the boost
-@# library. Here's why it is useful:
-@# 
-@# @select(tangler(tdir+'tut125.flx'))
-@# #include <std.flx>
-@# #include <boost.flx>
-@# 
-@# val rex = regex_of_string("(a|b)*abb");
-@# val matchit = regex_match(rex);
-@# print (matchit "ababababb"); endl;
-@# print (matchit "No match"); endl;
-@# 
-@# proc print_if_matches(matcher:string->bool) (s:string)
-@# {
-@#   if (matcher s) then 
-@#   {
-@#     print s; endl;
-@#   };
-@#   endif;
-@# }
-@# 
-@# val p = print_if_matches matchit;
-@# p "Hello";
-@# p "ababa";
-@# p "abbabbabb";
-@# p "ababababb";
-@# 
-@# @doc()
-@# As you can see, matchit matches a particular 
-@# regular expression, so you don't have to keep
-@# specifying it. You can also pass it to a function
-@# that needs a string matcher, hiding the method by which
-@# the matching is done. We pass it to print_if_matches,
-@# which again partially applied to define the new function p.
-@# @p()
-@# I hope you can see uses for the combination of power
-@# obtained by treating functions as first class citizens,
-@# and by use of currying. The technique is used extensively
-@# in functional programming languages.
-@# 
-@# @head(2,'More on regular expressions')
-@# Sick of writing doubled up sloshes in regular expressions?
-@# Felix provides Python style string literals, including
-@# raw strings. Strings prefixed by an r are called raw strings,
-@# slosh escapes are not processed. This makes it easier
-@# to define regular expressions. For example:
-@# 
-@# @select(tangler(tdir+'tut126.flx'))
-@# #include <std.flx>
-@# #include <boost.flx>
-@# val rex = regex_of_string("\\A(\\d{3,4})[- ]?(\\d{4})[- ]?(\\d{4})[- ]?(\\d{4})\\z");
-@# val machine_format = merge_pattern_of_string ("\\1\\2\\3\\4");
-@# val human_format = merge_pattern_of_string("\\1-\\2-\\3-\\4");
-@# val credit_no_1 = "1234-5678-9012-3456";
-@# val credit_no_2 = "6676688-7765-1111";
-@# val bad_no = "XYZ";
-@# 
-@# print (regex_merge rex machine_format credit_no_1); endl;
-@# print (regex_merge rex human_format credit_no_1); endl;
-@# print (regex_merge rex machine_format credit_no_2); endl;
-@# print (regex_merge rex human_format credit_no_2); endl;
-@# print (regex_merge rex human_format bad_no); endl;
-@# 
-@# // again, using raw strings:
-@# 
-@# val rex1 = regex_of_string(r"\A(\d{3,4})[- ]?(\d{4})[- ]?(\d{4})[- ]?(\d{4})\z");
-@# val machine_format1 = merge_pattern_of_string (r"\1\2\3\4");
-@# val human_format1 = merge_pattern_of_string(r"\1-\2-\3-\4");
-@# 
-@# print (regex_merge rex1 machine_format1 credit_no_1); endl;
-@# print (regex_merge rex1 human_format1 credit_no_1); endl;
-@# print (regex_merge rex1 machine_format1 credit_no_2); endl;
-@# print (regex_merge rex1 human_format1 credit_no_2); endl;
-@# print (regex_merge rex1 human_format1 credit_no_2); endl;
-@# 
 
 @head(2,'Modules')
 Most modern languages support packaging of related
@@ -1782,6 +2056,111 @@ This would also make modules first class objects,
 with a type described more or less as a tuple.
 In turn this allows dynamic binding.]
 
+@head(2,'Procedure return')
+A procedure can be terminated by a goto to a label
+at the end of the procedure:
+@select(tangler(tdir+'tut131a.flx'))
+#include <std.flx>
+
+proc f(x:int) 
+{
+  if x == 0 goto zero;
+  print x; endl;
+  goto finished;
+zero:>
+  print "Zero"; endl;
+finished:>
+}
+
+f(1);
+f(0);
+@doc()
+A slightly more structured way of doing this
+involves the procedural return statement:
+@select(tangler(tdir+'tut131b.flx'))
+#include <std.flx>
+
+proc f(x:int) 
+{
+  if x == 0 goto zero;
+  print x; endl;
+  return;
+zero:>
+  print "Zero"; endl;
+}
+
+f(1);
+f(0);
+
+@doc()
+This can also be shortened by using a the jump statement:
+@select(tangler(tdir+'tut131c.flx'))
+#include <std.flx>
+
+proc f(x:int) 
+{
+  if x == 0 goto zero;
+  print x; jump endl;
+zero:>
+  print "Zero"; jump endl;
+}
+
+f(1);
+f(0);
+
+@doc()
+which is equivalent to a call statement followed by a 
+return, which in turn is equivalent to a call
+followed by a goto the end of the procedure.
+
+@head(2,'Loops')
+The final call in a procedure is known as a tail call,
+and and can be indicated by a jump statement as 
+described in the previous section, though it isn't
+necessary: tail calls are detected by the compiler.
+@doc()
+There is a special kind of tail call known
+as a loop, in which the jump is made to the procedure
+containing the jump, or one or its parents.
+@p()
+Provided no pointers are kept to any of the frames
+of the procedures between the target and current
+frame, so that all these frames would be garbage
+collected, a jump to a parent can reuse the parent's
+storage.
+@p()
+This is a form of goto, except that the procedure
+arguments are re-initialised.
+@p()
+Loops are automatically detected in some cases
+by the compiler. An explicit loop statement
+may also be used:
+
+@select(tangler(tdir+'tut131c.flx'))
+#include <std.flx>
+
+proc f(x:int) 
+{
+  if x == 0 goto zero;
+  print x; endl; loop f(x-1);
+zero:>
+  print "Zero"; jump endl;
+}
+
+f(10);
+
+@head(2,'Failure')
+The fail construction is used to abort a
+task with prejudice. A string argument may be
+given. A C++ exception is thrown. It cannot
+be caught by the Felix program (although
+it can be caught by the driver).
+
+@select(tangler(tdir+'tut131d.flx'))
+#include <std.flx>
+// uncomment to test 
+//fail "Aborted";
+
 @head(2,'Dynamic exception handling using goto')
 Non local gotos are very useful for a form of
 exception handling. Consider the following example:
@@ -1978,7 +2357,7 @@ proc While (cond:unit->bool) (bdy:unit->void)
   finished:>
 }
 
-var x = 1;
+var x = 10;
 While {x>0} { print x; endl; x = x - 1; };
 
 @doc()
@@ -2004,6 +2383,34 @@ but of course those expressions can be procedures
 which are subsequently called: here the default
 call syntax fools you into believing there
 is a match statement when actually there isn't.
+
+@head(2,'Lambda expressions')
+Felix allows a function to be specified in an expression,
+this is called a lambda expression:
+@select(tangler(tdir+'tut137a.flx'))
+#include <std.flx>
+var x = 10;
+while 
+  (fun ():bool = { return x>0; })
+  { print x; endl; x = x - 1; };
+
+@doc()
+Of course, we have already used lambdas in the short form,
+by enclosing expressions in curley braces;
+this example shows the long form. Lambdas of course
+may have arguments:
+@select(tangler(tdir+'tut137b.flx'))
+#include <std.flx>
+fun f(g:int->int,x:int) = { return g x; }
+print 
+(
+  f
+  (
+    (fun(a:int):int = { return a + a; }),
+    1
+  )
+); endl;
+
 
 @head(2,'Standard types and Lexemes')
 Here is a more comprehensive set of examples
@@ -2032,10 +2439,10 @@ The types:
   float double ldouble
 
   // character
-  char  wchar  uchar
+  char  uchar
 
   // string
-  string wstring ustring
+  string ustring
 @end_displayed_code()
 are defined in the standard library at the top level.
 Except for the addressing types, there is module
@@ -2048,6 +2455,8 @@ for the corresponding types are available at the top
 level. Don't expect "1L + 1L" to work unless you
 first "open Long;" in your program!
 @p()
+
+@head(3,'Integer Lexemes')
 The compiler directly supports literals of all
 the numeric types, but the lexicology is a sanitised
 version of that used by C. Note in particular
@@ -2119,6 +2528,53 @@ that 010 is decimal ten in Felix!
   val x6 : double = 2.2e4;
   val x7 : float = 2.2e4f;
 };
+
+@head(3,'String')
+Felix provides two kinds of strings: 8 bit and 32 bit,
+denotes string and ustring respectively.
+@p()
+Both kinds of string are intended to provide a universal
+representation of human readable text using the 
+ISO-10646/Unicode character set.
+@p()
+Both kinds of string encode 32 bit values representing
+ISO-10646 code points. Strings use UTF-8, whilst ustrings
+use UCS-4.
+@p()
+Both kinds of string literals are replaced where they
+occur with named constants with internal linkage
+of types basic_string<char>, and 
+basic_string<uint32_t>. 
+@p()
+String literals are output in the C files as C string
+literals with all UTF-8 encoding expressed with hex
+escapes, surrounded by a constructor for basic_string<char>.
+@p()
+Ustrings are surrounded by a Felix function which constructs
+a basic_string<uint32_t> from an 8 bit C string literal
+by decoding UTF-8 sequences.
+@p()
+Both kinds of string admit \uXXXX and \UXXXXXXXX escapes,
+as well as the usual C escapes \\, \', \", \r, \n, \t, \b, \v, \f
+for slosh, quote, double quote, return, newline, tab, bell, vertical tab, and
+form feed, respectively.
+@p()
+Octal and hex escapes are NOT allowed: strings are
+for internationalisable human text, and do not represent
+arbitrary raw memory extents.
+@p()
+Although not part of the lexicology, note here two special
+forms for strings: a string may be applied to a string, or,
+a string may be applied to an integer. The first case is
+remodelled as a concatenation, and the second as the concatenation
+of the string and the ISO-10646 code point the integer represents.
+Note that if the string is 8 bit, UTF-8 encoding will be applied.
+
+@select(tangler(tdir+'tut138a.flx'))
+#include <std.flx>
+string s = "Hello" 32; // add a space after "Hello"
+s = s s; // says "Hello Hello "
+print s; endl;
 
 @head(2,'Floating matches')
 Felix provides special matching for

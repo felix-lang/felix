@@ -80,7 +80,6 @@ let rec register_type_r syms bbdfns exclude t =
   let rnr t = register_type_nr syms t in
   match unfold t with
   | `BTYP_void -> ()
-  | `BTYP_none -> ()
   | `BTYP_fix _ -> ()
   | `BTYP_var _ -> failwith "Attempt to register type variable"
   | `BTYP_function (ps,ret) -> rr ps; rr ret; rnr t
@@ -229,12 +228,18 @@ let collect_types syms bbdfns =
 Now some code to generate the bases, given the
 hashtable. We also mangle c++ abstract type names.
 @select(h)
-let is_unitsum (t:btypecode_t) = match t with
-  | `BTYP_sum ls -> 
+let all_voids ls =    
+    List.fold_left 
+    (fun acc t -> acc && (t = `BTYP_void))
+    true ls
+
+let all_units ls =    
     List.fold_left 
     (fun acc t -> acc && (t = `BTYP_tuple []))
     true ls
 
+let is_unitsum (t:btypecode_t) = match t with
+  | `BTYP_sum ls ->  all_units ls
   | _ -> false
 
 let gen_type_name syms bbdfns (index,typ) =
@@ -260,7 +265,6 @@ let gen_type_name syms bbdfns (index,typ) =
       "typedef _uctor_ " ^ tn typ ^ ";\n"
 
   | `BTYP_void -> ""
-  | `BTYP_none -> ""
   | `BTYP_pointer t -> "//Pointer by template"
 
   | `BTYP_inst (i,vs) ->
@@ -271,7 +275,7 @@ let gen_type_name syms bbdfns (index,typ) =
       | _ -> failwith "Expected primitive type"
     in
     let name = tn typ in
-    let s = csubst syms bbdfns ct [] [] `BTYP_none vs in
+    let s = csubst syms bbdfns ct [] [] `BTYP_void vs in
     "typedef " ^ s ^ " " ^ name ^ ";\n"
 
   | `BTYP_name index ->
@@ -283,8 +287,14 @@ let gen_type_name syms bbdfns (index,typ) =
     begin match entry with
     | `BBDCL_struct cs ->
       "struct " ^ name ^ ";\n"
-    | `BBDCL_union _ -> 
-      "typedef _uctor_ " ^ tn typ ^ ";\n"
+
+    | `BBDCL_union ls -> 
+      if all_voids (List.map snd ls)
+      then
+        "typedef int " ^ tn typ ^ ";\n"
+      else
+        "typedef _uctor_ " ^ tn typ ^ ";\n"
+
     | `BBDCL_abs (vs,ct) -> 
       (match vs with
       | [] -> "typedef " ^ ct ^ " " ^ tn typ ^ ";\n" 
@@ -391,7 +401,6 @@ let gen_type syms bbdfns (index,typ) =
     "};\n"
 
   | `BTYP_void -> ""
-  | `BTYP_none -> ""
   | `BTYP_pointer t -> failwith "Generate pointer type: should use template"
     (*
     let name = tn typ in
@@ -452,7 +461,7 @@ let gen_type syms bbdfns (index,typ) =
       ) ^
       "};\n"
 
-    | `BBDCL_union _ -> "" (* covered by prior typedef of _uctor_ *)
+    | `BBDCL_union _ -> "" (* covered by prior typedef of _uctor_ or int *)
     | `BBDCL_abs (vs,ct) -> ""
     | _ -> 
       failwith 

@@ -43,8 +43,11 @@ let string_of_token (tok :Flx_parse.token): string =
   | INTEGER (sr,t,i) -> Big_int.string_of_big_int i
   | FLOAT (sr,t,v) -> v
   | STRING (sr,s) -> Flx_string.c_quote_of_string s 
+  | WSTRING (sr,s) -> Flx_string.c_quote_of_string s 
+  | USTRING (sr,s) -> Flx_string.c_quote_of_string s 
 
   (* one character tokens *)
+  | DOLLAR _ -> "$" 
   | QUEST _ -> "?" 
   | EXCLAMATION _ -> "!" 
   | LPAR _ -> "(" 
@@ -124,14 +127,19 @@ let string_of_token (tok :Flx_parse.token): string =
   | AND _ ->  "and"
   | NOT _ -> "not"
   | OR _ -> "or"
-  | FUNCTION _ -> "function" 
-  | PROCEDURE _ -> "procedure" 
+  | FUNCTION _ -> "fun" 
+  | PROCEDURE _ -> "proc" 
+  | MACRO _ -> "macro" 
+  | IDENT _ -> "ident"
+  | NEW _ -> "new"
   | IF _ -> "if" 
   | THEN _ -> "then" 
   | ELSE _ -> "else" 
   | ENDIF _ -> "endif" 
   | ELIF _ -> "elif" 
   | CALL _ -> "call"
+  | JUMP _ -> "jump"
+  | LOOP _ -> "loop"
   | REGMATCH _ -> "regmatch"
   | MATCH _ -> "match"
   | WITH _ -> "with"
@@ -141,18 +149,14 @@ let string_of_token (tok :Flx_parse.token): string =
   | IN _ -> "in"
   | TYPE _ -> "type"
   | TYPEDEF _ -> "typedef"
-  | FUN _ -> "fun"
   | READ _ -> "read"
   | RETURN _ -> "return"
   | CONST _ -> "const"
-  | PROC _ -> "proc"
   | STRUCT _ -> "struct"
   | HEADER _ -> "header"
   | BODY _ -> "body"
   | CODE _ -> "code"
   | FORK _ -> "fork"
-  | WHILE _ -> "while"
-  | LOOP _ -> "loop"
   | TODO _ -> "todo"
   | OF _ -> "of" 
   | ATTEMPT _ -> "attempt"
@@ -169,14 +173,12 @@ let string_of_token (tok :Flx_parse.token): string =
   | VAR _ -> "var"
   | EXCEPTIONS _ -> "exceptions"
   | CLASS _ -> "class"
-  | CATEGORY _ -> "category"
   | VAL _ -> "val"
   | MODULE _ -> "module"
   | GOTO _ -> "goto"
   | TO _ -> "to"
   | EXPORT _ -> "export"
   | DEFINE _ -> "define"
-  | OVERLOAD _ -> "overload"
 
   (* special things *)
   | SLOSH _ -> "\\" (* "\"" *) 
@@ -202,6 +204,8 @@ let src_of_token t = match t with
   | INF s 
   | NAN s
   | STRING  (s,_)
+  | WSTRING  (s,_)
+  | USTRING  (s,_)
 
   | ERRORTOKEN (s,_) 
 
@@ -217,6 +221,7 @@ let src_of_token t = match t with
   | AMPER s 
   | VBAR s 
   | EXCLAMATION s 
+  | DOLLAR s 
   | QUEST s 
   | LPAR s 
   | RPAR s 
@@ -290,7 +295,6 @@ let src_of_token t = match t with
   | VAR s 
   | UNION s 
   | CLASS s 
-  | CATEGORY s 
   | EXCEPTIONS s 
   | GOTO s 
   | EXPORT s 
@@ -306,17 +310,18 @@ let src_of_token t = match t with
   | MODULE s 
   | CODE s 
   | CALL s 
+  | JUMP s 
+  | LOOP s 
   | PROCEDURE s 
   | FUNCTION s 
+  | MACRO s 
+  | IDENT s 
+  | NEW s 
   | RETURN s 
   | FORK s 
-  | WHILE s 
-  | LOOP s 
   | TODO s 
   | TYPE s 
-  | FUN s 
   | READ s 
-  | PROC s 
   | CONST s 
   | STRUCT s 
   | RAISE s 
@@ -327,7 +332,6 @@ let src_of_token t = match t with
   | TYPEDEF s 
   | TO s
   | DEFINE s
-  | OVERLOAD s
   | OPEN s
   | USE s
   | UNDERSCORE s

@@ -104,8 +104,10 @@ MODULES = [
   'flx_lex1'         ,
   'flx_tok'          ,
   'flx_parse_ctrl'   ,
-  'flx_dfa'     ,
+  'flx_dfa'          ,
   'flx_pat'          , 
+  'flx_constfld'     , 
+  'flx_macro'        , 
   'flx_desugar'      , 
   'flx_mbind'        , 
   'flx_symtab'       , 
@@ -143,6 +145,7 @@ EXES = [
   # compiler tools
   'flxl',
   'flxp',
+  'flxm',
   'flxd',
   'flxb',
   'flxg',
@@ -483,7 +486,7 @@ See
 John Maxwell Skaller, mailto:skaller@ozemail.com.au
 
 @select(tangler('man/man1/flx_op.1'))
-.TH FELIX OPERATORS "2002 April 11"
+.TH FELIX OPERATORS "2003 April 11"
 .SH NAME
 Felix operators and operator names
 (these need to be checked!).
@@ -669,11 +672,46 @@ left assoc
 .B endmatch
 .br
 
+.B (fun (<arglist>):<type> = { <expr> })
+.br
+.B (fun (<arglist>):<type> = { <statements> })
+.br
+.B { <expr> }
+.br
+Lambda function. The return type is optional.
+The third form is short for 
+.B (fun () = { <expr> })
+.br
+
+.B (proc (<arglist>){ <statements> })
+.br
+.B { <statements> }
+.br
+Lambda procedure.
+The second form is short for 
+.B (proc () = { <statements> })
+.br
+
 .SH SEE ALSO
 .B flx(1) 
 for a list of the tools.
 .B felix(1)
-for a language introduction
+for a language introduction,
+.B flx_op(1)
+for a list of operators,
+.B flx_dir(1)
+for a list of directives.
+.B flx_exec(1)
+for a list of executable statement.
+.B flx_decl(1)
+for a list of declarations and definitons
+.B flx_lib_type(1)
+for a list of standard library types
+.B flx_bind(1)
+for a list of binding defintions.
+.B flx_key(1)
+for a list of keywords
+
 
 .SH WEB SITE
 See 
@@ -682,8 +720,490 @@ See
 .SH AUTHOR
 John Maxwell Skaller, mailto:skaller@ozemail.com.au
 
+@select(tangler('man/man1/flx_dir.1'))
+.TH FELIX DIRECTIVES "2003 April 11"
+.SH NAME
+Felix statements and directives
+(these need to be checked!).
+
+.SH Directives
+.B #include <string>
+.br
+Preprocessor include like C, except that only the first
+occurence of an include directive causes inclusion.
+.br
+
+.B header <string>;
+.br
+Includes C++ literally neat top of header file.
+.br
+
+.B body <string>;
+.br
+Includes C++ literally near top of body file.
+.br
+
+.B code <string>;
+.br
+Includes C++ literally in body file ay point of writing.
+.br
+
+.B open <name>;
+.br
+Makes identifiers in the specified module available for use
+without qualification.
+.br
+
+.B use <name>::identifier;
+.br
+.B use <identifier>=<name>;
+.br
+Makes the specified identifier available for use
+without qualification.
+.br
+
+.SH SEE ALSO
+.B felix(1)
+for a language introduction and man page reference
+
+.SH WEB SITE
+See 
+.B http://felix.sf.net
+
+.SH AUTHOR
+John Maxwell Skaller, mailto:skaller@ozemail.com.au
+
+
+@select(tangler('man/man1/flx_bind.1'))
+.TH FELIX BINDING DEFINITIONS "2003 April 11"
+.SH NAME
+Felix binding definitons 
+(these need to be checked!).
+
+.SH Binding defintions 
+
+.B type <identifier> = string>;
+.br
+.B type <identifier> [<identlist>]= string>;
+.br
+Define function by C++ expression. 
+In the second form a parameterised type is defined.
+.br
+
+.B const <identifier>: <type> = <string>;
+.br
+Define constant by C++ expression. 
+.br
+
+.B fun <identifier> type>=<string>;
+.br
+.B fun <identifier> [<identlist>]<type>=<string>;
+.br
+Define function by C++ expression.
+In the second form a parameterised function is defined.
+.br
+
+.B proc <identifier> <type>=<string>;
+.br
+.B proc <identifier> [<identlist>]<type>=<string>;
+.br
+Define procedure by C++ statements.
+In the second form a parameterised procedure is defined.
+.br
+
+.SH Argument Encoding
+.br
+.B $<n>
+Specifies n'th argument (1 origin), data pointer
+only for pointer types
+
+.B $a
+Specifies all arguments, short hand for $1, $2, $3 ...
+
+.B $t
+pass argument tuple as a tuple object
+
+.B #<n>
+Specifies type of n'th argment (1 origin)
+
+.B #0 
+Return type
+
+.B `<n>
+Specifies n'th component (1 origin) including
+frame pointer for pointer types
+
+.B @n
+reference to shape object of n'th argument type
+
+.B ?<n>
+Specifies n'th type argument (1 origin)
+
+.B ?a
+Short hand for ?1,?2,?3 ...
+
+.B ??
+Question mark character ? emitted.
+
+.SH SEE ALSO
+.B felix(1)
+for a language introduction and man page index
+
+@select(tangler('man/man1/flx_key.1'))
+.TH FELIX KEYWORDS "2003 April 11"
+.SH NAME
+Felix keywords and operator symbols
+
+.SH Keywords
+_
+all
+and
+as
+attempt
+body
+call
+case
+class
+code
+const
+define
+elif
+else
+endattempt
+endif
+endmatch
+except
+exceptions
+export
+finally
+fork
+fun
+function
+functor
+goto
+header
+if
+in
+inf
+interface
+lambda
+let
+match
+module
+NaN
+not
+not
+of
+open
+or
+proc
+procedure
+raise
+read
+regexp
+regmatch
+return
+struct
+then
+to
+todo
+type
+typedef
+union
+use
+val
+var
+when
+with
+.br
+
+.SH operator symbols
+( 
+) 
+[ 
+] 
+
+} 
+! 
+: 
+, 
+; 
++ 
+- 
+* 
+/ 
+| 
+& 
+< 
+> 
+= 
+. 
+% 
+` 
+~ 
+^ 
+! 
+? 
+=> 
+&< 
+&> 
+.. 
+:: 
+== 
+<> 
+!= 
+<= 
+>= 
+<< 
+>> 
+** 
+\\ 
+++ 
+-- 
++= 
+-= 
+*= 
+/= 
+%= 
+^= 
+|= 
+&= 
+~= 
+:= 
+<- 
+-> 
+<: 
+:> 
+[< 
+>] 
+<<= 
+>>= 
+... 
+<-> 
+&== 
+&<> 
+&!= 
+&<= 
+&>= 
+
+.SH SEE ALSO
+.B felix(1)
+for a language introduction and man page index
+
+@select(tangler('man/man1/flx_decl.1'))
+.TH FELIX Declarations "2003 April 11"
+.SH NAME
+Felix declarations and definitons 
+(these need to be checked!).
+
+.SH declarations and defintions 
+
+.B struct <identifier> { <identifier>: <type>  ... };
+.br
+Define a struct. 
+.br
+
+.B union <identifier> = | <identifier> of <type>  ...;
+.br
+Define a union.  The of <type> part is optional.
+.br
+
+.B module <identifier> { <statements> } 
+.br
+Define a module.
+.br
+
+.B fun <identifier> (<arglist>):<type>= { <statements> };
+.br
+Define a function. The return type is optional.
+
+.B proc <identifier> (<arglist>) { <statements> };
+.br
+Define a procedure. 
+
+.B <identifier> :>
+.br
+Specify a label.
+.br
+
+.SH SEE ALSO
+.B felix(1)
+for a language introduction and man page index.
+
+.SH WEB SITE
+See 
+.B http://felix.sf.net
+
+.SH AUTHOR
+John Maxwell Skaller, mailto:skaller@ozemail.com.au
+
+@select(tangler('man/man1/flx_exec.1'))
+.TH FELIX Executable statements "2003 April 11"
+.SH NAME
+Felix executable statements 
+(these need to be checked!).
+
+.SH Executable Statements
+
+.B goto <label>;
+.br
+unconditional jump
+.br
+
+.B if <expr> goto <label>;
+.br
+conditional jump
+.br
+
+.B call <expr><expr>;
+.br
+.B <expr><expr>;
+.br
+.B call <expr>;
+.br
+.B <expr>;
+.br
+Procedure call. The third and fourth forms call <expr> ().
+.br
+
+.B jump <expr>;
+.br
+Explicit tail call: same as 
+.B call <expr>; return;
+.br
+
+.B loop <ident><expr>;
+.br
+Explicit tail call of parent <ident> which reuses its frame object.
+.br
+
+.B read <identifier>;
+.br
+blocking read of message into variable.
+.br
+
+.B attempt { <statements> } exceptions { <handlers> }
+.br
+.B raise <identifier> <argument>;
+.br
+.B <identifier> ( <parameters> ) { <statements> }
+.br
+Execute the statements in the attempt clause
+and if it falls through, continue after the
+exceptions clause.
+If a raise statement is executed, find the innermost
+matching handler and invoke it. If the handler
+falls through continue afters its containing exceptions
+clause. Each exception must match a visible handler
+of a compiler time error is issued.
+.br
+
+.B todo <string>;
+.br
+Fail with unimplemented feature error at run time. Used to mark
+incomplete parts of a program.
+.br
+
+.SH SEE ALSO
+.B felix(1)
+for a language introduction and man page index.
+
+.SH WEB SITE
+See 
+.B http://felix.sf.net
+
+.SH AUTHOR
+John Maxwell Skaller, mailto:skaller@ozemail.com.au
+
+
+@select(tangler('man/man1/flx_lib_typ.1'))
+.TH FELIX STANDARD LIBRARY - TYPES "2003 April 11"
+.SH NAME
+Standard library types
+(these need to be checked!).
+
+.SH Integers
+
+.B tiny short int long vlong
+.br
+Signed integers corresponding to char, int, short, long and long long in C.
+.br
+
+.B utiny ushort uint ulong uvlong
+.br
+Signed integers corresponding to unsigned char, unsigned short, unsigned int, 
+unsigned long and unsigned long long in C.
+.br
+
+.B int8 int16 int32 int64
+.br
+Signed two's complement integers of exact size.
+.br
+
+.B uint8 uint16 uint32 uint64
+.br
+Signed two's complement integers of exact size.
+.br
+
+.SH Floats
+.B float double ldouble
+.br
+Floats corresponding to  float, double and long double in C.
+.br
+
+.B float32 float64 float80
+.br
+IEEE floats
+.br
+
+.SH chars
+.B char wchar uchar
+.br
+character types corresponding to char, wchar_t in C, and an ISO10646 
+code point type (guarrateed to be at at least 24 bits).
+.br
+
+.SH strings
+.B string wstring ustring 
+.br
+string types corresponding to char, wchar and uchar 
+.br
+
+.SH sums
+.br
+.B void unit bool
+.br
+Equal to types 0, 1, and 2: anonymous 
+unit sums of no, one, and two cases.
+
+.SH any
+.B any
+.br
+Any type. Only useful for unused parameters.
+Defined as the fixpoint of the type equation "typedef x = x;".
+
+.SH misc
+.B address
+.be
+Machine address, void* in C.
+.br
+.B byte
+Unit of memory store, unisgned char in C.
+
+.SH SEE ALSO
+.B felix(1)
+for a language introduction and man page index.
+
+.SH WEB SITE
+See 
+.B http://felix.sf.net
+
+.SH AUTHOR
+John Maxwell Skaller, mailto:skaller@ozemail.com.au
+
+
 @select(tangler('man/man1/flx.1'))
-.TH FELIX TOOLS "2002 April 11"
+.TH FELIX TOOLS "2003 April 11"
 .SH NAME
 Felix tools
 .SH SYNOPSIS
@@ -694,6 +1214,11 @@ filebasename
 
 .br
 .B flxp 
+[-Iinclude-dir]
+filebasename
+
+.br
+.B flxm
 [-Iinclude-dir]
 filebasename
 
@@ -748,6 +1273,12 @@ lexes the input and prints the token list to standard output
 lexes and parses the input and prints the parse tree to standard output
 
 .br
+.B flxm
+lexes, parses, folds constants and performs
+macro expansion of the input and prints the
+AST tree to standard output
+
+.br
 .B flxd
 lexes, parses and
 desugars the the input and prints the desugared 
@@ -777,7 +1308,7 @@ then executes the resulting library using flx_run.
 
 .SH USE
 .B flxg
-is the compiler proper. flx[lpdb] are provided to
+is the compiler proper. flx[lpmdb] are provided to
 aid in debugging, and perform successive phases of
 the compilation process.
 
@@ -834,7 +1365,12 @@ Plenty, this is a pre-alpha release.
 Separate compilation is the big one.
 
 .SH SEE ALSO
-Felix(1) for a brief introduction to the language.
+.B felix(1)
+for a language introduction and man page index.
+
+.SH WEB SITE
+See 
+.B http://felix.sf.net
 
 .SH AUTHOR
 John Maxwell Skaller, mailto:skaller@ozemail.com.au

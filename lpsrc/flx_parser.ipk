@@ -140,7 +140,7 @@ let mkcurry sr name args return_type body =
       let body = 
         [
           aux t;
-          `AST_return 
+          `AST_fun_return 
           (
             sr,
             `AST_suffix
@@ -179,6 +179,8 @@ let mkcurry sr name args return_type body =
 %token<Flx_types.srcref * string * Big_int.big_int> INTEGER
 %token<Flx_types.srcref * string * string > FLOAT
 %token<Flx_types.srcref * string> STRING
+%token<Flx_types.srcref * string> WSTRING
+%token<Flx_types.srcref * string> USTRING
 %token<Flx_types.srcref> INF
 %token<Flx_types.srcref> NAN 
 
@@ -223,22 +225,25 @@ let mkcurry sr name args return_type body =
 %token<Flx_types.srcref> DOTDOT SLOSH DOTDOTDOT
 
 /* operator keywords */
-%token<Flx_types.srcref> NOT OR AND LAMBDA 
+%token<Flx_types.srcref> NOT OR AND LAMBDA DOLLAR
 
 /* patterns */
 %token<Flx_types.srcref> AS UNDERSCORE REGEXP WHEN ALL
 
 /* statement keywords */
-%token<Flx_types.srcref> IF THEN ELSE ENDIF ELIF OF VAR UNION CLASS CATEGORY EXCEPTIONS GOTO EXPORT
+%token<Flx_types.srcref> IF THEN ELSE ENDIF ELIF 
+%token<Flx_types.srcref> OF VAR UNION CLASS EXCEPTIONS GOTO EXPORT
 
 %token<Flx_types.srcref> MATCH WITH ENDMATCH CASE REGMATCH
 %token<Flx_types.srcref> HEADER BODY MODULE CODE LET IN
-%token<Flx_types.srcref> CALL PROCEDURE FUNCTION FUNCTOR
+%token<Flx_types.srcref> CALL PROCEDURE FUNCTION FUNCTOR JUMP LOOP
 %token<Flx_types.srcref> RETURN FORK 
-%token<Flx_types.srcref> WHILE LOOP TO OPEN EQRIGHTARROW USE
-%token<Flx_types.srcref> TODO INTERFACE DEFINE OVERLOAD
-%token<Flx_types.srcref> TYPE FUN READ PROC CONST STRUCT RAISE ATTEMPT FINALLY EXCEPT VAL TYPEDEF ENDATTEMPT
+%token<Flx_types.srcref> TO OPEN EQRIGHTARROW USE
+%token<Flx_types.srcref> TODO INTERFACE DEFINE
+%token<Flx_types.srcref> TYPE READ CONST STRUCT 
+%token<Flx_types.srcref> RAISE ATTEMPT FINALLY EXCEPT VAL TYPEDEF ENDATTEMPT
 %token<Flx_types.srcref> QUEST
+%token<Flx_types.srcref> MACRO IDENT NEW 
 
 %type <Flx_types.compilation_unit_t> compilation_unit
 %type <Flx_types.range_srcref * Flx_types.statement_t list> compound
@@ -296,6 +301,7 @@ declarative:
   | open_decl { $1 }
   | use_decl { $1 }
   | regdef { $1 }
+  | macro_definition { $1 }
 
 executable:
   | var_def { $1 }
@@ -508,6 +514,97 @@ use_decl:
       `AST_use (sr, snd $2, qualified_name_of_expr $4)
     }
   
+@head(3,'Macro Definition')
+@select(h)
+mac_arg:
+  | NAME COLON FUNCTION    { snd $1, Expr }
+  | NAME COLON PROCEDURE   { snd $1, Stmt }
+  | NAME COLON IDENT       { snd $1, Ident}
+  | NAME                   { snd $1, Expr }
+
+mac_args:
+  | mac_arg COMMA mac_args       { $1 :: $3 }
+  | mac_arg                { [$1] }
+
+mac_arg_list:
+  | LPAR mac_args RPAR     { $2 }
+  | LPAR RPAR              { [] }
+  |                        { [] }
+
+macro_definition:
+  | MACRO IDENT NAME EQUAL NAME SEMI
+    {
+      let 
+        sr = rstoken $1 $6 and
+        lname = snd $3 and
+        rname = snd $5
+      in
+        `AST_name_macro (sr,lname,rname)
+    }
+
+  | MACRO IDENT NAME EQUAL NEW SEMI
+    {
+      let 
+        sr = rstoken $1 $6 and
+        lname = snd $3
+      in
+        `AST_name_macro (sr,lname,"")
+    }
+
+  | MACRO VAR NAME EQUAL expr SEMI
+    {
+      let 
+        sr = rstoken $1 $6 and
+        name = snd $3 and
+        e = $5
+      in
+        `AST_macro_var (sr,name,e)
+    }
+
+  | MACRO NAME EQUAL expr SEMI
+    {
+      let 
+        sr = rstoken $1 $5 and
+        name = snd $2 and
+        e = $4
+      in
+        `AST_macro_assign (sr,name,e)
+    }
+
+
+  | MACRO VAL NAME EQUAL expr SEMI
+    {
+      let 
+        sr = rstoken $1 $6 and
+        name = snd $3 and
+        e = $5
+      in
+        `AST_macro_val (sr,name,e)
+    }
+
+
+  | MACRO FUNCTION NAME mac_arg_list EQUAL expr SEMI
+    {
+      let 
+        sr = rstoken $1 $7 and
+        name = snd $3 and
+        args = $4 and
+        e = $6
+      in
+      `AST_expr_macro (sr,name,args,e)
+    }
+
+  | MACRO PROCEDURE NAME mac_arg_list compound 
+    {
+      let 
+        sr = rsrange (slift $1) (fst $5) and 
+        name = snd $3 and
+        args = $4 and
+        sts = snd $5
+      in
+      `AST_stmt_macro (sr,name,args,sts)
+    }
+
 @head(3,'Function and Procedure Definition')
 @select(h)
 fun_arg:
@@ -781,7 +878,8 @@ Variables can be declared in both procedures and functions.
 @head(3,'Function or Procedure Return')
 @select(h)
 return:       
-  | RETURN expr SEMI          { `AST_return (rstoken $1 $3, $2) }
+  | RETURN expr SEMI          { `AST_fun_return (rstoken $1 $3, $2) }
+  | RETURN SEMI               { `AST_proc_return (rstoken $1 $2) }
 @doc()
 The return statement is only permitted as the last statement
 in a function.
@@ -829,45 +927,65 @@ constant: it could be a variable name.
 
 @select(h)
 call:
-  | application SEMI {
-    match $1 with 
-    | `AST_apply (s,(proc, arg)) -> 
-      `AST_call (rsrange s (slift $2), proc, arg)
+  | application SEMI 
+    {
+      let sr = 
+        let sr1 = src_of_expr $1 in
+        rsrange sr1 (slift $2) 
+     in
+      match $1 with 
+      | `AST_apply (_,(proc, arg)) -> 
+        `AST_call (sr, proc, arg)
 
-    | `AST_name (s,name) as proc ->
-      `AST_call (rsrange s (slift $2), proc, `AST_tuple (slift $2, []))
+      | `AST_lambda(_,([],`AST_void _,stmts)) ->
+        `AST_block (sr,stmts)
 
-    | `AST_lambda(sr,([],`AST_void _,stmts)) ->
-      `AST_block (sr,stmts)
+      | proc -> 
+       let u = `AST_tuple (slift $2, []) in
+       `AST_call (sr, proc, u)
+    }
 
-    (* ARGGG! A match expression may have the type
-       of a procedure, and we need to call it,
-       we could check for 'match' here, but
-       basically, we just have to give up and
-       assume that an expression returns an 
-       unit->void and call it, and let the type
-       checker detect an error.
+  | CALL application SEMI 
+    {
+      let sr = rstoken $1 $3 in
+      match $2 with 
+      | `AST_apply (sr,(proc, arg)) -> 
+        `AST_call (sr, proc, arg)
+      
+      | `AST_lambda(sr,([],`AST_void _,stmts)) ->
+        `AST_block (sr,stmts)
 
-       This is a MESS because it is inconsistent ...
-    *)
-    | proc -> 
-     let s = src_of_expr proc in
-     `AST_call (rsrange s (slift $2), proc, `AST_tuple (slift $2, []))
-    
-    (* we used to do this:
-    failwith 
-    (
-      "Procedure call requires application, got " ^
-      Flx_print.string_of_expr $1
-    )
-    *)
-  }
+      | proc -> 
+        let u = `AST_tuple (slift $3, []) in
+       `AST_call (rstoken $1 $3, proc, u)
+    }
 
-  | CALL application SEMI {
+  | JUMP application SEMI 
+    {
+      let sr = rstoken $1 $3 in
+      match $2 with 
+      | `AST_apply (sr,(proc, arg)) -> 
+        `AST_jump (sr, proc, arg)
+      
+      | `AST_lambda(sr,([],`AST_void _,stmts)) ->
+        `AST_block (sr,stmts)
+
+      | proc -> 
+        let u = `AST_tuple (slift $3, []) in
+       `AST_call (sr, proc, u)
+    }
+
+  | LOOP application SEMI {
+    let sr = rstoken $1 $3 in
+    let u = `AST_tuple (slift $3, []) in
     match $2 with 
-    | `AST_apply (s,(proc, arg)) -> 
-      `AST_call (rsrange s (slift $3), proc, arg)
-    | _ -> failwith "Procedure call requires application"
+    | `AST_apply (_,(`AST_name (_,name), arg)) -> 
+      `AST_loop (sr, name, arg)
+    
+    | `AST_name (s,name) ->
+      `AST_loop (sr, name, u)
+
+    | _ -> failwith "Loop requires unqualified name"
   }
 
 assignop:
@@ -1263,7 +1381,7 @@ lambda:
         (
           $3, 
           typecode_of_expr $6, 
-          [`AST_return (sr,$9)]
+          [`AST_fun_return (sr,$9)]
         )
       )
     }
@@ -1341,6 +1459,8 @@ cmp_op:
   Normally, this can't happen because these are not
   legal user names. We should use a unique index,
   but the parser is currently stateless.
+
+  THis routine should be moved to desugaring phase.
 */
   
 comparison:
@@ -1391,7 +1511,7 @@ comparison:
         ::
         p 0 $4
         @
-        [`AST_return (sr,`AST_name(sr,"_r"^si n))]
+        [`AST_fun_return (sr,`AST_name(sr,"_r"^si n))]
       in
       `AST_apply
       (
@@ -1567,8 +1687,48 @@ qualified_name:
       let sr = rsrange (src_of_expr $1) (slift (fst $3)) in
       `AST_lookup (sr, ($1, snd $3))
     }
-  | atom { $1 }
+  | dollar_atom { $1 }
 
+elif:
+  | ELIF expr THEN expr { $2,$4 }
+
+elifs:
+  | elifs elif { $2 :: $1 }
+  | elif { [$1] }
+
+else_part:
+  | elifs ELSE expr 
+    {
+      List.fold_left (* actually a right fold cause list is reversed *)
+      (fun result (cond,thn) ->
+        let sr = rsrange (src_of_expr cond) (src_of_expr result) in
+        `AST_cond 
+        (
+          sr,
+          (
+            cond,
+            thn,
+            result
+          )
+        )
+      )
+      $3 $1
+    }
+  | ELSE expr { $2 }
+
+cond:
+  | IF expr THEN expr else_part ENDIF
+    { 
+      `AST_cond (rstoken $1 $6,($2,$4,$5))
+    }
+
+dollar_atom:
+  | DOLLAR atom 
+    { 
+      `AST_noexpand (rsrange (slift $1) (src_of_expr $2), $2)
+    }
+  | atom { $1}
+  
 atom:
   | LBRACE expr RBRACE     
     { 
@@ -1579,7 +1739,7 @@ atom:
         (
           [],
           `TYP_none,
-          [`AST_return (sr,$2)]
+          [`AST_fun_return (sr,$2)]
         ) 
       )
     }
@@ -1600,10 +1760,7 @@ atom:
   | LPAR RPAR           { `AST_tuple (rstoken $1 $2,[]) }
   | literal             { $1 }
   | simple_name         { ($1:>expr_t) }
-  | IF expr THEN expr ELSE expr ENDIF 
-    { 
-      `AST_cond (rstoken $1 $7,($2,$4,$6))
-    }
+  | cond                { $1 }
 
 literal:
   | INTEGER 

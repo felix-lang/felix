@@ -459,6 +459,13 @@ let rec build_tables print_flag dfns counter name level parent grandparent root 
           Hashtbl.add dfns asgn_idx (asgn_name,sr,parent,`SYMDEF_dcl asgn_dcl);
           add_function name_map asgn_name asgn_idx
           ; 
+
+          let unit_sum = 
+            List.fold_left 
+            (fun v (_,t) -> v && (match t with `AST_void _ -> true | _ -> false) )
+            true 
+            its
+          in
           let ccount = ref 0 in (* count component constructors *)
           List.iter
           (fun (component_name,t) ->
@@ -466,60 +473,82 @@ let rec build_tables print_flag dfns counter name level parent grandparent root 
             let match_idx = !counter in incr counter; (* matcher *)
             let ctor_idx = !ccount in incr ccount; (* ctor sequence in union *)
             let ctor_dcl =
-              match t with
-              | `AST_void _ -> (* constant constructor *)
-                add_unique name_map component_name dfn_idx;
-                `DCL_const (`AST_name (sr,id),
-                  "_uctor_(" ^ string_of_int ctor_idx ^ ",0)"
-                )
-              | `TYP_tuple ts -> (* non-constant constructor or 2 or more arguments *)
-                add_function name_map component_name dfn_idx;
-                let dcl = 
-                  `DCL_fun 
+              if unit_sum
+              then begin
+                  add_unique name_map component_name dfn_idx;
+                  `DCL_const 
                   (
-                    [],
-                    ts,
                     `AST_name (sr,id),
-                    "_uctor_(" ^ string_of_int ctor_idx ^ 
-                    ", new(gc,@t) #t($t))"
+                    string_of_int ctor_idx
                   )
-                in 
-                  dcl
-              | _ -> (* non-constant constructor of 1 argument *)
-                add_function name_map component_name dfn_idx;
-                `DCL_fun ([],[t],`AST_name (sr,id),
-                  "_uctor_(" ^ string_of_int ctor_idx ^ 
-                  ", new(gc,@1) #1($1))"
+              end
+              else
+                match t with
+                | `AST_void _ -> (* constant constructor *)
+                  add_unique name_map component_name dfn_idx;
+                  `DCL_const 
+                  (
+                    `AST_name (sr,id),
+                    "_uctor_(" ^ string_of_int ctor_idx ^ ",0)"
+                  )
+                | `TYP_tuple ts -> (* non-constant constructor or 2 or more arguments *)
+                  add_function name_map component_name dfn_idx;
+                  let dcl = 
+                    `DCL_fun 
+                    (
+                      [],
+                      ts,
+                      `AST_name (sr,id),
+                      "_uctor_(" ^ string_of_int ctor_idx ^ 
+                      ", new(gc,@t) #t($t))"
+                    )
+                  in 
+                    dcl
+                | _ -> (* non-constant constructor of 1 argument *)
+                  add_function name_map component_name dfn_idx;
+                  `DCL_fun ([],[t],`AST_name (sr,id),
+                    "_uctor_(" ^ string_of_int ctor_idx ^ 
+                    ", new(gc,@1) #1($1))"
+                  )
+            and ctor_match = 
+              if unit_sum
+              then
+                `DCL_fun 
+                (
+                  [],
+                  [`AST_name (sr,id)],
+                  flx_bool,
+                  "($1 ==" ^ string_of_int ctor_idx ^")"
                 )
-            in
-              let ctor_match = 
-                `DCL_fun (
+              else
+                `DCL_fun 
+                (
                   [],
                   [`AST_name (sr,id)],
                   flx_bool,
                   "($1.variant==" ^ string_of_int ctor_idx ^")"
                 )
-              and ctor_match_name ="_match_ctor_" ^ component_name 
-              in
+            and ctor_match_name ="_match_ctor_" ^ component_name 
+            in
 
-              if print_flag then print_endline ("//  " ^ spc ^ string_of_int dfn_idx ^ " -> " ^ component_name); 
-              Hashtbl.add dfns dfn_idx (component_name,sr,parent,`SYMDEF_dcl ctor_dcl);
+            if print_flag then print_endline ("//  " ^ spc ^ string_of_int dfn_idx ^ " -> " ^ component_name); 
+            Hashtbl.add dfns dfn_idx (component_name,sr,parent,`SYMDEF_dcl ctor_dcl);
 
-              if print_flag then print_endline ("//  " ^ spc ^ string_of_int match_idx ^ " -> " ^ ctor_match_name); 
-              Hashtbl.add dfns match_idx (ctor_match_name,sr,parent,`SYMDEF_dcl ctor_match);
+            if print_flag then print_endline ("//  " ^ spc ^ string_of_int match_idx ^ " -> " ^ ctor_match_name); 
+            Hashtbl.add dfns match_idx (ctor_match_name,sr,parent,`SYMDEF_dcl ctor_match);
 
-              add_function name_map ctor_match_name match_idx;
+            add_function name_map ctor_match_name match_idx;
 
-              (* destructor *)
-              match t with
-              | `AST_void _ -> ()
-              | _ -> (* non-constant constructor *)
-                let dtor_idx = !counter in incr counter;
-                let dtor_name = "_ctor_arg_" ^ component_name in
-                let dtor_dcl = `DCL_fun ([],[`AST_name (sr,id)],t,"*(#0*)`1.data") in
-                if print_flag then print_endline ("//  " ^ spc ^ string_of_int dtor_idx ^ " -> " ^ dtor_name); 
-                Hashtbl.add dfns dtor_idx (dtor_name,sr,parent,`SYMDEF_dcl dtor_dcl);
-                add_function name_map dtor_name dtor_idx
+            (* destructor *)
+            match t with
+            | `AST_void _ -> ()
+            | _ -> (* non-constant constructor *)
+              let dtor_idx = !counter in incr counter;
+              let dtor_name = "_ctor_arg_" ^ component_name in
+              let dtor_dcl = `DCL_fun ([],[`AST_name (sr,id)],t,"*(#0*)`1.data") in
+              if print_flag then print_endline ("//  " ^ spc ^ string_of_int dtor_idx ^ " -> " ^ dtor_name); 
+              Hashtbl.add dfns dtor_idx (dtor_name,sr,parent,`SYMDEF_dcl dtor_dcl);
+              add_function name_map dtor_name dtor_idx
           )
           its
  
