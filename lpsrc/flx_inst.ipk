@@ -66,7 +66,10 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   | `BEXPR_case_arg (_,e)
     -> ue e
     
-  | `BEXPR_apply ((`BEXPR_closure (index,ts),_) as f,a) ->
+  | `BEXPR_apply_prim (index,ts,a)
+  | `BEXPR_apply_direct (index,ts,a)
+  | `BEXPR_apply_stack (index,ts,a)
+  | `BEXPR_apply ((`BEXPR_closure (index,ts),_),a) ->
     let id,parent,sr2,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[process_expr(apply instance)] Can't find index " ^ si index)
@@ -80,7 +83,8 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     (* the remaining cases are struct/variant type constructors,
     which probably don't need types either .. fix me!
     *)
-    | _ -> ue f; ue a
+    (* | _ -> ue f; ue a *)
+    | _ -> ui index ts; ue a
     end
     
   | `BEXPR_apply (e1,e2) -> 
@@ -111,6 +115,17 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   print_endline ("processing exe " ^ string_of_bexe syms.dfns 0 exe);
   *)
   match exe with
+  | `BEXE_call_prim (sr,i,ts,e2) 
+  | `BEXE_call_direct (sr,i,ts,e2) 
+  | `BEXE_call_stack (sr,i,ts,e2) 
+    -> 
+    let ut t = register_type_r syms bbdfns [] sr t in
+    let vs t = varmap_subst hvarmap t in
+    let ts = map vs ts in
+    iter ut ts;
+    add_inst syms ref_insts1 (i,ts);
+    ue sr e2
+
   | `BEXE_call (sr,e1,e2) 
   | `BEXE_jump (sr,e1,e2) 
     -> ue sr e1; ue sr e2

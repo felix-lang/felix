@@ -50,12 +50,13 @@ let unravel syms bbdfns e =
       | `BEXPR_apply ((`BEXPR_name _,_) as f, b),t ->
         refer (`BEXPR_apply (f, aux b),t)
 
-      | `BEXPR_apply ((`BEXPR_closure (i,_),_) as f, b),t ->
+      | `BEXPR_apply_direct (i,ts,b),t 
+      | `BEXPR_apply ((`BEXPR_closure (i,ts),_), b),t ->
         let id,parent,sr,entry = Hashtbl.find bbdfns i in
         begin match entry with 
-        | `BBDCL_struct _ -> `BEXPR_apply (f, aux b),t
-        | `BBDCL_fun _ -> `BEXPR_apply (f, aux b),t
-        | `BBDCL_function _ -> refer (`BEXPR_apply (f, aux b),t)
+        | `BBDCL_struct _ -> `BEXPR_apply_direct (i,ts, aux b),t
+        | `BBDCL_fun _ -> `BEXPR_apply_direct (i, ts, aux b),t
+        | `BBDCL_function _ -> refer (`BEXPR_apply_direct (i,ts, aux b),t)
         | _ -> assert false
         end
 

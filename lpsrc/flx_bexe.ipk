@@ -36,7 +36,20 @@ let cal_call syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) =
   match unfold pt with
   | `BTYP_function (t, `BTYP_void) -> 
     if t = argt 
-    then `BEXE_call (sr,(p,lower pt), tbe2)
+    then 
+      ( 
+        match p with 
+        | `BEXPR_closure (i,ts) -> 
+          begin match Hashtbl.find syms.dfns i with
+          | {symdef=`SYMDEF_fun _ } -> 
+          `BEXE_call_prim (sr,i,ts,tbe2)
+          | {symdef=`SYMDEF_function _} ->
+          `BEXE_call_direct (sr,i,ts,tbe2)
+          | _ -> assert false
+          end
+        | _ -> 
+          `BEXE_call (sr,(p,lower pt), tbe2)
+      )
     else
       clierr sr
       (

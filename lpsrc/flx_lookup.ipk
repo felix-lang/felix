@@ -1604,7 +1604,19 @@ and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
     )
   ;
   *)
-  `BEXPR_apply ((be1,lower t1), (be2,lower t2)),rest
+  match be1 with
+  | `BEXPR_closure (i,ts) ->
+    begin match Hashtbl.find syms.dfns i with
+    | {symdef=`SYMDEF_fun _} ->
+      `BEXPR_apply_prim (i,ts, (be2,lower t2)),rest
+    | {symdef=`SYMDEF_function _} ->
+      `BEXPR_apply_direct (i,ts, (be2,lower t2)),rest
+    | _ -> (* needed temporarily for constructors .. *)
+      `BEXPR_apply_direct (i,ts, (be2,lower t2)),rest
+
+    end
+  | _ ->
+    `BEXPR_apply ((be1,lower t1), (be2,lower t2)),rest
 
 and koenig_lookup syms sra id' name_map fn t2 ts =
   (*

@@ -421,6 +421,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_opt2.ipk')
 @include_file ('flx_opt1.ipk')
 @include_file ('flx_opt3.ipk')
+@include_file ('flx_opt4.ipk')
 @include_file ('flx_inst.ipk')
 @pop_head()
 

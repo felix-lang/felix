@@ -52,6 +52,11 @@ let rec process_expr h k sr ((e,t) as be) =
   | `BEXPR_case_arg (_,e)
     -> ue e
     
+  | `BEXPR_apply_prim (i,ts,e2) 
+  | `BEXPR_apply_direct (i,ts,e2)
+  | `BEXPR_apply_stack (i,ts,e2) -> 
+    ui i; ue e2
+
   | `BEXPR_apply (e1,e2) -> 
     ue e1; ue e2
 
@@ -76,6 +81,11 @@ and process_exe (h:usage_t) k exe =
   let ue sr e = process_expr h k sr e in
   let ui i sr = add_inst h k i sr in
   match exe with
+  | `BEXE_call_prim (sr,i,ts,e2) 
+  | `BEXE_call_direct (sr,i,ts,e2) 
+  | `BEXE_call_stack (sr,i,ts,e2) 
+    -> ui i sr; ue sr e2
+  
   | `BEXE_call (sr,e1,e2) 
   | `BEXE_jump (sr,e1,e2) 
     -> ue sr e1; ue sr e2

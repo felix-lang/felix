@@ -477,6 +477,7 @@ MODULES = [
   'flx_call'         , 
   'flx_use'          , 
   'flx_inline'       , 
+  'flx_stack_calls'  , 
   'flx_inst'         , 
   'flx_cexpr'        ,
   'flx_tgen'         , 

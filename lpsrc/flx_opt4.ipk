@@ -1,0 +1,143 @@
+@head(1,"Make stack calls")
+Name binding pass 2.
+
+@h = tangler("src/flx_stack_calls.mli")
+@select(h)
+open Flx_ast
+open Flx_types
+open Flx_mtypes1
+
+val make_stack_calls:
+  sym_state_t ->
+  (bid_t, bid_t list) Hashtbl.t *
+  fully_bound_symbol_table_t ->
+  fully_bound_symbol_table_t
+
+@h = tangler("src/flx_stack_calls.ml")
+@select(h)
+open Flx_util
+open Flx_ast
+open Flx_types
+open Flx_print
+open Flx_mtypes1
+open Flx_typing
+open Flx_mbind
+open Flx_srcref
+open List
+open Flx_unify
+open Flx_treg
+open Flx_generic
+open Flx_maps
+open Flx_exceptions
+
+(* first approximation: we can stack functions that have no
+  function or procedure children AND no variables: later
+  we will check the return type, for now just check
+  the code generator works
+*)
+
+exception Found
+
+let can_stack_func (child_map,bbdfns) i =
+  let children = try Hashtbl.find child_map i with Not_found -> [] in
+  try
+    iter
+    (fun i ->
+      let id,parent,sr,entry = Hashtbl.find bbdfns i in
+      match entry with 
+      | `BBDCL_procedure _ 
+      | `BBDCL_function _ 
+      | `BBDCL_var _  -> raise Found
+      | _ -> ()
+    )
+    children
+    ;
+    true
+  with Found -> false
+
+let tident t = t 
+
+let rec enstack_applies syms (child_map, bbdfns) x = 
+  let ea e = enstack_applies syms (child_map, bbdfns) e in
+  match map_tbexpr ea tident x with
+  | `BEXPR_apply_direct (i,ts,b),t  ->
+    if can_stack_func (child_map, bbdfns) i
+    then `BEXPR_apply_stack (i,ts,b),t
+    else x
+  
+  | x -> x
+
+let enstack_calls syms (child_map,bbdfns) exes =
+  let ea e = enstack_applies syms (child_map, bbdfns) e in
+  let exes' = ref [] in
+  iter
+  (fun x -> match x with
+  | `BEXE_init (sr,i,b) -> 
+    exes' := `BEXE_init (sr,i,ea b) :: !exes'
+
+  | `BEXE_assign (sr,a,b) -> 
+    exes' := `BEXE_assign (sr,ea a,ea b) :: !exes'
+
+  | `BEXE_call_direct (sr,i,ts, b') ->
+    exes' := `BEXE_call_direct (sr,i,ts,ea b') :: !exes'
+
+  | `BEXE_call (sr,a,b) -> exes' := `BEXE_call (sr,ea a,ea b) :: !exes'
+  | `BEXE_jump (sr,a,b) -> exes' := `BEXE_jump (sr,ea a,ea b) :: !exes'
+  | `BEXE_fun_return (sr,a) -> exes' := `BEXE_fun_return (sr,ea a) :: !exes'
+  | `BEXE_ifgoto (sr,e,l) -> exes' := `BEXE_ifgoto (sr,ea e, l) :: !exes'
+  | `BEXE_ifnotgoto (sr,e,l) -> exes' := `BEXE_ifnotgoto (sr,ea e, l) :: !exes'
+  | `BEXE_loop (sr,i,e) -> exes' := `BEXE_loop (sr,i,ea e) :: !exes'
+
+  | `BEXE_nop _ -> () (* elide NOP *)
+  | `BEXE_comment _  as x -> exes' := x :: !exes' (* but not comments *)
+
+  | `BEXE_label (sr,s) -> 
+    exes' := x :: !exes'
+
+  | `BEXE_regmatch (sr,e,(a,n,h,tr)) ->
+     let h' = Hashtbl.create 97 in
+     Hashtbl.iter
+     (fun i e -> Hashtbl.add h' i (ea e))
+     h
+     ;
+    exes' := `BEXE_regmatch (sr,ea e,(a,n,h',tr)) :: !exes'
+
+
+  | `BEXE_reglex (sr,p1,p2,(a,n,h,tr)) ->
+     let h' = Hashtbl.create 97 in
+     Hashtbl.iter
+     (fun i e -> Hashtbl.add h' i (ea e))
+     h
+     ;
+    exes' := `BEXE_reglex (sr,ea p1, ea p2,(a,n,h',tr)) :: !exes'
+
+  | x -> exes' := x :: !exes'
+  )
+  exes
+  ;
+  rev !exes'
+
+let copy_bbdcl syms (child_map,bbdfns) bbdfns2 i bbdfn =
+  let data =
+    match bbdfn with
+    | id,parent,sr,`BBDCL_procedure (props,vs,p,exes) ->
+      let exes = enstack_calls syms (child_map,bbdfns) exes in
+      id,parent,sr,`BBDCL_procedure (props,vs,p,exes)
+
+    | id,parent,sr,`BBDCL_function (props,vs,p,ret,exes) ->
+      let exes = enstack_calls syms (child_map,bbdfns) exes in
+      id,parent,sr,`BBDCL_function (props,vs,p,ret,exes)
+    | x -> x
+  in
+    Hashtbl.add bbdfns2 i data
+
+let make_stack_calls syms (child_map, bbdfns) =
+  let bbdfns2 = Hashtbl.create 97 in
+  Hashtbl.iter
+  (fun i bbdfn ->
+    copy_bbdcl syms (child_map,bbdfns) bbdfns2 i bbdfn
+  )
+  bbdfns
+  ;
+  bbdfns2
+

@@ -634,6 +634,9 @@ and bexe_t =
   | `BEXE_ifgoto of range_srcref * tbexpr_t * string  (* for internal use only *)
   | `BEXE_ifnotgoto of range_srcref * tbexpr_t * string  (* for internal use only *)
   | `BEXE_call of range_srcref * tbexpr_t * tbexpr_t 
+  | `BEXE_call_direct of range_srcref * bid_t * btypecode_t list * tbexpr_t 
+  | `BEXE_call_stack of range_srcref * bid_t * btypecode_t list * tbexpr_t 
+  | `BEXE_call_prim of range_srcref * bid_t * btypecode_t list * tbexpr_t 
   | `BEXE_jump of range_srcref * tbexpr_t * tbexpr_t 
   | `BEXE_loop of range_srcref * int * tbexpr_t 
   | `BEXE_read of range_srcref * bid_t
@@ -654,6 +657,9 @@ and bexpr_t =
   | `BEXPR_ref of bid_t * btypecode_t list
   | `BEXPR_literal of literal_t 
   | `BEXPR_apply of tbexpr_t * tbexpr_t 
+  | `BEXPR_apply_prim of bid_t * btypecode_t list * tbexpr_t 
+  | `BEXPR_apply_direct of bid_t * btypecode_t list * tbexpr_t 
+  | `BEXPR_apply_stack of bid_t * btypecode_t list * tbexpr_t 
   | `BEXPR_tuple of tbexpr_t list
   | `BEXPR_get_n of int * tbexpr_t
   | `BEXPR_closure of bid_t * btypecode_t list
@@ -841,6 +847,9 @@ let iter_btype f = function
 let map_tbexpr fe ft = function
   | `BEXPR_deref e,t -> `BEXPR_deref (fe e),ft t
   | `BEXPR_apply (e1,e2),t -> `BEXPR_apply (fe e1, fe e2),ft t
+  | `BEXPR_apply_prim (i,ts,e2),t -> `BEXPR_apply_prim (i, map ft ts, fe e2),ft t
+  | `BEXPR_apply_direct (i,ts,e2),t -> `BEXPR_apply_direct (i, map ft ts, fe e2),ft t
+  | `BEXPR_apply_stack (i,ts,e2),t -> `BEXPR_apply_stack (i, map ft ts, fe e2),ft t
   | `BEXPR_tuple  es,t -> `BEXPR_tuple (map fe es),ft t
   | `BEXPR_get_n (i,e),t -> `BEXPR_get_n (i, fe e),ft t
   | `BEXPR_coercion (e,t'),t -> `BEXPR_coercion (fe e,ft t'),ft t
@@ -2372,6 +2381,21 @@ and string_of_bound_expression dfns e =
     se arg ^ 
     ")"
 
+  | `BEXPR_apply_prim (i,ts, arg) -> "(" ^ 
+    sid i ^ print_inst dfns ts ^ " " ^
+    se arg ^ 
+    ")"
+
+  | `BEXPR_apply_direct  (i,ts, arg) -> "(" ^ 
+    sid i ^ print_inst dfns ts ^ " " ^
+    se arg ^ 
+    ")"
+
+  | `BEXPR_apply_stack (i,ts, arg) -> "(" ^ 
+    sid i ^ print_inst dfns ts ^ " " ^
+    se arg ^ 
+    ")"
+
   | `BEXPR_tuple t -> "(" ^ catmap ", " se t ^ ")"
   | `BEXPR_case (v,t) -> 
     "case " ^ si v ^ " of " ^ string_of_btypecode dfns t
@@ -2427,6 +2451,21 @@ and string_of_bexe dfns level s =
   | `BEXE_call (_,p,a) -> spc ^ 
     "call " ^ 
     se p ^ " " ^ 
+    se a ^ ";"
+
+  | `BEXE_call_direct (_,i,ts,a) -> spc ^ 
+    "directcall " ^ 
+    sid i ^ print_inst dfns ts ^ " " ^
+    se a ^ ";"
+
+  | `BEXE_call_stack (_,i,ts,a) -> spc ^ 
+    "stackcall " ^ 
+    sid i ^ print_inst dfns ts ^ " " ^
+    se a ^ ";"
+
+  | `BEXE_call_prim (_,i,ts,a) -> spc ^ 
+    "primcall " ^ 
+    sid i ^ print_inst dfns ts ^ " " ^
     se a ^ ";"
 
   | `BEXE_jump (_,p,a) -> spc ^ 
@@ -3339,6 +3378,14 @@ let rec cmp_tbexpr (a,_) (b,_) =
   | `BEXPR_literal a,`BEXPR_literal a' -> cmp_literal a a'
 
   | `BEXPR_apply (a,b),`BEXPR_apply (a',b') ->  ecmp a a' && ecmp b b'
+
+  | `BEXPR_apply_prim (i,ts,b),`BEXPR_apply_prim (i',ts',b') 
+  | `BEXPR_apply_direct (i,ts,b),`BEXPR_apply_direct (i',ts',b')
+  | `BEXPR_apply_stack (i,ts,b),`BEXPR_apply_stack (i',ts',b') ->  
+     i = i' && 
+     fold_left2 (fun r a b -> r && a = b) true ts ts' &&
+     ecmp b b'
+
   | `BEXPR_tuple ls,`BEXPR_tuple ls' ->
      fold_left2 (fun r a b -> r && ecmp a b) true ls ls'
      

@@ -816,8 +816,12 @@ let get_var_ref syms bbdfns this index ts : string =
   | `BBDCL_val (vs,t)
   | `BBDCL_var (vs,t) ->
     begin match parent with
-    | None -> "ptf->" ^ cpp_instance_name syms bbdfns index ts
+    | None -> (* print_endline "No parent ...?"; *)
+      "ptf->" ^ cpp_instance_name syms bbdfns index ts
     | Some i -> 
+      (*
+      print_endline ("Parent " ^ si i);
+      *)
       (
         if i <> this 
         then "ptr" ^ cpp_instance_name syms bbdfns i ts ^ "->" 
@@ -1061,19 +1065,12 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
       *) 
 
 
-  | `BEXPR_apply ((`BEXPR_closure (index,ts),_) as f,a) ->
-    (*
-    print_endline "Apply closure ..";
-    *)
+  | `BEXPR_apply_prim (index,ts,a) ->
     let id,parent,sr2,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
     in
     begin 
-    (*
-    print_endline ("apply closure of "^ id );
-    print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
-    *)
     match entry with
     | `BBDCL_fun (vs,ps,retyp,ct,_) -> 
       if length vs <> length ts then
@@ -1120,8 +1117,51 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
           "(" ^ csubst sr sr2 ct [a] [typ] typ retyp ts ^ ")"
       end
 
+    (* not sure whether these will be prims or directs or what .. *)
+    | `BBDCL_cstruct (vs,_) ->
+     "(*("^ id ^"*)(void*)&(" ^ ge a ^ "))"
+       
+    (* not sure whether these will be prims or directs or what .. *)
+    | `BBDCL_struct (vs,_) ->
+      let name = tn (`BTYP_inst (index,ts)) in
+      name ^ "(" ^ ge a ^ ")"
+
+    (* but can't be a Felix function *)
+    | _ -> 
+      failwith 
+      (
+        "[gen_expr: apply prim] Expected '"^id^"' to be primitive function instance, got:\n" ^
+        string_of_bbdcl syms.dfns entry index 
+      )
+    end
+
+  | `BEXPR_apply_direct (index,ts,a) ->
+    let id,parent,sr2,entry = 
+      try Hashtbl.find bbdfns index 
+      with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
+    in
+    begin 
+    (*
+    print_endline ("apply closure of "^ id );
+    print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
+    *)
+    match entry with
     | `BBDCL_function (props,vs,ps,retyp,_) ->
-      (ge f) ^ "\n      ->apply(" ^ ge_arg a ^ ")"
+      let ts = map tsub ts in
+      let the_display = 
+        let d' = 
+          map (fun i-> "ptr"^ cpp_instance_name syms bbdfns i ts)
+          (get_display_list bbdfns index)
+        in 
+          if length d' > our_level
+          then "this" :: tl d'
+          else d'
+      in
+      let name = cpp_instance_name syms bbdfns index ts in
+      "(FLX_NEWP("^name^")"^
+      "(" ^ cat ", " ("FLX_FPAR_PASS" :: the_display) ^
+      "))" ^
+      "\n      ->apply(" ^ ge_arg a ^ ")"
 
     | `BBDCL_cstruct (vs,_) ->
      "(*("^ id ^"*)(void*)&(" ^ ge a ^ "))"
@@ -1133,10 +1173,56 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
     | _ -> 
       failwith 
       (
-        "[gen_expr] Expected '"^id^"' to be generic function instance, got:\n" ^
+        "[gen_expr: apply_direct] Expected '"^id^"' to be generic function instance, got:\n" ^
         string_of_bbdcl syms.dfns entry index 
       )
     end
+
+  | `BEXPR_apply_stack (index,ts,a) ->
+    let id,parent,sr2,entry = 
+      try Hashtbl.find bbdfns index 
+      with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
+    in
+    begin 
+    (*
+    print_endline ("apply closure of "^ id );
+    print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
+    *)
+    match entry with
+    | `BBDCL_function (props,vs,ps,retyp,_) ->
+      let ts = map tsub ts in
+      let the_display = 
+        let d' = 
+          map (fun i-> "ptr"^ cpp_instance_name syms bbdfns i ts)
+          (get_display_list bbdfns index)
+        in 
+          if length d' > our_level
+          then "this" :: tl d'
+          else d'
+      in
+      let name = cpp_instance_name syms bbdfns index ts in
+      "("^name^
+      "(" ^ cat ", " ("FLX_FPAR_PASS" :: the_display) ^
+      "))" ^
+      "\n      .apply(" ^ ge_arg a ^ ")"
+
+    | `BBDCL_cstruct (vs,_) ->
+     "(*("^ id ^"*)(void*)&(" ^ ge a ^ "))"
+       
+    | `BBDCL_struct (vs,_) ->
+      let name = tn (`BTYP_inst (index,ts)) in
+      name ^ "(" ^ ge a ^ ")"
+
+    | _ -> 
+      failwith 
+      (
+        "[gen_expr: apply_direct] Expected '"^id^"' to be generic function instance, got:\n" ^
+        string_of_bbdcl syms.dfns entry index 
+      )
+    end
+
+  | `BEXPR_apply ((`BEXPR_closure (index,ts),_),a) ->
+    assert false (* should have been factored out *)
 
   (* General application*)
   | `BEXPR_apply (f,a) ->
@@ -1148,7 +1234,6 @@ let rec gen_expr syms bbdfns this (e,t) vs ts sr =
     ctyp ^ "(" ^
     cat ", " (map ge es) ^
     ")"
-
 
 type kind_t = Function | Procedure
 
@@ -1411,7 +1496,10 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
     let ts = map tsub ts in
     handle_closure sr true index ts subs x
     
-  | `BEXE_call (sr,((`BEXPR_closure (index,ts),_) as f),a) ->
+  | `BEXE_call_prim (sr,index,ts,a) 
+  | `BEXE_call_direct (sr,index,ts,a) 
+  | `BEXE_call_stack (sr,index,ts,a) 
+  | `BEXE_call (sr,(`BEXPR_closure (index,ts),_),a) ->
     let subs,x = unravel syms bbdfns a in
     let ts = map tsub ts in
     handle_closure sr false index ts subs x
@@ -1549,6 +1637,9 @@ let gen_exe syms (child_map,bbdfns) label_map counter this vs ts (exe:bexe_t) : 
     ";\n"
     
   | `BEXE_init (sr,v,e) -> 
+    (*
+    print_endline ("INIT of " ^ si v ^ " inside " ^ si this);
+    *)
     "      //"^src_str^"\n" ^
     "      "^
     get_var_ref syms bbdfns this v ts^ 
@@ -1814,7 +1905,7 @@ let gen_procedure_methods syms (child_map,bbdfns) label_map counter index ts ins
       "\n//PROC " ^ q ^ ": Resume method\n" ^
       resume
 
-  | _ -> failwith "prcoedure expected"
+  | _ -> failwith "procedure expected"
 
 
 let gen_execute_methods syms (child_map,bbdfns) counter bf =
@@ -2163,6 +2254,10 @@ try
   ;
   let bbdfns = !bbdfns in
   let child_map = !child_map in
+
+  if compiler_options.print_flag 
+  then print_endline "//Calculating stackable calls";
+  let bbdfns = Flx_stack_calls.make_stack_calls syms (child_map,bbdfns) in
   
   if compiler_options.print_flag then 
   begin
