@@ -333,7 +333,7 @@ private:
 #include <dlfcn.h>
 #define dlsym(x,y) dlsym(x,#y)
 #else
-#define dlsym(x,y) y
+#define dlsym(x,y) (void*)&y
 extern void *create_global_frame;
 extern void *create_process_frame;
 extern void *create_thread_frame;
@@ -393,7 +393,7 @@ void flx_dynlink_t::link(char const *filename) throw(flx_link_failure_t)
 #ifndef FLX_STATIC_LINK
     dlsym(library,start);
 #else
-  ::start;
+  (void*)&::start;
 #endif
   if(!start) 
     throw flx_link_failure_t(filename,"dlsym","start");
@@ -427,12 +427,12 @@ void flx_libinit_t::create
 {
   lib = lib_a;
 #ifdef FLX_STATIC_LINK
-  printf("Building frames now ..\n");
-  printf("Global frame creator is %p\n",lib->global_frame_creator);
+//  printf("Building frames now ..\n");
+//  printf("Global frame creator is %p\n",lib->global_frame_creator);
 #endif
   global_frame = lib->global_frame_creator();
 #ifdef FLX_STATIC_LINK
-  printf("Built global frame %p\n",global_frame);
+//  printf("Built global frame %p\n",global_frame);
 #endif
   process_frame = lib->process_frame_creator(global_frame);
   thread_frame = lib->thread_frame_creator(
@@ -441,11 +441,11 @@ void flx_libinit_t::create
     collector 
   );
 #ifdef FLX_STATIC_LINK
-  printf("Built frames, creating init continuation ..\n");
+//  printf("Built frames, creating init continuation ..\n");
 #endif
   start = lib->start(global_frame, process_frame, thread_frame);
 #ifdef FLX_STATIC_LINK
-  printf("Init continuation created %p\n",start);
+//  printf("Init continuation created %p\n",start);
 #endif
   usr_create();
 }
@@ -499,7 +499,7 @@ int main(int argc, char* argv[])
   char *filename = argv[1];
 #else
   char *filename = "static";
-  printf("Statically linked Felix program running\n");
+//  printf("Statically linked Felix program running\n");
 #endif
   try 
   {
@@ -509,13 +509,13 @@ int main(int argc, char* argv[])
 
     library.link(filename);
 #ifdef FLX_STATIC_LINK
-    printf("Linked %s\n",filename);
+//    printf("Linked %s\n",filename);
 #endif
     flx::gc::collector::malloc_free allocator;
     flx::gc::collector::flx_collector_t collector(&allocator);
     instance.create(&library, &collector);
 #ifdef FLX_STATIC_LINK
-    printf("Created instance %s\n",filename);
+//    printf("Created instance %s\n",filename);
 #endif
  
     collector.add_root(instance.start);

@@ -131,13 +131,13 @@ except:
   # just call the g++ compiler CC if we don't have g++
   CC = "CC "
 
-CCOBJ_DLLIB = CC + "-ansi -fPIC -c "
-CCOBJ_DLMAIN = CC + "-ansi -rdynamic -c "
-CCLINK_DLLIB = CC + "-ansi -shared "
-CCLINK_DLMAIN = CC + "-ansi -rdynamic -ldl "
+CCOBJ_DLLIB = CC + "-ansi -g -fPIC -c "
+CCOBJ_DLMAIN = CC + "-ansi -g -rdynamic -c "
+CCLINK_DLLIB = CC + "-ansi -g -shared "
+CCLINK_DLMAIN = CC + "-ansi -g -rdynamic -ldl "
 
-CCOBJ_STATIC_LIB = CC + "-ansi -c "
-CCOBJ_STATIC_MAIN = CC + "-ansi -c "
+CCOBJ_STATIC_LIB = CC + "-ansi -g -c "
+CCOBJ_STATIC_MAIN = CC + "-ansi -g -c "
 
 # NOTE: static link means the driver is linked
 # with the library to produce an executable.
@@ -153,7 +153,7 @@ CCOBJ_STATIC_MAIN = CC + "-ansi -c "
 # on Windows for example, where the system is intrinsically
 # represented by DLLs)
 
-CCLINK_STATIC = CC + "-ansi "
+CCLINK_STATIC = CC + "-ansi -g "
 
 #find if -rdynamic and -shared supported
 try:
