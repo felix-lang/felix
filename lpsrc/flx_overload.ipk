@@ -77,7 +77,7 @@ let sig_of_symdef symdef name = match symdef with
 let overload 
   syms 
   bt 
-  sr 
+  call_sr 
   (fs : entry_kind_t list)
   (name: string)
   (suf : btypecode_t) 
@@ -91,11 +91,11 @@ let overload
   let resolve i =
     match get_data syms.dfns i with 
     {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=symdef} ->
-    id,parent,i,vs,sig_of_symdef symdef id
+    id,sr,parent,i,vs,sig_of_symdef symdef id
   in
   let sign = lift suf in
   let consider i =
-    let id,p,i,vs,t = resolve i in
+    let id,sr,p,i,vs,t = resolve i in
     (*
     print_endline ("Candidate "^si i^" sig is " ^ string_of_typecode t);
     *)
@@ -163,7 +163,7 @@ let overload
       iter2
       (fun (s,i) k ->
         if not (mem_assoc k mgu)
-        then clierr sr
+        then clierr call_sr
         (
           "[resolve_overload] The " ^th k ^" subscript  " ^ s ^ "["^si i^"]" ^
           " of function " ^ id ^
@@ -175,7 +175,7 @@ let overload
       vs (nlist m)
       ;
       if sign <> list_subst mgu sign then
-      clierr sr 
+      clierr call_sr 
       (
         "[resolve_overload] Unification of function " ^ 
         id ^ "<" ^ si i ^ "> signature " ^
@@ -278,7 +278,8 @@ let overload
            *)
            lhs @ rhs (* keep whole list, discard c *) 
          | `Equal -> 
-           failwith "[resolve_overload] Not expecting equal signatures"
+           clierr call_sr 
+           "[resolve_overload] Ambiguous call: Not expecting equal signatures"
 
          | `Greater -> 
            (*
@@ -303,7 +304,7 @@ let overload
 
   | [] -> None
   | _ -> 
-    clierr sr 
+    clierr call_sr 
     (
       "Too many candidates match in overloading " ^ name ^
       " with argument type " ^ sbt syms.dfns sign ^

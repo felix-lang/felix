@@ -28650,8 +28650,62 @@ open Flx_version
 open Flx_mtypes1
 ;;
 
-let filename = Sys.argv.(1)
+exception Next
 ;;
+let filename = ref ""
+let noincludes = ref []
+;;
+let control_filename = Sys.argv.(1)
+;;
+let f = open_in control_filename
+;;
+let rec aux () =
+  try 
+    let line = input_line f in
+    let n = String.length line in
+    let i = ref 0 in
+    try
+        (* skip white *)
+        while !i < n && line.[!i]=' ' do incr i done;
+        if !i = n then raise Next;
+
+        let j = !i in
+        while !i < n && line.[!i]<>' ' do incr i done;
+        let keyword = String.sub line j (!i-j) in
+
+        match keyword with
+        | "data" ->
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "data statement requires filename";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          filename := String.sub line j (!i-j);
+          raise Next
+
+        | "noinclude" ->
+          while !i < n && line.[!i]=' ' do incr i done;
+          if !i = n then failwith "noinclude statement requires filename";
+          let j = !i in
+          while !i < n && line.[!i]<>' ' do incr i done;
+          let fn = String.sub line j (!i-j) in
+          noincludes := fn :: !noincludes;
+          raise Next
+
+        | "//" -> raise Next
+
+        | _ -> failwith ("Unknown keyword " ^keyword^ " in control file")
+
+    with Next -> aux()
+  with End_of_file -> ()
+in aux()
+;;
+
+close_in f
+;;
+
+let filename = !filename
+;;
+
 let format_time tm = 
   si (tm.Unix.tm_year + 1900) ^ "/" ^
   si (tm.Unix.tm_mon + 1) ^ "/" ^
@@ -28792,6 +28846,7 @@ let rplname s =
   with Not_found -> s
 ;;
 
+(*
 let fpatch =
 [
   "/usr/include/bits/byteswap.h", "/usr/include/byteswap.h";
@@ -28862,15 +28917,7 @@ let fpatch =
 ]
 ;;
 
-let filename_patches = Hashtbl.create 97
-;;
-
-List.iter (fun (k,v) ->Hashtbl.add filename_patches k v) []
-;;
-
-let patch_filename s = 
-  try Hashtbl.find filename_patches s 
-  with Not_found -> s
+*)
 
 let soi = function
 | IBool -> "bool"
@@ -29143,7 +29190,6 @@ let module_of_filename fname =
 
 
 let getreg {file=s} = 
-  let s = patch_filename s in
   let stab = getstab s in 
   let m = module_of_filename s in
   stab.registry,stab.counter,m
@@ -29153,7 +29199,6 @@ let all_structs : (string,string) Hashtbl.t = Hashtbl.create 97
 ;;
 
 let rpl {file=s} which = 
-  let s = patch_filename s in
   let stab = (getstab s) in
   match which with
   | `aliases (k,v) -> Hashtbl.replace stab.aliases k v
@@ -29202,7 +29247,7 @@ let add_file fname =
 ;;
 
 let add_loc {file=fname} = 
-  let fname = patch_filename fname in add_file fname
+  add_file fname
 ;;
 
 let filename_of_module m =
@@ -29360,8 +29405,6 @@ let outdir = "flxcc_out/"
 ;;
 try Unix.mkdir outdir 0o777 with _ -> ()
 ;;
-exception Next
-;;
 
 let is_nonempty h = 
   try 
@@ -29455,7 +29498,7 @@ begin
   print_endline ("include 'std';");
   print_endline "";
  
-  if not (mem_assoc fname fpatch) then
+  if not (mem fname !noincludes) then
     print_endline ("header '#include \"" ^ fname^"\"';")
   else
     print_endline ("//NOT INCLUDED: \"" ^ fname^"\"")
@@ -29650,4 +29693,385 @@ begin
 end
 stabs
 ;;
+
+@select(tangler("config/usr_include.flxcc"))
+data config/usr_include.hhh
+noinclude /usr/include/bits/byteswap.h
+noinclude /usr/include/bits/cmathcalls.h
+noinclude /usr/include/bits/confname.h
+noinclude /usr/include/bits/dirent.h
+noinclude /usr/include/bits/dlfcn.h
+noinclude /usr/include/bits/elfclass.h
+noinclude /usr/include/bits/endian.h
+noinclude /usr/include/bits/environments.h
+noinclude /usr/include/bits/fcntl.h
+noinclude /usr/include/bits/fenv.h
+noinclude /usr/include/bits/huge_val.h
+noinclude /usr/include/bits/in.h
+noinclude /usr/include/bits/ioctls.h
+noinclude /usr/include/bits/ioctl-types.h
+noinclude /usr/include/bits/ipc.h
+noinclude /usr/include/bits/ipctypes.h
+noinclude /usr/include/bits/locale.h
+noinclude /usr/include/bits/mathcalls.h
+noinclude /usr/include/bits/mathdef.h
+noinclude /usr/include/bits/mathinline.h
+noinclude /usr/include/bits/mman.h
+noinclude /usr/include/bits/msq.h
+noinclude /usr/include/bits/nan.h
+noinclude /usr/include/bits/netdb.h
+noinclude /usr/include/bits/poll.h
+noinclude /usr/include/bits/posix1_lim.h
+noinclude /usr/include/bits/posix2_lim.h
+noinclude /usr/include/bits/pthreadtypes.h
+noinclude /usr/include/bits/resource.h
+noinclude /usr/include/bits/sched.h
+noinclude /usr/include/bits/select.h
+noinclude /usr/include/bits/sem.h
+noinclude /usr/include/bits/setjmp.h
+noinclude /usr/include/bits/shm.h
+noinclude /usr/include/bits/sigset.h
+noinclude /usr/include/bits/sigaction.h
+noinclude /usr/include/bits/sigcontext.h
+noinclude /usr/include/bits/siginfo.h
+noinclude /usr/include/bits/sigstack.h
+noinclude /usr/include/bits/sigthread.h
+noinclude /usr/include/bits/sockaddr.h
+noinclude /usr/include/bits/socket.h
+noinclude /usr/include/bits/statfs.h
+noinclude /usr/include/bits/stat.h
+noinclude /usr/include/bits/statvfs.h
+noinclude /usr/include/bits/stdio.h
+noinclude /usr/include/bits/stdio_lim.h
+noinclude /usr/include/bits/string2.h
+noinclude /usr/include/bits/string.h
+noinclude /usr/include/bits/stropts.h
+noinclude /usr/include/bits/syscall.h
+noinclude /usr/include/bits/sys_errlist.h
+noinclude /usr/include/bits/termios.h
+noinclude /usr/include/bits/time.h
+noinclude /usr/include/bits/types.h
+noinclude /usr/include/bits/typesizes.h
+noinclude /usr/include/bits/uio.h
+noinclude /usr/include/bits/ustat.h
+noinclude /usr/include/bits/utmp.h
+noinclude /usr/include/bits/utmpx.h
+noinclude /usr/include/bits/utsname.h
+noinclude /usr/include/bits/waitflags.h
+noinclude /usr/include/bits/waitstatus.h
+noinclude /usr/include/bits/xopen_lim.h
+noinclude /usr/include/bits/xtitypes.h
+
+@select(tangler("config/usr_include.h"))
+/* #include "/usr/include/af_vfs.h" */
+#include "/usr/include/aio.h"
+#include "/usr/include/aliases.h"
+#include "/usr/include/alloca.h"
+#include "/usr/include/ansidecl.h"
+#include "/usr/include/a.out.h"
+#include "/usr/include/apm.h"
+#include "/usr/include/argp.h"
+#include "/usr/include/argz.h"
+#include "/usr/include/ar.h"
+#include "/usr/include/assert.h"
+#include "/usr/include/audiofile.h"
+#include "/usr/include/aupvlist.h"
+#include "/usr/include/baudboy.h"
+#include "/usr/include/bfd.h"
+#include "/usr/include/bfdlink.h"
+#include "/usr/include/byteswap.h"
+#include "/usr/include/complex.h"
+#include "/usr/include/cpio.h"
+#include "/usr/include/crack.h"
+#include "/usr/include/crypt.h"
+#include "/usr/include/ctype.h"
+#include "/usr/include/curses.h"
+/* #include "/usr/include/cxx_common.h" */
+/* #include "/usr/include/cxx_except.h" */
+#include "/usr/include/db_185.h"
+#include "/usr/include/db.h"
+#include "/usr/include/dejagnu.h"
+#include "/usr/include/dirent.h"
+#include "/usr/include/dis-asm.h"
+/* #include "/usr/include/disptmpl.h" */
+#include "/usr/include/dlfcn.h"
+#include "/usr/include/efs_error.h"
+#include "/usr/include/efs.h"
+#include "/usr/include/elf.h"
+#include "/usr/include/endian.h"
+#include "/usr/include/envz.h"
+#include "/usr/include/err.h"
+#include "/usr/include/errno.h"
+#include "/usr/include/error.h"
+#include "/usr/include/esd.h"
+#include "/usr/include/eti.h"
+#include "/usr/include/execinfo.h"
+#include "/usr/include/expat.h"
+#include "/usr/include/fam.h"
+#include "/usr/include/fcntl.h"
+#include "/usr/include/features.h"
+#include "/usr/include/fenv.h"
+#include "/usr/include/fmtmsg.h"
+#include "/usr/include/fnmatch.h"
+#include "/usr/include/form.h"
+#include "/usr/include/fpu_control.h"
+#include "/usr/include/fstab.h"
+#include "/usr/include/ft2build.h"
+#include "/usr/include/fts.h"
+#include "/usr/include/ftw.h"
+#include "/usr/include/_G_config.h"
+#include "/usr/include/gconv.h"
+#include "/usr/include/gdbm.h"
+#include "/usr/include/gdcache.h"
+#include "/usr/include/gdfontg.h"
+#include "/usr/include/gdfontl.h"
+#include "/usr/include/gdfontmb.h"
+#include "/usr/include/gdfonts.h"
+#include "/usr/include/gdfontt.h"
+#include "/usr/include/gd.h"
+#include "/usr/include/gd_io.h"
+#include "/usr/include/gdk_imlib.h"
+#include "/usr/include/gdk_imlib_private.h"
+#include "/usr/include/gdk_imlib_types.h"
+#include "/usr/include/getopt.h"
+#include "/usr/include/gif_lib.h"
+#include "/usr/include/glibtop.h"
+#include "/usr/include/glibtop_machine.h"
+#include "/usr/include/glibtop_server.h"
+#include "/usr/include/glob.h"
+#include "/usr/include/gmp.h"
+#include "/usr/include/gmp-mparam.h"
+#include "/usr/include/gnu-versions.h"
+#include "/usr/include/gpm.h"
+#include "/usr/include/grp.h"
+#include "/usr/include/hesiod.h"
+/* #include "/usr/include/hmac-md5.h" */
+#include "/usr/include/iconv.h"
+#include "/usr/include/ieee754.h"
+#include "/usr/include/ifaddrs.h"
+#include "/usr/include/Imlib.h"
+#include "/usr/include/Imlib_private.h"
+#include "/usr/include/Imlib_types.h"
+#include "/usr/include/inttypes.h"
+#include "/usr/include/iwlib.h"
+#include "/usr/include/jconfig.h"
+#include "/usr/include/jerror.h"
+#include "/usr/include/jmorecfg.h"
+#include "/usr/include/jpeglib.h"
+#include "/usr/include/langinfo.h"
+#include "/usr/include/lastlog.h"
+#include "/usr/include/lber.h"
+#include "/usr/include/lber_types.h"
+#include "/usr/include/ldap_cdefs.h"
+#include "/usr/include/ldap_features.h"
+#include "/usr/include/ldap.h"
+#include "/usr/include/ldap_schema.h"
+#include "/usr/include/liba2ps.h"
+#include "/usr/include/libgen.h"
+#include "/usr/include/libiberty.h"
+#include "/usr/include/libintl.h"
+#include "/usr/include/libio.h"
+#include "/usr/include/libmng_conf.h"
+#include "/usr/include/libmng.h"
+#include "/usr/include/libmng_types.h"
+#include "/usr/include/libsmbclient.h"
+#include "/usr/include/limits.h"
+#include "/usr/include/link.h"
+#include "/usr/include/locale.h"
+#include "/usr/include/lockdev.h"
+#include "/usr/include/ltdl.h"
+#include "/usr/include/malloc.h"
+#include "/usr/include/math.h"
+#include "/usr/include/mcheck.h"
+#include "/usr/include/md5global.h"
+#include "/usr/include/md5.h"
+#include "/usr/include/memory.h"
+#include "/usr/include/menu.h"
+#include "/usr/include/mikmod.h"
+#include "/usr/include/mntent.h"
+#include "/usr/include/monetary.h"
+/* #include "/usr/include/mp.h" */
+#include "/usr/include/ncurses.h"
+#include "/usr/include/netdb.h"
+#include "/usr/include/newt.h"
+#include "/usr/include/nl_types.h"
+#include "/usr/include/nss.h"
+#include "/usr/include/obstack.h"
+#include "/usr/include/pam.h"
+/* #include "/usr/include/pammap.h" */
+#include "/usr/include/panel.h"
+#include "/usr/include/paths.h"
+#include "/usr/include/pbm.h"
+#include "/usr/include/pbmshhopt.h"
+#include "/usr/include/pcap.h"
+#include "/usr/include/pcap-namedb.h"
+#include "/usr/include/pgm.h"
+#include "/usr/include/pm_config.h"
+#include "/usr/include/pm.h"
+/* #include "/usr/include/pngconf.h" */
+/* #include "/usr/include/png.h" */
+#include "/usr/include/pnm.h"
+#include "/usr/include/poll.h"
+#include "/usr/include/popt.h"
+#include "/usr/include/ppmcmap.h"
+#include "/usr/include/ppmfloyd.h"
+#include "/usr/include/ppm.h"
+#include "/usr/include/printf.h"
+#include "/usr/include/pthread.h"
+#include "/usr/include/pty.h"
+#include "/usr/include/pwd.h"
+#include "/usr/include/re_comp.h"
+#include "/usr/include/regex.h"
+/* #include "/usr/include/regexp.h" */
+/* hack .. */
+#undef BSD
+#include "/usr/include/resolv.h"
+#include "/usr/include/sasl.h"
+#include "/usr/include/saslplug.h"
+#include "/usr/include/saslutil.h"
+#include "/usr/include/sched.h"
+#include "/usr/include/search.h"
+#include "/usr/include/semaphore.h"
+#include "/usr/include/setjmp.h"
+#include "/usr/include/sgtty.h"
+#include "/usr/include/shadow.h"
+#include "/usr/include/signal.h"
+#include "/usr/include/spawn.h"
+#include "/usr/include/srchpref.h"
+#include "/usr/include/stab.h"
+#include "/usr/include/stdint.h"
+#include "/usr/include/stdio_ext.h"
+#include "/usr/include/stdio.h"
+#include "/usr/include/stdlib.h"
+#include "/usr/include/string.h"
+#include "/usr/include/strings.h"
+#include "/usr/include/stropts.h"
+/* #include "/usr/include/swig.h" */
+#include "/usr/include/symcat.h"
+#include "/usr/include/syscall.h"
+#include "/usr/include/sysexits.h"
+#include "/usr/include/syslog.h"
+#include "/usr/include/tar.h"
+/* #include "/usr/include/tclDecls.h" */
+#include "/usr/include/tcl.h"
+#include "/usr/include/tclPlatDecls.h"
+#include "/usr/include/tcpd.h"
+#include "/usr/include/termcap.h"
+/* #include "/usr/include/term.h" */
+#include "/usr/include/termio.h"
+#include "/usr/include/termios.h"
+#include "/usr/include/tgmath.h"
+#include "/usr/include/thread_db.h"
+#include "/usr/include/tiffconf.h"
+#include "/usr/include/tiff.h"
+#include "/usr/include/tiffio.h"
+#include "/usr/include/tiffvers.h"
+#include "/usr/include/time.h"
+/* #include "/usr/include/tkDecls.h" */
+#include "/usr/include/tk.h"
+#include "/usr/include/tkPlatDecls.h"
+#include "/usr/include/ttyent.h"
+#include "/usr/include/ttylock.h"
+#include "/usr/include/ucontext.h"
+#include "/usr/include/ulimit.h"
+#include "/usr/include/unctrl.h"
+#include "/usr/include/unicode.h"
+#include "/usr/include/unistd.h"
+#include "/usr/include/usb.h"
+#include "/usr/include/ustat.h"
+#include "/usr/include/utempter.h"
+#include "/usr/include/utime.h"
+#include "/usr/include/utmp.h"
+#include "/usr/include/utmpx.h"
+#include "/usr/include/values.h"
+#include "/usr/include/wait.h"
+#include "/usr/include/wchar.h"
+#include "/usr/include/wctype.h"
+#include "/usr/include/wordexp.h"
+#include "/usr/include/xlocale.h"
+#include "/usr/include/zconf.h"
+#include "/usr/include/zlib.h"
+/* #include "/usr/include/zutil.h" */
+
+#include "/usr/include/sys/acct.h"
+#include "/usr/include/sys/acl.h"
+#include "/usr/include/sys/bitypes.h"
+#include "/usr/include/sys/capability.h"
+#include "/usr/include/sys/cdefs.h"
+#include "/usr/include/sys/debugreg.h"
+#include "/usr/include/sys/dir.h"
+#include "/usr/include/sys/elf.h"
+#include "/usr/include/sys/epoll.h"
+#include "/usr/include/sys/errno.h"
+#include "/usr/include/sys/fcntl.h"
+#include "/usr/include/sys/file.h"
+#include "/usr/include/sys/fsuid.h"
+#include "/usr/include/sys/gmon.h"
+#include "/usr/include/sys/gmon_out.h"
+#include "/usr/include/sys/ioctl.h"
+#include "/usr/include/sys/io.h"
+#include "/usr/include/sys/ipc.h"
+#include "/usr/include/sys/kdaemon.h"
+#include "/usr/include/sys/kd.h"
+#include "/usr/include/sys/klog.h"
+#include "/usr/include/sys/mman.h"
+#include "/usr/include/sys/mount.h"
+#include "/usr/include/sys/msg.h"
+#include "/usr/include/sys/mtio.h"
+#include "/usr/include/sys/param.h"
+#include "/usr/include/sys/pci.h"
+#include "/usr/include/sys/perm.h"
+#include "/usr/include/sys/personality.h"
+#include "/usr/include/sys/poll.h"
+#include "/usr/include/sys/prctl.h"
+#include "/usr/include/sys/procfs.h"
+#include "/usr/include/sys/profil.h"
+#include "/usr/include/sys/ptrace.h"
+#include "/usr/include/sys/queue.h"
+#include "/usr/include/sys/quota.h"
+#include "/usr/include/sys/raw.h"
+#include "/usr/include/sys/reboot.h"
+#include "/usr/include/sys/reg.h"
+#include "/usr/include/sys/resource.h"
+#include "/usr/include/sys/select.h"
+#include "/usr/include/sys/sem.h"
+#include "/usr/include/sys/sendfile.h"
+#include "/usr/include/sys/shm.h"
+#include "/usr/include/sys/signal.h"
+#include "/usr/include/sys/socket.h"
+#include "/usr/include/sys/socketvar.h"
+#include "/usr/include/sys/soundcard.h"
+#include "/usr/include/sys/statfs.h"
+#include "/usr/include/sys/stat.h"
+#include "/usr/include/sys/statvfs.h"
+#include "/usr/include/sys/stropts.h"
+#include "/usr/include/sys/swap.h"
+#include "/usr/include/sys/syscall.h"
+#include "/usr/include/sys/sysctl.h"
+#include "/usr/include/sys/sysinfo.h"
+#include "/usr/include/sys/syslog.h"
+#include "/usr/include/sys/sysmacros.h"
+#include "/usr/include/sys/termios.h"
+#include "/usr/include/sys/timeb.h"
+#include "/usr/include/sys/time.h"
+#include "/usr/include/sys/times.h"
+#include "/usr/include/sys/timex.h"
+#include "/usr/include/sys/ttychars.h"
+#include "/usr/include/sys/ttydefaults.h"
+#include "/usr/include/sys/types.h"
+#include "/usr/include/sys/ucontext.h"
+#include "/usr/include/sys/uio.h"
+#include "/usr/include/sys/ultrasound.h"
+#include "/usr/include/sys/un.h"
+#include "/usr/include/sys/unistd.h"
+#include "/usr/include/sys/user.h"
+#include "/usr/include/sys/ustat.h"
+#include "/usr/include/sys/utsname.h"
+#include "/usr/include/sys/vfs.h"
+#include "/usr/include/sys/vlimit.h"
+#include "/usr/include/sys/vm86.h"
+#include "/usr/include/sys/vt.h"
+#include "/usr/include/sys/vtimes.h"
+#include "/usr/include/sys/wait.h"
+#include "/usr/include/sys/xattr.h"
 
