@@ -118,12 +118,13 @@ let find_references bbdfns name_map =
 
 let dummy_name_map = Hashtbl.create 97
 
+(* SHOULD USE ROUTINE IN LOOKUP FOR THIS *)
 let get_name_map symdef name = match symdef with 
-    | SYMDEF_function (_,_,_,name_map) -> name_map
-    | SYMDEF_procedure (_,_,name_map) -> name_map
-    | SYMDEF_module name_map -> name_map
-    | SYMDEF_interface name_map -> name_map
-    | SYMDEF_match_handler (_,_,_,name_map) -> name_map
+    | SYMDEF_function (_,_,_,name_map,dirs) -> name_map
+    | SYMDEF_procedure (_,_,name_map,dirs) -> name_map
+    | SYMDEF_module (name_map,dirs) -> name_map
+    | SYMDEF_interface (name_map,dirs) -> name_map
+    | SYMDEF_match_handler (_,_,_,name_map,dirs) -> name_map
     | SYMDEF_lazy _
     | SYMDEF_match_check _ -> dummy_name_map
     | _ -> 
@@ -163,7 +164,7 @@ let find_variable_indices dfns index =
         | SYMDEF_dcl (DCL_val _) 
         | SYMDEF_dcl (DCL_val_typeof _) 
           -> variables := idx :: !variables
-        | SYMDEF_module table
+        | SYMDEF_module (table,dirs)
           -> variables := extract table @ !variables
         | _ -> ()
     ) 
@@ -909,6 +910,17 @@ let gen_exe registry dfns bbdfns label_map counter this exe =
       with _ -> failwith ("[gen_exe(call)] Can't find index " ^ string_of_int index)
     in
     begin match entry with
+    | BBDCL_proc (_,ct) -> 
+      begin match a with
+      | (BEXPR_tuple es,BTYP_tuple typs) ->
+        let args = List.map ge es in
+        "      //call multi (or no) -arg primitive " ^ id ^ "\n" ^
+        "      {" ^ subst registry dfns bbdfns ct args typs BTYP_void ^ "}\n"
+      | (_,typ) -> 
+        "      //call single-arg primitive " ^ id ^ "\n" ^
+        "      {" ^ subst registry dfns bbdfns ct [ge a] [typ] BTYP_void ^ "}\n"
+      end
+
     | BBDCL_procedure _ ->
       let n = !counter in
       incr counter;
@@ -959,37 +971,13 @@ let gen_exe registry dfns bbdfns label_map counter this exe =
       )
 
 
-    | _ -> failwith ("[gen_exe] Expected '"^id^"' to be procedure constant")
-    end
-
-  | BEXE_call ((BEXPR_name index,_) as p,a) ->
-    let id,parent,entry = 
-      try Hashtbl.find bbdfns index 
-      with _ -> failwith ("[gen_exe(call)] Can't find index " ^ string_of_int index)
-    in
-    begin match entry with
-    | BBDCL_proc (_,ct) -> 
-      begin match a with
-      | (BEXPR_tuple es,BTYP_tuple typs) ->
-        let args = List.map ge es in
-        "      //call multi (or no) -arg primitive " ^ id ^ "\n" ^
-        "      {" ^ subst registry dfns bbdfns ct args typs BTYP_void ^ "}\n"
-      | (_,typ) -> 
-        "      //call single-arg primitive " ^ id ^ "\n" ^
-        "      {" ^ subst registry dfns bbdfns ct [ge a] [typ] BTYP_void ^ "}\n"
-      end
-
     | _ -> 
-      let args = match a with
-        | _,BTYP_tuple [] -> "this"
-        | _ -> "this, " ^ ge a
-      in
-      let n = !counter in
-      incr counter;
-      "      pc = " ^ string_of_int n ^ ";\n" ^
-      "      return " ^ ge p ^ "->call(" ^ args ^");\n" ^
-      "    case " ^ string_of_int n ^ ":\n"
-      end
+      failwith 
+      (
+        "[gen_exe] Expected '"^id^"' to be procedure constant, got " ^
+        string_of_bbdcl dfns entry index 
+      )
+    end
 
   | BEXE_call (p,a) ->
     let args = match a with
@@ -1603,7 +1591,7 @@ try
   let deblocked = desugar_program module_name counter parse_tree in
   if !print_flag then print_endline "//BUILDING TABLES";
   let dfns = Hashtbl.create 97 in
-  let table, exes, ifaces = 
+  let table, exes, ifaces,dirs = 
     build_tables !print_flag dfns counter "<top level>" 0 None deblocked 
   in
     if !print_flag then
@@ -1847,7 +1835,7 @@ try
     let top_class = 
       let id,sr,parent,entry = Hashtbl.find dfns top_level_index in
       let name_map = match entry with
-        | SYMDEF_module table -> table
+        | SYMDEF_module (table,dirs) -> table
         | _ -> failwith "Expected to find top level module ''"
       in let entry = Hashtbl.find name_map "_init_" in
       let index = match entry with

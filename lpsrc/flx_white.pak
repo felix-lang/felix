@@ -137,12 +137,56 @@ Felix overconstrains calling of nested procedures
 to ensure that simple compile time static evaluation
 can determine if it is safe to call the procedure.
 
+@head(2,'Parallel definitions')
+In Felix, declarations in the same
+scope are always mutually recursive and parallel
+like 'let rec' in ML languages or member functions
+in C++. In effect, the scope acts to declare a
+set of names. Thus, it is possible to assign
+a value to a variable before it is declared,
+and it is not possible to assign the value
+of a variable from an outer scope to one of the
+same name in an inner scope without using a
+qualified name or alias (such as a pointer
+or parameter).
+
 @head(2,'Modules and generics')
 Felix supports non-extensible namespaces called modules.
 Modules can be parameterised by module signatures,
 such a module is known as a functor. Functors are
 the only mechanism available for generic programming.
 Functor instantiation is implicit, as in C++.
+
+@head(2,'Coercions and bound types')
+The Felix type system is novel in that
+it supports a kind of type known as a bound type.
+A bound type results when an abstract type in
+an interface is associated with an actual
+type in a module implementation by a modular
+coercion. For example:
+@begin_displayed_code()
+  interface I { type t; }
+  module M { typedef t = int; }
+  module B = M : I;
+  val x : B::t;
+@end_displayed_code()
+
+Here the type of x, denoted B::t, is, in fact
+
+@begin_displayed_code()
+  B::t/int
+@end_displayed_code()
+
+and should be thought of as a component of the
+functor M : I from I to M which maps the interface
+I onto the implementation M by name.
+@p()
+Bound types have two operations, lifting and lowering:
+the lift of a bound type n/d is n, the lower is d.
+For the purpose of typechecking, the lift of a bound
+type is always used to enforce information hiding.
+For code generation, the lowering is used, so as to
+instantiate the actual representation.
 
 @head(2,'Purely Abstract Primitives')
 Felix is unual in that it supports no builtin types.

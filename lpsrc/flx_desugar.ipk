@@ -151,7 +151,8 @@ and rst seq st : asm_t list =
   match st with
   | AST_label (sr,s) -> [Exe (sr,EXE_label s)]
   | AST_goto (sr,s) -> [Exe (sr,EXE_goto s)]
-
+  | AST_open (sr,name) -> [Dir (sr,DIR_open name)]
+  
   | AST_comment s -> [Exe (generated,EXE_comment s)]
 
   (* objects *)
@@ -232,19 +233,47 @@ and rst seq st : asm_t list =
       Dcl (sr,name,DCL_interface (rsts' sts))
     ]
 
-  | AST_module (sr,name, sts) -> 
-    [
-      Dcl (sr,name,DCL_module (rsts' sts));
-      Exe 
+  | AST_module (sr,name, typ, sts) -> 
+    begin match typ with
+    | TYP_none ->
+      [
+        Dcl (sr,name,DCL_module (rsts' sts));
+        Exe 
+        (
+          sr,
+          EXE_call 
+          (
+            AST_name (sr,([name;"_init_"],TYP_tuple [])),
+            AST_tuple (generated,[])
+          )
+        )
+      ]
+    | _ ->
+      let n = seq() in 
+      let mname = "_module_" ^ string_of_int n in
+      let mexpr = AST_coercion 
       (
         sr,
-        EXE_call 
         (
-          AST_name (sr,([name;"_init_"],TYP_tuple [])),
-          AST_tuple (generated,[])
+          AST_name (sr,([mname],TYP_none)), 
+          typ
         )
-      )
-    ]
+      ) 
+      in
+      [
+        Dcl (sr,mname,DCL_module (rsts' sts));
+        Dcl (sr,name,DCL_module_binding mexpr);
+        Exe 
+        (
+          sr,
+          EXE_call 
+          (
+            AST_name (sr,([name;"_init_"],TYP_tuple [])),
+            AST_tuple (generated,[])
+          )
+        )
+      ]
+      end
 
   | AST_functor (sr,name,ps,typ,sts) ->
     [
@@ -495,8 +524,8 @@ let rec build_if d = match d with
       )
     ]
 
-  | AST_module (sr,name,sts) -> 
-    [AST_module (sr,name,build_interface sts)]
+  | AST_module (sr,name,typ,sts) -> 
+    [AST_module (sr,name,typ,build_interface sts)]
 
   | AST_var_decl _
   | AST_val_decl _
@@ -521,7 +550,7 @@ let desugar_program name counter sts =
       (src_of_statement (list_last sts))
   in
   let seq () = let n = !counter in incr counter; n in
-  rst seq (AST_module (sr,name,sts))
+  rst seq (AST_module (sr,name,TYP_none,sts))
 
 @h = tangler("src/flxd.ml")
 @select(h)

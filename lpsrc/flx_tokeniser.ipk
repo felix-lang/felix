@@ -113,6 +113,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | ANDGREATEREQUAL _ -> "&>="
 
   (* keywords *)
+  | OPEN _ -> "open"
   | INTERFACE _ -> "interface"
   | ROOT _ -> "root"
   | FUNCTOR _ -> "functor"
@@ -172,6 +173,8 @@ let string_of_token (tok :Flx_parse.token): string =
   | GOTO _ -> "goto"
   | TO _ -> "to"
   | EXPORT _ -> "export"
+  | DEFINE _ -> "define"
+  | OVERLOAD _ -> "overload"
 
   (* special things *)
   | SLOSH _ -> "\\" (* "\"" *) 
@@ -322,6 +325,9 @@ let src_of_token t = match t with
   | VAL s 
   | TYPEDEF s 
   | TO s
+  | DEFINE s
+  | OVERLOAD s
+  | OPEN s
     -> s
 
 

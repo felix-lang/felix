@@ -22,7 +22,7 @@ if options:
   print "OPTIONS: ", options
 if "clean" in options:
     os.system("rm -f tmp/* src/* test/* lpsrc/*.cache")
-do_tests = "test" in options
+do_tests = "test" in options or "tut" in options or "rt" in options or "bt" in options
 use_interscript = "noiscr" not in options
 
 # ------------------------------------------------
@@ -107,7 +107,6 @@ INTERFACES = [
   'flx_pat'          , 
   'flx_desugar'      , 
   'flx_symtab'       , 
-  'flx_env'          , 
   'flx_lookup'       , 
   'flx_mbind'        , 
   'flx_bbind'        , 
@@ -136,7 +135,6 @@ IMPLEMENTATIONS = [
   'flx_pat'          , 
   'flx_desugar'      , 
   'flx_symtab'       , 
-  'flx_env'          , 
   'flx_lookup'       , 
   'flx_mbind'        , 
   'flx_bbind'        , 
@@ -248,7 +246,13 @@ try:
     REGRESSION_TESTS = glob.glob('test/rt*.flx')
     BAD_TESTS = glob.glob('test/bt*.flx')
     TUTORIAL_TESTS = glob.glob('tut/examples/tut*.flx')
-    TESTS = TESTS + REGRESSION_TESTS + TUTORIAL_TESTS
+    if "test" in options:
+      TESTS = TESTS + REGRESSION_TESTS + TUTORIAL_TESTS
+    else:
+      if "tut" in options:
+        TESTS = TESTS + TUTORIAL_TESTS
+      if "rt" in options:
+        TESTS = TESTS + REGRESSION_TESTS
     TESTS.sort()
     BAD_TESTS.sort()
 
@@ -340,29 +344,30 @@ try:
             results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
 
       # FAILURE TESTS 
-      for testfile in BAD_TESTS:
-        #print 'Running Felix code generator on ',testfile
-        basename = string.split(testfile,'.')[0]
-        cppfilename = basename + ".cpp"
-        if buildall or \
-          filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
-          filetime('bin/flxg')> filetime(basename+'.cpp') or \
-          filetime('lib/std.flx') > filetime(basename+'.cpp') or \
-          filetime('lib/regex.flx') > filetime(basename+'.cpp'):
-          try:
-            xqt('bin/flxg -e -Ilib ' + basename)
-            #print 'TESTFILE -- failed as expected',basename
-            results.append("flxg " + (basename+ ' ' * w)[:w]+ ' OK')
-            erasefile(basename+'.cpp')
-            erasefile(basename+'.hpp')
-            erasefile(basename+'.so')
-          except MakeError:
-            print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
-            erasefile(basename+'.cpp')
-            erasefile(basename+'.hpp')
-            erasefile(basename+'.so')
-            if stop_on_error: raise MakeError
-            results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
+      if "bt" in options:
+        for testfile in BAD_TESTS:
+          #print 'Running Felix code generator on ',testfile
+          basename = string.split(testfile,'.')[0]
+          cppfilename = basename + ".cpp"
+          if buildall or \
+            filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
+            filetime('bin/flxg')> filetime(basename+'.cpp') or \
+            filetime('lib/std.flx') > filetime(basename+'.cpp') or \
+            filetime('lib/regex.flx') > filetime(basename+'.cpp'):
+            try:
+              xqt('bin/flxg -e -Ilib ' + basename)
+              #print 'TESTFILE -- failed as expected',basename
+              results.append("flxg " + (basename+ ' ' * w)[:w]+ ' OK')
+              erasefile(basename+'.cpp')
+              erasefile(basename+'.hpp')
+              erasefile(basename+'.so')
+            except MakeError:
+              print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
+              erasefile(basename+'.cpp')
+              erasefile(basename+'.hpp')
+              erasefile(basename+'.so')
+              if stop_on_error: raise MakeError
+              results.append("flxg " + (basename + ' '*w)[:w] + ' ERROR')
 
       # C++ COMPILE SHARED LIBRARIES
       for testfile in TESTS:

@@ -26,6 +26,15 @@ get smaller with each compiler improvement.
 @select(tangler('test/bt01.flx'))
 basic parser error
 
+@select(tangler('test/bt02.flx'))
+type bool = "bool";
+module X { proc p(){} }
+module Y { proc p(){} }
+open X;
+open Y;
+p; // ambiguous
+
+
 @select(tangler('test/rt01.flx'))
 #include <std.flx>
 @xs = [
@@ -160,9 +169,31 @@ while(i <= n) {
 };
 endl;
 
-@select(tangler('test/flx_rt04.flx'))
+@select(tangler('test/rt03.flx'))
 // test the chained comparison
 #include <std.flx>
 assert(1<2&<3&<4);
+
+
+@select(tangler('test/rt04.flx'))
+// open bound module
+#include <std.flx>
+interface I { proc print_endl:int; }
+module M { proc print_endl (a:int) { print a; endl; } }
+module B = M:I;
+open B;
+print_endl 1;
+
+@select(tangler('test/bt03.flx'))
+// open depends on self
+#include <std.flx>
+interface I { proc print_endl:int; }
+module X {
+  module M { proc print_endl (a:int) { print a; endl; } }
+  module B = M:I;
+}
+open X;
+open B;
+print_endl 1;
 
 

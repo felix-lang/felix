@@ -24,7 +24,8 @@ val build_tables:
   (
     name_map_t *  
     exe_t list * 
-    (iface_t * int option) list
+    (iface_t * int option) list *
+    dir_t list
   )
 
 @h = tangler("src/flx_symtab.ml")
@@ -41,18 +42,20 @@ open Flx_lookup
 let split_asms asms : 
   (range_srcref * id_t * dcl_t) list * 
   exe_t list *
-  iface_t list
+  iface_t list *
+  dir_t list
 = 
-  let rec aux asms dcls exes ifaces =
+  let rec aux asms dcls exes ifaces dirs =
     match asms with
-    | [] -> (dcls,exes,ifaces)
+    | [] -> (dcls,exes,ifaces, dirs)
     | h :: t -> 
       match h with 
-      | Exe (sr,exe) -> aux t dcls (exe :: exes) ifaces
-      | Dcl (sr,id,dcl) -> aux t ((sr,id,dcl) :: dcls) exes ifaces
-      | Iface (sr,iface) -> aux t dcls exes (iface :: ifaces)
+      | Exe (sr,exe) -> aux t dcls (exe :: exes) ifaces dirs
+      | Dcl (sr,id,dcl) -> aux t ((sr,id,dcl) :: dcls) exes ifaces dirs
+      | Iface (sr,iface) -> aux t dcls exes (iface :: ifaces) dirs
+      | Dir (sr,dir) -> aux t dcls exes ifaces (dir::dirs)
   in 
-    aux asms [] [] []
+    aux asms [] [] [] []
  
 let dump_name_to_int_map level name name_map =
   let spc = spaces level in
@@ -91,8 +94,10 @@ let add_function table key value =
   at locations equal to and above the counter
 *)
 let rec build_tables print_flag dfns counter name level parent asms = 
-  let dcls,exes,ifaces = split_asms asms in
-  let dcls,exes,ifaces = List.rev dcls,List.rev exes,List.rev ifaces in
+  let dcls,exes,ifaces,dirs = split_asms asms in
+  let dcls,exes,ifaces,dirs = 
+    List.rev dcls,List.rev exes,List.rev ifaces, List.rev dirs
+  in
   let ifaces = List.map (fun i-> i,parent) ifaces in
   let interfaces = ref ifaces in
   let spc = spaces level in
@@ -120,12 +125,12 @@ let rec build_tables print_flag dfns counter name level parent asms =
 
         | DCL_functor (ps,ret,asms) -> 
           let fun_index = n in
-          let table, exes,ifaces = 
+          let table, exes,ifaces,dirs = 
             build_tables print_flag dfns counter id (level+1) (Some n) 
             asms
           in
           Hashtbl.add dfns fun_index (id, sr, parent,
-            SYMDEF_functor (ps,ret,exes,table) 
+            SYMDEF_functor (ps,ret,exes,table, dirs) 
           );
           List.iter (fun (name,typ) -> 
             let n = !counter in
@@ -137,7 +142,6 @@ let rec build_tables print_flag dfns counter name level parent asms =
           ) ps
           ;
 
-          (*
           let n' = !counter in
           incr counter;
           let init_def = 
@@ -145,20 +149,20 @@ let rec build_tables print_flag dfns counter name level parent asms =
             (
               [], 
               exes, 
-              Hashtbl.create 97
+              Hashtbl.create 97,
+              [] 
             ) 
           in
           Hashtbl.add dfns n' ("_init_",sr,Some fun_index, init_def);
           (* NOTE: NO CALL TO INIT ROUTINE HERE! *)
           add_function table ("_init_") n';
-          *)
 
           add_function name_map id fun_index ;
           interfaces := !interfaces @ ifaces
 
         | DCL_function (ps,t,asms) ->   
           let fun_index = n in
-          let table, exes, ifaces =  
+          let table, exes, ifaces,dirs =  
             build_tables print_flag dfns counter id (level+1) 
             (Some fun_index) asms 
           in
@@ -172,12 +176,11 @@ let rec build_tables print_flag dfns counter name level parent asms =
           ) ps
           ; 
           Hashtbl.add dfns fun_index (id, sr,parent,
-            SYMDEF_function (ps, t, exes, table)
+            SYMDEF_function (ps, t, exes, table, dirs)
           )
           ;
           add_function name_map id fun_index ;
           interfaces := !interfaces @ ifaces
-
 
 
         | DCL_match_check (pat,mvname) ->
@@ -195,7 +198,7 @@ let rec build_tables print_flag dfns counter name level parent asms =
         
         | DCL_match_handler (pat,mvname,asms) ->
           let fun_index = n in
-          let table, exes,ifaces = 
+          let table, exes,ifaces,dirs = 
             build_tables print_flag dfns counter id (level+1) 
             (Some fun_index) asms 
           in
@@ -206,7 +209,7 @@ let rec build_tables print_flag dfns counter name level parent asms =
           in 
           Hashtbl.add dfns fun_index (id, sr, parent,
             SYMDEF_match_handler (pat, 
-              match_var_index, exes, table)
+              match_var_index, exes, table, dirs)
             )
           ;
           add_function name_map id fun_index;
@@ -218,11 +221,11 @@ let rec build_tables print_flag dfns counter name level parent asms =
           add_unique name_map id n
 
         | DCL_module asms ->
-          let table, exes,ifaces = 
+          let table, exes,ifaces,dirs = 
             build_tables print_flag dfns counter id (level+1) (Some n) 
             asms
           in
-          Hashtbl.add dfns n (id, sr,parent,SYMDEF_module table);
+          Hashtbl.add dfns n (id, sr,parent,SYMDEF_module (table,dirs));
           let n' = !counter in
           incr counter;
           let init_def = 
@@ -230,7 +233,8 @@ let rec build_tables print_flag dfns counter name level parent asms =
             (
               [], 
               exes, 
-              Hashtbl.create 97
+              Hashtbl.create 97,
+              []
             ) 
           in
           Hashtbl.add dfns n' ("_init_",sr,Some n, init_def);
@@ -240,11 +244,11 @@ let rec build_tables print_flag dfns counter name level parent asms =
           interfaces := !interfaces @ ifaces
         
         | DCL_interface asms ->
-          let table, exes,ifaces = 
+          let table, exes,ifaces,dirs = 
             build_tables print_flag dfns counter id (level+1) (Some n) 
             asms
           in
-          Hashtbl.add dfns n (id, sr,parent,SYMDEF_interface table);
+          Hashtbl.add dfns n (id, sr,parent,SYMDEF_interface (table, dirs));
           let n' = !counter in
           incr counter;
           let init_def = 
@@ -266,7 +270,7 @@ let rec build_tables print_flag dfns counter name level parent asms =
 
         | DCL_procedure (ps,asms) -> 
           let fun_index = n in
-          let table, exes,ifaces = 
+          let table, exes,ifaces,dirs = 
             build_tables print_flag dfns counter id 
             (level+1) (Some fun_index) asms 
           in
@@ -280,7 +284,7 @@ let rec build_tables print_flag dfns counter name level parent asms =
           ) ps
           ; 
           Hashtbl.add dfns fun_index (id, sr,parent,
-            SYMDEF_procedure (ps, exes, table))
+            SYMDEF_procedure (ps, exes, table, dirs))
           ;
           add_function name_map id fun_index;
           interfaces := !interfaces @ ifaces
@@ -454,5 +458,5 @@ let rec build_tables print_flag dfns counter name level parent asms =
     dcls
   end
   ;
-  name_map,exes,!interfaces
+  name_map,exes,!interfaces, dirs
 

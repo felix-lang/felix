@@ -1161,6 +1161,26 @@ Qualification inhibits upscope overloading.
 @p()
 Note the keyword 'root' is used to name the top-level
 module.
+@p()
+Finally, it is vital to understand that Felix
+scopes act like sets of names. Names are always defined
+in parallel, and visible to all definitions in the scope,
+so that all definitions are mutually recursive.
+For this reason, forward declarations are never needed.
+The following example is quite legal:
+
+@begin_displayed_code()
+  x = 1;
+  y = x;
+  var y:int;
+  var x:int;
+@end_displayed_code()
+
+This is much like the 'rewriting rule' for C++ class member
+functions. Note, however, that executable code
+is still sequential! Thus, the order of value and variable
+definition does matter: initialisations are executed
+in order of writing. 
 
 @head(2,'Koenig Lookup')
 Consider the following example:
@@ -1824,7 +1844,7 @@ interface group
 
 module number {
   typedef t = int;
-  fun add(a:t, b:t):t { return a + b; }
+  fun add(a:t, b:t):t { return root::add(a,b); }
   fun neg(a:t):t { return -a; }
   val zero = 0;
   proc print (a:int) { root::print a; }
@@ -1832,12 +1852,66 @@ module number {
 
 module NUMBER = number : group;
 
-val one = NUMBER::zero;
+val zero = NUMBER::zero;
+NUMBER::print zero; endl;
+val one = 1 : NUMBER::t;
+NUMBER::print one; endl;
+NUMBER::print (NUMBER::add(one,one)); endl;
 
 @doc()
 Note that the representation of t by an int
 is hidden by the interface: you can't
 multiply these numbers.
+
+@head(2,'Coercions')
+In the previous example, in the line
+
+@begin_displayed_code()
+module NUMBER = number : group;
+@end_displayed_code()
+
+the expression on right hand side is a 
+called a module coercion, and the module
+on the left hand side is known as a bound 
+module. A bound module is view of a module,
+as seen through an interface.
+@p()
+Felix provides syntact sugar which allows
+you to define a module and bind it to
+an interface in the same definition:
+@select(tangler(tdir+'tut202.flx'))
+#include <std.flx>
+interface group
+{
+  type t;
+  proc print: t;
+  fun add: t * t -> t;
+  fun neg: t -> t;
+  val zero:t;
+}
+
+module NUMBER: group {
+  typedef t = int;
+  fun add(a:t, b:t):t { return root::add(a, b); }
+  fun neg(a:t):t { return -a; }
+  val zero = 0;
+  proc print (a:int) { root::print a; }
+}
+
+val zero = NUMBER::zero;
+NUMBER::print zero; endl;
+val one = 1 : NUMBER::t;
+NUMBER::print one; endl;
+NUMBER::print (NUMBER::add(one,one)); endl;
+@doc()
+Note also the coercion
+
+@begin_displayed_code()
+val one = 1 : NUMBER::t;
+@end_displayed_code()
+
+which is required to 'cast' the int 1 to the bound
+type t/int.
 
 @head(2,'Functors')
 You may have been wondering how Felix handles
@@ -1845,7 +1919,8 @@ genericity.
 Felix supports modules which
 can be parameterized by other modules.
 Lets look at an example.
-@select(tangler(tdir+'tut202.flx'))
+
+@select(tangler(tdir+'tut203.flx'))
 #include <std.flx>
 
 interface list_req
@@ -1895,6 +1970,7 @@ int_list::print t2; endl;
 @doc()
 The first thing we do is define an interface
 which specifies the requirements for a list:
+
 @begin_displayed_code()
 interface list_req
 {
@@ -1902,6 +1978,132 @@ interface list_req
   proc print_element: element;
 }
 @end_displayed_code()
+
 A list is built of elements of some type,
 a routine to print an element is required.
+@p()
+Next, the functor specified a list: the union
+
+@begin_displayed_code()
+  union list =
+    | Empty
+    | Cons of req::element * list
+  ;
+@end_displayed_code()
+
+defines the structure of a list inductively,
+and the print routine prints it recursively.
+@p()
+To instantiate the functor, we must supply
+a module bound by the interface list_req.
+First we specify a suitable module for
+a list of int:
+
+@begin_displayed_code()
+module Int 
+{ 
+  typedef element = int;
+  proc print_element (a:int) { print a; }
+}
+@end_displayed_code()
+
+This module has the correct structure
+to use with the functor, but it must be explicitly
+constrained by the interface:
+
+@begin_displayed_code()
+module Int_req = Int : list_req;
+@end_displayed_code()
+
+because functors can be overloaded, and an 
+exact match is required.
+@p()
+Finally, we instantiate the functor:
+
+@begin_displayed_code()
+module int_list = List Int_req;
+@end_displayed_code()
+
+and the result is a module. Note that to use the module,
+at the moment, we not only have to qualify all
+the names, but we also must coerce each int to
+the type Int_req::element.
+
+@head(2,'The open directive')
+It's really boring writing qualified names all
+the time. Felix provides the open directive
+to allow you to open a module so its contents
+can be accesses without using qualified names.
+Here's a simple example:
+
+@select(tangler(tdir+'tut204.flx'))
+#include <std.flx>
+module X {
+  proc print_endl (a:int) { print a; endl; }
+  fun square (a:int):int { return a * a; }
+}
+
+open X;
+print_endl (square 2);
+
+@doc()
+Note that the open directive only affects lookup
+of unqualified names, or the first component of
+a qualified name. Lookup proceeds first in the
+current scope, before considering opened modules;
+then opened modules are considered, then the
+parent scope, then opened modules in the parent,
+etc.
+@p()
+The name of the module
+to be opened is not looked up in the modules
+opened by open directives in the same module
+as itself. Open directives in containing modules
+are, however, examined.
+@p()
+The reason for this last rule is as follows:
+open directives, like Felix declarations,
+are all considered in parallel; that is,
+their order of writing is irrelevant;
+hence, open directives are considered in a
+context in which none of the open directives
+have been applied.
+@p()
+It is not an error to open modules containing
+conflicting definitions, however, it is an error
+to refer to a name with conflicting definitions.
+@p()
+Functions with the same name in opened modules
+are overloaded. If two functions have the same
+signature, a reference will lead to an ambiguity.
+Such an ambiguity can be resolved by hiding
+such definitions in opened modules by providing
+a definition in the module containing the
+open directives. Alternatively, you can use
+a qualified name.
+
+@select(tangler(tdir+'tut205.flx'))
+#include <std.flx>
+module X1 {
+  proc printme() { print "X1"; endl; }
+}
+module X2 {
+  proc printme() { print "X2"; endl; }
+}
+open X1;
+open X2;
+proc printme() { print "top level"; endl; }
+
+X1::printme();
+X2::printme();
+printme();
+
+@doc()
+Finally note that the effect of opening a module
+named X which contains an entity named X is well
+defined: the contained X will not be seen
+by other open directives, whereas the module X
+will not be seen by any declarations and definitions
+in the body of the containing scope.
+
 

@@ -232,8 +232,8 @@ let mkcurry sr name args return_type body =
 %token<Flx_types.srcref> MATCH WITH ENDMATCH CASE HEADER MODULE CODE
 %token<Flx_types.srcref> SERVICE COMMAND HANDLER CALL PROCEDURE FUNCTION READER FUNCTOR
 %token<Flx_types.srcref> UNIT RETURN FORK VOID
-%token<Flx_types.srcref> WHILE LOOP TO
-%token<Flx_types.srcref> TODO INTERFACE
+%token<Flx_types.srcref> WHILE LOOP TO OPEN
+%token<Flx_types.srcref> TODO INTERFACE DEFINE OVERLOAD
 %token<Flx_types.srcref> TYPE FUN READ PROC CONST STRUCT RAISE ATTEMPT FINALLY EXCEPT VAL TYPEDEF
 
 
@@ -293,7 +293,8 @@ declarative:
   | union_decl { $1 }
   | struct_decl { $1 }
   | interface_decl { $1 }
-  
+  | open_decl { $1 }
+
 executable:
   | var_def { $1 }
   | val_def { $1 }
@@ -394,6 +395,14 @@ export_statement:
       AST_export (rstoken $1 $5, snd $2, snd $4) 
     }
  
+@head(3,'Open')
+@select(h)
+open_decl:
+  | OPEN qualified_name SEMI
+  {
+    AST_open (rstoken $1 $3,snd $2)
+  }
+  
 @head(3,'Function and Procedure Definition')
 @select(h)
 fun_arg:
@@ -536,7 +545,19 @@ module_definition:
       (
         rsrange (slift $1) (fst $3), 
         snd $2, 
+        TYP_none,
         snd $3
+      ) 
+    }
+
+  | MODULE NAME COLON type_expr compound 
+    { 
+      AST_module 
+      (
+        rsrange (slift $1) (fst $5), 
+        snd $2, 
+        $4,
+        snd $5
       ) 
     }
 

@@ -109,7 +109,7 @@ and expr_t =
   | AST_deref of range_srcref * expr_t
   | AST_name of range_srcref * suffixed_name_t
   | AST_index of range_srcref * bid_t
-  | AST_bound_module of range_srcref * (bid_t * index_map_t)
+  | AST_bound_module of range_srcref * (bid_t * bid_t * index_map_t)
   | AST_ref of range_srcref * expr_t
   | AST_literal of range_srcref * literal_t
   | AST_apply of range_srcref * (expr_t * expr_t)
@@ -169,6 +169,7 @@ Statements; that is, the procedural sequence control system.
 and parameter_t = id_t * typecode_t
 and statement_t =
  
+  | AST_open of range_srcref * qualified_name_t
   | AST_comment of string (* for documenting generated code *)
 
   (* definitions *)
@@ -185,7 +186,7 @@ and statement_t =
   | AST_var_decl of range_srcref * id_t * typecode_t option * expr_t option
  
   (* module system *)
-  | AST_module of range_srcref * id_t * statement_t list  
+  | AST_module of range_srcref * id_t * typecode_t * statement_t list  
   | AST_module_binding of range_srcref * id_t * expr_t
   | AST_functor of range_srcref * id_t * parameter_t list * typecode_t * statement_t list
   | AST_interface of range_srcref * id_t * statement_t list
@@ -242,6 +243,9 @@ and exe_t =
   | EXE_nop of string
   | EXE_init of id_t * expr_t 
 
+and dir_t =
+  | DIR_open of qualified_name_t
+
 and dcl_t = 
   | DCL_header of string
 
@@ -282,6 +286,7 @@ and asm_t =
   | Exe of range_srcref * exe_t 
   | Dcl of range_srcref * id_t * dcl_t 
   | Iface of range_srcref * iface_t
+  | Dir of range_srcref * dir_t
 
 and bid_t = int
 
@@ -325,7 +330,7 @@ and btypecode_t =
   | BTYP_pointer  of btypecode_t                  (* pointer type *)
   | BTYP_void                                     (* void type *)
   | BTYP_none                                     (* special hack for 'no type' *)
-  | BTYP_binding of bid_t * btypecode_t           (* interface, module *)
+  | BTYP_binding of btypecode_t * btypecode_t           (* interface, module *)
 
 and bparameter_t = string * btypecode_t
 and bbdcl_t = 
@@ -359,8 +364,8 @@ and entry_set_t =
   | NonFunctionEntry of entry_kind_t
   
 and module_rep_t = 
-  | Simple_module of name_map_t
-  | Bound_module of bid_t * index_map_t
+  | Simple_module of bid_t * name_map_t * dir_t list
+  | Bound_module of bid_t * bid_t * index_map_t
   | Functor_set of bid_t list
   | Module_product of module_rep_t list
 
@@ -377,26 +382,47 @@ and functor_arg_binding_t =
     id_t *                        (* argument name *)
     (
       bid_t *                     (* interface *)
+      bid_t *                     (* implementation module  *)
       index_map_t                 (* interface->module binding map *)
     )
   ) list
 
-type env_t = name_map_t list
+type env_t = (name_map_t * name_map_t list) list 
 type symbol_definition_t =
   | SYMDEF_parameter of typecode_t
-  | SYMDEF_function of parameter_t list * typecode_t * exe_t list * name_map_t
+  | SYMDEF_function of 
+    parameter_t list * 
+    typecode_t * 
+    exe_t list * 
+    name_map_t * 
+    dir_t list
+
   | SYMDEF_lazy of expr_t 
   | SYMDEF_match_check of pattern_t * int 
-  | SYMDEF_match_handler of pattern_t * int * exe_t list * name_map_t
+  | SYMDEF_match_handler of 
+    pattern_t * 
+    int * 
+    exe_t list * 
+    name_map_t * 
+    dir_t list
 
-  | SYMDEF_interface of name_map_t
-  | SYMDEF_functor of parameter_t list * typecode_t * exe_t list * name_map_t
-  | SYMDEF_module of name_map_t
+  | SYMDEF_interface of name_map_t * dir_t list
+  | SYMDEF_functor of 
+    parameter_t list * 
+    typecode_t * 
+    exe_t list * 
+    name_map_t * 
+    dir_t list
+
+  | SYMDEF_module of name_map_t * dir_t list
   | SYMDEF_if_type
   | SYMDEF_if_proc of typecode_t 
   | SYMDEF_if_fun of typecode_t
   | SYMDEF_procedure of  
-     parameter_t list * exe_t list * name_map_t
+     parameter_t list * 
+     exe_t list * 
+     name_map_t * 
+     dir_t list
   
   | SYMDEF_module_binding of expr_t
   | SYMDEF_dcl of dcl_t
@@ -531,11 +557,12 @@ let src_of_statement s = match s with
   | AST_code (s, _) 
   | AST_union (s, _, _ ) 
   | AST_struct (s, _, _)
-  | AST_module (s, _,_)
+  | AST_module (s, _,_,_)
   | AST_export (s, _,_)
   | AST_procedure_decl (s,_,_)
   | AST_function_decl (s,_,_)
   | AST_type (s,_)
+  | AST_open (s,_)
     -> s
 
   | AST_comment _ -> ("Generated",0,0,0,0)
@@ -671,7 +698,7 @@ and string_of_expression e =
   let se e = se e in
   match e with
   | AST_index (sr,i) -> "(index " ^ string_of_int i ^ ")"
-  | AST_bound_module (sr,(iface,binding)) -> "(module_binding)"
+  | AST_bound_module (sr,(iface,impl,binding)) -> "(module_binding)"
   | AST_coercion (_,(e,t)) -> 
     "(" ^ se e ^ ":" ^ 
     string_of_typecode t ^ ")"
@@ -732,7 +759,7 @@ and string_of_btypecode dfns tc =
   match tc with
   | BTYP_binding (a,b) -> 
     "binding (" ^ 
-    qualified_name_of_index dfns a ^
+    sbt a ^
     " => " ^
     sbt b ^
     ")"
@@ -862,6 +889,9 @@ and string_of_statement level s =
   | AST_goto (_,s) -> spaces level ^ "goto " ^ s ^ ";"
 
   | AST_comment s -> spaces level ^ "// " ^ s
+  | AST_open (_,n) -> 
+    spaces level ^ "open " ^ string_of_qualified_name n ^ ";"
+  
 
   | AST_type_alias (_,t1,t2) ->
     spaces level ^ "type " ^ t1 ^ " = " ^ string_of_typecode t2 ^ ";"
@@ -869,10 +899,19 @@ and string_of_statement level s =
   | AST_type (_,t) ->
     spaces level ^ "type " ^ t ^ ";"
 
-  | AST_module (_,name, sts)  -> 
-    spaces level ^ "module " ^ name ^ " = " ^
-    "\n" ^ 
-    string_of_compound level sts
+  | AST_module (_,name, typ, sts)  -> 
+    begin match typ with
+    | TYP_none ->
+      spaces level ^ "module " ^ name ^ " = " ^
+      "\n" ^ 
+      string_of_compound level sts
+    | _ ->
+      spaces level ^ "module " ^ name ^ ":" ^ 
+      string_of_typecode typ ^ 
+      " = " ^
+      "\n" ^ 
+      string_of_compound level sts
+    end
 
   | AST_struct (_,name, cs) -> 
     let string_of_struct_component (name,ty) =
@@ -1069,7 +1108,7 @@ and string_of_symdef entry name = match entry with
   | SYMDEF_parameter t -> 
     "parameter " ^ string_of_typecode t ^ ";"
     
-  | SYMDEF_function (ps,res,es,nm) -> 
+  | SYMDEF_function (ps,res,es,nm,dir) -> 
     "function " ^ name ^ ": " ^ string_of_typecode 
     (
       TYP_function 
@@ -1091,16 +1130,16 @@ and string_of_symdef entry name = match entry with
   | SYMDEF_match_check (pat,i)-> 
     "match_check " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
   
-  | SYMDEF_match_handler (pat,i,es,nm) ->
+  | SYMDEF_match_handler (pat,i,es,nm,dir) ->
     "match_handler " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
 
-  | SYMDEF_interface nm ->
+  | SYMDEF_interface (nm,dir) ->
     "interface " ^ name ^ ";"
 
-  | SYMDEF_functor (ps,ret,es,nm) ->
+  | SYMDEF_functor (ps,ret,es,nm,dir) ->
     "functor " ^ name ^ ";"
 
-  | SYMDEF_module table -> 
+  | SYMDEF_module (table,dir) -> 
     "module " ^ name ^ ";"
     
   | SYMDEF_if_type -> 
@@ -1112,7 +1151,7 @@ and string_of_symdef entry name = match entry with
   | SYMDEF_if_fun t ->
     "abstract_function  " ^ name ^ string_of_typecode t ^ ";"
 
-  | SYMDEF_procedure (ps,es,nm) ->
+  | SYMDEF_procedure (ps,es,nm,dir) ->
     "procedure " ^ name ^ ";"  
   
   | SYMDEF_module_binding e ->
@@ -1352,6 +1391,12 @@ and string_of_asm level s =
   | Dcl (sr,name,d) -> string_of_dcl level name d
   | Exe (sr,s) -> string_of_exe level s
   | Iface (sr,s) -> string_of_iface level s
+  | Dir (sr,s) -> string_of_dir level s
+
+and string_of_dir level s =
+  match s with
+  | DIR_open qn ->
+    spaces level ^ "open " ^ string_of_qualified_name qn ^ ";"
 
 and string_of_bbdcl dfns bbdcl index = 
   let name = qualified_name_of_index dfns index in
@@ -1537,7 +1582,7 @@ let rec lower t = match t with
 
 
 let rec lift t = match t with
-  | BTYP_binding (i,t) -> BTYP_name i
+  | BTYP_binding (i,t) -> i
   | BTYP_pointer t -> BTYP_pointer (lift t)
   | BTYP_tuple ts -> BTYP_tuple (List.map lift ts)
   | BTYP_none -> BTYP_none
@@ -1548,8 +1593,6 @@ let rec lift t = match t with
 let rec unify dfns it mt = 
   let u it mt = unify dfns it mt in
   match it,mt with
-  | BTYP_name index,t -> BTYP_binding (index,t)
-  
   | BTYP_function (a,b), BTYP_function(c,d) ->
     BTYP_function (u a c, u b d)
 
@@ -1561,9 +1604,7 @@ let rec unify dfns it mt =
 
   | BTYP_void, BTYP_void -> BTYP_void
   | BTYP_none, BTYP_none -> BTYP_none
-
-  | _ -> raise (UnificationError (it,mt))
-
+  | i,m -> BTYP_binding (i,m)
 
 @h = tangler('src/flx_typing.mli')
 @select(h)
