@@ -1,5 +1,5 @@
 @head(1,'Maker')
-@flx_version = '1.0a3'
+@flx_version = '1.0a4'
 @h = tangler('script/maker','python')
 @select(h)
 #!/usr/bin/env python
@@ -319,9 +319,9 @@ try:
   # COMPILER DRIVER PROGRAMS
 
   for testfile in DRIVERS:
-    print 'Compiling driver program ',testfile
     basename = string.split(testfile,'.')[0]
     if buildall or filetime("rtl/"+basename+ '.cpp') > filetime("bin/"+basename):
+      print 'Compiling driver program ',testfile
       try:
         xqt(FLX_CPP_LINK + " -I. " +
           "rtl/flx_gc.cpp " +

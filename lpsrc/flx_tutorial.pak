@@ -2394,8 +2394,8 @@ typedef g = (
 ;
 
 
-// FIXPOINTS NOT WORKING YET
-//val x : list int = case 1 of list int;
+// FIXPOINTS WORKING NOW
+val x : list int = case 1 of list int;
 
 typedef fun pair (a:TYPE,b:TYPE):TYPE = a * b;
 //typedef pair = (fun (a:TYPE,b:TYPE):TYPE = {a * b});

@@ -1364,6 +1364,49 @@ and bind_type syms env expr_fixlist excluded_dirs sr t : btypecode_t =
   *)
   t''
 
+(* fixpoint reduction: reduce
+   Fix f. Lam x. e ==> Lam x. Fix z. e [f x -> z]
+   to replace a recursive function
+   with a recursive data structure
+*)
+
+and fixup ps body =
+ let param = match ps with
+   | [] -> assert false
+   | [i,_] -> `BTYP_var i
+   | x -> `BTYP_type_tuple (List.map (fun (i,_) -> `BTYP_var i) x)
+ in
+ let rec aux term depth =
+   let fx t = aux t (depth+1) in
+   match term with
+   | `BTYP_apply (`BTYP_fix i, arg) 
+     when arg = param 
+     && i + depth +1  = 0 (* looking inside application, one more level *)
+     -> `BTYP_fix (i+2) (* elide application AND skip under lambda abstraction *)
+
+   | `BTYP_tuple ls -> `BTYP_tuple (List.map fx ls)
+   | `BTYP_sum ls -> `BTYP_sum (List.map fx ls)
+   | `BTYP_type_tuple ls -> `BTYP_type_tuple (List.map fx ls)
+   | `BTYP_function (a,b) -> `BTYP_function (fx a, fx b)
+   | `BTYP_binding (a,b) -> `BTYP_binding (fx a, fx b)
+   | `BTYP_pointer a -> `BTYP_pointer (fx a)
+   | `BTYP_apply(a,b) -> `BTYP_apply (fx a, fx b)
+   | `BTYP_typefun (a,b,c) ->
+      (* NOTE we have to add 2 to depth here, an extra
+      level for the lambda binder.
+      NOTE also: this is NOT a recusive call to fixup!
+      It doesn't fixup this function.
+      *)
+
+      `BTYP_typefun (a, fx b, aux c (depth + 2))
+   | _ -> term
+ in 
+   (* note depth 1: we seek a fix to an abstraction
+   of which we're given only the body, that's an 
+   extra level in the term structure 
+   *)
+   aux body 1
+
 and beta_reduce syms params t = 
   let br t = beta_reduce syms params t in
   let st t = string_of_btypecode syms.dfns t in
@@ -1395,7 +1438,7 @@ and beta_reduce syms params t =
       if a <> mt2
       then failwith ("Argument metatype not same as function parameter")
     | _ -> 
-      failwith ("Expected LHS of application to be function")
+      failwith ("Expected LHS of application to be function, got\n" ^ st t1)
     end
     ;
     begin match t1 with
@@ -1439,7 +1482,15 @@ and beta_reduce syms params t =
   | `BTYP_binding (a,b) -> `BTYP_binding (br a, br b)
   | `BTYP_pointer a -> `BTYP_pointer (br a)
   | `BTYP_typefun (p,r,b) -> 
-     let p' = List.map (fun (i,t) -> (i, br t)) p in
+    let p' = List.map (fun (i,t) -> (i, br t)) p in
+    (*
+    print_endline ("fixing up function " ^ st t);
+    print_endline ("body is " ^ st b);
+    *)
+    let b = fixup p b in
+    (*
+    print_endline ("After fixup body is " ^ st b);
+    (_
     `BTYP_typefun (p', br r, beta_reduce syms (p' @ params) b)
 
   | _ -> t
