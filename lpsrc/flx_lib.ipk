@@ -175,7 +175,7 @@ namespace std_flx {
 @for t in all:
   tangle('//')
   tangle('//'+t)
-  tangle('proc set: &'+t+' * '+t+' = "*($1.data)=$2;";')
+  tangle('proc set: &'+t+' * '+t+' = "*$1=$2;";')
   tangle('fun eq: '+t+' * '+t+' -> bool = "$1==$2";')
   tangle('fun ne: '+t+' * '+t+' -> bool = "$1!=$2";')
 
@@ -259,10 +259,10 @@ proc assert: bool = "assert($1);";
 //
 // increment, decrement
 @for t in ints:
-  tangle('proc pre_incr:  &'+t+' = "++*($1.data);";')
-  tangle('proc pre_decr:  &'+t+' = "--*($1.data);";')
-  tangle('proc post_incr: &'+t+' = "++*($1.data);";')
-  tangle('proc post_decr: &'+t+' = "--*($1.data);";')
+  tangle('proc pre_incr:  &'+t+' = "++*$1;";')
+  tangle('proc pre_decr:  &'+t+' = "--*$1;";')
+  tangle('proc post_incr: &'+t+' = "++*$1;";')
+  tangle('proc post_decr: &'+t+' = "--*$1;";')
   
 //
 // casts
@@ -295,8 +295,8 @@ proc space: int = "std::cout << ' ';";
 
 // strings
 type string = "string";
-proc set: &string * string = "$1.data->assign($1);";
-proc pluseq: &string * string = "$1.data->append($2);";
+proc set: &string * string = "$1->assign($1);";
+proc pluseq: &string * string = "$1->append($2);";
 
 fun len: string -> int = "$1.size()";
 fun add: string * string -> string = "$1+$2";

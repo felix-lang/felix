@@ -112,10 +112,28 @@ and bind_expression dfns bdfns env exclude e : tbexpr_t =
     let expr,typ = be e' in
     let ctyp = match typ with 
     | BTYP_tuple ts -> 
-      if List.length ts < n
-      then failwith ("[bind_expression] Expected tuple type to have at least " ^ string_of_int (n+1) ^ " components")
-      else List.nth ts (n-1)
-    | _ -> failwith ("[bind_expression] Expected tuple " ^ string_of_expression e' ^ " to have tuple type, got " ^ string_of_btypecode dfns typ)
+      let len = List.length ts in
+      if n<0 or n>len-1
+      then failwith 
+        (
+          "[bind_expression] Tuple index " ^ 
+          string_of_int n ^
+          " out of range 0.." ^
+          string_of_int (len-1) ^
+          " in " ^
+          short_string_of_src sr
+        )
+      else List.nth ts n
+    | _ -> 
+      failwith 
+      (
+        "[bind_expression] Expected tuple " ^ 
+        string_of_expression e' ^ 
+        " to have tuple type, got " ^ 
+        string_of_btypecode dfns typ ^
+        " in " ^
+        short_string_of_src sr
+      )
     in 
       BEXPR_get_n (n, (expr,typ)), ctyp
     
@@ -206,7 +224,7 @@ and bind_expression dfns bdfns env exclude e : tbexpr_t =
   | AST_ref (_,(AST_deref (sr,e))) -> be e
   
   | AST_ref (sr,(AST_dot (_,(e,id)))) ->
-    let ref_name = "_ref_" ^ id in
+    let ref_name = "ref_" ^ id in
     be 
     (
       AST_apply 
@@ -292,9 +310,9 @@ and bind_expression dfns bdfns env exclude e : tbexpr_t =
     BEXPR_tuple bets, BTYP_tuple bts
 
   | AST_dot (sr,(e,id)) ->
-    let get_name = "_get_" ^ id in
+    let get_name = "get_" ^ id in
     be (AST_apply (sr,(name_of_string sr get_name,e)))
-    
+
   | AST_match_ctor (sr,(qn,e)) ->
     let ctor, prefix = match List.rev qn with 
       | h::t -> h,List.rev t 

@@ -51,8 +51,6 @@ let rec rex seq eh_env msgt e =
   match e with
 
   (* these cases should use the source reference for the error *)
-  | AST_get_n _ 
-    -> failwith "[rex] not expecting AST_get_n"
   | AST_match_ctor _ 
     -> failwith "[rex] not expecting union component constructor matcher"
   | AST_ctor_arg _ 
@@ -62,6 +60,10 @@ let rec rex seq eh_env msgt e =
   | AST_name _ -> [],e
   | AST_ref _ -> [],e
   | AST_literal _ -> [],e
+  | AST_get_n (sr,(n,e')) ->
+    let l1,x1 = rex e' in
+    l1, AST_get_n (sr,(n,x1))
+
   | AST_apply (sr,(fn,arg)) -> 
     let l1,x1 = rex fn in 
     let l2,x2 = rex arg in

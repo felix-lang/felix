@@ -326,18 +326,18 @@ let rec build_tables print_flag dfns counter name level parent display msgt asms
           List.iter
           (fun (component_name,t) ->
             let getn = !counter in incr counter;
-            let get_name = "_get_" ^ component_name in
+            let get_name = "get_" ^ component_name in
             let get_dcl = DCL_fun ([TYP_name [id]],t,"$1." ^ component_name) in
             Hashtbl.add dfns getn (get_name,sr,parent,SYMDEF_dcl get_dcl);
             add_function name_map get_name getn
             ;
 
             let refn = !counter in incr counter;
-            let ref_name = "_ref_" ^ component_name in
+            let ref_name = "ref_" ^ component_name in
             let ref_dcl = DCL_fun (
               [TYP_pointer (TYP_name [id])],
               TYP_pointer t,
-              "_make_ref_($1.frame,&($1.data->" ^ component_name ^"))"
+              "_make_ref_(`1.frame,&($1->" ^ component_name ^"))"
             ) 
             in
             Hashtbl.add dfns refn (ref_name,sr,parent,SYMDEF_dcl ref_dcl) ;

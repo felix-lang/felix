@@ -120,8 +120,8 @@ let rec get_pattern_vars
     List.iter
     (fun pat -> 
       let sr = src_of_pattern pat in
-      incr n; 
       let extractor' = (Proj_n (sr,!n)) :: extractor in
+      incr n; 
       get_pattern_vars vars pat extractor'
     )
     pats
@@ -178,7 +178,7 @@ let rec gen_match_check pat (arg:expr_t) =
   (* other *)
   | PAT_name (sr,_) -> truth sr
   | PAT_tuple (sr,pats) ->
-    let counter = ref 2 in
+    let counter = ref 1 in
     List.fold_left 
     (fun init pat ->
       let sr = src_of_pattern pat in
@@ -192,7 +192,7 @@ let rec gen_match_check pat (arg:expr_t) =
     (
       let pat = List.hd pats in 
       let sr = src_of_pattern pat in
-      gen_match_check pat (AST_get_n (sr,(1, arg)))
+      gen_match_check pat (AST_get_n (sr,(0, arg)))
     )
     (List.tl pats)
 

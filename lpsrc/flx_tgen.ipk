@@ -222,7 +222,7 @@ let gen_type registry dfns bbdfns (index,typ) =
 
   | BTYP_tuple ts ->
     let components = ref [] in
-    let counter = ref 1 in
+    let counter = ref 0 in
     List.iter 
     (fun t -> 
       components := !components @ [!counter, t]; 
@@ -295,9 +295,9 @@ let gen_type registry dfns bbdfns (index,typ) =
           let counter = ref 0 in
           List.iter 
           (fun (name,typ) -> 
-            incr counter; 
+            let n = !counter in incr counter; 
             ctor_inits :=
-              (name ^ "(_arg.mem_"^string_of_int !counter ^")")
+              (name ^ "(_arg.mem_"^string_of_int n ^")")
               :: !ctor_inits
           )
           cs

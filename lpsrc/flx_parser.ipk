@@ -795,7 +795,11 @@ a value and selects the first matching case from the matching body.
 /* patterns */
 integral:
   | INTEGER { let sr,t,v = $1 in lift sr, v }
-  | MINUS INTEGER { let sr,t,v = $2 in rstoken $1 sr, Big_int.minus_big_int v }
+  | MINUS INTEGER 
+    { 
+      let sr,t,v = $2 in 
+      rstoken $1 sr, Big_int.minus_big_int v 
+    }
 
 floating:
   | FLOAT { lift (fst $1), snd $1 }
@@ -1181,6 +1185,24 @@ factor:
   | factor LSQB expr COLON RSQB         { apl2 $2 "copyfrom" [$1; $3] }
   | factor LSQB COLON expr RSQB         { apl2 $2 "copyto" [$1; $4] } 
   | factor DOT NAME                     { AST_dot (lift $2, ($1, snd $3)) }
+  | factor DOT LPAR INTEGER RPAR
+    { 
+      match $4 with
+      | (sr,t,v) ->
+        let n = 
+          try Big_int.int_of_big_int v 
+          with _ -> 
+            failwith 
+            (
+              "[parser] Tuple index " ^
+              Big_int.string_of_big_int v ^
+              " too big in " ^ 
+              short_string_of_src (lift sr)
+             )
+        in
+          let sr = rsrange (src_of_expr $1) (lift $5) in
+          AST_get_n (sr, (n,$1)) 
+    }
   | atom { $1 }
 
 

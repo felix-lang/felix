@@ -330,12 +330,14 @@ let gen_ctor bbdfns name display =
   ) ^ 
   "\n  {}\n"
 
-type mode_t = Normal | Dollar | Hash | Earhole
+type mode_t = Normal | Dollar | Hash | Earhole | Backquote
 
 (* substitution encoding:
-   $n: n'th component of argument tuple
-   #n: type of n'th component of argument tuple
-       unless n = 0, in which case use return type
+   $n: n'th component of argument tuple, 1 origin!
+       (but only 'data' part of pointers)
+   #n: type of n'th component of argument tuple (1 origin)
+   `n: n'th component (including frame* for pointers)
+   #0: return type
    @n: reference to shape object
 *)
 
@@ -366,9 +368,24 @@ let subst registry bbdfns ct args typs retyp =
         if j <= List.length args
         then begin 
           match !mode with 
+          | Backquote -> 
+            if j == 0 then failwith "[subst] 0 not valid argument number";
+            let s' = List.nth args (j-1) in
+            s := !s ^ "(" ^ s' ^ ")"
+
           | Dollar -> 
             if j == 0 then failwith "[subst] 0 not valid argument number";
-            s := !s ^ List.nth args (j-1);
+            let s' = List.nth args (j-1) in
+            (match List.nth typs (j-1) with
+            (* In the special case of passing a Felix pointer,
+               we get use the data pointer 
+               (ignoring the frame pointer)
+             *)
+            | BTYP_pointer _ ->
+              s := !s ^ "(" ^ s' ^ ").data"
+            | _ -> 
+              s := !s ^ "(" ^ s' ^ ")"
+            );
             mode := Normal
           | Hash ->
             if j = 0 
@@ -388,6 +405,8 @@ let subst registry bbdfns ct args typs retyp =
         )
     else if ct.[i] = '$'
     then mode := Dollar
+    else if ct.[i] = '`'
+    then mode := Backquote 
     else if ct.[i] = '#'
     then mode := Hash
     else if ct.[i] = '@'
@@ -915,7 +934,7 @@ let gen_function_methods registry dfns bbdfns label_map counter index =
         | 0 -> ""
         | 1 -> "  " ^ cpp_name bbdfns (List.hd params) ^ " = _arg;\n"
         | _ -> 
-          let counter = ref 1 in List.fold_left 
+          let counter = ref 0 in List.fold_left 
           (fun s i -> 
             let n = !counter in incr counter; 
             s ^ "  " ^ cpp_name bbdfns i ^ " = _arg.mem_"^ string_of_int n ^";\n"
@@ -961,7 +980,7 @@ let gen_procedure_methods registry dfns bbdfns label_map counter index =
         (match List.length params with
         | 0 -> ""
         | 1 -> "  " ^ cpp_name bbdfns (List.hd params) ^ " = _arg;\n"
-        | _ -> let counter = ref 1 in List.fold_left 
+        | _ -> let counter = ref 0 in List.fold_left 
           (fun s i -> 
             let n = !counter in incr counter; 
             s ^ "  " ^ cpp_name bbdfns i ^ " = _arg.mem_"^ string_of_int n ^";\n"
