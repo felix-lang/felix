@@ -210,10 +210,12 @@ using namespace std;
    tmap["int64"]="int64_t"
    tmap["uint64"]="uint64_t"
  else:
+   tmap["int8"]="signed char"
+   tmap["uint8"]="unsigned char"
    sizes = { 
-     SIZEOF_SHORT : "short",
-     SIZEOF_INT: "int",
-     SIZEOF_LONG : "long",
+     SIZEOF_SHORT*8 : "short",
+     SIZEOF_INT*8: "int",
+     SIZEOF_LONG*8 : "long",
    }
    if HAVE_LONGLONG:
      sizes[SIZEOF_LONGLONG]="long long"

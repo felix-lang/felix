@@ -277,6 +277,7 @@ Flx_version.version_data := version_data
     ["regexp", "REGEXP"],
     ["reglex", "REGLEX"],
     ["regmatch", "REGMATCH"],
+    ["requires", "REQUIRES"],
     ["return", "RETURN"],
     ["set","SET"],
     ["struct", "STRUCT"],

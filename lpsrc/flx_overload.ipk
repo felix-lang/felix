@@ -57,7 +57,7 @@ let sig_of_symdef symdef name = match symdef with
     -> `TYP_tuple[]
 
   (* primitives *)
-  | `SYMDEF_fun (ps,r,_)
+  | `SYMDEF_fun (ps,r,_,_)
     -> typeof_list ps
 
   | `SYMDEF_function (ps,r,_,_)

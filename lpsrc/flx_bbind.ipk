@@ -188,7 +188,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       print_vs vs ^ ":" ^
       sbt syms.dfns t)
     
-    | `SYMDEF_const (t,ct) ->
+    | `SYMDEF_const (t,ct,reqs) ->
       let t = typeofindex syms [] i in
       Hashtbl.add bbdfns i (name,None,sr,`BBDCL_const (vs,t,ct));
       if syms.compiler_options.print_flag then
@@ -196,7 +196,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       sbt syms.dfns t)
 
 
-    | `SYMDEF_fun (ts,ret,ct) ->
+    | `SYMDEF_fun (ts,ret,ct,reqs) ->
       let ts = map bt ts in
       let bret = bt ret in
       let bbdcl = match bret with
@@ -235,7 +235,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
     | `SYMDEF_regdef _ -> ()
     | `SYMDEF_type_alias _ -> ()
 
-    | `SYMDEF_abs (complete,ct)->
+    | `SYMDEF_abs (complete,ct,reqs)->
       (*
       print_endline ("//Binding abstract type " ^ si i ^ " --> " ^ name); 
       *)
