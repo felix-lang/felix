@@ -1393,120 +1393,66 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth index args =
     end
     ;
     *)
-    begin match exes with
-    (*
-    (* a bit hacky: in principle this is a multi-branch return statement,
-      so it could be used wherever a return statement is used, however
-      really regmatch is a function, but we use a normal function wrapper
-      and a special instruction because the processing is lighter
-    *)
-    | [sr,`EXE_reglex (_,_,cls)] 
-    | [sr,`EXE_regmatch (_,cls)] ->
+    let return_counter = ref 0 in
+    iter
+    (fun exe -> match exe with
+    | (sr,`EXE_fun_return e) ->
+      incr return_counter;
       (*
-      print_endline 
-      (
-       "Calc ret type of regmatch, initially " ^
-       sbt syms.dfns !ret_type
-      );
+      print_endline ("  .. Handling return of " ^ string_of_expr e);
       *)
-
-      iter
-      (
-       fun (re,e) ->
-         let t = snd 
-         (
-           bind_expression' syms env 
-           (index::idx_fixlist) expr_fixlist depth 
-           e
-          ) 
-         in
-         (*
-         print_endline 
-         (
-           "regmatch instance " ^ string_of_expr e ^ ", type " ^ 
-           sbt syms.dfns t
-         );
-         *)
-         if do_unify syms !ret_type t
-         then 
-           ret_type := varmap_subst syms.varmap !ret_type
-         else 
-           clierr sr
-           (
-              "[cal_ret_type] Inconsistent return type of " ^ id ^ "<"^string_of_int index^">" ^
-              "\nGot: " ^ sbt syms.dfns !ret_type ^
-              "\nAnd: " ^ sbt syms.dfns t
-           )
-      )
-      cls
-      (*
-      ;
-      print_endline ("type is " ^ sbt syms.dfns !ret_type)
-      *)
-    *)
-
-    | _ ->
-      let return_counter = ref 0 in
-      iter
-      (fun exe -> match exe with
-      | (sr,`EXE_fun_return e) ->
-        incr return_counter;
-        (*
-        print_endline ("  .. Handling return of " ^ string_of_expr e);
-        *)
-        begin try
-          let t = 
-            (* this is bad code .. we lose detection
-            of errors other than recursive dependencies ..
-            which shouldn't be errors anyhow ..
-            *)
-              snd 
-              (
-                bind_expression' syms env 
-                (index::idx_fixlist) expr_fixlist depth 
-                e
-              ) 
-          in
-          if do_unify syms !ret_type t (* the argument order is crucial *)
-          then 
-            ret_type := varmap_subst syms.varmap !ret_type
-          else begin
-            (*
-            print_endline 
+      begin try
+        let t = 
+          (* this is bad code .. we lose detection
+          of errors other than recursive dependencies ..
+          which shouldn't be errors anyhow ..
+          *)
+            snd 
             (
-              "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<"^string_of_int index^">" ^
-              "\nGot: " ^ sbt syms.dfns !ret_type ^
-              "\nAnd: " ^ sbt syms.dfns t
-            )
-            ;
-            *)
-            clierr sr
-            (
-              "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<"^string_of_int index^">" ^
-              "\nGot: " ^ sbt syms.dfns !ret_type ^
-              "\nAnd: " ^ sbt syms.dfns t
-            )
-          end
-        with 
-          | Stack_overflow -> failwith "[cal_ret_type] Stack overflow"
-          | Expr_recursion e -> () 
-          | Free_fixpoint t -> () 
-          | Unresolved_return (sr,s) -> () 
-          | ClientError (sr,s) as e -> raise (ClientError (sr,"Whilst calculating return type:\n"^s))
-          | x -> 
-          print_endline ("  .. Unable to compute type of " ^ string_of_expr e);
-          print_endline ("Reason: " ^ Printexc.to_string x);
-          ()
+              bind_expression' syms env 
+              (index::idx_fixlist) expr_fixlist depth 
+              e
+            ) 
+        in
+        if do_unify syms !ret_type t (* the argument order is crucial *)
+        then 
+          ret_type := varmap_subst syms.varmap !ret_type
+        else begin
+          (*
+          print_endline 
+          (
+            "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<"^string_of_int index^">" ^
+            "\nGot: " ^ sbt syms.dfns !ret_type ^
+            "\nAnd: " ^ sbt syms.dfns t
+          )
+          ;
+          *)
+          clierr sr
+          (
+            "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<"^string_of_int index^">" ^
+            "\nGot: " ^ sbt syms.dfns !ret_type ^
+            "\nAnd: " ^ sbt syms.dfns t
+          )
         end
-      | _ -> ()
-      )
-      exes
-      ;
-      if !return_counter = 0 then (* it's a procedure .. *)
-      begin 
-        let mgu = do_unify syms !ret_type `BTYP_void in
-        ret_type := varmap_subst syms.varmap !ret_type
+      with 
+        | Stack_overflow -> failwith "[cal_ret_type] Stack overflow"
+        | Expr_recursion e -> () 
+        | Free_fixpoint t -> () 
+        | Unresolved_return (sr,s) -> () 
+        | ClientError (sr,s) as e -> raise (ClientError (sr,"Whilst calculating return type:\n"^s))
+        | x -> 
+        print_endline ("  .. Unable to compute type of " ^ string_of_expr e);
+        print_endline ("Reason: " ^ Printexc.to_string x);
+        ()
       end
+    | _ -> ()
+    )
+    exes
+    ;
+    if !return_counter = 0 then (* it's a procedure .. *)
+    begin 
+      let mgu = do_unify syms !ret_type `BTYP_void in
+      ret_type := varmap_subst syms.varmap !ret_type
     end
     ;
     (* not sure if this is needed or not .. 
@@ -1887,7 +1833,7 @@ and lookup_qn_with_sig'
         print_endline ("Struct constructor found, type= " ^ sbt syms.dfns t);
         *)
 (*
-print_endline "lookup_qn_with_sig: struct";
+print_endline (id ^ ": lookup_qn_with_sig: struct/regmatch/lex");
 *)
         (*
         let ts = adjust_ts syms sr index ts in
@@ -1915,7 +1861,7 @@ print_endline "lookup_qn_with_sig: struct";
       | `SYMDEF_parameter t
         ->
 (*
-print_endline "lookup_qn_with_sig: val/var";
+print_endline (id ^ ": lookup_qn_with_sig: val/var");
 *)
         (*
         let ts = adjust_ts syms sr index ts in
@@ -1937,39 +1883,6 @@ print_endline "lookup_qn_with_sig: val/var";
             `BEXPR_name (index, ts),
             t
 
-        | `BTYP_inst (i,[]) ->
-          begin match get_data syms.dfns i with
-          { id=id'}->
-          begin match sign with
-          | `BTYP_inst (j,[]) ->
-            begin match get_data syms.dfns j with 
-            { id=id''} ->
-            begin match id',id'' with
-            | "string","string" 
-            | "ustring","ustring" 
-            | "string","int"
-            | "ustring","int" -> 
-              `BEXPR_name (index, ts),
-               t
-
-            | _ ->
-              clierr srn
-              (
-                "[lookup_qn_with_sig] expected variable " ^ 
-                id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
-                sbt syms.dfns t
-              )
-            end
-            end
-          | _ ->
-            clierr srn
-            (
-              "[lookup_qn_with_sig] expected variable " ^ 
-              id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
-              sbt syms.dfns t
-            )
-          end
-          end
         | _ ->
           clierr srn
           (
@@ -2239,46 +2152,10 @@ and handle_variable syms env index id sr ts t t2 =
           *)
         )
 
-    | `BTYP_inst (i,[]) ->
-      begin match get_data syms.dfns i  with
-      {id=id'} ->
-        begin match t2 with
-        | `BTYP_lvalue (`BTYP_inst (j,[]))
-        | `BTYP_inst (j,[]) ->
-          begin match get_data syms.dfns j with
-          {id=id''} ->
-            begin match id',id'' with
-            | "string","string" 
-            | "ustring","ustring" 
-            | "string","int"
-            | "ustring","int" -> 
-              Some (`BEXPR_name (index, ts),t)
-            | _ ->
-              clierr sr
-              (
-                "[handle_variable(2)] expected variable " ^ 
-                id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
-                sbt syms.dfns t
-              )
-            end
-          end
-        | _ ->
-          clierr sr
-          (
-            "[handle_variable(3)] expected variable " ^ 
-            id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
-            sbt syms.dfns t
-          )
-        end
-      end
-    | _ ->
-      clierr sr
-      (
-        "[handle_variable(4)] expected variable " ^ 
-        id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
-        sbt syms.dfns t
-        
-      )
+    (* anything other than function type, dont check the sig,
+       just return it.. 
+    *)
+    | _ ->  Some (`BEXPR_name (index,ts),t)
     end
 
 and lookup_name_in_table_dirs_with_sig (table, dirs) 
@@ -2340,7 +2217,8 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_var t
     | `SYMDEF_val t 
     | `SYMDEF_parameter t
-      -> handle_variable syms env index id srn ts t t2
+      ->
+      handle_variable syms env index id srn ts t t2
     | _ 
       -> 
         clierr sra 
@@ -2751,6 +2629,9 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
   | `AST_the (sr,q) -> clierr sr "invalid use of 'the' "
 
   | (`AST_lookup (sr,(e,name,ts))) as qn ->
+    (*
+    print_endline ("Handling qn " ^ string_of_qualified_name qn);
+    *)
     let ts = map (bt sr) ts in
     let entry = 
       match 
@@ -2914,37 +2795,43 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
       try unfold syms.dfns ta
       with _ -> print_endline " .. free fixpoint"; raise (Free_fixpoint ta) 
     in
-    let f = lookup sr f' ta in
+    let (bf,tf) as f = lookup sr f' ta in
+    (* this function is very crude, since it binds f dash, a dash again,
+        but they are already bound -- FIXIT!
+
+        Also there is a BUG! if 'apply' is found but is not
+        a function, then we end up trying again .. perhaps
+        indefinitely ..??
+    *)
+    let apl name =
+      be 
+      (
+        `AST_apply 
+        (
+          sr,
+          (
+            `AST_name (sr,name,[]),
+            `AST_tuple (sr,[f';a'])
+          )
+        )
+      )
+    in
     begin 
-      match f,a with
-      | (_,`BTYP_lvalue (`BTYP_inst (i1,[]))),(_,`BTYP_lvalue(`BTYP_inst (i2,[])))
-      | (_,`BTYP_lvalue (`BTYP_inst (i1,[]))),(_,`BTYP_inst (i2,[])) 
-      | (_,`BTYP_inst (i1,[])),(_,`BTYP_lvalue(`BTYP_inst (i2,[])))
-      | (_,`BTYP_inst (i1,[])),(_,`BTYP_inst (i2,[])) ->
-        begin
-          match get_data syms.dfns i1 with {id=id1; symdef=entry1} ->
-          match get_data syms.dfns i2 with {id=id2; symdef=entry2} ->
-          let apl name =
-            be 
-            (
-              `AST_apply 
-              (
-                sr,
-                (
-                  `AST_name (sr,name,[]),
-                  `AST_tuple (sr,[f';a'])
-                )
-              )
-            )
-          in
-            match id1,id2 with
-            | "string","string" -> apl "add"
-            | "ustring","ustring" -> apl "add"
-            | "string","int" -> apl "add"
-            | "ustring","int" -> apl "add"
-            | _ -> cal_apply syms sr f a
-        end
+      match tf with
+      (* CRUDE -- prevents auto apply if first arg is a function .. *)
+      | `BTYP_function _ -> cal_apply syms sr f a
+      | _ -> 
+      
+      (*
+      print_endline ("Type of f is not function, got " ^ sbt syms.dfns tf);
+      *)
+      apl "apply"
+
+
+
+      (*
       | _ -> cal_apply syms sr f a
+      *)
     end
 
   | `AST_arrayof (sr,es) ->

@@ -1,8 +1,13 @@
 @head(1,"Pattern matching utilities")
 @h = tangler("src/flx_pat.mli")
 @select(h)
+open Flx_ast
+
 val validate_patterns:
-  Flx_ast.pattern_t list -> unit
+  pattern_t list -> unit
+
+val is_universal: 
+  pattern_t -> bool
 
 @h = tangler("src/flx_pat.ml")
 @select(h)
@@ -190,6 +195,18 @@ and find_match_type pat = match pat with
 (* This routine is used to check all but the last
    pattern match isn't a match all
 *)
+
+let rec is_universal pat = match pat with
+  | `PAT_any _
+  | `PAT_name (_,_) 
+  | `PAT_float_range (_, Float_minus_inf, Float_inf) 
+    -> true
+
+  | `PAT_as (_,pat,_) -> is_universal pat
+  | `PAT_coercion (_,pat,_) -> is_universal pat
+  | `PAT_tuple (_,ps) -> fold_left (fun a p -> a && is_universal p) true ps
+  
+  | _ -> false
 
 let rec check_terminal pat = match pat with
   | `PAT_any sr -> 

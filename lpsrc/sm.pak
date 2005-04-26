@@ -4059,13 +4059,14 @@ class PtrSet : private PtrMap<KEY, KEY> {
 // now get the installed FlexLexer.h.. this nominally lives in
 // /usr/include or /usr/local/include, depending on how Flex is
 // installed
-#include <FlexLexer.h>
+//#include <FlexLexer.h>
 
 
 // for now I keep the rest but I think I may be able to delete
 // it soon..
-#if 0     // terminates at EOF
-
+//#if 0     // terminates at EOF
+// FELIX uses this text, never the system FlexLexer.h
+#if 1
 
 
 // copy of /usr/include/FlexLexer.h from flex-2.5.4
@@ -5292,6 +5293,16 @@ public:
 
 #ifndef STR_H
 #define STR_H
+
+// this should eventually be put someplace more general...
+#ifndef va_copy
+  #ifdef __va_copy
+    #define va_copy(a,b) __va_copy(a,b)
+  #else
+    #define va_copy(a,b) (a)=(b)
+  #endif
+#endif
+// MOVE THE ABOVE TO PLACE MORE GENERAL 
 
 #include "sm_typ.h"
 #include <iostream.h>    // istream, ostream
@@ -18264,7 +18275,12 @@ sm_string sm_stringf(char const *format, ...)
 sm_string vsm_stringf(char const *format, va_list args)
 {                                  
   // estimate sm_string length
-  int est = vnprintf(format, args);
+  // int est = vnprintf(format, args);
+
+  va_list args2;
+  va_copy(args2, args);
+  int est = vnprintf(format, args2);
+  va_end(args2);
                     
   // allocate space
   sm_string ret(est+1);

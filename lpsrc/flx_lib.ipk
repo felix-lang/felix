@@ -839,7 +839,10 @@ module String
   fun add: string * int -> string = "$1+flx::rtl::i18n::utf8($2)" requires flx_i18n;
   fun mul: string * int -> string = "flx::rtl::strutil::mul($1,$2)" requires flx_strutil;
   fun mul: char * int -> string = "std::string($2,$1)";
-
+  
+  fun apply (x:string, y:string):string => x + y;
+  fun apply (x:string, y:int):string => x + y;
+  
   fun subscript: string * int -> char = 
     "$1[$2<0??$1.size()+$2 : $2]";
   fun copyfrom: string * int -> string = 
@@ -885,6 +888,8 @@ module Ustring
   fun mul: ustring * int -> ustring = "flx::lib::mul($1,$2)";
   fun mul: char * int -> ustring = "ustring($2,$1)";
 
+  fun apply (x:ustring, y:ustring):ustring => x + y;
+ 
   fun subscript: ustring * int -> char = 
     "$1[$2<0??$1.size()+$2 : $2]";
   fun copyfrom: ustring * int -> ustring = 

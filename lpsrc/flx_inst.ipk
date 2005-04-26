@@ -158,21 +158,6 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
 
   | `BEXE_read (sr,i) -> ui i 
 
-  (*
-  | `BEXE_regmatch (sr,e,(_,_,h,_)) -> 
-    ue sr e;
-    Hashtbl.iter
-    (fun _ e -> ue sr e)
-    h
-
-  | `BEXE_reglex (sr,p1,p2,(_,_,h,_)) -> 
-    ue sr p1; 
-    ue sr  p2;
-    Hashtbl.iter
-    (fun _ e -> ue sr e)
-    h
-  *)
-
   | `BEXE_label _
   | `BEXE_halt _
   | `BEXE_goto _
@@ -216,14 +201,14 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
   if syms.compiler_options.print_flag then
   print_endline ("//Instance "^si inst ^ "="^id^"<" ^ si i ^ ">[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]");
   match entry with
-  | `BBDCL_glr (vs,ret, (p,exes)) ->
+  | `BBDCL_glr (props,vs,ret, (p,exes)) ->
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     process_function syms bbdfns null_table ref_insts1 i sr [] ret exes ts;
     process_production syms bbdfns ref_insts1 p ts
  
-  | `BBDCL_regmatch (vs,ps,ret,(_,_,h,_))  ->
+  | `BBDCL_regmatch (props,vs,ps,ret,(_,_,h,_))  ->
     let argtypes = map (fun x -> snd (snd x)) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -233,7 +218,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     h;
     iter (fun (_,(i,_)) -> ui i) ps
 
-   | `BBDCL_reglex (vs,ps,i,ret,(_,_,h,_)) ->
+   | `BBDCL_reglex (props,vs,ps,le,ret,(_,_,h,_)) ->
     let argtypes = map (fun x -> snd (snd x)) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -242,13 +227,9 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     (fun _ e -> ue hvarmap e)
     h;
     iter (fun (_,(i,_)) -> ui i) ps;
+    ui le; (* lexeme end .. *)
     ui i
     
-    (*
-    ;
-    process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret [] ts
-    *)
-
   | `BBDCL_function (props,vs,ps,ret,exes) -> 
     let argtypes = map (fun x -> snd (snd x)) ps in
     assert (length vs = length ts);

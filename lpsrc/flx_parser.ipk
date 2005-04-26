@@ -1329,8 +1329,12 @@ regmatch_expr:
   | REGMATCH expr WITH regmatch_alternatives ENDMATCH
   {
     let sr = rstoken $1 $5 in
+    (*
     let pa = `PAT_name (sr,"_a") in
     let pb = `PAT_name (sr,"_b") in
+    *)
+    let pa = `PAT_as (sr,`PAT_any sr,"_a") in
+    let pb = `PAT_as (sr,`PAT_any sr,"_b") in
     let p = `PAT_tuple (sr,[pa;pb]) in
     let a = `AST_name (sr,"_a",[]) in
     let b = `AST_name (sr,"_b",[]) in
@@ -1463,7 +1467,10 @@ atomic_pattern:
 
   /* other */
   | ctor_pattern { $1 }
+  /*
   | QUEST NAME { `PAT_name (rstoken $1 (fst $2), snd $2) }
+  */
+  | QUEST NAME { let sr = rstoken $1 (fst $2)in `PAT_as (sr,`PAT_any sr, snd $2) }
   | QUEST { `PAT_any (slift $1) }
   | UNDERSCORE { `PAT_any (slift $1) }
   | LPAR pattern RPAR { $2 }

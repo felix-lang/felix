@@ -28,6 +28,16 @@ val uses:
   int ->
   unit
 
+val full_use_closure:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  IntSet.t
+
+val copy_used:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  fully_bound_symbol_table_t
+
 @h = tangler("src/flx_use.ml")
 @select(h)
 open Flx_util
@@ -150,15 +160,15 @@ and uses syms used bbdfns i =
         iter ut (map (fun x -> snd (snd x)) ps);
         ux exes
 
-      | `BBDCL_glr (_,t,(p,e)) ->
+      | `BBDCL_glr (_,_,t,(p,e)) ->
         ut t; ux e;
         uses_production syms used bbdfns p
 
-      | `BBDCL_regmatch (_,ps,t,(_,_,h,_)) ->
+      | `BBDCL_regmatch (_,_,ps,t,(_,_,h,_)) ->
         ut t; Hashtbl.iter (fun _ e -> ue e) h;
         iter (fun (_,(i,_)) -> ui i) ps
 
-      | `BBDCL_reglex (_,ps,i,t,(_,_,h,_)) ->
+      | `BBDCL_reglex (_,_,ps,i,t,(_,_,h,_)) ->
         ut t; Hashtbl.iter (fun _ e -> ue e) h;
         iter (fun (_,(i,_)) -> ui i) ps;
         ui i
@@ -184,7 +194,7 @@ and uses syms used bbdfns i =
         ut unt; ut ct
 
       end
-    | None -> ()
+    | None -> print_endline ("Cannot find " ^ si i)
   end
 
 let find_roots syms bbdfns
@@ -207,4 +217,36 @@ let find_roots syms bbdfns
   ;
   syms.roots := !roots
 
+let full_use_closure syms bbdfns =
+  let u = ref IntSet.empty in
+  let v : IntSet.t  = !(syms.roots) in
+  let v = ref v in
+
+  let add j = 
+    if not (IntSet.mem j !u) then 
+    begin
+       (*
+       print_endline ("Scanning " ^ si j);
+       *)
+       u:= IntSet.add j !u;
+       uses syms v bbdfns j
+    end
+  in
+  while not (IntSet.is_empty !v) do 
+    let j = IntSet.choose !v in
+    v := IntSet.remove j !v;
+    add j
+  done;
+  !u
+       
+let copy_used syms bbdfns =
+  let h = Hashtbl.create 97 in
+  let u = full_use_closure syms bbdfns in
+  IntSet.iter
+  begin fun i ->
+    (* print_endline ("Copying " ^ si i); *)
+    Hashtbl.add h i (Hashtbl.find bbdfns i)
+  end
+  u;
+  h
 

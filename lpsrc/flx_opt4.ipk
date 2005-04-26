@@ -183,57 +183,6 @@ let enstack_calls cache syms (child_map,bbdfns) exes =
   let ea e = enstack_applies cache syms (child_map, bbdfns) e in
   let id x = x in
   map (map_bexe id ea id id id) exes
-  (*
-  let exes' = ref [] in
-  iter
-  (fun x -> match x with
-  | `BEXE_init (sr,i,b) -> 
-    exes' := `BEXE_init (sr,i,ea b) :: !exes'
-
-  | `BEXE_assign (sr,a,b) -> 
-    exes' := `BEXE_assign (sr,ea a,ea b) :: !exes'
-
-  | `BEXE_call_direct (sr,i,ts, b') ->
-    exes' := `BEXE_call_direct (sr,i,ts,ea b') :: !exes'
-
-  | `BEXE_call (sr,a,b) -> exes' := `BEXE_call (sr,ea a,ea b) :: !exes'
-  | `BEXE_jump (sr,a,b) -> exes' := `BEXE_jump (sr,ea a,ea b) :: !exes'
-  | `BEXE_fun_return (sr,a) -> exes' := `BEXE_fun_return (sr,ea a) :: !exes'
-  | `BEXE_ifgoto (sr,e,l) -> exes' := `BEXE_ifgoto (sr,ea e, l) :: !exes'
-  | `BEXE_ifnotgoto (sr,e,l) -> exes' := `BEXE_ifnotgoto (sr,ea e, l) :: !exes'
-  | `BEXE_loop (sr,i,e) -> exes' := `BEXE_loop (sr,i,ea e) :: !exes'
-
-  | `BEXE_nop _ -> () (* elide NOP *)
-  | `BEXE_comment _  as x -> exes' := x :: !exes' (* but not comments *)
-
-  | `BEXE_label (sr,s) -> 
-    exes' := x :: !exes'
-
-  (*
-  | `BEXE_regmatch (sr,e,(a,n,h,tr)) ->
-     let h' = Hashtbl.create 97 in
-     Hashtbl.iter
-     (fun i e -> Hashtbl.add h' i (ea e))
-     h
-     ;
-    exes' := `BEXE_regmatch (sr,ea e,(a,n,h',tr)) :: !exes'
-
-
-  | `BEXE_reglex (sr,p1,p2,(a,n,h,tr)) ->
-     let h' = Hashtbl.create 97 in
-     Hashtbl.iter
-     (fun i e -> Hashtbl.add h' i (ea e))
-     h
-     ;
-    exes' := `BEXE_reglex (sr,ea p1, ea p2,(a,n,h',tr)) :: !exes'
-  *)
-
-  | x -> exes' := x :: !exes'
-  )
-  exes
-  ;
-  rev !exes'
-  *)
 
 let copy_bbdcl cache syms (child_map,bbdfns) bbdfns2 i bbdfn =
   let ea e = enstack_applies cache syms (child_map, bbdfns) e in
@@ -248,17 +197,17 @@ let copy_bbdcl cache syms (child_map,bbdfns) bbdfns2 i bbdfn =
       let exes = enstack_calls cache syms (child_map,bbdfns) exes in
       id,parent,sr,`BBDCL_function (props,vs,p,ret,exes)
 
-    | id,parent,sr,`BBDCL_glr (vs,t,(p,exes)) ->
+    | id,parent,sr,`BBDCL_glr (props,vs,t,(p,exes)) ->
       let exes = enstack_calls cache syms (child_map,bbdfns) exes in
-      id,parent,sr,`BBDCL_glr (vs,t,(p,exes))
+      id,parent,sr,`BBDCL_glr (props,vs,t,(p,exes))
 
-    | id,parent,sr,`BBDCL_regmatch (vs,p,t,(a,i,h,m)) ->
+    | id,parent,sr,`BBDCL_regmatch (_,vs,p,t,(a,i,h,m)) ->
       Hashtbl.iter
       (fun k e -> Hashtbl.replace h k (ea e))
       h;
       bbdfn (* mutated *)
 
-    | id,parent,sr,`BBDCL_reglex (vs,p,j,t,(a,i,h,m)) ->
+    | id,parent,sr,`BBDCL_reglex (_,vs,p,j,t,(a,i,h,m)) ->
       Hashtbl.iter
       (fun k e -> Hashtbl.replace h k (ea e))
       h;

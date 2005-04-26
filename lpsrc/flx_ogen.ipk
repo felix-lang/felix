@@ -10,7 +10,6 @@ val gen_offset_tables:
   sym_state_t ->
   (bid_t, bid_t list) Hashtbl.t *
   fully_bound_symbol_table_t ->
-  IntSet.t ->
   string
 
 val find_thread_vars_with_type:
@@ -290,7 +289,7 @@ let gen_thread_frame_offsets s syms bbdfns =
   );
   gen_offset_data s n name offsets false
 
-let gen_offset_tables syms (child_map,bbdfns) all_closures =
+let gen_offset_tables syms (child_map,bbdfns) =
   let primitive_shapes = Hashtbl.create 97 in
   let s = Buffer.create 20000 in
 
@@ -303,16 +302,16 @@ let gen_offset_tables syms (child_map,bbdfns) all_closures =
     *)
     match entry with
     | `BBDCL_function (props,vs,ps, ret,_) -> 
-      if IntSet.mem index all_closures then
+      if mem `Explicit_closure props then
         gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance
       (*
       else 
         print_endline ("Warning: no closure of " ^ id ^ "<"^si index ^"> is used")
       *)
 
-    | `BBDCL_regmatch (vs,ps,ret,_) 
-    | `BBDCL_reglex (vs,ps,_,ret,_)  ->
-      if IntSet.mem index all_closures then
+    | `BBDCL_regmatch (props,vs,ps,ret,_) 
+    | `BBDCL_reglex (props,vs,ps,_,ret,_)  ->
+      if mem `Explicit_closure props then
         gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance
       (*
       else 
@@ -320,7 +319,7 @@ let gen_offset_tables syms (child_map,bbdfns) all_closures =
       *)
         
     | `BBDCL_procedure (props,vs,ps,_) -> 
-      if IntSet.mem index all_closures then
+      if mem `Explicit_closure props then
         gen_fun_offsets s syms (child_map,bbdfns) index vs ps `BTYP_void ts instance
       (*
       else

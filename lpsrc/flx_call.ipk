@@ -16,6 +16,7 @@ val call_data:
 val print_call_report:
   fully_bound_symbol_table_t -> out_channel -> unit
 
+val is_recursive_call: usage_table_t -> bid_t -> bid_t -> bool
 val is_recursive: usage_table_t -> bid_t -> bool
 
 val cal_exe_usage:
@@ -92,17 +93,17 @@ and cal_exe_usage h k exe =
   let ue sr e = process_expr h k sr e in
   let ui i sr = add h k i sr in
   match exe with
-  | `BEXE_call_prim (sr,i,ts,e2) 
-  | `BEXE_call_direct (sr,i,ts,e2) 
-  | `BEXE_jump_direct (sr,i,ts,e2) 
-  | `BEXE_call_stack (sr,i,ts,e2) 
+  | `BEXE_loop (sr,i,e2)
+  | `BEXE_call_prim (sr,i,_,e2) 
+  | `BEXE_call_direct (sr,i,_,e2) 
+  | `BEXE_jump_direct (sr,i,_,e2) 
+  | `BEXE_call_stack (sr,i,_,e2) 
     -> ui i sr; ue sr e2
   
   | `BEXE_call (sr,e1,e2) 
   | `BEXE_jump (sr,e1,e2) 
     -> ue sr e1; ue sr e2
     
-  | `BEXE_loop (sr,_,e)
   | `BEXE_ifgoto (sr,e,_)
   | `BEXE_ifnotgoto (sr,e,_)
   | `BEXE_fun_return (sr,e) 
@@ -112,21 +113,6 @@ and cal_exe_usage h k exe =
   | `BEXE_assign (sr,e1,e2) -> ue sr e1; ue sr e2
 
   | `BEXE_read (sr,i) -> ui i sr
-
-  (*
-  | `BEXE_regmatch (sr,e,(_,_,h,_)) -> 
-    ue sr e;
-    Hashtbl.iter
-    (fun _ e -> ue sr e)
-    h
-
-  | `BEXE_reglex (sr,p1,p2,(_,_,h,_)) -> 
-    ue sr p1; 
-    ue sr  p2;
-    Hashtbl.iter
-    (fun _ e -> ue sr e)
-    h
-  *)
 
   | `BEXE_label _
   | `BEXE_halt _
@@ -157,12 +143,12 @@ let call_data (bbdfns:fully_bound_symbol_table_t):usage_t =
   | `BBDCL_function (_,_,_,_,exes) ->
     iter (cal_exe_usage uses k) exes
 
-  | `BBDCL_glr (_,_,(p,exes)) ->
+  | `BBDCL_glr (_,_,_,(p,exes)) ->
     iter (cal_exe_usage uses k) exes;
     uses_production uses k sr p
   
-  | `BBDCL_regmatch (_,_,_,(_,_,h,_))
-  | `BBDCL_reglex (_,_,_,_,(_,_,h,_)) 
+  | `BBDCL_regmatch (_,_,_,_,(_,_,h,_))
+  | `BBDCL_reglex (_,_,_,_,_,(_,_,h,_)) 
     -> Hashtbl.iter (fun _ e -> process_expr uses k sr e) h
 
   | _ -> () 
@@ -196,7 +182,9 @@ let cls h i =
     ;
     !c
 
-let is_recursive h i = IntSet.mem i (cls h i)
+let is_recursive_call h caller callee = IntSet.mem caller (cls h callee)
+let is_recursive h i = is_recursive_call h i i
+
 let use_closure h i = cls h i
 
 (* this calculates the use closure of i, eliminating recursive
@@ -215,7 +203,35 @@ let use_closure h i = cls h i
   refer to different copies of variables.
 
   This routine is used to find which variables
-  in f and expression in f can use via a call to a child.
+  in f an expression in f can use via a call to a child.
+
+  OUCH OUCH OUCH. I THINK THIS IDEA MUST BE BUGGED!
+
+  Here's the problem. Given
+
+  fun A(){
+    fun B { fun C() {} return C; }
+    fun D(f) { f 1; }
+    D (B());
+  }
+
+  function B is returning a closure of C,
+  which is being passed into D and called.
+  Note D cannot see the function C.
+
+  The inliner should handle this correctly:
+  B is inlined to return a *clone* C' of C which
+  is nested in A, then D is inlined, resulting
+  in the call C' 1 (which can now be inlined too).
+
+  The problem is that the assumption "calls outside
+  the child tree of f are not tracked since they can't
+  call any children of f" is wrong. A call outside
+  the tree can still execute something inside 
+  the tree via a closure .. however how does the
+  closure get out .. it has to be 'made' by someon
+  who can see it ..
+  
 *)
 
 let child_use_closure k h i =

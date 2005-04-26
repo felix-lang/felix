@@ -36,9 +36,9 @@ let cal_display bbdfns parent : (bid_t *int) list =
     with
     | _,parent',sr,`BBDCL_procedure (_,vs,_,_)
     | _,parent',sr,`BBDCL_function (_,vs,_,_,_)
-    | _,parent',sr,`BBDCL_regmatch (vs,_,_,_)
-    | _,parent',sr,`BBDCL_reglex (vs,_,_,_,_)
-    | _,parent',sr,`BBDCL_glr (vs,_,_)
+    | _,parent',sr,`BBDCL_regmatch (_,vs,_,_,_)
+    | _,parent',sr,`BBDCL_reglex (_,vs,_,_,_,_)
+    | _,parent',sr,`BBDCL_glr (_,vs,_,_)
       -> aux parent' ((parent,length vs)::display)
     | _ -> assert false
   in aux parent []

@@ -256,7 +256,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       let ts = map (fun (s,(i,t)) -> t) bps in
       let ret_type =  ref (snd (be (snd (hd cls)))) in
       let bregex = bind_regex syms env sr be ret_type cls in
-      let bbdcl = `BBDCL_regmatch (vs,bps,!ret_type,bregex) in
+      let bbdcl = `BBDCL_regmatch ([],vs,bps,!ret_type,bregex) in
       Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl)
       ;
       begin
@@ -279,7 +279,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       let ts = map (fun (s,(i,t)) -> t) bps in
       let ret_type = ref (snd (be (snd (hd cls)))) in
       let bregex = bind_regex syms env sr be ret_type cls in
-      let bbdcl = `BBDCL_reglex (vs,bps,le,!ret_type,bregex) in
+      let bbdcl = `BBDCL_reglex ([],vs,bps,le,!ret_type,bregex) in
       Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl)
       ;
       begin
@@ -326,7 +326,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=vs;privmap=name_map;
       let bp p = map (fun (n,q) -> n,bn q) p in
       let p = bp p in
       let brt',bbexes = bexes env exes brt i vs in
-      let bbdcl = `BBDCL_glr (vs,brt',(p, bbexes)) in
+      let bbdcl = `BBDCL_glr ([],vs,brt',(p, bbexes)) in
       Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
 
       if syms.compiler_options.print_flag then

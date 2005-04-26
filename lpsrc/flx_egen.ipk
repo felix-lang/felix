@@ -333,18 +333,20 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
       | `BBDCL_cstruct _ 
       | `BBDCL_struct _ 
+      | `BBDCL_reglex _
+      | `BBDCL_regmatch _
       | `BBDCL_function _
       | `BBDCL_procedure _ 
       | `BBDCL_fun _
       | `BBDCL_proc _ ->
-         failwith 
+         syserr sr
          (
            "[gen_expr: name] Open function '" ^ 
            id ^ "'<"^si index^
            "> in expression (closure required)"
          )
       | _ -> 
-        failwith 
+        syserr sr
         (
           "[gen_expr: name] Cannot use this kind of name '"^
           id^"' in expression"
@@ -475,6 +477,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       if length cts > 1 then
         (* argument must be an lvalue *)
        ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
+      else if length cts = 0 then
+        ce_atom (name ^ "()")
       else
         ce_atom (name ^ "(" ^ ge a ^ ")")
 
@@ -525,6 +529,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       if length cts > 1 then 
         (* argument must be an lvalue *)
         ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
+      else if length cts = 0 then
+        ce_atom (name ^ "()")
       else
         ce_atom (name ^ "(" ^ ge a ^ ")")
 

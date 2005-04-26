@@ -265,9 +265,11 @@ let rec build_tables syms name level parent grandparent root asms =
           let p1 = !(syms.counter) in incr syms.counter;
           let p2 = !(syms.counter) in incr syms.counter;
           let v3 = !(syms.counter) in incr syms.counter;
+
           add_unique privtab "lexeme_start" p1;
           add_unique privtab "buffer_end" p2;
           add_unique privtab "lexeme_end" v3;
+
           Hashtbl.add dfns p1 {id="lexeme_start";sr=sr;
             parent=Some n;vs=vs;
             pubmap=Hashtbl.create 3;privmap=Hashtbl.create 3;dirs=[];

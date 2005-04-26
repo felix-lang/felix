@@ -203,7 +203,7 @@ let check_can_inline (child_map, bbdfns) i =
   let children = get_children child_map i in
   iter
     begin fun i ->
-      let id,sr,parent,entry = Hashtbl.find bbdfns i in
+      let id,sr,parent,entry = try Hashtbl.find bbdfns i with Not_found-> failwith "WOOPS, Not found in check_can_inline" in
       match entry with 
       | `BBDCL_var _
       | `BBDCL_val _
@@ -249,7 +249,7 @@ let rec inline_applies syms (child_map, bbdfns) exclude x =
   | `BEXPR_apply ((`BEXPR_closure (i,ts),_),b'),t -> 
     assert false
     (*
-    begin match Hashtbl.find bbdfns i with
+    begin match (try Hashtbl.find bbdfns i with Not_found -> failwith "inline applies Not found err") with
     | _,_,_,`BBDCL_fun _ ->
       `BEXPR_apply_prim (i,ts, b'),t
     | _,_,_,`BBDCL_function _ ->
@@ -263,7 +263,7 @@ let rec inline_applies syms (child_map, bbdfns) exclude x =
   | `BEXPR_apply_direct (i,ts,b'),t 
     when not (mem i exclude) ->
     begin 
-      match Hashtbl.find bbdfns i 
+      match (try Hashtbl.find bbdfns i with Not_found -> failwith "Inline applies(2) not found err")
       with id,parent,sr2,bbdcl -> 
       match bbdcl with
       | `BBDCL_function (props,vs,ps,ret,exes) ->
@@ -328,7 +328,11 @@ let rec useless_call_elim syms used (child_map,bbdfns) vs' exes index =
   | `BEXE_call_stack (sr,i,ts, b') -> assert false
 
   | `BEXE_call_direct (sr,i,ts, b') ->
-      begin match Hashtbl.find bbdfns i with
+      begin match (try Hashtbl.find bbdfns i with Not_found -> 
+      iter (fun x-> print_endline (string_of_bexe syms.dfns 0 x)) exes;
+      failwith ("Elide useless(2) not found err, call direct to " ^ si i ^ " from " ^ si index)
+      ) 
+      with
       | id,parent,sr2,`BBDCL_procedure (props,vs,ps,inner_exes) ->
         if not (isuseless bbdfns inner_exes) 
         then begin 
@@ -449,25 +453,6 @@ let rec useless_call_elim syms used (child_map,bbdfns) vs' exes index =
     ;
     exes' := x :: !exes'
 
-  (*
-  | `BEXE_regmatch (sr,e,(a,n,h,tr)) ->
-     let h' = Hashtbl.create 97 in
-     Hashtbl.iter
-     (fun i e -> Hashtbl.add h' i (ia e))
-     h
-     ;
-    exes' := `BEXE_regmatch (sr,ia e,(a,n,h',tr)) :: !exes'
-
-
-  | `BEXE_reglex (sr,p1,p2,(a,n,h,tr)) ->
-     let h' = Hashtbl.create 97 in
-     Hashtbl.iter
-     (fun i e -> Hashtbl.add h' i (ia e))
-     h
-     ;
-    exes' := `BEXE_reglex (sr,ia p1, ia p2,(a,n,h',tr)) :: !exes'
-  *)
-
   | `BEXE_goto _
   | `BEXE_proc_return _
   | `BEXE_code _
@@ -484,7 +469,12 @@ let rec useless_call_elim syms used (child_map,bbdfns) vs' exes index =
 
 let copy_bbdcl syms used (child_map,bbdfns) bbdfns2 i =
   let data =
-    match Hashtbl.find bbdfns i with
+    match  
+    (
+      try Hashtbl.find bbdfns i
+      with  Not_found -> failwith "WOOPS copy_bbdcl in flx_uselss not found"
+    ) 
+    with
     | id,parent,sr,`BBDCL_procedure (props,vs,p,exes) ->
       let exes = useless_call_elim syms used (child_map,bbdfns) vs exes i in
       id,parent,sr,`BBDCL_procedure (props,vs,p,exes)
@@ -512,3 +502,20 @@ let elide_unused syms
   ;
   bbdfns2
 
+
+
+(* THE TRIVIAL INLINER
+
+  The idea was if you call f, and f just calls g,
+  you might as well just call g -- with appropriate
+  argument substitutions.
+
+  The problem is when g is a child of f, you cannot
+  call g. (g may look at some of f child variables,
+  but these are being substituted out)
+  
+  For this reason, we only do the replacement
+  if f has no children other than data variables --
+  the full inliner handles this by cloning.
+
+*)

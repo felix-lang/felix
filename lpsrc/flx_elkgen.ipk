@@ -225,7 +225,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
   let prod_of_glr i =
     try
     match Hashtbl.find bbdfns i with
-    | _,_,_,`BBDCL_glr (_,_,(p,_)) -> p
+    | _,_,_,`BBDCL_glr (_,_,_,(p,_)) -> p
     | id,_,_,entry -> failwith
       ("Expected "^si i^"->BBDCL_glr, got " ^ string_of_bbdcl syms.dfns entry i)
     
@@ -257,7 +257,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
     let j = IntSet.choose x in 
     let id,parent,sr'',entry = Hashtbl.find bbdfns j in
     begin match entry with
-    | `BBDCL_glr (_,t,(p,xs)) ->
+    | `BBDCL_glr (_,_,t,(p,xs)) ->
       let tt = tn t in
       pe ("nonterm("^tt^"*) "^cid_of_flxid id^" {");
       pe ("  fun dup(x) { return new " ^ tt ^ "(*x); }");
@@ -265,7 +265,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
       IntSet.iter (fun i ->
         let id,parent,sr'',entry = Hashtbl.find bbdfns i in
         match entry with
-        | `BBDCL_glr (_,t,(p,xs)) -> print_production (i,p,xs)
+        | `BBDCL_glr (_,_,t,(p,xs)) -> print_production (i,p,xs)
         | _ -> assert false
       )
       x;
@@ -319,7 +319,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
         let j = hd ii in 
         let id,parent,sr'',entry = Hashtbl.find bbdfns j in
         begin match entry with
-        | `BBDCL_glr (_,t,(p,xs)) ->
+        | `BBDCL_glr (_,_,t,(p,xs)) ->
           let result_type = tn t in
           pe ("//Elkhound parser Elk" ^ parser_name ^ " -> " ^ result_type);
           pe ("//Token type " ^ token_id ^ " -> " ^ token_type_name);
@@ -400,7 +400,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
         iter (fun i ->
           let id,parent,sr'',entry = Hashtbl.find bbdfns i in
           match entry with
-          | `BBDCL_glr (vs,t,(p,xs)) -> print_production (i,p,xs)
+          | `BBDCL_glr (_,vs,t,(p,xs)) -> print_production (i,p,xs)
           | _ -> assert false
         )
         (tl ii)

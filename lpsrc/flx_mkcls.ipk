@@ -11,8 +11,7 @@ open Flx_mtypes2
 
 val make_closures:
   sym_state_t ->
-  fully_bound_symbol_table_t ->
-  IntSet.t
+  fully_bound_symbol_table_t  -> unit
 
 @h = tangler("src/flx_mkcls.ml")
 @select(h)
@@ -81,7 +80,10 @@ let gen_closure syms bbdfns i =
 let mkcls syms bbdfns all_closures i ts =
   let j =
     try Hashtbl.find syms.wrappers i 
-    with Not_found -> gen_closure syms bbdfns i
+    with Not_found -> 
+      let j = gen_closure syms bbdfns i in
+      Hashtbl.add syms.wrappers i j;
+      j
   in 
     all_closures := IntSet.add j !all_closures;
     `BEXPR_closure (j,ts)
@@ -106,6 +108,9 @@ let rec adj_cls syms bbdfns all_closures e =
   | `BEXPR_closure (i,ts),t -> 
     check_prim syms bbdfns all_closures i ts,t
 
+  (* Direct calls to non-stacked functions require heap
+     but not a clone .. 
+  *)
   | `BEXPR_apply_direct (i,ts,a),t as x -> 
     all_closures := IntSet.add i !all_closures;
     x
@@ -143,24 +148,6 @@ let process_exe syms bbdfns all_closures (exe : bexe_t) : bexe_t =
 
   | `BEXE_read (sr,i) -> exe
 
-  (*
-  | `BEXE_regmatch (sr,e,(a,b,h,d)) -> 
-    let h' = Hashtbl.create 97 in
-    Hashtbl.iter
-    (fun k e -> Hashtbl.add h' k (ue e))
-    h
-    ;
-    `BEXE_regmatch (sr, ue e, (a,b,h',d))
-
-  | `BEXE_reglex (sr,p1,p2,(a,b,h,d)) -> 
-    let h' = Hashtbl.create 97 in
-    Hashtbl.iter
-    (fun k e -> Hashtbl.add h' k (ue e))
-    h
-    ;
-    `BEXE_reglex (sr, ue p1, ue p2, (a,b,h',d))
-  *)
-
   | `BEXE_label _
   | `BEXE_halt _
   | `BEXE_goto _
@@ -190,16 +177,41 @@ let process_entry syms bbdfns all_closures i =
     let entry = `BBDCL_procedure (props,vs,ps,exes) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry)
 
-  | `BBDCL_glr (vs,t,(p,exes)) ->
+  | `BBDCL_glr (props,vs,t,(p,exes)) ->
     let exes = process_exes syms bbdfns all_closures exes in
-    let entry = `BBDCL_glr (vs,t,(p,exes)) in
+    let entry = `BBDCL_glr (props,vs,t,(p,exes)) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry)
 
-  | `BBDCL_regmatch (vs,ps,t,(a,j,h,m)) ->
+  | `BBDCL_regmatch (props,vs,ps,t,(a,j,h,m)) ->
     Hashtbl.iter (fun i e -> Hashtbl.replace h i (ue e)) h
 
-  | `BBDCL_reglex (vs,ps,i,t,(a,j,h,m)) ->
+  | `BBDCL_reglex (props,vs,ps,i,t,(a,j,h,m)) ->
     Hashtbl.iter (fun i e -> Hashtbl.replace h i (ue e)) h
+
+  | _ -> ()
+
+let set_closure bbdfns i =
+  let id,parent,sr,entry = Hashtbl.find bbdfns i in
+   match entry with
+  | `BBDCL_function (props,vs,ps,ret,exes) ->
+    let entry = `BBDCL_function (`Explicit_closure :: props,vs,ps,ret,exes) in
+    Hashtbl.replace bbdfns i (id,parent,sr,entry);
+
+  | `BBDCL_procedure (props,vs,ps,exes) ->
+    let entry = `BBDCL_procedure (`Explicit_closure :: props,vs,ps,exes) in
+    Hashtbl.replace bbdfns i (id,parent,sr,entry)
+
+  | `BBDCL_regmatch (props,vs,ps,t,x) ->
+    let entry = `BBDCL_regmatch (`Explicit_closure :: props, vs, ps, t, x) in
+    Hashtbl.replace bbdfns i (id,parent,sr,entry)
+
+  | `BBDCL_reglex (props,vs,ps,le,t,x) ->
+    let entry = `BBDCL_reglex (`Explicit_closure :: props, vs, ps, le, t, x) in
+    Hashtbl.replace bbdfns i (id,parent,sr,entry)
+
+  | `BBDCL_glr (props, vs, t, x) -> 
+    let entry = `BBDCL_glr (`Explicit_closure :: props, vs, t, x) in
+    Hashtbl.replace bbdfns i (id,parent,sr,entry)
 
   | _ -> ()
 
@@ -209,6 +221,6 @@ let make_closures syms bbdfns =
   let uses i = Flx_use.uses syms used bbdfns i in
   IntSet.iter uses !(syms.roots);
   IntSet.iter (process_entry syms bbdfns all_closures) !used;
-  !all_closures
-
+  IntSet.iter (set_closure bbdfns) (IntSet.union !all_closures !(syms.roots))
+ 
 

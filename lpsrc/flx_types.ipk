@@ -472,8 +472,10 @@ and property_t = [
   | `Recursive 
   | `Inline 
   | `NoInline 
+  | `Inlining_started
   | `Inlining_complete
   | `Generated of string
+  | `Explicit_closure    (* an explicit closure is formed *)
 ]
 
 and type_qual_t = [
@@ -608,10 +610,6 @@ and exe_t =
   | `EXE_init of id_t * expr_t 
   | `EXE_iinit of (id_t * int) * expr_t 
   | `EXE_assign of expr_t * expr_t 
-  (*
-  | `EXE_regmatch of (expr_t * (regexp_t * expr_t) list)
-  | `EXE_reglex of (expr_t * expr_t * (regexp_t * expr_t) list)
-  *)
   ]
 
 type sexe_t = range_srcref * exe_t
@@ -793,10 +791,6 @@ and bexe_t =
   | `BEXE_init of range_srcref * bid_t * tbexpr_t 
   | `BEXE_begin
   | `BEXE_end
-  (*
-  | `BEXE_regmatch of range_srcref * tbexpr_t * regular_args_t
-  | `BEXE_reglex of range_srcref * tbexpr_t * tbexpr_t * regular_args_t
-  *)
   ]
 
 and bexpr_t =
@@ -837,9 +831,9 @@ and bbdcl_t =
   | `BBDCL_val of        bvs_t * btypecode_t
   | `BBDCL_var of        bvs_t * btypecode_t
   | `BBDCL_tmp of        bvs_t * btypecode_t
-  | `BBDCL_glr of        bvs_t * btypecode_t * (bproduction_t * bexe_t list)
-  | `BBDCL_regmatch of   bvs_t * bparameter_t list * btypecode_t * regular_args_t
-  | `BBDCL_reglex of     bvs_t * bparameter_t list * int * btypecode_t * regular_args_t
+  | `BBDCL_glr of        property_t list * bvs_t * btypecode_t * (bproduction_t * bexe_t list)
+  | `BBDCL_regmatch of   property_t list * bvs_t * bparameter_t list * btypecode_t * regular_args_t
+  | `BBDCL_reglex of     property_t list * bvs_t * bparameter_t list * int * btypecode_t * regular_args_t
 
   (* binding structures [prolog] *)
   | `BBDCL_abs of        bvs_t * type_qual_t list * c_t * breqs_t
@@ -1110,7 +1104,7 @@ let iter_tbexpr fi fe ft e = match e with
 
   | `BEXPR_apply (e1,e2),t -> fe e1; fe e2; ft t
 
-  | `BEXPR_apply_prim (i,ts,e2),t -> fi i; iter ft ts, fe e2; ft t
+  | `BEXPR_apply_prim (i,ts,e2),t -> fi i; iter ft ts; fe e2; ft t
   | `BEXPR_apply_direct (i,ts,e2),t -> fi i; iter ft ts; fe e2; ft t
   | `BEXPR_apply_stack (i,ts,e2),t -> fi i; iter ft ts; fe e2; ft t
   | `BEXPR_tuple  es,t -> iter fe es; ft t
@@ -1118,7 +1112,7 @@ let iter_tbexpr fi fe ft e = match e with
   | `BEXPR_get_n (i,e),t -> fe e; ft t
 
   | `BEXPR_closure (i,ts),t -> fi i; iter ft ts; ft t
-  | `BEXPR_name (i,ts),t -> fi i, iter ft ts; ft t
+  | `BEXPR_name (i,ts),t -> fi i; iter ft ts; ft t
   | `BEXPR_case (i,t'),t -> ft t'; ft t
   | `BEXPR_match_case (i,e),t -> fe e; ft t
   | `BEXPR_case_arg (i,e),t -> fe e; ft t
@@ -1187,22 +1181,6 @@ let iter_bexe fi fe ft fl fldef exe =
   | `BEXE_read (sr,i)  
     -> fi i
     
-  (*
-  | `BEXE_regmatch (sr,e,(a,sc,h,tr)) 
-    -> 
-    fe e; 
-    Hashtbl.iter
-    (fun k v -> fe v)
-    h
-    
-  | `BEXE_reglex (sr,p1,p2,(a,sc,h,tr)) 
-    ->
-    fe p1; fe p2;
-    Hashtbl.iter
-    (fun k v -> fe v)
-    h
-    
-  *)
   | `BEXE_halt _
   | `BEXE_code _
   | `BEXE_nonreturn_code _
@@ -1261,26 +1239,6 @@ let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
   | `BEXE_read (sr,i) ->
     `BEXE_read (sr,fi i)  
     
-  (*
-  | `BEXE_regmatch (sr,e,(a,sc,h,tr)) 
-    -> 
-    let h' = Hashtbl.create 97 in
-    Hashtbl.iter
-    (fun k v -> Hashtbl.add h' k (fe v))
-    h
-    ;
-    `BEXE_regmatch (sr,fe e,(a,sc,h',tr)) 
-    
-  | `BEXE_reglex (sr,p1,p2,(a,sc,h,tr)) 
-    ->
-    let h' = Hashtbl.create 97 in
-    Hashtbl.iter
-    (fun k v -> Hashtbl.add h' k (fe v))
-    h
-    ;
-    `BEXE_reglex (sr,fe p1,fe p2,(a,sc,h',tr)) 
-  *)
-  
   | `BEXE_halt _
   | `BEXE_code _
   | `BEXE_nonreturn_code _
@@ -1653,6 +1611,11 @@ val string_of_bigint: bigint -> string
 
 val print_env: env_t -> unit
 val print_env_short: env_t -> unit
+
+val print_functions: 
+  symbol_table_t -> 
+  fully_bound_symbol_table_t ->
+  unit
 
 @h = tangler('src/flx_print.ml')
 @select(h)
@@ -2030,8 +1993,9 @@ and qualified_name_of_index' dfns index =
     id
 
 and qualified_name_of_index dfns index = 
-  try qualified_name_of_index' dfns index
+  try qualified_name_of_index' dfns index ^ "<"^si index ^">"
   with Not_found -> "index_"^ si index
+  
 
 (* fixppoint labeller .. very sloppy, ignores precedence .. *)
 and get_label i =
@@ -2238,7 +2202,12 @@ and string_of_pattern p =
     "(" ^ cat ", " b ^ ")"
   | `PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s 
   | `PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_pattern p
-  | `PAT_as (_,p,n) -> "(" ^ string_of_pattern p ^ " as " ^ n ^ ")"
+  | `PAT_as (_,p,n) -> 
+    begin match p with
+    | `PAT_any _ -> n
+    | _ ->
+      "(" ^ string_of_pattern p ^ " as " ^ n ^ ")"
+    end
   | `PAT_when (_,p,e) -> "(" ^ string_of_pattern p ^ " when " ^ se e ^ ")"
 
 and string_of_letpat p = 
@@ -2336,7 +2305,9 @@ and string_of_property = function
 | `Inline -> "inline"
 | `Generated s -> "generated " ^ s
 | `NoInline -> "noinline"
+| `Inlining_started -> "inlining_started"
 | `Inlining_complete -> "inlining_complete"
+| `Explicit_closure -> "explicit_closure_formed"
 
 and string_of_properties ps =
   match ps with 
@@ -2876,35 +2847,6 @@ and string_of_exe level s =
   and se e = string_of_expr e 
   in
   match s with
-  (*
-  | `EXE_regmatch (e,cls) ->
-    spc ^
-    "regmatch " ^ se e ^ " with " ^
-    catmap "\n"
-    (fun (p,e')->
-      " | " ^
-      string_of_re p ^
-      " => " ^
-      string_of_expr e'
-    )
-    cls 
-    ^
-    " endmatch;"
-
-  | `EXE_reglex (p1,p2,cls) ->
-    spc ^
-    "reglex " ^ se p1 ^ " to " ^ se p2 ^ " with " ^
-    catmap "\n"
-    (fun (p,e')->
-      " | " ^
-      string_of_re p ^
-      " => " ^
-      string_of_expr e'
-    )
-    cls 
-    ^
-    " endmatch;"
-  *)
 
   | `EXE_goto s -> spc ^ "goto " ^ s ^ ";"
 
@@ -3038,18 +2980,6 @@ and string_of_bexe dfns level s =
   let se e = string_of_bound_expression dfns e in
   let sid n = qualified_name_of_index dfns n in
   match s with
-  (*
-  | `BEXE_regmatch (_,e,(alphabet, nstates, termcodes,matrix)) -> 
-    spc ^ "regmatch " ^ se e ^ " with " ^
-    "<TRANSITION MATRIX of "^si nstates^" states> " ^
-    "endmatch;"
-
-  | `BEXE_reglex (_,p1,p2,(alphabet, nstates, termcodes,matrix)) -> 
-    spc ^ "reglex " ^ se p1 ^ " to " ^ se p2 ^ " with " ^
-    "<TRANSITION MATRIX of "^si nstates^" states> " ^
-    "endmatch;"
-
-  *)
   | `BEXE_goto (_,s) -> spc ^ "goto " ^ s ^ ";"
 
   | `BEXE_halt (_,s) -> spc ^ "halt " ^ s ^ ";"
@@ -3424,7 +3354,7 @@ and string_of_bbdcl dfns bbdcl index =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     "}"
 
-  | `BBDCL_glr (vs,t,(p,bexes)) ->
+  | `BBDCL_glr (props,vs,t,(p,bexes)) ->
     "  " ^ "nonterm " ^ name ^ print_bvs vs ^ " : " ^sobt t ^
     "   | " ^
     string_of_bproduction dfns p ^
@@ -3432,8 +3362,8 @@ and string_of_bbdcl dfns bbdcl index =
     cat "\n" (map (string_of_bexe dfns 1) bexes) ^
     ";"
   
-  | `BBDCL_regmatch (vs,ps,t,regargs) -> "regmatch.."
-  | `BBDCL_reglex (vs,ps,i,t,regargs) -> "reglex.."
+  | `BBDCL_regmatch (props,vs,ps,t,regargs) -> "regmatch.."
+  | `BBDCL_reglex (props,vs,ps,i,t,regargs) -> "reglex.."
 
   | `BBDCL_nonconst_ctor (vs,uidx,ut,ctor_idx, ctor_argt) ->
     "  uctor<" ^ name ^ ">"^ print_bvs vs ^
@@ -3501,6 +3431,20 @@ let print_env_short e =
     print_endline (id^"<"^si index^">")
   in 
   List.iter print_level e
+
+let print_functions dfns bbdfns =
+  Hashtbl.iter
+  (fun i (id,_,_,entry) -> match entry with
+  | `BBDCL_function (_,_,_,_,exes) 
+  | `BBDCL_procedure (_,_,_,exes) ->
+    print_endline "";
+    print_endline ("BODY OF " ^ id ^ "<" ^ si i ^ ">");
+    iter 
+    (fun exe -> print_endline (string_of_bexe dfns 1 exe)) 
+    exes
+  | _ -> ()
+  )
+  bbdfns
 
 @h = tangler('src/flx_mtypes1.ml')
 @select(h)
