@@ -6,6 +6,7 @@ Name binding pass 2.
 open Flx_ast
 open Flx_types
 open Flx_mtypes1
+open Flx_mtypes2
 
 type usage_table_t =  (bid_t, (bid_t * range_srcref) list) Hashtbl.t
 type usage_t =  usage_table_t * usage_table_t
@@ -28,6 +29,14 @@ val use_closure:
 val child_use_closure:
   IntSet.t -> usage_table_t -> int -> IntSet.t
 
+val expr_uses:
+ sym_state_t ->
+ IntSet.t ->
+ usage_table_t ->
+ IntSet.t ->
+ tbexpr_t ->
+ IntSet.t
+
 @h = tangler("src/flx_call.ml")
 @select(h)
 open Flx_ast
@@ -36,6 +45,7 @@ open Flx_srcref
 open Flx_mtypes1
 open List
 open Flx_exceptions
+open Flx_maps
 
 type usage_table_t =  (bid_t, (bid_t * range_srcref) list) Hashtbl.t
 type usage_t =  usage_table_t * usage_table_t
@@ -314,4 +324,42 @@ let print_call_report bbdfns f =
   let usage = call_data bbdfns in
   print_call_report' bbdfns usage f
 
+let expr_uses syms descend usage restrict e = 
+  let u = ref IntSet.empty in
+  let add u i = u := IntSet.add i !u in
+  let rec fe e = iter_tbexpr (add u) fe ignore e in
+  fe e;
   
+
+  (*
+  print_string ("Direct usage of expr " ^ sbe syms.dfns e ^ ": ");
+  IntSet.iter (fun i -> print_string (si i^" ")) !u;
+  print_endline "";
+  
+
+  print_string ("Restrict =  ");
+  IntSet.iter (fun i -> print_string (si i^" ")) restrict;
+  print_endline "";
+  *)
+ 
+  let u = IntSet.fold
+    (fun i cls -> IntSet.union cls (
+     let cl = Flx_call.child_use_closure descend usage i in
+     (*
+     print_string ("Closure of " ^ si i ^ " is: ");
+     IntSet.iter (fun i -> print_string (si i ^ " ")) cl;
+     print_endline "";
+     *)
+     cl
+    ))
+    !u
+    !u
+  in let u = IntSet.inter restrict u in
+  (*
+  print_string ("Restricted usage of expr " ^ sbe syms.dfns e ^ ": ");
+  IntSet.iter (fun i -> print_string (si i^" ")) u;
+  print_endline "";
+  *)
+  u
+
+ 

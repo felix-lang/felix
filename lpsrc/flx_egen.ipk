@@ -627,9 +627,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       in
         (* cast a tuple which is an array type to an array *)
         let atyp = tn (lower t) in
-        ce_cast 
-          (atyp ^ "&")
-          (ce_infix "," (ce_atom "0") tuple)
+        ce_call 
+          (ce_atom ("reinterpret<" ^ atyp ^">"))
+          [tuple]
 
     | `BTYP_tuple _ ->
       let ctyp = tn (lower t) in

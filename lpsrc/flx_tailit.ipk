@@ -1,0 +1,370 @@
+@h = tangler("src/flx_tailit.mli")
+@select(h)
+open Flx_ast
+open Flx_types
+open Flx_mtypes1
+open Flx_mtypes2
+open Flx_call
+open Flx_srcref
+open Flx_child
+
+val tailit:
+  sym_state_t ->
+  usage_table_t * child_map_t * fully_bound_symbol_table_t ->
+  bid_t ->
+  range_srcref ->
+  (string * (int * btypecode_t)) list ->
+  bvs_t ->
+  bexe_t list ->
+  bexe_t list
+
+@h = tangler("src/flx_tailit.ml")
+@select(h)
+open Flx_util
+open Flx_ast
+open Flx_types
+open Flx_print
+open Flx_mtypes1
+open Flx_mtypes2
+open Flx_typing
+open Flx_mbind
+open Flx_srcref
+open List
+open Flx_unify
+open Flx_treg
+open Flx_generic
+open Flx_maps
+open Flx_exceptions
+open Flx_use
+open Flx_child
+open Flx_call
+
+let tailit syms (uses,child_map,bbdfns) this sr ps vs exes : bexe_t list = 
+  let ts' = map (fun (_,i) -> `BTYP_var i) vs in
+  let pset = fold_left (fun s (_,(i,_))-> IntSet.add i s) IntSet.empty ps in
+  let parameters = ref [] in
+  let descend = descendants child_map this in
+  let jump_done = ref false in
+  let lc = !(syms.counter) in incr (syms.counter);
+  let start_label = "start_" ^ si lc in
+
+  (* note reverse order *)
+  (* Weirdly, this works for BOTH tail calls
+    and tail applies
+  *)
+  let cal_tail_call e = 
+    match length ps with
+    | 0 -> 
+      [
+        `BEXE_goto (sr,start_label);
+        `BEXE_comment (sr,"tail rec call (0)")
+      ]
+    | 1 ->
+      let (_,(k,_)) = hd ps in
+      [
+        `BEXE_goto (sr,start_label);
+        `BEXE_init (sr,k,e);
+        `BEXE_comment (sr,"tail rec call (1)")
+      ]
+    | _ ->
+      begin match e with
+      | `BEXPR_tuple ls,_ ->
+        (*
+        print_endline ("TUPLE ASSGN " ^ sbe syms.dfns e);
+        *)
+        (* Parallel Assignment algorithm.
+           Given a set of assignments, xi = ei,
+           we need a sequence of assignments of xi, ei, tj,
+           where tj are fresh variables, xi on left, ei on
+           right, and tj on either side, such that no RHS
+           term depends on a prior LHS term.
+
+           A pair x1 = e1, x2 = e2 which are mutually dependent
+           can always by resolved as
+
+           t1 = e1; x2 = e2; x1 = t1
+
+           Here e1 doesn't depend on a prior term, vaccuously,
+           e2 can't depend on t1 since it is fresh, and
+           t1 can't depend on anything, since it just a fresh variable
+
+           Let's start by taking the equations, and making
+           two lists -- a head list and a tail list.
+           Head assignments are done first, tails last,
+           the head list is in reverse order.
+
+           Any equations setting variables no one depends on
+           can be moved into the head list, they can safely
+           be done first.
+
+           Any equations whose RHS depend on nothing are
+           moved into the tail list, its safe to do them last.
+
+           Any dependencies on variables set by equations
+           moved into the tail list can now be removed
+           from the remaining equations, since it is determined
+           now that these variables will be changed after
+           any of the remaining assignments are one.
+
+           Repeat until the set of remaining equations is fixed.
+
+           We can now pick (somehow!!) an equation, and break
+           it into two using a fresh temporary. The temporary
+           assignment goes on the head list, the variable
+           assignment from the temporary on the tail list,
+           and as above, any dependencies on the variable
+           can now be removed from the remaining equations.
+
+           Repeat everything until the set of remaining
+           equations is empty, the result is the reverse
+           of the heap list plus the tail list.
+
+           This process is certain to terminate, since
+           each outer step removes one equation,
+           and it is certain to be correct (obvious).
+
+           What is NOT clear is that the result is minimal.
+           And it is NOT clear how to best 'choose' which
+           equation to split.
+           
+        
+        *)
+        assert (length ls = length ps);
+        let pinits = 
+          map2
+          (fun (name,(i,t)) e ->
+            i,(name,t,e,expr_uses syms descend uses pset e)
+          )
+          ps ls
+        in
+        (* strip trivial assignments like x = x *)
+        let pinits = 
+          filter 
+          (fun (i,(name,t,e,u)) -> 
+            match e with 
+            | `BEXPR_name (j,_),_ when i = j -> false 
+            | _ -> true
+          )
+          pinits 
+        in
+        let fixdeps pinits =
+          let vars = fold_left (fun s (i,_) -> IntSet.add i s) IntSet.empty pinits in
+          map 
+          (fun (i,(name,t,e,u)) -> 
+            let u = IntSet.remove i (IntSet.inter u vars) in
+            i,(name,t,e,u)
+          )
+          pinits
+        in
+        (*
+        iter
+        (fun (i,(name,t,e,u)) -> 
+          print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns e);
+          print_string "  Depends: "; 
+            IntSet.iter (fun i -> print_string (si i ^ ", ")) u;
+          print_endline "";
+        )
+        pinits;
+        *)
+        (* this function measures if the expression assigning i
+        depends on the old value of j
+        *)
+        let depend pinits i j =
+           let u = match assoc i pinits with _,_,_,u -> u in
+           IntSet.mem j u
+        in
+        (* return true if an assignment in inits depends on j *)
+        let used j inits = 
+          fold_left (fun r (i,_)-> r or depend inits i j) false inits
+        in
+        let rec aux ((head, middle, tail) as arg) = function
+          | [] -> arg
+          | (i,(name,ty,e,u)) as h :: ta ->
+            if IntSet.cardinal u = 0 then
+              aux (head,middle,h::tail) ta
+            else if not (used i (middle @ ta)) then
+              aux (h::head, middle, tail) ta
+            else 
+              aux (head,h::middle,tail) ta
+        in 
+
+        let printem (h,m,t) =
+          print_endline "HEAD:";
+          iter
+          (fun (i,(name,t,e,u)) -> 
+            print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns e)
+          )
+          h;
+
+          print_endline "MIDDLE:";
+          iter
+          (fun (i,(name,t,e,u)) -> 
+            print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns e)
+          )
+          m;
+
+          print_endline "TAIL:";
+          iter
+          (fun (i,(name,t,e,u)) -> 
+            print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns e)
+          )
+          t
+        in
+
+        let rec aux2 (hh,mm,tt) =
+          let h,m,t = aux ([],[],[]) (fixdeps mm) in
+          (* printem (h,m,t); *)
+          (* reached a fixpoint? *)
+          if length h = 0 && length t = 0 then hh,m,tt (* m = mm *)
+          else begin
+            (*
+            print_endline "Recursing on MIDDLE";
+            *)
+            aux2 (h @ hh, m, t @ tt) 
+          end
+        in
+        let tmplist = ref [] in
+        let rec aux3 (hh,mm,tt) =
+          let h,m,t = aux2 (hh,mm,tt) in
+          (*
+          print_endline "SPLIT STEP result:";
+          printem(h,m,t);
+          *)
+          match m with
+          | [] -> rev h @ t 
+          | [_] -> assert false
+          | (i,(name,ty,e,u)) :: ta ->
+            let k = !(syms.counter) in incr syms.counter;
+            let name2 = "_tmp_" ^ name in
+            parameters := (ty,k) :: !parameters;
+            tmplist := k :: !tmplist;
+            let h' = k,(name2,ty,e,IntSet.empty) in
+            let e' = `BEXPR_name (k,ts'),ty in
+            let t' = i,(name,ty,e',IntSet.empty) in
+            aux3 (h' :: h, ta, t' :: t)
+        in
+        let m = aux3 ([],pinits,[]) in
+        (*
+        print_endline "FINAL SPLIT UP:";
+        iter
+        (fun (i,(name,t,e,u)) -> 
+          print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.dfns e)
+        )
+        m;
+        *)
+        let result = ref [] in
+        result :=  `BEXE_comment (sr,"tail rec call (3)") :: !result;
+        iter 
+        (fun (i,(name,ty,e,_)) -> 
+          if mem i !tmplist then
+            result := `BEXE_begin :: !result;
+          result := `BEXE_init (sr,i,e) :: !result;
+        ) 
+        m;
+        while length !tmplist > 0 do 
+          result := `BEXE_end :: !result; 
+          tmplist := tl !tmplist
+        done;
+        result :=  `BEXE_goto (sr,start_label) :: !result;
+        (*
+          print_endline "Tail opt code is:";
+          iter (fun x -> print_endline (string_of_bexe syms.dfns 0 x) ) (rev !result);
+        *)
+        !result
+
+      | _ ->
+        print_endline "NON TUPLE TAIL CALL";
+        let t = snd e in
+        let pix = 
+          try assoc t !parameters 
+          with Not_found ->
+            let pix = !(syms.counter) in incr syms.counter;
+            parameters := (t,pix) :: !parameters;
+            pix
+        in
+        let p = `BEXPR_name (pix,ts'),t in  
+        let n = ref 0 in
+        let param_decode = 
+          map
+          (fun (_,(ix,prjt)) ->
+            let prj = reduce_tbexpr bbdfns (`BEXPR_get_n (!n,p),prjt) in
+            incr n;
+            `BEXE_init (sr,ix,prj)
+          )
+          ps
+        in
+        [
+          `BEXE_goto (sr,start_label);
+        ]
+        @
+        param_decode
+        @
+        [
+          `BEXE_init (sr,pix,e);
+          `BEXE_comment (sr,"tail rec call (2)")
+        ]
+      end
+  in
+  let rec aux tail res = match tail with
+  | `BEXE_call_direct (sr,i,ts,a) :: tail 
+    when (i,ts)=(this,ts') && Flx_cflow.tailable exes [] tail
+    ->
+     (*
+     print_endline ("--> Tail rec call " ^ si this);
+     *)
+     jump_done := true;
+     let res = cal_tail_call a @ res
+     in aux tail res
+
+  | `BEXE_fun_return (sr,(`BEXPR_apply_direct(i,ts,a),_)) :: tail 
+    when (i,ts)=(this,ts') 
+    ->
+     (*
+     print_endline ("--> Tail rec apply " ^ si this);
+     *)
+     jump_done := true;
+     let res = cal_tail_call a @ res
+     in aux tail res
+
+  | (`BEXE_call_direct (sr,i,ts,a)) as x :: tail  ->
+    (*
+    print_endline ("Untailed call " ^ si i ^ "["^catmap "," (sbt syms.dfns) ts^"]");
+    print_endline ("This = " ^ si this);
+    print_endline ("ts'=" ^"["^catmap "," (sbt syms.dfns) ts'^"]");
+    print_endline "TAIL=";
+    iter (fun x -> print_endline (string_of_bexe syms.dfns 0 x)) tail;
+    print_endline "-- end of tail --";
+    *)
+    aux tail (x::res)
+    
+  | [] -> rev res (* forward order *)
+  | h :: t  -> aux t (h::res)
+  in 
+    let exes = aux exes [] in
+
+    (* instantiate any parameter temporaries *)
+    iter 
+      (fun (paramtype, parameter) ->
+        let entry = `BBDCL_tmp (vs,paramtype) in
+        let kids = 
+          try Hashtbl.find child_map this
+          with Not_found -> [] 
+        in
+        Hashtbl.replace child_map this (parameter::kids);
+        let id = "_trp_" ^ si  parameter in
+        Hashtbl.add bbdfns parameter (id,Some this,sr,entry);
+      )
+    !parameters
+    ;
+    (* return with posssible label at start *)
+    let exes = 
+      if !jump_done
+      then `BEXE_label (sr,start_label) :: exes
+      else exes
+    in
+      (*
+      print_endline ("Tailed exes = ");
+      iter (fun exe -> print_endline (string_of_bexe syms.dfns 0 exe)) exes;
+      *)
+      exes
+      

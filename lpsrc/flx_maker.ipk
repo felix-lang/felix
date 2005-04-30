@@ -2003,20 +2003,18 @@ LUARTL_INTERFACES = [
 
 
 # files containing ocamllex sources
-LEXS = [
-  'lex_fish',
-  'flx_cil_clexer',
-  'flx_cil_formatlex',
-  'flx_lex'
-]
+FISH_LEXS = [ 'lex_fish', ]
+CIL_LEXS = [ 'flx_cil_clexer', 'flx_cil_formatlex', ]
+FLX_LEXS = [ 'flx_lex' ]
+OCS_LEXS = []
+MISC_LEXS = []
 
 # files containing ocamlyacc sources
-PARSES = [
-  'parse_fish',
-  'flx_cil_cparser',
-  'flx_cil_formatparse',
-  'flx_parse'
-]
+MISC_PARSES = [ ]
+OCS_PARSES = [ ]
+FISH_PARSES = [ 'parse_fish', ]
+CIL_PARSES = [ 'flx_cil_cparser', 'flx_cil_formatparse', ]
+FLX_PARSES = [ 'flx_parse' ]
 
 # ocaml modules = interfaces + implementation files
 
@@ -2109,6 +2107,8 @@ FLX_MODULES = [
   'flx_call'         , 
   'flx_use'          , 
   'flx_useless'      , 
+  'flx_child'        , 
+  'flx_tailit'       , 
   'flx_inline'       , 
   'flx_stack_calls'  , 
   'flx_mkcls'        , 
@@ -2248,9 +2248,9 @@ OCAMLLIBS = [
 ]
 
 # target executable programs to produce
-EXES = [
-  # compiler tools
-  'fish',
+MISC_EXES=[]
+FISH_EXES = [ 'fish',]
+FLX_EXES = [
   'flxf',
   'flxl',
   'flxp',
@@ -2258,10 +2258,12 @@ EXES = [
   'flxd',
   'flxb',
   'flxg',
-  'flxcc',
   'stub',
-  'ocs_main',
 ]
+
+CIL_EXES = [ 'flxcc',]
+OCS_EXES = [ 'ocs_main', ]
+EXES = MISC_EXES + FISH_EXES + OCS_EXES + CIL_EXES + FLX_EXES
 
 if 1:
   s = ' -cclib "-Lsrc '
@@ -2338,6 +2340,38 @@ def copy_lua2rtl():
   for f in LUARTL_INTERFACES:
     if filetime("lua/"+f) > filetime("rtl/"+f):
       os.system("cp lua/"+f+" rtl/"+f)
+
+def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES):
+  global buildall
+  # STEP 2: Generate lexers
+  for lex in LEXS:
+    file = 'src/'+lex
+    if buildall or filetime(file + '.mll') > filetime(file +'.ml'):
+      buildall = 1
+      xqt(OCAMLLEX + file + '.mll')
+
+  # STEP 3: Generate parsers
+  for parse in PARSES:
+    file = 'src/'+parse
+    if buildall or filetime(file + '.mly') > filetime(file +'.ml'):
+      buildall = 1
+      xqt(OCAMLYACC+ ' -v '+ file + '.mly')
+      if file <> "src/parse_fish":
+        nxqt("grep conflict " + file + ".output")
+
+  # STEP 4: Compile ocaml interfaces
+  for interface in INTERFACES:
+    file = 'src/'+interface
+    if buildall or filetime(file + '.mli') > filetime(file+'.cmi'):
+      buildall = 1
+      xqt(OCAMLC + ' ' + OCAML_INCLUDES+' -c '+file+ '.mli')
+
+  # STEP 5: Compile ocaml implementations
+  for implementation in IMPLEMENTATIONS + EXES:
+    file = 'src/'+implementation
+    if buildall or filetime(file+ '.ml') > filetime(file+OCAML_OBJECT_EXTENSION):
+      buildall = 1
+      xqt(OCAMLOPT + ' '+ OCAML_INCLUDES+ ' -c ' + file +'.ml')
 
 
 try:
@@ -2420,36 +2454,11 @@ try:
       if buildall or filetime(file +".c") > filetime(file +".o"):
         xqt(CCOMPILE +" -I "+OCAML_INCLUDE_DIRECTORY+" -Irtl "+flags+" "+file+".c")
 
-    # STEP 2: Generate lexers
-    for lex in LEXS:
-      file = 'src/'+lex
-      if buildall or filetime(file + '.mll') > filetime(file +'.ml'):
-        buildall = 1
-        xqt(OCAMLLEX + file + '.mll')
-
-    # STEP 3: Generate parsers
-    for parse in PARSES:
-      file = 'src/'+parse
-      if buildall or filetime(file + '.mly') > filetime(file +'.ml'):
-        buildall = 1
-        xqt(OCAMLYACC+ ' -v '+ file + '.mly')
-        if file <> "src/parse_fish":
-          nxqt("grep conflict " + file + ".output")
-
-    # STEP 4: Compile ocaml interfaces
-    for interface in INTERFACES:
-      file = 'src/'+interface
-      if buildall or filetime(file + '.mli') > filetime(file+'.cmi'):
-        buildall = 1
-        xqt(OCAMLC + ' ' + OCAML_INCLUDES+' -c '+file+ '.mli')
-
-    # STEP 5: Compile ocaml implementations
-    for implementation in IMPLEMENTATIONS + EXES:
-      file = 'src/'+implementation
-      if buildall or filetime(file+ '.ml') > filetime(file+OCAML_OBJECT_EXTENSION):
-        buildall = 1
-        xqt(OCAMLOPT + ' '+ OCAML_INCLUDES+ ' -c ' + file +'.ml')
-
+    ocamlit(MISC_LEXS,MISC_PARSES,MISC_INTERFACES,MISC_IMPLEMENTATIONS,MISC_EXES)
+    ocamlit(FISH_LEXS,FISH_PARSES,FISH_INTERFACES,FISH_IMPLEMENTATIONS,FISH_EXES)
+    ocamlit(OCS_LEXS,OCS_PARSES,OCS_INTERFACES,OCS_IMPLEMENTATIONS,OCS_EXES)
+    ocamlit(CIL_LEXS,CIL_PARSES,CIL_INTERFACES,CIL_IMPLEMENTATIONS,CIL_EXES)
+    ocamlit(FLX_LEXS,FLX_PARSES,FLX_INTERFACES,FLX_IMPLEMENTATIONS,FLX_EXES)
 
     # STEP 6: Build FELIX Library
     if "olink" in options: buildall = 1

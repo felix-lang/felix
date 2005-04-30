@@ -1610,7 +1610,7 @@ print produced; print " "; print consumed; endl;
 @setup()
 proc print1: double = 'printf("%.1f\\n",$1);';
 
-noinline fun Tak (x:double, y:double, z:double): double =>
+fun Tak (x:double, y:double, z:double): double =>
   if (y >= x) then z
   else Tak(Tak(x-1.0,y,z), Tak(y-1.0,z,x), Tak(z-1.0,x,y))
   endif

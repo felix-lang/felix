@@ -1,6 +1,6 @@
 @bc = begin_displayed_code
 @ec = end_displayed_code
-@flx_version = '1.0.22'
+@flx_version = '1.0.23'
 @godi_revision = '0'
 @set_title('Felix '+flx_version)
 @head(1,'Purpose')
@@ -259,6 +259,8 @@ Flx_version.version_data := version_data
 @include_file ('flx_call.ipk')
 @include_file ('flx_use.ipk')
 @include_file ('flx_useless.ipk')
+@include_file ('flx_child.ipk')
+@include_file ('flx_tailit.ipk')
 @include_file ('flx_inline.ipk')
 @include_file ('flx_opt4.ipk')
 @include_file ('flx_mkcls.ipk')
