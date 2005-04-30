@@ -1469,9 +1469,11 @@ and heavy_inline_calls
             let vid,vparent,vsr,ventry = Hashtbl.find bbdfns i in
             begin match ventry with
             | `BBDCL_tmp (vs,t) ->
+              (*
               print_endline ("Downgrading temporary .." ^ si i);
+              *)
               (* should this be a VAR or a VAL? *)
-              Hashtbl.replace bbdfns i (vid,vparent,vsr,`BBDCL_val (vs,t))
+              Hashtbl.replace bbdfns i (vid,vparent,vsr,`BBDCL_var (vs,t))
             | _ -> ()
             end;
             let xs = 
@@ -1595,8 +1597,8 @@ and fold_vars syms (uses,child_map,bbdfns) i ps exes =
         in
         let isvar = 
           match Hashtbl.find bbdfns j with
-          | _,_,_,`BBDCL_var _ -> true
-          | _,_,_,(`BBDCL_val _ | `BBDCL_tmp _) -> false
+          | _,_,_,(`BBDCL_var _ | `BBDCL_tmp _) -> true
+          | _,_,_,`BBDCL_val _ -> false
           | _ -> assert false
         in
         if isvar or !setcnt > 1 then
