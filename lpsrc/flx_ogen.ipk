@@ -302,7 +302,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
     *)
     match entry with
     | `BBDCL_function (props,vs,ps, ret,_) -> 
-      if mem `Explicit_closure props then
+      if mem `Heap_closure props then
         gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance
       (*
       else 
@@ -311,7 +311,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
 
     | `BBDCL_regmatch (props,vs,ps,ret,_) 
     | `BBDCL_reglex (props,vs,ps,_,ret,_)  ->
-      if mem `Explicit_closure props then
+      if mem `Heap_closure props then
         gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance
       (*
       else 
@@ -319,7 +319,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
       *)
         
     | `BBDCL_procedure (props,vs,ps,_) -> 
-      if mem `Explicit_closure props then
+      if mem `Heap_closure props then
         gen_fun_offsets s syms (child_map,bbdfns) index vs ps `BTYP_void ts instance
       (*
       else

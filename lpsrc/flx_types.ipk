@@ -475,7 +475,10 @@ and property_t = [
   | `Inlining_started
   | `Inlining_complete
   | `Generated of string
-  | `Explicit_closure    (* an explicit closure is formed *)
+  | `Heap_closure        (* a heaped closure is formed *)
+  | `Explicit_closure    (* explicit closure expression *)
+  | `Stackable           (* closure can be created on stack *)
+  | `Pure                (* closure not required by self *)
 ]
 
 and type_qual_t = [
@@ -2307,7 +2310,10 @@ and string_of_property = function
 | `NoInline -> "noinline"
 | `Inlining_started -> "inlining_started"
 | `Inlining_complete -> "inlining_complete"
-| `Explicit_closure -> "explicit_closure_formed"
+| `Explicit_closure -> "explicit_closure_expression"
+| `Stackable -> "stackable"
+| `Heap_closure -> "heap_closure"
+| `Pure -> "pure"
 
 and string_of_properties ps =
   match ps with 

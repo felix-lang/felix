@@ -155,16 +155,22 @@ right type by client drivers.
 #define FLX_FMEM_DECL
 #define FLX_FPAR_DECL_ONLY
 #define FLX_FPAR_DECL
+#define FLX_APAR_DECL_ONLY
+#define FLX_APAR_DECL
 #define FLX_DCL_THREAD_FRAME extern thread_frame_t ptf;
 #elif defined(FLX_PTF_STATIC_POINTER)
 #define FLX_FMEM_DECL
 #define FLX_FPAR_DECL_ONLY
 #define FLX_FPAR_DECL
+#define FLX_APAR_DECL_ONLY
+#define FLX_APAR_DECL
 #define FLX_DCL_THREAD_FRAME extern thread_frame_t *ptf;
 #else
 #define FLX_FMEM_DECL thread_frame_t *ptf;
 #define FLX_FPAR_DECL_ONLY thread_frame_t *_ptf
 #define FLX_FPAR_DECL thread_frame_t *_ptf,
+#define FLX_APAR_DECL_ONLY thread_frame_t *ptf
+#define FLX_APAR_DECL thread_frame_t *ptf,
 #define FLX_DCL_THREAD_FRAME
 #endif
 

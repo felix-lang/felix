@@ -262,7 +262,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_child.ipk')
 @include_file ('flx_tailit.ipk')
 @include_file ('flx_inline.ipk')
-@include_file ('flx_opt4.ipk')
+@include_file ('flx_enstack.ipk')
 @include_file ('flx_mkcls.ipk')
 @include_file ('flx_inst.ipk')
 @pop_head()

@@ -190,27 +190,27 @@ let process_entry syms bbdfns all_closures i =
 
   | _ -> ()
 
-let set_closure bbdfns i =
+let set_closure bbdfns p i =
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
    match entry with
   | `BBDCL_function (props,vs,ps,ret,exes) ->
-    let entry = `BBDCL_function (`Explicit_closure :: props,vs,ps,ret,exes) in
+    let entry = `BBDCL_function (p :: props,vs,ps,ret,exes) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry);
 
   | `BBDCL_procedure (props,vs,ps,exes) ->
-    let entry = `BBDCL_procedure (`Explicit_closure :: props,vs,ps,exes) in
+    let entry = `BBDCL_procedure (p :: props,vs,ps,exes) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry)
 
   | `BBDCL_regmatch (props,vs,ps,t,x) ->
-    let entry = `BBDCL_regmatch (`Explicit_closure :: props, vs, ps, t, x) in
+    let entry = `BBDCL_regmatch (p :: props, vs, ps, t, x) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry)
 
   | `BBDCL_reglex (props,vs,ps,le,t,x) ->
-    let entry = `BBDCL_reglex (`Explicit_closure :: props, vs, ps, le, t, x) in
+    let entry = `BBDCL_reglex (p :: props, vs, ps, le, t, x) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry)
 
   | `BBDCL_glr (props, vs, t, x) -> 
-    let entry = `BBDCL_glr (`Explicit_closure :: props, vs, t, x) in
+    let entry = `BBDCL_glr (p :: props, vs, t, x) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry)
 
   | _ -> ()
@@ -220,7 +220,8 @@ let make_closures syms bbdfns =
   let all_closures = ref IntSet.empty in
   let uses i = Flx_use.uses syms used bbdfns i in
   IntSet.iter uses !(syms.roots);
-  IntSet.iter (process_entry syms bbdfns all_closures) !used;
-  IntSet.iter (set_closure bbdfns) (IntSet.union !all_closures !(syms.roots))
+  IntSet.iter (process_entry syms bbdfns all_closures ) !used;
+  IntSet.iter (set_closure bbdfns `Heap_closure) (IntSet.union !all_closures !(syms.roots));
+  
  
 

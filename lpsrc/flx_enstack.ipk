@@ -6,12 +6,12 @@ Name binding pass 2.
 open Flx_ast
 open Flx_types
 open Flx_mtypes2
+open Flx_child
 
 val make_stack_calls:
   sym_state_t ->
-  (bid_t, bid_t list) Hashtbl.t *
-  fully_bound_symbol_table_t ->
-  fully_bound_symbol_table_t
+  child_map_t * fully_bound_symbol_table_t -> 
+  unit
 
 @h = tangler("src/flx_stack_calls.ml")
 @select(h)
@@ -165,66 +165,139 @@ let can_stack_func cache syms (child_map,bbdfns) i =
     -> false (* hack *)
   | _ -> failwith ("Unexpected non-function " ^ id)
 
+let rec is_pure syms (child_map, bbdfns) i =
+  let children = try Hashtbl.find child_map i with Not_found -> [] in
+  let id,parent,sr,entry = Hashtbl.find bbdfns i in
+  match entry with
+  | `BBDCL_var _ 
+  | `BBDCL_val _
+  | `BBDCL_tmp _
+  | `BBDCL_const_ctor _
+  | `BBDCL_nonconst_ctor _
+  | `BBDCL_fun _
+  | `BBDCL_proc _
+  | `BBDCL_header _
+  | `BBDCL_body _
+  | `BBDCL_struct _
+  | `BBDCL_cstruct _
+  | `BBDCL_union _
+  | `BBDCL_abs _
+  | `BBDCL_const _
+     -> true
+
+  | `BBDCL_glr _
+  | `BBDCL_reglex _
+  | `BBDCL_regmatch _
+  | `BBDCL_procedure _ 
+    -> false
+
+  | `BBDCL_function _ ->
+    match parent with Some _ -> false | None ->
+    try 
+      iter (fun kid -> 
+        if not (is_pure syms (child_map, bbdfns) kid) 
+        then begin
+          (*
+          print_endline ("Child " ^ si kid ^ " is not pure");
+          *)
+          raise Not_found
+        end
+      )
+      children
+      ;
+      true
+    with 
+    | Not_found -> false
+
 let ident x = x 
 let tident t = t 
 
 let rec enstack_applies cache syms (child_map, bbdfns) x = 
   let ea e = enstack_applies cache syms (child_map, bbdfns) e in
   match map_tbexpr ident ea tident x with
-  | `BEXPR_apply ((`BEXPR_closure(i,ts),_),b),t 
-  | `BEXPR_apply_direct (i,ts,b),t  ->
-    if can_stack_func cache syms (child_map, bbdfns) i
-    then `BEXPR_apply_stack (i,ts,b),t
-    else x
-  
+  | (
+       `BEXPR_apply ((`BEXPR_closure(i,ts),_),b),t 
+     | `BEXPR_apply_direct (i,ts,b),t
+    ) as x 
+    ->
+      begin
+        let _,_,_,entry = Hashtbl.find bbdfns i in
+        match entry with 
+        | `BBDCL_function (props,_,_,_,_) ->
+          if mem `Stackable props
+          then `BEXPR_apply_stack (i,ts,b),t
+          else x
+        | _ -> x
+      end
   | x -> x
+
+let mark_stackable cache syms (child_map,bbdfns) =
+  Hashtbl.iter
+  (fun i (id,parent,sr,entry) ->
+    match entry with
+    | `BBDCL_function (props,vs,p,ret,exes) ->
+      let props: property_t list ref = ref props in
+      if can_stack_func cache syms (child_map,bbdfns) i then
+      begin
+        props := `Stackable :: !props;
+        if is_pure syms (child_map,bbdfns) i then
+        begin
+          (*
+          print_endline ("Function " ^ id ^ "<" ^ si i ^ "> is PURE");
+          *)
+          props := `Pure :: !props;
+        end
+        (*
+        else
+          print_endline ("Stackable Function " ^ id ^ "<" ^ si i ^ "> is NOT PURE")
+        *)
+      end
+      (*
+      else print_endline ("Function " ^ id ^ "<" ^ si i ^ "> is NOT STACKABLE")
+      *)
+      ;
+      let props : property_t list = !props in
+      let entry : bbdcl_t = `BBDCL_function (props,vs,p,ret,exes) in
+      Hashtbl.replace bbdfns i (id,parent,sr,entry)
+    | _ -> ()
+  )
+  bbdfns
 
 let enstack_calls cache syms (child_map,bbdfns) exes =
   let ea e = enstack_applies cache syms (child_map, bbdfns) e in
   let id x = x in
   map (map_bexe id ea id id id) exes
 
-let copy_bbdcl cache syms (child_map,bbdfns) bbdfns2 i bbdfn =
+let make_stack_calls syms (child_map, (bbdfns: fully_bound_symbol_table_t)) =
+  let cache = Hashtbl.create 97 in
   let ea e = enstack_applies cache syms (child_map, bbdfns) e in
-  let data =
-    match bbdfn with
-    | id,parent,sr,`BBDCL_procedure (props,vs,p,exes) ->
+  mark_stackable cache syms (child_map,bbdfns);
+  Hashtbl.iter
+  (fun i (id,parent,sr,entry) -> match entry with
+    | `BBDCL_procedure (props,vs,p,exes) ->
       let exes = enstack_calls cache syms (child_map,bbdfns) exes in
       let exes = Flx_cflow.final_tailcall_opt exes in
-      id,parent,sr,`BBDCL_procedure (props,vs,p,exes)
+      Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_procedure (props,vs,p,exes))
 
-    | id,parent,sr,`BBDCL_function (props,vs,p,ret,exes) ->
+    | `BBDCL_function (props,vs,p,ret,exes) ->
       let exes = enstack_calls cache syms (child_map,bbdfns) exes in
-      id,parent,sr,`BBDCL_function (props,vs,p,ret,exes)
+      Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_function (props,vs,p,ret,exes))
 
-    | id,parent,sr,`BBDCL_glr (props,vs,t,(p,exes)) ->
+    | `BBDCL_glr (props,vs,t,(p,exes)) ->
       let exes = enstack_calls cache syms (child_map,bbdfns) exes in
-      id,parent,sr,`BBDCL_glr (props,vs,t,(p,exes))
+      Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_glr (props,vs,t,(p,exes)))
 
-    | id,parent,sr,`BBDCL_regmatch (_,vs,p,t,(a,i,h,m)) ->
+    | `BBDCL_regmatch (_,vs,p,t,(a,i,h,m)) ->
       Hashtbl.iter
       (fun k e -> Hashtbl.replace h k (ea e))
-      h;
-      bbdfn (* mutated *)
+      h
 
-    | id,parent,sr,`BBDCL_reglex (_,vs,p,j,t,(a,i,h,m)) ->
+    | `BBDCL_reglex (_,vs,p,j,t,(a,i,h,m)) ->
       Hashtbl.iter
       (fun k e -> Hashtbl.replace h k (ea e))
-      h;
-      bbdfn (* mutated *)
+      h
 
-    | x -> x
-  in
-    Hashtbl.add bbdfns2 i data
-
-let make_stack_calls syms (child_map, bbdfns) =
-  let bbdfns2 = Hashtbl.create 97 in
-  let cache = Hashtbl.create 97 in
-  Hashtbl.iter
-  (fun i bbdfn ->
-    copy_bbdcl cache syms (child_map,bbdfns) bbdfns2 i bbdfn
+    | _ -> ()
   )
   bbdfns
-  ;
-  bbdfns2
 

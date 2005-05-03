@@ -568,21 +568,32 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     match entry with
     | `BBDCL_function (props,vs,ps,retyp,_) ->
       let ts = map tsub ts in
-      let the_display = 
-        let d' = 
-          map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-          (get_display_list bbdfns index)
-        in 
-          if length d' > our_level
-          then "this" :: tl d'
-          else d'
-      in
+      let display = get_display_list bbdfns index in
       let name = cpp_instance_name syms bbdfns index ts in
-      let s = 
-      name^ strd the_display 
-      ^
-      "\n      .apply(" ^ ge_arg a ^ ")"
-      in ce_atom s
+      if mem `Pure props && not (mem `Heap_closure props) then
+        let s = 
+          assert (length display = 0);
+          match a with
+          | _,`BTYP_tuple [] ->
+            name^ "(FLX_FPAR_PASS_ONLY)"
+          | _ ->
+            name^ "(FLX_FPAR_PASS " ^ ge_arg a ^")"
+        in ce_atom s
+      else
+        let the_display = 
+          let d' = 
+            map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
+            display
+          in 
+            if length d' > our_level
+            then "this" :: tl d'
+            else d'
+        in
+        let s = 
+          name^ strd the_display 
+          ^
+          "\n      .apply(" ^ ge_arg a ^ ")"
+        in ce_atom s
 
     | `BBDCL_cstruct (vs,_) ->
       ce_atom ("reinterpret<"^ id ^">(" ^ ge a ^ ")")
