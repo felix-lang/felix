@@ -2465,10 +2465,10 @@ try:
       ocamlit(FISH_LEXS,FISH_PARSES,FISH_INTERFACES,FISH_IMPLEMENTATIONS,FISH_EXES)
     if buildall or "ocs" in options:
       ocamlit(OCS_LEXS,OCS_PARSES,OCS_INTERFACES,OCS_IMPLEMENTATIONS,OCS_EXES)
-    if buildall or "flxcc" in options:
-      ocamlit(CIL_LEXS,CIL_PARSES,CIL_INTERFACES,CIL_IMPLEMENTATIONS,CIL_EXES)
     if buildall or "felix" in options:
       ocamlit(FLX_LEXS,FLX_PARSES,FLX_INTERFACES,FLX_IMPLEMENTATIONS,FLX_EXES)
+    if buildall or "flxcc" in options:
+      ocamlit(CIL_LEXS,CIL_PARSES,CIL_INTERFACES,CIL_IMPLEMENTATIONS,CIL_EXES)
 
     # STEP 6: Build FELIX Library
     if "olink" in options: buildall = 1

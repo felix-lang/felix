@@ -344,7 +344,7 @@ let expr_uses syms descend usage restrict e =
  
   let u = IntSet.fold
     (fun i cls -> IntSet.union cls (
-     let cl = Flx_call.child_use_closure descend usage i in
+     let cl = child_use_closure descend usage i in
      (*
      print_string ("Closure of " ^ si i ^ " is: ");
      IntSet.iter (fun i -> print_string (si i ^ " ")) cl;
