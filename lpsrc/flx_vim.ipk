@@ -318,3 +318,35 @@ let b:current_syntax = "felix"
 
 " vim: ts=8
 
+@head(1,"Interscript Syntax File")
+@select(tangler("misc/interscript.vim",'data'))
+" Vim syntax file
+" Language:  Interscript	
+" Maintainer:	Neil Schemenauer <nascheme@acs.ucalgary.ca>
+" Last change:	1998 July 17
+
+" Remove any old syntax stuff hanging around
+syn clear
+
+syn match   iscrOther /^@.*$/ 
+syn match   iscrHead /^@head.*$/ 
+syn match   iscrHead /^@set_title.*$/ 
+syn match   iscrInclude /^@include.*$/ 
+syn region iscrSelect start=/^@select.*$/ end=/^@/me=e-1 contains=iscrCodeContainer
+syn region  iscrCodeContainer start=/@select.*$/ms=e+1 end=/^@/me=e-1 contained 
+syn sync minlines=200
+
+if !exists("did_iscr_syntax_inits")
+  let did_iscr_syntax_inits = 1
+  hi link iscrHead Keyword
+  hi iscrSelect guifg=Magenta
+  hi iscrOther guifg=Brown
+  hi iscrInclude guifg=DarkGreen
+  hi iscrCodeContainer guifg=Blue
+endif
+
+let b:current_syntax = "interscript"
+
+" vim: ts=8
+
+

@@ -2402,6 +2402,7 @@ try:
     runISCR('lpsrc/flx_tut_macro.pak')
     runISCR('lpsrc/flx_tut_bind.pak')
     runISCR('lpsrc/flx_tut_migrate.pak')
+    runISCR('lpsrc/flx_speed.pak')
   os.system('rm -f tmp.tmp')
 
   if "doc" in options or "man" in options:
@@ -2741,8 +2742,11 @@ try:
           if stop_on_error: raise MakeError
           results.append(("Exec Special",testscript,'ERROR'))
 
-    print "RUN COMPLETE"
+    if "speed" in options:
+      execfile("speed/measure.py")
+      xqt("gnuplot speed/mkjpgs.gpl")
 
+    print "RUN COMPLETE"
   finally:
     # REPORT FINAL RESULTS
     print
