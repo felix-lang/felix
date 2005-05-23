@@ -12,16 +12,24 @@ type usage_table_t =  (bid_t, (bid_t * range_srcref) list) Hashtbl.t
 type usage_t =  usage_table_t * usage_table_t
 
 val call_data:
-  fully_bound_symbol_table_t -> usage_t
+  sym_state_t -> fully_bound_symbol_table_t -> usage_t
 
 val print_call_report:
-  fully_bound_symbol_table_t -> out_channel -> unit
+  sym_state_t -> fully_bound_symbol_table_t -> out_channel -> unit
 
 val is_recursive_call: usage_table_t -> bid_t -> bid_t -> bool
 val is_recursive: usage_table_t -> bid_t -> bool
 
 val cal_exe_usage:
-  usage_table_t -> int -> bexe_t -> unit
+  sym_state_t -> usage_table_t -> int -> bexe_t -> unit
+
+val cal_param_usage:
+  sym_state_t -> 
+  usage_table_t -> 
+  range_srcref -> 
+  int -> 
+  bparameter_t -> 
+  unit
 
 val use_closure:
   usage_table_t -> int -> IntSet.t
@@ -46,11 +54,17 @@ open Flx_mtypes1
 open List
 open Flx_exceptions
 open Flx_maps
+open Flx_util
+open Flx_print
+open Flx_mtypes2
 
 type usage_table_t =  (bid_t, (bid_t * range_srcref) list) Hashtbl.t
 type usage_t =  usage_table_t * usage_table_t
 
 let add (h:usage_table_t) k j sr = 
+  (*
+  print_endline ("Adding use of " ^ si j ^ " in " ^ si k);
+  *)
   Hashtbl.replace h k
   (
     (j,sr) 
@@ -99,7 +113,10 @@ let rec process_expr h k sr ((e,t) as be) =
   | `BEXPR_expr (_,t) -> ()
   end
 
-and cal_exe_usage h k exe =
+and cal_exe_usage syms h k exe =
+  (*
+  print_endline ("Checking uses in " ^ si k ^ ", exe: " ^ string_of_bexe syms.dfns 2 exe);
+  *)
   let ue sr e = process_expr h k sr e in
   let ui i sr = add h k i sr in
   match exe with
@@ -119,7 +136,7 @@ and cal_exe_usage h k exe =
   | `BEXE_fun_return (sr,e) 
     -> ue sr e
 
-  | `BEXE_init (sr,i,e) -> (* ui i sr; *) ue sr e
+  | `BEXE_init (sr,i,e) -> ui i sr; ue sr e
   | `BEXE_assign (sr,e1,e2) -> ue sr e1; ue sr e2
 
   | `BEXE_read (sr,i) -> ui i sr
@@ -143,23 +160,28 @@ let uses_production h k sr p =
   in
   iter uses_symbol p
 
-let call_data (bbdfns:fully_bound_symbol_table_t):usage_t =
+let cal_param_usage syms uses sr parent (_,(child,_)) =
+  add uses parent child sr 
+
+let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
   let uses = Hashtbl.create 97 in
   let usedby = Hashtbl.create 97 in
   let usage = uses,usedby in
   Hashtbl.iter
   (fun k (_,_,sr,entry) -> match entry with
-  | `BBDCL_procedure (_,_,_,exes)
-  | `BBDCL_function (_,_,_,_,exes) ->
-    iter (cal_exe_usage uses k) exes
+  | `BBDCL_procedure (_,_,ps,exes)
+  | `BBDCL_function (_,_,ps,_,exes) ->
+    iter (cal_param_usage syms uses sr k) ps;
+    iter (cal_exe_usage syms uses k) exes
 
   | `BBDCL_glr (_,_,_,(p,exes)) ->
-    iter (cal_exe_usage uses k) exes;
+    iter (cal_exe_usage syms uses k) exes;
     uses_production uses k sr p
   
-  | `BBDCL_regmatch (_,_,_,_,(_,_,h,_))
-  | `BBDCL_reglex (_,_,_,_,_,(_,_,h,_)) 
-    -> Hashtbl.iter (fun _ e -> process_expr uses k sr e) h
+  | `BBDCL_regmatch (_,_,ps,_,(_,_,h,_))
+  | `BBDCL_reglex (_,_,ps,_,_,(_,_,h,_)) -> 
+    iter (cal_param_usage syms uses sr k) ps;
+    Hashtbl.iter (fun _ e -> process_expr uses k sr e) h
 
   | _ -> () 
   )
@@ -260,7 +282,7 @@ let child_use_closure k h i =
     !c
 
 
-let call_report bbdfns (uses,usedby) f k =
+let call_report syms bbdfns (uses,usedby) f k =
   let si = string_of_int in
   let catmap = Flx_util.catmap in
   let w s = output_string f s in
@@ -302,7 +324,7 @@ let call_report bbdfns (uses,usedby) f k =
   w (catmap "," si u);
   w "\n"
 
-let print_call_report' bbdfns usage f =
+let print_call_report' syms bbdfns usage f =
   let x = ref [] in
   Hashtbl.iter
   (fun k (id,_,sr,entry) ->
@@ -317,12 +339,12 @@ let print_call_report' bbdfns usage f =
   bbdfns
   ;
   iter
-    (call_report bbdfns usage f)
+    (call_report syms bbdfns usage f)
     (sort compare (!x))
 
-let print_call_report bbdfns f =
-  let usage = call_data bbdfns in
-  print_call_report' bbdfns usage f
+let print_call_report syms bbdfns f =
+  let usage = call_data syms bbdfns in
+  print_call_report' syms bbdfns usage f
 
 let expr_uses syms descend usage restrict e = 
   let u = ref IntSet.empty in

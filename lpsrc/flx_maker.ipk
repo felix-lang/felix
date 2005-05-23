@@ -2389,12 +2389,15 @@ try:
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_macro.pak')
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_bind.pak')
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_migrate.pak')
+    runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ lpsrc/flx_perf.pak')
+    xqt('cp doc/interscript.css speed/interscript.css')
   elif "extract" in options:
     runISCR('lpsrc/flx.pak')
     runISCR('lpsrc/sm.pak')
     runISCR('lpsrc/ast.pak')
     runISCR('lpsrc/elk.pak')
     runISCR('lpsrc/lua.pak')
+    runISCR('lpsrc/flx_perf.pak')
     copy_mli2ml()
     copy_elk2rtl()
     copy_lua2rtl()
@@ -2402,7 +2405,7 @@ try:
     runISCR('lpsrc/flx_tut_macro.pak')
     runISCR('lpsrc/flx_tut_bind.pak')
     runISCR('lpsrc/flx_tut_migrate.pak')
-    runISCR('lpsrc/flx_speed.pak')
+    xqt('cp doc/interscript.css speed/interscript.css')
   os.system('rm -f tmp.tmp')
 
   if "doc" in options or "man" in options:
@@ -2429,9 +2432,12 @@ try:
   
   if "doc" in options or "impldoc" in options:
     xqt('rm -rf impldoc/*')
-    xqt('ocamldoc -I src -d impldoc src/*.mli -html')
-    xqt('ocamldoc -I src -o impldoc/flx_impl.tex src/*.mli -latex')
-    xqt('(cd impldoc; latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex)')
+    try:
+      xqt('ocamldoc -I src -d impldoc src/*.mli -html')
+      xqt('ocamldoc -I src -o impldoc/flx_impl.tex src/*.mli -latex')
+      xqt('(cd impldoc; latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex)')
+    except: 
+     pass # well ocamldoc is full of bugs ..
 
   if "regression" in options:
     TESTS = TESTS + glob.glob('test/rt*.flx')
@@ -2743,8 +2749,10 @@ try:
           results.append(("Exec Special",testscript,'ERROR'))
 
     if "speed" in options:
-      execfile("speed/measure.py")
+      runISCR('lpsrc/flx_perf.pak')
+      os.system("python speed/measure.py")
       xqt("gnuplot speed/mkjpgs.gpl")
+      runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ lpsrc/flx_perf.pak')
 
     print "RUN COMPLETE"
   finally:
@@ -2904,6 +2912,9 @@ We have no idea if it continues copying.
 @tangle('\tsh bagley/run.sh')
 @tangle('\tsh bagley/check.sh')
 @tangle('')
+@tangle('speed: dummy')
+@tangle('\tpython script/maker speed')
+@tangle('')
 @tangle('pfcount.all:')
 @tangle('\tpython script/maker pfcount_all')
 @tangle('')
@@ -3045,6 +3056,16 @@ We have no idea if it continues copying.
 @tangle('\t\tflx_'+flx_version+'/impldoc/*.html \\')
 @tangle('\t\tflx_'+flx_version+'/www/*.html \\')
 @tangle('\t\tflx_'+flx_version+'/bin/flx \\')
+@tangle('\t\tflx_'+flx_version+'/speed/*.py \\')
+@tangle('\t\tflx_'+flx_version+'/speed/*.html \\')
+@tangle('\t\tflx_'+flx_version+'/speed/*.css \\')
+@tangle('\t\tflx_'+flx_version+'/speed/*.gpl \\')
+@tangle('\t\tflx_'+flx_version+'/speed/exes/*/*.times \\')
+@tangle('\t\tflx_'+flx_version+'/speed/images/*.jpg \\')
+@tangle('\t\tflx_'+flx_version+'/speed/plotters/*.gpl \\')
+@tangle('\t\tflx_'+flx_version+'/speed/src/c/*.c \\')
+@tangle('\t\tflx_'+flx_version+'/speed/src/ocaml/*.ml \\')
+@tangle('\t\tflx_'+flx_version+'/speed/src/felix/*.flx \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/bin/*.py \\')
 @tangle('\t\tflx_'+flx_version+'/interscript/compilers/*.py \\')
@@ -3082,6 +3103,7 @@ We have no idea if it continues copying.
 @tangle('\trm -rf lpsrc/*.cache')
 @tangle('\trm -rf interscript/*.pyc')
 @tangle('\trm -rf interscript/*.pyo')
+@tangle('\trm -rf speed/')
 @tangle('\trm -f README LICENCE VERSION CONTENTS INSTALL AUTHORS NEWS COPYING ChangeLog')
 @tangle('')
 

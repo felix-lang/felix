@@ -97,6 +97,9 @@ and uses_exes syms used bbdfns exes =
   iter (uses_exe syms used bbdfns) exes
 
 and uses_exe syms used bbdfns (exe:bexe_t) =
+  (*
+  print_endline ("EXE=" ^ string_of_bexe syms.dfns 0 exe);
+  *)
   let ue e = uses_tbexpr syms used bbdfns e in
   let ui i = uses syms used bbdfns i in
   let ut t = uses_type syms used bbdfns t in
@@ -194,7 +197,7 @@ and uses syms used bbdfns i =
         ut unt; ut ct
 
       end
-    | None -> print_endline ("Cannot find " ^ si i)
+    | None -> failwith ("[Flx_use.uses] Cannot find " ^ si i)
   end
 
 let find_roots syms bbdfns

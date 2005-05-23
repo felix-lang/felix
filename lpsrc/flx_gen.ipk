@@ -156,6 +156,7 @@ let get_type bbdfns index =
 
 let gen_C_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_no =
   let ps = map (fun (id,(ix,t)) -> id,t) bps in
+  let params = map (fun (id,(ix,t)) -> ix) bps in
   if syms.compiler_options.print_flag then
   print_endline 
   (
@@ -188,10 +189,36 @@ let gen_C_function syms (child_map,bbdfns) props index id vs bps ret' ts instanc
   let rettypename = cpp_typename syms ret in
   rettypename ^ " " ^ name ^ "(" ^
   (
-    if argtype = `BTYP_tuple[] 
-    then "FLX_FPAR_DECL_ONLY"
-    else "FLX_FPAR_DECL "^argtypename^" const &"
-  )^ 
+    match length params with
+    | 0 -> "FLX_APAR_DECL_ONLY"
+    | 1 -> 
+      let ix = hd params in
+      if Hashtbl.mem syms.instances (ix, ts)
+      && not (argtype = `BTYP_tuple [])
+      then
+        "FLX_FPAR_DECL " ^ argtypename 
+      else "FLX_FPAR_DECL_ONLY"
+    | _ -> 
+      let s = 
+        let counter = ref 0 in
+        fold_left
+        (fun s (_,(i,t)) -> 
+          let t = reduce_type (tsubst vs ts (lower t)) in
+          if Hashtbl.mem syms.instances (i,ts)
+          then s ^
+            (if String.length s > 0 then ", " else " ") ^
+            cpp_typename syms t
+          else s (* elide initialisation of elided variable *)
+        )
+        ""
+        bps
+      in 
+        (
+          if String.length s > 0 
+          then "FLX_FPAR_DECL " ^s 
+          else "FLX_FPAR_DECL_ONLY"
+        )
+  ) ^
   ");\n"
 
 (* vs here is the (name,index) list of type variables *)
@@ -901,7 +928,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
     if length ts <> length vs then 
     failwith 
     (
-      "[get_function_methods} wrong number of args, expected vs = " ^ 
+      "[get_function_methods] wrong number of type args, expected vs = " ^ 
       si (length vs) ^ 
       ", got ts=" ^ 
       si (length ts)
@@ -949,12 +976,42 @@ let gen_C_function_body filename syms (child_map,bbdfns)
       "//C FUNC " ^ name ^ "\n" ^
       rettypename ^ " " ^ name ^ "(" ^
       (
-        if argtype = `BTYP_tuple[] 
-        then "FLX_APAR_DECL_ONLY"
-        else "FLX_APAR_DECL "^argtypename^" const & _arg"
+        match length params with
+        | 0 -> "FLX_APAR_DECL_ONLY"
+        | 1 -> 
+          let ix = hd params in
+          if Hashtbl.mem syms.instances (ix, ts)
+          && not (argtype = `BTYP_tuple [])
+          then
+            "FLX_APAR_DECL " ^ 
+            argtypename ^ "  " ^ cpp_instance_name syms bbdfns ix ts
+          else "FLX_APAR_DECL_ONLY"
+        | _ -> 
+          let s = 
+            let counter = ref 0 in
+            fold_left
+            (fun s (_,(i,t)) -> 
+              let t = reduce_type (tsubst vs ts (lower t)) in
+              let n = !counter in incr counter; 
+              if Hashtbl.mem syms.instances (i,ts)
+              then s ^
+                (if String.length s > 0 then ", " else " ") ^
+                cpp_typename syms t ^ " " ^
+                cpp_instance_name syms bbdfns i ts
+              else s (* elide initialisation of elided variable *)
+            )
+            ""
+            bps
+          in 
+            (
+              if String.length s > 0 
+              then "FLX_APAR_DECL " ^ s
+              else "FLX_APAR_DECL_ONLY"
+            )
       )^ 
       "){\n" ^
       "  collector_t &gc = *PTF gc;\n" ^
+      (* NO LONGER UNPACK ARGUMENT
       (
         match length params with
         | 0 -> ""
@@ -983,6 +1040,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
           )
           "" params 
       )^
+      *)
       dcl_vars ^
       exe_string ^
       "}\n"
@@ -1257,7 +1315,6 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
     *)
     let ps = map (fun (id,(ix,t)) -> id,t) bps in
     let params = map (fun (id,(ix,t)) -> ix) bps in
-
     let exe_string,needs_switch =
       gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no
     in
@@ -1769,7 +1826,7 @@ try
   if compiler_options.print_flag then 
   begin
     let f = open_out report_file_name in
-    Flx_call.print_call_report bbdfns f;
+    Flx_call.print_call_report syms bbdfns f;
     close_out f
   end
   ;

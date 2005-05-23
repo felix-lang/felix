@@ -593,9 +593,17 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
         ]
         @
         [
-        Exe (patsrc,`EXE_comment ("match case " ^ si !match_caseno^":" ^ string_of_pattern pat));
+        Exe (patsrc,`EXE_comment ("match case " ^ si !match_caseno^":" ^ string_of_pattern pat))
+        ]
+        @
+        (
+        (* we dont need a label for the first case *)
+        if !match_caseno <> 1 then
+        [
         Exe (patsrc,`EXE_label ("_ml" ^ si n1))
         ]
+        else []
+        )
         @
 
         (* This code checks the match condition, it can be

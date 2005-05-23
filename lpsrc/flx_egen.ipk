@@ -157,6 +157,10 @@ let get_var_ref syms bbdfns this index ts : string =
 
   | _ -> failwith ("[get_var_ref(3)] Expected name "^id^" to be variable, value or temporary")
 
+let nth_type ts i = match ts with
+  | `BTYP_tuple ts -> nth ts i
+  | `BTYP_array (t,`BTYP_unitsum n) -> assert (i<n); t
+  | _ -> assert false
 
 let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   (*
@@ -570,15 +574,40 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       let ts = map tsub ts in
       let display = get_display_list bbdfns index in
       let name = cpp_instance_name syms bbdfns index ts in
+
+      (* C FUNCTION CALL *)
       if mem `Pure props && not (mem `Heap_closure props) then
         let s = 
           assert (length display = 0);
-          match a with
-          | _,`BTYP_tuple [] ->
-            name^ "(FLX_FPAR_PASS_ONLY)"
+          match ps with
+          | [] -> "FLX_FPAR_PASS_ONLY"
+          | [_] -> "FLX_FPAR_PASS " ^ ge_arg a
           | _ ->
-            name^ "(FLX_FPAR_PASS " ^ ge_arg a ^")"
-        in ce_atom s
+            begin match a with
+            | `BEXPR_tuple xs,_ ->
+              "FLX_FPAR_PASS " ^ catmap ", " ge_arg xs
+
+            | _,tt ->
+              let tt = reduce_type (lstrip syms.dfns (tsubst vs ts tt)) in
+              (* NASTY, EVALUATES EXPR MANY TIMES .. *)
+              let n = ref 0 in
+              "FLX_FPAR_PASS " ^
+              catmap ", " 
+              (fun i -> 
+                (*
+                print_endline ( "ps = " ^ catmap "," (fun (id,(p,t)) -> id) ps);
+                print_endline ("tt=" ^ sbt syms.dfns tt);
+                *)
+                let t = nth_type tt i in
+                let t = reduce_type (lstrip syms.dfns t) in
+                let a' = `BEXPR_get_n (i,a),t in
+                let s = ge_arg a' in
+                incr n;
+                s
+              ) 
+              (nlist (length ps))
+            end
+        in ce_atom (name ^ "(" ^ s ^ ")")
       else
         let the_display = 
           let d' = 
