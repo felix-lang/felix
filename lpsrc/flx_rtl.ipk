@@ -104,6 +104,9 @@ T &reinterpret(U const &x) {
 @if HAVE_CGOTO:
   tangle("#define FLX_HAVE_CGOTO")
 
+@if USE_REGPARM3:
+  tangle("#define FLX_USE_REGPARM3")
+  
 @if HAVE_ASM_LABELS:
   tangle("#define FLX_HAVE_ASM_LABELS")
 //
@@ -288,6 +291,11 @@ static void x##_finaliser(collector_t *, void *p){\
   ((x*)p)->~x();\
 }
 
+#if defined(FLX_USE_REGPARM3) && defined(HAVE_GXX_X86)
+#define FLX_REGPARM __attribute__((regparm(3)))
+#else
+#define FLX_REGPARM
+#endif
 
 #if defined(FLX_PTF_STATIC_STRUCT)
 #define FLX_FMEM_INIT_ONLY

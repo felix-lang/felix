@@ -1608,16 +1608,18 @@ print produced; print " "; print consumed; endl;
 
 @select(tangler('bagley/felix/takfp.flx','data'))
 @setup()
-proc print1: double = 'printf("%.1f\\n",$1);';
+open Float;
 
-fun Tak (x:double, y:double, z:double): double =>
+proc print1: float = 'printf("%.1f\\n",$1);';
+
+fun Tak (x:float, y:float, z:float): float =>
   if (y >= x) then z
-  else Tak(Tak(x-1.0,y,z), Tak(y-1.0,z,x), Tak(z-1.0,x,y))
+  else Tak(Tak(x-1.0f,y,z), Tak(y-1.0f,z,x), Tak(z-1.0f,x,y))
   endif
 ;
  
-w := double_of n;
-print1 (Tak(w*3.0, w*2.0, w*1.0));
+w := float_of n;
+print1 (Tak(w*3.0f, w*2.0f, w*1.0f));
 
 @select(tangler('bagley/felix/procinst.flx','data'))
 @setup()

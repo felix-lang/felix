@@ -187,7 +187,9 @@ let gen_C_function syms (child_map,bbdfns) props index id vs bps ret' ts instanc
   assert (length display = 0);
   let name = cpp_instance_name syms bbdfns index ts in
   let rettypename = cpp_typename syms ret in
-  rettypename ^ " " ^ name ^ "(" ^
+  rettypename ^ " " ^
+  "FLX_REGPARM "^
+  name ^ "(" ^
   (
     match length params with
     | 0 -> "FLX_APAR_DECL_ONLY"
@@ -974,7 +976,9 @@ let gen_C_function_body filename syms (child_map,bbdfns)
       "" kids
     in
       "//C FUNC " ^ name ^ "\n" ^
-      rettypename ^ " " ^ name ^ "(" ^
+      rettypename ^ " " ^ 
+      "FLX_REGPARM " ^
+      name ^ "(" ^
       (
         match length params with
         | 0 -> "FLX_APAR_DECL_ONLY"

@@ -563,6 +563,12 @@ try:
 except:
   HAVE_GXX_X86 = 0
 
+if HAVE_GXX_X86:
+  USE_REGPARM3=1
+else:
+  USE_REGPARM3=0
+
+
 # find if we have g++ supporting computed jumps
 try:
   xqt("g++ tmp/cgoto.cxx -o tmp/cgoto")
@@ -976,6 +982,7 @@ try:
   p(f,"HAVE_MSVC")
   p(f,"HAVE_GXX")
   p(f,"HAVE_GXX_X86")
+  p(f,"USE_REGPARM3")
   p(f,"HAVE_CGOTO")
   p(f,"HAVE_ASM_LABELS")
   p(f,"HAVE_INCLASS_MEMBER_INITIALIZATION")
