@@ -35,24 +35,51 @@ open List
 Now some code to generate the bases, given the
 hashtable. We also mangle c++ abstract type names.
 @select(h)
-let gen_tuple name typs =
+let gen_tuple name tn typs =
   let n = length typs in
   "struct " ^ name ^ " {\n" ^
   catmap "" 
-  (fun (t,i) -> "  "^t^ " mem_" ^ si i ^ ";\n")
+  (fun (t,i) -> 
+    if t = `BTYP_tuple [] 
+    then "  // elided mem_" ^ si i ^ "(type unit)\n"
+    else "  "^tn t^ " mem_" ^ si i ^ ";\n"
+  )
   (combine typs (nlist n))
   ^
-  "  " ^ name ^ "(" ^
-  catmap ", " 
-  (fun (t,i) -> t^" a" ^ si i) 
-  (combine typs (nlist n))
+  "  " ^ name ^ "(){}\n" (* default constructor *)
   ^
-  "):\n    " ^ 
-   catmap ", " 
-  (fun i -> "mem_"^si i ^ "(a" ^ si i^")") 
-  (nlist n) ^
-  "{}\n" ^
-  "  " ^ name ^ "(){}\n" ^
+  (
+    if fold_left (fun r t -> r && t = `BTYP_tuple []) true typs 
+    then "" 
+    else
+    "  " ^ name ^ "(" ^
+    fold_left 
+    (fun s (t,i) -> 
+      if t = `BTYP_tuple [] then s 
+      else 
+        s ^ 
+        (if String.length s > 0 then ", " else "") ^
+        tn t^" a" ^ si i
+    ) 
+    ""
+    (combine typs (nlist n))
+    ^
+    "):\n    " 
+    ^ 
+    fold_left
+    (fun s (t,i) -> 
+      if t = `BTYP_tuple [] then s 
+      else
+        s ^
+        (if String.length s > 0 then ", " else "") ^
+        "mem_"^si i ^ "(a" ^ si i^")"
+    ) 
+    ""
+    (combine typs (nlist n))
+    ^
+    "{}\n"
+  )
+  ^
   "};\n"
 
 (* copy ctor, assignment, and destructor are generated; 
@@ -312,7 +339,7 @@ let gen_type syms bbdfns (index,typ) =
   | `BTYP_tuple [] -> "" 
   | `BTYP_tuple ts -> 
      descr ^
-     gen_tuple (cn typ) (map tn ts)
+     gen_tuple (cn typ) tn ts
      
   | `BTYP_void -> ""
   | `BTYP_pointer t -> 

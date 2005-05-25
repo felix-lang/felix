@@ -181,7 +181,11 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
   let f = open_out filename in
   let pe s = output_string f (s ^ "\n") in
   let ps s = output_string f s in
-  let ge this e = gen_expr syms bbdfns this e [] [] sr in
+  let ge_arg this ((x,t) as e) = 
+    match t with
+    | `BTYP_tuple [] -> ""
+    | _ -> gen_expr syms bbdfns this e [] [] sr 
+  in
   let tn t = cpp_typename syms (reduce_type t) in
   let string_of_bprod (n,g) =
     (match n with | None -> "" | Some n -> cid_of_flxid n ^ ":") ^
@@ -201,7 +205,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
       ps (catmap " " string_of_bprod p);
       pe "";
       pe "    {";
-      pe ("       "^t^" *_x = new "^t^"(" ^ ge this e ^ ");");
+      pe ("       "^t^" *_x = new "^t^"(" ^ ge_arg this e ^ ");");
       iter 
       (function 
         | Some n, `Nonterm _ -> pe ("       delete " ^ n^";")

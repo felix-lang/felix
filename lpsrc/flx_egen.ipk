@@ -163,6 +163,7 @@ let nth_type ts i = match ts with
   | _ -> assert false
 
 let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
+
   (*
   print_endline ("Generating expression " ^ string_of_bound_expression_with_type syms.dfns (e,t));
   *)
@@ -180,10 +181,11 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   let tsub t = reduce_type (tsubst vs ts t) in
   let tn t = cpp_typename syms (tsub (lower t)) in
   let raw_typename t = cpp_typename syms (tsubst vs ts (lower t)) in
-  let ge_arg a = 
-    match a with
-    | _,`BTYP_tuple [] -> ""
-    | x -> ge x 
+  let ge_arg ((x,t) as a) = 
+    let t = reduce_type (tsubst vs ts (lower t)) in
+    match t with
+    | `BTYP_tuple [] -> ""
+    | _ -> ge a
   in
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns this 
@@ -193,6 +195,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   let our_level = length our_display in
   let rt t = reduce_type (lstrip syms.dfns (tsub t)) in
   let t = rt t in
+  match t with
+  | `BTYP_tuple [] -> ce_atom ("UNIT_ERROR")
+  | _ ->
   match e with
   | `BEXPR_parse ((_,t')as e,ii) -> 
     let pn = Hashtbl.find syms.parsers (this,t',ii) in
@@ -422,7 +427,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
        in
        let aval = 
          "new (gc, "^arg_typename^"_ptr_map) " ^
-         arg_typename ^ "(" ^ ge (a,t'') ^ ")"
+         arg_typename ^ "(" ^ ge_arg (a,t'') ^ ")"
        in
        let uval = 
          if is_unitsum t then
@@ -580,34 +585,50 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         let s = 
           assert (length display = 0);
           match ps with
-          | [] -> "FLX_FPAR_PASS_ONLY"
-          | [_] -> "FLX_FPAR_PASS " ^ ge_arg a
+          | [] -> ""
+          | [_,(_,t)] -> 
+            ge_arg a
+
           | _ ->
             begin match a with
             | `BEXPR_tuple xs,_ ->
-              "FLX_FPAR_PASS " ^ catmap ", " ge_arg xs
+              fold_left 
+              (fun s ((x,t) as xt) ->
+                let x = ge_arg xt in
+                if String.length x = 0 then s else
+                s ^ 
+                (if String.length s > 0 then ", " else "") ^ (* append a comma if needed *)
+                x
+              )
+              ""
+              xs
 
             | _,tt ->
               let tt = reduce_type (lstrip syms.dfns (tsubst vs ts tt)) in
               (* NASTY, EVALUATES EXPR MANY TIMES .. *)
               let n = ref 0 in
-              "FLX_FPAR_PASS " ^
-              catmap ", " 
-              (fun i -> 
+              fold_left
+              (fun s i -> 
                 (*
                 print_endline ( "ps = " ^ catmap "," (fun (id,(p,t)) -> id) ps);
                 print_endline ("tt=" ^ sbt syms.dfns tt);
                 *)
                 let t = nth_type tt i in
-                let t = reduce_type (lstrip syms.dfns t) in
                 let a' = `BEXPR_get_n (i,a),t in
-                let s = ge_arg a' in
+                let x = ge_arg a' in
                 incr n;
-                s
+                if String.length x = 0 then s else
+                s ^ (if String.length s > 0 then ", " else "") ^ x
               ) 
+              ""
               (nlist (length ps))
             end
-        in ce_atom (name ^ "(" ^ s ^ ")")
+        in 
+        let s = 
+          if String.length s > 0 then "FLX_FPAR_PASS " ^ s 
+          else "FLX_FPAR_PASS_ONLY"
+        in 
+          ce_atom (name ^ "(" ^ s ^ ")")
       else
         let the_display = 
           let d' = 
@@ -661,7 +682,17 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         let ctyp = raw_typename t'' in
         ce_atom (
         ctyp ^ "(" ^
-        cat ", " (map ge es) ^
+          fold_left
+          (fun s e ->
+            let x = ge_arg e in
+            if String.length x = 0 then s else
+            s ^ 
+            (if String.length s > 0 then ", " else "") ^
+            x
+          )
+          ""
+          es
+        ^
         ")"
         )
       in
@@ -675,7 +706,17 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       let ctyp = tn (lower t) in
       ce_atom (
       ctyp ^ "(" ^
-      cat ", " (map ge es) ^
+        fold_left
+        (fun s e ->
+          let x = ge_arg e in
+          if String.length x = 0 then s else
+          s ^ 
+          (if String.length s > 0 then ", " else "") ^
+          x
+        )
+        ""
+        es
+      ^
       ")"
       )
     | _ -> assert false

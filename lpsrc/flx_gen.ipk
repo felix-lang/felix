@@ -180,6 +180,9 @@ let gen_C_function syms (child_map,bbdfns) props index id vs bps ret' ts instanc
   let argtype = reduce_type (lstrip syms.dfns (tsubst vs ts argtype)) in
   let ret = lower ret' in
   let ret = reduce_type (lstrip syms.dfns (tsubst vs ts ret)) in
+
+  if ret = `BTYP_tuple [] then "// elided (returns unit)\n" else
+
   let funtype = fold syms.dfns (`BTYP_function (argtype, ret)) in
 
   let argtypename = cpp_typename syms argtype in
@@ -191,22 +194,20 @@ let gen_C_function syms (child_map,bbdfns) props index id vs bps ret' ts instanc
   "FLX_REGPARM "^
   name ^ "(" ^
   (
-    match length params with
-    | 0 -> "FLX_APAR_DECL_ONLY"
-    | 1 -> 
-      let ix = hd params in
-      if Hashtbl.mem syms.instances (ix, ts)
-      && not (argtype = `BTYP_tuple [])
-      then
-        "FLX_FPAR_DECL " ^ argtypename 
-      else "FLX_FPAR_DECL_ONLY"
-    | _ -> 
-      let s = 
+    let s =
+      match length params with
+      | 0 -> ""
+      | 1 -> 
+        let ix = hd params in
+        if Hashtbl.mem syms.instances (ix, ts)
+        && not (argtype = `BTYP_tuple [])
+        then argtypename else ""
+      | _ -> 
         let counter = ref 0 in
         fold_left
         (fun s (_,(i,t)) -> 
           let t = reduce_type (tsubst vs ts (lower t)) in
-          if Hashtbl.mem syms.instances (i,ts)
+          if Hashtbl.mem syms.instances (i,ts) && not (t = `BTYP_tuple [])
           then s ^
             (if String.length s > 0 then ", " else " ") ^
             cpp_typename syms t
@@ -214,12 +215,12 @@ let gen_C_function syms (child_map,bbdfns) props index id vs bps ret' ts instanc
         )
         ""
         bps
-      in 
-        (
-          if String.length s > 0 
-          then "FLX_FPAR_DECL " ^s 
-          else "FLX_FPAR_DECL_ONLY"
-        )
+    in 
+      (
+        if String.length s > 0 
+        then "FLX_FPAR_DECL " ^s 
+        else "FLX_FPAR_DECL_ONLY"
+      )
   ) ^
   ");\n"
 
@@ -249,6 +250,9 @@ let gen_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_
   let argtype = reduce_type (lstrip syms.dfns (tsubst vs ts argtype)) in
   let ret = lower ret' in
   let ret = reduce_type (lstrip syms.dfns (tsubst vs ts ret)) in
+
+  if ret = `BTYP_tuple [] then "// elided (returns unit)\n" else
+
   let funtype = fold syms.dfns (`BTYP_function (argtype, ret)) in
 
   let argtypename = cpp_typename syms argtype in
@@ -935,12 +939,19 @@ let gen_C_function_body filename syms (child_map,bbdfns)
       ", got ts=" ^ 
       si (length ts)
     );
+    let name = cpp_instance_name syms bbdfns index ts in
+
+    "//C FUNC " ^ name ^ "\n" ^
+
     let argtype = lower (typeof_bparams bps) in
     let argtype = reduce_type (tsubst vs ts argtype) in
     let ret = reduce_type (tsubst vs ts (lower ret')) in
+
+    if ret = `BTYP_tuple [] then "// elided (returns unit)\n\n" else
+
+
     let funtype = fold syms.dfns (`BTYP_function (argtype, ret)) in
     let argtypename = cpp_typename syms argtype in
-    let name = cpp_instance_name syms bbdfns index ts in
     let rettypename = cpp_typename syms ret in
 
     let params = map (fun (id,(ix,t)) -> ix) bps in
@@ -975,43 +986,41 @@ let gen_C_function_body filename syms (child_map,bbdfns)
       )
       "" kids
     in
-      "//C FUNC " ^ name ^ "\n" ^
       rettypename ^ " " ^ 
       "FLX_REGPARM " ^
       name ^ "(" ^
       (
-        match length params with
-        | 0 -> "FLX_APAR_DECL_ONLY"
-        | 1 -> 
-          let ix = hd params in
-          if Hashtbl.mem syms.instances (ix, ts)
-          && not (argtype = `BTYP_tuple [])
-          then
-            "FLX_APAR_DECL " ^ 
-            argtypename ^ "  " ^ cpp_instance_name syms bbdfns ix ts
-          else "FLX_APAR_DECL_ONLY"
-        | _ -> 
-          let s = 
-            let counter = ref 0 in
-            fold_left
-            (fun s (_,(i,t)) -> 
-              let t = reduce_type (tsubst vs ts (lower t)) in
-              let n = !counter in incr counter; 
-              if Hashtbl.mem syms.instances (i,ts)
-              then s ^
-                (if String.length s > 0 then ", " else " ") ^
-                cpp_typename syms t ^ " " ^
-                cpp_instance_name syms bbdfns i ts
-              else s (* elide initialisation of elided variable *)
-            )
-            ""
-            bps
-          in 
-            (
-              if String.length s > 0 
-              then "FLX_APAR_DECL " ^ s
-              else "FLX_APAR_DECL_ONLY"
-            )
+        let s = 
+          match length params with
+          | 0 -> ""
+          | 1 -> 
+            let ix = hd params in
+            if Hashtbl.mem syms.instances (ix, ts)
+            && not (argtype = `BTYP_tuple [])
+            then
+              argtypename ^ "  " ^ cpp_instance_name syms bbdfns ix ts
+            else ""
+          | _ -> 
+              let counter = ref 0 in
+              fold_left
+              (fun s (_,(i,t)) -> 
+                let t = reduce_type (tsubst vs ts (lower t)) in
+                let n = !counter in incr counter; 
+                if Hashtbl.mem syms.instances (i,ts) && not (t = `BTYP_tuple [])
+                then s ^
+                  (if String.length s > 0 then ", " else " ") ^
+                  cpp_typename syms t ^ " " ^
+                  cpp_instance_name syms bbdfns i ts
+                else s (* elide initialisation of elided variable *)
+              )
+              ""
+              bps
+        in 
+          (
+            if String.length s > 0 
+            then "FLX_APAR_DECL " ^ s
+            else "FLX_APAR_DECL_ONLY"
+          )
       )^ 
       "){\n" ^
       "  collector_t &gc = *PTF gc;\n" ^
@@ -1079,6 +1088,9 @@ let gen_function_methods filename syms (child_map,bbdfns)
     let argtype = lower (typeof_bparams bps) in
     let argtype = reduce_type (tsubst vs ts argtype) in
     let ret = reduce_type (tsubst vs ts (lower ret')) in
+
+    if ret = `BTYP_tuple [] then "// elided (returns unit)\n" else
+
     let funtype = fold syms.dfns (`BTYP_function (argtype, ret)) in
 
     let argtypename = cpp_typename syms argtype in

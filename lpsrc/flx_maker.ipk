@@ -3091,6 +3091,7 @@ We have no idea if it continues copying.
 @tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.dll tut/examples/*.par tut/examples/*.o tut/examples/*.output')
 @tangle('\trm -rf test/*.cpp test/*.hpp test/*.so test/*.dll test/*.par test/*.o test/*.output')
 @tangle('\trm -rf bagley/felix/*.cpp bagley/felix/*.hpp bagley/felix/*.so bagley/felix/*.dll bagley/felix/*.par bagley/felix/*.o')
+@tangle('\trm -rf speed/exes/*')
 @tangle('')
 @tangle('virgin: dummy')
 @tangle('\tcp Makefile Makefile.old')
