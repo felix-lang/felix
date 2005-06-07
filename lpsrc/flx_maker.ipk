@@ -1659,16 +1659,32 @@ def get_stdout(x):
 def get_stdouterr(x):
   return get_stdout(x+" 2>&1")
 
+def flush():
+  try: sys.stdin.flush()
+  except: pass
+
+def run(x):
+  print x
+  flush()
+  result = os.system(ENV+x)
+  if result: print "  .. ERROR CODE",hex(result)
+  flush()
+
+  if result:
+    raise MakeError
+
+
 def xqt(x):
-  if "silent" not in options: print x
-  try: sys.stdin.flush()
-  except: pass
+  if "quiet" not in options: print x
+  flush()
   result,output = get_stdouterr(x)
-  if "quiet" not in options:
-    if result: print "  .. ERROR CODE",hex(result)
-    if output: print string.join(output,"")
-  try: sys.stdin.flush()
-  except: pass
+  if result: 
+    if "quiet" in options: print x
+    print "  .. ERROR CODE",hex(result)
+  if output: 
+    if result or "quiet" not in options:
+      print string.join(output,"")
+  flush()
 
   if result:
     raise MakeError
@@ -1676,16 +1692,16 @@ def xqt(x):
 ENV = 'env PATH=bin:$PATH LD_LIBRARY_PATH=rtl:$LD_LIBRARY_PATH '
 def exqt(x): xqt(ENV+x)
 
+# used when a negative result is expected (return code is supposed to be nonzero)
+# used for a grep which is supposed to fail
 def nxqt(x):
   x = ENV+x
-  if "silent" not in options: print x
-  try: sys.stdin.flush()
-  except: pass
+  if "quiet" not in options: print x
+  flush()
   result,output = get_stdouterr(x)
-  if "quiet" not in options:
+  if not result:
     if output: print string.join(output,"")
-  try: sys.stdin.flush()
-  except: pass
+  flush()
 
   if not result:
     raise MakeError
@@ -2309,18 +2325,6 @@ def filetime(f):
     t = 0
   return t
 
-def run(x):
-  print x
-  try: sys.stdin.flush()
-  except: pass
-  result = os.system(ENV+x)
-  if result: print "  .. ERROR CODE",hex(result)
-  try: sys.stdin.flush()
-  except: pass
-
-  if result:
-    raise MakeError
-
 def erasefile(f):
   try:
     os.unlink(f)
@@ -2382,8 +2386,16 @@ def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES):
 
 try:
   # STEP 0: run interscript
-  if "doc" in options:
+  if "weave" in options:
+    print "WEAVING PROGRAM SOURCES"
     runISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
+  elif "doc" in options or "extract" in options:
+    print "EXTRACTING PRINCIPAL CODEBASE"
+    runISCR('lpsrc/flx.pak')
+
+  if "doc" in options:
+    print "GENERATING DOCUMENTATION"
+    runISCR('lpsrc/flx.pak')
     copy_mli2ml()
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_macro.pak')
@@ -2392,6 +2404,7 @@ try:
     runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ lpsrc/flx_perf.pak')
     xqt('cp doc/interscript.css speed/interscript.css')
   elif "extract" in options:
+    print "EXTRATING SOURCES"
     runISCR('lpsrc/flx.pak')
     runISCR('lpsrc/sm.pak')
     runISCR('lpsrc/ast.pak')
@@ -2409,6 +2422,7 @@ try:
   os.system('rm -f tmp.tmp')
 
   if "doc" in options or "man" in options:
+    print "GENERATING MAN PAGES"
     mp = glob.glob('man/man1/*.1')
     MAN_PAGES = []
     for i in mp:
@@ -2431,6 +2445,7 @@ try:
     except:pass
   
   if "doc" in options or "impldoc" in options:
+    print "GENERATING OCAMLDOCS"
     xqt('rm -rf impldoc/*')
     try:
       xqt('ocamldoc -I src -d impldoc src/*.mli -html')
@@ -2467,19 +2482,25 @@ try:
       if buildall or filetime(file +".c") > filetime(file +".o"):
         xqt(CCOMPILE +" -I "+OCAML_INCLUDE_DIRECTORY+" -Irtl "+flags+" "+file+".c")
 
+    print "COMPILING MISC"
     ocamlit(MISC_LEXS,MISC_PARSES,MISC_INTERFACES,MISC_IMPLEMENTATIONS,MISC_EXES)
     if buildall or "fish" in options:
+      print "COMPILING FISH"
       ocamlit(FISH_LEXS,FISH_PARSES,FISH_INTERFACES,FISH_IMPLEMENTATIONS,FISH_EXES)
     if buildall or "ocs" in options:
+      print "COMPILING OCS"
       ocamlit(OCS_LEXS,OCS_PARSES,OCS_INTERFACES,OCS_IMPLEMENTATIONS,OCS_EXES)
     if buildall or "felix" in options:
+      print "COMPILING FELIX"
       ocamlit(FLX_LEXS,FLX_PARSES,FLX_INTERFACES,FLX_IMPLEMENTATIONS,FLX_EXES)
     if buildall or "flxcc" in options:
+      print "COMPILING FLXCC"
       ocamlit(CIL_LEXS,CIL_PARSES,CIL_INTERFACES,CIL_IMPLEMENTATIONS,CIL_EXES)
 
     # STEP 6: Build FELIX Library
     if "olink" in options: buildall = 1
     for lib,IMPLEMENTATIONS in OCAMLLIBS:
+      print "CREATING LIBRARY ",lib
       object_library_name = "src/" + lib + OCAML_LIB_EXTENSION
       linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
       library_filetime = filetime(object_library_name)
@@ -2494,6 +2515,7 @@ try:
           break
 
     # STEP 8: Link executables
+    print "LINKING EXECUTABLES"
     x = ''
     for library in OLIBRARIES:
       x = x + ' ' + library + OCAML_LIB_EXTENSION
@@ -2505,18 +2527,22 @@ try:
 
   # COMPILE RTL  
   if "rtl" in options:
+    print "COMPILING RUN TIME LIBRARY COMPONENTS"
     if SUPPORT_DYNAMIC_LOADING:
+      print " ++ DYNAMIC LINK VERSIONS"
       ars = ""
 
       # FELIX SUBLIBRARY
+      print " .. FELIX RTL"
       for x in RTL_CPPS:
-        print 'Compiling rtl object',x
+        if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_dynamic.o "
         xqt(CCOBJ_DLLIB + " -Irtl " + x + ".cpp -o " +x+"_dynamic.o")
 
       # LUA SUBLIBRARY
+      print " .. LUA"
       for x in LUARTL:
-        print 'Compiling lua rtl object',x
+        if not "quiet" in options: print 'Compiling lua rtl object',x
         ars = ars + "rtl/lua_" + x + "_dynamic.o "
         if HAVE_DLOPEN:
           dlmac=' -DUSE_DLOPEN '
@@ -2525,12 +2551,14 @@ try:
         xqt(CCOBJ_DLLIB + dlmac+"-Ilua lua/" + x + ".cpp -o rtl/lua_" +x+"_dynamic.o")
 
       #ELKHOUND SUBLIBRARY
+      print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:
-        print 'Compiling elkhound rtl object',x
+        if not "quiet" in options: print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_dynamic.o "
         xqt(CCOBJ_DLLIB + " -D__UNIX__ -Ielk elk/" + x + ".cpp -o rtl/" +x+"_dynamic.o")
 
       # LINK RTL
+      print " ** MAKING RTL (dynamic) "
       xqt(AR + " rtl/libflx_dynamic.a " + ars)
       xqt(RANLIB + " rtl/libflx_dynamic.a")
 
@@ -2541,30 +2569,44 @@ try:
           "--out-implib=rtl/libflx_dynamic.dll.a ")
         xqt(cmd)
       else:
-        xqt(CCLINK_DLLIB + "-o rtl/libflx_dynamic.so "+ars)
+        #the actual library
+        xqt(CCLINK_DLLIB + "-Wl,-soname="+FLX_SONAME+" -o rtl/libflx_dynamic.so."+flx_version+' '+ars)
+
+        # to link against at compile time using -lflx_dynamic
+        xqt('(cd rtl && rm -f libflx_dynamic.so && ln -s libflx_dynamic.so.'+flx_version+' libflx_dynamic.so)')
+
+        # what a program linked against the library will load at run time
+        xqt('(cd rtl && rm -f '+FLX_SONAME+' && ln -s libflx_dynamic.so.'+flx_version+' '+FLX_SONAME+')')
+
 
     if SUPPORT_STATIC_LINKAGE:
+      print " ++ STATIC LINK VERSIONS"
       ars = ""
+      print " .. FELIX RTL"
       for x in RTL_CPPS:
-        print 'Compiling rtl object',x
+        if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_static.o "
         xqt(CCOBJ_STATIC_LIB + " -Irtl " + x + ".cpp -o " +x+"_static.o")
+      print " .. LUA"
       for x in LUARTL:
-        print 'Compiling lua rtl object',x
+        if not "quiet" in options: print 'Compiling lua rtl object',x
         ars = ars + "rtl/lua_" + x + "_static.o "
         xqt(CCOBJ_STATIC_LIB + " -Ilua lua/" + x + ".cpp -o rtl/lua_" +x+"_static.o")
+      print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:
-        print 'Compiling elkhound rtl object',x
+        if not "quiet" in options: print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_static.o "
         xqt(CCOBJ_STATIC_LIB + " -D__UNIX__ -Ielk elk/" + x + ".cpp -o rtl/" +x+"_static.o")
+      print " ** MAKING RTL (static) "
       xqt(AR + " rtl/libflx_static.a " + ars)
       xqt(RANLIB + " rtl/libflx_static.a")
   
   # elkhound executable: no need for dynamic loading, always built static
   if "elkhound" in options:
+    print "COMPILING ELKHOUND"
     ars = ""
     for x in SMBASE + SMRTL + ASTGEN + ELKHOUND + ELKRTL:
-      print 'Compiling elkhound object',x
+      if not "quiet" in options: print 'Compiling elkhound object',x
       ars = ars + "elk/"+x + "_static.o "
       xqt(CCOBJ_STATIC_LIB + " -D__UNIX__ -Ielk elk/" + x + ".cpp -o elk/" +x+"_static.o")
     xqt(AR + " elk/libelk_static.a " + ars)
@@ -2575,11 +2617,13 @@ try:
   # lua executable: build dynamic version is possible
   if "lua" in options:
     if SUPPORT_DYNAMIC_LOADING:
+      print "COMPILING LUA (dynamic)"
       xqt(CCOBJ_DLMAIN + "  -Ilua lua/lua.cpp -o lua/lua_dynamic.o")
       xqt(CCLINK_DLMAIN + " lua/lua_dynamic.o rtl/libflx_dynamic.so -o bin/flx_lua")
       xqt(CCOBJ_DLMAIN + " -Ilua  lua/luac.cpp -o lua/luac_dynamic.o")
       xqt(CCLINK_DLMAIN + " lua/luac_dynamic.o rtl/libflx_dynamic.so -o bin/flx_luac")
     else:
+      print "COMPILING LUA (static)"
       xqt(CCOBJ_STATIC_MAIN + "  -Ilua lua/lua.cpp -o lua/lua_static.o")
       xqt(CCLINK_STATIC + " lua/lua_static.o rtl/libflx_static.a -o bin/flx_lua")
       xqt(CCOBJ_STATIC_MAIN + " -Ilua  lua/luac.cpp -o lua/luac_static.o")
@@ -2588,13 +2632,15 @@ try:
   # COMPILE DRIVER PROGRAMS
   if "drivers" in options:
     if SUPPORT_STATIC_LINKAGE:
+      print "COMPILING DRIVERS (static)"
       for i,j in DRIVERS:
-        print 'Compiling driver object',i
+        if not "quiet" in options: print 'Compiling driver object',i
         xqt(CCOBJ_STATIC_MAIN + " -Irtl " + i + ".cpp -o " +i+"_static.o")
 
     if SUPPORT_DYNAMIC_LOADING:
+      print "COMPILING DRIVERS (dynamic)"
       for i,j in DRIVERS:
-        print 'Compiling driver object',i
+        if not "quiet" in options: print 'Compiling driver object',i
         xqt(CCOBJ_DLMAIN + " -Irtl " + i + ".cpp -o " +i+"_dynamic.o")
 
         if CYGWIN:
@@ -2605,12 +2651,18 @@ try:
   # run tests
   try:
     results = []
-
+    print "RUNNING TESTS"
     # GENERATE C++ FROM FELIX SOURCE
     EXTRA = []
     if "performance" in options:
       for driver,testfile,moreargs in SPECIAL_TESTS: 
         EXTRA.append(testfile)
+
+    TX = TESTS+EXTRA+BAGLEY
+    if len(TX)>0 or "regression" in options:
+      print "TRANSLATING FELIX TEST CODE TO C++"
+    if len(TX)>0:
+      print " .. REGRESSION TESTS and TUTORIAL EXAMPLES"
     for testfile in TESTS+EXTRA+BAGLEY:
       #print 'Running Felix code generator on ',testfile
       basename = string.split(testfile,'.')[0]
@@ -2633,6 +2685,7 @@ try:
 
     # FAILURE TESTS 
     if "regression" in options:
+      print " .. ERROR HANDLING TESTS"
       for testfile in BAD_TESTS:
         #print 'Running Felix code generator on ',testfile
         basename = string.split(testfile,'.')[0]
@@ -2662,73 +2715,78 @@ try:
     if "performance" in options:
       for driver,testfile,moreargs in SPECIAL_TESTS: 
         EXTRA.append(testfile)
-    for testfile in TESTS+EXTRA+BAGLEY:
-      #print 'Compiling generated code of ',testfile
-      basename = string.split(testfile,'.')[0]
-      cppfilename = basename + ".cpp"
-      if buildall or filetime(basename+ '.cpp') > filetime(basename+SHLX):
-        try:
-          if LINK_MODEL == "dynamic":
-            if CYGWIN:
-              xqt("g++ -w -ansi -g -o "+basename+SHLX+" -shared -Irtl "+cppfilename+" -Lrtl -lflx_dynamic -Wl,--enable-auto-import")
+    TX = TESTS+EXTRA+BAGLEY
+    if len(TX)>0:
+      print "COMPILING GENERATED C++ TEST CODE"
+      for testfile in TESTS+EXTRA+BAGLEY:
+        #print 'Compiling generated code of ',testfile
+        basename = string.split(testfile,'.')[0]
+        cppfilename = basename + ".cpp"
+        if buildall or filetime(basename+ '.cpp') > filetime(basename+SHLX):
+          try:
+            if LINK_MODEL == "dynamic":
+              if CYGWIN:
+                xqt("g++ -w -ansi -g -o "+basename+SHLX+" -shared -Irtl "+cppfilename+" -Lrtl -lflx_dynamic -Wl,--enable-auto-import")
+              else:
+                xqt(CCOBJ_DLLIB+" -Irtl "+cppfilename + " -o " + basename + "_dynamic.o")
+                xqt(CCLINK_DLLIB+" -Lrtl -lflx_dynamic -o "+ basename + SHLX + " "+basename+"_dynamic.o")
             else:
-              xqt(CCOBJ_DLLIB+" -Irtl "+cppfilename + " -o " + basename + "_dynamic.o")
-              xqt(CCLINK_DLLIB+" -Lrtl -lflx_dynamic -o "+ basename + SHLX + " "+basename+"_dynamic.o")
-          else:
-            xqt(CCOBJ_STATIC_LIB +" -Irtl "+cppfilename + " -o " + basename + "_static.o" )
-            xqt(CCLINK_STATIC +" -Irtl ./rtl/flx_run_static.o "+basename+ "_static.o -Lrtl -lflx_static -o " + basename + SHLX )
-          #print 'TESTFILE -- OK!',basename
-          results.append(("g++",basename,'OK'))
-        except MakeError:
-          print 'TESTFILE -- ERROR!',basename
-          erasefile(basename+SHLX)
-          if stop_on_error: raise MakeError
-          results.append(("g++",basename,'ERROR'))
+              xqt(CCOBJ_STATIC_LIB +" -Irtl "+cppfilename + " -o " + basename + "_static.o" )
+              xqt(CCLINK_STATIC +" -Irtl ./rtl/flx_run_static.o "+basename+ "_static.o -Lrtl -lflx_static -o " + basename + SHLX )
+            #print 'TESTFILE -- OK!',basename
+            results.append(("g++",basename,'OK'))
+          except MakeError:
+            print 'TESTFILE -- ERROR!',basename
+            erasefile(basename+SHLX)
+            if stop_on_error: raise MakeError
+            results.append(("g++",basename,'ERROR'))
 
 
     # run the tests
-    for testfile in TESTS:
-      basename = string.split(testfile,'.')[0]
-      if LINK_MODEL == "dynamic":
-        testscript = "env LD_LIBRARY_PATH=./rtl:$LD_LIBRARY_PATH ./bin/flx_run ./"+basename+SHLX
-      else:
-        testscript = "./"+basename+SHLX
+    if len(TESTS)>0:
+      print "RUNNING TESTS"
+      for testfile in TESTS:
+        basename = string.split(testfile,'.')[0]
+        if LINK_MODEL == "dynamic":
+          testscript = "env LD_LIBRARY_PATH=./rtl:$LD_LIBRARY_PATH ./bin/flx_run ./"+basename+SHLX
+        else:
+          testscript = "./"+basename+SHLX
 
-      if "log_output" in options:
-        testscript = testscript + " >" + basename + ".output"
+        if "log_output" in options:
+          testscript = testscript + " >" + basename + ".output"
 
-      elif "time_execution" in options:
-        testscript = "time " + testscript 
+        elif "time_execution" in options:
+          testscript = "time " + testscript 
 
-      elif "check_output" in options:
-        testscript = testscript + " >" + basename + ".output"
-        testscript = testscript + " && diff -a -b " + basename + ".expect "+ basename + ".output"
+        elif "check_output" in options:
+          testscript = testscript + " >" + basename + ".output"
+          testscript = testscript + " && diff -a -b " + basename + ".expect "+ basename + ".output"
 
-      #print 'Executing ',testscript
-      try:
-        run(testscript)
-        #print 'TESTFILE -- OK!',testscript
-        results.append(("Exec",testscript,'OK'))
-      except MakeError:
-        print 'TESTFILE -- ERROR!',testscript
-        if stop_on_error: raise MakeError
-        results.append(("Exec",testscript,'ERROR'))
-    
-    if "test" in options or "tutorial" in options or "fcount" in options:
-      tkind = "std"
-      if "inline" in options: tkind="inline"
-      stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "tut/examples/*.hpp"'
-      run(stats)
-      stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "test/*.hpp"'
-      run(stats)
-    
-    if "pfcount" in options:
-      stats = 'python script/pfcount.py misc/fcounts.stats'
-      run(stats)
+        #print 'Executing ',testscript
+        try:
+          run(testscript)
+          #print 'TESTFILE -- OK!',testscript
+          results.append(("Exec",testscript,'OK'))
+        except MakeError:
+          print 'TESTFILE -- ERROR!',testscript
+          if stop_on_error: raise MakeError
+          results.append(("Exec",testscript,'ERROR'))
+      
+      if "test" in options or "tutorial" in options or "fcount" in options:
+        tkind = "std"
+        if "inline" in options: tkind="inline"
+        stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "tut/examples/*.hpp"'
+        run(stats)
+        stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "test/*.hpp"'
+        run(stats)
+      
+      if "pfcount" in options:
+        stats = 'python script/pfcount.py misc/fcounts.stats'
+        run(stats)
 
-    if "pfcount_all" in options:
-      stats = 'python script/pfcount.py misc/fcounts.stats all'
-      run(stats)
+      if "pfcount_all" in options:
+        stats = 'python script/pfcount.py misc/fcounts.stats all'
+        run(stats)
 
     if "performance" in options:
       for driver,testfile,moreargs in SPECIAL_TESTS:
@@ -2796,7 +2854,12 @@ We have no idea if it continues copying.
 @tangle('BUILTIN_ISCR=env PYTHONPATH=. python -O interscript/bin/iscr.py --nocache')
 @tangle('')
 @tangle('all: dummy')
-@tangle('\tpython script/maker extract compiler rtl elkhound lua drivers test log_output check_output optimise_c')
+@tangle('\tpython script/maker extract compiler rtl elkhound lua drivers test log_output stop_on_error check_output optimise_c')
+@tangle('\tmake tools libdoc')
+@tangle('')
+
+@tangle('all.quiet: dummy')
+@tangle('\tpython script/maker quiet extract compiler rtl elkhound lua drivers test log_output stop_on_error check_output optimise_c')
 @tangle('\tmake tools libdoc')
 @tangle('')
 
@@ -2848,7 +2911,10 @@ We have no idea if it continues copying.
 @tangle('doc: grammar tools libdoc')
 @tangle('\tpython script/maker doc man impldoc')
 @tangle('\tcp doc/*.css tut/doc >/dev/null 2>&1')
-@tangle('\tmake impldoc')
+@tangle('')
+@tangle('doc.quiet: grammar tools libdoc')
+@tangle('\tpython script/maker quiet doc man impldoc')
+@tangle('\tcp doc/*.css tut/doc >/dev/null 2>&1')
 @tangle('')
 @tangle('libdoc: grammar tools')
 @tangle('\tbin/flx_doc --outdir=libdoc \\')
@@ -2979,110 +3045,126 @@ We have no idea if it continues copying.
 @tangle('\t#type "make install" to install Felix')
 @tangle('')
 
-@tangle('tarball: dummy')
-@tangle('\trm -f flx_'+flx_version)
-@tangle('\tln -s . flx_'+flx_version)
+@tangle('src_tarball: extract debian_data')
+@tangle('\trm -f felix-'+flx_version)
+@tangle('\tln -s . felix-'+flx_version)
 @tangle('\ttar -zcvf flx_'+flx_version+'_src.tgz\\')
-@tangle('\t\tflx_'+flx_version+'/configure\\')
-@tangle('\t\tflx_'+flx_version+'/Makefile\\')
-@tangle('\t\tflx_'+flx_version+'/README \\')
-@tangle('\t\tflx_'+flx_version+'/CONTENTS \\')
-@tangle('\t\tflx_'+flx_version+'/INSTALL \\')
-@tangle('\t\tflx_'+flx_version+'/VERSION \\')
-@tangle('\t\tflx_'+flx_version+'/LICENCE \\')
-@tangle('\t\tflx_'+flx_version+'/NEWS \\')
-@tangle('\t\tflx_'+flx_version+'/AUTHORS \\')
-@tangle('\t\tflx_'+flx_version+'/COPYING\\')
-@tangle('\t\tflx_'+flx_version+'/ChangeLog \\')
-@tangle('\t\tflx_'+flx_version+'/lpsrc/*.ipk\\')
-@tangle('\t\tflx_'+flx_version+'/lpsrc/*.pak\\')
-@tangle('\t\tflx_'+flx_version+'/interscript/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/bin/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/compilers/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/core/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/drivers/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/drivers/sinks/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/drivers/sources/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/drivers/storage/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/encoding/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/frames/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/frames/platform/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/languages/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/parsers/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/tanglers/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/tokenisers/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/utilities/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/weavers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/configure\\')
+@tangle('\t\tfelix-'+flx_version+'/Makefile\\')
+@tangle('\t\tfelix-'+flx_version+'/README \\')
+@tangle('\t\tfelix-'+flx_version+'/CONTENTS \\')
+@tangle('\t\tfelix-'+flx_version+'/INSTALL \\')
+@tangle('\t\tfelix-'+flx_version+'/VERSION \\')
+@tangle('\t\tfelix-'+flx_version+'/LICENCE \\')
+@tangle('\t\tfelix-'+flx_version+'/NEWS \\')
+@tangle('\t\tfelix-'+flx_version+'/AUTHORS \\')
+@tangle('\t\tfelix-'+flx_version+'/COPYING\\')
+@tangle('\t\tfelix-'+flx_version+'/ChangeLog \\')
+@tangle('\t\tfelix-'+flx_version+'/lpsrc/*.ipk \\')
+@tangle('\t\tfelix-'+flx_version+'/lpsrc/*.pak \\')
+@tangle('\t\tfelix-'+flx_version+'/debian/* \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/bin/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/compilers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/core/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/sinks/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/sources/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/storage/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/encoding/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/frames/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/frames/platform/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/languages/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/parsers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/tanglers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/tokenisers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/utilities/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/weavers/*.py \\')
 @tangle('')
+@tangle('bin_tarball:')
+@tangle('\trm -f felix-'+flx_version)
+@tangle('\tln -s . felix-'+flx_version)
 @tangle('\ttar -zcvf flx_'+flx_version+'_bin_linux.tgz\\')
-@tangle('\t\tflx_'+flx_version+'/configure\\')
-@tangle('\t\tflx_'+flx_version+'/Makefile\\')
-@tangle('\t\tflx_'+flx_version+'/README \\')
-@tangle('\t\tflx_'+flx_version+'/CONTENTS \\')
-@tangle('\t\tflx_'+flx_version+'/INSTALL \\')
-@tangle('\t\tflx_'+flx_version+'/VERSION \\')
-@tangle('\t\tflx_'+flx_version+'/LICENCE \\')
-@tangle('\t\tflx_'+flx_version+'/NEWS \\')
-@tangle('\t\tflx_'+flx_version+'/AUTHORS \\')
-@tangle('\t\tflx_'+flx_version+'/COPYING\\')
-@tangle('\t\tflx_'+flx_version+'/ChangeLog \\')
-@tangle('\t\tflx_'+flx_version+'/lpsrc/*.ipk \\')
-@tangle('\t\tflx_'+flx_version+'/lpsrc/*.pak \\')
-@tangle('\t\tflx_'+flx_version+'/script/maker \\')
-@tangle('\t\tflx_'+flx_version+'/script/*\\')
-@tangle('\t\tflx_'+flx_version+'/src/*.ml \\')
-@tangle('\t\tflx_'+flx_version+'/src/*.mli \\')
-@tangle('\t\tflx_'+flx_version+'/src/*.mly \\')
-@tangle('\t\tflx_'+flx_version+'/src/*.mll \\')
-@tangle('\t\tflx_'+flx_version+'/tools/*.flx \\')
-@tangle('\t\tflx_'+flx_version+'/rtl/*.cpp\\')
-@tangle('\t\tflx_'+flx_version+'/rtl/*.hpp\\')
-@tangle('\t\tflx_'+flx_version+'/libdoc/*.html \\')
-@tangle('\t\tflx_'+flx_version+'/lib/*.flx \\')
-@tangle('\t\tflx_'+flx_version+'/lib/*.fsh \\')
-@tangle('\t\tflx_'+flx_version+'/test/*.flx \\')
-@tangle('\t\tflx_'+flx_version+'/test/*.cpp \\')
-@tangle('\t\tflx_'+flx_version+'/tut/examples/*.flx \\')
-@tangle('\t\tflx_'+flx_version+'/tut/doc/*.html \\')
-@tangle('\t\tflx_'+flx_version+'/tut/doc/*.css \\')
-@tangle('\t\tflx_'+flx_version+'/tut/doc/*.tex \\')
-@tangle('\t\tflx_'+flx_version+'/doc/*.html \\')
-@tangle('\t\tflx_'+flx_version+'/doc/*.css \\')
-@tangle('\t\tflx_'+flx_version+'/doc/*.tex \\')
-@tangle('\t\tflx_'+flx_version+'/licences/*.txt \\')
-@tangle('\t\tflx_'+flx_version+'/misc/* \\')
-@tangle('\t\tflx_'+flx_version+'/htmlman/*.html \\')
-@tangle('\t\tflx_'+flx_version+'/man/man1/*.1 \\')
-@tangle('\t\tflx_'+flx_version+'/impldoc/*.html \\')
-@tangle('\t\tflx_'+flx_version+'/www/*.html \\')
-@tangle('\t\tflx_'+flx_version+'/bin/flx \\')
-@tangle('\t\tflx_'+flx_version+'/speed/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/speed/*.html \\')
-@tangle('\t\tflx_'+flx_version+'/speed/*.css \\')
-@tangle('\t\tflx_'+flx_version+'/speed/*.gpl \\')
-@tangle('\t\tflx_'+flx_version+'/speed/exes/*/*.times \\')
-@tangle('\t\tflx_'+flx_version+'/speed/images/*.jpg \\')
-@tangle('\t\tflx_'+flx_version+'/speed/plotters/*.gpl \\')
-@tangle('\t\tflx_'+flx_version+'/speed/src/c/*.c \\')
-@tangle('\t\tflx_'+flx_version+'/speed/src/ocaml/*.ml \\')
-@tangle('\t\tflx_'+flx_version+'/speed/src/felix/*.flx \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/bin/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/compilers/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/core/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/drivers/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/drivers/sinks/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/drivers/sources/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/drivers/storage/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/encoding/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/frames/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/frames/platform/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/languages/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/parsers/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/tanglers/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/tokenisers/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/utilities/*.py \\')
-@tangle('\t\tflx_'+flx_version+'/interscript/weavers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/configure\\')
+@tangle('\t\tfelix-'+flx_version+'/Makefile\\')
+@tangle('\t\tfelix-'+flx_version+'/README \\')
+@tangle('\t\tfelix-'+flx_version+'/CONTENTS \\')
+@tangle('\t\tfelix-'+flx_version+'/INSTALL \\')
+@tangle('\t\tfelix-'+flx_version+'/VERSION \\')
+@tangle('\t\tfelix-'+flx_version+'/LICENCE \\')
+@tangle('\t\tfelix-'+flx_version+'/NEWS \\')
+@tangle('\t\tfelix-'+flx_version+'/AUTHORS \\')
+@tangle('\t\tfelix-'+flx_version+'/COPYING\\')
+@tangle('\t\tfelix-'+flx_version+'/ChangeLog \\')
+@tangle('\t\tfelix-'+flx_version+'/lpsrc/*.ipk \\')
+@tangle('\t\tfelix-'+flx_version+'/lpsrc/*.pak \\')
+@tangle('\t\tfelix-'+flx_version+'/script/maker \\')
+@tangle('\t\tfelix-'+flx_version+'/script/*\\')
+@tangle('\t\tfelix-'+flx_version+'/src/*.ml \\')
+@tangle('\t\tfelix-'+flx_version+'/src/*.mli \\')
+@tangle('\t\tfelix-'+flx_version+'/src/*.mly \\')
+@tangle('\t\tfelix-'+flx_version+'/src/*.mll \\')
+@tangle('\t\tfelix-'+flx_version+'/tools/*.flx \\')
+@tangle('\t\tfelix-'+flx_version+'/rtl/*.cpp\\')
+@tangle('\t\tfelix-'+flx_version+'/rtl/*.hpp\\')
+@tangle('\t\tfelix-'+flx_version+'/libdoc/*.html \\')
+@tangle('\t\tfelix-'+flx_version+'/lib/*.flx \\')
+@tangle('\t\tfelix-'+flx_version+'/lib/*.fsh \\')
+@tangle('\t\tfelix-'+flx_version+'/test/*.flx \\')
+@tangle('\t\tfelix-'+flx_version+'/test/*.cpp \\')
+@tangle('\t\tfelix-'+flx_version+'/tut/examples/*.flx \\')
+@tangle('\t\tfelix-'+flx_version+'/tut/doc/*.html \\')
+@tangle('\t\tfelix-'+flx_version+'/tut/doc/*.css \\')
+@tangle('\t\tfelix-'+flx_version+'/tut/doc/*.tex \\')
+@tangle('\t\tfelix-'+flx_version+'/doc/*.html \\')
+@tangle('\t\tfelix-'+flx_version+'/doc/*.css \\')
+@tangle('\t\tfelix-'+flx_version+'/doc/*.tex \\')
+@tangle('\t\tfelix-'+flx_version+'/licences/*.txt \\')
+@tangle('\t\tfelix-'+flx_version+'/debian/* \\')
+@tangle('\t\tfelix-'+flx_version+'/misc/* \\')
+@tangle('\t\tfelix-'+flx_version+'/htmlman/*.html \\')
+@tangle('\t\tfelix-'+flx_version+'/man/man1/*.1 \\')
+@tangle('\t\tfelix-'+flx_version+'/impldoc/*.html \\')
+@tangle('\t\tfelix-'+flx_version+'/www/*.html \\')
+@tangle('\t\tfelix-'+flx_version+'/bin/flx \\')
+@tangle('\t\tfelix-'+flx_version+'/speed/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/speed/*.html \\')
+@tangle('\t\tfelix-'+flx_version+'/speed/*.css \\')
+@tangle('\t\tfelix-'+flx_version+'/speed/*.gpl \\')
+@tangle('\t\tfelix-'+flx_version+'/speed/exes/*/*.times \\')
+@tangle('\t\tfelix-'+flx_version+'/speed/images/*.jpg \\')
+@tangle('\t\tfelix-'+flx_version+'/speed/plotters/*.gpl \\')
+@tangle('\t\tfelix-'+flx_version+'/speed/src/c/*.c \\')
+@tangle('\t\tfelix-'+flx_version+'/speed/src/ocaml/*.ml \\')
+@tangle('\t\tfelix-'+flx_version+'/speed/src/felix/*.flx \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/bin/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/compilers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/core/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/sinks/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/sources/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/drivers/storage/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/encoding/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/frames/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/frames/platform/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/languages/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/parsers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/tanglers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/tokenisers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/utilities/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/weavers/*.py \\')
+@tangle('')
+@tangle('tarball: src_tarball bin_tarball')
+@tangle('')
+@tangle('debian_data: dummy')
+@tangle('\trm -rf debian')
+@tangle('\t${BUILTIN_ISCR} lpsrc/flx_debian.pak')
+@tangle('\tchmod u+x debian/rules')
+@tangle('')
+@tangle('debian: debian_data')
+@tangle('\tdpkg-buildpackage -rfakeroot -d')
+@tangle('')
 @tangle('')
 @tangle('www: dummy')
 @tangle('\t${BUILTIN_ISCR} lpsrc/flx_sourceforge.pak')
@@ -3093,17 +3175,20 @@ We have no idea if it continues copying.
 @tangle('\trm -rf bagley/felix/*.cpp bagley/felix/*.hpp bagley/felix/*.so bagley/felix/*.dll bagley/felix/*.par bagley/felix/*.o')
 @tangle('\trm -rf speed/exes/*')
 @tangle('')
-@tangle('virgin: dummy')
-@tangle('\tcp Makefile Makefile.old')
-@tangle('\trm -rf tut rtl test www src misc man script bin doc lib impldoc htmlman tmp tmp.tmp')
+@tangle('distclean:')
+@tangle('\trm -rf tut rtl test www src misc man bin doc lib impldoc htmlman tmp tmp.tmp')
 @tangle('\trm -rf elk')
 @tangle('\trm -rf flxcc_out c89 c99 cxx gnu89 gnu99 gnucxx cxx_sys')
 @tangle('\trm -rf bagley')
 @tangle('\trm -rf doc_out libdoc lua tools')
 @tangle('\trm -rf fish meta licences')
 @tangle('\trm -rf lpsrc/*.cache')
+@tangle('')
+@tangle('virgin: distclean')
+@tangle('\tcp Makefile Makefile.old')
 @tangle('\trm -rf interscript/*.pyc')
 @tangle('\trm -rf interscript/*.pyo')
+@tangle('\trm -rf script/')
 @tangle('\trm -rf speed/')
 @tangle('\trm -f README LICENCE VERSION CONTENTS INSTALL AUTHORS NEWS COPYING ChangeLog')
 @tangle('')
@@ -3177,7 +3262,7 @@ We have no idea if it continues copying.
   tangle('\t'+RANLIB+' ${SHLIB_DIR}/libflx_static.a')
 @if SUPPORT_DYNAMIC_LOADING:
   tangle('\t'+RANLIB+' ${INSTALL_DIR}/rtl/libflx_dynamic.a')
-  tangle('\tinstall rtl/libflx_dynamic.so ${SHLIB_DIR}')
+  tangle('\tinstall rtl/libflx_dymamic.so ${SHLIB_DIR}')
   tangle('\tinstall rtl/libflx_dynamic.a ${SHLIB_DIR}')
   tangle('\t'+RANLIB+' ${SHLIB_DIR}/libflx_dynamic.a')
 @tangle('\t(install doc/* ${INSTALL_DIR}/doc || exit 0) > /dev/null 2>&1')

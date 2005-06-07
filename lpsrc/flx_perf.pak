@@ -134,40 +134,16 @@ using gnuplot.
 import os
 import time
 import sys
+import random
+import signal
+import socket
 
 # utility to make a directory
 def mkdir(p):
   try: os.mkdir(p)
   except: pass
 
-# define the translators
-def mk_gcc(p):
-  return "gcc -o speed/exes/gcc/%s speed/src/c/%s.c" % (p,p)
-
-def mk_gcc_opt(p):
-  x = "gcc -O3 -fomit-frame-pointer "
-  x = x + "-o speed/exes/gccopt/%s speed/src/c/%s.c" % (p,p)
-  return x
-
-def mk_ocamlopt(p):
-  return "ocamlopt.opt -o speed/exes/ocamlopt/%s speed/src/ocaml/%s.ml" % (p,p)
-
-def mk_ocamlb(p):
-  return "ocamlc.opt -o speed/exes/ocamlb/%s speed/src/ocaml/%s.ml" % (p,p)
-
-def mk_felix(p):
-  x = "bin/flx --test --force --static --optimise -c -DFLX_PTF_STATIC_POINTER "
-  x = x + "speed/src/felix/%s && " % p
-  x = x + "mv speed/src/felix/%s speed/exes/felix/%s" % (p,p)
-  return x
-
-xlators = [
-  ('felix',mk_felix,'felix'),
-  ('gcc',mk_gcc,'c'),
-  ('gccopt',mk_gcc_opt,'c'),
-  ('ocamlopt',mk_ocamlopt,'ocaml'),
-  ('ocamlb',mk_ocamlb,'ocaml'),
-]
+execfile("config/speed_xlators.py")
 
 # make the output directories
 mkdir('speed/exes')
@@ -175,51 +151,112 @@ for key,mk,src in xlators:
   mkdir('speed/exes/'+key)
 
 #define the tests
-tests = [
-  ('ack',1,16),
-  ('takfp',1,20),
-]
+tests = {
+  'ack':(1,5),
+  'takfp':(1,5),
+}
 
 #compile the programs
 for xl,mk,src in xlators:
-  for test,fst,lst in tests:
-    cmd = mk(test) 
+  for test in tests.keys():
+    fst,last = tests[test]
+    cmd = mk(xl,test) 
     os.system(cmd)
   
-#run the programs, stop after one uses more than the 
-# maximum allowed time
+# maximum allowed time per test, seconds
 maxtime = 5.0
-for test,fst,lst in tests:
-  print test
-  for xl,mk,src in xlators:
-    sys.stdout.write("%-20s" % ('  '+xl))
-    sys.stdout.flush()
-    f = open("speed/exes/"+xl+"/"+test+".times","w")
-    maxn = -1
-    for n in range(fst,lst):
-      sys.stdout.write('.')
-      sys.stdout.flush()
-      start = time.time()
-      cmd = ("speed/exes/"+xl+"/"+test+" %d" % n) + " > /dev/null"
-      os.system(cmd)
-      finish = time.time()
-      elapsed = finish - start
-      x = "%s %s %d %6.4f" % (xl,test,n,elapsed)
-      #print x
-      f.write(x+"\n")
-      maxn = n
-      if elapsed > maxtime: break
-    f.close()
+mintime = 0.5
+sleep_time = 10
 
-    #get right spacing
-    x = ' '
-    j = 20
-    while j > maxn:
-      x = x + ' '
-      j = j - 1
-    sys.stdout.write(x+" n =%3d, " % maxn +"t = %6.2f s" % elapsed + '\n')
-    sys.stdout.flush()
+#total time for testsing, seconds:
+max_test_time = 200.0
+start_time = time.time()
 
+#hostname
+hostname = socket.gethostname()
+
+#test date
+etime = time.time()
+ltime = time.localtime(etime)
+date = time.strftime("%Y/%m/%d %H:%M",ltime)
+
+ntests = len(tests)
+nlators = len(xlators)
+
+pid = 0
+spid = 0
+
+f = open("speed/results.dat","at")
+while time.time() - start_time < max_test_time:
+  # pick a random test and a random translator
+  test_ix = random.randint(0,ntests-1)
+  xlator_ix = random.randint(0,nlators-1)
+  test = tests.keys()[test_ix]
+  fst,lst = tests[test]
+  xl,mk,src = xlators[xlator_ix]
+  n = random.randint(fst,lst+1)
+
+  test_file = "speed/exes/"+xl+"/"+test
+  test_arg = "%d" % n
+
+  print test_file,test_arg
+  start = time.time()
+  pid = os.spawnl(os.P_NOWAIT,test_file,"DUMMY",test_arg)
+  spid = os.spawnlp(os.P_NOWAIT,"sleep","DUMMY","%d" % sleep_time)
+  pidx,status = os.wait()
+  finish = time.time()
+  elapsed = finish - start
+
+  if pidx == spid:
+    os.kill(pid,signal.SIGKILL)
+    print "TIMEOUT"
+  else:
+    os.kill(spid,signal.SIGKILL)
+  os.wait()
+
+
+  if  pidx == pid:
+    signalled = os.WIFSIGNALED(status)
+    exited = os.WIFEXITED(status)
+    if not (signalled or exited):
+      print "WHAT?? Neither exited nor signalled?"
+      exit(2)
+
+    if signalled:
+      sig = os.WTERMSIG(status)
+      if sig == signal.SIGINT:
+        raise KeyboardInterrupt
+
+      if sig == signal.SIGSEGV:
+        print "SEGMENTATION FAULT, TERMINATING"
+        sys.exit(1)
+
+      if sig != 0:
+        print "UNKNOWN SIGNAL",sig,": TERMINATING"
+        sys.exit(1)
+    else:
+      if status == 0:
+        x = hostname + " " + date + " %s %s %d %6.4f" % (xl,test,n,elapsed)
+        print x
+        f.write(x+"\n")
+        f.flush()
+      else:
+        ret = os.WEXITSTATUS(status)
+        if ret != 0:
+          print "TEST RETURNED ERROR CODE ",ret,": TERMINATING"
+          sys.exit(1)
+        else:
+          print "WHAT?? Exit code is 0 and not 0?"
+          sys.exit(2)
+
+  if elapsed > maxtime: lst = n - 1 
+  if elapsed < mintime: fst = n + 1
+  if fst > lst: lst = fst
+  tests[test] = (fst,lst)
+
+f.close()
+
+@select(tangler('speed/plot.py'))
 # generate gnuplot files
 mkdir("speed/plotters")
 for test,fst,lst in tests:

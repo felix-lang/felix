@@ -1,7 +1,6 @@
 @bc = begin_displayed_code
 @ec = end_displayed_code
-@flx_version = '1.0.25'
-@godi_revision = '0'
+@execfile('config/config.py')
 @set_title('Felix '+flx_version)
 @head(1,'Purpose')
 Felix is a procedural language designed to implement
@@ -323,5 +322,6 @@ create a file here for unit tests.
 @head(2,'Misc')
 @include_file ('flx_vim.ipk')
 @include_file ('flx_highlight.ipk')
+@include_file ('flx_debian.pak')
 
 

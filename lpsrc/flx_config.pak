@@ -1,6 +1,55 @@
 @head(1,'Configure')
 @FLX_CONFIG_CVS_ID='$Id$'
 @print FLX_CONFIG_CVS_ID
+@flx_version = '1.1.0'
+@godi_revision = '0'
+@debian_revision = '1'
+
+@select(tangler('tmp/speed_xlators.py.default','python'))
+# this config file defines default translators on your platform
+# to be used by the performance test module
+#
+# The file 'config/speed_xlators.py' can be edited,
+# it will not be clobbered once created
+#
+# define the translators
+def mk_gcc_3_4(k,p):
+  return "gcc-3.4 -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+
+def mk_gcc_3_4_opt(k,p):
+  x = "gcc-3.4 -O3 -fomit-frame-pointer "
+  x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+  return x
+
+def mk_gcc_4_0(k,p):
+  return "gcc-4.0 -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+
+def mk_gcc_4_0_opt(k,p):
+  x = "gcc-4.0 -O3 -fomit-frame-pointer "
+  x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+  return x
+
+def mk_ocamlopt(k,p):
+  return "ocamlopt.opt -o speed/exes/%s/%s speed/src/ocaml/%s.ml" % (k,p,p)
+
+def mk_ocamlb(k,p):
+  return "ocamlc.opt -o speed/exes/%s/%s speed/src/ocaml/%s.ml" % (k,p,p)
+
+def mk_felix(k,p):
+  x = "bin/flx --test --force --static --optimise -c -DFLX_PTF_STATIC_POINTER "
+  x = x + "speed/src/felix/%s && " % p
+  x = x + "mv speed/src/felix/%s speed/exes/%s/%s" % (p,k,p)
+  return x
+
+xlators = [
+  ('felix',mk_felix,'felix'),
+  ('gcc_3_4',mk_gcc_3_4,'c'),
+  ('gccopt_3_4',mk_gcc_3_4_opt,'c'),
+  ('gcc_4_0',mk_gcc_4_0,'c'),
+  ('gccopt_4_0',mk_gcc_4_0_opt,'c'),
+  ('ocamlopt',mk_ocamlopt,'ocaml'),
+  ('ocamlb',mk_ocamlb,'ocaml'),
+]
 
 @h = tangler("tmp/check_cygwin.cxx",'c++')
 @select(h)
@@ -331,8 +380,6 @@ int main(int,char*[]) {
 # config/config.py
 # WHICH YOU SHOULD EDIT TO SUIT YOUR REQUIREMENTS
 
-@tangle("CONFIG_GENERATOR_CVS_ID='"+FLX_CONFIG_CVS_ID+"'")
-print CONFIG_GENERATOR_CVS_ID
 import sys
 import os
 import os.path
@@ -340,6 +387,30 @@ import traceback
 import string
 import time
 
+#---------- utilities -------------------
+# We're screwed if popen doesn't work ..
+def get_stdout(x):
+  f = os.popen(x,"r")
+  output = f.readlines()
+  result = f.close()
+  if not result: result = 0
+  return result,output
+
+
+# we cannot do anything fancy here like redirect
+# stdout/stderr because we don't know what OS we're on
+
+def xxqt(x):
+  result = os.system(x)
+  if result != 0: 
+    print "FAIL:",x
+    raise Error
+  else: print x
+
+def xqt(x): 
+  xxqt(x + " >/dev/null 2>&1")
+
+#----------------------------------------
 time_stamp_format = "%Y/%m/%d %H:%M:%S UTC"
 config_time=time.gmtime(time.time())
 CONFIG_TIME = time.strftime(time_stamp_format, config_time)
@@ -409,6 +480,11 @@ while(i < len (sys.argv)):
 
 if PREFIX=='': PREFIX=default_prefix
 
+if not file_exists("config/speed_xlators.py"):
+  xqt('cp tmp/speed_xlators.py.default config/speed_xlators.py')
+  print "*** Created new configuration for speed tests ***"
+  print "   Edit config/speed_xlators.py to suit your platform"
+
 if file_exists("config/config.py"):
   if force or upgrade:
     print "**** upgrading configuration"
@@ -421,7 +497,7 @@ if file_exists("config/config.py"):
       print "*** It is assumed to container client configuration data"
       print "*** and so will not be clobbered."
       print
-      print "*** To upgrade the configuration use the --force option"
+      print "*** To upgrade the configuration use the --upgrade option"
       print
       print "*** To recreate the default configuration"
       print "*** delete config/config.py first"
@@ -433,27 +509,16 @@ else:
   else:
     print "**** creating new configuration"
 
-# We're screwed if popen doesn't work ..
-def get_stdout(x):
-  f = os.popen(x,"r")
-  output = f.readlines()
-  result = f.close()
-  if not result: result = 0
-  return result,output
+if force or refresh:
+  a = file_exists("config/speed_xlators.py")
+  b = file_exists("config/speed_xlators.py.old")
+  if a and not b:
+    xqt('cp config/speed_xlators.py config/speed_xlators.py.old')
+    print "*** Created config/speed_xlators.py.old"
 
-
-# we cannot do anything fancy here like redirect
-# stdout/stderr because we don't know what OS we're on
-
-def xxqt(x):
-  result = os.system(x)
-  if result != 0: 
-    print "FAIL:",x
-    raise Error
-  else: print x
-
-def xqt(x): 
-  xxqt(x + " >/dev/null 2>&1")
+  xqt('cp tmp/speed_xlators.py.default config/speed_xlators.py')
+  print "***Clobbered configuration for speed tests***"
+  print "   Edit config/speed_xlators.py to suit your platform"
 
 
 #---------------------------------------------------
@@ -864,8 +929,22 @@ print "ESTABLISHED DEFAULT CONFIGURATION"
 # attempt to clobber the configuration with old values
 if not refresh:
   try:
-    execfile("config.py")
+    execfile("config/config.py")
   except: pass
+
+# reclobber version details to this version
+@tangle("CONFIG_GENERATOR_CVS_ID='"+FLX_CONFIG_CVS_ID+"'")
+@tangle("flx_version = '"+flx_version+"'")
+@tangle("godi_revision = '"+godi_revision+"'")
+@tangle("debian_revision = '"+debian_revision+"'")
+
+print CONFIG_GENERATOR_CVS_ID
+print 'flx_version',flx_version
+print 'godi_revision',godi_revision
+print 'debian_revision',debian_revision
+
+FLX_SONAME = 'libflx_dynamic.so.'+flx_version[0:string.index(flx_version,'.')]
+
 
 def pr(f,x):
   print x
@@ -1040,6 +1119,10 @@ try:
   pr(f,'#'+CONFIG_GENERATOR_CVS_ID)
   p(f,"CONFIG_GENERATOR_CVS_ID")
   p(f,"CONFIG_TIME")
+  p(f,"flx_version")
+  p(f,"godi_revision")
+  p(f,"debian_revision")
+  p(f,"FLX_SONAME")
   for fn in cf_reg:
     pr(f,"execfile('"+fn+"')")
 

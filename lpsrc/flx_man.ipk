@@ -52,12 +52,12 @@ John Maxwell Skaller, mailto:skaller@users.sourceforge.net
 """
 //
 
-@def mh(s):
-  tangle('.TH '+s+' "'+short_time+'" ('+flx_version+')')
+@def mh(t):
+  tangle('.TH "'+t+'" 1 "'+short_time+'" ('+flx_version+')')
 
 @head(2,'felix:language overview')
 @select(tangler('man/man1/felix.1','data'))
-@mh('FELIX LANGUAGE')
+@mh('FELIX LANGUAGE '+flx_version)
 .SH NAME
 Felix language
 .SH SYNOPSIS

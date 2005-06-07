@@ -230,7 +230,7 @@ native Win32 using MSVC++.
 </P>
 
 <H1>Download</H1>
-@flx_old_version = '1.0.24'
+@flx_old_version = '1.0.25'
 @tangle("<P> Download developer tarball 'Morphlix' <A HREF=../../flx_"+flx_version+"_src.tgz>flx_"+flx_version+"_src.tgz</A></P><P>")
 @tangle("<P> Download user tarball 'Felix' <A HREF=../../flx_"+flx_old_version+"_src.tgz>flx_"+flx_old_version+"_src.tgz</A></P><P>")
 @keep=['1.0.23','1.0.22','1.0.21','1.0.20','1.0.19','1.0.18','1.0.17','1.0.16','1.0.15','1.0.12','1.0.11','1.0.10','1.0.9','1.0.8','1.0.7']
