@@ -209,6 +209,10 @@ let rec is_pure syms (child_map, bbdfns) i =
     with 
     | Not_found -> false
 
+let uses_global syms bbdfns x =
+  let ea e = uses_global syms bbdfns e in
+  match fold
+
 let ident x = x 
 let tident t = t 
 

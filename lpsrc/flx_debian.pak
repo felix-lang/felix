@@ -13,7 +13,7 @@ Source: felix
 Section: devel
 Priority: optional
 Maintainer: John Skaller <skaller@users.sourceforge.net>
-Build-Depends: debhelper (>= 4.0.0), python, ocaml (>=3.08.0), gnuplot, man2html
+Build-Depends: debhelper (>= 4.0.0), python (>=2.0), ocaml (>=3.08.0), gnuplot (>=4.0), man2html (>=1.5), sed (>=4.1)
 Standards-Version: 3.6.1
 
 Package: felix

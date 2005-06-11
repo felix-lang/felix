@@ -1542,16 +1542,16 @@ and varinfo = {
 
 (** Storage-class information *)
 and storage = 
-    NoStorage |                         (** The default storage. Nothing is 
+    | NoStorage                          (** The default storage. Nothing is 
                                          * printed  *)
-    Static |                           
-    Register |                          
-    Extern                              
+    | Static                            
+    | Register                           
+    | Extern                              
 
 
 (** Expressions (Side-effect free)*)
 and exp =
-    Const      of constant              (** Constant *)
+  | Const      of constant              (** Constant *)
   | Lval       of lval                  (** Lvalue *)
   | SizeOf     of typ                   (** sizeof(<type>). Has [unsigned 
                                          * int] type (ISO 6.5.3.4). This is 

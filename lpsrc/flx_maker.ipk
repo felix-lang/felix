@@ -2436,7 +2436,7 @@ try:
         basename = string.split(file,".")[0]
         xqt(
           "man2html man/man1/" + file + 
-          '| sed -e "s%http://localhost/cgi-bin/man/man2html?1+\(.*\)\\">%\\1_1.html\\">%"' +
+          '| sed -e "s%<A HREF=\\"[^<]*cgi-bin/man/man2html?1+\(.*\)\\">%<A HREF=\\"\\1_1.html\\">%"' +
           '| sed -e "7d"' +
           '| sed -e "1,3d"' +
           '| sed -e "s%<html>%'+dtd+'\\n<html>%"' +
@@ -3048,7 +3048,7 @@ We have no idea if it continues copying.
 @tangle('src_tarball: extract debian_data')
 @tangle('\trm -f felix-'+flx_version)
 @tangle('\tln -s . felix-'+flx_version)
-@tangle('\ttar -zcvf flx_'+flx_version+'_src.tgz\\')
+@tangle('\ttar -cvf flx_'+flx_version+'_src.tar\\')
 @tangle('\t\tfelix-'+flx_version+'/configure\\')
 @tangle('\t\tfelix-'+flx_version+'/Makefile\\')
 @tangle('\t\tfelix-'+flx_version+'/README \\')
@@ -3079,7 +3079,10 @@ We have no idea if it continues copying.
 @tangle('\t\tfelix-'+flx_version+'/interscript/tanglers/*.py \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/tokenisers/*.py \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/utilities/*.py \\')
-@tangle('\t\tfelix-'+flx_version+'/interscript/weavers/*.py \\')
+@tangle('\t\tfelix-'+flx_version+'/interscript/weavers/*.py ')
+@# debian requires gzip -9
+@tangle('\tgzip -9 flx_'+flx_version+'_src.tar')
+@tangle('\tmv flx_'+flx_version+'_src.tar.gz flx_'+flx_version+'_src.tgz')
 @tangle('')
 @tangle('bin_tarball:')
 @tangle('\trm -f felix-'+flx_version)
@@ -3162,8 +3165,8 @@ We have no idea if it continues copying.
 @tangle('\t${BUILTIN_ISCR} lpsrc/flx_debian.pak')
 @tangle('\tchmod u+x debian/rules')
 @tangle('')
-@tangle('debian: debian_data')
-@tangle('\tdpkg-buildpackage -rfakeroot -d')
+@tangle('debian: dummy')
+@tangle('\tdpkg-buildpackage -rfakeroot -sd -us -uc')
 @tangle('')
 @tangle('')
 @tangle('www: dummy')
@@ -3183,13 +3186,15 @@ We have no idea if it continues copying.
 @tangle('\trm -rf doc_out libdoc lua tools')
 @tangle('\trm -rf fish meta licences')
 @tangle('\trm -rf lpsrc/*.cache')
+@tangle('\trm -rf interscript/*.pyo')
+@tangle('\trm -rf interscript/*/*.pyo')
+@tangle('\trm -rf interscript/*/*/*.pyo')
+@tangle('\trm -rf speed/')
 @tangle('')
 @tangle('virgin: distclean')
 @tangle('\tcp Makefile Makefile.old')
-@tangle('\trm -rf interscript/*.pyc')
-@tangle('\trm -rf interscript/*.pyo')
 @tangle('\trm -rf script/')
-@tangle('\trm -rf speed/')
+@tangle('\trm -rf debian/')
 @tangle('\trm -f README LICENCE VERSION CONTENTS INSTALL AUTHORS NEWS COPYING ChangeLog')
 @tangle('')
 

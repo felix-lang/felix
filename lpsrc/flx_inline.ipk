@@ -75,6 +75,14 @@ let string_of_intset s =
   IntSet.fold (fun i x -> x ^ si i ^ " ") s "" ^
   "}"
 
+(* a function 'uses' a global if
+  (a) it refers to a global variable
+  (b) directly calls a function that uses a global variable
+  (c) forms a closure of a function that uses a global variable
+*)
+
+let uses_global bbfns i exes =
+
 let recal_exes_usage syms uses sr i ps exes =
   (*
   print_endline ("Recal usage of this code:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
@@ -1946,6 +1954,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       remove_unused_children syms (uses,child_map,bbdfns) i;
       let exes = Flx_cflow.chain_gotos exes in
       let props = `Inlining_complete :: props in
+      let props = if uses_global bbfns i exes then `Uses_global :: props else props in
       let data = id,parent,sr,`BBDCL_function (props,vs,ps,ret,exes) in
       Hashtbl.replace bbdfns i data;
       (*

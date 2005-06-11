@@ -459,6 +459,8 @@ if DEBIAN:
 
 PREFIX=os.getenv("PREFIX",default=default_prefix)
 
+overrides = {}
+
 i = 1
 while(i < len (sys.argv)):
   arg = sys.argv[i]
@@ -473,6 +475,18 @@ while(i < len (sys.argv)):
   elif has_prefix("--prefix=", arg):
     maybe_prefix=arg[9:]
     if maybe_prefix !=  '': PREFIX=maybe_prefix
+  elif has_prefix("--set-int-",arg):
+    x=arg[10:]
+    i = string.index(x,'=')
+    v = x[:i]
+    a = x[i+1:]
+    overrides[v]=eval(a)
+  elif has_prefix("--set-string-",arg):
+    x=arg[13:]
+    i = string.index(x,'=')
+    v = x[:i]
+    a = x[i+1:]
+    overrides[v]=a
   else:
     print "UNKNOWN CONFIGURE OPTION",arg
     sys.exit(1)
@@ -730,7 +744,9 @@ FLXCC_CPP = CPP
 if HAVE_PKGCONFIG:
   pkgs = ""
   for i in PKGCONFIG_PACKAGES.keys(): pkgs = pkgs + i + " "
-  FLXCC_CPP = FLXCC_CPP + "-I/usr/local/include/python2.3 `pkg-config --cflags "+pkgs+"`"
+  # This hack was needed by me to find python2.3 on my old box ..
+  # this is bad stuff ..
+  #FLXCC_CPP = FLXCC_CPP + "-I/usr/local/include/python2.3 `pkg-config --cflags "+pkgs+"`"
 
 # set C++ compilation commands
 # for CYGWIN, this isn't enough, it needs to generate
@@ -937,6 +953,11 @@ if not refresh:
 @tangle("flx_version = '"+flx_version+"'")
 @tangle("godi_revision = '"+godi_revision+"'")
 @tangle("debian_revision = '"+debian_revision+"'")
+
+# clobber with command line overrides now
+g = globals()
+for k in overrides.keys():
+  g[k]=overrides[k]
 
 print CONFIG_GENERATOR_CVS_ID
 print 'flx_version',flx_version
