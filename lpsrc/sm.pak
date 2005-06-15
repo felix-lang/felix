@@ -3288,7 +3288,7 @@ public:       // funcs
 
 #ifndef OHASHTBL_H
 #define OHASHTBL_H
-
+#include "sm_typ.h"
 #include "sm_hashtbl.h"
 
 template <class T> class OwnerHashTableIter;
@@ -3426,6 +3426,7 @@ OwnerKHashArray<T,K>::~OwnerKHashArray()
 #ifndef OKHASHTBL_H
 #define OKHASHTBL_H
 
+#include "sm_typ.h"
 #include "sm_hashtbl.h"
 
 template <class T, class K> class OwnerKHashTableIter;
@@ -5798,7 +5799,8 @@ public:     // types
     sm_string const &key() const { return iter.key(); }
     T *&value() const { return (T *&)iter.value(); }
 
-    int private_getCurrent() const { return iter.private_getCurrent(); }
+    //int private_getCurrent() const { return iter.private_getCurrent(); }
+    void *private_getCurrent() const { return iter.private_getCurrent(); }
   };
   friend class Iter;
 
@@ -5817,7 +5819,8 @@ public:     // types
     sm_string const &key() const { return iter.key(); }
     T *value() const { return (T *)iter.value(); }
 
-    int private_getCurrent() const { return iter.private_getCurrent(); }
+    //int private_getCurrent() const { return iter.private_getCurrent(); }
+    void *private_getCurrent() const { return iter.private_getCurrent(); }
   };
   friend class IterC;
 
@@ -5866,7 +5869,8 @@ public:     // funcs
     { dict.foreach((StringVoidDict::ForeachFn)func, extra); }
     
   // debugging
-  int private_getTopAddr() const { return dict.private_getTopAddr(); }
+  //int private_getTopAddr() const { return dict.private_getTopAddr(); }
+  void *private_getTopAddr() const { return dict.private_getTopAddr(); }
 };
 
 
@@ -6117,7 +6121,8 @@ public:     // types
     sm_string &key() const { return current->key; }
     void *&value() const { return current->value; }
     
-    int private_getCurrent() const { return (int)current; }
+    //int private_getCurrent() const { return (int)current; }
+    void *private_getCurrent() const { return current; }
   };
   friend class Iter;
 
@@ -6231,7 +6236,8 @@ public:
   sm_string toString() const;
   
   // debugging...
-  int private_getTopAddr() const { return (int)top; }
+  //int private_getTopAddr() const { return (int)top; }
+  void *private_getTopAddr() const { return top; }
 };
 
 #endif // __SVDICT_H
@@ -6767,6 +6773,13 @@ void trashingDeleteArr(void *blk, size_t size);
 
 #ifndef __TYP_H
 #define __TYP_H
+
+// js: this crud is required to provide an integer type
+// to which a void* can be cast so the result can be
+// input to a hashing function
+
+#include "../rtl/flx_rtl_config.hpp"
+typedef FLX_RAWADDRESS SM_RAWADDRESS;
 
 // byte
 typedef unsigned char byte;
@@ -9970,7 +9983,7 @@ STATICDEF void const *HashTable::identityKeyFn(void *data)
   return data;
 }
 
-unsigned lcprngTwoSteps(unsigned v)
+unsigned lcprngTwoSteps(SM_RAWADDRESS v)
 {
   // this is the core of the LC PRNG in one of the many libcs
   // running around the net
@@ -9984,7 +9997,7 @@ unsigned lcprngTwoSteps(unsigned v)
 
 STATICDEF unsigned HashTable::lcprngHashFn(void const *key)
 {
-  return lcprngTwoSteps((unsigned)key);
+  return lcprngTwoSteps((SM_RAWADDRESS)key);
 }
 
 STATICDEF bool HashTable::
@@ -10363,7 +10376,7 @@ void jmpHandler(int signum)
 
 void printAddrHandler(int signum, siginfo_t *info, void *)
 {
-  fprintf(stderr, "faulting address: 0x%08X\n", (int)(info->si_addr));
+  fprintf(stderr, "faulting address: %p\n", (info->si_addr));
   
   // reset handler and re-raise
   setHandler(signum, SIG_DFL);
@@ -14851,6 +14864,7 @@ int main()
 @select(h)
 // voidlist.cc            see license.txt for copyright and terms of use
 // code for voidlist.h
+#include <functional>
 
 #include "sm_voidlist.h"
 #include "sm_breaker.h"
@@ -15466,7 +15480,10 @@ bool VoidList::containsByDiff(void *item, VoidDiff diff, void *extra) const
 
 STATICDEF int VoidList::pointerAddressDiff(void *left, void *right, void*)
 {
-  return (int)left - (int)right;
+  // originally, left - right which is +ve if right < left
+  return
+    std::less<void*>()(right, left) ? 1 :
+    ((left == right) ? 0 : -1);
 }
 
 
@@ -15812,7 +15829,7 @@ VoidPtrMap::Entry &VoidPtrMap::findEntry(void const *key) const
 
   // compute first hash function, which gives the starting index
   // for the probe sequence
-  unsigned index = hashFunc(CONST1, (unsigned)key);
+  unsigned index = hashFunc(CONST1, (SM_RAWADDRESS)key);
 
   // analyze the first entry now, before computing the second
   // hash function (stride) value
@@ -15828,7 +15845,7 @@ VoidPtrMap::Entry &VoidPtrMap::findEntry(void const *key) const
   // compute stride; it has to be odd so that it is relatively
   // prime to the table size (which is a power of 2), so I just
   // turn on the least significant bit
-  unsigned stride = hashFunc(CONST2, (unsigned)key) | 1;
+  unsigned stride = hashFunc(CONST2, (SM_RAWADDRESS)key) | 1;
 
   // uncomment this to experiment with linear hashing; when ITERS2MAX
   // is 10000, I see a small increase in avgprobes when using linear

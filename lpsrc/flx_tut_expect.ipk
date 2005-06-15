@@ -25,9 +25,6 @@ OK
 @head(2,"tut/examples/mac106.expect")
 @select(tangler("tut/examples/mac106.expect","data"))
 Yes
-@head(2,"tut/examples/mac107.expect")
-@select(tangler("tut/examples/mac107.expect","data"))
-3
 @head(2,"tut/examples/mac122.expect")
 @select(tangler("tut/examples/mac122.expect","data"))
 101

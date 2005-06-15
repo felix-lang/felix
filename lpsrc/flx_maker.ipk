@@ -1729,8 +1729,6 @@ if options:
   print "OPTIONS: ", options
 
 if "compiler" in options or "bytecode" in options or "olink" in options:
-  options.append("fish")
-  options.append("ocs")
   options.append("flxcc")
   options.append("felix")
 
@@ -1985,56 +1983,13 @@ ELKRTL_INTERFACES = [
   'elk_useract.h',
 ]
 
-LUARTL = [
-  'lapi',
-  'lcode',
-  'ldebug',
-  'ldo',
-  'ldump',
-  'lfunc',
-  'lgc',
-  'llex',
-  'lmem',
-  'lobject',
-  'lopcodes',
-  'lparser',
-  'lstate',
-  'lstring',
-  'ltable',
-  'ltests',
-  'ltm',
-  'lvm',
-  'lzio',
-  'lauxlib',
-  'lbaselib',
-  'ldblib',
-  'liolib',
-  'lmathlib',
-  'loadlib',
-  'lstrlib',
-  'ltablib',
-  'lundump',
-  'luac_print',
-]
-
-LUARTL_INTERFACES = [
-  'flx_lua.h',
-  'flx_lauxlib.h',
-  'flx_lualib.h'
-]
-
-
 # files containing ocamllex sources
-FISH_LEXS = [ 'lex_fish', ]
 CIL_LEXS = [ 'flx_cil_clexer', 'flx_cil_formatlex', ]
 FLX_LEXS = [ 'flx_lex' ]
-OCS_LEXS = []
 MISC_LEXS = []
 
 # files containing ocamlyacc sources
 MISC_PARSES = [ ]
-OCS_PARSES = [ ]
-FISH_PARSES = [ 'parse_fish', ]
 CIL_PARSES = [ 'flx_cil_cparser', 'flx_cil_formatparse', ]
 FLX_PARSES = [ 'flx_parse' ]
 
@@ -2178,25 +2133,6 @@ OCS_MODULES = [
   'ocs_top', 
 ]
 
-FISH_MODULES = [
-  'primitive_fish'     ,
-  'types_fish'         ,
-  'terms_fish'         ,
-  'sugar_fish'         ,
-  'environments_fish'  ,
-  'type_subs_fish'     ,
-  'substitution_fish'  ,
-  'pretty_fish'        ,
-  'util_fish'          ,
-  'parse_fish'         ,
-  'lex_fish'           ,
-  'unify_fish'         ,
-  'infer_fish'         ,
-  'partial_ev_fish'    ,
-  'turbot2C_fish'      ,
-  'hook_fish'      ,
-]
-
 CIL_RAW_INTERFACES = [
   'flx_cil_machdep_type',
   'flx_cil_cabs',
@@ -2208,29 +2144,17 @@ FLX_RAW_INTERFACES = [
   'flx_ctypes'       ,
 ] 
 
-FISH_RAW_INTERFACES = [
-  'ocs_types',
-  'ocs_error'
-]
-
-OCS_RAW_INTERFACES = [
-]
-
 MISC_INTERFACES = MISC_MODULES
 FLX_INTERFACES = FLX_MODULES
 CIL_INTERFACES = CIL_MODULES
-OCS_INTERFACES = OCS_MODULES
-FISH_INTERFACES = FISH_MODULES
 
 MISC_IMPLEMENTATIONS = MISC_INTERFACES
 FLX_IMPLEMENTATIONS = FLX_INTERFACES
-OCS_IMPLEMENTATIONS = OCS_INTERFACES
 CIL_IMPLEMENTATIONS = CIL_INTERFACES
-FISH_IMPLEMENTATIONS = FISH_INTERFACES
   
-IMPLEMENTATIONS = MISC_IMPLEMENTATIONS + CIL_IMPLEMENTATIONS + FISH_IMPLEMENTATIONS + OCS_IMPLEMENTATIONS + FLX_IMPLEMENTATIONS 
-INTERFACES = MISC_INTERFACES + CIL_INTERFACES + FISH_INTERFACES + OCS_INTERFACES + FLX_INTERFACES
-RAW_INTERFACES = CIL_RAW_INTERFACES + FISH_RAW_INTERFACES + OCS_RAW_INTERFACES + FLX_RAW_INTERFACES
+IMPLEMENTATIONS = MISC_IMPLEMENTATIONS + CIL_IMPLEMENTATIONS + FLX_IMPLEMENTATIONS 
+INTERFACES = MISC_INTERFACES + CIL_INTERFACES + FLX_INTERFACES
+RAW_INTERFACES = CIL_RAW_INTERFACES + FLX_RAW_INTERFACES
 
 RTL_CPPS = [
   "rtl/flx_gc",
@@ -2239,9 +2163,6 @@ RTL_CPPS = [
   "rtl/flx_dynlink",
   "rtl/flx_i18n",
   "rtl/flx_ioutil",
-  "rtl/printval_fish",
-  "rtl/saveval_fish",
-  "rtl/xmalloc_fish",
 ]
 
 DRIVERS = [
@@ -2260,21 +2181,17 @@ CLIBRARIES = ['nums']
 # and some hackery so we can if the source doesn't need
 # ocaml-fileutils we can still build if it isn't found
 OCAML_INCLUDES = ""
-OLIBRARIES = ['nums','unix','misclib','cillib','fishlib','ocslib','flxlib']
+OLIBRARIES = ['nums','unix','misclib','cillib','flxlib']
 
 OCAMLLIBS = [
   ('misclib',MISC_IMPLEMENTATIONS),
   ('cillib',CIL_IMPLEMENTATIONS),
-  ('fishlib',FISH_IMPLEMENTATIONS),
-  ('ocslib',OCS_IMPLEMENTATIONS),
   ('flxlib',FLX_IMPLEMENTATIONS),
 ]
 
 # target executable programs to produce
 MISC_EXES=[]
-FISH_EXES = [ 'fish',]
 FLX_EXES = [
-  'flxf',
   'flxl',
   'flxp',
   'flxm',
@@ -2285,8 +2202,7 @@ FLX_EXES = [
 ]
 
 CIL_EXES = [ 'flxcc',]
-OCS_EXES = [ 'ocs_main', ]
-EXES = MISC_EXES + FISH_EXES + OCS_EXES + CIL_EXES + FLX_EXES
+EXES = MISC_EXES + CIL_EXES + FLX_EXES
 
 if 1:
   s = ' -cclib "-Lsrc '
@@ -2347,11 +2263,6 @@ def copy_elk2rtl():
     if filetime("elk/"+f) > filetime("rtl/"+f):
       os.system("cp elk/"+f+" rtl/"+f)
 
-def copy_lua2rtl():
-  for f in LUARTL_INTERFACES:
-    if filetime("lua/"+f) > filetime("rtl/"+f):
-      os.system("cp lua/"+f+" rtl/"+f)
-
 def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES):
   global buildall
   # STEP 2: Generate lexers
@@ -2367,8 +2278,7 @@ def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES):
     if buildall or filetime(file + '.mly') > filetime(file +'.ml'):
       buildall = 1
       xqt(OCAMLYACC+ ' -v '+ file + '.mly')
-      if file <> "src/parse_fish":
-        nxqt("grep conflict " + file + ".output")
+      nxqt("grep conflict " + file + ".output")
 
   # STEP 4: Compile ocaml interfaces
   for interface in INTERFACES:
@@ -2410,11 +2320,9 @@ try:
     runISCR('lpsrc/sm.pak')
     runISCR('lpsrc/ast.pak')
     runISCR('lpsrc/elk.pak')
-    runISCR('lpsrc/lua.pak')
     runISCR('lpsrc/flx_perf.pak')
     copy_mli2ml()
     copy_elk2rtl()
-    copy_lua2rtl()
     runISCR('lpsrc/flx_tutorial.pak')
     runISCR('lpsrc/flx_tut_macro.pak')
     runISCR('lpsrc/flx_tut_bind.pak')
@@ -2485,12 +2393,6 @@ try:
 
     print "COMPILING MISC"
     ocamlit(MISC_LEXS,MISC_PARSES,MISC_INTERFACES,MISC_IMPLEMENTATIONS,MISC_EXES)
-    if buildall or "fish" in options:
-      print "COMPILING FISH"
-      ocamlit(FISH_LEXS,FISH_PARSES,FISH_INTERFACES,FISH_IMPLEMENTATIONS,FISH_EXES)
-    if buildall or "ocs" in options:
-      print "COMPILING OCS"
-      ocamlit(OCS_LEXS,OCS_PARSES,OCS_INTERFACES,OCS_IMPLEMENTATIONS,OCS_EXES)
     if buildall or "felix" in options:
       print "COMPILING FELIX"
       ocamlit(FLX_LEXS,FLX_PARSES,FLX_INTERFACES,FLX_IMPLEMENTATIONS,FLX_EXES)
@@ -2540,17 +2442,6 @@ try:
         ars = ars + x + "_dynamic.o "
         xqt(CCOBJ_DLLIB + " -Irtl " + x + ".cpp -o " +x+"_dynamic.o")
 
-      # LUA SUBLIBRARY
-      print " .. LUA"
-      for x in LUARTL:
-        if not "quiet" in options: print 'Compiling lua rtl object',x
-        ars = ars + "rtl/lua_" + x + "_dynamic.o "
-        if HAVE_DLOPEN:
-          dlmac=' -DUSE_DLOPEN '
-        else:
-          dlmac = ' '
-        xqt(CCOBJ_DLLIB + dlmac+"-Ilua lua/" + x + ".cpp -o rtl/lua_" +x+"_dynamic.o")
-
       #ELKHOUND SUBLIBRARY
       print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:
@@ -2588,11 +2479,6 @@ try:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_static.o "
         xqt(CCOBJ_STATIC_LIB + " -Irtl " + x + ".cpp -o " +x+"_static.o")
-      print " .. LUA"
-      for x in LUARTL:
-        if not "quiet" in options: print 'Compiling lua rtl object',x
-        ars = ars + "rtl/lua_" + x + "_static.o "
-        xqt(CCOBJ_STATIC_LIB + " -Ilua lua/" + x + ".cpp -o rtl/lua_" +x+"_static.o")
       print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:
         if not "quiet" in options: print 'Compiling elkhound rtl object',x
@@ -2615,21 +2501,6 @@ try:
     xqt(CCOBJ_STATIC_MAIN + " -D__UNIX__ -DGRAMANL_MAIN elk/elk_gramanl.cpp -o elk/elkhound.o")
     xqt(CCLINK_STATIC + " elk/elkhound.o elk/libelk_static.a -o bin/flx_elkhound")
  
-  # lua executable: build dynamic version is possible
-  if "lua" in options:
-    if SUPPORT_DYNAMIC_LOADING:
-      print "COMPILING LUA (dynamic)"
-      xqt(CCOBJ_DLMAIN + "  -Ilua lua/lua.cpp -o lua/lua_dynamic.o")
-      xqt(CCLINK_DLMAIN + " lua/lua_dynamic.o rtl/libflx_dynamic.so -o bin/flx_lua")
-      xqt(CCOBJ_DLMAIN + " -Ilua  lua/luac.cpp -o lua/luac_dynamic.o")
-      xqt(CCLINK_DLMAIN + " lua/luac_dynamic.o rtl/libflx_dynamic.so -o bin/flx_luac")
-    else:
-      print "COMPILING LUA (static)"
-      xqt(CCOBJ_STATIC_MAIN + "  -Ilua lua/lua.cpp -o lua/lua_static.o")
-      xqt(CCLINK_STATIC + " lua/lua_static.o rtl/libflx_static.a -o bin/flx_lua")
-      xqt(CCOBJ_STATIC_MAIN + " -Ilua  lua/luac.cpp -o lua/luac_static.o")
-      xqt(CCLINK_STATIC + " lua/luac_static.o rtl/libflx_static.a -o bin/flx_luac")
-
   # COMPILE DRIVER PROGRAMS
   if "drivers" in options:
     if SUPPORT_STATIC_LINKAGE:
@@ -2855,12 +2726,12 @@ We have no idea if it continues copying.
 @tangle('BUILTIN_ISCR=env PYTHONPATH=. python -O interscript/bin/iscr.py --nocache')
 @tangle('')
 @tangle('all: dummy')
-@tangle('\tpython script/maker extract compiler rtl elkhound lua drivers test log_output stop_on_error check_output optimise_c')
+@tangle('\tpython script/maker extract compiler rtl elkhound drivers test log_output stop_on_error check_output optimise_c')
 @tangle('\tmake tools libdoc')
 @tangle('')
 
 @tangle('all.quiet: dummy')
-@tangle('\tpython script/maker quiet extract compiler rtl elkhound lua drivers test log_output stop_on_error check_output optimise_c')
+@tangle('\tpython script/maker quiet extract compiler rtl elkhound drivers test log_output stop_on_error check_output optimise_c')
 @tangle('\tmake tools libdoc')
 @tangle('')
 
@@ -2892,7 +2763,6 @@ We have no idea if it continues copying.
 @tangle('grammar: dummy')
 @tangle('\tpython script/get_grammar src/flx_parse.mly >misc/flx_parse.grammar')
 @tangle('\tpython script/get_grammar src/flx_cil_cparser.mly >misc/flx_cil_cparser.grammar')
-@tangle('\tpython script/get_grammar src/parse_fish.mly >misc/parse_fish.grammar')
 #@tangle('\tpython script/elk_flx_grgen misc/flx_parse.grammar >misc/elk_flx_gr.gr')
 @tangle('\tpython script/flx_flx_grgen misc/flx_parse.grammar >lib/flx_grammar.flx')
 #@tangle('\tpython script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
@@ -2926,9 +2796,6 @@ We have no idea if it continues copying.
 @tangle('man: dummy')
 @tangle('\tpython script/maker man')
 @tangle('')
-@tangle('test.fish: dummy')
-@tangle('\tbin/flxf -Ilib -Irtl fish/tfish')
-@tangle('')
 @tangle('test: dummy')
 @tangle('\tpython script/maker test stop_on_error check_output')
 @tangle('\tsh bagley/compile.sh')
@@ -2947,15 +2814,13 @@ We have no idea if it continues copying.
 @tangle('test.debug: dummy')
 @tangle('\tpython script/maker debug test stop_on_error')
 @tangle('')
+@tangle('test.lua_parser: dummy')
+@tangle('\tfor i in misc/lua/*.lua; do tools/lua_parser $$i; done;')
+@tangle('')
 @tangle('tests: dummy')
 @tangle('\tpython script/maker test check_output')
-@tangle('\tsh bagley/compile.sh')
-@tangle('\tsh bagley/run.sh')
-@tangle('\tsh bagley/check.sh')
-@tangle('')
-@tangle('test.lua: dummy')
-@tangle('\tfor i in misc/lua/*.lua; do bin/flx_lua $$i; done;')
-@tangle('\tfor i in misc/lua/*.lua; do tools/lua_parser $$i; done;')
+@tangle('\tmake tests.bagley')
+@tangle('\tmake test.lua_parser')
 @tangle('')
 @tangle('tests.verify: dummy')
 @tangle('\tpython script/maker test check_output')
@@ -2999,9 +2864,6 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('elkhound: dummy')
 @tangle('\tpython script/maker elkhound')
-@tangle('')
-@tangle('lua: dummy')
-@tangle('\tpython script/maker lua optimise_c')
 @tangle('')
 @tangle('expect.bagley: clean')
 @tangle('\tpython script/maker bagley')
@@ -3184,8 +3046,8 @@ We have no idea if it continues copying.
 @tangle('\trm -rf elk')
 @tangle('\trm -rf flxcc_out c89 c99 cxx gnu89 gnu99 gnucxx cxx_sys')
 @tangle('\trm -rf bagley')
-@tangle('\trm -rf doc_out libdoc lua tools')
-@tangle('\trm -rf fish meta licences')
+@tangle('\trm -rf doc_out libdoc tools')
+@tangle('\trm -rf meta licences')
 @tangle('\trm -rf lpsrc/*.cache')
 @tangle('\trm -rf interscript/*.pyo')
 @tangle('\trm -rf interscript/*/*.pyo')

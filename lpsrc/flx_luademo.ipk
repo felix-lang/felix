@@ -1,0 +1,1493 @@
+@head(1,'Lua Demo: lua interface')
+
+@h=tangler('lib/lua.flx')
+@select(h)
+include 'std';
+header lua_h '#include "flx_lua.h"';
+header lua_h '#include "flx_lauxlib.h"';
+header lua_h '#include "flx_lualib.h"';
+
+publish "Interface to Lua 5.0 CAPI"
+module Lua
+{
+  requires lua_h;
+
+  open C_hack;
+
+
+  comment "Event masks";
+  const LUA_MASKCALL    : int; // 0b0001
+  const LUA_MASKRET     : int; // 0b0010
+  const LUA_MASKLINE    : int; // 0b0100
+  const LUA_MASKCOUNT   : int; // 0b1000
+
+  comment "Event codes";
+  const LUA_HOOKCALL    : int; // 0
+  const LUA_HOOKRET     : int; // 1
+  const LUA_HOOKLINE    : int; // 2
+  const LUA_HOOKCOUNT   : int; // 3
+  const LUA_HOOKTAILRET : int; // 4
+
+  comment "Lua basic typecodes";
+  const LUA_TNONE       : int;  // -1
+  const LUA_TNIL        : int;  // 0
+  const LUA_TBOOLEAN    : int;  // 1
+  const LUA_TLIGHTUSERDATA      : int; // 2
+  const LUA_TNUMBER     : int; // 3
+  const LUA_TSTRING     : int; // 4
+  const LUA_TTABLE      : int; // 5
+  const LUA_TFUNCTION   : int; // 6
+  const LUA_TUSERDATA   : int; // 7
+  const LUA_TTHREAD     : int; // 8
+
+  comment "error codes for `lua_load' and `lua_pcall'";
+  const LUA_ERRRUN      : int; // 1
+  const LUA_ERRFILE     : int; // 2
+  const LUA_ERRSYNTAX   : int; // 3
+  const LUA_ERRMEM      : int; // 4
+  const LUA_ERRERR      : int; // 5
+
+  const LUA_IDSIZE      : int; 
+  const LUA_NUMBER_FMT  : charp;
+  const LUA_NUMBER_SCAN : charp;
+
+  const LUA_REFNIL      : int; 
+  const LUA_NOREF       : int; 
+
+  const LUA_MINSTACK    : int; 
+  const LUA_GLOBALSINDEX  :int; 
+  const LUA_REGISTRYINDEX : int;
+  const LUA_MULTRET     :int;
+
+  comment "Lua version";
+  const LUA_AUTHORS     :charp;
+  const LUA_COPYRIGHT   :charp;
+  const LUA_VERSION     :charp;
+
+  
+  //CSTRUCTS 
+  cstruct luaL_reg {
+    name: cptr[char];
+    func: lua_CFunction;
+  }
+
+  cstruct luaL_Buffer {
+    p: ptr[char];
+    lvl: int;
+    L: lua_t;
+    buffer: ptr[char];
+  }
+   
+  
+  //C FUNCTION POINTER TYPES
+  header '''typedef int (*lua_lua_h_cft_3)(lua_State *, void const *,  size_t, void *);''';
+  type lua_lua_h_cft_3 = 'lua_lua_h_cft_3';
+  header '''typedef void (*lua_lua_h_cft_4)(lua_State *, lua_Debug *);''';
+  type lua_lua_h_cft_4 = 'lua_lua_h_cft_4';
+
+  ctypes lua_CFunction;
+  type lua_t = "lua_State*";
+  
+  //TYPE ALIASES
+  typedef lua_Chunkwriter = lua_lua_h_cft_3;
+  typedef lua_Hook = lua_lua_h_cft_4;
+  typedef _struct_lua_Debug = lua_Debug;
+  typedef lua_Number = double;
+
+//#define lua_getref(L,ref)       lua_rawgeti(L, LUA_REGISTRYINDEX, ref)
+//#define lua_unref(L,ref)        luaL_unref(L, LUA_REGISTRYINDEX, (ref))
+//#define lua_ref(L,lock) ((lock) ? luaL_ref(L, LUA_REGISTRYINDEX) : \
+//#define lua_getglobal(L,s)      \
+//#define lua_setglobal(L,s)      \
+//#define lua_getregistry(L)      lua_pushvalue(L, LUA_REGISTRYINDEX)
+//#define lua_pushliteral(L, s)   \
+
+  comment "3.1- States";
+  fun lua_open: 1 -> lua_t;
+  proc lua_close: lua_t;
+
+  comment "3.2- The stack and indicies";
+  publish "Reserve space on the Lua stack for subsequent operations"
+  fun lua_checkstack: lua_t * int -> int;
+
+  publish "Get the index of the top of the lua stack"
+  fun lua_gettop: lua_t -> int;
+
+
+  comment "3.3 - Generic stack operations";
+  publish "Copy element onto top of stack"
+  proc lua_pushvalue: lua_t * int;
+
+  publish "Move top element into stack"
+  proc lua_insert: lua_t * int;
+
+  publish "Discard top element"
+  proc lua_pop: lua_t * int;
+
+  publish "Remove element from stack"
+  proc lua_remove: lua_t * int;
+
+  publish "Replace element with top of stack"
+  proc lua_replace: lua_t * int;
+
+
+  comment "3.4 - Querying the Stack";
+  fun lua_isnoneornil: lua_t * int -> bool; 
+  fun lua_isnone: lua_t * int -> bool;      
+  fun lua_isboolean: lua_t * int -> bool;  
+  fun lua_isnil: lua_t * int -> bool;     
+  fun lua_islightuserdata: lua_t * int -> bool; 
+  fun lua_istable: lua_t * int -> bool;       
+  fun lua_isfunction: lua_t * int -> bool;   
+  fun lua_iscfunction: lua_t * int -> int;
+  fun lua_isnumber: lua_t * int -> int;
+  fun lua_isstring: lua_t * int -> int;
+  fun lua_isuserdata: lua_t * int -> int;
+
+  publish "Typecode of top element"
+  fun lua_type: lua_t * int -> int;
+
+  publish "String of typecode"
+  fun lua_typename: lua_t * int -> cptr[char];
+
+  publish "Equality without metamethods"
+  fun lua_rawequal: lua_t * int * int -> int;
+
+  publish "Equality"
+  fun lua_equal: lua_t * int * int -> int;
+
+  publish "Less Than"
+  fun lua_lessthan: lua_t * int * int -> int;
+
+  comment "3.5 - Getting Values from the Stack";
+  fun lua_toboolean: lua_t * int -> int;
+  fun lua_tonumber: lua_t * int -> double;
+  fun lua_tocfunction: lua_t * int -> lua_CFunction;
+  fun lua_topointer: lua_t * int -> caddress;
+  fun lua_tostring: lua_t * int -> cptr[char];
+  fun lua_tothread: lua_t * int -> lua_t;
+  fun lua_touserdata: lua_t * int -> address;
+  fun lua_strlen: lua_t * int -> size;
+
+  comment "3.6 Pushing Values onto the Stack";
+  proc lua_pushboolean: lua_t * int;
+  proc lua_pushcfunction: lua_t * lua_CFunction; 
+  proc lua_pushcclosure: lua_t * lua_CFunction * int;
+  proc lua_pushlightuserdata: lua_t * address;
+  proc lua_pushlstring: lua_t * cptr[char] * size;
+  proc lua_pushnil: lua_t;
+  proc lua_pushnumber: lua_t * double;
+  proc lua_pushstring: lua_t * cptr[char];
+
+  publish " Push formatted string (like sprintf)"
+  fun lua_pushfstring[t]: t -> cptr[char] = 'lua_pushfstring($a)';
+
+  publish "Push formatted string (like vsprintf)"
+  fun lua_pushvfstring: lua_t * cptr[char] * va_list -> cptr[char];
+
+  publish "Concatenate strings on stack"
+  proc lua_concat: lua_t * int;
+
+  comment "3.7- GC control";
+  proc lua_setgcthreshold: lua_t * int;
+  fun lua_getgccount: lua_t -> int;
+  fun lua_getgcthreshold: lua_t -> int;
+
+  comment "3.8- Userdata";
+  fun lua_newuserdata: lua_t * size -> address;
+
+  comment "3.9- Metatables";
+  fun lua_getmetatable: lua_t * int -> int;
+  fun lua_setmetatable: lua_t * int -> int;
+
+  comment "3.10- Loading chunks";
+
+  publish "Raw C chunkreader function type"
+  type lua_Chunkreader_p = "lua_Chunkreader*";
+
+  publish "Load chunk using C chunkreader function"
+  fun lua_load: lua_t * lua_Chunkreader_p * address * cptr[char] -> int;
+  
+  comment """
+    Felix callback wrapper for lua chunkreader type.
+    This target callback type just returns a string.
+  """;
+  
+  // the wrapper for the Felix callback, has type lua_Chunkreader
+  header fcbw_chrd_dcl 
+  '''
+    char const *_fcbw_chrd(lua_State *a1, void *a2,  size_t *a3);
+  ''';
+
+  body fcbw_chrd_def 
+  '''
+    char const *_fcbw_chrd(lua_State *a1, void *a2,  size_t *a3)
+    {
+      // cast client data to exported Felix function type and apply it
+      // the result is a string
+      std::string result = ((_fcbt_chrd_t)a2)->apply(a1);
+
+      // get the size of the string and store it
+      std::size_t n = (size_t)result.size();
+      *a3 = n;
+
+      // we take an empty string as end of data
+      if (n == 0) return NULL;
+
+      // malloc the string contents so Lua can own it
+      char const * data = (char const*)std::malloc(n);
+      std::memcpy(data,result.data(),n);
+
+      // return the data to Lua
+      return data;
+    }
+  ''' 
+    requires fcbw_chrd_dcl;
+
+  // make the C wrapper available to Felix
+  const _fcbw_chrd: lua_Chunkreader_p = "_fcbw_chrd" 
+    requires fcbw_chrd_def;
+
+  // The wrapper for load accepts a Felix callback
+  // It calls lua_load with the fixed callback wrapper
+  // passing the Felix function in the client data pointer
+
+  publish "Felix wrapper for lua_load"
+  fun wrapper_lua_load
+  (
+    a1: lua_t, 
+    a2: lua_t -> string, 
+    a4: string
+  ): int= 
+  {
+    return lua_load(a1, _fcbw_chrd, C_hack::cast[address]a2, C_hack::enconst (cstr a4));
+  }
+
+  comment "3.11- Manipulating Tables";
+  proc lua_gettable: lua_t * int;
+  proc lua_newtable: lua_t;
+  proc lua_rawget: lua_t * int;
+  proc lua_settable: lua_t * int;
+  proc lua_rawset: lua_t * int;
+  fun lua_next: lua_t * int -> int;
+
+  comment "3.12- Manipulating Environments";
+  proc lua_getfenv: lua_t * int;
+  fun lua_setfenv: lua_t * int -> int;
+
+  comment "3.13- Using Tables as Arrays";
+  proc lua_rawgeti: lua_t * int * int;
+  proc lua_rawseti: lua_t * int * int;
+
+  comment "3.14- Calling Functions";
+  proc lua_call: lua_t * int * int;
+
+  comment "3.15- Protected Calls";
+  fun lua_pcall: lua_t * int * int * int -> int;
+
+  comment "3.16- Defining C functions";
+  proc lua_register: lua_t * int * lua_CFunction;
+
+  comment "3.17- Defining C Closures";
+  proc lua_pushcclosure: lua_t * lua_CFunction* int;
+
+  comment "3.18- Registry";
+
+  comment "3.19- Error Handling in C";
+  fun lua_atpanic: lua_t * lua_CFunction -> lua_CFunction;
+  fun lua_cpcall: lua_t * lua_CFunction * address -> int;
+  fun lua_error: lua_t -> int;
+
+  comment "3.20- Threads";
+  fun lua_newthread: lua_t -> lua_t;
+  fun lua_resume: lua_t * int -> int;
+  fun lua_yield: lua_t * int -> int;
+
+  publish "Move n stack items from thread 1 to thread 2"
+  proc lua_xmove: lua_t * lua_t * int;
+
+  comment "4- The Debug Interface";
+
+  comment "4.1 Stack and Function Information";
+  fun lua_getstack: lua_t * int * ptr[lua_Debug] -> int;
+  cstruct lua_Debug {
+    event: int;
+    name: cptr[char];
+    namewhat: cptr[char];
+    what: cptr[char];
+    source: cptr[char];
+    currentline: int;
+    nups: int;
+    linedefined: int;
+    short_src: ptr[char];
+    i_ci: int;
+  }
+
+  fun lua_getinfo: lua_t * cptr[char] * ptr[lua_Debug] -> int;
+
+  comment "4.2- Manipulating Local Variables and Upvalues";
+  fun lua_getlocal: lua_t * cptr[lua_Debug] * int -> cptr[char];
+  fun lua_setlocal: lua_t * cptr[lua_Debug] * int -> cptr[char];
+  fun lua_getupvalue: lua_t * int * int -> cptr[char];
+  fun lua_setupvalue: lua_t * int * int -> cptr[char];
+
+
+  comment "4.3- Hooks";
+  fun lua_sethook: lua_t * lua_lua_h_cft_4 * int * int -> int;
+  fun lua_gethook: lua_t -> lua_Hook;
+  fun lua_gethookmask: lua_t -> int;
+  fun lua_gethookcount: lua_t -> int;
+
+  comment "open standard libraries";
+  fun luaopen_base: lua_t -> int;
+  fun luaopen_debug: lua_t -> int;
+  fun luaopen_io: lua_t -> int;
+  fun luaopen_loadlib: lua_t -> int;
+  fun luaopen_math: lua_t -> int;
+  fun luaopen_string: lua_t -> int;
+  fun luaopen_table: lua_t -> int;
+ 
+  comment "Verson";
+  fun lua_version: 1 -> cptr[char];
+
+  comment "Undocumented";
+
+  publish "Reset top of stack position"
+  proc lua_settop: lua_t * int;
+  fun lua_dump: lua_t * lua_lua_h_cft_3 * address -> int;
+  fun lua_pushupvalues: lua_t -> int;
+
+
+//#define lua_unboxpointer(L,i)   (*(void **)(lua_touserdata(L, i)))
+//#define lua_boxpointer(L,u) \
+  fun lua_upvalueindex:int->int;
+ 
+  comment "LuaL";
+  fun luaL_argerror: lua_t * int * cptr[char] -> int;
+  fun luaL_callmeta: lua_t * int * cptr[char] -> int;
+  proc luaL_addlstring: ptr[luaL_Buffer] * cptr[char] * size;
+  proc luaL_addstring: ptr[luaL_Buffer] * cptr[char];
+  proc luaL_addvalue: ptr[luaL_Buffer];
+  proc luaL_buffinit: lua_t * ptr[luaL_Buffer];
+
+  fun luaL_error[t]: t -> int = 'luaL_error($a)';
+  fun luaL_findstring: cptr[char] * cptr[cptr[char]] -> int;
+  fun luaL_getmetafield: lua_t * int * cptr[char] -> int;
+  fun luaL_getn: lua_t * int -> int;
+  fun luaL_loadbuffer: lua_t * cptr[char] * size * cptr[char] -> int;
+  fun luaL_loadfile: lua_t * cptr[char] -> int;
+  fun luaL_newmetatable: lua_t * cptr[char] -> int;
+  fun luaL_optlstring: lua_t * int * cptr[char] * ptr[size] -> cptr[char];
+  fun luaL_optnumber: lua_t * int * double -> double;
+  fun luaL_prepbuffer: ptr[luaL_Buffer] -> ptr[char];
+  fun luaL_ref: lua_t * int -> int;
+  fun luaL_typerror: lua_t * int * cptr[char] -> int;
+
+  comment "Integrity Check";
+  fun luaL_checklstring: lua_t * int * ptr[size] -> cptr[char];
+  fun luaL_checknumber: lua_t * int -> double;
+  fun luaL_checkudata: lua_t * int * cptr[char] -> address;
+  proc luaL_checkany: lua_t * int;
+
+  proc luaL_checkstack: lua_t * int * cptr[char];
+  proc luaL_checktype: lua_t * int * int;
+
+  proc luaL_getmetatable: lua_t * cptr[char];
+  proc luaL_openlib: lua_t * cptr[char] * cptr[luaL_reg] * int;
+  proc luaL_pushresult: ptr[luaL_Buffer];
+  proc luaL_setn: lua_t * int * int;
+  proc luaL_unref: lua_t * int * int;
+  proc luaL_where: lua_t * int;
+ 
+}
+
+@head(1,'Lua Demo: lua Parser')
+From: Rici Lake <lua@ricilake.net>
+Date: Sat, 29 Jan 2005 17:22:07 -0500
+To: Lua list <lua@bazar2.conectiva.com.br>
+Subject: Re: Still cryptic OOP syntax
+
+On 29-Jan-05, at 3:46 PM, skaller wrote:
+
+> *** writing a parser in Lua will not be easy,
+> it isn't particularly well suited to that.
+
+Perhaps not, but I managed to do it, at least. It's available
+on LuaForge, and I really have to get around to rewriting it :(
+
+I think you are using the word "ambiguity" when you
+mean something else, possibly "shift-reduce conflict".
+
+There is one ambiguity in the Lua grammar, which was
+introduced in Lua 5.0; a simple example of it is:
+
+   a(b)(c)(d)
+
+which could be one or two function-call statements. In
+general, statements which can end with expressions suffer
+from this ambiguity. I would guess that it would be
+diagnosed as a shift-reduce conflict involving the production
+
+   functioncall -> prefixexp args
+
+Technically, this is not an ambiguity; it is resolved in
+favour of making the expression as long as possible.
+There is a straight-forward grammar transformation which can
+express this condition, although it is a bit tedious; it
+is unnecessary since LALR parser generators like yacc will
+normally resolve shift-reduce conflicts in favour of shift.
+
+Lua also bans functioncalls in which a new-line intervenes
+between the function expression and the argument list.
+(My parser doesn't handle this case, but it could be accomplished
+by having the lexer mark the difference between a '(' which
+is the first token in a line and a '(' which is not.)
+
+The grammar as printed in the reference manual has two additional
+ambiguities. First, it does not reflect operator precedence rules
+(the grammar transformation to deal with this is well-known, and
+I don't think it adds to the readability of grammars; again, parser
+generators like yacc will accept operator precedence declarations
+which are, imho, more readable than writing out a rule for each
+precedence set).
+
+Second, it does not reflect the fact that return (and break)
+statements can only occur at the end of a chunk; if this were
+not the case then
+
+   return a()
+
+would also be ambiguous. (It is interesting that the return
+statement is the only Lua statement which can end with an
+optional expression.)
+
+It would have been more accurate to have written:
+
+   <chunk> -> { <stat> [;] } [ <final-stat> [;] ]
+   <final-stat> -> return [ <explist1> ]
+                 | break
+   <stat> -> -- everything except return and break --
+
+I think this would be useful to put in the printed grammar, and
+this relatively simple change would probably remove one of the
+ambiguities being detected by your parser.
+
+There are some additional ambiguities in the lexical rules,
+which is a suprisingly common occurrence. These are uniformly
+resolved with the normal "greedy lex" algorithm except for the
+lexing of numbers; a strict greedy lexer would resolve
+   3E=7
+as four tokens and
+   3..7
+as two tokens. The Lua lexer generates lexical errors in both
+cases. (Curiously, A=4E=7 is a lexical error whereas A=4F=7 is
+two assignment statements. Personally, I would have gone for
+making them both lexical errors, but that's just me.)
+
+Of course, Lua is not as simple to parse as Forth, Scheme or
+Smalltalk; on the other hand, it is much simpler than Perl,
+Python or C. It can easily be parsed with the combination of
+a recursive descent statement parser and an operator precedence
+expression parser, except for the slight annoyance of table
+constructors which require an additional lookahead token to
+distinguish between {a = 3}  and  {a + 3}.
+
+The complexity of LuaParse is due to a combination of factors:
+
+1) I was experimenting with different writing styles at the
+time, and not all the experiments were successful.
+
+2) I was attempting to do better error recovery than just
+stopping and reporting an error.
+
+3) LuaParse is designed for visual linting and therefore
+preserves comments. (This is not much of a complication
+but it was a bit annoying; in many cases, a parse error
+is discovered after a sequence of comments but the error
+indication needs to go before them.)
+
+4) It does enough semantic analysis to distinguish between
+uses of variables and setting of variables. Really, I'd like
+to do more flow analysis, but that's on the sometime-in-the-misty
+future list.
+
+Even so, it's not that much code.
+
+@h=tangler('lib/lua_parse.flx')
+@select(h)
+include "std";
+
+module Lua_parse
+{
+  comment "Lua tokens";
+
+  union lua_token_t =
+  // mandatory terminal, code 0
+  | TOK_EOF 
+
+  // keywords
+  | DO
+  | END
+  | IF
+  | THEN
+  | ELSE
+  | ELSEIF
+  | WHILE 
+  | REPEAT
+  | UNTIL
+  | RETURN
+  | BREAK
+  | IN
+  | FOR
+  | FUNCTION
+  | LOCAL
+  | NOT
+  | AND
+  | OR
+  | NIL
+  | TRUE
+  | FALSE
+
+  // operators
+  | DOTDOT
+  | DOTDOTDOT
+  | TILDE
+  | EQ     // =
+  | EQEQ   // ==
+  | NE     // ~=
+  | PLUS
+  | MINUS
+  | STAR
+  | SLASH
+  | CARET
+  | LT
+  | GT
+  | LE
+  | GE
+
+  // punctuation
+  | DOT
+  | COLON
+  | COMMA 
+  | SEMICOLON
+
+  // brackets
+  | LBRACE    // {
+  | RBRACE    // }
+  | LPAREN    // (
+  | RPAREN    // )
+  | LSQ       // [
+  | RSQ       // ]
+
+  // literals
+  | NUMBER of double
+  | STRING of string
+
+  // identifier
+  |  NAME of string
+
+  // whitespace 
+  | WHITE
+  | NEWLINE
+  | DASHDASH_COMMENT
+  | SQUARE_COMMENT
+  ;
+
+  comment "Lua lexer";
+
+  regexp digit = ['0'-'9'];
+  regexp lower = ['a'-'z'];
+  regexp upper = ['A'-'Z'];
+  regexp letter = lower | upper | '_';
+  regexp identifier = letter (letter | digit) *;
+
+  regexp quote = '\'';
+  regexp dquote = '"';
+  regexp slosh = '\\';
+  regexp newline = '\n';
+  regexp tab = '\t';
+  regexp space = ' ';
+  regexp white = tab | space;
+
+  regexp integer = digit+;
+  regexp fraction = '.' digit+;
+  regexp exponent = ('E'|'e')('+'|'-')? digit+;
+  regexp number = integer fraction? exponent?;
+
+  regexp hichar = [128-255];
+
+  regexp ordinary = letter | digit | hichar |
+    '!' | '#' | '$' | '%' | '&' | '(' | ')' | '*' |
+    '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' |
+    '=' | '>' | '?' | '@' | '[' | ']' | '^' | '_' |
+    '`' | '{' | '|' | '}' | '~'
+  ;
+
+  regexp escape = slosh _ ;
+  regexp q_string = quote (ordinary | dquote | escape | white) * quote;
+  regexp dq_string = dquote (ordinary | quote | escape | white) * dquote;
+  regexp sq_string = "[[" _ *  "]]";
+
+  keywords :=
+    ('do',DO),
+    ('end',END),
+    ('if',IF),
+    ('then',THEN),
+    ('else',ELSE),
+    ('elseif',ELSEIF),
+    ('while',WHILE),
+    ('repeat',REPEAT),
+    ('until',UNTIL),
+    ('return',RETURN),
+    ('break',BREAK),
+    ('in',IN),
+    ('for',FOR),
+    ('function',FUNCTION),
+    ('local',LOCAL),
+    ('not',NOT),
+    ('and',AND),
+    ('or',OR),
+    ('nil',NIL),
+    ('true',TRUE),
+    ('false',FALSE),
+    ("",TOK_EOF)
+  ;
+  
+  fun find_keyword(k:string) = 
+  {
+    var i=0;
+    var key = keywords.[i];
+    until key.(0) == k or key.(0) == "" do 
+      ++i;
+      key = keywords.[i];
+    done;
+    return key.(1);
+  }
+
+  fun check_name(s:Lexer::iterator, e:Lexer::iterator) =>
+    let ?lexeme = Lexer::string_between (s,e) in
+    match find_keyword lexeme with
+    | TOK_EOF => NAME lexeme
+    | ?x => x
+    endmatch
+  ;
+    
+  fun numof(s:Lexer::iterator, e:Lexer::iterator) =>
+    let ?lexeme = Lexer::string_between (s,e) in
+    NUMBER (atof lexeme)
+  ;
+
+  fun strof(s:Lexer::iterator, e:Lexer::iterator) =>
+    let ?lexeme = Lexer::string_between (s,e) in
+    STRING lexeme.[1 to -1] // hack, ignore escapes
+  ;
+
+  fun pre_lua_lex(s:Lexer::iterator, e:Lexer::iterator) =>
+    reglex s to e with
+    | identifier => check_name(lexeme_start, lexeme_end)
+    | dq_string => strof(lexeme_start, lexeme_end)
+    | q_string => strof(lexeme_start, lexeme_end)
+    | number => numof(lexeme_start, lexeme_end)
+    | "--" .* newline => DASHDASH_COMMENT
+    | "+" => PLUS
+    | "-" => MINUS
+    | "*" => STAR
+    | "/" => SLASH
+    | "~" => TILDE
+    | ".." => DOTDOT
+    | "..." => DOTDOTDOT
+    | "=" => EQ     // =
+    | "==" => EQEQ   // ==
+    | "~=" => NE     // ~=
+    | "^" => CARET
+    | "<" => LT
+    | ">" => GT
+    | "<=" => LE
+    | ">=" => GE
+
+    // punctuation
+    | "." => DOT
+    | ":" => COLON
+    | "," => COMMA 
+    | ";" => SEMICOLON
+
+    // brackets
+    | "{" => LBRACE    // {
+    | "}" => RBRACE    // }
+    | "(" => LPAREN    // (
+    | ")" => RPAREN    // )
+    | "[" => LSQ       // [
+    | "]" => RSQ       // ]
+    | white + => WHITE
+    | newline => NEWLINE
+    endmatch
+  ;
+
+  comment "Top level Lua grammar";
+
+  nonterm block:unit =
+    | clause* => ()
+  ;
+
+  nonterm clause : unit =
+    | stat SEMICOLON => ()
+    | stat => ()
+  ;
+
+  nonterm stat : unit = 
+    | varlist1 EQ explist1  => ()
+    | functioncall  => ()
+    | DO block END  => ()
+    | WHILE exp DO block END  => ()
+    | REPEAT block UNTIL exp  => ()
+    | IF exp THEN block elseif_clause* else_clause? END  => ()
+    | RETURN explist1? => ()
+    | BREAK => ()
+    | FOR NAME EQ exp COMMA_exp COMMA_exp? DO block END  => ()
+    | FOR namelist IN explist1 DO block END  => ()
+    | FUNCTION funcname funcbody  => ()
+    | LOCAL FUNCTION NAME funcbody  => ()
+    | LOCAL namelist init? => ()
+  ;
+
+  nonterm elseif_clause : unit =
+    | ELSEIF exp THEN block => ()
+  ;
+
+  nonterm else_clause : unit =
+    | ELSE block => ()
+  ;
+
+  nonterm funcname : unit = 
+    | NAME DOT_NAME* COLON_NAME? => ()
+  ;
+
+  nonterm DOT_NAME : unit =
+    | DOT NAME => ()
+  ;
+
+  nonterm COLON_NAME : unit =
+    | COLON NAME => ()
+  ;
+
+  nonterm COMMA_NAME : unit =
+    | COMMA NAME => ()
+  ;
+
+  nonterm COMMA_vari : unit =
+    | COMMA vari => ()
+  ;
+
+  nonterm varlist1 : unit = 
+    | vari COMMA_vari* => ()
+  ;
+
+  nonterm namelist : unit = 
+    | NAME COMMA_NAME* => ()
+  ;
+
+  nonterm init : unit = 
+    | EQ explist1 => ()
+  ;
+
+  nonterm COMMA_exp : unit =
+    | COMMA exp => ()
+  ;
+
+  nonterm explist1 : unit = 
+    | exp COMMA_exp* => ()
+  ;
+
+  nonterm args : unit =
+    | LPAREN explist1 RPAREN => ()
+    | LPAREN RPAREN => ()
+    | tableconstructor  => ()
+    | STRING  => ()
+  ;
+
+  nonterm function : unit =
+    | FUNCTION funcbody => ()
+  ;
+
+  nonterm funcbody : unit = 
+    | LPAREN parlist1 RPAREN block END => ()
+    | LPAREN RPAREN block END => ()
+  ;
+
+  nonterm parlist1 : unit = 
+    | namelist COMMA DOTDOTDOT => ()
+    | namelist => ()
+    | DOTDOTDOT => ()
+  ;
+
+  nonterm tableconstructor : unit = 
+    | LBRACE fieldlist RBRACE => () 
+    | LBRACE RBRACE => ()
+  ;
+
+  nonterm fieldlist : unit = 
+    | field {fieldsep field} fieldsep? => ()
+  ;
+
+  nonterm field : unit = 
+    | LSQ exp RSQ EQ exp  => ()
+    | NAME EQ exp  => ()
+    | exp  => ()
+  ;
+
+  nonterm fieldsep : unit = 
+    | COMMA => ()
+    | SEMICOLON => ()
+  ;
+
+  // expressions
+
+  nonterm exp : unit =
+    | exp OR lland => ()
+    | lland => ()
+  ;
+
+  nonterm lland : unit =
+    | lland AND comparison => ()
+    | comparison => ()
+  ;
+    
+  nonterm comparison : unit =
+    | comparison LT cat => ()
+    | comparison LE cat => ()
+    | comparison GT cat => ()
+    | comparison GE cat => ()
+    | comparison EQEQ cat => ()
+    | comparison NE cat => ()
+    | cat => ()
+  ;
+  
+  nonterm cat : unit =
+    | sum DOTDOT cat => ()
+    | sum => ()
+  ;
+  
+  nonterm sum : unit =
+    | sum PLUS factor => ()
+    | sum MINUS factor => ()
+    | factor => ()
+  ;
+  
+  nonterm factor : unit =
+    | factor STAR unary => ()
+    | factor SLASH unary => ()
+    | unary => ()
+  ;
+
+  nonterm unary : unit = 
+    | MINUS unary => ()
+    | TILDE unary => ()
+    | NOT unary => ()
+    | power => ()
+  ;
+  
+  nonterm power : unit =
+    | atom CARET power => ()
+    | atom  => ()
+  ;
+  
+  nonterm atom : unit =
+    | NIL => ()
+    | FALSE => ()
+    | TRUE => ()
+    | NUMBER => ()
+    | STRING => ()
+    | tableconstructor => ()
+    | function => ()
+    | prefixexp => ()
+  ;
+
+  nonterm prefixexp : unit =
+    | vari => ()
+    | functioncall  => ()
+    | LPAREN exp RPAREN => ()
+  ;
+
+  nonterm vari : unit = 
+    | NAME  => ()
+    | prefixexp LSQ exp RSQ => ()
+    | prefixexp DOT_NAME => ()
+  ;
+
+
+  nonterm functioncall : unit =
+    | prefixexp args  => ()
+    | prefixexp COLON_NAME args => ()
+  ;
+
+}
+
+@h=tangler('tools/lua_parser.flx')
+@select(h)
+include "std";
+include "lua_parse";
+open Lua_parse;
+
+filename := System::argv 1;
+
+data:= Text_file::load filename;
+use Lexer::eq;
+
+var start = Lexer::start_iterator data;
+fin := Lexer::end_iterator data;
+
+fun get_token(): lua_token_t =
+{
+  if start == fin do return TOK_EOF; done;
+  def var j, var t = pre_lua_lex (start,fin);
+  //print (Lexer::string_between(start,j));
+  start = j;
+  return
+    match t with
+    | WHITE => get_token() 
+    | NEWLINE => get_token() 
+    | DASHDASH_COMMENT => get_token() 
+    | SQUARE_COMMENT => get_token() 
+    | _ => t
+    endmatch
+  ;
+}
+
+var x = 
+  parse the get_token with
+  | block  => ()
+  endmatch
+;
+
+d :=
+  match x with
+  | case 1 => "**** FAILED"
+  | case 2 _ => "Successful"
+  endmatch
+;
+   
+print (d " parse of " filename); endl;
+
+exit_code := 
+  match x with
+  | case 1 => 1
+  | case 2 _ => 0
+  endmatch
+;
+
+System::exit exit_code;
+
+
+
+@head(1,'Lua test scripts')
+These are just here to check the demo lua parser can actually
+parse lua code.
+
+@h=tangler('misc/lua/echo.lua','data')
+@select(h)
+-- echo command line arguments
+
+for i=0,table.getn(arg) do
+ print(i,arg[i])
+end
+@h=tangler('misc/lua/life.lua','data')
+@select(h)
+-- life.lua
+-- original by Dave Bollinger <DBollinger@compuserve.com> posted to lua-l
+-- modified to use ANSI terminal escape sequences
+-- modified to use for instead of while
+
+local write=io.write
+
+ALIVE="O"       DEAD="-"
+
+function delay() -- NOTE: SYSTEM-DEPENDENT, adjust as necessary
+  for i=1,10000 do end
+  -- local i=os.clock()+1 while(os.clock()<i) do end
+end
+
+function ARRAY2D(w,h)
+  local t = {w=w,h=h}
+  for y=1,h do
+    t[y] = {}
+    for x=1,w do
+      t[y][x]=0
+    end
+  end
+  return t
+end
+
+_CELLS = {}
+
+-- give birth to a "shape" within the cell array
+function _CELLS:spawn(shape,left,top)
+  for y=0,shape.h-1 do
+    for x=0,shape.w-1 do
+      self[top+y][left+x] = shape[y*shape.w+x+1]
+    end
+  end
+end
+
+-- run the CA and produce the next generation
+function _CELLS:evolve(next)
+  local ym1,y,yp1,yi=self.h-1,self.h,1,self.h
+  while yi > 0 do
+    local xm1,x,xp1,xi=self.w-1,self.w,1,self.w
+    while xi > 0 do
+      local sum = self[ym1][xm1] + self[ym1][x] + self[ym1][xp1] +
+                  self[y][xm1] + self[y][xp1] +
+                  self[yp1][xm1] + self[yp1][x] + self[yp1][xp1]
+      next[y][x] = ((sum==2) and self[y][x]) or ((sum==3) and 1) or 0
+      xm1,x,xp1,xi = x,xp1,xp1+1,xi-1
+    end
+    ym1,y,yp1,yi = y,yp1,yp1+1,yi-1
+  end
+end
+
+-- output the array to screen
+function _CELLS:draw()
+  local out="" -- accumulate to reduce flicker
+  for y=1,self.h do
+   for x=1,self.w do
+      out=out..(((self[y][x]>0) and ALIVE) or DEAD)
+    end
+    out=out.."\n"
+  end
+  write(out)
+end
+
+-- constructor
+function CELLS(w,h)
+  local c = ARRAY2D(w,h)
+  c.spawn = _CELLS.spawn
+  c.evolve = _CELLS.evolve
+  c.draw = _CELLS.draw
+  return c
+end
+
+--
+-- shapes suitable for use with spawn() above
+--
+HEART = { 1,0,1,1,0,1,1,1,1; w=3,h=3 }
+GLIDER = { 0,0,1,1,0,1,0,1,1; w=3,h=3 }
+EXPLODE = { 0,1,0,1,1,1,1,0,1,0,1,0; w=3,h=4 }
+FISH = { 0,1,1,1,1,1,0,0,0,1,0,0,0,0,1,1,0,0,1,0; w=5,h=4 }
+BUTTERFLY = { 1,0,0,0,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,1,1,0,0,0,1; w=5,h=5 }
+
+-- the main routine
+function LIFE(w,h)
+  -- create two arrays
+  local thisgen = CELLS(w,h)
+  local nextgen = CELLS(w,h)
+
+  -- create some life
+  -- about 1000 generations of fun, then a glider steady-state
+  thisgen:spawn(GLIDER,5,4)
+  thisgen:spawn(EXPLODE,25,10)
+  thisgen:spawn(FISH,4,12)
+
+  -- run until break
+  local gen=1
+  write("\027[2J")      -- ANSI clear screen
+  while 1 do
+    thisgen:evolve(nextgen)
+    thisgen,nextgen = nextgen,thisgen
+    write("\027[H")     -- ANSI home cursor
+    thisgen:draw()
+    write("Life - generation ",gen,"\n")
+    gen=gen+1
+    if gen>500 then break end
+    --delay()           -- no delay
+  end
+end
+
+LIFE(40,20)
+@h=tangler('misc/lua/fib.lua','data')
+@select(h)
+-- fibonacci function with cache
+
+-- very inefficient fibonacci function
+function fib(n)
+        N=N+1
+        if n<2 then
+                return n
+        else
+                return fib(n-1)+fib(n-2)
+        end
+end
+
+-- a general-purpose value cache
+function cache(f)
+        local c={}
+        return function (x)
+                local y=c[x]
+                if not y then
+                        y=f(x)
+                        c[x]=y
+                end
+                return y
+        end
+end
+
+-- run and time it
+function test(s,f)
+        N=0
+        local c=os.clock()
+        local v=f(n)
+        local t=os.clock()-c
+        print(s,n,v,t,N)
+end
+
+n=arg[1] or 24          -- for other values, do lua fib.lua XX
+n=tonumber(n)
+print("","n","value","time","evals")
+test("plain",fib)
+fib=cache(fib)
+test("cached",fib)
+@h=tangler('misc/lua/factorial.lua','data')
+@select(h)
+-- function closures are powerful
+
+-- traditional fixed-point operator from functional programming
+Y = function (g)
+      local a = function (f) return f(f) end
+      return a(function (f)
+                 return g(function (x)
+                             local c=f(f)
+                             return c(x)
+                           end)
+               end)
+end
+
+
+-- factorial without recursion
+F = function (f)
+      return function (n)
+               if n == 0 then return 1
+               else return n*f(n-1) end
+             end
+    end
+
+factorial = Y(F)   -- factorial is the fixed point of F
+
+-- now test it
+function test(x)
+        io.write(x,"! = ",factorial(x),"\n")
+end
+
+for n=0,16 do
+        test(n)
+end
+@h=tangler('misc/lua/sort.lua','data')
+@select(h)
+-- two implementations of a sort function
+-- this is an example only. Lua has now a built-in function "sort"
+
+-- extracted from Programming Pearls, page 110
+function qsort(x,l,u,f)
+ if l<u then
+  local m=math.random(u-(l-1))+l-1      -- choose a random pivot in range l..u
+  x[l],x[m]=x[m],x[l]                   -- swap pivot to first position
+  local t=x[l]                          -- pivot value
+  m=l
+  local i=l+1
+  while i<=u do
+    -- invariant: x[l+1..m] < t <= x[m+1..i-1]
+    if f(x[i],t) then
+      m=m+1
+      x[m],x[i]=x[i],x[m]               -- swap x[i] and x[m]
+    end
+    i=i+1
+  end
+  x[l],x[m]=x[m],x[l]                   -- swap pivot to a valid place
+  -- x[l+1..m-1] < x[m] <= x[m+1..u]
+  qsort(x,l,m-1,f)
+  qsort(x,m+1,u,f)
+ end
+end
+
+function selectionsort(x,n,f)
+ local i=1
+ while i<=n do
+  local m,j=i,i+1
+  while j<=n do
+   if f(x[j],x[m]) then m=j end
+   j=j+1
+  end
+ x[i],x[m]=x[m],x[i]                    -- swap x[i] and x[m]
+ i=i+1
+ end
+end
+
+function show(m,x)
+ io.write(m,"\n\t")
+ local i=1
+ while x[i] do
+  io.write(x[i])
+  i=i+1
+  if x[i] then io.write(",") end
+ end
+ io.write("\n")
+end
+
+function testsorts(x)
+ local n=1
+ while x[n] do n=n+1 end; n=n-1         -- count elements
+ show("original",x)
+ qsort(x,1,n,function (x,y) return x<y end)
+ show("after quicksort",x)
+ selectionsort(x,n,function (x,y) return x>y end)
+ show("after reverse selection sort",x)
+ qsort(x,1,n,function (x,y) return x<y end)
+ show("after quicksort again",x)
+end
+
+-- array to be sorted
+x={"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"}
+
+testsorts(x)
+@h=tangler('misc/lua/hello.lua','data')
+@select(h)
+-- the first program in every language
+
+io.write("Hello world, from ",_VERSION,"!\n")
+@h=tangler('misc/lua/bisect.lua','data')
+@select(h)
+-- bisection method for solving non-linear equations
+
+delta=1e-6      -- tolerance
+
+function bisect(f,a,b,fa,fb)
+ local c=(a+b)/2
+ io.write(n," c=",c," a=",a," b=",b,"\n")
+ if c==a or c==b or math.abs(a-b)<delta then return c,b-a end
+ n=n+1
+ local fc=f(c)
+ if fa*fc<0 then return bisect(f,a,c,fa,fc) else return bisect(f,c,b,fc,fb) end
+end
+
+-- find root of f in the inverval [a,b]. needs f(a)*f(b)<0
+function solve(f,a,b)
+ n=0
+ local z,e=bisect(f,a,b,f(a),f(b))
+ io.write(string.format("after %d steps, root is %.17g with error %.1e, f=%.1e\n",n,z,e,f(z)))
+end
+
+-- our function
+function f(x)
+ return x*x*x-x-1
+end
+
+-- find zero in [1,2]
+solve(f,1,2)
+@h=tangler('misc/lua/cf.lua','data')
+@select(h)
+-- temperature conversion table (celsius to farenheit)
+
+for c0=-20,50-1,10 do
+        io.write("C ")
+        for c=c0,c0+10-1 do
+                io.write(string.format("%3.0f ",c))
+        end
+        io.write("\n")
+        
+        io.write("F ")
+        for c=c0,c0+10-1 do
+                f=(9/5)*c+32
+                io.write(string.format("%3.0f ",f))
+        end
+        io.write("\n\n")
+end
+@h=tangler('tools/lua/globals.lua','data')
+@select(h)
+-- reads luac listings and reports global variable usage
+-- lines where a global is written to are marked with "*"
+-- typical usage: luac -p -l file.lua | lua globals.lua | sort | lua table.lua
+
+while 1 do
+ local s=io.read()
+ if s==nil then break end
+ local ok,_,l,op,g=string.find(s,"%[%-?(%d*)%]%s*([GS])ETGLOBAL.-;%s+(.*)$")
+ if ok then
+  if op=="S" then op="*" else op="" end
+  io.write(g,"\t",l,op,"\n")
+ end
+end
+@h=tangler('misc/lua/trace-globals.lua','data')
+@select(h)
+-- trace assigments to global variables
+
+do
+ -- a tostring that quotes strings. note the use of the original tostring.
+ local _tostring=tostring
+ local tostring=function(a)
+  if type(a)=="string" then
+   return string.format("%q",a)
+  else
+   return _tostring(a)
+  end
+ end
+
+ local log=function (name,old,new)
+  local t=debug.getinfo(3,"Sl")
+  local line=t.currentline
+  io.write(t.short_src)
+  if line>=0 then io.write(":",line) end
+  io.write(": ",name," is now ",tostring(new)," (was ",tostring(old),")","\n")
+ end
+
+ local g={}
+ local set=function (t,name,value)
+  log(name,g[name],value)
+  g[name]=value
+ end
+ setmetatable(getfenv(),{__index=g,__newindex=set})
+end
+
+-- an example
+
+a=1
+b=2
+a=10
+b=20
+b=nil
+b=200
+print(a,b,c)
+@h=tangler('misc/lua/trace-calls.lua','data')
+@select(h)
+-- trace calls
+-- example: lua -ltrace-calls.lua bisect.lua
+
+local level=0
+
+function hook(event)
+ local t=debug.getinfo(3)
+ io.write(level," >>> ",string.rep(" ",level))
+ if t~=nil and t.currentline>=0 then io.write(t.short_src,":",t.currentline," ") end
+ t=debug.getinfo(2)
+ if event=="call" then
+  level=level+1
+ else
+  level=level-1 if level<0 then level=0 end
+ end
+ if t.what=="main" then
+  if event=="call" then
+   io.write("begin ",t.short_src)
+  else
+   io.write("end ",t.short_src)
+  end
+ elseif t.what=="Lua" then
+-- table.foreach(t,print)
+  io.write(event," ",t.name or "(Lua)"," <",t.linedefined,":",t.short_src,">")
+ else
+ io.write(event," ",t.name or "(C)"," [",t.what,"] ")
+ end
+ io.write("\n")
+end
+
+debug.sethook(hook,"cr")
+level=0
+@h=tangler('tools/lua/table.lua','data')
+@select(h)
+-- make table, grouping all data for the same item
+-- input is 2 columns (item, data)
+
+local A
+while 1 do
+ local l=io.read()
+ if l==nil then break end
+ local _,_,a,b=string.find(l,'"?([_%w]+)"?%s*(.*)$')
+ if a~=A then A=a io.write("\n",a,":") end
+ io.write(" ",b)
+end
+io.write("\n")
+@h=tangler('tools/lua/xd.lua','data')
+@select(h)
+-- hex dump
+-- usage: lua xd.lua < file
+
+local offset=0
+
+while 1 do
+ local s=io.read(16)
+ if s==nil then return end
+ io.write(string.format("%08X  ",offset))
+ string.gsub(s,"(.)",function (c) io.write(string.format("%02X ",string.byte(c))) end)
+ io.write(string.rep(" ",3*(16-string.len(s))))
+ io.write(" ",string.gsub(s,"%c","."),"\n") 
+ offset=offset+16
+end
+@h=tangler('misc/lua/fibfor.lua','data')
+@select(h)
+-- example of for with generator functions
+
+function generatefib (n)
+  return coroutine.wrap(function ()
+    local a,b = 1, 1
+    while a <= n do
+      coroutine.yield(a)
+      a, b = b, a+b
+    end
+  end, n)
+end
+
+for i in generatefib(1000) do print(i) end
+@h=tangler('misc/lua/printf.lua','data')
+@select(h)
+-- an implementation of printf
+
+function printf(...)
+ io.write(string.format(unpack(arg)))
+end
+
+printf("Hello %s from %s on %s\n",os.getenv"USER" or "there",_VERSION,os.date())
+@h=tangler('tools/lua/luac.lua','data')
+@select(h)
+-- bare-bones luac in Lua
+-- usage: lua luac.lua file.lua
+
+assert(arg[1]~=nil and arg[2]==nil,"usage: lua luac.lua file.lua")
+f=assert(io.open("luac.out","wb"))
+f:write(string.dump(assert(loadfile(arg[1]))))
+io.close(f)
+@h=tangler('misc/lua/env.lua','data')
+@select(h)
+-- read environment variables as if they were global variables
+
+local f=function (t,i) return os.getenv(i) end
+setmetatable(getfenv(),{__index=f})
+
+-- an example
+print(a,USER,PATH)
+@h=tangler('misc/lua/sieve.lua','data')
+@select(h)
+-- the sieve of of Eratosthenes programmed with coroutines
+-- typical usage: lua -e N=1000 sieve.lua | column
+
+-- generate all the numbers from 2 to n
+function gen (n)
+  return coroutine.wrap(function ()
+    for i=2,n do coroutine.yield(i) end
+  end)
+end
+
+-- filter the numbers generated by `g', removing multiples of `p'
+function filter (p, g)
+  return coroutine.wrap(function ()
+    while 1 do
+      local n = g()
+      if n == nil then return end
+      if math.mod(n, p) ~= 0 then coroutine.yield(n) end
+    end
+  end)
+end
+
+N=N or 1000             -- from command line
+x = gen(N)              -- generate primes up to N
+while 1 do
+  local n = x()         -- pick a number until done
+  if n == nil then break end
+  print(n)              -- must be a prime number
+  x = filter(n, x)      -- now remove its multiples
+end
+

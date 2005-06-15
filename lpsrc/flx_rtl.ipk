@@ -126,6 +126,15 @@ T &reinterpret(U const &x) {
 #define FLX_PURE 
 #endif
 #endif
+
+@def cal_raw_address():
+  if SIZEOF_INT == SIZEOF_VOIDP: return "unsigned"
+  if SIZEOF_LONG == SIZEOF_VOIDP: return "unsigned long"
+  if SIZEOF_LONGLONG == SIZEOF_VOIDP: return "unsigned long long"
+  raise "Cannot find an int the size of a void pointer"
+
+@tangle("#define FLX_RAWADDRESS "+cal_raw_address())
+
 #endif
 
 @head(2,"Procedure Continuation Abstraction")
@@ -960,9 +969,15 @@ int main(int argc, char** argv)
     if (init_sp != fin_sp ) {
       fprintf(stderr,"g++: STACK POINTER ERROR %p != %p\n",init_sp,fin_sp);
     }
+// I have to comment this out, because it only applies if the
+// gcc compiler is using the frame pointer.. it doesn't if you
+// say -fomit-frame-pointer, for example .. I don't know if there
+// is a way to tell inside the code ..
+#if 0
     if (init_fframe != fin_fframe) {
       fprintf(stderr,"g++: FRAME POINTER ERROR %p != %p\n",init_fframe,fin_fframe);
     }
+#endif
     else if (init_ret != fin_ret) {
       fprintf(stderr,"g++: RETURN ADDRESS ERROR %p != %p\n",init_ret,fin_ret);
     }

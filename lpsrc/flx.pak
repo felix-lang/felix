@@ -285,12 +285,6 @@ Flx_version.version_data := version_data
 @include_file ('flx_getopt.ipk')
 @pop_head()
 
-@head(2,'Array Fish')
-@include_file ('flx_fish.ipk')
-
-@head(2,'Ocs Scheme')
-@include_file ('flx_ocs.ipk')
-
 @head(2,'The Felix Run time')
 @include_file ('flx_rtl.ipk')
 @include_file ('flx_gc.ipk')
@@ -304,6 +298,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_tut_expect.ipk')
 @include_file ('flx_test_expect.ipk')
 @include_file ('flx_bagley_expect.ipk')
+@include_file ('flx_luademo.ipk')
 
 @head(2,'Stub mainline')
 This is a just a file for writing

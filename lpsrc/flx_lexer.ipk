@@ -261,14 +261,11 @@ class file_control
     method condition_stack_length = List.length condition
   end
 
-class lexer_state filename basedir incdirs (ocs_env':Ocs_types.env) = 
+class lexer_state filename basedir incdirs = 
   object (self)
-    val ocs_env = ocs_env'
     val comment_ctrl = new comment_control
     val file_ctrl = new file_control filename basedir incdirs 
     val mutable at_line_start = true
-
-    method get_ocs_env = ocs_env
 
     method is_at_line_start = at_line_start
 
@@ -402,13 +399,10 @@ class lexer_state :
   string ->
   string ->
   string list ->
-  Ocs_types.env ->
   object
-    val ocs_env : Ocs_types.env
     val comment_ctrl : comment_control
     val file_ctrl : file_control
 
-    method get_ocs_env : Ocs_types.env
     method adj : int -> unit
     method append_comment : string -> unit
     method comment_level : int
@@ -463,7 +457,6 @@ val pre_tokens_of_string :
   string -> string -> 
   token list
 
-(*
 val line_directive :
   lexer_state -> range_srcref -> string -> 
   lexbuf -> 
@@ -525,18 +518,6 @@ val include_directive :
   (lexer_state -> lexbuf -> token list) ->
   'a -> token list
 
-val scheme_file_directive :
-  lexer_state -> range_srcref -> string ->
-  (lexer_state -> lexbuf -> token list) ->
-  'a -> token list
-
-val scheme_string_directive :
-  lexer_state ->
-  range_srcref ->
-  string ->
-  (lexer_state -> lexbuf -> token list) -> 'b -> token list
-*)
-
 val handle_preprocessor :
   lexer_state -> lexbuf -> string ->
   (lexer_state -> lexbuf -> token list) ->
@@ -592,8 +573,7 @@ let pre_tokens_of_lexbuf lexer buf state =
     List.rev (get [])
 
 let pre_tokens_of_string lexer s filename =
-  let e = Ocs_top.make_env() in
-  let state = new lexer_state filename "" [] e in
+  let state = new lexer_state filename "" [] in
   pre_tokens_of_lexbuf lexer (Lexing.from_string s) state
 
 
@@ -914,8 +894,7 @@ let include_directive is_import state sr s pre_flx_lex lexbuf =
   let pre_tokens_of_filename filename =
   let incdirs = state#get_incdirs in
   let basedir = Filename.dirname filename in
-  let ocs_env = state#get_ocs_env in
-  let state' = new lexer_state filename basedir incdirs ocs_env in
+  let state' = new lexer_state filename basedir incdirs in
   let infile = open_in filename in
   let src = Lexing.from_channel infile in
   let toks = pre_tokens_of_lexbuf pre_flx_lex src state' in
@@ -929,51 +908,6 @@ let include_directive is_import state sr s pre_flx_lex lexbuf =
 
  in
    pre_tokens_of_filename filename
-
-let scheme_file_directive state sr s pre_flx_lex lexbuf =
-  let filename = find_include_file state s sr in
-  let basedir = Filename.dirname filename in
-  let ocs_env = state#get_ocs_env in
-  let state' = new lexer_state filename basedir state#get_incdirs ocs_env in
-  let th = Ocs_top.make_thread () in
-  let sp = Ocs_port.string_output_port () in
-  let th = { th with Ocs_types.th_stdout = Ocs_types.Sport sp } in
-  begin try
-     Ocs_prim.load_file ocs_env th filename;
-     let s = Ocs_port.get_string sp in
-     let src = Lexing.from_string s in
-     let toks = pre_tokens_of_lexbuf pre_flx_lex src state' in
-     toks
-
-   with
-     | Ocs_error.Error err ->
-       clierr sr ("Scheme error " ^ err)
-     | Ocs_error.ErrorL ((file, line), err) ->
-       let sr2 = file,line,1,line+1,1 in
-       clierr2 sr sr2
-       ("Scheme error " ^ err)
-  end
-
-let scheme_string_directive state sr s pre_flx_lex lexbuf =
-  let e = state#get_ocs_env in
-  let th = Ocs_top.make_thread () in
-  let sp = Ocs_port.string_output_port () in
-  let th = { th with Ocs_types.th_stdout = Ocs_types.Sport sp } in
-  begin try
-     Ocs_prim.load_string e th s;
-     let s = Ocs_port.get_string sp in
-     let src = Lexing.from_string s in
-     let toks = pre_tokens_of_lexbuf pre_flx_lex src state in
-     toks
-
-   with
-     | Ocs_error.Error err ->
-       clierr sr ("Scheme error " ^ err)
-     | Ocs_error.ErrorL ((file, line), err) ->
-       let sr2 = file,line,1,line+1,1 in
-       clierr2 sr sr2
-       ("Scheme error " ^ err)
-  end
 
 let slosh_cat s = 
   let mode = ref `seek_eol in
@@ -1053,20 +987,6 @@ let handle_preprocessor state lexbuf s pre_flx_lex parse_line =
     begin match state#get_condition with
     | `Processing ->
       include_directive is_import state sr s pre_flx_lex lexbuf
-    | _ -> []
-    end
-
-  | "scheme_include" -> 
-    begin match state#get_condition with
-    | `Processing ->
-      scheme_file_directive state sr s pre_flx_lex lexbuf
-    | _ -> []
-    end
-
-  | "scheme" -> 
-    begin match state#get_condition with
-    | `Processing ->
-      scheme_string_directive state sr s pre_flx_lex lexbuf
     | _ -> []
     end
 
