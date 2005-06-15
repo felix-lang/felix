@@ -148,7 +148,9 @@ let gen_elk_lexer filebase module_name syms bbdfns this sr ((_,t') as e) n  =
   iter (fun (nm,_) -> pe ("   \""^nm^"\",")) cts;
   pe ("};");
   pe "";
-  pe (gen_ctor syms bbdfns lexer_name display [] [get_token_fun_type,"get_token"] ["gc(*PTF gc)"] []);
+  (* FUDGE PROPERTY LIST *)
+  let props : property_t list = [`Uses_gc; `Requires_ptf] in
+  pe (gen_ctor syms bbdfns lexer_name display [] [get_token_fun_type,"get_token"] ["gc(*PTF gc)"] [] props);
   pe ("sm_string " ^ lexer_name ^ "::tokenDesc() const { return tokenKindDesc(type); }");
   pe "";
   pe ("sm_string " ^ lexer_name ^ "::tokenKindDesc(int kind) const {");
@@ -323,7 +325,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
         let j = hd ii in 
         let id,parent,sr'',entry = Hashtbl.find bbdfns j in
         begin match entry with
-        | `BBDCL_glr (_,_,t,(p,xs)) ->
+        | `BBDCL_glr (props,_,t,(p,xs)) ->
           let result_type = tn t in
           pe ("//Elkhound parser Elk" ^ parser_name ^ " -> " ^ result_type);
           pe ("//Token type " ^ token_id ^ " -> " ^ token_type_name);
@@ -361,7 +363,7 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
         pe "};";
         pe "";
         pe "impl_verbatim {";
-        pe (gen_ctor syms bbdfns ("Elk"^parser_name) display [] [] ["gc(*PTF gc)"] []);
+        pe (gen_ctor syms bbdfns ("Elk"^parser_name) display [] [] ["gc(*PTF gc)"] [] props);
         pe "}";
         pe "";
         pe "impl_verbatim {";

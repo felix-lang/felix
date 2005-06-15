@@ -3,9 +3,6 @@
 Generates debian packaging meta info.
 @p()
 BUGS, PROBLEMS ..
-@p()
-usr/include contains 'lua.h', 'lualib.h','lauxlib.h' which
-will conflict with a standard Lua install.
 
 @head(2,'Package control')
 @select(tangler('debian/control','data'))
@@ -13,7 +10,7 @@ Source: felix
 Section: devel
 Priority: optional
 Maintainer: John Skaller <skaller@users.sourceforge.net>
-Build-Depends: debhelper (>= 4.0.0), python (>=2.0), ocaml (>=3.08.0), gnuplot (>=4.0), man2html (>=1.5), sed (>=4.1)
+Build-Depends: debhelper (>= 4.0.0), python (>=2.0), ocaml-nox (>=3.08), ocaml-best-compilers, gnuplot (>=4.0), man2html (>=1.5), sed (>=4.1)
 Standards-Version: 3.6.1
 
 Package: felix
@@ -34,6 +31,12 @@ usr/lib/felix
 usr/lib/felix/lib
 usr/lib/felix/rtl
 usr/include
+usr/share/doc/felix
+usr/share/doc/felix/libdoc
+usr/share/doc/felix/examples
+usr/share/doc/felix/htmlman
+usr/share/doc/felix/doc
+usr/share/man/man1
 
 @select(tangler('debian/compat','data'))
 4

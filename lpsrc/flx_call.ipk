@@ -349,8 +349,7 @@ let print_call_report syms bbdfns f =
 let expr_uses syms descend usage restrict e = 
   let u = ref IntSet.empty in
   let add u i = u := IntSet.add i !u in
-  let rec fe e = iter_tbexpr (add u) fe ignore e in
-  fe e;
+  iter_tbexpr (add u) ignore ignore e;
   
 
   (*

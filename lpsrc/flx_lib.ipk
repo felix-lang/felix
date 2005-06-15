@@ -623,9 +623,12 @@ module Dynlink
   proc dlopen:flx_library * string = "$1->link($2.data());";
   proc dlclose:flx_library = "$1->unlink();";
 
+  // this is a procedure, so maybe the caller is too
+  // which means the thread frame must be available
   proc create: flx_library * flx_instance = 
-    "_create($1,&$2,&gc,ptf->argc,ptf->argv);"
-    requires body """
+    "_create($1,&$2,PTF gc,ptf->argc,ptf->argv);"
+    requires property "needs_gc",
+    body """
     flx::rtl::con_t *_create
     (
       flx::rtl::flx_dynlink_t *library,
@@ -1095,10 +1098,10 @@ module Control
   code equivalent to 'run'.
   """
   proc collect: unit = """
-  	gc.add_root(this); 
-  	gc.collect();
-	  gc.remove_root(this); 
-  """;
+    PTF gc->add_root(this); 
+    PTF gc->collect();
+	  PTF gc ->remove_root(this); 
+  """ requires property "needs_gc";
 }
 
 @#------------- List -------------------

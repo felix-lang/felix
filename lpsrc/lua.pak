@@ -114,9 +114,9 @@ Even so, it's not that much code.
 @h=tangler('lib/lua.flx')
 @select(h)
 include 'std';
-header lua_h '#include "lua.h"';
-header lua_h '#include "lauxlib.h"';
-header lua_h '#include "lualib.h"';
+header lua_h '#include "flx_lua.h"';
+header lua_h '#include "flx_lauxlib.h"';
+header lua_h '#include "flx_lualib.h"';
 
 publish "Interface to Lua 5.0 CAPI"
 module Lua
@@ -977,7 +977,7 @@ exit_code :=
 System::exit exit_code;
 
 
-@h=tangler('lua/lua.h')
+@h=tangler('lua/flx_lua.h')
 @select(h)
 /*
 ** $Id$
@@ -1370,7 +1370,7 @@ struct lua_Debug {
 
 
 #endif
-@h=tangler('lua/lualib.h')
+@h=tangler('lua/flx_lualib.h')
 @select(h)
 /*
 ** $Id$
@@ -1382,7 +1382,7 @@ struct lua_Debug {
 #ifndef lualib_h
 #define lualib_h
 
-#include "lua.h"
+#include "flx_lua.h"
 
 
 #ifndef LUALIB_API
@@ -1430,7 +1430,7 @@ LUALIB_API int luaopen_loadlib (lua_State *L);
 #endif
 
 
-@h=tangler('lua/lauxlib.h')
+@h=tangler('lua/flx_lauxlib.h')
 @select(h)
 
 /*
@@ -1447,7 +1447,7 @@ LUALIB_API int luaopen_loadlib (lua_State *L);
 #include <stddef.h>
 #include <stdio.h>
 
-#include "lua.h"
+#include "flx_lua.h"
 
 
 #ifndef LUALIB_API
@@ -1592,7 +1592,7 @@ LUALIB_API int   lua_dobuffer (lua_State *L, const char *buff, size_t sz,
 
 #define lapi_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "lapi.h"
 #include "ldebug.h"
@@ -2533,7 +2533,7 @@ void luaA_pushobject (lua_State *L, const TObject *o);
 
 #define lcode_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "lcode.h"
 #include "ldebug.h"
@@ -3326,7 +3326,7 @@ void luaK_posfix (FuncState *fs, BinOpr op, expdesc *v1, expdesc *v2);
 
 #define ldebug_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "lapi.h"
 #include "lcode.h"
@@ -3947,7 +3947,7 @@ int luaG_checkcode (const Proto *pt);
 
 #define ldo_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -4479,7 +4479,7 @@ int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud);
 
 #define ldump_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "lobject.h"
 #include "lopcodes.h"
@@ -4652,7 +4652,7 @@ void luaU_dump (lua_State* L, const Proto* Main, lua_Chunkwriter w, void* data)
 
 #define lfunc_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "lfunc.h"
 #include "lgc.h"
@@ -4815,7 +4815,7 @@ const char *luaF_getlocalname (const Proto *func, int local_number, int pc);
 
 #define lgc_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -5344,7 +5344,7 @@ void luaC_link (lua_State *L, GCObject *o, lu_byte tt);
 
 #define llex_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "ldo.h"
 #include "llex.h"
@@ -5842,7 +5842,7 @@ const char *luaX_token2str (LexState *ls, int token);
 #include <stddef.h>
 
 
-#include "lua.h"
+#include "flx_lua.h"
 
 
 /*
@@ -6026,7 +6026,7 @@ typedef unsigned long Instruction;
 
 #define lmem_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -6121,7 +6121,7 @@ void *luaM_realloc (lua_State *L, void *block, lu_mem oldsize, lu_mem size) {
 #include <stddef.h>
 
 #include "llimits.h"
-#include "lua.h"
+#include "flx_lua.h"
 
 #define MEMERRMSG       "not enough memory"
 
@@ -6167,7 +6167,7 @@ void *luaM_growaux (lua_State *L, void *block, int *size, int size_elem,
 
 #define lobject_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "ldo.h"
 #include "lmem.h"
@@ -6362,7 +6362,7 @@ void luaO_chunkid (char *out, const char *source, int bufflen) {
 
 
 #include "llimits.h"
-#include "lua.h"
+#include "flx_lua.h"
 
 
 /* tags for values visible from Lua */
@@ -6699,7 +6699,7 @@ void luaO_chunkid (char *out, const char *source, int len);
 
 #define lopcodes_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "lobject.h"
 #include "lopcodes.h"
@@ -7038,7 +7038,7 @@ extern const char *const luaP_opnames[];  /* opcode names */
 
 #define lparser_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "lcode.h"
 #include "ldebug.h"
@@ -8446,7 +8446,7 @@ Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff);
 
 #define lstate_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -8666,7 +8666,7 @@ LUA_API void lua_close (lua_State *L) {
 #ifndef lstate_h
 #define lstate_h
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "lobject.h"
 #include "ltm.h"
@@ -8865,7 +8865,7 @@ void luaE_freethread (lua_State *L, lua_State *L1);
 
 #define lstring_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "lmem.h"
 #include "lobject.h"
@@ -9020,7 +9020,7 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l);
 
 #define ltable_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -9552,10 +9552,10 @@ Node *luaH_mainposition (const Table *t, const TObject *key);
 
 #define ltests_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "lapi.h"
-#include "lauxlib.h"
+#include "flx_lauxlib.h"
 #include "lcode.h"
 #include "ldebug.h"
 #include "ldo.h"
@@ -9565,7 +9565,7 @@ Node *luaH_mainposition (const Table *t, const TObject *key);
 #include "lstate.h"
 #include "lstring.h"
 #include "ltable.h"
-#include "lualib.h"
+#include "flx_lualib.h"
 
 
 
@@ -10402,7 +10402,7 @@ int main (int argc, char *argv[]) {
 
 #define ltm_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "lobject.h"
 #include "lstate.h"
@@ -10524,7 +10524,7 @@ extern const char *const luaT_typenames[];
 
 #define lundump_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "ldebug.h"
 #include "lfunc.h"
@@ -10856,7 +10856,7 @@ void luaU_print (const Proto* Main);
 
 #define lvm_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -11671,7 +11671,7 @@ void luaV_concat (lua_State *L, int total, int last);
 
 #define lzio_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
 #include "llimits.h"
 #include "lmem.h"
@@ -11753,7 +11753,7 @@ char *luaZ_openspace (lua_State *L, Mbuffer *buff, size_t n) {
 #ifndef lzio_h
 #define lzio_h
 
-#include "lua.h"
+#include "flx_lua.h"
 
 
 #define EOZ     (-1)                    /* end of stream */
@@ -11829,9 +11829,9 @@ int luaZ_fill (ZIO *z);
 
 #define lauxlib_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
-#include "lauxlib.h"
+#include "flx_lauxlib.h"
 
 
 /* number of prereserved references (for internal use) */
@@ -12417,10 +12417,10 @@ LUALIB_API int lua_dostring (lua_State *L, const char *str) {
 
 #define lbaselib_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
-#include "lauxlib.h"
-#include "lualib.h"
+#include "flx_lauxlib.h"
+#include "flx_lualib.h"
 
 
 
@@ -13092,10 +13092,10 @@ LUALIB_API int luaopen_base (lua_State *L) {
 
 #define ldblib_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
-#include "lauxlib.h"
-#include "lualib.h"
+#include "flx_lauxlib.h"
+#include "flx_lualib.h"
 
 
 
@@ -13396,10 +13396,10 @@ LUALIB_API int luaopen_debug (lua_State *L) {
 
 #define liolib_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
-#include "lauxlib.h"
-#include "lualib.h"
+#include "flx_lauxlib.h"
+#include "flx_lualib.h"
 
 
 
@@ -14144,10 +14144,10 @@ LUALIB_API int luaopen_io (lua_State *L) {
 
 #define lmathlib_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
-#include "lauxlib.h"
-#include "lualib.h"
+#include "flx_lauxlib.h"
+#include "flx_lualib.h"
 
 
 #undef PI
@@ -14408,9 +14408,9 @@ LUALIB_API int luaopen_math (lua_State *L) {
 *
 */
 
-#include "lua.h"
-#include "lauxlib.h"
-#include "lualib.h"
+#include "flx_lua.h"
+#include "flx_lauxlib.h"
+#include "flx_lualib.h"
 
 
 #undef LOADLIB
@@ -14602,10 +14602,10 @@ LUALIB_API int luaopen_loadlib (lua_State *L)
 
 #define lstrlib_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
-#include "lauxlib.h"
-#include "lualib.h"
+#include "flx_lauxlib.h"
+#include "flx_lualib.h"
 
 
 /* macro to `unsign' a character */
@@ -15370,10 +15370,10 @@ LUALIB_API int luaopen_string (lua_State *L) {
 
 #define ltablib_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
-#include "lauxlib.h"
-#include "lualib.h"
+#include "flx_lauxlib.h"
+#include "flx_lualib.h"
 
 
 #define aux_getn(L,n)   (luaL_checktype(L, n, LUA_TTABLE), luaL_getn(L, n))
@@ -15836,8 +15836,8 @@ void luaU_print(const Proto* f)
 #include <stdlib.h>
 #include <string.h>
 
-#include "lua.h"
-#include "lauxlib.h"
+#include "flx_lua.h"
+#include "flx_lauxlib.h"
 
 #include "lfunc.h"
 #include "lmem.h"
@@ -16035,10 +16035,10 @@ int main(int argc, char* argv[])
 
 #define lua_c
 
-#include "lua.h"
+#include "flx_lua.h"
 
-#include "lauxlib.h"
-#include "lualib.h"
+#include "flx_lauxlib.h"
+#include "flx_lualib.h"
 
 
 /*

@@ -2018,9 +2018,9 @@ LUARTL = [
 ]
 
 LUARTL_INTERFACES = [
-  'lua.h',
-  'lauxlib.h',
-  'lualib.h'
+  'flx_lua.h',
+  'flx_lauxlib.h',
+  'flx_lualib.h'
 ]
 
 
@@ -2134,6 +2134,7 @@ FLX_MODULES = [
   'flx_inline'       , 
   'flx_stack_calls'  , 
   'flx_mkcls'        , 
+  'flx_global'       , 
   'flx_inst'         , 
   'flx_tgen'         , 
   'flx_display'      , 

@@ -15,6 +15,7 @@ val gen_ctor:
   (string * string) list ->   (* extra args *)
   string list ->              (* extra inits *)
   btypecode_t list ->         (* ts *)
+  property_t list ->          (* properties *)
   string
  
 @h = tangler("src/flx_ctorgen.ml")
@@ -41,13 +42,18 @@ open Flx_ctypes
 open Flx_cexpr
 open Flx_maps
 
-let gen_ctor syms bbdfns name display funs extra_args extra_inits ts =
+let gen_ctor syms bbdfns name display funs extra_args extra_inits ts props =
+  let requires_ptf = mem `Requires_ptf props in
   name^"::"^name^
   (if length display + length extra_args = 0 then
-  "(FLX_FPAR_DECL_ONLY)"
+  (if requires_ptf then "(FLX_FPAR_DECL_ONLY)" else "()")
   else
   "\n  (\n" ^
-  "    FLX_FPAR_DECL\n" ^
+  (if requires_ptf then
+  "    FLX_FPAR_DECL\n" 
+  else ""
+  )
+  ^
   cat ",\n"
   (
     map 
@@ -67,9 +73,14 @@ let gen_ctor syms bbdfns name display funs extra_args extra_inits ts =
   "\n  )\n" 
   )
   ^
-  (if length display + length funs + length extra_args + length extra_inits = 0 then "FLX_FMEM_INIT_ONLY"
+  (if length display + length funs + length extra_args + length extra_inits = 0 
+  then (if requires_ptf then "FLX_FMEM_INIT_ONLY" else "")
   else
-  "  FLX_FMEM_INIT " ^
+  (if requires_ptf then
+  "  FLX_FMEM_INIT "
+  else " : "
+  )
+  ^
   cat ",\n"
   (
     map 

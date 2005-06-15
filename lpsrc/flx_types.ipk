@@ -479,6 +479,13 @@ and property_t = [
   | `Explicit_closure    (* explicit closure expression *)
   | `Stackable           (* closure can be created on stack *)
   | `Pure                (* closure not required by self *)
+  | `Uses_global_var     (* a global variable is explicitly used *)
+
+  (* one of the below must be set before code generation *)
+  | `Requires_ptf        (* a pointer to thread frame is needed *)
+  | `Not_requires_ptf    (* no pointer to thread frame is needed *)
+
+  | `Uses_gc             (* requires gc locally *)
 ]
 
 and type_qual_t = [
@@ -490,6 +497,7 @@ and requirement_t = [
   | `Named_req of qualified_name_t 
   | `Body_req of string
   | `Header_req of string
+  | `Property_req of string
 ]
 
 and requirements_t = requirement_t list
@@ -687,7 +695,7 @@ type dcl_t =
   (* binding structures [prolog] *)
   | `DCL_abs of          type_qual_t list * c_t * named_reqs_t
   | `DCL_const of        typecode_t * c_t * named_reqs_t
-  | `DCL_fun of          typecode_t list * typecode_t * c_t * named_reqs_t * prec_t
+  | `DCL_fun of          property_t list * typecode_t list * typecode_t * c_t * named_reqs_t * prec_t
   | `DCL_header of       c_t * named_reqs_t
   | `DCL_body of         c_t * named_reqs_t
   | `DCL_regdef of      regexp_t
@@ -841,8 +849,8 @@ and bbdcl_t =
   (* binding structures [prolog] *)
   | `BBDCL_abs of        bvs_t * type_qual_t list * c_t * breqs_t
   | `BBDCL_const of      bvs_t * btypecode_t * c_t * breqs_t
-  | `BBDCL_fun of        bvs_t * btypecode_t list * btypecode_t * c_t  * breqs_t * prec_t
-  | `BBDCL_proc of       bvs_t * btypecode_t list * c_t  * breqs_t
+  | `BBDCL_fun of        property_t list * bvs_t * btypecode_t list * btypecode_t * c_t  * breqs_t * prec_t
+  | `BBDCL_proc of       property_t list * bvs_t * btypecode_t list * c_t  * breqs_t
   | `BBDCL_header of     bvs_t * c_t  * breqs_t
   | `BBDCL_body of       bvs_t * c_t  * breqs_t
   
@@ -878,7 +886,7 @@ type symbol_definition_t =
   | `SYMDEF_const of typecode_t * c_t * named_reqs_t
   | `SYMDEF_var of  typecode_t
   | `SYMDEF_val of  typecode_t
-  | `SYMDEF_fun of typecode_t list * typecode_t * c_t  * named_reqs_t * prec_t
+  | `SYMDEF_fun of property_t list * typecode_t list * typecode_t * c_t  * named_reqs_t * prec_t
   | `SYMDEF_header of c_t  * named_reqs_t
   | `SYMDEF_body of c_t  * named_reqs_t
   | `SYMDEF_union of  (id_t * typecode_t) list
@@ -1100,29 +1108,32 @@ let iter_btype f = function
 
 (* type invariant mapping *)
 
-let iter_tbexpr fi fe ft e = match e with 
-  | `BEXPR_parse (e,iis),t -> fe e; iter fi iis; ft t
-  | `BEXPR_deref e,t -> fe e; ft t
-  | `BEXPR_ref (i,ts),t -> fi i; iter ft ts; ft t
+let rec iter_tbexpr fi fe ft ((x,t) as e) = 
+  fe e; ft t;
+  let fe e = iter_tbexpr fi fe ft e in
+  match x with 
+  | `BEXPR_parse (e,iis) -> fe e; iter fi iis
+  | `BEXPR_deref e -> fe e
+  | `BEXPR_ref (i,ts) -> fi i; iter ft ts
 
-  | `BEXPR_apply (e1,e2),t -> fe e1; fe e2; ft t
+  | `BEXPR_apply (e1,e2) -> fe e1; fe e2
 
-  | `BEXPR_apply_prim (i,ts,e2),t -> fi i; iter ft ts; fe e2; ft t
-  | `BEXPR_apply_direct (i,ts,e2),t -> fi i; iter ft ts; fe e2; ft t
-  | `BEXPR_apply_stack (i,ts,e2),t -> fi i; iter ft ts; fe e2; ft t
-  | `BEXPR_tuple  es,t -> iter fe es; ft t
+  | `BEXPR_apply_prim (i,ts,e2) -> fi i; iter ft ts; fe e2
+  | `BEXPR_apply_direct (i,ts,e2) -> fi i; iter ft ts; fe e2
+  | `BEXPR_apply_stack (i,ts,e2) -> fi i; iter ft ts; fe e2
+  | `BEXPR_tuple  es -> iter fe es
 
-  | `BEXPR_get_n (i,e),t -> fe e; ft t
+  | `BEXPR_get_n (i,e) -> fe e
 
-  | `BEXPR_closure (i,ts),t -> fi i; iter ft ts; ft t
-  | `BEXPR_name (i,ts),t -> fi i; iter ft ts; ft t
-  | `BEXPR_case (i,t'),t -> ft t'; ft t
-  | `BEXPR_match_case (i,e),t -> fe e; ft t
-  | `BEXPR_case_arg (i,e),t -> fe e; ft t
-  | `BEXPR_case_index e,t -> fe e; ft t
+  | `BEXPR_closure (i,ts) -> fi i; iter ft ts
+  | `BEXPR_name (i,ts) -> fi i; iter ft ts
+  | `BEXPR_case (i,t') -> ft t'
+  | `BEXPR_match_case (i,e) -> fe e
+  | `BEXPR_case_arg (i,e) -> fe e
+  | `BEXPR_case_index e -> fe e
 
-  | `BEXPR_literal x,t -> ft t
-  | `BEXPR_expr (s,t1),t2 -> ft t1; ft t2
+  | `BEXPR_literal x -> ft t
+  | `BEXPR_expr (s,t1) -> ft t1
 
 let map_tbexpr fi fe ft e = match e with 
   | `BEXPR_parse (e,iis),t -> `BEXPR_parse (fe e,map fi iis), ft t
@@ -2314,6 +2325,10 @@ and string_of_property = function
 | `Stackable -> "stackable"
 | `Heap_closure -> "heap_closure"
 | `Pure -> "pure"
+| `Uses_global_var-> "uses_global_var"
+| `Requires_ptf -> "requires_thread_frame"
+| `Not_requires_ptf -> "does_not_require_thread_frame"
+| `Uses_gc -> "uses_gc"
 
 and string_of_properties ps =
   match ps with 
@@ -2328,6 +2343,7 @@ and string_of_reqs = function
       | `Named_req s -> string_of_qualified_name s
       | `Body_req s -> "body \"" ^ s ^ "\""
       | `Header_req s -> "header \"" ^ s ^ "\""
+      | `Property_req s -> "property \"" ^ s ^ "\""
     )
     x
 
@@ -2792,7 +2808,8 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t)
   | `SYMDEF_cstruct (cts) -> 
     "cstruct " ^ name ^ print_ivs vs ^ ";"
     
-  | `SYMDEF_fun (pts,res,cts, reqs,prec) -> 
+  | `SYMDEF_fun (props, pts,res,cts, reqs,prec) -> 
+    string_of_properties props ^
     "fun " ^ name ^ print_ivs vs ^
     ": " ^ string_of_typecode 
     (
@@ -3132,10 +3149,11 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     string_of_named_reqs reqs ^
     ";"
 
-  | `DCL_fun (args, result, code, reqs,prec) ->
+  | `DCL_fun (props, args, result, code, reqs,prec) ->
     let argtype:typecode_t = type_of_argtypes args in
     let t:typecode_t = `TYP_function (argtype,result) in
     spaces level ^ 
+    string_of_properties props ^
     "fun " ^ name^seq ^ print_vs vs ^
     ": " ^ string_of_typecode t ^
     " = " ^ string_of_string code ^ 
@@ -3304,7 +3322,8 @@ and string_of_bbdcl dfns bbdcl index =
      string_of_breqs dfns reqs ^
      ";" 
 
-  | `BBDCL_fun (vs,ps,rt,code,reqs,prec) ->
+  | `BBDCL_fun (props,vs,ps,rt,code,reqs,prec) ->
+    string_of_properties props ^
     "fun " ^ name ^ print_bvs vs ^
     ": " ^ 
     (sobt (typeoflist ps)) ^ " -> " ^
@@ -3314,7 +3333,8 @@ and string_of_bbdcl dfns bbdcl index =
      string_of_breqs dfns reqs ^
     ";"
 
-  | `BBDCL_proc (vs, ps,code,reqs) ->
+  | `BBDCL_proc (props,vs, ps,code,reqs) ->
+    string_of_properties props ^
     "proc " ^ name ^ print_bvs vs ^
     ": " ^ 
      (sobt (typeoflist ps)) ^

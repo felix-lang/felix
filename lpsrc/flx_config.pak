@@ -1226,6 +1226,7 @@ flx_keywords = [
     ("pod", "POD"),
     ("private", "PRIVATE"),
     ("proc", "PROCEDURE"),
+    ("property", "PROPERTY"),
     ("public", "PUBLIC"),
     ("publish", "PUBLISH"),
     ("read", "READ"),

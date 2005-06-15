@@ -1607,7 +1607,7 @@ and inner_typeofindex
   | `SYMDEF_match_check _ ->
     `BTYP_function (`BTYP_tuple [], flx_bbool)
 
-  | `SYMDEF_fun (pts,rt,_,_,_) -> 
+  | `SYMDEF_fun (_,pts,rt,_,_,_) -> 
     let t = `TYP_function (typeof_list pts,rt) in
     bt t
     

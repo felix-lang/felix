@@ -201,9 +201,9 @@ let rec get_offsets' syms bbdfns typ : string list =
 let get_offsets syms bbdfns typ =
   map (fun s -> s^",") (get_offsets' syms bbdfns typ)
 
-let gen_offset_data s n name offsets isfun =
+let gen_offset_data s n name offsets isfun props =
   let noffsets = 
-    if isfun then si (n-1)^"+FLX_PASS_PTF"
+    if isfun && mem `Requires_ptf props then si (n-1)^"+FLX_PASS_PTF"
     else si n
   in
   if n <> 0 then
@@ -220,12 +220,19 @@ let gen_offset_data s n name offsets isfun =
   (if n<>0 then name^"_offsets\n" else "0\n"));
   bcat s ( ");\n")
 
-let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance = 
+let is_instantiated syms i ts = Hashtbl.mem syms.instances (i,ts)
+
+let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props : unit = 
   let vars =  (find_references syms (child_map,bbdfns) index ts) in
+  let vars = filter (fun (i, _) -> is_instantiated syms i ts) vars in
   let name = cpp_instance_name syms bbdfns index ts in
   let display = Flx_display.get_display_list bbdfns index in
   let offsets = 
-    ("FLX_EAT_PTF(offsetof(" ^ name ^ ",ptf)comma)") ::
+    (if mem `Requires_ptf props then
+    ["FLX_EAT_PTF(offsetof(" ^ name ^ ",ptf)comma)"]
+    else []
+    )
+    @
     (match ret with 
       | `BTYP_void -> [ ("offsetof(" ^ name ^ ",_caller),")  ] 
       | _ -> []
@@ -260,7 +267,7 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance =
     (match ret with |`BTYP_void -> "procedure " | _ -> "function ") ^ 
     name ^ "\n"
   );
-  gen_offset_data s n name offsets true
+  gen_offset_data s n name offsets true props
 
 let gen_thread_frame_offsets s syms bbdfns =
   let vars = find_thread_vars_with_type bbdfns in
@@ -287,7 +294,7 @@ let gen_thread_frame_offsets s syms bbdfns =
   (
     "\n//OFFSETS for "^ name ^ "\n"
   );
-  gen_offset_data s n name offsets false
+  gen_offset_data s n name offsets false []
 
 let gen_offset_tables syms (child_map,bbdfns) =
   let primitive_shapes = Hashtbl.create 97 in
@@ -303,7 +310,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
     match entry with
     | `BBDCL_function (props,vs,ps, ret,_) -> 
       if mem `Heap_closure props then
-        gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance
+        gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props
       (*
       else 
         print_endline ("Warning: no closure of " ^ id ^ "<"^si index ^"> is used")
@@ -312,7 +319,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
     | `BBDCL_regmatch (props,vs,ps,ret,_) 
     | `BBDCL_reglex (props,vs,ps,_,ret,_)  ->
       if mem `Heap_closure props then
-        gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance
+        gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props
       (*
       else 
         print_endline ("Warning: no closure of " ^ id ^ "<"^si index ^"> is used")
@@ -320,7 +327,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
         
     | `BBDCL_procedure (props,vs,ps,_) -> 
       if mem `Heap_closure props then
-        gen_fun_offsets s syms (child_map,bbdfns) index vs ps `BTYP_void ts instance
+        gen_fun_offsets s syms (child_map,bbdfns) index vs ps `BTYP_void ts instance props
       (*
       else
         print_endline ("Warning: no closure of " ^ id ^"<" ^ si index ^ "> is used")
@@ -401,7 +408,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
       let n = length offsets in 
       let classname = cpp_type_classname syms btyp in
       bcat s ("\n//OFFSETS for tuple type " ^ si index ^ "\n");
-      gen_offset_data s n name offsets false
+      gen_offset_data s n name offsets false []
 
     (* for an array, we only have offsets for the first element *)
     | `BTYP_array (t,i) ->

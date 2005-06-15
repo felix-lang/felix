@@ -468,6 +468,11 @@ requirement:
       `Header_req (snd $2)
     }
 
+  | PROPERTY STRING
+    {
+      `Property_req (snd $2)
+    }
+
 requirements:
   | requirement COMMA requirements { $1 :: $3 }
   | requirement { [$1] }

@@ -208,8 +208,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       our_display
     in
 
-    let pdisplay = strd the_display in
-    let ldisplay = strd (the_display @[ge e]) in
+    (* HACK PROPERTIES *)
+    let pdisplay = strd the_display [`Requires_ptf] in
+    let ldisplay = strd (the_display @[ge e]) [`Requires_ptf] in
     let callstr = 
     "(Elk_" ^ si pn ^ pdisplay ^
     ".apply((new ElkLex_" ^ si ln^ldisplay^")->init()))"
@@ -363,6 +364,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     end
 
   | `BEXPR_closure (index,ts') -> 
+    (*
+    print_endline ("Generating closure of " ^ si index);
+    *)
     let id,parent,sr,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
@@ -373,8 +377,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     *)
     let ts = map tsub ts' in
     begin match entry with
-    | `BBDCL_function _ 
-    | `BBDCL_procedure _ ->
+    | `BBDCL_function (props,_,_,_,_) 
+    | `BBDCL_procedure (props,_,_,_) ->
       let the_display = 
         let d' = 
           map (fun (i,vslen) -> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
@@ -386,7 +390,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       in
       let name = cpp_instance_name syms bbdfns index ts in
       ce_atom (
-      "(FLX_NEWP("^name^")" ^ strd the_display ^")"
+      "(FLX_NEWP("^name^")" ^ strd the_display props ^")"
       )
 
     | `BBDCL_cstruct _ 
@@ -460,7 +464,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     in
     begin 
     match entry with
-    | `BBDCL_fun (vs,ps,retyp,ct,_,prec) -> 
+    | `BBDCL_fun (props,vs,ps,retyp,ct,_,prec) -> 
       if length vs <> length ts then
       failwith 
       (
@@ -511,9 +515,12 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
     *)
     match entry with
-    | `BBDCL_regmatch _
-    | `BBDCL_reglex _
-    | `BBDCL_function _ ->
+    | `BBDCL_regmatch (props,_,_,_,_) 
+    | `BBDCL_reglex (props,_,_,_,_,_)
+    | `BBDCL_function (props,_,_,_,_) ->
+      (*
+      print_endline ("Generating closure[apply direct] of " ^ si index);
+      *)
       let ts = map tsub ts in
       let the_display = 
         let d' = 
@@ -526,7 +533,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       in
       let name = cpp_instance_name syms bbdfns index ts in
       ce_atom (
-      "(FLX_NEWP("^name^")"^ strd the_display ^")"^
+      "(FLX_NEWP("^name^")"^ strd the_display props ^")"^
       "\n      ->apply(" ^ ge_arg a ^ ")"
       )
 
@@ -625,8 +632,10 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
             end
         in 
         let s = 
-          if String.length s > 0 then "FLX_FPAR_PASS " ^ s 
-          else "FLX_FPAR_PASS_ONLY"
+          if mem `Requires_ptf props then
+            if String.length s > 0 then "FLX_FPAR_PASS " ^ s 
+            else "FLX_FPAR_PASS_ONLY"
+          else s
         in 
           ce_atom (name ^ "(" ^ s ^ ")")
       else
@@ -640,7 +649,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
             else d'
         in
         let s = 
-          name^ strd the_display 
+          name^ strd the_display props
           ^
           "\n      .apply(" ^ ge_arg a ^ ")"
         in ce_atom s

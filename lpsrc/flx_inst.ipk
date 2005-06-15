@@ -307,7 +307,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     do_reqs vs reqs
 
 
-  | `BBDCL_fun (vs,argtypes,ret,_,reqs,_) ->
+  | `BBDCL_fun (props,vs,argtypes,ret,_,reqs,_) ->
     (*
     print_endline ("Handling requirements of fun " ^ id);
     *)
@@ -318,7 +318,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     do_reqs vs reqs;
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret [] ts
 
-  | `BBDCL_proc (vs,argtypes,_,reqs) ->
+  | `BBDCL_proc (props,vs,argtypes,_,reqs) ->
     (*
     print_endline ("Handling requirements of proc " ^ id);
     *)

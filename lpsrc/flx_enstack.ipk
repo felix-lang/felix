@@ -155,7 +155,9 @@ let can_stack_func cache syms (child_map,bbdfns) i =
   let children = try Hashtbl.find child_map i with Not_found -> [] in
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
-  | `BBDCL_function (_,_,_,ret,_) -> not (has_ptr_fn cache syms bbdfns children ret)
+  | `BBDCL_function (_,_,_,ret,_) -> 
+    not (has_ptr_fn cache syms bbdfns children ret)
+
   | `BBDCL_nonconst_ctor _
   | `BBDCL_fun _
   | `BBDCL_struct _
@@ -208,10 +210,6 @@ let rec is_pure syms (child_map, bbdfns) i =
       true
     with 
     | Not_found -> false
-
-let uses_global syms bbdfns x =
-  let ea e = uses_global syms bbdfns e in
-  match fold
 
 let ident x = x 
 let tident t = t 

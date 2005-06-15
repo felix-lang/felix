@@ -33,7 +33,7 @@ let gen_closure syms bbdfns i =
   let j = !(syms.counter) in incr syms.counter;
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
-  | `BBDCL_proc (vs,ps,c,reqs) ->
+  | `BBDCL_proc (props,vs,ps,c,reqs) ->
     let arg_t = 
       match ps with | [t] -> t | ps -> `BTYP_tuple ps
     in
@@ -56,7 +56,7 @@ let gen_closure syms bbdfns i =
     Hashtbl.add bbdfns j (id,parent,sr,entry);
     j
 
-  | `BBDCL_fun (vs,ps,ret,c,reqs,_) ->
+  | `BBDCL_fun (props,vs,ps,ret,c,reqs,_) ->
     let ts = map (fun (_,i) -> `BTYP_var i) vs in
     let arg_t = 
       match ps with | [t] -> t | ps -> `BTYP_tuple ps
