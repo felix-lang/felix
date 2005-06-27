@@ -289,8 +289,8 @@ namespace flx { namespace rtl { namespace strutil {
 header '#include "flx_rtl_config.hpp"';
 #include "flx_categories.flx"
 
-header iostream "#include <iostream>";
-header cmath """
+header iostream = "#include <iostream>";
+header cmath = """
 #include <cmath>
 #ifdef HAVE_ISNANF_IN_IEEEFP
 #include <ieeefp.h>
@@ -306,9 +306,9 @@ using namespace std;
 """;
 
 
-header flx_ioutil '#include "flx_ioutil.hpp"';
-header flx_dynlink '#include "flx_dynlink.hpp"';
-header flx_i18n '#include "flx_i18n.hpp"';
+header flx_ioutil = '#include "flx_ioutil.hpp"';
+header flx_dynlink = '#include "flx_dynlink.hpp"';
+header flx_i18n = '#include "flx_i18n.hpp"';
 
 // note -- this code is templated, we include
 // it in the header file because that's where
@@ -316,19 +316,19 @@ header flx_i18n '#include "flx_i18n.hpp"';
 // separate compilation of templates but most
 // compilers as at 2004 don't implement it)
 
-header flx_strutil '#include "flx_strutil.cpp"';
+header flx_strutil = '#include "flx_strutil.cpp"';
 
-header cctype_hxx '#include <cctype>';
-header string_hxx '#include <string>';
-header complex_hxx '#include <complex>';
-header c99_complex_h '#include <complex.h>';
+header cctype_hxx = '#include <cctype>';
+header string_hxx = '#include <string>';
+header complex_hxx = '#include <complex>';
+header c99_complex_h = '#include <complex.h>';
 
 @if HAVE_STDINT:
-  tangle('header c99_stdint_h "#include <stdint.h>";')
+  tangle('header c99_stdint_h = "#include <stdint.h>";')
  else:
-  tangle('header c99_stdint_h "";')
+  tangle('header c99_stdint_h = "";')
 
-header cstdlib "#include <cstdlib>";
+header cstdlib = "#include <cstdlib>";
 
 @chars = ["char", "wchar", "uchar"]
 @sints = [
@@ -357,7 +357,7 @@ header cstdlib "#include <cstdlib>";
   else:
     tangle('pod type '+t+' = "'+tmap[t]+'";')
 
-body swapper[t] """
+body swapper[t] = """
   void swapper(?1 &a, ?1 &b){
     ?1 tmp = a; a = b; b = tmp;
   }
@@ -574,7 +574,7 @@ module C_hack
   publish """ print an address in hex """
   proc print: address = "std::cout << $1;" requires iostream;
 
-  header dflt_h "template<class T> T dflt() { return T(); }";
+  header dflt_h = "template<class T> T dflt() { return T(); }";
   publish """
   Workaround for g++ 3.2.2 parsing bug,
   it can parse T() as a default ctor call,
@@ -959,7 +959,7 @@ module Control
   proc pass(){}
 
   publish 'C style for loop'
-  proc for 
+  proc for_each
     (init:unit->void) 
     (cond:unit->bool) 
     (incr:unit->void)
@@ -1236,20 +1236,20 @@ open Control;
 #include "flx_categories.flx"
 
 include "std";
-header std_stl_vector "#include <vector>";
-header std_stl_list "#include <list>";
-header std_stl_deque "#include <deque>";
-header std_stl_queue "#include <queue>";
-header std_stl_set "#include <set>";
-header std_stl_map "#include <map>";
-header std_stl_stack "#include <stack>";
+header std_stl_vector = "#include <vector>";
+header std_stl_list = "#include <list>";
+header std_stl_deque = "#include <deque>";
+header std_stl_queue = "#include <queue>";
+header std_stl_set = "#include <set>";
+header std_stl_map = "#include <map>";
+header std_stl_stack = "#include <stack>";
 @if HAVE_STL_GNU_CXX:
-  tangle('header ext_hash_set "#include <ext/hash_set>";')
-  tangle('header ext_hash_map "#include <ext/hash_map>";')
-  tangle('header ext_slist "#include <ext/slist>";')
+  tangle('header ext_hash_set = "#include <ext/hash_set>";')
+  tangle('header ext_hash_map = "#include <ext/hash_map>";')
+  tangle('header ext_slist = "#include <ext/slist>";')
 
 // hash for std::string for use with hash containers
-header ext_string_hash """
+header ext_string_hash = """
   namespace __gnu_cxx {
     template<> struct hash<std::string> { 
       size_t operator()(std::string const& s)const;
@@ -1257,7 +1257,7 @@ header ext_string_hash """
   }
 """;
 
-body ext_string_hash """
+body ext_string_hash = """
 // this is a sick hash .. fix it!
 size_t __gnu_cxx::hash<std::string>::
   operator()(std::string const& s)const {

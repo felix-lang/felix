@@ -479,12 +479,24 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       "\npossible infinite loop"
     )
   | _ ->
-    if !reachable 
-    then print_endline 
-    (
-      "WARNING: function "^id^" drops off end, possible missing return statement in\n" ^
-      long_string_of_src sr
-    );
+    if !reachable then begin 
+      (* this is now a hard error .. 
+         functions must manifestly return. We have to be careful
+         generating code where the compiler cannot deduce 
+         that a final branch cannot be taken .. the user,
+         however, is required to supply a dead code assertion
+         to prevent the error.
+      *)
+      clierr sr
+      (
+        "[bind_exes]: function "^id^" drops off end, missing return statement"
+      )
+      (*
+      ;
+      print_endline "[DEBUG] Instruction sequence is:";
+      iter (fun exe -> print_endline (string_of_bexe syms.dfns 0 exe)) bound_exes
+      *)
+    end
   end
   ;
   !ret_type,bound_exes

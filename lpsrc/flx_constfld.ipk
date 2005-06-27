@@ -27,6 +27,7 @@ all the basic operations on them as follows:
   x=y, eq(x,y)
   x!=y, x<>y,ne(x,y)
   x n // append the utf8 encoding of n to x
+  x y // same as x + y
 
   // ustrings
   x+y, add
@@ -79,6 +80,7 @@ open List
 open Flx_typing
 open Big_int
 open Flx_mtypes1
+open Flx_maps
 
 let truth sr r = 
   let r = if r then 2 else 1 in
@@ -288,18 +290,15 @@ let const_fold' e sr name arg = match name, arg with
 
   | _ -> e
 
-let const_fold e = 
-  match e with
+let rec const_fold e =  
+  let e' = map_expr const_fold e in
+  match e' with
   | `AST_apply (sr, (`AST_name (_,name,[]),arg)) ->
     const_fold' e sr name arg
 
-  | `AST_apply ( sr, ( 
-           `AST_literal (_,`AST_string x),
-           `AST_literal (_,`AST_string y)
-          ))
-    -> 
-    `AST_literal (sr,`AST_string (String.concat "" [x; y]))
+  | `AST_apply ( sr, (( `AST_literal (_,`AST_string _) as x), y)) -> 
+    const_fold' e sr "add" (`AST_tuple (sr,[x;y]))
 
-  | _ -> e
+  | _ -> e'
 
 

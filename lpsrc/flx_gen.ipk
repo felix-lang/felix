@@ -1874,7 +1874,7 @@ try
   if compiler_options.print_flag 
   then print_endline "//Calculating stackable calls";
   let label_map = Flx_label.create_label_map bbdfns syms.counter in
-  let label_usage = Flx_label.create_label_usage bbdfns label_map in
+  let label_usage = Flx_label.create_label_usage syms bbdfns label_map in
   let label_info = label_map, label_usage in
 
   Flx_stack_calls.make_stack_calls syms (child_map,bbdfns);

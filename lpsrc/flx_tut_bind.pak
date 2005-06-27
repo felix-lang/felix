@@ -460,8 +460,8 @@ statements: this is typically useful on a header-body pair.
 
 @select(tangler(tdir+'tut_bind135.flx'))
 body "#include <stdio.h>";
-body xprint "void printx(char *fmt, char *s) { printf(fmt,s);}";
-body printu 'void print(char *s) { printx("%s\\n",s); }';
+body xprint = "void printx(char *fmt, char *s) { printf(fmt,s);}";
+body printu = 'void print(char *s) { printx("%s\\n",s); }';
 
 proc hello:1='print("Hello");' requires xprint, printu;
 hello;
@@ -472,8 +472,8 @@ We can reorganise the previous example using this fact.
 
 @select(tangler(tdir+'tut_bind136.flx'))
 body "#include <stdio.h>";
-body xprint "void printx(char *fmt, char *s) { printf(fmt,s);}";
-body printu 'void print(char *s) { printx("%s\\n",s); }' 
+body xprint = "void printx(char *fmt, char *s) { printf(fmt,s);}";
+body printu = 'void print(char *s) { printx("%s\\n",s); }' 
   requires xprint;
 
 proc hello:1='print("Hello");' requires printu;
@@ -486,8 +486,8 @@ existing tagged requirements are roots.
 
 @select(tangler(tdir+'tut_bind137.flx'))
 body "#include <stdio.h>";
-body xprint "void printx(char *fmt, char *s) { printf(fmt,s);}";
-body printu 'void print(char *s) { printx("%s\\n",s); }';
+body xprint = "void printx(char *fmt, char *s) { printf(fmt,s);}";
+body printu = 'void print(char *s) { printx("%s\\n",s); }';
 requires xprint;
 xxxx requires printu;
 
@@ -500,9 +500,9 @@ inside modules, unless they're marked private of course.
 
 @select(tangler(tdir+'tut_bind138.flx'))
 body "#include <stdio.h>";
-body xprint "void printx(char *fmt, char *s) { printf(fmt,s);}";
+body xprint = "void printx(char *fmt, char *s) { printf(fmt,s);}";
 module fred {
-  body printu 'void print(char *s) { printx("%s\\n",s); }';
+  body printu = 'void print(char *s) { printx("%s\\n",s); }';
 }
 requires xprint;
 
@@ -514,23 +514,23 @@ The next example demonstrates untagged bodies at work.
 @select(tangler(tdir+'tut_bind138a.flx'))
 include "std";
 
-body top 'int ptop() { printf("TOP\\n"); return 1; }';
+body top = 'int ptop() { printf("TOP\\n"); return 1; }';
 body 'int top = ptop();' requires top;
 
 proc f() {
-  body pf 'int pf(){ printf("f used\\n"); return 1;}';
+  body pf = 'int pf(){ printf("f used\\n"); return 1;}';
   body 'int x = pf();' requires pf;
   print "Using f"; endl; 
 }
 
 module A {
-  body p 'int p() { printf("A will be used\\n"); return 1;}';
+  body p = 'int p() { printf("A will be used\\n"); return 1;}';
   body 'int y = p();' requires p;
   proc f: unit = 'printf("A is used\\n");';
 }
 
 module B {
-  body p 'int p() { printf("B will be used\\n"); return 1;}';
+  body p = 'int p() { printf("B will be used\\n"); return 1;}';
   body 'int y = p();' requires p;
   proc f: unit = 'printf("B is used\\n");';
 }
@@ -555,7 +555,7 @@ Here's an example demonstrating polymorphic insertions.
 pod type int="int";
 pod type double="double";
 
-body prb[t] "void pr(?1 x) { std::cout << x << std::endl; }"
+body prb[t] = "void pr(?1 x) { std::cout << x << std::endl; }"
   requires header "#include <iostream>";
 
 proc pr[t]:t = "pr($1);" requires prb[t];

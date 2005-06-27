@@ -10,14 +10,14 @@ Source: felix
 Section: devel
 Priority: optional
 Maintainer: John Skaller <skaller@users.sourceforge.net>
-Build-Depends: debhelper (>= 4.0.0), python (>=2.0), ocaml-nox (>=3.08), ocaml-best-compilers, gnuplot (>=4.0), man2html (>=1.5), sed (>=4.1)
+Build-Depends: debhelper (>= 4.0.0), python (>=2.0), ocaml-nox (>=3.08.3), ocaml-nox (<<3.08.4), ocaml-best-compilers, gnuplot (>=4.0), man2html (>=1.5), sed (>=4.1)
 Standards-Version: 3.6.1
 
 Package: felix
 Section: devel
 Priority: optional
 Architecture: any
-Depends: ${shlibs:Depends}, g++
+Depends: ${shlibs:Depends}, g++, ocaml-nox (>=3.08.3), ocaml-nox (<<3.08.4)
 Recommends: g++-4.0
 Description: high performance programming language translator and tools
  A new high performance language with 
@@ -412,4 +412,41 @@ esac
 #DEBHELPER#
 
 exit 0
+
+@select(tangler('Makefile.debian_package_creator'))
+@tangle("#THIS FILE MUST BE EXECUTED FROM THE PARENT DIRECTORY")
+@tangle('all: binary_package')
+@tangle('')
+@tangle('felix_'+flx_version+'.orig.tar.gz:')
+@tangle('\t(cd flx && make extract src_tarball)')
+@tangle('\tln -s flx/flx_'+flx_version+'_src.tgz felix_'+flx_version+'.orig.tar.gz')
+@tangle('')
+@tangle('felix_'+flx_version+'-'+debian_revision+'.dsc: felix_'+flx_version+'.orig.tar.gz')
+@tangle('\trm -rf felix-'+flx_version+' # remove source directory')
+@tangle('\ttar -zxvf felix_'+flx_version+'.orig.tar.gz # recreate source')
+@tangle('\tdpkg-source -b -sk felix-'+flx_version+' # build debian source package')
+@tangle('\trm -rf felix-'+flx_version+' # remove source directory')
+@tangle('\trm -rf felix-'+flx_version+'.orig # remove .orig source directory')
+@tangle('')
+@tangle('# makes source package too')
+@tangle('felix_'+flx_version+'-'+debian_revision+'.deb: felix_'+flx_version+'.orig.tar.gz')
+@tangle('\trm -rf felix-'+flx_version+' # remove source directory')
+@tangle('\ttar -zxvf felix_'+flx_version+'.orig.tar.gz # recreate source')
+@tangle('\t(cd felix-'+flx_version+' && dpkg-buildpackage -rfakeroot -sd -us -uc)')
+@tangle('\trm -rf felix-'+flx_version+' # remove source directory')
+@tangle('')
+@tangle('package: felix_'+flx_version+'-'+debian_revision+'.deb')
+@tangle('')
+@tangle('clean:')
+@tangle('\trm -rf felix-'+flx_version+'.orig # remove source directory')
+@tangle('\trm -rf *.deb *.changes *.dsc # remove all debian stuff')
+@tangle('\trm -f *.gz # remove all tarballs')
+@tangle('')
+@tangle('# uploads debian AND felix tarball')
+@tangle('upload: felix_'+flx_version+'-'+debian_revision+'.deb')
+@tangle('\tscp flx/flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('\tscp felix_'+flx_version+'-'+debian_revision+'.dsc skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/debian')
+@tangle('\tscp felix_'+flx_version+'-'+debian_revision+'.diff.gz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/debian')
+@tangle('\tscp felix_'+flx_version+'-'+debian_revision+'_amd64.deb skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/debian')
+@tangle('\tscp felix_'+flx_version+'-1_amd64.changes skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/debian')
 

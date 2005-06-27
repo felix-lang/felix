@@ -56,6 +56,7 @@ open Flx_typing2
 open Flx_srcref
 open Flx_print
 open Flx_charset
+open Flx_exceptions
 open List
 
 let list_last lst = List.hd (List.rev lst)
@@ -132,6 +133,8 @@ let mktypefun sr name vs args return_type body =
     vs,
     body
   )
+
+let strterm sr s = `AST_literal (sr,`AST_string s)
 
 %}
 
@@ -356,10 +359,10 @@ abstract_type:
       `AST_ctypes (sr,$3,qs,$4)
     }
 
-  | type_quals TYPE NAME tvarlist EQUAL STRING requires_clause SEMI 
+  | type_quals TYPE NAME tvarlist EQUAL expr requires_clause SEMI 
     { 
       let qs = List.map snd $1 in
-      `AST_abs_decl (rstoken $2 $8, snd $3, List.map snd $4, qs, snd $6, $7) 
+      `AST_abs_decl (rstoken $2 $8, snd $3, List.map snd $4, qs, $6, $7) 
     }
 
 @head(3,'Union Binding')
@@ -425,7 +428,7 @@ struct_component:
 @head(3,'Abstract Constant Binding')
 @select(h)
 const_def:
-  | CONST NAME tvarlist COLON type_expr EQUAL STRING requires_clause SEMI 
+  | CONST NAME tvarlist COLON type_expr EQUAL expr requires_clause SEMI 
   { 
     `AST_const_decl 
     (
@@ -433,19 +436,20 @@ const_def:
       snd $2, 
       List.map snd $3,
       typecode_of_expr $5, 
-      snd $7, $8
+      $7, $8
     ) 
   }
 
   | CONST NAME tvarlist COLON type_expr requires_clause SEMI 
   { 
+    let sr = rstoken $1 $7 in
     `AST_const_decl 
     (
-      rstoken $1 $7, 
+      sr,
       snd $2, 
       List.map snd $3,
       typecode_of_expr $5, 
-      snd $2, $6
+      strterm sr (snd $2), $6
     ) 
   }
 
@@ -484,32 +488,48 @@ requires_clause:
 binding_header:
   | HEADER STRING requires_clause SEMI 
   { 
-      `AST_header (rstoken $1 $4, "_root", [], snd $2, $3) 
+      let sr = rstoken $1 $4 in
+      `AST_header (sr, "_root", [], strterm sr (snd $2), $3) 
   }
   
   | BODY STRING requires_clause SEMI 
   { 
-    `AST_body (rstoken $1 $4, "_root", [], snd $2, $3) 
+     let sr = rstoken $1 $4 in
+    `AST_body (sr, "_root", [], strterm sr (snd $2), $3) 
   }
 
-  | HEADER NAME tvarlist STRING requires_clause SEMI 
+  | HEADER EQUAL expr requires_clause SEMI 
   { 
-    `AST_header (rstoken $1 $6, snd $2, List.map snd $3, snd $4, $5) 
+      let sr = rstoken $1 $5 in
+      `AST_header (sr, "_root", [], $3, $4) 
   }
   
-  | BODY NAME tvarlist STRING requires_clause SEMI 
+  | BODY EQUAL expr requires_clause SEMI 
   { 
-    `AST_body (rstoken $1 $6, snd $2, List.map snd $3, snd $4, $5) 
+     let sr = rstoken $1 $5 in
+    `AST_body (sr, "_root", [], $3, $4) 
+  }
+
+  | HEADER NAME tvarlist EQUAL expr requires_clause SEMI 
+  { 
+    `AST_header (rstoken $1 $7, snd $2, List.map snd $3, $5, $6) 
+  }
+  
+  | BODY NAME tvarlist EQUAL expr requires_clause SEMI 
+  { 
+    `AST_body (rstoken $1 $7, snd $2, List.map snd $3, $5, $6) 
   }
 
   | REQUIRES requirements SEMI 
   { 
-    `AST_body (rstoken $1 $3, "_root", [], "", $2)
+    let sr = rstoken $1 $3 in
+    `AST_body (sr, "_root", [], strterm sr "", $2)
   }
 
   | NAME REQUIRES requirements SEMI 
   { 
-    `AST_body (rstoken (fst $1) $4, snd $1, [], "", $3)
+    let sr = rstoken (fst $1) $4 in
+    `AST_body (sr, snd $1, [], strterm sr "", $3)
   }
 
 @head(3,'Inline C++ Code Definition')
@@ -619,7 +639,14 @@ use_decl:
 mac_arg:
   | NAME COLON FUNCTION    { snd $1, Expr }
   | NAME COLON PROCEDURE   { snd $1, Stmt }
-  | NAME COLON IDENT       { snd $1, Ident}
+  | NAME COLON NAME 
+    { 
+      let sr = rstoken (fst $1) (fst $3) in
+      snd $1, 
+      match $3 with 
+      | (_,"ident") -> Ident 
+      | _ -> clierr sr "Unknown macro type"
+    }
   | NAME                   { snd $1, Expr }
 
 mac_args:
@@ -631,23 +658,71 @@ mac_arg_list:
   | LPAR RPAR              { [] }
 
 macro_definition:
-  | MACRO IDENT NAME EQUAL NAME SEMI
+  | MACRO NAME IS expr SEMI
     {
       let 
-        sr = rstoken $1 $6 and
-        lname = snd $3 and
-        rname = snd $5
+        sr = rstoken $1 $5 and
+        lname = snd $2 and
+        rname = $4
       in
-        `AST_name_macro (sr,lname,rname)
+        match rname with
+        | `AST_tuple (_,ls) -> 
+          let ls =
+            map 
+            (fun x -> match x with 
+              | `AST_name (_,x,[]) -> x
+              | _ -> clierr sr "RHS must be name or name list"
+            ) 
+            ls
+          in
+          `AST_macro_names (sr,lname,ls)
+
+        | `AST_name (_,x,[]) -> `AST_macro_name (sr,lname,x)
+
+        | _ -> clierr sr "RHS must be name or name list"
     }
 
-  | MACRO IDENT NAME EQUAL NEW SEMI
+  | MACRO FOR NAME IN expr DO statement_aster DONE SEMI
+    { 
+      let 
+        sr = rstoken $1 $9 and
+        lname = snd $3 and
+        rname = $5 and
+        sts = $7 
+      in
+        let ls = match rname with
+        | `AST_name (_,rname,[]) -> [rname]
+        | `AST_tuple (_,ls) ->
+          map 
+          (fun x -> match x with 
+          | `AST_name (_,x,[]) -> x
+          | _ -> clierr sr "RHS must be name or name list"
+          ) 
+          ls
+        | _ -> clierr sr "RHS must be name list"
+        in
+         `AST_macro_ifor (sr, lname,ls,sts) 
+  }
+
+
+  /*
+  | MACRO NAME COLON LIST IDENT EQUAL rev_name_list SEMI
     {
       let 
-        sr = rstoken $1 $6 and
-        lname = snd $3
+        sr = rstoken $1 $8 and
+        lname = snd $2 and
+        rnames = rev $7
       in
-        `AST_name_macro (sr,lname,"")
+        `AST_macro_names (sr,lname,rnames)
+    }
+  */
+  | MACRO NAME IS NEW SEMI
+    {
+      let 
+        sr = rstoken $1 $5 and
+        lname = snd $2
+      in
+        `AST_macro_name (sr,lname,"")
     }
 
   | MACRO VAR NAME EQUAL expr SEMI
@@ -659,6 +734,7 @@ macro_definition:
       in
         `AST_macro_var (sr,name,e)
     }
+
 
   | MACRO NAME EQUAL expr SEMI
     {
@@ -679,6 +755,22 @@ macro_definition:
         e = $5
       in
         `AST_macro_val (sr,name,e)
+    }
+
+  | MACRO VAL NAME IS tuple SEMI
+    {
+      let 
+        sr = rstoken $1 $6 and
+        name = snd $3 and
+        es = 
+          (* hacky .. (x,y) and x,y both tuples, no way
+            to get a real tuple value ..
+          *)
+          match $5 with 
+          | `AST_tuple (_,es) -> es 
+          | x -> [x]
+      in
+        `AST_macro_vals (sr,name,es)
     }
 
 
@@ -723,6 +815,16 @@ macro_definition:
   | MACRO IF expr GOTO NAME SEMI
     { `AST_macro_ifgoto (rstoken $1 $6,$3,snd $5) }
 
+  | MACRO FOR VAL NAME IN tuple DO statement_aster DONE SEMI
+  { 
+    let vs = 
+      match $6 with
+      | `AST_tuple (_,ls) -> ls
+      | x -> [x]
+    in
+    `AST_macro_vfor (rstoken $1 $10, snd $4,vs,$8) 
+  }
+  
  
 macro_name_list:
   | macro_name_list NAME { snd $2 :: $1 }
@@ -730,7 +832,11 @@ macro_name_list:
 macro_names:
   | macro_name_list { List.rev $1 }
   | { [] }
-  
+
+rev_name_list:
+  | NAME COMMA rev_name_list { snd $1 :: $3 }
+  | NAME { [snd $1] }
+
 @head(3,'Function and Procedure Definition')
 @select(h)
 fun_arg:
@@ -749,7 +855,7 @@ opt_type_expr:
   | { `TYP_none }
 
 opt_cstring:
-  | EQUAL STRING { Some (snd $2) }
+  | EQUAL expr { Some $2 }
   | { None }
 
 adjective:
@@ -807,7 +913,7 @@ function_definition:
       let ct =  
         match $7 with 
         | Some x -> x 
-        | None -> name ^ "($a)"
+        | None -> strterm sr (name ^ "($a)")
       in
       match t with
       | `TYP_function (arg, ret) ->
@@ -891,7 +997,7 @@ procedure_definition:
       let ct =  
         match $6 with 
         | Some x -> x 
-        | None -> name ^ "($a);"
+        | None -> strterm sr (name ^ "($a);")
       in
       let args = 
         match t with

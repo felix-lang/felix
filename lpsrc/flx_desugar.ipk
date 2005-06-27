@@ -706,7 +706,12 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
 (* parent vs is containing module vs .. only for modules *)
 
 and rst syms name access parent_vs st : asm_t list = 
-
+  let dstr s = 
+    match s with 
+    | `AST_literal (_,`AST_string s) -> s 
+    | x -> let sr = src_of_expr x in clierr sr "String literal required"
+  in
+  
   (* construct an anonymous name *)
   let parent_ts sr : typecode_t list = 
     map (fun s-> `AST_name (sr,s,[])) parent_vs 
@@ -834,13 +839,13 @@ and rst syms name access parent_vs st : asm_t list =
 
   | `AST_const_decl (sr,name, vs,typ, s, reqs) -> 
     let props,dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,name,None,access,vs,`DCL_const (typ,s, map_reqs sr reqs))
+    Dcl (sr,name,None,access,vs,`DCL_const (typ,dstr s, map_reqs sr reqs))
     :: dcls
 
   (* types *)
   | `AST_abs_decl (sr,name,vs,quals,str, reqs) -> 
     let props,dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,name,None,access,vs,`DCL_abs (quals,str,map_reqs sr reqs))
+    Dcl (sr,name,None,access,vs,`DCL_abs (quals,dstr str,map_reqs sr reqs))
     :: dcls
   
   | `AST_union (sr,name, vs, components) -> [Dcl (sr,name,None,access,vs,`DCL_union (components))]
@@ -907,7 +912,7 @@ and rst syms name access parent_vs st : asm_t list =
   | `AST_fun_decl (sr,name',vs,args,result,code, reqs,prec) ->
     let props, dcls, reqs = mkreqs sr reqs in
     Dcl (sr,name',None,access,vs,
-      `DCL_fun (props,args,result,code,map_reqs sr reqs,prec))
+      `DCL_fun (props,args,result,dstr code,map_reqs sr reqs,prec))
     :: dcls
 
   (* misc *)
@@ -948,12 +953,12 @@ and rst syms name access parent_vs st : asm_t list =
 
   | `AST_header (sr,name',vs,s,reqs) -> 
     let props, dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,map_req name',None,access,vs,`DCL_header (s, map_reqs sr reqs))
+    Dcl (sr,map_req name',None,access,vs,`DCL_header (dstr s, map_reqs sr reqs))
     :: dcls
 
   | `AST_body (sr,name',vs,s, reqs) -> 
     let props, dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,map_req name',None,access,vs,`DCL_body (s, map_reqs sr reqs))
+    Dcl (sr,map_req name',None,access,vs,`DCL_body (dstr s, map_reqs sr reqs))
     :: dcls
 
   (* executable *)
@@ -1080,12 +1085,16 @@ and rst syms name access parent_vs st : asm_t list =
   | `AST_macro_label _
   | `AST_macro_proc_return _ 
   | `AST_macro_val _ 
+  | `AST_macro_vals _ 
   | `AST_macro_var _ 
-  | `AST_name_macro _
+  | `AST_macro_name _
+  | `AST_macro_names _
   | `AST_public _ 
   | `AST_stmt_macro _ 
   | `AST_until _ 
   | `AST_whilst _
+  | `AST_macro_ifor _
+  | `AST_macro_vfor _
     -> assert false
 
 and handle_glr seq rex sr' p e glr_idx t nt_id =

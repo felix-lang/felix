@@ -646,3 +646,12 @@ ctypes int;
 
 ;
 
+@select(tangler('test/bt10.flx'))
+// function drops off end
+include "std";
+fun f(x:int):int =
+{
+  if  x == 1 do return 1; done;
+}
+print (f 1); endl;
+

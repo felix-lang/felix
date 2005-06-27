@@ -599,7 +599,7 @@ var m = n;
 until m == 0 do
   m--;
   count = 0;
-  for {i=2;} { i <= 8192 } { i++; } { prime.[i] = true; };
+  for_each {i=2;} { i <= 8192 } { i++; } { prime.[i] = true; };
   i=2;
   whilst i <= 8192 do
     if prime.[i] do

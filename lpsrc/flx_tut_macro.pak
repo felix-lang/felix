@@ -465,7 +465,7 @@ macro proc k ()
   val yy = $x + x; // x + 1
   print $x; print "+"; print x; print " -> "; print yy; endl;
 }
-macro ident x = x; // blocks x
+macro x is x; // blocks x
 {
   val x = 2;
   k();
@@ -491,13 +491,13 @@ or which recurs.
 @select(tangler(tdir+'mac128.flx'))
 include "std";
 
-macro ident oldname = newname;
+macro oldname is newname;
 fun oldname(x:int):int = { return x; }
 print (newname 1); endl;
 
 macro proc make_ints ()
 {
-  macro ident vnew = new;
+  macro vnew is new;
   val vnew = vold+1;
   macro vold = vnew;
 }

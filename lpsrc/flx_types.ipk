@@ -538,10 +538,12 @@ and statement_t =
   
 
   (* macros *)
-  | `AST_name_macro of range_srcref * id_t * id_t 
+  | `AST_macro_name of range_srcref * id_t * id_t 
+  | `AST_macro_names of range_srcref * id_t * id_t list
   | `AST_expr_macro of range_srcref * id_t * macro_parameter_t list * expr_t
   | `AST_stmt_macro of range_srcref * id_t * macro_parameter_t list * statement_t list
   | `AST_macro_val  of range_srcref * id_t * expr_t
+  | `AST_macro_vals  of range_srcref * id_t * expr_t list
   | `AST_macro_var  of range_srcref * id_t * expr_t
   | `AST_macro_assign of range_srcref * id_t * expr_t
   | `AST_macro_forget of range_srcref * id_t list
@@ -549,6 +551,10 @@ and statement_t =
   | `AST_macro_goto of range_srcref * id_t
   | `AST_macro_ifgoto of range_srcref * expr_t * id_t
   | `AST_macro_proc_return of range_srcref
+
+  (* type macros *)
+  | `AST_macro_ifor of range_srcref * id_t * id_t list * statement_t list
+  | `AST_macro_vfor of range_srcref * id_t * expr_t list * statement_t list
 
   (* types *)
   | `AST_union of range_srcref * id_t * id_t list * (id_t * typecode_t) list
@@ -585,14 +591,14 @@ and statement_t =
   | `AST_nop of range_srcref * string
 
   (* binding structures [prolog] *)
-  | `AST_abs_decl of range_srcref * id_t * id_t list * type_qual_t list * c_t * requirements_t
+  | `AST_abs_decl of range_srcref * id_t * id_t list * type_qual_t list * expr_t * requirements_t
   | `AST_ctypes of range_srcref * (srcref * id_t) list * type_qual_t list  * requirements_t 
-  | `AST_const_decl of range_srcref * id_t * id_t list * typecode_t * c_t * requirements_t
-  | `AST_fun_decl of range_srcref * id_t * id_t list * typecode_t list * typecode_t * c_t  * requirements_t * prec_t
+  | `AST_const_decl of range_srcref * id_t * id_t list * typecode_t * expr_t * requirements_t
+  | `AST_fun_decl of range_srcref * id_t * id_t list * typecode_t list * typecode_t * expr_t  * requirements_t * prec_t
 
   (* embedding *)
-  | `AST_header of range_srcref * id_t * id_t list * c_t * requirements_t
-  | `AST_body of range_srcref * id_t * id_t list * c_t * requirements_t
+  | `AST_header of range_srcref * id_t * id_t list * expr_t * requirements_t
+  | `AST_body of range_srcref * id_t * id_t list * expr_t * requirements_t
   | `AST_code of range_srcref * string
   | `AST_noreturn_code of range_srcref * string
 
@@ -942,6 +948,11 @@ val iter_tbexpr:
   (btypecode_t -> unit) ->
   tbexpr_t -> unit
 
+val map_expr: 
+  (expr_t -> expr_t) -> 
+  expr_t -> 
+  expr_t
+
 val map_tbexpr:
   (bid_t -> bid_t) ->
   (tbexpr_t -> tbexpr_t) -> 
@@ -1031,6 +1042,71 @@ let map_type f = function
   | `TYP_typefun (ps, a, b) -> `TYP_typefun (ps, f a, f b)
   | `TYP_type_tuple ts -> `TYP_type_tuple (map f ts)
   | x -> x
+
+let map_expr f (e:expr_t):expr_t = match e with
+  | `AST_map (sr,a,b) -> `AST_map (sr,f a, f b)
+  | `AST_noexpand (sr,x) -> e (* DO NOT EXPAND .. HMM .. *)
+  | `AST_name _ -> e
+  | `AST_the _ -> e
+  | `AST_index _ -> e
+  | `AST_case_tag _ -> e
+  | `AST_typed_case _ -> e
+  | `AST_lookup (sr,(x,s,ts)) -> `AST_lookup (sr,(f x, s, ts))
+  | `AST_apply (sr,(a,b)) -> `AST_apply (sr,(f a, f b))
+  | `AST_tuple (sr,es) -> `AST_tuple (sr, map f es)
+  | `AST_arrayof (sr, es) -> `AST_arrayof (sr, map f es)
+  | `AST_coercion (sr, (x,t)) -> `AST_coercion (sr,(f x, t))
+  | `AST_suffix _ -> e
+
+  | `AST_void sr -> e
+  | `AST_ellipsis sr -> e
+  | `AST_product (sr,es) -> `AST_product (sr, map f es)
+  | `AST_sum (sr,es) -> `AST_sum (sr, map f es)
+  | `AST_arrow (sr,(a,b)) -> `AST_arrow (sr,(f a, f b))
+  | `AST_superscript (sr,(a,b)) -> `AST_superscript (sr,(f a, f b))
+
+  | `AST_literal _ -> e
+  | `AST_deref (sr,x) -> `AST_deref (sr,f x)
+  | `AST_ref (sr,x) -> `AST_ref (sr, f x)
+  | `AST_lvalue (sr,x) -> `AST_lvalue (sr, x)
+  | `AST_method_apply (sr,(id,x)) -> `AST_method_apply (sr,(id,f x))
+  | `AST_dot (sr,(x,id)) -> `AST_dot (sr,(f x,id))
+
+  (* GIVE UP ON LAMBDAS FOR THE MOMENT .. NEEDS STATEMENT MAPPING TOO *)
+  (* | `AST_lambda of range_srcref * (parameter_t list list * typecode_t * statement_t list) *)
+  | `AST_lambda _ -> e
+
+  | `AST_match_ctor (sr,(qn,x)) -> `AST_match_ctor (sr,(qn,f x))
+  | `AST_match_case (sr,(j,x)) -> `AST_match_case (sr,(j, f x))
+
+  | `AST_ctor_arg (sr,(qn,x)) -> `AST_ctor_arg (sr,(qn,f x))
+  | `AST_case_arg (sr,(j,x)) -> `AST_case_arg (sr,(j, f x))
+  | `AST_case_index (sr,x) -> `AST_case_index (sr,f x)
+
+  | `AST_letin (sr,(pat,a,b)) -> `AST_letin (sr,(pat,f a, f b))
+
+  | `AST_get_n (sr,(j,x)) -> `AST_get_n (sr,(j,f x))
+  | `AST_as (sr,(x,s)) -> `AST_as (sr,(f x, s))
+  | `AST_match (sr,(a,pes)) ->
+    `AST_match (sr, (f a, map (fun (pat,x) -> pat, f x) pes))
+  
+  (* GIVE UP ON NASTY STUFF FOR THE MOMENT *)
+  (*
+  | `AST_parse of range_srcref * expr_t * (range_srcref * production_t * expr_t) list
+  | `AST_sparse of range_srcref * expr_t * string * int list
+  | `AST_regmatch of range_srcref * (expr_t * expr_t * (regexp_t * expr_t) list)
+  | `AST_reglex of range_srcref * (expr_t * expr_t * (regexp_t * expr_t) list)
+  *)
+  | `AST_parse _
+  | `AST_sparse _
+  | `AST_regmatch _
+  | `AST_reglex _ -> e
+
+  | `AST_typeof (sr,x) -> `AST_typeof (sr,f x)
+  | `AST_cond (sr,(a,b,c)) -> `AST_cond (sr, (f a, f b, f c))
+
+  | `AST_expr _ -> e
+  | `AST_type_match _ -> e
 
 let all_units' ts = 
   try 
@@ -1406,10 +1482,12 @@ let src_of_stmt e = match e with
   | `AST_function (s,_, _, _ , _, _, _)
   | `AST_curry (s,_, _, _ , _, _,_)
   | `AST_object (s,_, _, _ , _)
-  | `AST_name_macro (s, _,_)
+  | `AST_macro_name (s, _,_)
+  | `AST_macro_names (s, _,_)
   | `AST_expr_macro (s,_, _,_)
   | `AST_stmt_macro (s,_, _,_)
   | `AST_macro_val (s,_,_)
+  | `AST_macro_vals (s,_,_)
   | `AST_macro_var (s, _,_)
   | `AST_macro_assign (s,_,_)
   | `AST_macro_forget (s,_)
@@ -1417,6 +1495,8 @@ let src_of_stmt e = match e with
   | `AST_macro_goto (s,_)
   | `AST_macro_ifgoto (s,_,_)
   | `AST_macro_proc_return s
+  | `AST_macro_ifor (s,_,_,_)
+  | `AST_macro_vfor (s,_,_,_)
 
   | `AST_val_decl (s,_,_,_,_) 
   | `AST_var_decl (s,_,_,_,_) 
@@ -2473,7 +2553,7 @@ and string_of_statement level s =
   | `AST_abs_decl (_,t,vs, quals, ct, reqs) -> spaces level ^ 
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ t ^ print_vs vs ^
-    " = " ^ string_of_string ct ^ 
+    " = " ^ string_of_expr ct ^ 
     string_of_reqs reqs ^
     ";"
 
@@ -2483,7 +2563,7 @@ and string_of_statement level s =
     ": " ^ 
     (string_of_typecode (`TYP_tuple args)) ^ " -> " ^
     (string_of_typecode result) ^ 
-    " = " ^ string_of_string code ^ 
+    " = " ^ string_of_expr code ^ 
     (if prec = "" then "" else ":"^prec^" ")^
     string_of_reqs reqs ^
     ";"
@@ -2492,21 +2572,21 @@ and string_of_statement level s =
     spaces level ^ 
      "const " ^ name ^ 
      ": " ^ string_of_typecode typ ^ 
-     " = "^string_of_string code^ 
+     " = "^string_of_expr code^ 
      string_of_reqs reqs ^
      ";" 
 
-  | `AST_header (_,n,vs,s, reqs) -> let triple_quote = "\"\"\"" in
+  | `AST_header (_,n,vs,s, reqs) -> 
     spaces level ^
     "header "^n^print_vs vs^ 
-    "\n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
+    "\n" ^ string_of_expr s ^ " " ^
      string_of_reqs reqs ^
     ";\n"
 
-  | `AST_body (_,n,vs,s, reqs) -> let triple_quote = "\"\"\"" in
+  | `AST_body (_,n,vs,s, reqs) -> 
     spaces level ^
     "body "^n^print_vs vs^ 
-    "\n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
+    "\n" ^ string_of_expr s ^ " " ^
      string_of_reqs reqs ^
     ";\n"
 
@@ -2556,6 +2636,12 @@ and string_of_statement level s =
     se e ^
     ";"
 
+  | `AST_macro_vals (_,name, es) ->
+    spaces level ^ 
+    "macro val " ^ name ^ " = " ^
+    catmap ", " se es ^
+    ";"
+
   | `AST_macro_var (_,name, e) ->
     spaces level ^ 
     "macro var " ^ name ^ " = " ^
@@ -2568,10 +2654,16 @@ and string_of_statement level s =
     se e ^
     ";\n"
 
-  | `AST_name_macro (_,lname, rname) ->
+  | `AST_macro_name (_,lname, rname) ->
     spaces level ^ 
     "macro ident " ^ lname ^ " = " ^
     (match rname with | "" -> "new" | _ -> rname) ^
+    ";"
+
+  | `AST_macro_names (_,lname, rnames) ->
+    spaces level ^ 
+    "macro ident " ^ lname ^ " = " ^
+    cat ", " rnames ^
     ";"
     
 
@@ -2652,6 +2744,19 @@ and string_of_statement level s =
       | None -> ""
     )
     ^ ";"
+
+  | `AST_macro_ifor (_,v,ids,sts) ->
+    spaces level
+    ^ "macro for ident " ^ v ^ " in " ^ cat "," ids ^ " do\n" ^ 
+    catmap "\n" (string_of_statement (level +2)) sts ^
+    spaces level ^ "done;"
+
+  | `AST_macro_vfor (_,v,vs,sts) ->
+    let se e = string_of_expr e in
+    spaces level
+    ^ "macro for val " ^ v ^ " in " ^ catmap "," se vs ^ " do\n" ^ 
+    catmap "\n" (string_of_statement (level +2)) sts ^
+    spaces level ^ "done;"
 
   | `AST_call (_,pr, args) ->
     spaces level

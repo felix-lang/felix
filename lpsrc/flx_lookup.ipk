@@ -1441,8 +1441,10 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth index args =
         | Unresolved_return (sr,s) -> () 
         | ClientError (sr,s) as e -> raise (ClientError (sr,"Whilst calculating return type:\n"^s))
         | x -> 
+        (*
         print_endline ("  .. Unable to compute type of " ^ string_of_expr e);
         print_endline ("Reason: " ^ Printexc.to_string x);
+        *)
         ()
       end
     | _ -> ()
@@ -2793,7 +2795,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     let (ba, ta) as a = be a' in
     let _ = 
       try unfold syms.dfns ta
-      with _ -> print_endline " .. free fixpoint"; raise (Free_fixpoint ta) 
+      with _ -> (* print_endline " .. free fixpoint"; *) raise (Free_fixpoint ta) 
     in
     let (bf,tf) as f = lookup sr f' ta in
     (* this function is very crude, since it binds f dash, a dash again,
