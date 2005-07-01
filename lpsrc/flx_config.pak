@@ -93,10 +93,10 @@ def mk_felix(k,p):
   return x
 
 def mk_ghc(k,p):
-  return "ghc -O3 -fvia-C -foptc -O3 -o speed/exes/%s/%s speed/src/haskell/%s.hs" % (k,p,p)
+  return "ghc -O3 -fvia-C -optc -O3 -o speed/exes/%s/%s speed/src/haskell/%s.hs" % (k,p,p)
 
 def mk_ghc_6_2_2(k,p):
-  return "ghc-6.2.2 -O3 -fvia-C -foptc -O3 -o speed/exes/%s/%s speed/src/haskell/%s.hs" % (k,p,p)
+  return "ghc-6.2.2 -O3 -fvia-C -optc -O3 -o speed/exes/%s/%s speed/src/haskell/%s.hs" % (k,p,p)
 
 def mk_gnat(k,p):
   return "python script/gnatmaker.py speed/src/ada/%s speed/exes/%s " % (p,k)

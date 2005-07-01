@@ -296,33 +296,14 @@ def mkdir(p):
 
 execfile("config/xlators.py")
 
-# make the output directories
-mkdir('speed/exes')
-for key,mk,src in xlators:
-  print "Using translator",key
-  mkdir('speed/exes/'+key)
-
 #define the tests
 tests = {
   'ack':(1,5),
   'takfp':(1,5),
 }
 
-for t in tests:
-  min,max=tests[t]
-  print "Running test",t,"nrange="+str(min)+":"+str(max)
 
-ntests = len(tests)
-nlators = len(xlators)
-
-#compile the programs
-for xl,mk,src in xlators:
-  for test in tests.keys():
-    fst,last = tests[test]
-    cmd = mk(xl,test) 
-    print cmd
-    os.system(cmd)
-  
+#------ command line arguments -----------------
 max_test_time = 5.0
 try: max_test_time = float(sys.argv[1])
 except:pass
@@ -332,20 +313,54 @@ maxtime = 5.0
 try: maxtime = float(sys.argv[2])
 except:pass
 
-print "Run time limit ",max_test_time," minutes"
-print "Run time limit ",maxtime," seconds"
+mintime = 0.5
+try: mintime = float(sys.argv[3])
+except:pass
+
+gracetime = 10.0
+try: gracetime = float(sys.argv[4])
+except:pass
+
+# ------------ report paramaters ------------------
+print "Batch time limit",max_test_time,"minutes"
+print "Individual test soft seek range: ",mintime,'-',maxtime,"seconds"
+print "Grace before cancellation",gracetime,"seconds"
+
+# make the output directories
+mkdir('speed/exes')
+for key,mk,src in xlators:
+  print "Using translator",key
+  mkdir('speed/exes/'+key)
+
+for t in tests:
+  min,max=tests[t]
+  print "Running test",t,"initial nrange="+str(min)+":"+str(max)
+
+hostname = socket.gethostname()
+print "Host",hostname
+
+#--------- setup -----------------------------
+ntests = len(tests)
+nlators = len(xlators)
 
 #convert to seconds
 max_test_time = max_test_time * 60.0
 
-mintime = 0.5
-sleep_time = 10
+sleep_time = maxtime+gracetime
 
+
+print "COMPILING PROGRAMS"
+#compile the programs
+for xl,mk,src in xlators:
+  for test in tests.keys():
+    fst,last = tests[test]
+    cmd = mk(xl,test) 
+    print cmd
+    os.system(cmd)
+  
+# -------------- run -----------------------
 #total time for testsing, seconds:
 start_time = time.time()
-
-#hostname
-hostname = socket.gethostname()
 
 #test date
 etime = time.time()
@@ -367,7 +382,7 @@ while time.time() - start_time < max_test_time:
   fst,lst = xlt.setdefault((test,xl),(fst,lst))
 
   # pick an integer between fst and lst inclusive
-  n = random.randint(fst,lst+1)
+  n = random.randint(fst,lst)
 
   test_file = "speed/exes/"+xl+"/"+test
   test_arg = "%d" % n
@@ -375,7 +390,7 @@ while time.time() - start_time < max_test_time:
   print test_file,test_arg
   start = time.time()
   pid = os.spawnl(os.P_NOWAIT,test_file,"DUMMY",test_arg)
-  spid = os.spawnlp(os.P_NOWAIT,"sleep","DUMMY","%d" % sleep_time)
+  spid = os.spawnlp(os.P_NOWAIT,"sleep","DUMMY","%d" % int(sleep_time))
   pidx,status = os.wait()
   finish = time.time()
   elapsed = finish - start
@@ -383,6 +398,7 @@ while time.time() - start_time < max_test_time:
   if pidx == spid:
     os.kill(pid,signal.SIGKILL)
     print "TIMEOUT"
+    assert (elapsed > maxtime)
   else:
     os.kill(spid,signal.SIGKILL)
   os.wait()
@@ -444,13 +460,13 @@ while time.time() - start_time < max_test_time:
   elif n == fst:
     fst = fst - 1
     if fst > lst: lst = fst
-    print "BUMPED fst down"
+    print "BUMPED fst down to",fst
 
   # maximum n too low
   elif n == lst:
     lst = lst + 1
     if fst > lst: fst = lst
-    print "BUMPED lst up"
+    print "BUMPED lst up to",lst
     
   xlt[test,xl] = (fst,lst)
 
@@ -478,7 +494,6 @@ for line in fin:
   n = int(n)
   elapsed=float(elapsed)
   print hostname,date,time,xl,tst,n,elapsed
-  print
   hostd = hostsd.setdefault(hostname,{})
   testd = hostd.setdefault(tst,{})
   xld = testd.setdefault(xl,{})
