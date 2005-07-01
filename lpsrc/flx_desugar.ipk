@@ -314,6 +314,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_type_match _
   | `AST_ellipsis _
   | `AST_lvalue _
+  | `AST_strexpr _
     ->
     clierr sr ("[rex] Unexpected " ^ string_of_expr e)
 

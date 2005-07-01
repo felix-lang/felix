@@ -2681,6 +2681,7 @@ try:
     if "speed" in options:
       runISCR('lpsrc/flx_perf.pak')
       os.system("python speed/measure.py")
+      os.system("python speed/panal.py")
       xqt("gnuplot speed/mkjpgs.gpl")
       runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ lpsrc/flx_perf.pak')
 
@@ -2909,12 +2910,13 @@ We have no idea if it continues copying.
 @tangle('')
 
 @tangle('src_tarball: extract debian/rules')
+@tangle('\tchmod u+x debian/rules')
 @tangle('\trm -f felix-'+flx_version)
 @tangle('\tln -s . felix-'+flx_version)
 @tangle('\ttar -cvf flx_'+flx_version+'_src.tar\\')
 @tangle('\t\tfelix-'+flx_version+'/configure \\')
-@tangle('\t\tfelix-'+flx_version+'/Makefile.debian_package_maker \\')
-@tangle('\t\tfelix-'+flx_version+'/Makefile\\')
+@tangle('\t\tfelix-'+flx_version+'/Makefile.debian_package_creator \\')
+@tangle('\t\tfelix-'+flx_version+'/Makefile \\')
 @tangle('\t\tfelix-'+flx_version+'/README \\')
 @tangle('\t\tfelix-'+flx_version+'/CONTENTS \\')
 @tangle('\t\tfelix-'+flx_version+'/INSTALL \\')
@@ -2922,7 +2924,7 @@ We have no idea if it continues copying.
 @tangle('\t\tfelix-'+flx_version+'/LICENCE \\')
 @tangle('\t\tfelix-'+flx_version+'/NEWS \\')
 @tangle('\t\tfelix-'+flx_version+'/AUTHORS \\')
-@tangle('\t\tfelix-'+flx_version+'/COPYING\\')
+@tangle('\t\tfelix-'+flx_version+'/COPYING \\')
 @tangle('\t\tfelix-'+flx_version+'/ChangeLog \\')
 @tangle('\t\tfelix-'+flx_version+'/lpsrc/*.ipk \\')
 @tangle('\t\tfelix-'+flx_version+'/lpsrc/*.pak \\')
@@ -2946,7 +2948,7 @@ We have no idea if it continues copying.
 @tangle('\t\tfelix-'+flx_version+'/interscript/weavers/*.py ')
 @# debian requires gzip -9
 @tangle('\tgzip -9 flx_'+flx_version+'_src.tar')
-@tangle('\tmv flx_'+flx_version+'_src.tar.gz flx_'+flx_version+'_src.tgz')
+@tangle('\tmv -f flx_'+flx_version+'_src.tar.gz flx_'+flx_version+'_src.tgz')
 @tangle('')
 @tangle('bin_tarball:')
 @tangle('\trm -f felix-'+flx_version)

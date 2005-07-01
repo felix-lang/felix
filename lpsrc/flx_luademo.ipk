@@ -3,9 +3,9 @@
 @h=tangler('lib/lua.flx')
 @select(h)
 include 'std';
-header lua_h '#include "flx_lua.h"';
-header lua_h '#include "flx_lauxlib.h"';
-header lua_h '#include "flx_lualib.h"';
+header lua_h = '#include "flx_lua.h"';
+header lua_h = '#include "flx_lauxlib.h"';
+header lua_h = '#include "flx_lualib.h"';
 
 publish "Interface to Lua 5.0 CAPI"
 module Lua
@@ -214,12 +214,12 @@ module Lua
   """;
   
   // the wrapper for the Felix callback, has type lua_Chunkreader
-  header fcbw_chrd_dcl 
+  header fcbw_chrd_dcl =
   '''
     char const *_fcbw_chrd(lua_State *a1, void *a2,  size_t *a3);
   ''';
 
-  body fcbw_chrd_def 
+  body fcbw_chrd_def =
   '''
     char const *_fcbw_chrd(lua_State *a1, void *a2,  size_t *a3)
     {

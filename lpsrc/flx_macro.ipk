@@ -253,6 +253,10 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   let e = cf e in
   match e with
 
+  | `AST_strexpr (sr,e) -> 
+    let s = string_of_expr e in
+    `AST_literal (sr,`AST_string s)
+    
   (* Expansion block: don't even fold constants *)
   | `AST_noexpand _ -> e 
 

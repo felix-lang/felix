@@ -491,16 +491,18 @@ proc handle_export (f:text_file, t:export_statement_t)
 proc handle_binding_header (f:text_file, t:binding_header_t)
 {
   match t with
-  | binding_header_1 (?name,_) =>  {}
-  | binding_header_2 (?name,_) => {}
-  | binding_header_3 (?name,?tvs,?h,_) =>
+  | binding_header_1 (_,_) =>  {}
+  | binding_header_2 (_,_) => {}
+  | binding_header_3 (_,_) => {}
+  | binding_header_4 (_,_) => {}
+  | binding_header_5 (?name,?tvs,?h,_) =>
    { writeln(f,keywrd "header " + dcl name + str tvs); }
 
-  | binding_header_4 (?name,?tvs,?b,_) =>
+  | binding_header_6 (?name,?tvs,?b,_) =>
    { writeln(f,keywrd "body " + dcl name + str tvs); }
 
-  | binding_header_5 _ => {}
-  | binding_header_6 _ => {}
+  | binding_header_7 _ => {}
+  | binding_header_8 _ => {}
   endmatch;
 }
 
@@ -508,15 +510,15 @@ proc handle_const_def (f:text_file, t:const_def_t)
 {
   match t with
   | const_def_1 (?name,?tvs,?typ,?ct,_) =>
-    { handle_const (f,name,tvs,typ,ct); }
+    { handle_const (f,name,tvs,typ); }
     
   | const_def_2 (?name,?tvs,?typ,_) =>
-    { handle_const (f,name,tvs,typ,name); }
+    { handle_const (f,name,tvs,typ); }
   endmatch;
 }
 
 
-proc handle_const (f:text_file, name:string, tvs:tvarlist_t, typ:type_expr_t, ct:string)
+proc handle_const (f:text_file, name:string, tvs:tvarlist_t, typ:type_expr_t)
 {
   writeln(f,keywrd "const " + dcl name + str tvs + " : " + str typ);
 }
@@ -832,7 +834,7 @@ proc handle_abstract_type (f:text_file, s: abstract_type_t)
     { handle_ctypes (f,qs,bncl); }
   
   | abstract_type_2 (?qs, ?name, ?tvl, ?ct,?rqs) => 
-    { handle_ctype (f,qs,name,tvl,ct); }
+    { handle_ctype (f,qs,name,tvl); }
 
   endmatch;
 }
@@ -866,10 +868,10 @@ proc handle_ctypes (f:text_file, qs:type_quals_t, bncl: basic_name_comma_list_t)
   handle_bncl bncl;
 }
 
-proc handle_ctype (f:text_file, qs:type_quals_t,name:string,tvl:tvarlist_t, ct:string) 
+proc handle_ctype (f:text_file, qs:type_quals_t,name:string,tvl:tvarlist_t) 
 {
   sqs := str qs;
-  s:= sqs " " ktype (dcl name) + (str tvl) ' = <span class="ctype">' (html ct) '</span>';
+  s:= sqs " " ktype (dcl name) + (str tvl);
   writeln(f,s);
 }
 

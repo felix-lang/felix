@@ -2422,6 +2422,7 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
   *)
   let sr = src_of_expr e in
   match e with
+  | `AST_strexpr _
   | `AST_type_match _ 
   | `AST_noexpand _
   | `AST_letin _ 

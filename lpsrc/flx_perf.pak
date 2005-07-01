@@ -32,20 +32,33 @@ where 'ack' is replaced by the name of the test.
   tangle("// Felix Performance Test Program")
   tangle('include "std";')
   tangle("n := atoi(System::argv 1);")
-@def showgraph(test,title):
+@def showgraph(machine,test,title):
   get_weaver()._write(
     '''<P></P><TABLE BORDER=2 ALIGN=center>
    <CAPTION>'''+title+'''</CAPTION>
    <TR><TD>
-   <IMG ALT="'''+title+'''" SRC="images/'''+test+'''.jpg">
+   <IMG ALT="'''+title+'''" SRC="images/'''+machine+'/'+test+'''.jpg">
    </TD></TR></TABLE><P></P>
    ''')
+
+@head(2,'The Test Machines')
+@head(3,'Rosella: x86-64')
+This is my main work machine, an AMD64 K8 3200 with 
+1G Ram and an ASUS motherboard running nVidia chipset,
+budget price cache memory, 200G SATA drive,
+Ubuntu Hoary Linux distribution.
+
+@head(3,'Pelican: x86')
+The old faithful, an 80586 Pentium III 700MHz running RedHat 9 Linux
+distribution.
 
 @head(2,'[ack] Ackermanns Function')
 Ackermann's function is used to check tail-recursion optimisation
 and is heavily dependent on the number of words stacked per function call.
 
-@showgraph('ack',"Ackermann performance graph")
+@showgraph('rosella','ack',"Ackermann's function on Rosella (Amd64-k8)")
+@showgraph('pelican','ack',"Ackermann's function on Pelican (x86-PIII")
+
 @select(tangler('speed/src/felix/ack.flx','data'))
 @flx_setup()
 
@@ -58,11 +71,16 @@ fun ack(x:int,y:int):int =>
 v := ack(3,n);
 print "Ack(3,"; print n; print "): "; print v; endl;
 
+@head(3,'C code')
 @select(tangler('speed/src/c/ack.c','data'))
 #include <stdio.h>
 #include <stdlib.h>
 
-int Ack(int M, int N) { return(M ? (Ack(M-1,N ? Ack(M,(N-1)) : 1)) : N+1); }
+int Ack(int M, int N) { 
+  if (M==0) return N +1;
+  else if(N==0) return Ack(M-1,1);
+  else return Ack(M-1, Ack(M,N-1));
+}
 
 int main(int argc, char *argv[]) {
     int n = atoi(argv[1]);
@@ -70,6 +88,22 @@ int main(int argc, char *argv[]) {
     return(0);
 }
 
+@head(3,'Java code')
+@select(tangler('speed/src/java/ack.java','data'))
+public class ack {
+  public static void main(String[] args) {
+    int num = Integer.parseInt(args[0]);
+    System.out.println("Ack(3," + num + "): " + Ack(3, num));
+  }
+  public static int Ack(int m, int n) {
+    return 
+      (m == 0) ? (n + 1) : 
+      ((n == 0) ? Ack(m-1, 1) : Ack(m-1, Ack(m, n - 1)))
+    ;
+  }
+}
+
+@head(3,'Ocaml code')
 @select(tangler('speed/src/ocaml/ack.ml','data'))
 let rec ack m n = match m,n with
   | 0,n -> n + 1
@@ -81,8 +115,80 @@ let n = if Array.length Sys.argv > 1 then int_of_string Sys.argv.(1) else 1 in
 Printf.printf "Ack(3,%d): %d\n" n (ack 3 n)
 ;;
 
+@head(3,'Haskell code')
+@select(tangler('speed/src/haskell/ack.hs','data'))
+import System(getArgs)
+
+main = do ~[num] <- getArgs
+	  putStrLn ("Ack(3," ++ num ++ "): " ++ (show (ack 3 (read num))))
+
+ack :: Int -> Int -> Int
+ack 0 n = n+1
+ack m 0 = ack (m-1) 1
+ack m n = ack (m-1) (ack m (n-1));
+
+@head(3,'Ada code')
+@select(tangler('speed/src/ada/ack.ada','data'))
+with Ada.Text_Io; use Ada.Text_Io;
+with Ada.Command_Line; use Ada.Command_Line;
+with Ada.Strings.Fixed;
+with Ack_F;
+
+procedure Ack is
+  Num : Natural;
+  function L_Trim(Source : String; Side : Ada.Strings.Trim_End := Ada.Strings.Left) return String renames Ada.Strings.Fixed.Trim;
+begin
+  if Argument_Count = 1 then
+    Num := Natural'Value(Argument(1));
+  else
+    Num := 1;
+  end if;
+
+  Put("Ack(3,");
+  Put(L_Trim ( Natural'Image (Num)));
+  Put("):");
+  Put(Natural'Image (Ack_F (3, Num)));
+end Ack;
+
+----------------------------------------------------------------------
+
+function Ack_F (M, N : Natural) return Natural;
+
+----------------------------------------------------------------------
+
+function Ack_F (M, N : Natural) return Natural is
+pragma Suppress(All_Checks);
+begin
+   if M = 0 then
+      return N + 1;
+   elsif N = 0 then
+      return Ack_F (M - 1, 1);
+   else
+      return Ack_F (M - 1, Ack_F (M, N - 1));
+   end if;
+end Ack_F;
+
 @head(2,'[takfp] Takfp')
-@showgraph('takfp',"Takfp performance graph")
+@showgraph('rosella','takfp',"Takfp on Rosella: amd64-k8")
+@showgraph('pelican','takfp',"Takfp on Pelican: x86-PIII")
+
+@select(tangler('speed/src/felix/takfp.flx','data'))
+@flx_setup()
+open Float;
+proc print1: float = 'printf("%.1f\\n",$1);';
+
+fun Tak (x:float, y:float, z:float): float =>
+  if (y >= x) then z
+  else Tak(Tak(x-1.0f,y,z), Tak(y-1.0f,z,x), Tak(z-1.0f,x,y))
+  endif
+;
+
+w := float_of n;
+
+print1 (Tak(w*3.0f, w*2.0f, w*1.0f));
+
+
+@head(3,'C code')
 @select(tangler('speed/src/c/takfp.c','data'))
 #include <stdio.h>
 #include <stdlib.h>
@@ -100,6 +206,21 @@ int main(int argc, char* argv[])
     return 0;
 }
 
+@head(3,'Java code')
+@select(tangler('speed/src/java/takfp.java','data'))
+public class takfp {
+  public static void main(String args[]) {
+    int n = Integer.parseInt(args[0]);
+    System.out.println( Tak(n*3.0f, n*2.0f, n*1.0f) );
+  }
+
+  public static float Tak (float x, float y, float z) {
+    if (y >= x) return z;
+    else return Tak(Tak(x-1.0f,y,z), Tak(y-1.0f,z,x), Tak(z-1.0f,x,y));
+  }
+}
+
+@head(3,'Ocaml code')
 @select(tangler('speed/src/ocaml/takfp.ml','data'))
 let rec tak x y z =
   if y >= x then z
@@ -110,20 +231,50 @@ let () =
   Printf.printf "%.1f\n" (tak (3. *. n) (2. *. n) n)
 ;;
 
-@select(tangler('speed/src/felix/takfp.flx','data'))
-@flx_setup()
-open Float;
-proc print1: float = 'printf("%.1f\\n",$1);';
+@head(3,'Haskell code')
+@select(tangler('speed/src/haskell/takfp.hs','data'))
+import System(getArgs)
 
-fun Tak (x:float, y:float, z:float): float =>
-  if (y >= x) then z
-  else Tak(Tak(x-1.0f,y,z), Tak(y-1.0f,z,x), Tak(z-1.0f,x,y))
-  endif
-;
+main = do n <- getArgs >>= readIO.head
+          putStrLn $ show $ tak (3*n) (2*n) n
 
-w := float_of n;
+tak :: Float -> Float -> Float -> Float
+tak x y z | y>=x      = z
+          | otherwise = tak (tak (x-1) y z) (tak (y-1) z x) (tak (z-1) x y)
 
-print1 (Tak(w*3.0f, w*2.0f, w*1.0f));
+@head(3,'Ada code')
+@select(tangler('speed/src/ada/takfp.ada','data'))
+package Takfp_Pck is
+   function Tak (X, Y, Z : Float) return Float;
+end Takfp_Pck;
+
+package body Takfp_Pck is
+
+   function Tak (X, Y, Z : Float) return Float is
+   begin
+      if Y >= X then
+         return Z;
+      else
+         return Tak
+           (Tak (X - 1.0, Y, Z), Tak (Y - 1.0, Z, X), Tak (Z - 1.0, X, Y));
+      end if;
+   end Tak;
+
+end Takfp_Pck;
+---------------------------
+with Ada.Text_IO;       use Ada.Text_IO;
+with Ada.Float_Text_IO; use Ada.Float_Text_IO;
+with Ada.Command_Line;  use Ada.Command_Line;
+with Takfp_Pck;         use Takfp_Pck;
+
+procedure Takfp is
+   N : Float;
+begin
+   N := Float'Value (Argument (1));
+   Put (Tak (N * 3.0, N * 2.0, N * 1.0), 0, 1, 0);
+   New_Line;
+end Takfp;
+
 
 @head(1,'Timing script')
 Here is the Python script used to compile, execute and time
@@ -143,11 +294,12 @@ def mkdir(p):
   try: os.mkdir(p)
   except: pass
 
-execfile("config/speed_xlators.py")
+execfile("config/xlators.py")
 
 # make the output directories
 mkdir('speed/exes')
 for key,mk,src in xlators:
+  print "Using translator",key
   mkdir('speed/exes/'+key)
 
 #define the tests
@@ -156,20 +308,40 @@ tests = {
   'takfp':(1,5),
 }
 
+for t in tests:
+  min,max=tests[t]
+  print "Running test",t,"nrange="+str(min)+":"+str(max)
+
+ntests = len(tests)
+nlators = len(xlators)
+
 #compile the programs
 for xl,mk,src in xlators:
   for test in tests.keys():
     fst,last = tests[test]
     cmd = mk(xl,test) 
+    print cmd
     os.system(cmd)
   
+max_test_time = 5.0
+try: max_test_time = float(sys.argv[1])
+except:pass
+
 # maximum allowed time per test, seconds
 maxtime = 5.0
+try: maxtime = float(sys.argv[2])
+except:pass
+
+print "Run time limit ",max_test_time," minutes"
+print "Run time limit ",maxtime," seconds"
+
+#convert to seconds
+max_test_time = max_test_time * 60.0
+
 mintime = 0.5
 sleep_time = 10
 
 #total time for testsing, seconds:
-max_test_time = 200.0
 start_time = time.time()
 
 #hostname
@@ -180,11 +352,9 @@ etime = time.time()
 ltime = time.localtime(etime)
 date = time.strftime("%Y/%m/%d %H:%M",ltime)
 
-ntests = len(tests)
-nlators = len(xlators)
-
 pid = 0
 spid = 0
+xlt = {}
 
 f = open("speed/results.dat","at")
 while time.time() - start_time < max_test_time:
@@ -194,6 +364,9 @@ while time.time() - start_time < max_test_time:
   test = tests.keys()[test_ix]
   fst,lst = tests[test]
   xl,mk,src = xlators[xlator_ix]
+  fst,lst = xlt.setdefault((test,xl),(fst,lst))
+
+  # pick an integer between fst and lst inclusive
   n = random.randint(fst,lst+1)
 
   test_file = "speed/exes/"+xl+"/"+test
@@ -222,6 +395,8 @@ while time.time() - start_time < max_test_time:
       print "WHAT?? Neither exited nor signalled?"
       exit(2)
 
+    # Killed by signal, possibly timeout, no result
+    # can be recorded
     if signalled:
       sig = os.WTERMSIG(status)
       if sig == signal.SIGINT:
@@ -235,12 +410,16 @@ while time.time() - start_time < max_test_time:
         print "UNKNOWN SIGNAL",sig,": TERMINATING"
         sys.exit(1)
     else:
+      # the process terminated correctly, record a result even
+      # if it is out of range
       if status == 0:
         x = hostname + " " + date + " %s %s %d %6.4f" % (xl,test,n,elapsed)
         print x
         f.write(x+"\n")
         f.flush()
       else:
+        # the process terminated by gave an error
+        # exit because this should not happen
         ret = os.WEXITSTATUS(status)
         if ret != 0:
           print "TEST RETURNED ERROR CODE ",ret,": TERMINATING"
@@ -249,40 +428,111 @@ while time.time() - start_time < max_test_time:
           print "WHAT?? Exit code is 0 and not 0?"
           sys.exit(2)
 
-  if elapsed > maxtime: lst = n - 1 
-  if elapsed < mintime: fst = n + 1
-  if fst > lst: lst = fst
-  tests[test] = (fst,lst)
+  # overtime
+  if elapsed > maxtime: 
+    lst = n - 1 
+    if fst > lst: fst = lst
+    print 'CUT lst to',lst
+
+  # undertime
+  elif elapsed < mintime: 
+    fst = n + 1
+    if fst > lst: lst = fst
+    print 'BOOSTED fst to',fst
+
+  #minimum n too high
+  elif n == fst:
+    fst = fst - 1
+    if fst > lst: lst = fst
+    print "BUMPED fst down"
+
+  # maximum n too low
+  elif n == lst:
+    lst = lst + 1
+    if fst > lst: fst = lst
+    print "BUMPED lst up"
+    
+  xlt[test,xl] = (fst,lst)
 
 f.close()
 
-@select(tangler('speed/plot.py'))
-# generate gnuplot files
+@select(tangler('speed/panal.py'))
+# generate analysis
+# sort data by host, test, processor, n value
+import sys
+import os
+import string
+hostsd = {}
+
+def mkdir(p):
+  try: os.mkdir(p)
+  except: pass
+
 mkdir("speed/plotters")
-for test,fst,lst in tests:
-  f = open("speed/plotters/"+test+'.gpl','w')
-  x = 'set title "'+test+'"\n'
-  x = x + 'set xlabel "N"\n'
-  x = x + 'set ylabel "secs"\n'
-  x = x + 'set key left\n'
-  x = x + 'plot \\\n'
-  j = 0
-  for xl,mk,src in xlators:
-    j = j + 1
-    x = x + '"speed/exes/'+xl+'/'+test+'.times" using 3:4 title "'+xl+'" with linespoints'
-    if  j != len (xlators): x = x + ',\\'
-    x = x + '\n'
-  f.write(x)
-  f.close()
-
-# make a shell script to plot all the results as jpg images
 mkdir("speed/images")
-f = open("speed/mkjpgs.gpl",'w')
-f.write("set terminal jpeg\n")
-for test,fst,lst in tests:
-  f.write('set output "speed/images/'+test+'.jpg"\n')
-  f.write('load "speed/plotters/'+test+'.gpl"\n') 
-f.close()
+
+fin = open("speed/results.dat")
+for line in fin:
+  print line,
+  hostname,date,time,xl,tst,n,elapsed = string.split (line)
+  n = int(n)
+  elapsed=float(elapsed)
+  print hostname,date,time,xl,tst,n,elapsed
+  print
+  hostd = hostsd.setdefault(hostname,{})
+  testd = hostd.setdefault(tst,{})
+  xld = testd.setdefault(xl,{})
+  nd = xld.setdefault(n,[])
+  nd.append(elapsed)
+fin.close()
+
+print "DATA"
+fi = open("speed/mkjpgs.gpl",'w')
+fi.write("set terminal jpeg\n")
+
+for h,d in hostsd.iteritems():
+  print "host",h
+  root = "speed/plotters/"+h
+  mkdir(root)
+  mkdir("speed/images/"+h)
+  for t,xd in d.iteritems():
+    print "  test",t
+    mkdir(root+'/'+t)
+    # one gnuplot file for each test
+    fp = open(root+'/'+t+'.gpl','w')
+    x = 'set title "'+t+'"\n'
+    x = x + 'set xlabel "N"\n'
+    x = x + 'set ylabel "secs"\n'
+    x = x + 'set key left\n'
+    x = x + 'plot \\\n'
+    j = 0
+    xls = xd.keys()
+    xls.sort()
+    for xl in xls:
+      nd = xd[xl]
+      # one datafile for each test/xlator
+      fxl = open(root+'/'+t+'/'+xl+'.dat','w')
+      print "    xlator",xl
+      ns = nd.keys()
+      ns.sort()
+      for n in ns:
+        es = nd[n]
+        print "        n",n," --> ",map ((lambda e: "%0.2f" % e),es)
+        average = reduce (lambda x,y:x+y, es) / float(len(es))
+        # one line for each n value
+        fxl.write("%s %d %e\n" % (xl,n,average))
+      fxl.close()
+
+      j = j + 1
+      x = x + '"'+root+'/'+t+'/'+xl+'.dat" using 2:3 title "'+xl+'" with linespoints'
+      if  j != len (xd): x = x + ',\\'
+      x = x + '\n'
+    fp.write(x)
+    fp.close()
+    fi.write('set output "speed/images/'+h+'/'+t+'.jpg"\n')
+    fi.write('load "speed/plotters/'+h+'/'+t+'.gpl"\n') 
+
+fi.close()
 
 # the client can view individual plots in an x11 console
 # with the command 'gnuplot' and then 

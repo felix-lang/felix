@@ -5,19 +5,54 @@
 @godi_revision = '0'
 @debian_revision = '1'
 
-@select(tangler('tmp/speed_xlators.py.default','python'))
-# this config file defines default translators on your platform
-# to be used by the performance test module
-#
-# The file 'config/speed_xlators.py' can be edited,
-# it will not be clobbered once created
-#
-# define the translators
-def mk_gcc_3_4(k,p):
-  return "gcc-3.4 -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+@select(tangler('script/gnatmaker.py'))
+import os
+import sys
+import string
+def xqt(x):
+  print x
+  os.system(x)
 
-def mk_gcc_3_4_opt(k,p):
-  x = "gcc-3.4 -O3 -fomit-frame-pointer "
+filebase = sys.argv[1]
+split = string.split(filebase,'/')
+filebase = split[-1]
+indir =  string.join(split[:-1],'/')
+curdir = os.getcwd()
+os.chdir(indir)
+outdir = sys.argv[2]
+f = os.popen('gnatchop -w ' + filebase + '.ada | grep \\.adb')
+units = f.readlines()
+f.close()
+units = [string.strip (x) for x in units]
+for f in units:
+  xqt("gcc -c "+ f)
+xqt("gnatbind " + filebase)
+xqt("gnatlink " + filebase)
+os.chdir(curdir)
+xqt("mv "+indir+'/'+filebase+" "+outdir)
+
+@select(tangler('speed/xlators_default.py','python'))
+# this file defines default translators
+# do NOT edit this config file, instead:
+#
+# edit config/xlators_local.py to define local translators
+# edit config/xlators.py to define the translators actually used
+
+# for some weird reason: k is the source language, p is the test name
+#
+def mk_gcc(k,p):
+  return "gcc -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+
+def mk_gccopt(k,p):
+  x = "gcc -O3 -fomit-frame-pointer -funroll-loops "
+  x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+  return x
+
+def mk_gcc_3_3(k,p):
+  return "gcc-3.3 -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+
+def mk_gcc_3_3_opt(k,p):
+  x = "gcc-3.3 -O3 -fomit-frame-pointer -funroll-loops "
   x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
   return x
 
@@ -25,7 +60,23 @@ def mk_gcc_4_0(k,p):
   return "gcc-4.0 -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
 
 def mk_gcc_4_0_opt(k,p):
-  x = "gcc-4.0 -O3 -fomit-frame-pointer "
+  x = "gcc-4.0 -O3 -fomit-frame-pointer -funroll-loops "
+  x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+  return x
+
+def mk_gpp_3_3(k,p):
+  return "g++-3.3 -x c++ -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+
+def mk_gpp_3_3_opt(k,p):
+  x = "g++-3.3 -x c++ -O3 -fomit-frame-pointer -funroll-loops "
+  x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+  return x
+
+def mk_gpp_4_0(k,p):
+  return "g++-4.0 -x c++ -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+
+def mk_gpp_4_0_opt(k,p):
+  x = "g++-4.0 -x c++ -O3 -fomit-frame-pointer -funroll-loops "
   x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
   return x
 
@@ -41,14 +92,51 @@ def mk_felix(k,p):
   x = x + "mv speed/src/felix/%s speed/exes/%s/%s" % (p,k,p)
   return x
 
+def mk_ghc(k,p):
+  return "ghc -O3 -fvia-C -foptc -O3 -o speed/exes/%s/%s speed/src/haskell/%s.hs" % (k,p,p)
+
+def mk_ghc_6_2_2(k,p):
+  return "ghc-6.2.2 -O3 -fvia-C -foptc -O3 -o speed/exes/%s/%s speed/src/haskell/%s.hs" % (k,p,p)
+
+def mk_gnat(k,p):
+  return "python script/gnatmaker.py speed/src/ada/%s speed/exes/%s " % (p,k)
+
+def mk_gcj_4_0(k,p):
+  x = "gcj-4.0  -O3 -fomit-frame-pointer -funroll-loops "
+  x = x + "-o speed/exes/%s/%s --main=%s speed/src/java/%s.java" % (k,p,p,p)
+  return x
+
+@select(tangler('tmp/xlators_local.py','python'))
+# reconfigure translator definitions for your
+# local system here
+
+@select(tangler('tmp/xlators.py','python'))
+execfile('speed/xlators_default.py')
+execfile('config/xlators_local.py')
+
+# this table defines the actual translators
+# which the performance tester will use
+# comment out the lines you don't want,
+# or add new ones if desired
+
 xlators = [
   ('felix',mk_felix,'felix'),
-  ('gcc_3_4',mk_gcc_3_4,'c'),
-  ('gccopt_3_4',mk_gcc_3_4_opt,'c'),
-  ('gcc_4_0',mk_gcc_4_0,'c'),
-  ('gccopt_4_0',mk_gcc_4_0_opt,'c'),
+  ('gcc',mk_gcc,'c'),
+  ('gccopt',mk_gccopt,'c'),
+#  ('gcc_3_3',mk_gcc_3_3,'c'),
+#  ('gccopt_3_3',mk_gcc_3_3_opt,'c'),
+#  ('gcc_4_0',mk_gcc_4_0,'c'),
+#  ('gccopt_4_0',mk_gcc_4_0_opt,'c'),
+#  ('gcj_4_0',mk_gcj_4_0_opt,'java'),
+#  ('gnat',mk_gnat,"ada"),
+#  ('gpp_3_3',mk_gpp_3_3,'c'),
+#  ('gppopt_3_3',mk_gpp_3_3_opt,'c'),
+#  ('gpp_4_0',mk_gpp_4_0,'c'),
+#  ('gppopt_4_0',mk_gpp_4_0_opt,'c'),
+#  ('ghc',mk_ghc,'haskell'),
+#  ('ghc_6_2_2',mk_ghc_6_2_2,'haskell'),
   ('ocamlopt',mk_ocamlopt,'ocaml'),
-  ('ocamlb',mk_ocamlb,'ocaml'),
+#  ('ocamlb',mk_ocamlb,'ocaml'),
 ]
 
 @h = tangler("tmp/check_cygwin.cxx",'c++')
@@ -494,10 +582,19 @@ while(i < len (sys.argv)):
 
 if PREFIX=='': PREFIX=default_prefix
 
-if not file_exists("config/speed_xlators.py"):
-  xqt('cp tmp/speed_xlators.py.default config/speed_xlators.py')
-  print "*** Created new configuration for speed tests ***"
-  print "   Edit config/speed_xlators.py to suit your platform"
+if not file_exists("config/xlators_local.py"):
+  xqt('cp tmp/xlators_local.py config')
+  print "*** Created dummy local translator definitions for speed tests ***"
+  print "   Edit config/xlators_local.py to suit your platform"
+  print "   This file will never be clobbered, even on a reconfigure"
+  print "   delete it to force reinstallation of the default"
+
+if not file_exists("config/xlators.py"):
+  xqt('cp tmp/xlators.py config')
+  print "*** Created new translator list for speed tests ***"
+  print "   Edit config/xlators.py to suit your platform and testing needs"
+  print "   This file will never be clobbered, even on a reconfigure"
+  print "   delete it to force reinstallation of the default"
 
 if file_exists("config/config.py"):
   if force or upgrade:
