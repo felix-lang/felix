@@ -25,7 +25,7 @@ units = f.readlines()
 f.close()
 units = [string.strip (x) for x in units]
 for f in units:
-  xqt("gcc -c "+ f)
+  xqt("gcc -c -O3 "+ f)
 xqt("gnatbind " + filebase)
 xqt("gnatlink " + filebase)
 os.chdir(curdir)
@@ -106,6 +106,9 @@ def mk_gcj_4_0(k,p):
   x = x + "-o speed/exes/%s/%s --main=%s speed/src/java/%s.java" % (k,p,p,p)
   return x
 
+# ----------- environment hack ------------------
+env['GHCRTS']='-K8m -k1m' # set stack size for GHC
+
 @select(tangler('tmp/xlators_local.py','python'))
 # reconfigure translator definitions for your
 # local system here
@@ -116,8 +119,16 @@ execfile('config/xlators_local.py')
 
 # this table defines the actual translators
 # which the performance tester will use
+#
 # comment out the lines you don't want,
 # or add new ones if desired
+#
+# the translators selected by default should be availebl
+# since they're required to build Felix .. but actually
+# we preselect gcc for C compiler and ocamlopt for ocaml ..
+# 
+# this should really depend on the config for those things
+#
 
 xlators = [
   ('felix',mk_felix,'felix'),

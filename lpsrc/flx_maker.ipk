@@ -2680,9 +2680,9 @@ try:
 
     if "speed" in options:
       runISCR('lpsrc/flx_perf.pak')
-      os.system("python speed/measure.py")
-      os.system("python speed/panal.py")
-      xqt("gnuplot speed/mkjpgs.gpl")
+      run("python speed/measure.py")
+      run("python speed/panal.py")
+      run("gnuplot speed/mkjpgs.gpl")
       runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ lpsrc/flx_perf.pak')
 
     print "RUN COMPLETE"
@@ -3160,6 +3160,9 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('upload_src: dummy')
 @tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('')
+@tangle('upload_speed: dummy')
+@tangle('\tscp -r speed/*.html speed/images skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/current/speed')
 @tangle('')
 @tangle('upload: dummy')
 @tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')

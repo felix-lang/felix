@@ -236,7 +236,7 @@ let () =
 import System(getArgs)
 
 main = do n <- getArgs >>= readIO.head
-          putStrLn $ show $ tak (3*n) (2*n) n
+          putStrLn (show (tak (3*n) (2*n) n))
 
 tak :: Float -> Float -> Float -> Float
 tak x y z | y>=x      = z
@@ -291,10 +291,16 @@ import socket
 
 # utility to make a directory
 def mkdir(p):
-  try: os.mkdir(p)
-  except: pass
+  os.system('rm -rf ' + p)
+  os.mkdir(p)
+
+env = {}
 
 execfile("config/xlators.py")
+
+# set up any environment needed, this is a temporary hack
+for k in env:
+  os.putenv(k,env[k])
 
 #define the tests
 tests = {
@@ -480,9 +486,20 @@ import os
 import string
 hostsd = {}
 
+args = sys.argv
+args = args[1:]
+mintime = 0.5
+try: 
+  mintime = float(args[1])
+  args = args[1:]
+except:pass
+
+def chkxl(x):
+  return args == [] or x in args
+  
 def mkdir(p):
-  try: os.mkdir(p)
-  except: pass
+  os.system('rm -rf ' + p)
+  os.mkdir(p)
 
 mkdir("speed/plotters")
 mkdir("speed/images")
@@ -515,34 +532,45 @@ for h,d in hostsd.iteritems():
     mkdir(root+'/'+t)
     # one gnuplot file for each test
     fp = open(root+'/'+t+'.gpl','w')
-    x = 'set title "'+t+'"\n'
-    x = x + 'set xlabel "N"\n'
-    x = x + 'set ylabel "secs"\n'
-    x = x + 'set key left\n'
-    x = x + 'plot \\\n'
-    j = 0
+    gx = 'set title "'+t+'"\n'
+    gx = gx + 'set xlabel "N"\n'
+    gx = gx + 'set ylabel "secs"\n'
+    gx = gx + 'set key left\n'
+    gx = gx + 'plot \\\n'
+    first = 1
     xls = xd.keys()
     xls.sort()
-    for xl in xls:
+    for xl in [x for x in xls if chkxl(x)]:
       nd = xd[xl]
       # one datafile for each test/xlator
       fxl = open(root+'/'+t+'/'+xl+'.dat','w')
       print "    xlator",xl
       ns = nd.keys()
       ns.sort()
+      lines = 0
       for n in ns:
         es = nd[n]
-        print "        n",n," --> ",map ((lambda e: "%0.2f" % e),es)
-        average = reduce (lambda x,y:x+y, es) / float(len(es))
+        count = len(es)
+        sum = reduce (lambda x,y: x+y,es)
+        average = sum / float(count)
+        emin = reduce (lambda x,y:min(x,y),es)
+        emax = reduce (lambda x,y:max(x,y),es)
+        print "        n %2d -[%3d]-> (%6.2f,%6.2f,%6.2f)" % (n,count,emin,average,emax)
         # one line for each n value
-        fxl.write("%s %d %e\n" % (xl,n,average))
+        # skip too low values
+        if average > mintime:
+          fxl.write("%s %d %0.2f\n" % (xl,n,average))
+          lines = lines + 1
       fxl.close()
 
-      j = j + 1
-      x = x + '"'+root+'/'+t+'/'+xl+'.dat" using 2:3 title "'+xl+'" with linespoints'
-      if  j != len (xd): x = x + ',\\'
-      x = x + '\n'
-    fp.write(x)
+      # gnuplot is too dumb to handle empty files
+      if lines > 0:
+        if first:
+          first = 0
+        else:
+          gx = gx + ', \\\n'
+        gx = gx + '"'+root+'/'+t+'/'+xl+'.dat" using 2:3 title "'+xl+'" with linespoints'
+    fp.write(gx+'\n')
     fp.close()
     fi.write('set output "speed/images/'+h+'/'+t+'.jpg"\n')
     fi.write('load "speed/plotters/'+h+'/'+t+'.gpl"\n') 
