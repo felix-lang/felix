@@ -46,7 +46,7 @@ open Flx_lookup
 open Flx_exceptions
 
 let split_asms asms : 
-  (range_srcref * id_t * int option * access_t * id_t list * dcl_t) list * 
+  (range_srcref * id_t * int option * access_t * vs_list_t * dcl_t) list * 
   sexe_t list *
   (range_srcref * iface_t) list *
   dir_t list
@@ -193,16 +193,16 @@ let rec build_tables syms name level parent grandparent root asms =
         let vs = 
           map 
           (
-            fun tid-> let n = !counter in incr counter; 
+            fun (tid,tpat)-> let n = !counter in incr counter; 
             if print_flag then
             print_endline ("//  "^spc ^ si n ^ " -> " ^ tid^ " (type variable)");
-            tid,n
+            tid,n,tpat
           ) 
           vs'
         in
         let add_tvars table =        
           iter
-          (fun (tvid,i) ->
+          (fun (tvid,i,tpat) ->
             Hashtbl.add dfns i 
             {
               id=tvid; 
@@ -558,7 +558,7 @@ let rec build_tables syms name level parent grandparent root asms =
           add_tvars privtab
 
         | `DCL_union (its) ->
-          let tvars = map (fun (s,_)-> `AST_name (sr,s,[])) vs in
+          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
           let utype = `AST_name(sr,id, tvars) in
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_union (its)}
           ;
@@ -651,7 +651,7 @@ let rec build_tables syms name level parent grandparent root asms =
  
         | `DCL_cstruct (sts)
         | `DCL_struct (sts) ->
-          let tvars = map (fun (s,_)-> `AST_name (sr,s,[])) vs in
+          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
           let stype = `AST_name(sr,id,tvars) in
           Hashtbl.add dfns n {
             id=id;sr=sr;parent=parent;

@@ -8,12 +8,12 @@ open Flx_ast
 val find_split_vs:
   sym_state_t ->
   int -> 
-  (string * int) list * (string * int) list 
+  ivs_list_t * ivs_list_t
 
 val find_vs:
   sym_state_t ->
   int ->
-  (string * int) list
+  ivs_list_t
 
 val adjust_ts:
   sym_state_t ->
@@ -119,7 +119,7 @@ let find_split_vs syms i =
   | None -> [],vs
   | Some j -> find_func_vs syms vs j
 
-let print_vs vs = catmap ", " (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs
+let print_ivs vs = catmap ", " (fun (s,i,_) -> s ^ "<" ^ si i ^ ">") vs
 
 let adjust_ts syms sr index ts =
   let pvs,vs = find_split_vs syms index in
@@ -133,8 +133,8 @@ let adjust_ts syms sr index ts =
       "For "^ id^ "<" ^ si index ^ 
       "> Too many type subscripts, expected " ^ 
       si m ^ " got " ^ si n ^ 
-      "\nparent vs="^print_vs pvs ^ 
-      "\nvs="^print_vs vs
+      "\nparent vs="^print_ivs pvs ^ 
+      "\nvs="^print_ivs vs
     )
   end;
   if n<m then begin
@@ -144,23 +144,23 @@ let adjust_ts syms sr index ts =
       "For "^id^"<" ^ si index ^ 
       "> Not enough type subscripts, expected " ^ 
       si m ^ " got " ^ si n ^ 
-      "\nparent vs="^print_vs pvs ^ 
-      "\nvs=" ^ print_vs vs
+      "\nparent vs="^print_ivs pvs ^ 
+      "\nvs=" ^ print_ivs vs
     )
   end;
   
-  map (fun (_,i) -> `BTYP_var i) pvs @ ts
+  map (fun (_,i,_) -> `BTYP_var i) pvs @ ts
   
 
 let make_params syms sr i ts =
   let vs = find_vs syms i in
   let ts = adjust_ts syms sr i ts in
-  map2 (fun (s,i) t -> s,t) vs ts
+  map2 (fun (s,i,_) t -> s,t) vs ts
 
 (* full ts required *)
 let make_varmap syms sr i ts = 
   let vs = find_vs syms i in
   assert (length ts = length vs);
-  let vars = map2 (fun (s,i) t -> i,t) vs ts in
+  let vars = map2 (fun (s,i,_) t -> i,t) vs ts in
   hashtable_of_list vars
 

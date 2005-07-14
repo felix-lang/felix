@@ -1401,7 +1401,7 @@ open Stl::HashMap;
 
 requires ext_string_hash;
 
-body hexer """ 
+body hexer = """ 
 string hex(int x) { char buf[20]; sprintf(buf,"%x",x); return buf; }
 """;
 
@@ -1488,7 +1488,7 @@ open Stl::Set;
 open Text_file;
 open Lexer;
 
-body lt_cmp[t] """
+body lt_cmp[t] = """
   namespace std {
     template<> 
     bool less<?1> :: operator()(?1 const &a, ?1 const &b)const {

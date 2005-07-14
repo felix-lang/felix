@@ -1,4 +1,6 @@
+@execfile('config/flx_data.py')
 @head(1,'Highlight tool language spec')
+Warning: not to be confused with misc/felix.lang, which is xml for gtksourceview.
 @select(tangler('misc/flx.lang','data'))
 # Felix language definition file
 #
@@ -57,3 +59,121 @@ void unit bool any address byte
 /ESCCHAR=\
 
 /DIRECTIVE=#
+
+@select(tangler('misc/felix.lang','data'))
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE language SYSTEM "language.dtd">
+<language _name="felix" version="1.0" _section="Sources" mimetypes="text/x-felix">
+	
+	<escape-char>\</escape-char>
+
+	<line-comment _name = "Line Comment" style= "Comment">
+		<start-regex>//</start-regex>
+	</line-comment>
+
+	<block-comment _name = "Block Comment" style = "Comment">
+		<start-regex>/\*</start-regex>
+        	<end-regex>\*/</end-regex>
+	</block-comment>
+
+	<block-comment _name = "'#if 0' Comment" style = "Comment">
+		<start-regex>^[ \t]*#[ \t]*if[ \t]*0</start-regex>
+        	<end-regex>[ \t]*#[ \t]*(endif|else)</end-regex>
+	</block-comment>
+
+	<string _name = "String" style = "String" end-at-line-end = "TRUE">
+		<start-regex>&quot;</start-regex>
+		<end-regex>&quot;</end-regex>
+	</string>
+
+	<syntax-item _name = "Include/Pragma" style = "Preprocessor">
+		<start-regex>^#[ \t]*(include|pragma)</start-regex>
+	         <end-regex>\n</end-regex>
+	</syntax-item>
+
+	<keyword-list _name = "Keywords" style = "Keyword" case-sensitive="TRUE">
+@for k,x in flx_keywords:
+  tangle('    <keyword>'+k+'</keyword>')
+@#
+	</keyword-list>
+
+	<keyword-list _name = "Types" style = "Data Type" case-sensitive="TRUE">
+		<keyword>_Bool</keyword>
+		<keyword>_Complex</keyword>
+		<keyword>_Imaginary</keyword>
+		<keyword>auto</keyword>
+		<keyword>char</keyword>
+		<keyword>const</keyword>
+		<keyword>double</keyword>
+    <keyword>enum</keyword>
+		<keyword>extern</keyword>
+		<keyword>float</keyword>
+		<keyword>int</keyword>
+		<keyword>inline</keyword>
+		<keyword>long</keyword>
+		<keyword>register</keyword>
+		<keyword>restrict</keyword>
+		<keyword>short</keyword>
+		<keyword>signed</keyword>
+		<keyword>static</keyword>
+		<keyword>struct</keyword>
+		<keyword>typedef</keyword>
+		<keyword>union</keyword>
+		<keyword>unsigned</keyword>
+		<keyword>void</keyword>
+		<keyword>volatile</keyword>
+	</keyword-list>
+
+	<string _name = "Character Constant" style = "String" end-at-line-end = "TRUE">
+		<start-regex>&apos;</start-regex>
+		<end-regex>&apos;</end-regex>
+	</string>
+
+	<pattern-item _name = "Decimal" style = "Decimal">
+		<regex>\b([1-9][0-9]*|0)([Uu]([Ll]|LL|ll)?|([Ll]|LL|ll)[Uu]?)?\b</regex>
+	</pattern-item>
+
+	<pattern-item _name = "Floating Point Number" style = "Floating Point">
+		<regex>\b([0-9]+[Ee][-]?[0-9]+|([0-9]*\.[0-9]+|[0-9]+\.)([Ee][-]?[0-9]+)?)[fFlL]?</regex>
+	</pattern-item>
+
+	<pattern-item _name = "Octal Number" style = "Base-N Integer">
+		<regex>\b0[0-7]+([Uu]([Ll]|LL|ll)?|([Ll]|LL|ll)[Uu]?)?\b</regex>
+	</pattern-item>
+
+	<pattern-item _name = "Hex Number" style = "Base-N Integer">
+		<regex>\b0[xX][0-9a-fA-F]+([Uu]([Ll]|LL|ll)?|([Ll]|LL|ll)[Uu]?)?\b</regex>
+	</pattern-item>
+
+	<keyword-list _name = "Common Macro" style = "Preprocessor" case-sensitive="TRUE">
+		<keyword>NULL</keyword>
+		<keyword>TRUE</keyword>
+		<keyword>FALSE</keyword>
+		<keyword>MAX</keyword>
+		<keyword>MIN</keyword>
+		<keyword>__LINE__</keyword>
+		<keyword>__DATA__</keyword>
+		<keyword>__FILE__</keyword>
+		<keyword>__func__</keyword>
+		<keyword>__TIME__</keyword>
+		<keyword>__STDC__</keyword>
+	</keyword-list>
+
+	<keyword-list _name = "Preprocessor Definitions" style = "Preprocessor" case-sensitive="TRUE"
+		match-empty-string-at-beginning = "FALSE"
+		match-empty-string-at-end = "TRUE"
+		beginning-regex = "^[ \t]*#[ \t]*">
+		<keyword>if</keyword>
+		<keyword>ifdef</keyword>
+		<keyword>ifndef</keyword>
+		<keyword>else</keyword>
+		<keyword>elif</keyword>
+		<keyword>define</keyword>
+		<keyword>endif</keyword>
+		<keyword>undef</keyword>
+		<keyword>error</keyword>
+		<keyword>pragma</keyword>
+		<keyword>line</keyword>
+	</keyword-list>
+
+</language>

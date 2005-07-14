@@ -315,7 +315,7 @@ on integers, bools, and strings: user defined functions
 are not applied and do not need to be defined.
 Consequently, the result may disagree with a user
 defined function applied at run time.  If necessary,
-constant folding can be blocked with the noexpand mark $.
+constant folding can be blocked with the noexpand mark 'noexpand'.
 @p()
 Note: the expressions
 @begin_displayed_code()
@@ -455,15 +455,15 @@ macro proc print_alot ()
 print_alot();
 
 @head(2,'Expansion Barrier')
-The symbol '$' can be used to block expansion.
+The symbol 'noexpand' can be used to block expansion.
 @select(tangler(tdir+'mac127.flx'))
 include "std";
 // expansion barrier
 macro val x = 1;
 macro proc k ()
 {
-  val yy = $x + x; // x + 1
-  print $x; print "+"; print x; print " -> "; print yy; endl;
+  val yy = noexpand x + x; // x + 1
+  print noexpand x; print "+"; print x; print " -> "; print yy; endl;
 }
 macro x is x; // blocks x
 {

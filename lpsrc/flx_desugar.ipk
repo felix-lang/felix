@@ -122,14 +122,14 @@ let include_file syms inspec lookup =
   in
     sts
 
-let  fix_params seq (ps:parameter_t list):string list * parameter_t list = 
-  let rec aux (ps:parameter_t list) :string list * parameter_t list =
+let fix_params seq (ps:parameter_t list):vs_list_t * parameter_t list = 
+  let rec aux (ps:parameter_t list) :vs_list_t * parameter_t list =
     match ps with
     | (x,`TYP_none) :: t ->
       let v = "_v"^si (seq()) in
       let vt: typecode_t = `AST_name(generated,v,[]) in
       let vs,ps = aux t in
-      (v::vs),((x,vt)::ps)
+      ((v,`TPAT_any)::vs),((x,vt)::ps) (* a bit HACKY *)
       
     | h :: t -> 
       let vs,ps = aux t in 
@@ -706,7 +706,14 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
 (* remove blocks *)
 (* parent vs is containing module vs .. only for modules *)
 
-and rst syms name access parent_vs st : asm_t list = 
+and maybe_tpat = function
+  | `TPAT_any -> ""
+  | tp -> ": " ^ string_of_tpattern tp
+
+and string_of_vs (vs:vs_list_t) = 
+  cat "," (map (fun (v,tp) -> v ^ maybe_tpat tp) vs)
+
+and rst syms name access (parent_vs:vs_list_t) st : asm_t list = 
   let dstr s = 
     match s with 
     | `AST_literal (_,`AST_string s) -> s 
@@ -715,7 +722,7 @@ and rst syms name access parent_vs st : asm_t list =
   
   (* construct an anonymous name *)
   let parent_ts sr : typecode_t list = 
-    map (fun s-> `AST_name (sr,s,[])) parent_vs 
+    map (fun (s,tp)-> `AST_name (sr,s,[])) parent_vs 
   in
   let rqname' sr = `AST_name (sr,"_rqs_" ^ name,parent_ts sr) in
 
@@ -728,9 +735,9 @@ and rst syms name access parent_vs st : asm_t list =
   *)
   let bridge n sr : asm_t = 
     (*
-    print_endline ("Making bridge for " ^ n ^ " -> " ^ name ^"["^cat "," parent_vs ^"]");
+    print_endline ("Making bridge for " ^ n ^ " -> " ^ name ^"["^string_of_vs _vs ^"]");
     *)
-    let ts = map (fun s-> `AST_name (sr,s,[])) parent_vs in
+    let ts = map (fun (s,_)-> `AST_name (sr,s,[])) parent_vs in
     let us = `AST_name (sr,"_rqs_" ^ name,ts) in
     let body = `DCL_body ("",[us]) in
     Dcl (sr,"_rqs_"^n,None,`Public,[],body)

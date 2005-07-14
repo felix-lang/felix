@@ -1,113 +1,13 @@
 @head(1,'Configure')
 @FLX_CONFIG_CVS_ID='$Id$'
 @print FLX_CONFIG_CVS_ID
-@flx_version = '1.1.0'
+@flx_version_major = '1'
+@flx_version_minor = '1'
+@flx_version_patch = '0'
+@flx_version = flx_version_major+'.'+flx_version_minor+'.'+flx_version_patch
 @godi_revision = '0'
 @debian_revision = '1'
-
-@select(tangler('script/gnatmaker.py'))
-import os
-import sys
-import string
-def xqt(x):
-  print x
-  os.system(x)
-
-filebase = sys.argv[1]
-split = string.split(filebase,'/')
-filebase = split[-1]
-indir =  string.join(split[:-1],'/')
-curdir = os.getcwd()
-os.chdir(indir)
-outdir = sys.argv[2]
-f = os.popen('gnatchop -w ' + filebase + '.ada | grep \\.adb')
-units = f.readlines()
-f.close()
-units = [string.strip (x) for x in units]
-for f in units:
-  xqt("gcc -c -O3 "+ f)
-xqt("gnatbind " + filebase)
-xqt("gnatlink " + filebase)
-os.chdir(curdir)
-xqt("mv "+indir+'/'+filebase+" "+outdir)
-
-@select(tangler('speed/xlators_default.py','python'))
-# this file defines default translators
-# do NOT edit this config file, instead:
-#
-# edit config/xlators_local.py to define local translators
-# edit config/xlators.py to define the translators actually used
-
-# for some weird reason: k is the source language, p is the test name
-#
-def mk_gcc(k,p):
-  return "gcc -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
-
-def mk_gccopt(k,p):
-  x = "gcc -O3 -fomit-frame-pointer -funroll-loops "
-  x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
-  return x
-
-def mk_gcc_3_3(k,p):
-  return "gcc-3.3 -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
-
-def mk_gcc_3_3_opt(k,p):
-  x = "gcc-3.3 -O3 -fomit-frame-pointer -funroll-loops "
-  x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
-  return x
-
-def mk_gcc_4_0(k,p):
-  return "gcc-4.0 -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
-
-def mk_gcc_4_0_opt(k,p):
-  x = "gcc-4.0 -O3 -fomit-frame-pointer -funroll-loops "
-  x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
-  return x
-
-def mk_gpp_3_3(k,p):
-  return "g++-3.3 -x c++ -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
-
-def mk_gpp_3_3_opt(k,p):
-  x = "g++-3.3 -x c++ -O3 -fomit-frame-pointer -funroll-loops "
-  x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
-  return x
-
-def mk_gpp_4_0(k,p):
-  return "g++-4.0 -x c++ -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
-
-def mk_gpp_4_0_opt(k,p):
-  x = "g++-4.0 -x c++ -O3 -fomit-frame-pointer -funroll-loops "
-  x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
-  return x
-
-def mk_ocamlopt(k,p):
-  return "ocamlopt.opt -o speed/exes/%s/%s speed/src/ocaml/%s.ml" % (k,p,p)
-
-def mk_ocamlb(k,p):
-  return "ocamlc.opt -o speed/exes/%s/%s speed/src/ocaml/%s.ml" % (k,p,p)
-
-def mk_felix(k,p):
-  x = "bin/flx --test --force --static --optimise -c -DFLX_PTF_STATIC_POINTER "
-  x = x + "speed/src/felix/%s && " % p
-  x = x + "mv speed/src/felix/%s speed/exes/%s/%s" % (p,k,p)
-  return x
-
-def mk_ghc(k,p):
-  return "ghc -O3 -fvia-C -optc -O3 -o speed/exes/%s/%s speed/src/haskell/%s.hs" % (k,p,p)
-
-def mk_ghc_6_2_2(k,p):
-  return "ghc-6.2.2 -O3 -fvia-C -optc -O3 -o speed/exes/%s/%s speed/src/haskell/%s.hs" % (k,p,p)
-
-def mk_gnat(k,p):
-  return "python script/gnatmaker.py speed/src/ada/%s speed/exes/%s " % (p,k)
-
-def mk_gcj_4_0(k,p):
-  x = "gcj-4.0  -O3 -fomit-frame-pointer -funroll-loops "
-  x = x + "-o speed/exes/%s/%s --main=%s speed/src/java/%s.java" % (k,p,p,p)
-  return x
-
-# ----------- environment hack ------------------
-env['GHCRTS']='-K8m -k1m' # set stack size for GHC
+@rpm_revision = '1'
 
 @select(tangler('tmp/xlators_local.py','python'))
 # reconfigure translator definitions for your
@@ -130,24 +30,49 @@ execfile('config/xlators_local.py')
 # this should really depend on the config for those things
 #
 
+# this is set up for PERSONAL USE
+# this config is NOT suitable for submission to website
+# you must use VERSIONED translators for submissions
+#
 xlators = [
+
+# generic translators
   ('felix',mk_felix,'felix'),
   ('gcc',mk_gcc,'c'),
   ('gccopt',mk_gccopt,'c'),
-#  ('gcc_3_3',mk_gcc_3_3,'c'),
-#  ('gccopt_3_3',mk_gcc_3_3_opt,'c'),
-#  ('gcc_4_0',mk_gcc_4_0,'c'),
-#  ('gccopt_4_0',mk_gcc_4_0_opt,'c'),
-#  ('gcj_4_0',mk_gcj_4_0_opt,'java'),
-#  ('gnat',mk_gnat,"ada"),
-#  ('gpp_3_3',mk_gpp_3_3,'c'),
-#  ('gppopt_3_3',mk_gpp_3_3_opt,'c'),
-#  ('gpp_4_0',mk_gpp_4_0,'c'),
-#  ('gppopt_4_0',mk_gpp_4_0_opt,'c'),
-#  ('ghc',mk_ghc,'haskell'),
-#  ('ghc_6_2_2',mk_ghc_6_2_2,'haskell'),
   ('ocamlopt',mk_ocamlopt,'ocaml'),
-#  ('ocamlb',mk_ocamlb,'ocaml'),
+#  ('gnat',mk_gnat,"ada"),
+#  ('ghc',mk_ghc,'haskell'),
+
+# GNU C and C++ compilers
+#  ('gcc-3.3',mk_gcc_3_3,'c'),
+#  ('gcc-3.3-O3',mk_gcc_3_3_opt,'c'),
+#  ('gcc-4.0',mk_gcc_4_0,'c'),
+#  ('gcc-4.0-O3',mk_gcc_4_0_opt,'c'),
+#  ('g++-3.3',mk_gpp_3_3,'c'),
+#  ('g++-3.3-O3',mk_gpp_3_3_opt,'c'),
+#  ('g++-4_0',mk_gpp_4_0,'c'),
+#  ('g++-4.0-O3',mk_gpp_4_0_opt,'c'),
+
+# GNU Java
+#  ('gcj-4_0',mk_gcj_4_0_opt,'java'),
+
+# GNU Ada
+#  ('gnat-4.0',mk_gnat,"ada"),
+
+# Free Pascal
+#  ('fpc-2.0.0',mk_fpc_2_0_0,"pascal"),
+
+# GNU Pascal
+#  ('gpc-2.1-3.3',mk_gpc_2_1_3_3,"pascal"),
+
+# Glasgow Haskell
+#  ('ghc-6.2.2',mk_ghc_6_2_2,'haskell'),
+#  ('ghc-6.4.1',mk_ghc_6_4_1,'haskell'),
+
+# Inria's Ocaml
+#  ('ocamlopt-3.08_3',mk_ocamlopt_3_08_3,'ocaml'),
+#  ('ocamlc-3.08.3',mk_ocamlc_3_08_3,'ocaml'),
 ]
 
 @h = tangler("tmp/check_cygwin.cxx",'c++')
@@ -872,8 +797,8 @@ if CYGWIN:
   CCLINK_DLLIB = CXX + "-w -Wl,-shared -Wl,--export-all-symbols -Wl,--enable-auto-import "
   CCLINK_DLMAIN = CXX + "-w "
 else:
-  CCOBJ_DLLIB = CXX + "-w "+FORCE_DEBUG+"-fPIC -c "
-  CCOBJ_DLMAIN = CXX + "-w "+FORCE_DEBUG+"-fPIC -c "
+  CCOBJ_DLLIB = CXX + "-w "+FORCE_DEBUG+"-fPIC -D_REENTRANT -c "
+  CCOBJ_DLMAIN = CXX + "-w "+FORCE_DEBUG+"-fPIC -D_REENTRANT -c "
 #  CCLINK_DLLIB = CXX + "-w -Wl,-shared -Wl,--export-dynamic "
   CCLINK_DLLIB = CXX + "-w -shared  "
   CCLINK_DLMAIN = CXX + "-w -Wl,-Bdynamic -Wl,--export-dynamic "
@@ -1323,6 +1248,7 @@ flx_keywords = [
     ("module", "MODULE"),
     ("NaN", "NAN"),
     ("new", "NEW"),
+    ("noexpand", "NOEXPAND"),
     ("noinline", "NOINLINE"),
     ("nonterm", "NONTERM"),
     ("noreturn", "NORETURN"),

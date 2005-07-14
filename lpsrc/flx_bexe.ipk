@@ -13,7 +13,7 @@ val bind_exes:
   btypecode_t ->
   string ->
   bid_t ->
-  (string * int) list ->
+  bvs_t ->
   btypecode_t * bexe_t list
 
 @h = tangler("src/flx_bexe.ml")

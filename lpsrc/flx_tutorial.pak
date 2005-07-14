@@ -2,36 +2,6 @@
 @tdir = 'tut/examples/'
 @execfile('config/flx_data.py')
 
-@head(1,'Preface: Authors note')
-This document is literate programmed using interscript.
-Although it is primarily designed
-as a tutorial, almost all the code examples are complete
-executable programs. This is partly so readers can run
-the examples as written, but there is another purpose:
-tutorial examples are expected to provide coverage
-of basic language features with a graded increase
-in complexity, which makes the examples excellent
-regression tests. And unlike other tests, the purpose
-of the examples is usually well documented.
-@p()
-There is another role of the tutorial during development:
-it provides an excellent way to check the usability
-of the language and tools: issues of ease of comprehension
-and use arise more easily than when working on 
-the compiler itself. Development of tutorial material
-in parallel with the language specification, implementation,
-hard core unit tests, and reference manual, can be seen
-as a form of 'Extreme Programming', but it is better
-understood as the central paradigm of 'Literate Programming'.
-@p()
-There is no requirement to use literate programming tools like
-interscript when developing Felix code. Or any
-other code. But I strongly
-recommend it be considered for larger projects, 
-expecially libraries. The strong integration 
-provided by LP is likely to challenge corporate 
-procedures. And they surely need it.
-
 @head(1,'Basic Felix 101')
 This section deals with the basic concepts in Felix.
 
@@ -122,6 +92,7 @@ print (1 > 2); endl; print (gt (1,2)); endl;
 print (1 <= 2); endl; print (le (1,2)); endl;
 print (1 >= 2); endl; print (ge (1,2)); endl;
 
+@doc()
 @head(2,'Value declaration')
 Felix allows values to be declared using the 'val'
 keyword.
@@ -177,6 +148,7 @@ print c; print " ";
 print d; print " ";
 print e; print " ";
 endl;
+@doc()
 @head(2,'Variable declaration')
 Felix also support mutable variables, which are
 declared with the 'var' keyword.
@@ -239,6 +211,7 @@ print e; print " ";
 endl;
 
 
+@doc()
 @head(2,'Mutators')
 Felix provides a range of mutators, 
 these being assignment operators and counting operators.
@@ -275,6 +248,7 @@ i++;           post_incr (i);
 --i;           pre_decr (i);
 i--;           post_decr (i);
 
+@doc()
 @head(2,'Functions')
 Felix allows you to define functions,
 although the syntax is different from C.
@@ -511,6 +485,7 @@ f i2;
 f i3;
 
 
+@doc()
 @head(2,'Structs')
 Felix supports C like structs. A struct, like a tuple,
 is a categorical product type. Unlike a tuple,
@@ -549,6 +524,7 @@ val xy = XY(1,2);
 print xy.x; endl;
 print xy.y; endl;
 
+@doc()
 @head(2,'Arrays')
 Felix provides arrays of constant length.
 The type notation
@@ -776,6 +752,7 @@ print (z.fetch()); endl;
 z.store(2);
 print (z.fetch()); endl;
 
+@doc()
 @head(2,'Regular Matching')
 Felix provides support for matching strings
 against regular expressions.
@@ -1004,6 +981,7 @@ use Lexer::ne;
 
 while { i1 != i2 } { print_token; };
 
+@doc()
 @head(2,'Lazy expressions')
 There is a function which is so useful, there
 is a special syntax for it: the lazy expression.
@@ -1158,6 +1136,7 @@ val x = fst x22;
 val y = snd x22;
 print x; print ","; print y; endl;
 
+@doc()
 @head(2,'Generic Structs and Unions')
 Felix structs and unions can be generic too.
 Here is a simple example.
@@ -1182,6 +1161,7 @@ x = Cons[int] (3,x);
 val y = pair[int,int] (1,2);
 print y.fst; print ","; print y.snd; endl;
 
+@doc()
 @head(2,'Argument Deduction')
 It is inconvenient to specify the type
 arguments for a function. Generally,
@@ -1258,7 +1238,8 @@ proc printint (x:int) { print x; }
 
 pr (x,(printint of (int))); endl;
 
-@head (2,'Generic modules')
+@doc()
+@head(2,'Generic modules')
 It is also possible specify type arguments for a module.
 The effect is simply that all the entities declared in
 the module are parameterised by the type parameter.
@@ -1317,6 +1298,7 @@ var x = mk[int]();
 var y = mk[int]();
 if cmp(x,y) do print "YES"; endl; else print "NO"; endl; done;
 
+@doc()
 @head(2,'Inductive types')
 Felix supports inductive types such as lists.
 Here is a list of ints.
@@ -1407,6 +1389,7 @@ fun rev(lst:int_list):int_list =
 
 print "Reversed= "; print (rev a); endl;
 
+@doc()
 @head(2,'Higher order Functions')
 In Felix, functions and procedures are first class:
 they may accept functions or procedures as arguments,
@@ -1522,6 +1505,7 @@ fun apply[s,d] (f:s->d) (x:s) : d => f x;
 
 print (apply (the f) 4); endl;
 
+@doc()
 @head(2,'Currying')
 Consider the following example:
 @select(tangler(tdir+'tut139.flx'))
@@ -1679,6 +1663,7 @@ print y_r_total; endl;
 
 
 
+@doc()
 @head(2,'Modules')
 Most modern languages support packaging of related
 specifications into some kind of module, and Felix
@@ -2053,7 +2038,7 @@ The final call in a procedure is known as a tail call,
 and and can be indicated by a jump statement as 
 described in the previous section, though it isn't
 necessary: tail calls are detected by the compiler.
-@doc()
+@p()
 There is a special kind of tail call known
 as a loop, in which the jump is made to the procedure
 containing the jump, or one or its parents.
@@ -2084,6 +2069,7 @@ zero:>
 
 f(10);
 
+@doc()
 @head(2,'Conditional Statements')
 Felix supports a traditional procedural if chain.
 Here is a simple if/do/done:
@@ -2151,6 +2137,7 @@ f 2;
 f 3;
 endl;
 
+@doc()
 @head(2,'More on Conditionals')
 Of course conditional statements can be nested.
 @p()
@@ -2224,6 +2211,7 @@ macro val x = 1;
 if x == 1 do val y = 1; else val y = "ONE"; done;
 print y; endl;
 
+@doc()
 @head(2,'Failure')
 The fail construction is used to abort a
 task with prejudice. A string argument may be
@@ -2236,6 +2224,7 @@ include "std";
 // uncomment to test 
 //fail "Aborted";
 
+@doc()
 @head(2,'Dynamic exception handling using goto')
 Non local gotos are very useful for a form of
 exception handling. Consider the following example:
@@ -2298,6 +2287,7 @@ resume:>
   print "error handled, continuing"; endl;
 }
 
+@doc()
 @head(2,'Procedure Values Again')
 We've seen the advantages of higher order 
 functions and procedures. It is possible
@@ -2424,6 +2414,7 @@ print
 ); endl;
 
 
+@doc()
 @head(2,'Standard types and Lexemes')
 Here is a more comprehensive set of examples
 of Felix standard types and numeric lexicology. 
@@ -2541,6 +2532,7 @@ include "std";
   val x7 : float = 2.2e4f;
 };
 
+@doc()
 @head(3,'String')
 Felix provides two kinds of strings: 8 bit and 32 bit,
 denotes string and ustring respectively.
@@ -2588,6 +2580,7 @@ var s = "Hello" 32; // add a space after "Hello"
 s = s s; // says "Hello Hello "
 print s; endl;
 
+@doc()
 @head(2,'Floating matches')
 Felix provides special matching for
 floating point. Here are some examples:
@@ -2669,6 +2662,7 @@ val Y_can't_U_do_this_in_C'' : double = 2.0;
 val x\u05d0= 1; // x,Hebrew  aleph
 val zz = x\U000005D0; // x,Hebrew aleph
 
+@doc()
 @head(1,'Intermediate Felix 201')
 This section mainly deals with the Felix module system.
 
@@ -2839,6 +2833,7 @@ rename x42=X::x42;
 print x42;
 print y42;
 
+@doc()
 @head(2,'Modular inheritance')
 It is possible to inherit all
 the symbols of a module with the inherit directive.
@@ -2917,6 +2912,7 @@ module W {
 }
 print W::a; endl;
 
+@doc()
 @head(2,'Let expression')
 There is a short form for match expressions.
 An expression of the form:
@@ -2936,6 +2932,7 @@ print (match 1 with | ?x =>  x + x endmatch); endl;
 print (let ?z = 1 in z + z); endl;
 print (let ?x = (let ?y = 2 in y + y) in x + x); endl; // 8
 
+@doc()
 @head(2,'Metatyping')
 Felix supports a metatyping or kinding system.
 The reserved identifer TYPE denotes the kind of a type.
@@ -3009,7 +3006,8 @@ match x3 with
 | ((?a,?b),?c) => { print a; endl; print b; endl; print c; endl; } 
 endmatch;
 
-@head(1,'Felix threads: Cooperative Multitasking')
+@doc()
+@head(1,'Felix threads -- Cooperative Multitasking')
 Felix supports event driven programming with
 a threading interface. This is variously known
 as cooperative multi-tasking, ultra-lightweight 
@@ -3073,6 +3071,7 @@ proc report() {
 
 print ".. OK"; endl;
 
+@doc()
 @head(2,'Message chain using fthreads')
 @select(tangler(tdir+'tut211.flx'))
 include "std";
@@ -3122,6 +3121,7 @@ whilst message_count >0 do
 done;
 
 
+@doc()
 @head(1,"System interface")
 We show how to get at the command line arguments.
 The function 'argv' returns an empty string
@@ -3142,6 +3142,7 @@ for_each {i=0;} {i<argc} {++i;}
   print i; print "->"; print (argv i); endl;
 };
 
+@doc()
 @head(1,"STL Containers")
 @select(tangler(tdir+'tut302.flx'))
 include "std";
@@ -3180,6 +3181,7 @@ var i = begin m; until i == end m do
   print k; print " -> "; print vl; endl; ++i;
 done;
 
+@doc()
 @head(1,"GLR parsing")
 Felix contains a builtin parser generator. This is roughly
 like a builtin yacc or bison facility, but it differs in
@@ -3296,6 +3298,7 @@ match z with
 endmatch;
 endl;
 
+@doc()
 @head(2,"nested parser")
 @select(tangler(tdir+'tut311.flx'))
 include "std";
@@ -3355,6 +3358,7 @@ proc try_parse() {
 
 try_parse();
 
+@doc()
 @head(2,"Parser shortcuts")
 The Felix parser system actually accepts
 so-called meta-grammars.
@@ -3367,8 +3371,8 @@ for such groups, and replaces the group with
 the name of the dummy non-terminal.
 @p()
 You can also apply the postfix operators "*", "+" and "?"
-to any symbol or group. Curley brackets { .. } can also
-be used and are equivalent to ( ..) *. Note you can't
+to any symbol or group. Curly brackets "{" .. "}" can also
+be used and are equivalent to ( .. ) *. Note you can't
 use [..] notation for optional constructions, since
 this conflicts with the use of [] for type subscripts.
 @p()
@@ -3442,3 +3446,4 @@ match z with
 endmatch;
 endl;
 
+@doc()

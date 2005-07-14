@@ -2928,7 +2928,6 @@ We have no idea if it continues copying.
 @tangle('\t\tfelix-'+flx_version+'/ChangeLog \\')
 @tangle('\t\tfelix-'+flx_version+'/lpsrc/*.ipk \\')
 @tangle('\t\tfelix-'+flx_version+'/lpsrc/*.pak \\')
-@tangle('\t\tfelix-'+flx_version+'/debian/* \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/*.py \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/bin/*.py \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/compilers/*.py \\')

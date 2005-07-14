@@ -1620,7 +1620,7 @@ and inner_typeofindex
   | `SYMDEF_cstruct (ls)
   | `SYMDEF_struct (ls) -> 
     (* ARGGG WHAT A MESS *)
-    let ts = map (fun (s,i) -> `AST_name (sr,s,[])) vs in
+    let ts = map (fun (s,i,_) -> `AST_name (sr,s,[])) vs in
     let ts = map bt ts in
   (*
   print_endline "inner_typeofindex: struct";
@@ -1869,7 +1869,8 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
         let ts = adjust_ts syms sr index ts in
         *)
         let t = bt sr t in
-        let t = try tsubst vs ts t with _ -> failwith "[lookup_qn_with_sig] WOOPS" in
+        let bvs = map (fun (s,i,tp) -> s,i) vs in
+        let t = try tsubst bvs ts t with _ -> failwith "[lookup_qn_with_sig] WOOPS" in
         begin match t with
         | `BTYP_function (a,b) ->
           if not (type_match syms.dfns a sign) then
@@ -2129,7 +2130,8 @@ and handle_variable syms env index id sr ts t t2 =
     let t = bt sr t in
     let ts = adjust_ts syms sr index ts in
     let vs = find_vs syms index in
-    let t = tsubst vs ts t in
+    let bvs = map (fun (s,i,tp) -> s,i) vs in
+    let t = tsubst bvs ts t in
     let t = match t with | `BTYP_lvalue t -> t | t -> t in
     begin match t with
     | `BTYP_function (d,c) ->

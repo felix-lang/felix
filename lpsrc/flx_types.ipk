@@ -230,7 +230,6 @@ followed by a square bracket enclosed list of type expressions.
 @select(h)
 type c_t = string     (* C++ code as a string *)
 type id_t = string
-type vs_list_t = (id_t * int) list
 type bid_t = int
 type index_map_t = (int,int) Hashtbl.t
 
@@ -331,6 +330,9 @@ and tpattern_t =
   |  `TPAT_as of tpattern_t * string
   |  `TPAT_any
   ]
+
+and vs_list_t = (id_t * tpattern_t) list
+and ivs_list_t = (id_t * int * tpattern_t) list
 
 @head(3,'Literals')
 Literals recognized by the lexer.
@@ -531,9 +533,9 @@ and statement_t =
   | `AST_private of range_srcref * statement_t
 
   (* definitions *)
-  | `AST_function of range_srcref * id_t * id_t list * parameter_t list * typecode_t * property_t list * statement_t list
-  | `AST_curry of range_srcref * id_t * id_t list * parameter_t list list * typecode_t * funkind_t * statement_t list
-  | `AST_object of range_srcref * id_t * id_t list * parameter_t list * statement_t list
+  | `AST_function of range_srcref * id_t * vs_list_t * parameter_t list * typecode_t * property_t list * statement_t list
+  | `AST_curry of range_srcref * id_t * vs_list_t * parameter_t list list * typecode_t * funkind_t * statement_t list
+  | `AST_object of range_srcref * id_t * vs_list_t * parameter_t list * statement_t list
   | `AST_regdef of range_srcref * string * regexp_t
   | `AST_glr of range_srcref * string * typecode_t * (range_srcref * production_t * expr_t) list
   
@@ -558,19 +560,19 @@ and statement_t =
   | `AST_macro_vfor of range_srcref * id_t * expr_t list * statement_t list
 
   (* types *)
-  | `AST_union of range_srcref * id_t * id_t list * (id_t * typecode_t) list
-  | `AST_struct of range_srcref * id_t * id_t list * (id_t * typecode_t) list
-  | `AST_cstruct of range_srcref * id_t * id_t list * (id_t * typecode_t) list
-  | `AST_type_alias of range_srcref * id_t * id_t list * typecode_t
-  | `AST_inherit of range_srcref * id_t * id_t list * qualified_name_t
-  | `AST_inherit_fun of range_srcref * id_t * id_t list * qualified_name_t
+  | `AST_union of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
+  | `AST_struct of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
+  | `AST_cstruct of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
+  | `AST_type_alias of range_srcref * id_t * vs_list_t * typecode_t
+  | `AST_inherit of range_srcref * id_t * vs_list_t * qualified_name_t
+  | `AST_inherit_fun of range_srcref * id_t * vs_list_t * qualified_name_t
 
   (* variables *)
-  | `AST_val_decl of range_srcref * id_t * id_t list * typecode_t option * expr_t option
-  | `AST_var_decl of range_srcref * id_t * id_t list * typecode_t option * expr_t option
+  | `AST_val_decl of range_srcref * id_t * vs_list_t * typecode_t option * expr_t option
+  | `AST_var_decl of range_srcref * id_t * vs_list_t * typecode_t option * expr_t option
  
   (* module system *)
-  | `AST_untyped_module of range_srcref * id_t * id_t list * statement_t list  
+  | `AST_untyped_module of range_srcref * id_t * vs_list_t * statement_t list  
  
   (* control structures: primitives *)
   | `AST_label of range_srcref * id_t
@@ -592,14 +594,14 @@ and statement_t =
   | `AST_nop of range_srcref * string
 
   (* binding structures [prolog] *)
-  | `AST_abs_decl of range_srcref * id_t * id_t list * type_qual_t list * expr_t * requirements_t
+  | `AST_abs_decl of range_srcref * id_t * vs_list_t * type_qual_t list * expr_t * requirements_t
   | `AST_ctypes of range_srcref * (srcref * id_t) list * type_qual_t list  * requirements_t 
-  | `AST_const_decl of range_srcref * id_t * id_t list * typecode_t * expr_t * requirements_t
-  | `AST_fun_decl of range_srcref * id_t * id_t list * typecode_t list * typecode_t * expr_t  * requirements_t * prec_t
+  | `AST_const_decl of range_srcref * id_t * vs_list_t * typecode_t * expr_t * requirements_t
+  | `AST_fun_decl of range_srcref * id_t * vs_list_t * typecode_t list * typecode_t * expr_t  * requirements_t * prec_t
 
   (* embedding *)
-  | `AST_header of range_srcref * id_t * id_t list * expr_t * requirements_t
-  | `AST_body of range_srcref * id_t * id_t list * expr_t * requirements_t
+  | `AST_header of range_srcref * id_t * vs_list_t * expr_t * requirements_t
+  | `AST_body of range_srcref * id_t * vs_list_t * expr_t * requirements_t
   | `AST_code of range_srcref * string
   | `AST_noreturn_code of range_srcref * string
 
@@ -715,7 +717,7 @@ and access_t = [`Private | `Public ]
 and asm_t = 
   
   | Exe of range_srcref * exe_t 
-  | Dcl of range_srcref * id_t * int option * access_t * id_t list * dcl_t 
+  | Dcl of range_srcref * id_t * int option * access_t * vs_list_t * dcl_t 
   | Iface of range_srcref * iface_t
   | Dir of range_srcref * dir_t
  
@@ -908,7 +910,7 @@ type symbol_data_t = {
   id:string;
   sr:range_srcref;
   parent:int option;
-  vs:vs_list_t;
+  vs:ivs_list_t;
   pubmap:name_map_t;
   privmap:name_map_t;
   dirs:dir_t list;
@@ -1664,7 +1666,9 @@ val tsbe:
   symbol_table_t -> 
   tbexpr_t -> 
   string
+
 val string_of_pattern : pattern_t -> string
+val string_of_tpattern : tpattern_t -> string
 val string_of_literal : literal_t -> string
 val string_of_parameters : parameter_t list -> string
 val string_of_arguments : expr_t list -> string
@@ -1673,7 +1677,7 @@ val string_of_compilation_unit : compilation_unit_t -> string
 val string_of_desugared : asm_t list -> string
 val string_of_suffixed_name : suffixed_name_t -> string
 val string_of_qualified_name : qualified_name_t -> string
-val string_of_dcl : int -> id_t -> int option -> id_t list -> dcl_t -> string
+val string_of_dcl : int -> id_t -> int option -> vs_list_t -> dcl_t -> string
 val string_of_bexe : symbol_table_t -> int -> bexe_t -> string
 val string_of_exe : int -> exe_t -> string
 val qualified_name_of_index : symbol_table_t -> int -> string
@@ -1684,7 +1688,7 @@ val string_of_bbdcl :
   string
 
 val string_of_symdef : 
-  symbol_definition_t -> string -> vs_list_t ->
+  symbol_definition_t -> string -> ivs_list_t ->
   string
 
 val string_of_entry_kind:
@@ -2353,13 +2357,21 @@ and string_of_macro_parameter_type = function
   | Ident -> "ident"
   | Stmt -> "proc"
  
-and print_vs = function
+and print_ixs = function
   | [] -> ""
-  | vs -> "[" ^ cat ", " vs ^ "]"
+  | ixs -> "[" ^ cat ", " ixs ^ "]"
+
+and string_of_maybe_tpattern = function
+  | `TPAT_any -> ""
+  | t -> ": " ^ string_of_tpattern t
 
 and print_ivs = function
   | [] -> ""
-  | vs -> "[" ^ cat ", " (map fst vs) ^ "]"
+  | vs -> "[" ^ cat ", " (map (fun (name,ix,tpat) -> name ^ string_of_maybe_tpattern tpat) vs) ^ "]"
+
+and print_vs = function
+  | [] -> ""
+  | vs -> "[" ^ cat ", " (map (fun (name,tpat) -> name ^ string_of_maybe_tpattern tpat) vs) ^ "]"
 
 and print_bvs = function
   | [] -> ""
@@ -2842,7 +2854,7 @@ and string_of_iface level s =
     spc ^ "export type (" ^ string_of_typecode flx_type ^ 
     ") as \"" ^ cpp_name ^ "\";"
 
-and string_of_symdef (entry:symbol_definition_t) name (vs:vs_list_t) 
+and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) 
 = match entry with
   | `SYMDEF_regdef re ->
     "regexp " ^ name ^ " = " ^ string_of_re re ^ ";\n"

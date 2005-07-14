@@ -906,6 +906,11 @@ fun str : lambda_t -> string =
   | lambda_5 ?c => "{ ... }" 
 ;
 
+fun str: dollar_apply_t -> string =
+  | dollar_apply_1 (?a,?b) => (str a) " (" (str b) ")"
+  | dollar_apply_2 ?x => str x
+;
+
 fun str : tuple_t -> string =
   | tuple_1 (?o,?t) => str o + str t
   | tuple_2 ?o => str o 
@@ -1139,6 +1144,18 @@ fun str :  basic_name_comma_list_t -> string =
         str name + ", " + str bncl
   | basic_name_comma_list_2 ?name => str name
   | basic_name_comma_list_3 => ""
+;
+
+fun str : tvar_t -> string =
+  | tvar_1 ?s => s
+  | tvar_2 (?s,_) => s
+;
+
+fun str :  tvar_comma_list_t -> string =
+  | tvar_comma_list_1 (?name,?bncl) => 
+        str name + ", " + str bncl
+  | tvar_comma_list_2 ?name => str name
+  | tvar_comma_list_3 => ""
 ;
 
 fun str : tvarlist_t -> string = 

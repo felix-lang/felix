@@ -60,7 +60,6 @@ Run time library Licence: Free for any use.
 
 @head(2,'Documentation')
 @select(tangler('debian/felix.docs','data'))
-VERSION
 htmlman/
 tut/doc/
 libdoc/
@@ -75,14 +74,6 @@ test/*.flx
   * Initial Release.
 
  -- John Skaller <skaller@users.sourceforge.net>  Fri, 27 May 2005 11:08:54 +1000
-
-@select(tangler('debian/README.debian','data'))
-Felix for Debian
-----------------
-
-Felix scripting harness.
-
- -- John Skaller <skaller@users.sourceforge.net>, Fri, 27 May 2005 11:08:54 +1000
 
 @select(tangler('debian/felix.doc-base.tools','data'))
 Document: felix-tools
@@ -187,9 +178,9 @@ usr/share/man/man1/flx.1.gz usr/share/man/man1/flx_elkhound.1.gz
 @tangle('build-stamp:  config-stamp')
 @tangle('\tdh_testdir')
 @tangle('\techo "************ MAKING FELIX SYSTEM ****************"')
-@tangle('\t$(MAKE) all.quiet')
+@tangle('\t$(MAKE) all')
 @tangle('\techo "************ MAKING FELIX DOCUMENTATION ****************"')
-@tangle('\t$(MAKE) doc.quiet')
+@tangle('\t$(MAKE) doc')
 @tangle('\ttouch build-stamp')
 @tangle('')
 @tangle('')
@@ -424,6 +415,11 @@ exit 0
 @tangle('felix_'+flx_version+'-'+debian_revision+'.dsc: felix_'+flx_version+'.orig.tar.gz')
 @tangle('\trm -rf felix-'+flx_version+' # remove source directory')
 @tangle('\ttar -zxvf felix_'+flx_version+'.orig.tar.gz # recreate source')
+@tangle('\t(cd felix-'+flx_version+' && ./configure && iscr lpsrc/flx_debian.pak && cp -r debian ..)')
+@tangle('\trm -rf felix-'+flx_version+' # remove source directory')
+@tangle('\ttar -zxvf felix_'+flx_version+'.orig.tar.gz # recreate source')
+@tangle('\tmv debian felix-'+flx_version)
+@tangle('\tchmod u+x felix-'+flx_version+'/debian/rules')
 @tangle('\tdpkg-source -b -sk felix-'+flx_version+' # build debian source package')
 @tangle('\trm -rf felix-'+flx_version+' # remove source directory')
 @tangle('\trm -rf felix-'+flx_version+'.orig # remove .orig source directory')
@@ -432,6 +428,11 @@ exit 0
 @tangle('felix_'+flx_version+'-'+debian_revision+'.deb: felix_'+flx_version+'.orig.tar.gz')
 @tangle('\trm -rf felix-'+flx_version+' # remove source directory')
 @tangle('\ttar -zxvf felix_'+flx_version+'.orig.tar.gz # recreate source')
+@tangle('\t(cd felix-'+flx_version+' && ./configure && iscr lpsrc/flx_debian.pak && cp -r debian ..)')
+@tangle('\trm -rf felix-'+flx_version+' # remove source directory')
+@tangle('\ttar -zxvf felix_'+flx_version+'.orig.tar.gz # recreate source')
+@tangle('\tmv debian felix-'+flx_version)
+@tangle('\tchmod u+x felix-'+flx_version+'/debian/rules')
 @tangle('\t(cd felix-'+flx_version+' && dpkg-buildpackage -rfakeroot -sd -us -uc)')
 @tangle('\trm -rf felix-'+flx_version+' # remove source directory')
 @tangle('')

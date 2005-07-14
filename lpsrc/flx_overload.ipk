@@ -145,13 +145,14 @@ let overload
     let base = !(syms.counter) in
     syms.counter := base + k + m;
     let lhs = map (fun i -> `BTYP_var (i+base)) (nlist (k + m)) in
-    let rhs = (map (fun (_,i) -> `BTYP_var i) pvs) @ ts in
+    let rhs = (map (fun (_,i,_) -> `BTYP_var i) pvs) @ ts in
     let eqns = combine (list_prefix lhs (k+n)) rhs in
 
     (* Step 2: convert t to use variables 0 to m-1 
       instead of those in vs
     *)
-    let t' = tsubst (pvs @ vs) lhs t in
+    let bvs = map (fun (s,i,tp) -> s,i) (pvs @ vs) in
+    let t' = tsubst bvs lhs t in
     let eqns = (t',sign) :: eqns in
     (*
     print_endline "EQUATIONS ARE:";
@@ -178,12 +179,17 @@ let overload
         | _ -> si (i+1) ^ "'th"
       in
       iter2
-      (fun (s,i) k ->
+      (fun (s,i,tp) k ->
+        let maybe_tp tp = match tp with
+          | `TPAT_any -> ""
+          | tp -> ": " ^ string_of_tpattern tp
+        in
         if not (mem_assoc (k+base) mgu)
         then clierr call_sr
         (
           "[resolve_overload] The " ^th k ^" subscript  " ^ s ^ "["^si i^"]" ^
           " of function " ^ id ^
+          maybe_tp tp ^ 
           " cannot be determined in this application:\n" ^
           "Try using an explicit subscript." ^
           "\nmgu=" ^ string_of_varlist syms.dfns mgu 
