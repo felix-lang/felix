@@ -3,7 +3,7 @@
 @print FLX_CONFIG_CVS_ID
 @flx_version_major = '1'
 @flx_version_minor = '1'
-@flx_version_patch = '0'
+@flx_version_patch = '1'
 @flx_version = flx_version_major+'.'+flx_version_minor+'.'+flx_version_patch
 @godi_revision = '0'
 @debian_revision = '1'
