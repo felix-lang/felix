@@ -3,7 +3,10 @@
 @print FLX_MAKER_CVS_ID
 
 @head(2,'CVS LOG')
-$log$
+$Log$
+Revision 1.117  2005/07/28 22:11:09  skaller
+Get log to work ..
+
 
 @head(2,'Utilities')
 Hack up the tutorial: phase 1 of conversion to texinfo format.
