@@ -9,7 +9,8 @@ BUGS, PROBLEMS ..
 Source: felix
 Section: devel
 Priority: optional
-Maintainer: John Skaller <skaller@users.sourceforge.net>
+Maintainer: Felix Language <felix-language@lists.sourceforge.net>
+Uploader: John Skaller <skaller@users.sourceforge.net>
 Build-Depends: debhelper (>= 4.0.0), python (>=2.0), ocaml-nox (>=3.08.3), ocaml-nox (<<3.08.4), ocaml-best-compilers, gnuplot (>=4.0), man2html (>=1.5), sed (>=4.1)
 Standards-Version: 3.6.1
 
@@ -32,10 +33,12 @@ usr/lib/felix/lib
 usr/lib/felix/rtl
 usr/include
 usr/share/doc/felix
+usr/share/doc/felix/tut
+usr/share/doc/felix/tut/doc
+usr/share/doc/felix/tut/examples
+usr/share/doc/felix/test
 usr/share/doc/felix/libdoc
-usr/share/doc/felix/examples
 usr/share/doc/felix/htmlman
-usr/share/doc/felix/doc
 usr/share/man/man1
 
 @select(tangler('debian/compat','data'))
@@ -59,15 +62,6 @@ for the full text of the licence.
 Run time library Licence: Free for any use.
 
 @head(2,'Documentation')
-@select(tangler('debian/felix.docs','data'))
-htmlman/
-tut/doc/
-libdoc/
-
-@select(tangler('debian/felix.examples','data'))
-tut/examples/*.flx
-test/*.flx
-
 @select(tangler('debian/changelog','data'))
 @tangle('felix ('+flx_version+'-'+debian_revision+') unstable; urgency=low')
 
@@ -77,9 +71,9 @@ test/*.flx
 
 @select(tangler('debian/felix.doc-base.tools','data'))
 Document: felix-tools
-Title: Debian Felix Tools summary
+Title: Felix Tools Summary
 Author: John Skaller
-Abstract: An tutorial on Felix language and toolkit.
+Abstract: Felix toolkit summary
 Section: main
 Format: HTML
 Index: /usr/share/doc/felix/htmlman/felix_1.html
@@ -87,13 +81,22 @@ Files: /usr/share/doc/felix/htmlman/*.html
 
 @select(tangler('debian/felix.doc-base.tut','data'))
 Document: felix-tutorial
-Title: Debian Felix Tutorial
+Title: Felix Tutorial
 Author: John Skaller
 Abstract: An tutorial on Felix language and toolkit.
 Section: main
 Format: HTML
 Index: /usr/share/doc/felix/tut/en_tutorial_top.html
 Files: /usr/share/doc/felix/tut/*.html
+
+@select(tangler('debian/felix.doc-base.tut_bind','data'))
+Document: felix-binding-tutorial
+Title: Felix C/C++ Interfacing Tutorial
+Author: John Skaller
+Abstract: An tutorial on Felix language and toolkit.
+Section: main
+Format: HTML
+Index: /usr/share/doc/felix/tut/en_tut_bind_top.html
 
 @select(tangler('debian/felix.doc-base.lib','data'))
 Document: felix-library
@@ -127,6 +130,12 @@ rtl/*.c usr/lib/felix/rtl
 rtl/*.cpp usr/lib/felix/rtl
 rtl/flx_run_static.o usr/lib/felix/rtl
 rtl/flx_run_dynamic.o usr/lib/felix/rtl
+htmlman/*.html usr/share/doc/felix/htmlman
+tut/doc/*.html usr/share/doc/felix/tut/doc
+tut/examples/*.flx usr/share/doc/felix/tut/examples
+test/*.flx usr/share/doc/felix/test
+test/flx_perf_drv1.cpp usr/share/doc/felix/test
+libdoc/*.html usr/share/doc/felix/libdoc
 
 @select(tangler('debian/felix.links','data'))
 usr/share/man/man1/flx.1.gz usr/share/man/man1/flxg.1.gz
@@ -404,7 +413,7 @@ esac
 
 exit 0
 
-@select(tangler('Makefile.debian_package_creator'))
+@select(tangler('Makefile.debian_package_creator','data'))
 @tangle("#THIS FILE MUST BE EXECUTED FROM THE PARENT DIRECTORY")
 @tangle('all: binary_package')
 @tangle('')

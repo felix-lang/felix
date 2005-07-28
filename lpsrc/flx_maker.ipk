@@ -2,6 +2,150 @@
 @FLX_MAKER_CVS_ID='$Id$'
 @print FLX_MAKER_CVS_ID
 
+Hack up the tutorial: phase 1 of conversion to texinfo format.
+@h = tangler('script/mktitut.sed','python')
+@select(h)
+s/@set_title('\(.*\)')/\\input texinfo\n@settitle \1/
+s/@head(1,'\(.*\)')/@node \1\n@chapter \1/
+s/@head(1,"\(.*\)")/@node \1\n@chapter \1/
+s/@head(2,'\(.*\)')/@node \1\n@section \1/
+s/@head(2,"\(.*\)")/@node \1\n@section \1/
+s/@head(3,'\(.*\)')/@node \1\n@subsection \1/
+s/@head(3,"\(.*\)")/@node \1\n@subsection \1/
+s/@p()//
+s/@select.*/@verbatim/
+s/@doc()/@end verbatim/
+s/@begin_displayed_code()/@verbatim/
+s/@end_displayed_code()/@end verbatim/
+s/@tdir =.*//
+s/@execfile.*//
+s/@h=//
+s/@begin_table("\(.*\)","\(.*\)","\(.*\)")/@multitable @columnfractions .33 .33 .33\n@headitem \1 @tab \2 @tab \3/
+s/@begin_table("\(.*\)","\(.*\)")/@multitable @columnfractions .5 .5\n@headitem \1 @tab \2/
+s/@end_table()/@end multitable/
+s/@table_row("\(.*\)","\(.*\)","\(.*\)")/@item \1 @tab \2 @tab \3/
+s/@table_row("\(.*\)","\(.*\)")/@item \1 @tab \2/
+s/\\uXXXX/@verb{ \\uXXXX }/
+s/\\UXXXXXXXX/@verb{ \\UXXXXXXXX }/
+s/\\\\, \\', \\", \\r, \\n, \\t, \\b, \\v, \\f/@verb{ \\\\, \\', \\", \\r, \\n, \\t, \\b, \\v, \\f }/
+s/'else {}'\./@verb{.else {}.}/
+s/"{" /@verb{ { }/
+s/"}" /@verb{ } }/
+@doc()
+Now phase 2, a python script. There are some caveats
+on what it can handle: it generates just one menu.
+@h = tangler('script/mktitut.py','python')
+@select(h)
+# modify an texinfo file to add a menu of all the nodes
+# read from stdin, write to stout
+import sys
+
+crap1 = """
+@@copying
+This manual is for Felix version 1.1.0. 
+Copyright @copyright{} 2005 John Skaller
+@@quotation
+All rights relinquished, you can do whatever you
+like with this manual.
+@@end quotation
+@@end copying
+
+@@titlepage
+@@title Felix Overview
+@@subtitle A quick guide to the basic ideas
+@@author John Skaller
+@@page
+@@vskip 0pt plus 1filll
+@@insertcopying
+@@end titlepage
+@@contents
+
+@@ifnottex
+"""
+
+crap2 = """
+@@top Overview
+
+@@insertcopying
+@@end ifnottex
+"""
+
+cache = []
+menu = []
+
+def nav(node):
+  for i in xrange(0,n):
+    if node == menu[i]:
+      if i == 0: prev = "Top"
+      else: prev = menu[i-1]
+      if i == n-1: next = "Top"
+      else: next = menu[i+1]
+      return next,prev
+
+flag = 0
+for line in sys.stdin:
+  if flag == 0:
+    if '@node ' == line[:6]:
+      node = line[6:-1]
+      flag = 1
+      cache.append(line)
+    else:
+      cache.append(line)
+  else:
+    if '@chapter' == line[:8]:
+      #print "chapter"
+      menu.append(node)
+    elif '@section' == line[:8]:
+      #print "section"
+      menu.append(node)
+    elif '@subsection' == line[:11]:
+      #print "subsection"
+      menu.append(node)
+    else:
+      print "ERROR, need chapter section or subsection here"
+      print "got ",line,
+      raise "error" 
+    cache.append('@section\n')
+    flag = 0
+  
+  
+n = len(menu)
+
+for line in cache:
+  if '@settitle' == line[:9]:
+    print '@setfilename ' + sys.argv[1] # the filename
+    print line,
+    print crap1
+    print "@node Top, "+menu[0]+", "+menu[n-1]+",(dir)"
+    print crap2
+    print '@menu'
+    for item in menu:
+      print "* " + item+":: "+item
+    print '@end menu'
+  elif '@node ' == line[:6]:
+    node = line[6:-1]
+    next,prev = nav(node)
+    print '@node '+node+', '+next+', '+prev+', Top'
+  else:
+    print line,
+print
+
+@doc()
+This is input to equiv-build, which makes
+a dummy ocaml-3.08.3 package to satisfy
+the debian package dependencies.
+@h = tangler('misc/ocaml-nox-3.08.3-equiv')
+@select(h)
+Source: ocaml-nox-3.08.3
+Section: devel
+Priority: optional
+Maintainer: John Skaller <skaller@users.sourceforge.net>
+Standards-Version: 3.6.1
+
+Package: ocaml-nox-3.08.3
+Architecture: any
+Description: hack to tell system 0caml3.08.3 is installed
+
 @h = tangler('script/fcount.py','python')
 @select(h)
 import glob
@@ -1619,6 +1763,74 @@ for l in f:
 f.close()
 
 
+@h = tangler('script/load_grammar','python')
+@select(h)
+# get ocamlyacc grammar and store as Python
+# the header part is between %{ and %}
+# the prelude is after that and before %%
+# then comes the grammar up to %% 
+# then the trailer
+
+import string
+import sys
+f = open(sys.argv[1])
+lines = [line for line in f]
+
+i = 0
+def upto(prefix=None):
+  global i
+  s = []
+  while 1:
+    line = f[i]
+    i = i + 1
+    if prefix == None and 
+      i == len(lines) or
+      prefix =- line[:len(prefix)]:
+      return s
+    s = s.append(line)
+  
+head = upto('%}')
+prelude = upto('%%')
+grammr = upto('%%')
+footer = upto()
+
+print "head:"
+print head
+print "prelude"
+print prelude
+print "body"
+print body
+print "footer"
+print footer
+sys.exit(0)
+
+start = 0
+count = 0
+for l in f:
+  if start:
+    if l[:2]=='%%': start=0
+    else:
+      out = ""
+      for ch in l:
+        if ch == '{': count+=1
+        elif ch == '}': count-=1
+        elif count == 0: out += ch
+      out = string.strip(out)
+      if out: 
+        if out[0]=='|': 
+          out = string.strip(out[1:])
+          if out=="": print "  | /* empty */"
+          else: print "  | "+out
+        elif out[-1]==':': 
+          print 
+          print out
+        elif out==';': pass
+        else: 
+          print out
+  elif l[:2]=='%%': start=1
+f.close()
+
+
 @h = tangler('script/maker','python')
 @select(h)
 #!/usr/bin/env python
@@ -2719,6 +2931,7 @@ We have no idea if it continues copying.
 @select(tangler('Makefile','data'))
 @tangle('CONFIG_ARGS=')
 @tangle('PREFIX='+PREFIX)
+@tangle('LIB_DIR=${PREFIX}/lib')
 @tangle('SHLIB_DIR=${PREFIX}/lib')
 @tangle('SHINC_DIR=${PREFIX}/include')
 @tangle('INSTALL_DIR=${PREFIX}/lib/felix')
@@ -3111,9 +3324,11 @@ We have no idea if it continues copying.
 @tangle('\t#"EXEC_DIR=${EXEC_DIR}"')
 @tangle('\t#"MAN_DIR=${MAN_DIR}"')
 @tangle('\t#"SHLIB_DIR=${SHLIB_DIR}"')
+@tangle('\t#"LIB_DIR=${LIB_DIR}"')
 @tangle('\t#"SHINC_DIR=${SHINC_DIR}"')
 @tangle('\tinstall -d ${MAN_DIR}')
 @tangle('\tinstall -d ${SHLIB_DIR}')
+@tangle('\tinstall -d ${LIB_DIR}')
 @tangle('\tinstall -d ${SHINC_DIR}')
 @tangle('\tinstall -d ${INSTALL_DIR}/lib')
 @tangle('\tinstall -d ${INSTALL_DIR}/rtl')
@@ -3127,11 +3342,13 @@ We have no idea if it continues copying.
 @tangle('\tinstall rtl/* ${INSTALL_DIR}/rtl')
 @if SUPPORT_STATIC_LINKAGE:
   tangle('\t'+RANLIB+' ${INSTALL_DIR}/rtl/libflx_static.a')
-  tangle('\tinstall rtl/libflx_static.a ${SHLIB_DIR}')
-  tangle('\t'+RANLIB+' ${SHLIB_DIR}/libflx_static.a')
+  tangle('\tinstall rtl/libflx_static.a ${LIB_DIR}')
+  tangle('\t'+RANLIB+' ${LIB_DIR}/libflx_static.a')
 @if SUPPORT_DYNAMIC_LOADING:
   tangle('\t'+RANLIB+' ${INSTALL_DIR}/rtl/libflx_dynamic.a')
-  tangle('\tinstall rtl/libflx_dymamic.so ${SHLIB_DIR}')
+  tangle('\tinstall rtl/libflx_dynamic.so.'+flx_version+' ${SHLIB_DIR}')
+  tangle('\tinstall rtl/libflx_dynamic.so.'+flx_version_major+' ${SHLIB_DIR}')
+  tangle('\tinstall rtl/libflx_dynamic.so ${SHLIB_DIR}')
   tangle('\tinstall rtl/libflx_dynamic.a ${SHLIB_DIR}')
   tangle('\t'+RANLIB+' ${SHLIB_DIR}/libflx_dynamic.a')
 @tangle('\t(install doc/* ${INSTALL_DIR}/doc || exit 0) > /dev/null 2>&1')
@@ -4041,6 +4258,8 @@ then
   FLXRUN="env LD_LIBRARY_PATH=./rtl:\"\$LD_LIBRARY_PATH\" ./bin/flx_run"
   FLXRTL="./rtl"
   FLXBIN="./bin"
+  FLXAR="./rtl"
+  FLXSHLIB="./rtl"
 else
   # Locate the felix installation
   prefix=""
@@ -4058,8 +4277,10 @@ else
   FLXG="$prefix/bin/flxg"
   FLXRUN="$prefix/bin/flx_run"
   FLXLIB="$prefix/lib/felix/lib"
-  FLXRTL="$prefix/lib/felix/rtl"
+  FLXRTL="$prefix/lib/felix/lib"
   FLXBIN="$prefix/bin"
+  FLXAR="$prefix/lib"
+  FLXSHLIB="$prefix/lib"
 fi
 if [ "$DEBUG" = "1" ]; then FLXRUN="$FLXRUN --debug"; fi
 STATIC_ENV=""
@@ -4143,7 +4364,7 @@ else
   if `echo $FCMD`
   then
     CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp -o $base.o"
-    LCMD="$CCLINK_STATIC $FLXRTL/flx_run_static.o $PKGS $cppos $base.o $FLXRTL/libflx_static.a -o $base"
+    LCMD="$CCLINK_STATIC $FLXRTL/flx_run_static.o $PKGS $cppos $base.o $FLXAR/libflx_static.a -o $base"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then

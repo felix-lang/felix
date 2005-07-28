@@ -984,6 +984,7 @@ if not refresh:
 # reclobber version details to this version
 @tangle("CONFIG_GENERATOR_CVS_ID='"+FLX_CONFIG_CVS_ID+"'")
 @tangle("flx_version = '"+flx_version+"'")
+@tangle("flx_version_major = '"+flx_version_major+"'")
 @tangle("godi_revision = '"+godi_revision+"'")
 @tangle("debian_revision = '"+debian_revision+"'")
 
@@ -994,10 +995,11 @@ for k in overrides.keys():
 
 print CONFIG_GENERATOR_CVS_ID
 print 'flx_version',flx_version
+print 'flx_version_major',flx_version_major
 print 'godi_revision',godi_revision
 print 'debian_revision',debian_revision
 
-FLX_SONAME = 'libflx_dynamic.so.'+flx_version[0:string.index(flx_version,'.')]
+FLX_SONAME = 'libflx_dynamic.so.'+flx_version_major
 
 
 def pr(f,x):
@@ -1174,6 +1176,7 @@ try:
   p(f,"CONFIG_GENERATOR_CVS_ID")
   p(f,"CONFIG_TIME")
   p(f,"flx_version")
+  p(f,"flx_version_major")
   p(f,"godi_revision")
   p(f,"debian_revision")
   p(f,"FLX_SONAME")

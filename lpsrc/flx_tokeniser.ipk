@@ -128,6 +128,9 @@ object
   val mutable current_token_index = 0
   initializer tokens  <- t; tokens_copy <- t
 
+  method token_peek (dummy :Lexing.lexbuf) =
+    List.hd tokens
+
   method token_src (dummy :Lexing.lexbuf) =
     let tmp = List.hd tokens in
     tokens <- List.tl tokens;
@@ -213,6 +216,7 @@ class tokeniser :
     val mutable tokens_copy : token list
     method report_syntax_error : unit
     method token_src : Lexing.lexbuf -> token
+    method token_peek : Lexing.lexbuf -> token
   end
 
 type 'a parser_t = 

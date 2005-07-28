@@ -184,6 +184,7 @@ let strterm sr s = `AST_literal (sr,`AST_string s)
 %type <Flx_ast.expr_t> qualified_name
 %type <Flx_ast.expr_t> expression
 %start expression
+%start statement
 
 %%
 

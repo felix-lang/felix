@@ -1693,11 +1693,15 @@ let format_time tm =
   si tm.Unix.tm_sec 
 ;;
 try
+  (* Time initialisation *)
   let compile_start = Unix.time () in
   let compile_start_gm = Unix.gmtime compile_start in
   let compile_start_local = Unix.localtime compile_start in
   let compile_start_gm_string = format_time compile_start_gm ^ " UTC" in
   let compile_start_local_string = format_time compile_start_local ^ " (local)" in
+
+
+  (* Argument parsing *)
   let argc = Array.length Sys.argv in
   if argc <= 1 
   then begin
@@ -1724,6 +1728,7 @@ try
   end
   ;
 
+ (* main filename processing *)
  let filename = 
     match get_key_value raw_options "" with
     | Some s -> s

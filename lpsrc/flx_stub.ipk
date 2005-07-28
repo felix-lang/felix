@@ -12,11 +12,44 @@ pe "STUB TEST PROGRAM"
 open Flx_ctypes
 open Flx_cexpr
 open Flx_ctype
+open List
 
 let raw_options = Flx_getopt.parse_options Sys.argv;;
 let compiler_options = Flx_flxopt.get_felix_options raw_options;;
 let syms = Flx_flxopt.make_syms compiler_options;;
 
+let input_file_name = Sys.argv.(1)
+;;
+
+let () = 
+  let pre_tokens =  Flx_pretok.pre_tokens_of_filename 
+    input_file_name 
+    (Filename.dirname input_file_name) 
+    [] 
+  in
+  Flx_tok.print_pre_tokens pre_tokens;
+  let tokens  = Flx_lex1.translate pre_tokens in
+  
+  (* strip EOF *)
+  let lexbuf = (Lexing.from_string "dummy" ) in
+  let toker = (new Flx_tok.tokeniser tokens) in
+  while toker#token_peek lexbuf != Flx_parse .ENDMARKER do
+    let x = 
+        try 
+          Flx_parse.statement
+          (toker#token_src) 
+          lexbuf
+        with _ -> begin
+          toker#report_syntax_error;
+          raise (Flx_exceptions.ParseError "Parsing String")
+        end
+    in 
+    print_endline (Flx_print.string_of_statement 0 x)
+  done;
+  print_endline "Parsed it"
+;;
+
+ (*
 let e1 =
   `Ce_infix ("*",
     `Ce_infix ("+",`Ce_atom "x",`Ce_atom "y"),
@@ -112,4 +145,5 @@ let u4 = Flx_maps.reduce_type u4 in
 print_endline ("u4="^Flx_print.string_of_btypecode syms.Flx_mtypes2.dfns u4);;
 
 
+*)
 
