@@ -1689,7 +1689,7 @@ def xqt(x):
   if result:
     raise MakeError
 
-ENV = 'env PATH=bin:$PATH LD_LIBRARY_PATH=rtl:$LD_LIBRARY_PATH '
+ENV = 'env PATH=bin:"$PATH" LD_LIBRARY_PATH=rtl:"$LD_LIBRARY_PATH" '
 def exqt(x): xqt(ENV+x)
 
 # used when a negative result is expected (return code is supposed to be nonzero)
@@ -2620,7 +2620,7 @@ try:
       for testfile in TESTS:
         basename = string.split(testfile,'.')[0]
         if LINK_MODEL == "dynamic":
-          testscript = "env LD_LIBRARY_PATH=./rtl:$LD_LIBRARY_PATH ./bin/flx_run ./"+basename+SHLX
+          testscript = "env LD_LIBRARY_PATH=./rtl:\"$LD_LIBRARY_PATH\" ./bin/flx_run ./"+basename+SHLX
         else:
           testscript = "./"+basename+SHLX
 
@@ -3996,7 +3996,7 @@ case "$arg" in
     base="`pwd`/$arg"
     ;;
   *)
-    for dir in `echo .:$PATH | sed 's/:/ /g'`
+    for dir in `echo .:"$PATH" | sed 's/:/ /g'`
     do
       dir=$dir
       if [ -r "$dir/$arg.so" -o -r "$dir/$arg.flx" ]
@@ -4036,15 +4036,15 @@ done
 if [ "$TESTMODE" = "1" ]
 then
   INCLUDE_DIR="./rtl"
-  FLXG="env PATH=./bin:\$PATH ./bin/flxg"
+  FLXG="env PATH=./bin:\"\$PATH\" ./bin/flxg"
   FLXLIB="./lib"
-  FLXRUN="env LD_LIBRARY_PATH=./rtl:\$LD_LIBRARY_PATH ./bin/flx_run"
+  FLXRUN="env LD_LIBRARY_PATH=./rtl:\"\$LD_LIBRARY_PATH\" ./bin/flx_run"
   FLXRTL="./rtl"
   FLXBIN="./bin"
 else
   # Locate the felix installation
   prefix=""
-  for dir in `echo $PATH | sed 's/:/ /g'`
+  for dir in `echo "$PATH" | sed 's/:/ /g'`
   do
     dir=$dir
     if [ -x "$dir/flxg" ]
@@ -4258,7 +4258,7 @@ MAKE_FLAGS=     PREFIX=${PREFIX}
 
 
 
-PATH:=          ${LOCALBASE}/bin:${PATH}
+PATH:=          ${LOCALBASE}/bin:"${PATH}"
 HAS_CONFIGURE = yes
 CONFIGURE_ARGS+= --prefix ${PREFIX}
 CONFIGURE_ENV+= ${BUILD_OCAMLFIND_ENV}
