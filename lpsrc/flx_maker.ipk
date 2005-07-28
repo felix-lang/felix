@@ -2,6 +2,10 @@
 @FLX_MAKER_CVS_ID='$Id$'
 @print FLX_MAKER_CVS_ID
 
+@head(2,'CVS LOG')
+$log$
+
+@head(2,'Utilities')
 Hack up the tutorial: phase 1 of conversion to texinfo format.
 @h = tangler('script/mktitut.sed','python')
 @select(h)
