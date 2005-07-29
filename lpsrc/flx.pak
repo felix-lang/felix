@@ -1,6 +1,6 @@
 @bc = begin_displayed_code
 @ec = end_displayed_code
-@execfile('config/config.py')
+@execfile('config'+os.sep+'config.py')
 @set_title('Felix '+flx_version)
 @head(1,'Purpose')
 Felix is a procedural language designed to implement
@@ -137,10 +137,13 @@ and thread frames at present).
 @head(2,'Configuration loader')
 There is a separate package "flx_config.pak" which should
 be used to create the configuration creator script.
+@import traceback
 @try:
-    execfile("config/flx_data.py")
+    execfile("config"+os.sep+"flx_data.py")
  except:
+    xt,xv,tb = sys.exc_info()
     print "ERROR IN config/config.py"
+    traceback.print_exception(xt,xv,tb)
     print "You must either"
     print "(a) edit config/config.py and fix the error, or,"
     print "(b) i) delete it, and,"
@@ -224,7 +227,7 @@ let version_data: version_data_t =
 Flx_version.version_data := version_data
 ;;
 
-@execfile('config/flx_data.py')
+@execfile('config'+os.sep+'flx_data.py')
 
 @head(2,'The front end')
 @push_head()

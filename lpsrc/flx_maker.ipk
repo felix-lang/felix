@@ -4,6 +4,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.118  2005/07/29 08:34:50  skaller
+Make config script a bit more platform independent by using os.sep,
+python filecopy routine replacing cp
+
 Revision 1.117  2005/07/28 22:11:09  skaller
 Get log to work ..
 
@@ -1456,7 +1460,8 @@ print "}"
 @select(h)
 import string
 import sys
-execfile ("config/flx_data.py")
+import os
+execfile ("config"+os.sep+"flx_data.py")
 ts ={}
 for k,t in flx_keywords: ts[t]=1
 for t,l in flx_1_char_syms: ts[t]=1
@@ -1850,12 +1855,14 @@ import stat
 import string
 import sys
 import re
-
+import traceback
 
 try:
-  execfile("config/config.py")
+  execfile("config"+os.sep+"config.py")
 except:
+  xt,xv,tb = sys.exc_info()
   print "ERROR IN config/config.py"
+  traceback.print_exception(xt,xv,tb)
   print "You must either"
   print "(a) edit config/config.py and fix the error, or,"
   print "(b) i) delete it, and,"

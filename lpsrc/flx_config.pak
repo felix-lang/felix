@@ -14,8 +14,9 @@
 # local system here
 
 @select(tangler('tmp/xlators.py','python'))
-execfile('speed/xlators_default.py')
-execfile('config/xlators_local.py')
+import os
+execfile('speed"+os.sep+"xlators_default.py')
+execfile('config"+os.sep+"xlators_local.py')
 
 # this table defines the actual translators
 # which the performance tester will use
@@ -431,8 +432,20 @@ def xxqt(x):
     raise Error
   else: print x
 
+#### THIS WILL NOT WORK ON WINDOWS
 def xqt(x): 
   xxqt(x + " >/dev/null 2>&1")
+
+def filecopy(a,b):
+  f = open(a)
+  g = open(b,"w")
+  g.write(f.read())
+  g.close()
+  f.close()
+
+def filecopy2dir(a,d):
+  base = string.split(a,os.sep)[-1]
+  filecopy(a,d+os.sep+base)
 
 #----------------------------------------
 time_stamp_format = "%Y/%m/%d %H:%M:%S UTC"
@@ -458,7 +471,7 @@ except: pass
 try: os.mkdir("htmlman")
 except: pass
 
-try: os.mkdir("tut/doc")
+try: os.mkdir("tut"+os.sep+"doc")
 except: pass
 
 def file_exists(f):
@@ -518,21 +531,21 @@ while(i < len (sys.argv)):
 
 if PREFIX=='': PREFIX=default_prefix
 
-if not file_exists("config/xlators_local.py"):
-  xqt('cp tmp/xlators_local.py config')
+if not file_exists("config"+os.sep+"xlators_local.py"):
+  filecopy2dir('tmp'+os.sep+'xlators_local.py','config')
   print "*** Created dummy local translator definitions for speed tests ***"
   print "   Edit config/xlators_local.py to suit your platform"
   print "   This file will never be clobbered, even on a reconfigure"
   print "   delete it to force reinstallation of the default"
 
-if not file_exists("config/xlators.py"):
-  xqt('cp tmp/xlators.py config')
+if not file_exists("config"+os.sep+"xlators.py"):
+  filecopy2dir("tmp"+os.sep+"xlators.py","config")
   print "*** Created new translator list for speed tests ***"
   print "   Edit config/xlators.py to suit your platform and testing needs"
   print "   This file will never be clobbered, even on a reconfigure"
   print "   delete it to force reinstallation of the default"
 
-if file_exists("config/config.py"):
+if file_exists("config"+os.sep+"config.py"):
   if force or upgrade:
     print "**** upgrading configuration"
   elif refresh:
@@ -557,13 +570,13 @@ else:
     print "**** creating new configuration"
 
 if force or refresh:
-  a = file_exists("config/speed_xlators.py")
-  b = file_exists("config/speed_xlators.py.old")
+  a = file_exists("config"+os.sep+"speed_xlators.py")
+  b = file_exists("config"+os.sep+"speed_xlators.py.old")
   if a and not b:
-    xqt('cp config/speed_xlators.py config/speed_xlators.py.old')
+    filecopy("config"+os.sep+"speed_xlators.py","config"+os.sep+"speed_xlators.py.old")
     print "*** Created config/speed_xlators.py.old"
 
-  xqt('cp tmp/speed_xlators.py.default config/speed_xlators.py')
+  filecopy('tmp'+os.sep+'speed_xlators.py.default','config'+os.sep+'speed_xlators.py')
   print "***Clobbered configuration for speed tests***"
   print "   Edit config/speed_xlators.py to suit your platform"
 
@@ -636,7 +649,7 @@ OCAML_INCLUDE_DIRECTORY= x[0][0:-1]
 
 # find if we have MSVC++
 try:
-  xqt("cl tmp/dummy.cxx /Fetmp/dummy_ms.exe")
+  xqt("cl tmp"+os.sep+"dummy.cxx "+os.sep+"Fetmp"+os.sep+"dummy_ms.exe")
   MSVC="cl "
   HAVE_MSVC = 1
 except:
@@ -645,7 +658,7 @@ except:
   
 # find if we have cpp
 try:
-  xqt("cpp tmp/dummyc.c tmp/dummy_cpp.out")
+  xqt("cpp tmp"+os.sep+"dummyc.c tmp"+os.sep+"dummy_cpp.out")
   CPP = "cpp " 
   HAVE_CPP = 1
 except:
@@ -653,7 +666,7 @@ except:
 
 # find if we have gcc
 try:
-  xqt("gcc -w -c tmp/dummyc.c -o tmp/dummy.o")
+  xqt("gcc -w -c tmp"+os.sep+"dummyc.c -o tmp"+os.sep+"dummy.o")
   GCC = "gcc " 
   HAVE_GCC = 1
 except:
@@ -661,7 +674,7 @@ except:
 
 # find if we have g++
 try:
-  xqt("g++ -w -c tmp/dummy.cxx -o tmp/dummy.o")
+  xqt("g++ -w -c tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
   GXX = "g++ " 
   HAVE_GXX = 1
 except:
@@ -669,8 +682,8 @@ except:
 
 # find if we have g++ on 32 bit x86 platform with named registers
 try:
-  xqt("g++ -w tmp/gxx_x86.cxx -o tmp/x86_check")
-  xqt('tmp/x86_check')
+  xqt("g++ -w tmp"+os.sep+"gxx_x86.cxx -o tmp"+os.sep+"x86_check")
+  xqt("tmp"+os.sep+"x86_check")
   HAVE_GXX_X86 = 1
 except:
   HAVE_GXX_X86 = 0
@@ -683,24 +696,24 @@ else:
 
 # find if we have g++ supporting computed jumps
 try:
-  xqt("g++ tmp/cgoto.cxx -o tmp/cgoto")
-  xqt("tmp/cgoto")
+  xqt("g++ tmp"+os.sep+"cgoto.cxx -o tmp"+os.sep+"cgoto")
+  xqt("tmp"+os.sep+"cgoto")
   HAVE_CGOTO = 1
 except:
   HAVE_CGOTO = 0
 
 # find if we have g++ supporting computed jumps and asm labels
 try:
-  xqt("g++ tmp/asm_labels.cxx -o tmp/asm_labels")
-  xqt("tmp/asm_labels")
+  xqt("g++ tmp"+os.sep+"asm_labels.cxx -o tmp"+os.sep+"asm_labels")
+  xqt("tmp"+os.sep+"asm_labels")
   HAVE_ASM_LABELS = 1
 except:
   HAVE_ASM_LABELS = 0
 
 # find if we have g++ supported ext/ with STL extensions
 try:
-  xqt("g++ tmp/gxx_hash.cxx -o tmp/gxx_hash")
-  xqt("tmp/gxx_hash")
+  xqt("g++ tmp"+os.sep+"gxx_hash.cxx -o tmp"+os.sep+"gxx_hash")
+  xqt("tmp"+os.sep+"gxx_hash")
   HAVE_STL_GNU_CXX = 1
 except:
   HAVE_STL_GNU_CXX = 0
@@ -708,7 +721,7 @@ except:
 
 # find if we have cc
 try:
-  xqt("cc -c tmp/dummyc.c -o tmp/dummy.o")
+  xqt("cc -c tmp"+os.sep+"dummyc.c -o tmp"+os.sep+"dummy.o")
   CC = "cc "
   HAVE_CC=1
 except:
@@ -716,7 +729,7 @@ except:
 
 # find if we have CC (not 'cc' but 'CC')
 try:
-  xqt("CC -c tmp/dummy.cxx -o tmp/dummy.o")
+  xqt("CC -c tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
   CCCC = "CC "
   HAVE_CCCC=1
 except:
@@ -743,14 +756,14 @@ if HAVE_GCC:
 
 # find if we have CYGWIN
 try:
-  xqt("g++ -w -c tmp/check_cygwin.cxx -o tmp/dummy.o")
+  xqt("g++ -w -c tmp"+os.sep+"check_cygwin.cxx -o tmp"+os.sep+"dummy.o")
   CYGWIN=1
 except:
   CYGWIN=0
 
 # find if we have static const init in class
 try:
-  xqt(CXX+" -w -c tmp/check_inclass.cxx -o tmp/dummy.o")
+  xqt(CXX+" -w -c tmp"+os.sep+"check_inclass.cxx -o tmp"+os.sep+"dummy.o")
   HAVE_INCLASS_MEMBER_INITIALIZATION=1
 except:
   HAVE_INCLASS_MEMBER_INITIALIZATION=0
@@ -813,27 +826,27 @@ CCLINK_STATIC = CXX  + "-w "
 #check if we can get dlopen to work without -ldl (BSD doesn't need)
 HAVE_DLOPEN = 0
 try:
-  xqt(CCOBJ_DLLIB+"tmp/dummy_lib.cxx -o tmp/dummy_lib.o")
-  xqt(CCOBJ_DLMAIN+"tmp/dummy_main.cxx -o tmp/dummy_main.o")
-  xqt(CCLINK_DLLIB+"tmp/dummy_lib.o -o tmp/dummy_lib.so")
-  xqt(CCLINK_DLMAIN+"tmp/dummy_main.o -o tmp/dlmain")
-  xqt("tmp/dlmain tmp/dummy_lib.so")
+  xqt(CCOBJ_DLLIB+"tmp"+os.sep+"dummy_lib.cxx -o tmp"+os.sep+"dummy_lib.o")
+  xqt(CCOBJ_DLMAIN+"tmp"+os.sep+"dummy_main.cxx -o tmp"+os.sep+"dummy_main.o")
+  xqt(CCLINK_DLLIB+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib.so")
+  xqt(CCLINK_DLMAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
+  xqt("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib.so")
   SUPPORT_DYNAMIC_LOADING = 1
   HAVE_DLOPEN = 1
 except:
   try: # nope, try with -ldl
     CCLINK_DLMAIN = CCLINK_DLMAIN + "-ldl "
-    xqt(CCLINK_DLMAIN+"tmp/dummy_main.o -o tmp/dlmain")
-    xqt("tmp/dlmain tmp/dummy_lib.so")
+    xqt(CCLINK_DLMAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
+    xqt("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib.so")
     HAVE_DLOPEN = 1
     SUPPORT_DYNAMIC_LOADING = 1
   except:
     try: #again with --shared
       CCLINK_DLLIB = CXX + "-w --shared "
       CCLINK_DLMAIN = CXX + "-w -Wl,-Bdynamic -ldl "
-      xqt(CCLINK_DLLIB+"tmp/dummy_lib.o -o tmp/dummy_lib.so")
-      xqt(CCLINK_DLMAIN+"tmp/dummy_main.o -o tmp/dlmain")
-      xqt("tmp/dlmain tmp/dummy_lib.so")
+      xqt(CCLINK_DLLIB+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib.so")
+      xqt(CCLINK_DLMAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
+      xqt("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib.so")
       HAVE_DLOPEN = 1
       SUPPORT_DYNAMIC_LOADING = 1
     except:
@@ -841,21 +854,21 @@ except:
 
 # see if we have strip
 try:
-  xqt("strip tmp/dummy.o")
+  xqt("strip tmp"+os.sep+"dummy.o")
   STRIP="strip"
 except:
   STRIP="#strip"
 
 # see if we have ar
 try:
-  xqt("ar -rc tmp/dummy.a tmp/dummy.o")
+  xqt("ar -rc tmp"+os.sep+"dummy.a tmp"+os.sep+"dummy.o")
   AR="ar -rc "
 except:
   AR="#ar -rc "
 
 # see if we have ranlib
 try:
-  xqt("ranlib tmp/dummy.a")
+  xqt("ranlib tmp"+os.sep+"dummy.a")
   RANLIB="ranlib "
 except:
   RANLIB="#ranlib "
@@ -865,70 +878,70 @@ try:
   xqt("iscr")
   ISCR="iscr "
 except:
-  ISCR='env PYTHONPATH=. python -O interscript/bin/iscr.py '
+  ISCR="env PYTHONPATH=. python -O interscript"+os.sep+"bin"+os.sep+"iscr.py "
 
 # find if we have BSD isnan in <cmath> (NAUGHTY!)
 try:
-  xqt(CXX+" -w -c tmp/dummy_nan.cxx -o tmp/dummy_nan.o")
+  xqt(CXX+" -w -c tmp"+os.sep+"dummy_nan.cxx -o tmp"+os.sep+"dummy_nan.o")
   HAVE_ISNAN_IN_CMATH=1
 except:
   HAVE_ISNAN_IN_CMATH=0
 
 # find if we have BSD isnanf in <ieeefp.h> (NAUGHTY!)
 try:
-  xqt(CXX+" -w -c tmp/dummy_nan2.cxx -o tmp/dummy_nan2.o")
+  xqt(CXX+" -w -c tmp"+os.sep+"dummy_nan2.cxx -o tmp"+os.sep+"dummy_nan2.o")
   HAVE_ISNANF_IN_IEEEFP=1
 except:
   HAVE_ISNANF_IN_IEEEFP=0
 
 # find if we have stdint.h
 try:
-  xqt(CXX+" -w -c tmp/dummy_stdint.cxx -o tmp/dummy_stdint.o")
+  xqt(CXX+" -w -c tmp"+os.sep+"dummy_stdint.cxx -o tmp"+os.sep+"dummy_stdint.o")
   HAVE_STDINT=1
 except:
   HAVE_STDINT=0
 
 # find sizes of ints
 try:
-  xqt(CXX+" -w tmp/intsizes.cxx -o tmp/intsizes")
-  xxqt("tmp/intsizes > tmp/intsizes.py")
-  execfile("tmp/intsizes.py")
+  xqt(CXX+" -w tmp"+os.sep+"intsizes.cxx -o tmp"+os.sep+"intsizes")
+  xxqt("tmp"+os.sep+"intsizes > tmp"+os.sep+"intsizes.py")
+  execfile("tmp"+os.sep+"intsizes.py")
 except:
   print "FATAL: can't determine sizes of ints"
   sys.exit(1)
   
 # find if we have long long
 try:
-  xqt(CXX+" -w tmp/longlong.cxx -o tmp/longlong")
-  xxqt("tmp/longlong >tmp/longlong.py")
-  execfile("tmp/longlong.py")
+  xqt(CXX+" -w tmp"+os.sep+"longlong.cxx -o tmp"+os.sep+"longlong")
+  xxqt("tmp"+os.sep+"longlong >tmp"+os.sep+"longlong.py")
+  execfile("tmp"+os.sep+"longlong.py")
   HAVE_LONGLONG=1
 except:
   HAVE_LONGLONG=0
 
 # find if we have long double
 try:
-  xqt(CXX+" -w tmp/longdouble.cxx -o tmp/longdouble")
-  xxqt("tmp/longdouble >tmp/longdouble.py")
-  execfile("tmp/longdouble.py")
+  xqt(CXX+" -w tmp"+os.sep+"longdouble.cxx -o tmp"+os.sep+"longdouble")
+  xxqt("tmp"+os.sep+"longdouble >tmp"+os.sep+"longdouble.py")
+  execfile("tmp"+os.sep+"longdouble.py")
   HAVE_LONGDOUBLE=1
 except:
   HAVE_LONGDOUBLE=0
 
 # find if we have _Bool
 try:
-  xqt(CC+" -w tmp/bool.c -o tmp/bool")
-  xxqt("tmp/bool >tmp/bool.py")
-  execfile("tmp/bool.py")
+  xqt(CC+" -w tmp"+os.sep+"bool.c -o tmp"+os.sep+"bool")
+  xxqt("tmp"+os.sep+"bool >tmp"+os.sep+"bool.py")
+  execfile("tmp"+os.sep+"bool.py")
   HAVE_CBOOL=1
 except:
   HAVE_CBOOL=0
 
 # find if we have _Complex
 try:
-  xqt("gcc -w tmp/complex.c -o tmp/complex")
-  xxqt("tmp/complex >tmp/complex.py")
-  execfile("tmp/complex.py")
+  xqt("gcc -w tmp"+os.sep+"complex.c -o tmp"+os.sep+"complex")
+  xxqt("tmp"+os.sep+"complex >tmp"+os.sep+"complex.py")
+  execfile("tmp"+os.sep+"complex.py")
   HAVE_COMPLEX=1
 except:
   HAVE_COMPLEX=0
@@ -978,7 +991,7 @@ print "ESTABLISHED DEFAULT CONFIGURATION"
 # attempt to clobber the configuration with old values
 if not refresh:
   try:
-    execfile("config/config.py")
+    execfile("config"+os.sep+"config.py")
   except: pass
 
 # reclobber version details to this version
@@ -1017,7 +1030,7 @@ def pne(f,s):
 cf_reg = []
 
 def copen(c):
-  f = "config/"+c+"_config.py"
+  f = "config"+os.sep+""+c+"_config.py"
   print "--------------------------"
   print "Creating "+f
   cf_reg.append(f)
@@ -1170,7 +1183,7 @@ try:
   f.close()
 
 
-  f = open("config/config.py","w")
+  f = open("config"+os.sep+"config.py","w")
   pr(f,'#'+CONFIG_TIME)
   pr(f,'#'+CONFIG_GENERATOR_CVS_ID)
   p(f,"CONFIG_GENERATOR_CVS_ID")
@@ -1192,16 +1205,17 @@ try:
   p(f,"PREFIX")
   f.close()
 except:
-  print "Unable to create config/config.py"
+  print "Unable to create config"+os.sep+"config.py"
   sys.exit(1)
 
-print "Created config/config.py"
+print "Created config"+os.sep+"config.py"
 print "Edit this file to set your preferences"
 print "This file will not be clobbered by the Felix build process"
 
 @h = tangler('config/flx_data.py')
 @select(h)
-execfile('config/config.py')
+import os
+execfile("config"+os.sep+"config.py")
 
 flx_keywords = [
     ("all", "ALL"),
