@@ -487,6 +487,10 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     let res = map (fun (rexp,e) -> rexp, me e) res in
     `AST_regmatch (sr,(me p1, me p2, res))
 
+  | `AST_string_regmatch (sr, (s, res)) -> 
+    let res = map (fun (rexp,e) -> rexp, me e) res in
+    `AST_string_regmatch (sr,(me s, res))
+
   | `AST_reglex (sr, (e1, e2, res)) -> 
     let res = map (fun (rexp,e) -> rexp, me e) res in
     `AST_reglex (sr,(me e1, me e2, res))

@@ -471,6 +471,34 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     rfun :: l1 @ l2 @ !dcls,
     `AST_apply(sr,(`AST_index(sr,fname,n),pp))
 
+  | `AST_string_regmatch (sr,(s,cls)) ->
+    let ssr = src_of_expr s in
+    let vix = seq() in
+    let vid = "_me_" ^ si vix in
+    let v = `AST_index(sr,vid,vix) in
+    let pa = `PAT_as (sr,`PAT_any sr,"_a") in
+    let pb = `PAT_as (sr,`PAT_any sr,"_b") in
+    let p = `PAT_tuple (sr,[pa;pb]) in
+    let a = `AST_name (sr,"_a",[]) in
+    let b = `AST_name (sr,"_b",[]) in
+    let lexmod = `AST_name(sr,"Lexer",[]) in
+    let sb = `AST_lookup(sr,(lexmod,"bounds",[])) in
+    let se = `AST_apply(sr,(sb,v)) in
+    let r =
+      `AST_letin (sr,(p,se,
+        `AST_regmatch (sr,(a,b,cls)))
+      )
+    in 
+      let l,x = rex r in
+      let d1 =  
+        Dcl (ssr,vid,Some vix,`Private,[], `DCL_var (`TYP_typeof(s)))
+      in 
+      let d2 =
+        Exe (ssr,`EXE_iinit ((vid, vix),s))
+      in
+      d1 :: d2 :: l, x
+
+
   | `AST_reglex (sr,(p1,p2,cls')) ->
     let dcls = ref [] in
     let cls = ref [] in

@@ -99,6 +99,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_superscript _  
   | `AST_match _  
   | `AST_regmatch _  
+  | `AST_string_regmatch _  
   | `AST_reglex _  
   | `AST_ellipsis _  
   | `AST_parse _  

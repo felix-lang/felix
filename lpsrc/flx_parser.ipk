@@ -1447,10 +1447,9 @@ regmatch_expr:
   | REGMATCH expr WITH regmatch_alternatives ENDMATCH
   {
     let sr = rstoken $1 $5 in
+    `AST_string_regmatch (sr,($2,$4))
+
     (*
-    let pa = `PAT_name (sr,"_a") in
-    let pb = `PAT_name (sr,"_b") in
-    *)
     let pa = `PAT_as (sr,`PAT_any sr,"_a") in
     let pb = `PAT_as (sr,`PAT_any sr,"_b") in
     let p = `PAT_tuple (sr,[pa;pb]) in
@@ -1462,6 +1461,7 @@ regmatch_expr:
     `AST_letin (sr,(p,se,
       `AST_regmatch (sr,(a,b,$4)))
     )
+    *)
   }
 
   | REGLEX expr TO expr WITH regmatch_alternatives ENDMATCH

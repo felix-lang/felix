@@ -892,7 +892,7 @@ fun lexit(start:iterator, finish:iterator):
 }
 
 
-val s = "A string 2 lex";
+var s = "A string 2 lex";
 val first = start_iterator s;
 val finish = end_iterator s;
 var current = first;
@@ -924,7 +924,7 @@ print "Lexer here"; endl;
 val xx = 1214;
 
 //val s = "A string is here == != @@ ";
-val s = Text_file::load("tut/examples/tut121b.flx");
+var s = Text_file::load("tut/examples/tut121b.flx");
 
 //print s; endl;
 

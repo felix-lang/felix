@@ -398,6 +398,7 @@ and expr_t =
   | `AST_sparse of range_srcref * expr_t * string * int list
 
   | `AST_regmatch of range_srcref * (expr_t * expr_t * (regexp_t * expr_t) list)
+  | `AST_string_regmatch of range_srcref * (expr_t * (regexp_t * expr_t) list)
   | `AST_reglex of range_srcref * (expr_t * expr_t * (regexp_t * expr_t) list)
   | `AST_typeof of range_srcref * expr_t
   | `AST_cond of range_srcref * (expr_t * expr_t * expr_t)
@@ -1104,6 +1105,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_parse _
   | `AST_sparse _
   | `AST_regmatch _
+  | `AST_string_regmatch _
   | `AST_reglex _ -> e
 
   | `AST_typeof (sr,x) -> `AST_typeof (sr,f x)
@@ -1471,6 +1473,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_sparse (s,_,_,_) 
   | `AST_type_match (s, _) 
   | `AST_regmatch (s, _) 
+  | `AST_string_regmatch (s, _) 
   | `AST_reglex (s, _) 
   | `AST_cond (s,_)
   | `AST_expr (s,_,_)
@@ -1951,6 +1954,19 @@ and string_of_expr (e:expr_t) =
 
   | `AST_regmatch (_,(p1,p2, ps)) ->
     "regmatch " ^ se p1 ^ " to " ^ se p2 ^ " with " ^
+    catmap "\n"
+    (fun (p,e')->
+      " | " ^
+      string_of_re p ^
+      " => " ^
+      string_of_expr e'
+    )
+    ps
+    ^
+    " endmatch"
+
+  | `AST_string_regmatch (_,(s, ps)) ->
+    "regmatch " ^ se s ^ " with " ^
     catmap "\n"
     (fun (p,e')->
       " | " ^

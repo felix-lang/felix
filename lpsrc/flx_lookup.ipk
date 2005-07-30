@@ -2943,7 +2943,8 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     | _ -> clierr sr "Expected variant constructor name in union dtor"
     end
 
-  | `AST_regmatch (sr,(p1,p2,cls)) ->
+  | `AST_string_regmatch (sr,_) 
+  | `AST_regmatch (sr,_) ->
     syserr sr
     (
       "[bind_expression] "  ^

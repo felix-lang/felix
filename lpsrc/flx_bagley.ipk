@@ -250,7 +250,7 @@ fun lexit (start:iterator, finish:iterator): iterator * string =>
 ;
 
 // hack so context_check won't crash (pre- and append space)
-val data = " " + Text_file::load(Text_file::stdin)+" ";
+var data = " " + Text_file::load(Text_file::stdin)+" ";
 first := Lexer::start_iterator data;
 finish := Lexer::end_iterator data;
 

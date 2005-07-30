@@ -1197,13 +1197,12 @@ module Assoc_list
 module Lexer
 {
   pod type iterator = "char const*";
-  fun start_iterator : string -> iterator = "$1.data()";
-  fun end_iterator: string -> iterator = "$1.data()+$1.size()";
-  fun bounds (x:string): iterator * iterator = {
-    var y = x;
+  fun start_iterator : lvalue[string] -> iterator = "$1.data()";
+  fun end_iterator: lvalue[string] -> iterator = "$1.data()+$1.size()";
+  fun bounds (x:lvalue[string]): iterator * iterator = {
     return 
-      start_iterator y,
-      end_iterator y
+      start_iterator x,
+      end_iterator x
     ;
   }
   fun string_between: iterator * iterator -> string =
