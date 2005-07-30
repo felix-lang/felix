@@ -1194,7 +1194,7 @@ try:
   p(f,"debian_revision")
   p(f,"FLX_SONAME")
   for fn in cf_reg:
-    pr(f,"execfile('"+fn+"')")
+    pr(f,"execfile("+repr(fn)+")")
 
   pr(f,"")
   pr(f,"#User configurable section")
