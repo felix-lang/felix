@@ -15,8 +15,8 @@
 
 @select(tangler('tmp/xlators.py','python'))
 import os
-execfile('speed"+os.sep+"xlators_default.py')
-execfile('config"+os.sep+"xlators_local.py')
+execfile('speed'+os.sep+'xlators_default.py')
+execfile('config'+os.sep+'xlators_local.py')
 
 # this table defines the actual translators
 # which the performance tester will use

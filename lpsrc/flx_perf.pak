@@ -611,21 +611,25 @@ while time.time() - start_time < max_test_time:
   # overtime
   if elapsed > maxtime: 
     lst = n - 1 
+    if lst < fst: fst = lst
     print 'CUT lst to',lst
 
   # undertime
   elif elapsed < mintime: 
     fst = n + 1
+    if lst < fst: lst = fst
     print 'BOOSTED fst to',fst
 
   #minimum n too high
   elif n == fst:
     fst = fst - 1
+    if lst < fst: lst = fst
     print "BUMPED fst down to",fst
 
   # maximum n too low
   elif n == lst:
     lst = lst + 1
+    if lst < fst: fst = lst
     print "BUMPED lst up to",lst
     
   if lst < 1: lst = 1
