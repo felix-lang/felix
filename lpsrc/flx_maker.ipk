@@ -4,6 +4,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.119  2005/08/01 07:54:26  skaller
+Fixed PATH with spaces problem (however more related problems with
+other variables such as include paths probably remain)
+
 Revision 1.118  2005/07/29 08:34:50  skaller
 Make config script a bit more platform independent by using os.sep,
 python filecopy routine replacing cp
@@ -4345,7 +4349,7 @@ if [ $STATIC = 0 ]
 then
   FCMD="$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"
   if [ $ECHO = 1 ]; then echo "$FCMD"; fi
-  if `echo $FCMD`
+  if eval $FCMD
   then
     CCMD="$CCOBJ_DLLIB $CCFLAGS -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp -o $base.o"
     LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base.o -o $base.so"
@@ -4375,7 +4379,7 @@ then
 else
   FCMD="$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"
   if [ $ECHO = 1 ]; then echo "$FCMD"; fi
-  if `echo $FCMD`
+  if eval $FCMD
   then
     CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp -o $base.o"
     LCMD="$CCLINK_STATIC $FLXRTL/flx_run_static.o $PKGS $cppos $base.o $FLXAR/libflx_static.a -o $base"
