@@ -573,22 +573,22 @@ done;
 include "std";
 
 print "Starting .. "; endl;
-Dynlink::run_lib("./test/rt02.so");
-Dynlink::run_lib("./test/rt04.so");
-Dynlink::run_lib("./test/rt05.so");
-Dynlink::run_lib("./test/rt07.so");
-Dynlink::run_lib("./test/rt08.so");
-Dynlink::run_lib("./test/rt09.so");
-Dynlink::run_lib("./test/rt10.so");
-Dynlink::run_lib("./test/rt11.so");
-Dynlink::run_lib("./test/rt12.so");
-Dynlink::run_lib("./test/rt13.so");
-Dynlink::run_lib("./test/rt14.so");
-Dynlink::run_lib("./test/rt15.so");
-Dynlink::run_lib("./test/rt16.so");
-Dynlink::run_lib("./test/rt17.so");
-Dynlink::run_lib("./test/rt18.so");
-Dynlink::run_lib("./test/rt19.so");
+@tangle('Dynlink::run_lib("./test/rt02'+EXT_SHARED+'");')
+@tangle('Dynlink::run_lib("./test/rt04'+EXT_SHARED+'");')
+@tangle('Dynlink::run_lib("./test/rt05'+EXT_SHARED+'");')
+@tangle('Dynlink::run_lib("./test/rt07'+EXT_SHARED+'");')
+@tangle('Dynlink::run_lib("./test/rt08'+EXT_SHARED+'");')
+@tangle('Dynlink::run_lib("./test/rt09'+EXT_SHARED+'");')
+@tangle('Dynlink::run_lib("./test/rt10'+EXT_SHARED+'");')
+@tangle('Dynlink::run_lib("./test/rt11'+EXT_SHARED+'");')
+@tangle('Dynlink::run_lib("./test/rt12'+EXT_SHARED+'");')
+@tangle('Dynlink::run_lib("./test/rt13'+EXT_SHARED+'");')
+@tangle('Dynlink::run_lib("./test/rt14'+EXT_SHARED+'");')
+@tangle('Dynlink::run_lib("./test/rt15'+EXT_SHARED+'");')
+@tangle('Dynlink::run_lib("./test/rt16'+EXT_SHARED+'");')
+@tangle('Dynlink::run_lib("./test/rt17'+EXT_SHARED+'");')
+@tangle('Dynlink::run_lib("./test/rt18'+EXT_SHARED+'");')
+@tangle('Dynlink::run_lib("./test/rt19'+EXT_SHARED+'");')
 print "Its run"; endl;
 
 @head(2,'Bad tests')

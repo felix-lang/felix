@@ -114,6 +114,12 @@ T &reinterpret(U const &x) {
 #define FLX_CGOTO
 #endif
 
+#if defined(__CYGWIN__) || defined(_WIN32)
+#define FLX_EXPORT __declspec(dllexport)
+#else
+#define FLX_EXPORT
+#endif
+
 #ifdef HAVE_GXX
 #define FLX_ALWAYS_INLINE __attribute__ ((always_inline))
 #define FLX_NOINLINE __attribute__ ((noinline))
@@ -357,7 +363,7 @@ extern "C" thread_frame_t *create_thread_frame(\
 }
 #else
 #define FLX_FRAME_WRAPPERS \
-extern "C" thread_frame_t *create_thread_frame(\
+extern "C" FLX_EXPORT thread_frame_t *create_thread_frame(\
   collector_t *gc\
 ) {\
   thread_frame_t *p = new(*gc,thread_frame_t_ptr_map) thread_frame_t(gc);\
@@ -391,7 +397,7 @@ extern "C" con_t *flx_start(\
 }
 #else 
 #define FLX_START_WRAPPER(x)\
-extern "C" con_t *flx_start(\
+extern "C" FLX_EXPORT con_t *flx_start(\
   thread_frame_t *ptf,\
   int argc,\
   char **argv\

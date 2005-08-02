@@ -100,8 +100,8 @@ extern "C" int fred(int,char*[]) { return 0; }
 #include <dlfcn.h>
 #include <stdlib.h>
 
-int main(int,char*[]) { 
-   void *lib = dlopen("tmp/dummy_lib.so",RTLD_NOW);
+int main(int,char*argv[]) { 
+   void *lib = dlopen(argv[1],RTLD_NOW);
    if(!lib) exit(1);
    void *fred = dlsym(lib,"fred");
    if(!fred) exit(1);
@@ -647,14 +647,18 @@ OCAML_INCLUDE_DIRECTORY= x[0][0:-1]
 #---------------------------------------------------
 # Discover C/C++ compilers, linker, and other 'binutils'
 
-# find if we have MSVC++
-try:
-  xqt("cl tmp"+os.sep+"dummy.cxx "+os.sep+"Fetmp"+os.sep+"dummy_ms.exe")
-  MSVC="cl "
-  HAVE_MSVC = 1
-except:
-  MSVC="#cl "
-  HAVE_MSVC = 0
+## find if we have MSVC++
+#try:
+#  xqt("cl tmp"+os.sep+"dummy.cxx "+os.sep+"Fetmp"+os.sep+"dummy_ms.exe")
+#  MSVC="cl "
+#  HAVE_MSVC = 1
+#except:
+#  MSVC="#cl "
+#  HAVE_MSVC = 0
+
+# or rather don't, because it breaks stuff at the moment
+MSVC="#cl "
+HAVE_MSVC = 0
   
 # find if we have cpp
 try:
@@ -805,11 +809,13 @@ if HAVE_PKGCONFIG:
 FORCE_DEBUG=""
 
 if CYGWIN:
+  EXT_SHARED = ".dll"
   CCOBJ_DLLIB = CXX + "-w "+FORCE_DEBUG+"-c "
   CCOBJ_DLMAIN = CXX + "-w "+FORCE_DEBUG+"-c "
-  CCLINK_DLLIB = CXX + "-w -Wl,-shared -Wl,--export-all-symbols -Wl,--enable-auto-import "
+  CCLINK_DLLIB = CXX + "-w -shared -Wl,--export-all-symbols -Wl,--enable-auto-import "
   CCLINK_DLMAIN = CXX + "-w "
 else:
+  EXT_SHARED = ".so"
   CCOBJ_DLLIB = CXX + "-w "+FORCE_DEBUG+"-fPIC -D_REENTRANT -c "
   CCOBJ_DLMAIN = CXX + "-w "+FORCE_DEBUG+"-fPIC -D_REENTRANT -c "
 #  CCLINK_DLLIB = CXX + "-w -Wl,-shared -Wl,--export-dynamic "
@@ -828,25 +834,25 @@ HAVE_DLOPEN = 0
 try:
   xqt(CCOBJ_DLLIB+"tmp"+os.sep+"dummy_lib.cxx -o tmp"+os.sep+"dummy_lib.o")
   xqt(CCOBJ_DLMAIN+"tmp"+os.sep+"dummy_main.cxx -o tmp"+os.sep+"dummy_main.o")
-  xqt(CCLINK_DLLIB+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib.so")
+  xqt(CCLINK_DLLIB+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib"+EXT_SHARED)
   xqt(CCLINK_DLMAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
-  xqt("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib.so")
+  xqt("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+EXT_SHARED)
   SUPPORT_DYNAMIC_LOADING = 1
   HAVE_DLOPEN = 1
 except:
   try: # nope, try with -ldl
     CCLINK_DLMAIN = CCLINK_DLMAIN + "-ldl "
     xqt(CCLINK_DLMAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
-    xqt("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib.so")
+    xqt("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+EXT_SHARED)
     HAVE_DLOPEN = 1
     SUPPORT_DYNAMIC_LOADING = 1
   except:
     try: #again with --shared
       CCLINK_DLLIB = CXX + "-w --shared "
       CCLINK_DLMAIN = CXX + "-w -Wl,-Bdynamic -ldl "
-      xqt(CCLINK_DLLIB+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib.so")
+      xqt(CCLINK_DLLIB+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib"+EXT_SHARED)
       xqt(CCLINK_DLMAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
-      xqt("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib.so")
+      xqt("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+EXT_SHARED)
       HAVE_DLOPEN = 1
       SUPPORT_DYNAMIC_LOADING = 1
     except:
@@ -1012,6 +1018,7 @@ print 'flx_version_major',flx_version_major
 print 'godi_revision',godi_revision
 print 'debian_revision',debian_revision
 
+# Not used in Cygwin
 FLX_SONAME = 'libflx_dynamic.so.'+flx_version_major
 
 
@@ -1136,6 +1143,7 @@ try:
   p(f,"HAVE_INCLASS_MEMBER_INITIALIZATION")
   p(f,"HAVE_PKGCONFIG")
   p(f,"HAVE_DLOPEN")
+  p(f,"EXT_SHARED")
   p(f,"CXX")
   p(f,"CPP")
   p(f,"FLXCC_CPP")

@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.121  2005/08/02 17:15:15  haeleth
+Dynamic loading for Cygwin
+
 Revision 1.120  2005/08/02 16:09:40  skaller
 Add FLX_EXPORT to exported function declarations.
 
@@ -2074,10 +2077,7 @@ CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + "-DFLX_STATIC_LINK "
 CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-DFLX_STATIC_LINK "
 
 if LINK_MODEL == "dynamic":
-  if CYGWIN:
-    SHLX = ".dll"
-  else:
-    SHLX = ".so"
+  SHLX = EXT_SHARED
 else:
   SHLX = ""
 
@@ -4004,7 +4004,7 @@ echo $cmd
 
 @head(1,'Run script')
 @select(tangler('bin/flx','data'))
-#!/bin/bash
+#!/usr/bin/env bash
 # flx - felix script harness
 
 # g++ compilation string

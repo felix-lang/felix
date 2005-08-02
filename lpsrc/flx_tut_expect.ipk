@@ -1858,7 +1858,7 @@ dead
 @head(2,"tut/examples/tut301.expect")
 @select(tangler("tut/examples/tut301.expect","data"))
 argc=1
-0->./tut/examples/tut301.so
+@tangle("0->./tut/examples/tut301"+EXT_SHARED)
 @head(2,"tut/examples/tut302.expect")
 @select(tangler("tut/examples/tut302.expect","data"))
 1

@@ -293,7 +293,9 @@ header iostream = "#include <iostream>";
 header cmath = """
 #include <cmath>
 #ifdef HAVE_ISNANF_IN_IEEEFP
+extern "C" {
 #include <ieeefp.h>
+}
 #endif
 """;
 
