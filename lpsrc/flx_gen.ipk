@@ -1544,7 +1544,7 @@ let gen_biface_header syms bbdfns biface = match biface with
 
       "//EXPORT FUNCTION " ^ cpp_instance_name syms bbdfns index [] ^ 
       " as " ^ export_name ^ "\n" ^
-      "extern \"C\" " ^ rettypename ^" " ^ export_name ^ "(\n" ^ arglist ^ "\n);\n"
+      "extern \"C\" FLX_EXPORT " ^ rettypename ^" " ^ export_name ^ "(\n" ^ arglist ^ "\n);\n"
 
     | `BBDCL_procedure (props,vs,ps, _) ->
       let display = get_display_list bbdfns index in
@@ -1564,7 +1564,7 @@ let gen_biface_header syms bbdfns biface = match biface with
       
       "//EXPORT PROCEDURE " ^ cpp_instance_name syms bbdfns index [] ^ 
       " as " ^ export_name ^ "\n" ^
-      "extern \"C\" con_t * "  ^ export_name ^ "(\n" ^ arglist ^ "\n);\n"
+      "extern \"C\" FLX_EXPORT con_t * "  ^ export_name ^ "(\n" ^ arglist ^ "\n);\n"
   
     | _ -> failwith "Not implemented: export non-function/procedure"
     end

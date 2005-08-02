@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.120  2005/08/02 16:09:40  skaller
+Add FLX_EXPORT to exported function declarations.
+
 Revision 1.119  2005/08/01 07:54:26  skaller
 Fixed PATH with spaces problem (however more related problems with
 other variables such as include paths probably remain)
@@ -4000,7 +4003,7 @@ echo $cmd
 `$cmd`
 
 @head(1,'Run script')
-@select(tangler('bin/flx'))
+@select(tangler('bin/flx','data'))
 #!/bin/bash
 # flx - felix script harness
 

@@ -543,6 +543,31 @@ proc f(g:int->void) { var x=1; g x; }
 proc g(x:int) { }
 f g of (int);
 
+@select(tangler('test/rt21.flx'))
+// contrib by Valery, mod by Skaller
+include "std";
+
+// emulate command line arguments
+arguments := "--test", "words", "more words";
+argc := 3;
+fun argv (i:int):string =>
+  match i with
+  | 0 .. 2 => arguments.[i]
+  | _ => ""
+  endmatch
+;
+ 
+var i = 0;
+whilst i < argc do
+  print "checking arg "; print i; print "="; print (argv i); endl;
+  regmatch (argv i) with
+  | "--test" => { print "test"; endl; }
+  | _*       => { print "terminating"; endl; i = argc; }
+  endmatch;
+  i++;
+done;
+
+
 @select(tangler('test/drt1.flx'))
 // plugin loader test
 include "std";

@@ -111,6 +111,12 @@ ONE
 1
 @head(2,"test/rt20.expect")
 @select(tangler("test/rt20.expect","data"))
+@head(2,"test/rt21.expect")
+@select(tangler("test/rt21.expect","data"))
+checking arg 0=--test
+test
+checking arg 1=words
+terminating
 @head(2,"test/drt1.expect")
 @select(tangler("test/drt1.expect","data"))
 Starting .. 
