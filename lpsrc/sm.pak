@@ -14596,6 +14596,7 @@ int main()
 #include <unistd.h>     // select
 #include <stdio.h>      // perror
 #include <sys/select.h> // FD_ZERO etc
+#include <string.h>     // required for bzero in FreeBSD 4, Darwin 6, etc.
 
 int writeAll(int fd, void const *buf, int len)
 {
