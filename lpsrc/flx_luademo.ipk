@@ -930,7 +930,7 @@ open Lua_parse;
 
 filename := System::argv 1;
 
-data:= Text_file::load filename;
+var data = Text_file::load filename;
 use Lexer::eq;
 
 var start = Lexer::start_iterator data;
