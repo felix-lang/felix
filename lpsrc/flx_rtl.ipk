@@ -533,9 +533,22 @@ or even constants which require dynamic initialisation.
 #include <string>
 using namespace std;
 
+// define the type of a library handle: needed even for static linkage
+#ifdef _WIN32
+#include <windows.h>
+typedef HMODULE LIBHANDLE;
+#else
+typedef void *LIBHANDLE;
+#endif
+
 #ifndef FLX_STATIC_LINK
+#ifdef _WIN32
+#define DLSYM(x,y) GetProcAddress(x,#y) 
+#else
 #include <dlfcn.h>
 #define DLSYM(x,y) dlsym(x,#y)
+#endif
+
 #else
 #define DLSYM(x,y) (void*)&y
 #endif
@@ -591,7 +604,7 @@ typedef con_t *(*start_t)
 struct flx_dynlink_t
 {
   // data
-  void *library;
+  LIBHANDLE library;
   thread_frame_creator_t thread_frame_creator;
   start_t start_sym;
   long refcnt;
@@ -664,9 +677,16 @@ void flx_dynlink_t::link(char const *filename) throw(flx_link_failure_t)
 {
 
 #ifndef FLX_STATIC_LINK
+#ifdef _WIN32
+  SetErrorMode(SEM_NOOPENFILEERRORBOX);
+  library = LoadLibrary(filename);
+  if(!library) 
+    throw flx_link_failure_t(filename,"LoadLibrary","Cannot find dll");
+#else
   library = dlopen(filename,RTLD_NOW);
   if(!library) 
     throw flx_link_failure_t(filename,"dlopen",dlerror());
+#endif
 #endif
 
   //fprintf(stderr,"File %s dlopened at %p ok\n",filename,library);
@@ -705,7 +725,11 @@ void flx_dynlink_t::unlink()
   if(refcnt == 0) {
     //fprintf(stderr,"closing library\n");
 #ifndef FLX_STATIC_LINK
+#ifdef _WIN32
+   FreeLibrary(library);
+#else
     dlclose(library);
+#endif
 #endif
   }
 }

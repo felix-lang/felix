@@ -2618,8 +2618,9 @@ bool limitFileAccess(char const *fname);
 // is to return something that can be used to correlate log output
 // from (say) sftpd with log output from some other source (syslog,
 // or NT event viewer, etc.)
+#if 0
 int getProcessId();
-
+#endif
 
 // create a new directory; returns false on error;
 // precise naming semantics, such as use
@@ -14262,13 +14263,12 @@ int main()
 #include <sys/types.h>  // select
 #include <unistd.h>     // select
 #include <stdio.h>      // perror
+
+// SKIP ALL OF THIS NOW, not using canRead
 #if 0
 #include <sys/select.h> // FD_ZERO etc
-<<<<<<< sm.pak
-#endif
-=======
 #include <string.h>     // required for bzero in FreeBSD 4, Darwin 6, etc.
->>>>>>> 1.7
+#endif
 
 int writeAll(int fd, void const *buf, int len)
 {
@@ -17260,6 +17260,7 @@ unsigned getSystemCryptoRandom()
 }
 
 
+#if 0
 int getProcessId()
 {
   #ifdef __UNIX__
@@ -17270,7 +17271,7 @@ int getProcessId()
 
   #endif
 }
-
+#endif
 
 // do we have access to C99 vsnprintf?
 #if defined(__GLIBC__) && defined(__GLIBC_MINOR__)

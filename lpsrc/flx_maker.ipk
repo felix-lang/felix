@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.122  2005/08/05 03:10:29  skaller
+Cleaned up sm.pak so __UNIX__ flag no longer needed
+
 Revision 1.121  2005/08/02 17:15:15  haeleth
 Dynamic loading for Cygwin
 
@@ -328,8 +331,8 @@ sm_files = [
   'hashtbl.h',
   'macros.h',
   'missing.h',
-  'mypopen.h',
-  'mysig.h',
+#  'mypopen.h',
+#  'mysig.h',
   'nonport.h',
   'objlist.h',
   'objpool.h',
@@ -343,7 +346,7 @@ sm_files = [
   'pprint.h',
   'ptrmap.h',
   'sm_flexlexer.h',
-  'smregexp.h',
+#  'smregexp.h',
   'sobjlist.h',
   'sobjset.h',
   'sobjstack.h',
@@ -382,11 +385,11 @@ sm_files = [
   'growbuf.cc',
   'hashline.cc',
   'hashtbl.cc',
-  'mypopen.c',
-  'mysig.cc',
+#  'mypopen.c',
+#  'mysig.cc',
   'point.cc',
   'pprint.cc',
-  'smregexp.cc',
+#  'smregexp.cc',
   'srcloc.cc',
   'strdict.cc',
   'strhash.cc',
@@ -496,8 +499,8 @@ sm_files = [
   'hashtbl.h',
   'macros.h',
   'missing.h',
-  'mypopen.h',
-  'mysig.h',
+#  'mypopen.h',
+#  'mysig.h',
   'nonport.h',
   'objlist.h',
   'objpool.h',
@@ -511,7 +514,7 @@ sm_files = [
   'pprint.h',
   'ptrmap.h',
   'sm_flexlexer.h',
-  'smregexp.h',
+#  'smregexp.h',
   'sobjlist.h',
   'sobjset.h',
   'sobjstack.h',
@@ -550,11 +553,11 @@ sm_files = [
   'growbuf.cc',
   'hashline.cc',
   'hashtbl.cc',
-  'mypopen.c',
-  'mysig.cc',
+#  'mypopen.c',
+#  'mysig.cc',
   'point.cc',
   'pprint.cc',
-  'smregexp.cc',
+#  'smregexp.cc',
   'srcloc.cc',
   'strdict.cc',
   'strhash.cc',
@@ -697,8 +700,8 @@ sm_files = [
   'hashtbl.h',
   'macros.h',
   'missing.h',
-  'mypopen.h',
-  'mysig.h',
+#  'mypopen.h',
+#  'mysig.h',
   'nonport.h',
   'objlist.h',
   'objpool.h',
@@ -712,7 +715,7 @@ sm_files = [
   'pprint.h',
   'ptrmap.h',
   'sm_flexlexer.h',
-  'smregexp.h',
+#  'smregexp.h',
   'sobjlist.h',
   'sobjset.h',
   'sobjstack.h',
@@ -751,11 +754,11 @@ sm_files = [
   'growbuf.cc',
   'hashline.cc',
   'hashtbl.cc',
-  'mypopen.c',
-  'mysig.cc',
+#  'mypopen.c',
+#  'mysig.cc',
   'point.cc',
   'pprint.cc',
-  'smregexp.cc',
+#  'smregexp.cc',
   'srcloc.cc',
   'strdict.cc',
   'strhash.cc',
@@ -1867,6 +1870,7 @@ import sys
 import re
 import traceback
 
+
 try:
   execfile("config"+os.sep+"config.py")
 except:
@@ -1880,6 +1884,17 @@ except:
   print "       again to reset it:"
   print "       this is done automatically by 'make boot'"
   sys.exit(1)
+
+# for nonportable stuffs
+# ELHOUND_*_FLAGS -- for elkhound:
+#         either -D__UNIX__ for a posix environment or empty
+# OCAML_LINK_OPTIONS -- set the library directory 
+#         for the linker used by gcc (posix) or cl (Win32)
+
+if os.name == "nt":
+  OCAML_LINK_OPTIONS="/link /LIBPATH:src -lnums"
+else:
+  OCAML_LINK_OPTIONS="-Lsrc -lnums"
 
 FLXFLAGS = ""
 
@@ -2139,11 +2154,11 @@ SMRTL = [
   'sm_hashline',
   'sm_hashtbl',
   'sm_missing',
-  'sm_mypopen',
-  'sm_mysig',
+#  'sm_mypopen',
+#  'sm_mysig',
   'sm_point',
   'sm_pprint',
-  'sm_regexp',
+#  'sm_regexp',
   'sm_strdict',
   'sm_strhash',
   'sm_stringset',
@@ -2680,7 +2695,7 @@ try:
       for x in SMRTL+ELKRTL:
         if not "quiet" in options: print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_dynamic.o "
-        xqt(CCOBJ_DLLIB + " -D__UNIX__ -Ielk elk/" + x + ".cpp -o rtl/" +x+"_dynamic.o")
+        xqt(CCOBJ_DLLIB + "  -Ielk elk/" + x + ".cpp -o rtl/" +x+"_dynamic.o")
 
       # LINK RTL
       print " ** MAKING RTL (dynamic) "
@@ -2689,9 +2704,13 @@ try:
 
       if CYGWIN:
         print "Building RTL for CYGWIN dynamic linkage"
-        cmd = (CCLINK_DLLIB + " -shared -o bin/cygflx_dynamic.dll " +
-          "--export-all-symbols --enable-auto-import " +
-          "--out-implib=rtl/libflx_dynamic.dll.a ")
+        # note --enable-auto-import is specified in the config
+        cmd = (CCLINK_DLLIB + "-o bin/cygflx_dynamic.dll " +
+          "-Wl,--out-implib=rtl/libflx_dynamic.dll.a " +
+          "-Wl,--export-all-symbols " +
+          "-Wl,--whole-archive rtl/libflx_dynamic.a " +
+          "-Wl,--no-whole-archive"
+          )
         xqt(cmd)
       else:
         #the actual library
@@ -2716,7 +2735,7 @@ try:
       for x in SMRTL+ELKRTL:
         if not "quiet" in options: print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_static.o "
-        xqt(CCOBJ_STATIC_LIB + " -D__UNIX__ -Ielk elk/" + x + ".cpp -o rtl/" +x+"_static.o")
+        xqt(CCOBJ_STATIC_LIB + "  -Ielk elk/" + x + ".cpp -o rtl/" +x+"_static.o")
       print " ** MAKING RTL (static) "
       xqt(AR + " rtl/libflx_static.a " + ars)
       xqt(RANLIB + " rtl/libflx_static.a")
@@ -2728,11 +2747,11 @@ try:
     for x in SMBASE + SMRTL + ASTGEN + ELKHOUND + ELKRTL:
       if not "quiet" in options: print 'Compiling elkhound object',x
       ars = ars + "elk/"+x + "_static.o "
-      xqt(CCOBJ_STATIC_LIB + " -D__UNIX__ -Ielk elk/" + x + ".cpp -o elk/" +x+"_static.o")
-    xqt(AR + " elk/libelk_static.a " + ars)
-    xqt(RANLIB + " elk/libelk_static.a")
-    xqt(CCOBJ_STATIC_MAIN + " -D__UNIX__ -DGRAMANL_MAIN elk/elk_gramanl.cpp -o elk/elkhound.o")
-    xqt(CCLINK_STATIC + " elk/elkhound.o elk/libelk_static.a -o bin/flx_elkhound")
+      xqt(HOST_CCOBJ_STATIC_LIB + "  -Ielk elk/" + x + ".cpp -o elk/" +x+"_static.o")
+    xqt(HOST_AR + " elk/libelk_static.a " + ars)
+    xqt(HOST_RANLIB + " elk/libelk_static.a")
+    xqt(HOST_CCOBJ_STATIC_MAIN + "  -DGRAMANL_MAIN elk/elk_gramanl.cpp -o elk/elkhound.o")
+    xqt(HOST_CCLINK_STATIC + " elk/elkhound.o elk/libelk_static.a -o bin/flx_elkhound")
  
   # COMPILE DRIVER PROGRAMS
   if "drivers" in options:
@@ -2749,7 +2768,9 @@ try:
         xqt(CCOBJ_DLMAIN + " -Irtl " + i + ".cpp -o " +i+"_dynamic.o")
 
         if CYGWIN:
-          xqt("g++ -o "+j+" -Wl,--enable-auto-import " + i + "_dynamic.o -Lrtl -lflx_dynamic")
+          #xqt("g++ -o "+j+" -Wl,--enable-auto-import " + i + "_dynamic.o -Lrtl -lflx_dynamic")
+          #JMS: seems to be same now, except for order
+          xqt(CCLINK_DLMAIN+" -o "+j+" " + i + "_dynamic.o -Lrtl -lflx_dynamic")
         else:
           xqt(CCLINK_DLMAIN + " -o "+j+" -Lrtl -lflx_dynamic " +i+"_dynamic.o")
 
@@ -2830,14 +2851,14 @@ try:
         if buildall or filetime(basename+ '.cpp') > filetime(basename+SHLX):
           try:
             if LINK_MODEL == "dynamic":
+              xqt(CCOBJ_DLLIB+" -Irtl "+cppfilename + " -o " + basename + "_dynamic.o")
               if CYGWIN:
-                xqt("g++ -w -ansi -g -o "+basename+SHLX+" -shared -Irtl "+cppfilename+" -Lrtl -lflx_dynamic -Wl,--enable-auto-import")
+                xqt(CCLINK_DLLIB +"-o "+basename+SHLX+" "+basename+"_dynamic.o -Lrtl -lflx_dynamic.dll")
               else:
-                xqt(CCOBJ_DLLIB+" -Irtl "+cppfilename + " -o " + basename + "_dynamic.o")
-                xqt(CCLINK_DLLIB+" -Lrtl -lflx_dynamic -o "+ basename + SHLX + " "+basename+"_dynamic.o")
+                xqt(CCLINK_DLLIB+" -o "+ basename + SHLX + " "+basename+"_dynamic.o -Lrtl -lflx_dynamic")
             else:
               xqt(CCOBJ_STATIC_LIB +" -Irtl "+cppfilename + " -o " + basename + "_static.o" )
-              xqt(CCLINK_STATIC +" -Irtl ./rtl/flx_run_static.o "+basename+ "_static.o -Lrtl -lflx_static -o " + basename + SHLX )
+              xqt(CCLINK_STATIC +" ./rtl/flx_run_static.o "+basename+ "_static.o -Lrtl -lflx_static -o " + basename + SHLX )
             #print 'TESTFILE -- OK!',basename
             results.append(("g++",basename,'OK'))
           except MakeError:

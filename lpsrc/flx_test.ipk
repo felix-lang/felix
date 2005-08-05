@@ -386,7 +386,7 @@ int main(int argc, char** argv)
   try 
   {
     printf("Running flx_perf_drv, %dK transactions\n", niter );
-    sleep(1);
+    //sleep(1);
     library_linkage_t library;
     flx_libinit_t instance;
 
