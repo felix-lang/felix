@@ -970,6 +970,14 @@ let handle_preprocessor state lexbuf s pre_flx_lex parse_line =
   let result = match ident with
 
   (* print a warning *)
+  | "error" -> 
+    begin match state#get_condition with
+    | `Processing ->
+      print_string s;
+      clierr sr ("Preprocessor #error " ^ s)
+    | _ -> []
+    end
+
   | "warn" -> 
     begin match state#get_condition with
     | `Processing ->

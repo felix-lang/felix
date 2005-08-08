@@ -4,6 +4,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.123  2005/08/08 16:23:53  skaller
+Add #error preprocessor directive, fix make script to send output
+to NUL in Win32 where it goes to /dev/null in unix.
+
 Revision 1.122  2005/08/05 03:10:29  skaller
 Cleaned up sm.pak so __UNIX__ flag no longer needed
 
@@ -1908,7 +1912,10 @@ def get_stdout(x):
   return result,output
 
 def get_stdouterr(x):
-  return get_stdout(x+" 2>&1")
+  if os.name == "posix":
+    return get_stdout(x+" 2>&1")
+  else:
+    return get_stdout(x)
 
 def flush():
   try: sys.stdin.flush()
@@ -1939,6 +1946,17 @@ def xqt(x):
 
   if result:
     raise MakeError
+
+# quiet execution
+def xqtq(x):
+  if "quiet" not in options: print x
+  flush()
+  result,output = get_stdouterr(x)
+  if result: 
+    if "quiet" in options: print x
+    print "  .. ERROR CODE",hex(result)
+    raise MakeError
+
 
 ENV = 'env PATH=bin:"$PATH" LD_LIBRARY_PATH=rtl:"$LD_LIBRARY_PATH" '
 def exqt(x): xqt(ENV+x)
@@ -2821,7 +2839,7 @@ try:
           filetime('bin/flxg')> filetime(basename+'.cpp') or \
           filetime('lib/std.flx') > filetime(basename+'.cpp'):
           try:
-            xqt('bin/flxg -e -Ilib ' + basename + " 2>&1 >/dev/null")
+            xqtq('bin/flxg -e -Ilib ' + basename)
             #print 'TESTFILE -- failed as expected',basename
             results.append(("flxg",basename,'OK'))
             erasefile(basename+'.cpp')

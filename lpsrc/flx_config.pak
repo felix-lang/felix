@@ -436,7 +436,7 @@ def xqt(x):
  if os.name == "posix":
    xxqt(x + " >/dev/null 2>&1")
  elif os.name == "nt":
-   xxqt(x + " >tmp.tmp")
+   xxqt(x + " >NUL")
  else:
    xxqt(x)
 
