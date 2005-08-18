@@ -575,7 +575,7 @@ typedef void *LIBHANDLE;
 // they're dispatched automatically by wrappers
 // defined in the base]
 
-// must be at global scope, because the users is
+// must be at global scope, because the users' is
 struct thread_frame_t;
 
 namespace flx { namespace rtl {
@@ -678,7 +678,7 @@ void flx_dynlink_t::link(char const *filename) throw(flx_link_failure_t)
 
 #ifndef FLX_STATIC_LINK
 #ifdef _WIN32
-  SetErrorMode(SEM_NOOPENFILEERRORBOX);
+  SetErrorMode(SEM_NOOPENFILEERRORBOX);  // stop windows showing err dialogues
   library = LoadLibrary(filename);
   if(!library) 
     throw flx_link_failure_t(filename,"LoadLibrary","Cannot find dll");

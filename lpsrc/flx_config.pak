@@ -24,7 +24,7 @@ execfile('config'+os.sep+'xlators_local.py')
 # comment out the lines you don't want,
 # or add new ones if desired
 #
-# the translators selected by default should be availebl
+# the translators selected by default should be available
 # since they're required to build Felix .. but actually
 # we preselect gcc for C compiler and ocamlopt for ocaml ..
 # 
@@ -82,6 +82,15 @@ int main(int,char*[]) {
    int x = __CYGWIN__;
    return 0;
 }
+
+@h = tangler("tmp/check_osx.cxx",'c++')
+@select(h)
+// RF: I think this implies the presence of OS X
+int main(int,char*[]) { 
+   int x = __APPLE__;
+   return 0;
+}
+
 
 @h = tangler("tmp/dummy.cxx",'c++')
 @select(h)
@@ -769,6 +778,14 @@ try:
 except:
   CYGWIN=0
 
+#find if we have OS X
+try:
+  xqt("g++ -w -c tmp"+os.sep+"check_osx.cxx -o tmp"+os.sep+"dummy.o")
+  MACOSX=1
+except:
+  MACOSX=0
+
+
 # find if we have static const init in class
 try:
   xqt(CXX+" -w -c tmp"+os.sep+"check_inclass.cxx -o tmp"+os.sep+"dummy.o")
@@ -818,6 +835,12 @@ if CYGWIN:
   CCOBJ_DLMAIN = CXX + "-w "+FORCE_DEBUG+"-c "
   CCLINK_DLLIB = CXX + "-w -shared -Wl,--enable-auto-import "
   CCLINK_DLMAIN = CXX + "-w "
+elif MACOSX:
+  EXT_SHARED = ".so"
+  CCOBJ_DLLIB = CXX + "-w "+FORCE_DEBUG+"-fPIC -D_REENTRANT -c -dynamic "
+  CCOBJ_DLMAIN = CXX + "-w "+FORCE_DEBUG+"-fPIC -D_REENTRANT -c "
+  CCLINK_DLLIB = CXX + "-dynamiclib  "
+  CCLINK_DLMAIN = CXX + " "
 else:
   EXT_SHARED = ".so"
   CCOBJ_DLLIB = CXX + "-w "+FORCE_DEBUG+"-fPIC -D_REENTRANT -c "
@@ -825,6 +848,7 @@ else:
 #  CCLINK_DLLIB = CXX + "-w -Wl,-shared -Wl,--export-dynamic "
   CCLINK_DLLIB = CXX + "-w -shared  "
   CCLINK_DLMAIN = CXX + "-w -Wl,-Bdynamic -Wl,--export-dynamic "
+
 
 CCOBJ_STATIC_LIB = CXX + "-w "+FORCE_DEBUG+"-c "
 CCOBJ_STATIC_MAIN = CXX + "-w "+FORCE_DEBUG+"-c "
@@ -1228,6 +1252,7 @@ try:
   pr(f,"SUPPORT_STATIC_LINKAGE = 1")
   p(f,"DEFAULT_LINK_MODEL")
   p(f,"CYGWIN")
+  p(f, "MACOSX")
   p(f,"PREFIX")
   pr(f,"")
   pr(f,"# CROSS COMPILATION OPTIONS")

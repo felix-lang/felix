@@ -4,6 +4,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.124  2005/08/18 14:29:15  rfistman
+added dynamic linking for os x. uses dlcompat which may have only been
+introduced in 10.3. will probably need more work for 10.2, 10.1
+
 Revision 1.123  2005/08/08 16:23:53  skaller
 Add #error preprocessor directive, fix make script to send output
 to NUL in Win32 where it goes to /dev/null in unix.
@@ -2730,6 +2734,8 @@ try:
           "-Wl,--no-whole-archive"
           )
         xqt(cmd)
+      elif MACOSX:
+        xqt(CCLINK_DLLIB + " -o rtl/libflx_dynamic.so."+flx_version+' '+ars)
       else:
         #the actual library
         xqt(CCLINK_DLLIB + "-Wl,-soname="+FLX_SONAME+" -o rtl/libflx_dynamic.so."+flx_version+' '+ars)
@@ -2789,6 +2795,9 @@ try:
           #xqt("g++ -o "+j+" -Wl,--enable-auto-import " + i + "_dynamic.o -Lrtl -lflx_dynamic")
           #JMS: seems to be same now, except for order
           xqt(CCLINK_DLMAIN+" -o "+j+" " + i + "_dynamic.o -Lrtl -lflx_dynamic")
+        elif MACOSX:
+          #RF: os x likes the same order as cygwin
+          xqt(CCLINK_DLMAIN+" -o "+j+" "+i+"_dynamic.o"+" -Lrtl -lflx_dynamic " )
         else:
           xqt(CCLINK_DLMAIN + " -o "+j+" -Lrtl -lflx_dynamic " +i+"_dynamic.o")
 
