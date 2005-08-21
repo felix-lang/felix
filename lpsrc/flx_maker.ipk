@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.125  2005/08/21 15:48:10  skaller
+Fix bug in flx script in --test mode with dynamic linkage for Cygwin environment.
+
 Revision 1.124  2005/08/18 14:29:15  rfistman
 added dynamic linking for os x. uses dlcompat which may have only been
 introduced in 10.3. will probably need more work for 10.2, 10.1
@@ -3415,9 +3418,13 @@ We have no idea if it continues copying.
   tangle('\t'+RANLIB+' ${LIB_DIR}/libflx_static.a')
 @if SUPPORT_DYNAMIC_LOADING:
   tangle('\t'+RANLIB+' ${INSTALL_DIR}/rtl/libflx_dynamic.a')
-  tangle('\tinstall rtl/libflx_dynamic.so.'+flx_version+' ${SHLIB_DIR}')
-  tangle('\tinstall rtl/libflx_dynamic.so.'+flx_version_major+' ${SHLIB_DIR}')
-  tangle('\tinstall rtl/libflx_dynamic.so ${SHLIB_DIR}')
+  if CYGWIN:
+    # static link thunk for bin/cygflx_dynamic.dll
+    tangle('\tinstall rtl/libflx_dynamic.dll.a ${SHLIB_DIR}')
+  else:
+    tangle('\tinstall rtl/libflx_dynamic.so.'+flx_version+' ${SHLIB_DIR}')
+    tangle('\tinstall rtl/libflx_dynamic.so.'+flx_version_major+' ${SHLIB_DIR}')
+    tangle('\tinstall rtl/libflx_dynamic.so ${SHLIB_DIR}')
   tangle('\tinstall rtl/libflx_dynamic.a ${SHLIB_DIR}')
   tangle('\t'+RANLIB+' ${SHLIB_DIR}/libflx_dynamic.a')
 @tangle('\t(install doc/* ${INSTALL_DIR}/doc || exit 0) > /dev/null 2>&1')
@@ -4055,6 +4062,7 @@ echo $cmd
 #!/usr/bin/env bash
 # flx - felix script harness
 
+@tangle("CYGWIN="+str(CYGWIN))
 # g++ compilation string
 @tangle('CCOBJ_DLLIB="'+CCOBJ_DLLIB+'"')
 @tangle('CCLINK_DLLIB="'+CCLINK_DLLIB+'"')
@@ -4403,7 +4411,12 @@ then
   if eval $FCMD
   then
     CCMD="$CCOBJ_DLLIB $CCFLAGS -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp -o $base.o"
-    LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base.o -o $base.so"
+    if [ $CYGWIN = 1 ]; 
+    then 
+      LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base.o -o $base.so -L$FLXAR -lflx_dynamic.dll"
+    else 
+      LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base.o -o $base.so"
+    fi
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then
