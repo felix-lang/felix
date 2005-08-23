@@ -218,7 +218,7 @@ has been built on the following platforms:
 <LI>Linux RH9 (x86) (g++ 3.3.2)
 <LI>Linux Ubuntu (x86_64/AMD64) (g++ 3.4) (Ocaml bytecode)
 <LI>Mac OS9 (CodeWarrior)
-<LI>OSX 10.3 (g++)
+<LI>OSX 10.2, 10.3, 10.4 (g++)
 <LI>Solaris 9 SPARC (g++)
 <LI>Free BSD 5.2.1 i386 (g++)
 <LI>Win32 Cygwin (g++)
