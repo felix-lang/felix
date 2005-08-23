@@ -109,6 +109,13 @@ T &reinterpret(U const &x) {
   
 @if HAVE_ASM_LABELS:
   tangle("#define FLX_HAVE_ASM_LABELS")
+
+@if HAVE_DLOPEN:
+  tangle("#define HAVE_DLOPEN")
+
+@if MACOSX:
+  tangle("#define MACOSX")
+
 //
 #if defined(FLX_HAVE_CGOTO) && defined(FLX_HAVE_ASM_LABELS)
 #define FLX_CGOTO
@@ -118,6 +125,10 @@ T &reinterpret(U const &x) {
 #define FLX_EXPORT __declspec(dllexport)
 #else
 #define FLX_EXPORT
+#endif
+
+#if defined(MACOSX) && !defined(HAVE_DLOPEN)
+#define MACOSX_NODLCOMPAT
 #endif
 
 #ifdef HAVE_GXX
@@ -538,15 +549,25 @@ using namespace std;
 #include <windows.h>
 typedef HMODULE LIBHANDLE;
 #else
-typedef void *LIBHANDLE;
+  #ifdef MACOSX_NODLCOMPAT
+     #include <mach-o/dyld.h>
+     typedef NSModule LIBHANDLE;
+   #else
+     typedef void *LIBHANDLE;
+   #endif
 #endif
 
 #ifndef FLX_STATIC_LINK
 #ifdef _WIN32
 #define DLSYM(x,y) GetProcAddress(x,#y) 
 #else
-#include <dlfcn.h>
-#define DLSYM(x,y) dlsym(x,#y)
+  #ifdef MACOSX_NODLCOMPAT
+    //#include <mach-o/dyld.h>
+    #define DLSYM(x, y) flx::rtl::getmachosym(x,"_"#y)
+  #else
+    #include <dlfcn.h>
+    #define DLSYM(x,y) dlsym(x,#y)
+  #endif
 #endif
 
 #else
@@ -654,6 +675,10 @@ private:
     // called before standard destroy starts
 };
 
+#ifdef MACOSX_NODLCOMPAT
+void* getmachosym(LIBHANDLE, const char*);
+#endif
+
 }} // namespaces
 #endif
 
@@ -666,6 +691,18 @@ extern void *flx_start;
 #endif
 
 namespace flx { namespace rtl {
+
+#ifdef MACOSX_NODLCOMPAT
+void*
+getmachosym(NSModule library, const char* symname)
+{
+    NSSymbol    sym = NSLookupSymbolInModule(library, symname);
+    if(sym)
+        return NSAddressOfSymbol(sym);
+    return 0;
+}
+
+#endif
 
 flx_link_failure_t::flx_link_failure_t(string f, string o, string w) : 
   filename(f), 
@@ -683,9 +720,35 @@ void flx_dynlink_t::link(char const *filename) throw(flx_link_failure_t)
   if(!library) 
     throw flx_link_failure_t(filename,"LoadLibrary","Cannot find dll");
 #else
+  #ifdef MACOSX_NODLCOMPAT
+    NSObjectFileImage            bndl_img;
+    NSObjectFileImageReturnCode  res;
+
+    res = NSCreateObjectFileImageFromFile(filename, &bndl_img);
+
+	if(NSObjectFileImageSuccess != res)
+      throw flx_link_failure_t(filename, "NSCreateObjectFileImageFromFile",
+              "failure to open library");
+
+    // don't merge globals with loader's, load programmatically
+    // return on error allows us to continue without being terminated
+
+    unsigned long                link_flags;
+    link_flags = NSLINKMODULE_OPTION_PRIVATE | NSLINKMODULE_OPTION_RETURN_ON_ERROR;
+    library = NSLinkModule(bndl_img, filename, link_flags);
+
+    // even if link failed, we do this
+    NSDestroyObjectFileImage(bndl_img);
+
+    // more info can be gleaned about link errors from NSLinkEditError
+    if(!library)
+      throw flx_link_failure_t(filename, "NSLinkModule", "failed to link");
+
+  #else
   library = dlopen(filename,RTLD_NOW);
   if(!library) 
     throw flx_link_failure_t(filename,"dlopen",dlerror());
+  #endif
 #endif
 #endif
 
@@ -726,9 +789,13 @@ void flx_dynlink_t::unlink()
     //fprintf(stderr,"closing library\n");
 #ifndef FLX_STATIC_LINK
 #ifdef _WIN32
-   FreeLibrary(library);
+    FreeLibrary(library);
 #else
+  #ifdef MACOSX_NODLCOMPAT
+    NSUnLinkModule(library, NSUNLINKMODULE_OPTION_NONE);
+  #else
     dlclose(library);
+  #endif
 #endif
 #endif
   }

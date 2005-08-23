@@ -839,7 +839,7 @@ elif MACOSX:
   EXT_SHARED = ".so"
   CCOBJ_DLLIB = CXX + "-w "+FORCE_DEBUG+"-fPIC -D_REENTRANT -c -dynamic "
   CCOBJ_DLMAIN = CXX + "-w "+FORCE_DEBUG+"-fPIC -D_REENTRANT -c "
-  CCLINK_DLLIB = CXX + "-dynamiclib  "
+  CCLINK_DLLIB = CXX + "-bundle  "
   CCLINK_DLMAIN = CXX + " "
 else:
   EXT_SHARED = ".so"
@@ -873,22 +873,30 @@ try:
   HAVE_DLOPEN = 1
 except:
   try: # nope, try with -ldl
-    CCLINK_DLMAIN = CCLINK_DLMAIN + "-ldl "
-    xqt(CCLINK_DLMAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
+    LINK_MAIN = CCLINK_DLMAIN + "-ldl "
+    xqt(LINK_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
     xqt("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+EXT_SHARED)
+    CCLINK_DLMAIN = LINK_MAIN
     HAVE_DLOPEN = 1
     SUPPORT_DYNAMIC_LOADING = 1
   except:
     try: #again with --shared
-      CCLINK_DLLIB = CXX + "-w --shared "
-      CCLINK_DLMAIN = CXX + "-w -Wl,-Bdynamic -ldl "
-      xqt(CCLINK_DLLIB+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib"+EXT_SHARED)
-      xqt(CCLINK_DLMAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
+      # make temp variables, to see if they'll work
+      LINK_LIB = CXX + "-w --shared "
+      LINK_MAIN = CXX + "-w -Wl,-Bdynamic -ldl "
+      xqt(LINK_LIB+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib"+EXT_SHARED)
+      xqt(LINK_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
       xqt("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+EXT_SHARED)
+      # worked, keep these vars
+      CCLINK_DLLIB = LINK_LIB
+      CCLINK_DLMAIN = LINK_MAIN
       HAVE_DLOPEN = 1
       SUPPORT_DYNAMIC_LOADING = 1
     except:
-      SUPPORT_DYNAMIC_LOADING = 0
+      if MACOSX:
+        SUPPORT_DYNAMIC_LOADING = 1    # pre dlcompat osx mach-o routines
+      else:
+        SUPPORT_DYNAMIC_LOADING = 0    # or give up on dynamic loading
 
 # see if we have strip
 try:
