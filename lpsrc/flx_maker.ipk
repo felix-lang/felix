@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.126  2005/08/26 06:11:47  skaller
+Start new build method using Python class for C++ compiler.
+
 Revision 1.125  2005/08/21 15:48:10  skaller
 Fix bug in flx script in --test mode with dynamic linkage for Cygwin environment.
 
@@ -2658,11 +2661,11 @@ try:
 
   if "compiler" in options or "olink" in options:
     # STEP 1: Compile all compiler support C files
-    for cobject in COBJECTS.keys():
-      flags = COBJECTS[cobject]
-      file = 'src/'+cobject
-      if buildall or filetime(file +".c") > filetime(file +".o"):
-        xqt(CCOMPILE +" -I "+OCAML_INCLUDE_DIRECTORY+" -Irtl "+flags+" "+file+".c")
+    #for cobject in COBJECTS.keys():
+    #  flags = COBJECTS[cobject]
+    #  file = 'src/'+cobject
+    #  if buildall or filetime(file +".c") > filetime(file +".o"):
+    #    xqt(CCOMPILE +" -I "+OCAML_INCLUDE_DIRECTORY+" -Irtl "+flags+" "+file+".c")
 
     print "COMPILING MISC"
     ocamlit(MISC_LEXS,MISC_PARSES,MISC_INTERFACES,MISC_IMPLEMENTATIONS,MISC_EXES)
@@ -2713,19 +2716,33 @@ try:
       for x in RTL_CPPS:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_dynamic.o "
-        xqt(CCOBJ_DLLIB + " -Irtl " + x + ".cpp -o " +x+"_dynamic.o")
+        if FUTURE:
+          dir,base = string.split(x,'/')
+          TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl'])
+        else:
+          xqt(CCOBJ_DLLIB + " -Irtl " + x + ".cpp -o " +x+"_dynamic.o")
 
       #ELKHOUND SUBLIBRARY
       print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:
         if not "quiet" in options: print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_dynamic.o "
-        xqt(CCOBJ_DLLIB + "  -Ielk elk/" + x + ".cpp -o rtl/" +x+"_dynamic.o")
+        if FUTURE:
+          TARGET_CXX.compile_shared_rtl(xqt,"elk",x,"rtl",include_path=['elk'])
+        else:
+          xqt(CCOBJ_DLLIB + "  -Ielk elk/" + x + ".cpp -o rtl/" +x+"_dynamic.o")
 
       # LINK RTL
       print " ** MAKING RTL (dynamic) "
-      xqt(AR + " rtl/libflx_dynamic.a " + ars)
-      xqt(RANLIB + " rtl/libflx_dynamic.a")
+      if FUTURE:
+        tmp = string.split(ars)
+        objs=[]
+        for i in tmp:
+          objs.append(i[:-2]) # chop off the .o
+        TARGET_CXX.link_static_archive(xqt,objs, "rtl/libflx_dynamic.a")
+      else:
+        xqt(AR + " rtl/libflx_dynamic.a " + ars)
+        xqt(RANLIB + " rtl/libflx_dynamic.a")
 
       if CYGWIN:
         print "Building RTL for CYGWIN dynamic linkage"
@@ -2757,15 +2774,31 @@ try:
       for x in RTL_CPPS:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_static.o "
-        xqt(CCOBJ_STATIC_LIB + " -Irtl " + x + ".cpp -o " +x+"_static.o")
+        if FUTURE:
+          dir,base = string.split(x,'/')
+          HOST_CXX.compile_static_rtl(xqt,dir,base,dir,include_path=['rtl'],macros=["FLX_STATIC_LINK"])
+        else:
+          xqt(CCOBJ_STATIC_LIB + " -Irtl " + x + ".cpp -o " +x+"_static.o")
+
       print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:
         if not "quiet" in options: print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_static.o "
-        xqt(CCOBJ_STATIC_LIB + "  -Ielk elk/" + x + ".cpp -o rtl/" +x+"_static.o")
+        if FUTURE:
+          HOST_CXX.compile_static_rtl(xqt,"elk",x,"rtl",include_path=['rtl'])
+        else:
+          xqt(CCOBJ_STATIC_LIB + "  -Ielk elk/" + x + ".cpp -o rtl/" +x+"_static.o")
+
       print " ** MAKING RTL (static) "
-      xqt(AR + " rtl/libflx_static.a " + ars)
-      xqt(RANLIB + " rtl/libflx_static.a")
+      if FUTURE:
+        tmp = string.split(ars)
+        objs=[]
+        for i in tmp:
+          objs.append(i[:-2]) # chop off the .o
+        HOST_CXX.link_static_archive(xqt,objs,"rtl/libflx_static.a")
+      else:
+        xqt(AR + " rtl/libflx_static.a " + ars)
+        xqt(RANLIB + " rtl/libflx_static.a")
   
   # elkhound executable: no need for dynamic loading, always built static
   if "elkhound" in options:
@@ -2774,11 +2807,23 @@ try:
     for x in SMBASE + SMRTL + ASTGEN + ELKHOUND + ELKRTL:
       if not "quiet" in options: print 'Compiling elkhound object',x
       ars = ars + "elk/"+x + "_static.o "
-      xqt(HOST_CCOBJ_STATIC_LIB + "  -Ielk elk/" + x + ".cpp -o elk/" +x+"_static.o")
-    xqt(HOST_AR + " elk/libelk_static.a " + ars)
-    xqt(HOST_RANLIB + " elk/libelk_static.a")
-    xqt(HOST_CCOBJ_STATIC_MAIN + "  -DGRAMANL_MAIN elk/elk_gramanl.cpp -o elk/elkhound.o")
-    xqt(HOST_CCLINK_STATIC + " elk/elkhound.o elk/libelk_static.a -o bin/flx_elkhound")
+      if FUTURE:
+        HOST_CXX.compile_static_rtl(xqt,"elk",x,"elk",include_path=["elk"])
+      else:
+        xqt(HOST_CCOBJ_STATIC_LIB + "  -Ielk elk/" + x + ".cpp -o elk/" +x+"_static.o")
+    if FUTURE:
+      tmp = string.split(ars)
+      objs=[]
+      for i in tmp:
+        objs.append(i[:-2]) # chop off the .o
+      HOST_CXX.link_static_archive(xqt,objs,"elk/libelk_static.a")
+      HOST_CXX.compile_static_main(xqt,"elk","elk_gramanl","elk",include_path=["elk"],macros=["GRAMANL_MAIN"])
+      HOST_CXX.link_static_program(xqt,["elk/elk_gramanl_static"],"bin/flx_elkhound",lib_path=["elk"],libs=["elk_static"])
+    else:
+      xqt(HOST_AR + " elk/libelk_static.a " + ars)
+      xqt(HOST_RANLIB + " elk/libelk_static.a")
+      xqt(HOST_CCOBJ_STATIC_MAIN + "  -DGRAMANL_MAIN elk/elk_gramanl.cpp -o elk/elk_gramanl_static.o")
+      xqt(HOST_CCLINK_STATIC + " elk/elk_gramanl_static.o elk/libelk_static.a -o bin/flx_elkhound")
  
   # COMPILE DRIVER PROGRAMS
   if "drivers" in options:
@@ -2786,13 +2831,21 @@ try:
       print "COMPILING DRIVERS (static)"
       for i,j in DRIVERS:
         if not "quiet" in options: print 'Compiling driver object',i
-        xqt(CCOBJ_STATIC_MAIN + " -Irtl " + i + ".cpp -o " +i+"_static.o")
+        if FUTURE:
+          d,b = string.split(i,'/')
+          TARGET_CXX.compile_static_main(xqt,d,b,d,include_path=["rtl"],macros=["FLX_STATIC_LINK"])
+        else:
+          xqt(CCOBJ_STATIC_MAIN + " -Irtl " + i + ".cpp -o " +i+"_static.o")
 
     if SUPPORT_DYNAMIC_LOADING:
       print "COMPILING DRIVERS (dynamic)"
       for i,j in DRIVERS:
         if not "quiet" in options: print 'Compiling driver object',i
-        xqt(CCOBJ_DLMAIN + " -Irtl " + i + ".cpp -o " +i+"_dynamic.o")
+        if FUTURE:
+          d,b = string.split(i,'/')
+          TARGET_CXX.compile_shared_main(xqt,d,b,d,include_path=["rtl"])
+        else:
+          xqt(CCOBJ_DLMAIN + " -Irtl " + i + ".cpp -o " +i+"_dynamic.o")
 
         if CYGWIN:
           #xqt("g++ -o "+j+" -Wl,--enable-auto-import " + i + "_dynamic.o -Lrtl -lflx_dynamic")
@@ -2802,7 +2855,10 @@ try:
           #RF: os x likes the same order as cygwin
           xqt(CCLINK_DLMAIN+" -o "+j+" "+i+"_dynamic.o"+" -Lrtl -lflx_dynamic " )
         else:
-          xqt(CCLINK_DLMAIN + " -o "+j+" -Lrtl -lflx_dynamic " +i+"_dynamic.o")
+          if FUTURE:
+            TARGET_CXX.link_dynamic_program(xqt,[i+"_dynamic"],j,lib_path=["rtl"],libs=["flx_dynamic"])
+          else:
+            xqt(CCLINK_DLMAIN + " -o "+j+" -Lrtl -lflx_dynamic " +i+"_dynamic.o")
 
   # run tests
   try:
