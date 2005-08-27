@@ -119,7 +119,7 @@ let regen b (alpha, nstates, cases, matrix) kind ge =
     tack ("  char const*p = "^lexeme_start^";\n");
     tack ("  int state = 1;\n");
     tack ("  while(state && p != "^buffer_end^")\n");
-    tack ("    state = matrix[*p++][state];\n");
+    tack ("    state = matrix[int(*p++)][state];\n");
     tack ("  switch (state)\n")
   | `reglex (lexeme_start, buffer_end, lexeme_end) ->
     tack ("  char const *p= "^lexeme_start^";\n");
@@ -131,7 +131,7 @@ let regen b (alpha, nstates, cases, matrix) kind ge =
     tack ("    "^lexeme_end^" = p;\n");
     tack ("  }\n");
     tack ("  while(state && p != "^buffer_end^") {\n");
-    tack ("    state = matrix[*p++][state];\n");
+    tack ("    state = matrix[int(*p++)][state];\n");
     tack ("    if(accept[state]){\n");
     tack ("      last_state = state;\n");
     tack ("      "^lexeme_end^" = p;\n");
@@ -152,8 +152,8 @@ let regen b (alpha, nstates, cases, matrix) kind ge =
   )
   cases 
   ;
-  tack "    case 0: assert((\"regmatch failure\",0));\n";
-  tack "    default: assert((\"system failure in regmatch\",0));\n";
+  tack "    case 0: assert(((void)\"regmatch failure\",0));\n";
+  tack "    default: assert(((void)\"system failure in regmatch\",0));\n";
   tack "  }\n";
 
 

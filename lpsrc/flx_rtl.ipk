@@ -136,11 +136,15 @@ T &reinterpret(U const &x) {
 #define FLX_NOINLINE __attribute__ ((noinline))
 #define FLX_CONST __attribute__ ((const))
 #define FLX_PURE __attribute__ ((pure))
+#define GXX_PARSER_HACK (void)0,
+#define FLX_UNUSED __attribute__((unused))
 #else
 #define FLX_ALWAYS_INLINE
 #define FLX_NOINLINE 
 #define FLX_CONST
 #define FLX_PURE 
+#define GXX_PARSER_HACK
+#define FLX_UNUSED
 #endif
 #endif
 
@@ -633,7 +637,7 @@ struct flx_dynlink_t
   // routines
   void link(char const *filename) throw(flx_link_failure_t);
   void unlink();
-
+  virtual ~flx_dynlink_t();
 private:
   // the user should override this procedure to
   // link any extra symbols.
@@ -662,6 +666,7 @@ struct flx_libinit_t
   void destroy ();
 
   con_t *bind_proc(void *fn, void *data);
+  virtual ~flx_libinit_t();
   
 private:
   // the user can override these procedures
@@ -709,6 +714,8 @@ flx_link_failure_t::flx_link_failure_t(string f, string o, string w) :
   operation(o), 
   what(w) 
 {}
+
+flx_dynlink_t::~flx_dynlink_t(){}
 
 void flx_dynlink_t::link(char const *filename) throw(flx_link_failure_t)
 {
@@ -802,6 +809,8 @@ void flx_dynlink_t::unlink()
 }
 
 void flx_dynlink_t::usr_link(){}
+
+flx_libinit_t::~flx_libinit_t(){}
 
 void flx_libinit_t::create
 (
@@ -927,7 +936,7 @@ int main(int argc, char** argv)
 #ifdef HAVE_GXX
     if(debug) fprintf(stderr, "Compiled by g++\n");
     static void *init_sp = sp;
-    static void *init_fframe = __builtin_frame_address(0);
+    static void *init_fframe FLX_UNUSED = __builtin_frame_address(0);
     static void *init_ret = __builtin_return_address(0);
 #endif
   if(debug)
@@ -1061,7 +1070,7 @@ int main(int argc, char** argv)
 #ifdef HAVE_GXX
     // check the frame pointer isn't corrupted
     static void *fin_sp = sp;
-    static void *fin_fframe = __builtin_frame_address(0);
+    static void *fin_fframe FLX_UNUSED = __builtin_frame_address(0);
     static void *fin_ret = __builtin_return_address(0);
     if (init_sp != fin_sp ) {
       fprintf(stderr,"g++: STACK POINTER ERROR %p != %p\n",init_sp,fin_sp);

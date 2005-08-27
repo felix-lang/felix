@@ -102,7 +102,6 @@ namespace flx { namespace rtl { namespace ioutil {
     {
       string x = "";
       char buffer[512];
-      int n;
       while (fgets(buffer,512,fi))
         x = x + string(buffer);
       fclose(fi);
@@ -119,7 +118,6 @@ namespace flx { namespace rtl { namespace ioutil {
     {
       string x = "";
       char buffer[512];
-      int n;
       while (fgets(buffer,512,fi))
         x = x + string(buffer);
       fclose(fi);
@@ -1282,9 +1280,9 @@ size_t __gnu_cxx::hash<std::string>::
   it = 'stl_'+n+'_iterator[t]'
 
   tangle('    type stl_'+n+' = "'+ns+'::'+n+'<?1>";')
-  tangle('    fun create : unit -> '+c+' = "(0,'+ns+'::'+n+'<?1>())";')
-  tangle('    fun create : int * t -> '+c+'= "(0,'+ns+'::'+n+'<?1>($1,$2))";')
-  tangle('    fun create[i] : i * i -> '+c+' = "(0,'+ns+'::'+n+'<?1>($1,$2))";')
+  tangle('    fun create : unit -> '+c+' = "(GXX_PARSER_HACK '+ns+'::'+n+'<?1>())";')
+  tangle('    fun create : int * t -> '+c+'= "(GXX_PARSER_HACK '+ns+'::'+n+'<?1>($1,$2))";')
+  tangle('    fun create[i] : i * i -> '+c+' = "(GXX_PARSER_HACK '+ns+'::'+n+'<?1>($1,$2))";')
   gen_pcmp(c)
   tangle('    fun len: '+c+' -> int = "$1.size()";')
   tangle('    fun empty: '+c+' -> int = "$1.empty()";')
@@ -1363,7 +1361,7 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    type stl_'+n+' = "'+ns+'::'+n+'<?1>";')
   tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1>::iterator";')
   tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1>::reverse_iterator";')
-  tangle('    fun create : unit -> '+c+' = "(0,'+ns+'::'+n+'<?1>())";')
+  tangle('    fun create : unit -> '+c+' = "(GXX_PARSER_HACK '+ns+'::'+n+'<?1>())";')
   tangle('    gen_cmp '+c+';')
   tangle('    fun len: '+c+'->int = "$1.size()";')
   tangle('    fun empty: '+c+'->int = "$1.empty()";')
@@ -1399,7 +1397,7 @@ size_t __gnu_cxx::hash<std::string>::
   tangle('    type stl_'+n+'_iterator = "'+ns+'::'+n+'<?1,?2>::iterator";')
   tangle('    type stl_'+n+'_reverse_iterator = "'+ns+'::'+n+'<?1,?2>::reverse_iterator";')
 
-  tangle('    fun create : unit -> '+c+' = "(0,'+ns+'::'+n+'<?1,?2>())";')
+  tangle('    fun create : unit -> '+c+' = "(GXX_PARSER_HACK '+ns+'::'+n+'<?1,?2>())";')
   tangle('    gen_cmp '+c+';')
   tangle('    fun len: '+c+'->int = "$1.size()";')
   tangle('    fun empty: '+c+'->int = "$1.empty()";')

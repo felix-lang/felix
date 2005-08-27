@@ -1263,7 +1263,7 @@ public:
 
   // print the boxprint tree; for debugging code that produces them;
   // these methods do not emit leading or trailing whitespace
-  virtual void debugPrint(ostream &os, int ind) const =0;
+  virtual void debugPrint(std::ostream &os, int ind) const =0;
 
   // deallocate the element
   virtual ~BPElement();
@@ -1282,7 +1282,7 @@ public:
   // BPElement funcs
   virtual int oneLineWidth();
   virtual void render(BPRender &mgr);
-  virtual void debugPrint(ostream &os, int ind) const;
+  virtual void debugPrint(std::ostream &os, int ind) const;
 };
 
 
@@ -1311,7 +1311,7 @@ public:
   virtual int oneLineWidth();
   virtual void render(BPRender &mgr);
   virtual bool isBreak() const;
-  virtual void debugPrint(ostream &os, int ind) const;
+  virtual void debugPrint(std::ostream &os, int ind) const;
 };
 
 
@@ -1348,7 +1348,7 @@ public:
   // BPElement funcs
   virtual int oneLineWidth();
   virtual void render(BPRender &mgr);
-  virtual void debugPrint(ostream &os, int ind) const;
+  virtual void debugPrint(std::ostream &os, int ind) const;
 };
 
 
@@ -1427,7 +1427,7 @@ public:      // funcs
   BPBox* /*owner*/ takeTree();
   
   // print the current stack of trees
-  void debugPrint(ostream &os) const;
+  void debugPrint(std::ostream &os) const;
   void debugPrintCout() const;      // for gdb
 };
 
@@ -1733,7 +1733,7 @@ public:       // funcs
 #include "sm_typ.h"
 #include "sm_xassert.h"
 #include "sm_str.h"
-#include <iostream.h>    // ostream
+#include <iostream>    // std::ostream
 
 // forward declarations
 class sm_stringBuilder;
@@ -1789,8 +1789,8 @@ public:
   char const *why() const
     { return (char const*)msg; }
 
-  void insert(ostream &os) const;
-  friend ostream& operator << (ostream &os, xBase const &obj)
+  void insert(std::ostream &os) const;
+  friend std::ostream& operator << (std::ostream &os, xBase const &obj)
     { obj.insert(os); return os; }
     // print why
 };
@@ -2273,8 +2273,8 @@ public:       // funcs
 // standard insert operator
 // (note that you can put 'virtual' in front of the macro call if desired)
 #define INSERT_OSTREAM(T)                                \
-  void insertOstream(ostream &os) const;                 \
-  friend ostream& operator<< (ostream &os, T const &obj) \
+  void insertOstream(std::ostream &os) const;                 \
+  friend std::ostream& operator<< (std::ostream &os, T const &obj) \
     { obj.insertOstream(os); return os; }
 
 
@@ -2318,7 +2318,7 @@ bool T::operator== (T const &obj) const
     EMEMB();
 }
 
-void T::insertOstream(ostream &os) const
+void T::insertOstream(std::ostream &os) const
 {}
 #endif // 0
 
@@ -2409,9 +2409,9 @@ inline void pretendUsedFn(T const &) {}
   STATICDEF void classname::printAllocStats(bool anyway)   \
   {                                                        \
     if (anyway || numAllocd != 0) {                        \
-      cout << #classname << " nodes: " << numAllocd        \
+      std::cout << #classname << " nodes: " << numAllocd        \
            << ", max  nodes: " << maxAllocd                \
-           << endl;                                        \
+           << std::endl;                                        \
     }                                                      \
   }
 
@@ -3744,17 +3744,18 @@ sm_stringBuilder& operator<< (sm_stringBuilder &sb, fpoint const &pt);
 #ifndef PPRINT_H
 #define PPRINT_H
 
-#include <iostream.h>      // ostream
+#include <iostream>      // std::ostream
 #include "sm_str.h"
 #include "sm_array.h"
 
 
 // output interface for PPrint.. I'd like to just start using the
-// C++ iostreams interfaces, but reading on the net I get the
+// C++ istd::ostreams interfaces, but reading on the net I get the
 // impression they're still a little too much in flux
 class PPrintOut {
 public:
   virtual void write(char const *text) = 0;
+  virtual ~PPrintOut(){}
 };
 
 class PPrintStringOut : public PPrintOut {
@@ -3765,9 +3766,9 @@ public:
 };
 
 class PPrintOstreamOut : public PPrintOut {
-  ostream &os;
+  std::ostream &os;
 public:
-  PPrintOstreamOut(ostream &o) : os(o) {}
+  PPrintOstreamOut(std::ostream &o) : os(o) {}
   virtual void write(char const *text);
 };
 
@@ -3889,7 +3890,7 @@ class PPrintToOstream : public PPrint {
   PPrintOstreamOut osOut;
 
 public:
-  PPrintToOstream(ostream &os)
+  PPrintToOstream(std::ostream &os)
     : PPrint(osOut), osOut(os) {}
 };
 
@@ -4100,7 +4101,7 @@ class PtrSet : private PtrMap<KEY, KEY> {
 #ifndef __FLEX_LEXER_H
 // Never included before - need to define base class.
 #define __FLEX_LEXER_H
-#include <iostream.h>
+#include <iostream>
 
 // FELIX: always C++ compiles anyhow
 //extern "C++" {
@@ -4118,14 +4119,14 @@ public:
         virtual void
                 yy_switch_to_buffer( struct yy_buffer_state* new_buffer ) = 0;
         virtual struct yy_buffer_state*
-                yy_create_buffer( istream* s, int size ) = 0;
+                yy_create_buffer( std::istream* s, int size ) = 0;
         virtual void yy_delete_buffer( struct yy_buffer_state* b ) = 0;
-        virtual void yyrestart( istream* s ) = 0;
+        virtual void yyrestart( std::istream* s ) = 0;
 
         virtual int yylex() = 0;
 
         // Call yylex with new input/output sources.
-        int yylex( istream* new_in, ostream* new_out = 0 )
+        int yylex( std::istream* new_in, std::ostream* new_out = 0 )
                 {
                 switch_streams( new_in, new_out );
                 return yylex();
@@ -4133,8 +4134,8 @@ public:
 
         // Switch to new input/output streams.  A nil stream pointer
         // indicates "keep the current one".
-        virtual void switch_streams( istream* new_in = 0,
-                                        ostream* new_out = 0 ) = 0;
+        virtual void switch_streams( std::istream* new_in = 0,
+                                        std::ostream* new_out = 0 ) = 0;
 
         int lineno() const              { return yylineno; }
 
@@ -4163,17 +4164,17 @@ class yyFlexLexer : public FlexLexer {
 public:
         // arg_yyin and arg_yyout default to the cin and cout, but we
         // only make that assignment when initializing in yylex().
-        yyFlexLexer( istream* arg_yyin = 0, ostream* arg_yyout = 0 );
+        yyFlexLexer( std::istream* arg_yyin = 0, std::ostream* arg_yyout = 0 );
 
         virtual ~yyFlexLexer();
 
         void yy_switch_to_buffer( struct yy_buffer_state* new_buffer );
-        struct yy_buffer_state* yy_create_buffer( istream* s, int size );
+        struct yy_buffer_state* yy_create_buffer( std::istream* s, int size );
         void yy_delete_buffer( struct yy_buffer_state* b );
-        void yyrestart( istream* s );
+        void yyrestart( std::istream* s );
 
         virtual int yylex();
-        virtual void switch_streams( istream* new_in, ostream* new_out );
+        virtual void switch_streams( std::istream* new_in, std::ostream* new_out );
 
 protected:
         virtual int LexerInput( char* buf, int max_size );
@@ -4184,7 +4185,7 @@ protected:
         int yyinput();
 
         void yy_load_buffer_state();
-        void yy_init_buffer( struct yy_buffer_state* b, istream* s );
+        void yy_init_buffer( struct yy_buffer_state* b, std::istream* s );
         void yy_flush_buffer( struct yy_buffer_state* b );
 
         int yy_start_stack_ptr;
@@ -4199,8 +4200,8 @@ protected:
         yy_state_type yy_try_NUL_trans( yy_state_type current_state );
         int yy_get_next_buffer();
 
-        istream* yyin;  // input source for default LexerInput
-        ostream* yyout; // output sink for default LexerOutput
+        std::istream* yyin;  // input source for default LexerInput
+        std::ostream* yyout; // output sink for default LexerOutput
 
         struct yy_buffer_state* yy_current_buffer;
 
@@ -5103,7 +5104,7 @@ inline SourceLoc advText(SourceLoc base, char const *text, int textLen)
 #ifndef __STRDICT_H
 #define __STRDICT_H
 
-#include <iostream.h>   // ostream
+#include <iostream>   // std::ostream
 #include "sm_str.h"
 #include "sm_macros.h"
 #include "sm_xassert.h"
@@ -5261,7 +5262,7 @@ public:
 // MOVE THE ABOVE TO PLACE MORE GENERAL 
 
 #include "sm_typ.h"
-#include <iostream.h>    // istream, ostream
+#include <iostream>    // std::istream, std::ostream
 #include <stdarg.h>      // va_list
 
 class Flatten;           // flatten.h
@@ -5338,27 +5339,27 @@ public:        // funcs
   sm_string& operator&= (sm_string const &tail);
 
   // input/output
-  friend istream& operator>> (istream &is, sm_string &obj)
+  friend std::istream& operator>> (std::istream &is, sm_string &obj)
     { obj.readline(is); return is; }
-  friend ostream& operator<< (ostream &os, sm_string const &obj)
+  friend std::ostream& operator<< (std::ostream &os, sm_string const &obj)
     { obj.write(os); return os; }
 
   // note: the read* functions are currently implemented in a fairly
   // inefficient manner (one char at a time)
 
-  void readdelim(istream &is, char const *delim);
+  void readdelim(std::istream &is, char const *delim);
     // read from is until any character in delim is encountered; consumes that
     // character, but does not put it into the sm_string; if delim is null or
     // empty, reads until EOF
 
-  void readall(istream &is) { readdelim(is, NULL); }
+  void readall(std::istream &is) { readdelim(is, NULL); }
     // read all remaining chars of is into this
 
-  void readline(istream &is) { readdelim(is, "\n"); }
+  void readline(std::istream &is) { readdelim(is, "\n"); }
     // read a line from input stream; consumes the \n, but doesn't put it into
     // the sm_string
 
-  void write(ostream &os) const;
+  void write(std::ostream &os) const;
     // writes all stored characters (but not '\0')
     
   // debugging
@@ -5447,12 +5448,12 @@ public:
   sm_stringBuilder& operator<< (Manipulator manip);
 
   // stream readers
-  friend istream& operator>> (istream &is, sm_stringBuilder &sb)
+  friend std::istream& operator>> (std::istream &is, sm_stringBuilder &sb)
     { sb.readline(is); return is; }
-  void readall(istream &is) { readdelim(is, NULL); }
-  void readline(istream &is) { readdelim(is, "\n"); }
+  void readall(std::istream &is) { readdelim(is, NULL); }
+  void readline(std::istream &is) { readdelim(is, "\n"); }
 
-  void readdelim(istream &is, char const *delim);
+  void readdelim(std::istream &is, char const *delim);
 
   // an experiment: hex formatting (something I've sometimes done by resorting
   // to sprintf in the past)
@@ -5469,7 +5470,7 @@ public:
 
 
 // the real strength of this entire module: construct sm_strings in-place
-// using the same syntax as C++ iostreams.  e.g.:
+// using the same syntax as C++ istd::ostreams.  e.g.:
 //   puts(sm_stringb("x=" << x << ", y=" << y));
 #define sm_stringb(expr) (sm_stringBuilder() << expr)
 
@@ -5833,14 +5834,14 @@ public:     // funcs
 @h=tangler('elk/sm_strtokp.h')
 @select(h)
 // strtokp.h            see license.txt for copyright and terms of use
-// using strtok to parse an entire sm_string at once
+// using std::strtok to parse an entire sm_string at once
 // Scott McPeak, 1997  This file is public domain.
 
 #ifndef __STRTOKP_H
 #define __STRTOKP_H
 
 #include "sm_str.h"
-#include <string.h>    // strlen
+#include <cstring>    // std::strlen
 
 class StrtokParse {
   sm_string buf;          // locally allocated storage
@@ -5881,7 +5882,7 @@ public:
     // yields a pointer to where tokv(which) is, as a subsm_string, in that sm_string
 
   int offsetAfter(int which) const
-    { return offset(which) + strlen(tokv(which)); }
+    { return offset(which) + std::strlen(tokv(which)); }
     // offset for character just beyond last one in tokv (should be either
     // a delimiter character, or 0)
 
@@ -6017,7 +6018,7 @@ sm_string chomp(char const *src);
 #ifndef __SVDICT_H
 #define __SVDICT_H
 
-#include <iostream.h>   // ostream
+#include <iostream>   // std::ostream
 #include "sm_str.h"
 #include "sm_macros.h"
 #include "sm_xassert.h"
@@ -6446,7 +6447,7 @@ public:
 #ifndef __TEST_H
 #define __TEST_H
 
-#include <iostream.h>      // cout
+#include <iostream>      // cout
 #include <stdio.h>         // printf
 #include "sm_exc.h"
 #include "sm_nonport.h"
@@ -6466,7 +6467,7 @@ int main()                                      \
     return 0;                                   \
   }                                             \
   catch (xBase &x) {                            \
-    cout << x << endl;                          \
+    std::cout << x << std::endl;                          \
     return 4;                                   \
   }                                             \
 }
@@ -6481,14 +6482,14 @@ int main(int argc, char *argv[])                \
     return 0;                                   \
   }                                             \
   catch (xBase &x) {                            \
-    cout << x << endl;                          \
+    std::cout << x << std::endl;                          \
     return 4;                                   \
   }                                             \
 }
 
 
 // convenient for printing the value of a variable or expression
-#define PVAL(val) cout << #val << " = " << (val) << endl
+#define PVAL(val) std::cout << #val << " = " << (val) << std::endl
 
 
 // easy way to time a section of code
@@ -6501,7 +6502,7 @@ public:
     start = getMilliseconds();
   }
   ~TimedSection() {
-    cout << name << ": " << (getMilliseconds() - start) << " msecs\n";
+    std::cout << name << ": " << (getMilliseconds() - start) << " msecs\n";
   }
 };
 
@@ -6614,7 +6615,7 @@ public:       // funcs
 #ifndef TRACE_H
 #define TRACE_H
 
-#include <iostream.h>     // ostream
+#include <iostream>     // std::ostream
 
 
 // add a subsystem to the list of those being traced
@@ -6632,16 +6633,16 @@ void traceRemoveAll();
 
 // trace; if the named system is active, this yields cout (after
 // sending a little output to identify the system); if not, it
-// yields an ostream attached to /dev/null; when using this
+// yields an std::ostream attached to /dev/null; when using this
 // method, it is up to you to put the newline
-ostream &trace(char const *sysName);
+std::ostream &trace(char const *sysName);
 
 // give an entire sm_string to trace; do *not* put a newline in it
 // (the tracer will do that)
 void trstr(char const *sysName, char const *traceString);
 
 // trace macro which disables itself when NDEBUG is true,
-// and automatically supplies 'endl' when it's not true
+// and automatically supplies 'std::endl' when it's not true
 //
 // dsw: debugging *weakly* implies tracing: if we are debugging, do
 // tracing unless otherwise specified
@@ -6657,7 +6658,7 @@ void trstr(char const *sysName, char const *traceString);
   #define DO_TRACE 0
 #endif
 #if DO_TRACE != 0
-  #define TRACE(tag, exp) trace(tag) << exp << endl /* user ; */
+  #define TRACE(tag, exp) trace(tag) << exp << std::endl /* user ; */
 #else
   #define TRACE(tag, exp) ((void)0)
 #endif
@@ -6666,7 +6667,7 @@ void trstr(char const *sysName, char const *traceString);
 // special for "progress" tracing; prints time too;
 // 'level' is level of detail -- 1 is highest level, 2 is
 // more refined (and therefore usually not printed), etc.
-ostream &traceProgress(int level=1);
+std::ostream &traceProgress(int level=1);
 
 
 // add one or more subsystems, separated by commas
@@ -8102,7 +8103,7 @@ USUAL_MAIN
 #include "sm_xassert.h"
 #include "sm_flatten.h"
 
-#include <string.h>     // memset, memcpy
+#include <cstring>     // std::memset, std::memcpy
 #include <stdio.h>      // printf
 
 
@@ -8130,7 +8131,7 @@ Bit2d::Bit2d(Bit2d const &obj)
   stride = obj.stride;
   data = new byte[datasize()];
   owning = true;
-  memcpy(data, obj.data, datasize());
+  std::memcpy(data, obj.data, datasize());
 }
 
 
@@ -8138,7 +8139,7 @@ Bit2d& Bit2d::operator= (Bit2d const &obj)
 {
   if (this != &obj) {
     xassert(size == obj.size);
-    memcpy(data, obj.data, datasize());
+    std::memcpy(data, obj.data, datasize());
   }
   return *this;
 }
@@ -8147,7 +8148,7 @@ Bit2d& Bit2d::operator= (Bit2d const &obj)
 bool Bit2d::operator== (Bit2d const &obj) const
 {
   return (size == obj.size) &&
-         (0==memcmp(data, obj.data, datasize()));
+         (0==std::memcmp(data, obj.data, datasize()));
 }
 
 
@@ -8168,7 +8169,7 @@ void Bit2d::xfer(Flatten &flat)
 
 void Bit2d::setall(int val)
 {
-  memset(data, val? 0xFF : 0, datasize());
+  std::memset(data, val? 0xFF : 0, datasize());
 }
 
 
@@ -8315,7 +8316,7 @@ int main()
 #include "sm_bitarray.h"
 #include "sm_flatten.h"
 
-#include <string.h>       // memset
+#include <cstring>       // std::memset
 
 
 BitArray::BitArray(int n)
@@ -8349,7 +8350,7 @@ void BitArray::xfer(Flatten &flat)
 
 void BitArray::clearAll()
 {
-  memset(bits, 0, allocdBytes());
+  std::memset(bits, 0, allocdBytes());
 }
 
 @h=tangler('elk/sm_boxprint.cpp')
@@ -8360,7 +8361,7 @@ void BitArray::clearAll()
 #include "sm_boxprint.h"
 #include "sm_strutil.h"
 
-#include <string.h>         // strlen
+#include <cstring>         // std::strlen
 
 
 // ----------------------- BPRender ----------------------
@@ -8384,7 +8385,7 @@ void BPRender::reset()
 
 void BPRender::add(char const *text)
 {
-  int len = strlen(text);
+  int len = std::strlen(text);
   sb << text;
   curCol += len;
 }
@@ -8442,7 +8443,7 @@ void BPText::render(BPRender &mgr)
 }
 
 
-void BPText::debugPrint(ostream &os, int /*ind*/) const
+void BPText::debugPrint(std::ostream &os, int /*ind*/) const
 {
   os << "text(" << quoted(text) << ")";
 }
@@ -8473,7 +8474,7 @@ bool BPBreak::isBreak() const
   return enabled;
 }
 
-void BPBreak::debugPrint(ostream &os, int /*ind*/) const
+void BPBreak::debugPrint(std::ostream &os, int /*ind*/) const
 {
   os << "break(en=" << (int)enabled << ", ind=" << indent << ")";
 }
@@ -8584,7 +8585,7 @@ void BPBox::render(BPRender &mgr)
 }
 
 
-void BPBox::debugPrint(ostream &os, int ind) const
+void BPBox::debugPrint(std::ostream &os, int ind) const
 {           
   static char const * const map[] = {
     "vert",
@@ -8703,7 +8704,7 @@ BPBox* /*owner*/ BoxPrint::takeTree()
 }
 
 
-void BoxPrint::debugPrint(ostream &os) const
+void BoxPrint::debugPrint(std::ostream &os) const
 {                             
   for (int i=0; i < boxStack.length(); i++) {
     os << "----- frame -----\n";
@@ -8714,7 +8715,7 @@ void BoxPrint::debugPrint(ostream &os) const
 
 void BoxPrint::debugPrintCout() const
 {
-  debugPrint(cout);
+  debugPrint(std::cout);
 }
 
 
@@ -8788,14 +8789,14 @@ void doit(int argc, char *argv[])
   if (argc >= 2) {
     ren.margin = atoi(argv[1]);
   }
-  cout << "margin: " << ren.margin << "\n";
+  std::cout << "margin: " << ren.margin << "\n";
 
   tree->render(ren);
   delete tree;
 
-  cout << "         1    1    2    2    3    3    4    4    5    5    6    6    7\n";
-  cout << "1---5----0----5----0----5----0----5----0----5----0----5----0----5----0\n";
-  cout << ren.takeString();
+  std::cout << "         1    1    2    2    3    3    4    4    5    5    6    6    7\n";
+  std::cout << "1---5----0----5----0----5----0----5----0----5----0----5----0----5----0\n";
+  std::cout << ren.takeString();
 }
 
 int main(int argc, char *argv[])
@@ -8952,7 +8953,7 @@ int main()
 
 #include "sm_flatten.h"
 #include "sm_exc.h"
-#include <string.h>      // strlen
+#include <cstring>      // std::strlen
 
 Flatten::Flatten()
 {}
@@ -8999,7 +9000,7 @@ void Flatten::xferCharString(char *&str)
       return;
     }
 
-    int len = strlen(str);
+    int len = std::strlen(str);
     writeInt(len);
 
     // write the null terminator too, as a simple
@@ -9344,7 +9345,7 @@ int general_printf(Gprintf_output_function output,
 #ifdef TEST_GPRINTF
 
 #include <stdio.h>     /* fputc, printf, vsprintf */
-#include <string.h>    /* strcmp, strlen */
+#include <cstring>    /* strcmp, std::strlen */
 #include <stdlib.h>    /* exit */
 
 
@@ -9407,7 +9408,7 @@ void expect_vector(char const *expect_output,
 {
   va_list args;
   va_start(args, format);
-  expect_vector_len(strlen(expect_output), expect_output, format, args);
+  expect_vector_len(std::strlen(expect_output), expect_output, format, args);
   va_end(args);
 }
 
@@ -9462,7 +9463,7 @@ int main()
 
 #include "sm_growbuf.h"
 
-#include <string.h>       // memcpy
+#include <cstring>       // std::memcpy
 
 void GrowBuffer::append(byte const *str, int len)
 {
@@ -9479,7 +9480,7 @@ void GrowBuffer::append(byte const *str, int len)
   }
 
   // do copy
-  memcpy(getData()+getDataLen(), str, len);
+  std::memcpy(getData()+getDataLen(), str, len);
   setDataLen(newLen);
 }
 
@@ -9498,11 +9499,11 @@ void entry()
     buf.append(str, len);
   }
   loopi(10) {
-    if (0!=memcmp(str, buf.getData()+len*i, len)) {
+    if (0!=std::memcmp(str, buf.getData()+len*i, len)) {
       xfailure("buffer contents are wrong");
     }
   }
-  cout << "growbuf ok\n";
+  std::cout << "growbuf ok\n";
 }
 
 USUAL_MAIN
@@ -9515,7 +9516,7 @@ USUAL_MAIN
 
 #include "sm_hashline.h"
 
-#include <string.h>        // memcpy
+#include <cstring>        // std::memcpy
 
 
 HashLineMap::HashLineMap(char const *pf)
@@ -9556,7 +9557,7 @@ void HashLineMap::doneAdding()
   ArrayStack<HashLine> tmp(directives.length());
 
   // copy all the entries into the new array
-  memcpy(tmp.getDangerousWritableArray(), directives.getArray(),
+  std::memcpy(tmp.getDangerousWritableArray(), directives.getArray(),
          directives.length() * sizeof(HashLine));
   tmp.setLength(directives.length());
 
@@ -9707,7 +9708,7 @@ int main()
 #include "sm_hashtbl.h"
 #include "sm_xassert.h"
 
-#include <string.h>      // memset
+#include <cstring>      // std::memset
 
 
 unsigned HashTable::hashFunction(void const *key) const
@@ -9734,7 +9735,7 @@ void HashTable::makeTable(int size)
 {
   hashTable = new void*[size];
   tableSize = size;
-  memset(hashTable, 0, sizeof(void*) * tableSize);
+  std::memset(hashTable, 0, sizeof(void*) * tableSize);
   numEntries = 0;
 }
 
@@ -9970,7 +9971,7 @@ STATICDEF bool HashTable::
 
 #include "sm_mysig.h"
 
-#include <string.h>     // strsignal
+//#include <cstring>     // strsignal
 #include <stdlib.h>     // exit
 #include <unistd.h>     // sleep
 #include <stdio.h>      // printf
@@ -9985,7 +9986,7 @@ STATICDEF bool HashTable::
 void setHandler(int signum, SignalHandler handler)
 {
   struct sigaction sa;
-  memset(&sa, 0, sizeof(sa));       // clear any "extra" fields
+  std::memset(&sa, 0, sizeof(sa));       // clear any "extra" fields
   sa.sa_handler = handler;          // handler function
   sigemptyset(&sa.sa_mask);         // don't block other signals
   sa.sa_flags = SA_RESTART;         // automatically restart syscalls
@@ -10094,7 +10095,7 @@ void printSegfaultAddrs()
 
   // construct the handler information struct
   struct sigaction sa;
-  memset(&sa, 0, sizeof(sa));
+  std::memset(&sa, 0, sizeof(sa));
   sa.sa_sigaction = printAddrHandler;
   sigemptyset(&sa.sa_mask);         // don't block other signals
   sa.sa_flags = SA_SIGINFO; // | SA_STACK;
@@ -10203,7 +10204,7 @@ sm_stringBuilder& operator<< (sm_stringBuilder &sb, fpoint const &pt)
 #include "sm_pprint.h"
 #include "sm_breaker.h"
 #include <stdio.h>       // sprintf
-#include <string.h>      // memcpy
+#include <cstring>      // std::memcpy
 
 
 // ---------------------- PPrintOut ----------------------
@@ -10406,7 +10407,7 @@ PPrint::Setter::~Setter()
     // unbalanced groups
     breaker();          
     if (warnWhenUnbalanced) {
-      cout << "warning: unbalanced indentation grouping in pprint input\n";
+      std::cout << "warning: unbalanced indentation grouping in pprint input\n";
     }
   }
 }
@@ -10470,7 +10471,7 @@ void PPrint::set()
 void append(ArrayStack<char> &line, char const *src, int len)
 {
   line.ensureAtLeast(line.length() + len);
-  memcpy(line.getArrayNC()+line.length(),     // dest
+  std::memcpy(line.getArrayNC()+line.length(),     // dest
          src, len);                           // src, len
   line.setLength(line.length() + len);
 }
@@ -10530,8 +10531,8 @@ int main()
   pp.margin = 30;
   pp.startText = "; ";
 
-  cout << "         1    1    2    2    3\n";
-  cout << "1---5----0----5----0----5----0\n";
+  std::cout << "         1    1    2    2    3\n";
+  std::cout << "1---5----0----5----0----5----0\n";
 
   pp << "int foo()\n"
         "{\n"
@@ -10553,7 +10554,7 @@ int main()
   pp.ind(-2);
   pp << "}\n";
   
-  cout << pp.sb;
+  std::cout << pp.sb;
   
   return 0;
 }
@@ -10742,7 +10743,7 @@ int main()
 #include "sm_hashline.h"
 
 #include <stdio.h>      // fprintf
-#include <string.h>     // memcpy
+#include <cstring>     // std::memcpy
 
 
 // this parameter controls the frequency of Markers in 
@@ -10877,12 +10878,12 @@ SourceLocManager::File::File(char const *n, SourceLoc aStartLoc)
 
   this->lineLengthsSize = lineLengths.length();
   this->lineLengths = new unsigned char[lineLengthsSize];
-  memcpy(this->lineLengths, lineLengths.getArray(),
+  std::memcpy(this->lineLengths, lineLengths.getArray(),
          lineLengthsSize * sizeof(this->lineLengths[0]));
 
   this->indexSize = index.length();
   this->index = new Marker[indexSize];
-  memcpy(this->index, index.getArray(),
+  std::memcpy(this->index, index.getArray(),
          indexSize * sizeof(this->index[0]));
          
   // 'fp' closed by the AutoFILE
@@ -11591,11 +11592,11 @@ void testHashMap()
     char buf[SZ];
     int ppLine=0;
     while (fgets(buf, SZ, fp)) {
-      if (buf[strlen(buf)-1] == '\n') {
+      if (buf[std::strlen(buf)-1] == '\n') {
         ppLine++;
       }
 
-      if (0==memcmp(buf, "int blah_de_blah", 16)) {
+      if (0==std::memcmp(buf, "int blah_de_blah", 16)) {
         expanderLine = ppLine;
       }
 
@@ -11609,7 +11610,7 @@ void testHashMap()
 
       int origLine = atoi(tok[1]);
       char const *tok2 = tok[2];
-      sm_string origFname = sm_string(tok2+1, strlen(tok2)-2);  // remove quotes
+      sm_string origFname = sm_string(tok2+1, std::strlen(tok2)-2);  // remove quotes
       pp->addHashLine(ppLine, origLine, origFname);
     }
     pp->doneAdding();
@@ -11627,23 +11628,23 @@ void testHashMap()
   int ppLine;
   for (ppLine = 1; ppLine < 10; ppLine++) {
     SourceLoc loc = mgr.encodeLineCol("srcloc.tmp", ppLine, 1);
-    cout << "ppLine " << ppLine << ": " << toString(loc) << endl;
+    std::cout << "ppLine " << ppLine << ": " << toString(loc) << std::endl;
   }
 
   // similar for last few lines
   for (ppLine = pp->numLines - 10; ppLine <= pp->numLines; ppLine++) {
     SourceLoc loc = mgr.encodeLineCol("srcloc.tmp", ppLine, 1);
-    cout << "ppLine " << ppLine << ": " << toString(loc) << endl;
+    std::cout << "ppLine " << ppLine << ": " << toString(loc) << std::endl;
   }
 
   // see how the expander line behaves
   if (!expanderLine) {
-    cout << "didn't find expander line!\n";
+    std::cout << "didn't find expander line!\n";
     exit(2);
   }
   else {
     SourceLoc loc = mgr.encodeLineCol("srcloc.tmp", expanderLine, 1);
-    cout << "expander column 1: " << toString(loc) << endl;
+    std::cout << "expander column 1: " << toString(loc) << std::endl;
 
     // in the pp file, I can advance the expander horizontally a long ways;
     // this should truncate to column 9
@@ -11652,15 +11653,15 @@ void testHashMap()
     char const *fname;
     int offset;
     mgr.decodeOffset(loc, fname, offset);
-    cout << "expander column 21: " << fname << ", offset " << offset << endl;
+    std::cout << "expander column 21: " << fname << ", offset " << offset << std::endl;
     xassert(0==strcmp(fname, "srcloc.cc"));
 
     // map that to line/col, which should show the truncation
     int line, col;
     orig->charToLineCol(offset, line, col);
-    cout << "expander column 21: " << locString(fname, line, col) << endl;
+    std::cout << "expander column 21: " << locString(fname, line, col) << std::endl;
     if (col != 9) {
-      cout << "expected column 9!\n";
+      std::cout << "expected column 9!\n";
       exit(2);
     }
   }
@@ -11670,7 +11671,7 @@ void testHashMap()
 void entry(int argc, char ** /*argv*/)
 {
   traceAddSys("progress");
-  traceProgress() << "begin" << endl;
+  traceProgress() << "begin" << std::endl;
 
   if (argc >= 2) {
     // set maxStaticLocs low to test the warning
@@ -11688,21 +11689,21 @@ void entry(int argc, char ** /*argv*/)
     testFile("srcloc.h");
   }
 
-  traceProgress() << "end" << endl;
+  traceProgress() << "end" << std::endl;
 
   // protect against degeneracy by printing the length of
   // the longest line
-  cout << "\n";
-  cout << "long line len: " << longestLen << endl;
+  std::cout << "\n";
+  std::cout << "long line len: " << longestLen << std::endl;
 
   // test the statics
-  cout << "invalid: " << toString(SL_UNKNOWN) << endl;
-  cout << "here: " << toString(HERE_SOURCELOC) << endl;
+  std::cout << "invalid: " << toString(SL_UNKNOWN) << std::endl;
+  std::cout << "here: " << toString(HERE_SOURCELOC) << std::endl;
   
-  cout << "\n";
+  std::cout << "\n";
   testHashMap();
 
-  cout << "srcloc is ok\n";
+  std::cout << "srcloc is ok\n";
 }
 
 ARGS_MAIN
@@ -11715,7 +11716,7 @@ ARGS_MAIN
 // code for strdict.h
 
 #include "sm_strdict.h"
-#include <string.h>         // strcmp
+#include <cstring>         // strcmp
 
 
 #define FOREACH_NODE(itervar) \
@@ -12020,10 +12021,10 @@ void StringDict::selfCheck() const
 }
 
 
-void StringDict::insertOstream(ostream &os) const
+void StringDict::insertOstream(std::ostream &os) const
 {
   FOREACH_ITERC(*this, entry) {
-    os << entry.key() << " = " << entry.value() << endl;
+    os << entry.key() << " = " << entry.value() << std::endl;
   }
 }
 
@@ -12173,11 +12174,11 @@ void entry()
     }
   }
 
-  cout << "final size: " << size
+  std::cout << "final size: " << size
        << "\ncollisions: " << collisions
        << "\n";
 
-  cout << "all tests passed\n";
+  std::cout << "all tests passed\n";
 }
 
 USUAL_MAIN
@@ -12191,7 +12192,7 @@ USUAL_MAIN
 #include "sm_strhash.h"
 #include "sm_xassert.h"
 
-#include <string.h>      // strcmp
+#include <cstring>      // strcmp
 
 // notes on sm_string hash functions ****************
 
@@ -12240,7 +12241,7 @@ STATICDEF unsigned StringHash::coreHash(char const *key)
   // failure is better than a segfault
   //
   // sm: I don't agree; segfaults arising from NULL derefs are
-  // quite friendly (deref'ing random address is another story).
+  // quite fristd::endly (deref'ing random address is another story).
   // Anyway, this is fine, but I'd like it to go away in NDEBUG
   // mode so I'm changing it to use 'xassertdb'.
   xassertdb(key);
@@ -12459,9 +12460,9 @@ STATICDEF bool StringHash::keyCompare(char const *key1, char const *key2)
 // ---------------------- test code --------------------
 #ifdef TEST_STRHASH
 
-#include <iostream.h>    // cout
+#include <iostream>    // std::cout
 #include <stdlib.h>      // rand
-#include <iostream>      // istream
+#include <iostream>      // std::istream
 #include <fstream>       // filebuf
 #include "sm_trace.h"
 #include "sm_crc.h"
@@ -12522,11 +12523,11 @@ void readDataFromFile(char *inFileName) {
   char *delim = " \t\n\r\v\f";
   std::filebuf fb;
   fb.open (inFileName, ios::in);
-  istream in(&fb);
+  std::istream in(&fb);
   while(true) {
     sm_stringBuilder s;
     s.readdelim(in, delim);
-//      cout << ":" << s->pcharc() << ":" << endl;
+//      std::cout << ":" << s->pcharc() << ":" << std::endl;
     if (in.eof()) break;
 //      // don't insert 0 length sm_strings
 //      if (s->length() == 0) continue;
@@ -12534,10 +12535,10 @@ void readDataFromFile(char *inFileName) {
   }
 }
 
-void writeData(ostream &out) {
-  cout << "write data" << endl;
+void writeData(std::ostream &out) {
+  std::cout << "write data" << std::endl;
   for(int i=0; i<dataArray->tableSize; ++i) {
-    out << dataArray->table[i] << endl;
+    out << dataArray->table[i] << std::endl;
   }
 }
 
@@ -12610,13 +12611,13 @@ void performanceTest(int numPerfRuns) {
   loopj(numPerfRuns) {
     loopi(dataArray->tableSize) {
       StringHash::coreHash(dataArray->table[i]);
-      //crc32((unsigned char*)dataArray->table[i], strlen(dataArray->table[i]));
+      //crc32((unsigned char*)dataArray->table[i], std::strlen(dataArray->table[i]));
       //crc32((unsigned char*)dataArray->table[i], 10);
     }
   }
   long stopTime = getMilliseconds();
   long duration = stopTime - startTime;
-  cout << "milliseconds to hash: " << duration << endl;
+  std::cout << "milliseconds to hash: " << duration << std::endl;
   
   traceProgress() << "end of strhash performance testing\n";
 }
@@ -12630,7 +12631,7 @@ bool testPerf = true;
 int numPerfRuns = 10000;
 
 void usage() {
-  cout << "Test the sm_string hashing module strhash.cc\n"
+  std::cout << "Test the sm_string hashing module strhash.cc\n"
        << "  --help / -h     : print this message\n"
        << "  --[no-]testCor  : run the correctness tests\n"
        << "                    will fail if data has duplicate sm_strings (?!)\n"
@@ -12641,7 +12642,7 @@ void usage() {
        << "                    N should be even\n"
        << "  --dump          : dump out the data after generating/reading it\n"
        << "The default is '--random 300 --testCor --testPerf --numPerfRuns 10000'."
-       << endl;
+       << std::endl;
 }
 
 void initFromFlags(int &argc, char**&argv) {
@@ -12662,31 +12663,31 @@ void initFromFlags(int &argc, char**&argv) {
       testPerf = false;
     } else if (strcmp(*argv, "--random")==0) {
       if (inFileName) {
-        cout << "do not use --random and --file together" << endl;
+        std::cout << "do not use --random and --file together" << std::endl;
         usage();
         exit(1);
       }
       --argc; ++argv;
       if (!*argv) {
-        cout << "supply an argument to --random" << endl;
+        std::cout << "supply an argument to --random" << std::endl;
         usage();
         exit(1);
       }
       numRandStrs = atoi(*argv);
       if (!(numRandStrs > 0)) {
-        cout << "argument to --random must be > 0" << endl;
+        std::cout << "argument to --random must be > 0" << std::endl;
         usage();
         exit(1);
       }
     } else if (strcmp(*argv, "--file")==0) {
       if (numRandStrs) {
-        cout << "do not use --random and --file together" << endl;
+        std::cout << "do not use --random and --file together" << std::endl;
         usage();
         exit(1);
       }
       --argc; ++argv;
       if (!*argv) {
-        cout << "supply an argument to --file" << endl;
+        std::cout << "supply an argument to --file" << std::endl;
         usage();
         exit(1);
       }
@@ -12695,20 +12696,20 @@ void initFromFlags(int &argc, char**&argv) {
     } else if (strcmp(*argv, "--numPerfRuns")==0) {
       --argc; ++argv;
       if (!*argv) {
-        cout << "supply an argument to --numPerfRuns" << endl;
+        std::cout << "supply an argument to --numPerfRuns" << std::endl;
         usage();
         exit(1);
       }
       numPerfRuns = atoi(*argv);
       if (!(numPerfRuns > 0)) {
-        cout << "argument to --numPerfRuns must be > 0" << endl;
+        std::cout << "argument to --numPerfRuns must be > 0" << std::endl;
         usage();
         exit(1);
       }
     } else if (strcmp(*argv, "--dump")==0) {
       dump = true;
     } else {
-      cout << "unrecognized flag " << *argv << endl;
+      std::cout << "unrecognized flag " << *argv << std::endl;
       usage();
       exit(1);
     }
@@ -12720,9 +12721,9 @@ int main(int argc, char **argv)
   traceAddSys("progress");
 
   #if STRHASH_ALG == 1
-    cout << "hash function 1: Nelson" << endl;
+    std::cout << "hash function 1: Nelson" << std::endl;
   #elif STRHASH_ALG == 2
-    cout << "hash function 2: word-rotate/final-mix" << endl;
+    std::cout << "hash function 2: word-rotate/final-mix" << std::endl;
   #else
     #error You must pick a hash function
   #endif // STRHASH_ALG multi-switch
@@ -12735,7 +12736,7 @@ int main(int argc, char **argv)
     numRandStrs = 300;          // default
   }
   if (numRandStrs % 2 != 0) {
-    cout << "use an even-number argument for --random" << endl;
+    std::cout << "use an even-number argument for --random" << std::endl;
     usage();
     exit(1);
   }
@@ -12743,8 +12744,8 @@ int main(int argc, char **argv)
     makeRandomData(numRandStrs);
   } else if (inFileName) {
     if (testCor) {
-      cout << "Warning: The correctness test fails if sm_strings are duplicated "
-        "and you are reading data from a file." << endl;
+      std::cout << "Warning: The correctness test fails if sm_strings are duplicated "
+        "and you are reading data from a file." << std::endl;
     }
     readDataFromFile(inFileName);
   } else {
@@ -12753,7 +12754,7 @@ int main(int argc, char **argv)
 
   // dump data
   if (dump) {
-    writeData(cout);
+    writeData(std::cout);
   }
 
   // test
@@ -12767,7 +12768,7 @@ int main(int argc, char **argv)
   // delete data
 //    deleteData();
 
-  cout << "strhash tests finished\n";
+  std::cout << "strhash tests finished\n";
   return 0;
 }
 
@@ -12806,7 +12807,7 @@ void StringSet::remove(char const *elt)
 #include "sm_autofile.h"
 
 #include <ctype.h>       // isspace
-#include <string.h>      // strstr, memcmp
+#include <cstring>      // strstr, std::memcmp
 #include <stdio.h>       // sprintf
 #include <stdlib.h>      // strtoul
 #include <time.h>        // time, asctime, localtime
@@ -12834,7 +12835,7 @@ sm_string replace(char const *src, char const *oldstr, char const *newstr)
     ret &= sm_string(newstr);
 
     // move src to beyond replaced subsm_string
-    src += (next-src) + strlen(oldstr);
+    src += (next-src) + std::strlen(oldstr);
   }
 
   return ret;
@@ -12887,7 +12888,7 @@ sm_string translate(char const *src, char const *srcchars, char const *destchars
   }
 
   // run through 'src', applying 'map'
-  sm_string ret(strlen(src));
+  sm_string ret(std::strlen(src));
   char *dest = ret.pchar();
   while (*src) {
     *dest = map[(unsigned char)*src];
@@ -12913,7 +12914,7 @@ sm_string trimWhitespace(char const *str)
   }
 
   // trim trailing whitespace
-  char const *end = str + strlen(str);
+  char const *end = str + std::strlen(str);
   while (end > str &&
          isspace(end[-1])) {
     end--;
@@ -12978,14 +12979,14 @@ sm_string encodeWithEscapes(char const *p, int len)
 
 sm_string encodeWithEscapes(char const *p)
 {
-  return encodeWithEscapes(p, strlen(p));
+  return encodeWithEscapes(p, std::strlen(p));
 }
 
 
 sm_string quoted(char const *src)
 {
   return sm_stringc << "\""
-                 << encodeWithEscapes(src, strlen(src))
+                 << encodeWithEscapes(src, std::strlen(src))
                  << "\"";
 }
 
@@ -13090,7 +13091,7 @@ void decodeEscapes(sm_string &dest, int &destLen, char const *src,
   // copy to 'dest'
   dest.setlength(destLen);       // this sets the NUL
   if (destLen > 0) {
-    memcpy(dest.pchar(), sb.pchar(), destLen);
+    std::memcpy(dest.pchar(), sb.pchar(), destLen);
   }
 }
 
@@ -13098,12 +13099,12 @@ void decodeEscapes(sm_string &dest, int &destLen, char const *src,
 sm_string parseQuotedString(char const *text)
 {
   if (!( text[0] == '"' &&
-         text[strlen(text)-1] == '"' )) {
+         text[std::strlen(text)-1] == '"' )) {
     xformat(sm_stringc << "quoted sm_string is missing quotes: " << text);
   }
 
   // strip the quotes
-  sm_string noQuotes = sm_string(text+1, strlen(text)-2);
+  sm_string noQuotes = sm_string(text+1, std::strlen(text)-2);
   
   // decode escapes
   sm_string ret;
@@ -13117,7 +13118,7 @@ sm_string localTimeString()
 {
   time_t t = time(NULL);
   char const *p = asctime(localtime(&t));
-  return sm_string(p, strlen(p) - 1);     // strip final newline
+  return sm_string(p, std::strlen(p) - 1);     // strip final newline
 }
 
 
@@ -13127,7 +13128,7 @@ sm_string sm_basename(char const *src)
   if (sl && sl[1] == 0) {
     // there is a slash, but it is the last character; ignore it
     // (this behavior is what /bin/basename does)
-    return sm_basename(sm_string(src, strlen(src)-1));
+    return sm_basename(sm_string(src, std::strlen(src)-1));
   }
 
   if (sl) {
@@ -13149,7 +13150,7 @@ sm_string dirname(char const *src)
   if (sl && sl[1] == 0) {
     // there is a slash, but it is the last character; ignore it
     // (this behavior is what /bin/dirname does)
-    return dirname(sm_string(src, strlen(src)-1));
+    return dirname(sm_string(src, std::strlen(src)-1));
   }
 
   if (sl) {
@@ -13172,8 +13173,8 @@ sm_string plural(int n, char const *prefix)
   if (0==strcmp(prefix, "was")) {
     return sm_string("were");
   }
-  if (prefix[strlen(prefix)-1] == 'y') {
-    return sm_stringc << sm_string(prefix, strlen(prefix)-1) << "ies";
+  if (prefix[std::strlen(prefix)-1] == 'y') {
+    return sm_stringc << sm_string(prefix, std::strlen(prefix)-1) << "ies";
   }
   else {
     return sm_stringc << prefix << "s";
@@ -13191,9 +13192,9 @@ char *copyToStaticBuffer(char const *s)
   enum { SZ=200 };
   static char buf[SZ+1];
 
-  int len = strlen(s);
+  int len = std::strlen(s);
   if (len > SZ) len=SZ;
-  memcpy(buf, s, len);
+  std::memcpy(buf, s, len);
   buf[len] = 0;
 
   return buf;
@@ -13202,18 +13203,18 @@ char *copyToStaticBuffer(char const *s)
 
 bool prefixEquals(char const *str, char const *prefix)
 {
-  int slen = strlen(str);
-  int plen = strlen(prefix);
+  int slen = std::strlen(str);
+  int plen = std::strlen(prefix);
   return slen >= plen &&
-         0==memcmp(str, prefix, plen);
+         0==std::memcmp(str, prefix, plen);
 }
 
 bool suffixEquals(char const *str, char const *suffix)
 {
-  int slen = strlen(str);
-  int ulen = strlen(suffix);    // sUffix
+  int slen = std::strlen(str);
+  int ulen = std::strlen(suffix);    // sUffix
   return slen >= ulen &&
-         0==memcmp(str+slen-ulen, suffix, ulen);
+         0==std::memcmp(str+slen-ulen, suffix, ulen);
 }
 
 
@@ -13258,7 +13259,7 @@ bool readLine(sm_string &dest, FILE *fp)
     return false;
   }
 
-  if (buf[strlen(buf)-1] == '\n') {
+  if (buf[std::strlen(buf)-1] == '\n') {
     // read a newline, we got the whole line
     dest = buf;
     return true;
@@ -13266,7 +13267,7 @@ bool readLine(sm_string &dest, FILE *fp)
 
   // only got part of the sm_string; need to iteratively construct
   sm_stringBuilder sb;
-  while (buf[strlen(buf)-1] != '\n') {
+  while (buf[std::strlen(buf)-1] != '\n') {
     sb << buf;
     if (!fgets(buf, 80, fp)) {
       // found eof after partial; return partial *without* eof
@@ -13282,8 +13283,8 @@ bool readLine(sm_string &dest, FILE *fp)
 
 sm_string chomp(char const *src)
 {
-  if (src && src[strlen(src)-1] == '\n') {
-    return sm_string(src, strlen(src)-1);
+  if (src && src[std::strlen(src)-1] == '\n') {
+    return sm_string(src, std::strlen(src)-1);
   }
   else {
     return sm_string(src);
@@ -13318,7 +13319,7 @@ void decodeVector(char const *in, char const *out, int outLen)
   int destLen;
   decodeEscapes(dest, destLen, in, '\0' /*delim, ignored*/, false /*allowNewlines*/);
   xassert(destLen == outLen);
-  xassert(0==memcmp(out, dest.pcharc(), destLen));
+  xassert(0==std::memcmp(out, dest.pcharc(), destLen));
 }
 
 void basenameVector(char const *in, char const *out)
@@ -13388,7 +13389,7 @@ USUAL_MAIN
 // code for svdict.h
 
 #include "sm_svdict.h"
-#include <string.h>         // strcmp
+#include <cstring>         // strcmp
 
 
 #define FOREACH_NODE(itervar) \
@@ -13467,7 +13468,7 @@ bool StringVoidDict::operator== (StringVoidDict const &obj) const
 
   IterC ths(*this), other(obj);
   while (!ths.isDone() && !other.isDone()) {
-    if (0!=strcmp(ths.key(), other.key()) ||
+    if (0!=std::strcmp(ths.key(), other.key()) ||
         ths.value() != other.value()) {
       return false;
     }
@@ -13574,7 +13575,7 @@ void *StringVoidDict::remove(char const *key)
   xassert(top);
 
   // check for removal of top element
-  if (0==strcmp(top->key, key)) {
+  if (0==std::strcmp(top->key, key)) {
     Node *temp = top;
     top = top->next;
     ret = temp->value;
@@ -13585,7 +13586,7 @@ void *StringVoidDict::remove(char const *key)
   // find node to remove in tail of list
   else {
     Node *p = top;
-    while (p->next && 0!=strcmp(p->next->key, key)) {
+    while (p->next && 0!=std::strcmp(p->next->key, key)) {
       p = p->next;
     }
 
@@ -13668,7 +13669,7 @@ void StringVoidDict::foreach(ForeachFn func, void *extra) const
   Node *walker = top;
   while (walker->next != NULL) {
     // see if walker->next is out of order
-    if (0 <= strcmp(walker->key, walker->next->key)) {
+    if (0 <= std::strcmp(walker->key, walker->next->key)) {
       // it's in order
       walker = walker->next;
       continue;
@@ -13682,7 +13683,7 @@ void StringVoidDict::foreach(ForeachFn func, void *extra) const
     mover->next = NULL;       // (redundant because of (**) lines)
 
     // insert at head?
-    if (0 < strcmp(mover->key, top->key)) {
+    if (0 < std::strcmp(mover->key, top->key)) {
       mover->next = top;            // (**)
       top = mover;
       continue;
@@ -13691,7 +13692,7 @@ void StringVoidDict::foreach(ForeachFn func, void *extra) const
     // must find correct place to insert mover (will find the place
     // where we can insert mover just before searcher->next)
     Node *searcher = top;
-    while (0 < strcmp(searcher->next->key, mover->key)) {
+    while (0 < std::strcmp(searcher->next->key, mover->key)) {
       searcher = searcher->next;
       xassert(searcher != walker);
         // otherwise how could mover have been out of order to begin with?
@@ -13718,7 +13719,7 @@ void StringVoidDict::verifySorted() const
 
   Node *p = top;
   while (p->next) {
-    xassert(0 <= strcmp(p->key, p->next->key));
+    xassert(0 <= std::strcmp(p->key, p->next->key));
     p = p->next;
   }
 }
@@ -13747,10 +13748,10 @@ void StringVoidDict::selfCheck() const
 }
 
 
-void StringVoidDict::insertOstream(ostream &os) const
+void StringVoidDict::insertOstream(std::ostream &os) const
 {
   FOREACH_ITERC(*this, entry) {
-    os << entry.key() << " = " << entry.value() << endl;
+    os << entry.key() << " = " << entry.value() << std::endl;
   }
 }
 
@@ -13905,11 +13906,11 @@ void entry()
     }
   }
 
-  cout << "final size: " << size
+  std::cout << "final size: " << size
        << "\ncollisions: " << collisions
        << "\n";
 
-  cout << "all tests passed\n";
+  std::cout << "all tests passed\n";
 }
 
 USUAL_MAIN
@@ -13926,7 +13927,7 @@ USUAL_MAIN
 #include "sm_strtokp.h"
 #include "sm_nonport.h"
 
-#include <fstream.h>   // ofstream
+#include <fstream>   // ofstream
 #include <stdlib.h>    // getenv
 
 
@@ -13937,8 +13938,8 @@ static bool inited = false;
 static ObjList<sm_string> tracers;
 
 // stream connected to /dev/null
-ofstream devNullObj("/dev/null");
-static ostream *devNull = &devNullObj;
+std::ofstream devNullObj("/dev/null");
+static std::ostream *devNull = &devNullObj;
 
 
 // initialize
@@ -13999,13 +14000,13 @@ void traceRemoveAll()
 }  
 
 
-ostream &trace(char const *sysName)
+std::ostream &trace(char const *sysName)
 {
   init();
 
   if (tracingSys(sysName)) {
-    cout << "%%% " << sysName << ": ";
-    return cout;
+    std::cout << "%%% " << sysName << ": ";
+    return std::cout;
   }
   else {
     return *devNull;
@@ -14015,11 +14016,11 @@ ostream &trace(char const *sysName)
 
 void trstr(char const *sysName, char const *traceString)
 {
-  trace(sysName) << traceString << endl;
+  trace(sysName) << traceString << std::endl;
 }
 
 
-ostream &traceProgress(int level)
+std::ostream &traceProgress(int level)
 {
   if ( (level == 1) ||
        (level == 2 && tracingSys("progress2")) ) {
@@ -14046,7 +14047,7 @@ void traceAddMultiSys(char const *systemNames)
         traceRemoveSys(name);
       }
       else {
-        cout << "Currently, `" << name << "' is not being traced.\n";
+        std::cout << "Currently, `" << name << "' is not being traced.\n";
       }
     }
     
@@ -14062,7 +14063,7 @@ bool traceProcessArg(int &argc, char **&argv)
 {
   traceAddFromEnvVar();
 
-  if (argc >= 3  &&  0==strcmp(argv[1], "-tr")) {
+  if (argc >= 3  &&  0==std::strcmp(argv[1], "-tr")) {
     traceAddMultiSys(argv[2]);
     argc -= 2;
     argv += 2;
@@ -14099,7 +14100,7 @@ void traceAddFromEnvVar()
 
 #include <stdlib.h>       // abs
 #include "sm_trdelete.h"
-#include <string.h>       // memset
+#include <cstring>       // std::memset
 #include "sm_breaker.h"
 
 
@@ -14137,7 +14138,7 @@ static void trash(void *blk, size_t size)
   #endif
 
   // assume the size is ok
-  memset(blk, 0xAA, size);
+  std::memset(blk, 0xAA, size);
     // the choice of AA is made as it is easily recognizable,
     // and 0xAAAAAAAA is pretty much always a bad pointer
 }
@@ -14267,7 +14268,7 @@ int main()
 // SKIP ALL OF THIS NOW, not using canRead
 #if 0
 #include <sys/select.h> // FD_ZERO etc
-#include <string.h>     // required for bzero in FreeBSD 4, Darwin 6, etc.
+#include <cstring>     // required for bzero in FreeBSD 4, Darwin 6, etc.
 #endif
 
 int writeAll(int fd, void const *buf, int len)
@@ -15431,7 +15432,7 @@ USUAL_MAIN
 #include "sm_xassert.h"
 
 #include <stddef.h>      // NULL
-#include <string.h>      // memset
+#include <cstring>      // std::memset
 
 
 // ------------------ VoidPtrMap -------------------
@@ -15592,7 +15593,7 @@ void VoidPtrMap::empty()
   xassert(iterators == 0);
 
   // establishes invariant that NULL keys have NULL values
-  memset(hashTable, 0, sizeof(*hashTable) * tableSize);
+  std::memset(hashTable, 0, sizeof(*hashTable) * tableSize);
   numEntries = 0;
 }
 
@@ -16034,7 +16035,7 @@ int main(int argc, char *argv[])
 #include "sm_syserr.h"
 
 #include <stdio.h>        // printf
-#include <string.h>       // memcpy
+#include <cstring>       // std::memcpy
 #include <ctype.h>        // isprint
     
     
@@ -16106,7 +16107,7 @@ void DataBlock::ctor(byte const *srcData, int srcDataLen, int allocatedSize)
 {
   init(allocatedSize);
   dataLen = srcDataLen;
-  memcpy(data, srcData, dataLen);
+  std::memcpy(data, srcData, dataLen);
   SELFCHECK();
 }
     
@@ -16121,7 +16122,7 @@ void DataBlock::copyCtorShared(DataBlock const &obj)
 {
   dataLen = obj.dataLen;
   if (dataLen > 0) {
-    memcpy(data, obj.data, dataLen);
+    std::memcpy(data, obj.data, dataLen);
   }
   SELFCHECK();
 }
@@ -16159,7 +16160,7 @@ bool DataBlock::dataEqual(DataBlock const &obj) const
   SELFCHECK();
   if (dataLen != obj.dataLen ||
       (dataLen > 0 &&
-       0 != memcmp(data, obj.data, dataLen))) {
+       0 != std::memcmp(data, obj.data, dataLen))) {
     return false;
   }
   else {
@@ -16196,7 +16197,7 @@ void DataBlock::setAllocated(int newAllocated)
     
     // transfer data
     if (dataLen > 0) {
-      memcpy(newData, data, dataLen);
+      std::memcpy(newData, data, dataLen);
     }
     
     // deallocate old buffer and replace with new buffer
@@ -16235,7 +16236,7 @@ void DataBlock::addNull()
 void DataBlock::setFromString(char const *srcString)
 {
   SELFCHECK();
-  int len = strlen(srcString)+1;
+  int len = std::strlen(srcString)+1;
     // a sm_string is its contents and the null terminator
   setFromBlock((byte const*)srcString, len);
   SELFCHECK();
@@ -16249,7 +16250,7 @@ void DataBlock::setFromBlock(byte const *srcData, int len)
   }
   setDataLen(len);
   if (len > 0) {
-    memcpy(data, srcData, len);
+    std::memcpy(data, srcData, len);
   }
   SELFCHECK();
 }
@@ -16261,7 +16262,7 @@ DataBlock& DataBlock::operator= (DataBlock const &obj)
   if (this != &obj) {
     setAllocated(obj.allocated);
     dataLen = obj.dataLen;
-    memcpy(data, obj.data, dataLen);
+    std::memcpy(data, obj.data, dataLen);
   }
   SELFCHECK();
   return *this;
@@ -16519,8 +16520,8 @@ int main()
 
 #include "sm_exc.h"
 
-#include <string.h>       // strlen, strcpy
-#include <iostream.h>     // clog
+#include <cstring>       // std::strlen, std::strcpy
+#include <iostream>     // clog
 #include <stdarg.h>       // va_xxx
 #include <ctype.h>        // toupper, tolower
 
@@ -16534,7 +16535,7 @@ xBase::xBase(char const *m)
   : msg(m)
 {
   if (logExceptions) {
-    clog << "Exception thrown: " << m << endl;
+    std::clog << "Exception thrown: " << m << std::endl;
   }
 
   // done at very end when we know this object will
@@ -16577,7 +16578,7 @@ bool unwinding_other(xBase const &)
 }
 
 
-void xBase::insert(ostream &os) const
+void xBase::insert(std::ostream &os) const
 {
   os << why();
 }
@@ -16677,13 +16678,13 @@ void throw_XOpen(char const *fname)
 int main()
 {
   xBase x("yadda");
-  cout << x << endl;
+  std::cout << x << std::endl;
 
   try {
     THROW(x);
   }
   catch (xBase &x) {
-    cout << "caught xBase: " << x << endl;
+    std::cout << "caught xBase: " << x << std::endl;
   }
 
   return 0;
@@ -16726,7 +16727,7 @@ int missing_stricmp(char const *s1, char const *s2)
 
 #include <stdio.h>       // printf
 #include <stdlib.h>      // abort, exit
-#include <string.h>      // strncpy
+#include <cstring>      // std::strncpy
 
 #ifdef __WIN32__
 #  ifdef USE_MINWIN_H
@@ -16771,7 +16772,7 @@ int missing_stricmp(char const *s1, char const *s2)
 
 #include <sys/stat.h>     // chmod, mode macros
 #include <time.h>         // tzset, localtime, time
-#include <iostream.h>     // cout
+#include <iostream>     // std::cout
 
 #if !defined(__WIN32__) || defined(__BORLANDC__)
   #include <dirent.h>       // opendir
@@ -16962,7 +16963,7 @@ void getCurrentUsername(char *buf, int buflen)
     DWORD len = buflen;
     if (!GetUserName(buf, &len)) {
       fail("GetUserName");
-      strncpy(buf, "(unknown)", buflen);
+      std::strncpy(buf, "(unknown)", buflen);
     }
 
   #else    // unix (SunOS only?  we'll see..)
@@ -16981,7 +16982,7 @@ void getCurrentUsername(char *buf, int buflen)
       temp = pw->pw_name;
     }
 
-    strncpy(buf, temp, buflen);
+    std::strncpy(buf, temp, buflen);
   #endif
 }
 
@@ -17018,8 +17019,8 @@ static void nonechoLoop(char *buf, int len)
 
 void readNonechoString(char *buf, int len, char const *prompt)
 {
-  cout << prompt;
-  cout.flush();
+  std::cout << prompt;
+  std::cout.flush();
 
   setRawMode(true);
 
@@ -17033,8 +17034,8 @@ void readNonechoString(char *buf, int len, char const *prompt)
 
   setRawMode(false);
 
-  cout << "\n";
-  cout.flush();
+  std::cout << "\n";
+  std::cout.flush();
 }
 
 
@@ -17055,9 +17056,9 @@ void applyToDirContents(char const *dirName,
   //  I think this is the only way to do it in the Win32 API
   #if defined(__WIN32__) && !defined(__BORLANDC__)
     struct _finddata_t fb;
-    char* buf = new char[strlen(dirName)+5];
-    strcpy(buf, dirName);
-    if (buf[strlen(buf)-1] != '\\') strcat(buf, "\\");
+    char* buf = new char[std::strlen(dirName)+5];
+    std::strcpy(buf, dirName);
+    if (buf[std::strlen(buf)-1] != '\\') strcat(buf, "\\");
     strcat(buf, "*");
     long handle = _findfirst(buf, &fb);
     delete buf;
@@ -17132,9 +17133,9 @@ bool fileOrDirectoryExists(char const *path)
 bool ensurePath(char const *filename, bool isDirectory)
 {
   // make a temporary buffer so we can modify it safely
-  int len = strlen(filename);
+  int len = std::strlen(filename);
   char *temp = new char[len+1];
-  strcpy(temp, filename);
+  std::strcpy(temp, filename);
 
   if (isDirectory) {
     len++;    // also consider final '\0' (strchr returns ptr to it)
@@ -17406,20 +17407,20 @@ int main(int argc, char **argv)
   s[1] = 'l';
   s[2] = 's';
   s[3] = 0;
-  if (0!=strcmp(s, "-ls")) {
-    printf("strcmp failed!\n");
+  if (0!=std::strcmp(s, "-ls")) {
+    printf("std::strcmp failed!\n");
     return 4;
   }
 
   // process arguments
   bool interactive = false;
   for (int i=1; i<argc; i++) {
-    if (0==strcmp("-ls", argv[i])) {
+    if (0==std::strcmp("-ls", argv[i])) {
       // do an ls, and bail
       applyToCwdContents(printIt);
       return 0;
     }
-    else if (0==strcmp("-noninteractive", argv[i])) {
+    else if (0==std::strcmp("-noninteractive", argv[i])) {
       // don't do the interactive stuff
       interactive = false;
     }
@@ -17435,7 +17436,7 @@ int main(int argc, char **argv)
   //char buf[80];
   //printf("type stuff and try backspace: ");
   //gets(buf);
-  //printf("%s (%d chars)\n", buf, strlen(buf));
+  //printf("%s (%d chars)\n", buf, std::strlen(buf));
   //return 0;
 
   long startTime = getMilliseconds();
@@ -17602,8 +17603,8 @@ void limitFileAccess(char const *fname)
 #include <stdlib.h>         // atoi
 #include <stdio.h>          // sprintf
 #include <ctype.h>          // isspace
-#include <string.h>         // strcmp
-#include <iostream.h>       // ostream << char*
+#include <cstring>         // std::strcmp
+#include <iostream>       // std::ostream << char*
 #include <assert.h>         // assert
 
 #include "sm_xassert.h"
@@ -17625,7 +17626,7 @@ sm_string::sm_string(char const *src, int length)
 {
   s=empty;
   setlength(length);       // setlength already has the +1; sets final NUL
-  memcpy(s, src, length);
+  std::memcpy(s, src, length);
 }
 
 
@@ -17635,9 +17636,9 @@ void sm_string::dup(char const *src)
     s = empty;
   }
   else {
-    s = new char[ strlen(src) + 1 ];
+    s = new char[ std::strlen(src) + 1 ];
     xassert(s);
-    strcpy(s, src);
+    std::strcpy(s, src);
   }
 }
 
@@ -17662,7 +17663,7 @@ void sm_string::xfer(Flatten &flat)
 int sm_string::length() const
 {
   xassert(s);
-  return strlen(s);
+  return std::strlen(s);
 }
 
 bool sm_string::contains(char c) const
@@ -17709,14 +17710,14 @@ int sm_string::compareTo(char const *src) const
   if (src == NULL) {
     src = empty;
   }
-  return strcmp(s, src);
+  return std::strcmp(s, src);
 }
 
 
 sm_string sm_string::operator&(sm_string const &tail) const
 {
   sm_string dest(length() + tail.length());
-  strcpy(dest.s, s);
+  std::strcpy(dest.s, s);
   strcat(dest.s, tail.s);
   return dest;
 }
@@ -17727,7 +17728,7 @@ sm_string& sm_string::operator&=(sm_string const &tail)
 }
 
 
-void sm_string::readdelim(istream &is, char const *delim)
+void sm_string::readdelim(std::istream &is, char const *delim)
 {
   sm_stringBuilder sb;
   sb.readdelim(is, delim);
@@ -17735,7 +17736,7 @@ void sm_string::readdelim(istream &is, char const *delim)
 }
 
 
-void sm_string::write(ostream &os) const
+void sm_string::write(std::ostream &os) const
 {
   os << s;     // standard char* writing routine
 }
@@ -17766,9 +17767,9 @@ void sm_stringBuilder::init(int initSize)
 
 void sm_stringBuilder::dup(char const *str)
 {
-  int len = strlen(str);
+  int len = std::strlen(str);
   init(len);
-  strcpy(s, str);
+  std::strcpy(s, str);
   end += len;
 }
 
@@ -17782,7 +17783,7 @@ sm_stringBuilder::sm_stringBuilder(char const *str)
 sm_stringBuilder::sm_stringBuilder(char const *str, int len)
 {
   init(len);
-  memcpy(s, str, len);
+  std::memcpy(s, str, len);
   end += len;
 }
 
@@ -17816,7 +17817,7 @@ void sm_stringBuilder::adjustend(char* newend)
 
 sm_stringBuilder& sm_stringBuilder::operator&= (char const *tail)
 {
-  append(tail, strlen(tail));
+  append(tail, std::strlen(tail));
   return *this;
 }
 
@@ -17824,7 +17825,7 @@ void sm_stringBuilder::append(char const *tail, int len)
 {
   ensure(length() + len);
 
-  memcpy(end, tail, len);
+  std::memcpy(end, tail, len);
   end += len;
   *end = 0;
 }
@@ -17835,7 +17836,7 @@ sm_stringBuilder& sm_stringBuilder::indent(int amt)
   xassert(amt >= 0);
   ensure(length() + amt);
 
-  memset(end, ' ', amt);
+  std::memset(end, ' ', amt);
   end += amt;
   *end = 0;
   
@@ -17860,7 +17861,7 @@ void sm_stringBuilder::grow(int newMinLength)
   // realloc s to be newMinSize bytes
   char *temp = new char[newMinSize];
   xassert(len+1 <= newMinSize);    // prevent overrun
-  memcpy(temp, s, len+1);          // copy null too
+  std::memcpy(temp, s, len+1);          // copy null too
   delete[] s;
   s = temp;
 
@@ -17922,7 +17923,7 @@ sm_stringBuilder& sm_stringBuilder::operator<< (Manipulator manip)
 
 
 // slow but reliable
-void sm_stringBuilder::readdelim(istream &is, char const *delim)
+void sm_stringBuilder::readdelim(std::istream &is, char const *delim)
 {
   char c;
   is.get(c);
@@ -17998,7 +17999,7 @@ sm_string vsm_stringf(char const *format, va_list args)
     static char const msg[] =
       "fatal error: vnprintf failed to provide a conservative estimate,\n"
       "memory is most likely corrupted\n";
-    writeAll(2 /*stderr*/, msg, strlen(msg));
+    writeAll(2 /*stderr*/, msg, std::strlen(msg));
     abort();
   }
              
@@ -18010,13 +18011,13 @@ sm_string vsm_stringf(char const *format, va_list args)
 // ------------------ test code --------------------
 #ifdef TEST_STR
 
-#include <iostream.h>    // cout
+#include <iostream>    // std::cout
 
 void test(unsigned long val)
 {
-  //cout << sm_stringb(val << " in hex: 0x" << sm_stringBuilder::Hex(val)) << endl;
+  //std::cout << sm_stringb(val << " in hex: 0x" << sm_stringBuilder::Hex(val)) << std::endl;
 
-  cout << sm_stringb(val << " in hex: " << SBHex(val)) << endl;
+  std::cout << sm_stringb(val << " in hex: " << SBHex(val)) << std::endl;
 }
 
 int main()
@@ -18028,10 +18029,10 @@ int main()
   test((unsigned long)(-1));
   test(1);
 
-  cout << "sm_stringf: " << sm_stringf("int=%d hex=%X str=%s char=%c float=%f",
-                                 5, 0xAA, "hi", 'f', 3.4) << endl;            
+  std::cout << "sm_stringf: " << sm_stringf("int=%d hex=%X str=%s char=%c float=%f",
+                                 5, 0xAA, "hi", 'f', 3.4) << std::endl;            
 
-  cout << "tests passed\n";
+  std::cout << "tests passed\n";
 
   return 0;
 }
@@ -18041,12 +18042,12 @@ int main()
 @h=tangler('elk/sm_strtokp.cpp')
 @select(h)
 // strtokp.cc            see license.txt for copyright and terms of use
-// code for strtokp.h
+// code for std::strtokp.h
 // Scott McPeak, 1997, 1999, 2000  This file is public domain.
 
 #include "sm_strtokp.h"
 #include "sm_exc.h"
-#include <string.h>     // strtok
+#include <cstring>     // std::strtok
 
 
 StrtokParse::StrtokParse(char const *str, char const *delim)
@@ -18058,10 +18059,10 @@ StrtokParse::StrtokParse(char const *str, char const *delim)
 
   // parse it first time to count # of tokens
   int ct=0;
-  char *tok = strtok(buf.pchar(), delim);
+  char *tok = std::strtok(buf.pchar(), delim);
   while (tok) {
     ct++;
-    tok = strtok(NULL, delim);
+    tok = std::strtok(NULL, delim);
   }
 
   // restore buf
@@ -18079,11 +18080,11 @@ StrtokParse::StrtokParse(char const *str, char const *delim)
 
   // parse it again, this time saving the values
   ct=0;
-  tok = strtok(buf.pchar(), delim);
+  tok = std::strtok(buf.pchar(), delim);
   while (tok) {
     _tokv[ct] = tok;
     ct++;
-    tok = strtok(NULL, delim);
+    tok = std::strtok(NULL, delim);
   }
 
   // simple check just because it's easy
@@ -18118,7 +18119,7 @@ sm_string StrtokParse::
   reassemble(int firstTok, int lastTok, char const *original) const
 {
   int left = offset(firstTok);
-  int right = offset(lastTok) + strlen(tokv(lastTok));
+  int right = offset(lastTok) + std::strlen(tokv(lastTok));
 
   return sm_string(original + left, right-left);
 }
@@ -18368,7 +18369,7 @@ STATICDEF xSysError::Reason xSysError::portablize(int sysErrorCode, sm_string &s
 #else      // unix
 
 #include <errno.h>       // errno
-#include <string.h>      // strerror
+#include <cstring>      // std::strerror
 
 // mappings to a set of error codes I can use below
 // (I am sure I've already done this somewhere else, but I
@@ -18398,7 +18399,7 @@ STATICDEF int xSysError::getSystemErrorCode()
 
 STATICDEF xSysError::Reason xSysError::portablize(int sysErrorCode, sm_string &sysMsg)
 {
-  sysMsg = strerror(sysErrorCode);
+  sysMsg = std::strerror(sysErrorCode);
     // operator= copies to local storage
 
   static struct S {
@@ -18445,7 +18446,7 @@ STATICDEF xSysError::Reason xSysError::portablize(int sysErrorCode, sm_string &s
 #define TRY_FAIL(failingCall, expectedCode)                       \
   try {                                                           \
     if (failingCall) {                                            \
-      cout << "ERROR: " #failingCall " should have failed\n";     \
+      std::cout << "ERROR: " #failingCall " should have failed\n";     \
     }                                                             \
     else {                                                        \
       /* got an error to test */                                  \
@@ -18454,7 +18455,7 @@ STATICDEF xSysError::Reason xSysError::portablize(int sysErrorCode, sm_string &s
   }                                                               \
   catch (xSysError &x) {                                          \
     if (x.reason != xSysError::expectedCode) {                    \
-      cout << "ERROR: " #failingCall " returned '"                \
+      std::cout << "ERROR: " #failingCall " returned '"                \
            << x.reasonString << "' but '"                         \
            << xSysError::getReasonString(xSysError::expectedCode) \
            << "' was expected\n";                                 \
@@ -18481,10 +18482,10 @@ void entry()
            R_FILE_NOT_FOUND);
 
   if (errors == 0) {
-    cout << "success!\n";
+    std::cout << "success!\n";
   }
   else {
-    cout << errors << " error(s)\n";
+    std::cout << errors << " error(s)\n";
   }
 }
 

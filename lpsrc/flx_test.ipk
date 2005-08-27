@@ -201,7 +201,7 @@ int main(int argc, char** argv)
       {
         gc_counter++;
         if(gc_counter==10) {
-          int collected = collector.collect(); 
+          int collected FLX_UNUSED = collector.collect(); 
           if(collector.get_allocation_count()>100)
             printf("WARNING!: Currently allocated=%ld\n", 
             collector.get_allocation_count());
@@ -412,7 +412,7 @@ int main(int argc, char** argv)
       {
         assert(active.size()<100);
         session_record top_rec = *(active.begin());
-        int active_thread_id = top_rec.first;
+        int active_thread_id FLX_UNUSED = top_rec.first;
         //printf("Processing active thread %d\n",top_rec.first);
         con_t *top = top_rec.second;
         active.pop_front();
@@ -474,7 +474,7 @@ int main(int argc, char** argv)
         if(gc_counter==100) {
           //printf("TRIGGERING GC CYCLE\n");
           //printf("Total memory allocated=%ld\n",collector.get_allocation_amt());
-          int collected = collector.collect(); 
+          int collected FLX_UNUSED = collector.collect(); 
           //printf("Collected %d unreachable objects\n", collected);
           //printf("Total memory allocated=%ld\n",collector.get_allocation_amt());
           if(collector.get_allocation_count()>100)

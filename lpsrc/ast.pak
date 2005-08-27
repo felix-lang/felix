@@ -84,7 +84,7 @@ public:      // funcs
 
   ASTSpecFile *clone() const;
 
-  void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
 };
 
@@ -113,7 +113,7 @@ public:      // funcs
 
   virtual ToplevelForm *clone() const=0;
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
 };
 
@@ -129,7 +129,7 @@ public:      // funcs
   virtual Kind kind() const { return TF_VERBATIM; }
   enum { TYPE_TAG = TF_VERBATIM };
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   virtual TF_verbatim *clone() const;
 
@@ -147,7 +147,7 @@ public:      // funcs
   virtual Kind kind() const { return TF_IMPL_VERBATIM; }
   enum { TYPE_TAG = TF_IMPL_VERBATIM };
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   virtual TF_impl_verbatim *clone() const;
 
@@ -166,7 +166,7 @@ public:      // funcs
   virtual Kind kind() const { return TF_CLASS; }
   enum { TYPE_TAG = TF_CLASS };
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   virtual TF_class *clone() const;
 
@@ -186,7 +186,7 @@ public:      // funcs
   virtual Kind kind() const { return TF_OPTION; }
   enum { TYPE_TAG = TF_OPTION };
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   virtual TF_option *clone() const;
 
@@ -205,7 +205,7 @@ public:      // funcs
   virtual Kind kind() const { return TF_ENUM; }
   enum { TYPE_TAG = TF_ENUM };
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   virtual TF_enum *clone() const;
 
@@ -230,7 +230,7 @@ public:      // funcs
 
   ASTClass *clone() const;
 
-  void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   public:  sm_string classKindName() const;
 };
@@ -270,7 +270,7 @@ public:      // funcs
 
   AccessMod *clone() const;
 
-  void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   public:  bool hasMod(char const *mod) const;
 };
@@ -297,7 +297,7 @@ public:      // funcs
 
   virtual Annotation *clone() const=0;
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
 };
 
@@ -315,7 +315,7 @@ public:      // funcs
   virtual Kind kind() const { return USERDECL; }
   enum { TYPE_TAG = USERDECL };
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   virtual UserDecl *clone() const;
 
@@ -336,7 +336,7 @@ public:      // funcs
   virtual Kind kind() const { return CUSTOMCODE; }
   enum { TYPE_TAG = CUSTOMCODE };
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   virtual CustomCode *clone() const;
 
@@ -362,7 +362,7 @@ public:      // funcs
 
   CtorArg *clone() const;
 
-  void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
 };
 
@@ -383,7 +383,7 @@ public:      // funcs
 
   BaseClass *clone() const;
 
-  void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
 };
 
@@ -431,7 +431,7 @@ public:
   ASTSpecFile(ASTList<ToplevelForm> *_forms) : forms(_forms) {}
   ~ASTSpecFile() {}
 
-  void debugPrint(ostream &os, int indent) const;
+  void debugPrint(std::ostream &os, int indent) const;
 };
 
 
@@ -446,7 +446,7 @@ public:
   DECL_AST_DOWNCASTS(TF_verbatim, TF_VERBATIM)
   DECL_AST_DOWNCASTS(ASTClass, ASTCLASS)
 
-  virtual void debugPrint(ostream &os, int indent) const;
+  virtual void debugPrint(std::ostream &os, int indent) const;
 };
 
 class TF_verbatim : public ToplevelForm {
@@ -462,7 +462,7 @@ public:
   virtual Kind kind() const { return TF_VERBATIM; }
   enum { TYPE_TAG = TF_VERBATIM };
 
-  virtual void debugPrint(ostream &os, int indent) const;
+  virtual void debugPrint(std::ostream &os, int indent) const;
 };
 
 class ASTClass : public ToplevelForm {
@@ -482,7 +482,7 @@ public:
   virtual Kind kind() const { return ASTCLASS; }
   enum { TYPE_TAG = ASTCLASS };
 
-  virtual void debugPrint(ostream &os, int indent) const;
+  virtual void debugPrint(std::ostream &os, int indent) const;
   
   public: bool hasChildren() const { return ctors.isNotEmpty(); }
 };
@@ -503,7 +503,7 @@ public:
   {}
   ~UserDecl() {}
 
-  void debugPrint(ostream &os, int indent) const;
+  void debugPrint(std::ostream &os, int indent) const;
 };
 
 
@@ -519,7 +519,7 @@ public:
   {}
   ~ASTCtor() {}
 
-  void debugPrint(ostream &os, int indent) const;
+  void debugPrint(std::ostream &os, int indent) const;
   
   public: sm_string kindName() const;
 };
@@ -539,7 +539,7 @@ public:
   {}
   ~CtorArg() {}
 
-  void debugPrint(ostream &os, int indent) const;
+  void debugPrint(std::ostream &os, int indent) const;
 };
 
 #endif // AST_HAND_H
@@ -558,7 +558,7 @@ public:
 #include "sm_str.h"
 #include "ast_locstr.h"
 
-#include <iostream.h>    // ostream
+#include <iostream>    // ostream
 
 // ----------------- downcasts --------------------
 // the 'if' variants return NULL if the type isn't what's expected;
@@ -669,7 +669,7 @@ public:
 
 
 // ------------------- debug print helpers -----------------
-ostream &ind(ostream &os, int indent);
+std::ostream &ind(std::ostream &os, int indent);
 
 // I occasionally want to see addresses, so I just throw this
 // switch and recompile..
@@ -690,7 +690,7 @@ ostream &ind(ostream &os, int indent);
   debugPrintStr(var, #var, os, indent)    /* user ; */
 
 void debugPrintStr(sm_string const &s, char const *name,
-                   ostream &os, int indent);
+                   std::ostream &os, int indent);
 
 
 #define PRINT_LIST(T, list) \
@@ -698,7 +698,7 @@ void debugPrintStr(sm_string const &s, char const *name,
 
 template <class T>
 void debugPrintList(ASTList<T> const &list, char const *name,
-                    ostream &os, int indent)
+                    std::ostream &os, int indent)
 {
   ind(os, indent) << name << ":\n";
   int ct=0;
@@ -712,9 +712,9 @@ void debugPrintList(ASTList<T> const &list, char const *name,
 
 // provide explicit specialization for sm_strings
 void debugPrintList(ASTList<sm_string> const &list, char const *name,
-                    ostream &os, int indent);
+                    std::ostream &os, int indent);
 void debugPrintList(ASTList<LocString> const &list, char const *name,
-                    ostream &os, int indent);
+                    std::ostream &os, int indent);
 
 
 #define PRINT_FAKE_LIST(T, list) \
@@ -722,7 +722,7 @@ void debugPrintList(ASTList<LocString> const &list, char const *name,
 
 template <class T>
 void debugPrintFakeList(FakeList<T> const *list, char const *name,
-                        ostream &os, int indent)
+                        std::ostream &os, int indent)
 {
   ind(os, indent) << name << ":\n";
   int ct=0;
@@ -771,7 +771,7 @@ void debugPrintFakeList(FakeList<T> const *list, char const *name,
   xmlPrintStr(var, #var, os, indent) /* user ; */
 
 void xmlPrintStr(sm_string const &s, char const *name,
-                 ostream &os, int indent);
+                 std::ostream &os, int indent);
 
 
 #define XMLPRINT_LIST(T, list)                              \
@@ -779,7 +779,7 @@ void xmlPrintStr(sm_string const &s, char const *name,
 
 template <class T>
 void xmlPrintList(ASTList<T> const &list, char const *name,
-                  ostream &os, int indent)
+                  std::ostream &os, int indent)
 {
   ind(os, indent) << "<member type=list name=\"" << name << "\">\n";
   {
@@ -792,9 +792,9 @@ void xmlPrintList(ASTList<T> const &list, char const *name,
 
 // provide explicit specialization for sm_strings
 void xmlPrintList(ASTList<sm_string> const &list, char const *name,
-                    ostream &os, int indent);
+                    std::ostream &os, int indent);
 void xmlPrintList(ASTList<LocString> const &list, char const *name,
-                    ostream &os, int indent);
+                    std::ostream &os, int indent);
 
 
 #define XMLPRINT_FAKE_LIST(T, list) \
@@ -802,7 +802,7 @@ void xmlPrintList(ASTList<LocString> const &list, char const *name,
 
 template <class T>
 void xmlPrintFakeList(FakeList<T> const *list, char const *name,
-                        ostream &os, int indent)
+                        std::ostream &os, int indent)
 {
   ind(os, indent) << "<member type=fakelist name=\"" << name << "\">\n";
   {
@@ -1200,7 +1200,7 @@ FakeList<T> *FakeList<T>::reverse()
 // FlexLexer.h myself.
 #include "sm_flexlexer.h"
 
-#include <iostream.h>         // istream
+#include <iostream>         // istream
 
 // token code definitions
 #define TOK_EOF 0             // better name
@@ -1247,11 +1247,11 @@ private:     // data
   // state of a file we were or are lexing
   struct FileState {
     SourceLoc loc;                 // location in the file
-    istream *source;               // (owner?) source stream
+    std::istream *source;               // (owner?) source stream
     yy_buffer_state *bufstate;     // (owner?) flex's internal buffer state
 
   public:
-    FileState(char const *filename, istream *source);
+    FileState(char const *filename, std::istream *source);
     ~FileState();
 
     FileState(FileState const &obj);
@@ -1317,7 +1317,7 @@ public:      // funcs
   GrammarLexer(isEmbedTok embedTokTest,
                StringTable &strtable,
                char const *fname = "<stdin>",
-               istream * /*owner*/ source = NULL,
+               std::istream * /*owner*/ source = NULL,
                EmbeddedLang * /*owner*/ embedded = NULL /*i.e. assume C lexics*/);
 
   // clean up
@@ -1368,7 +1368,7 @@ public:      // funcs
   void printWarning(SourceLoc loc, char const *msg);
 
   // for processing includes
-  void recursivelyProcess(char const *fname, istream * /*owner*/ source);
+  void recursivelyProcess(char const *fname, std::istream * /*owner*/ source);
   void popRecursiveFile();
   bool hasPendingFiles() const;
   
@@ -1387,8 +1387,8 @@ public:      // funcs
 #ifndef LOCSTR_H
 #define LOCSTR_H
                                           
-#include <iostream.h>    // ostream
-#include <string.h>      // strlen
+#include <iostream>    // ostream
+#include <cstring>      // strlen
 
 #include "ast_strtable.h"
 #include "sm_srcloc.h"
@@ -1420,7 +1420,7 @@ public:    // funcs
   sm_string locString() const { return toString(loc); }
 
   // (read-only) sm_string-like behavior
-  friend ostream& operator<< (ostream &os, LocString const &loc)
+  friend std::ostream& operator<< (std::ostream &os, LocString const &loc)
     { return os << loc.str; }
   friend sm_stringBuilder& operator<< (sm_stringBuilder &sb, LocString const &loc)
     { return sb << loc.str; }
@@ -1463,6 +1463,7 @@ public:
 
   // report a warning
   virtual void reportWarning(char const *str)=0;
+  virtual ~ReportError(){}
 };
 
 
@@ -1613,7 +1614,7 @@ ASTSpecFile::~ASTSpecFile()
   forms.deleteAll();
 }
 
-void ASTSpecFile::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void ASTSpecFile::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, ASTSpecFile);
 
@@ -1643,7 +1644,7 @@ char const * const ToplevelForm::kindNames[ToplevelForm::NUM_KINDS] = {
   "TF_enum",
 };
 
-void ToplevelForm::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void ToplevelForm::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
 }
 
@@ -1653,7 +1654,7 @@ TF_verbatim::~TF_verbatim()
 {
 }
 
-void TF_verbatim::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void TF_verbatim::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, TF_verbatim);
 
@@ -1676,7 +1677,7 @@ TF_impl_verbatim::~TF_impl_verbatim()
 {
 }
 
-void TF_impl_verbatim::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void TF_impl_verbatim::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, TF_impl_verbatim);
 
@@ -1701,7 +1702,7 @@ TF_class::~TF_class()
   ctors.deleteAll();
 }
 
-void TF_class::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void TF_class::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, TF_class);
 
@@ -1729,7 +1730,7 @@ TF_option::~TF_option()
   }
 }
 
-void TF_option::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void TF_option::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, TF_option);
 
@@ -1757,7 +1758,7 @@ TF_enum::~TF_enum()
   }
 }
 
-void TF_enum::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void TF_enum::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, TF_enum);
 
@@ -1786,7 +1787,7 @@ ASTClass::~ASTClass()
   decls.deleteAll();
 }
 
-void ASTClass::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void ASTClass::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, ASTClass);
 
@@ -1817,7 +1818,7 @@ AccessMod::~AccessMod()
   }
 }
 
-void AccessMod::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void AccessMod::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, AccessMod);
 
@@ -1846,7 +1847,7 @@ char const * const Annotation::kindNames[Annotation::NUM_KINDS] = {
   "CustomCode",
 };
 
-void Annotation::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void Annotation::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
 }
 
@@ -1857,7 +1858,7 @@ UserDecl::~UserDecl()
   delete amod;
 }
 
-void UserDecl::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void UserDecl::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, UserDecl);
 
@@ -1884,7 +1885,7 @@ CustomCode::~CustomCode()
 {
 }
 
-void CustomCode::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void CustomCode::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, CustomCode);
 
@@ -1910,7 +1911,7 @@ CtorArg::~CtorArg()
 {
 }
 
-void CtorArg::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void CtorArg::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, CtorArg);
 
@@ -1938,7 +1939,7 @@ BaseClass::~BaseClass()
 {
 }
 
-void BaseClass::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void BaseClass::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, BaseClass);
 
@@ -2010,7 +2011,7 @@ bool AccessMod::hasMod(char const *mod) const
 #include "sm_strutil.h"
 
 // ----------- debugPrint helpers -----------------------
-ostream &ind(ostream &os, int indent)
+std::ostream &ind(std::ostream &os, int indent)
 {
   while (indent--) {
     os << " ";
@@ -2020,7 +2021,7 @@ ostream &ind(ostream &os, int indent)
 
 
 void debugPrintStr(sm_string const &s, char const *name,
-                   ostream &os, int indent)
+                   std::ostream &os, int indent)
 {
   ind(os, indent) << name << " = " << quoted(s) << "\n";
 }
@@ -2028,7 +2029,7 @@ void debugPrintStr(sm_string const &s, char const *name,
 
 template <class STR>
 void debugPrintStringList(ASTList<STR> const &list, char const *name,
-                          ostream &os, int indent)
+                          std::ostream &os, int indent)
 {
   ind(os, indent) << name << ": ";
   {
@@ -2045,13 +2046,13 @@ void debugPrintStringList(ASTList<STR> const &list, char const *name,
 
 
 void debugPrintList(ASTList<sm_string> const &list, char const *name,
-                    ostream &os, int indent)
+                    std::ostream &os, int indent)
 {
   debugPrintStringList(list, name, os, indent);
 }
 
 void debugPrintList(ASTList<LocString> const &list, char const *name,
-                    ostream &os, int indent)
+                    std::ostream &os, int indent)
 {
   debugPrintStringList(list, name, os, indent);
 }
@@ -2059,7 +2060,7 @@ void debugPrintList(ASTList<LocString> const &list, char const *name,
 
 // ----------- xmlPrint helpers -----------------------
 void xmlPrintStr(sm_string const &s, char const *name,
-                 ostream &os, int indent)
+                 std::ostream &os, int indent)
 {
   ind(os, indent) << "<member type=sm_string name = \"" << name << "\">\n";
   // dsw: quoted might add another layer of quotes.
@@ -2070,7 +2071,7 @@ void xmlPrintStr(sm_string const &s, char const *name,
 
 template <class STR>
 void xmlPrintStringList(ASTList<STR> const &list, char const *name,
-                        ostream &os, int indent)
+                        std::ostream &os, int indent)
 {
   ind(os, indent) << "<member type=sm_stringList name = \"" << name << "\">\n";
   {
@@ -2084,13 +2085,13 @@ void xmlPrintStringList(ASTList<STR> const &list, char const *name,
 
 
 void xmlPrintList(ASTList<sm_string> const &list, char const *name,
-                  ostream &os, int indent)
+                  std::ostream &os, int indent)
 {
   xmlPrintStringList(list, name, os, indent);
 }
 
 void xmlPrintList(ASTList<LocString> const &list, char const *name,
-                  ostream &os, int indent)
+                  std::ostream &os, int indent)
 {
   xmlPrintStringList(list, name, os, indent);
 }
@@ -2105,7 +2106,7 @@ void xmlPrintList(ASTList<LocString> const &list, char const *name,
 #include "sm_strutil.h"
 #include "ast_reporterr.h"
 
-#include <iostream.h>    // cout
+#include <iostream>    // std::cout
 #include <ctype.h>       // isspace
 
 
@@ -2315,7 +2316,7 @@ public:
 
 void Test::feed(CC &cc, char const *src)
 {
-  //cout << "trying: " << src << endl;
+  //std::cout << "trying: " << src << std::endl;
   while (*src) {
     // feed it in 10 char increments, to test split processing too
     int len = min(strlen(src), 10);
@@ -2442,7 +2443,7 @@ int Test::main()
   badname(")");
   badname("main");
 
-  cout << "\nccsstr: all tests PASSED\n";
+  std::cout << "\nccsstr: all tests PASSED\n";
 
   return 0;
 }
@@ -2480,7 +2481,7 @@ EmbeddedLang::~EmbeddedLang()
 #include "ast_ccsstr.h"
 #include "sm_ckheap.h"
 
-#include <fstream.h>     // cout, ifstream
+#include <fstream>     // std::cout, ifstream
 
 
 // workaround for flex-2.5.31
@@ -2509,7 +2510,7 @@ void GrammarLexer::AltReportError::reportWarning(char const *msg)
 
 
 // ----------------- GrammarLexer::FileState --------------------
-GrammarLexer::FileState::FileState(char const *filename, istream *src)
+GrammarLexer::FileState::FileState(char const *filename, std::istream *src)
   : loc(sourceLocManager->encodeBegin(filename)),
     source(src),
     bufstate(NULL)
@@ -2544,7 +2545,7 @@ GrammarLexer::FileState &GrammarLexer::FileState::
 
 // ---------------------- GrammarLexer --------------------------
 GrammarLexer::GrammarLexer(isEmbedTok test, StringTable &strtbl,
-                           char const *fname, istream *source,
+                           char const *fname, std::istream *source,
                            EmbeddedLang *userEmb)
   : yyFlexLexer(source),
     altReporter(*this),
@@ -2565,7 +2566,7 @@ GrammarLexer::GrammarLexer(isEmbedTok test, StringTable &strtbl,
     strtable(strtbl),
     errors(0)
 {
-  trace("tmp") << "source is " << source << endl;
+  trace("tmp") << "source is " << source << std::endl;
 
   // grab initial buffer object so we can restore it after
   // processing an include file (turns out this doesn't work
@@ -2585,14 +2586,14 @@ GrammarLexer::~GrammarLexer()
 
   // now delete the original istream source
   // 
-  // 10/09/04: This used to say "fileState.source != cin", but that
-  // invokes cin.operator void*(), which always returns 0 or -1 in
+  // 10/09/04: This used to say "fileState.source != std::cin", but that
+  // invokes std::cin.operator void*(), which always returns 0 or -1 in
   // gcc-2.95.3's library.  I believe I intended to compare addresses,
   // though at this point I'm not sure since I don't know where the
   // call sites to the constructor are.  (I found this problem because
   // at one point Elsa (erroneously) choked on this construction.)
   if (fileState.source &&
-      fileState.source != &cin) {
+      fileState.source != &std::cin) {
     //checkHeap();
     //checkHeapNode(fileState.source);   // this is wrong b/c of virtual inheritance..
     delete fileState.source;
@@ -2618,7 +2619,7 @@ int GrammarLexer::yylexInc()
     sm_string fname = includeFileName;
 
     // 'in' will be deleted in ~GrammarLexer
-    ifstream *in = new ifstream(fname);
+    std::ifstream *in = new std::ifstream(fname);
     if (!*in) {
       err(sm_stringc << "unable to open include file `" << fname << "'");
     }
@@ -2640,12 +2641,12 @@ int GrammarLexer::yylexInc()
   if (embedTokTest(code)) {
     trace("lex") << "yielding embedded (" << code << ") at "
                  << curLocStr() << ": "
-                 << curFuncBody() << endl;
+                 << curFuncBody() << std::endl;
   }
   else {
     trace("lex") << "yielding token (" << code << ") "
                  << curToken() << " at "
-                 << curLocStr() << endl;
+                 << curLocStr() << std::endl;
   }
   #endif // 0/1
 
@@ -2708,7 +2709,7 @@ void GrammarLexer::reportError(char const *msg)
 void GrammarLexer::printError(SourceLoc loc, char const *msg)
 {
   errors++;
-  cerr << toString(loc) << ": error: " << msg << endl;
+  std::cerr << toString(loc) << ": error: " << msg << std::endl;
 }
 
 
@@ -2719,7 +2720,7 @@ void GrammarLexer::reportWarning(char const *msg)
 
 void GrammarLexer::printWarning(SourceLoc loc, char const *msg)
 {
-  cerr << toString(loc) << ": warning: " << msg << endl;
+  std::cerr << toString(loc) << ": warning: " << msg << std::endl;
 }
 
 
@@ -2740,9 +2741,9 @@ void GrammarLexer::errorIllegalCharacter(char ch)
 }
 
 
-void GrammarLexer::recursivelyProcess(char const *fname, istream *source)
+void GrammarLexer::recursivelyProcess(char const *fname, std::istream *source)
 {
-  trace("lex") << "recursively processing " << fname << endl;
+  trace("lex") << "recursively processing " << fname << std::endl;
                        
   // grab current buffer; this is necessary because when we
   // tried to grab it in the ctor it was NULL
@@ -2767,11 +2768,11 @@ void GrammarLexer::recursivelyProcess(char const *fname, istream *source)
 void GrammarLexer::popRecursiveFile()
 {
   trace("lex") << "done processing " <<     
-    sourceLocManager->getFile(fileState.loc) << endl;
+    sourceLocManager->getFile(fileState.loc) << std::endl;
 
   // among other things, this prevents us from accidentally deleting
   // flex's first buffer (which it presumably takes care of) or
-  // deleting 'cin'
+  // deleting 'std::cin'
   xassert(hasPendingFiles());
 
   // close down stuff associated with current file
@@ -2806,7 +2807,7 @@ int main(int argc)
   GrammarLexer lexer(isGramlexEmbed);
   traceAddSys("lex");
 
-  cout << "go!\n";
+  std::cout << "go!\n";
 
   while (1) {
     // any argument disables include processing
@@ -2816,23 +2817,23 @@ int main(int argc)
     }
 
     else if (isGramlexEmbed(code)) {
-      cout << "embedded code at " << lexer.curLocStr()
+      std::cout << "embedded code at " << lexer.curLocStr()
            << ": " << lexer.curFuncBody()
-           << endl;
+           << std::endl;
     }
     
     else if (code == TOK_INCLUDE) {
       // if I use yylexInc above, this is never reached
-      cout << "include at " << lexer.curLocStr()
+      std::cout << "include at " << lexer.curLocStr()
            << ": filename is `" << lexer.includeFileName.pcharc()
            << "'\n";
     }
     
     else {
-      cout << "token at " << lexer.curLocStr()
+      std::cout << "token at " << lexer.curLocStr()
            << ": code=" << code
            << ", text: " << lexer.curToken().pcharc()
-           << endl;
+           << std::endl;
     }
   }
 
@@ -2915,18 +2916,18 @@ sm_string toString(LocString const &s)
 
 #include "ast_reporterr.h"
 
-#include <iostream.h>       // cout
+#include <iostream>       // std::cout
 
 
 // --------------------- SimpleReportError -------------------------
 void SimpleReportError::reportError(char const *str)
 {
-  cout << "error: " << str << endl;
+  std::cout << "error: " << str << std::endl;
 }
 
 void SimpleReportError::reportWarning(char const *str)
 {
-  cout << "warning: " << str << endl;
+  std::cout << "warning: " << str << std::endl;
 }
 
 SimpleReportError simpleReportError;

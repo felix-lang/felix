@@ -43,16 +43,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "elk_gramanl.h"    // GrammarAnalysis
 #include "sm_strtokp.h"    // StrtokParse
 
-#include <iostream.h>   // cin/cout
+#include <iostream>   // cin/std::cout
 
 
 void grammarExplorer(GrammarAnalysis &g)
 {
-  cout << "exploring the grammar:\n";
+  std::cout << "exploring the grammar:\n";
 
   #if 0
   for (;;) {
-    cout << "commands:\n"
+    std::cout << "commands:\n"
             "  terminals\n"
             "  nonterminals\n"
             "  productions <nonterm-id>\n"
@@ -61,8 +61,8 @@ void grammarExplorer(GrammarAnalysis &g)
             "  reach <state-id>\n"
             "  track-la <state-id> <prod-id> <term-id>\n"
             "  quit\n";
-    cout << "command> ";
-    cout.flush();
+    std::cout << "command> ";
+    std::cout.flush();
 
     char buf[80];
     cin >> buf;     // buffer overrun potential, don't care
@@ -75,14 +75,14 @@ void grammarExplorer(GrammarAnalysis &g)
       if (0==strcmp(tok[0], "terminals")) {
         for (int i=0; i < g.numTerminals(); i++) {
           Terminal const *t = g.getTerminal(i);
-          t->print(cout);
+          t->print(std::cout);
         }
       }
 
       else if (0==strcmp(tok[0], "nonterminals")) {
         for (int i=0; i < g.numNonterminals(); i++) {
           Nonterminal const *nt = g.getNonterminal(i);
-          nt->print(cout);
+          nt->print(std::cout);
         }
       }
 
@@ -92,8 +92,8 @@ void grammarExplorer(GrammarAnalysis &g)
         int ct=0;
         FOREACH_PRODUCTION(g.productions, iter) {
           if (iter.data()->left == nt) {
-            cout << "[" << ct << "] ";   // production id
-            iter.data()->print(cout);
+            std::cout << "[" << ct << "] ";   // production id
+            iter.data()->print(std::cout);
           }
           ct++;
         }
@@ -101,7 +101,7 @@ void grammarExplorer(GrammarAnalysis &g)
 
       else if (0==strcmp(tok[0], "state")) {
         ItemSet const *is = g.getItemSet(atoi(tok[1]));
-        is->print(cout, g);
+        is->print(std::cout, g);
       }
 
       else if (0==strcmp(tok[0], "suppress-except")) {
@@ -109,10 +109,10 @@ void grammarExplorer(GrammarAnalysis &g)
         Terminal const *t = (id==-1? NULL : g.getTerminal(atoi(tok[1])));
         DottedProduction::lookaheadSuppressExcept = t;
         if (t) {
-          cout << "suppressing  " << t->name << endl;
+          std::cout << "suppressing  " << t->name << std::endl;
         }
         else {
-          cout << "suppressing nothing\n";
+          std::cout << "suppressing nothing\n";
         }
       }
 
@@ -127,13 +127,13 @@ void grammarExplorer(GrammarAnalysis &g)
           for (int termId=0; termId < g.numTerminals(); termId++) {
             ItemSet const *dest = set->transitionC(g.getTerminal(termId));
             if (dest && dest->id == targetId) {
-              dest->print(cout, g);
+              dest->print(std::cout, g);
             }
           }
           for (int nontermId=0; nontermId < g.numNonterminals(); nontermId++) {
             ItemSet const *dest = set->transitionC(g.getNonterminal(nontermId));
             if (dest && dest->id == targetId) {
-              dest->print(cout, g);
+              dest->print(std::cout, g);
             }
           }
         }
@@ -160,11 +160,11 @@ void grammarExplorer(GrammarAnalysis &g)
       else if (0==strcmp(tok[0], "quit")) {
       }
       else {
-        cout << "unknown command: " << tok[0] << endl;
+        std::cout << "unknown command: " << tok[0] << std::endl;
       }
     }
     catch (xArrayBounds &) {
-      cout << "too few arguments to " << tok[0] << endl;
+      std::cout << "too few arguments to " << tok[0] << std::endl;
     }
 
 
@@ -234,13 +234,13 @@ public:
 #ifndef EMITCODE_H
 #define EMITCODE_H
   
-#include <fstream.h>      // ofstream
+#include <fstream>      // std::ofstream
 #include "sm_str.h"
 #include "sm_srcloc.h"
 
 class EmitCode : public sm_stringBuilder {
 private:     // data
-  ofstream os;         // stream to write to
+  std::ofstream os;         // stream to write to
   sm_string fname;        // filename for emitting #line
   int line;            // current line number
 
@@ -775,7 +775,7 @@ void emitMLActionCode(GrammarAnalysis const &g, char const *mliFname,
 #include "sm_sobjlist.h"
 
 #include <stdio.h>         // FILE
-#include <iostream.h>      // ostream
+#include <iostream>      // std::ostream
 
 
 // fwds from other files
@@ -1109,7 +1109,7 @@ public:
   // there is significant expense to computing the debug sm_strings
   // (that are then usually not printed)
   bool trParse;                             // tracingSys("parse")
-  ostream &trsParse;                        // trace("parse")
+  std::ostream &trsParse;                        // trace("parse")
 
   // track column for new nodes
   NODE_COLUMN( int globalNodeColumn; )
@@ -1298,8 +1298,8 @@ public:     // funcs
   Symbol const *symbolAfterDotC() const { return afterDot; }
   Symbol *symbolAfterDot() { return const_cast<Symbol*>(symbolAfterDotC()); }
 
-  // print to cout as 'A -> B . c D' (no newline)
-  void print(ostream &os/*, GrammarAnalysis const &g*/) const;
+  // print to std::cout as 'A -> B . c D' (no newline)
+  void print(std::ostream &os/*, GrammarAnalysis const &g*/) const;
   OSTREAM_OPERATOR(DottedProduction)
 };
 
@@ -1381,7 +1381,7 @@ public:    // funcs
   // true if this item is "A -> alpha * t beta"
   bool isExtendingShift(Nonterminal const *A, Terminal const *t) const;
 
-  void print(ostream &os, GrammarAnalysis const &g) const;
+  void print(std::ostream &os, GrammarAnalysis const &g) const;
 };
 
 
@@ -1556,8 +1556,8 @@ public:     // funcs
   static bool equalKey(ItemSet const *key1, ItemSet const *key2);
 
   // ---- debugging ----
-  void writeGraph(ostream &os, GrammarAnalysis const &g) const;
-  void print(ostream &os, GrammarAnalysis const &g, bool nonkernel=true) const;
+  void writeGraph(std::ostream &os, GrammarAnalysis const &g) const;
+  void print(std::ostream &os, GrammarAnalysis const &g, bool nonkernel=true) const;
 };
 
 
@@ -1772,10 +1772,10 @@ public:     // funcs
 
   // overrides base class to add a little bit of the
   // annotated info
-  void printProductions(ostream &os, bool printCode=true) const;
+  void printProductions(std::ostream &os, bool printCode=true) const;
 
   // print lots of stuff
-  void printProductionsAndItems(ostream &os, bool printCode=true) const;
+  void printProductionsAndItems(std::ostream &os, bool printCode=true) const;
 
   // when grammar is built, this runs all analyses and stores
   // the results in this object's data fields; write the LR item
@@ -1783,7 +1783,7 @@ public:     // funcs
   void runAnalyses(char const *setsFname);
 
   // print the item sets to a stream (optionally include nonkernel items)
-  void printItemSets(ostream &os, bool nonkernel) const;
+  void printItemSets(std::ostream &os, bool nonkernel) const;
 
   // given a grammar, replace all of its actions with actions that
   // will build a straightforward parse tree using the facilities
@@ -1864,7 +1864,7 @@ public:      // funcs
 
   GrammarAST *clone() const;
 
-  void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   public:  TF_terminals *terms;
   public:  TF_nonterm *firstNT;
@@ -1895,7 +1895,7 @@ public:      // funcs
 
   virtual TopForm *clone() const=0;
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
 };
 
@@ -1911,7 +1911,7 @@ public:      // funcs
   virtual Kind kind() const { return TF_CONTEXT; }
   enum { TYPE_TAG = TF_CONTEXT };
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   virtual TF_context *clone() const;
 
@@ -1930,7 +1930,7 @@ public:      // funcs
   virtual Kind kind() const { return TF_VERBATIM; }
   enum { TYPE_TAG = TF_VERBATIM };
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   virtual TF_verbatim *clone() const;
 
@@ -1949,7 +1949,7 @@ public:      // funcs
   virtual Kind kind() const { return TF_OPTION; }
   enum { TYPE_TAG = TF_OPTION };
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   virtual TF_option *clone() const;
 
@@ -1969,7 +1969,7 @@ public:      // funcs
   virtual Kind kind() const { return TF_TERMINALS; }
   enum { TYPE_TAG = TF_TERMINALS };
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   virtual TF_terminals *clone() const;
 
@@ -1991,7 +1991,7 @@ public:      // funcs
   virtual Kind kind() const { return TF_NONTERM; }
   enum { TYPE_TAG = TF_NONTERM };
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   virtual TF_nonterm *clone() const;
 
@@ -2015,7 +2015,7 @@ public:      // funcs
 
   TermDecl *clone() const;
 
-  void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
 };
 
@@ -2037,7 +2037,7 @@ public:      // funcs
 
   TermType *clone() const;
 
-  void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
 };
 
@@ -2059,7 +2059,7 @@ public:      // funcs
 
   PrecSpec *clone() const;
 
-  void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
 };
 
@@ -2081,7 +2081,7 @@ public:      // funcs
 
   SpecFunc *clone() const;
 
-  void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   public:  LocString nthFormal(int i) const
     { return *( formals.nthC(i) ); };
@@ -2104,7 +2104,7 @@ public:      // funcs
 
   ProdDecl *clone() const;
 
-  void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
 };
 
@@ -2131,7 +2131,7 @@ public:      // funcs
 
   virtual RHSElt *clone() const=0;
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
 };
 
@@ -2148,7 +2148,7 @@ public:      // funcs
   virtual Kind kind() const { return RH_NAME; }
   enum { TYPE_TAG = RH_NAME };
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   virtual RH_name *clone() const;
 
@@ -2167,7 +2167,7 @@ public:      // funcs
   virtual Kind kind() const { return RH_STRING; }
   enum { TYPE_TAG = RH_STRING };
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   virtual RH_sm_string *clone() const;
 
@@ -2185,7 +2185,7 @@ public:      // funcs
   virtual Kind kind() const { return RH_PREC; }
   enum { TYPE_TAG = RH_PREC };
 
-  virtual void debugPrint(ostream &os, int indent, char const *subtreeName = "tree") const;
+  virtual void debugPrint(std::ostream &os, int indent, char const *subtreeName = "tree") const;
 
   virtual RH_prec *clone() const;
 
@@ -2277,7 +2277,7 @@ int Symbol::getTermOrNontermIndex() const
 }
 
 
-void Symbol::print(ostream &os) const
+void Symbol::print(std::ostream &os) const
 {
   os << name;
   if (type) {
@@ -2288,7 +2288,7 @@ void Symbol::print(ostream &os) const
 }
 
 
-void Symbol::printDDM(ostream &os) const
+void Symbol::printDDM(std::ostream &os) const
 {
   // don't print anything if no handlers
   if (!anyDDM()) return;
@@ -2306,7 +2306,7 @@ void Symbol::printDDM(ostream &os) const
 }
 
 
-void Symbol::internalPrintDDM(ostream &os) const
+void Symbol::internalPrintDDM(std::ostream &os) const
 {
   if (dupCode.isNonNull()) {
     os << "    dup(" << dupParam << ") [" << dupCode << "]\n";
@@ -2373,7 +2373,7 @@ void Terminal::xfer(Flatten &flat)
 }
 
 
-void Terminal::print(ostream &os) const
+void Terminal::print(std::ostream &os) const
 {
   os << "[" << termIndex << "]";
   if (precedence) {
@@ -2384,7 +2384,7 @@ void Terminal::print(ostream &os) const
 }
 
 
-void Terminal::internalPrintDDM(ostream &os) const
+void Terminal::internalPrintDDM(std::ostream &os) const
 {
   Symbol::internalPrintDDM(os);
 
@@ -2470,7 +2470,7 @@ void Nonterminal::xferSerfs(Flatten &flat, Grammar &g)
 }
 
 
-void Nonterminal::print(ostream &os, Grammar const *grammar) const
+void Nonterminal::print(std::ostream &os, Grammar const *grammar) const
 {
   os << "[" << ntIndex << "] ";
   Symbol::print(os);
@@ -2494,7 +2494,7 @@ void Nonterminal::print(ostream &os, Grammar const *grammar) const
 }
 
 
-void Nonterminal::internalPrintDDM(ostream &os) const
+void Nonterminal::internalPrintDDM(std::ostream &os) const
 {
   Symbol::internalPrintDDM(os);
   
@@ -2650,7 +2650,7 @@ bool TerminalSet::merge(TerminalSet const &obj)
 }
 
 
-void TerminalSet::print(ostream &os, Grammar const &g) const
+void TerminalSet::print(std::ostream &os, Grammar const &g) const
 {
   int ct=0;
   FOREACH_TERMINAL(g.terminals, iter) {
@@ -2894,7 +2894,7 @@ DottedProduction const *Production::getDProdC(int dotPlace) const
 #endif // 0
 
 
-void Production::print(ostream &os) const
+void Production::print(std::ostream &os) const
 {
   os << toString();
 }
@@ -3052,7 +3052,7 @@ int Grammar::numNonterminals() const
 }
 
 
-void Grammar::printSymbolTypes(ostream &os) const
+void Grammar::printSymbolTypes(std::ostream &os) const
 {
   os << "Grammar terminals with types or precedence:\n";
   FOREACH_OBJLIST(Terminal, terminals, term) {
@@ -3060,7 +3060,7 @@ void Grammar::printSymbolTypes(ostream &os) const
     t.printDDM(os);
     if (t.precedence) {
       os << "  " << t.name << " " << ::toString(t.associativity)
-         << " %prec " << t.precedence << endl;
+         << " %prec " << t.precedence << std::endl;
     }
   }
 
@@ -3071,7 +3071,7 @@ void Grammar::printSymbolTypes(ostream &os) const
 }
 
 
-void Grammar::printProductions(ostream &os, bool code) const
+void Grammar::printProductions(std::ostream &os, bool code) const
 {
   os << "Grammar productions:\n";
   for (ObjListIter<Production> iter(productions);
@@ -3127,7 +3127,7 @@ bool Grammar::declareToken(LocString const &symbolName, int code,
 {
   // verify that this token hasn't been declared already
   if (findSymbolC(symbolName)) {
-    cout << "token " << symbolName << " has already been declared\n";
+    std::cout << "token " << symbolName << " has already been declared\n";
     return false;
   }
 
@@ -3160,7 +3160,7 @@ sm_string bisonTokenName(Terminal const *t)
 }
 
 // print the grammar in a form that Bison likes
-void Grammar::printAsBison(ostream &os) const
+void Grammar::printAsBison(std::ostream &os) const
 {
   os << "/* automatically generated grammar */\n\n";
 
@@ -3267,8 +3267,8 @@ void Grammar::printAsBison(ostream &os) const
             }
           }
           if (!found) {
-            cout << "warning: cannot find token for precedence level "
-                 << prod.data()->precedence << endl;
+            std::cout << "warning: cannot find token for precedence level "
+                 << prod.data()->precedence << std::endl;
             os << " /* no token precedence level "/* */
                << prod.data()->precedence << " */";
           }
@@ -3427,7 +3427,7 @@ sm_string terminalSequenceToString(TerminalList const &list)
 
 // ------------------ emitting C++ code ---------------------
 #if 0     // not done
-void Grammar::emitSelfCC(ostream &os) const
+void Grammar::emitSelfCC(std::ostream &os) const
 {
   os << "void buildGrammar(Grammar *g)\n"
         "{\n";
@@ -3477,7 +3477,7 @@ void Grammar::emitSelfCC(ostream &os) const
 #ifndef __GRAMMAR_H
 #define __GRAMMAR_H
 
-#include <iostream.h>    // ostream
+#include <iostream>    // std::ostream
 
 #include "sm_str.h"
 #include "sm_objlist.h"
@@ -3531,7 +3531,7 @@ public:
   bool reachable;           // computed by constructLRItemSets; true when nonterminal reachable from start symbol
 
 protected:  // funcs
-  virtual void internalPrintDDM(ostream &os) const;
+  virtual void internalPrintDDM(std::ostream &os) const;
 
 public:      // funcs
   Symbol(LocString const &n, bool t, bool e = false);
@@ -3568,11 +3568,11 @@ public:      // funcs
 
   // debugging
   // print as '$name: isTerminal=$isTerminal' (no newline)
-  virtual void print(ostream &os) const;
+  virtual void print(std::ostream &os) const;
   OSTREAM_OPERATOR(Symbol)
 
   // print 'token[type] name { dup.. del.. merge.. }' (with newlines)
-  void printDDM(ostream &os) const;
+  void printDDM(std::ostream &os) const;
 
   // true if any of the handlers were specified
   virtual bool anyDDM() const;
@@ -3629,7 +3629,7 @@ public:     // data
   int termIndex;
 
 protected:  // funcs  
-  virtual void internalPrintDDM(ostream &os) const;
+  virtual void internalPrintDDM(std::ostream &os) const;
 
 public:     // funcs
   Terminal(LocString const &name)        // canonical name for terminal class
@@ -3644,7 +3644,7 @@ public:     // funcs
   Terminal(Flatten &flat);
   void xfer(Flatten &flat);
 
-  virtual void print(ostream &os) const;
+  virtual void print(std::ostream &os) const;
   OSTREAM_OPERATOR(Terminal)
 
   virtual bool anyDDM() const;
@@ -3719,7 +3719,7 @@ public:     // funcs
   void copy(TerminalSet const &obj);      // lengths must be the same
   bool merge(TerminalSet const &obj);     // union; returns true if merging changed set
 
-  void print(ostream &os, Grammar const &g) const;
+  void print(std::ostream &os, Grammar const &g) const;
 };
 
 
@@ -3741,7 +3741,7 @@ public:
   SObjList<Nonterminal> subsets;      // preferred subsets (for scannerless)
 
 protected:  // funcs
-  virtual void internalPrintDDM(ostream &os) const;
+  virtual void internalPrintDDM(std::ostream &os) const;
 
 public:     // funcs
   Nonterminal(LocString const &name, bool isEmptyString=false);
@@ -3751,7 +3751,7 @@ public:     // funcs
   void xfer(Flatten &flat);
   void xferSerfs(Flatten &flat, Grammar &g);
 
-  virtual void print(ostream &os, Grammar const *grammer = NULL) const;
+  virtual void print(std::ostream &os, Grammar const *grammer = NULL) const;
   OSTREAM_OPERATOR(Nonterminal)
 
   virtual bool anyDDM() const;
@@ -3868,7 +3868,7 @@ public:     // funcs
   // this one prints 'B c D' for above example rule
   sm_string rhsString(bool printTags = true, bool quoteAliases = false) const;
 
-  void print(ostream &os) const;
+  void print(std::ostream &os) const;
   OSTREAM_OPERATOR(Production)
 
   // print entire input syntax, with newlines, e.g.
@@ -3976,13 +3976,13 @@ public:     // funcs
 
   // ---------- outputting a grammar --------------
   // print the list of symbols with type annotations
-  void printSymbolTypes(ostream &os) const;
+  void printSymbolTypes(std::ostream &os) const;
 
   // print the current list of productions
-  void printProductions(ostream &os, bool printCode=true) const;
+  void printProductions(std::ostream &os, bool printCode=true) const;
 
   // emit C++ code to construct this grammar later
-  void emitSelfCC(ostream &os) const;
+  void emitSelfCC(std::ostream &os) const;
 
   // ---- whole-grammar stuff ----
   // after adding all rules, check that all nonterminals have
@@ -3994,7 +3994,7 @@ public:     // funcs
   // output grammar in Bison's syntax
   // (coincidentally, when bison dumps its table with '-v', its table
   // dump syntax is similar to my input syntax)
-  void printAsBison(ostream &os) const;
+  void printAsBison(std::ostream &os) const;
 
   // ---- symbol access ----
   #define SYMBOL_ACCESS(Thing)                              \
@@ -4453,7 +4453,7 @@ public:
 
 #include "sm_array.h"
 #include "elk_glrconfig.h"
-#include <iostream.h>     // ostream
+#include <iostream>     // std::ostream
 
 class Flatten;            // flatten.h
 class EmitCode;           // emitcode.h
@@ -4465,7 +4465,7 @@ class Bit2d;              // bit2d.h
 // prevent any other integers from silently flowing into it
 enum StateId { STATE_INVALID=-1 };
 
-inline ostream& operator<< (ostream &os, StateId id)
+inline std::ostream& operator<< (std::ostream &os, StateId id)
   { return os << (int)id; }
 
 
@@ -5040,7 +5040,7 @@ public:
 #define PTREENODE_H
 
 #include <stddef.h>     // NULL
-#include <iostream.h>   // ostream
+#include <iostream>   // std::ostream
 
 // for storing counts of parse trees; I try to make the code work for
 // either 'int' or 'double' in this spot (e.g. I assign 0 to it
@@ -5096,8 +5096,8 @@ private:     // funcs
   void init();
 
   // helpers
-  static void indent(ostream &out, int n);
-  void innerPrintTree(ostream &out, int indentation, PrintFlags pf) const;
+  static void indent(std::ostream &out, int n);
+  void innerPrintTree(std::ostream &out, int indentation, PrintFlags pf) const;
   int countMergedList() const;
 
 public:      // funcs
@@ -5129,7 +5129,7 @@ public:      // funcs
   // print the entire parse forest using indentation to represent
   // nesting, and duplicating printing of shared subtrees within
   // ambiguous regions
-  void printTree(ostream &out, PrintFlags pf = PF_NONE) const;
+  void printTree(std::ostream &out, PrintFlags pf = PF_NONE) const;
 
   // add an alternative to the current 'merged' list
   void addAlternative(PTreeNode *alt);
@@ -5407,7 +5407,7 @@ public:
 
 // given a method called 'print', define an operator to use it
 #define OSTREAM_OPERATOR(MyClass)                                \
-  friend ostream &operator << (ostream &os, MyClass const &ths)  \
+  friend std::ostream &operator << (std::ostream &os, MyClass const &ths)  \
     { ths.print(os); return os; }
 
 
@@ -5430,7 +5430,7 @@ inline T *transferOwnership(T *&ptr)
 
 // print a value under the debug trace (name: Trace VALue)
 #define TVAL(expr) \
-  trace("debug") << #expr ": " << (expr) << endl
+  trace("debug") << #expr ": " << (expr) << std::endl
 
 
 #endif // __UTIL_H
@@ -5759,7 +5759,7 @@ void emitMLActionCode(GrammarAnalysis const &g, char const *mliFname,
     out << "#include \"sm_srcloc.h\"      // SourceLoc\n";
     out << "\n";
     out << "#include <assert.h>      // assert\n";
-    out << "#include <iostream.h>    // cout\n";
+    out << "#include <iostream>    // std::cout\n";
     out << "#include <stdlib.h>      // abort\n";
     out << "\n";
 
@@ -5872,7 +5872,7 @@ static char const *notVoid(char const *type)
 static char const *typeString(char const *type, LocString const &tag)
 {
   if (!type) {
-    cout << tag.locString() << ": Production tag \"" << tag
+    std::cout << tag.locString() << ": Production tag \"" << tag
          << "\" on a symbol with no type.\n";
     return "__error_no_type__";     // will make compiler complain
   }
@@ -6606,7 +6606,7 @@ void ParseTables::emitMLConstructionCode
 #endif
 #if ACTION_TRACE
   #define ACTION(stmt) stmt
-  #define TRSACTION(stuff) if (tracingSys("action")) { cout << stuff << endl; }
+  #define TRSACTION(stuff) if (tracingSys("action")) { std::cout << stuff << std::endl; }
 #else
   #define ACTION(stmt)
   #define TRSACTION(stuff)
@@ -6615,7 +6615,7 @@ void ParseTables::emitMLConstructionCode
 // TRSPARSE(stuff) traces <stuff> during debugging with -tr parse
 #if !defined(NDEBUG)
   #define IF_NDEBUG(stuff)
-  #define TRSPARSE(stuff) if (trParse) { trsParse << stuff << endl; }
+  #define TRSPARSE(stuff) if (trParse) { trsParse << stuff << std::endl; }
   #define TRSPARSE_DECL(stuff) stuff
 #else
   #define IF_NDEBUG(stuff) stuff
@@ -6970,9 +6970,9 @@ SiblingLink *StackNode::getLinkTo(StackNode *another)
 
 STATICDEF void StackNode::printAllocStats()
 {
-  cout << "stack nodes: " << numStackNodesAllocd
+  std::cout << "stack nodes: " << numStackNodesAllocd
        << ", max stack nodes: " << maxStackNodesAllocd
-       << endl;
+       << std::endl;
 }
 
 
@@ -7305,11 +7305,11 @@ bool GLR::glrParse(LexerInterface &lexer, SemanticValue &treeTop)
   if (getenv("ELKHOUND_DEBUG")) {
     #if DO_ACCOUNTING
       StackNode::printAllocStats();
-      cout << "detShift=" << detShift
+      std::cout << "detShift=" << detShift
            << ", detReduce=" << detReduce
            << ", nondetShift=" << nondetShift
            << ", nondetReduce=" << nondetReduce
-           << endl;
+           << std::endl;
       //PVAL(parserMerges);
       PVAL(computeDepthIters);
       
@@ -7400,7 +7400,7 @@ STATICDEF bool GLR
 
     // some debugging streams so the TRSPARSE etc. macros work
     bool trParse       = glr.trParse;
-    ostream &trsParse  = glr.trsParse;
+    std::ostream &trsParse  = glr.trsParse;
   #endif
   for (;;) {
     // debugging
@@ -7611,7 +7611,7 @@ STATICDEF bool GLR
               // update: now I don't even set it to NULL because the code here
               // has been changed to ignore *any* value
               //if (prev->firstSib.sval != NULL) {
-              //  cout << "I GOT THE ANALYSIS WRONG!\n";
+              //  std::cout << "I GOT THE ANALYSIS WRONG!\n";
               //}
 
               // cancelled(1) effect: parser->decRefCt();
@@ -7814,7 +7814,7 @@ sm_string stackTraceString(StackNode *parser)
 // far as I can tell!)
 bool GLR::nondeterministicParseToken()
 {
-  //cout << "not deterministic\n";
+  //std::cout << "not deterministic\n";
 
   // ([GLR] called the code from here to the end of
   // the loop 'parseword')
@@ -7869,29 +7869,29 @@ void GLR::printParseErrorMessage(StateId lastToDie)
   // nondeterministic algorithm there might have been more than one
   // state that could have made progress..
   if (lastToDie != STATE_INVALID) {
-    cout << "In state " << lastToDie << ", I expected one of these tokens:\n";
-    cout << "  ";
+    std::cout << "In state " << lastToDie << ", I expected one of these tokens:\n";
+    std::cout << "  ";
     for (int i=0; i < tables->getNumTerms(); i++) {
       ActionEntry act = tables->getActionEntry(lastToDie, i);
       if (!tables->isErrorAction(act)) {
-        //cout << "  [" << i << "] " << lexerPtr->tokenKindDesc(i) << "\n";
-        cout << lexerPtr->tokenKindDesc(i) << ", ";
+        //std::cout << "  [" << i << "] " << lexerPtr->tokenKindDesc(i) << "\n";
+        std::cout << lexerPtr->tokenKindDesc(i) << ", ";
       }
     }
-    cout << "\n";
+    std::cout << "\n";
   }
   else {                                                                          
     // this happens because I lose the dead-parser info while processing
     // the reduction worklist; to implement this I'd need to remember each
     // state that died while processing the worklist; for now I'll just let
     // it be, and only have the right info sometimes
-    cout << "(expected-token info not available due to nondeterministic mode)\n";
+    std::cout << "(expected-token info not available due to nondeterministic mode)\n";
   }
 
-  cout << toString(lexerPtr->loc)
+  std::cout << toString(lexerPtr->loc)
        << ": Parse error (state " << lastToDie << ") at "
        << lexerPtr->tokenDesc()
-       << endl;
+       << std::endl;
 
   // removing this for now since keeping it would mean putting
   // sample inputs and left contexts for all states into the
@@ -7899,11 +7899,11 @@ void GLR::printParseErrorMessage(StateId lastToDie)
   #if 0
   if (lastToDie == STATE_INVALID) {
     // I'm not entirely confident it has to be nonnull..
-    cout << "what the?  lastToDie is STATE_INVALID??\n";
+    std::cout << "what the?  lastToDie is STATE_INVALID??\n";
   }
   else {
     // print out the context of that parser
-    cout << "last parser (state " << lastToDie << ") to die had:\n"
+    std::cout << "last parser (state " << lastToDie << ") to die had:\n"
          << "  sample input: "
          << sampleInput(getItemSet(lastToDie)) << "\n"
          << "  left context: "
@@ -7932,7 +7932,7 @@ bool GLR::cleanupAfterParse(CycleTimer &timer, SemanticValue &treeTop)
 
   // finish the parse by reducing to start symbol
   if (topmostParsers.length() != 1) {
-    cout << "parsing finished with more than one active parser!\n";
+    std::cout << "parsing finished with more than one active parser!\n";
     return false;
   }
   StackNode *last = topmostParsers.top();
@@ -8475,18 +8475,18 @@ SiblingLink *GLR::rwlShiftNonterminal(StackNode *leftSibling, int lhsIndex,
         if (sibLink->yieldCount > 0) {
           // yield-then-merge (YTM) happened
           yieldThenMergeCt++;
-          SOURCELOC( trace("ytm") << "at " << toString(loc) << endl; )
+          SOURCELOC( trace("ytm") << "at " << toString(loc) << std::endl; )
 
           // if merging yielded a new semantic value, then we most likely
           // have a problem; if it yielded the *same* value, then most
           // likely the user has implemented the 'ambiguity' link soln,
           // so we're ok
           if (old2 != sibLink->sval) {
-            cout << "warning: incomplete parse forest: " << (void*)old2
+            std::cout << "warning: incomplete parse forest: " << (void*)old2
                  << " has already been yielded, but it now has been "
                  << "merged with " << (void*)sval << " to make "
                  << (void*)(sibLink->sval) << " (lhsIndex="
-                 << lhsIndex << ")" << endl;
+                 << lhsIndex << ")" << std::endl;
           }
         }
       )
@@ -8916,7 +8916,7 @@ void GLR::writeParseGraph(char const *fname) const
 
 // --------------------- testing ------------------------
 // read an entire file into a single sm_string
-// currenty is *not* pipe-friendly because it must seek
+// currenty is *not* pipe-frendly because it must seek
 // (candidate for adding to 'str' module)
 sm_string readFileIntoString(char const *fname)
 {
@@ -8978,7 +8978,7 @@ sm_string readFileIntoString(char const *fname)
 #include "sm_ckheap.h"
 #include "elk_genml.h"
 
-#include <fstream.h>     // ofstream
+#include <fstream>     // std::ofstream
 #include <stdlib.h>      // getenv
 #include <stdio.h>       // printf
 
@@ -9025,7 +9025,7 @@ static bool const LALR1 = true;
     {                                                                           \
       unsigned newCt = numMallocCalls();                                        \
       if (mallocCt != newCt) {                                                  \
-        cout << (newCt - mallocCt) << " malloc calls during " << desc << endl;  \
+        std::cout << (newCt - mallocCt) << " malloc calls during " << desc << std::endl;  \
         mallocCt = newCt;                                                       \
         breaker();                                                              \
       }                                                                         \
@@ -9123,7 +9123,7 @@ Symbol const *DottedProduction::symbolAfterDotC() const
 #endif // 0
 
 
-void DottedProduction::print(ostream &os) const
+void DottedProduction::print(std::ostream &os) const
 {
   os << prod->left->name << " ->";
 
@@ -9219,7 +9219,7 @@ bool LRItem::isExtendingShift(Nonterminal const *A, Terminal const *t) const
 }
 
 
-void LRItem::print(ostream &os, GrammarAnalysis const &g) const
+void LRItem::print(std::ostream &os, GrammarAnalysis const &g) const
 {
   dprod->print(os);
   lookahead.print(os, g);      // prints the separating comma, if necessary
@@ -9618,7 +9618,7 @@ void ItemSet::getPossibleReductions(ProductionList &reductions,
                          << item->getProd()->toString(false /*printType*/)
                          << " because " << lookahead->toString()
                          << " is not in follow of "
-                         << item->getProd()->left->name << endl;
+                         << item->getProd()->left->name << std::endl;
         }
         continue;
       }
@@ -9631,7 +9631,7 @@ void ItemSet::getPossibleReductions(ProductionList &reductions,
                          << ", not reducing by "
                          << item->getProd()->toString(false /*printType*/)
                          << " because " << lookahead->toString()
-                         << " is not in lookahead" << endl;
+                         << " is not in lookahead" << std::endl;
         }
         continue;
       }
@@ -9776,7 +9776,7 @@ void ItemSet::computeKernelCRC(GrowArray<DottedProduction const*> &array)
 }
 
 
-void ItemSet::print(ostream &os, GrammarAnalysis const &g, 
+void ItemSet::print(std::ostream &os, GrammarAnalysis const &g, 
                     bool nonkernel) const
 {
   os << "ItemSet " << id << ":\n";
@@ -9806,7 +9806,7 @@ void ItemSet::print(ostream &os, GrammarAnalysis const &g,
         os << "--> " << is->id;
       }
     }
-    os << endl;
+    os << std::endl;
   }
 
   // print transition function directly, since I'm now throwing
@@ -9814,24 +9814,24 @@ void ItemSet::print(ostream &os, GrammarAnalysis const &g,
   for (int t=0; t<terms; t++) {
     if (termTransition[t]) {
       os << "  on terminal " << g.getTerminal(t)->name 
-         << " go to " << termTransition[t]->id << endl;
+         << " go to " << termTransition[t]->id << std::endl;
     }
   }
 
   for (int n=0; n<nonterms; n++) {
     if (nontermTransition[n]) {
       os << "  on nonterminal " << g.getNonterminal(n)->name 
-         << " go to " << nontermTransition[n]->id << endl;
+         << " go to " << nontermTransition[n]->id << std::endl;
     }
   }
   
   for (int p=0; p<numDotsAtEnd; p++) {
-    os << "  can reduce by " << dotsAtEnd[p]->getProd()->toString() << endl;
+    os << "  can reduce by " << dotsAtEnd[p]->getProd()->toString() << std::endl;
   }
 }
 
 
-void ItemSet::writeGraph(ostream &os, GrammarAnalysis const &g) const
+void ItemSet::writeGraph(std::ostream &os, GrammarAnalysis const &g) const
 {
   // node: n <name> <desc>
   os << "\nn ItemSet" << id << " ItemSet" << id << "/";
@@ -9853,13 +9853,13 @@ void ItemSet::writeGraph(ostream &os, GrammarAnalysis const &g) const
     // slashes too, if it has >1 lookahead token ... !
     os << "/";      // line separator in my node format
   }
-  os << endl;
+  os << std::endl;
 
   // print transitions on terminals
   INTLOOP(t, 0, terms) {
     if (termTransition[t] != NULL) {
       os << "e ItemSet" << id
-         << " ItemSet" << termTransition[t]->id << endl;
+         << " ItemSet" << termTransition[t]->id << std::endl;
     }
   }
 
@@ -9867,7 +9867,7 @@ void ItemSet::writeGraph(ostream &os, GrammarAnalysis const &g) const
   INTLOOP(nt, 0, nonterms) {
     if (nontermTransition[nt] != NULL) {
       os << "e ItemSet" << id
-         << " ItemSet" << nontermTransition[nt]->id << endl;
+         << " ItemSet" << nontermTransition[nt]->id << std::endl;
     }
   }
 }
@@ -9998,7 +9998,7 @@ void GrammarAnalysis::xfer(Flatten &flat)
 
 
 void GrammarAnalysis::
-  printProductions(ostream &os, bool printCode) const
+  printProductions(std::ostream &os, bool printCode) const
 {
   if (cyclic) {
     os << "(cyclic!) ";
@@ -10008,7 +10008,7 @@ void GrammarAnalysis::
 
 
 void GrammarAnalysis::
-  printProductionsAndItems(ostream &os, bool printCode) const
+  printProductionsAndItems(std::ostream &os, bool printCode) const
 {
   printProductions(os, printCode);
 
@@ -10018,11 +10018,11 @@ void GrammarAnalysis::
 }
 
 
-void printSymbols(ostream &os, ObjList<Symbol> const &list)
+void printSymbols(std::ostream &os, ObjList<Symbol> const &list)
 {
   for (ObjListIter<Symbol> iter(list);
        !iter.isDone(); iter.adv()) {
-    os << "  " << *(iter.data()) << endl;
+    os << "  " << *(iter.data()) << std::endl;
   }
 }
 
@@ -10549,11 +10549,11 @@ void GrammarAnalysis::computeFirst()
       if (LHS->first.merge(firstOfRHS)) {
         changes++;
         if (tr) {
-          ostream &trs = trace("first");
+          std::ostream &trs = trace("first");
           trs << "added ";
           firstOfRHS.print(trs, *this);
           trs << " to " << LHS->name << " because of "
-              << prod->toString() << endl;
+              << prod->toString() << std::endl;
         }
       }
     } // for (productions)
@@ -10563,9 +10563,9 @@ void GrammarAnalysis::computeFirst()
     FOREACH_NONTERMINAL(nonterminals, iter) {
       Nonterminal const &nt = *(iter.data());
 
-      ostream &trs = trace("first") << " " << nt.name << ": ";
+      std::ostream &trs = trace("first") << " " << nt.name << ": ";
       nt.first.print(trs, *this);
-      trs << endl;
+      trs << std::endl;
     }
   }
 }
@@ -10680,12 +10680,12 @@ void GrammarAnalysis::computeFollow()
           if (rightNT.follow.merge(firstOfBeta)) {
             changes++;
             if (&rightNT == symOfInterest) {
-              ostream &trs = trace("follow-sym");
+              std::ostream &trs = trace("follow-sym");
               trs << "Follow(" << rightNT.name
                   << "): adding ";
               firstOfBeta.print(trs, *this);
               trs << " by first(RHS-tail) of " << *prod
-                  << endl;
+                  << std::endl;
             }
           }
         }
@@ -10698,12 +10698,12 @@ void GrammarAnalysis::computeFollow()
           if (rightNT.follow.merge(prod->left->follow)) {
             changes++;
             if (&rightNT == symOfInterest) {
-              ostream &trs = trace("follow-sym");
+              std::ostream &trs = trace("follow-sym");
               trs << "Follow(" << rightNT.name
                   << "): adding ";
               prod->left->follow.print(trs, *this);
               trs << " by follow(LHS) of " << *prod
-                  << endl;
+                  << std::endl;
             }
           }
         }
@@ -10753,7 +10753,7 @@ void GrammarAnalysis::computePredictiveParsingTable()
 
 
   // print the resulting table
-  ostream &os = trace("pred-table") << endl;
+  std::ostream &os = trace("pred-table") << std::endl;
 
   // for each nonterminal
   INTLOOP(nonterm, 0, numNonterms) {
@@ -10769,7 +10769,7 @@ void GrammarAnalysis::computePredictiveParsingTable()
         prod.data()->print(os);
       }
 
-      os << endl;
+      os << std::endl;
     }
   }
 
@@ -10815,7 +10815,7 @@ STATICDEF bool LRItem::dpEqual(DottedProduction const *key1,
 void GrammarAnalysis::itemSetClosure(ItemSet &itemSet)
 {
   bool const tr = tracingSys("closure");
-  ostream &trs = trace("closure");     // trace stream
+  std::ostream &trs = trace("closure");     // trace stream
   if (tr) {
     trs << "computing closure of ";
     itemSet.print(trs, *this);
@@ -10892,7 +10892,7 @@ void GrammarAnalysis::itemSetClosure(ItemSet &itemSet)
   itemSet.changedItems();
 
   if (tr) {
-    trs << "done with closure of state " << itemSet.id << endl;
+    trs << "done with closure of state " << itemSet.id << std::endl;
     itemSet.print(trs, *this);
   }
 }
@@ -10907,17 +10907,17 @@ void GrammarAnalysis
   INITIAL_MALLOC_STATS();
 
   bool const tr = tracingSys("closure");
-  ostream &trs = trace("closure");     // trace stream
+  std::ostream &trs = trace("closure");     // trace stream
 
   if (tr) {
     trs << "  considering item ";
     item->print(trs, *this);
-    trs << endl;
+    trs << std::endl;
   }
 
   if (item->isDotAtEnd()) {
     if (tr) {
-      trs << "    dot is at the end" << endl;
+      trs << "    dot is at the end" << std::endl;
     }
     CHECK_MALLOC_STATS("return, dot at end");
     return;
@@ -10930,7 +10930,7 @@ void GrammarAnalysis
   Symbol const *B = item->symbolAfterDotC();
   if (B->isTerminal()) {
     if (tr) {
-      trs << "    symbol after the dot is a terminal" << endl;
+      trs << "    symbol after the dot is a terminal" << std::endl;
     }
     CHECK_MALLOC_STATS("return, dot sym is terminal");
     return;
@@ -10949,7 +10949,7 @@ void GrammarAnalysis
   SMUTATE_EACH_PRODUCTION(productionsByLHS[nontermIndex], prodIter) {    // (constness)
     Production &prod = *(prodIter.data());
     if (tr) {
-      trs << "    considering production " << prod << endl;
+      trs << "    considering production " << prod << std::endl;
     }
 
     // key to good performance: do *no* dynamic allocation in this
@@ -10984,7 +10984,7 @@ void GrammarAnalysis
       newDP->print(trs);
       trs << ", ";
       newItemLA.print(trs, *this);
-      trs << endl;
+      trs << std::endl;
     }
 
     // is 'newDP' already there?
@@ -11003,7 +11003,7 @@ void GrammarAnalysis
       if (tr) {
         trs << "      looks similar to ";
         already->print(trs, *this);
-        trs << endl;
+        trs << std::endl;
       }
 
       // but the new item may have additional lookahead
@@ -11013,7 +11013,7 @@ void GrammarAnalysis
         if (tr) {
           trs << "      (chg) merged it to make ";
           already->print(trs, *this);
-          trs << endl;
+          trs << std::endl;
         }
 
         if (inDoneList) {
@@ -11032,7 +11032,7 @@ void GrammarAnalysis
       }
       else {
         if (tr) {
-          trs << "      this dprod already existed" << endl;
+          trs << "      this dprod already existed" << std::endl;
         }
       }
     }
@@ -11044,7 +11044,7 @@ void GrammarAnalysis
       LRItem *newItem = new LRItem(numTerms, newDP);
       newItem->lookahead.copy(newItemLA);
       if (tr) {
-        trs << "      this dprod is new, queueing it to add" << endl;
+        trs << "      this dprod is new, queueing it to add" << std::endl;
       }
 
       worklist.push(newItem);
@@ -11288,7 +11288,7 @@ void GrammarAnalysis::constructLRItemSets()
                       << ", " << itemSet->kernelItems.count()
                       << " kernel items and "
                       << itemSet->nonkernelItems.count()
-                      << " nonkernel items" << endl;
+                      << " nonkernel items" << std::endl;
     }
 
     // see below; this is part of a fix for a *very* subtle heisenbug
@@ -11313,10 +11313,10 @@ void GrammarAnalysis::constructLRItemSets()
         CHECK_MALLOC_STATS("top of item list loop");
 
         if (tr) {
-          ostream &trs = trace("lrsets");
+          std::ostream &trs = trace("lrsets");
           trs << "considering item ";
           item->print(trs, *this);
-          trs << endl;
+          trs << std::endl;
         }
 
         // get the symbol 'sym' after the dot (next to be shifted)
@@ -11364,7 +11364,7 @@ void GrammarAnalysis::constructLRItemSets()
               trace("lrsets")
                 << "from state " << itemSet->id << ", found that the transition "
                 << "on " << sym->name << " yielded a state similar to "
-                << already->id << ", but with different lookahead" << endl;
+                << already->id << ", but with different lookahead" << std::endl;
             }
 
             CHECK_MALLOC_STATS("mergeLookaheadsInto");
@@ -11482,9 +11482,9 @@ void GrammarAnalysis::constructLRItemSets()
 
   if (tracingSys("itemset-graph")) {
     // write this info to a graph applet file
-    ofstream out("lrsets.g");
+    std::ofstream out("lrsets.g");
     if (!out) {
-      xsyserror("ofstream open");
+      xsyserror("std::ofstream open");
     }
     out << "# lr sets in graph form\n";
 
@@ -11496,7 +11496,7 @@ void GrammarAnalysis::constructLRItemSets()
 
 
 // print each item set
-void GrammarAnalysis::printItemSets(ostream &os, bool nonkernel) const
+void GrammarAnalysis::printItemSets(std::ostream &os, bool nonkernel) const
 {
   FOREACH_OBJLIST(ItemSet, itemSets, itemSet) {
     os << "State " << itemSet.data()->id
@@ -11584,7 +11584,7 @@ void GrammarAnalysis::handleShiftReduceConflict(
   // say that we're considering this conflict
   trace("prec")
     << "in state " << state->id << ", S/R conflict on token "
-    << sym->name << " with production " << *prod << endl;
+    << sym->name << " with production " << *prod << std::endl;
 
   // look at scannerless directives
   { 
@@ -11610,7 +11610,7 @@ void GrammarAnalysis::handleShiftReduceConflict(
   if (!( prod->precedence && sym->precedence )) {
     // one of the two doesn't have a precedence specification,
     // so we can do nothing
-    trace("prec") << "will SPLIT because no disambiguation spec available" << endl;
+    trace("prec") << "will SPLIT because no disambiguation spec available" << std::endl;
     return;
   }
 
@@ -11651,9 +11651,9 @@ void GrammarAnalysis::handleShiftReduceConflict(
       // the user claimed this token would never be involved in a conflict
       trace("pred") << "neverassoc specification ERROR\n";
       errors++;
-      cout << "token " << sym->name << " was declared 'prec', "
+      std::cout << "token " << sym->name << " was declared 'prec', "
            << "but it is involved in an associativity conflict with \""
-           << *prod << "\" in state " << state->id << endl;
+           << *prod << "\" in state " << state->id << std::endl;
       return;
 
     case AK_SPLIT:
@@ -11828,7 +11828,7 @@ void GrammarAnalysis::resolveConflicts(
   	         trace("prec")
   	           << "in state " << state->id << ", R/R conflict on token "
   	           << sym->name << ", removed production " << *(mut.data())
-  	           << " because " << p << "<" << highestPrec << endl;
+  	           << " because " << p << "<" << highestPrec << std::endl;
   	         mut.remove();
   	       }
   	       else {
@@ -11859,7 +11859,7 @@ void GrammarAnalysis::resolveConflicts(
       // report
       trace("prec")
         << "in state " << state->id << ", R/R conflict on token "
-        << sym->name << ", removed production " << *p1 << endl;
+        << sym->name << ", removed production " << *p1 << std::endl;
     }
 #endif
   }
@@ -11881,19 +11881,19 @@ void GrammarAnalysis::resolveConflicts(
       trace("conflict")
         << "--------- state " << state->id << " ----------\n"
         << "left context: " << leftContextString(state)
-        << endl
+        << std::endl
         << "sample input: " << sampleInput(state)
-        << endl
+        << std::endl
         ;
       printedConflictHeader = true;
     }
 
     trace("conflict")
       << "conflict for symbol " << sym->name
-      << endl;
+      << std::endl;
 
     if (shiftDest) {
-      trace("conflict") << "  shift, and move to state " << shiftDest->id << endl;
+      trace("conflict") << "  shift, and move to state " << shiftDest->id << std::endl;
       sr++;                 // shift/reduce conflict
       rr += actions - 2;    // any reduces beyond first are r/r errors
     }
@@ -11902,7 +11902,7 @@ void GrammarAnalysis::resolveConflicts(
     }
 
     SFOREACH_PRODUCTION(reductions, prod) {
-      trace("conflict") << "  reduce by rule " << *(prod.data()) << endl;
+      trace("conflict") << "  reduce by rule " << *(prod.data()) << std::endl;
     }
   }
 
@@ -11936,11 +11936,11 @@ void reportUnexpected(int value, int expectedValue, char const *desc)
 {
   if ((expectedValue == -1 && value>0) ||
       (expectedValue != -1 && expectedValue != value)) {
-    cout << value << " " << desc;
+    std::cout << value << " " << desc;
     if (expectedValue != -1) {
-      cout << " (expected " << expectedValue << ")";
+      std::cout << " (expected " << expectedValue << ")";
     }
-    cout << endl;
+    std::cout << std::endl;
   }
 }
 
@@ -11987,7 +11987,7 @@ int GrammarAnalysis::subsetDirectiveResolution(
           << ", R/R conflict on token " << sym->name
           << ", removed production yielding " << prod->left->name
           << " b/c another yields subset " << sub->name
-          << endl;
+          << std::endl;
         mut.remove();
         removed++;
         goto continue_outer_loop;
@@ -12116,7 +12116,7 @@ STATICDEF int GrammarAnalysis::renumberStatesDiff
   // I suspect this will never be reached, since usually the
   // transition function will be sufficient
   // update: it happens often enough.. even in the arith grammar
-  //cout << "using reductions to distinguish states\n";
+  //std::cout << "using reductions to distinguish states\n";
 
   // finally, order by possible reductions
   FOREACH_OBJLIST(Terminal, gramanl->terminals, termIter) {
@@ -12135,14 +12135,14 @@ STATICDEF int GrammarAnalysis::renumberStatesDiff
   // I used to throw an xfailure here, but that causes a problem
   // because the 'itemSets' list is not well-formed, because we
   // are in the middle of sorting it
-  cout << "two different states have identical transitions and "
+  std::cout << "two different states have identical transitions and "
           "identical reductions!\n";
-  cout << "left=" << left->id
+  std::cout << "left=" << left->id
        << ", sym is " << left->getStateSymbolC()->toString() << "\n";
-  left->print(cout, *gramanl);
-  cout << "right=" << right->id
+  left->print(std::cout, *gramanl);
+  std::cout << "right=" << right->id
        << ", sym is " << right->getStateSymbolC()->toString() << "\n";
-  right->print(cout, *gramanl);
+  right->print(std::cout, *gramanl);
 
   return 0;
 }
@@ -12337,7 +12337,7 @@ void GrammarAnalysis::computeParseTables(bool allowAmbig)
   for (int nontermId=0; nontermId<numNonterms; nontermId++) {
     Nonterminal const *nonterminal = getNonterminal(nontermId);
     if (nonterminal->cyclic) {
-      cout << "grammar symbol " << nonterminal->name << " is cyclic\n";
+      std::cout << "grammar symbol " << nonterminal->name << " is cyclic\n";
     }
   }
 
@@ -12633,7 +12633,7 @@ bool GrammarAnalysis::
     // or all of them are recursive (which means the language doesn't
     // have any finite sentences)
     trace("rewrite") << "couldn't find any unused, non-recursive rules for "
-                     << nonterminal->name << endl;
+                     << nonterminal->name << std::endl;
     return false;
   }
 
@@ -12712,7 +12712,7 @@ void GrammarAnalysis::lrParse(char const *input)
       // debugging
       trace("parse")
         << "moving to state " << state
-        << " after shifting symbol " << symbol->name << endl;
+        << " after shifting symbol " << symbol->name << std::endl;
     }
 
     else if (tables->isReduceAction(action)) {
@@ -12743,14 +12743,14 @@ void GrammarAnalysis::lrParse(char const *input)
       // debugging
       trace("parse")
         << "moving to state " << state
-        << " after reducing by rule id " << prodIndex << endl;
+        << " after reducing by rule id " << prodIndex << std::endl;
     }
 
     else if (tables->isErrorAction(action)) {
       // error
       trace("parse")
         << "no actions defined for symbol " << symbol->name
-        << " in state " << state << endl;
+        << " in state " << state << std::endl;
       break;       // stop parsing
     }
 
@@ -12769,11 +12769,11 @@ void GrammarAnalysis::lrParse(char const *input)
         action = entry[i+1];
         if (tables->isShiftAction(action)) {
           trace("parse") << "  shift, and move to state "
-                         << tables->decodeShift(action, symbol->termIndex) << endl;
+                         << tables->decodeShift(action, symbol->termIndex) << std::endl;
         }
         else if (tables->isReduceAction(action)) {
           trace("parse") << "  reduce by rule id "
-                         << tables->decodeReduce(action, state) << endl;
+                         << tables->decodeReduce(action, state) << std::endl;
         }
         else {
           // no other alternative makes sense
@@ -12789,18 +12789,18 @@ void GrammarAnalysis::lrParse(char const *input)
   // I want to see what remains; if not, it's interesting anyway
   trace("parse") << "final contents of stacks (right is top):\n";
 
-  ostream &os = trace("parse") << "  state stack:";
+  std::ostream &os = trace("parse") << "  state stack:";
   int i;
   for (i=0; i < stateStack.length(); i++) {
     os << " " << stateStack[i];
   }
-  os << " <-- current" << endl;
+  os << " <-- current" << std::endl;
 
   os << "  symbol stack:";
   for (i=0; i < symbolStack.length(); i++) {
     os << " " << symbolStack[i]->name;
   }
-  os << endl;
+  os << std::endl;
 }
 
 
@@ -12903,7 +12903,7 @@ void GrammarAnalysis::exampleGrammar()
   };
 
   // verify we got what we expected
-  printProductions(trace("grammar") << endl);
+  printProductions(trace("grammar") << std::endl);
 
 
   // run analyses
@@ -12926,7 +12926,7 @@ void GrammarAnalysis::runAnalyses(char const *setsFname)
     if (name != NULL) {
       symOfInterest = findSymbolC(name);
       if (!symOfInterest) {
-        cout << "warning: " << name << " isn't in the grammar\n";
+        std::cout << "warning: " << name << " isn't in the grammar\n";
       }
     }
   }
@@ -12955,12 +12955,12 @@ void GrammarAnalysis::runAnalyses(char const *setsFname)
 
   // print results
   {
-    ostream &tracer = trace("terminals") << "Terminals:\n";
+    std::ostream &tracer = trace("terminals") << "Terminals:\n";
     printSymbols(tracer, toObjList(terminals));
   }
   {
-    ostream &tracer = trace("nonterminals") << "Nonterminals:\n";
-    tracer << "  " << emptyString << endl;
+    std::ostream &tracer = trace("nonterminals") << "Nonterminals:\n";
+    tracer << "  " << emptyString << std::endl;
     printSymbols(tracer, toObjList(nonterminals));
   }
 
@@ -12981,14 +12981,14 @@ void GrammarAnalysis::runAnalyses(char const *setsFname)
     itemSetClosure(itemSet);
 
     // print it
-    cout << "Closure of: ";
-    kernel->print(cout);
-    cout << endl;
+    std::cout << "Closure of: ";
+    kernel->print(std::cout);
+    std::cout << std::endl;
                  
     SFOREACH_OBJLIST(LRItem, itemSet, dprod) {
-      cout << "  ";
-      dprod.data()->print(cout);
-      cout << endl;
+      std::cout << "  ";
+      dprod.data()->print(std::cout);
+      std::cout << std::endl;
     }
   }
   #endif // 0
@@ -13009,7 +13009,7 @@ void GrammarAnalysis::runAnalyses(char const *setsFname)
     int sr=0, rr=0;           // numbers of each kind of conflict
     findSLRConflicts(sr, rr);
     if (sr + rr > 0) {
-      cout << sr << " shift/reduce conflicts and "
+      std::cout << sr << " shift/reduce conflicts and "
            << rr << " reduce/reduce conflicts\n";
     }
   }
@@ -13017,15 +13017,15 @@ void GrammarAnalysis::runAnalyses(char const *setsFname)
 
   // if we want to print, do so before throwing away the items
   if (tracingSys("itemsets")) {
-    printProductionsAndItems(cout, true /*code*/);
+    printProductionsAndItems(std::cout, true /*code*/);
   }
 
   // open debug output file
-  ofstream *setsOutput = NULL;
+  std::ofstream *setsOutput = NULL;
   if (setsFname) {
-    setsOutput = new ofstream(setsFname);
+    setsOutput = new std::ofstream(setsFname);
     if (!*setsOutput) {
-      cout << "couldn't open " << setsFname << " to write item sets\n";
+      std::cout << "couldn't open " << setsFname << " to write item sets\n";
       delete setsOutput;
       setsOutput = NULL;
     }
@@ -13072,7 +13072,7 @@ void GrammarAnalysis::runAnalyses(char const *setsFname)
 
   // print the item sets
   if (setsOutput) {
-    traceProgress() << "printing item sets to " << setsFname << " ..." << endl;
+    traceProgress() << "printing item sets to " << setsFname << " ..." << std::endl;
     *setsOutput << "NOTE: Item set numbers can change depending on what flags\n"
                 << "are passed to 'elkhound'!\n\n\n";
     // only print the nonkernel items if they're explicitly requested,
@@ -13250,7 +13250,7 @@ void emitActionCode(GrammarAnalysis const &g, char const *hFname,
   out << "#include \"sm_srcloc.h\"      // SourceLoc\n";
   out << "\n";
   out << "#include <assert.h>      // assert\n";
-  out << "#include <iostream.h>    // cout\n";
+  out << "#include <iostream>    // std::cout\n";
   out << "#include <stdlib.h>      // abort\n";
   out << "\n";
 
@@ -13759,13 +13759,13 @@ void emitSwitchCode(Grammar const &g, EmitCode &out,
         // warn about unspec'd del, since it's probably a memory leak
         if (syms.firstC()->isNonterminal()) {
           // use the nonterminal map
-          out << "      cout << \"WARNING: there is no action to deallocate nonterm \"\n"
-                 "           << nontermNames[" << switchVar << "] << endl;\n";
+          out << "      std::cout << \"WARNING: there is no action to deallocate nonterm \"\n"
+                 "           << nontermNames[" << switchVar << "] << std::endl;\n";
         }
         else {
           // use the terminal map
-          out << "      cout << \"WARNING: there is no action to deallocate terminal \"\n"
-                 "           << termNames[" << switchVar << "] << endl;\n";
+          out << "      std::cout << \"WARNING: there is no action to deallocate terminal \"\n"
+                 "           << termNames[" << switchVar << "] << std::endl;\n";
         }
       }
       else {
@@ -13775,9 +13775,9 @@ void emitSwitchCode(Grammar const &g, EmitCode &out,
       break;
 
     case 2:    // unspecified merge: warn, but then use left (arbitrarily)
-      out << "      cout << toString(loc) \n"
+      out << "      std::cout << toString(loc) \n"
           << "           << \": WARNING: there is no action to merge nonterm \"\n"
-          << "           << nontermNames[" << switchVar << "] << endl;\n";
+          << "           << nontermNames[" << switchVar << "] << std::endl;\n";
       if (g.defaultMergeAborts) {
         out << "      abort();\n";
       }
@@ -13848,7 +13848,7 @@ int inner_entry(int argc, char **argv)
     }
     else if (0==strcmp(op, "testRW")) {
       SHIFT;
-      cout << "The testRW option has been removed because I wasn't using\n"
+      std::cout << "The testRW option has been removed because I wasn't using\n"
               "it, and the code that implements it has bit-rotted.\n";
       exit(3);
     }
@@ -13857,13 +13857,13 @@ int inner_entry(int argc, char **argv)
       useML = true;
     }
     else {
-      cout << "unknown option: " << argv[0] << endl;
+      std::cout << "unknown option: " << argv[0] << std::endl;
       exit(2);
     }
   }
 
   if (!argv[0]) {
-    cout << "usage: " << progName << " [options] filename.gr [extension.gr [...]]\n"
+    std::cout << "usage: " << progName << " [options] filename.gr [extension.gr [...]]\n"
             "  Generates parse tables to parse with the given grammar.\n"
             "  The optional extension modules can add rules, etc.\n"
             "\n"
@@ -13899,7 +13899,7 @@ int inner_entry(int argc, char **argv)
   while (argv[0]) {
     Owner<GrammarAST> ext(parseGrammarFile(argv[0], useML));
 
-    traceProgress() << "merging module: " << argv[0] << endl;
+    traceProgress() << "merging module: " << argv[0] << std::endl;
     mergeGrammar(ast, ext);
 
     SHIFT;
@@ -13914,10 +13914,10 @@ int inner_entry(int argc, char **argv)
   ast.del();              // done with it
 
   if (tracingSys("treebuild")) {
-    cout << "replacing given actions with treebuilding actions\n";
+    std::cout << "replacing given actions with treebuilding actions\n";
     g.addTreebuildingActions();
   }
-  g.printProductions(trace("grammar") << endl);
+  g.printProductions(trace("grammar") << std::endl);
 
   sm_string setsFname = sm_stringc << prefix << ".out";
   g.runAnalyses(tracingSys("lrtable")? setsFname.pcharc() : NULL);
@@ -13950,8 +13950,8 @@ int inner_entry(int argc, char **argv)
   // write it in a bison-compatible format as well
   if (tracingSys("bison")) {
     sm_string bisonFname = sm_stringc << prefix << ".y";
-    traceProgress() << "writing bison-compatible grammar to " << bisonFname << endl;
-    ofstream out(bisonFname);
+    traceProgress() << "writing bison-compatible grammar to " << bisonFname << std::endl;
+    std::ofstream out(bisonFname);
     g.printAsBison(out);
   }
 
@@ -13992,7 +13992,7 @@ GrammarAST::~GrammarAST()
   forms.deleteAll();
 }
 
-void GrammarAST::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void GrammarAST::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, GrammarAST);
 
@@ -14022,7 +14022,7 @@ char const * const TopForm::kindNames[TopForm::NUM_KINDS] = {
   "TF_nonterm",
 };
 
-void TopForm::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void TopForm::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
 }
 
@@ -14032,7 +14032,7 @@ TF_context::~TF_context()
 {
 }
 
-void TF_context::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void TF_context::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, TF_context);
 
@@ -14055,7 +14055,7 @@ TF_verbatim::~TF_verbatim()
 {
 }
 
-void TF_verbatim::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void TF_verbatim::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, TF_verbatim);
 
@@ -14080,7 +14080,7 @@ TF_option::~TF_option()
 {
 }
 
-void TF_option::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void TF_option::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, TF_option);
 
@@ -14108,7 +14108,7 @@ TF_terminals::~TF_terminals()
   prec.deleteAll();
 }
 
-void TF_terminals::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void TF_terminals::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, TF_terminals);
 
@@ -14138,7 +14138,7 @@ TF_nonterm::~TF_nonterm()
   subsets.deleteAll();
 }
 
-void TF_nonterm::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void TF_nonterm::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, TF_nonterm);
 
@@ -14170,7 +14170,7 @@ TermDecl::~TermDecl()
 {
 }
 
-void TermDecl::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void TermDecl::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, TermDecl);
 
@@ -14197,7 +14197,7 @@ TermType::~TermType()
   funcs.deleteAll();
 }
 
-void TermType::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void TermType::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, TermType);
 
@@ -14224,7 +14224,7 @@ PrecSpec::~PrecSpec()
   tokens.deleteAll();
 }
 
-void PrecSpec::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void PrecSpec::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, PrecSpec);
 
@@ -14251,7 +14251,7 @@ SpecFunc::~SpecFunc()
   formals.deleteAll();
 }
 
-void SpecFunc::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void SpecFunc::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, SpecFunc);
 
@@ -14278,7 +14278,7 @@ ProdDecl::~ProdDecl()
   rhs.deleteAll();
 }
 
-void ProdDecl::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void ProdDecl::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, ProdDecl);
 
@@ -14308,7 +14308,7 @@ char const * const RHSElt::kindNames[RHSElt::NUM_KINDS] = {
   "RH_prec",
 };
 
-void RHSElt::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void RHSElt::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
 }
 
@@ -14318,7 +14318,7 @@ RH_name::~RH_name()
 {
 }
 
-void RH_name::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void RH_name::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, RH_name);
 
@@ -14343,7 +14343,7 @@ RH_sm_string::~RH_sm_string()
 {
 }
 
-void RH_sm_string::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void RH_sm_string::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, RH_sm_string);
 
@@ -14368,7 +14368,7 @@ RH_prec::~RH_prec()
 {
 }
 
-void RH_prec::debugPrint(ostream &os, int indent, char const *subtreeName) const
+void RH_prec::debugPrint(std::ostream &os, int indent, char const *subtreeName) const
 {
   PRINT_HEADER(subtreeName, RH_prec);
 
@@ -14534,7 +14534,7 @@ typedef unsigned int yy_size_t;
 
 struct yy_buffer_state
 	{
-	istream* yy_input_file;
+	std::istream* yy_input_file;
 
 	char *yy_ch_buf;		/* input buffer */
 	char *yy_buf_pos;		/* current position in input buffer */
@@ -15050,7 +15050,7 @@ YY_DECL
 			yyin = &cin;
 
 		if ( ! yyout )
-			yyout = &cout;
+			yyout = &std::cout;
 
 		if ( ! yy_current_buffer )
 			yy_current_buffer =
@@ -15663,7 +15663,7 @@ case YY_STATE_EOF(OPTIONAL_TYPE):
 		} /* end of scanning one token */
 	} /* end of yylex */
 
-yyFlexLexer::yyFlexLexer( istream* arg_yyin, ostream* arg_yyout )
+yyFlexLexer::yyFlexLexer( std::istream* arg_yyin, std::ostream* arg_yyout )
 	{
 	yyin = arg_yyin;
 	yyout = arg_yyout;
@@ -15698,7 +15698,7 @@ yyFlexLexer::~yyFlexLexer()
 	yy_delete_buffer( yy_current_buffer );
 	}
 
-void yyFlexLexer::switch_streams( istream* new_in, ostream* new_out )
+void yyFlexLexer::switch_streams( std::istream* new_in, std::ostream* new_out )
 	{
 	if ( new_in )
 		{
@@ -16048,7 +16048,7 @@ int yyFlexLexer::yyinput()
 	return c;
 	}
 
-void yyFlexLexer::yyrestart( istream* input_file )
+void yyFlexLexer::yyrestart( std::istream* input_file )
 	{
 	if ( ! yy_current_buffer )
 		yy_current_buffer = yy_create_buffer( yyin, YY_BUF_SIZE );
@@ -16092,7 +16092,7 @@ void yyFlexLexer::yy_load_buffer_state()
 	}
 
 
-YY_BUFFER_STATE yyFlexLexer::yy_create_buffer( istream* file, int size )
+YY_BUFFER_STATE yyFlexLexer::yy_create_buffer( std::istream* file, int size )
 	{
 	YY_BUFFER_STATE b;
 
@@ -16132,7 +16132,7 @@ void yyFlexLexer::yy_delete_buffer( YY_BUFFER_STATE b )
 	}
 
 
-void yyFlexLexer::yy_init_buffer( YY_BUFFER_STATE b, istream* file )
+void yyFlexLexer::yy_init_buffer( YY_BUFFER_STATE b, std::istream* file )
 
 	{
 	yy_flush_buffer( b );
@@ -16491,7 +16491,7 @@ typedef unsigned int yy_size_t;
 
 struct yy_buffer_state
         {
-        istream* yy_input_file;
+        std::istream* yy_input_file;
 
         char *yy_ch_buf;                /* input buffer */
         char *yy_buf_pos;               /* current position in input buffer */
@@ -17006,7 +17006,7 @@ YY_DECL
                         yyin = &cin;
 
                 if ( ! yyout )
-                        yyout = &cout;
+                        yyout = &std::cout;
 
                 if ( ! yy_current_buffer )
                         yy_current_buffer =
@@ -17576,7 +17576,7 @@ case YY_STATE_EOF(OPTIONAL_TYPE):
                 } /* end of scanning one token */
         } /* end of yylex */
 
-yyFlexLexer::yyFlexLexer( istream* arg_yyin, ostream* arg_yyout )
+yyFlexLexer::yyFlexLexer( std::istream* arg_yyin, std::ostream* arg_yyout )
         {
         yyin = arg_yyin;
         yyout = arg_yyout;
@@ -17611,7 +17611,7 @@ yyFlexLexer::~yyFlexLexer()
         yy_delete_buffer( yy_current_buffer );
         }
 
-void yyFlexLexer::switch_streams( istream* new_in, ostream* new_out )
+void yyFlexLexer::switch_streams( std::istream* new_in, std::ostream* new_out )
         {
         if ( new_in )
                 {
@@ -17961,7 +17961,7 @@ int yyFlexLexer::yyinput()
         return c;
         }
 
-void yyFlexLexer::yyrestart( istream* input_file )
+void yyFlexLexer::yyrestart( std::istream* input_file )
         {
         if ( ! yy_current_buffer )
                 yy_current_buffer = yy_create_buffer( yyin, YY_BUF_SIZE );
@@ -18005,7 +18005,7 @@ void yyFlexLexer::yy_load_buffer_state()
         }
 
 
-YY_BUFFER_STATE yyFlexLexer::yy_create_buffer( istream* file, int size )
+YY_BUFFER_STATE yyFlexLexer::yy_create_buffer( std::istream* file, int size )
         {
         YY_BUFFER_STATE b;
 
@@ -18045,7 +18045,7 @@ void yyFlexLexer::yy_delete_buffer( YY_BUFFER_STATE b )
         }
 
 
-void yyFlexLexer::yy_init_buffer( YY_BUFFER_STATE b, istream* file )
+void yyFlexLexer::yy_init_buffer( YY_BUFFER_STATE b, std::istream* file )
 
         {
         yy_flush_buffer( b );
@@ -18275,7 +18275,7 @@ bool isGramlexEmbed(int code)
 #include "sm_array.h"
 #include "elk_mlsstr.h"
 
-#include <fstream.h>         // ifstream
+#include <fstream>         // std::ifstream
 #include <ctype.h>           // isspace, isalnum
 
 #define LIT_STR(s) LocString(SL_INIT, grammarStringTable.add(s))
@@ -18360,7 +18360,7 @@ void astParseErrorCont(Environment &env, LocString const &failToken,
                        char const *msg)
 {
   XASTParse x(failToken, msg);
-  cout << x.why() << endl;
+  std::cout << x.why() << std::endl;
   env.errors++;
 }
 
@@ -18625,7 +18625,7 @@ void astParseTerminals(Environment &env, TF_terminals const &terms)
       int code = term.code;
       StringRef name = term.name;
       trace("grampar") << "token: code=" << code
-                       << ", name=" << name << endl;
+                       << ", name=" << name << std::endl;
 
       if (!env.g.declareToken(term.name, code, term.alias)) {
         astParseError(term.name, "token already declared");
@@ -18654,7 +18654,7 @@ void astParseTerminals(Environment &env, TF_terminals const &terms)
     FOREACH_ASTLIST(TermType, terms.types, iter) {
       TermType const &type = *(iter.data());
       trace("grampar") << "token type: name=" << type.name
-                       << ", type=" << type.type << endl;
+                       << ", type=" << type.type << std::endl;
 
       // look up the name
       Terminal *t = astParseToken(env, type.name);
@@ -19086,7 +19086,7 @@ int grampar_yylex(YYSTYPE *lvalp, void *parseParam)
   }
   catch (xBase &x) {
     // e.g. malformed fundecl
-    cout << lexer.curLocStr() << ": " << x << endl;
+    std::cout << lexer.curLocStr() << ": " << x << std::endl;
 
     // optimistically try just skipping the bad token
     return grampar_yylex(lvalp, parseParam);
@@ -19099,7 +19099,7 @@ int grampar_yylex(YYSTYPE *lvalp, void *parseParam)
 void grampar_yyerror(char const *message, void *parseParam)
 {
   ParseParams *par = (ParseParams*)parseParam;
-  cout << par->lexer.curLocStr() << ": " << message << endl;
+  std::cout << par->lexer.curLocStr() << ": " << message << std::endl;
 }
 
 
@@ -19356,12 +19356,12 @@ GrammarAST *parseGrammarFile(char const *fname, bool useML)
   #endif // NDEBUG
 
   // open input file
-  Owner<ifstream> in;
+  Owner<std::ifstream> in;
   if (fname == NULL) {
     fname = "<stdin>";
   }
   else {
-    in = new ifstream(fname);
+    in = new std::ifstream(fname);
     if (!*in) {
       xsyserror("open", sm_stringc << "error opening input file " << fname);
     }
@@ -19386,15 +19386,15 @@ GrammarAST *parseGrammarFile(char const *fname, bool useML)
 
   ParseParams params(lexer);
 
-  traceProgress() << "parsing grammar source: " << fname << endl;
+  traceProgress() << "parsing grammar source: " << fname << std::endl;
   int retval = grampar_yyparse(&params);
   if (retval==0 && lexer.errors==0) {
     GrammarAST *ret = params.treeTop;
 
     if (tracingSys("printGrammarAST")) {
       // print AST
-      cout << "AST:\n";
-      ret->debugPrint(cout, 2);
+      std::cout << "AST:\n";
+      ret->debugPrint(std::cout, 2);
     }
 
     return ret;
@@ -19442,7 +19442,7 @@ void readGrammarFile(Grammar &g, char const *fname)
 
   // hmm.. I'd like to restore this functionality...
   //if (ASTNode::nodeCount > 0) {
-  //  cout << "leaked " << ASTNode::nodeCount << " AST nodes\n";
+  //  std::cout << "leaked " << ASTNode::nodeCount << " AST nodes\n";
   //}
 }
 
@@ -19456,10 +19456,10 @@ void readGrammarFile(Grammar &g, char const *fname)
 int main(int argc, char **argv)
 {
   if (argc < 2) {
-    cout << "usage: " << argv[0] << " [-tr flags] filename.gr\n";
-    cout << "  interesting trace flags:\n";
-    cout << "    keep-tmp      do not delete the temporary files\n";
-    //cout << "    cat-grammar   print the ascii rep to the screen\n";
+    std::cout << "usage: " << argv[0] << " [-tr flags] filename.gr\n";
+    std::cout << "  interesting trace flags:\n";
+    std::cout << "    keep-tmp      do not delete the temporary files\n";
+    //std::cout << "    cat-grammar   print the ascii rep to the screen\n";
     return 0;
   }
 
@@ -19476,7 +19476,7 @@ int main(int argc, char **argv)
   char const g1Fname[] = "grammar.g1.tmp";
   traceProgress() << "printing initial grammar to " << g1Fname << "\n";
   {
-    ofstream out(g1Fname);
+    std::ofstream out(g1Fname);
     g1.printSymbolTypes(out);
     g1.printProductions(out, printCode);
   }
@@ -19508,7 +19508,7 @@ int main(int argc, char **argv)
   char const g2Fname[] = "grammar.g2.tmp";
   traceProgress() << "printing just-read grammar to " << g2Fname << "\n";
   {
-    ofstream out(g2Fname);
+    std::ofstream out(g2Fname);
     g2.printSymbolTypes(out);
     g2.printProductions(out, printCode);
   }
@@ -19516,7 +19516,7 @@ int main(int argc, char **argv)
   // compare the two written files
   int result = system(sm_stringc << "diff " << g1Fname << " " << g2Fname);
   if (result != 0) {
-    cout << "the two ascii representations differ!!\n";
+    std::cout << "the two ascii representations differ!!\n";
     return 4;
   }
 
@@ -19527,7 +19527,7 @@ int main(int argc, char **argv)
     remove(binFname);
   }
 
-  cout << "successfully parsed, printed, wrote, and read a grammar!\n";
+  std::cout << "successfully parsed, printed, wrote, and read a grammar!\n";
   return 0;
 }
 
@@ -19571,7 +19571,7 @@ int main(int argc, char **argv)
 #include "sm_owner.h"
 
 #include <stdlib.h>         // malloc, free
-#include <iostream.h>       // cout
+#include <iostream>       // std::cout
 
 // enable debugging the parser
 #ifndef NDEBUG
@@ -20984,7 +20984,7 @@ AssocKind whichKind(LocString * /*owner*/ kind)
 #include "sm_exc.h"
 #include "sm_strutil.h"
 
-#include <iostream.h>    // cout
+#include <iostream>    // std::cout
 #include <ctype.h>       // isspace
 
 
@@ -21176,7 +21176,7 @@ public:
 
 void Test::feed(ML &ml, char const *src)
 {
-  cout << "trying: " << src << endl;
+  std::cout << "trying: " << src << std::endl;
   while (*src) {
     // feed it in 10 char increments, to test split processing too
     int len = min(strlen(src), 10);
@@ -21315,7 +21315,7 @@ int Test::main()
   badname(")");
   badname("main");
 
-  cout << "\nmlsstr: all tests PASSED\n";
+  std::cout << "\nmlsstr: all tests PASSED\n";
 
   return 0;
 }
@@ -21566,7 +21566,7 @@ ActionEntry makeAE(ActionEntryKind k, int index)
   else {                     
     // this is just so I can see the resulting truncated table;
     // the parser will *not* work
-    cout << "error: index " << index << " truncated!\n";
+    std::cout << "error: index " << index << " truncated!\n";
     index = AE_MAXINDEX;
   }
   
@@ -22370,7 +22370,7 @@ int ParseTables::colorTheGraph(int *color, Bit2d &graph)
     }
   }
 
-  ostream &os = trace("graphColor") << "colors[]:";
+  std::ostream &os = trace("graphColor") << "colors[]:";
 
   for (int i=0; i<n; i++) {
     // every node should now have blocked == degree
@@ -22817,7 +22817,7 @@ TreeCount PTreeNode::countTrees()
 }
 
 
-void PTreeNode::printTree(ostream &out, PrintFlags pf) const
+void PTreeNode::printTree(std::ostream &out, PrintFlags pf) const
 {
   if (tracingSys("ptreeAddrs")) {
     pf = (PrintFlags)(pf | PF_ADDRS);
@@ -22829,7 +22829,7 @@ void PTreeNode::printTree(ostream &out, PrintFlags pf) const
 // amount to indent per level
 enum { INDENT_INC = 2 };
 
-void PTreeNode::innerPrintTree(ostream &out, int indentation, 
+void PTreeNode::innerPrintTree(std::ostream &out, int indentation, 
                                PrintFlags pf) const
 {
   int alts = 1;
@@ -22898,7 +22898,7 @@ void PTreeNode::innerPrintTree(ostream &out, int indentation,
   }
 }
 
-STATICDEF void PTreeNode::indent(ostream &out, int n)
+STATICDEF void PTreeNode::indent(std::ostream &out, int n)
 {
   for (int i=0; i<n; i++) {
     out << " ";

@@ -421,7 +421,9 @@ class gxx:
     lib_extension=".a",
     dll_binding_extension=None, # .dll.a for Cygwin -nocygwin
     dll_prefix="lib", #lib for unix, cyg for Cygwin -nocygwin
-    dll_binding_prefix=None #lib for Cygwin -nocygwin
+    dll_binding_prefix=None, #lib for Cygwin -nocygwin
+    DLLIB="", # dl for linux, empty for Cygwin and BSD
+    options = "-Wall"
     ):
     self.path=path
     self.debug=debug
@@ -430,12 +432,14 @@ class gxx:
     self.dll_extension = dll_extension
     self.exe_extension = exe_extension
     self.dll_binding_extension=dll_binding_extension
+    self.DLLIB=DLLIB
     
   # compile a file to an object suitable for inclusion in a shared 
   # library version of RTL
-  def compile_shared_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[]):
+  def compile_shared_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],options="-Wall"):
     # compile for a dll: position independent code etc
-    cmd = self.path+" -w -c -fPIC -D_REENTRANT "
+    cmd = self.path+" -c -fPIC "
+    cmd = cmd + options + " "
 
     # debug symbols
     if self.debug: cmd = cmd + "-g "
@@ -467,12 +471,14 @@ class gxx:
   # compile a file to an object suitable for inclusion in a mainline
   # which links to shared libraries
   compile_shared_main = compile_shared_rtl
+  compile_felix_dll = compile_shared_rtl
 
   # compile a file to an object suitable for inclusion in a static link 
   # version of the RTL 
-  def compile_static_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[]):
+  def compile_static_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],options="-Wall"):
     # compile for a dll: position independent code etc
-    cmd = self.path+" -w -c "
+    cmd = self.path+" -c "
+    cmd = cmd + options + " "
 
     # debug symbols
     if self.debug: cmd = cmd + "-g "
@@ -503,6 +509,7 @@ class gxx:
     return shell(cmd)
 
   compile_static_main = compile_static_rtl
+  compile_felix_static = compile_static_rtl
 
   def link_static_archive(self,shell,objects,archive):
     cmd = "ar -rc "+ archive + " " 
@@ -527,22 +534,27 @@ class gxx:
     cmd = cmd + "-Wl,--no-whole-archive"
     return shell(cmd)
 
-  def link_shared_rtl(self,shell,infile,lib_path,libs):
+  def link_shared_rtl(self,shell,objects,outfile,lib_path,libs):
     cmd = self.path +" -shared -fPIC "
     cmd = cmd + "-o " +outfile + " "
     for i in objects: cmd = cmd +i+self.obj_extension+" "
     for i in lib_path: cmd = cmd + "-L"+i+" "
     for i in libs: cmd = cmd + "-l"+i+" "
-    shell(cmd)
- 
+    if self.DLLIB:
+      cmd = cmd + "-l"+self.DLLIB+" "
+    return shell(cmd)
+  
+  link_felix_dll = link_shared_rtl
+  
   def link_dynamic_program(self,shell,objects,outfile,lib_path,libs):
-    cmd = self.path +" -Wl,-Bdynamic -Wl,--export-dynamic "
+    cmd = self.path +" -fPIC -Wl,-Bdynamic -Wl,--export-dynamic "
     #cmd = self.path + " -shared "
     cmd = cmd + "-o " +outfile + " "
     for i in objects: cmd = cmd +i+self.obj_extension+" "
     for i in lib_path: cmd = cmd + "-L"+i+" "
     for i in libs: cmd = cmd + "-l"+i+" "
-    cmd = cmd + "-ldl "
+    if self.DLLIB:
+      cmd = cmd + "-l"+self.DLLIB+" "
     shell(cmd)
   
 @h = tangler("script/make_config.py")
@@ -873,6 +885,13 @@ except:
   HAVE_STL_GNU_CXX = 0
 
 
+# find if we have g++ with -Wno-invalid-offsetof
+try:
+  xqt("g++ -Wno-invalid-offsetof tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
+  NO_INVALID_OFFSETOF_WARNING="-Wall -Wno-invalid-offsetof"
+except:
+  NO_INVALID_OFFSETOF_WARNING = "-w"
+
 # find if we have cc
 try:
   xqt("cc -c tmp"+os.sep+"dummyc.c -o tmp"+os.sep+"dummy.o")
@@ -968,38 +987,42 @@ FORCE_DEBUG=""
 
 if CYGWIN:
   EXT_SHARED = ".dll"
-  CCOBJ_DLLIB = CXX + "-w "+FORCE_DEBUG+"-c "
-  CCOBJ_DLMAIN = CXX + "-w "+FORCE_DEBUG+"-c "
-  CCLINK_DLLIB = CXX + "-w -shared -Wl,--enable-auto-import "
-  CCLINK_DLMAIN = CXX + "-w "
+  CCOBJ_DLLIB = CXX + FORCE_DEBUG+"-c "
+  CCOBJ_DLMAIN = CXX + FORCE_DEBUG+"-c "
+  CCLINK_DLLIB = CXX + "-shared -Wl,--enable-auto-import "
+  CCLINK_DLMAIN = CXX
 elif MACOSX:
   EXT_SHARED = ".so"
-  CCOBJ_DLLIB = CXX + "-w "+FORCE_DEBUG+"-fPIC -D_REENTRANT -c -dynamic "
-  CCOBJ_DLMAIN = CXX + "-w "+FORCE_DEBUG+"-fPIC -D_REENTRANT -c "
+  CCOBJ_DLLIB = CXX + FORCE_DEBUG+"-fPIC -c -dynamic "
+  CCOBJ_DLMAIN = CXX + FORCE_DEBUG+"-fPIC -c "
   CCLINK_DLLIB = CXX + "-bundle  "
   CCLINK_DLMAIN = CXX + " "
 else:
   EXT_SHARED = ".so"
-  CCOBJ_DLLIB = CXX + "-w "+FORCE_DEBUG+"-fPIC -D_REENTRANT -c "
-  CCOBJ_DLMAIN = CXX + "-w "+FORCE_DEBUG+"-fPIC -D_REENTRANT -c "
-#  CCLINK_DLLIB = CXX + "-w -Wl,-shared -Wl,--export-dynamic "
-  CCLINK_DLLIB = CXX + "-w -shared  "
-  CCLINK_DLMAIN = CXX + "-w -Wl,-Bdynamic -Wl,--export-dynamic "
+  CCOBJ_DLLIB = CXX + FORCE_DEBUG+"-fPIC -c "
+  CCOBJ_DLMAIN = CXX + FORCE_DEBUG+"-fPIC -c "
+#  CCLINK_DLLIB = CXX + "-Wl,-shared -Wl,--export-dynamic "
+  CCLINK_DLLIB = CXX + "-shared  "
+  CCLINK_DLMAIN = CXX + "-Wl,-Bdynamic -Wl,--export-dynamic "
 
 
-CCOBJ_STATIC_LIB = CXX + "-w "+FORCE_DEBUG+"-c "
-CCOBJ_STATIC_MAIN = CXX + "-w "+FORCE_DEBUG+"-c "
+CCOBJ_STATIC_LIB = CXX + FORCE_DEBUG+"-c "
+CCOBJ_STATIC_MAIN = CXX + FORCE_DEBUG+"-c "
 
 # NOTE: static here means linking felix libraries with drivers
 # it does NOT mean not to do dynamic loading at load time
-CCLINK_STATIC = CXX  + "-w "
+CCLINK_STATIC = CXX
 
 HOST_CCOBJ_STATIC_LIB=CCOBJ_STATIC_LIB
 HOST_CCOBJ_STATIC_MAIN=CCOBJ_STATIC_MAIN
 HOST_CCLINK_STATIC=CCLINK_STATIC
 
-#check if we can get dlopen to work without -ldl (BSD doesn't need)
+CCOBJ_DLLIB=CCOBJ_DLLIB+" "+NO_INVALID_OFFSETOF_WARNING+" "
+CCOBJ_STATIC_LIB=CCOBJ_STATIC_LIB+" "+NO_INVALID_OFFSETOF_WARNING+" "
+
+#check if we can get dlopen to work without -ldl (BSD, Cygwin don't need)
 HAVE_DLOPEN = 0
+DLLIB=""
 try:
   xqt(CCOBJ_DLLIB+"tmp"+os.sep+"dummy_lib.cxx -o tmp"+os.sep+"dummy_lib.o")
   xqt(CCOBJ_DLMAIN+"tmp"+os.sep+"dummy_main.cxx -o tmp"+os.sep+"dummy_main.o")
@@ -1011,6 +1034,7 @@ try:
 except:
   try: # nope, try with -ldl
     LINK_MAIN = CCLINK_DLMAIN + "-ldl "
+    DLLIB="dl"
     xqt(LINK_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
     xqt("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+EXT_SHARED)
     CCLINK_DLMAIN = LINK_MAIN
@@ -1025,6 +1049,7 @@ except:
       xqt(LINK_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
       xqt("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+EXT_SHARED)
       # worked, keep these vars
+      DLLIB="dl"
       CCLINK_DLLIB = LINK_LIB
       CCLINK_DLMAIN = LINK_MAIN
       HAVE_DLOPEN = 1
@@ -1342,6 +1367,7 @@ try:
   p(f,"CCOPT1")
   p(f,"CCOPT2")
   p(f,"HAVE_STL_GNU_CXX")
+  p(f,"DLLIB")
   f.close()
 
   f = copen("posix")
@@ -1413,11 +1439,12 @@ try:
   pr(f,"# This determines the build for the Felix run time library and C++ generated by Felix")
   pr(f,"TARGET_PLATFORM='posix'")
   pr(f,"#TARGET_PLATFORM='win32'")
+  p(f,"NO_INVALID_OFFSETOF_WARNING")
 
   pr(f,"FUTURE=0")
   pr(f,"execfile('script/gxx_class.py')")
   pr(f,"HOST_CXX=gxx()")
-  pr(f,"TARGET_CXX=gxx()")
+  pr(f,"TARGET_CXX=gxx(DLLIB='"+DLLIB+"')")
   f.close()
 except:
   print "Unable to create config"+os.sep+"config.py"

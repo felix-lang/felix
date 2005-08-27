@@ -4,6 +4,14 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.127  2005/08/27 18:54:45  skaller
+Get more of the python class based cross-compilation support
+scripts to work. g++ class now works for the main build and tests.
+bin/flx is not yet supported by this mechanism and may never be,
+since it would introduce a dependence on Python to run it,
+however this may be necessary for Windows anyhow, since bin/flx
+is a bash script.
+
 Revision 1.126  2005/08/26 06:11:47  skaller
 Start new build method using Python class for C++ compiler.
 
@@ -172,7 +180,7 @@ print
 This is input to equiv-build, which makes
 a dummy ocaml-3.08.3 package to satisfy
 the debian package dependencies.
-@h = tangler('misc/ocaml-nox-3.08.3-equiv')
+@h = tangler('misc/ocaml-nox-3.08.3-equiv','data')
 @select(h)
 Source: ocaml-nox-3.08.3
 Section: devel
@@ -2591,18 +2599,17 @@ try:
     runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ lpsrc/flx_perf.pak')
     xqt('cp doc/interscript.css speed/interscript.css')
   elif "extract" in options:
+    packages = [
+      'flx','sm','ast','elk','flx_perf','flx_tutorial','flx_tut_macro',
+      'flx_tut_bind','flx_tut_migrate'
+      ]
     print "EXTRATING SOURCES"
-    runISCR('lpsrc/flx.pak')
-    runISCR('lpsrc/sm.pak')
-    runISCR('lpsrc/ast.pak')
-    runISCR('lpsrc/elk.pak')
-    runISCR('lpsrc/flx_perf.pak')
+    args = ""
+    for p in packages:
+      args = args + " lpsrc/"+p+".pak"
+    runISCR(args)
     copy_mli2ml()
     copy_elk2rtl()
-    runISCR('lpsrc/flx_tutorial.pak')
-    runISCR('lpsrc/flx_tut_macro.pak')
-    runISCR('lpsrc/flx_tut_bind.pak')
-    runISCR('lpsrc/flx_tut_migrate.pak')
     xqt('cp doc/interscript.css speed/interscript.css')
   os.system('rm -f tmp.tmp')
 
@@ -2718,7 +2725,7 @@ try:
         ars = ars + x + "_dynamic.o "
         if FUTURE:
           dir,base = string.split(x,'/')
-          TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl'])
+          TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl'],options=NO_INVALID_OFFSETOF_WARNING)
         else:
           xqt(CCOBJ_DLLIB + " -Irtl " + x + ".cpp -o " +x+"_dynamic.o")
 
@@ -2776,7 +2783,7 @@ try:
         ars = ars + x + "_static.o "
         if FUTURE:
           dir,base = string.split(x,'/')
-          HOST_CXX.compile_static_rtl(xqt,dir,base,dir,include_path=['rtl'],macros=["FLX_STATIC_LINK"])
+          TARGET_CXX.compile_static_rtl(xqt,dir,base,dir,include_path=['rtl'],macros=["FLX_STATIC_LINK"],options=NO_INVALID_OFFSETOF_WARNING)
         else:
           xqt(CCOBJ_STATIC_LIB + " -Irtl " + x + ".cpp -o " +x+"_static.o")
 
@@ -2785,7 +2792,7 @@ try:
         if not "quiet" in options: print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_static.o "
         if FUTURE:
-          HOST_CXX.compile_static_rtl(xqt,"elk",x,"rtl",include_path=['rtl'])
+          TARGET_CXX.compile_static_rtl(xqt,"elk",x,"rtl",include_path=['rtl'])
         else:
           xqt(CCOBJ_STATIC_LIB + "  -Ielk elk/" + x + ".cpp -o rtl/" +x+"_static.o")
 
@@ -2933,18 +2940,31 @@ try:
       for testfile in TESTS+EXTRA+BAGLEY:
         #print 'Compiling generated code of ',testfile
         basename = string.split(testfile,'.')[0]
+        path = string.split(basename,'/')
+        indir = string.join(path[:-1],os.sep)
+        infile= path[-1]
         cppfilename = basename + ".cpp"
         if buildall or filetime(basename+ '.cpp') > filetime(basename+SHLX):
           try:
             if LINK_MODEL == "dynamic":
-              xqt(CCOBJ_DLLIB+" -Irtl "+cppfilename + " -o " + basename + "_dynamic.o")
+              if FUTURE:
+                TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,include_path=["rtl"],options=NO_INVALID_OFFSETOF_WARNING)
+              else:
+                xqt(CCOBJ_DLLIB+" -Irtl "+cppfilename + " -o " + basename + "_dynamic.o")
               if CYGWIN:
                 xqt(CCLINK_DLLIB +"-o "+basename+SHLX+" "+basename+"_dynamic.o -Lrtl -lflx_dynamic.dll")
               else:
-                xqt(CCLINK_DLLIB+" -o "+ basename + SHLX + " "+basename+"_dynamic.o -Lrtl -lflx_dynamic")
+                if FUTURE:
+                  TARGET_CXX.link_felix_dll(xqt,[basename+"_dynamic"],basename+SHLX,lib_path=["rtl"],libs=["flx_dynamic"])
+                else:
+                  xqt(CCLINK_DLLIB+" -o "+ basename + SHLX + " "+basename+"_dynamic.o -Lrtl -lflx_dynamic")
             else:
-              xqt(CCOBJ_STATIC_LIB +" -Irtl "+cppfilename + " -o " + basename + "_static.o" )
-              xqt(CCLINK_STATIC +" ./rtl/flx_run_static.o "+basename+ "_static.o -Lrtl -lflx_static -o " + basename + SHLX )
+              if FUTURE:
+                  TARGET_CXX.compile_felix_static(xqt,indir,infile,indir,include_path=["rtl"],options=NO_INVALID_OFFSETOF_WARNING)
+                  TARGET_CXX.link_static_program(xqt,["rtl/flx_run_static",basename+"_static"],basename,lib_path=["rtl"],libs=["flx_static"])
+              else:
+                xqt(CCOBJ_STATIC_LIB +" -Irtl "+cppfilename + " -o " + basename + "_static.o" )
+                xqt(CCLINK_STATIC +" ./rtl/flx_run_static.o "+basename+ "_static.o -Lrtl -lflx_static -o " + basename + SHLX )
             #print 'TESTFILE -- OK!',basename
             results.append(("g++",basename,'OK'))
           except MakeError:

@@ -701,7 +701,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
       [
         Exe (sr,`EXE_comment "match failure");
         Exe (sr,`EXE_label failure_label);
-        Exe (sr,`EXE_noreturn_code ("      assert((\""^mfmsg^"\",false));\n"));
+        Exe (sr,`EXE_noreturn_code ("      assert(((void)\""^mfmsg^"\",false));\n"));
       ]
     )
     in

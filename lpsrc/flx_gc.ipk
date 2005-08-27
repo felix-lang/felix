@@ -134,7 +134,7 @@ if necessary.
 #define _ROUNDUP(i,n) ((i + n - 1) / n * n)
 #define _ALIGN(i) _ROUNDUP(i,_MAX_ALIGN)
 
-#define FRAMESIZE _ALIGN(sizeof(frame_t))
+#define FRAMESIZE int(_ALIGN(sizeof(frame_t)))
 #define FRAME_TO_CLIENT(p) \
   ((void*)((unsigned char*)(void*)p + FRAMESIZE))
 #define CLIENT_TO_FRAME(p) \
@@ -356,7 +356,6 @@ void _set_ptr(void **a, void *b)
 // *a may be 0
 void _release_ptr(void **a)
 {
-  void *p = *a;
   *a = 0;
 }
 
@@ -496,7 +495,7 @@ namespace flx {
 namespace gc {
 namespace collector {
 
-static int mcount = 0;
+static int mcount FLX_UNUSED = 0;
 #ifdef HAVE_GXX_X86
 register void *sp __asm__("esp");
 #else
@@ -557,13 +556,13 @@ unsigned long flx_collector_t::get_allocation_amt()const
 
 flx_collector_t::flx_collector_t(allocator_t *a) :
   collecting(false),
+  allocation_count(0),
+  root_count(0),
+  allocation_amt(0),
   first(0),
   to_delete(0),
-  allocation_count(0),
-  allocation_amt(0),
-  root_count(0),
-  allocator(a),
-  parity(false)
+  parity(false),
+  allocator(a)
 {}
 
 
@@ -739,21 +738,21 @@ void flx_collector_t::scan_object(frame_t *frame)
       fprintf(stderr,"Reachable %p\n",frame);
       gc_shape_t * shape = frame->shape;
       fprintf(stderr,"Reachable [valid] %p=%s\n",frame,shape->cname);
-      for(int i=0; i<shape->n_offsets; ++i)
+      for(unsigned int i=0; i<shape->n_offsets; ++i)
       {
         unsigned long offset = shape->offsets[i];
         unsigned char *p = (unsigned char*)FRAME_TO_CLIENT(frame);
         void *x = *(void**)(p+offset);
         if(x) {
           bool valid = check_client_pointer(x);
-          fprintf(stderr," offset: 0x%04x %p->[%p-0x%x] %s\n",
+          fprintf(stderr," offset: 0x%04lx %p->[%p-0x%x] %s\n",
             offset,p+offset,x,FRAMESIZE,
             valid?"[valid]":"INVALID"
           );
           if(!valid) abort();
         }
         else
-          fprintf(stderr," offset: 0x%04x %p->[%p] NULL\n",
+          fprintf(stderr," offset: 0x%04lx %p->[%p] NULL\n",
             offset,p+offset,x);
       }
     }
@@ -767,7 +766,7 @@ void flx_collector_t::scan_object(frame_t *frame)
 
     for(unsigned long j=0; j<n_objects; ++j)
     {
-      for(int i=0; i<n_offsets; ++i)
+      for(unsigned int i=0; i<n_offsets; ++i)
       {
         void **q = (void**)(void*)(p + offsets[i]);
         if(*q)
