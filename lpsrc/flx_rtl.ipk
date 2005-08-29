@@ -314,7 +314,7 @@ struct flx_exec_failure_t {
   return tmp; \
 }
 
-#define FLX_NEWP(x) new(gc,x##_ptr_map)x
+#define FLX_NEWP(x) new(*PTF gc,x##_ptr_map)x
 
 #define FLX_FINALISER(x) \
 static void x##_finaliser(collector_t *, void *p){\

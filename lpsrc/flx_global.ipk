@@ -61,24 +61,14 @@ let throw_on_gc syms bbdfns e : unit = match e with
     *)
     raise Not_found
 
-  | `BEXPR_apply_direct (i,_,_),_ -> 
-    (* HACK HACK!! *)
-    let id,sr,parent,entry=Hashtbl.find bbdfns i in
-    begin 
-    match entry with 
-    | `BBDCL_struct _ -> 
-      (*
-      print_endline ("Found application of struct " ^ si i);
-      *)
-      ()
-    | _ ->
-      (*
-      print_endline ("Found direct apply of " ^ si i);
-      *)
-      raise Not_found
-    end
-
+  | `BEXPR_apply_direct (i,_,_),_ -> raise Not_found
   | `BEXPR_apply( (`BEXPR_closure (_,_),_),_),_ -> assert false
+  | `BEXPR_apply_struct (i,_,_),_ ->
+    let id,sr,parent,entry=Hashtbl.find bbdfns i in
+    begin match entry with
+    | `BBDCL_nonconst_ctor _ -> raise Not_found
+    | _ -> ()
+    end
 
   | `BEXPR_case (_,t),_ -> 
     begin match t with
@@ -104,16 +94,38 @@ let exe_uses_gc syms bbdfns exe =
   print_endline ("[exe_uses_gc] Exe = " ^ string_of_bexe syms.dfns 0 exe);
   *)
   match exe with
-  | `BEXE_jump_direct _
-  | `BEXE_call_direct _
+  | `BEXE_jump_direct (_,i,_,_)
+  | `BEXE_call_direct (_,i,_,_)
     -> raise Not_found
+
+    (*
+    (* HACKERY *)
+    let id,sr,parent,entry=Hashtbl.find bbdfns i in
+    begin match entry with
+    | `BBDCL_procedure _ -> raise Not_found
+    | `BBDCL_proc (props,_,_,_,_) -> 
+      (*
+      print_endline "Checking primitive for gc use[1]";
+      *)
+      if mem `Uses_gc props 
+      then begin (* print_endline "Flagged as using gc"; *) raise Not_found end
+      else
+      iter_bexe ignore (expr_uses_gc syms bbdfns) ignore ignore ignore exe
+    | _ -> assert false
+    end
+    *)
 
   (* this test is used to trap use of gc by primitives *)
   | `BEXE_call_prim (sr,i,ts,a) ->
     let id,parent,sr,entry = Hashtbl.find bbdfns i in
     begin match entry with
     | `BBDCL_proc (props,vs,ps,c,rqs) ->
-      if mem `Uses_gc props then raise Not_found else
+      (*
+      print_endline "Checking primitive for gc use[2]";
+      *)
+      if mem `Uses_gc props 
+      then begin (* print_endline "Flagged as using gc"; *) raise Not_found end
+      else
       iter_bexe ignore (expr_uses_gc syms bbdfns) ignore ignore ignore exe
     | _ -> assert false
     end

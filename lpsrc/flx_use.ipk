@@ -124,6 +124,7 @@ and uses_tbexpr syms used bbdfns (e,t) =
   | `BEXPR_apply_prim (i,ts,e2)-> ui i; iter ut ts; ue e2
   | `BEXPR_apply_stack (i,ts,e2)-> ui i; iter ut ts; ue e2
   | `BEXPR_apply_direct (i,ts,e2)-> ui i; iter ut ts; ue e2
+  | `BEXPR_apply_struct (i,ts,e2)-> ui i; iter ut ts; ue e2
   | `BEXPR_tuple es              -> iter ue es 
   | `BEXPR_case (_,t)            -> ut t
   | `BEXPR_ref (i,ts)

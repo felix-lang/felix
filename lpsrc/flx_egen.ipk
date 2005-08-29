@@ -430,7 +430,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
          union_typename = tn (lower t)
        in
        let aval = 
-         "new (gc, "^arg_typename^"_ptr_map) " ^
+         "new (*PTF gc, "^arg_typename^"_ptr_map) " ^
          arg_typename ^ "(" ^ ge_arg (a,t'') ^ ")"
        in
        let uval = 
@@ -480,6 +480,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       let retyp = tn retyp in
       gen_prim_call syms bbdfns tsub ge'' ct ts (arg,argt) retyp sr sr2 prec
 
+    (*
     (* not sure whether these will be prims or directs or what .. *)
     | `BBDCL_cstruct (vs,_) ->
       ce_atom ("reinterpret<"^ id ^">(" ^ ge a ^ ")")
@@ -494,6 +495,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         ce_atom (name ^ "()")
       else
         ce_atom (name ^ "(" ^ ge a ^ ")")
+    *)
 
     (* but can't be a Felix function *)
     | _ -> 
@@ -502,6 +504,37 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         "[gen_expr: apply prim] Expected '"^id^"' to be primitive function instance, got:\n" ^
         string_of_bbdcl syms.dfns entry index 
       )
+    end
+
+  | `BEXPR_apply_struct (index,ts,a) ->
+    let id,parent,sr2,entry = 
+      try Hashtbl.find bbdfns index 
+      with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
+    in
+    begin match entry with
+    | `BBDCL_cstruct (vs,_) ->
+      ce_atom ("reinterpret<"^ id ^">(" ^ ge a ^ ")")
+       
+    | `BBDCL_struct (vs,cts) ->
+      let name = tn (`BTYP_inst (index,ts)) in
+      if length cts > 1 then 
+        (* argument must be an lvalue *)
+        ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
+      else if length cts = 0 then
+        ce_atom (name ^ "()")
+      else
+        ce_atom (name ^ "(" ^ ge a ^ ")")
+
+    | `BBDCL_nonconst_ctor (vs,uidx,udt,cidx,ct) ->
+      let ts = map tsub ts in
+      let ct = reduce_type (tsubst vs ts ct) in
+      let ctt = tn ct in
+      let ptrmap = shape_of bbdfns tn ct in 
+      ce_atom (
+        "(_uctor_(" ^ si cidx ^ ", new(*PTF gc,"^ ptrmap^")"^
+        ctt ^"("^ ge a ^")))"
+      )
+    | _ -> assert false
     end
 
   | `BEXPR_apply_direct (index,ts,a) ->
@@ -537,32 +570,11 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       "\n      ->apply(" ^ ge_arg a ^ ")"
       )
 
-    | `BBDCL_cstruct (vs,_) ->
-      ce_atom ("reinterpret<"^ id ^">(" ^ ge a ^ ")")
-       
-    | `BBDCL_struct (vs,cts) ->
-      let name = tn (`BTYP_inst (index,ts)) in
-      if length cts > 1 then 
-        (* argument must be an lvalue *)
-        ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
-      else if length cts = 0 then
-        ce_atom (name ^ "()")
-      else
-        ce_atom (name ^ "(" ^ ge a ^ ")")
-
-    | `BBDCL_fun _ ->
+    | `BBDCL_fun _ -> assert false
+    (*
       ge' (`BEXPR_apply_prim (index,ts,a),t)
-
-    | `BBDCL_nonconst_ctor (vs,uidx,udt,cidx,ct) ->
-      let ts = map tsub ts in
-      let ct = reduce_type (tsubst vs ts ct) in
-      let ctt = tn ct in
-      let ptrmap = shape_of bbdfns tn ct in 
-      ce_atom (
-        "(_uctor_(" ^ si cidx ^ ", new(gc,"^ ptrmap^")"^
-        ctt ^"("^ ge a ^")))"
-      )
-    
+    *)
+   
     | _ -> 
       failwith 
       (
@@ -654,6 +666,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           "\n      .apply(" ^ ge_arg a ^ ")"
         in ce_atom s
 
+    (*
     | `BBDCL_cstruct (vs,_) ->
       ce_atom ("reinterpret<"^ id ^">(" ^ ge a ^ ")")
        
@@ -664,11 +677,12 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
       else
         ce_atom (name ^ "(" ^ ge a ^ ")")
+    *)
 
     | _ -> 
       failwith 
       (
-        "[gen_expr: apply_direct] Expected '"^id^"' to be generic function instance, got:\n" ^
+        "[gen_expr: apply_stack] Expected '"^id^"' to be generic function instance, got:\n" ^
         string_of_bbdcl syms.dfns entry index 
       )
     end

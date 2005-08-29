@@ -2670,9 +2670,10 @@ void getCurrentDate(int &month, int &day, int &year);
 void portableSleep(unsigned seconds);
 
 
+/*
 // determine usable name of current user, and write it into 'buffer'
 void getCurrentUsername(char *buffer, int buflen);
-
+*/
 
 // read a sm_string from the console, with no echo
 void readNonechoString(char *buffer, int buflen, char const *prompt);
@@ -16957,6 +16958,7 @@ void portableSleep(unsigned seconds)
 }
 
 
+/*
 void getCurrentUsername(char *buf, int buflen)
 {
   #ifdef __WIN32__
@@ -16985,7 +16987,7 @@ void getCurrentUsername(char *buf, int buflen)
     std::strncpy(buf, temp, buflen);
   #endif
 }
-
+*/
 
 // loop reading characters, return when finished
 static void nonechoLoop(char *buf, int len)
@@ -17505,10 +17507,12 @@ int main(int argc, char **argv)
   printf("sleeping for 1 second...\n");
   portableSleep(1);
 
+  /*
   // test user name
   char buf[80];
   getCurrentUsername(buf, 80);
   printf("current user name is: %s\n", buf);
+  */
 
   if (interactive) {
     // test nonecho reading

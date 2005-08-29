@@ -1060,10 +1060,12 @@ let gen_C_function_body filename syms (child_map,bbdfns)
           )
       )^ 
       "){\n" ^
+      (*
       (if mem `Uses_gc props then
       "  collector_t &gc = *PTF gc;\n" 
       else ""
       ) ^
+      *)
       (* NO LONGER UNPACK ARGUMENT
       (
         match length params with
@@ -1168,11 +1170,13 @@ let gen_function_methods filename syms (child_map,bbdfns)
       then ""
       else argtypename ^" const &_arg ")^
       "){\n" ^
+      (*
       (if mem `Uses_gc props then
       "  collector_t &gc = *PTF gc;\n" 
       else ""
       )
       ^
+      *)
       (
         match length params with
         | 0 -> ""
@@ -1299,10 +1303,12 @@ let gen_regexp_methods filename syms (child_map,bbdfns)
     let apply =
       rettypename^ " " ^name^ "::apply("^
       argtypename ^" const &_arg ){\n" ^
+      (*
       (if mem `Uses_gc props then
       "  collector_t &gc = *PTF gc;\n" 
       else ""
       ) ^
+      *)
       "  " ^ lexeme_start ^ " = _arg.data[0];\n" ^
       "  " ^ buffer_end ^ " = _arg.data[1];\n" ^
       exe_string ^
@@ -1433,11 +1439,13 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
         "}\n"
       else
         cont^name^"::resume(){\n"^
+        (*
         (if mem `Uses_gc props then
         "  collector_t &gc = *PTF gc;\n" 
         else ""
         )
         ^
+        *)
         (if needs_switch then 
         "  FLX_START_SWITCH\n" else ""
         ) ^

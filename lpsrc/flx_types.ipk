@@ -825,6 +825,7 @@ and bexpr_t =
   | `BEXPR_apply_prim of bid_t * btypecode_t list * tbexpr_t 
   | `BEXPR_apply_direct of bid_t * btypecode_t list * tbexpr_t 
   | `BEXPR_apply_stack of bid_t * btypecode_t list * tbexpr_t 
+  | `BEXPR_apply_struct of bid_t * btypecode_t list * tbexpr_t 
   | `BEXPR_tuple of tbexpr_t list
   | `BEXPR_get_n of int * tbexpr_t
   | `BEXPR_closure of bid_t * btypecode_t list
@@ -1202,6 +1203,7 @@ let rec iter_tbexpr fi fe ft ((x,t) as e) =
 
   | `BEXPR_apply_prim (i,ts,e2) -> fi i; iter ft ts; fe e2
   | `BEXPR_apply_direct (i,ts,e2) -> fi i; iter ft ts; fe e2
+  | `BEXPR_apply_struct (i,ts,e2) -> fi i; iter ft ts; fe e2
   | `BEXPR_apply_stack (i,ts,e2) -> fi i; iter ft ts; fe e2
   | `BEXPR_tuple  es -> iter fe es
 
@@ -1226,6 +1228,7 @@ let map_tbexpr fi fe ft e = match e with
 
   | `BEXPR_apply_prim (i,ts,e2),t -> `BEXPR_apply_prim (fi i, map ft ts, fe e2),ft t
   | `BEXPR_apply_direct (i,ts,e2),t -> `BEXPR_apply_direct (fi i, map ft ts, fe e2),ft t
+  | `BEXPR_apply_struct (i,ts,e2),t -> `BEXPR_apply_struct (fi i, map ft ts, fe e2),ft t
   | `BEXPR_apply_stack (i,ts,e2),t -> `BEXPR_apply_stack (fi i, map ft ts, fe e2),ft t
   | `BEXPR_tuple  es,t -> `BEXPR_tuple (map fe es),ft t
 
@@ -3100,6 +3103,11 @@ and string_of_bound_expression dfns e =
     se arg ^ 
     ")"
 
+  | `BEXPR_apply_struct (i,ts, arg) -> "(" ^ 
+    sid i ^ print_inst dfns ts ^ " " ^
+    se arg ^ 
+    ")"
+
   | `BEXPR_apply_stack (i,ts, arg) -> "(" ^ 
     sid i ^ print_inst dfns ts ^ " " ^
     se arg ^ 
@@ -4004,6 +4012,7 @@ let rec cmp_tbexpr (a,_) (b,_) =
 
   | `BEXPR_apply_prim (i,ts,b),`BEXPR_apply_prim (i',ts',b') 
   | `BEXPR_apply_direct (i,ts,b),`BEXPR_apply_direct (i',ts',b')
+  | `BEXPR_apply_struct (i,ts,b),`BEXPR_apply_struct (i',ts',b')
   | `BEXPR_apply_stack (i,ts,b),`BEXPR_apply_stack (i',ts',b') ->  
      i = i' && 
      fold_left2 (fun r a b -> r && a = b) true ts ts' &&

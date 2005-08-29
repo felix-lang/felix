@@ -547,8 +547,8 @@ class gxx:
   link_felix_dll = link_shared_rtl
   
   def link_dynamic_program(self,shell,objects,outfile,lib_path,libs):
-    cmd = self.path +" -fPIC -Wl,-Bdynamic -Wl,--export-dynamic "
-    #cmd = self.path + " -shared "
+    #cmd = self.path +" -fPIC -Wl,-Bdynamic -Wl,--export-dynamic "
+    cmd = self.path + " -fPIC "
     cmd = cmd + "-o " +outfile + " "
     for i in objects: cmd = cmd +i+self.obj_extension+" "
     for i in lib_path: cmd = cmd + "-L"+i+" "

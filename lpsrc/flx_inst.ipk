@@ -80,6 +80,7 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     
   | `BEXPR_apply_prim (index,ts,a)
   | `BEXPR_apply_direct (index,ts,a)
+  | `BEXPR_apply_struct (index,ts,a)
   | `BEXPR_apply_stack (index,ts,a)
   | `BEXPR_apply ((`BEXPR_closure (index,ts),_),a) ->
     let id,parent,sr2,entry = 

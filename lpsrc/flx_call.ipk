@@ -91,6 +91,7 @@ let rec process_expr h k sr ((e,t) as be) =
     
   | `BEXPR_apply_prim (i,ts,e2) 
   | `BEXPR_apply_direct (i,ts,e2)
+  | `BEXPR_apply_struct (i,ts,e2)
   | `BEXPR_apply_stack (i,ts,e2) -> 
     ui i; ue e2
 

@@ -4,6 +4,13 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.128  2005/08/29 16:15:19  skaller
+Clean up a bit, fix incorrect gc usage indicator, and
+finally eliminate the collector_t &gc; statement altogether.
+Add a new combinator `BEXPR_apply_struct which handles
+calls to struct, cstruct, a nonconst_ctor type constructors
+distinctly from applications of primitives and Felix functions.
+
 Revision 1.127  2005/08/27 18:54:45  skaller
 Get more of the python class based cross-compilation support
 scripts to work. g++ class now works for the main build and tests.
@@ -3088,8 +3095,15 @@ We have no idea if it continues copying.
 @tangle('BUILTIN_ISCR=env PYTHONPATH=. python -O interscript/bin/iscr.py --nocache')
 @tangle('')
 @tangle('all: dummy')
-@tangle('\tpython script/maker extract compiler rtl elkhound drivers test log_output stop_on_error check_output optimise_c')
+@tangle('\tpython script/maker extract compiler rtl elkhound drivers optimise_c')
 @tangle('\tmake tools libdoc')
+@tangle('\tpython script/maker clean test log_output stop_on_error check_output')
+@tangle('\tpython script/maker clean test static log_output stop_on_error check_output')
+@tangle('\tpython script/maker clean test optimise log_output stop_on_error check_output')
+@tangle('\tpython script/maker clean test optimise static log_output stop_on_error check_output')
+@tangle('\tsh bagley/compile.sh')
+@tangle('\tsh bagley/run.sh')
+@tangle('\tsh bagley/check.sh')
 @tangle('')
 
 @tangle('all.quiet: dummy')
@@ -3172,6 +3186,9 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('test.inline: dummy')
 @tangle('\tpython script/maker inline test stop_on_error')
+@tangle('')
+@tangle('test.inline.static: dummy')
+@tangle('\tpython script/maker inline test static stop_on_error')
 @tangle('')
 @tangle('test.debug: dummy')
 @tangle('\tpython script/maker debug test stop_on_error')
