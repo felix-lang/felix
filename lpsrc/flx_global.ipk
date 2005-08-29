@@ -62,10 +62,21 @@ let throw_on_gc syms bbdfns e : unit = match e with
     raise Not_found
 
   | `BEXPR_apply_direct (i,_,_),_ -> 
-    (*
-    print_endline ("Found direct apply of " ^ si i);
-    *)
-    raise Not_found
+    (* HACK HACK!! *)
+    let id,sr,parent,entry=Hashtbl.find bbdfns i in
+    begin 
+    match entry with 
+    | `BBDCL_struct _ -> 
+      (*
+      print_endline ("Found application of struct " ^ si i);
+      *)
+      ()
+    | _ ->
+      (*
+      print_endline ("Found direct apply of " ^ si i);
+      *)
+      raise Not_found
+    end
 
   | `BEXPR_apply( (`BEXPR_closure (_,_),_),_),_ -> assert false
 
@@ -90,7 +101,7 @@ let expr_uses_gc syms bbdfns e =
 
 let exe_uses_gc syms bbdfns exe = 
   (*
-  print_endline ("Exe = " ^ string_of_bexe syms.dfns 0 exe);
+  print_endline ("[exe_uses_gc] Exe = " ^ string_of_bexe syms.dfns 0 exe);
   *)
   match exe with
   | `BEXE_jump_direct _
@@ -114,7 +125,12 @@ let exes_use_gc syms bbdfns exes =
   try 
     iter (exe_uses_gc syms bbdfns) exes;
     false
-  with Not_found -> true
+  with 
+    Not_found -> 
+    (*
+    print_endline "GC USED HERE";
+    *)
+    true
 
 let set_gc_use syms bbdfns =
   Hashtbl.iter

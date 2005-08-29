@@ -87,7 +87,7 @@ let find_references syms (child_map,bbdfns) index ts =
   ) 
   children 
   ;
-  !references
+  rev (!references)
 
 let comma_sub s = 
   let rec aux l r =

@@ -329,33 +329,33 @@ of 999, whilst the second is the UCS-32 value 999.
 @select(tangler(tdir+'mac125.flx'))
 include "std";
 header '''
-#define unix 0
-#define windows 0
+#define flx_unix 0
+#define flx_windows 0
 #define testhook 1
-#if unix
+#if flx_unix
 #include <dlopen.h>
-#elif windows
+#elif flx_windows
 #include <windows.h>
 #else
 #include <stdio.h>
 #endif
 ''';
-macro val unix = case 1 of 2;
-macro val windows = case 1 of 2;
+macro val Unix = case 1 of 2;
+macro val Windows = case 1 of 2;
 
 fun dlopen:string -> address = 'dlopen($1.data())';
 fun LoadLibrary:string -> int = 'LoadLibrary($.data())';
 fun testhook:string -> int = 'printf("LoadTheLibrary(%s)\\n",$1.data())';
 
 macro val openlib = 
-  if unix then dlopen 
-  elif windows then LoadLibrary 
+  if Unix then dlopen 
+  elif Windows then LoadLibrary 
   else testhook endif
 ;
 
 macro val ext = 
-  if unix then ".so" 
-  elif windows then ".DLL"
+  if Unix then ".so" 
+  elif Windows then ".DLL"
   else ".lib_ext" endif
 ;
 // conditional compilation

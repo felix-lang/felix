@@ -125,8 +125,8 @@ let gen_elk_lexer filebase module_name syms bbdfns this sr ((_,t') as e) n  =
   pe display_string;
   pe ("  // constructor");
   pe ctor_dcl;
-  pe ("  collector_t &gc; // Felix garbage collector");
   pe ("  " ^ get_token_fun_type ^ " get_token; // client token generator");
+  pe ("  collector_t &gc; // Felix garbage collector");
   pe "  void setToken();  //fetch next token ";
   pe ("  "^lexer_name^" *init(); //prime the lexer");
   pe "";

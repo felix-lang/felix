@@ -629,7 +629,7 @@ module Dynlink
     "_create($1,&$2,PTF gc,ptf->argc,ptf->argv);"
     requires property "needs_gc",
     body """
-    flx::rtl::con_t *_create
+    void _create
     (
       flx::rtl::flx_dynlink_t *library,
       flx::rtl::flx_libinit_t *instance,
@@ -681,6 +681,7 @@ module Dynlink
     delete_library_handle dl;
   }
 
+  // NEEDS TO BE FIXED SO IT WORKS ON WINDOWS TOO
   publish "dlsym wrapper, returns any symbol"
   fun dlsym:flx_library * string->address = 
       "dlsym($1->library,$2.data())";
