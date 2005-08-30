@@ -530,7 +530,7 @@ class gxx:
   def convert_static_archive_to_shared_library(self,shell,archive,soname,dll):
     cmd = self.path + " -shared -o " + dll + " "
     cmd = cmd + "-Wl,-soname="+soname+ " "
-    cmd = cmd + "-Wl,whole-archive " + archive + " " 
+    cmd = cmd + "-Wl,--whole-archive " + archive + " " 
     cmd = cmd + "-Wl,--no-whole-archive"
     return shell(cmd)
 

@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.130  2005/08/30 19:56:30  skaller
+more fiddling g++ switches
+
 Revision 1.129  2005/08/30 02:10:05  skaller
 Put -Lrtl -lflx_dynamic on the end of --test mode bin/flx dynamic link command line
 
@@ -2756,32 +2759,33 @@ try:
         objs=[]
         for i in tmp:
           objs.append(i[:-2]) # chop off the .o
-        TARGET_CXX.link_static_archive(xqt,objs, "rtl/libflx_dynamic.a")
+        TARGET_CXX.link_static_archive(xqt,objs, "rtl/libflx_dynamic_objects.a")
+        TARGET_CXX.convert_static_archive_to_shared_library(xqt,"rtl/libflx_dynamic_objects.a",FLX_SONAME,"rtl/libflx_dynamic.so."+flx_version)
       else:
-        xqt(AR + " rtl/libflx_dynamic.a " + ars)
-        xqt(RANLIB + " rtl/libflx_dynamic.a")
+        xqt(AR + " rtl/libflx_dynamic_objects.a " + ars)
+        xqt(RANLIB + " rtl/libflx_dynamic_objects.a")
 
-      if CYGWIN:
-        print "Building RTL for CYGWIN dynamic linkage"
-        # note --enable-auto-import is specified in the config
-        cmd = (CCLINK_DLLIB + "-o bin/cygflx_dynamic.dll " +
-          "-Wl,--out-implib=rtl/libflx_dynamic.dll.a " +
-          "-Wl,--export-all-symbols " +
-          "-Wl,--whole-archive rtl/libflx_dynamic.a " +
-          "-Wl,--no-whole-archive"
-          )
-        xqt(cmd)
-      elif MACOSX:
-        xqt(CCLINK_DLLIB + " -o rtl/libflx_dynamic.so."+flx_version+' '+ars)
-      else:
-        #the actual library
-        xqt(CCLINK_DLLIB + "-Wl,-soname="+FLX_SONAME+" -o rtl/libflx_dynamic.so."+flx_version+' '+ars)
+        if CYGWIN:
+          print "Building RTL for CYGWIN dynamic linkage"
+          # note --enable-auto-import is specified in the config
+          cmd = (CCLINK_DLLIB + "-o bin/cygflx_dynamic.dll " +
+            "-Wl,--out-implib=rtl/libflx_dynamic.dll.a " +
+            "-Wl,--export-all-symbols " +
+            "-Wl,--whole-archive rtl/libflx_dynamic_objects.a " +
+            "-Wl,--no-whole-archive"
+            )
+          xqt(cmd)
+        elif MACOSX:
+          xqt(CCLINK_DLLIB + " -o rtl/libflx_dynamic.so."+flx_version+' '+ars)
+        else:
+          #the actual library
+          xqt(CCLINK_DLLIB + "-Wl,-soname="+FLX_SONAME+" -o rtl/libflx_dynamic.so."+flx_version+' '+ars)
 
-        # to link against at compile time using -lflx_dynamic
-        xqt('(cd rtl && rm -f libflx_dynamic.so && ln -s libflx_dynamic.so.'+flx_version+' libflx_dynamic.so)')
+      # to link against at compile time using -lflx_dynamic
+      xqt('(cd rtl && rm -f libflx_dynamic.so && ln -s libflx_dynamic.so.'+flx_version+' libflx_dynamic.so)')
 
-        # what a program linked against the library will load at run time
-        xqt('(cd rtl && rm -f '+FLX_SONAME+' && ln -s libflx_dynamic.so.'+flx_version+' '+FLX_SONAME+')')
+      # what a program linked against the library will load at run time
+      xqt('(cd rtl && rm -f '+FLX_SONAME+' && ln -s libflx_dynamic.so.'+flx_version+' '+FLX_SONAME+')')
 
 
     if SUPPORT_STATIC_LINKAGE:
@@ -3513,7 +3517,6 @@ We have no idea if it continues copying.
   tangle('\tinstall rtl/libflx_static.a ${LIB_DIR}')
   tangle('\t'+RANLIB+' ${LIB_DIR}/libflx_static.a')
 @if SUPPORT_DYNAMIC_LOADING:
-  tangle('\t'+RANLIB+' ${INSTALL_DIR}/rtl/libflx_dynamic.a')
   if CYGWIN:
     # static link thunk for bin/cygflx_dynamic.dll
     tangle('\tinstall rtl/libflx_dynamic.dll.a ${SHLIB_DIR}')
@@ -3521,8 +3524,6 @@ We have no idea if it continues copying.
     tangle('\tinstall rtl/libflx_dynamic.so.'+flx_version+' ${SHLIB_DIR}')
     tangle('\tinstall rtl/libflx_dynamic.so.'+flx_version_major+' ${SHLIB_DIR}')
     tangle('\tinstall rtl/libflx_dynamic.so ${SHLIB_DIR}')
-  tangle('\tinstall rtl/libflx_dynamic.a ${SHLIB_DIR}')
-  tangle('\t'+RANLIB+' ${SHLIB_DIR}/libflx_dynamic.a')
 @tangle('\t(install doc/* ${INSTALL_DIR}/doc || exit 0) > /dev/null 2>&1')
 @tangle('\t(install impldoc/* ${INSTALL_DIR}/impldoc || exit 0) > /dev/null 2>&1')
 @tangle('\t(install htmlman/* ${INSTALL_DIR}/htmlman || exit 0) > /dev/null 2>&1')
