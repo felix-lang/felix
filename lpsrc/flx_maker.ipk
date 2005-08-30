@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.129  2005/08/30 02:10:05  skaller
+Put -Lrtl -lflx_dynamic on the end of --test mode bin/flx dynamic link command line
+
 Revision 1.128  2005/08/29 16:15:19  skaller
 Clean up a bit, fix incorrect gc usage indicator, and
 finally eliminate the collector_t &gc; statement altogether.
@@ -4508,7 +4511,7 @@ then
     then 
       LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base.o -o $base.so -L$FLXAR -lflx_dynamic.dll"
     else 
-      LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base.o -o $base.so"
+      LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base.o -o $base.so -L$FLXAR -lflx_dynamic"
     fi
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
