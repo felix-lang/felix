@@ -532,7 +532,6 @@ open Flx_string
 open Big_int
 open Flx_exceptions
 open Flx_lexstate
-open Flx_preproc
 
 let substr = String.sub
 let len = String.length
