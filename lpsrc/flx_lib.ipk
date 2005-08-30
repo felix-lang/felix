@@ -1506,16 +1506,19 @@ module Stl
     requires std_stl_map;
 @mkass('multimap')
   }
-  module Slist[t]
-  {
-    requires ext_slist;
-@mkseq('slist','__gnu_cxx')
-@mkpuf('slist')
-@mkfront('slist')
-@mkpof('slist')
-    proc insert_after : stl_slist[t] * stl_slist_iterator[t] *  t  = "$1.insert_after($2,$3);";
-    proc erase_after : stl_slist[t] * stl_slist_iterator[t] = "$1.erase_after($1);";
-  }
+
+@if HAVE_STL_GNU_CXX:
+  tangle('  module Slist[t]')
+  tangle('  {')
+  tangle('    requires ext_slist;')
+  mkseq('slist','__gnu_cxx')
+  mkpuf('slist')
+  mkfront('slist')
+  mkpof('slist')
+  tangle('    proc insert_after : stl_slist[t] * stl_slist_iterator[t] *  t  = "$1.insert_after($2,$3);";')
+  tangle('    proc erase_after : stl_slist[t] * stl_slist_iterator[t] = "$1.erase_after($1);";')
+  tangle('  }')
+
 @if HAVE_STL_GNU_CXX:
   tangle('// HASHTABLE based containers assume')
   tangle('// these classes will be added to C++ via TR1 in the future.')
@@ -1544,5 +1547,3 @@ module Stl
   mkass('hash_multimap','__gnu_cxx')    
   tangle('  }')
 }
-
-
