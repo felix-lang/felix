@@ -82,7 +82,7 @@ echo "DICT_DIR=$DICT_DIR"
 PLUGIN_DIR=bagley/felix/
 export PLUGIN_DIR
 echo "PLUGIN_DIR=$PLUGIN_DIR"
-LD_LBRARY_PATH=`pwd`/rtl:$LD_LIBRARY_PATH
+LD_LIBRARY_PATH=`pwd`/rtl:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH
 echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 @for i,j in runbags: mkr (i,j)
