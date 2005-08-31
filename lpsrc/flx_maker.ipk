@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.131  2005/08/31 06:24:19  skaller
+More cygwin fiddling
+
 Revision 1.130  2005/08/30 19:56:30  skaller
 more fiddling g++ switches
 
@@ -2736,57 +2739,40 @@ try:
       for x in RTL_CPPS:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_dynamic.o "
-        if FUTURE:
-          dir,base = string.split(x,'/')
-          TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl'],options=NO_INVALID_OFFSETOF_WARNING)
-        else:
-          xqt(CCOBJ_DLLIB + " -Irtl " + x + ".cpp -o " +x+"_dynamic.o")
+        dir,base = string.split(x,'/')
+        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl'],options=NO_INVALID_OFFSETOF_WARNING)
 
       #ELKHOUND SUBLIBRARY
       print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:
         if not "quiet" in options: print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_dynamic.o "
-        if FUTURE:
-          TARGET_CXX.compile_shared_rtl(xqt,"elk",x,"rtl",include_path=['elk'])
-        else:
-          xqt(CCOBJ_DLLIB + "  -Ielk elk/" + x + ".cpp -o rtl/" +x+"_dynamic.o")
+        TARGET_CXX.compile_shared_rtl(xqt,"elk",x,"rtl",include_path=['elk'])
 
       # LINK RTL
       print " ** MAKING RTL (dynamic) "
-      if FUTURE:
-        tmp = string.split(ars)
-        objs=[]
-        for i in tmp:
-          objs.append(i[:-2]) # chop off the .o
-        TARGET_CXX.link_static_archive(xqt,objs, "rtl/libflx_dynamic_objects.a")
-        TARGET_CXX.convert_static_archive_to_shared_library(xqt,"rtl/libflx_dynamic_objects.a",FLX_SONAME,"rtl/libflx_dynamic.so."+flx_version)
-      else:
-        xqt(AR + " rtl/libflx_dynamic_objects.a " + ars)
-        xqt(RANLIB + " rtl/libflx_dynamic_objects.a")
+      tmp = string.split(ars)
+      objs=[]
+      for i in tmp:
+        objs.append(i[:-2]) # chop off the .o
+      TARGET_CXX.link_static_archive(xqt,objs, "rtl/libflx_dynamic_objects.a")
+      TARGET_CXX.convert_static_archive_to_shared_library(xqt,"rtl/libflx_dynamic_objects.a",FLX_SONAME,SHLIB_DIR+"/libflx_dynamic"+EXT_SHARED)
 
-        if CYGWIN:
-          print "Building RTL for CYGWIN dynamic linkage"
-          # note --enable-auto-import is specified in the config
-          cmd = (CCLINK_DLLIB + "-o bin/cygflx_dynamic.dll " +
-            "-Wl,--out-implib=rtl/libflx_dynamic.dll.a " +
-            "-Wl,--export-all-symbols " +
-            "-Wl,--whole-archive rtl/libflx_dynamic_objects.a " +
-            "-Wl,--no-whole-archive"
-            )
-          xqt(cmd)
-        elif MACOSX:
-          xqt(CCLINK_DLLIB + " -o rtl/libflx_dynamic.so."+flx_version+' '+ars)
-        else:
-          #the actual library
-          xqt(CCLINK_DLLIB + "-Wl,-soname="+FLX_SONAME+" -o rtl/libflx_dynamic.so."+flx_version+' '+ars)
-
-      # to link against at compile time using -lflx_dynamic
-      xqt('(cd rtl && rm -f libflx_dynamic.so && ln -s libflx_dynamic.so.'+flx_version+' libflx_dynamic.so)')
-
-      # what a program linked against the library will load at run time
-      xqt('(cd rtl && rm -f '+FLX_SONAME+' && ln -s libflx_dynamic.so.'+flx_version+' '+FLX_SONAME+')')
-
+        #if CYGWIN:
+        #  print "Building RTL for CYGWIN dynamic linkage"
+        #  # note --enable-auto-import is specified in the config
+        #  cmd = (CCLINK_DLLIB + "-o bin/cygflx_dynamic.dll " +
+        #    "-Wl,--out-implib=rtl/libflx_dynamic.dll.a " +
+        #    "-Wl,--export-all-symbols " +
+        #    "-Wl,--whole-archive rtl/libflx_dynamic_objects.a " +
+        #    "-Wl,--no-whole-archive"
+        #    )
+        #  xqt(cmd)
+        #elif MACOSX:
+        #  xqt(CCLINK_DLLIB + " -o rtl/libflx_dynamic.so."+flx_version+' '+ars)
+        #else:
+        #  #the actual library
+        #  xqt(CCLINK_DLLIB + "-Wl,-soname="+FLX_SONAME+" -o rtl/libflx_dynamic.so "+ars)
 
     if SUPPORT_STATIC_LINKAGE:
       print " ++ STATIC LINK VERSIONS"
@@ -2795,31 +2781,21 @@ try:
       for x in RTL_CPPS:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_static.o "
-        if FUTURE:
-          dir,base = string.split(x,'/')
-          TARGET_CXX.compile_static_rtl(xqt,dir,base,dir,include_path=['rtl'],macros=["FLX_STATIC_LINK"],options=NO_INVALID_OFFSETOF_WARNING)
-        else:
-          xqt(CCOBJ_STATIC_LIB + " -Irtl " + x + ".cpp -o " +x+"_static.o")
+        dir,base = string.split(x,'/')
+        TARGET_CXX.compile_static_rtl(xqt,dir,base,dir,include_path=['rtl'],macros=["FLX_STATIC_LINK"],options=NO_INVALID_OFFSETOF_WARNING)
 
       print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:
         if not "quiet" in options: print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_static.o "
-        if FUTURE:
-          TARGET_CXX.compile_static_rtl(xqt,"elk",x,"rtl",include_path=['rtl'])
-        else:
-          xqt(CCOBJ_STATIC_LIB + "  -Ielk elk/" + x + ".cpp -o rtl/" +x+"_static.o")
+        TARGET_CXX.compile_static_rtl(xqt,"elk",x,"rtl",include_path=['rtl'])
 
       print " ** MAKING RTL (static) "
-      if FUTURE:
-        tmp = string.split(ars)
-        objs=[]
-        for i in tmp:
-          objs.append(i[:-2]) # chop off the .o
-        HOST_CXX.link_static_archive(xqt,objs,"rtl/libflx_static.a")
-      else:
-        xqt(AR + " rtl/libflx_static.a " + ars)
-        xqt(RANLIB + " rtl/libflx_static.a")
+      tmp = string.split(ars)
+      objs=[]
+      for i in tmp:
+        objs.append(i[:-2]) # chop off the .o
+      HOST_CXX.link_static_archive(xqt,objs,"rtl/libflx_static.a")
   
   # elkhound executable: no need for dynamic loading, always built static
   if "elkhound" in options:
@@ -2828,23 +2804,14 @@ try:
     for x in SMBASE + SMRTL + ASTGEN + ELKHOUND + ELKRTL:
       if not "quiet" in options: print 'Compiling elkhound object',x
       ars = ars + "elk/"+x + "_static.o "
-      if FUTURE:
-        HOST_CXX.compile_static_rtl(xqt,"elk",x,"elk",include_path=["elk"])
-      else:
-        xqt(HOST_CCOBJ_STATIC_LIB + "  -Ielk elk/" + x + ".cpp -o elk/" +x+"_static.o")
-    if FUTURE:
-      tmp = string.split(ars)
-      objs=[]
-      for i in tmp:
-        objs.append(i[:-2]) # chop off the .o
-      HOST_CXX.link_static_archive(xqt,objs,"elk/libelk_static.a")
-      HOST_CXX.compile_static_main(xqt,"elk","elk_gramanl","elk",include_path=["elk"],macros=["GRAMANL_MAIN"])
-      HOST_CXX.link_static_program(xqt,["elk/elk_gramanl_static"],"bin/flx_elkhound",lib_path=["elk"],libs=["elk_static"])
-    else:
-      xqt(HOST_AR + " elk/libelk_static.a " + ars)
-      xqt(HOST_RANLIB + " elk/libelk_static.a")
-      xqt(HOST_CCOBJ_STATIC_MAIN + "  -DGRAMANL_MAIN elk/elk_gramanl.cpp -o elk/elk_gramanl_static.o")
-      xqt(HOST_CCLINK_STATIC + " elk/elk_gramanl_static.o elk/libelk_static.a -o bin/flx_elkhound")
+      HOST_CXX.compile_static_rtl(xqt,"elk",x,"elk",include_path=["elk"])
+    tmp = string.split(ars)
+    objs=[]
+    for i in tmp:
+      objs.append(i[:-2]) # chop off the .o
+    HOST_CXX.link_static_archive(xqt,objs,"elk/libelk_static.a")
+    HOST_CXX.compile_static_main(xqt,"elk","elk_gramanl","elk",include_path=["elk"],macros=["GRAMANL_MAIN"])
+    HOST_CXX.link_static_program(xqt,["elk/elk_gramanl_static"],"bin/flx_elkhound",lib_path=["elk"],libs=["elk_static"])
  
   # COMPILE DRIVER PROGRAMS
   if "drivers" in options:
@@ -2852,34 +2819,25 @@ try:
       print "COMPILING DRIVERS (static)"
       for i,j in DRIVERS:
         if not "quiet" in options: print 'Compiling driver object',i
-        if FUTURE:
-          d,b = string.split(i,'/')
-          TARGET_CXX.compile_static_main(xqt,d,b,d,include_path=["rtl"],macros=["FLX_STATIC_LINK"])
-        else:
-          xqt(CCOBJ_STATIC_MAIN + " -Irtl " + i + ".cpp -o " +i+"_static.o")
+        d,b = string.split(i,'/')
+        TARGET_CXX.compile_static_main(xqt,d,b,d,include_path=["rtl"],macros=["FLX_STATIC_LINK"])
 
     if SUPPORT_DYNAMIC_LOADING:
       print "COMPILING DRIVERS (dynamic)"
       for i,j in DRIVERS:
         if not "quiet" in options: print 'Compiling driver object',i
-        if FUTURE:
-          d,b = string.split(i,'/')
-          TARGET_CXX.compile_shared_main(xqt,d,b,d,include_path=["rtl"])
-        else:
-          xqt(CCOBJ_DLMAIN + " -Irtl " + i + ".cpp -o " +i+"_dynamic.o")
+        d,b = string.split(i,'/')
+        TARGET_CXX.compile_shared_main(xqt,d,b,d,include_path=["rtl"])
 
-        if CYGWIN:
-          #xqt("g++ -o "+j+" -Wl,--enable-auto-import " + i + "_dynamic.o -Lrtl -lflx_dynamic")
-          #JMS: seems to be same now, except for order
-          xqt(CCLINK_DLMAIN+" -o "+j+" " + i + "_dynamic.o -Lrtl -lflx_dynamic")
-        elif MACOSX:
-          #RF: os x likes the same order as cygwin
-          xqt(CCLINK_DLMAIN+" -o "+j+" "+i+"_dynamic.o"+" -Lrtl -lflx_dynamic " )
-        else:
-          if FUTURE:
-            TARGET_CXX.link_dynamic_program(xqt,[i+"_dynamic"],j,lib_path=["rtl"],libs=["flx_dynamic"])
-          else:
-            xqt(CCLINK_DLMAIN + " -o "+j+" -Lrtl -lflx_dynamic " +i+"_dynamic.o")
+        #if CYGWIN:
+        #  #xqt("g++ -o "+j+" -Wl,--enable-auto-import " + i + "_dynamic.o -Lrtl -lflx_dynamic")
+        #  #JMS: seems to be same now, except for order
+        #  xqt(CCLINK_DLMAIN+" -o "+j+" " + i + "_dynamic.o -Lrtl -lflx_dynamic")
+        #elif MACOSX:
+        #  #RF: os x likes the same order as cygwin
+        #  xqt(CCLINK_DLMAIN+" -o "+j+" "+i+"_dynamic.o"+" -Lrtl -lflx_dynamic " )
+        #else:
+        TARGET_CXX.link_dynamic_program(xqt,[i+"_dynamic"],j,lib_path=[SHLIB_DIR],libs=["flx_dynamic"])
 
   # run tests
   try:
@@ -2961,24 +2919,11 @@ try:
         if buildall or filetime(basename+ '.cpp') > filetime(basename+SHLX):
           try:
             if LINK_MODEL == "dynamic":
-              if FUTURE:
-                TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,include_path=["rtl"],options=NO_INVALID_OFFSETOF_WARNING)
-              else:
-                xqt(CCOBJ_DLLIB+" -Irtl "+cppfilename + " -o " + basename + "_dynamic.o")
-              if CYGWIN:
-                xqt(CCLINK_DLLIB +"-o "+basename+SHLX+" "+basename+"_dynamic.o -Lrtl -lflx_dynamic.dll")
-              else:
-                if FUTURE:
-                  TARGET_CXX.link_felix_dll(xqt,[basename+"_dynamic"],basename+SHLX,lib_path=["rtl"],libs=["flx_dynamic"])
-                else:
-                  xqt(CCLINK_DLLIB+" -o "+ basename + SHLX + " "+basename+"_dynamic.o -Lrtl -lflx_dynamic")
-            else:
-              if FUTURE:
-                  TARGET_CXX.compile_felix_static(xqt,indir,infile,indir,include_path=["rtl"],options=NO_INVALID_OFFSETOF_WARNING)
-                  TARGET_CXX.link_static_program(xqt,["rtl/flx_run_static",basename+"_static"],basename,lib_path=["rtl"],libs=["flx_static"])
-              else:
-                xqt(CCOBJ_STATIC_LIB +" -Irtl "+cppfilename + " -o " + basename + "_static.o" )
-                xqt(CCLINK_STATIC +" ./rtl/flx_run_static.o "+basename+ "_static.o -Lrtl -lflx_static -o " + basename + SHLX )
+              TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,include_path=["rtl"],options=NO_INVALID_OFFSETOF_WARNING)
+              TARGET_CXX.link_felix_dll(xqt,[basename+"_dynamic"],basename+SHLX,lib_path=[SHLIB_DIR],libs=["flx_dynamic"])
+            else: # static
+              TARGET_CXX.compile_felix_static(xqt,indir,infile,indir,include_path=["rtl"],options=NO_INVALID_OFFSETOF_WARNING)
+              TARGET_CXX.link_static_program(xqt,["rtl/flx_run_static",basename+"_static"],basename,lib_path=["rtl"],libs=["flx_static"])
             #print 'TESTFILE -- OK!',basename
             results.append(("g++",basename,'OK'))
           except MakeError:
@@ -2994,7 +2939,10 @@ try:
       for testfile in TESTS:
         basename = string.split(testfile,'.')[0]
         if LINK_MODEL == "dynamic":
-          testscript = "env LD_LIBRARY_PATH=./rtl:\"$LD_LIBRARY_PATH\" ./bin/flx_run ./"+basename+SHLX
+          if CYGWIN:
+            testscript = "env PATH=./bin:\"$PATH\" ./bin/flx_run ./"+basename+SHLX
+          else:
+            testscript = "env LD_LIBRARY_PATH=./rtl:\"$LD_LIBRARY_PATH\" ./bin/flx_run ./"+basename+SHLX
         else:
           testscript = "./"+basename+SHLX
 
@@ -3094,7 +3042,7 @@ We have no idea if it continues copying.
 @tangle('CONFIG_ARGS=')
 @tangle('PREFIX='+PREFIX)
 @tangle('LIB_DIR=${PREFIX}/lib')
-@tangle('SHLIB_DIR=${PREFIX}/lib')
+@tangle('SHLIB_DIR=${PREFIX}/'+SHLIB_DIR)
 @tangle('SHINC_DIR=${PREFIX}/include')
 @tangle('INSTALL_DIR=${PREFIX}/lib/felix')
 @tangle('EXEC_DIR=${PREFIX}/bin')
@@ -3519,7 +3467,9 @@ We have no idea if it continues copying.
 @if SUPPORT_DYNAMIC_LOADING:
   if CYGWIN:
     # static link thunk for bin/cygflx_dynamic.dll
-    tangle('\tinstall rtl/libflx_dynamic.dll.a ${SHLIB_DIR}')
+    #tangle('\tinstall rtl/libflx_dynamic.dll.a ${SHLIB_DIR}')
+    # not used now, dll goes in 'bin'
+    pass
   else:
     tangle('\tinstall rtl/libflx_dynamic.so.'+flx_version+' ${SHLIB_DIR}')
     tangle('\tinstall rtl/libflx_dynamic.so.'+flx_version_major+' ${SHLIB_DIR}')
@@ -4427,13 +4377,23 @@ done
 if [ "$TESTMODE" = "1" ]
 then
   INCLUDE_DIR="./rtl"
-  FLXG="env PATH=./bin:\"\$PATH\" ./bin/flxg"
+  FLXG="env \"PATH=./bin:\$PATH\" ./bin/flxg"
   FLXLIB="./lib"
-  FLXRUN="env LD_LIBRARY_PATH=./rtl:\"\$LD_LIBRARY_PATH\" ./bin/flx_run"
+  if [ "$CYGWIN" = "1" ]
+  then
+    FLXRUN="env \"PATH=./bin:\$PATH\" ./bin/flx_run"
+  else
+    FLXRUN="env \"LD_LIBRARY_PATH=./rtl:\$LD_LIBRARY_PATH\" ./bin/flx_run"
+  fi
   FLXRTL="./rtl"
   FLXBIN="./bin"
   FLXAR="./rtl"
-  FLXSHLIB="./rtl"
+  if [ "$CYGWIN" = "1" ]
+  then
+    FLXSHLIB="./bin"
+  else
+    FLXSHLIB="./rtl"
+  fi
 else
   # Locate the felix installation
   prefix=""
@@ -4454,7 +4414,12 @@ else
   FLXRTL="$prefix/lib/felix/lib"
   FLXBIN="$prefix/bin"
   FLXAR="$prefix/lib"
-  FLXSHLIB="$prefix/lib"
+  if [ "$CYGWIN" = "1" ]
+  then
+    FLXSHLIB="$prefix/bin"
+  else
+    FLXSHLIB="$prefix/lib"
+  fi
 fi
 if [ "$DEBUG" = "1" ]; then FLXRUN="$FLXRUN --debug"; fi
 STATIC_ENV=""
@@ -4508,12 +4473,7 @@ then
   if eval $FCMD
   then
     CCMD="$CCOBJ_DLLIB $CCFLAGS -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp -o $base.o"
-    if [ $CYGWIN = 1 ]; 
-    then 
-      LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base.o -o $base.so -L$FLXAR -lflx_dynamic.dll"
-    else 
-      LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base.o -o $base.so -L$FLXAR -lflx_dynamic"
-    fi
+    LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base.o -o $base.so -L$FLXSHLIB -lflx_dynamic"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then

@@ -1005,6 +1005,11 @@ else:
   CCLINK_DLLIB = CXX + "-shared  "
   CCLINK_DLMAIN = CXX + "-Wl,-Bdynamic -Wl,--export-dynamic "
 
+# where to put the rtl: Cygwin requires the dll be in the PATH
+if CYGWIN:
+  SHLIB_DIR="bin"
+else:
+  SHLIB_DIR="rtl"
 
 CCOBJ_STATIC_LIB = CXX + FORCE_DEBUG+"-c "
 CCOBJ_STATIC_MAIN = CXX + FORCE_DEBUG+"-c "
@@ -1353,6 +1358,7 @@ try:
   p(f,"HAVE_PKGCONFIG")
   p(f,"HAVE_DLOPEN")
   p(f,"EXT_SHARED")
+  p(f,"SHLIB_DIR")
   p(f,"CXX")
   p(f,"CPP")
   p(f,"FLXCC_CPP")
