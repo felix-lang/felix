@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.132  2005/08/31 06:55:34  skaller
+Make a link for Linux for the RTL so the loader finds the library.
+
 Revision 1.131  2005/08/31 06:24:19  skaller
 More cygwin fiddling
 
@@ -2757,6 +2760,9 @@ try:
         objs.append(i[:-2]) # chop off the .o
       TARGET_CXX.link_static_archive(xqt,objs, "rtl/libflx_dynamic_objects.a")
       TARGET_CXX.convert_static_archive_to_shared_library(xqt,"rtl/libflx_dynamic_objects.a",FLX_SONAME,SHLIB_DIR+"/libflx_dynamic"+EXT_SHARED)
+      if not CYGWIN:
+        # hack: Cygwin doesn't use soname, linux does ..
+        xqt("cd rtl && ln -s libflx_dynamic.so.1 libflx_dynamic.so")
 
         #if CYGWIN:
         #  print "Building RTL for CYGWIN dynamic linkage"
