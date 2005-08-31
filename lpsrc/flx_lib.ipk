@@ -725,7 +725,7 @@ module Text_file
   fun readln: text_file -> string ="flx::rtl::ioutil::readln($1)";
   proc writeln : text_file * string ="flx::rtl::ioutil::writeln($1,$2);";
   proc write : text_file * string ="flx::rtl::ioutil::write($1,$2);";
-
+  fun valid : text_file -> bool = "$1!=(FILE*)0";
   const stdin: text_file = "stdin";
   const stdout: text_file = "stdout";
   const stderr: text_file = "stderr";
