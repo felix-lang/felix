@@ -433,6 +433,81 @@ class gxx:
     self.exe_extension = exe_extension
     self.dll_binding_extension=dll_binding_extension
     self.DLLIB=DLLIB
+
+  def check_options(self):
+
+  # find if we have cpp
+  try:
+    xqt("cpp tmp"+os.sep+"dummyc.c tmp"+os.sep+"dummy_cpp.out")
+    CPP = "cpp " 
+    HAVE_CPP = 1
+  except:
+    HAVE_CPP = 0
+
+  # find if we have gcc
+  try:
+    xqt("gcc -w -c tmp"+os.sep+"dummyc.c -o tmp"+os.sep+"dummy.o")
+    GCC = "gcc " 
+    HAVE_GCC = 1
+  except:
+    HAVE_GCC = 0
+
+  # find if we have g++
+  try:
+    xqt("g++ -w -c tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
+    GXX = "g++ " 
+    HAVE_GXX = 1
+  except:
+    HAVE_GXX = 0
+
+  # find if we have g++ on 32 bit x86 platform with named registers
+  try:
+    xqt("g++ -w tmp"+os.sep+"gxx_x86.cxx -o tmp"+os.sep+"x86_check")
+    xqt("tmp"+os.sep+"x86_check")
+    HAVE_GXX_X86 = 1
+  except:
+    HAVE_GXX_X86 = 0
+
+  if HAVE_GXX_X86:
+    USE_REGPARM3=1
+  else:
+    USE_REGPARM3=0
+
+
+  # find if we have g++ supporting computed jumps
+  try:
+    xqt("g++ tmp"+os.sep+"cgoto.cxx -o tmp"+os.sep+"cgoto")
+    xqt("tmp"+os.sep+"cgoto")
+    HAVE_CGOTO = 1
+  except:
+    HAVE_CGOTO = 0
+
+  # find if we have g++ supporting computed jumps and asm labels
+  try:
+    xqt("g++ tmp"+os.sep+"asm_labels.cxx -o tmp"+os.sep+"asm_labels")
+    xqt("tmp"+os.sep+"asm_labels")
+    HAVE_ASM_LABELS = 1
+  except:
+    HAVE_ASM_LABELS = 0
+
+  # find if we have g++ supported ext/ with STL extensions
+  try:
+    xqt("g++ tmp"+os.sep+"gxx_hash.cxx -o tmp"+os.sep+"gxx_hash")
+    xqt("tmp"+os.sep+"gxx_hash")
+    HAVE_STL_GNU_CXX = 1
+  except:
+    HAVE_STL_GNU_CXX = 0
+
+
+  # find if we have g++ with -Wno-invalid-offsetof
+  try:
+    xqt("g++ -Wno-invalid-offsetof tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
+    NO_INVALID_OFFSETOF_WARNING="-Wall -Wno-invalid-offsetof"
+  except:
+    NO_INVALID_OFFSETOF_WARNING = "-w"
+
+
+
     
   # compile a file to an object suitable for inclusion in a shared 
   # library version of RTL
@@ -660,6 +735,53 @@ PREFIX=os.getenv("PREFIX",default=default_prefix)
 
 overrides = {}
 
+host = None # guess
+
+archmap = {
+  "posix":"posix",
+  "linux":"posix",
+  "solaris":"posix",
+  "cygwin":"cygwin",
+  "nocygwin":"nocygwin",
+  "mingw":"mingw"
+  "nt":"win32",
+  "win32":"win32",
+  "osx":"osx"
+}
+
+try:
+  build_model = archmap[os.name]
+except:
+  print "Python returns unknown OS type, assuming 'posix'"
+  build_model = "posix"
+
+host_model = None
+target_model = None
+
+
+models = (
+  "posix/posix",
+  "cygwin/cygwin",
+  "cygwin/nocygwin",
+  "nocygwin/nocygwin",
+  "migw/mingw",
+  "win32/win32"
+}
+
+def check_model(m):
+  try: 
+    h,t = string.split(m,"/")
+  except:
+    h,t=m,m
+  h = archmap[h]
+  t = archmap[t]
+  m = h + "/" + t
+  if not m in models:
+    print "Unknown model, please choose one of:"
+    for m in models: print " * " + m
+    sys.exit(1)
+  return h,t
+
 i = 1
 while(i < len (sys.argv)):
   arg = sys.argv[i]
@@ -686,10 +808,15 @@ while(i < len (sys.argv)):
     v = x[:i]
     a = x[i+1:]
     overrides[v]=a
+  elif has_prefix("--model=",arg):
+    host_model,target_model = check_model(arg[7:])
   else:
     print "UNKNOWN CONFIGURE OPTION",arg
     sys.exit(1)
   i = i + 1
+
+if not host_model: host_model=build_model
+if not target_model: target_model = host_model
 
 if PREFIX=='': PREFIX=default_prefix
 
@@ -822,75 +949,7 @@ OCAML_INCLUDE_DIRECTORY= x[0][0:-1]
 MSVC="#cl "
 HAVE_MSVC = 0
   
-# find if we have cpp
-try:
-  xqt("cpp tmp"+os.sep+"dummyc.c tmp"+os.sep+"dummy_cpp.out")
-  CPP = "cpp " 
-  HAVE_CPP = 1
-except:
-  HAVE_CPP = 0
-
-# find if we have gcc
-try:
-  xqt("gcc -w -c tmp"+os.sep+"dummyc.c -o tmp"+os.sep+"dummy.o")
-  GCC = "gcc " 
-  HAVE_GCC = 1
-except:
-  HAVE_GCC = 0
-
-# find if we have g++
-try:
-  xqt("g++ -w -c tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
-  GXX = "g++ " 
-  HAVE_GXX = 1
-except:
-  HAVE_GXX = 0
-
-# find if we have g++ on 32 bit x86 platform with named registers
-try:
-  xqt("g++ -w tmp"+os.sep+"gxx_x86.cxx -o tmp"+os.sep+"x86_check")
-  xqt("tmp"+os.sep+"x86_check")
-  HAVE_GXX_X86 = 1
-except:
-  HAVE_GXX_X86 = 0
-
-if HAVE_GXX_X86:
-  USE_REGPARM3=1
-else:
-  USE_REGPARM3=0
-
-
-# find if we have g++ supporting computed jumps
-try:
-  xqt("g++ tmp"+os.sep+"cgoto.cxx -o tmp"+os.sep+"cgoto")
-  xqt("tmp"+os.sep+"cgoto")
-  HAVE_CGOTO = 1
-except:
-  HAVE_CGOTO = 0
-
-# find if we have g++ supporting computed jumps and asm labels
-try:
-  xqt("g++ tmp"+os.sep+"asm_labels.cxx -o tmp"+os.sep+"asm_labels")
-  xqt("tmp"+os.sep+"asm_labels")
-  HAVE_ASM_LABELS = 1
-except:
-  HAVE_ASM_LABELS = 0
-
-# find if we have g++ supported ext/ with STL extensions
-try:
-  xqt("g++ tmp"+os.sep+"gxx_hash.cxx -o tmp"+os.sep+"gxx_hash")
-  xqt("tmp"+os.sep+"gxx_hash")
-  HAVE_STL_GNU_CXX = 1
-except:
-  HAVE_STL_GNU_CXX = 0
-
-
-# find if we have g++ with -Wno-invalid-offsetof
-try:
-  xqt("g++ -Wno-invalid-offsetof tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
-  NO_INVALID_OFFSETOF_WARNING="-Wall -Wno-invalid-offsetof"
-except:
-  NO_INVALID_OFFSETOF_WARNING = "-w"
+if host_model in ["posix","cygwin","nocygwin","mingw"]:
 
 # find if we have cc
 try:
