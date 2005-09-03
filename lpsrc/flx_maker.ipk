@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.133  2005/09/03 19:35:39  skaller
+New object based toolchain support system
+
 Revision 1.132  2005/08/31 06:55:34  skaller
 Make a link for Linux for the RTL so the loader finds the library.
 
@@ -2035,7 +2038,7 @@ if options:
   print "OPTIONS: ", options
 
 if "compiler" in options or "bytecode" in options or "olink" in options:
-  options.append("flxcc")
+  #options.append("flxcc")
   options.append("felix")
 
 keyopt = {}
@@ -2455,7 +2458,8 @@ MISC_IMPLEMENTATIONS = MISC_INTERFACES
 FLX_IMPLEMENTATIONS = FLX_INTERFACES
 CIL_IMPLEMENTATIONS = CIL_INTERFACES
   
-IMPLEMENTATIONS = MISC_IMPLEMENTATIONS + CIL_IMPLEMENTATIONS + FLX_IMPLEMENTATIONS 
+IMPLEMENTATIONS =  MISC_IMPLEMENTATIONS + CIL_IMPLEMENTATIONS + FLX_IMPLEMENTATIONS 
+  
 INTERFACES = MISC_INTERFACES + CIL_INTERFACES + FLX_INTERFACES
 RAW_INTERFACES = CIL_RAW_INTERFACES + FLX_RAW_INTERFACES
 
@@ -2484,7 +2488,12 @@ CLIBRARIES = ['nums']
 # and some hackery so we can if the source doesn't need
 # ocaml-fileutils we can still build if it isn't found
 OCAML_INCLUDES = ""
-OLIBRARIES = ['nums','unix','misclib','cillib','flxlib']
+OLIBRARIES = [
+  'nums',
+  'unix',
+  'misclib',
+  'cillib',
+  'flxlib']
 
 OCAMLLIBS = [
   ('misclib',MISC_IMPLEMENTATIONS),
@@ -2504,7 +2513,10 @@ FLX_EXES = [
   'stub',
 ]
 
-CIL_EXES = [ 'flxcc',]
+CIL_EXES = [ 
+  'flxcc',
+]
+
 EXES = MISC_EXES + CIL_EXES + FLX_EXES
 
 if 1:
@@ -2743,7 +2755,7 @@ try:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_dynamic.o "
         dir,base = string.split(x,'/')
-        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl'],options=NO_INVALID_OFFSETOF_WARNING)
+        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl'])
 
       #ELKHOUND SUBLIBRARY
       print " .. ELKHOUND"
@@ -2762,7 +2774,7 @@ try:
       TARGET_CXX.convert_static_archive_to_shared_library(xqt,"rtl/libflx_dynamic_objects.a",FLX_SONAME,SHLIB_DIR+"/libflx_dynamic"+EXT_SHARED)
       if not CYGWIN:
         # hack: Cygwin doesn't use soname, linux does ..
-        xqt("cd rtl && ln -s libflx_dynamic.so.1 libflx_dynamic.so")
+        xqt("cd rtl && rm -f libflx_dynamic.so.1 && ln -s libflx_dynamic.so libflx_dynamic.so.1")
 
         #if CYGWIN:
         #  print "Building RTL for CYGWIN dynamic linkage"
@@ -2788,7 +2800,7 @@ try:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_static.o "
         dir,base = string.split(x,'/')
-        TARGET_CXX.compile_static_rtl(xqt,dir,base,dir,include_path=['rtl'],macros=["FLX_STATIC_LINK"],options=NO_INVALID_OFFSETOF_WARNING)
+        TARGET_CXX.compile_static_rtl(xqt,dir,base,dir,include_path=['rtl'],macros=["FLX_STATIC_LINK"])
 
       print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:
@@ -2925,10 +2937,10 @@ try:
         if buildall or filetime(basename+ '.cpp') > filetime(basename+SHLX):
           try:
             if LINK_MODEL == "dynamic":
-              TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,include_path=["rtl"],options=NO_INVALID_OFFSETOF_WARNING)
+              TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,include_path=["rtl"])
               TARGET_CXX.link_felix_dll(xqt,[basename+"_dynamic"],basename+SHLX,lib_path=[SHLIB_DIR],libs=["flx_dynamic"])
             else: # static
-              TARGET_CXX.compile_felix_static(xqt,indir,infile,indir,include_path=["rtl"],options=NO_INVALID_OFFSETOF_WARNING)
+              TARGET_CXX.compile_felix_static(xqt,indir,infile,indir,include_path=["rtl"])
               TARGET_CXX.link_static_program(xqt,["rtl/flx_run_static",basename+"_static"],basename,lib_path=["rtl"],libs=["flx_static"])
             #print 'TESTFILE -- OK!',basename
             results.append(("g++",basename,'OK'))

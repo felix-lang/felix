@@ -1468,7 +1468,13 @@ if prefix == "" do prefix = "./"; done;
 
 
 var dict = HashSet::create[string]();
-var f = fopen_input (prefix + "Usr.Dict.Words");
+val dfile = prefix + "Usr.Dict.Words";
+var f = fopen_input dfile;
+if not (valid f) do
+  print ("Cannot Open Dictionary file '" + dfile +"'"); endl;
+  System::exit 1;
+done;
+
 var word = readln f;
 until word == "" do insert (dict,word); word = readln f; done;
 fclose f;
