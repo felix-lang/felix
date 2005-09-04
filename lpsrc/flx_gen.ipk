@@ -1296,7 +1296,7 @@ let gen_regexp_methods filename syms (child_map,bbdfns)
     let exe_string = 
       let ge e : string = gen_expr syms bbdfns index e vs ts sr in
       let b = Buffer.create 2000 in
-      Flx_regen.regen b cls kind ge;
+      Flx_regen.regen b sr cls kind ge;
       Buffer.contents b
     in
     let cont = "con_t *" in

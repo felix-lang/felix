@@ -559,7 +559,11 @@ class gxx:
   # these options are model dependent and have to
   # be supplied by the client
 
-  def set_options(self,CXX="g++",
+  def set_options(self,
+    CXX="g++",
+    AR="ar -rc",
+    RANLIB="ranlib",
+    STRIP="strip",
     debug=0,
     optimise=0,
     dll_extension=".so",
@@ -580,6 +584,9 @@ class gxx:
     opt.exe_extension = exe_extension
     opt.dll_binding_extension=dll_binding_extension
     opt.CXX = CXX+" "
+    opt.AR = AR +" "
+    opt.RANLIB = RANLIB +" "
+    opt.STRIP = STRIP +" "
     opt.flags = flags
 
   def check_options(self,xqt):
@@ -588,6 +595,22 @@ class gxx:
 
     # check we have g++
     xqt(CXX+"-w -c tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
+
+    # see if we have strip: it isn't considered essential
+    if opt.STRIP:
+      xqt(opt.STRIP + "tmp"+os.sep+"dummy.o")
+    else:
+      opt.STRIP="#strip "
+
+    # see if we have ar
+    xqt(opt.AR+"tmp"+os.sep+"dummy.a tmp"+os.sep+"dummy.o")
+
+    # see if we have ranlib, it isn't considered essential
+    # (a totally brain dead Unix idea: AR should do this)
+    try:
+      xqt(RANLIB + "tmp"+os.sep+"dummy.a")
+    except:
+      opt.RANLIB="#ranlib "
 
     # find if we have g++ on 32 bit x86 platform with named registers
     try:
@@ -633,6 +656,17 @@ class gxx:
     except:
       opt.NO_INVALID_OFFSETOF_WARNING = "-w"
 
+    # find if we can use -fPIC without a warning
+    # if a warning is generated it will say something like 
+    # 'all code is relocatable on this platform' 
+    # so we make that into an error, detect it, and say -fPIC only
+    # if it would not generate this warning
+    try:
+      xqt(CXX+"-Werror -fPIC tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
+      opt.PIC = "-fPIC"
+    except:
+      opt.PIC = ""
+
     # find if we have CYGWIN
     try:
       xqt(CXX+"-w -c tmp"+os.sep+"check_cygwin.cxx -o tmp"+os.sep+"dummy.o")
@@ -656,14 +690,14 @@ class gxx:
       opt.CCLINK_DLMAIN = CXX
     elif opt.MACOSX:
       opt.EXT_SHARED = ".so"
-      opt.CCOBJ_DLLIB = CXX + FORCE_DEBUG+"-fPIC -c -dynamic "
-      opt.CCOBJ_DLMAIN = CXX + FORCE_DEBUG+"-fPIC -c "
+      opt.CCOBJ_DLLIB = CXX + FORCE_DEBUG+opt.PIC+" -c -dynamic "
+      opt.CCOBJ_DLMAIN = CXX + FORCE_DEBUG+opt.PIC+" -c "
       opt.CCLINK_DLLIB = CXX + "-bundle  "
       opt.CCLINK_DLMAIN = CXX
     else:
       opt.EXT_SHARED = ".so"
-      opt.CCOBJ_DLLIB = CXX + FORCE_DEBUG+"-fPIC -c "
-      opt.CCOBJ_DLMAIN = CXX + FORCE_DEBUG+"-fPIC -c "
+      opt.CCOBJ_DLLIB = CXX + FORCE_DEBUG+opt.PIC+" -c "
+      opt.CCOBJ_DLMAIN = CXX + FORCE_DEBUG+opt.PIC+" -c "
     #  CCLINK_DLLIB = CXX + "-Wl,-shared -Wl,--export-dynamic "
       opt.CCLINK_DLLIB = CXX + "-shared  "
       opt.CCLINK_DLMAIN = CXX + "-Wl,-Bdynamic -Wl,--export-dynamic "
@@ -856,7 +890,8 @@ class gxx:
   def compile_shared_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags=""):
     opt = self.options
     # compile for a dll: position independent code etc
-    cmd = opt.CXX +" -c -fPIC "
+    cmd = opt.CXX +" -c "
+    if opt.PIC: cmd = cmd + opt.PIC+" "
     cmd = cmd + opt.NO_INVALID_OFFSETOF_WARNING+" "
     if flags: cmd = cmd + flags + " "
 
@@ -935,16 +970,18 @@ class gxx:
   compile_felix_static = compile_static_rtl
 
   def link_static_archive(self,shell,objects,archive):
-    cmd = "ar -rc "+ archive + " " 
+    opt = self.options
+    cmd = opt.AR +" "+ archive + " " 
     for i in objects: cmd = cmd + i + ".o "
     result = shell(cmd)
     if result:
-      result = shell("ranlib "+archive)
+      if opt.RANLIB:
+        result = shell(opt.RANLIB+" "+archive)
     return result
   
   def link_static_program(self,shell,objects,outfile,lib_path,libs):
     opt = self.options
-    cmd = self.options.CXX +" -static "
+    cmd = opt.CXX +" -static "
     for i in objects: cmd = cmd +i+opt.obj_extension+" "
     cmd = cmd + "-o " +outfile + " "
     for i in lib_path: cmd = cmd + "-L"+i+" "
@@ -961,7 +998,8 @@ class gxx:
 
   def link_shared_rtl(self,shell,objects,outfile,lib_path,libs):
     opt = self.options
-    cmd = opt.CXX +" -shared -fPIC "
+    cmd = opt.CXX +"-shared "
+    if opt.PIC: cmd = cmd + opt.PIC+" "
     cmd = cmd + "-o " +outfile + " "
     for i in objects: cmd = cmd +i+opt.obj_extension+" "
     for i in lib_path: cmd = cmd + "-L"+i+" "
@@ -975,7 +1013,8 @@ class gxx:
   def link_dynamic_program(self,shell,objects,outfile,lib_path,libs):
     #cmd = self.CXX +" -fPIC -Wl,-Bdynamic -Wl,--export-dynamic "
     opt = self.options
-    cmd = opt.CXX + " -fPIC "
+    cmd = opt.CXX 
+    if opt.PIC: cmd = cmd + opt.PIC+" "
     cmd = cmd + "-o " +outfile + " "
     for i in objects: cmd = cmd +i+opt.obj_extension+" "
     for i in lib_path: cmd = cmd + "-L"+i+" "
@@ -1359,30 +1398,6 @@ else:
 # with a Python function def, since that's more flexible
 #FORCE_DEBUG="-g "
 FORCE_DEBUG=""
-# see if we have strip
-try:
-  xqt("strip tmp"+os.sep+"dummy.o")
-  STRIP="strip"
-except:
-  STRIP="#strip"
-
-# see if we have ar
-try:
-  xqt("ar -rc tmp"+os.sep+"dummy.a tmp"+os.sep+"dummy.o")
-  AR="ar -rc "
-except:
-  AR="#ar -rc "
-
-# see if we have ranlib
-try:
-  xqt("ranlib tmp"+os.sep+"dummy.a")
-  RANLIB="ranlib "
-except:
-  RANLIB="#ranlib "
-
-HOST_STRIP=STRIP
-HOST_AR=AR
-HOST_RANLIB=RANLIB
 
 # see if we have interscript
 try:
@@ -1462,15 +1477,6 @@ def copen(c):
 try:
   try: os.mkdir("config")
   except: pass
-
-  f = copen("posix")
-  p(f,"HOST_STRIP")
-  p(f,"HOST_AR")
-  p(f,"HOST_RANLIB")
-  p(f,"STRIP")
-  p(f,"AR")
-  p(f,"RANLIB")
-  f.close()
 
   f = copen("iscr")
   pr(f,"#Interscript support")

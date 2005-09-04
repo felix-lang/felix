@@ -279,8 +279,21 @@ struct flx_exec_failure_t {
   flx_exec_failure_t(std::string f, std::string o, std::string w);
 };
 
+// MATCH failure
+// Thrown when no match cases match the argument of a match,
+// regmatch, or reglex
+struct flx_match_failure_t {
+  std::string flx_srcloc;  // compiler generated
+  std::string cxx_srcloc;    // in C++ file
+  std::string operation;   // operation
+  flx_match_failure_t(std::string s, std::string f, int l, std::string o);
+};
+
 
 }} // namespaces
+
+#define FLX_MATCH_FAILURE(s,o) \
+  throw flx::rtl::flx_match_failure_t (s,__FILE__,__LINE__,o)
 
 // for generated code in body file
 #define INIT_PC pc=0;
@@ -511,6 +524,20 @@ flx_exec_failure_t::flx_exec_failure_t(std::string f, std::string o, std::string
   what(w) 
 {}
 
+flx_match_failure_t::flx_match_failure_t(
+  std::string s, 
+  std::string f, 
+  int l, 
+  std::string o
+) : 
+  flx_srcloc(s), 
+  cxx_srcloc(f), 
+  operation(o)
+{
+  char b[20];
+  sprintf(b,": %d",l);
+  f.append(b);
+}
 
 }}
 

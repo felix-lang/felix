@@ -12,6 +12,7 @@ type reg_kind_t =
 
 val regen: 
   Buffer.t -> 
+  range_srcref ->
   regular_args_t -> 
   reg_kind_t -> 
   (tbexpr_t -> string) ->
@@ -90,7 +91,7 @@ let emit_matrix tack nchars nstates d =
   tack "  };\n\n"
   
 
-let regen b (alpha, nstates, cases, matrix) kind ge =
+let regen b sr (alpha, nstates, cases, matrix) kind ge =
   let nchars = 256 in
   let tack s = bcat b s in
 
@@ -152,7 +153,8 @@ let regen b (alpha, nstates, cases, matrix) kind ge =
   )
   cases 
   ;
-  tack "    case 0: assert(((void)\"regmatch failure\",0));\n";
+  let src = Flx_srcref.short_string_of_src sr in
+  tack ("    case 0: FLX_MATCH_FAILURE(\""^src^"\",\"regmatch\");\n");
   tack "    default: assert(((void)\"system failure in regmatch\",0));\n";
   tack "  }\n";
 
