@@ -155,7 +155,7 @@ let regen b sr (alpha, nstates, cases, matrix) kind ge =
   ;
   let src = Flx_srcref.short_string_of_src sr in
   tack ("    case 0: FLX_MATCH_FAILURE(\""^src^"\",\"regmatch\");\n");
-  tack "    default: assert(((void)\"system failure in regmatch\",0));\n";
+  tack ("    default: FLX_MATCH_FAILURE(\""^src^"\",\"regmatch SYSTEM ERROR\");\n");
   tack "  }\n";
 
 

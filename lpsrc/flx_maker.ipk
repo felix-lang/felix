@@ -4,6 +4,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.134  2005/09/04 17:40:21  skaller
+Make the tests run in 'all' actually run all 4 combinations
+of optimisation and linkage.
+
 Revision 1.133  2005/09/03 19:35:39  skaller
 New object based toolchain support system
 
@@ -2755,14 +2759,14 @@ try:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_dynamic.o "
         dir,base = string.split(x,'/')
-        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl'])
+        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl'],optimise=1)
 
       #ELKHOUND SUBLIBRARY
       print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:
         if not "quiet" in options: print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_dynamic.o "
-        TARGET_CXX.compile_shared_rtl(xqt,"elk",x,"rtl",include_path=['elk'])
+        TARGET_CXX.compile_shared_rtl(xqt,"elk",x,"rtl",include_path=['elk'],optimise=1)
 
       # LINK RTL
       print " ** MAKING RTL (dynamic) "
@@ -2800,13 +2804,13 @@ try:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_static.o "
         dir,base = string.split(x,'/')
-        TARGET_CXX.compile_static_rtl(xqt,dir,base,dir,include_path=['rtl'],macros=["FLX_STATIC_LINK"])
+        TARGET_CXX.compile_static_rtl(xqt,dir,base,dir,include_path=['rtl'],macros=["FLX_STATIC_LINK"],optimise=1)
 
       print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:
         if not "quiet" in options: print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_static.o "
-        TARGET_CXX.compile_static_rtl(xqt,"elk",x,"rtl",include_path=['rtl'])
+        TARGET_CXX.compile_static_rtl(xqt,"elk",x,"rtl",include_path=['rtl'],optimise=1)
 
       print " ** MAKING RTL (static) "
       tmp = string.split(ars)
@@ -2838,14 +2842,14 @@ try:
       for i,j in DRIVERS:
         if not "quiet" in options: print 'Compiling driver object',i
         d,b = string.split(i,'/')
-        TARGET_CXX.compile_static_main(xqt,d,b,d,include_path=["rtl"],macros=["FLX_STATIC_LINK"])
+        TARGET_CXX.compile_static_main(xqt,d,b,d,include_path=["rtl"],macros=["FLX_STATIC_LINK"],optimise=1)
 
     if SUPPORT_DYNAMIC_LOADING:
       print "COMPILING DRIVERS (dynamic)"
       for i,j in DRIVERS:
         if not "quiet" in options: print 'Compiling driver object',i
         d,b = string.split(i,'/')
-        TARGET_CXX.compile_shared_main(xqt,d,b,d,include_path=["rtl"])
+        TARGET_CXX.compile_shared_main(xqt,d,b,d,include_path=["rtl"],optimise=1)
 
         #if CYGWIN:
         #  #xqt("g++ -o "+j+" -Wl,--enable-auto-import " + i + "_dynamic.o -Lrtl -lflx_dynamic")
@@ -2869,7 +2873,7 @@ try:
 
     TX = TESTS+EXTRA+BAGLEY
     if len(TX)>0 or "regression" in options:
-      print "TRANSLATING FELIX TEST CODE TO C++"
+      print "TRANSLATING FELIX TEST CODE TO C++ "+FLXFLAGS
     if len(TX)>0:
       print " .. REGRESSION TESTS and TUTORIAL EXAMPLES"
     for testfile in TESTS+EXTRA+BAGLEY:
@@ -2926,7 +2930,10 @@ try:
         EXTRA.append(testfile)
     TX = TESTS+EXTRA+BAGLEY
     if len(TX)>0:
-      print "COMPILING GENERATED C++ TEST CODE"
+      optimise= "optimise_c" in options
+      mode = "std"
+      if optimise: mode = "Optimised"
+      print "COMPILING GENERATED C++ TEST CODE: " + mode+ " " + LINK_MODEL
       for testfile in TESTS+EXTRA+BAGLEY:
         #print 'Compiling generated code of ',testfile
         basename = string.split(testfile,'.')[0]
@@ -2937,10 +2944,10 @@ try:
         if buildall or filetime(basename+ '.cpp') > filetime(basename+SHLX):
           try:
             if LINK_MODEL == "dynamic":
-              TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,include_path=["rtl"])
+              TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise)
               TARGET_CXX.link_felix_dll(xqt,[basename+"_dynamic"],basename+SHLX,lib_path=[SHLIB_DIR],libs=["flx_dynamic"])
             else: # static
-              TARGET_CXX.compile_felix_static(xqt,indir,infile,indir,include_path=["rtl"])
+              TARGET_CXX.compile_felix_static(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise)
               TARGET_CXX.link_static_program(xqt,["rtl/flx_run_static",basename+"_static"],basename,lib_path=["rtl"],libs=["flx_static"])
             #print 'TESTFILE -- OK!',basename
             results.append(("g++",basename,'OK'))
@@ -3072,8 +3079,8 @@ We have no idea if it continues copying.
 @tangle('\tmake tools libdoc')
 @tangle('\tpython script/maker clean test log_output stop_on_error check_output')
 @tangle('\tpython script/maker clean test static log_output stop_on_error check_output')
-@tangle('\tpython script/maker clean test optimise log_output stop_on_error check_output')
-@tangle('\tpython script/maker clean test optimise static log_output stop_on_error check_output')
+@tangle('\tpython script/maker clean test optimise_c inline log_output stop_on_error check_output')
+@tangle('\tpython script/maker clean test optimise_c inline static log_output stop_on_error check_output')
 @tangle('\tsh bagley/compile.sh')
 @tangle('\tsh bagley/run.sh')
 @tangle('\tsh bagley/check.sh')

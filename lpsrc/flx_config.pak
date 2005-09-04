@@ -564,8 +564,6 @@ class gxx:
     AR="ar -rc",
     RANLIB="ranlib",
     STRIP="strip",
-    debug=0,
-    optimise=0,
     dll_extension=".so",
     exe_extension="",
     obj_extension=".o",
@@ -576,9 +574,6 @@ class gxx:
     flags= ""
     ):
     opt = self.options
-
-    opt.debug=debug
-    opt.optimise = optimise
     opt.obj_extension = obj_extension
     opt.dll_extension = dll_extension
     opt.exe_extension = exe_extension
@@ -867,8 +862,7 @@ class gxx:
     opt.flx_aligns[1]="char"
 
     opt.DEBUG_SYMBOLS = "-g "
-    opt.CCOPT1 = "-O1 -DNDEBUG "
-    opt.CCOPT2 = "-O3 -fomit_frame_pointer --inline -DNDEBUG "
+    opt.OPTIMISE = "-O3 -fomit-frame-pointer --inline -DNDEBUG "
 
   def save_options(self, filename):
     f = open(filename,"w")
@@ -887,7 +881,7 @@ class gxx:
 
   # compile a file to an object suitable for inclusion in a shared 
   # library version of RTL
-  def compile_shared_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags=""):
+  def compile_shared_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
     opt = self.options
     # compile for a dll: position independent code etc
     cmd = opt.CXX +" -c "
@@ -896,14 +890,10 @@ class gxx:
     if flags: cmd = cmd + flags + " "
 
     # debug symbols
-    if opt.debug: cmd = cmd + "-g "
+    if debug: cmd = cmd + "-g "
 
     # optimisation
-    if opt.optimise: cmd = cmd + "-O3 "
-
-    # maintain framepointer for debugging version
-    if opt.optimise and not opt.debug: 
-      cmd = cmd + "-fomit_frame_pointer "
+    if optimise: cmd = cmd + opt.OPTIMISE + " "
 
     # include path
     for i in include_path: cmd = cmd +"-I"+i+" "
@@ -930,7 +920,7 @@ class gxx:
 
   # compile a file to an object suitable for inclusion in a static link 
   # version of the RTL 
-  def compile_static_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags=""):
+  def compile_static_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
     opt = self.options
     # compile for a dll: position independent code etc
     cmd = opt.CXX +" -c "
@@ -938,14 +928,10 @@ class gxx:
     if flags: cmd = cmd + flags + " "
 
     # debug symbols
-    if opt.debug: cmd = cmd + "-g "
+    if debug: cmd = cmd + "-g "
 
     # optimisation
-    if opt.optimise: cmd = cmd + "-O3 "
-
-    # maintain framepointer for debugging version
-    if opt.optimise and not opt.debug: 
-      cmd = cmd + "-fomit_frame_pointer "
+    if optimise: cmd = cmd + opt.OPTIMISE+ " "
 
     # include path
     for i in include_path: cmd = cmd +"-I"+i+" "
