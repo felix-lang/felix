@@ -706,7 +706,7 @@ class gxx:
       opt.EXT_SHARED = ".dll"
       
       opt.COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
-      opt.LINK_DYNAMIC_RTL = "-shared"
+      opt.LINK_DYNAMIC_RTL = "-shared "
       
       opt.COMPILE_DYNAMIC_MAIN = "-c "
       opt.LINK_DYNAMIC_MAIN = ""
