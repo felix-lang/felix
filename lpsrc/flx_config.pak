@@ -739,7 +739,8 @@ class gxx:
       
       opt.COMPILE_DYNAMIC_MAIN = "-c "
       #hysterical note: this crap should not be needed
-      opt.LINK_DYNAMIC_MAIN = "-Wl,-Bdynamic -Wl,--export-dynamic "
+      #opt.LINK_DYNAMIC_MAIN = "-Wl,-Bdynamic -Wl,--export-dynamic "
+      opt.LINK_DYNAMIC_MAIN = ""
 
       opt.COMPILE_DYNAMIC_FLX = opt.PIC+"-c "
       opt.LINK_DYNAMIC_FLX = "-shared "
