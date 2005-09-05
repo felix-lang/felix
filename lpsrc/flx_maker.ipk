@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.135  2005/09/05 15:38:10  skaller
+Fix build bug where dynamic linkage wasn't supported.
+
 Revision 1.134  2005/09/04 17:40:21  skaller
 Make the tests run in 'all' actually run all 4 combinations
 of optimisation and linkage.
@@ -2158,25 +2161,26 @@ if LINK_MODEL == "dynamic":
 else:
   SHLX = ""
 
-# for compiling mainlines
-if "optimise_c" in options:
-  CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + "-O3 -fomit-frame-pointer "
-  CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-O3 -fomit-frame-pointer "
-  CCOBJ_DLLIB = CCOBJ_DLLIB + "-O3 -fomit-frame-pointer "
-  CCOBJ_DLMAIN = CCOBJ_DLMAIN + "-O3 -fomit-frame-pointer "
+if 0: # NOT USED NOW?
+  # for compiling mainlines
+  if "optimise_c" in options:
+    CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + "-O3 -fomit-frame-pointer "
+    CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-O3 -fomit-frame-pointer "
+    CCOBJ_DLLIB = CCOBJ_DLLIB + "-O3 -fomit-frame-pointer "
+    CCOBJ_DLMAIN = CCOBJ_DLMAIN + "-O3 -fomit-frame-pointer "
 
-if "debug" in options:
-  CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + " -g "
-  CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + " -g "
-  CCOBJ_DLLIB = CCOBJ_DLLIB + " -g "
-  CCOBJ_DLMAIN = CCOBJ_DLMAIN + " -g "
+  if "debug" in options:
+    CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + " -g "
+    CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + " -g "
+    CCOBJ_DLLIB = CCOBJ_DLLIB + " -g "
+    CCOBJ_DLMAIN = CCOBJ_DLMAIN + " -g "
 
 
 
-CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + ' ' + CCMACS
-CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + ' ' + CCMACS
-CCOBJ_DLLIB = CCOBJ_DLLIB + ' ' + CCMACS
-CCOBJ_DLMAIN = CCOBJ_DLMAIN + ' '+CCMACS
+  CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + ' ' + CCMACS
+  CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + ' ' + CCMACS
+  CCOBJ_DLLIB = CCOBJ_DLLIB + ' ' + CCMACS
+  CCOBJ_DLMAIN = CCOBJ_DLMAIN + ' '+CCMACS
 
 
 # ------------------------------------------------
@@ -4136,9 +4140,9 @@ echo $cmd
 
 @tangle("CYGWIN="+str(CYGWIN))
 # g++ compilation string
-@tangle('CCOBJ_DLLIB="'+CCOBJ_DLLIB+'"')
-@tangle('CCLINK_DLLIB="'+CCLINK_DLLIB+'"')
-@tangle('CCOBJ_STATIC_LIB="'+CCOBJ_STATIC_LIB+'"')
+@tangle('CCOBJ_DLLIB="'+CCOBJ_DYNAMIC_FLX+'"')
+@tangle('CCLINK_DLLIB="'+CCLINK_DYNAMIC_FLX+'"')
+@tangle('CCOBJ_STATIC_LIB="'+CCOBJ_STATIC_FLX+'"')
 @tangle('CCLINK_STATIC="'+CCLINK_STATIC+'"')
 @tangle('VERSION="'+flx_version+'"')
 

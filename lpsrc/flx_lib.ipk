@@ -290,7 +290,7 @@ header '#include "flx_rtl_config.hpp"';
 header iostream = "#include <iostream>";
 header cmath = """
 #include <cmath>
-#ifdef HAVE_ISNANF_IN_IEEEFP
+#ifdef HAVE_ISNAN_IN_IEEEFP
 extern "C" {
 #include <ieeefp.h>
 }
@@ -444,7 +444,7 @@ proc store[t,n]: &array[t,n] * int * t = "((?1*)($1.data))[$2]=$3;";
 @def gen_nan(t):
   if HAVE_ISNAN_IN_CMATH:
     tangle('  fun isnan: '+t+' -> bool = "isnan'+fc[t]+'($1)" is postfix requires cmath;')
-  elif HAVE_ISNANF_IN_IEEEFP:
+  elif HAVE_ISNAN_IN_IEEEFP:
     tangle('  fun isnan: '+t+' -> bool = "isnanf'+fc[t]+'($1)" is postfix requires cmath;')
   else:
     tangle('  fun isnan: '+t+' -> bool = "!($1==$1)" is unary requires cmath;')

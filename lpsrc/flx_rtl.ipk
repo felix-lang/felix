@@ -92,8 +92,8 @@ T &reinterpret(U const &x) {
 #ifndef FLX_RTL_CONFIG
 #define FLX_RTL_CONFIG
 #ifndef FLX_RTL_GNU
-@if HAVE_ISNANF_IN_IEEEFP:
-  tangle('#define HAVE_ISNANF_IN_IEEEFP')
+@if HAVE_ISNAN_IN_IEEEFP:
+  tangle('#define HAVE_ISNAN_IN_IEEEFP')
 
 @if HAVE_GXX:
   tangle('#define HAVE_GXX')

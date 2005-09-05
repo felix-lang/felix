@@ -564,6 +564,7 @@ class gxx:
     AR="ar -rc",
     RANLIB="ranlib",
     STRIP="strip",
+    model="detect",
     dll_extension=".so",
     exe_extension="",
     obj_extension=".o",
@@ -583,6 +584,7 @@ class gxx:
     opt.RANLIB = RANLIB +" "
     opt.STRIP = STRIP +" "
     opt.flags = flags
+    opt.model = model
 
   def check_options(self,xqt):
     opt = self.options
@@ -603,7 +605,7 @@ class gxx:
     # see if we have ranlib, it isn't considered essential
     # (a totally brain dead Unix idea: AR should do this)
     try:
-      xqt(RANLIB + "tmp"+os.sep+"dummy.a")
+      xqt(opt.RANLIB + "tmp"+os.sep+"dummy.a")
     except:
       opt.RANLIB="#ranlib "
 
@@ -612,11 +614,13 @@ class gxx:
       xqt(CXX +"-w tmp"+os.sep+"gxx_x86.cxx -o tmp"+os.sep+"x86_check")
       xqt("tmp"+os.sep+"x86_check")
       opt.HAVE_GXX_X86 = 1
+      print "g++ x86 support detected"
     except:
       opt.HAVE_GXX_X86 = 0
 
     if opt.HAVE_GXX_X86:
       opt.USE_REGPARM3=1
+      print "regparm3 supported"
     else:
       opt.USE_REGPARM3=0
 
@@ -625,6 +629,7 @@ class gxx:
       xqt(CXX+" tmp"+os.sep+"cgoto.cxx -o tmp"+os.sep+"cgoto")
       xqt("tmp"+os.sep+"cgoto")
       opt.HAVE_CGOTO = 1
+      print "Computed goto supported"
     except:
       opt.HAVE_CGOTO = 0
 
@@ -633,6 +638,7 @@ class gxx:
       xqt(CXX+"tmp"+os.sep+"asm_labels.cxx -o tmp"+os.sep+"asm_labels")
       xqt("tmp"+os.sep+"asm_labels")
       opt.HAVE_ASM_LABELS = 1
+      print "Asm labels supported"
     except:
       opt.HAVE_ASM_LABELS = 0
 
@@ -641,15 +647,17 @@ class gxx:
       xqt(CXX+"tmp"+os.sep+"gxx_hash.cxx -o tmp"+os.sep+"gxx_hash")
       xqt("tmp"+os.sep+"gxx_hash")
       opt.HAVE_STL_GNU_CXX = 1
+      print "Gnu ext/ templates supported"
     except:
       opt.HAVE_STL_GNU_CXX = 0
 
     # find if we have g++ with -Wno-invalid-offsetof
     try:
       xqt(CXX+"-Wno-invalid-offsetof tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
-      opt.NO_INVALID_OFFSETOF_WARNING="-Wall -Wno-invalid-offsetof"
+      opt.NO_INVALID_OFFSETOF_WARNING="-Wall -Wno-invalid-offsetof "
+      print "-Wno-invalid-offsetof supported"
     except:
-      opt.NO_INVALID_OFFSETOF_WARNING = "-w"
+      opt.NO_INVALID_OFFSETOF_WARNING = "-w "
 
     # find if we can use -fPIC without a warning
     # if a warning is generated it will say something like 
@@ -658,14 +666,23 @@ class gxx:
     # if it would not generate this warning
     try:
       xqt(CXX+"-Werror -fPIC tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
-      opt.PIC = "-fPIC"
+      opt.PIC = "-fPIC "
+      print "-fPIC supported"
     except:
       opt.PIC = ""
+      print "All code is position independent"
 
     # find if we have CYGWIN
     try:
       xqt(CXX+"-w -c tmp"+os.sep+"check_cygwin.cxx -o tmp"+os.sep+"dummy.o")
       opt.CYGWIN=1
+      print "Cygwin detected"
+      if opt.model in ["posix","cygwin","nocygwin","detect"]:
+        if opt.model == "detect": opt.model = "cygwin"
+        if opt.model == "posix": opt.model = "cygwin"
+      else:
+        print "INVALID MODEL",opt.model,"SPECIFIED"
+        sys.exit(1)
     except:
       opt.CYGWIN=0
 
@@ -673,114 +690,168 @@ class gxx:
     try:
       xqt(CXX+"-w -c tmp"+os.sep+"check_osx.cxx -o tmp"+os.sep+"dummy.o")
       opt.MACOSX=1
+      print "MACOSX detected"
+      if model in ["posix","osx","detect"]:
+        opt.model = "osx"
+      else:
+        print "INVALID MODEL",opt.model,"SPECIFIED"
+        sys.exit(1)
     except:
       opt.MACOSX=0
+    
+    print "MODEL =",opt.model
 
-    FORCE_DEBUG = "" # hack ..
     if opt.CYGWIN:
+      opt.EXT_EXE= ".exe"
       opt.EXT_SHARED = ".dll"
-      opt.CCOBJ_DLLIB = CXX + FORCE_DEBUG+" -c "
-      opt.CCOBJ_DLMAIN = CXX + FORCE_DEBUG+" -c "
-      opt.CCLINK_DLLIB = CXX + " -shared -Wl,--enable-auto-import "
-      opt.CCLINK_DLMAIN = CXX
+      
+      opt.COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
+      opt.LINK_DYNAMIC_RTL = "-shared"
+      
+      opt.COMPILE_DYNAMIC_MAIN = "-c "
+      opt.LINK_DYNAMIC_MAIN = ""
+      
+      opt.COMPILE_DYNAMIC_FLX = opt.PIC+ "-c "
+      opt.LINK_DYNAMIC_FLX = opt.PIC+"-shared "
+
+      #hysterical note:
+      #opt.CCLINK_DLLIB = CXX + "-shared -Wl,--enable-auto-import "
+
     elif opt.MACOSX:
+      opt.EXT_EXE= ""
       opt.EXT_SHARED = ".so"
-      opt.CCOBJ_DLLIB = CXX + FORCE_DEBUG+opt.PIC+" -c -dynamic "
-      opt.CCOBJ_DLMAIN = CXX + FORCE_DEBUG+opt.PIC+" -c "
-      opt.CCLINK_DLLIB = CXX + "-bundle  "
-      opt.CCLINK_DLMAIN = CXX
+      
+      opt.COMPILE_DYNAMIC_RTL = opt.PIC + "-dynamic -c "
+      opt.LINK_DYNAMIC_RTL = "-bundle "
+      
+      opt.COMPILE_DYNAMIC_MAIN = "-c "
+      opt.LINK_DYNAMIC_MAIN = ""
+      
+      opt.COMPILE_DYNAMIC_FLX = opt.PIC + "-dynamic -c "
+      opt.LINK_DYNAMIC_FLX = "-bundle "
+
     else:
+      opt.EXT_EXE= ""
       opt.EXT_SHARED = ".so"
-      opt.CCOBJ_DLLIB = CXX + FORCE_DEBUG+opt.PIC+" -c "
-      opt.CCOBJ_DLMAIN = CXX + FORCE_DEBUG+opt.PIC+" -c "
-    #  CCLINK_DLLIB = CXX + "-Wl,-shared -Wl,--export-dynamic "
-      opt.CCLINK_DLLIB = CXX + "-shared  "
-      opt.CCLINK_DLMAIN = CXX + "-Wl,-Bdynamic -Wl,--export-dynamic "
+      
+      opt.COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
+      opt.LINK_DYNAMIC_RTL = "-shared "
+      
+      opt.COMPILE_DYNAMIC_MAIN = "-c "
+      #hysterical note: this crap should not be needed
+      opt.LINK_DYNAMIC_MAIN = "-Wl,-Bdynamic -Wl,--export-dynamic "
+
+      opt.COMPILE_DYNAMIC_FLX = opt.PIC+"-c "
+      opt.LINK_DYNAMIC_FLX = "-shared "
+
+    opt.CCOBJ_DYNAMIC_FLX = CXX + opt.COMPILE_DYNAMIC_FLX
+    opt.CCLINK_DYNAMIC_FLX = CXX + opt.LINK_DYNAMIC_FLX
+
+    opt.CCOBJ_DYNAMIC_RTL = CXX + opt.COMPILE_DYNAMIC_RTL
+    opt.CCLINK_DYNAMIC_RTL = CXX + opt.LINK_DYNAMIC_RTL
+
+    opt.CCOBJ_DYNAMIC_MAIN = CXX + opt.COMPILE_DYNAMIC_MAIN
+    opt.CCLINK_DYNAMIC_MAIN = CXX + opt.LINK_DYNAMIC_MAIN
+
+    opt.CCOBJ_STATIC_FLX = opt.CXX + "-c "
+    opt.CCOBJ_STATIC_RTL = opt.CXX + "-c "
+    opt.CCOBJ_STATIC_MAIN = opt.CXX + "-c "
+
+    opt.CCOBJ_DYNAMIC_RTL=opt.CCOBJ_DYNAMIC_RTL+opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCOBJ_DYNAMIC_FLX=opt.CCOBJ_DYNAMIC_FLX+opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCOBJ_STATIC_RTL=opt.CCOBJ_STATIC_RTL+opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCOBJ_STATIC_FLX=opt.CCOBJ_STATIC_FLX+opt.NO_INVALID_OFFSETOF_WARNING
+    opt.CCLINK_STATIC = opt.CXX
+
+
+    print "Command to compile static Felix rtl     : " + opt.CCOBJ_STATIC_RTL
+    print "Command to compile shared Felix rtl     : " + opt.CCOBJ_DYNAMIC_RTL
+    print "Command to link shared Felix rtl        : " + opt.CCLINK_DYNAMIC_RTL
+
+    print "Command to compile static Felix driver  : " + opt.CCOBJ_STATIC_MAIN
+    print "Command to compile dynamic Felix driver : " + opt.CCOBJ_DYNAMIC_MAIN
+    print "Command to link dynamic Felix driver    : " + opt.CCLINK_DYNAMIC_MAIN
+
+    print "Command to compile static Felix object  : " + opt.CCOBJ_STATIC_FLX
+    print "Command to compile loadable Felix object: " + opt.CCOBJ_DYNAMIC_FLX
+    print "Command to link loadable Felix object   : " + opt.CCLINK_DYNAMIC_FLX
+
+    print "Extension for loadable Felix object     : " + opt.EXT_SHARED
+    print "Extension for executable                : " + opt.EXT_EXE
 
     # where to put the rtl: Cygwin requires the dll be in the PATH
     if opt.CYGWIN:
       opt.SHLIB_DIR="bin"
+      print "rtl located in bin directory"
     else:
+      print "rtl located in rtl directory"
       opt.SHLIB_DIR="rtl"
 
-    opt.CCOBJ_STATIC_LIB = opt.CXX + FORCE_DEBUG+"-c "
-    opt.CCOBJ_STATIC_MAIN = opt.CXX + FORCE_DEBUG+"-c "
 
-    # NOTE: static here means linking felix libraries with drivers
-    # it does NOT mean not to do dynamic loading at load time
-    opt.CCLINK_STATIC = opt.CXX
-
-    opt.CCOBJ_DLLIB=opt.CCOBJ_DLLIB+" "+opt.NO_INVALID_OFFSETOF_WARNING+" "
-    opt.CCOBJ_STATIC_LIB=opt.CCOBJ_STATIC_LIB+" "+opt.NO_INVALID_OFFSETOF_WARNING+" "
 
     #check if we can get dlopen to work without -ldl (BSD, Cygwin don't need)
     opt.HAVE_DLOPEN = 0
     opt.DLLIB=""
     try:
-      xqt(opt.CCOBJ_DLLIB+"tmp"+os.sep+"dummy_lib.cxx -o tmp"+os.sep+"dummy_lib.o")
-      xqt(opt.CCOBJ_DLMAIN+"tmp"+os.sep+"dummy_main.cxx -o tmp"+os.sep+"dummy_main.o")
-      xqt(opt.CCLINK_DLLIB+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib"+EXT_SHARED)
-      xqt(opt.CCLINK_DLMAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
+      xqt(opt.CCOBJ_DYNAMIC_FLX+"tmp"+os.sep+"dummy_lib.cxx -o tmp"+os.sep+"dummy_lib.o")
+      xqt(opt.CCOBJ_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.cxx -o tmp"+os.sep+"dummy_main.o")
+      xqt(opt.CCLINK_DYNAMIC_FLX+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib"+opt.EXT_SHARED)
+      xqt(opt.CCLINK_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
       xqt("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+opt.EXT_SHARED)
       opt.SUPPORT_DYNAMIC_LOADING = 1
       opt.HAVE_DLOPEN = 1
+      print "Dynamic Loading Supported (without -ldl)"
     except:
       try: # nope, try with -ldl
-        LINK_MAIN = opt.CCLINK_DLMAIN + "-ldl "
         opt.DLLIB="dl"
-        xqt(LINK_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
+        xqt(opt.CCLINK_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain -ldl")
         xqt("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+opt.EXT_SHARED)
-        opt.CCLINK_DLMAIN = LINK_MAIN
         opt.HAVE_DLOPEN = 1
         opt.SUPPORT_DYNAMIC_LOADING = 1
+        print "Dynamic Loading Supported (with -ldl)"
       except:
-        try: #again with --shared
-          # make temp variables, to see if they'll work
-          LINK_LIB = opt.CXX + "-w --shared "
-          LINK_MAIN = opt.CXX + "-w -Wl,-Bdynamic -ldl "
-          xqt(LINK_LIB+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib"+EXT_SHARED)
-          xqt(LINK_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
-          xqt("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+opt.EXT_SHARED)
-          # worked, keep these vars
-          opt.DLLIB="dl"
-          opt.CCLINK_DLLIB = LINK_LIB
-          opt.CCLINK_DLMAIN = LINK_MAIN
-          opt.HAVE_DLOPEN = 1
-          opt.SUPPORT_DYNAMIC_LOADING = 1
-        except:
-          if opt.MACOSX:
-            opt.SUPPORT_DYNAMIC_LOADING = 1    # pre dlcompat osx mach-o routines
-          else:
-            opt.SUPPORT_DYNAMIC_LOADING = 0    # or give up on dynamic loading
-
+        opt.SUPPORT_DYNAMIC_LOADING = 0    # or give up on dynamic loading
+        print "Dynamic Loading NOT SUPPORTED"
+        sys.exit(1)
 
     # find if we have static const init in class
     try:
       xqt(opt.CXX+" -w -c tmp"+os.sep+"check_inclass.cxx -o tmp"+os.sep+"dummy.o")
       opt.HAVE_INCLASS_MEMBER_INITIALIZATION=1
+      print "Inclass member initialisation supported"
     except:
       opt.HAVE_INCLASS_MEMBER_INITIALIZATION=0
+      print "Inclass member initialisation NOT supported"
 
     # find if we have BSD isnan in <cmath> (NAUGHTY!)
     try:
       xqt(opt.CXX+" -w -c tmp"+os.sep+"dummy_nan.cxx -o tmp"+os.sep+"dummy_nan.o")
       opt.HAVE_ISNAN_IN_CMATH=1
+      print "Isnan found in <cmath>"
     except:
       opt.HAVE_ISNAN_IN_CMATH=0
 
     # find if we have BSD isnanf in <ieeefp.h> (NAUGHTY!)
     try:
       xqt(opt.CXX+" -w -c tmp"+os.sep+"dummy_nan2.cxx -o tmp"+os.sep+"dummy_nan2.o")
-      opt.HAVE_ISNANF_IN_IEEEFP=1
+      opt.HAVE_ISNAN_IN_IEEEFP=1
+      print "Isnan found in <ieeefp.h>"
     except:
-      opt.HAVE_ISNANF_IN_IEEEFP=0
+      opt.HAVE_ISNAN_IN_IEEEFP=0
+
+    if opt.HAVE_ISNAN_IN_CMATH or opt.HAVE_ISNAN_IN_IEEEFP:
+      print "Isnan supported"
+    else:
+      print "Isnan NOT supported"
 
     # find if we have stdint.h
     try:
       xqt(opt.CXX+" -w -c tmp"+os.sep+"dummy_stdint.cxx -o tmp"+os.sep+"dummy_stdint.o")
       opt.HAVE_STDINT=1
+      print "Have stdint.h support"
     except:
       opt.HAVE_STDINT=0
+      print "stdint.h NOT supported"
 
     # find sizes of ints
     try:
@@ -884,16 +955,14 @@ class gxx:
   def compile_shared_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
     opt = self.options
     # compile for a dll: position independent code etc
-    cmd = opt.CXX +" -c "
-    if opt.PIC: cmd = cmd + opt.PIC+" "
-    cmd = cmd + opt.NO_INVALID_OFFSETOF_WARNING+" "
+    cmd = opt.CCOBJ_DYNAMIC_RTL
     if flags: cmd = cmd + flags + " "
 
     # debug symbols
     if debug: cmd = cmd + "-g "
 
     # optimisation
-    if optimise: cmd = cmd + opt.OPTIMISE + " "
+    if optimise: cmd = cmd + opt.OPTIMISE
 
     # include path
     for i in include_path: cmd = cmd +"-I"+i+" "
@@ -923,8 +992,7 @@ class gxx:
   def compile_static_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
     opt = self.options
     # compile for a dll: position independent code etc
-    cmd = opt.CXX +" -c "
-    cmd = cmd + opt.NO_INVALID_OFFSETOF_WARNING+" "
+    cmd = opt.CCOBJ_STATIC_RTL
     if flags: cmd = cmd + flags + " "
 
     # debug symbols
@@ -967,7 +1035,7 @@ class gxx:
   
   def link_static_program(self,shell,objects,outfile,lib_path,libs):
     opt = self.options
-    cmd = opt.CXX +" -static "
+    cmd = opt.CCLINK_STATIC
     for i in objects: cmd = cmd +i+opt.obj_extension+" "
     cmd = cmd + "-o " +outfile + " "
     for i in lib_path: cmd = cmd + "-L"+i+" "
@@ -976,16 +1044,17 @@ class gxx:
     
   def convert_static_archive_to_shared_library(self,shell,archive,soname,dll):
     opt = self.options
-    cmd = opt.CXX + " -shared -o " + dll + " "
+    cmd = opt.CCLINK_DYNAMIC_RTL + "-o " + dll + " "
     cmd = cmd + "-Wl,-soname="+soname+ " "
     cmd = cmd + "-Wl,--whole-archive " + archive + " " 
-    cmd = cmd + "-Wl,--no-whole-archive"
+    cmd = cmd + "-Wl,--no-whole-archive "
+    if opt.DLLIB:
+      cmd = cmd + "-l"+opt.DLLIB+" "
     return shell(cmd)
 
   def link_shared_rtl(self,shell,objects,outfile,lib_path,libs):
     opt = self.options
-    cmd = opt.CXX +"-shared "
-    if opt.PIC: cmd = cmd + opt.PIC+" "
+    cmd = opt.CCLINK_DYNAMIC_RTL
     cmd = cmd + "-o " +outfile + " "
     for i in objects: cmd = cmd +i+opt.obj_extension+" "
     for i in lib_path: cmd = cmd + "-L"+i+" "
@@ -999,8 +1068,7 @@ class gxx:
   def link_dynamic_program(self,shell,objects,outfile,lib_path,libs):
     #cmd = self.CXX +" -fPIC -Wl,-Bdynamic -Wl,--export-dynamic "
     opt = self.options
-    cmd = opt.CXX 
-    if opt.PIC: cmd = cmd + opt.PIC+" "
+    cmd = opt.CCLINK_DYNAMIC_MAIN
     cmd = cmd + "-o " +outfile + " "
     for i in objects: cmd = cmd +i+opt.obj_extension+" "
     for i in lib_path: cmd = cmd + "-L"+i+" "
