@@ -735,7 +735,7 @@ struct flx_libinit_t
     char **argv,
     FILE *stdin_,
     FILE *stdout_,
-    FILE *stderr
+    FILE *stderr_
   );
 
   void destroy ();
