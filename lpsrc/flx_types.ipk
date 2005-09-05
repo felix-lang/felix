@@ -593,6 +593,7 @@ and statement_t =
   | `AST_fun_return of range_srcref * expr_t
   | `AST_proc_return of range_srcref 
   | `AST_nop of range_srcref * string
+  | `AST_assert of range_srcref * expr_t
 
   (* binding structures [prolog] *)
   | `AST_abs_decl of range_srcref * id_t * vs_list_t * type_qual_t list * expr_t * requirements_t
@@ -631,6 +632,7 @@ and exe_t =
   | `EXE_init of id_t * expr_t 
   | `EXE_iinit of (id_t * int) * expr_t 
   | `EXE_assign of expr_t * expr_t 
+  | `EXE_assert of expr_t
   ]
 
 type sexe_t = range_srcref * exe_t
@@ -812,6 +814,7 @@ and bexe_t =
   | `BEXE_init of range_srcref * bid_t * tbexpr_t 
   | `BEXE_begin
   | `BEXE_end
+  | `BEXE_assert of range_srcref * tbexpr_t
   ]
 
 and bexpr_t =
@@ -1274,6 +1277,9 @@ let iter_bexe fi fe ft fl fldef exe =
   | `BEXE_fun_return (sr,e) 
     -> fe e
 
+  | `BEXE_assert (sr,e)
+    -> fe e
+
   | `BEXE_init (sr,i,e) 
     -> fi i; fe e
     
@@ -1331,6 +1337,9 @@ let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
 
   | `BEXE_fun_return (sr,e) ->
     `BEXE_fun_return (sr,fe e) 
+
+  | `BEXE_assert (sr,e) ->
+    `BEXE_assert (sr, fe e)
 
   | `BEXE_init (sr,i,e) ->
     `BEXE_init (sr,fi i,fe e) 
@@ -1490,6 +1499,7 @@ let src_of_stmt e = match e with
   | `AST_private (s,_)
   | `AST_label (s,_)
   | `AST_goto (s,_)
+  | `AST_assert (s,_)
   | `AST_function (s,_, _, _ , _, _, _)
   | `AST_curry (s,_, _, _ , _, _,_)
   | `AST_object (s,_, _, _ , _)
@@ -2499,6 +2509,8 @@ and string_of_statement level s =
   | `AST_label (_,s) -> s ^ ":"
   | `AST_goto (_,s) -> spaces level ^ "goto " ^ s ^ ";"
 
+  | `AST_assert (_,e) -> spaces level ^ "assert " ^ se e ^ ";"
+
   | `AST_comment s -> spaces level ^ "// " ^ s
 
   | `AST_open (_,n) -> 
@@ -3012,6 +3024,7 @@ and string_of_exe level s =
   match s with
 
   | `EXE_goto s -> spc ^ "goto " ^ s ^ ";"
+  | `EXE_assert e -> spc ^ "assert " ^ se e ^ ";"
 
   | `EXE_ifgoto (e,s) -> spc ^ 
      "if(" ^ se e ^ ")goto " ^ s ^ ";"
@@ -3149,6 +3162,8 @@ and string_of_bexe dfns level s =
   let sid n = qualified_name_of_index dfns n in
   match s with
   | `BEXE_goto (_,s) -> spc ^ "goto " ^ s ^ ";"
+
+  | `BEXE_assert (_,e) -> spc ^ "assert " ^ se e ^ ";"
 
   | `BEXE_halt (_,s) -> spc ^ "halt " ^ s ^ ";"
 

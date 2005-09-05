@@ -135,6 +135,7 @@ and cal_exe_usage syms h k exe =
   | `BEXE_ifgoto (sr,e,_)
   | `BEXE_ifnotgoto (sr,e,_)
   | `BEXE_fun_return (sr,e) 
+  | `BEXE_assert (sr,e)
     -> ue sr e
 
   | `BEXE_init (sr,i,e) -> ui i sr; ue sr e

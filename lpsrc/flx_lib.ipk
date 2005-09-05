@@ -626,7 +626,7 @@ module Dynlink
   // this is a procedure, so maybe the caller is too
   // which means the thread frame must be available
   proc create: flx_library * flx_instance = 
-    "_create($1,&$2,PTF gc,ptf->argc,ptf->argv);"
+    "_create($1,&$2,PTF gc,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr);"
     requires property "needs_gc",
     body """
     void _create
@@ -634,10 +634,11 @@ module Dynlink
       flx::rtl::flx_dynlink_t *library,
       flx::rtl::flx_libinit_t *instance,
       flx::gc::generic::collector_t *gc,
-      int argc, char **argv
+      int argc, char **argv, 
+      FILE *stdin_, FILE *stdout_, FILE *stderr_
     )
     { 
-      instance->create(library,gc,argc,argv); 
+      instance->create(library,gc,argc,argv,stdin_,stdout_,stderr_); 
     }
     """;
   
@@ -726,9 +727,9 @@ module Text_file
   proc writeln : text_file * string ="flx::rtl::ioutil::writeln($1,$2);";
   proc write : text_file * string ="flx::rtl::ioutil::write($1,$2);";
   fun valid : text_file -> bool = "$1!=(FILE*)0";
-  const stdin: text_file = "stdin";
-  const stdout: text_file = "stdout";
-  const stderr: text_file = "stderr";
+  const stdin: text_file = "PTF flx_stdin";
+  const stdout: text_file = "PTF flx_stdout";
+  const stderr: text_file = "PTF flx_stderr";
 }
 
 
@@ -746,7 +747,6 @@ module Bool
   fun nor: bool * bool -> bool = "!($1 || $2)";
   fun xor: bool * bool -> bool = "$1 != $2";
   fun lnot: bool -> bool = "!$1";
-  proc assert: bool = "assert($1);";
   proc print: bool = 'std::cout << ($1??"true":"false");' requires iostream;
 }
 

@@ -1623,6 +1623,7 @@ flx_keywords = [
     ("all", "ALL"),
     ("and", "AND"),
     ("as", "AS"),
+    ("assert", "ASSERT"),
     ("body", "BODY"),
     ("call", "CALL"),
     ("case", "CASE"),

@@ -289,11 +289,21 @@ struct flx_match_failure_t {
   flx_match_failure_t(std::string s, std::string f, int l, std::string o);
 };
 
+// ASSERT failure
+struct flx_assert_failure_t {
+  std::string flx_srcloc;  // compiler generated
+  std::string cxx_srcloc;    // in C++ file
+  flx_assert_failure_t(std::string s, std::string f, int l);
+};
+
 
 }} // namespaces
 
 #define FLX_MATCH_FAILURE(s,o) \
   throw flx::rtl::flx_match_failure_t (s,__FILE__,__LINE__,o)
+
+#define FLX_ASSERT_FAILURE(s) \
+  throw flx::rtl::flx_assert_failure_t (s,__FILE__,__LINE__)
 
 // for generated code in body file
 #define INIT_PC pc=0;
@@ -404,10 +414,16 @@ extern "C" FLX_EXPORT thread_frame_t *create_thread_frame(\
 extern "C" con_t *flx_start(\
   thread_frame_t *ptf,\
   int argc,\
-  char **argv\
+  char **argv,\
+  FILE *stdin_,\
+  FILE *stdout_,\
+  FILE *stderr_\
 ) {\
   ptf->argc = argc;\
   ptf->argv = argv;\
+  ptf->flx_stdin = stdin_;\
+  ptf->flx_stdout = stdout_;\
+  ptf->flx_stderr = stderr_;\
   return (new(*ptf->gc,x##_ptr_map) \
     x()) ->call(0);\
 }
@@ -416,10 +432,16 @@ extern "C" con_t *flx_start(\
 extern "C" con_t *flx_start(\
   thread_frame_t *ptf,\
   int argc,\
-  char **argv\
+  char **argv,\
+  FILE *stdin_,\
+  FILE *stdout_,\
+  FILE *stderr_\
 ) {\
   ptf->argc = argc;\
   ptf->argv = argv;\
+  ptf->flx_stdin = stdin_;\
+  ptf->flx_stdout = stdout_;\
+  ptf->flx_stderr = stderr_;\
   return (new(*ptf->gc,x##_ptr_map) \
     x()) ->call(0);\
 }
@@ -428,10 +450,16 @@ extern "C" con_t *flx_start(\
 extern "C" FLX_EXPORT con_t *flx_start(\
   thread_frame_t *ptf,\
   int argc,\
-  char **argv\
+  char **argv,\
+  FILE *stdin_,\
+  FILE *stdout_,\
+  FILE *stderr_\
 ) {\
   ptf->argc = argc;\
   ptf->argv = argv;\
+  ptf->flx_stdin = stdin_;\
+  ptf->flx_stdout = stdout_;\
+  ptf->flx_stderr = stderr_;\
   return (new(*ptf->gc,x##_ptr_map) \
     x(ptf)) ->call(0);\
 }
@@ -533,6 +561,19 @@ flx_match_failure_t::flx_match_failure_t(
   flx_srcloc(s), 
   cxx_srcloc(f), 
   operation(o)
+{
+  char b[20];
+  sprintf(b,": %d",l);
+  f.append(b);
+}
+
+flx_assert_failure_t::flx_assert_failure_t(
+  std::string s, 
+  std::string f, 
+  int l
+) : 
+  flx_srcloc(s), 
+  cxx_srcloc(f)
 {
   char b[20];
   sprintf(b,": %d",l);
@@ -650,7 +691,11 @@ typedef con_t *(*start_t)
 (
   thread_frame_t*,
   int,
-  char **
+  char **,
+  FILE*,
+  FILE*,
+  FILE*
+  
 );
 
 struct flx_dynlink_t
@@ -687,7 +732,10 @@ struct flx_libinit_t
     flx_dynlink_t *lib_a, 
     flx::gc::generic::collector_t *collector_a,
     int argc,
-    char **argv
+    char **argv,
+    FILE *stdin_,
+    FILE *stdout_,
+    FILE *stderr
   );
 
   void destroy ();
@@ -844,7 +892,10 @@ void flx_libinit_t::create
   flx_dynlink_t *lib_a, 
   flx::gc::generic::collector_t *collector_a,
   int argc,
-  char **argv
+  char **argv,
+  FILE *stdin_,
+  FILE *stdout_,
+  FILE *stderr_
 )
 {
   lib = lib_a;
@@ -855,7 +906,7 @@ void flx_libinit_t::create
   //fprintf(stderr,"Incrementing refcnt\n");
   ++lib->refcnt;
   collector->add_root(thread_frame);
-  start_proc = lib->start_sym(thread_frame, argc, argv);
+  start_proc = lib->start_sym(thread_frame, argc, argv, stdin_,stdout_,stderr_);
   usr_create();
 }
 
@@ -981,7 +1032,7 @@ int main(int argc, char** argv)
     allocator.set_debug(debug);
     flx::gc::collector::flx_collector_t collector(&allocator);
     collector.set_debug(debug);
-    instance.create(&library, &collector,flx_argc,flx_argv);
+    instance.create(&library, &collector,flx_argc,flx_argv,stdin,stdout,stderr);
     if(debug) {
       fprintf(stderr,"loaded library %s at %p\n",filename,library.library);
       fprintf(stderr,"thread frame at %p\n",instance.thread_frame);
@@ -1087,6 +1138,21 @@ int main(int argc, char** argv)
     fprintf(stderr,"filename: %s\n",x.filename.data());
     fprintf(stderr,"operation: %s\n",x.operation.data());
     fprintf(stderr,"what: %s\n",x.what.data());
+    return 3;
+  }
+  catch (flx_assert_failure_t x)
+  {
+    fprintf(stderr,"Assertion Failure\n");
+    fprintf(stderr,"Felix location: %s\n",x.flx_srcloc.data());
+    fprintf(stderr,"C++ location  : %s\n",x.cxx_srcloc.data());
+    return 3;
+  }
+  catch (flx_match_failure_t x)
+  {
+    fprintf(stderr,"Mactch Failure\n");
+    fprintf(stderr,"Felix location: %s\n",x.flx_srcloc.data());
+    fprintf(stderr,"C++ location  : %s\n",x.cxx_srcloc.data());
+    fprintf(stderr,"operation     : %s\n",x.operation.data());
     return 3;
   }
   catch (...)

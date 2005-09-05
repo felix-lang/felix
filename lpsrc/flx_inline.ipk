@@ -627,6 +627,8 @@ let gen_body syms (uses,child_map,bbdfns) id
 
   | `BEXE_loop (sr,i,e) -> assert false
 
+  | `BEXE_assert (sr,e) -> [`BEXE_assert (sr, ge e)]
+
   | `BEXE_ifgoto (sr,e,lab) -> [`BEXE_ifgoto (sr,ge e, relab lab)]
   | `BEXE_ifnotgoto (sr,e,lab) -> [`BEXE_ifnotgoto (sr,ge e, relab lab)]
   | `BEXE_fun_return (sr,e) -> [`BEXE_fun_return (sr, ge e)]
@@ -1062,6 +1064,10 @@ let expand_exe syms bbdfns u exe =
       let e1,xs = u sr e1 in
       let e2,xs = u sr e2 in
       `BEXE_assign (sr,e1,e2) :: xs
+
+    | `BEXE_assert (sr,e) ->
+      let e,xs = u sr e in
+      `BEXE_assert (sr,e) :: xs
 
     (* preserve call lift pattern ??*)
     | `BEXE_call (sr,(`BEXPR_apply_direct(i,ts,e1),t),e2) ->
@@ -1748,6 +1754,7 @@ and fold_vars syms (uses,child_map,bbdfns) i ps exes =
           (* return modified instr *)
           | `BEXE_ifgoto _
           | `BEXE_ifnotgoto _
+          | `BEXE_assert _
              -> elimi exe
 
           (* terminate substitution, return modified instr *)

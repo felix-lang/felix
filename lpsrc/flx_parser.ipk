@@ -265,6 +265,7 @@ executable:
   | inline_cpp { $1 } 
   | goto_statement { $1 }
   | label_statement { $1 }
+  | assert_statement { $1 }
 
 null_statement:
   | SEMI                    { `AST_nop (rstoken $1 $1,"") }
@@ -1047,6 +1048,14 @@ parameter:
 Flx functions and procedures are first class citizens: the may both be passed
 as arguments to procedures, and they may both be be returned from functions.
 Only functions may be passed to functions.
+
+@head(3,'Assert')
+@select(h)
+assert_statement:
+  | ASSERT expr SEMI
+    {
+      `AST_assert(rstoken $1 $3, $2)
+    }
 
 @head(3,'Goto and Label')
 The goto and label statements are ONLY for testing!

@@ -85,7 +85,6 @@ print "rt01 complete\n";
 @select(tangler('test/rt02.flx'))
 header r"""
 #include <stdio.h>
-#include <assert.h>
 typedef char *charp;
 """;
 
@@ -100,7 +99,6 @@ fun sub: int * int -> int = "$1 - $2";
 fun mul: int * int -> int = "$1 * $2";
 fun gt: int * int -> bool = "$1 > $2";
 fun eq: int * int -> bool = "$1 == $2";
-proc assert:bool = "assert($1);";
 
 // test some recursion
 fun fact(a:int): int =
@@ -205,7 +203,6 @@ assert(1<2&<3&<4);
 
 @select(tangler('test/rt07.flx'))
 header "#include <stdio.h>";
-header "#include <assert.h>";
 
 fun land: 2 * 2 -> 2 = "$1 && $2";
 type int = "int";

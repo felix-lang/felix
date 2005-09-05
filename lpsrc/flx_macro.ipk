@@ -710,6 +710,22 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       ctack (`AST_ifgoto (sr, e, mi sr id))
     end
 
+  | `AST_assert (sr,e) ->
+    let e = me e in
+    begin match e with
+    | `AST_typed_case (_,c,`TYP_unitsum 2) ->
+      if c = 2 (* assertion proven true *)
+      then () 
+      else (* assertion proven false *)
+        begin
+          reachable := false;
+          ctack (`AST_assert (sr,e))
+        end
+
+    | _ -> (* check at run time *)
+        ctack (`AST_assert (sr,e))
+    end
+
   | `AST_whilst (sr, e , sts) -> 
     let e = me e in
     let n = !seq in incr seq;

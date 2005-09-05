@@ -1001,6 +1001,9 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_fun_return (sr,e) ->
     let d,x = rex e in d @ [Exe (sr,`EXE_fun_return x)]
   
+  | `AST_assert (sr,e) -> 
+    let d,x = rex e in d @ [Exe (sr,`EXE_assert x)]
+
   | `AST_nop _ -> []
 
   | `AST_cassign (sr,l,r) ->

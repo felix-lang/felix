@@ -335,6 +335,16 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       reachable := false; 
       tack (`BEXE_nonreturn_code (sr,s))
 
+    | `EXE_assert e -> 
+      let (x,t) as e' = be e in
+      if lstrip syms.dfns t = flx_bbool
+      then tack (`BEXE_assert (sr,e'))
+      else clierr sr
+      (
+        "assert requires bool argument, got " ^
+        string_of_btypecode syms.dfns t
+      )
+
     | `EXE_iinit ((s,index),e) -> 
         let e',rhst = be e in
         let lhst = typeofindex_with_ts syms sr index parent_ts in
