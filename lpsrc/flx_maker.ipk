@@ -4,6 +4,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.138  2005/09/06 19:13:25  skaller
+Add a new option to 'flx' bash script: --nofelix prevents flxg running,
+allowing a hand modified C++ program to be compiled (and run) without
+needing to figure out all the flags.
+
 Revision 1.137  2005/09/06 18:44:47  skaller
 Due to inane incompatibilities in bash, Cygwin requires
 quotes around the argument to env, whereas
@@ -4172,7 +4177,7 @@ TIME=0
 
 RUNIT=1
 CCFLAGS=""
-
+FELIX=1
 grab=1
 
 INCLUDE_DIRS=""
@@ -4273,6 +4278,11 @@ do
 
   x-I*)
     INCLUDE_DIRS="$INCLUDE_DIRS $1"
+    shift
+  ;;
+
+  x--nofelix)
+    FELIX=0
     shift
   ;;
 
@@ -4487,7 +4497,7 @@ then
     then
       cmd="$FLXRUN $base.so $args"
       if [ $ECHO = 1 ]; then echo $cmd; fi
-      exec $cmd
+      eval $cmd
     fi
     exit $?
   fi
@@ -4498,7 +4508,7 @@ else
     then
       cmd="$STATIC_ENV $base $args"
       if [ $ECHO = 1 ]; then echo $cmd; fi
-      exec $cmd
+      eval $cmd
     fi
     exit $?
   fi
@@ -4518,9 +4528,13 @@ FLXFLAGS="--inline=$INLINE"
 
 if [ $STATIC = 0 ]
 then
-  FCMD="$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"
-  if [ $ECHO = 1 ]; then echo "$FCMD"; fi
-  if eval $FCMD
+  if [ $FELIX = 1 ]
+  then
+    FCMD="$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"
+    if [ $ECHO = 1 ]; then echo "$FCMD"; fi
+    eval $FCMD
+  fi
+  if [ $? = 0 ]
   then
     CCMD="$CCOBJ_DLLIB $CCFLAGS -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp -o $base.o"
     LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base.o -o $base.so -L$FLXSHLIB -lflx_dynamic"
@@ -4539,7 +4553,7 @@ then
             cmd="$FLXRUN $base.so $args"
           fi
           if [ $ECHO = 1 ]; then echo $cmd; fi
-          exec $cmd
+          eval $cmd
         fi
         exit $?
       else
@@ -4550,9 +4564,13 @@ then
     fi
   fi
 else
-  FCMD="$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"
-  if [ $ECHO = 1 ]; then echo "$FCMD"; fi
-  if eval $FCMD
+  if [ $FELIX = 1 ]
+  then
+    FCMD="$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"
+    if [ $ECHO = 1 ]; then echo "$FCMD"; fi
+    eval $FCMD
+  fi
+  if [ $? = 0 ]
   then
     CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp -o $base.o"
     LCMD="$CCLINK_STATIC $FLXRTL/flx_run_static.o $PKGS $cppos $base.o $FLXAR/libflx_static.a -o $base"
@@ -4572,7 +4590,7 @@ else
             cmd="$STATIC_ENV $base $args"
           fi
           if [ $ECHO = 1 ]; then echo $cmd; fi
-          exec $cmd
+          eval $cmd
         fi
         exit $?
       else
