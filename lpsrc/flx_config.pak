@@ -1090,6 +1090,7 @@ import os.path
 import traceback
 import string
 import time
+import glob
 
 #---------- utilities -------------------
 # We're screwed if popen doesn't work ..
@@ -1129,6 +1130,14 @@ def filecopy(a,b):
 def filecopy2dir(a,d):
   base = string.split(a,os.sep)[-1]
   filecopy(a,d+os.sep+base)
+
+def mkdirs(x):
+  cps = string.split(x,os.sep)
+  path = ""
+  for d in cps:
+    path = path + d + os.sep
+    try: os.mkdir(path)
+    except: pass
 
 #----------------------------------------
 time_stamp_format = "%Y/%m/%d %H:%M:%S UTC"
@@ -1274,6 +1283,9 @@ def check_install_style(x):
 
 install_style = None
 
+SAVE_CONFIG=""
+LOAD_CONFIG=""
+
 i = 1
 while(i < len (sys.argv)):
   arg = sys.argv[i]
@@ -1311,6 +1323,10 @@ while(i < len (sys.argv)):
     host_model,target_model = check_model(arg[8:])
   elif has_prefix("--install-style=",arg):
     install_style = check_install_style(arg[16:])
+  elif has_prefix("--save-config=",arg):
+    SAVE_CONFIG=arg[14:]
+  elif has_prefix("--load-config=",arg):
+    LOAD_CONFIG=arg[14:]
   else:
     print "UNKNOWN CONFIGURE OPTION",arg
     sys.exit(1)
@@ -1349,6 +1365,27 @@ if install_style == None:
 
 print "Installation Style",install_style
 
+if LOAD_CONFIG:
+  g = LOAD_CONFIG+os.sep+"*"
+  files = glob.glob(g)
+  for f in files:
+    base = string.split(f,os.sep)[-1]
+    out = 'config' + os.sep + base
+    print "Copying ",f,"-->",out
+    filecopy(f,out)
+
+def save_config():
+  if SAVE_CONFIG:
+    print "*** SAVING configuration to ",SAVE_CONFIG
+    mkdirs(SAVE_CONFIG)
+    g = "config"+os.sep+"*"
+    files = glob.glob(g)
+    for f in files:
+      base = string.split(f,os.sep)[-1]
+      out = SAVE_CONFIG+ os.sep + base
+      print "Copying ",f,"-->",out
+      filecopy(f,out)
+
 if not file_exists("config"+os.sep+"xlators_local.py"):
   filecopy2dir('tmp'+os.sep+'xlators_local.py','config')
   print "*** Created dummy local translator definitions for speed tests ***"
@@ -1379,6 +1416,7 @@ if file_exists("config"+os.sep+"config.py"):
       print
       print "*** To recreate the default configuration"
       print "*** delete config/config.py first"
+    save_config()
     sys.exit(0)
 else:
   if upgrade:
@@ -1613,6 +1651,9 @@ except:
 print "Created config"+os.sep+"config.py"
 print "Edit this file to set your preferences"
 print "This file will not be clobbered by the Felix build process"
+
+save_config()
+
 
 @h = tangler('config/flx_data.py')
 @select(h)
