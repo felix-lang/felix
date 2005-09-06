@@ -4,6 +4,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.137  2005/09/06 18:44:47  skaller
+Due to inane incompatibilities in bash, Cygwin requires
+quotes around the argument to env, whereas
+Linux will not accept them.
+
 Revision 1.136  2005/09/06 16:44:12  skaller
 More fiddling. Optimisation is now the default!
 
@@ -4426,7 +4431,10 @@ then
   FLXLIB="./lib"
   if [ "$CYGWIN" = "1" ]
   then
-    FLXRUN="env PATH=./bin:\$PATH ./bin/flx_run"
+    # bash is a heap of crap! The escaped quotes here are
+    # required in case the PATH has a filename with spaces
+    # However this actually fails on Linux!
+    FLXRUN="env \"PATH=./bin:\$PATH\" ./bin/flx_run"
   else
     FLXRUN="env LD_LIBRARY_PATH=./rtl:\$LD_LIBRARY_PATH ./bin/flx_run"
   fi
