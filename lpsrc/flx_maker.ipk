@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.136  2005/09/06 16:44:12  skaller
+More fiddling. Optimisation is now the default!
+
 Revision 1.135  2005/09/05 15:38:10  skaller
 Fix build bug where dynamic linkage wasn't supported.
 
@@ -2041,6 +2044,8 @@ if "bagley" in options:
 
 if "inline" in options:
   FLXFLAGS = FLXFLAGS + "--inline "
+if "noinline" in options:
+  FLXFLAGS = FLXFLAGS + "--noinline "
 if options:
   print "OPTIONS: ", options
 
@@ -2998,6 +3003,7 @@ try:
       if "test" in options or "tutorial" in options or "fcount" in options:
         tkind = "std"
         if "inline" in options: tkind="inline"
+        elif "noinline" in options: tkind="noinline"
         stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "tut/examples/*.hpp"'
         run(stats)
         stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "test/*.hpp"'
@@ -4151,7 +4157,7 @@ echo $cmd
 TESTMODE=0
 RECOMPILE=0
 DEBUG=0
-INLINE=0
+INLINE=10
 ECHO=0
 TIME=0
 @if DEFAULT_LINK_MODEL=="dynamic":
@@ -4200,37 +4206,47 @@ do
     shift
   ;;
 
+  x--inline=*)
+    INLINE=${1:9}
+    shift
+  ;;
+
   x--inline)
-    INLINE=1
+    INLINE=50
+    shift
+  ;;
+
+  x--noinline)
+    INLINE=0
     shift
   ;;
 
   x--opt=1)
-    INLINE=1
+    INLINE=10
     CCFLAGS="-O1 $CCFLAGS"
     shift
   ;;
 
   x--opt=2)
-    INLINE=1
+    INLINE=20
     CCFLAGS="-O2 $CCFLAGS"
     shift
   ;;
 
   x--opt=3)
-    INLINE=1
+    INLINE=50
     CCFLAGS="-O3 $CCFLAGS"
     shift
   ;;
 
   x--optimise)
-    INLINE=1
+    INLINE=10
     CCFLAGS="-O3 -fomit-frame-pointer -finline $CCFLAGS"
     shift
   ;;
 
   x--optimize)
-    INLINE=1
+    INLINE=10
     CCFLAGS="-O3 -fomit-frame-pointer -finline $CCFLAGS"
     shift
   ;;
@@ -4406,13 +4422,13 @@ done
 if [ "$TESTMODE" = "1" ]
 then
   INCLUDE_DIR="./rtl"
-  FLXG="env \"PATH=./bin:\$PATH\" ./bin/flxg"
+  FLXG="env PATH=./bin:\$PATH ./bin/flxg"
   FLXLIB="./lib"
   if [ "$CYGWIN" = "1" ]
   then
-    FLXRUN="env \"PATH=./bin:\$PATH\" ./bin/flx_run"
+    FLXRUN="env PATH=./bin:\$PATH ./bin/flx_run"
   else
-    FLXRUN="env \"LD_LIBRARY_PATH=./rtl:\$LD_LIBRARY_PATH\" ./bin/flx_run"
+    FLXRUN="env LD_LIBRARY_PATH=./rtl:\$LD_LIBRARY_PATH ./bin/flx_run"
   fi
   FLXRTL="./rtl"
   FLXBIN="./bin"
@@ -4461,18 +4477,20 @@ then
   then
     if [ $RUNIT = 1 ]
     then
-      if [ $ECHO = 1 ]; then echo "running $base.so"; fi
-      `echo "$FLXRUN" "$base.so $args"`
+      cmd="$FLXRUN $base.so $args"
+      if [ $ECHO = 1 ]; then echo $cmd; fi
+      exec $cmd
     fi
     exit $?
   fi
 else
   if [ $RECOMPILE = 0 -a -r "$base" -a "(" ! -r "$base.flx" -o "$base" -nt "$base.flx" ")" ]
   then
-    if [ $ECHO = 1 ]; then echo "running $base"; fi
     if [ $RUNIT = 1 ]
     then
-      `echo "$STATIC_ENV $base $args"`
+      cmd="$STATIC_ENV $base $args"
+      if [ $ECHO = 1 ]; then echo $cmd; fi
+      exec $cmd
     fi
     exit $?
   fi
@@ -4488,12 +4506,7 @@ else
   VERBOSE="-q"
 fi
 
-if [ $INLINE = 1 ]
-then
-  FLXFLAGS="--inline"
-else
-  FLXFLAGS=""
-fi
+FLXFLAGS="--inline=$INLINE"
 
 if [ $STATIC = 0 ]
 then
@@ -4513,10 +4526,12 @@ then
         then
           if [ $TIME = 1 ]
           then
-            `echo "time $FLXRUN" "$base.so" $args`
+            cmd="time $FLXRUN $base.so $args"
           else
-            `echo "$FLXRUN" "$base.so" $args`
+            cmd="$FLXRUN $base.so $args"
           fi
+          if [ $ECHO = 1 ]; then echo $cmd; fi
+          exec $cmd
         fi
         exit $?
       else
@@ -4544,10 +4559,12 @@ else
         then
           if [ $TIME = 1 ]
           then
-            `echo time $STATIC_ENV $base $args`
+            cmd="time $STATIC_ENV $base $args"
           else
-            `echo $STATIC_ENV $base $args`
+            cmd="$STATIC_ENV $base $args"
           fi
+          if [ $ECHO = 1 ]; then echo $cmd; fi
+          exec $cmd
         fi
         exit $?
       else

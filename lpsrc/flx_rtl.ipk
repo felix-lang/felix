@@ -279,31 +279,45 @@ struct flx_exec_failure_t {
   flx_exec_failure_t(std::string f, std::string o, std::string w);
 };
 
+struct flx_range_srcref_t {
+  char *filename;
+  int startline;
+  int startcol;
+  int endline;
+  int endcol;
+  flx_range_srcref_t(char *f,int sl, int sc, int el, int ec) :
+    filename(f),startline(sl),startcol(sc),endline(el),endcol(ec){}
+};
+
 // MATCH failure
 // Thrown when no match cases match the argument of a match,
 // regmatch, or reglex
+
 struct flx_match_failure_t {
-  std::string flx_srcloc;  // compiler generated
-  std::string cxx_srcloc;    // in C++ file
-  std::string operation;   // operation
-  flx_match_failure_t(std::string s, std::string f, int l, std::string o);
+  flx_range_srcref_t flx_loc;
+  char *cxx_srcfile;    // in C++ file
+  int cxx_srcline;      // __LINE__ macro
+  flx_match_failure_t(flx_range_srcref_t ff, char *cf, int cl) :
+   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
 };
 
 // ASSERT failure
 struct flx_assert_failure_t {
-  std::string flx_srcloc;  // compiler generated
-  std::string cxx_srcloc;    // in C++ file
-  flx_assert_failure_t(std::string s, std::string f, int l);
+  flx_range_srcref_t flx_loc;
+  char *cxx_srcfile;    // in C++ file
+  int cxx_srcline;      // __LINE__ macro
+  flx_assert_failure_t(flx_range_srcref_t ff, char *cf, int cl) :
+   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
 };
 
 
 }} // namespaces
 
-#define FLX_MATCH_FAILURE(s,o) \
-  throw flx::rtl::flx_match_failure_t (s,__FILE__,__LINE__,o)
+#define FLX_MATCH_FAILURE(f,sl,sc,el,ec) \
+  throw flx::rtl::flx_match_failure_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
 
-#define FLX_ASSERT_FAILURE(s) \
-  throw flx::rtl::flx_assert_failure_t (s,__FILE__,__LINE__)
+#define FLX_ASSERT_FAILURE(f,sl,sc,el,ec) \
+  throw flx::rtl::flx_assert_failure_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
 
 // for generated code in body file
 #define INIT_PC pc=0;
@@ -551,34 +565,6 @@ flx_exec_failure_t::flx_exec_failure_t(std::string f, std::string o, std::string
   operation(o), 
   what(w) 
 {}
-
-flx_match_failure_t::flx_match_failure_t(
-  std::string s, 
-  std::string f, 
-  int l, 
-  std::string o
-) : 
-  flx_srcloc(s), 
-  cxx_srcloc(f), 
-  operation(o)
-{
-  char b[20];
-  sprintf(b,": %d",l);
-  f.append(b);
-}
-
-flx_assert_failure_t::flx_assert_failure_t(
-  std::string s, 
-  std::string f, 
-  int l
-) : 
-  flx_srcloc(s), 
-  cxx_srcloc(f)
-{
-  char b[20];
-  sprintf(b,": %d",l);
-  f.append(b);
-}
 
 }}
 
@@ -969,6 +955,18 @@ register void *sp __asm__("esp");
 static void *sp = 0;
 #endif
 
+void print_loc(FILE *ef,flx_range_srcref_t x,char *cf, int cl)
+{
+  fprintf(ef,"Felix location: %s %d[%d]-%d[%d]\n",
+    x.filename,
+    x.startline,
+    x.startcol,
+    x.endline,
+    x.endcol
+  );
+  fprintf(ef,"C++ location  : %s %d\n", cf, cl);
+}
+
 int main(int argc, char** argv)
 {
 #ifndef FLX_STATIC_LINK  
@@ -1143,16 +1141,13 @@ int main(int argc, char** argv)
   catch (flx_assert_failure_t x)
   {
     fprintf(stderr,"Assertion Failure\n");
-    fprintf(stderr,"Felix location: %s\n",x.flx_srcloc.data());
-    fprintf(stderr,"C++ location  : %s\n",x.cxx_srcloc.data());
+    print_loc(stderr,x.flx_loc,x.cxx_srcfile, x.cxx_srcline);
     return 3;
   }
   catch (flx_match_failure_t x)
   {
-    fprintf(stderr,"Mactch Failure\n");
-    fprintf(stderr,"Felix location: %s\n",x.flx_srcloc.data());
-    fprintf(stderr,"C++ location  : %s\n",x.cxx_srcloc.data());
-    fprintf(stderr,"operation     : %s\n",x.operation.data());
+    fprintf(stderr,"Match Failure\n");
+    print_loc(stderr,x.flx_loc,x.cxx_srcfile, x.cxx_srcline);
     return 3;
   }
   catch (...)

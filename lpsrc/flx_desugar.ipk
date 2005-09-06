@@ -697,11 +697,15 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     !matches
     @
     (if !iswild then [] else
-      let src = short_string_of_src sr in
+      let f,sl,sc,el,ec = sr in
+      let s = "\""^ f ^"\"," ^ 
+        si sl ^ "," ^ si sc ^ "," ^
+        si el ^ "," ^ si ec
+      in
       [
         Exe (sr,`EXE_comment "match failure");
         Exe (sr,`EXE_label failure_label);
-        Exe (sr,`EXE_noreturn_code ("      FLX_MATCH_FAILURE(\""^src^"\",\"match\");\n"));
+        Exe (sr,`EXE_noreturn_code ("      FLX_MATCH_FAILURE("^s^");\n"));
       ]
     )
     in

@@ -1534,7 +1534,8 @@ and heavy_inline_calls
       | _ -> exes' := exe :: !exes'
       end
 
-    | `BEXE_fun_return (sr,(`BEXPR_apply((`BEXPR_closure(callee,ts),_),a),_)) -> assert false
+    | `BEXE_fun_return (sr,(`BEXPR_apply((`BEXPR_closure(callee,ts),_),a),_)) 
+    (* -> assert false .. seems this still happens ..*)
     | `BEXE_fun_return (sr,(`BEXPR_apply_direct (callee,ts,a),_)) 
       when not (mem callee excludes)  ->
       (*

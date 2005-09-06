@@ -56,23 +56,30 @@ to get some times.
 
 @def mko(i,j):
   tangle('echo "Compiling '+i+'"')
-  tangle('bin/flx --test --force --echo -c --optimise -DFLX_PTF_STATIC_POINTER bagley/felix/'+i)
+  tangle('bin/flx --test --force --echo -c --optimise bagley/felix/'+i)
+  tangle('if [ 0 != $? ]; then exit $?; fi')
 
 @def mkr(i,j):
   k = (i+' .................  ')[:20]+' '
   tangle('rm -f bagley/felix/'+i+'.output')
   tangle('/usr/bin/time -f "'+k+' %U" bin/flx --test bagley/felix/'+i+' '+j+' >bagley/felix/'+i+'.output')
+  tangle('if [ 0 != $? ]; then exit $?; fi')
 
 @def mkc(i,j):
   tangle('echo "Checking result for '+i+'"')
   tangle('diff -a -b bagley/felix/'+i+'.output bagley/felix/'+i+'.expect')
+  tangle('if [ 0 != $? ]; then exit $?; fi')
 
 @select(tangler('bagley/compile.sh','data'))
 @if SUPPORT_DYNAMIC_LOADING:
   tangle('bin/flx --test --force --optimise -c bagley/felix/plugin_1')
+  tangle('if [ 0 != $? ]; then exit $?; fi')
   tangle('bin/flx --test --force --optimise -c bagley/felix/plugin_2')
+  tangle('if [ 0 != $? ]; then exit $?; fi')
   tangle('bin/flx --test --force --optimise -c bagley/felix/plugin_3')
+  tangle('if [ 0 != $? ]; then exit $?; fi')
   tangle('bin/flx --test --force --optimise -c bagley/felix/plugin')
+  tangle('if [ 0 != $? ]; then exit $?; fi')
 @for i,j in bags: mko (i,j)
 
 @select(tangler('bagley/run.sh','data'))

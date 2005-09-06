@@ -153,9 +153,13 @@ let regen b sr (alpha, nstates, cases, matrix) kind ge =
   )
   cases 
   ;
-  let src = Flx_srcref.short_string_of_src sr in
-  tack ("    case 0: FLX_MATCH_FAILURE(\""^src^"\",\"regmatch\");\n");
-  tack ("    default: FLX_MATCH_FAILURE(\""^src^"\",\"regmatch SYSTEM ERROR\");\n");
+  let f,sl,sc,el,ec = sr in
+  let s = "\""^ f ^"\"," ^ 
+    si sl ^ "," ^ si sc ^ "," ^
+    si el ^ "," ^ si ec
+  in
+  tack ("    case 0: FLX_MATCH_FAILURE("^s^");\n");
+  tack ("    default: FLX_MATCH_FAILURE("^s^");\n");
   tack "  }\n";
 
 

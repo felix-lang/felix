@@ -922,8 +922,12 @@ let gen_exe filename syms
     | `BEXE_end -> "      }\n"
 
     | `BEXE_assert (sr,e) ->
-       let s = Flx_srcref.short_string_of_src sr in
-       "      {if(!(" ^ ge sr e ^ "))FLX_ASSERT_FAILURE(\""^s^"\");}\n"
+       let f,sl,sc,el,ec = sr in
+       let s = "\""^ f ^"\"," ^ 
+         si sl ^ "," ^ si sc ^ "," ^
+         si el ^ "," ^ si ec
+       in
+       "      {if(!(" ^ ge sr e ^ "))FLX_ASSERT_FAILURE("^s^");}\n"
   in gexe exe
 
 let gen_exes filename syms bbdfns display label_info counter index exes vs ts instance_no =
@@ -1859,7 +1863,7 @@ try
 
   let bbdfns = ref bbdfns in
   let child_map = ref child_map in
-  if compiler_options.heavy_inlining then
+  if compiler_options.max_inline_length > 0 then
   begin
     if compiler_options.print_flag then
     print_endline "//INLINING";

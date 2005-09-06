@@ -140,18 +140,27 @@ let get_felix_options options =
     files       = get_key_values options "";
     raw_options = options;
     reverse_return_parity = check_key options "e"; 
-    heavy_inlining = check_keys options ["inline"];
     force_recompile = check_keys options ["force"];
     max_inline_length = 
-      (match get_key_value options "inline_size_limit" with 
+      begin match get_key_value options "inline" with 
       | Some i -> 
         (
+          if i = "none" then 0 else
+          if i = "" then 50 else
           try int_of_string i 
           with _ -> 
-            failwith ("Invalid value for inline_size_limit: " ^ i)
+            failwith ("Invalid value for inline: '" ^ i^"'")
         )
-      | None -> 50
-      )
+      | None -> 
+      begin match check_key options "noinline" with
+      | true -> 0
+      | false -> 
+      begin match check_keys options ["inline";"opt";"optimise"] with
+      | true -> 50 
+      | false -> 5 
+      end
+      end
+      end
     ;
     compile_only = check_keys options ["c";"compile-only"]
   }
@@ -164,7 +173,7 @@ let print_options () =
   print_endline "  -q, --quiet: no stdout";
   print_endline "  -c, --compile-only: no code generation";
   print_endline "  -Idir, --include=dir : append dir to include path";
-  print_endline "  --inline";
+  print_endline "  --inline, --noinline, --optimise";
   print_endline "  --force : force recompilation"
 
 let make_syms options = 
