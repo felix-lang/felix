@@ -16737,7 +16737,8 @@ int missing_stricmp(char const *s1, char const *s2)
 #    include <windows.h>  // api
 #  endif
 
-#  include <strstream>   // ostrstream
+//#  include <strstream>   // ostrstream
+#  include <sstream>   // ostrstream
 #  include <conio.h>      // getch or _getch
 #  include <dos.h>        // sleep
 #  include <io.h>         // chmod

@@ -617,7 +617,7 @@ typedef HMODULE LIBHANDLE;
 
 #ifndef FLX_STATIC_LINK
 #ifdef _WIN32
-#define DLSYM(x,y) GetProcAddress(x,#y) 
+#define DLSYM(x,y) (void*)GetProcAddress(x,#y) 
 #else
   #ifdef MACOSX_NODLCOMPAT
     //#include <mach-o/dyld.h>
@@ -688,6 +688,7 @@ struct flx_dynlink_t
 {
   // data
   LIBHANDLE library;
+  string filename;
   thread_frame_creator_t thread_frame_creator;
   start_t start_sym;
   long refcnt;
@@ -778,13 +779,13 @@ flx_link_failure_t::flx_link_failure_t(string f, string o, string w) :
 
 flx_dynlink_t::~flx_dynlink_t(){}
 
-void flx_dynlink_t::link(char const *filename) throw(flx_link_failure_t)
+void flx_dynlink_t::link(char const *fname) throw(flx_link_failure_t)
 {
-
+  filename=fname;
 #ifndef FLX_STATIC_LINK
 #ifdef _WIN32
   SetErrorMode(SEM_NOOPENFILEERRORBOX);  // stop windows showing err dialogues
-  library = LoadLibrary(filename);
+  library = LoadLibrary(fname);
   if(!library) 
     throw flx_link_failure_t(filename,"LoadLibrary","Cannot find dll");
 #else
@@ -792,7 +793,7 @@ void flx_dynlink_t::link(char const *filename) throw(flx_link_failure_t)
     NSObjectFileImage            bndl_img;
     NSObjectFileImageReturnCode  res;
 
-    res = NSCreateObjectFileImageFromFile(filename, &bndl_img);
+    res = NSCreateObjectFileImageFromFile(fname, &bndl_img);
 
 	if(NSObjectFileImageSuccess != res)
       throw flx_link_failure_t(filename, "NSCreateObjectFileImageFromFile",
@@ -803,7 +804,7 @@ void flx_dynlink_t::link(char const *filename) throw(flx_link_failure_t)
 
     unsigned long                link_flags;
     link_flags = NSLINKMODULE_OPTION_PRIVATE | NSLINKMODULE_OPTION_RETURN_ON_ERROR;
-    library = NSLinkModule(bndl_img, filename, link_flags);
+    library = NSLinkModule(bndl_img, fname, link_flags);
 
     // even if link failed, we do this
     NSDestroyObjectFileImage(bndl_img);
@@ -813,14 +814,14 @@ void flx_dynlink_t::link(char const *filename) throw(flx_link_failure_t)
       throw flx_link_failure_t(filename, "NSLinkModule", "failed to link");
 
   #else
-  library = dlopen(filename,RTLD_NOW);
+  library = dlopen(fname,RTLD_NOW);
   if(!library) 
     throw flx_link_failure_t(filename,"dlopen",dlerror());
   #endif
 #endif
 #endif
 
-  //fprintf(stderr,"File %s dlopened at %p ok\n",filename,library);
+  //fprintf(stderr,"File %s dlopened at %p ok\n",fname,library);
 
   thread_frame_creator = (thread_frame_creator_t)
     DLSYM(library,create_thread_frame);

@@ -1,3 +1,4 @@
+@execfile('config/config.py')
 @def setup():
   tangle("//")
   tangle("// Contributed by John Skaller")
@@ -28,13 +29,16 @@ to get some times.
   ('regexmatch',' 8 < bagley/data/phone_numbers.data'),
   ('reversefile',' 1 < bagley/data/phone_numbers.data'),
   ('sieve',' 8'),
-  ('spellcheck',' < bagley/data/spellcheck.data'),
   ('strcat',' 8'),
   ('takfp',' 10'),
   ('sumcol',' < bagley/data/sumcol.data'),
   ('wc',' < bagley/data/phone_numbers.data'), 
   ('wordfreq',' 1 < bagley/data/wordfreq.data'), 
  ]
+
+@if not CYGWIN:
+  # hangs for unknown reason on Cygwin
+  sbags.append(('spellcheck',' < bagley/data/spellcheck.data'))
 
 @dbags = [
   ('plugin',' 20'),
@@ -62,6 +66,7 @@ to get some times.
 @def mkr(i,j):
   k = (i+' .................  ')[:20]+' '
   tangle('rm -f bagley/felix/'+i+'.output')
+  tangle('echo "Running '+i+'"')
   tangle('/usr/bin/time -f "'+k+' %U" bin/flx --test bagley/felix/'+i+' '+j+' >bagley/felix/'+i+'.output')
   tangle('if [ 0 != $? ]; then exit $?; fi')
 
@@ -72,13 +77,13 @@ to get some times.
 
 @select(tangler('bagley/compile.sh','data'))
 @if SUPPORT_DYNAMIC_LOADING:
-  tangle('bin/flx --test --force --optimise -c bagley/felix/plugin_1')
+  tangle('bin/flx --test --force --optimise --echo -c bagley/felix/plugin_1')
   tangle('if [ 0 != $? ]; then exit $?; fi')
-  tangle('bin/flx --test --force --optimise -c bagley/felix/plugin_2')
+  tangle('bin/flx --test --force --optimise --echo -c bagley/felix/plugin_2')
   tangle('if [ 0 != $? ]; then exit $?; fi')
-  tangle('bin/flx --test --force --optimise -c bagley/felix/plugin_3')
+  tangle('bin/flx --test --force --optimise --echo -c bagley/felix/plugin_3')
   tangle('if [ 0 != $? ]; then exit $?; fi')
-  tangle('bin/flx --test --force --optimise -c bagley/felix/plugin')
+  tangle('bin/flx --test --force --optimise --echo -c bagley/felix/plugin')
   tangle('if [ 0 != $? ]; then exit $?; fi')
 @for i,j in bags: mko (i,j)
 
@@ -89,9 +94,15 @@ echo "DICT_DIR=$DICT_DIR"
 PLUGIN_DIR=bagley/felix/
 export PLUGIN_DIR
 echo "PLUGIN_DIR=$PLUGIN_DIR"
-LD_LIBRARY_PATH=`pwd`/rtl:$LD_LIBRARY_PATH
-export LD_LIBRARY_PATH
-echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+@if CYGWIN:
+  tangle('PATH=`pwd`/bin:$PATH')
+  tangle('export PATH')
+  tangle('echo "PATH=$PATH"')
+ else:
+  tangle('LD_LIBRARY_PATH=`pwd`/rtl:$LD_LIBRARY_PATH')
+  tangle('export LD_LIBRARY_PATH')
+  tangle('echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"')
+
 @for i,j in runbags: mkr (i,j)
 
 @select(tangler('bagley/check.sh','data'))

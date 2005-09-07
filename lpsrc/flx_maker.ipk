@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.139  2005/09/07 17:38:51  skaller
+Get -mno-cygwin to work
+
 Revision 1.138  2005/09/06 19:13:25  skaller
 Add a new option to 'flx' bash script: --nofelix prevents flxg running,
 allowing a hand modified C++ program to be compiled (and run) without
@@ -4387,27 +4390,28 @@ esac
 
 # Find absolute pathname
 
-base=""
+base=$arg
 
-case "$arg" in
-  /*)
-    base="$arg"
-    ;;
-  [^/]*/*)
-    base="`pwd`/$arg"
-    ;;
-  *)
-    for dir in `echo .:"$PATH" | sed 's/:/ /g'`
-    do
-      dir=$dir
-      if [ -r "$dir/$arg.so" -o -r "$dir/$arg.flx" ]
-      then
-        base="$dir/$arg"
-        break
-      fi
-    done
-    ;;
-esac
+#base=""
+#case "$arg" in
+#  /*)
+#    base="$arg"
+#    ;;
+#  [^/]*/*)
+#    base="`pwd`/$arg"
+#    ;;
+#  *)
+#    for dir in `echo .:"$PATH" | sed 's/:/ /g'`
+#    do
+#      dir=$dir
+#      if [ -r "$dir/$arg.so" -o -r "$dir/$arg.flx" ]
+#      then
+#        base="$dir/$arg"
+#        break
+#      fi
+#    done
+#    ;;
+#esac
 
 if [ "x$base" = "x" ]
 then
