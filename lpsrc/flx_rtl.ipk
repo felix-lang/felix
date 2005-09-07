@@ -618,18 +618,22 @@ typedef HMODULE LIBHANDLE;
 #ifndef FLX_STATIC_LINK
 #ifdef _WIN32
 #define DLSYM(x,y) (void*)GetProcAddress(x,#y) 
+#define SDLSYM(x,y) (void*)GetProcAddress(x,y) 
 #else
   #ifdef MACOSX_NODLCOMPAT
     //#include <mach-o/dyld.h>
     #define DLSYM(x, y) flx::rtl::getmachosym(x,"_"#y)
+    #define SDLSYM(x, y) flx::rtl::getmachosym(x,(string("_")+string(y)).data())
   #else
     #include <dlfcn.h>
     #define DLSYM(x,y) dlsym(x,#y)
+    #define SDLSYM(x,y) dlsym(x,y)
   #endif
 #endif
 
 #else
 #define DLSYM(x,y) (void*)&y
+#define SDLSYM(x,y) (throw flx::rtl::link_failure_t("<static link>",y,"dlsym with static link requires name not string")
 #endif
 // Utilities to make dynamic linkage and
 // initialisation of Felix modules easier

@@ -685,7 +685,7 @@ module Dynlink
 
   publish "dlsym wrapper, returns any symbol"
   fun dlsym:flx_library * string->address = 
-      "DLSYM($1->library,$2.data())";
+      "SDLSYM($1->library,$2.data())";
 
   publish """
     execute an address representing a top
@@ -699,7 +699,7 @@ module Dynlink
   fun bind_proc: flx_instance * address * address -> cont = 
     "$1.bind_proc($2,$3)";
 
-  fun dlib_of : flx_library -> address = "$1->library";
+  fun dlib_of : flx_library -> address = "(void*)$1->library";
 
   proc dlsym_err:flx_library*string="""
     throw flx::rtl::flx_link_failure_t($1->filename,$2,"symbol not found");
@@ -709,7 +709,7 @@ module Dynlink
   {
     var lib = get_library instance;
     var sym = dlsym(lib, p);
-    if isNULL(sym) do dlsym_err(lib,p); done;
+    if C_hack::isNULL(sym) do dlsym_err(lib,p); done;
     var f = bind_proc(instance, sym, data);
     run f;
   }

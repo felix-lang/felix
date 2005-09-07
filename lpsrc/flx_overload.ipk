@@ -324,6 +324,9 @@ let overload
   candidates in
   match candidates with
   | [Unique (i,t,mgu,ts)] -> 
+    (*
+    print_endline ("[overload] Got unique result " ^ si i);
+    *)
     Some (i,t,mgu,ts)
 
   | [] -> None
