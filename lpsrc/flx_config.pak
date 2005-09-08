@@ -570,6 +570,8 @@ class gxx:
     use="generic"
     ):
     opt = self.options
+    opt.model = model
+    opt.CXX = CXX+" "
     if build == "cygwin" and model == "nocygwin": 
       opt.CXX = CXX + " -mno-cygwin "
     else:
@@ -578,7 +580,6 @@ class gxx:
     opt.RANLIB = RANLIB +" "
     opt.STRIP = STRIP +" "
     opt.flags = flags
-    opt.model = model
     opt.use = use
 
   def detect_gxx_language_extensions(self):
