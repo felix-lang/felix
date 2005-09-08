@@ -564,51 +564,26 @@ class gxx:
     AR="ar -rc",
     RANLIB="ranlib",
     STRIP="strip",
+    build="posix",
     model="detect",
-    dll_extension=".so",
-    exe_extension="",
-    obj_extension=".o",
-    lib_extension=".a",
-    dll_binding_extension=None, # .dll.a for Cygwin -nocygwin
-    dll_prefix="lib", #lib for unix, cyg for Cygwin -nocygwin
-    dll_binding_prefix=None, #lib for Cygwin -nocygwin
-    flags= ""
+    flags= "",
+    use="generic"
     ):
     opt = self.options
-    opt.obj_extension = obj_extension
-    opt.dll_extension = dll_extension
-    opt.exe_extension = exe_extension
-    opt.dll_binding_extension=dll_binding_extension
-    opt.CXX = CXX+" "
+    if build == "cygwin" and model == "nocygwin": 
+      opt.CXX = CXX + " -mno-cygwin "
+    else:
+      opt.CXX = CXX+" "
     opt.AR = AR +" "
     opt.RANLIB = RANLIB +" "
     opt.STRIP = STRIP +" "
     opt.flags = flags
     opt.model = model
+    opt.use = use
 
-  def check_options(self,xqt):
+  def detect_gxx_language_extensions(self):
     opt = self.options
     CXX = opt.CXX
-
-    # check we have g++
-    xqt(CXX+"-w -c tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
-
-    # see if we have strip: it isn't considered essential
-    if opt.STRIP:
-      xqt(opt.STRIP + "tmp"+os.sep+"dummy.o")
-    else:
-      opt.STRIP="#strip "
-
-    # see if we have ar
-    xqt(opt.AR+"tmp"+os.sep+"dummy.a tmp"+os.sep+"dummy.o")
-
-    # see if we have ranlib, it isn't considered essential
-    # (a totally brain dead Unix idea: AR should do this)
-    try:
-      xqt(opt.RANLIB + "tmp"+os.sep+"dummy.a")
-    except:
-      opt.RANLIB="#ranlib "
-
     # find if we have g++ on 32 bit x86 platform with named registers
     try:
       xqt(CXX +"-w tmp"+os.sep+"gxx_x86.cxx -o tmp"+os.sep+"x86_check")
@@ -642,15 +617,20 @@ class gxx:
     except:
       opt.HAVE_ASM_LABELS = 0
 
-    # find if we have g++ supported ext/ with STL extensions
+    # find if we have static const init in class
+    # [not so much an extension as a bug if we don't]
     try:
-      xqt(CXX+"tmp"+os.sep+"gxx_hash.cxx -o tmp"+os.sep+"gxx_hash")
-      xqt("tmp"+os.sep+"gxx_hash")
-      opt.HAVE_STL_GNU_CXX = 1
-      print "Gnu ext/ templates supported"
+      xqt(opt.CXX+" -w -c tmp"+os.sep+"check_inclass.cxx -o tmp"+os.sep+"dummy.o")
+      opt.HAVE_INCLASS_MEMBER_INITIALIZATION=1
+      print "Inclass member initialisation supported"
     except:
-      opt.HAVE_STL_GNU_CXX = 0
+      opt.HAVE_INCLASS_MEMBER_INITIALIZATION=0
+      print "Inclass member initialisation NOT supported"
 
+
+  def detect_gxx_flags(self):
+    opt = self.options
+    CXX = opt.CXX
     # find if we have g++ with -Wno-invalid-offsetof
     try:
       xqt(CXX+"-Wno-invalid-offsetof tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
@@ -671,6 +651,40 @@ class gxx:
     except:
       opt.PIC = ""
       print "All code is position independent"
+
+  def check_options(self,xqt):
+    opt = self.options
+    CXX = opt.CXX
+
+    # check we have g++
+    xqt(CXX+"-w -c tmp"+os.sep+"dummy.cxx -o tmp"+os.sep+"dummy.o")
+    self.detect_gxx_language_extensions()
+
+    # see if we have strip: it isn't considered essential
+    if opt.STRIP:
+      xqt(opt.STRIP + "tmp"+os.sep+"dummy.o")
+    else:
+      opt.STRIP="#strip "
+
+    # see if we have ar
+    xqt(opt.AR+"tmp"+os.sep+"dummy.a tmp"+os.sep+"dummy.o")
+
+    # see if we have ranlib, it isn't considered essential
+    # (a totally brain dead Unix idea: AR should do this)
+    try:
+      xqt(opt.RANLIB + "tmp"+os.sep+"dummy.a")
+    except:
+      opt.RANLIB="#ranlib "
+
+    self.detect_gxx_flags()
+    # find if we have g++ supported ext/ with STL extensions
+    try:
+      xqt(CXX+"tmp"+os.sep+"gxx_hash.cxx -o tmp"+os.sep+"gxx_hash")
+      xqt("tmp"+os.sep+"gxx_hash")
+      opt.HAVE_STL_GNU_CXX = 1
+      print "Gnu ext/ templates supported"
+    except:
+      opt.HAVE_STL_GNU_CXX = 0
 
     # find if we have CYGWIN
     try:
@@ -698,87 +712,80 @@ class gxx:
         sys.exit(1)
     except:
       opt.MACOSX=0
-    
+
+    if opt.model == "detect": opt.model = "posix" 
+
     print "MODEL =",opt.model
 
     if opt.CYGWIN:
+      opt.EXT_LIB = ".a"
       opt.EXT_EXE= ".exe"
       opt.EXT_SHARED = ".dll"
+      opt.EXT_OBJ = ".o"
       
-      opt.COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
-      opt.LINK_DYNAMIC_RTL = "-shared "
+      COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
+      LINK_DYNAMIC_RTL = "-shared "
       
-      opt.COMPILE_DYNAMIC_MAIN = "-c "
-      opt.LINK_DYNAMIC_MAIN = ""
+      COMPILE_DYNAMIC_MAIN = "-c "
+      LINK_DYNAMIC_MAIN = ""
       
-      opt.COMPILE_DYNAMIC_FLX = opt.PIC+ "-c "
-      opt.LINK_DYNAMIC_FLX = opt.PIC+"-shared "
+      COMPILE_DYNAMIC_FLX = opt.PIC+ "-c "
+      LINK_DYNAMIC_FLX = opt.PIC+"-shared "
 
       #hysterical note:
-      #opt.CCLINK_DLLIB = CXX + "-shared -Wl,--enable-auto-import "
+      #CCLINK_DLLIB = CXX + "-shared -Wl,--enable-auto-import "
 
     elif opt.MACOSX:
+      opt.EXT_LIB = ".a"
       opt.EXT_EXE= ""
       opt.EXT_SHARED = ".so"
+      opt.EXT_OBJ = ".o"
       
-      opt.COMPILE_DYNAMIC_RTL = opt.PIC + "-dynamic -c "
-      opt.LINK_DYNAMIC_RTL = "-bundle "
+      COMPILE_DYNAMIC_RTL = opt.PIC + "-dynamic -c "
+      LINK_DYNAMIC_RTL = "-bundle "
       
-      opt.COMPILE_DYNAMIC_MAIN = "-c "
-      opt.LINK_DYNAMIC_MAIN = ""
+      COMPILE_DYNAMIC_MAIN = "-c "
+      LINK_DYNAMIC_MAIN = ""
       
-      opt.COMPILE_DYNAMIC_FLX = opt.PIC + "-dynamic -c "
-      opt.LINK_DYNAMIC_FLX = "-bundle "
+      COMPILE_DYNAMIC_FLX = opt.PIC + "-dynamic -c "
+      LINK_DYNAMIC_FLX = "-bundle "
 
     else:
+      opt.EXT_LIB = ".a"
       opt.EXT_EXE= ""
       opt.EXT_SHARED = ".so"
+      opt.EXT_OBJ = ".o"
       
-      opt.COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
-      opt.LINK_DYNAMIC_RTL = "-shared "
+      COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
+      LINK_DYNAMIC_RTL = "-shared "
       
-      opt.COMPILE_DYNAMIC_MAIN = "-c "
+      COMPILE_DYNAMIC_MAIN = "-c "
       #hysterical note: this crap should not be needed
-      #opt.LINK_DYNAMIC_MAIN = "-Wl,-Bdynamic -Wl,--export-dynamic "
-      opt.LINK_DYNAMIC_MAIN = ""
+      #LINK_DYNAMIC_MAIN = "-Wl,-Bdynamic -Wl,--export-dynamic "
+      LINK_DYNAMIC_MAIN = ""
 
-      opt.COMPILE_DYNAMIC_FLX = opt.PIC+"-c "
-      opt.LINK_DYNAMIC_FLX = "-shared "
+      COMPILE_DYNAMIC_FLX = opt.PIC+"-c "
+      LINK_DYNAMIC_FLX = "-shared "
 
-    opt.CCOBJ_DYNAMIC_FLX = CXX + opt.COMPILE_DYNAMIC_FLX
-    opt.CCLINK_DYNAMIC_FLX = CXX + opt.LINK_DYNAMIC_FLX
+    opt.CCOBJ_DYNAMIC_FLX = CXX + COMPILE_DYNAMIC_FLX
+    opt.CCLINK_DYNAMIC_FLX = CXX + LINK_DYNAMIC_FLX
 
-    opt.CCOBJ_DYNAMIC_RTL = CXX + opt.COMPILE_DYNAMIC_RTL
-    opt.CCLINK_DYNAMIC_RTL = CXX + opt.LINK_DYNAMIC_RTL
+    opt.CCOBJ_DYNAMIC_RTL = CXX + COMPILE_DYNAMIC_RTL
+    opt.CCLINK_DYNAMIC_RTL = CXX + LINK_DYNAMIC_RTL
 
-    opt.CCOBJ_DYNAMIC_MAIN = CXX + opt.COMPILE_DYNAMIC_MAIN
-    opt.CCLINK_DYNAMIC_MAIN = CXX + opt.LINK_DYNAMIC_MAIN
+    opt.CCOBJ_DYNAMIC_MAIN = CXX + COMPILE_DYNAMIC_MAIN
+    opt.CCLINK_DYNAMIC_MAIN = CXX + LINK_DYNAMIC_MAIN
 
-    opt.CCOBJ_STATIC_FLX = opt.CXX + "-c "
-    opt.CCOBJ_STATIC_RTL = opt.CXX + "-c "
-    opt.CCOBJ_STATIC_MAIN = opt.CXX + "-c "
+    opt.CCOBJ_STATIC_FLX = CXX + "-c "
+    opt.CCOBJ_STATIC_RTL = CXX + "-c "
+    opt.CCOBJ_STATIC_MAIN = CXX + "-c "
 
     opt.CCOBJ_DYNAMIC_RTL=opt.CCOBJ_DYNAMIC_RTL+opt.NO_INVALID_OFFSETOF_WARNING
     opt.CCOBJ_DYNAMIC_FLX=opt.CCOBJ_DYNAMIC_FLX+opt.NO_INVALID_OFFSETOF_WARNING
     opt.CCOBJ_STATIC_RTL=opt.CCOBJ_STATIC_RTL+opt.NO_INVALID_OFFSETOF_WARNING
     opt.CCOBJ_STATIC_FLX=opt.CCOBJ_STATIC_FLX+opt.NO_INVALID_OFFSETOF_WARNING
-    opt.CCLINK_STATIC = opt.CXX
+    opt.CCLINK_STATIC = CXX
 
-
-    print "Command to compile static Felix rtl     : " + opt.CCOBJ_STATIC_RTL
-    print "Command to compile shared Felix rtl     : " + opt.CCOBJ_DYNAMIC_RTL
-    print "Command to link shared Felix rtl        : " + opt.CCLINK_DYNAMIC_RTL
-
-    print "Command to compile static Felix driver  : " + opt.CCOBJ_STATIC_MAIN
-    print "Command to compile dynamic Felix driver : " + opt.CCOBJ_DYNAMIC_MAIN
-    print "Command to link dynamic Felix driver    : " + opt.CCLINK_DYNAMIC_MAIN
-
-    print "Command to compile static Felix object  : " + opt.CCOBJ_STATIC_FLX
-    print "Command to compile loadable Felix object: " + opt.CCOBJ_DYNAMIC_FLX
-    print "Command to link loadable Felix object   : " + opt.CCLINK_DYNAMIC_FLX
-
-    print "Extension for loadable Felix object     : " + opt.EXT_SHARED
-    print "Extension for executable                : " + opt.EXT_EXE
 
     # where to put the rtl: Cygwin requires the dll be in the PATH
     if opt.CYGWIN:
@@ -787,8 +794,6 @@ class gxx:
     else:
       print "rtl located in rtl directory"
       opt.SHLIB_DIR="rtl"
-
-
 
     #check if we can get dlopen to work without -ldl (BSD, Cygwin don't need)
     opt.HAVE_DLOPEN = 0
@@ -814,15 +819,6 @@ class gxx:
         opt.SUPPORT_DYNAMIC_LOADING = 0    # or give up on dynamic loading
         print "Dynamic Loading NOT SUPPORTED"
         sys.exit(1)
-
-    # find if we have static const init in class
-    try:
-      xqt(opt.CXX+" -w -c tmp"+os.sep+"check_inclass.cxx -o tmp"+os.sep+"dummy.o")
-      opt.HAVE_INCLASS_MEMBER_INITIALIZATION=1
-      print "Inclass member initialisation supported"
-    except:
-      opt.HAVE_INCLASS_MEMBER_INITIALIZATION=0
-      print "Inclass member initialisation NOT supported"
 
     # find if we have BSD isnan in <cmath> (NAUGHTY!)
     try:
@@ -889,7 +885,7 @@ class gxx:
 
     # find if we have _Bool
     try:
-      xqt(opt.CC+" -w tmp"+os.sep+"bool.c -o tmp"+os.sep+"bool")
+      xqt(opt.CXX+" -w tmp"+os.sep+"bool.c -o tmp"+os.sep+"bool")
       xxqt("tmp"+os.sep+"bool >tmp"+os.sep+"bool.py")
       f = open("tmp"+os.sep+"bool.py")
       exec f in opt.__dict__
@@ -900,7 +896,7 @@ class gxx:
 
     # find if we have _Complex
     try:
-      xqt(opt.CC + " -w tmp"+os.sep+"complex.c -o tmp"+os.sep+"complex")
+      xqt(opt.CXX + " -w tmp"+os.sep+"complex.c -o tmp"+os.sep+"complex")
       xxqt("tmp"+os.sep+"complex >tmp"+os.sep+"complex.py")
       f = open("tmp"+os.sep+"complex.py")
       exec f in opt.__dict__
@@ -935,6 +931,55 @@ class gxx:
 
     opt.DEBUG_SYMBOLS = "-g "
     opt.OPTIMISE = "-O3 -fomit-frame-pointer --inline -DNDEBUG "
+
+  def report_config(self):
+    opt = self.options
+    print "**********************************************"
+    print "g++",opt.use,"configuration"
+    print "**********************************************"
+    print "model=",opt.model
+    print "static library tool #1                  : " + opt.AR
+    print "static library tool #2                  : " + opt.RANLIB
+    print
+    print "Command to compile static Felix rtl     : " + opt.CCOBJ_STATIC_RTL
+    print "Command to compile shared Felix rtl     : " + opt.CCOBJ_DYNAMIC_RTL
+    print "Command to link shared Felix rtl        : " + opt.CCLINK_DYNAMIC_RTL
+    print
+    print "Command to compile static Felix driver  : " + opt.CCOBJ_STATIC_MAIN
+    print "Command to compile dynamic Felix driver : " + opt.CCOBJ_DYNAMIC_MAIN
+    print "Command to link dynamic Felix driver    : " + opt.CCLINK_DYNAMIC_MAIN
+
+    print "Command to compile static Felix object  : " + opt.CCOBJ_STATIC_FLX
+    print "Command to compile loadable Felix object: " + opt.CCOBJ_DYNAMIC_FLX
+    print "Command to link loadable Felix object   : " + opt.CCLINK_DYNAMIC_FLX
+    print
+
+    print "Extension for object file               : " + opt.EXT_OBJ
+    print "Extension for static archive            : " + opt.EXT_LIB
+    print "Extension for loadable RTL              : " + opt.EXT_SHARED
+    print "Extension for executable                : " + opt.EXT_EXE
+    print "RTL in directory                        : " + opt.SHLIB_DIR
+
+    print
+    if opt.SUPPORT_DYNAMIC_LOADING and opt.HAVE_DLOPEN:
+      if opt.DLLIB:
+        print "Dynamic Loading Supported               : with dlopen() in -l"+opt.DLLIB
+      else:
+        print "Dynamic Loading Supported               : with dlopen() [native]"
+    else:
+      if opt.SUPPORT_DYNAMIC_LOADING:
+        print "Dynamic Loading Supported               : UNKNOWN METHOD"
+      else:
+        print "Dynamic Loading                         : NOT SUPPORTED"
+    print
+    if opt.HAVE_ISNAN_IN_CMATH:
+      print "NaN Support in                          : <cmath>"
+    if opt.HAVE_ISNAN_IN_IEEEFP:
+      print "NaN Support in                          : <ifpeee.h>"
+    if not opt.HAVE_ISNAN_IN_IEEEFP and not opt.HAVE_ISNAN_IN_CMATH:
+      print "NaN                                     : NOT SUPPORTED"
+    print "**********************************************"
+
 
   def save_options(self, filename):
     f = open(filename,"w")
@@ -971,7 +1016,7 @@ class gxx:
     # output file
     cmd = cmd + "-o "
     if outdir: cmd = cmd + outdir + os.sep
-    cmd = cmd + basename + "_dynamic"+opt.obj_extension+" "
+    cmd = cmd + basename + "_dynamic"+opt.EXT_OBJ+" "
 
     # macros
     for i in macros: cmd=cmd + "-D"+i+" "
@@ -1008,7 +1053,7 @@ class gxx:
     # output file
     cmd = cmd + "-o "
     if outdir: cmd = cmd + outdir + os.sep
-    cmd = cmd + basename + "_static"+opt.obj_extension+" "
+    cmd = cmd + basename + "_static"+opt.EXT_OBJ+" "
 
     #macros
     for i in macros: cmd=cmd + "-D"+i+" "
@@ -1027,7 +1072,7 @@ class gxx:
   def link_static_archive(self,shell,objects,archive):
     opt = self.options
     cmd = opt.AR +" "+ archive + " " 
-    for i in objects: cmd = cmd + i + ".o "
+    for i in objects: cmd = cmd + i + opt.EXT_OBJ + " "
     result = shell(cmd)
     if result:
       if opt.RANLIB:
@@ -1037,7 +1082,7 @@ class gxx:
   def link_static_program(self,shell,objects,outfile,lib_path,libs):
     opt = self.options
     cmd = opt.CCLINK_STATIC
-    for i in objects: cmd = cmd +i+opt.obj_extension+" "
+    for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
     cmd = cmd + "-o " +outfile + " "
     for i in lib_path: cmd = cmd + "-L"+i+" "
     for i in libs: cmd = cmd + "-l"+i+" "
@@ -1057,7 +1102,7 @@ class gxx:
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_RTL
     cmd = cmd + "-o " +outfile + " "
-    for i in objects: cmd = cmd +i+opt.obj_extension+" "
+    for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
     for i in lib_path: cmd = cmd + "-L"+i+" "
     for i in libs: cmd = cmd + "-l"+i+" "
     if opt.DLLIB:
@@ -1071,7 +1116,7 @@ class gxx:
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_MAIN
     cmd = cmd + "-o " +outfile + " "
-    for i in objects: cmd = cmd +i+opt.obj_extension+" "
+    for i in objects: cmd = cmd +i+opt.EXT_OBJ+" "
     for i in lib_path: cmd = cmd + "-L"+i+" "
     for i in libs: cmd = cmd + "-l"+i+" "
     if opt.DLLIB:
@@ -1209,7 +1254,21 @@ if PREFIX:
 
 overrides = {}
 
-host = None # guess
+# supported platforms
+
+platforms = [
+  "posix",
+  "cygwin",
+  "nocygwin",
+  "mingw",
+  "win32",
+  "win64",
+  "osx",
+  "detect"
+  ]
+
+# map other names for them, obtained from
+# various place like os.platform, os.system("mname -u"), etc
 
 archmap = {
   "posix":"posix",
@@ -1221,67 +1280,37 @@ archmap = {
   "nt":"win32",
   "win32":"win32",
   "osx":"osx",
+  "detect":"detect"
   }
 
 try:
   build_model = archmap[os.name]
+  print "Build platform: " + build_model
 except:
-  print "Python returns unknown OS type, assuming 'posix'"
-  build_model = "posix"
+  print "Python returns unknown OS type, assuming 'detect'"
+  build_model = "detect"
 
-host_model = None
-target_model = None
-
-
-models = [
-  "posix/posix",
-  "cygwin/cygwin",
-  "cygwin/nocygwin",
-  "nocygwin/nocygwin",
-  "migw/mingw",
-  "win32/win32",
-  ]
+host_model = "detect"
+target_model = "detect"
 
 def check_model(m):
   try: 
     h,t = string.split(m,"/")
   except:
     h,t=m,m
-  h = archmap[h]
-  t = archmap[t]
-  m = h + "/" + t
-  if not m in models:
-    print "Unknown model, please choose one of:"
-    for m in models: print " * " + m
+  try:
+    h = archmap[h]
+  except:
+    print "Unknown host platform '"+h+"' please choose one of:"
+    for m in platforms: print " * " + m
+    sys.exit(1)
+  try:
+    t = archmap[t]
+  except:
+    print "Unknown target platform '"+t+"' please choose one of:"
+    for m in platforms: print " * " + m
     sys.exit(1)
   return h,t
-
-install_styles = [
-  ("kernel","[/sbin] for kernel modules"),
-  ("system","[/bin] for init scripts"),
-  ("root","[/usr/bin] for system applications"),
-  ("local","[/usr/local/bin, /opt] for user applications"),
-  ("personal","[~]for personal use only"),
-  ("none","For developers: do not install")
-  ]
-
-install_keys = []
-for i,j in install_styles:
-  install_keys.append(i)
-
-def check_install_style(x):
-  if x not in install_keys:
-   print "Unknown install style",x
-   print "Please use --install-style=<key>"
-   print "  where key is chosen from"
-   for k,d in install_styles:
-     s = "  %-10s : %s" % (k,d)
-     print s
-   print
-   sys.exit(1)
-
-
-install_style = None
 
 SAVE_CONFIG=""
 LOAD_CONFIG=""
@@ -1301,12 +1330,6 @@ while(i < len (sys.argv)):
     maybe_prefix=arg[9:]
     if maybe_prefix !=  '': 
       PREFIX=maybe_prefix
-      if install_style == None:
-        install_style = "root"
-    else:
-      if install_style == None:
-        install_style="none"
-
   elif has_prefix("--set-int-",arg):
     x=arg[10:]
     i = string.index(x,'=')
@@ -1321,8 +1344,6 @@ while(i < len (sys.argv)):
     overrides[v]=a
   elif has_prefix("--model=",arg):
     host_model,target_model = check_model(arg[8:])
-  elif has_prefix("--install-style=",arg):
-    install_style = check_install_style(arg[16:])
   elif has_prefix("--save-config=",arg):
     SAVE_CONFIG=arg[14:]
   elif has_prefix("--load-config=",arg):
@@ -1340,30 +1361,7 @@ print "TARGET=",target_model
 
 if PREFIX=='': PREFIX=default_prefix
 
-if install_style == None:
-  if PREFIX == "/usr":
-    install_style = "system"
-  elif PREFIX == "/usr/local":
-    install_style = "local"
-  else:
-    if DEBIAN:
-      install_style = "root"
-    else:
-      print
-      print "Install prefix is set, but style not recognized"
-      print
-      print "Please use --install-style=<key>"
-      print "  where key is chosen from"
-      for k in install_styles:
-        d = install_styles[k]
-        s = "%-10s : %s" % (k,d)
-        print s
-      print
-      print "Or, do not specify an install prefix"
-      print
-      sys.exit(1)
-
-print "Installation Style",install_style
+print "INSTALL PREFIX="+PREFIX
 
 if LOAD_CONFIG:
   g = LOAD_CONFIG+os.sep+"*"
@@ -1443,7 +1441,7 @@ if force or refresh:
 
 ## find if we have MSVC++
 #try:
-#  xqt("cl tmp"+os.sep+"dummy.cxx "+os.sep+"Fetmp"+os.sep+"dummy_ms.exe")
+#  xqt("cl tmp"+os.sep+"dummy.cxx /Fetmp"+os.sep+"dummy_ms.exe")
 #  MSVC="cl "
 #  HAVE_MSVC = 1
 #except:
@@ -1461,11 +1459,36 @@ HOST_OCAML.report_config()
 HOST_OCAML.save_config("config/ocaml_config.py")
 
 execfile("script/gxx_class.py")
-  
-if host_model in ["posix","cygwin","nocygwin","mingw"]:
+#
+# Detect the native build model
+# 
+# This model has two uses: first, to build any build time
+# tools needed to assist in generating the sources
+# and second, to aid in selecting the options to cross-compile
+# for the chosen host and target
+#
+BUILD_CXX=gxx()
+BUILD_CXX.set_options(use="build",model="detect")
+BUILD_CXX.check_options(xqt)
+BUILD_CXX.report_config()
+BUILD_CXX.save_options("config/build_cxx.py")
+BUILD_CYGWIN = BUILD_CXX.options.CYGWIN
+BUILD_MACOSX = BUILD_CXX.options.MACOSX
+build_model=BUILD_CXX.options.model
+
+#
+# Now create the host model: the compiler has to run
+# on the build machine, but can cross compile for
+# the host (if so, we can build but not test Felix)
+#
+# Cross compilation of the host tools may prevent any
+# testing of the tools
+#
+if host_model in ["posix","cygwin","nocygwin","mingw","detect"]:
   HOST_CXX=gxx()
-  HOST_CXX.set_options()
+  HOST_CXX.set_options(use="host",model=host_model,build=build_model)
   HOST_CXX.check_options(xqt)
+  HOST_CXX.report_config()
   HOST_CXX.save_options("config/host_cxx.py")
   CYGWIN = HOST_CXX.options.CYGWIN
   MACOSX = HOST_CXX.options.MACOSX
@@ -1473,24 +1496,24 @@ else:
   print "Sorry only gnu tool chain supported at the moment"
   exit(1)
 
-if target_model in ["posix","cygwin","nocygwin","mingw"]:
+#
+# Now create the target model: the compiler has to run
+# on the build machine, but can cross compile for
+# the target 
+#
+# cross compilation of C++ generated by Felix allows us to
+# check the generated code compiles, but not that it runs
+# [but the output is largely portable so we can still try]
+#
+if target_model in ["posix","cygwin","nocygwin","mingw","detect"]:
   TARGET_CXX=gxx()
-  TARGET_CXX.set_options()
+  TARGET_CXX.set_options(use="target",model=target_model,build=build_model)
   TARGET_CXX.check_options(xqt)
+  HOST_CXX.report_config()
   TARGET_CXX.save_options("config/target_cxx.py")
 else:
   print "Sorry only gnu tool chain supported at the moment"
   exit(1)
-
-# set C++ compilation commands
-# for CYGWIN, this isn't enough, it needs to generate
-# an additional output stub link library .. this is handled
-# directly in the script/maker at the moment
-#
-# down the track, we should replace these variables
-# with a Python function def, since that's more flexible
-#FORCE_DEBUG="-g "
-FORCE_DEBUG=""
 
 # see if we have interscript
 try:
