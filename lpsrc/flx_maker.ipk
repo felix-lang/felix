@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.142  2005/09/10 04:44:00  skaller
+Remove ocamlopt -cc-lib flags (seems to work without these)
+
 Revision 1.141  2005/09/10 04:30:22  skaller
 Win32 build
 
@@ -2558,6 +2561,8 @@ if 0:
   s = s + '"'
   LDFLAGS = s
   del s
+else:
+  LDFLAGS = ""
 
 if 1:
   o = ''
