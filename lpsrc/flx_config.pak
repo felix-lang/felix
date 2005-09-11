@@ -1079,7 +1079,7 @@ class gxx:
     for i in objects: cmd = cmd + i + opt.EXT_OBJ + " "
     shell(cmd)
     if opt.RANLIB:
-      shell(opt.RANLIB+" "+archive)
+      shell(opt.RANLIB+" "+archive+opt.EXT_LIB)
   
   def link_static_program(self,shell,objects,outfile,lib_path,libs):
     opt = self.options

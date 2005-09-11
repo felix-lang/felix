@@ -158,6 +158,7 @@ And here is the collector abstraction.
 struct collector_t
 {
   bool debug;
+  void set_debug(bool d){debug=d;}
   collector_t();
   virtual ~collector_t(){}
 
