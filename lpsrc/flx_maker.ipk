@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.143  2005/09/11 04:45:09  skaller
+win32 build
+
 Revision 1.142  2005/09/10 04:44:00  skaller
 Remove ocamlopt -cc-lib flags (seems to work without these)
 
@@ -397,7 +400,6 @@ sm_files = [
   'breaker.h',
   'ckheap.h',
   'crc.h',
-  'cycles.h',
   'datablok.h',
   'exc.h',
   'flatten.h',
@@ -407,8 +409,6 @@ sm_files = [
   'hashtbl.h',
   'macros.h',
   'missing.h',
-#  'mypopen.h',
-#  'mysig.h',
   'nonport.h',
   'objlist.h',
   'objpool.h',
@@ -422,7 +422,6 @@ sm_files = [
   'pprint.h',
   'ptrmap.h',
   'sm_flexlexer.h',
-#  'smregexp.h',
   'sobjlist.h',
   'sobjset.h',
   'sobjstack.h',
@@ -443,7 +442,6 @@ sm_files = [
   'trace.h',
   'trdelete.h',
   'typ.h',
-  'unixutil.h',
   'vdtllist.h',
   'voidlist.h',
   'vptrmap.h',
@@ -455,17 +453,13 @@ sm_files = [
   'bit2d.cc',
   'bitarray.cc',
   'boxprint.cc',
-  'cycles.c',
   'flatten.cc',
   'gprintf.c',
   'growbuf.cc',
   'hashline.cc',
   'hashtbl.cc',
-#  'mypopen.c',
-#  'mysig.cc',
   'point.cc',
   'pprint.cc',
-#  'smregexp.cc',
   'srcloc.cc',
   'strdict.cc',
   'strhash.cc',
@@ -475,7 +469,6 @@ sm_files = [
   'trace.cc',
   'trdelete.cc',
   'tsobjlist.cc',
-  'unixutil.c',
   'vdtllist.cc',
   'voidlist.cc',
   'vptrmap.cc',
@@ -565,7 +558,6 @@ sm_files = [
   'breaker.h',
   'ckheap.h',
   'crc.h',
-  'cycles.h',
   'datablok.h',
   'exc.h',
   'flatten.h',
@@ -623,7 +615,6 @@ sm_files = [
   'bit2d.cc',
   'bitarray.cc',
   'boxprint.cc',
-  'cycles.c',
   'flatten.cc',
   'gprintf.c',
   'growbuf.cc',
@@ -727,7 +718,6 @@ for fn,tgt in tgts:
   print "@select(h)"
   f = open(fn)
   data = f.readlines()
-  'sm_cycles',
   f.close()
   for line in data:
     line = string.expandtabs(line)
@@ -766,7 +756,6 @@ sm_files = [
   'breaker.h',
   'ckheap.h',
   'crc.h',
-  'cycles.h',
   'datablok.h',
   'exc.h',
   'flatten.h',
@@ -824,7 +813,6 @@ sm_files = [
   'bit2d.cc',
   'bitarray.cc',
   'boxprint.cc',
-  'cycles.c',
   'flatten.cc',
   'gprintf.c',
   'growbuf.cc',
@@ -897,7 +885,6 @@ elk_files = [
   'gramlex.lex',
   'grampar.y',
   'asockind.h',
-  'cyctimer.h',
   'emitcode.h',
   'flatutil.h',
   'genml.h',
@@ -919,7 +906,6 @@ elk_files = [
   'useract.h',
   'util.h',
   'asockind.cc',
-  'cyctimer.cc',
   'emitcode.cc',
   'genml.cc',
   'glr.cc',
@@ -2262,7 +2248,6 @@ SMRTL = [
   'sm_vdtllist',
   'sm_vptrmap',
   'sm_warn',
-  'sm_cycles',
   'sm_srcloc',
   'sm_syserr',
   'sm_str',
@@ -2296,7 +2281,6 @@ ELKHOUND = [
 ]
 
 ELKRTL = [
-  'elk_cyctimer',
   'elk_glr',
   'elk_parsetables',
   'elk_useract',
@@ -2807,8 +2791,8 @@ try:
       objs=[]
       for i in tmp:
         objs.append(i[:-2]) # chop off the .o
-      TARGET_CXX.link_static_archive(xqt,objs, "rtl/libflx_dynamic_objects.a")
-      TARGET_CXX.convert_static_archive_to_shared_library(xqt,"rtl/libflx_dynamic_objects.a",FLX_SONAME,SHLIB_DIR+"/libflx_dynamic"+EXT_SHARED)
+      TARGET_CXX.link_static_archive(xqt,objs, "rtl/libflx_dynamic_objects")
+      TARGET_CXX.convert_static_archive_to_shared_library(xqt,"rtl/libflx_dynamic_objects",FLX_SONAME,SHLIB_DIR+"/libflx_dynamic"+EXT_SHARED)
       if not CYGWIN:
         # hack: Cygwin doesn't use soname, linux does ..
         xqt("cd rtl && rm -f libflx_dynamic.so.1 && ln -s libflx_dynamic.so libflx_dynamic.so.1")
@@ -2850,7 +2834,7 @@ try:
       objs=[]
       for i in tmp:
         objs.append(i[:-2]) # chop off the .o
-      HOST_CXX.link_static_archive(xqt,objs,"rtl/libflx_static.a")
+      HOST_CXX.link_static_archive(xqt,objs,"rtl/libflx_static")
   
   # elkhound executable: no need for dynamic loading, always built static
   if "elkhound" in options:
@@ -2864,7 +2848,7 @@ try:
     objs=[]
     for i in tmp:
       objs.append(i[:-2]) # chop off the .o
-    HOST_CXX.link_static_archive(xqt,objs,"elk/libelk_static.a")
+    HOST_CXX.link_static_archive(xqt,objs,"elk/libelk_static")
     HOST_CXX.compile_static_main(xqt,"elk","elk_gramanl","elk",include_path=["elk"],macros=["GRAMANL_MAIN"])
     HOST_CXX.link_static_program(xqt,["elk/elk_gramanl_static"],"bin/flx_elkhound",lib_path=["elk"],libs=["elk_static"])
  

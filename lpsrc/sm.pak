@@ -1540,34 +1540,6 @@ unsigned long crc32(unsigned char const *data, int length);
 
 #endif // __CRC_H
 
-@h=tangler('elk/sm_cycles.h')
-@select(h)
-// cycles.h            see license.txt for copyright and terms of use
-// read processor cycle count
-// interface is portable, implementation is not
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-// read the processor's cycle-count register, and store the count
-// into these two 'unsigned' variables; if the count isn't available,
-// yields zero in both
-void getCycles(unsigned *lowp, unsigned *highp);
-
-
-#ifdef __GNUC__
-// if we're using gcc, so the 'long long' type is available,
-// here's a more convenient version
-unsigned long long getCycles_ll(void);
-#endif
-
-
-#ifdef __cplusplus
-}
-#endif
-
 @h=tangler('elk/sm_datablok.h')
 @select(h)
 // datablok.h            see license.txt for copyright and terms of use
@@ -6863,37 +6835,6 @@ inline T div_up(T const &x, T const &y)
 
 #endif // __TYP_H
 
-@h=tangler('elk/sm_unixutil.h')
-@select(h)
-// unixutil.h            see license.txt for copyright and terms of use
-// some utilities on top of unix functions
-
-#ifndef UNIXUTIL_H
-#define UNIXUTIL_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// write entire contents of buffer to 'fd', returning 0 on failure
-int writeAll(int fd, void const *buf, int len);
-                                           
-// read(2) some data into a buffer of 'len' bytes; null-terminate
-// those bytes, and strip any trailing newline; return 0 on failure
-int readString(int fd, char *str, int len);
-
-// test if there are bytes available to be read from a file descriptor,
-// returning nonzero if so
-
-#if 0
-int canRead(int fd);
-#endif
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif // UNIXUTIL_H
 @h=tangler('elk/sm_vdtllist.h')
 @select(h)
 // vdtllist.h            see license.txt for copyright and terms of use
@@ -8808,142 +8749,7 @@ int main(int argc, char *argv[])
 }
 
 #endif // TEST_BOXPRINT
-@h=tangler('elk/sm_cycles.cpp')
-@select(h)
-// cycles.c            see license.txt for copyright and terms of use
-// code for cycles.h
 
-#include "sm_cycles.h"
-
-// -------------------- x86 -------------------------
-#if defined(__i386__)
-// use the 'rdtsc' (read time-stamp count) instruction
-// NOTE: this entire file assumes we're compiling to a 32-bit machine
-// (i.e. 'unsigned' is a 32-bit quantity)
-
-// see also:
-//   http://cedar.intel.com/software/idap/media/pdf/rdtscpm1.pdf
-//   http://www.x86-64.org/lists/bugs/msg00621.html
-//   http://www.dc.uba.ar/people/materias/oc2/LaboLinux/docs/intel/RDTSC.pdf
-
-
-#ifdef RDTSC_SOURCE
-// this function yields a 64-bit cycle count, writing into
-// two variables passed by address
-void getCycles(unsigned *lowp, unsigned *highp)
-{
-  unsigned int low, high;
-
-  // this is gcc inline assembler syntax; it says that the
-  // instruction writes to EAX ("=a") and EDX ("=d"), but that
-  // I would like it to then copy those values into 'low' and
-  // 'high', respectively
-  asm volatile ("rdtsc" : "=a" (low), "=d" (high));
-
-  // now copy into the variables passed by address
-  *lowp = low;
-  *highp = high;
-}
-
-#else // RDTSC_SOURCE
-
-// this is the binary instructions that gcc-2.95.3 (optimization -O2)
-// produces for the above code; it will work regardless of the current
-// compiler's assembler syntax (even if the current compiler doesn't
-// have *any* inline assembler)
-static char const rdtsc_instructions[] = {
-  0x55,                                 // push   %ebp
-  0x89, 0xe5,                           // mov    %esp,%ebp
-  0x53,                                 // push   %ebx
-  0x8b, 0x4d, 0x08,                     // mov    0x8(%ebp),%ecx
-  0x8b, 0x5d, 0x0c,                     // mov    0xc(%ebp),%ebx
-  0x0f, 0x31,                           // rdtsc
-  0x89, 0x01,                           // mov    %eax,(%ecx)
-  0x89, 0x13,                           // mov    %edx,(%ebx)
-  0x5b,                                 // pop    %ebx
-  0xc9,                                 // leave
-  0xc3,                                 // ret
-  0x90,                                 // nop
-};
-
-// external entry point
-void getCycles(unsigned *lowp, unsigned *highp)
-{
-  return ((void (*)(unsigned*, unsigned*))rdtsc_instructions)(lowp, highp);
-}
-
-#endif // RDTSC_SOURCE
-
-
-// ------------------ unknown architecture -----------------
-#else
-
-// some preprocessors choke on this..
-//#warn unknown architecture in cycles.c
-
-void getCycles(unsigned *lowp, unsigned *highp)
-{
-  *lowp = 0;
-  *highp = 0;
-}
-
-#endif // architecture
-
-
-// ------------------- getCycles_ll ----------------------
-#ifdef __GNUC__
-// this uses gcc's "long long" to represent the 64-bit
-// quantity a little more easily
-unsigned long long getCycles_ll()
-{
-  unsigned int low, high;
-  unsigned long long ret;
-
-  getCycles(&low, &high);
-
-  ret = high;
-  ret <<= 32;
-  ret += low;
-
-  return ret;
-}
-#endif // __GNUC__
-
-
-// ----------------------- test code ---------------------
-#ifdef TEST_CYCLES
-
-#include <stdio.h>    // printf
-
-int main()
-{
-  #ifdef __GNUC__
-    unsigned long long v = getCycles_ll();
-    printf("getCycles: %llu\n", v);
-  #endif // __GNUC__
-
-  // this segment should work on any compiler, by virtue
-  // of only using 32-bit quantities
-  {
-    unsigned low, high;
-    getCycles(&low, &high);
-    printf("getCycles high=%u, low=%u\n", high, low);
-  }
-
-  // test whether the instruction causes a privileged instruction
-  // fault; on my machine I get 33 cycles per call, which clearly
-  // is too few for it to be trapping on each one
-  {
-    unsigned low1, low2, low3, high;
-    getCycles(&low1, &high);
-    getCycles(&low2, &high);
-    getCycles(&low3, &high);
-    printf("three lows in a row: %u, %u, %u\n", low1, low2, low3);
-  }
-
-  return 0;
-}
-#endif // TEST_CYCLES
 @h=tangler('elk/sm_flatten.cpp')
 @select(h)
 // flatten.cc            see license.txt for copyright and terms of use
@@ -14252,83 +14058,6 @@ int main()
 
   return 0;
 }
-@h=tangler('elk/sm_unixutil.cpp')
-@select(h)
-// unixutil.c            see license.txt for copyright and terms of use
-// code for unixutil.h
-
-#include "sm_unixutil.h"
-
-#include <unistd.h>     // write
-#include <assert.h>     // assert
-#include <sys/time.h>   // struct timeval
-#include <sys/types.h>  // select
-#include <unistd.h>     // select
-#include <stdio.h>      // perror
-
-// SKIP ALL OF THIS NOW, not using canRead
-#if 0
-#include <sys/select.h> // FD_ZERO etc
-#include <cstring>     // required for bzero in FreeBSD 4, Darwin 6, etc.
-#endif
-
-int writeAll(int fd, void const *buf, int len)
-{
-  int written = 0;
-  while (written < len) {
-    int result = write(fd, ((char const*)buf)+written, len-written);
-    if (result < 0) {
-      return 0;    // failure
-    }
-    written += result;
-  }
-  assert(written == len);
-  return 1;        // success
-}
-
-
-int readString(int fd, char *str, int len)
-{ 
-  int count = read(fd, str, len-1);
-  if (count < 0) {
-    return 0;      // failure
-  }
-  str[count]=0;
-
-  // remove trailing newlines (or NULs), if any
-  while (count>0 && (str[count-1] == '\n' || str[count-1] == 0)) {
-    count--;
-    str[count] = 0;
-  }
-
-  return 1;
-}
-
-
-#if 0
-int canRead(int fd)
-{
-  fd_set set;
-  struct timeval tv;
-  int res;
-
-  // check only 'fd'
-  FD_ZERO(&set);
-  FD_SET(fd, &set);
-
-  // do not block at all
-  tv.tv_sec = 0;
-  tv.tv_usec = 0;
-
-  res = select(fd+1, &set, NULL, NULL, &tv);
-  if (res == -1) {
-    perror("select");     // not ideal...
-    return 0;
-  }
-  
-  return res;             // 0 or 1
-}
-#endif
 
 // EOF
 @h=tangler('elk/sm_vdtllist.cpp')
@@ -16730,7 +16459,7 @@ int missing_stricmp(char const *s1, char const *s2)
 #include <stdlib.h>      // abort, exit
 #include <cstring>      // std::strncpy
 
-#ifdef __WIN32__
+#ifdef _WIN32
 #  ifdef USE_MINWIN_H
 #    include "minwin.h"   // api
 #  else
@@ -16776,7 +16505,7 @@ int missing_stricmp(char const *s1, char const *s2)
 #include <time.h>         // tzset, localtime, time
 #include <iostream>     // std::cout
 
-#if !defined(__WIN32__) || defined(__BORLANDC__)
+#if !defined(_WIN32) || defined(__BORLANDC__)
   #include <dirent.h>       // opendir
 #endif
 
@@ -16797,7 +16526,7 @@ inline void fail(char const *call, char const *ctx=NULL)
 
 void setRawMode(bool raw)
 {
-# ifdef __WIN32__
+# ifdef _WIN32
     // nothing necessary; getConsoleChar handles it
 
 # else
@@ -16822,7 +16551,7 @@ void setRawMode(bool raw)
 // or buffering
 char getConsoleChar()
 {
-# ifdef __WIN32__
+# ifdef _WIN32
     // this function always bypasses 'cooked' console mode
     return (char)getch();
 
@@ -16841,7 +16570,7 @@ char getConsoleChar()
 // constant for the life of the program, event
 long getMilliseconds()
 {
-# ifdef __WIN32__
+# ifdef _WIN32
     // # of milliseconds since program started
     return GetTickCount();
 
@@ -16877,7 +16606,7 @@ bool limitFileAccess(char const *fname)
 bool createDirectory(char const *dirname)
 {
   int res;
-# ifdef __WIN32__
+# ifdef _WIN32
     // no 'mode' argument
     res = mkdir(dirname);
 # else   // unix
@@ -16962,7 +16691,7 @@ void portableSleep(unsigned seconds)
 /*
 void getCurrentUsername(char *buf, int buflen)
 {
-  #ifdef __WIN32__
+  #ifdef _WIN32
     DWORD len = buflen;
     if (!GetUserName(buf, &len)) {
       fail("GetUserName");
@@ -17057,7 +16786,7 @@ void applyToDirContents(char const *dirName,
   //     trash section)
   // DOB: VC doesn't have opendir-
   //  I think this is the only way to do it in the Win32 API
-  #if defined(__WIN32__) && !defined(__BORLANDC__)
+  #if defined(_WIN32) && !defined(__BORLANDC__)
     struct _finddata_t fb;
     char* buf = new char[std::strlen(dirName)+5];
     std::strcpy(buf, dirName);
@@ -17111,7 +16840,7 @@ bool isDirectory(char const *path)
     fail("stat", path);
     return false;
   }
-  #if defined(__WIN32__) && !defined(__BORLANDC__)
+  #if defined(_WIN32) && !defined(__BORLANDC__)
     return !!(st.st_mode & _S_IFDIR); // this is how it works for VC
   #else
     return S_ISDIR(st.st_mode);
@@ -17570,7 +17299,7 @@ void limitFileAccess(char const *fname)
 # endif
 }
 
-# ifdef __WIN32__     // findfirst, findnext
+# ifdef _WIN32     // findfirst, findnext
 #   ifdef __BORLANDC__
       struct ffblk fb;
       int done = findfirst("*", &fb, 0);
@@ -17616,7 +17345,6 @@ void limitFileAccess(char const *fname)
 #include "sm_ckheap.h"
 #include "sm_flatten.h"
 #include "sm_nonport.h"
-#include "sm_unixutil.h"
 
 
 // ----------------------- sm_string ---------------------
@@ -18004,7 +17732,7 @@ sm_string vsm_stringf(char const *format, va_list args)
     static char const msg[] =
       "fatal error: vnprintf failed to provide a conservative estimate,\n"
       "memory is most likely corrupted\n";
-    writeAll(2 /*stderr*/, msg, std::strlen(msg));
+    fprintf(stderr, msg);
     abort();
   }
              
@@ -18287,7 +18015,7 @@ sm_string sysErrorCodeString(int systemErrorCode, char const *syscallName,
 
 
 // ----------------------- Win32 code ------------------------------------
-#ifdef __WIN32__
+#ifdef _WIN32
 
 #ifdef USE_MINWIN_H
 #  include "minwin.h"   // api

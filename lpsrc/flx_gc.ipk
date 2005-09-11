@@ -189,7 +189,6 @@ Routines to add and remove roots.
 Integrity check for the data structure being managed.
 @select(h)
   virtual void check()=0;
-  void set_debug(bool d);
 
 @doc()
 It doesn't make any sense to copy collector objects
@@ -378,6 +377,9 @@ void reset_count(void *memory, unsigned long n)
   CLIENT_TO_FRAME(memory)->n_objects = n;
 }
 
+collector_t::collector_t() : debug(false) {}
+
+
 }}} // end namespaces
 
 // in global namespace now ..
@@ -530,13 +532,6 @@ void malloc_free::deallocate(void *p, std::size_t)
   if(debug)fprintf(stderr,"Free %p\n",p);
   free(p);
 }
-
-void collector_t::set_debug(bool d) {
-  debug = d;
-  if (debug) fprintf(stderr,"Collector: FRAMESIZE 0x%x\n",FRAMESIZE);
-}
-
-collector_t::collector_t() : debug(false) {}
 
 unsigned long flx_collector_t::get_allocation_count()const
 {
