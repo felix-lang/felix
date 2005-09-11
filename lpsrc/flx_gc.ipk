@@ -42,6 +42,9 @@ to supply a user written allocator.
 #define FLX_GC
 
 #include <cstdlib>
+#ifndef FLX_RTL_CONFIG
+#include "flx_rtl_config.hpp"
+#endif
 
 // we use an STL set to hold the collection of roots
 #include <set>
@@ -51,9 +54,9 @@ namespace gc {
 namespace generic {
 // Here are the types we refer to:
 
-struct frame_t;      // the type of all collectable objects
-struct gc_shape_t;   // the shape of collectable objects
-struct collector_t;  // the collector itself
+struct FLX_RTL_EXTERN frame_t;      // the type of all collectable objects
+struct FLX_RTL_EXTERN gc_shape_t;   // the shape of collectable objects
+struct FLX_RTL_EXTERN collector_t;  // the collector itself
 
 struct gc_shape_t
 {
@@ -271,8 +274,8 @@ of object an memory block hold, and reset the
 length of an array, respectively.
 
 @select(h)
-void flx_reset_shape(void *memory, gc_shape_t &);
-void flx_reset_count(void *memory, unsigned long); 
+FLX_RTL_EXTERN void flx_reset_shape(void *memory, gc_shape_t &);
+FLX_RTL_EXTERN void flx_reset_count(void *memory, unsigned long); 
 
 }}} // end namespaces
 
@@ -286,14 +289,14 @@ in the global namespace to accomodate Metrowerks
 compiler on Mac OS. 
 
 @select(h)
-void *operator new
+FLX_RTL_EXTERN void *operator new
 (
   std::size_t, 
   flx::gc::generic::collector_t &, 
   flx::gc::generic::gc_shape_t &
 );
 
-void *operator new
+FLX_RTL_EXTERN void *operator new
 (
   std::size_t, 
   flx::gc::generic::collector_t &, 
@@ -421,6 +424,9 @@ namespace flx {
 namespace gc {
 namespace collector {
 using namespace generic;
+
+struct FLX_RTL_EXTERN malloc_free;
+struct FLX_RTL_EXTERN flx_collector_t;
 
 struct malloc_free : public virtual allocator_t {
   void *allocate(std::size_t);

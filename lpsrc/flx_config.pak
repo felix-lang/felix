@@ -1090,20 +1090,10 @@ class gxx:
     for i in libs: cmd = cmd + "-l"+i+" "
     shell(cmd)
     
-  def convert_static_archive_to_shared_library(self,shell,archive,soname,dll):
-    opt = self.options
-    cmd = opt.CCLINK_DYNAMIC_RTL + "-o " + dll + " "
-    cmd = cmd + "-Wl,-soname="+soname+ " "
-    cmd = cmd + "-Wl,--whole-archive " + archive + opt.EXT_LIB+" " 
-    cmd = cmd + "-Wl,--no-whole-archive "
-    if opt.DLLIB:
-      cmd = cmd + "-l"+opt.DLLIB+" "
-    shell(cmd)
-
-  def link_shared_rtl(self,shell,objects,outfile,lib_path,libs):
+  def link_shared_rtl(self,shell,objects,outfile,soname=None,lib_path=[],libs=[]):
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_RTL
-    cmd = cmd + "-o " +outfile + " "
+    cmd = cmd + "-o " +outfile + opt.EXT_SHARED + " "
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
     for i in lib_path: cmd = cmd + "-L"+i+" "
     for i in libs: cmd = cmd + "-l"+i+" "
@@ -1114,7 +1104,6 @@ class gxx:
   link_felix_dll = link_shared_rtl
   
   def link_dynamic_program(self,shell,objects,outfile,lib_path,libs):
-    #cmd = self.CXX +" -fPIC -Wl,-Bdynamic -Wl,--export-dynamic "
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_MAIN
     cmd = cmd + "-o " +outfile + " "
@@ -1198,14 +1187,14 @@ class msvcxx:
     opt.EXT_SHARED = ".dll"
     opt.EXT_OBJ = ".obj"
 
-    COMPILE_DYNAMIC_RTL = "/MT /c /EHs "
-    LINK_DYNAMIC_RTL = "/MT /LD "
+    COMPILE_DYNAMIC_RTL = "/nologo /MD /c /EHs "
+    LINK_DYNAMIC_RTL = "/nologo /MD /LD "
       
-    COMPILE_DYNAMIC_MAIN = "/MT /c /EHs "
-    LINK_DYNAMIC_MAIN = "/MT "
+    COMPILE_DYNAMIC_MAIN = "/nologo /MT /c /EHs "
+    LINK_DYNAMIC_MAIN = "/nologo /MT "
 
-    COMPILE_DYNAMIC_FLX = "/c /EHs "
-    LINK_DYNAMIC_FLX = "/MT /LD "
+    COMPILE_DYNAMIC_FLX = "/nologo /MD /c /EHs "
+    LINK_DYNAMIC_FLX = "/nologo /MT /LD "
 
     opt.CCOBJ_DYNAMIC_FLX = CXX + COMPILE_DYNAMIC_FLX
     opt.CCLINK_DYNAMIC_FLX = CXX + LINK_DYNAMIC_FLX
@@ -1216,9 +1205,9 @@ class msvcxx:
     opt.CCOBJ_DYNAMIC_MAIN = CXX + COMPILE_DYNAMIC_MAIN
     opt.CCLINK_DYNAMIC_MAIN = CXX + LINK_DYNAMIC_MAIN
 
-    opt.CCOBJ_STATIC_FLX = CXX + "/c "
-    opt.CCOBJ_STATIC_RTL = CXX + "/c "
-    opt.CCOBJ_STATIC_MAIN = CXX + "/c "
+    opt.CCOBJ_STATIC_FLX = CXX + "/nologo /MT /EHs /c "
+    opt.CCOBJ_STATIC_RTL = CXX + "/nologo /MT /EHs /c "
+    opt.CCOBJ_STATIC_MAIN = CXX + "/nologo /MT /EHs /c "
 
     opt.CCOBJ_DYNAMIC_RTL=opt.CCOBJ_DYNAMIC_RTL+opt.NO_INVALID_OFFSETOF_WARNING
     opt.CCOBJ_DYNAMIC_FLX=opt.CCOBJ_DYNAMIC_FLX+opt.NO_INVALID_OFFSETOF_WARNING
@@ -1486,24 +1475,20 @@ class msvcxx:
     opt = self.options
     cmd = opt.CCLINK_STATIC
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
-    cmd = cmd + "/Fo" +outfile + " "
+    cmd = cmd + "/Fe" +outfile + opt.EXT_EXE + " "
+    cmd = cmd + "/link "
     for i in lib_path: cmd = cmd + "/LIBPATH:"+i+" "
-    for i in libs: cmd = cmd + "/DEFAULTLIB:"+i+" "
+    for i in libs: cmd = cmd + "/DEFAULTLIB:lib"+i+" "
     shell(cmd)
     
-  def convert_static_archive_to_shared_library(self,shell,archive,soname,dll):
-    opt = self.options
-    cmd = opt.CCLINK_DYNAMIC_RTL + archive +opt.EXT_LIB + " /Fe" + dll + " /link "
-    shell(cmd)
-
-  def link_shared_rtl(self,shell,objects,outfile,lib_path,libs):
+  def link_shared_rtl(self,shell,objects,outfile,soname=None,lib_path=[],libs=[]):
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_RTL
-    cmd = cmd + "/Fe" +outfile + " "
+    cmd = cmd + "/Fe" +outfile + opt.EXT_SHARED + " "
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
     cmd = cmd + "/link "
     for i in lib_path: cmd = cmd + "/LIBPATH:"+i+" "
-    for i in libs: cmd = cmd + "/DEFAULTLIB:"+i+" "
+    for i in libs: cmd = cmd + "/DEFAULTLIB:lib"+i+" "
     shell(cmd)
   
   link_felix_dll = link_shared_rtl
@@ -1511,11 +1496,11 @@ class msvcxx:
   def link_dynamic_program(self,shell,objects,outfile,lib_path,libs):
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_MAIN
-    cmd = cmd + "/Fe" +outfile + " "
+    cmd = cmd + "/Fe" +outfile  + opt.EXT_EXE + " "
     for i in objects: cmd = cmd +i+opt.EXT_OBJ+" "
     cmd = cmd + "/link "
     for i in lib_path: cmd = cmd + "/LIBPATH:"+i+" "
-    for i in libs: cmd = cmd + "/DEFAULTLIB:"+i+" "
+    for i in libs: cmd = cmd + "/DEFAULTLIB:lib"+i+" "
     shell(cmd)
   
 @h = tangler("script/make_config.py")

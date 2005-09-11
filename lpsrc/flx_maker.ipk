@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.144  2005/09/11 16:22:30  skaller
+Most of Win32 running now
+
 Revision 1.143  2005/09/11 04:45:09  skaller
 win32 build
 
@@ -603,7 +606,6 @@ sm_files = [
   'trace.h',
   'trdelete.h',
   'typ.h',
-  'unixutil.h',
   'vdtllist.h',
   'voidlist.h',
   'vptrmap.h',
@@ -634,7 +636,6 @@ sm_files = [
   'trace.cc',
   'trdelete.cc',
   'tsobjlist.cc',
-  'unixutil.c',
   'vdtllist.cc',
   'voidlist.cc',
   'vptrmap.cc',
@@ -801,7 +802,6 @@ sm_files = [
   'trace.h',
   'trdelete.h',
   'typ.h',
-  'unixutil.h',
   'vdtllist.h',
   'voidlist.h',
   'vptrmap.h',
@@ -832,7 +832,6 @@ sm_files = [
   'trace.cc',
   'trdelete.cc',
   'tsobjlist.cc',
-  'unixutil.c',
   'vdtllist.cc',
   'voidlist.cc',
   'vptrmap.cc',
@@ -2244,7 +2243,6 @@ SMRTL = [
   'sm_strtokp',
   'sm_strutil',
   'sm_svdict',
-  'sm_unixutil',
   'sm_vdtllist',
   'sm_vptrmap',
   'sm_warn',
@@ -2776,14 +2774,14 @@ try:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_dynamic.o "
         dir,base = string.split(x,'/')
-        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl'],optimise=1)
+        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl'],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"])
 
       #ELKHOUND SUBLIBRARY
       print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:
         if not "quiet" in options: print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_dynamic.o "
-        TARGET_CXX.compile_shared_rtl(xqt,"elk",x,"rtl",include_path=['elk'],optimise=1)
+        TARGET_CXX.compile_shared_rtl(xqt,"elk",x,"rtl",include_path=['rtl','elk'],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"])
 
       # LINK RTL
       print " ** MAKING RTL (dynamic) "
@@ -2791,11 +2789,7 @@ try:
       objs=[]
       for i in tmp:
         objs.append(i[:-2]) # chop off the .o
-      TARGET_CXX.link_static_archive(xqt,objs, "rtl/libflx_dynamic_objects")
-      TARGET_CXX.convert_static_archive_to_shared_library(xqt,"rtl/libflx_dynamic_objects",FLX_SONAME,SHLIB_DIR+"/libflx_dynamic"+EXT_SHARED)
-      if not CYGWIN:
-        # hack: Cygwin doesn't use soname, linux does ..
-        xqt("cd rtl && rm -f libflx_dynamic.so.1 && ln -s libflx_dynamic.so libflx_dynamic.so.1")
+      TARGET_CXX.link_shared_rtl(xqt,objs,SHLIB_DIR+os.sep+"libflx_dynamic")
 
         #if CYGWIN:
         #  print "Building RTL for CYGWIN dynamic linkage"
@@ -2827,7 +2821,7 @@ try:
       for x in SMRTL+ELKRTL:
         if not "quiet" in options: print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_static.o "
-        TARGET_CXX.compile_static_rtl(xqt,"elk",x,"rtl",include_path=['rtl'],optimise=1)
+        TARGET_CXX.compile_static_rtl(xqt,"elk",x,"rtl",include_path=['rtl','elk'],optimise=1,macros=["FLX_STATIC_LINK"])
 
       print " ** MAKING RTL (static) "
       tmp = string.split(ars)
@@ -2843,13 +2837,13 @@ try:
     for x in SMBASE + SMRTL + ASTGEN + ELKHOUND + ELKRTL:
       if not "quiet" in options: print 'Compiling elkhound object',x
       ars = ars + "elk/"+x + "_static.o "
-      HOST_CXX.compile_static_rtl(xqt,"elk",x,"elk",include_path=["elk"])
+      HOST_CXX.compile_static_rtl(xqt,"elk",x,"elk",include_path=["rtl","elk"],macros=["FLX_STATIC_LINK"])
     tmp = string.split(ars)
     objs=[]
     for i in tmp:
       objs.append(i[:-2]) # chop off the .o
     HOST_CXX.link_static_archive(xqt,objs,"elk/libelk_static")
-    HOST_CXX.compile_static_main(xqt,"elk","elk_gramanl","elk",include_path=["elk"],macros=["GRAMANL_MAIN"])
+    HOST_CXX.compile_static_main(xqt,"elk","elk_gramanl","elk",include_path=["rtl","elk"],macros=["GRAMANL_MAIN","FLX_STATIC_LINK"])
     HOST_CXX.link_static_program(xqt,["elk/elk_gramanl_static"],"bin/flx_elkhound",lib_path=["elk"],libs=["elk_static"])
  
   # COMPILE DRIVER PROGRAMS
@@ -2962,7 +2956,7 @@ try:
           try:
             if LINK_MODEL == "dynamic":
               TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise)
-              TARGET_CXX.link_felix_dll(xqt,[basename+"_dynamic"],basename+SHLX,lib_path=[SHLIB_DIR],libs=["flx_dynamic"])
+              TARGET_CXX.link_felix_dll(xqt,[basename+"_dynamic"],basename,lib_path=[SHLIB_DIR],libs=["flx_dynamic"])
             else: # static
               TARGET_CXX.compile_felix_static(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise)
               TARGET_CXX.link_static_program(xqt,["rtl/flx_run_static",basename+"_static"],basename,lib_path=["rtl"],libs=["flx_static"])

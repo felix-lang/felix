@@ -5234,11 +5234,13 @@ public:
 #endif
 // MOVE THE ABOVE TO PLACE MORE GENERAL 
 
+#include "flx_rtl_config.hpp"
 #include "sm_typ.h"
 #include <iostream>    // std::istream, std::ostream
 #include <stdarg.h>      // va_list
 
 class Flatten;           // flatten.h
+class FLX_RTL_EXTERN sm_string;
 
 class sm_string {
 protected:     // data

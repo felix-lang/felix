@@ -116,15 +116,28 @@ T &reinterpret(U const &x) {
 @if MACOSX:
   tangle("#define MACOSX")
 
+@if HAVE_MSVC:
+  tangle("#define HAVE_MSVC")
+
 //
-#if defined(FLX_HAVE_CGOTO) && defined(FLX_HAVE_ASM_LABELS)
+#if !defined(FLX_STATIC_LINK) && defined(FLX_HAVE_CGOTO) && defined(FLX_HAVE_ASM_LABELS)
 #define FLX_CGOTO
 #endif
 
-#if defined(__CYGWIN__) || defined(_WIN32)
+#if  !defined(FLX_STATIC_LINK) && (defined(__CYGWIN__) || defined(_WIN32))
 #define FLX_EXPORT __declspec(dllexport)
 #else
 #define FLX_EXPORT
+#endif
+
+#if  !defined(FLX_STATIC_LINK) && (defined(__CYGWIN__) || defined(_WIN32))
+#if defined(FLX_BUILD_DYNAMIC_RTL)
+#define FLX_RTL_EXTERN __declspec(dllexport)
+#else
+#define FLX_RTL_EXTERN __declspec(dllimport)
+#endif
+#else
+#define FLX_RTL_EXTERN
 #endif
 
 #if defined(MACOSX) && !defined(HAVE_DLOPEN)
@@ -210,7 +223,7 @@ right type by client drivers.
 namespace flx { namespace rtl {
 
 // CONTINUATION
-struct con_t // abstract base for mutable continuations
+struct FLX_RTL_EXTERN con_t // abstract base for mutable continuations
 {
 #ifdef FLX_CGOTO
   void *pc;
@@ -234,7 +247,7 @@ struct con_t // abstract base for mutable continuations
 };
 
 //REFERENCE
-struct _ref_
+struct FLX_RTL_EXTERN _ref_
 {
   void *frame;
   void *data;
@@ -252,10 +265,10 @@ struct _ref_
   void operator = (_ref_ const& r);
 };
 
-extern flx::gc::generic::gc_shape_t _ref_ptr_map;
+extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _ref_ptr_map;
 
 //VARIANTS
-struct _uctor_
+struct FLX_RTL_EXTERN _uctor_
 {
   int variant;
   void *data;
@@ -263,23 +276,23 @@ struct _uctor_
   _uctor_(int i, void *d) : variant(i), data(d) {}
 };
 
-extern flx::gc::generic::gc_shape_t _uctor_ptr_map;
-extern flx::gc::generic::gc_shape_t _int_ptr_map;
-extern flx::gc::generic::gc_shape_t unit_ptr_map;
+extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _uctor_ptr_map;
+extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _int_ptr_map;
+extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t unit_ptr_map;
 
 // UNIT
-struct unit {};
+struct FLX_RTL_EXTERN unit {};
 
 // EXEC protocol failure
 // Thrown when trying to run a dead procedure
-struct flx_exec_failure_t {
+struct FLX_RTL_EXTERN flx_exec_failure_t {
   std::string filename;
   std::string operation;
   std::string what;
   flx_exec_failure_t(std::string f, std::string o, std::string w);
 };
 
-struct flx_range_srcref_t {
+struct FLX_RTL_EXTERN flx_range_srcref_t {
   char *filename;
   int startline;
   int startcol;
@@ -293,7 +306,7 @@ struct flx_range_srcref_t {
 // Thrown when no match cases match the argument of a match,
 // regmatch, or reglex
 
-struct flx_match_failure_t {
+struct FLX_RTL_EXTERN flx_match_failure_t {
   flx_range_srcref_t flx_loc;
   char *cxx_srcfile;    // in C++ file
   int cxx_srcline;      // __LINE__ macro
@@ -302,7 +315,7 @@ struct flx_match_failure_t {
 };
 
 // ASSERT failure
-struct flx_assert_failure_t {
+struct FLX_RTL_EXTERN flx_assert_failure_t {
   flx_range_srcref_t flx_loc;
   char *cxx_srcfile;    // in C++ file
   int cxx_srcline;      // __LINE__ macro
@@ -663,6 +676,10 @@ struct thread_frame_t;
 
 namespace flx { namespace rtl {
 
+struct FLX_RTL_EXTERN flx_link_failure_t;
+struct FLX_RTL_EXTERN flx_dynlink_t;
+struct FLX_RTL_EXTERN flx_libinit_t;
+
 struct flx_link_failure_t {
   string filename;
   string operation;
@@ -947,7 +964,7 @@ shared library name are not passed.
 #include <cassert>
 
 #include <string>
-#include <unistd.h>
+//#include <unistd.h>
 #include "flx_rtl.hpp"
 
 #include "flx_collector.hpp"

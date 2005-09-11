@@ -98,7 +98,7 @@ to the client.
 #include <string.h>
 #include <assert.h>
 #include <string>
-#include <unistd.h>
+//#include <unistd.h>
 
 #include "flx_rtl.hpp"
 #include "flx_collector.hpp"
@@ -282,7 +282,7 @@ messages.
 @d = tangler('test/flx_perf_drv1.cpp')
 @select(d)
 #include <time.h>
-#include <unistd.h>
+//#include <unistd.h>
 
 #include <cstdio>
 #include <cstring>
