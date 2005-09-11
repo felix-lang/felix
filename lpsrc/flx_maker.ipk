@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.145  2005/09/11 16:25:21  skaller
+Add WIN32 check for running tests, don't use LD_LIBRARY_PATH
+
 Revision 1.144  2005/09/11 16:22:30  skaller
 Most of Win32 running now
 
@@ -2975,7 +2978,7 @@ try:
       for testfile in TESTS:
         basename = string.split(testfile,'.')[0]
         if LINK_MODEL == "dynamic":
-          if CYGWIN:
+          if CYGWIN or WIN32:
             testscript = "env PATH=./bin:\"$PATH\" ./bin/flx_run ./"+basename+SHLX
           else:
             testscript = "env LD_LIBRARY_PATH=./rtl:\"$LD_LIBRARY_PATH\" ./bin/flx_run ./"+basename+SHLX
