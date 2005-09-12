@@ -33,12 +33,16 @@ to get some times.
   ('takfp',' 10'),
   ('sumcol',' < bagley/data/sumcol.data'),
   ('wc',' < bagley/data/phone_numbers.data'), 
-  ('wordfreq',' 1 < bagley/data/wordfreq.data'), 
  ]
 
-@if not CYGWIN:
+@if not CYGWIN and not WIN32:
   # hangs for unknown reason on Cygwin
+  # HashSet not available on Windows 
   sbags.append(('spellcheck',' < bagley/data/spellcheck.data'))
+
+@if not WIN32:
+  # HashMap not available on Windows 
+  sbags.append(('wordfreq',' 1 < bagley/data/wordfreq.data'))
 
 @dbags = [
   ('plugin',' 20'),
@@ -1049,7 +1053,9 @@ open Ulong;
 
 body '''
 #include <limits.h>
-#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+
 #define BSIZE 4096
 unsigned long wds[UCHAR_MAX + 1];
 unsigned long nwds[UCHAR_MAX + 1];
@@ -1070,7 +1076,7 @@ proc setnws: int * ulong = "nwds[$1]=$2;";
 fun getws: ulong -> ulong = "wds[$1]";
 fun getnws: ulong -> ulong = "nwds[$1]";
 
-fun readbuf: unit -> int = "read(0,buff,BSIZE)";
+fun readbuf: unit -> int = "fread(buff,1,BSIZE,stdin)";
 
 var prev_nws = 0x1_0000uL;
 var w_cnt = 0uL;
@@ -1223,9 +1229,14 @@ if prefix == "" do prefix = "./"; done;
 
 // list of the plugin filenames
 var plugins = List::Empty[string];
-plugins = plugins + (prefix + 'plugin_1.so');
-plugins = plugins + (prefix + 'plugin_2.so');
-plugins = plugins + (prefix + 'plugin_3.so');
+@if WIN32:
+  tangle("plugins = plugins + (prefix + 'plugin_1.dll');")
+  tangle("plugins = plugins + (prefix + 'plugin_2.dll');")
+  tangle("plugins = plugins + (prefix + 'plugin_3.dll');")
+ else:
+  tangle("plugins = plugins + (prefix + 'plugin_1.so');")
+  tangle("plugins = plugins + (prefix + 'plugin_2.so');")
+  tangle("plugins = plugins + (prefix + 'plugin_3.so');")
 
 // data structure for communication with plugin
 struct plugin_com_t

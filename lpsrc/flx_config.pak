@@ -526,17 +526,17 @@ class ocaml:
    
   def save_config(self,filename):
     f = open(filename,"w")
-    f.write("OCAML_VERSION='"+self.OCAML_VERSION+"'\n")
+    f.write("OCAML_VERSION="+repr(self.OCAML_VERSION)+"\n")
     f.write("NATIVE_CODE_COMPILER="+str(self.NATIVE_CODE_COMPILER)+"\n")
-    f.write("OCAMLLEX='"+self.OCAMLLEX+"'\n")
-    f.write("OCAMLYACC='"+self.OCAMLYACC+"'\n")
-    f.write("OCAMLB='"+self.OCAMLB+"'\n")
-    f.write("OCAMLB_DESCRIPTION='"+self.OCAMLB_DESCRIPTION+"'\n")
-    f.write("OCAMLC='"+self.OCAMLC+"'\n")
-    f.write("OCAMLC_DESCRIPTION='"+self.OCAMLC_DESCRIPTION+"'\n")
-    f.write("OCAMLCP='"+self.OCAMLCP+"'\n")
-    f.write("OCAMLDOC='"+self.OCAMLDOC+"'\n")
-    f.write("OCAML_INCLUDE_DIRECTORY='"+self.OCAML_INCLUDE_DIRECTORY+"'\n")
+    f.write("OCAMLLEX="+repr(self.OCAMLLEX)+"\n")
+    f.write("OCAMLYACC="+repr(self.OCAMLYACC)+"\n")
+    f.write("OCAMLB="+repr(self.OCAMLB)+"\n")
+    f.write("OCAMLB_DESCRIPTION="+repr(self.OCAMLB_DESCRIPTION)+"\n")
+    f.write("OCAMLC="+repr(self.OCAMLC)+"\n")
+    f.write("OCAMLC_DESCRIPTION="+repr(self.OCAMLC_DESCRIPTION)+"\n")
+    f.write("OCAMLCP="+repr(self.OCAMLCP)+"\n")
+    f.write("OCAMLDOC="+repr(self.OCAMLDOC)+"\n")
+    f.write("OCAML_INCLUDE_DIRECTORY="+repr(self.OCAML_INCLUDE_DIRECTORY)+"\n")
     f.close()
   
   def load_config(self,filename):

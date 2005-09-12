@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.147  2005/09/12 17:59:24  skaller
+Win32 build working
+
 Revision 1.146  2005/09/12 16:32:10  skaller
 Win32 build
 
@@ -1951,17 +1954,6 @@ except:
   print "       again to reset it:"
   print "       this is done automatically by 'make boot'"
   sys.exit(1)
-
-# for nonportable stuffs
-# ELHOUND_*_FLAGS -- for elkhound:
-#         either -D__UNIX__ for a posix environment or empty
-# OCAML_LINK_OPTIONS -- set the library directory 
-#         for the linker used by gcc (posix) or cl (Win32)
-
-if os.name == "nt":
-  OCAML_LINK_OPTIONS="/link /LIBPATH:src -lnums"
-else:
-  OCAML_LINK_OPTIONS="-Lsrc -lnums"
 
 FLXFLAGS = ""
 
@@ -4147,7 +4139,8 @@ echo $cmd
 
 @tangle("CYGWIN="+str(CYGWIN))
 @tangle("WIN32="+str(WIN32))
-# g++ compilation string
+@tangle("HAVE_GXX="+str(HAVE_GXX))
+@tangle("HAVE_MSVC="+str(HAVE_MSVC))
 @tangle('CCOBJ_DLLIB="'+CCOBJ_DYNAMIC_FLX+'"')
 @tangle('CCLINK_DLLIB="'+CCLINK_DYNAMIC_FLX+'"')
 @tangle('CCOBJ_STATIC_LIB="'+CCOBJ_STATIC_FLX+'"')
@@ -4161,6 +4154,10 @@ echo $cmd
 @tangle('SPEC_EXE_FILENAME="'+SPEC_EXE_FILENAME+'"')
 @tangle('OPTIMISE="'+OPTIMISE+'"')
 @tangle('DEBUG_FLAGS="'+DEBUG_FLAGS+'"')
+@if HAVE_MSVC:
+  tangle("DYNLINK_STRING='/link /LIBPATH:bin /DEFAULTLIB:libflx_dynamic'")
+ else:
+  tangle("DYNLINK_STRING='-Lrtl -lflx_dynamic'")
 
 # check for test mode: this argument must come first
 
@@ -4442,7 +4439,7 @@ then
   FLXRTL="./rtl"
   FLXBIN="./bin"
   FLXAR="./rtl"
-  if [ "$CYGWIN" = "1" ]
+  if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]
   then
     FLXSHLIB="./bin"
   else
@@ -4468,7 +4465,7 @@ else
   FLXRTL="$prefix/lib/felix/lib"
   FLXBIN="$prefix/bin"
   FLXAR="$prefix/lib"
-  if [ "$CYGWIN" = "1" ]
+  if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]
   then
     FLXSHLIB="$prefix/bin"
   else
@@ -4482,7 +4479,7 @@ if [ "$DEBUG" = "1" ]; then STATIC_ENV="env FLX_DEBUG=1 "; fi
 # No need to compile, just run it
 if [ $STATIC = 0 ]
 then
-  if [ $RECOMPILE = 0 -a -r "$base.so" -a "(" ! -r "$base.flx" -o "$base.so" -nt "$base.flx" ")" ]
+  if [ $RECOMPILE = 0 -a -r "$base$EXT_SHLIB" -a "(" ! -r "$base.flx" -o "$base$EXT_SHLIB" -nt "$base.flx" ")" ]
   then
     if [ $RUNIT = 1 ]
     then
@@ -4493,7 +4490,7 @@ then
     exit $?
   fi
 else
-  if [ $RECOMPILE = 0 -a -r "$base" -a "(" ! -r "$base.flx" -o "$base" -nt "$base.flx" ")" ]
+  if [ $RECOMPILE = 0 -a -r "$base$EXT_EXE" -a "(" ! -r "$base.flx" -o "$base$EXT_EXE" -nt "$base.flx" ")" ]
   then
     if [ $RUNIT = 1 ]
     then
@@ -4528,7 +4525,7 @@ then
   if [ $? = 0 ]
   then
     CCMD="$CCOBJ_DLLIB $CCFLAGS -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB -L$FLXSHLIB -lflx_dynamic"
+    LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $DYNLINK_STRING"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then
