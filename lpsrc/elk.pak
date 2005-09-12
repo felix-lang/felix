@@ -756,7 +756,7 @@ void emitMLActionCode(GrammarAnalysis const &g, char const *mliFname,
 
 #include <stdio.h>         // FILE
 #include <iostream>      // std::ostream
-
+#include "flx_rtl_config.hpp"
 
 // fwds from other files
 class LexerInterface;      // lexerint.h
@@ -765,7 +765,7 @@ class LexerInterface;      // lexerint.h
 class StackNode;           // unit of parse state
 class SiblingLink;         // connections between stack nodes
 class PendingShift;        // for postponing shifts.. may remove
-class GLR;                 // main class for GLR parsing
+class FLX_RTL_EXTERN GLR;                 // main class for GLR parsing
 
 
 // a pointer from a stacknode to one 'below' it (in the LR
@@ -4439,6 +4439,7 @@ class EmitCode;           // emitcode.h
 class Symbol;             // grammar.h
 class Bit2d;              // bit2d.h
 
+class FLX_RTL_EXTERN ParseTables;
 
 // integer id for an item-set DFA state; I'm using an 'enum' to
 // prevent any other integers from silently flowing into it
@@ -5207,6 +5208,7 @@ public:     // funcs
 #include "sm_srcloc.h"
 
 class ParseTables;         // parsetables.h
+class FLX_RTL_EXTERN UserActions;
 
 // user-supplied semantic values:
 //  - Semantic values are an arbitrary word, that the user can then

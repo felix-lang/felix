@@ -4763,6 +4763,7 @@ public:
 
 #include "sm_str.h"
 #include "sm_objlist.h"
+#include "flx_rtl_config.hpp"
 
 class HashLineMap;    // hashline.h
 
@@ -4791,7 +4792,7 @@ enum SourceLoc {
 // interpreting SourceLocs.  It's expected to be a singleton in the
 // program, though within this module that assumption is confined to
 // the 'toString' function at the end.
-class SourceLocManager {
+class FLX_RTL_EXTERN SourceLocManager {
 private:     // types
   // a triple which identifies a line boundary in a file (it's
   // implicit which file it is) with respect to all of the relevant
@@ -5036,7 +5037,7 @@ extern SourceLocManager *sourceLocManager;
 // dsw: So that gdb can find it please DO NOT inline this; also the
 // unique public name is intensional: I don't want gdb doing
 // overloading and sometimes getting it wrong, which it does
-sm_string locToStr(SourceLoc sl);
+FLX_RTL_EXTERN sm_string locToStr(SourceLoc sl);
 
 inline sm_string toString(SourceLoc sl)
   { return locToStr(sl); }
@@ -5347,7 +5348,7 @@ public:        // funcs
 
 
 // this class is specifically for appending lots of things
-class sm_stringBuilder : public sm_string {
+class FLX_RTL_EXTERN sm_stringBuilder : public sm_string {
 protected:
   enum { EXTRA_SPACE = 30 };    // extra space allocated in some situations
   char *end;          // current end of the sm_string (points to the NUL character)

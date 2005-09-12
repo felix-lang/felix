@@ -584,6 +584,8 @@ class gxx:
     opt.STRIP = STRIP +" "
     opt.flags = flags
     opt.use = use
+    opt.SPEC_OBJ_FILENAME = "-o "
+    opt.SPEC_EXE_FILENAME = "-o "
 
   def detect_gxx_language_extensions(self,shell):
     opt = self.options
@@ -724,7 +726,7 @@ class gxx:
     if opt.CYGWIN:
       opt.EXT_LIB = ".a"
       opt.EXT_EXE= ".exe"
-      opt.EXT_SHARED = ".dll"
+      opt.EXT_SHLIB = ".dll"
       opt.EXT_OBJ = ".o"
       
       COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
@@ -742,7 +744,7 @@ class gxx:
     elif opt.MACOSX:
       opt.EXT_LIB = ".a"
       opt.EXT_EXE= ""
-      opt.EXT_SHARED = ".so"
+      opt.EXT_SHLIB = ".so"
       opt.EXT_OBJ = ".o"
       
       COMPILE_DYNAMIC_RTL = opt.PIC + "-dynamic -c "
@@ -757,7 +759,7 @@ class gxx:
     else:
       opt.EXT_LIB = ".a"
       opt.EXT_EXE= ""
-      opt.EXT_SHARED = ".so"
+      opt.EXT_SHLIB = ".so"
       opt.EXT_OBJ = ".o"
       
       COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
@@ -805,9 +807,9 @@ class gxx:
     try:
       shell(opt.CCOBJ_DYNAMIC_FLX+"tmp"+os.sep+"dummy_lib.cxx -o tmp"+os.sep+"dummy_lib.o")
       shell(opt.CCOBJ_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.cxx -o tmp"+os.sep+"dummy_main.o")
-      shell(opt.CCLINK_DYNAMIC_FLX+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib"+opt.EXT_SHARED)
+      shell(opt.CCLINK_DYNAMIC_FLX+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib"+opt.EXT_SHLIB)
       shell(opt.CCLINK_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
-      shell("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+opt.EXT_SHARED)
+      shell("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+opt.EXT_SHLIB)
       opt.SUPPORT_DYNAMIC_LOADING = 1
       opt.HAVE_DLOPEN = 1
       print "Dynamic Loading Supported (without -ldl)"
@@ -815,7 +817,7 @@ class gxx:
       try: # nope, try with -ldl
         opt.DLLIB="dl"
         shell(opt.CCLINK_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain -ldl")
-        shell("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+opt.EXT_SHARED)
+        shell("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+opt.EXT_SHLIB)
         opt.HAVE_DLOPEN = 1
         opt.SUPPORT_DYNAMIC_LOADING = 1
         print "Dynamic Loading Supported (with -ldl)"
@@ -857,7 +859,8 @@ class gxx:
     # find sizes of ints
     try:
       shell(opt.CXX+" -w tmp"+os.sep+"intsizes.cxx -o tmp"+os.sep+"intsizes")
-      shell("tmp"+os.sep+"intsizes > tmp"+os.sep+"intsizes.py")
+      # THIS CALL CANNOT USE THE SHELL BECAUSE IT REDIRECTS OUTPUT
+      os.system("tmp"+os.sep+"intsizes > tmp"+os.sep+"intsizes.py")
       f = open("tmp"+os.sep+"intsizes.py")
       exec f in opt.__dict__
       f.close()
@@ -868,7 +871,7 @@ class gxx:
     # find if we have long long
     try:
       shell(opt.CXX+" -w tmp"+os.sep+"longlong.cxx -o tmp"+os.sep+"longlong")
-      shell("tmp"+os.sep+"longlong >tmp"+os.sep+"longlong.py")
+      os.system("tmp"+os.sep+"longlong >tmp"+os.sep+"longlong.py")
       f = open("tmp"+os.sep+"longlong.py")
       exec f in opt.__dict__
       f.close()
@@ -879,7 +882,7 @@ class gxx:
     # find if we have long double
     try:
       shell(opt.CXX+" -w tmp"+os.sep+"longdouble.cxx -o tmp"+os.sep+"longdouble")
-      shell("tmp"+os.sep+"longdouble >tmp"+os.sep+"longdouble.py")
+      os.system("tmp"+os.sep+"longdouble >tmp"+os.sep+"longdouble.py")
       f = open("tmp"+os.sep+"longdouble.py")
       exec f in opt.__dict__
       f.close()
@@ -890,7 +893,7 @@ class gxx:
     # find if we have _Bool
     try:
       shell(opt.CXX+" -w tmp"+os.sep+"bool.c -o tmp"+os.sep+"bool")
-      shell("tmp"+os.sep+"bool >tmp"+os.sep+"bool.py")
+      os.system("tmp"+os.sep+"bool >tmp"+os.sep+"bool.py")
       f = open("tmp"+os.sep+"bool.py")
       exec f in opt.__dict__
       f.close()
@@ -901,7 +904,7 @@ class gxx:
     # find if we have _Complex
     try:
       shell(opt.CXX + " -w tmp"+os.sep+"complex.c -o tmp"+os.sep+"complex")
-      shell("tmp"+os.sep+"complex >tmp"+os.sep+"complex.py")
+      os.system("tmp"+os.sep+"complex >tmp"+os.sep+"complex.py")
       f = open("tmp"+os.sep+"complex.py")
       exec f in opt.__dict__
       f.close()
@@ -933,7 +936,7 @@ class gxx:
       if v > opt.MAX_ALIGN: opt.MAX_ALIGN = v
     opt.flx_aligns[1]="char"
 
-    opt.DEBUG_SYMBOLS = "-g "
+    opt.DEBUG_FLAGS = "-g "
     opt.OPTIMISE = "-O3 -fomit-frame-pointer --inline -DNDEBUG "
 
   def report_config(self):
@@ -960,7 +963,7 @@ class gxx:
 
     print "Extension for object file               : " + opt.EXT_OBJ
     print "Extension for static archive            : " + opt.EXT_LIB
-    print "Extension for loadable RTL              : " + opt.EXT_SHARED
+    print "Extension for loadable RTL              : " + opt.EXT_SHLIB
     print "Extension for executable                : " + opt.EXT_EXE
     print "RTL in directory                        : " + opt.SHLIB_DIR
 
@@ -1093,7 +1096,7 @@ class gxx:
   def link_shared_rtl(self,shell,objects,outfile,soname=None,lib_path=[],libs=[]):
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_RTL
-    cmd = cmd + "-o " +outfile + opt.EXT_SHARED + " "
+    cmd = cmd + "-o " +outfile + opt.EXT_SHLIB + " "
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
     for i in lib_path: cmd = cmd + "-L"+i+" "
     for i in libs: cmd = cmd + "-l"+i+" "
@@ -1144,6 +1147,8 @@ class msvcxx:
     opt.flags = flags
     opt.use = use
     opt.SUPPORT_DYNAMIC_LOADING=1
+    opt.SPEC_OBJ_FILENAME = "/Fo"
+    opt.SPEC_EXE_FILENAME = "/Fe"
 
   def detect_msvcxx_language_extensions(self,shell):
     opt = self.options
@@ -1184,7 +1189,7 @@ class msvcxx:
     print "MODEL =",opt.model
     opt.EXT_LIB = ".lib"
     opt.EXT_EXE= ".exe"
-    opt.EXT_SHARED = ".dll"
+    opt.EXT_SHLIB = ".dll"
     opt.EXT_OBJ = ".obj"
 
     COMPILE_DYNAMIC_RTL = "/nologo /MD /c /EHs "
@@ -1213,7 +1218,7 @@ class msvcxx:
     opt.CCOBJ_DYNAMIC_FLX=opt.CCOBJ_DYNAMIC_FLX+opt.NO_INVALID_OFFSETOF_WARNING
     opt.CCOBJ_STATIC_RTL=opt.CCOBJ_STATIC_RTL+opt.NO_INVALID_OFFSETOF_WARNING
     opt.CCOBJ_STATIC_FLX=opt.CCOBJ_STATIC_FLX+opt.NO_INVALID_OFFSETOF_WARNING
-    opt.CCLINK_STATIC = CXX + "/MT "
+    opt.CCLINK_STATIC = CXX + "/nologo /MT "
 
     opt.HAVE_DLOPEN = 0
     opt.DLLIB=""
@@ -1255,7 +1260,8 @@ class msvcxx:
     # find sizes of ints
     try:
       shell(opt.CXX+" /ML /w tmp"+os.sep+"intsizes.cxx /Fetmp"+os.sep+"intsizes.exe")
-      shell("tmp"+os.sep+"intsizes > tmp"+os.sep+"intsizes.py")
+      # THIS CALL CANNOT USE THE SHELL BECAUSE IT REDIRECTS OUTPUT
+      os.system("tmp"+os.sep+"intsizes > tmp"+os.sep+"intsizes.py")
       f = open("tmp"+os.sep+"intsizes.py")
       exec f in opt.__dict__
       f.close()
@@ -1266,7 +1272,7 @@ class msvcxx:
     # find if we have long long
     try:
       shell(opt.CXX+" /ML /w tmp"+os.sep+"longlong.cxx /Fetmp"+os.sep+"longlong.exe")
-      shell("tmp"+os.sep+"longlong >tmp"+os.sep+"longlong.py")
+      os.system("tmp"+os.sep+"longlong >tmp"+os.sep+"longlong.py")
       f = open("tmp"+os.sep+"longlong.py")
       exec f in opt.__dict__
       f.close()
@@ -1277,7 +1283,7 @@ class msvcxx:
     # find if we have long double
     try:
       shell(opt.CXX+" /ML /w tmp"+os.sep+"longdouble.cxx /Fetmp"+os.sep+"longdouble.exe")
-      shell("tmp"+os.sep+"longdouble >tmp"+os.sep+"longdouble.py")
+      os.system("tmp"+os.sep+"longdouble >tmp"+os.sep+"longdouble.py")
       f = open("tmp"+os.sep+"longdouble.py")
       exec f in opt.__dict__
       f.close()
@@ -1288,7 +1294,7 @@ class msvcxx:
     # find if we have _Bool
     try:
       shell(opt.CXX+" /ML /w tmp"+os.sep+"bool.c /Fetmp"+os.sep+"bool.exe")
-      shell("tmp"+os.sep+"bool >tmp"+os.sep+"bool.py")
+      os.system("tmp"+os.sep+"bool >tmp"+os.sep+"bool.py")
       f = open("tmp"+os.sep+"bool.py")
       exec f in opt.__dict__
       f.close()
@@ -1299,7 +1305,7 @@ class msvcxx:
     # find if we have _Complex
     try:
       shell(opt.CXX + " /ML /w tmp"+os.sep+"complex.c /Fetmp"+os.sep+"complex.exe")
-      shell("tmp"+os.sep+"complex >tmp"+os.sep+"complex.py")
+      os.system("tmp"+os.sep+"complex >tmp"+os.sep+"complex.py")
       f = open("tmp"+os.sep+"complex.py")
       exec f in opt.__dict__
       f.close()
@@ -1331,7 +1337,7 @@ class msvcxx:
       if v > opt.MAX_ALIGN: opt.MAX_ALIGN = v
     opt.flx_aligns[1]="char"
 
-    opt.DEBUG_SYMBOLS = "/g "
+    opt.DEBUG_FLAGS = "/g "
     opt.OPTIMISE = "/Ox /DNDEBUG "
 
   def report_config(self):
@@ -1358,7 +1364,7 @@ class msvcxx:
 
     print "Extension for object file               : " + opt.EXT_OBJ
     print "Extension for static archive            : " + opt.EXT_LIB
-    print "Extension for loadable RTL              : " + opt.EXT_SHARED
+    print "Extension for loadable RTL              : " + opt.EXT_SHLIB
     print "Extension for executable                : " + opt.EXT_EXE
     print "RTL in directory                        : " + opt.SHLIB_DIR
 
@@ -1484,7 +1490,7 @@ class msvcxx:
   def link_shared_rtl(self,shell,objects,outfile,soname=None,lib_path=[],libs=[]):
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_RTL
-    cmd = cmd + "/Fe" +outfile + opt.EXT_SHARED + " "
+    cmd = cmd + "/Fe" +outfile + opt.EXT_SHLIB + " "
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
     cmd = cmd + "/link "
     for i in lib_path: cmd = cmd + "/LIBPATH:"+i+" "
@@ -1615,7 +1621,7 @@ refresh = 0
 default_prefix='/usr/local'
 
 try: 
-  xxqt("apt-get -v")
+  xqt("apt-get -v")
   DEBIAN = 1
 except:
   DEBIAN = 0
@@ -1742,16 +1748,6 @@ while(i < len (sys.argv)):
     sys.exit(1)
   i = i + 1
 
-if not host_model: host_model=build_model
-if not target_model: target_model = host_model
-
-print
-print "+++ BUILD CONFIGURATION +++" 
-print "BUILD TOOLCHAIN  =",build_model
-print "HOST TOOLCHAIN   =",host_model
-print "TARGET TOOLCHAIN =",target_model
-print
-
 if BOOTFILE:
   try:
     execfile(BOOTFILE)
@@ -1856,12 +1852,19 @@ execfile("script/msvcxx_class.py")
 # and second, to aid in selecting the options to cross-compile
 # for the chosen host and target
 #
+
+print 
+print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+print "Checking BUILD MODEL",build_model
+print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+print
+
 if build_model == "win32":
   BUILD_CXX=msvcxx()
 else:
   BUILD_CXX=gxx()
-BUILD_CXX.set_options(use="build",model="detect")
-BUILD_CXX.check_options(xxqt)
+BUILD_CXX.set_options(use="build",model=build_model,build=build_model)
+BUILD_CXX.check_options(xqt)
 BUILD_CXX.report_config()
 BUILD_CXX.save_options("config/build_cxx.py")
 BUILD_CYGWIN = BUILD_CXX.options.CYGWIN
@@ -1876,10 +1879,19 @@ build_model=BUILD_CXX.options.model
 # Cross compilation of the host tools may prevent any
 # testing of the tools
 #
+
+if not host_model: host_model=build_model
+
+print 
+print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+print "Checking HOST MODEL",host_model
+print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+print
+
 if host_model in ["posix","cygwin","nocygwin","mingw","detect"]:
   HOST_CXX=gxx()
   HOST_CXX.set_options(use="host",model=host_model,build=build_model)
-  HOST_CXX.check_options(xxqt)
+  HOST_CXX.check_options(xqt)
   HOST_CXX.report_config()
   HOST_CXX.save_options("config/host_cxx.py")
   CYGWIN = HOST_CXX.options.CYGWIN
@@ -1890,7 +1902,7 @@ if host_model in ["posix","cygwin","nocygwin","mingw","detect"]:
 elif host_model in ["win32"]:
   HOST_CXX=msvcxx()
   HOST_CXX.set_options(use="host",model=host_model,build=build_model)
-  HOST_CXX.check_options(xxqt)
+  HOST_CXX.check_options(xqt)
   HOST_CXX.report_config()
   HOST_CXX.save_options("config/host_cxx.py")
   CYGWIN=0
@@ -1911,16 +1923,25 @@ else:
 # check the generated code compiles, but not that it runs
 # [but the output is largely portable so we can still try]
 #
+
+if not target_model: target_model = host_model
+
+print 
+print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+print "Checking TARGET MODEL",target_model
+print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+print
+
 if target_model in ["posix","cygwin","nocygwin","mingw","detect"]:
   TARGET_CXX=gxx()
   TARGET_CXX.set_options(use="target",model=target_model,build=build_model)
-  TARGET_CXX.check_options(xxqt)
+  TARGET_CXX.check_options(xqt)
   TARGET_CXX.report_config()
   TARGET_CXX.save_options("config/target_cxx.py")
 elif target_model in ["win32"]:
   TARGET_CXX=msvcxx()
   TARGET_CXX.set_options(use="target",model=target_model,build=build_model)
-  TARGET_CXX.check_options(xxqt)
+  TARGET_CXX.check_options(xqt)
   TARGET_CXX.report_config()
   TARGET_CXX.save_options("config/target_cxx.py")
 else:

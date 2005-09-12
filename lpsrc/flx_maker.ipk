@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.146  2005/09/12 16:32:10  skaller
+Win32 build
+
 Revision 1.145  2005/09/11 16:25:21  skaller
 Add WIN32 check for running tests, don't use LD_LIBRARY_PATH
 
@@ -2018,7 +2021,11 @@ def xqtq(x):
     raise MakeError
 
 
-ENV = 'env PATH=bin:"$PATH" LD_LIBRARY_PATH=rtl:"$LD_LIBRARY_PATH" '
+if CYGWIN or WIN32:
+  ENV = 'env PATH=bin:"$PATH" '
+else:
+  ENV = 'env PATH=bin:"$PATH" LD_LIBRARY_PATH=rtl:"$LD_LIBRARY_PATH" '
+
 def exqt(x): xqt(ENV+x)
 
 # used when a negative result is expected (return code is supposed to be nonzero)
@@ -2172,30 +2179,19 @@ CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + "-DFLX_STATIC_LINK "
 CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-DFLX_STATIC_LINK "
 
 if LINK_MODEL == "dynamic":
-  SHLX = EXT_SHARED
+  SHLX = EXT_SHLIB
 else:
   SHLX = ""
 
-if 0: # NOT USED NOW?
-  # for compiling mainlines
-  if "optimise_c" in options:
-    CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + "-O3 -fomit-frame-pointer "
-    CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-O3 -fomit-frame-pointer "
-    CCOBJ_DLLIB = CCOBJ_DLLIB + "-O3 -fomit-frame-pointer "
-    CCOBJ_DLMAIN = CCOBJ_DLMAIN + "-O3 -fomit-frame-pointer "
 
-  if "debug" in options:
-    CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + " -g "
-    CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + " -g "
-    CCOBJ_DLLIB = CCOBJ_DLLIB + " -g "
-    CCOBJ_DLMAIN = CCOBJ_DLMAIN + " -g "
+if CCMACS:
+  CCOBJ_STATIC_RTL = CCOBJ_STATIC_RTL + CCMACS
+  CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + CCMACS
+  CCOBJ_STATIC_FLX = CCOBJ_STATIC_FLX + CCMACS
 
-
-
-  CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + ' ' + CCMACS
-  CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + ' ' + CCMACS
-  CCOBJ_DLLIB = CCOBJ_DLLIB + ' ' + CCMACS
-  CCOBJ_DLMAIN = CCOBJ_DLMAIN + ' '+CCMACS
+  CCOBJ_DYNAMIC_RTL = CCOBJ_DYNAMIC_MAIN + CCMACS
+  CCOBJ_DYNAMIC_MAIN = CCOBJ_DYNAMIC_MAIN + CCMACS
+  CCOBJ_DYNAMIC_FLX = CCOBJ_DYNAMIC_FLX + CCMACS
 
 
 # ------------------------------------------------
@@ -2961,7 +2957,7 @@ try:
               TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise)
               TARGET_CXX.link_felix_dll(xqt,[basename+"_dynamic"],basename,lib_path=[SHLIB_DIR],libs=["flx_dynamic"])
             else: # static
-              TARGET_CXX.compile_felix_static(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise)
+              TARGET_CXX.compile_felix_static(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise,macros=["FLX_STATIC_LINK"])
               TARGET_CXX.link_static_program(xqt,["rtl/flx_run_static",basename+"_static"],basename,lib_path=["rtl"],libs=["flx_static"])
             #print 'TESTFILE -- OK!',basename
             results.append(("g++",basename,'OK'))
@@ -4150,12 +4146,21 @@ echo $cmd
 # flx - felix script harness
 
 @tangle("CYGWIN="+str(CYGWIN))
+@tangle("WIN32="+str(WIN32))
 # g++ compilation string
 @tangle('CCOBJ_DLLIB="'+CCOBJ_DYNAMIC_FLX+'"')
 @tangle('CCLINK_DLLIB="'+CCLINK_DYNAMIC_FLX+'"')
 @tangle('CCOBJ_STATIC_LIB="'+CCOBJ_STATIC_FLX+'"')
 @tangle('CCLINK_STATIC="'+CCLINK_STATIC+'"')
 @tangle('VERSION="'+flx_version+'"')
+@tangle('EXT_LIB="'+EXT_LIB+'"')
+@tangle('EXT_OBJ="'+EXT_OBJ+'"')
+@tangle('EXT_EXE="'+EXT_EXE+'"')
+@tangle('EXT_SHLIB="'+EXT_SHLIB+'"')
+@tangle('SPEC_OBJ_FILENAME="'+SPEC_OBJ_FILENAME+'"')
+@tangle('SPEC_EXE_FILENAME="'+SPEC_EXE_FILENAME+'"')
+@tangle('OPTIMISE="'+OPTIMISE+'"')
+@tangle('DEBUG_FLAGS="'+DEBUG_FLAGS+'"')
 
 # check for test mode: this argument must come first
 
@@ -4234,25 +4239,25 @@ do
 
   x--opt=2)
     INLINE=20
-    CCFLAGS="-O2 $CCFLAGS"
+    CCFLAGS="$CCFLAGS$OPTIMISE"
     shift
   ;;
 
   x--opt=3)
     INLINE=50
-    CCFLAGS="-O3 $CCFLAGS"
+    CCFLAGS="$CCFLAGS$OPTIMISE"
     shift
   ;;
 
   x--optimise)
     INLINE=10
-    CCFLAGS="-O3 -fomit-frame-pointer -finline $CCFLAGS"
+    CCFLAGS="$CCFLAGS$OPTIMISE"
     shift
   ;;
 
   x--optimize)
     INLINE=10
-    CCFLAGS="-O3 -fomit-frame-pointer -finline $CCFLAGS"
+    CCFLAGS="$CCFLAGS$OPTIMISE"
     shift
   ;;
 
@@ -4304,28 +4309,38 @@ do
   case "$1" in
     *.cpp)
       cpps="$cpps $1"
-      cppos="$cppos `dirname $1`/`basename $1 .cpp`.o"
+      cppos="$cppos `dirname $1`/`basename $1 .cpp`$EXT_OBJ"
       shift
     ;;
 
     *.cxx)
       cpps="$cpps $1"
-      cppos="$cppos `dirname $1`/`basename $1 .cxx`.o"
+      cppos="$cppos `dirname $1`/`basename $1 .cxx`$EXT_OBJ"
       shift
     ;;
 
     *.c)
       cpps="$cpps $1"
-      cppos="$cppos `dirname $1`/`basename $1 .c`.o"
+      cppos="$cppos `dirname $1`/`basename $1 .c`$EXT_OBJ"
       shift
     ;;
 
     *.o)
-      cppos="$cppos `dirname $1`/`basename $1 .cpp`.o"
+      cppos="$cppos `dirname $1`/`basename $1 .o`$EXT_OBJ"
+      shift
+    ;;
+
+    *.obj)
+      cppos="$cppos `dirname $1`/`basename $1 .obj`$EXT_OBJ"
       shift
     ;;
 
     *.a)
+      cppos="$cppos $1"
+      shift
+    ;;
+
+    *.lib)
       cppos="$cppos $1"
       shift
     ;;
@@ -4384,27 +4399,6 @@ esac
 
 base=$arg
 
-#base=""
-#case "$arg" in
-#  /*)
-#    base="$arg"
-#    ;;
-#  [^/]*/*)
-#    base="`pwd`/$arg"
-#    ;;
-#  *)
-#    for dir in `echo .:"$PATH" | sed 's/:/ /g'`
-#    do
-#      dir=$dir
-#      if [ -r "$dir/$arg.so" -o -r "$dir/$arg.flx" ]
-#      then
-#        base="$dir/$arg"
-#        break
-#      fi
-#    done
-#    ;;
-#esac
-
 if [ "x$base" = "x" ]
 then
   echo "No such felix program: $arg" >&2
@@ -4433,15 +4427,16 @@ done
 if [ "$TESTMODE" = "1" ]
 then
   INCLUDE_DIR="./rtl"
-  FLXG="env PATH=./bin:\$PATH ./bin/flxg"
   FLXLIB="./lib"
-  if [ "$CYGWIN" = "1" ]
+  if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]
   then
     # bash is a heap of crap! The escaped quotes here are
     # required in case the PATH has a filename with spaces
     # However this actually fails on Linux!
+    FLXG="env \"PATH=./bin:\$PATH\" ./bin/flxg"
     FLXRUN="env \"PATH=./bin:\$PATH\" ./bin/flx_run"
   else
+    FLXG="env PATH=./bin:\$PATH ./bin/flxg"
     FLXRUN="env LD_LIBRARY_PATH=./rtl:\$LD_LIBRARY_PATH ./bin/flx_run"
   fi
   FLXRTL="./rtl"
@@ -4491,7 +4486,7 @@ then
   then
     if [ $RUNIT = 1 ]
     then
-      cmd="$FLXRUN $base.so $args"
+      cmd="$FLXRUN $base$EXT_SHLIB $args"
       if [ $ECHO = 1 ]; then echo $cmd; fi
       eval $cmd
     fi
@@ -4515,7 +4510,7 @@ fi
 if [ $DEBUG = 1 ]
 then
   VERBOSE="-v"
-  CCFLAGS="$CCFLAGS -g"
+  CCFLAGS="$CCFLAGS$DEBUG_FLAGS"
 else
   VERBOSE="-q"
 fi
@@ -4532,8 +4527,8 @@ then
   fi
   if [ $? = 0 ]
   then
-    CCMD="$CCOBJ_DLLIB $CCFLAGS -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp -o $base.o"
-    LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base.o -o $base.so -L$FLXSHLIB -lflx_dynamic"
+    CCMD="$CCOBJ_DLLIB $CCFLAGS -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
+    LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB -L$FLXSHLIB -lflx_dynamic"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then
@@ -4544,9 +4539,9 @@ then
         then
           if [ $TIME = 1 ]
           then
-            cmd="time $FLXRUN $base.so $args"
+            cmd="time $FLXRUN $base$EXT_SHLIB $args"
           else
-            cmd="$FLXRUN $base.so $args"
+            cmd="$FLXRUN $base$EXT_SHLIB $args"
           fi
           if [ $ECHO = 1 ]; then echo $cmd; fi
           eval $cmd
@@ -4568,8 +4563,8 @@ else
   fi
   if [ $? = 0 ]
   then
-    CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp -o $base.o"
-    LCMD="$CCLINK_STATIC $FLXRTL/flx_run_static.o $PKGS $cppos $base.o $FLXAR/libflx_static.a -o $base"
+    CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
+    LCMD="$CCLINK_STATIC $FLXRTL/flx_run_static$EXT_OBJ $PKGS $cppos $base$EXT_OBJ $FLXAR/libflx_static$EXT_LIB $SPEC_EXE_FILENAME$base$EXT_EXE"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then

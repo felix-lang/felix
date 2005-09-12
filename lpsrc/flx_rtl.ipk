@@ -774,8 +774,8 @@ void* getmachosym(LIBHANDLE, const char*);
 @select(h)
 #include "flx_dynlink.hpp"
 #ifdef FLX_STATIC_LINK
-extern void *create_thread_frame;
-extern void *flx_start;
+extern "C" void *create_thread_frame;
+extern "C" void *flx_start;
 #endif
 
 namespace flx { namespace rtl {
