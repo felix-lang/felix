@@ -222,6 +222,24 @@ right type by client drivers.
 
 namespace flx { namespace rtl {
 
+struct FLX_RTL_EXTERN con_t;
+struct FLX_RTL_EXTERN _ref_;
+extern flx::gc::generic::gc_shape_t _ref_ptr_map;
+struct FLX_RTL_EXTERN _uctor_;
+extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _uctor_ptr_map;
+extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _uctor_ptr_map;
+extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _int_ptr_map;
+extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t unit_ptr_map;
+struct FLX_RTL_EXTERN flx_exec_failure_t;
+
+// UNIT
+struct FLX_RTL_EXTERN unit {};
+struct FLX_RTL_EXTERN flx_exec_failure_t;
+struct FLX_RTL_EXTERN flx_range_srcref_t;
+struct FLX_RTL_EXTERN flx_match_failure_t;
+struct FLX_RTL_EXTERN flx_assert_failure_t;
+
+
 // CONTINUATION
 struct FLX_RTL_EXTERN con_t // abstract base for mutable continuations
 {
@@ -265,7 +283,6 @@ struct FLX_RTL_EXTERN _ref_
   void operator = (_ref_ const& r);
 };
 
-extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _ref_ptr_map;
 
 //VARIANTS
 struct FLX_RTL_EXTERN _uctor_
@@ -276,12 +293,6 @@ struct FLX_RTL_EXTERN _uctor_
   _uctor_(int i, void *d) : variant(i), data(d) {}
 };
 
-extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _uctor_ptr_map;
-extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _int_ptr_map;
-extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t unit_ptr_map;
-
-// UNIT
-struct FLX_RTL_EXTERN unit {};
 
 // EXEC protocol failure
 // Thrown when trying to run a dead procedure
@@ -680,7 +691,7 @@ struct FLX_RTL_EXTERN flx_link_failure_t;
 struct FLX_RTL_EXTERN flx_dynlink_t;
 struct FLX_RTL_EXTERN flx_libinit_t;
 
-struct flx_link_failure_t {
+struct FLX_RTL_EXTERN flx_link_failure_t {
   string filename;
   string operation;
   string what;
@@ -705,7 +716,7 @@ typedef con_t *(*start_t)
   
 );
 
-struct flx_dynlink_t
+struct FLX_RTL_EXTERN flx_dynlink_t
 {
   // data
   LIBHANDLE library;
@@ -729,7 +740,7 @@ private:
     // called after mandatory symbols are linked
 };
 
-struct flx_libinit_t 
+struct FLX_RTL_EXTERN flx_libinit_t 
 {
   thread_frame_t *thread_frame;
   con_t *start_proc;

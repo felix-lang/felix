@@ -730,16 +730,13 @@ class gxx:
       opt.EXT_OBJ = ".o"
       
       COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
-      LINK_DYNAMIC_RTL = "-shared "
+      LINK_DYNAMIC_RTL = "-shared -Wl,--disable-auto-import "
       
       COMPILE_DYNAMIC_MAIN = "-c "
-      LINK_DYNAMIC_MAIN = ""
+      LINK_DYNAMIC_MAIN = "-Wl,--disable-auto-import "
       
       COMPILE_DYNAMIC_FLX = opt.PIC+ "-c "
-      LINK_DYNAMIC_FLX = opt.PIC+"-shared "
-
-      #hysterical note:
-      #CCLINK_DLLIB = CXX + "-shared -Wl,--enable-auto-import "
+      LINK_DYNAMIC_FLX = opt.PIC+"-shared -Wl,--disable-auto-import "
 
     elif opt.MACOSX:
       opt.EXT_LIB = ".a"
@@ -766,9 +763,6 @@ class gxx:
       LINK_DYNAMIC_RTL = "-shared "
       
       COMPILE_DYNAMIC_MAIN = "-c "
-      #hysterical note: this crap should not be needed
-      #LINK_DYNAMIC_MAIN = "-Wl,-Bdynamic -Wl,--export-dynamic "
-      LINK_DYNAMIC_MAIN = ""
 
       COMPILE_DYNAMIC_FLX = opt.PIC+"-c "
       LINK_DYNAMIC_FLX = "-shared "
@@ -1097,6 +1091,9 @@ class gxx:
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_RTL
     cmd = cmd + "-o " +outfile + opt.EXT_SHLIB + " "
+    # only for shared rtl not felix dll?
+    if opt.CYGWIN:
+      cmd = cmd + "-Wl,--out-implib="+outfile+".dll.a "
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
     for i in lib_path: cmd = cmd + "-L"+i+" "
     for i in libs: cmd = cmd + "-l"+i+" "

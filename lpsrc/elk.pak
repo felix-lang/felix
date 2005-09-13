@@ -1022,7 +1022,7 @@ public:       // funcs
 
 // each GLR object is a parser for a specific grammar, but can be
 // used to parse multiple token streams
-class GLR {
+class FLX_RTL_EXTERN GLR {
 public:
   // ---- grammar-wide data ----
   // user-specified actions
@@ -4534,7 +4534,7 @@ inline void checkAssign(DEST &d, SRC s)
 // the parse tables are the traditional action/goto, plus the list
 // of ambiguous actions, plus any more auxilliary tables useful during
 // run-time parsing
-class ParseTables {
+class FLX_RTL_EXTERN ParseTables {
 private:    // types
   // data about an intermediate state of parse table construction;
   // once the table is finished, this data gets consolidated into the
@@ -5228,7 +5228,7 @@ typedef unsigned long SemanticValue;
 // package of functions; the user will create an instance of a class
 // derived from this, and the parser will carry it along to invoke
 // the various action functions
-class UserActions {
+class FLX_RTL_EXTERN UserActions {
 public:
   // allow abstract user to delete
   virtual ~UserActions();

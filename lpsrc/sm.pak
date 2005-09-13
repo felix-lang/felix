@@ -1708,7 +1708,7 @@ public:       // funcs
 #include <iostream>    // std::ostream
 
 // forward declarations
-class sm_stringBuilder;
+class FLX_RTL_EXTERN sm_stringBuilder;
 
 
 // by using this macro, the debugger gets a shot before the stack is unwound
@@ -3667,7 +3667,7 @@ typedef TPoint<double> fpoint;
 
 
 // and we can then define sm_stringBuilder output ops for them
-class sm_stringBuilder;
+class FLX_RTL_EXTERN sm_stringBuilder;
 sm_stringBuilder& operator<< (sm_stringBuilder &sb, point const &pt);
 sm_stringBuilder& operator<< (sm_stringBuilder &sb, fpoint const &pt);
 
@@ -5243,7 +5243,7 @@ public:
 class Flatten;           // flatten.h
 class FLX_RTL_EXTERN sm_string;
 
-class sm_string {
+class FLX_RTL_EXTERN sm_string {
 protected:     // data
   // 10/12/00: switching to never letting s be NULL
   char *s;                             // sm_string contents; never NULL

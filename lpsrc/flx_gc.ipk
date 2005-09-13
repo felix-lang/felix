@@ -57,8 +57,9 @@ namespace generic {
 struct FLX_RTL_EXTERN frame_t;      // the type of all collectable objects
 struct FLX_RTL_EXTERN gc_shape_t;   // the shape of collectable objects
 struct FLX_RTL_EXTERN collector_t;  // the collector itself
+struct FLX_RTL_EXTERN allocator_t;  // the collector itself
 
-struct gc_shape_t
+struct FLX_RTL_EXTERN gc_shape_t
 {
   char const *cname;              // C++ typename
   std::size_t count;              // array element count
@@ -158,7 +159,7 @@ struct allocator_t {
 @doc()
 And here is the collector abstraction.
 @select(h)
-struct collector_t
+struct FLX_RTL_EXTERN collector_t
 {
   bool debug;
   void set_debug(bool d){debug=d;}
@@ -211,7 +212,7 @@ to the object. Other pointers might exist, and that is normally
 OK provided they're not dereferenced.
 
 @select(h)
-void destroy(void *b);
+void FLX_RTL_EXTERN destroy(void *b);
 
 @doc()
 The following routines are provided to help
@@ -225,10 +226,10 @@ Each untyped routine has a corresponding
 template to provide a type safe interface.
 
 @select(h)
-void _init_ptr(void **a, void *b);
-void _set_ptr(void **a, void *b);
-void _release_ptr(void **a);
-void _destroy_ptr(void **a);
+void FLX_RTL_EXTERN _init_ptr(void **a, void *b);
+void FLX_RTL_EXTERN _set_ptr(void **a, void *b);
+void FLX_RTL_EXTERN _release_ptr(void **a);
+void FLX_RTL_EXTERN _destroy_ptr(void **a);
 
 template<class T>
 void init_ptr(T **a, T *b)
@@ -428,13 +429,13 @@ using namespace generic;
 struct FLX_RTL_EXTERN malloc_free;
 struct FLX_RTL_EXTERN flx_collector_t;
 
-struct malloc_free : public virtual allocator_t {
+struct FLX_RTL_EXTERN malloc_free : public virtual allocator_t {
   void *allocate(std::size_t);
   void deallocate(void *, std::size_t);
 };
 
 
-struct flx_collector_t : public collector_t
+struct FLX_RTL_EXTERN flx_collector_t : public collector_t
 {
   flx_collector_t(allocator_t *);
   ~flx_collector_t();
