@@ -627,7 +627,7 @@ or even constants which require dynamic initialisation.
 using namespace std;
 
 // define the type of a library handle: needed even for static linkage
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
 #include <windows.h>
 typedef HMODULE LIBHANDLE;
 #else
@@ -640,7 +640,7 @@ typedef HMODULE LIBHANDLE;
 #endif
 
 #ifndef FLX_STATIC_LINK
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
 #define DLSYM(x,y) (void*)GetProcAddress(x,#y) 
 #define SDLSYM(x,y) (void*)GetProcAddress(x,y) 
 #else
@@ -815,7 +815,7 @@ void flx_dynlink_t::link(char const *fname) throw(flx_link_failure_t)
 {
   filename=fname;
 #ifndef FLX_STATIC_LINK
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
   SetErrorMode(SEM_NOOPENFILEERRORBOX);  // stop windows showing err dialogues
   library = LoadLibrary(fname);
   if(!library) 
@@ -889,7 +889,7 @@ void flx_dynlink_t::unlink()
   if(refcnt == 0) {
     //fprintf(stderr,"closing library\n");
 #ifndef FLX_STATIC_LINK
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
     FreeLibrary(library);
 #else
   #ifdef MACOSX_NODLCOMPAT

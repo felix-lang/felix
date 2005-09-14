@@ -83,6 +83,13 @@ int main(int,char*[]) {
    return 0;
 }
 
+@h = tangler("tmp/check_win32.cxx",'c++')
+@select(h)
+int main(int,char*[]) { 
+   int x = _WIN32;
+   return 0;
+}
+
 @h = tangler("tmp/check_osx.cxx",'c++')
 @select(h)
 // RF: I think this implies the presence of OS X
@@ -113,6 +120,23 @@ int main(int,char*argv[]) {
    void *lib = dlopen(argv[1],RTLD_NOW);
    if(!lib) exit(1);
    void *fred = dlsym(lib,"fred");
+   if(!fred) exit(1);
+   return 0;
+}
+
+@h = tangler("tmp/win32_dummy_lib.cxx",'c++')
+@select(h)
+extern "C" __declspec(dllexport) int fred(int,char*[]) { return 0; }
+
+@h = tangler("tmp/win32_dummy_main.cxx",'c++')
+@select(h)
+#include <windows.h>
+#include <stdlib.h>
+
+int main(int,char*argv[]) { 
+   HMODULE lib = LoadLibrary(argv[1]);
+   if(!lib) exit(1);
+   void *fred = (void*)GetProcAddress(lib,"fred");
    if(!fred) exit(1);
    return 0;
 }
@@ -574,11 +598,11 @@ class gxx:
     ):
     opt = self.options
     opt.model = model
-    opt.CXX = CXX+" "
-    if build == "cygwin" and model == "nocygwin": 
+    if model == "nocygwin": 
       opt.CXX = CXX + " -mno-cygwin "
     else:
       opt.CXX = CXX+" "
+    print "CXX=",opt.CXX
     opt.AR = AR +" "
     opt.RANLIB = RANLIB +" "
     opt.STRIP = STRIP +" "
@@ -658,6 +682,59 @@ class gxx:
       opt.PIC = ""
       print "All code is position independent"
 
+  def detect_win32(self,shell):
+    CXX = self.options.CXX
+    try:
+      shell(CXX+"-w -c tmp"+os.sep+"check_win32.cxx -o tmp"+os.sep+"dummy.o")
+      print "WIN32 detected"
+      return 1
+    except:
+      print "WIN32 NOT detected"
+      return 0
+
+  def detect_cygwin(self,shell):
+    CXX = self.options.CXX
+    try:
+      shell(CXX+"-w -c tmp"+os.sep+"check_cygwin.cxx -o tmp"+os.sep+"dummy.o")
+      print "CYGWIN detected"
+      return 1
+    except:
+      print "CYGWIN NOT detected"
+      return 0
+
+  def detect_osx(self,shell):
+    CXX = self.options.CXX
+    try:
+      shell(CXX+"-w -c tmp"+os.sep+"check_osx.cxx -o tmp"+os.sep+"dummy.o")
+      print "MACOSX detected"
+      return 1
+    except:
+      print "MACOSX NOT detected"
+      return 0
+
+  # only allows 4 models: cygwin, osx, win32 and posix
+  # nocygwin = mingw = win32
+  def detect_model(self,shell):
+    opt = self.options
+    opt.MACOSX = self.detect_osx(shell)
+    opt.WIN32 = self.detect_win32(shell)
+    opt.CYGWIN = self.detect_cygwin(shell)
+    sum = opt.MACOSX + opt.WIN32 + opt.CYGWIN
+    if sum > 1:
+      print "INCOMPATIBLE MODELS DETECTED"
+      print "MACOSX",opt.MACOSX
+      print "CYGWIN",opt.CYGWIN
+      print "WIN32",opt.WIN32
+    else:
+     if opt.model == "detect":
+       if opt.CYGWIN: opt.model = "cygwin"
+       if opt.MACOSX: opt.model = "osx"
+       if opt.WIN32: opt.model = "win32"
+       if opt.model == "detect": opt.model = "posix"
+    if opt.model in ["mingw","nocygwin"]: opt.model = "win32"
+    if opt.model in ["posix"] and opt.CYGWIN: opt.model = "cygwin"
+    assert opt.model in ["cygwin","osx","win32","posix"]
+
   def check_options(self,shell):
     opt = self.options
     CXX = opt.CXX
@@ -692,42 +769,15 @@ class gxx:
     except:
       opt.HAVE_STL_GNU_CXX = 0
 
-    # find if we have CYGWIN
-    try:
-      shell(CXX+"-w -c tmp"+os.sep+"check_cygwin.cxx -o tmp"+os.sep+"dummy.o")
-      opt.CYGWIN=1
-      print "Cygwin detected"
-      if opt.model in ["posix","cygwin","nocygwin","detect"]:
-        if opt.model == "detect": opt.model = "cygwin"
-        if opt.model == "posix": opt.model = "cygwin"
-      else:
-        print "INVALID MODEL",opt.model,"SPECIFIED"
-        sys.exit(1)
-    except:
-      opt.CYGWIN=0
-
-    #find if we have OS X
-    try:
-      shell(CXX+"-w -c tmp"+os.sep+"check_osx.cxx -o tmp"+os.sep+"dummy.o")
-      opt.MACOSX=1
-      print "MACOSX detected"
-      if model in ["posix","osx","detect"]:
-        opt.model = "osx"
-      else:
-        print "INVALID MODEL",opt.model,"SPECIFIED"
-        sys.exit(1)
-    except:
-      opt.MACOSX=0
-
-    if opt.model == "detect": opt.model = "posix" 
-
+    self.detect_model(shell)
     print "MODEL =",opt.model
 
-    if opt.CYGWIN:
+    if opt.model=="cygwin":
       opt.EXT_LIB = ".a"
       opt.EXT_EXE= ".exe"
       opt.EXT_SHLIB = ".dll"
       opt.EXT_OBJ = ".o"
+      opt.SHLIB_DIR="bin"
       
       COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
       LINK_DYNAMIC_RTL = "-shared -Wl,--disable-auto-import "
@@ -738,11 +788,28 @@ class gxx:
       COMPILE_DYNAMIC_FLX = opt.PIC+ "-c "
       LINK_DYNAMIC_FLX = opt.PIC+"-shared -Wl,--disable-auto-import "
 
-    elif opt.MACOSX:
+    elif opt.model=="win32":
+      opt.EXT_LIB = ".a"
+      opt.EXT_EXE= ".exe"
+      opt.EXT_SHLIB = ".dll"
+      opt.EXT_OBJ = ".obj"
+      opt.SHLIB_DIR="bin"
+      
+      COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
+      LINK_DYNAMIC_RTL = "-shared -Wl,--disable-auto-import "
+      
+      COMPILE_DYNAMIC_MAIN = "-c "
+      LINK_DYNAMIC_MAIN = "-Wl,--disable-auto-import "
+      
+      COMPILE_DYNAMIC_FLX = opt.PIC+ "-c "
+      LINK_DYNAMIC_FLX = opt.PIC+"-shared -Wl,--disable-auto-import "
+
+    elif opt.model=="osx":
       opt.EXT_LIB = ".a"
       opt.EXT_EXE= ""
       opt.EXT_SHLIB = ".so"
       opt.EXT_OBJ = ".o"
+      opt.SHLIB_DIR="rtl"
       
       COMPILE_DYNAMIC_RTL = opt.PIC + "-dynamic -c "
       LINK_DYNAMIC_RTL = "-bundle "
@@ -753,19 +820,24 @@ class gxx:
       COMPILE_DYNAMIC_FLX = opt.PIC + "-dynamic -c "
       LINK_DYNAMIC_FLX = "-bundle "
 
-    else:
+    elif opt.model=="posix":
       opt.EXT_LIB = ".a"
       opt.EXT_EXE= ""
       opt.EXT_SHLIB = ".so"
       opt.EXT_OBJ = ".o"
+      opt.SHLIB_DIR="rtl"
       
       COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
       LINK_DYNAMIC_RTL = "-shared "
       
       COMPILE_DYNAMIC_MAIN = "-c "
+      LINK_DYNAMIC_MAIN = ""
 
       COMPILE_DYNAMIC_FLX = opt.PIC+"-c "
       LINK_DYNAMIC_FLX = "-shared "
+    else:
+      print "UNKNOWN MODEL",model
+      sys.exit(1)
 
     opt.CCOBJ_DYNAMIC_FLX = CXX + COMPILE_DYNAMIC_FLX
     opt.CCLINK_DYNAMIC_FLX = CXX + LINK_DYNAMIC_FLX
@@ -786,39 +858,50 @@ class gxx:
     opt.CCOBJ_STATIC_FLX=opt.CCOBJ_STATIC_FLX+opt.NO_INVALID_OFFSETOF_WARNING
     opt.CCLINK_STATIC = CXX
 
-
-    # where to put the rtl: Cygwin requires the dll be in the PATH
-    if opt.CYGWIN:
-      opt.SHLIB_DIR="bin"
-      print "rtl located in bin directory"
-    else:
-      print "rtl located in rtl directory"
-      opt.SHLIB_DIR="rtl"
-
     #check if we can get dlopen to work without -ldl (BSD, Cygwin don't need)
+    opt.SUPPORT_DYNAMIC_LOADING = 0
     opt.HAVE_DLOPEN = 0
+    opt.HAVE_LOADLIBRARY = 0
     opt.DLLIB=""
-    try:
-      shell(opt.CCOBJ_DYNAMIC_FLX+"tmp"+os.sep+"dummy_lib.cxx -o tmp"+os.sep+"dummy_lib.o")
-      shell(opt.CCOBJ_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.cxx -o tmp"+os.sep+"dummy_main.o")
-      shell(opt.CCLINK_DYNAMIC_FLX+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib"+opt.EXT_SHLIB)
-      shell(opt.CCLINK_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
-      shell("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+opt.EXT_SHLIB)
-      opt.SUPPORT_DYNAMIC_LOADING = 1
-      opt.HAVE_DLOPEN = 1
-      print "Dynamic Loading Supported (without -ldl)"
-    except:
-      try: # nope, try with -ldl
-        opt.DLLIB="dl"
-        shell(opt.CCLINK_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain -ldl")
+    if opt.model in ["cygwin","posix","osx"]:
+      try:
+        shell(opt.CCOBJ_DYNAMIC_FLX+"tmp"+os.sep+"dummy_lib.cxx -o tmp"+os.sep+"dummy_lib.o")
+        shell(opt.CCOBJ_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.cxx -o tmp"+os.sep+"dummy_main.o")
+        shell(opt.CCLINK_DYNAMIC_FLX+"tmp"+os.sep+"dummy_lib.o -o tmp"+os.sep+"dummy_lib"+opt.EXT_SHLIB)
+        shell(opt.CCLINK_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain")
         shell("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+opt.EXT_SHLIB)
-        opt.HAVE_DLOPEN = 1
         opt.SUPPORT_DYNAMIC_LOADING = 1
-        print "Dynamic Loading Supported (with -ldl)"
+        opt.HAVE_DLOPEN = 1
       except:
-        opt.SUPPORT_DYNAMIC_LOADING = 0    # or give up on dynamic loading
-        print "Dynamic Loading NOT SUPPORTED"
-        sys.exit(1)
+        try: # nope, try with -ldl
+          shell(opt.CCLINK_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.o -o tmp"+os.sep+"dlmain -ldl")
+          shell("tmp"+os.sep+"dlmain tmp"+os.sep+"dummy_lib"+opt.EXT_SHLIB)
+          opt.HAVE_DLOPEN = 1
+          opt.SUPPORT_DYNAMIC_LOADING = 1
+          opt.DLLIB="dl"
+          print "Dynamic Loading Supported (with -ldl)"
+        except:
+          pass
+
+    else:
+    # check if can get LoadLibrary to work
+      try:
+        shell(opt.CCOBJ_DYNAMIC_FLX+"tmp"+os.sep+"win32_dummy_lib.cxx -o tmp"+os.sep+"win32_dummy_lib.o")
+        shell(opt.CCOBJ_DYNAMIC_MAIN+"tmp"+os.sep+"win32_dummy_main.cxx -o tmp"+os.sep+"win32_dummy_main.o")
+        shell(opt.CCLINK_DYNAMIC_FLX+"tmp"+os.sep+"win32_dummy_lib.o -o tmp"+os.sep+"win32_dummy_lib"+opt.EXT_SHLIB)
+        shell(opt.CCLINK_DYNAMIC_MAIN+"tmp"+os.sep+"win32_dummy_main.o -o tmp"+os.sep+"dlmain")
+        shell("tmp"+os.sep+"dlmain tmp"+os.sep+"win32_dummy_lib"+opt.EXT_SHLIB)
+        opt.SUPPORT_DYNAMIC_LOADING = 1
+        opt.HAVE_LOADLIBRARY = 1
+        print "Dynamic Loading Supported (with LoadLibrary)"
+      except:
+        pass
+
+    if not opt.SUPPORT_DYNAMIC_LOADING:
+      print "DYNAMIC LOADING NOT SUPPORTED"
+      print "Temporarily this is mandatory [during config debugging]"
+      sys.exit(1)
+    
 
     # find if we have BSD isnan in <cmath> (NAUGHTY!)
     try:
@@ -962,16 +1045,16 @@ class gxx:
     print "RTL in directory                        : " + opt.SHLIB_DIR
 
     print
-    if opt.SUPPORT_DYNAMIC_LOADING and opt.HAVE_DLOPEN:
-      if opt.DLLIB:
-        print "Dynamic Loading Supported               : with dlopen() in -l"+opt.DLLIB
-      else:
-        print "Dynamic Loading Supported               : with dlopen() [native]"
+    if opt.SUPPORT_DYNAMIC_LOADING:
+      if opt.HAVE_DLOPEN:
+        if opt.DLLIB:
+          print "Dynamic Loading Supported               : with dlopen() in -l"+opt.DLLIB
+        else:
+          print "Dynamic Loading Supported               : with dlopen() [native]"
+      if opt.HAVE_LOADLIBRARY:
+          print "Dynamic Loading Supported               : with LoadLibrary"
     else:
-      if opt.SUPPORT_DYNAMIC_LOADING:
-        print "Dynamic Loading Supported               : UNKNOWN METHOD"
-      else:
-        print "Dynamic Loading                         : NOT SUPPORTED"
+      print "Dynamic Loading                         : NOT SUPPORTED"
     print
     if opt.HAVE_ISNAN_IN_CMATH:
       print "NaN Support in                          : <cmath>"
@@ -1087,11 +1170,10 @@ class gxx:
     for i in libs: cmd = cmd + "-l"+i+" "
     shell(cmd)
     
-  def link_shared_rtl(self,shell,objects,outfile,soname=None,lib_path=[],libs=[]):
+  def link_shared_rtl(self,shell,objects,outfile,lib_path=[],libs=[]):
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_RTL
     cmd = cmd + "-o " +outfile + opt.EXT_SHLIB + " "
-    # only for shared rtl not felix dll?
     if opt.CYGWIN:
       cmd = cmd + "-Wl,--out-implib="+outfile+".dll.a "
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
@@ -1100,9 +1182,18 @@ class gxx:
     if opt.DLLIB:
       cmd = cmd + "-l"+opt.DLLIB+" "
     shell(cmd)
-  
-  link_felix_dll = link_shared_rtl
-  
+
+  def link_felix_dll(self,shell,objects,outfile,lib_path=[],libs=[]):
+    opt = self.options
+    cmd = opt.CCLINK_DYNAMIC_RTL
+    cmd = cmd + "-o " +outfile + opt.EXT_SHLIB + " "
+    for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
+    for i in lib_path: cmd = cmd + "-L"+i+" "
+    for i in libs: cmd = cmd + "-l"+i+" "
+    if opt.DLLIB:
+      cmd = cmd + "-l"+opt.DLLIB+" "
+    shell(cmd)
+    
   def link_dynamic_program(self,shell,objects,outfile,lib_path,libs):
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_MAIN
@@ -1484,7 +1575,7 @@ class msvcxx:
     for i in libs: cmd = cmd + "/DEFAULTLIB:lib"+i+" "
     shell(cmd)
     
-  def link_shared_rtl(self,shell,objects,outfile,soname=None,lib_path=[],libs=[]):
+  def link_shared_rtl(self,shell,objects,outfile,lib_path=[],libs=[]):
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_RTL
     cmd = cmd + "/Fe" +outfile + opt.EXT_SHLIB + " "
@@ -1547,7 +1638,6 @@ def xxqt(x):
   else: print x
 
 def xqt(x): 
- print x
  if os.name == "posix":
    xxqt(x + " >/dev/null 2>&1")
  elif os.name == "nt":
@@ -1685,6 +1775,8 @@ except:
   print "Python returns unknown OS type, assuming 'detect'"
   build_model = "detect"
 
+print "Detected Build model:",build_model
+
 host_model = None
 target_model = None
 
@@ -1731,9 +1823,11 @@ while(i < len (sys.argv)):
   elif has_prefix("--build=",arg):
     build_model=check_model(arg[8:])
   elif has_prefix("--host=",arg):
+    print "Specified host model:",host_model
     host_model=check_model(arg[7:])
   elif has_prefix("--target=",arg):
     target_model=check_model(arg[9:])
+    print "Specified target model",target_model
   elif has_prefix("--boot=",arg):
     BOOTFILE=arg[7:]
   elif has_prefix("--save-config=",arg):
@@ -1877,7 +1971,13 @@ build_model=BUILD_CXX.options.model
 # testing of the tools
 #
 
-if not host_model: host_model=build_model
+if not host_model: 
+  host_model=build_model
+  print "Defaulting host model to build model",host_model
+if not target_model: 
+  target_model = host_model
+  print "Defaulting target model to host model:",target_model
+
 
 print 
 print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
@@ -1891,25 +1991,17 @@ if host_model in ["posix","cygwin","nocygwin","mingw","detect"]:
   HOST_CXX.check_options(xqt)
   HOST_CXX.report_config()
   HOST_CXX.save_options("config/host_cxx.py")
-  CYGWIN = HOST_CXX.options.CYGWIN
-  MACOSX = HOST_CXX.options.MACOSX
-  WIN32=0
-  HAVE_MSVC=0
-  HAVE_GXX=1
 elif host_model in ["win32"]:
   HOST_CXX=msvcxx()
   HOST_CXX.set_options(use="host",model=host_model,build=build_model)
   HOST_CXX.check_options(xqt)
   HOST_CXX.report_config()
   HOST_CXX.save_options("config/host_cxx.py")
-  CYGWIN=0
-  MACOSX=0
-  WIN32=1
-  HAVE_MSVC=1
-  HAVE_GXX=0
 else:
-  print "Sorry only gnu tool chain supported at the moment"
+  print "Sorry only gnu and msvc++ tool chain supported at the moment"
   exit(1)
+
+host_model = HOST_CXX.options.model
 
 #
 # Now create the target model: the compiler has to run
@@ -1920,8 +2012,6 @@ else:
 # check the generated code compiles, but not that it runs
 # [but the output is largely portable so we can still try]
 #
-
-if not target_model: target_model = host_model
 
 print 
 print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
@@ -1935,15 +2025,27 @@ if target_model in ["posix","cygwin","nocygwin","mingw","detect"]:
   TARGET_CXX.check_options(xqt)
   TARGET_CXX.report_config()
   TARGET_CXX.save_options("config/target_cxx.py")
+  CYGWIN = TARGET_CXX.options.CYGWIN
+  MACOSX = TARGET_CXX.options.MACOSX
+  WIN32 =  TARGET_CXX.options.WIN32
+  HAVE_MSVC=0
+  HAVE_GXX=1
 elif target_model in ["win32"]:
   TARGET_CXX=msvcxx()
   TARGET_CXX.set_options(use="target",model=target_model,build=build_model)
   TARGET_CXX.check_options(xqt)
   TARGET_CXX.report_config()
   TARGET_CXX.save_options("config/target_cxx.py")
+  CYGWIN=0
+  MACOSX=0
+  WIN32=1
+  HAVE_MSVC=1
+  HAVE_GXX=0
 else:
-  print "Sorry only gnu tool chain supported at the moment"
+  print "Sorry only gnu and msvc++ tool chain supported at the moment"
   exit(1)
+
+target_model = TARGET_CXX.options.model
 
 # see if we have interscript
 try:
@@ -1992,10 +2094,6 @@ print 'flx_version',flx_version
 print 'flx_version_major',flx_version_major
 print 'godi_revision',godi_revision
 print 'debian_revision',debian_revision
-
-# Not used in Cygwin
-FLX_SONAME = 'libflx_dynamic.so.'+flx_version_major
-
 
 def pr(f,x):
   print x
@@ -2070,7 +2168,6 @@ try:
   pr(f,"try:")
   pr(f,"  execfile('config/config_bootstrap.py')")
   pr(f,"except: pass")
-  p(f,"FLX_SONAME")
   for fn in cf_reg:
     pr(f,"execfile("+repr(fn)+")")
 

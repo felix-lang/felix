@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.148  2005/09/14 09:43:59  skaller
+win32 and nocywin work, cygwin still doesn't
+
 Revision 1.147  2005/09/12 17:59:24  skaller
 Win32 build working
 
@@ -2782,22 +2785,6 @@ try:
         objs.append(i[:-2]) # chop off the .o
       TARGET_CXX.link_shared_rtl(xqt,objs,SHLIB_DIR+os.sep+"libflx_dynamic")
 
-        #if CYGWIN:
-        #  print "Building RTL for CYGWIN dynamic linkage"
-        #  # note --enable-auto-import is specified in the config
-        #  cmd = (CCLINK_DLLIB + "-o bin/cygflx_dynamic.dll " +
-        #    "-Wl,--out-implib=rtl/libflx_dynamic.dll.a " +
-        #    "-Wl,--export-all-symbols " +
-        #    "-Wl,--whole-archive rtl/libflx_dynamic_objects.a " +
-        #    "-Wl,--no-whole-archive"
-        #    )
-        #  xqt(cmd)
-        #elif MACOSX:
-        #  xqt(CCLINK_DLLIB + " -o rtl/libflx_dynamic.so."+flx_version+' '+ars)
-        #else:
-        #  #the actual library
-        #  xqt(CCLINK_DLLIB + "-Wl,-soname="+FLX_SONAME+" -o rtl/libflx_dynamic.so "+ars)
-
     if SUPPORT_STATIC_LINKAGE:
       print " ++ STATIC LINK VERSIONS"
       ars = ""
@@ -3270,13 +3257,11 @@ We have no idea if it continues copying.
 @tangle('\t#type "make install" to install Felix')
 @tangle('')
 
-@tangle('src_tarball: extract debian/rules')
-@tangle('\tchmod u+x debian/rules')
+@tangle('src_tarball: extract ')
 @tangle('\trm -f felix-'+flx_version)
 @tangle('\tln -s . felix-'+flx_version)
 @tangle('\ttar -cvf flx_'+flx_version+'_src.tar\\')
 @tangle('\t\tfelix-'+flx_version+'/configure \\')
-@tangle('\t\tfelix-'+flx_version+'/Makefile.debian_package_creator \\')
 @tangle('\t\tfelix-'+flx_version+'/Makefile \\')
 @tangle('\t\tfelix-'+flx_version+'/README \\')
 @tangle('\t\tfelix-'+flx_version+'/CONTENTS \\')
@@ -3349,7 +3334,6 @@ We have no idea if it continues copying.
 @tangle('\t\tfelix-'+flx_version+'/doc/*.css \\')
 @tangle('\t\tfelix-'+flx_version+'/doc/*.tex \\')
 @tangle('\t\tfelix-'+flx_version+'/licences/*.txt \\')
-@tangle('\t\tfelix-'+flx_version+'/debian/* \\')
 @tangle('\t\tfelix-'+flx_version+'/misc/* \\')
 @tangle('\t\tfelix-'+flx_version+'/htmlman/*.html \\')
 @tangle('\t\tfelix-'+flx_version+'/man/man1/*.1 \\')
@@ -4156,6 +4140,8 @@ echo $cmd
 @tangle('DEBUG_FLAGS="'+DEBUG_FLAGS+'"')
 @if HAVE_MSVC:
   tangle("DYNLINK_STRING='/link /LIBPATH:bin /DEFAULTLIB:libflx_dynamic'")
+ elif CYGWIN or WIN32:
+  tangle("DYNLINK_STRING='-Lbin -lflx_dynamic'")
  else:
   tangle("DYNLINK_STRING='-Lrtl -lflx_dynamic'")
 

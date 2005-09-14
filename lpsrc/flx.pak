@@ -321,6 +321,5 @@ create a file here for unit tests.
 @head(2,'Misc')
 @include_file ('flx_vim.ipk')
 @include_file ('flx_highlight.ipk')
-@include_file ('flx_debian.pak')
 
 
