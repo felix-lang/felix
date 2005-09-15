@@ -12931,44 +12931,25 @@ sm_string localTimeString()
   return sm_string(p, std::strlen(p) - 1);     // strip final newline
 }
 
-
+// rewritten by JMS to handle /, \ and : as separators
 sm_string sm_basename(char const *src)
 {
-  char const *sl = strrchr(src, '/');   // locate last slash
-  if (sl && sl[1] == 0) {
-    // there is a slash, but it is the last character; ignore it
-    // (this behavior is what /bin/basename does)
-    return sm_basename(sm_string(src, std::strlen(src)-1));
-  }
-
-  if (sl) {
-    return sm_string(sl+1);     // everything after the slash
-  }
-  else {
-    return sm_string(src);      // entire sm_string if no slashes
-  }
+  int n = std::strlen(src);
+  while(n>0 && (src[n-1] == '/' || src[n-1] == '\\' || src[n-1] == ':'))--n;
+  int m = n;
+  while(m>0 && src[m-1] != '/' && src[m-1] != '\\' && src[m-1] != ':')--m;
+  if(n==0 && m==0) return sm_string(src);
+  else return sm_string(src+m,n-m);
 }
 
 sm_string dirname(char const *src)
 {
-  char const *sl = strrchr(src, '/');   // locate last slash
-  if (sl == src) {
-    // last slash is leading slash
-    return sm_string("/");
-  }
-
-  if (sl && sl[1] == 0) {
-    // there is a slash, but it is the last character; ignore it
-    // (this behavior is what /bin/dirname does)
-    return dirname(sm_string(src, std::strlen(src)-1));
-  }
-
-  if (sl) {
-    return sm_string(src, sl-src);     // everything before slash
-  }
-  else {
-    return sm_string(".");
-  }
+  int n = std::strlen(src);
+  while(n>0 && (src[n-1] == '/' || src[n-1] == '\\' || src[n-1] == ':'))--n;
+  int m = n;
+  while(m>0 && src[m-1] != '/' && src[m-1] != '\\' && src[m-1] != ':')--m;
+  if(n==0 && m==0) return sm_string("."); // JMS: this is just wrong ..
+  else return sm_string(src,m);
 }
 
 

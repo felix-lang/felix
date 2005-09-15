@@ -124,13 +124,15 @@ T &reinterpret(U const &x) {
 #define FLX_CGOTO
 #endif
 
-#if  !defined(FLX_STATIC_LINK) && (defined(__CYGWIN__) || defined(_WIN32))
+//#if  !defined(FLX_STATIC_LINK) && (defined(__CYGWIN__) || defined(_WIN32))
+#if  !defined(FLX_STATIC_LINK) && (defined(_WIN32))
 #define FLX_EXPORT __declspec(dllexport)
 #else
 #define FLX_EXPORT
 #endif
 
-#if  !defined(FLX_STATIC_LINK) && (defined(__CYGWIN__) || defined(_WIN32))
+//#if  !defined(FLX_STATIC_LINK) && (defined(__CYGWIN__) || defined(_WIN32))
+#if  !defined(FLX_STATIC_LINK) && (defined(_WIN32))
 #if defined(FLX_BUILD_DYNAMIC_RTL)
 #define FLX_RTL_EXTERN __declspec(dllexport)
 #else
@@ -627,7 +629,8 @@ or even constants which require dynamic initialisation.
 using namespace std;
 
 // define the type of a library handle: needed even for static linkage
-#if defined(_WIN32) || defined(__CYGWIN__)
+//#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(_WIN32) 
 #include <windows.h>
 typedef HMODULE LIBHANDLE;
 #else
@@ -640,7 +643,8 @@ typedef HMODULE LIBHANDLE;
 #endif
 
 #ifndef FLX_STATIC_LINK
-#if defined(_WIN32) || defined(__CYGWIN__)
+//#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(_WIN32) 
 #define DLSYM(x,y) (void*)GetProcAddress(x,#y) 
 #define SDLSYM(x,y) (void*)GetProcAddress(x,y) 
 #else
@@ -815,7 +819,8 @@ void flx_dynlink_t::link(char const *fname) throw(flx_link_failure_t)
 {
   filename=fname;
 #ifndef FLX_STATIC_LINK
-#if defined(_WIN32) || defined(__CYGWIN__)
+//#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(_WIN32) 
   SetErrorMode(SEM_NOOPENFILEERRORBOX);  // stop windows showing err dialogues
   library = LoadLibrary(fname);
   if(!library) 
@@ -889,7 +894,8 @@ void flx_dynlink_t::unlink()
   if(refcnt == 0) {
     //fprintf(stderr,"closing library\n");
 #ifndef FLX_STATIC_LINK
-#if defined(_WIN32) || defined(__CYGWIN__)
+//#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(_WIN32) 
     FreeLibrary(library);
 #else
   #ifdef MACOSX_NODLCOMPAT

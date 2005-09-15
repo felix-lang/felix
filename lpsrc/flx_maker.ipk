@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.149  2005/09/15 14:29:13  skaller
+Full native Win32 version running (no Cygwin at all)
+
 Revision 1.148  2005/09/14 09:43:59  skaller
 win32 and nocywin work, cygwin still doesn't
 
@@ -269,6 +272,9 @@ Description: hack to tell system 0caml3.08.3 is installed
 import glob
 import os
 import sys
+import flxbuild
+from flxbuild.flxutil import *
+
 try:
   filename = sys.argv[1]
 except:
@@ -289,13 +295,6 @@ dict = {}
 try:
   execfile (filename)
 except:pass
-
-def get_stdout(x):
-  f = os.popen(x,"r")
-  output = f.readlines()
-  result = f.close()
-  return result,output
-
 
 files = glob.glob(globspec)
 
@@ -1937,12 +1936,14 @@ f.close()
 ###############################################################
 @tangle("FLX_MAKER_CVS_ID='"+FLX_MAKER_CVS_ID+"'")
 import os
+import glob
 import stat
 import string
 import sys
 import re
 import traceback
-
+import flxbuild
+from flxbuild.flxutil import *
 
 try:
   execfile("config"+os.sep+"config.py")
@@ -1960,20 +1961,16 @@ except:
 
 FLXFLAGS = ""
 
+if WIN32:
+  DIFF = "FC /L /W "
+else:
+  DIFF = "diff -a -b "
+
 # --------------------------------------------------
 # IMPORT UTILITY RESOURCES
 # ---------------------------------------------------
-def get_stdout(x):
-  f = os.popen(x,"r")
-  output = f.readlines()
-  result = f.close()
-  return result,output
 
-def get_stdouterr(x):
-  if os.name == "posix":
-    return get_stdout(x+" 2>&1")
-  else:
-    return get_stdout(x)
+get_stdouterr = get_stdout
 
 def flush():
   try: sys.stdin.flush()
@@ -2016,10 +2013,13 @@ def xqtq(x):
     raise MakeError
 
 
-if CYGWIN or WIN32:
-  ENV = 'env PATH=bin:"$PATH" '
+if os.name=="nt":
+  ENV="set PATH=bin;%PATH%&&set PYTHONPATH=.;%PYTHONPATH%&&"
 else:
-  ENV = 'env PATH=bin:"$PATH" LD_LIBRARY_PATH=rtl:"$LD_LIBRARY_PATH" '
+  if CYGWIN or WIN32:
+    ENV = 'env PATH=bin:"$PATH" PYTHONPATH=.:"$PYTHONPATH"'
+  else:
+    ENV = 'env PYTHONPATH=.:$PYTHONPATH PATH=bin:"$PATH" LD_LIBRARY_PATH=rtl:"$LD_LIBRARY_PATH" '
 
 def exqt(x): xqt(ENV+x)
 
@@ -2037,12 +2037,17 @@ def nxqt(x):
   if not result:
     raise MakeError
 
+# ----------- Utilities ---------------------
+class MakeError: pass
 
 # ------------------------------------------------
 # PROCESS COMMAND LINE OPTIONS
 # ------------------------------------------------
 
 options = sys.argv[1:]
+if not options: 
+  options = ["extract","compiler","rtl","drivers","optimise_c"]
+
 CCMACS=""
 for i in options:
   if i[0:2]=="-D": CCMACS=CCMACS+i+" "
@@ -2100,15 +2105,16 @@ if "help" in options:
   print "doc - build all user documentation"
 
 if "clean" in options:
-  os.system("rm -rf test/*.cpp test/*.hpp test/*.so test/*.par")
-  os.system("rm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.par")
-  os.system("rm -rf bagley/felix/*.cpp bagley/felix/*.hpp bagley/felix/*.so bagley/felix/*.par")
+  for d in [ "test","tut"+os.sep+"examples","bagley"+os.sep+"felix"]:
+    for e in ["*.hpp","*.so","*.dll","*.cpp","*.hpp","*.par","*.output","*.o","*.obj","*.exp","*.lib"]:
+      for f in glob.glob(d + os.sep + e):
+        erasefile(f)
 
 if "tests" in options or "test" in options:
   options = options + ["regression","tutorial"]
 
 def flxg(x,basename):
-  x = './bin/flxg ' + x
+  x = 'bin'+os.sep+'flxg ' + x
   exqt(x)
 
 # ------------------------------------------------
@@ -2118,9 +2124,9 @@ def flxg(x,basename):
 #interscript command (now built in part of Felix package)
 def runISCR(a):
   if buildall:
-    xqt(ISCR + "--nocache " + a)
+    exqt(ISCR + "--nocache " + a)
   else:
-    xqt(ISCR + ' ' + a)
+    exqt(ISCR + ' ' + a)
 
 if "compiler" in options or "bytecode" in options or "olink" in options:
   OCAML_OBJDIR = "src"
@@ -2560,21 +2566,7 @@ SPECIAL_TESTS = [
 # END IMPLEMENTOR CONFIGURABLE SECTION
 # -------------------------------------------------
 
-# ----------- Utilities ---------------------
-class MakeError: pass
 
-def filetime(f):
-  try:
-    t = os.stat(f)[stat.ST_MTIME]
-  except:
-    t = 0
-  return t
-
-def erasefile(f):
-  try:
-    os.unlink(f)
-  except:
-    pass
 # ----------- Here begins the actual build procedure ---------------------
 
 buildall = "clean" in options or "force" in options
@@ -2583,13 +2575,13 @@ import glob
 
 def copy_mli2ml():
   for f in RAW_INTERFACES:
-    if filetime("src/"+f+".mli") > filetime("src/"+f+".ml"):
-      os.system("cp src/"+f+".mli src/"+f+".ml")
+    if filetime("src"+os.sep+f+".mli") > filetime("src"+os.sep+f+".ml"):
+      filecopy("src"+os.sep+f+".mli","src"+os.sep+f+".ml")
 
 def copy_elk2rtl():
   for f in ELKRTL_INTERFACES:
-    if filetime("elk/"+f) > filetime("rtl/"+f):
-      os.system("cp elk/"+f+" rtl/"+f)
+    if filetime("elk"+os.sep+f) > filetime("rtl"+os.sep+f):
+      filecopy("elk"+os.sep+f,"rtl"+os.sep+f)
 
 def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES):
   global buildall
@@ -2606,7 +2598,8 @@ def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES):
     if buildall or filetime(file + '.mly') > filetime(file +'.ml'):
       buildall = 1
       xqt(OCAMLYACC+ ' -v '+ file + '.mly')
-      nxqt("grep conflict " + file + ".output")
+      if not WIN32:
+        nxqt("grep conflict " + file + ".output")
 
   # STEP 4: Compile ocaml interfaces
   for interface in INTERFACES:
@@ -2628,12 +2621,10 @@ try:
   if "weave" in options:
     print "WEAVING PROGRAM SOURCES"
     runISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
-  elif "doc" in options or "extract" in options:
-    print "EXTRACTING PRINCIPAL CODEBASE"
-    runISCR('lpsrc/flx.pak')
 
   if "doc" in options:
     print "GENERATING DOCUMENTATION"
+    runISCR('lpsrc/flx_config.pak')
     runISCR('lpsrc/flx.pak')
     copy_mli2ml()
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
@@ -2641,11 +2632,11 @@ try:
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_bind.pak')
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_migrate.pak')
     runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ lpsrc/flx_perf.pak')
-    xqt('cp doc/interscript.css speed/interscript.css')
+    filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
   elif "extract" in options:
     packages = [
       'flx','sm','ast','elk','flx_perf','flx_tutorial','flx_tut_macro',
-      'flx_tut_bind','flx_tut_migrate'
+      'flx_tut_bind','flx_tut_migrate','flx_config'
       ]
     print "EXTRATING SOURCES"
     args = ""
@@ -2654,8 +2645,8 @@ try:
     runISCR(args)
     copy_mli2ml()
     copy_elk2rtl()
-    xqt('cp doc/interscript.css speed/interscript.css')
-  os.system('rm -f tmp.tmp')
+    filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
+  erasefile('tmp.tmp')
 
   if "doc" in options or "man" in options:
     print "GENERATING MAN PAGES"
@@ -2682,7 +2673,7 @@ try:
   
   if "doc" in options or "impldoc" in options:
     print "GENERATING OCAMLDOCS"
-    xqt('rm -rf impldoc/*')
+    erasedir('impldoc')
     try:
       xqt('ocamldoc -I src -d impldoc src/*.mli -html')
       xqt('ocamldoc -I src -o impldoc/flx_impl.tex src/*.mli -latex')
@@ -2871,8 +2862,8 @@ try:
       cppfilename = basename + ".cpp"
       if buildall or \
         filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
-        filetime('bin/flxg')> filetime(basename+'.cpp') or \
-        filetime('lib/std.flx') > filetime(basename+'.cpp'):
+        filetime('bin'+os.sep+'flxg')> filetime(basename+'.cpp') or \
+        filetime('lib'+os.sep+'std.flx') > filetime(basename+'.cpp'):
         try:
           flxg('-Ilib ' +FLXFLAGS + basename,basename)
           #print 'TESTFILE -- generated ',basename
@@ -2894,10 +2885,10 @@ try:
         cppfilename = basename + ".cpp"
         if buildall or \
           filetime(basename+ '.flx') > filetime(basename+'.cpp') or \
-          filetime('bin/flxg')> filetime(basename+'.cpp') or \
-          filetime('lib/std.flx') > filetime(basename+'.cpp'):
+          filetime('bin'+os.sep+'flxg')> filetime(basename+'.cpp') or \
+          filetime('lib'+os.sep+'std.flx') > filetime(basename+'.cpp'):
           try:
-            xqtq('bin/flxg -e -Ilib ' + basename)
+            xqtq('bin'+os.sep+'flxg -e -Ilib ' + basename)
             #print 'TESTFILE -- failed as expected',basename
             results.append(("flxg",basename,'OK'))
             erasefile(basename+'.cpp')
@@ -2953,12 +2944,9 @@ try:
       for testfile in TESTS:
         basename = string.split(testfile,'.')[0]
         if LINK_MODEL == "dynamic":
-          if CYGWIN or WIN32:
-            testscript = "env PATH=./bin:\"$PATH\" ./bin/flx_run ./"+basename+SHLX
-          else:
-            testscript = "env LD_LIBRARY_PATH=./rtl:\"$LD_LIBRARY_PATH\" ./bin/flx_run ./"+basename+SHLX
+            testscript = "bin"+os.sep+"flx_run ./"+basename+SHLX
         else:
-          testscript = "./"+basename+SHLX
+          testscript = basename+SHLX
 
         if "log_output" in options:
           testscript = testscript + " >" + basename + ".output"
@@ -2968,7 +2956,7 @@ try:
 
         elif "check_output" in options:
           testscript = testscript + " >" + basename + ".output"
-          testscript = testscript + " && diff -a -b " + basename + ".expect "+ basename + ".output"
+          testscript = testscript + " && "+DIFF+ basename + ".expect "+ basename + ".output"
 
         #print 'Executing ',testscript
         try:
@@ -2980,22 +2968,23 @@ try:
           if stop_on_error: raise MakeError
           results.append(("Exec",testscript,'ERROR'))
       
-      if "test" in options or "tutorial" in options or "fcount" in options:
-        tkind = "std"
-        if "inline" in options: tkind="inline"
-        elif "noinline" in options: tkind="noinline"
-        stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "tut/examples/*.hpp"'
-        run(stats)
-        stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "test/*.hpp"'
-        run(stats)
+      if not WIN32: # requires posix
+        if "test" in options or "tutorial" in options or "fcount" in options:
+          tkind = "std"
+          if "inline" in options: tkind="inline"
+          elif "noinline" in options: tkind="noinline"
+          stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "tut/examples/*.hpp"'
+          run(stats)
+          stats = 'python script/fcount.py misc/fcounts.stats '+tkind+' "test/*.hpp"'
+          run(stats)
       
-      if "pfcount" in options:
-        stats = 'python script/pfcount.py misc/fcounts.stats'
-        run(stats)
+        if "pfcount" in options:
+          stats = 'python script/pfcount.py misc/fcounts.stats'
+          run(stats)
 
-      if "pfcount_all" in options:
-        stats = 'python script/pfcount.py misc/fcounts.stats all'
-        run(stats)
+        if "pfcount_all" in options:
+          stats = 'python script/pfcount.py misc/fcounts.stats all'
+          run(stats)
 
     if "performance" in options:
       for driver,testfile,moreargs in SPECIAL_TESTS:
@@ -3062,7 +3051,7 @@ We have no idea if it continues copying.
 @tangle('INSTALL_DIR=${PREFIX}/lib/felix')
 @tangle('EXEC_DIR=${PREFIX}/bin')
 @tangle('MAN_DIR=${PREFIX}/man')
-@tangle('BUILTIN_ISCR=env PYTHONPATH=. python -O interscript/bin/iscr.py --nocache')
+@tangle('BUILTIN_ISCR=python -O interscript/bin/iscr.py --nocache')
 @tangle('')
 @tangle('all: dummy')
 @tangle('\tpython script/maker extract compiler rtl elkhound drivers optimise_c')
@@ -3094,7 +3083,7 @@ We have no idea if it continues copying.
 @tangle('\tpython script/maker compiler bytecode debug')
 @tangle('')
 @tangle('extract_compiler: dummy')
-@tangle('\t${BUILTIN_ISCR} lpsrc/flx.pak')
+@tangle('\tenv PYTHONPATH=. ${BUILTIN_ISCR} lpsrc/flx.pak')
 @tangle('\tpython script/maker compiler')
 @tangle('')
 @tangle('extract: dummy')
@@ -3262,6 +3251,10 @@ We have no idea if it continues copying.
 @tangle('\tln -s . felix-'+flx_version)
 @tangle('\ttar -cvf flx_'+flx_version+'_src.tar\\')
 @tangle('\t\tfelix-'+flx_version+'/configure \\')
+@tangle('\t\tfelix-'+flx_version+'/win32env.bat \\')
+@tangle('\t\tfelix-'+flx_version+'/win32iscr.bat \\')
+@tangle('\t\tfelix-'+flx_version+'/win32make.bat \\')
+@tangle('\t\tfelix-'+flx_version+'/win32config.bat \\')
 @tangle('\t\tfelix-'+flx_version+'/Makefile \\')
 @tangle('\t\tfelix-'+flx_version+'/README \\')
 @tangle('\t\tfelix-'+flx_version+'/CONTENTS \\')
@@ -3372,14 +3365,14 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('debian/rules: lpsrc/flx_debian.pak lpsrc/flx_maker.ipk')
 @tangle('\trm -rf debian')
-@tangle('\t${BUILTIN_ISCR} lpsrc/flx_debian.pak')
+@tangle('\tenv PYTHONPATH=. ${BUILTIN_ISCR} lpsrc/flx_debian.pak')
 @tangle('\tchmod u+x debian/rules')
 @tangle('')
 @tangle('debian-package: debian/rules')
 @tangle('\t(cd .. && make -f flx/Makefile.debian_package_creator package)')
 @tangle('')
 @tangle('www: dummy')
-@tangle('\t${BUILTIN_ISCR} lpsrc/flx_sourceforge.pak')
+@tangle('\tenv PYTHONPATH=. ${BUILTIN_ISCR} lpsrc/flx_sourceforge.pak')
 @tangle('')
 @tangle('clean: dummy')
 @tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.dll tut/examples/*.par tut/examples/*.o tut/examples/*.output')
@@ -3417,13 +3410,13 @@ We have no idea if it continues copying.
 @tangle('')
 
 @tangle('config: dummy')
-@tangle('\t${BUILTIN_ISCR} lpsrc/flx_config.pak')
+@tangle('\tenv PYTHONPATH=. ${BUILTIN_ISCR} lpsrc/flx_config.pak')
 @tangle('\tpython -O script/make_config.py --quiet --prefix=${PREFIX} ${CONFIG_ARGS}')
 @tangle('')
 @tangle('config/config.py: config')
 @tangle('')
 @tangle('boot: config/config.py')
-@tangle('\t${BUILTIN_ISCR} lpsrc/flx.pak')
+@tangle('\tenv PYTHONPATH=. ${BUILTIN_ISCR} lpsrc/flx.pak')
 @for i in [
   'flx_cil_machdep_type',
   'flx_cil_cabs',
@@ -4704,8 +4697,12 @@ post-install:
 
 @head(1,'Finish up')
 Just cleaning up script now.
-@os.system('chmod u+x configure')
-@os.system('chmod u+x bin/flx')
-@os.system('chmod u+x bin/fishcc')
-@os.system('cp doc/*.css tut/doc >/dev/null 2>&1')
+@try:
+   os.system('chmod u+x configure')
+   os.system('chmod u+x bin/flx')
+   os.system('chmod u+x bin/fishcc')
+ except:pass
+
+for f in glob.glob('doc'+os.sep+'*.css'):
+  filecopy2dir(f, 'tut'+os.sep+'doc')
 

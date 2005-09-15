@@ -142,7 +142,7 @@ be used to create the configuration creator script.
     execfile("config"+os.sep+"flx_data.py")
  except:
     xt,xv,tb = sys.exc_info()
-    print "ERROR IN config/config.py"
+    print "ERROR IN config/flx_data.py"
     traceback.print_exception(xt,xv,tb)
     print "You must either"
     print "(a) edit config/config.py and fix the error, or,"
@@ -317,6 +317,9 @@ create a file here for unit tests.
 @head(2,'The Unix Build system')
 @include_file ('flx_man.ipk')
 @include_file ('flx_maker.ipk')
+
+@head(2,'The Windows Build system extras')
+@include_file ('flx_win32.ipk')
 
 @head(2,'Misc')
 @include_file ('flx_vim.ipk')

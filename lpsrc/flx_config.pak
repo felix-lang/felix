@@ -780,13 +780,17 @@ class gxx:
       opt.SHLIB_DIR="bin"
       
       COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
-      LINK_DYNAMIC_RTL = "-shared -Wl,--disable-auto-import "
+      #LINK_DYNAMIC_RTL = "-shared -Wl,--disable-auto-import "
+      LINK_DYNAMIC_RTL = "-shared  "
+
       
       COMPILE_DYNAMIC_MAIN = "-c "
-      LINK_DYNAMIC_MAIN = "-Wl,--disable-auto-import "
+      #LINK_DYNAMIC_MAIN = "-Wl,--disable-auto-import "
+      LINK_DYNAMIC_MAIN = ""
       
       COMPILE_DYNAMIC_FLX = opt.PIC+ "-c "
-      LINK_DYNAMIC_FLX = opt.PIC+"-shared -Wl,--disable-auto-import "
+      #LINK_DYNAMIC_FLX = opt.PIC+"-shared -Wl,--disable-auto-import "
+      LINK_DYNAMIC_FLX = opt.PIC+"-shared "
 
     elif opt.model=="win32":
       opt.EXT_LIB = ".a"
@@ -1596,6 +1600,55 @@ class msvcxx:
     for i in lib_path: cmd = cmd + "/LIBPATH:"+i+" "
     for i in libs: cmd = cmd + "/DEFAULTLIB:lib"+i+" "
     shell(cmd)
+
+@h=tangler("flxbuild/__init__.py")
+@select(h)
+#package base
+
+@h=tangler("flxbuild/flxutil.py")
+@select(h)
+# build system utility module
+import os
+import glob
+import stat
+import string
+
+def filetime(f):
+  try:
+    t = os.stat(f)[stat.ST_MTIME]
+  except:
+    t = 0
+  return t
+
+def erasefile(f):
+  try: os.unlink(f)
+  except: pass
+
+def erasedir(d):
+  fs = glob.glob(d+os.sep+"*")
+  for f in fs: erasefile(f)
+  try: os.rmdir(d)
+  except: pass
+
+def filecopy(a,b):
+  f = open(a)
+  g = open(b,"w")
+  g.write(f.read())
+  g.close()
+  f.close()
+
+def filecopy2dir(a,d):
+  base = string.split(a,os.sep)[-1]
+  filecopy(a,d+os.sep+base)
+
+def get_stdout(x):
+  fin, fout, ferr = os.popen3(x)
+  output = fout.readlines()
+  errs = ferr.readlines()
+  fin.close()
+  ferr.close() 
+  result = fout.close()
+  return result,output + errs
   
 @h = tangler("script/make_config.py")
 @select(h)
@@ -1610,6 +1663,8 @@ import traceback
 import string
 import time
 import glob
+import flxbuild
+from flxbuild.flxutil import *
 
 # user defined bootstrap to set up environment
 try:
@@ -1619,16 +1674,6 @@ except:
 
 #---------- utilities -------------------
 # We're screwed if popen doesn't work ..
-def get_stdout(x):
-  f = os.popen(x,"r")
-  output = f.readlines()
-  result = f.close()
-  if not result: result = 0
-  return result,output
-
-
-# we cannot do anything fancy here like redirect
-# stdout/stderr because we don't know what OS we're on
 
 def xxqt(x):
   result = os.system(x)
@@ -1644,17 +1689,6 @@ def xqt(x):
    xxqt(x + " >NUL")
  else:
    xxqt(x)
-
-def filecopy(a,b):
-  f = open(a)
-  g = open(b,"w")
-  g.write(f.read())
-  g.close()
-  f.close()
-
-def filecopy2dir(a,d):
-  base = string.split(a,os.sep)[-1]
-  filecopy(a,d+os.sep+base)
 
 def mkdirs(x):
   cps = string.split(x,os.sep)
@@ -1958,8 +1992,6 @@ BUILD_CXX.set_options(use="build",model=build_model,build=build_model)
 BUILD_CXX.check_options(xqt)
 BUILD_CXX.report_config()
 BUILD_CXX.save_options("config/build_cxx.py")
-BUILD_CYGWIN = BUILD_CXX.options.CYGWIN
-BUILD_MACOSX = BUILD_CXX.options.MACOSX
 build_model=BUILD_CXX.options.model
 
 #
@@ -2052,7 +2084,7 @@ try:
   xqt("iscr")
   ISCR="iscr "
 except:
-  ISCR="env PYTHONPATH=. python -O interscript"+os.sep+"bin"+os.sep+"iscr.py "
+  ISCR="python -O interscript"+os.sep+"bin"+os.sep+"iscr.py "
 
 SUPPORT_DYNAMIC_LOADING = TARGET_CXX.options.SUPPORT_DYNAMIC_LOADING
 
@@ -2182,22 +2214,22 @@ try:
   p(f,"PREFIX")
   pr(f,"")
 
-  pr(f,"execfile('script"+os.sep+"gxx_class.py')")
-  pr(f,"execfile('script"+os.sep+"msvcxx_class.py')")
+  pr(f,"execfile("+repr('script'+os.sep+'gxx_class.py')+")")
+  pr(f,"execfile("+repr('script'+os.sep+'msvcxx_class.py')+")")
   pr(f,"execfile('script"+os.sep+"ocaml_class.py')")
   pr(f,"HOST_OCAML=ocaml()")
-  pr(f,"HOST_OCAML.load_config('config"+os.sep+"ocaml_config.py')")
+  pr(f,"HOST_OCAML.load_config("+repr('config'+os.sep+'ocaml_config.py')+")")
   pr(f,"HOST_CXX="+HOST_CXX.__class__.__name__+"()")
-  pr(f,"HOST_CXX.load_options('config"+os.sep+"host_cxx.py')")
+  pr(f,"HOST_CXX.load_options("+repr('config'+os.sep+'host_cxx.py')+")")
   pr(f,"TARGET_CXX="+TARGET_CXX.__class__.__name__+"()")
-  pr(f,"TARGET_CXX.load_options('config"+os.sep+"target_cxx.py')")
+  pr(f,"TARGET_CXX.load_options("+repr('config'+os.sep+'target_cxx.py')+")")
   pr(f,"")
   p(f,"HAVE_GXX")
   pr(f,"FLXCC_CPP='cpp '")
   p(f,"HAVE_MSVC")
   pr(f,"# HACK to get all the target variables into global namespace")
-  pr(f,"execfile('config"+os.sep+"target_cxx.py')")
-  pr(f,"execfile('config"+os.sep+"ocaml_config.py')")
+  pr(f,"execfile("+repr('config'+os.sep+'target_cxx.py')+")")
+  pr(f,"execfile("+repr('config'+os.sep+'ocaml_config.py')+")")
   f.close()
   if BOOTFILE:
     print "Copying bootfile :  "+ BOOTFILE

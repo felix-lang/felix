@@ -13073,9 +13073,11 @@ void emitActionCode(GrammarAnalysis const &g, char const *hFname,
     throw_XOpen(hFname);
   }
 
-  sm_string latchName = replace(replace(replace(
+  sm_string latchName = replace(replace(replace(replace(replace(
                        sm_stringToupper(hFname),
                          ".", "_"),
+                         ":", "_"),
+                         "\\", "_"),
                          "/", "_"),
                          "-", "_");
       

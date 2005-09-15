@@ -1759,7 +1759,7 @@ try
   and module_name = 
     let n = String.length filebase in 
     let i = ref (n-1) in
-    while !i <> -1 && filebase.[!i] <> '/' do decr i done;
+    while !i <> -1 && filebase.[!i] <> '/' && filebase.[!i] <> '\\' do decr i done;
     String.sub filebase (!i+1) (n - !i - 1)
   in
 
