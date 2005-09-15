@@ -1,0 +1,19 @@
+@select(tangler("win32env.bat"))
+set OCAMLLIB=c:\program files\Objective Caml\lib
+set PATH="c:\Program files\Objective Caml\bin";%PATH%
+set PATH="c:\Program files\Microsoft Visual Studio .NET 2003\vc7\bin";%PATH%
+set INCLUDE="c:\Program files\Microsoft Visual Studio .NET 2003\vc7\INCLUDE";%INCLUDE%
+set INCLUDE="c:\Program files\Microsoft Visual Studio .NET 2003\vc7\PlatformSDK\INCLUDE";%INCLUDE%
+set LIB="c:\Program files\Microsoft Visual Studio .NET 2003\vc7\LIB";%LIB%
+set LIB="c:\Program files\Microsoft Visual Studio .NET 2003\vc7\PlatformSDK\LIB";%LIB%
+set PATH=c:\Python24;%PATH%
+set PYTHONPATH=.
+@select(tangler("win32config.bat"))
+python interscript\bin\iscr.py --nocache lpsrc\flx_config.pak
+python script/make_config.py --host=win32 --target=win32
+python interscript\bin\iscr.py --nocache lpsrc\flx.pak
+@select(tangler("win32config.bat"))
+python script/maker %1 %2 %3 %4 %5 %6 %7 %8 %9
+@select(tangler("win32iscr.bat"))
+python interscript\bin\iscr.py %1 %2 %3 %4 %5 %6 %7 %8 %9
+
