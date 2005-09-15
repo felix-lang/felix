@@ -1642,13 +1642,10 @@ def filecopy2dir(a,d):
   filecopy(a,d+os.sep+base)
 
 def get_stdout(x):
-  fin, fout, ferr = os.popen3(x)
+  fout = os.popen(x,"r")
   output = fout.readlines()
-  errs = ferr.readlines()
-  fin.close()
-  ferr.close() 
   result = fout.close()
-  return result,output + errs
+  return result,output
   
 @h = tangler("script/make_config.py")
 @select(h)
