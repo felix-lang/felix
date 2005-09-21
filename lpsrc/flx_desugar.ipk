@@ -705,7 +705,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
       [
         Exe (sr,`EXE_comment "match failure");
         Exe (sr,`EXE_label failure_label);
-        Exe (sr,`EXE_noreturn_code ("      FLX_MATCH_FAILURE("^s^");\n"));
+        Exe (sr,`EXE_noreturn_code (`Str ("      FLX_MATCH_FAILURE("^s^");\n")));
       ]
     )
     in
@@ -746,11 +746,6 @@ and string_of_vs (vs:vs_list_t) =
   cat "," (map (fun (v,tp) -> v ^ maybe_tpat tp) vs)
 
 and rst syms name access (parent_vs:vs_list_t) st : asm_t list = 
-  let dstr s = 
-    match s with 
-    | `AST_literal (_,`AST_string s) -> s 
-    | x -> let sr = src_of_expr x in clierr sr "String literal required"
-  in
   
   (* construct an anonymous name *)
   let parent_ts sr : typecode_t list = 
@@ -771,7 +766,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     *)
     let ts = map (fun (s,_)-> `AST_name (sr,s,[])) parent_vs in
     let us = `AST_name (sr,"_rqs_" ^ name,ts) in
-    let body = `DCL_body ("",[us]) in
+    let body = `DCL_insert (`Str "",`Body,[us]) in
     Dcl (sr,"_rqs_"^n,None,`Public,[],body)
   in
 
@@ -802,16 +797,16 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       match rqs with 
       | [] -> props, rev dcls, nrqs
       | h :: t -> match h with
-      | `Body_req s -> 
+      | `Body_req s ->
         let n = !(syms.counter) in incr syms.counter;
         let n = "_req_" ^ si n in
-        let dcl = Dcl (sr,n,ix,access,[],`DCL_body (s,[])) in
+        let dcl = Dcl (sr,n,ix,access,[],`DCL_insert (s,`Body,[])) in
         aux t props ( dcl :: dcls) ( `AST_name (sr,n,parent_ts sr) :: nrqs)
 
-      | `Header_req s -> 
+      | `Header_req s ->
         let n = !(syms.counter) in incr syms.counter;
         let n = "_req_" ^ si n in
-        let dcl = Dcl (sr,n,ix,access,[],`DCL_header (s,[])) in
+        let dcl = Dcl (sr,n,ix,access,[],`DCL_insert (s,`Header,[])) in
         aux t props ( dcl :: dcls) ( `AST_name (sr,n,parent_ts sr) :: nrqs)
 
       | `Named_req n -> aux t props dcls (n::nrqs)
@@ -879,13 +874,13 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
 
   | `AST_const_decl (sr,name, vs,typ, s, reqs) -> 
     let props,dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,name,None,access,vs,`DCL_const (typ,dstr s, map_reqs sr reqs))
+    Dcl (sr,name,None,access,vs,`DCL_const (typ,s, map_reqs sr reqs))
     :: dcls
 
   (* types *)
-  | `AST_abs_decl (sr,name,vs,quals,str, reqs) -> 
+  | `AST_abs_decl (sr,name,vs,quals,s, reqs) -> 
     let props,dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,name,None,access,vs,`DCL_abs (quals,dstr str,map_reqs sr reqs))
+    Dcl (sr,name,None,access,vs,`DCL_abs (quals,s,map_reqs sr reqs))
     :: dcls
   
   | `AST_union (sr,name, vs, components) -> [Dcl (sr,name,None,access,vs,`DCL_union (components))]
@@ -952,7 +947,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_fun_decl (sr,name',vs,args,result,code, reqs,prec) ->
     let props, dcls, reqs = mkreqs sr reqs in
     Dcl (sr,name',None,access,vs,
-      `DCL_fun (props,args,result,dstr code,map_reqs sr reqs,prec))
+      `DCL_fun (props,args,result,code,map_reqs sr reqs,prec))
     :: dcls
 
   (* misc *)
@@ -991,14 +986,9 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       )
     ) :: mdcl else mdcl
 
-  | `AST_header (sr,name',vs,s,reqs) -> 
+  | `AST_insert (sr,name',vs,s,kind,reqs) -> 
     let props, dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,map_req name',None,access,vs,`DCL_header (dstr s, map_reqs sr reqs))
-    :: dcls
-
-  | `AST_body (sr,name',vs,s, reqs) -> 
-    let props, dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,map_req name',None,access,vs,`DCL_body (dstr s, map_reqs sr reqs))
+    Dcl (sr,map_req name',None,access,vs,`DCL_insert (s, kind, map_reqs sr reqs))
     :: dcls
 
   (* executable *)

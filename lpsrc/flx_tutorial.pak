@@ -3049,7 +3049,7 @@ proc printing() {
   print s; endl;
 }
 
-var x = start printing of(unit) ();
+var x = start the printing;
 report;
 send[string] (&x) "World";
 report;
@@ -3102,8 +3102,8 @@ proc agent() {
   us := thread_count;
   --thread_count;
   var next = 
-    if us > 1 then start the agent ()
-    else start the final () endif
+    if us > 1 then start the agent
+    else start the final endif
   ;
   var msg:int;
   whilst true do
@@ -3112,7 +3112,7 @@ proc agent() {
   done;
 }
 
-var first = start the agent ();
+var first = start the agent;
 
 whilst message_count >0 do
   --message_count;

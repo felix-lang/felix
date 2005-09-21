@@ -192,8 +192,7 @@ and uses syms used bbdfns i =
       | `BBDCL_proc (_,_,ps, _, reqs)  -> iter ut ps; iter ur reqs
 
       | `BBDCL_abs (_,_,_,reqs) -> iter ur reqs
-      | `BBDCL_header (_,s,reqs)  
-      | `BBDCL_body (_,s,reqs) -> iter ur reqs
+      | `BBDCL_insert (_,s,ikind,reqs)  -> iter ur reqs
       | `BBDCL_nonconst_ctor (_,_,unt,_,ct) ->
         ut unt; ut ct
 

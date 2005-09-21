@@ -1635,8 +1635,8 @@ proc producer() {
   done;
 }
 
-var con = start the consumer ();
-var prod= start the producer ();
+var con = start the consumer;
+var prod= start the producer;
 run prod;
 
 print produced; print " "; print consumed; endl;
@@ -1681,8 +1681,8 @@ proc agent() {
   us := thread_count;
   --thread_count;
   var next = 
-    if us > 1 then start the agent ()
-    else start the final () endif
+    if us > 1 then start the agent
+    else start the final endif
   ;
   var msg:int;
   whilst true do
@@ -1691,7 +1691,7 @@ proc agent() {
   done;
 }
 
-var first = start the agent ();
+var first = start the agent; 
 
 whilst message_count >0 do
   --message_count;

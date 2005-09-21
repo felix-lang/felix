@@ -351,7 +351,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;(*vs=ivs;*)privmap=name
         if unit_sum then si ctor_idx 
         else "_uctor_(" ^ si ctor_idx ^ ",0)"
       in
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_const (bvs,t,ct,[]));
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_const (bvs,t,`Str ct,[]));
 
       if syms.compiler_options.print_flag then
       print_endline ("//bound const " ^ name ^ "<"^si i^">:" ^
@@ -453,17 +453,11 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;(*vs=ivs;*)privmap=name
       let reqs = bind_reqs reqs in
       Hashtbl.add bbdfns i (name,None,sr,`BBDCL_abs (bvs,complete,ct,reqs))
 
-    | `SYMDEF_header (ct,reqs) ->
+    | `SYMDEF_insert (ct,ikind,reqs) ->
       (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name); 
       *)
       let reqs = bind_reqs reqs in
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_header (bvs,ct,reqs))
-
-    | `SYMDEF_body (ct,reqs) ->
-      (* print_endline ("//Binding body string " ^ si i ^ " --> " ^ name); 
-      *)
-      let reqs = bind_reqs reqs in
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_body (bvs,ct,reqs))
+      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_insert (bvs,ct,ikind,reqs))
 
     end
     (*

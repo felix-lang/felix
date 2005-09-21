@@ -260,7 +260,7 @@ let rec set_ptf_usage syms bbdfns usage excludes i =
           begin match u,r with
           | Unknown, x | x, Unknown -> x
           | Required, _ | _, Required -> Required
-          | Not_required, _ | _, Not_required -> Not_required
+          | Not_required, _ (* | _, Not_required *) -> Not_required 
           end
         )
         Not_required

@@ -1,4 +1,4 @@
-@head(1,'Utilities')
+| @head(1,'Utilities')
 Generic (non Felix dependent) utilities.
 @h = tangler('src/flx_util.mli')
 @select(h)
@@ -228,10 +228,14 @@ A simple name is an identifier, a qualified name is a dot (.) separated list
 of instantiated names, and a instantiated name is a simple name optionally
 followed by a square bracket enclosed list of type expressions.
 @select(h)
-type c_t = string     (* C++ code as a string *)
 type id_t = string
 type bid_t = int
 type index_map_t = (int,int) Hashtbl.t
+type  c_t = [
+  | `StrTemplate of string
+  | `Str of string
+]
+
 
 (** type of a qualified name *)
 type qualified_name_t =
@@ -498,12 +502,16 @@ and type_qual_t = [
 ]
 
 and requirement_t = [
+  | `Body_req of c_t
+  | `Header_req of c_t
   | `Named_req of qualified_name_t 
-  | `Body_req of string
-  | `Header_req of string
   | `Property_req of string
 ]
 
+and ikind_t = [
+  | `Header
+  | `Body
+] 
 and requirements_t = requirement_t list
 and named_reqs_t = qualified_name_t list
 and prec_t = string
@@ -596,16 +604,15 @@ and statement_t =
   | `AST_assert of range_srcref * expr_t
 
   (* binding structures [prolog] *)
-  | `AST_abs_decl of range_srcref * id_t * vs_list_t * type_qual_t list * expr_t * requirements_t
+  | `AST_abs_decl of range_srcref * id_t * vs_list_t * type_qual_t list * c_t * requirements_t
   | `AST_ctypes of range_srcref * (srcref * id_t) list * type_qual_t list  * requirements_t 
-  | `AST_const_decl of range_srcref * id_t * vs_list_t * typecode_t * expr_t * requirements_t
-  | `AST_fun_decl of range_srcref * id_t * vs_list_t * typecode_t list * typecode_t * expr_t  * requirements_t * prec_t
+  | `AST_const_decl of range_srcref * id_t * vs_list_t * typecode_t * c_t * requirements_t
+  | `AST_fun_decl of range_srcref * id_t * vs_list_t * typecode_t list * typecode_t * c_t * requirements_t * prec_t
 
   (* embedding *)
-  | `AST_header of range_srcref * id_t * vs_list_t * expr_t * requirements_t
-  | `AST_body of range_srcref * id_t * vs_list_t * expr_t * requirements_t
-  | `AST_code of range_srcref * string
-  | `AST_noreturn_code of range_srcref * string
+  | `AST_insert of range_srcref * id_t * vs_list_t * c_t * ikind_t  * requirements_t
+  | `AST_code of range_srcref * c_t
+  | `AST_noreturn_code of range_srcref * c_t
 
   | `AST_export_fun of range_srcref * suffixed_name_t * string
   | `AST_export_type of range_srcref * typecode_t * string
@@ -615,8 +622,8 @@ and statement_t =
 
 and exe_t =
   [
-  | `EXE_code of string (* for inline C++ code *)
-  | `EXE_noreturn_code of string (* for inline C++ code *)
+  | `EXE_code of c_t (* for inline C++ code *)
+  | `EXE_noreturn_code of c_t (* for inline C++ code *)
   | `EXE_comment of string (* for documenting generated code *)
   | `EXE_label of string (* for internal use only *)
   | `EXE_goto of string  (* for internal use only *)
@@ -708,8 +715,7 @@ type dcl_t =
   | `DCL_abs of          type_qual_t list * c_t * named_reqs_t
   | `DCL_const of        typecode_t * c_t * named_reqs_t
   | `DCL_fun of          property_t list * typecode_t list * typecode_t * c_t * named_reqs_t * prec_t
-  | `DCL_header of       c_t * named_reqs_t
-  | `DCL_body of         c_t * named_reqs_t
+  | `DCL_insert of      c_t * ikind_t * named_reqs_t
   | `DCL_regdef of      regexp_t
   | `DCL_regmatch of    (regexp_t * expr_t) list
   | `DCL_reglex of      (regexp_t * expr_t) list
@@ -808,8 +814,8 @@ and bexe_t =
   | `BEXE_fun_return of range_srcref * tbexpr_t
   | `BEXE_proc_return of range_srcref   
   | `BEXE_nop of range_srcref * string
-  | `BEXE_code of range_srcref * string
-  | `BEXE_nonreturn_code of range_srcref * string
+  | `BEXE_code of range_srcref * c_t
+  | `BEXE_nonreturn_code of range_srcref * c_t
   | `BEXE_assign of range_srcref * tbexpr_t * tbexpr_t 
   | `BEXE_init of range_srcref * bid_t * tbexpr_t 
   | `BEXE_begin
@@ -865,8 +871,7 @@ and bbdcl_t =
   | `BBDCL_const of      bvs_t * btypecode_t * c_t * breqs_t
   | `BBDCL_fun of        property_t list * bvs_t * btypecode_t list * btypecode_t * c_t  * breqs_t * prec_t
   | `BBDCL_proc of       property_t list * bvs_t * btypecode_t list * c_t  * breqs_t
-  | `BBDCL_header of     bvs_t * c_t  * breqs_t
-  | `BBDCL_body of       bvs_t * c_t  * breqs_t
+  | `BBDCL_insert of     bvs_t * c_t * ikind_t * breqs_t
   
   | `BBDCL_union of      bvs_t * (id_t * btypecode_t) list
   | `BBDCL_struct of     bvs_t * (id_t * btypecode_t) list
@@ -901,8 +906,7 @@ type symbol_definition_t =
   | `SYMDEF_var of  typecode_t
   | `SYMDEF_val of  typecode_t
   | `SYMDEF_fun of property_t list * typecode_t list * typecode_t * c_t  * named_reqs_t * prec_t
-  | `SYMDEF_header of c_t  * named_reqs_t
-  | `SYMDEF_body of c_t  * named_reqs_t
+  | `SYMDEF_insert of c_t  * ikind_t * named_reqs_t
   | `SYMDEF_union of  (id_t * typecode_t) list
   | `SYMDEF_struct of  (id_t * typecode_t) list
   | `SYMDEF_cstruct of  (id_t * typecode_t) list
@@ -1546,8 +1550,7 @@ let src_of_stmt e = match e with
   | `AST_ctypes (s,_,_,_) 
   | `AST_const_decl (s,_,_,_,_,_) 
   | `AST_fun_decl (s,_,_,_,_,_,_,_ ) 
-  | `AST_header (s,_,_,_,_) 
-  | `AST_body (s,_,_,_,_) 
+  | `AST_insert (s,_,_,_,_,_) 
   | `AST_code (s, _) 
   | `AST_noreturn_code (s, _) 
   | `AST_union (s, _,_, _ ) 
@@ -2460,14 +2463,24 @@ and string_of_properties ps =
   | [] -> ""
   | ps -> catmap " " string_of_property ps
   
+and string_of_code_spec = function
+  | `StrTemplate s -> "\"" ^ s ^  "\""
+  | `Str s -> "c\"" ^ s ^  "\""
+
+and string_of_long_code_spec c = 
+  let triple_quote = "\"\"\"" in
+  match c with
+  | `StrTemplate s -> triple_quote ^ s ^ triple_quote
+  | `Str s -> "c" ^ triple_quote ^ s ^ triple_quote
+
 and string_of_reqs = function 
   | [] -> ""
   | x -> 
     " requires " ^ catmap ", " 
     (function 
       | `Named_req s -> string_of_qualified_name s
-      | `Body_req s -> "body \"" ^ s ^ "\""
-      | `Header_req s -> "header \"" ^ s ^ "\""
+      | `Body_req c -> "body " ^ string_of_code_spec c
+      | `Header_req c -> "header " ^ string_of_code_spec c
       | `Property_req s -> "property \"" ^ s ^ "\""
     )
     x
@@ -2600,7 +2613,7 @@ and string_of_statement level s =
   | `AST_abs_decl (_,t,vs, quals, ct, reqs) -> spaces level ^ 
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ t ^ print_vs vs ^
-    " = " ^ string_of_expr ct ^ 
+    " = " ^ string_of_code_spec ct ^ 
     string_of_reqs reqs ^
     ";"
 
@@ -2610,7 +2623,7 @@ and string_of_statement level s =
     ": " ^ 
     (string_of_typecode (`TYP_tuple args)) ^ " -> " ^
     (string_of_typecode result) ^ 
-    " = " ^ string_of_expr code ^ 
+    " = " ^ string_of_code_spec code ^ 
     (if prec = "" then "" else ":"^prec^" ")^
     string_of_reqs reqs ^
     ";"
@@ -2619,31 +2632,26 @@ and string_of_statement level s =
     spaces level ^ 
      "const " ^ name ^ 
      ": " ^ string_of_typecode typ ^ 
-     " = "^string_of_expr code^ 
+     " = "^string_of_code_spec code^ 
      string_of_reqs reqs ^
      ";" 
 
-  | `AST_header (_,n,vs,s, reqs) -> 
+  | `AST_insert (_,n,vs,s, ikind, reqs) -> 
     spaces level ^
-    "header "^n^print_vs vs^ 
-    "\n" ^ string_of_expr s ^ " " ^
+    (match ikind with 
+    | `Header -> "header "
+    | `Body -> "body "
+    )
+    ^n^print_vs vs^ 
+    "\n" ^ string_of_code_spec s ^ " " ^
      string_of_reqs reqs ^
     ";\n"
 
-  | `AST_body (_,n,vs,s, reqs) -> 
-    spaces level ^
-    "body "^n^print_vs vs^ 
-    "\n" ^ string_of_expr s ^ " " ^
-     string_of_reqs reqs ^
-    ";\n"
+  | `AST_code (_,s) -> 
+    "code \n" ^ string_of_long_code_spec s ^ ";\n"
 
-  | `AST_code (_,s) -> let triple_quote = "\"\"\"" in
-    "code \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
-    ";\n"
-
-  | `AST_noreturn_code (_,s) -> let triple_quote = "\"\"\"" in
-    "noreturn_code \n" ^ triple_quote ^ "\n" ^ s ^ triple_quote ^
-    ";\n"
+  | `AST_noreturn_code (_,s) -> 
+    "noreturn_code \n" ^ string_of_long_code_spec s ^ ";\n"
 
   | `AST_function (_,name, vs, ps, res, props, ss) -> 
     spaces level ^ 
@@ -2930,7 +2938,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t)
   | `SYMDEF_abs (quals,code, reqs) ->
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ name ^ print_ivs vs ^
-    " = " ^ string_of_string code ^ 
+    " = " ^ string_of_code_spec code ^ 
     string_of_named_reqs reqs ^
     ";"
 
@@ -2948,7 +2956,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t)
 
   | `SYMDEF_const (t,ct, reqs) -> 
     "const " ^ name ^ print_ivs vs ^":"^ 
-    string_of_typecode t ^ " = '" ^ct^"'"^
+    string_of_typecode t ^ " = " ^string_of_code_spec ct^
     string_of_named_reqs reqs ^
     ";"
     
@@ -2980,19 +2988,13 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t)
     string_of_named_reqs reqs ^
     ";"
 
-  | `SYMDEF_header (s,reqs) -> 
-    "header " ^ name ^ print_ivs vs ^
-    " "^ string_of_string s ^ 
+  | `SYMDEF_insert (s,ikind, reqs) -> 
+    (match ikind with | `Header -> "header " | `Body -> "body ") ^
+    name ^ print_ivs vs ^
+    " "^ string_of_code_spec s ^ 
      string_of_named_reqs reqs ^
     ";\n"
     
-  | `SYMDEF_body (s,reqs) -> 
-    "body " ^ name ^ print_ivs vs ^
-    " "^ string_of_string s ^ 
-     string_of_named_reqs reqs ^
-    ";\n"
-
- 
   | `SYMDEF_function (ps,res,props, es) -> 
     string_of_properties props ^
     "fun " ^ name ^ print_ivs vs ^
@@ -3065,10 +3067,10 @@ and string_of_exe level s =
     "/*" ^ s ^ "*/"
 
   | `EXE_code s -> spc ^ 
-    "code " ^ string_of_string s 
+    "code " ^ string_of_code_spec s 
 
   | `EXE_noreturn_code s -> spc ^ 
-    "noreturn_code " ^ string_of_string s 
+    "noreturn_code " ^ string_of_code_spec s 
 
   | `EXE_init (l,r) -> spc ^ 
     l ^ " := " ^ se r ^ ";"
@@ -3226,10 +3228,10 @@ and string_of_bexe dfns level s =
     "/*" ^ s ^ "*/"
 
   | `BEXE_code (_,s) -> spc ^ 
-    "code " ^ string_of_string s 
+    "code " ^ string_of_code_spec s 
 
   | `BEXE_nonreturn_code (_,s) -> spc ^ 
-    "non_return_code " ^ string_of_string s 
+    "non_return_code " ^ string_of_code_spec s 
 
   | `BEXE_assign (_,l,r) -> spc ^ 
     se l ^ " = " ^ se r ^ ";"
@@ -3305,7 +3307,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
   | `DCL_abs (quals, code, reqs) -> spaces level ^ 
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ name^seq ^ print_vs vs ^
-    " = " ^ string_of_string code ^ 
+    " = " ^ string_of_code_spec code ^ 
     string_of_named_reqs reqs ^
     ";"
 
@@ -3316,26 +3318,23 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     string_of_properties props ^
     "fun " ^ name^seq ^ print_vs vs ^
     ": " ^ string_of_typecode t ^
-    " = " ^ string_of_string code ^ 
+    " = " ^ string_of_code_spec code ^ 
     (if prec = "" then "" else ":"^prec^" ")^
     string_of_named_reqs reqs ^
     ";"
 
-  | `DCL_header (s,reqs) -> 
-    spaces level ^ "header " ^ name^seq ^  print_vs vs ^
-    " = "^ string_of_string s ^
+  | `DCL_insert (s,ikind, reqs) -> 
+    spaces level ^ 
+    (match ikind with | `Header -> "header " | `Body -> "body ") ^ 
+    name^seq ^  print_vs vs ^
+    " = "^ string_of_code_spec s ^
     string_of_named_reqs reqs ^ ";"
     
-  | `DCL_body (s,reqs) -> 
-    spaces level ^ "body " ^ name^seq ^ print_vs vs ^
-    " = "^ string_of_string s ^
-     string_of_named_reqs reqs ^ ";"
-
   | `DCL_const (typ, code, reqs) ->
     spaces level ^ 
      "const " ^ name^seq ^print_vs vs ^  
      ": " ^ string_of_typecode typ ^ 
-     " = "^string_of_string code^ 
+     " = "^string_of_code_spec code^ 
     string_of_named_reqs reqs ^
      ";" 
 
@@ -3473,12 +3472,12 @@ and string_of_bbdcl dfns bbdcl index =
   | `BBDCL_abs (vs,quals,code,reqs) ->
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ name ^  print_bvs vs ^
-    " = " ^ string_of_string code ^ ";"
+    " = " ^ string_of_code_spec code ^ ";"
 
   | `BBDCL_const (vs,ty,code,reqs) ->
      "const " ^ name ^ print_bvs vs ^    
      ": " ^ sobt ty ^ 
-     " = "^string_of_string code^ 
+     " = "^string_of_code_spec code^ 
      string_of_breqs dfns reqs ^
      ";" 
 
@@ -3488,7 +3487,7 @@ and string_of_bbdcl dfns bbdcl index =
     ": " ^ 
     (sobt (typeoflist ps)) ^ " -> " ^
     (sobt rt) ^ 
-    " = " ^ string_of_string code ^ 
+    " = " ^ string_of_code_spec code ^ 
     (if prec = "" then "" else ":"^prec^" ")^
      string_of_breqs dfns reqs ^
     ";"
@@ -3498,20 +3497,15 @@ and string_of_bbdcl dfns bbdcl index =
     "proc " ^ name ^ print_bvs vs ^
     ": " ^ 
      (sobt (typeoflist ps)) ^
-     " = " ^ string_of_string code ^ 
+     " = " ^ string_of_code_spec code ^ 
      string_of_breqs dfns reqs ^
      ";"
 
-  | `BBDCL_header (vs,s,reqs) -> 
-    "header " ^ name^  print_bvs vs ^
-    " "^ string_of_string s ^
+  | `BBDCL_insert (vs,s,ikind,reqs) -> 
+     (match ikind with | `Header -> "header " | `Body -> "body ") ^
+    name^  print_bvs vs ^
+    " "^ string_of_code_spec s ^
     string_of_breqs dfns reqs
-
-  | `BBDCL_body (vs,s,reqs) -> 
-    "body " ^ name^ 
-    " "^ string_of_string s ^
-    string_of_breqs dfns reqs
-
 
   | `BBDCL_union (vs,cs) ->
     let string_of_union_component (name,ty) =

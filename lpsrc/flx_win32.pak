@@ -12,7 +12,7 @@ set PYTHONPATH=.
 python interscript\bin\iscr.py --nocache lpsrc\flx_config.pak
 python script/make_config.py --host=win32 --target=win32
 python interscript\bin\iscr.py --nocache lpsrc\flx.pak
-@select(tangler("win32maker.bat"))
+@select(tangler("win32make.bat"))
 python script/maker %1 %2 %3 %4 %5 %6 %7 %8 %9
 @select(tangler("win32iscr.bat"))
 python interscript\bin\iscr.py %1 %2 %3 %4 %5 %6 %7 %8 %9

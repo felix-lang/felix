@@ -159,7 +159,10 @@ let gen_type_name syms bbdfns (index,typ) =
       let instance_name = cn typ in
       let tss = map tn ts in
       let instance = 
-        try sc "expr" (csubst sr sr ct [] [] "Error" "Error" tss "atom" "Error" ["Error"]) 
+        match ct with
+        | `Str c -> c
+        | `StrTemplate c ->
+        try sc "expr" (csubst sr sr c [] [] "Error" "Error" tss "atom" "Error" ["Error"]) 
         with Not_found -> failwith "[gen_type_name] Unexpected error in csubst"
       in
 

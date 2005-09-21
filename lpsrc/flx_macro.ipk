@@ -526,12 +526,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   let result = ref [] in
   let tack x = result := x :: !result in
   let ctack x = if !reachable then tack x in
-  let cs e = 
-    let x = const_fold (me e) in match x with
-    | `AST_literal (_,`AST_string _) -> x
-    | x -> let sr = src_of_expr x in clierr sr "string literal required"
-  in 
-  let strterm sr s : expr_t = `AST_literal (sr,`AST_string s) in
 
   begin match st with
   (* cheat for now and ignore public and private decls *)
@@ -590,32 +584,23 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     iter 
     (fun (sr,id) -> 
       let sr = slift sr in
-      let st = `AST_abs_decl (sr,id, [], qs, strterm sr id, reqs) in
+      let st = `AST_abs_decl (sr,id, [], qs, `Str id, reqs) in
       tack st
     ) 
     ids
 
   | `AST_abs_decl (sr,id,vs,typs,v,rqs) ->  
-    tack (`AST_abs_decl (sr,id,vs,typs,cs v, rqs))
+    tack (`AST_abs_decl (sr,id,vs,typs,v, rqs))
 
   | `AST_const_decl (sr, id, vs, t, c, reqs) -> 
-     tack (`AST_const_decl (sr, mi sr id, vs, mt sr t, cs c, reqs))
+     tack (`AST_const_decl (sr, mi sr id, vs, mt sr t, c, reqs))
     
   | `AST_fun_decl (sr, id, vs, ts, t, c, reqs,prec) -> 
-     let c = cs c in
-     begin match c with 
-     | `AST_literal (_,`AST_string c) ->
-       let c,prec = Flx_cexpr.genprec c prec in
-       tack (`AST_fun_decl (sr, mi sr id, vs, map (mt sr) ts, mt sr t, strterm sr c, reqs,prec))
-     | _ -> clierr sr "String literal required"
-     end
+    tack (`AST_fun_decl (sr, mi sr id, vs, map (mt sr) ts, mt sr t, c, reqs,prec))
 
-  | `AST_header (sr, n, vs, s,reqs) ->  
-    tack (`AST_header (sr,n,vs,cs s, reqs))
+  | `AST_insert (sr, n, vs, s, ikind, reqs) ->  
+    tack (`AST_insert (sr,n,vs,s, ikind, reqs))
   
-  | `AST_body (sr, n, vs, s, reqs) ->  
-    tack (`AST_body (sr,n,vs, cs s, reqs))
-
     (* 
       NOTE: c code is embedded even  though it isn't
       reachable because it might contain declarations or 

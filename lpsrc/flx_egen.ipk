@@ -196,7 +196,11 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   let rt t = reduce_type (lstrip syms.dfns (tsub t)) in
   let t = rt t in
   match t with
-  | `BTYP_tuple [] -> ce_atom ("UNIT_ERROR")
+  | `BTYP_tuple [] -> 
+      clierr sr 
+     "[egen] unit value required, should have been eliminated"
+
+     (* ce_atom ("UNIT_ERROR") *)
   | _ ->
   match e with
   | `BEXPR_parse ((_,t')as e,ii) -> 
@@ -338,8 +342,12 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           ce_atom (get_var_ref syms bbdfns this index ts)
 
       | `BBDCL_const (_,_,ct,_) -> 
-        let ts = map tn ts in
-        csubst sr sr2 ct [] [] "Error" "Error" ts "expr" "Error" ["Error"]
+        begin match ct with
+        | `Str c -> ce_expr "expr" c
+        | `StrTemplate c ->
+          let ts = map tn ts in
+          csubst sr sr2 c [] [] "Error" "Error" ts "expr" "Error" ["Error"]
+        end
 
       | `BBDCL_cstruct _ 
       | `BBDCL_struct _ 
@@ -475,11 +483,14 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         ", got ts=" ^ 
         si (length ts)
       );
-      let ts = map tsub ts in
-      let retyp = reduce_type (lstrip syms.dfns (tsubst vs ts retyp)) in
-      let retyp = tn retyp in
-      gen_prim_call syms bbdfns tsub ge'' ct ts (arg,argt) retyp sr sr2 prec
-
+      begin match ct with
+      | `Str s -> ce_expr prec s
+      | `StrTemplate s ->
+        let ts = map tsub ts in
+        let retyp = reduce_type (lstrip syms.dfns (tsubst vs ts retyp)) in
+        let retyp = tn retyp in
+        gen_prim_call syms bbdfns tsub ge'' s ts (arg,argt) retyp sr sr2 prec
+      end
     (*
     (* not sure whether these will be prims or directs or what .. *)
     | `BBDCL_cstruct (vs,_) ->

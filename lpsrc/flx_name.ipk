@@ -165,10 +165,14 @@ let rec cpp_type_classname syms t =
       { id=id; symdef=symdef } -> id,symdef 
     with
     | id,`SYMDEF_cstruct _ -> id
-    | _,`SYMDEF_abs (_,"int",_) -> "int" (* hack .. *)
-    | _,`SYMDEF_abs (_,"long",_) -> "long" (* hack .. *)
-    | _,`SYMDEF_abs (_,"float",_) -> "float" (* hack .. *)
-    | _,`SYMDEF_abs (_,"double",_) -> "double" (* hack .. *)
+    | _,`SYMDEF_abs (_,`Str "int",_) -> "int" (* hack .. *)
+    | _,`SYMDEF_abs (_,`Str "long",_) -> "long" (* hack .. *)
+    | _,`SYMDEF_abs (_,`Str "float",_) -> "float" (* hack .. *)
+    | _,`SYMDEF_abs (_,`StrTemplate "double",_) -> "double" (* hack .. *)
+    | _,`SYMDEF_abs (_,`StrTemplate "int",_) -> "int" (* hack .. *)
+    | _,`SYMDEF_abs (_,`StrTemplate "long",_) -> "long" (* hack .. *)
+    | _,`SYMDEF_abs (_,`StrTemplate "float",_) -> "float" (* hack .. *)
+    | _,`SYMDEF_abs (_,`StrTemplate "double",_) -> "double" (* hack .. *)
     | _,data  ->
       let prefix =
         match data with

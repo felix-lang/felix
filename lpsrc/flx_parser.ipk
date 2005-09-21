@@ -134,8 +134,6 @@ let mktypefun sr name vs args return_type body =
     body
   )
 
-let strterm sr s = `AST_literal (sr,`AST_string s)
-
 %}
 
 @head(2,'Tokens')
@@ -367,7 +365,7 @@ abstract_type:
       `AST_ctypes (sr,$3,qs,$4)
     }
 
-  | type_quals TYPE NAME tvarlist EQUAL expr requires_clause SEMI 
+  | type_quals TYPE NAME tvarlist EQUAL code_spec requires_clause SEMI 
     { 
       let qs = List.map snd $1 in
       `AST_abs_decl (rstoken $2 $8, snd $3, $4, qs, $6, $7) 
@@ -436,7 +434,7 @@ struct_component:
 @head(3,'Abstract Constant Binding')
 @select(h)
 const_def:
-  | CONST NAME tvarlist COLON type_expr EQUAL expr requires_clause SEMI 
+  | CONST NAME tvarlist COLON type_expr EQUAL code_spec requires_clause SEMI 
   { 
     `AST_const_decl 
     (
@@ -457,33 +455,26 @@ const_def:
       snd $2, 
       $3,
       typecode_of_expr $5, 
-      strterm sr (snd $2), $6
+      `Str (snd $2), $6
     ) 
   }
 
 
 @head(3,'Binding Header Definition')
 @select(h)
+code_spec:
+  | STRING { `StrTemplate (snd $1) }
+  | CSTRING { `Str (snd $1) }
+
 requirement:
   | qualified_name
     {
       `Named_req (qualified_name_of_expr $1)
     }
 
-  | BODY STRING 
-    {
-      `Body_req (snd $2)
-    }
-
-  | HEADER STRING
-    {
-      `Header_req (snd $2)
-    }
-
-  | PROPERTY STRING
-    {
-      `Property_req (snd $2)
-    }
+  | BODY code_spec { `Body_req $2 }
+  | HEADER code_spec { `Header_req $2 }
+  | PROPERTY STRING { `Property_req (snd $2) }
 
 requirements:
   | requirement COMMA requirements { $1 :: $3 }
@@ -494,57 +485,57 @@ requires_clause:
   | {[]}
 
 binding_header:
-  | HEADER STRING requires_clause SEMI 
+  | HEADER code_spec requires_clause SEMI 
   { 
       let sr = rstoken $1 $4 in
-      `AST_header (sr, "_root", [], strterm sr (snd $2), $3) 
+      `AST_insert (sr, "_root", [], $2, `Header ,$3) 
   }
   
-  | BODY STRING requires_clause SEMI 
+  | BODY code_spec requires_clause SEMI 
   { 
      let sr = rstoken $1 $4 in
-    `AST_body (sr, "_root", [], strterm sr (snd $2), $3) 
+    `AST_insert (sr, "_root", [], $2, `Body, $3) 
   }
 
-  | HEADER EQUAL expr requires_clause SEMI 
+  | HEADER EQUAL code_spec requires_clause SEMI 
   { 
       let sr = rstoken $1 $5 in
-      `AST_header (sr, "_root", [], $3, $4) 
+      `AST_insert (sr, "_root", [], $3, `Header, $4) 
   }
   
-  | BODY EQUAL expr requires_clause SEMI 
+  | BODY EQUAL code_spec requires_clause SEMI 
   { 
      let sr = rstoken $1 $5 in
-    `AST_body (sr, "_root", [], $3, $4) 
+    `AST_insert (sr, "_root", [], $3, `Body, $4) 
   }
 
-  | HEADER NAME tvarlist EQUAL expr requires_clause SEMI 
+  | HEADER NAME tvarlist EQUAL code_spec requires_clause SEMI 
   { 
-    `AST_header (rstoken $1 $7, snd $2, $3, $5, $6) 
+    `AST_insert (rstoken $1 $7, snd $2, $3, $5, `Header, $6) 
   }
   
-  | BODY NAME tvarlist EQUAL expr requires_clause SEMI 
+  | BODY NAME tvarlist EQUAL code_spec requires_clause SEMI 
   { 
-    `AST_body (rstoken $1 $7, snd $2, $3, $5, $6) 
+    `AST_insert (rstoken $1 $7, snd $2, $3, $5, `Body, $6) 
   }
 
   | REQUIRES requirements SEMI 
   { 
     let sr = rstoken $1 $3 in
-    `AST_body (sr, "_root", [], strterm sr "", $2)
+    `AST_insert (sr, "_root", [], `Str "", `Body, $2)
   }
 
   | NAME REQUIRES requirements SEMI 
   { 
     let sr = rstoken (fst $1) $4 in
-    `AST_body (sr, snd $1, [], strterm sr "", $3)
+    `AST_insert (sr, snd $1, [], `Str "", `Body, $3)
   }
 
 @head(3,'Inline C++ Code Definition')
 @select(h)
 inline_cpp:
-  | CODE STRING SEMI { `AST_code (rstoken $1 $3, snd $2) }
-  | NORETURN CODE STRING SEMI { `AST_noreturn_code (rstoken $1 $4, snd $3) }
+  | CODE code_spec SEMI { `AST_code (rstoken $1 $3, $2) }
+  | NORETURN CODE code_spec SEMI { `AST_noreturn_code (rstoken $1 $4, $3) }
 
 @head(3,'Type Alias')
 @select(h)
@@ -863,7 +854,7 @@ opt_type_expr:
   | { `TYP_none }
 
 opt_cstring:
-  | EQUAL expr { Some $2 }
+  | EQUAL code_spec { Some $2 }
   | { None }
 
 adjective:
@@ -921,7 +912,7 @@ function_definition:
       let ct =  
         match $7 with 
         | Some x -> x 
-        | None -> strterm sr (name ^ "($a)")
+        | None -> `StrTemplate (name ^ "($a)")
       in
       match t with
       | `TYP_function (arg, ret) ->
@@ -1005,7 +996,7 @@ procedure_definition:
       let ct =  
         match $6 with 
         | Some x -> x 
-        | None -> strterm sr (name ^ "($a);")
+        | None -> `StrTemplate (name ^ "($a);")
       in
       let args = 
         match t with

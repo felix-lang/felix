@@ -296,8 +296,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     do_reqs vs reqs
  
   (* shortcut -- header and body can only require other header and body *)
-  | `BBDCL_header (vs,s,reqs)
-  | `BBDCL_body (vs,s,reqs)
+  | `BBDCL_insert (vs,s,ikind,reqs)
     -> 
     (*
     print_endline ("Handling requirements of header/body " ^ s);

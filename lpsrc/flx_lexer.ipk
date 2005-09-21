@@ -1194,6 +1194,10 @@ let dqstring = (ordinary | quote | escape | white) * dquote
 let qqqstring = qqqspecial * qqq
 let dddstring = dddspecial * ddd
 
+let raw = 'r' | 'R'
+let see = 'c' | 'C'
+let rqc = raw see | see raw
+
 let raw_qstring = (ordinary | dquote | escape | white) * quote
 let raw_dqstring =  (ordinary | quote | escape | white) * dquote
 
@@ -1517,6 +1521,65 @@ and parse_raw_dddstring state = parse
      ] 
    }
 
+and parse_raw_cqstring state = parse
+| raw_qstring { 
+      state#inbody;
+      [CSTRING (
+        state#get_srcref lexbuf,
+        state#decode decode_raw_qstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+    state#inbody;
+    [ERRORTOKEN (
+     state#get_srcref lexbuf,
+    "raw ' cstring")] 
+  }
+
+and parse_raw_cdqstring state = parse
+| raw_dqstring { 
+      state#inbody;
+      [STRING (
+        state#get_srcref lexbuf,
+        state#decode decode_raw_dqstring (lexeme lexbuf)
+      )]
+  }
+| _ { 
+    state#inbody;
+    [ERRORTOKEN (
+      state#get_srcref lexbuf,
+        "raw \" cstring"
+    )]
+  }
+
+and parse_raw_cqqqstring state = parse
+| raw_qqqstring { 
+      state#inbody;
+      [CSTRING (
+        state#get_srcref lexbuf,
+        state#decode decode_raw_qqqstring (lexeme lexbuf)
+      )]
+  }
+| _ { state#inbody; 
+  [ERRORTOKEN (
+    state#get_srcref lexbuf,
+    "raw ''' cstring")] }
+
+and parse_raw_cdddstring state = parse
+| raw_dddstring { 
+      state#inbody;
+      [CSTRING (
+        state#get_srcref lexbuf,
+        state#decode decode_raw_dddstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+     [ERRORTOKEN (
+       state#get_srcref lexbuf,
+       lexeme lexbuf)
+     ] 
+   }
+
 and parse_cpp_comment state = parse 
 | not_newline * newline {
       state#newline lexbuf;
@@ -1717,6 +1780,13 @@ and pre_flx_lex state = parse
 | ('r'|'R') qqq    { state#inbody; parse_raw_qqqstring state lexbuf }
 | ('r'|'R') dquote { state#inbody; parse_raw_dqstring state lexbuf }
 | ('r'|'R') ddd    { state#inbody; parse_raw_dddstring state lexbuf }
+
+(* raw C strings: type char*  *)
+| rqc quote  { state#inbody; parse_cqstring state lexbuf }
+| rqc qqq    { state#inbody; parse_cqqqstring state lexbuf }
+| rqc dquote { state#inbody; parse_cdqstring state lexbuf }
+| rqc ddd    { state#inbody; parse_cdddstring state lexbuf }
+
 
 (* whitespace *)
 | white + { 

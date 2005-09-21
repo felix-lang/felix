@@ -1698,7 +1698,9 @@ and fold_vars syms (uses,child_map,bbdfns) i ps exes =
         let subi,rplimit =
           match y with
           | `BEXPR_tuple ys,_ ->
+            (*
             print_endline "Tuple init found";
+            *)
             let rec subi j ys e =
               match map_tbexpr ident (subi j ys) ident e with
               | `BEXPR_get_n (k, (`BEXPR_name(i,_),_) ),_ 

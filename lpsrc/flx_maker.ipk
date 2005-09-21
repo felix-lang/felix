@@ -4,6 +4,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.151  2005/09/21 01:26:53  skaller
+Change headers and bodies to use C strings as "no substitution"
+so $ etc in comments don't cause trouble.
+
 Revision 1.150  2005/09/15 18:19:53  skaller
 Minor fixes to new system on Linux
 
@@ -2621,22 +2625,19 @@ def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES):
 
 try:
   # STEP 0: run interscript
-  if "weave" in options:
-    print "WEAVING PROGRAM SOURCES"
-    runISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
-
   if "doc" in options:
     print "GENERATING DOCUMENTATION"
     runISCR('lpsrc/flx_config.pak')
     runISCR('lpsrc/flx.pak')
     copy_mli2ml()
+    runISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_macro.pak')
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_bind.pak')
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_migrate.pak')
     runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ lpsrc/flx_perf.pak')
     filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
-  elif "extract" in options:
+  if "extract" in options:
     packages = [
       'flx','sm','ast','elk','flx_perf','flx_tutorial','flx_tut_macro',
       'flx_tut_bind','flx_tut_migrate','flx_config'
@@ -2677,6 +2678,7 @@ try:
   if "doc" in options or "impldoc" in options:
     print "GENERATING OCAMLDOCS"
     erasedir('impldoc')
+    os.mkdir('impldoc')
     try:
       xqt('ocamldoc -I src -d impldoc src/*.mli -html')
       xqt('ocamldoc -I src -o impldoc/flx_impl.tex src/*.mli -latex')
@@ -3319,10 +3321,11 @@ We have no idea if it continues copying.
 @tangle('\t\tfelix-'+flx_version+'/rtl/*.hpp\\')
 @tangle('\t\tfelix-'+flx_version+'/libdoc/*.html \\')
 @tangle('\t\tfelix-'+flx_version+'/lib/*.flx \\')
-@tangle('\t\tfelix-'+flx_version+'/lib/*.fsh \\')
 @tangle('\t\tfelix-'+flx_version+'/test/*.flx \\')
 @tangle('\t\tfelix-'+flx_version+'/test/*.cpp \\')
+@tangle('\t\tfelix-'+flx_version+'/test/*.expect \\')
 @tangle('\t\tfelix-'+flx_version+'/tut/examples/*.flx \\')
+@tangle('\t\tfelix-'+flx_version+'/tut/examples/*.expect \\')
 @tangle('\t\tfelix-'+flx_version+'/tut/doc/*.html \\')
 @tangle('\t\tfelix-'+flx_version+'/tut/doc/*.css \\')
 @tangle('\t\tfelix-'+flx_version+'/tut/doc/*.tex \\')
@@ -3340,12 +3343,7 @@ We have no idea if it continues copying.
 @tangle('\t\tfelix-'+flx_version+'/speed/*.html \\')
 @tangle('\t\tfelix-'+flx_version+'/speed/*.css \\')
 @tangle('\t\tfelix-'+flx_version+'/speed/*.gpl \\')
-@tangle('\t\tfelix-'+flx_version+'/speed/exes/*/*.times \\')
-@tangle('\t\tfelix-'+flx_version+'/speed/images/*.jpg \\')
-@tangle('\t\tfelix-'+flx_version+'/speed/plotters/*.gpl \\')
-@tangle('\t\tfelix-'+flx_version+'/speed/src/c/*.c \\')
-@tangle('\t\tfelix-'+flx_version+'/speed/src/ocaml/*.ml \\')
-@tangle('\t\tfelix-'+flx_version+'/speed/src/felix/*.flx \\')
+@tangle('\t\tfelix-'+flx_version+'/speed/images/rosella/*.jpg \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/*.py \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/bin/*.py \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/compilers/*.py \\')

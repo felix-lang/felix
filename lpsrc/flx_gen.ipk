@@ -553,7 +553,12 @@ let gen_exe filename syms
       if length vs <> length ts then
       clierr sr "[gen_prim_call] Wrong number of type arguments"
       ;
-      let s = gen_prim_call syms bbdfns tsub ge' ct ts a "Error" sr sr2 "atom" in
+      let s = 
+        match ct with
+        | `Str s -> ce_expr "expr" s
+        | `StrTemplate s ->
+          gen_prim_call syms bbdfns tsub ge' s ts a "Error" sr sr2 "atom" 
+      in
       let s = sc "expr" s in
       "      // " ^ src_str ^ "\n" ^
       sub_start ^
@@ -671,10 +676,11 @@ let gen_exe filename syms
     "      " ^ frame_ptr ^ "->pc = FLX_FARTARGET("^si pc^","^si target_instance^","^s^");\n" ^
     "      return " ^ frame_ptr ^ ";\n"
   in
+  let forget_template s = match s with | `Str s -> s | `StrTemplate s -> s in
   let rec gexe exe = 
     match exe with
-    | `BEXE_code (_,s) -> s
-    | `BEXE_nonreturn_code (_,s) -> s
+    | `BEXE_code (_,s) -> forget_template s
+    | `BEXE_nonreturn_code (_,s) -> forget_template s
     | `BEXE_comment (_,s) -> "/*" ^ s ^ "*/\n"
     | `BEXE_label (_,s) -> 
       let local_labels = 
@@ -2027,13 +2033,19 @@ try
       match Hashtbl.find bbdfns i
       with (id,parent,sr,entry) ->
       match entry with
-      | `BBDCL_header (_,s,_) -> 
-        if s <> "" then 
-        begin
-          (* do we need tsubst vs ts t? *)
-          let tn t = cpp_typename syms (Flx_typing.lower t) in
-          let ts = List.map tn ts in
-          let s = Flx_csubst.csubst sr sr s [] [] "Error" "Error" ts "atom" "Error" ["Error"] in
+      | `BBDCL_insert (_,s,`Header,_) -> 
+        begin match s with
+        | `Str "" | `StrTemplate "" -> ()
+        | _ ->
+          let s = 
+            match s with
+            | `Str s -> Flx_cexpr.ce_expr "atom" s
+            | `StrTemplate s ->
+              (* do we need tsubst vs ts t? *)
+              let tn t = cpp_typename syms (Flx_typing.lower t) in
+              let ts = List.map tn ts in
+              Flx_csubst.csubst sr sr s [] [] "Error" "Error" ts "atom" "Error" ["Error"] 
+          in
           let s = Flx_cexpr.sc "expr" s in
           if not (Hashtbl.mem insts s) then
           begin
@@ -2167,18 +2179,24 @@ try
       match Hashtbl.find bbdfns i
       with (id,parent,sr,entry) ->
       match entry with
-      | `BBDCL_body (_,s,_) -> 
-        if s <> "" then 
-        begin
-          (* do we need tsubst vs ts t? *)
-          let tn t = cpp_typename syms (Flx_typing.lower t) in
-          let ts = List.map tn ts in
-          let s = Flx_csubst.csubst sr sr s [] [] "Error" "Error" ts "atom" "Error" ["Error"] in
+      | `BBDCL_insert (_,s,`Body,_) -> 
+        begin match s with
+        | `Str "" | `StrTemplate "" -> ()
+        | _ ->
+          let s = 
+            match s with
+            | `Str s -> Flx_cexpr.ce_expr "atom" s
+            | `StrTemplate s ->
+              (* do we need tsubst vs ts t? *)
+              let tn t = cpp_typename syms (Flx_typing.lower t) in
+              let ts = List.map tn ts in
+              Flx_csubst.csubst sr sr s [] [] "Error" "Error" ts "atom" "Error" ["Error"] 
+          in
           let s = Flx_cexpr.sc "expr" s in
           if not (Hashtbl.mem insts s) then
           begin
             Hashtbl.add insts s ();
-            plb s
+            plh s
           end
         end
       | _ -> ()

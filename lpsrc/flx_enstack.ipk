@@ -178,8 +178,7 @@ let rec is_pure syms (child_map, bbdfns) i =
   | `BBDCL_nonconst_ctor _
   | `BBDCL_fun _
   | `BBDCL_proc _
-  | `BBDCL_header _
-  | `BBDCL_body _
+  | `BBDCL_insert _
   | `BBDCL_struct _
   | `BBDCL_cstruct _
   | `BBDCL_union _
