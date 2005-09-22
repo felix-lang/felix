@@ -1581,12 +1581,14 @@ and parse_raw_cdddstring state = parse
    }
 
 and parse_cpp_comment state = parse 
-| not_newline * newline {
+(* eof is not eaten up, so parent will find eof and emit ENDMARKER *)
+| not_newline * (newline | eof) {
       state#newline lexbuf;
       let lex = lexeme lexbuf in
       let n = String.length lex in
       [COMMENT_NEWLINE  (String.sub lex 0 (n-1))]
   }
+
 | _ { [ERRORTOKEN (
         state#get_srcref lexbuf,
   lexeme lexbuf)] }

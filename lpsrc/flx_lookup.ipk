@@ -1554,7 +1554,8 @@ and inner_typeofindex
   print_env_short env;
   *)
   let bt t:btypecode_t = 
-    let t' = bind_type' syms env idx_fixlist [] [] expr_fixlist depth sr t [] in
+    let t' = 
+      bind_type' syms env idx_fixlist [] [] expr_fixlist depth sr t [] in
     let t' = beta_reduce syms [] t' in
     t'
   in
@@ -1590,6 +1591,9 @@ and inner_typeofindex
   | `SYMDEF_var (t)
   | `SYMDEF_const_ctor (_,t,_)
     -> 
+    (*
+    print_endline ("Calculating type of variable " ^ id);
+    *)
     bt t
 
   | `SYMDEF_regmatch (ps,cls)
@@ -1862,9 +1866,7 @@ print_endline (id ^ ": lookup_qn_with_sig: struct/regmatch/lex");
       | `SYMDEF_var t 
       | `SYMDEF_parameter t
         ->
-(*
 print_endline (id ^ ": lookup_qn_with_sig: val/var");
-*)
         (*
         let ts = adjust_ts syms sr index ts in
         *)
@@ -1949,6 +1951,9 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     end
 
   | `AST_name (sr,name,ts) ->
+    (*
+    print_endline "Looking up name with sig ..";
+    *)
     let ts = map (bt sr) ts in
     lookup_name_with_sig 
       syms 
@@ -2121,9 +2126,13 @@ and handle_function
       "[handle_function] Expected function"
     )
 
-and handle_variable syms env index id sr ts t t2 = 
+and handle_variable syms
+  env idx_fixlist expr_fixlist depth 
+  index id sr ts t t2 
+= 
+  (* HACKED the params argument to [] .. this is WRONG!! *)
   let bt sr t = 
-    bind_type syms env sr t 
+    bind_type' syms env idx_fixlist [] [] expr_fixlist depth sr t []
   in
 
     (* we have to check the variable is the right type *) 
@@ -2165,7 +2174,7 @@ and handle_variable syms env index id sr ts t t2 =
 and lookup_name_in_table_dirs_with_sig (table, dirs) 
   syms 
   env idx_fixlist expr_fixlist depth 
-  sra srn name ts t2 
+  sra srn name (ts:btypecode_t list) t2 
 : tbexpr_t option
 =
   (*
@@ -2222,7 +2231,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_val t 
     | `SYMDEF_parameter t
       ->
-      handle_variable syms env index id srn ts t t2
+      handle_variable syms env idx_fixlist expr_fixlist depth index id srn ts t t2
     | _ 
       -> 
         clierr sra 
@@ -2786,11 +2795,17 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     handle_map sr (be f) (be a)
   
   | `AST_apply (sr,(f',a')) ->
+    (*
+    print_endline "Bind expression, handling application";
+    *)
     let (ba, ta) as a = be a' in
     let _ = 
       try unfold syms.dfns ta
       with _ -> (* print_endline " .. free fixpoint"; *) raise (Free_fixpoint ta) 
     in
+    (*
+    print_endline "Got type of argument -- doing 'lookup' -- reckon this is the bug";
+    *)
     let (bf,tf) as f = lookup sr f' ta in
     (* this function is very crude, since it binds f dash, a dash again,
         but they are already bound -- FIXIT!

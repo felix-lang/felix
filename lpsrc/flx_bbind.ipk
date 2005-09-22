@@ -76,8 +76,9 @@ let bind_regex syms env sr be ret_type cls : regular_args_t =
   Hashtbl.iter
   (fun i c -> 
     let sr = src_of_expr c in
-    let _,t as bt = be c in
-    Hashtbl.add bcode i bt;
+    let e,t as bt = be c in
+    let t = minimise syms.dfns t in
+    Hashtbl.add bcode i (e,t);
     if do_unify syms !ret_type t then
       ret_type := varmap_subst syms.varmap !ret_type
     else 

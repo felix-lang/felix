@@ -148,8 +148,9 @@ let bind_regex syms env sr be return_count ret_type cls =
   Hashtbl.iter
   (fun i c -> 
     let sr = src_of_expr c in
-    let _,t as bt = be c in
-    Hashtbl.add bcode i bt;
+    let e,t = be c in
+    let t = minimise syms.dfns t in
+    Hashtbl.add bcode i (e,t);
     incr return_count;
     if do_unify syms !ret_type t then
       ret_type := varmap_subst syms.varmap !ret_type
@@ -316,6 +317,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       reachable := false;
       incr return_count;
       let e',t' = be e in
+      let t' = minimise syms.dfns t' in
       if do_unify syms !ret_type t' then begin
         ret_type := varmap_subst syms.varmap !ret_type;
         tack (`BEXE_fun_return (sr,(e',lower t')))
