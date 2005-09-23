@@ -922,13 +922,23 @@ fun str : tuple_suffix_t -> string =
 ;
 
 fun str : or_condition_t -> string =
-  | or_condition_1 (?o,_,?a) => str o +" or "+ str a
-  | or_condition_2 ?a => str a 
+  | or_condition_1 (?s,?sl) => str s + " + " + str sl
+  | or_condition_2 ?s => str s
+;
+
+fun str : or_list_t -> string =
+  | or_list_1 (?s,?sl) => str s + " + " + str sl
+  | or_list_2 ?s => str s
 ;
 
 fun str : and_condition_t -> string =
-  | and_condition_1 (?a,_,?n) => str a +" and "+ str n
-  | and_condition_2 ?n => str n 
+  | and_condition_1 (?s,?sl) => str s + " + " + str sl
+  | and_condition_2 ?s => str s
+;
+
+fun str : and_list_t -> string =
+  | and_list_1 (?s,?sl) => str s + " + " + str sl
+  | and_list_2 ?s => str s
 ;
 
 fun str : not_condition_t -> string =

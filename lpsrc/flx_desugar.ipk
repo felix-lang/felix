@@ -311,6 +311,8 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_as _
   | `AST_product _ 
   | `AST_sum _
+  | `AST_andlist _
+  | `AST_orlist _
   | `AST_type_match _
   | `AST_ellipsis _
   | `AST_lvalue _

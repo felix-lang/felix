@@ -199,6 +199,8 @@ let rec dual t =
     let rec aux ds k = if k = 0 then ds else aux (unit_t::ds) (k-1) in
     `BTYP_tuple (aux [] k)
 
+  | `BTYP_typeset ts -> `BTYP_intersect (map dual ts)
+  | `BTYP_intersect ts -> `BTYP_typeset (map dual ts)
   | t -> t
 
 (* top down check for fix point not under sum or pointer *)
@@ -370,6 +372,8 @@ let fix i t =
     | `BTYP_inst (k,ts) -> `BTYP_inst (k, map aux ts)
     | `BTYP_tuple ts -> `BTYP_tuple (map aux ts)
     | `BTYP_sum ts -> `BTYP_sum (map aux ts)
+    | `BTYP_intersect ts -> `BTYP_intersect (map aux ts)
+    | `BTYP_typeset ts -> `BTYP_typeset (map aux ts)
     | `BTYP_function (a,b) -> `BTYP_function (aux a, aux b)
     | `BTYP_pointer a -> `BTYP_pointer (aux a)
     | `BTYP_lvalue a -> `BTYP_lvalue (aux a)
@@ -426,7 +430,10 @@ let lstrip dfns t =
   handle any subtyping
 *)
 
-let rec unification allow_lval dfns eqns (dvars: IntSet.t) : (int * btypecode_t) list = 
+let rec unification allow_lval dfns 
+  (eqns: (btypecode_t * btypecode_t) list) 
+  (dvars: IntSet.t) 
+: (int * btypecode_t) list = 
   (*
   print_endline ( "Dvars = { " ^ catmap ", " si (IntSet.elements dvars) ^ "}");
   *)
@@ -483,6 +490,42 @@ let rec unification allow_lval dfns eqns (dvars: IntSet.t) : (int * btypecode_t)
           s := Some (i,t)
         end
 
+      | `BTYP_intersect ts,t
+      | t,`BTYP_intersect ts ->
+        iter (function t' -> eqns := (t,t') :: !eqns) ts
+
+
+      (* t unifies with a set of types if it unifies with
+         any one of them. Unfortunately, it is not enough
+         to just find the first type in the list because
+         the resulting unifier may fail later, whilst
+         a subsequent one might succeed.
+
+         To solve this properly requires an Earley parser,
+         that is, we need backtracking to the last decision
+         point, failure or success...
+
+         We will start by just solving a subset of the
+         cases.
+      *)
+      | `BTYP_typeset ts,t
+      | t,`BTYP_typeset ts -> 
+        let u (t':btypecode_t): (int * btypecode_t) list option =
+          try Some (unification allow_lval dfns [(t,t')] dvars)
+          with Not_found -> None
+        in
+        let mgus = map u ts in
+        let mgus : (int * btypecode_t) list list = fold_left 
+          (fun acc -> function | Some x -> x::acc | None -> acc) 
+          [] mgus 
+        in
+        begin match mgus with
+        | [] -> raise Not_found
+        | [mgu] ->   iter (fun (i,t) -> eqns := (`BTYP_var i,t) :: !eqns) mgu
+        | _ ->
+          failwith "Unification algorithm currently requires terms of typeset to be non-intersecting"
+        end
+      
       | `BTYP_pointer t1, `BTYP_pointer t2 ->
         eqns := (t1,t2) :: !eqns
 
@@ -498,7 +541,7 @@ let rec unification allow_lval dfns eqns (dvars: IntSet.t) : (int * btypecode_t)
           | _ -> raise Not_found
         )
         ls
-      
+     
       | `BTYP_array (t11, t12), `BTYP_array (t21, t22)
       | `BTYP_function (t11, t12), `BTYP_function (t21, t22) ->
         eqns := (t11,t21) :: (t12,t22) :: !eqns
@@ -830,6 +873,8 @@ let fold dfns t =
   let rec aux trail depth t' = 
     let ax t = aux ((depth,t')::trail) (depth+1) t in
     match t' with
+    | `BTYP_intersect ls 
+    | `BTYP_typeset ls 
     | `BTYP_sum ls 
     | `BTYP_inst (_,ls)
     | `BTYP_tuple ls -> iter ax ls
@@ -871,6 +916,8 @@ let minimise dfns t = match map_btype (fold dfns) t with x -> fold dfns x
 let var_occurs t =
   let rec aux t =
     match t with
+    | `BTYP_intersect ls 
+    | `BTYP_typeset ls 
     | `BTYP_sum ls 
     | `BTYP_inst (_,ls)
     | `BTYP_tuple ls -> iter aux ls

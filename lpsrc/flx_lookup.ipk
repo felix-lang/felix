@@ -570,7 +570,12 @@ and bind_type syms env sr t : btypecode_t =
   print_endline ("[bind_type] " ^ string_of_typecode t);
   *)
   let bt:btypecode_t = 
-    bind_type' syms env [] [] [] [] 0 sr t []
+    try
+      bind_type' syms env [] [] [] [] 0 sr t []
+    with 
+      | Free_fixpoint b ->
+        clierr sr
+        ("Unresolvable recursive type " ^ sbt syms.dfns b)
   in
   (*
   print_endline ("Bound type= " ^ sbt syms.dfns t);
@@ -583,7 +588,15 @@ and bind_type syms env sr t : btypecode_t =
     bt 
 
 and bind_expression syms env e  =
-  let be = bind_expression' syms env [] [] 0 e in
+  let be = 
+    try
+      bind_expression' syms env [] [] 0 e 
+    with 
+     | Free_fixpoint b ->
+       let sr = src_of_expr e in
+       clierr sr 
+       ("Circular dependency typing expression " ^ string_of_expr e)
+  in
   be
 
 
@@ -1055,6 +1068,9 @@ and bind_type'
     `BTYP_tuple ts'
 
   | `TYP_unitsum k -> `BTYP_unitsum k
+
+  | `TYP_intersect ts -> `BTYP_intersect (map bt ts)
+  | `TYP_typeset ts -> `BTYP_typeset (map bt ts)
 
   | `TYP_sum ts -> 
     let ts' = map bt ts  in
@@ -1791,13 +1807,18 @@ and lookup_qn_with_sig
   (qn:qualified_name_t)
   (sign:btypecode_t)
 =
-lookup_qn_with_sig'
-  syms 
-  sra srn 
-  env idx_fixlist [] 0 
-  qn
-  sign
-
+try
+  lookup_qn_with_sig'
+    syms 
+    sra srn 
+    env idx_fixlist [] 0 
+    qn
+    sign
+with 
+  | Free_fixpoint b ->
+    clierr sra 
+    ("Recursive dependency resolving name " ^ string_of_qualified_name qn)
+    
 and lookup_qn_with_sig'
   syms 
   sra srn 
@@ -2455,6 +2476,20 @@ and bind_expression' syms env idx_fixlist expr_fixlist depth e
     let t = bt sr t in 
     `BEXPR_expr (s,t),t
 
+  | `AST_andlist (sri,ls) -> 
+    begin let mksum a b = apl2 sri "land" [a;b] in
+    match ls with 
+    | h::t -> be (fold_left mksum h t)
+    | [] -> clierr sri "Not expecting empty and list"
+    end
+
+  | `AST_orlist (sri,ls) -> 
+    begin let mksum a b = apl2 sri "lor" [a;b] in
+    match ls with 
+    | h::t -> be (fold_left mksum h t)
+    | [] -> clierr sri "Not expecting empty or list"
+    end
+ 
   | `AST_sum (sri,ls) -> 
     begin let mksum a b = apl2 sri "add" [a;b] in
     match ls with 
@@ -3184,6 +3219,9 @@ and rebind_btype syms env sr ts t: btypecode_t =
     | _ -> t
     end
   | `BTYP_tuple ts -> `BTYP_tuple (map rbt ts)
+  | `BTYP_typeset ts ->  `BTYP_typeset (map rbt ts)
+  | `BTYP_intersect ts ->  `BTYP_intersect (map rbt ts)
+
   | `BTYP_sum ts -> 
     let ts = map rbt ts in 
     if all_units ts then

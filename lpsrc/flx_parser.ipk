@@ -1850,17 +1850,52 @@ tuple_suffix:
   | COMMA or_condition tuple_suffix     { $2 :: $3 }
   | COMMA or_condition                  { [$2] }
 
-orop:
+/*orop:
   | OR {$1}
 or_condition:
   | or_condition orop and_condition     { apl2 $2 "lor" [$1; $3] }
   | and_condition                       { $1 }
+*/
 
+/* oring formation is 'psuedo-associative' */
+or_condition:
+  | and_condition OR or_list              
+    { 
+      let sr = rsrange 
+        (src_of_expr $1) 
+        (src_of_expr (list_last $3)) 
+      in
+      `AST_orlist (sr,$1 :: $3) 
+    }
+  | and_condition { $1 }
+
+or_list:
+  | and_condition OR or_list              { $1 :: $3 }
+  | and_condition                         { [$1] }
+
+/* oring formation is 'psuedo-associative' */
+and_condition:
+  | not_condition AND and_list              
+    { 
+      let sr = rsrange 
+        (src_of_expr $1) 
+        (src_of_expr (list_last $3)) 
+      in
+      `AST_andlist (sr,$1 :: $3) 
+    }
+  | not_condition { $1 }
+
+and_list:
+  | not_condition AND and_list              { $1 :: $3 }
+  | not_condition                         { [$1] }
+
+/*
 andop:
   | AND {$1}
 and_condition:
   | and_condition andop not_condition   { apl2 $2 "land" [$1; $3] }
   | not_condition                       { $1 }
+*/
 
 notop:
   | NOT {$1,"lnot"}

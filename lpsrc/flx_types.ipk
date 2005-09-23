@@ -292,6 +292,8 @@ and typecode_t =
   | `TYP_tuple of typecode_t list               (** product type *)
   | `TYP_unitsum of int                         (** sum of units  *)
   | `TYP_sum of typecode_t list                 (** numbered sum type *)
+  | `TYP_typeset of typecode_t list             (** open union type *)
+  | `TYP_intersect of typecode_t list           (** intersection type *)
   | `TYP_function of typecode_t * typecode_t    (** function type *)
   | `TYP_pointer of typecode_t                  (** pointer type *)
   | `TYP_array of typecode_t * typecode_t       (** array type base ^ index *)
@@ -376,6 +378,8 @@ and expr_t =
   | `AST_ellipsis of range_srcref
   | `AST_product of range_srcref * expr_t list
   | `AST_sum of range_srcref * expr_t list
+  | `AST_orlist of range_srcref * expr_t list
+  | `AST_andlist of range_srcref * expr_t list
   | `AST_arrow of range_srcref * (expr_t * expr_t)
   | `AST_superscript of range_srcref * (expr_t * expr_t)
 
@@ -761,6 +765,8 @@ type 't b0typecode_t' =
   | `BTYP_void                       
   | `BTYP_fix of int      
   | `BTYP_var of int     
+  | `BTYP_typeset of 't list (** open union *)
+  | `BTYP_intersect of 't list (** open intersection *)
   ]
 
 (** meta typing *)
@@ -1033,6 +1039,8 @@ let map_type f = function
      we have already used up storage
   *)
   | `TYP_sum ts -> `TYP_sum (map f ts)
+  | `TYP_typeset ts -> `TYP_typeset (map f ts)
+  | `TYP_intersect ts -> `TYP_intersect (map f ts)
   | `TYP_function (a,b) -> `TYP_function (f a, f b)
   | `TYP_pointer t -> `TYP_pointer (f t)
   | `TYP_lvalue t -> `TYP_lvalue (f t)
@@ -1075,6 +1083,8 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_ellipsis sr -> e
   | `AST_product (sr,es) -> `AST_product (sr, map f es)
   | `AST_sum (sr,es) -> `AST_sum (sr, map f es)
+  | `AST_orlist (sr,es) -> `AST_orlist (sr, map f es)
+  | `AST_andlist (sr,es) -> `AST_andlist (sr, map f es)
   | `AST_arrow (sr,(a,b)) -> `AST_arrow (sr,(f a, f b))
   | `AST_superscript (sr,(a,b)) -> `AST_superscript (sr,(f a, f b))
 
@@ -1145,6 +1155,18 @@ let map_b0type f = function
       | _ -> `BTYP_tuple ( list_of_n_things mapped_unit [] k)
     else `BTYP_unitsum k
   
+  | `BTYP_typeset ts -> 
+    let g acc elt = 
+      (* SHOULD USE UNIFICATIION! *)
+      let elt = f elt in 
+      if mem elt acc then acc else elt::acc
+    in
+    let ts = fold_left g [] ts in
+    if length ts = 1 then hd ts else
+    `BTYP_typeset ts
+
+  | `BTYP_intersect ts -> `BTYP_intersect (map f ts)
+
   | `BTYP_sum ts -> 
     let ts = map f ts in
     if all_units' ts then
@@ -1461,6 +1483,8 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_noexpand (s,_)
   | `AST_product (s,_)
   | `AST_sum (s,_)
+  | `AST_orlist (s,_)
+  | `AST_andlist (s,_)
   | `AST_arrow (s,_)
   | `AST_superscript (s,_)
 
@@ -1879,8 +1903,16 @@ and string_of_expr (e:expr_t) =
 
   | `AST_product (_,ts) ->
      cat "*" (map se ts)
+
   | `AST_sum (_,ts) ->
      cat "+" (map se ts)
+
+  | `AST_orlist (_,ts) ->
+     cat " or " (map se ts)
+
+  | `AST_andlist (_,ts) ->
+     cat " and " (map se ts)
+
   | `AST_arrow (_,(a,b)) ->
     "(" ^ se a ^ " -> " ^ se b ^ ")"
 
@@ -2015,9 +2047,11 @@ and string_of_expr (e:expr_t) =
    3 -- ^
    4 -- *
    5 -- +
-   6 -- ->
-   7 -- =>
-   8    as, all
+   6 .. and
+   7 .. or
+   8 -- ->
+   9 -- =>
+   10    as, all
 *)
 
 
@@ -2057,11 +2091,23 @@ and st prec tc : string =
       begin match ls with 
       | [] -> 0,"void" 
       | [`TYP_tuple[];`TYP_tuple[]] -> 0,"bool" 
-      | _ -> 5,cat " * " (map (st 5) ls)
+      | _ -> 5,cat " + " (map (st 5) ls)
+      end
+
+    | `TYP_typeset ls ->
+      begin match ls with 
+      | [] -> 0,"void" 
+      | _ -> 6,cat " or " (map (st 6) ls)
+      end
+
+    | `TYP_intersect ls ->
+      begin match ls with 
+      | [] -> 0,"unit" 
+      | _ -> 7,cat " and " (map (st 7) ls)
       end
 
     | `TYP_function (args, result) ->  
-      6,st 6 args ^ " -> " ^ st 6 result
+      8,st 8 args ^ " -> " ^ st 8 result
 
     | `TYP_array (vt,it) -> 3, st 1 vt ^ "^" ^ st 3 it
     
@@ -2069,7 +2115,7 @@ and st prec tc : string =
     | `TYP_lvalue t -> 0,"lvalue[" ^ st 1 t ^"]"
     
     | `TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
-    | `TYP_as (t,s) -> 8,st 8 t ^ " as " ^ s
+    | `TYP_as (t,s) -> 10,st 10 t ^ " as " ^ s
 
     | `TYP_proj (i,t) -> 2,"proj_"^si i^" "^ st 2 t
     | `TYP_dual t -> 2,"~"^ st 2 t
@@ -2086,15 +2132,15 @@ and st prec tc : string =
        0,"glr_attr_type(" ^string_of_qualified_name qn^ ")"
        
     | `TYP_typefun (args,ret,body) -> 
-       8,
+       10,
        (
          "fun(" ^ cat ", " 
          (
            map 
-           (fun (n,t)-> n ^ ": " ^ st 8 t) 
+           (fun (n,t)-> n ^ ": " ^ st 10 t) 
            args
          ) ^
-         "): " ^ st 0 ret ^ "=" ^ st 8 body
+         "): " ^ st 0 ret ^ "=" ^ st 10 body
        )
   in
     if iprec >= prec 
@@ -2207,6 +2253,20 @@ and sb dfns depth fixlist counter prec tc =
           0,si (length ls)
         else
           5,cat " + " (map (sbt 5) ls)
+      end
+
+    | `BTYP_typeset ls -> 
+      begin match ls with 
+      | [] -> 9,"UNEXPECTED EMPTY TYPESET = void" 
+      | _ -> 
+          3,cat " or " (map (sbt 5) ls)
+      end
+
+    | `BTYP_intersect ls -> 
+      begin match ls with 
+      | [] -> 9,"void" 
+      | _ -> 
+          4,cat " and " (map (sbt 5) ls)
       end
 
     | `BTYP_function (args, result) ->  
@@ -4102,6 +4162,9 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
       `TYP_unitsum (length ts)
     else
       `TYP_sum ts
+
+  | `AST_orlist (_,ts) -> `TYP_typeset (map te ts)
+  | `AST_andlist (_,ts) -> `TYP_intersect (map te ts)
 
   | `AST_typeof (_,e) -> `TYP_typeof e
   | `AST_as (sr,(t,x)) -> `TYP_as (te t,x)

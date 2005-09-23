@@ -1660,6 +1660,7 @@ import traceback
 import string
 import time
 import glob
+if '' not in sys.path: sys.path = [''] + sys.path
 import flxbuild
 from flxbuild.flxutil import *
 
@@ -2186,6 +2187,8 @@ try:
 
   print "Writing main config file"
   f = open("config"+os.sep+"config.py","w")
+  pr(f,'import sys')
+  pr(f,"if '' not in sys.path: sys.path = [''] + sys.path")
   pr(f,'#'+CONFIG_TIME)
   pr(f,'#'+CONFIG_GENERATOR_CVS_ID)
   p(f,"CONFIG_GENERATOR_CVS_ID")

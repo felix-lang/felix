@@ -260,6 +260,50 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   (* Expansion block: don't even fold constants *)
   | `AST_noexpand _ -> e 
 
+  (* and desugaring: x and y and z and ... *)
+  | `AST_andlist (sr, es) ->  
+    begin match es with
+    | [] -> failwith "Unexpected empty and list"
+    | h::t ->
+      List.fold_left
+      (fun x y ->
+        me 
+        (
+          `AST_apply
+          (
+            sr,
+            (
+              `AST_name ( sr,"land",[]),
+              `AST_tuple (sr,[me x; me y])
+            )
+          )
+        )
+      )
+      h t
+    end
+
+  (* or desugaring: x or y or z or ... *)
+  | `AST_orlist (sr, es) ->  
+    begin match es with
+    | [] -> failwith "Unexpected empty alternative list"
+    | h::t ->
+      List.fold_left
+      (fun x y ->
+        me 
+        (
+          `AST_apply
+          (
+            sr,
+            (
+              `AST_name ( sr,"lor",[]),
+              `AST_tuple (sr,[me x; me y])
+            )
+          )
+        )
+      )
+      h t
+    end
+
   (* Sum desugaring: x+y+z+ ... *)
   | `AST_sum (sr, es) ->  
     begin match es with

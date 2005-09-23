@@ -93,6 +93,8 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_product _ 
   | `AST_void _ 
   | `AST_sum _ 
+  | `AST_andlist _ 
+  | `AST_orlist _ 
   | `AST_typed_case _ 
   | `AST_case_arg _ 
   | `AST_arrow _  
