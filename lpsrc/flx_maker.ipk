@@ -4,6 +4,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.153  2005/09/24 20:46:13  skaller
+Fix static RTL to be built by the TARGET C++ compiler, not
+the HOST C++ compiler.
+
 Revision 1.152  2005/09/23 23:17:55  skaller
 Fix PYTHONPATH problems; add typeset and intersection types
 
@@ -2807,7 +2811,7 @@ try:
       objs=[]
       for i in tmp:
         objs.append(i[:-2]) # chop off the .o
-      HOST_CXX.link_static_archive(xqt,objs,"rtl/libflx_static")
+      TARGET_CXX.link_static_archive(xqt,objs,"rtl/libflx_static")
   
   # elkhound executable: no need for dynamic loading, always built static
   if "elkhound" in options:
