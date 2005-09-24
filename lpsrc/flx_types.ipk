@@ -389,7 +389,7 @@ and expr_t =
   | `AST_lvalue of range_srcref * expr_t
   | `AST_method_apply of range_srcref * (id_t * expr_t)
   | `AST_dot of range_srcref * (expr_t * id_t)
-  | `AST_lambda of range_srcref * (parameter_t list list * typecode_t * statement_t list)
+  | `AST_lambda of range_srcref * (params_t list * typecode_t * statement_t list)
 
   | `AST_match_ctor of range_srcref * (qualified_name_t * expr_t)
   | `AST_match_case of range_srcref * (int * expr_t)
@@ -534,7 +534,7 @@ and production_t = glr_entry_t list
 
 and reduced_glr_entry_t = string option * qualified_name_t
 and reduced_production_t = reduced_glr_entry_t list
-
+and params_t = parameter_t list * expr_t option (* second arg is a constraint *)
 and statement_t =
   [ 
   | `AST_include of range_srcref * string 
@@ -546,9 +546,9 @@ and statement_t =
   | `AST_private of range_srcref * statement_t
 
   (* definitions *)
-  | `AST_function of range_srcref * id_t * vs_list_t * parameter_t list * typecode_t * property_t list * statement_t list
-  | `AST_curry of range_srcref * id_t * vs_list_t * parameter_t list list * typecode_t * funkind_t * statement_t list
-  | `AST_object of range_srcref * id_t * vs_list_t * parameter_t list * statement_t list
+  | `AST_function of range_srcref * id_t * vs_list_t * params_t * typecode_t * property_t list * statement_t list
+  | `AST_curry of range_srcref * id_t * vs_list_t * params_t list * typecode_t * funkind_t * statement_t list
+  | `AST_object of range_srcref * id_t * vs_list_t * params_t * statement_t list
   | `AST_regdef of range_srcref * string * regexp_t
   | `AST_glr of range_srcref * string * typecode_t * (range_srcref * production_t * expr_t) list
   
@@ -697,7 +697,7 @@ type dcl_t =
   [
 
   (* data structures *)
-  | `DCL_function of     parameter_t list * typecode_t * property_t list * asm_t list
+  | `DCL_function of     params_t * typecode_t * property_t list * asm_t list
   | `DCL_union of        (id_t * typecode_t) list
   | `DCL_struct of       (id_t * typecode_t) list
   | `DCL_cstruct of      (id_t * typecode_t) list
@@ -860,17 +860,18 @@ and bproduction_t = bglr_entry_t list
 and bparameter_t = string * (int * btypecode_t)
 and breqs_t = (bid_t * btypecode_t list) list
 and bvs_t = (string * int) list
+and bparams_t = bparameter_t list * tbexpr_t option
 
 and bbdcl_t = 
   [
-  | `BBDCL_function of   property_t list * bvs_t * bparameter_t list * btypecode_t * bexe_t list
-  | `BBDCL_procedure of  property_t list * bvs_t * bparameter_t list * bexe_t list
+  | `BBDCL_function of   property_t list * bvs_t * bparams_t * btypecode_t * bexe_t list
+  | `BBDCL_procedure of  property_t list * bvs_t * bparams_t * bexe_t list
   | `BBDCL_val of        bvs_t * btypecode_t
   | `BBDCL_var of        bvs_t * btypecode_t
   | `BBDCL_tmp of        bvs_t * btypecode_t
   | `BBDCL_glr of        property_t list * bvs_t * btypecode_t * (bproduction_t * bexe_t list)
-  | `BBDCL_regmatch of   property_t list * bvs_t * bparameter_t list * btypecode_t * regular_args_t
-  | `BBDCL_reglex of     property_t list * bvs_t * bparameter_t list * int * btypecode_t * regular_args_t
+  | `BBDCL_regmatch of   property_t list * bvs_t * bparams_t * btypecode_t * regular_args_t
+  | `BBDCL_reglex of     property_t list * bvs_t * bparams_t * int * btypecode_t * regular_args_t
 
   (* binding structures [prolog] *)
   | `BBDCL_abs of        bvs_t * type_qual_t list * c_t * breqs_t
@@ -893,14 +894,14 @@ type symbol_definition_t =
   [
   | `SYMDEF_abs of type_qual_t list * c_t * named_reqs_t
   | `SYMDEF_regdef of regexp_t
-  | `SYMDEF_regmatch of parameter_t list * (regexp_t * expr_t) list
-  | `SYMDEF_reglex of parameter_t list * int * (regexp_t * expr_t) list
+  | `SYMDEF_regmatch of params_t * (regexp_t * expr_t) list
+  | `SYMDEF_reglex of params_t * int * (regexp_t * expr_t) list
   | `SYMDEF_glr of typecode_t * (reduced_production_t * sexe_t list) 
 
   | `SYMDEF_parameter of  typecode_t
   | `SYMDEF_typevar of typecode_t (* usually type TYPE *)
 
-  | `SYMDEF_function of parameter_t list * typecode_t * property_t list * sexe_t list
+  | `SYMDEF_function of params_t * typecode_t * property_t list * sexe_t list
 
   | `SYMDEF_match_check of  pattern_t * (string *int)
   | `SYMDEF_module
@@ -1096,7 +1097,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_dot (sr,(x,id)) -> `AST_dot (sr,(f x,id))
 
   (* GIVE UP ON LAMBDAS FOR THE MOMENT .. NEEDS STATEMENT MAPPING TOO *)
-  (* | `AST_lambda of range_srcref * (parameter_t list list * typecode_t * statement_t list) *)
+  (* | `AST_lambda of range_srcref * (params_t list * typecode_t * statement_t list) *)
   | `AST_lambda _ -> e
 
   | `AST_match_ctor (sr,(qn,x)) -> `AST_match_ctor (sr,(qn,f x))
@@ -1713,7 +1714,7 @@ val tsbe:
 val string_of_pattern : pattern_t -> string
 val string_of_tpattern : tpattern_t -> string
 val string_of_literal : literal_t -> string
-val string_of_parameters : parameter_t list -> string
+val string_of_parameters : params_t -> string
 val string_of_arguments : expr_t list -> string
 val string_of_statement : int -> statement_t -> string
 val string_of_compilation_unit : compilation_unit_t -> string
@@ -2322,20 +2323,40 @@ and string_of_btypecode (dfns:symbol_table_t) tc =
 
 and sbt a b = string_of_btypecode a b
 
-and string_of_parameters ps = 
+and string_of_parameters (ps:params_t) = 
+  let ps, traint = ps in
   cat 
     ", " 
     (map (fun (x,y)-> x ^ ": "^(string_of_typecode y)) ps)
+  ^
+  (match traint with
+  | Some x -> " where " ^ string_of_expr x
+  | None -> ""
+  )
 
-and string_of_iparameters ps = 
+(*
+and string_of_iparameters dfns ps = 
+  let ps,traint = ps in
   cat 
     ", " 
     (map (fun (x,(i,y))-> x ^ "["^si i^"]: "^(string_of_typecode y)) ps)
+  ^
+  (match traint with
+  | Some x ->  " where " ^ sbe dfns x
+  | None -> ""
+  )
+*)
 
 and string_of_bparameters dfns ps = 
+  let ps, traint = ps in
   cat 
     ", " 
     (map (fun (x,(i,y))-> x ^ "["^si i^"]: "^(string_of_btypecode dfns y)) ps)
+  ^
+  (match traint with
+  | Some x -> " where " ^ sbe dfns x
+  | None -> ""
+  )
 
 and string_of_arguments ass = 
   catmap ", " string_of_expr ass
@@ -3056,6 +3077,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t)
     ";\n"
     
   | `SYMDEF_function (ps,res,props, es) -> 
+    let ps,traint = ps in
     string_of_properties props ^
     "fun " ^ name ^ print_ivs vs ^
     ": " ^ string_of_typecode 
@@ -4238,7 +4260,8 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
 
   | `AST_lambda (sr,(paramss,ret,body)) ->
      begin match paramss with
-     | [params] ->
+     | [params,traint] ->
+       (* constraint is ignored for now!! *)
        begin match body with
        | [`AST_fun_return (_,e)] -> 
          begin 

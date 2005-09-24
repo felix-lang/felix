@@ -605,7 +605,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
     *)
     match entry with
-    | `BBDCL_function (props,vs,ps,retyp,_) ->
+    | `BBDCL_function (props,vs,(ps,traint),retyp,_) ->
       let ts = map tsub ts in
       let display = get_display_list bbdfns index in
       let name = cpp_instance_name syms bbdfns index ts in

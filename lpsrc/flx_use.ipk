@@ -155,12 +155,12 @@ and uses syms used bbdfns i =
     | Some (id,_,_,bbdcl) ->
       used := IntSet.add i !used;
       begin match bbdcl with
-      | `BBDCL_function (props,_,ps,ret,exes) ->
+      | `BBDCL_function (props,_,(ps,traint),ret,exes) ->
         iter (fun (_,(i,t)) -> ui i; ut t) ps;
         ut ret;
         ux exes
                                                                                 
-      | `BBDCL_procedure (props,_,ps, exes) ->
+      | `BBDCL_procedure (props,_,(ps,traint), exes) ->
         iter (fun (_,(i,t)) -> ui i; ut t) ps;
         ux exes
 
@@ -168,11 +168,11 @@ and uses syms used bbdfns i =
         ut t; ux e;
         uses_production syms used bbdfns p
 
-      | `BBDCL_regmatch (_,_,ps,t,(_,_,h,_)) ->
+      | `BBDCL_regmatch (_,_,(ps,traint),t,(_,_,h,_)) ->
         ut t; Hashtbl.iter (fun _ e -> ue e) h;
         iter (fun (_,(i,t)) -> ui i; ut t) ps;
 
-      | `BBDCL_reglex (_,_,ps,i,t,(_,_,h,_)) ->
+      | `BBDCL_reglex (_,_,(ps,traint),i,t,(_,_,h,_)) ->
         ut t; Hashtbl.iter (fun _ e -> ue e) h;
         iter (fun (_,(i,t)) -> ui i; ut t) ps;
         ui i

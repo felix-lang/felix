@@ -338,19 +338,19 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   end
   ;
   match entry with
-  | `BBDCL_procedure (props,vs,ps,exes) ->
+  | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
     let exes = rexes exes in
     let ps = remap_ps ps in
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_procedure (props,splice vs,ps,exes));
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_procedure (props,splice vs,(ps,traint),exes));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls
      
-  | `BBDCL_function (props, vs, ps, ret, exes) ->
+  | `BBDCL_function (props, vs, (ps,traint), ret, exes) ->
     let ps = remap_ps ps in
     let exes = rexes exes in
     let ret = auxt ret in
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_function (props,splice vs,ps,ret,exes));
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_function (props,splice vs,(ps,traint),ret,exes));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls
@@ -364,26 +364,26 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   | `BBDCL_tmp (vs,t) ->
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_tmp (splice vs,auxt t))
 
-  | `BBDCL_reglex (props,vs,ps,i,t,(a,j,h,m)) ->
+  | `BBDCL_reglex (props,vs,(ps,traint),i,t,(a,j,h,m)) ->
     let t = auxt t in
     let ps = remap_ps ps in
     let vs = splice vs in
     let i = revar i in
     let h2 = Hashtbl.create 13 in
     Hashtbl.iter (fun x e -> Hashtbl.add h2 x (rexpr e)) h;
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_reglex (props,vs,ps,i,t,(a,j,h2,m)));
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_reglex (props,vs,(ps,traint),i,t,(a,j,h2,m)));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls
 
 
-  | `BBDCL_regmatch (props,vs,ps,t,(a,j,h,m)) ->
+  | `BBDCL_regmatch (props,vs,(ps,traint),t,(a,j,h,m)) ->
     let t = auxt t in
     let ps = remap_ps ps in
     let vs = splice vs in
     let h2 = Hashtbl.create 13 in
     Hashtbl.iter (fun x e -> Hashtbl.add h2 x (rexpr e)) h;
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_regmatch (props,vs,ps,t,(a,j,h2,m)));
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_regmatch (props,vs,(ps,traint),t,(a,j,h2,m)));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls
@@ -799,14 +799,14 @@ let gen_body syms (uses,child_map,bbdfns) id
         IntSet.iter (fun i -> 
           let id,parent,sr,entry = Hashtbl.find bbdfns i in
           match entry with 
-          | `BBDCL_function (props,vs,ps,ret,exes) ->
+          | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
             let exes = map (subarg syms bbdfns argmap) exes in 
             Hashtbl.replace bbdfns i 
-            (id,parent,sr,`BBDCL_function (props,vs,ps,ret,exes))
-          | `BBDCL_procedure (props,vs,ps,exes) ->
+            (id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes))
+          | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
             let exes = map (subarg syms bbdfns argmap) exes in 
             Hashtbl.replace bbdfns i 
-            (id,parent,sr,`BBDCL_procedure (props,vs,ps,exes))
+            (id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes))
           | _ -> ()
         )
         kids
@@ -860,7 +860,7 @@ let call_lifting syms (uses,child_map,bbdfns) caller caller_vs callee ts a argum
   *)
   let id,parent,sr,entry = Hashtbl.find bbdfns callee in
   match entry with 
-  | `BBDCL_function (props,vs,ps,ret,exes) ->
+  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     (*
     print_endline ("Found procedure "^id^": Inline it!");
     *)
@@ -916,7 +916,7 @@ let inline_tail_apply syms (uses,child_map,bbdfns) caller caller_vs callee ts a 
   assert (callee <> caller);
   let id,parent,sr,entry = Hashtbl.find bbdfns callee in
   match entry with 
-  | `BBDCL_function (props,vs,ps,ret,exes) ->
+  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let id2,_,_,_ = Hashtbl.find bbdfns caller in
     (*
     print_endline 
@@ -948,7 +948,7 @@ let inline_tail_apply syms (uses,child_map,bbdfns) caller caller_vs callee ts a 
 let inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a varindex =
   let id,parent,sr,entry = Hashtbl.find bbdfns callee in
   match entry with 
-  | `BBDCL_function (props,vs,ps,ret,exes) ->
+  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     (*
     print_endline 
     (
@@ -1157,7 +1157,7 @@ let xmap_bexe syms (child_map,bbdfns) caller vs exe : bexe_t list =
   expand_exe syms bbdfns u exe 
 
 let heavy_inline_call syms (uses,child_map,bbdfns) 
-  caller caller_vs callee ts argument id sr (props, vs, ps, exes)
+  caller caller_vs callee ts argument id sr (props, vs, (ps,traint), exes)
 =
   (*
   print_endline ("INLINING CALL to " ^ id ^"<"^ si callee^">("^sbe syms.dfns argument^")");
@@ -1263,7 +1263,7 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
       heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
       let id,parent,sr,entry = Hashtbl.find bbdfns callee in
       begin match entry with
-      | `BBDCL_function (props,vs,ps,ret,exes) ->
+      | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         if 
           not (mem `NoInline props) &&
           (
@@ -1405,7 +1405,7 @@ and heavy_inline_calls
       print_endline ("CALL DIRECT " ^ id ^ "<"^ si callee^">");
       *)
       begin match entry with
-      | `BBDCL_procedure (props,vs,ps,exes) ->
+      | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
         if 
          mem `Inlining_complete props &&
          not (mem `NoInline props) &&
@@ -1424,7 +1424,7 @@ and heavy_inline_calls
           *)
           let xs = 
             heavy_inline_call syms (uses,child_map,bbdfns) 
-            caller caller_vs callee ts argument id sr (props,vs,ps,exes)
+            caller caller_vs callee ts argument id sr (props,vs,(ps,traint),exes)
           in 
             let xs = hic callee xs in
             exes' := rev xs @ !exes'
@@ -1450,7 +1450,7 @@ and heavy_inline_calls
       heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
       let id,parent,sr,entry = Hashtbl.find bbdfns callee in
       begin match entry with
-      | `BBDCL_function (props,vs,ps,ret,exes) ->
+      | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         if 
           mem `Inlining_complete props &&
           not (mem `NoInline props) &&
@@ -1498,7 +1498,7 @@ and heavy_inline_calls
       heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
       let id,parent,sr,entry = Hashtbl.find bbdfns callee in
       begin match entry with
-      | `BBDCL_function (props,vs,ps,ret,exes) ->
+      | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         if 
           mem `Inlining_complete props &&
           not (mem `NoInline props) &&
@@ -1544,7 +1544,7 @@ and heavy_inline_calls
       heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
       let id,parent,sr,entry = Hashtbl.find bbdfns callee in
       begin match entry with
-      | `BBDCL_function (props,vs,ps,ret,exes) ->
+      | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         if 
           not (mem `NoInline props) &&
           (
@@ -1872,10 +1872,10 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
   in
   match specs with None -> () | Some spec ->
   match spec with
-  | id,parent,sr,`BBDCL_procedure (props,vs,ps,exes) ->
+  | id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes) ->
     if not (mem `Inlining_started props) then begin
       let props = `Inlining_started :: props in
-      let data = id,parent,sr,`BBDCL_procedure (props,vs,ps,exes) in
+      let data = id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes) in
       Hashtbl.replace bbdfns i data;
 
       (* inline into all children first *)
@@ -1907,7 +1907,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       remove_unused_children syms (uses,child_map,bbdfns) i;
       let exes = Flx_cflow.chain_gotos exes in
       let props = `Inlining_complete :: props in
-      let data = id,parent,sr,`BBDCL_procedure (props,vs,ps,exes) in
+      let data = id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes) in
       Hashtbl.replace bbdfns i data;
       (*
       print_endline ("DONE Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
@@ -1915,10 +1915,10 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       *)
     end
 
-  | id,parent,sr,`BBDCL_function (props,vs,ps,ret,exes) ->
+  | id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     if not (mem `Inlining_started props) then begin
       let props = `Inlining_started :: props in
-      let data = id,parent,sr,`BBDCL_function (props,vs,ps,ret,exes) in
+      let data = id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes) in
       Hashtbl.replace bbdfns i data;
 
       (* inline into all children first *)
@@ -1956,7 +1956,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       remove_unused_children syms (uses,child_map,bbdfns) i;
       let exes = Flx_cflow.chain_gotos exes in
       let props = `Inlining_complete :: props in
-      let data = id,parent,sr,`BBDCL_function (props,vs,ps,ret,exes) in
+      let data = id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes) in
       Hashtbl.replace bbdfns i data;
       (*
       print_endline ("DONE Examining function " ^ id ^"<" ^ si i ^ "> for inlinable calls");

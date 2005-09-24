@@ -267,6 +267,7 @@ struct FLX_RTL_EXTERN con_t // abstract base for mutable continuations
 };
 
 //REFERENCE
+// note: non-polymorphic, so ctor can be inline
 struct FLX_RTL_EXTERN _ref_
 {
   void *frame;
@@ -287,6 +288,7 @@ struct FLX_RTL_EXTERN _ref_
 
 
 //VARIANTS
+// note: non-polymorphic, so ctor can be inline
 struct FLX_RTL_EXTERN _uctor_
 {
   int variant;
@@ -311,8 +313,7 @@ struct FLX_RTL_EXTERN flx_range_srcref_t {
   int startcol;
   int endline;
   int endcol;
-  flx_range_srcref_t(char *f,int sl, int sc, int el, int ec) :
-    filename(f),startline(sl),startcol(sc),endline(el),endcol(ec){}
+  flx_range_srcref_t(char *f,int sl, int sc, int el, int ec);
 };
 
 // MATCH failure
@@ -323,8 +324,8 @@ struct FLX_RTL_EXTERN flx_match_failure_t {
   flx_range_srcref_t flx_loc;
   char *cxx_srcfile;    // in C++ file
   int cxx_srcline;      // __LINE__ macro
-  flx_match_failure_t(flx_range_srcref_t ff, char *cf, int cl) :
-   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
+  flx_match_failure_t(flx_range_srcref_t ff, char *cf, int cl);
+  virtual ~flx_match_failure_t();
 };
 
 // ASSERT failure
@@ -332,8 +333,8 @@ struct FLX_RTL_EXTERN flx_assert_failure_t {
   flx_range_srcref_t flx_loc;
   char *cxx_srcfile;    // in C++ file
   int cxx_srcline;      // __LINE__ macro
-  flx_assert_failure_t(flx_range_srcref_t ff, char *cf, int cl) :
-   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
+  flx_assert_failure_t(flx_range_srcref_t ff, char *cf, int cl);
+  virtual ~flx_assert_failure_t();
 };
 
 
@@ -592,6 +593,15 @@ flx_exec_failure_t::flx_exec_failure_t(std::string f, std::string o, std::string
   what(w) 
 {}
 
+flx_range_srcref_t::flx_range_srcref_t(char *f,int sl, int sc, int el, int ec) :
+    filename(f),startline(sl),startcol(sc),endline(el),endcol(ec){}
+flx_match_failure_t::flx_match_failure_t(flx_range_srcref_t ff, char *cf, int cl) :
+   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_match_failure_t::~flx_match_failure_t(){}
+flx_assert_failure_t::flx_assert_failure_t(flx_range_srcref_t ff, char *cf, int cl) :
+   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_assert_failure_t::~flx_assert_failure_t(){}
+
 }}
 
 @head(2,"Unix Dynamic linker")
@@ -700,6 +710,7 @@ struct FLX_RTL_EXTERN flx_link_failure_t {
   string operation;
   string what;
   flx_link_failure_t(string f, string o, string w);
+  virtual ~flx_link_failure_t();
 };
 
 // frame creators
@@ -812,6 +823,8 @@ flx_link_failure_t::flx_link_failure_t(string f, string o, string w) :
   operation(o), 
   what(w) 
 {}
+
+flx_link_failure_t::~flx_link_failure_t(){}
 
 flx_dynlink_t::~flx_dynlink_t(){}
 

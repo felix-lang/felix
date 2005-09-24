@@ -1118,8 +1118,9 @@ fun str: fun_args_t -> string =
 ;
 
 fun str: fun_arg_t -> string =
-  | fun_arg_1 ?ps => str ps
-  | fun_arg_2 ?s => s
+  | fun_arg_1 (?ps,?traint) => str ps + " when " + str traint
+  | fun_arg_2 ?ps => str ps
+  | fun_arg_3 ?s => s
 ;
 
 fun str: parameter_comma_list_t -> string =

@@ -52,7 +52,7 @@ let gen_closure syms bbdfns i =
         `BEXE_proc_return sr
       ] 
     in
-    let entry = `BBDCL_procedure ([],vs,ps,exes) in
+    let entry = `BBDCL_procedure ([],vs,(ps,None),exes) in
     Hashtbl.add bbdfns j (id,parent,sr,entry);
     j
 
@@ -70,7 +70,7 @@ let gen_closure syms bbdfns i =
     in
     let e = `BEXPR_apply_prim (i,ts,a),ret in
     let exes : bexe_t list = [`BEXE_fun_return (sr,e)] in
-    let entry = `BBDCL_function ([],vs,ps,ret,exes) in
+    let entry = `BBDCL_function ([],vs,(ps,None),ret,exes) in
     Hashtbl.add bbdfns j (id,parent,sr,entry);
     j
 

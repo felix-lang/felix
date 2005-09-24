@@ -1392,7 +1392,7 @@ and cal_ret_type syms idx_fixlist expr_fixlist depth index args =
   *)
   match (get_data syms.dfns index) with
   | {id=id;sr=sr;parent=parent;vs=vs;privmap=name_map;dirs=dirs;
-     symdef=`SYMDEF_function (ps,rt,props,exes)
+     symdef=`SYMDEF_function ((ps,_),rt,props,exes)
     } ->
     (*
     print_endline ("Calculate return type of " ^ id);
@@ -1578,7 +1578,7 @@ and inner_typeofindex
   match entry with
   | `SYMDEF_inherit qn -> failwith ("Woops inner_typeofindex found inherit " ^ si index)
   | `SYMDEF_inherit_fun qn -> failwith ("Woops inner_typeofindex found inherit fun!! " ^ si index)
-  | `SYMDEF_function (ps, rt,_,_) -> 
+  | `SYMDEF_function ((ps,_), rt,_,_) -> 
     let pts = map snd ps in
     let rt' = 
       try Hashtbl.find syms.varmap index with Not_found ->

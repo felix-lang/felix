@@ -122,7 +122,7 @@ let include_file syms inspec lookup =
   in
     sts
 
-let fix_params seq (ps:parameter_t list):vs_list_t * parameter_t list = 
+let fix_params seq (ps:params_t):vs_list_t * params_t = 
   let rec aux (ps:parameter_t list) :vs_list_t * parameter_t list =
     match ps with
     | (x,`TYP_none) :: t ->
@@ -135,22 +135,25 @@ let fix_params seq (ps:parameter_t list):vs_list_t * parameter_t list =
       let vs,ps = aux t in 
       vs, (h::ps)
     | [] -> [],[]
-  in aux ps
+  in 
+  let ps, traint = ps in 
+  let vs,ps = aux ps in
+  vs,(ps,traint)
 
 let arglist x = 
   match x with
   | `AST_tuple (_,ts) -> ts
   | _ -> [x]
 
-let mkcurry seq sr name vs args return_type kind body props =
-  let vss',args= split (map (fix_params seq) args) in
+let mkcurry seq sr name vs (args:params_t list) return_type kind body props =
+  let vss',(args:params_t list)= split (map (fix_params seq) args) in
   let vs = concat (vs :: vss') in
   let mkfuntyp d c = `TYP_function (d,c)
   and typeoflist lst = match lst with
     | [x] -> x
     | _ -> `TYP_tuple lst
   in 
-  let mkret arg ret = mkfuntyp (typeoflist (List.map snd arg)) ret in
+  let mkret arg ret = mkfuntyp (typeoflist (List.map snd (fst arg))) ret in
   let arity = List.length args in
   let rettype args = 
     match return_type with
@@ -158,7 +161,7 @@ let mkcurry seq sr name vs args return_type kind body props =
     | _ -> List.fold_right mkret args return_type 
   in
 
-  let rec aux args vs =  
+  let rec aux (args:params_t list) vs =  
     let n = List.length args in
     let name n = 
       if n = arity
@@ -178,13 +181,13 @@ let mkcurry seq sr name vs args return_type kind body props =
           in
           begin match return_type with
           | `AST_void _ ->
-            `AST_function (sr, name n, vs, [], return_type, props, body)
+            `AST_function (sr, name n, vs, ([],None), return_type, props, body)
           | _ ->
             syserr sr "Function with no arguments"
           end
 
         | `Object ->
-          `AST_object (sr, name n, vs, [], body)
+          `AST_object (sr, name n, vs, ([],None), body)
         )
 
     | h :: [] -> (* bottom level *)
@@ -202,6 +205,11 @@ let mkcurry seq sr name vs args return_type kind body props =
           `AST_object (sr, name n, vs, h, body)
         )
     | h :: t ->
+      let argt = 
+        let hdt = hd t in
+        let xargs,traint = hdt in
+        typeoflist (map snd xargs) 
+      in
       let m = List.length args in
       let body = 
         [
@@ -213,8 +221,7 @@ let mkcurry seq sr name vs args return_type kind body props =
             (
               sr,
               (
-                `AST_name (sr,name (m-1),[]),
-                typeoflist (List.map snd (List.hd t))
+                `AST_name (sr,name (m-1),[]),argt
               )
             )
           )
@@ -252,7 +259,7 @@ let find_methods seq sr sts =
       if vs <> [] then
       clierr sr "[process_object] Object methods may not be generic"
       ;
-      let argtyp = match map snd ps with 
+      let argtyp = match map snd (fst ps) with 
         | [] -> `TYP_tuple []
         | [a] -> a
         | x -> `TYP_tuple x
@@ -415,7 +422,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
         sr,
         (
           `AST_name (sr,name',[]), 
-          type_of_argtypes (map snd (hd pps))
+          type_of_argtypes (map snd (fst (hd pps)))
         )
       )
     in
@@ -720,7 +727,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
         [],
         `DCL_function 
         (
-          [],
+          ([],None),
           `TYP_none,
           [`Inline;`Generated "desugar:match fun"],
           match_function_body
@@ -748,7 +755,6 @@ and string_of_vs (vs:vs_list_t) =
   cat "," (map (fun (v,tp) -> v ^ maybe_tpat tp) vs)
 
 and rst syms name access (parent_vs:vs_list_t) st : asm_t list = 
-  
   (* construct an anonymous name *)
   let parent_ts sr : typecode_t list = 
     map (fun (s,tp)-> `AST_name (sr,s,[])) parent_vs 
@@ -936,16 +942,36 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   
   (* functions *)
   | `AST_function (sr,name', vs, params, res, props, sts) -> 
-    let vs',params = fix_params seq params in
-    let vs = vs @ vs' in
-    let asms = rsts name' [] sts in
-    let asms = bridge name' sr :: asms in
-    [
-      Dcl (sr,name',None,access,vs, 
-        `DCL_function (params, res, props, asms)
-      )
-    ]
-    
+    let ps,traint = params in
+    begin match traint with
+    | None ->
+      let vs',params = fix_params seq params in
+      let vs = vs @ vs' in
+      let asms = rsts name' [] sts in
+      let asms = bridge name' sr :: asms in
+      [
+        Dcl (sr,name',None,access,vs, 
+          `DCL_function (params, res, props, asms)
+        )
+      ]
+    | Some x ->
+      let name'' = "_" ^ name' in
+      let inner = `AST_name (sr,name'',[]) in
+      let un = `AST_tuple (sr,[]) in
+      let retval:expr_t = `AST_apply(sr,(inner,un)) in
+      let sts = 
+        [
+          `AST_assert (src_of_expr x,x);
+          `AST_function (sr,name'', [],([],None),res,props,sts);
+          `AST_fun_return (sr,retval)
+        ]
+      in 
+      let st =
+        `AST_function (sr,name',vs,(ps,None),res,props,sts)
+      in 
+      rst syms name access parent_vs st
+    end
+      
   | `AST_fun_decl (sr,name',vs,args,result,code, reqs,prec) ->
     let props, dcls, reqs = mkreqs sr reqs in
     Dcl (sr,name',None,access,vs,
@@ -1334,7 +1360,7 @@ and inner_handle_glr seq rex sr' p e glr_idx t nt_id =
       [],
       `DCL_function 
       (
-        params,
+        (params,None),
         `TYP_none,
         [`NoInline],
         (Exe (sr',`EXE_fun_return x) :: lams)

@@ -158,7 +158,7 @@ let build_args sr ps args =
     | Expr -> (p,MVal a)
     | Stmt ->
       begin match a with
-      | `AST_lambda (_,([[]],`TYP_none,sts)) -> (p,MStmt ([],sts))
+      | `AST_lambda (_,([[],_],`TYP_none,sts)) -> (p,MStmt ([],sts))
       | `AST_name(_,name,[]) ->(p,MVal a)
       | _ -> 
         clierr sr 
@@ -429,7 +429,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
             *)
             let sts = [`AST_call (sr,e1, e2)] in
             let sts = expand_statements recursion_limit local_prefix seq (ref true) macros sts in
-            `AST_lambda(sr,([[]],`TYP_none,sts))
+            `AST_lambda(sr,([[],None],`TYP_none,sts))
             (*
             clierr sr 
             (
@@ -461,7 +461,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   (* Lambda hook *)
   | `AST_lambda (sr, (pss, t, sts)) -> 
-    let pr = concat (map (map fst) pss) in
+    let pr = concat (map (map fst) (map fst pss)) in
     let pr = protect sr pr in
     let sts = 
       expand_statements recursion_limit local_prefix seq (ref true) 
@@ -675,18 +675,22 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_nop (sr, s) ->  ()
 
   | `AST_function (sr, id, vs, ps, t, props, sts ) ->
-    let pr = map fst ps in
-    let ps = map (fun (id,t) -> id,mt sr t) ps in
+    let pr = map fst (fst ps) in
+    let ps = map (fun (id,t) -> id,mt sr t) (fst ps),snd ps in
     tack(`AST_function (sr, mi sr id, vs, ps, mt sr t, props, msp sr pr sts ))
 
   | `AST_curry (sr,id,vs,pss,ret,kind,sts) ->
-    let pr = map fst (concat pss) in
-    let pss = map (map (fun (id,t) -> id,mt sr t)) pss in
+    let pr = map fst (concat (map fst pss)) in
+    let pss = 
+      map (fun (ps,traint) ->
+        (map (fun (id,t) -> id,mt sr t)) ps,traint)
+      pss 
+    in
     tack(`AST_curry(sr, mi sr id, vs, pss, ret,kind, msp sr pr sts ))
 
   | `AST_object (sr, id, vs, ps, sts ) ->
-    let pr = map fst ps in
-    let ps = map (fun (id,t) -> id,mt sr t) ps in
+    let pr = map fst (fst ps) in
+    let ps = map (fun (id,t) -> id,mt sr t) (fst ps),snd ps in
     tack(`AST_object (sr, mi sr id, vs, ps, msp sr pr sts ))
 
   | `AST_val_decl (sr, id, vs, optt, opte) -> 

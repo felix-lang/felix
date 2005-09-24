@@ -63,7 +63,7 @@ let sig_of_symdef symdef sr name = match symdef with
     -> typeof_list ps
 
   | `SYMDEF_function (ps,r,_,_)
-    -> paramtype ps
+    -> paramtype (fst ps)
 
   | `SYMDEF_cstruct ls
   | `SYMDEF_struct ls ->

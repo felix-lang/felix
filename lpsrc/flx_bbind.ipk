@@ -144,10 +144,17 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;(*vs=ivs;*)privmap=name
     let ivs = find_vs syms i in (* this is the full vs list *) 
     let bvs = map (fun (s,i,tp) -> s,i) ivs in
     let bt t = bind_type syms env sr t in
+    let btraint = function | Some x -> Some (be x) | None -> None in
     let bind_reqs reqs = bind_reqs bt syms env sr reqs in
     (*
     print_endline ("Binding " ^ name);
     *)
+    let bindps (ps,traint) = 
+        List.map (fun (s,t) -> 
+        let i = find_param name_map s in
+        s,(i,bt t)) 
+      ps , btraint traint
+    in
     match bdcl with
 
     (* Pure declarations of functions, modules, and type
@@ -158,13 +165,8 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;(*vs=ivs;*)privmap=name
       -> ()
 
     | `SYMDEF_function (ps,rt,props,exes) -> 
-      let bps : (string * (int * btypecode_t)) list = 
-        List.map (fun (s,t) -> 
-        let i = find_param name_map s in
-        s,(i,bt t)) 
-      ps 
-      in
-      let ts = map (fun (s,(i,t)) -> t) bps in
+      let bps = bindps ps in
+      let ts = map (fun (s,(i,t)) -> t) (fst bps) in
       let brt = bt rt in
       let brt',bbexes = bexes env exes brt i bvs in
       let bbdcl = 
@@ -181,7 +183,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;(*vs=ivs;*)privmap=name
           Hashtbl.add syms.ticache i t
         end
         ;
-        let atyp = typeoflist (map (fun (s,(i,t)) -> t) bps) in
+        let atyp = typeoflist (map (fun (s,(i,t)) -> t) (fst bps)) in
         if syms.compiler_options.print_flag then
         print_endline 
         (
@@ -229,7 +231,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;(*vs=ivs;*)privmap=name
         )
       ;
       Hashtbl.add bbdfns i (name,true_parent,sr,
-        `BBDCL_function ([`Inline; `Generated "bbind: match check"],bvs,[],flx_bbool,bbexes)
+        `BBDCL_function ([`Inline; `Generated "bbind: match check"],bvs,([],None),flx_bbool,bbexes)
       );
       begin
         if not (Hashtbl.mem syms.ticache i) then
@@ -249,13 +251,8 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;(*vs=ivs;*)privmap=name
     *)
 
     | `SYMDEF_regmatch (ps,cls) ->
-      let bps : (string * (int * btypecode_t)) list = 
-        List.map (fun (s,t) -> 
-        let i = find_param name_map s in
-        s,(i,bt t)) 
-      ps 
-      in
-      let ts = map (fun (s,(i,t)) -> t) bps in
+      let bps = bindps ps in
+      let ts = map (fun (s,(i,t)) -> t) (fst bps) in
       let ret_type =  ref (snd (be (snd (hd cls)))) in
       let bregex = bind_regex syms env sr be ret_type cls in
       let bbdcl = `BBDCL_regmatch ([],bvs,bps,!ret_type,bregex) in
@@ -272,13 +269,8 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;(*vs=ivs;*)privmap=name
 
       
     | `SYMDEF_reglex (ps,le,cls) ->
-      let bps : (string * (int * btypecode_t)) list = 
-        List.map (fun (s,t) -> 
-        let i = find_param name_map s in
-        s,(i,bt t)) 
-      ps 
-      in
-      let ts = map (fun (s,(i,t)) -> t) bps in
+      let bps = bindps ps in
+      let ts = map (fun (s,(i,t)) -> t) (fst bps) in
       let ret_type = ref (snd (be (snd (hd cls)))) in
       let bregex = bind_regex syms env sr be ret_type cls in
       let bbdcl = `BBDCL_reglex ([],bvs,bps,le,!ret_type,bregex) in

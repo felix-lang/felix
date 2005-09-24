@@ -171,8 +171,8 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
   let usage = uses,usedby in
   Hashtbl.iter
   (fun k (_,_,sr,entry) -> match entry with
-  | `BBDCL_procedure (_,_,ps,exes)
-  | `BBDCL_function (_,_,ps,_,exes) ->
+  | `BBDCL_procedure (_,_,(ps,_),exes)
+  | `BBDCL_function (_,_,(ps,_),_,exes) ->
     iter (cal_param_usage syms uses sr k) ps;
     iter (cal_exe_usage syms uses k) exes
 
@@ -180,8 +180,8 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
     iter (cal_exe_usage syms uses k) exes;
     uses_production uses k sr p
   
-  | `BBDCL_regmatch (_,_,ps,_,(_,_,h,_))
-  | `BBDCL_reglex (_,_,ps,_,_,(_,_,h,_)) -> 
+  | `BBDCL_regmatch (_,_,(ps,_),_,(_,_,h,_))
+  | `BBDCL_reglex (_,_,(ps,_),_,_,(_,_,h,_)) -> 
     iter (cal_param_usage syms uses sr k) ps;
     Hashtbl.iter (fun _ e -> process_expr uses k sr e) h
 

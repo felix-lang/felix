@@ -151,9 +151,9 @@ let get_type bbdfns index =
     with _ -> failwith ("[get_type] Can't find index " ^ si index)
   in
   match entry with
-  | `BBDCL_function (props,vs,ps,ret,_) -> 
+  | `BBDCL_function (props,vs,(ps,_),ret,_) -> 
       `BTYP_function (typeof_bparams ps,ret)
-  | `BBDCL_procedure (props,vs,ps,_) -> 
+  | `BBDCL_procedure (props,vs,(ps,_),_) -> 
       `BTYP_function (typeof_bparams ps,`BTYP_void)
   | _ -> failwith "Only function and procedure types handles by get_type"
 
@@ -428,7 +428,7 @@ let gen_functions syms (child_map,bbdfns) =
     in
     match Hashtbl.find bbdfns index with (id,parent,sr,entry) -> 
     match entry with
-    | `BBDCL_function (props,vs,ps, ret, _) -> 
+    | `BBDCL_function (props,vs,(ps,traint), ret, _) -> 
       bcat s ("\n//------------------------------\n");
       if mem `Pure props && not (mem `Heap_closure props) then begin
         bcat s ("//PURE C FUNCTION " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
@@ -440,19 +440,19 @@ let gen_functions syms (child_map,bbdfns) =
         (gen_function syms (child_map,bbdfns) props index id vs ps ret ts i)
       end
 
-    | `BBDCL_regmatch (props,vs, ps, ret, regargs) -> 
+    | `BBDCL_regmatch (props,vs, (ps,traint), ret, regargs) -> 
       bcat s ("\n//------------------------------\n");
       bcat s ("//REGMATCH " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
       bcat s 
       (gen_function syms (child_map,bbdfns) props index id vs ps ret ts i)
 
-    | `BBDCL_reglex (props, vs, ps, i, ret, regargs) -> 
+    | `BBDCL_reglex (props, vs, (ps,traint), i, ret, regargs) -> 
       bcat s ("\n//------------------------------\n");
       bcat s ("//REGLEX " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
       bcat s 
       (gen_function syms (child_map,bbdfns) props index id vs ps ret ts i)
 
-    | `BBDCL_procedure (props,vs,ps,_) -> 
+    | `BBDCL_procedure (props,vs,(ps,traint),_) -> 
       bcat s ("\n//------------------------------\n");
       bcat s ("//PROC " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
       bcat s 
@@ -978,7 +978,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
     )
   );
   match entry with 
-  | `BBDCL_function (props,vs,bps,ret',exes) ->
+  | `BBDCL_function (props,vs,(bps,traint),ret',exes) ->
     let requires_ptf = mem `Requires_ptf props in
     if length ts <> length vs then 
     failwith 
@@ -1132,7 +1132,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
     )
   );
   match entry with 
-  | `BBDCL_function (props,vs,bps,ret',exes) ->
+  | `BBDCL_function (props,vs,(bps,traint),ret',exes) ->
     if length ts <> length vs then 
     failwith 
     (
@@ -1256,14 +1256,14 @@ let gen_regexp_methods filename syms (child_map,bbdfns)
     )
   );
   let lexeme_start,buffer_end,lexeme_end,kind = match entry with 
-  | `BBDCL_regmatch (props,vs,bps,ret',cls) -> 
+  | `BBDCL_regmatch (props,vs,(bps,traint),ret',cls) -> 
     let p1 = fst (snd (hd bps)) in
     let p1' = cpp_instance_name syms bbdfns p1 ts in
     let p2 = fst (snd (hd (tl bps))) in
     let p2' = cpp_instance_name syms bbdfns p2 ts in
     p1',p2',None,`regmatch (p1',p2')
     
-  | `BBDCL_reglex (props,vs,bps,i,ret',cls) -> 
+  | `BBDCL_reglex (props,vs,(bps,traint),i,ret',cls) -> 
     let p1 = fst (snd (hd bps)) in
     let p1' = cpp_instance_name syms bbdfns p1 ts in
     let p2 = fst (snd (hd (tl bps))) in
@@ -1274,8 +1274,8 @@ let gen_regexp_methods filename syms (child_map,bbdfns)
   | _ -> assert false
   in
   match entry with 
-  | `BBDCL_regmatch (props,vs,bps,ret',cls)
-  | `BBDCL_reglex (props,vs,bps,_,ret',cls) ->
+  | `BBDCL_regmatch (props,vs,(bps,traint),ret',cls)
+  | `BBDCL_reglex (props,vs,(bps,traint),_,ret',cls) ->
     if length ts <> length vs then 
     failwith 
     (
@@ -1364,7 +1364,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
     )
   );
   match entry with 
-  | `BBDCL_procedure (props,vs,bps,exes) ->
+  | `BBDCL_procedure (props,vs,(bps,traint),exes) ->
     if length ts <> length vs then 
     failwith 
     (
@@ -1508,7 +1508,7 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf =
   (fun (index,ts) instance_no -> 
   let id,parent,sr,entry = Hashtbl.find bbdfns index in 
   begin match entry with
-  | `BBDCL_function (props,vs,ps, ret, _) -> 
+  | `BBDCL_function (props,vs,(ps,traint), ret, _) -> 
     bcat s ("//------------------------------\n");
     if mem `Pure props && not (mem `Heap_closure props) then
       bcat s (
@@ -1522,7 +1522,7 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf =
       )
 
     
-  | `BBDCL_procedure (props,vs,ps,_) -> 
+  | `BBDCL_procedure (props,vs,(ps,traint),_) -> 
     bcat s ("//------------------------------\n");
     bcat s (
       gen_procedure_methods filename syms (child_map,bbdfns) label_info counter index ts instance_no
@@ -1547,7 +1547,7 @@ let gen_biface_header syms bbdfns biface = match biface with
   | `BIFACE_export_fun (sr,index, export_name) ->
     let id,parent,sr,entry = Hashtbl.find bbdfns index in
     begin match entry with
-    | `BBDCL_function (props,vs,ps, ret, _) ->
+    | `BBDCL_function (props,vs,(ps,traint), ret, _) ->
       let display = get_display_list bbdfns index in
       if length display <> 0
       then clierr sr "Can't export nested function";
@@ -1568,7 +1568,7 @@ let gen_biface_header syms bbdfns biface = match biface with
       " as " ^ export_name ^ "\n" ^
       "extern \"C\" FLX_EXPORT " ^ rettypename ^" " ^ export_name ^ "(\n" ^ arglist ^ "\n);\n"
 
-    | `BBDCL_procedure (props,vs,ps, _) ->
+    | `BBDCL_procedure (props,vs,(ps,traint), _) ->
       let display = get_display_list bbdfns index in
       if length display <> 0
       then clierr sr "Can't export nested proc";
@@ -1600,7 +1600,7 @@ let gen_biface_body syms bbdfns biface = match biface with
   | `BIFACE_export_fun (sr,index, export_name) ->
     let id,parent,sr,entry = Hashtbl.find bbdfns index in
     begin match entry with
-    | `BBDCL_function (props,vs,ps, ret, _) ->
+    | `BBDCL_function (props,vs,(ps,traint), ret, _) ->
       if length vs <> 0
       then clierr sr ("Can't export generic function " ^ id)
       ;
@@ -1629,7 +1629,7 @@ let gen_biface_body syms bbdfns biface = match biface with
       "    ->apply(" ^ cat ", " (map fst ps) ^ ");\n" ^
       "}\n"
 
-    | `BBDCL_procedure (props,vs,ps,_) ->
+    | `BBDCL_procedure (props,vs,(ps,traint),_) ->
       if length vs <> 0
       then clierr sr ("Can't export generic procedure " ^ id)
       ;

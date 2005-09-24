@@ -210,7 +210,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     process_function syms bbdfns null_table ref_insts1 i sr [] ret exes ts;
     process_production syms bbdfns ref_insts1 p ts
  
-  | `BBDCL_regmatch (props,vs,ps,ret,(_,_,h,_))  ->
+  | `BBDCL_regmatch (props,vs,(ps,traint),ret,(_,_,h,_))  ->
     let argtypes = map (fun x -> snd (snd x)) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -220,7 +220,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     h;
     iter (fun (_,(i,_)) -> ui i) ps
 
-   | `BBDCL_reglex (props,vs,ps,le,ret,(_,_,h,_)) ->
+   | `BBDCL_reglex (props,vs,(ps,traint),le,ret,(_,_,h,_)) ->
     let argtypes = map (fun x -> snd (snd x)) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -232,14 +232,14 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     ui le; (* lexeme end .. *)
     ui i
     
-  | `BBDCL_function (props,vs,ps,ret,exes) -> 
+  | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> 
     let argtypes = map (fun x -> snd (snd x)) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret exes ts
  
-  | `BBDCL_procedure (props,vs,ps, exes) ->
+  | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
     let argtypes = map (fun x -> snd (snd x)) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
