@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.154  2005/09/24 21:46:33  skaller
+More pathname fixes (/ vs \, using os.sep ..) and DIFF fix
+
 Revision 1.153  2005/09/24 20:46:13  skaller
 Fix static RTL to be built by the TARGET C++ compiler, not
 the HOST C++ compiler.
@@ -1977,10 +1980,12 @@ except:
 
 FLXFLAGS = ""
 
-if WIN32:
+if os.name == 'nt': # build system is Windows Python
   DIFF = "FC /L /W "
+  GREP = "#grep "
 else:
-  DIFF = "diff -a -b "
+  DIFF = "diff -a -b " # build system is Unix Python
+  GREP = "grep "
 
 # --------------------------------------------------
 # IMPORT UTILITY RESOURCES
@@ -2173,9 +2178,6 @@ if "compiler" in options or "bytecode" in options or "olink" in options:
     OCAML_OBJECT_EXTENSION = '.cmo'
     OCAML_LIB_EXTENSION = '.cma'
     
-# where gnu readline header files are
-#READLINE_INCLUDE_DIRECTORY='/usr/include/readline'
-
 #determine linkage model
 
 LINK_MODEL = DEFAULT_LINK_MODEL
@@ -2573,9 +2575,9 @@ TESTS= USER_TESTS
 BAD_TESTS = []
 
 SPECIAL_TESTS = [
-  ('bin/flx_run','test/flx_run_lib1.flx',''),
-  ('test/flx_perf_drv1','test/flx_perf_lib1.flx','1000'),
-  ('bin/flx_stdin_drv','test/flx_stdin_lib1.flx','<Makefile >tmp.tmp'),
+  ('bin'+os.sep+'flx_run','test'+os.sep+'flx_run_lib1.flx',''),
+  ('test'+os.sep+'flx_perf_drv1','test'+os.sep+'flx_perf_lib1.flx','1000'),
+  ('bin'+os.sep+'flx_stdin_drv','test'+os.sep+'flx_stdin_lib1.flx','<Makefile >tmp.tmp'),
 ]
 
 # -------------------------------------------------
@@ -2603,30 +2605,29 @@ def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES):
   global buildall
   # STEP 2: Generate lexers
   for lex in LEXS:
-    file = 'src/'+lex
+    file = 'src'+os.sep+lex
     if buildall or filetime(file + '.mll') > filetime(file +'.ml'):
       buildall = 1
       xqt(OCAMLLEX + file + '.mll')
 
   # STEP 3: Generate parsers
   for parse in PARSES:
-    file = 'src/'+parse
+    file = 'src'+os.sep+parse
     if buildall or filetime(file + '.mly') > filetime(file +'.ml'):
       buildall = 1
       xqt(OCAMLYACC+ ' -v '+ file + '.mly')
-      if not WIN32:
-        nxqt("grep conflict " + file + ".output")
+      nxqt(GREP+"conflict " + file + ".output")
 
   # STEP 4: Compile ocaml interfaces
   for interface in INTERFACES:
-    file = 'src/'+interface
+    file = 'src'+os.sep+interface
     if buildall or filetime(file + '.mli') > filetime(file+'.cmi'):
       buildall = 1
       xqt(OCAMLC + ' ' + OCAML_INCLUDES+' -c '+file+ '.mli')
 
   # STEP 5: Compile ocaml implementations
   for implementation in IMPLEMENTATIONS + EXES:
-    file = 'src/'+implementation
+    file = 'src'+os.sep+implementation
     if buildall or filetime(file+ '.ml') > filetime(file+OCAML_OBJECT_EXTENSION):
       buildall = 1
       xqt(OCAMLOPT + ' '+ OCAML_INCLUDES+ ' -c ' + file +'.ml')
@@ -2696,20 +2697,20 @@ try:
      pass # well ocamldoc is full of bugs ..
 
   if "regression" in options:
-    TESTS = TESTS + glob.glob('test/rt*.flx')
+    TESTS = TESTS + glob.glob('test'+os.sep+'rt*.flx')
     if LINK_MODEL == "dynamic":
-      TESTS = TESTS + glob.glob('test/drt*.flx')
+      TESTS = TESTS + glob.glob('test'+os.sep+'drt*.flx')
 
-    BAD_TESTS = glob.glob('test/bt*.flx')
+    BAD_TESTS = glob.glob('test'+os.sep+'bt*.flx')
 
   if "tutorial" in options:
-    TESTS = TESTS + glob.glob('tut/examples/tut*.flx')
-    TESTS = TESTS + glob.glob('tut/examples/mac*.flx')
-    TESTS = TESTS + glob.glob('tut/examples/mig*.flx')
+    TESTS = TESTS + glob.glob('tut'+os.sep+'examples'+os.sep+'tut*.flx')
+    TESTS = TESTS + glob.glob('tut'+os.sep+'examples'+os.sep+'mac*.flx')
+    TESTS = TESTS + glob.glob('tut'+os.sep+'examples'+os.sep+'mig*.flx')
 
   BAGLEY = []
   if "bagley" in options:
-    BAGLEY = glob.glob('bagley/felix/bag*.flx')
+    BAGLEY = glob.glob('bagley'+os.sep+'felix'+os.sep+'bag*.flx')
 
   TESTS.sort()
   BAD_TESTS.sort()
@@ -2758,7 +2759,7 @@ try:
     # finally, mainline *.cmx or cma files to link to executables
     for exe in EXES:
       if buildall or filetime(exe + OCAML_OBJECT_EXTENSION) > filetime(exe):
-        xqt(OCAMLOPT + LDFLAGS + ' ' + OCAML_INCLUDES + ' -o bin/'+exe + x + OBJECT_FILES + ' src/flx_version_hook.ml ' + exe + OCAML_OBJECT_EXTENSION)
+        xqt(OCAMLOPT + LDFLAGS + ' ' + OCAML_INCLUDES + ' -o bin'+os.sep+exe + x + OBJECT_FILES + ' src/flx_version_hook.ml ' + exe + OCAML_OBJECT_EXTENSION)
 
   # COMPILE RTL  
   if "rtl" in options:
@@ -2982,7 +2983,7 @@ try:
           if stop_on_error: raise MakeError
           results.append(("Exec",testscript,'ERROR'))
       
-      if not WIN32: # requires posix
+      if os.name != 'nt': # requires posix
         if "test" in options or "tutorial" in options or "fcount" in options:
           tkind = "std"
           if "inline" in options: tkind="inline"
