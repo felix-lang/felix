@@ -262,7 +262,8 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
   | `BBDCL_var (vs,t)
   | `BBDCL_tmp (vs,t)
     ->
-    (* assert (length vs = length ts); *)
+    assert (length vs = length ts);
+    (*
     if length vs <> length ts
     then syserr sr
     (
@@ -271,6 +272,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
       "ts = [" ^
       catmap ";" (fun t->sbt syms.dfns t) ts ^ "]"
     );
+    *)
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     let t = varmap_subst hvarmap t in
@@ -288,6 +290,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
       catmap ";" (fun t->sbt syms.dfns t) ts ^ "]"
     );
     *)
+    assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     let t = varmap_subst hvarmap t in

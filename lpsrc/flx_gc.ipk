@@ -429,7 +429,8 @@ using namespace generic;
 struct FLX_RTL_EXTERN malloc_free;
 struct FLX_RTL_EXTERN flx_collector_t;
 
-struct FLX_RTL_EXTERN malloc_free : public virtual allocator_t {
+struct FLX_RTL_EXTERN malloc_free : public virtual allocator_t 
+{
   void *allocate(std::size_t);
   void deallocate(void *, std::size_t);
 };

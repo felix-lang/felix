@@ -289,6 +289,7 @@ and typecode_t =
   | `AST_lookup of range_srcref * (expr_t * string * typecode_t list) 
   | `AST_the of range_srcref * qualified_name_t
   | `AST_index of range_srcref * string * int
+  | `AST_suffix of range_srcref * (qualified_name_t * typecode_t)  
   | `TYP_tuple of typecode_t list               (** product type *)
   | `TYP_unitsum of int                         (** sum of units  *)
   | `TYP_sum of typecode_t list                 (** numbered sum type *)
@@ -335,6 +336,8 @@ and tpattern_t =
   |  `TPAT_name of string * tpattern_t list
   |  `TPAT_as of tpattern_t * string
   |  `TPAT_any
+  |  `TPAT_unitsum of int
+  |  `TPAT_type_tuple of tpattern_t list
   ]
 
 and vs_list_t = (id_t * tpattern_t) list
@@ -546,8 +549,8 @@ and statement_t =
   | `AST_private of range_srcref * statement_t
 
   (* definitions *)
-  | `AST_function of range_srcref * id_t * vs_list_t * params_t * typecode_t * property_t list * statement_t list
-  | `AST_curry of range_srcref * id_t * vs_list_t * params_t list * typecode_t * funkind_t * statement_t list
+  | `AST_function of range_srcref * id_t * vs_list_t * params_t * (typecode_t * expr_t option) * property_t list * statement_t list
+  | `AST_curry of range_srcref * id_t * vs_list_t * params_t list * (typecode_t * expr_t option) * funkind_t * statement_t list
   | `AST_object of range_srcref * id_t * vs_list_t * params_t * statement_t list
   | `AST_regdef of range_srcref * string * regexp_t
   | `AST_glr of range_srcref * string * typecode_t * (range_srcref * production_t * expr_t) list
@@ -764,7 +767,6 @@ type 't b0typecode_t' =
   | `BTYP_array of 't * 't 
   | `BTYP_void                       
   | `BTYP_fix of int      
-  | `BTYP_var of int     
   | `BTYP_typeset of 't list (** open union *)
   | `BTYP_intersect of 't list (** open intersection *)
   ]
@@ -772,11 +774,13 @@ type 't b0typecode_t' =
 (** meta typing *)
 type 't b1typecode_t' =
   [
+  | `BTYP_var of int * 't
   | `BTYP_apply of 't * 't 
   | `BTYP_typefun of (int * 't) list * 't * 't
   | `BTYP_type
   | `BTYP_type_tuple of 't list
-  | `BTYP_type_match of 't * ('t * 't) list
+  | `BTYP_type_match of 't * ('t * IntSet.t * (int * 't) list * 't) list
+  (*                   arg    pattern ivars    eqns           result *)
   ]
 
 (** general typing *)
@@ -1187,7 +1191,8 @@ let map_btype f = function
      `BTYP_typefun (map (fun (i,t) -> i, f t) its, f a , f b)
   | `BTYP_type_tuple ts -> `BTYP_type_tuple (map f ts)
   | `BTYP_type_match (t,ps) ->
-    let g (a,b) = f a, f b in
+    (* this may be wrong .. hard to know .. *)
+    let g (a,b,c,d) = f a, b,c,f d in
     `BTYP_type_match (f t, map g ps)
     
   | `BTYP_type -> `BTYP_type 
@@ -1212,7 +1217,7 @@ let iter_btype f = function
   | `BTYP_typefun (its, a, b) ->
      iter (fun (i,t) -> f t) its; f a; f b
   | `BTYP_type_match (t,ps) ->
-    let g (a,b) = f a; f b in
+    let g (a,b,c,d) = f a; f d in
     f t; 
     iter g ps
  
@@ -2059,7 +2064,7 @@ and string_of_expr (e:expr_t) =
 and st prec tc : string = 
   let iprec,txt =
     match tc with
-    | #qualified_name_t as t -> 0,string_of_qualified_name t
+    | #suffixed_name_t as t -> 0,string_of_suffixed_name t
     | `TYP_none -> 0,"<none>"
     | `TYP_ellipsis-> 0,"..."
     | `TYP_type_match (e,ps) -> 0,
@@ -2203,7 +2208,7 @@ and sb dfns depth fixlist counter prec tc =
         sbt 99 t ^
         " with" ^
         catmap ""
-        (fun (p,t) ->
+        (fun (p,_,_,t) ->
           " | " ^ sbt 99 p ^ " => " ^ sbt 99 t 
         )
         ps 
@@ -2222,7 +2227,7 @@ and sb dfns depth fixlist counter prec tc =
            lab 
        )
 
-    | `BTYP_var i -> 0,"<T" ^ si i ^ ">"
+    | `BTYP_var (i,mt) -> 0,"<T" ^ si i ^ ":"^sbt 0 mt^">"
     | `BTYP_inst (i,ts) -> 
       0,qualified_name_of_index dfns i ^ 
       (if List.length ts = 0 then "" else
@@ -2238,7 +2243,7 @@ and sb dfns depth fixlist counter prec tc =
 
     | `BTYP_unitsum k -> 
       begin match k with
-      | 0 -> 0,"void"
+      | 0 -> 0,"/*unitsum*/void"
       | 2 -> 0,"bool"
       | _ -> 0,si k
       end
@@ -2265,7 +2270,7 @@ and sb dfns depth fixlist counter prec tc =
 
     | `BTYP_intersect ls -> 
       begin match ls with 
-      | [] -> 9,"void" 
+      | [] -> 9,"/*intersect*/void" 
       | _ -> 
           4,cat " and " (map (sbt 5) ls)
       end
@@ -2388,9 +2393,10 @@ and string_of_tpattern p =
       | ps -> "[" ^ catmap "," sp ps ^ "]"
     )
   
-  |  `TPAT_as (p,s) -> sp p ^ " as " ^ s
-  |  `TPAT_any -> "_"
-
+  | `TPAT_as (p,s) -> sp p ^ " as " ^ s
+  | `TPAT_any -> "_"
+  | `TPAT_unitsum j -> si j
+  | `TPAT_type_tuple ps -> catmap ", " sp ps
 
 and string_of_pattern p = 
   let se e = string_of_expr e in
@@ -2734,14 +2740,19 @@ and string_of_statement level s =
   | `AST_noreturn_code (_,s) -> 
     "noreturn_code \n" ^ string_of_long_code_spec s ^ ";\n"
 
-  | `AST_function (_,name, vs, ps, res, props, ss) -> 
+  | `AST_function (_,name, vs, ps, (res,post), props, ss) -> 
     spaces level ^ 
     string_of_properties props ^
     "fun " ^ name ^ print_vs vs ^ 
-    "("^string_of_parameters ps^"): "^string_of_typecode res^"\n" ^
+    "("^string_of_parameters ps^"): "^string_of_typecode res^
+    (match post with
+    | None -> ""
+    | Some x -> " when " ^ string_of_expr x
+    )^
+    "\n" ^
     string_of_compound level ss
 
-  | `AST_curry (_,name, vs, pss, res, kind, ss) -> 
+  | `AST_curry (_,name, vs, pss, (res,traint) , kind, ss) -> 
     spaces level ^ 
     (match kind with 
     | `Function -> "fun " 
@@ -2757,7 +2768,12 @@ and string_of_statement level s =
     )
     pss
     ^ 
-    ": "^string_of_typecode res^"\n" ^
+    ": "^string_of_typecode res^
+    (match traint with
+    | None -> ""
+    | Some x -> " when " ^ string_of_expr x
+    )^
+    "\n" ^
     string_of_compound level ss
 
   | `AST_object (_,name, vs, ps, ss) -> 
@@ -4169,7 +4185,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   match e with 
   | `AST_name (_,"TYPE",[]) -> `TYP_type
   | `AST_ellipsis _ -> `TYP_ellipsis
-  | #qualified_name_t as x -> (x:>typecode_t)
+  | #suffixed_name_t as x -> (x:>typecode_t)
   | `AST_tuple (sr,ls) ->
     `TYP_type_tuple (map te ls)
 
@@ -4290,9 +4306,11 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | `AST_type_match (sr,(e,ps)) ->
     `TYP_type_match (e,ps)
 
+  | `AST_noexpand (sr,e) -> te e
+   
   | #expr_t -> 
     let sr = src_of_expr e in
-    clierr sr "Type expression expected"
+    clierr sr ("Type expression expected, got " ^ string_of_expr e)
     
 @head(1,'Charset')
 @select(tangler('src/flx_charset.mli'))

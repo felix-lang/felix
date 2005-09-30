@@ -40,7 +40,7 @@ open Flx_child
 open Flx_call
 
 let tailit syms (uses,child_map,bbdfns) this sr ps vs exes : bexe_t list = 
-  let ts' = map (fun (_,i) -> `BTYP_var i) vs in
+  let ts' = map (fun (_,i) -> `BTYP_var (i,`BTYP_type)) vs in
   let pset = fold_left (fun s (_,(i,_))-> IntSet.add i s) IntSet.empty ps in
   let parameters = ref [] in
   let descend = descendants child_map this in

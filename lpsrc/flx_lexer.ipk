@@ -1069,12 +1069,12 @@ let len = String.length
 
 (* string parsers *)
 let decode_qstring s = let n = len s in unescape (substr s 0 (n-1)) 
-let decode_dqstring s = let n = len s in unescape (substr s 0 (n-1)) 
+let decode_dstring s = let n = len s in unescape (substr s 0 (n-1)) 
 let decode_qqqstring s = let n = len s in unescape (substr s 0 (n-3)) 
 let decode_dddstring s = let n = len s in unescape (substr s 0 (n-3)) 
 
 let decode_raw_qstring s = let n = len s in substr s 0 (n-1) 
-let decode_raw_dqstring s = let n = len s in substr s 0 (n-1) 
+let decode_raw_dstring s = let n = len s in substr s 0 (n-1) 
 let decode_raw_qqqstring s = let n = len s in substr s 0 (n-3) 
 let decode_raw_dddstring s = let n = len s in substr s 0 (n-3)
 
@@ -1190,7 +1190,7 @@ let raw_qqqnormal = ordinary | dquote | slosh | space | newline
 let raw_qqqspecial = raw_qqqnormal | quote raw_qqqnormal | quote quote raw_qqqnormal
 
 let qstring = (ordinary | dquote | escape | white) * quote
-let dqstring = (ordinary | quote | escape | white) * dquote
+let dstring = (ordinary | quote | escape | white) * dquote
 let qqqstring = qqqspecial * qqq
 let dddstring = dddspecial * ddd
 
@@ -1199,7 +1199,7 @@ let see = 'c' | 'C'
 let rqc = raw see | see raw
 
 let raw_qstring = (ordinary | dquote | escape | white) * quote
-let raw_dqstring =  (ordinary | quote | escape | white) * dquote
+let raw_dstring =  (ordinary | quote | escape | white) * dquote
 
 let raw_qqqstring = raw_qqqspecial * qqq
 let raw_dddstring = raw_dddspecial * ddd
@@ -1225,12 +1225,12 @@ rule parse_qstring state = parse
     )] 
   }
 
-and parse_dqstring state = parse
-| dqstring {
+and parse_dstring state = parse
+| dstring {
       state#inbody;
       [STRING (
         state#get_srcref lexbuf, 
-        state#decode decode_dqstring (lexeme lexbuf)
+        state#decode decode_dstring (lexeme lexbuf)
       )] 
   }
 | _ { 
@@ -1288,12 +1288,12 @@ and parse_cqstring state = parse
     )] 
   }
 
-and parse_cdqstring state = parse
-| dqstring {
+and parse_cdstring state = parse
+| dstring {
       state#inbody;
       [CSTRING (
         state#get_srcref lexbuf, 
-        state#decode decode_dqstring (lexeme lexbuf)
+        state#decode decode_dstring (lexeme lexbuf)
       )] 
   }
 | _ { 
@@ -1351,12 +1351,12 @@ and parse_wqstring state = parse
     )] 
   }
 
-and parse_wdqstring state = parse
-| dqstring {
+and parse_wdstring state = parse
+| dstring {
       state#inbody;
       [WSTRING (
         state#get_srcref lexbuf, 
-        state#decode decode_dqstring (lexeme lexbuf)
+        state#decode decode_dstring (lexeme lexbuf)
       )] 
   }
 | _ { 
@@ -1414,12 +1414,12 @@ and parse_uqstring state = parse
     )] 
   }
 
-and parse_udqstring state = parse
-| dqstring {
+and parse_udstring state = parse
+| dstring {
       state#inbody;
       [USTRING (
         state#get_srcref lexbuf, 
-        state#decode decode_dqstring (lexeme lexbuf)
+        state#decode decode_dstring (lexeme lexbuf)
       )] 
   }
 | _ { 
@@ -1477,12 +1477,12 @@ and parse_raw_qstring state = parse
     "raw ' string")] 
   }
 
-and parse_raw_dqstring state = parse
-| raw_dqstring { 
+and parse_raw_dstring state = parse
+| raw_dstring { 
       state#inbody;
       [STRING (
         state#get_srcref lexbuf,
-        state#decode decode_raw_dqstring (lexeme lexbuf)
+        state#decode decode_raw_dstring (lexeme lexbuf)
       )]
   }
 | _ { 
@@ -1536,12 +1536,12 @@ and parse_raw_cqstring state = parse
     "raw ' cstring")] 
   }
 
-and parse_raw_cdqstring state = parse
-| raw_dqstring { 
+and parse_raw_cdstring state = parse
+| raw_dstring { 
       state#inbody;
       [STRING (
         state#get_srcref lexbuf,
-        state#decode decode_raw_dqstring (lexeme lexbuf)
+        state#decode decode_raw_dstring (lexeme lexbuf)
       )]
   }
 | _ { 
@@ -1656,16 +1656,6 @@ and pre_flx_lex state = parse
       [COMMENT (state#get_comment)]
   }
 
-| identifier { 
-      state#inbody;
-      let s = lexeme lexbuf in
-      let s' = Flx_id.utf8_to_ucn s in
-      [Flx_keywords.map_flx_keywords 
-        (state#get_srcref lexbuf) 
-        s'
-      ]
-  } 
-
 | int_lit { 
       state#inbody;
       let sr = state#get_srcref lexbuf in
@@ -1756,39 +1746,52 @@ and pre_flx_lex state = parse
 (* Python strings *)
 | quote  { state#inbody; parse_qstring state lexbuf }
 | qqq    { state#inbody; parse_qqqstring state lexbuf }
-| dquote { state#inbody; parse_dqstring state lexbuf }
+| dquote { state#inbody; parse_dstring state lexbuf }
 | ddd    { state#inbody; parse_dddstring state lexbuf }
 
 (* C strings: type char*  *)
 | ('c'|'C') quote  { state#inbody; parse_cqstring state lexbuf }
 | ('c'|'C') qqq    { state#inbody; parse_cqqqstring state lexbuf }
-| ('c'|'C') dquote { state#inbody; parse_cdqstring state lexbuf }
+| ('c'|'C') dquote { state#inbody; parse_cdstring state lexbuf }
 | ('c'|'C') ddd    { state#inbody; parse_cdddstring state lexbuf }
 
 (* wide strings *)
 | ('w' | 'W') quote  { state#inbody; parse_wqstring state lexbuf }
 | ('w' | 'W') qqq    { state#inbody; parse_wqqqstring state lexbuf }
-| ('w' | 'W') dquote { state#inbody; parse_wdqstring state lexbuf }
+| ('w' | 'W') dquote { state#inbody; parse_wdstring state lexbuf }
 | ('w' | 'W') ddd    { state#inbody; parse_wdddstring state lexbuf }
 
 (* UTF32 strings *)
 | ('u' | 'U') quote  { state#inbody; parse_uqstring state lexbuf }
 | ('u' | 'U') qqq    { state#inbody; parse_uqqqstring state lexbuf }
-| ('u' | 'U') dquote { state#inbody; parse_udqstring state lexbuf }
+| ('u' | 'U') dquote { state#inbody; parse_udstring state lexbuf }
 | ('u' | 'U') ddd    { state#inbody; parse_udddstring state lexbuf }
 
 (* Python raw strings *)
 | ('r'|'R') quote  { state#inbody; parse_raw_qstring state lexbuf }
 | ('r'|'R') qqq    { state#inbody; parse_raw_qqqstring state lexbuf }
-| ('r'|'R') dquote { state#inbody; parse_raw_dqstring state lexbuf }
+| ('r'|'R') dquote { state#inbody; parse_raw_dstring state lexbuf }
 | ('r'|'R') ddd    { state#inbody; parse_raw_dddstring state lexbuf }
 
 (* raw C strings: type char*  *)
 | rqc quote  { state#inbody; parse_cqstring state lexbuf }
 | rqc qqq    { state#inbody; parse_cqqqstring state lexbuf }
-| rqc dquote { state#inbody; parse_cdqstring state lexbuf }
+| rqc dquote { state#inbody; parse_cdstring state lexbuf }
 | rqc ddd    { state#inbody; parse_cdddstring state lexbuf }
 
+(* this MUST be after strings, so raw strings take precedence
+  over identifiers, eg r'x' is a string, not an identifier,
+  but x'x' is an identifier .. yucky ..
+*)
+| identifier { 
+      state#inbody;
+      let s = lexeme lexbuf in
+      let s' = Flx_id.utf8_to_ucn s in
+      [Flx_keywords.map_flx_keywords 
+        (state#get_srcref lexbuf) 
+        s'
+      ]
+  } 
 
 (* whitespace *)
 | white + { 

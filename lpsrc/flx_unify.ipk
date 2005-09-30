@@ -9,6 +9,17 @@ open Flx_types
 open Flx_mtypes1
 open Flx_mtypes2
 
+(** obtain the mgu of a set of type equations with specified
+  dependent variable set, throws Not_found if cannot unify
+*)
+val unification: 
+  bool -> (* true if lvalue degrade is allowed *)
+  symbol_table_t -> (* just for diagnostics *)
+  (btypecode_t * btypecode_t) list ->
+  IntSet.t -> (* dependent variable set *)
+  (int * btypecode_t) list
+
+
 (** obtain the mgu of a set of type equations *)
 val maybe_unification: 
   symbol_table_t -> (* just for diagnostics *)
@@ -217,7 +228,7 @@ let rec check_recursion t = match t with
 
 let term_subst t1 i t2 =
   let rec s t = match map_btype s t with
-  | `BTYP_var j when i = j -> t2
+  | `BTYP_var (j,_) when i = j -> t2
   | t -> t
   in s t1
 
@@ -226,7 +237,7 @@ let list_subst x t1 =
   
 let varmap0_subst varmap t =
   let rec s t = match map_btype s t with
-  | `BTYP_var i as x ->
+  | `BTYP_var (i,_) as x ->
     if Hashtbl.mem varmap i
     then Hashtbl.find varmap i
     else x
@@ -235,7 +246,7 @@ let varmap0_subst varmap t =
 
 let varmap_subst varmap t =
   let rec s t = match map_btype s t with
-  | `BTYP_var i as x ->
+  | `BTYP_var (i,_) as x ->
     if Hashtbl.mem varmap i
     then Hashtbl.find varmap i
     else x
@@ -348,7 +359,7 @@ let tsubst
 
 let var_i_occurs i t =
   let rec aux t:unit = match t with
-    | `BTYP_var j when i = j -> raise Not_found
+    | `BTYP_var (j,_) when i = j -> raise Not_found
     | _ -> iter_btype aux t
  in 
    try 
@@ -360,7 +371,7 @@ let rec vars_in t =
   let vs = ref IntSet.empty in
   let add_var i = vs := IntSet.add i !vs in
   let rec aux t = match t with
-    | `BTYP_var i -> add_var i
+    | `BTYP_var (i,_) -> add_var i
     | _ -> iter_btype aux t
   in aux t; !vs
 
@@ -368,7 +379,7 @@ let fix i t =
   let rec aux n t = 
     let aux t = aux (n - 1) t in 
     match t with
-    | `BTYP_var k -> if k = i then `BTYP_fix n else t
+    | `BTYP_var (k,_) -> if k = i then `BTYP_fix n else t
     | `BTYP_inst (k,ts) -> `BTYP_inst (k, map aux ts)
     | `BTYP_tuple ts -> `BTYP_tuple (map aux ts)
     | `BTYP_sum ts -> `BTYP_sum (map aux ts)
@@ -430,6 +441,15 @@ let lstrip dfns t =
   handle any subtyping
 *)
 
+(* NOTE: at the moment,
+  unification doesn't care about type variable
+  meta types: we should probably require them
+  to be the same for an assignment or fail
+  the unification .. however that requires
+  comparing the metatypes for equality, and to that
+  that right requires unification .. :)
+*)
+
 let rec unification allow_lval dfns 
   (eqns: (btypecode_t * btypecode_t) list) 
   (dvars: IntSet.t) 
@@ -446,12 +466,19 @@ let rec unification allow_lval dfns
       eqns := t;
       let s = ref None in
       begin match h with
-      | `BTYP_var i, `BTYP_var j ->
+      | (`BTYP_var (i,mi) as ti), (`BTYP_var (j,mj) as tj)->
+        (*
+        print_endline ("Equated variables " ^ si i ^ " <-> " ^ si j);
+        *)
+
+        (* meta type have to agree *)
+        if mi <> mj then raise Not_found; 
+
         if i <> j then 
           if IntSet.mem i dvars then
-            s := Some (i,`BTYP_var j)
+            s := Some (i,tj)
           else if IntSet.mem j dvars then
-            s := Some (j,`BTYP_var i)
+            s := Some (j,ti)
           else raise Not_found
 
       | `BTYP_lvalue t1, `BTYP_lvalue t2 ->
@@ -473,8 +500,15 @@ let rec unification allow_lval dfns
         eqns := (t1,t2) :: !eqns
       *)
 
-      | `BTYP_var i, t
-      | t,`BTYP_var i ->
+      | `BTYP_var (i,_), t
+      | t,`BTYP_var (i,_) ->
+        (*
+        print_endline ("variable assignment " ^ si i ^ " -> " ^ sbt dfns t);
+        *)
+
+        (* WE SHOULD CHECK THAT t has the right meta type .. but 
+        the metatype routine isn't defined yet .. 
+        *)
         if not (IntSet.mem i dvars) then raise Not_found;
         if var_i_occurs i t
         then begin
@@ -487,6 +521,9 @@ let rec unification allow_lval dfns
           s := Some (i, fix i t)
         end else begin
           let t = lstrip dfns t in
+          (*
+          print_endline "Adding substitution";
+          *)
           s := Some (i,t)
         end
 
@@ -507,7 +544,21 @@ let rec unification allow_lval dfns
 
          We will start by just solving a subset of the
          cases.
+
+         NOTE:probably get rid of this.. it seems wrong.
+         'int' is in the set {'int','long'} but this is of
+         little use to know: the 'unifier' cannot say which
+         choice was made: it's an undiscriminated union,
+         not a sum, and there is no 'type variable' to bind
+         in the MGU .. so I think this is crap.
+
+         It also uniquely introduces the problem of creating
+         a type variable from the MGU .. which doesn't contain
+         any meta typing information... probably the MGU should
+         to fix this .. but it is always substituting for a type
+         variable with know metatype so why bother?
       *)
+      (* SUPPORT FOR TYPESETS REMOVED .. hehe, before even released ..
       | `BTYP_typeset ts,t
       | t,`BTYP_typeset ts -> 
         let u (t':btypecode_t): (int * btypecode_t) list option =
@@ -525,7 +576,8 @@ let rec unification allow_lval dfns
         | _ ->
           failwith "Unification algorithm currently requires terms of typeset to be non-intersecting"
         end
-      
+      *)
+
       | `BTYP_pointer t1, `BTYP_pointer t2 ->
         eqns := (t1,t2) :: !eqns
 
@@ -536,7 +588,7 @@ let rec unification allow_lval dfns
       | `BTYP_sum ls, `BTYP_unitsum k when length ls = k ->
         iter 
         (function 
-          | `BTYP_var i as v ->
+          | `BTYP_var _ as v ->
              eqns := (v,unit_t) :: !eqns
           | _ -> raise Not_found
         )
@@ -546,6 +598,7 @@ let rec unification allow_lval dfns
       | `BTYP_function (t11, t12), `BTYP_function (t21, t22) ->
         eqns := (t11,t21) :: (t12,t22) :: !eqns
 
+      | `BTYP_type,`BTYP_type-> ()
       | `BTYP_void,`BTYP_void -> ()
 
       | `BTYP_inst (i1,ts1),`BTYP_inst (i2,ts2) ->
@@ -570,6 +623,14 @@ let rec unification allow_lval dfns
         when n = length ls ->
         iter (fun t -> eqns := (t,ta) :: !eqns) ls
 
+      (* type tuple is handled same as a tuple type .. not
+        really sure this is right. Certainly, the corresponding
+        terms in both must unify, however possibly we should
+        return distinct MGU for each case for the type tuple,
+        possibly with distinct bindings for the same variable..
+      *)
+      
+      | (`BTYP_type_tuple ls1, `BTYP_type_tuple ls2) 
       | (`BTYP_tuple ls1, `BTYP_tuple ls2) 
       | (`BTYP_sum ls1, `BTYP_sum ls2)  
         when length ls1 = length ls2 ->
@@ -583,12 +644,19 @@ let rec unification allow_lval dfns
             s := None
         end
 
-      | _ -> raise Not_found
+      | x,y -> 
+        (*
+        print_endline ("Terms do not match: " ^ sbt dfns x ^ " <-> " ^ sbt dfns y); 
+        *)
+        raise Not_found
       end 
       ;
       begin match !s with
       | None -> ()
       | Some (i,t) ->
+        (*
+        print_endline ("Substituting " ^ si i ^ " -> " ^ sbt dfns t);
+        *)
         eqns := 
           map 
           (fun (a,b) -> 
@@ -786,6 +854,7 @@ let rec type_eq' dfns allow_lval ltrail ldepth rtrail rdepth trail t1 t2 =
 
   | `BTYP_array (s1,d1),`BTYP_array (s2,d2) 
   | `BTYP_function (s1,d1),`BTYP_function (s2,d2) 
+  | `BTYP_apply(s1,d1),`BTYP_apply(s2,d2)
     -> te s1 s2 && te d1 d2
 
   (* order is important for lvalues .. *)
@@ -862,13 +931,14 @@ let unfold dfns t =
   | `BTYP_fix i when (-i) > depth -> 
     failwith ("[unfold] Fix point outside term, depth="^string_of_int i)
 
+  | `BTYP_apply (a,b) -> `BTYP_apply(uf a, uf b)
   | `BTYP_inst (i,ts) -> `BTYP_inst (i,map uf ts)
   | _ -> t'
   in aux 0 t
 
 exception Found of btypecode_t
 
-(* this undoes an fold: it won't minimise an arbitrary type *)
+(* this undoes an unfold: it won't minimise an arbitrary type *)
 let fold dfns t = 
   let rec aux trail depth t' = 
     let ax t = aux ((depth,t')::trail) (depth+1) t in
@@ -898,12 +968,13 @@ let fold dfns t =
       with Not_found -> ()
       end 
 
-    | `BTYP_apply _
+    | `BTYP_apply (a,b) -> ax a; ax b
+
     | `BTYP_typefun _
     | `BTYP_type 
     | `BTYP_type_tuple _
     | `BTYP_type_match _ -> 
-      failwith "[fold] unexpected metatype"
+      failwith ("[fold] unexpected metatype " ^ sbt dfns t')
   in
     try aux [] 0 t; t
     with Found t -> t
@@ -941,9 +1012,9 @@ let normalise_type t =
   let counter = ref 0 in
   let varmap = ref [] in
   let rec aux t = match map_btype aux t with
-  | `BTYP_var i ->
+  | `BTYP_var (i,mt) ->
     `BTYP_var 
-    (
+    ((
       match list_index !varmap i with
       | Some j -> j
       | None ->
@@ -951,7 +1022,7 @@ let normalise_type t =
         incr counter;
         varmap := !varmap @ [i];
         n
-     )
+     ),mt)
    | x -> x
    in 
      let x = aux t in

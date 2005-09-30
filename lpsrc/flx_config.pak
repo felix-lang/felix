@@ -2273,6 +2273,7 @@ flx_keywords = [
     ("endif", "ENDIF"),
     ("endmatch", "ENDMATCH"),
     ("enum", "ENUM"),
+    ("expect", "EXPECT"),
     ("export", "EXPORT"),
     ("for", "FOR"),
     ("forget", "FORGET"),

@@ -852,8 +852,10 @@ opt_fun_args:
   | { [] }
 
 opt_type_expr:
-  | COLON type_expr { typecode_of_expr $2 }
-  | { `TYP_none }
+  | COLON type_expr EXPECT expr { typecode_of_expr $2, Some $4 }
+  | COLON type_expr { typecode_of_expr $2, None }
+  | EXPECT expr { `TYP_none, Some $2 }
+  | { `TYP_none, None }
 
 opt_cstring:
   | EQUAL code_spec { Some $2 }
@@ -871,6 +873,14 @@ opt_prec:
   | IS NAME { snd $2 }
   | { "" }
 
+opt_traint:
+  | EXPECT expr { Some $2 }
+  | { None }
+
+opt_traint_eq:
+  | EXPECT expr EQUAL { Some $2 }
+  | { None }
+  
 function_definition:
   | adjectives FUNCTION NAME tvarlist fun_args opt_type_expr EQRIGHTARROW expr SEMI
     { 
@@ -949,12 +959,13 @@ function_definition:
       let name = snd $3 in
       let vs = $4 in
       let t = typecode_of_expr $6 in
+      let traint = None in
       match t with
       | `TYP_function (argt, return_type) ->
         let args = [["_a",argt],None] in 
         let match_expr = `AST_match (sr,(`AST_name (sr,"_a",[]),$8)) in
         let body = [`AST_fun_return (sr,match_expr)] in
-        mkcurry sr name vs args return_type kind body
+        mkcurry sr name vs args (return_type,traint) kind body
       | _ -> 
         failwith 
         (
@@ -965,27 +976,29 @@ function_definition:
     }
 
 procedure_definition:
-  | PROCEDURE NAME tvarlist opt_fun_args compound 
+  | PROCEDURE NAME tvarlist opt_fun_args opt_traint_eq compound 
     { 
-      let sr = rsrange (slift $1) (fst $5) in
+      let sr = rsrange (slift $1) (fst $6) in
       let name = snd $2 
       and vs = $3
       and return_type = `AST_void sr
-      and body = snd $5
+      and traint = $5 
+      and body = snd $6
       and args = List.map snd $4 (* elide srcref *)
-      in mkcurry sr name vs args return_type `Function body
+      in mkcurry sr name vs args (return_type,traint) `Function body
     }
 
-  | adjective PROCEDURE NAME tvarlist fun_args compound 
+  | adjective PROCEDURE NAME tvarlist fun_args opt_traint_eq compound 
     { 
-      let sr = rsrange (slift (fst $1)) (fst $6) in
+      let sr = rsrange (slift (fst $1)) (fst $7) in
       let name = snd $3 
       and vs = $4
       and return_type = `AST_void sr
-      and body = snd $6
+      and traint = $6
+      and body = snd $7
       and args = List.map snd $5 (* elide srcref *)
       and adjective = snd $1 
-      in mkcurry sr name vs args return_type adjective body
+      in mkcurry sr name vs args (return_type,traint) adjective body
     }
 
   | PROCEDURE NAME tvarlist COLON type_expr opt_cstring requires_clause SEMI 
@@ -1025,7 +1038,7 @@ object_definition:
       and body = snd $5
       and args = List.map snd $4 (* elide srcref *)
       and vs = $3
-      in mkcurry sr name vs args return_type `Object body
+      in mkcurry sr name vs args (return_type,None) `Object body
     }
 
 
@@ -1662,6 +1675,14 @@ basic_name:
 @select(h)
 @commalistof('tpattern')
 
+tuple_tpattern:
+  | tpattern_comma_list { 
+      match $1 with
+      | _ :: _ :: _ -> `TPAT_type_tuple $1 
+      | x :: [] -> x
+      | [] -> assert false
+    }
+  
 tpattern:
   | tpattern AS NAME { `TPAT_as ($1,snd $3) }
   | tpat0 { $1 }
@@ -1696,10 +1717,11 @@ mulpat:
 
 tpat3:
   | NAME tpatlist { `TPAT_name (snd $1, $2) }
-  | LPAR tpat0 RPAR { $2 }
+  | LPAR tuple_tpattern RPAR { $2 }
   | QUEST NAME { `TPAT_var (snd $2) }
   | QUEST { `TPAT_any }
   | UNDERSCORE { `TPAT_any }
+  | INTEGER { let sr,t,v = $1 in `TPAT_unitsum (Big_int.int_of_big_int v) }
 
 tpatlist:
    | LSQB tpattern_comma_list RSQB { $2 }
@@ -1718,7 +1740,7 @@ type_matchings:
   | type_matching { [$1] }
 
 type_matching:
-  | VBAR tpattern EQRIGHTARROW type_expr { $2, typecode_of_expr $4 }
+  | VBAR tuple_tpattern EQRIGHTARROW type_expr { $2, typecode_of_expr $4 }
 
 @head(2,'Grammar Expressions')
 @select(h)
@@ -1807,7 +1829,7 @@ lambda:
     {
       let sr = rsrange (slift $2) (fst $6) in
       let args = List.map snd $3 in
-      let ret = $4 in
+      let ret,traint = $4 in
       let body = snd $6 in
       `AST_lambda ( sr,(args, ret, body))
     }
@@ -1817,7 +1839,7 @@ lambda:
       let sr = rsrange (slift $2) (src_of_expr $6) in
       let args = List.map snd $3 in
       let body = [`AST_fun_return (sr,$6)] in
-      let ret = $4 in
+      let ret,traint = $4 in
       `AST_lambda (sr, (args, ret, body))
     }
 

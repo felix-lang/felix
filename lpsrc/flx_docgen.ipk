@@ -949,8 +949,10 @@ fun str : not_condition_t -> string =
 fun str (t:comparison_t)=> 'comparison .. endcomparison';
 
 fun str: opt_type_expr_t -> string =
-  | opt_type_expr_1 ?t => " : " + str t
-  | opt_type_expr_2 => ""
+  | opt_type_expr_1 (?t,?e) => " : " + str t + " expect " + str e
+  | opt_type_expr_2 ?t => " : " + str t
+  | opt_type_expr_3 ?e => " exprect " + str e
+  | opt_type_expr_4 => ""
 ;
 
 fun str (t: type_expr_t):string =>

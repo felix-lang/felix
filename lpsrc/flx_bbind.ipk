@@ -56,7 +56,7 @@ let bind_regex syms env sr be ret_type cls : regular_args_t =
   (*
   print_endline "Binding regmatch";
   *) 
-  let bd e = bind_regdef syms env [] [] e in
+  let bd e = bind_regdef syms env [] e in
 
   (* create a unified regexp using REGEXP_code for expressions *)
   let f (e,c) = REGEXP_seq (e, REGEXP_code c) in
@@ -289,7 +289,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;(*vs=ivs;*)privmap=name
       (*
       print_endline ("Binding nonterm " ^ name ^"<"^ si i ^">");
       *)
-      let brt = if t = `TYP_none then `BTYP_var i else bt t in
+      let brt = if t = `TYP_none then `BTYP_var (i,`BTYP_type) else bt t in
       (*
       print_endline ("Specified type " ^ sbt syms.dfns brt);
       *)
@@ -494,10 +494,16 @@ let bbind syms =
   let i = ref 0 in
   while !i < !(syms.counter) do
     begin 
-      try 
-        let entry = Hashtbl.find syms.dfns !i in
-        bbind_sym syms bbdfns !i entry
-      with Not_found -> ()
+      let entry = 
+        try Some (Hashtbl.find syms.dfns !i)
+        with Not_found -> None
+      in match entry with
+      | Some entry ->
+        begin try
+          bbind_sym syms bbdfns !i entry
+        with Not_found -> failwith ("Binding error index " ^ si !i)
+        end
+      | None -> ()
     end
     ;
     incr i

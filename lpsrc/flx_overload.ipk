@@ -71,9 +71,20 @@ let sig_of_symdef symdef sr name = match symdef with
 
   | `SYMDEF_const_ctor _ -> `AST_void sr
   | `SYMDEF_nonconst_ctor (_,_,_,t) -> t
-
+  | `SYMDEF_type_alias t ->
+    begin match t with
+    | `TYP_typefun (ps,r,b) -> typeof_list (map snd ps)
+    | symdef -> 
+      clierr sr (
+        "[sig_of_symdef] Expected "^
+        name
+        ^" to be a type function, got " ^
+        string_of_typecode t
+      )
+    end
+  
   | symdef -> 
-    failwith (
+    clierr sr (
       "[sig_of_symdef] Expected "^
       name
       ^" to be function or procedure, got " ^
@@ -142,10 +153,11 @@ let overload
     let n = length ts in
     if n>m then clierr sr "Too many type subscripts";
 
+    (* Currently, vs lists can only specify TYPE variables *)
     let base = !(syms.counter) in
     syms.counter := base + k + m;
-    let lhs = map (fun i -> `BTYP_var (i+base)) (nlist (k + m)) in
-    let rhs = (map (fun (_,i,_) -> `BTYP_var i) pvs) @ ts in
+    let lhs = map (fun i -> `BTYP_var ((i+base),`BTYP_type)) (nlist (k + m)) in
+    let rhs = (map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type)) pvs) @ ts in
     let eqns = combine (list_prefix lhs (k+n)) rhs in
 
     (* Step 2: convert t to use variables 0 to m-1 
@@ -165,6 +177,7 @@ let overload
     (match mgu with
     | Some mgu -> 
       (*
+      print_endline "Specialisation detected";
       print_endline (" .. mgu = " ^ string_of_varlist syms.dfns mgu);
       *)
       (* each universally quantified variable must be fixed

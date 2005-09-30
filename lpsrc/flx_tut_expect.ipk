@@ -173,6 +173,12 @@ false
 @head(2,"tut/examples/tut107.expect")
 @select(tangler("tut/examples/tut107.expect","data"))
 3
+@head(2,"tut/examples/tut107a.expect")
+@select(tangler("tut/examples/tut107a.expect","data"))
+0
+@head(2,"tut/examples/tut107b.expect")
+@select(tangler("tut/examples/tut107b.expect","data"))
+0
 @head(2,"tut/examples/tut108.expect")
 @select(tangler("tut/examples/tut108.expect","data"))
 3355
@@ -188,6 +194,9 @@ false
 @head(2,"tut/examples/tut112.expect")
 @select(tangler("tut/examples/tut112.expect","data"))
 1
+@head(2,"tut/examples/tut112a.expect")
+@select(tangler("tut/examples/tut112a.expect","data"))
+5
 @head(2,"tut/examples/tut113.expect")
 @select(tangler("tut/examples/tut113.expect","data"))
 1

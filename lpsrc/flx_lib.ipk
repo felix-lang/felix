@@ -338,10 +338,13 @@ header c99_complex_h = '#include <complex.h>';
 header cstdlib = "#include <cstdlib>";
 
 @chars = ["char", "wchar", "uchar"]
-@sints = [
-  "tiny", "short", "int", "long", "vlong",
+@fast_sints = [
+  "tiny", "short", "int", "long", "vlong"
+  ]
+@exact_sints = [
   "int8","int16","int32","int64"
   ]
+@sints = fast_sints + exact_sints
 @uints = [
   "utiny", "ushort", "uint", "ulong","uvlong",
   "uint8","uint16","uint32","uint64"
@@ -349,6 +352,13 @@ header cstdlib = "#include <cstdlib>";
 @floats = ["float", "double", "ldouble"]
 @complex = ["complex","dcomplex","lcomplex"]
 @imaginary= ["imaginary", "dimaginary", "limaginary"]
+@absmap = { 
+  "tiny":"abs",
+  "short":"abs",
+  "int":"abs",
+  "long":"labs",
+  "vlong":"llabs"
+  }
 
 @all = [
   "byte", "size","address","caddress","vaddress","cvaddress",
@@ -768,6 +778,8 @@ type string = "std::string";
   tangle("module " + string.capitalize(t))
   tangle("{")
   tangle('  gen_integral('+t+');')
+  if t in fast_sints:
+    tangle('  fun abs: '+t+' -> '+t+' = "'+absmap[t]+'($1)";')
   if t in uints: gen_uint(t)
   if t in uints: gen_uint_assign(t)
   if t == "tiny":
@@ -880,6 +892,9 @@ module String
 
   publish "Unsafe extract buffer pointer"
   fun cstr: string -> C_hack::ptr[char] = "$1.data()";
+
+  fun repr_expr[t]: t -> string = '\\"$a:?1\\"';
+  const repr_type[t]:string = '\\"?1\\"';
 }
 
 module Cstdlib

@@ -120,7 +120,7 @@ T &reinterpret(U const &x) {
   tangle("#define HAVE_MSVC")
 
 //
-#if !defined(FLX_STATIC_LINK) && defined(FLX_HAVE_CGOTO) && defined(FLX_HAVE_ASM_LABELS)
+#if defined(FLX_HAVE_CGOTO) && defined(FLX_HAVE_ASM_LABELS)
 #define FLX_CGOTO
 #endif
 
@@ -240,6 +240,7 @@ struct FLX_RTL_EXTERN flx_exec_failure_t;
 struct FLX_RTL_EXTERN flx_range_srcref_t;
 struct FLX_RTL_EXTERN flx_match_failure_t;
 struct FLX_RTL_EXTERN flx_assert_failure_t;
+struct FLX_RTL_EXTERN flx_switch_failure_t;
 
 
 // CONTINUATION
@@ -337,6 +338,11 @@ struct FLX_RTL_EXTERN flx_assert_failure_t {
   virtual ~flx_assert_failure_t();
 };
 
+// SWITCH failure -- this is a system failure!
+struct FLX_RTL_EXTERN flx_switch_failure_t {
+  virtual ~flx_switch_failure_t();
+};
+
 
 }} // namespaces
 
@@ -368,7 +374,7 @@ struct FLX_RTL_EXTERN flx_assert_failure_t {
   #define FLX_DECLARE_LABEL(n,i,x)
   #define FLX_LABEL(n,i,x) case n: x:;
   #define FLX_FARTARGET(n,i,x) n
-  #define FLX_END_SWITCH }
+  #define FLX_END_SWITCH default: throw flx_switch_failure_t(); }
 #endif
 
 #define FLX_RETURN \
@@ -601,6 +607,7 @@ flx_match_failure_t::~flx_match_failure_t(){}
 flx_assert_failure_t::flx_assert_failure_t(flx_range_srcref_t ff, char *cf, int cl) :
    flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
 flx_assert_failure_t::~flx_assert_failure_t(){}
+flx_switch_failure_t::~flx_switch_failure_t(){}
 
 }}
 
@@ -1229,6 +1236,29 @@ int main(int argc, char** argv)
     }
 #endif
   if(debug)fprintf(stderr,"flx_run driver ends OK\n");
+  return 0;
+}
+
+@h = tangler('test/micky_mouse.cpp')
+@select(h)
+#include <stdio.h>
+#include "flx_rtl.hpp"
+#include "flx_collector.hpp"
+#include "flx_dynlink.hpp"
+
+using namespace std;
+using namespace flx;
+
+int main(int argc, char** argv)
+{
+  rtl::flx_dynlink_t library;
+  rtl::flx_libinit_t instance;
+  library.link(argc>1?argv[1]:"<static>");
+  gc::collector::malloc_free allocator;
+  gc::collector::flx_collector_t collector(&allocator);
+  instance.create(&library, &collector,argc,argv,stdin,stdout,stderr);
+  rtl::con_t *top = instance.start_proc;
+  while( top ) top = top->resume();
   return 0;
 }
 

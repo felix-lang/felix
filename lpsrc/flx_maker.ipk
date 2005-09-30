@@ -4,6 +4,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.155  2005/09/30 19:01:19  skaller
+Rewrote the lookup to use a single record for recursion stopper,
+repairs on type functions so type matches reduce properly,
+preparation for type constraints.
+
 Revision 1.154  2005/09/24 21:46:33  skaller
 More pathname fixes (/ vs \, using os.sep ..) and DIFF fix
 
@@ -2511,6 +2516,7 @@ DRIVERS = [
   ('rtl/flx_run','bin/flx_run'),
   ('test/flx_perf_drv1','test/flx_perf_drv1'),
   ('rtl/flx_stdin_drv','bin/flx_stdin_drv'),
+  ('test/micky_mouse','bin/micky_mouse'),
 ]
 
 # C files that we need to compile, with options required to build them

@@ -146,6 +146,7 @@ let arglist x =
   | _ -> [x]
 
 let mkcurry seq sr name vs (args:params_t list) return_type kind body props =
+  let return_type, postcondition = return_type in
   let vss',(args:params_t list)= split (map (fix_params seq) args) in
   let vs = concat (vs :: vss') in
   let mkfuntyp d c = `TYP_function (d,c)
@@ -181,7 +182,7 @@ let mkcurry seq sr name vs (args:params_t list) return_type kind body props =
           in
           begin match return_type with
           | `AST_void _ ->
-            `AST_function (sr, name n, vs, ([],None), return_type, props, body)
+            `AST_function (sr, name n, vs, ([],None), (return_type,postcondition), props, body)
           | _ ->
             syserr sr "Function with no arguments"
           end
@@ -200,7 +201,7 @@ let mkcurry seq sr name vs (args:params_t list) return_type kind body props =
           | `NoInlineFunction -> `NoInline::props
           | _ -> props 
           in
-          `AST_function (sr, name n, vs, h, return_type, props, body)
+          `AST_function (sr, name n, vs, h, (return_type,postcondition), props, body)
         | `Object ->
           `AST_object (sr, name n, vs, h, body)
         )
@@ -227,7 +228,7 @@ let mkcurry seq sr name vs (args:params_t list) return_type kind body props =
           )
         ] 
       in
-        `AST_function (sr, name m, vs, h, rettype t, [`Generated "curry";`Inline], body)
+        `AST_function (sr, name m, vs, h, (rettype t,None), [`Generated "curry";`Inline], body)
    in aux args vs
 
 (* model binary operator as procedure call *)
@@ -252,10 +253,10 @@ let find_methods seq sr sts =
 
     (*
     | `AST_object (sr,mname, vs, ps, sts) ->
-       check (`AST_function (sr,mname,vs,ps,`TYP_none,props,sts))
+       check (`AST_function (sr,mname,vs,ps,(`TYP_none,None),props,sts))
     *)
 
-    | `AST_function (sr,mname, vs, ps, ret,props,sts) ->
+    | `AST_function (sr,mname, vs, ps, (ret,postcondition),props,sts) ->
       if vs <> [] then
       clierr sr "[process_object] Object methods may not be generic"
       ;
@@ -320,12 +321,13 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_sum _
   | `AST_andlist _
   | `AST_orlist _
-  | `AST_type_match _
   | `AST_ellipsis _
   | `AST_lvalue _
   | `AST_strexpr _
     ->
     clierr sr ("[rex] Unexpected " ^ string_of_expr e)
+
+  | `AST_type_match _ -> [],e
 
   | `AST_noexpand (_,e) -> rex e
   | `AST_name (sr,name,_) -> [],e
@@ -414,7 +416,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let access = `Private in
     let vs = [] in
     let sts = 
-      rst syms name access [] (mkcurry seq sr name' vs pps ret kind sts [`Generated "lambda"])
+      rst syms name access [] (mkcurry seq sr name' vs pps (ret,None) kind sts [`Generated "lambda"])
     in
     let e = 
       `AST_suffix 
@@ -941,10 +943,10 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     ]
   
   (* functions *)
-  | `AST_function (sr,name', vs, params, res, props, sts) -> 
+  | `AST_function (sr,name', vs, params, (res,postcondition), props, sts) -> 
     let ps,traint = params in
-    begin match traint with
-    | None ->
+    begin match traint,postcondition with
+    | None,None ->
       let vs',params = fix_params seq params in
       let vs = vs @ vs' in
       let asms = rsts name' [] sts in
@@ -954,20 +956,43 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
           `DCL_function (params, res, props, asms)
         )
       ]
-    | Some x ->
-      let name'' = "_" ^ name' in
+    | pre,post ->
+      let name'' = "_wrap_" ^ name' in
       let inner = `AST_name (sr,name'',[]) in
       let un = `AST_tuple (sr,[]) in
-      let retval:expr_t = `AST_apply(sr,(inner,un)) in
       let sts = 
+        (match pre with
+        | None -> []
+        | Some x -> [`AST_assert (src_of_expr x,x)]
+        )
+        @
         [
-          `AST_assert (src_of_expr x,x);
-          `AST_function (sr,name'', [],([],None),res,props,sts);
-          `AST_fun_return (sr,retval)
+          `AST_function (sr,name'', [],([],None),(res,None),props,sts);
         ]
+        @
+        begin match res with 
+        | `AST_void _ ->
+           [`AST_call (sr,inner,un) ] @ 
+           begin match post with
+           | None -> []
+           | Some y -> [`AST_assert (src_of_expr y,y)]
+           end
+          | _ ->
+            let retval:expr_t = `AST_apply(sr,(inner,un)) in
+            begin match post with
+            | None ->
+              [`AST_fun_return (sr,retval)]
+            | Some y -> 
+              [
+                `AST_val_decl (sr,"result",[],None,Some retval);
+                `AST_assert (src_of_expr y,y);
+                `AST_fun_return (sr,`AST_name (sr,"result",[]))
+              ]
+            end
+        end
       in 
       let st =
-        `AST_function (sr,name',vs,(ps,None),res,props,sts)
+        `AST_function (sr,name',vs,(ps,None),(res,None),props,sts)
       in 
       rst syms name access parent_vs st
     end

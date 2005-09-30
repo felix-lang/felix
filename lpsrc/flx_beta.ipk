@@ -35,12 +35,19 @@ open Flx_maps
 exception BTfound of btypecode_t
 
 (* params is list of string * bound_typecode *)
-let rec metatype syms params term =
+let rec metatype syms (params:(int * btypecode_t) list) term =
   (*
-  print_endline ("Metatype: " ^ string_of_btypecode syms.dfns term);
+  print_endline ("Find Metatype  of: " ^ string_of_btypecode syms.dfns term);
   *)
+  let t = metatype' syms params term in
+  (*
+  print_endline "Done";
+  *)
+  t
+  
+and metatype' syms (params:(int * btypecode_t) list) term =
   let st t = string_of_btypecode syms.dfns t in
-  let mt t = metatype syms params t in
+  let mt t = metatype' syms params t in
   match term with
   | `BTYP_typefun (a,b,c) ->
     let ps = List.map snd a in
@@ -77,7 +84,8 @@ let rec metatype syms params term =
           failwith "Metatype error: function argument wrong metatype"
       | _ -> failwith "Metatype error: function required for LHS of application"
     end
-  | `BTYP_var i -> 
+  | `BTYP_var (i,mt) ->  mt
+    (*
     begin try 
       List.assoc i params 
       with 
@@ -98,9 +106,10 @@ let rec metatype syms params term =
           print_endline "";
           failwith 
           (
-            "[metatype] Can't find index " ^ string_of_int i ^ " in generic assoc list"
+            "[metatype] Type variable " ^ string_of_int i ^ " not found in generic assoc list"
           )
     end
+    *)
 
   | _ -> `BTYP_type (* THIS ISN'T RIGHT *)
   
@@ -112,12 +121,16 @@ let rec metatype syms params term =
    with a recursive data structure
 *)
 
-and fixup ps body =
+and fixup syms ps body =
  let param = match ps with
    | [] -> assert false
-   | [i,_] -> `BTYP_var i
-   | x -> `BTYP_type_tuple (List.map (fun (i,_) -> `BTYP_var i) x)
+   | [i,mt] -> `BTYP_var (i,mt)
+   | x -> `BTYP_type_tuple (List.map (fun (i,mt) -> `BTYP_var (i,mt)) x)
  in
+ (*
+ print_endline ("Body  = " ^ sbt syms.dfns body);
+ print_endline ("Param = " ^ sbt syms.dfns param);
+ *)
  let rec aux term depth =
    let fx t = aux t (depth+1) in
    match map_btype fx term with
@@ -169,7 +182,7 @@ and beta_reduce syms (btvars:(int * btypecode_t) list) t =
   let t = 
   try
   beta_reduce' syms btvars [] t 
-  with _ -> failwith ("beta-reduce failed in " ^ sbt syms.dfns t)
+  with Failure s -> failwith ("beta-reduce failed in " ^ sbt syms.dfns t ^ "msg: " ^ s)
   in
   (*
   print_endline ("  reduced= " ^ sbt syms.dfns t);
@@ -194,7 +207,13 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
   then let beta-reduce find it..
   *)
   match t with
-  | `BTYP_inst (i,ts) -> `BTYP_inst (i,map br ts)
+  | `BTYP_inst (i,ts) -> 
+    let ts = map br ts in
+    begin match Hashtbl.find syms.dfns i with
+    | {id=id; symdef=`SYMDEF_type_alias _ } ->
+      failwith ("Beta reduce found a type instance of "^id^" to be an alias, which it can't handle")
+    | _ -> `BTYP_inst (i,ts)
+    end
   | `BTYP_tuple ls -> `BTYP_tuple (map br ls)
   | `BTYP_array (i,t) -> `BTYP_array (i, br t)
   | `BTYP_sum ls -> `BTYP_sum (map br ls)
@@ -232,12 +251,18 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
     print_endline ("Function metatype is" ^ st mt1);
     print_endline ("Argument metatype is" ^ st mt2);
     *)
+    begin match t1 with
+    | `BTYP_fix _ -> `BTYP_apply(t1,t2)
+    | _ ->
     begin match mt1 with
     | `BTYP_function (a,b) ->
       if a <> mt2
       then failwith ("Argument metatype not same as function parameter")
     | _ -> 
-      failwith ("[beta_reduce] Expected LHS of application to be type function, got\n" ^ st t1)
+      failwith (
+        "[beta_reduce] Expected LHS of application to be type function, got\n" ^ 
+        st t1^"\nmeta type: " ^ st mt1
+      )
     end
     ;
     begin match t1 with
@@ -271,6 +296,7 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
       br t
 
     | `BTYP_var _ -> t (* can't reduce it yet *)
+    | `BTYP_fix _ -> t (* can't reduce it yet *)
 
     | _ -> failwith 
       (
@@ -278,50 +304,64 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
         string_of_btypecode syms.dfns t1
       )
     end
+    end
 
   | `BTYP_typefun (p,r,b) -> 
     let p' = List.map (fun (i,t) -> (i, br t)) p in
     (*
     print_endline ("fixing up function " ^ st t);
+    *)
+    (*
     print_endline ("body is " ^ st b);
     *)
-    let b = fixup p b in
+    let b = fixup syms p b in
     (*
     print_endline ("After fixup body is " ^ st b);
     *)
-    `BTYP_typefun (p', br r, beta_reduce syms (p' @ btvars) b)
+    let b' = beta_reduce syms (p' @ btvars) b in
+    (*
+    print_endline ("Reducing body inside lambda, result is" ^ sbt syms.dfns b');
+    *)
+    `BTYP_typefun (p', br r, b')
 
   | `BTYP_type_match (tt,pts) ->
     (*
-    print_endline ("Typematch [before reduction] " ^ sbt syms.dfns tt);
+    print_endline ("Typematch [before reduction] " ^ sbt syms.dfns t);
     *)
     let tt = br tt in
-    let pts = map (fun (a,b) -> br a, br b) pts in
+    let pts = 
+      map (fun (a,b,c,d) -> 
+        br a, b, map (fun (j,t) -> j, br t) c, br d
+      ) 
+      pts 
+    in
     (*
-    print_endline ("Typematch [after reduction] " ^ sbt syms.dfns tt);
+    let xx = `BTYP_type_match (tt,pts) in
+    print_endline ("Typematch [after reduction] " ^ sbt syms.dfns xx);
     *)
-    begin try 
-      iter
-      (fun (p',t') ->
-        let u = maybe_unification syms.dfns [p', tt] in
-        match u with
-        | Some mgu when not (var_list_occurs (map fst mgu) tt)
-          -> raise (BTfound (list_subst mgu t'))
-        | Some _ 
-        | None -> ()
-      )
-      pts
-      ;
-      if var_occurs tt
-      then `BTYP_type_match (tt,pts)
-      else 
-        failwith 
-        (
-          "[beta_reduce] type_match failure in:\n" ^
-          string_of_btypecode syms.dfns t
-        )
-    with 
-    | BTfound t -> t
-    end
-
+    let new_matches = ref [] in
+    iter (fun ((p',dvars,eqns,t') as x) ->
+      (*
+      print_endline ("Tring to unify argument with " ^ sbt syms.dfns p');
+      *)
+      match maybe_unification syms.dfns [p',tt] with
+      | Some _ -> new_matches := x :: !new_matches
+      | None -> 
+        (*
+        print_endline ("Discarding pattern " ^ sbt syms.dfns p'); 
+        *)
+        ()
+    )
+    pts
+    ;
+    let pts = rev !new_matches in
+    match pts with
+    | [] -> 
+      failwith "[beta-reduce] typematch failure"
+    | (p',dvars,eqns,t') :: _ ->
+      try 
+        let mgu = unification false syms.dfns [p', tt] dvars in
+        let t' = list_subst eqns t' in
+        list_subst mgu t'
+      with Not_found -> `BTYP_type_match (tt,pts)
 

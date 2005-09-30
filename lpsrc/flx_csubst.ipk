@@ -72,6 +72,7 @@ open Flx_cexpr
   'Varargs',
   'VarargsDigits',
   'DollarDigitsPrec',
+  'Escape'
  ]
 
 type mode_t = 
@@ -125,11 +126,14 @@ let csubst sr sr2 ct (args:cexpr_t list) typs argtyp retyp gargs prec argshape a
       | '#' -> mode := Hash
       | '@' -> mode := Earhole
       | '?' -> mode := Quest
-      | '\\' -> serr i "Naked \\"
+      | '\\' -> mode := Escape 
       | '"' -> chcat ch; mode := CString
       | '\'' -> chcat ch; mode := CChar
       | _ -> chcat ch
       end
+
+    | Escape ->
+      chcat ch; mode := Normal
 
     | CString ->
       begin match ch with

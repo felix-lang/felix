@@ -149,12 +149,13 @@ let adjust_ts syms sr index ts =
     )
   end;
   
-  map (fun (_,i,_) -> `BTYP_var i) pvs @ ts
+  map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type)) pvs @ ts
   
 
 let make_params syms sr i ts =
   let vs = find_vs syms i in
   let ts = adjust_ts syms sr i ts in
+  assert (length vs = length ts);
   map2 (fun (s,i,_) t -> s,t) vs ts
 
 (* full ts required *)

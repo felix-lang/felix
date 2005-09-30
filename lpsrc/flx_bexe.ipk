@@ -128,7 +128,7 @@ let bind_regex syms env sr be return_count ret_type cls =
   (*
   print_endline "Binding regmatch";
   *) 
-  let bd e = bind_regdef syms env [] [] e in
+  let bd e = bind_regdef syms env [] e in
 
   (* create a unified regexp using REGEXP_code for expressions *)
   let f (e,c) = REGEXP_seq (e, REGEXP_code c) in
@@ -185,7 +185,8 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
   print_endline "-------------------";
   *)
 
-  let parent_ts = map (fun (s,i) -> `BTYP_var i) parent_vs in
+  (* a type variable in executable code just has to be of kind TYPE *)
+  let parent_ts = map (fun (s,i) -> `BTYP_var (i,`BTYP_type)) parent_vs in
   let ret_type = ref ret_type in
   let be e : tbexpr_t = bind_expression syms env e in
   let lun sr n = lookup_name_in_env syms env sr n in
@@ -249,7 +250,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
          lookup_qn_with_sig 
          syms 
          sr sr 
-         env [] 
+         env
          (`AST_name(sr,n,[]) : qualified_name_t)
          t2 
       in  
@@ -272,7 +273,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
            lookup_qn_with_sig 
            syms 
            sr sr 
-           env [] 
+           env
            qn t2 
          | _ -> be sn
       in  
@@ -370,17 +371,13 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       begin match lun sr s with
       | FunctionEntry _ -> clierr sr "Can't init function constant"
       | NonFunctionEntry (index) -> 
-        (*
-        print_endline "Binding RHS of initialisation with bind_expression";
-        *)
         let e',rhst = be e in
-
-        (*
-        print_endline "Binding LHS of initialistion with typeofindex";
-        *)
         let lhst = typeofindex_with_ts syms sr index parent_ts in
         let rhst = minimise syms.dfns rhst in
         let lhst = match lhst with |`BTYP_lvalue t -> t | t -> t in
+        (*
+        print_endline ("Checking type match " ^ sbt syms.dfns lhst ^ " ?= " ^ sbt syms.dfns rhst);
+        *)
         if type_match syms.dfns lhst rhst
         then tack (`BEXE_init (sr,index, (e',rhst)))
         else clierr sr

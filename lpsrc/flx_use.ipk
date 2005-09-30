@@ -197,7 +197,15 @@ and uses syms used bbdfns i =
         ut unt; ut ct
 
       end
-    | None -> failwith ("[Flx_use.uses] Cannot find " ^ si i)
+    | None -> 
+      let id = 
+        try match Hashtbl.find syms.dfns i with {id=id} -> id
+        with Not_found -> "not found in unbound symbol table"
+      in
+      failwith 
+      (
+        "[Flx_use.uses] Cannot find bound defn for " ^ id ^ "<"^si i ^ ">"
+      )
   end
 
 let find_roots syms bbdfns

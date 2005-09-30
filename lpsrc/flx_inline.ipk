@@ -309,7 +309,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     | None -> "NONE?" 
     | Some i -> si i
   in
-  let caller_vars = map (fun (s,i) -> `BTYP_var i) caller_vs in
+  let caller_vars = map (fun (s,i) -> `BTYP_var (i,`BTYP_type)) caller_vs in
 
   let auxt t = varmap_subst varmap t in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
@@ -570,7 +570,7 @@ let gen_body syms (uses,child_map,bbdfns) id
       varmap_subst varmap pt
   in
  
-  let caller_vars = map (fun (s,i) -> `BTYP_var i) vs in
+  let caller_vars = map (fun (s,i) -> `BTYP_var (i,`BTYP_type)) vs in
   let ge e = remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e in
   let relab s = try Hashtbl.find relabel s with Not_found -> s in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
@@ -713,7 +713,7 @@ let gen_body syms (uses,child_map,bbdfns) id
        
         (* unpack argument *)
         if length ps > 1 then
-        let ts = map (fun (_,i) -> `BTYP_var i) vs in
+        let ts = map (fun (_,i) -> `BTYP_var (i,`BTYP_type)) vs in
         let p = `BEXPR_name (parameter,ts),paramtype in  
         let n = ref 0 in
         iter 
@@ -744,7 +744,7 @@ let gen_body syms (uses,child_map,bbdfns) id
         let index = revar k in
         Hashtbl.add argmap index argument
       | _ -> 
-        let ts = map (fun (_,i) -> `BTYP_var i) vs in
+        let ts = map (fun (_,i) -> `BTYP_var (i,`BTYP_type)) vs in
         let n = ref 0 in
         iter 
         (fun (vid,(ix,prjt)) ->
@@ -1132,7 +1132,7 @@ let expand_exe syms bbdfns u exe =
 
 (* output in reverse order *)
 let xmap_bexe syms (child_map,bbdfns) caller vs exe : bexe_t list = 
-  let ts = map (fun (_,i)-> `BTYP_var i) vs in
+  let ts = map (fun (_,i)-> `BTYP_var (i,`BTYP_type)) vs in
   let u sr e = 
     let x,xs = bunravel syms bbdfns ts e in
     iter 
@@ -1330,7 +1330,7 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller excludes sr
                   Hashtbl.add bbdfns urv (urvid,Some caller,sr,entry);
 
                   exes' := rxs @ !exes';
-                  let ts = map (fun (_,i)-> `BTYP_var i) caller_vs in
+                  let ts = map (fun (_,i)-> `BTYP_var (i,`BTYP_type)) caller_vs in
                   `BEXPR_name (urv,ts),t
               end
               else e

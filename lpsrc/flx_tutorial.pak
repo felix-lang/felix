@@ -289,6 +289,40 @@ which is equivalent to the one above.
 Note however that the types of the arguments
 must be given.
 
+@head(3,'Preconditions and postconditions')
+Functions can be given preconditions:
+
+@select(tangler(tdir+'tut107a.flx'))
+include "std";
+fun guarded_div(a:int, b:int when b!=0) =
+{
+  return a/b;
+}
+print (guarded_div(2,4)); print "\n";
+
+@doc()
+Functions can also be given postconditions:
+
+@select(tangler(tdir+'tut107b.flx'))
+include "std";
+fun abs_div(a:int, b:int when b!=0) expect result >=0 =
+{
+  return abs(a/b);
+}
+print (abs_div(2,4)); print "\n";
+
+@doc()
+Note the special identifier 'result' may be used to 
+refer to the function result. 
+@p()
+If a pre or post condition is not met, a C++ exception
+is thrown. Typically this will result in a diagnostic
+error being printed the thread terminated by the driver.
+However it is driver dependent. 
+@p()
+At present (Felix 1.1.1) recovery is not possible,
+nor is it possible to catch the exception.
+
 @head(2,'Procedures')
 Felix allows you to define procedures.
 They're like functions, but they can't return values.
@@ -322,6 +356,22 @@ unit argument. Note there is no confusion
 with the use of a procedure name as an expression,
 that always represents the closure of the procedure
 at the point of writing.
+
+@head(3,'Preconditions and Postconditions')
+Procedures may also have pre and post conditions.
+
+@select(tangler(tdir+'tut112a.flx'))
+include "std";
+var x = 7;
+var y = x;
+
+proc decr(d:int when d>=0) expect x==y-d = {
+  y = x;
+  x -= d;
+}
+
+decr 2;
+print x; endl;
 
 @head(2,'Tuples')
 As you might guess from the title, Felix has
@@ -3001,7 +3051,7 @@ endmatch;
 typedef fun twoup (x:TYPE):TYPE = x * x;
 
 // (twoup int) * int = (int * int) * int
-val x3 : (f (int,twoup) (int)) = ((1,2),3);
+val x3 : (f (int,twoup of (TYPE)) (int)) = ((1,2),3);
 match x3 with
 | ((?a,?b),?c) => { print a; endl; print b; endl; print c; endl; } 
 endmatch;

@@ -455,9 +455,47 @@ let rec build_tables syms name level parent grandparent root asms =
         | `DCL_type_alias (t) ->
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_type_alias t}
           ;
-          if access = `Public then add_unique pub_name_map id n;
-          add_unique priv_name_map id n
-          ;
+          (* this is a hack, checking for a type function this way,
+             since it will also incorrectly recognize a type lambda like:
+
+             typedef f = fun(x:TYPE)=>x;
+
+             With ordinary functions:
+
+             f := fun (x:int)=>x;
+
+             initialises a value, and this f cannot be overloaded.
+
+             That is, a closure (object) and a function (class) are
+             distinguished .. this should be the same for type
+             functions as well.
+
+             EVEN WORSE: our system is getting confused with
+             unbound type variables which are HOLES in types, and
+             parameters, which are bound variables: the latter
+             are really just the same as type aliases where
+             the alias isn't known. The problem is that we usually
+             substitute names with what they alias, but we can't
+             for parameters, so we replace them with undistinguished
+             type variables.
+
+             Consequently, for a type function with a type
+             function as a parameter, the parameter name is being 
+             overloaded when it is applied, which is wrong.
+
+             We need to do what we do with ordinary function:
+             put the parameter names into the symbol table too:
+             lookup_name_with_sig can handle this, because it checks
+             both function set results and non-function results.
+          *)
+          begin match t with
+          | `TYP_typefun _ ->
+            if access = `Public then add_function pub_name_map id n;
+            add_function priv_name_map id n
+          | _ ->
+            if access = `Public then add_unique pub_name_map id n;
+            add_unique priv_name_map id n
+          end;
           add_tvars privtab
          
         | `DCL_inherit qn ->
