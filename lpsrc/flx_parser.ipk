@@ -403,7 +403,7 @@ type_sum_items:
   | type_sum_items VBAR type_sum_item { $1 @ [$3] }
   | type_sum_item { [$1] }
 type_sum_item:
-  | NAME OF type_expr { (snd $1,typecode_of_expr $3) }
+  | NAME OF expr { (snd $1,typecode_of_expr $3) }
   | NAME 
     { 
       let sr = slift (fst $1) in
@@ -429,13 +429,13 @@ struct_decl:
 
 @aster("struct_component")
 struct_component:
-  | NAME COLON type_expr SEMI { (snd $1,typecode_of_expr $3) }
+  | NAME COLON expr SEMI { (snd $1,typecode_of_expr $3) }
 
 
 @head(3,'Abstract Constant Binding')
 @select(h)
 const_def:
-  | CONST NAME tvarlist COLON type_expr EQUAL code_spec requires_clause SEMI 
+  | CONST NAME tvarlist COLON expr EQUAL code_spec requires_clause SEMI 
   { 
     `AST_const_decl 
     (
@@ -447,7 +447,7 @@ const_def:
     ) 
   }
 
-  | CONST NAME tvarlist COLON type_expr requires_clause SEMI 
+  | CONST NAME tvarlist COLON expr requires_clause SEMI 
   { 
     let sr = rstoken $1 $7 in
     `AST_const_decl 
@@ -541,7 +541,7 @@ inline_cpp:
 @head(3,'Type Alias')
 @select(h)
 type_alias:
-  | TYPEDEF NAME tvarlist EQUAL type_expr SEMI 
+  | TYPEDEF NAME tvarlist EQUAL expr SEMI 
     { 
       let sr = rstoken $1 $6
       and name = snd $2 
@@ -552,7 +552,7 @@ type_alias:
       `AST_type_alias (sr,name,vs,body)
     }
 
-  | TYPEDEF FUNCTION NAME tvarlist fun_args COLON type_expr EQUAL type_expr SEMI
+  | TYPEDEF FUNCTION NAME tvarlist fun_args COLON expr EQRIGHTARROW expr SEMI
     {
       let sr = rstoken $1 $10
       and name = snd $3 
@@ -563,6 +563,28 @@ type_alias:
       in 
       mktypefun sr name vs args return_type body
     }
+ 
+ | TYPEDEF FUNCTION NAME tvarlist COLON expr EQUAL type_matchings SEMI
+    { 
+      let sr = rstoken $1 $9 in
+      let name = snd $3 in
+      let vs = $4 in
+      let t = typecode_of_expr $6 in
+      match t with
+      | `TYP_function (argt, return_type) ->
+        let args = [["_a",argt],None] in 
+        let match_expr = `AST_type_match (sr,(`AST_name (sr,"_a",[]),$8)) in
+        let body = typecode_of_expr match_expr in
+        mktypefun sr name vs args return_type body
+      | _ -> 
+        failwith 
+        (
+          "Function '"^name^"' requires function type, got " ^
+          string_of_typecode t ^ " in " ^
+          short_string_of_src sr
+        )
+    }
+
 
   | RENAME NAME tvarlist EQUAL qualified_name SEMI 
     { 
@@ -605,7 +627,7 @@ export_statement:
       `AST_export_fun (rstoken $1 $6, $3, snd $5) 
     }
 
-  | EXPORT TYPE LPAR type_expr RPAR AS STRING SEMI 
+  | EXPORT TYPE LPAR expr RPAR AS STRING SEMI 
     { 
       `AST_export_type (rstoken $1 $8, typecode_of_expr $4, snd $7) 
     }
@@ -833,9 +855,11 @@ macro_names:
   | macro_name_list { List.rev $1 }
   | { [] }
 
+/*
 rev_name_list:
   | NAME COMMA rev_name_list { snd $1 :: $3 }
   | NAME { [snd $1] }
+*/
 
 @head(3,'Function and Procedure Definition')
 @select(h)
@@ -852,8 +876,8 @@ opt_fun_args:
   | { [] }
 
 opt_type_expr:
-  | COLON type_expr EXPECT expr { typecode_of_expr $2, Some $4 }
-  | COLON type_expr { typecode_of_expr $2, None }
+  | COLON expr EXPECT expr { typecode_of_expr $2, Some $4 }
+  | COLON expr { typecode_of_expr $2, None }
   | EXPECT expr { `TYP_none, Some $2 }
   | { `TYP_none, None }
 
@@ -872,10 +896,6 @@ adjectives:
 opt_prec:
   | IS NAME { snd $2 }
   | { "" }
-
-opt_traint:
-  | EXPECT expr { Some $2 }
-  | { None }
 
 opt_traint_eq:
   | EXPECT expr EQUAL { Some $2 }
@@ -912,7 +932,7 @@ function_definition:
       in mkcurry sr name vs args return_type kind body
     }
   
-  | adjectives FUNCTION NAME tvarlist COLON type_expr opt_cstring opt_prec requires_clause SEMI 
+  | adjectives FUNCTION NAME tvarlist COLON expr opt_cstring opt_prec requires_clause SEMI 
     { 
       let name = snd $3 
       and vs = $4
@@ -949,7 +969,7 @@ function_definition:
         )
     }
 
-  | adjectives FUNCTION NAME tvarlist COLON type_expr EQUAL matchings SEMI
+  | adjectives FUNCTION NAME tvarlist COLON expr EQUAL matchings SEMI
     { 
       let kind = match $1 with
         | [] -> `Function
@@ -1001,7 +1021,7 @@ procedure_definition:
       in mkcurry sr name vs args (return_type,traint) adjective body
     }
 
-  | PROCEDURE NAME tvarlist COLON type_expr opt_cstring requires_clause SEMI 
+  | PROCEDURE NAME tvarlist COLON expr opt_cstring requires_clause SEMI 
     { 
       let sr = rstoken $1 $8
       and vs = $3
@@ -1045,9 +1065,9 @@ object_definition:
 
 @commalistof("parameter")
 parameter:
-  | NAME COLON type_expr { snd $1,typecode_of_expr $3 }
+  | NAME COLON arrow { snd $1,typecode_of_expr $3 }
   | NAME { snd $1,`TYP_none }
-  | VAR NAME COLON type_expr { snd $2,`TYP_lvalue (typecode_of_expr $4) }
+  | VAR NAME COLON arrow { snd $2,`TYP_lvalue (typecode_of_expr $4) }
   | VAR NAME { snd $2,`TYP_lvalue (`TYP_none) }
  
 @doc()
@@ -1121,7 +1141,7 @@ var_def:
         $3, None, Some $5
       ) 
     }
-  | VAR NAME tvarlist COLON type_expr EQUAL expr SEMI  
+  | VAR NAME tvarlist COLON expr EQUAL expr SEMI  
     { 
       `AST_var_decl 
       (
@@ -1132,7 +1152,7 @@ var_def:
         Some $7
       ) 
     }
-  | VAR NAME tvarlist COLON type_expr SEMI  
+  | VAR NAME tvarlist COLON expr SEMI  
     { 
       `AST_var_decl 
       (
@@ -1157,7 +1177,7 @@ val_def:
       ) 
     }
 
-  | VAL NAME tvarlist COLON type_expr EQUAL expr SEMI  
+  | VAL NAME tvarlist COLON expr EQUAL expr SEMI  
     { 
       `AST_val_decl 
       (
@@ -1168,7 +1188,7 @@ val_def:
         Some $7
       ) 
     }
-  | VAL NAME tvarlist COLON type_expr SEMI  
+  | VAL NAME tvarlist COLON expr SEMI  
     { 
       `AST_val_decl 
       (
@@ -1555,7 +1575,7 @@ coercive_pattern_list:
   | coercive_pattern { [$1] }
 
 coercive_pattern:
-  | atomic_pattern COLON type_expr 
+  | atomic_pattern COLON arrow 
     { 
       let sr = rsrange (src_of_pat $1) (src_of_expr $3) in
       let t = typecode_of_expr $3 in
@@ -1729,7 +1749,7 @@ tpatlist:
 
 
 type_match_expr:
-  | TYPEMATCH type_expr WITH type_matchings ENDMATCH
+  | TYPEMATCH expr WITH type_matchings ENDMATCH
   { 
     let t = typecode_of_expr $2 in
     `AST_type_match (rstoken $1 $5, (t, $4))
@@ -1740,7 +1760,7 @@ type_matchings:
   | type_matching { [$1] }
 
 type_matching:
-  | VBAR tuple_tpattern EQRIGHTARROW type_expr { $2, typecode_of_expr $4 }
+  | VBAR tuple_tpattern EQRIGHTARROW expr { $2, typecode_of_expr $4 }
 
 @head(2,'Grammar Expressions')
 @select(h)
@@ -1786,7 +1806,7 @@ glr_matchings:
   | glr_matching { [$1] }
 
 glr_production:
-  | NONTERM NAME COLON type_expr EQUAL glr_matchings SEMI
+  | NONTERM NAME COLON expr EQUAL glr_matchings SEMI
   {
     let sr = rstoken $1 $7 in
     let t = typecode_of_expr $4 in
@@ -2021,11 +2041,6 @@ as_expr:
       let sr = rsrange (src_of_expr $1) (slift (fst $3)) in
       `AST_as (sr,($1,snd $3))
     }
-  | type_expr { $1 }
-
-/* arrow is right associative */
-@commalistof('type_expr')
-type_expr:
   | arrow { $1 }
 
 arrow:
@@ -2268,7 +2283,7 @@ cond:
     }
 
 expr_code_prefix:
-  | CODE LSQB type_expr RSQB 
+  | CODE LSQB expr RSQB 
     {
      $1,
      typecode_of_expr $3
@@ -2356,11 +2371,13 @@ literal:
     }
 
 simple_name_parts:
-  | NAME LSQB type_expr_comma_list RSQB  
+  | NAME LSQB expr RSQB  
     { 
       rsrange (slift (fst $1)) (slift $4),
       snd $1,
-      List.map typecode_of_expr $3 
+      match typecode_of_expr $3 with
+      | `TYP_type_tuple ls -> ls
+      | x -> [x]
     }
 
   | NAME 
@@ -2371,7 +2388,7 @@ simple_name_parts:
     }
 
 suffixed_name:
-  | qualified_name OF LPAR type_expr RPAR 
+  | qualified_name OF LPAR expr RPAR 
     { 
       `AST_suffix
       (

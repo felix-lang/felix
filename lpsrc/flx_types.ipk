@@ -4201,8 +4201,23 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
     else
       `TYP_sum ts
 
-  | `AST_orlist (_,ts) -> `TYP_typeset (map te ts)
-  | `AST_andlist (_,ts) -> `TYP_intersect (map te ts)
+  | `AST_orlist (sr,ts) -> 
+    begin match ts with
+    | [] -> assert false
+    | [x] -> assert false
+    | h :: t ->
+      let llor = `AST_name (sr,"lor",[]) in
+      fold_left (fun sum t -> `TYP_apply (llor,`TYP_type_tuple[sum; te t])) (te h) t
+    end
+
+  | `AST_andlist (sr,ts) ->
+    begin match ts with
+    | [] -> assert false
+    | [x] -> assert false
+    | h :: t ->
+      let lland = `AST_name (sr,"land",[]) in
+      fold_left (fun sum t -> `TYP_apply (lland,`TYP_type_tuple [sum; te t])) (te h) t
+    end
 
   | `AST_typeof (_,e) -> `TYP_typeof e
   | `AST_as (sr,(t,x)) -> `TYP_as (te t,x)
