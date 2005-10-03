@@ -304,6 +304,7 @@ and typecode_t =
   | `TYP_none                                   (** unspecified *)
   | `TYP_ellipsis                               (** ... for varargs *)
   | `TYP_lvalue of typecode_t                   (** ... lvalue annotation *)
+  | `TYP_isin of typecode_t * typecode_t        (** typeset membership *)
 
   (* dualizer *)
   | `TYP_dual of typecode_t                     (** dual *)
@@ -771,6 +772,13 @@ type 't b0typecode_t' =
   | `BTYP_intersect of 't list (** open intersection *)
   ]
 
+type 't btpattern_t' = {
+  pattern: 't;
+  pattern_vars: IntSet.t; (* pattern type variables, including 'any' vars *)
+  assignments : (int * 't) list (* assignments for 'as' vars *)
+}
+
+
 (** meta typing *)
 type 't b1typecode_t' =
   [
@@ -779,8 +787,7 @@ type 't b1typecode_t' =
   | `BTYP_typefun of (int * 't) list * 't * 't
   | `BTYP_type
   | `BTYP_type_tuple of 't list
-  | `BTYP_type_match of 't * ('t * IntSet.t * (int * 't) list * 't) list
-  (*                   arg    pattern ivars    eqns           result *)
+  | `BTYP_type_match of 't * ('t btpattern_t' * 't) list
   ]
 
 (** general typing *)
@@ -792,6 +799,7 @@ type 't btypecode_t' =
 
 type b0typecode_t = 't b0typecode_t' as 't
 type btypecode_t = 't btypecode_t' as 't
+type btpattern_t = btypecode_t btpattern_t'
 
 type biface_t =
   [
@@ -1026,6 +1034,7 @@ let map_type f = function
   | `AST_lookup (sr,(e,name,ts)) -> `AST_lookup (sr,(e,name,map f ts))
   | `AST_typed_case (sr,i,t) -> `AST_typed_case (sr,i, f t)
   | `TYP_tuple ts -> `TYP_tuple (map f ts)
+  | `TYP_isin (a,b) -> `TYP_isin (f a, f b)
 
   (* we have to do this, so that a large unitsume
      can be specified without overflowing the compiler
@@ -1192,7 +1201,7 @@ let map_btype f = function
   | `BTYP_type_tuple ts -> `BTYP_type_tuple (map f ts)
   | `BTYP_type_match (t,ps) ->
     (* this may be wrong .. hard to know .. *)
-    let g (a,b,c,d) = f a, b,c,f d in
+    let g (tp,t) = {tp with pattern=f tp.pattern},f t in
     `BTYP_type_match (f t, map g ps)
     
   | `BTYP_type -> `BTYP_type 
@@ -1217,7 +1226,7 @@ let iter_btype f = function
   | `BTYP_typefun (its, a, b) ->
      iter (fun (i,t) -> f t) its; f a; f b
   | `BTYP_type_match (t,ps) ->
-    let g (a,b,c,d) = f a; f d in
+    let g (tp,t) = f tp.pattern; f t in
     f t; 
     iter g ps
  
@@ -2053,11 +2062,12 @@ and string_of_expr (e:expr_t) =
    3 -- ^
    4 -- *
    5 -- +
-   6 .. and
-   7 .. or
-   8 -- ->
-   9 -- =>
-   10    as, all
+   6 -- isin 
+   7 .. and
+   8 .. or
+   9 -- ->
+   10 -- =>
+   11    as, all
 *)
 
 
@@ -2109,11 +2119,11 @@ and st prec tc : string =
     | `TYP_intersect ls ->
       begin match ls with 
       | [] -> 0,"unit" 
-      | _ -> 7,cat " and " (map (st 7) ls)
+      | _ -> 9,cat " and " (map (st 9) ls)
       end
 
     | `TYP_function (args, result) ->  
-      8,st 8 args ^ " -> " ^ st 8 result
+      9,st 9 args ^ " -> " ^ st 9 result
 
     | `TYP_array (vt,it) -> 3, st 1 vt ^ "^" ^ st 3 it
     
@@ -2121,13 +2131,15 @@ and st prec tc : string =
     | `TYP_lvalue t -> 0,"lvalue[" ^ st 1 t ^"]"
     
     | `TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
-    | `TYP_as (t,s) -> 10,st 10 t ^ " as " ^ s
+    | `TYP_as (t,s) -> 11,st 11 t ^ " as " ^ s
 
     | `TYP_proj (i,t) -> 2,"proj_"^si i^" "^ st 2 t
     | `TYP_dual t -> 2,"~"^ st 2 t
     | `TYP_dom t -> 2,"dom "^ st 2 t
     | `TYP_cod t -> 2,"cod "^st 2 t
     | `TYP_case_arg (i,t) -> 2,"case_arg_"^si i^" "^st 2 t
+
+    | `TYP_isin (t1,t2) -> 6,st 2 t1 ^ " isin " ^ st 6 t2
 
     | `TYP_apply (t1,t2) -> 2,st 2 t1 ^ " " ^ st 2 t2
     | `TYP_type -> 0,"TYPE"
@@ -2208,7 +2220,7 @@ and sb dfns depth fixlist counter prec tc =
         sbt 99 t ^
         " with" ^
         catmap ""
-        (fun (p,_,_,t) ->
+        (fun ({pattern=p},t) ->
           " | " ^ sbt 99 p ^ " => " ^ sbt 99 t 
         )
         ps 
@@ -3539,6 +3551,7 @@ and string_of_bbdcl dfns bbdcl index =
   let name = qualified_name_of_index dfns index in
   let sobt t = string_of_btypecode dfns t in
   let se e = string_of_bound_expression dfns e in
+  let un = `BTYP_tuple [] in 
   match bbdcl with
   | `BBDCL_function (props,vs,ps,res,es) ->
     string_of_properties props ^
@@ -4242,13 +4255,30 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
       else if !v = 1 then `TYP_tuple[]
       else `TYP_unitsum !v
 
+  (* NOT SPECIAL NAME HANDLING HACKS!! *)
   | `AST_apply(sr,(e1,e2)) ->
     begin match e1 with
     | `AST_name (_,name,[]) ->
       let name' = name ^ "          " (* 10 chars *) in
       if name = "typeof" then `TYP_typeof e2 
       else let arg = typecode_of_expr e2 in
-      if name = "compl" then `TYP_dual arg
+      if name = "_isin" then
+      begin
+        match arg with
+        | `TYP_type_tuple [memt; sett] ->
+           `TYP_isin (memt, sett)
+        | _ -> 
+          (* this can be fixed by taking projections but I can't be bothered atm *)
+          failwith 
+           "Implementation limitation, 'isin' operator requires two explicit arguments"
+      end
+      else if name = "typesetof" then
+      begin
+        match arg with 
+        | `TYP_type_tuple ls -> `TYP_typeset ls
+        | x -> `TYP_typeset [x]
+      end
+      else if name = "compl" then `TYP_dual arg
       else if String.sub name' 0 5 = "proj_" 
       then 
         begin 

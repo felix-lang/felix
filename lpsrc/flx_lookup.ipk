@@ -225,6 +225,7 @@ open Flx_beta
 open Flx_generic
 open Flx_name
 open Flx_overload
+open Flx_tpat
 
 let unit_t = `BTYP_tuple []
 
@@ -800,53 +801,6 @@ should start with reset traps.
   pattern variables
 *)
 
-and type_of_tpattern syms p : 
-  typecode_t * 
-  (int * string) list *     (* variables for '?' terms *)
-  int list *                (* variables for 'any' terms *)
-  (int * string) list *     (* variables for 'as' terms *)
-  (int * typecode_t) list   (* variables for as terms *)
-= 
-  let sr = "unk",0,0,0,0 in
-  let explicit_vars = ref [] in
-  let any_vars = ref [] in
-  let as_vars = ref [] in
-  let eqns = ref [] in
-  let rec tp p = 
-    match p with
-    | `TPAT_function (a,b) -> `TYP_function (tp a, tp b)
-    | `TPAT_tuple ps -> `TYP_tuple (map tp ps)
-    | `TPAT_sum ps -> `TYP_sum (map tp ps)
-    | `TPAT_pointer p -> `TYP_pointer (tp p)
-    | `TPAT_name (n,ps) -> `AST_name (sr,n,map tp ps)
-    | `TPAT_void -> `AST_void sr
-
-    | `TPAT_var n -> 
-      let j = !(syms.counter) in 
-      incr (syms.counter); 
-      explicit_vars := (j,n) :: !explicit_vars;
-      `TYP_var j 
-
-    | `TPAT_any -> 
-      let j = !(syms.counter) in 
-      incr (syms.counter); 
-      any_vars := j :: !any_vars;
-      `TYP_var j
-
-    | `TPAT_as (t,n) ->
-      let t = tp t in
-      let j = !(syms.counter) in 
-      incr (syms.counter); 
-      as_vars := (j,n) :: !as_vars;
-      eqns := (j,t) :: !eqns;
-      t
-
-    | `TPAT_unitsum j -> `TYP_unitsum j
-    | `TPAT_type_tuple ts -> `TYP_type_tuple (map tp ts)
-  in 
-    let t = tp p in
-    t,!explicit_vars, !any_vars, !as_vars, !eqns
-
 (* params is list of string * bound type *)
 
 and bind_type' 
@@ -953,7 +907,7 @@ and bind_type'
           (*
           print_endline ("Bound matching is " ^ sbt syms.dfns p' ^ " => " ^ sbt syms.dfns t');
           *)
-          pts := (p',varset,eqns,t') :: !pts
+          pts := ({pattern=p'; pattern_vars=varset; assignments=eqns},t') :: !pts
     )
     ps
     ;
@@ -1055,6 +1009,62 @@ and bind_type'
     failwith "Unexpected `TYP_ellipsis (...) in bind type"
   | `TYP_none ->  
     failwith "Unexpected `TYP_none in bind type"
+
+  | `TYP_isin (elt,tset) ->  
+    let elt = bt elt in
+    let tset = bt tset in
+    begin match tset with
+    (* x isin { a,b,c } is the same as 
+      typematch x with
+      | a => 1
+      | b => 1
+      | c => 1
+      | _ => 0
+      endmatch
+
+      ** THIS CODE ONLY WORKS FOR BASIC TYPES **
+      
+      This is because we don't know what to do with any
+      type variables in the terms of the set. The problem
+      is that 'bind type' just replaces them with bound
+      variables. We have to assume they're not pattern
+      variables at the moment, therefore they're variables
+      from the environment.
+
+      We should really allow for patterns, however bound
+      patterns aren't just types, but types with binders
+      indicating 'as' assignments and pattern variables.
+
+      Crudely -- typesets are a hack that we should get 
+      rid of in the future, since a typematch is just
+      more general .. however we have no way to generalise
+      type match cases so they can be named at the moment.
+
+      This is why we have typesets.. so I need to fix them,
+      so the list of things in a typeset is actually
+      a sequence of type patterns, not types.
+      
+    *)
+    | `BTYP_typeset ls ->
+    let e = IntSet.empty in
+    let un = `BTYP_tuple [] in
+    let lss = rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
+    let fresh = !(syms.counter) in incr (syms.counter);
+    let dflt = 
+      {
+        pattern=`BTYP_var (fresh,`BTYP_type); 
+        pattern_vars = IntSet.singleton fresh;
+        assignments=[]
+      },
+      `BTYP_void 
+    in
+    let lss = rev (dflt :: lss) in
+    `BTYP_type_match (elt, lss)
+    
+    | x -> 
+      clierr sr  
+        ("expected explicit typeset, got " ^ sbt syms.dfns x)
+    end
 
   (* HACK .. assume variable is type TYPE *)
   | `TYP_var i ->  `BTYP_var (i,`BTYP_type)
@@ -3383,6 +3393,7 @@ and rebind_btype syms env sr ts t: btypecode_t =
       bind_type syms env sr t'
     | _ -> t
     end
+
   | `BTYP_tuple ts -> `BTYP_tuple (map rbt ts)
   | `BTYP_typeset ts ->  `BTYP_typeset (map rbt ts)
   | `BTYP_intersect ts ->  `BTYP_intersect (map rbt ts)

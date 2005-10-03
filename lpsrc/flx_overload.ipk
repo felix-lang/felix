@@ -37,6 +37,7 @@ open Flx_unify
 open Flx_beta
 open Flx_generic
 open Flx_name
+open Flx_tconstraint
 
 type overload_result = 
  int *  (* index of function *)
@@ -121,10 +122,12 @@ let overload
     *)
     let t = bt sr i t in
     let t = lift t in
+    let type_constraint = build_type_constraints syms (bt sr i) sr vs in
     (*
     print_endline ("Candidate bound sig is " ^ sbt syms.dfns t);
     print_endline ("pvs = " ^ catmap ", " (fun (s,i) ->s ^ "=" ^ si i) pvs);
     print_endline ("vs = " ^ catmap ", " (fun (s,i) ->s ^ "=" ^ si i) vs);
+    print_endline ("type constraint = " ^ sbt syms.dfns type_constraint);
     *)
     (* Here we have a parameter list vs of m type variables,
        a signature type t, containing these variables,
@@ -233,7 +236,31 @@ let overload
         ", ts=" ^ catmap ", " (sbt syms.dfns) ts
       );
       *)
-      Some (i,t,mgu,ts)
+
+      (* we need to check the type constraint, it uses the
+        raw vs type variable indicies. We need to substitute
+        in the corresponding ts values. First we need to build
+        a map of the correspondence
+      *)
+
+      assert (length bvs = length ts);
+      let type_constraint = tsubst bvs ts type_constraint in
+      (*
+      print_endline ("Substituted type constraint " ^ sbt syms.dfns type_constraint);
+      *)
+      let reduced_constraint = beta_reduce syms [] type_constraint in
+      (*
+      print_endline ("Reduced type constraint " ^ sbt syms.dfns reduced_constraint);
+      *)
+      begin match reduced_constraint with
+      | `BTYP_void -> 
+        (*
+        print_endline "Constraint failure, rejecting candidate";
+        *)
+        None
+      | `BTYP_tuple [] -> Some (i,t,mgu,ts)
+      | _ -> clierr sr "[overload] Cannot resolve type constraint!"
+      end
 
     | None -> 
       (*

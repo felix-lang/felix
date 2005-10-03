@@ -2289,6 +2289,7 @@ flx_keywords = [
     ("inf", "INF"),
     ("in", "IN"),
     ("is", "IS"),
+    ("isin", "ISIN"),
     ("inherit", "INHERIT"),
     ("inline", "INLINE"),
     ("jump", "JUMP"),
@@ -2402,6 +2403,7 @@ flx_2_char_syms = [
     ("RIGHTARROW","->"),
     ("EQRIGHTARROW","=>"),
     ("LEFTARROW","<-"),
+
     ("LSQANGLE","[<"),
     ("RSQANGLE",">]"),
 

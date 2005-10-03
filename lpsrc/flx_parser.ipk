@@ -1971,6 +1971,7 @@ cmp_op:
   | GREATER                            { "gt",$1 }
   | LESSEQUAL                          { "le",$1 }
   | GREATEREQUAL                       { "ge",$1 }
+  | ISIN                               { "_isin",$1 } /* hack */
 
 comparison:
   | sum cmp_op sum cmp_item_list

@@ -217,7 +217,23 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
   | `BTYP_tuple ls -> `BTYP_tuple (map br ls)
   | `BTYP_array (i,t) -> `BTYP_array (i, br t)
   | `BTYP_sum ls -> `BTYP_sum (map br ls)
-  | `BTYP_intersect ls -> `BTYP_intersect (map br ls)
+
+  (* Intersection type reduction rule: if any term is 0,
+     the result is 0, otherwise the result is the intersection
+     of the reduced terms with 1 terms removed: if there
+     are no terms return 1, if a single term return it,
+     otherwise return the intersection of non units
+     (at least two)
+  *)
+  | `BTYP_intersect ls -> 
+    let ls = map br ls in
+    if mem `BTYP_void ls then `BTYP_void
+    else let ls = filter (fun i -> i <> `BTYP_tuple []) ls in
+    begin match ls with
+    | [] -> `BTYP_tuple []
+    | [t] -> t
+    | ls -> `BTYP_intersect ls
+    end
   | `BTYP_typeset ls -> `BTYP_typeset (map br ls)
   | `BTYP_type_tuple ls -> `BTYP_type_tuple (map br ls)
   | `BTYP_function (a,b) -> `BTYP_function (br a, br b)
@@ -330,8 +346,11 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
     *)
     let tt = br tt in
     let pts = 
-      map (fun (a,b,c,d) -> 
-        br a, b, map (fun (j,t) -> j, br t) c, br d
+      map (fun (tp,t) -> 
+        {
+          tp with pattern=br tp.pattern; 
+           assignments= map (fun (j,t) -> j, br t) tp.assignments
+         }, br t
       ) 
       pts 
     in
@@ -340,7 +359,7 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
     print_endline ("Typematch [after reduction] " ^ sbt syms.dfns xx);
     *)
     let new_matches = ref [] in
-    iter (fun ((p',dvars,eqns,t') as x) ->
+    iter (fun (({pattern=p'; pattern_vars=dvars; assignments=eqns}, t') as x) ->
       (*
       print_endline ("Tring to unify argument with " ^ sbt syms.dfns p');
       *)
@@ -358,7 +377,7 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
     match pts with
     | [] -> 
       failwith "[beta-reduce] typematch failure"
-    | (p',dvars,eqns,t') :: _ ->
+    | ({pattern=p';pattern_vars=dvars;assignments=eqns},t') :: _ ->
       try 
         let mgu = unification false syms.dfns [p', tt] dvars in
         let t' = list_subst eqns t' in

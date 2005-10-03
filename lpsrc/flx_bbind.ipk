@@ -40,6 +40,8 @@ open Flx_exceptions
 open Flx_bexe
 open List
 open Flx_generic
+open Flx_tpat
+
 
 let find_param name_map s =
   match Hashtbl.find name_map s with
@@ -49,8 +51,6 @@ let find_param name_map s =
 let print_bvs vs =
   if length vs = 0 then "" else
   "[" ^ catmap "," (fun (s,i) -> s ^ "<"^si i^">") vs^ "]"
-
-
 
 let bind_regex syms env sr be ret_type cls : regular_args_t =
   (*
@@ -128,7 +128,7 @@ let bind_reqs bt syms env sr reqs : (bid_t * btypecode_t list) list =
   in
     br
   
-let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;(*vs=ivs;*)privmap=name_map;dirs=dirs;symdef=bdcl} =
+let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=name_map;dirs=dirs;symdef=bdcl} =
   let qname = qualified_name_of_index syms.dfns i in
   let true_parent = find_true_parent syms.dfns name parent in
   let bexes env exes rt i tvars = bind_exes syms env sr exes rt name i tvars in
@@ -141,9 +141,9 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;(*vs=ivs;*)privmap=name
     let be e = bind_expression syms env e in
     let luqn n = lookup_qn_in_env syms env n in
     let luqn2 n = lookup_qn_in_env2 syms env n in
+    let bt t = bind_type syms env sr t in
     let ivs = find_vs syms i in (* this is the full vs list *) 
     let bvs = map (fun (s,i,tp) -> s,i) ivs in
-    let bt t = bind_type syms env sr t in
     let btraint = function | Some x -> Some (be x) | None -> None in
     let bind_reqs reqs = bind_reqs bt syms env sr reqs in
     (*
@@ -397,9 +397,9 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;(*vs=ivs;*)privmap=name
       let reqs = bind_reqs reqs in
       let bbdcl = match bret with
         | `BTYP_void ->
-          `BBDCL_proc (props,bvs, ts,ct,reqs)
+          `BBDCL_proc (props,bvs,ts,ct,reqs)
         | _ ->
-          `BBDCL_fun (props,bvs, ts,bret,ct,reqs,prec)
+          `BBDCL_fun (props,bvs,ts,bret,ct,reqs,prec)
       in
       Hashtbl.add bbdfns i (name,None,sr,bbdcl);
       begin

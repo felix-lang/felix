@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.156  2005/10/03 18:58:11  skaller
+Basic type constraints now working.
+
 Revision 1.155  2005/09/30 19:01:19  skaller
 Rewrote the lookup to use a single record for recursion stopper,
 repairs on type functions so type matches reduce properly,
@@ -2420,6 +2423,8 @@ FLX_MODULES = [
   'flx_name'         , 
   'flx_treg'         ,
   'flx_beta'         ,
+  'flx_tpat'         , 
+  'flx_tconstraint'  ,
   'flx_generic'      , 
   'flx_overload'     , 
   'flx_lookup'       , 
