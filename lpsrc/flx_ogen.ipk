@@ -207,7 +207,10 @@ let rec get_offsets' syms bbdfns typ : string list =
   | `BTYP_type 
   | `BTYP_typefun _
   | `BTYP_type_tuple _
-  | `BTYP_type_match _ -> assert false
+  | `BTYP_type_match _ 
+  | `BTYP_typesetintersection _ 
+  | `BTYP_typesetunion _ 
+    -> assert false
 
 let get_offsets syms bbdfns typ =
   map (fun s -> s^",") (get_offsets' syms bbdfns typ)

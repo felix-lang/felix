@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.157  2005/10/05 06:29:31  skaller
+More work on type constraints, more OO in build system.
+
 Revision 1.156  2005/10/03 18:58:11  skaller
 Basic type constraints now working.
 
@@ -3081,7 +3084,7 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('all: dummy')
 @tangle('\tpython script/maker extract compiler rtl elkhound drivers optimise_c')
-@tangle('\tmake tools libdoc')
+@tangle('\t#make tools libdoc')
 @tangle('\tpython script/maker clean test log_output stop_on_error check_output')
 @tangle('\tpython script/maker clean test static log_output stop_on_error check_output')
 @tangle('\tpython script/maker clean test optimise_c inline log_output stop_on_error check_output')

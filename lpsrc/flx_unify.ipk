@@ -397,7 +397,9 @@ let fix i t =
     | `BTYP_typefun _
     | `BTYP_type 
     | `BTYP_type_tuple _
-    | `BTYP_type_match _ -> t
+    | `BTYP_type_match _ 
+    | `BTYP_typesetunion _ -> t
+    | `BTYP_typesetintersection _ -> t
   in
     aux 0 t
 
@@ -531,56 +533,8 @@ let rec unification allow_lval dfns
       | t,`BTYP_intersect ts ->
         iter (function t' -> eqns := (t,t') :: !eqns) ts
 
-
-      (* t unifies with a set of types if it unifies with
-         any one of them. Unfortunately, it is not enough
-         to just find the first type in the list because
-         the resulting unifier may fail later, whilst
-         a subsequent one might succeed.
-
-         To solve this properly requires an Earley parser,
-         that is, we need backtracking to the last decision
-         point, failure or success...
-
-         We will start by just solving a subset of the
-         cases.
-
-         NOTE:probably get rid of this.. it seems wrong.
-         'int' is in the set {'int','long'} but this is of
-         little use to know: the 'unifier' cannot say which
-         choice was made: it's an undiscriminated union,
-         not a sum, and there is no 'type variable' to bind
-         in the MGU .. so I think this is crap.
-
-         It also uniquely introduces the problem of creating
-         a type variable from the MGU .. which doesn't contain
-         any meta typing information... probably the MGU should
-         to fix this .. but it is always substituting for a type
-         variable with know metatype so why bother?
-      *)
-      (* SUPPORT FOR TYPESETS REMOVED .. hehe, before even released ..
-      | `BTYP_typeset ts,t
-      | t,`BTYP_typeset ts -> 
-        let u (t':btypecode_t): (int * btypecode_t) list option =
-          try Some (unification allow_lval dfns [(t,t')] dvars)
-          with Not_found -> None
-        in
-        let mgus = map u ts in
-        let mgus : (int * btypecode_t) list list = fold_left 
-          (fun acc -> function | Some x -> x::acc | None -> acc) 
-          [] mgus 
-        in
-        begin match mgus with
-        | [] -> raise Not_found
-        | [mgu] ->   iter (fun (i,t) -> eqns := (`BTYP_var i,t) :: !eqns) mgu
-        | _ ->
-          failwith "Unification algorithm currently requires terms of typeset to be non-intersecting"
-        end
-      *)
-
       | `BTYP_pointer t1, `BTYP_pointer t2 ->
         eqns := (t1,t2) :: !eqns
-
 
       | `BTYP_unitsum i, `BTYP_unitsum j when i = j -> ()
 
@@ -944,7 +898,6 @@ let fold dfns t =
     let ax t = aux ((depth,t')::trail) (depth+1) t in
     match t' with
     | `BTYP_intersect ls 
-    | `BTYP_typeset ls 
     | `BTYP_sum ls 
     | `BTYP_inst (_,ls)
     | `BTYP_tuple ls -> iter ax ls
@@ -970,11 +923,14 @@ let fold dfns t =
 
     | `BTYP_apply (a,b) -> ax a; ax b
 
+    | `BTYP_typesetintersection _
+    | `BTYP_typesetunion _
+    | `BTYP_typeset _
     | `BTYP_typefun _
     | `BTYP_type 
     | `BTYP_type_tuple _
-    | `BTYP_type_match _ -> 
-      failwith ("[fold] unexpected metatype " ^ sbt dfns t')
+    | `BTYP_type_match _ -> () (* assume fixpoint can't span these boundaries *) 
+      (* failwith ("[fold] unexpected metatype " ^ sbt dfns t') *)
   in
     try aux [] 0 t; t
     with Found t -> t
@@ -989,6 +945,8 @@ let var_occurs t =
     match t with
     | `BTYP_intersect ls 
     | `BTYP_typeset ls 
+    | `BTYP_typesetintersection ls 
+    | `BTYP_typesetunion ls 
     | `BTYP_sum ls 
     | `BTYP_inst (_,ls)
     | `BTYP_tuple ls -> iter aux ls

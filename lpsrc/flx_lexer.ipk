@@ -88,8 +88,18 @@ let src_of_token t = match t with
 
   | ERRORTOKEN (s,_) 
 
+@for k,s in flx_1_char_syms:
+  tangle('  | '+k+' s ',inhibit_sref=1)
+
+@for k,s in flx_2_char_syms:
+  tangle('  | '+k+' s ',inhibit_sref=1)
+
+@for k,s in flx_3_char_syms:
+  tangle('  | '+k+' s ',inhibit_sref=1)
+
 @for n,t in flx_keywords: tangle('  | '+t+' s',inhibit_sref=1)
 
+(*
   | EQUAL s 
   | PLUS s 
   | MINUS s 
@@ -156,6 +166,7 @@ let src_of_token t = match t with
   | COLONCOLON s 
   | DOTDOT s 
   | DOTDOTDOT s 
+*)
     -> s
 
 @h = tangler('src/flx_lexstate.ml','data')

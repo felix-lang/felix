@@ -234,7 +234,63 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
     | [t] -> t
     | ls -> `BTYP_intersect ls
     end
+
   | `BTYP_typeset ls -> `BTYP_typeset (map br ls)
+
+  | `BTYP_typesetunion ls -> 
+    let ls = map br ls in
+    (* split into explicit typesets and other terms 
+      at the moment, there shouldn't be any 'other'
+      terms (since there are no typeset variables ..
+    *)
+    let rec aux ts ot ls  = match ls with
+    | [] -> 
+      begin match ot with 
+      | [] -> `BTYP_typeset ts
+      | _ -> 
+        print_endline "WARNING UNREDUCED TYPESET UNION";
+        `BTYP_typesetunion (`BTYP_typeset ts :: ot)
+      end
+
+    | `BTYP_typeset xs :: t -> aux (xs @ ts) ot t
+    | h :: t -> aux ts (h :: ot) t
+    in aux [] [] ls
+
+  (* NOTE: sets have no unique unit *)
+  (* WARNING: this representation is dangerous: 
+     we can only calculate the real intersection
+     of discrete types *without type variables*
+
+     If there are pattern variables, we may be able
+     to apply unification as a reduction. However
+     we have to be very careful doing that: we can't
+     unify variables bound by universal or lambda quantifiers 
+     or the environment: technically I think we can only
+     unify existentials. For example the intersection
+
+     'a * int & long & 'b
+
+     may seem to be long * int, but only if 'a and 'b are
+     pattern variables, i.e. dependent variables we're allowed
+     to assign. If they're actually function parameters, or
+     just names for types in the environment, we have to stop
+     the unification algorithm from assigning them (since they're
+     actually particular constants at that point).
+
+     but the beta-reduction can be applied anywhere .. so I'm
+     not at all confident of the right reduction rule yet.
+
+     Bottom line: the rule below is a hack.
+  *)
+  | `BTYP_typesetintersection ls -> 
+    let ls = map br ls in
+    if mem (`BTYP_typeset []) ls then `BTYP_typeset []
+    else begin match ls with
+    | [t] -> t
+    | ls -> `BTYP_typesetintersection ls
+    end
+
+
   | `BTYP_type_tuple ls -> `BTYP_type_tuple (map br ls)
   | `BTYP_function (a,b) -> `BTYP_function (br a, br b)
   | `BTYP_pointer a -> `BTYP_pointer (br a)

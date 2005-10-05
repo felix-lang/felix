@@ -607,7 +607,7 @@ and bind_type syms env sr t : btypecode_t =
     bt 
 
 and bind_expression syms env e  =
-  let be = 
+  let e',t' = 
     try
       bind_expression' syms env rsground e 
     with 
@@ -616,7 +616,8 @@ and bind_expression syms env e  =
        clierr sr 
        ("Circular dependency typing expression " ^ string_of_expr e)
   in
-  be
+  let t' = beta_reduce syms [] t' in
+  e',t'
 
 
 (* =========================================== *)
@@ -834,6 +835,7 @@ and bind_type'
   *)
   let t = 
   match t with
+  | `TYP_intersect ts -> `BTYP_intersect (map bt ts)
 
   (* We first attempt to perform the match
     at binding time as an optimisation, if that
@@ -1010,6 +1012,11 @@ and bind_type'
   | `TYP_none ->  
     failwith "Unexpected `TYP_none in bind type"
 
+  | `TYP_setunion ts -> `BTYP_typesetunion (map bt ts)
+  | `TYP_setintersection ts -> `BTYP_typesetintersection (map bt ts)
+  | `TYP_typeset ts -> `BTYP_typeset (map bt ts)
+
+
   | `TYP_isin (elt,tset) ->  
     let elt = bt elt in
     let tset = bt tset in
@@ -1115,9 +1122,6 @@ and bind_type'
     | _ -> `BTYP_unitsum k
     )
 
-  | `TYP_intersect ts -> `BTYP_intersect (map bt ts)
-  | `TYP_typeset ts -> `BTYP_typeset (map bt ts)
-
   | `TYP_sum ts -> 
     let ts' = map bt ts  in
     if all_units ts' then
@@ -1201,7 +1205,10 @@ and bind_type'
        unless it is a simple name .. which is already handled by
        the previous case .. so we can drop them .. ?
        *)
-       let result = lookup_qn_with_sig' syms sr sr env {rs with depth=rs.depth+1 } qn sign in
+
+       let result = lookup_qn_with_sig' syms sr sr env 
+         {rs with depth=rs.depth+1 } qn sign 
+       in
        (* this is a hack, since result will be a closure expression,
           we just want a bound name .. but type name lookup, which returns
           the derired type, doesn't do overloading: so we use lookup_qn_with_sig,
@@ -1507,7 +1514,7 @@ and typeofindex_with_ts
   let t = typeofindex syms index in
   let varmap = make_varmap syms sr index ts in
   let t = varmap_subst varmap t in
-  t
+  beta_reduce syms [] t
 
 (* This routine should ONLY 'fail' if the return type
   is indeterminate. This cannot usually happen.
@@ -1648,7 +1655,8 @@ and inner_typeofindex_with_ts
  *)
  let t = inner_typeofindex syms rs index in
  let varmap = make_varmap syms sr index ts in
- varmap_subst varmap t
+ let t = varmap_subst varmap t in
+ beta_reduce syms [] t 
  
 
 (* this routine is called to find the type of a function
@@ -1676,6 +1684,7 @@ and typeofindex
         print_endline "typeofindex produced free fixpoint";
         failwith "[typeofindex] free fixpoint constructed"
       in
+      let t = beta_reduce syms [] t in
       (*
       print_endline ("Type of index "^ si index ^ " is " ^ sbt syms.dfns t);
       *)
@@ -2633,6 +2642,8 @@ and bind_expression' syms env (rs:recstop) e
   | `AST_superscript _ 
   | `AST_ellipsis _ 
   | `AST_parse _ 
+  | `AST_setunion _
+  | `AST_setintersection _
     -> 
       clierr sr 
      ("[bind_expression] Expected expression, got " ^ string_of_expr e) 
@@ -3393,6 +3404,9 @@ and rebind_btype syms env sr ts t: btypecode_t =
       bind_type syms env sr t'
     | _ -> t
     end
+
+  | `BTYP_typesetunion ts -> `BTYP_typesetunion (map rbt ts)
+  | `BTYP_typesetintersection ts -> `BTYP_typesetintersection (map rbt ts)
 
   | `BTYP_tuple ts -> `BTYP_tuple (map rbt ts)
   | `BTYP_typeset ts ->  `BTYP_typeset (map rbt ts)

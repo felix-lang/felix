@@ -57,6 +57,7 @@ open Flx_ctypes
 open Flx_cexpr
 open Flx_maps
 open Flx_pgen
+open Flx_beta
 
 let string_of_string = Flx_string.c_quote_of_string
 
@@ -178,11 +179,14 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     ", got ts=" ^ 
     si (length ts)
   );
-  let tsub t = reduce_type (tsubst vs ts t) in
+  let tsub t = reduce_type (beta_reduce syms [] (tsubst vs ts t)) in
   let tn t = cpp_typename syms (tsub (lower t)) in
-  let raw_typename t = cpp_typename syms (tsubst vs ts (lower t)) in
+
+  (* NOTE this function does not do a reduce_type *)
+  let raw_typename t = cpp_typename syms (beta_reduce syms [] (tsubst vs ts t)) in
+
   let ge_arg ((x,t) as a) = 
-    let t = reduce_type (tsubst vs ts (lower t)) in
+    let t = tsub t in
     match t with
     | `BTYP_tuple [] -> ""
     | _ -> ge a
@@ -193,7 +197,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   in
   let our_display = get_display_list bbdfns this in
   let our_level = length our_display in
-  let rt t = reduce_type (lstrip syms.dfns (tsub t)) in
+  let rt t = reduce_type (beta_reduce syms [] (lstrip syms.dfns (tsubst vs ts t))) in
   let t = rt t in
   match t with
   | `BTYP_tuple [] -> 
@@ -239,7 +243,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       let id,_,_,entry = Hashtbl.find bbdfns i in
       begin match entry with
       | `BBDCL_union (bvs,cts) ->
-        let tsub' t = reduce_type (tsubst bvs ts t) in
+        let tsub' t = reduce_type (beta_reduce syms [] (tsubst bvs ts t)) in
         let cts = map (fun (_,t) -> tsub' t) cts in
         if all_voids cts then ge' e
         else ce_dot (ge' e) "variant"
@@ -256,7 +260,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     end
 
   | `BEXPR_match_case (n,((e',t') as e)) -> 
-    let t' = reduce_type (lstrip syms.dfns t') in
+    let t' = reduce_type (beta_reduce syms [] (lstrip syms.dfns t')) in
     if is_unitsum t' then
       ce_infix "==" (ge' e) (ce_atom (si (n-1)))
     else
@@ -487,26 +491,10 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       | `Str s -> ce_expr prec s
       | `StrTemplate s ->
         let ts = map tsub ts in
-        let retyp = reduce_type (lstrip syms.dfns (tsubst vs ts retyp)) in
+        let retyp = reduce_type (beta_reduce syms [] (lstrip syms.dfns (tsubst vs ts retyp))) in
         let retyp = tn retyp in
         gen_prim_call syms bbdfns tsub ge'' s ts (arg,argt) retyp sr sr2 prec
       end
-    (*
-    (* not sure whether these will be prims or directs or what .. *)
-    | `BBDCL_cstruct (vs,_) ->
-      ce_atom ("reinterpret<"^ id ^">(" ^ ge a ^ ")")
-       
-    (* not sure whether these will be prims or directs or what .. *)
-    | `BBDCL_struct (vs,cts) ->
-      let name = tn (`BTYP_inst (index,ts)) in
-      if length cts > 1 then
-        (* argument must be an lvalue *)
-       ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
-      else if length cts = 0 then
-        ce_atom (name ^ "()")
-      else
-        ce_atom (name ^ "(" ^ ge a ^ ")")
-    *)
 
     (* but can't be a Felix function *)
     | _ -> 
@@ -538,7 +526,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
     | `BBDCL_nonconst_ctor (vs,uidx,udt,cidx,ct) ->
       let ts = map tsub ts in
-      let ct = reduce_type (tsubst vs ts ct) in
+      let ct = reduce_type (beta_reduce syms [] (tsubst vs ts ct)) in
       let ctt = tn ct in
       let ptrmap = shape_of bbdfns tn ct in 
       ce_atom (
@@ -634,7 +622,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
               xs
 
             | _,tt ->
-              let tt = reduce_type (lstrip syms.dfns (tsubst vs ts tt)) in
+              let tt = reduce_type (beta_reduce syms [] (lstrip syms.dfns (tsubst vs ts tt))) in
               (* NASTY, EVALUATES EXPR MANY TIMES .. *)
               let n = ref 0 in
               fold_left
@@ -676,19 +664,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           ^
           "\n      .apply(" ^ ge_arg a ^ ")"
         in ce_atom s
-
-    (*
-    | `BBDCL_cstruct (vs,_) ->
-      ce_atom ("reinterpret<"^ id ^">(" ^ ge a ^ ")")
-       
-    | `BBDCL_struct (vs,cts) ->
-      let name = tn (`BTYP_inst (index,ts)) in
-      if length cts > 1 then
-        (* argument must be an lvalue *)
-        ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
-      else
-        ce_atom (name ^ "(" ^ ge a ^ ")")
-    *)
 
     | _ -> 
       failwith 

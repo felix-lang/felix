@@ -52,57 +52,46 @@ let cilVersion      = "1.2.5"
 
 @h = tangler("src/flx_cil_machdep_type.mli")
 @select(h)
+@ctypes = [
+  'bool',
+  'cbool',
+  'int',
+  'short',
+  'long',
+  'longlong',
+  'enum',
+  'wchar',
+  'sizeof',
+
+  'float',
+  'double',
+  'longdouble',
+
+  'complex',
+  'doublecomplex',
+  'longdoublecomplex',
+
+  'imaginary',
+  'doubleimaginary',
+  'longdoubleimaginary',
+  ]
+
+@def dcl(a):
+  tangle("  sizeof_" + a.lower() + " : int;")
+  tangle("  alignof_" + a.lower() + " : int;")
+
+
 type mach = {
   version_major: int;     (* Major version number *)
   version_minor: int;     (* Minor version number *)
   version: string;        (* version number *)
   underscore_name: bool;  (* If assembly names have leading underscore *)
-  sizeof_bool: int;      (* Size of "bool" *)
-  sizeof_cbool: int;      (* Size of "_Bool" *)
-  sizeof_short: int;      (* Size of "short" *)
-  sizeof_int: int;        (* Size of "int" *)
-  sizeof_long: int ;      (* Size of "long" *)
-  sizeof_longlong: int;   (* Size of "long long" *)
-  sizeof_enum: int;       (* Size of enum types *)
-  sizeof_sizeof: int;     (* Size of "sizeof(T)" *)
-  sizeof_wchar: int;      (* Size of "wchar_t" *)
+
+@for x in ctypes: dcl(x)
 
   sizeof_ptr: int;        (* Size of pointers *)
   sizeof_void: int;       (* Size of "void" *)
   sizeof_fun: int;        (* Size of function *)
-
-  sizeof_float: int; (* Size of "float" *)
-  sizeof_double: int; (* Size of "double" *)
-  sizeof_longdouble: int; (* Size of "long double" *)
-
-  sizeof_complex: int;    (* Size of "complex" *)
-  sizeof_doublecomplex: int;    (* Size of "double complex" *)
-  sizeof_longdoublecomplex: int;    (* Size of "long double complex" *)
-
-  sizeof_imaginary: int;    (* Size of "complex" *)
-  sizeof_doubleimaginary: int;    (* Size of "double complex" *)
-  sizeof_longdoubleimaginary: int;    (* Size of "long double complex" *)
-
-  alignof_bool: int;  (* Alignment of "bool" *)
-  alignof_cbool: int;  (* Alignment of "_Bool" *)
-
-  alignof_short: int;  (* Alignment of "long long" *)
-  alignof_int: int;  (* Alignment of "long long" *)
-  alignof_long: int;  (* Alignment of "long long" *)
-  alignof_longlong: int;  (* Alignment of "long long" *)
-  alignof_enum: int;  (* Alignment of "long long" *)
-
-  alignof_float: int;    (* Alignment of "double" *)
-  alignof_double: int;    (* Alignment of "double" *)
-  alignof_longdouble: int;  (* Alignment of "long double" *)
-
-  alignof_complex: int;    (* Alignment of "complex" *)
-  alignof_doublecomplex: int;    (* Alignment of "double complex" *)
-  alignof_longdoublecomplex: int;    (* Alignment of "long double complex" *)
-
-  alignof_imaginary: int;    (* Alignment of "complex" *)
-  alignof_doubleimaginary: int;    (* Alignment of "double complex" *)
-  alignof_longdoubleimaginary: int;    (* Alignment of "long double complex" *)
 
   alignof_str: int;       (* Alignment of strings *)
   alignof_fun: int;       (* Alignment of function *)
@@ -129,54 +118,22 @@ let gcc:mach = {
   version_minor    = 2;
   version          = "3.2.2 20030222 (Red Hat Linux 3.2.2-5)";
   underscore_name  = true;
-@tangle("  sizeof_bool       = "+str(SIZEOF_BOOL)+";")
-@tangle("  sizeof_cbool       = "+str(SIZEOF_CBOOL)+";")
-@tangle("  sizeof_int       = "+str(SIZEOF_INT)+";")
-@tangle("  sizeof_short     = "+str(SIZEOF_SHORT)+";")
-@tangle("  sizeof_long      = "+str(SIZEOF_LONG)+";")
-@tangle("  sizeof_longlong  = "+str(SIZEOF_LONGLONG)+";")
-@tangle("  sizeof_enum      = "+str(SIZEOF_ENUM)+";")
-@tangle("  sizeof_wchar     = "+str(SIZEOF_WCHAR)+";")
-@tangle("  sizeof_sizeof    = "+str(SIZEOF_SIZEOF)+";")
-@tangle("  sizeof_ptr       = "+str(SIZEOF_VOIDP)+";")
-
-@tangle("  sizeof_float= "+str(SIZEOF_FLOAT)+";")
-@tangle("  sizeof_double  = "+str(SIZEOF_DOUBLE)+";")
-@tangle("  sizeof_longdouble  = "+str(SIZEOF_LONGDOUBLE)+";")
-
-@tangle("  sizeof_complex = "+str(SIZEOF_COMPLEX)+";")
-@tangle("  sizeof_doublecomplex  = "+str(SIZEOF_DOUBLECOMPLEX)+";")
-@tangle("  sizeof_longdoublecomplex  = "+str(SIZEOF_LONGDOUBLECOMPLEX)+";")
-
-@tangle("  sizeof_imaginary = "+str(SIZEOF_IMAGINARY)+";")
-@tangle("  sizeof_doubleimaginary  = "+str(SIZEOF_DOUBLEIMAGINARY)+";")
-@tangle("  sizeof_longdoubleimaginary  = "+str(SIZEOF_LONGDOUBLEIMAGINARY)+";")
-
-@tangle("  sizeof_void      = 1;")
-@tangle("  sizeof_fun       = 1;")
-
-@tangle("  alignof_bool = "+str(ALIGNOF_BOOL)+";")
-@tangle("  alignof_cbool = "+str(ALIGNOF_CBOOL)+";")
-@tangle("  alignof_short = "+str(ALIGNOF_SHORT)+";")
-@tangle("  alignof_int = "+str(ALIGNOF_INT)+";")
-@tangle("  alignof_long = "+str(ALIGNOF_LONG)+";")
-@tangle("  alignof_longlong = "+str(ALIGNOF_LONGLONG)+";")
-@tangle("  alignof_enum = "+str(ALIGNOF_ENUM)+";")
-
-@tangle("  alignof_float = "+str(ALIGNOF_FLOAT)+";")
-@tangle("  alignof_double = "+str(ALIGNOF_DOUBLE)+";")
-@tangle("  alignof_longdouble = "+str(ALIGNOF_LONGDOUBLE)+";")
-
-@tangle("  alignof_complex = "+str(ALIGNOF_COMPLEX)+";")
-@tangle("  alignof_doublecomplex = "+str(ALIGNOF_DOUBLECOMPLEX)+";")
-@tangle("  alignof_longdoublecomplex = "+str(ALIGNOF_LONGDOUBLECOMPLEX)+";")
-
-@tangle("  alignof_imaginary = "+str(ALIGNOF_IMAGINARY)+";")
-@tangle("  alignof_doubleimaginary = "+str(ALIGNOF_DOUBLEIMAGINARY)+";")
-@tangle("  alignof_longdoubleimaginary = "+str(ALIGNOF_LONGDOUBLEIMAGINARY)+";")
 
 @tangle("  alignof_str = 1;")
 @tangle("  alignof_fun = 1;")
+@tangle("  sizeof_void      = 1;")
+@tangle("  sizeof_fun       = 1;")
+@tangle("  sizeof_ptr       = "+str(SIZEOF_VOIDP)+";")
+
+@def pr(a):
+  d= globals()
+  v = d.get("SIZEOF_"+a.upper(),0)
+  tangle("  sizeof_" + a.lower() + " = " + str(v) + ";")
+  v = d.get("ALIGNOF_"+a.upper(),0)
+  tangle("  alignof_" + a.lower() + " = " + str(v) + ";")
+
+@for x in ctypes: pr(x)
+
 @if CHAR_IS_UNSIGNED:
    tangle("  char_is_unsigned = true;")
  else:

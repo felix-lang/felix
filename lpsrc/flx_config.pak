@@ -103,10 +103,6 @@ int main(int,char*[]) {
 @select(h)
 int main(int argc, char*argv[]) { return 0; }
 
-@h = tangler("tmp/dummyc.c",'c')
-@select(h)
-int main(int argc, char*argv[]) { return 0; }
-
 @h = tangler("tmp/dummy_lib.cxx",'c++')
 @select(h)
 extern "C" int fred(int,char*[]) { return 0; }
@@ -145,6 +141,16 @@ int main(int,char*argv[]) {
 @select(h)
 #include <cstdio>
 register void *sp __asm__ ("esp");
+
+int main(int,char*[]) { 
+   std::printf("Sp = %p\n",sp);
+   return 0;
+}
+
+@h = tangler("tmp/gxx_x86_64.cxx",'c++')
+@select(h)
+#include <cstdio>
+register void *sp __asm__ ("rsp");
 
 int main(int,char*[]) { 
    std::printf("Sp = %p\n",sp);
@@ -264,48 +270,27 @@ union endian_t {
 
 int main(int,char*[]) { 
   printf("SIZEOF_BOOL=%d\n",sizeof(bool));
-  printf("SIZEOF_CBOOL=%d\n",sizeof(int)); // fallback
   printf("SIZEOF_SHORT=%d\n",sizeof(short));
   printf("SIZEOF_INT=%d\n",sizeof(int));
   printf("SIZEOF_LONG=%d\n",sizeof(long));
-  printf("SIZEOF_LONGLONG=%d\n",sizeof(long)); // fallback
   printf("SIZEOF_FLOAT=%d\n",sizeof(float));
   printf("SIZEOF_DOUBLE=%d\n",sizeof(double));
-  printf("SIZEOF_LONGDOUBLE=%d\n",sizeof(double)); // fallback
   printf("SIZEOF_WCHAR=%d\n",sizeof(wchar_t));
+  printf("SIZEOF_PTRDIFF=%d\n",sizeof(ptrdiff_t));
   printf("SIZEOF_ENUM=%d\n",sizeof(enum_t));
   printf("SIZEOF_SIZEOF=%d\n",sizeof(sizeof(int)));
-
-  printf("SIZEOF_COMPLEX=%d\n",sizeof(float)); // fallback
-  printf("SIZEOF_DOUBLECOMPLEX=%d\n",sizeof(double)); // fallback
-  printf("SIZEOF_LONGDOUBLECOMPLEX=%d\n",sizeof(double)); // fallback
-
-  printf("SIZEOF_IMAGINARY=%d\n",sizeof(float)); // fallback
-  printf("SIZEOF_DOUBLEIMAGINARY=%d\n",sizeof(double)); // fallback
-  printf("SIZEOF_LONGDOUBLEIMAGINARY=%d\n",sizeof(double)); // fallback
 
   printf("SIZEOF_VOIDP=%d\n",sizeof(void*));
   printf("SIZEOF_FUNCP=%d\n",sizeof(fp_t));
 
   printf("ALIGNOF_BOOL=%d\n",offsetof(BOOL,y));
-  printf("ALIGNOF_CBOOL=%d\n",offsetof(BOOL,y)); // fallback
   printf("ALIGNOF_SHORT=%d\n",offsetof(SHORT,y));
   printf("ALIGNOF_INT=%d\n",offsetof(INT,y));
   printf("ALIGNOF_LONG=%d\n",offsetof(LONG,y));
-  printf("ALIGNOF_LONGLONG=%d\n",offsetof(LONG,y)); // fallback
   
   printf("ALIGNOF_FLOAT=%d\n",offsetof(FLOAT,y));
   printf("ALIGNOF_DOUBLE=%d\n",offsetof(DOUBLE,y));
-  printf("ALIGNOF_LONGDOUBLE=%d\n",offsetof(DOUBLE,y)); // fallback
   
-  printf("ALIGNOF_COMPLEX=%d\n",offsetof(FLOAT,y)); // fallback
-  printf("ALIGNOF_DOUBLECOMPLEX=%d\n",offsetof(DOUBLE,y)); // fallback
-  printf("ALIGNOF_LONGDOUBLECOMPLEX=%d\n",offsetof(DOUBLE,y)); // fallback
-
-  printf("ALIGNOF_IMAGINARY=%d\n",offsetof(FLOAT,y)); // fallback
-  printf("ALIGNOF_DOUBLEIMAGINARY=%d\n",offsetof(DOUBLE,y)); // fallback
-  printf("ALIGNOF_LONGDOUBLEIMAGINARY=%d\n",offsetof(DOUBLE,y)); // fallback
-
   printf("ALIGNOF_WCHAR=%d\n",offsetof(WCHAR,y));
   printf("ALIGNOF_ENUM=%d\n",offsetof(ENUM,y));
   printf("ALIGNOF_FUNCP=%d\n",offsetof(FUNCP,y));
@@ -351,14 +336,14 @@ int main(int,char*[]) {
   return 0;
 }
 
-@h = tangler("tmp/complex.c",'c')
+@h = tangler("tmp/complex.cxx",'c++')
 @select(h)
 #include <stdio.h>
 #include <stddef.h>
 
 struct COMPLEX {
   char x;
-  _Complex y;
+  float _Complex y;
 };
 
 struct DOUBLECOMPLEX {
@@ -372,7 +357,7 @@ struct LONGDOUBLECOMPLEX {
 };
 
 int main(int,char*[]) { 
-  printf("SIZEOF_COMPLEX=%d\n",sizeof(_Complex));
+  printf("SIZEOF_COMPLEX=%d\n",sizeof(float _Complex));
   printf("SIZEOF_DOUBLECOMPLEX=%d\n",sizeof(double _Complex));
   printf("SIZEOF_LONGDOUBLECOMPLEX=%d\n",sizeof(long double _Complex));
   printf("ALIGNOF_COMPLEX=%d\n",offsetof(COMPLEX,y));
@@ -381,7 +366,37 @@ int main(int,char*[]) {
   return 0;
 }
 
-@h = tangler("tmp/cbool.c",'c')
+@h = tangler("tmp/imaginary.cxx",'c++')
+@select(h)
+#include <stdio.h>
+#include <stddef.h>
+
+struct IMAGINARY {
+  char x;
+  float _Imaginary y;
+};
+
+struct DOUBLEIMAGINARY {
+  char x;
+  double _Imaginary y;
+};
+
+struct LONGDOUBLEIMAGINARY {
+  char x;
+  long double _Imaginary y;
+};
+
+int main(int,char*[]) { 
+  printf("SIZEOF_IMAGINARY=%d\n",sizeof(float _Imaginary));
+  printf("SIZEOF_DOUBLEIMAGINARY=%d\n",sizeof(double _Imaginary));
+  printf("SIZEOF_LONGDOUBLEIMAGINARY=%d\n",sizeof(long double _Imaginary));
+  printf("ALIGNOF_IMAGINARY=%d\n",offsetof(IMAGINARY,y));
+  printf("ALIGNOF_DOUBLEIMAGINARY=%d\n",offsetof(DOUBLEIMAGINARY,y));
+  printf("ALIGNOF_LONGDOUBLEIMAGINARY=%d\n",offsetof(LONGDOUBLEIMAGINARY,y));
+  return 0;
+}
+
+@h = tangler("tmp/cbool.cxx",'c++')
 @select(h)
 #include <stdio.h>
 #include <stddef.h>
@@ -432,10 +447,12 @@ int main(int,char*[]) {
   return 0;
 }
 
-@h = tangler("script/ocaml_class.py")
+@h = tangler("flxbuild/ocaml_class.py")
 @select(h)
 #---------------------------------------------------
 # discover which ocaml compilers are available
+import string
+
 class ocaml:
   def __init__(self):
     pass
@@ -568,21 +585,33 @@ class ocaml:
     exec f in self.__dict__
     f.close()
 
-@h = tangler("script/object_class.py")
+@h = tangler("flxbuild/object_class.py")
 @select (h)
 class object:pass
 
-@h = tangler("script/gxx_class.py")
+@h = tangler("flxbuild/compiler_class.py")
+@select (h)
+import flxbuild
+import flxbuild.object_class
+
+class compiler_base:
+  def __init__(self):
+    self.options = flxbuild.object_class.object()
+
+
+@h = tangler("flxbuild/gxx_class.py")
 @select (h)
 import string
 import os
-execfile("script"+os.sep+"object_class.py")
+import flxbuild
+import flxbuild.object_class
+import flxbuild.compiler_class
 
-class gxx:
+class gxx(flxbuild.compiler_class.compiler_base):
 
   def __init__(self):
-    self.options = object()
-
+    flxbuild.compiler_class.compiler_base.__init__(self)
+    
   # these options are model dependent and have to
   # be supplied by the client
 
@@ -621,6 +650,19 @@ class gxx:
       opt.HAVE_GXX_X86 = 1
       print "g++ x86 support detected"
     except:
+      opt.HAVE_GXX_X86 = 0
+
+    # find if we have g++ on 32 bit x86 platform with named registers
+    try:
+      shell(CXX +"-w tmp"+os.sep+"gxx_x86.cxx -o tmp"+os.sep+"x86_64_check")
+      shell("tmp"+os.sep+"x86_64_check")
+      opt.HAVE_GXX_X86_64 = 1
+      print "g++ x86 support detected"
+    except:
+      opt.HAVE_GXX_X86_64 = 0
+    
+    # X86_64 dominates X86
+    if opt.HAVE_GXX_X86 and opt.HAVE_GXX_X86_64:
       opt.HAVE_GXX_X86 = 0
 
     if opt.HAVE_GXX_X86:
@@ -973,9 +1015,9 @@ class gxx:
 
     # find if we have _Bool
     try:
-      shell(opt.CXX+" -w tmp"+os.sep+"bool.c -o tmp"+os.sep+"bool")
-      os.system("tmp"+os.sep+"bool >tmp"+os.sep+"bool.py")
-      f = open("tmp"+os.sep+"bool.py")
+      shell(opt.CXX+" -w tmp"+os.sep+"cbool.cxx -o tmp"+os.sep+"cbool")
+      os.system("tmp"+os.sep+"cbool >tmp"+os.sep+"cbool.py")
+      f = open("tmp"+os.sep+"cbool.py")
       exec f in opt.__dict__
       f.close()
       opt.HAVE_CBOOL=1
@@ -984,7 +1026,7 @@ class gxx:
 
     # find if we have _Complex
     try:
-      shell(opt.CXX + " -w tmp"+os.sep+"complex.c -o tmp"+os.sep+"complex")
+      shell(opt.CXX + " -w tmp"+os.sep+"complex.cxx -o tmp"+os.sep+"complex")
       os.system("tmp"+os.sep+"complex >tmp"+os.sep+"complex.py")
       f = open("tmp"+os.sep+"complex.py")
       exec f in opt.__dict__
@@ -992,6 +1034,17 @@ class gxx:
       opt.HAVE_COMPLEX=1
     except:
       opt.HAVE_COMPLEX=0
+
+    # find if we have _Imaginary
+    try:
+      shell(opt.CXX + " -w tmp"+os.sep+"imaginary.cxx -o tmp"+os.sep+"imaginary")
+      os.system("tmp"+os.sep+"imaginary >tmp"+os.sep+"imaginary.py")
+      f = open("tmp"+os.sep+"imaginary.py")
+      exec f in opt.__dict__
+      f.close()
+      opt.HAVE_IMAGINARY=1
+    except:
+      opt.HAVE_IMAGINARY=0
 
     #calculate alignment tables
     vbls = [
@@ -1012,9 +1065,11 @@ class gxx:
     opt.MAX_ALIGN = 1
     opt.flx_aligns = {}
     for k,t in vbls:
-      v = opt.__dict__[k]
-      opt.flx_aligns[v]=t
-      if v > opt.MAX_ALIGN: opt.MAX_ALIGN = v
+      try:
+        v = opt.__dict__[k]
+        opt.flx_aligns[v]=t
+        if v > opt.MAX_ALIGN: opt.MAX_ALIGN = v
+      except KeyError: pass
     opt.flx_aligns[1]="char"
 
     opt.DEBUG_FLAGS = "-g "
@@ -1209,16 +1264,17 @@ class gxx:
       cmd = cmd + "-l"+opt.DLLIB+" "
     shell(cmd)
 
-@h = tangler("script/msvcxx_class.py")
+@h = tangler("flxbuild/msvcxx_class.py")
 @select (h)
 import string
 import os
-execfile("script"+os.sep+"object_class.py")
+import flxbuild
+import flxbuild.compiler_class
 
-class msvcxx:
+class msvcxx(flxbuild.compiler_class.compiler_base):
 
   def __init__(self):
-    self.options = object()
+    flxbuild.compiler_class.compiler_base.__init__(self)
 
   # these options are model dependent and have to
   # be supplied by the client
@@ -1246,6 +1302,7 @@ class msvcxx:
     opt = self.options
     CXX = opt.CXX
     opt.HAVE_GXX_X86 = 0
+    opt.HAVE_GXX_X86_64 = 0
     opt.USE_REGPARM3=0
     opt.HAVE_CGOTO = 0
     opt.HAVE_ASM_LABELS = 0
@@ -1385,9 +1442,9 @@ class msvcxx:
 
     # find if we have _Bool
     try:
-      shell(opt.CXX+" /ML /w tmp"+os.sep+"bool.c /Fetmp"+os.sep+"bool.exe")
-      os.system("tmp"+os.sep+"bool >tmp"+os.sep+"bool.py")
-      f = open("tmp"+os.sep+"bool.py")
+      shell(opt.CXX+" /ML /w tmp"+os.sep+"cbool.cxx /Fetmp"+os.sep+"bool.exe")
+      os.system("tmp"+os.sep+"cbool >tmp"+os.sep+"cbool.py")
+      f = open("tmp"+os.sep+"cbool.py")
       exec f in opt.__dict__
       f.close()
       opt.HAVE_CBOOL=1
@@ -1396,7 +1453,7 @@ class msvcxx:
 
     # find if we have _Complex
     try:
-      shell(opt.CXX + " /ML /w tmp"+os.sep+"complex.c /Fetmp"+os.sep+"complex.exe")
+      shell(opt.CXX + " /ML /w tmp"+os.sep+"complex.cxx /Fetmp"+os.sep+"complex.exe")
       os.system("tmp"+os.sep+"complex >tmp"+os.sep+"complex.py")
       f = open("tmp"+os.sep+"complex.py")
       exec f in opt.__dict__
@@ -1405,8 +1462,21 @@ class msvcxx:
     except:
       opt.HAVE_COMPLEX=0
 
+    # find if we have _Imaginary
+    try:
+      shell(opt.CXX + " -w tmp"+os.sep+"imaginary.cxx -o tmp"+os.sep+"imaginary")
+      os.system("tmp"+os.sep+"imaginary >tmp"+os.sep+"imaginary.py")
+      f = open("tmp"+os.sep+"imaginary.py")
+      exec f in opt.__dict__
+      f.close()
+      opt.HAVE_IMAGINARY=1
+    except:
+      opt.HAVE_IMAGINARY=0
+
+
     #calculate alignment tables
     vbls = [
+      ("ALIGNOF_CBOOL","_Bool"),
       ("ALIGNOF_BOOL","bool"),
       ("ALIGNOF_SHORT","short"),
       ("ALIGNOF_INT","int"),
@@ -1424,9 +1494,11 @@ class msvcxx:
     opt.MAX_ALIGN = 1
     opt.flx_aligns = {}
     for k,t in vbls:
-      v = opt.__dict__[k]
-      opt.flx_aligns[v]=t
-      if v > opt.MAX_ALIGN: opt.MAX_ALIGN = v
+      try:
+        v = opt.__dict__[k]
+        opt.flx_aligns[v]=t
+        if v > opt.MAX_ALIGN: opt.MAX_ALIGN = v
+      except KeyError: pass
     opt.flx_aligns[1]="char"
 
     opt.DEBUG_FLAGS = "/g "
@@ -1959,14 +2031,16 @@ if force or refresh:
 #---------------------------------------------------
 # Discover C/C++ compilers, linker, and other 'binutils'
 
-execfile("script/ocaml_class.py")
-HOST_OCAML = ocaml()
+import flxbuild.ocaml_class
+import flxbuild.gxx_class
+import flxbuild.msvcxx_class
+
+
+HOST_OCAML = flxbuild.ocaml_class.ocaml()
 HOST_OCAML.autodetect(xqt,get_stdout)
 HOST_OCAML.report_config()
 HOST_OCAML.save_config("config/ocaml_config.py")
 
-execfile("script/gxx_class.py")
-execfile("script/msvcxx_class.py")
 #
 # Detect the native build model
 # 
@@ -1983,9 +2057,9 @@ print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 print
 
 if build_model == "win32":
-  BUILD_CXX=msvcxx()
+  BUILD_CXX=flxbuild.msvcxx_class.msvcxx()
 else:
-  BUILD_CXX=gxx()
+  BUILD_CXX=flxbuild.gxx_class.gxx()
 BUILD_CXX.set_options(use="build",model=build_model,build=build_model)
 BUILD_CXX.check_options(xqt)
 BUILD_CXX.report_config()
@@ -2016,13 +2090,13 @@ print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 print
 
 if host_model in ["posix","cygwin","nocygwin","mingw","detect"]:
-  HOST_CXX=gxx()
+  HOST_CXX=flxbuild.gxx_class.gxx()
   HOST_CXX.set_options(use="host",model=host_model,build=build_model)
   HOST_CXX.check_options(xqt)
   HOST_CXX.report_config()
   HOST_CXX.save_options("config/host_cxx.py")
 elif host_model in ["win32"]:
-  HOST_CXX=msvcxx()
+  HOST_CXX=flxbuild.msvcxx_class.msvcxx()
   HOST_CXX.set_options(use="host",model=host_model,build=build_model)
   HOST_CXX.check_options(xqt)
   HOST_CXX.report_config()
@@ -2050,7 +2124,7 @@ print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 print
 
 if target_model in ["posix","cygwin","nocygwin","mingw","detect"]:
-  TARGET_CXX=gxx()
+  TARGET_CXX=flxbuild.gxx_class.gxx()
   TARGET_CXX.set_options(use="target",model=target_model,build=build_model)
   TARGET_CXX.check_options(xqt)
   TARGET_CXX.report_config()
@@ -2061,7 +2135,7 @@ if target_model in ["posix","cygwin","nocygwin","mingw","detect"]:
   HAVE_MSVC=0
   HAVE_GXX=1
 elif target_model in ["win32"]:
-  TARGET_CXX=msvcxx()
+  TARGET_CXX=flxbuild.msvcxx_class.msvcxx()
   TARGET_CXX.set_options(use="target",model=target_model,build=build_model)
   TARGET_CXX.check_options(xqt)
   TARGET_CXX.report_config()
@@ -2214,14 +2288,17 @@ try:
   p(f,"PREFIX")
   pr(f,"")
 
-  pr(f,"execfile("+repr('script'+os.sep+'gxx_class.py')+")")
-  pr(f,"execfile("+repr('script'+os.sep+'msvcxx_class.py')+")")
-  pr(f,"execfile('script"+os.sep+"ocaml_class.py')")
-  pr(f,"HOST_OCAML=ocaml()")
+  pr(f,"import flxbuild")
+  pr(f,"import flxbuild.gxx_class")
+  pr(f,"import flxbuild.msvcxx_class")
+  pr(f,"import flxbuild.ocaml_class")
+  pr(f,"HOST_OCAML=flxbuild.ocaml_class.ocaml()")
   pr(f,"HOST_OCAML.load_config("+repr('config'+os.sep+'ocaml_config.py')+")")
-  pr(f,"HOST_CXX="+HOST_CXX.__class__.__name__+"()")
+  cxx = HOST_CXX.__class__.__name__
+  pr(f,"HOST_CXX=flxbuild."+cxx+"_class."+cxx+"()")
   pr(f,"HOST_CXX.load_options("+repr('config'+os.sep+'host_cxx.py')+")")
-  pr(f,"TARGET_CXX="+TARGET_CXX.__class__.__name__+"()")
+  cxx = TARGET_CXX.__class__.__name__
+  pr(f,"TARGET_CXX=flxbuild."+cxx+"_class."+cxx+"()")
   pr(f,"TARGET_CXX.load_options("+repr('config'+os.sep+'target_cxx.py')+")")
   pr(f,"")
   p(f,"HAVE_GXX")
@@ -2409,6 +2486,9 @@ flx_2_char_syms = [
 
     ("LSQBAR","[|"),
     ("RSQBAR","|]"),
+
+    ("AMPERAMPER","&&"),
+    ("VBARVBAR","||"),
   ]
 
 flx_3_char_syms = [
