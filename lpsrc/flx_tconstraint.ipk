@@ -1,0 +1,118 @@
+@h = tangler('src/flx_tconstraint.mli')
+@select(h)
+open Flx_ast
+open Flx_types
+open Flx_mtypes2
+
+val build_type_constraints:
+  sym_state_t ->
+  (typecode_t -> btypecode_t) -> (* bind type *)
+  range_srcref ->
+  (string * int * tpattern_t) list -> (* local vs list *)
+  btypecode_t
+
+@h = tangler('src/flx_tconstraint.ml')
+@select(h)
+open Flx_ast
+open Flx_types
+open Flx_mtypes1
+open Flx_mtypes2
+open Flx_tpat
+open Flx_exceptions
+open List
+open Flx_print
+open Flx_util
+
+(* A type constraint written in a vs list is a simplification.
+   The form
+   
+   v:p
+
+   is short for 
+
+   typematch v with | p -> 1 | _ -> 0 endmatch
+
+   Only 'any' variables are currently allowed, no
+   'as' or explicit pattern variables are permitted,
+   because we don't know what to do with them yet.
+
+*)
+   
+let build_constraint_element syms bt sr i p1 =
+  (* special case, no constraint, represent by just 'true' (unit type) *)
+  if p1 = `TPAT_any then `BTYP_tuple [] else
+
+  (* more general cases *)
+  let p1,explicit_vars1,any_vars1, as_vars1, eqns1 = type_of_tpattern syms p1 in
+
+  (* check the pattern doesn't introduce any named variables *)
+  (* later we may allow them as additional 'vs' variables .. but
+    it is tricky because they'd have to be introduced 'in scope':
+  *)
+  if eqns1 <> [] then clierr sr 
+    "Type variable constraint may not have 'as' terms"
+  ;
+  if explicit_vars1 <> [] then clierr sr
+    "Type variable constraint may not have named pattern variables"
+  ;
+  (* the only introduced variables allowed are 'any' wildcards that thus
+    cannot be refered to
+  *)
+  let varset1 = 
+    fold_left (fun s i -> IntSet.add i s) 
+    IntSet.empty any_vars1
+  in
+  let un = `BTYP_tuple [] in (* the 'true' value of the type system *)
+  let elt = `BTYP_var (i,`BTYP_type) in
+  let p1 = bt p1 in
+  let tm = 
+  match p1 with
+  | `BTYP_typeset ls ->
+    let e = IntSet.empty in
+    let un = `BTYP_tuple [] in
+    let lss = rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
+    let fresh = !(syms.counter) in incr (syms.counter);
+    let dflt = 
+      {
+        pattern=`BTYP_var (fresh,`BTYP_type); 
+        pattern_vars = IntSet.singleton fresh;
+        assignments=[]
+      },
+      `BTYP_void 
+    in
+    let lss = rev (dflt :: lss) in
+    `BTYP_type_match (elt, lss)
+
+  | _ ->
+    let t1 = `BTYP_tuple [] in
+    let newvar = !(syms.counter) in incr (syms.counter);
+    let p2 = `BTYP_var (newvar,`BTYP_type) in
+    let t2 = `BTYP_void in
+    let varset2 = IntSet.singleton newvar in
+    print_endline ("Bound matching is " ^ sbt syms.dfns p1 ^ " => " ^ sbt syms.dfns t1);
+    let pt1 = ({pattern=p1; pattern_vars=varset1; assignments=[]},t1) in
+    let pt2 = ({pattern=p2; pattern_vars=varset2; assignments=[]},t2) in
+    let pts = [pt1; pt2] in 
+    `BTYP_type_match (`BTYP_var (i,`BTYP_type), pts)
+  in
+    (* print_endline ("Bound typematch is " ^ sbt syms.dfns tm); *)
+    tm
+
+let build_type_constraints syms bt sr vs = 
+  let type_constraints = 
+    map (fun (s,i,tp) -> 
+      let tp = build_constraint_element syms bt sr i tp in
+      (*
+      if tp <> `BTYP_tuple [] then
+        print_endline (
+        " vs entry " ^ s ^ ", var " ^ si i ^ 
+        " constraint " ^ sbt syms.dfns tp)
+      ;
+      *)
+      tp
+    )
+    vs 
+  in
+    `BTYP_intersect type_constraints
+
+
