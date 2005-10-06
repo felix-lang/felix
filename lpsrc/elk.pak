@@ -8866,7 +8866,7 @@ sm_string readFileIntoString(char const *fname)
 
 
 // EOF
-@h=tangler('elk/elk_gramanl.cpp')
+@h=tangler('elk/elk_gramanl.cxx')
 @select(h)
 // gramanl.cc            see license.txt for copyright and terms of use
 // code for gramanl.h
@@ -13714,7 +13714,6 @@ void emitSwitchCode(Grammar const &g, EmitCode &out,
 
 // ------------------------- main --------------------------
 // TODO: split this into its own source file
-#ifdef GRAMANL_MAIN
 
 #include "sm_bflatten.h"
 #include "sm_test.h"
@@ -13886,7 +13885,6 @@ void entry(int argc, char **argv)
 
 ARGS_MAIN
 
-#endif // GRAMANL_MAIN
 @h=tangler('elk/elk_gramast.ast.gen.cpp')
 @select(h)
 // gramast.ast.gen.cc

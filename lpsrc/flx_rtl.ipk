@@ -990,7 +990,7 @@ For dynamically loaded programs, the name of the
 driver and optional --debug switch given before the
 shared library name are not passed.
 
-@h = tangler('rtl/flx_run.cpp')
+@h = tangler('rtl/flx_run.cxx')
 @select(h)
 #include <cstdlib>
 #include <stdio.h>
@@ -1239,7 +1239,7 @@ int main(int argc, char** argv)
   return 0;
 }
 
-@h = tangler('test/micky_mouse.cpp')
+@h = tangler('test/micky_mouse.cxx')
 @select(h)
 #include <stdio.h>
 #include "flx_rtl.hpp"

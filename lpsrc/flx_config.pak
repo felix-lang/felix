@@ -76,29 +76,6 @@ xlators = [
 #  ('ocamlc-3.08.3',mk_ocamlc_3_08_3,'ocaml'),
 ]
 
-@h = tangler("tmp/check_cygwin.cxx",'c++')
-@select(h)
-int main(int,char*[]) { 
-   int x = __CYGWIN__;
-   return 0;
-}
-
-@h = tangler("tmp/check_win32.cxx",'c++')
-@select(h)
-int main(int,char*[]) { 
-   int x = _WIN32;
-   return 0;
-}
-
-@h = tangler("tmp/check_osx.cxx",'c++')
-@select(h)
-// RF: I think this implies the presence of OS X
-int main(int,char*[]) { 
-   int x = __APPLE__;
-   return 0;
-}
-
-
 @h = tangler("tmp/dummy.cxx",'c++')
 @select(h)
 int main(int argc, char*argv[]) { return 0; }
@@ -189,22 +166,6 @@ int main(int,char*[]) {
   return 0;
 }
 
-@h = tangler("tmp/dummy_stdint.cxx",'c++')
-@select(h)
-#include <stdint.h>
-
-int main(int,char*[]) { 
-  {int8_t i;}
-  {int16_t i;}
-  {int32_t i;}
-  {int64_t i;}
-  {uint8_t i;}
-  {uint16_t i;}
-  {uint32_t i;}
-  {uint64_t i;}
-  return 0;
-}
-
 @h = tangler("tmp/intsizes.cxx",'c++')
 @select(h)
 #include <stdio.h>
@@ -213,202 +174,17 @@ int main(int,char*[]) {
 enum enum_t {e_tag};
 typedef void (*fp_t)(void);
 
-struct BOOL {
-  char x;
-  bool y;
-};
-
-struct SHORT {
-  char x;
-  short y;
-};
-
-struct INT {
-  char x;
-  int y;
-};
-
-struct LONG {
-  char x;
-  long y;
-};
-
-struct FLOAT {
-  char x;
-  float y;
-};
-
-struct DOUBLE {
-  char x;
-  double y;
-};
-
-struct VOIDP {
-  char x;
-  void *y;
-};
-
-struct WCHAR {
-  char x;
-  wchar_t y;
-};
-
-struct ENUM {
-  char x;
-  enum_t y;
-};
-
-struct FUNCP {
-  char x;
-  fp_t y;
-};
-
 union endian_t {
   unsigned long x;
   unsigned char y[sizeof(unsigned long)];
 } endian;
 
 int main(int,char*[]) { 
-  printf("SIZEOF_BOOL=%d\n",sizeof(bool));
-  printf("SIZEOF_SHORT=%d\n",sizeof(short));
-  printf("SIZEOF_INT=%d\n",sizeof(int));
-  printf("SIZEOF_LONG=%d\n",sizeof(long));
-  printf("SIZEOF_FLOAT=%d\n",sizeof(float));
-  printf("SIZEOF_DOUBLE=%d\n",sizeof(double));
-  printf("SIZEOF_WCHAR=%d\n",sizeof(wchar_t));
-  printf("SIZEOF_PTRDIFF=%d\n",sizeof(ptrdiff_t));
-  printf("SIZEOF_ENUM=%d\n",sizeof(enum_t));
-  printf("SIZEOF_SIZEOF=%d\n",sizeof(sizeof(int)));
-
-  printf("SIZEOF_VOIDP=%d\n",sizeof(void*));
-  printf("SIZEOF_FUNCP=%d\n",sizeof(fp_t));
-
-  printf("ALIGNOF_BOOL=%d\n",offsetof(BOOL,y));
-  printf("ALIGNOF_SHORT=%d\n",offsetof(SHORT,y));
-  printf("ALIGNOF_INT=%d\n",offsetof(INT,y));
-  printf("ALIGNOF_LONG=%d\n",offsetof(LONG,y));
-  
-  printf("ALIGNOF_FLOAT=%d\n",offsetof(FLOAT,y));
-  printf("ALIGNOF_DOUBLE=%d\n",offsetof(DOUBLE,y));
-  
-  printf("ALIGNOF_WCHAR=%d\n",offsetof(WCHAR,y));
-  printf("ALIGNOF_ENUM=%d\n",offsetof(ENUM,y));
-  printf("ALIGNOF_FUNCP=%d\n",offsetof(FUNCP,y));
-  printf("ALIGNOF_VOIDP=%d\n",offsetof(VOIDP,y));
-
   printf("CHAR_IS_UNSIGNED=%d\n",((char)0xFF)>0?1:0);
   endian.x = 1ul;
   printf("LITTLE_ENDIAN=%d\n", endian.y[0]);
   printf("BIG_ENDIAN=%d\n", endian.y[sizeof(unsigned long)-1]);
 
-  return 0;
-}
-
-@h = tangler("tmp/longlong.cxx",'c++')
-@select(h)
-#include <stdio.h>
-#include <stddef.h>
-
-struct LONGLONG {
-  char x;
-  long long y;
-};
-
-int main(int,char*[]) { 
-  printf("SIZEOF_LONGLONG=%d\n",sizeof(long long));
-  printf("ALIGNOF_LONGLONG=%d\n",offsetof(LONGLONG,y));
-  return 0;
-}
-
-@h = tangler("tmp/longdouble.cxx",'c++')
-@select(h)
-#include <stdio.h>
-#include <stddef.h>
-
-struct LONGDOUBLE {
-  char x;
-  long double y;
-};
-
-int main(int,char*[]) { 
-  printf("SIZEOF_LONGDOUBLE=%d\n",sizeof(long double));
-  printf("ALIGNOF_LONGDOUBLE=%d\n",offsetof(LONGDOUBLE,y));
-  return 0;
-}
-
-@h = tangler("tmp/complex.cxx",'c++')
-@select(h)
-#include <stdio.h>
-#include <stddef.h>
-
-struct COMPLEX {
-  char x;
-  float _Complex y;
-};
-
-struct DOUBLECOMPLEX {
-  char x;
-  double _Complex y;
-};
-
-struct LONGDOUBLECOMPLEX {
-  char x;
-  long double _Complex y;
-};
-
-int main(int,char*[]) { 
-  printf("SIZEOF_COMPLEX=%d\n",sizeof(float _Complex));
-  printf("SIZEOF_DOUBLECOMPLEX=%d\n",sizeof(double _Complex));
-  printf("SIZEOF_LONGDOUBLECOMPLEX=%d\n",sizeof(long double _Complex));
-  printf("ALIGNOF_COMPLEX=%d\n",offsetof(COMPLEX,y));
-  printf("ALIGNOF_DOUBLECOMPLEX=%d\n",offsetof(DOUBLECOMPLEX,y));
-  printf("ALIGNOF_LONGDOUBLECOMPLEX=%d\n",offsetof(LONGDOUBLECOMPLEX,y));
-  return 0;
-}
-
-@h = tangler("tmp/imaginary.cxx",'c++')
-@select(h)
-#include <stdio.h>
-#include <stddef.h>
-
-struct IMAGINARY {
-  char x;
-  float _Imaginary y;
-};
-
-struct DOUBLEIMAGINARY {
-  char x;
-  double _Imaginary y;
-};
-
-struct LONGDOUBLEIMAGINARY {
-  char x;
-  long double _Imaginary y;
-};
-
-int main(int,char*[]) { 
-  printf("SIZEOF_IMAGINARY=%d\n",sizeof(float _Imaginary));
-  printf("SIZEOF_DOUBLEIMAGINARY=%d\n",sizeof(double _Imaginary));
-  printf("SIZEOF_LONGDOUBLEIMAGINARY=%d\n",sizeof(long double _Imaginary));
-  printf("ALIGNOF_IMAGINARY=%d\n",offsetof(IMAGINARY,y));
-  printf("ALIGNOF_DOUBLEIMAGINARY=%d\n",offsetof(DOUBLEIMAGINARY,y));
-  printf("ALIGNOF_LONGDOUBLEIMAGINARY=%d\n",offsetof(LONGDOUBLEIMAGINARY,y));
-  return 0;
-}
-
-@h = tangler("tmp/cbool.cxx",'c++')
-@select(h)
-#include <stdio.h>
-#include <stddef.h>
-
-struct CBOOL {
-  char x;
-  _Bool y;
-};
-
-int main(int,char*[]) { 
-  printf("SIZEOF_CBOOL=%d\n",sizeof(_Bool));
-  printf("ALIGNOF_CBOOL=%d\n",offsetof(CBOOL,y));
   return 0;
 }
 
@@ -593,12 +369,162 @@ class object:pass
 @select (h)
 import flxbuild
 import flxbuild.object_class
+import os
+import sys
+import string
+
+class Error: pass
 
 class compiler_base:
   def __init__(self):
     self.options = flxbuild.object_class.object()
 
+  def eval_tmp_program(self,shell,get_stdout,pname):
+    self.compile_static_main(shell,"tmp",pname,"tmp")
+    self.link_static_program(shell,["tmp"+os.sep+pname+"_static"],"tmp"+os.sep+pname+self.options.EXT_EXE,[],[])
+    result,lines= get_stdout("tmp"+os.sep+pname+self.options.EXT_EXE)
+    return result,lines
 
+  def eval_string_program(self,shell,get_stdout,data):
+    fn = "tmp"+os.sep+"tmp.cxx"
+    f = open(fn,"w")
+    f.write(data)
+    f.close()
+    return eval_tmp_program(shell,get_stdout,"tmp")
+
+  def check_macro_defined(self,shell,mac):
+    fn = "tmp"+os.sep+"mchk.cxx"
+    f = open(fn,"w")
+    f.write("#ifndef "+mac+"\n")
+    f.write("#error "+mac+"\n")
+    f.write("#endif\n")
+    f.write("int main() { return 0; }\n")
+    f.close()
+    try:
+      self.compile_static_main(shell,"tmp","mchk","tmp")
+      print "#defined",mac
+      return 1
+    except:
+      print "NOT defined",mac
+      return 0
+
+  def check_macro_defined_in_header(self,shell,file,mac):
+    fn = "tmp"+os.sep+"mchk.cxx"
+    f = open(fn,"w")
+    f.write("#include <"+file+">\n")
+    f.write("#ifndef "+mac+"\n")
+    f.write("#error "+mac+"\n")
+    f.write("#endif\n")
+    f.write("int main() { return 0; }\n")
+    f.close()
+    try:
+      self.compile_static_main(shell,"tmp","mchk","tmp")
+      print "#defined",mac,"in","#include <"+file+">"
+      return 1
+    except:
+      print "NOT defined",mac,"in","#include <"+file+">"
+      return 0
+
+  def check_header_exists(self,shell,name):
+    fn = "tmp"+os.sep+"hchk.cxx"
+    f = open(fn,"w")
+    f.write("#include <"+name+">\n")
+    f.write("int main() { return 0; }\n")
+    f.close()
+    try:
+      self.compile_static_main(shell,"tmp","hchk","tmp")
+      print "#include <"+name+">"
+      return 1
+    except:
+      print "NO HEADER <"+name+">"
+      return 0
+
+  # the typedef defines alias 't' for the type
+  def get_type_data(self,shell,get_stdout,typedef,header=None):
+    fn = "tmp"+os.sep+"tchk.cxx"
+    f = open(fn,"w")
+    f.write("#include <stddef.h>\n")
+    f.write("#include <stdio.h>\n")
+    if header:
+      f.write("#include <"+header+">\n")
+    f.write(typedef+"\n");
+    f.write("struct TEST {\n");
+    f.write("  char c;\n");
+    f.write("  t mem;\n");
+    f.write("};\n");
+    f.write("int main() { \n")
+    f.write('  printf("%d\\n",int(sizeof(t)));')
+    f.write('  printf("%d\\n",int(offsetof(TEST,mem)));')
+    f.write("  return 0;\n")
+    f.write("}\n")
+    f.close()
+    try:
+      self.compile_static_main(shell,"tmp","tchk","tmp")
+      self.link_static_program(shell,["tmp"+os.sep+"tchk_static"],"tmp"+os.sep+"tchk"+self.options.EXT_EXE,[],[])
+      result,lines= get_stdout("tmp"+os.sep+"tchk"+self.options.EXT_EXE)
+      if not result: # got a result
+        size = int(lines[0])
+        align = int(lines[1])
+        print typedef,"size",size,"align",align
+        return size,align
+      else:
+        raise Error
+    except:
+      print "NO TYPE",typedef,
+      if header: print "in <"+header+">"
+      else: print
+      return None,None
+
+  def get_c_type_data(self,shell,get_stdout):
+    opt = self.options
+    # find if we have stdint.h
+    opt.HAVE_STDINT = self.check_header_exists(shell,"stdint.h")
+   
+    std_dtypes = [
+      ('CBOOL','_Bool',None),
+      ('BOOL','bool',None),
+      ('CHAR','char',None),
+      ('SHORT','short',None),
+      ('INT','int',None),
+      ('LONG','long',None),
+      ('LONGLONG','long long',None),
+      ('ENUM','typedef enum enum_t {tag} t;',None),
+      ('FLOAT','float',None),
+      ('DOUBLE','double',None),
+      ('LONGDOUBLE','long double',None),
+      ('VOIDP','void *',None),
+      ('FUNCP','typedef void (*t)(void);',None),
+      ('WCHAR','wchar_t','stddef.h'),
+      ('PTRDIFF','ptrdiff_t','stddef.h'),
+      ('SIZE','size_t','stddef.h'),
+      ('COMPLEX','float _Complex',None),
+      ('DOUBLECOMPLEX','double _Complex',None),
+      ('LONGDOUBLECOMPLEX','long double _Complex',None),
+      ('IMAGINARY','float _Imaginary',None),
+      ('DOUBLEIMAGINARY','double _Imaginary',None),
+      ('LONGDOUBLEIMAGINARY','long double _Imaginary',None),
+      ('INT8','uint8_t','stdint.h'),
+      ('INT16','uint16_t','stdint.h'),
+      ('INT32','uint32_t','stdint.h'),
+      ('INT64','uint64_t','stdint.h'),
+      ('UINT8','uint8_t','stdint.h'),
+      ('UINT16','uint16_t','stdint.h'),
+      ('UINT32','uint32_t','stdint.h'),
+      ('UINT64','uint64_t','stdint.h'),
+    ]
+
+    for m,t,f in std_dtypes:
+      if "typedef" != t[:7]: t = "typedef " + t + " t;"
+      size,align = self.get_type_data(shell,get_stdout,t,header=f)
+      if size == None:
+        opt.__dict__['HAVE_'+m]=0
+      else:
+        opt.__dict__['HAVE_'+m]=1
+        opt.__dict__['SIZEOF_'+m]=size
+        opt.__dict__['ALIGNOF_'+m]=align
+
+    
+     
 @h = tangler("flxbuild/gxx_class.py")
 @select (h)
 import string
@@ -639,6 +565,8 @@ class gxx(flxbuild.compiler_class.compiler_base):
     opt.use = use
     opt.SPEC_OBJ_FILENAME = "-o "
     opt.SPEC_EXE_FILENAME = "-o "
+    opt.DEBUG_FLAGS = "-g "
+    opt.OPTIMISE = "-O3 -fomit-frame-pointer --inline -DNDEBUG "
 
   def detect_gxx_language_extensions(self,shell):
     opt = self.options
@@ -725,34 +653,13 @@ class gxx(flxbuild.compiler_class.compiler_base):
       print "All code is position independent"
 
   def detect_win32(self,shell):
-    CXX = self.options.CXX
-    try:
-      shell(CXX+"-w -c tmp"+os.sep+"check_win32.cxx -o tmp"+os.sep+"dummy.o")
-      print "WIN32 detected"
-      return 1
-    except:
-      print "WIN32 NOT detected"
-      return 0
+    return self.check_macro_defined(shell,"_WIN32")
 
   def detect_cygwin(self,shell):
-    CXX = self.options.CXX
-    try:
-      shell(CXX+"-w -c tmp"+os.sep+"check_cygwin.cxx -o tmp"+os.sep+"dummy.o")
-      print "CYGWIN detected"
-      return 1
-    except:
-      print "CYGWIN NOT detected"
-      return 0
+    return self.check_macro_defined(shell,"__CYGWIN__")
 
   def detect_osx(self,shell):
-    CXX = self.options.CXX
-    try:
-      shell(CXX+"-w -c tmp"+os.sep+"check_osx.cxx -o tmp"+os.sep+"dummy.o")
-      print "MACOSX detected"
-      return 1
-    except:
-      print "MACOSX NOT detected"
-      return 0
+    return self.check_macro_defined(shell,"__APPLE__")
 
   # only allows 4 models: cygwin, osx, win32 and posix
   # nocygwin = mingw = win32
@@ -777,7 +684,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
     if opt.model in ["posix"] and opt.CYGWIN: opt.model = "cygwin"
     assert opt.model in ["cygwin","osx","win32","posix"]
 
-  def check_options(self,shell):
+  def check_options(self,shell,get_stdout):
     opt = self.options
     CXX = opt.CXX
 
@@ -970,16 +877,9 @@ class gxx(flxbuild.compiler_class.compiler_base):
     else:
       print "Isnan NOT supported"
 
-    # find if we have stdint.h
-    try:
-      shell(opt.CXX+" -w -c tmp"+os.sep+"dummy_stdint.cxx -o tmp"+os.sep+"dummy_stdint.o")
-      opt.HAVE_STDINT=1
-      print "Have stdint.h support"
-    except:
-      opt.HAVE_STDINT=0
-      print "stdint.h NOT supported"
+    self.get_c_type_data(shell,get_stdout)
 
-    # find sizes of ints
+    # find misc info about basic types
     try:
       shell(opt.CXX+" -w tmp"+os.sep+"intsizes.cxx -o tmp"+os.sep+"intsizes")
       # THIS CALL CANNOT USE THE SHELL BECAUSE IT REDIRECTS OUTPUT
@@ -990,61 +890,14 @@ class gxx(flxbuild.compiler_class.compiler_base):
     except:
       print "FATAL: can't determine sizes of ints"
       sys.exit(1)
-      
-    # find if we have long long
-    try:
-      shell(opt.CXX+" -w tmp"+os.sep+"longlong.cxx -o tmp"+os.sep+"longlong")
-      os.system("tmp"+os.sep+"longlong >tmp"+os.sep+"longlong.py")
-      f = open("tmp"+os.sep+"longlong.py")
-      exec f in opt.__dict__
-      f.close()
-      opt.HAVE_LONGLONG=1
-    except:
-      opt.HAVE_LONGLONG=0
 
-    # find if we have long double
-    try:
-      shell(opt.CXX+" -w tmp"+os.sep+"longdouble.cxx -o tmp"+os.sep+"longdouble")
-      os.system("tmp"+os.sep+"longdouble >tmp"+os.sep+"longdouble.py")
-      f = open("tmp"+os.sep+"longdouble.py")
-      exec f in opt.__dict__
-      f.close()
-      opt.HAVE_LONGDOUBLE=1
-    except:
-      opt.HAVE_LONGDOUBLE=0
+    if opt.CHAR_IS_UNSIGNED:
+      print "char is unsigned"
+    else:
+      print "char is signed"
 
-    # find if we have _Bool
-    try:
-      shell(opt.CXX+" -w tmp"+os.sep+"cbool.cxx -o tmp"+os.sep+"cbool")
-      os.system("tmp"+os.sep+"cbool >tmp"+os.sep+"cbool.py")
-      f = open("tmp"+os.sep+"cbool.py")
-      exec f in opt.__dict__
-      f.close()
-      opt.HAVE_CBOOL=1
-    except:
-      opt.HAVE_CBOOL=0
-
-    # find if we have _Complex
-    try:
-      shell(opt.CXX + " -w tmp"+os.sep+"complex.cxx -o tmp"+os.sep+"complex")
-      os.system("tmp"+os.sep+"complex >tmp"+os.sep+"complex.py")
-      f = open("tmp"+os.sep+"complex.py")
-      exec f in opt.__dict__
-      f.close()
-      opt.HAVE_COMPLEX=1
-    except:
-      opt.HAVE_COMPLEX=0
-
-    # find if we have _Imaginary
-    try:
-      shell(opt.CXX + " -w tmp"+os.sep+"imaginary.cxx -o tmp"+os.sep+"imaginary")
-      os.system("tmp"+os.sep+"imaginary >tmp"+os.sep+"imaginary.py")
-      f = open("tmp"+os.sep+"imaginary.py")
-      exec f in opt.__dict__
-      f.close()
-      opt.HAVE_IMAGINARY=1
-    except:
-      opt.HAVE_IMAGINARY=0
+    if opt.BIG_ENDIAN: print "Big Endian byte order detected"
+    if opt.LITTLE_ENDIAN: print "Little Endian byte order detected"
 
     #calculate alignment tables
     vbls = [
@@ -1071,9 +924,6 @@ class gxx(flxbuild.compiler_class.compiler_base):
         if v > opt.MAX_ALIGN: opt.MAX_ALIGN = v
       except KeyError: pass
     opt.flx_aligns[1]="char"
-
-    opt.DEBUG_FLAGS = "-g "
-    opt.OPTIMISE = "-O3 -fomit-frame-pointer --inline -DNDEBUG "
 
   def report_config(self):
     opt = self.options
@@ -1141,7 +991,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
 
   # compile a file to an object suitable for inclusion in a shared 
   # library version of RTL
-  def compile_shared_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+  def compile_shared_thing(self,shell,indir,basename,src_ext,outdir,include_path,macros,flags,optimise,debug):
     opt = self.options
     # compile for a dll: position independent code etc
     cmd = opt.CCOBJ_DYNAMIC_RTL
@@ -1166,19 +1016,24 @@ class gxx(flxbuild.compiler_class.compiler_base):
     #input file
     if  indir: cmd = cmd + indir + os.sep
     cmd = cmd + basename
-    cmd = cmd + ".cpp"
+    cmd = cmd + src_ext
 
     # compile it
     shell(cmd)
 
-  # compile a file to an object suitable for inclusion in a mainline
-  # which links to shared libraries
-  compile_shared_main = compile_shared_rtl
-  compile_felix_dll = compile_shared_rtl
+  def compile_shared_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+    self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug)
+
+  def compile_shared_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+    self.compile_shared_thing(shell,indir,basename,".cxx",outdir,include_path,macros,flags,optimise,debug)
+
+  def compile_felix_dll(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+    self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug)
+
 
   # compile a file to an object suitable for inclusion in a static link 
   # version of the RTL 
-  def compile_static_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+  def compile_static_thing(self,shell,indir,basename,src_ext,outdir,include_path,macros,flags,optimise,debug):
     opt = self.options
     # compile for a dll: position independent code etc
     cmd = opt.CCOBJ_STATIC_RTL
@@ -1204,13 +1059,20 @@ class gxx(flxbuild.compiler_class.compiler_base):
     #input file
     if  indir: cmd = cmd + indir + os.sep
     cmd = cmd + basename
-    cmd = cmd + ".cpp"
+    cmd = cmd + src_ext
 
     # compile it
     shell(cmd)
 
-  compile_static_main = compile_static_rtl
-  compile_felix_static = compile_static_rtl
+  def compile_static_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+    self.compile_static_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug)
+
+  def compile_static_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+    self.compile_static_thing(shell,indir,basename,".cxx",outdir,include_path,macros,flags,optimise,debug)
+
+  def compile_felix_static(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+    self.compile_static_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug)
+
 
   def link_static_archive(self,shell,objects,archive):
     opt = self.options
@@ -1297,6 +1159,8 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     opt.SUPPORT_DYNAMIC_LOADING=1
     opt.SPEC_OBJ_FILENAME = "/Fo"
     opt.SPEC_EXE_FILENAME = "/Fe"
+    opt.DEBUG_FLAGS = "/g "
+    opt.OPTIMISE = "/Ox /DNDEBUG "
 
   def detect_msvcxx_language_extensions(self,shell):
     opt = self.options
@@ -1324,7 +1188,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     CXX = opt.CXX
     opt.NO_INVALID_OFFSETOF_WARNING="/w "
 
-  def check_options(self,shell):
+  def check_options(self,shell,get_stdout):
     opt = self.options
     CXX = opt.CXX
 
@@ -1340,6 +1204,8 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     opt.EXT_EXE= ".exe"
     opt.EXT_SHLIB = ".dll"
     opt.EXT_OBJ = ".obj"
+    opt.EXT_SRC_MAIN = ".cxx"
+    opt.EXT_SRC_LIB = ".cpp"
 
     COMPILE_DYNAMIC_RTL = "/nologo /MD /c /EHs "
     LINK_DYNAMIC_RTL = "/nologo /MD /LD "
@@ -1397,14 +1263,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     else:
       print "Isnan NOT supported"
 
-    # find if we have stdint.h
-    try:
-      shell(opt.CXX+" /w /c tmp"+os.sep+"dummy_stdint.cxx /o tmp"+os.sep+"dummy_stdint.o")
-      opt.HAVE_STDINT=1
-      print "Have stdint.h support"
-    except:
-      opt.HAVE_STDINT=0
-      print "stdint.h NOT supported"
+    self.get_c_type_data(shell,get_stdout)
 
     # find sizes of ints
     try:
@@ -1418,62 +1277,6 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
       print "FATAL: can't determine sizes of ints"
       sys.exit(1)
       
-    # find if we have long long
-    try:
-      shell(opt.CXX+" /ML /w tmp"+os.sep+"longlong.cxx /Fetmp"+os.sep+"longlong.exe")
-      os.system("tmp"+os.sep+"longlong >tmp"+os.sep+"longlong.py")
-      f = open("tmp"+os.sep+"longlong.py")
-      exec f in opt.__dict__
-      f.close()
-      opt.HAVE_LONGLONG=1
-    except:
-      opt.HAVE_LONGLONG=0
-
-    # find if we have long double
-    try:
-      shell(opt.CXX+" /ML /w tmp"+os.sep+"longdouble.cxx /Fetmp"+os.sep+"longdouble.exe")
-      os.system("tmp"+os.sep+"longdouble >tmp"+os.sep+"longdouble.py")
-      f = open("tmp"+os.sep+"longdouble.py")
-      exec f in opt.__dict__
-      f.close()
-      opt.HAVE_LONGDOUBLE=1
-    except:
-      opt.HAVE_LONGDOUBLE=0
-
-    # find if we have _Bool
-    try:
-      shell(opt.CXX+" /ML /w tmp"+os.sep+"cbool.cxx /Fetmp"+os.sep+"bool.exe")
-      os.system("tmp"+os.sep+"cbool >tmp"+os.sep+"cbool.py")
-      f = open("tmp"+os.sep+"cbool.py")
-      exec f in opt.__dict__
-      f.close()
-      opt.HAVE_CBOOL=1
-    except:
-      opt.HAVE_CBOOL=0
-
-    # find if we have _Complex
-    try:
-      shell(opt.CXX + " /ML /w tmp"+os.sep+"complex.cxx /Fetmp"+os.sep+"complex.exe")
-      os.system("tmp"+os.sep+"complex >tmp"+os.sep+"complex.py")
-      f = open("tmp"+os.sep+"complex.py")
-      exec f in opt.__dict__
-      f.close()
-      opt.HAVE_COMPLEX=1
-    except:
-      opt.HAVE_COMPLEX=0
-
-    # find if we have _Imaginary
-    try:
-      shell(opt.CXX + " -w tmp"+os.sep+"imaginary.cxx -o tmp"+os.sep+"imaginary")
-      os.system("tmp"+os.sep+"imaginary >tmp"+os.sep+"imaginary.py")
-      f = open("tmp"+os.sep+"imaginary.py")
-      exec f in opt.__dict__
-      f.close()
-      opt.HAVE_IMAGINARY=1
-    except:
-      opt.HAVE_IMAGINARY=0
-
-
     #calculate alignment tables
     vbls = [
       ("ALIGNOF_CBOOL","_Bool"),
@@ -1501,8 +1304,6 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
       except KeyError: pass
     opt.flx_aligns[1]="char"
 
-    opt.DEBUG_FLAGS = "/g "
-    opt.OPTIMISE = "/Ox /DNDEBUG "
 
   def report_config(self):
     opt = self.options
@@ -1564,7 +1365,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
 
   # compile a file to an object suitable for inclusion in a shared 
   # library version of RTL
-  def compile_shared_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+  def compile_shared_thing(self,shell,indir,basename,src_ext,outdir,include_path,macros,flags,optimise,debug):
     opt = self.options
     # compile for a dll: position independent code etc
     cmd = opt.CCOBJ_DYNAMIC_RTL
@@ -1589,19 +1390,25 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     #input file
     if  indir: cmd = cmd + indir + os.sep
     cmd = cmd + basename
-    cmd = cmd + ".cpp"
+    cmd = cmd + src_ext
 
     # compile it
     shell(cmd)
 
   # compile a file to an object suitable for inclusion in a mainline
   # which links to shared libraries
-  compile_shared_main = compile_shared_rtl
-  compile_felix_dll = compile_shared_rtl
+  def compile_shared_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+    self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug)
+
+  def compile_shared_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+    self.compile_shared_thing(shell,indir,basename,".cxx",outdir,include_path,macros,flags,optimise,debug)
+
+  def compile_felix_dll(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+    self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug)
 
   # compile a file to an object suitable for inclusion in a static link 
   # version of the RTL 
-  def compile_static_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+  def compile_static_thing(self,shell,indir,basename,src_ext,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
     opt = self.options
     # compile for a dll: position independent code etc
     cmd = opt.CCOBJ_STATIC_RTL
@@ -1627,13 +1434,20 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     #input file
     if  indir: cmd = cmd + indir + os.sep
     cmd = cmd + basename
-    cmd = cmd + ".cpp"
+    cmd = cmd + src_ext
 
     # compile it
     shell(cmd)
 
-  compile_static_main = compile_static_rtl
-  compile_felix_static = compile_static_rtl
+  def compile_static_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+    self.compile_static_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug)
+
+  def compile_static_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+    self.compile_static_thing(shell,indir,basename,".cxx",outdir,include_path,macros,flags,optimise,debug)
+
+  def compile_felix_static(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+    self.compile_static_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug)
+
 
   def link_static_archive(self,shell,objects,archive):
     opt = self.options
@@ -1745,20 +1559,23 @@ except:
 #---------- utilities -------------------
 # We're screwed if popen doesn't work ..
 
-def xxqt(x):
+def xxqt(x,print_cmd=0,print_on_error=1):
   result = os.system(x)
   if result != 0: 
-    print "FAIL:",x
+    if print_on_error:
+      print "FAIL:",x
     raise Error
-  else: print x
+  else: 
+    if print_cmd:
+      print x
 
-def xqt(x): 
- if os.name == "posix":
-   xxqt(x + " >/dev/null 2>&1")
- elif os.name == "nt":
-   xxqt(x + " >NUL")
- else:
-   xxqt(x)
+def xqt(x,print_on_error=0,print_cmd=0,print_output=0): 
+ if not print_output:
+   if os.name == "posix":
+     x = x + " >/dev/null 2>&1"
+   elif os.name == "nt":
+     x = x + x + " >NUL"
+ xxqt(x,print_cmd,print_on_error)
 
 def mkdirs(x):
   cps = string.split(x,os.sep)
@@ -2061,7 +1878,7 @@ if build_model == "win32":
 else:
   BUILD_CXX=flxbuild.gxx_class.gxx()
 BUILD_CXX.set_options(use="build",model=build_model,build=build_model)
-BUILD_CXX.check_options(xqt)
+BUILD_CXX.check_options(xqt,get_stdout)
 BUILD_CXX.report_config()
 BUILD_CXX.save_options("config/build_cxx.py")
 build_model=BUILD_CXX.options.model
@@ -2092,13 +1909,13 @@ print
 if host_model in ["posix","cygwin","nocygwin","mingw","detect"]:
   HOST_CXX=flxbuild.gxx_class.gxx()
   HOST_CXX.set_options(use="host",model=host_model,build=build_model)
-  HOST_CXX.check_options(xqt)
+  HOST_CXX.check_options(xqt,get_stdout)
   HOST_CXX.report_config()
   HOST_CXX.save_options("config/host_cxx.py")
 elif host_model in ["win32"]:
   HOST_CXX=flxbuild.msvcxx_class.msvcxx()
   HOST_CXX.set_options(use="host",model=host_model,build=build_model)
-  HOST_CXX.check_options(xqt)
+  HOST_CXX.check_options(xqt,get_stdout)
   HOST_CXX.report_config()
   HOST_CXX.save_options("config/host_cxx.py")
 else:
@@ -2126,7 +1943,7 @@ print
 if target_model in ["posix","cygwin","nocygwin","mingw","detect"]:
   TARGET_CXX=flxbuild.gxx_class.gxx()
   TARGET_CXX.set_options(use="target",model=target_model,build=build_model)
-  TARGET_CXX.check_options(xqt)
+  TARGET_CXX.check_options(xqt,get_stdout)
   TARGET_CXX.report_config()
   TARGET_CXX.save_options("config/target_cxx.py")
   CYGWIN = TARGET_CXX.options.CYGWIN
@@ -2137,7 +1954,7 @@ if target_model in ["posix","cygwin","nocygwin","mingw","detect"]:
 elif target_model in ["win32"]:
   TARGET_CXX=flxbuild.msvcxx_class.msvcxx()
   TARGET_CXX.set_options(use="target",model=target_model,build=build_model)
-  TARGET_CXX.check_options(xqt)
+  TARGET_CXX.check_options(xqt,get_stdout)
   TARGET_CXX.report_config()
   TARGET_CXX.save_options("config/target_cxx.py")
   CYGWIN=0

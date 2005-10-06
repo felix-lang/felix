@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.158  2005/10/06 15:21:24  skaller
+Refactoring build system.
+
 Revision 1.157  2005/10/05 06:29:31  skaller
 More work on type constraints, more OO in build system.
 
@@ -2841,7 +2844,7 @@ try:
     for i in tmp:
       objs.append(i[:-2]) # chop off the .o
     HOST_CXX.link_static_archive(xqt,objs,"elk/libelk_static")
-    HOST_CXX.compile_static_main(xqt,"elk","elk_gramanl","elk",include_path=["rtl","elk"],macros=["GRAMANL_MAIN","FLX_STATIC_LINK"])
+    HOST_CXX.compile_static_main(xqt,"elk","elk_gramanl","elk",include_path=["rtl","elk"],macros=["FLX_STATIC_LINK"])
     HOST_CXX.link_static_program(xqt,["elk/elk_gramanl_static"],"bin/flx_elkhound",lib_path=["elk"],libs=["elk_static"])
  
   # COMPILE DRIVER PROGRAMS
@@ -3112,7 +3115,7 @@ We have no idea if it continues copying.
 @tangle('\tpython script/maker compiler bytecode debug')
 @tangle('')
 @tangle('extract_compiler: dummy')
-@tangle('\tenv PYTHONPATH=. ${BUILTIN_ISCR} lpsrc/flx.pak')
+@tangle('\t${BUILTIN_ISCR} lpsrc/flx.pak')
 @tangle('\tpython script/maker compiler')
 @tangle('')
 @tangle('extract: dummy')
@@ -3390,14 +3393,14 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('debian/rules: lpsrc/flx_debian.pak lpsrc/flx_maker.ipk')
 @tangle('\trm -rf debian')
-@tangle('\tenv PYTHONPATH=. ${BUILTIN_ISCR} lpsrc/flx_debian.pak')
+@tangle('\t${BUILTIN_ISCR} lpsrc/flx_debian.pak')
 @tangle('\tchmod u+x debian/rules')
 @tangle('')
 @tangle('debian-package: debian/rules')
 @tangle('\t(cd .. && make -f flx/Makefile.debian_package_creator package)')
 @tangle('')
 @tangle('www: dummy')
-@tangle('\tenv PYTHONPATH=. ${BUILTIN_ISCR} lpsrc/flx_sourceforge.pak')
+@tangle('\t${BUILTIN_ISCR} lpsrc/flx_sourceforge.pak')
 @tangle('')
 @tangle('clean: dummy')
 @tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.dll tut/examples/*.par tut/examples/*.o tut/examples/*.output')
@@ -3435,13 +3438,13 @@ We have no idea if it continues copying.
 @tangle('')
 
 @tangle('config: dummy')
-@tangle('\tenv PYTHONPATH=. ${BUILTIN_ISCR} lpsrc/flx_config.pak')
+@tangle('\t${BUILTIN_ISCR} lpsrc/flx_config.pak')
 @tangle('\tenv PYTHONPATH=. python -O script/make_config.py --quiet --prefix=${PREFIX} ${CONFIG_ARGS}')
 @tangle('')
 @tangle('config/config.py: config')
 @tangle('')
 @tangle('boot: config/config.py')
-@tangle('\tenv PYTHONPATH=. ${BUILTIN_ISCR} lpsrc/flx.pak')
+@tangle('\t${BUILTIN_ISCR} lpsrc/flx.pak')
 @for i in [
   'flx_cil_machdep_type',
   'flx_cil_cabs',

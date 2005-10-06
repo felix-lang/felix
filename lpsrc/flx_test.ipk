@@ -89,7 +89,7 @@ of a string. No end of file is delivered
 to the client.
 
 @head(3,'Driver implementation')
-@d = tangler('rtl/flx_stdin_drv.cpp')
+@d = tangler('rtl/flx_stdin_drv.cxx')
 @select(d)
 #include <stdio.h>
 #include <vector>
@@ -279,7 +279,7 @@ We create 1 million threads, and process 2 million
 messages.
 
 @head(3,'Driver Implementation')
-@d = tangler('test/flx_perf_drv1.cpp')
+@d = tangler('test/flx_perf_drv1.cxx')
 @select(d)
 #include <time.h>
 //#include <unistd.h>
