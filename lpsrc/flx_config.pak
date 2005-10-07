@@ -401,14 +401,14 @@ class compiler_base:
     f.write("int main() { return 0; }\n")
     f.close()
     try:
-      self.compile_static_main(shell,"tmp","mchk","tmp")
+      self.compile_static_main(shell,"tmp","mchk","tmp",optimise=0)
       print "#defined",mac
       return 1
     except:
       print "NOT defined",mac
       return 0
 
-  def check_macro_defined_in_header(self,shell,file,mac):
+  def check_macro_defined_in_header(self,shell,file,mac,optimise=0):
     fn = "tmp"+os.sep+"mchk.cxx"
     f = open(fn,"w")
     f.write("#include <"+file+">\n")
@@ -555,7 +555,9 @@ class gxx(flxbuild.compiler_class.compiler_base):
     opt.model = model
     if model == "nocygwin": 
       opt.CXX = CXX + " -mno-cygwin "
+      opt.EXT_OBJ = ".obj" # temporary hack
     else:
+      opt.EXT_OBJ = ".o" # temporary hack
       opt.CXX = CXX+" "
     print "CXX=",opt.CXX
     opt.AR = AR +" "
@@ -1036,7 +1038,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
   def compile_static_thing(self,shell,indir,basename,src_ext,outdir,include_path,macros,flags,optimise,debug):
     opt = self.options
     # compile for a dll: position independent code etc
-    cmd = opt.CCOBJ_STATIC_RTL
+    cmd = opt.__dict__.get("CCOBJ_STATIC_RTL",opt.CXX+" -c ")
     if flags: cmd = cmd + flags + " "
 
     # debug symbols
@@ -1411,7 +1413,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
   def compile_static_thing(self,shell,indir,basename,src_ext,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
     opt = self.options
     # compile for a dll: position independent code etc
-    cmd = opt.CCOBJ_STATIC_RTL
+    cmd = opt.__dict__.get("CCOBJ_STATIC_RTL",opt.CXX+" /c ")
     if flags: cmd = cmd + flags + " "
 
     # debug symbols
