@@ -2204,7 +2204,7 @@ try
           if not (Hashtbl.mem insts s) then
           begin
             Hashtbl.add insts s ();
-            plh s
+            plb s
           end
         end
       | _ -> ()
