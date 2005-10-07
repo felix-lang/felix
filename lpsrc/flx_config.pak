@@ -1530,9 +1530,15 @@ def filecopy2dir(a,d):
   filecopy(a,d+os.sep+base)
 
 def get_stdout(x):
-  fout = os.popen(x,"r")
-  output = fout.readlines()
-  result = fout.close()
+  if os.name == "nt": # popen doesn't work on Windows
+    result = os.system(x + " >tmp.out")
+    fout = open("tmp.out")
+    output = fout.readlines()
+    fout.close()
+  else:
+    fout = os.popen(x,"r")
+    output = fout.readlines()
+    result = fout.close()
   return result,output
   
 @h = tangler("script/make_config.py")
@@ -1576,7 +1582,7 @@ def xqt(x,print_on_error=0,print_cmd=0,print_output=0):
    if os.name == "posix":
      x = x + " >/dev/null 2>&1"
    elif os.name == "nt":
-     x = x + x + " >NUL"
+     x = x + " >NUL"
  xxqt(x,print_cmd,print_on_error)
 
 def mkdirs(x):

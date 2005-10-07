@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.159  2005/10/07 18:07:11  skaller
+Fix win32 build bugs .. again ..
+
 Revision 1.158  2005/10/06 15:21:24  skaller
 Refactoring build system.
 
@@ -2081,7 +2084,7 @@ class MakeError: pass
 
 options = sys.argv[1:]
 if not options: 
-  options = ["extract","compiler","rtl","drivers","optimise_c"]
+  options = ["extract","compiler","rtl","drivers","elkhound","optimise_c"]
 
 CCMACS=""
 for i in options:
