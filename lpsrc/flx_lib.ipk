@@ -663,6 +663,12 @@ module System
     requires cstdlib;
   proc exit: int = "std::exit($1);";
   proc abort: 1 = "std::abort($1);";
+  type ptf_t = "thread_frame_t*";
+  const ptf:ptf_t = "ptf"; 
+    // note this will NOT work if ptf is a struct,
+    // then we'd need (&ptf) instead ..
+    // however this model isn't supported fully yet and probably never will be
+    // we may, however, make ptf a machine register
 }
 
 @#------------- Environment -------------------
