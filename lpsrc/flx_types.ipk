@@ -272,6 +272,7 @@ and regexp_t =
   | REGEXP_epsilon (** epsilon: null string *)
   | REGEXP_sentinel (** end marker *)
   | REGEXP_code of expr_t (** associated code *)
+  | REGEXP_group of string * regexp_t (** named group *)
 
 @head(3,'Type sublanguage')
 The encoding '`TYP_void'
@@ -1901,6 +1902,7 @@ and string_of_re re =
   | REGEXP_epsilon -> "epsilon"
   | REGEXP_sentinel -> "sentinel"
   | REGEXP_code e -> "<CODE " ^ string_of_expr e ^ ">"
+  | REGEXP_group (n,r) -> "(" ^ string_of_re r ^ " as " ^ n ^ ")"
 
 and string_of_expr (e:expr_t) = 
   let se e = string_of_expr e 

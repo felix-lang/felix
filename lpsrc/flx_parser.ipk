@@ -286,6 +286,10 @@ regdef:
       `AST_regdef (rstoken $1 $5,name,$4) 
     }
   
+re0:
+  | re1 AS NAME              { REGEXP_group (snd $3, $1) }
+  | re1                      { $1 }
+
 re1:
   | re1 VBAR re2             { REGEXP_alt ($1, $3) }
   | re2                      { $1 }
@@ -304,7 +308,7 @@ re4:
   | STRING                  { let s = snd $1 in REGEXP_string s }
   | UNDERSCORE              { regexp_underscore }
   | DOT                     { regexp_dot }
-  | LPAR re1 RPAR           { $2 }
+  | LPAR re0 RPAR           { $2 }
   | LSQB charset RSQB       { regexp_of_charset $2 }
   | LSQB CIRCUMFLEX charset RSQB { regexp_of_charset (charset_inv $3) }
   | re_name                 { REGEXP_name $1 } 

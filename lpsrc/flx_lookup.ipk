@@ -2510,6 +2510,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
 and bind_regdef syms env regexp_exclude e =
   let bd e = bind_regdef syms env regexp_exclude e in
   match e with
+  | REGEXP_group (n,e) -> REGEXP_group (n, bd e)
   | REGEXP_seq (e1,e2) -> REGEXP_seq (bd e1, bd e2)
   | REGEXP_alt (e1,e2) -> REGEXP_alt (bd e1, bd e2)
   | REGEXP_aster e -> REGEXP_aster (bd e)

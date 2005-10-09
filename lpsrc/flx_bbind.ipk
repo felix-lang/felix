@@ -41,7 +41,7 @@ open Flx_bexe
 open List
 open Flx_generic
 open Flx_tpat
-
+open Inria_syntax
 
 let find_param name_map s =
   match Hashtbl.find name_map s with
@@ -52,6 +52,37 @@ let print_bvs vs =
   if length vs = 0 then "" else
   "[" ^ catmap "," (fun (s,i) -> s ^ "<"^si i^">") vs^ "]"
 
+
+let bind_regex' syms env sr be ret_type cls : regular_args_t =
+  let irc c = Characters (Inria_cset.singleton (Char.code c)) in
+  let rec inr re = match re with 
+    | REGEXP_code _ -> assert false
+    | REGEXP_name _ -> assert false
+    | REGEXP_sentinel -> assert false
+
+    | REGEXP_alt (a,b) -> Alternative (inr a, inr b)
+    | REGEXP_seq (a,b) -> Sequence (inr a, inr b)
+    | REGEXP_epsilon -> Epsilon
+    | REGEXP_aster a -> Repetition (inr a)
+    | REGEXP_group (name,a) -> Bind (inr a,name)
+    | REGEXP_string s -> 
+      if String.length s = 0 then Epsilon
+      else let r = ref (irc s.[0]) in
+      for i = 1 to String.length s -1 do 
+        r := Sequence (!r, irc s.[i])
+      done; 
+      !r
+  in
+  let cls = map (fun (e,c) -> bind_regdef syms env [] e, c) cls in
+  let lex : (unit, expr_t) Inria_syntax.entry = 
+  { 
+      name = "dummy"; shortest = false; args=();
+      clauses = map (fun (e,c) -> inr e, c) cls
+  }
+  in
+    let aes, aut = Inria_lexgen.make_dfa [lex] in
+    failwith "Inria dfa built"
+    
 let bind_regex syms env sr be ret_type cls : regular_args_t =
   (*
   print_endline "Binding regmatch";

@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.160  2005/10/09 00:59:25  skaller
+Experiment with group extraction in regexps using Inria code.
+
 Revision 1.159  2005/10/07 18:07:11  skaller
 Fix win32 build bugs .. again ..
 
@@ -2390,6 +2393,10 @@ MISC_MODULES = [
 ]
 
 FLX_MODULES = [
+  'inria_table'      ,
+  'inria_cset'      ,
+  'inria_syntax'      ,
+  'inria_lexgen'      ,
   'flx_mtypes1'      ,
   'flx_ast'          ,
   'flx_types'        ,
