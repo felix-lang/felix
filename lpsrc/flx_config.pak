@@ -670,6 +670,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
     opt.MACOSX = self.detect_osx(shell)
     opt.WIN32 = self.detect_win32(shell)
     opt.CYGWIN = self.detect_cygwin(shell)
+
     sum = opt.MACOSX + opt.WIN32 + opt.CYGWIN
     if sum > 1:
       print "INCOMPATIBLE MODELS DETECTED"
@@ -727,6 +728,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
       opt.EXT_LIB = ".a"
       opt.EXT_EXE= ".exe"
       opt.EXT_SHLIB = ".dll"
+      opt.EXT_DYLIB = opt.EXT_SHLIB 
       opt.EXT_OBJ = ".o"
       opt.SHLIB_DIR="bin"
       
@@ -747,6 +749,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
       opt.EXT_LIB = ".a"
       opt.EXT_EXE= ".exe"
       opt.EXT_SHLIB = ".dll"
+      opt.EXT_DYLIB = opt.EXT_SHLIB 
       opt.EXT_OBJ = ".obj"
       opt.SHLIB_DIR="bin"
       
@@ -760,25 +763,33 @@ class gxx(flxbuild.compiler_class.compiler_base):
       LINK_DYNAMIC_FLX = opt.PIC+"-shared -Wl,--disable-auto-import "
 
     elif opt.model=="osx":
+      # flags for rtl & flx executable compilation & linking taken from
+      # http://fink.sourceforge.net/doc/porting/shared.php with many thanks
       opt.EXT_LIB = ".a"
       opt.EXT_EXE= ""
-      opt.EXT_SHLIB = ".so"
+      opt.EXT_SHLIB = ".so"     # differentiated now because osx treats dylibs
+      opt.EXT_DYLIB = ".dylib"  # and plugin-type libraries.
       opt.EXT_OBJ = ".o"
       opt.SHLIB_DIR="rtl"
+
+      opt.PIC = ""		# darwin code is by default position independent
       
-      COMPILE_DYNAMIC_RTL = opt.PIC + "-dynamic -c "
-      LINK_DYNAMIC_RTL = "-bundle "
+      #COMPILE_DYNAMIC_RTL = opt.PIC + "-bundle -c "
+      COMPILE_DYNAMIC_RTL = opt.PIC + "-c " + "-fno-common "
+      # make a dynamic library (not loadable via APIs like dlcompat)
+      LINK_DYNAMIC_RTL = "-dynamiclib "
       
       COMPILE_DYNAMIC_MAIN = "-c "
       LINK_DYNAMIC_MAIN = ""
       
-      COMPILE_DYNAMIC_FLX = opt.PIC + "-dynamic -c "
+      COMPILE_DYNAMIC_FLX = opt.PIC + "-bundle -c " "-fno-common "
       LINK_DYNAMIC_FLX = "-bundle "
 
     elif opt.model=="posix":
       opt.EXT_LIB = ".a"
       opt.EXT_EXE= ""
       opt.EXT_SHLIB = ".so"
+      opt.EXT_DYLIB = opt.EXT_SHLIB
       opt.EXT_OBJ = ".o"
       opt.SHLIB_DIR="rtl"
       
@@ -836,7 +847,8 @@ class gxx(flxbuild.compiler_class.compiler_base):
           opt.DLLIB="dl"
           print "Dynamic Loading Supported (with -ldl)"
         except:
-          pass
+          if opt.model == "osx":
+            opt.SUPPORT_DYNAMIC_LOADING = 1  # pre 10.3, we do our own dlopen
 
     else:
     # check if can get LoadLibrary to work
@@ -951,7 +963,8 @@ class gxx(flxbuild.compiler_class.compiler_base):
 
     print "Extension for object file               : " + opt.EXT_OBJ
     print "Extension for static archive            : " + opt.EXT_LIB
-    print "Extension for loadable RTL              : " + opt.EXT_SHLIB
+    print "Extension for loadable RTL              : " + opt.EXT_DYLIB
+    print "Extension for flx modules               : " + opt.EXT_SHLIB
     print "Extension for executable                : " + opt.EXT_EXE
     print "RTL in directory                        : " + opt.SHLIB_DIR
 
@@ -1096,7 +1109,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
   def link_shared_rtl(self,shell,objects,outfile,lib_path=[],libs=[]):
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_RTL
-    cmd = cmd + "-o " +outfile + opt.EXT_SHLIB + " "
+    cmd = cmd + "-o " +outfile + opt.EXT_DYLIB + " "
     if opt.CYGWIN:
       cmd = cmd + "-Wl,--out-implib="+outfile+".dll.a "
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
@@ -1108,7 +1121,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
 
   def link_felix_dll(self,shell,objects,outfile,lib_path=[],libs=[]):
     opt = self.options
-    cmd = opt.CCLINK_DYNAMIC_RTL
+    cmd = opt.CCLINK_DYNAMIC_FLX
     cmd = cmd + "-o " +outfile + opt.EXT_SHLIB + " "
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
     for i in lib_path: cmd = cmd + "-L"+i+" "
@@ -1205,6 +1218,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     opt.EXT_LIB = ".lib"
     opt.EXT_EXE= ".exe"
     opt.EXT_SHLIB = ".dll"
+    opt.EXT_DYLIB = opt.EXT_SHLIB
     opt.EXT_OBJ = ".obj"
     opt.EXT_SRC_MAIN = ".cxx"
     opt.EXT_SRC_LIB = ".cpp"
@@ -1331,7 +1345,8 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
 
     print "Extension for object file               : " + opt.EXT_OBJ
     print "Extension for static archive            : " + opt.EXT_LIB
-    print "Extension for loadable RTL              : " + opt.EXT_SHLIB
+    print "Extension for loadable RTL              : " + opt.EXT_DYLIB
+    print "Extension for flx modules               : " + opt.EXT_SHLIB
     print "Extension for executable                : " + opt.EXT_EXE
     print "RTL in directory                        : " + opt.SHLIB_DIR
 
@@ -1646,6 +1661,7 @@ if DEBIAN:
   default_prefix='/usr'
   print "DEBIAN detected"
 
+# RF: noone seems to be using the results of this - flag should be -p on osx
 result,output = get_stdout("uname -m")
 if not result:
   ARCH = output[0]
@@ -1698,7 +1714,15 @@ archmap = {
   }
 
 try:
-  build_model = archmap[os.name]
+  # RF: python's os.name is reporting posix for osx, which is all wrong
+  # at this point we can't yet use all the environ tests and I don't
+  # know how to call detect_osx from here.
+  result,output = get_stdout("uname -s")  # os x uname flag
+  print result,output
+  if not result and output[0] == "Darwin\n":
+    build_model = archmap["osx"]
+  else:
+    build_model = archmap[os.name]
   print "Build platform: " + build_model
 except:
   print "Python returns unknown OS type, assuming 'detect'"
@@ -1914,7 +1938,7 @@ print "Checking HOST MODEL",host_model
 print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 print
 
-if host_model in ["posix","cygwin","nocygwin","mingw","detect"]:
+if host_model in ["posix","osx","cygwin","nocygwin","mingw","detect"]:
   HOST_CXX=flxbuild.gxx_class.gxx()
   HOST_CXX.set_options(use="host",model=host_model,build=build_model)
   HOST_CXX.check_options(xqt,get_stdout)
@@ -1948,7 +1972,7 @@ print "Checking TARGET MODEL",target_model
 print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 print
 
-if target_model in ["posix","cygwin","nocygwin","mingw","detect"]:
+if target_model in ["posix","osx","cygwin","nocygwin","mingw","detect"]:
   TARGET_CXX=flxbuild.gxx_class.gxx()
   TARGET_CXX.set_options(use="target",model=target_model,build=build_model)
   TARGET_CXX.check_options(xqt,get_stdout)
