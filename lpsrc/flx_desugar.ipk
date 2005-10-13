@@ -326,7 +326,6 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_strexpr _
   | `AST_setunion  _
   | `AST_setintersection _
-  | `AST_intersection _
     ->
     clierr sr ("[rex] Unexpected " ^ string_of_expr e)
 

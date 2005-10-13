@@ -440,14 +440,101 @@ and memory_action =
 
 and tag_action = SetTag of int * int | EraseTag of int
 
-(* Representation of entry points *)
+let string_of_automata_move x = match x with
+  | Backtrack -> "backtrack"
+  | Goto i -> "goto " ^ string_of_int i
 
+let string_of_tag_base x = match x with
+  | Start -> "Start"
+  | Mem j -> "Mem " ^ string_of_int j
+  | End -> "End"
+
+let string_of_tag_addr x = match x with Sum (tb,i) ->
+  string_of_tag_base tb ^ " " ^ string_of_int i
+
+let string_of_ident_info x = match x with
+  | Ident_string (b,t1,t2) ->
+    "string " ^
+    if b then "true " else "false " ^
+   "(" ^ string_of_tag_addr t1 ^ ", " ^ string_of_tag_addr t2 ^ ")"
+ | Ident_char (b,t1) ->
+    "char " ^ 
+    if b then "true " else "false " ^
+   "(" ^ string_of_tag_addr t1 ^ ")"
+ 
+let string_of_tenv iidis =
+  if List.length iidis = 0 then "none" else
+  (
+  String.concat ";\n" 
+    (
+      List.map
+      (fun (s,idi) -> "  var " ^ s ^ ":" ^string_of_ident_info idi)
+      iidis
+    )
+  ) ^ "\n"
+  
+(* Representation of entry points *)
+let string_of_tag_action x = match x with
+  | SetTag (i,j) -> "set " ^ string_of_int i ^ " " ^ string_of_int j
+  | EraseTag i -> "erase " ^ string_of_int i
+
+let string_of_memory_action x = match x with
+  | Copy(i,j) -> "copy " ^ string_of_int i ^ " " ^ string_of_int j
+  | Set i -> "set " ^ string_of_int i
+
+let string_of_tag_action_list x = 
+  String.concat ", " (List.map string_of_tag_action x)
+
+let string_of_automata_trans x = match x with
+  | No_remember -> "No_remember"
+  | Remember  (i,tal) -> "Remember " ^ string_of_int i ^ " "^ 
+    string_of_tag_action_list tal
+  
+let string_of_automata a = match a with
+  | Perform (i,tal) -> "perform " ^ string_of_int i ^ " " ^ 
+    string_of_tag_action_list tal
+
+  | Shift (at,vect) -> "shift " ^ string_of_automata_trans at ^ 
+    "\n" ^
+    (
+      let s = ref "" in
+      for i = 0 to Array.length vect - 1 do
+        let move,macts = vect.(i) in
+        if move=Backtrack && List.length macts = 0 then () else
+        s:= !s ^ "Char " ^ string_of_int i ^ " " ^
+          "move="^ string_of_automata_move move ^ 
+          ", macts= " ^ 
+          (
+            if List.length macts = 0 then "none" else
+            String.concat ", " 
+            (List.map string_of_memory_action macts)
+          ) ^ "\n"
+      done;
+      !s
+    )
+  
 type ('args,'action) automata_entry =
   { auto_name: string;
     auto_args: 'args ;
     auto_mem_size : int ;
     auto_initial_state: int * memory_action list;
     auto_actions: (int * t_env * 'action) list }
+
+let string_of_automata_entry { 
+    auto_name = auto_name;
+    auto_mem_size = size ;
+    auto_initial_state = (i,mal);
+    auto_actions = itenvas 
+} =
+  auto_name ^ " size=" ^ string_of_int size ^
+  ", init_state=" ^ string_of_int i ^ "\nmemacts=" ^
+  (if List.length mal = 0 then "none" else
+  String.concat "," (List.map (fun ma -> string_of_memory_action ma) mal)
+  ) ^ "\n" ^
+  "actions=\n" ^
+  String.concat "" (List.map (fun (i,te,_) -> 
+    "action " ^ string_of_int i ^ "\n  " ^ string_of_tenv te
+  ) itenvas)
 
 
 (* A lot of sets and map structures *)
@@ -1544,7 +1631,23 @@ let make_dfa lexdef =
   eprintf "%d states\n" !next_state_num ;
 (* *)
   let actions = Array.create !next_state_num (Perform (0,[])) in
-  List.iter (fun (act, i) -> actions.(i) <- act) states;
+  List.iter (fun (act, i) -> actions.(i) <- act ) states;
+
+  print_endline "Actions ..";
+  for i = 0 to !next_state_num - 1 do
+    let act = actions.(i) in
+    print_endline 
+    ("State " ^ string_of_int i ^ " has action " ^ string_of_automata act) 
+  done; 
   reset_state_mem () ;
   reset_cell_mem  0 ;
+
+  print_endline "Initial states ..";
+  List.iter
+  (fun ae ->
+    print_endline "--- automata entry -- ";
+    print_endline (string_of_automata_entry ae);
+  )
+  initial_states
+  ;
   (initial_states, actions)

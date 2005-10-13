@@ -53,7 +53,7 @@ let print_bvs vs =
   "[" ^ catmap "," (fun (s,i) -> s ^ "<"^si i^">") vs^ "]"
 
 
-let bind_regex' syms env sr be ret_type cls : regular_args_t =
+let bind_regex syms env sr be ret_type cls : regular_args_t =
   let irc c = Characters (Inria_cset.singleton (Char.code c)) in
   let rec inr re = match re with 
     | REGEXP_code _ -> assert false
@@ -83,7 +83,7 @@ let bind_regex' syms env sr be ret_type cls : regular_args_t =
     let aes, aut = Inria_lexgen.make_dfa [lex] in
     failwith "Inria dfa built"
     
-let bind_regex syms env sr be ret_type cls : regular_args_t =
+let bind_regex' syms env sr be ret_type cls : regular_args_t =
   (*
   print_endline "Binding regmatch";
   *) 

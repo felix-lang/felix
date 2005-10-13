@@ -44,6 +44,7 @@ let fp_union followpos i x =
 let rec annotate counter followpos posmap codemap re =
   let a r = annotate counter followpos posmap codemap r in
   match re with
+  | REGEXP_group _ -> failwith "Can't handle groups yet"
   | REGEXP_name _ -> failwith "Unbound regular expresion name"
   | REGEXP_seq (r1,r2) ->
     let a1 = a r1 and a2 = a r2 in
