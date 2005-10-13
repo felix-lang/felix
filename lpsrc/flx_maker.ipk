@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.162  2005/10/13 20:43:09  skaller
+Added --static to Windows flx script
+
 Revision 1.161  2005/10/13 19:42:24  skaller
 Add a Windows version of the 'flx' script called bin/flx.bat
 
@@ -4159,6 +4162,7 @@ SET RUNIT=1
 SET DOFLXG=1
 SET DOECHO=0
 SET FID=%FLX_INSTALL_DIR%
+SET STATIC=0
 
 :DOARGS
 IF "-c" EQU "%1" (
@@ -4186,22 +4190,36 @@ SHIFT
 GOTO DOARGS
 )
 
-"%FLX_INSTALL_DIR%\BIN\FLXG" -I"%FLX_INSTALL_DIR%\LIB" %1 >"%1.LOG"
+IF "--static" EQU "%1" (
+SET STATIC=1
+SHIFT
+GOTO DOARGS
+)
+
+"%FID%\BIN\FLXG" -I"%FID%\LIB" %1 >"%1.LOG"
 if ERRORLEVEL 1 GOTO ERROR
-cl /nologo /MD /c /EHs /w  /I"%FLX_INSTALL_DIR%\RTL" %1.cpp /Fo%1.obj >"%1.LOG"
+if %STATIC% EQU 0 (
+cl /nologo /MD /c /EHs /w  /I"%FID%\RTL" %1.cpp /Fo%1.obj >"%1.LOG"
 if ERRORLEVEL 1 GOTO ERROR
-cl /nologo /MT /LD %1.obj /Fe%1.dll /link /LIBPATH:"%FLX_INSTALL_DIR%\BIN" /DEFAULTLIB:libflx_dynamic >"%1.LOG"
+cl /nologo /MT /LD %1.obj /Fe%1.dll /link /LIBPATH:"%FID%\BIN" /DEFAULTLIB:libflx_dynamic >"%1.LOG"
 if ERRORLEVEL 1 GOTO ERROR
 del %1.exp
 del %1.lib
 IF %RUNIT% EQU 1 (
-"%FLX_INSTALL_DIR%\bin\flx_run" %1
+"%FID%\bin\flx_run" %1 %2 %3 %4 %5 %6 %7 %8 %9  
+)
+) else (
+cl /nologo /MT /c /EHs /w  /I"%FID%\RTL" /DFLX_STATIC_LINK %1.cpp /Fo%1.obj >"%1.LOG"
+if ERRORLEVEL 1 GOTO ERROR
+cl /nologo /MT "%FID%\rtl\flx_run_static.obj" %1.obj /Fe%1.exe /link /LIBPATH:"%FID%\RTL" /DEFAULTLIB:libflx_static >"%1.LOG"
+if ERRORLEVEL 1 GOTO ERROR
+%1 %2 %3 %4 %5 %6 %7 %8 %9
 )
 GOTO FINISHED
 :ERROR
 ECHO SOME KIND OF ERROR OCCURED, rerun with --echo
 type %1.LOG
-EXIT 1
+EXIT /B 1
 :FINISHED
 ENDLOCAL
 
