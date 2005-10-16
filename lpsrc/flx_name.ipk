@@ -165,6 +165,7 @@ let rec cpp_type_classname syms t =
       { id=id; symdef=symdef } -> id,symdef 
     with
     | id,`SYMDEF_cstruct _ -> id
+    | id,`SYMDEF_cclass _ -> id^"*"
     | _,`SYMDEF_abs (_,`Str "char",_) -> "char" (* hack .. *)
     | _,`SYMDEF_abs (_,`Str "int",_) -> "int" (* hack .. *)
     | _,`SYMDEF_abs (_,`Str "long",_) -> "long" (* hack .. *)

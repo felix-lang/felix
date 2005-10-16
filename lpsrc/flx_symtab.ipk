@@ -681,6 +681,187 @@ let rec build_tables syms name level parent grandparent root asms =
           ;
           add_tvars privtab
  
+        | `DCL_cclass (sts) ->
+          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
+          let stype = `AST_name(sr,id,tvars) in
+          Hashtbl.add dfns n {
+            id=id;sr=sr;parent=parent;
+            vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=`SYMDEF_cclass (sts)
+          }
+          ;
+          if access = `Public then add_unique pub_name_map id n;
+          add_unique priv_name_map id n
+          ;
+          (* projections *)
+          iter
+          (fun mem ->
+            let kind, component_name,t =
+              match mem with
+              | `MemberVar (n,t) -> `Var,n,t
+              | `MemberVal (n,t) -> `Val,n,t
+              | `MemberFun (n,t) -> `Fun,n,t
+              | `MemberProc (n,t) -> `Proc,n,t
+            in
+            if kind = `Fun || kind = `Proc then
+            begin
+             (* make applicator method. This precisely the function:
+
+                   fun get_f(x:X) (a:arg_t): result_t => exec_f (x,a);
+                   
+                   which reduces to
+
+                   fun get_f(x:X): arg_t -> result_t = {
+                     fun do_f(a:arg_t): result_t = {
+                       fun exec_f: X * arg_t -> result_t = "$1->f($c)";
+                          // $c is the unpacked list of the second arg ..
+                          // we have no such code, so we have to unpack
+                          // manually ..
+                       return exec_f (x,a);
+                     }
+                     return do_f;
+                   }
+
+              *)
+              let domain,codomain = 
+                match t with
+                | `TYP_function (domain,codomain) when kind = `Fun -> domain,codomain
+                | domain when kind = `Proc -> domain,`AST_void sr
+                | _ -> clierr sr "Accessor method must have function type"
+              in
+                
+                (* make the execute method *)
+                let argts = match domain with
+                  | `TYP_tuple ls -> ls
+                  | x -> [x]
+                in
+
+                (* The exec method *)
+                let execn = !counter in incr counter;
+                let exec_name = "exec_" ^ component_name in
+                let exec_asm = 
+                  let trail =  (match codomain with `AST_void _ -> ";" | _ -> "") in
+                  Dcl (sr,exec_name,Some execn,`Private,[], (* vs inherited *)
+                    `DCL_fun ([],stype::argts,codomain,
+                      `StrTemplate("$1->" ^ component_name^"($b)" ^ trail),[],"primary"
+                     )
+                  ) 
+                in
+
+                (* the do method *)
+                let don = !counter in incr counter;
+                let do_name = "_do_" ^ component_name in
+                let obj_name = "_a_" ^ component_name in
+                let do_asm =
+                  let f = `AST_index (sr,exec_name,execn) in
+                  let cnt = ref 1 in
+                  let params = 
+                    map 
+                    (fun t -> 
+                      let i = !cnt in incr cnt; 
+                      let pname = "_" ^ si i in
+                      (pname,t)
+                    ) 
+                    argts
+                  in
+                  let args = map fst params in
+                  let arg = `AST_tuple (sr, map (fun n -> `AST_name (sr,n,[])) (obj_name::args)) in
+                  let asms = 
+                    [
+                      Exe (sr, 
+                        (match codomain with 
+                        | `AST_void _ -> `EXE_call (f,arg)
+                        | _ -> `EXE_fun_return (`AST_apply(sr,(f,arg)))
+                        )
+                      )
+                      ;
+                      exec_asm
+                    ]
+                  in
+                  Dcl (sr,do_name,Some don, `Private,[], (* vs inherited *)
+                    `DCL_function ((params,None),codomain,[],asms)
+                  )
+                in
+
+                let getn = !counter in incr counter;
+                let get_name = "get_" ^ component_name in
+                let asms = 
+                  [
+                    Exe (sr,`EXE_fun_return (`AST_index (sr,do_name,don)));
+                    do_asm
+                  ] 
+                in
+                let props = [] in
+                let ps = [stype] in
+
+                (* the return type of the get_f function *)
+                let rett = `TYP_function (domain,codomain) in
+                let pubtab,privtab, exes, ifaces,dirs =  
+                  build_tables syms get_name (level+1) 
+                 (Some getn) parent root asms 
+                in
+
+                (* add parameters to symbol table of the function,
+                  there is only one, namely the object
+                *)
+                let n = !counter in incr counter;
+                if print_flag then
+                print_endline ("//  "^spc ^ si n ^ " -> " ^ obj_name^ " (parameter)");
+                Hashtbl.add dfns n {id=obj_name;sr=sr;parent=Some getn;vs=[];pubmap=null_tab;privmap=null_tab;dirs=[];symdef=`SYMDEF_parameter (stype)};
+                if access = `Public then add_unique pubtab obj_name n;
+                add_unique privtab obj_name n;
+                ; 
+
+                (* add the get method to the current sumbol table *)
+                Hashtbl.add dfns getn {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
+                  symdef=`SYMDEF_function (([obj_name,stype],None), rett, props, exes)};
+                add_function pub_name_map get_name getn;
+                add_function priv_name_map get_name getn;
+                interfaces := !interfaces @ ifaces
+                ;
+                add_tvars privtab
+
+            end
+            ; 
+            if kind = `Var || kind = `Val then
+            begin
+              let getn = !counter in incr counter;
+              let get_name = "get_" ^ component_name in
+              let get_dcl = `SYMDEF_fun ([],[stype],t,`StrTemplate("$1->" ^ component_name),[],"primary") in
+              Hashtbl.add dfns getn {
+                id=get_name;sr=sr;parent=parent;vs=vs;
+                pubmap=pubtab;privmap=privtab;dirs=dirs;
+                symdef=get_dcl
+              };
+              if access = `Public then add_function pub_name_map get_name getn;
+              add_function priv_name_map get_name getn
+              ;
+              if print_flag then print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name)
+            end
+            ; 
+            (* LVALUE VARIATION *)
+            if kind = `Var then
+            begin
+              let getn = !counter in incr counter;
+              let get_name = "get_" ^ component_name in
+              let get_dcl = `SYMDEF_fun ([],[`TYP_lvalue stype],`TYP_lvalue t,`StrTemplate ("$1->" ^ component_name),[],"primary") in
+              Hashtbl.add dfns getn {
+                id=get_name;sr=sr;parent=parent;vs=vs;
+                pubmap=pubtab;privmap=privtab;dirs=dirs;
+                symdef=get_dcl
+              };
+              if access = `Public then add_function pub_name_map get_name getn;
+              add_function priv_name_map get_name getn
+              ;
+              if print_flag then print_endline ("//[lvalue]  " ^ spc ^ si getn ^ " -> " ^ get_name)
+            end
+
+          )
+          sts
+          ;
+          add_tvars privtab
+          ;
+
         | `DCL_cstruct (sts)
         | `DCL_struct (sts) ->
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
@@ -717,6 +898,7 @@ let rec build_tables syms name level parent grandparent root asms =
               if print_flag then print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name)
             end
             ; 
+            (* LVALUE VARIATION *)
             begin
               let getn = !counter in incr counter;
               let get_name = "get_" ^ component_name in
@@ -729,7 +911,7 @@ let rec build_tables syms name level parent grandparent root asms =
               if access = `Public then add_function pub_name_map get_name getn;
               add_function priv_name_map get_name getn
               ;
-              if print_flag then print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name)
+              if print_flag then print_endline ("//[lvalue]  " ^ spc ^ si getn ^ " -> " ^ get_name)
             end
             ; 
 

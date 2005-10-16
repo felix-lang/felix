@@ -178,6 +178,7 @@ let gen_type_name syms bbdfns (index,typ) =
       "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
 
     | `BBDCL_cstruct _ -> ""
+    | `BBDCL_cclass _ -> ""
 
     | `BBDCL_struct _ ->
       let descr = 
@@ -388,6 +389,7 @@ let gen_type syms bbdfns (index,typ) =
     begin match entry with
     | `BBDCL_abs (vs,quals,ct,_) -> ""
     | `BBDCL_cstruct (vs,cts) -> ""
+    | `BBDCL_cclass (vs,cts) -> ""
 
     | `BBDCL_struct (vs,cts) ->
       let cts = map (fun (name,typ) -> name, tsubst vs ts typ) cts in

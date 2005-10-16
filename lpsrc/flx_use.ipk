@@ -182,7 +182,16 @@ and uses syms used bbdfns i =
       | `BBDCL_cstruct (_,ps)
         ->
         iter ut (map snd ps)
-                                                                                
+      | `BBDCL_cclass (_,mems) ->
+        iter ut (map (function 
+          | `BMemberVal (_,t)
+          | `BMemberVar (_,t) 
+          | `BMemberFun (_,t) 
+          | `BMemberProc (_,t) -> t
+          )
+          mems
+        )
+        
       | `BBDCL_val (_,t)
       | `BBDCL_var (_,t) 
       | `BBDCL_tmp (_,t) -> ut t

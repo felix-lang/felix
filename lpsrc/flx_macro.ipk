@@ -669,6 +669,16 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     let idts = map (fun (id,t) -> id,mt sr t) idts in
     tack (`AST_cstruct (sr, mi sr id, vs, idts))
 
+  | `AST_cclass (sr, id, vs, idts) ->  
+    let idts = map (function 
+      | `MemberVar (id,t) -> `MemberVar (id,mt sr t)
+      | `MemberVal (id,t) -> `MemberVal (id,mt sr t)
+      | `MemberFun (id,t) -> `MemberFun (id,mt sr t)
+      | `MemberProc (id,t) -> `MemberProc (id,mt sr t)
+      ) idts 
+    in
+    tack (`AST_cclass (sr, mi sr id, vs, idts))
+
   (* IDENTIFIER RENAMING NOT SUPPORTED IN TYPES *)
   | `AST_type_alias (sr, id, vs, t) ->  
     tack (`AST_type_alias (sr,id,vs, mt sr t))

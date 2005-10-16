@@ -258,6 +258,21 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     iter rtr tss;
     rtnr (`BTYP_inst (i,ts))
 
+  | `BBDCL_cclass (vs,ps)
+    ->
+    let argtypes = map (function 
+      | `BMemberVal (_,t) 
+      | `BMemberVar (_,t) 
+      | `BMemberFun (_,t) 
+      | `BMemberProc (_,t)  -> t
+    ) ps in
+    assert (length vs = length ts);
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let hvarmap = hashtable_of_list vars in
+    let tss = map (varmap_subst hvarmap) argtypes in
+    iter rtr tss;
+    rtnr (`BTYP_inst (i,ts))
+
   | `BBDCL_val (vs,t)
   | `BBDCL_var (vs,t)
   | `BBDCL_tmp (vs,t)

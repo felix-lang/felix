@@ -164,7 +164,6 @@ let nth_type ts i = match ts with
   | _ -> assert false
 
 let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
-
   (*
   print_endline ("Generating expression " ^ string_of_bound_expression_with_type syms.dfns (e,t));
   *)
@@ -202,7 +201,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   match t with
   | `BTYP_tuple [] -> 
       clierr sr 
-     "[egen] unit value required, should have been eliminated"
+     ("[egen] In "^sbe syms.dfns (e,t)^":\nunit value required, should have been eliminated")
 
      (* ce_atom ("UNIT_ERROR") *)
   | _ ->
@@ -469,6 +468,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
 
   | `BEXPR_apply_prim (index,ts,(arg,argt as a)) ->
+    (*
+    print_endline ("Prim apply, arg=" ^ sbe syms.dfns a);
+    *)
     let argt = tsub argt in
     let id,parent,sr2,entry = 
       try Hashtbl.find bbdfns index 
@@ -610,6 +612,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           | _ ->
             begin match a with
             | `BEXPR_tuple xs,_ ->
+              (*
+              print_endline ("Arg to C function is tuple " ^ sbe syms.dfns a);
+              *)
               fold_left 
               (fun s ((x,t) as xt) ->
                 let x = ge_arg xt in
@@ -683,6 +688,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     )
 
   | `BEXPR_tuple es ->
+    (*
+    print_endline ("Eval tuple " ^ sbe syms.dfns (e,t));
+    *)
     (* just apply the tuple type ctor to the arguments *)
     begin match t with
     | `BTYP_array (t',`BTYP_unitsum n) ->

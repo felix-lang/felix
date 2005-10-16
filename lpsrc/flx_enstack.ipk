@@ -101,6 +101,21 @@ exception Unsafe
 
 let has_ptr_fn cache syms bbdfns children e = 
   let rec aux e = 
+    let check_components vs ts tlist =
+      let varmap = mk_varmap vs ts in
+      begin try
+        iter 
+          (fun t -> 
+            let t = varmap_subst varmap t in
+            aux t
+          ) 
+        tlist;
+        Hashtbl.replace cache e `Safe
+      with Unsafe ->
+        Hashtbl.replace cache e `Unsafe;
+        raise Unsafe
+      end
+    in
     try match Hashtbl.find cache e with
     | `Recurse -> ()
     | `Unsafe -> raise Unsafe
@@ -125,19 +140,16 @@ let has_ptr_fn cache syms bbdfns children e =
         | `BBDCL_union (vs,cs)
         | `BBDCL_struct (vs,cs)
         | `BBDCL_cstruct (vs,cs) -> 
-          let varmap = mk_varmap vs ts in
-          begin try
-            iter 
-            (fun (_,t) -> 
-              let t = varmap_subst varmap t in
-              aux t
-            ) 
-            cs;
-            Hashtbl.replace cache e `Safe
-          with Unsafe ->
-            Hashtbl.replace cache e `Unsafe;
-            raise Unsafe
-          end
+          check_components vs ts (map snd cs)
+        | `BBDCL_cclass (vs,cs) ->
+          let tlist = map (function 
+            | `BMemberVal (_,t)
+            | `BMemberVar (_,t)
+            | `BMemberFun (_,t)
+            | `BMemberProc (_,t) -> t
+            ) cs
+          in
+          check_components vs ts tlist
 
         | _ -> assert false
         end
@@ -186,6 +198,7 @@ let rec is_pure syms (child_map, bbdfns) i =
   | `BBDCL_const _
      -> true
 
+  | `BBDCL_cclass _  (* not sure FIXME .. *)
   | `BBDCL_glr _
   | `BBDCL_reglex _
   | `BBDCL_regmatch _

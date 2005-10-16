@@ -1477,6 +1477,7 @@ and bind_type_index syms (rs:recstop)
     | `SYMDEF_union _
     | `SYMDEF_struct _ 
     | `SYMDEF_cstruct _ 
+    | `SYMDEF_cclass _ 
       ->
       `BTYP_inst (index,ts)
 
@@ -2149,6 +2150,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     begin match get_data syms.dfns index with 
     | {id=id; sr=sra; symdef=entry} ->
     match entry with 
+    | `SYMDEF_fun _
     | `SYMDEF_function _ 
     | `SYMDEF_match_check _ 
       ->
@@ -2826,9 +2828,22 @@ and bind_expression' syms env (rs:recstop) e
 
   | `AST_index (_,name,index) ->
     let ts = adjust_ts syms sr index [] in
-    `BEXPR_name (index,ts), 
-    ti sr index ts
-    
+    let t = ti sr index ts in
+    begin match Hashtbl.find syms.dfns index with
+    | {symdef=`SYMDEF_fun _ } 
+    | {symdef=`SYMDEF_function _ } 
+    -> 
+    (*
+    print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to closure");
+    *)
+      `BEXPR_closure (index,ts),t
+    | _ -> 
+    (*
+    print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to variable");
+    *)
+      `BEXPR_name (index,ts),t
+    end
+
   | `AST_the(_,`AST_name (sr,name,ts)) ->
     (*
     print_endline ("AST_name " ^ name ^ "[" ^ catmap "," string_of_typecode ts^ "]");
@@ -3018,7 +3033,7 @@ and bind_expression' syms env (rs:recstop) e
   
   | `AST_apply (sr,(f',a')) ->
     (*
-    print_endline "Bind expression, handling application";
+    print_endline ("Bind expression, handling application " ^ string_of_expr e);
     *)
     let (ba, ta) as a = be a' in
     let _ = 

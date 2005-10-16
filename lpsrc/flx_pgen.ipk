@@ -93,7 +93,24 @@ let gen_prim_call
 
   (* the argument is explicitly a tuple *)
   | (`BEXPR_tuple es,_) ->
-    let ess = map (ge sr) es in
+    let ess = 
+      map 
+      (fun e-> 
+        match e with 
+        (* individual arguments which are unit values are never passed: 
+          they CAN be passed as subcomponents though .. but they can't
+          be generated .. we need to fix this!
+        *)
+        | `BEXPR_tuple [],_ -> 
+          (*
+          print_endline "Stripping unit"; 
+          *)
+          `Ce_atom "/*()*/"
+
+        | _ -> ge sr e
+      ) 
+      es 
+    in
     let ets,ashapes = 
       match argt with
       | `BTYP_tuple typs -> map rtn typs, map sh typs

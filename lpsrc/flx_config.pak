@@ -2189,6 +2189,7 @@ flx_keywords = [
     ("code", "CODE"),
     ("comment", "COMMENT_KEYWORD"),
     ("const", "CONST"),
+    ("cclass", "CCLASS"),
     ("cstruct", "CSTRUCT"),
     ("ctypes", "CTYPES"),
     ("def", "DEF"),

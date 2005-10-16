@@ -4,6 +4,12 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.163  2005/10/16 17:38:42  skaller
+Add cclass wrapper construction to sugar up
+wrapping C++ classes. At this stage, four member types are
+supported: val, var, fun, and proc all corresponding to
+non-static members. Constructors are not yet supported.
+
 Revision 1.162  2005/10/13 20:43:09  skaller
 Added --static to Windows flx script
 
@@ -435,6 +441,101 @@ for line in data:
   line = string.expandtabs(line)
   f.write(line)
 f.close()
+
+@h = tangler('script/mktre.py','python')
+@select(h)
+
+import string
+import os
+import sys
+
+prefix = '/work/tre-0.7.2/lib/'
+
+tre_files = [
+  'gettext.h',
+  'regcomp.c',
+  'regerror.c',
+  'regexec.c',
+  'regex.h',
+  'tre-ast.c',
+  'tre-ast.h',
+  'tre-compile.c',
+  'tre-compile.h',
+  'tre-config.h',
+  'tre-filter.c',
+  'tre-filter.h',
+  'tre-internal.h',
+  'tre-match-approx.c',
+  'tre-match-backtrack.c',
+  'tre-match-parallel.c',
+  'tre-match-utils.h',
+  'tre-mem.c',
+  'tre-mem.h',
+  'tre-parse.c',
+  'tre-parse.h',
+  'tre-stack.c',
+  'tre-stack.h',
+  'xmalloc.h',
+  'xmalloc.c',
+  ]
+
+mods = {}
+tgts = [] 
+
+for fn in tre_files:
+  parts = string.split(fn,'/')
+  base = parts[-1]
+  if base[0:4]=='tre-':
+    target = 'tre/tre_'+base[4:]
+  else:
+    target = 'tre/tre_'+base
+  if target[-1:]=='c':
+    target = target[:-1]+'cpp'
+  elif target[-1:]=='h':
+    target = target[:-1]+'hpp'
+  tgts.append((prefix+fn,target))
+
+def index(line,ch):
+  n = len (line)
+  for i in range(0,n):
+    if line[i]==ch: return i
+  return -1
+
+def incl(line):
+  hp = index(line,'#')
+  if hp == -1: return ""
+  line = line[hp:]
+  if line[:10]=='#include "':
+    line=line[10:]
+    qp = index(line,'"')
+    if qp == -1: return ""
+    return line[:qp]
+  else:
+    return ""
+
+print "@head(1,'tre')"
+for fn,tgt in tgts:
+  print "@h=tangler('"+tgt+"')"
+  print "@select(h)"
+  f = open(fn)
+  data = f.readlines()
+  f.close()
+  for line in data:
+    line = string.expandtabs(line)
+    fl = incl(line)
+    if fl:
+      if fl in tre_files:
+        if fl[0:4]=="tre-":
+          print '#include "tre_'+fl[4:]+'"'
+        else:
+          print '#include "tre_'+fl+'"'
+      else:
+        print "UNKNOWN FILE:",fl
+        sys.exit(1)
+    else:
+      if line[:5] != '#line':
+        print line,
+ 
 
 @h = tangler('script/mksm.py','python')
 @select(h)

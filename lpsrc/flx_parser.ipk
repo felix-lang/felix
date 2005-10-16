@@ -431,10 +431,22 @@ struct_decl:
     `AST_cstruct (rstoken $1 $5, snd $2, [], $4) 
   }
 
+  | CCLASS NAME LBRACE class_component_aster RBRACE 
+  { 
+    `AST_cclass (rstoken $1 $5, snd $2, [], $4) 
+  }
+
 @aster("struct_component")
 struct_component:
   | NAME COLON expr SEMI { (snd $1,typecode_of_expr $3) }
 
+
+@aster("class_component")
+class_component:
+  | VAR NAME COLON expr SEMI { `MemberVar (snd $2,typecode_of_expr $4) }
+  | VAL NAME COLON expr SEMI { `MemberVal (snd $2,typecode_of_expr $4) }
+  | FUNCTION NAME COLON expr SEMI { `MemberFun (snd $2,typecode_of_expr $4) }
+  | PROCEDURE NAME COLON expr SEMI { `MemberProc (snd $2,typecode_of_expr $4) }
 
 @head(3,'Abstract Constant Binding')
 @select(h)

@@ -124,50 +124,6 @@ exception Found of int
 let print_vs vs =
   catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs
 
-let bind_regex syms env sr be return_count ret_type cls =
-  (*
-  print_endline "Binding regmatch";
-  *) 
-  let bd e = bind_regdef syms env [] e in
-
-  (* create a unified regexp using REGEXP_code for expressions *)
-  let f (e,c) = REGEXP_seq (e, REGEXP_code c) in
-  let re = List.map f cls in
-  let alt r1 r2 = REGEXP_alt (r1,r2) in
-  let re = List.fold_right alt re REGEXP_sentinel in
-
-  (* do lookups *)
-  let re = bd re in
-
-  (* generate transition matrix *)
-  let alphabet, nstates, code_table, matrix = Flx_dfa.process_regexp re in
-  let alphabet = CharSet.elements alphabet in
-
-  (* bind RHS expressions *)
-  let bcode = Hashtbl.create 97 in
-  Hashtbl.iter
-  (fun i c -> 
-    let sr = src_of_expr c in
-    let e,t = be c in
-    let t = minimise syms.dfns t in
-    Hashtbl.add bcode i (e,t);
-    incr return_count;
-    if do_unify syms !ret_type t then
-      ret_type := varmap_subst syms.varmap !ret_type
-    else 
-      clierr sr 
-      (
-        "Wrong return type,\nexpected : " ^ 
-        string_of_btypecode syms.dfns !ret_type ^
-        "\nbut we got " ^
-        string_of_btypecode syms.dfns t ^ " in\n" ^
-        short_string_of_src sr
-      )
-  )
-  code_table
-  ;
-  alphabet,nstates, bcode,matrix
-
 let bind_exes syms env sr exes ret_type id index parent_vs = 
   (*
   print_endline ("bind_exes.. env depth="^ string_of_int (List.length env));
@@ -326,6 +282,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       else
         clierr sr
         (
+          "In " ^ string_of_exe 0 x ^ "\n" ^
           "Wrong return type,\nexpected : " ^ 
           string_of_btypecode syms.dfns !ret_type ^
           "\nbut we got " ^

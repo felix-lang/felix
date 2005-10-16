@@ -172,6 +172,19 @@ let rec register_type_r ui syms bbdfns exclude sr t =
       iter rr cts;
       rnr t
 
+    | `BBDCL_cclass (vs,cs) ->
+       let cts = map (function 
+         | `BMemberVal (_,t)
+         | `BMemberVar (_,t)
+         | `BMemberFun (_,t)
+         | `BMemberProc (_,t) -> t
+         ) cs
+       in
+      let cts = map (tsubst vs ts) cts in
+      iter rr cts;
+      rnr t
+      (* NO CONSTRUCTOR! *)
+
     | `BBDCL_cstruct (vs,cs) 
     | `BBDCL_struct (vs,cs) -> 
       let cts = map snd cs in
