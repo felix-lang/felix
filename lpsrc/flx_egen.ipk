@@ -512,9 +512,11 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       try Hashtbl.find bbdfns index 
       with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
     in
+    let ts = map tsub ts in
     begin match entry with
     | `BBDCL_cstruct (vs,_) ->
-      ce_atom ("reinterpret<"^ id ^">(" ^ ge a ^ ")")
+      let name = tn (`BTYP_inst (index,ts)) in
+      ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
        
     | `BBDCL_struct (vs,cts) ->
       let name = tn (`BTYP_inst (index,ts)) in

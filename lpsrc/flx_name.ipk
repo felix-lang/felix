@@ -159,36 +159,39 @@ let rec cpp_type_classname syms t =
     "_us" ^ si k
 
     
-  | `BTYP_inst (i,_) -> 
-    begin try match
-      match Hashtbl.find syms.dfns i with 
-      { id=id; symdef=symdef } -> id,symdef 
-    with
-    | id,`SYMDEF_cstruct _ -> id
-    | id,`SYMDEF_cclass _ -> id^"*"
-    | _,`SYMDEF_abs (_,`Str "char",_) -> "char" (* hack .. *)
-    | _,`SYMDEF_abs (_,`Str "int",_) -> "int" (* hack .. *)
-    | _,`SYMDEF_abs (_,`Str "long",_) -> "long" (* hack .. *)
-    | _,`SYMDEF_abs (_,`Str "float",_) -> "float" (* hack .. *)
-    | _,`SYMDEF_abs (_,`Str "double",_) -> "double" (* hack .. *)
-    | _,`SYMDEF_abs (_,`StrTemplate "char",_) -> "char" (* hack .. *)
-    | _,`SYMDEF_abs (_,`StrTemplate "int",_) -> "int" (* hack .. *)
-    | _,`SYMDEF_abs (_,`StrTemplate "long",_) -> "long" (* hack .. *)
-    | _,`SYMDEF_abs (_,`StrTemplate "float",_) -> "float" (* hack .. *)
-    | _,`SYMDEF_abs (_,`StrTemplate "double",_) -> "double" (* hack .. *)
-    | _,data  ->
-      let prefix =
-        match data with
-        | `SYMDEF_struct _  -> "_s"
-        | `SYMDEF_union _   -> "_u"
-        | `SYMDEF_abs _  -> "_a"
-        | _ -> "_unk_"
-      in 
+  | `BTYP_inst (i,ts) -> 
+    let cal_prefix = function
+      | `SYMDEF_struct _  -> "_s"
+      | `SYMDEF_union _   -> "_u"
+      | `SYMDEF_abs _  -> "_a"
+      | _ -> "_unk_"
+    in
+    if ts = [] then
+      match
+        try
+          match Hashtbl.find syms.dfns i with 
+          { id=id; symdef=symdef } -> Some (id,symdef )
+        with Not_found -> None
+      with
+      | Some (id,`SYMDEF_cstruct _) -> id
+      | Some (id,`SYMDEF_cclass _) -> id^"*"
+      | Some (_,`SYMDEF_abs (_,`Str "char",_)) -> "char" (* hack .. *)
+      | Some (_,`SYMDEF_abs (_,`Str "int",_)) -> "int" (* hack .. *)
+      | Some (_,`SYMDEF_abs (_,`Str "long",_)) -> "long" (* hack .. *)
+      | Some (_,`SYMDEF_abs (_,`Str "float",_)) -> "float" (* hack .. *)
+      | Some (_,`SYMDEF_abs (_,`Str "double",_)) -> "double" (* hack .. *)
+      | Some (_,`SYMDEF_abs (_,`StrTemplate "char",_)) -> "char" (* hack .. *)
+      | Some (_,`SYMDEF_abs (_,`StrTemplate "int",_)) -> "int" (* hack .. *)
+      | Some (_,`SYMDEF_abs (_,`StrTemplate "long",_)) -> "long" (* hack .. *)
+      | Some (_,`SYMDEF_abs (_,`StrTemplate "float",_)) -> "float" (* hack .. *)
+      | Some (_,`SYMDEF_abs (_,`StrTemplate "double",_)) -> "double" (* hack .. *)
+      | Some (_,data)  -> 
+        let prefix = cal_prefix data in
         prefix ^ si i ^ "t_" ^ si (Hashtbl.find registry t) 
-    with 
-    | Not_found -> 
-       "_unk_" ^ si i ^ "t_" ^ si (Hashtbl.find registry t) 
-    end
+      | None -> 
+         "_unk_" ^ si i ^ "t_" ^ si (Hashtbl.find registry t) 
+    else
+      "_poly_" ^ si i ^ "t_" ^ si (Hashtbl.find registry t) 
 
   | _ -> 
     failwith 

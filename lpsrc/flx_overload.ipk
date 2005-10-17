@@ -154,7 +154,20 @@ let overload
     let k = length pvs in
     let m = length vs in 
     let n = length ts in
-    if n>m then clierr sr "Too many type subscripts";
+    (* This is actually NOT an error .. it should just 
+      cause this candidate to be rejected
+    *)
+    (*
+    if n>m then clierr sr 
+    (
+      "[overload] Overloading " ^ name ^ 
+      "\nToo many type subscripts for index "^si i^", expected " ^ 
+      si m ^ ", got:\n" ^
+      catmap "," (sbt syms.dfns) ts
+    )
+    ;
+    *)
+    if n>m then None else
 
     (* Currently, vs lists can only specify TYPE variables *)
     let base = !(syms.counter) in

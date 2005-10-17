@@ -2251,7 +2251,7 @@ flx_keywords = [
     ("rename", "RENAME"),
     ("requires", "REQUIRES"),
     ("return", "RETURN"),
-    ("set","SET"),
+    #("set","SET"),
     ("struct", "STRUCT"),
     ("the", "THE"),
     ("then", "THEN"),

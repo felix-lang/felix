@@ -416,24 +416,24 @@ type_sum_item:
 
 @head(3,'Struct Binding')
 @select(h)
+opt_equal:
+  | EQUAL {()}
+  | {()}
+
 struct_decl:
-  | STRUCT NAME tvarlist EQUAL LBRACE struct_component_aster RBRACE 
+  | STRUCT NAME tvarlist opt_equal LBRACE struct_component_aster RBRACE 
   { 
     `AST_struct (rstoken $1 $7, snd $2, $3, $6) 
   }
-  | STRUCT NAME tvarlist LBRACE struct_component_aster RBRACE 
+
+  | CSTRUCT NAME tvarlist opt_equal LBRACE struct_component_aster RBRACE 
   { 
-    `AST_struct (rstoken $1 $6, snd $2, $3, $5) 
+    `AST_cstruct (rstoken $1 $7, snd $2, $3, $6) 
   }
 
-  | CSTRUCT NAME LBRACE struct_component_aster RBRACE 
+  | CCLASS NAME tvarlist opt_equal LBRACE class_component_aster RBRACE 
   { 
-    `AST_cstruct (rstoken $1 $5, snd $2, [], $4) 
-  }
-
-  | CCLASS NAME LBRACE class_component_aster RBRACE 
-  { 
-    `AST_cclass (rstoken $1 $5, snd $2, [], $4) 
+    `AST_cclass (rstoken $1 $7, snd $2, $3, $6) 
   }
 
 @aster("struct_component")

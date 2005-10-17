@@ -177,8 +177,30 @@ let gen_type_name syms bbdfns (index,typ) =
       ^
       "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
 
-    | `BBDCL_cstruct _ -> ""
-    | `BBDCL_cclass _ -> ""
+    | `BBDCL_cstruct _ -> if ts = [] then "" else
+      let descr = 
+        "\n//CSTRUCT "^si i ^" INSTANCE " ^ 
+        si index^": " ^ 
+        sbt syms.dfns typ ^ 
+        "\n" 
+      in
+      let instance_name = cn typ in
+      let instance = id ^ "<" ^ catmap "," cn ts ^"> " in
+      descr ^
+      "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
+
+
+    | `BBDCL_cclass _ ->  if ts = [] then "" else
+      let descr = 
+        "\n//CCLASS "^si i ^" INSTANCE " ^ 
+        si index^": " ^ 
+        sbt syms.dfns typ ^ 
+        "\n" 
+      in
+      let instance_name = cn typ in
+      let instance = id ^ "<" ^ catmap "," cn ts ^"> " in
+      descr ^
+      "typedef " ^ instance ^ " *" ^ instance_name ^ ";\n"
 
     | `BBDCL_struct _ ->
       let descr = 
