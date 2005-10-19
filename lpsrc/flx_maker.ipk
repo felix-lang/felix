@@ -4,6 +4,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.164  2005/10/19 01:28:32  rfistman
+fixed problem in cygwin build, seemed that the while loop in the configure
+script was actually wrong under cygwin, a syntax error.
+
 Revision 1.163  2005/10/16 17:38:42  skaller
 Add cclass wrapper construction to sugar up
 wrapping C++ classes. At this stage, four member types are
@@ -3668,7 +3672,8 @@ grab=1
 PREFIX=$PREFIX
 ARGS=""
 
-while (( "$grab" == "1" ));
+#while (( "$grab" == "1" ));	# not working under cygwin bash
+while  [ "$grab" -eq 1 ]
 do
   case x$1 in
   x--prefix=*)
