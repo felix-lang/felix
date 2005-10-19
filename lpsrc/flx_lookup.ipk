@@ -2431,6 +2431,8 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
           | None -> None
           end
 
+    | `SYMDEF_cclass _ -> failwith "Constructors not implemented yet"
+    
     | `SYMDEF_const_ctor (_,t,_)
     | `SYMDEF_const (t,_,_)
     | `SYMDEF_var t

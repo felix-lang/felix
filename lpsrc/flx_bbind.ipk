@@ -465,11 +465,17 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_cstruct (bvs,cs'))
 
     | `SYMDEF_cclass (cs) -> 
+      (* NOTE: At present the code spec is already handled by symtab,
+      so there is point propagating it .. the bound members are kept
+      to ensure we generate all required types, they don't generate
+      any actual code
+      *)
       let cs' = List.map (function
-        |  `MemberVal (n,t) -> `BMemberVal (n, bt t)
-        |  `MemberVar (n,t) -> `BMemberVar (n, bt t)
-        |  `MemberFun (n,t) -> `BMemberFun (n, bt t)
-        |  `MemberProc (n,t) -> `BMemberProc (n, bt t)
+        |  `MemberVal (n,t,_) -> `BMemberVal (n, bt t)
+        |  `MemberVar (n,t,_) -> `BMemberVar (n, bt t)
+        |  `MemberFun (n,t,_) -> `BMemberFun (n, bt t)
+        |  `MemberProc (n,t,_) -> `BMemberProc (n, bt t)
+        |  `MemberCtor (n,t,_) -> `BMemberCtor (n, bt t)
         ) cs 
       in
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_cclass (bvs,cs'))

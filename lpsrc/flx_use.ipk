@@ -187,6 +187,7 @@ and uses syms used bbdfns i =
           | `BMemberVal (_,t)
           | `BMemberVar (_,t) 
           | `BMemberFun (_,t) 
+          | `BMemberCtor (_,t) 
           | `BMemberProc (_,t) -> t
           )
           mems

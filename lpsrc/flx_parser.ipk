@@ -441,12 +441,17 @@ struct_component:
   | NAME COLON expr SEMI { (snd $1,typecode_of_expr $3) }
 
 
+opt_name:
+  | NAME { snd $1 }
+  | {""}
+
 @aster("class_component")
 class_component:
-  | VAR NAME COLON expr SEMI { `MemberVar (snd $2,typecode_of_expr $4) }
-  | VAL NAME COLON expr SEMI { `MemberVal (snd $2,typecode_of_expr $4) }
-  | FUNCTION NAME COLON expr SEMI { `MemberFun (snd $2,typecode_of_expr $4) }
-  | PROCEDURE NAME COLON expr SEMI { `MemberProc (snd $2,typecode_of_expr $4) }
+  | VAR NAME COLON expr SEMI { `MemberVar (snd $2,typecode_of_expr $4,None) }
+  | VAL NAME COLON expr SEMI { `MemberVal (snd $2,typecode_of_expr $4,None) }
+  | FUNCTION NAME COLON expr opt_cstring SEMI { `MemberFun (snd $2,typecode_of_expr $4,$5) }
+  | PROCEDURE NAME COLON expr opt_cstring SEMI { `MemberProc (snd $2,typecode_of_expr $4,$5) }
+  | CTOR opt_name COLON expr opt_cstring SEMI { `MemberProc ($2,typecode_of_expr $4,$5) }
 
 @head(3,'Abstract Constant Binding')
 @select(h)
@@ -1324,7 +1329,6 @@ call:
 
 
 assignop:
-  | LEFTARROW       { $1,"_move" }
   | EQUAL           { $1,"_set" }
   | COLONEQUAL      { $1,"_init" }
 
@@ -1372,6 +1376,25 @@ lexpr:
     }
 
 assignment: 
+  | expr LEFTARROW expr SEMI
+    {
+      let sr = rsrange (src_of_expr $1) (slift $4) in
+      let lsym = $1 in
+      match $3 with
+      | `AST_apply (sr2,(f,a)) ->
+        begin match a with
+        | `AST_tuple (sr3,ls) ->
+          `AST_call (sr,f,`AST_tuple (sr3,lsym::ls))
+        | _ ->
+          `AST_call (sr,f,`AST_tuple (sr2,[lsym;a]))
+        end
+      | _ -> Flx_exceptions.clierr sr 
+        (
+          "Special procedure call operator <- requires explicit " ^
+          "call of form f a on RHS"
+        )
+    }
+
   | expr swapop expr SEMI 
     { 
       let srop,sname = $2 in
@@ -1987,7 +2010,8 @@ cmp_op:
   | GREATER                            { "gt",$1 }
   | LESSEQUAL                          { "le",$1 }
   | GREATEREQUAL                       { "ge",$1 }
-  | ISIN                               { "_isin",$1 } /* hack */
+  | ISIN                               { "_isin",$1 } 
+    /* hack */
 
 comparison:
   | sum cmp_op sum cmp_item_list

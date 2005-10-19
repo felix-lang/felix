@@ -178,6 +178,7 @@ let rec register_type_r ui syms bbdfns exclude sr t =
          | `BMemberVar (_,t)
          | `BMemberFun (_,t)
          | `BMemberProc (_,t) -> t
+         | `BMemberCtor (_,t) -> t
          ) cs
        in
       let cts = map (tsubst vs ts) cts in

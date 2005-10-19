@@ -146,7 +146,8 @@ let has_ptr_fn cache syms bbdfns children e =
             | `BMemberVal (_,t)
             | `BMemberVar (_,t)
             | `BMemberFun (_,t)
-            | `BMemberProc (_,t) -> t
+            | `BMemberProc (_,t)
+            | `BMemberCtor (_,t) -> t
             ) cs
           in
           check_components vs ts tlist

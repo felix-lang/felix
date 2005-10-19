@@ -671,10 +671,11 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   | `AST_cclass (sr, id, vs, idts) ->  
     let idts = map (function 
-      | `MemberVar (id,t) -> `MemberVar (id,mt sr t)
-      | `MemberVal (id,t) -> `MemberVal (id,mt sr t)
-      | `MemberFun (id,t) -> `MemberFun (id,mt sr t)
-      | `MemberProc (id,t) -> `MemberProc (id,mt sr t)
+      | `MemberVar (id,t,cc) -> `MemberVar (id,mt sr t,cc)
+      | `MemberVal (id,t,cc) -> `MemberVal (id,mt sr t,cc)
+      | `MemberFun (id,t,cc) -> `MemberFun (id,mt sr t,cc)
+      | `MemberProc (id,t,cc) -> `MemberProc (id,mt sr t,cc)
+      | `MemberCtor (id,t,cc) -> `MemberCtor (id,mt sr t,cc)
       ) idts 
     in
     tack (`AST_cclass (sr, mi sr id, vs, idts))

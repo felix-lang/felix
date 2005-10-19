@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.165  2005/10/19 08:32:58  skaller
+Added <- operator and more OO stuff.
+
 Revision 1.164  2005/10/19 01:28:32  rfistman
 fixed problem in cygwin build, seemed that the while loop in the configure
 script was actually wrong under cygwin, a syntax error.
@@ -2779,6 +2782,7 @@ try:
     runISCR('lpsrc/flx.pak')
     copy_mli2ml()
     runISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
+  if "tutdoc" in options:
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_macro.pak')
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_bind.pak')
@@ -2800,7 +2804,7 @@ try:
     filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
   erasefile('tmp.tmp')
 
-  if "doc" in options or "man" in options:
+  if "man" in options:
     print "GENERATING MAN PAGES"
     mp = glob.glob('man/man1/*.1')
     MAN_PAGES = []
@@ -2823,7 +2827,7 @@ try:
         )
     except:pass
   
-  if "doc" in options or "impldoc" in options:
+  if "impldoc" in options:
     print "GENERATING OCAMLDOCS"
     erasedir('impldoc')
     os.mkdir('impldoc')
@@ -3267,8 +3271,13 @@ We have no idea if it continues copying.
 @tangle('bin/flx_doc: tools/flx_doc.flx')
 @tangle('\tbin/flx --test --static -c tools/flx_doc && mv tools/flx_doc bin/flx_doc')
 @tangle('')
-@tangle('doc: grammar tools libdoc')
-@tangle('\tpython script/maker doc man impldoc')
+@tangle('doc: grammar tools libdoc man impldoc tutdoc tutstyle')
+@tangle('')
+@tangle('impldoc: dummy')
+@tangle('\tpython script/maker impldoc')
+@tangle('')
+@tangle('tutdoc: dummy')
+@tangle('\tpython script/maker doc')
 @tangle('\tcp doc/*.css tut/doc >/dev/null 2>&1')
 @tangle('')
 @tangle('doc.quiet: grammar tools libdoc')

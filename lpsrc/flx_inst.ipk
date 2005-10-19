@@ -264,7 +264,8 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
       | `BMemberVal (_,t) 
       | `BMemberVar (_,t) 
       | `BMemberFun (_,t) 
-      | `BMemberProc (_,t)  -> t
+      | `BMemberProc (_,t) 
+      | `BMemberCtor (_,t)  -> t
     ) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in

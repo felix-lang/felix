@@ -548,10 +548,11 @@ and reduced_glr_entry_t = string option * qualified_name_t
 and reduced_production_t = reduced_glr_entry_t list
 and params_t = parameter_t list * expr_t option (* second arg is a constraint *)
 and class_member_t = [
-  | `MemberVal of id_t * typecode_t
-  | `MemberVar of id_t * typecode_t
-  | `MemberFun of id_t * typecode_t
-  | `MemberProc of id_t * typecode_t
+  | `MemberVal of id_t * typecode_t * c_t option
+  | `MemberVar of id_t * typecode_t * c_t option
+  | `MemberFun of id_t * typecode_t * c_t option
+  | `MemberProc of id_t * typecode_t * c_t option
+  | `MemberCtor of id_t * typecode_t * c_t option
 ]
 
 and statement_t =
@@ -899,6 +900,7 @@ and bclass_member_t = [
   | `BMemberVar of id_t * btypecode_t
   | `BMemberFun of id_t * btypecode_t
   | `BMemberProc of id_t * btypecode_t
+  | `BMemberCtor of id_t * btypecode_t
 ]
 
 and bbdcl_t = 
@@ -2671,6 +2673,19 @@ and string_of_qual = function
 
 and string_of_quals qs = catmap " " string_of_qual qs
 
+and string_of_class_component level mem =
+  let kind, name, ty,cc = match mem with
+  | `MemberVar (name,typ,cc) -> "var",name,typ,cc
+  | `MemberVal (name,typ,cc) -> "val",name,typ,cc
+  | `MemberFun (name,typ,cc) -> "fun",name,typ,cc
+  | `MemberProc (name,typ,cc) -> "proc",name,typ,cc
+  | `MemberCtor (name,typ,cc) -> "ctor",name,typ,cc
+  in
+    (spaces (level+1)) ^ 
+    kind ^ " " ^ name ^ ": " ^ string_of_typecode ty ^ 
+    (match cc with None -> "" | Some cc -> string_of_code_spec cc) ^
+    ";"
+
 and string_of_statement level s = 
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
@@ -2773,19 +2788,9 @@ and string_of_statement level s =
     spaces level ^ "}"
 
   | `AST_cclass (_,name, vs, cs) -> 
-    let string_of_class_component mem =
-      let kind, name, ty = match mem with
-      | `MemberVar (name,typ) -> "var",name,typ
-      | `MemberVal (name,typ) -> "val",name,typ
-      | `MemberFun (name,typ) -> "fun",name,typ
-      | `MemberProc (name,typ) -> "proc",name,typ
-      in
-      (spaces (level+1)) ^ 
-      kind ^ " " ^ name ^ ": " ^ string_of_typecode ty ^ ";"
-    in
     spaces level ^ "cclass " ^ name ^ print_vs vs ^ " = " ^
     spaces level ^ "{\n" ^
-    catmap "\n" string_of_class_component cs ^ "\n" ^
+    catmap "\n" (string_of_class_component level) cs ^ "\n" ^
     spaces level ^ "}"
 
   | `AST_union (_,name, vs,cs) -> 
@@ -3503,21 +3508,10 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     spaces level ^ "}"
 
   | `DCL_cclass (cs) -> 
-    let string_of_class_component mem =
-      let kind, name, ty = match mem with
-      | `MemberVar (name,typ) -> "var",name,typ
-      | `MemberVal (name,typ) -> "val",name,typ
-      | `MemberFun (name,typ) -> "fun",name,typ
-      | `MemberProc (name,typ) -> "proc",name,typ
-      in
-      (spaces (level+1)) ^ 
-      kind ^ " " ^ name ^ ": " ^ string_of_typecode ty ^ ";"
-    in
     spaces level ^ "ccstruct " ^ name^seq ^ print_vs vs ^ " = " ^
     spaces level ^ "{\n" ^
-    catmap "\n" string_of_class_component cs ^ "\n" ^
+    catmap "\n" (string_of_class_component level) cs ^ "\n" ^
     spaces level ^ "}"
-
 
   | `DCL_union (cs) -> 
     let string_of_union_component (name,ty) =
@@ -3768,6 +3762,7 @@ and string_of_bbdcl dfns bbdcl index =
         | `BMemberVar (name,ty) -> "var",name,ty
         | `BMemberFun (name,ty) -> "fun",name,ty
         | `BMemberProc (name,ty) -> "proc",name,ty
+        | `BMemberCtor (name,ty) -> "ctor",name,ty
       in
       kind ^ "  " ^ name ^ ": " ^ sobt ty ^ ";"
     in

@@ -696,12 +696,13 @@ let rec build_tables syms name level parent grandparent root asms =
           (* projections *)
           iter
           (fun mem ->
-            let kind, component_name,t =
+            let kind, component_name,t,cc =
               match mem with
-              | `MemberVar (n,t) -> `Var,n,t
-              | `MemberVal (n,t) -> `Val,n,t
-              | `MemberFun (n,t) -> `Fun,n,t
-              | `MemberProc (n,t) -> `Proc,n,t
+              | `MemberVar (n,t,cc) -> `Var,n,t,cc
+              | `MemberVal (n,t,cc) -> `Val,n,t,cc
+              | `MemberFun (n,t,cc) -> `Fun,n,t,cc
+              | `MemberProc (n,t,cc) -> `Proc,n,t,cc
+              | `MemberCtor (n,t,cc) -> `Ctor,n,t,cc
             in
             if kind = `Fun || kind = `Proc then
             begin
@@ -713,7 +714,7 @@ let rec build_tables syms name level parent grandparent root asms =
 
                    fun get_f(x:X): arg_t -> result_t = {
                      fun do_f(a:arg_t): result_t = {
-                       fun exec_f: X * arg_t -> result_t = "$1->f($c)";
+                       fun exec_f: X * arg_t -> result_t = "$1->f($b)";
                           // $c is the unpacked list of the second arg ..
                           // we have no such code, so we have to unpack
                           // manually ..
@@ -740,11 +741,12 @@ let rec build_tables syms name level parent grandparent root asms =
                 let execn = !counter in incr counter;
                 let exec_name = "exec_" ^ component_name in
                 let exec_asm = 
-                  let trail =  (match codomain with `AST_void _ -> ";" | _ -> "") in
+                  let cc = match cc with | Some cc -> cc | None ->
+                     let trail =  (match codomain with `AST_void _ -> ";" | _ -> "") in
+                    `StrTemplate("$1->" ^ component_name^"($b)" ^ trail)
+                  in
                   Dcl (sr,exec_name,Some execn,`Private,[], (* vs inherited *)
-                    `DCL_fun ([],stype::argts,codomain,
-                      `StrTemplate("$1->" ^ component_name^"($b)" ^ trail),[],"primary"
-                     )
+                    `DCL_fun ([],stype::argts,codomain, cc,[],"primary")
                   ) 
                 in
 
