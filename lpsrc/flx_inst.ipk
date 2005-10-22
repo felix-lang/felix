@@ -158,7 +158,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   | `BEXE_init (sr,i,e) -> ui i; ue sr e
   | `BEXE_assign (sr,e1,e2) -> ue sr e1; ue sr e2
 
-  | `BEXE_read (sr,i) -> ui i 
+  | `BEXE_svc (sr,i) -> ui i 
 
   | `BEXE_label _
   | `BEXE_halt _

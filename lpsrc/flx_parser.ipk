@@ -255,7 +255,7 @@ executable:
   | var_def { $1 }
   | val_def { $1 }
   | call { $1 }
-  | read { $1 }
+  | svc { $1 }
   | return { $1 }
   | ifgoto_stmt { $1 }
   | whilst_stmt { $1 }
@@ -357,6 +357,7 @@ tvarlist:
 type_qual:
   | INCOMPLETE { $1,`Incomplete }
   | POD { $1, `Pod }
+  | GC_POINTER { $1, `GC_pointer }
 
 type_quals:
   | type_qual type_quals { $1 :: $2 }
@@ -451,7 +452,7 @@ class_component:
   | VAL NAME COLON expr SEMI { `MemberVal (snd $2,typecode_of_expr $4,None) }
   | FUNCTION NAME COLON expr opt_cstring SEMI { `MemberFun (snd $2,typecode_of_expr $4,$5) }
   | PROCEDURE NAME COLON expr opt_cstring SEMI { `MemberProc (snd $2,typecode_of_expr $4,$5) }
-  | CTOR opt_name COLON expr opt_cstring SEMI { `MemberProc ($2,typecode_of_expr $4,$5) }
+  | CTOR opt_name COLON expr opt_cstring SEMI { `MemberCtor ($2,typecode_of_expr $4,$5) }
 
 @head(3,'Abstract Constant Binding')
 @select(h)
@@ -1125,16 +1126,13 @@ label_statement:
 
 @head(3,'Read Statement')
 @select(h)
-read:         
-  | READ NAME SEMI            
+svc:         
+  | SVC NAME SEMI            
     { 
-      `AST_read (rstoken $1 $3, snd $2) 
+      `AST_svc (rstoken $1 $3, snd $2) 
     }
 @doc()
-The read statement is responsible for specifying the variable to contain
-the next message, and exchanging control with the dispatcher on entry,
-to wait for the message, and resuming control when the message is
-placed in the variable by the dispatcher.
+The svc statement is used for supervisor calls.
 
 @head(3,'Module Definition')
 @select(h)
@@ -1388,11 +1386,16 @@ assignment:
         | _ ->
           `AST_call (sr,f,`AST_tuple (sr2,[lsym;a]))
         end
+      | _ as f -> 
+        `AST_call (sr,f,lsym)
+
+      (*
       | _ -> Flx_exceptions.clierr sr 
         (
           "Special procedure call operator <- requires explicit " ^
           "call of form f a on RHS"
         )
+      *)
     }
 
   | expr swapop expr SEMI 

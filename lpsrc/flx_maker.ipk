@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.166  2005/10/22 00:57:16  skaller
+Implemented Service Control Requests
+
 Revision 1.165  2005/10/19 08:32:58  skaller
 Added <- operator and more OO stuff.
 
@@ -3263,7 +3266,9 @@ We have no idea if it continues copying.
 @tangle('compiler: dummy')
 @tangle('\tpython script/maker compiler')
 @tangle('')
-@tangle('tools: grammar bin/flx_doc tools/lua_parser')
+@tangle('tools: grammar tools/lua_parser')
+@tangle('')
+@tangle('#tools: grammar bin/flx_doc tools/lua_parser')
 @tangle('')
 @tangle('tools/lua_parser: tools/lua_parser.flx')
 @tangle('\tbin/flx --test --static -c tools/lua_parser')
@@ -3271,7 +3276,9 @@ We have no idea if it continues copying.
 @tangle('bin/flx_doc: tools/flx_doc.flx')
 @tangle('\tbin/flx --test --static -c tools/flx_doc && mv tools/flx_doc bin/flx_doc')
 @tangle('')
-@tangle('doc: grammar tools libdoc man impldoc tutdoc tutstyle')
+@tangle('doc: grammar tools man impldoc tutdoc tutstyle')
+@tangle('')
+@tangle('#doc: grammar tools libdoc man impldoc tutdoc tutstyle')
 @tangle('')
 @tangle('impldoc: dummy')
 @tangle('\tpython script/maker impldoc')

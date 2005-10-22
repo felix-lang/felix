@@ -89,7 +89,7 @@ of a string. No end of file is delivered
 to the client.
 
 @head(3,'Driver implementation')
-@d = tangler('rtl/flx_stdin_drv.cxx')
+@d = tangler('rtl/flx_stdin_drv.cxx','cpp')
 @select(d)
 #include <stdio.h>
 #include <vector>
@@ -165,29 +165,19 @@ int main(int argc, char** argv)
         instance.thread_frame
     );
     collector.add_root(top);
+    fthread_t ft = fthread_t(top);
+    _uctor_ *request = ft.run();
 
     while(true)
     {
-      while( top && top->action == con_t::yield_action)
-      {
-        con_t *new_top = top->resume();
-        if(new_top != top) {
-          if(new_top) collector.add_root(new_top);
-          collector.remove_root(top);
-          top = new_top;
-        }
-      }
-
       // dispatch message
-      if(top)
+      if(request && request->variant == svc_read)
       {
-        assert (top->action==con_t::wait_action);
-        top->action = con_t::yield_action;
-        if (top->p_message)
+        if (request->data)
         {
           char buffer[2000];
           if(fgets(buffer,2000,stdin))
-            *(string*)(top->p_message) = string(buffer);
+            **(string**)(request->data) = string(buffer);
           else break;
         }
         else 
@@ -226,33 +216,18 @@ header r"""
 #include <string>
 #include <stdio.h>
 using namespace std;
-struct check {
-  check() { printf("ctor\n"); }
-  ~check() { printf("dtor\n"); }
-};
 """;
 
-type check = "check";
-typedef bool = 2;
+include "std";
 
-type string = "string";
-proc print: string = 'printf("%s",$1.data());';
-
-type int = "int";
-proc print: int = 'printf("%d",$1);';
-proc incr : &int = "*$1++;";
-fun eq : int * int -> bool = "$1==$2";
-proc _set : & int * int = "*$1 = $2;";
 var counter : int = 0;
 var counter2 : int = 0;
-proc eol : 1 = 'printf("\n");';
 
 proc handle_line()
 {
-  var checker : check;
   var line : string;
   repeat:> 
-    read line;
+    &line <- read;
     print line;
     goto repeat;
 }
@@ -279,7 +254,7 @@ We create 1 million threads, and process 2 million
 messages.
 
 @head(3,'Driver Implementation')
-@d = tangler('test/flx_perf_drv1.cxx')
+@d = tangler('test/flx_perf_drv1.cxx','cpp')
 @select(d)
 #include <time.h>
 //#include <unistd.h>
@@ -396,12 +371,18 @@ int main(int argc, char** argv)
     instance.create(&library, &collector,0,NULL,stdin,stdout,stderr);
     
     typedef int session_key;
-    typedef pair<const session_key, con_t*> session_record;
+    typedef pair<const session_key, fthread_t*> session_record;
 
     std::list<session_record> active;
-    std::map<session_key,con_t*> waiting;
-    active.push_front(make_pair(-1,instance.start_proc));
-    collector.add_root(instance.start_proc);
+    std::map<session_key,fthread_t*> waiting;
+
+    fthread_t *ft = 
+      new(collector,_fthread_ptr_map) 
+      fthread_t(instance.start_proc)
+    ;
+    
+    active.push_front(make_pair(-1,ft));
+    collector.add_root(ft);
     int gc_counter = 0;
 
     time_t start = time(NULL);
@@ -414,26 +395,13 @@ int main(int argc, char** argv)
         session_record top_rec = *(active.begin());
         int active_thread_id FLX_UNUSED = top_rec.first;
         //printf("Processing active thread %d\n",top_rec.first);
-        con_t *top = top_rec.second;
+        fthread_t *top = top_rec.second;
         active.pop_front();
         assert(top);
-        while(
-          top && 
-          (
-            top->action == con_t::yield_action
-          )
-        )
+        _uctor_ *request = top->run();
+        if(request)
         {
-          con_t *new_top = top->resume();
-          if(new_top != top) {
-            if(new_top) collector.add_root(new_top);
-            collector.remove_root(top);
-            top = new_top;
-          }
-        }
-        if(top)
-        {
-          assert (top->action==con_t::wait_action);
+          assert (request->variant == svc_read);
           try {
             waiting.insert(make_pair(top_rec.first, top));
             assert(waiting.size()<100);
@@ -444,7 +412,8 @@ int main(int argc, char** argv)
           }
         }
         else {
-          //printf("THREAD SUICIDES\n");
+          //printf("THREAD SUICIDES %p\n",ft);
+          collector.remove_root(top);
         }
       }
 
@@ -456,15 +425,15 @@ int main(int argc, char** argv)
       //printf("New message Id=%d\n",id);
    
       // find the id in the map of waiting
-      std::map<int,con_t*>::iterator line_handler_ptr = 
+      std::map<int,fthread_t*>::iterator line_handler_ptr = 
         waiting.find(id);
       
       if(line_handler_ptr  != waiting.end())
       {
         //printf("Found existing WAITING line handler for %d, making active\n", id);
         active.push_front(*line_handler_ptr);
-        *(message_t*)((*line_handler_ptr).second->p_message) = msg;  
-        (*line_handler_ptr).second->action = con_t::yield_action;  
+
+        **(message_t**)((*line_handler_ptr).second->get_svc()->data) = msg;  
         waiting.erase(line_handler_ptr);
       }
       else 
@@ -487,29 +456,16 @@ int main(int argc, char** argv)
             instance.thread_frame
           )
         ;
-        collector.add_root(top);
+        fthread_t *ft = new(collector,_fthread_ptr_map) fthread_t(top);
+        collector.add_root(ft);
         //printf("instance created, continuation=%p\n",top);
-        while(
-          top && 
-          (
-            top->action == con_t::yield_action
-          )
-        )
+        _uctor_ *request = ft->run();
+        if(request)
         {
-          con_t *new_top = top->resume();
-          if(new_top != top) {
-            if(new_top) collector.add_root(new_top);
-            collector.remove_root(top);
-            top = new_top;
-          }
-        }
-        if(top)
-        {
-          assert (top->action==con_t::wait_action);
-          top->action = con_t::yield_action;
+          assert (request->variant=svc_read);
           //printf("instance waiting for INITIAL message\n");
           try {
-            active.push_front (make_pair(id,top));
+            active.push_front (make_pair(id,ft));
             assert(active.size()<100);
           }
           catch (...) {
@@ -517,9 +473,9 @@ int main(int argc, char** argv)
             exit(1);
           }
 
-          if (top->p_message)
+          if (request->data)
           {
-            *(message_t*)(top->p_message) = msg;
+            **(message_t**)(request->data) = msg;
           }
           else 
           {
@@ -557,7 +513,6 @@ int main(int argc, char** argv)
 header r"""
 #include <string>
 #include <stdio.h>
-#include <iostream>
 
 using namespace std;
 struct check {
@@ -565,17 +520,10 @@ struct check {
   ~check() { printf("dtor %p\n",this); }
 };
 """;
+include "std";
 
 type check = "check";
-typedef bool = 2;
-type string = "string";
-proc print: string = 'cout << $1;';
 
-type int = "int";
-proc print: int = 'cout <<$1;';
-proc incr : &int = "(*$1)++;";
-fun eq : int * int -> bool = "$1==$2";
-proc _set : & int * int = "*$1 = $2;";
 var counter : int = 0;
 var counter2 : int = 0;
 
@@ -583,20 +531,16 @@ proc handle_line()
 {
   //var checker : check;
   var line : string;
-  read line;
-  incr (&counter);
-  if (counter == 100000) then
-  {
+  &line <- read;
+  ++counter;
+  if counter == 100000 do
     counter = 0;
-    incr (&counter2);
+    ++counter2;
     print counter2;
     print "00 K threads\n";
-  } 
-  else 
-  {} 
-  endif
+  done
   ;
-  read line;
+  &line <- read;
 }
 
 export proc handle_line of (1) as "line_handler_creator";

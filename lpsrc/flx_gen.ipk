@@ -870,7 +870,7 @@ let gen_exe filename syms
 
     | `BEXE_proc_return _ -> "      FLX_RETURN\n"
 
-    | `BEXE_read (sr,index) -> 
+    | `BEXE_svc (sr,index) -> 
       let id,parent,sr,entry = 
         try Hashtbl.find bbdfns index 
         with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
@@ -884,8 +884,7 @@ let gen_exe filename syms
       let n = !counter in incr counter;
       needs_switch := true;
       "      //read variable\n" ^
-      "      p_message = &" ^ get_var_ref syms bbdfns this index ts^";\n" ^
-      "      action = wait_action;\n" ^
+      "      p_svc = &" ^ get_var_ref syms bbdfns this index ts^";\n" ^
       "      FLX_SET_PC(" ^ si n ^ ")\n" ^
       "      return this;\n" ^
       "    FLX_CASE_LABEL(" ^ si n ^ ")\n"

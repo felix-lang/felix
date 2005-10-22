@@ -1621,7 +1621,7 @@ var consumed = 0;
 
 proc consumer() {
   until consumed == n do
-    var x:int; read x;
+    var x:int; &x <- read;
     ++consumed;
   done;
 }
@@ -1668,7 +1668,7 @@ proc final() {
   var msg:int;
   var total = 0;
   whilst true do
-    read msg;
+    &msg <-read;
     total += msg;
 
     if message_count == 0 do
@@ -1686,7 +1686,7 @@ proc agent() {
   ;
   var msg:int;
   whilst true do
-    read msg;
+    &msg <- read;
     send[int] (&next) (msg+1);
   done;
 }

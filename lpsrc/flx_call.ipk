@@ -141,7 +141,7 @@ and cal_exe_usage syms h k exe =
   | `BEXE_init (sr,i,e) -> ui i sr; ue sr e
   | `BEXE_assign (sr,e1,e2) -> ue sr e1; ue sr e2
 
-  | `BEXE_read (sr,i) -> ui i sr
+  | `BEXE_svc (sr,i) -> ui i sr
 
   | `BEXE_label _
   | `BEXE_halt _

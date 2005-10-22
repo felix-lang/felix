@@ -239,20 +239,20 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       let p',pt' = be p and e',et' = be e in
       tack (cal_call syms sr (p', pt') (e', et'))
 
-    | `EXE_read s ->          
+    | `EXE_svc s ->          
       begin match lun sr s with
       | NonFunctionEntry (index) -> 
         let {symdef=entry; id=id} = Hashtbl.find syms.dfns index in
         begin match entry with
         | `SYMDEF_var _ -> ()
-        | `SYMDEF_val _ -> clierr sr ("Can't read into value " ^ id)
-        | `SYMDEF_parameter _ -> clierr sr ("Can't read into parameter value " ^ id)
-        | _ -> clierr sr ("[bexe] Read requires variable, got " ^ id)
+        | `SYMDEF_val _ -> clierr sr ("Can't svc into value " ^ id)
+        | `SYMDEF_parameter _ -> clierr sr ("Can't svc into parameter value " ^ id)
+        | _ -> clierr sr ("[bexe] svc requires variable, got " ^ id)
         end
         ;
-        tack (`BEXE_read (sr,index))
+        tack (`BEXE_svc (sr,index))
 
-      | FunctionEntry _ -> failwith "Can't read function!"
+      | FunctionEntry _ -> failwith "Can't svc function!"
       end
 
     | `EXE_proc_return ->

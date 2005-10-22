@@ -1065,11 +1065,13 @@ fun str : simple_name_parts_t -> string =
   | simple_name_parts_2 ?s => s
 ;
 
+/*
 fun str : type_expr_comma_list_t -> string =
   | type_expr_comma_list_1 (?t,?ts) => str t + ", " + str ts
   | type_expr_comma_list_2 ?t => str t
   | type_expr_comma_list_3 => ""
 ;
+*/
 
 fun str : suffixed_name_t -> string =
   | suffixed_name_1 (?qn,?t) => str qn + " of (" + str t + ")"

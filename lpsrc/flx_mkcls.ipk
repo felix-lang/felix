@@ -147,7 +147,7 @@ let process_exe syms bbdfns all_closures (exe : bexe_t) : bexe_t =
   | `BEXE_assign (sr,e1,e2) -> `BEXE_assign (sr, ue e1, ue e2)
   | `BEXE_assert (sr,e) -> `BEXE_assert (sr, ue e)
 
-  | `BEXE_read (sr,i) -> exe
+  | `BEXE_svc (sr,i) -> exe
 
   | `BEXE_label _
   | `BEXE_halt _

@@ -2244,7 +2244,6 @@ flx_keywords = [
     ("property", "PROPERTY"),
     ("public", "PUBLIC"),
     ("publish", "PUBLISH"),
-    ("read", "READ"),
     ("regexp", "REGEXP"),
     ("reglex", "REGLEX"),
     ("regmatch", "REGMATCH"),
@@ -2268,6 +2267,8 @@ flx_keywords = [
     ("with", "WITH"),
     ("until", "UNTIL"),
     ("_", "UNDERSCORE"),
+    ("_gc_pointer", "GC_POINTER"),
+    ("_svc", "SVC"),
   ]
 
 flx_1_char_syms = [

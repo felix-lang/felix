@@ -225,10 +225,11 @@ right type by client drivers.
 namespace flx { namespace rtl {
 
 struct FLX_RTL_EXTERN con_t;
+struct FLX_RTL_EXTERN fthread_t;
+extern flx::gc::generic::gc_shape_t _fthread_ptr_map;
 struct FLX_RTL_EXTERN _ref_;
 extern flx::gc::generic::gc_shape_t _ref_ptr_map;
 struct FLX_RTL_EXTERN _uctor_;
-extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _uctor_ptr_map;
 extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _uctor_ptr_map;
 extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _int_ptr_map;
 extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t unit_ptr_map;
@@ -242,6 +243,15 @@ struct FLX_RTL_EXTERN flx_match_failure_t;
 struct FLX_RTL_EXTERN flx_assert_failure_t;
 struct FLX_RTL_EXTERN flx_switch_failure_t;
 
+// SERVICE REQUEST CODE
+// THESE VALUES MUST SYNCH WITH THE STANDARD LIBRARY
+enum svc_t      // what the dispatch should do
+{                        // when the resume callback returns
+  svc_yield = 0,
+  svc_get_fthread=1,
+  svc_read=2,
+  svc_end
+};
 
 // CONTINUATION
 struct FLX_RTL_EXTERN con_t // abstract base for mutable continuations
@@ -252,19 +262,22 @@ struct FLX_RTL_EXTERN con_t // abstract base for mutable continuations
    int pc;
 #endif
 
-  enum action_t        // what the dispatch should do
-  {                    // when the resume callback returns
-    yield_action,      // cooperative yield (resume after housekeeping)
-    wait_action        // resume with new message
-  } action;
-
-  void *p_message;   // where the next message is put
+  _uctor_ *p_svc;   // pointer to service request
 
   con_t();
   virtual con_t *resume()=0;
-  // virtual con_t *clone()const=0; 
   virtual ~con_t();
   con_t * _caller;
+};
+
+struct FLX_RTL_EXTERN fthread_t // fthread abstraction
+{
+  fthread_t();
+  fthread_t(con_t*);
+  con_t *cc; // current continuation
+  virtual _uctor_ *run();
+  _uctor_ *get_svc()const;
+  virtual ~fthread_t();
 };
 
 //REFERENCE
@@ -306,6 +319,7 @@ struct FLX_RTL_EXTERN flx_exec_failure_t {
   std::string operation;
   std::string what;
   flx_exec_failure_t(std::string f, std::string o, std::string w);
+  virtual ~flx_exec_failure_t();
 };
 
 struct FLX_RTL_EXTERN flx_range_srcref_t {
@@ -520,7 +534,7 @@ extern "C" FLX_EXPORT con_t *flx_start(\
 #include <cstdio>
 
 namespace flx { namespace rtl {
-con_t::con_t() : pc(0), action(yield_action), _caller(0) { 
+con_t::con_t() : pc(0), p_svc(0), _caller(0) { 
 #ifdef FLX_DEBUG_CONT
  printf("Constructing %p\n",this);
 #endif
@@ -530,6 +544,58 @@ con_t::~con_t(){
   printf("Destroying %p\n",this);
 #endif
 }
+
+// fthread
+fthread_t::fthread_t() : cc(0) {}
+fthread_t::fthread_t(con_t *a) : cc(a) {}
+fthread_t::~fthread_t(){cc=0;}
+_uctor_ *fthread_t::get_svc()const { return cc?cc->p_svc:0; }
+
+_uctor_ *fthread_t::run() {
+restep:
+  cc->p_svc = 0;
+step:  
+  try { cc = cc->resume(); }
+  catch (con_t *x) { cc = x; }
+
+  if(!cc) return 0; // died
+
+  if(cc->p_svc)
+  {
+    switch(cc->p_svc->variant)
+    {
+      case svc_get_fthread: 
+        *(fthread_t**)(cc->p_svc->data)= this;
+        
+      case svc_yield: 
+        goto restep;
+
+      // we don't know what to do with the request,
+      // so pass the buck to the driver
+      default:
+        return cc->p_svc;
+    }
+  }
+  goto step;
+}
+//OFFSETS for fthread_t
+static std::size_t _fthread_offsets[1]={
+    offsetof(fthread_t,cc)
+};
+
+static void _fthread_finaliser (flx::gc::generic::collector_t *, void *p)
+{
+  ((fthread_t*)p)->~fthread_t();
+}
+
+flx::gc::generic::gc_shape_t _fthread_ptr_map(
+  "fthread_t",
+  1,sizeof(fthread_t),
+  _fthread_finaliser,
+  1,
+  _fthread_offsets
+);
+
 
 void _ref_::operator = (_ref_ const& r)
 {
@@ -598,6 +664,8 @@ flx_exec_failure_t::flx_exec_failure_t(std::string f, std::string o, std::string
   operation(o), 
   what(w) 
 {}
+
+flx_exec_failure_t::~flx_exec_failure_t(){}
 
 flx_range_srcref_t::flx_range_srcref_t(char *f,int sl, int sc, int el, int ec) :
     filename(f),startline(sl),startcol(sc),endline(el),endcol(ec){}
@@ -990,7 +1058,7 @@ For dynamically loaded programs, the name of the
 driver and optional --debug switch given before the
 shared library name are not passed.
 
-@h = tangler('rtl/flx_run.cxx')
+@h = tangler('rtl/flx_run.cxx','cpp')
 @select(h)
 #include <cstdlib>
 #include <stdio.h>
@@ -1096,31 +1164,24 @@ int main(int argc, char** argv)
       fprintf(stderr,"initial continuation at %p\n",instance.start_proc);
     } 
     int gc_counter = 0;
-    con_t *top = instance.start_proc;
-    collector.add_root(top);
-    con_t *old_root = top;
-
     unsigned long collections = 0;
-    while( top && top->action == con_t::yield_action)
+
+    con_t *top = instance.start_proc;
+    fthread_t *ft = new (collector,_fthread_ptr_map) fthread_t(top);
+    collector.add_root(ft);
+    _uctor_ *request = ft->run();
+
+    while( request && request->variant  == svc_yield)
     {
-      try {
-        top = top->resume();
-      }
-      catch (con_t *x) { top=x; }
       gc_counter++;
       if(gc_counter == 1000)
       {
         gc_counter = 0;
-        // reset the root to the current top
-        if(old_root != top) {
-          if(top) collector.add_root(top);
-          if(old_root) collector.remove_root(old_root);
-          old_root = top;
-        }
         ++collections;
         unsigned long n = collector.collect();
         if(debug)fprintf(stderr,"collected %ld objects\n",n);
       }
+      request = ft->run();
     }
     if(debug){
       unsigned long uncollected = collector.get_allocation_count();
@@ -1130,10 +1191,8 @@ int main(int argc, char** argv)
     if(finalise)
     {
       if(debug) fprintf(stderr,"Finalising\n");
-      if(old_root) {
-        if(debug)fprintf(stderr,"removing top frame %p\n",old_root);
-        collector.remove_root(old_root);
-      }
+      if(debug)fprintf(stderr,"removing thread %p\n",ft);
+      collector.remove_root(ft);
       {
         if(debug)
           fprintf(stderr,"Data collection starts ..\n");
@@ -1239,7 +1298,7 @@ int main(int argc, char** argv)
   return 0;
 }
 
-@h = tangler('test/micky_mouse.cxx')
+@h = tangler('test/micky_mouse.cxx','cpp')
 @select(h)
 #include <stdio.h>
 #include "flx_rtl.hpp"

@@ -2431,7 +2431,14 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
           | None -> None
           end
 
-    | `SYMDEF_cclass _ -> failwith "Constructors not implemented yet"
+    | `SYMDEF_cclass _ -> 
+      (* recursively lookup using "_ctor_" ^ name :
+         WARNING: we might find a constructor with the
+         right name for a different cclass than this one,
+         it isn't clear this is wrong though.
+      *)
+      lookup_name_in_table_dirs_with_sig (table, dirs) 
+      syms env rs sra srn ("_ctor_" ^ name) ts t2 
     
     | `SYMDEF_const_ctor (_,t,_)
     | `SYMDEF_const (t,_,_)

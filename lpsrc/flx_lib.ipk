@@ -614,6 +614,7 @@ module C_hack
   """
   fun addr[t]: lvalue[t] -> ptr[t] = "&$1";
   fun caddr[t]: lvalue[t] -> cptr[t] ="(?1 const*)&$1";
+  fun as_address[t]: ptr[t]->address = "(void*)$1";
   fun address_of[t]: lvalue[t]-> address = "(void*)&$1";
   fun isNULL: address -> bool = "(NULL==$1)";
   
@@ -1058,10 +1059,13 @@ module Control
   fun fail_fun[t]:string->t = 'throw std::exception ($1),*(?1*)0';
 
   publish "Felix procedural continuation type"
-  type cont = "flx::rtl::con_t*";
+  _gc_pointer type cont = "flx::rtl::con_t*";
 
   publish "Current continuation"
   fun current_continuation: 1 -> cont = "this";
+
+  publish "Felix fthread"
+  _gc_pointer type fthread = "flx::rtl::fthread_t*";
 
  
   publish """
@@ -1087,19 +1091,46 @@ module Control
   proc throw(x: unit->void) { _throw (C_hack::cast[cont] x); }
   private proc _throw: cont = "throw $1;";
 
- 
+  publish "Supervisor calls"
+  // THESE VALUES MUST SYNC WITH THE RTL
+  union svc_req_t =
+  | svc_yield                          // 0
+  | svc_get_fthread of address         // 1
+  | svc_read of address                // 2
+  ;
+
+  publish "Call Supervisor"
+  // this interface just gets rid of the horrible requirement
+  // the request be in a variable so it is addressable
+  proc svc(x:svc_req_t) {
+    var y=x;
+    _svc y;
+  }
+
+  publish "Read primitive"
+  // finds the machine address of the read buffer
+  // then does a supervisor read specifying that address
+  proc read[t](x:&t) { 
+    val vadr : address = C_hack::as_address$ C_hack::unref x;
+    req  := svc_read vadr;
+    svc req;
+  }
+
   private fun _start[t]: (t->0)*t->cont = "$1->clone()->call(0,$2)";
   fun start[t] (p:t->0) (x:t) = { return _start (p,x); }
   private fun _start0: (1->0)->cont = "$1->clone()->call(0)";
   fun start (p:1->0) = { return _start0 (p); }
 
+  fun mk_thread: cont->fthread = "new(PTF gc,_fthread_ptr_map) flx::rtl::fthread_t($1)";
   publish "Resume a continuation until it yields"
   fun step: cont -> cont = "$1->resume()";
 
   publish """
   Run a continuation until it terminates.
   Do not use this proc if the underlying
-  procedure attempts to read messages
+  procedure attempts to read messages.
+  
+  This is a low level primitive, bypassing fthreads.
   """
   proc run: cont = 
   """
@@ -1107,10 +1138,10 @@ module Control
     flx::rtl::con_t *tmp=$1;
     if(!tmp)
       throw flx::rtl::flx_exec_failure_t (__FILE__,"run","Run terminated procedure");
-      while(tmp) {
-        try { tmp=tmp->resume(); }
-        catch (flx::rtl::con_t *x) { tmp = x; }
-      }
+    while(tmp) {
+      try { tmp=tmp->resume(); }
+      catch (flx::rtl::con_t *x) { tmp = x; }
+    }
   }
   """;
 
@@ -1119,18 +1150,28 @@ module Control
   {
     using namespace flx::rtl;
     con_t *tmp = *(con_t**)$1.data;
-    while(tmp && tmp->action == yield_action) {
+    // run target until it reaches a service request (or death)
+    while(tmp && (!tmp->p_svc || tmp->p_svc->variant == svc_yield)) {
       try { tmp=tmp->resume(); }
-      catch (flx::rtl::con_t *x) { tmp = x; }
+      catch (con_t *x) { tmp = x; }
     }
+    // check it is alive and making the expected service request
     if (!tmp) 
-      throw flx::rtl::flx_exec_failure_t (__FILE__,"send","Send to terminated procedure");
-    *(?1*)tmp->p_message = $2;
-    tmp->action = yield_action;
-    while(tmp && tmp->action == yield_action) {
+      throw flx_exec_failure_t (__FILE__,"send","Send to terminated procedure");
+    if (!tmp->p_svc) 
+      throw flx_exec_failure_t (__FILE__,"send","Send to unready Procedure");
+    if (tmp->p_svc->variant != svc_read) 
+      throw flx_exec_failure_t (__FILE__,"send","Send to Procedure which is not trying to read");
+    // store the message
+    **(?1**)tmp->p_svc->data= $2;
+    // clear the service request
+    tmp->p_svc = 0;
+    // run the target until the next service request (or death)
+    while(tmp && (!tmp->p_svc || tmp->p_svc->variant == svc_yield)) {
       try { tmp=tmp->resume(); }
-      catch (flx::rtl::con_t *x) { tmp = x; }
+      catch (con_t *x) { tmp = x; }
     }
+    // save the new continuation
     *(con_t**)$1.data = tmp; 
   }
   """;
@@ -1139,26 +1180,13 @@ module Control
   There is no type checking on the message type.
   The procedure is executed until
   the next wait_state, then the message is stored.
+
+  Low level primitive, bypassing fthreads.
   """
   proc send[t] (p:&cont) (x:t)
   {
     _send (p,x);
   }
-
-  publish """
-  Type of the state of a continuation.
-  dead_state means, obviously, the continuation
-  has terminated, wait_state means it is waiting
-  for a message to be stored in a receptor variable,
-  and yield_state means it has suspended itself
-  for to allow the system to do any housekeeping
-  such as garbage collection and can be resumed 
-  at any time.
-  """
-  union cont_state = | yield_state | wait_state | dead_state;
-
-  publish "Fetch the state of a continuation"
-  fun get_cont_state: cont -> cont_state = "$1??$1->action:2";
 
   publish """
   Invoke the garbage collector inside a procedure run

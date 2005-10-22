@@ -1870,14 +1870,9 @@ case 3 33
 @head(2,"tut/examples/tut210.expect")
 @select(tangler("tut/examples/tut210.expect","data"))
 Start .. 
-yield
 Hello World
-This is wait
-Felix
-Saying 
-wait
-Bye for now
-dead
+This is Felix
+Saying Bye for now
 .. OK
 @head(2,"tut/examples/tut211.expect")
 @select(tangler("tut/examples/tut211.expect","data"))
@@ -1978,3 +1973,21 @@ A is used
 4
 4
 16
+@head(2,"tut/examples/tut_bind160.expect")
+@select(tangler("tut/examples/tut_bind160.expect","data"))
+-50
+2
+3
+105
+1105
+Y=2,3
+20
+3
+20
+42
+10062
+162
+1162
+162
+1
+1

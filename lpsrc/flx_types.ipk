@@ -515,6 +515,7 @@ and property_t = [
 and type_qual_t = [
   | `Incomplete
   | `Pod
+  | `GC_pointer (* this means the type is a pointer the GC must follow *)
 ]
 
 and requirement_t = [
@@ -622,7 +623,7 @@ and statement_t =
   | `AST_cassign of range_srcref * expr_t * expr_t 
   | `AST_jump of range_srcref * expr_t * expr_t 
   | `AST_loop of range_srcref * id_t * expr_t 
-  | `AST_read of range_srcref * id_t
+  | `AST_svc of range_srcref * id_t
   | `AST_fun_return of range_srcref * expr_t
   | `AST_proc_return of range_srcref 
   | `AST_nop of range_srcref * string
@@ -657,7 +658,7 @@ and exe_t =
   | `EXE_call of expr_t * expr_t 
   | `EXE_jump of expr_t * expr_t 
   | `EXE_loop of id_t * expr_t 
-  | `EXE_read of id_t
+  | `EXE_svc of id_t
   | `EXE_fun_return of expr_t
   | `EXE_proc_return
   | `EXE_nop of string
@@ -850,7 +851,7 @@ and bexe_t =
   | `BEXE_jump of range_srcref * tbexpr_t * tbexpr_t 
   | `BEXE_jump_direct of range_srcref * bid_t * btypecode_t list * tbexpr_t 
   | `BEXE_loop of range_srcref * int * tbexpr_t 
-  | `BEXE_read of range_srcref * bid_t
+  | `BEXE_svc of range_srcref * bid_t
   | `BEXE_fun_return of range_srcref * tbexpr_t
   | `BEXE_proc_return of range_srcref   
   | `BEXE_nop of range_srcref * string
@@ -1368,7 +1369,7 @@ let iter_bexe fi fe ft fl fldef exe =
   | `BEXE_init (sr,i,e) 
     -> fi i; fe e
     
-  | `BEXE_read (sr,i)  
+  | `BEXE_svc (sr,i)  
     -> fi i
     
   | `BEXE_halt _
@@ -1429,8 +1430,8 @@ let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
   | `BEXE_init (sr,i,e) ->
     `BEXE_init (sr,fi i,fe e) 
     
-  | `BEXE_read (sr,i) ->
-    `BEXE_read (sr,fi i)  
+  | `BEXE_svc (sr,i) ->
+    `BEXE_svc (sr,fi i)  
     
   | `BEXE_halt _
   | `BEXE_code _
@@ -1622,7 +1623,7 @@ let src_of_stmt e = match e with
   | `AST_call (s, _, _ ) 
   | `AST_jump (s, _, _ ) 
   | `AST_loop (s, _, _ ) 
-  | `AST_read (s, _) 
+  | `AST_svc (s, _) 
   | `AST_fun_return (s, _) 
   | `AST_proc_return s 
   | `AST_ifgoto (s,_,_)
@@ -2670,6 +2671,7 @@ and string_of_named_reqs = function | [] -> ""
 and string_of_qual = function 
 | `Incomplete -> "incomplete"
 | `Pod -> "pod"
+| `GC_pointer -> "GC_pointer"
 
 and string_of_quals qs = catmap " " string_of_qual qs
 
@@ -3081,7 +3083,7 @@ and string_of_statement level s =
   | `AST_proc_return _ -> 
     spaces level ^ "return;"
     
-  | `AST_read (_,name) ->
+  | `AST_svc (_,name) ->
     spaces level ^ "read " ^ name ^ ";"
 
 and string_of_compilation_unit stats =
@@ -3267,8 +3269,8 @@ and string_of_exe level s =
     p ^ " " ^ 
     se a ^ ";"
 
-  | `EXE_read v -> spc ^ 
-    "read " ^ v
+  | `EXE_svc v -> spc ^ 
+    "_svc " ^ v
 
   | `EXE_fun_return x -> spc ^ 
     "return " ^ se x ^ ";"
@@ -3428,8 +3430,8 @@ and string_of_bexe dfns level s =
     si p ^ "> " ^ 
     se a ^ ";"
 
-  | `BEXE_read (_,v) -> spc ^ 
-    "read " ^ sid v 
+  | `BEXE_svc (_,v) -> spc ^ 
+    "_svc " ^ sid v 
 
   | `BEXE_fun_return (_,x) -> spc ^ 
     "return " ^ se x ^ ";"

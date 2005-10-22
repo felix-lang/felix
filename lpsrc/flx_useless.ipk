@@ -77,7 +77,7 @@ let rec isuseless bbdfns exes =
       | `BEXE_assert _
       | `BEXE_assign _
       | `BEXE_call _ (* assume useful if not call to named useful proc *)
-      | `BEXE_read _ (* useful even if local, due to side effect *)
+      | `BEXE_svc _ (* useful even if local, due to side effect *)
       | `BEXE_code _ 
       | `BEXE_nonreturn_code _ 
       | `BEXE_ifgoto _ (* assume a non-local goto here *)
@@ -459,7 +459,7 @@ let rec useless_call_elim syms used (child_map,bbdfns) vs' exes index =
   | `BEXE_proc_return _
   | `BEXE_code _
   | `BEXE_nonreturn_code _
-  | `BEXE_read _
+  | `BEXE_svc _
   | `BEXE_halt _
   | `BEXE_begin
   | `BEXE_end

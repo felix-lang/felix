@@ -1149,7 +1149,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     d @ [Exe (sr,`EXE_ifnotgoto (x,lab))]
 
    
-  | `AST_read (sr,name) ->  [Exe (sr,`EXE_read name)]
+  | `AST_svc (sr,name) ->  [Exe (sr,`EXE_svc name)]
   | `AST_code (sr,s) -> [Exe (sr,`EXE_code s)]
   | `AST_noreturn_code (sr,s) -> [Exe (sr,`EXE_noreturn_code s)]
 

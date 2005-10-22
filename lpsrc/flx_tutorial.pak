@@ -3087,37 +3087,22 @@ print "Start .. "; endl;
 proc printing() {
   var s:string;
   print "Hello "; 
-  read s;
+  &s <- read;
   print s; endl;
 
   print "This is ";
-  read s;
+  &s <- read;
   print s; endl;
 
-  print "Saying "; endl;
-  read s;
+  print "Saying ";
+  &s <- read;
   print s; endl;
 }
 
 var x = start the printing;
-report;
 send[string] (&x) "World";
-report;
 send[string] (&x) "Felix";
-report;
 send[string] (&x) "Bye for now";
-report;
-
-proc report() {
-  print
-    match get_cont_state x with
-    | yield_state => "yield"
-    | wait_state => "wait"
-    | dead_state => "dead"
-    endmatch
-  ;
-  endl;
-}
 
 print ".. OK"; endl;
 
@@ -3139,7 +3124,7 @@ proc final() {
   var msg:int;
   var total = 0;
   whilst true do
-    read msg;
+    &msg <- read;
     total += msg;
 
     if message_count == 0 do
@@ -3157,7 +3142,7 @@ proc agent() {
   ;
   var msg:int;
   whilst true do
-    read msg;
+    &msg <- read;
     send[int] (&next) (msg+1);
   done;
 }

@@ -613,3 +613,101 @@ f();  print n; endl;
 print N; endl;
 print (g N); endl;
 
+@head(2,'Binding Classes')
+C++ classes are bound using the cclass construction.
+
+@select(tangler(tdir+'tut_bind160.flx'))
+include "std";
+open Long;
+
+header """#include <stdio.h>""";
+
+header """ 
+struct Y { 
+  int c;
+  int x; 
+  long y;
+  Y() : c(-1) {}
+  Y(int _x) : c(-50), x(_x) {}
+  int h()const { return x + y + c; }
+  int f(int z)const { return z + x + y; }
+  int g(int z,int a)const { return z + x + y+a; }
+
+  void setx(int _x){ x= _x;}
+  void setxy(int _x, long _y) {x = _x; y= _y;}
+  void print() { printf("Y=%d,%ld\\n",x,y); }
+}; 
+""";
+
+cclass Y {
+  val c : int;
+  var x : int;
+  var y : long;
+  fun h: unit -> int;
+  fun f: int -> int;
+  fun g: int * int -> int;
+  proc setx: int;
+  proc setxy: int * long;
+  proc print: unit;
+  proc setc: int = "$1->c = $2;";
+  ctor : unit;
+  ctor : int;
+};
+
+var b = Y(99);
+b.x = 2;
+b.y = 3L;
+print b.c; endl;
+print b.x; endl;
+print b.y; endl;
+
+print$ b.f 100; endl;
+print$ b.g$ 100,1000; endl;
+b.print ();
+
+b.setx 20;
+print b.x; endl;
+print b.y; endl;
+
+b.setxy$ 20,42L;
+b.setc 10000;
+print b.x; endl;
+print b.y; endl;
+
+print$ b.h (); endl;
+print$ b.f 100; endl;
+print$ b.g$ 100,1000; endl;
+
+anEff := b.f;
+print$ anEff 100; endl;
+
+header """
+template <class T> 
+struct V
+{ 
+  T x; 
+  T get()const { return x; }
+  void sset(T _x) { x = _x; }
+};
+""";
+
+cclass V[t] {
+  fun get: unit -> t;
+  proc sset: t;
+  ctor : unit;
+};
+
+v := V[int]();
+
+v.sset 1;
+print (v.get ()); endl;
+
+header """
+template<class T> struct X { T x; };
+""";
+
+cstruct X[t] { x : t; }
+xx := X(1);
+print$ xx.x; endl;
+
+

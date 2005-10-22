@@ -229,7 +229,10 @@ has been built on the following platforms:
 native Win32 using MSVC++.
 </P>
 
-<H1>Download</H1>
+<H1>Binary Download</H1>
+<P>Download MSI format <A HREF=http://felix.sf.net/win32/felix.msi>Win32 Binary</A> package, built by <A HREF=http://www.advancedinstaller.com>Advanced Installer</A>.
+
+<H1>Source Download</H1>
 @flx_old_version = '1.1.0'
 @tangle("<P> Download developer tarball 'Morphlix' <A HREF=../../flx_"+flx_version+"_src.tgz>flx_"+flx_version+"_src.tgz</A></P><P>")
 @tangle("<P> Download user tarball 'Felix' <A HREF=../../flx_"+flx_old_version+"_src.tgz>flx_"+flx_old_version+"_src.tgz</A></P><P>")

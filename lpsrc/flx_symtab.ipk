@@ -704,6 +704,31 @@ let rec build_tables syms name level parent grandparent root asms =
               | `MemberProc (n,t,cc) -> `Proc,n,t,cc
               | `MemberCtor (n,t,cc) -> `Ctor,n,t,cc
             in
+            if kind = `Ctor then
+            begin
+              let ctor_index = !(syms.counter) in incr (syms.counter);
+              let ctor_name = "_ctor_" ^ id in
+              let ct = 
+                match vs with 
+                | [] -> `StrTemplate("new "^ id^"($a)") 
+                | _ -> `StrTemplate("new "^ id^"<?a>($a)") 
+              in
+              let argst = match t with
+              | `TYP_tuple ls -> ls
+              | x -> [x]
+              in
+              let symdef = `SYMDEF_fun ([],argst,stype,ct,[],"primary") in
+              Hashtbl.add dfns ctor_index {
+                id=ctor_name;sr=sr;parent=parent;
+                vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
+                symdef=symdef
+              }
+              ;
+              if access = `Public then add_function pub_name_map ctor_name ctor_index;
+              add_function priv_name_map ctor_name ctor_index;
+              if print_flag then print_endline ("//[ctor]  " ^ spc ^ si ctor_index ^ " -> " ^ ctor_name)
+            end
+            ;
             if kind = `Fun || kind = `Proc then
             begin
              (* make applicator method. This precisely the function:

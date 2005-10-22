@@ -139,10 +139,8 @@ let rec get_offsets' syms bbdfns typ : string list =
       ;
       !lst
  
-    (* this is a HACK to fix the continuation type *)
-    | `BBDCL_abs (vs,_,`Str "flx::rtl::con_t*",_) 
-    | `BBDCL_abs (vs,_,`StrTemplate "flx::rtl::con_t*",_) 
-       when id = "cont" -> ["0"]
+    | `BBDCL_abs (vs,type_quals,_,_) 
+       when mem `GC_pointer type_quals -> ["0"]
     
     | _ -> []
     end

@@ -634,7 +634,7 @@ let gen_body syms (uses,child_map,bbdfns) id
   | `BEXE_fun_return (sr,e) -> [`BEXE_fun_return (sr, ge e)]
   | `BEXE_assign (sr,e1,e2) -> [`BEXE_assign (sr, ge e1, ge e2)]
   | `BEXE_init (sr,i,e) -> [`BEXE_init (sr,revar i, ge e)]
-  | `BEXE_read (sr,i)  -> [`BEXE_read (sr, revar i)]
+  | `BEXE_svc (sr,i)  -> [`BEXE_svc (sr, revar i)]
 
   | `BEXE_code (sr,s)  as x -> [x]
   | `BEXE_nonreturn_code (sr,s)  as x -> [x]
@@ -1114,7 +1114,7 @@ let expand_exe syms bbdfns u exe =
       let e,xs = u sr e in
       `BEXE_init (sr,i,e) :: xs
     
-    | `BEXE_read _
+    | `BEXE_svc _
     | `BEXE_label _
     | `BEXE_goto _
     | `BEXE_code _
@@ -1749,7 +1749,7 @@ and fold_vars syms (uses,child_map,bbdfns) i ps exes =
           (* conditional, check if y depends on init (tail rec) *)
            
           | `BEXE_assign (_,(`BEXPR_name (k,_),_),_)
-          | `BEXE_read (_,k)
+          | `BEXE_svc (_,k)
           | `BEXE_init (_,k,_) ->
              subs := not (IntSet.mem k yuses); 
              elimi exe
