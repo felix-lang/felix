@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.167  2005/10/23 04:11:50  skaller
+Fixed inlining bug, removed special useless call eliminator
+
 Revision 1.166  2005/10/22 00:57:16  skaller
 Implemented Service Control Requests
 
@@ -2567,7 +2570,6 @@ FLX_MODULES = [
   'flx_cflow'        , 
   'flx_call'         , 
   'flx_use'          , 
-  'flx_useless'      , 
   'flx_child'        , 
   'flx_tailit'       , 
   'flx_inline'       , 

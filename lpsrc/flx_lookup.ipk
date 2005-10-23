@@ -1886,6 +1886,21 @@ and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   *)
 
   let rest = varmap_subst syms.varmap rest in
+  if rest = `BTYP_void then 
+    clierr sr
+    (
+      "[cal_apply] Function " ^
+      sbe syms.dfns tbe1 ^
+      "\nof type " ^
+      sbt syms.dfns t1 ^
+      "\napplied to argument " ^
+      sbe syms.dfns tbe2 ^
+      "\n of type " ^
+      sbt syms.dfns t2 ^
+      "\nreturns void"
+    )
+  else
+  
   (* We have to allow type variables now .. the result
   should ALWAYS be determined, and independent of function
   return type unknowns, even if that means it is a recursive

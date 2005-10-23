@@ -77,7 +77,7 @@ let string_of_intset s =
 
 let recal_exes_usage syms uses sr i ps exes =
   (*
-  print_endline ("Recal usage of this code:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
+  print_endline ("Recal usage of "^ si i^", this code:\n" ^ catmap "\n" (sbx syms.dfns) exes);
   *)
   (* delete old entry *)
   (try Hashtbl.remove uses i with Not_found -> ());
@@ -154,6 +154,9 @@ let locals child_map uses i =
 
 (* remove all uses of j from i *)
 let remove_uses uses i j =
+  (*
+  print_endline "Eliding " ^ si i ^ " from " ^ si j);
+  *)
   try
     let u = Hashtbl.find uses i in
     let u = filter (fun (k,sr) -> j <> k) u in
@@ -202,6 +205,9 @@ let vsplice caller_vars callee_vs_len ts =
 let ident x = x 
 
 let remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e = 
+  (*
+  print_endline ("Remapping expression " ^ sbe syms.dfns e);
+  *)
   let auxt t = varmap_subst varmap t in
   let fixup i ts = 
     let ts = map auxt ts in
@@ -256,6 +262,7 @@ let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len ex
   let ge e = remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let relab s = try Hashtbl.find relabel s with Not_found -> s in
+  let exe = 
   match exe with 
   | `BEXE_call_prim (sr,i,ts,e2)  -> 
     let fixup i ts = 
@@ -294,6 +301,12 @@ let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len ex
     `BEXE_call_stack (sr,i,ts, ge e2)
     
   | x -> map_bexe revar ge ident relab relab x
+  in 
+  (*
+  print_endline ("remapped_exe " ^ string_of_bexe syms.dfns 0 exe);
+  *)
+  exe
+
 
 let remap_exes syms bbdfns relabel varmap revariable caller_vars callee_vs_len exes =
   map (remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len) exes
@@ -344,6 +357,10 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_procedure (props,splice vs,(ps,traint),exes));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
+    (*
+    print_endline ("Cal new usage of proc " ^ si k ^ ": " ^
+      catmap "," (fun (j,_) -> si j) calls);
+    *)
     Hashtbl.add uses k calls
      
   | `BBDCL_function (props, vs, (ps,traint), ret, exes) ->
@@ -353,6 +370,10 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_function (props,splice vs,(ps,traint),ret,exes));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
+    (*
+    print_endline ("Cal new usage of fun " ^ si k ^ ": " ^
+      catmap "," (fun (j,_) -> si j) calls);
+    *)
     Hashtbl.add uses k calls
  
   | `BBDCL_var (vs,t) ->
@@ -668,7 +689,7 @@ let gen_body syms (uses,child_map,bbdfns) id
     let b = 
       ref 
       (
-        if source = "" then 
+        if source = "" && id <> "_init_" then 
           [`BEXE_comment (sr,(kind ^ "inline call to " ^ id ^source))] 
         else []
       ) 
@@ -993,6 +1014,9 @@ let inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a va
         end
         ;
         let call_instr = `BEXE_init (sr,varindex,e) in
+        (*
+        print_endline ("Replacing return with init: " ^ string_of_bexe syms.dfns 0 call_instr);
+        *)
         body2 := call_instr :: !body2;
 
       | x -> body2 := x::!body2
@@ -1832,13 +1856,14 @@ and fold_vars syms (uses,child_map,bbdfns) i ps exes =
   ;
   exes
 
-and remove_unused_children syms (uses,child_map,bbdfns) i =
+and remove_unused_children syms (uses,child_map,bbdfns) i = () (*
   (* all the descendants of a routine, excluding self *)
   let desc = descendants child_map i in
 
   (* everything used by this routine directly or indirectly *)
   let used = Flx_call.use_closure uses i in
 
+  print_endline ("Usage of " ^ si i ^ " =" ^ IntSet.fold (fun j s -> s ^ " " ^ si j) used "");
   (* any desendants not used by this routine *)
   let unused_descendants = IntSet.diff desc used in
 
@@ -1859,11 +1884,10 @@ and remove_unused_children syms (uses,child_map,bbdfns) i =
     Hashtbl.remove bbdfns i;
     Hashtbl.remove child_map i;
     Hashtbl.remove uses i;
-    (*
     print_endline ("REMOVED SYMBOL " ^ qualified_name_of_index syms.dfns i)
-    *)
   )
   unused_descendants
+*)
 
 and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
   let specs = 
@@ -1977,6 +2001,12 @@ let heavy_inlining syms
   let used = ref (!(syms.roots)) in
   let (uses,usedby) = Flx_call.call_data syms bbdfns in
 
+  (*
+  Hashtbl.iter
+  (fun i u -> print_endline (si i ^ "= " ^ catmap ", " (fun (j,_)->si j) u))
+  uses
+  ;
+  *)
   while not (IntSet.is_empty !used) do
     let i = IntSet.choose !used in
     used := IntSet.remove i !used;

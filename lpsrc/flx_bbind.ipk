@@ -727,33 +727,6 @@ try
       )
     )
     bbdfns
-    ;
-    print_endline "//OPTIMISING -- pass 1";
-    print_endline "//---------------------";
-    let () = Flx_use.find_roots syms bbdfns root_proc bifaces in
-    let bbdfns = Flx_useless.elide_unused syms (child_map,bbdfns) in
-    let child_map = cal_children syms bbdfns in
-    Hashtbl.iter
-    (fun index (name,parent,sr,entry) -> print_endline
-      (
-        si index ^ " --> " ^
-        string_of_bbdcl syms.dfns entry index
-      )
-    )
-    bbdfns
-    ;
-    print_endline "//OPTIMISING -- pass 2";
-    print_endline "//---------------------";
-    let bbdfns = Flx_useless.elide_unused syms (child_map,bbdfns) in
-    Hashtbl.iter
-    (fun index (name,parent,sr,entry) -> print_endline
-      (
-        si index ^ " --> " ^
-        string_of_bbdcl syms.dfns entry index
-      )
-    )
-    bbdfns
-
    
 with x -> Flx_terminate.terminate !reverse_return_parity x
 ;;

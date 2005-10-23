@@ -1785,6 +1785,7 @@ val string_of_suffixed_name : suffixed_name_t -> string
 val string_of_qualified_name : qualified_name_t -> string
 val string_of_dcl : int -> id_t -> int option -> vs_list_t -> dcl_t -> string
 val string_of_bexe : symbol_table_t -> int -> bexe_t -> string
+val sbx: symbol_table_t -> bexe_t -> string
 val string_of_exe : int -> exe_t -> string
 val qualified_name_of_index : symbol_table_t -> int -> string
 val string_of_bbdcl : 
@@ -3372,6 +3373,8 @@ and string_of_biface dfns level s =
   | `BIFACE_export_type (_,btyp,cpp_name) ->
     spc ^ "export type (" ^ string_of_btypecode dfns btyp ^ 
     ") as \"" ^ cpp_name ^ "\";"
+
+and sbx dfns s =  string_of_bexe dfns 0 s 
 
 and string_of_bexe dfns level s = 
   let spc = spaces level in

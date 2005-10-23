@@ -262,7 +262,6 @@ Flx_version.version_data := version_data
 @include_file ('flx_cflow.ipk')
 @include_file ('flx_call.ipk')
 @include_file ('flx_use.ipk')
-@include_file ('flx_useless.ipk')
 @include_file ('flx_child.ipk')
 @include_file ('flx_tailit.ipk')
 @include_file ('flx_inline.ipk')
