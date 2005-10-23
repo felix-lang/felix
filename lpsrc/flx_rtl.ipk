@@ -250,6 +250,7 @@ enum svc_t      // what the dispatch should do
   svc_yield = 0,
   svc_get_fthread=1,
   svc_read=2,
+  svc_general=3,
   svc_end
 };
 
@@ -565,7 +566,7 @@ step:
     switch(cc->p_svc->variant)
     {
       case svc_get_fthread: 
-        **(fthread_t***)(cc->p_svc->data)= this;
+        **(fthread_t***)(cc->p_svc->data) = this;
         
       case svc_yield: 
         goto restep;
