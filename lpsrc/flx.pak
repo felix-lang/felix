@@ -327,4 +327,6 @@ create a file here for unit tests.
 @include_file ('flx_highlight.ipk')
 @include_file ('inria_re.ipk')
 
+@head(2,'Optional Components')
+@include_file ('flx_gmp.ipk')
 

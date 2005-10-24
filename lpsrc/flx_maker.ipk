@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.168  2005/10/24 08:29:10  skaller
+Blah
+
 Revision 1.167  2005/10/23 04:11:50  skaller
 Fixed inlining bug, removed special useless call eliminator
 
@@ -538,6 +541,10 @@ for fn,tgt in tgts:
     fl = incl(line)
     if fl:
       if fl in tre_files:
+        dot = index(fl,".")
+        if dot > 0:
+          fl = fl[:dot]
+          fl = fl+'.hpp'
         if fl[0:4]=="tre-":
           print '#include "tre_'+fl[4:]+'"'
         else:

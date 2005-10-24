@@ -2021,6 +2021,30 @@ PYTHON_OS_PARDIR=os.pardir
 PYTHON_OS_SEP=os.sep
 PYTHON_OS_PATHSEP=os.pathsep
 
+# establish which OPTIONAL components are available
+components = [
+  ('HAVE_CMPXX','gmpxx.h',
+    'C++ bindings for GNU Multiple Precision arithmetic library',
+    'http://www.hpl.hp.com/personal/Hans_Boehm/gc/'
+  ),
+  ('HAVE_LIBGC','gc.h',
+    'Boehm-Demers-Weiser Conservative Garbage Collector',
+    'http://www.hpl.hp.com/personal/Hans_Boehm/gc/'
+  ),
+  ("HAVE_WINDOWS_H",'windows.h',
+    "Microsoft Windows core CAPI",
+    "http://microsoft.com"
+  ]
+
+for m,h,d,u in components:
+  haveit = TARGET_CXX.check_header_exists(xqt,h)
+  if haveit:
+    print "SUPPORTING",d
+  else:
+    print "NOT SUPPORTING",d
+    print ".. To install see",u
+  exec(m + " = " + repr(haveit))
+
 print "ESTABLISHED DEFAULT CONFIGURATION"
 
 # attempt to clobber the configuration with old values
@@ -2055,6 +2079,17 @@ def pr(f,x):
 def p(f,s):
   try:
     x = s + "=" + repr(getattr(this,s))
+    pr(f,x)
+  except:
+    print "UNABLE TO FIND VALUE FOR ATTRIBUTE '"+s+"'"
+    f.write(s+"= None # EDIT ME!!")
+
+def pc(f,m,h,d,u):
+  try:
+    pr(f,'')
+    pr(f,"# "+d)
+    pr(f,"# "+u)
+    x = m + "=" + repr(getattr(this,m))
     pr(f,x)
   except:
     print "UNABLE TO FIND VALUE FOR ATTRIBUTE '"+s+"'"
@@ -2107,6 +2142,11 @@ try:
   p(f,"PYTHON_OS_PATHSEP")
   f.close()
 
+  print "Storing data about optional components"
+  f = copen("components")
+  for m,c,d,u in components:
+    pc (f,m,c,d,u)
+  f.close()
 
   print "Writing main config file"
   f = open("config"+os.sep+"config.py","w")
@@ -2156,6 +2196,7 @@ try:
   pr(f,"# HACK to get all the target variables into global namespace")
   pr(f,"execfile("+repr('config'+os.sep+'target_cxx.py')+")")
   pr(f,"execfile("+repr('config'+os.sep+'ocaml_config.py')+")")
+  pr(f,"execfile("+repr('config'+os.sep+'components_config.py')+")")
   f.close()
   if BOOTFILE:
     print "Copying bootfile :  "+ BOOTFILE
