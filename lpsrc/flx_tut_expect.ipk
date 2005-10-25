@@ -1359,6 +1359,36 @@ Eol:     "
 White:   "    "
 VBAR:    "|"
 White:   " "
+Id:      "SLOSHAMPER"
+White:   " "
+=>:      "=>"
+White:   " "
+Other:   ""\\&""
+Eol:     "
+"
+White:   "    "
+VBAR:    "|"
+White:   " "
+Id:      "SLOSHVBAR"
+White:   " "
+=>:      "=>"
+White:   " "
+Other:   ""\\|""
+Eol:     "
+"
+White:   "    "
+VBAR:    "|"
+White:   " "
+Id:      "SLOSHCIRCUMFLEX"
+White:   " "
+=>:      "=>"
+White:   " "
+Other:   ""\\|""
+Eol:     "
+"
+White:   "    "
+VBAR:    "|"
+White:   " "
 Id:      "LEFTSHIFTEQUAL"
 White:   " "
 =>:      "=>"
@@ -1903,6 +1933,9 @@ argc=1
 @head(2,"tut/examples/tut312.expect")
 @select(tangler("tut/examples/tut312.expect","data"))
 6
+@head(2,"tut/examples/tut313.expect")
+@select(tangler("tut/examples/tut313.expect","data"))
+3
 @head(2,"tut/examples/tut330.expect")
 @select(tangler("tut/examples/tut330.expect","data"))
 Hello

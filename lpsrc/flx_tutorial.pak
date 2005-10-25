@@ -3481,4 +3481,14 @@ match z with
 endmatch;
 endl;
 
+@head(2,"Mixed Mode Arithmetic")
+@select(tangler(tdir+'tut313.flx'))
+include "std";
+open MixedInt;
+
+var x = 1;
+var y = 2L;
+
+print$ x + y; endl;
+
 @doc()

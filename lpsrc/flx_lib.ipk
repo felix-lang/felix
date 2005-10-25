@@ -349,9 +349,16 @@ header cstdlib = "#include <cstdlib>";
   "utiny", "ushort", "uint", "ulong","uvlong",
   "uint8","uint16","uint32","uint64"
   ]
+@ints = uints + sints
+
 @floats = ["float", "double", "ldouble"]
 @complex = ["complex","dcomplex","lcomplex"]
 @imaginary= ["imaginary", "dimaginary", "limaginary"]
+@all = [
+  "byte", "size","address","caddress","vaddress","cvaddress",
+  "offset", 
+  ] + chars + sints + uints + floats + complex + imaginary
+
 
 typedef chars = typesetof (char, wchar, uchar);
 
@@ -376,6 +383,57 @@ typedef imaginaries = typesetof (imaginary, dimaginary, limaginary);
 
 typedef numbers = reals || imaginaries || complexes;
 
+// C integer promotion rule
+typedef fun integral_promotion: TYPE -> TYPE =
+  | tiny => int
+  | utiny => int
+  | short => int
+  | ushort => int
+  | int => int
+  | uint => uint
+  | long => long
+  | ulong => ulong
+  | vlong => vlong
+  | uvlong => uvlong
+;
+
+@fint2cint={
+  'int':'int',
+  'long':'long',
+  'vlong':'long long',
+  'uint':'unsigned int',
+  'ulong':'unsigned long',
+  'uvlong':'unsigned long long',
+  }
+
+@cint2fint = {}
+@for f in fint2cint.keys(): cint2fint[fint2cint[f]]=f
+
+// arithmetic conversion rule 
+typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
+  typematch integral_promotion l, integral_promotion r with
+@for f1 in fint2cint.keys():
+  for f2 in fint2cint.keys():
+    f3 = cint2fint[arith_conv[(fint2cint[f1],fint2cint[f2])]]
+    comment = ""
+    if f1 == f2:
+      if f2 <> f1: comment = "// ERROR"
+    if (f1 == 'uvlong' or f2 == 'uvlong') and f3 <> 'uvlong':
+      comment = "// ERROR, uvlong expected"
+    elif f3 <> f1 and f3 <> f2:
+      comment = "// SPECIAL PROMOTION"
+    elif f1 == 'uint' and f2=='long' or f1=='long' and f2=='uint':
+      comment = '// Representation Dependent (long or ulong)'
+    if f1 == 'uvlong' or f2 == 'uvlong' or f3 == 'int':
+      pass
+    else:
+      tangle('  | '+f1+','+f2+' => '+f3+' '+comment)
+@#
+  | uvlong,_ => uvlong
+  | _,uvlong => uvlong
+  | _,_ => int
+  endmatch
+;
 
 @absmap = { 
   "tiny":"abs",
@@ -384,13 +442,6 @@ typedef numbers = reals || imaginaries || complexes;
   "long":"labs",
   "vlong":"llabs"
   }
-
-@all = [
-  "byte", "size","address","caddress","vaddress","cvaddress",
-  "offset", 
-  ] + chars + sints + uints + floats + complex + imaginary
-
-@ints = uints + sints
 
 @def gen_type(t):
   d = rmap.get(t,None)
@@ -820,6 +871,30 @@ module Bool
 }
 
 @#------------- INTEGER MODULES -------------------
+
+publish "Mixed Mode arithmentic"
+module MixedInt 
+{
+  fun add[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1+$2";
+  fun sub[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1-$2";
+  fun mul[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1*$2";
+  fun div[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1/$2";
+  fun mod[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1%$2";
+
+  fun band[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1&$2";
+  fun bor[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1|$2";
+  fun bxor[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1^$2";
+  fun shl[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1<<$2";
+  fun shr[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1>>$2";
+
+  fun lt[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1<$2";
+  fun le[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1<=$2";
+  fun eq[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1==$2";
+  fun ne[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1!=$2";
+  fun gt[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1>$2";
+  fun ge[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1>=$2";
+}
+
 type string = "std::string";
 @for t in ints:
   tangle("module " + string.capitalize(t))

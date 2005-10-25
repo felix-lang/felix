@@ -10,11 +10,18 @@ REQUIRES: -lgmpxx -lgmp
 
 @h = tangler('lib/flx_gmp.flx','data')
 @select(h)
+// THIS WRAPPER IS FFAU .. it is NOT LGPL licenced
+// This is because the wrapper was hand written from
+// scratch .. it was NOT derived from any LGPL headers
+// Code LINKED against libgmp, however, may be governed
+// by the LGPL licence, since the object files ARE
+// derived from gmp.h
+
 header "#include <cstdio>";
 header "#include <gmpxx.h>";
 
 @typs = ['mpz', 'mpq', 'mpf']
-@iops = [('add','+'),('sub','-',),('mul','*')]
+@iops = [('add','+'),('sub','-',),('mul','*'),('div','/')]
 module Gmp
 {
   type mpz='mpz_class';

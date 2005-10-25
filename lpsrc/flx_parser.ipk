@@ -2142,6 +2142,23 @@ case_literal:
         typecode_of_expr $4
       )
     } 
+  | bor { $1 }
+
+bor:
+  | bor SLOSHVBAR bxor { apl2 $2 "bor" [$1;$3] }
+  | bxor { $1 }
+
+bxor:
+  | bxor SLOSHCIRCUMFLEX band { apl2 $2 "bxor" [$1;$3] }
+  | band { $1 }
+
+band:
+  | band SLOSHAMPER shift { apl2 $2 "band" [$1;$3] }
+  | shift { $1 }
+
+shift:
+  | shift LEFTSHIFT sum { apl2 $2 "shl" [$1;$3] }
+  | shift RIGHTSHIFT sum { apl2 $2 "shr" [$1;$3] }
   | sum { $1 }
 
 /* sum formation is 'psuedo-associative' */

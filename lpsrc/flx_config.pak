@@ -475,6 +475,44 @@ class compiler_base:
       else: print
       return None,None
 
+  def find_type(self,shell,get_stdout,e,header=None):
+    fn = "tmp"+os.sep+"tchk.cxx"
+    f = open(fn,"w")
+    f.write("#include <stddef.h>\n")
+    f.write("#include <stdlib.h>\n")
+    f.write("#include <stdio.h>\n")
+    if header:
+      f.write("#include <"+header+">\n")
+    f.write('char *f(char){return "char";}\n')
+    f.write('char *f(signed char){return "signed char";}\n')
+    f.write('char *f(unsigned char){return "unsigned char";}\n')
+    f.write('char *f(short){return "short";}\n')
+    f.write('char *f(unsigned short){return "unsigned short";}\n')
+    f.write('char *f(int){return "int";}\n')
+    f.write('char *f(unsigned int){return "unsigned int";}\n')
+    f.write('char *f(long){return "long";}\n')
+    f.write('char *f(unsigned long){return "unsigned long";}\n')
+    f.write('char *f(long long){return "long long";}\n')
+    f.write('char *f(unsigned long long){return "unsigned long long";}\n')
+    f.write('int main(){\n');
+    f.write('printf("%s\\n",f('+e+'));\n')
+    f.write("  return 0;\n")
+    f.write("}\n")
+    f.close()
+    try:
+      self.compile_static_main(shell,"tmp","tchk","tmp")
+      self.link_static_program(shell,["tmp"+os.sep+"tchk_static"],"tmp"+os.sep+"tchk"+self.options.EXT_EXE,[],[])
+      result,lines= get_stdout("tmp"+os.sep+"tchk"+self.options.EXT_EXE)
+      if not result: # got a result
+        alias = lines[0][:-1]
+        print e, "has type",alias
+        return alias
+      else:
+        raise Error
+    except:
+      print "UNKNOWN COMPILE ERROR"
+      return None
+
   def get_c_type_data(self,shell,get_stdout):
     opt = self.options
     # find if we have stdint.h
@@ -523,8 +561,32 @@ class compiler_base:
         opt.__dict__['SIZEOF_'+m]=size
         opt.__dict__['ALIGNOF_'+m]=align
 
-    
-     
+    for t in ['ptrdiff_t','size_t']:
+      alias=self.find_type(shell,get_stdout,"("+t+")0",None)
+      if alias:
+        opt.__dict__['ALIAS_'+t]=alias
+
+    for t in [
+      'int8_t','uint8_t',
+      'int16_t','uint16_t',
+      'int32_t','uint32_t',
+      'int64_t','uint64_t']:
+      alias=self.find_type(shell,get_stdout,"("+t+")0",'stdint.h')
+      if alias:
+        opt.__dict__['ALIAS_'+t]=alias
+
+    native_types = [
+      'int','long','long long',
+      'unsigned int', 
+      'unsigned long','unsigned long long'
+      ]
+      
+    opt.__dict__["arith_conv"] = {}
+    for t1 in native_types:
+      for t2 in native_types:
+        alias=self.find_type(shell,get_stdout,"("+t1+")0+("+t2+")0",'stdint.h')
+        opt.arith_conv[(t1,t2)]=alias
+
 @h = tangler("flxbuild/gxx_class.py")
 @select (h)
 import string
@@ -2034,6 +2096,7 @@ components = [
   ("HAVE_WINDOWS_H",'windows.h',
     "Microsoft Windows core CAPI",
     "http://microsoft.com"
+  )
   ]
 
 for m,h,d,u in components:
@@ -2380,6 +2443,9 @@ flx_2_char_syms = [
 
     ("AMPERAMPER","&&"),
     ("VBARVBAR","||"),
+    ("SLOSHAMPER","\\\\&"),
+    ("SLOSHVBAR","\\\\|"),
+    ("SLOSHCIRCUMFLEX","\\\\|"),
   ]
 
 flx_3_char_syms = [
