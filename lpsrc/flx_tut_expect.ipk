@@ -1912,7 +1912,10 @@ Saying Bye for now
 @head(2,"tut/examples/tut301.expect")
 @select(tangler("tut/examples/tut301.expect","data"))
 argc=1
-@tangle("0->./tut/examples/tut301"+EXT_SHLIB)
+@if WIN32:
+   tangle("0->.\\tut\\examples\\tut301"+EXT_SHLIB)
+ else:
+   tangle("0->./tut/examples/tut301"+EXT_SHLIB)
 @head(2,"tut/examples/tut302.expect")
 @select(tangler("tut/examples/tut302.expect","data"))
 1

@@ -158,7 +158,7 @@ val eval_module_expr:
   module_rep_t
 
 val resolve_overload:
-  sym_state_t ->
+  sym_state_t -> 
   range_srcref ->
   entry_kind_t list ->  
   id_t -> 
@@ -315,7 +315,8 @@ type recstop = {
   type_alias_fixlist: (int * int) list;
   as_fixlist: (string * int) list;
   expr_fixlist: (expr_t * int) list;
-  depth:int
+  depth:int;
+  open_excludes : qualified_name_t list
 }
 
 let rsground= { 
@@ -323,7 +324,8 @@ let rsground= {
   type_alias_fixlist = [];
   as_fixlist = [];
   expr_fixlist = [];
-  depth = 0
+  depth = 0;
+  open_excludes = []
 }
 
 (* this ugly thing merges a list of function entries
@@ -331,7 +333,7 @@ some of which might be inherits, into a list of
 actual functions
 *)
 
-let rec trclose syms sr fs =
+let rec trclose syms rs sr fs =
   let inset = ref IntSet.empty in
   let outset = ref IntSet.empty in
   let exclude = ref IntSet.empty in
@@ -353,7 +355,7 @@ let rec trclose syms sr fs =
         match Hashtbl.find syms.dfns x with
         | {parent=parent; sr=sr2; symdef=`SYMDEF_inherit_fun qn} ->
           let env = build_env syms parent in
-          begin match fst (lookup_qn_in_env2 syms env qn) with
+          begin match fst (lookup_qn_in_env2' syms env rs qn) with
           | NonFunctionEntry _ -> clierr2 sr sr2 "Inherit fun doesn't denote function set"
           | FunctionEntry fs' -> append fs'; trclosem ()
           end
@@ -367,21 +369,33 @@ let rec trclose syms sr fs =
   IntSet.iter (fun i -> output := i :: !output) !outset;
   !output
 
-and resolve_inherits syms sr x =
+and resolve_inherits syms rs sr x =
   match x with
   | NonFunctionEntry z -> 
     begin match Hashtbl.find syms.dfns z with
     | {parent=parent; symdef=`SYMDEF_inherit qn} ->
-      let env = build_env syms parent in
-      fst (lookup_qn_in_env2 syms env qn)
+      (*
+      print_endline ("Found an inherit symbol qn=" ^ string_of_qualified_name qn);
+      *)
+      let env = inner_build_env syms rs parent in
+      (*
+      print_endline "Environment built for lookup ..";
+      *)
+      fst (lookup_qn_in_env2' syms env rs qn)
     | {sr=sr2; symdef=`SYMDEF_inherit_fun qn} ->
       clierr2 sr sr2
       "NonFunction inherit denotes function"
     | _ -> x
     end
-  | FunctionEntry fs -> FunctionEntry (trclose syms sr fs)
+  | FunctionEntry fs -> FunctionEntry (trclose syms rs sr fs)
 
 and lookup_name_in_env syms (env:env_t) sr name : entry_set_t =
+ inner_lookup_name_in_env syms (env:env_t) rsground sr name
+
+and inner_lookup_name_in_env syms (env:env_t) rs sr name : entry_set_t =
+  (*
+  print_endline ("[lookup_name_in_env] " ^ name);
+  *)
   let rec aux env = 
     match env with 
     | [] -> None
@@ -391,7 +405,11 @@ and lookup_name_in_env syms (env:env_t) sr name : entry_set_t =
       | None -> aux tail
   in 
     match aux env with
-    | Some x -> resolve_inherits syms sr x
+    | Some x -> 
+      (*
+      print_endline "[lookup_name_in_env] Got result, resolve inherits";
+      *)
+      resolve_inherits syms rs sr x
     | None ->
       clierr sr 
       (
@@ -405,13 +423,16 @@ and lookup_name_in_env syms (env:env_t) sr name : entry_set_t =
    environment and returns an entry_set_t:
    can be either non-function or function set
 *)
-
-and lookup_qn_in_env2
+and lookup_qn_in_env2'
   syms
   (env:env_t) 
+  (rs:recstop)
   (qn: qualified_name_t)
   : entry_set_t * typecode_t list
 =
+  (*
+  print_endline ("[lookup_qn_in_env2] qn=" ^ string_of_qualified_name qn);
+  *)
   match qn with
   | `AST_void sr -> clierr sr "[lookup_qn_in_env2] qualified name is void"
   | `AST_case_tag (sr,_) -> clierr sr "[lookup_qn_in_env2] Can't lookup a case tag"
@@ -421,10 +442,13 @@ and lookup_qn_in_env2
     clierr sr "[lookup_qn_in_env2] Can't lookup a synthetic name"
 
   | `AST_name (sr,name,ts) -> 
-    lookup_name_in_env syms env sr name, ts
+    (*
+    print_endline ("Found simple name " ^ name);
+    *)
+    inner_lookup_name_in_env syms env rs sr name, ts
 
   | `AST_the (sr,qn) -> 
-    let es,ts = lookup_qn_in_env2 syms env qn in
+    let es,ts = lookup_qn_in_env2' syms env rs qn in
     begin match es with
     | NonFunctionEntry  _
     | FunctionEntry [_] -> es,ts
@@ -436,11 +460,11 @@ and lookup_qn_in_env2
     match eval_module_expr syms env me with 
     | Simple_module (impl,ts', htab,dirs) ->
       let env' = mk_bare_env syms impl in
-      let tables = get_pub_tables syms env' dirs in
+      let tables = get_pub_tables syms env' rs dirs in
       let result = lookup_name_in_table_dirs htab tables sr name in
       match result with
       | Some entry ->
-        resolve_inherits syms sr entry,
+        resolve_inherits syms rs sr entry,
         ts' @ ts
       | None ->
         clierr sr
@@ -452,7 +476,7 @@ and lookup_qn_in_env2
       begin 
       try 
         let entry = Hashtbl.find htab name in
-        resolve_inherits syms sr entry,
+        resolve_inherits syms rs sr entry,
         ts' @ ts
       with Not_found -> 
         clierr sr
@@ -462,8 +486,18 @@ and lookup_qn_in_env2
       end
       *)
 
+and lookup_qn_in_env2
+  syms
+  (env:env_t) 
+  (qn: qualified_name_t)
+  : entry_set_t * typecode_t list
+=
+  lookup_qn_in_env2' syms env rsground qn
+
+
+(* this one isn't recursive i hope .. *)
 and lookup_code_in_env syms env sr qn =
-  match lookup_qn_in_env2 syms env qn with
+  match lookup_qn_in_env2' syms env rsground qn with
     | NonFunctionEntry x,ts -> 
       clierr sr 
       (
@@ -480,7 +514,15 @@ and lookup_qn_in_env
   (qn: qualified_name_t)
   : entry_kind_t  * typecode_t list
 =
-  match lookup_qn_in_env2 syms env qn with
+  lookup_qn_in_env' syms env rsground qn
+
+and lookup_qn_in_env'
+  syms
+  (env:env_t) rs
+  (qn: qualified_name_t)
+  : entry_kind_t  * typecode_t list
+=
+  match lookup_qn_in_env2' syms env rs qn with
     | NonFunctionEntry x,ts -> x,ts
     | FunctionEntry _,_ ->
       let sr = src_of_expr (qn:>expr_t) in
@@ -497,7 +539,7 @@ and lookup_uniq_in_env
   (qn: qualified_name_t)
   : entry_kind_t  * typecode_t list
 =
-  match lookup_qn_in_env2 syms env qn with
+  match lookup_qn_in_env2' syms env rsground qn with
     | NonFunctionEntry x,ts -> x,ts
     | FunctionEntry [x],ts -> x,ts
     | _ ->
@@ -515,7 +557,7 @@ and lookup_function_in_env
   (qn: qualified_name_t)
   : entry_kind_t  * typecode_t list
 =
-  match lookup_qn_in_env2 syms env qn with
+  match lookup_qn_in_env2' syms env rsground qn with
     | FunctionEntry [x],ts -> x,ts
     | _ ->
       let sr = src_of_expr (qn:>expr_t) in
@@ -1212,7 +1254,7 @@ and bind_type'
        the previous case .. so we can drop them .. ?
        *)
 
-       let result = lookup_qn_with_sig' syms sr sr env 
+       let result = lookup_qn_with_sig' syms sr sr env
          {rs with depth=rs.depth+1 } qn sign 
        in
        (* this is a hack, since result will be a closure expression,
@@ -1280,7 +1322,7 @@ and bind_type'
     *)
     (* WARNING: we're skipping the recursion stoppers here !! *)
     let t = 
-      match lookup_qn_in_env2 syms env qn with
+      match lookup_qn_in_env2' syms env rs qn with
       | FunctionEntry ii,[] -> 
         cal_glr_attr_type syms sr ii
 
@@ -1433,7 +1475,7 @@ and bind_type_index syms (rs:recstop)
       let params = make_params syms sr index ts in
       let env:env_t = build_env syms (Some index) in
       let t = 
-        bind_type' syms env 
+        bind_type' syms env
         { rs with type_alias_fixlist = (index,rs.depth):: rs.type_alias_fixlist }
         sr t params 
       in
@@ -1585,7 +1627,7 @@ and cal_ret_type syms (rs:recstop) index args =
           *)
             snd 
             (
-              bind_expression' syms env 
+              bind_expression' syms env
               { rs with idx_fixlist = index::rs.idx_fixlist }
               e
             ) 
@@ -1942,7 +1984,7 @@ and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   | _ ->
     `BEXPR_apply ((be1,lower t1), (be2,lower t2)),rest
 
-and koenig_lookup syms sra id' name_map fn t2 ts =
+and koenig_lookup syms rs sra id' name_map fn t2 ts =
   (*
   print_endline ("Applying Koenig lookup for " ^ fn);
   *)
@@ -1964,7 +2006,7 @@ and koenig_lookup syms sra id' name_map fn t2 ts =
     (*
     print_endline ("Got candidates: " ^ string_of_entry_set entries);
     *)
-    begin match resolve_overload syms sra fs fn t2 ts with
+    begin match resolve_overload' syms rs sra fs fn t2 ts with
     | Some (index'',t,mgu,ts) ->
       (* print_endline "Overload resolution OK"; *)
       `BEXPR_closure (index'',ts),
@@ -2176,8 +2218,8 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     | `SYMDEF_match_check _ 
       ->
       begin match
-        resolve_overload
-        syms sra [index] name sign []
+        resolve_overload'
+        syms rs sra [index] name sign []
       with
       | Some (index,t,mgu,ts) ->
         `BEXPR_closure (index,ts),
@@ -2204,7 +2246,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     print_endline ("Module " ^ si impl ^ "[" ^ catmap "," (sbt syms.dfns) ts' ^"]");
     *)
     let env' = mk_bare_env syms impl in
-    let tables = get_pub_tables syms env' dirs in
+    let tables = get_pub_tables syms env' rs dirs in
     let result = lookup_name_in_table_dirs htab tables sr name in
     begin match result with
     | None -> 
@@ -2218,8 +2260,8 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
 
     | FunctionEntry fs ->
       match
-        resolve_overload
-        syms sra fs name sign ts
+        resolve_overload'
+        syms rs sra fs name sign ts
       with
       | Some (index,t,mgu,ts) ->
         (*
@@ -2245,7 +2287,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
 and lookup_name_with_sig 
   syms 
   sra srn 
-  env 
+  env
   (rs:recstop)
   (name : string)
   (ts : btypecode_t list)
@@ -2437,8 +2479,8 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         print_endline "lookup_name_in_table_dirs_with_sig finds struct constructor";
         *)
         let ro = 
-          resolve_overload 
-          syms sra [index] name t2 ts
+          resolve_overload'
+          syms rs sra [index] name t2 ts
         in
           begin match ro with 
           | Some (index,t,mgu,ts) ->
@@ -2481,8 +2523,8 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
 
   | FunctionEntry fs ->
     let ro = 
-      resolve_overload 
-      syms sra fs name t2 ts
+      resolve_overload'
+      syms rs sra fs name t2 ts
     in
     match ro with 
       | Some (index,t,mgu,ts) ->
@@ -2518,8 +2560,8 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
           *)
           let fs:entry_kind_t list = merge_functions opens name in
           let ro = 
-            resolve_overload
-            syms sra fs name t2 ts
+            resolve_overload'
+            syms rs sra fs name t2 ts
           in
           (*
           print_endline "OVERLOAD RESOLVED .. ";
@@ -2840,7 +2882,7 @@ and bind_expression' syms env (rs:recstop) e
 
   | `AST_name (sr,name,ts) ->
     let ts = map (bt sr) ts in
-    begin match lookup_name_in_env syms env sr name with
+    begin match inner_lookup_name_in_env syms env rs sr name with
     | NonFunctionEntry (index) -> 
       let ts = adjust_ts syms sr index ts in
       `BEXPR_name (index,ts),
@@ -2879,7 +2921,7 @@ and bind_expression' syms env (rs:recstop) e
     print_endline ("AST_name " ^ name ^ "[" ^ catmap "," string_of_typecode ts^ "]");
     *)
     let ts = map (bt sr) ts in
-    begin match lookup_name_in_env syms env sr name with
+    begin match inner_lookup_name_in_env syms env rs sr name with
     | NonFunctionEntry (index) -> 
       let ts = adjust_ts syms sr index ts in
       `BEXPR_name (index,ts),
@@ -2915,7 +2957,7 @@ and bind_expression' syms env (rs:recstop) e
       with 
       | (Simple_module (impl, ts, htab,dirs)) ->
         let env' = mk_bare_env syms impl in
-        let tables = get_pub_tables syms env' dirs in
+        let tables = get_pub_tables syms env' rs dirs in
         let result = lookup_name_in_table_dirs htab tables sr name in
         result
 
@@ -3050,7 +3092,7 @@ and bind_expression' syms env (rs:recstop) e
           ->
           match entry' with
           | `SYMDEF_module ->
-            koenig_lookup syms sra id' name_map fn t2 ts
+            koenig_lookup syms rs sra id' name_map fn t2 ts
 
           | _ -> clierr sra ("Koenig lookup: parent for method apply not module")
         end
@@ -3249,7 +3291,17 @@ and bind_expression' syms env (rs:recstop) e
     )
 
 and resolve_overload
-  syms 
+  syms
+  sr
+  (fs : entry_kind_t list)
+  (name: string)
+  (suf : btypecode_t)
+  (ts:btypecode_t list)
+=
+  resolve_overload' syms rsground sr fs name suf ts
+
+and resolve_overload'
+  syms (rs:recstop)
   sr
   (fs : entry_kind_t list)
   (name: string)
@@ -3258,10 +3310,10 @@ and resolve_overload
 : (entry_kind_t * btypecode_t * (int * btypecode_t) list * btypecode_t list) option =
 
   let bt sr i t =
-    let env = build_env syms (Some i) in
+    let env = inner_build_env syms rs (Some i) in
     bind_type syms env sr t
   in
-    let fs = trclose syms sr fs in
+    let fs = trclose syms rs sr fs in
     overload syms bt sr fs name suf ts
 
 (* an environment is a list of hastables, mapping
@@ -3276,7 +3328,7 @@ and resolve_overload
    'top'->NonFunctionEntry 0. 
 *)
 
-and split_dirs dirs :
+and split_dirs open_excludes dirs :
     qualified_name_t list *
     qualified_name_t list *
     (string * qualified_name_t) list
@@ -3286,7 +3338,7 @@ and split_dirs dirs :
      (
        map
        (fun x -> match x with 
-         | DIR_open qn -> [qn]
+         | DIR_open qn -> if mem qn open_excludes then [] else [qn]
          | DIR_inject_module qn -> []
          | DIR_use (n,qn) -> []
        )
@@ -3316,7 +3368,7 @@ and split_dirs dirs :
      )
   in opens, includes, uses
 
-and  get_includes' syms includes index =
+and get_includes' syms includes index =
   if not (mem index !includes) then
   begin
     includes := index :: !includes;
@@ -3339,12 +3391,18 @@ and  get_includes' syms includes index =
 
 and bind_dir 
   syms 
-  (env:env_t)
+  (env:env_t) rs
   qn 
 : int =
   let sr = ("dummy",0,0,0,0) in
+  (*
+  print_endline ("Try to bind dir " ^ string_of_qualified_name qn);
+  *)
   let result = 
-    try lookup_qn_in_env syms env qn 
+    try 
+      lookup_qn_in_env' syms env 
+      {rs with open_excludes = qn::rs.open_excludes } 
+      qn 
     with Not_found -> failwith "QN NOT FOUND"
   in
   match result with
@@ -3359,9 +3417,9 @@ and pub_table_dir
   | {sr=sr} -> clierr sr "[map_dir] Expected module"
 
 
-and get_pub_tables syms env dirs =
-  let _,includes,_ = split_dirs dirs in
-  let opens = uniq_list (map (bind_dir syms env) includes) in
+and get_pub_tables syms env rs dirs =
+  let _,includes,_ = split_dirs rs.open_excludes dirs in
+  let opens = uniq_list (map (bind_dir syms env rs) includes) in
   let includes = ref [] in
   iter (get_includes' syms includes) opens;
   let includes = uniq_list !includes in
@@ -3375,11 +3433,14 @@ and mk_bare_env syms index =
   | None -> [] 
   | Some index -> mk_bare_env syms index
 
-and merge_opens syms env (opens,includes,uses) =
+and merge_opens syms env rs (opens,includes,uses) =
+  (*
+  print_endline ("MERGE OPENS ");
+  *)
   let use_map = Hashtbl.create 97 in
   iter
   (fun (n,qn) ->
-    let entry,_ = lookup_qn_in_env2 syms env qn in
+    let entry,_ = lookup_qn_in_env2' syms env rs qn in
     match entry with
     
     | NonFunctionEntry _ ->
@@ -3400,8 +3461,14 @@ and merge_opens syms env (opens,includes,uses) =
   )
   uses 
   ;
-  let opens = uniq_list (map (bind_dir syms env) opens) in
-  let opens = uniq_cat opens (map (bind_dir syms env) includes) in
+  (*
+  print_endline "Binding opens ..";
+  *)
+  let opens = uniq_list (map (bind_dir syms env rs) opens) in
+  (*
+  print_endline "Binding complete";
+  *)
+  let opens = uniq_cat opens (map (bind_dir syms env rs) includes) in
 
   let includes = ref [] in
   iter (get_includes' syms includes) opens;
@@ -3409,16 +3476,16 @@ and merge_opens syms env (opens,includes,uses) =
   let tables = map (pub_table_dir syms) includes in
   use_map::tables 
 
-and build_env'' syms index : env_t =
+and build_env'' syms rs index : env_t =
   match Hashtbl.find syms.dfns index with
   {id=id; parent=parent;privmap=table;dirs=dirs} ->
-  let opens,includes,uses = split_dirs dirs in
-  let env = build_env syms parent in
+  let opens,includes,uses = split_dirs rs.open_excludes dirs in
+  let env = inner_build_env syms rs parent in
   let env' = (index,id,table,[])::env in
-  let second = merge_opens syms env' (opens,includes,uses) in
+  let second = merge_opens syms env' rs (opens,includes,uses) in
   (index,id,table,second)::env
   
-and build_env syms parent : env_t =
+and inner_build_env syms rs parent : env_t =
   match parent with
   | None -> []
   | Some i ->
@@ -3426,9 +3493,13 @@ and build_env syms parent : env_t =
       Hashtbl.find syms.env_cache i
     with 
       Not_found ->
-       let env = build_env'' syms i in
+       let env = build_env'' syms rs i in
        Hashtbl.add syms.env_cache i env;
        env
+
+and build_env syms parent : env_t =
+  inner_build_env syms rsground parent
+ 
 
 (*===========================================================*)
 (* MODULE STUFF *)
@@ -3511,9 +3582,12 @@ and check_module syms name sr entries ts =
 *)
 
 and eval_module_expr syms env e : module_rep_t = 
+  (*
+  print_endline ("Eval module expr " ^ string_of_expr e);
+  *)
   match e with
   | `AST_name (sr,name,ts) ->
-    let entries = lookup_name_in_env syms env sr name in
+    let entries = inner_lookup_name_in_env syms env rsground sr name in
     check_module syms name sr entries ts
 
   | `AST_lookup (sr,(e,name,ts)) ->
@@ -3521,7 +3595,7 @@ and eval_module_expr syms env e : module_rep_t =
     begin match result with
       | Simple_module (index,ts',htab,dirs) ->
       let env' = mk_bare_env syms index in
-      let tables = get_pub_tables syms env' dirs in
+      let tables = get_pub_tables syms env' rsground dirs in
       let result = lookup_name_in_table_dirs htab tables sr name in
         begin match result with
         | Some x -> 

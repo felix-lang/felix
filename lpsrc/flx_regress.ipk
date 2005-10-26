@@ -26,7 +26,7 @@ get smaller with each compiler improvement.
 
 @head(2,'Good tests')
 @select(tangler('test/rt01.flx'))
-#include <std.flx>
+include "std";
 open Tiny;
 open Short;
 open Long;
