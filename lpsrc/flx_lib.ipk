@@ -341,24 +341,101 @@ header cstdlib = "#include <cstdlib>";
 @fast_sints = [
   "tiny", "short", "int", "long", "vlong"
   ]
+@fast_uints = [
+  "utiny", "ushort", "uint", "ulong", "uvlong"
+  ]
 @exact_sints = [
   "int8","int16","int32","int64"
   ]
-@sints = fast_sints + exact_sints
-@uints = [
-  "utiny", "ushort", "uint", "ulong","uvlong",
+@exact_uints = [
   "uint8","uint16","uint32","uint64"
   ]
+@sints = fast_sints + exact_sints
+@uints = fast_uints + exact_uints
+@fast_ints = fast_sints + fast_uints
+@exact_ints = exact_sints + exact_uints
 @ints = uints + sints
 
 @floats = ["float", "double", "ldouble"]
+
 @complex = ["complex","dcomplex","lcomplex"]
 @imaginary= ["imaginary", "dimaginary", "limaginary"]
 @all = [
-  "byte", "size","address","caddress","vaddress","cvaddress",
+  "byte", "address","caddress","vaddress","cvaddress",
   "offset", 
-  ] + chars + sints + uints + floats + complex + imaginary
+  ] + chars + fast_ints + floats + complex + imaginary
 
+@def gen_type(t):
+  d = rmap.get(t,None)
+  if d:
+    tangle('pod type '+t+' = "'+tmap[t]+'" requires '+d+';')
+  else:
+    tangle('pod type '+t+' = "'+tmap[t]+'";')
+
+@for t in all:
+  gen_type(t)
+
+@fint2cint={
+  'tiny':'signed char',
+  'short':'short',
+  'int':'int',
+  'long':'long',
+  'vlong':'long long',
+  'utiny':'unsigned char',
+  'ushort':'unsigned short',
+  'uint':'unsigned int',
+  'ulong':'unsigned long',
+  'uvlong':'unsigned long long',
+  }
+
+@cint2fint = {}
+@for f in fint2cint.keys(): cint2fint[fint2cint[f]]=f
+
+@def alias_sint(t):
+  if t == 'int8': size = 1
+  elif t == 'int16': size = 2
+  elif t == 'int32': size = 4
+  elif t == 'int64': size = 8
+  if SIZEOF_CHAR == size: return 'tiny'
+  if SIZEOF_SHORT == size: return 'short'
+  if SIZEOF_INT == size: return 'int'
+  if SIZEOF_LONG == size: return 'long'
+  if SIZEOF_LONGLONG == size: return 'vlong'
+
+@def alias_uint(t):
+  if t == 'uint8': size = 1
+  elif t == 'uint16': size = 2
+  elif t == 'uint32': size = 4
+  elif t == 'uint64': size = 8
+  if SIZEOF_CHAR == size: return 'utiny'
+  if SIZEOF_SHORT == size: return 'ushort'
+  if SIZEOF_INT == size: return 'uint'
+  if SIZEOF_LONG == size: return 'ulong'
+  if SIZEOF_LONGLONG == size: return 'uvlong'
+
+@# mandatory in C
+@for t in ['ptrdiff','size']:
+  equiv = cint2fint[eval('ALIAS_'+t+'_t')]
+  tangle('typedef ' + t + ' = ' + equiv + ';')
+
+@# optional in C
+@for t in exact_ints:
+  try:
+    equiv = cint2fint[eval('ALIAS_'+t+'_t')]
+    tangle('typedef ' + t + ' = ' + equiv + ';')
+  except:
+    try:
+      if t[:3] == 'int': 
+        equiv = alias_sint(t)
+        tangle('typedef ' + t + ' = ' + equiv + ';')
+        tangle('rename ' + string.capitalize(t) + ' = ' + string.capitalize(equiv) + ';')
+      elif t[:4] == 'uint': 
+        equiv = alias_uint(t)
+        tangle('typedef ' + t + ' = ' + equiv + ';')
+        tangle('rename ' + string.capitalize(t) + ' = ' + string.capitalize(equiv) + ';')
+    except:
+      tangle("// FORCED TO USE EMULATION OF UNAVAILABLE SIZE")
+      tangle('type ' + t + ' = "flx_emul_'+t + '";')
 
 typedef chars = typesetof (char, wchar, uchar);
 
@@ -397,37 +474,27 @@ typedef fun integral_promotion: TYPE -> TYPE =
   | uvlong => uvlong
 ;
 
-@fint2cint={
-  'int':'int',
-  'long':'long',
-  'vlong':'long long',
-  'uint':'unsigned int',
-  'ulong':'unsigned long',
-  'uvlong':'unsigned long long',
-  }
-
-@cint2fint = {}
-@for f in fint2cint.keys(): cint2fint[fint2cint[f]]=f
-
 // arithmetic conversion rule 
 typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
   typematch integral_promotion l, integral_promotion r with
 @for f1 in fint2cint.keys():
-  for f2 in fint2cint.keys():
-    f3 = cint2fint[arith_conv[(fint2cint[f1],fint2cint[f2])]]
-    comment = ""
-    if f1 == f2:
-      if f2 <> f1: comment = "// ERROR"
-    if (f1 == 'uvlong' or f2 == 'uvlong') and f3 <> 'uvlong':
-      comment = "// ERROR, uvlong expected"
-    elif f3 <> f1 and f3 <> f2:
-      comment = "// SPECIAL PROMOTION"
-    elif f1 == 'uint' and f2=='long' or f1=='long' and f2=='uint':
-      comment = '// Representation Dependent (long or ulong)'
-    if f1 == 'uvlong' or f2 == 'uvlong' or f3 == 'int':
-      pass
-    else:
-      tangle('  | '+f1+','+f2+' => '+f3+' '+comment)
+  if f1 not in ['tiny','short','utiny','ushort']:
+    for f2 in fint2cint.keys():
+      if f2 not in ['tiny','short','utiny','ushort']:
+        f3 = cint2fint[arith_conv[(fint2cint[f1],fint2cint[f2])]]
+        comment = ""
+        if f1 == f2:
+          if f2 <> f1: comment = "// ERROR"
+        if (f1 == 'uvlong' or f2 == 'uvlong') and f3 <> 'uvlong':
+          comment = "// ERROR, uvlong expected"
+        elif f3 <> f1 and f3 <> f2:
+          comment = "// SPECIAL PROMOTION"
+        elif f1 == 'uint' and f2=='long' or f1=='long' and f2=='uint':
+          comment = '// Representation Dependent (long or ulong)'
+        if f1 == 'uvlong' or f2 == 'uvlong' or f3 == 'int':
+          pass
+        else:
+          tangle('  | '+f1+','+f2+' => '+f3+' '+comment)
 @#
   | uvlong,_ => uvlong
   | _,uvlong => uvlong
@@ -443,13 +510,6 @@ typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
   "vlong":"llabs"
   }
 
-@def gen_type(t):
-  d = rmap.get(t,None)
-  if d:
-    tangle('pod type '+t+' = "'+tmap[t]+'" requires '+d+';')
-  else:
-    tangle('pod type '+t+' = "'+tmap[t]+'";')
-
 body swapper[t] = """
   void swapper(?1 &a, ?1 &b){
     ?1 tmp = a; a = b; b = tmp;
@@ -459,9 +519,6 @@ body swapper[t] = """
 proc _swap[t]: lvalue[t] * lvalue[t] = 
   "swapper($1,$2);"
   requires swapper[t];
-
-@for t in all:
-  gen_type(t)
 
 typedef charp = C_hack::ptr[char];
 typedef charcp = C_hack::cptr[char];
@@ -496,9 +553,9 @@ proc store[t,n]: &array[t,n] * int * t = "((?1*)($1.data))[$2]=$3;";
 
 @def gen_uint(t):
   for opname,op in [
-    ("caret","^"),
-    ("vbar","|"),
-    ("amper","&"),
+    ("bxor","^"),
+    ("bor","|"),
+    ("band","&"),
   ]:
     tangle('  fun '+opname+': '+t+' * '+t+' -> '+t+' = "$1'+op+'$2";')
   tangle('  fun bnot: '+t+' -> '+t+' = "~$1";')
@@ -506,9 +563,9 @@ proc store[t,n]: &array[t,n] * int * t = "((?1*)($1.data))[$2]=$3;";
 
 @def gen_uint_assign(t):
   for opname,op in [
-    ("careteq","^="),
-    ("vbareq","|="),
-    ("ampereq","&=")
+    ("bxoreq","^="),
+    ("boreq","|="),
+    ("bandeq","&=")
   ]:
     tangle('  proc '+opname+': lvalue['+t+'] * '+t+' = "$1'+op+'$2;";')
 
@@ -896,7 +953,7 @@ module MixedInt
 }
 
 type string = "std::string";
-@for t in ints:
+@for t in fast_ints:
   tangle("module " + string.capitalize(t))
   tangle("{")
   tangle('  gen_integral('+t+');')
@@ -953,7 +1010,6 @@ module Wchar
 
 module Unicode
 {
-  open Uint32;
   fun ord: uchar -> uint32 ="$1";
   fun uchr: uint32 -> uchar = "$1";
   //this needs to be fixed!
@@ -1064,8 +1120,7 @@ All the arithmetic casts between standard C arithmetic types.
 module Arith_casts
 {
 @for t1 in ints+floats:
-  for t2 in ints+floats:
-    tangle('  fun '+t1+'_of: '+t2+' -> '+t1+' = "('+tmap[t1]+')$1:cast" is cast;')
+  tangle('  fun '+t1+'_of[t2:reals]: t2 -> '+t1+' = "('+tmap[t1]+')$1:cast" is cast;')
 }
 
 @#------------- CONTROL STRUCTURES -------------------

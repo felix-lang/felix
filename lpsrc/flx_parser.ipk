@@ -1338,9 +1338,9 @@ rmwop:
   | PERCENTEQUAL    { $1,"modeq" }
   | LEFTSHIFTEQUAL  { $1,"leftshifteq" }
   | RIGHTSHIFTEQUAL { $1,"rightshifteq" }
-  | CARETEQUAL      { $1,"careteq" }
-  | VBAREQUAL       { $1,"vbareq" }
-  | AMPEREQUAL      { $1,"ampereq" }
+  | CARETEQUAL      { $1,"bxoreq" }
+  | VBAREQUAL       { $1,"boreq" }
+  | AMPEREQUAL      { $1,"bandeq" }
   | TILDEEQUAL      { $1,"tildeeq" }
 
 swapop:
