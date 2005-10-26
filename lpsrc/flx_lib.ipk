@@ -423,6 +423,7 @@ header cstdlib = "#include <cstdlib>";
   try:
     equiv = cint2fint[eval('ALIAS_'+t+'_t')]
     tangle('typedef ' + t + ' = ' + equiv + ';')
+    tangle('rename ' + string.capitalize(t) + ' = ' + string.capitalize(equiv) + ';')
   except:
     try:
       if t[:3] == 'int': 
@@ -435,6 +436,7 @@ header cstdlib = "#include <cstdlib>";
         tangle('rename ' + string.capitalize(t) + ' = ' + string.capitalize(equiv) + ';')
     except:
       tangle("// FORCED TO USE EMULATION OF UNAVAILABLE SIZE")
+      tangle("// NOTE: The require module rename is NOT provided to force an error here")
       tangle('type ' + t + ' = "flx_emul_'+t + '";')
 
 typedef chars = typesetof (char, wchar, uchar);
