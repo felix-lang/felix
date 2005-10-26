@@ -237,9 +237,9 @@ i *=  1;       muleq        (i,1);
 i /=  1;       diveq        (i,1);
 
 // bitwise: unsigned only
-u ^=  1u;       careteq      (u,1u);
-u |=  1u;       vbareq       (u,1u);
-u &=  1u;       ampereq      (u,1u);
+u ^=  1u;       bxoreq      (u,1u);
+u |=  1u;       boreq       (u,1u);
+u &=  1u;       bandeq      (u,1u);
 
 
 // counting

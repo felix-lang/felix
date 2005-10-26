@@ -510,7 +510,7 @@ class compiler_base:
       else:
         raise Error
     except:
-      print "UNKNOWN COMPILE ERROR"
+      print "EXPRESSION NOT SUPPORTED:",e
       return None
 
   def get_c_type_data(self,shell,get_stdout):
@@ -571,7 +571,9 @@ class compiler_base:
       'int16_t','uint16_t',
       'int32_t','uint32_t',
       'int64_t','uint64_t']:
-      alias=self.find_type(shell,get_stdout,"("+t+")0",'stdint.h')
+      header=None
+      if opt.HAVE_STDINT == 1: header = 'stdint.h'
+      alias=self.find_type(shell,get_stdout,"("+t+")0",header)
       if alias:
         opt.__dict__['ALIAS_'+t]=alias
 
@@ -584,7 +586,7 @@ class compiler_base:
     opt.__dict__["arith_conv"] = {}
     for t1 in native_types:
       for t2 in native_types:
-        alias=self.find_type(shell,get_stdout,"("+t1+")0+("+t2+")0",'stdint.h')
+        alias=self.find_type(shell,get_stdout,"("+t1+")0+("+t2+")0",None)
         opt.arith_conv[(t1,t2)]=alias
 
 @h = tangler("flxbuild/gxx_class.py")
