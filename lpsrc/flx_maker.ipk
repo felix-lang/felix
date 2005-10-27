@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.170  2005/10/27 18:19:33  skaller
+add -W y option to suppress Ocaml 3.09 warning Y
+
 Revision 1.169  2005/10/27 16:46:27  skaller
 Add user defined infix operators.
 
@@ -2328,7 +2331,7 @@ if "compiler" in options or "bytecode" in options or "olink" in options:
     OCAML_OBJECT_EXTENSION = '.cmo'
     OCAML_LIB_EXTENSION = '.cma'
     
-OCAMLOPT = OCAMLOPT + " -W y "
+  OCAMLOPT = OCAMLOPT + " -W y "
     
 #determine linkage model
 
