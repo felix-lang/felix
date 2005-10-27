@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.169  2005/10/27 16:46:27  skaller
+Add user defined infix operators.
+
 Revision 1.168  2005/10/24 08:29:10  skaller
 Blah
 
@@ -2324,6 +2327,8 @@ if "compiler" in options or "bytecode" in options or "olink" in options:
   else:
     OCAML_OBJECT_EXTENSION = '.cmo'
     OCAML_LIB_EXTENSION = '.cma'
+    
+OCAMLOPT = OCAMLOPT + " -W y "
     
 #determine linkage model
 

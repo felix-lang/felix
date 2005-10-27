@@ -20,6 +20,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | CSTRING (sr,s) -> Flx_string.c_quote_of_string s 
   | WSTRING (sr,s) -> Flx_string.c_quote_of_string s 
   | USTRING (sr,s) -> Flx_string.c_quote_of_string s 
+  | USER10 (sr,s) -> "op10 " ^ s
 
 @for k,s in flx_1_char_syms:
   tangle('  | '+k+' _ -> "'+s+'"',inhibit_sref=1)
@@ -49,6 +50,7 @@ let name_of_token (tok :Flx_parse.token): string =
   | CSTRING (sr,s) -> "CSTRING"
   | WSTRING (sr,s) -> "WSTRING"
   | USTRING (sr,s) -> "USTRING"
+  | USER10 (sr,s) -> "USER10"
 
 @for k,s in flx_1_char_syms:
   tangle('  | '+k+' _ -> "'+k+'"',inhibit_sref=1)
@@ -85,7 +87,7 @@ let src_of_token t = match t with
   | CSTRING  (s,_)
   | WSTRING  (s,_)
   | USTRING  (s,_)
-
+  | USER10 (s,_)
   | ERRORTOKEN (s,_) 
 
 @for k,s in flx_1_char_syms:
@@ -99,84 +101,43 @@ let src_of_token t = match t with
 
 @for n,t in flx_keywords: tangle('  | '+t+' s',inhibit_sref=1)
 
-(*
-  | EQUAL s 
-  | PLUS s 
-  | MINUS s 
-  | STAR s 
-  | SLASH s 
-  | PERCENT s 
-  | STARSTAR s 
-  | AMPER s 
-  | VBAR s 
-  | EXCLAMATION s 
-  | DOLLAR s 
-  | QUEST s 
-  | LPAR s 
-  | RPAR s 
-  | LSQB s 
-  | RSQB s 
-  | LBRACE s 
-  | RBRACE s 
-  | LSQANGLE s 
-  | RSQANGLE s 
-  | LSQBAR s 
-  | RSQBAR s 
-  | COLON s 
-  | COMMA s 
-  | SEMI s 
-  | DOT s 
-  | BACKQUOTE s 
-  | LESS s 
-  | GREATER s 
-  | EQEQUAL s 
-  | NOTEQUAL s 
-  | LESSEQUAL s 
-  | GREATEREQUAL s 
-  | ANDLESS s 
-  | ANDGREATER s 
-  | ANDEQEQUAL s 
-  | ANDNOTEQUAL s 
-  | ANDLESSEQUAL s 
-  | ANDGREATEREQUAL s 
-  | TILDE s 
-  | CIRCUMFLEX s 
-  | LEFTSHIFT s 
-  | RIGHTSHIFT s 
-  | LEFTRIGHTARROW s 
-  | PLUSPLUS s 
-  | MINUSMINUS s 
-  | PLUSEQUAL s 
-  | MINUSEQUAL s 
-  | STAREQUAL s 
-  | SLASHEQUAL s 
-  | PERCENTEQUAL s 
-  | CARETEQUAL s 
-  | VBAREQUAL s 
-  | AMPEREQUAL s 
-  | TILDEEQUAL s 
-  | COLONEQUAL s 
-  | LEFTSHIFTEQUAL s 
-  | RIGHTSHIFTEQUAL s 
-  | LEFTARROW s 
-  | RIGHTARROW s 
-  | EQRIGHTARROW s 
-  | COLONGREATER s 
-  | LESSCOLON s 
-  | COLONCOLON s 
-  | DOTDOT s 
-  | DOTDOTDOT s 
-*)
     -> s
 
-@h = tangler('src/flx_lexstate.ml','data')
+@h = tangler('src/flx_lexstate.ml')
 @select(h)
 open Flx_util
 open Flx_parse
 open Flx_string
 open Big_int
 open Flx_exceptions
+open Flx_ast
+open List
 
+let special_tokens = 
+  [
+@for k,s in flx_1_char_syms:
+  tangle('    ("'+s+'",(fun (sr,s)-> '+k+' sr));',inhibit_sref=1)
+
+@for k,s in flx_2_char_syms:
+  tangle('    ("'+s+'",(fun (sr,s)-> '+k+' sr));',inhibit_sref=1)
+
+@for k,s in flx_3_char_syms:
+  tangle('    ("'+s+'",(fun (sr,s)-> '+k+' sr));',inhibit_sref=1)
+@#
+  ]
+
+let std_tokens =
+  let tk = Array.make 4 [] in
+  iter  (fun (s,f) -> 
+    let n = String.length s in
+    assert (n >0 && n <= 3);
+    tk.(n) <- (s,f) :: tk.(n)
+  )
+  special_tokens
+  ;
+  tk
+
+  
 exception Duplicate_macro of string
 
 class comment_control = 
@@ -216,7 +177,7 @@ class file_control
     val mutable filename = filename'
     val mutable condition:condition_t list = [`Processing]
     val macros : (string,string list * Flx_parse.token list) Hashtbl.t = Hashtbl.create 97
-    
+   
     method incr_lex_counters lexbuf =
       line_no <- line_no + 1;
       last_buf_pos <- buf_pos;
@@ -344,12 +305,54 @@ class lexer_state filename basedir incdirs =
         else Hashtbl.add h k v 
       )
       s#get_macros
+
+    val mutable symbols: 
+      (string * (srcref * string -> Flx_parse.token)) list array
+      = std_tokens
+
+    method add_symbol (prec:int) s f =
+      let n = String.length s in
+      let m = Array.length symbols in
+      if m <= n then begin
+        let a = Array.make (n+1) [] in
+        Array.blit symbols 0 a 0 m;
+        symbols <- a
+      end
+      ;
+      let elt = s,(fun (sr,_) -> Flx_parse.USER10 (sr,f)) in
+      symbols.(n) <- elt :: symbols.(n)
+        
+    method tokenise_symbols lexbuf (s:string) : token list =
+      (* temporary hack *)
+      let sr = self#get_srcref lexbuf in
+      let rec tk tks s =
+        let m = String.length s in
+        let rec aux n =
+          if n = 0 then (* cannot match even first char *)
+           tk (ERRORTOKEN (sr,String.sub s 0 1)::tks) (String.sub s 1 (m-1)) 
+          else
+          let f = 
+            try Some (assoc (String.sub s 0 n) symbols.(n))
+            with Not_found -> None
+          in
+          match f with
+          | None -> aux (n-1)
+          | Some f -> 
+            (* next token *)
+            tk (f (sr,String.sub s 0 n) :: tks) (String.sub s n (m-n))
+        in 
+        let n = String.length s in
+        if n = 0 then rev tks
+        else aux (min n (Array.length symbols - 1))
+      in 
+        tk [] s
 end
 
-@h = tangler('src/flx_lexstate.mli','data')
+@h = tangler('src/flx_lexstate.mli')
 @select(h)
 open Flx_ast
 open Flx_string
+open Flx_parse
 
 exception Duplicate_macro of string
 
@@ -444,6 +447,12 @@ class lexer_state :
     method get_macro : string -> (string list * Flx_parse.token list) option
     method get_macros : (string,string list * Flx_parse.token list) Hashtbl.t 
     method add_macros : lexer_state -> unit
+    val mutable symbols :
+      (string * (srcref * string -> Flx_parse.token)) list array
+    method tokenise_symbols : Lexing.lexbuf -> string -> token list
+    method add_symbol:
+      int -> string -> string -> unit
+
 end
 
 @h = tangler('src/flx_preproc.mli')
@@ -479,6 +488,11 @@ val undef_directive :
   token list
 
 val define_directive :
+  lexer_state -> range_srcref -> string -> 
+  (lexer_state -> lexbuf -> token list) -> 
+  token list
+
+val infix_directive :
   lexer_state -> range_srcref -> string -> 
   (lexer_state -> lexbuf -> token list) -> 
   token list
@@ -787,6 +801,22 @@ let define_directive state sr s lexer =
     clierr sr "#define requires identifier"
   | [] ->
     clierr sr "#define requires identifier"
+
+let infix_directive state sr s lexer =
+  let src = Lexing.from_string s in
+  let toks = pre_tokens_of_lexbuf lexer src state in
+  let toks = Flx_lex1.translate toks in
+  match toks with
+  | [INTEGER (sr1,kind,v); STRING (sr2,tok); NAME (sr3,fn)] ->
+    if kind <> "int" then
+      clierr sr "#infix directive requires plain integer precedence"
+    ;
+    let j = Big_int.int_of_big_int v in
+    state#add_symbol j tok fn;
+    []
+
+  | _ ->
+    clierr sr "#infix directive has syntax #infix 99 \"..\" fname"
   
 let if_directive state sr s lexer =
   state#push_condition 
@@ -1046,6 +1076,12 @@ let handle_preprocessor state lexbuf s pre_flx_lex parse_line =
   | "undivert" -> 
     undivert_directive state sr s pre_flx_lex
 
+  | "infix" ->
+    begin match state#get_condition with
+    | `Processing ->
+      infix_directive state sr s pre_flx_lex
+    | _ -> []
+    end
 
   | _ -> 
     print_endline (state#string_of_srcref lexbuf);
@@ -1130,6 +1166,19 @@ let ordinary = letter | digit | hichar |
   '!' | '#' | '$' | '%' | '&' | '(' | ')' | '*' |
   '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' |
   '=' | '>' | '?' | '@' | '[' | ']' | '^' | '_' |
+  '`' | '{' | '|' | '}' | '~'
+
+(* any sequence of these characters makes one or more tokens *)
+(* MISSING: # should be in here, but can't be supported atm
+  because preprocessor # uses a conditional, and just errors
+  out if the # isn't at the start of a line .. needs fixing,
+  not sure how to fix it
+*)
+
+let symchar =
+  '!' | '$' | '%' | '&' | '(' | ')' | '*' |
+  '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' |
+  '=' | '>' | '?' | '@' | '[' | ']' | '^' |
   '`' | '{' | '|' | '}' | '~'
 
 let printable = ordinary | quote | dquote | slosh
@@ -1744,16 +1793,6 @@ and pre_flx_lex state = parse
       [FLOAT (state#get_srcref lexbuf,"double",strip_us str)]
   }
 
-@for k,s in flx_1_char_syms:
-  tangle('| "'+s+'" { state#inbody; ['+k+'  (state#get_srcref lexbuf)] }',inhibit_sref=1)
-
-@for k,s in flx_2_char_syms:
-  tangle('| "'+s+'" { state#inbody; ['+k+'  (state#get_srcref lexbuf)] }',inhibit_sref=1)
-
-@for k,s in flx_3_char_syms:
-  tangle('| "'+s+'" { state#inbody; ['+k+'  (state#get_srcref lexbuf)] }',inhibit_sref=1)
-@#
-
 (* Python strings *)
 | quote  { state#inbody; parse_qstring state lexbuf }
 | qqq    { state#inbody; parse_qqqstring state lexbuf }
@@ -1840,6 +1879,23 @@ and pre_flx_lex state = parse
        "#")
      ]
   }
+
+| symchar + { 
+     state#inbody; 
+     state#tokenise_symbols  lexbuf (lexeme lexbuf)
+   }
+
+(*
+@for k,s in flx_1_char_syms:
+  tangle('| "'+s+'" { state#inbody; ['+k+'  (state#get_srcref lexbuf)] }',inhibit_sref=1)
+
+@for k,s in flx_2_char_syms:
+  tangle('| "'+s+'" { state#inbody; ['+k+'  (state#get_srcref lexbuf)] }',inhibit_sref=1)
+
+@for k,s in flx_3_char_syms:
+  tangle('| "'+s+'" { state#inbody; ['+k+'  (state#get_srcref lexbuf)] }',inhibit_sref=1)
+@#
+*)
 
 (* end of line *)
 | newline {
