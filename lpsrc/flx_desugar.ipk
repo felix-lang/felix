@@ -65,19 +65,23 @@ let include_file syms inspec lookup =
         let x = try Some (open_out_bin pf) with _ -> None in
         match x with 
         | Some x -> 
+          if syms.compiler_options.print_flag then
+          print_endline ("Written " ^ pf);
           Marshal.to_channel x (this_version,sts) [];
           close_out x
         | None -> () (* can't write, don't worry *)
   in
   let parseit() =
-      let sts = 
-        Flx_parse_ctrl.parse_file 
-          tf 
-          (Filename.dirname tf)
-          include_dirs 
-      in
-        let local_prefix = Filename.basename basename in
-        expand_macros local_prefix 5000 sts
+    let sts = 
+      if syms.compiler_options.print_flag then
+      print_endline ("Parsing " ^ tf);
+      Flx_parse_ctrl.parse_file 
+        tf 
+        (Filename.dirname tf)
+        include_dirs 
+    in
+      let local_prefix = Filename.basename basename in
+      expand_macros local_prefix 5000 sts
   in
   let sts =
       (* -- no file ----------------------------------------- *)
@@ -106,9 +110,11 @@ let include_file syms inspec lookup =
           let (that_version,tree) = Marshal.from_channel x in
           close_in x;
           if this_version = that_version
-          then
+          then begin
+            if syms.compiler_options.print_flag then
+            print_endline ("Loaded " ^ pf);
             tree
-          else 
+          end else 
             let sts = parseit() in
             saveit sts;
             sts

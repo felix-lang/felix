@@ -228,6 +228,7 @@ int main(int,char*[]) {
 #---------------------------------------------------
 # discover which ocaml compilers are available
 import string
+import os
 
 class ocaml:
   def __init__(self):
@@ -318,7 +319,15 @@ class ocaml:
       print "Ocaml: bytecode compiler",self.OCAML_VERSION
       print "Ocaml: compiler         ",y
       sys.exit(1)
-    
+    try:
+      f = open('tmp'+os.sep+'camldummy.ml','w')
+      f.write('print_endline "OK";;\n')
+      f.close()
+      result,x = get_stdout(self.OCAMLC + ' -w yx tmp'+os.sep+'camldummy.ml')
+      self.OCAMLB = self.OCAMLB + ' -w yx'
+      self.OCAMLC = self.OCAMLC + ' -w yx'
+    except:
+      pass
     
   def report_config(self):
     print
