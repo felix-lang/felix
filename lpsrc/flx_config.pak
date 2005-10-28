@@ -324,8 +324,9 @@ class ocaml:
       f.write('print_endline "OK";;\n')
       f.close()
       result,x = get_stdout(self.OCAMLC + ' -w yz tmp'+os.sep+'camldummy.ml')
-      self.OCAMLB = self.OCAMLB + ' -w yx'
-      self.OCAMLC = self.OCAMLC + ' -w yx'
+      if not result:
+        self.OCAMLB = self.OCAMLB + ' -w yz'
+        self.OCAMLC = self.OCAMLC + ' -w yz'
     except:
       pass
     
@@ -513,7 +514,7 @@ class compiler_base:
       self.link_static_program(shell,["tmp"+os.sep+"tchk_static"],"tmp"+os.sep+"tchk"+self.options.EXT_EXE,[],[])
       result,lines= get_stdout("tmp"+os.sep+"tchk"+self.options.EXT_EXE)
       if not result: # got a result
-        alias = lines[0][:-1]
+        alias = string.strip(lines[0]) # remove \n (and \r on windows)
         print e, "has type",alias
         return alias
       else:
