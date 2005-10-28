@@ -842,6 +842,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     bindings defined in this entity
   *)
   match st with
+  | `AST_seq _ -> assert false
   | `AST_private (sr,st) ->
      rst syms name `Private parent_vs st
      

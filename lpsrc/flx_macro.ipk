@@ -629,6 +629,9 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_private (sr,st) -> 
     iter (fun st -> tack (`AST_private (sr,st))) (ms [st])
 
+  | `AST_seq (_,sts) -> 
+    iter tack (ms sts)
+
   | `AST_include (sr, s) -> tack st
 
   (* FIX TO SUPPORT IDENTIFIER RENAMING *)

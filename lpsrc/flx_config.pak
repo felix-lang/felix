@@ -323,7 +323,7 @@ class ocaml:
       f = open('tmp'+os.sep+'camldummy.ml','w')
       f.write('print_endline "OK";;\n')
       f.close()
-      result,x = get_stdout(self.OCAMLC + ' -w yx tmp'+os.sep+'camldummy.ml')
+      result,x = get_stdout(self.OCAMLC + ' -w yz tmp'+os.sep+'camldummy.ml')
       self.OCAMLB = self.OCAMLB + ' -w yx'
       self.OCAMLC = self.OCAMLC + ' -w yx'
     except:

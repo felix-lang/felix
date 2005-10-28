@@ -1165,6 +1165,70 @@ var_def:
         $3, None, Some $5
       ) 
     }
+
+  | VAR NAME tvarlist COLON expr LEFTARROW expr SEMI  
+   {
+      let sr = rstoken $1 $8 in
+      let call =
+        let lsym = `AST_name (slift (fst $2),snd $2,[]) in
+        match $7 with
+        | `AST_apply (sr2,(f,a)) ->
+          begin match a with
+          | `AST_tuple (sr3,ls) ->
+            `AST_call (sr,f,`AST_tuple (sr3,lsym::ls))
+          | _ ->
+            `AST_call (sr,f,`AST_tuple (sr2,[lsym;a]))
+          end
+        | _ as f -> 
+          `AST_call (sr,f,lsym)
+      in
+      let vardef =
+        `AST_var_decl 
+        (
+          rstoken $1 $6, 
+          snd $2, 
+          $3,
+          Some (typecode_of_expr $5), 
+          None
+        ) 
+      in 
+        `AST_seq (sr,[vardef;call])
+    }
+
+  | VAR AMPER NAME tvarlist COLON expr LEFTARROW expr SEMI  
+   {
+      let sr = rstoken $1 $9 in
+      let call =
+        let srn = slift (fst $3) in
+        let lsym = `AST_ref 
+          (rsrange (slift $2) srn,
+            `AST_name (srn,snd $3,[])
+          ) 
+        in
+        match $8 with
+        | `AST_apply (sr2,(f,a)) ->
+          begin match a with
+          | `AST_tuple (sr3,ls) ->
+            `AST_call (sr,f,`AST_tuple (sr3,lsym::ls))
+          | _ ->
+            `AST_call (sr,f,`AST_tuple (sr2,[lsym;a]))
+          end
+        | _ as f -> 
+          `AST_call (sr,f,lsym)
+      in
+      let vardef =
+        `AST_var_decl 
+        (
+          rstoken $1 $7, 
+          snd $3, 
+          $4,
+          Some (typecode_of_expr $6), 
+          None
+        ) 
+      in 
+        `AST_seq (sr,[vardef;call])
+    }
+
   | VAR NAME tvarlist COLON expr EQUAL expr SEMI  
     { 
       `AST_var_decl 
@@ -1176,6 +1240,7 @@ var_def:
         Some $7
       ) 
     }
+
   | VAR NAME tvarlist COLON expr SEMI  
     { 
       `AST_var_decl 
@@ -1393,14 +1458,6 @@ assignment:
         end
       | _ as f -> 
         `AST_call (sr,f,lsym)
-
-      (*
-      | _ -> Flx_exceptions.clierr sr 
-        (
-          "Special procedure call operator <- requires explicit " ^
-          "call of form f a on RHS"
-        )
-      *)
     }
 
   | expr swapop expr SEMI 

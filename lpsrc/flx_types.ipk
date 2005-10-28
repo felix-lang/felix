@@ -1,4 +1,4 @@
-| @head(1,'Utilities')
+@head(1,'Utilities')
 Generic (non Felix dependent) utilities.
 @h = tangler('src/flx_util.mli')
 @select(h)
@@ -592,6 +592,9 @@ and statement_t =
   (* type macros *)
   | `AST_macro_ifor of range_srcref * id_t * id_t list * statement_t list
   | `AST_macro_vfor of range_srcref * id_t * expr_t list * statement_t list
+
+  (* composition of statements: note NOT A BLOCK *)
+  | `AST_seq of range_srcref * statement_t list
 
   (* types *)
   | `AST_union of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
@@ -1653,6 +1656,7 @@ let src_of_stmt e = match e with
   | `AST_use (s,_,_)
   | `AST_regdef (s,_,_)
   | `AST_glr (s,_,_,_)
+  | `AST_seq (s,_)
     -> s
   | `AST_comment _ 
     -> ("Generated",0,0,0,0)
@@ -2693,6 +2697,7 @@ and string_of_statement level s =
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
   match s with 
+  | `AST_seq (_,sts) -> catmap "" (string_of_statement level) sts
   | `AST_public (_,s,st) ->
     "\n" ^
     spaces level ^ "public '" ^ s ^ "'\n" ^
