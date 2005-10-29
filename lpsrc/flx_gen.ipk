@@ -1890,7 +1890,7 @@ try
   end
   ;
   let bbdfns = Flx_use.copy_used syms !bbdfns in
-  let child_map = !child_map in
+  let child_map = cal_children syms bbdfns in
 
   if compiler_options.print_flag 
   then print_endline "//Calculating stackable calls";

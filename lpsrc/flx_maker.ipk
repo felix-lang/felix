@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.172  2005/10/29 05:48:20  skaller
+Fixed numerous minor bugs
+
 Revision 1.171  2005/10/28 04:08:43  skaller
 Test in ocaml config for -w xy options needed for 3.09,
 extend handling of user defined infix operators to allow
@@ -3296,15 +3299,15 @@ We have no idea if it continues copying.
 @tangle('bin/flx_doc: tools/flx_doc.flx')
 @tangle('\tbin/flx --test --static -c tools/flx_doc && mv tools/flx_doc bin/flx_doc')
 @tangle('')
-@tangle('doc: grammar tools man impldoc tutdoc tutstyle')
+@tangle('doc: grammar tools man impldoc tutdoc')
 @tangle('')
 @tangle('#doc: grammar tools libdoc man impldoc tutdoc tutstyle')
 @tangle('')
 @tangle('impldoc: dummy')
-@tangle('\tpython script/maker impldoc')
+@tangle('\tpython script/maker doc impldoc')
 @tangle('')
 @tangle('tutdoc: dummy')
-@tangle('\tpython script/maker doc')
+@tangle('\tpython script/maker doc tutdoc')
 @tangle('\tcp doc/*.css tut/doc >/dev/null 2>&1')
 @tangle('')
 @tangle('doc.quiet: grammar tools libdoc')
@@ -3503,7 +3506,7 @@ We have no idea if it continues copying.
 @tangle('\t\tfelix-'+flx_version+'/tools/*.flx \\')
 @tangle('\t\tfelix-'+flx_version+'/rtl/*.cpp\\')
 @tangle('\t\tfelix-'+flx_version+'/rtl/*.hpp\\')
-@tangle('\t\tfelix-'+flx_version+'/libdoc/*.html \\')
+@#tangle('\t\tfelix-'+flx_version+'/libdoc/*.html \\')
 @tangle('\t\tfelix-'+flx_version+'/lib/*.flx \\')
 @tangle('\t\tfelix-'+flx_version+'/test/*.flx \\')
 @tangle('\t\tfelix-'+flx_version+'/test/*.cpp \\')

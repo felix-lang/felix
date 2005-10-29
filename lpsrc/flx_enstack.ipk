@@ -220,9 +220,12 @@ let rec is_pure syms (child_map, bbdfns) i =
       )
       children
       ;
+      (*
+      print_endline "pure";
+      *)
       true
     with 
-    | Not_found -> false
+    | Not_found -> (* print_endline "Not pure"; *) false
 
 let ident x = x 
 let tident t = t 
