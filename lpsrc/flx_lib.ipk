@@ -1223,13 +1223,24 @@ module Control
   proc throw(x: unit->void) { _throw (C_hack::cast[cont] x); }
   private proc _throw: cont = "throw $1;";
 
+  cstruct driver_request_entry_t
+  {
+    name: charp; // string name
+    handle: int; // integer handle
+  };
+
+  typedef driver_request_table_t = C_hack::ptr[driver_request_entry_t];
+  
   publish "Supervisor calls"
   // THESE VALUES MUST SYNC WITH THE RTL
   union svc_req_t =
-  | svc_yield                          // 0
-  | svc_get_fthread of address         // 1
-  | svc_read of address                // 2
-  | svc_general of address             // 3
+  /*0*/ | svc_yield                          
+  /*1*/ | svc_get_fthread         of address        
+  /*2*/ | svc_read                of address              
+  /*3*/ | svc_general             of address          
+  /*4*/ | svc_map_driver_requests of C_hack::ptr[driver_request_table_t]
+  /*5*/ | svc_driver_request      of int * address
+  /*6*/ | svc_spawn_detached      of fthread
   ;
 
   publish "Call Supervisor"
@@ -1257,6 +1268,7 @@ module Control
   fun mk_thread: cont->fthread = "new(*PTF gc,_fthread_ptr_map) flx::rtl::fthread_t($1)";
   publish "Resume a continuation until it yields"
   fun step: cont -> cont = "$1->resume()";
+  proc kill: fthread = "$1->cc = 0;";
 
   publish """
   Run a continuation until it terminates.

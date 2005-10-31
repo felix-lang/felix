@@ -260,7 +260,7 @@ let merge_functions
         if mem x init then init else x :: init
       )
       init ls
-    | _ -> failwith ("Expected " ^ name ^ " to be function overload set in all open modules")
+    | _ -> failwith ("[merge_functions] Expected " ^ name ^ " to be function overload set in all open modules")
     )
   []
   opens
@@ -288,7 +288,8 @@ let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
       )
       dirs
     )
-  in match opens with
+  in 
+  match opens with
   | [x] -> Some x
   | FunctionEntry ls :: rest ->
     Some (FunctionEntry (merge_functions opens name))
@@ -2556,9 +2557,14 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
           )
         in
           (*
-          print_endline (si (length opens) ^ " OPENS BUILT");
+          print_endline (si (length opens) ^ " OPENS BUILT for " ^ name);
           *)
-          let fs:entry_kind_t list = merge_functions opens name in
+          let fs:entry_kind_t list = 
+            match opens with 
+            | [NonFunctionEntry i] -> [i]
+            | [FunctionEntry ii] -> ii
+            | _ -> merge_functions opens name 
+          in
           let ro = 
             resolve_overload'
             syms rs sra fs name t2 ts

@@ -269,8 +269,27 @@ enum svc_t               // what the dispatch should do
   svc_get_fthread=1,
   svc_read=2,
   svc_general=3,         // temporary hack by RF
+  svc_map_driver_requests=4,
+  svc_driver_request=5,
+  svc_spawn_detached=6,
   svc_end
 };
+
+// ********************************************************
+// driver request entry
+// ********************************************************
+
+struct driver_request_entry_t
+{
+  char const* name; // string name
+  int handle;       // integer handle
+};
+
+extern void FLX_RTL_EXTERN map_driver_requests
+(
+  driver_request_entry_t *provided, 
+  driver_request_entry_t *requested
+);
 
 // ********************************************************
 // CONTINUATION
@@ -615,8 +634,8 @@ step:
       case svc_get_fthread: 
         **(fthread_t***)(cc->p_svc->data) = this;
         
-      case svc_yield: 
-        goto restep;
+      //case svc_yield: 
+      //  goto restep;
 
       // we don't know what to do with the request,
       // so pass the buck to the driver
@@ -724,6 +743,21 @@ flx_assert_failure_t::flx_assert_failure_t(flx_range_srcref_t ff, char *cf, int 
    flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
 flx_assert_failure_t::~flx_assert_failure_t(){}
 flx_switch_failure_t::~flx_switch_failure_t(){}
+
+void map_driver_requests
+(
+  driver_request_entry_t *provided, 
+  driver_request_entry_t *requested
+){
+  driver_request_entry_t *r = requested;
+  char const *rname;
+  while((rname = r->name)) 
+  {
+    driver_request_entry_t *p = provided;
+    while(p->name && strcmp(rname,p->name)) ++p;
+    r++->handle = p->handle;
+  }
+}
 
 }}
 
@@ -1142,6 +1176,19 @@ void print_loc(FILE *ef,flx_range_srcref_t x,char *cf, int cl)
   fprintf(ef,"C++ location  : %s %d\n", cf, cl);
 }
 
+enum {
+  dreq_error = 0,
+  dreq_get_driver_name = 1,
+  dreq_exit= 2
+};
+  
+static struct driver_request_entry_t flx_run_services[]=
+{
+  {"get_driver_name",dreq_get_driver_name},
+  {"exit",dreq_exit},
+  {NULL,0}
+};
+
 int main(int argc, char** argv)
 {
 #ifndef FLX_STATIC_LINK  
@@ -1214,23 +1261,90 @@ int main(int argc, char** argv)
     int gc_counter = 0;
     unsigned long collections = 0;
 
-    con_t *top = instance.start_proc;
-    fthread_t *ft = new (collector,_fthread_ptr_map) fthread_t(top);
-    collector.add_root(ft);
-    _uctor_ *request = ft->run();
-
-    while( request && request->variant  == svc_yield)
+    std::list<fthread_t*> active;
     {
-      gc_counter++;
-      if(gc_counter == 1000)
-      {
-        gc_counter = 0;
-        ++collections;
-        unsigned long n = collector.collect();
-        if(debug)fprintf(stderr,"collected %ld objects\n",n);
-      }
-      request = ft->run();
+      con_t *top = instance.start_proc;
+      fthread_t *ft = new (collector,_fthread_ptr_map) fthread_t(top);
+      collector.add_root(ft);
+      active.push_front(ft);
     }
+
+ process_active:
+    while(active.size() > 0)
+    {
+      fthread_t *ft = active.front();
+      active.pop_front();
+      _uctor_ *request = ft->run();
+      while( request)
+      {
+        gc_counter++;
+        if(gc_counter == 1000)
+        {
+          gc_counter = 0;
+          ++collections;
+          unsigned long n = collector.collect();
+          if(debug)fprintf(stderr,"collected %ld objects\n",n);
+        }
+        
+        switch(request->variant)
+        {
+          case svc_yield: 
+          {
+            active.push_back(ft);
+            goto process_active;
+          }
+
+          case svc_map_driver_requests:
+            map_driver_requests(
+              flx_run_services, 
+              *(driver_request_entry_t**)request->data
+            );
+          break;
+
+          case svc_spawn_detached:
+          {
+            fthread_t *ftx = *(fthread_t**)request->data;
+            if(debug) printf("Spawn thread %p\n",ftx);
+            collector.add_root(ftx);
+            active.push_front(ftx);
+          }
+          break;
+          
+          case svc_driver_request:
+          {
+            _uctor_ dreq = *(_uctor_*)request->data;
+            if (debug)
+              printf("Request code %d \n",dreq.variant);
+            switch (dreq.variant)
+            {
+              case dreq_get_driver_name:
+              {
+                *(char **)dreq.data = "flx_run";
+              }
+              break;
+
+              case dreq_exit:
+                goto cleanup;
+
+              default:
+                printf("Unknown driver reqest code %d, terminating\n",dreq.variant);
+                goto cleanup;
+            }
+          }
+          break;
+
+          default: 
+            printf("Unknown service request code %d, terminating!\n",request->variant);
+            goto cleanup;
+        } 
+        request = ft->run();
+      }
+      if(debug) fprintf(stderr,"Finalising\n");
+      if(debug)fprintf(stderr,"removing thread %p\n",ft);
+      collector.remove_root(ft);
+    }
+
+cleanup:
     if(debug){
       unsigned long uncollected = collector.get_allocation_count();
       unsigned long roots = collector.get_root_count();
@@ -1238,9 +1352,6 @@ int main(int argc, char** argv)
     }
     if(finalise)
     {
-      if(debug) fprintf(stderr,"Finalising\n");
-      if(debug)fprintf(stderr,"removing thread %p\n",ft);
-      collector.remove_root(ft);
       {
         if(debug)
           fprintf(stderr,"Data collection starts ..\n");

@@ -4,6 +4,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.173  2005/10/31 03:38:06  skaller
+Fiddle with service request stuff
+
 Revision 1.172  2005/10/29 05:48:20  skaller
 Fixed numerous minor bugs
 
@@ -3483,7 +3486,7 @@ We have no idea if it continues copying.
 @tangle('bin_tarball:')
 @tangle('\trm -f felix-'+flx_version)
 @tangle('\tln -s . felix-'+flx_version)
-@tangle('\ttar -zcvf flx_'+flx_version+'_bin_linux.tgz\\')
+@tangle('\ttar -zcvf flx_'+flx_version+'_share.tgz\\')
 @tangle('\t\tfelix-'+flx_version+'/configure\\')
 @tangle('\t\tfelix-'+flx_version+'/Makefile\\')
 @tangle('\t\tfelix-'+flx_version+'/README \\')
@@ -3563,9 +3566,9 @@ We have no idea if it continues copying.
 @tangle('\t${BUILTIN_ISCR} lpsrc/flx_sourceforge.pak')
 @tangle('')
 @tangle('clean: dummy')
-@tangle('\trm -rf tut/examples/*.cpp tut/examples/*.hpp tut/examples/*.so tut/examples/*.dll tut/examples/*.par tut/examples/*.o tut/examples/*.output')
-@tangle('\trm -rf test/*.cpp test/*.hpp test/*.so test/*.dll test/*.par test/*.o test/*.output')
-@tangle('\trm -rf bagley/felix/*.cpp bagley/felix/*.hpp bagley/felix/*.so bagley/felix/*.dll bagley/felix/*.par bagley/felix/*.o')
+@for dir in ['tut/examples/*','test/*','bagley/felix*']:
+  for ext in ['.cpp','.hpp','.o','.so','.obj','.dll','.exp','.imp','.output','.par','.exe']:
+    tangle('\trm -rf '+dir+ext)
 @tangle('\trm -rf speed/exes/*')
 @tangle('')
 @tangle('distclean:')
@@ -3698,7 +3701,7 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('upload: dummy')
 @tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
-@tangle('\tscp flx_'+flx_version+'_bin_linux.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
+@tangle('\tscp flx_'+flx_version+'_share.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('')
 
 @head(1,'configure')
