@@ -375,6 +375,9 @@ header cstdlib = "#include <cstdlib>";
 @for t in all:
   gen_type(t)
 
+_gc_pointer type gcaddress = "void*";
+_gc_pointer type gcptr[t]= "?1*";
+
 @fint2cint={
   'tiny':'signed char',
   'short':'short',
@@ -714,6 +717,7 @@ module C_hack
   """
   fun deref[t]: ptr[t] -> lvalue[t] = "*$1";
   fun deref[t]: cptr[t] -> lvalue[t] = "*$1";
+  fun deref[t]: gcptr[t] -> lvalue[t] = "*$1";
 
   publish """
   Function to take the address of a C lvalue,
@@ -732,6 +736,7 @@ module C_hack
   Polymorphic null pointer constant
   """
   const null_ptr[t]:ptr[t] = "(?1*)NULL";
+  const null_gcptr[t]:gcptr[t] = "(?1*)NULL";
   const null_cptr[t]:ptr[t] = "(?1 const*)NULL";
 
   publish """
@@ -751,6 +756,11 @@ module C_hack
   """
   fun dflt[t]:1->t = "dflt<?1>()" requires dflt_h;
 
+  // this hackery is here to force Felix to make 
+  // a suitable shape object
+  private union _dummy[t] = | _new of t;
+  private fun _udata[t]: _dummy[t]->gcptr[t] = "(?1*)$1.data";
+  fun xnew[t](x:t) => _udata$ _new x;
 }
 
 module Carray
@@ -1128,6 +1138,7 @@ module Arith_casts
 @#------------- CONTROL STRUCTURES -------------------
 module Control 
 {
+  open C_hack;
   publish 'infinite loop'
   proc forever (bdy:unit->void)
   {
@@ -1229,18 +1240,20 @@ module Control
     handle: int; // integer handle
   };
 
-  typedef driver_request_table_t = C_hack::ptr[driver_request_entry_t];
+  typedef driver_request_table_t = ptr[driver_request_entry_t];
   
   publish "Supervisor calls"
   // THESE VALUES MUST SYNC WITH THE RTL
   union svc_req_t =
   /*0*/ | svc_yield                          
-  /*1*/ | svc_get_fthread         of address        
+  /*1*/ | svc_get_fthread         of ptr[fthread] 
   /*2*/ | svc_read                of address              
   /*3*/ | svc_general             of address          
-  /*4*/ | svc_map_driver_requests of C_hack::ptr[driver_request_table_t]
+  /*4*/ | svc_map_driver_requests of ptr[driver_request_table_t]
   /*5*/ | svc_driver_request      of int * address
   /*6*/ | svc_spawn_detached      of fthread
+  /*7*/ | svc_sread               of _schannel * ptr[gcaddress]
+  /*8*/ | svc_swrite              of _schannel * ptr[gcaddress]
   ;
 
   publish "Call Supervisor"
@@ -1250,6 +1263,22 @@ module Control
     var y=x;
     _svc y;
   }
+
+  _gc_pointer type schannel[t] = "flx::rtl::schannel_t*";
+  private type _schannel = "flx::rtl::schannel_t*";
+  fun mk_schannel[t]: 1->schannel[t] = 
+    "new(*PTF gc,flx::rtl::schannel_ptr_map) flx::rtl::schannel_t(PTF gc)"
+  ; 
+
+  proc read[t](chan:schannel[t],loc:ptr[gcptr[string]]) {
+    svc$ svc_sread$ cast[_schannel] chan, cast[ptr[gcaddress]] loc;
+  }
+
+  proc write[t](chan:schannel[t],v:t) {
+    var ps = cast[gcaddress]$ xnew v;
+    svc$ svc_swrite$ cast[_schannel] chan, addr ps;
+  }
+
 
   publish "Read primitive"
   // finds the machine address of the read buffer

@@ -1,9 +1,13 @@
 @head(2,'Maker')
 @FLX_MAKER_CVS_ID='$Id$'
 @print FLX_MAKER_CVS_ID
+@execfile('config/flx_data.py')
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.174  2005/10/31 21:22:32  skaller
+I/O channels now working.
+
 Revision 1.173  2005/10/31 03:38:06  skaller
 Fiddle with service request stuff
 
@@ -2679,7 +2683,6 @@ RTL_CPPS = [
 DRIVERS = [
   ('rtl/flx_run','bin/flx_run'),
   ('test/flx_perf_drv1','test/flx_perf_drv1'),
-  ('rtl/flx_stdin_drv','bin/flx_stdin_drv'),
   ('test/micky_mouse','bin/micky_mouse'),
 ]
 
@@ -2747,7 +2750,6 @@ BAD_TESTS = []
 SPECIAL_TESTS = [
   ('bin'+os.sep+'flx_run','test'+os.sep+'flx_run_lib1.flx',''),
   ('test'+os.sep+'flx_perf_drv1','test'+os.sep+'flx_perf_lib1.flx','1000'),
-  ('bin'+os.sep+'flx_stdin_drv','test'+os.sep+'flx_stdin_lib1.flx','<Makefile >tmp.tmp'),
 ]
 
 # -------------------------------------------------

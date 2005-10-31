@@ -109,42 +109,6 @@ void std_finaliser(collector_t*, void *t)
 }
 
 @doc()
-Here is the frame_t data type.
-@select(h)
-struct frame_t
-{
-  gc_shape_t *shape;      // the shape of each object
-  unsigned long n_objects; // how many objects (for arrays)
-  frame_t *next;          // the next and previous objects
-  frame_t *prev;          // in the collectors list
-  collector_t *collector; // the managing collector
-  bool garbage;           // the garbage flag
-  bool finalised;         // whether the object is finalised
-};
-
-@doc()
-Its unfortunate, but neither C nor C++ provide
-proper alignment controls, and rather than mess
-around with weird macro solutions, we just fix
-a reasonable figure for 32 bit machines and hope
-for the best. Change this figure for your machine
-if necessary.
-
-@select(h)
-@tangle('#define _MAX_ALIGN '+str(MAX_ALIGN))
-
-// ----------------------------------------------------
-
-#define _ROUNDUP(i,n) ((i + n - 1) / n * n)
-#define _ALIGN(i) _ROUNDUP(i,_MAX_ALIGN)
-
-#define FRAMESIZE int(_ALIGN(sizeof(frame_t)))
-#define FRAME_TO_CLIENT(p) \
-  ((void*)((unsigned char*)(void*)p + FRAMESIZE))
-#define CLIENT_TO_FRAME(p) \
-  ((frame_t*)(void*)((unsigned char*)p - FRAMESIZE))
-
-@doc()
 Here is the allocator abstraction.
 @select(h)
 struct allocator_t {
@@ -307,14 +271,53 @@ FLX_RTL_EXTERN void *operator new
 
 #endif
 
-@select(tangler('rtl/flx_gc.cpp'))
+@h=tangler('rtl/flx_gc_private.hpp')
+@select(h)
+// THIS IS A HACK .. required by generic pointer
+// manipulators -- but really should be private to the Felix
+// default collector implementation
+
+namespace flx {
+namespace gc {
+namespace generic { // SHOULD BE NAMESPACE collector
+
+struct frame_t
+{
+  gc_shape_t *shape;      // the shape of each object
+  unsigned long n_objects; // how many objects (for arrays)
+  frame_t *next;          // the next and previous objects
+  frame_t *prev;          // in the collectors list
+  collector_t *collector; // the managing collector
+  bool garbage;           // the garbage flag
+  bool finalised;         // whether the object is finalised
+};
+
+}}} // end namespaces
+
+// ----------------------------------------------------
+
+#define _ROUNDUP(i,n) ((i + n - 1) / n * n)
+#define _ALIGN(i) _ROUNDUP(i,FLX_MAX_ALIGN)
+
+#define FRAMESIZE int(_ALIGN(sizeof(frame_t)))
+#define FRAME_TO_CLIENT(p) \
+  ((void*)((unsigned char*)(void*)p + FRAMESIZE))
+#define CLIENT_TO_FRAME(p) \
+  ((frame_t*)(void*)((unsigned char*)p - FRAMESIZE))
+
+
+@h=tangler('rtl/flx_gc.cpp')
+@select(h)
 
 #include "flx_gc.hpp"
 #include <cstdio>
 #include <cassert>
+#include "flx_gc_private.hpp"
+
 namespace flx {
 namespace gc {
 namespace generic {
+
 
 // create a shape object given an array of offsets
 gc_shape_t::gc_shape_t
@@ -419,6 +422,7 @@ void *operator new(
 #ifndef FLX_COLLECTOR
 #define FLX_COLLECTOR
 #include "flx_gc.hpp"
+#include "flx_gc_private.hpp"
 #include <map>
 
 namespace flx {
