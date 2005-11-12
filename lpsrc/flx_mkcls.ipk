@@ -115,6 +115,17 @@ let rec adj_cls syms bbdfns all_closures e =
     all_closures := IntSet.add i !all_closures;
     x
 
+  (* Class method -- ASSUMED NOT A PRIMITIVE -- seem to require
+     heap closures: not sure why this should be. They cannot
+     be inlined into their parent at the moment, since it is a class,
+     and any 'inlined' version would be an actual C++ class method.
+     Which would also be a kind of stack call. In any case
+     we cannot optimise this yet.
+  *)
+  | `BEXPR_method_closure (_,i,_),_ as x ->
+    all_closures := IntSet.add i !all_closures;
+    x
+
   | x -> x
 
 
@@ -134,6 +145,11 @@ let process_exe syms bbdfns all_closures (exe : bexe_t) : bexe_t =
   | `BEXE_call_stack (sr,i,ts,e2)  -> 
     (* stack calls do use closures -- but not heap allocated ones *)
     `BEXE_call_stack (sr,i,ts, ue e2)
+
+  | `BEXE_apply_ctor (sr,i1,i2,ts,i3,e2) ->
+    all_closures := IntSet.add i2 !all_closures;
+    all_closures := IntSet.add i3 !all_closures;
+    `BEXE_apply_ctor(sr,i1,i2,ts,i3,ue e2)
 
   | `BEXE_call (sr,e1,e2)  -> `BEXE_call (sr,ue e1, ue e2)
   | `BEXE_jump (sr,e1,e2)  -> `BEXE_jump (sr,ue e1, ue e2)

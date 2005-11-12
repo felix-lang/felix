@@ -136,7 +136,8 @@ let rec find_true_parent dfns child parent =
       | `SYMDEF_module -> find_true_parent dfns id grandparent
       | `SYMDEF_regmatch _ 
       | `SYMDEF_reglex _ 
-      | `SYMDEF_function _ -> Some parent
+      | `SYMDEF_function _ 
+      | `SYMDEF_class  -> Some parent
       | _ -> None
     
 let bind_req syms env sr tag =
@@ -480,6 +481,9 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
       in
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_cclass (bvs,cs'))
 
+    | `SYMDEF_class -> 
+      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_class ([],bvs))
+
     | `SYMDEF_regdef _ -> ()
     | `SYMDEF_type_alias _ -> ()
     | `SYMDEF_inherit _ -> ()
@@ -546,8 +550,21 @@ let bbind syms =
       in match entry with
       | Some entry ->
         begin try
+          (*
+          begin
+            try match Hashtbl.find syms.dfns !i with {id=id} ->
+              print_endline (" Trying to bind "^id^" index " ^ si !i)
+            with Not_found ->
+              failwith ("Binding error UNKNOWN SYMBOL, index " ^ si !i)
+          end
+          ;
+          *)
           bbind_sym syms bbdfns !i entry
-        with Not_found -> failwith ("Binding error index " ^ si !i)
+        with Not_found -> 
+          try match Hashtbl.find syms.dfns !i with {id=id} ->
+            failwith ("Binding error "^id^" index " ^ si !i)
+          with Not_found ->
+            failwith ("Binding error UNKNOWN SYMBOL, index " ^ si !i)
         end
       | None -> ()
     end
@@ -679,7 +696,7 @@ try
   print_endline ("//Top level module '"^module_name^"' has index " ^ si root);
 
   let table, _, exes, ifaces,dirs = 
-    build_tables syms "root" 0 None None root deblocked 
+    build_tables syms "root" 0 None None root false deblocked 
   in
     print_endline "//BINDING EXECUTABLE CODE";
     print_endline "//-----------------------";

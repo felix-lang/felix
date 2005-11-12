@@ -141,6 +141,11 @@ let has_ptr_fn cache syms bbdfns children e =
         | `BBDCL_struct (vs,cs)
         | `BBDCL_cstruct (vs,cs) -> 
           check_components vs ts (map snd cs)
+
+        | `BBDCL_class _ ->
+          Hashtbl.replace cache e `Unsafe;
+          raise Unsafe
+
         | `BBDCL_cclass (vs,cs) ->
           let tlist = map (function 
             | `BMemberVal (_,t)
@@ -200,6 +205,7 @@ let rec is_pure syms (child_map, bbdfns) i =
      -> true
 
   | `BBDCL_cclass _  (* not sure FIXME .. *)
+  | `BBDCL_class _  (* not sure FIXME .. *)
   | `BBDCL_glr _
   | `BBDCL_reglex _
   | `BBDCL_regmatch _

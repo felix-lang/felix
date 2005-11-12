@@ -172,6 +172,8 @@ let rec register_type_r ui syms bbdfns exclude sr t =
       iter rr cts;
       rnr t
 
+    | `BBDCL_class vs -> rnr t
+
     | `BBDCL_cclass (vs,cs) ->
        let cts = map (function 
          | `BMemberVal (_,t)

@@ -290,13 +290,13 @@ struct readreq_t {
 };
 
 // ********************************************************
-// driver request entry
+/// driver request entry.
 // ********************************************************
 
 struct driver_request_entry_t
 {
-  char const* name; // string name
-  int handle;       // integer handle
+  char const* name; ///< string name
+  int handle;       ///< integer handle
 };
 
 extern void FLX_RTL_EXTERN map_driver_requests
@@ -306,27 +306,27 @@ extern void FLX_RTL_EXTERN map_driver_requests
 );
 
 // ********************************************************
-// CONTINUATION
+/// CONTINUATION.
 // ********************************************************
 
-struct FLX_RTL_EXTERN con_t // abstract base for mutable continuations
+struct FLX_RTL_EXTERN con_t ///< abstract base for mutable continuations
 {
 #ifdef FLX_CGOTO
-  void *pc;                 // interior program counter
+  void *pc;                 ///< interior program counter
 #else
    int pc;
 #endif
 
-  _uctor_ *p_svc;           // pointer to service request
+  _uctor_ *p_svc;           ///< pointer to service request
 
   con_t();
   virtual con_t *resume()=0;
   virtual ~con_t();
-  con_t * _caller;          // callers continuation
+  con_t * _caller;          ///< callers continuation
 };
 
 // ********************************************************
-// SLIST -- singly linked lists: SHARABLE and COPYABLE
+/// SLIST. singly linked lists: SHARABLE and COPYABLE
 // ********************************************************
 
 struct FLX_RTL_EXTERN slist_t {
@@ -342,7 +342,7 @@ struct FLX_RTL_EXTERN slist_t {
 };
 
 // ********************************************************
-// FTHREAD -- Felix threads
+/// FTHREAD. Felix threads
 // ********************************************************
 
 struct FLX_RTL_EXTERN fthread_t // fthread abstraction
@@ -359,7 +359,7 @@ private: // uncopyable
 };
 
 // ********************************************************
-// SCHANNEL -- Synchronous channels
+/// SCHANNEL. Synchronous channels
 // ********************************************************
 
 struct FLX_RTL_EXTERN schannel_t 
@@ -377,14 +377,14 @@ private: // uncopyable
 };
 
 // ********************************************************
-// REFERENCE -- Felix pointer type
-// note: non-polymorphic, so ctor can be inline
+/// REFERENCE. Felix pointer type
+/// note: non-polymorphic, so ctor can be inline
 // ********************************************************
 
 struct FLX_RTL_EXTERN _ref_
 {
-  void *frame;
-  void *data;
+  void *frame; ///< Heap frame pointer
+  void *data;  ///< Client Data pointer
 
   _ref_(){}
   _ref_(void *f, void *d): frame(f), data(d) {}
@@ -401,74 +401,74 @@ struct FLX_RTL_EXTERN _ref_
 
 
 // ********************************************************
-// VARIANTS -- Felix union type
-// note: non-polymorphic, so ctor can be inline
+/// VARIANTS. Felix union type
+/// note: non-polymorphic, so ctor can be inline
 // ********************************************************
 
 struct FLX_RTL_EXTERN _uctor_
 {
-  int variant;
-  void *data;
+  int variant;  ///< Variant code
+  void *data;   ///< Heap variant constructor data
   _uctor_() : variant(-1), data(0) {}
   _uctor_(int i, void *d) : variant(i), data(d) {}
 };
 
 
 // ********************************************************
-// EXCEPTION: EXEC protocol failure
-// Thrown when trying to run a dead procedure
+/// EXCEPTION: EXEC protocol failure.
+/// Thrown when trying to run a dead procedure
 // ********************************************************
 
 struct FLX_RTL_EXTERN flx_exec_failure_t {
-  std::string filename;
-  std::string operation;
-  std::string what;
+  std::string filename;  ///< dll filename
+  std::string operation; ///< faulty operation
+  std::string what;      ///< error description
   flx_exec_failure_t(std::string f, std::string o, std::string w);
   virtual ~flx_exec_failure_t();
 };
 
 // ********************************************************
-// SOURCE REFERENCE: to track places in user source code
+/// SOURCE REFERENCE: to track places in user source code.
 // ********************************************************
 
 struct FLX_RTL_EXTERN flx_range_srcref_t {
-  char *filename;
-  int startline;
-  int startcol;
-  int endline;
-  int endcol;
+  char *filename;  ///< source file name
+  int startline;   ///< first line (1 origin)
+  int startcol;    ///< first column (1 origin)
+  int endline;     ///< last line
+  int endcol;      ///< last column
   flx_range_srcref_t(char *f,int sl, int sc, int el, int ec);
 };
 
 // ********************************************************
-// EXCEPTION: MATCH failure
-// Thrown when no match cases match the argument of a match,
-// regmatch, or reglex
+/// EXCEPTION: MATCH failure.
+/// Thrown when no match cases match the argument of a match,
+/// regmatch, or reglex
 // ********************************************************
 
 struct FLX_RTL_EXTERN flx_match_failure_t {
-  flx_range_srcref_t flx_loc;
-  char *cxx_srcfile;    // in C++ file
-  int cxx_srcline;      // __LINE__ macro
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  char *cxx_srcfile;          ///< C++ file name
+  int cxx_srcline;            ///< C++ line number
   flx_match_failure_t(flx_range_srcref_t ff, char *cf, int cl);
   virtual ~flx_match_failure_t();
 };
 
 // ********************************************************
-// EXCEPTION: ASSERT failure
-// Thrown when user assertion fails
+/// EXCEPTION: ASSERT failure.
+/// Thrown when user assertion fails
 // ********************************************************
 
 struct FLX_RTL_EXTERN flx_assert_failure_t {
-  flx_range_srcref_t flx_loc;
-  char *cxx_srcfile;    // in C++ file
-  int cxx_srcline;      // __LINE__ macro
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  char *cxx_srcfile;          ///< C++ file
+  int cxx_srcline;            ///< __LINE__ macro
   flx_assert_failure_t(flx_range_srcref_t ff, char *cf, int cl);
   virtual ~flx_assert_failure_t();
 };
 
 // ********************************************************
-// EXCEPTION: SWITCH failure -- this is a system failure!
+/// EXCEPTION: SWITCH failure. this is a system failure!
 // ********************************************************
 
 struct FLX_RTL_EXTERN flx_switch_failure_t {
@@ -1062,6 +1062,8 @@ struct FLX_RTL_EXTERN flx_link_failure_t;
 struct FLX_RTL_EXTERN flx_dynlink_t;
 struct FLX_RTL_EXTERN flx_libinit_t;
 
+/// Dynamic linkage failure.
+
 struct FLX_RTL_EXTERN flx_link_failure_t {
   string filename;
   string operation;
@@ -1070,13 +1072,15 @@ struct FLX_RTL_EXTERN flx_link_failure_t {
   virtual ~flx_link_failure_t();
 };
 
-// frame creators
+/// frame creators.
+
 typedef thread_frame_t *(*thread_frame_creator_t)
 (
   flx::gc::generic::collector_t*
 );
 
-// library initialisation routine
+/// library initialisation routine.
+
 typedef con_t *(*start_t)
 (
   thread_frame_t*,
@@ -1087,6 +1091,8 @@ typedef con_t *(*start_t)
   FILE*
   
 );
+
+/// dynamic object loader.
 
 struct FLX_RTL_EXTERN flx_dynlink_t
 {
@@ -1111,6 +1117,8 @@ private:
   virtual void usr_link();
     // called after mandatory symbols are linked
 };
+
+/// Thread Frame Initialisation.
 
 struct FLX_RTL_EXTERN flx_libinit_t 
 {

@@ -412,6 +412,8 @@ and expr_t =
   | `AST_letin of range_srcref * (pattern_t * expr_t * expr_t)
 
   | `AST_get_n of range_srcref * (int * expr_t) (* get n'th component of a tuple *)
+  | `AST_get_named_variable of range_srcref * (string * expr_t) (* get named component of a class *)
+  | `AST_get_named_method of range_srcref * (string * expr_t * typecode_t) (* get named component of a class *)
   | `AST_as of range_srcref * (expr_t * string)
   | `AST_match of range_srcref * (expr_t * (pattern_t * expr_t) list)
   | `AST_parse of range_srcref * expr_t * (range_srcref * production_t * expr_t) list
@@ -490,6 +492,7 @@ and funkind_t = [
   | `Function 
   | `InlineFunction 
   | `NoInlineFunction
+  | `Ctor
 ]
 
 and property_t = [
@@ -504,6 +507,7 @@ and property_t = [
   | `Stackable           (* closure can be created on stack *)
   | `Pure                (* closure not required by self *)
   | `Uses_global_var     (* a global variable is explicitly used *)
+  | `Ctor                (* Class constructor procedure *)
 
   (* one of the below must be set before code generation *)
   | `Requires_ptf        (* a pointer to thread frame is needed *)
@@ -573,7 +577,6 @@ and statement_t =
   | `AST_regdef of range_srcref * string * regexp_t
   | `AST_glr of range_srcref * string * typecode_t * (range_srcref * production_t * expr_t) list
   
-
   (* macros *)
   | `AST_macro_name of range_srcref * id_t * id_t 
   | `AST_macro_names of range_srcref * id_t * id_t list
@@ -601,6 +604,7 @@ and statement_t =
   | `AST_struct of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
   | `AST_cstruct of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
   | `AST_cclass of range_srcref * id_t * vs_list_t * class_member_t list
+  | `AST_class of range_srcref * id_t * vs_list_t * statement_t list
   | `AST_type_alias of range_srcref * id_t * vs_list_t * typecode_t
   | `AST_inherit of range_srcref * id_t * vs_list_t * qualified_name_t
   | `AST_inherit_fun of range_srcref * id_t * vs_list_t * qualified_name_t
@@ -631,6 +635,7 @@ and statement_t =
   | `AST_proc_return of range_srcref 
   | `AST_nop of range_srcref * string
   | `AST_assert of range_srcref * expr_t
+  | `AST_apply_ctor of range_srcref * id_t * expr_t * expr_t
 
   (* binding structures [prolog] *)
   | `AST_abs_decl of range_srcref * id_t * vs_list_t * type_qual_t list * c_t * requirements_t
@@ -669,6 +674,7 @@ and exe_t =
   | `EXE_iinit of (id_t * int) * expr_t 
   | `EXE_assign of expr_t * expr_t 
   | `EXE_assert of expr_t
+  | `EXE_apply_ctor of id_t * expr_t * expr_t
   ]
 
 type sexe_t = range_srcref * exe_t
@@ -740,6 +746,7 @@ type dcl_t =
 
   (* module system *)
   | `DCL_module of       asm_t list  
+  | `DCL_class of        asm_t list  
 
   (* binding structures [prolog] *)
   | `DCL_abs of          type_qual_t list * c_t * named_reqs_t
@@ -865,7 +872,31 @@ and bexe_t =
   | `BEXE_begin
   | `BEXE_end
   | `BEXE_assert of range_srcref * tbexpr_t
-  ]
+
+  | `BEXE_apply_ctor of range_srcref * bid_t * bid_t * btypecode_t list * bid_t * tbexpr_t
+    (* For classes! Note this case works as so: 
+     * arg0 denotes a variable to store the closure pointer in
+     * arg1 and 2 denote the closure to be created, 
+     * arg3 and 4 s a procedure call executed in the 
+       context of the closure to initialise the frame. 
+     * The expression just returns the initialised closure. 
+     * This is rougly equivalent to (in Ocaml notation):
+     
+      let frame = closure (arg1,arg2) in
+      closure(arg3,arg2).call(arg4).run();
+      closure
+
+      except that the second closure create takes
+      the first as its parent. This combinator is
+      needed to intervene in the construction of
+      the display (list of environment pointers)
+      to ensure that the first closure is passed
+      as a display variable to the second, so that
+      the class constructor can refer to the class object
+      as its parent, that is, so references to member variables
+      resolve correctly to the instance object.
+    *)
+   ]
 
 and bexpr_t =
   [
@@ -879,9 +910,12 @@ and bexpr_t =
   | `BEXPR_apply_direct of bid_t * btypecode_t list * tbexpr_t 
   | `BEXPR_apply_stack of bid_t * btypecode_t list * tbexpr_t 
   | `BEXPR_apply_struct of bid_t * btypecode_t list * tbexpr_t 
+   
   | `BEXPR_tuple of tbexpr_t list
-  | `BEXPR_get_n of int * tbexpr_t
+  | `BEXPR_get_n of int * tbexpr_t (* tuple projection *)
+  | `BEXPR_get_named of int * tbexpr_t (* struct/class projection *)
   | `BEXPR_closure of bid_t * btypecode_t list
+  | `BEXPR_method_closure of tbexpr_t * bid_t * btypecode_t list
   | `BEXPR_case of int * btypecode_t
   | `BEXPR_match_case of int * tbexpr_t
   | `BEXPR_case_arg of int * tbexpr_t
@@ -929,6 +963,7 @@ and bbdcl_t =
   | `BBDCL_struct of     bvs_t * (id_t * btypecode_t) list
   | `BBDCL_cstruct of     bvs_t * (id_t * btypecode_t) list
   | `BBDCL_cclass of     bvs_t * bclass_member_t list
+  | `BBDCL_class of      property_t list * bvs_t
   | `BBDCL_nonconst_ctor of bvs_t * int * btypecode_t * int * btypecode_t
   ]
 
@@ -951,6 +986,7 @@ type symbol_definition_t =
 
   | `SYMDEF_match_check of  pattern_t * (string *int)
   | `SYMDEF_module
+  | `SYMDEF_class
 
   | `SYMDEF_const_ctor of int * typecode_t * int
   | `SYMDEF_nonconst_ctor of int * typecode_t * int * typecode_t
@@ -1164,6 +1200,8 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_letin (sr,(pat,a,b)) -> `AST_letin (sr,(pat,f a, f b))
 
   | `AST_get_n (sr,(j,x)) -> `AST_get_n (sr,(j,f x))
+  | `AST_get_named_variable (sr,(j,x)) -> `AST_get_named_variable (sr,(j,f x))
+  | `AST_get_named_method (sr,(j,x,t)) -> `AST_get_named_method (sr,(j,f x,t))
   | `AST_as (sr,(x,s)) -> `AST_as (sr,(f x, s))
   | `AST_match (sr,(a,pes)) ->
     `AST_match (sr, (f a, map (fun (pat,x) -> pat, f x) pes))
@@ -1300,8 +1338,10 @@ let rec iter_tbexpr fi fe ft ((x,t) as e) =
   | `BEXPR_tuple  es -> iter fe es
 
   | `BEXPR_get_n (i,e) -> fe e
+  | `BEXPR_get_named (i,e) -> fi i; fe e
 
   | `BEXPR_closure (i,ts) -> fi i; iter ft ts
+  | `BEXPR_method_closure (e,i,ts) -> fe e; fi i; iter ft ts
   | `BEXPR_name (i,ts) -> fi i; iter ft ts
   | `BEXPR_case (i,t') -> ft t'
   | `BEXPR_match_case (i,e) -> fe e
@@ -1310,6 +1350,7 @@ let rec iter_tbexpr fi fe ft ((x,t) as e) =
 
   | `BEXPR_literal x -> ft t
   | `BEXPR_expr (s,t1) -> ft t1
+
 
 let map_tbexpr fi fe ft e = match e with 
   | `BEXPR_parse (e,iis),t -> `BEXPR_parse (fe e,map fi iis), ft t
@@ -1322,11 +1363,14 @@ let map_tbexpr fi fe ft e = match e with
   | `BEXPR_apply_direct (i,ts,e2),t -> `BEXPR_apply_direct (fi i, map ft ts, fe e2),ft t
   | `BEXPR_apply_struct (i,ts,e2),t -> `BEXPR_apply_struct (fi i, map ft ts, fe e2),ft t
   | `BEXPR_apply_stack (i,ts,e2),t -> `BEXPR_apply_stack (fi i, map ft ts, fe e2),ft t
+
   | `BEXPR_tuple  es,t -> `BEXPR_tuple (map fe es),ft t
 
   | `BEXPR_get_n (i,e),t -> `BEXPR_get_n (i, fe e),ft t
+  | `BEXPR_get_named (i,e),t -> `BEXPR_get_named (fi i, fe e),ft t
 
   | `BEXPR_closure (i,ts),t -> `BEXPR_closure (fi i, map ft ts),ft t
+  | `BEXPR_method_closure (e,i,ts),t -> `BEXPR_method_closure (fe e, fi i, map ft ts),ft t
   | `BEXPR_name (i,ts),t -> `BEXPR_name (fi i, map ft ts), ft t
   | `BEXPR_case (i,t'),t -> `BEXPR_case (i, ft t'),ft t
   | `BEXPR_match_case (i,e),t -> `BEXPR_match_case (i, fe e),ft t
@@ -1350,6 +1394,9 @@ let iter_bexe fi fe ft fl fldef exe =
   | `BEXE_jump (sr,e1,e2) 
     -> fe e1; fe e2
 
+  | `BEXE_apply_ctor (sr,i0, i1,ts,i2,e2) 
+    -> fi i0; fi i1; iter ft ts; fi i2; fe e2
+  
   | `BEXE_loop (sr,i,e) 
     -> fi i; fe e
     
@@ -1405,6 +1452,9 @@ let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
    
   | `BEXE_call (sr,e1,e2) -> 
     `BEXE_call (sr,fe e1, fe e2)
+
+  | `BEXE_apply_ctor (sr,i1,i2,ts,i3,e2) ->
+    `BEXE_apply_ctor (sr,fi i1,fi i2, map ft ts, fi i3,fe e2)
 
   | `BEXE_jump (sr,e1,e2) ->
     `BEXE_jump (sr,fe e1, fe e2) 
@@ -1478,6 +1528,8 @@ Source reference manipulators.
 @h = tangler('src/flx_srcref.mli')
 @select(h)
 open Flx_ast
+open Flx_types
+
 val rstoken: srcref -> srcref -> range_srcref
 val rsrange: range_srcref -> range_srcref -> range_srcref
 val slift: srcref -> range_srcref
@@ -1485,6 +1537,7 @@ val slift: srcref -> range_srcref
 val rsexpr: expr_t -> expr_t -> range_srcref
 val rslist: expr_t list -> range_srcref
 
+val src_of_bexe: bexe_t -> range_srcref
 val src_of_expr: expr_t -> range_srcref
 val src_of_stmt : statement_t -> range_srcref
 val src_of_pat : pattern_t -> range_srcref
@@ -1494,13 +1547,18 @@ val src_of_suffixed_name: suffixed_name_t -> range_srcref
 val short_string_of_src: range_srcref -> string
 val long_string_of_src: range_srcref -> string
 
+val dummy_sr: range_srcref
 @h = tangler('src/flx_srcref.ml')
+
 @doc()
 Generic source reference manipulation.
 Note the special hack of forgetting the second
 filename when creating a range: the alternative
 would be to record a complete list of lines.
 @select(h)
+
+let dummy_sr = ("generated",0,0,0,0)
+
 (** axiom: rstoken a b = rsrange (lift a) (lift b) *)
 
 (** get source range from source references of first
@@ -1525,6 +1583,35 @@ Type specific operations.
 open Flx_util
 open Flx_ast
 open Flx_types
+let src_of_bexe = function
+  | `BEXE_goto (sr,_)
+  | `BEXE_assert (sr,_)
+  | `BEXE_halt (sr,_)
+  | `BEXE_ifgoto (sr,_,_)
+  | `BEXE_ifnotgoto (sr,_,_)
+  | `BEXE_label (sr,_)
+  | `BEXE_comment (sr,_)
+  | `BEXE_call (sr,_,_)
+  | `BEXE_call_direct (sr,_,_,_)
+  | `BEXE_jump_direct (sr,_,_,_)
+  | `BEXE_call_stack (sr,_,_,_)
+  | `BEXE_call_prim (sr,_,_,_)
+  | `BEXE_jump (sr,_,_)
+  | `BEXE_loop (sr,_,_)
+  | `BEXE_svc (sr,_)
+  | `BEXE_fun_return (sr,_)
+  | `BEXE_proc_return sr
+  | `BEXE_nop (sr,_)
+  | `BEXE_code (sr,_)
+  | `BEXE_nonreturn_code (sr,_)
+  | `BEXE_assign (sr,_,_)
+  | `BEXE_init (sr,_,_)
+  | `BEXE_apply_ctor (sr,_,_,_,_,_)
+    -> sr
+
+  | `BEXE_begin
+  | `BEXE_end -> dummy_sr
+
 let src_of_qualified_name (e : qualified_name_t) = match e with
   | `AST_void s 
   | `AST_name  (s,_,_) 
@@ -1571,6 +1658,8 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_case_arg  (s,_) 
   | `AST_case_index (s,_) 
   | `AST_get_n  (s,_) 
+  | `AST_get_named_variable  (s,_) 
+  | `AST_get_named_method (s,_) 
   | `AST_coercion (s,_)
   | `AST_as (s,_)
   | `AST_match (s, _) 
@@ -1593,6 +1682,7 @@ let src_of_stmt e = match e with
   | `AST_label (s,_)
   | `AST_goto (s,_)
   | `AST_assert (s,_)
+  | `AST_apply_ctor (s,_,_,_)
   | `AST_function (s,_, _, _ , _, _, _)
   | `AST_curry (s,_, _, _ , _, _,_)
   | `AST_object (s,_, _, _ , _)
@@ -1646,6 +1736,7 @@ let src_of_stmt e = match e with
   | `AST_struct (s,_, _, _)
   | `AST_cstruct (s,_, _, _)
   | `AST_cclass (s,_, _, _)
+  | `AST_class (s,_, _, _)
   | `AST_untyped_module (s,_,_,_)
   | `AST_export_fun (s, _,_)
   | `AST_export_type (s, _,_)
@@ -1959,6 +2050,8 @@ and string_of_expr (e:expr_t) =
   | `AST_typeof (_,e) -> "typeof("^se e^")"
   | `AST_as (_,(e1, name)) -> "(" ^ se e1 ^ ") as " ^ name  
   | `AST_get_n (_,(n,e)) -> "get (" ^ si n ^ ", " ^se e^")"
+  | `AST_get_named_variable (_,(n,e)) -> "get (" ^ n ^ ", " ^se e^")"
+  | `AST_get_named_method (_,(n,e,t)) -> "get (" ^ n ^ ", " ^se e ^","^string_of_typecode t^")"
   | `AST_strexpr (_,e) -> "#" ^ (string_of_expr e)
   | `AST_map (_,f,e) -> "map (" ^ se f ^ ") (" ^ se e ^ ")"
   | `AST_deref (_,e) -> "*(" ^ se e ^ ")"
@@ -2642,6 +2735,7 @@ and string_of_property = function
 | `Requires_ptf -> "requires_thread_frame"
 | `Not_requires_ptf -> "does_not_require_thread_frame"
 | `Uses_gc -> "uses_gc"
+| `Ctor -> "ctor"
 
 and string_of_properties ps =
   match ps with 
@@ -2724,6 +2818,9 @@ and string_of_statement level s =
 
   | `AST_assert (_,e) -> spaces level ^ "assert " ^ se e ^ ";"
 
+  | `AST_apply_ctor (_,i1,f,a) ->
+    spaces level ^ i1 ^ " <- new " ^ se f ^ "(" ^ se a ^ ");"
+
   | `AST_comment s -> spaces level ^ "// " ^ s
 
   | `AST_open (_,n) -> 
@@ -2800,6 +2897,10 @@ and string_of_statement level s =
     spaces level ^ "{\n" ^
     catmap "\n" (string_of_class_component level) cs ^ "\n" ^
     spaces level ^ "}"
+
+  | `AST_class (_,name, vs, sts) -> 
+    spaces level ^ "class " ^ name ^ print_vs vs ^ " = " ^
+    string_of_compound level sts
 
   | `AST_union (_,name, vs,cs) -> 
     let string_of_union_component (name,ty) =
@@ -2878,6 +2979,7 @@ and string_of_statement level s =
     | `Object -> "obj " 
     | `InlineFunction -> "inline fun "
     | `NoInlineFunction -> "noinline fun "
+    | `Ctor -> "ctor "
     )
     ^ 
     name ^ print_vs vs ^ 
@@ -3187,7 +3289,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t)
     
   | `SYMDEF_cclass (cts) -> 
     "cclass " ^ name ^ print_ivs vs ^ ";"
-    
+
   | `SYMDEF_fun (props, pts,res,cts, reqs,prec) -> 
     string_of_properties props ^
     "fun " ^ name ^ print_ivs vs ^
@@ -3239,6 +3341,9 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t)
   
   | `SYMDEF_module -> 
     "module " ^ name ^ ";"
+
+  | `SYMDEF_class -> 
+    "class " ^ name ^ ";"
     
 and string_of_exe level s = 
   let spc = spaces level
@@ -3248,6 +3353,10 @@ and string_of_exe level s =
 
   | `EXE_goto s -> spc ^ "goto " ^ s ^ ";"
   | `EXE_assert e -> spc ^ "assert " ^ se e ^ ";"
+  | `EXE_apply_ctor (i1,f,e) ->
+    spc ^ i1 ^ " <- new " ^ se f ^
+    "(" ^ se e ^ ");"
+
 
   | `EXE_ifgoto (e,s) -> spc ^ 
      "if(" ^ se e ^ ")goto " ^ s ^ ";"
@@ -3317,10 +3426,12 @@ and string_of_bound_expression dfns e =
   | `BEXPR_parse (e,ii) -> "parse " ^ se e ^ " with <nt> endmatch"
 
   | `BEXPR_get_n (n,e') -> "(" ^ se e' ^ ").mem_" ^ si n
+  | `BEXPR_get_named (i,e') -> "(" ^ se e' ^ ")." ^ sid i
 
   | `BEXPR_deref e -> "*("^ se e ^ ")"
   | `BEXPR_name (i,ts) -> sid i ^ print_inst dfns ts
   | `BEXPR_closure (i,ts) -> sid i ^ print_inst dfns ts
+  | `BEXPR_method_closure (e,i,ts) -> se e ^ "." ^ sid i ^ print_inst dfns ts
   | `BEXPR_ref (i,ts) -> "&" ^ sid i ^ print_inst dfns ts
 
   | `BEXPR_literal e -> string_of_literal e
@@ -3461,8 +3572,15 @@ and string_of_bexe dfns level s =
 
   | `BEXE_init (_,l,r) -> spc ^ 
     sid l ^ " := " ^ se r ^ ";"
+
   | `BEXE_begin -> "{//begin"
+
   | `BEXE_end -> "}//end"
+
+  | `BEXE_apply_ctor (sr,i0,i1,ts, i2, arg) -> spc ^ 
+    sid i0 ^ " = new " ^ sid i1 ^ print_inst dfns ts ^ " " ^ 
+    sid i2 ^ " (" ^ se arg ^ ");"
+
 
 and string_of_dcl level name seq vs (s:dcl_t) = 
   let se e = string_of_expr e in
@@ -3499,6 +3617,11 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     "\n" ^ 
     string_of_asm_compound level asms 
 
+  | `DCL_class (asms) -> 
+    spaces level ^ "class " ^ name^seq ^ print_vs vs ^ " = " ^
+    "\n" ^ 
+    string_of_asm_compound level asms 
+
   | `DCL_struct (cs) -> 
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ name^ ": " ^ string_of_typecode ty ^ ";"
@@ -3518,7 +3641,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     spaces level ^ "}"
 
   | `DCL_cclass (cs) -> 
-    spaces level ^ "ccstruct " ^ name^seq ^ print_vs vs ^ " = " ^
+    spaces level ^ "cclass " ^ name^seq ^ print_vs vs ^ " = " ^
     spaces level ^ "{\n" ^
     catmap "\n" (string_of_class_component level) cs ^ "\n" ^
     spaces level ^ "}"
@@ -3780,6 +3903,10 @@ and string_of_bbdcl dfns bbdcl index =
     "{\n" ^
     catmap "\n" string_of_class_component cs ^ "\n" ^
     "}"
+
+  | `BBDCL_class (props,vs) ->
+    string_of_properties props ^
+    "class " ^ name ^ print_bvs vs ^ ";"
 
   | `BBDCL_glr (props,vs,t,(p,bexes)) ->
     "  " ^ "nonterm " ^ name ^ print_bvs vs ^ " : " ^sobt t ^
@@ -4106,7 +4233,6 @@ open Flx_types
 exception UnificationError of btypecode_t * btypecode_t
 val flx_bool : typecode_t
 val flx_bbool : btypecode_t
-val dummy_sr: range_srcref
 
 val is_unitsum: btypecode_t -> bool
 val int_of_unitsum : btypecode_t -> int
@@ -4212,7 +4338,6 @@ let typeoflist typlist = match typlist with
 let lift t = t
 let lower t = t (* CHANGE THIS WHEN ABSTRACT TYPES IMPLEMENTED *)
 
-let dummy_sr = ("generated",0,0,0,0)
 let flx_bool = `TYP_unitsum 2
 let flx_bbool = `BTYP_unitsum 2
 
@@ -4260,6 +4385,11 @@ let rec cmp_tbexpr (a,_) (b,_) =
      i = i' && 
      fold_left2 (fun r a b -> r && a = b) true ts ts'
 
+  | `BEXPR_method_closure (e,i,ts),`BEXPR_method_closure (e',i',ts') ->
+     ecmp e e' &&
+     i = i' && 
+     fold_left2 (fun r a b -> r && a = b) true ts ts'
+
   | `BEXPR_literal a,`BEXPR_literal a' -> cmp_literal a a'
 
   | `BEXPR_apply (a,b),`BEXPR_apply (a',b') ->  ecmp a a' && ecmp b b'
@@ -4279,6 +4409,14 @@ let rec cmp_tbexpr (a,_) (b,_) =
 
   | `BEXPR_match_case (i,e),`BEXPR_match_case (i',e')
   | `BEXPR_get_n (i,e),`BEXPR_get_n (i',e') ->
+    i = i' && ecmp e e'
+
+  (* this is probably wrong: says x.y = x'.y' iff x = x && y = y',
+  however, x.y should unify with a simple value .. oh well..
+  hmm .. this should REALLY be a pointer to member, that is,
+  an actual projection function
+  *)
+  | `BEXPR_get_named (i,e),`BEXPR_get_named (i',e') ->
     i = i' && ecmp e e'
 
   | `BEXPR_case_index e,`BEXPR_case_index e' -> ecmp e e'

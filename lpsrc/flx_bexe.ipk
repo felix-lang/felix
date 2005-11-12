@@ -235,6 +235,57 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       in  
         tack (cal_call syms sr tbe1 (be2,t2))
 
+    | `EXE_apply_ctor (vname, clsname, arg) ->
+      let (e2,t2) as barg = be arg in
+      let var_idx = 
+        let varname = `AST_name (sr,vname,[]) in
+        match be varname with
+          | `BEXPR_name (i,[]),_ -> i
+          | _ -> clierr sr "Expected (nonpolymorphic) variable name to store object"
+      in
+      let cls = be clsname in
+      begin match cls with 
+
+      | `BEXPR_name (class_idx,ts),_ ->
+        begin 
+          match 
+            try Hashtbl.find syms.dfns class_idx
+            with Not_found ->
+              syserr sr ("[bexe][EXE_apply_ctor] Weird, can't find class index " ^ si class_idx)
+          with 
+          | {id=name;pubmap=pubmap;symdef=`SYMDEF_class} -> 
+            (*
+            print_endline ("Found a class "^name^", look for constructor with hacked name _ctor_"^name);
+            *)
+            let entries = lookup_name_in_htab pubmap ("_ctor_" ^ name) in
+            begin match entries with
+            | None -> clierr sr "Unable to find any constructors for this class"
+            | Some (NonFunctionEntry _) -> syserr sr 
+              "[lookup_name_in_table_dirs_with_sig] Expected constructor to be a procedure"
+
+            | Some (FunctionEntry fs) ->
+              (*
+              print_endline ("Ok, found "^si (length fs) ^"constructors for " ^ name);
+              *)
+              let ro = 
+                resolve_overload
+                syms sr fs ("_ctor_" ^ name) t2 ts
+              in
+              match ro with 
+                | Some (ctor_idx,t,mgu,ts) ->
+                  tack (`BEXE_apply_ctor (sr,var_idx,class_idx,ts,ctor_idx, barg))
+                | None ->
+                  clierr sr "Unable to find matching constructor"
+            end
+          | _ -> clierr sr "Argument of new must be a class"
+        end
+      | `BEXPR_closure (i,ts),_ ->
+        clierr sr ("Class constructor must name class, and we got a closure (which is right but unexpected ..)")
+
+      | _ -> 
+        clierr sr ("Class constructor must name class, got " ^ sbe syms.dfns cls)
+      end
+
     | `EXE_call (p,e) ->
       let p',pt' = be p and e',et' = be e in
       tack (cal_call syms sr (p', pt') (e', et'))

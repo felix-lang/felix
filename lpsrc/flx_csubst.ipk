@@ -17,6 +17,7 @@ val csubst:
   string ->      (* precedence *)
   string ->      (* shape of argument *)
   string list -> (* shape of arguments *)
+  string list -> (* display EXCLUDING thread frame *)
   cexpr_t
   
 @h = tangler('src/flx_csubst.ml')
@@ -45,6 +46,7 @@ open Flx_cexpr
    $Tn: pass argument n expanded into an argument list (varargs)
    #t: the type of the argument tuple
    @t: the shape of the argument tuple
+   @dn: expands to first n components of display, excluding thread frame
    
    ??: expands to ?
    ?n: the n'th generic type argument ..
@@ -68,6 +70,7 @@ open Flx_cexpr
   'BackquoteDigits',
   'HashDigits',
   'EarholeDigits',
+  'EarholeDisplayDigits',
   'QuestDigits',
   'Varargs',
   'VarargsDigits',
@@ -98,7 +101,7 @@ let is_atomic s =
 
 let islower = function | 'a' .. 'z' -> true | _ -> false
 
-let csubst sr sr2 ct (args:cexpr_t list) typs argtyp retyp gargs prec argshape argshapes =
+let csubst sr sr2 ct (args:cexpr_t list) typs argtyp retyp gargs prec argshape argshapes display =
   let n = length args in
   assert (n = length typs); 
   (* print_endline ("CSUBST " ^ ct ^ ", count="^si n^", result prec=" ^ prec); *)
@@ -222,11 +225,27 @@ let csubst sr sr2 ct (args:cexpr_t list) typs argtyp retyp gargs prec argshape a
         bcat ( argshape );
         mode := Normal
 
+      | 'd' -> 
+        digits := 0;
+        mode := EarholeDisplayDigits
+      
       | '0' .. '9' -> 
         digits := Char.code ch - Char.code '0'; 
         mode := EarholeDigits
 
       | _ -> serr i "Expected 't' or digit after @"
+      end
+
+    | EarholeDisplayDigits ->
+      begin match ch with
+      | '0' .. '9' -> 
+        digits := Char.code ch - Char.code '0' 
+
+      | _ ->
+        let d = String.concat "," (list_prefix display !digits) in
+        bcat d;
+        mode := Normal;
+        trans i ch
       end
 
     | Hash ->

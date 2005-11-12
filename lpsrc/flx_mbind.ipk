@@ -155,6 +155,8 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_match_case _ 
   | `AST_ctor_arg _ 
   | `AST_get_n _ 
+  | `AST_get_named_variable _ 
+  | `AST_get_named_method _ 
   | `AST_match_ctor _ 
     ->
     let sr = src_of_expr e in

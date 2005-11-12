@@ -61,6 +61,13 @@ let throw_on_gc syms bbdfns e : unit = match e with
     *)
     raise Not_found
 
+  | `BEXPR_method_closure (_,i,_),_ ->
+    (*
+    print_endline ("Found method closure of " ^ si i);
+    *)
+    raise Not_found
+
+ 
   | `BEXPR_apply_direct (i,_,_),_ -> raise Not_found
   | `BEXPR_apply( (`BEXPR_closure (_,_),_),_),_ -> assert false
   | `BEXPR_apply_struct (i,_,_),_ ->
@@ -94,8 +101,9 @@ let exe_uses_gc syms bbdfns exe =
   print_endline ("[exe_uses_gc] Exe = " ^ string_of_bexe syms.dfns 0 exe);
   *)
   match exe with
-  | `BEXE_jump_direct (_,i,_,_)
-  | `BEXE_call_direct (_,i,_,_)
+  | `BEXE_jump_direct _ 
+  | `BEXE_call_direct _
+  | `BEXE_apply_ctor _
     -> raise Not_found
 
     (*
@@ -180,7 +188,7 @@ let set_gc_use syms bbdfns =
           `BBDCL_reglex (`Uses_gc :: props,vs,ps,j,rt,(a,s,se,tr)))
     end
 
-   | _ -> ()
+  | _ -> ()
   )
   bbdfns
 
@@ -358,6 +366,20 @@ let rec set_ptf_usage syms bbdfns usage excludes i =
       let result1, result2 = cal_reqs calls i in
       Hashtbl.replace bbdfns i (id,parent,sr,
         `BBDCL_reglex (result2 :: props,vs,ps,j,rt,ra));
+      result1
+   end
+
+  | `BBDCL_class (props,vs) ->
+    if mem `Requires_ptf props then Required 
+    else if mem `Not_requires_ptf props then Not_required
+    else if mem `Uses_global_var props or mem `Uses_gc props or mem `Heap_closure props then begin
+      Hashtbl.replace bbdfns i (id,parent,sr,
+        `BBDCL_class (`Requires_ptf :: props,vs));
+        Required
+    end else begin
+      let result1, result2 = cal_reqs calls i in
+      Hashtbl.replace bbdfns i (id,parent,sr,
+        `BBDCL_class (result2 :: props,vs));
       result1
    end
 

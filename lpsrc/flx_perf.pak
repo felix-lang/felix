@@ -650,10 +650,20 @@ hostsd = {}
 args = sys.argv
 args = args[1:]
 mintime = 0.5
+mindata = 5
+
 try: 
   mintime = float(args[1])
   args = args[1:]
 except:pass
+
+try: 
+  mindata = int(args[1])
+ or count < mindata  args = args[1:]
+except:pass
+
+print "Minimum time",mintime
+print "Minimum data",mindata
 
 def chkxl(x):
   return args == [] or x in args
@@ -722,7 +732,7 @@ for h,d in hostsd.iteritems():
         print "        n %2d -[%3d]-> (%6.2f,%6.2f,%6.2f)" % (n,count,emin,average,emax)
         # one line for each n value
         # skip too low values
-        if average > mintime:
+        if average > mintime or count < mindata:
           fxl.write("%s %d %0.2f\n" % (xl,n,average))
           lines = lines + 1
         summary[(-n,average)]=xl
@@ -795,7 +805,7 @@ def mk_felix(k,p):
   return x
 
 def mk_ghc(k,p):
-  return "ghc -O3 -fvia-C -optc -O3 -o speed/exes/%s/%s speed/src/haskell/%s.hs" % (k,p,p)
+  return "ghc -O3 -fvia-C -optc -O1 -o speed/exes/%s/%s speed/src/haskell/%s.hs" % (k,p,p)
 
 def mk_gnat(k,p):
   return "python script/gnatmaker.py speed/src/ada/%s speed/exes/%s " % (p,k)

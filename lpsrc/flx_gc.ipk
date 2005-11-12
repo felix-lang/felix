@@ -59,14 +59,15 @@ struct FLX_RTL_EXTERN gc_shape_t;   // the shape of collectable objects
 struct FLX_RTL_EXTERN collector_t;  // the collector itself
 struct FLX_RTL_EXTERN allocator_t;  // the collector itself
 
+/// Describes runtime object shape.
 struct FLX_RTL_EXTERN gc_shape_t
 {
-  char const *cname;              // C++ typename
-  std::size_t count;              // array element count
-  std::size_t amt;                // bytes allocated
-  void (*finaliser)(collector_t*, void*);  // finalisation function
-  std::size_t n_offsets;          // number of offsets
-  std::size_t *offsets;           // actual offsets
+  char const *cname;              ///< C++ typename
+  std::size_t count;              ///< array element count
+  std::size_t amt;                ///< bytes allocated
+  void (*finaliser)(collector_t*, void*);  ///< finalisation function
+  std::size_t n_offsets;          ///< number of offsets
+  std::size_t *offsets;           ///< actual offsets
 
   // convenience constructor
   gc_shape_t(
@@ -111,6 +112,9 @@ void std_finaliser(collector_t*, void *t)
 @doc()
 Here is the allocator abstraction.
 @select(h)
+
+/// Allocator abstraction.
+
 struct allocator_t {
   bool debug;
   allocator_t():debug(false){}
@@ -123,6 +127,8 @@ struct allocator_t {
 @doc()
 And here is the collector abstraction.
 @select(h)
+
+/// Collector abstraction.
 struct FLX_RTL_EXTERN collector_t
 {
   bool debug;
@@ -254,6 +260,7 @@ in the global namespace to accomodate Metrowerks
 compiler on Mac OS. 
 
 @select(h)
+/// Allocate collectable object
 FLX_RTL_EXTERN void *operator new
 (
   std::size_t, 
@@ -261,6 +268,7 @@ FLX_RTL_EXTERN void *operator new
   flx::gc::generic::gc_shape_t &
 );
 
+/// Allocate collectable array
 FLX_RTL_EXTERN void *operator new
 (
   std::size_t, 
@@ -281,6 +289,7 @@ namespace flx {
 namespace gc {
 namespace generic { // SHOULD BE NAMESPACE collector
 
+/// Heap Frame header
 struct frame_t
 {
   gc_shape_t *shape;      // the shape of each object
@@ -433,6 +442,7 @@ using namespace generic;
 struct FLX_RTL_EXTERN malloc_free;
 struct FLX_RTL_EXTERN flx_collector_t;
 
+/// Allocator using malloc and free.
 struct FLX_RTL_EXTERN malloc_free : public virtual allocator_t 
 {
   void *allocate(std::size_t);
@@ -440,15 +450,16 @@ struct FLX_RTL_EXTERN malloc_free : public virtual allocator_t
 };
 
 
+/// Naive Mark and Sweep Collector.
 struct FLX_RTL_EXTERN flx_collector_t : public collector_t
 {
   flx_collector_t(allocator_t *);
   ~flx_collector_t();
 
-  // allocator
+  /// allocator
   void *allocate(gc_shape_t *ptr_map, unsigned long);
 
-  // collector (returns number of objects collected)
+  /// collector (returns number of objects collected)
   unsigned long collect();
 
   // add and remove roots

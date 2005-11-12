@@ -3,7 +3,7 @@
 @print FLX_CONFIG_CVS_ID
 @flx_version_major = '1'
 @flx_version_minor = '1'
-@flx_version_patch = '1'
+@flx_version_patch = '2'
 @flx_version_release = '_rc1'
 @flx_version = flx_version_major+'.'+flx_version_minor+'.'+flx_version_patch+flx_version_release
 @godi_revision = '0'
@@ -43,8 +43,9 @@ xlators = [
   ('gcc',mk_gcc,'c'),
   ('gccopt',mk_gccopt,'c'),
   ('ocamlopt',mk_ocamlopt,'ocaml'),
-#  ('gnat',mk_gnat,"ada"),
-#  ('ghc',mk_ghc,'haskell'),
+  ('gnat',mk_gnat,"ada"),
+  ('ghc',mk_ghc,'haskell'),
+  ('gcj',mk_gcj,'java'),
 
 # GNU C and C++ compilers
 #  ('gcc-3.3',mk_gcc_3_3,'c'),
@@ -628,6 +629,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
     ):
     opt = self.options
     opt.model = model
+    if not CXX: CXX="g++"
     if model == "nocygwin": 
       opt.CXX = CXX + " -mno-cygwin "
       opt.EXT_OBJ = ".obj" # temporary hack
@@ -1241,6 +1243,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     ):
     opt = self.options
     opt.model = model
+    if not CXX: CXX="cl"
     opt.CXX = CXX+" "
     opt.AR = LIB+" "
     opt.RANLIB = "#"
@@ -1644,6 +1647,8 @@ import traceback
 import string
 import time
 import glob
+import signal # try to force ctrl-C to this process 
+
 if '' not in sys.path: sys.path = [''] + sys.path
 import flxbuild
 from flxbuild.flxutil import *
@@ -1725,16 +1730,6 @@ force = 0
 upgrade = 0
 refresh = 0
 default_prefix='/usr/local'
-
-try: 
-  xqt("apt-get -v")
-  DEBIAN = 1
-except:
-  DEBIAN = 0
-
-if DEBIAN:
-  default_prefix='/usr'
-  print "DEBIAN detected"
 
 # RF: noone seems to be using the results of this - flag should be -p on osx
 result,output = get_stdout("uname -m")
@@ -1820,6 +1815,9 @@ def check_model(m):
 SAVE_CONFIG=""
 LOAD_CONFIG=""
 BOOTFILE=""
+HOSTCC=""
+TARGETCC=""
+BUILDCC=""
 
 i = 1
 while(i < len (sys.argv)):
@@ -1856,6 +1854,12 @@ while(i < len (sys.argv)):
   elif has_prefix("--target=",arg):
     target_model=check_model(arg[9:])
     print "Specified target model",target_model
+  elif has_prefix("--buildcc=",arg):
+    BUILDCC = arg[10:]
+  elif has_prefix("--hostcc=",arg):
+    HOSTCC = arg[9:]
+  elif has_prefix("--targetcc=",arg):
+    TARGETCC = arg[11:]
   elif has_prefix("--boot=",arg):
     BOOTFILE=arg[7:]
   elif has_prefix("--save-config=",arg):
@@ -2015,13 +2019,13 @@ print
 
 if host_model in ["posix","osx","cygwin","nocygwin","mingw","detect"]:
   HOST_CXX=flxbuild.gxx_class.gxx()
-  HOST_CXX.set_options(use="host",model=host_model,build=build_model)
+  HOST_CXX.set_options(CXX=HOSTCC,use="host",model=host_model,build=build_model)
   HOST_CXX.check_options(xqt,get_stdout)
   HOST_CXX.report_config()
   HOST_CXX.save_options("config/host_cxx.py")
 elif host_model in ["win32"]:
   HOST_CXX=flxbuild.msvcxx_class.msvcxx()
-  HOST_CXX.set_options(use="host",model=host_model,build=build_model)
+  HOST_CXX.set_options(CXX=HOSTCC,use="host",model=host_model,build=build_model)
   HOST_CXX.check_options(xqt,get_stdout)
   HOST_CXX.report_config()
   HOST_CXX.save_options("config/host_cxx.py")
@@ -2049,7 +2053,7 @@ print
 
 if target_model in ["posix","osx","cygwin","nocygwin","mingw","detect"]:
   TARGET_CXX=flxbuild.gxx_class.gxx()
-  TARGET_CXX.set_options(use="target",model=target_model,build=build_model)
+  TARGET_CXX.set_options(CXX=TARGETCC,use="target",model=target_model,build=build_model)
   TARGET_CXX.check_options(xqt,get_stdout)
   TARGET_CXX.report_config()
   TARGET_CXX.save_options("config/target_cxx.py")
@@ -2060,7 +2064,7 @@ if target_model in ["posix","osx","cygwin","nocygwin","mingw","detect"]:
   HAVE_GXX=1
 elif target_model in ["win32"]:
   TARGET_CXX=flxbuild.msvcxx_class.msvcxx()
-  TARGET_CXX.set_options(use="target",model=target_model,build=build_model)
+  TARGET_CXX.set_options(CXX=TARGETCC,use="target",model=target_model,build=build_model)
   TARGET_CXX.check_options(xqt,get_stdout)
   TARGET_CXX.report_config()
   TARGET_CXX.save_options("config/target_cxx.py")

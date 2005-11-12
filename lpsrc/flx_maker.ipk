@@ -5,6 +5,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.175  2005/11/12 17:26:48  skaller
+First implementation of classes is working, doesn't provide
+correct shapes yet (may not initialise pointers either).
+
 Revision 1.174  2005/10/31 21:22:32  skaller
 I/O channels now working.
 
@@ -2869,6 +2873,15 @@ try:
     except: 
      pass # well ocamldoc is full of bugs ..
 
+  if "rtldoc" in options:
+    print "GENERATING RTLDOCS"
+    erasedir('rtldoc')
+    os.mkdir('rtldoc')
+    try:
+      xqt("doxygen misc/doxconf.dox")
+    except:
+      pass
+
   if "regression" in options:
     TESTS = TESTS + glob.glob('test'+os.sep+'rt*.flx')
     if LINK_MODEL == "dynamic":
@@ -3304,12 +3317,15 @@ We have no idea if it continues copying.
 @tangle('bin/flx_doc: tools/flx_doc.flx')
 @tangle('\tbin/flx --test --static -c tools/flx_doc && mv tools/flx_doc bin/flx_doc')
 @tangle('')
-@tangle('doc: grammar tools man impldoc tutdoc')
+@tangle('doc: grammar tools man impldoc rtldoc tutdoc')
 @tangle('')
 @tangle('#doc: grammar tools libdoc man impldoc tutdoc tutstyle')
 @tangle('')
 @tangle('impldoc: dummy')
 @tangle('\tpython script/maker doc impldoc')
+@tangle('')
+@tangle('rtldoc: dummy')
+@tangle('\tpython script/maker rtldoc')
 @tangle('')
 @tangle('tutdoc: dummy')
 @tangle('\tpython script/maker doc tutdoc')

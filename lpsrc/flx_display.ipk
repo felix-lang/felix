@@ -34,6 +34,7 @@ let cal_display bbdfns parent : (bid_t *int) list =
       with Not_found -> 
         failwith ("[cal_display] Can't find index " ^ si parent)
     with
+    | _,parent',sr,`BBDCL_class (_,vs)
     | _,parent',sr,`BBDCL_procedure (_,vs,_,_)
     | _,parent',sr,`BBDCL_function (_,vs,_,_,_)
     | _,parent',sr,`BBDCL_regmatch (_,vs,_,_,_)

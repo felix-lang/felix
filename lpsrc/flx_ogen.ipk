@@ -138,7 +138,9 @@ let rec get_offsets' syms bbdfns typ : string list =
       cpts 
       ;
       !lst
- 
+     
+    | `BBDCL_class _ -> ["0"]
+
     | `BBDCL_abs (vs,type_quals,_,_) 
        when mem `GC_pointer type_quals -> ["0"]
     
@@ -280,6 +282,43 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props 
   );
   gen_offset_data s n name offsets true props
 
+let gen_class_offsets s syms (child_map,bbdfns) index vs ts instance : unit = 
+  let vars =  (find_references syms (child_map,bbdfns) index ts) in
+  let vars = filter (fun (i, _) -> is_instantiated syms i ts) vars in
+  let varmap = mk_varmap vs ts in
+  let name = cpp_instance_name syms bbdfns index ts in
+  let display = Flx_display.get_display_list bbdfns index in
+  let offsets =
+    map
+    (fun (didx, vslen) ->
+    let dptr = "ptr" ^ cpp_instance_name syms bbdfns didx (list_prefix ts vslen) in
+    "offsetof("^name^","^dptr^"),"
+    )
+    display
+    @
+    concat
+    (
+      map 
+      (fun (idx,typ)->
+        let mem = cpp_instance_name syms bbdfns idx ts in
+        let offsets = get_offsets syms bbdfns typ in
+        map 
+        (fun offset ->
+          "offsetof("^name^","^mem^")+" ^ offset
+        )
+        offsets 
+      )
+      vars
+    )
+  in
+  bcat s 
+  (
+    "\n//OFFSETS for class "^ name ^ "\n" ^
+    "// WARNING, incomplete, not handling ptf yet .. \n"
+  );
+  let n = length offsets in
+  gen_offset_data s n name offsets true []
+
 let gen_thread_frame_offsets s syms bbdfns =
   let vars = find_thread_vars_with_type bbdfns in
   let ts = [] in
@@ -326,6 +365,12 @@ let gen_offset_tables syms (child_map,bbdfns) =
       else 
         print_endline ("Warning: no closure of " ^ id ^ "<"^si index ^"> is used")
       *)
+
+    | `BBDCL_class (props,vs) ->
+        (*
+        print_endline "[gen_offset_tables] Generate offsets for a class";
+        *)
+        gen_class_offsets s syms (child_map,bbdfns) index vs ts instance
 
     | `BBDCL_regmatch (props,vs,ps,ret,_) 
     | `BBDCL_reglex (props,vs,ps,_,ret,_)  ->
@@ -381,6 +426,23 @@ let gen_offset_tables syms (child_map,bbdfns) =
       *)
       let id,parent,sr,entry = Hashtbl.find bbdfns i in 
       begin match entry with
+      | `BBDCL_class (props,vs) ->
+        (*
+        print_endline "Detected class instance type";
+        *)
+        begin try
+        let index = Hashtbl.find syms.registry btyp in
+        (*
+        print_endline ("Class " ^id ^"<"^ si i ^ ">, ts=["^
+          catmap "," (fun t -> sbt syms.dfns t) ts
+        ^"] type registry instance " ^ si index);
+        *)
+        Hashtbl.replace allocable_types btyp index
+        with Not_found -> 
+          print_endline ("Can't find the type " ^ sbt syms.dfns btyp ^ " in registry");
+          failwith ("Can't find the type " ^ sbt syms.dfns btyp ^ " in registry")
+        end
+
       | `BBDCL_union (vs,args) ->
         let varmap = mk_varmap vs ts in
         let args = map snd args in
@@ -462,6 +524,16 @@ let gen_offset_tables syms (child_map,bbdfns) =
       let name = cpp_typename syms btyp in
       let id,parent,sr,entry = Hashtbl.find bbdfns i in 
       begin match entry with
+      | `BBDCL_class (props,vs) ->
+        let instance = index in
+        (*
+        print_endline ("[gen_offset_tables] CLASS TYPE INSTANCE(skipping). Class " ^ si i ^ " instance " ^ si instance);
+        *)
+        bcat s "/* CLASS TYPE INSTANCE OFFSETS WILL GO HERE */\n"
+        (*
+        gen_class_offsets s syms (child_map,bbdfns) index vs ts instance
+        *)
+
       | `BBDCL_abs (_,quals,_,_) ->
         let complete = not (mem `Incomplete quals) in
         let pod = mem `Pod quals in

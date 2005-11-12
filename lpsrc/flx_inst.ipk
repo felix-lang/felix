@@ -65,8 +65,10 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   let ui i ts = add_inst syms ref_insts1 (i,ts) in
   let ut t = register_type_r ui syms bbdfns [] sr t in
   let vs t = varmap_subst hvarmap t in
-  ut (vs t)
+  let t' = vs t in
+  ut t'
   ;
+  (* CONSIDER DOING THIS WITH A MAP! *)
   begin match e with
   | `BEXPR_parse (e,ii) -> 
     ue e; iter (fun i -> ui i []) ii
@@ -77,7 +79,15 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   | `BEXPR_case_arg (_,e)
   | `BEXPR_case_index e
     -> ue e
-    
+
+  | `BEXPR_get_named (i,e) ->
+    ue e;
+    begin match t' with
+    | `BTYP_inst (j,ts)
+    | `BTYP_lvalue (`BTYP_inst (j,ts)) -> ui i ts
+    | _ -> assert false
+    end
+
   | `BEXPR_apply_prim (index,ts,a)
   | `BEXPR_apply_direct (index,ts,a)
   | `BEXPR_apply_struct (index,ts,a)
@@ -119,6 +129,11 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     let ts = map vs ts in
     ui i ts; iter ut ts
 
+  | `BEXPR_method_closure (e,i,ts) ->
+    ue e;
+    let ts = map vs ts in
+    ui i ts; iter ut ts
+
   | `BEXPR_literal _ -> ()
   | `BEXPR_expr (_,t) -> ut t
   end
@@ -130,6 +145,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   (*
   print_endline ("processing exe " ^ string_of_bexe syms.dfns 0 exe);
   *)
+  (* TODO: replace with a map *)
   match exe with
   | `BEXE_call_prim (sr,i,ts,e2) 
   | `BEXE_call_direct (sr,i,ts,e2) 
@@ -140,7 +156,24 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
     let vs t = varmap_subst hvarmap t in
     let ts = map vs ts in
     iter ut ts;
-    add_inst syms ref_insts1 (i,ts);
+    uis i ts;
+    ue sr e2
+
+  | `BEXE_apply_ctor (sr,i1,i2,ts,i3,e2) 
+    -> 
+    let ut t = register_type_r uis syms bbdfns [] sr t in
+    let vs t = varmap_subst hvarmap t in
+    let ts = map vs ts in
+    iter ut ts;
+    ui i1; (* this is wrong?: initialisation is not use .. *)
+    uis i2 ts;
+    (*
+    print_endline ("INSTANTIATING CLASS " ^ si i2 ^ "<"^catmap "," (sbt syms.dfns) ts^">");
+    *)
+    uis i3 ts;
+    (*
+    print_endline ("INSTANTIATING CONSTRUCTOR " ^ si i3 ^ "<"^catmap "," (sbt syms.dfns) ts^">");
+    *)
     ue sr e2
 
   | `BEXE_call (sr,e1,e2) 
@@ -154,8 +187,10 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   | `BEXE_fun_return (sr,e) 
     -> ue sr e
 
-  (* this is wrong: initialisation is not use .. *)
-  | `BEXE_init (sr,i,e) -> ui i; ue sr e
+  | `BEXE_init (sr,i,e) -> 
+    ui i; (* this is wrong?: initialisation is not use .. *)
+    ue sr e
+
   | `BEXE_assign (sr,e1,e2) -> ue sr e1; ue sr e2
 
   | `BEXE_svc (sr,i) -> ui i 
@@ -245,6 +280,23 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes `BTYP_void exes ts
+
+  | `BBDCL_class (props,vs) ->
+    assert (length vs = length ts);
+    (*
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let hvarmap = hashtable_of_list vars in
+    *)
+
+    (*
+    print_endline "Registering class type!";
+    *)
+    rtnr (`BTYP_inst (i,ts));
+
+    (*
+    print_endline "Registering class object";
+    *)
+    ui i
 
   | `BBDCL_union (vs,ps)
   | `BBDCL_struct (vs,ps)

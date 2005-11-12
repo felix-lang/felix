@@ -97,6 +97,11 @@ open Flx_ast
 open Flx_types
 open Flx_mtypes2
 
+val lookup_name_in_htab:
+  name_map_t ->
+  string -> 
+  entry_set_t option
+
 val build_env:
   sym_state_t ->
   int option -> (* parent *)
@@ -1526,6 +1531,7 @@ and bind_type_index syms (rs:recstop)
     | `SYMDEF_union _
     | `SYMDEF_struct _ 
     | `SYMDEF_cstruct _ 
+    | `SYMDEF_class
     | `SYMDEF_cclass _ 
       ->
       `BTYP_inst (index,ts)
@@ -1865,6 +1871,12 @@ and inner_typeofindex
     print_endline ("Struct as function type is " ^ sbt syms.dfns t);
     *)
     t
+
+  | `SYMDEF_class ->
+    let ts = map (fun (s,i,_) -> `AST_name (sr,s,[])) vs in
+    let ts = map bt ts in
+    let ts = adjust_ts syms sr index ts in
+    `BTYP_inst (index,ts)
 
   | _ ->
     clierr sr
@@ -2463,7 +2475,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
   match result with
   | NonFunctionEntry (index) ->
     begin match get_data syms.dfns index with
-    {id=id;sr=sr;parent=parent;vs=vs;symdef=entry}->
+    {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubmap;symdef=entry}->
     begin match entry with
     | `SYMDEF_inherit _ -> 
       clierr sra "Woops found inherit in lookup_name_in_table_dirs_with_sig"
@@ -2495,6 +2507,45 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
           | None -> None
           end
 
+    | `SYMDEF_class ->
+      (*
+      print_endline ("Found a class "^name^", look for constructor with hacked name _ctor_"^name);
+      *)
+      let entries = lookup_name_in_htab pubmap ("_ctor_" ^ name) in
+      begin match entries with
+      | None -> clierr sr "Unable to find any constructors for this class"
+      | Some (NonFunctionEntry _) -> syserr sr 
+        "[lookup_name_in_table_dirs_with_sig] Expected constructor to be a procedure"
+
+      | Some (FunctionEntry fs) ->
+        (*
+        print_endline ("Ok, found "^si (length fs) ^"constructors for " ^ name);
+        *)
+        let ro = 
+          resolve_overload'
+          syms rs sra fs ("_ctor_" ^ name) t2 ts
+        in
+        match ro with 
+          | Some (index,t,mgu,ts) ->
+            let ((_,tt) as tb) =
+              handle_function 
+              syms 
+              env rs
+              sra srn name ts index
+            in 
+              print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind syms.dfns index);
+              print_endline ("Value of ts is " ^ catmap "," (sbt syms.dfns) ts);
+              print_endline ("Instantiated closure value is " ^ sbe syms.dfns tb);
+              print_endline ("type is " ^ sbt syms.dfns tt);
+              Some tb 
+          | None ->
+            clierr sr "Unable to find matching constructor"
+      end
+      (*
+      lookup_name_in_table_dirs_with_sig (table, dirs) 
+      syms env rs sra srn ("_ctor_" ^ name) ts t2 
+      *)
+ 
     | `SYMDEF_cclass _ -> 
       (* recursively lookup using "_ctor_" ^ name :
          WARNING: we might find a constructor with the
@@ -2833,6 +2884,79 @@ and bind_expression' syms env (rs:recstop) e
     in 
       `BEXPR_get_n (n, (expr,typ)), ctyp
 
+  | `AST_get_named_variable (sr,(name,e')) ->
+    let e'',t'' = be e' in
+    begin match t'' with
+    | `BTYP_inst (i,ts) 
+    | `BTYP_lvalue (`BTYP_inst (i,ts)) ->
+      begin match Hashtbl.find syms.dfns i with
+      | {pubmap=pubtab; symdef = `SYMDEF_class } ->
+        (*
+        print_endline "AST_get_named finds a class .. ";
+        print_endline ("Looking for component named " ^ name);
+        *)
+        let entryset = 
+          try Hashtbl.find pubtab name 
+          with Not_found -> clierr sr ("Cannot find component " ^ name ^ " in class")
+        in
+        begin match entryset with
+        | NonFunctionEntry idx ->
+          let vtype = 
+            inner_typeofindex_with_ts syms sr
+            { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist; depth = rs.depth+1 }
+            idx ts
+           in
+           (*
+           print_endline ("Class member variable has type " ^ sbt syms.dfns vtype);
+           *)
+           `BEXPR_get_named (idx,(e'',t'')),vtype
+        | _ -> clierr sr ("Expected component "^name^" to be a variable")
+        end
+      | _ -> clierr sr ("[bind_expression] Projection requires class")
+      end
+    | _ -> clierr sr ("[bind_expression] Projection requires class instance")
+    end
+
+  | `AST_get_named_method (sr,(name,e',t)) ->
+    let t = bt sr t in
+    let e'',t'' = be e' in
+    begin match t'' with
+    | `BTYP_inst (i,ts) 
+    | `BTYP_lvalue (`BTYP_inst (i,ts)) ->
+      begin match Hashtbl.find syms.dfns i with
+      | {id=classname; pubmap=pubtab; symdef = `SYMDEF_class } ->
+        (*
+        print_endline ("AST_get_named finds a class .. " ^ classname);
+        print_endline ("Looking for component named " ^ name);
+        *)
+        let entryset = 
+          try Hashtbl.find pubtab name 
+          with Not_found -> clierr sr ("Cannot find component " ^ name ^ " in class " ^ classname)
+        in
+        begin match entryset with
+        | FunctionEntry fs ->
+          (*
+          print_endline ("Found " ^ si (length fs) ^ " candidates");
+          print_endline ("Required signature is " ^ sbt syms.dfns t);
+          *)
+          begin match resolve_overload' syms rs sr fs name t ts with
+          | Some (index'',t',mgu,ts) ->
+            (* print_endline "Overload resolution OK"; *)
+            let typ = typeofindex_with_ts syms sr index'' ts in
+           `BEXPR_method_closure ((e'',t''),index'',ts),typ
+
+          | _ -> clierr sr 
+            ("[get_named_method] Cannot find method " ^ name ^ 
+              " with signature "^sbt syms.dfns t^" in class"
+            )
+          end
+        | _ -> clierr sr ("Expected component "^name^" to be a function")
+        end
+      | _ -> clierr sr ("[bind_expression] Projection requires class")
+      end
+    | _ -> clierr sr ("[bind_expression] Projection requires class instance")
+    end
+
   | `AST_case_index (sr,e) -> 
     let (e',t) as e  = be e in
     begin match lstrip syms.dfns t with
@@ -3083,6 +3207,9 @@ and bind_expression' syms env (rs:recstop) e
     `BEXPR_literal v, t
 
   | `AST_method_apply (sra,(fn,e2)) -> 
+    (*
+    print_endline ("METHOD APPLY: " ^ string_of_expr e);
+    *)
     let be2,t2 = be e2 in
     let tbe1 = 
       match t2 with

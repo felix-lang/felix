@@ -258,6 +258,30 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     | _ -> ce_dot (ge' e) ("mem_" ^ si n)
     end
 
+  | `BEXPR_get_named (n,(e',t as e)) -> 
+    (*
+    print_endline "Handling get_named expression";
+    *)
+    begin match rt t with
+    | `BTYP_inst (i,ts) -> 
+      begin match
+        try Hashtbl.find syms.dfns i 
+        with Not_found -> assert false
+      with { id=class_name; symdef=symdef } -> 
+      match symdef with
+      | `SYMDEF_class -> 
+        begin match 
+          try Hashtbl.find syms.dfns n
+          with Not_found -> failwith ("Can't find class "^class_name^"member " ^ si n);
+        with { id = name } ->
+          let cname = cpp_instance_name syms bbdfns n ts in
+          ce_arrow (ge' e) cname
+        end
+      | _ -> clierr sr ("[gen_expr'] Expecting "^si i^" to be class, got " ^ string_of_bbdcl syms.dfns entry i)
+      end
+    | _ -> assert false
+    end
+
   | `BEXPR_match_case (n,((e',t') as e)) -> 
     let t' = reduce_type (beta_reduce syms [] (lstrip syms.dfns t')) in
     if is_unitsum t' then
@@ -349,7 +373,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         | `Str c -> ce_expr "expr" c
         | `StrTemplate c ->
           let ts = map tn ts in
-          csubst sr sr2 c [] [] "Error" "Error" ts "expr" "Error" ["Error"]
+          csubst sr sr2 c [] [] "Error" "Error" ts "expr" "Error" ["Error"] ["Error"]
         end
 
       | `BBDCL_cstruct _ 
@@ -399,6 +423,66 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           then "this" :: tl d'
           else d'
       in
+      let name = cpp_instance_name syms bbdfns index ts in
+      ce_atom (
+      "(FLX_NEWP("^name^")" ^ strd the_display props ^")"
+      )
+
+    | `BBDCL_cstruct _ 
+    | `BBDCL_struct _ 
+    | `BBDCL_fun _
+    | `BBDCL_proc _ ->
+      failwith ("[gen_expr: closure] Can't wrap primitive proc, fun, or struct '"^id^"' yet")
+    | _ -> failwith ("[gen_expr: closure] Cannot use this kind of name '"^id^"' in expression")
+    end
+
+  | `BEXPR_method_closure (e,index,ts') -> 
+    (*
+    print_endline ("Generating method closure of " ^ si index);
+    *)
+    let id,parent,sr,entry = 
+      try Hashtbl.find bbdfns index 
+      with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
+    in
+    (*
+    Should not be needed now .. 
+    let ts = adjust_ts syms index ts' in
+    *)
+    let ts = map tsub ts' in
+    begin match entry with
+    | `BBDCL_function (props,_,_,_,_) 
+    | `BBDCL_procedure (props,_,_,_) ->
+      (*
+      print_endline ("Method " ^ id ^ (
+        if mem `Requires_ptf props then 
+          " REQUIRES PTF" else " DOES NOT REQUIRE PTF"
+        )
+      );
+      *)
+      let the_display = 
+        let d' = 
+          map (fun (i,vslen) -> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
+          (get_display_list bbdfns index)
+        in 
+          assert (length d' = our_level + 1);
+          tl d'
+
+          (*
+          print_endline ("Generated display is " ^ cat ", " d');
+          print_endline ("Display length = " ^ si (length d') ^ " .. our level = " ^ si our_level);
+
+          if length d' > our_level
+          then "this" :: tl d'
+          else d'
+          *)
+      in
+      (* A method closure requires the last entry in the display
+         to be the class. If we're cross calling from one
+         method to another, we should automatically get the 
+         parent class environment, but I'm not sure .. 
+      *)
+      let class_frame = ge e in
+      let the_display = class_frame :: the_display in
       let name = cpp_instance_name syms bbdfns index ts in
       ce_atom (
       "(FLX_NEWP("^name^")" ^ strd the_display props ^")"

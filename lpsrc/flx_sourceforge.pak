@@ -30,13 +30,14 @@ modification, are permitted.
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
 </HEAD>
 <BODY>
-<H1>Tutorials</H1>
+<H1>Tutorials and manuals</H1>
 <UL>
 <LI><A HREF=../tut/doc/en_flx_tutorial_top.html>main tutorial</A>,
 <LI><A HREF=../tut/doc/en_flx_tut_bind_top.html>binding and embedding tutorial</A> or
 <LI><A HREF=../tut/doc/en_flx_tut_macro_top.html>macro processor tutorial</A> 
 <LI><A HREF=../tut/doc/en_flx_tut_migration_top.html>C++ migration tutorial</A> 
 <LI><A HREF=../htmlman/felix_1.html>man pages</A> 
+<LI><A HREF=../rtldoc/index.html>Run Time Library Reference</A> 
 </UL>
 </BODY>
 </HTML>

@@ -180,10 +180,12 @@ let mkcurry seq sr name vs (args:params_t list) return_type kind body props =
         (match kind with
         | `NoInlineFunction
         | `InlineFunction
+        | `Ctor 
         | `Function ->
           let props = match kind with
           | `InlineFunction -> `Inline::props
           | `NoInlineFunction -> `NoInline::props
+          | `Ctor -> `Ctor::props
           | _ -> props
           in
           begin match return_type with
@@ -201,10 +203,12 @@ let mkcurry seq sr name vs (args:params_t list) return_type kind body props =
         (match kind with
         | `NoInlineFunction
         | `InlineFunction
+        | `Ctor 
         | `Function ->
           let props = match kind with
           | `InlineFunction -> `Inline::props
           | `NoInlineFunction -> `NoInline::props
+          | `Ctor -> `Ctor::props
           | _ -> props 
           in
           `AST_function (sr, name n, vs, h, (return_type,postcondition), props, body)
@@ -390,6 +394,14 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_get_n (sr,(n,e')) ->
     let l1,x1 = rex e' in
     l1, `AST_get_n (sr,(n,x1))
+
+  | `AST_get_named_variable (sr,(n,e')) ->
+    let l1,x1 = rex e' in
+    l1, `AST_get_named_variable (sr,(n,x1))
+
+  | `AST_get_named_method (sr,(n,e',t)) ->
+    let l1,x1 = rex e' in
+    l1, `AST_get_named_method (sr,(n,x1,t))
 
   | `AST_case_index (sr,e) -> 
     let l,x = rex e in
@@ -906,6 +918,14 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_struct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,`DCL_struct (components))]
   | `AST_cstruct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,`DCL_cstruct (components))]
   | `AST_cclass (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,`DCL_cclass (components))]
+
+  | `AST_class (sr,name', vs', sts) -> 
+    let asms = rsts name' (parent_vs @ vs') sts in
+    let asms = bridge name' sr :: asms in
+    let mdcl =
+      [ Dcl (sr,name',None,access,vs', `DCL_class asms) ]
+    in mdcl
+
   | `AST_type_alias (sr,name,vs,typ) -> [Dcl (sr,name,None,access,vs,`DCL_type_alias (typ))]
   | `AST_inherit (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,`DCL_inherit qn)]
   | `AST_inherit_fun (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,`DCL_inherit_fun qn)]
@@ -1138,10 +1158,20 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     let d2,x2 = rex arg in
     d1 @ d2 @ [Exe (sr,`EXE_call (x1,x2))]
 
+  | `AST_apply_ctor (sr,name,f,a) -> 
+    let d1,f1 = rex f in
+    let d2,a1 = rex a in
+    let t = `TYP_typeof(f1) in
+    let vs = [] in
+    d1 @ d2 @ [
+      Dcl (sr,name,None,access,vs,`DCL_var t);
+      Exe (sr,`EXE_apply_ctor (name,f1,a1))
+    ]
+
   | `AST_jump (sr,proc, arg) ->
     let d1,x1 = rex proc in
     let d2,x2 = rex arg in
-    d1 @ d2 @ [Exe (sr,`EXE_call (x1,x2))]
+    d1 @ d2 @ [Exe (sr,`EXE_jump (x1,x2))]
 
   | `AST_loop (sr,proc, arg) ->
     let d2,x2 = rex arg in

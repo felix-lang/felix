@@ -78,82 +78,18 @@ let add (h:usage_table_t) k j sr =
 let rec process_expr h k sr ((e,t) as be) =
   let ue e = process_expr h k sr e in
   let ui i = add h k i sr in
-  begin match e with
-  | `BEXPR_parse (e,ii) ->
-    ue e; iter ui ii
-  
-  | `BEXPR_deref e
-  | `BEXPR_get_n (_,e)
-  | `BEXPR_match_case (_,e)
-  | `BEXPR_case_arg (_,e)
-  | `BEXPR_case_index e
-    -> ue e
-    
-  | `BEXPR_apply_prim (i,ts,e2) 
-  | `BEXPR_apply_direct (i,ts,e2)
-  | `BEXPR_apply_struct (i,ts,e2)
-  | `BEXPR_apply_stack (i,ts,e2) -> 
-    ui i; ue e2
-
-  | `BEXPR_apply (e1,e2) -> 
-    ue e1; ue e2
-
-  | `BEXPR_tuple es -> iter ue es 
-  | `BEXPR_array es -> iter ue es 
-     
-  | `BEXPR_case (_,t) -> ()
-
-  | `BEXPR_ref (i,_) 
-  | `BEXPR_name (i,_)
-  | `BEXPR_closure (i,_)
-    -> 
-    (* substitute out display variables *)
-    ui i
-
-  | `BEXPR_literal _ -> ()
-  | `BEXPR_expr (_,t) -> ()
-  end
+  (* Use the flx_maps iterator now! *)
+  iter_tbexpr ui ignore ignore be
 
 and cal_exe_usage syms h k exe =
   (*
   print_endline ("Checking uses in " ^ si k ^ ", exe: " ^ string_of_bexe syms.dfns 2 exe);
   *)
-  let ue sr e = process_expr h k sr e in
-  let ui i sr = add h k i sr in
-  match exe with
-  | `BEXE_loop (sr,i,e2)
-  | `BEXE_call_prim (sr,i,_,e2) 
-  | `BEXE_call_direct (sr,i,_,e2) 
-  | `BEXE_jump_direct (sr,i,_,e2) 
-  | `BEXE_call_stack (sr,i,_,e2) 
-    -> ui i sr; ue sr e2
-  
-  | `BEXE_call (sr,e1,e2) 
-  | `BEXE_jump (sr,e1,e2) 
-    -> ue sr e1; ue sr e2
-    
-  | `BEXE_ifgoto (sr,e,_)
-  | `BEXE_ifnotgoto (sr,e,_)
-  | `BEXE_fun_return (sr,e) 
-  | `BEXE_assert (sr,e)
-    -> ue sr e
-
-  | `BEXE_init (sr,i,e) -> ui i sr; ue sr e
-  | `BEXE_assign (sr,e1,e2) -> ue sr e1; ue sr e2
-
-  | `BEXE_svc (sr,i) -> ui i sr
-
-  | `BEXE_label _
-  | `BEXE_halt _
-  | `BEXE_goto _
-  | `BEXE_code _
-  | `BEXE_nonreturn_code _
-  | `BEXE_comment _
-  | `BEXE_nop _
-  | `BEXE_proc_return _
-  | `BEXE_begin 
-  | `BEXE_end
-    -> ()
+  let sr = src_of_bexe exe in
+  let ue e = process_expr h k sr e in
+  let ui i = add h k i sr in
+  (* USE A MAP *)
+  iter_bexe ui ue ignore ignore ignore exe
 
 let uses_production h k sr p =
   let uses_symbol (_,nt) = match nt with

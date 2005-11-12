@@ -96,7 +96,8 @@ let cpp_name bbdfns index =
   | `BBDCL_var _ -> "_v"
   | `BBDCL_val _ -> "_v"
   | `BBDCL_tmp _ -> "_tmp"
-  | _ -> syserr sr "cpp_name expected func,proc,var or val"
+  | `BBDCL_class _ -> "_cl"
+  | _ -> syserr sr "cpp_name expected func,proc,var,val,class,reglex or regmatch"
   ) ^ si index ^ "_" ^ cvt id
 
 let cpp_instance_name syms bbdfns index ts =
@@ -164,6 +165,7 @@ let rec cpp_type_classname syms t =
       | `SYMDEF_struct _  -> "_s"
       | `SYMDEF_union _   -> "_u"
       | `SYMDEF_abs _  -> "_a"
+      | `SYMDEF_class -> "_cl"
       | _ -> "_unk_"
     in
     if ts = [] then
@@ -211,6 +213,18 @@ let rec cpp_type_classname syms t =
 let cpp_typename syms t = 
   match unfold syms.dfns (lstrip syms.dfns t) with
   | `BTYP_function _ -> cpp_type_classname syms t ^ "*"
+  (*
+  | `BTYP_inst (i,ts) -> 
+    begin match
+      try
+        match Hashtbl.find syms.dfns i with 
+        { symdef=symdef } -> Some ( symdef )
+      with Not_found -> None
+    with
+    | Some (`SYMDEF_class ) -> cpp_type_classname syms t ^ "*"
+    | _ -> cpp_type_classname syms t
+    end
+  *)
   | _ -> cpp_type_classname syms t
 
 let cpp_ltypename syms t = 

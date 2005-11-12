@@ -23,6 +23,7 @@ val build_tables:
   int option -> (* parent index *)
   int option -> (* grandparent index *)
   int -> (* root index *)
+  bool -> (* true if parent is a class, false otherwise *)
   asm_t list ->
   (
     name_map_t *  
@@ -135,7 +136,7 @@ let add_function syms sr table key value =
 
 let null_tab = Hashtbl.create 3 
 
-let rec build_tables syms name level parent grandparent root asms = 
+let rec build_tables syms name level parent grandparent root is_class asms = 
   let 
     print_flag = syms.compiler_options.print_flag and
     dfns = syms.dfns and
@@ -218,8 +219,297 @@ let rec build_tables syms name level parent grandparent root asms =
           )
           vs
         in
+        let handle_class class_kind classno sts tvars stype = 
+          (*
+          print_endline ("Interfaces for class " ^ si classno);
+          *)
+          (* projections *)
+          iter
+          (fun mem ->
+            let kind, component_name,t,cc =
+              match mem with
+              | `MemberVar (n,t,cc) -> `Var,n,t,cc
+              | `MemberVal (n,t,cc) -> `Val,n,t,cc
+              | `MemberFun (n,t,cc) -> `Fun,n,t,cc
+              | `MemberProc (n,t,cc) -> `Proc,n,t,cc
+              | `MemberCtor (n,t,cc) -> `Ctor,n,t,cc
+            in
+            if kind = `Ctor && class_kind = `CClass then
+            begin
+              let ctor_index = !(syms.counter) in incr (syms.counter);
+              let ctor_name = "_ctor_" ^ id in
+              let ct = 
+                match vs with 
+                | [] -> `StrTemplate("new "^ id^"($a)") 
+                | _ -> `StrTemplate("new "^ id^"<?a>($a)") 
+              in
+              let argst = match t with
+                | `TYP_tuple ls -> ls
+                | x -> [x]
+              in
+              let symdef = `SYMDEF_fun ([],argst,stype,ct,[],"primary") in
+              Hashtbl.add dfns ctor_index {
+                id=ctor_name;sr=sr;parent=parent;
+                vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
+                symdef=symdef
+              }
+              ;
+              if access = `Public then add_function pub_name_map ctor_name ctor_index;
+              add_function priv_name_map ctor_name ctor_index;
+              if print_flag then print_endline ("//[ctor]  " ^ spc ^ si ctor_index ^ " -> " ^ ctor_name)
+            end
+            ;
+
+            if (kind = `Fun || kind = `Proc) then
+            begin
+              let domain,codomain = 
+                match t with
+                | `TYP_function (domain,codomain) when kind = `Fun -> 
+                  domain,codomain
+                | domain when kind = `Proc -> 
+                  domain,`AST_void sr
+                | _ -> clierr sr "Accessor method must have function type"
+              in
+              let obj_name = "_a_" ^ component_name in
+              let getn = !counter in incr counter;
+              let get_name = "get_" ^ component_name in
+              let props = [] in
+              let ps = [stype] in
+
+              (* the return type of the get_f function *)
+              let rett = `TYP_function (domain,codomain) in
+              (* add parameters to symbol table of the function,
+                there is only one, namely the object
+              *)
+              let objidx = !counter in incr counter;
+              let get_asms =
+                if class_kind = `CClass || cc <> None then
+                begin
+                 (* make applicator method. This precisely the function:
+
+                       fun get_f(x:X) (a:arg_t): result_t => exec_f (x,a);
+                       
+                       which reduces to
+
+                       fun get_f(x:X): arg_t -> result_t = {
+                         fun do_f(a:arg_t): result_t = {
+                           fun exec_f: X * arg_t -> result_t = "$1->f($b)";
+                           return exec_f (x,a);
+                         }
+                         return do_f;
+                       }
+
+                  *)
+                   
+                    (* make the execute method *)
+                    let argts = match domain with
+                      | `TYP_tuple ls -> ls
+                      | x -> [x]
+                    in
+
+                    (* The exec method *)
+                    let execn = !counter in incr counter;
+                    let exec_name = "exec_" ^ component_name in
+                    let exec_asm = 
+                      let cc = 
+                        match cc with Some cc -> cc | None ->
+                        let trail =  
+                          (match codomain with `AST_void _ -> ";" | _ -> "") 
+                        in
+                          `StrTemplate("$1->" ^ component_name^"($b)" ^ trail)
+                      in
+                          Dcl (sr,exec_name,Some execn,`Private,[], (* vs inherited *)
+                            `DCL_fun ([],stype::argts,codomain, cc,[],"primary")
+                          )
+                    in
+
+                    (* the do method *)
+                    let don = !counter in incr counter;
+                    let do_name = "_do_" ^ component_name in
+                    let do_asm =
+                      let f = `AST_index (sr,exec_name,execn)  in
+                      let cnt = ref 1 in
+                      let params = 
+                        map 
+                        (fun t -> 
+                          let i = !cnt in incr cnt; 
+                          let pname = "_" ^ si i in
+                          (pname,t)
+                        ) 
+                        argts
+                      in
+                      let args = map fst params in
+                      let arg = `AST_tuple (sr, map (fun n -> `AST_name (sr,n,[])) (obj_name::args)) in
+                      let asms = 
+                        [
+                          Exe (sr, 
+                            (match codomain with 
+                            | `AST_void _ -> `EXE_call (f,arg)
+                            | _ -> `EXE_fun_return (`AST_apply(sr,(f,arg)))
+                            )
+                          );
+                          exec_asm
+                        ]
+                      in
+                      Dcl (sr,do_name,Some don, `Private,[], (* vs inherited *)
+                        `DCL_function ((params,None),codomain,[],asms)
+                      )
+                    in
+                    let get_asms = 
+                      [
+                        Exe (sr,`EXE_fun_return (`AST_index (sr,do_name,don)));
+                        do_asm
+                      ] 
+                    in
+                    get_asms
+                end else begin
+                  let get_asms = 
+                      [
+                        Exe 
+                        (
+                          sr,
+                          `EXE_fun_return 
+                          (
+                            `AST_get_named_method 
+                            (
+                              sr,
+                              (
+                                component_name,
+                                `AST_index (sr,obj_name,objidx),
+                                domain (* method signature *)
+                              )
+                            )
+                          )
+                        )
+                      ] 
+                  in
+                  get_asms
+                end
+              in
+              begin
+                let pubtab,privtab, exes, ifaces,dirs =  
+                  build_tables syms get_name (level+1) 
+                 (Some getn) parent root false get_asms 
+                in
+
+                (* add the get method to the current sumbol table *)
+                Hashtbl.add dfns getn {
+                  id=get_name;sr=sr;parent=parent;
+                  vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
+                  symdef=`SYMDEF_function (
+                    ([obj_name,stype],None), rett, props, exes
+                  )
+                };
+                add_function pub_name_map get_name getn;
+                add_function priv_name_map get_name getn;
+
+                (* add parameter now *)
+                if print_flag then
+                print_endline ("//  "^spc ^ si objidx ^ " -> " ^ obj_name^ " (parameter)");
+                Hashtbl.add dfns objidx {
+                  id=obj_name;sr=sr;parent=Some getn;vs=[];
+                  pubmap=null_tab;privmap=null_tab;dirs=[];
+                  symdef=`SYMDEF_parameter (stype)
+                };
+                if access = `Public then add_unique pubtab obj_name objidx;
+                add_unique privtab obj_name objidx;
+
+                interfaces := !interfaces @ ifaces
+                ;
+                add_tvars privtab;
+                if print_flag then 
+                print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name)
+              end
+            end
+            ; 
+            if kind = `Var || kind = `Val then
+            begin
+              let getn = !counter in incr counter;
+              let get_name = "get_" ^ component_name in
+              let funtab = Hashtbl.create 3 in
+              let get_dcl = 
+                if class_kind = `CClass then
+                  `SYMDEF_fun ([],[stype],t,`StrTemplate("$1->" ^ component_name),[],"primary") 
+                else
+                  let objix = !(syms.counter) in incr syms.counter;
+                  let objname = "obj" in
+                  Hashtbl.add dfns objix {
+                    id=objname;sr=sr;parent=Some getn;
+                    vs=[];pubmap=null_tab;privmap=null_tab;
+                    dirs=[];symdef=`SYMDEF_parameter (stype)
+                  };
+                  add_unique funtab objname objix;
+                  let ps = ["obj",stype],None in
+                  let exes = [sr,
+                    `EXE_fun_return (`AST_get_named_variable (sr,
+                      (component_name,`AST_index (sr,"obj",objix))
+                    ))
+                  ] 
+                  in 
+                  `SYMDEF_function (ps,t,[`Inline],exes) 
+              in
+              (* the get function, lives outside class *)
+              Hashtbl.add dfns getn {
+                id=get_name;sr=sr;parent=parent;vs=vs;
+                pubmap=funtab;privmap=funtab;dirs=[];
+                symdef=get_dcl
+              };
+              if access = `Public then add_function pub_name_map get_name getn;
+              add_function priv_name_map get_name getn
+              ;
+              (*
+              print_endline ("Added " ^ get_name ^ " to class parent");
+              *)
+              if print_flag then 
+              print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name)
+            end
+            ; 
+            (* LVALUE VARIATION *)
+            if kind = `Var then
+            begin
+              let funtab = Hashtbl.create 3 in
+              let getn = !counter in incr counter;
+              let get_name = "get_" ^ component_name in
+              let get_dcl = 
+                if class_kind = `CClass then
+                 `SYMDEF_fun ([],[`TYP_lvalue stype],`TYP_lvalue t,`StrTemplate ("$1->" ^ component_name),[],"primary") 
+                else
+                  let objix = !(syms.counter) in incr syms.counter;
+                  let objname = "obj" in
+                  Hashtbl.add dfns objix {
+                    id=objname;sr=sr;parent=Some getn;
+                    vs=[];pubmap=null_tab;privmap=null_tab;
+                    dirs=[];symdef=`SYMDEF_parameter (`TYP_lvalue stype)
+                  };
+                  add_unique funtab objname objix;
+                  let ps = ["obj",`TYP_lvalue stype],None in
+                  let exes = [sr,
+                    `EXE_fun_return (`AST_get_named_variable (sr,
+                      (component_name,`AST_index (sr,"obj",objix))
+                    ))
+                  ] 
+                  in 
+                  `SYMDEF_function (ps,`TYP_lvalue t,[`Inline],exes) 
+              in
+              Hashtbl.add dfns getn {
+                id=get_name;sr=sr;parent=parent;vs=vs;
+                pubmap=funtab;privmap=funtab;dirs=[];
+                symdef=get_dcl
+              };
+              if access = `Public then add_function pub_name_map get_name getn;
+              add_function priv_name_map get_name getn
+              ;
+              if print_flag then print_endline ("//[lvalue]  " ^ spc ^ si getn ^ " -> " ^ get_name)
+            end
+
+          )
+          sts
+          ;
+          add_tvars privtab
+        in
         begin match (dcl:dcl_t) with
         | `DCL_regdef re ->
+          if is_class then clierr sr "Regdef not allowed in class";
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_regdef re};
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n
@@ -227,6 +517,7 @@ let rec build_tables syms name level parent grandparent root asms =
           add_tvars privtab
 
         | `DCL_regmatch cls ->
+          if is_class then clierr sr "Regmatch not allowed in class";
           let lexmod = `AST_name (sr,"Lexer",[]) in
           let ptyp = `AST_lookup (sr,(lexmod,"iterator",[])) in
 
@@ -259,6 +550,7 @@ let rec build_tables syms name level parent grandparent root asms =
           add_tvars privtab
 
         | `DCL_reglex cls ->
+          if is_class then clierr sr "Reglex not allowed in class";
           let lexmod = `AST_name (sr,"Lexer",[]) in
           let ptyp = `AST_lookup (sr,(lexmod,"iterator",[])) in
 
@@ -301,27 +593,61 @@ let rec build_tables syms name level parent grandparent root asms =
 
 
         | `DCL_function (ps,t,props,asms) ->   
+          let is_ctor =  mem `Ctor props in
+
+          if is_ctor && id <> "__constructor__" 
+          then syserr sr 
+            "Function with constructor property not named __constructor__"
+          ;
+
+          if is_ctor && not is_class 
+          then clierr sr 
+            "Constructors must be defined directly inside a class"
+          ;
+         
+          if is_ctor then
+            begin match t with
+            | `AST_void _ -> ()
+            | _ -> syserr sr 
+              "Constructor should return type void"
+            end
+          ;
+         
+          (* change the name of a constructor to the class name
+            prefixed by _ctor_
+          *)
+          let id = if is_ctor then "_ctor_" ^ name else id in
+          (*
+          if is_class && not is_ctor then
+            print_endline ("TABLING METHOD " ^ id ^ " OF CLASS " ^ name);
+          *)
           let fun_index = n in
           let ps,traint = ps in
           let t = if t = `TYP_none then `TYP_var fun_index else t in
           let pubtab,privtab, exes, ifaces,dirs =  
             build_tables syms id (level+1) 
-            (Some fun_index) parent root asms 
+            (Some fun_index) parent root false asms 
           in
           let ips = ref [] in
           iter (fun (name,typ) -> 
-            let n = !counter in
-            incr counter;
+            let n = !counter in incr counter;
             if print_flag then
             print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
-            Hashtbl.add dfns n {id=name;sr=sr;parent=Some fun_index;vs=[];pubmap=null_tab;privmap=null_tab;dirs=[];symdef=`SYMDEF_parameter (typ)};
+            Hashtbl.add dfns n {
+              id=name;sr=sr;parent=Some fun_index;
+              vs=[];pubmap=null_tab;privmap=null_tab;
+              dirs=[];symdef=`SYMDEF_parameter (typ)
+            };
             if access = `Public then add_unique pubtab name n;
             add_unique privtab name n;
             ips := (name,typ) :: !ips 
           ) ps
           ; 
-          Hashtbl.add dfns fun_index {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
-            symdef=`SYMDEF_function ((rev !ips,traint), t, props, exes)};
+          Hashtbl.add dfns fun_index {
+            id=id;sr=sr;parent=parent;vs=vs;
+            pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=`SYMDEF_function ((rev !ips,traint), t, props, exes)
+          };
           if access = `Public then add_function pub_name_map id fun_index;
           add_function priv_name_map id fun_index;
           interfaces := !interfaces @ ifaces
@@ -329,6 +655,7 @@ let rec build_tables syms name level parent grandparent root asms =
           add_tvars privtab
 
         | `DCL_match_check (pat,(mvname,match_var_index)) ->
+          if is_class then clierr sr "Match check not allowed in class";
           assert (length vs = 0);
           let fun_index = n in
           Hashtbl.add dfns fun_index {
@@ -343,6 +670,7 @@ let rec build_tables syms name level parent grandparent root asms =
           add_tvars privtab
 
         | `DCL_match_handler (pat,(mvname,match_var_index),asms) ->
+          if is_class then clierr sr "Match handler not allowed in class";
           (*
           print_endline ("Parent is " ^ match parent with Some i -> si i);
           print_endline ("Match handler, "^si n^", mvname = " ^ mvname);
@@ -384,7 +712,7 @@ let rec build_tables syms name level parent grandparent root asms =
           let fun_index = n in
           let pubtab,privtab, exes,ifaces,dirs = 
             build_tables syms id (level+1) 
-            (Some fun_index) parent root !new_asms 
+            (Some fun_index) parent root false !new_asms 
           in
           Hashtbl.add dfns fun_index {
             id=id;sr=sr;parent=parent;vs=vs;
@@ -408,8 +736,9 @@ let rec build_tables syms name level parent grandparent root asms =
           add_function priv_name_map id n
 
         | `DCL_module asms ->
+          if is_class then clierr sr "Module not allowed in class";
           let pubtab,privtab, exes,ifaces,dirs = 
-            build_tables syms id (level+1) (Some n) parent root
+            build_tables syms id (level+1) (Some n) parent root false
             asms
           in
           Hashtbl.add dfns n {
@@ -433,7 +762,65 @@ let rec build_tables syms name level parent grandparent root asms =
           interfaces := !interfaces @ ifaces
           ;
           add_tvars privtab
-        
+
+        | `DCL_class asms ->
+          if is_class then clierr sr "class not allowed in class";
+          let pubtab,privtab, exes,ifaces,dirs = 
+            build_tables syms id (level+1) (Some n) parent root true
+            asms
+          in
+          Hashtbl.add dfns n {
+            id=id;sr=sr;
+            parent=parent;vs=vs;
+            pubmap=pubtab;privmap=privtab;
+            dirs=dirs;
+            symdef=`SYMDEF_class
+          };
+          if access = `Public then add_unique pub_name_map id n;
+          add_unique priv_name_map id n;
+          interfaces := !interfaces @ ifaces
+          ;
+          add_tvars privtab
+          ;
+          (* Hack it by building an interface *)
+          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
+          let stype = `AST_name(sr,id,tvars) in
+          let sts = 
+            let detail x = match x with
+            | Exe _ -> assert false
+            | Dcl (_,id,_,access,vs,dcl) ->
+              (*
+              print_endline ("HANDLING DETAIL for " ^ id);
+              *)
+              begin if access = `Private then None else match dcl with
+              | `DCL_var t -> Some (`MemberVar (id,t,None))
+              | `DCL_val t -> Some (`MemberVal (id,t,None))
+              | `DCL_function (ps,ret,props,_) -> 
+                if mem `Ctor props then None else
+                let ps = map snd (fst ps) in
+                let a = match ps with 
+                  | [x] -> x 
+                  | x -> `TYP_tuple x 
+                in
+                begin match ret with
+                | `AST_void _ -> Some (`MemberProc (id,a,None))
+                | _ -> Some (`MemberFun (id,`TYP_function(a,ret),None))
+                end
+              | _ -> None
+              end
+            | _ -> None
+            in
+            let rec aux out inp = match inp with
+            | [] -> rev out
+            | h :: t -> 
+              match detail h with 
+              | Some x ->  aux (x::out) t
+              | None -> aux out t
+            in
+            aux [] asms
+          in
+          handle_class `Class n sts tvars stype
+ 
         | `DCL_val t ->
           let t = match t with | `TYP_none -> `TYP_var n | _ -> t in
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_val (t)}
@@ -453,6 +840,7 @@ let rec build_tables syms name level parent grandparent root asms =
           add_tvars privtab
 
         | `DCL_type_alias (t) ->
+          if is_class then clierr sr "Type alias not allowed in class";
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_type_alias t}
           ;
           (* this is a hack, checking for a type function this way,
@@ -509,6 +897,7 @@ let rec build_tables syms name level parent grandparent root asms =
           add_tvars privtab
 
          | `DCL_inherit_fun qn ->
+          if is_class then clierr sr "inherit clause not allowed in class";
           Hashtbl.add dfns n 
           {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;
           privmap=privtab;dirs=dirs;symdef=`SYMDEF_inherit_fun qn}
@@ -519,6 +908,7 @@ let rec build_tables syms name level parent grandparent root asms =
           add_tvars privtab
         
         | `DCL_abs (quals,c, reqs) ->
+          if is_class then clierr sr "Type binding not allowed in class";
           Hashtbl.add dfns n {
             id=id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=dirs;
@@ -531,6 +921,7 @@ let rec build_tables syms name level parent grandparent root asms =
           add_tvars privtab
 
         | `DCL_const (t,c, reqs) ->
+          if is_class then clierr sr "Const binding not allowed in class";
           let t = if t = `TYP_none then `TYP_var n else t in
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;
             pubmap=pubtab;privmap=privtab;dirs=dirs;
@@ -543,11 +934,12 @@ let rec build_tables syms name level parent grandparent root asms =
           add_tvars privtab
 
         | `DCL_glr (t,(p,e)) ->
+          if is_class then clierr sr "GLR parsing not allowed in class";
           let fun_index = n in 
           let asms = [Exe (sr,`EXE_fun_return e)] in
           let pubtab,privtab, exes, ifaces,dirs =  
             build_tables syms id (level+1) 
-            (Some fun_index) parent root asms 
+            (Some fun_index) parent root false asms 
           in
           let ips = ref [] in
           iter (fun (name,typ) -> 
@@ -590,6 +982,7 @@ let rec build_tables syms name level parent grandparent root asms =
           add_tvars privtab
 
         | `DCL_union (its) ->
+          if is_class then clierr sr "Union not allowed in class";
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
           let utype = `AST_name(sr,id, tvars) in
           Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_union (its)}
@@ -681,216 +1074,26 @@ let rec build_tables syms name level parent grandparent root asms =
           ;
           add_tvars privtab
  
-        | `DCL_cclass (sts) ->
+        | `DCL_cclass (sts) -> 
+          if is_class then clierr sr "cclass not allowed in class";
+          let symdef = `SYMDEF_cclass sts in
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
           let stype = `AST_name(sr,id,tvars) in
           Hashtbl.add dfns n {
             id=id;sr=sr;parent=parent;
             vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
-            symdef=`SYMDEF_cclass (sts)
+            symdef=symdef
           }
           ;
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n
           ;
-          (* projections *)
-          iter
-          (fun mem ->
-            let kind, component_name,t,cc =
-              match mem with
-              | `MemberVar (n,t,cc) -> `Var,n,t,cc
-              | `MemberVal (n,t,cc) -> `Val,n,t,cc
-              | `MemberFun (n,t,cc) -> `Fun,n,t,cc
-              | `MemberProc (n,t,cc) -> `Proc,n,t,cc
-              | `MemberCtor (n,t,cc) -> `Ctor,n,t,cc
-            in
-            if kind = `Ctor then
-            begin
-              let ctor_index = !(syms.counter) in incr (syms.counter);
-              let ctor_name = "_ctor_" ^ id in
-              let ct = 
-                match vs with 
-                | [] -> `StrTemplate("new "^ id^"($a)") 
-                | _ -> `StrTemplate("new "^ id^"<?a>($a)") 
-              in
-              let argst = match t with
-              | `TYP_tuple ls -> ls
-              | x -> [x]
-              in
-              let symdef = `SYMDEF_fun ([],argst,stype,ct,[],"primary") in
-              Hashtbl.add dfns ctor_index {
-                id=ctor_name;sr=sr;parent=parent;
-                vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
-                symdef=symdef
-              }
-              ;
-              if access = `Public then add_function pub_name_map ctor_name ctor_index;
-              add_function priv_name_map ctor_name ctor_index;
-              if print_flag then print_endline ("//[ctor]  " ^ spc ^ si ctor_index ^ " -> " ^ ctor_name)
-            end
-            ;
-            if kind = `Fun || kind = `Proc then
-            begin
-             (* make applicator method. This precisely the function:
-
-                   fun get_f(x:X) (a:arg_t): result_t => exec_f (x,a);
-                   
-                   which reduces to
-
-                   fun get_f(x:X): arg_t -> result_t = {
-                     fun do_f(a:arg_t): result_t = {
-                       fun exec_f: X * arg_t -> result_t = "$1->f($b)";
-                          // $c is the unpacked list of the second arg ..
-                          // we have no such code, so we have to unpack
-                          // manually ..
-                       return exec_f (x,a);
-                     }
-                     return do_f;
-                   }
-
-              *)
-              let domain,codomain = 
-                match t with
-                | `TYP_function (domain,codomain) when kind = `Fun -> domain,codomain
-                | domain when kind = `Proc -> domain,`AST_void sr
-                | _ -> clierr sr "Accessor method must have function type"
-              in
-                
-                (* make the execute method *)
-                let argts = match domain with
-                  | `TYP_tuple ls -> ls
-                  | x -> [x]
-                in
-
-                (* The exec method *)
-                let execn = !counter in incr counter;
-                let exec_name = "exec_" ^ component_name in
-                let exec_asm = 
-                  let cc = match cc with | Some cc -> cc | None ->
-                     let trail =  (match codomain with `AST_void _ -> ";" | _ -> "") in
-                    `StrTemplate("$1->" ^ component_name^"($b)" ^ trail)
-                  in
-                  Dcl (sr,exec_name,Some execn,`Private,[], (* vs inherited *)
-                    `DCL_fun ([],stype::argts,codomain, cc,[],"primary")
-                  ) 
-                in
-
-                (* the do method *)
-                let don = !counter in incr counter;
-                let do_name = "_do_" ^ component_name in
-                let obj_name = "_a_" ^ component_name in
-                let do_asm =
-                  let f = `AST_index (sr,exec_name,execn) in
-                  let cnt = ref 1 in
-                  let params = 
-                    map 
-                    (fun t -> 
-                      let i = !cnt in incr cnt; 
-                      let pname = "_" ^ si i in
-                      (pname,t)
-                    ) 
-                    argts
-                  in
-                  let args = map fst params in
-                  let arg = `AST_tuple (sr, map (fun n -> `AST_name (sr,n,[])) (obj_name::args)) in
-                  let asms = 
-                    [
-                      Exe (sr, 
-                        (match codomain with 
-                        | `AST_void _ -> `EXE_call (f,arg)
-                        | _ -> `EXE_fun_return (`AST_apply(sr,(f,arg)))
-                        )
-                      )
-                      ;
-                      exec_asm
-                    ]
-                  in
-                  Dcl (sr,do_name,Some don, `Private,[], (* vs inherited *)
-                    `DCL_function ((params,None),codomain,[],asms)
-                  )
-                in
-
-                let getn = !counter in incr counter;
-                let get_name = "get_" ^ component_name in
-                let asms = 
-                  [
-                    Exe (sr,`EXE_fun_return (`AST_index (sr,do_name,don)));
-                    do_asm
-                  ] 
-                in
-                let props = [] in
-                let ps = [stype] in
-
-                (* the return type of the get_f function *)
-                let rett = `TYP_function (domain,codomain) in
-                let pubtab,privtab, exes, ifaces,dirs =  
-                  build_tables syms get_name (level+1) 
-                 (Some getn) parent root asms 
-                in
-
-                (* add parameters to symbol table of the function,
-                  there is only one, namely the object
-                *)
-                let n = !counter in incr counter;
-                if print_flag then
-                print_endline ("//  "^spc ^ si n ^ " -> " ^ obj_name^ " (parameter)");
-                Hashtbl.add dfns n {id=obj_name;sr=sr;parent=Some getn;vs=[];pubmap=null_tab;privmap=null_tab;dirs=[];symdef=`SYMDEF_parameter (stype)};
-                if access = `Public then add_unique pubtab obj_name n;
-                add_unique privtab obj_name n;
-                ; 
-
-                (* add the get method to the current sumbol table *)
-                Hashtbl.add dfns getn {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
-                  symdef=`SYMDEF_function (([obj_name,stype],None), rett, props, exes)};
-                add_function pub_name_map get_name getn;
-                add_function priv_name_map get_name getn;
-                interfaces := !interfaces @ ifaces
-                ;
-                add_tvars privtab
-
-            end
-            ; 
-            if kind = `Var || kind = `Val then
-            begin
-              let getn = !counter in incr counter;
-              let get_name = "get_" ^ component_name in
-              let get_dcl = `SYMDEF_fun ([],[stype],t,`StrTemplate("$1->" ^ component_name),[],"primary") in
-              Hashtbl.add dfns getn {
-                id=get_name;sr=sr;parent=parent;vs=vs;
-                pubmap=pubtab;privmap=privtab;dirs=dirs;
-                symdef=get_dcl
-              };
-              if access = `Public then add_function pub_name_map get_name getn;
-              add_function priv_name_map get_name getn
-              ;
-              if print_flag then print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name)
-            end
-            ; 
-            (* LVALUE VARIATION *)
-            if kind = `Var then
-            begin
-              let getn = !counter in incr counter;
-              let get_name = "get_" ^ component_name in
-              let get_dcl = `SYMDEF_fun ([],[`TYP_lvalue stype],`TYP_lvalue t,`StrTemplate ("$1->" ^ component_name),[],"primary") in
-              Hashtbl.add dfns getn {
-                id=get_name;sr=sr;parent=parent;vs=vs;
-                pubmap=pubtab;privmap=privtab;dirs=dirs;
-                symdef=get_dcl
-              };
-              if access = `Public then add_function pub_name_map get_name getn;
-              add_function priv_name_map get_name getn
-              ;
-              if print_flag then print_endline ("//[lvalue]  " ^ spc ^ si getn ^ " -> " ^ get_name)
-            end
-
-          )
-          sts
-          ;
-          add_tvars privtab
-          ;
+          let dont_care = 0 in
+          handle_class `CClass dont_care sts tvars stype
 
         | `DCL_cstruct (sts)
         | `DCL_struct (sts) ->
+          if is_class then clierr sr "(c)struct not allowed in class";
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
           let stype = `AST_name(sr,id,tvars) in
           Hashtbl.add dfns n {

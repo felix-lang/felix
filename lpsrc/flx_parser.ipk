@@ -442,6 +442,12 @@ struct_decl:
     `AST_cclass (rstoken $1 $7, snd $2, $3, $6) 
   }
 
+  | CLASS NAME tvarlist opt_equal compound
+  { 
+    let sr = rsrange (slift $1) (fst $5) in
+    `AST_class (sr, snd $2, $3, snd $5) 
+  }
+
 @aster("struct_component")
 struct_component:
   | NAME COLON expr SEMI { (snd $1,typecode_of_expr $3) }
@@ -1023,6 +1029,18 @@ function_definition:
     }
 
 procedure_definition:
+  | CTOR tvarlist opt_fun_args opt_traint_eq compound 
+    { 
+      let sr = rsrange (slift $1) (fst $5) in
+      let name = "__constructor__"
+      and vs = $2
+      and return_type = `AST_void sr
+      and traint = $4 
+      and body = snd $5
+      and args = List.map snd $3 (* elide srcref *)
+      in mkcurry sr name vs args (return_type,traint) `Ctor body
+    }
+
   | PROCEDURE NAME tvarlist opt_fun_args opt_traint_eq compound 
     { 
       let sr = rsrange (slift $1) (fst $6) in
@@ -1142,14 +1160,14 @@ The svc statement is used for supervisor calls.
 @head(3,'Module Definition')
 @select(h)
 module_definition:
-  | MODULE NAME tvarlist compound 
+  | MODULE NAME tvarlist opt_equal compound 
     { 
       `AST_untyped_module 
       (
-        rsrange (slift $1) (fst $4), 
+        rsrange (slift $1) (fst $5), 
         snd $2, 
         $3,
-        snd $4
+        snd $5
       ) 
     }
 
@@ -1444,6 +1462,17 @@ lexpr:
     }
 
 assignment: 
+  | VAR NAME LEFTARROW NEW expr SEMI 
+    {
+      let sr = rstoken $1 $6 in
+      let name = snd $2 in
+      let f,a= match $5 with
+      | `AST_apply(_,(f,a)) -> f,a
+      | f -> f,`AST_tuple (sr,[])
+      in
+      `AST_apply_ctor (sr,name,f,a)
+    }
+
   | expr LEFTARROW expr SEMI
     {
       let sr = rsrange (src_of_expr $1) (slift $4) in
