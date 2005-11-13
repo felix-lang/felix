@@ -464,17 +464,17 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           map (fun (i,vslen) -> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
           (get_display_list bbdfns index)
         in 
-          assert (length d' = our_level + 1);
-          tl d'
+        let d' = tl d' in (* throw out class pointer *)
 
           (*
           print_endline ("Generated display is " ^ cat ", " d');
           print_endline ("Display length = " ^ si (length d') ^ " .. our level = " ^ si our_level);
+          *)
 
+          assert (length d' >= our_level);
           if length d' > our_level
           then "this" :: tl d'
           else d'
-          *)
       in
       (* A method closure requires the last entry in the display
          to be the class. If we're cross calling from one

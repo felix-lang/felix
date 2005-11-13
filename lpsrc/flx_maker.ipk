@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.176  2005/11/13 09:58:33  skaller
+Fiddling with Classes.
+
 Revision 1.175  2005/11/12 17:26:48  skaller
 First implementation of classes is working, doesn't provide
 correct shapes yet (may not initialise pointers either).
@@ -4720,7 +4723,7 @@ else
   FLXG="$prefix/bin/flxg"
   FLXRUN="$prefix/bin/flx_run"
   FLXLIB="$prefix/lib/felix/lib"
-  FLXRTL="$prefix/lib/felix/lib"
+  FLXRTL="$prefix/rtl/felix/lib"
   FLXBIN="$prefix/bin"
   FLXAR="$prefix/lib"
   if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]

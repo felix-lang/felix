@@ -3224,7 +3224,9 @@ and bind_expression' syms env (rs:recstop) e
           {id=id';sr=sr';parent=parent';vs=vs';pubmap=name_map;dirs=dirs;symdef=entry'}
           ->
           match entry' with
-          | `SYMDEF_module ->
+          | `SYMDEF_module 
+          | `SYMDEF_function _
+            ->
             koenig_lookup syms rs sra id' name_map fn t2 ts
 
           | _ -> clierr sra ("Koenig lookup: parent for method apply not module")
