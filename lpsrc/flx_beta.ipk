@@ -209,10 +209,11 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
   match t with
   | `BTYP_inst (i,ts) -> 
     let ts = map br ts in
-    begin match Hashtbl.find syms.dfns i with
+    begin try match Hashtbl.find syms.dfns i with
     | {id=id; symdef=`SYMDEF_type_alias _ } ->
       failwith ("Beta reduce found a type instance of "^id^" to be an alias, which it can't handle")
     | _ -> `BTYP_inst (i,ts)
+    with Not_found -> `BTYP_inst (i,ts) (* could be reparented class *)
     end
   | `BTYP_tuple ls -> `BTYP_tuple (map br ls)
   | `BTYP_array (i,t) -> `BTYP_array (i, br t)

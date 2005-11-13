@@ -110,7 +110,7 @@ let is_native_literal e = match e with
 let get_var_frame syms bbdfns this index ts : string =
   match 
     try Hashtbl.find bbdfns index 
-    with _ -> failwith ("[get_var_frame(1)] Can't find index " ^ si index)
+    with Not_found -> failwith ("[get_var_frame(1)] Can't find index " ^ si index)
   with (id,parent,sr,entry) -> 
   match entry with
   | `BBDCL_val (vs,t)
@@ -130,7 +130,7 @@ let get_var_frame syms bbdfns this index ts : string =
 let get_var_ref syms bbdfns this index ts : string =
   match 
     try Hashtbl.find bbdfns index 
-    with _ -> failwith ("[get_var_ref] Can't find index " ^ si index)
+    with Not_found -> failwith ("[get_var_ref] Can't find index " ^ si index)
   with (id,parent,sr,entry) ->
   (*
   print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode syms.dfns) ts^"]");
@@ -192,7 +192,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   in
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns this 
-    with _ -> failwith ("[gen_expr] Can't find this = " ^ si this)
+    with Not_found -> failwith ("[gen_expr] Can't find this = " ^ si this)
   in
   let our_display = get_display_list bbdfns this in
   let our_level = length our_display in
@@ -207,8 +207,14 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   | _ ->
   match e with
   | `BEXPR_parse ((_,t')as e,ii) -> 
-    let pn = Hashtbl.find syms.parsers (this,t',ii) in
-    let ln = Hashtbl.find syms.lexers (this,e) in
+    let pn = 
+      try Hashtbl.find syms.parsers (this,t',ii) 
+      with Not_found -> failwith ("[gen_expr] parse can't find parser")
+    in
+    let ln = 
+      try Hashtbl.find syms.lexers (this,e) 
+      with Not_found -> failwith ("[gen_expr] parse can't find lexer")
+    in
     let the_display = 
       "this"::
       map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
@@ -239,7 +245,10 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       else ce_dot (ge' e) "variant"
     | `BTYP_inst (i,ts) ->
       let ts = map tsub ts in
-      let id,_,_,entry = Hashtbl.find bbdfns i in
+      let id,_,_,entry = 
+        try Hashtbl.find bbdfns i 
+        with Not_found -> failwith ("[gen_expr: case_index] Can't find index " ^ si i)
+      in
       begin match entry with
       | `BBDCL_union (bvs,cts) ->
         let tsub' t = reduce_type (beta_reduce syms [] (tsubst bvs ts t)) in
@@ -356,7 +365,10 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     let id,parent,sr2,entry = 
       try Hashtbl.find bbdfns index 
       with _ -> 
-        match Hashtbl.find syms.dfns index with
+        match 
+          try Hashtbl.find syms.dfns index 
+          with Not_found -> assert false
+        with
         {id=id; sr=sr} -> syserr sr
         ("[gen_expr(name)] Can't find "^ id ^ "<" ^ si index ^ ">")
     in
@@ -434,6 +446,89 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     | `BBDCL_proc _ ->
       failwith ("[gen_expr: closure] Can't wrap primitive proc, fun, or struct '"^id^"' yet")
     | _ -> failwith ("[gen_expr: closure] Cannot use this kind of name '"^id^"' in expression")
+    end
+
+  | `BEXPR_apply_method_stack (obj,meth,ts',a) ->
+    let id,parent,sr2,entry = 
+      try Hashtbl.find bbdfns meth
+      with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si meth)
+    in
+    begin 
+    (*
+    print_endline ("apply method closure of "^ id );
+    print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
+    *)
+    match entry with
+    | `BBDCL_function (props,_,_,_,_) ->
+      (*
+      print_endline ("Generating closure[apply method stack] of " ^ si meth);
+      *)
+      let ts = map tsub ts' in
+      let the_display = 
+        let d' = 
+          map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
+          (get_display_list bbdfns meth)
+        in 
+          let d' = tl d' in (* throw out class pointer *)
+          if length d' > our_level
+          then "this" :: tl d'
+          else d'
+      in
+      let class_frame = ge obj in
+      let the_display = class_frame :: the_display in
+      let name = cpp_instance_name syms bbdfns meth ts in
+      ce_atom (
+      name ^ strd the_display props ^
+      "\n      .apply(" ^ ge_arg a ^ ")"
+      )
+    | _ ->
+      failwith 
+      (
+        "[gen_expr: apply_method_stack] Expected '"^id^"' to be generic function instance, got:\n" ^
+        string_of_bbdcl syms.dfns entry meth
+      )
+   end
+
+  | `BEXPR_apply_method_direct (obj,meth,ts',a) ->
+    let id,parent,sr2,entry = 
+      try Hashtbl.find bbdfns meth
+      with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si meth)
+    in
+    begin 
+    (*
+    print_endline ("apply method closure of "^ id );
+    print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
+    *)
+    match entry with
+    | `BBDCL_function (props,_,_,_,_) ->
+      (*
+      print_endline ("Generating closure[apply method direct] of " ^ si meth);
+      *)
+      let ts = map tsub ts' in
+      let the_display = 
+        let d' = 
+          map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
+          (get_display_list bbdfns meth)
+        in 
+          let d' = tl d' in (* throw out class pointer *)
+          if length d' > our_level
+          then "this" :: tl d'
+          else d'
+      in
+      let class_frame = ge obj in
+      let the_display = class_frame :: the_display in
+      let name = cpp_instance_name syms bbdfns meth ts in
+      ce_atom (
+      "(FLX_NEWP("^name^")"^ strd the_display props ^")"^
+      "\n      ->apply(" ^ ge_arg a ^ ")"
+      )
+
+    | _ -> 
+      failwith 
+      (
+        "[gen_expr: apply_method_direct] Expected '"^id^"' to be generic function instance, got:\n" ^
+        string_of_bbdcl syms.dfns entry meth
+      )
     end
 
   | `BEXPR_method_closure (e,index,ts') -> 

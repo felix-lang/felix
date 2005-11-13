@@ -111,6 +111,21 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     (* | _ -> ue f; ue a *)
     | _ -> ui index ts; ue a
     end
+
+  | `BEXPR_apply_method_direct (obj,meth,ts,a) 
+  | `BEXPR_apply_method_stack (obj,meth,ts,a) 
+  | `BEXPR_apply ((`BEXPR_method_closure (obj,meth,ts),_),a) ->
+     let id,parent,sr2,entry = 
+      try Hashtbl.find bbdfns meth
+      with _ -> failwith ("[process_expr(apply instance)] Can't find index " ^ si meth)
+    in
+    begin match entry with
+    | `BBDCL_function _ 
+      -> 
+      let ts = map vs ts in
+      ue obj; ui meth ts; ue a
+    | _ -> assert false
+    end
     
   | `BEXPR_apply (e1,e2) -> 
     ue e1; ue e2

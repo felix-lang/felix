@@ -113,7 +113,10 @@ let rec get_offsets' syms bbdfns typ : string list =
     ["offsetof("^tname^",data)"]
 
   | `BTYP_inst (i,ts) ->
-    let id,parent,sr,entry = Hashtbl.find bbdfns i in 
+    let id,parent,sr,entry = 
+      try Hashtbl.find bbdfns i 
+      with Not_found -> failwith ("get_offsets'] can't find index " ^ si i)
+    in 
     begin match entry with
     | `BBDCL_union (vs,idts) ->
       let varmap = mk_varmap vs ts in
@@ -353,7 +356,10 @@ let gen_offset_tables syms (child_map,bbdfns) =
   (* print_endline "Function and procedure offsets"; *)
   Hashtbl.iter
   (fun (index,ts) instance ->
-    let id,parent,sr,entry = Hashtbl.find bbdfns index in 
+    let id,parent,sr,entry = 
+      try Hashtbl.find bbdfns index 
+      with Not_found -> failwith ("[gen_offset_tables] can't find index " ^ si index)
+    in 
     (*
     print_endline ("Offsets for " ^ id ^ "<"^ si index ^">["^catmap "," (sbt syms.dfns) ts ^"]");
     *)
@@ -424,14 +430,20 @@ let gen_offset_tables syms (child_map,bbdfns) =
       (*
       print_endline ("Thinking about instance type --> " ^ string_of_btypecode syms.dfns btyp);
       *)
-      let id,parent,sr,entry = Hashtbl.find bbdfns i in 
+      let id,parent,sr,entry = 
+        try Hashtbl.find bbdfns i 
+        with Not_found -> failwith ("[gen_offset_tables:BTYP_inst] can't find index " ^ si i)
+      in 
       begin match entry with
       | `BBDCL_class (props,vs) ->
         (*
         print_endline "Detected class instance type";
         *)
         begin try
-        let index = Hashtbl.find syms.registry btyp in
+        let index = 
+          try Hashtbl.find syms.registry btyp 
+          with Not_found -> failwith ("[gen_offset_tables:BTYP_inst:class] can't find type in registry " ^ sbt syms.dfns btyp)
+        in
         (*
         print_endline ("Class " ^id ^"<"^ si i ^ ">, ts=["^
           catmap "," (fun t -> sbt syms.dfns t) ts
@@ -457,7 +469,10 @@ let gen_offset_tables syms (child_map,bbdfns) =
               print_endline ("Thinking about argument type --> " ^ string_of_btypecode syms.dfns t);
             *)
             try
-            let index = Hashtbl.find syms.registry t in
+            let index = 
+              try Hashtbl.find syms.registry t 
+              with Not_found -> failwith ("[gen_offset_tables:BTYP_inst:union] can't find type in registry " ^ sbt syms.dfns t)
+            in
             Hashtbl.replace allocable_types t index
             with Not_found -> 
               failwith ("Can't find the type " ^ sbt syms.dfns t ^ " in registry")
@@ -522,7 +537,10 @@ let gen_offset_tables syms (child_map,bbdfns) =
 
     | `BTYP_inst (i,ts) ->
       let name = cpp_typename syms btyp in
-      let id,parent,sr,entry = Hashtbl.find bbdfns i in 
+      let id,parent,sr,entry = 
+        try Hashtbl.find bbdfns i 
+        with Not_found -> failwith ("[gen_offset_tables:BTYP_inst:allocable_types] can't find index " ^ si i)
+      in 
       begin match entry with
       | `BBDCL_class (props,vs) ->
         let instance = index in

@@ -94,7 +94,10 @@ let find_variable_indices syms (child_map,bbdfns) index =
 
 let get_variable_typename syms bbdfns i ts =
   let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms [] (tsubst vs ts t))) in
-  let id,parent,sr,entry = Hashtbl.find bbdfns i in
+  let id,parent,sr,entry = 
+    try Hashtbl.find bbdfns i 
+    with Not_found -> failwith ("[get_variable_typename] can't find index " ^ si i)
+  in
   match entry with
   | `BBDCL_var (vs,t)
   | `BBDCL_val (vs,t) 
@@ -110,7 +113,8 @@ let get_variable_typename syms bbdfns i ts =
       si (length ts)
     );
     let t = rt vs t in
-    cpp_typename syms t
+    let n = cpp_typename syms t in
+    n
 
   | _ -> 
     failwith "[get_variable_typename] Expected variable"
@@ -168,7 +172,7 @@ let gen_C_function syms (child_map,bbdfns) props index id vs bps ret' ts instanc
   if syms.compiler_options.print_flag then
   print_endline 
   (
-    "//Generating function inst " ^ 
+    "//Generating C function inst " ^ 
     si instance_no ^ "=" ^ 
     id ^ "<" ^si index^">" ^
     (
@@ -540,7 +544,10 @@ let gen_functions syms (child_map,bbdfns) =
       if length ts = 0 then "" else 
       "[" ^ catmap "," (string_of_btypecode syms.dfns) ts^ "]"
     in
-    match Hashtbl.find bbdfns index with (id,parent,sr,entry) -> 
+    match 
+      try Hashtbl.find bbdfns index 
+      with Not_found -> failwith ("[gen_functions] can't find index " ^ si index)
+    with (id,parent,sr,entry) -> 
     match entry with
     | `BBDCL_function (props,vs,(ps,traint), ret, _) -> 
       bcat s ("\n//------------------------------\n");
@@ -1072,7 +1079,10 @@ let gen_exe filename syms
       ";\n"
       
     | `BEXE_init (sr,v,e) -> 
-      let id,_,_,entry = Hashtbl.find bbdfns v in
+      let id,_,_,entry = 
+        try Hashtbl.find bbdfns v with 
+        Not_found -> failwith ("[gen_expr(init) can't find index " ^ si v)
+      in
       begin match entry with
         | `BBDCL_tmp _ ->
         "      //"^src_str^"\n" ^
@@ -1138,7 +1148,10 @@ let gen_C_function_body filename syms (child_map,bbdfns)
   label_info counter index ts instance_no 
 = 
   let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms [] (tsubst vs ts t))) in
-  let id,parent,sr,entry = Hashtbl.find bbdfns index in
+  let id,parent,sr,entry = 
+    try Hashtbl.find bbdfns index 
+    with Not_found -> failwith ("gen_C_function_body] can't find " ^ si index)
+  in
   if syms.compiler_options.print_flag then
   print_endline 
   (
@@ -1191,7 +1204,10 @@ let gen_C_function_body filename syms (child_map,bbdfns)
       let kids = 
         fold_left 
         (fun lst i ->
-          let _,_,_,entry = Hashtbl.find bbdfns i in
+          let _,_,_,entry =  
+            try Hashtbl.find bbdfns i 
+            with Not_found -> failwith ("[C func body, vars] Can't find index " ^ si i);
+          in
           match entry with
           | `BBDCL_var (vs,t)
           | `BBDCL_val (vs,t) 
@@ -1293,7 +1309,10 @@ let gen_function_methods filename syms (child_map,bbdfns)
   label_info counter index ts instance_no 
 = 
   let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms [] (tsubst vs ts t))) in
-  let id,parent,sr,entry = Hashtbl.find bbdfns index in
+  let id,parent,sr,entry = 
+    try Hashtbl.find bbdfns index 
+    with Not_found -> failwith ("[gen_function_methods] can't find " ^ si index)
+  in
   if syms.compiler_options.print_flag then
   print_endline 
   (
@@ -1418,7 +1437,10 @@ let gen_regexp_methods filename syms (child_map,bbdfns)
   label_info counter index ts instance_no 
 = 
   let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms [] (tsubst vs ts t))) in
-  let id,parent,sr,entry = Hashtbl.find bbdfns index in
+  let id,parent,sr,entry = 
+    try Hashtbl.find bbdfns index 
+    with Not_found -> failwith ("[gen_regexp_methods] Can't find index " ^ si index)
+  in
   if syms.compiler_options.print_flag then
   print_endline 
   (
@@ -1527,7 +1549,10 @@ let gen_class_methods filename syms (child_map,bbdfns)
   label_info counter index ts instance_no 
 = 
   let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms [] (tsubst vs ts t))) in
-  let id,parent,sr,entry = Hashtbl.find bbdfns index in (* can't fail *)
+  let id,parent,sr,entry = 
+    try Hashtbl.find bbdfns index 
+    with Not_found -> failwith ("[gen_class_methods] Can't find index " ^ si index)
+  in (* can't fail *)
   if syms.compiler_options.print_flag then
   print_endline 
   (
@@ -1585,7 +1610,10 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
   label_info counter index ts instance_no 
 = 
   let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms [] (tsubst vs ts t))) in
-  let id,parent,sr,entry = Hashtbl.find bbdfns index in (* can't fail *)
+  let id,parent,sr,entry = 
+    try Hashtbl.find bbdfns index 
+    with Not_found -> failwith ("[gen_procedure_methods] Can't find index " ^ si index)
+  in (* can't fail *)
   if syms.compiler_options.print_flag then
   print_endline 
   (
@@ -1740,7 +1768,10 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf =
   let s = Buffer.create 2000 in
   Hashtbl.iter
   (fun (index,ts) instance_no -> 
-  let id,parent,sr,entry = Hashtbl.find bbdfns index in 
+  let id,parent,sr,entry = 
+    try Hashtbl.find bbdfns index 
+    with Not_found -> failwith ("[gen_execute_methods] Can't find index " ^ si index)
+  in 
   begin match entry with
   | `BBDCL_function (props,vs,(ps,traint), ret, _) -> 
     bcat s ("//------------------------------\n");
@@ -1785,7 +1816,10 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf =
 
 let gen_biface_header syms bbdfns biface = match biface with
   | `BIFACE_export_fun (sr,index, export_name) ->
-    let id,parent,sr,entry = Hashtbl.find bbdfns index in
+    let id,parent,sr,entry = 
+      try Hashtbl.find bbdfns index 
+      with Not_found -> failwith ("[gen_biface_header] Can't find index " ^ si index)
+    in
     begin match entry with
     | `BBDCL_function (props,vs,(ps,traint), ret, _) ->
       let display = get_display_list bbdfns index in
@@ -1838,7 +1872,10 @@ let gen_biface_header syms bbdfns biface = match biface with
       
 let gen_biface_body syms bbdfns biface = match biface with
   | `BIFACE_export_fun (sr,index, export_name) ->
-    let id,parent,sr,entry = Hashtbl.find bbdfns index in
+    let id,parent,sr,entry = 
+      try Hashtbl.find bbdfns index 
+      with Not_found -> failwith ("[gen_biface_body] Can't find index " ^ si index)
+    in
     begin match entry with
     | `BBDCL_function (props,vs,(ps,traint), ret, _) ->
       if length vs <> 0
@@ -2106,7 +2143,6 @@ try
   let () = Flx_use.find_roots syms bbdfns root_proc bifaces in
   let child_map = cal_children syms bbdfns in
 
-  let bbdfns = ref bbdfns in
   let child_map = ref child_map in
   if compiler_options.max_inline_length > 0 then
   begin
@@ -2116,15 +2152,19 @@ try
     if compiler_options.print_flag then
     print_endline "//INLINING";
 
-    Flx_inline.heavy_inlining syms (!child_map,!bbdfns) root_proc bifaces;
+    Flx_inline.heavy_inlining syms (!child_map,bbdfns) root_proc bifaces;
     (*
     print_endline "INLINING DONE";
-    print_functions syms.dfns !bbdfns;
+    print_functions syms.dfns bbdfns;
     *)
   end
   ;
-  let bbdfns = Flx_use.copy_used syms !bbdfns in
+  let bbdfns = Flx_use.copy_used syms bbdfns in
   let child_map = cal_children syms bbdfns in
+
+  (*
+  print_functions syms.dfns bbdfns;
+  *)
 
   if compiler_options.print_flag 
   then print_endline "//Calculating stackable calls";
@@ -2258,7 +2298,9 @@ try
     let insts = Hashtbl.create 97 in
     List.iter 
     (fun (i,ts)->
-      match Hashtbl.find bbdfns i
+      match 
+        try Hashtbl.find bbdfns i 
+        with Not_found -> failwith ("[user header] can't find index " ^ si i)
       with (id,parent,sr,entry) ->
       match entry with
       | `BBDCL_insert (_,s,`Header,_) -> 
@@ -2404,7 +2446,9 @@ try
     let insts = Hashtbl.create 97 in
     List.iter 
     (fun (i,ts) ->
-      match Hashtbl.find bbdfns i
+      match 
+        try Hashtbl.find bbdfns i
+        with Not_found -> failwith ("[user body] can't find index " ^ si i)
       with (id,parent,sr,entry) ->
       match entry with
       | `BBDCL_insert (_,s,`Body,_) -> 

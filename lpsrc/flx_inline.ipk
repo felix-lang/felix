@@ -208,7 +208,14 @@ let remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e =
   (*
   print_endline ("Remapping expression " ^ sbe syms.dfns e);
   *)
-  let auxt t = varmap_subst varmap t in
+  let revar i = try Hashtbl.find revariable i with Not_found -> i in
+  let tmap t = match t with
+  | `BTYP_inst (i,ts) -> `BTYP_inst (revar i,ts)
+  | x -> x
+  in
+  let auxt t = 
+    map_btype tmap (varmap_subst varmap t)
+  in
   let fixup i ts = 
     let ts = map auxt ts in
     try 
@@ -229,20 +236,31 @@ let remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e =
     let i,ts = fixup i ts in
     `BEXPR_closure (i,ts), auxt t
 
+  | `BEXPR_method_closure (obj,i,ts),t ->
+    let i,ts = fixup i ts in
+    `BEXPR_method_closure (aux obj,i,ts), auxt t
+
   | `BEXPR_apply_direct (i,ts,e),t ->
     let i,ts = fixup i ts in
     `BEXPR_apply_direct (i,ts,aux e), auxt t
 
+  | `BEXPR_apply_method_direct (obj,i,ts,e),t ->
+    let i,ts = fixup i ts in
+    `BEXPR_apply_method_direct (aux obj,i,ts,aux e), auxt t
+
   | `BEXPR_apply_stack (i,ts,e),t ->
     let i,ts = fixup i ts in
     `BEXPR_apply_stack (i,ts,aux e), auxt t
+
+  | `BEXPR_apply_method_stack (obj,i,ts,e),t ->
+    let i,ts = fixup i ts in
+    `BEXPR_apply_method_stack (aux obj,i,ts,aux e), auxt t
 
   | `BEXPR_apply_prim (i,ts,e),t ->
     let i,ts = fixup i ts in
     `BEXPR_apply_prim (i,ts,aux e), auxt t
 
   | `BEXPR_parse (e,gs),t ->
-    let revar i = try Hashtbl.find revariable i with Not_found -> i in
     let e = aux e in
     let gs = map revar gs in
     `BEXPR_parse (e,gs), auxt t
@@ -262,11 +280,17 @@ let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len ex
   let ge e = remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let relab s = try Hashtbl.find relabel s with Not_found -> s in
+  let tmap t = match t with
+  | `BTYP_inst (i,ts) -> `BTYP_inst (revar i,ts)
+  | x -> x
+  in
+  let auxt t = 
+    map_btype tmap (varmap_subst varmap t)
+  in
   let exe = 
   match exe with 
   | `BEXE_call_prim (sr,i,ts,e2)  -> 
     let fixup i ts = 
-      let auxt t = varmap_subst varmap t in
       let ts = map auxt ts in
       try 
         let j= Hashtbl.find revariable i in 
@@ -278,7 +302,6 @@ let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len ex
 
   | `BEXE_call_direct (sr,i,ts,e2)  -> 
     let fixup i ts = 
-      let auxt t = varmap_subst varmap t in
       let ts = map auxt ts in
       try 
         let j= Hashtbl.find revariable i in 
@@ -290,7 +313,6 @@ let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len ex
 
   | `BEXE_call_stack (sr,i,ts,e2)  -> 
     let fixup i ts = 
-      let auxt t = varmap_subst varmap t in
       let ts = map auxt ts in
       try 
         let j= Hashtbl.find revariable i in 
@@ -324,8 +346,14 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   in
   let caller_vars = map (fun (s,i) -> `BTYP_var (i,`BTYP_type)) caller_vs in
 
-  let auxt t = varmap_subst varmap t in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
+  let tmap t = match t with
+  | `BTYP_inst (i,ts) -> `BTYP_inst (revar i,ts)
+  | x -> x
+  in
+  let auxt t = 
+    map_btype tmap (varmap_subst varmap t)
+  in
   let remap_ps ps = map (fun (id,(i,t)) -> id,(revar i,auxt t)) ps in
 
   let k = Hashtbl.find revariable index in
@@ -423,6 +451,9 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls
+
+  | `BBDCL_class (props,vs) ->
+    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_class (props,splice vs));
 
   | _ -> syserr sr ("[reparent1] Unexpected bbdcl " ^ string_of_bbdcl syms.dfns entry index)
 
