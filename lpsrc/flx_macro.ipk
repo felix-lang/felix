@@ -551,7 +551,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   | `AST_get_n (sr, (i, e1)) ->  `AST_get_n (sr,(i,me e1))
   | `AST_get_named_variable (sr, (i, e1)) ->  `AST_get_named_variable (sr,(i,me e1))
-  | `AST_get_named_method (sr, (i, e1,t)) ->  `AST_get_named_method (sr,(i,me e1,mt sr t))
+  | `AST_get_named_method (sr, (i,ts, e1,t)) ->  `AST_get_named_method (sr,(i,map (mt sr) ts,me e1,mt sr t))
   | `AST_as (sr, (e1, id)) ->  `AST_as (sr,(me e1, mi sr id))
 
   | `AST_parse (sr, e1, ms) -> 
@@ -826,6 +826,9 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     let a = me a in
     ctack (`AST_apply_ctor (sr, i, f, a))
 
+  | `AST_init (sr,v,e) ->
+    ctack (`AST_init (sr, mi sr v, me e))
+    
   | `AST_assert (sr,e) ->
     let e = me e in
     begin match e with

@@ -311,6 +311,17 @@ let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len ex
     let i,ts = fixup i ts in
     `BEXE_call_direct (sr,i,ts, ge e2)
 
+  | `BEXE_call_method_direct (sr,e1,i,ts,e2)  -> 
+    let fixup i ts = 
+      let ts = map auxt ts in
+      try 
+        let j= Hashtbl.find revariable i in 
+        j, vsplice caller_vars callee_vs_len ts
+      with Not_found -> i,ts
+    in
+    let i,ts = fixup i ts in
+    `BEXE_call_method_direct (sr,ge e1,i,ts, ge e2)
+
   | `BEXE_call_stack (sr,i,ts,e2)  -> 
     let fixup i ts = 
       let ts = map auxt ts in
@@ -660,6 +671,18 @@ let gen_body syms (uses,child_map,bbdfns) id
     let i,ts = fixup i ts in
     [`BEXE_call_direct (sr,i,ts, ge e2)]
 
+  | `BEXE_call_method_direct (sr,e1,i,ts,e2)  -> 
+    let fixup i ts = 
+      let auxt t = varmap_subst varmap t in
+      let ts = map auxt ts in
+      try 
+        let j= Hashtbl.find revariable i in 
+        j, vsplice caller_vars callee_vs_len ts
+      with Not_found -> i,ts
+    in
+    let i,ts = fixup i ts in
+    [`BEXE_call_method_direct (sr,ge e1,i,ts, ge e2)]
+
   | `BEXE_jump_direct (sr,i,ts,e2)  -> 
     let fixup i ts = 
       let auxt t = varmap_subst varmap t in
@@ -950,6 +973,8 @@ let call_lifting syms (uses,child_map,bbdfns) caller caller_vs callee ts a argum
           (match e with
           | `BEXPR_closure (i,ts),_ -> 
             `BEXE_call_direct (sr,i,ts,argument)
+          | `BEXPR_method_closure (obj,i,ts),_ -> 
+            `BEXE_call_method_direct (sr,obj,i,ts,argument)
           | _ ->
             `BEXE_call (sr,e,argument)
           )
@@ -1117,6 +1142,11 @@ let expand_exe syms bbdfns u exe =
     | `BEXE_call_direct (sr,i,ts,e2) ->
       let e,xs = u sr e2 in
       `BEXE_call_direct (sr,i,ts,e) :: xs
+
+    | `BEXE_call_method_direct (sr,e1,i,ts,e2) ->
+      let e1,xs1 = u sr e1 in
+      let e2,xs2 = u sr e2 in
+      `BEXE_call_method_direct (sr,e1,i,ts,e2) :: xs2 @ xs1
 
     | `BEXE_jump_direct (sr,i,ts,e2) ->
       let e,xs = u sr e2 in
@@ -1836,6 +1866,7 @@ and fold_vars syms (uses,child_map,bbdfns) i ps exes =
           | `BEXE_call_prim _
           | `BEXE_call _
           | `BEXE_call_direct _
+          | `BEXE_call_method_direct _
           | `BEXE_call_stack _
              -> subs := false; elimi exe
           else exe

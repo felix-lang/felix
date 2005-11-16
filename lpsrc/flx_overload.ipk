@@ -125,8 +125,8 @@ let overload
     let type_constraint = build_type_constraints syms (bt sr i) sr vs in
     (*
     print_endline ("Candidate bound sig is " ^ sbt syms.dfns t);
-    print_endline ("pvs = " ^ catmap ", " (fun (s,i) ->s ^ "=" ^ si i) pvs);
-    print_endline ("vs = " ^ catmap ", " (fun (s,i) ->s ^ "=" ^ si i) vs);
+    print_endline ("pvs = " ^ catmap ", " (fun (s,i,_) ->s ^ "=" ^ si i) pvs);
+    print_endline ("vs = " ^ catmap ", " (fun (s,i,_) ->s ^ "=" ^ si i) vs);
     print_endline ("type constraint = " ^ sbt syms.dfns type_constraint);
     *)
     (* Here we have a parameter list vs of m type variables,

@@ -77,7 +77,7 @@ let dump_name_to_int_map level name name_map =
   ;
   print_endline ""
 
-  
+let strp = function | Some x -> si x | None -> "none" 
  
 let add_unique syms sr table key value =
   try 
@@ -88,11 +88,9 @@ let add_unique syms sr table key value =
        (match Hashtbl.find syms.dfns idx  with 
        | { sr=sr2 } ->
          clierr2 sr sr2 
-         ("[build_tables] Duplicate non-function name declared " ^ key)
+         ("[build_tables] Duplicate non-function " ^ key ^ "<"^si idx^">")
        )
-     | _ ->
-       clierr sr ("[build_tables] Duplicate non-function name declared " ^ key)
-
+     | FunctionEntry [] -> assert false
   with Not_found -> 
     Hashtbl.add table key (NonFunctionEntry (value))
 
@@ -137,6 +135,9 @@ let add_function syms sr table key value =
 let null_tab = Hashtbl.create 3 
 
 let rec build_tables syms name level parent grandparent root is_class asms = 
+  (*
+  print_endline ("//Building tables for " ^ name);
+  *)
   let 
     print_flag = syms.compiler_options.print_flag and
     dfns = syms.dfns and
@@ -184,14 +185,21 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           | Some n -> (* print_endline ("SPECIAL " ^ id ^ si n); *) n 
           | None -> let n = !counter in incr counter; n
         in
-        if print_flag then 
+        if print_flag then begin
+          let kind = match dcl with
+          | `DCL_class _ -> "(class) "
+          | `DCL_function _ -> "(function) "
+          | `DCL_module _ -> "(module) "
+          | `DCL_insert _ -> "(insert) "
+          | _ -> ""
+          in 
           print_endline 
           (
             "//" ^ spc ^ si n ^ " -> " ^ id ^ 
-            " " ^ short_string_of_src sr
+            " " ^ kind ^ short_string_of_src sr
           )
-        ;
-        let vs = 
+        end;
+        let make_vs vs' = 
           map 
           (
             fun (tid,tpat)-> let n = !counter in incr counter; 
@@ -201,14 +209,14 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           ) 
           vs'
         in
-        let add_tvars table =        
+        let add_tvars' parent table vs =        
           iter
           (fun (tvid,i,tpat) ->
             Hashtbl.add dfns i 
             {
               id=tvid; 
               sr=sr; 
-              parent=Some n;
+              parent=parent;
               vs=[];
               pubmap=null_tab;
               privmap=null_tab;
@@ -219,10 +227,12 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           )
           vs
         in
+        let vs = make_vs vs' in
+        let add_tvars table = add_tvars' (Some n) table vs in
+
         let handle_class class_kind classno sts tvars stype = 
-          (*
-          print_endline ("Interfaces for class " ^ si classno);
-          *)
+          if print_flag then
+          print_endline ("//Interfaces for class " ^ si classno);
           (* projections *)
           iter
           (fun mem ->
@@ -234,6 +244,8 @@ let rec build_tables syms name level parent grandparent root is_class asms =
               | `MemberProc (n,t,cc) -> `Proc,n,t,cc
               | `MemberCtor (n,t,cc) -> `Ctor,n,t,cc
             in
+            if print_flag then
+            print_endline ("//Member " ^ component_name);
             if kind = `Ctor && class_kind = `CClass then
             begin
               let ctor_index = !(syms.counter) in incr (syms.counter);
@@ -256,7 +268,7 @@ let rec build_tables syms name level parent grandparent root is_class asms =
               ;
               if access = `Public then add_function pub_name_map ctor_name ctor_index;
               add_function priv_name_map ctor_name ctor_index;
-              if print_flag then print_endline ("//[ctor]  " ^ spc ^ si ctor_index ^ " -> " ^ ctor_name)
+              if print_flag then print_endline ("//  " ^ spc ^ si ctor_index ^ " -> " ^ ctor_name ^ " [ctor]")
             end
             ;
 
@@ -275,6 +287,8 @@ let rec build_tables syms name level parent grandparent root is_class asms =
               let get_name = "get_" ^ component_name in
               let props = [] in
               let ps = [stype] in
+              if print_flag then
+              print_endline "//Get method for function";
 
               (* the return type of the get_f function *)
               let rett = `TYP_function (domain,codomain) in
@@ -374,9 +388,9 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                             (
                               sr,
                               (
-                                component_name,
+                                component_name,[], (* NO WAY TO SPECIFY POLYMORPHIC METHODS?? *)
                                 `AST_index (sr,obj_name,objidx),
-                                domain (* method signature *)
+                                domain (* GENERIC method signature *)
                               )
                             )
                           )
@@ -387,12 +401,20 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                 end
               in
               begin
+                if print_flag then
+                print_endline ("//Building tables for " ^ get_name);
                 let pubtab,privtab, exes, ifaces,dirs =  
                   build_tables syms get_name (level+1) 
                  (Some getn) parent root false get_asms 
                 in
-
+                (* print_endline "Making fresh type variables"; *)
+                let vs = make_vs vs' in
+                add_tvars' (Some getn) privtab vs;
                 (* add the get method to the current sumbol table *)
+                if print_flag then
+                print_endline ("//Adding get method " ^ get_name ^ " with vs=" ^
+                  print_ivs_with_index vs ^ ", parent = " ^ strp parent
+                );
                 Hashtbl.add dfns getn {
                   id=get_name;sr=sr;parent=parent;
                   vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
@@ -416,7 +438,6 @@ let rec build_tables syms name level parent grandparent root is_class asms =
 
                 interfaces := !interfaces @ ifaces
                 ;
-                add_tvars privtab;
                 if print_flag then 
                 print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name)
               end
@@ -424,9 +445,18 @@ let rec build_tables syms name level parent grandparent root is_class asms =
             ; 
             if kind = `Var || kind = `Val then
             begin
+              if print_flag then
+              print_endline "//Get method for variable";
               let getn = !counter in incr counter;
               let get_name = "get_" ^ component_name in
               let funtab = Hashtbl.create 3 in
+              let vs = make_vs vs' in
+              add_tvars' (Some getn) funtab vs;
+              (* add the get method to the current sumbol table *)
+              if print_flag then
+              print_endline ("//Adding get method " ^ get_name ^ " with vs=" ^
+                  print_ivs_with_index vs ^ ", parent = " ^ strp parent
+              );
               let get_dcl = 
                 if class_kind = `CClass then
                   `SYMDEF_fun ([],[stype],t,`StrTemplate("$1->" ^ component_name),[],"primary") 
@@ -470,6 +500,8 @@ let rec build_tables syms name level parent grandparent root is_class asms =
               let funtab = Hashtbl.create 3 in
               let getn = !counter in incr counter;
               let get_name = "get_" ^ component_name in
+              let vs = make_vs vs' in
+              add_tvars' (Some getn) funtab vs;
               let get_dcl = 
                 if class_kind = `CClass then
                  `SYMDEF_fun ([],[`TYP_lvalue stype],`TYP_lvalue t,`StrTemplate ("$1->" ^ component_name),[],"primary") 
@@ -499,13 +531,15 @@ let rec build_tables syms name level parent grandparent root is_class asms =
               if access = `Public then add_function pub_name_map get_name getn;
               add_function priv_name_map get_name getn
               ;
-              if print_flag then print_endline ("//[lvalue]  " ^ spc ^ si getn ^ " -> " ^ get_name)
+              if print_flag then 
+              print_endline ("//  " ^ spc ^ si getn ^ " -> " ^ get_name ^ " [lvalue]")
             end
 
           )
           sts
           ;
-          add_tvars privtab
+          if print_flag then
+          print_endline "//---- end interface----";
         in
         begin match (dcl:dcl_t) with
         | `DCL_regdef re ->
@@ -1087,6 +1121,8 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           ;
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n
+          ;
+          add_tvars privtab
           ;
           let dont_care = 0 in
           handle_class `CClass dont_care sts tvars stype

@@ -44,6 +44,7 @@ open Flx_mtypes2
 open Flx_util
 open List
 open Flx_exceptions
+open Flx_print
 
 (* Adjustment of type argument lists works much
 like the activation record display, so well call
@@ -133,6 +134,7 @@ let adjust_ts syms sr index ts =
       "For "^ id^ "<" ^ si index ^ 
       "> Too many type subscripts, expected " ^ 
       si m ^ " got " ^ si n ^ 
+      "=["^catmap "," (sbt syms.dfns) ts ^ "]"^
       "\nparent vs="^print_ivs pvs ^ 
       "\nvs="^print_ivs vs
     )

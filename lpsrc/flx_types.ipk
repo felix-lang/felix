@@ -413,7 +413,7 @@ and expr_t =
 
   | `AST_get_n of range_srcref * (int * expr_t) (* get n'th component of a tuple *)
   | `AST_get_named_variable of range_srcref * (string * expr_t) (* get named component of a class *)
-  | `AST_get_named_method of range_srcref * (string * expr_t * typecode_t) (* get named component of a class *)
+  | `AST_get_named_method of range_srcref * (string * typecode_t list * expr_t * typecode_t) (* get named component of a class *)
   | `AST_as of range_srcref * (expr_t * string)
   | `AST_match of range_srcref * (expr_t * (pattern_t * expr_t) list)
   | `AST_parse of range_srcref * expr_t * (range_srcref * production_t * expr_t) list
@@ -636,6 +636,7 @@ and statement_t =
   | `AST_nop of range_srcref * string
   | `AST_assert of range_srcref * expr_t
   | `AST_apply_ctor of range_srcref * id_t * expr_t * expr_t
+  | `AST_init of range_srcref * id_t * expr_t
 
   (* binding structures [prolog] *)
   | `AST_abs_decl of range_srcref * id_t * vs_list_t * type_qual_t list * c_t * requirements_t
@@ -856,6 +857,7 @@ and bexe_t =
   | `BEXE_ifnotgoto of range_srcref * tbexpr_t * string  (* for internal use only *)
   | `BEXE_call of range_srcref * tbexpr_t * tbexpr_t 
   | `BEXE_call_direct of range_srcref * bid_t * btypecode_t list * tbexpr_t 
+  | `BEXE_call_method_direct of range_srcref * tbexpr_t * bid_t * btypecode_t list * tbexpr_t 
   | `BEXE_call_stack of range_srcref * bid_t * btypecode_t list * tbexpr_t 
   | `BEXE_call_prim of range_srcref * bid_t * btypecode_t list * tbexpr_t 
   | `BEXE_jump of range_srcref * tbexpr_t * tbexpr_t 
@@ -1203,7 +1205,7 @@ let map_expr f (e:expr_t):expr_t = match e with
 
   | `AST_get_n (sr,(j,x)) -> `AST_get_n (sr,(j,f x))
   | `AST_get_named_variable (sr,(j,x)) -> `AST_get_named_variable (sr,(j,f x))
-  | `AST_get_named_method (sr,(j,x,t)) -> `AST_get_named_method (sr,(j,f x,t))
+  | `AST_get_named_method (sr,(j,ts,x,t)) -> `AST_get_named_method (sr,(j,ts,f x,t))
   | `AST_as (sr,(x,s)) -> `AST_as (sr,(f x, s))
   | `AST_match (sr,(a,pes)) ->
     `AST_match (sr, (f a, map (fun (pat,x) -> pat, f x) pes))
@@ -1395,6 +1397,9 @@ let iter_bexe fi fe ft fl fldef exe =
   | `BEXE_jump_direct (sr,i,ts,e2)  
     -> fi i; iter ft ts; fe e2
 
+  | `BEXE_call_method_direct (sr,e1,i,ts,e2)  
+    -> fe e1; fi i; iter ft ts; fe e2
+
   | `BEXE_assign (sr,e1,e2) 
   | `BEXE_call (sr,e1,e2)
   | `BEXE_jump (sr,e1,e2) 
@@ -1449,6 +1454,9 @@ let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
 
   | `BEXE_call_direct (sr,i,ts,e2) ->
     `BEXE_call_direct (sr,fi i,map ft ts,fe e2)  
+
+  | `BEXE_call_method_direct (sr,e1,i,ts,e2) ->
+    `BEXE_call_method_direct (sr,fe e1,fi i,map ft ts,fe e2)  
 
   | `BEXE_jump_direct (sr,i,ts,e2) ->
     `BEXE_jump_direct (sr,fi i,map ft ts,fe e2)  
@@ -1525,6 +1533,10 @@ let reduce_bexe bbdfns exe =
   match map_bexe ident (reduce_tbexpr bbdfns) ident ident ident exe with
   | `BEXE_call (sr,(`BEXPR_closure (i,ts),_),a) ->
     `BEXE_call_direct (sr,i,ts,a)
+
+  | `BEXE_call (sr,(`BEXPR_method_closure (obj,meth,ts),_),a) ->
+    `BEXE_call_method_direct (sr,obj,meth,ts,a)
+
   | x -> x
 
 let rec reduce_type t =
@@ -1602,6 +1614,7 @@ let src_of_bexe = function
   | `BEXE_comment (sr,_)
   | `BEXE_call (sr,_,_)
   | `BEXE_call_direct (sr,_,_,_)
+  | `BEXE_call_method_direct (sr,_,_,_,_)
   | `BEXE_jump_direct (sr,_,_,_)
   | `BEXE_call_stack (sr,_,_,_)
   | `BEXE_call_prim (sr,_,_,_)
@@ -1692,6 +1705,7 @@ let src_of_stmt e = match e with
   | `AST_goto (s,_)
   | `AST_assert (s,_)
   | `AST_apply_ctor (s,_,_,_)
+  | `AST_init (s,_,_)
   | `AST_function (s,_, _, _ , _, _, _)
   | `AST_curry (s,_, _, _ , _, _,_)
   | `AST_object (s,_, _, _ , _)
@@ -1929,6 +1943,10 @@ val print_functions:
   fully_bound_symbol_table_t ->
   unit
 
+val print_vs: vs_list_t -> string
+val print_ivs: ivs_list_t -> string
+val print_ivs_with_index: ivs_list_t -> string
+
 @h = tangler('src/flx_print.ml')
 @select(h)
 open Flx_util
@@ -2060,7 +2078,9 @@ and string_of_expr (e:expr_t) =
   | `AST_as (_,(e1, name)) -> "(" ^ se e1 ^ ") as " ^ name  
   | `AST_get_n (_,(n,e)) -> "get (" ^ si n ^ ", " ^se e^")"
   | `AST_get_named_variable (_,(n,e)) -> "get (" ^ n ^ ", " ^se e^")"
-  | `AST_get_named_method (_,(n,e,t)) -> "get (" ^ n ^ ", " ^se e ^","^string_of_typecode t^")"
+  | `AST_get_named_method (_,(n,ts,e,t)) -> 
+    "get (" ^ n ^ "["^catmap "," string_of_typecode ts^"], " ^
+    se e ^","^string_of_typecode t^")"
   | `AST_strexpr (_,e) -> "#" ^ (string_of_expr e)
   | `AST_map (_,f,e) -> "map (" ^ se f ^ ") (" ^ se e ^ ")"
   | `AST_deref (_,e) -> "*(" ^ se e ^ ")"
@@ -2688,6 +2708,10 @@ and print_ivs = function
   | [] -> ""
   | vs -> "[" ^ cat ", " (map (fun (name,ix,tpat) -> name ^ string_of_maybe_tpattern tpat) vs) ^ "]"
 
+and print_ivs_with_index = function
+  | [] -> ""
+  | vs -> "[" ^ cat ", " (map (fun (name,ix,tpat) -> name ^ "<"^si ix^">"^string_of_maybe_tpattern tpat) vs) ^ "]"
+
 and print_vs = function
   | [] -> ""
   | vs -> "[" ^ cat ", " (map (fun (name,tpat) -> name ^ string_of_maybe_tpattern tpat) vs) ^ "]"
@@ -2829,6 +2853,9 @@ and string_of_statement level s =
 
   | `AST_apply_ctor (_,i1,f,a) ->
     spaces level ^ i1 ^ " <- new " ^ se f ^ "(" ^ se a ^ ");"
+
+  | `AST_init (_,v,e) ->
+    spaces level ^ v ^ " := " ^ se e ^ ";"
 
   | `AST_comment s -> spaces level ^ "// " ^ s
 
@@ -3542,6 +3569,11 @@ and string_of_bexe dfns level s =
   | `BEXE_call_direct (_,i,ts,a) -> spc ^ 
     "directcall " ^ 
     sid i ^ print_inst dfns ts ^ " " ^
+    se a ^ ";"
+
+  | `BEXE_call_method_direct (_,obj,i,ts,a) -> spc ^ 
+    "direct_method_call " ^ 
+    se obj ^ "->" ^ sid i ^ print_inst dfns ts ^ " " ^
     se a ^ ";"
 
   | `BEXE_jump_direct (_,i,ts,a) -> spc ^ 

@@ -1028,17 +1028,31 @@ function_definition:
         )
     }
 
+ctor_init:
+  | NAME LPAR expr RPAR { $1,$3 }
+  
+ctor_init_list:
+  | ctor_init COMMA ctor_init_list { $1 :: $3 }
+  | ctor_init { [$1] }
+  
+ctor_inits:
+  | COLON ctor_init_list { $2 }
+  | {[]}
+  
 procedure_definition:
-  | CTOR tvarlist opt_fun_args opt_traint_eq compound 
+  | CTOR tvarlist opt_fun_args opt_traint_eq ctor_inits compound 
     { 
-      let sr = rsrange (slift $1) (fst $5) in
+      let sr = rsrange (slift $1) (fst $6) in
       let name = "__constructor__"
       and vs = $2
       and return_type = `AST_void sr
       and traint = $4 
-      and body = snd $5
+      and body = snd $6
+      and inits = $5
       and args = List.map snd $3 (* elide srcref *)
-      in mkcurry sr name vs args (return_type,traint) `Ctor body
+      in 
+      let body = map (fun (n,e) -> `AST_init (slift (fst n), snd n, e)) inits @ body in
+      mkcurry sr name vs args (return_type,traint) `Ctor body
     }
 
   | PROCEDURE NAME tvarlist opt_fun_args opt_traint_eq compound 

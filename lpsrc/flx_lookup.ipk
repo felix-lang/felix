@@ -639,6 +639,7 @@ and bind_type syms env sr t : btypecode_t =
   let bt:btypecode_t = 
     try
       bind_type' syms env rsground sr t []
+
     with 
       | Free_fixpoint b ->
         clierr sr
@@ -2917,40 +2918,73 @@ and bind_expression' syms env (rs:recstop) e
     | _ -> clierr sr ("[bind_expression] Projection requires class instance")
     end
 
-  | `AST_get_named_method (sr,(name,e',t)) ->
-    let t = bt sr t in
-    let e'',t'' = be e' in
-    begin match t'' with
-    | `BTYP_inst (i,ts) 
-    | `BTYP_lvalue (`BTYP_inst (i,ts)) ->
-      begin match Hashtbl.find syms.dfns i with
-      | {id=classname; pubmap=pubtab; symdef = `SYMDEF_class } ->
+  | `AST_get_named_method (sr,(meth_name,meth_ts,obj,sign)) ->
+    let meth_ts = map (bt sr) meth_ts in
+    let oe,ot = be obj in
+    begin match ot with
+    | `BTYP_inst (oi,ots) 
+    | `BTYP_lvalue (`BTYP_inst (oi,ots)) ->
+
+      (* bind the method signature in the context of the object *)
+      let sign =
+        let entry = Hashtbl.find syms.dfns oi in
+        match entry with | {vs = vs } ->
+        let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) vs in
+        (*
+        print_endline ("Binding sign = " ^ string_of_typecode sign);
+        *)
+        let env' = build_env syms (Some oi) in
+        bind_type' syms env' rsground sr sign bvs
+      in
+      (*
+      print_endline ("Got sign bound = " ^ sbt syms.dfns sign);
+      *)
+      begin match Hashtbl.find syms.dfns oi with
+      | {id=classname; pubmap=pubtab; vs=obj_vs; symdef = `SYMDEF_class } ->
         (*
         print_endline ("AST_get_named finds a class .. " ^ classname);
         print_endline ("Looking for component named " ^ name);
         *)
         let entryset = 
-          try Hashtbl.find pubtab name 
-          with Not_found -> clierr sr ("Cannot find component " ^ name ^ " in class " ^ classname)
+          try Hashtbl.find pubtab meth_name 
+          with Not_found -> clierr sr ("Cannot find component " ^ meth_name ^ " in class " ^ classname)
         in
         begin match entryset with
         | FunctionEntry fs ->
           (*
           print_endline ("Found " ^ si (length fs) ^ " candidates");
-          print_endline ("Required signature is " ^ sbt syms.dfns t);
+          print_endline ("Required signature is " ^ sbt syms.dfns sign);
+          print_endline ("Object ts=" ^ catmap "," (sbt syms.dfns) ots);
+          print_endline ("Object vs = " ^ print_ivs_with_index obj_vs);
+          print_endline ("Method ots=" ^ catmap "," (sbt syms.dfns) meth_ts);
           *)
-          begin match resolve_overload' syms rs sr fs name t ts with
-          | Some (index'',t',mgu,ts) ->
-            (* print_endline "Overload resolution OK"; *)
-            let typ = typeofindex_with_ts syms sr index'' ts in
-           `BEXPR_method_closure ((e'',t''),index'',ts),typ
+          begin match resolve_overload' syms rs sr fs meth_name sign meth_ts with
+          | Some (meth_idx,meth_rt,mgu,meth_ts) ->
+            (*
+            print_endline "Overload resolution OK";
+            *)
+            (* Now we need to fixate the class type variables in the method *)
+            (*
+            print_endline ("ots = " ^ catmap "," (sbt syms.dfns) ots);
+            *)
+            let omap =
+              let vars = map2 (fun (_,i,_) t -> i,t) obj_vs ots in
+              hashtable_of_list vars 
+            in
+            let meth_ts = map (varmap_subst omap) meth_ts in
+            (*
+            print_endline ("meth_ts = " ^ catmap "," (sbt syms.dfns) meth_ts);
+            *)
+            let typ = typeofindex_with_ts syms sr meth_idx meth_ts in
+            `BEXPR_method_closure ((oe,ot),meth_idx,meth_ts),typ
 
           | _ -> clierr sr 
-            ("[get_named_method] Cannot find method " ^ name ^ 
-              " with signature "^sbt syms.dfns t^" in class"
+            ("[get_named_method] Cannot find method " ^ meth_name ^ 
+              " with signature "^sbt syms.dfns sign^" in class, candidates are:\n" ^
+              catmap "," (fun i -> meth_name ^ "<" ^si i^ ">") fs
             )
           end
-        | _ -> clierr sr ("Expected component "^name^" to be a function")
+        | _ -> clierr sr ("Expected component "^meth_name^" to be a function")
         end
       | _ -> clierr sr ("[bind_expression] Projection requires class")
       end

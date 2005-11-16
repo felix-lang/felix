@@ -261,7 +261,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
             begin match entries with
             | None -> clierr sr "Unable to find any constructors for this class"
             | Some (NonFunctionEntry _) -> syserr sr 
-              "[lookup_name_in_table_dirs_with_sig] Expected constructor to be a procedure"
+              "[EXE_apply_ctor: lookup_name_in_table_dirs_with_sig] Expected constructor to be a procedure"
 
             | Some (FunctionEntry fs) ->
               (*
@@ -269,13 +269,28 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
               *)
               let ro = 
                 resolve_overload
-                syms sr fs ("_ctor_" ^ name) t2 ts
+                syms sr fs ("_ctor_" ^ name) t2 [] (* constructors can't be polymorphic *)
               in
               match ro with 
-                | Some (ctor_idx,t,mgu,ts) ->
+                | Some (ctor_idx,t,mgu,ts') ->
+                  (* The overload resolution is generic, but the application
+                    is concrete. so ts' should be a list of type variables
+                    corresponding to the class vs, and the mgu should 
+                    map these to the ts used to instantiate the class..??
+                  *)
+                  if length ts' <> length ts then
+                    clierr sr ("[EXE_apply_ctor] Type subscript mismatch:\n" ^
+                    "got type subscripts " ^ catmap "," (sbt syms.dfns) ts')
+                  ;
                   tack (`BEXE_apply_ctor (sr,var_idx,class_idx,ts,ctor_idx, barg))
                 | None ->
-                  clierr sr "Unable to find matching constructor"
+                  clierr sr 
+                  (
+                    "Unable to find matching constructor for class " ^ name ^
+                    "<" ^ si class_idx ^ ">[" ^ 
+                    catmap "," (sbt syms.dfns) ts ^ "](" ^ 
+                    sbt syms.dfns t2 ^ ")"
+                  )
             end
           | _ -> clierr sr "Argument of new must be a class"
         end

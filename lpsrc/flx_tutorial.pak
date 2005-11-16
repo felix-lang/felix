@@ -3591,26 +3591,122 @@ class Y {
     print ", and c = "; print c; endl;
   }
 
+  // test methods calling methods
+
+  fun f(a:int):int => g a;
+  fun g(a:int):int => a + x;
+
   // constructors
   ctor () {}
-  ctor (a:int) { x = a; }
+  ctor (a:int): c(20000) { x = a; }
 };
 
-var b <- new Y(99);
-b.x = 2;
-b.y = 3L;
+var ob <- new Y(99);
+ob.x = 2;
+ob.y = 3L;
 
-print b.c; endl;
-print b.x; endl;
-print b.y; endl;
-print$ b.fetchc(); endl;
+print ob.c; endl;
+print ob.x; endl;
+print ob.y; endl;
+print$ ob.fetchc(); endl;
 
-b.setx 22;
-b.print();
+ob.setx 22;
+ob.print();
 
-b.setxy (12,33L);
-b.print;
+ob.setxy (12,33L);
+ob.print;
 
-@doc()
+print$ ob.f 1; endl;
 
+proc ncl() {
+  var x = 42;
+  class J {
+    var j:int;
+    ctor (a:int) { j = a; }
+    fun h(q:int):int => q + j + x;
+  };
+  var b <- new J(100);
+  print$ b.h 1000; endl;
+};
+
+ncl;
+
+@head(2,"Polymorphic Classes")
+@select(tangler(tdir+'tut317.flx'))
+include "std";
+open Long;
+
+class Y[t] {
+  // variables
+  val c : int;
+  var x : t;
+  var y : long;
+  
+  // accessor methods
+  fun fetchc():int =>c;
+
+  // mutatoes
+  proc setx(a:t) { x = a; }
+  proc setxy( a:t, b:long) { x = a; y = b; }
+
+  // accessor procedures
+  proc print(xprint:t->0) {
+    print "This is a Y object, with x = "; 
+    xprint x; print ", y = "; print y;
+    print ", and c = "; print c; endl;
+  }
+
+  // test methods calling methods
+
+  fun f(a:int,add:int * t->int):int => g$ a,add;
+  fun g(a:int,add:int * t->int):int => a + x;
+
+  // constructors
+  ctor () {}
+  ctor (a:int): c(20000) { x = a; }
+};
+
+var ob <- new Y[int](99);
+ob.x = 2;
+ob.y = 3L;
+
+print ob.c; endl;
+print ob.x; endl;
+print ob.y; endl;
+print$ ob.fetchc(); endl;
+
+ob.setx 22;
+ob.print(print of (int));
+
+ob.setxy (12,33L);
+ob.print(print of (int));
+
+print$ ob.f (1,add of (int*int)); endl;
+
+proc ncl() {
+  var x = 42;
+  class J {
+    var j:int;
+    ctor (a:int) { j = a; }
+    fun h(q:int):int => q + j + x;
+  };
+  var b <- new J(100);
+  print$ b.h 1000; endl;
+};
+
+ncl;
+
+class A[t] {
+  fun f(a:t):t=>a;
+  ctor (){}
+};
+
+module V[t] {
+  fun f(a:t):t=>a;
+};
+
+fun X[t]() = {
+  fun f(a:t):t=>a;
+}
+var aint <- new A[int]();
 

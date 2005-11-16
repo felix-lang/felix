@@ -399,9 +399,9 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let l1,x1 = rex e' in
     l1, `AST_get_named_variable (sr,(n,x1))
 
-  | `AST_get_named_method (sr,(n,e',t)) ->
+  | `AST_get_named_method (sr,(n,ts,e',t)) ->
     let l1,x1 = rex e' in
-    l1, `AST_get_named_method (sr,(n,x1,t))
+    l1, `AST_get_named_method (sr,(n,ts,x1,t))
 
   | `AST_case_index (sr,e) -> 
     let l,x = rex e in
@@ -920,7 +920,8 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_cclass (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,`DCL_cclass (components))]
 
   | `AST_class (sr,name', vs', sts) -> 
-    let asms = rsts name' (parent_vs @ vs') sts in
+    (* let asms = rsts name' (parent_vs @ vs') sts in *)
+    let asms = rsts name' [] sts in
     let asms = bridge name' sr :: asms in
     let mdcl =
       [ Dcl (sr,name',None,access,vs', `DCL_class asms) ]
@@ -1167,6 +1168,10 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       Dcl (sr,name,None,access,vs,`DCL_var t);
       Exe (sr,`EXE_apply_ctor (name,f1,a1))
     ]
+
+  | `AST_init (sr,v,e) ->
+    let d,x = rex e in
+    d @ [Exe (sr,`EXE_init (v,e))]
 
   | `AST_jump (sr,proc, arg) ->
     let d1,x1 = rex proc in

@@ -80,9 +80,13 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   | `BEXPR_case_index e
     -> ue e
 
-  | `BEXPR_get_named (i,e) ->
-    ue e;
-    begin match t' with
+  | `BEXPR_get_named (i,((oe,ot) as obj)) ->
+    (*
+    print_endline "Get named: class member";
+    *)
+    ue obj;
+    (* instantiate member with binding for class type parameters *)
+    begin match ot with
     | `BTYP_inst (j,ts)
     | `BTYP_lvalue (`BTYP_inst (j,ts)) -> ui i ts
     | _ -> assert false
@@ -122,8 +126,23 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     begin match entry with
     | `BBDCL_function _ 
       -> 
+      (*
+      print_endline ("Processing method application " ^ sbe syms.dfns be);
+      *)
+      (* The class type variable in 'obj' but the binding
+        of the method can contain these type variables: we need
+        to bind them to the concrete instance the class has been.
+        Weirdness .. hmm .. well it means there are extra variables
+        in the instantiation. It is going to make a superior MESS.
+      *)
       let ts = map vs ts in
-      ue obj; ui meth ts; ue a
+      (*
+      print_endline ("ts = " ^ catmap "," (sbt syms.dfns) ts);
+      *)
+      ue obj; 
+      ui meth ts; 
+      ue a;
+
     | _ -> assert false
     end
     
@@ -170,6 +189,15 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
     let ut t = register_type_r uis syms bbdfns [] sr t in
     let vs t = varmap_subst hvarmap t in
     let ts = map vs ts in
+    iter ut ts;
+    uis i ts;
+    ue sr e2
+
+  | `BEXE_call_method_direct (sr,e1,i,ts,e2) ->
+    let ut t = register_type_r uis syms bbdfns [] sr t in
+    let vs t = varmap_subst hvarmap t in
+    let ts = map vs ts in
+    ue sr e1;
     iter ut ts;
     uis i ts;
     ue sr e2
@@ -345,8 +373,6 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
   | `BBDCL_var (vs,t)
   | `BBDCL_tmp (vs,t)
     ->
-    assert (length vs = length ts);
-    (*
     if length vs <> length ts
     then syserr sr
     (
@@ -355,7 +381,6 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
       "ts = [" ^
       catmap ";" (fun t->sbt syms.dfns t) ts ^ "]"
     );
-    *)
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     let t = varmap_subst hvarmap t in

@@ -1962,18 +1962,30 @@ OK
 1
 @head(2,"tut/examples/tut316.expect")
 @select(tangler("tut/examples/tut316.expect","data"))
-0
+20000
 2
 3
-0
-This is a Y object, with x = 22, y = 3, and c = 0
-This is a Y object, with x = 12, y = 33, and c = 0
+20000
+This is a Y object, with x = 22, y = 3, and c = 20000
+This is a Y object, with x = 12, y = 33, and c = 20000
+13
+1142
 @head(2,"tut/examples/tut_bind130.expect")
 @select(tangler("tut/examples/tut_bind130.expect","data"))
 (1, 2)
 (2, 4)
 (-12, 16)
 400
+@head(2,"tut/examples/tut317.expect")
+@select(tangler("tut/examples/tut317.expect","data"))
+20000
+2
+3
+20000
+This is a Y object, with x = 22, y = 3, and c = 20000
+This is a Y object, with x = 12, y = 33, and c = 20000
+13
+1142
 @head(2,"tut/examples/tut_bind131.expect")
 @select(tangler("tut/examples/tut_bind131.expect","data"))
 (1, 2)

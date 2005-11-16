@@ -736,6 +736,17 @@ let do_unify syms a b =
     )
     mgu;
     *)
+
+    (* This crud is used to find the return types of
+    functions initially marked TYP_none, which really
+    means the type is unknown and should be calculated.
+    The system binds each TYP_none to a SPECIAL type variable,
+    and this code is supposed to store type computed by
+    some random unification in a hashtable for such variables.
+
+    The variables are marked as SPECIAL by using the same
+    index as the function whose return type is unknown.
+    *)
     iter
     (fun (i, t) ->
       if Hashtbl.mem syms.varmap i
@@ -761,11 +772,16 @@ let do_unify syms a b =
             (*
             print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode syms.dfns t);
             *)
-          Hashtbl.add syms.varmap i t
-          | _ -> failwith 
+            Hashtbl.add syms.varmap i t
+
+          (* if it's a declared type variable, leave it alone *)
+          | {symdef=`SYMDEF_typevar _ } -> ()
+
+          | _ -> 
+            failwith 
             (
               "[do_unify] attempt to add non-function return unknown type variable "^
-              si i^" to hashtble"
+              si i^", type "^sbt syms.dfns t^" to hashtble"
             )
         end
     )

@@ -909,6 +909,43 @@ let gen_exe filename syms
       let ts = map tsub ts in
       handle_closure sr false index ts subs x
 
+    | `BEXE_call_method_direct (sr,obj,meth,ts,a) ->
+      let obj = match obj with (a,t) -> a, tsub t in
+      let a = match a with (a,t) -> a, tsub t in
+      let ts = map tsub ts in
+      let the_display = 
+        let d' = 
+          map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
+          (get_display_list bbdfns meth)
+        in 
+          let d' = tl d' in (* throw out class pointer *)
+          if length d' > our_level
+          then "this" :: tl d'
+          else d'
+      in
+      let args = match a with
+        | _,`BTYP_tuple [] -> "this"
+        | _ -> "this" ^ ", " ^ ge sr a
+      in
+      let class_frame = ge sr obj in
+      let the_display = class_frame :: the_display in
+      let meth_name = cpp_instance_name syms bbdfns meth ts in
+      let meth_props = 
+        try match Hashtbl.find bbdfns meth with 
+          | _,_,_,`BBDCL_procedure (props,_,_,_)->props
+          | _ -> failwith "Panic, index isn't procedure"
+        with Not_found -> failwith "Panic, can't find procedure"
+      in
+      let labno = !counter in incr counter;
+      let code =
+        "      FLX_SET_PC(" ^ si labno ^ ")\n" ^
+        "      return (FLX_NEWP(" ^ meth_name ^ ")"^strd (the_display) meth_props ^ ")" ^
+        "\n      ->call(" ^ args ^ ");\n" ^
+        "    FLX_CASE_LABEL(" ^ si labno ^ ")\n"
+      in 
+      needs_switch := true; 
+      code
+
     | `BEXE_apply_ctor (sr,i1,i2,ts,i3,a) ->
       let a = match a with (a,t) -> a, tsub t in
       let ts = map tsub ts in
