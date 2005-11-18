@@ -1,9 +1,45 @@
 @head(1,'Pre token filters')
+
+@mwct = [
+ ("signed char","tiny"),
+ ("unsigned char","utiny"),
+
+ ("signed int","int"),
+ ("unsigned int","uint"),
+ ("unsigned","uint"),
+
+ ("long","long"),
+ ("signed long","long"),
+ ("unsigned long","ulong"),
+ 
+ ("long int","long"),
+ ("signed long int","long"),
+ ("unsigned long int","ulong"),
+
+ ("long long","vlong"),
+ ("signed long long","vlong"),
+ ("unsigned long long","uvlong"),
+ 
+ ("long long int","vlong"),
+ ("signed long long int","vlong"),
+ ("unsigned long long int","uvlong"),
+
+ ("float double","double"),
+ ("double float","double"),
+ ("long double float","ldouble"),
+ ]
+
+@mwct = [ (string.split(s,' '),t) for s,t in mwct ]
+@mwct = [ (len (s), s, t) for s,t in mwct ]
+@mwct.sort(reverse=True)
+
 @h = tangler('src/flx_lex1.ml')
 @select(h)
 
 open Flx_parse
 open Flx_exceptions
+open List
+open Flx_srcref
 
 (* 1: remove comments *)
 
@@ -15,12 +51,24 @@ let filter_comments x =
     | NEWLINE :: t
     | WHITE _ :: t -> filter t result
     | h :: t -> filter t (h::result)
-    | [] -> List.rev result
+    | [] -> rev result
   in filter x []
 
+let compress_ctypes x =
+  let rec filter x' result = 
+    match x' with
+@for n,c,f in mwct:
+  tangle('| NAME(sr,"' + string.join (c,'") :: NAME(_,"') + '") :: t -> ')
+  tangle('    filter t (NAME (sr, "'+f+'") :: result)')
+@#    
+    | h :: t -> filter t (h::result)
+    | [] -> rev result
+  in filter x [] 
+  
 let translate ts = 
   let filters = [
-    (* 1 *) filter_comments
+    (* 1 *) filter_comments ;
+    (* 2 *) compress_ctypes ;
     ] 
   and reverse_apply dat fn = fn dat 
   in List.fold_left reverse_apply ts filters
