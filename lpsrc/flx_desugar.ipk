@@ -399,9 +399,9 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let l1,x1 = rex e' in
     l1, `AST_get_named_variable (sr,(n,x1))
 
-  | `AST_get_named_method (sr,(n,ts,e',t)) ->
+  | `AST_get_named_method (sr,(n,mix,ts,e')) ->
     let l1,x1 = rex e' in
-    l1, `AST_get_named_method (sr,(n,ts,x1,t))
+    l1, `AST_get_named_method (sr,(n,mix,ts,x1))
 
   | `AST_case_index (sr,e) -> 
     let l,x = rex e in
@@ -417,9 +417,9 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let l2,x2 = rex arg in
     l1 @ l2, `AST_map (sr,x1,x2)
 
-  | `AST_method_apply (sr,(fn,arg)) -> 
+  | `AST_method_apply (sr,(fn,arg,ts)) -> 
     let l2,x2 = rex arg in
-    l2, `AST_method_apply (sr,(fn,x2))
+    l2, `AST_method_apply (sr,(fn,x2,ts))
     
   | `AST_tuple (sr,t) -> 
     let lss,xs = split (map rex t) in
@@ -450,9 +450,9 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     in
     sts,e
 
-  | `AST_dot (sr,(obj,comp)) -> 
+  | `AST_dot (sr,(obj,comp,ts)) -> 
     let l1,x1 = rex obj in 
-    l1 , `AST_dot (sr,(x1,comp))
+    l1 , `AST_dot (sr,(x1,comp,ts))
 
   | `AST_coercion (sr,(e,t)) ->
     let l1,x1 = rex e in 

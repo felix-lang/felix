@@ -461,9 +461,12 @@ opt_name:
 class_component:
   | VAR NAME COLON expr SEMI { `MemberVar (snd $2,typecode_of_expr $4,None) }
   | VAL NAME COLON expr SEMI { `MemberVal (snd $2,typecode_of_expr $4,None) }
-  | FUNCTION NAME COLON expr opt_cstring SEMI { `MemberFun (snd $2,typecode_of_expr $4,$5) }
-  | PROCEDURE NAME COLON expr opt_cstring SEMI { `MemberProc (snd $2,typecode_of_expr $4,$5) }
-  | CTOR opt_name COLON expr opt_cstring SEMI { `MemberCtor ($2,typecode_of_expr $4,$5) }
+  | FUNCTION NAME tvarlist COLON expr opt_cstring SEMI 
+    { `MemberFun (snd $2,None,$3,typecode_of_expr $5,$6) }
+  | PROCEDURE NAME tvarlist COLON expr opt_cstring SEMI 
+    { `MemberProc (snd $2,None,$3,typecode_of_expr $5,$6) }
+  | CTOR opt_name COLON expr opt_cstring SEMI 
+    { `MemberCtor ($2,None,typecode_of_expr $4,$5) }
 
 @head(3,'Abstract Constant Binding')
 @select(h)
@@ -2402,7 +2405,12 @@ factor:
   | factor DOT LSQB expr TO expr RSQB  { apl2 $3 "substring" [$1; $4; $6] }
   | factor DOT LSQB expr TO RSQB       { apl2 $3 "copyfrom" [$1; $4] }
   | factor DOT LSQB TO expr RSQB       { apl2 $3 "copyto" [$1; $5] } 
-  | factor DOT NAME                    { `AST_dot (slift $2, ($1, snd $3)) }
+  | factor DOT simple_name_parts       
+    { 
+      let rsr,name,ts = $3 in
+      let sr = rsrange (src_of_expr $1) rsr in
+      `AST_dot (sr, ($1, name,ts)) 
+    }
   | factor DOT LPAR INTEGER RPAR
     { 
       match $4 with

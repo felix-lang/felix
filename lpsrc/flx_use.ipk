@@ -171,15 +171,21 @@ and uses syms used bbdfns i =
       | `BBDCL_class _ -> ()
 
       | `BBDCL_cclass (_,mems) ->
+        () 
+        (* this is wrong -- existence doesn't
+           constitute a use!
+        *)
+        (*
         iter ut (map (function 
           | `BMemberVal (_,t)
           | `BMemberVar (_,t) 
-          | `BMemberFun (_,t) 
+          | `BMemberFun (_,_,t) 
           | `BMemberCtor (_,t) 
-          | `BMemberProc (_,t) -> t
+          | `BMemberProc (_,_,t) -> t
           )
           mems
         )
+        *)
         
       | `BBDCL_val (_,t)
       | `BBDCL_var (_,t) 

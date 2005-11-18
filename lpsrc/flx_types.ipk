@@ -399,8 +399,8 @@ and expr_t =
   | `AST_deref of range_srcref * expr_t
   | `AST_ref of range_srcref * expr_t
   | `AST_lvalue of range_srcref * expr_t
-  | `AST_method_apply of range_srcref * (id_t * expr_t)
-  | `AST_dot of range_srcref * (expr_t * id_t)
+  | `AST_method_apply of range_srcref * (id_t * expr_t * typecode_t list)
+  | `AST_dot of range_srcref * (expr_t * id_t * typecode_t list)
   | `AST_lambda of range_srcref * (params_t list * typecode_t * statement_t list)
 
   | `AST_match_ctor of range_srcref * (qualified_name_t * expr_t)
@@ -413,7 +413,7 @@ and expr_t =
 
   | `AST_get_n of range_srcref * (int * expr_t) (* get n'th component of a tuple *)
   | `AST_get_named_variable of range_srcref * (string * expr_t) (* get named component of a class *)
-  | `AST_get_named_method of range_srcref * (string * typecode_t list * expr_t * typecode_t) (* get named component of a class *)
+  | `AST_get_named_method of range_srcref * (string * int * typecode_t list * expr_t ) (* get named component of a class *)
   | `AST_as of range_srcref * (expr_t * string)
   | `AST_match of range_srcref * (expr_t * (pattern_t * expr_t) list)
   | `AST_parse of range_srcref * expr_t * (range_srcref * production_t * expr_t) list
@@ -555,9 +555,9 @@ and params_t = parameter_t list * expr_t option (* second arg is a constraint *)
 and class_member_t = [
   | `MemberVal of id_t * typecode_t * c_t option
   | `MemberVar of id_t * typecode_t * c_t option
-  | `MemberFun of id_t * typecode_t * c_t option
-  | `MemberProc of id_t * typecode_t * c_t option
-  | `MemberCtor of id_t * typecode_t * c_t option
+  | `MemberFun of id_t * int option * vs_list_t * typecode_t * c_t option
+  | `MemberProc of id_t * int option * vs_list_t * typecode_t * c_t option
+  | `MemberCtor of id_t * int option * typecode_t * c_t option
 ]
 
 and statement_t =
@@ -940,8 +940,8 @@ and bparams_t = bparameter_t list * tbexpr_t option
 and bclass_member_t = [
   | `BMemberVal of id_t * btypecode_t
   | `BMemberVar of id_t * btypecode_t
-  | `BMemberFun of id_t * btypecode_t
-  | `BMemberProc of id_t * btypecode_t
+  | `BMemberFun of id_t * bvs_t * btypecode_t
+  | `BMemberProc of id_t * bvs_t * btypecode_t
   | `BMemberCtor of id_t * btypecode_t
 ]
 
@@ -1187,8 +1187,8 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_deref (sr,x) -> `AST_deref (sr,f x)
   | `AST_ref (sr,x) -> `AST_ref (sr, f x)
   | `AST_lvalue (sr,x) -> `AST_lvalue (sr, x)
-  | `AST_method_apply (sr,(id,x)) -> `AST_method_apply (sr,(id,f x))
-  | `AST_dot (sr,(x,id)) -> `AST_dot (sr,(f x,id))
+  | `AST_method_apply (sr,(id,x,ts)) -> `AST_method_apply (sr,(id,f x,ts))
+  | `AST_dot (sr,(x,id,ts)) -> `AST_dot (sr,(f x,id,ts))
 
   (* GIVE UP ON LAMBDAS FOR THE MOMENT .. NEEDS STATEMENT MAPPING TOO *)
   (* | `AST_lambda of range_srcref * (params_t list * typecode_t * statement_t list) *)
@@ -1205,7 +1205,7 @@ let map_expr f (e:expr_t):expr_t = match e with
 
   | `AST_get_n (sr,(j,x)) -> `AST_get_n (sr,(j,f x))
   | `AST_get_named_variable (sr,(j,x)) -> `AST_get_named_variable (sr,(j,f x))
-  | `AST_get_named_method (sr,(j,ts,x,t)) -> `AST_get_named_method (sr,(j,ts,f x,t))
+  | `AST_get_named_method (sr,(j,k,ts,x)) -> `AST_get_named_method (sr,(j,k,ts,f x))
   | `AST_as (sr,(x,s)) -> `AST_as (sr,(f x, s))
   | `AST_match (sr,(a,pes)) ->
     `AST_match (sr, (f a, map (fun (pat,x) -> pat, f x) pes))
@@ -2078,9 +2078,9 @@ and string_of_expr (e:expr_t) =
   | `AST_as (_,(e1, name)) -> "(" ^ se e1 ^ ") as " ^ name  
   | `AST_get_n (_,(n,e)) -> "get (" ^ si n ^ ", " ^se e^")"
   | `AST_get_named_variable (_,(n,e)) -> "get (" ^ n ^ ", " ^se e^")"
-  | `AST_get_named_method (_,(n,ts,e,t)) -> 
-    "get (" ^ n ^ "["^catmap "," string_of_typecode ts^"], " ^
-    se e ^","^string_of_typecode t^")"
+  | `AST_get_named_method (_,(n,mix,ts,e)) -> 
+    "get (" ^ n ^ "<" ^ si mix ^">"^"["^catmap "," string_of_typecode ts^"], " ^
+    se e ^")"
   | `AST_strexpr (_,e) -> "#" ^ (string_of_expr e)
   | `AST_map (_,f,e) -> "map (" ^ se f ^ ") (" ^ se e ^ ")"
   | `AST_deref (_,e) -> "*(" ^ se e ^ ")"
@@ -2116,14 +2116,21 @@ and string_of_expr (e:expr_t) =
   | `AST_superscript (_,(a,b)) ->
     "(" ^ se a ^ " ^ " ^ se b ^ ")"
     
-  | `AST_method_apply  (_,(fn, arg)) -> "(" ^ 
-    fn ^ " " ^ 
+  | `AST_method_apply  (_,(fn, arg,ts)) -> "(" ^ fn ^ 
+    (match ts with 
+    | [] -> "" 
+    | _ -> "[" ^catmap "," string_of_typecode ts^ "]"
+    ) ^ 
+    " " ^ 
     se arg ^ 
     ")"
 
   | `AST_tuple (_,t) -> "(" ^ catmap ", " sme t ^ ")"
   | `AST_arrayof (_,t) -> "[|" ^ catmap ", " sme t ^ "|]"
-  | `AST_dot (_,(e,n)) ->  "get_" ^ n ^ "(" ^ se e ^ ")"
+  | `AST_dot (_,(e,n,ts)) ->  
+    "get_" ^ n ^ 
+    (match ts with | [] -> "" | _ -> "[" ^ catmap "," string_of_typecode ts^ "]")^
+    "(" ^ se e ^ ")"
 
   | `AST_lambda (_,(paramss,ret, sts)) -> 
     "(fun " ^
@@ -2808,15 +2815,15 @@ and string_of_qual = function
 and string_of_quals qs = catmap " " string_of_qual qs
 
 and string_of_class_component level mem =
-  let kind, name, ty,cc = match mem with
-  | `MemberVar (name,typ,cc) -> "var",name,typ,cc
-  | `MemberVal (name,typ,cc) -> "val",name,typ,cc
-  | `MemberFun (name,typ,cc) -> "fun",name,typ,cc
-  | `MemberProc (name,typ,cc) -> "proc",name,typ,cc
-  | `MemberCtor (name,typ,cc) -> "ctor",name,typ,cc
+  let kind, name, mix,vs,ty,cc = match mem with
+  | `MemberVar (name,typ,cc) -> "var",name,None,[],typ,cc
+  | `MemberVal (name,typ,cc) -> "val",name,None,[],typ,cc
+  | `MemberFun (name,mix,vs,typ,cc) -> "fun",name,mix,vs,typ,cc
+  | `MemberProc (name,mix,vs,typ,cc) -> "proc",name,mix,vs,typ,cc
+  | `MemberCtor (name,mix,typ,cc) -> "ctor",name,mix,[],typ,cc
   in
     (spaces (level+1)) ^ 
-    kind ^ " " ^ name ^ ": " ^ string_of_typecode ty ^ 
+    kind ^ " " ^ name ^ print_vs vs ^ ": " ^ string_of_typecode ty ^ 
     (match cc with None -> "" | Some cc -> string_of_code_spec cc) ^
     ";"
 
@@ -3941,15 +3948,15 @@ and string_of_bbdcl dfns bbdcl index =
 
   | `BBDCL_cclass (vs,cs) ->
     let string_of_class_component mem  = 
-      let kind, name,ty =
+      let kind, name,bvs,ty =
         match mem with
-        | `BMemberVal (name,ty) -> "val",name,ty
-        | `BMemberVar (name,ty) -> "var",name,ty
-        | `BMemberFun (name,ty) -> "fun",name,ty
-        | `BMemberProc (name,ty) -> "proc",name,ty
-        | `BMemberCtor (name,ty) -> "ctor",name,ty
+        | `BMemberVal (name,ty) -> "val",name,[],ty
+        | `BMemberVar (name,ty) -> "var",name,[],ty
+        | `BMemberFun (name,bvs,ty) -> "fun",name,bvs,ty
+        | `BMemberProc (name,bvs,ty) -> "proc",name,bvs,ty
+        | `BMemberCtor (name,ty) -> "ctor",name,[],ty
       in
-      kind ^ "  " ^ name ^ ": " ^ sobt ty ^ ";"
+      kind ^ "  " ^ name ^ print_bvs bvs ^ ": " ^ sobt ty ^ ";"
     in
     "cclass " ^ name ^ print_bvs vs ^ " = " ^
     "{\n" ^

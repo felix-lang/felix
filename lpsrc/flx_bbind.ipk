@@ -477,17 +477,25 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
       to ensure we generate all required types, they don't generate
       any actual code
       *)
+
+      (*
+      (* DUMMY type variable index here!! FIX ME !!!! *)
+      let vs2bvs (s,_) = let i = 0 in s,i in
       let cs' = 
         List.map (function
         |  `MemberVal (n,t,_) -> `BMemberVal (n, bt t)
         |  `MemberVar (n,t,_) -> `BMemberVar (n, bt t)
-        |  `MemberFun (n,t,_) -> `BMemberFun (n, bt t)
-        |  `MemberProc (n,t,_) -> `BMemberProc (n, bt t)
+        |  `MemberFun (n,vs,t,_) -> `BMemberFun (n, map vs2bvs vs, bt t)
+        |  `MemberProc (n,vs,t,_) -> `BMemberProc (n, map vs2bvs vs, bt t)
         |  `MemberCtor (n,t,_) -> `BMemberCtor (n, bt t)
         )
         cs 
       in
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_cclass (bvs,cs'))
+      *)
+
+      (* temporary hack, elide interface .. *)
+      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_cclass (bvs,[]))
 
     | `SYMDEF_class -> 
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_class ([],bvs))

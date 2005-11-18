@@ -812,6 +812,9 @@ let gen_exe filename syms
   in
   let forget_template s = match s with | `Str s -> s | `StrTemplate s -> s in
   let rec gexe exe = 
+    (*
+    print_endline (string_of_bexe syms.dfns 0 exe);
+    *)
     match exe with
     | `BEXE_code (_,s) -> forget_template s
     | `BEXE_nonreturn_code (_,s) -> forget_template s

@@ -1986,6 +1986,16 @@ This is a Y object, with x = 22, y = 3, and c = 20000
 This is a Y object, with x = 12, y = 33, and c = 20000
 13
 1142
+@head(2,"tut/examples/tut318.expect")
+@select(tangler("tut/examples/tut318.expect","data"))
+20000
+2
+3
+20000
+This is a Y object, with x = 22, y = 3, and c = 20000
+This is a Y object, with x = 12, y = 33, and c = 20000
+13
+13
 @head(2,"tut/examples/tut_bind131.expect")
 @select(tangler("tut/examples/tut_bind131.expect","data"))
 (1, 2)

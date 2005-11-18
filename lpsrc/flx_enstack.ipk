@@ -147,15 +147,19 @@ let has_ptr_fn cache syms bbdfns children e =
           raise Unsafe
 
         | `BBDCL_cclass (vs,cs) ->
+          () 
+          (* nope, it isn't a use *)
+          (*
           let tlist = map (function 
             | `BMemberVal (_,t)
             | `BMemberVar (_,t)
-            | `BMemberFun (_,t)
-            | `BMemberProc (_,t)
+            | `BMemberFun (_,_,t)
+            | `BMemberProc (_,_,t)
             | `BMemberCtor (_,t) -> t
             ) cs
           in
           check_components vs ts tlist
+          *)
 
         | _ -> assert false
         end

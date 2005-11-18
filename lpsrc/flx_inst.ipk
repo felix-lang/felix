@@ -119,32 +119,9 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   | `BEXPR_apply_method_direct (obj,meth,ts,a) 
   | `BEXPR_apply_method_stack (obj,meth,ts,a) 
   | `BEXPR_apply ((`BEXPR_method_closure (obj,meth,ts),_),a) ->
-     let id,parent,sr2,entry = 
-      try Hashtbl.find bbdfns meth
-      with _ -> failwith ("[process_expr(apply instance)] Can't find index " ^ si meth)
-    in
-    begin match entry with
-    | `BBDCL_function _ 
-      -> 
-      (*
-      print_endline ("Processing method application " ^ sbe syms.dfns be);
-      *)
-      (* The class type variable in 'obj' but the binding
-        of the method can contain these type variables: we need
-        to bind them to the concrete instance the class has been.
-        Weirdness .. hmm .. well it means there are extra variables
-        in the instantiation. It is going to make a superior MESS.
-      *)
-      let ts = map vs ts in
-      (*
-      print_endline ("ts = " ^ catmap "," (sbt syms.dfns) ts);
-      *)
-      ue obj; 
-      ui meth ts; 
-      ue a;
-
-    | _ -> assert false
-    end
+    ue obj; 
+    ui meth ts; 
+    ue a
     
   | `BEXPR_apply (e1,e2) -> 
     ue e1; ue e2
@@ -193,14 +170,14 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
     uis i ts;
     ue sr e2
 
-  | `BEXE_call_method_direct (sr,e1,i,ts,e2) ->
+  | `BEXE_call_method_direct (sr,obj,meth,ts,a) ->
     let ut t = register_type_r uis syms bbdfns [] sr t in
     let vs t = varmap_subst hvarmap t in
     let ts = map vs ts in
-    ue sr e1;
+    ue sr obj;
     iter ut ts;
-    uis i ts;
-    ue sr e2
+    uis meth ts;
+    ue sr a
 
   | `BEXE_apply_ctor (sr,i1,i2,ts,i3,e2) 
     -> 
@@ -312,6 +289,9 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     
   | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> 
     let argtypes = map (fun x -> snd (snd x)) ps in
+    (*
+    print_endline ("len vs = " ^ si (length vs) ^ ", len ts=" ^ si (length ts));
+    *)
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
@@ -355,18 +335,22 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
 
   | `BBDCL_cclass (vs,ps)
     ->
+    (*
     let argtypes = map (function 
       | `BMemberVal (_,t) 
       | `BMemberVar (_,t) 
-      | `BMemberFun (_,t) 
-      | `BMemberProc (_,t) 
+      | `BMemberFun (_,_,t) 
+      | `BMemberProc (_,_,t) 
       | `BMemberCtor (_,t)  -> t
     ) ps in
+    *)
     assert (length vs = length ts);
+    (*
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     let tss = map (varmap_subst hvarmap) argtypes in
     iter rtr tss;
+    *)
     rtnr (`BTYP_inst (i,ts))
 
   | `BBDCL_val (vs,t)

@@ -3710,3 +3710,59 @@ fun X[t]() = {
 }
 var aint <- new A[int]();
 
+@head(2,"Polymorphic Methods")
+@select(tangler(tdir+'tut318.flx'))
+include "std";
+open Long;
+
+class Y[t] {
+  // variables
+  val c : int;
+  var x : t;
+  var y : long;
+  
+  // accessor methods
+  fun fetchc():int =>c;
+
+  // mutatoes
+  proc setx(a:t) { x = a; }
+  proc setxy( a:t, b:long) { x = a; y = b; }
+
+  // accessor procedures
+  proc print(xprint:t->0) {
+    print "This is a Y object, with x = "; 
+    xprint x; print ", y = "; print y;
+    print ", and c = "; print c; endl;
+  }
+
+  // test methods calling methods
+
+  fun f(a:int,add:int * t->int):int => g$ a,add;
+  fun g(a:int,add:int * t->int):int => a + x;
+
+  // constructors
+  ctor () {}
+  ctor (a:int): c(20000) { x = a; }
+
+  // polymorphic method
+  fun p[u](a:u, add:t * u ->int):int => x + a;
+};
+
+var ob <- new Y[int](99);
+ob.x = 2;
+ob.y = 3L;
+
+print ob.c; endl;
+print ob.x; endl;
+print ob.y; endl;
+print$ ob.fetchc(); endl;
+
+ob.setx 22;
+ob.print(print of (int));
+
+ob.setxy (12,33L);
+ob.print(print of (int));
+
+print$ ob.f (1,add of (int*int)); endl;
+print$ ob.p[int] (1,add of (int*int)); endl;
+

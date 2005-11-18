@@ -2918,25 +2918,26 @@ and bind_expression' syms env (rs:recstop) e
     | _ -> clierr sr ("[bind_expression] Projection requires class instance")
     end
 
-  | `AST_get_named_method (sr,(meth_name,meth_ts,obj,sign)) ->
+  | `AST_get_named_method (sr,(meth_name,meth_idx,meth_ts,obj)) ->
+    (*
+    print_endline ("Get named method " ^ meth_name);
+    *)
     let meth_ts = map (bt sr) meth_ts in
     let oe,ot = be obj in
     begin match ot with
     | `BTYP_inst (oi,ots) 
     | `BTYP_lvalue (`BTYP_inst (oi,ots)) ->
 
+      (*
       (* bind the method signature in the context of the object *)
       let sign =
         let entry = Hashtbl.find syms.dfns oi in
         match entry with | {vs = vs } ->
         let bvs = map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type)) vs in
-        (*
         print_endline ("Binding sign = " ^ string_of_typecode sign);
-        *)
         let env' = build_env syms (Some oi) in
         bind_type' syms env' rsground sr sign bvs
       in
-      (*
       print_endline ("Got sign bound = " ^ sbt syms.dfns sign);
       *)
       begin match Hashtbl.find syms.dfns oi with
@@ -2951,38 +2952,50 @@ and bind_expression' syms env (rs:recstop) e
         in
         begin match entryset with
         | FunctionEntry fs ->
-          (*
-          print_endline ("Found " ^ si (length fs) ^ " candidates");
-          print_endline ("Required signature is " ^ sbt syms.dfns sign);
-          print_endline ("Object ts=" ^ catmap "," (sbt syms.dfns) ots);
-          print_endline ("Object vs = " ^ print_ivs_with_index obj_vs);
-          print_endline ("Method ots=" ^ catmap "," (sbt syms.dfns) meth_ts);
-          *)
-          begin match resolve_overload' syms rs sr fs meth_name sign meth_ts with
-          | Some (meth_idx,meth_rt,mgu,meth_ts) ->
+          if not (mem meth_idx fs) then syserr sr "Woops, method index isn't a member function!";
+          begin match Hashtbl.find syms.dfns meth_idx with
+          | {id=method_name; vs=meth_vs; symdef = `SYMDEF_function _} ->
+            assert (meth_name = method_name);
             (*
-            print_endline "Overload resolution OK";
+            print_endline ("Found " ^ si (length fs) ^ " candidates");
+            print_endline ("Object ts=" ^ catmap "," (sbt syms.dfns) ots);
+            print_endline ("Object vs = " ^ print_ivs_with_index obj_vs);
+            print_endline ("Method ts=" ^ catmap "," (sbt syms.dfns) meth_ts);
+            print_endline ("Method vs = " ^ print_ivs_with_index meth_vs);
             *)
-            (* Now we need to fixate the class type variables in the method *)
             (*
-            print_endline ("ots = " ^ catmap "," (sbt syms.dfns) ots);
-            *)
-            let omap =
-              let vars = map2 (fun (_,i,_) t -> i,t) obj_vs ots in
-              hashtable_of_list vars 
-            in
-            let meth_ts = map (varmap_subst omap) meth_ts in
-            (*
-            print_endline ("meth_ts = " ^ catmap "," (sbt syms.dfns) meth_ts);
-            *)
-            let typ = typeofindex_with_ts syms sr meth_idx meth_ts in
-            `BEXPR_method_closure ((oe,ot),meth_idx,meth_ts),typ
+            begin match resolve_overload' syms rs sr fs meth_name sign meth_ts with
+            | Some (meth_idx,meth_rt,mgu,meth_ts) ->
+              (*
+              print_endline "Overload resolution OK";
+              *)
+              (* Now we need to fixate the class type variables in the method *)
+              *)
+              (*
+              print_endline ("ots = " ^ catmap "," (sbt syms.dfns) ots);
+              *)
+              let omap =
+                let vars = map2 (fun (_,i,_) t -> i,t) obj_vs ots in
+                hashtable_of_list vars 
+              in
+              let meth_ts = map (varmap_subst omap) meth_ts in
+              (*
+              print_endline ("meth_ts = " ^ catmap "," (sbt syms.dfns) meth_ts);
+              *)
+              let ts = ots @ meth_ts in
+              let typ = typeofindex_with_ts syms sr meth_idx ts in
+              `BEXPR_method_closure ((oe,ot),meth_idx,ts),typ
 
-          | _ -> clierr sr 
-            ("[get_named_method] Cannot find method " ^ meth_name ^ 
-              " with signature "^sbt syms.dfns sign^" in class, candidates are:\n" ^
-              catmap "," (fun i -> meth_name ^ "<" ^si i^ ">") fs
-            )
+
+            (*
+            | _ -> clierr sr 
+              ("[get_named_method] Cannot find method " ^ meth_name ^ 
+                " with signature "^sbt syms.dfns sign^" in class, candidates are:\n" ^
+                catmap "," (fun i -> meth_name ^ "<" ^si i^ ">") fs
+              )
+          end
+          *)
+          | _ -> clierr sr ("[get_named_method] Can't find method "^meth_name)
           end
         | _ -> clierr sr ("Expected component "^meth_name^" to be a function")
         end
@@ -3163,7 +3176,7 @@ and bind_expression' syms env (rs:recstop) e
   | `AST_lvalue (srr,e) ->
     failwith "WOOPS, lvalue in expression??";
  
-  | `AST_ref (sr,(`AST_dot (_,(e,id)))) ->
+  | `AST_ref (sr,(`AST_dot (_,(e,id,[])))) ->
     let ref_name = "ref_" ^ id in
     be 
     (
@@ -3240,10 +3253,12 @@ and bind_expression' syms env (rs:recstop) e
     let t = typeof_literal syms env sr v in
     `BEXPR_literal v, t
 
-  | `AST_method_apply (sra,(fn,e2)) -> 
+  | `AST_method_apply (sra,(fn,e2,meth_ts)) -> 
     (*
     print_endline ("METHOD APPLY: " ^ string_of_expr e);
     *)
+    (* .. PRAPS .. *)
+    let meth_ts = map (bt sra) meth_ts in
     let be2,t2 = be e2 in
     let tbe1 = 
       match t2 with
@@ -3261,7 +3276,7 @@ and bind_expression' syms env (rs:recstop) e
           | `SYMDEF_module 
           | `SYMDEF_function _
             ->
-            koenig_lookup syms rs sra id' name_map fn t2 ts
+            koenig_lookup syms rs sra id' name_map fn t2 (ts @ meth_ts)
 
           | _ -> clierr sra ("Koenig lookup: parent for method apply not module")
         end
@@ -3366,9 +3381,9 @@ and bind_expression' syms env (rs:recstop) e
     `BEXPR_tuple [],`BTYP_tuple []
 
 
-  | `AST_dot (sr,(e,id)) ->
+  | `AST_dot (sr,(e,id,ts)) ->
     let get_name = "get_" ^ id in
-    be (`AST_method_apply (sr,(get_name,e)))
+    be (`AST_method_apply (sr,(get_name,e,ts)))
 
   | `AST_match_case (sr,(v,e)) ->
      `BEXPR_match_case (v,be e),flx_bbool

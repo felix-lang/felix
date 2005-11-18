@@ -236,14 +236,15 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           (* projections *)
           iter
           (fun mem ->
-            let kind, component_name,t,cc =
+            let kind, component_name,component_index,mvs,t,cc =
               match mem with
-              | `MemberVar (n,t,cc) -> `Var,n,t,cc
-              | `MemberVal (n,t,cc) -> `Val,n,t,cc
-              | `MemberFun (n,t,cc) -> `Fun,n,t,cc
-              | `MemberProc (n,t,cc) -> `Proc,n,t,cc
-              | `MemberCtor (n,t,cc) -> `Ctor,n,t,cc
+              | `MemberVar (n,t,cc) -> `Var,n,None,[],t,cc
+              | `MemberVal (n,t,cc) -> `Val,n,None,[],t,cc
+              | `MemberFun (n,mix,vs,t,cc) -> `Fun,n,mix,vs,t,cc
+              | `MemberProc (n,mix,vs,t,cc) -> `Proc,n,mix,vs,t,cc
+              | `MemberCtor (n,mix,t,cc) -> `Ctor,n,mix,[],t,cc
             in
+            let mtvars = map (fun (s,_)-> `AST_name (sr,s,[])) mvs in
             if print_flag then
             print_endline ("//Member " ^ component_name);
             if kind = `Ctor && class_kind = `CClass then
@@ -377,6 +378,9 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                     in
                     get_asms
                 end else begin
+                  match component_index with
+                  | None -> assert false
+                  | Some mix ->
                   let get_asms = 
                       [
                         Exe 
@@ -388,9 +392,8 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                             (
                               sr,
                               (
-                                component_name,[], (* NO WAY TO SPECIFY POLYMORPHIC METHODS?? *)
-                                `AST_index (sr,obj_name,objidx),
-                                domain (* GENERIC method signature *)
+                                component_name, mix,mtvars, 
+                                `AST_index (sr,obj_name,objidx)
                               )
                             )
                           )
@@ -409,15 +412,16 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                 in
                 (* print_endline "Making fresh type variables"; *)
                 let vs = make_vs vs' in
-                add_tvars' (Some getn) privtab vs;
+                let mvs = make_vs mvs in
+                add_tvars' (Some getn) privtab (vs @ mvs);
                 (* add the get method to the current sumbol table *)
                 if print_flag then
                 print_endline ("//Adding get method " ^ get_name ^ " with vs=" ^
-                  print_ivs_with_index vs ^ ", parent = " ^ strp parent
+                  print_ivs_with_index (vs @ mvs) ^ ", parent = " ^ strp parent
                 );
                 Hashtbl.add dfns getn {
                   id=get_name;sr=sr;parent=parent;
-                  vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
+                  vs=vs @ mvs;pubmap=pubtab;privmap=privtab;dirs=dirs;
                   symdef=`SYMDEF_function (
                     ([obj_name,stype],None), rett, props, exes
                   )
@@ -819,6 +823,47 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           (* Hack it by building an interface *)
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
           let stype = `AST_name(sr,id,tvars) in
+
+
+          (* THIS IS A SUPERIOR HACK!!!! *)
+          let sts = ref [] in
+          let detail idx = 
+            match 
+              try Hashtbl.find syms.dfns idx 
+              with Not_found -> 
+                (*
+                print_endline ("Wah! Can't find entry " ^ si idx);
+                *)
+                raise Not_found
+                
+            with
+            | {id=id; vs=vs;symdef=symdef} ->
+            let vs = map (fun (s,i,pat) -> s,pat) vs in
+            match symdef with
+            | `SYMDEF_var t -> sts := `MemberVar (id,t,None) :: !sts
+            | `SYMDEF_val t -> sts := `MemberVal (id,t,None) :: ! sts
+            | `SYMDEF_function (ps,ret,props,_) ->
+              if mem `Ctor props then () else
+              let ps = map snd (fst ps) in
+              let a = match ps with 
+                | [x] -> x 
+                | x -> `TYP_tuple x 
+              in
+              begin match ret with
+              | `AST_void _ -> sts := `MemberProc (id,Some idx,vs,a,None) :: !sts
+              | _ -> sts := `MemberFun (id,Some idx,vs,`TYP_function(a,ret),None) :: !sts
+              end
+            | _ -> ()
+          in
+          let detail x = try detail x with Not_found -> () in 
+          Hashtbl.iter 
+          (fun id entry -> match entry with
+          | NonFunctionEntry idx -> detail idx
+          | FunctionEntry idxs -> iter detail idxs
+          )
+          privtab
+          ;
+          (*
           let sts = 
             let detail x = match x with
             | Exe _ -> assert false
@@ -837,8 +882,8 @@ let rec build_tables syms name level parent grandparent root is_class asms =
                   | x -> `TYP_tuple x 
                 in
                 begin match ret with
-                | `AST_void _ -> Some (`MemberProc (id,a,None))
-                | _ -> Some (`MemberFun (id,`TYP_function(a,ret),None))
+                | `AST_void _ -> Some (`MemberProc (id,vs,a,None))
+                | _ -> Some (`MemberFun (id,vs,`TYP_function(a,ret),None))
                 end
               | _ -> None
               end
@@ -853,7 +898,8 @@ let rec build_tables syms name level parent grandparent root is_class asms =
             in
             aux [] asms
           in
-          handle_class `Class n sts tvars stype
+          *)
+          handle_class `Class n (!sts) tvars stype
  
         | `DCL_val t ->
           let t = match t with | `TYP_none -> `TYP_var n | _ -> t in
