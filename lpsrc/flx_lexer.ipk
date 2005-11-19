@@ -1731,19 +1731,6 @@ and parse_raw_cdddstring state = parse
      ] 
    }
 
-and parse_cpp_comment state = parse 
-(* eof is not eaten up, so parent will find eof and emit ENDMARKER *)
-| not_newline * (newline | eof) {
-      state#newline lexbuf;
-      let lex = lexeme lexbuf in
-      let n = String.length lex in
-      [COMMENT_NEWLINE  (String.sub lex 0 (n-1))]
-  }
-
-| _ { [ERRORTOKEN (
-        state#get_srcref lexbuf,
-  lexeme lexbuf)] }
-
 and parse_hashbang state = parse 
 | not_newline * newline {
     begin
@@ -1797,10 +1784,14 @@ and parse_preprocessor state = parse
 
 
 and pre_flx_lex state = parse
-| "//" 
-  { 
-    parse_cpp_comment state lexbuf 
+(* eof is not eaten up, so parent will find eof and emit ENDMARKER *)
+| "//" not_newline * (newline | eof) {
+      state#newline lexbuf;
+      let lex = lexeme lexbuf in
+      let n = String.length lex in
+      [COMMENT_NEWLINE  (String.sub lex 2 (n-3))]
   }
+
 | "/*" { 
       state#set_comment (lexeme lexbuf);
       parse_C_comment state lexbuf; 

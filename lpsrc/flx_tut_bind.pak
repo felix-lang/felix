@@ -711,3 +711,17 @@ xx := X(1);
 print$ xx.x; endl;
 
 
+header """
+struct Z {
+  template<class T> T sum(T a, T b)const { return a + b; }
+};
+""";
+
+cclass Z {
+  fun sum[t]: t * t -> t;
+  ctor : unit;
+};
+
+var z  = Z();
+print$ z.sum[int] (12,13); endl; // 25
+
