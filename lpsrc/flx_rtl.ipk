@@ -760,6 +760,7 @@ step:
     {
       case svc_get_fthread: 
         **(fthread_t***)(cc->p_svc->data) = this;
+        break;      // handled
         
       //case svc_yield: 
       //  goto restep;
