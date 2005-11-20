@@ -61,7 +61,7 @@ let cilVersion      = "1.2.5"
   'longlong',
   'enum',
   'wchar',
-  'sizeof',
+  'size',
 
   'float',
   'double',
@@ -6851,7 +6851,7 @@ let initCIL () =
       E.s(E.unimp "initCIL: cannot find the right ikind for size %d\n" sz)
   in      
   upointType := TInt(findIkind true !theMachine.sizeof_ptr, []);
-  kindOfSizeOf := findIkind true !theMachine.sizeof_sizeof;
+  kindOfSizeOf := findIkind true !theMachine.sizeof_size;
   typeOfSizeOf := TInt(!kindOfSizeOf, []);
   H.add gccBuiltins "__builtin_memset" 
     (voidPtrType, [ voidPtrType; intType; intType ], false);

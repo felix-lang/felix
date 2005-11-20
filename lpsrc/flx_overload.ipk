@@ -11,7 +11,7 @@ val overload:
   range_srcref ->
   entry_kind_t list ->
   string ->
-  btypecode_t ->
+  btypecode_t list ->
   btypecode_t list ->
   (
     entry_kind_t * 
@@ -55,26 +55,26 @@ let get_data table index : symbol_data_t =
   with Not_found -> 
     failwith ("[Flx_lookup.get_data] No definition of <" ^ string_of_int index ^ ">")
 
-let sig_of_symdef symdef sr name = match symdef with 
+let sig_of_symdef symdef sr name i = match symdef with 
   | `SYMDEF_match_check (_) 
-    -> `TYP_tuple[]
+    -> `TYP_tuple[],`TYP_sum [`TYP_tuple[];`TYP_tuple[]] (* bool *)
 
   (* primitives *)
   | `SYMDEF_fun (_,ps,r,_,_,_)
-    -> typeof_list ps
+    -> typeof_list ps,r
 
   | `SYMDEF_function (ps,r,_,_)
-    -> paramtype (fst ps)
+    -> paramtype (fst ps),r
 
   | `SYMDEF_cstruct ls
   | `SYMDEF_struct ls ->
-    typeof_list (map snd ls)
+    typeof_list (map snd ls),`AST_index (sr,name,i)
 
-  | `SYMDEF_const_ctor _ -> `AST_void sr
-  | `SYMDEF_nonconst_ctor (_,_,_,t) -> t
+  | `SYMDEF_const_ctor (_,r,_) -> `AST_void sr,r
+  | `SYMDEF_nonconst_ctor (_,r,_,t) -> t,r
   | `SYMDEF_type_alias t ->
     begin match t with
-    | `TYP_typefun (ps,r,b) -> typeof_list (map snd ps)
+    | `TYP_typefun (ps,r,b) -> typeof_list (map snd ps),r
     | symdef -> 
       clierr sr (
         "[sig_of_symdef] Expected "^
@@ -92,39 +92,33 @@ let sig_of_symdef symdef sr name = match symdef with
      string_of_symdef symdef name []
     )    
 
+let resolve syms i =
+  match get_data syms.dfns i with 
+  {id=id; sr=sr;parent=parent;privmap=table;dirs=dirs;symdef=symdef} ->
+  let pvs,vs = find_split_vs syms i in
+  let t,r = sig_of_symdef symdef sr id i in
+  id,sr,parent,i,vs,pvs,t,r
 
-let overload 
-  syms 
-  bt 
-  call_sr 
-  (fs : entry_kind_t list)
-  (name: string)
-  (suf : btypecode_t) 
-  (ts:btypecode_t list) 
-: (entry_kind_t * btypecode_t * (int * btypecode_t) list * btypecode_t list) option =
+let rec unravel_ret tin dts = 
+  match tin with
+  | `BTYP_function (a,b) -> unravel_ret b (a::dts)
+  | _ -> rev dts
 
-  (*
-  print_endline ("Argument sig is " ^ sbt syms.dfns suf);
-  print_endline ("Candidates are " ^ catmap "," (string_of_entry_kind) fs);
-  print_endline ("Input ts = " ^ catmap ", " (sbt syms.dfns) ts);
-  *)
-  let resolve i =
-    match get_data syms.dfns i with 
-    {id=id; sr=sr;parent=parent;privmap=table;dirs=dirs;symdef=symdef} ->
-    let pvs,vs = find_split_vs syms i in
-    id,sr,parent,i,vs,pvs,sig_of_symdef symdef sr id
-  in
-  let sign = lift suf in
-  let consider i =
-    let id,sr,p,i,vs,pvs,t = resolve i in
+let consider syms bt i ts signs call_sr =
+    let id,sr,p,i,vs,pvs,t,r = resolve syms i in
     (*
     print_endline ("Candidate "^si i^" sig is " ^ string_of_typecode t);
     *)
     let t = bt sr i t in
-    let t = lift t in
+    let dms = 
+      try unravel_ret (bt sr i r) []
+      with _ -> print_endline "Failed to bind candidate return type!"; []
+    in
+    let tdms = t :: dms in
     let type_constraint = build_type_constraints syms (bt sr i) sr vs in
     (*
-    print_endline ("Candidate bound sig is " ^ sbt syms.dfns t);
+    print_endline ("Argument  sigs= " ^  catmap "->" (sbt syms.dfns) signs);
+    print_endline ("Candidate sigs= " ^  catmap "->" (sbt syms.dfns) tdms);
     print_endline ("pvs = " ^ catmap ", " (fun (s,i,_) ->s ^ "=" ^ si i) pvs);
     print_endline ("vs = " ^ catmap ", " (fun (s,i,_) ->s ^ "=" ^ si i) vs);
     print_endline ("type constraint = " ^ sbt syms.dfns type_constraint);
@@ -180,8 +174,15 @@ let overload
       instead of those in vs
     *)
     let bvs = map (fun (s,i,tp) -> s,i) (pvs @ vs) in
-    let t' = tsubst bvs lhs t in
+    let tdms' = map (tsubst bvs lhs) tdms in
+    let rec rfld res x y = match x,y with
+    | [],_ | _,[] -> res
+    | h::t,h'::t' -> rfld ((h,h'):: res) t t'
+    in 
+    let eqns = rfld eqns tdms' signs in
+    (*
     let eqns = (t',sign) :: eqns in
+    *)
     (*
     print_endline "EQUATIONS ARE:";
     iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
@@ -226,16 +227,20 @@ let overload
       )
       vs (nlist m)
       ;
-      if sign <> list_subst mgu sign then
-      clierr call_sr 
-      (
-        "[resolve_overload] Unification of function " ^ 
-        id ^ "<" ^ si i ^ "> signature " ^
-        sbt syms.dfns t ^ 
-        "\nwith argument type " ^ sbt syms.dfns sign ^
-        "\nhas mgu " ^ string_of_varlist syms.dfns mgu ^
-        "\nwhich specialises a variable of the argument type"
+      iter 
+      (fun sign ->
+        if sign <> list_subst mgu sign then
+        clierr call_sr 
+        (
+          "[resolve_overload] Unification of function " ^ 
+          id ^ "<" ^ si i ^ "> signature " ^
+          sbt syms.dfns t ^ 
+          "\nwith argument type " ^ sbt syms.dfns sign ^
+          "\nhas mgu " ^ string_of_varlist syms.dfns mgu ^
+          "\nwhich specialises a variable of the argument type"
+        )
       )
+      signs
       ;
       (*
       print_endline ("Matched with mgu = " ^ string_of_varlist syms.dfns mgu);
@@ -281,15 +286,30 @@ let overload
       *)
       None
     )
-  in
+ 
+let overload 
+  syms 
+  bt 
+  call_sr 
+  (fs : entry_kind_t list)
+  (name: string)
+  (sufs : btypecode_t list) 
+  (ts:btypecode_t list) 
+: (entry_kind_t * btypecode_t * (int * btypecode_t) list * btypecode_t list) option =
+
+  (*
+  print_endline ("Argument sigs are " ^ catmap ", " (sbt syms.dfns) sufs);
+  print_endline ("Candidates are " ^ catmap "," (string_of_entry_kind) fs);
+  print_endline ("Input ts = " ^ catmap ", " (sbt syms.dfns) ts);
+  *)
+  (* HACK for the moment *)
   let rec aux i =  
-    match consider i with
+    match consider syms bt i ts sufs call_sr with
     | Some x -> Unique x
     | None -> Fail
   in
   let fun_defs = List.map aux fs in
   let candidates = 
-    let lift_suf = lift suf in
     List.filter 
     (fun result -> match result with
       | Unique _ -> true
@@ -322,6 +342,7 @@ let overload
   thus the list remains without comparable pairs,
   otherwise in case 2, the list is retained and c discarded
   and so trivially remains unordered.
+
   *)
 
   let candidates = fold_left
@@ -387,11 +408,12 @@ let overload
     clierr call_sr 
     (
       "Too many candidates match in overloading " ^ name ^
-      " with argument type " ^ sbt syms.dfns sign ^
+      " with argument types " ^ catmap "," (sbt syms.dfns) sufs ^
       "\nOf the matching candidates, the following are most specialised ones are incomparable\n" ^
       catmap "\n" (function 
         | Unique (i,t,_,_) ->
-          qualified_name_of_index syms.dfns i ^ "<" ^ si i ^ "> sig " ^ sbt syms.dfns t
+          qualified_name_of_index syms.dfns i ^ "<" ^ si i ^ "> sig " ^ 
+          sbt syms.dfns t
         | Fail -> assert false
       ) 
       candidates

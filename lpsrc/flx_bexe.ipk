@@ -208,7 +208,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
          sr sr 
          env
          (`AST_name(sr,n,[]) : qualified_name_t)
-         t2 
+         [t2] 
       in  
         (* reverse order .. *)
         tack (`BEXE_proc_return sr);
@@ -230,7 +230,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
            syms 
            sr sr 
            env
-           qn t2 
+           qn [t2]
          | _ -> be sn
       in  
         tack (cal_call syms sr tbe1 (be2,t2))
@@ -269,7 +269,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
               *)
               let ro = 
                 resolve_overload
-                syms sr fs ("_ctor_" ^ name) t2 [] (* constructors can't be polymorphic *)
+                syms sr fs ("_ctor_" ^ name) [t2] [] (* constructors can't be polymorphic *)
               in
               match ro with 
                 | Some (ctor_idx,t,mgu,ts') ->

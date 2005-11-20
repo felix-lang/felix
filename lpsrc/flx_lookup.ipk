@@ -167,7 +167,7 @@ val resolve_overload:
   range_srcref ->
   entry_kind_t list ->  
   id_t -> 
-  btypecode_t ->
+  btypecode_t list ->
   btypecode_t list ->      (* explicit param/arg bindings *)
   (entry_kind_t * btypecode_t * (int * btypecode_t) list * btypecode_t list) option
 
@@ -202,7 +202,7 @@ val lookup_qn_with_sig:
   range_srcref ->
   env_t ->
   qualified_name_t ->
-  btypecode_t ->
+  btypecode_t list ->
   tbexpr_t
 
 val bind_regdef:
@@ -444,7 +444,7 @@ and lookup_qn_in_env2'
   | `AST_case_tag (sr,_) -> clierr sr "[lookup_qn_in_env2] Can't lookup a case tag"
   | `AST_typed_case (sr,_,_) -> clierr sr "[lookup_qn_in_env2] Can't lookup a typed case tag"
   | `AST_index (sr,name,_) -> 
-    print_endline ("lookup_qn_in_env2] synthetic name woops");
+    print_endline ("[lookup_qn_in_env2] synthetic name " ^ name);
     clierr sr "[lookup_qn_in_env2] Can't lookup a synthetic name"
 
   | `AST_name (sr,name,ts) -> 
@@ -598,7 +598,7 @@ and lookup_sn_in_env
       syms 
       sr sr 
       env rsground
-      qn bsuf
+      qn [bsuf]
     in match be with
     | `BEXPR_name (index,ts) -> 
       index,ts
@@ -658,7 +658,7 @@ and bind_type syms env sr t : btypecode_t =
 and bind_expression syms env e  =
   let e',t' = 
     try
-      bind_expression' syms env rsground e 
+      bind_expression' syms env rsground e []
     with 
      | Free_fixpoint b ->
        let sr = src_of_expr e in
@@ -1155,7 +1155,7 @@ and bind_type'
         `BTYP_fix fixdepth
       end
       else begin
-        snd(bind_expression' syms env rs e)
+        snd(bind_expression' syms env rs e [])
       end
     in 
       (*
@@ -1262,7 +1262,7 @@ and bind_type'
        *)
 
        let result = lookup_qn_with_sig' syms sr sr env
-         {rs with depth=rs.depth+1 } qn sign 
+         {rs with depth=rs.depth+1 } qn [sign]
        in
        (* this is a hack, since result will be a closure expression,
           we just want a bound name .. but type name lookup, which returns
@@ -1348,6 +1348,35 @@ and bind_type'
       t
       
 
+  | `AST_index (sr,name,index) as x -> 
+    print_endline ("[bind type] AST_index " ^ string_of_qualified_name x);
+    let { vs=vs; symdef=entry } =
+      try Hashtbl.find syms.dfns index 
+      with Not_found -> 
+        syserr sr ("Synthetic name "^name ^ " not in symbol table!")
+    in
+    begin match entry with
+    | `SYMDEF_struct _ 
+    | `SYMDEF_cstruct _ 
+    | `SYMDEF_union _ 
+    | `SYMDEF_class  
+    | `SYMDEF_cclass _ 
+    | `SYMDEF_abs _ 
+      ->
+      print_endline ("Synthetic name "^name ^ " is a nominal type!");
+      print_endline ("Using ts = [] .. probably wrong!");
+      `BTYP_inst (index,[])
+
+    | `SYMDEF_typevar _ ->
+      print_endline ("Synthetic name "^name ^ " is a typevar!");
+      syserr sr ("Synthetic name "^name ^ " is a typevar!")
+
+    | _ 
+      ->
+        print_endline ("Synthetic name "^name ^ " is not a nominal type!");
+        syserr sr ("Synthetic name "^name ^ " is not a nominal type!")
+    end
+
   (* QUALIFIED OR UNQUALIFIED NAME *)
   | #qualified_name_t as x ->
     (*
@@ -1366,7 +1395,7 @@ and bind_type'
   | `AST_suffix (sr,(qn,t)) ->
     let sign = bt t in
     let result = 
-      lookup_qn_with_sig' syms  sr sr env rs qn sign
+      lookup_qn_with_sig' syms  sr sr env rs qn [sign]
     in 
     begin match result with
     | `BEXPR_closure (i,ts),_ -> 
@@ -1637,7 +1666,7 @@ and cal_ret_type syms (rs:recstop) index args =
             (
               bind_expression' syms env
               { rs with idx_fixlist = index::rs.idx_fixlist }
-              e
+              e []
             ) 
         in
         if do_unify syms !ret_type t (* the argument order is crucial *)
@@ -1838,7 +1867,7 @@ and inner_typeofindex
     let be e = 
       bind_expression' syms env 
       { rs with idx_fixlist = index::rs.idx_fixlist }
-      e
+      e []
     in
     let t = snd (be (snd (hd cls))) in
     let lexit_t = bt (`AST_lookup (sr,(`AST_name (sr,"Lexer",[]),"iterator",[]))) in
@@ -2020,7 +2049,7 @@ and koenig_lookup syms rs sra id' name_map fn t2 ts =
     (*
     print_endline ("Got candidates: " ^ string_of_entry_set entries);
     *)
-    begin match resolve_overload' syms rs sra fs fn t2 ts with
+    begin match resolve_overload' syms rs sra fs fn [t2] ts with
     | Some (index'',t,mgu,ts) ->
       (* print_endline "Overload resolution OK"; *)
       `BEXPR_closure (index'',ts),
@@ -2047,7 +2076,7 @@ and lookup_qn_with_sig
   sra srn 
   env 
   (qn:qualified_name_t)
-  (sign:btypecode_t)
+  (signs:btypecode_t list)
 =
 try
   lookup_qn_with_sig'
@@ -2055,7 +2084,7 @@ try
     sra srn 
     env rsground
     qn
-    sign
+    signs
 with 
   | Free_fixpoint b ->
     clierr sra 
@@ -2066,11 +2095,11 @@ and lookup_qn_with_sig'
   sra srn 
   env (rs:recstop)
   (qn:qualified_name_t)
-  (sign:btypecode_t)
+  (signs:btypecode_t list)
 : tbexpr_t =    
   (*
   print_endline ("[lookup_qn_with_sig] " ^ string_of_qualified_name qn);
-  print_endline ("sig = " ^ sbt syms.dfns sign);
+  print_endline ("sigs = " ^ catmap "," (sbt syms.dfns) signs);
   print_endline ("expr_fixlist is " ^ 
     catmap ","
     (fun (e,d) -> string_of_expr e ^ " [depth " ^si d^"]") 
@@ -2107,6 +2136,7 @@ print_endline (id ^ ": lookup_qn_with_sig: struct/regmatch/lex");
         (*
         let ts = adjust_ts syms sr index ts in
         *)
+        let sign = try hd signs with _ -> assert false in
         let t = typeofindex_with_ts syms sr index ts in
         begin match t with
         | `BTYP_function (a,_) ->
@@ -2138,6 +2168,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
         let t = try tsubst bvs ts t with _ -> failwith "[lookup_qn_with_sig] WOOPS" in
         begin match t with
         | `BTYP_function (a,b) ->
+          let sign = try hd signs with _ -> assert false in
           if not (type_match syms.dfns a sign) then
           clierr srn
           (
@@ -2174,7 +2205,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
   | `AST_the (sr,qn) -> 
     lookup_qn_with_sig' syms sra srn
     env rs
-    qn sign
+    qn signs
 
   | `AST_void _ -> clierr sra "qualified-name is void"
 
@@ -2221,7 +2252,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     lookup_name_with_sig 
       syms 
       sra srn
-      env rs name ts sign
+      env rs name ts signs
 
   | `AST_index (sr,name,index) ->
     begin match get_data syms.dfns index with 
@@ -2231,9 +2262,13 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     | `SYMDEF_function _ 
     | `SYMDEF_match_check _ 
       ->
+      (* THIS IS A HACK! THERE IS NOTHING TO RESOLVE, WE KNOW
+      WHICH FUNCTION IS CHOSEN ALREADY .. WE SEEM TO BE DOING
+      THIS OVERLOAD JUST TO FIND THE TS VALUES
+      *)
       begin match
         resolve_overload'
-        syms rs sra [index] name sign []
+        syms rs sra [index] name signs []
       with
       | Some (index,t,mgu,ts) ->
         `BEXPR_closure (index,ts),
@@ -2275,7 +2310,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     | FunctionEntry fs ->
       match
         resolve_overload'
-        syms rs sra fs name sign ts
+        syms rs sra fs name signs ts
       with
       | Some (index,t,mgu,ts) ->
         (*
@@ -2293,7 +2328,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
         (
           "[lookup_qn_with_sig] (Simple module) Unable to resolve overload of " ^ 
           string_of_qualified_name qn ^
-          " of (" ^ sbt syms.dfns sign ^")\n" ^
+          " of (" ^ catmap "," (sbt syms.dfns) signs ^")\n" ^
           "candidates are: " ^ full_string_of_entry_set syms.dfns entries
         )
     end
@@ -2305,17 +2340,19 @@ and lookup_name_with_sig
   (rs:recstop)
   (name : string)
   (ts : btypecode_t list)
-  (t2:btypecode_t) 
+  (t2:btypecode_t list) 
 : tbexpr_t =
   (*
-  print_endline ("[lookup_name_with_sig] " ^ name ^ " of " ^ sbt syms.dfns t2);
+  print_endline ("[lookup_name_with_sig] " ^ name ^ 
+    " of " ^ catmap "," (sbt syms.dfns) t2)
+  ;
   *)
   match env with
   | [] -> 
     clierr srn
     (
       "[lookup_name_with_sig] Can't find " ^ name ^ 
-      " of " ^ sbt syms.dfns t2
+      " of " ^ catmap "," (sbt syms.dfns) t2
     )
   | (_,_,table,dirs)::tail ->
     match 
@@ -2457,7 +2494,7 @@ and handle_variable syms
 and lookup_name_in_table_dirs_with_sig (table, dirs) 
   syms 
   env (rs:recstop)
-  sra srn name (ts:btypecode_t list) t2 
+  sra srn name (ts:btypecode_t list) (t2: btypecode_t list)
 : tbexpr_t option
 =
   (*
@@ -2465,7 +2502,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
   (
     "LOOKUP NAME "^name ^"["^
     catmap "," (sbt syms.dfns) ts ^
-    "] IN TABLE DIRS WITH SIG " ^ sbt syms.dfns t2
+    "] IN TABLE DIRS WITH SIG " ^ catmap "," (sbt syms.dfns) t2
   ); 
   *)
   let result:entry_set_t =
@@ -2562,7 +2599,8 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     | `SYMDEF_val t 
     | `SYMDEF_parameter t
       ->
-      handle_variable syms env rs index id srn ts t t2
+      let sign = try hd t2 with _ -> assert false in
+      handle_variable syms env rs index id srn ts t sign
     | _ 
       -> 
         clierr sra 
@@ -2698,7 +2736,7 @@ and handle_map sr (f,ft) (a,at) =
       *)
       failwith "MAP NOT IMPLEMENTED"
  
-and bind_expression' syms env (rs:recstop) e 
+and bind_expression' syms env (rs:recstop) e args
 : tbexpr_t = 
   (*
   print_endline ("[bind_expression'] " ^ string_of_expr e);
@@ -2712,7 +2750,7 @@ and bind_expression' syms env (rs:recstop) e
   then raise (Expr_recursion e)
   ;
   let be e' = bind_expression' syms env 
-    { rs with expr_fixlist=(e,rs.depth)::rs.expr_fixlist; depth=rs.depth+1} e' in
+    { rs with expr_fixlist=(e,rs.depth)::rs.expr_fixlist; depth=rs.depth+1} e' [] in
   let bt sr t = 
     (* we're really wanting to call bind type and propagate depth ? *)
     let t = bind_type' syms env 
@@ -2727,20 +2765,6 @@ and bind_expression' syms env (rs:recstop) e
     { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist; depth = rs.depth + 1}
                                (* CHANGED THIS ------------------*******)
     i ts
-  in
-
-  let lookup sr f (sign:btypecode_t) =
-    match f with
-      
-    | #qualified_name_t as name -> 
-      let srn = src_of_expr name in
-      lookup_qn_with_sig'
-        syms 
-        sr srn env 
-        { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist }
-        name sign
-
-    | e -> be e
   in
 
   (* model infix operator as function call *)
@@ -2964,7 +2988,7 @@ and bind_expression' syms env (rs:recstop) e
             print_endline ("Method vs = " ^ print_ivs_with_index meth_vs);
             *)
             (*
-            begin match resolve_overload' syms rs sr fs meth_name sign meth_ts with
+            begin match resolve_overload' syms rs sr fs meth_name [sign] meth_ts with
             | Some (meth_idx,meth_rt,mgu,meth_ts) ->
               (*
               print_endline "Overload resolution OK";
@@ -3058,6 +3082,9 @@ and bind_expression' syms env (rs:recstop) e
     end
 
   | `AST_name (sr,name,ts) ->
+    (*
+    print_endline ("BINDING NAME " ^ name);
+    *)
     let ts = map (bt sr) ts in
     begin match inner_lookup_name_in_env syms env rs sr name with
     | NonFunctionEntry (index) -> 
@@ -3066,13 +3093,34 @@ and bind_expression' syms env (rs:recstop) e
       let t = ti sr index ts in
       t
 
-    | FunctionEntry fs -> 
-      clierr sr
-      (
-        "[bind_expression] Simple name " ^ name ^ 
-        " binds to function set in\n" ^
-        short_string_of_src sr
-      )
+    | FunctionEntry fs ->
+      assert (length fs > 0);
+      begin match args with
+      | [] ->
+        clierr sr
+        (
+          "[bind_expression] Simple name " ^ name ^ 
+          " binds to function set in\n" ^
+          short_string_of_src sr
+        )
+      | args -> 
+        let sufs = map snd args in
+        let rs = { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist } in
+        let ro = resolve_overload' syms rs sr fs name sufs ts in
+        begin match ro with
+         | Some (index, ret,mgu,ts) ->
+           (*
+           print_endline "OK, overload resolved!!";
+           *)
+           `BEXPR_closure (index,ts),
+            ti sr index ts
+            (*
+            typeofindex_with_ts syms sr index ts
+            *)
+
+         | None -> clierr sr "Cannot resolve overload .."
+        end 
+      end
     end
 
   | `AST_index (_,name,index) ->
@@ -3152,12 +3200,34 @@ and bind_expression' syms env (rs:recstop) e
           end
 
         | FunctionEntry fs ->
-          clierr sr 
-          (
-            "[bind_expression] Qualified name " ^ 
-            string_of_qualified_name qn ^ 
-            " binds to function set"
-          )
+          begin match args with
+          | [] ->
+            clierr sr 
+            (
+              "[bind_expression] Qualified name " ^ 
+              string_of_qualified_name qn ^ 
+              " binds to function set"
+            )
+          
+          | args -> 
+            let sufs = map snd args in
+            let rs  = { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist } in
+            let ro = resolve_overload' syms rs sr fs name sufs ts in
+            begin match ro with
+             | Some (index, ret,mgu,ts) ->
+               (*
+               print_endline "OK, overload resolved!!";
+               *)
+               `BEXPR_closure (index,ts),
+               (*
+               typeofindex_with_ts syms sr index ts
+               *)
+               ti sr index ts
+
+            | None -> 
+              clierr sr "Overload resolution failed .. "
+            end
+          end
         end
 
       | None ->
@@ -3169,7 +3239,21 @@ and bind_expression' syms env (rs:recstop) e
 
   | `AST_suffix (sr,(f,suf)) ->
     let sign = bt sr suf in
-    lookup sr (f:>expr_t) sign
+    begin match (f:>expr_t) with
+    | #qualified_name_t as name -> 
+      let srn = src_of_expr name in
+      lookup_qn_with_sig'
+        syms 
+        sr srn env 
+        { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist }
+        name [sign]
+
+    | e -> be e
+    end
+
+    (*
+    lookup sr (f:>expr_t) [sign]
+    *)
 
   | `AST_ref (_,(`AST_deref (sr,e))) -> be e
 
@@ -3288,6 +3372,41 @@ and bind_expression' syms env (rs:recstop) e
     handle_map sr (be f) (be a)
   
   | `AST_apply (sr,(f',a')) ->
+    let (ea,ta) as a = be a' in
+    (*
+    print_endline ("Recursive descent into application " ^ string_of_expr e);
+    *)
+    let (bf,tf) as f  =
+      match f' with
+      | #qualified_name_t as name -> 
+        let sigs = map snd args in
+        let srn = src_of_expr name in
+        lookup_qn_with_sig' syms sr srn env 
+          { rs with expr_fixlist = (e,rs.depth)::rs.expr_fixlist }
+          name (ta::sigs)
+      | _ -> bind_expression' syms env rs f' (a :: args) 
+    in
+    begin match tf with 
+    | `BTYP_function _ -> cal_apply syms sr f a
+    | _ ->
+      let apl name =
+        be 
+        (
+          `AST_apply 
+          (
+            sr,
+            (
+              `AST_name (sr,name,[]),
+              `AST_tuple (sr,[f';a'])
+            )
+          )
+        )
+      in
+      apl "apply"
+    end
+
+  (*
+  | `AST_apply (sr,(f',a')) ->
     (*
     print_endline ("Bind expression, handling application " ^ string_of_expr e);
     *)
@@ -3299,26 +3418,8 @@ and bind_expression' syms env (rs:recstop) e
     (*
     print_endline "Got type of argument -- doing 'lookup' -- reckon this is the bug";
     *)
-    let (bf,tf) as f = lookup sr f' ta in
-    (* this function is very crude, since it binds f dash, a dash again,
-        but they are already bound -- FIXIT!
-
-        Also there is a BUG! if 'apply' is found but is not
-        a function, then we end up trying again .. perhaps
-        indefinitely ..??
-    *)
-    let apl name =
-      be 
-      (
-        `AST_apply 
-        (
-          sr,
-          (
-            `AST_name (sr,name,[]),
-            `AST_tuple (sr,[f';a'])
-          )
-        )
-      )
+    let (bf,tf) as f = 
+      lookup sr f' ta 
     in
     begin 
       match tf with
@@ -3329,14 +3430,29 @@ and bind_expression' syms env (rs:recstop) e
       (*
       print_endline ("Type of f is not function, got " ^ sbt syms.dfns tf);
       *)
-      apl "apply"
+      (* this function is very crude, since it binds f dash, a dash again,
+          but they are already bound -- FIXIT!
 
-
-
-      (*
-      | _ -> cal_apply syms sr f a
+          Also there is a BUG! if 'apply' is found but is not
+          a function, then we end up trying again .. perhaps
+          indefinitely ..??
       *)
+      let apl name =
+        be 
+        (
+          `AST_apply 
+          (
+            sr,
+            (
+              `AST_name (sr,name,[]),
+              `AST_tuple (sr,[f';a'])
+            )
+          )
+        )
+      in
+      apl "apply"
     end
+    *)
 
   | `AST_arrayof (sr,es) ->
     let bets = map be es in
@@ -3479,26 +3595,27 @@ and resolve_overload
   sr
   (fs : entry_kind_t list)
   (name: string)
-  (suf : btypecode_t)
+  (sufs : btypecode_t list)
   (ts:btypecode_t list)
 =
-  resolve_overload' syms rsground sr fs name suf ts
+  resolve_overload' syms rsground sr fs name sufs ts
 
 and resolve_overload'
   syms (rs:recstop)
   sr
   (fs : entry_kind_t list)
   (name: string)
-  (suf : btypecode_t)
+  (sufs : btypecode_t list)
   (ts:btypecode_t list)
 : (entry_kind_t * btypecode_t * (int * btypecode_t) list * btypecode_t list) option =
 
+  if length fs = 0 then None else
   let bt sr i t =
     let env = inner_build_env syms rs (Some i) in
     bind_type syms env sr t
   in
     let fs = trclose syms rs sr fs in
-    overload syms bt sr fs name suf ts
+    overload syms bt sr fs name sufs ts
 
 (* an environment is a list of hastables, mapping
    names to definition indicies. Each entity defining
