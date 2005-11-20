@@ -746,7 +746,7 @@ void fthread_t::operator=(fthread_t const&){ assert(false); }
 _uctor_ *fthread_t::get_svc()const { return cc?cc->p_svc:0; }
 
 _uctor_ *fthread_t::run() {
-//restep:
+restep:
   cc->p_svc = 0;
 step:  
   try { cc = cc->resume(); }
@@ -760,7 +760,7 @@ step:
     {
       case svc_get_fthread: 
         **(fthread_t***)(cc->p_svc->data) = this;
-        break;      // handled
+        goto restep;      // handled
         
       //case svc_yield: 
       //  goto restep;
