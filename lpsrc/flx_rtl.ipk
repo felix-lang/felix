@@ -280,13 +280,19 @@ enum svc_t               // what the dispatch should do
   svc_driver_request=5,
   svc_spawn_detached=6,
   svc_sread=7,           // synchronous read
-  svc_swrite=8,           // synchronous write
+  svc_swrite=8,          // synchronous write
+  svc_sclose=9,          // close channel
+  svc_kill=10,           // kill fthread
   svc_end
 };
 
 struct readreq_t {
   schannel_t *chan;
   void **data;
+};
+
+struct killreq_t {
+  fthread_t *fthread;
 };
 
 // ********************************************************
@@ -347,10 +353,12 @@ struct FLX_RTL_EXTERN slist_t {
 
 struct FLX_RTL_EXTERN fthread_t // fthread abstraction
 {
+  con_t *cc;                    // current continuation
+
   fthread_t();                  // dead thread, suitable for assignment
   fthread_t(con_t*);            // make thread from a continuation
-  con_t *cc;                    // current continuation
   virtual _uctor_ *run();       // run until dead or driver service request
+  void kill();                  // kill the continuation
   _uctor_ *get_svc()const;      // get current service request of waiting thread
   virtual ~fthread_t();         // kill the thread -- continuation cc unaffected
 private: // uncopyable
@@ -371,6 +379,8 @@ struct FLX_RTL_EXTERN schannel_t
   fthread_t *pop_reader();
   void push_writer(fthread_t *);
   fthread_t *pop_writer();
+  void close();               /// Close channel, killing subscribers
+  ~schannel_t();
 private: // uncopyable
   schannel_t(schannel_t const&); 
   void operator= (schannel_t const&); 
@@ -706,7 +716,6 @@ void slist_t::push(void *data)
 }
 
 // note: never fails, return NULL pointer if the list is empty
-// probably should fail :)
 void *slist_t::pop()
 {
   if(head) { 
@@ -742,6 +751,8 @@ fthread_t::~fthread_t(){cc=0;}
 // uncopyable object but implementation needed for linker
 fthread_t::fthread_t(fthread_t const&){ assert(false); }
 void fthread_t::operator=(fthread_t const&){ assert(false); }
+
+void fthread_t::kill() { cc = 0; }
 
 _uctor_ *fthread_t::get_svc()const { return cc?cc->p_svc:0; }
 
@@ -827,6 +838,15 @@ fthread_t *schannel_t::pop_writer()
 {
   return (fthread_t*)waiting_to_write->pop();
 }
+
+void schannel_t::close()
+{
+  fthread_t *blocked;
+  while( (blocked = pop_reader()) ) blocked->kill();
+  while( (blocked = pop_writer()) ) blocked->kill();
+}
+
+schannel_t::~schannel_t() { close(); }
 
 //OFFSETS for schannel_t
 static std::size_t schannel_offsets[2]={
@@ -1524,48 +1544,68 @@ int main(int argc, char** argv)
             readreq_t * pr = (readreq_t*)request->data;
             schannel_t *chan = pr->chan;
             if(debug)printf("Request to read on channel %p\n",chan);
-            if(!chan->waiting_to_write->isempty())
+          svc_read_next:
             {
-               readreq_t * pr = (readreq_t*)request->data;
-               fthread_t *writer= chan->pop_writer();
+              fthread_t *writer= chan->pop_writer();
+              if(writer == 0) goto svc_read_none;       // no writers
+              if(writer->cc == 0) goto svc_read_next;   // killed
+              {
+                readreq_t * pr = (readreq_t*)request->data;
+                readreq_t * pw = (readreq_t*)writer->get_svc()->data;
+                if(debug)printf("Writer @%p=%p, read into %p\n", pw->data,*pw->data, pr->data);
+                *pr->data = *pw->data;
+                active.push_front(writer);
+              }
+            }
+            break; // keep running
 
-               // need to check writer was not killed here!
-               readreq_t * pw = (readreq_t*)writer->get_svc()->data;
-               if(debug)printf("Writer @%p=%p, read into %p\n", pw->data,*pw->data, pr->data);
-               *pr->data = *pw->data;
-               active.push_front(writer);
-            }
-            else
-            {
-              chan->push_reader(ft);
-              goto process_active;
-            }
+          svc_read_none:
+            chan->push_reader(ft);
+            goto process_active;
           }
-          break;
 
           case svc_swrite:
           {
             readreq_t * pr = (readreq_t*)request->data;
             schannel_t *chan = pr->chan;
             if(debug)printf("Request to write on channel %p\n",chan);
-            if(!chan->waiting_to_read->isempty())
+          svc_write_next:
             {
-               readreq_t * pw = (readreq_t*)request->data;
-               fthread_t *reader= chan->pop_reader();
+              fthread_t *reader= chan->pop_reader();
+              if(reader == 0) goto svc_write_none;     // no readers
+              if(reader->cc == 0) goto svc_write_next; // killed
+              {
+                readreq_t * pw = (readreq_t*)request->data;
+                readreq_t * pr = (readreq_t*)reader->get_svc()->data;
+                if(debug)printf("Writer @%p=%p, read into %p\n", pw->data,*pw->data, pr->data);
+                *pr->data = *pw->data;
+                active.push_front(reader);
+              }
+            }
+            break; // keep running
 
-               // need to check reader was not killed here!
-               readreq_t * pr = (readreq_t*)reader->get_svc()->data;
-               if(debug)printf("Writer @%p=%p, read into %p\n", pw->data,*pw->data, pr->data);
-               *pr->data = *pw->data;
-               active.push_front(reader);
-            }
-            else
-            {
-              chan->push_writer(ft);
-              goto process_active;
-            }
+          svc_write_none:
+            chan->push_writer(ft);
+            goto process_active;
+          }
+          
+          case svc_sclose:
+          {
+            readreq_t * pr = (readreq_t*)request->data;
+            schannel_t *chan = pr->chan;
+            if(debug)printf("Request to close channel %p\n",chan);
+            chan->close();
           }
           break;
+
+
+          case svc_kill:
+          {
+            fthread_t *ftx = *(fthread_t**)request->data;
+            if(debug)printf("Request to kill fthread %p\n",ftx);
+            ftx -> kill();
+          }
+          break; // keep running (even if we suicided)
 
           case svc_driver_request:
           {

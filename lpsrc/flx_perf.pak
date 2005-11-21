@@ -651,20 +651,26 @@ args = sys.argv
 args = args[1:]
 mintime = 0.5
 mindata = 5
+pload = "p1"
 
 try: 
-  mintime = float(args[1])
+  mintime = float(args[0])
   args = args[1:]
 except:pass
 
 try: 
-  mindata = int(args[1])
- or count < mindata  args = args[1:]
+  mindata = int(args[0])
+  args = args[1:]
+except:pass
+
+try: 
+  pload = args[0]
+  args = args[1:]
 except:pass
 
 print "Minimum time",mintime
 print "Minimum data",mindata
-
+print "Load        ",pload
 def chkxl(x):
   return args == [] or x in args
   
@@ -677,16 +683,17 @@ mkdir("speed/images")
 
 fin = open("speed/results.dat")
 for line in fin:
-  print line,
+  #print line,
   hostname,kind,date,time,xl,tst,n,elapsed = string.split (line)
   n = int(n)
   elapsed=float(elapsed)
-  print hostname,kind,date,time,xl,tst,n,elapsed
-  hostd = hostsd.setdefault(hostname,{})
-  testd = hostd.setdefault(tst,{})
-  xld = testd.setdefault(xl,{})
-  nd = xld.setdefault(n,[])
-  nd.append(elapsed)
+  if pload == kind:
+    print hostname,kind,date,time,xl,tst,n,elapsed
+    hostd = hostsd.setdefault(hostname,{})
+    testd = hostd.setdefault(tst,{})
+    xld = testd.setdefault(xl,{})
+    nd = xld.setdefault(n,[])
+    nd.append(elapsed)
 fin.close()
 
 print "DATA"
@@ -703,7 +710,7 @@ for h,d in hostsd.iteritems():
     mkdir(root+'/'+t)
     # one gnuplot file for each test
     fp = open(root+'/'+t+'.gpl','w')
-    gx = 'set title "'+t+'"\n'
+    gx = 'set title "'+hostname+' '+pload+' '+t+'"\n'
     gx = gx + 'set xlabel "N"\n'
     gx = gx + 'set ylabel "secs"\n'
     gx = gx + 'set key left\n'
@@ -732,7 +739,7 @@ for h,d in hostsd.iteritems():
         print "        n %2d -[%3d]-> (%6.2f,%6.2f,%6.2f)" % (n,count,emin,average,emax)
         # one line for each n value
         # skip too low values
-        if average > mintime or count < mindata:
+        if average >= mintime and count >= mindata:
           fxl.write("%s %d %0.2f\n" % (xl,n,average))
           lines = lines + 1
         summary[(-n,average)]=xl

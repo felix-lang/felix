@@ -1254,6 +1254,8 @@ module Control
   /*6*/ | svc_spawn_detached      of fthread
   /*7*/ | svc_sread               of _schannel * ptr[gcaddress]
   /*8*/ | svc_swrite              of _schannel * ptr[gcaddress]
+  /*9*/ | svc_sclose              of _schannel 
+  /*10*/ | svc_kill               of fthread 
   ;
 
   publish "Call Supervisor"

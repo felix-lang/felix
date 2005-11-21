@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.177  2005/11/21 05:23:58  skaller
+svc_kill, svc_close
+
 Revision 1.176  2005/11/13 09:58:33  skaller
 Fiddling with Classes.
 
@@ -3530,6 +3533,7 @@ We have no idea if it continues copying.
 @tangle('\t\tfelix-'+flx_version+'/tools/*.flx \\')
 @tangle('\t\tfelix-'+flx_version+'/rtl/*.cpp\\')
 @tangle('\t\tfelix-'+flx_version+'/rtl/*.hpp\\')
+@tangle('\t\tfelix-'+flx_version+'/doxydoc/html/*\\')
 @#tangle('\t\tfelix-'+flx_version+'/libdoc/*.html \\')
 @tangle('\t\tfelix-'+flx_version+'/lib/*.flx \\')
 @tangle('\t\tfelix-'+flx_version+'/test/*.flx \\')
