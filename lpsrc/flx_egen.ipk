@@ -309,7 +309,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
   | `BEXPR_deref e -> 
     let cast = tn t ^ "*" in
-    ce_prefix "*" (ce_cast cast (ce_dot (ge' e) "data"))
+    ce_prefix "*" (ce_cast cast (ce_dot (ge' e) "get_data()"))
 
   | `BEXPR_literal v ->
     if is_native_literal v

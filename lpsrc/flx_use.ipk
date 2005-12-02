@@ -163,6 +163,12 @@ and uses syms used bbdfns i =
         ui i
         
       | `BBDCL_union (_,ps)
+        -> () 
+        
+        (* types of variant arguments are only used if constructed 
+          .. OR ..  matched against ??
+        *)
+
       | `BBDCL_struct (_,ps)
       | `BBDCL_cstruct (_,ps)
         ->

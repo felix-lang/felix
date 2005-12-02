@@ -2183,7 +2183,6 @@ try
   let () = Flx_use.find_roots syms bbdfns root_proc bifaces in
   let child_map = cal_children syms bbdfns in
 
-  let child_map = ref child_map in
   if compiler_options.max_inline_length > 0 then
   begin
     (*
@@ -2192,7 +2191,7 @@ try
     if compiler_options.print_flag then
     print_endline "//INLINING";
 
-    Flx_inline.heavy_inlining syms (!child_map,bbdfns) root_proc bifaces;
+    Flx_inline.heavy_inlining syms (child_map,bbdfns) root_proc bifaces;
     (*
     print_endline "INLINING DONE";
     print_functions syms.dfns bbdfns;

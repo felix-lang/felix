@@ -59,6 +59,12 @@ struct FLX_RTL_EXTERN gc_shape_t;   // the shape of collectable objects
 struct FLX_RTL_EXTERN collector_t;  // the collector itself
 struct FLX_RTL_EXTERN allocator_t;  // the collector itself
 
+enum gc_shape_flags_t {
+  gc_flags_default    = 0,            //< collectable and mobile
+  gc_flags_immobile   = 1,            //< cannot be moved
+  gc_flags_persistent = 2             //< cannot be deallocated
+};
+
 /// Describes runtime object shape.
 struct FLX_RTL_EXTERN gc_shape_t
 {
@@ -68,7 +74,7 @@ struct FLX_RTL_EXTERN gc_shape_t
   void (*finaliser)(collector_t*, void*);  ///< finalisation function
   std::size_t n_offsets;          ///< number of offsets
   std::size_t *offsets;           ///< actual offsets
-
+  gc_shape_flags_t flags;         ///< flags
   // convenience constructor
   gc_shape_t(
     char const *cn,
@@ -77,6 +83,15 @@ struct FLX_RTL_EXTERN gc_shape_t
     void (*finaliser_a)(collector_t*, void*),
     std::size_t n_offsets_a,
     std::size_t *offsets_a
+  );
+  gc_shape_t(
+    char const *cn,
+    std::size_t count_a,
+    std::size_t amt_a,
+    void (*finaliser_a)(collector_t*, void*),
+    std::size_t n_offsets_a,
+    std::size_t *offsets_a,
+    gc_shape_flags_t flags_a
   );
 };
 @doc()
@@ -159,6 +174,22 @@ Routines to add and remove roots.
 @select(h)
   virtual void add_root(void *memory)=0;
   virtual void remove_root(void *memory)=0;
+
+@doc()
+Routine to optimise store by compaction. Optional,
+does nothing if not implemented. The closed flag
+should be set to true if a collection has just been
+done, and, no foreign pointers are expected anywhere,
+otherwise it should be set to false. Setting it to
+true enables a check that every pointer found
+is live (points to an known object) or NULL.
+This may not be the case if there is any garbage,
+which may contain the address on the machine stack
+that used to point to a live frame (but the frame
+is now gone).
+
+@select(h)
+  virtual void compact(bool closed)=0;
 
 @doc()
 Integrity check for the data structure being managed.
@@ -327,8 +358,28 @@ namespace flx {
 namespace gc {
 namespace generic {
 
-
 // create a shape object given an array of offsets
+gc_shape_t::gc_shape_t
+(
+  char const *cn,
+  std::size_t count_a,
+  std::size_t amt_a,
+  void (*finaliser_a)(collector_t*, void*),
+  std::size_t n_offsets_a,
+  std::size_t *offsets_a,
+  gc_shape_flags_t flags_a
+)
+  :
+  cname(cn),
+  count(count_a),
+  amt(amt_a),
+  finaliser(finaliser_a),
+  n_offsets(n_offsets_a),
+  offsets(offsets_a),
+  flags(flags_a)
+{}
+
+// with flags defaulted
 gc_shape_t::gc_shape_t
 (
   char const *cn,
@@ -344,7 +395,8 @@ gc_shape_t::gc_shape_t
   amt(amt_a),
   finaliser(finaliser_a),
   n_offsets(n_offsets_a),
-  offsets(offsets_a)
+  offsets(offsets_a),
+  flags(gc_flags_default)
 {}
 
 void destroy(void *p)
@@ -476,12 +528,16 @@ struct FLX_RTL_EXTERN flx_collector_t : public collector_t
   unsigned long get_root_count()const;
   unsigned long get_allocation_amt()const;
 
+  void compact(bool closed);
+  void set_min_arena_size(unsigned long);
+
 private:
   bool collecting;
   unsigned long allocation_count;
   unsigned long root_count;
   unsigned long allocation_amt;
 
+ 
   void deallocate(frame_t *frame);
     // calls unlink and dispose
 
@@ -503,6 +559,20 @@ private:
   rootmap_t roots;
   bool parity;
   allocator_t *allocator;
+
+  // if compaction is being used this stuff controls
+  // the arena. The arena ptr grows DOWN towards the
+  // start of the arena. arena is NULL unless arenas
+  // are being used. Once in use, the allocator is
+  // not (normally) used for individual objects
+
+  void *arena;       // if compaction is being used, lo address
+  void *arena_high;  // arena base (high) address
+  void *arena_ptr;   // current top of the stack
+  unsigned long arena_size; // hi - lo
+  unsigned long arena_free; // ptr - lo
+  float arena_size_factor;
+  unsigned long min_arena_size;
 };
 
 }}} // end namespaces
@@ -534,7 +604,7 @@ void *hi_sp = 0;
 void *malloc_free::allocate(std::size_t amt)
 {
   void *p = malloc(amt);
-  if(debug)fprintf(stderr,"Malloc %p\n",p);
+  if(debug)fprintf(stderr,"Malloc %ld bytes, address = %p\n",amt,p);
   //++mcount;
   //void *x = sp;
   //if (low_sp == NULL) low_sp = x,hi_sp = x;
@@ -581,17 +651,38 @@ flx_collector_t::flx_collector_t(allocator_t *a) :
   first(0),
   to_delete(0),
   parity(false),
-  allocator(a)
+  allocator(a),
+  arena(0),
+  arena_high(0),
+  arena_ptr(0),
+  arena_size(0),
+  arena_free(0),
+  arena_size_factor(1.6f),
+  min_arena_size(1000000) // 1Meg
 {}
 
+void flx_collector_t::set_min_arena_size(unsigned long x) 
+{  
+  min_arena_size = x; 
+}
 
 void * flx_collector_t::allocate(gc_shape_t *shape, unsigned long nobj)
 {
   // calculate how much memory to request
-  std::size_t amt = nobj * shape->amt + FRAMESIZE;
+  std::size_t amt = nobj * shape->amt * shape->count + FRAMESIZE;
 
   // allocate a block
-  frame_t *fp = (frame_t*)allocator->allocate(amt);
+  frame_t *fp;
+  if(!arena || shape->flags & generic::gc_flags_immobile || amt > arena_free)
+    fp = (frame_t*)allocator->allocate(amt);
+  else
+  {
+    amt = _ALIGN(amt);
+    arena_ptr = (unsigned char*)arena_ptr - amt;
+    arena_free -= amt;
+    fp = (frame_t*)arena_ptr;
+    if(debug)fprintf(stderr, "New arena object at %p, size %ld\n",arena_ptr,amt);
+  }
   assert(fp); // Got some memory!
 
   // initialise the shape, garbage flag, and refcount
@@ -610,7 +701,7 @@ void * flx_collector_t::allocate(gc_shape_t *shape, unsigned long nobj)
   // update statistics
   allocation_count++;
   allocation_amt += amt;
-
+  //fprintf(stderr,"ADDING %ld to allocation amt, result %ld\n",long(amt),long(allocation_amt));
   // return client memory pointer
   return FRAME_TO_CLIENT(fp);
 }
@@ -623,7 +714,6 @@ void flx_collector_t::deallocate(frame_t *fp)
 
 void flx_collector_t::unlink(frame_t *fp)
 {
-
   // check we have a pointer to an object
   assert(fp);
 
@@ -669,11 +759,30 @@ void flx_collector_t::delete_frame(frame_t *fp)
 {
   // update statistics
   allocation_count--;
-  std::size_t size = fp->shape->amt + FRAMESIZE;
-  allocation_amt -= size;
+  gc_shape_t *shape = fp->shape;
+  unsigned long nobj = shape -> count * fp -> n_objects;
+  std::size_t size = shape->amt * nobj + FRAMESIZE;
+  //fprintf(stderr,"Raw frame %p size %ld\n",fp,long(size));
+  // check if pointer is in arena
+  if(arena && 
+    std::less_equal<void*>()(arena_ptr,fp) && // ptr <= fp < base
+    std::less<void*>()(fp,arena_high) 
+  )
+  {
+    size = _ALIGN(size); // FRAGILE
+    //fprintf(stderr,"In arena!");
+  }
+  else
+  {
+    //fprintf(stderr,"Not in arena\n");
+    allocator->deallocate(fp, size);
+  }
 
-  // deallocate the storage
-  allocator->deallocate(fp, size);
+  allocation_amt -= size;
+  //fprintf(stderr,"Subtracting %ld result is %ld\n",long(size),long(allocation_amt));
+  //fprintf(stderr, "delete frame %p: nalloc=%ld, alloc=%ld, size = %ld\n",
+  //  fp, allocation_count, allocation_amt,long(size)
+  //);
 }
 
 unsigned long flx_collector_t::reap ()
@@ -812,17 +921,132 @@ void flx_collector_t::mark()
 
 unsigned long flx_collector_t::collect()
 {
+  if(debug)check();
   if(debug)fprintf(stderr,"Running collector\n");
   mark();
-  return sweep();
+  unsigned long r = sweep();
+  if(debug)check();
+  return r;
 }
+
+static int vpcompare(void const *a, void const *b) {
+  void *aa = *(void**)a;
+  void *bb = *(void**)b;
+  if (std::less<void*>()(aa,bb)) return -1;
+  if (std::equal_to<void*>()(aa,bb)) return 0;
+  return 1;
+}
+
+// scan all known objects, and check every pointer
+// is either NULL or points to one of them
 
 void flx_collector_t::check()
 {
- // not implemented: should scan all objects,
- // and check total memory is as expected
- // can also check back links, statistics,
- // and parity
+  if(debug)fprintf(stderr,"RUNNING HEAP INTEGRITY CHECK\n");
+  unsigned long nobj = allocation_count;
+  void **ctrl = (void**)malloc(nobj * sizeof(void*));
+  unsigned long handled = 0;
+  unsigned long allocated = 0;
+  frame_t *lfirst = first;
+  unsigned long inarena = 0;
+  unsigned long outofarena = 0;
+  while(lfirst) {
+    ctrl[handled++]=lfirst;
+    gc_shape_t *shape = lfirst->shape;
+    unsigned long n_objects = lfirst->n_objects * shape->count;
+    unsigned long size = n_objects * shape->amt + FRAMESIZE;
+    if(arena && 
+      std::less_equal<void*>()(arena_ptr,lfirst) && // ptr <= fp < base
+      std::less<void*>()(lfirst,arena_high) 
+    )
+    {
+      size = _ALIGN(size); // FRAGILE
+      inarena++;
+    }
+    else 
+      outofarena++
+    ;
+    //fprintf(stderr,"Object %p size %ld type %s\n",lfirst,long(size),shape->cname);
+    allocated += size;
+    lfirst = lfirst->next;
+  }
+
+  if(handled != nobj)
+  {
+    fprintf(stderr,"Wrong number of objects\n");
+    abort();
+  }
+
+  if(allocated != allocation_amt)
+  {
+    fprintf(stderr,"Wrong allocation amount: recorded as %ld, counted as %ld\n",
+      allocation_amt, allocated
+    );
+    fprintf(stderr, "Objects in arena = %ld, objects out of arena = %ld\n",
+      inarena,outofarena
+    );
+    abort();
+  }
+  qsort(ctrl,nobj,sizeof(void*),vpcompare);
+
+  for(unsigned int i = 0; i<nobj; ++i) {
+    frame_t *frame = (frame_t*) ctrl[i];
+    gc_shape_t *shape = frame->shape;
+    unsigned long n_objects = frame->n_objects * shape->count;
+
+    // scan the frame for pointers and adjust them
+    unsigned char *client = (unsigned char*)FRAME_TO_CLIENT(frame);
+    size_t *offsets = shape -> offsets;
+    for(unsigned int nel = 0; nel < n_objects; nel++)
+    {
+      for(unsigned int k = 0; k<shape->n_offsets; ++k) 
+      {
+        size_t offset = offsets[k];
+        void **loc = (void**)(client + offset);
+        void *client_ptr = *loc;
+        if (client_ptr) // leave NULL alone 
+        {
+          void *address= CLIENT_TO_FRAME(client_ptr);
+          void **res = (void**) bsearch(
+            &address,
+            ctrl,nobj,
+            sizeof(void*),
+            vpcompare
+          );
+          if(!res) {
+            fprintf(stderr, 
+              "CHECK: In object frame=%p, type %s, subobject #%d,\n"
+              "offset #%d->%ld, at address %p,\n"
+              "pointer [frame=%p, client=%p] NOT IN GC LIST\n",
+              frame, shape->cname,nel,k,offset,loc,address,client_ptr);
+            abort();
+          }
+        }
+      }
+      client += shape->amt;
+    }
+  }
+
+  rootmap_t::iterator last = roots.end();
+  for(
+    rootmap_t::iterator iter = roots.begin();
+    iter != last;
+    ++iter
+  )
+  {
+    std::pair<frame_t *const, unsigned long> root_record = *iter;
+    void **res = (void**) bsearch(
+      &root_record.first,
+      ctrl,nobj,
+      sizeof(void*),
+      vpcompare
+    );
+    if(!res) {
+      fprintf(stderr,"CHECK: WOOPS CANNOT FIND ROOT! %p\n",root_record.first);
+      abort();
+    }
+  }
+  free(ctrl);
 }
 
 bool flx_collector_t::check_frame_pointer(frame_t *p)
@@ -851,6 +1075,241 @@ flx_collector_t::~flx_collector_t()
   //roots.clear();
   //root_count = 0;
   //sweep();
+}
+
+// ONCE THIS ROUTINE IS CALLED, the allocator
+// is never used again for individual objects.
+// The compactor puts all the targets in a SINGLE frame
+// and so they cannot be deallocated by the allocator.
+// Instead, the only way to clean up garbage is by 
+// compacting again. We have to do this when we run out
+// of memory --- but ONLY when we're in compacting mode:
+// if we try it out of compacting mode we're screwed,
+// because we have to allocate enough memory for a copy
+// of ALL the objects (and if just ran out on a single
+// operation that is going to be impossible!
+
+struct compact_entry_t {
+  void *old_frame;
+  void *new_frame;
+};
+
+static int compact_entry_compare
+(
+  void const *a, 
+  void const *b
+) {
+  void * aa = ((compact_entry_t const*)a) -> old_frame;
+  void * bb = ((compact_entry_t const*)b) -> old_frame;
+  if (std::less<void*>()(aa,bb)) return -1;
+  else if (std::equal_to<void*>()(aa,bb)) return 0;
+  else return 1;
+}
+
+void flx_collector_t::compact(bool closed) {
+  //if(arena)
+  //fprintf(stderr,"arena size = %ld, free space %d%%\n",
+  //  arena_size, int(float(arena_free)/float(arena_size)*100.0f)
+  //);
+
+  unsigned long nobj = allocation_count;
+  unsigned long memreq = allocation_amt;
+
+  // temporary hack: if arena has at least 20% free space don't compact
+  if(arena && float(arena_free>>8) / float(arena_size>>8) > 0.2) return;
+  //fprintf(stderr,"COMPACTING\n");
+  compact_entry_t *ctrl = (compact_entry_t*)malloc(nobj * sizeof(compact_entry_t));
+  unsigned long handled = 0;
+
+  // empty the collectors list of objects into the control array
+  // the effect is to simply forget all the objects!
+
+  if(debug)fprintf(stderr,"FRAME SIZE = %x\n",FRAMESIZE);
+  if(debug)
+    fprintf(stderr,"Building array of %ld frames\n",nobj);
+  while(first) {
+    ctrl[handled++].old_frame=first;
+    first = first->next;
+  }
+  assert(handled == nobj);
+
+  if(debug)fprintf(stderr,"Sorting array");
+  qsort(ctrl,nobj,sizeof(compact_entry_t),compact_entry_compare);
+
+  // make a new arena, make sure it is aligned!
+  if(debug)
+    fprintf(stderr,"MEMREQ=%ld\n",memreq);
+  unsigned long new_arena_size = (unsigned long)(memreq * arena_size_factor) + 256 + nobj * FLX_MAX_ALIGN;
+  if(new_arena_size < min_arena_size) new_arena_size = min_arena_size ;
+  if(debug)fprintf(stderr,"UNALIGNED MEMORY REQUIREMENT=%ld\n",new_arena_size);
+  new_arena_size = _ALIGN(new_arena_size);
+  if(debug)fprintf(stderr,"ALIGNED MEMORY REQUIREMENT=%ld\n",new_arena_size);
+  if(debug)fprintf(stderr,"Allocating new arena, size=%ld\n",new_arena_size);
+  unsigned char *new_arena = (unsigned char*)allocator->allocate(new_arena_size);
+  unsigned char *new_arena_ptr = new_arena + new_arena_size;
+  unsigned long new_arena_free = new_arena_size;
+  unsigned char *new_arena_high = new_arena_ptr;
+
+  if(debug)fprintf(stderr,"new arena =%p\n",new_arena);
+  if(debug)fprintf(stderr,"arena_ptr =%p\n",new_arena_ptr);
+
+  // assign new locations to our objects
+  for(unsigned long int j = 0; j<nobj; ++j) {
+    unsigned long int i = nobj - j - 1;
+    // calculate the object size
+    frame_t *frame = (frame_t*) ctrl[i].old_frame;
+    gc_shape_t *shape = frame->shape;
+    if(shape->flags & gc_flags_immobile)
+    {
+      // don't move immobile objects
+      ctrl[i].new_frame = frame;
+      //fprintf(stderr, "Immobile %p type %s\n",frame, shape->cname);
+    }
+    else
+    {
+      unsigned long n_objects = frame->n_objects * shape->count;
+      unsigned long amt = shape->amt * n_objects + FRAMESIZE;
+      if(arena && 
+        std::less_equal<void*>()(arena_ptr,frame) && // ptr <= fp < base
+        std::less<void*>()(frame,arena_high) 
+      )
+        amt = _ALIGN(amt); // FRAGILE
+      allocation_amt -= amt;
+      unsigned long new_amt = _ALIGN(amt);
+      allocation_amt += new_amt;
+
+      // allocate store in arena
+      new_arena_ptr = (unsigned char*)new_arena_ptr - new_amt;
+      new_arena_free -= new_amt;
+      ctrl[i].new_frame = new_arena_ptr;
+      //fprintf(stderr,"MOVE OBJECT %p old size %ld new size %ld to %p\n",frame,amt,new_amt,new_arena_ptr);
+      if(debug)
+        if(amt != new_amt)
+          fprintf(stderr,"NONARENA TO ARENA MOVE\n");
+    }
+  }
+
+  // copy the objects and update pointers
+  if(debug)fprintf(stderr,"COPYING OBJECTS\n");
+  for(unsigned int i = 0; i<nobj; ++i) {
+    frame_t *old_frame = (frame_t*) ctrl[i].old_frame;
+    frame_t *new_frame = (frame_t*) ctrl[i].new_frame;
+    gc_shape_t *shape = old_frame->shape;
+    //if(debug)fprintf(stderr,"\nCOPYING OBJECT %s at %p to %p\n",shape->cname,old_frame,new_frame);
+    unsigned long n_objects = old_frame->n_objects * shape->count;
+    std::size_t obj_size = shape->amt;
+
+    // NOTE: NOT ALIGNED!! in case source is not an arena
+    unsigned long amt = obj_size * n_objects + FRAMESIZE;
+    //if(debug)fprintf(stderr,"Raw size %ld\n",amt);
+
+    // copy the frame: we use memmove because
+    // we might be doing an in-place compaction
+    if (new_frame != old_frame)
+      memmove(new_frame,old_frame,amt)
+    ;
+
+    //if(debug)fprintf(stderr,"Linking into collector list\n");
+    // link the frame into the collectors list
+    new_frame->prev = 0;
+    new_frame->next = first;
+    if(first) first->prev = new_frame;
+    first = new_frame;
+
+    // scan the frame for pointers and adjust them
+    unsigned char *client = (unsigned char*)FRAME_TO_CLIENT(new_frame);
+    size_t *offsets = shape -> offsets;
+    //if(debug)fprintf(stderr,"Client pointer %p\n",client);
+    //if(debug)fprintf(stderr,"SCANNING frame %d, %ld objects\n",i,n_objects);
+    for(unsigned int nel = 0; nel < n_objects; nel++)
+    {
+      for(unsigned int k = 0; k<shape->n_offsets; ++k) 
+      {
+        size_t offset = offsets[k];
+        //if(debug)fprintf(stderr,"Scanning offset #%d, offset %ld, \n",k,(long)offset);
+
+        void **loc = (void**)(client + offset);
+        //if(debug)fprintf(stderr,"ADDRESS OF POINTER %p\n",loc);
+        void *client_ptr = *loc;
+        //if(debug)fprintf(stderr,"VALUE OF CLIENT POINTER %p\n",client_ptr);
+        if (client_ptr) // leave NULL alone 
+        {
+          void *address= CLIENT_TO_FRAME(client_ptr);
+          //if(debug)fprintf(stderr,"FRAME POINTER %p\n",address);
+          //if(debug)fprintf(stderr,"SEARCHING\n");
+          compact_entry_t *res = (compact_entry_t*) bsearch(
+            &address,
+            ctrl,nobj,
+            sizeof(compact_entry_t),
+            compact_entry_compare
+          );
+          //if(debug)fprintf(stderr,"SEARCH DONE\n");
+          //if(debug)fprintf(stderr,"RESULT ADDRESS=%p\n",res);
+          if(closed)
+          {
+            if(!res) {
+              fprintf(stderr, "COMPACTOR: CANNOT FIND ADDRESS %p!!!!!!!\n",address);
+              abort();
+            }
+            //if(debug)fprintf(stderr,"New frame pointer is %p\n",res->new_frame);
+            //if(debug)fprintf(stderr,"New client pointer is %p\n",FRAME_TO_CLIENT(res->new_frame));
+          }
+          // finally adjust the pointer if needed
+          if(res)
+            *loc = FRAME_TO_CLIENT(res->new_frame);
+        }
+      }
+      client += shape->amt;
+    }
+  }
+
+  //if(debug)fprintf(stderr,"SCANNING COMPLETE\n");
+  // discard the old arena now (if there was one)
+  if (arena)
+  {
+    if(debug)fprintf(stderr,"DEALLOCATING OLD ARENA\n");
+    allocator->deallocate(arena, arena_size);
+  }
+  arena = new_arena;
+  arena_size = new_arena_size;
+  arena_free = new_arena_free;
+  arena_ptr = new_arena_ptr;
+  arena_high = new_arena_high;
+
+  if(debug)
+    fprintf(stderr,"NEW ARENA: LO %p HI %p PTR %p\n",arena, arena_high,arena_ptr);
+
+  //if(debug)fprintf(stderr, "FIXING ROOTS\n");
+  rootmap_t old_roots = roots;
+  roots.clear();
+
+  rootmap_t::iterator last = old_roots.end();
+  for(
+    rootmap_t::iterator iter = old_roots.begin();
+    iter != last;
+    ++iter
+  )
+  {
+    std::pair<frame_t *const, unsigned long> old_root_record = *iter;
+    compact_entry_t *res = (compact_entry_t*) bsearch(
+      &old_root_record.first,
+      ctrl,nobj,
+      sizeof(compact_entry_t),
+      compact_entry_compare
+    );
+    if(!res) {
+      fprintf(stderr,"WOOPS CANNOT FIND ROOT! %p\n",old_root_record.first);
+      abort();
+    }
+    std::pair<frame_t *const, unsigned long> new_root_record
+    (
+      (frame_t*)res->new_frame,
+      old_root_record.second
+    );
+    roots.insert(new_root_record);
+  }
+  //if(debug)fprintf(stderr,"FIXED UP ROOTS\n");
+  free(ctrl);
 }
 
 }}} // end namespaces

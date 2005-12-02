@@ -8,73 +8,6 @@ Support table.
 @table_row("lib/stl","Felix","","STL support")
 @end_table()
 
-@select(tangler('rtl/flx_i18n.hpp'))
-#ifndef FLX_I18N
-#define FLX_I18N
-#include <string>
-#include "flx_rtl_config.hpp"
-
-namespace flx { namespace rtl { namespace i18n {
-   FLX_RTL_EXTERN std::string utf8(unsigned long);
-}}}
-#endif
-
-@select(tangler('rtl/flx_i18n.cpp'))
-#include "flx_i18n.hpp"
-namespace flx { namespace rtl { namespace i18n {
-  std::string utf8(unsigned long i) 
-  {
-    char s[6];
-    if (i < 0x80UL ) 
-    {
-      s[0]= i;
-      s[1]= 0;
-    }
-    else if (i < 0x800UL ) 
-    {
-      s[0]=0xC0u | (i >> 6ul)  & 0x1Fu;
-      s[1]=0x80u | i           & 0x3Fu;
-      s[2]=0;
-    }
-    else if (i < 0x10000UL ) 
-    {
-      s[0]=0xE0u | (i >> 12ul) & 0xFu;
-      s[1]=0x80u | (i >> 6ul)  & 0x3Fu;
-      s[2]=0x80u | i           & 0x3F;
-      s[3]=0;
-    }
-    else if (i < 0x200000UL ) 
-    {
-      s[0]=0xF0u | (i >> 18ul) & 0x7u;
-      s[1]=0x80u | (i >> 12ul) & 0x3Fu;
-      s[2]=0x80u | (i >> 6ul)  & 0x3Fu;
-      s[3]=0x80u | i           & 0x3F;
-      s[4]=0;
-    }
-    else if (i < 0x4000000UL ) 
-    {
-      s[0]=0xF8u | (i >> 24ul) & 0x3u;
-      s[1]=0x80u | (i >> 18ul) & 0x3Fu;
-      s[2]=0x80u | (i >> 12ul) & 0x3Fu;
-      s[3]=0x80u | (i >> 6ul)  & 0x3Fu;
-      s[4]=0x80u | i           & 0x3Fu;
-      s[5]=0;
-    }
-    else 
-    {
-      s[0]=0xFCu | (i >> 30ul) & 0x1u;
-      s[1]=0x80u | (i >> 24ul) & 0x3Fu;
-      s[2]=0x80u | (i >> 18ul) & 0x3Fu;
-      s[3]=0x80u | (i >> 12ul) & 0x3Fu;
-      s[4]=0x80u | (i >> 6ul)  & 0x3Fu;
-      s[5]=0x80u | i           & 0x3Fu;
-      s[6]=0;
-    }
-    return s;
-  }
-}}}
-
-
 @h=tangler('rtl/flx_ioutil.hpp')
 @select(h)
 #ifndef FLX_IOUTIL
@@ -554,7 +487,7 @@ fun subscript[t,n]: array[t, n] * int -> t = "$1.data[$2]";
 fun subscript[t,n]: lvalue[array[t, n]] * int -> lvalue[t] = "$1.data[$2]";
 
 publish "Explicit array store function"
-proc store[t,n]: &array[t,n] * int * t = "((?1*)($1.data))[$2]=$3;";
+proc store[t,n]: &array[t,n] * int * t = "((?1*)($1.get_data()))[$2]=$3;";
 
 @def gen_uint(t):
   for opname,op in [
@@ -699,7 +632,7 @@ module C_hack
   The pointer may dangle if the collector deletes the 
   frame containing the object. 
   """
-  fun unref[t]: &t->ptr[t] = "(?1*)($1.data)";
+  fun unref[t]: &t->ptr[t] = "(?1*)($1.get_data())";
 
   publish """
   Function to make Felix reference from C pointer.
@@ -708,7 +641,7 @@ module C_hack
   the resulting reference will never be collected
   (because the frame pointer is set to 0)
   """
-  fun mkref[t]: ptr[t]->&t = "(#0 const&)flx::rtl::_ref_(0,(void*)$1)";
+  fun mkref[t]: ptr[t]->&t = "(#0 const&)flx::rtl::_ref_(0,(void*)$1-NULL)";
 
   publish """
   Dereference a C pointer. If the expression is an
@@ -1032,8 +965,10 @@ module Unicode
 @#------------- STDOUT UTILITY -------------------
 module Stdout 
 {
-  proc endl: unit = "std::cout << std::endl;" requires iostream;
-  proc space: int = "std::cout << ' ';" requires iostream;
+  requires iostream;
+  proc endl: unit = "std::cout << std::endl;";
+  proc space: int = "std::cout << ' ';";
+  proc flush: unit = "std::cout.flush(); ";
 }
 macro proc print_line (x) { print x; Stdout::endl; }
 
@@ -1256,6 +1191,9 @@ module Control
   /*8*/ | svc_swrite              of _schannel * ptr[gcaddress]
   /*9*/ | svc_sclose              of _schannel 
   /*10*/ | svc_kill               of fthread 
+  /*11*/ | svc_compact
+  /*12*/ | svc_collect
+  /*13*/ | svc_collect_and_compact
   ;
 
   publish "Call Supervisor"
@@ -1272,7 +1210,7 @@ module Control
     "new(*PTF gc,flx::rtl::schannel_ptr_map) flx::rtl::schannel_t(PTF gc)"
   ; 
 
-  proc read[t](chan:schannel[t],loc:ptr[gcptr[string]]) {
+  proc read[t](chan:schannel[t],loc:ptr[gcptr[t]]) {
     svc$ svc_sread$ cast[_schannel] chan, cast[ptr[gcaddress]] loc;
   }
 
@@ -1325,7 +1263,7 @@ module Control
   """
   {
     using namespace flx::rtl;
-    con_t *tmp = *(con_t**)$1.data;
+    con_t *tmp = *(con_t**)$1.get_data();
     // run target until it reaches a service request (or death)
     while(tmp && (!tmp->p_svc || tmp->p_svc->variant == svc_yield)) {
       try { tmp=tmp->resume(); }
@@ -1348,7 +1286,8 @@ module Control
       catch (con_t *x) { tmp = x; }
     }
     // save the new continuation
-    *(con_t**)$1.data = tmp; 
+    *(con_t**)$1.get_data() = tmp;
+
   }
   """;
 
@@ -1381,6 +1320,7 @@ module Control
     PTF gc->collect();
 	  PTF gc ->remove_root(this); 
   """ requires property "needs_gc";
+
 }
 
 @#------------- List -------------------

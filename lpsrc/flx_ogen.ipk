@@ -217,7 +217,7 @@ let rec get_offsets' syms bbdfns typ : string list =
 let get_offsets syms bbdfns typ =
   map (fun s -> s^",") (get_offsets' syms bbdfns typ)
 
-let gen_offset_data s n name offsets isfun props =
+let gen_offset_data s n name offsets isfun props flags =
   let noffsets = 
     if isfun && mem `Requires_ptf props then si (n-1)^"+FLX_PASS_PTF"
     else si n
@@ -232,8 +232,9 @@ let gen_offset_data s n name offsets isfun props =
   bcat s ("FLX_FINALISER("^name^")\n");
   bcat s (  "static gc_shape_t "^ name ^"_ptr_map (\n");
   bcat s ("  \"" ^ name ^ "\",\n");
-  bcat s ( "  1,sizeof("^name^"),\n  "^name^"_finaliser,\n  "^noffsets^",\n  "^
-  (if n<>0 then name^"_offsets\n" else "0\n"));
+  bcat s ("  1,sizeof("^name^"),\n  "^name^"_finaliser,\n");
+  bcat s ("  "^noffsets^",\n  "^ (if n<>0 then name^"_offsets" else "0"));
+  bcat s (match flags with None -> "\n" | Some flags -> ",\n  " ^ flags^"\n");
   bcat s ( ");\n")
 
 let is_instantiated syms i ts = Hashtbl.mem syms.instances (i,ts)
@@ -283,7 +284,7 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props 
     (match ret with |`BTYP_void -> "procedure " | _ -> "function ") ^ 
     name ^ "\n"
   );
-  gen_offset_data s n name offsets true props
+  gen_offset_data s n name offsets true props None 
 
 let gen_class_offsets s syms (child_map,bbdfns) index vs ts instance : unit = 
   let vars =  (find_references syms (child_map,bbdfns) index ts) in
@@ -316,11 +317,12 @@ let gen_class_offsets s syms (child_map,bbdfns) index vs ts instance : unit =
   in
   bcat s 
   (
-    "\n//OFFSETS for class "^ name ^ "\n" ^
-    "// WARNING, incomplete, not handling ptf yet .. \n"
+    "\n//OFFSETS for class "^ name ^ 
+     "<"^si index^">["^catmap "," (sbt syms.dfns) ts^"] = instance "^si instance^"\n" ^
+     "// WARNING, incomplete, not handling ptf yet .. \n"
   );
   let n = length offsets in
-  gen_offset_data s n name offsets true []
+  gen_offset_data s n name offsets true [] None
 
 let gen_thread_frame_offsets s syms bbdfns =
   let vars = find_thread_vars_with_type bbdfns in
@@ -347,7 +349,7 @@ let gen_thread_frame_offsets s syms bbdfns =
   (
     "\n//OFFSETS for "^ name ^ "\n"
   );
-  gen_offset_data s n name offsets false []
+  gen_offset_data s n name offsets false [] (Some "gc_flags_immobile")
 
 let gen_offset_tables syms (child_map,bbdfns) =
   let primitive_shapes = Hashtbl.create 97 in
@@ -373,10 +375,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
       *)
 
     | `BBDCL_class (props,vs) ->
-        (*
-        print_endline "[gen_offset_tables] Generate offsets for a class";
-        *)
-        gen_class_offsets s syms (child_map,bbdfns) index vs ts instance
+      gen_class_offsets s syms (child_map,bbdfns) index vs ts instance
 
     | `BBDCL_regmatch (props,vs,ps,ret,_) 
     | `BBDCL_reglex (props,vs,ps,_,ret,_)  ->
@@ -419,10 +418,9 @@ let gen_offset_tables syms (child_map,bbdfns) =
         | `BTYP_void -> ()
         | _ -> 
           try
-          let index = Hashtbl.find syms.registry t in
-          Hashtbl.replace allocable_types t index
-          with Not_found -> 
-            failwith ("Can't find the type " ^ sbt syms.dfns t ^ " in registry")
+            let index = Hashtbl.find syms.registry t in
+            Hashtbl.replace allocable_types t index
+          with Not_found -> ()
       )
       args
 
@@ -455,6 +453,14 @@ let gen_offset_tables syms (child_map,bbdfns) =
           failwith ("Can't find the type " ^ sbt syms.dfns btyp ^ " in registry")
         end
 
+      (* this routine assumes any use of a union component is
+         allocable .. this is quite wrong but safe. This SHOULD
+         be drived by detecting constructor expressions 
+
+         We don't need to worry about pattern matches .. if
+         we didn't construct it, perhaps a foreigner did,
+         in which case THEY needed to create the shape object
+      *)
       | `BBDCL_union (vs,args) ->
         let varmap = mk_varmap vs ts in
         let args = map snd args in
@@ -465,17 +471,10 @@ let gen_offset_tables syms (child_map,bbdfns) =
           | `BTYP_tuple [] 
           | `BTYP_void -> ()
           | _ -> 
-            (*
-              print_endline ("Thinking about argument type --> " ^ string_of_btypecode syms.dfns t);
-            *)
             try
-            let index = 
-              try Hashtbl.find syms.registry t 
-              with Not_found -> failwith ("[gen_offset_tables:BTYP_inst:union] can't find type in registry " ^ sbt syms.dfns t)
-            in
-            Hashtbl.replace allocable_types t index
-            with Not_found -> 
-              failwith ("Can't find the type " ^ sbt syms.dfns t ^ " in registry")
+              let index = Hashtbl.find syms.registry t in
+              Hashtbl.replace allocable_types t index
+            with Not_found -> ()
         )
         args
       | _ -> ()
@@ -496,7 +495,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
       let n = length offsets in 
       let classname = cpp_type_classname syms btyp in
       bcat s ("\n//OFFSETS for tuple type " ^ si index ^ "\n");
-      gen_offset_data s n name offsets false []
+      gen_offset_data s n name offsets false [] None
 
     (* for an array, we only have offsets for the first element *)
     | `BTYP_array (t,i) ->
@@ -547,7 +546,13 @@ let gen_offset_tables syms (child_map,bbdfns) =
         (*
         print_endline ("[gen_offset_tables] CLASS TYPE INSTANCE(skipping). Class " ^ si i ^ " instance " ^ si instance);
         *)
-        bcat s "/* CLASS TYPE INSTANCE OFFSETS WILL GO HERE */\n"
+        let class_instance =   
+          try Hashtbl.find syms.instances (i,ts) 
+          with Not_found -> failwith ("WOOPS CAN'T FIND CLASS INSTANCE CORRESONDING TO CLASS TYPE INSTANCE")
+        in
+        bcat s ("\n/* CLASS TYPE "^id^"<"^si i^">["^catmap "," (sbt syms.dfns) ts^"] INSTANCE "^si instance^" OFFSETS WILL GO HERE */\n");
+        bcat s ("/* CLASS TYPE INSTANCE IS CURRENTLY CLASS INSTANCE */\n");
+        bcat s ("/* SEE CLASS "^id^"<"^si i^">["^catmap "," (sbt syms.dfns) ts^"] INSTANCE "^si class_instance^"*/\n")
         (*
         gen_class_offsets s syms (child_map,bbdfns) index vs ts instance
         *)

@@ -138,7 +138,11 @@ let rec register_type_r ui syms bbdfns exclude sr t =
     *)
 
   | `BTYP_tuple ps -> iter rr ps; rnr t
-  | `BTYP_sum ps -> iter rr ps; rnr t
+
+  | `BTYP_sum ps -> 
+    (* iter rr ps; *) (* should be driven by constructors *)
+    rnr t
+
   | `BTYP_unitsum k -> rnr t
 
   (* NOTE: pointer type is registered before the type it points
@@ -167,9 +171,11 @@ let rec register_type_r ui syms bbdfns exclude sr t =
     in
     begin match entry with
     | `BBDCL_union (vs,cs) -> 
+      (*
       let cts = map snd cs in
       let cts = map (tsubst vs ts) cts in
       iter rr cts;
+      *)
       rnr t
 
     | `BBDCL_class vs -> rnr t

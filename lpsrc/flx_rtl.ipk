@@ -101,6 +101,9 @@ T &reinterpret(U const &x) {
 @if HAVE_GXX_X86:
   tangle('#define HAVE_GXX_X86')
 
+@if HAVE_GXX_X86_64:
+  tangle('#define HAVE_GXX_X86_64')
+
 @if HAVE_CGOTO:
   tangle("#define FLX_HAVE_CGOTO")
 
@@ -191,6 +194,7 @@ right type by client drivers.
 #include "flx_gc.hpp"
 #endif
 #include <string>
+#include <functional>
 
 #if defined(FLX_PTF_STATIC_STRUCT)
 #define PTF ptf.
@@ -231,11 +235,12 @@ namespace flx { namespace rtl {
 // ********************************************************
 
 struct FLX_RTL_EXTERN con_t;     // continuation
-struct FLX_RTL_EXTERN fthread_t; // f-thread
+struct FLX_RTL_EXTERN thread_t; // f-thread
 struct FLX_RTL_EXTERN _ref_;     // pointer/reference
 struct FLX_RTL_EXTERN _uctor_;   // union constructor
 struct FLX_RTL_EXTERN schannel_t;   // synchronous channel type
 struct FLX_RTL_EXTERN slist_t;   // singly linked list of void*
+struct FLX_RTL_EXTERN _root_ptr_t;   // singly linked list of void*
 
 struct FLX_RTL_EXTERN unit {};   // unit 
   // INLINE DEFINITION, PROBLEMATIC!!
@@ -254,6 +259,7 @@ extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _uctor_ptr_map;
 extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _int_ptr_map;
 extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t unit_ptr_map;
 extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t slist_ptr_map;
+extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _root_ptr_ptr_map;
 
 // ********************************************************
 // Standard C++ Exceptions
@@ -283,16 +289,15 @@ enum svc_t               // what the dispatch should do
   svc_swrite=8,          // synchronous write
   svc_sclose=9,          // close channel
   svc_kill=10,           // kill fthread
+  svc_compact=11,        // run compactor
+  svc_collect=12,        // run collector
+  svc_collect_and_compact=13,        // run collector and compactor
   svc_end
 };
 
 struct readreq_t {
   schannel_t *chan;
   void **data;
-};
-
-struct killreq_t {
-  fthread_t *fthread;
 };
 
 // ********************************************************
@@ -393,20 +398,19 @@ private: // uncopyable
 
 struct FLX_RTL_EXTERN _ref_
 {
-  void *frame; ///< Heap frame pointer
-  void *data;  ///< Client Data pointer
+  void *frame;      ///< Heap frame pointer
+  std::ptrdiff_t offset;   ///< Client Data offset
 
   _ref_(){}
-  _ref_(void *f, void *d): frame(f), data(d) {}
-  ~_ref_()
-  { 
-    frame=0; 
-  }
-
-  _ref_(_ref_ const& r) : frame(r.frame), data(r.data) 
-  {
-  }
+  _ref_(void *f, void *d): frame(f), offset((unsigned char*)d-(unsigned char*)f) {}
+  _ref_(void *f, std::ptrdiff_t d): frame(f), offset(d) {}
+  _ref_(_ref_ const& r) : frame(r.frame), offset(r.offset) { }
+  ~_ref_() { frame=0; offset=0; }
   void operator = (_ref_ const& r);
+
+  void *get_data()const { return (unsigned char*)frame + offset; }
+  void set_data(void *p) { offset = (unsigned char*)p - (unsigned char*)frame; }
+  void set(void *f, void *p) { frame = f; offset = (unsigned char*)p - (unsigned char*)f; }
 };
 
 
@@ -422,6 +426,87 @@ struct FLX_RTL_EXTERN _uctor_
   _uctor_() : variant(-1), data(0) {}
   _uctor_(int i, void *d) : variant(i), data(d) {}
 };
+
+// ********************************************************
+/// ROOT POINTER.
+/// Use to chain pseudo roots together. Generally scannable
+/// but not collectable. 
+// ********************************************************
+
+struct FLX_RTL_EXTERN _root_ptr_t
+{
+  _root_ptr_t();
+  _root_ptr_t(void *x);
+  _root_ptr_t(_root_ptr_t const&);
+  void operator=(_root_ptr_t const&);
+  ~_root_ptr_t();
+
+  _root_ptr_t *next;
+  _root_ptr_t *prev;
+  void *data;
+
+private:
+  void insert_after (_root_ptr_t*);
+  void erase();
+};
+
+// INLINE! All casts
+template<class T>
+struct root_ptr_t : _root_ptr_t {
+  root_ptr_t(){}
+  root_ptr_t(root_ptr_t<T> const&){}
+  root_ptr_t<T>& operator=(root_ptr_t<T> const &a){
+    return reinterpret_cast<root_ptr_t<T>&>(_root_ptr_t::operator=(a));
+  }
+ ~root_ptr_t(){}
+
+  root_ptr_t(T const *a) : _root_ptr_t (const_cast<T*>(a)) {}
+  
+  T *operator->() { return (T*)data; }
+  T const *operator->() { return (T const*)data; }
+  T &operator*() { return *(T*)data; }
+  T const &operator*() { return *(T const*)data; }
+};
+
+template<class T>
+bool operator == (root_ptr_t<T> a, root_ptr_t<T> b)
+{
+  return a-> data == b->data;
+}
+
+template<class T>
+bool operator != (root_ptr_t<T> a, root_ptr_t<T> b)
+{
+  return a-> data != b->data;
+}
+
+template<class T>
+bool operator < (root_ptr_t<T> const &a, root_ptr_t<T> const &b)
+{
+  // we use this because it enforces a total order
+  return std::less<void const*>()(a-> data, b->data);
+}
+
+template<class T>
+bool operator <= (root_ptr_t<T> const &a, root_ptr_t<T> const &b)
+{
+  // we use this because it enforces a total order
+  return std::less_equal<void const*>()(a-> data, b->data);
+}
+
+template<class T>
+bool operator > (root_ptr_t<T> const &a, root_ptr_t<T> const &b)
+{
+  // we use this because it enforces a total order
+  return std::greater<void const*>()(a-> data, b->data);
+}
+
+template<class T>
+bool operator >= (root_ptr_t<T> const &a, root_ptr_t<T> const &b)
+{
+  // we use this because it enforces a total order
+  return std::greater_equal<void const*>()(a-> data, b->data);
+}
 
 
 // ********************************************************
@@ -670,12 +755,12 @@ namespace flx { namespace rtl {
 
 con_t::con_t() : pc(0), p_svc(0), _caller(0) { 
 #ifdef FLX_DEBUG_CONT
- printf("Constructing %p\n",this);
+ fprintf(stderr,"Constructing %p\n",this);
 #endif
 }
 con_t::~con_t(){
 #ifdef FLX_DEBUG_CONT
-  printf("Destroying %p\n",this);
+  fprintf(stderr,"Destroying %p\n",this);
 #endif
 }
 
@@ -739,6 +824,55 @@ flx::gc::generic::gc_shape_t slist_ptr_map(
   slist_offsets
 );
 
+// ********************************************************
+// _root_ptr_t implementation
+// ********************************************************
+
+_root_ptr_t::_root_ptr_t() : next(0), prev(0), data(0) {}
+_root_ptr_t::_root_ptr_t(void *x) : next(0), prev(0), data(x) {}
+_root_ptr_t::~_root_ptr_t() { erase(); }
+
+void _root_ptr_t::insert_after(_root_ptr_t *a) {
+  prev = a;
+  next = prev->next;
+  prev->next = this;
+  if(next)next->prev = this;
+  data = next->data;
+}
+
+_root_ptr_t::_root_ptr_t(_root_ptr_t const &a) {
+  insert_after(const_cast<_root_ptr_t*>(&a));
+}
+
+void _root_ptr_t::operator=(_root_ptr_t const &a) {
+  if (&a != this)
+  {
+    erase(); 
+    insert_after(const_cast<_root_ptr_t*>(&a));
+  }
+}
+
+//OFFSETS for root_ptr_t
+static std::size_t _root_ptr_offsets[3]={
+    offsetof(_root_ptr_t,next),
+    offsetof(_root_ptr_t,prev),
+    offsetof(_root_ptr_t,data)
+};
+
+flx::gc::generic::gc_shape_t _root_ptr_ptr_map(
+  "_root_ptr_t",
+  1,sizeof(_root_ptr_t),
+  0, // no finaliser
+  1,
+  _root_ptr_offsets
+);
+
+void _root_ptr_t::erase() {
+  next->prev = prev;
+  prev->next = next;
+  next = 0; prev = 0;
+  data = 0;
+}
 
 // ********************************************************
 // fthread_t implementation
@@ -760,9 +894,11 @@ _uctor_ *fthread_t::run() {
 restep:
   cc->p_svc = 0;
 step:  
+  //fprintf(stderr,"cc=%p->",cc);
   try { cc = cc->resume(); }
   catch (con_t *x) { cc = x; }
 
+  //fprintf(stderr,"->%p\n",cc);
   if(!cc) return 0; // died
 
   if(cc->p_svc)
@@ -801,7 +937,8 @@ flx::gc::generic::gc_shape_t _fthread_ptr_map(
   1,sizeof(fthread_t),
   _fthread_finaliser,
   1,
-  _fthread_offsets
+  _fthread_offsets,
+  gc::generic::gc_flags_immobile
 );
 
 // ********************************************************
@@ -868,13 +1005,10 @@ flx::gc::generic::gc_shape_t schannel_ptr_map(
 
 void _ref_::operator = (_ref_ const& r)
 {
-  if (data != r.data)
+  if (frame != r.frame || offset != r.offset)
   {
-    if (frame != r.frame)
-    {
-      frame = r.frame;
-    }
-    data = r.data;
+    frame = r.frame;
+    offset = r.offset;
   }
 }
 
@@ -1390,7 +1524,11 @@ using namespace flx::rtl;
 #ifdef HAVE_GXX_X86
 register void *sp __asm__("esp");
 #else
+#ifdef HAVE_GXX_X86_64
+register void *sp __asm__("rsp");
+#else
 static void *sp = 0;
+#endif
 #endif
 
 void print_loc(FILE *ef,flx_range_srcref_t x,char *cf, int cl)
@@ -1458,13 +1596,23 @@ int main(int argc, char** argv)
   }
   char *finalise_env= std::getenv("FLX_FINALISE");
   bool finalise = finalise_env != 0;
+
   if(debug) 
     fprintf(stderr,"Finalisation %s\n",finalise? "Enabled" : "Disabled");
+
+  char *compact_env= std::getenv("FLX_COMPACT");
+  unsigned long compact = compact_env?atol(compact_env):0;
+  if(debug)
+    if(compact)
+      fprintf(stderr,"Compacting with arena minimum size = %ldK\n",compact);
+  compact = compact * 1024;
+
 #ifdef HAVE_GXX
-    if(debug) fprintf(stderr, "Compiled by g++\n");
+    if(debug)fprintf(stderr, "Compiled by g++\n");
     static void *init_sp = sp;
     static void *init_fframe FLX_UNUSED = __builtin_frame_address(0);
     static void *init_ret = __builtin_return_address(0);
+    if(debug)fprintf(stderr, "Stack pointer = %p, frame=%p, return=%p\n",sp,init_fframe,init_ret);
 #endif
   if(debug)
     for(int i=0; i<flx_argc; ++i) 
@@ -1482,13 +1630,19 @@ int main(int argc, char** argv)
     flx::gc::collector::flx_collector_t collector(&allocator);
     collector.set_debug(debug);
     instance.create(&library, &collector,flx_argc,flx_argv,stdin,stdout,stderr);
-    if(debug) {
+    if(debug){
       fprintf(stderr,"loaded library %s at %p\n",filename,library.library);
       fprintf(stderr,"thread frame at %p\n",instance.thread_frame);
       fprintf(stderr,"initial continuation at %p\n",instance.start_proc);
     } 
     int gc_counter = 0;
     unsigned long collections = 0;
+
+    if(compact)
+    {
+      collector.set_min_arena_size(compact);
+      collector.compact(false);
+    }
 
     std::list<fthread_t*> active;
     {
@@ -1512,6 +1666,7 @@ int main(int argc, char** argv)
           gc_counter = 0;
           ++collections;
           unsigned long n = collector.collect();
+          if(compact) collector.compact(true);
           if(debug)fprintf(stderr,"collected %ld objects\n",n);
         }
         
@@ -1519,6 +1674,7 @@ int main(int argc, char** argv)
         {
           case svc_yield: 
           {
+            if(debug)fprintf(stderr,"yield");
             active.push_back(ft);
             goto process_active;
           }
@@ -1533,7 +1689,7 @@ int main(int argc, char** argv)
           case svc_spawn_detached:
           {
             fthread_t *ftx = *(fthread_t**)request->data;
-            if(debug) printf("Spawn thread %p\n",ftx);
+            if(debug)fprintf(stderr,"Spawn thread %p\n",ftx);
             collector.add_root(ftx);
             active.push_front(ftx);
           }
@@ -1543,7 +1699,7 @@ int main(int argc, char** argv)
           {
             readreq_t * pr = (readreq_t*)request->data;
             schannel_t *chan = pr->chan;
-            if(debug)printf("Request to read on channel %p\n",chan);
+            if(debug)fprintf(stderr,"Request to read on channel %p\n",chan);
           svc_read_next:
             {
               fthread_t *writer= chan->pop_writer();
@@ -1552,7 +1708,7 @@ int main(int argc, char** argv)
               {
                 readreq_t * pr = (readreq_t*)request->data;
                 readreq_t * pw = (readreq_t*)writer->get_svc()->data;
-                if(debug)printf("Writer @%p=%p, read into %p\n", pw->data,*pw->data, pr->data);
+                if(debug)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->data,*pw->data, pr->data);
                 *pr->data = *pw->data;
                 active.push_front(writer);
               }
@@ -1568,7 +1724,7 @@ int main(int argc, char** argv)
           {
             readreq_t * pr = (readreq_t*)request->data;
             schannel_t *chan = pr->chan;
-            if(debug)printf("Request to write on channel %p\n",chan);
+            if(debug)fprintf(stderr,"Request to write on channel %p\n",chan);
           svc_write_next:
             {
               fthread_t *reader= chan->pop_reader();
@@ -1577,7 +1733,7 @@ int main(int argc, char** argv)
               {
                 readreq_t * pw = (readreq_t*)request->data;
                 readreq_t * pr = (readreq_t*)reader->get_svc()->data;
-                if(debug)printf("Writer @%p=%p, read into %p\n", pw->data,*pw->data, pr->data);
+                if(debug)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->data,*pw->data, pr->data);
                 *pr->data = *pw->data;
                 active.push_front(reader);
               }
@@ -1593,7 +1749,7 @@ int main(int argc, char** argv)
           {
             readreq_t * pr = (readreq_t*)request->data;
             schannel_t *chan = pr->chan;
-            if(debug)printf("Request to close channel %p\n",chan);
+            if(debug)fprintf(stderr,"Request to close channel %p\n",chan);
             chan->close();
           }
           break;
@@ -1602,7 +1758,7 @@ int main(int argc, char** argv)
           case svc_kill:
           {
             fthread_t *ftx = *(fthread_t**)request->data;
-            if(debug)printf("Request to kill fthread %p\n",ftx);
+            if(debug)fprintf(stderr,"Request to kill fthread %p\n",ftx);
             ftx -> kill();
           }
           break; // keep running (even if we suicided)
@@ -1610,8 +1766,7 @@ int main(int argc, char** argv)
           case svc_driver_request:
           {
             _uctor_ dreq = *(_uctor_*)request->data;
-            if (debug)
-              printf("Request code %d \n",dreq.variant);
+            if(debug)fprintf(stderr,"Request code %d \n",dreq.variant);
             switch (dreq.variant)
             {
               case dreq_get_driver_name:
@@ -1624,29 +1779,56 @@ int main(int argc, char** argv)
                 goto cleanup;
 
               default:
-                printf("Unknown driver reqest code %d, terminating\n",dreq.variant);
+                fprintf(stderr,"Unknown driver reqest code %d, terminating\n",dreq.variant);
                 goto cleanup;
             }
           }
           break;
 
+          case svc_compact:
+          {
+            // requires fthreads to be immobile
+            if(debug)fprintf(stderr,"svc compact\n");
+            collector.compact(false);
+          }
+          break;
+
+          case svc_collect:
+          {
+            // requires fthreads to be immobile
+            if(debug)fprintf(stderr,"svc collect\n");
+            collector.collect();
+          }
+          break;
+
+          case svc_collect_and_compact:
+          {
+            // requires fthreads to be immobile
+            if(debug)fprintf(stderr,"svc collect and compact\n");
+            collector.collect();
+            collector.compact(true);
+          }
+          break;
+
+
           default: 
-            printf("Unknown service request code %d, terminating!\n",request->variant);
+            fprintf(stderr,"Unknown service request code %d, terminating!\n",request->variant);
             goto cleanup;
         } 
         request = ft->run();
       }
-      if(debug) fprintf(stderr,"Finalising\n");
       if(debug)fprintf(stderr,"removing thread %p\n",ft);
       collector.remove_root(ft);
     }
 
+    if(debug)fprintf(stderr,"Out of active threads\n");
 cleanup:
     if(debug){
       unsigned long uncollected = collector.get_allocation_count();
       unsigned long roots = collector.get_root_count();
       fprintf(stderr,"program finished, %ld collections, %ld uncollected objects, roots %ld\n",collections,uncollected,roots);
     }
+
     if(finalise)
     {
       {
@@ -1690,7 +1872,7 @@ cleanup:
         fprintf(stderr,"flx_run driver ends with finalisation complete, collected %ld,left=%ld\n",n,a);
     }
     else {
-      if(debug) {
+      if(debug){
         unsigned long a = collector.get_allocation_count();
         fprintf(stderr,"flx_run driver ends with finalisation skipped, %ld uncollected objects\n",a);
       }
@@ -1776,5 +1958,73 @@ int main(int argc, char** argv)
   while( top ) top = top->resume();
   return 0;
 }
+
+
+@select(tangler('rtl/flx_i18n.hpp'))
+#ifndef FLX_I18N
+#define FLX_I18N
+#include <string>
+#include "flx_rtl_config.hpp"
+
+namespace flx { namespace rtl { namespace i18n {
+   FLX_RTL_EXTERN std::string utf8(unsigned long);
+}}}
+#endif
+
+@select(tangler('rtl/flx_i18n.cpp'))
+#include "flx_i18n.hpp"
+namespace flx { namespace rtl { namespace i18n {
+  std::string utf8(unsigned long i) 
+  {
+    char s[6];
+    if (i < 0x80UL ) 
+    {
+      s[0]= i;
+      s[1]= 0;
+    }
+    else if (i < 0x800UL ) 
+    {
+      s[0]=0xC0u | (i >> 6ul)  & 0x1Fu;
+      s[1]=0x80u | i           & 0x3Fu;
+      s[2]=0;
+    }
+    else if (i < 0x10000UL ) 
+    {
+      s[0]=0xE0u | (i >> 12ul) & 0xFu;
+      s[1]=0x80u | (i >> 6ul)  & 0x3Fu;
+      s[2]=0x80u | i           & 0x3F;
+      s[3]=0;
+    }
+    else if (i < 0x200000UL ) 
+    {
+      s[0]=0xF0u | (i >> 18ul) & 0x7u;
+      s[1]=0x80u | (i >> 12ul) & 0x3Fu;
+      s[2]=0x80u | (i >> 6ul)  & 0x3Fu;
+      s[3]=0x80u | i           & 0x3F;
+      s[4]=0;
+    }
+    else if (i < 0x4000000UL ) 
+    {
+      s[0]=0xF8u | (i >> 24ul) & 0x3u;
+      s[1]=0x80u | (i >> 18ul) & 0x3Fu;
+      s[2]=0x80u | (i >> 12ul) & 0x3Fu;
+      s[3]=0x80u | (i >> 6ul)  & 0x3Fu;
+      s[4]=0x80u | i           & 0x3Fu;
+      s[5]=0;
+    }
+    else 
+    {
+      s[0]=0xFCu | (i >> 30ul) & 0x1u;
+      s[1]=0x80u | (i >> 24ul) & 0x3Fu;
+      s[2]=0x80u | (i >> 18ul) & 0x3Fu;
+      s[3]=0x80u | (i >> 12ul) & 0x3Fu;
+      s[4]=0x80u | (i >> 6ul)  & 0x3Fu;
+      s[5]=0x80u | i           & 0x3Fu;
+      s[6]=0;
+    }
+    return s;
+  }
+}}}
+
 
 
