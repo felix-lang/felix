@@ -34,17 +34,30 @@ let () =
   let lexbuf = (Lexing.from_string "dummy" ) in
   let toker = (new Flx_tok.tokeniser tokens) in
   while toker#token_peek lexbuf != Flx_parse .ENDMARKER do
-    let x = 
+    let x,tok = 
         try 
-          Flx_parse.statement
+          Flx_parse.exprx
+          (toker#token_src) 
+          lexbuf
+        with _ -> begin
+          toker#report_syntax_error;
+          raise (Flx_exceptions.ParseError "Parsing Expr")
+        end
+    in 
+    print_endline (Flx_print.string_of_expr x)
+    ;
+    toker#put_back tok
+    ;
+    let _ = 
+        try 
+          Flx_parse.semi
           (toker#token_src) 
           lexbuf
         with _ -> begin
           toker#report_syntax_error;
           raise (Flx_exceptions.ParseError "Parsing String")
         end
-    in 
-    print_endline (Flx_print.string_of_statement 0 x)
+    in ()
   done;
   print_endline "Parsed it"
 ;;

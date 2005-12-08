@@ -626,6 +626,28 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   let tack x = result := x :: !result in
   let ctack x = if !reachable then tack x in
 
+  let substitute_statement_terms sr ss ts =
+    let args = 
+      let rec aux terms res count = 
+        let id = "_" ^ si count in 
+        match terms with
+        | h :: t -> 
+          begin match h with
+          | `Expression_term  e -> aux t ((id,MVal e)::res) (count+1)
+          | `Identifier_term s -> aux t ((id,MName s)::res) (count+1)
+          | `Statement_term s -> aux t ((id,MStmt ([],[s]))::res) (count+1)
+          | `Statements_term ss -> aux t ((id,MStmt ([],ss))::res) (count+1)
+          | _ -> 
+            print_endline ("[substitute statement terms] Weird arg kind .. dropped " ^ id);
+            aux t res (count+1)
+          end
+        | [] -> res
+      in aux ts [] 1
+    in
+    let sts =
+      recurse recursion_limit local_prefix seq (ref true) (args @ macros) ss 
+    in iter ctack sts
+  in
   begin match st with
   (* cheat for now and ignore public and private decls *)
   | `AST_public (_,_,st) -> iter tack (ms [st])
@@ -974,6 +996,58 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_fun_return (sr, e)  ->
     ctack (`AST_fun_return (sr, me e));
     reachable := false
+
+  | `AST_user_statement (sr,name,term) ->
+    print_endline ("Processing user defined statement " ^ name);
+    let rec aux term = match term with
+      | `Statement_term s -> ctack s
+      | `Statements_term ss -> iter ctack ss (* reverse order is correct *)
+      | `Expression_term e -> 
+         clierr sr 
+         (
+           "User statement: expected statement got expression " ^
+           string_of_expr e
+         )
+
+      | `Identifier_term s ->
+         clierr sr 
+         (
+           "User statement: expected statement got identifier " ^ s
+         )
+
+      | `Keyword_term s ->
+         clierr sr 
+         (
+           "User statement: expected statement got keyword " ^ s
+         )
+
+      | `Nonterminal_term _ ->
+         clierr sr 
+         (
+           "User statement: expected statement got nonterminal "
+         )
+
+      | `Tokens_term _ ->
+         clierr sr 
+         (
+           "User statement: expected statement got token sequence "
+         )
+
+      | `Apply_term (t,ts) ->
+        begin match t with
+        | `Statement_term s -> 
+          substitute_statement_terms sr [s] ts
+
+        | `Statements_term ss ->
+          substitute_statement_terms sr ss ts
+
+        | _ -> 
+          clierr sr 
+          (
+            "User statement: In application, expected statement "
+          )
+        end
+    in aux term
 
   | st -> failwith ("[subst_or_expand] Unhandled case " ^ string_of_statement 0 st)
   end

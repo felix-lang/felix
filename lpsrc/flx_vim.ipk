@@ -1,4 +1,10 @@
 @head(1,"Vim Syntax File")
+@select(tangler("misc/felix_plugin.vim",'data'))
+an 50.40.90 &Syntax.FG.Felix :cal SetSyn("felix")<CR>
+" Felix 
+au BufNewFile,BufRead *.flx setf felix
+
+
 @select(tangler("misc/felix.vim",'data'))
 " Vim syntax file
 " Language:	Felix

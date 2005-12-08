@@ -1205,6 +1205,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
        aux (dcls' @ dcls) ta
     in aux [] ms
 
+  | `AST_user_statement _
   | `AST_ctypes _ 
   | `AST_expr_macro _ 
   | `AST_ifdo _ 

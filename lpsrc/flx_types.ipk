@@ -559,6 +559,17 @@ and class_member_t = [
   | `MemberProc of id_t * int option * vs_list_t * typecode_t * c_t option
   | `MemberCtor of id_t * int option * typecode_t * c_t option
 ]
+and ast_term_t = 
+  [
+  | `Expression_term of expr_t
+  | `Statement_term of statement_t
+  | `Statements_term of statement_t list
+  | `Identifier_term of string
+  | `Keyword_term of string
+  | `Nonterminal_term of string * ast_term_t 
+  | `Apply_term of ast_term_t * ast_term_t list
+  | `Tokens_term of string list (* TEMPORARY HACK *)
+  ]
 
 and statement_t =
   [ 
@@ -652,6 +663,7 @@ and statement_t =
   | `AST_export_fun of range_srcref * suffixed_name_t * string
   | `AST_export_type of range_srcref * typecode_t * string
 
+  | `AST_user_statement of range_srcref * string * ast_term_t
   ]
 
 
@@ -1771,6 +1783,7 @@ let src_of_stmt e = match e with
   | `AST_regdef (s,_,_)
   | `AST_glr (s,_,_,_)
   | `AST_seq (s,_)
+  | `AST_user_statement (s,_,_)
     -> s
   | `AST_comment _ 
     -> ("Generated",0,0,0,0)
@@ -3236,7 +3249,10 @@ and string_of_statement level s =
     
   | `AST_svc (_,name) ->
     spaces level ^ "read " ^ name ^ ";"
-
+  
+  | `AST_user_statement (_,name,_) ->
+    spaces level ^ "User statement " ^ name
+  
 and string_of_compilation_unit stats =
   catmap "\n" (string_of_statement 0) stats
 

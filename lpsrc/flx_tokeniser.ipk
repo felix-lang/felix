@@ -82,13 +82,13 @@ val translate : Flx_parse.token list -> Flx_parse.token list
 @select(h)
 open Flx_parse
 open Flx_prelex
-;;
+
 let pre_tokens_of_lexbuf buf state =
   let rec get lst = 
     let t = Flx_lex.pre_flx_lex state buf in 
     match t with
-    | [Flx_parse.ENDMARKER] ->
-      [Flx_parse.ENDMARKER] @ lst
+    | [ENDMARKER] ->
+      [ENDMARKER] @ lst
     | _ -> 
       match state#get_condition with
       | `Processing ->
@@ -119,25 +119,31 @@ val pre_tokens_of_string : string -> string -> token list
 @head(1, 'Tokeniser')
 @h = tangler('src/flx_tok.ml')
 @select(h)
+open Flx_ast
+open Flx_exceptions
+open List
+open Flx_srcref 
+open Flx_parse
+
 let print_pre_token t = 
   let emit t = print_string (Flx_prelex.string_of_token t) in
     begin match t with
-    | Flx_parse.COMMENT_NEWLINE s -> 
+    | COMMENT_NEWLINE s -> 
       print_endline ("//" ^ s); 
 
-    | Flx_parse.NEWLINE -> 
+    | NEWLINE -> 
       print_endline ""
 
-    | Flx_parse.ENDMARKER -> print_endline "<<EOF>>" 
+    | ENDMARKER -> print_endline "<<EOF>>" 
     | _ -> emit t
     end;
     flush stdout
 
 let print_pre_tokens ts = 
-  if (List.length ts) = 0
+  if (length ts) = 0
   then print_string "<Empty pretoken list>";
   print_string "   1: ";
-  List.iter print_pre_token ts
+  iter print_pre_token ts
 
 let print_tokens ts = 
   let lineno = ref 0 in
@@ -153,54 +159,63 @@ let print_tokens ts =
   in
   let print_token t =  
     begin match t with
-    | Flx_parse.NEWLINE  -> 
+    | NEWLINE  -> 
       emit_eol ("//")
-    | Flx_parse.LBRACE _ -> 
+    | LBRACE _ -> 
       incr indent;
       emit_eol "  {" 
-    | Flx_parse.RBRACE _ -> 
+    | RBRACE _ -> 
       decr indent;
       emit_eol "}" 
-    | Flx_parse.ENDMARKER -> emit_eol "#<<EOF>>"
+    | ENDMARKER -> emit_eol "#<<EOF>>"
     | _ -> emit t
     end;
     flush stdout
   in 
-    List.iter print_token ts
+    iter print_token ts
 ;;
 
 class tokeniser t = 
-object
+object(self)
   val mutable tokens = []
   val mutable tokens_copy = []
   val mutable current_token_index = 0
   initializer tokens  <- t; tokens_copy <- t
 
   method token_peek (dummy :Lexing.lexbuf) =
-    List.hd tokens
+    hd tokens
 
   method token_src (dummy :Lexing.lexbuf) =
-    let tmp = List.hd tokens in
-    tokens <- List.tl tokens;
+    let tmp = hd tokens in
+    tokens <- tl tokens;
     current_token_index <- current_token_index + 1;
-    tmp
+    match tmp with
+    | USER_STATEMENT_KEYWORD (sr,s,tkss,nonterminals) ->
+      print_endline ("TRANSLATING USER STATEMENT KEYWORD " ^ s);
+      let f = fun () -> self#parse_user_statement s (slift sr) tkss nonterminals in
+      USER_STATEMENT_DRIVER (sr,s,f)
+    | _ -> tmp
+
+  method put_back (x:token) =
+    tokens <- x :: tokens;
+    current_token_index <- current_token_index - 1
 
   method report_syntax_error = 
     print_endline "";
     print_endline "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
-    let n = List.length tokens_copy in
+    let n = length tokens_copy in
     let first = max 0 (current_token_index - 20)
     and last = min (n-1) (current_token_index + 20)
     and slist = ref [] in
     for i = first to current_token_index-1 do
-      slist := List.concat [!slist; [List.nth tokens_copy i]]
+      slist := concat [!slist; [nth tokens_copy i]]
     done;
     print_tokens !slist;
     print_endline "";
     
-    let token = List.nth tokens_copy
+    let token = nth tokens_copy
       begin 
-        if List.length tokens_copy = current_token_index
+        if length tokens_copy = current_token_index
         then begin
           print_string "Unexpected End Of File";
           current_token_index - 1
@@ -221,14 +236,134 @@ object
     
     slist := [];
     for i = current_token_index to last do
-      slist := List.concat [!slist; [List.nth tokens_copy i]]
+      slist := concat [!slist; [nth tokens_copy i]]
     done;
     print_tokens !slist;
     print_endline "";
     print_endline "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
     flush stdout
+
+  method parse_user_statement
+    (name:string) 
+    (sr:range_srcref)
+    (tokss: (token list * ast_term_t) list)
+    (nonterminals: (string,(token list * ast_term_t) list) Hashtbl.t)
+  : statement_t =
+    let term = self#parse_alternatives name sr tokss nonterminals in
+    `AST_user_statement (sr,name,term)
+
+  method private parse_alternatives
+    (name:string) 
+    (sr:range_srcref)
+    (tokss:(token list * ast_term_t) list)
+    (nonterminals: (string,(token list * ast_term_t) list) Hashtbl.t)
+  : ast_term_t =
+
+    (* save state for backtracking *)
+    let saved_tokens = tokens in
+    let saved_token_index = current_token_index in
+    let rec aux tokss = match tokss with
+      | (toks,term) :: tail ->
+        begin 
+          try 
+            `Apply_term (term,self#parse_production name sr toks nonterminals)
+          with _ -> 
+            (* backtrack for next try *)
+            tokens <- saved_tokens;
+            current_token_index <- saved_token_index;
+            aux tail
+        end
+      | [] -> clierr sr ("Syntax error matching user statement " ^ name)
+    in aux tokss
+
+  method private parse_production
+    (name:string) 
+    (sr:range_srcref)
+    (toks:token list)
+    (nonterminals: (string,(token list * ast_term_t) list) Hashtbl.t)
+  : ast_term_t list =
+
+    let dummy_lexbuf = Lexing.from_string "blah" in
+    let rec aux toks res = match toks with
+    | h :: t -> 
+      begin match h with
+      | EXPRESSION _ -> 
+        print_endline "Matching expression ..";
+        let e,tk = 
+          exprx self#token_src dummy_lexbuf 
+        in
+        print_endline (
+          "Expression matched, stopped by " ^
+          Flx_prelex.string_of_token tk
+        );
+        self#put_back tk;
+        aux t (`Expression_term e :: res)
+        
+      | STATEMENT _ ->
+        print_endline "Matching statement ..";
+        let s = 
+          statement self#token_src dummy_lexbuf 
+        in
+        aux t (`Statement_term s :: res)
+      
+      | STATEMENTS _ ->
+        print_endline "Matching statements ..";
+        let s,tk = 
+          statementsx self#token_src dummy_lexbuf 
+        in
+        self#put_back tk;
+        aux t (`Statements_term s :: res)
+
+      | IDENT _ ->
+        print_endline "Matching ident ..";
+        let tok' = self#token_src dummy_lexbuf in
+        begin match tok' with
+        | NAME (sr,s) ->
+          aux t (`Identifier_term s :: res)
+        | _ ->
+          Flx_exceptions.clierr sr
+          (
+            "User statement: identifier requires, got " ^
+            Flx_prelex.string_of_token tok'
+          )
+        end
+          
+
+      | tok -> 
+        let s = Flx_prelex.string_of_token tok in
+        print_endline ("Checking if " ^ s ^ " is a nonterminal");
+        let alts = 
+          try Some (Hashtbl.find nonterminals s) 
+          with Not_found -> None
+        in
+        begin match alts with
+        | Some productions -> 
+          print_endline ("FOUND NONTERMINAL " ^ s);
+          let result = self#parse_alternatives s sr productions nonterminals in
+          aux t (`Nonterminal_term (name,result) :: res)
+
+        | None  ->
+        print_endline "Nope, not a non-terminal";
+        let tok' = self#token_src dummy_lexbuf in
+        let s' = Flx_prelex.string_of_token tok' in
+        print_endline ("Matching other token " ^ s ^ " with " ^ s');
+        if s = s' then
+          aux t (`Keyword_term s :: res)
+        else Flx_exceptions.clierr sr 
+        (
+          "Syntax Error in user statement: " ^
+          "Failed to match keyword or symbol " ^
+          s ^ ", got " ^ s' ^ " instead"
+        )
+        end
+      end
+
+    | [] -> rev res
+    in aux toks []
+
 end
 ;;
+
 
 type 'a parser_t = 
   (Lexing.lexbuf  -> Flx_parse.token) -> 
@@ -253,6 +388,7 @@ let parse_tokens (parser:'a parser_t) (tokens: Flx_parse.token list) =
 @h = tangler('src/flx_tok.mli')
 @select(h)
 open Flx_parse
+open Flx_ast
 
 val print_pre_tokens : token list -> unit
 val print_tokens : token list -> unit
@@ -263,8 +399,15 @@ class tokeniser :
     val mutable tokens : token list
     val mutable tokens_copy : token list
     method report_syntax_error : unit
+    method put_back : token -> unit
     method token_src : Lexing.lexbuf -> token
     method token_peek : Lexing.lexbuf -> token
+    method parse_user_statement: 
+      string -> 
+      range_srcref -> 
+      (token list * ast_term_t) list -> 
+      (string, (token list * ast_term_t) list) Hashtbl.t ->
+      statement_t
   end
 
 type 'a parser_t = 
@@ -276,7 +419,6 @@ val parse_tokens:
   'a parser_t ->
   token list ->
   'a
-
 
 @head(1, 'Lexer test harness')
 @h = tangler('src/flxl.ml')

@@ -339,7 +339,7 @@ struct frame_t
 #define _ROUNDUP(i,n) ((i + n - 1) / n * n)
 #define _ALIGN(i) _ROUNDUP(i,FLX_MAX_ALIGN)
 
-#define FRAMESIZE int(_ALIGN(sizeof(frame_t)))
+#define FRAMESIZE int(_ALIGN(sizeof(flx::gc::generic::frame_t)))
 #define FRAME_TO_CLIENT(p) \
   ((void*)((unsigned char*)(void*)p + FRAMESIZE))
 #define CLIENT_TO_FRAME(p) \

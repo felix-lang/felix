@@ -3310,8 +3310,8 @@ union expr_t =
 ;
  
 // a grammar for expressions
-nonterm expr : expr_t =
-| xx:expr TOK_PLUS y:TOK_INT =>
+nonterm eexpr : expr_t =
+| xx:eexpr TOK_PLUS y:TOK_INT =>
   match xx with
   | Integer ?i => Integer (i+y)
   endmatch
@@ -3322,7 +3322,7 @@ nonterm expr : expr_t =
 // a parser for our example
 var z : 1 + int =
   parse (the get_token) with
-  | e: expr => match e with | Integer ?i => i endmatch
+  | e: eexpr => match e with | Integer ?i => i endmatch
   endmatch
 ;
  
@@ -3368,8 +3368,8 @@ union expr_t =
   | Integer of int
 ;
 
-nonterm expr : expr_t = 
-| xx:expr TOK_PLUS y:TOK_INT => 
+nonterm eexpr : expr_t = 
+| xx:eexpr TOK_PLUS y:TOK_INT => 
   match xx with 
   | Integer ?i => Integer (i+y)
   endmatch
@@ -3380,7 +3380,7 @@ nonterm expr : expr_t =
 proc try_parse() {
   var z : 1 + int = 
     parse (the get_token) with 
-    | e: expr => match e with | Integer ?i => i endmatch
+    | e: eexpr => match e with | Integer ?i => i endmatch
     endmatch
   ;
 
@@ -3458,8 +3458,8 @@ union expr_t =
 ;
 
 // a grammar for expressions
-nonterm expr : expr_t =
-| xx:expr TOK_PLUS y:TOK_INT+ =>
+nonterm eexpr : expr_t =
+| xx:eexpr TOK_PLUS y:TOK_INT+ =>
   match xx with
   | Integer ?i => let case 2 (?j,_) = y in Integer (i+j)
   endmatch
@@ -3470,7 +3470,7 @@ nonterm expr : expr_t =
 // a parser for our example
 var z : 1 + int =
   parse (the get_token) with
-  | e: expr => match e with | Integer ?i => i endmatch
+  | e: eexpr => match e with | Integer ?i => i endmatch
   endmatch
 ;
  

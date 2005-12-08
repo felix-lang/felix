@@ -50,6 +50,13 @@ val format_vars:
   btypecode_t list ->
   string
 
+val is_gc_pointer:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  range_srcref ->
+  btypecode_t ->
+  bool
+
 @h = tangler('src/flx_gen.ml')
 @select(h)
 open Flx_util
@@ -163,6 +170,25 @@ let get_type bbdfns index =
       `BTYP_function (typeof_bparams ps,`BTYP_void)
   | _ -> failwith "Only function and procedure types handles by get_type"
 
+
+let is_gc_pointer syms bbdfns sr t =
+  let t = lstrip syms.dfns t in
+  (*
+  print_endline ("[is_gc_ptr] Checking type " ^ sbt syms.dfns t);
+  *)
+  match t with 
+  | `BTYP_function _ -> true 
+  | `BTYP_inst (i,_) ->
+    let id,sr,parent,entry = 
+      try Hashtbl.find bbdfns i 
+      with Not_found -> 
+        clierr sr ("[is_gc_pointer] Can't find nominal type " ^ si i);
+   in 
+   begin match entry with
+   | `BBDCL_abs (_,tqs,_,_) -> mem `GC_pointer tqs
+   | _ -> false
+   end
+  | _ -> false
 
 let gen_C_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_no =
   let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms [] (tsubst vs ts t))) in
@@ -1391,12 +1417,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
 
     let ctor = 
       let vars =  find_references syms (child_map,bbdfns) index ts in
-      let funs = filter 
-        (fun (i,t) -> match t with 
-        | `BTYP_function _ -> true 
-        | _ -> false
-        ) vars 
-      in
+      let funs = filter (fun (_,t) -> is_gc_pointer syms bbdfns sr t) vars in
       gen_ctor syms bbdfns name display funs [] [] ts props
     in
     let params = map (fun (id,(ix,t)) -> ix) bps in
@@ -1535,12 +1556,7 @@ let gen_regexp_methods filename syms (child_map,bbdfns)
 
     let ctor = 
       let vars =  find_references syms (child_map,bbdfns) index ts in
-      let funs = filter 
-        (fun (i,t) -> match t with 
-        | `BTYP_function _ -> true 
-        | _ -> false
-        ) vars 
-      in
+      let funs = filter (fun (_,t) -> is_gc_pointer syms bbdfns sr t) vars in
       gen_ctor syms bbdfns name display funs [] [] ts props
     in
     let params = map (fun (id,(ix,t)) -> ix) bps in
@@ -1619,14 +1635,7 @@ let gen_class_methods filename syms (child_map,bbdfns)
     let display = get_display_list bbdfns index in
     let ctor = 
       let vars =  find_references syms (child_map,bbdfns) index ts in
-
-      (* this is needed to 0 initialise these pointers!! *)
-      let funs = filter 
-        (fun (i,t) -> match t with 
-        | `BTYP_function _ -> true 
-        | _ -> false
-        ) vars 
-      in
+      let funs = filter (fun (_,t) -> is_gc_pointer syms bbdfns sr t) vars in
       gen_ctor syms bbdfns name display funs [] [] ts props
     in
 
@@ -1686,12 +1695,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
 
     let ctor = 
       let vars =  find_references syms (child_map,bbdfns) index ts in
-      let funs = filter 
-        (fun (i,t) -> match t with 
-        | `BTYP_function _ -> true 
-        | _ -> false
-        ) vars 
-      in
+      let funs = filter (fun (i,t) -> is_gc_pointer syms bbdfns sr t) vars in
       gen_ctor syms bbdfns name display funs [] [] ts props
     in
 
@@ -2520,12 +2524,8 @@ try
   plb "FLX_DEF_THREAD_FRAME";
   plb "//Thread Frame Constructor";
 
-  let topfuns = List.filter 
-    (fun (i,t) -> match t with 
-    | `BTYP_function _ -> true 
-    | _ -> false
-    ) topvars_with_type
-  in
+  let sr = "Thread Frame",0,0,0,0 in
+  let topfuns = List.filter (fun (_,t) -> is_gc_pointer syms bbdfns sr t) topvars_with_type in
   let topfuns = List.map fst topfuns in
   let topinits =
     [
