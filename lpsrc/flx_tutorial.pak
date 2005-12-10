@@ -3156,6 +3156,66 @@ whilst message_count >0 do
 done;
 
 
+@head(2,"Using Synchronous channels")
+Synchronous channels provide a more disciplined
+way of doing synchronous I/O.
+@select(tangler(tdir+'tut212.flx'))
+include "std";
+open C_hack;
+
+print "driver request test"; endl;
+
+var dirt = 
+  driver_request_entry_t(c"get_driver_name",0),
+  driver_request_entry_t(c"exit",0),
+  driver_request_entry_t(null_ptr[char],0)
+;
+
+p_dirt := 
+  cast[ptr[driver_request_table_t]]$ 
+  address_of dirt
+;
+
+svc$ svc_map_driver_requests$ p_dirt;
+
+print "driver name code is "; print dirt.[0].handle; endl;
+print "exit code is "; print dirt.[1].handle; endl;
+
+var name: charp = c"not fetched";
+var name_req = dirt.[0].handle, address_of name;
+
+svc$ svc_driver_request$ name_req;
+
+print "Name service performed, result "; print name; endl;
+
+proc t1() {
+  print "t1 starts"; endl;
+  svc$ svc_yield;
+  print "t1 continues"; endl;
+  svc$ svc_yield;
+  var s = "Hello main from t1!";
+  print "t1 sends message: "; print s; endl;
+  write(chan,s);
+  print "t1 dies"; endl;
+}
+
+{
+  ft := mk_thread$ start the t1;
+  svc$ svc_spawn_detached ft;
+};
+
+print "main launched t1"; endl;
+svc$ svc_yield;
+
+var chan = mk_schannel[string]();
+//print "Created channel "; print$ cast[address] chan; endl;
+
+var s : gcptr[string];
+read (chan, &s);
+print "Main got message: "; print$ deref$ s; endl;
+
+
+
 @doc()
 @head(1,"System interface")
 We show how to get at the command line arguments.

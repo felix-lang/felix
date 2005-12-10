@@ -637,8 +637,17 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
           | `Identifier_term s -> aux t ((id,MName s)::res) (count+1)
           | `Statement_term s -> aux t ((id,MStmt ([],[s]))::res) (count+1)
           | `Statements_term ss -> aux t ((id,MStmt ([],ss))::res) (count+1)
-          | _ -> 
-            print_endline ("[substitute statement terms] Weird arg kind .. dropped " ^ id);
+          | `Keyword_term _ ->
+            print_endline ("[substitute statement terms] Keyword arg dropped " ^ id);
+            aux t res (count+1)
+          | `Nonterminal_term _ ->
+            print_endline ("[substitute statement terms] Nonterminal arg dropped " ^ id);
+            aux t res (count+1)
+          | `Tokens_term _ ->
+            print_endline ("[substitute statement terms] Tokens arg dropped " ^ id);
+            aux t res (count+1)
+          | `Apply_term _ ->
+            print_endline ("[substitute statement terms] Apply arg dropped " ^ id);
             aux t res (count+1)
           end
         | [] -> res
@@ -1101,6 +1110,12 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
   | `AST_macro_assign (sr, id, e) ->
     tack (`AST_macro_assign (sr, id, me e))
 
+  | `AST_macro_ifor (sr,id,ids,sts) ->
+    tack (`AST_macro_ifor (sr,id,ids,ms sts))
+    
+  | `AST_macro_vfor (sr,id,es,sts) ->
+    tack (`AST_macro_vfor (sr,id,map me es,ms sts))
+  
   (* during parameter replacement,
     we don't know if a call is executable or not,
     so we can't elide it even if unreachable:

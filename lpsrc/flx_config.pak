@@ -321,14 +321,15 @@ class ocaml:
       print "Ocaml: bytecode compiler",self.OCAML_VERSION
       print "Ocaml: compiler         ",y
       sys.exit(1)
+    warn=' -w yzex -warn-error FDPSU '
     try:
       f = open('tmp'+os.sep+'camldummy.ml','w')
       f.write('print_endline "OK";;\n')
       f.close()
-      result,x = get_stdout(self.OCAMLC + ' -w yz tmp'+os.sep+'camldummy.ml')
+      result,x = get_stdout(self.OCAMLC + warn+'tmp'+os.sep+'camldummy.ml')
       if not result:
-        self.OCAMLB = self.OCAMLB + ' -w yz'
-        self.OCAMLC = self.OCAMLC + ' -w yz'
+        self.OCAMLB = self.OCAMLB + warn
+        self.OCAMLC = self.OCAMLC + warn
     except:
       pass
     

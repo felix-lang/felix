@@ -270,52 +270,6 @@ struct FLX_RTL_EXTERN flx_range_srcref_t;
 struct FLX_RTL_EXTERN flx_match_failure_t;
 struct FLX_RTL_EXTERN flx_assert_failure_t;
 struct FLX_RTL_EXTERN flx_switch_failure_t;
-
-// ********************************************************
-// SERVICE REQUEST CODE
-// THESE VALUES MUST SYNCH WITH THE STANDARD LIBRARY
-// ********************************************************
-
-enum svc_t               // what the dispatch should do
-{                        // when the resume callback returns
-  svc_yield = 0,
-  svc_get_fthread=1,
-  svc_read=2,
-  svc_general=3,         // temporary hack by RF
-  svc_map_driver_requests=4,
-  svc_driver_request=5,
-  svc_spawn_detached=6,
-  svc_sread=7,           // synchronous read
-  svc_swrite=8,          // synchronous write
-  svc_sclose=9,          // close channel
-  svc_kill=10,           // kill fthread
-  svc_compact=11,        // run compactor
-  svc_collect=12,        // run collector
-  svc_collect_and_compact=13,        // run collector and compactor
-  svc_end
-};
-
-struct readreq_t {
-  schannel_t *chan;
-  void **data;
-};
-
-// ********************************************************
-/// driver request entry.
-// ********************************************************
-
-struct driver_request_entry_t
-{
-  char const* name; ///< string name
-  int handle;       ///< integer handle
-};
-
-extern void FLX_RTL_EXTERN map_driver_requests
-(
-  driver_request_entry_t *provided, 
-  driver_request_entry_t *requested
-);
-
 // ********************************************************
 /// CONTINUATION.
 // ********************************************************
@@ -569,6 +523,52 @@ struct FLX_RTL_EXTERN flx_assert_failure_t {
 struct FLX_RTL_EXTERN flx_switch_failure_t {
   virtual ~flx_switch_failure_t();
 };
+
+
+// ********************************************************
+// SERVICE REQUEST CODE
+// THESE VALUES MUST SYNCH WITH THE STANDARD LIBRARY
+// ********************************************************
+
+enum svc_t               // what the dispatch should do
+{                        // when the resume callback returns
+  svc_yield = 0,
+  svc_get_fthread=1,
+  svc_read=2,
+  svc_general=3,         // temporary hack by RF
+  svc_map_driver_requests=4,
+  svc_driver_request=5,
+  svc_spawn_detached=6,
+  svc_sread=7,           // synchronous read
+  svc_swrite=8,          // synchronous write
+  svc_sclose=9,          // close channel
+  svc_kill=10,           // kill fthread
+  svc_compact=11,        // run compactor
+  svc_collect=12,        // run collector
+  svc_collect_and_compact=13,        // run collector and compactor
+  svc_end
+};
+
+struct readreq_t {
+  schannel_t *chan;
+  _ref_ variable;
+};
+
+// ********************************************************
+/// driver request entry.
+// ********************************************************
+
+struct driver_request_entry_t
+{
+  char const* name; ///< string name
+  int handle;       ///< integer handle
+};
+
+extern void FLX_RTL_EXTERN map_driver_requests
+(
+  driver_request_entry_t *provided, 
+  driver_request_entry_t *requested
+);
 
 
 }} // namespaces
@@ -1708,8 +1708,8 @@ int main(int argc, char** argv)
               {
                 readreq_t * pr = (readreq_t*)request->data;
                 readreq_t * pw = (readreq_t*)writer->get_svc()->data;
-                if(debug)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->data,*pw->data, pr->data);
-                *pr->data = *pw->data;
+                if(debug)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable.get_data(),*(void**)pw->variable.get_data(), pr->variable.get_data());
+                *(void**)pr->variable.get_data() = *(void**)pw->variable.get_data();
                 active.push_front(writer);
               }
             }
@@ -1733,8 +1733,8 @@ int main(int argc, char** argv)
               {
                 readreq_t * pw = (readreq_t*)request->data;
                 readreq_t * pr = (readreq_t*)reader->get_svc()->data;
-                if(debug)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->data,*pw->data, pr->data);
-                *pr->data = *pw->data;
+                if(debug)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable.get_data(),*(void**)pw->variable.get_data(), pr->variable.get_data());
+                *(void**)pr->variable.get_data() = *(void**)pw->variable.get_data();
                 active.push_front(reader);
               }
             }
