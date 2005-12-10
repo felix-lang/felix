@@ -1,0 +1,346 @@
+@header(1,'Jedit syntax highlight file')
+Provided by Klas Iversson.
+@select(tangler('misc/jedit/felix.xml'))
+<?xml version="1.0"?>
+<!DOCTYPE MODE SYSTEM "xmode.dtd">
+<MODE>
+    <PROPS>
+        <PROPERTY NAME="commentStart" VALUE="/*" />
+        <PROPERTY NAME="commentEnd" VALUE="*/" />
+        <PROPERTY NAME="lineComment" VALUE="//" />
+        <PROPERTY NAME="wordBreakChars" VALUE=",+-=&lt;&gt;/?^&amp;*" />
+        <!-- Auto indent -->
+        <PROPERTY NAME="indentOpenBrackets" VALUE="{" />
+        <PROPERTY NAME="indentCloseBrackets" VALUE="}" />
+        <PROPERTY NAME="indentNextLine"
+            VALUE="\s*(((if|while)\s*\(|else\s*|else\s+if\s*\(|for\s*\(.*\))[^{;]*)" />
+        <!-- set this to 'true' if you want to use GNU coding style -->
+        <PROPERTY NAME="doubleBracketIndent" VALUE="true" />
+        <PROPERTY NAME="lineUpClosingBracket" VALUE="true" />
+    </PROPS>
+    <RULES  ESCAPE="\"
+        IGNORE_CASE="FALSE"
+        HIGHLIGHT_DIGITS="TRUE"
+        DIGIT_RE="(0x[[:xdigit:]]+[lL]?|(0b)[10]+|(0o)[01234567]+|(0d)[0123456789]+|[[:digit:]]+(e[[:digit:]]*)?(_)?[lLdDfFtTsSiIvV]?(i8)?(u8)?(i16)?(u16)?(i32)?(u32)?(i64)?(u64)?)"><!-- [lLdDfF] -->
+        <!-- embedded C++ header -->
+        <SPAN TYPE="KEYWORD4" DELEGATE="c_plus_plus">
+            <BEGIN>header """</BEGIN>
+            <END>""";</END>
+        </SPAN>
+         <!-- embedded C++ body -->
+        <SPAN TYPE="KEYWORD4" DELEGATE="c_plus_plus">
+            <BEGIN>body """</BEGIN>
+            <END>""";</END>
+        </SPAN>
+        <!-- Doxygen comment, Javadoc style -->
+        <SPAN TYPE="COMMENT3" DELEGATE="doxygen::DOXYGEN">
+            <BEGIN>/**</BEGIN>
+            <END>*/</END>
+        </SPAN>
+        <!-- Doxygen comment, Qt style -->
+        <SPAN TYPE="COMMENT3" DELEGATE="doxygen::DOXYGEN">
+            <BEGIN>/*!</BEGIN>
+            <END>*/</END>
+        </SPAN>
+        <!-- C style comment -->
+        <SPAN TYPE="COMMENT1">
+            <BEGIN>/*</BEGIN>
+            <END>*/</END>
+        </SPAN>
+        <SPAN TYPE="LITERAL1" NO_LINE_BREAK="TRUE">
+            <BEGIN>"</BEGIN>
+            <END>"</END>
+        </SPAN>
+        <SPAN TYPE="LITERAL1" NO_LINE_BREAK="TRUE">
+            <BEGIN>'</BEGIN>
+            <END>'</END>
+        </SPAN>
+        <!-- preprocessor statements -->
+        <SEQ TYPE="KEYWORD2">##</SEQ>
+        <EOL_SPAN TYPE="KEYWORD2" DELEGATE="c::CPP">#</EOL_SPAN>
+        <EOL_SPAN TYPE="COMMENT2">//</EOL_SPAN>
+
+        <SEQ TYPE="OPERATOR">&lt;-</SEQ>
+        <SEQ TYPE="OPERATOR">:=</SEQ>
+        <SEQ TYPE="OPERATOR">+=</SEQ>
+        <SEQ TYPE="OPERATOR">-=</SEQ>
+        <SEQ TYPE="OPERATOR">*=</SEQ>
+        <SEQ TYPE="OPERATOR">/=</SEQ>
+        <SEQ TYPE="OPERATOR">%=</SEQ>
+        <SEQ TYPE="OPERATOR">|=</SEQ>
+        <SEQ TYPE="OPERATOR">^=</SEQ>
+        <SEQ TYPE="OPERATOR">&amp;=</SEQ>
+        <SEQ TYPE="OPERATOR">**</SEQ>
+        <SEQ TYPE="OPERATOR">&amp;&amp;</SEQ>
+        <SEQ TYPE="OPERATOR">||</SEQ>
+        <SEQ TYPE="OPERATOR">==</SEQ>
+        <SEQ TYPE="OPERATOR">&gt;=</SEQ>
+        <SEQ TYPE="OPERATOR">&lt;=</SEQ>
+        <SEQ TYPE="OPERATOR">&lt;&gt;</SEQ>
+        <SEQ TYPE="OPERATOR">!=</SEQ>
+        <SEQ TYPE="OPERATOR">-&gt;</SEQ>
+        <SEQ TYPE="OPERATOR">=</SEQ>
+        <SEQ TYPE="OPERATOR">!</SEQ>
+        <SEQ TYPE="OPERATOR">+</SEQ>
+        <SEQ TYPE="OPERATOR">-</SEQ>
+        <SEQ TYPE="OPERATOR">/</SEQ>
+        <SEQ TYPE="OPERATOR">*</SEQ>
+        <SEQ TYPE="OPERATOR">&gt;</SEQ>
+        <SEQ TYPE="OPERATOR">&lt;</SEQ>
+        <SEQ TYPE="OPERATOR">%</SEQ>
+        <SEQ TYPE="OPERATOR">&amp;</SEQ>
+        <SEQ TYPE="OPERATOR">|</SEQ>
+        <SEQ TYPE="OPERATOR">^</SEQ>
+        <SEQ TYPE="OPERATOR">~</SEQ>
+        <SEQ TYPE="OPERATOR">}</SEQ><!-- not sure -->
+        <SEQ TYPE="OPERATOR">{</SEQ><!-- not sure -->
+        <SEQ TYPE="OPERATOR">,</SEQ><!-- not sure -->
+
+        <MARK_PREVIOUS TYPE="LABEL">:</MARK_PREVIOUS><!-- was :: and FUNCTION-->
+
+        <!-- <MARK_PREVIOUS AT_WHITESPACE_END="TRUE" EXCLUDE_MATCH="TRUE" TYPE="LABEL">:</MARK_PREVIOUS> -->
+
+        <!-- Function calls -->
+        <MARK_PREVIOUS TYPE="FUNCTION" EXCLUDE_MATCH="TRUE">(</MARK_PREVIOUS>
+
+        <KEYWORDS>
+			<KEYWORD3>all</KEYWORD3>			<!-- ? -->
+            <KEYWORD3>and</KEYWORD3>			<!--						3 -->
+            <KEYWORD4>assert</KEYWORD4>			<!--								4 -->
+            <KEYWORD2>as</KEYWORD2>				<!--				2 -->
+            <KEYWORD4>body</KEYWORD4>			<!--								4 -->
+            <KEYWORD2>call</KEYWORD2>			<!--				2 -->
+            <KEYWORD2>caseno</KEYWORD2>			<!--				2 -->
+            <KEYWORD1>case</KEYWORD1>			<!--		1 -->
+            <KEYWORD4>cclass</KEYWORD4>			<!--								4 -->
+            <KEYWORD2>class</KEYWORD2>			<!--				2 -->
+			<KEYWORD4>code</KEYWORD4>			<!--								4 -->
+			<KEYWORD3>commment</KEYWORD3>		<!--						3 -->
+            <KEYWORD2>const</KEYWORD2>			<!--				2 -->
+            <KEYWORD4>cstruct</KEYWORD4>		<!--								4 -->
+            <KEYWORD4>ctor</KEYWORD4>			<!--								4 -->
+            <KEYWORD4>ctypes</KEYWORD4>			<!--								4 -->
+            <KEYWORD4>def</KEYWORD4>			<!--								4 -->
+            <KEYWORD1>done</KEYWORD1>			<!--        1 -->
+            <KEYWORD1>do</KEYWORD1>				<!--        1 -->
+            <KEYWORD1>elif</KEYWORD1>			<!--        1 -->
+            <KEYWORD1>else</KEYWORD1>			<!--        1 -->
+            <KEYWORD1>endif</KEYWORD1>			<!--        1 -->
+            <KEYWORD2>endmatch</KEYWORD2>		<!--				2 -->
+            <KEYWORD3>enum</KEYWORD3>			<!--						3 -->
+            <KEYWORD2>expect</KEYWORD2>			<!--				2 -->
+            <KEYWORD4>export</KEYWORD4>			<!--								4 -->
+            <KEYWORD1>forget</KEYWORD1>			<!--        1 -->
+            <KEYWORD1>fork</KEYWORD1>			<!--        1 -->
+            <KEYWORD1>for</KEYWORD1>			<!--        1 -->
+            <KEYWORD1>functor</KEYWORD1>		<!--        1 -->
+            <KEYWORD1>fun</KEYWORD1>			<!--        1 -->
+            <KEYWORD1>goto</KEYWORD1>			<!--        1 -->
+            <KEYWORD4>header</KEYWORD4>			<!--								4 -->
+            <KEYWORD1>if</KEYWORD1>				<!--        1 -->
+            <KEYWORD1>include</KEYWORD1>		<!--        1 -->
+            <KEYWORD1>incomplete</KEYWORD1>		<!--        1 -->
+            <KEYWORD1>inf</KEYWORD1>			<!--        1 -->
+            <KEYWORD1>inherit</KEYWORD1>		<!--        1 -->
+            <KEYWORD4>inline</KEYWORD4>			<!--								4 -->
+            <KEYWORD1>in</KEYWORD1>				<!--        1 -->
+            <KEYWORD1>isin</KEYWORD1>			<!--        1 -->
+            <KEYWORD1>is</KEYWORD1>				<!--        1 -->
+            <KEYWORD1>jump</KEYWORD1>			<!--        1 -->
+            <KEYWORD1>let</KEYWORD1>			<!--        1 -->
+            <KEYWORD1>loop</KEYWORD1>			<!--        1 -->
+            <KEYWORD4>lval</KEYWORD4>			<!--								4 -->
+            <KEYWORD1>macro</KEYWORD1>			<!--        1 -->
+            <KEYWORD2>match</KEYWORD2>			<!--				2 -->
+            <KEYWORD2>module</KEYWORD2>			<!--				2 -->
+            <KEYWORD2>NaN</KEYWORD2>			<!--				2 -->
+            <KEYWORD4>new</KEYWORD4>			<!--								4 -->
+            <KEYWORD4>noexpand</KEYWORD4>		<!--								4 -->
+            <KEYWORD4>noinline</KEYWORD4>		<!--								4 -->
+            <KEYWORD4>nointerm</KEYWORD4>		<!--								4 -->
+            <KEYWORD2>noreturn</KEYWORD2>		<!--				2 -->
+            <KEYWORD3>not</KEYWORD3>			<!--						3 -->
+            <KEYWORD4>obj</KEYWORD4>			<!--								4 -->
+            <KEYWORD1>of</KEYWORD1>				<!--		1 -->
+            <KEYWORD3>open</KEYWORD3>			<!--						3 -->
+            <KEYWORD3>or</KEYWORD3>				<!--						3 -->
+            <KEYWORD3>parse</KEYWORD3>			<!--						3 -->
+            <KEYWORD4>pod</KEYWORD4>			<!--								4 -->
+            <KEYWORD1>private</KEYWORD1>		<!--        1 -->
+            <KEYWORD1>proc</KEYWORD1>			<!--        1 -->
+            <KEYWORD3>property</KEYWORD3>		<!--						3 -->
+            <KEYWORD1>public</KEYWORD1>			<!--        1 -->
+            <KEYWORD3>publish</KEYWORD3>		<!--						3 -->
+            <KEYWORD3>read</KEYWORD3>			<!--						3 -->
+            <KEYWORD3>regexp</KEYWORD3>			<!--						3 -->
+            <KEYWORD3>reglex</KEYWORD3>			<!--						3 -->
+            <KEYWORD3>regmatch</KEYWORD3>		<!--						3 -->
+            <KEYWORD3>rename</KEYWORD3>			<!--						3 -->
+            <KEYWORD3>requires</KEYWORD3>		<!--						3 -->
+            <KEYWORD1>return</KEYWORD1>			<!--        1 -->
+            <KEYWORD3>set</KEYWORD3>			<!--						3 -->
+            <KEYWORD3>struct</KEYWORD3>			<!--						3 -->
+            <KEYWORD1>then</KEYWORD1>			<!--        1 -->
+            <KEYWORD3>the</KEYWORD3>			<!--						3 -->
+            <KEYWORD3>todo</KEYWORD3>			<!--						3 -->
+            <KEYWORD1>to</KEYWORD1>				<!--        1 -->
+            <KEYWORD3>typedef</KEYWORD3>		<!--						3 -->
+            <KEYWORD3>typematch</KEYWORD3>		<!--						3 -->
+            <KEYWORD3>type</KEYWORD3>			<!--						3 -->
+            <KEYWORD3>union</KEYWORD3>			<!--						3 -->
+            <KEYWORD3>use</KEYWORD3>			<!--						3 -->
+            <KEYWORD3>val</KEYWORD3>			<!--						3 -->
+            <KEYWORD3>var</KEYWORD3>			<!--						3 -->
+            <KEYWORD1>when</KEYWORD1>			<!--        1 -->
+            <KEYWORD1>whilst</KEYWORD1>			<!--        1 -->
+            <KEYWORD2>with</KEYWORD2>			<!--				2 -->
+            <KEYWORD1>until</KEYWORD1>			<!--        1 -->
+            <KEYWORD4>_gc_pointer</KEYWORD4>	<!--								4 -->
+            <KEYWORD4>_svc</KEYWORD4>			<!--								4 -->
+        </KEYWORDS>
+    </RULES>
+     <RULES SET="c_plus_plus" 
+        ESCAPE="\"
+        IGNORE_CASE="FALSE"
+        HIGHLIGHT_DIGITS="TRUE"
+        DIGIT_RE="(0x[[:xdigit:]]+[lL]?|[[:digit:]]+(e[[:digit:]]*)?[lLdDfF]?)">
+
+        <!-- Doxygen comment, Javadoc style -->
+        <SPAN TYPE="COMMENT3" DELEGATE="doxygen::DOXYGEN">
+            <BEGIN>/**</BEGIN>
+            <END>*/</END>
+        </SPAN>
+
+        <!-- Doxygen comment, Qt style -->
+        <SPAN TYPE="COMMENT3" DELEGATE="doxygen::DOXYGEN">
+            <BEGIN>/*!</BEGIN>
+            <END>*/</END>
+        </SPAN>
+
+        <!-- C style comment -->
+        <SPAN TYPE="COMMENT1">
+            <BEGIN>/*</BEGIN>
+            <END>*/</END>
+        </SPAN>
+
+        <SPAN TYPE="LITERAL1" NO_LINE_BREAK="TRUE">
+            <BEGIN>"</BEGIN>
+            <END>"</END>
+        </SPAN>
+        <SPAN TYPE="LITERAL1" NO_LINE_BREAK="TRUE">
+            <BEGIN>'</BEGIN>
+            <END>'</END>
+        </SPAN>
+
+        <!-- preprocessor statements -->
+        <SEQ TYPE="KEYWORD2">##</SEQ>
+        <EOL_SPAN TYPE="KEYWORD2" DELEGATE="c::CPP">#</EOL_SPAN>
+
+        <EOL_SPAN TYPE="COMMENT3">//</EOL_SPAN><!-- egentligen COMMENT2 -->
+        <SEQ TYPE="OPERATOR">=</SEQ>
+        <SEQ TYPE="OPERATOR">!</SEQ>
+        <SEQ TYPE="OPERATOR">&gt;=</SEQ>
+        <SEQ TYPE="OPERATOR">&lt;=</SEQ>
+        <SEQ TYPE="OPERATOR">+</SEQ>
+        <SEQ TYPE="OPERATOR">-</SEQ>
+        <SEQ TYPE="OPERATOR">/</SEQ>
+
+        <SEQ TYPE="OPERATOR">*</SEQ>
+        <SEQ TYPE="OPERATOR">&gt;</SEQ>
+        <SEQ TYPE="OPERATOR">&lt;</SEQ>
+        <SEQ TYPE="OPERATOR">%</SEQ>
+        <SEQ TYPE="OPERATOR">&amp;</SEQ>
+        <SEQ TYPE="OPERATOR">|</SEQ>
+        <SEQ TYPE="OPERATOR">^</SEQ>
+        <SEQ TYPE="OPERATOR">~</SEQ>
+        <SEQ TYPE="OPERATOR">}</SEQ>
+        <SEQ TYPE="OPERATOR">{</SEQ>
+        
+        <MARK_PREVIOUS TYPE="FUNCTION">::</MARK_PREVIOUS>
+        
+        <MARK_PREVIOUS AT_WHITESPACE_END="TRUE"
+            EXCLUDE_MATCH="TRUE"
+            TYPE="LABEL">:</MARK_PREVIOUS>
+
+        <!-- Function calls -->
+        <MARK_PREVIOUS TYPE="FUNCTION" EXCLUDE_MATCH="TRUE">(</MARK_PREVIOUS>
+
+        <KEYWORDS>
+            <KEYWORD3>and</KEYWORD3>
+            <KEYWORD3>and_eq</KEYWORD3>
+            <KEYWORD2>asm</KEYWORD2>
+            <KEYWORD1>auto</KEYWORD1>
+            <KEYWORD3>bitand</KEYWORD3>
+            <KEYWORD3>bitor</KEYWORD3>
+            <KEYWORD3>bool</KEYWORD3>
+            <KEYWORD1>break</KEYWORD1>
+            <KEYWORD1>case</KEYWORD1>
+            <KEYWORD1>catch</KEYWORD1>
+            <KEYWORD3>char</KEYWORD3>
+            <KEYWORD3>class</KEYWORD3>
+            <KEYWORD3>compl</KEYWORD3>
+            <KEYWORD1>const</KEYWORD1>
+            <KEYWORD3>const_cast</KEYWORD3>
+            <KEYWORD1>continue</KEYWORD1>
+            <KEYWORD1>default</KEYWORD1>
+            <KEYWORD1>delete</KEYWORD1>
+            <KEYWORD1>do</KEYWORD1>
+            <KEYWORD3>double</KEYWORD3>
+            <KEYWORD3>dynamic_cast</KEYWORD3>
+            <KEYWORD1>else</KEYWORD1>
+            <KEYWORD3>enum</KEYWORD3>
+            <KEYWORD1>explicit</KEYWORD1>
+            <KEYWORD2>export</KEYWORD2>
+            <KEYWORD2>extern</KEYWORD2>
+            <LITERAL2>false</LITERAL2>
+            <KEYWORD3>float</KEYWORD3>
+            <KEYWORD1>for</KEYWORD1>
+            <KEYWORD1>friend</KEYWORD1>
+            <KEYWORD1>goto</KEYWORD1>
+            <KEYWORD1>if</KEYWORD1>
+            <KEYWORD1>inline</KEYWORD1>
+            <KEYWORD3>int</KEYWORD3>
+            <KEYWORD3>long</KEYWORD3>
+            <KEYWORD3>mutable</KEYWORD3>
+            <KEYWORD2>namespace</KEYWORD2>
+            <KEYWORD1>new</KEYWORD1>
+            <KEYWORD3>not</KEYWORD3>
+            <KEYWORD3>not_eq</KEYWORD3>
+            <KEYWORD3>operator</KEYWORD3>
+            <KEYWORD3>or</KEYWORD3>
+            <KEYWORD3>or_eq</KEYWORD3>
+            <KEYWORD1>private</KEYWORD1>
+            <KEYWORD1>protected</KEYWORD1>
+            <KEYWORD1>public</KEYWORD1>
+            <KEYWORD1>register</KEYWORD1>
+            <KEYWORD3>reinterpret_cast</KEYWORD3>
+            <KEYWORD1>return</KEYWORD1>
+            <KEYWORD3>short</KEYWORD3>
+            <KEYWORD3>signed</KEYWORD3>
+            <KEYWORD1>sizeof</KEYWORD1>
+            <KEYWORD1>static</KEYWORD1>
+            <KEYWORD3>static_cast</KEYWORD3>
+            <KEYWORD3>struct</KEYWORD3>
+            <KEYWORD1>switch</KEYWORD1>
+            <KEYWORD3>template</KEYWORD3>
+            <LITERAL2>this</LITERAL2>
+            <KEYWORD1>throw</KEYWORD1>
+            <LITERAL2>true</LITERAL2>
+            <KEYWORD1>try</KEYWORD1>
+            <KEYWORD3>typedef</KEYWORD3>
+            <KEYWORD3>typeid</KEYWORD3>
+            <KEYWORD3>typename</KEYWORD3>
+            <KEYWORD3>union</KEYWORD3>
+            <KEYWORD3>unsigned</KEYWORD3>
+            <KEYWORD2>using</KEYWORD2>
+            <KEYWORD1>virtual</KEYWORD1>
+            <KEYWORD1>void</KEYWORD1>
+            <KEYWORD1>volatile</KEYWORD1>
+            <KEYWORD3>wchar_t</KEYWORD3>
+            <KEYWORD1>while</KEYWORD1>
+            <KEYWORD3>xor</KEYWORD3>
+            <KEYWORD3>xor_eq</KEYWORD3>
+            <LITERAL2>NULL</LITERAL2>
+        </KEYWORDS>
+    </RULES> 
+</MODE>
