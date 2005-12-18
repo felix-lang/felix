@@ -253,7 +253,12 @@ Done.
 @head(2,"tut/examples/tut121b.expect")
 @select(tangler("tut/examples/tut121b.expect","data"))
 Lexer here
-Pre:     "#!/bin/env flx"
+Other:   "#!/"
+Id:      "bin"
+SLASH:   "/"
+Id:      "env"
+White:   " "
+Id:      "flx"
 Eol:     "
 "
 Id:      "include"
@@ -1927,6 +1932,18 @@ argc=1
 0 -> 2
 1 -> 23
 2 -> 423
+@head(2,"tut/examples/tut212.expect")
+@select(tangler("tut/examples/tut212.expect","data"))
+driver request test
+driver name code is 1
+exit code is 2
+Name service performed, result flx_run
+main launched t1
+t1 starts
+t1 continues
+t1 sends message: Hello main from t1!
+t1 dies
+Main got message: Hello main from t1!
 @head(2,"tut/examples/tut310.expect")
 @select(tangler("tut/examples/tut310.expect","data"))
 6

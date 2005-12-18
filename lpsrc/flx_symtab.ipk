@@ -1173,6 +1173,21 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           let dont_care = 0 in
           handle_class `CClass dont_care sts tvars stype
 
+        | `DCL_typeclass (sts) -> 
+          let symdef = `SYMDEF_typeclass sts in
+          let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
+          let stype = `AST_name(sr,id,tvars) in
+          Hashtbl.add dfns n {
+            id=id;sr=sr;parent=parent;
+            vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=symdef
+          }
+          ;
+          if access = `Public then add_unique pub_name_map id n;
+          add_unique priv_name_map id n
+          ;
+          add_tvars privtab
+
         | `DCL_cstruct (sts)
         | `DCL_struct (sts) ->
           if is_class then clierr sr "(c)struct not allowed in class";

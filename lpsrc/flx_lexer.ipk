@@ -26,7 +26,9 @@ let string_of_token (tok :Flx_parse.token): string =
   | USER_KEYWORD (sr,s) -> s
   | USER_STATEMENT_KEYWORD (sr,s,_,_) -> s
   | USER_STATEMENT_DRIVER (sr,s,_) -> s
+  (*
   | PARSE_ACTION sr -> "=>#"
+  *)
   
 @for k,s in flx_1_char_syms:
   tangle('  | '+k+' _ -> "'+s+'"',inhibit_sref=1)
@@ -62,8 +64,9 @@ let name_of_token (tok :Flx_parse.token): string =
   | USER_KEYWORD (sr,s) -> s
   | USER_STATEMENT_KEYWORD (sr,s,_,_) -> s
   | USER_STATEMENT_DRIVER (sr,s,_) -> s
+  (*
   | PARSE_ACTION sr -> "PARSE_ACTION"
-
+  *)
 @for k,s in flx_1_char_syms:
   tangle('  | '+k+' _ -> "'+k+'"',inhibit_sref=1)
 
@@ -105,7 +108,9 @@ let src_of_token t = match t with
   | USER_KEYWORD (s,_)
   | USER_STATEMENT_KEYWORD (s,_,_,_)
   | USER_STATEMENT_DRIVER (s,_,_)
+  (*
   | PARSE_ACTION s
+  *)
   | ERRORTOKEN (s,_) 
 
 @for k,s in flx_1_char_syms:
@@ -1419,7 +1424,7 @@ let symchar =
   '!' | '$' | '%' | '&' | '(' | ')' | '*' |
   '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' |
   '=' | '>' | '?' | '@' | '[' | ']' | '^' |
-  '`' | '{' | '|' | '}' | '~'
+  '`' | '{' | '|' | '}' | '~' | '#'
 
 let printable = ordinary | quote | dquote | slosh
 
@@ -2097,6 +2102,7 @@ and pre_flx_lex state = parse
   }
 
 (* Preprocessor Directive *)
+(*
 | "#!" {
     if state#is_at_line_start
     then parse_hashbang state lexbuf
@@ -2116,25 +2122,20 @@ and pre_flx_lex state = parse
        "#")
      ]
   }
-
-| "=>#" { [PARSE_ACTION (state#get_srcref lexbuf)] }
+*)
 
 | symchar + { 
-     state#inbody; 
-     state#tokenise_symbols  lexbuf (lexeme lexbuf)
-   }
-
-(*
-@for k,s in flx_1_char_syms:
-  tangle('| "'+s+'" { state#inbody; ['+k+'  (state#get_srcref lexbuf)] }',inhibit_sref=1)
-
-@for k,s in flx_2_char_syms:
-  tangle('| "'+s+'" { state#inbody; ['+k+'  (state#get_srcref lexbuf)] }',inhibit_sref=1)
-
-@for k,s in flx_3_char_syms:
-  tangle('| "'+s+'" { state#inbody; ['+k+'  (state#get_srcref lexbuf)] }',inhibit_sref=1)
-@#
-*)
+    let atstart = state#is_at_line_start in
+    state#inbody; 
+    let toks = state#tokenise_symbols  lexbuf (lexeme lexbuf) in
+    match toks,atstart with
+    | [HASH _],true -> parse_preprocessor state lexbuf
+    | [HASHBANG _ | HASHBANGSLASH _ ],true  -> 
+      print_endline "IGNORING HASHBANG";
+      parse_hashbang state lexbuf
+    | _ -> toks
+    
+  }
 
 (* end of line *)
 | newline {

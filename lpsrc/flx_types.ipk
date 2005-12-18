@@ -559,6 +559,12 @@ and class_member_t = [
   | `MemberProc of id_t * int option * vs_list_t * typecode_t * c_t option
   | `MemberCtor of id_t * int option * typecode_t * c_t option
 ]
+
+and typeclass_member_t = [
+  | `TypeClassMemberFun of id_t * typecode_t  
+  | `TypeClassMemberProc of id_t * typecode_t  
+]
+
 and ast_term_t = 
   [
   | `Expression_term of expr_t
@@ -619,7 +625,8 @@ and statement_t =
   | `AST_type_alias of range_srcref * id_t * vs_list_t * typecode_t
   | `AST_inherit of range_srcref * id_t * vs_list_t * qualified_name_t
   | `AST_inherit_fun of range_srcref * id_t * vs_list_t * qualified_name_t
-
+  | `AST_typeclass of range_srcref * id_t * vs_list_t * typeclass_member_t list
+  
   (* variables *)
   | `AST_val_decl of range_srcref * id_t * vs_list_t * typecode_t option * expr_t option
   | `AST_var_decl of range_srcref * id_t * vs_list_t * typecode_t option * expr_t option
@@ -746,6 +753,7 @@ type dcl_t =
   | `DCL_struct of       (id_t * typecode_t) list
   | `DCL_cstruct of      (id_t * typecode_t) list
   | `DCL_cclass of       class_member_t list
+  | `DCL_typeclass of    typeclass_member_t list
   | `DCL_match_check of pattern_t * (string * int)
   | `DCL_match_handler of pattern_t * (string * int) * asm_t list
   | `DCL_glr of          typecode_t * (reduced_production_t * expr_t)
@@ -1016,6 +1024,7 @@ type symbol_definition_t =
   | `SYMDEF_struct of  (id_t * typecode_t) list
   | `SYMDEF_cstruct of  (id_t * typecode_t) list
   | `SYMDEF_cclass of  class_member_t list
+  | `SYMDEF_typeclass of  typeclass_member_t list
   | `SYMDEF_type_alias of   typecode_t
   | `SYMDEF_inherit of   qualified_name_t
   | `SYMDEF_inherit_fun of   qualified_name_t
@@ -1772,6 +1781,7 @@ let src_of_stmt e = match e with
   | `AST_cstruct (s,_, _, _)
   | `AST_cclass (s,_, _, _)
   | `AST_class (s,_, _, _)
+  | `AST_typeclass (s,_, _, _)
   | `AST_untyped_module (s,_,_,_)
   | `AST_export_fun (s, _,_)
   | `AST_export_type (s, _,_)
@@ -1959,6 +1969,8 @@ val print_functions:
 val print_vs: vs_list_t -> string
 val print_ivs: ivs_list_t -> string
 val print_ivs_with_index: ivs_list_t -> string
+
+val string_of_ast_term: int -> ast_term_t -> string
 
 @h = tangler('src/flx_print.ml')
 @select(h)
@@ -2827,6 +2839,18 @@ and string_of_qual = function
 
 and string_of_quals qs = catmap " " string_of_qual qs
 
+and string_of_ast_term level (term:ast_term_t) = 
+  let sast x = string_of_ast_term level x in
+  match term with
+  | `Statement_term s -> string_of_statement (level+1) s
+  | `Statements_term ss -> catmap "\n" (string_of_statement (level+1)) ss
+  | `Expression_term e -> string_of_expr e
+  | `Identifier_term s -> s
+  | `Keyword_term s -> s
+  | `Nonterminal_term (s,t) -> "\nuser nonterm: " ^ s ^ " ::= " ^ sast t
+  | `Tokens_term (tks) -> "\nuser tokens: " ^ String.concat " " tks
+  | `Apply_term (t,ts) -> sast t ^ "(" ^ catmap ", " sast ts ^ ")"
+
 and string_of_class_component level mem =
   let kind, name, mix,vs,ty,cc = match mem with
   | `MemberVar (name,typ,cc) -> "var",name,None,[],typ,cc
@@ -2839,6 +2863,16 @@ and string_of_class_component level mem =
     kind ^ " " ^ name ^ print_vs vs ^ ": " ^ string_of_typecode ty ^ 
     (match cc with None -> "" | Some cc -> string_of_code_spec cc) ^
     ";"
+
+and string_of_typeclass_component level mem = 
+  match mem with
+  | `TypeClassMemberFun (name,typ) -> 
+    spaces level ^ "fun " ^ name ^ ": " ^ 
+    string_of_typecode typ ^ ";\n"
+    
+  | `TypeClassMemberProc (name,typ) -> 
+    spaces level ^ "proc " ^ name ^ ": " ^ 
+    string_of_typecode typ ^ ";\n"
 
 and string_of_statement level s = 
   let se e = string_of_expr e in
@@ -2957,6 +2991,12 @@ and string_of_statement level s =
   | `AST_class (_,name, vs, sts) -> 
     spaces level ^ "class " ^ name ^ print_vs vs ^ " = " ^
     string_of_compound level sts
+
+  | `AST_typeclass (_,name,vs,sts) ->
+    spaces level ^ "type class " ^ name ^ print_vs vs ^ " = \n" ^
+    spaces level ^ "{\n" ^
+    catmap "" (string_of_typeclass_component (level +1)) sts ^
+    spaces level ^ "}"
 
   | `AST_union (_,name, vs,cs) -> 
     let string_of_union_component (name,ty) =
@@ -3250,8 +3290,9 @@ and string_of_statement level s =
   | `AST_svc (_,name) ->
     spaces level ^ "read " ^ name ^ ";"
   
-  | `AST_user_statement (_,name,_) ->
-    spaces level ^ "User statement " ^ name
+  | `AST_user_statement (_,name,term) ->
+    let body = string_of_ast_term level term in
+    spaces level ^ "User statement " ^ name ^ "\n" ^ body
   
 and string_of_compilation_unit stats =
   catmap "\n" (string_of_statement 0) stats
@@ -3348,6 +3389,9 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t)
     
   | `SYMDEF_cclass (cts) -> 
     "cclass " ^ name ^ print_ivs vs ^ ";"
+
+  | `SYMDEF_typeclass (cts) -> 
+    "typeclass " ^ name ^ print_ivs vs ^ ";"
 
   | `SYMDEF_fun (props, pts,res,cts, reqs,prec) -> 
     string_of_properties props ^
@@ -3719,6 +3763,12 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     spaces level ^ "cclass " ^ name^seq ^ print_vs vs ^ " = " ^
     spaces level ^ "{\n" ^
     catmap "\n" (string_of_class_component level) cs ^ "\n" ^
+    spaces level ^ "}"
+
+  | `DCL_typeclass (cs) -> 
+    spaces level ^ "type class " ^ name^seq ^ print_vs vs ^ " = " ^
+    spaces level ^ "{\n" ^
+    catmap "" (string_of_typeclass_component level) cs ^ 
     spaces level ^ "}"
 
   | `DCL_union (cs) -> 

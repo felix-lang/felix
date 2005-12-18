@@ -500,6 +500,8 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
     | `SYMDEF_class -> 
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_class ([],bvs))
 
+   | `SYMDEF_typeclass _ -> ()
+
     | `SYMDEF_regdef _ -> ()
     | `SYMDEF_type_alias _ -> ()
     | `SYMDEF_inherit _ -> ()

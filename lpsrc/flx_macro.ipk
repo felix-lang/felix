@@ -243,6 +243,9 @@ and expand_type_expr sr recursion_limit local_prefix seq (macros:macro_dfn_t lis
 
 (* expand expression *)
 and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:expr_t):expr_t =
+  (*
+  print_endline ("expand expr " ^ string_of_expr e);
+  *)
   if recursion_limit < 1 
   then failwith "Recursion limit exceeded expanding macros";
   let recursion_limit = recursion_limit - 1 in
@@ -612,6 +615,9 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   reachble.
 *)
 and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (st:statement_t):statement_t list = 
+  (*
+  print_endline ("Subst or expand: " ^ string_of_statement 0 st);
+  *)
   let recurion_limit = recursion_limit - 1 in
   let mt sr e = expand_type_expr sr recursion_limit local_prefix seq macros e in
   let me e = expand_expr recursion_limit local_prefix seq macros e in
@@ -626,37 +632,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   let tack x = result := x :: !result in
   let ctack x = if !reachable then tack x in
 
-  let substitute_statement_terms sr ss ts =
-    let args = 
-      let rec aux terms res count = 
-        let id = "_" ^ si count in 
-        match terms with
-        | h :: t -> 
-          begin match h with
-          | `Expression_term  e -> aux t ((id,MVal e)::res) (count+1)
-          | `Identifier_term s -> aux t ((id,MName s)::res) (count+1)
-          | `Statement_term s -> aux t ((id,MStmt ([],[s]))::res) (count+1)
-          | `Statements_term ss -> aux t ((id,MStmt ([],ss))::res) (count+1)
-          | `Keyword_term _ ->
-            print_endline ("[substitute statement terms] Keyword arg dropped " ^ id);
-            aux t res (count+1)
-          | `Nonterminal_term _ ->
-            print_endline ("[substitute statement terms] Nonterminal arg dropped " ^ id);
-            aux t res (count+1)
-          | `Tokens_term _ ->
-            print_endline ("[substitute statement terms] Tokens arg dropped " ^ id);
-            aux t res (count+1)
-          | `Apply_term _ ->
-            print_endline ("[substitute statement terms] Apply arg dropped " ^ id);
-            aux t res (count+1)
-          end
-        | [] -> res
-      in aux ts [] 1
-    in
-    let sts =
-      recurse recursion_limit local_prefix seq (ref true) (args @ macros) ss 
-    in iter ctack sts
-  in
   begin match st with
   (* cheat for now and ignore public and private decls *)
   | `AST_public (_,_,st) -> iter tack (ms [st])
@@ -716,6 +691,14 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       ) idts 
     in
     tack (`AST_cclass (sr, mi sr id, vs, idts))
+
+  | `AST_typeclass (sr, id, vs, idts) ->  
+    let idts = map (function 
+      | `TypeClassMemberFun (id,t) -> `TypeClassMemberFun (id,mt sr t)
+      | `TypeClassMemberProc (id,t) -> `TypeClassMemberProc (id,mt sr t)
+      ) idts 
+    in
+    tack (`AST_typeclass (sr, mi sr id, vs, idts))
 
   (* IDENTIFIER RENAMING NOT SUPPORTED IN TYPES *)
   | `AST_type_alias (sr, id, vs, t) ->  
@@ -1006,58 +989,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     ctack (`AST_fun_return (sr, me e));
     reachable := false
 
-  | `AST_user_statement (sr,name,term) ->
-    print_endline ("Processing user defined statement " ^ name);
-    let rec aux term = match term with
-      | `Statement_term s -> ctack s
-      | `Statements_term ss -> iter ctack ss (* reverse order is correct *)
-      | `Expression_term e -> 
-         clierr sr 
-         (
-           "User statement: expected statement got expression " ^
-           string_of_expr e
-         )
-
-      | `Identifier_term s ->
-         clierr sr 
-         (
-           "User statement: expected statement got identifier " ^ s
-         )
-
-      | `Keyword_term s ->
-         clierr sr 
-         (
-           "User statement: expected statement got keyword " ^ s
-         )
-
-      | `Nonterminal_term _ ->
-         clierr sr 
-         (
-           "User statement: expected statement got nonterminal "
-         )
-
-      | `Tokens_term _ ->
-         clierr sr 
-         (
-           "User statement: expected statement got token sequence "
-         )
-
-      | `Apply_term (t,ts) ->
-        begin match t with
-        | `Statement_term s -> 
-          substitute_statement_terms sr [s] ts
-
-        | `Statements_term ss ->
-          substitute_statement_terms sr ss ts
-
-        | _ -> 
-          clierr sr 
-          (
-            "User statement: In application, expected statement "
-          )
-        end
-    in aux term
-
   | st -> failwith ("[subst_or_expand] Unhandled case " ^ string_of_statement 0 st)
   end
   ;
@@ -1072,11 +1003,17 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   nor context in which they're used need any expansion
 *)
 and subst_statement recursion_limit local_prefix seq reachable macros (st:statement_t):statement_t list = 
+  (*
+  print_endline ("subst statement " ^ string_of_statement 0 st);
+  print_endline ("Macro context length " ^ si (length macros));
+  print_endline (string_of_macro_env macros);
+  *)
   if recursion_limit < 1 
   then failwith "Recursion limit exceeded expanding macros";
   let recurion_limit = recursion_limit - 1 in
   let me e = expand_expr recursion_limit local_prefix seq macros e in
-  let ms ss = subst_statements recursion_limit local_prefix seq (ref true) macros ss in
+  let ms ss = subst_statement recursion_limit local_prefix seq (ref true) macros ss in
+  let mss ss = subst_statements recursion_limit local_prefix seq (ref true) macros ss in
   let mi sr id = expand_ident sr macros [] id in
   let result = ref [] in
   let tack x = result := x :: !result in
@@ -1111,10 +1048,10 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
     tack (`AST_macro_assign (sr, id, me e))
 
   | `AST_macro_ifor (sr,id,ids,sts) ->
-    tack (`AST_macro_ifor (sr,id,ids,ms sts))
+    tack (`AST_macro_ifor (sr,id,ids,mss sts))
     
   | `AST_macro_vfor (sr,id,es,sts) ->
-    tack (`AST_macro_vfor (sr,id,map me es,ms sts))
+    tack (`AST_macro_vfor (sr,id,map me es,mss sts))
   
   (* during parameter replacement,
     we don't know if a call is executable or not,
@@ -1126,7 +1063,7 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
     begin try
       match assoc name macros with
       | MStmt ([],b) ->
-        iter tack (ms b)
+        iter tack (mss b)
       | _ -> 
         tack (`AST_call (sr, me e1, me e2))
     with Not_found ->
@@ -1135,6 +1072,25 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
 
   | `AST_call (sr, e1, e2) ->
     tack (`AST_call (sr, me e1, me e2))
+
+  | `AST_user_statement (sr,name,term) -> 
+    print_endline "Replacing into user statement call";
+    let rec aux term = match term with
+      | `Statement_term s -> `Statements_term (ms s)
+      | `Statements_term ss -> `Statements_term (mss ss)
+      | `Expression_term e -> `Expression_term (me e)
+      | `Identifier_term s -> `Identifier_term (mi sr s)
+
+      (* ONLY SUBSTITUTE INTO PARAMETERS? *)
+      | `Apply_term (t,ts) -> `Apply_term (t, map aux ts)
+
+      (* invariant -- for the moment *)
+      | `Keyword_term _ 
+      | `Nonterminal_term _ 
+      | `Tokens_term _ -> term
+    in 
+    tack (`AST_user_statement (sr,name,aux term))
+
 
   | `AST_macro_label _
   | `AST_macro_goto _
@@ -1159,6 +1115,11 @@ and subst_statements recursion_limit local_prefix seq reachable macros (ss:state
   expand statement : process macros
 *)
 and expand_statement recursion_limit local_prefix seq reachable ref_macros macros (st:statement_t) = 
+  (*
+  print_endline ("Expand statement " ^ string_of_statement 0 st);
+  print_endline ("Macro context length " ^ si (length macros));
+  print_endline (string_of_macro_env macros);
+  *)
   if recursion_limit < 1 
   then failwith "Recursion limit exceeded expanding macros";
   let recurion_limit = recursion_limit - 1 in
@@ -1191,7 +1152,9 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     )
   in
   let rec expand_exprs sr (exprs: expr_t list):expr_t list =
+    (*
     print_endline ("Expand exprs: [" ^ catmap ", " string_of_expr exprs ^ "]");
+    *)
     concat
     ( 
       map
@@ -1387,6 +1350,77 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
 
       | _ -> ctack (`AST_call (sr,e1,e2))
       end
+
+  | `AST_user_statement (sr,name,term) ->
+    let substitute_statement_terms sr ss ts =
+      let args = 
+        let rec aux terms res count = 
+          let id = "_" ^ si count in 
+          match terms with
+          | h :: t -> 
+            begin match h with
+            | `Expression_term  e -> aux t ((id,MVal e)::res) (count+1)
+            | `Identifier_term s -> aux t ((id,MName s)::res) (count+1)
+            | `Statement_term s -> aux t ((id,MStmt ([],[s]))::res) (count+1)
+            | `Statements_term ss -> aux t ((id,MStmt ([],ss))::res) (count+1)
+            | `Keyword_term _ ->
+              print_endline ("[substitute statement terms] Keyword arg dropped " ^ id);
+              aux t res (count+1)
+            | `Nonterminal_term _ ->
+              print_endline ("[substitute statement terms] Nonterminal arg dropped " ^ id);
+              print_endline (string_of_ast_term 1 h);
+              aux t res (count+1)
+            | `Tokens_term _ ->
+              print_endline ("[substitute statement terms] Tokens arg dropped " ^ id);
+              aux t res (count+1)
+            | `Apply_term _ ->
+              print_endline ("[substitute statement terms] Apply arg dropped " ^ id);
+              aux t res (count+1)
+            end
+          | [] -> res
+        in aux ts [] 1
+      in
+      let string_of_statements sts =
+        String.concat "\n" (map (string_of_statement 1) sts)
+      in
+
+      print_endline "Got arguments ..";
+      print_endline (string_of_macro_env args);
+      print_endline "WE SHOULD EXPAND THE ARGS BUT AREN'T AT THE MOMENT";
+      print_endline ("Body is" ^ string_of_statements ss);
+      print_endline "SUBSTITUTING";
+      let ss = subst_statements recursion_limit local_prefix seq reachable args ss in
+      print_endline ("Body after substitution is" ^ string_of_statements ss);
+      print_endline "EXECUTING STATEMENTS NOW";
+      let ss = ses ss in
+      print_endline ("Body after execution is" ^ string_of_statements ss);
+      iter ctack ss
+    in
+    print_endline ("Expand Statement: Processing user defined statement " ^ name);
+    let rec aux term = match term with
+      | `Statement_term s -> ctack s
+      | `Statements_term ss -> iter ctack ss (* reverse order is correct *)
+      | `Expression_term e -> clierr sr ( "User statement: expected statement got expression " ^ string_of_expr e) 
+      | `Identifier_term s -> clierr sr ( "User statement: expected statement got identifier " ^ s)
+      | `Keyword_term s -> clierr sr ( "User statement: expected statement got keyword " ^ s)
+      | `Nonterminal_term _ -> clierr sr ( "User statement: expected statement got nonterminal ")
+      | `Tokens_term _ -> clierr sr ( "User statement: expected statement got token sequence ")
+      | `Apply_term (t,ts) ->
+        begin match t with
+        | `Statement_term s -> 
+          substitute_statement_terms sr [s] ts
+
+        | `Statements_term ss ->
+          substitute_statement_terms sr ss ts
+
+        | _ -> 
+          clierr sr 
+          (
+            "User statement: In application, expected statement "
+          )
+        end
+    in aux term
+
 
   | st -> 
     iter tack 

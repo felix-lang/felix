@@ -1,5 +1,38 @@
-@header(1,'Jedit syntax highlight file')
+@head(1,'Jedit syntax highlight file')
 Provided by Klas Iversson.
+
+@head(2,'Installation')
+Look in JEdit's help file for more detailed information how to 
+install edit modes. On my windows machine I did...
+@p()
+Step 1)  
+@p()
+Install JEdit. Get it from http://www.jedit.org/   (needs Java)
+p()
+Step 2)  
+@p()
+Place the file felix.xml in the directory C:\Program\jEdit\modes
+@p()
+Step 3)  
+@p()
+Take a backup of the file named catalog
+@p()
+Step 4)  
+@p()
+Open the catalog file in a text editor and insert the following tag: 
+<MODE NAME="felix" FILE="felix.xml" FILE_NAME_GLOB="*.flx" />       
+Observe that this tag must be placed between the <MODES> and </MODES> tags!
+@p()
+Step 5)  
+@p()
+Save the catalog file.
+@p()
+It's not nessacary, but I highly recommend to also install the plug-in "Editor Scheme Selector" from http://www.jedit.org/    
+@p()
+(It icludes the PLEAC sheme which is my favourite:)
+
+@head(2,'Syntax file')
+
 @select(tangler('misc/jedit/felix.xml'))
 <?xml version="1.0"?>
 <!DOCTYPE MODE SYSTEM "xmode.dtd">

@@ -2305,6 +2305,7 @@ flx_expr_terminator_keywords = [
     ("call", "CALL"),
     ("case", "CASE"),
     ("caseno", "CASENO"),
+    ("category", "CATEGORY"),
     ("class", "CLASS"),
     ("comment", "COMMENT_KEYWORD"),
     ("compound", "COMPOUND"),
@@ -2430,6 +2431,7 @@ flx_1_char_syms = [
     ("BACKQUOTE","`"),
     ("TILDE","~"),
     ("CIRCUMFLEX","^"),
+    ("HASH","#"),
   ]
 
 flx_2_char_syms = [
@@ -2474,6 +2476,7 @@ flx_2_char_syms = [
     ("SLOSHAMPER","\\\\&"),
     ("SLOSHVBAR","\\\\|"),
     ("SLOSHCIRCUMFLEX","\\\\|"),
+    ("HASHBANG","#!"),
   ]
 
 flx_3_char_syms = [
@@ -2485,6 +2488,8 @@ flx_3_char_syms = [
     ("ANDLESSEQUAL","&<="),
     ("ANDGREATEREQUAL","&>="),
     ("DOTDOTDOT","..."),
+    ("PARSE_ACTION","=>#"),
+    ("HASHBANGSLASH","#!/"),
   ]
 
 

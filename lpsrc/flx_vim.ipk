@@ -1,11 +1,11 @@
 @head(1,"Vim Syntax File")
-@select(tangler("misc/felix_plugin.vim",'data'))
+@select(tangler("misc/vim/felix_plugin.vim",'data'))
 an 50.40.90 &Syntax.FG.Felix :cal SetSyn("felix")<CR>
 " Felix 
 au BufNewFile,BufRead *.flx setf felix
 
 
-@select(tangler("misc/felix.vim",'data'))
+@select(tangler("misc/vim/felix.vim",'data'))
 " Vim syntax file
 " Language:	Felix
 " Maintainer:	<John Max Skaller> skaller@ozemail.com.au
@@ -325,7 +325,7 @@ let b:current_syntax = "felix"
 " vim: ts=8
 
 @head(1,"Interscript Syntax File")
-@select(tangler("misc/interscript.vim",'data'))
+@select(tangler("misc/vim/interscript.vim",'data'))
 " Vim syntax file
 " Language:  Interscript	
 " Maintainer:	Neil Schemenauer <nascheme@acs.ucalgary.ca>

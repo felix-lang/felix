@@ -292,6 +292,7 @@ declarative:
   | union_decl { $1 }
   | struct_decl { $1 }
   | type_alias { $1 }
+  | typeclass { $1 }
 
 directive:
   | open_decl { $1 }
@@ -520,6 +521,21 @@ class_component:
     { `MemberProc (snd $2,None,$3,typecode_of_expr $5,$6) }
   | CTOR opt_name COLON expr opt_cstring SEMI 
     { `MemberCtor ($2,None,typecode_of_expr $4,$5) }
+
+typeclass:
+  | CATEGORY NAME tvarlist opt_equal LBRACE typeclass_component_aster RBRACE
+    { 
+      let sr = rstoken $1 $7 in
+      `AST_typeclass (sr,snd $2,$3,$6)
+    }
+
+typeclass_component:
+  | FUNCTION NAME COLON expr SEMI 
+    { `TypeClassMemberFun (snd $2,typecode_of_expr $4) }
+  | PROCEDURE NAME COLON expr SEMI 
+    { `TypeClassMemberProc (snd $2,typecode_of_expr $4) }
+
+@aster("typeclass_component")
 
 @head(3,'Abstract Constant Binding')
 @select(h)
