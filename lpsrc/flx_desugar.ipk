@@ -1225,6 +1225,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_macro_names _
   | `AST_public _ 
   | `AST_stmt_macro _ 
+  | `AST_macro_block _ 
   | `AST_until _ 
   | `AST_whilst _
   | `AST_macro_ifor _

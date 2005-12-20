@@ -221,6 +221,58 @@ namespace flx { namespace rtl { namespace strutil {
     gen_bidirectional t;
   }
 
+@h=tangler('lib/flx.flxh','data')
+@select(h)
+#import "flx_syntax.flxh"
+include "std";
+
+@h=tangler('lib/flx_syntax.flxh','data')
+@select(h)
+#statement#
+  whilst expr do statements done ; =># 
+  macro {
+    macro lab1 is new;
+    macro lab2 is new;
+    lab1:> 
+      if not _1 goto lab2;
+      _3;
+      goto lab1;
+    lab2:>
+  };
+#
+
+#statement#
+  until expr do statements done; =># 
+  macro {
+    macro lab1 is new;
+    macro lab2 is new;
+    lab1:> 
+      if _1 goto lab2;
+      _3;
+      goto lab1;
+    lab2:>
+  };
+#
+
+#statement#
+  forall ident in expr do statements done ; =># 
+    macro for val i in _3 do _5; done;
+#
+
+#keyword upto
+#statement# 
+  forall ident in expr upto expr do statements done ; =># 
+  i = _3;
+  whilst i <= _5 do _7; ++i; done;
+#
+
+#keyword downto
+#statement# 
+  forall ident in expr downto expr do statements done ; =># 
+  i = _3;
+  whilst i >= _5 do _7; --i; done;
+#
+
 @h=tangler('lib/std.flx','data')
 @# use data tangler to prevent line number generation
 @select(h)
@@ -1101,10 +1153,10 @@ module Control
   """
   proc until(cond:unit->bool) (bdy:unit->void)
   {
-    repeat:>
+    repeatx:>
       if cond() goto finish;
       bdy();
-      goto repeat;
+      goto repeatx;
     finish:>
   }
   */

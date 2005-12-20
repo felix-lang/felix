@@ -10,7 +10,7 @@ There is no better introduction to a programming
 language than the infamous hello-world program.
 
 @select(tangler(tdir+'tut101.flx'))
-include "std";
+#import <flx.flxh>
 print "Hello World\n";
 @doc()
 and the Felix version is simplicity itself.
@@ -40,7 +40,7 @@ we'll make a small modification to the hello
 world program. You can compile and run the
 program as before, just change the example number.
 @select(tangler(tdir+'tut102.flx'))
-include "std";
+#import <flx.flxh>
 print "Hello World ";
 print 42;
 print "\n";
@@ -64,7 +64,7 @@ used facility]. There are no bitwise operators,
 because both & and | have different uses.
 
 @select(tangler(tdir+'tut102a.flx'))
-include "std";
+#import <flx.flxh>
 // arith
 print (1 + 1); endl; print (add (1,2)); endl;
 print (1 - 1); endl; print (sub (1,2)); endl;
@@ -97,7 +97,7 @@ print (1 >= 2); endl; print (ge (1,2)); endl;
 Felix allows values to be declared using the 'val'
 keyword.
 @select(tangler(tdir+'tut103.flx'))
-include "std";
+#import <flx.flxh>
 val i = 40;
 val j = 2;
 val k = i + j;
@@ -116,7 +116,7 @@ value for you. You can declare the type of a variable
 if you want: the following program is equivalent
 to the one above:
 @select(tangler(tdir+'tut104.flx'))
-include "std";
+#import <flx.flxh>
 val i : int = 40;
 val j : int = 2;
 val k : int = i + j;
@@ -136,7 +136,7 @@ for the value entirely).
 There is a shortcut form for declaring variables
 using the := operator:
 @select(tangler(tdir+'tut104a.flx'))
-include "std";
+#import <flx.flxh>
 a := 1; 
 b:int := 2; 
 
@@ -153,7 +153,7 @@ endl;
 Felix also support mutable variables, which are
 declared with the 'var' keyword.
 @select(tangler(tdir+'tut105.flx'))
-include "std";
+#import <flx.flxh>
 var i = 1;
 var j : int;
 while {i < 10}
@@ -186,7 +186,7 @@ there is no while statement in Felix!
 
 @head(2,'Lvalue patterns')
 @select(tangler(tdir+'tut105a.flx'))
-include "std";
+#import <flx.flxh>
 
 var a:int;
 var b:int;
@@ -218,7 +218,7 @@ these being assignment operators and counting operators.
 Below is a list of operators and equivalent procedure names.
 
 @select(tangler(tdir+'tut105b.flx'))
-include "std";
+#import <flx.flxh>
 open Uint;
 
 var i:int;
@@ -254,7 +254,7 @@ Felix allows you to define functions,
 although the syntax is different from C.
 Here is an example:
 @select(tangler(tdir+'tut106.flx'))
-include "std";
+#import <flx.flxh>
 fun mid(a:int, b:int):int =
 {
   val c = (a + b) / 2;
@@ -277,7 +277,7 @@ Whilst in the above example the return type of the
 function is clearly given, it is not necessary,
 as illustrated by the next example:
 @select(tangler(tdir+'tut107.flx'))
-include "std";
+#import <flx.flxh>
 fun mid(a:int, b:int) =
 {
   val c = (a + b) / 2;
@@ -293,7 +293,7 @@ must be given.
 Functions can be given preconditions:
 
 @select(tangler(tdir+'tut107a.flx'))
-include "std";
+#import <flx.flxh>
 fun guarded_div(a:int, b:int when b!=0) =
 {
   return a/b;
@@ -304,7 +304,7 @@ print (guarded_div(2,4)); print "\n";
 Functions can also be given postconditions:
 
 @select(tangler(tdir+'tut107b.flx'))
-include "std";
+#import <flx.flxh>
 fun abs_div(a:int, b:int when b!=0) expect result >=0 =
 {
   return abs(a/b);
@@ -333,7 +333,7 @@ dispatch queue (which you will learn about much later).
 Here is an example of a procedure definition
 and use:
 @select(tangler(tdir+'tut112.flx'))
-include "std";
+#import <flx.flxh>
 proc print_newline (a:int)
 {
   print a;
@@ -345,7 +345,7 @@ There is a special short cut for calling procedures
 with unit argument: if the procedure is called
 by its name, the () can be elided:
 @select(tangler(tdir+'tut113.flx'))
-include "std";
+#import <flx.flxh>
 print 1; endl();
 print 2; endl;
 @doc()
@@ -361,7 +361,7 @@ at the point of writing.
 Procedures may also have pre and post conditions.
 
 @select(tangler(tdir+'tut112a.flx'))
-include "std";
+#import <flx.flxh>
 var x = 7;
 var y = x;
 
@@ -398,7 +398,7 @@ argument. If not, you get another chance,
 studying this example, which is equivalent
 to example 106.
 @select(tangler(tdir+'tut110.flx'))
-include "std";
+#import <flx.flxh>
 fun mid(a:int, b:int):int =
 {
   val c = (a + b) / 2;
@@ -444,7 +444,7 @@ is the exception.
 You can get at tuple components using a suffixed
 dot followed a zero origin integer in brackets:
 @select(tangler(tdir+'tut111.flx'))
-include "std";
+#import <flx.flxh>
 val x = (0,1,(3,4));
 print x.(0); print " ";
 print x.(1); print " ";
@@ -461,7 +461,7 @@ which you will learn about soon.
 It is also possible to pattern match tuples.
 Here is an example:
 @select(tangler(tdir+'tut120.flx'))
-include "std";
+#import <flx.flxh>
 val v = 1,2,(3,4);
 match (v) with
   | (?x,_,?z) =>
@@ -493,7 +493,7 @@ operator + is the type combinator used
 to denote them.
 
 @select(tangler(tdir+'tut207a.flx'))
-include "std";
+#import <flx.flxh>
 open Long;
 
 typedef three = unit +  unit + unit;
@@ -545,7 +545,7 @@ its members are mutable.
 Struct members can be used with C style dot notation.
 Here is an example:
 @select(tangler(tdir+'tut115.flx'))
-include "std";
+#import <flx.flxh>
 
 struct XY {
   x : int;
@@ -563,7 +563,7 @@ which constructs an object of the struct type
 from a tuple consisting of values to initialise
 the members in sequence. For example:
 @select(tangler(tdir+'tut116.flx'))
-include "std";
+#import <flx.flxh>
 
 struct XY = {
   x : int;
@@ -603,7 +603,7 @@ the component has, and the actual component.
 Here are some examples of unions.
 
 @select(tangler(tdir+'tut117.flx'))
-include "std";
+#import <flx.flxh>
 
 union parity =
   | Odd
@@ -650,7 +650,7 @@ The enum form only permits constant constructors
 The only way to get at the current component
 of a union is by pattern matching. Here is an example: 
 @select(tangler(tdir+'tut118.flx'))
-include "std";
+#import <flx.flxh>
 union int_option =
   | Some of int
   | None
@@ -699,7 +699,7 @@ returns a procedure which could print something.
 Felix supports the conditional expression as shown:
 
 @select(tangler(tdir+'tut119.flx'))
-include "std";
+#import <flx.flxh>
 
 fun sign1(x:int):int = 
 {
@@ -790,7 +790,7 @@ are not taken.
 
 @h= tangler(tdir+'tut120a.flx')
 @select(h)
-include "std";
+#import <flx.flxh>
 obj a(x:int) {
   var v = x;
   fun fetch ():int = { return v; }
@@ -845,7 +845,7 @@ Note that a char is represented by a one character string.
 
 @h= tangler(tdir+'tut121.flx')
 @select(h)
-include "std";
+#import <flx.flxh>
 regexp lower = ["abcdefghijklmnopqrstuvwxyz"];
 regexp upper = ["ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
 regexp digit = ["0123456789"];
@@ -913,7 +913,7 @@ buffer_end.
 
 @h= tangler(tdir+'tut121a.flx')
 @select(h)
-include "std";
+#import <flx.flxh>
 open Lexer;
 
 regexp lower = ["abcdefghijklmnopqrstuvwxyz"];
@@ -963,7 +963,7 @@ print "Done.\n";
 @h= tangler(tdir+'tut121b.flx','data')
 @select(h)
 #!/bin/env flx
-include "std";
+#import <flx.flxh>
 include "flx_lex";
 use Lexer::sub;
 
@@ -1036,7 +1036,7 @@ while { i1 != i2 } { print_token; };
 There is a function which is so useful, there
 is a special syntax for it: the lazy expression.
 @select(tangler(tdir+'tut108.flx'))
-include "std";
+#import <flx.flxh>
 var x = 1;
 var y = 2;
 
@@ -1062,7 +1062,7 @@ is the type of the expression.
 You can also put statements inside curly brackets
 to define a lazy function:
 @select(tangler(tdir+'tut109.flx'))
-include "std";
+#import <flx.flxh>
 val x = 1;
 val f = { val y = x + 1; return y; };
 val eol = { endl; };
@@ -1080,7 +1080,7 @@ is a special syntax for it, as described above in
 the section on lazy things: the block.
 
 @select(tangler(tdir+'tut114.flx'))
-include "std";
+#import <flx.flxh>
 var x = 1;
 val p1 = { print x; };
 proc p2() { print x; }; // equivalent to p1 (almost)
@@ -1160,7 +1160,7 @@ type subscripts must be given explicity, because they cannot
 be deduced from the argument. 
 
 @select(tangler(tdir+'tut135c.flx'))
-include "std";
+#import <flx.flxh>
 fun pair1 x y = { return x,y; }
 fun pair2[t,u] (x:t) (y:u) = { return x,y; }
 fun diag x = { return x,x; }
@@ -1192,7 +1192,7 @@ Felix structs and unions can be generic too.
 Here is a simple example.
 
 @select(tangler(tdir+'tut135e.flx'))
-include "std";
+#import <flx.flxh>
 union list[T] = 
   | Cons of T * list[T] 
   | Empty
@@ -1220,7 +1220,7 @@ the example: Felix deduces the value
 of the type variables from function arguments.
 
 @select(tangler(tdir+'tut135f.flx'))
-include "std";
+#import <flx.flxh>
 union list[T] =
   | Cons of T * list[T]
   | Empty
@@ -1305,7 +1305,7 @@ arguments of the parent of a function are fully
 determined by its child.
 
 @select(tangler(tdir+'tut135g.flx'))
-include "std";
+#import <flx.flxh>
 
 module X[t] {
   fun f[k]: t * k  -> t = "1";
@@ -1354,7 +1354,7 @@ Felix supports inductive types such as lists.
 Here is a list of ints.
 
 @select(tangler(tdir+'tut136.flx'))
-include "std";
+#import <flx.flxh>
 
 union float_list =
   | Empty
@@ -1387,7 +1387,7 @@ Here, we use a recursive routine to build the list,
 and an iterative routine to reverse it.
 
 @select(tangler(tdir+'tut137.flx'))
-include "std";
+#import <flx.flxh>
 
 union int_list =
   | Empty
@@ -1460,7 +1460,7 @@ Here is an example, beware this example
 contains quite a lot of subtle features!
 
 @select(tangler(tdir+'tut138.flx'))
-include "std";
+#import <flx.flxh>
 
 var j = 2;
 
@@ -1548,7 +1548,7 @@ of a given name. in this special case
 you can use the keyword 'the' to specify
 you mean that function.
 @select(tangler(tdir+'tut138a.flx'))
-include "std";
+#import <flx.flxh>
 
 fun f(x:int):int=>x*x;
 fun apply[s,d] (f:s->d) (x:s) : d => f x;
@@ -1559,7 +1559,7 @@ print (apply (the f) 4); endl;
 @head(2,'Currying')
 Consider the following example:
 @select(tangler(tdir+'tut139.flx'))
-include "std";
+#import <flx.flxh>
 
 fun f4(i4:int): int->int->int->int = {
   fun f3(i3:int): int->int->int = {
@@ -1620,7 +1620,7 @@ to declare functions suitable for currying.
 Here is the equivalent code, using this sugar:
 
 @select(tangler(tdir+'tut140.flx'))
-include "std";
+#import <flx.flxh>
 
 fun f4(i4:int) (i3:int) (i2:int) (i1:int): int = {
   return i1+i2+i3+i4;
@@ -1679,7 +1679,7 @@ leave the first free.
 
 @head(2,'List functions')
 @select(tangler(tdir+'tut140a.flx'))
-include "std";
+#import <flx.flxh>
 open List;
 val x : list[int] = 
   Cons (1, Cons (2, Cons (3, Empty[int])));
@@ -1719,7 +1719,7 @@ Most modern languages support packaging of related
 specifications into some kind of module, and Felix
 is no exception. Basic module use is quite simple:
 @select(tangler(tdir+'tut141.flx'))
-include "std";
+#import <flx.flxh>
 val top = 1;
 module A {
   val a = top + 1;
@@ -1774,7 +1774,7 @@ in order of writing.
 @head(2,'Koenig Lookup')
 Consider the following example:
 @select(tangler(tdir+'tut142.flx'))
-include "std";
+#import <flx.flxh>
 
 module A {
   struct X {
@@ -1913,7 +1913,7 @@ frame from being destroyed.
 Here is an example:
 
 @select(tangler(tdir+'tut143.flx'))
-include "std";
+#import <flx.flxh>
 
 fun pone (): &int = 
 {
@@ -1943,7 +1943,7 @@ Felix allows statements to be labelled,
 and provides a conditional and unconditional goto statement.
 
 @select(tangler(tdir+'tut144.flx'))
-include "std";
+#import <flx.flxh>
 print "start"; endl;
 var i = 1;
 start_loop:>
@@ -1971,7 +1971,7 @@ this quite easily in Felix, as we shall soon see.
 But first consider the following example:
 
 @select(tangler(tdir+'tut145.flx'))
-include "std";
+#import <flx.flxh>
 
 var x = 1;
 proc run()
@@ -2030,7 +2030,7 @@ In turn this allows dynamic binding.]
 A procedure can be terminated by a goto to a label
 at the end of the procedure:
 @select(tangler(tdir+'tut146.flx'))
-include "std";
+#import <flx.flxh>
 
 proc f(x:int) 
 {
@@ -2048,7 +2048,7 @@ f(0);
 A slightly more structured way of doing this
 involves the procedural return statement:
 @select(tangler(tdir+'tut147.flx'))
-include "std";
+#import <flx.flxh>
 
 proc f(x:int) 
 {
@@ -2065,7 +2065,7 @@ f(0);
 @doc()
 This can also be shortened by using a the jump statement:
 @select(tangler(tdir+'tut148.flx'))
-include "std";
+#import <flx.flxh>
 
 proc f(x:int) 
 {
@@ -2107,7 +2107,7 @@ by the compiler. An explicit loop statement
 may also be used:
 
 @select(tangler(tdir+'tut149.flx'))
-include "std";
+#import <flx.flxh>
 
 proc f(x:int) 
 {
@@ -2125,7 +2125,7 @@ Felix supports a traditional procedural if chain.
 Here is a simple if/do/done:
 
 @select(tangler(tdir+'tut149a.flx'))
-include "std";
+#import <flx.flxh>
 // procedural if
 proc f(x:int) {
   if x == 1 do print "ONE"; endl; done;
@@ -2138,7 +2138,7 @@ f 2;
 
 You can also have an else clause:
 @select(tangler(tdir+'tut149b.flx'))
-include "std";
+#import <flx.flxh>
 // procedural if/else
 proc f(x:int) {
   if x == 1 do print "ONE"; endl; 
@@ -2153,7 +2153,7 @@ f 2;
 
 and even elif clauses:
 @select(tangler(tdir+'tut149c.flx'))
-include "std";
+#import <flx.flxh>
 // procedural if/do/elif/else
 proc f(x:int) {
   if x == 1 do print "ONE"; endl; 
@@ -2172,7 +2172,7 @@ Any number of statements can be used, including none.
 You can also use a conditional return or goto instead
 of the do part:
 @select(tangler(tdir+'tut149d.flx'))
-include "std";
+#import <flx.flxh>
 // procedural if
 proc f(x:int) {
   if x == 1 do print "ONE "; endl; 
@@ -2198,7 +2198,7 @@ shorthand for a web of labels and conditional gotos,
 so adding extra labels can gotos is possible.
 
 @select(tangler(tdir+'tut149e.flx'))
-include "std";
+#import <flx.flxh>
 
 inline proc f(x:int) (y:int) {
   print "NOT ONE"; endl;
@@ -2230,7 +2230,7 @@ Conditional expresssions always have an else part,
 so that f1 and f2 below are equivalent:
 
 @select(tangler(tdir+'tut149f.flx'))
-include "std";
+#import <flx.flxh>
 
 proc f1(x:int) {
   if x == 1 then { print 1; endl; } 
@@ -2256,7 +2256,7 @@ conditional statements, in particular it can
 choose between two declarations.
 
 @select(tangler(tdir+'tut149g.flx'))
-include "std";
+#import <flx.flxh>
 macro val x = 1;
 if x == 1 do val y = 1; else val y = "ONE"; done;
 print y; endl;
@@ -2270,7 +2270,7 @@ be caught by the Felix program (although
 it can be caught by the driver).
 
 @select(tangler(tdir+'tut150.flx'))
-include "std";
+#import <flx.flxh>
 // uncomment to test 
 //fail "Aborted";
 
@@ -2280,7 +2280,7 @@ Non local gotos are very useful for a form of
 exception handling. Consider the following example:
 
 @select(tangler(tdir+'tut151.flx'))
-include "std";
+#import <flx.flxh>
 
 proc bad_calc(err: int -> void) 
 {
@@ -2315,7 +2315,7 @@ Non local gotos are very useful for another form of
 exception handling. Consider the following example:
 
 @select(tangler(tdir+'tut152.flx'))
-include "std";
+#import <flx.flxh>
 
 proc main
 {
@@ -2346,7 +2346,7 @@ literally, as in the next example,
 they're called lambdas, after the lambda calculus:
 
 @select(tangler(tdir+'tut154.flx'))
-include "std";
+#import <flx.flxh>
 val f = fun(a:int):int = { return a * a; };
 
 print (f 1); 
@@ -2399,13 +2399,13 @@ Here is the while procedure from
 the standard library, renamed While
 to avoid a clash:
 @select(tangler(tdir+'tut155.flx'))
-include "std";
+#import <flx.flxh>
 proc While (cond:unit->bool) (bdy:unit->void)
 {
-  repeat:>
+  repeatx:>
     if not (cond()) goto finished;
     bdy();
-    goto repeat;
+    goto repeatx;
   finished:>
 }
 
@@ -2440,7 +2440,7 @@ is a match statement when actually there isn't.
 Felix allows a function to be specified in an expression,
 this is called a lambda expression:
 @select(tangler(tdir+'tut156.flx'))
-include "std";
+#import <flx.flxh>
 var x = 10;
 while 
   (fun ():bool = { return x>0; })
@@ -2452,7 +2452,7 @@ by enclosing expressions in curley braces;
 this example shows the long form. Lambdas of course
 may have arguments:
 @select(tangler(tdir+'tut157.flx'))
-include "std";
+#import <flx.flxh>
 fun f(g:int->int,x:int) = { return g x; }
 print 
 (
@@ -2516,7 +2516,7 @@ version of that used by C. Note in particular
 that 010 is decimal ten in Felix!
 
 @select(tangler(tdir+'tut158.flx'))
-include "std";
+#import <flx.flxh>
 
 // radix
 {
@@ -2625,7 +2625,7 @@ of the string and the ISO-10646 code point the integer represents.
 Note that if the string is 8 bit, UTF-8 encoding will be applied.
 
 @select(tangler(tdir+'tut159.flx'))
-include "std";
+#import <flx.flxh>
 var s = "Hello" 32; // add a space after "Hello"
 s = s s; // says "Hello Hello "
 print s; endl;
@@ -2638,7 +2638,7 @@ floating point. Here are some examples:
 ranges is too ugly ..]
 
 @select(tangler(tdir+'tut160.flx'))
-include "std";
+#import <flx.flxh>
 
 match (1.0) with
   | NaN => { print "Not a Number"; }
@@ -2705,7 +2705,7 @@ X's are hex digits. Felix normalises all such
 encodings so identifiers match properly.
 
 @select(tangler(tdir+'tut161.flx'))
-include "std";
+#import <flx.flxh>
 
 val x_y_7' = 1;
 val Y_can't_U_do_this_in_C'' : double = 2.0;
@@ -2724,7 +2724,7 @@ can be accesses without using qualified names.
 Here's a simple example:
 
 @select(tangler(tdir+'tut205.flx'))
-include "std";
+#import <flx.flxh>
 module X {
   proc print_endl (a:int) { print a; endl; }
   fun square (a:int):int = { return a * a; }
@@ -2770,7 +2770,7 @@ open directives. Alternatively, you can use
 a qualified name.
 
 @select(tangler(tdir+'tut206.flx'))
-include "std";
+#import <flx.flxh>
 module X1 {
   proc printme() { print "X1"; endl; }
 }
@@ -2977,7 +2977,7 @@ The let expression is, in effect, a prefix operator with
 the lowest precedence. 
 
 @select(tangler(tdir+'tut208.flx'))
-include "std";
+#import <flx.flxh>
 print (match 1 with | ?x =>  x + x endmatch); endl;
 print (let ?z = 1 in z + z); endl;
 print (let ?x = (let ?y = 2 in y + y) in x + x); endl; // 8
@@ -3023,7 +3023,7 @@ that is, the parser uses the same grammar to build expressions
 and type expresssions (though each imposes constraints).
 
 @select(tangler(tdir+'tut209.flx'))
-include "std";
+#import <flx.flxh>
 open Long;
 
 typedef fun list (elt:TYPE):TYPE => 1 + elt * list elt;
@@ -3080,7 +3080,7 @@ that the type of the data sent agrees with the
 type which is read.
 
 @select(tangler(tdir+'tut210.flx'))
-include "std";
+#import <flx.flxh>
 
 print "Start .. "; endl;
 
@@ -3109,7 +3109,7 @@ print ".. OK"; endl;
 @doc()
 @head(2,'Message chain using fthreads')
 @select(tangler(tdir+'tut211.flx'))
-include "std";
+#import <flx.flxh>
 
 thread_max := 10;  
 message_max := 10;
@@ -3160,7 +3160,7 @@ done;
 Synchronous channels provide a more disciplined
 way of doing synchronous I/O.
 @select(tangler(tdir+'tut212.flx'))
-include "std";
+#import <flx.flxh>
 open C_hack;
 
 print "driver request test"; endl;
@@ -3227,7 +3227,7 @@ name: the driver name and control arguments
 are stripped.
 
 @select(tangler(tdir+'tut301.flx'))
-include "std";
+#import <flx.flxh>
 open System;
 print "argc="; print argc; endl;
 
@@ -3240,7 +3240,7 @@ for_each {i=0;} {i<argc} {++i;}
 @doc()
 @head(1,"STL Containers")
 @select(tangler(tdir+'tut302.flx'))
-include "std";
+#import <flx.flxh>
 include "stl";
 open Stl;
 open Stl::Vector;
@@ -3334,7 +3334,7 @@ pick between the parses.
 
 @head(2,"top level parser")
 @select(tangler(tdir+'tut310.flx'))
-include "std";
+#import <flx.flxh>
  
 // the input string
 data := "1+2+3$";
@@ -3396,7 +3396,7 @@ endl;
 @doc()
 @head(2,"nested parser")
 @select(tangler(tdir+'tut311.flx'))
-include "std";
+#import <flx.flxh>
 
 data := "1+2+3$";
 
@@ -3482,7 +3482,7 @@ once will lead to a reduce/reduce conflict.
 Note: restriction: all the anonymous symbols must have attributes.
 
 @select(tangler(tdir+'tut312.flx'))
-include "std";
+#import <flx.flxh>
  
 // the input string
 data := "1+22+33$";
@@ -3543,7 +3543,7 @@ endl;
 
 @head(2,"Mixed Mode Arithmetic")
 @select(tangler(tdir+'tut313.flx'))
-include "std";
+#import <flx.flxh>
 open MixedInt;
 
 var x = 1;
@@ -3553,7 +3553,7 @@ print$ x + y; endl;
 
 @head(2,"Service requests")
 @select(tangler(tdir+'tut314.flx'))
-include "std";
+#import <flx.flxh>
 open C_hack;
 
 print "driver request test"; endl;
@@ -3599,7 +3599,7 @@ svc$ svc_yield;
 
 @head(2,"User defined operators")
 @select(tangler(tdir+'tut315.flx'))
-include "std";
+#import <flx.flxh>
 #infix 10 "^%" myfun
 print "OK"; endl;
 fun myfun: int * int -> int = "$1 + $2 * 2";
@@ -3628,7 +3628,7 @@ print y; endl;
 
 @head(2,"Classes")
 @select(tangler(tdir+'tut316.flx'))
-include "std";
+#import <flx.flxh>
 open Long;
 
 class Y {
@@ -3693,7 +3693,7 @@ ncl;
 
 @head(2,"Polymorphic Classes")
 @select(tangler(tdir+'tut317.flx'))
-include "std";
+#import <flx.flxh>
 open Long;
 
 class Y[t] {
@@ -3772,7 +3772,7 @@ var aint <- new A[int]();
 
 @head(2,"Polymorphic Methods")
 @select(tangler(tdir+'tut318.flx'))
-include "std";
+#import <flx.flxh>
 open Long;
 
 class Y[t] {

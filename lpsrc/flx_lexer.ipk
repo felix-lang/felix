@@ -275,6 +275,10 @@ class lexer_state filename basedir incdirs =
 
     val mutable brackets: ((string * string) * string) list = []
 
+    method get_symbols = symbols
+    method get_nonterminals = nonterminals
+    method get_brackets = brackets
+
     method is_at_line_start = at_line_start
 
     method inbody = at_line_start <- false
@@ -332,6 +336,7 @@ class lexer_state filename basedir incdirs =
     method undef_macro name = file_ctrl#undef_macro name
     method get_macro name = file_ctrl#get_macro name
     method get_macros = file_ctrl#get_macros
+
     method add_macros (s:lexer_state) = 
       let h = self#get_macros in
       Hashtbl.iter 
@@ -341,7 +346,43 @@ class lexer_state filename basedir incdirs =
         else Hashtbl.add h k v 
       )
       s#get_macros
+      ;
 
+     (* append new keywords *)
+     let new_keywords = s#get_keywords in
+     let n = Array.length new_keywords in
+     if n > Array.length keywords then begin
+       let old_keywords = keywords in
+       keywords <- Array.make n [];
+       Array.blit old_keywords 0 keywords 0 (Array.length old_keywords)
+     end;
+     for i = 0 to Array.length new_keywords - 1 do
+       keywords.(i) <- new_keywords.(i) @ keywords.(i)
+     done
+     ;
+
+     (* append new symbols *)
+     let new_symbols = s#get_symbols in
+     let n = Array.length new_symbols in
+     if n > Array.length symbols then begin
+       let old_symbols = symbols in
+       symbols <- Array.make n [];
+       Array.blit old_symbols 0 symbols 0 (Array.length old_symbols)
+     end;
+     for i = 0 to Array.length new_symbols - 1 do
+       symbols.(i) <- new_symbols.(i) @ symbols.(i)
+     done
+     ;
+
+     brackets <- s#get_brackets @ brackets 
+
+     ;
+     Hashtbl.iter
+     (fun k ls ->
+       let old = try Hashtbl.find nonterminals k with Not_found -> [] in
+       Hashtbl.replace nonterminals k (ls @ old)
+     )
+     s#get_nonterminals
 
     method get_keywords = keywords
 
@@ -553,12 +594,23 @@ class lexer_state :
 
     method get_keywords: 
       (string * (srcref * string -> token)) list array
+
     method adjust_keyword_array : int -> unit
+
     method add_infix_keyword:
       int -> string -> string -> unit
     method add_keyword:
       string -> unit
 
+    method get_brackets:
+      ((string * string) * string) list
+
+    method get_nonterminals:
+      (string, (token list *ast_term_t) list) Hashtbl.t
+    
+    method get_symbols:
+      (string * (srcref * string -> token)) list array
+    
     method add_statement_keyword:
       string -> range_srcref -> token list -> ast_term_t -> unit
 
@@ -977,14 +1029,18 @@ let statement_directive state sr s lexer =
   match toks with
   | NAME (sr,tok) :: t 
   | USER_STATEMENT_KEYWORD (sr,tok,_,_) :: t ->
+    (*
     print_endline ("Statement directive " ^ tok);
+    *)
     let t1,t2 = action_split t in
     let sts,_ =
       match t2 with 
       | [] -> [],ENDMARKER
       | _ -> Flx_tok.parse_tokens Flx_parse.statementsx (t2 @ [ENDMARKER])
     in
+    (*
     print_endline ("Action Statements " ^ catmap "\n" (Flx_print.string_of_statement 0) sts);
+    *)
     state#add_statement_keyword tok (Flx_srcref.slift sr) t1 (`Statements_term sts);
     []
 
@@ -997,11 +1053,15 @@ let nonterminal_directive state sr s lexer =
   let toks = Flx_lex1.translate toks in
   match toks with
   | NAME (sr,tok) :: t ->
+    (*
     print_endline ("Adding nonterminal .." ^ tok);
+    *)
     let t1,t2 = action_split t in
+    (*
     print_endline ("Action Tokens: " ^ catmap ", " Flx_prelex.string_of_token t2);
-    let t2 = map Flx_prelex.string_of_token t2 in
-    state#add_nonterminal tok (Flx_srcref.slift sr) t1 (`Tokens_term t2);
+    *)
+    let expr = Flx_tok.parse_tokens Flx_parse.expression (t2 @ [ENDMARKER]) in
+    state#add_nonterminal tok (Flx_srcref.slift sr) t1 (`Expression_term expr);
     []
 
   | _ ->

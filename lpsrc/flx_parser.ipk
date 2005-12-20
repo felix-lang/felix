@@ -236,7 +236,7 @@ statements_terminator:
   | DONE { DONE $1 }
   | USER_KEYWORD { USER_KEYWORD $1 }
   | ENDMARKER { ENDMARKER }
-  
+ 
 compilation_unit:  
   | statement_aster ENDMARKER { $1 }
 
@@ -308,7 +308,7 @@ executable:
   | svc { $1 }
   | return { $1 }
   | ifgoto_stmt { $1 }
-  | whilst_stmt { $1 }
+/*  | whilst_stmt { $1 } */
   | todo { $1 }
   | assignment { $1 } 
   | inline_cpp { $1 } 
@@ -324,7 +324,9 @@ user_statement:
     { 
       let srt, kw, f = $1 in
       let sr = slift srt in
+      (*
       print_endline ("USER STATEMENT KEYWORD " ^ kw);
+      *)
       f ()
     }
 
@@ -922,6 +924,13 @@ macro_definition:
       in
       `AST_stmt_macro (sr,name,args,sts)
     }
+
+  | MACRO compound SEMI
+    {
+      let sr = rstoken $1 $3 in
+      let sts = snd $2 in 
+      `AST_macro_block (sr,sts)
+    }
     
   | MACRO FORGET macro_names SEMI
     {
@@ -942,14 +951,9 @@ macro_definition:
   | MACRO IF expr GOTO NAME SEMI
     { `AST_macro_ifgoto (rstoken $1 $6,$3,snd $5) }
 
-  | MACRO FOR VAL NAME IN tuple DO statement_aster DONE SEMI
+  | MACRO FOR VAL NAME IN expr DO statement_aster DONE SEMI
   { 
-    let vs = 
-      match $6 with
-      | `AST_tuple (_,ls) -> ls
-      | x -> [x]
-    in
-    `AST_macro_vfor (rstoken $1 $10, snd $4,vs,$8) 
+    `AST_macro_vfor (rstoken $1 $10, snd $4,$6,$8) 
   }
   
  
@@ -1688,13 +1692,15 @@ ifgoto_stmt:
   | IF expr DO statement_aster DONE SEMI
     { `AST_ifdo (rstoken $1 $5,$2,$4,[]) }
 
+/*
 whilst_stmt:
    | WHILST expr DO statement_aster DONE SEMI
      { `AST_whilst (rstoken $1 $6, $2, $4) }
 
    | UNTIL expr DO statement_aster DONE SEMI
      { `AST_until (rstoken $1 $6, $2, $4) }
-   
+*/
+
 @head(3,'Regular expression matching')
 @select(h)
 regmatch_expr:

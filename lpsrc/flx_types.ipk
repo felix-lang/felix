@@ -572,9 +572,7 @@ and ast_term_t =
   | `Statements_term of statement_t list
   | `Identifier_term of string
   | `Keyword_term of string
-  | `Nonterminal_term of string * ast_term_t 
   | `Apply_term of ast_term_t * ast_term_t list
-  | `Tokens_term of string list (* TEMPORARY HACK *)
   ]
 
 and statement_t =
@@ -599,6 +597,7 @@ and statement_t =
   | `AST_macro_names of range_srcref * id_t * id_t list
   | `AST_expr_macro of range_srcref * id_t * macro_parameter_t list * expr_t
   | `AST_stmt_macro of range_srcref * id_t * macro_parameter_t list * statement_t list
+  | `AST_macro_block of range_srcref * statement_t list
   | `AST_macro_val  of range_srcref * id_t * expr_t
   | `AST_macro_vals  of range_srcref * id_t * expr_t list
   | `AST_macro_var  of range_srcref * id_t * expr_t
@@ -611,7 +610,7 @@ and statement_t =
 
   (* type macros *)
   | `AST_macro_ifor of range_srcref * id_t * id_t list * statement_t list
-  | `AST_macro_vfor of range_srcref * id_t * expr_t list * statement_t list
+  | `AST_macro_vfor of range_srcref * id_t * expr_t * statement_t list
 
   (* composition of statements: note NOT A BLOCK *)
   | `AST_seq of range_srcref * statement_t list
@@ -1734,6 +1733,7 @@ let src_of_stmt e = match e with
   | `AST_macro_names (s, _,_)
   | `AST_expr_macro (s,_, _,_)
   | `AST_stmt_macro (s,_, _,_)
+  | `AST_macro_block (s,_)
   | `AST_macro_val (s,_,_)
   | `AST_macro_vals (s,_,_)
   | `AST_macro_var (s, _,_)
@@ -2840,16 +2840,14 @@ and string_of_qual = function
 and string_of_quals qs = catmap " " string_of_qual qs
 
 and string_of_ast_term level (term:ast_term_t) = 
-  let sast x = string_of_ast_term level x in
+  let sast level x = string_of_ast_term level x in
   match term with
   | `Statement_term s -> string_of_statement (level+1) s
   | `Statements_term ss -> catmap "\n" (string_of_statement (level+1)) ss
   | `Expression_term e -> string_of_expr e
   | `Identifier_term s -> s
   | `Keyword_term s -> s
-  | `Nonterminal_term (s,t) -> "\nuser nonterm: " ^ s ^ " ::= " ^ sast t
-  | `Tokens_term (tks) -> "\nuser tokens: " ^ String.concat " " tks
-  | `Apply_term (t,ts) -> sast t ^ "(" ^ catmap ", " sast ts ^ ")"
+  | `Apply_term (t,ts) -> "apply("^ sast 0 t ^ ",(" ^ catmap ", " (sast 0) ts ^ "))"
 
 and string_of_class_component level mem =
   let kind, name, mix,vs,ty,cc = match mem with
@@ -3159,6 +3157,12 @@ and string_of_statement level s =
     "("^ cat ", " sps ^") " ^
     short_string_of_compound level ss
 
+  | `AST_macro_block (_,ss) -> 
+    spaces level ^ 
+    "macro " ^
+    short_string_of_compound level ss ^
+    "}"
+
   | `AST_macro_forget (_,names) ->
     spaces level ^ 
     "macro forget" ^
@@ -3220,10 +3224,10 @@ and string_of_statement level s =
     catmap "\n" (string_of_statement (level +2)) sts ^
     spaces level ^ "done;"
 
-  | `AST_macro_vfor (_,v,vs,sts) ->
+  | `AST_macro_vfor (_,v,e,sts) ->
     let se e = string_of_expr e in
     spaces level
-    ^ "macro for val " ^ v ^ " in " ^ catmap "," se vs ^ " do\n" ^ 
+    ^ "macro for val " ^ v ^ " in " ^ se e ^ " do\n" ^ 
     catmap "\n" (string_of_statement (level +2)) sts ^
     spaces level ^ "done;"
 

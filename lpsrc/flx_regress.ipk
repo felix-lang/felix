@@ -26,7 +26,7 @@ get smaller with each compiler improvement.
 
 @head(2,'Good tests')
 @select(tangler('test/rt01.flx'))
-include "std";
+#import <flx.flxh>
 open Tiny;
 open Short;
 open Long;
@@ -305,7 +305,7 @@ print (two());
 
 @select(tangler('test/rt10.flx'))
 //multiple assignment
-include "std";
+#import <flx.flxh>
 var a:int;
 var b:int;
 var c:int;
@@ -329,7 +329,7 @@ print e; print " ";
 endl;
 
 @select(tangler('test/rt11.flx'))
-include "std";
+#import <flx.flxh>
 
 // test dual
 typedef y = ~(int+int); // = int * int
@@ -359,7 +359,7 @@ print two; endl;
 
 @select(tangler('test/rt12.flx'))
 // generics inlining/call lifting tests
-include "std";
+#import <flx.flxh>
 
 proc f[k] (z:k, print:k->void) {
   fun diag[t] (x:t):t*t = { return x,x; }
@@ -372,7 +372,7 @@ f[int] (1, print of (int));
 
 @select(tangler('test/rt13.flx'))
 //call inlining
-include "std";
+#import <flx.flxh>
 proc g[t]()
 {
   proc h()
@@ -415,7 +415,7 @@ f[int]();
 
 @select(tangler('test/rt14.flx'))
 //call inlining
-include "std";
+#import <flx.flxh>
 
 val x = 1;
 if x == 1 then 
@@ -435,7 +435,7 @@ endif
 
 @select(tangler('test/rt15.flx'))
 // more generic stuff
-include "std";
+#import <flx.flxh>
 open List;
 
 fun snd(x,y)=>y;
@@ -475,7 +475,7 @@ iter
 ;
 
 @select(tangler('test/rt16.flx'))
-include "std";
+#import <flx.flxh>
 // self-tail rec test (inspect output)
 // (requires --inline atm)
 var x = 4;
@@ -490,7 +490,7 @@ endoff:>
 recur();
 
 @select(tangler('test/rt17.flx'))
-include "std";
+#import <flx.flxh>
 // non-self-tail rec test (inspect output)
 // (requires --inline atm)
 var x = 4;
@@ -508,7 +508,7 @@ recur2();
 
 
 @select(tangler('test/rt18.flx'))
-include "std";
+#import <flx.flxh>
 // self-tail rec test (inspect output)
 // (requires --inline atm)
 fun g(x:int):int = {
@@ -520,7 +520,7 @@ endoff:>
  
 print (g 10); endl;
 @select(tangler('test/rt19.flx'))
-include "std";
+#import <flx.flxh>
 // non-self-tail rec test (inspect output)
 // (requires --inline atm)
 
@@ -534,7 +534,7 @@ print (f 10); endl;
 
 @select(tangler('test/rt20.flx'))
 // lvalue decay if function called thru variable
-include "std";
+#import <flx.flxh>
 
 proc f(g:int->void) { var x=1; g x; }
 proc g(x:int) { }
@@ -542,7 +542,7 @@ f g of (int);
 
 @select(tangler('test/rt21.flx'))
 // contrib by Valery, mod by Skaller
-include "std";
+#import <flx.flxh>
 
 // emulate command line arguments
 arguments := "--test", "words", "more words";
@@ -567,7 +567,7 @@ done;
 
 @select(tangler('test/drt1.flx'))
 // plugin loader test
-include "std";
+#import <flx.flxh>
 
 print "Starting .. "; endl;
 @tangle('Dynlink::run_lib("./test/rt02'+EXT_SHLIB+'");')
@@ -627,7 +627,7 @@ fun neg(a:int) = { return -a; }
 
 @select(tangler('test/bt06.flx'))
 // privacy violation
-include "std";
+#import <flx.flxh>
 
 module X 
 {
@@ -670,7 +670,7 @@ ctypes int;
 
 @select(tangler('test/bt10.flx'))
 // function drops off end
-include "std";
+#import <flx.flxh>
 fun f(x:int):int =
 {
   if  x == 1 do return 1; done;

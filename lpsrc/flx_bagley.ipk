@@ -3,7 +3,7 @@
   tangle("//")
   tangle("// Contributed by John Skaller")
   tangle("//")
-  tangle('include "std";')
+  tangle('#import <flx.flxh>;')
   tangle("n := atoi(System::argv 1);")
 
 @head(1,'Bagley Language Shootout')
