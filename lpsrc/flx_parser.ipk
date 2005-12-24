@@ -145,6 +145,7 @@ let mktypefun sr name vs args return_type body =
 
 /* whitespace and comments */
 %token NEWLINE 
+%token SLOSH
 %token<string> COMMENT 
 %token<string> COMMENT_NEWLINE
 %token<int> WHITE 
@@ -854,36 +855,36 @@ macro_definition:
         `AST_macro_name (sr,lname,"")
     }
 
-  | MACRO VAR NAME EQUAL expr SEMI
+  | MACRO VAR macro_names EQUAL expr SEMI
     {
       let 
         sr = rstoken $1 $6 and
-        name = snd $3 and
+        names = $3 and
         e = $5
       in
-        `AST_macro_var (sr,name,e)
+        `AST_macro_var (sr,names,e)
     }
 
 
-  | MACRO NAME EQUAL expr SEMI
+  | MACRO macro_names EQUAL expr SEMI
     {
       let 
         sr = rstoken $1 $5 and
-        name = snd $2 and
+        names = $2 and
         e = $4
       in
-        `AST_macro_assign (sr,name,e)
+        `AST_macro_assign (sr,names,e)
     }
 
 
-  | MACRO VAL NAME EQUAL expr SEMI
+  | MACRO VAL macro_names EQUAL expr SEMI
     {
       let 
         sr = rstoken $1 $6 and
-        name = snd $3 and
+        names = $3 and
         e = $5
       in
-        `AST_macro_val (sr,name,e)
+        `AST_macro_val (sr,names,e)
     }
 
   | MACRO VAL NAME IS tuple SEMI
@@ -951,14 +952,14 @@ macro_definition:
   | MACRO IF expr GOTO NAME SEMI
     { `AST_macro_ifgoto (rstoken $1 $6,$3,snd $5) }
 
-  | MACRO FOR VAL NAME IN expr DO statement_aster DONE SEMI
+  | MACRO FOR VAL macro_names IN expr DO statement_aster DONE SEMI
   { 
-    `AST_macro_vfor (rstoken $1 $10, snd $4,$6,$8) 
+    `AST_macro_vfor (rstoken $1 $10, $4,$6,$8) 
   }
   
  
 macro_name_list:
-  | macro_name_list NAME { snd $2 :: $1 }
+  | macro_name_list COMMA NAME { snd $3 :: $1 }
   | NAME { [snd $1] }
 macro_names:
   | macro_name_list { List.rev $1 }
@@ -2463,7 +2464,15 @@ application:
       let sr = rsrange (slift $1) (src_of_expr $2) in
       `AST_case_index (sr,$2) 
     }
+    
+  | MACRO CTOR NAME coercion 
+    {
+      let sr = rsrange (slift $1) (src_of_expr $4) in
+      `AST_macro_ctor (sr,(snd $3,$4))
+    }
+    
   | coercion { $1 }
+
 
 coercion:
   | coercion COLON factor          

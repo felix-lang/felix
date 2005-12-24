@@ -428,7 +428,9 @@ and expr_t =
   | `AST_expr of range_srcref * string * typecode_t
 
   | `AST_type_match of range_srcref * (typecode_t * (tpattern_t * typecode_t) list)
-   
+
+  | `AST_macro_ctor of range_srcref * (string * expr_t)
+  | `AST_macro_statements of range_srcref * statement_t list
   ]
 
 @head(3,'Pattern')
@@ -598,10 +600,10 @@ and statement_t =
   | `AST_expr_macro of range_srcref * id_t * macro_parameter_t list * expr_t
   | `AST_stmt_macro of range_srcref * id_t * macro_parameter_t list * statement_t list
   | `AST_macro_block of range_srcref * statement_t list
-  | `AST_macro_val  of range_srcref * id_t * expr_t
+  | `AST_macro_val  of range_srcref * id_t list * expr_t
   | `AST_macro_vals  of range_srcref * id_t * expr_t list
-  | `AST_macro_var  of range_srcref * id_t * expr_t
-  | `AST_macro_assign of range_srcref * id_t * expr_t
+  | `AST_macro_var  of range_srcref * id_t list * expr_t
+  | `AST_macro_assign of range_srcref * id_t list * expr_t
   | `AST_macro_forget of range_srcref * id_t list
   | `AST_macro_label of range_srcref * id_t
   | `AST_macro_goto of range_srcref * id_t
@@ -610,7 +612,7 @@ and statement_t =
 
   (* type macros *)
   | `AST_macro_ifor of range_srcref * id_t * id_t list * statement_t list
-  | `AST_macro_vfor of range_srcref * id_t * expr_t * statement_t list
+  | `AST_macro_vfor of range_srcref * id_t list * expr_t * statement_t list
 
   (* composition of statements: note NOT A BLOCK *)
   | `AST_seq of range_srcref * statement_t list
@@ -1248,6 +1250,8 @@ let map_expr f (e:expr_t):expr_t = match e with
 
   | `AST_expr _ -> e
   | `AST_type_match _ -> e
+  | `AST_macro_ctor _ -> e
+  | `AST_macro_statements _ -> e
 
 let all_units' ts = 
   try 
@@ -1715,6 +1719,8 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_expr (s,_,_)
   | `AST_letin (s,_)
   | `AST_typeof (s,_)
+  | `AST_macro_ctor (s,_)
+  | `AST_macro_statements (s,_)
   
     -> s
 
@@ -2228,6 +2234,13 @@ and string_of_expr (e:expr_t) =
     ps
     ^
     " endmatch"
+
+  | `AST_macro_ctor (_,(s,e)) ->
+    "macro ctor " ^ s ^ string_of_expr e
+
+  | `AST_macro_statements (_,ss) ->
+    "macro statements begin\n" ^ 
+    catmap "\n" (string_of_statement 1) ss ^ "\nend"
 
   | `AST_regmatch (_,(p1,p2, ps)) ->
     "regmatch " ^ se p1 ^ " to " ^ se p2 ^ " with " ^
@@ -3097,9 +3110,9 @@ and string_of_statement level s =
     "("^string_of_parameters ps^")\n" ^
     string_of_compound level ss
 
-  | `AST_macro_val (_,name, e) ->
+  | `AST_macro_val (_,names, e) ->
     spaces level ^ 
-    "macro val " ^ name ^ " = " ^
+    "macro val " ^ String.concat ", " names ^ " = " ^
     se e ^
     ";"
 
@@ -3109,15 +3122,15 @@ and string_of_statement level s =
     catmap ", " se es ^
     ";"
 
-  | `AST_macro_var (_,name, e) ->
+  | `AST_macro_var (_,names, e) ->
     spaces level ^ 
-    "macro var " ^ name ^ " = " ^
+    "macro var " ^ String.concat ", " names ^ " = " ^
     se e ^
     ";"
 
-  | `AST_macro_assign (_,name, e) ->
+  | `AST_macro_assign (_,names, e) ->
     spaces level ^ 
-    "macro " ^ name ^ " = " ^
+    "macro " ^ String.concat ", " names ^ " = " ^
     se e ^
     ";\n"
 
@@ -3227,7 +3240,7 @@ and string_of_statement level s =
   | `AST_macro_vfor (_,v,e,sts) ->
     let se e = string_of_expr e in
     spaces level
-    ^ "macro for val " ^ v ^ " in " ^ se e ^ " do\n" ^ 
+    ^ "macro for val " ^ String.concat ", " v ^ " in " ^ se e ^ " do\n" ^ 
     catmap "\n" (string_of_statement (level +2)) sts ^
     spaces level ^ "done;"
 
@@ -4215,6 +4228,8 @@ type felix_compiler_options_t =
   max_inline_length : int;
   compile_only : bool;
   force_recompile : bool;
+  with_comments : bool;
+  mangle_names : bool;
 }
 
 
@@ -4234,6 +4249,8 @@ type sym_state_t =
   wrappers : (int, int) Hashtbl.t;
   lexers : (int * tbexpr_t, int) Hashtbl.t;
   parsers : (int * btypecode_t * int list, int) Hashtbl.t;
+  quick_names : (string, (int * btypecode_t list)) Hashtbl.t;
+  mutable bifaces : biface_t list;
 }
 
 module VarMap = StringMap
@@ -4295,6 +4312,8 @@ type felix_compiler_options_t =
   max_inline_length : int;
   compile_only : bool;
   force_recompile : bool;
+  with_comments : bool;
+  mangle_names : bool;
 }
 
 
@@ -4314,6 +4333,8 @@ type sym_state_t =
   wrappers : (int, int) Hashtbl.t;
   lexers : (int * tbexpr_t, int) Hashtbl.t;
   parsers : (int * btypecode_t * int list, int) Hashtbl.t;
+  quick_names : (string, (int * btypecode_t list)) Hashtbl.t;
+  mutable bifaces : biface_t list;
 }
 
 

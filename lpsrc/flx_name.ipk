@@ -46,6 +46,18 @@ open Flx_util
 open Flx_exceptions
 open List
 
+(* these words are either keywords or peculiar to the
+   compiler code generator, so we have to avoid a clash.
+   This list has been constructed by trial and error ..
+*)
+
+let fixups = [
+  "true","_true";
+  "false","_false";
+  "argc","_argc";
+  "argv","_argv";
+]
+
 let cvt s = 
   let n = String.length s in
   let id = Buffer.create (n+10) in
@@ -55,7 +67,8 @@ let cvt s =
     | '\\' -> Buffer.add_string id "__"
     | x -> Buffer.add_char id x
   done;
-  Buffer.contents id
+  let name = Buffer.contents id in
+  try assoc name fixups with Not_found -> name
 
 let cid_of_flxid s = cvt s
 
@@ -100,7 +113,7 @@ let cpp_name bbdfns index =
   | _ -> syserr sr "cpp_name expected func,proc,var,val,class,reglex or regmatch"
   ) ^ si index ^ "_" ^ cvt id
 
-let cpp_instance_name syms bbdfns index ts =
+let cpp_instance_name' syms bbdfns index ts =
   let inst = 
     try Hashtbl.find syms.instances (index,ts) 
     with Not_found -> 
@@ -128,6 +141,40 @@ let cpp_instance_name syms bbdfns index ts =
     )
   in
   "_i" ^ si inst ^ cpp_name bbdfns index 
+
+let is_export syms id =
+  let bifaces = syms.bifaces in
+  try 
+    iter 
+    (function
+      | `BIFACE_export_fun (_,_,s)
+      | `BIFACE_export_type (_,_,s) -> 
+        if id = s then raise Not_found
+     )
+     bifaces; 
+     false 
+  with Not_found -> true
+  
+let cpp_instance_name syms bbdfns index ts =
+  let long_name = cpp_instance_name' syms bbdfns index ts in
+  if syms.compiler_options.mangle_names then long_name else
+  let id,parent,sr,entry = 
+    try Hashtbl.find bbdfns index 
+    with _ -> failwith ("[cpp_name] Can't find index " ^ si index)
+  in
+  let id' = cvt id in
+  if id = id' then 
+  begin
+    let inst = 
+      try Hashtbl.find syms.quick_names id 
+      with Not_found -> 
+        Hashtbl.add syms.quick_names id (index,ts);
+        index,ts
+    in
+      if (index,ts) <> inst then long_name else
+      if is_export syms id then long_name else id
+  end
+  else long_name
 
 let tix syms t = 
   try Hashtbl.find syms.registry t

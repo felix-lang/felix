@@ -41,7 +41,7 @@ open Flx_exceptions
 open List
 open Flx_srcref
 
-(* 1: remove comments *)
+(* remove comments, whitespace, newlines *)
 
 let filter_comments x =
   let rec filter x' result  =
@@ -53,6 +53,31 @@ let filter_comments x =
     | h :: t -> filter t (h::result)
     | [] -> rev result
   in filter x []
+
+(* remove comments, whitespace, newlines, trailing sloshes,
+  and a trailing hash on the first line 
+*)
+let filter_preprocessor x =
+  let rec filter first_line x' result  =
+    match x' with 
+    | WHITE _ :: t
+    | COMMENT _ :: t 
+      -> filter first_line t result
+
+    | COMMENT_NEWLINE _ :: t
+    | NEWLINE :: t
+    | SLOSH :: NEWLINE :: t 
+    | SLOSH :: WHITE _ :: NEWLINE :: t
+      -> filter false t result
+
+    | HASH _ :: NEWLINE :: t
+    | HASH _ :: WHITE _ :: NEWLINE :: t 
+      when first_line  -> filter false t result
+
+    | h :: t -> filter first_line t (h::result)
+    | [] -> rev result
+  in filter true x []
+
 
 let compress_ctypes x =
   let rec filter x' result = 
@@ -73,9 +98,18 @@ let translate ts =
   and reverse_apply dat fn = fn dat 
   in List.fold_left reverse_apply ts filters
 
+let translate_preprocessor ts = 
+  let filters = [
+    (* 1 *) filter_preprocessor ;
+    (* 2 *) compress_ctypes ;
+    ] 
+  and reverse_apply dat fn = fn dat 
+  in List.fold_left reverse_apply ts filters
+
 @h = tangler('src/flx_lex1.mli')
 @select(h)
 val translate : Flx_parse.token list -> Flx_parse.token list
+val translate_preprocessor : Flx_parse.token list -> Flx_parse.token list
 
 @head(1,'Pre token printer')
 @h = tangler('src/flx_pretok.ml')
@@ -215,7 +249,7 @@ object(self)
     print_tokens !slist;
     print_endline "";
     
-    let token = nth tokens_copy
+    let j =
       begin 
         if length tokens_copy = current_token_index
         then begin
@@ -228,13 +262,28 @@ object(self)
         end
       end
     in 
-    let file,line,scol,ecol = Flx_prelex.src_of_token token in
-    print_endline 
-    (
-      " in " ^ file ^ 
-      ", line " ^ string_of_int line ^ 
-      " col " ^ string_of_int scol
-    );
+    let token = nth tokens_copy j in
+    let sr = ref (Flx_prelex.src_of_token token) in
+    let file,line,scol,ecol = !sr in
+    if line <> 0 or j = 0 then
+      print_endline 
+      (
+        " in " ^ file ^ 
+        ", line " ^ string_of_int line ^ 
+        " col " ^ string_of_int scol
+      )
+    else begin
+      let token = nth tokens_copy (j-1) in
+      sr := Flx_prelex.src_of_token token;
+      let file,line,scol,ecol = !sr in
+      print_endline 
+      (
+        " in " ^ file ^ 
+        ", after line " ^ string_of_int line ^ 
+        " col " ^ string_of_int scol
+      )
+    end
+    ; 
     
     slist := [];
     for i = current_token_index to last do
@@ -243,7 +292,9 @@ object(self)
     print_tokens !slist;
     print_endline "";
     print_endline "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
-    flush stdout
+    flush stdout;
+    clierr (Flx_srcref.slift (!sr)) "Syntax Error";
+    ()
 
   method parse_user_statement
     (name:string) 

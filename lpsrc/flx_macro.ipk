@@ -397,17 +397,29 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
  
   (* Name expansion *)
   | `AST_name (sr, name,[]) ->
-    begin try 
-      match List.assoc name macros with
-      | MVar b -> me !b
-      | MVal b -> me b
-      | MVals bs -> `AST_tuple (sr,(map me bs))
-      | MExpr(ps,b) -> e
-      | MName _ -> `AST_name (sr,mi sr name,[])
-      | MNames _ -> clierr sr "Cannot use macro name list here"
-      | MStmt (ps,b) -> e
-    with 
-    | Not_found -> e
+    (*
+    print_endline ("EXPANDING NAME " ^ name);
+    *)
+    let mac = try Some (List.assoc name macros) with Not_found -> None in
+    begin match mac with
+    | None -> e
+    | Some mac -> match mac with
+    | MVar b -> me !b
+    | MVal b -> me b
+    | MVals bs -> `AST_tuple (sr,(map me bs))
+    | MExpr(ps,b) -> 
+     (*
+     clierr sr ("Name "^name^" expands to unapplied macro function"); 
+     *)
+     e
+     
+    | MName _ -> `AST_name (sr,mi sr name,[])
+    | MNames _ -> clierr sr "Cannot use macro name list here"
+    | MStmt (ps,b) -> 
+     (*
+     clierr sr ("Name "^name^" expands to unapplied macro procedure"); 
+     *)
+     e
     end
 
   | `AST_name (sr, name,ts) -> 
@@ -562,6 +574,14 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | `AST_case_tag (sr, i) -> e
   | `AST_typed_case (sr, i, t) -> e
   | `AST_case_index (sr,e) -> `AST_case_index (sr,me e)
+
+  | `AST_macro_ctor (sr,(name,e)) -> `AST_macro_ctor (sr,(name,me e))
+  | `AST_macro_statements (sr,sts) -> 
+     let sts = 
+      expand_statements recursion_limit local_prefix seq (ref true) 
+      macros sts 
+     in
+     `AST_macro_statements (sr,sts)
 
   | `AST_tuple (sr, es) -> `AST_tuple (sr, map me es)
   | `AST_arrayof (sr, es) -> `AST_arrayof (sr, map me es)
@@ -1072,23 +1092,23 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
   | `AST_macro_names (sr, id1, id2) ->
     tack (`AST_macro_names (sr, id1, map (mi sr) id2))
 
-  | `AST_macro_val (sr, id, e) ->
-    tack (`AST_macro_val (sr, id, me e))
+  | `AST_macro_val (sr, ids, e) ->
+    tack (`AST_macro_val (sr, ids, me e))
 
   | `AST_macro_vals (sr, id, e) ->
     tack (`AST_macro_vals (sr, id, map me e))
 
-  | `AST_macro_var (sr, id, e) ->
-    tack (`AST_macro_var (sr, id, me e))
+  | `AST_macro_var (sr, ids, e) ->
+    tack (`AST_macro_var (sr, ids, me e))
 
-  | `AST_macro_assign (sr, id, e) ->
-    tack (`AST_macro_assign (sr, id, me e))
+  | `AST_macro_assign (sr, ids, e) ->
+    tack (`AST_macro_assign (sr, ids, me e))
 
   | `AST_macro_ifor (sr,id,ids,sts) ->
     tack (`AST_macro_ifor (sr,id,ids,mss sts))
     
-  | `AST_macro_vfor (sr,id,e,sts) ->
-    tack (`AST_macro_vfor (sr,id,me e,mss sts))
+  | `AST_macro_vfor (sr,ids,e,sts) ->
+    tack (`AST_macro_vfor (sr,ids,me e,mss sts))
   
   (* during parameter replacement,
     we don't know if a call is executable or not,
@@ -1234,25 +1254,94 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     let ps,e = alpha_expr sr local_prefix seq ps e in
     ref_macros := (id,MExpr (ps, e)) :: !ref_macros
 
-  | `AST_macro_val (sr, id, e) ->
-    ref_macros := (id,MVal (me e)) :: !ref_macros
+  | `AST_macro_val (sr, ids, e) ->
+    let e = me e in
+    let n = length ids in
+    if n = 1 then
+      ref_macros := (hd ids,MVal e) :: !ref_macros
+    else begin 
+      let vs = 
+        match e with 
+        | `AST_tuple (_,ls) -> ls
+        | _ -> clierr sr "Unpack non-tuple"
+      in
+      let m = length vs in 
+      if m <> n then
+        clierr sr 
+        (
+          "Tuple is wrong length, got " ^ 
+          si n ^ " variables, only " ^ 
+          si m ^ " values"
+        )
+      else 
+      let ides = combine ids vs in
+      iter (fun (id,v) ->
+        ref_macros := (id,MVal v) :: !ref_macros
+      )
+      ides
+    end
 
   | `AST_macro_vals (sr, id, es) ->
     ref_macros := (id,MVals (map me es)) :: !ref_macros
 
-  | `AST_macro_var (sr, id, e) ->
-    ref_macros := (id,MVar (ref (me e))) :: !ref_macros
+  | `AST_macro_var (sr, ids, e) ->
+    let e = me e in
+    let n = length ids in
+    if n = 1 then
+      ref_macros := (hd ids,MVar (ref e)) :: !ref_macros
+    else begin 
+      let vs = 
+        match e with 
+        | `AST_tuple (_,ls) -> ls
+        | _ -> clierr sr "Unpack non-tuple"
+      in
+      let m = length vs in 
+      if m <> n then
+        clierr sr 
+        (
+          "Tuple is wrong length, got " ^ 
+          si n ^ " variables, only " ^ 
+          si m ^ " values"
+        )
+      else 
+      let ides = combine ids vs in
+      iter (fun (id,v) ->
+        ref_macros := (id,MVar (ref v)) :: !ref_macros
+      )
+      ides
+    end
 
-  | `AST_macro_assign (sr, id, e) ->
-    begin 
+  | `AST_macro_assign (sr, ids, e) ->
+    let assign id e =
       try 
         let r = assoc id (!ref_macros @ macros) in
         match r with
-        | MVar p -> p := me e
+        | MVar p -> p := e
         | _ -> clierr sr "Assignment to wrong kind of macro"
       with Not_found -> clierr sr "Assignment requires macro var"
+    in
+    let e = me e in
+    let n = length ids in
+    if n = 1 then assign (hd ids) e
+    else begin 
+      let vs = 
+        match e with 
+        | `AST_tuple (_,ls) -> ls
+        | _ -> clierr sr "Unpack non-tuple"
+      in
+      let m = length vs in 
+      if m <> n then
+        clierr sr 
+        (
+          "Tuple is wrong length, got " ^ 
+          si n ^ " variables, only " ^ 
+          si m ^ " values"
+        )
+      else 
+      let ides = combine ids vs in
+      iter (fun (id,v) -> assign id v) ides
     end
-      
+
   | `AST_macro_ifor (sr, id, names, sts) ->
     let names = expand_names sr names in
     iter (fun name ->
@@ -1262,16 +1351,41 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       ref_macros := saved_macros
     ) names
 
-  | `AST_macro_vfor (sr, id, e, sts) ->
+  | `AST_macro_vfor (sr, ids, e, sts) ->
     let e = me e in
     let vals = match e with
       | `AST_tuple (_,vals) -> vals
       | x -> [x]
     in
-    iter (fun expr ->
-      let name = me expr in
+    iter (fun e ->
       let saved_macros = !ref_macros in
-      ref_macros := (id,MVal expr) :: saved_macros;
+      begin
+        let n = length ids in
+        if n = 1 then
+          ref_macros := (hd ids,MVal e) :: !ref_macros
+        else begin 
+          let vs = 
+            match e with 
+            | `AST_tuple (_,ls) -> ls
+            | _ -> clierr sr ("Unpack non-tuple " ^ string_of_expr e)
+          in
+          let m = length vs in 
+          if m <> n then
+            clierr sr 
+            (
+              "Tuple is wrong length, got " ^ 
+              si n ^ " variables, only " ^ 
+              si m ^ " values"
+            )
+          else 
+          let ides = combine ids vs in
+          iter (fun (id,v) ->
+            ref_macros := (id,MVal v) :: !ref_macros
+          )
+          ides
+        end
+      end
+      ;
       iter tack (ms sts);
       ref_macros := saved_macros
     ) vals
@@ -1300,6 +1414,12 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     let b = ses b in
     iter ctack b
 
+  | `AST_call (sr, `AST_macro_statements (srs,sts), arg) ->
+    begin match arg with
+    | `AST_tuple (_,[]) -> iter ctack sts
+    | _ -> clierr sr "Apply statements requires unit arg"
+    end
+    
   | `AST_call (sr, e1', e2') ->
     let 
       e1 = me e1' and 
@@ -1401,12 +1521,17 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     let string_of_statements sts =
         String.concat "\n" (map (string_of_statement 1) sts)
     in
+    let wrap_stmts ss = `AST_macro_statements (sr,ss) in
     let rec eval_arg (id:string) (h:ast_term_t) : macro_dfn_t option = 
       match h with
       | `Expression_term  e -> Some (id,MVal e)
       | `Identifier_term s -> Some (id,MName s)
+      (*
       | `Statement_term s -> Some (id,MStmt ([],[s]))
       | `Statements_term ss -> Some (id,MStmt ([],ss))
+      *)
+      | `Statement_term s -> Some (id,MVal (wrap_stmts [s]))
+      | `Statements_term ss -> Some (id,MVal (wrap_stmts ss))
       | `Keyword_term _ ->
         (*
         print_endline ("[substitute statement terms] Keyword arg dropped " ^ id);
@@ -1450,6 +1575,9 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     and eval_term_apply sr (body:ast_term_t) (args:macro_dfn_t list) : ast_term_t =
       match body with
       | `Expression_term e ->
+        (*
+        print_endline ("EXPANDING EXPRESSION " ^ string_of_expr e);
+        *)
         let e = expand_expr (recursion_limit-1) local_prefix seq args e in
         `Expression_term e
 

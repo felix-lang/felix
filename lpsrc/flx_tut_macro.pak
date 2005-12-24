@@ -139,7 +139,7 @@ endl;
 
 @head(2,'Long Lines')
 Preprocessor directives support a kind of 'here' doc.
-Place a # character after the command name, and
+Place a # character after the first part of the command, and
 all lines up to a line consisting solely of a #
 will be taken as the argument string.
 

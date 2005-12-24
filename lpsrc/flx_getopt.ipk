@@ -134,6 +134,8 @@ let get_felix_options options =
   {
     optimise    = check_keys options ["opt"; "optimise"];
     debug       = check_key options "debug";
+    with_comments = check_key options "with-comments";
+    mangle_names = check_key options "mangle-names";
     include_dirs= get_keys_values options ["I"; "include"];
     print_flag  = check_keys options ["v"; "verbose"];
     trace       = check_keys options ["trace" ];
@@ -174,7 +176,9 @@ let print_options () =
   print_endline "  -c, --compile-only: no code generation";
   print_endline "  -Idir, --include=dir : append dir to include path";
   print_endline "  --inline, --noinline, --optimise";
-  print_endline "  --force : force recompilation"
+  print_endline "  --force : force recompilation";
+  print_endline "  --with-comments : generate code with comments";
+  print_endline "  --mangle-names : generate code with fully mangled names"
 
 let make_syms options = 
   {
@@ -192,6 +196,8 @@ let make_syms options =
     wrappers = Hashtbl.create 97;
     lexers = Hashtbl.create 7;
     parsers = Hashtbl.create 7;
+    quick_names = Hashtbl.create 97;
+    bifaces = [];
   }
 
 

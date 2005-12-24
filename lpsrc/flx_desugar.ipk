@@ -336,6 +336,8 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_strexpr _
   | `AST_setunion  _
   | `AST_setintersection _
+  | `AST_macro_ctor _
+  | `AST_macro_statements _
     ->
     clierr sr ("[rex] Unexpected " ^ string_of_expr e)
 
@@ -438,13 +440,14 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let sts = 
       rst syms name access [] (mkcurry seq sr name' vs pps (ret,None) kind sts [`Generated "lambda"])
     in
+    if length pps = 0 then syserr sr "[rex] Lambda with no arguments?" else
+    let t = type_of_argtypes (map snd (fst (hd pps))) in
     let e = 
       `AST_suffix 
       (
         sr,
         (
-          `AST_name (sr,name',[]), 
-          type_of_argtypes (map snd (fst (hd pps)))
+          `AST_name (sr,name',[]), t
         )
       )
     in

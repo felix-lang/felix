@@ -664,6 +664,7 @@ let gen_exe filename syms
   );
   let sr = ("dummy",0,0,0,0) in
   let src_str = string_of_bexe syms.dfns 0 exe in
+  let with_comments = syms.compiler_options.with_comments in
   (*
   print_endline ("generating exe " ^ string_of_bexe syms.dfns 0 exe);
   print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs);
@@ -720,7 +721,7 @@ let gen_exe filename syms
           gen_prim_call syms bbdfns tsub ge' s ts a "Error" sr sr2 "atom" 
       in
       let s = sc "expr" s in
-      "      // " ^ src_str ^ "\n" ^
+      (if with_comments then "      // " ^ src_str ^ "\n" else "") ^
       sub_start ^
       "      " ^ s ^ "\n" ^
       sub_end
@@ -1140,7 +1141,7 @@ let gen_exe filename syms
     | `BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
 
     | `BEXE_assign (sr,e1,e2) ->
-      "      //"^src_str^"\n" ^
+      (if with_comments then "      //"^src_str^"\n" else "") ^
       "      "^ ge sr e1 ^ " = " ^ ge sr e2 ^
       ";\n"
       
@@ -1151,7 +1152,7 @@ let gen_exe filename syms
       in
       begin match entry with
         | `BBDCL_tmp _ ->
-        "      //"^src_str^"\n" ^
+        (if with_comments then "      //"^src_str^"\n" else "") ^
         "      "^
         get_variable_typename syms bbdfns v [] ^
         " " ^
@@ -1164,7 +1165,7 @@ let gen_exe filename syms
         (*
         print_endline ("INIT of " ^ si v ^ " inside " ^ si this);
         *)
-        "      //"^src_str^"\n" ^
+        (if with_comments then "      //"^src_str^"\n" else "") ^
         "      "^
         get_var_ref syms bbdfns this v ts^ 
         " = " ^ 
@@ -2140,7 +2141,7 @@ try
   ;
   let bbdfns = bbind syms in
   let child_map = cal_children syms bbdfns in
-  let bifaces = bind_ifaces syms ifaces in
+  syms.bifaces <- bind_ifaces syms ifaces;
   Hashtbl.clear syms.ticache;
 
   let binding_time = tim() in
@@ -2184,7 +2185,7 @@ try
 
   if compiler_options.print_flag 
   then print_endline "//OPTIMISING";
-  let () = Flx_use.find_roots syms bbdfns root_proc bifaces in
+  let () = Flx_use.find_roots syms bbdfns root_proc syms.bifaces in
   let child_map = cal_children syms bbdfns in
 
   if compiler_options.max_inline_length > 0 then
@@ -2195,7 +2196,7 @@ try
     if compiler_options.print_flag then
     print_endline "//INLINING";
 
-    Flx_inline.heavy_inlining syms (child_map,bbdfns) root_proc bifaces;
+    Flx_inline.heavy_inlining syms (child_map,bbdfns) root_proc syms.bifaces;
     (*
     print_endline "INLINING DONE";
     print_functions syms.dfns bbdfns;
@@ -2244,7 +2245,7 @@ try
   if compiler_options.print_flag 
   then print_endline "//instantiating";
 
-  Flx_inst.instantiate syms bbdfns root_proc bifaces;
+  Flx_inst.instantiate syms bbdfns root_proc syms.bifaces;
   let top_class =
     try cpp_instance_name syms bbdfns root_proc []
     with Not_found -> 
@@ -2608,9 +2609,9 @@ try
   plb ("FLX_START_WRAPPER("^top_class^")");
   plb "\n//-----------------------------------------";
   plh "//DECLARE USER EXPORTS";
-  plh (gen_biface_headers syms bbdfns bifaces);
+  plh (gen_biface_headers syms bbdfns syms.bifaces);
   plb "//DEFINE EXPORTS";
-  plb (gen_biface_bodies syms bbdfns bifaces);
+  plb (gen_biface_bodies syms bbdfns syms.bifaces);
 
   plh "//header complete";
   plh "#endif";
