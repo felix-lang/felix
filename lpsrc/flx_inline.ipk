@@ -2003,7 +2003,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       let exes = fold_vars syms (uses,child_map,bbdfns) i ps exes in 
       recal_exes_usage syms uses sr i ps exes;
       remove_unused_children syms (uses,child_map,bbdfns) i;
-      let exes = Flx_cflow.chain_gotos exes in
+      let exes = Flx_cflow.chain_gotos syms exes in
       let props = `Inlining_complete :: props in
       let data = id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes) in
       Hashtbl.replace bbdfns i data;
@@ -2052,7 +2052,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       let exes = fold_vars syms (uses,child_map,bbdfns) i ps exes in
       recal_exes_usage syms uses sr i ps exes;
       remove_unused_children syms (uses,child_map,bbdfns) i;
-      let exes = Flx_cflow.chain_gotos exes in
+      let exes = Flx_cflow.chain_gotos syms exes in
       let props = `Inlining_complete :: props in
       let data = id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes) in
       Hashtbl.replace bbdfns i data;

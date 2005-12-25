@@ -201,6 +201,9 @@ let mktypefun sr name vs args return_type body =
 %type <Flx_ast.expr_t * token> exprx
 %type <Flx_ast.expr_t> atom
 %type <unit> semi
+%type <Flx_ast.expr_t> integer_literal
+%type <Flx_ast.expr_t> float_literal
+%type <Flx_ast.expr_t> string_literal
 
 %start expression
 %start statement
@@ -210,6 +213,9 @@ let mktypefun sr name vs args return_type body =
 %start atom
 %start compound
 %start statementsx
+%start integer_literal
+%start float_literal
+%start string_literal
 
 %%
 
@@ -273,11 +279,13 @@ binding_definition:
   | export_statement { $1 }
 
 publish:
+  /*
   | PUBLISH STRING binding_definition 
     { `AST_public (slift $1, snd $2, $3) }
 
   | PUBLISH STRING declarative 
     { `AST_public (slift $1, snd $2, $3) }
+  */
 
   | PRIVATE declarative 
     { `AST_private (slift $1, $2) }
@@ -2656,19 +2664,40 @@ atom:
     }
 
 literal:
+  | integer_literal { $1 }
+  | string_literal { $1 }
+  | float_literal { $1 }
+
+integer_literal:
   | INTEGER 
     { let sr,t,v = $1 in
       `AST_literal (slift sr, `AST_int (t,v)) 
     }
+
+float_literal:
   | FLOAT   
     { 
       let sr,t,v = $1 in
       `AST_literal (slift sr, `AST_float (t,v)) 
     }
+
+string_literal:    
   | STRING  
     { 
       let sr,s = $1 in
       `AST_literal (slift sr, `AST_string s) 
+    }
+
+  | WSTRING  
+    { 
+      let sr,s = $1 in
+      `AST_literal (slift sr, `AST_wstring s) 
+    }
+
+  | USTRING  
+    { 
+      let sr,s = $1 in
+      `AST_literal (slift sr, `AST_ustring s) 
     }
 
   | CSTRING  

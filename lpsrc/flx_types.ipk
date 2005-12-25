@@ -584,7 +584,9 @@ and statement_t =
   | `AST_inject_module of range_srcref * qualified_name_t
   | `AST_use of range_srcref * id_t * qualified_name_t
   | `AST_comment of string (* for documenting generated code *)
+  (*
   | `AST_public of range_srcref * string * statement_t
+  *)
   | `AST_private of range_srcref * statement_t
 
   (* definitions *)
@@ -1725,7 +1727,9 @@ let src_of_expr (e : expr_t) = match e with
     -> s
 
 let src_of_stmt e = match e with
+  (*
   | `AST_public (s,_,_)
+  *)
   | `AST_private (s,_)
   | `AST_label (s,_)
   | `AST_goto (s,_)
@@ -2890,10 +2894,12 @@ and string_of_statement level s =
   let sqn n = string_of_qualified_name n in
   match s with 
   | `AST_seq (_,sts) -> catmap "" (string_of_statement level) sts
+  (*
   | `AST_public (_,s,st) ->
     "\n" ^
     spaces level ^ "public '" ^ s ^ "'\n" ^
     string_of_statement (level+1) st
+  *)
 
   | `AST_private (_,st) ->
     spaces level ^ "private " ^

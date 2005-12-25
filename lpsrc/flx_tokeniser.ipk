@@ -392,6 +392,57 @@ object(self)
         end
           
 
+      | INTEGER_LITERAL _ ->
+        let tok' = self#token_src dummy_lexbuf in
+        begin match tok' with
+        | INTEGER (sr,kind,vl) ->
+          let j = `AST_literal (slift sr,`AST_int (kind,vl)) in
+          aux t (`Expression_term j :: res)
+        | _ ->
+          Flx_exceptions.clierr sr
+          (
+            "User statement: integer required, got " ^
+            Flx_prelex.string_of_token tok'
+          )
+        end
+
+      | FLOAT_LITERAL _ ->
+        let tok' = self#token_src dummy_lexbuf in
+        begin match tok' with
+        | FLOAT (sr,kind,vl) ->
+          let j = `AST_literal (slift sr,`AST_float (kind,vl)) in
+          aux t (`Expression_term j :: res)
+        | _ ->
+          Flx_exceptions.clierr sr
+          (
+            "User statement: integer required, got " ^
+            Flx_prelex.string_of_token tok'
+          )
+        end
+
+      | STRING_LITERAL _ ->
+        let tok' = self#token_src dummy_lexbuf in
+        begin match tok' with
+        | STRING (sr,s) ->
+          let j = `AST_literal (slift sr,`AST_string s) in
+          aux t (`Expression_term j :: res)
+        | CSTRING (sr,s) ->
+          let j = `AST_literal (slift sr,`AST_cstring s) in
+          aux t (`Expression_term j :: res)
+        | WSTRING (sr,s) ->
+          let j = `AST_literal (slift sr,`AST_wstring s) in
+          aux t (`Expression_term j :: res)
+        | USTRING (sr,s) ->
+          let j = `AST_literal (slift sr,`AST_ustring s) in
+          aux t (`Expression_term j :: res)
+        | _ ->
+          Flx_exceptions.clierr sr
+          (
+            "User statement: integer required, got " ^
+            Flx_prelex.string_of_token tok'
+          )
+        end
+
       | tok -> 
         let s = Flx_prelex.string_of_token tok in
         (*

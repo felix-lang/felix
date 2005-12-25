@@ -152,7 +152,7 @@ namespace flx { namespace rtl { namespace strutil {
   }
 }}}
 
-@h=tangler('lib/flx_categories.flx')
+@h=tangler('lib/flx_categories.flxh')
 @select(h)
   macro proc gen_eq(t){
     fun eq: t * t -> bool = "$1==$2" ;
@@ -223,7 +223,7 @@ namespace flx { namespace rtl { namespace strutil {
 
 @h=tangler('lib/flx.flxh','data')
 @select(h)
-#import "flx_syntax.flxh"
+#import <flx_syntax.flxh>
 include "std";
 
 @h=tangler('lib/flx_syntax.flxh','data')
@@ -273,11 +273,17 @@ include "std";
   whilst i >= _5 do _7; --i; done;
 #
 
+#statement publish #
+  string_literal statement =># _2;
+#
+  
 @h=tangler('lib/std.flx','data')
 @# use data tangler to prevent line number generation
 @select(h)
+#import <flx_syntax.flxh>
+#import <flx_categories.flxh>
+
 header '#include "flx_rtl_config.hpp"';
-#include "flx_categories.flx"
 
 header iostream = "#include <iostream>";
 header cmath = """
@@ -916,11 +922,11 @@ module Bool
   val false : bool = case 1 of 2; // binary 0
   val true : bool = case 2 of 2; // binary 1
   gen_eq bool;
-  fun land: bool * bool -> bool = "$1 && $2";
-  fun nand: bool * bool -> bool = "!($1 && $2)";
-  fun lor: bool * bool -> bool = "$1 || $2";
-  fun nor: bool * bool -> bool = "!($1 || $2)";
-  fun xor: bool * bool -> bool = "$1 != $2";
+  fun land: bool * bool -> bool = "$1&&$2";
+  fun nand: bool * bool -> bool = "!($1&&$2)";
+  fun lor: bool * bool -> bool = "$1||$2";
+  fun nor: bool * bool -> bool = "!($1||$2)";
+  fun xor: bool * bool -> bool = "$1!=$2";
   fun lnot: bool -> bool = "!$1";
   proc print: bool = 'std::cout << ($1??"true":"false");' requires iostream;
 }
@@ -1504,7 +1510,7 @@ open Control;
 @head(1,'Stl library')
 @h=tangler('lib/stl.flx','data')
 @select(h)
-#include "flx_categories.flx"
+#include <flx_categories.flxh>
 
 include "std";
 header std_stl_vector = "#include <vector>";

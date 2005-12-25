@@ -768,7 +768,9 @@ let gen_exe filename syms
         begin 
           match kind with
           | Function ->
-            "      //run procedure " ^ src_str ^ "\n" ^
+            (if with_comments 
+            then "      //run procedure " ^ src_str ^ "\n" 
+            else "") ^ 
             "      {\n" ^
             subs ^
             "      con_t *_p =\n" ^
@@ -784,7 +786,9 @@ let gen_exe filename syms
             in
             if is_jump
             then
-              "      //jump to procedure " ^ src_str ^ "\n" ^
+              (if with_comments then
+              "      //jump to procedure " ^ src_str ^ "\n" 
+              else "") ^
               "      {\n" ^
               subs ^
               "      con_t *tmp = _caller;\n" ^
@@ -794,7 +798,12 @@ let gen_exe filename syms
             else
             (
               needs_switch := true;
-              "      //call procedure " ^ src_str ^ "\n" ^
+              (if with_comments then
+              "      //call procedure " ^ src_str ^ "\n" 
+              else ""
+              )
+              ^
+              
               sub_start ^
               "      FLX_SET_PC(" ^ si n ^ ")\n" ^
               call_string ^
@@ -913,9 +922,12 @@ let gen_exe filename syms
     | `BEXE_ifnotgoto (sr,e,s) ->
       begin match find_label bbdfns label_map this s with
       | `Local _ -> 
+        (*
         let not_e = ce_prefix "!" (ge' sr e) in
         let not_e = string_of_cexpr not_e in
         "      if("^not_e^")goto " ^ s ^ ";\n" 
+        *)
+        "      ifnot(" ^ ge sr e ^ ")goto " ^ s ^ ";\n"
 
       | `Nonlocal (pc,frame) ->
         let skip = "_" ^ si !(syms.counter) in
@@ -1081,7 +1093,9 @@ let gen_exe filename syms
       in
       begin match kind with
       | Function ->
-        "      //run procedure " ^ src_str ^ "\n" ^
+        (if with_comments then
+        "      //run procedure " ^ src_str ^ "\n" 
+        else "") ^
         "      {\n" ^
         "        con_t *_p = "^ge sr p ^ "->clone()\n      ->call("^args^");\n" ^
         "        while(_p) _p=_p->resume();\n" ^
@@ -1093,7 +1107,9 @@ let gen_exe filename syms
         needs_switch := true;
         let n = !counter in
         incr counter;
-        "      //"^ src_str ^ "\n" ^
+        (if with_comments then
+        "      //"^ src_str ^ "\n" 
+        else "") ^
         "      FLX_SET_PC(" ^ si n ^ ")\n" ^
         "      return " ^ ge sr p ^ "->clone()\n      ->call(" ^ args ^");\n" ^
         "    FLX_CASE_LABEL(" ^ si n ^ ")\n"
@@ -1104,7 +1120,9 @@ let gen_exe filename syms
         | _,`BTYP_tuple [] -> "tmp"
         | _ -> "tmp, " ^ ge sr a
       in
-      "      //"^ src_str ^ "\n" ^
+      (if with_comments then
+      "      //"^ src_str ^ "\n" 
+      else "") ^
       "      {\n" ^
       "        con_t *tmp = _caller;\n" ^
       "        _caller=0;\n" ^
@@ -1135,7 +1153,9 @@ let gen_exe filename syms
       
     | `BEXE_fun_return (sr,e) -> 
       let _,t = e in
-      "      //" ^ src_str ^ ": type "^tn t^"\n" ^
+      (if with_comments then
+      "      //" ^ src_str ^ ": type "^tn t^"\n" 
+      else "") ^
       "      return "^ge sr e^";\n" 
 
     | `BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
@@ -2478,6 +2498,7 @@ try
   plb ("#include \"" ^ module_name ^ ".hpp\"");
   plb "#include <stdio.h>"; (* for diagnostics *)
   plb "#define comma ,";
+  plb "#define ifnot(x) if(!(x))";
   plb "\n//-----------------------------------------";
   plb "//EMIT USER BODY CODE";
   (* These must be in order: build a list and sort it *)
