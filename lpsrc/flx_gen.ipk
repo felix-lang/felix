@@ -2393,10 +2393,24 @@ try
   end
   ;
 
+  (* HACKERY FOR ELKHOUND -- we force include library files
+    into the global namespace, macro guards should prevent
+    subsequent inclusion in the module namespace
+  *)
+  if Hashtbl.length syms.lexers <> 0 then begin
+    plh "#include \"elk_lexerint.h\""
+  end
+  ;
+
+  if Hashtbl.length syms.parsers <> 0 then begin
+    plh "#include \"elk_useract.h\""
+  end
+  ;
+
   plh "\n//-----------------------------------------";
   List.iter plh [
   "//FELIX SYSTEM";
-
+  "namespace flxusr { namespace "^module_name^ " {";
   "struct thread_frame_t;"
   ]
   ;
@@ -2485,6 +2499,7 @@ try
   plh "";
   plh "FLX_DCL_THREAD_FRAME";
   plh "";
+  plh ("}} // namespace flxusr::" ^ module_name);
 
   (* BODY *)
   if compiler_options.print_flag then 
@@ -2497,6 +2512,12 @@ try
 
   plb ("#include \"" ^ module_name ^ ".hpp\"");
   plb "#include <stdio.h>"; (* for diagnostics *)
+
+  if Hashtbl.length syms.parsers <> 0 then begin
+    plb "#include \"elk_glr.h\""
+  end
+  ;
+
   plb "#define comma ,";
   plb "#define ifnot(x) if(!(x))";
   plb "\n//-----------------------------------------";
@@ -2543,6 +2564,8 @@ try
   ;
   
   plb "\n//-----------------------------------------";
+  plb ("namespace flxusr { namespace " ^ module_name ^ " {");
+
   plb "FLX_DEF_THREAD_FRAME";
   plb "//Thread Frame Constructor";
 
@@ -2625,14 +2648,21 @@ try
 
   if compiler_options.print_flag then print_endline "//GENERATING C++: interface";
   plb "\n//-----------------------------------------";
+  plb ("}} // namespace flxusr::" ^ module_name);
+
   plb "//CREATE STANDARD EXTERNAL INTERFACE";
-  plb "FLX_FRAME_WRAPPERS";
-  plb ("FLX_START_WRAPPER("^top_class^")");
+  plb ("FLX_FRAME_WRAPPERS(flxusr::"^module_name^")");
+  plb ("FLX_START_WRAPPER(flxusr::"^module_name^","^top_class^")");
   plb "\n//-----------------------------------------";
-  plh "//DECLARE USER EXPORTS";
-  plh (gen_biface_headers syms bbdfns syms.bifaces);
-  plb "//DEFINE EXPORTS";
-  plb (gen_biface_bodies syms bbdfns syms.bifaces);
+
+  plh ("using namespace flxusr::" ^ module_name ^ ";");
+  if List.length syms.bifaces > 0 then begin
+    plh "//DECLARE USER EXPORTS";
+    plh (gen_biface_headers syms bbdfns syms.bifaces);
+    plb "//DEFINE EXPORTS";
+    plb (gen_biface_bodies syms bbdfns syms.bifaces);
+  end
+  ;
 
   plh "//header complete";
   plh "#endif";

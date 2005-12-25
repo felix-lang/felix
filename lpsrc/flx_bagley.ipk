@@ -892,6 +892,7 @@ private:
 };
 """;
 
+header "class Toggle;";
 pod type toggle =  "class Toggle*";
 
 fun new_toggle: bool -> toggle = "new Toggle($1)";
@@ -968,8 +969,8 @@ private:
     int counter;
 };
 """;
-
-pod type toggle =  "class Toggle*";
+header "class Toggle;";
+pod type toggle =  "Toggle*";
 fun new_toggle: bool -> toggle = "new Toggle($1)";
 fun new_ntoggle: bool * int -> toggle = "new NthToggle($1,$2)";
 proc del: toggle = "delete $1;";
