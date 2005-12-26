@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.179  2005/12/26 02:14:55  skaller
+Add RF's demux library to core
+
 Revision 1.178  2005/12/08 11:52:47  skaller
 User defined statements Work in Progress.
 Fix serious gc bug, abstract types of kind GC_pointer
@@ -543,7 +546,7 @@ for fn in tre_files:
   if base[0:4]=='tre-':
     target = 'tre/tre_'+base[4:]
   else:
-    target = 'demux/faio_'+base
+    target = 'demux/demux_'+base
   if target[-1:]=='cpp':
     target = target[:-1]+'cpp'
   elif target[-1:]=='h':
@@ -568,7 +571,7 @@ def incl(line):
   else:
     return ""
 
-print "@head(1,'faio')"
+print "@head(1,'demux')"
 for fn,tgt in tgts:
   print "@h=tangler('"+tgt+"')"
   print "@select(h)"
@@ -585,9 +588,9 @@ for fn,tgt in tgts:
           fl = fl[:dot]
           fl = fl+'.hpp'
         if fl[0:4]=="tre-":
-          print '#include "faio_'+fl[4:]+'"'
+          print '#include "demux_'+fl[4:]+'"'
         else:
-          print '#include "faio_'+fl+'"'
+          print '#include "demux_'+fl+'"'
       else:
         print "UNKNOWN FILE:",fl
         sys.exit(1)

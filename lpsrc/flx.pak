@@ -294,6 +294,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_gc.ipk')
 @include_file ('flx_lib.ipk')
 @include_file ('flx_lex_lib.ipk')
+@include_file ('flx_demux.ipk')
 
 @head(2,'The Tests')
 @include_file ('flx_test.ipk')
