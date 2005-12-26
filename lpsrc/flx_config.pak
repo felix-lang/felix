@@ -735,19 +735,35 @@ class gxx(flxbuild.compiler_class.compiler_base):
   def detect_win32(self,shell):
     return self.check_macro_defined(shell,"_WIN32")
 
+  def detect_posix(self,shell):
+    return not self.check_macro_defined(shell,"_WIN32")
+
   def detect_cygwin(self,shell):
     return self.check_macro_defined(shell,"__CYGWIN__")
 
   def detect_osx(self,shell):
     return self.check_macro_defined(shell,"__APPLE__")
 
+  def detect_bsd(self,shell):
+    return self.check_macro_defined(shell,"BSD")
+
+  def detect_solaris(self,shell):
+    return self.check_macro_defined(shell,"__SOLARIS__")
+
+  def detect_linux(self,shell):
+    return self.check_macro_defined(shell,"__linux__")
+
   # only allows 4 models: cygwin, osx, win32 and posix
   # nocygwin = mingw = win32
   def detect_model(self,shell):
     opt = self.options
     opt.MACOSX = self.detect_osx(shell)
+    opt.BSD = self.detect_bsd(shell)
+    opt.SOLARIS = self.detect_solaris(shell)
+    opt.LINUX= self.detect_linux(shell)
     opt.WIN32 = self.detect_win32(shell)
     opt.CYGWIN = self.detect_cygwin(shell)
+    opt.POSIX = self.detect_posix(shell)
 
     sum = opt.MACOSX + opt.WIN32 + opt.CYGWIN
     if sum > 1:
@@ -760,10 +776,13 @@ class gxx(flxbuild.compiler_class.compiler_base):
        if opt.CYGWIN: opt.model = "cygwin"
        if opt.MACOSX: opt.model = "osx"
        if opt.WIN32: opt.model = "win32"
+       if opt.SOLARIS: opt.model = "solaris"
+       if opt.LINUX: opt.model = "linux"
+       if opt.BSD: opt.model = "bsd"
        if opt.model == "detect": opt.model = "posix"
     if opt.model in ["mingw","nocygwin"]: opt.model = "win32"
     if opt.model in ["posix"] and opt.CYGWIN: opt.model = "cygwin"
-    assert opt.model in ["cygwin","osx","win32","posix"]
+    assert opt.model in ["cygwin","osx","win32","posix","bsd","solaris"]
 
   def check_options(self,shell,get_stdout):
     opt = self.options
@@ -2061,6 +2080,9 @@ if target_model in ["posix","osx","cygwin","nocygwin","mingw","detect"]:
   CYGWIN = TARGET_CXX.options.CYGWIN
   MACOSX = TARGET_CXX.options.MACOSX
   WIN32 =  TARGET_CXX.options.WIN32
+  LINUX =  TARGET_CXX.options.LINUX
+  SOLARIS =  TARGET_CXX.options.SOLARIS
+  BSD =  TARGET_CXX.options.BSD
   HAVE_MSVC=0
   HAVE_GXX=1
 elif target_model in ["win32"]:
@@ -2071,6 +2093,9 @@ elif target_model in ["win32"]:
   TARGET_CXX.save_options("config/target_cxx.py")
   CYGWIN=0
   MACOSX=0
+  SOLARIS=0
+  LINUX=0
+  BSD=0
   WIN32=1
   HAVE_MSVC=1
   HAVE_GXX=0
@@ -2163,7 +2188,7 @@ def p(f,s):
     pr(f,x)
   except:
     print "UNABLE TO FIND VALUE FOR ATTRIBUTE '"+s+"'"
-    f.write(s+"= None # EDIT ME!!")
+    f.write(s+"= None # EDIT ME!!\n")
 
 def pc(f,m,h,d,u):
   try:
@@ -2174,7 +2199,7 @@ def pc(f,m,h,d,u):
     pr(f,x)
   except:
     print "UNABLE TO FIND VALUE FOR ATTRIBUTE '"+s+"'"
-    f.write(s+"= None # EDIT ME!!")
+    f.write(s+"= None # EDIT ME!!\n")
 
 def pne(f,s):
   try:
@@ -2182,7 +2207,7 @@ def pne(f,s):
     f.write(x+"\n")
   except:
     print "UNABLE TO FIND VALUE FOR ATTRIBUTE '"+s+"'"
-    f.write(s+"= None # EDIT ME!!")
+    f.write(s+"= None # EDIT ME!!\n")
 
 
 cf_reg = []
@@ -2255,6 +2280,9 @@ try:
   p(f,"CYGWIN")
   p(f,"MACOSX")
   p(f,"WIN32")
+  p(f,"SOLARIS")
+  p(f,"BSD")
+  p(f,"LINUX")
   p(f,"PREFIX")
   pr(f,"")
 

@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.180  2005/12/26 03:38:50  skaller
+Add support for Solaris, bsd, linux specific builds
+
 Revision 1.179  2005/12/26 02:14:55  skaller
 Add RF's demux library to core
 
@@ -2800,6 +2803,52 @@ RTL_CPPS = [
   "rtl/flx_ioutil",
 ]
 
+DEMUX_CPPS = [
+  "demux/demux_demuxer",
+]
+
+POSIX_DEMUX_CPPS = [
+  "demux/demux_posix_demuxer",      # all posix
+  "demux/demux_posix_queue",        # all posix
+  "demux/demux_select_demuxer",     # all posix
+  "demux/demux_sleep_task",         # posix
+  "demux/demux_sockety",            # posix
+  "demux/demux_mutexlite",          # posix
+  "demux/demux_pfileio",            # posix
+  "demux/demux_work_fifo",          # posix
+]
+
+LINUX_DEMUX_CPPS = [
+  "demux/demux_epoll_demuxer",      # Linux 2.6 +
+]
+
+SOLARIS_DEMUX_CPPS = [
+  "demux/demux_evtport_demuxer",    # solaris
+]
+
+WINDOWS_DEMUX_CPPS = [
+  "demux/demux_iocp_demuxer",       # windows
+]
+
+BSD_DEMUX_CPPS = [
+  "demux/demux_kqueue_demuxer",     # osx/bsd
+]
+
+if WIN32:
+  DEMUX_CPPS = DEMUX_CPPS + WINDOWS_DEMUX_CPPS
+
+if POSIX:
+  DEMUX_CPPS = DEMUX_CPPS + POSIX_DEMUX_CPPS
+
+if LINUX:
+  DEMUX_CPPS = DEMUX_CPPS + LINUX_DEMUX_CPPS
+
+if BSD or MACOSX:
+  DEMUX_CPPS = DEMUX_CPPS + BSD_DEMUX_CPPS
+
+if SOLARIS:
+  DEMUX_CPPS = DEMUX_CPPS + SOLARIS_DEMUX_CPPS
+
 DRIVERS = [
   ('rtl/flx_run','bin/flx_run'),
   ('test/flx_perf_drv1','test/flx_perf_drv1'),
@@ -3078,6 +3127,13 @@ try:
         dir,base = string.split(x,'/')
         TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl'],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"])
 
+      print " .. FELIX EVENT DEMUX"
+      for x in DEMUX_CPPS:
+        if not "quiet" in options: print 'Compiling rtl object',x
+        ars = ars + x + "_dynamic.o "
+        dir,base = string.split(x,'/')
+        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"])
+
       #ELKHOUND SUBLIBRARY
       print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:
@@ -3102,6 +3158,14 @@ try:
         ars = ars + x + "_static.o "
         dir,base = string.split(x,'/')
         TARGET_CXX.compile_static_rtl(xqt,dir,base,dir,include_path=['rtl'],macros=["FLX_STATIC_LINK"],optimise=1)
+
+      print " .. FELIX EVENT DEMUX"
+      for x in DEMUX_CPPS:
+        if not "quiet" in options: print 'Compiling rtl object',x
+        ars = ars + x + "_dynamic.o "
+        dir,base = string.split(x,'/')
+        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"])
+
 
       print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:

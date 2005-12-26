@@ -1,15 +1,6 @@
 @head(1,'demux')
 @h=tangler('demux/demux_demuxer.hpp')
 @select(h)
-/*
- *  demuxer.h
- *  ngame
- *
- *  Created by Rhythmic Fistman on 02/08/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 #ifndef __DEMUXER__
 #define __DEMUXER__
 
@@ -31,15 +22,6 @@ public:
 
 @h=tangler('demux/demux_epoll_demuxer.hpp')
 @select(h)
-/*
- *  epoll_demuxer.h
- *  ngame
- *
- *  Created by Rhythmic Fistman on 07/08/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 #include "demux_posix_demuxer.hpp"
 
 class epoll_demuxer : public posix_demuxer {
@@ -59,15 +41,6 @@ public:
 
 @h=tangler('demux/demux_evtport_demuxer.hpp')
 @select(h)
-/*
- *  port_demuxer.h
- *  ngame
- *
- *  Created by Rhythmic Fistman on 10/08/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 // driver for solaris 10 event port notifications
 
 #include "demux_posix_demuxer.hpp"
@@ -89,15 +62,6 @@ public:
 
 @h=tangler('demux/demux_iocp_demuxer.hpp')
 @select(h)
-/*
- *  iocp_demuxer.h
- *  ngame
- *
- *  Created by Rhythmic Fistman on 04/08/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 // includes WinBase.h, where CreateIOCompletionPort lives
 // May need to define _WIN32_WINNT = 0x0350? Or not.
 #include <Windows.h>
@@ -177,15 +141,6 @@ public:
 
 @h=tangler('demux/demux_kqueue_demuxer.hpp')
 @select(h)
-/*
- *  kqueue_demuxer.h
- *  ngame
- *
- *  Created by Rhythmic Fistman on 04/08/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 #include "demux_posix_demuxer.hpp"
 
 class kqueue_demuxer : public posix_demuxer {
@@ -209,15 +164,6 @@ public:
 
 @h=tangler('demux/demux_mutexlite.hpp')
 @select(h)
-/*
- *  mutexlite.h
- *  ngame
- *
- *  Created by Rhythmic Fistman on 31/07/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 #ifndef __MUTEXLITE__
 #define __MUTEXLITE__
 
@@ -312,15 +258,6 @@ public:
 #endif  // __PFILEIO__
 @h=tangler('demux/demux_posix_demuxer.hpp')
 @select(h)
-/*
- *  posix_demuxer.h
- *  ngame
- *
- *  Created by Rhythmic Fistman on 04/08/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 // this is simply a demuxer with a pthread that calls thread_loop_body
 // with a thread cancel hook and a hopefully correct destructor. hoof!
 // it also owns an optional listener socket. imagine that!s
@@ -369,16 +306,6 @@ public:
 @select(h)
 #ifndef __POSIX_QUEUE__
 #define __POSIX_QUEUE__
-
-/*
- *  posix_queue.h
- *  
- *
- *  Created by Rhythmic Fistman on 29/08/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 #include "demux_mutexlite.hpp"
 #include "demux_sleep_queue.hpp"
 
@@ -398,15 +325,6 @@ public:
 
 @h=tangler('demux/demux_select_demuxer.hpp')
 @select(h)
-/*
- *  select_demuxer.h
- *  ngame
- *
- *  Created by Rhythmic Fistman on 02/08/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 #include "demux_posix_demuxer.hpp"
 #include "demux_mutexlite.hpp"
 #include <sys/select.h>   // for fd_set
@@ -439,15 +357,6 @@ public:
 
 @h=tangler('demux/demux_sleep_queue.hpp')
 @select(h)
-/*
- *  sleep_queue.h
- *  
- *
- *  Created by Rhythmic Fistman on 24/08/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 #ifndef __SLEEPQUEUE__
 #define __SLEEPQUEUE__
 
@@ -520,20 +429,16 @@ public:
 };
 
 #endif // __SLEEP_TASK__
+
 @h=tangler('demux/demux_sockety.hpp')
 @select(h)
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
+#ifndef __SOCKETY__
+#define __SOCKETY__
 int create_listener_socket(int* io_port, int q_len);
 int nice_create_listener(int* io_port, int q_len);
 int nice_accept(int listener);
 int nice_connect(const char* addr, int port);
 int async_connect(const char* addr, int port, int* finished);
-
-#ifdef  __cplusplus
-}
 #endif
 
 @h=tangler('demux/demux_work_fifo.hpp')
@@ -573,28 +478,12 @@ public:
 #endif  // __WORKER_FIFO__
 @h=tangler('demux/demux_demuxer.cpp')
 @select(h)
-/*
- *  demuxer.cpp
- *  ngame
- *
- *  Created by Rhythmic Fistman on 02/08/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 #include "demux_demuxer.hpp"
+
+// nothing here atm ..
 
 @h=tangler('demux/demux_epoll_demuxer.cpp')
 @select(h)
-/*
- *  epoll_demuxer.cpp
- *  ngame
- *
- *  Created by Rhythmic Fistman on 07/08/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 // epoll interface. does epoll support ordinary files in addition to sockets?
 
 // cool! EPOLLONESHOT
@@ -757,14 +646,6 @@ epoll_demuxer::thread_loop_body()
 
 @h=tangler('demux/demux_evtport_demuxer.cpp')
 @select(h)
-/*
- *  evtport_demuxer.cpp
- *  ngame
- *
- *  Created by Rhythmic Fistman on 10/08/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
 
 #include "demux_evtport_demuxer.hpp"
 
@@ -958,15 +839,6 @@ evtport_demuxer::thread_loop_body()
 
 @h=tangler('demux/demux_iocp_demuxer.cpp')
 @select(h)
-/*
- *  iocp_demuxer.cpp
- *  ngame
- *
- *  Created by Rhythmic Fistman on 04/08/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 #include "demux_iocp_demuxer.hpp"
 #include <Mswsock.h>    // AcceptEx
 
@@ -1409,14 +1281,6 @@ blah()
 
 @h=tangler('demux/demux_kqueue_demuxer.cpp')
 @select(h)
-/*
- *  kqueue_demuxer.cpp
- *  ngame
- *
- *  Created by Rhythmic Fistman on 04/08/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
 
 // kqueue demuxer for bsd/os x
 // N.B. calling close on a file descriptor will remove any kevents that
@@ -1618,15 +1482,6 @@ kqueue_demuxer::thread_loop_body()
 
 @h=tangler('demux/demux_mutexlite.cpp')
 @select(h)
-/*
- *  mutexlite.cpp
- *  ngame
- *
- *  Created by Rhythmic Fistman on 31/07/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 #include "demux_mutexlite.hpp"
 #include <stdio.h>        // printf debugging
 
@@ -1821,15 +1676,6 @@ fileio_request::doit()
 
 @h=tangler('demux/demux_posix_demuxer.cpp')
 @select(h)
-/*
- *  posix_demuxer.cpp
- *  ngame
- *
- *  Created by Rhythmic Fistman on 04/08/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 #include "demux_posix_demuxer.hpp"
 #include "demux_sockety.hpp"
 
@@ -1959,15 +1805,6 @@ posix_demuxer::handle_socket_write(int s, sel_param* pb)
 
 @h=tangler('demux/demux_posix_queue.cpp')
 @select(h)
-/*
- *  posix_queue.cpp
- *  
- *
- *  Created by Rhythmic Fistman on 24/08/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 #include <pthread.h>
 #include "demux_posix_queue.hpp"
 #include <queue>        // stl to the bloated rescue
@@ -2055,15 +1892,6 @@ posix_queue::dequeue()
 
 @h=tangler('demux/demux_select_demuxer.cpp')
 @select(h)
-/*
- *  select_demuxer.cpp
- *  ngame
- *
- *  Created by Rhythmic Fistman on 30/07/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 // P.S. for current impl don't need the pthreads. WHOO!!!
 
 // A very light wrapper around select, that allows the addition
@@ -2762,17 +2590,8 @@ worker_fifo::add_worker_task(worker_task* task)
   fifo.enqueue(task);         // don't worry, fifo is re-entrant
 }
 
-@h=tangler('demux/demux_sockety.c')
+@h=tangler('demux/demux_sockety.cpp')
 @select(h)
-/*
- *  sockety.c
- *  nstate
- *
- *  Created by Rhythmic Fistman on 28/07/05.
- *  Copyright 2005 UnNeko. All rights reserved.
- *
- */
-
 #include <stdio.h>        /* for perror */
 #include <fcntl.h>        /* for making non blocking sockets */
 #include <netinet/in.h>     /* for sockaddr_in (used when accepting) */
