@@ -168,6 +168,27 @@ int main(int,char*[]) {
   return 0;
 }
 
+@h=tangler("tmp/have_socklen_t.cxx","c++")
+@select(h)
+#include <sys/types.h>
+#include <sys/socket.h>
+extern "C" int accept(int s, struct sockaddr *addr, socklen_t *addrlen);
+int main(int, char*[]) { return 0; }
+
+@h=tangler("tmp/socklen_t_is_uint.cxx","c++")
+@select(h)
+#include <sys/types.h>
+#include <sys/socket.h>
+extern "C" int accept(int s, struct sockaddr *addr, unsigned int *addrlen);
+int main(int, char*[]) { return 0; }
+
+@h=tangler("tmp/socklen_t_is_int.cxx","c++")
+@select(h)
+#include <sys/types.h>
+#include <sys/socket.h>
+extern "C" int accept(int s, struct sockaddr *addr, int *addrlen);
+int main(int, char*[]) { return 0; }
+
 @h = tangler("tmp/intsizes.cxx",'c++')
 @select(h)
 #include <stdio.h>
@@ -989,6 +1010,21 @@ class gxx(flxbuild.compiler_class.compiler_base):
       print "Isnan NOT supported"
 
     self.get_c_type_data(shell,get_stdout)
+
+    try:
+      shell(opt.CXX+" -w tmp"+os.sep+"have_socklen_t.cxx -o tmp"+os.sep+"dummy")
+      opt.FLX_SOCKLEN_T="socklen_t"
+    except:
+      try:
+        shell(opt.CXX+" -w tmp"+os.sep+"socklen_t_is_uint.cxx -o tmp"+os.sep+"dummy")
+        opt.FLX_SOCKLEN_T="unsigned int"
+      except:
+        try:
+          shell(opt.CXX+" -w tmp"+os.sep+"socklen_t_is_int.cxx -o tmp"+os.sep+"dummy")
+          opt.FLX_SOCKLEN_T="int"
+        except:
+          opt.FLX_SOCKLEN_T = None
+    print "socken_t=",opt.FLX_SOCKLEN_T
 
     # find misc info about basic types
     try:
@@ -2083,6 +2119,7 @@ if target_model in ["posix","osx","cygwin","nocygwin","mingw","detect"]:
   LINUX =  TARGET_CXX.options.LINUX
   SOLARIS =  TARGET_CXX.options.SOLARIS
   BSD =  TARGET_CXX.options.BSD
+  FLX_SOCKLEN_T = TARGET_CXX.options.FLX_SOCKLEN_T
   HAVE_MSVC=0
   HAVE_GXX=1
 elif target_model in ["win32"]:
@@ -2097,6 +2134,7 @@ elif target_model in ["win32"]:
   LINUX=0
   BSD=0
   WIN32=1
+  FLX_SOCKLEN_T = "int"
   HAVE_MSVC=1
   HAVE_GXX=0
 else:
@@ -2284,6 +2322,7 @@ try:
   p(f,"BSD")
   p(f,"LINUX")
   p(f,"PREFIX")
+  p(f,"FLX_SOCKLEN_T")
   pr(f,"")
 
   pr(f,"import flxbuild")
