@@ -2134,6 +2134,7 @@ elif target_model in ["win32"]:
   LINUX=0
   BSD=0
   WIN32=1
+  POSIX=0
   FLX_SOCKLEN_T = "int"
   HAVE_MSVC=1
   HAVE_GXX=0
