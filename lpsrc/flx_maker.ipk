@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.181  2005/12/26 06:17:15  skaller
+Copy demux interfaces to rtl directory
+
 Revision 1.180  2005/12/26 03:38:50  skaller
 Add support for Solaris, bsd, linux specific builds
 
@@ -2615,6 +2618,11 @@ ELKRTL_INTERFACES = [
   'elk_useract.h',
 ]
 
+DEMUXRTL_INTERFACES = [
+ 'demux_sleep_queue.hpp',  
+ 'demux_posix_queue.hpp',  
+]
+
 # files containing ocamllex sources
 CIL_LEXS = [ 'flx_cil_clexer', 'flx_cil_formatlex', ]
 FLX_LEXS = [ 'flx_lex' ]
@@ -2942,6 +2950,11 @@ def copy_elk2rtl():
     if filetime("elk"+os.sep+f) > filetime("rtl"+os.sep+f):
       filecopy("elk"+os.sep+f,"rtl"+os.sep+f)
 
+def copy_demux2rtl():
+  for f in DEMUXRTL_INTERFACES:
+    if filetime("demux"+os.sep+f) > filetime("rtl"+os.sep+f):
+      filecopy("demux"+os.sep+f,"rtl"+os.sep+f)
+
 def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES):
   global buildall
   # STEP 2: Generate lexers
@@ -3001,6 +3014,7 @@ try:
     runISCR(args)
     copy_mli2ml()
     copy_elk2rtl()
+    copy_demux2rtl()
     filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
   erasefile('tmp.tmp')
 
