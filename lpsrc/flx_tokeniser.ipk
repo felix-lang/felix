@@ -31,7 +31,8 @@
 
 @mwct = [ (string.split(s,' '),t) for s,t in mwct ]
 @mwct = [ (len (s), s, t) for s,t in mwct ]
-@mwct.sort(reverse=True)
+@mwct.sort()
+@mwct.reverse()
 
 @h = tangler('src/flx_lex1.ml')
 @select(h)
