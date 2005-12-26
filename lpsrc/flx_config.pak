@@ -1023,7 +1023,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
           shell(opt.CXX+" -w tmp"+os.sep+"socklen_t_is_int.cxx -o tmp"+os.sep+"dummy")
           opt.FLX_SOCKLEN_T="int"
         except:
-          opt.FLX_SOCKLEN_T = None
+          opt.FLX_SOCKLEN_T = "int"
     print "socken_t=",opt.FLX_SOCKLEN_T
 
     # find misc info about basic types
