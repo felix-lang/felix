@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.182  2005/12/26 06:20:35  skaller
+Add mutexlite to interfaces ..
+
 Revision 1.181  2005/12/26 06:17:15  skaller
 Copy demux interfaces to rtl directory
 
@@ -2621,6 +2624,7 @@ ELKRTL_INTERFACES = [
 DEMUXRTL_INTERFACES = [
  'demux_sleep_queue.hpp',  
  'demux_posix_queue.hpp',  
+ 'demux_mutexlite.hpp',  
 ]
 
 # files containing ocamllex sources
