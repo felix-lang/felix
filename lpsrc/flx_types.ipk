@@ -4236,6 +4236,7 @@ type felix_compiler_options_t =
   force_recompile : bool;
   with_comments : bool;
   mangle_names : bool;
+  elkhound : string;
 }
 
 
@@ -4320,6 +4321,7 @@ type felix_compiler_options_t =
   force_recompile : bool;
   with_comments : bool;
   mangle_names : bool;
+  elkhound : string;
 }
 
 

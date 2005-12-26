@@ -5,6 +5,15 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.183  2005/12/26 17:55:10  skaller
+Add pthread support.
+Add new methods for locating felix in flx script:
+  FLX_INSTALL_DIR environment variable locates uninstalled package
+  --test=INSTALL_DIR switch overrides it
+Add new method for locating flx_elkhound to flxg:
+  --elkhound=bin/flx_elkhound specifies path
+  automatically set by flx script
+
 Revision 1.182  2005/12/26 06:20:35  skaller
 Add mutexlite to interfaces ..
 
@@ -2624,6 +2633,7 @@ ELKRTL_INTERFACES = [
 DEMUXRTL_INTERFACES = [
  'demux_sleep_queue.hpp',  
  'demux_posix_queue.hpp',  
+ 'demux_iocp_demuxer.hpp',  # win32 version
  'demux_mutexlite.hpp',  
 ]
 
@@ -4616,6 +4626,7 @@ ENDLOCAL
  else:
   tangle("DYNLINK_STRING='-Lrtl -lflx_dynamic'")
 
+@tangle('PTHREAD_SWITCH="'+PTHREAD_SWITCH+'"')
 # check for test mode: this argument must come first
 
 TESTMODE=0
@@ -4639,8 +4650,15 @@ INCLUDE_DIRS=""
 while (( "$grab" == "1" ));
 do
   case x$1 in
+  x--test=*)
+    TESTMODE=1
+    FLX_INSTALL_DIR=${1:7}
+    shift
+  ;;
+
   x--test)
     TESTMODE=1
+    FLX_INSTALL_DIR=.
     shift
   ;;
 
@@ -4749,7 +4767,7 @@ done
 
 if [ "$TESTMODE" = "1" -a "$ECHO" = "1" ]
 then
-  echo "TESTMODE: running felix from current directory"
+  echo "TESTMODE: running felix from $FLX_INSTALL_DIR"
 fi
 
 # make a list of any *.cpp files (or other g++ options ..)
@@ -4878,30 +4896,31 @@ do
  esac
 done
 
-if [ "$TESTMODE" = "1" ]
+if [ "x$FLX_INSTALL_DIR" != "x" ]
 then
-  INCLUDE_DIR="./rtl"
-  FLXLIB="./lib"
+  INCLUDE_DIR="$FLX_INSTALL_DIR/rtl"
+  FLXLIB="$FLX_INSTALL_DIR/lib"
   if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]
   then
     # bash is a heap of crap! The escaped quotes here are
     # required in case the PATH has a filename with spaces
     # However this actually fails on Linux!
-    FLXG="env \"PATH=./bin:\$PATH\" ./bin/flxg"
-    FLXRUN="env \"PATH=./bin:\$PATH\" ./bin/flx_run"
+    FLXG="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" $FLX_INSTALL_DIR/bin/flxg"
+    FLXRUN="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" $FLX_INSTALL_DIR/bin/flx_run"
   else
-    FLXG="env PATH=./bin:\$PATH ./bin/flxg"
-    FLXRUN="env LD_LIBRARY_PATH=./rtl:\$LD_LIBRARY_PATH ./bin/flx_run"
+    FLXG="env PATH=$FLX_INSTALL_DIR/bin:\$PATH $FLX_INSTALL_DIR/bin/flxg"
+    FLXRUN="env LD_LIBRARY_PATH=$FLX_INSTALL_DIR/rtl:\$LD_LIBRARY_PATH $FLX_INSTALL_DIR/bin/flx_run"
   fi
-  FLXRTL="./rtl"
-  FLXBIN="./bin"
-  FLXAR="./rtl"
+  FLXRTL="$FLX_INSTALL_DIR/rtl"
+  FLXBIN="$FLX_INSTALL_DIR/bin"
+  FLXAR="$FLX_INSTALL_DIR/rtl"
   if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]
   then
-    FLXSHLIB="./bin"
+    FLXSHLIB="$FLX_INSTALL_DIR/bin"
   else
-    FLXSHLIB="./rtl"
+    FLXSHLIB="$FLX_INSTALL_DIR/rtl"
   fi
+  ELKHOUND="--elkhound=$FLX_INSTALL_DIR/bin/flx_elkhound"
 else
   # Locate the felix installation
   prefix=""
@@ -4915,18 +4934,25 @@ else
     fi
   done
   prefix="`echo $prefix | sed 's/\/bin\/flxg$//'`"
-  INCLUDE_DIR="$prefix/lib/felix/rtl"
-  FLXG="$prefix/bin/flxg"
-  FLXRUN="$prefix/bin/flx_run"
-  FLXLIB="$prefix/lib/felix/lib"
-  FLXRTL="$prefix/rtl/felix/lib"
-  FLXBIN="$prefix/bin"
-  FLXAR="$prefix/lib"
-  if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]
+  if [ x$prefix = x ]
   then
-    FLXSHLIB="$prefix/bin"
+    echo "Cannot find felix in PATH, use --test=root to set it"
+    exit 1
   else
-    FLXSHLIB="$prefix/lib"
+    INCLUDE_DIR="$prefix/lib/felix/rtl"
+    FLXG="$prefix/bin/flxg"
+    FLXRUN="$prefix/bin/flx_run"
+    FLXLIB="$prefix/lib/felix/lib"
+    FLXRTL="$prefix/rtl/felix/lib"
+    FLXBIN="$prefix/bin"
+    FLXAR="$prefix/lib"
+    if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]
+    then
+      FLXSHLIB="$prefix/bin"
+    else
+      FLXSHLIB="$prefix/lib"
+    fi
+    ELKHOUND="--elkhound=$prefix/bin/flx_elkhound"
   fi
 fi
 if [ "$DEBUG" = "1" ]; then FLXRUN="$FLXRUN --debug"; fi
@@ -4975,14 +5001,14 @@ if [ $STATIC = 0 ]
 then
   if [ $FELIX = 1 ]
   then
-    FCMD="$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"
+    FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND -I$FLXLIB $INCLUDE_DIRS $base"
     if [ $ECHO = 1 ]; then echo "$FCMD"; fi
     eval $FCMD
   fi
   if [ $? = 0 ]
   then
     CCMD="$CCOBJ_DLLIB $CCFLAGS -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $DYNLINK_STRING"
+    LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $DYNLINK_STRING $PTHREAD_SWITCH"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then
@@ -5011,14 +5037,14 @@ then
 else
   if [ $FELIX = 1 ]
   then
-    FCMD="$FLXG $VERBOSE $FLXFLAGS -I$FLXLIB $INCLUDE_DIRS $base"
+    FCMD="$FLXG $VERBOSE $FLXFLAGS $ELKHOUND -I$FLXLIB $INCLUDE_DIRS $base"
     if [ $ECHO = 1 ]; then echo "$FCMD"; fi
     eval $FCMD
   fi
   if [ $? = 0 ]
   then
     CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    LCMD="$CCLINK_STATIC $FLXRTL/flx_run_static$EXT_OBJ $PKGS $cppos $base$EXT_OBJ $FLXAR/libflx_static$EXT_LIB $SPEC_EXE_FILENAME$base$EXT_EXE"
+    LCMD="$CCLINK_STATIC $FLXRTL/flx_run_static$EXT_OBJ $PKGS $cppos $base$EXT_OBJ $FLXAR/libflx_static$EXT_LIB $SPEC_EXE_FILENAME$base$EXT_EXE $PTHREAD_SWITCH"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then

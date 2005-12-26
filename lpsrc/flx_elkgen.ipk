@@ -430,7 +430,8 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
   ;
   close_out f
   ;
-  let retval = Unix.system("flx_elkhound -tr nolines " ^ filename) in
+  let elkhound = syms.compiler_options.elkhound in
+  let retval = Unix.system(elkhound ^ " -tr nolines " ^ filename) in
   begin match retval with
   | Unix.WEXITED 0 -> ()
   | _ -> failwith "Error executing flx_elkhound"

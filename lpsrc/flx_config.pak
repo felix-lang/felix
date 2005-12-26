@@ -189,6 +189,15 @@ int main(int, char*[]) { return 0; }
 extern "C" int accept(int s, struct sockaddr *addr, int *addrlen);
 int main(int, char*[]) { return 0; }
 
+@h=tangler("tmp/pthreads.cxx","c++")
+@select(h)
+#include <pthread.h>
+int main(int, char*[]) {
+  pthread_t pt;
+  pthread_cancel(pt);
+  return 0;
+}
+
 @h = tangler("tmp/intsizes.cxx",'c++')
 @select(h)
 #include <stdio.h>
@@ -987,6 +996,33 @@ class gxx(flxbuild.compiler_class.compiler_base):
       print "Temporarily this is mandatory [during config debugging]"
       sys.exit(1)
     
+    # find out how to do pthreads
+    opt.PTHREAD_SWITCH=""
+    try:
+      shell(opt.CXX+" -w -c tmp"+os.sep+"pthreads.cxx -o tmp"+os.sep+"pthreads.o")
+      opt.HAVE_PTHREADS=1
+    except:
+      opt.HAVE_PTHREADS=0
+
+    if opt.HAVE_PTHREADS:
+      try:
+        shell(opt.CXX +"tmp"+os.sep+"pthreads.o -o tmp"+os.sep+"pthreads -lpthread")
+        opt.PTHREAD_SWITCH="-lpthread "
+      except:
+        try:
+          shell(opt.CXX +"tmp"+os.sep+"pthreads.o -o tmp"+os.sep+"pthreads -pthread")
+          opt.PTHREAD_SWITCH="-pthread "
+        except:
+          try:
+            shell(opt.CXX +"tmp"+os.sep+"pthreads.o -o tmp"+os.sep+"pthreads -pthreads")
+            opt.PTHREAD_SWITCH="-pthreads "
+          except:
+            opt.HAVE_PTHREADS=0
+
+    if opt.HAVE_PTHREADS:
+      print "Posix Threads supported with "+opt.PTHREAD_SWITCH
+    else:
+      print "Posix Threads not supported"
 
     # find if we have BSD isnan in <cmath> (NAUGHTY!)
     try:
@@ -1250,6 +1286,8 @@ class gxx(flxbuild.compiler_class.compiler_base):
     for i in libs: cmd = cmd + "-l"+i+" "
     if opt.DLLIB:
       cmd = cmd + "-l"+opt.DLLIB+" "
+    if opt.HAVE_PTHREADS:
+      cmd = cmd + opt.PTHREAD_SWITCH
     shell(cmd)
 
   def link_felix_dll(self,shell,objects,outfile,lib_path=[],libs=[]):
@@ -1261,6 +1299,8 @@ class gxx(flxbuild.compiler_class.compiler_base):
     for i in libs: cmd = cmd + "-l"+i+" "
     if opt.DLLIB:
       cmd = cmd + "-l"+opt.DLLIB+" "
+    if opt.HAVE_PTHREADS:
+      cmd = cmd + opt.PTHREAD_SWITCH
     shell(cmd)
     
   def link_dynamic_program(self,shell,objects,outfile,lib_path,libs):
@@ -1272,6 +1312,8 @@ class gxx(flxbuild.compiler_class.compiler_base):
     for i in libs: cmd = cmd + "-l"+i+" "
     if opt.DLLIB:
       cmd = cmd + "-l"+opt.DLLIB+" "
+    if opt.HAVE_PTHREADS:
+      cmd = cmd + opt.PTHREAD_SWITCH
     shell(cmd)
 
 @h = tangler("flxbuild/msvcxx_class.py")
@@ -2120,6 +2162,8 @@ if target_model in ["posix","osx","cygwin","nocygwin","mingw","detect"]:
   SOLARIS =  TARGET_CXX.options.SOLARIS
   BSD =  TARGET_CXX.options.BSD
   FLX_SOCKLEN_T = TARGET_CXX.options.FLX_SOCKLEN_T
+  HAVE_PTHREADS =  TARGET_CXX.options.HAVE_PTHREADS
+  PTHREAD_SWITCH =  TARGET_CXX.options.PTHREAD_SWITCH
   HAVE_MSVC=0
   HAVE_GXX=1
 elif target_model in ["win32"]:
@@ -2136,6 +2180,8 @@ elif target_model in ["win32"]:
   WIN32=1
   POSIX=0
   FLX_SOCKLEN_T = "int"
+  HAVE_PTHREADS=0
+  PTHREAD_SWITCH=""
   HAVE_MSVC=1
   HAVE_GXX=0
 else:
@@ -2325,6 +2371,8 @@ try:
   p(f,"LINUX")
   p(f,"PREFIX")
   p(f,"FLX_SOCKLEN_T")
+  p(f,"HAVE_PTHREADS")
+  p(f,"PTHREADS_SWITCH")
   pr(f,"")
 
   pr(f,"import flxbuild")
