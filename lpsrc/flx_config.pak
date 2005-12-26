@@ -2319,6 +2319,7 @@ try:
   p(f,"CYGWIN")
   p(f,"MACOSX")
   p(f,"WIN32")
+  p(f,"POSIX")
   p(f,"SOLARIS")
   p(f,"BSD")
   p(f,"LINUX")
