@@ -1517,6 +1517,12 @@ shared library name are not passed.
 //#include <unistd.h>
 #include "flx_rtl.hpp"
 
+#ifdef WIN32
+#include "demux_iocp_demuxer.hpp"
+#else
+#include "demux_posix_queue.hpp"
+#endif
+
 #include "flx_collector.hpp"
 #include "flx_dynlink.hpp"
 using namespace std;
@@ -1645,6 +1651,15 @@ int main(int argc, char** argv)
     }
 
     std::list<fthread_t*> active;
+	
+#ifdef WIN32
+    win_queue async_active;
+#else
+    posix_queue async_active;
+#endif
+    bool async_requests = false;
+
+
     {
       con_t *top = instance.start_proc;
       fthread_t *ft = new (collector,_fthread_ptr_map) fthread_t(top);
@@ -1819,6 +1834,18 @@ int main(int argc, char** argv)
       }
       if(debug)fprintf(stderr,"removing thread %p\n",ft);
       collector.remove_root(ft);
+    }
+
+    
+    // ran out of active threads - are there any in the async queue?
+    if(debug){
+      fprintf(stderr, "out of active synchronous threads, trying async\n");
+    }
+
+    if(async_requests){
+      fthread_t* ftp = (fthread_t*)async_active.dequeue();
+      active.push_front(ftp);
+      goto process_active;
     }
 
     if(debug)fprintf(stderr,"Out of active threads\n");

@@ -2620,7 +2620,7 @@ create_listener_socket(int* io_port, int q_len)
 {
   int         fdForListening;
   struct sockaddr_in  serverAddress;
-  unsigned int    namelen = sizeof(serverAddress);
+  FLX_SOCKLEN_T    namelen = sizeof(serverAddress);
   int         yes = 1;
 
   if((fdForListening = socket(AF_INET, SOCK_STREAM, 0)) == -1)
