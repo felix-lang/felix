@@ -997,27 +997,25 @@ class gxx(flxbuild.compiler_class.compiler_base):
       sys.exit(1)
     
     # find out how to do pthreads
-    opt.PTHREAD_SWITCH=""
     try:
       shell(opt.CXX+" -w -c tmp"+os.sep+"pthreads.cxx -o tmp"+os.sep+"pthreads.o")
       opt.HAVE_PTHREADS=1
     except:
       opt.HAVE_PTHREADS=0
 
+    opt.PTHREAD_SWITCH=None
     if opt.HAVE_PTHREADS:
-      try:
-        shell(opt.CXX +"tmp"+os.sep+"pthreads.o -o tmp"+os.sep+"pthreads -lpthread")
-        opt.PTHREAD_SWITCH="-lpthread "
-      except:
+      for i in [' ','-lpthread ','-pthread ','-pthreads ']:
         try:
-          shell(opt.CXX +"tmp"+os.sep+"pthreads.o -o tmp"+os.sep+"pthreads -pthread")
-          opt.PTHREAD_SWITCH="-pthread "
+          shell(opt.CXX +"tmp"+os.sep+"pthreads.o -o tmp"+os.sep+"pthreads "+i)
+          opt.PTHREAD_SWITCH=i
+          break
         except:
-          try:
-            shell(opt.CXX +"tmp"+os.sep+"pthreads.o -o tmp"+os.sep+"pthreads -pthreads")
-            opt.PTHREAD_SWITCH="-pthreads "
-          except:
-            opt.HAVE_PTHREADS=0
+          pass
+
+    if opt.HAVE_PTHREADS and opt.PTHREAD_SWITCH == None:
+      print "FATAL: Cannot find how to link pthreads"
+      sys.exit(1)
 
     if opt.HAVE_PTHREADS:
       print "Posix Threads supported with "+opt.PTHREAD_SWITCH
