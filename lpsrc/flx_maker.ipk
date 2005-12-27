@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.186  2005/12/27 12:31:49  skaller
+Skeleton for faio.
+
 Revision 1.185  2005/12/27 07:10:41  skaller
 Fix library order, fix to choose library name based on compiler instead of os.
 
@@ -2644,6 +2647,11 @@ DEMUXRTL_INTERFACES = [
  'demux_mutexlite.hpp',  
 ]
 
+FAIORTL_INTERFACES = [
+ 'faio_file1.hpp',  
+ 'faio_file2.hpp',  
+]
+
 # files containing ocamllex sources
 CIL_LEXS = [ 'flx_cil_clexer', 'flx_cil_formatlex', ]
 FLX_LEXS = [ 'flx_lex' ]
@@ -2832,6 +2840,11 @@ RTL_CPPS = [
   "rtl/flx_ioutil",
 ]
 
+FAIO_CPPS = [
+  "faio/faio_file1",
+  "faio/faio_file2",
+]
+
 DEMUX_CPPS = [
   "demux/demux_demuxer",
 ]
@@ -2990,6 +3003,11 @@ def copy_demux2rtl():
     if filetime("demux"+os.sep+f) > filetime("rtl"+os.sep+f):
       filecopy("demux"+os.sep+f,"rtl"+os.sep+f)
 
+def copy_faio2rtl():
+  for f in FAIORTL_INTERFACES:
+    if filetime("faio"+os.sep+f) > filetime("rtl"+os.sep+f):
+      filecopy("faio"+os.sep+f,"rtl"+os.sep+f)
+
 def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES):
   global buildall
   # STEP 2: Generate lexers
@@ -3050,6 +3068,7 @@ try:
     copy_mli2ml()
     copy_elk2rtl()
     copy_demux2rtl()
+    copy_faio2rtl()
     filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
   erasefile('tmp.tmp')
 
@@ -3183,6 +3202,13 @@ try:
         dir,base = string.split(x,'/')
         TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"])
 
+      print " .. FELIX ASYNCH IO BINDINGS"
+      for x in FAIO_CPPS:
+        if not "quiet" in options: print 'Compiling rtl object',x
+        ars = ars + x + "_dynamic.o "
+        dir,base = string.split(x,'/')
+        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"])
+
       #ELKHOUND SUBLIBRARY
       print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:
@@ -3215,6 +3241,12 @@ try:
         dir,base = string.split(x,'/')
         TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_STATIC_LINK"])
 
+      print " .. FELIX ASYNCH IO"
+      for x in FAIO_CPPS:
+        if not "quiet" in options: print 'Compiling rtl object',x
+        ars = ars + x + "_dynamic.o "
+        dir,base = string.split(x,'/')
+        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"])
 
       print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:

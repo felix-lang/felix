@@ -1,0 +1,26 @@
+@head(1,"Faio")
+Asynch I/O interface pack.
+@execfile('config'+os.sep+'config.py')
+
+@h=tangler('faio/faio_file1.hpp')
+@select(h)
+// some C++ interfaces
+
+@h=tangler('faio/faio_file2.hpp')
+@select(h)
+// some C++ interfaces
+
+@h=tangler('faio/faio_file1.cpp')
+@select(h)
+// Some C++ code
+
+@h=tangler('faio/faio_file2.cpp')
+@select(h)
+// some C++ code
+
+@h=tangler('lib/flx_faio.flx')
+@select(h)
+include "std";
+
+// Faio library bindings
+
