@@ -4,6 +4,7 @@
 @select(h)
 #ifndef __DEMUXER__
 #define __DEMUXER__
+#include <flx_rtl_config.hpp>
 
 typedef struct {
   char*   buffer;           // set on input
@@ -13,7 +14,7 @@ typedef struct {
 }sel_param;
 
 // abstract base class (gee - it doesn't do much)
-class demuxer {
+class FLX_RTL_EXTERN demuxer {
 protected:
 public:
   virtual ~demuxer() {}
@@ -25,7 +26,7 @@ public:
 @select(h)
 #include "demux_posix_demuxer.hpp"
 
-class epoll_demuxer : public posix_demuxer {
+class FLX_RTL_EXTERN epoll_demuxer : public posix_demuxer {
   int   epoll_fd;
 
   virtual void  thread_loop_body();
@@ -46,7 +47,7 @@ public:
 
 #include "demux_posix_demuxer.hpp"
 
-class evtport_demuxer : public posix_demuxer {
+class FLX_RTL_EXTERN evtport_demuxer : public posix_demuxer {
     int     evtport;
   void  cleanup();
 protected:
@@ -70,7 +71,7 @@ public:
 #include "demux_demuxer.hpp"
 
 // this thing isn't actually being used by the iocp code. it should be.
-class win_thread {
+class FLX_RTL_EXTERN win_thread {
   HANDLE    thread;
   HANDLE    cancel_evt;
 
@@ -81,12 +82,12 @@ public:
   void deinit();
 };
 
-class iocp_demuxer;   // predeclaration
+class FLX_RTL_EXTERN iocp_demuxer;   // predeclaration
 
 // abstract descendent of demux_iface, this time with iocp callback
 // user retrieves their own personal data via the OVERLAPPED ptr.
 // this can probably piss off and become a per object callback
-class iocp_demux_iface {
+class FLX_RTL_EXTERN iocp_demux_iface {
 public:
   // 2 possibilities for piggybacking data. who could ask for more?
   virtual void iocp_op_finished(iocp_demuxer& d,
@@ -94,7 +95,7 @@ public:
 };
 
 
-class iocp_demuxer : public demuxer {
+class FLX_RTL_EXTERN iocp_demuxer : public demuxer {
 
   HANDLE    iocp;     // the io completion queue
   win_thread  iocp_thread;  // our "select" thread
@@ -118,7 +119,7 @@ public:
 };
 
 // synchronisation stuff
-class win_locker {
+class FLX_RTL_EXTERN win_locker {
   HANDLE  m;
 public:
   win_locker(HANDLE mutex);
@@ -127,7 +128,7 @@ public:
 
 #include "demux_sleep_queue.hpp"
 
-class win_queue  : public sleep_queue {
+class FLX_RTL_EXTERN win_queue  : public sleep_queue {
   HANDLE      member_lock;  // protects member data
   HANDLE      nz_elts_cond; // wakes up threads waiting on resource
   void*     lame_opaque;  // when will I ever learn?
@@ -144,7 +145,7 @@ public:
 @select(h)
 #include "demux_posix_demuxer.hpp"
 
-class kqueue_demuxer : public posix_demuxer {
+class FLX_RTL_EXTERN kqueue_demuxer : public posix_demuxer {
   int   kq;
 protected:
   virtual void  thread_loop_body();
@@ -167,13 +168,14 @@ public:
 @select(h)
 #ifndef __MUTEXLITE__
 #define __MUTEXLITE__
+#include <flx_rtl_config.hpp>
 
 // simple mutex. call lock, unlock
 // not sure that I'm locking properly. may need cancel handlers.
 
 #include <pthread.h>
 
-class pmut {
+class FLX_RTL_EXTERN pmut {
 public:
   pthread_mutex_t m;        // be nice, don't touch
 
@@ -184,7 +186,7 @@ public:
 };
 
 // simple locker
-class pmut_locker {
+class FLX_RTL_EXTERN pmut_locker {
   pmut& p;
 public:
   pmut_locker(pmut& pm) : p(pm) { p.lock(); }
@@ -198,7 +200,7 @@ public:
 // I don't know if printf et al are supposed to be thread safe (most impls
 // seem to try to be) but I sometimes get deadlocks in ppc64 os x 10.4.2
 // with 4.0.1 when printfing to stdout. Nasty.
-class apthread {
+class FLX_RTL_EXTERN apthread {
   pthread_t   thr;        // the thread
   bool      inited;       // do I need this or is pthread_t a pointer?
 public:
@@ -218,6 +220,7 @@ public:
 @select(h)
 #ifndef __PFILEIO__
 #define __PFILEIO__
+#include <flx_rtl_config.hpp>
 
 #include "demux_demuxer.hpp"
 #include "demux_posix_queue.hpp"
@@ -229,7 +232,7 @@ public:
 // like another event source. this is basically a wrapped pread, pwrite
 // should probably be derived from posix_wakeup or something like that.
 // or have the same signature. abstract - users overload "finished
-class fileio_request : public worker_task
+class FLX_RTL_EXTERN fileio_request : public worker_task
 {
   long    offset;   // make this a proper offset (64bit)
   // off_t    offset; // in: offset, for use with pread, pwrite
@@ -267,7 +270,7 @@ public:
 #include "demux_demuxer.hpp"
 #include "demux_mutexlite.hpp"
 
-class posix_demuxer;            // fwd decl
+class FLX_RTL_EXTERN posix_demuxer;            // fwd decl
 
 // abc
 class posix_wakeup {
@@ -278,12 +281,12 @@ public:
   virtual void wakeup(posix_demuxer& demux) = 0;
 };
 
-class socket_wakeup : public posix_wakeup {
+class FLX_RTL_EXTERN socket_wakeup : public posix_wakeup {
 public:
   int   s;                // the non blocking socket
 };
 
-class posix_demuxer : public demuxer {
+class FLX_RTL_EXTERN posix_demuxer : public demuxer {
   apthread    evt_pthr;       // the event loop thread
   static void*  thread_start(void*);  // bootstrap thread callback
 
@@ -307,10 +310,11 @@ public:
 @select(h)
 #ifndef __POSIX_QUEUE__
 #define __POSIX_QUEUE__
+#include <flx_rtl_config.hpp>
 #include "demux_mutexlite.hpp"
 #include "demux_sleep_queue.hpp"
 
-class posix_queue  : public sleep_queue {
+class FLX_RTL_EXTERN posix_queue  : public sleep_queue {
   pmut      member_lock;  // protects member data
   pthread_cond_t  nz_elts_cond; // wakes up threads waiting on resource
   void*     lame_opaque;  // when will I ever learn?
@@ -330,7 +334,7 @@ public:
 #include "demux_mutexlite.hpp"
 #include <sys/select.h>   // for fd_set
 
-class select_demuxer : public posix_demuxer {
+class FLX_RTL_EXTERN select_demuxer : public posix_demuxer {
   // still using these, but they're not virtual - make them private &
   // remove the locks?
   void  remove_reading_fd(int s);
@@ -360,12 +364,13 @@ public:
 @select(h)
 #ifndef __SLEEPQUEUE__
 #define __SLEEPQUEUE__
+#include <flx_rtl_config.hpp>
 
 
 // interface for a consumer/producer queue. threads requesting a resource
 // that isn't there block until one is available. push/pop re-entrant
 
-class sleep_queue {
+class FLX_RTL_EXTERN sleep_queue {
 public:
   virtual ~sleep_queue() {}
 
@@ -379,6 +384,7 @@ public:
 @select(h)
 #ifndef __SLEEP_TASK__
 #define __SLEEP_TASK__
+#include <flx_rtl_config.hpp>
 
 // this is a sort of worker_fifo, but with a prio queue that never sleeps
 #include "demux_work_fifo.hpp"
@@ -388,7 +394,7 @@ public:
 // class sleep_task : public worker_task
 // may not need time in here - just the wakeup - something I surely have
 // somewhere else.
-class sleep_task
+class FLX_RTL_EXTERN sleep_task
 {
 public:
   virtual ~sleep_task() {}
@@ -400,7 +406,7 @@ public:
 // it needs a prio queue
 // class sleep_task_queue : public worker_fifo
 // don't want a worker_fifo
-class sleep_task_queue
+class FLX_RTL_EXTERN sleep_task_queue
 {
   // ATTENZIONE: the thread uses this & so it must outlive it
   // for this it is declared before the thread (I would've expected
@@ -435,23 +441,25 @@ public:
 @select(h)
 #ifndef __SOCKETY__
 #define __SOCKETY__
-int create_listener_socket(int* io_port, int q_len);
-int nice_create_listener(int* io_port, int q_len);
-int nice_accept(int listener);
-int nice_connect(const char* addr, int port);
-int async_connect(const char* addr, int port, int* finished);
+#include <flx_rtl_config.hpp>
+int FLX_RTL_EXTERN create_listener_socket(int* io_port, int q_len);
+int FLX_RTL_EXTERN nice_create_listener(int* io_port, int q_len);
+int FLX_RTL_EXTERN nice_accept(int listener);
+int FLX_RTL_EXTERN nice_connect(const char* addr, int port);
+int FLX_RTL_EXTERN async_connect(const char* addr, int port, int* finished);
 #endif
 
 @h=tangler('demux/demux_work_fifo.hpp')
 @select(h)
 #ifndef __WORKER_FIFO__
 #define __WORKER_FIFO__
+#include <flx_rtl_config.hpp>
 
 #include "demux_posix_queue.hpp"
 #include "demux_mutexlite.hpp"
 
 // abstract 
-class worker_task
+class FLX_RTL_EXTERN worker_task
 {
 public:
   virtual ~worker_task() {}   // c++ should do this automatically
@@ -461,7 +469,7 @@ public:
 };
 
 // make this into a general work queue
-class worker_fifo
+class FLX_RTL_EXTERN worker_fifo
 {
   apthread  io_thread;
   
