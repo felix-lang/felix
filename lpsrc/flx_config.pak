@@ -1271,6 +1271,8 @@ class gxx(flxbuild.compiler_class.compiler_base):
     cmd = cmd + "-o " +outfile + " "
     for i in lib_path: cmd = cmd + "-L"+i+" "
     for i in libs: cmd = cmd + "-l"+i+" "
+    if opt.HAVE_PTHREADS:
+      cmd = cmd + opt.PTHREAD_SWITCH
     shell(cmd)
     
   def link_shared_rtl(self,shell,objects,outfile,lib_path=[],libs=[]):
