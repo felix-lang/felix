@@ -4,17 +4,15 @@
 @select(h)
 #ifndef __DEMUXER__
 #define __DEMUXER__
-#include <flx_rtl_config.hpp>
 
 typedef struct {
   char*   buffer;           // set on input
   long    buffer_size;        // set on input
   long    bytes_written;        // set on input and output
-//  void*   user_data;          // set on input
 }sel_param;
 
 // abstract base class (gee - it doesn't do much)
-class FLX_RTL_EXTERN demuxer {
+class demuxer {
 protected:
 public:
   virtual ~demuxer() {}
@@ -26,7 +24,7 @@ public:
 @select(h)
 #include "demux_posix_demuxer.hpp"
 
-class FLX_RTL_EXTERN epoll_demuxer : public posix_demuxer {
+class epoll_demuxer : public posix_demuxer {
   int   epoll_fd;
 
   virtual void  thread_loop_body();
@@ -47,7 +45,7 @@ public:
 
 #include "demux_posix_demuxer.hpp"
 
-class FLX_RTL_EXTERN evtport_demuxer : public posix_demuxer {
+class evtport_demuxer : public posix_demuxer {
     int     evtport;
   void  cleanup();
 protected:
@@ -70,8 +68,13 @@ public:
 
 #include "demux_demuxer.hpp"
 
+// not here? returns INVALID_SOCKET on failure (unlike posix version,
+// this doesn't let the os choose the port - make it so).
+SOCKET create_listener_socket(int port, int backlog);
+
+
 // this thing isn't actually being used by the iocp code. it should be.
-class FLX_RTL_EXTERN win_thread {
+class win_thread {
   HANDLE    thread;
   HANDLE    cancel_evt;
 
@@ -82,26 +85,25 @@ public:
   void deinit();
 };
 
-class FLX_RTL_EXTERN iocp_demuxer;   // predeclaration
-
-// abstract descendent of demux_iface, this time with iocp callback
-// user retrieves their own personal data via the OVERLAPPED ptr.
-// this can probably piss off and become a per object callback
-class FLX_RTL_EXTERN iocp_demux_iface {
+// iocp_wakeup base class for users of iocp_demuxer
+class iocp_wakeup {
+protected:            // folks need to use these in win 32 calls
+  OVERLAPPED  ol;
+  // I didn't want this to be felixy, useful though.
+  void clear_overlapped();  // zero the OVERLAPPED structure
 public:
   // 2 possibilities for piggybacking data. who could ask for more?
-  virtual void iocp_op_finished(iocp_demuxer& d,
-    DWORD nbytes, ULONG_PTR udat, LPOVERLAPPED olp, int err) = 0;
+  // why don't I need this in the posix version?
+  virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
+    LPOVERLAPPED olp, int err) = 0;
+
+  // retrieves this pointer from OVERLAPPED pointer
+  static iocp_wakeup* from_overlapped(LPOVERLAPPED olp);
 };
 
-
-class FLX_RTL_EXTERN iocp_demuxer : public demuxer {
-
+class iocp_demuxer : public demuxer {
   HANDLE    iocp;     // the io completion queue
   win_thread  iocp_thread;  // our "select" thread
-
-  // not needed
-  iocp_demux_iface  &callbacks; // on the way out
 
   // necessary windows magic for CreateThread
   // see CreateThread example code on MSDN
@@ -110,16 +112,17 @@ class FLX_RTL_EXTERN iocp_demuxer : public demuxer {
 
   void    cleanup();
 public:
-  iocp_demuxer(iocp_demux_iface& cbs);
+  iocp_demuxer();
   virtual ~iocp_demuxer();
 
-  // using instead this more general interface
+  // udat is a spare user cookie - probably not used very often
+  // the OVERLAPPED retrieved from the iocp is assumed to be part of
+  // an iocp_wakeup - beware!
   int associate_with_iocp(HANDLE obj, ULONG_PTR udat);
-
 };
 
 // synchronisation stuff
-class FLX_RTL_EXTERN win_locker {
+class win_locker {
   HANDLE  m;
 public:
   win_locker(HANDLE mutex);
@@ -128,7 +131,7 @@ public:
 
 #include "demux_sleep_queue.hpp"
 
-class FLX_RTL_EXTERN win_queue  : public sleep_queue {
+class win_queue  : public sleep_queue {
   HANDLE      member_lock;  // protects member data
   HANDLE      nz_elts_cond; // wakes up threads waiting on resource
   void*     lame_opaque;  // when will I ever learn?
@@ -145,7 +148,7 @@ public:
 @select(h)
 #include "demux_posix_demuxer.hpp"
 
-class FLX_RTL_EXTERN kqueue_demuxer : public posix_demuxer {
+class kqueue_demuxer : public posix_demuxer {
   int   kq;
 protected:
   virtual void  thread_loop_body();
@@ -168,14 +171,13 @@ public:
 @select(h)
 #ifndef __MUTEXLITE__
 #define __MUTEXLITE__
-#include <flx_rtl_config.hpp>
 
 // simple mutex. call lock, unlock
 // not sure that I'm locking properly. may need cancel handlers.
 
 #include <pthread.h>
 
-class FLX_RTL_EXTERN pmut {
+class pmut {
 public:
   pthread_mutex_t m;        // be nice, don't touch
 
@@ -186,7 +188,7 @@ public:
 };
 
 // simple locker
-class FLX_RTL_EXTERN pmut_locker {
+class pmut_locker {
   pmut& p;
 public:
   pmut_locker(pmut& pm) : p(pm) { p.lock(); }
@@ -200,7 +202,7 @@ public:
 // I don't know if printf et al are supposed to be thread safe (most impls
 // seem to try to be) but I sometimes get deadlocks in ppc64 os x 10.4.2
 // with 4.0.1 when printfing to stdout. Nasty.
-class FLX_RTL_EXTERN apthread {
+class apthread {
   pthread_t   thr;        // the thread
   bool      inited;       // do I need this or is pthread_t a pointer?
 public:
@@ -220,7 +222,6 @@ public:
 @select(h)
 #ifndef __PFILEIO__
 #define __PFILEIO__
-#include <flx_rtl_config.hpp>
 
 #include "demux_demuxer.hpp"
 #include "demux_posix_queue.hpp"
@@ -232,7 +233,7 @@ public:
 // like another event source. this is basically a wrapped pread, pwrite
 // should probably be derived from posix_wakeup or something like that.
 // or have the same signature. abstract - users overload "finished
-class FLX_RTL_EXTERN fileio_request : public worker_task
+class fileio_request : public worker_task
 {
   long    offset;   // make this a proper offset (64bit)
   // off_t    offset; // in: offset, for use with pread, pwrite
@@ -270,7 +271,7 @@ public:
 #include "demux_demuxer.hpp"
 #include "demux_mutexlite.hpp"
 
-class FLX_RTL_EXTERN posix_demuxer;            // fwd decl
+class posix_demuxer;            // fwd decl
 
 // abc
 class posix_wakeup {
@@ -281,12 +282,12 @@ public:
   virtual void wakeup(posix_demuxer& demux) = 0;
 };
 
-class FLX_RTL_EXTERN socket_wakeup : public posix_wakeup {
+class socket_wakeup : public posix_wakeup {
 public:
   int   s;                // the non blocking socket
 };
 
-class FLX_RTL_EXTERN posix_demuxer : public demuxer {
+class posix_demuxer : public demuxer {
   apthread    evt_pthr;       // the event loop thread
   static void*  thread_start(void*);  // bootstrap thread callback
 
@@ -310,11 +311,10 @@ public:
 @select(h)
 #ifndef __POSIX_QUEUE__
 #define __POSIX_QUEUE__
-#include <flx_rtl_config.hpp>
 #include "demux_mutexlite.hpp"
 #include "demux_sleep_queue.hpp"
 
-class FLX_RTL_EXTERN posix_queue  : public sleep_queue {
+class posix_queue  : public sleep_queue {
   pmut      member_lock;  // protects member data
   pthread_cond_t  nz_elts_cond; // wakes up threads waiting on resource
   void*     lame_opaque;  // when will I ever learn?
@@ -334,7 +334,7 @@ public:
 #include "demux_mutexlite.hpp"
 #include <sys/select.h>   // for fd_set
 
-class FLX_RTL_EXTERN select_demuxer : public posix_demuxer {
+class select_demuxer : public posix_demuxer {
   // still using these, but they're not virtual - make them private &
   // remove the locks?
   void  remove_reading_fd(int s);
@@ -364,13 +364,12 @@ public:
 @select(h)
 #ifndef __SLEEPQUEUE__
 #define __SLEEPQUEUE__
-#include <flx_rtl_config.hpp>
 
 
 // interface for a consumer/producer queue. threads requesting a resource
 // that isn't there block until one is available. push/pop re-entrant
 
-class FLX_RTL_EXTERN sleep_queue {
+class sleep_queue {
 public:
   virtual ~sleep_queue() {}
 
@@ -384,7 +383,6 @@ public:
 @select(h)
 #ifndef __SLEEP_TASK__
 #define __SLEEP_TASK__
-#include <flx_rtl_config.hpp>
 
 // this is a sort of worker_fifo, but with a prio queue that never sleeps
 #include "demux_work_fifo.hpp"
@@ -394,7 +392,7 @@ public:
 // class sleep_task : public worker_task
 // may not need time in here - just the wakeup - something I surely have
 // somewhere else.
-class FLX_RTL_EXTERN sleep_task
+class sleep_task
 {
 public:
   virtual ~sleep_task() {}
@@ -406,7 +404,7 @@ public:
 // it needs a prio queue
 // class sleep_task_queue : public worker_fifo
 // don't want a worker_fifo
-class FLX_RTL_EXTERN sleep_task_queue
+class sleep_task_queue
 {
   // ATTENZIONE: the thread uses this & so it must outlive it
   // for this it is declared before the thread (I would've expected
@@ -436,30 +434,27 @@ public:
 };
 
 #endif // __SLEEP_TASK__
-
 @h=tangler('demux/demux_sockety.hpp')
 @select(h)
 #ifndef __SOCKETY__
 #define __SOCKETY__
-#include <flx_rtl_config.hpp>
-int FLX_RTL_EXTERN create_listener_socket(int* io_port, int q_len);
-int FLX_RTL_EXTERN nice_create_listener(int* io_port, int q_len);
-int FLX_RTL_EXTERN nice_accept(int listener);
-int FLX_RTL_EXTERN nice_connect(const char* addr, int port);
-int FLX_RTL_EXTERN async_connect(const char* addr, int port, int* finished);
+int create_listener_socket(int* io_port, int q_len);
+int nice_create_listener(int* io_port, int q_len);
+int nice_accept(int listener);
+int nice_connect(const char* addr, int port);
+int async_connect(const char* addr, int port, int* finished);
 #endif
 
 @h=tangler('demux/demux_work_fifo.hpp')
 @select(h)
 #ifndef __WORKER_FIFO__
 #define __WORKER_FIFO__
-#include <flx_rtl_config.hpp>
 
 #include "demux_posix_queue.hpp"
 #include "demux_mutexlite.hpp"
 
 // abstract 
-class FLX_RTL_EXTERN worker_task
+class worker_task
 {
 public:
   virtual ~worker_task() {}   // c++ should do this automatically
@@ -469,7 +464,7 @@ public:
 };
 
 // make this into a general work queue
-class FLX_RTL_EXTERN worker_fifo
+class worker_fifo
 {
   apthread  io_thread;
   
@@ -886,8 +881,26 @@ evtport_demuxer::thread_loop_body()
 // oh, wait they're the same
 // FormatMessge
 
-iocp_demuxer::iocp_demuxer(iocp_demux_iface& cbs)
-  : iocp(NULL), callbacks(cbs)
+
+// iocp_wakeup base class for users of iocp_demuxer
+//static
+iocp_wakeup*
+iocp_wakeup::from_overlapped(LPOVERLAPPED olp)
+{
+  // calculate the address of this from overlapped member
+  // suffer an obligatory offsestof warning from broken gccs.
+  return (iocp_wakeup*)((char*)olp-offsetof(iocp_wakeup, ol));
+}
+
+void
+iocp_wakeup::clear_overlapped()
+{
+  ZeroMemory(&ol, sizeof(ol));  // much better than memset, right?
+}
+
+
+iocp_demuxer::iocp_demuxer()
+  : iocp(NULL)
 {
   // Create the completion port
   // not sure what first 3 args do, but by specifying INVALID_HANDLE_VALUE
@@ -906,7 +919,7 @@ iocp_demuxer::iocp_demuxer(iocp_demux_iface& cbs)
     1       // 1 thread (zero means one for each CPU)
   );
 
-  if(INVALID_HANDLE_VALUE == iocp)
+  if(NULL == iocp)
   {
     DWORD err = GetLastError();
     printf("failed to create completion port: %li\n", err);
@@ -937,7 +950,7 @@ iocp_demuxer::cleanup()
 
   iocp_thread.deinit();
 
-  if(iocp != INVALID_HANDLE_VALUE && !CloseHandle(iocp))
+  if(NULL != iocp && !CloseHandle(iocp))
   {
     DWORD err = GetLastError();
     // zzz do something with this
@@ -994,7 +1007,7 @@ iocp_demuxer::worker_thread_body() {
   // completion port this thread is associated with it until exit or respec
   DWORD     nbytes;   // number of bytes in io transaction
   ULONG     udat;   // user data - not using this atm
-  LPOVERLAPPED  io;     // often has piggybacked data
+  LPOVERLAPPED  olp;    // we get iocp_wakeup from this.
 
 // If a socket handle associated with a completion port is closed,
 // GetQueuedCompletionStatus returns ERROR_SUCCESS, with *lpOverlapped
@@ -1002,8 +1015,9 @@ iocp_demuxer::worker_thread_body() {
   
   int err = NO_ERROR;
 
-  // No timeout. What does false mean? Eh.
-  if(!GetQueuedCompletionStatus(iocp, &nbytes, &udat, &io, INFINITE))
+  // No timeout. What does false mean? Eh. Could need a timeout to bring
+  // the thread down.
+  if(!GetQueuedCompletionStatus(iocp, &nbytes, &udat, &olp, INFINITE))
   {
     // That's strange - I sometimes get my ConnectEx errors popping
     // out here (ERROR_SEM_TIMEOUT=121, ERROR_CONNECTION_REFUSED=1225)
@@ -1014,7 +1028,7 @@ iocp_demuxer::worker_thread_body() {
     // printf("GetQueuedCompletionStatus returned false: %i\n", err);
 
     // let's see: yep - there's my overlapped
-    // printf("nbytes=%li, udat=%lx, io=%p\n", nbytes, udat, io);
+    // printf("nbytes=%li, udat=%lx, io=%p\n", nbytes, udat, olp);
     // return;
   }
 // An IOCP is a very general event mechanism. It tells you not only about
@@ -1024,12 +1038,19 @@ iocp_demuxer::worker_thread_body() {
 // know about demuxers & so forth so I'll have to know about them.
 
   // printf("HOLEY! Woke up!\n");
-  // printf("nbytes=%li, udat=%lx, io=%p, err=%i\n", nbytes, udat, io, err);
+  // printf("nbytes=%li, udat=%lx, olp=%p, err=%i\n", nbytes, udat, olp, err);
 
-  // tell someone that some overlapped op finished via the callback
-  callbacks.iocp_op_finished(*this, nbytes, udat, io, err);
+  if(NULL == olp)
+  {
+    printf("failed to get iocp_wakeup: %p (err: %i)\n", olp, err);
+    return;
+  }
+
+  // tell someone that some overlapped op finished
+  iocp_wakeup*  wakeup = iocp_wakeup::from_overlapped(olp);
+  // passing olp may be redundant, seeing as it's contained in iocp_wakeup
+  wakeup->iocp_op_finished(nbytes, udat, olp, err);
 }
-
 
 
 // thread stuff
@@ -1248,6 +1269,57 @@ win_queue::dequeue()
 
   return elt;           // should never return NULL
 }
+
+// simple utility fn, shouldn't be here. creates listener on any interface.
+// this could benifit from a SOCKET class. in failure returns INVALID_SOCKET
+SOCKET
+create_listener_socket(int port, int backlog)
+{
+  printf("creating_listener_socket\n");
+  SOCKET        listener = INVALID_SOCKET;
+
+  // could use WSASocket, but these seem to be turning out overlapped anyway
+  listener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+  if (INVALID_SOCKET == listener)
+  {
+    printf("listener create failed: %i\n", WSAGetLastError());
+    return INVALID_SOCKET;
+  }
+
+  SOCKADDR_IN   addr;
+
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  addr.sin_port = htons(port);
+
+  // bind our name to the socket
+  int         res;
+  res = bind(listener, (LPSOCKADDR)&addr, sizeof(addr));
+
+  if (SOCKET_ERROR == res)
+  {
+    printf("bind() failed %i\n", WSAGetLastError());
+    if(closesocket(listener) == SOCKET_ERROR)
+      printf("closesocket failed on listener: %i\n", WSAGetLastError());
+    return INVALID_SOCKET;
+  }
+
+  // Set the socket to listen
+  res = listen(listener, backlog);
+  if (SOCKET_ERROR == res)
+  {
+    printf("listen() failed %i\n", WSAGetLastError());
+
+    if(closesocket(listener) == SOCKET_ERROR)
+      printf("closesocket failed on listener: %i\n", WSAGetLastError());
+
+    return INVALID_SOCKET;
+  }
+
+  return listener;
+}
+
 
 // testing out some timer stuff
 static VOID CALLBACK
@@ -2319,229 +2391,6 @@ sleep_task_queue::thread_loop_body()
   // lock released here
 }
 
-@h=tangler('demux/demux_unused.cpp')
-@select(h)
-// I feel stupid, pthread mutices can be made recursive with a simple flag
-
-class rlock {
-  pmut      member_lock;  // the lock, protects our member data
-  pthread_cond_t  cond;     // condition to sleep on
-  pthread_t   owner;
-  int       count;      // recursive lock count
-  void      ownz();     // DOESN'T USE LOCK!
-public:
-  rlock();
-  ~rlock();
-  void lock();
-  void unlock();
-};
-
-// recursive locker
-class rlocker
-{
-  rlock&  p;
-public:
-  rlocker(rlock& pm) : p(pm) { p.lock(); }
-  ~rlocker() { p.unlock(); }
-};
-
-rlock::rlock()
-  : owner(NULL), count(0)
-{
-  int res = pthread_cond_init(&cond, NULL);
-  if(0 != res) throw res;
-}
-
-rlock::~rlock()
-{
-  int res = pthread_cond_destroy(&cond);
-  if(0 != res)
-    printf("pthread_cond_destroy returned %i\n", res);
-}
-
-void
-rlock::ownz()
-{
-  owner = pthread_self();
-  count = 1;
-}
-
-// protect member vars
-void
-rlock::lock()
-{
-  pmut_locker l(member_lock);
-
-  if(pthread_equal(pthread_self(), owner))
-  {
-    count++;
-  }
-  else
-  {
-    do
-    {
-      if(NULL == owner) // ours?
-      {
-        ownz();
-        return;
-      }
-
-      int res;
-      // wait on condition signal. mutex is unlocked during
-      // wait period & relocked afterwards
-      res = pthread_cond_wait(&cond, &member_lock.m);
-      if(res != 0)
-        printf("pthread_cond_wait failed: %i\n", res);
-
-    } while(1);
-  }
-}
-
-void
-rlock::unlock()
-{
-  pmut_locker l(member_lock);
-
-  count--;
-
-  if(0 == count)    // no one in there?
-  {
-    int res;
-
-    owner = NULL;
-    res = pthread_cond_signal(&cond);
-    if(0 != res)
-      printf("pthread_cond_signal failed: %i\n", res);
-  }
-}
-
-
-// this sucks - SIG_IGN won't wake sleep functions & having your own handler
-// will, but only those sleeps called in the main thread. that sucks.
-// what the hell do I do? signals are shit.
-
-return;
-// this signal stuff sucks
-
-  // hum, the ualarm type is u_int on osx 10.3.9 (this compiles though)9
-  // not using the interval arg to ualarm which generates periodic signals
-  // without intervening calls to ualarm, because we ignore the signal -
-  // we just want our ualarm call to return with time remaining.
-  useconds_t  time_left;
-
-  // need wakeup
-  if(task)
-  {
-    // this is not right, btw - unless we convert the time in the
-    // prioqueue
-    // sleep for the specified time
-    // convert from seconds to microseconds (mul by 10^6)
-    useconds_t  time_to_wait = (useconds_t)(task->t*MIL);
-
-    printf("about to wait for %lf seconds (%i musecs)\n",
-      task->t, time_to_wait);
-    // wait
-    // time_left = ualarm(time_to_wait, 0);
-    printf("ualarm returned %i time left\n", time_left);
-  }
-  else
-  {
-    // sleep indefinitely with some way of being woken. this
-    // needs to also be done for when a newer wakeup comes in
-    // (i.e. a higher priority)
-    printf("hum - no task...\n");
-    // sleep for a minute (why not?). wait for something to do
-    //time_left = ualarm(60*MIL, 10000);
-    time_left = ualarm(100000, MIL);
-    printf("nothing to do woke up with %i on the clock\n", time_left);
-    printf("sleeping for real\n");
-    //printf("sleep returned %i\n", sleep(10));
-    printf("usleep returned %i\n", usleep(MIL));
-  }
-static void
-alarm_handler(int i)
-{
-  printf("ALERM (%i)\n", i);
-}
-
-void
-sleep_task_queue::setup_alarm()
-{
-  sig_t prev_sighdl;
-  // printf("installing SIGALRM ignorer\n");
-  // prev_sighdl = signal(SIGALRM, SIG_IGN);
-  // signal ignore doesn't seem to be waking sleep & friends.
-  printf("installing SIGALRM handler\n");
-  prev_sighdl = signal(SIGALRM, alarm_handler);
-  if(prev_sighdl)
-  {
-    printf("WARNING: blew away previous SIGALRM handler: %p\n",
-      prev_sighdl);
-  }
-}
-
-#if 0
-// my comparator that is actually greater than. makes priority queue
-// have smallest first (soonest) (was by comparing pointers by default)
-struct sleep_less {
-  bool operator() (sleep_task* a, sleep_task* b) { return *b < *a; }
-};
-
-// no idea what the second arg is, but that's the default
-typedef priority_queue<sleep_task*, vector<sleep_task*>, sleep_less>
-  void_prio_queue;
-#endif
-
-
-  if(!PRIOQ->empty())
-  {
-    const long MIL = 1000000;
-
-    sleep_task* task = PRIOQ->top();
-    PRIOQ->pop();   // don't necessarily want to pop here
-    // don't actually need task outside of here.
-    long  wait_musec;
-    wait_musec = (long)(task->t*MIL);
-
-    timespec  tv;
-
-    tv.tv_sec = (wait_musec / MIL);
-    tv.tv_nsec = (wait_musec % MIL)*1000;   // 1000 nsec in 1 musec
-
-    printf("sleepwait: %limus -> %lis, %lins\n",
-      wait_musec, tv.tv_sec, tv.tv_nsec);
-
-    // could use np version here which is relative
-    // pthread_cond_timedwait_relative_np
-    //    res = pthread_cond_timedwait(&sleep_cond, &lock.m, &tv);
-    res = pthread_cond_timedwait_relative_np(&sleep_cond, &lock.m, &tv);
-    // if using posix abstime timed wait we make get EINVAL here for 
-    // abstimes in the past. must handle this.
- 
-    printf("pthread_cond_timedwait_relative_np woke up!\n");
-    if(0 == res) 
-      printf("pthread_cond_timedwait_np returned 0 - meaning?\n");
-  }
-  else
-  {
-    printf("no sleep task, sleeping indefinitely\n");
-    res = pthread_cond_wait(&sleep_cond, &lock.m);
-    printf("pthread_cond_wait woke up!\n");
-  }
-
-  switch(res)
-  {
-    case 0:
-      // nothing
-    break;
-    case ETIMEDOUT:
-      printf("Timer expired (do something)!\n");
-    break;
-    default:
-      printf("pthread_cond_timedwait failed: %i\n", res);
-    break;
-  }
-
 @h=tangler('demux/demux_work_fifo.cpp')
 @select(h)
 #include <stdio.h>    // printf
@@ -2649,17 +2498,21 @@ create_listener_socket(int* io_port, int q_len)
 
   /* bind to port */
   if (bind(fdForListening, (struct sockaddr *)&serverAddress, namelen) < 0) {
-    close (fdForListening);
+    close (fdForListening);   /* THIS masks the error */
     return -1;
   }
 
-  /* Find out what port number was chosen */
-  if (getsockname(fdForListening, (struct sockaddr *)&serverAddress, &namelen) < 0) {
-    close(fdForListening);
-    return -1;
-  }
+  /* we don't need to do this when the port was specified */
+  if(0 == *io_port) {
+    /* Find out what port number was chosen */
+    if (getsockname(fdForListening, (struct sockaddr *)&serverAddress,
+      &namelen) < 0) {
+      close(fdForListening);  /* um, this masks the error. */
+      return -1;
+    }
 
-  *io_port = ntohs(serverAddress.sin_port);
+    *io_port = ntohs(serverAddress.sin_port);
+  }
 
   /* set listen queue length for socket */
   if(listen(fdForListening, q_len) != 0) {
