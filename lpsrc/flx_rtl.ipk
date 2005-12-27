@@ -1517,7 +1517,7 @@ shared library name are not passed.
 //#include <unistd.h>
 #include "flx_rtl.hpp"
 
-#ifdef WIN32
+#ifdef _WIN32
 #include "demux_iocp_demuxer.hpp"
 #else
 #include "demux_posix_queue.hpp"
@@ -1652,7 +1652,7 @@ int main(int argc, char** argv)
 
     std::list<fthread_t*> active;
 	
-#ifdef WIN32
+#ifdef _WIN32
     win_queue async_active;
 #else
     posix_queue async_active;

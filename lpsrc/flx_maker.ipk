@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.184  2005/12/27 06:05:46  skaller
+Fix make script for Windows
+
 Revision 1.183  2005/12/26 17:55:10  skaller
 Add pthread support.
 Add new methods for locating felix in flx script:
@@ -2631,6 +2634,7 @@ ELKRTL_INTERFACES = [
 ]
 
 DEMUXRTL_INTERFACES = [
+ 'demux_demuxer.hpp',  
  'demux_sleep_queue.hpp',  
  'demux_posix_queue.hpp',  
  'demux_iocp_demuxer.hpp',  # win32 version
@@ -2856,8 +2860,16 @@ BSD_DEMUX_CPPS = [
   "demux/demux_kqueue_demuxer",     # osx/bsd
 ]
 
+EXTRA_LIBS = []
+
 if WIN32:
   DEMUX_CPPS = DEMUX_CPPS + WINDOWS_DEMUX_CPPS
+  EXTRA_LIBS = EXTRA_LIBS + ["ws2_32","mswsock"]
+  FLX_DYNAMIC_LIBS = ["libflx_dynamic"]
+  ELK_STATIC_LIBS = ["libelk_static"]
+else:
+  FLX_DYNAMIC_LIBS = ["flx_dynamic"]
+  ELK_STATIC_LIBS = ["elk_static"]
 
 if POSIX:
   DEMUX_CPPS = DEMUX_CPPS + POSIX_DEMUX_CPPS
@@ -2870,6 +2882,7 @@ if BSD or MACOSX:
 
 if SOLARIS:
   DEMUX_CPPS = DEMUX_CPPS + SOLARIS_DEMUX_CPPS
+  EXTRA_LIBS = EXTRA_LIBS + ["socket","nsl"]
 
 DRIVERS = [
   ('rtl/flx_run','bin/flx_run'),
@@ -3175,7 +3188,7 @@ try:
       objs=[]
       for i in tmp:
         objs.append(i[:-2]) # chop off the .o
-      TARGET_CXX.link_shared_rtl(xqt,objs,SHLIB_DIR+os.sep+"libflx_dynamic")
+      TARGET_CXX.link_shared_rtl(xqt,objs,SHLIB_DIR+os.sep+"libflx_dynamic",libs=EXTRA_LIBS)
 
     if SUPPORT_STATIC_LINKAGE:
       print " ++ STATIC LINK VERSIONS"
@@ -3192,7 +3205,7 @@ try:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_dynamic.o "
         dir,base = string.split(x,'/')
-        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"])
+        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_STATIC_LINK"])
 
 
       print " .. ELKHOUND"
@@ -3222,7 +3235,7 @@ try:
       objs.append(i[:-2]) # chop off the .o
     HOST_CXX.link_static_archive(xqt,objs,"elk/libelk_static")
     HOST_CXX.compile_static_main(xqt,"elk","elk_gramanl","elk",include_path=["rtl","elk"],macros=["FLX_STATIC_LINK"])
-    HOST_CXX.link_static_program(xqt,["elk/elk_gramanl_static"],"bin/flx_elkhound",lib_path=["elk"],libs=["elk_static"])
+    HOST_CXX.link_static_program(xqt,["elk/elk_gramanl_static"],"bin/flx_elkhound",lib_path=["elk"],libs=ELK_STATIC_LIBS)
  
   # COMPILE DRIVER PROGRAMS
   if "drivers" in options:
@@ -3248,7 +3261,7 @@ try:
         #  #RF: os x likes the same order as cygwin
         #  xqt(CCLINK_DLMAIN+" -o "+j+" "+i+"_dynamic.o"+" -Lrtl -lflx_dynamic " )
         #else:
-        TARGET_CXX.link_dynamic_program(xqt,[i+"_dynamic"],j,lib_path=[SHLIB_DIR],libs=["flx_dynamic"])
+        TARGET_CXX.link_dynamic_program(xqt,[i+"_dynamic"],j,lib_path=[SHLIB_DIR],libs=EXTRA_LIBS+FLX_DYNAMIC_LIBS)
 
   # run tests
   try:
@@ -3334,10 +3347,10 @@ try:
           try:
             if LINK_MODEL == "dynamic":
               TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise)
-              TARGET_CXX.link_felix_dll(xqt,[basename+"_dynamic"],basename,lib_path=[SHLIB_DIR],libs=["flx_dynamic"])
+              TARGET_CXX.link_felix_dll(xqt,[basename+"_dynamic"],basename,lib_path=[SHLIB_DIR],libs=EXTRA_LIBS+FLX_DYNAMIC_LIBS)
             else: # static
               TARGET_CXX.compile_felix_static(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise,macros=["FLX_STATIC_LINK"])
-              TARGET_CXX.link_static_program(xqt,["rtl/flx_run_static",basename+"_static"],basename,lib_path=["rtl"],libs=["flx_static"])
+              TARGET_CXX.link_static_program(xqt,["rtl/flx_run_static",basename+"_static"],basename,lib_path=["rtl"],libs=EXTRA_LIBS+["flx_static"])
             #print 'TESTFILE -- OK!',basename
             results.append(("g++",basename,'OK'))
           except MakeError:

@@ -1653,7 +1653,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     cmd = cmd + "/Fe" +outfile + opt.EXT_EXE + " "
     cmd = cmd + "/link "
     for i in lib_path: cmd = cmd + "/LIBPATH:"+i+" "
-    for i in libs: cmd = cmd + "/DEFAULTLIB:lib"+i+" "
+    for i in libs: cmd = cmd + "/DEFAULTLIB:"+i+" "
     shell(cmd)
     
   def link_shared_rtl(self,shell,objects,outfile,lib_path=[],libs=[]):
@@ -1663,7 +1663,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
     cmd = cmd + "/link "
     for i in lib_path: cmd = cmd + "/LIBPATH:"+i+" "
-    for i in libs: cmd = cmd + "/DEFAULTLIB:lib"+i+" "
+    for i in libs: cmd = cmd + "/DEFAULTLIB:"+i+" "
     shell(cmd)
   
   link_felix_dll = link_shared_rtl
@@ -1675,7 +1675,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     for i in objects: cmd = cmd +i+opt.EXT_OBJ+" "
     cmd = cmd + "/link "
     for i in lib_path: cmd = cmd + "/LIBPATH:"+i+" "
-    for i in libs: cmd = cmd + "/DEFAULTLIB:lib"+i+" "
+    for i in libs: cmd = cmd + "/DEFAULTLIB:"+i+" "
     shell(cmd)
 
 @h=tangler("flxbuild/__init__.py")
@@ -2370,7 +2370,7 @@ try:
   p(f,"PREFIX")
   p(f,"FLX_SOCKLEN_T")
   p(f,"HAVE_PTHREADS")
-  p(f,"PTHREADS_SWITCH")
+  p(f,"PTHREAD_SWITCH")
   pr(f,"")
 
   pr(f,"import flxbuild")
