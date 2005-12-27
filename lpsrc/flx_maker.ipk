@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.185  2005/12/27 07:10:41  skaller
+Fix library order, fix to choose library name based on compiler instead of os.
+
 Revision 1.184  2005/12/27 06:05:46  skaller
 Fix make script for Windows
 
@@ -2862,14 +2865,19 @@ BSD_DEMUX_CPPS = [
 
 EXTRA_LIBS = []
 
-if WIN32:
-  DEMUX_CPPS = DEMUX_CPPS + WINDOWS_DEMUX_CPPS
-  EXTRA_LIBS = EXTRA_LIBS + ["ws2_32","mswsock"]
+if HAVE_GXX:
+  FLX_DYNAMIC_LIBS = ["flx_dynamic"]
+  ELK_STATIC_LIBS = ["elk_static"]
+elif HAVE_MSVC:
   FLX_DYNAMIC_LIBS = ["libflx_dynamic"]
   ELK_STATIC_LIBS = ["libelk_static"]
 else:
-  FLX_DYNAMIC_LIBS = ["flx_dynamic"]
-  ELK_STATIC_LIBS = ["elk_static"]
+  print "CANNOT IDENTIFY COMPILER CLASS: only gcc and msvc known"
+  raise MakeError
+
+if WIN32:
+  DEMUX_CPPS = DEMUX_CPPS + WINDOWS_DEMUX_CPPS
+  EXTRA_LIBS = EXTRA_LIBS + ["ws2_32","mswsock"]
 
 if POSIX:
   DEMUX_CPPS = DEMUX_CPPS + POSIX_DEMUX_CPPS
@@ -3261,7 +3269,7 @@ try:
         #  #RF: os x likes the same order as cygwin
         #  xqt(CCLINK_DLMAIN+" -o "+j+" "+i+"_dynamic.o"+" -Lrtl -lflx_dynamic " )
         #else:
-        TARGET_CXX.link_dynamic_program(xqt,[i+"_dynamic"],j,lib_path=[SHLIB_DIR],libs=EXTRA_LIBS+FLX_DYNAMIC_LIBS)
+        TARGET_CXX.link_dynamic_program(xqt,[i+"_dynamic"],j,lib_path=[SHLIB_DIR],libs=FLX_DYNAMIC_LIBS+EXTRA_LIBS)
 
   # run tests
   try:
@@ -3347,10 +3355,10 @@ try:
           try:
             if LINK_MODEL == "dynamic":
               TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise)
-              TARGET_CXX.link_felix_dll(xqt,[basename+"_dynamic"],basename,lib_path=[SHLIB_DIR],libs=EXTRA_LIBS+FLX_DYNAMIC_LIBS)
+              TARGET_CXX.link_felix_dll(xqt,[basename+"_dynamic"],basename,lib_path=[SHLIB_DIR],libs=FLX_DYNAMIC_LIBS+EXTRA_LIBS)
             else: # static
               TARGET_CXX.compile_felix_static(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise,macros=["FLX_STATIC_LINK"])
-              TARGET_CXX.link_static_program(xqt,["rtl/flx_run_static",basename+"_static"],basename,lib_path=["rtl"],libs=EXTRA_LIBS+["flx_static"])
+              TARGET_CXX.link_static_program(xqt,["rtl/flx_run_static",basename+"_static"],basename,lib_path=["rtl"],libs=["flx_static"]+EXTRA_LIBS)
             #print 'TESTFILE -- OK!',basename
             results.append(("g++",basename,'OK'))
           except MakeError:
@@ -4639,7 +4647,11 @@ ENDLOCAL
  else:
   tangle("DYNLINK_STRING='-Lrtl -lflx_dynamic'")
 
-@tangle('PTHREAD_SWITCH="'+PTHREAD_SWITCH+'"')
+@if PTHREAD_SWITCH != None:
+  tangle('PTHREAD_SWITCH="'+PTHREAD_SWITCH+'"')
+ else:
+  tangle('PTHREAD_SWITCH=""')
+
 # check for test mode: this argument must come first
 
 TESTMODE=0
