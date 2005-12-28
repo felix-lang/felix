@@ -549,7 +549,7 @@ epoll_demuxer::epoll_demuxer()
   : epoll_fd(-1)
 {
 #ifdef EPOLLONESHOT
-  printf("WARNING: EPOLLONESHOT AVAILABLE!!!\n");
+  fprintf(stderr,"WARNING: EPOLLONESHOT AVAILABLE!!!\n");
 #endif
 
   // god knows what the maximum size will be, I'll just say 1 for now
@@ -591,7 +591,7 @@ epoll_demuxer::add_socket_wakeup(socket_wakeup* sv, bool read)
   int s = sv->s;
 
   struct epoll_event  evt;
-  // printf("add_socket_wakeup: %sing on %i (sv=%p)\n",
+  // fprintf(stderr,"add_socket_wakeup: %sing on %i (sv=%p)\n",
   //  (read) ? "read" : "writ", s, sv);
 
   // EPOLLONESHOT saves us not only a system call to remove epoll evts,
@@ -623,7 +623,7 @@ epoll_demuxer::remove_socket(int s, bool read)
   struct epoll_event  evt;
   evt.events = (read) ? EPOLLIN : EPOLLOUT;
 
-  // printf("removing %sing socket %i\n", (read) ? "read" : "writ", s);
+  // fprintf(stderr,"removing %sing socket %i\n", (read) ? "read" : "writ", s);
 
   if(epoll_ctl(epoll_fd, EPOLL_CTL_DEL, s, &evt) == -1)
   {
@@ -653,7 +653,7 @@ epoll_demuxer::thread_loop_body()
 
   socket_wakeup* sv = (socket_wakeup*)evt.data.ptr;
   
-  // printf("wakeup!\n");
+  // fprintf(stderr,"wakeup!\n");
   
   // it might be possible to get both a read & write event...
   // in which case I should take out the else below
@@ -661,13 +661,13 @@ epoll_demuxer::thread_loop_body()
   {
     // epoll events are not one shot, so evt must be removed
     // looks like I do need to know how - can I make them one shot?
-    // printf("wakeup of reader %p\n", sv);
+    // fprintf(stderr,"wakeup of reader %p\n", sv);
     remove_socket(sv->s, true);
     sv->wakeup(*this);
   }
   else if(evt.events & EPOLLOUT)
   {
-    // printf("wakeup of writer %p\n", sv);
+    // fprintf(stderr,"wakeup of writer %p\n", sv);
     remove_socket(sv->s, false);
     // ditto.
     sv->wakeup(*this);
@@ -679,14 +679,14 @@ epoll_demuxer::thread_loop_body()
     // I guess I'll just have to remove both. Note that a working
     // one-shot would fix this, I think. One of these will cause
     // an error
-    printf("epoll error: don't know from who, removing both\n");
+    fprintf(stderr,"epoll error: don't know from who, removing both\n");
     remove_socket(sv->s, true);
     remove_socket(sv->s, false);
   }
 #endif
     else
     {
-        printf("unknown events in epoll_demuxer (err?)\n");
+        fprintf(stderr,"unknown events in epoll_demuxer (err?)\n");
     }
 }
 
@@ -729,7 +729,7 @@ evtport_demuxer::evtport_demuxer()
 void
 evtport_demuxer::cleanup()
 {
-printf("do you use close to close an event port?\n");
+fprintf(stderr,"do you use close to close an event port?\n");
   deinit_pthread();
 
   if(-1 != evtport)
@@ -751,7 +751,7 @@ evtport_demuxer::add_socket_wakeup(socket_wakeup* sv, bool read)
   int events = (read) ? POLLIN : POLLOUT;
   int s = sv->s;
 
-  //printf("add_socket_wakeup: %i, sv: %p, %s\n", s, sv,
+  //fprintf(stderr,"add_socket_wakeup: %i, sv: %p, %s\n", s, sv,
   //  (read) ? "reading" : "writing");
 
   // register for event we are interested in...
@@ -793,34 +793,34 @@ print_port_evt(port_event_t* e)
 {
   char* srcstr[PORT_SOURCE_ALERT-PORT_SOURCE_AIO+1]
     = { "ALERT", "TIMER", "USER", "FD", "AIO"};
-  printf("e: %p\n\t", e);
-  //printf("portev_events: %x\n\t", e->portev_events);
-  printf("portev_events: ");
-  if(e->portev_events & POLLIN) printf("POLLIN, ");
-  if(e->portev_events & POLLOUT) printf("POLLOUT, ");
-  if(e->portev_events & POLLERR) printf("POLLERR");
-  printf(" (%x)\n\t", e->portev_events);
+  fprintf(stderr,"e: %p\n\t", e);
+  //fprintf(stderr,"portev_events: %x\n\t", e->portev_events);
+  fprintf(stderr,"portev_events: ");
+  if(e->portev_events & POLLIN) fprintf(stderr,"POLLIN, ");
+  if(e->portev_events & POLLOUT) fprintf(stderr,"POLLOUT, ");
+  if(e->portev_events & POLLERR) fprintf(stderr,"POLLERR");
+  fprintf(stderr," (%x)\n\t", e->portev_events);
   
   int src = e->portev_source;
   if(PORT_SOURCE_AIO <= src && src <= PORT_SOURCE_ALERT)
   {
-    printf("portev_source: PORT_SOURCE_%s (%x)\n\t",
+    fprintf(stderr,"portev_source: PORT_SOURCE_%s (%x)\n\t",
       srcstr[src-PORT_SOURCE_AIO], src);
   }
   else
   {
-    printf("portev_source: %x\n\t", e->portev_source);
+    fprintf(stderr,"portev_source: %x\n\t", e->portev_source);
   }
 
-  printf("portev_pad: %x\n\t", e->portev_pad);
-  printf("portev_object: %x\n\t", e->portev_object);
-  printf("portev_user: %p\n", e->portev_user);
+  fprintf(stderr,"portev_pad: %x\n\t", e->portev_pad);
+  fprintf(stderr,"portev_object: %x\n\t", e->portev_object);
+  fprintf(stderr,"portev_user: %p\n", e->portev_user);
 }
 
 void
 evtport_demuxer::thread_loop_body()
 {
-  //printf("evtport thread loop body!!!\n");
+  //fprintf(stderr,"evtport thread loop body!!!\n");
 // Block until a single event appears on the port
 // event will not fire again, so must re-add it, that is, it automatically
 // dissociates, which is going to make remove interesting... remove never
@@ -844,7 +844,7 @@ evtport_demuxer::thread_loop_body()
     return;
   }
 
-  // printf("PORT_GET RETURNED: "); print_port_evt(&evt);
+  // fprintf(stderr,"PORT_GET RETURNED: "); print_port_evt(&evt);
 
   // get wakeup obj tucked away in the user cookie.
   socket_wakeup*  sv = (socket_wakeup*)evt.portev_user;
@@ -852,25 +852,25 @@ evtport_demuxer::thread_loop_body()
 
   if(evt.portev_events & POLLERR)
   {
-    printf("ERRORS on s = %i, sv = %p\n", s, sv); 
+    fprintf(stderr,"ERRORS on s = %i, sv = %p\n", s, sv); 
     //evt.portev_events &= ~POLLERR;
     //return;
   }
 
 
   if(evt.portev_source != PORT_SOURCE_FD)
-    printf("got non PORT_SOURCE_FD (%i, %p)\n", s, sv);
+    fprintf(stderr,"got non PORT_SOURCE_FD (%i, %p)\n", s, sv);
 
   if(evt.portev_events & POLLIN)
   {
-    // printf("GOT READ EVT FOR %p\n", sv);
+    // fprintf(stderr,"GOT READ EVT FOR %p\n", sv);
     assert(sv);
     sv->wakeup(*this);
   }
 
   if(evt.portev_events & POLLOUT)
   {
-    //printf("GOT WRITE EVT FOR %p\n", sv);
+    //fprintf(stderr,"GOT WRITE EVT FOR %p\n", sv);
     assert(sv);
     sv->wakeup(*this);
   }
@@ -878,7 +878,7 @@ evtport_demuxer::thread_loop_body()
   // I never asked for POLLERR, but anyway
   if(evt.portev_events & ~(POLLIN | POLLOUT | POLLERR))
     {
-        printf("UNSOLICITED events in evtport_demuxer (%x)\n",
+        fprintf(stderr,"UNSOLICITED events in evtport_demuxer (%x)\n",
       evt.portev_events);
     }
 }
@@ -955,7 +955,7 @@ iocp_demuxer::iocp_demuxer()
 // NT 3.51 doesn't let you pass null filehandle, you've got to have a dummy
 // socket. keep that in mind. see InitializeIOCP in IOCPServer.cpp example
 // taken from codeproject. GetSystemInfo to find out num CPUs
-  printf("CreateIoCompletionPort with ONE WORKER THREAD\n");
+  fprintf(stderr,"CreateIoCompletionPort with ONE WORKER THREAD\n");
   iocp = CreateIoCompletionPort(
     INVALID_HANDLE_VALUE,
     NULL,
@@ -966,7 +966,7 @@ iocp_demuxer::iocp_demuxer()
   if(NULL == iocp)
   {
     DWORD err = GetLastError();
-    printf("failed to create completion port: %li\n", err);
+    fprintf(stderr,"failed to create completion port: %li\n", err);
     // zzz now...
     cleanup();
     throw -1;
@@ -976,7 +976,7 @@ iocp_demuxer::iocp_demuxer()
   if(iocp_thread.init(worker_thread_stub, this) == -1)
   {
     DWORD err = GetLastError();
-    printf("failed to create thread: %li\n", err);
+    fprintf(stderr,"failed to create thread: %li\n", err);
     cleanup();
     throw -1;
   }
@@ -990,7 +990,7 @@ iocp_demuxer::~iocp_demuxer()
 void
 iocp_demuxer::cleanup()
 {
-  printf("iocp cleanup\n");
+  fprintf(stderr,"iocp cleanup\n");
 
   iocp_thread.deinit();
 
@@ -998,14 +998,14 @@ iocp_demuxer::cleanup()
   {
     DWORD err = GetLastError();
     // zzz do something with this
-    printf("failed cleanup iocp: %li\n", err);
+    fprintf(stderr,"failed cleanup iocp: %li\n", err);
   }
 }
 
 int
 iocp_demuxer::associate_with_iocp(HANDLE obj, ULONG_PTR udat)
 {
-  // printf("associating with iocp: %p, udat: %lx\n", obj, udat);
+  // fprintf(stderr,"associating with iocp: %p, udat: %lx\n", obj, udat);
 
   // Any overlapped operations performed on the object will use the
   // completion port for notification. The 3rd param can be used to pass
@@ -1013,7 +1013,7 @@ iocp_demuxer::associate_with_iocp(HANDLE obj, ULONG_PTR udat)
   if(CreateIoCompletionPort(obj, iocp, udat, 0) == NULL) {
     // adding the same obj twice without an intervening get completion
     // status wakup gets an error 87, ERROR_INVALID_PARAMETER
-    printf("CreateIoCompletionPort failed to register object: %li\n",
+    fprintf(stderr,"CreateIoCompletionPort failed to register object: %li\n",
       GetLastError());
     return -1;
   }
@@ -1029,7 +1029,7 @@ iocp_demuxer::worker_thread_stub(LPVOID lParam) {
   // will printf work here or do I have to use windows' conio? (WriteConsole)
   iocp_demuxer* demuxer = (iocp_demuxer*)lParam;
 
-  printf("how to allow thread cancel in windows?\n");
+  fprintf(stderr,"how to allow thread cancel in windows?\n");
   while(1) {
     // I would call cancel here we were using pthreads here 
     demuxer->worker_thread_body();
@@ -1069,10 +1069,10 @@ iocp_demuxer::worker_thread_body() {
     // I can still awake the sleeper
     err = GetLastError();   // doco says this & not WSALastError.
 
-    // printf("GetQueuedCompletionStatus returned false: %i\n", err);
+    // fprintf(stderr,"GetQueuedCompletionStatus returned false: %i\n", err);
 
     // let's see: yep - there's my overlapped
-    // printf("nbytes=%li, udat=%lx, io=%p\n", nbytes, udat, olp);
+    // fprintf(stderr,"nbytes=%li, udat=%lx, io=%p\n", nbytes, udat, olp);
     // return;
   }
 // An IOCP is a very general event mechanism. It tells you not only about
@@ -1081,12 +1081,12 @@ iocp_demuxer::worker_thread_body() {
 // I've got general overlapped things completing here. I don't want them to
 // know about demuxers & so forth so I'll have to know about them.
 
-  // printf("HOLEY! Woke up!\n");
-  // printf("nbytes=%li, udat=%lx, olp=%p, err=%i\n", nbytes, udat, olp, err);
+  // fprintf(stderr,"HOLEY! Woke up!\n");
+  // fprintf(stderr,"nbytes=%li, udat=%lx, olp=%p, err=%i\n", nbytes, udat, olp, err);
 
   if(NULL == olp)
   {
-    printf("failed to get iocp_wakeup: %p (err: %i)\n", olp, err);
+    fprintf(stderr,"failed to get iocp_wakeup: %p (err: %i)\n", olp, err);
     return;
   }
 
@@ -1108,18 +1108,18 @@ win_thread::win_thread()
 void
 win_thread::deinit()
 {
-  printf("win_thread::deinit: how do I get my return status?\n");
-  printf("also, how do I implement a cancel request?\n");
+  fprintf(stderr,"win_thread::deinit: how do I get my return status?\n");
+  fprintf(stderr,"also, how do I implement a cancel request?\n");
 
   // ask thread to stop
   if(cancel_evt)
   {
-    printf("this cancel_evt isn't actually used - it should be\n");
+    fprintf(stderr,"this cancel_evt isn't actually used - it should be\n");
     if(!SetEvent(cancel_evt))
-      printf("cancel event failed: %li\n", GetLastError());
+      fprintf(stderr,"cancel event failed: %li\n", GetLastError());
 
     if(!CloseHandle(cancel_evt))
-      printf("failed to close cancel evt: %li\n", GetLastError());
+      fprintf(stderr,"failed to close cancel evt: %li\n", GetLastError());
 
     cancel_evt = NULL;
   }
@@ -1136,14 +1136,14 @@ win_thread::deinit()
     if(WAIT_FAILED == wait_res)
     {
       // something went wrong, have a cry
-      printf("thread wait failed (%li)\n", GetLastError());
+      fprintf(stderr,"thread wait failed (%li)\n", GetLastError());
     }
 
     // I've already tried waiting on the  thread's exit
     if(!CloseHandle(thread))
     {
       // have a cry
-      printf("failed to delete thread (%li)\n", GetLastError());
+      fprintf(stderr,"failed to delete thread (%li)\n", GetLastError());
     }
 
     thread = NULL;
@@ -1152,7 +1152,7 @@ win_thread::deinit()
 
 win_thread::~win_thread()
 {
-  printf("win_thread dtor (killing thread!)\n");
+  fprintf(stderr,"win_thread dtor (killing thread!)\n");
   deinit();
 }
 
@@ -1167,7 +1167,7 @@ win_thread::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
 
   if(NULL == cancel_evt)
   {
-    printf("failed to create cancel event\n");
+    fprintf(stderr,"failed to create cancel event\n");
     return -1;
   }
 
@@ -1189,7 +1189,7 @@ win_locker::win_locker(HANDLE mutex)
 
   if(WAIT_OBJECT_0 != res)
   {
-    printf("Wait for mutex didn't do as expected, got: %li\n", res);
+    fprintf(stderr,"Wait for mutex didn't do as expected, got: %li\n", res);
     throw res;
   }
 }
@@ -1197,7 +1197,7 @@ win_locker::win_locker(HANDLE mutex)
 win_locker::~win_locker()
 {
   if(!ReleaseMutex(m))
-    printf("Error releasing mutex: %li\n", GetLastError());
+    fprintf(stderr,"Error releasing mutex: %li\n", GetLastError());
 }
 
 // shoving the win_queue in here for now
@@ -1224,7 +1224,7 @@ win_queue::win_queue()
   if(NULL == nz_elts_cond)
   {
     err = GetLastError();
-    printf("CreateEvent returned: %li\n", err);
+    fprintf(stderr,"CreateEvent returned: %li\n", err);
     cleanup();
     throw err;
   }
@@ -1235,7 +1235,7 @@ win_queue::win_queue()
   if(NULL == member_lock)
   {
     err = GetLastError();
-    printf("CreateMutex returned: %li\n", err);
+    fprintf(stderr,"CreateMutex returned: %li\n", err);
     cleanup();
     throw err;
   }
@@ -1246,9 +1246,9 @@ win_queue::cleanup()
 {
   if(ELTQ) delete ELTQ;
   if(nz_elts_cond && !CloseHandle(nz_elts_cond))
-    printf("Failed to close event: %li\n", GetLastError());
+    fprintf(stderr,"Failed to close event: %li\n", GetLastError());
   if(member_lock && !CloseHandle(member_lock))
-    printf("Failed to close mutex: %li\n", GetLastError());
+    fprintf(stderr,"Failed to close mutex: %li\n", GetLastError());
 }
 
 win_queue::~win_queue()
@@ -1272,7 +1272,7 @@ win_queue::enqueue(void* elt)
   // be in the signalled stated. Hope that's not a problem.
   // Might be an optimization to skip this if it became nonempty.
   if(!SetEvent(nz_elts_cond))
-    printf("Set condition failed: %li\n", GetLastError());
+    fprintf(stderr,"Set condition failed: %li\n", GetLastError());
 }
 
 void*
@@ -1293,7 +1293,7 @@ win_queue::dequeue()
         // if the queue is now empty, make condition reflect it
         // this failing will probably lock the app up...
         if(!ResetEvent(nz_elts_cond)) // non-signalled state
-          printf("Reset condition failed: %li\n", GetLastError());
+          fprintf(stderr,"Reset condition failed: %li\n", GetLastError());
         break;
       }
     }
@@ -1305,7 +1305,7 @@ win_queue::dequeue()
 
     if(WAIT_OBJECT_0 != res)
     {
-      printf("Wait on condition failed: %li\n", GetLastError());
+      fprintf(stderr,"Wait on condition failed: %li\n", GetLastError());
       throw res;
     }
 
@@ -1319,7 +1319,7 @@ win_queue::dequeue()
 SOCKET
 create_listener_socket(int port, int backlog)
 {
-  printf("creating_listener_socket\n");
+  fprintf(stderr,"creating_listener_socket\n");
   SOCKET        listener = INVALID_SOCKET;
 
   // could use WSASocket, but these seem to be turning out overlapped anyway
@@ -1327,7 +1327,7 @@ create_listener_socket(int port, int backlog)
 
   if (INVALID_SOCKET == listener)
   {
-    printf("listener create failed: %i\n", WSAGetLastError());
+    fprintf(stderr,"listener create failed: %i\n", WSAGetLastError());
     return INVALID_SOCKET;
   }
 
@@ -1343,9 +1343,9 @@ create_listener_socket(int port, int backlog)
 
   if (SOCKET_ERROR == res)
   {
-    printf("bind() failed %i\n", WSAGetLastError());
+    fprintf(stderr,"bind() failed %i\n", WSAGetLastError());
     if(closesocket(listener) == SOCKET_ERROR)
-      printf("closesocket failed on listener: %i\n", WSAGetLastError());
+      fprintf(stderr,"closesocket failed on listener: %i\n", WSAGetLastError());
     return INVALID_SOCKET;
   }
 
@@ -1353,10 +1353,10 @@ create_listener_socket(int port, int backlog)
   res = listen(listener, backlog);
   if (SOCKET_ERROR == res)
   {
-    printf("listen() failed %i\n", WSAGetLastError());
+    fprintf(stderr,"listen() failed %i\n", WSAGetLastError());
 
     if(closesocket(listener) == SOCKET_ERROR)
-      printf("closesocket failed on listener: %i\n", WSAGetLastError());
+      fprintf(stderr,"closesocket failed on listener: %i\n", WSAGetLastError());
 
     return INVALID_SOCKET;
   }
@@ -1373,7 +1373,7 @@ timer_proc(
   DWORD dwTimerHighValue
 )
 {
-  printf("timerproc callback! udat: %p\n", udat);
+  fprintf(stderr,"timerproc callback! udat: %p\n", udat);
 }
 
 /*
@@ -1384,13 +1384,13 @@ blah()
   HANDLE  timer = CreateWaitableTimer(NULL, true, NULL);
 
   {
-    printf("couldn't create waitable timer: %li\n", GetLastError());
+    fprintf(stderr,"couldn't create waitable timer: %li\n", GetLastError());
     return;
   }
 
   // fill this out
   LARGE_INTEGER due;
-  printf("ACTUALLY INIT due\n");
+  fprintf(stderr,"ACTUALLY INIT due\n");
 
   // zero period => signal once only (I'll reinstall)
   // note callback + void*, passing timer for now.
@@ -1398,9 +1398,9 @@ blah()
   // from hibernation mode. I don't want to have anything to do with that.
   if(!SetWaitableTimer(timer, &due, 0, timer_proc, timer, false))
   {
-    printf("couldn't set waitable timer: %li\n", GetLastError());
+    fprintf(stderr,"couldn't set waitable timer: %li\n", GetLastError());
     if(!CloseHandle(timer))
-      printf("couldn't close timer: %li\n", GetLastError());
+      fprintf(stderr,"couldn't close timer: %li\n", GetLastError());
   }
 }
 */
@@ -1544,7 +1544,7 @@ kqueue_demuxer::remove_writing_fd(int s)
 }
 
 /*
-    printf("readevt on %i, EOF = %s\n",
+    fprintf(stderr,"readevt on %i, EOF = %s\n",
       s, (ev.flags & EV_EOF) ? "TRUE" : "FALSE");
  */
 
@@ -1571,7 +1571,7 @@ kqueue_demuxer::thread_loop_body()
     return;
   }
 
-  // printf("kqueue wakeup!\n");
+  // fprintf(stderr,"kqueue wakeup!\n");
 
   socket_wakeup*  sv = (socket_wakeup*)ev.udata;
   // int        s = ev.ident;
@@ -1585,24 +1585,24 @@ kqueue_demuxer::thread_loop_body()
     if(NULL == sv)      // => listener
     {
       int backlog = (int)ev.data;   
-      // printf("kq listen backlog: %i\n", backlog);
+      // fprintf(stderr,"kq listen backlog: %i\n", backlog);
       for(int i = 0; i < backlog; i++) handle_connection();
     }
     else
 */
-    // printf("EVFILT_READ: got %i bytes coming\n", (int)ev.data);
+    // fprintf(stderr,"EVFILT_READ: got %i bytes coming\n", (int)ev.data);
     // remove_reading_fd(s);  // now useing EV_ONESHOT
     sv->wakeup(*this);
   }
   else if(ev.filter == EVFILT_WRITE)
   {
-    // printf("EVFILT_WRITE: can write (?) %i bytes\n", (int)ev.data);
+    // fprintf(stderr,"EVFILT_WRITE: can write (?) %i bytes\n", (int)ev.data);
     // remove_writing_fd(s);
     sv->wakeup(*this);
   }
   else
   {
-    printf("kqueue returned something else (requires remove?)...\n");
+    fprintf(stderr,"kqueue returned something else (requires remove?)...\n");
   }
 }
 
@@ -1621,7 +1621,7 @@ public:
   {
     int res = pthread_mutexattr_destroy(a);
     if(0 != res)
-      printf("pthread_mutexattr_destroy failed: %i\n", res);
+      fprintf(stderr,"pthread_mutexattr_destroy failed: %i\n", res);
   }
 };
 
@@ -1641,7 +1641,7 @@ pmut::pmut(bool recursive)
     res = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
     if(0 != res)
     {
-      printf("phtread_mutexattr_settype failed: %i\n", res);
+      fprintf(stderr,"phtread_mutexattr_settype failed: %i\n", res);
       throw res;
     }
   }
@@ -1653,17 +1653,17 @@ pmut::pmut(bool recursive)
 pmut::~pmut()
 {
   int res;
-  // printf("MUTEX DESTROY!!!\n");
+  // fprintf(stderr,"MUTEX DESTROY!!!\n");
   // fflush(stdout);
   res = pthread_mutex_destroy(&m);
-  if(0 != res) printf("mutex_destroy failed: %i\n", res);
+  if(0 != res) fprintf(stderr,"mutex_destroy failed: %i\n", res);
 }
 
 void
 pmut::lock()
 {
   int res = pthread_mutex_lock(&m);
-if(res != 0) printf("lockres: %i\n", res);
+if(res != 0) fprintf(stderr,"lockres: %i\n", res);
   if(res != 0) throw res;
 }
 
@@ -1679,7 +1679,7 @@ pmut::unlock()
 int 
 apthread::init(void* (*start)(void*), void* udat)
 {
-  // printf("apthread::init(this=%p, fn=%p, udat=%p)\n",
+  // fprintf(stderr,"apthread::init(this=%p, fn=%p, udat=%p)\n",
   //  this, start, udat);
 
   // default attrs. hope they're good
@@ -1691,7 +1691,7 @@ apthread::init(void* (*start)(void*), void* udat)
 void
 apthread::deinit()
 {
-  printf("apthread::deinit(this=%p, inited=%i)\n", this, inited);
+  fprintf(stderr,"apthread::deinit(this=%p, inited=%i)\n", this, inited);
 
   if(!inited) return;
 // What if I cancel while someone (select thread) holds the mutex.
@@ -1709,11 +1709,11 @@ apthread::deinit()
   int   res;
 
   res = cancel();             // send cancel msg
-  printf("cancel res: %i, joining...\n", res);
+  fprintf(stderr,"cancel res: %i, joining...\n", res);
 
 
   res = pthread_join(thr, NULL);      // wait for cancel pt, ignor res
-  printf("join res: %i\n", res);
+  fprintf(stderr,"join res: %i\n", res);
 
   // is that all you have to do to free up a pthread?
 
@@ -1769,7 +1769,7 @@ fileio_request::fileio_request(int f, char* buf, long len, long off, bool rd)
 void
 fileio_request::doit()
 {
-  // printf("faio about to try to %s %i bytes from fd=%i\n",
+  // fprintf(stderr,"faio about to try to %s %i bytes from fd=%i\n",
   //  (read_flag) ? "read" : "write", pb.buffer_size, fd);
 
 // switching off (explicit) seeks for now because I'm not using them
@@ -1791,11 +1791,11 @@ fileio_request::doit()
   if(-1 == res)
   {
     err = errno;    // grab errno
-    printf("faio error: %i\n", err);
+    fprintf(stderr,"faio error: %i\n", err);
   }
   else
   {
-    // printf("faio %s %i bytes\n", (read_flag) ? "read" : "write", res);
+    // fprintf(stderr,"faio %s %i bytes\n", (read_flag) ? "read" : "write", res);
     pb.bytes_written = res;
   }
 }
@@ -1835,7 +1835,7 @@ posix_demuxer::~posix_demuxer()
   // no, it's required that the subclasses do it, as they have methods
   // called by the pthread. if we get here & they're still being called,
   // then we've got Trouble.
-  // printf("shouldn't I be deleting the thread in ~posix_demuxer?\n");
+  // fprintf(stderr,"shouldn't I be deleting the thread in ~posix_demuxer?\n");
 }
 
 // static pthread callback bootstrap
@@ -1959,7 +1959,7 @@ posix_queue::~posix_queue()
 {
   int res = pthread_cond_destroy(&nz_elts_cond);
   if(0 != res)
-    printf("pthread_cond_destroy failed: %i (%s)\n",
+    fprintf(stderr,"pthread_cond_destroy failed: %i (%s)\n",
       res, strerror(res));
   delete ELTQ;
 }
@@ -1983,7 +1983,7 @@ posix_queue::enqueue(void* elt)
   int       res;
   res = pthread_cond_signal(&nz_elts_cond);
   if(0 != res)
-    printf("pthread_cond_signal failed %i\n", res);
+    fprintf(stderr,"pthread_cond_signal failed %i\n", res);
 }
 
 void*
@@ -2009,7 +2009,7 @@ posix_queue::dequeue()
     // on wait and relocked on wake.
     res = pthread_cond_wait(&nz_elts_cond, &member_lock.m);
     if(res != 0)
-      printf("pthread_cond_wait nonzero elts failed: %i\n", res);
+      fprintf(stderr,"pthread_cond_wait nonzero elts failed: %i\n", res);
 
   } while(1);
 
@@ -2213,12 +2213,12 @@ typedef priority_queue<future_evt> void_prio_queue;
 int
 sleep_task_queue::setup_sleep_cond()
 {
-  printf("setup_sleep_cond\n");
+  fprintf(stderr,"setup_sleep_cond\n");
   int res;
   res = pthread_cond_init(&sleep_cond, NULL);
 
   if(0 != res)
-    printf("pthread_cond_init failed: %i\n", res);
+    fprintf(stderr,"pthread_cond_init failed: %i\n", res);
 
   return res;
 }
@@ -2226,25 +2226,25 @@ sleep_task_queue::setup_sleep_cond()
 void
 sleep_task_queue::takedown_sleep_cond()
 {
-  printf("sleep cond taking down\n");
+  fprintf(stderr,"sleep cond taking down\n");
   int res;
   res = pthread_cond_destroy(&sleep_cond);
-  if(0 != res) printf("condition destroy failed: %i\n", res);
+  if(0 != res) fprintf(stderr,"condition destroy failed: %i\n", res);
 }
 
 sleep_task_queue::sleep_task_queue()
   : lock(false)     // lock shouldn't need to be recursive
 {
-  // printf("sleep_task_queue ctor\n");
+  // fprintf(stderr,"sleep_task_queue ctor\n");
   int res;
   res = setup_sleep_cond();
   if(0 != res) throw res;
 
   // do the thread last because it uses all this stuff
-  printf("initing sleep thread\n");
+  fprintf(stderr,"initing sleep thread\n");
   opaque_prio_queue = new void_prio_queue;
   res = sleep_thread.init(thread_start, this);
-printf("will leak if thread or condition init fails.\n");
+fprintf(stderr,"will leak if thread or condition init fails.\n");
   if(0 != res) throw res;
   // not good to do much else after this as the thread is running
 
@@ -2263,13 +2263,13 @@ sleep_task_queue::~sleep_task_queue()
   // for now the explicit cancel + wakeup followed by explicit 
   // cancel test stays.
 
-  // printf("setting thread cancel flag\n");
+  // fprintf(stderr,"setting thread cancel flag\n");
   sleep_thread.cancel();      // set cancel flag
-  // printf("waking up thread!\n");
+  // fprintf(stderr,"waking up thread!\n");
   wakeup_thread();        // wakeup, cause to goto a cancel pt
 
   sleep_thread.deinit();      // will cancel again and join
-  printf("about to delete PRIOQ\n");
+  fprintf(stderr,"about to delete PRIOQ\n");
   delete PRIOQ;
 
   takedown_sleep_cond();
@@ -2287,7 +2287,7 @@ get_now(timespec* now)
   now->tv_sec = tp.tv_sec;
   now->tv_nsec = tp.tv_usec*1000;   // fits!
 
-  // printf("get_now = %li, %li\n", now->tv_sec, now->tv_nsec);
+  // fprintf(stderr,"get_now = %li, %li\n", now->tv_sec, now->tv_nsec);
 }
 
 // offset delta from "now" and store in "when"
@@ -2317,7 +2317,7 @@ calc_when(timespec* when, double delta)
 
   if(when->tv_nsec >= BIL)      // overflow of nanoseconds?
   {
-    // printf("OVERFLOW = %li, %li\n", when->tv_sec, when->tv_nsec);
+    // fprintf(stderr,"OVERFLOW = %li, %li\n", when->tv_sec, when->tv_nsec);
     // x, y < BIL, x + y < 2BIL
     when->tv_sec++;
     when->tv_nsec -= BIL;
@@ -2325,7 +2325,7 @@ calc_when(timespec* when, double delta)
     // when->tv_nsec %= BIL;
   }
 
-  // printf("when = %li, %li\n", when->tv_sec, when->tv_nsec);
+  // fprintf(stderr,"when = %li, %li\n", when->tv_sec, when->tv_nsec);
   // tp contains tv_sec (seconds) & tv_usec (microseconds) both longs.
   // however, if nonposix works everywhere...
 }
@@ -2334,7 +2334,7 @@ calc_when(timespec* when, double delta)
 void
 sleep_task_queue::add_sleep_request(sleep_task* st, double delta)
 {
-  // printf("add_sleep_request: %lf\n", delta);
+  // fprintf(stderr,"add_sleep_request: %lf\n", delta);
 
   future_evt  evt;
   evt.task = st;
@@ -2349,7 +2349,7 @@ sleep_task_queue::add_sleep_request(sleep_task* st, double delta)
   // with this. Turned off for now. Not sure how that works.
   if(1 || PRIOQ->top().task == st)
   {
-//    printf("WE PUSHED IN - waking thread\n");
+//    fprintf(stderr,"WE PUSHED IN - waking thread\n");
     wakeup_thread();
   }
 }
@@ -2357,23 +2357,23 @@ sleep_task_queue::add_sleep_request(sleep_task* st, double delta)
 void
 sleep_task_queue::wakeup_thread()
 {
-  // printf("waking sleeper thread with pthread_cond_signal\n");
+  // fprintf(stderr,"waking sleeper thread with pthread_cond_signal\n");
   int res;
   // we don't need broadcast because we're only ever waking
   // one thread, the sleeper thread.
   res = pthread_cond_signal(&sleep_cond);
-  if(0 != res) printf("condition signal failed: %i\n", res);
+  if(0 != res) fprintf(stderr,"condition signal failed: %i\n", res);
 }
 
 void*
 sleep_task_queue::thread_start(void* udat)
 {
   sleep_task_queue* q = (sleep_task_queue*)udat;
-  printf("sleeper thread\n");
+  fprintf(stderr,"sleeper thread\n");
 
   while(1)
   {
-    // printf("sleep thread testing cancel\n");
+    // fprintf(stderr,"sleep thread testing cancel\n");
     pthread_testcancel();   // not actually necessary
     q->thread_loop_body();
   }
@@ -2403,7 +2403,7 @@ sleep_task_queue::thread_loop_body()
     // < is arse backwards because I don't know how to use the stl
     if(now < evt)   // would prefer <=, eh.
     {
-      // printf("firing of (%li, %li) at (%li, %li)!\n",
+      // fprintf(stderr,"firing of (%li, %li) at (%li, %li)!\n",
       //  evt.when.tv_sec, evt.when.tv_nsec,
       //  now.when.tv_sec, now.when.tv_nsec);
       evt.task->fire();
@@ -2413,7 +2413,7 @@ sleep_task_queue::thread_loop_body()
     {
       // remember that condition waits are exit points...
       // so I don't need to test - check that.
-      // printf("sleeping from %li, %li until %li, %li\n",
+      // fprintf(stderr,"sleeping from %li, %li until %li, %li\n",
       //  now.when.tv_sec, now.when.tv_nsec,
       //  evt.when.tv_sec, evt.when.tv_nsec);
       res = pthread_cond_timedwait(&sleep_cond, &lock.m, &evt.when);
@@ -2421,16 +2421,16 @@ sleep_task_queue::thread_loop_body()
       // if using posix abstime timed wait we make get EINVAL here for 
       // abstimes in the past. must handle this.
  
-      // printf("pthread_cond_timedwait woke up! (%i)\n", res);
+      // fprintf(stderr,"pthread_cond_timedwait woke up! (%i)\n", res);
     }
   }
 
   // if we got here then the queue is empty, so sleep indefinitely
   // that we don't really need the mainloop testcancel because the condition
   // wait functions are cancellation points.
-  // printf("no sleep task, sleeping indefinitely\n");
+  // fprintf(stderr,"no sleep task, sleeping indefinitely\n");
   res = pthread_cond_wait(&sleep_cond, &lock.m);
-  // printf("pthread_cond_wait woke up! (%i)\n", res);
+  // fprintf(stderr,"pthread_cond_wait woke up! (%i)\n", res);
 
   // lock released here
 }
@@ -2445,17 +2445,17 @@ sleep_task_queue::thread_loop_body()
 
 worker_fifo::worker_fifo()
 {
-  printf("async worker fifo io module constructor\n");
+  fprintf(stderr,"async worker fifo io module constructor\n");
   // fifo already inited and ready to go, so get pthread going
   int res = io_thread.init(thread_start, this);
 
   if(0 != res) throw res;
 
 #if 0
-  printf("hey, trying multi threads here (leakingly)\n");
+  fprintf(stderr,"hey, trying multi threads here (leakingly)\n");
   for(int i = 1; i < 1; i++)
   {
-    printf("extra io thread\n");
+    fprintf(stderr,"extra io thread\n");
     apthread* pt = new apthread;
     res = pt->init(thread_start, this);
     if(0 != res) throw res;
@@ -2468,7 +2468,7 @@ void*
 worker_fifo::thread_start(void* udat)
 { 
   worker_fifo*  fio = (worker_fifo*)udat;
-  printf("posix worker_fifo thread started! this=%p\n", fio);
+  fprintf(stderr,"posix worker_fifo thread started! this=%p\n", fio);
 
   while(1)
   {
@@ -2482,7 +2482,7 @@ void
 worker_fifo::thread_loop_body()
 {
   worker_task*  req = (worker_task*)fifo.dequeue();
-  // printf("dequeued worker_task (%p)\n", req);
+  // fprintf(stderr,"dequeued worker_task (%p)\n", req);
   req->doit();
   req->finished();          // finish hook. I find this handy
 }

@@ -57,6 +57,8 @@ public:
     void disconnect();                  // will be used by close
     
     static async_copipe* create_copipe() { return new async_copipe; }
+    bool debug;
+    void set_debug(bool);
 
 private: 
     enum { READER, WRITER, NUM_CNXNS };
@@ -77,14 +79,19 @@ private:
 class copipe_endpt {
     int             read_channel;       // the channel this endpt reads on
     
-    copipe_endpt(async_copipe* p, int rchan) : read_channel(rchan), pipe(p) {}
+    copipe_endpt(async_copipe* p, int rchan) : 
+      read_channel(rchan), pipe(p), debug(false)
+    {}
+
 public:
     async_copipe*   pipe;               // endpt's copy (flx accessible)
     
     // 0 = no reads, 1 = no writes, 2 = no nothing (! = close, however)
     void shutdown(int how);
     int get_channel(bool reading);
-    
+    bool debug; 
+    void set_debug(bool d) { debug = d; }
+
     ~copipe_endpt() { pipe->disconnect(); } 
     static void pipe_pair(copipe_endpt* pair[2]);
 };
@@ -118,6 +125,10 @@ printf("THIS IS THE OLD DRIVER\'S METHOD FOR SPAWNING - USE THE OTHER ONE\n");
 // this is a bit interesting because the copipes are not asynchronous and
 // their work is actually all done in this function (once both ends have
 // read & written)
+
+void
+async_copipe::set_debug(bool d) { debug = d; }
+
 bool
 async_copipe::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 {
@@ -142,7 +153,7 @@ async_copipe::start_async_op(demuxer& demux, flx_drv* drv, void* f)
     if(!(thread[READER] && thread[WRITER])) return wake_caller;
     
     // we have both ends. one or both must wake after this
-if(wake_caller) printf("we should never have a 3rd party here!\n");
+if(wake_caller) fprintf(stderr,"we should never have a 3rd party here!\n");
     
     // move data from writer to reader
     long    len;
@@ -196,7 +207,7 @@ async_copipe::wake_all_threads(flx_drv* drv)
     }
 }
 
-async_copipe::async_copipe()
+async_copipe::async_copipe() : debug(false) 
 {
     thread[READER] = 0;
     thread[WRITER] = 0;
@@ -219,10 +230,10 @@ async_copipe::close_channel(int which)
 void
 async_copipe::disconnect()
 {   
-    printf("num_users before disconnect: %i\n", num_users);
+    if(debug)fprintf(stderr,"num_users before disconnect: %i\n", num_users);
     if(--num_users == 0)
     {   
-        printf("deleting this!\n");
+        if(debug)fprintf(stderr,"deleting this!\n");
         delete this;
     }
 }
@@ -238,14 +249,14 @@ async_copipe::connect(void* f, sel_param* inpb, bool reading, int channel)
     }
     else if(current_channel != channel) // channel must agree if already chosen
     {
-        printf("conflicting channels! make sure this causes a wake up!\n");
+        if(debug)fprintf(stderr,"conflicting channels! make sure this causes a wake up!\n");
         current_channel = -1;           // causes this thread to wake up
         return;
     }
         
     // there shouldn't be anything already there
     if(f && thread[i]) 
-        printf("copipe conflict! results undefined!\n");
+        if(debug)fprintf(stderr,"copipe conflict! results undefined!\n");
     
     thread[i] = f;
     pb[i] = inpb;
@@ -255,7 +266,7 @@ async_copipe::connect(void* f, sel_param* inpb, bool reading, int channel)
 void
 copipe_endpt::pipe_pair(copipe_endpt* pair[2])
 {
-printf("this will leak if one fails, you buffoon!\n");
+//fprintf(stderr,"this will leak if one fails, you buffoon!\n");
 // can just delete in that case. eh.
     async_copipe* p = async_copipe::create_copipe();
     // initialize with pipe and the channel they'll read on.
@@ -358,6 +369,8 @@ public:
 
     pasync_fileio* get_aio_worker() { return &file_aio_worker; }
     sleep_task_queue* get_sleepers() { return &sleepers; }
+    bool debug;
+    void set_debug(bool d) { debug = d; }
 };
 
 @h=tangler('faio/faio_pdrv.cpp')
@@ -377,14 +390,14 @@ pflx_drv::pflx_drv(sleep_queue& q)
     // the send flag MSG_NOSIGNAL)
 
     // this is actually demux/flxasync io's problem, so shift it there
-    printf("pdrv installing SIGPIPE ignorer\n");
-    printf("OSX/bsd only: setsockopt(SO_NOSIGPIPE) -> EPIPE\n");
+    if(debug)fprintf(stderr,"pdrv installing SIGPIPE ignorer\n");
+    if(debug)fprintf(stderr,"OSX/bsd only: setsockopt(SO_NOSIGPIPE) -> EPIPE\n");
     // sig_t   prev_handler;
     void (*prev_handler)(int);  // solaris is FUN.
     prev_handler = signal(SIGPIPE, SIG_IGN);
 
     if(prev_handler)
-        printf("warning: blew away prev SIGPIPE handler: %p\n", prev_handler);
+        fprintf(stderr,"warning: blew away prev SIGPIPE handler: %p\n", prev_handler);
 }
 
 @h=tangler('faio/faio_posixio.hpp')
@@ -592,7 +605,7 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
     
     // printf("not schedding %p\n", this); 
     if(demux.add_socket_wakeup(this, read) == -1)
-        printf("failed to re-add_socket_wakeup\n");
+        fprintf(stderr,"failed to re-add_socket_wakeup\n");
 }
 
 // asynchronous connect
@@ -608,7 +621,7 @@ connect_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 // printf("async_connect returned s: %i, finished: %i\n", sv.s, finished);
     if(-1 == sv.s)      // failed!
     {   
-        printf("async_connect failed, waking\n");
+        fprintf(stderr,"async_connect failed, waking\n");
         return true;    // wakeup thread
     }
     
@@ -671,7 +684,7 @@ connect_wakeup::wakeup(posix_demuxer& demux)
 bool
 accept_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 {
-    printf("async accept start\n");
+   // printf("async accept start\n");
 
     // important: copy down the thread and the driver
     sv.fw.drv = drv;
@@ -736,7 +749,7 @@ flxfileio_request::finished()
 bool
 sleep_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 {   
-    printf("driver called sleep_task start_async_op code\n");
+   // printf("driver called sleep_task start_async_op code\n");
     // important: copy down the thread and the driver
     fw.drv = drv;
     fw.f = f;
@@ -905,7 +918,7 @@ iocp_associator::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 {   
     iocp_demuxer* iod = (iocp_demuxer*)&demux;
     if(iod->associate_with_iocp((HANDLE)s, 0) != 0)
-        printf("associate request failed - get result here!\n");
+       fprintf(stderr,"associate request failed - get result here!\n");
 
     return true;            // wake caller
 }
@@ -919,7 +932,7 @@ waio_base::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 
     // this tells us when things went wrong (store it)
     if(NO_ERROR != err)
-        printf("catchall wakeup got error: %i (should store it)\n", err);
+        fprintf(stderr,"catchall wakeup got error: %i (should store it)\n", err);
 
     success = (NO_ERROR == err);    // this works pretty well
     driver->sched(f);
@@ -960,7 +973,7 @@ wasync_accept::start_async_op(demuxer& demux, flx_drv* drv, void* f)
     if(success)
     {   
         // must clear the wait 
-        printf("WHOA! AcceptEx RETURNED SUCCESS IMMEDIATELY!\n");
+        fprintf(stderr,"WHOA! AcceptEx RETURNED SUCCESS IMMEDIATELY!\n");
         // handle the successful wakeup
         // complete_async_op(demux, drv, nbytes, NO_ERROR); 
         // I hope they don't want the udat pointer, because I
@@ -980,8 +993,8 @@ wasync_accept::start_async_op(demuxer& demux, flx_drv* drv, void* f)
         }
         else
         {   
-            printf("AcceptEx failed: %i\n", err);
-            printf("returning true should wake thread to detect failure.\n");
+            fprintf(stderr,"AcceptEx failed: %i\n", err);
+            fprintf(stderr,"returning true should wake thread to detect failure.\n");
             return true;        // have self woken
         }
     }
@@ -1055,7 +1068,7 @@ connect_ex::start_async_op(demuxer& demux, flx_drv* drv, void* f)
     // call per-socket? does it really need to be that way?
     if(GetConnectExAddr(s, &pfConnectEx) == SOCKET_ERROR)
     {
-        printf("GetConnectExAddr failed: %i\n", WSAGetLastError());
+        fprintf(stderr,"GetConnectExAddr failed: %i\n", WSAGetLastError());
         return true;
     }
 
@@ -1065,7 +1078,7 @@ connect_ex::start_async_op(demuxer& demux, flx_drv* drv, void* f)
     // if I don't, ConnectEx returns EINVAL. in any case, I won't need
     // to do this again if I reuse this socket.
     if(bind_socket(s) == SOCKET_ERROR)
-        printf("ConnectEx bind failed: %i\n", WSAGetLastError());
+        fprintf(stderr,"ConnectEx bind failed: %i\n", WSAGetLastError());
 
     // I hope ConnectEx doesn't want this to hang around, because it's
     // going to drop off the stack after this.
@@ -1096,7 +1109,7 @@ connect_ex::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 // change it with setsockopt (?)
     if(success)
     {   
-        printf("WHOA! ConnectEx RETURNED SUCCESS IMMEDIATELY!\n");
+        fprintf(stderr,"WHOA! ConnectEx RETURNED SUCCESS IMMEDIATELY!\n");
         // handle the successful wakeup. (udat=0, olp=&ol)
         iocp_op_finished(bytes_sent, 0, &ol, NO_ERROR);
         return false;       // already woken up
@@ -1115,7 +1128,7 @@ connect_ex::start_async_op(demuxer& demux, flx_drv* drv, void* f)
         {   
             // maybe store the error here. that could work for all
             // windows wakeups
-            printf("ConnectEx failed: %i\n", err);
+            fprintf(stderr,"ConnectEx failed: %i\n", err);
             return true;        // have self woken
         }
     }
@@ -1138,7 +1151,7 @@ wasync_transmit_file::start_async_op(demuxer& demux, flx_drv* drv, void* f)
     // iocp. this is best done at socket creation time.
     if(TransmitFile(s, file, 0, 0, &ol, NULL, flags))
     {
-        printf("Transmit file succeeded immediately! waking...\n");
+        fprintf(stderr,"Transmit file succeeded immediately! waking...\n");
         return true;
     }
     else
@@ -1148,7 +1161,7 @@ wasync_transmit_file::start_async_op(demuxer& demux, flx_drv* drv, void* f)
         // will need to actually signal something
         // printf("signal TransmitFile failure!\n");
         if(ERROR_IO_PENDING != err && WSA_IO_PENDING != err)
-            printf("genuine error from TransmitFile: %li\n", err);
+            fprintf(stderr,"genuine error from TransmitFile: %li\n", err);
     }
     return false;
 }
@@ -1228,13 +1241,13 @@ wsa_socketio::start_async_op(demuxer& demux, flx_drv* drv, void* f)
                 return false;
             }
             
-            printf("WSARecv/Send returned SOCKET_ERR: %li\n", err);
+            fprintf(stderr,"WSARecv/Send returned SOCKET_ERR: %li\n", err);
             return true;        // assume it's bad and we won't get a wakeup
         }
         break;
         default:
         {       
-            printf("WSARecv/Send returned other error: %i, GetLastError: %li\n",
+            fprintf(stderr,"WSARecv/Send returned other error: %i, GetLastError: %li\n",
                 recv_res, GetLastError());
             return true;                // wake up
         }
@@ -1289,7 +1302,7 @@ winfile_io::winfile_io(HANDLE f, void* buf, int len, bool inread)
 bool
 winfile_io::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 {   
-    printf("trying out some read/write file\n");
+    fprintf(stderr,"trying out some read/write file\n");
     
     // factor this out - everyone does it.
     clear_overlapped();         
@@ -1311,9 +1324,9 @@ winfile_io::start_async_op(demuxer& demux, flx_drv* drv, void* f)
     if(!success)
     {
 // this is probably going to be IOPENDING
-        printf("%sFile failed! (%li)\n", (reading) ? "Read" : "Write",
+        fprintf(stderr,"%sFile failed! (%li)\n", (reading) ? "Read" : "Write",
             GetLastError());
-        printf("do I still get completion packet???\n");
+        fprintf(stderr,"do I still get completion packet???\n");
         // assume not           
         return true;            // ask for wakeup
     }
@@ -1325,7 +1338,7 @@ void
 winfile_io::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err)
 {
-    printf("winfile_io wakeup, nb: %li, err: %i\n", nbytes, err );
+    fprintf(stderr,"winfile_io wakeup, nb: %li, err: %i\n", nbytes, err );
     
     // printf("THIS WAKEUP SHOULD BE THE SAME AS SEND/RECV make it so\n");
     // actually, I don't think it should be. the SOCKET stuff goes around
