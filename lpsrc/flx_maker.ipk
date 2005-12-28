@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.188  2005/12/28 03:34:16  rfistman
+added faio supporting c code, partitioned files into posix/win32
+
 Revision 1.187  2005/12/28 01:33:22  rfistman
 moved all faio header files and flx support files over to felix proper
 fixed typo
@@ -2651,9 +2654,13 @@ DEMUXRTL_INTERFACES = [
  'demux_mutexlite.hpp',  
 ]
 
+# not yet using the files outside of flx/faio
 FAIORTL_INTERFACES = [
- 'faio_file1.hpp',  
- 'faio_file2.hpp',  
+# 'faio_asyncio.hpp',
+# 'faio_drv.hpp',
+# 'faio_pdrv.hpp',
+# 'faio_posixio.hpp',
+# 'faio_winio.hpp',
 ]
 
 # files containing ocamllex sources
@@ -2845,9 +2852,19 @@ RTL_CPPS = [
 ]
 
 FAIO_CPPS = [
-  "faio/faio_file1",
-  "faio/faio_file2",
+  "faio/faio_asyncio",
+  "faio/faio_drv",
 ]
+
+POSIX_FAIO_CPPS = [
+  "faio/faio_pdrv",
+  "faio/faio_posixio",
+]
+
+WINDOWS_FAIO_CPPS = [
+  "faio/faio_winio",
+]
+
 
 DEMUX_CPPS = [
   "demux/demux_demuxer",
@@ -2894,10 +2911,12 @@ else:
 
 if WIN32:
   DEMUX_CPPS = DEMUX_CPPS + WINDOWS_DEMUX_CPPS
+  FAIO_CPPS = FAIO_CPPS + WINDOWS_FAIO_CPPS
   EXTRA_LIBS = EXTRA_LIBS + ["ws2_32","mswsock"]
 
 if POSIX:
   DEMUX_CPPS = DEMUX_CPPS + POSIX_DEMUX_CPPS
+  FAIO_CPPS = FAIO_CPPS + POSIX_FAIO_CPPS
 
 if LINUX:
   DEMUX_CPPS = DEMUX_CPPS + LINUX_DEMUX_CPPS
