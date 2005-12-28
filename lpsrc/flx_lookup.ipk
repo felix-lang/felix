@@ -875,7 +875,7 @@ should start with reset traps.
 
 and bind_type' 
   syms env (rs:recstop)
-  sr t params
+  sr t (params: (string * btypecode_t) list)
 : btypecode_t =
   let btp t params = bind_type' syms env 
     {rs with depth = rs.depth+1}
@@ -1369,7 +1369,9 @@ and bind_type'
       
 
   | `AST_index (sr,name,index) as x -> 
+    (*
     print_endline ("[bind type] AST_index " ^ string_of_qualified_name x);
+    *)
     let { vs=vs; symdef=entry } =
       try Hashtbl.find syms.dfns index 
       with Not_found -> 
@@ -1383,8 +1385,11 @@ and bind_type'
     | `SYMDEF_cclass _ 
     | `SYMDEF_abs _ 
       ->
-      print_endline ("Synthetic name "^name ^ " is a nominal type!");
-      print_endline ("Using ts = [] .. probably wrong!");
+      if length vs <> 0 then begin
+        print_endline ("Synthetic name "^name ^ " is a nominal type!");
+        print_endline ("Using ts = [] .. probably wrong since type is polymorphic!");
+      end
+      ;
       `BTYP_inst (index,[])
 
     | `SYMDEF_typevar _ ->
