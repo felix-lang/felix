@@ -763,8 +763,13 @@ sleep_request::fire()
 #ifndef __DWINIO__
 #define __DWINIO__
 
-#include <Windows.h>
-#include <Mswsock.h>        // AcceptEx, TF_REUSE_SOCKET, etc
+//#define WINVER 0x0501
+//#include <Windows.h>
+//#include <WinSock.h>
+// visual studio is quite sensitve about how you do these includes.
+// THIS is the way (WinSock2.h must include Windows.h).
+#include <WinSock2.h>
+#include <MSWSock.h>        // AcceptEx, TF_REUSE_SOCKET, etc
 #include "faio_asyncio.hpp" // flx driver requests
 
 #include "demux_iocp_demuxer.hpp"   // all sorts of great stuff
