@@ -503,16 +503,36 @@ and lookup_qn_in_env2
 
 (* this one isn't recursive i hope .. *)
 and lookup_code_in_env syms env sr qn =
-  match lookup_qn_in_env2' syms env rsground qn with
-    | NonFunctionEntry x,ts -> 
-      clierr sr 
-      (
-        "[lookup_qn_in_env] Not expecting " ^ 
-        string_of_qualified_name qn ^
-        " to be non-function (code insertions use function entries) "
-      )
-    | FunctionEntry x,ts -> x,ts
+  let result = 
+    try Some (lookup_qn_in_env2' syms env rsground qn)
+    with _ -> None
+  in match result with
+  | Some (NonFunctionEntry x,ts) -> 
+    clierr sr 
+    (
+      "[lookup_qn_in_env] Not expecting " ^ 
+      string_of_qualified_name qn ^
+      " to be non-function (code insertions use function entries) "
+    )
 
+  | Some (FunctionEntry x,ts) -> 
+    iter 
+    (fun i -> 
+      match Hashtbl.find syms.dfns i with
+      | {symdef=`SYMDEF_insert _} -> ()
+      | {id=id; vs=vs; symdef=y} -> clierr sr 
+        (
+          "Expected requirement '"^
+          string_of_qualified_name qn ^
+          "' to bind to a header or body insertion, instead got:\n" ^
+          string_of_symdef y id vs
+        )
+    )
+    x
+    ;
+    x,ts
+
+  | None -> [0],[]
 
 and lookup_qn_in_env 
   syms

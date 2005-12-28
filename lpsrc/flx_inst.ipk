@@ -243,15 +243,22 @@ and process_production syms bbdfns ref_insts1 p ts =
   in
   iter uses_symbol p
                                                                                 
-
 and process_inst syms bbdfns ref_insts1 i ts inst =
   let uis i ts = add_inst syms ref_insts1 (i,ts) in
   let ui i = uis i ts in
-  let do_reqs vs reqs = iter (fun (i,ts)-> uis i( map vs ts)) reqs in
   let id,parent,sr,entry = 
     try Hashtbl.find bbdfns i 
     with Not_found -> failwith ("[process_inst] Can't find index " ^ si i)
   in 
+  let do_reqs vs reqs = 
+    iter (
+      fun (i,ts)-> 
+      if i = 0 then 
+        clierr sr ("Entity " ^ id ^ " has uninstantiable requirements");
+      uis i( map vs ts)
+    ) 
+    reqs 
+  in
   let ue hvarmap e = process_expr syms bbdfns ref_insts1 hvarmap sr e in
   let rtr t = register_type_r uis syms bbdfns [] sr t in
   let rtnr t = register_type_nr syms (reduce_type (lstrip syms.dfns t)) in

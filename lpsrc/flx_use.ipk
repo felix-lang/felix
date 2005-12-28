@@ -125,10 +125,21 @@ and uses_production syms used bbdfns p =
   in
   iter uses_symbol p
 
+and faulty_req syms i =
+  match Hashtbl.find syms.dfns i with {id=id; sr=sr } ->
+  clierr sr (id ^ " is used but has Unsatisfied requirement")
+
 and uses syms used bbdfns i =
   let ui i = uses syms used bbdfns i in
   let ut t = uses_type syms used bbdfns t in
-  let ur (i,ts) = ui i; iter ut ts in
+  let rq reqs = 
+    let ur (j,ts) = 
+      if j = 0 then 
+        faulty_req syms i 
+      else begin ui j; iter ut ts end
+    in
+    iter ur reqs 
+  in
   let ux x = uses_exes syms used bbdfns x in
   let ue e = uses_tbexpr syms used bbdfns e in
   if not (IntSet.mem i !used) then
@@ -176,33 +187,18 @@ and uses syms used bbdfns i =
 
       | `BBDCL_class _ -> ()
 
-      | `BBDCL_cclass (_,mems) ->
-        () 
-        (* this is wrong -- existence doesn't
-           constitute a use!
-        *)
-        (*
-        iter ut (map (function 
-          | `BMemberVal (_,t)
-          | `BMemberVar (_,t) 
-          | `BMemberFun (_,_,t) 
-          | `BMemberCtor (_,t) 
-          | `BMemberProc (_,_,t) -> t
-          )
-          mems
-        )
-        *)
+      | `BBDCL_cclass (_,mems) -> () 
         
       | `BBDCL_val (_,t)
       | `BBDCL_var (_,t) 
       | `BBDCL_tmp (_,t) -> ut t
 
-      | `BBDCL_const (_,t,_,reqs) -> ut t; iter ur reqs
-      | `BBDCL_fun (_,_,ps, ret, _,reqs,_) -> iter ut ps; ut ret; iter ur reqs
-      | `BBDCL_proc (_,_,ps, _, reqs)  -> iter ut ps; iter ur reqs
+      | `BBDCL_const (_,t,_,reqs) -> ut t; rq reqs
+      | `BBDCL_fun (_,_,ps, ret, _,reqs,_) -> iter ut ps; ut ret; rq reqs
+      | `BBDCL_proc (_,_,ps, _, reqs)  -> iter ut ps; rq reqs
 
-      | `BBDCL_abs (_,_,_,reqs) -> iter ur reqs
-      | `BBDCL_insert (_,s,ikind,reqs)  -> iter ur reqs
+      | `BBDCL_abs (_,_,_,reqs) -> rq reqs
+      | `BBDCL_insert (_,s,ikind,reqs)  -> rq reqs
       | `BBDCL_nonconst_ctor (_,_,unt,_,ct) ->
         ut unt; ut ct
 
