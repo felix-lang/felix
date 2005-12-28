@@ -1,0 +1,21 @@
+@head(1,"Felix Async IO tests")
+@h = tangler("test/posix_t1.flx")
+@select(h)
+//blah blah
+
+
+@h = tangler("test/posix_t2.flx")
+@select(h)
+//blah blah
+
+
+@h = tangler("test/win_t1.flx")
+@select(h)
+//blah blah
+
+
+@h = tangler("test/win_t2.flx")
+@select(h)
+//blah blah
+
+

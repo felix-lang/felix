@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.190  2005/12/28 07:32:54  skaller
+Add skeleton for async I/O tests.
+
 Revision 1.189  2005/12/28 07:05:16  rfistman
 hooked up posix async code - seems to work!
 
@@ -2921,10 +2924,12 @@ if WIN32:
   DEMUX_CPPS = DEMUX_CPPS + WINDOWS_DEMUX_CPPS
   FAIO_CPPS = FAIO_CPPS + WINDOWS_FAIO_CPPS
   EXTRA_LIBS = EXTRA_LIBS + ["ws2_32","mswsock"]
+  EXTRA_TEST_GLOBS = ["test" + os.sep + "win_*.flx"]
 
 if POSIX:
   DEMUX_CPPS = DEMUX_CPPS + POSIX_DEMUX_CPPS
   FAIO_CPPS = FAIO_CPPS + POSIX_FAIO_CPPS
+  EXTRA_TEST_GLOBS = ["test" + os.sep + "posix_*.flx"]
 
 if LINUX:
   DEMUX_CPPS = DEMUX_CPPS + LINUX_DEMUX_CPPS
@@ -3150,6 +3155,9 @@ try:
     TESTS = TESTS + glob.glob('test'+os.sep+'rt*.flx')
     if LINK_MODEL == "dynamic":
       TESTS = TESTS + glob.glob('test'+os.sep+'drt*.flx')
+
+    for aglob in EXTRA_TEST_GLOBS:
+      TESTS = TESTS + glob.glob(aglob)
 
     BAD_TESTS = glob.glob('test'+os.sep+'bt*.flx')
 
