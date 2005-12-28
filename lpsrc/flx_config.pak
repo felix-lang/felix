@@ -766,7 +766,10 @@ class gxx(flxbuild.compiler_class.compiler_base):
     return self.check_macro_defined(shell,"_WIN32")
 
   def detect_posix(self,shell):
-    return not self.check_macro_defined(shell,"_WIN32")
+    if self.check_macro_defined(shell,"_WIN32"):
+      return 0
+    else:
+      return 1
 
   def detect_cygwin(self,shell):
     return self.check_macro_defined(shell,"__CYGWIN__")
@@ -956,7 +959,20 @@ class gxx(flxbuild.compiler_class.compiler_base):
     opt.HAVE_DLOPEN = 0
     opt.HAVE_LOADLIBRARY = 0
     opt.DLLIB=""
-    if opt.model in ["cygwin","posix","osx"]:
+    if opt.model in ["win32"]:
+    # check if can get LoadLibrary to work
+      try:
+        shell(opt.CCOBJ_DYNAMIC_FLX+"tmp"+os.sep+"win32_dummy_lib.cxx -o tmp"+os.sep+"win32_dummy_lib.o")
+        shell(opt.CCOBJ_DYNAMIC_MAIN+"tmp"+os.sep+"win32_dummy_main.cxx -o tmp"+os.sep+"win32_dummy_main.o")
+        shell(opt.CCLINK_DYNAMIC_FLX+"tmp"+os.sep+"win32_dummy_lib.o -o tmp"+os.sep+"win32_dummy_lib"+opt.EXT_SHLIB)
+        shell(opt.CCLINK_DYNAMIC_MAIN+"tmp"+os.sep+"win32_dummy_main.o -o tmp"+os.sep+"dlmain")
+        shell("tmp"+os.sep+"dlmain tmp"+os.sep+"win32_dummy_lib"+opt.EXT_SHLIB)
+        opt.SUPPORT_DYNAMIC_LOADING = 1
+        opt.HAVE_LOADLIBRARY = 1
+        print "Dynamic Loading Supported (with LoadLibrary)"
+      except:
+        pass
+    else:
       try:
         shell(opt.CCOBJ_DYNAMIC_FLX+"tmp"+os.sep+"dummy_lib.cxx -o tmp"+os.sep+"dummy_lib.o")
         shell(opt.CCOBJ_DYNAMIC_MAIN+"tmp"+os.sep+"dummy_main.cxx -o tmp"+os.sep+"dummy_main.o")
@@ -977,19 +993,6 @@ class gxx(flxbuild.compiler_class.compiler_base):
           if opt.model == "osx":
             opt.SUPPORT_DYNAMIC_LOADING = 1  # pre 10.3, we do our own dlopen
 
-    else:
-    # check if can get LoadLibrary to work
-      try:
-        shell(opt.CCOBJ_DYNAMIC_FLX+"tmp"+os.sep+"win32_dummy_lib.cxx -o tmp"+os.sep+"win32_dummy_lib.o")
-        shell(opt.CCOBJ_DYNAMIC_MAIN+"tmp"+os.sep+"win32_dummy_main.cxx -o tmp"+os.sep+"win32_dummy_main.o")
-        shell(opt.CCLINK_DYNAMIC_FLX+"tmp"+os.sep+"win32_dummy_lib.o -o tmp"+os.sep+"win32_dummy_lib"+opt.EXT_SHLIB)
-        shell(opt.CCLINK_DYNAMIC_MAIN+"tmp"+os.sep+"win32_dummy_main.o -o tmp"+os.sep+"dlmain")
-        shell("tmp"+os.sep+"dlmain tmp"+os.sep+"win32_dummy_lib"+opt.EXT_SHLIB)
-        opt.SUPPORT_DYNAMIC_LOADING = 1
-        opt.HAVE_LOADLIBRARY = 1
-        print "Dynamic Loading Supported (with LoadLibrary)"
-      except:
-        pass
 
     if not opt.SUPPORT_DYNAMIC_LOADING:
       print "DYNAMIC LOADING NOT SUPPORTED"
@@ -1863,14 +1866,18 @@ platforms = [
   "win64",
   "osx",
   "detect"
+  "solaris",
+  "bsd",
+  "linux"
   ]
 
 # map other names for them, obtained from
 # various place like os.platform, os.system("mname -u"), etc
 
 archmap = {
+  "unix":"posix",
   "posix":"posix",
-  "linux":"posix",
+  "linux":"linux",
   "solaris":"posix",
   "cygwin":"cygwin",
   "nocygwin":"nocygwin",
@@ -2115,21 +2122,18 @@ print "Checking HOST MODEL",host_model
 print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 print
 
-if host_model in ["posix","osx","cygwin","nocygwin","mingw","detect"]:
-  HOST_CXX=flxbuild.gxx_class.gxx()
-  HOST_CXX.set_options(CXX=HOSTCC,use="host",model=host_model,build=build_model)
-  HOST_CXX.check_options(xqt,get_stdout)
-  HOST_CXX.report_config()
-  HOST_CXX.save_options("config/host_cxx.py")
-elif host_model in ["win32"]:
+if host_model in ["win32"]:
   HOST_CXX=flxbuild.msvcxx_class.msvcxx()
   HOST_CXX.set_options(CXX=HOSTCC,use="host",model=host_model,build=build_model)
   HOST_CXX.check_options(xqt,get_stdout)
   HOST_CXX.report_config()
   HOST_CXX.save_options("config/host_cxx.py")
 else:
-  print "Sorry only gnu and msvc++ tool chain supported at the moment"
-  exit(1)
+  HOST_CXX=flxbuild.gxx_class.gxx()
+  HOST_CXX.set_options(CXX=HOSTCC,use="host",model=host_model,build=build_model)
+  HOST_CXX.check_options(xqt,get_stdout)
+  HOST_CXX.report_config()
+  HOST_CXX.save_options("config/host_cxx.py")
 
 host_model = HOST_CXX.options.model
 
@@ -2149,24 +2153,7 @@ print "Checking TARGET MODEL",target_model
 print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 print
 
-if target_model in ["posix","osx","cygwin","nocygwin","mingw","detect"]:
-  TARGET_CXX=flxbuild.gxx_class.gxx()
-  TARGET_CXX.set_options(CXX=TARGETCC,use="target",model=target_model,build=build_model)
-  TARGET_CXX.check_options(xqt,get_stdout)
-  TARGET_CXX.report_config()
-  TARGET_CXX.save_options("config/target_cxx.py")
-  CYGWIN = TARGET_CXX.options.CYGWIN
-  MACOSX = TARGET_CXX.options.MACOSX
-  WIN32 =  TARGET_CXX.options.WIN32
-  LINUX =  TARGET_CXX.options.LINUX
-  SOLARIS =  TARGET_CXX.options.SOLARIS
-  BSD =  TARGET_CXX.options.BSD
-  FLX_SOCKLEN_T = TARGET_CXX.options.FLX_SOCKLEN_T
-  HAVE_PTHREADS =  TARGET_CXX.options.HAVE_PTHREADS
-  PTHREAD_SWITCH =  TARGET_CXX.options.PTHREAD_SWITCH
-  HAVE_MSVC=0
-  HAVE_GXX=1
-elif target_model in ["win32"]:
+if target_model in ["win32"]:
   TARGET_CXX=flxbuild.msvcxx_class.msvcxx()
   TARGET_CXX.set_options(CXX=TARGETCC,use="target",model=target_model,build=build_model)
   TARGET_CXX.check_options(xqt,get_stdout)
@@ -2185,8 +2172,23 @@ elif target_model in ["win32"]:
   HAVE_MSVC=1
   HAVE_GXX=0
 else:
-  print "Sorry only gnu and msvc++ tool chain supported at the moment"
-  exit(1)
+  TARGET_CXX=flxbuild.gxx_class.gxx()
+  TARGET_CXX.set_options(CXX=TARGETCC,use="target",model=target_model,build=build_model)
+  TARGET_CXX.check_options(xqt,get_stdout)
+  TARGET_CXX.report_config()
+  TARGET_CXX.save_options("config/target_cxx.py")
+  CYGWIN = TARGET_CXX.options.CYGWIN
+  MACOSX = TARGET_CXX.options.MACOSX
+  WIN32 =  TARGET_CXX.options.WIN32
+  LINUX =  TARGET_CXX.options.LINUX
+  SOLARIS =  TARGET_CXX.options.SOLARIS
+  POSIX =  TARGET_CXX.options.POSIX
+  BSD =  TARGET_CXX.options.BSD
+  FLX_SOCKLEN_T = TARGET_CXX.options.FLX_SOCKLEN_T
+  HAVE_PTHREADS =  TARGET_CXX.options.HAVE_PTHREADS
+  PTHREAD_SWITCH =  TARGET_CXX.options.PTHREAD_SWITCH
+  HAVE_MSVC=0
+  HAVE_GXX=1
 
 target_model = TARGET_CXX.options.model
 
