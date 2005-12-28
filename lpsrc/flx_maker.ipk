@@ -5,6 +5,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.187  2005/12/28 01:33:22  rfistman
+moved all faio header files and flx support files over to felix proper
+fixed typo
+
 Revision 1.186  2005/12/27 12:31:49  skaller
 Skeleton for faio.
 
@@ -3060,7 +3064,7 @@ try:
       'flx','sm','ast','elk','flx_perf','flx_tutorial','flx_tut_macro',
       'flx_tut_bind','flx_tut_migrate','flx_config'
       ]
-    print "EXTRATING SOURCES"
+    print "EXTRACTING SOURCES"
     args = ""
     for p in packages:
       args = args + " lpsrc/"+p+".pak"
