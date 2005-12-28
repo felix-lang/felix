@@ -1519,9 +1519,14 @@ shared library name are not passed.
 
 #ifdef _WIN32
 #include "demux_iocp_demuxer.hpp"
+#include "faio_drv.hpp"
 #else
 #include "demux_posix_queue.hpp"
+#include "demux_select_demuxer.hpp"
+#include "faio_pdrv.hpp"
 #endif
+
+#include "faio_asyncio.hpp"
 
 #include "flx_collector.hpp"
 #include "flx_dynlink.hpp"
@@ -1654,10 +1659,16 @@ int main(int argc, char** argv)
 	
 #ifdef _WIN32
     win_queue async_active;
+    iocp_demuxer demux;
+    flx_drv driver(async_active);
 #else
     posix_queue async_active;
+    select_demuxer demux;
+    // this isn't what it looks like (i.e. a driver) but rather
+    // just a wrapper for the queue.
+    pflx_drv driver(async_active);
 #endif
-    bool async_requests = false;
+    bool async_requests = false;   // no async
 
 
     {
@@ -1707,6 +1718,41 @@ int main(int argc, char** argv)
             if(debug)fprintf(stderr,"Spawn thread %p\n",ftx);
             collector.add_root(ftx);
             active.push_front(ftx);
+          }
+          break;
+
+          case svc_general:
+          {
+                // HACK! svc_general => async active queue to be used
+                // i.e. don't exit!!!
+                async_requests = true;
+
+                flx_driver_request_base*        async;
+
+                async = *(flx_driver_request_base**)(request->data);
+                
+                // start async op, with demuxer to track progress. if async
+                // somehow finished immediately, make thread ready
+                // I don't like this return flag and fear that it may hide
+                // a race condition. get rid of it and be more explicit.
+                if(async->start_async_op(demux, &driver, ft))
+                {
+                    printf("wow - async finished immediately (%p)\n", ft);
+                    // ready_queue.enqueue(ftx);     // add to run queue
+                    // this used to be added back to the rf driver thread safe active queue
+                    // not that this is the synchronous active queue. shouldn't be a problem.
+                    active.push_back(ft);           // add to run queue
+                    goto process_active;
+                }
+                else
+                {   
+                    // otherwise, let's hope there's something or someone out
+                    // there to wake this thread up
+                    printf("request did not want thread woken (%p)\n", ft);
+                    // DO NOT ADD BACK - will be (hopefully) added back to async_active
+                    // at some later date.
+                    goto process_active;
+                }
           }
           break;
 

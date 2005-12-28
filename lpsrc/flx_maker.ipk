@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.189  2005/12/28 07:05:16  rfistman
+hooked up posix async code - seems to work!
+
 Revision 1.188  2005/12/28 03:34:16  rfistman
 added faio supporting c code, partitioned files into posix/win32
 
@@ -2647,20 +2650,25 @@ ELKRTL_INTERFACES = [
 ]
 
 DEMUXRTL_INTERFACES = [
- 'demux_demuxer.hpp',  
- 'demux_sleep_queue.hpp',  
- 'demux_posix_queue.hpp',  
- 'demux_iocp_demuxer.hpp',  # win32 version
- 'demux_mutexlite.hpp',  
+ 'demux_demuxer.hpp',       # portable
+ 'demux_sleep_queue.hpp',   # portable
+ 'demux_posix_queue.hpp',   # posix
+ 'demux_posix_demuxer.hpp', # posix
+ 'demux_work_fifo.hpp',     # posix
+ 'demux_sleep_task.hpp',    # posix
+ 'demux_pfileio.hpp',       # posix
+ 'demux_select_demuxer.hpp',# posix
+ 'demux_iocp_demuxer.hpp',  # win32 (monolithic)
+ 'demux_mutexlite.hpp',     # posix
+ 'demux_sockety.hpp',       # posix
 ]
 
-# not yet using the files outside of flx/faio
 FAIORTL_INTERFACES = [
-# 'faio_asyncio.hpp',
-# 'faio_drv.hpp',
-# 'faio_pdrv.hpp',
-# 'faio_posixio.hpp',
-# 'faio_winio.hpp',
+ 'faio_asyncio.hpp',
+ 'faio_drv.hpp',
+ 'faio_pdrv.hpp',
+ 'faio_posixio.hpp',
+ 'faio_winio.hpp',
 ]
 
 # files containing ocamllex sources

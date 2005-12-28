@@ -102,11 +102,13 @@ public:
 bool
 spawn_request::start_async_op(demuxer& demux, flx_drv* drv, void* caller)
 {
+printf("THIS IS THE OLD DRIVER\'S METHOD FOR SPAWNING - USE THE OTHER ONE\n");
+#if 0
     if(fthr)                                // already got an fthread_t
         drv->sched_and_root(fthr);          // sched it (make a gc root)
     else
         drv->new_thread(argc, argv);
-
+#endif
     return true;        // wake caller.
 }
 
@@ -303,24 +305,13 @@ copipe_endpt::shutdown(int how)
 #include "demux_demuxer.hpp"
 
 class flx_drv {
-    // sorry. flx_rtl.hpp is not the most fun file to include.
-    void*           priv;
-
     sleep_queue&    ready_queue;
     // event source here?
 public:
     flx_drv(sleep_queue& q);
     virtual ~flx_drv();
 
-    // create threads, adding them to internal queue
-    void new_thread(int argc, char** argv);
-
-    // add to run queue
     void sched(void* f);
-    void sched_and_root(void* f);
-
-    // slightly old school - may change
-    void drv(demuxer& demux);
 };
 
 #endif              //__FLXDRV__
@@ -329,156 +320,21 @@ public:
 @h=tangler('faio/faio_drv.cpp')
 @select(h)
 #include <stdio.h>              // debug printf
-#include "faio_asyncio.hpp"     // should be called drvrequest.h or somesuch
-
 #include "faio_drv.hpp"
-
-#include "flx_rtl.hpp"
-#include "flx_collector.hpp"
-#include "flx_dynlink.hpp"
-
-
-using namespace flx::rtl;
-using namespace flx::gc::generic;
-
-// I need this to get the flx start con_t. this can be reused for several,
-// however it seems I mostly
-class felix_vars {
-public:
-    flx_dynlink_t   library;
-
-    flx::gc::collector::malloc_free     allocator;  //malloc/free alloc.
-    flx::gc::collector::flx_collector_t collector;
-
-    felix_vars() : collector(&allocator) {
-        library.link("static");     //static link
-    }
-
-    con_t* get_start(int argc, char** argv)
-    {
-        // this doesn't seem to have anything important in it,
-        // the dtor is a nop, so - I'm going to let it go out of scope.
-        flx_libinit_t   instance;
-        instance.create(&library, &collector, argc, argv, 0, 0, 0);
-        return instance.start_proc;
-    }
-};
-
-#define PRIVDECL felix_vars*    fv = (felix_vars*)priv
-
-
-void
-flx_drv::drv(demuxer& demux)
-{
-    PRIVDECL;
-
-    // handy for debugging garbage collector problems
-    //fv->collector.set_debug(true);
-    //fv->allocator.set_debug(true);
-
-    
-    while(1) {
-        // sleeping get/biting coma
-        fthread_t*  f = (fthread_t*)ready_queue.dequeue();
-        
-        // this might be worth putting in the felix demuxer itself.
-        // sort of balances (it created the threads)
-        // this returns the svc that we get later.
-        if(f->run())
-        {   
-            // fv->collector.collect(); // handy for testing gc
-            
-            // get reason for stopping
-            _uctor_*    message = f->get_svc();     // service request
-            
-            // these are svc requests & so this is all good
-            if(message->variant == svc_general)
-            {   
-                flx_driver_request_base*        async;
-// I don't understand why this is indirect
-                async = *(flx_driver_request_base**)(message->data);
-                
-                // start async op, with demuxer to track progress. if async
-                // somehow finished immediately, make thread ready
-                // this call is requiring more and more. may remove the
-                // finished flag. it's probably time to have a proper felix
-                // driver that calls the garbage collector and manages threads.
-                if(async->start_async_op(demux, this, f))
-                {
-                    // printf("wow - async finished immediately (%p)\n", f);
-                    ready_queue.enqueue(f);     // add to run queue
-                }
-                else
-                {   
-                    // otherwise, let's hope there's something or someone out
-                    // there to wake this thread up
-                    //printf("request did not want thread woken (%p)\n", f);
-                }
-            }
-            else if(message->variant == svc_collect)
-            {   
-                // when we get multiple worker threads we'll have to be careful
-                // here, in fact we'll have to block all the workers if
-                // they're to share the garbage collector.
-//              printf("about to collect\n");
-                fv->collector.collect();
-//              printf("finished collecting\n");
-                ready_queue.enqueue(f);
-            }
-            else
-            {   
-                // never restarted in this case
-                printf("got unknown variant (%i)\n", message->variant);
-            }
-        }
-        else
-        {   
-            // printf("thread exited - don't call delete\n");
-            // we don't delete anymore as they're garbage collected
-// not doing this now because some threads are felix created
-// and so accessible without being explicitly added.
-            // not adding it back to the queue, so remove the root.
-            fv->collector.remove_root(f);
-            // thread exited, do any at exit processing here
-        }
-    }
-}
 
 flx_drv::flx_drv(sleep_queue& q)
     : ready_queue(q)
 {   
-    priv = new felix_vars;
 }
 
 flx_drv::~flx_drv()
 {   
-    PRIVDECL;
-    delete fv;
-}
-
-// create new threads & schedule them
-void
-flx_drv::new_thread(int argc, char **argv)
-{   
-    PRIVDECL;
-    con_t*  con = fv->get_start(argc, argv);
-    // must use correct gc operator new
-    fthread_t*  f = new(fv->collector, _fthread_ptr_map) fthread_t(con);
-    sched_and_root((void*)f);
 }
 
 void
 flx_drv::sched(void* f)
 {   
     ready_queue.enqueue(f);
-}
-
-void
-flx_drv::sched_and_root(void* f)
-{   
-    PRIVDECL;
-    fv->collector.add_root(f);  // fthread_t*s are  collectable.
-    sched(f);
 }
 
 
@@ -815,7 +671,7 @@ connect_wakeup::wakeup(posix_demuxer& demux)
 bool
 accept_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 {
-    // printf("async accept start\n");
+    printf("async accept start\n");
 
     // important: copy down the thread and the driver
     sv.fw.drv = drv;
