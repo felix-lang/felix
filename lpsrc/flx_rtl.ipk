@@ -1571,6 +1571,29 @@ static struct driver_request_entry_t flx_run_services[]=
   {NULL,0}
 };
 
+class proto_async
+{
+public:
+#ifdef _WIN32
+    win_queue async_active;
+    iocp_demuxer demux;
+    flx_drv driver;
+#elif defined(MACOSX)
+    posix_queue async_active;
+    kqueue_demuxer demux;
+    pflx_drv driver;
+#else
+    posix_queue async_active;
+    select_demuxer demux;
+    // this isn't what it looks like (i.e. a driver) but rather
+    // just a wrapper for the queue.
+    pflx_drv driver;
+#endif
+
+   proto_async() : driver(async_active) {}
+
+};
+
 int main(int argc, char** argv)
 {
 #ifndef FLX_STATIC_LINK  
@@ -1661,22 +1684,7 @@ int main(int argc, char** argv)
 
     std::list<fthread_t*> active;
 	
-#ifdef _WIN32
-    win_queue async_active;
-    iocp_demuxer demux;
-    flx_drv driver(async_active);
-#elif defined(MACOSX)
-    posix_queue async_active;
-    kqueue_demuxer demux;
-    pflx_drv driver(async_active);
-#else
-    posix_queue async_active;
-    select_demuxer demux;
-    // this isn't what it looks like (i.e. a driver) but rather
-    // just a wrapper for the queue.
-    pflx_drv driver(async_active);
-#endif
-    bool async_requests = false;   // no async
+    proto_async* async = NULL;     // no async
 
 
     {
@@ -1732,23 +1740,24 @@ int main(int argc, char** argv)
           case svc_general:
           {
                 // HACK! svc_general => async active queue to be used
-                // i.e. don't exit!!!
-                async_requests = true;
+                // i.e. we don't exit!!!
+                // this needs to actually be deleted at some point.
+                if( !async ) async = new proto_async;
 
-                flx_driver_request_base*        async;
+                flx_driver_request_base*        req;
 
                 // OLD INTERFACE USED A pointer to the request object
-                //async = *(flx_driver_request_base**)(request->data);
+                //req = *(flx_driver_request_base**)(request->data);
 
                 // NEW INTERFACE USES A _ref_ instead of an address
-                async = (flx_driver_request_base*)
+                req = (flx_driver_request_base*)
                   ((_ref_*)(request->data))->get_data();
                 
                 // start async op, with demuxer to track progress. if async
                 // somehow finished immediately, make thread ready
                 // I don't like this return flag and fear that it may hide
                 // a race condition. get rid of it and be more explicit.
-                if(async->start_async_op(demux, &driver, ft))
+                if(req->start_async_op(async->demux, &async->driver, ft))
                 {
                     // printf("wow - async finished immediately (%p)\n", ft);
                     // ready_queue.enqueue(ftx);     // add to run queue
@@ -1903,8 +1912,8 @@ int main(int argc, char** argv)
       fprintf(stderr, "out of active synchronous threads, trying async\n");
     }
 
-    if(async_requests){
-      fthread_t* ftp = (fthread_t*)async_active.dequeue();
+    if(async){
+      fthread_t* ftp = (fthread_t*)async->async_active.dequeue();
       active.push_front(ftp);
       goto process_active;
     }

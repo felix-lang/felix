@@ -624,6 +624,8 @@ connect_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
     return (pd->add_socket_wakeup(&sv, false) == -1);
 }
 
+@tangle("typedef " + FLX_SOCKLEN_T + " FLX_SOCKLEN_T;")
+
 void
 connect_wakeup::wakeup(posix_demuxer& demux)
 {
@@ -632,7 +634,8 @@ connect_wakeup::wakeup(posix_demuxer& demux)
     // god knows what the level should be. socket level seems sensible.
     // no socklen_t on 10.2.8, this works though, albeit with a warning
     // was unsigned - I'll probably have to change that back
-    unsigned int    len = sizeof(socket_err);
+    // unsigned int    len = sizeof(socket_err);
+    FLX_SOCKLEN_T    len = sizeof(socket_err);
     int res = getsockopt(s, SOL_SOCKET, SO_ERROR, &socket_err, &len);
     
     if(-1 == res)

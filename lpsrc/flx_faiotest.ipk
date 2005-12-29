@@ -1,8 +1,36 @@
 @head(1,"Felix Async IO tests")
 @h = tangler("test/posix_t1.flx")
 @select(h)
-include "std";
-print 1; endl;
+include "flx_faio_posix";
+
+print "felix posix accept/connect test\n";
+
+var port = 0;   // let mk_listener choose the port
+
+print "creating listener\n";
+var listener: int <- mk_listener(port, 1);
+
+if listener == -1 then { System::exit 1; } else { print "got listener\n"; } endif;
+
+proc connector
+{
+  // not printing in thread to make output repeatable in
+  // the face of scheduler changes.
+  var c: int;
+  connect(&c, c"127.0.0.1", port);
+}
+
+print "spawning connector\n";
+spawn_thread{ connector; };
+
+var s: int;
+accept (&s, listener);  // async!
+if s == -1 then {
+  System::exit 1;
+} else {
+  print "accepted connection\n";
+  System::exit 0;
+} endif;
 
 @h = tangler("test/posix_t2.flx")
 @select(h)
@@ -23,7 +51,11 @@ print 1; endl;
 
 @h = tangler("test/posix_t1.expect")
 @select(h)
-1
+felix posix accept/connect test
+creating listener
+got listener
+spawning connector
+accepted connection
 @h = tangler("test/posix_t2.expect")
 @select(h)
 1
