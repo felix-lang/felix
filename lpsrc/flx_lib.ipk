@@ -225,6 +225,8 @@ namespace flx { namespace rtl { namespace strutil {
 @select(h)
 #import <flx_syntax.flxh>
 include "std";
+macro val true = case 2 of 2;
+macro val false = case 1 of 2;
 
 @h=tangler('lib/flx_syntax.flxh','data')
 @select(h)
@@ -936,8 +938,6 @@ publish "Bool compatible with C"
 module Bool 
 {
 
-  val false : bool = case 1 of 2; // binary 0
-  val true : bool = case 2 of 2; // binary 1
   gen_eq bool;
   fun land: bool * bool -> bool = "$1&&$2";
   fun nand: bool * bool -> bool = "!($1&&$2)";

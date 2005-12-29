@@ -1,7 +1,7 @@
 @head(1,'Felix lexerlibrary')
 @h=tangler('lib/flx_lex.flx')
 @select(h)
-include "std";
+#include <flx.flxh>
 /* ====================== REGULAR DEFINITIONS ============================ */
 module Flx_lex
 {

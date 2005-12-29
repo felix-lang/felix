@@ -1,5 +1,10 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
+$Log$
+Revision 1.12  2005/12/29 13:52:07  skaller
+Added log to rtl and faio.
+
+
 @execfile('config'+os.sep+'config.py')
 
 @h=tangler('faio/faio_asyncio.hpp')

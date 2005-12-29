@@ -1,4 +1,8 @@
 @head(1,"Run time driver support library")
+$Log$
+Revision 1.78  2005/12/29 13:52:07  skaller
+Added log to rtl and faio.
+
 This package contains core types and routines
 to facilitate construction of drivers for
 felix shared libraries. A felix driver is the top
