@@ -6,11 +6,13 @@
 #define __DEMUXER__
 #include <flx_rtl_config.hpp>
 
-typedef struct {
+namespace flx { namespace demux {
+
+struct sel_param {
   char*   buffer;           // set on input
   long    buffer_size;        // set on input
   long    bytes_written;        // set on input and output
-}sel_param;
+};
 
 // abstract base class(gee - it doesn't do much)
 class FLX_RTL_EXTERN demuxer {
@@ -19,6 +21,7 @@ public:
   virtual ~demuxer() {}
 };
 
+}} // namespace demux, flx
 #endif  /* __DEMUXER__ */
 
 @h=tangler('demux/demux_epoll_demuxer.hpp')
@@ -29,6 +32,7 @@ public:
 #include <flx_rtl_config.hpp>
 #include "demux_posix_demuxer.hpp"
 
+namespace flx { namespace demux {
 class FLX_RTL_EXTERN epoll_demuxer : public posix_demuxer {
   int   epoll_fd;
 
@@ -44,6 +48,7 @@ public:
   virtual int add_socket_wakeup(socket_wakeup* sv, bool read);
 };
 
+}} // namespace demux, flx
 #endif
 
 @h=tangler('demux/demux_evtport_demuxer.hpp')
@@ -56,6 +61,7 @@ public:
 #include <flx_rtl_config.hpp>
 #include "demux_posix_demuxer.hpp"
 
+namespace flx { namespace demux {
 class FLX_RTL_EXTERN evtport_demuxer : public posix_demuxer {
     int     evtport;
   void  cleanup();
@@ -71,6 +77,7 @@ public:
   virtual int add_socket_wakeup(socket_wakeup* sv, bool read);
 };
 
+}} // namespace demux, flx
 #endif
 
 @h=tangler('demux/demux_iocp_demuxer.hpp')
@@ -87,6 +94,7 @@ public:
 #include "demux_sleep_queue.hpp"
 
 
+namespace flx { namespace demux {
 // not here? returns INVALID_SOCKET on failure (unlike posix version,
 // this doesn't let the os choose the port - make it so).
 SOCKET FLX_RTL_EXTERN create_listener_socket(int port, int backlog);
@@ -167,6 +175,7 @@ public:
   virtual void* dequeue();    // re-entrant, sleeps on empty queue
 };
 
+}} // namespace demux, flx
 #endif
 
 @h=tangler('demux/demux_kqueue_demuxer.hpp')
@@ -176,6 +185,7 @@ public:
 
 #include "demux_posix_demuxer.hpp"
 
+namespace flx { namespace demux {
 class FLX_RTL_EXTERN kqueue_demuxer : public posix_demuxer {
   int   kq;
 protected:
@@ -195,6 +205,7 @@ public:
   virtual int add_socket_wakeup(socket_wakeup* sv, bool read);
 };
 
+}} // namespace demux, flx
 #endif
 
 @h=tangler('demux/demux_mutexlite.hpp')
@@ -207,6 +218,7 @@ public:
 // not sure that I'm locking properly. may need cancel handlers.
 
 #include <pthread.h>
+namespace flx { namespace demux {
 
 class FLX_RTL_EXTERN pmut {
 public:
@@ -247,6 +259,7 @@ public:
   int cancel();
 };
 
+}} // namespace demux, flx
 #endif
 
 @h=tangler('demux/demux_pfileio.hpp')
@@ -261,6 +274,7 @@ public:
 // #include <sys/types.h> // off_t (don't have flx iface to this yet)
               // can just add new constructor
 #include "demux_work_fifo.hpp"
+namespace flx { namespace demux {
 
 // like another event source. this is basically a wrapped pread, pwrite
 // should probably be derived from posix_wakeup or something like that.
@@ -292,6 +306,7 @@ public:
   void add_fileio_request(fileio_request* req) { add_worker_task(req); } 
 };
 
+}} // namespace demux, flx
 #endif  // __PFILEIO__
 
 @h=tangler('demux/demux_posix_demuxer.hpp')
@@ -307,6 +322,7 @@ public:
 #include "demux_demuxer.hpp"
 #include "demux_mutexlite.hpp"
 
+namespace flx { namespace demux {
 class FLX_RTL_EXTERN posix_demuxer;            // fwd decl
 
 // abc
@@ -343,6 +359,7 @@ public:
   static bool   handle_socket_write(int s, sel_param* pb);
 };
 
+}} // namespace demux, flx
 #endif
 
 @h=tangler('demux/demux_posix_queue.hpp')
@@ -353,6 +370,7 @@ public:
 #include "demux_sleep_queue.hpp"
 #include <flx_rtl_config.hpp>
 
+namespace flx { namespace demux {
 class FLX_RTL_EXTERN posix_queue  : public sleep_queue {
   pmut      member_lock;  // protects member data
   pthread_cond_t  nz_elts_cond; // wakes up threads waiting on resource
@@ -365,6 +383,7 @@ public:
   virtual void* dequeue();      // re-entrant, sleeps on empty queue
 };
 
+}} // namespace demux, flx
 #endif  // __POSIX_QUEUE__
 
 @h=tangler('demux/demux_select_demuxer.hpp')
@@ -376,6 +395,7 @@ public:
 #include "demux_mutexlite.hpp"
 #include <sys/select.h>   // for fd_set
 
+namespace flx { namespace demux {
 class FLX_RTL_EXTERN select_demuxer : public posix_demuxer {
   // still using these, but they're not virtual - make them private &
   // remove the locks?
@@ -402,6 +422,7 @@ public:
   virtual int   add_socket_wakeup(socket_wakeup* sv, bool read);
 };
 
+}} // namespace demux, flx
 #endif
 
 @h=tangler('demux/demux_sleep_queue.hpp')
@@ -414,6 +435,7 @@ public:
 // interface for a consumer/producer queue. threads requesting a resource
 // that isn't there block until one is available. push/pop re-entrant
 
+namespace flx { namespace demux {
 class FLX_RTL_EXTERN sleep_queue {
 public:
   virtual ~sleep_queue() {}
@@ -422,6 +444,7 @@ public:
   virtual void* dequeue() = 0;    // re-entrant, sleeps on empty queue
 };
 
+}} // namespace demux, flx
 #endif
 
 @h=tangler('demux/demux_sleep_task.hpp')
@@ -435,6 +458,7 @@ public:
 
 #include "demux_mutexlite.hpp"
 
+namespace flx { namespace demux {
 // class sleep_task : public worker_task
 // may not need time in here - just the wakeup - something I surely have
 // somewhere else.
@@ -479,17 +503,20 @@ public:
   void add_sleep_request(sleep_task* st, double delta);
 };
 
+}} // namespace demux, flx
 #endif // __SLEEP_TASK__
 @h=tangler('demux/demux_sockety.hpp')
 @select(h)
 #ifndef __SOCKETY__
 #define __SOCKETY__
 #include <flx_rtl_config.hpp>
+namespace flx { namespace demux {
 int create_listener_socket(int* io_port, int q_len);
 int nice_create_listener(int* io_port, int q_len);
 int nice_accept(int listener);
 int nice_connect(const char* addr, int port);
 int async_connect(const char* addr, int port, int* finished);
+}} // namespace demux, flx
 #endif
 
 @h=tangler('demux/demux_work_fifo.hpp')
@@ -501,6 +528,7 @@ int async_connect(const char* addr, int port, int* finished);
 #include "demux_posix_queue.hpp"
 #include "demux_mutexlite.hpp"
 
+namespace flx { namespace demux {
 // abstract 
 class FLX_RTL_EXTERN worker_task
 {
@@ -535,6 +563,7 @@ public:
   void stop_worker_thread();
 };
 
+}} // namespace demux, flx
 #endif  // __WORKER_FIFO__
 @h=tangler('demux/demux_demuxer.cpp')
 @select(h)
@@ -557,6 +586,8 @@ public:
 #include <sys/epoll.h>  // for epoll_*
 #include <stdio.h>  // for perror
 #include <unistd.h> // for close
+
+namespace flx { namespace demux {
 
 epoll_demuxer::epoll_demuxer()
   : epoll_fd(-1)
@@ -703,6 +734,7 @@ epoll_demuxer::thread_loop_body()
     }
 }
 
+}}
 
 @h=tangler('demux/demux_evtport_demuxer.cpp')
 @select(h)
@@ -720,6 +752,8 @@ epoll_demuxer::thread_loop_body()
 // header files for this stuff?
 // can use port_send for user defined events, to wake up reap loop
 // truss to see what's happening
+
+namespace flx { namespace demux {
 
 evtport_demuxer::evtport_demuxer()
 {
@@ -895,7 +929,7 @@ evtport_demuxer::thread_loop_body()
       evt.portev_events);
     }
 }
-
+}}
 
 @h=tangler('demux/demux_iocp_demuxer.cpp')
 @select(h)
@@ -903,6 +937,8 @@ evtport_demuxer::thread_loop_body()
 
 #include <stdio.h>      // for printf debugging
 #include <stddef.h>     // offsetof
+
+namespace flx { namespace demux {
 
 // this could really do with auto objs. steal the strat stuff?
 
@@ -1419,6 +1455,7 @@ blah()
   }
 }
 */
+}}
 
 @h=tangler('demux/demux_kqueue_demuxer.cpp')
 @select(h)
@@ -1439,6 +1476,7 @@ blah()
 
 #include <sys/syscall.h>  // for non clib close
 
+namespace flx { namespace demux {
 kqueue_demuxer::kqueue_demuxer()
   : kq(-1)
 {
@@ -1619,12 +1657,14 @@ kqueue_demuxer::thread_loop_body()
     fprintf(stderr,"kqueue returned something else (requires remove?)...\n");
   }
 }
+}}
 
 @h=tangler('demux/demux_mutexlite.cpp')
 @select(h)
 #include "demux_mutexlite.hpp"
 #include <stdio.h>        // printf debugging
 
+namespace flx { namespace demux {
 class auto_attr
 {
   pthread_mutexattr_t* a;
@@ -1745,6 +1785,7 @@ apthread::~apthread()
 {
   deinit();
 }
+}}
 
 @h=tangler('demux/demux_pfileio.cpp')
 @select(h)
@@ -1765,6 +1806,7 @@ apthread::~apthread()
 #include <sys/uio.h>
 #include <unistd.h>
 
+namespace flx { namespace demux {
 // fileio_request stuff follows
 
 // read or write in a blocking fashion. I like the idea of using pread
@@ -1813,6 +1855,7 @@ fileio_request::doit()
     pb.bytes_written = res;
   }
 }
+}}
 
 @h=tangler('demux/demux_posix_demuxer.cpp')
 @select(h)
@@ -1826,6 +1869,8 @@ fileio_request::doit()
 
 #include <sys/types.h>      // for send/recv
 #include <sys/socket.h>
+
+namespace flx { namespace demux {
 
 int
 posix_demuxer::init_pthread() {
@@ -1942,6 +1987,7 @@ posix_demuxer::handle_socket_write(int s, sel_param* pb)
   nbytes = read(s, pb->buffer + pb->bytes_written,
         pb->buffer_size - pb->bytes_written);
 #endif
+}}
 
 @h=tangler('demux/demux_posix_queue.cpp')
 @select(h)
@@ -1952,6 +1998,7 @@ posix_demuxer::handle_socket_write(int s, sel_param* pb)
 
 using namespace std;
 
+namespace flx { namespace demux {
 typedef queue<void*> void_queue;
 
 #define ELTQ ((void_queue*)lame_opaque)
@@ -2029,6 +2076,7 @@ posix_queue::dequeue()
 
   return elt;           // should never return NULL
 }
+}}
 
 @h=tangler('demux/demux_select_demuxer.cpp')
 @select(h)
@@ -2063,6 +2111,7 @@ posix_queue::dequeue()
 
 #include <stdio.h>        // for printf debug
 #include <stdlib.h>
+namespace flx { namespace demux {
 
 select_demuxer::select_demuxer()
   : ham_fist(true)
@@ -2193,7 +2242,7 @@ select_demuxer::remove_writing_fd(int s)
   FD_CLR(s, &master_write_set);       // we're finished with this
   write_svs[s] = NULL;
 }
-
+}}
 
 @h=tangler('demux/demux_sleep_task.cpp')
 @select(h)
@@ -2210,6 +2259,7 @@ select_demuxer::remove_writing_fd(int s)
 // #include <errno.h> // ETIMEDOUT - don't actually need to know this
 
 using namespace std;
+namespace flx { namespace demux {
 
 // it could happen!
 class future_evt
@@ -2456,11 +2506,13 @@ sleep_task_queue::thread_loop_body()
 
   // lock released here
 }
+}}
 
 @h=tangler('demux/demux_work_fifo.cpp')
 @select(h)
 #include <stdio.h>    // printf
 #include "demux_work_fifo.hpp"
+namespace flx { namespace demux {
 
 // a fifo of tasks & a thread (threads?) to serve them.
 // users overload finished function to implement wakeup
@@ -2550,6 +2602,7 @@ worker_fifo::add_worker_task(worker_task* task)
 {
   fifo.enqueue(task);         // don't worry, fifo is re-entrant
 }
+}}
 
 @h=tangler('demux/demux_sockety.cpp')
 @select(h)
@@ -2566,6 +2619,7 @@ worker_fifo::add_worker_task(worker_task* task)
 #include <errno.h>        /* errno */
 
 #include <string.h>       /* for memset */
+namespace flx { namespace demux {
 
 @tangle("typedef " + FLX_SOCKLEN_T + " FLX_SOCKLEN_T;")
 
@@ -2741,4 +2795,6 @@ async_connect(const char* addr, int port, int* finished)
   *finished = 1;            /* for completeness */
   return -1;
 }
+
+}}
 

@@ -426,7 +426,7 @@ tvarlist:
 
 type_qual:
   | INCOMPLETE { $1,`Incomplete }
-  | POD { $1, `Pod }
+  | POD { $1, `Pod } /* POD types don't require destructors */
   | GC_POINTER { $1, `GC_pointer }
 
 type_quals:

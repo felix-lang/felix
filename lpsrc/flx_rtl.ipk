@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.79  2005/12/29 18:16:04  skaller
+Namespaces and modules added ..
+
 Revision 1.78  2005/12/29 13:52:07  skaller
 Added log to rtl and faio.
 
@@ -1540,6 +1543,9 @@ shared library name are not passed.
 #include "flx_dynlink.hpp"
 using namespace std;
 using namespace flx::rtl;
+using namespace flx::demux;
+using namespace flx::faio;
+
 #ifdef HAVE_GXX_X86
 register void *sp __asm__("esp");
 #else

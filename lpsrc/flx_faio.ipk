@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.13  2005/12/29 18:16:04  skaller
+Namespaces and modules added ..
+
 Revision 1.12  2005/12/29 13:52:07  skaller
 Added log to rtl and faio.
 
@@ -20,12 +23,14 @@ Added log to rtl and faio.
     
 #include "demux_demuxer.hpp"        // sel_param, demuxer base
 #include "faio_drv.hpp"
-    
+
+namespace flx { namespace faio {
+
 class FLX_RTL_EXTERN flx_driver_request_base {
 public:
     virtual ~flx_driver_request_base() {}       // so destructors work
     // returns finished flag (async may fail or immediately finish)
-    virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f) = 0;
+    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f) = 0;
 };  
     
 // not actually asynchronous as such since the threads are woken synchronously
@@ -35,8 +40,8 @@ class FLX_RTL_EXTERN async_copipe : public flx_driver_request_base {
 public:
     enum { WINDWARD, LEEWARD, NUM_CHANNELS };
     
-    virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f);
-    void connect(void* f, sel_param* pb, bool reading, int channel);
+    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+    void connect(void* f, demux::sel_param* pb, bool reading, int channel);
     void close_channel(int which);      // WINDWARD or LEEWARD
     void disconnect();                  // will be used by close
     
@@ -49,7 +54,7 @@ private:
     
     // if there's a thread here, it's sleeping
     void*   thread[NUM_CNXNS];
-    sel_param*  pb[NUM_CNXNS];
+    demux::sel_param*  pb[NUM_CNXNS];
     int         num_users;
     
     bool        channel_open[NUM_CHANNELS];
@@ -79,7 +84,7 @@ public:
     ~copipe_endpt() { pipe->disconnect(); } 
     static void pipe_pair(copipe_endpt* pair[2]);
 };
-
+}} // namespace faio, flx
 #endif  // __ASYNCIO__
 
 @h=tangler('faio/faio_asyncio.cpp')
@@ -88,6 +93,8 @@ public:
 #include <string.h>     // memmove
 #include <stdio.h>      // debugging
 
+using namespace flx::demux;
+namespace flx { namespace faio {
 // cooperative pipes
 
 // this is a bit interesting because the copipes are not asynchronous and
@@ -98,7 +105,7 @@ void
 async_copipe::set_debug(bool d) { debug = d; }
 
 bool
-async_copipe::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+async_copipe::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {
 // this is where a big lock will go for multithreaded driver
     // we don't want to wake anyone twice
@@ -273,7 +280,7 @@ copipe_endpt::shutdown(int how)
         break;
     }
 }
-
+}}
 
 @h=tangler('faio/faio_drv.hpp')
 @select(h)
@@ -284,18 +291,20 @@ copipe_endpt::shutdown(int how)
 #include "demux_sleep_queue.hpp"
 #include "demux_demuxer.hpp"
 
+namespace flx { namespace faio {
 // vestigal driver class is all that remains of the embedded driver from
 // which faio came. all it is now is a pointer to a queue. 
 // watch this space.
 class FLX_RTL_EXTERN flx_drv {
-    sleep_queue&    ready_queue;
+    demux::sleep_queue&    ready_queue;
 public:
-    flx_drv(sleep_queue& q);
+    flx_drv(demux::sleep_queue& q);
     virtual ~flx_drv();
 
     void sched(void* f);
 };
 
+}}
 #endif              //__FLXDRV__
 
 
@@ -304,6 +313,8 @@ public:
 #include <stdio.h>              // debug printf
 #include "faio_drv.hpp"
 
+using namespace flx::demux;
+namespace flx { namespace faio {
 flx_drv::flx_drv(sleep_queue& q)
     : ready_queue(q)
 {   
@@ -319,6 +330,7 @@ flx_drv::sched(void* f)
     ready_queue.enqueue(f);
 }
 
+}}
 
 @h=tangler('faio/faio_pdrv.hpp')
 @select(h)
@@ -329,6 +341,7 @@ flx_drv::sched(void* f)
 #include "demux_pfileio.hpp"
 #include "demux_sleep_task.hpp"
 #include "faio_drv.hpp"
+namespace flx { namespace faio {
 
 // same as flx_drv, but with an async file io worker fifo.
 class FLX_RTL_EXTERN pflx_drv : public flx_drv {
@@ -336,16 +349,17 @@ class FLX_RTL_EXTERN pflx_drv : public flx_drv {
 //  pasync_fileio*  file_aio_worker;
     // make it direct so we don't have to protect the code that would
     // create the pointer. This is a bit heavy, I would prefer on demand.
-    pasync_fileio       file_aio_worker;
-    sleep_task_queue    sleepers;
+    demux::pasync_fileio       file_aio_worker;
+    demux::sleep_task_queue    sleepers;
 public:
-    pflx_drv(sleep_queue& q);
+    pflx_drv(demux::sleep_queue& q);
 
-    pasync_fileio* get_aio_worker() { return &file_aio_worker; }
-    sleep_task_queue* get_sleepers() { return &sleepers; }
+    demux::pasync_fileio* get_aio_worker() { return &file_aio_worker; }
+    demux::sleep_task_queue* get_sleepers() { return &sleepers; }
     bool debug;
     void set_debug(bool d) { debug = d; }
 };
+}}
 #endif
 
 @h=tangler('faio/faio_pdrv.cpp')
@@ -353,6 +367,9 @@ public:
 #include "faio_pdrv.hpp"
 #include <signal.h>     // for SIGPIPE portable ignoring
 #include <stdio.h>      // printf
+
+using namespace flx::demux;
+namespace flx { namespace faio {
 
 pflx_drv::pflx_drv(sleep_queue& q)
     : flx_drv(q)
@@ -374,6 +391,7 @@ pflx_drv::pflx_drv(sleep_queue& q)
     if(prev_handler)
         fprintf(stderr,"warning: blew away prev SIGPIPE handler: %p\n", prev_handler);
 }
+}}
 
 @h=tangler('faio/faio_posixio.hpp')
 @select(h)
@@ -397,6 +415,7 @@ pflx_drv::pflx_drv(sleep_queue& q)
 // a sleep prioqueue
 #include "demux_sleep_task.hpp"
 
+namespace flx { namespace faio {
 // this becomes socket thread wakeup. um. 
 // class thread_wakeup : public socket_wakeup {
 class FLX_RTL_EXTERN thread_wakeup {
@@ -408,13 +427,13 @@ public:
 };
 
     
-class FLX_RTL_EXTERN socketio_wakeup : public socket_wakeup {
+class FLX_RTL_EXTERN socketio_wakeup : public demux::socket_wakeup {
 public:
-    sel_param       pb;         // in: what you want, out: what you get
+    demux::sel_param       pb;         // in: what you want, out: what you get
     thread_wakeup   fw; 
     bool        read;
 
-    virtual void wakeup(posix_demuxer& demux);
+    virtual void wakeup(demux::posix_demuxer& demux);
 };
 
 // this can handle most unix style io, that is, read & write on sockets,
@@ -428,14 +447,14 @@ public:
     socketio_request() {}       // Lord Felix demands it. Like STL.
     
     socketio_request(int s, char* buf, long len, bool r);
-    virtual bool start_async_op(demuxer& demux, flx_drv* drv,  void* f);
+    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv,  void* f);
 };
 
 // move wakeup to thread_wakeup and get rid of class altogether
 class FLX_RTL_EXTERN connect_wakeup : public socketio_wakeup {
 public:
     int     socket_err;     // the error, if s == -1
-    virtual void wakeup(posix_demuxer& demux);
+    virtual void wakeup(demux::posix_demuxer& demux);
 };
 
 
@@ -448,14 +467,14 @@ public:
     connect_request() {}            // flx linkage
 
     connect_request(const char* addr, int port) : addy(addr), p(port) { sv.s=-1; }
-    virtual bool start_async_op(demuxer& demux, flx_drv* drv,  void* f);
+    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv,  void* f);
 };
 
 class FLX_RTL_EXTERN accept_wakeup : public socketio_wakeup {
 public:
     int     acceptee;       // listener socket
     int     socket_err;     // the error, if acceptee == -1
-    virtual void wakeup(posix_demuxer& demux);
+    virtual void wakeup(demux::posix_demuxer& demux);
 };
 
 class FLX_RTL_EXTERN accept_request : public flx_driver_request_base {
@@ -469,14 +488,14 @@ public:
 
     // note that the listener is the s socket
     accept_request(int listener) {sv.s = listener; sv.acceptee = -1; }
-    virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f);
+    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
 };
 
 
 // separate pthread file io
 // hum. multiple inheritance
 class FLX_RTL_EXTERN flxfileio_request
-    : public flx_driver_request_base, public fileio_request
+    : public flx_driver_request_base, public demux::fileio_request
 {
     thread_wakeup   fw;
 public:
@@ -486,7 +505,7 @@ public:
         : fileio_request(f, buf, len, off, rd) {}
 
     // from driver request
-    virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f);
+    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
 
     // from async io thread
     virtual void finished();
@@ -494,7 +513,7 @@ public:
 
 // sleeping
 class FLX_RTL_EXTERN sleep_request
-    : public flx_driver_request_base, public sleep_task
+    : public flx_driver_request_base, public demux::sleep_task
 {
     thread_wakeup   fw;
     double          delta;
@@ -504,12 +523,13 @@ public:
     sleep_request(double d) : delta(d) {}
 
     // from driver request
-    virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f);
+    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
 
     // from sleep_task
     virtual void fire();
 };
 
+}}
 #endif
 
 @h=tangler('faio/faio_posixio.cpp')
@@ -528,6 +548,8 @@ public:
 #include <unistd.h>     // close
 #include <string.h>     // strerror - probably not portable
 
+using namespace flx::demux;
+namespace flx { namespace faio {
 socketio_request::socketio_request(int s, char* buf, long len, bool r)
 {
     sv.s = s;
@@ -539,7 +561,7 @@ socketio_request::socketio_request(int s, char* buf, long len, bool r)
 }
 
 bool
-socketio_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+socketio_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {
     // printf("adding wakeup: len %i, done %i\n",
     //   sv.pb.buffer_size, sv.pb.bytes_written);
@@ -594,7 +616,7 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
 
 // asynchronous connect
 bool
-connect_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+connect_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {
     // printf("async connect start\n");
 
@@ -669,7 +691,7 @@ connect_wakeup::wakeup(posix_demuxer& demux)
 
 // async accept
 bool
-accept_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+accept_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {
    // printf("async accept start\n");
 
@@ -705,7 +727,7 @@ accept_wakeup::wakeup(posix_demuxer& demux)
 
 // from driver request
 bool
-flxfileio_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+flxfileio_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {
     // printf("driver called fileio start_async_op code\n");
     // important: copy down the thread and the driver
@@ -731,7 +753,7 @@ flxfileio_request::finished()
 // sleep task prio queue thing
 
 bool
-sleep_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+sleep_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {   
    // printf("driver called sleep_task start_async_op code\n");
     // important: copy down the thread and the driver
@@ -753,7 +775,7 @@ sleep_request::fire()
     fw.wake();      // wake thread
 }
 
-
+}}
 
 @h=tangler('faio/faio_winio.hpp')
 @select(h)
@@ -773,6 +795,7 @@ sleep_request::fire()
 // with an IOCP before their use, we don't actually need a demuxer here
 // at all. That's kind of nice. (actually iocp_associator uses it now)
         
+namespace flx { namespace faio {
 // a flx driver request to the add socket s to the drivers iocp
 // this is currently the only windows driver request that uses the demuxer.
 class FLX_RTL_EXTERN iocp_associator : public flx_driver_request_base {
@@ -782,7 +805,7 @@ public:
     iocp_associator() {}            
     iocp_associator(SOCKET associatee) : s(associatee) {}
 
-    virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f);
+    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
 };  
     
 // flx <-> c++ stuff for async io (well, it was)
@@ -791,7 +814,7 @@ protected:
     // these three should provide enough info to wake a thread
     void*       f;                      // give this a better name
     flx_drv*    driver;
-    demuxer*    demux;
+    demux::demuxer*    demux;
 public:
     bool    success;
     
@@ -814,7 +837,7 @@ class FLX_RTL_EXTERN wasync_accept : public waio_base {
     char    accept_buf[2*ACCEPTEX_ADDR_SIZE];
 public:
     
-    virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f);
+    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
     
     wasync_accept() {}              // felix linkage demands it
     wasync_accept(SOCKET l, SOCKET a) 
@@ -833,7 +856,7 @@ public:
     connect_ex(SOCKET soc, const char* addr, int port)
         : s(soc), addy(addr), p(port) {}
     
-    virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f);
+    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
 };
 
 // TransmitFile here (requires file handle)
@@ -850,7 +873,7 @@ public:
     wasync_transmit_file(SOCKET dst, HANDLE src)    // actual transmitfile
         : s(dst), file(src), flags(0) {}
 
-    virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f);
+    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
 };
 
 // handles both WSASend & WSARecv
@@ -860,12 +883,12 @@ class FLX_RTL_EXTERN wsa_socketio : public waio_base {
     SOCKET      s;
     bool        reading;    // else use WSASend
 public:
-    sel_param   pb;         // what you wanted & later, what you got
+    demux::sel_param   pb;         // what you wanted & later, what you got
 
     wsa_socketio() {}
     wsa_socketio(SOCKET src, void* buf, int len, bool read);
 
-    virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f);
+    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
     virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
         LPOVERLAPPED olp, int err);
 };
@@ -875,28 +898,30 @@ class FLX_RTL_EXTERN winfile_io : public waio_base {
     HANDLE      file;
     bool        reading;
 public:
-    sel_param   pb;
+    demux::sel_param   pb;
 
     winfile_io() {}         // flx linkage
 
     // offset?
     winfile_io(HANDLE f, void* buf, int len, bool read);
 
-    virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f);
+    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
     virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
         LPOVERLAPPED olp, int err);
 };
-
+}}
 #endif  // __DWINIO__
 
 @h=tangler('faio/faio_winio.cpp')
 @select(h)
 #include "faio_winio.hpp"
 #include <stdio.h>      // printf
+using namespace flx::demux;
+namespace flx { namespace faio {
 
 // way of adding sockets to the IOCP.
 bool
-iocp_associator::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+iocp_associator::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {   
     iocp_demuxer* iod = (iocp_demuxer*)&demux;
     if(iod->associate_with_iocp((HANDLE)s, 0) != 0)
@@ -928,7 +953,7 @@ waio_base::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 // return async finished flag (error flags - can be transmitted via class)
 // AcceptEx is the way to get accept connections via the IOCP
 bool
-wasync_accept::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+wasync_accept::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {
     WAIO_START_INIT;            // records enough info for wakeup
     clear_overlapped();
@@ -1031,7 +1056,7 @@ bind_socket(SOCKET s)
 }
 
 bool
-connect_ex::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+connect_ex::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {   
     WAIO_START_INIT;            // records enough info for wakeup
     clear_overlapped();
@@ -1118,7 +1143,7 @@ connect_ex::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 }
 
 bool
-wasync_transmit_file::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+wasync_transmit_file::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {   
     WAIO_START_INIT;            // records enough info for wakeup
     clear_overlapped();
@@ -1159,7 +1184,7 @@ wsa_socketio::wsa_socketio(SOCKET src, void* buf, int len, bool inread)
 }
 
 bool
-wsa_socketio::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+wsa_socketio::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {
     WAIO_START_INIT;            // records enough info for wakeup
     clear_overlapped();
@@ -1282,7 +1307,7 @@ winfile_io::winfile_io(HANDLE f, void* buf, int len, bool inread)
 // ops & set the desired offset within the overlapped. can also stick an
 // event to signal in there.
 bool
-winfile_io::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+winfile_io::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {   
     fprintf(stderr,"trying out some read/write file\n");
     
@@ -1332,11 +1357,15 @@ winfile_io::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     waio_base::iocp_op_finished(nbytes, udat, olp, err);
 }
 
+}}
 
 
 @h=tangler('lib/flx_faio.flx')
 @select(h)
-include "std";
+#import <flx.flxh>
+
+module Faio {
+open C_hack;
 
 proc faio_req[t](x:&t) {
   // svc_general takes an arbitrary machine
@@ -1360,15 +1389,18 @@ proc get_thread(thread: ptr[fthread]) {
     svc (svc_get_fthread thread );
 }
 
-// lame - argv gives a string, I might do my own. 
-fun cargv:int -> charp = '(char*)($1<0||$1>=ptf->argc??"":ptf->argv[$1])';
+// lame - argv gives a string, I might do my own.
+// fine .. but make it private :)
+private fun cargv:int -> charp = 
+  '(char*)($1<0||$1>=ptf->argc??"":ptf->argv[$1])'
+;
 
-
-header stdlib_h = '#include <stdlib.h>';            // malloc, free
+//header stdlib_h = '#include <stdlib.h>';            // malloc, free
     
 // be careful of this being optimized away 
-fun malloc: int -> address = 'malloc($1)' requires stdlib_h;
-proc free: address = 'free($1);' requires stdlib_h; 
+//JS: why? it isn't used .. and its in C_hack anyhow :)
+//fun malloc: int -> address = 'malloc($1)' requires stdlib_h;
+//proc free: address = 'free($1);' requires stdlib_h; 
     
 //header asyncio_h = '#include "faio_asyncio.hpp"';
 // could go through and conditionally require this header, but I'm
@@ -1376,13 +1408,8 @@ proc free: address = 'free($1);' requires stdlib_h;
 // this pulls in sel_params & demuxers & so on
 header = '#include "faio_asyncio.hpp"';
 
-// looks like it has to be ctypes, even if there's only one
-ctypes sel_param;
-
-// shouldn't have to do this, but I'm not allowed to take & of get_pb...
-// can define pointer, but then felix doesn't know the relationship between
-// pointer & pointed to type. what to do?
-type sel_param_ptr = 'sel_param*';
+type sel_param = "flx::demux::sel_param";
+type sel_param_ptr = "flx::demux::sel_param*";
 
 // this is felix coding at its least subtle
 fun to_ptr : sel_param -> sel_param_ptr = '&$1';
@@ -1406,21 +1433,11 @@ proc calc_eof(pb: sel_param_ptr, len: &int, eof: &bool)
 // is actually being used. useful for a few hairy svc/gc interactions
 proc gc_collect_me_not_hack[t]: t = ';';
 
-// thread spawning! go wild!
-
-// this is so much better now that I can pass a curried unit proc () -> ()
-proc spawn_thread(p:1->0)
-{
-    var con = start p;              // get continuation of p
-    var fthr = mk_thread con;
-    svc$ svc_spawn_detached fthr;
-}
-
 // copipe interface.
 
 // copipes are actually implemented as end_point_a <= pipe => end_point_b
 // felix only needs to know about endpoints, which we'll call pipes.
-type copipe = 'copipe_endpt*';
+type copipe = 'flx::faio::copipe_endpt*';
 
 // private calls
 proc connect : copipe*fthread*sel_param*bool
@@ -1432,9 +1449,10 @@ proc priv_delete : copipe = 'delete $1;';
 
 // this is awful but I don't know how to interact with flx ptrs
 // via the c interface. YUK!
-header 'typedef struct{ copipe_endpt* foo[2]; }sorry_awful;';
+//JS: check out C_hack and _ref_ in the rtl
+header 'typedef struct{ flx::faio::copipe_endpt* foo[2]; }sorry_awful;';
 type co_awful = 'sorry_awful';
-proc init_awful_pair : co_awful = 'copipe_endpt::pipe_pair($1.foo);';
+proc init_awful_pair : co_awful = 'flx::faio::copipe_endpt::pipe_pair($1.foo);';
 fun get : co_awful*int -> copipe = '$1.foo[$2]';
 
 proc flx_copipe_pair(p1: &copipe, p2: &copipe)
@@ -1446,8 +1464,9 @@ proc flx_copipe_pair(p1: &copipe, p2: &copipe)
 }
 
 // not for public consumption
+//JS -- then make it private
 // the c++ copipe code figures out what you wanted from the pipe itself.
-proc copipe_driver_request(pipe: copipe)
+private proc copipe_driver_request(pipe: copipe)
 {   
     var request = pipe_request pipe;
     faio_req$ &request;
@@ -1498,13 +1517,17 @@ proc co_write(pipe: copipe, len: &int, buf: address, eof: &bool)
 {   
     co_rw(pipe, len, buf, eof, false);      // read
 }
-
+} // module faio
 
 @h=tangler('lib/flx_faio_posix.flx')
 @select(h)
-include "std";
+#import <flx.flxh>
 // contains posix async socket io & copipes, all wrapped up streams
+
+include "flx_faio";
+module Faio_posix  {
 open C_hack;        // cast, address
+open Faio;
 
 // some random stuff, sorta unixy
 header unistd_h = '#include <unistd.h>';            // close
@@ -1523,16 +1546,14 @@ fun aio_ropen: charp -> int = 'open($1, O_RDONLY | O_NONBLOCK, 0)'
 // blocking, read only
 fun ropen: charp -> int = 'open($1, O_RDONLY, 0)' requires fcntl_h;
 
-// trying to factor out portable driver interaction code
-include "flx_faio";
 
 header = '#include "faio_posixio.hpp"';
 
 // socketio_request should be renamed to be async_fd_request
-ctypes socketio_request;
+type socketio_request = "flx::faio::socketio_request";
 
 fun mk_socketio_request: int*address*int*bool -> socketio_request
-    = 'socketio_request($1, (char*)$2, $3, $4)';
+    = 'flx::faio::socketio_request($1, (char*)$2, $3, $4)';
 
 fun get_pb: socketio_request -> sel_param_ptr = '&$1.sv.pb';
 
@@ -1558,11 +1579,11 @@ proc async_write(fd: int, len: &int, buf: address, eof: &bool)
     async_rw(fd, len, buf, eof, false);     // write
 }
 
-ctypes flxfileio_request;
+type flxfileio_request = "flx::faio::flxfileio_request";
 
 // offset ? let it be for a moment
 fun mk_faio: int*address*int*int*bool -> flxfileio_request
-    = 'flxfileio_request($1, (char*)$2, $3, $4, $5)';
+    = 'flx::faio::flxfileio_request($1, (char*)$2, $3, $4, $5)';
 fun get_pb: flxfileio_request -> sel_param_ptr = '&$1.pb';
 
 proc faio_rw(fd: int, len: &int, buf: address, eof: &bool, read_flag: bool)
@@ -1586,8 +1607,8 @@ proc faio_write(fd: int, len: &int, buf: address, eof: &bool)
 
 // sleep! finally!
 // pod type sleep_request = "sleep_request";
-ctypes sleep_request; 
-fun mk_sleep_request: double -> sleep_request = 'sleep_request($1)';
+type sleep_request = "flx::demux::sleep_request";
+fun mk_sleep_request: double -> sleep_request = 'flx::faio::sleep_request($1)';
 
 proc sleep(delta: double)
 {   
@@ -1596,9 +1617,9 @@ proc sleep(delta: double)
 }
 
 // connect!
-type async_connect = 'connect_request';
+type async_connect = 'flx::faio::connect_request';
 
-fun mk_async_connect: charp*int -> async_connect = 'connect_request($a)';
+fun mk_async_connect: charp*int -> async_connect = 'flx::faio::connect_request($a)';
 fun get_socket: async_connect -> int = '$1.sv.s';
 
 // could do multi connects for capable drivers
@@ -1609,14 +1630,14 @@ proc connect(s: &int, addr: charp, port: int)
     *s = ac.socket;
 }
 
-ctypes accept_request;
+type accept_request = "flx::faio::accept_request";
 
-fun mk_accept: int -> accept_request = 'accept_request($1)';
+fun mk_accept: int -> accept_request = 'flx::faio::accept_request($1)';
 fun get_socket: accept_request -> int = '$1.sv.acceptee';
 
 // arg1 = returned socket, arg2 is port, pass 0 to have one assigned
 proc mk_listener: lvalue[int]*lvalue[int]*int
-    = '$1 = nice_create_listener(&$2, $3);' requires sockety_h;
+    = '$1 = flx::demux::nice_create_listener(&$2, $3);' requires sockety_h;
 
 proc accept(s: &int, listener: int)
 {   
@@ -1638,7 +1659,7 @@ proc accept(s: &int, listener: int)
 // unify the io types
 union flx_stream =          
     | SOCK of int           // socket file descriptors (non blocking)
-    | CO of copipe
+    | CO of Faio::copipe
     | FILEFD of int         // file file descriptors (blocking?)
     | DEVNULL
 ;
@@ -1646,7 +1667,7 @@ union flx_stream =
 // will be ambiguous for file fd, will need name. do I even need these
 // when the conversion is unambiguous?
 fun to_stream (fd: int): flx_stream = { return SOCK fd; }
-fun to_stream (p: copipe): flx_stream = { return CO p; }
+fun to_stream (p: Faio::copipe): flx_stream = { return CO p; }
 fun new_devnull (): flx_stream = { return DEVNULL; }
 fun file_to_stream (fd: int): flx_stream = { return FILEFD fd; }
 
@@ -1699,7 +1720,7 @@ proc flx_popen(ourend: &flx_stream, p:flx_stream->0)
     flx_copipe_pair(&a, &b);
     *ourend = to_stream(a);
     var theirend = to_stream(b);
-    spawn_thread { p theirend; };
+    spawn_fthread { p theirend; };
 }
 
 proc flx_connect(strm: &flx_stream, addr: charp, port: int)
@@ -1710,17 +1731,19 @@ proc flx_connect(strm: &flx_stream, addr: charp, port: int)
     *strm = to_stream s;
 }
 
-
+} // module faio
 
 @h=tangler('lib/flx_faio_win32.flx')
 @select(h)
-include "std";
+#import <flx.flxh>
+include "flx_faio";     // defines copipes & some driver interaction
+
+module Faio_win32 {
 // contains windows overlapped/iocp io & copipes. no stream wrapper yet.
 open C_hack;
-
+open Faio;
 header '#include "faio_winio.hpp"'; // this has everything (includes asyncio.h)
 
-include "flx_faio";     // defines copipes & some driver interaction
 
 ctypes SOCKET;
 
@@ -1739,9 +1762,9 @@ proc mk_socket(s: &SOCKET)
 }
 
 
-ctypes wasync_accept;
+type wasync_accept = "flx::faio::wasync_accept";
 
-fun mk_accept: SOCKET*SOCKET -> wasync_accept = 'wasync_accept($a)';
+fun mk_accept: SOCKET*SOCKET -> wasync_accept = 'flx::faio::wasync_accept($a)';
 // make this a parameterised type
 fun get_success[t]: t -> bool = '$1.success';
 
@@ -1760,8 +1783,8 @@ proc Accept(success: &bool, listener: SOCKET, accepted: SOCKET)
     *success = get_success(acc);
 }
 
-ctypes connect_ex; 
-fun mk_connect_ex: SOCKET*charp*int -> connect_ex = 'connect_ex($a)';
+type connect_ex="flx::faio::connect_ex";
+fun mk_connect_ex: SOCKET*charp*int -> connect_ex = 'flx::faio::connect_ex($a)';
 
 // for use on sockets you make yourself, who knows, maybe you want to
 // reuse them
@@ -1800,7 +1823,8 @@ const SD_BOTH:int = 'SD_BOTH';
 
 proc shutdown: SOCKET*int = 'shutdown($1, $2);';
 
-ctypes wasync_transmit_file;
+type wasync_transmit_file = "flx::faio::wasync_transmit_file";
+
 // I could just use HANDLEs everywhere, but I want to see how this goes
 type WFILE = 'HANDLE';
 
@@ -1818,7 +1842,7 @@ proc OpenFile: lvalue[WFILE]*string =
 proc CloseFile: WFILE = 'CloseHandle($1);';
 
 fun mk_transmit_file : SOCKET*WFILE -> wasync_transmit_file
-    = 'wasync_transmit_file($a)';
+    = 'flx::faio::wasync_transmit_file($a)';
 
 // toylike interface for now, but still fun
 proc TransmitFile(s: SOCKET, f: WFILE)
@@ -1833,7 +1857,7 @@ proc TransmitFile(s: SOCKET, f: WFILE)
 // cannot be reused as the other type (which isn't a problem for my use)
 // however I already have TransmitFile code in place.
 fun mk_reuse_socket : SOCKET -> wasync_transmit_file
-    = 'wasync_transmit_file($a)';
+    = 'flx::faio::wasync_transmit_file($a)';
 
 proc ReuseSocket(s: SOCKET)
 {   
@@ -1841,8 +1865,8 @@ proc ReuseSocket(s: SOCKET)
     faio_req$ &tf;
 }
 
-ctypes wsa_socketio; 
-fun mk_wsa_socketio: SOCKET*address*int*bool->wsa_socketio = 'wsa_socketio($a)';
+types wsa_socketio = "flx::faio::wsa_socketio";
+fun mk_wsa_socketio: SOCKET*address*int*bool->wsa_socketio = 'flx::faio::wsa_socketio($a)';
 fun get_pb[t]: t -> sel_param_ptr = '&$1.pb';
 
 proc WSARecv(s: SOCKET, len: &int, buf: address, eof: &bool)
@@ -1860,8 +1884,9 @@ proc WSASend(s: SOCKET, len: &int, buf: address, eof: &bool)
     calc_eof(rev.pb, len, eof);
 }
 
-ctypes winfile_io; 
-fun mk_winfile_io: WFILE*address*int*bool->winfile_io = 'winfile_io($a)';
+type winfile_io = "flx::faio::winfile_io";
+
+fun mk_winfile_io: WFILE*address*int*bool->winfile_io = 'flx::faio::winfile_io($a)';
 
 // no offset - just for streams now. write probably doesn't work
 
@@ -1883,8 +1908,8 @@ proc WriteFile(f: WFILE, len: &int, buf: address, eof: &bool)
 
 // general request for addition of socket to iocp. might be better to
 // just create them that way.
-ctypes iocp_associator;
-fun mk_iocp_associator: SOCKET -> iocp_associator = 'iocp_associator($1)';
+type iocp_associator = "flx::faio::iocp_associator";
+fun mk_iocp_associator: SOCKET -> iocp_associator = 'flx::faio::iocp_associator($1)';
 
 proc associate_with_iocp(s: SOCKET)
 {
@@ -1893,6 +1918,7 @@ proc associate_with_iocp(s: SOCKET)
     faio_req$ &req;
 }
 
+} // module win32_faio
 
 // this totally sucks, but I wanted to try out the flx_streams on windows
 // unify the io types
@@ -1961,7 +1987,7 @@ proc flx_popen(ourend: &flx_stream, p:flx_stream->0)
     flx_copipe_pair(&a, &b);
     *ourend = to_stream(a);
     var theirend = to_stream(b);
-    spawn_thread { p theirend; };
+    spawn_fthread { p theirend; };
 }
 
 proc flx_connect(strm: &flx_stream, addr: charp, port: int)

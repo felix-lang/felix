@@ -1311,6 +1311,14 @@ module Control
   fun start (p:1->0) = { return _start0 (p); }
 
   fun mk_thread: cont->fthread = "new(*PTF gc,_fthread_ptr_map) flx::rtl::fthread_t($1)";
+
+  proc spawn_fthread(p:1->0)
+  {
+      var con = start p;              // get continuation of p
+      var fthr = mk_thread con;
+      svc$ svc_spawn_detached fthr;
+  }
+
   publish "Resume a continuation until it yields"
   fun step: cont -> cont = "$1->resume()";
   proc kill: fthread = "$1->cc = 0;";

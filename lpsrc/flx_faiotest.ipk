@@ -1,11 +1,13 @@
 @head(1,"Felix Async IO tests")
 @h = tangler("test/posix_t1.flx")
 @select(h)
+#import <flx.flxh>
 include "flx_faio_posix";
+open Faio_posix;
 
 // create a listening socket, spawn a thread to connect to it.
 // in case something goes wrong could make test time out with
-// spawn_thread { { sleep 5.0; System::exit 1; }; };
+// spawn_fthread { { sleep 5.0; System::exit 1; }; };
 print "felix posix accept/connect test\n";
 
 var port = 0;   // let mk_listener choose the port
@@ -15,7 +17,7 @@ var listener: int <- mk_listener(port, 1);
 print "spawning connector\n";
 // not printing in thread to make output repeatable in
 // the face of scheduler changes.
-spawn_thread{ { var c: int; connect(&c, c"127.0.0.1", port); }; };
+spawn_fthread{ { var c: int; connect(&c, c"127.0.0.1", port); }; };
 
 var s: int;
 accept (&s, listener);  // async!
@@ -28,7 +30,9 @@ if s == -1 then {
 
 @h = tangler("test/posix_t2.flx")
 @select(h)
+#import <flx.flxh>
 include "flx_faio_posix";
+open Faio_posix;
 
 header "typedef struct { char dat[8]; } tstbuf;";
 ctypes tstbuf;
@@ -42,7 +46,7 @@ var listener: int <- mk_listener(port, 1);
 
 // not printing in thread to make output repeatable in
 // the face of scheduler changes.
-spawn_thread{
+spawn_fthread{
   {
     var c: int;
     connect(&c, c"127.0.0.1", port);
@@ -70,7 +74,9 @@ async_write(s, &len, get_data((c"thanks!!")), &eof);
 
 @h = tangler("test/win_t1.flx")
 @select(h)
+#import <flx.flxh>
 include "flx_faio_win32";
+open Faio_win32;
 
 var port = 1234;  // can't yet get os to choose the port. should fix that.
 var listener: SOCKET;
@@ -79,7 +85,7 @@ mk_listener(&listener, port, 1);
 print "spawning connector\n";
 // not printing in thread to make output repeatable in
 // the face of scheduler changes.
-spawn_thread{
+spawn_fthread{
   {
     var c: SOCKET;
     Connect(&c, c"127.0.0.1", port);
@@ -102,7 +108,7 @@ if success then {
 
 @h = tangler("test/win_t2.flx")
 @select(h)
-include "std";
+#import <flx.flxh>
 print 1; endl;
 
 @h = tangler("test/posix_t1.expect")
