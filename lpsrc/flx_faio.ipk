@@ -6,6 +6,7 @@ Asynch I/O interface pack.
 @select(h)
 #ifndef __ASYNCIO__
 #define __ASYNCIO__
+#include <flx_rtl_config.hpp>
 
 // this file acts as go-between for my asynchronous interface for felix
 // programmes. 
@@ -15,7 +16,7 @@ Asynch I/O interface pack.
 #include "demux_demuxer.hpp"        // sel_param, demuxer base
 #include "faio_drv.hpp"
     
-class flx_driver_request_base {
+class FLX_RTL_EXTERN flx_driver_request_base {
 public:
     virtual ~flx_driver_request_base() {}       // so destructors work
     // returns finished flag (async may fail or immediately finish)
@@ -23,7 +24,7 @@ public:
 };  
     
 // thread spawning request
-class spawn_request : public flx_driver_request_base {
+class FLX_RTL_EXTERN spawn_request : public flx_driver_request_base {
     // either we've got argc*argv or a real fthread_t
     
     int     argc;
@@ -47,7 +48,7 @@ public:
 // not actually asynchronous as such since the threads are woken synchronously
 // definitely portable. look out for this shared structure when flx threads
 // are run pre-emptively. start_async_op will need to be serialised.
-class async_copipe : public flx_driver_request_base {
+class FLX_RTL_EXTERN async_copipe : public flx_driver_request_base {
 public:
     enum { WINDWARD, LEEWARD, NUM_CHANNELS };
     
@@ -76,7 +77,7 @@ private:
     async_copipe();                     // to control alloc/dealloc
 };
 
-class copipe_endpt {
+class FLX_RTL_EXTERN copipe_endpt {
     int             read_channel;       // the channel this endpt reads on
     
     copipe_endpt(async_copipe* p, int rchan) : 
@@ -311,11 +312,12 @@ copipe_endpt::shutdown(int how)
 @select(h)
 #ifndef __FLXDRV__
 #define __FLXDRV__
+#include <flx_rtl_config.hpp>
 
 #include "demux_sleep_queue.hpp"
 #include "demux_demuxer.hpp"
 
-class flx_drv {
+class FLX_RTL_EXTERN flx_drv {
     sleep_queue&    ready_queue;
     // event source here?
 public:
@@ -351,11 +353,15 @@ flx_drv::sched(void* f)
 
 @h=tangler('faio/faio_pdrv.hpp')
 @select(h)
+#ifndef __FAIO_PDRV__
+#define __FAIO_PDRV__
+
+#include <flx_rtl_config.hpp>
 #include "demux_pfileio.hpp"
 #include "demux_sleep_task.hpp"
 #include "faio_drv.hpp"
 
-class pflx_drv : public flx_drv {
+class FLX_RTL_EXTERN pflx_drv : public flx_drv {
     // this will be called asynchronously, so better be careful
 //  pasync_fileio*  file_aio_worker;
     // make it direct so we don't have to protect the code that would
@@ -372,6 +378,7 @@ public:
     bool debug;
     void set_debug(bool d) { debug = d; }
 };
+#endif
 
 @h=tangler('faio/faio_pdrv.cpp')
 @select(h)
@@ -402,6 +409,10 @@ pflx_drv::pflx_drv(sleep_queue& q)
 
 @h=tangler('faio/faio_posixio.hpp')
 @select(h)
+#ifndef __FAIO_POSIXIO__
+#define __FAIO_POSIXIO__
+#include <flx_rtl_config.hpp>
+
 #include "faio_asyncio.hpp"
 #include "faio_drv.hpp" 
 
@@ -420,7 +431,7 @@ pflx_drv::pflx_drv(sleep_queue& q)
 
 // this becomes socket thread wakeup. um. 
 // class thread_wakeup : public socket_wakeup {
-class thread_wakeup {
+class FLX_RTL_EXTERN thread_wakeup {
 public:
     void wake() { drv->sched(f); }
 
@@ -429,7 +440,7 @@ public:
 };
 
     
-class socketio_wakeup : public socket_wakeup {
+class FLX_RTL_EXTERN socketio_wakeup : public socket_wakeup {
 public:
     sel_param       pb;         // in: what you want, out: what you get
     thread_wakeup   fw; 
@@ -442,7 +453,7 @@ public:
 // files & pipes. NICE. the fact that the socket is now in here may mean
 // I can get rid of the epoll hack
 // Not sure if this can be used for file fds.
-class socketio_request : public flx_driver_request_base {
+class FLX_RTL_EXTERN socketio_request : public flx_driver_request_base {
 public:
     socketio_wakeup sv;
     
@@ -453,14 +464,14 @@ public:
 };
 
 // move wakeup to thread_wakeup and get rid of class altogether
-class connect_wakeup : public socketio_wakeup {
+class FLX_RTL_EXTERN connect_wakeup : public socketio_wakeup {
 public:
     int     socket_err;     // the error, if s == -1
     virtual void wakeup(posix_demuxer& demux);
 };
 
 
-class connect_request : public flx_driver_request_base {
+class FLX_RTL_EXTERN connect_request : public flx_driver_request_base {
     const char*     addy;
     int             p;
 public:
@@ -472,14 +483,14 @@ public:
     virtual bool start_async_op(demuxer& demux, flx_drv* drv,  void* f);
 };
 
-class accept_wakeup : public socketio_wakeup {
+class FLX_RTL_EXTERN accept_wakeup : public socketio_wakeup {
 public:
     int     acceptee;       // listener socket
     int     socket_err;     // the error, if acceptee == -1
     virtual void wakeup(posix_demuxer& demux);
 };
 
-class accept_request : public flx_driver_request_base {
+class FLX_RTL_EXTERN accept_request : public flx_driver_request_base {
 public:
     // we sometimes know that there'll be several connections to accept.
     // this'll need a different wakeup - and a different interface between
@@ -496,7 +507,7 @@ public:
 
 // separate pthread file io
 // hum. multiple inheritance
-class flxfileio_request
+class FLX_RTL_EXTERN flxfileio_request
     : public flx_driver_request_base, public fileio_request
 {
     thread_wakeup   fw;
@@ -514,7 +525,7 @@ public:
 };
 
 // sleeping
-class sleep_request
+class FLX_RTL_EXTERN sleep_request
     : public flx_driver_request_base, public sleep_task
 {
     thread_wakeup   fw;
@@ -531,6 +542,7 @@ public:
     virtual void fire();
 };
 
+#endif
 
 @h=tangler('faio/faio_posixio.cpp')
 @select(h)
@@ -775,6 +787,7 @@ sleep_request::fire()
 @select(h)
 #ifndef __DWINIO__
 #define __DWINIO__
+#include <flx_rtl_config.hpp>
 
 //#define WINVER 0x0501
 //#include <Windows.h>
@@ -793,7 +806,7 @@ sleep_request::fire()
         
 // a flx driver request to the add socket s to the drivers iocp
 // this is currently the only windows driver request that uses the demuxer.
-class iocp_associator : public flx_driver_request_base {
+class FLX_RTL_EXTERN iocp_associator : public flx_driver_request_base {
     SOCKET  s;
 public:
     // should have result & errcode
@@ -804,7 +817,7 @@ public:
 };  
     
 // flx <-> c++ stuff for async io (well, it was)
-class waio_base : public flx_driver_request_base, public iocp_wakeup {
+class FLX_RTL_EXTERN waio_base : public flx_driver_request_base, public iocp_wakeup {
 protected:
     // these three should provide enough info to wake a thread
     void*       f;                      // give this a better name
@@ -824,7 +837,7 @@ public:
 // listener socket must be already associated with an IOCP
 // in doing an AcceptEx, it might succeed immediately - do you still
 // get the IOCP wakeup?
-class wasync_accept : public waio_base {
+class FLX_RTL_EXTERN wasync_accept : public waio_base {
     enum { ACCEPTEX_ADDR_SIZE = sizeof(SOCKADDR_IN) + 16 };
     
     SOCKET  listener, acceptor;
@@ -839,7 +852,7 @@ public:
         : listener(l), acceptor(a) { }
 };
 
-class connect_ex : public waio_base
+class FLX_RTL_EXTERN connect_ex : public waio_base
 {   
     SOCKET      s;                  // previously unbound socket
     // can have buffer to be sent on connection
@@ -855,7 +868,7 @@ public:
 };
 
 // TransmitFile here (requires file handle)
-class wasync_transmit_file : public waio_base {
+class FLX_RTL_EXTERN wasync_transmit_file : public waio_base {
     SOCKET  s;
     HANDLE  file;
     DWORD   flags;                              // for possible socket reuse.
@@ -872,7 +885,7 @@ public:
 };
 
 // handles both WSASend & WSARecv
-class wsa_socketio : public waio_base {
+class FLX_RTL_EXTERN wsa_socketio : public waio_base {
     enum { NUM_WBUFS = 1 }; // just one for now, but can do scattered send/recvs
     WSABUF      wbufs[NUM_WBUFS];
     SOCKET      s;
@@ -889,7 +902,7 @@ public:
 };
 
 // looks a bit like wsa_socketio (bad name, sends too)
-class winfile_io : public waio_base {
+class FLX_RTL_EXTERN winfile_io : public waio_base {
     HANDLE      file;
     bool        reading;
 public:
@@ -1514,6 +1527,7 @@ proc co_write(pipe: copipe, len: &int, buf: address, eof: &bool)
 
 @h=tangler('lib/flx_faio_posix.flx')
 @select(h)
+include "std";
 // contains posix async socket io & copipes, all wrapped up streams
 open C_hack;        // cast, address
 
@@ -1730,6 +1744,7 @@ proc flx_connect(strm: &flx_stream, addr: charp, port: int)
 
 @h=tangler('lib/flx_faio_win32.flx')
 @select(h)
+include "std";
 // contains windows overlapped/iocp io & copipes. no stream wrapper yet.
 open C_hack;
 
