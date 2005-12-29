@@ -113,6 +113,7 @@ protected:            // folks need to use these in win 32 calls
   void clear_overlapped();  // zero the OVERLAPPED structure
 public:
   // 2 possibilities for piggybacking data. who could ask for more?
+  // udat = per iocp association, olp = per overlapped function call.
   // why don't I need this in the posix version?
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err) = 0;
@@ -135,9 +136,13 @@ public:
   iocp_demuxer();
   virtual ~iocp_demuxer();
 
-  // udat is a spare user cookie - probably not used very often
+  // udat is the per IOCP object user cookie & the overlapped pointer
+  // is the per overlapped operation cookie (sort of), so in the case
+  // of acceptex, udat is set when the listener is associated with the
+  // iocp and is passed to the subsequent acceptex iocp wakeups.
+  // probably won't be used very often
   // the OVERLAPPED retrieved from the iocp is assumed to be part of
-  // an iocp_wakeup - beware!
+  // an iocp_wakeup - beware! returns 0 on success, -1 on failure.
   int associate_with_iocp(HANDLE obj, ULONG_PTR udat);
 };
 
@@ -464,7 +469,7 @@ class FLX_RTL_EXTERN sleep_task_queue
 
   pthread_cond_t  sleep_cond;     // this could be cool.
   int setup_sleep_cond();
-  void takedown_sleep_cond();
+  void takedown_sleep_cond();     // deallocate the condition
 
   void wakeup_thread();       // we can do this!
 public:
@@ -509,6 +514,8 @@ public:
 // make this into a general work queue
 class FLX_RTL_EXTERN worker_fifo
 {
+  // this thread is destructed very carefully to make sure that all
+  // the objects in this class outlive its execution.
   apthread  io_thread;
   
   static void* thread_start(void*); // io thread entry point, passed this
@@ -518,8 +525,14 @@ class FLX_RTL_EXTERN worker_fifo
   posix_queue fifo;         // reentrant fifo!
 public:
   worker_fifo();
+  ~worker_fifo();
 
   void add_worker_task(worker_task* task);  // re-entrant?
+
+  // those deriving from this class might like to stop the
+  // thread in their destructors, so that their objects used
+  // by the worker thread can outlive it
+  void stop_worker_thread();
 };
 
 #endif  // __WORKER_FIFO__
@@ -889,7 +902,7 @@ evtport_demuxer::thread_loop_body()
 #include "demux_iocp_demuxer.hpp"
 
 #include <stdio.h>      // for printf debugging
-#include <stddef.h>
+#include <stddef.h>     // offsetof
 
 // this could really do with auto objs. steal the strat stuff?
 
@@ -1036,6 +1049,7 @@ iocp_demuxer::worker_thread_stub(LPVOID lParam) {
   }
   return 0;   // I think this means good.
 }
+
 
 void
 iocp_demuxer::worker_thread_body() {
@@ -1323,6 +1337,8 @@ create_listener_socket(int port, int backlog)
   SOCKET        listener = INVALID_SOCKET;
 
   // could use WSASocket, but these seem to be turning out overlapped anyway
+  // at least after tangling with overlapped functions.
+  // socket returns INVALID_SOCKET on failure.
   listener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
   if (INVALID_SOCKET == listener)
@@ -1406,7 +1422,6 @@ blah()
 
 @h=tangler('demux/demux_kqueue_demuxer.cpp')
 @select(h)
-
 // kqueue demuxer for bsd/os x
 // N.B. calling close on a file descriptor will remove any kevents that
 // reference that descriptor. that would explain remove complaining from
@@ -2073,10 +2088,12 @@ void
 select_demuxer::thread_loop_body()
 {
   // make a copy that select can modify
+// race condition - master_*_set modified under lock
   fd_set      read_set = master_read_set;
   fd_set      write_set = master_write_set;
   
-  // this is depending on my fake socket to wakeup. perhaps use the timer for now.
+  // this is depending on my fake socket to wakeup. perhaps use the timer
+  // for now.
   // timing out every 100th of a second. seems reasonable.
   struct timeval  tv;
   tv.tv_sec = 0;
@@ -2086,9 +2103,10 @@ select_demuxer::thread_loop_body()
   // sometimes I have to try again, or weed out bad fds.
   if(select(fdmax+1, &read_set, &write_set, NULL, &tv) == -1)
   {
-    // not the ideal reaction. I think this is where I weed out the bad socket(s).
+    // not the ideal reaction. I think this is where I weed out
+    // the bad socket(s). would need error set.
     perror("select");
-    exit(1);
+    exit(1);      // that's not a nice thing for a library to do.
   }
 
   // about to read and write master_set and pending reads.
@@ -2097,7 +2115,7 @@ select_demuxer::thread_loop_body()
   // that I have to use a recursive lock to protect my member vars
   pmut_locker     l(ham_fist);
 
-  // might be worth keeping a lowwater mark as well.
+  // might be worth keeping a low water mark as well.
   // I guess this is why select sucks. On osx we can only watch
   // about 1024 sockets. That sucks too.
   for(int i = 0; i <= fdmax; i++)
@@ -2125,6 +2143,10 @@ select_demuxer::thread_loop_body()
 int
 select_demuxer::add_socket_wakeup(socket_wakeup* sv, bool read)
 {
+// This isn't right: there are race conditions with the select thread
+// and the new socket isn't selected until select times out
+// (currently 1/100 of a second). This could explain the poor performance
+// seen when using this demuxer.
   int s = sv->s;
 
   if(s < 0 || s >= FD_SETSIZE) return -1;   // weakness of select
@@ -2144,6 +2166,7 @@ select_demuxer::add_socket_wakeup(socket_wakeup* sv, bool read)
     write_svs[s] = sv;
   }
 
+// fdmax used without locking in select thread
   if(s > fdmax) fdmax = s;          // update highwater mark
 
   return 0;
@@ -2462,6 +2485,36 @@ worker_fifo::worker_fifo()
 #endif
 }
 
+// local to this file only, don't export!
+// this is a hack to wake the work thread when it has an
+// empty queue. what we really need is a timeout and
+// no pthread style implicit cancel functions
+class dummy_task : public worker_task {
+public:
+  void doit() { /* nothing */ }
+  void finished() { /* nothing */ }
+};
+
+// stopping the worker thread turns out to be trickier than it sounds
+// because it's hard to wake up on an empty queue. 
+void
+worker_fifo::stop_worker_thread()
+{
+  io_thread.cancel();   // set cancel flag
+  dummy_task  dt;     // for waking up on possibly empty work queue
+  add_worker_task(&dt); // now that the thread can know it's cancelled
+  io_thread.deinit();   // wait for it.
+}
+
+worker_fifo::~worker_fifo()
+{
+  // the thread must be brought down before the objects it
+  // uses are destructed. lets hope anyone deriving from this
+  // class knows that and let them call this function in their
+  // destructor.
+  stop_worker_thread();
+}
+
 // io thread entry point, passed this
 void*
 worker_fifo::thread_start(void* udat)
@@ -2480,6 +2533,12 @@ worker_fifo::thread_start(void* udat)
 void
 worker_fifo::thread_loop_body()
 {
+  // this infinite sleep is no good because we have no way
+  // of bringing down thread - pthread_cancel is not that
+  // reliable as there seems to be race conditions with its
+  // use (depends on impl: seems only to work reliably on
+  // entry to a cancelable function. In any case, it's a
+  // bad way and something to avoid).
   worker_task*  req = (worker_task*)fifo.dequeue();
   // fprintf(stderr,"dequeued worker_task (%p)\n", req);
   req->doit();
@@ -2613,6 +2672,7 @@ nice_accept(int listener)
   return newfd;
 }
 
+// returns -1 with err in errno on failure
 static int
 connect_sock(int s, const char* addr, int port)
 {
