@@ -89,7 +89,7 @@ public:
 
 // not here? returns INVALID_SOCKET on failure (unlike posix version,
 // this doesn't let the os choose the port - make it so).
-SOCKET create_listener_socket(int port, int backlog);
+SOCKET FLX_RTL_EXTERN create_listener_socket(int port, int backlog);
 
 
 // this thing isn't actually being used by the iocp code. it should be.
@@ -1316,7 +1316,7 @@ win_queue::dequeue()
 
 // simple utility fn, shouldn't be here. creates listener on any interface.
 // this could benifit from a SOCKET class. in failure returns INVALID_SOCKET
-SOCKET
+SOCKET FLX_RTL_EXTERN
 create_listener_socket(int port, int backlog)
 {
   fprintf(stderr,"creating_listener_socket\n");

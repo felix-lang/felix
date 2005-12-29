@@ -1863,7 +1863,7 @@ fun mk_winfile_io: WFILE*address*int*bool->winfile_io = 'winfile_io($a)';
 proc ReadFile(f: WFILE, len: &int, buf: address, eof: &bool)
 {   
     var io = mk_winfile_io(f, buf, *len, true); // reading
-    faio_req &io;
+    faio_req$ &io;
 // we do have a success flag
     calc_eof(io.pb, len, eof);
 }
