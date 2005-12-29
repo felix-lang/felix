@@ -1737,7 +1737,12 @@ int main(int argc, char** argv)
 
                 flx_driver_request_base*        async;
 
-                async = *(flx_driver_request_base**)(request->data);
+                // OLD INTERFACE USED A pointer to the request object
+                //async = *(flx_driver_request_base**)(request->data);
+
+                // NEW INTERFACE USES A _ref_ instead of an address
+                async = (flx_driver_request_base*)
+                  ((_ref_*)(request->data))->get_data();
                 
                 // start async op, with demuxer to track progress. if async
                 // somehow finished immediately, make thread ready
@@ -1749,8 +1754,10 @@ int main(int argc, char** argv)
                     // ready_queue.enqueue(ftx);     // add to run queue
                     // this used to be added back to the rf driver thread safe active queue
                     // not that this is the synchronous active queue. shouldn't be a problem.
-                    active.push_back(ft);           // add to run queue
-                    goto process_active;
+
+                    // dropping thru is equivalent to:
+                    //active.push_back(ft);           // add to run queue
+                    //goto process_active;
                 }
                 else
                 {   

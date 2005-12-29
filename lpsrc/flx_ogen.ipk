@@ -497,6 +497,9 @@ let gen_offset_tables syms (child_map,bbdfns) =
       bcat s ("\n//OFFSETS for tuple type " ^ si index ^ "\n");
       gen_offset_data s n name offsets false [] None
 
+    (* This is just a _ref_, the offset data is in the system library *)
+    | `BTYP_pointer t -> ()
+    
     (* for an array, we only have offsets for the first element *)
     | `BTYP_array (t,i) ->
       let k = 

@@ -513,6 +513,10 @@ public:
 #include "faio_posixio.hpp"
 #include "demux_sockety.hpp"    // async_connect
 
+// pthread async file io stuff
+#include "faio_pdrv.hpp"
+
+
 #include <sys/types.h>  // getsockopt & co
 #include <sys/socket.h>
 
@@ -690,9 +694,6 @@ accept_wakeup::wakeup(posix_demuxer& demux)
     // drv->sched(f);
     fw.wake();
 }
-
-// pthread async file io stuff
-#include "faio_pdrv.hpp"
 
 // from driver request
 bool
@@ -1329,6 +1330,17 @@ winfile_io::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 @select(h)
 include "std";
 
+proc faio_req[t](x:&t) {
+  // svc_general takes an arbitrary machine
+  // address as an argument: the _ref_ denotes
+  // that address. It does NOT point to an 'address'
+  // but to an faio request .. however the svc doesn't
+  // know the type of such requests objects .. so we use
+  // the type 'address' as a convenient dummy
+  val y : &address = reinterpret[&address] x;
+  svc (svc_general y);
+}
+
 // Faio library bindings
 // this file should be portable. it currently defines only a few simple
 // driver interactions and copipes. no stream wrappers in here.
@@ -1394,9 +1406,6 @@ proc spawn_thread(p:1->0)
     var con = start p;              // get continuation of p
     var fthr = mk_thread con;
     svc$ svc_spawn_detached fthr;
-    // thread frame orphaned before svc call returns! a driver could
-    // garbage collect before doing processing the svc!
-    gc_collect_me_not_hack fthr;
 }
 
 // copipe interface.
@@ -1432,7 +1441,8 @@ proc flx_copipe_pair(p1: &copipe, p2: &copipe)
 // the c++ copipe code figures out what you wanted from the pipe itself.
 proc copipe_driver_request(pipe: copipe)
 {   
-    svc (svc_general (pipe_request pipe) );
+    var request = pipe_request pipe;
+    faio_req$ &request;
 }
 
 proc co_rw(pipe: copipe, len: &int, buf: address, eof: &bool, read_flag: bool)
@@ -1524,7 +1534,7 @@ proc async_rw(fd: int, len: &int, buf: address, eof: &bool, read_flag: bool)
     var asyncb = mk_socketio_request(fd, buf, *len, read_flag);
 
     // magic! (break to driver, wake up when it's all over)
-    svc (svc_general (address_of asyncb) );
+    faio_req$ &asyncb;
 
     calc_eof(asyncb.pb, len, eof);
 }
@@ -1551,7 +1561,7 @@ proc faio_rw(fd: int, len: &int, buf: address, eof: &bool, read_flag: bool)
 {   
     // constant offset for now, rushing to get this in flx_stream
     var faio = mk_faio(fd, buf, *len, 0, read_flag);
-    svc (svc_general (address_of faio) );
+    faio_req$ &faio;
     calc_eof(faio.pb, len, eof);
 }
 
@@ -1574,8 +1584,7 @@ fun mk_sleep_request: double -> sleep_request = 'sleep_request($1)';
 proc sleep(delta: double)
 {   
     var sr = mk_sleep_request delta; 
-    svc (svc_general (address_of sr) );
-    gc_collect_me_not_hack sr;     // don't get collected before svc returns!
+    faio_req$ &sr;
 }
 
 // connect!
@@ -1588,7 +1597,7 @@ fun get_socket: async_connect -> int = '$1.sv.s';
 proc connect(s: &int, addr: charp, port: int)
 {   
     var ac = mk_async_connect(addr, port);
-    svc (svc_general (address_of ac) );
+    faio_req$ &ac;
     *s = ac.socket;
 }
 
@@ -1604,7 +1613,7 @@ proc mk_listener: lvalue[int]*lvalue[int]*int
 proc accept(s: &int, listener: int)
 {   
     var acc = mk_accept listener ;
-    svc (svc_general (address_of acc) );
+    faio_req$ &acc;
     *s = acc.socket;
 }
 
@@ -1738,7 +1747,7 @@ proc Accept(success: &bool, listener: SOCKET, accepted: SOCKET)
 {
     var acc = mk_accept(listener, accepted);
 
-    svc (svc_general (address_of(acc)));    // causes AcceptEx to be called
+    faio_req$ &acc;    // causes AcceptEx to be called
 
     *success = get_success(acc);
 }
@@ -1751,7 +1760,7 @@ fun mk_connect_ex: SOCKET*charp*int -> connect_ex = 'connect_ex($a)';
 proc Connect(success: &bool, s: SOCKET, addr: charp, port: int)
 {   
     var con = mk_connect_ex(s, addr, port);  
-     svc (svc_general (address_of(con)));    // causes ConnectEx to be called
+     faio_req$ &con;    // causes ConnectEx to be called
     *success = get_success(con);
 }
 
@@ -1807,7 +1816,7 @@ fun mk_transmit_file : SOCKET*WFILE -> wasync_transmit_file
 proc TransmitFile(s: SOCKET, f: WFILE)
 {   
     var tf = mk_transmit_file(s, f); 
-    svc( svc_general (address_of(tf) ) );
+    faio_req$ &tf;
 }
 
 // by passing special flags to TransmitFile we can transform a connected
@@ -1821,7 +1830,7 @@ fun mk_reuse_socket : SOCKET -> wasync_transmit_file
 proc ReuseSocket(s: SOCKET)
 {   
     var tf = mk_reuse_socket(s);
-    svc( svc_general (address_of(tf) ) );
+    faio_req$ &tf;
 }
 
 ctypes wsa_socketio; 
@@ -1831,7 +1840,7 @@ fun get_pb[t]: t -> sel_param_ptr = '&$1.pb';
 proc WSARecv(s: SOCKET, len: &int, buf: address, eof: &bool)
 {   
     var rev = mk_wsa_socketio(s, buf, *len, true);  // reading
-    svc( svc_general (address_of(rev) ) );
+    faio_req$ &rev;
 // we do have a success flag
     calc_eof(rev.pb, len, eof);
 }
@@ -1839,7 +1848,7 @@ proc WSARecv(s: SOCKET, len: &int, buf: address, eof: &bool)
 proc WSASend(s: SOCKET, len: &int, buf: address, eof: &bool)
 {   
     var rev = mk_wsa_socketio(s, buf, *len, false); // writing
-    svc( svc_general (address_of(rev) ) );
+    faio_req$ &rev;
     calc_eof(rev.pb, len, eof);
 }
 
@@ -1851,7 +1860,7 @@ fun mk_winfile_io: WFILE*address*int*bool->winfile_io = 'winfile_io($a)';
 proc ReadFile(f: WFILE, len: &int, buf: address, eof: &bool)
 {   
     var io = mk_winfile_io(f, buf, *len, true); // reading
-    svc( svc_general (address_of(io) ) );
+    faio_req &io;
 // we do have a success flag
     calc_eof(io.pb, len, eof);
 }
@@ -1859,7 +1868,7 @@ proc ReadFile(f: WFILE, len: &int, buf: address, eof: &bool)
 proc WriteFile(f: WFILE, len: &int, buf: address, eof: &bool)
 {
     var io = mk_winfile_io(f, buf, *len, false);    // writing
-    svc( svc_general (address_of(io) ) );
+    faio_req$ &io;
     calc_eof(io.pb, len, eof);
 }
 
@@ -1873,7 +1882,7 @@ proc associate_with_iocp(s: SOCKET)
 {
     // results? err code?
     var req = mk_iocp_associator(s);
-    svc( svc_general (address_of(req) ) );
+    faio_req$ &req;
 }
 
 

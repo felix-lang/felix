@@ -1242,7 +1242,7 @@ module Control
   /*0*/ | svc_yield                          
   /*1*/ | svc_get_fthread         of ptr[fthread] 
   /*2*/ | svc_read                of address              
-  /*3*/ | svc_general             of address          
+  /*3*/ | svc_general             of &address          
   /*4*/ | svc_map_driver_requests of ptr[driver_request_table_t]
   /*5*/ | svc_driver_request      of int * address
   /*6*/ | svc_spawn_detached      of fthread
