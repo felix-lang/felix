@@ -277,11 +277,28 @@ include "std";
   string_literal statement =># _2;
 #
   
+@h=tangler('lib/flx_platform.flxh','data')
+@select(h)
+@plats = ["WIN32","POSIX","LINUX","MACOSX","CYGWIN","SOLARIS","BSD"]
+@for i in plats:
+  if(eval(i)==1):
+    tangle("#define " + i)
+
+macro val true = case 2 of 2;
+macro val false = case 1 of 2;
+
+@for i in plats:
+  x = eval(i)
+  if x == 1: y = "true"
+  else: y = "false" 
+  tangle("macro val " + i + " = " + y + ";")
+
 @h=tangler('lib/std.flx','data')
 @# use data tangler to prevent line number generation
 @select(h)
 #import <flx_syntax.flxh>
 #import <flx_categories.flxh>
+#import <flx_platform.flxh>
 
 header '#include "flx_rtl_config.hpp"';
 
