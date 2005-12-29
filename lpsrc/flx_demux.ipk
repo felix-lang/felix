@@ -1364,7 +1364,7 @@ create_listener_socket(int port, int backlog)
   return listener;
 }
 
-
+/*
 // testing out some timer stuff
 static VOID CALLBACK
 timer_proc(
@@ -1376,7 +1376,6 @@ timer_proc(
   fprintf(stderr,"timerproc callback! udat: %p\n", udat);
 }
 
-/*
 static void
 blah()
 {

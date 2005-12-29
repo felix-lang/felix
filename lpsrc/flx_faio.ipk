@@ -23,28 +23,6 @@ public:
     virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f) = 0;
 };  
     
-// thread spawning request
-class FLX_RTL_EXTERN spawn_request : public flx_driver_request_base {
-    // either we've got argc*argv or a real fthread_t
-    
-    int     argc;
-    char**  argv;           // private ptr or continuation. see bool
-    
-    void*   fthr;
-    // could return a success flag. beh.
-public:             
-    spawn_request() {}          // nuthin, flx linkage
-
-    // this doesn't need to be copied - could just be set by creating
-    // the fthread_t directly. could be done by stdlib
-    spawn_request(int iargc, char** iargv) : argc(iargc),
-            argv(iargv), fthr(0) {}                 // spawn this thing
-    spawn_request(void* f) : fthr(f)  {}        // sched this thread
-
-    virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* caller);
-};
-
-
 // not actually asynchronous as such since the threads are woken synchronously
 // definitely portable. look out for this shared structure when flx threads
 // are run pre-emptively. start_async_op will need to be serialised.
@@ -104,22 +82,6 @@ public:
 #include "faio_asyncio.hpp"
 #include <string.h>     // memmove
 #include <stdio.h>      // debugging
-
-
-// thread spawning. finally.
-bool
-spawn_request::start_async_op(demuxer& demux, flx_drv* drv, void* caller)
-{
-printf("THIS IS THE OLD DRIVER\'S METHOD FOR SPAWNING - USE THE OTHER ONE\n");
-#if 0
-    if(fthr)                                // already got an fthread_t
-        drv->sched_and_root(fthr);          // sched it (make a gc root)
-    else
-        drv->new_thread(argc, argv);
-#endif
-    return true;        // wake caller.
-}
-
 
 // cooperative pipes
 
@@ -317,9 +279,11 @@ copipe_endpt::shutdown(int how)
 #include "demux_sleep_queue.hpp"
 #include "demux_demuxer.hpp"
 
+// vestigal driver class is all that remains of the embedded driver from
+// which faio came. all it is now is a pointer to a queue. 
+// watch this space.
 class FLX_RTL_EXTERN flx_drv {
     sleep_queue&    ready_queue;
-    // event source here?
 public:
     flx_drv(sleep_queue& q);
     virtual ~flx_drv();
@@ -361,6 +325,7 @@ flx_drv::sched(void* f)
 #include "demux_sleep_task.hpp"
 #include "faio_drv.hpp"
 
+// same as flx_drv, but with an async file io worker fifo.
 class FLX_RTL_EXTERN pflx_drv : public flx_drv {
     // this will be called asynchronously, so better be careful
 //  pasync_fileio*  file_aio_worker;
@@ -369,9 +334,7 @@ class FLX_RTL_EXTERN pflx_drv : public flx_drv {
     pasync_fileio       file_aio_worker;
     sleep_task_queue    sleepers;
 public:
-    // pflx_drv(sleep_queue& q) : flx_drv(q) {}
     pflx_drv(sleep_queue& q);
-//  virtual ~pflx_drv();
 
     pasync_fileio* get_aio_worker() { return &file_aio_worker; }
     sleep_task_queue* get_sleepers() { return &sleepers; }
@@ -789,9 +752,6 @@ sleep_request::fire()
 #define __DWINIO__
 #include <flx_rtl_config.hpp>
 
-//#define WINVER 0x0501
-//#include <Windows.h>
-//#include <WinSock.h>
 // visual studio is quite sensitve about how you do these includes.
 // THIS is the way (WinSock2.h must include Windows.h).
 #include <WinSock2.h>
@@ -1067,7 +1027,7 @@ connect_ex::start_async_op(demuxer& demux, flx_drv* drv, void* f)
     WAIO_START_INIT;            // records enough info for wakeup
     clear_overlapped();
     
-    DWORD   bytes_sent;
+    DWORD   bytes_sent = 0;     // we're not sending data on connect (yet)
     BOOL    success;
     
     LPFN_CONNECTEX  pfConnectEx;
@@ -1422,24 +1382,21 @@ proc calc_eof(pb: sel_param_ptr, len: &int, eof: &bool)
     *len = bytes_done;
 }
 
+// this is a no-op hack to make it look like the argument t
+// is actually being used. useful for a few hairy svc/gc interactions
+proc gc_collect_me_not_hack[t]: t = ';';
 
 // thread spawning! go wild!
-ctypes spawn_request;
-
-fun mk_spawn_request : fthread -> spawn_request = 'spawn_request((void*)$1)';
 
 // this is so much better now that I can pass a curried unit proc () -> ()
 proc spawn_thread(p:1->0)
 {
     var con = start p;              // get continuation of p
-    // and from it make an fthread - it is VERY important to store this
-    // in a variable and not just make it an argument as otherwise
-    // it could be garbage collected before it gets added as a root
-    // and scheduled. this probably means it should be added as a root
-    // here.
     var fthr = mk_thread con;
-    var request = mk_spawn_request fthr;
-    svc (svc_general (address_of( request )) );
+    svc$ svc_spawn_detached fthr;
+    // thread frame orphaned before svc call returns! a driver could
+    // garbage collect before doing processing the svc!
+    gc_collect_me_not_hack fthr;
 }
 
 // copipe interface.
@@ -1614,15 +1571,11 @@ proc faio_write(fd: int, len: &int, buf: address, eof: &bool)
 ctypes sleep_request; 
 fun mk_sleep_request: double -> sleep_request = 'sleep_request($1)';
 
-// this is a no-op hack to make it look like the argument t
-// is actually being used.
-proc gc_hack[t]: t = ';';
-
 proc sleep(delta: double)
 {   
     var sr = mk_sleep_request delta; 
     svc (svc_general (address_of sr) );
-    gc_hack sr;     // don't get collected before svc returns!
+    gc_collect_me_not_hack sr;     // don't get collected before svc returns!
 }
 
 // connect!

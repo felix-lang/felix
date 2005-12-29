@@ -1520,6 +1520,10 @@ shared library name are not passed.
 #ifdef _WIN32
 #include "demux_iocp_demuxer.hpp"
 #include "faio_drv.hpp"
+#elif defined(MACOSX)
+#include "demux_posix_queue.hpp"
+#include "demux_kqueue_demuxer.hpp"
+#include "faio_pdrv.hpp"
 #else
 #include "demux_posix_queue.hpp"
 #include "demux_select_demuxer.hpp"
@@ -1661,6 +1665,10 @@ int main(int argc, char** argv)
     win_queue async_active;
     iocp_demuxer demux;
     flx_drv driver(async_active);
+#elif defined(MACOSX)
+    posix_queue async_active;
+    kqueue_demuxer demux;
+    pflx_drv driver(async_active);
 #else
     posix_queue async_active;
     select_demuxer demux;
@@ -1737,7 +1745,7 @@ int main(int argc, char** argv)
                 // a race condition. get rid of it and be more explicit.
                 if(async->start_async_op(demux, &driver, ft))
                 {
-                    printf("wow - async finished immediately (%p)\n", ft);
+                    // printf("wow - async finished immediately (%p)\n", ft);
                     // ready_queue.enqueue(ftx);     // add to run queue
                     // this used to be added back to the rf driver thread safe active queue
                     // not that this is the synchronous active queue. shouldn't be a problem.
@@ -1748,7 +1756,7 @@ int main(int argc, char** argv)
                 {   
                     // otherwise, let's hope there's something or someone out
                     // there to wake this thread up
-                    printf("request did not want thread woken (%p)\n", ft);
+                    // printf("request did not want thread woken (%p)\n", ft);
                     // DO NOT ADD BACK - will be (hopefully) added back to async_active
                     // at some later date.
                     goto process_active;

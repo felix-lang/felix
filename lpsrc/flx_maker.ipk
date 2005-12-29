@@ -5,6 +5,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.191  2005/12/29 02:10:41  rfistman
+now using flx_run thread spawn, fixed uninited variable, trying kqueue
+event source on the mac.
+
 Revision 1.190  2005/12/28 07:32:54  skaller
 Add skeleton for async I/O tests.
 
@@ -2662,6 +2666,7 @@ DEMUXRTL_INTERFACES = [
  'demux_pfileio.hpp',       # posix
  'demux_select_demuxer.hpp',# posix
  'demux_iocp_demuxer.hpp',  # win32 (monolithic)
+ 'demux_kqueue_demuxer.hpp',# osx/bsd
  'demux_mutexlite.hpp',     # posix
  'demux_sockety.hpp',       # posix
 ]
