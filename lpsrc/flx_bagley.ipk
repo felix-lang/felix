@@ -102,6 +102,10 @@ echo "PLUGIN_DIR=$PLUGIN_DIR"
   tangle('PATH=`pwd`/bin:$PATH')
   tangle('export PATH')
   tangle('echo "PATH=$PATH"')
+ elif MACOSX:
+  tangle('DYLD_LIBRARY_PATH=`pwd`/rtl:$DYLD_LIBRARY_PATH')
+  tangle('export DYLD_LIBRARY_PATH')
+  tangle('echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH"')
  else:
   tangle('LD_LIBRARY_PATH=`pwd`/rtl:$LD_LIBRARY_PATH')
   tangle('export LD_LIBRARY_PATH')

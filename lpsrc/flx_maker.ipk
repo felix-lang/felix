@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.192  2005/12/30 01:21:50  rfistman
+conditionalised maker+bagley to use DLYD_LIBRARY_PATH on the mac.
+
 Revision 1.191  2005/12/29 02:10:41  rfistman
 now using flx_run thread spawn, fixed uninited variable, trying kqueue
 event source on the mac.
@@ -2371,6 +2374,8 @@ if os.name=="nt":
 else:
   if CYGWIN or WIN32:
     ENV = 'env PATH=bin:"$PATH" PYTHONPATH=.:"$PYTHONPATH" '
+  elif MACOSX:
+    ENV = 'PATH=bin:"$PATH" DYLD_LIBRARY_PATH=rtl:"$DYLD_LIBRARY_PATH" '
   else:
     ENV = 'PATH=bin:"$PATH" LD_LIBRARY_PATH=rtl:"$LD_LIBRARY_PATH" '
 
@@ -4701,6 +4706,7 @@ ENDLOCAL
 
 @tangle("CYGWIN="+str(CYGWIN))
 @tangle("WIN32="+str(WIN32))
+@tangle("MACOSX="+str(MACOSX))
 @tangle("HAVE_GXX="+str(HAVE_GXX))
 @tangle("HAVE_MSVC="+str(HAVE_MSVC))
 @tangle('CCOBJ_DLLIB="'+CCOBJ_DYNAMIC_FLX+'"')
@@ -5010,7 +5016,13 @@ then
     FLXRUN="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" $FLX_INSTALL_DIR/bin/flx_run"
   else
     FLXG="env PATH=$FLX_INSTALL_DIR/bin:\$PATH $FLX_INSTALL_DIR/bin/flxg"
-    FLXRUN="env LD_LIBRARY_PATH=$FLX_INSTALL_DIR/rtl:\$LD_LIBRARY_PATH $FLX_INSTALL_DIR/bin/flx_run"
+    # the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
+    if [ "$MACOSX" = "1" ]
+    then
+      FLXRUN="env DYLD_LIBRARY_PATH=$FLX_INSTALL_DIR/rtl:\$DYLD_LIBRARY_PATH $FLX_INSTALL_DIR/bin/flx_run"
+    else
+      FLXRUN="env LD_LIBRARY_PATH=$FLX_INSTALL_DIR/rtl:\$LD_LIBRARY_PATH $FLX_INSTALL_DIR/bin/flx_run"
+    fi
   fi
   FLXRTL="$FLX_INSTALL_DIR/rtl"
   FLXBIN="$FLX_INSTALL_DIR/bin"
