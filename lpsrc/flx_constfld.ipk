@@ -86,7 +86,8 @@ let truth sr r =
   let r = if r then 2 else 1 in
   `AST_typed_case (sr,r,flx_bool)
 
-let const_fold' e sr name arg = match name, arg with
+let const_fold' e sr name arg = 
+  match name, arg with
   (* integers *)
   (* -x *)
   | "neg", `AST_literal (_,`AST_int ("int",x))
@@ -265,14 +266,14 @@ let const_fold' e sr name arg = match name, arg with
            `AST_typed_case (_,x,`TYP_unitsum 2);
            `AST_typed_case (_,y,`TYP_unitsum 2)
           ])
-    -> truth sr (x=1 or y=1)
+    -> truth sr (x=2 or y=2)
 
   (* x and y *)
   | "land", `AST_tuple ( _, [
            `AST_typed_case (_,x,`TYP_unitsum 2);
            `AST_typed_case (_,y,`TYP_unitsum 2)
           ])
-    -> truth sr (x=1 && y=1)
+    -> truth sr (x=2 && y=2)
 
   (* x eq y *)
   | "eq", `AST_tuple ( _, [

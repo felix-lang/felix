@@ -281,10 +281,16 @@ macro val false = case 1 of 2;
   
 @h=tangler('lib/flx_platform.flxh','data')
 @select(h)
+#define true case 2 of 2
+#define false case 1 of 2
+
 @plats = ["WIN32","POSIX","LINUX","MACOSX","CYGWIN","SOLARIS","BSD"]
 @for i in plats:
   if(eval(i)==1):
-    tangle("#define " + i)
+    tangle("#define " + i + " true")
+  else:
+    tangle("#define " + i + " false")
+@#
 
 macro val true = case 2 of 2;
 macro val false = case 1 of 2;

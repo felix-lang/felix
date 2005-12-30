@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.14  2005/12/30 04:39:32  skaller
+Fixed copipes to be 'portable'
+
 Revision 1.13  2005/12/29 18:16:04  skaller
 Namespaces and modules added ..
 
@@ -1646,90 +1649,7 @@ proc accept(s: &int, listener: int)
     *s = acc.socket;
 }
 
-// the following code wraps up both copipes and unix style sockets. 
-// this could present a portability problem as with this interface, all the
-// code is dumped into the c++ file, which won't work for windows. either
-// I can not use the unified interface or make it so that it pulls in
-// windows code on windows (preprocessor?). in any case, I should split
-// the copipe stuff off from the socket code.
 
-// could use this stuff to make file descriptors distinct from
-// socket descriptors.
-
-// unify the io types
-union flx_stream =          
-    | SOCK of int           // socket file descriptors (non blocking)
-    | CO of Faio::copipe
-    | FILEFD of int         // file file descriptors (blocking?)
-    | DEVNULL
-;
-
-// will be ambiguous for file fd, will need name. do I even need these
-// when the conversion is unambiguous?
-fun to_stream (fd: int): flx_stream = { return SOCK fd; }
-fun to_stream (p: Faio::copipe): flx_stream = { return CO p; }
-fun new_devnull (): flx_stream = { return DEVNULL; }
-fun file_to_stream (fd: int): flx_stream = { return FILEFD fd; }
-
-proc flx_read(strm: flx_stream, len: &int, buf: address, eof: &bool)
-{
-    match strm with 
-    | SOCK ?fd => { async_read(fd, len, buf, eof); }
-    | CO ?pipe => { co_read(pipe, len, buf, eof); }
-    | DEVNULL => { *len = 0; *eof = true; }
-    | FILEFD ?fd => { faio_read(fd, len, buf, eof); }
-    endmatch;
-}
-
-proc flx_write(strm: flx_stream, len: &int, buf: address, eof: &bool)
-{   
-    match strm with 
-    | SOCK ?fd => { async_write(fd, len, buf, eof); }
-    | CO ?pipe => { co_write(pipe, len, buf, eof); }
-    | DEVNULL => { /* nothing to do */ }
-    | FILEFD ?fd => { faio_write(fd, len, buf, eof); }
-    endmatch;
-}
-
-proc flx_shutdown(strm: flx_stream, how: int)
-{   
-    match strm with
-    | SOCK ?socket => { shutdown(socket, how); }
-    | CO ?pipe => { co_shutdown(pipe, how); }
-    | DEVNULL => { /* nothing to do? */ }
-    | FILEFD => { /* nuthin */ }
-    endmatch;
-}
-
-proc flx_close(strm: flx_stream)
-{   
-    match strm with
-    | SOCK ?socket => { close(socket); }    // error check?
-    | CO ?pipe => { co_close(pipe); }
-    | DEVNULL => { /* nothing to do */ }    
-    | FILEFD ?fd => { close(fd); }          // error check?
-    endmatch;
-}
-
-// much less lame (this is completely portable, if flx_stream is defined)
-proc flx_popen(ourend: &flx_stream, p:flx_stream->0)
-{   
-    var a: copipe;
-    var b: copipe;
-    
-    flx_copipe_pair(&a, &b);
-    *ourend = to_stream(a);
-    var theirend = to_stream(b);
-    spawn_fthread { p theirend; };
-}
-
-proc flx_connect(strm: &flx_stream, addr: charp, port: int)
-{   
-    var s: int;
-    connect( &s, addr, port );
-    // nice error handling
-    *strm = to_stream s;
-}
 
 } // module faio
 
@@ -1920,65 +1840,113 @@ proc associate_with_iocp(s: SOCKET)
 
 } // module win32_faio
 
-// this totally sucks, but I wanted to try out the flx_streams on windows
-// unify the io types
-// add wine FILE
+@h = tangler("lib/flx_copipe.flx")
+@select(h)
+include "faio";
+include "posix_faio";
+include "win32_faio";
+#import <flx_platform.flxh>
+
+module Flx_stream {
+//JS: the type name should be flx_stream_t by convention ..
 union flx_stream =
-    | WSOCK of SOCKET
-    | CO of copipe
-    | DEVNULL
-    | FD of WFILE           // new, actually just a HANDLE to a file
+    | CO of copipe     // copipe
+    | DEVNULL          // nothing
+#if POSIX
+    | UFD of int       // Unix file
+    | USOCK of int     // Unix socket
+#endif
+#if WIN32 or CYWGIN
+    | WSOCK of SOCKET  // Windows socket
+    | WFD of WFILE     // Windows file
+#endif
+
+// MISSING CASES: strstreams  -- strings as streams
+// FILE* streams, C++ iostreams as streams. kind of messy ..
+
 ;
+
+
 
 // will be ambiguous for file fd, will need name. do I even need these
 // when the conversion is unambiguous?
-fun to_stream (s: SOCKET): flx_stream = { return WSOCK s; }
-fun to_stream (p: copipe): flx_stream = { return CO p; }
-fun new_devnull (): flx_stream = { return DEVNULL; }
-fun to_stream (f: WFILE): flx_stream = { return FD f; }
+
+//JS: use the constructor, no need for a separate
+//JS: function to make things, that's what
+//JS: type constructors are for .. maybe the names
+//JS: should be changed to FLX_STRM_UFD or something ..
+
+//fun to_stream (p: copipe): flx_stream = { return CO p; }
+//fun new_devnull (): flx_stream = { return DEVNULL; }
+//fun file_to_stream (fd: int): flx_stream = { return UFD fd; }
+//fun to_stream (fd: int): flx_stream = { return USOCK fd; }
+//fun to_stream (f: WFILE): flx_stream = { return WFD f; }
+//fun to_stream (s: SOCKET): flx_stream = { return WSOCK s; }
 
 proc flx_read(strm: flx_stream, len: &int, buf: address, eof: &bool)
 {
     match strm with
-    | WSOCK ?s => { WSARecv(s, len, buf, eof); }
     | CO ?pipe => { co_read(pipe, len, buf, eof); }
     | DEVNULL => { *len = 0; *eof = true; }
-    | FD ?file => { ReadFile(file, len, buf, eof); }
+#if POSIX
+    | USOCK ?fd => { async_read(fd, len, buf, eof); }
+    | UFD ?fd => { faio_read(fd, len, buf, eof); }
+#endif
+#if WIN32 or CYGWIN
+    | WSOCK ?s => { WSARecv(s, len, buf, eof); }
+    | WFD ?file => { ReadFile(file, len, buf, eof); }
+#endif
     endmatch;
 }
 
 proc flx_write(strm: flx_stream, len: &int, buf: address, eof: &bool)
 {   
     match strm with 
-    | WSOCK ?s => { WSASend(s, len, buf, eof); }
     | CO ?pipe => { co_write(pipe, len, buf, eof); }
     | DEVNULL => { /* nothing to do */ }
-    | FD ?file => { WriteFile(file, len, buf, eof); }
+#if POSIX
+    | USOCK ?fd => { async_write(fd, len, buf, eof); }
+    | UFD ?fd => { faio_write(fd, len, buf, eof); }
+#endif
+#if WIN32 or CYGWIN
+    | WSOCK ?s => { WSASend(s, len, buf, eof); }
+    | WFD ?file => { WriteFile(file, len, buf, eof); }
+#endif
     endmatch;
 }
 
 proc flx_shutdown(strm: flx_stream, how: int)
 {
     match strm with
-    | WSOCK ?socket => { shutdown(socket, how); }
     | CO ?pipe => { co_shutdown(pipe, how); }
     | DEVNULL => { /* nothing to do? */ }
-    | FD => { /* nothing to do */ }
+#if POSIX
+    | USOCK ?socket => { shutdown(socket, how); }
+    | UFD => { /* nuthin */ }
+#endif
+#if WIN32 or CYGWIN
+    | WFD => { /* nothing to do */ }
+    | WSOCK ?socket => { shutdown(socket, how); }
+#endif
     endmatch;
 }
 
 proc flx_close(strm: flx_stream)
 {
     match strm with
-    | WSOCK ?socket => { closesocket(socket); }
     | CO ?pipe => { co_close(pipe); }
     | DEVNULL => { /* nothing to do */ }
-    | FD ?file => { CloseFile(file); }
+#if POSIX
+    | USOCK ?socket => { close(socket); }    // error check?
+    | UFD ?fd => { close(fd); }          // error check?
+#endif
+#if WIN32 or CYGWIN
+    | WSOCK ?socket => { closesocket(socket); }
+    | WFD ?file => { CloseFile(file); }
+#endif    
     endmatch;
 }
 
-// THIS SUCKS EVEN MORE BECAUSE THE CODE IS PORTABLE YET DEFINED IN TWO PLACES!
-// much less lame (this is completely portable, if flx_stream is defined)
 proc flx_popen(ourend: &flx_stream, p:flx_stream->0)
 {   
     var a: copipe;
@@ -1990,13 +1958,24 @@ proc flx_popen(ourend: &flx_stream, p:flx_stream->0)
     spawn_fthread { p theirend; };
 }
 
-proc flx_connect(strm: &flx_stream, addr: charp, port: int)
+
+#if WIN32 or CYGWIN
+proc flx_connect_win32(strm: &flx_stream, addr: charp, port: int)
 {   
     var s: SOCKET;
     Connect( &s, addr, port );
     // nice error handling
     *strm = to_stream s;
 }
+#endif
 
-
+#if POSIX
+proc flx_connect_posix(strm: &flx_stream, addr: charp, port: int)
+{   
+    var s: int;
+    connect( &s, addr, port );
+    // nice error handling
+    *strm = to_stream s;
+}
+#endif
 
