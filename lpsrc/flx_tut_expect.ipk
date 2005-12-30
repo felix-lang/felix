@@ -13,7 +13,7 @@ Defining FIRST
 detected FIRST
 @head(2,"tut/examples/mac104.expect")
 @select(tangler("tut/examples/mac104.expect","data"))
-BAD
+OK
 @head(2,"tut/examples/mac105.expect")
 @select(tangler("tut/examples/mac105.expect","data"))
 OK

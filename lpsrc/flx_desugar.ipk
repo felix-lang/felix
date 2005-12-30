@@ -56,7 +56,7 @@ let include_file syms inspec lookup =
   let pf = find_file lookup include_dirs (basename ^ ".par") in
   let tf_mt = filetime tf in
   let pf_mt = filetime pf in
-  let saveit sts =
+  let saveit hash_include_files sts =
       let pf = 
         if pf = "" then 
           (try Filename.chop_extension tf with | _ -> tf) ^ ".par"
@@ -67,12 +67,12 @@ let include_file syms inspec lookup =
         | Some x -> 
           if syms.compiler_options.print_flag then
           print_endline ("Written " ^ pf);
-          Marshal.to_channel x (this_version,sts) [];
+          Marshal.to_channel x (this_version,hash_include_files,sts) [];
           close_out x
         | None -> () (* can't write, don't worry *)
   in
   let parseit() =
-    let sts = 
+    let hash_include_files, sts = 
       if syms.compiler_options.print_flag then
       print_endline ("Parsing " ^ tf);
       Flx_parse_ctrl.parse_file 
@@ -81,7 +81,8 @@ let include_file syms inspec lookup =
         include_dirs 
     in
       let local_prefix = Filename.basename basename in
-      expand_macros local_prefix 5000 sts
+      let tree = expand_macros local_prefix 5000 sts in
+      hash_include_files, tree
   in
   let sts =
       (* -- no file ----------------------------------------- *)
@@ -107,23 +108,31 @@ let include_file syms inspec lookup =
         ;
         if (not force) && tf_mt < pf_mt then 
           let x = open_in_bin pf in
-          let (that_version,tree) = Marshal.from_channel x in
+          let (that_version,hash_include_files,tree) = Marshal.from_channel x in
           close_in x;
-          if this_version = that_version
+          if this_version = that_version &&
+          fold_left 
+            (fun acc f -> 
+              let ft = filetime f in
+              acc && ft <> 0.0 && filetime f < pf_mt
+            ) 
+            true 
+            hash_include_files
           then begin
             if syms.compiler_options.print_flag then
             print_endline ("Loaded " ^ pf);
             tree
           end else 
-            let sts = parseit() in
-            saveit sts;
+            let hash_include_files, sts = parseit() in
+            saveit hash_include_files sts;
             sts
 
         (* -- text file is newer or parsed file doesn't exist -- *)
-        else 
-          let sts = parseit() in
-          saveit sts;
+        else begin
+          let hash_include_files,sts = parseit() in
+          saveit hash_include_files sts;
           sts
+        end
       end
   in
     sts

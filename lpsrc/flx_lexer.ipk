@@ -26,6 +26,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | USER_KEYWORD (sr,s) -> s
   | USER_STATEMENT_KEYWORD (sr,s,_,_) -> s
   | USER_STATEMENT_DRIVER (sr,s,_) -> s
+  | HASH_INCLUDE_FILES fs -> "include_files(" ^ String.concat "," fs ^ ")"
   (*
   | PARSE_ACTION sr -> "=>#"
   *)
@@ -65,6 +66,7 @@ let name_of_token (tok :Flx_parse.token): string =
   | USER_KEYWORD (sr,s) -> s
   | USER_STATEMENT_KEYWORD (sr,s,_,_) -> s
   | USER_STATEMENT_DRIVER (sr,s,_) -> s
+  | HASH_INCLUDE_FILES _ -> "HASH_INCLUDE_FILES"
   (*
   | PARSE_ACTION sr -> "PARSE_ACTION"
   *)
@@ -96,6 +98,7 @@ let src_of_token t = match t with
   | WHITE _ 
   | ENDMARKER
   | SLOSH 
+  | HASH_INCLUDE_FILES _
     -> ("",0,0,0)
 
   | NAME    (s,_)
@@ -287,6 +290,8 @@ class file_control
 
 class lexer_state filename basedir incdirs = 
   object (self)
+    val mutable include_files: string list = []
+
     val comment_ctrl = new comment_control
     val file_ctrl = new file_control filename basedir incdirs 
     val mutable at_line_start = true
@@ -304,6 +309,9 @@ class lexer_state filename basedir incdirs =
       = Hashtbl.create 97
 
     val mutable brackets: ((string * string) * string) list = []
+
+    method get_include_files = include_files
+    method add_include_file f = include_files <- f :: include_files
 
     method get_symbols = symbols
     method get_nonterminals = nonterminals
@@ -603,6 +611,11 @@ class lexer_state :
       (string * (srcref * string -> token)) list array
     val mutable brackets: ((string * string) * string) list
     val nonterminals: (string, (token list *ast_term_t) list) Hashtbl.t
+    val mutable include_files : string list
+
+    method add_include_file : string -> unit
+    method get_include_files : string list
+
     method append_comment : string -> unit
     method comment_level : int
     method decode : (string -> string) -> string -> string
@@ -1107,6 +1120,7 @@ let find_include_file state s sr =
 
 let include_directive is_import state sr s pre_flx_lex =
   let filename = find_include_file state s sr in
+  state#add_include_file filename;
   let pre_tokens_of_filename filename =
     let incdirs = state#get_incdirs in
     let basedir = Filename.dirname filename in
@@ -1120,6 +1134,7 @@ let include_directive is_import state sr s pre_flx_lex =
         with Duplicate_macro k -> clierr sr 
         ("Duplicate Macro " ^ k ^ " imported")
       end;
+      iter state#add_include_file state'#get_include_files;
       toks
    in
    pre_tokens_of_filename filename

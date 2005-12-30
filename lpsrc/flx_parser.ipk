@@ -159,6 +159,7 @@ let mktypefun sr name vs args return_type body =
 %token<Flx_ast.srcref * string> WSTRING
 %token<Flx_ast.srcref * string> USTRING
 %token<Flx_ast.srcref * string> USER_KEYWORD
+%token <string list> HASH_INCLUDE_FILES
 
 /* this has to be defined, but is never seen */
 %token<Flx_ast.srcref * string * (token list * Flx_ast.ast_term_t) list * (string, (token list * Flx_ast.ast_term_t) list) Hashtbl.t > USER_STATEMENT_KEYWORD
@@ -2756,6 +2757,10 @@ let parse_file
       include_dirs 
   in
   let tokens  = Flx_lex1.translate pre_tokens in
+  let hash_include_files, tokens = match tokens with
+    | HASH_INCLUDE_FILES fs :: t -> fs,t
+    | _ -> assert false
+  in
     begin
       let toker = (new Flx_tok.tokeniser tokens) in
       let parse_tree = 
@@ -2784,7 +2789,7 @@ let parse_file
           print_endline (Printexc.to_string x);
           raise (Flx_exceptions.ParseError "Parsing File")
         end
-      in parse_tree
+      in hash_include_files, parse_tree
     end
 
 let parse_string (data : string) (filename : string) = 
@@ -2811,7 +2816,7 @@ val parse_file :
   string -> 
   string ->
   string list ->
-  Flx_ast.compilation_unit_t
+  string list * Flx_ast.compilation_unit_t
 
 val parse_string : 
   string -> 
@@ -2823,7 +2828,7 @@ val parse_string :
 @select(h)
 let filename = Sys.argv.(1) ^ ".flx";;
 print_endline ("Parsing " ^ filename);;
-let parse_tree = Flx_parse_ctrl.parse_file filename "" [];;
+let _,parse_tree = Flx_parse_ctrl.parse_file filename "" [];;
 print_endline (Flx_print.string_of_compilation_unit parse_tree);;
 print_endline "PARSE OK";;
 flush stdout
