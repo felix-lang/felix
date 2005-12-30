@@ -937,6 +937,10 @@ evtport_demuxer::thread_loop_body()
 
 #include <stdio.h>      // for printf debugging
 #include <stddef.h>     // offsetof
+// shoving the win_queue in here for now
+#include <queue>          // stl to the bloated rescue
+
+using namespace std;
 
 namespace flx { namespace demux {
 
@@ -1250,10 +1254,6 @@ win_locker::~win_locker()
     fprintf(stderr,"Error releasing mutex: %li\n", GetLastError());
 }
 
-// shoving the win_queue in here for now
-#include <queue>          // stl to the bloated rescue
-
-using namespace std;
 
 typedef queue<void*> void_queue;
 

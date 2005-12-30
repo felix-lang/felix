@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.15  2005/12/30 14:57:40  skaller
+Fix some win32 issues with namespaces.
+
 Revision 1.14  2005/12/30 04:39:32  skaller
 Fixed copipes to be 'portable'
 
@@ -812,7 +815,7 @@ public:
 };  
     
 // flx <-> c++ stuff for async io (well, it was)
-class FLX_RTL_EXTERN waio_base : public flx_driver_request_base, public iocp_wakeup {
+class FLX_RTL_EXTERN waio_base : public flx_driver_request_base, public demux::iocp_wakeup {
 protected:
     // these three should provide enough info to wake a thread
     void*       f;                      // give this a better name
@@ -1726,7 +1729,7 @@ proc Connect(s: &SOCKET, addr: charp, port: int)
 
 // listens on all interfaces, I guess
 proc cmk_listener: lvalue[SOCKET]*int*int
-    = '$1 = create_listener_socket($2, $3);';
+    = '$1 = flx::demux::create_listener_socket($2, $3);';
 
 proc mk_listener(listener: &SOCKET, port: int, backlog: int)
 {   
@@ -1785,7 +1788,7 @@ proc ReuseSocket(s: SOCKET)
     faio_req$ &tf;
 }
 
-types wsa_socketio = "flx::faio::wsa_socketio";
+type wsa_socketio = "flx::faio::wsa_socketio";
 fun mk_wsa_socketio: SOCKET*address*int*bool->wsa_socketio = 'flx::faio::wsa_socketio($a)';
 fun get_pb[t]: t -> sel_param_ptr = '&$1.pb';
 
