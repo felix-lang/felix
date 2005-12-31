@@ -182,7 +182,7 @@ let mktypefun sr name vs args return_type body =
 @for k,v in flx_3_char_syms:
   tangle("%token<Flx_ast.srcref> " + k,inhibit_sref=1)
 
-@for n,t in flx_keywords:
+@for n,t in flx_keywords+flx_parser_keywords:
   tangle("%token<Flx_ast.srcref> " + t,inhibit_sref=1)
 
 %type <Flx_ast.range_srcref * Flx_ast.statement_t list> compound

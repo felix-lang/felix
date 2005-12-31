@@ -1357,7 +1357,9 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     ) names
 
   | `AST_macro_vfor (sr, ids, e, sts) ->
+    (*
     print_endline "Expanding vfor";
+    *)
     let e = me e in
     let vals = match e with
       | `AST_tuple (_,vals) -> vals

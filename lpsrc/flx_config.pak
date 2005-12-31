@@ -2443,8 +2443,6 @@ flx_expr_terminator_keywords = [
     ("enum", "ENUM"),
     ("expect", "EXPECT"),
     ("export", "EXPORT"),
-    ("expr","EXPRESSION"),
-    ("float_literal", "FLOAT_LITERAL"),
     ("for", "FOR"),
     ("forget", "FORGET"),
     ("fork", "FORK"),
@@ -2460,7 +2458,6 @@ flx_expr_terminator_keywords = [
     ("is", "IS"),
     ("inherit", "INHERIT"),
     ("inline", "INLINE"),
-    ("integer_literal", "INTEGER_LITERAL"),
     ("jump", "JUMP"),
     ("let", "LET"),
     ("loop", "LOOP"),
@@ -2485,9 +2482,6 @@ flx_expr_terminator_keywords = [
     ("requires", "REQUIRES"),
     ("return", "RETURN"),
     ("struct", "STRUCT"),
-    ("statement", "STATEMENT"),
-    ("statements", "STATEMENTS"),
-    ("string_literal", "STRING_LITERAL"),
     ("then", "THEN"),
     ("todo", "TODO"),
     ("to", "TO"),
@@ -2522,6 +2516,15 @@ flx_other_keywords = [
     ("regmatch", "REGMATCH"),
     ("the", "THE"),
     ("typematch", "TYPEMATCH"),
+  ]
+
+flx_parser_keywords = [
+    ("expr","EXPRESSION"),
+    ("float_literal", "FLOAT_LITERAL"),
+    ("integer_literal", "INTEGER_LITERAL"),
+    ("string_literal", "STRING_LITERAL"),
+    ("statement", "STATEMENT"),
+    ("statements", "STATEMENTS"),
   ]
 
 flx_keywords = flx_expr_terminator_keywords + flx_other_keywords

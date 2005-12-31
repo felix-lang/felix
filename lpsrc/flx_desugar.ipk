@@ -114,7 +114,7 @@ let include_file syms inspec lookup =
           fold_left 
             (fun acc f -> 
               let ft = filetime f in
-              acc && ft <> 0.0 && filetime f < pf_mt
+              acc && ft <> 0.0 && ft < pf_mt
             ) 
             true 
             hash_include_files

@@ -1,6 +1,13 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.17  2005/12/31 07:06:32  skaller
+Changed user statement parser so that special keywords
+expr, statement, statements, etc are only recognized parsing
+the preprocessor directives statement and nonterminal.
+Note ident is already a proper keyword for the
+macro processor  though.
+
 Revision 1.16  2005/12/31 03:20:22  rfistman
 working on flx_stream stuff + writing tests
 
@@ -680,7 +687,7 @@ connect_wakeup::wakeup(posix_demuxer& demux)
     // failed, throw away socket
     if(0 != socket_err)
     {   
-        printf("async connect error: %s (%i), closing\n",
+        fprintf(stderr,"async connect error: %s (%i), closing\n",
             strerror(socket_err), socket_err);
 // this is not a good place to close as after the wakeup the socket
 // is often operated on via the event code (remove from kqueue, etc)

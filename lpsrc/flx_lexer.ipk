@@ -40,7 +40,7 @@ let string_of_token (tok :Flx_parse.token): string =
 @for k,s in flx_3_char_syms:
   tangle('  | '+k+' _ -> "'+s+'"',inhibit_sref=1)
 
-@for n,t in flx_keywords: 
+@for n,t in flx_keywords + flx_parser_keywords: 
   tangle('  |  '+t+' _ -> "'+n+'"',inhibit_sref=1)
 @#
   | COMMENT s -> s (* C style comment, includes the /* */ pair *)
@@ -79,7 +79,7 @@ let name_of_token (tok :Flx_parse.token): string =
 @for k,s in flx_3_char_syms:
   tangle('  | '+k+' _ -> "'+k+'"',inhibit_sref=1)
 
-@for n,t in flx_keywords: 
+@for n,t in flx_keywords + flx_parser_keywords: 
   tangle('  |  '+t+' _ -> "'+t+'"',inhibit_sref=1)
 @#
 
@@ -128,8 +128,9 @@ let src_of_token t = match t with
 @for k,s in flx_3_char_syms:
   tangle('  | '+k+' s ',inhibit_sref=1)
 
-@for n,t in flx_keywords: tangle('  | '+t+' s',inhibit_sref=1)
-
+@for n,t in flx_keywords + flx_parser_keywords: 
+  tangle('  | '+t+' s',inhibit_sref=1)
+@#
     -> s
 
 @h = tangler('src/flx_lexstate.ml')
@@ -976,6 +977,7 @@ let action_split t =
   in aux t []
 
 let statement_directive state sr toks =
+  let toks = Flx_keywords.retok_parser_tokens toks in
   match toks with
   | NAME (sr,tok) :: t 
   | USER_STATEMENT_KEYWORD (sr,tok,_,_) :: t ->
@@ -998,6 +1000,7 @@ let statement_directive state sr toks =
     clierr sr "#statement directive has syntax #statement kw production"
 
 let nonterminal_directive state sr toks =
+  let toks = Flx_keywords.retok_parser_tokens toks in
   match toks with
   | NAME (sr,tok) :: t ->
     (*
