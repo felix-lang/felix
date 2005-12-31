@@ -3597,35 +3597,6 @@ proc t1() {
 print "main launched t1"; endl;
 svc$ svc_yield;
 
-@head(2,"User defined operators")
-@select(tangler(tdir+'tut315.flx'))
-#import <flx.flxh>
-#infix 10 "^%" myfun
-print "OK"; endl;
-fun myfun: int * int -> int = "$1 + $2 * 2";
-print$ myfun$ 2,4; endl; // 10
-print$ 2 ^% 4; endl; // 10
-
-#bracket "[[" "]]" abs
-fun abs: int -> int = "abs($1)";
-
-print$ abs (-10); endl; //10
-print$ [[ -10 ]]; endl; //10
-
-#infix 10 fred joe
-fun joe: int * int -> int = "$1 + $2 * $2";
-print$ joe$ 2,3; endl; // 11
-print$ 2 fred 3; endl; // 11
-
-proc ff:lvalue[int] * int = "$1=$2;";
-var x:int <- ff 1;
-print x; endl;
-
-
-proc gg(px:&int, a:int) { *px = a; }
-var &y:int <- gg 1;
-print y; endl;
-
 @head(2,"Classes")
 @select(tangler(tdir+'tut316.flx'))
 #import <flx.flxh>

@@ -1077,7 +1077,7 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
   begin match st with
   | `AST_expr_macro (sr, id, ps, e) ->
     let ps,e = alpha_expr sr local_prefix seq ps e in
-    tack (`AST_expr_macro (sr, id, ps, me e))
+    tack (`AST_expr_macro (sr, mi sr id, ps, me e))
     
   | `AST_stmt_macro (sr, id, ps, sts) ->
     let ps,sts = alpha_stmts sr local_prefix seq ps sts in
@@ -1089,28 +1089,31 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
     tack (`AST_macro_block (sr,sts))
 
   | `AST_macro_name (sr, id1, id2) ->
+    (* IN THIS SPECIAL CASE THE LHS NAME IS NOT MAPPED *)
     tack (`AST_macro_name (sr, id1, mi sr id2))
 
   | `AST_macro_names (sr, id1, id2) ->
+    (* IN THIS SPECIAL CASE THE LHS NAME IS NOT MAPPED *)
     tack (`AST_macro_names (sr, id1, map (mi sr) id2))
 
   | `AST_macro_val (sr, ids, e) ->
-    tack (`AST_macro_val (sr, ids, me e))
+    tack (`AST_macro_val (sr, map (mi sr) ids, me e))
 
   | `AST_macro_vals (sr, id, e) ->
-    tack (`AST_macro_vals (sr, id, map me e))
+    tack (`AST_macro_vals (sr,mi sr id, map me e))
 
   | `AST_macro_var (sr, ids, e) ->
-    tack (`AST_macro_var (sr, ids, me e))
+    tack (`AST_macro_var (sr, map (mi sr) ids, me e))
 
   | `AST_macro_assign (sr, ids, e) ->
-    tack (`AST_macro_assign (sr, ids, me e))
+    tack (`AST_macro_assign (sr, map (mi sr) ids, me e))
 
   | `AST_macro_ifor (sr,id,ids,sts) ->
-    tack (`AST_macro_ifor (sr,id,ids,mss sts))
+    (* IN THIS SPECIAL CASE THE LHS NAME IS NOT MAPPED *)
+    tack (`AST_macro_ifor (sr,id,map (mi sr) ids,mss sts))
     
   | `AST_macro_vfor (sr,ids,e,sts) ->
-    tack (`AST_macro_vfor (sr,ids,me e,mss sts))
+    tack (`AST_macro_vfor (sr,map (mi sr) ids,me e,mss sts))
   
   (* during parameter replacement,
     we don't know if a call is executable or not,
@@ -1134,7 +1137,7 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
 
   | `AST_user_statement (sr,name,term) -> 
     (*
-    print_endline "Replacing into user statement call";
+    print_endline ("Replacing into user statement call " ^ name);
     *)
     let rec aux term = match term with
       | `Statement_term s -> `Statements_term (ms s)
@@ -1354,6 +1357,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     ) names
 
   | `AST_macro_vfor (sr, ids, e, sts) ->
+    print_endline "Expanding vfor";
     let e = me e in
     let vals = match e with
       | `AST_tuple (_,vals) -> vals
@@ -1363,9 +1367,12 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       let saved_macros = !ref_macros in
       begin
         let n = length ids in
-        if n = 1 then
+        if n = 1 then begin
+          (*
+          print_endline ("Setting " ^ hd ids ^ " to " ^ string_of_expr e);
+          *)
           ref_macros := (hd ids,MVal e) :: !ref_macros
-        else begin 
+        end else begin 
           let vs = 
             match e with 
             | `AST_tuple (_,ls) -> ls
@@ -1382,6 +1389,9 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
           else 
           let ides = combine ids vs in
           iter (fun (id,v) ->
+            (*
+            print_endline ("Setting " ^ id ^ " to " ^ string_of_expr v);
+            *)
             ref_macros := (id,MVal v) :: !ref_macros
           )
           ides
@@ -1523,6 +1533,9 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       end
 
   | `AST_user_statement (sr,name,term) ->
+    (*
+    print_endline ("Expanding statement " ^ name);
+    *)
     let string_of_statements sts =
         String.concat "\n" (map (string_of_statement 1) sts)
     in
@@ -1623,7 +1636,6 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       print_endline "[statement] Original argument term list (the parse tree) is";
       iter (fun term -> print_endline (string_of_ast_term 0 term)) ts;
       *)
-
       let args = eval_args sr ts in
       (*
       print_endline "[statement] Got arguments ..";

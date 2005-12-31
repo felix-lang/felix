@@ -91,6 +91,27 @@ Hi there locality!
 Hello locality!
 Hello world!
 Hello world!
+@head(2,"tut/examples/mac300.expect")
+@select(tangler("tut/examples/mac300.expect","data"))
+OK
+10
+10
+10
+10
+11
+11
+1
+1
+@head(2,"tut/examples/mac301.expect")
+@select(tangler("tut/examples/mac301.expect","data"))
+10 9 8 7 6 5 4 3 2 1 
+10 9 8 7 6 5 4 3 2 1 
+1 plus 2 is 3
+1 2 3 4 5 6 7 8 9 10
+10 9 8 7 6 5 4 3 2 1
+@head(2,"tut/examples/mac302.expect")
+@select(tangler("tut/examples/mac302.expect","data"))
+None
 @head(2,"tut/examples/mig01.expect")
 @select(tangler("tut/examples/mig01.expect","data"))
 1
