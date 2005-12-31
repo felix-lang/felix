@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.16  2005/12/31 03:20:22  rfistman
+working on flx_stream stuff + writing tests
+
 Revision 1.15  2005/12/30 14:57:40  skaller
 Fix some win32 issues with namespaces.
 
@@ -1405,8 +1408,9 @@ private fun cargv:int -> charp =
     
 // be careful of this being optimized away 
 //JS: why? it isn't used .. and its in C_hack anyhow :)
-//fun malloc: int -> address = 'malloc($1)' requires stdlib_h;
-//proc free: address = 'free($1);' requires stdlib_h; 
+//RF: I'm not seeing it.
+fun malloc: int -> address = 'malloc($1)' requires stdlib_h;
+proc free: address = 'free($1);' requires stdlib_h; 
     
 //header asyncio_h = '#include "faio_asyncio.hpp"';
 // could go through and conditionally require this header, but I'm
@@ -1843,12 +1847,23 @@ proc associate_with_iocp(s: SOCKET)
 
 } // module win32_faio
 
-@h = tangler("lib/flx_copipe.flx")
+@h = tangler("lib/flx_stream.flx")
 @select(h)
-include "faio";
-include "posix_faio";
-include "win32_faio";
+include "flx_faio";
+include "flx_faio_posix";
+include "flx_faio_win32";
 #import <flx_platform.flxh>
+
+open Faio;  // copipes
+
+#if POSIX
+open Faio_posix;
+#endif
+
+#if WIN32
+open Faio_win32;
+#endif
+
 
 module Flx_stream {
 //JS: the type name should be flx_stream_t by convention ..
@@ -1859,7 +1874,9 @@ union flx_stream =
     | UFD of int       // Unix file
     | USOCK of int     // Unix socket
 #endif
-#if WIN32 or CYWGIN
+// isn't this covered by the fact that under cygwin POSIX AND WIN32 are true?
+//#if WIN32 or CYWGIN
+#if WIN32
     | WSOCK of SOCKET  // Windows socket
     | WFD of WFILE     // Windows file
 #endif
@@ -1956,8 +1973,8 @@ proc flx_popen(ourend: &flx_stream, p:flx_stream->0)
     var b: copipe;
     
     flx_copipe_pair(&a, &b);
-    *ourend = to_stream(a);
-    var theirend = to_stream(b);
+    *ourend = CO a;
+    var theirend = CO b;
     spawn_fthread { p theirend; };
 }
 
@@ -1978,7 +1995,96 @@ proc flx_connect_posix(strm: &flx_stream, addr: charp, port: int)
     var s: int;
     connect( &s, addr, port );
     // nice error handling
-    *strm = to_stream s;
+    *strm = USOCK s;
 }
 #endif
+
+// unified name, ipv4, cygwin gets posix (?)
+proc flx_connect(strm: &flx_stream, addr: charp, port: int)
+{
+#if WIN32
+    flx_connect_win32(strm, addr, port);
+#else
+    flx_connect_posix(strm, addr, port);
+#endif
+}
+
+// fun things that probably need renaming
+proc cat(infd: flx_stream, outfd: flx_stream, buf: address, bufsize: int) {
+    var eof = false;
+    var weof = false;
+    var len: int;
+
+    // if we finish input, stop. if output eofs, don't keep hammering on it!
+    while{not(eof) and not(weof)} {
+        len = bufsize;
+// print "catting in "; print len; print " bytes\n";
+        flx_read(infd, &len, buf, &eof);
+// print "catting out "; print len; print " bytes\n";
+        flx_write(outfd, &len, buf, &weof);
+    };
+};
+
+proc cat(infd: flx_stream, outfd: flx_stream)
+{
+    val BUFSIZE = 10*1024;
+    var buf = malloc(BUFSIZE);
+
+    // that's some nice error checking
+    cat(infd, outfd, buf, BUFSIZE);
+    free(buf);
+}
+
+open List;
+
+// if these are all file descriptors, one might not like to have them
+// all open at once. would a generator be better?
+// could make this supercat, with multiple in, multiple out (multiout
+// in the sense of tee)
+proc cat(in_fds: list[flx_stream], outfd: flx_stream,
+    buf: address, bufsize: int)
+{
+    match in_fds with
+    | Empty[flx_stream] => {}               // finished
+    | Cons[flx_stream] (?fd, ?l) =>
+        {
+            cat(fd, outfd, buf, bufsize);   // cat first
+            cat(l, outfd, buf, bufsize);    // cat the rest
+        }
+    endmatch
+    ;
+}
+
+// try the stream interface
+proc echo(fd: flx_stream, buf: address, bufsize: int)
+{
+    // echo a = cat a a. that's deep, man.
+    cat(fd, fd, buf, bufsize);
+};
+
+// playing around. need to be able to control io buffers in a more
+// global way. I like the supercat idea. need to be careful not to hammer
+// multiple outputs. move tee to own file
+proc tee(infd: flx_stream, outfd: flx_stream, outfd2: flx_stream)
+{
+    var eof = false;
+    var weof = false;
+    var weof2 = false;
+    var len: int;
+
+    val BUFSIZE = 10*1024;
+    var buf = malloc(BUFSIZE);
+
+    // don't hammer!
+    while{not(eof) and not(weof) and not(weof2)} {
+        len = BUFSIZE;
+        flx_read(infd, &len, buf, &eof);
+        flx_write(outfd, &len, buf, &weof);
+        flx_write(outfd2, &len, buf, &weof2);
+    };
+    free buf;
+}
+
+
+} // module Flx_Stream
 

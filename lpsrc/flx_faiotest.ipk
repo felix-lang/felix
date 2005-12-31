@@ -72,6 +72,13 @@ async_read(s, &len, b.data, &eof);
 print "read "; print len; print " bytes: "; print b; endl;
 async_write(s, &len, get_data((c"thanks!!")), &eof);
 
+@h = tangler("test/posix_t3.flx")
+@select(h)
+// actually portable, but I don't know the scheme for
+// adding those tests.
+include "flx_stream";
+print "more output here\n";
+
 @h = tangler("test/win_t1.flx")
 @select(h)
 #import <flx.flxh>
@@ -121,6 +128,9 @@ accepted connection
 @select(h)
 read 8 bytes: faio2you
 read thanks!!
+@h = tangler("test/posix_t2.expect")
+@select(h)
+more output here
 @h = tangler("test/win_t1.expect")
 @select(h)
 successful accept!
