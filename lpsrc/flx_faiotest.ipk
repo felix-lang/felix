@@ -128,7 +128,7 @@ accepted connection
 @select(h)
 read 8 bytes: faio2you
 read thanks!!
-@h = tangler("test/posix_t2.expect")
+@h = tangler("test/posix_t3.expect")
 @select(h)
 more output here
 @h = tangler("test/win_t1.expect")
