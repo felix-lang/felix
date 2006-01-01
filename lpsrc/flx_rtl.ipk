@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.80  2006/01/01 09:04:55  rfistman
+made a few solaris style changes (own demuxer and a few build
+incompatibilities fixed)
+
 Revision 1.79  2005/12/29 18:16:04  skaller
 Namespaces and modules added ..
 
@@ -125,6 +129,9 @@ T &reinterpret(U const &x) {
 
 @if MACOSX:
   tangle("#define MACOSX")
+
+@if SOLARIS:
+  tangle("#define SOLARIS")
 
 @if HAVE_MSVC:
   tangle("#define HAVE_MSVC")
@@ -1531,6 +1538,10 @@ shared library name are not passed.
 #include "demux_posix_queue.hpp"
 #include "demux_kqueue_demuxer.hpp"
 #include "faio_pdrv.hpp"
+#elif defined(SOLARIS)
+#include "demux_posix_queue.hpp"
+#include "demux_evtport_demuxer.hpp"
+#include "faio_pdrv.hpp"
 #else
 #include "demux_posix_queue.hpp"
 #include "demux_select_demuxer.hpp"
@@ -1591,6 +1602,10 @@ public:
 #elif defined(MACOSX)
     posix_queue async_active;
     kqueue_demuxer demux;
+    pflx_drv driver;
+#elif defined(SOLARIS)
+    posix_queue async_active;
+    evtport_demuxer demux;
     pflx_drv driver;
 #else
     posix_queue async_active;

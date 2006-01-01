@@ -76,7 +76,9 @@ to get some times.
 
 @def mkc(i,j):
   tangle('echo "Checking result for '+i+'"')
-  tangle('diff -a -b bagley/felix/'+i+'.output bagley/felix/'+i+'.expect')
+  # tangle('diff -a -b bagley/felix/'+i+'.output bagley/felix/'+i+'.expect')
+  # solaris fun
+  tangle('diff -b bagley/felix/'+i+'.output bagley/felix/'+i+'.expect')
   tangle('if [ 0 != $? ]; then exit $?; fi')
 
 @select(tangler('bagley/compile.sh','data'))

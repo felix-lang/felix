@@ -639,6 +639,7 @@ import os
 import flxbuild
 import flxbuild.object_class
 import flxbuild.compiler_class
+from flxbuild.flxutil import *  # get_stdout
 
 class gxx(flxbuild.compiler_class.compiler_base):
 
@@ -781,7 +782,13 @@ class gxx(flxbuild.compiler_class.compiler_base):
     return self.check_macro_defined(shell,"BSD")
 
   def detect_solaris(self,shell):
-    return self.check_macro_defined(shell,"__SOLARIS__")
+    # can't find a symbol for solaris...
+    # return self.check_macro_defined(shell,"__SOLARIS__")
+    result,output = get_stdout("uname")  # print SunOS on solaris
+    if not result and output[0] == "SunOS\n":
+      return 1
+    else:
+      return 0
 
   def detect_linux(self,shell):
     return self.check_macro_defined(shell,"__linux__")
@@ -932,7 +939,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
       COMPILE_DYNAMIC_FLX = opt.PIC+"-c "
       LINK_DYNAMIC_FLX = "-shared "
     else:
-      print "UNKNOWN MODEL",model
+      print "UNKNOWN MODEL",opt.model
       sys.exit(1)
 
     opt.CCOBJ_DYNAMIC_FLX = CXX + COMPILE_DYNAMIC_FLX
@@ -1892,7 +1899,7 @@ try:
   # RF: python's os.name is reporting posix for osx, which is all wrong
   # at this point we can't yet use all the environ tests and I don't
   # know how to call detect_osx from here.
-  result,output = get_stdout("uname -s")  # os x uname flag
+  result,output = get_stdout("uname -s")  # os x uname flag (works in solaris)
   print result,output
   if not result and output[0] == "Darwin\n":
     build_model = archmap["osx"]

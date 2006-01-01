@@ -5,6 +5,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.193  2006/01/01 09:04:54  rfistman
+made a few solaris style changes (own demuxer and a few build
+incompatibilities fixed)
+
 Revision 1.192  2005/12/30 01:21:50  rfistman
 conditionalised maker+bagley to use DLYD_LIBRARY_PATH on the mac.
 
@@ -2319,7 +2323,10 @@ if os.name == 'nt': # build system is Windows Python
   DIFF = "FC /L /W "
   GREP = "#grep "
 else:
-  DIFF = "diff -a -b " # build system is Unix Python
+  #DIFF = "diff -a -b " # build system is Unix Python
+  # RF - trying out args that work on solaris (-a = not cool)
+  # could use that sys type stuff here?
+  DIFF = "diff -b " # build system is Unix Python
   GREP = "grep "
 
 # --------------------------------------------------
@@ -2672,6 +2679,7 @@ DEMUXRTL_INTERFACES = [
  'demux_select_demuxer.hpp',# posix
  'demux_iocp_demuxer.hpp',  # win32 (monolithic)
  'demux_kqueue_demuxer.hpp',# osx/bsd
+ 'demux_evtport_demuxer.hpp',# solaris
  'demux_mutexlite.hpp',     # posix
  'demux_sockety.hpp',       # posix
 ]
