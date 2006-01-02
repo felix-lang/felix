@@ -256,10 +256,9 @@ let const_fold' e sr name arg =
   
   (* bool *)
   (* not x *)
-  | "lnot", `AST_tuple ( _, [
-           `AST_typed_case (_,x,`TYP_unitsum 2)
-          ])
-    -> truth sr (x=0)
+  | "lnot", `AST_typed_case (_,x,`TYP_unitsum 2)
+    -> 
+    truth sr (x=1)
 
   (* x or y *)
   | "lor", `AST_tuple ( _, [

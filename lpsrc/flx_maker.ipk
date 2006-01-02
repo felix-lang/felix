@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.194  2006/01/02 00:54:16  skaller
+Fixes to macro processor including bug in goto feature.
+
 Revision 1.193  2006/01/01 09:04:54  rfistman
 made a few solaris style changes (own demuxer and a few build
 incompatibilities fixed)
@@ -3467,7 +3470,7 @@ try:
         else:
           testscript = basename+SHLX
 
-        if "log_output" in options:
+        if "log_output" in options and "check_output" not in options:
           testscript = testscript + " >" + basename + ".output"
 
         elif "time_execution" in options:

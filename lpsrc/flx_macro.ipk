@@ -256,10 +256,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   let e = cf e in
   match e with
 
-  | `AST_strexpr (sr,e) -> 
-    let s = string_of_expr e in
-    `AST_literal (sr,`AST_string s)
-    
   (* Expansion block: don't even fold constants *)
   | `AST_noexpand _ -> e 
 
@@ -438,6 +434,11 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
      print_endline "Making singleton tuple";
      *)
      `AST_tuple (sr,[me x])
+
+   | `AST_apply (sr,(`AST_name(_,"_str",[]),x)) ->
+     let x = me x in
+     let x = string_of_expr x in
+     `AST_literal (sr,`AST_string x)
 
    (* _tuple_cons (a,t) -> 
      a,t if t is not a tuple
@@ -684,6 +685,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   let result = ref [] in
   let tack x = result := x :: !result in
   let ctack x = if !reachable then tack x in
+  let cf e = const_fold e in
 
   begin match st with
   (* cheat for now and ignore public and private decls *)
@@ -879,6 +881,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   | `AST_ifgoto (sr, e , id) -> 
     let e = me e in
+    let e = cf e in
     begin match e with
     | `AST_typed_case (_,c,`TYP_unitsum 2) ->
       if c = 2 then 
@@ -1073,6 +1076,7 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
   let result = ref [] in
   let tack x = result := x :: !result in
   let ctack x = if !reachable then tack x in
+  let cf e = const_fold e in
 
   begin match st with
   | `AST_expr_macro (sr, id, ps, e) ->
@@ -1085,7 +1089,10 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
     tack (`AST_stmt_macro (sr,id,ps,sts))
 
   | `AST_macro_block (sr, sts) ->
+    (*
     let sts = expand_statements recursion_limit local_prefix seq (ref true) macros sts in
+    *)
+    let sts = mss sts in
     tack (`AST_macro_block (sr,sts))
 
   | `AST_macro_name (sr, id1, id2) ->
@@ -1153,10 +1160,14 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
     in 
     tack (`AST_user_statement (sr,name,aux term))
 
+  | `AST_macro_ifgoto (sr,e,id) ->
+    (*
+    print_endline ("Substituting if/goto " ^ string_of_expr e);
+    *)
+    tack (`AST_macro_ifgoto (sr, cf (me e), mi sr id))
 
   | `AST_macro_label _
   | `AST_macro_goto _
-  | `AST_macro_ifgoto _
   | `AST_macro_proc_return _
   | `AST_macro_forget _
     -> tack st
@@ -1207,7 +1218,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
         match d with
         | Some (MNames es) -> expand_names sr es
         | Some (MName x) -> [x]
-        | Some(_) -> clierr sr "[expand_names] Name list required"
+        | Some(_) -> [name] (* clierr sr "Name list required" *)
         | None -> [name]
       )
       names
@@ -1642,6 +1653,8 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       (*
       print_endline "[statement] Got arguments ..";
       print_endline (string_of_macro_env args);
+      *)
+      (*
       print_endline "[statement] WE SHOULD EXPAND THE ARGS BUT AREN'T AT THE MOMENT";
       print_endline ("[statement] Body is " ^ string_of_statements ss);
       print_endline "[statement] SUBSTITUTING";
@@ -1697,9 +1710,15 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
 
 and expand_statements recursion_limit local_prefix seq reachable macros (ss:statement_t list) =
   let ref_macros = ref [] in
-  special_expand_statements recursion_limit local_prefix seq reachable ref_macros macros ss
+  let r = special_expand_statements recursion_limit local_prefix seq reachable ref_macros macros ss in
+  r
 
-and special_expand_statements recursion_limit local_prefix seq reachable ref_macros macros ss =
+and special_expand_statements recursion_limit local_prefix seq 
+  reachable ref_macros macros ss 
+=
+  (*
+  iter (fun st -> print_endline (string_of_statement 0 st)) ss;
+  *)
   if ss = [] then []
   else
   let sr = 
@@ -1708,6 +1727,7 @@ and special_expand_statements recursion_limit local_prefix seq reachable ref_mac
     (src_of_stmt (Flx_util.list_last ss)) 
   in
 
+  let cf e = const_fold e in
   let expansion = ref [] in
   let tack x = expansion := x :: !expansion in
   let tacks xs = iter tack xs in
@@ -1717,7 +1737,8 @@ and special_expand_statements recursion_limit local_prefix seq reachable ref_mac
     fold_left
     (fun count x -> 
       match x with 
-      | `AST_macro_label (sr,s) -> Hashtbl.add label_map s (sr,count+1) ; count
+      | `AST_macro_label (sr,s) -> 
+        Hashtbl.add label_map s (sr,count) ; count
       | _ -> count+1
     )
     0
@@ -1731,21 +1752,35 @@ and special_expand_statements recursion_limit local_prefix seq reachable ref_mac
       ss
     )
   in
+  assert (count = Array.length program);
   try
     for i = 1 to 100000 do
-      begin match program.(!pc) with
+      let st = 
+        if !pc >=0 && !pc < Array.length program 
+        then program.(!pc) 
+        else syserr sr 
+        (
+          "Program counter "^si !pc^
+          " out of range 0.." ^
+          si (Array.length program - 1)
+        )
+      in 
+      begin match st with
       | `AST_macro_goto (sr,label) -> 
         begin 
           try 
             pc := snd (Hashtbl.find label_map label)
           with 
           | Not_found -> 
-            clierr sr "Undefined macro label"
+            clierr sr ("Undefined macro label " ^ label)
         end
 
       | `AST_macro_proc_return _ -> raise Macro_return
 
       | `AST_macro_ifgoto (sr,e,label) ->
+        (*
+        print_endline ("Expanding if/goto " ^ string_of_expr e);
+        *)
         let result = 
           expand_expr 
             recursion_limit 
@@ -1754,19 +1789,21 @@ and special_expand_statements recursion_limit local_prefix seq reachable ref_mac
             (!ref_macros @ macros) 
             e
         in
+        let result = cf result in
           begin match truthof result with
           | Some false -> incr pc
           | Some true ->
             begin 
               try 
-                pc := snd (Hashtbl.find label_map label)
+                pc := snd (Hashtbl.find label_map label);
               with
               | Not_found -> 
-                clierr sr "Undefined macro label"
+                clierr sr ("Undefined macro label " ^ label)
             end
 
           | None ->
-            clierr sr "Constant expression required"
+            clierr sr 
+            ("Constant expression required, got " ^ string_of_expr e)
           end
 
       | st ->

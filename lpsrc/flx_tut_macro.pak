@@ -532,6 +532,78 @@ macro fun greet() = hello " " place "!\n";
 
 print (greet());
 
+@head(3,'For Loops')
+Felix provides two for loops which iterate over tuples.
+@select(tangler(tdir+'mac130.flx'))
+include "std";
+macro for val i in ("Hello","World",42) do 
+  print i; print " ";
+done;
+endl;
+
+macro for i in (a,b,c) do 
+  var i = 1;
+  print$ String::repr_expr i; print "="; print i; endl;
+done;
+
+@head(3,"Unpacking Tuples")
+Tuples can be unpacked by macro assignment, 
+macro val, macro var, and macro for val statements.
+@select(tangler(tdir+'mac131.flx'))
+include "std";
+macro val x,y = 1,2;
+macro var a,b = 1,2;
+macro a,b = a+1,b+1;
+macro for val i in x,y,a,b do print i; print " "; done; endl;
+
+macro for val i,j in ((1,2),(3,4)) do
+  print "("; print i; print ","; print j; print ")"; print " ";
+done;
+endl;
+
+@head(3,"String representation")
+The string representation of an expression can be obtained
+with the special operator _str. This is most useful for
+printing a variable name (but it works for any expression).
+Note the expanded value is stringized.
+
+@select(tangler(tdir+'mac132.flx'))
+include "std";
+var x = 1;
+var y = 42;
+print (_str x); print " = "; print x; endl;
+print (_str y); print " = "; print y; endl;
+print (_str$ x+y); print " = "; print$ x+y; endl;
+
+
+@head(3,"Packing Tuples")
+The Felix syntax macro processor treats tuples as lists.
+The for val construction can be used to iterate over
+list contents. Two primitive macro functions are provided
+for constructing tuples.
+@p()
+The _tuple function takes one argument and makes a 
+one element tuple. Note that the main Felix programming
+language does not allow one element tuples. The macro
+processor does though.
+@p()
+The _tuple_cons function takes two arguments, an element
+and a tuple, and constructs a single tuple starting
+with the first argument followed by the elements of the 
+second argument: this is the usual list cons function of
+functional programming languages.
+@p()
+These two functions are most useful in recursive
+expansions, particularly when driven by user defined
+nontermial parses (see the next section).
+
+@select(tangler(tdir+'mac133.flx'))
+include "std";
+macro var x = _tuple 1;
+macro x = _tuple_cons (2,x);
+macro x = _tuple_cons (3,x);
+macro for val i in x do print i; print " "; done; endl;
+
 @head(1,"User defined syntax")
 Felix has a complete, graded system which
 allows the programmer to extend its syntax.

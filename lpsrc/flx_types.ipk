@@ -369,7 +369,6 @@ Raw expression terms.
 @select(h)
 and expr_t =
   [
-  | `AST_strexpr of range_srcref * expr_t
   | `AST_map of range_srcref * expr_t * expr_t
   | `AST_noexpand of range_srcref * expr_t
   | `AST_name of range_srcref * string * typecode_t list 
@@ -1181,7 +1180,6 @@ let map_type f = function
   | x -> x
 
 let map_expr f (e:expr_t):expr_t = match e with
-  | `AST_strexpr (sr,a) -> `AST_strexpr (sr,f a)
   | `AST_map (sr,a,b) -> `AST_map (sr,f a, f b)
   | `AST_noexpand (sr,x) -> e (* DO NOT EXPAND .. HMM .. *)
   | `AST_name _ -> e
@@ -1688,7 +1686,6 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_arrow (s,_)
   | `AST_superscript (s,_)
 
-  | `AST_strexpr (s,_) 
   | `AST_map (s,_,_) 
   | `AST_apply  (s,_) 
   | `AST_deref (s,_) 
@@ -2116,7 +2113,6 @@ and string_of_expr (e:expr_t) =
   | `AST_get_named_method (_,(n,mix,ts,e)) -> 
     "get (" ^ n ^ "<" ^ si mix ^">"^"["^catmap "," string_of_typecode ts^"], " ^
     se e ^")"
-  | `AST_strexpr (_,e) -> "#" ^ (string_of_expr e)
   | `AST_map (_,f,e) -> "map (" ^ se f ^ ") (" ^ se e ^ ")"
   | `AST_deref (_,e) -> "*(" ^ se e ^ ")"
   | `AST_lvalue (_,e) -> "lvalue" ^ "(" ^ se e ^ ")"

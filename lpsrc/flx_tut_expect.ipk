@@ -77,7 +77,7 @@ Start dump_e
 End dump_e
 @head(2,"tut/examples/mac126a.expect")
 @select(tangler("tut/examples/mac126a.expect","data"))
-10          
+10 9 8 7 6 5 4 3 2 1
 @head(2,"tut/examples/mac127.expect")
 @select(tangler("tut/examples/mac127.expect","data"))
 2+2 -> 4
@@ -91,6 +91,24 @@ Hi there locality!
 Hello locality!
 Hello world!
 Hello world!
+@head(2,"tut/examples/mac130.expect")
+@select(tangler("tut/examples/mac130.expect","data"))
+Hello World 42 
+PTF a:int=1
+PTF b:int=1
+PTF c:int=1
+@head(2,"tut/examples/mac131.expect")
+@select(tangler("tut/examples/mac131.expect","data"))
+1 2 2 3 
+(1,2) (3,4) 
+@head(2,"tut/examples/mac132.expect")
+@select(tangler("tut/examples/mac132.expect","data"))
+x = 1
+y = 42
+(add (x, y)) = 43
+@head(2,"tut/examples/mac133.expect")
+@select(tangler("tut/examples/mac133.expect","data"))
+3 2 1 
 @head(2,"tut/examples/mac300.expect")
 @select(tangler("tut/examples/mac300.expect","data"))
 OK
