@@ -56,6 +56,7 @@ let include_file syms inspec lookup =
   let pf = find_file lookup include_dirs (basename ^ ".par") in
   let tf_mt = filetime tf in
   let pf_mt = filetime pf in
+  let cbt = this_version.build_time_float in
   let saveit hash_include_files sts =
       let pf = 
         if pf = "" then 
@@ -67,7 +68,8 @@ let include_file syms inspec lookup =
         | Some x -> 
           if syms.compiler_options.print_flag then
           print_endline ("Written " ^ pf);
-          Marshal.to_channel x (this_version,hash_include_files,sts) [];
+          Marshal.to_channel x this_version [];
+          Marshal.to_channel x (hash_include_files,sts) [];
           close_out x
         | None -> () (* can't write, don't worry *)
   in
@@ -101,39 +103,51 @@ let include_file syms inspec lookup =
       Filename.chop_extension 
       (if tf <> "" then tf else pf)
     in
-      if mem include_name !(syms.include_files) then []
-      else
-      begin
+      if mem include_name !(syms.include_files) then [] else
+      begin (* file not already included *)
         syms.include_files := include_name :: !(syms.include_files)
         ;
-        if (not force) && tf_mt < pf_mt then 
+        if cbt < pf_mt && (not force) && tf_mt < pf_mt then 
+        begin (* top level time stamps OK *)
           let x = open_in_bin pf in
-          let (that_version,hash_include_files,tree) = Marshal.from_channel x in
-          close_in x;
-          if this_version = that_version &&
-          fold_left 
-            (fun acc f -> 
-              let ft = filetime f in
-              acc && ft <> 0.0 && ft < pf_mt
-            ) 
-            true 
-            hash_include_files
-          then begin
-            if syms.compiler_options.print_flag then
-            print_endline ("Loaded " ^ pf);
-            tree
-          end else 
+          let that_version = Marshal.from_channel x in
+          if this_version = that_version then begin
+            let (hash_include_files,tree) = Marshal.from_channel x in
+            close_in x;
+
+            let hash_includes_agree = fold_left 
+              (fun acc f -> 
+                let ft = filetime f in
+                acc && ft <> 0.0 && ft < pf_mt
+              ) 
+              true 
+              hash_include_files
+            in
+            if hash_includes_agree then begin (* all time stamps OK *)
+              if syms.compiler_options.print_flag then
+              print_endline ("Loaded " ^ pf);
+              tree
+            end else begin (* include file timestamps wrong *)
+              let hash_include_files, sts = parseit() in
+              saveit hash_include_files sts;
+              sts
+            end
+          end (* right version of compiler *)
+          else 
+          begin (* wrong version of compiler *)
+            close_in x;
             let hash_include_files, sts = parseit() in
             saveit hash_include_files sts;
             sts
-
-        (* -- text file is newer or parsed file doesn't exist -- *)
-        else begin
+          end
+        end 
+        else 
+        begin (* time stamps wrong *)
           let hash_include_files,sts = parseit() in
           saveit hash_include_files sts;
           sts
         end
-      end
+      end (* process inclusion first time *)
   in
     sts
 
