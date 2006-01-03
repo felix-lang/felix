@@ -227,6 +227,8 @@ namespace flx { namespace rtl { namespace strutil {
 include "std";
 macro val true = case 2 of 2;
 macro val false = case 1 of 2;
+macro fun print_line (x) = { fprint (cout,x); Stdout::endl cout; };
+macro fun print(x) = { fprint (cout,x); };
 
 @h=tangler('lib/flx_syntax.flxh','data')
 @select(h)
@@ -759,11 +761,11 @@ module C_hack
   publish """
   Unsafe output of hopefully null terminated C strings
   """
-  proc print: charp = "std::cout << $1;" requires iostream;
-  proc print: charcp = "std::cout << $1;" requires iostream;
+  proc fprint: ostream * charp = "*$1<<$2;" requires iostream;
+  proc fprint: ostream * charcp = "*$1<<$2;" requires iostream;
 
   publish """ print an address in hex """
-  proc print: address = "std::cout << $1;" requires iostream;
+  proc fprint: ostream * address = "*$1<<$2;" requires iostream;
 
   header dflt_h = "template<class T> T dflt() { return T(); }";
   publish """
@@ -951,7 +953,7 @@ module Bool
   fun nor: bool * bool -> bool = "!($1||$2)";
   fun xor: bool * bool -> bool = "$1!=$2";
   fun lnot: bool -> bool = "!$1";
-  proc print: bool = 'std::cout << ($1??"true":"false");' requires iostream;
+  proc fprint: ostream * bool = '*$1<<($2??"true":"false");' requires iostream;
 }
 
 @#------------- INTEGER MODULES -------------------
@@ -989,13 +991,13 @@ type string = "std::string";
   if t in uints: gen_uint(t)
   if t in uints: gen_uint_assign(t)
   if t == "tiny":
-    tangle('  proc print: tiny = "std::cout << (int)$1;" requires iostream;')
+    tangle('  proc fprint: ostream * tiny = "*$1<<(int)$2;" requires iostream;')
     tangle('  fun str: '+t+' -> string = "flx::rtl::strutil::str<int>($1)" requires flx_strutil;')
   elif t == "utiny":
-    tangle('  proc print: utiny = "std::cout << (unsigned int)$1;" requires iostream;')
+    tangle('  proc fprint: ostream * utiny = "*$1<<(unsigned int)$2;" requires iostream;')
     tangle('  fun str: '+t+' -> string = "flx::rtl::strutil::str<unsigned int>($1)" requires flx_strutil;')
   else:
-    tangle('  proc print: '+t+' = "std::cout<<$1;" requires iostream;')
+    tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires iostream;')
     tangle('  fun str: '+t+' -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;')
   tangle("}")
   tangle("")
@@ -1009,7 +1011,7 @@ type string = "std::string";
   gen_pow(t)
   gen_trig(t)
   gen_nan(t)
-  tangle('  proc print: '+t+' = "std::cout<<$1;" requires iostream;')
+  tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires iostream;')
   tangle('  fun str: '+t+' -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;')
   tangle("}")
   tangle("")
@@ -1024,7 +1026,7 @@ module Char
   open Int;
   fun ord: char -> int = "(int)$1";
   fun chr: int -> char = "(char)$1";
-  proc print: char = "std::cout<<$1;" requires iostream;
+  proc fprint: ostream * char = "*$1<<$2;" requires iostream;
 }
 
 module Wchar
@@ -1032,7 +1034,7 @@ module Wchar
   open Long;
   fun ord: wchar -> long ="(long)$1";
   fun wchr: long -> wchar = "(wchar_t)$1";
-  proc print: wchar = "std::cout<<$1;" requires iostream;
+  proc fprint: ostream * wchar = "*$1<<$2;" requires iostream;
 }
 
 module Unicode
@@ -1048,11 +1050,13 @@ module Unicode
 module Stdout 
 {
   requires iostream;
+  type ostream = "std::ostream*";
+  const cout: ostream = "&cout";
+  proc endl: ostream = "*$1<<std::endl;";
   proc endl: unit = "std::cout << std::endl;";
   proc space: int = "std::cout << ' ';";
   proc flush: unit = "std::cout.flush(); ";
 }
-macro proc print_line (x) { print x; Stdout::endl; }
 
 @#------------- STRING MODULES -------------------
 module String
@@ -1090,7 +1094,7 @@ module String
   // comparisons
   gen_cmp string;
 
-  proc print: string = "std::cout << $1;" requires iostream;
+  proc fprint: ostream * string = "*$1<<$2;" requires iostream;
   fun atoi: string -> int = "std::atoi($1.data())" requires cstdlib;
   fun atol: string -> long = "std::atol($1.data())" requires cstdlib;
   fun atof: string -> double = "std::atof($1.data())" requires cstdlib;
@@ -1140,7 +1144,7 @@ module Ustring
   // comparisons
   gen_cmp ustring;
 
-  proc print: ustring = "std::cout << $1;" requires iostream;
+  proc fprint: ostream * ustring = "*$1<<$2;" requires iostream;
 }
 
 publish """
@@ -1340,8 +1344,8 @@ module Control
   """
   {
     flx::rtl::con_t *tmp=$1;
-    if(!tmp)
-      throw flx::rtl::flx_exec_failure_t (__FILE__,"run","Run terminated procedure");
+    //if(!tmp)
+    //  throw flx::rtl::flx_exec_failure_t (__FILE__,"run","Run terminated procedure");
     while(tmp) {
       try { tmp=tmp->resume(); }
       catch (flx::rtl::con_t *x) { tmp = x; }

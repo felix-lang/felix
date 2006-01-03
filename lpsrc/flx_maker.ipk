@@ -5,6 +5,13 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.195  2006/01/03 16:15:10  skaller
+Changed all print functions to fprint, which requires an
+ostream as first argument. Provide macro print to support
+existing code. Note overloads on print will not work.
+Procedures objects can now be created on the stack,
+such procedures have no resume method.
+
 Revision 1.194  2006/01/02 00:54:16  skaller
 Fixes to macro processor including bug in goto feature.
 
@@ -2474,7 +2481,9 @@ if "help" in options:
 
 if "clean" in options:
   for d in [ "test","tut"+os.sep+"examples","bagley"+os.sep+"felix"]:
-    for e in ["*.hpp","*.so","*.dll","*.cpp","*.hpp","*.par","*.output","*.o","*.obj","*.exp","*.lib"]:
+    for e in ["*.hpp","*.so","*.dll","*.cpp","*.hpp",
+      "*.par","*.output","*.o","*.obj",
+      "*.exp","*.lib"]:
       for f in glob.glob(d + os.sep + e):
         erasefile(f)
 
@@ -2771,7 +2780,6 @@ FLX_MODULES = [
   'flx_constfld'     , 
   'flx_cexpr'        ,
   'flx_csubst'       , 
-  'flx_macro'        , 
   'flx_parse'        ,
   'flx_keywords'     ,
   'flx_prelex'       ,
@@ -2784,6 +2792,7 @@ FLX_MODULES = [
   'flx_parse_ctrl'   ,
   'flx_dfa'          ,
   'flx_pat'          , 
+  'flx_macro'        , 
   'flx_desugar'      , 
   'flx_mbind'        , 
   'flx_symtab'       , 
@@ -3906,7 +3915,7 @@ We have no idea if it continues copying.
 @tangle('\t${BUILTIN_ISCR} lpsrc/flx_sourceforge.pak')
 @tangle('')
 @tangle('clean: dummy')
-@for dir in ['tut/examples/*','test/*','bagley/felix*']:
+@for dir in ['tut/examples/*','test/*','bagley/felix/*']:
   for ext in ['.cpp','.hpp','.o','.so','.obj','.dll','.exp','.imp','.output','.par','.exe']:
     tangle('\trm -rf '+dir+ext)
 @tangle('\trm -rf speed/exes/*')

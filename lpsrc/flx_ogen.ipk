@@ -389,10 +389,9 @@ let gen_offset_tables syms (child_map,bbdfns) =
     | `BBDCL_procedure (props,vs,ps,_) -> 
       if mem `Heap_closure props then
         gen_fun_offsets s syms (child_map,bbdfns) index vs ps `BTYP_void ts instance props
-      (*
+      else if mem `Stackable props then ()
       else
-        print_endline ("Warning: no closure of " ^ id ^"<" ^ si index ^ "> is used")
-      *)
+        print_endline ("Warning: no closure of " ^ id ^"<" ^ si index ^ "> is used, but not stackable?")
     | _ -> ()
   )
   syms.instances

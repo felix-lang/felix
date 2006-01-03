@@ -157,7 +157,7 @@ module A
 }
 
 @select(tangler('test/rt03.flx'))
-#include <std.flx>
+#import <flx.flxh>
 // test lazy functions and procedures
 print "lazy expr eval test\n";
 var x = 1;
@@ -169,7 +169,7 @@ print (f ()); print "\n";
 
 @select(tangler('test/rt04.flx'))
 // test the string library
-#include <std.flx>
+#import <flx.flxh>
 var x = "Hello";
 x += "+";
 x += "World";
@@ -197,13 +197,11 @@ endl;
 
 @select(tangler('test/rt05.flx'))
 // test the chained comparison
-#include <std.flx>
+#import <flx.flxh>
 assert(1<2&<3&<4);
 
 
 @select(tangler('test/rt07.flx'))
-header "#include <stdio.h>";
-
 fun land: 2 * 2 -> 2 = "$1 && $2";
 type int = "int";
 fun eq: int * int -> 2 = "$1 == $2";
@@ -246,7 +244,7 @@ print (if 1==1 then "true" else "false" endif); eol;
 print (if 1==0 then "true" else "false" endif); eol;
 
 @select(tangler('test/rt08.flx'))
-#include <std.flx>
+#import <flx.flxh>
 // closure formation test
 
 // primitive function
@@ -260,9 +258,9 @@ print (appl (2, add of (int*int))); endl;
 // struct as function
 struct X { x:int; }
 fun execX(p:int->X):X = { return p(1); }
-proc print(x:X){ print "struct X"; }
-print (execX (X of (int))); endl;
-print (execX (X)); endl;
+proc xprint(x:X){ print "struct X"; }
+xprint (execX (X of (int))); endl;
+xprint (execX (X)); endl;
 
 // struct get projection as function
 fun execx(p:X->int,a:X):int => p a;
@@ -276,22 +274,22 @@ struct CX {int x; };
 
 cstruct CX { x:int; }
 fun execCX(p:int->CX):CX = { return p(1); }
-proc print(x:CX){ print "struct CX"; }
-print (execCX (CX of (int))); endl;
-print (execCX (CX)); endl;
+proc xprint(x:CX){ print "struct CX"; }
+xprint (execCX (CX of (int))); endl;
+xprint (execCX (CX)); endl;
 
 
 // anonymous variant type constructor as function
 typedef Y = 1 + int;
 fun exec2(y2:int->Y,a:int):Y= { return  y2 a; }
-proc print(y:Y) { print "union Y"; }
-print (exec2(case 2 of Y, 1)); endl;
+proc yprint(y:Y) { print "union Y"; }
+yprint (exec2(case 2 of Y, 1)); endl;
 
 // named variant type constructor as function
 union U = | A | B of int;
 fun exec3(y2:int->U,a:int):U= { return  y2 a; }
-proc print(y:U) { print "union U"; }
-print (exec3(B of (int), 1)); endl;
+proc xprint(y:U) { print "union U"; }
+xprint (exec3(B of (int), 1)); endl;
 
 @select(tangler('test/rt09.flx'))
 // code insertion
@@ -330,6 +328,7 @@ endl;
 
 @select(tangler('test/rt11.flx'))
 #import <flx.flxh>
+open Long;
 
 // test dual
 typedef y = ~(int+int); // = int * int
@@ -343,8 +342,8 @@ typedef ibl = typeof (1,1L);
 typedef tt = typematch ibl with | _ * ?t as z => t * t * z endmatch;
 var a:tt = (1L, 2L, (3,4L));
 
-Long::print a.(0); print " "; Long::print a.(1); print " ";
-print a.(2).(0); print " "; Long::print a.(2).(1); endl;
+print a.(0); print " "; print a.(1); print " ";
+print a.(2).(0); print " "; print a.(2).(1); endl;
 
 typedef fun domainf (t:TYPE):TYPE => typematch t with | ?aa -> ?bb => aa endmatch;
 typedef domains [t] = typematch t with | ?aa -> ?bb => aa endmatch;
@@ -361,14 +360,16 @@ print two; endl;
 // generics inlining/call lifting tests
 #import <flx.flxh>
 
-proc f[k] (z:k, print:k->void) {
+proc f[k] (z:k, pr:k->void) {
   fun diag[t] (x:t):t*t = { return x,x; }
   fun prj1[t1,t2] (x:t1,y:t2):t1 = { return x; }
   fun prj2[t1,t2] (x:t1,y:t2):t2 = { return y; }
-  print (prj1(diag z)); endl;
+  pr (prj1(diag z)); endl;
 }
 
-f[int] (1, print of (int));
+// eta expansion
+proc pr(x:int) { fprint (cout,x); }
+f[int] (1, the pr);
 
 @select(tangler('test/rt13.flx'))
 //call inlining
@@ -604,7 +605,7 @@ p; // ambiguous
 
 @select(tangler('test/bt03.flx'))
 // open depends on self
-#include <std.flx>
+#import <flx.flxh>
 interface I { proc print_endl:int; }
 module X {
   module M { proc print_endl (a:int) { print a; endl; } }
@@ -615,7 +616,7 @@ open B;
 print_endl 1;
 
 @select(tangler('test/bt04.flx'))
-#include <std.flx>
+#import <flx.flxh>
 // these now fail OK: (should yield 'any' .. then fail overload :-)
 val aa = bb + 1;
 val bb = aa + 1;

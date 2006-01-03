@@ -33,8 +33,6 @@ val heavy_inlining:
   sym_state_t ->
   (bid_t, bid_t list) Hashtbl.t *
   fully_bound_symbol_table_t ->
-  bid_t ->
-  biface_t list ->
   unit
 
  
@@ -321,6 +319,17 @@ let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len ex
     in
     let i,ts = fixup i ts in
     `BEXE_call_method_direct (sr,ge e1,i,ts, ge e2)
+
+  | `BEXE_call_method_stack (sr,e1,i,ts,e2)  -> 
+    let fixup i ts = 
+      let ts = map auxt ts in
+      try 
+        let j= Hashtbl.find revariable i in 
+        j, vsplice caller_vars callee_vs_len ts
+      with Not_found -> i,ts
+    in
+    let i,ts = fixup i ts in
+    `BEXE_call_method_stack (sr,ge e1,i,ts, ge e2)
 
   | `BEXE_call_stack (sr,i,ts,e2)  -> 
     let fixup i ts = 
@@ -683,6 +692,18 @@ let gen_body syms (uses,child_map,bbdfns) id
     let i,ts = fixup i ts in
     [`BEXE_call_method_direct (sr,ge e1,i,ts, ge e2)]
 
+  | `BEXE_call_method_stack (sr,e1,i,ts,e2)  -> 
+    let fixup i ts = 
+      let auxt t = varmap_subst varmap t in
+      let ts = map auxt ts in
+      try 
+        let j= Hashtbl.find revariable i in 
+        j, vsplice caller_vars callee_vs_len ts
+      with Not_found -> i,ts
+    in
+    let i,ts = fixup i ts in
+    [`BEXE_call_method_stack (sr,ge e1,i,ts, ge e2)]
+
   | `BEXE_jump_direct (sr,i,ts,e2)  -> 
     let fixup i ts = 
       let auxt t = varmap_subst varmap t in
@@ -703,6 +724,13 @@ let gen_body syms (uses,child_map,bbdfns) id
     let ts = vsplice caller_vars callee_vs_len ts in
     let rv i = try Hashtbl.find revariable i with Not_found -> i in
     [`BEXE_apply_ctor (sr,rv i1, rv i2,ts,rv i3,ge e2)]
+
+  | `BEXE_apply_ctor_stack (sr,i1,i2,ts,i3,e2) ->
+    let auxt t = varmap_subst varmap t in
+    let ts = map auxt ts in
+    let ts = vsplice caller_vars callee_vs_len ts in
+    let rv i = try Hashtbl.find revariable i with Not_found -> i in
+    [`BEXE_apply_ctor_stack (sr,rv i1, rv i2,ts,rv i3,ge e2)]
     
   | `BEXE_call (sr,e1,e2)  -> [reduce_bexe bbdfns (`BEXE_call (sr,ge e1, ge e2))]
   | `BEXE_jump (sr,e1,e2)  -> assert false
@@ -1148,6 +1176,11 @@ let expand_exe syms bbdfns u exe =
       let e2,xs2 = u sr e2 in
       `BEXE_call_method_direct (sr,e1,i,ts,e2) :: xs2 @ xs1
 
+    | `BEXE_call_method_stack (sr,e1,i,ts,e2) ->
+      let e1,xs1 = u sr e1 in
+      let e2,xs2 = u sr e2 in
+      `BEXE_call_method_stack (sr,e1,i,ts,e2) :: xs2 @ xs1
+
     | `BEXE_jump_direct (sr,i,ts,e2) ->
       let e,xs = u sr e2 in
       `BEXE_jump_direct (sr,i,ts,e) :: xs
@@ -1155,6 +1188,10 @@ let expand_exe syms bbdfns u exe =
     | `BEXE_apply_ctor (sr,i1,i2,ts,i3,e2) ->
       let e,xs = u sr e2 in
       `BEXE_apply_ctor (sr,i1,i2,ts,i3,e) :: xs
+
+    | `BEXE_apply_ctor_stack (sr,i1,i2,ts,i3,e2) ->
+      let e,xs = u sr e2 in
+      `BEXE_apply_ctor_stack (sr,i1,i2,ts,i3,e) :: xs
      
     | `BEXE_assign (sr,e1,e2) ->
       let e1,xs1 = u sr e1 in
@@ -1170,7 +1207,6 @@ let expand_exe syms bbdfns u exe =
       let e1,xs1 = u sr e1 in
       let e2,xs2 = u sr e2 in
       `BEXE_call (sr,(`BEXPR_apply_direct(i,ts,e1),t),e2) :: xs2 @ xs1
-
 
     | `BEXE_call (sr,e1,e2) ->
       let e1,xs1 = u sr e1 in
@@ -1858,6 +1894,7 @@ and fold_vars syms (uses,child_map,bbdfns) i ps exes =
 
           (* terminate substitution, return modified instr *)
           | `BEXE_apply_ctor _
+          | `BEXE_apply_ctor_stack _
           | `BEXE_assign _
           | `BEXE_fun_return _
           | `BEXE_jump _
@@ -1867,6 +1904,7 @@ and fold_vars syms (uses,child_map,bbdfns) i ps exes =
           | `BEXE_call _
           | `BEXE_call_direct _
           | `BEXE_call_method_direct _
+          | `BEXE_call_method_stack _
           | `BEXE_call_stack _
              -> subs := false; elimi exe
           else exe
@@ -2065,8 +2103,6 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
 
 let heavy_inlining syms  
   (child_map,bbdfns)
-  (root:bid_t) 
-  (bifaces:biface_t list) 
 =
   (* make set of used things, initially empty *)
   (*

@@ -429,16 +429,42 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     end
 
    (* artificially make singleton tuple *)
-   | `AST_apply (sr,(`AST_name(_,"_tuple",[]),x)) ->
+  | `AST_apply (sr,(`AST_name(_,"_tuple",[]),x)) ->
      (*
      print_endline "Making singleton tuple";
      *)
      `AST_tuple (sr,[me x])
 
-   | `AST_apply (sr,(`AST_name(_,"_str",[]),x)) ->
+  | `AST_apply (sr,(`AST_name(_,"_str",[]),x)) ->
      let x = me x in
      let x = string_of_expr x in
      `AST_literal (sr,`AST_string x)
+
+  | `AST_apply (sr,(`AST_name(_,"_parse_expr",[]),x)) ->
+    let x = me x in
+    let x = cf x in
+    begin match x with
+    | `AST_literal (_,`AST_string s) ->
+      let filename = match sr with filename,_,_,_,_ -> "_string_in_"^filename in
+      let pre_tokens  = Flx_pretok.pre_tokens_of_string s filename expand_expression in
+      let pre_tokens =
+        match pre_tokens with
+        | Flx_parse.HASH_INCLUDE_FILES _ :: tail -> tail 
+        | _ -> assert false
+      in 
+      let tokens  = Flx_lex1.translate pre_tokens in
+      let toker = (new Flx_tok.tokeniser tokens) in
+      begin try
+        Flx_parse.expr
+        (toker#token_src)
+        (Lexing.from_string "dummy" )
+      with _ ->
+        toker#report_syntax_error;
+        raise (Flx_exceptions.ParseError "Parsing String as Expression")
+      end
+    | _ -> clierr sr "_parse_expr requires string argument"
+    end
+   
 
    (* _tuple_cons (a,t) -> 
      a,t if t is not a tuple
@@ -447,7 +473,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
      NOTE .. not sure if this should be done
      before or after expansion .. 
    *)
-   | `AST_apply (sr,
+  | `AST_apply (sr,
        (
          `AST_name(_,"_tuple_cons",[]),
          `AST_tuple (_,[h;t])
@@ -476,7 +502,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       equivalent to
         id ()
    *)
-   | `AST_apply (sr, (e1', e2')) -> 
+  | `AST_apply (sr, (e1', e2')) -> 
     let 
       e1 = me e1' and 
       e2 = me e2' 
@@ -748,14 +774,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       ) idts 
     in
     tack (`AST_cclass (sr, mi sr id, vs, idts))
-
-  | `AST_typeclass (sr, id, vs, idts) ->  
-    let idts = map (function 
-      | `TypeClassMemberFun (id,t) -> `TypeClassMemberFun (id,mt sr t)
-      | `TypeClassMemberProc (id,t) -> `TypeClassMemberProc (id,mt sr t)
-      ) idts 
-    in
-    tack (`AST_typeclass (sr, mi sr id, vs, idts))
 
   (* IDENTIFIER RENAMING NOT SUPPORTED IN TYPES *)
   | `AST_type_alias (sr, id, vs, t) ->  
@@ -1831,7 +1849,7 @@ and expand_macros local_prefix recursion_limit ss =
   expand_statements recursion_limit local_prefix (ref 1) (ref true) [] ss
 
 
-let expand_expression local_prefix e =
+and expand_expression local_prefix e =
   let seq = ref 1 in
   expand_expr 20 local_prefix seq [] e
 
@@ -1901,7 +1919,8 @@ try
     Flx_parse_ctrl.parse_file 
       input_file_name 
       (Filename.dirname input_file_name)
-      compiler_options.include_dirs 
+      compiler_options.include_dirs
+      expand_expression
   in
   print_endline (Flx_print.string_of_compilation_unit parse_tree);
   print_endline "//PARSE OK";

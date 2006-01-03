@@ -1366,7 +1366,7 @@ val nxt = (100.1,t0);
 val t1 = Cons nxt;
 val t2 = Cons (200.2,t1);
 
-proc print (a: float_list) 
+proc xprint (a: float_list) 
 {
   match a with 
   | Empty => { print "[]"; }
@@ -1374,12 +1374,12 @@ proc print (a: float_list)
     {
       print i; 
       print " "; 
-      print tail;
+      xprint tail;
     }
   endmatch;
 }
 
-print t2; endl;
+xprint t2; endl;
 
 @doc()
 A more interesting example is now given.
@@ -1394,7 +1394,7 @@ union int_list =
   | Cons of int * int_list
 ;
 
-proc print (a: int_list) 
+proc xprint (a: int_list) 
 {
   match a with
   | Empty => { print "[]"; }
@@ -1402,7 +1402,7 @@ proc print (a: int_list)
     {
       print i; 
       print " "; 
-      print tail;
+      xprint tail;
     }
   endmatch;
 }
@@ -1417,7 +1417,7 @@ fun mk(i: int, tl:int_list):int_list =
 }
 
 val a = mk(10,Empty);
-print "List= "; print a; endl;
+print "List= "; xprint a; endl;
 
 fun rev(lst:int_list):int_list =
 {
@@ -1437,7 +1437,7 @@ fun rev(lst:int_list):int_list =
   return result;
 }
 
-print "Reversed= "; print (rev a); endl;
+print "Reversed= "; xprint (rev a); endl;
 
 @doc()
 @head(2,'Higher order Functions')
@@ -3224,9 +3224,10 @@ if the argument index is out of range.
 argv 0 is usually the program name:
 for the flx_run driver its the loaded library
 name: the driver name and control arguments
-are stripped.
+are stripped. (Note: the output is platform
+dependent and so can't be checked)
 
-@select(tangler(tdir+'tut301.flx'))
+@select(tangler(tdir+'xtut301.flx'))
 #import <flx.flxh>
 open System;
 print "argc="; print argc; endl;
@@ -3616,7 +3617,7 @@ class Y {
   proc setxy( a:int, b:long) { x = a; y = b; }
 
   // accessor procedures
-  proc print() {
+  proc yprint() {
     print "This is a Y object, with x = "; 
     print x; print ", y = "; print y;
     print ", and c = "; print c; endl;
@@ -3642,10 +3643,10 @@ print ob.y; endl;
 print$ ob.fetchc(); endl;
 
 ob.setx 22;
-ob.print();
+ob.yprint();
 
 ob.setxy (12,33L);
-ob.print;
+ob.yprint;
 
 print$ ob.f 1; endl;
 
@@ -3681,7 +3682,7 @@ class Y[t] {
   proc setxy( a:t, b:long) { x = a; y = b; }
 
   // accessor procedures
-  proc print(xprint:t->0) {
+  proc yprint(xprint:t->0) {
     print "This is a Y object, with x = "; 
     xprint x; print ", y = "; print y;
     print ", and c = "; print c; endl;
@@ -3706,11 +3707,13 @@ print ob.x; endl;
 print ob.y; endl;
 print$ ob.fetchc(); endl;
 
+proc iprint(x:int) { print x; }
+
 ob.setx 22;
-ob.print(print of (int));
+ob.yprint(iprint of (int));
 
 ob.setxy (12,33L);
-ob.print(print of (int));
+ob.yprint(iprint of (int));
 
 print$ ob.f (1,add of (int*int)); endl;
 
@@ -3760,7 +3763,7 @@ class Y[t] {
   proc setxy( a:t, b:long) { x = a; y = b; }
 
   // accessor procedures
-  proc print(xprint:t->0) {
+  proc yprint(xprint:t->0) {
     print "This is a Y object, with x = "; 
     xprint x; print ", y = "; print y;
     print ", and c = "; print c; endl;
@@ -3788,11 +3791,13 @@ print ob.x; endl;
 print ob.y; endl;
 print$ ob.fetchc(); endl;
 
+proc iprint(x:int) { print x; }
+
 ob.setx 22;
-ob.print(print of (int));
+ob.yprint(iprint of (int));
 
 ob.setxy (12,33L);
-ob.print(print of (int));
+ob.yprint(iprint of (int));
 
 print$ ob.f (1,add of (int*int)); endl;
 print$ ob.p[int] (1,add of (int*int)); endl;

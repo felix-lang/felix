@@ -36,7 +36,7 @@ open Faio_posix;
 
 header "typedef struct { char dat[8]; } tstbuf;";
 ctypes tstbuf;
-proc print: tstbuf = 'printf("%.8s", $1.dat);';
+proc dprint: tstbuf = 'printf("%.8s", $1.dat);';
 fun get_data: tstbuf -> address = "$1.dat";
 fun get_data: charp -> address = "$1";
 
@@ -58,7 +58,7 @@ spawn_fthread{
 
     var b: tstbuf;
     async_read(c, &len, b.data, &eof);
-    print "read "; print b; endl;
+    print "read "; dprint b; endl;
     System::exit 0;
   };
 };
@@ -69,11 +69,12 @@ var b: tstbuf;
 var len = 16;           // ask for more than there is and rely on shutdown
 var eof: bool;
 async_read(s, &len, b.data, &eof);
-print "read "; print len; print " bytes: "; print b; endl;
+print "read "; print len; print " bytes: "; dprint b; endl;
 async_write(s, &len, get_data((c"thanks!!")), &eof);
 
 @h = tangler("test/posix_t3.flx")
 @select(h)
+#include <flx.flxh>
 // actually portable, but I don't know the scheme for
 // adding those tests.
 include "flx_stream";

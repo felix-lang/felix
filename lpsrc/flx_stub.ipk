@@ -26,6 +26,7 @@ let () =
     input_file_name 
     (Filename.dirname input_file_name) 
     [] 
+    Flx_macro.expand_expression
   in
   Flx_tok.print_pre_tokens pre_tokens;
   let tokens  = Flx_lex1.translate pre_tokens in
@@ -38,7 +39,7 @@ let () =
         try 
           Flx_parse.exprx
           (toker#token_src) 
-          lexbuf
+          lexbuf 
         with _ -> begin
           toker#report_syntax_error;
           raise (Flx_exceptions.ParseError "Parsing Expr")

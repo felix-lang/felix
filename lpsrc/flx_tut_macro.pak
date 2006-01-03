@@ -46,11 +46,11 @@ includes a file once: note that symbolic links
 will defeat the check for a duplication.
 
 @select(tangler(tdir+'mac101.flx'))
-include "std";
+#import <flx.flxh>
 print "This is mac101"; endl;
 
 @select(tangler(tdir+'mac102.flx'))
-include "std";
+#import <flx.flxh>
 #include "mac101.flx"
 print "This is mac102"; endl;
 print "it should have printed the 101 message too"; endl;
@@ -95,7 +95,7 @@ Note that every name encountered must name a
 preprocessor macro.
 
 @select(tangler(tdir+'mac103.flx'))
-include "std";
+#import <flx.flxh>
 print "Defining FIRST"; endl;
 #define FIRST
 #ifdef FIRST
@@ -105,7 +105,7 @@ print "BAD"; endl;
 #endif
 
 @select(tangler(tdir+'mac104.flx'))
-include "std";
+#import <flx.flxh>
 #define FIRST 1
 #define SECOND 2
 #if FIRST == 1 and SECOND == 2
@@ -115,7 +115,7 @@ print "BAD"; endl;
 #endif
 
 @select(tangler(tdir+'mac105.flx'))
-include "std";
+#import <flx.flxh>
 #define FIRST 1
 #define SECOND 2
 #if if FIRST == 1 then SECOND == 2 else 1 == 0 endif
@@ -128,7 +128,7 @@ print "BAD"; endl;
 #define FIRST 1
 
 @select(tangler(tdir+'mac105b.flx'))
-include "std";
+#import <flx.flxh>
 #import "mac105a.flx"
 #ifdef FIRST
 print "OK";
@@ -144,7 +144,7 @@ all lines up to a line consisting solely of a #
 will be taken as the argument string.
 
 @select(tangler(tdir+'mac106.flx'))
-include "std";
+#import <flx.flxh>
 #define ONE 1
 #define TWO 1
 #define THREE 1
@@ -174,7 +174,7 @@ a redefinition hides the preceding defintion
 until the end of the scope.
 
 @select(tangler(tdir+'mac122.flx'))
-include "std";
+#import <flx.flxh>
 macro val mx1 = 1+y;
 macro val mx2 = 2+y;
 val y = 100;
@@ -207,7 +207,7 @@ until the end of the scope.
 Macro variables can be assigned a new value.
 
 @select(tangler(tdir+'mac123.flx'))
-include "std";
+#import <flx.flxh>
 macro var mx1 = 1+y;
 val y = 100;
 print mx1; endl; // 101
@@ -225,9 +225,13 @@ is not expanded during definition.
 At the point of call, the arguments
 are expanded and then substituted into
 the body, then the body is expanded.
+@p()
+WARNING: macro function definitions need a semi-colon
+at the end. This is because the RHS is universally
+treated as an expression.
 
 @select(tangler(tdir+'mac124.flx'))
-include "std";
+#import <flx.flxh>
 
 // a basic expression macro without parameters
 macro fun x() =  {print 1; endl;};
@@ -327,7 +331,7 @@ The first operation is the UTF-8 representation
 of 999, whilst the second is the UCS-32 value 999.
 
 @select(tangler(tdir+'mac125.flx'))
-include "std";
+#import <flx.flxh>
 header '''
 #define flx_unix 0
 #define flx_windows 0
@@ -370,7 +374,7 @@ This represents a special exception to the rule
 that macros respect scope.
 
 @select(tangler(tdir+'mac126.flx'))
-include "std";
+#import <flx.flxh>
 // procedure macro
 macro proc k ()
 {
@@ -439,9 +443,19 @@ jumps, conditional jumps, and returns. Note the conditional
 goto requires the condition resolve to a constant expression.
 Of course, the value can change with time, since it can
 depend on macro variables.
+@o()
+This example also illustrates the macro block, which is
+an anonymous procedure, called after definition. The effect
+is similar to the statements in the block, except that
+locally defined symbols are not exported. The construction
+is regularly required by the syntax extension facility,
+to prevent name conflicts when the same construction
+is expanded more than once, particularly cases where
+a macro expansion has as its argument another expansion
+of itself.
 
 @select(tangler(tdir+'mac126a.flx'))
-include "std";
+#import <flx.flxh>
 macro proc print_alot () 
 {
   macro var count = 10;
@@ -454,10 +468,31 @@ macro proc print_alot ()
 
 print_alot();
 
+macro {
+  macro var count = 10;
+  macro start:>
+    print count; print " ";
+    macro count = count - 1;
+    macro if count > 0 goto start;
+  endl;
+};
+
+// note the 'start' macro label is local so there
+// is no clash repeating a block.
+
+macro {
+  macro var count = 10;
+  macro start:>
+    print count; print " ";
+    macro count = count - 1;
+    macro if count > 0 goto start;
+  endl;
+};
+
 @head(2,'Expansion Barrier')
 The symbol 'noexpand' can be used to block expansion.
 @select(tangler(tdir+'mac127.flx'))
-include "std";
+#include <flx.flxh>
 // expansion barrier
 macro val x = 1;
 macro proc k ()
@@ -489,7 +524,7 @@ name in the chain which is not an ident macro,
 or which recurs.
 
 @select(tangler(tdir+'mac128.flx'))
-include "std";
+#include <flx.flxh>
 
 macro oldname is newname;
 fun oldname(x:int):int = { return x; }
@@ -516,7 +551,7 @@ the forget statement. If no arguments are given,
 all macros defined in the current scope are forgotten. 
 
 @select(tangler(tdir+'mac129.flx'))
-include "std";
+#include <flx.flxh>
 macro val hello = "Hello";
 macro val place = "world";
 macro fun greet() = hello " " place "!\n";
@@ -535,7 +570,7 @@ print (greet());
 @head(3,'For Loops')
 Felix provides two for loops which iterate over tuples.
 @select(tangler(tdir+'mac130.flx'))
-include "std";
+#include <flx.flxh>
 macro for val i in ("Hello","World",42) do 
   print i; print " ";
 done;
@@ -550,7 +585,7 @@ done;
 Tuples can be unpacked by macro assignment, 
 macro val, macro var, and macro for val statements.
 @select(tangler(tdir+'mac131.flx'))
-include "std";
+#include <flx.flxh>
 macro val x,y = 1,2;
 macro var a,b = 1,2;
 macro a,b = a+1,b+1;
@@ -568,7 +603,7 @@ printing a variable name (but it works for any expression).
 Note the expanded value is stringized.
 
 @select(tangler(tdir+'mac132.flx'))
-include "std";
+#include <flx.flxh>
 var x = 1;
 var y = 42;
 print (_str x); print " = "; print x; endl;
@@ -598,7 +633,7 @@ expansions, particularly when driven by user defined
 nontermial parses (see the next section).
 
 @select(tangler(tdir+'mac133.flx'))
-include "std";
+#include <flx.flxh>
 macro var x = _tuple 1;
 macro x = _tuple_cons (2,x);
 macro x = _tuple_cons (3,x);
@@ -685,7 +720,7 @@ Therefore, general cases must be given after specialised
 ones. 
 
 @select(tangler(tdir+'mac301.flx'))
-include "std";
+#include <flx.flxh>
 
 #statement#
   whilst expr do statements done ; =>#
@@ -782,7 +817,7 @@ preprocessor #statement statement, including in
 the very next #statement definition.
 
 @select(tangler(tdir+'mac302.flx'))
-include "std";
+#include <flx.flxh>
 #keyword DONE
 #keyword THEN
 #keyword ELIF
@@ -842,4 +877,27 @@ ELIF x==7 THEN print 7; print 7; endl;
 ELSE print "None"; endl; DONE;
 
 
+@head(2,"User Macro Statement")
+The syntax extension feature isn't limited to generated
+executable statements or definitions: you can actually
+generated macro statements, and thus extend the macro
+processor itself. The example below introduces a 
+macro conditional that accepts some statements as an 
+argument instead of using a macro goto.
+
+@select(tangler(tdir+'mac303.flx'))
+#include <flx.flxh>
+#statement#
+  IF expr do statements done; =>#
+  macro {
+    macro lab is new;
+    macro if not _1 goto lab;
+    _3;
+    macro lab:>
+  };
+#
+
+IF 1 == 1 do
+  print "Hello"; endl;
+done;
 

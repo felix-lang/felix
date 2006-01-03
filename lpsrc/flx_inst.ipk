@@ -170,7 +170,8 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
     uis i ts;
     ue sr e2
 
-  | `BEXE_call_method_direct (sr,obj,meth,ts,a) ->
+  | `BEXE_call_method_direct (sr,obj,meth,ts,a)
+  | `BEXE_call_method_stack (sr,obj,meth,ts,a) ->
     let ut t = register_type_r uis syms bbdfns [] sr t in
     let vs t = varmap_subst hvarmap t in
     let ts = map vs ts in
@@ -180,6 +181,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
     ue sr a
 
   | `BEXE_apply_ctor (sr,i1,i2,ts,i3,e2) 
+  | `BEXE_apply_ctor_stack (sr,i1,i2,ts,i3,e2) 
     -> 
     let ut t = register_type_r uis syms bbdfns [] sr t in
     let vs t = varmap_subst hvarmap t in

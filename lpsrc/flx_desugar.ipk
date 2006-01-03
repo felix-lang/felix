@@ -81,6 +81,7 @@ let include_file syms inspec lookup =
         tf 
         (Filename.dirname tf)
         include_dirs 
+        expand_expression
     in
       let local_prefix = Filename.basename basename in
       let tree = expand_macros local_prefix 5000 sts in
@@ -943,7 +944,6 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_struct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,`DCL_struct (components))]
   | `AST_cstruct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,`DCL_cstruct (components))]
   | `AST_cclass (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,`DCL_cclass (components))]
-  | `AST_typeclass (sr,name,vs,components) -> [Dcl (sr,name,None,access,vs,`DCL_typeclass (components))]
 
   | `AST_class (sr,name', vs', sts) -> 
     (* let asms = rsts name' (parent_vs @ vs') sts in *)

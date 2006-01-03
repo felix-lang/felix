@@ -104,7 +104,7 @@ function in Felix only hides another if they have
 the same signature. For example:
 
 @select(tangler(tdir+"mig01.flx"))
-include "std";
+#import <flx.flxh>
 proc f(x:int){ print 1; endl; }
 module X {
   proc f(x:double) { print 2; endl; }
@@ -144,7 +144,7 @@ is also accepted by the other, and the other also accepts
 at least one additional argument. For example:
 
 @select(tangler(tdir+"mig02.flx"))
-include "std";
+#import <flx.flxh>
 fun f[t,u] (x:t,y:u)=> 1; //1
 fun f[v] (x:v,y:v)=>2; //2: specialises 1
 
@@ -178,7 +178,7 @@ can be called before it is defined without a
 forward declaration.
 
 @select(tangler(tdir+"mig03.flx"))
-include "std";
+#import <flx.flxh>
 fun f(x:int) => g(x-1); 
 fun g(x:int) => if x>0 then f(x-1) else 0 endif;
 print (g 10); endl;
@@ -188,20 +188,21 @@ In particular this rule also applies to types,
 allowing recursive types to be easily defined:
 
 @select(tangler(tdir+"mig04.flx"))
-include "std";
+#import <flx.flxh>
 union ilist = empty | cons of int * ilist;
 var x = empty;
 x = cons (1,x);
 x = cons (2,x);
 
-proc print(x:ilist) { 
+proc xprint(x:ilist) { 
   match x with
   | empty => {}
-  | cons (?h,?t) => { print h; print " "; print t; }
+  | cons (?h,?t) => { print h; print " "; xprint t; }
   endmatch;
 }
 
-print x; endl;
+xprint x; endl;
+
 @head(1,'Type system')
 Felix types and their annotations are quite different
 to C++. Felix currenty supports tuple types, anonymous

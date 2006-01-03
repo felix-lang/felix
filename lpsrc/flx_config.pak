@@ -2431,7 +2431,6 @@ flx_expr_terminator_keywords = [
     ("call", "CALL"),
     ("case", "CASE"),
     ("caseno", "CASENO"),
-    ("category", "CATEGORY"),
     ("class", "CLASS"),
     ("comment", "COMMENT_KEYWORD"),
     ("compound", "COMPOUND"),

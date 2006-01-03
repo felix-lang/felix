@@ -302,7 +302,6 @@ declarative:
   | union_decl { $1 }
   | struct_decl { $1 }
   | type_alias { $1 }
-  | typeclass { $1 }
 
 directive:
   | open_decl { $1 }
@@ -533,21 +532,6 @@ class_component:
     { `MemberProc (snd $2,None,$3,typecode_of_expr $5,$6) }
   | CTOR opt_name COLON expr opt_cstring SEMI 
     { `MemberCtor ($2,None,typecode_of_expr $4,$5) }
-
-typeclass:
-  | CATEGORY NAME tvarlist opt_equal LBRACE typeclass_component_aster RBRACE
-    { 
-      let sr = rstoken $1 $7 in
-      `AST_typeclass (sr,snd $2,$3,$6)
-    }
-
-typeclass_component:
-  | FUNCTION NAME COLON expr SEMI 
-    { `TypeClassMemberFun (snd $2,typecode_of_expr $4) }
-  | PROCEDURE NAME COLON expr SEMI 
-    { `TypeClassMemberProc (snd $2,typecode_of_expr $4) }
-
-@aster("typeclass_component")
 
 @head(3,'Abstract Constant Binding')
 @select(h)
@@ -2749,12 +2733,14 @@ let parse_file
   (filename : string) 
   (basedir :string) 
   (include_dirs : string list) 
+  expand_expr
 = 
   let pre_tokens  = 
     Flx_pretok.pre_tokens_of_filename 
       filename 
       basedir
       include_dirs 
+      expand_expr
   in
   let tokens  = Flx_lex1.translate pre_tokens in
   let hash_include_files, tokens = match tokens with
@@ -2792,9 +2778,9 @@ let parse_file
       in hash_include_files, parse_tree
     end
 
-let parse_string (data : string) (filename : string) = 
+let parse_string (data : string) (filename : string) expand_expr = 
   let pre_tokens  = 
-    Flx_pretok.pre_tokens_of_string data filename 
+    Flx_pretok.pre_tokens_of_string data filename expand_expr
   in
   let tokens  = Flx_lex1.translate pre_tokens in
     begin
@@ -2812,23 +2798,27 @@ let parse_string (data : string) (filename : string) =
 
 @h = tangler('src/flx_parse_ctrl.mli')
 @select(h)
+open Flx_ast
+
 val parse_file : 
   string -> 
   string ->
   string list ->
-  string list * Flx_ast.compilation_unit_t
+  (string -> expr_t -> expr_t) ->
+  string list * compilation_unit_t
 
 val parse_string : 
   string -> 
   string -> 
-  Flx_ast.compilation_unit_t
+  (string -> expr_t -> expr_t) ->
+  compilation_unit_t
 
 @head(1,'Parser test harness')
 @h = tangler('src/flxp.ml')
 @select(h)
 let filename = Sys.argv.(1) ^ ".flx";;
 print_endline ("Parsing " ^ filename);;
-let _,parse_tree = Flx_parse_ctrl.parse_file filename "" [];;
+let _,parse_tree = Flx_parse_ctrl.parse_file filename "" [] Flx_macro.expand_expression;;
 print_endline (Flx_print.string_of_compilation_unit parse_tree);;
 print_endline "PARSE OK";;
 flush stdout

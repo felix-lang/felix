@@ -702,6 +702,7 @@ try
       input_file_name 
       (Filename.dirname input_file_name)
       compiler_options.include_dirs 
+      Flx_macro.expand_expression
   in
   let have_interface = Sys.file_exists iface_file_name in
   print_endline (Flx_print.string_of_compilation_unit parse_tree);

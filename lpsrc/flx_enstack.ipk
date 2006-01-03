@@ -189,6 +189,83 @@ let can_stack_func cache syms (child_map,bbdfns) i =
     -> false (* hack *)
   | _ -> failwith ("Unexpected non-function " ^ id)
 
+let rec can_stack_proc syms (child_map,bbdfns) i recstop =
+  let children = try Hashtbl.find child_map i with Not_found -> [] in
+  let id,parent,sr,entry = Hashtbl.find bbdfns i in
+  match entry with
+  | `BBDCL_procedure (_,_,_,exes) -> 
+    begin try iter (fun exe -> match exe with
+    | `BEXE_svc _ -> raise Not_found
+    | `BEXE_call (_,(`BEXPR_closure (j,_),_),_)
+    | `BEXE_call_direct (_,j,_,_) 
+    | `BEXE_call_method_direct (_,_,j,_,_)
+    | `BEXE_apply_ctor (_,_,_,_,j,_)
+      ->
+      if not (check_stackable_proc syms (child_map,bbdfns) j (i::recstop))
+      then raise Not_found
+
+    (* to be checked properly .. almost every proc will do this!! *)
+    | `BEXE_assign _ -> raise Not_found
+
+    | `BEXE_call _
+    | `BEXE_call_prim _
+    | `BEXE_jump _
+    | `BEXE_jump_direct _ 
+    | `BEXE_loop _
+    | `BEXE_code _
+    | `BEXE_nonreturn_code _
+       -> raise Not_found
+
+    | `BEXE_fun_return _ -> assert false
+
+    | `BEXE_apply_ctor_stack _
+    | `BEXE_call_stack _ (* cool *)
+    | `BEXE_call_method_stack _
+    | `BEXE_halt _
+    | `BEXE_comment _
+    | `BEXE_label _
+    | `BEXE_goto _
+    | `BEXE_ifgoto _
+    | `BEXE_ifnotgoto _
+    | `BEXE_init _
+    | `BEXE_assert _
+    | `BEXE_begin 
+    | `BEXE_end 
+    | `BEXE_nop _
+    | `BEXE_proc_return _ 
+      -> ()
+    )
+    exes;
+    true
+    with Not_found -> false
+    end
+
+  | _ -> assert false
+
+and check_stackable_proc syms (child_map,bbdfns) i recstop =
+  if mem i recstop then true else
+  let id,parent,sr,entry = Hashtbl.find bbdfns i in
+  match entry with
+  | `BBDCL_proc _ -> true
+  | `BBDCL_procedure (props,vs,p,exes) ->
+    if mem `Stackable props then true
+    else if mem `Unstackable props then false
+    else if can_stack_proc syms (child_map,bbdfns) i recstop
+    then begin
+      (*
+      print_endline ("MARKING PROCEDURE " ^ id ^ " stackable!");
+      *)
+      let entry : bbdcl_t = `BBDCL_procedure (`Stackable :: props,vs,p,exes) in
+      Hashtbl.replace bbdfns i (id,parent,sr,entry);
+      true
+    end
+    else begin
+      let entry : bbdcl_t = `BBDCL_procedure (`Unstackable :: props,vs,p,exes) in
+      Hashtbl.replace bbdfns i (id,parent,sr,entry);
+      false 
+    end
+  | _ -> assert false
+
 let rec is_pure syms (child_map, bbdfns) i =
   let children = try Hashtbl.find child_map i with Not_found -> [] in
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
@@ -313,6 +390,10 @@ let mark_stackable cache syms (child_map,bbdfns) =
       let props : property_t list = !props in
       let entry : bbdcl_t = `BBDCL_function (props,vs,p,ret,exes) in
       Hashtbl.replace bbdfns i (id,parent,sr,entry)
+
+    | `BBDCL_procedure (props,vs,p,exes) ->
+      if mem `Stackable props or mem `Unstackable props then ()
+      else ignore(check_stackable_proc syms (child_map,bbdfns) i [])
     | _ -> ()
   )
   bbdfns
@@ -326,10 +407,40 @@ let enstack_calls cache syms (child_map,bbdfns) exes =
     | `BEXE_call_direct (sr,i,ts,a) ->
       let _,_,_,entry = Hashtbl.find bbdfns i in
       begin match entry with
-      | `BBDCL_procedure _ -> `BEXE_call_direct (sr,i,ts,a)
+      | `BBDCL_procedure (props,_,_,_) -> 
+        if mem `Stackable props then
+        `BEXE_call_stack (sr,i,ts,a)
+        else 
+        `BEXE_call_direct (sr,i,ts,a)
+        
       | `BBDCL_proc _ -> `BEXE_call_prim (sr,i,ts,a)
       | _ -> assert false
       end 
+
+    | `BEXE_call_method_direct (sr,obj,i,ts,a) ->
+      let _,_,_,entry = Hashtbl.find bbdfns i in
+      begin match entry with
+      | `BBDCL_procedure (props,_,_,_) -> 
+        if mem `Stackable props then
+        `BEXE_call_method_stack (sr,obj,i,ts,a)
+        else 
+        `BEXE_call_method_direct (sr,obj,i,ts,a)
+        
+      | _ -> assert false
+      end 
+
+    | `BEXE_apply_ctor (sr,v,obj,ts,meth,a) ->
+      let _,_,_,entry = Hashtbl.find bbdfns meth in
+      begin match entry with
+      | `BBDCL_procedure (props,_,_,_) -> 
+        if mem `Stackable props then
+        `BEXE_apply_ctor_stack (sr,v,obj,ts,meth,a)
+        else 
+        `BEXE_apply_ctor (sr,v,obj,ts,meth,a)
+        
+      | _ -> assert false
+      end 
+
     | x -> x
     in 
       map_bexe id ea id id id exe

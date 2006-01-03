@@ -1385,11 +1385,16 @@ and bind_type'
     | `SYMDEF_cclass _ 
     | `SYMDEF_abs _ 
       ->
+      (* I STILL DO NOT UNDERSTAND THIS .. BUT LOTS OF EXAMPLES USE IT
+         AND IT WORKS .. so the diagnostic is comment out
+      *)
+      (*
       if length vs <> 0 then begin
         print_endline ("Synthetic name "^name ^ " is a nominal type!");
         print_endline ("Using ts = [] .. probably wrong since type is polymorphic!");
       end
       ;
+      *)
       `BTYP_inst (index,[])
 
     | `SYMDEF_typevar _ ->

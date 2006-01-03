@@ -289,8 +289,10 @@ class file_control
     method condition_stack_length = List.length condition
   end
 
-class lexer_state filename basedir incdirs = 
+class lexer_state filename basedir incdirs expand_expr' = 
   object (self)
+    val expand_expr: string -> expr_t -> expr_t = expand_expr'
+
     val mutable include_files: string list = []
 
     val comment_ctrl = new comment_control
@@ -311,6 +313,7 @@ class lexer_state filename basedir incdirs =
 
     val mutable brackets: ((string * string) * string) list = []
 
+    method get_expand_expr = expand_expr
     method get_include_files = include_files
     method add_include_file f = include_files <- f :: include_files
 
@@ -602,7 +605,9 @@ class lexer_state :
   string ->
   string ->
   string list ->
+  (string -> expr_t->expr_t) ->
   object
+    val expand_expr : string -> expr_t -> expr_t
     val comment_ctrl : comment_control
     val file_ctrl : file_control
 
@@ -613,6 +618,8 @@ class lexer_state :
     val mutable brackets: ((string * string) * string) list
     val nonterminals: (string, (token list *ast_term_t) list) Hashtbl.t
     val mutable include_files : string list
+
+    method get_expand_expr : string -> expr_t -> expr_t
 
     method add_include_file : string -> unit
     method get_include_files : string list
@@ -703,6 +710,7 @@ val pre_tokens_of_lexbuf :
 val pre_tokens_of_string :
   (lexer_state -> lexbuf -> token list) ->
   string -> string -> 
+  (string -> expr_t -> expr_t) ->
   token list
 
 val line_directive :
@@ -770,8 +778,8 @@ let pre_tokens_of_lexbuf lexer buf state =
   in 
     rev (get [])
 
-let pre_tokens_of_string lexer s filename =
-  let state = new lexer_state filename "" [] in
+let pre_tokens_of_string lexer s filename expand_expr =
+  let state = new lexer_state filename "" [] expand_expr in
   pre_tokens_of_lexbuf lexer (Lexing.from_string s) state
 
 let line_directive state sr s lexbuf =
@@ -859,16 +867,16 @@ let rec expand' state exclude toks =
 
   in aux [] toks [] []
 
-let eval toks =
+let eval state toks =
   let e = Flx_tok.parse_tokens Flx_parse.expression (toks @ [ENDMARKER]) in
-  let e = Flx_macro.expand_expression "PREPROC_EVAL" e in
+  let e = state#get_expand_expr "PREPROC_EVAL" e in
   e
   
 let expand state toks = rev (expand' state [] toks)
 
 let eval_bool state sr toks =
   let toks = expand state toks in
-  let e = eval toks in
+  let e = eval state toks in
   match e with
   | `AST_typed_case (sr,v,`TYP_unitsum 2) ->
     (* NOTE: the type case term is 1 origin, even though the
@@ -1127,7 +1135,7 @@ let include_directive is_import state sr s pre_flx_lex =
   let pre_tokens_of_filename filename =
     let incdirs = state#get_incdirs in
     let basedir = Filename.dirname filename in
-    let state' = new lexer_state filename basedir incdirs in
+    let state' = new lexer_state filename basedir incdirs state#get_expand_expr in
     let infile = open_in filename in
     let src = Lexing.from_channel infile in
     let toks = pre_tokens_of_lexbuf pre_flx_lex src state' in
@@ -2139,7 +2147,9 @@ and pre_flx_lex state = parse
         { y with Lexing.pos_fname = y.Lexing.pos_fname }
         lexbuf
     | [HASHBANG _ | HASHBANGSLASH _ ],true  -> 
+      (*
       print_endline "IGNORING HASHBANG";
+      *)
       parse_hashbang state lexbuf
     | _ -> toks
     
