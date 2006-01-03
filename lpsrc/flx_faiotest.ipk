@@ -106,10 +106,10 @@ Accept(&success, listener, s);
 
 if success then {
   print "successful accept!\n";
-  System::exit 1;
+  System::exit 0;
 } else {
   print "accept failed!\n";
-  System::exit 0;
+  System::exit 1;
 } endif;
 
 
@@ -133,6 +133,7 @@ read thanks!!
 more output here
 @h = tangler("test/win_t1.expect")
 @select(h)
+spawning connector
 successful accept!
 @h = tangler("test/win_t2.expect")
 @select(h)

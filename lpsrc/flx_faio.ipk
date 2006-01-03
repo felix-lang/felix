@@ -1,6 +1,10 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.18  2006/01/03 04:29:21  rfistman
+fixed win32 tests by a) initing winsock in flx_run and using
+the correct return value.
+
 Revision 1.17  2005/12/31 07:06:32  skaller
 Changed user statement parser so that special keywords
 expr, statement, statements, etc are only recognized parsing
@@ -823,6 +827,7 @@ public:
 
     virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
 };  
+
     
 // flx <-> c++ stuff for async io (well, it was)
 class FLX_RTL_EXTERN waio_base : public flx_driver_request_base, public demux::iocp_wakeup {

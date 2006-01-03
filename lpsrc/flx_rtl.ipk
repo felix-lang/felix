@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.81  2006/01/03 04:29:21  rfistman
+fixed win32 tests by a) initing winsock in flx_run and using
+the correct return value.
+
 Revision 1.80  2006/01/01 09:04:55  rfistman
 made a few solaris style changes (own demuxer and a few build
 incompatibilities fixed)
@@ -1709,8 +1713,14 @@ int main(int argc, char** argv)
 
     std::list<fthread_t*> active;
 	
-    proto_async* async = NULL;     // no async
+#ifdef _WIN32
+    // needed to perform win socket io (calls WSAInit). Must happen
+    // before iocp_demuxer is instantiated and (I assume) happen
+    // only once.
+    winsock_initer wsinit;
+#endif
 
+    proto_async* async = NULL;     // no async
 
     {
       con_t *top = instance.start_proc;

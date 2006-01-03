@@ -112,6 +112,14 @@ public:
   void deinit();
 };
 
+// make sure you instantion ONE (1) of these before using winsock
+class FLX_RTL_EXTERN winsock_initer
+{
+public:
+    winsock_initer();
+    ~winsock_initer();
+};
+
 // iocp_wakeup base class FLX_RTL_EXTERN for users of iocp_demuxer
 class FLX_RTL_EXTERN iocp_wakeup {
 public:
@@ -978,6 +986,26 @@ namespace flx { namespace demux {
 // oh, wait they're the same
 // FormatMessge
 
+winsock_initer::winsock_initer()
+{
+    WSADATA wsaData;
+
+    // apparently 2.2's the way to go
+    if(WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+    {
+        int err = WSAGetLastError();
+        fprintf(stderr,"couldn't find usable winsock dll: %i\n", err);
+        throw err;
+    }
+}
+
+winsock_initer::~winsock_initer()
+{   
+    if(WSACleanup() != 0)
+    {   
+        fprintf(stderr,"WSACleanup failed %i\n", WSAGetLastError());
+    }
+}
 
 // iocp_wakeup base class for users of iocp_demuxer
 //static
