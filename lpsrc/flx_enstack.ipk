@@ -189,7 +189,7 @@ let can_stack_func cache syms (child_map,bbdfns) i =
     -> false (* hack *)
   | _ -> failwith ("Unexpected non-function " ^ id)
 
-let rec can_stack_proc syms (child_map,bbdfns) i recstop =
+let rec can_stack_proc cache syms (child_map,bbdfns) i recstop =
   let children = try Hashtbl.find child_map i with Not_found -> [] in
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
@@ -201,10 +201,16 @@ let rec can_stack_proc syms (child_map,bbdfns) i recstop =
     | `BEXE_call_method_direct (_,_,j,_,_)
     | `BEXE_apply_ctor (_,_,_,_,j,_)
       ->
-      if not (check_stackable_proc syms (child_map,bbdfns) j (i::recstop))
+      if not (check_stackable_proc cache syms (child_map,bbdfns) j (i::recstop))
       then raise Not_found
 
-    (* to be checked properly .. almost every proc will do this!! *)
+    (* assignments to a local variable are safe *)
+    | `BEXE_assign (sr,(`BEXPR_name (j,ts),t),r) 
+      when mem j children -> ()
+      
+    | `BEXE_assign (sr,(_,t),_) 
+      when not (has_ptr_fn cache syms bbdfns children t) -> ()
+
     | `BEXE_assign _ -> raise Not_found
 
     | `BEXE_call _
@@ -242,7 +248,7 @@ let rec can_stack_proc syms (child_map,bbdfns) i recstop =
 
   | _ -> assert false
 
-and check_stackable_proc syms (child_map,bbdfns) i recstop =
+and check_stackable_proc cache syms (child_map,bbdfns) i recstop =
   if mem i recstop then true else
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
@@ -250,7 +256,7 @@ and check_stackable_proc syms (child_map,bbdfns) i recstop =
   | `BBDCL_procedure (props,vs,p,exes) ->
     if mem `Stackable props then true
     else if mem `Unstackable props then false
-    else if can_stack_proc syms (child_map,bbdfns) i recstop
+    else if can_stack_proc cache syms (child_map,bbdfns) i recstop
     then begin
       (*
       print_endline ("MARKING PROCEDURE " ^ id ^ " stackable!");
@@ -393,7 +399,7 @@ let mark_stackable cache syms (child_map,bbdfns) =
 
     | `BBDCL_procedure (props,vs,p,exes) ->
       if mem `Stackable props or mem `Unstackable props then ()
-      else ignore(check_stackable_proc syms (child_map,bbdfns) i [])
+      else ignore(check_stackable_proc cache syms (child_map,bbdfns) i [])
     | _ -> ()
   )
   bbdfns

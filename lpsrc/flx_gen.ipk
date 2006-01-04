@@ -309,23 +309,23 @@ let gen_class syms (child_map,bbdfns) props index id vs ts instance_no =
     (if length display = 0 
     then (if requires_ptf then "(FLX_FPAR_DECL_ONLY);\n" else "();\n")
     else (
-    "  (\n" ^
+    "  (" ^
     (if requires_ptf then
-    "    FLX_FPAR_DECL\n " 
+    "FLX_FPAR_DECL " 
     else ""
     )
     ^
-    cat ",\n"
+    cat ","
       (
         map 
         (
           fun (i,vslen) -> 
           let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
-          "    " ^ instname ^ "*"
+          instname ^ "*"
         )
         display
       )^
-      "\n  );\n" 
+      ");\n" 
     ))
   (*
   and dtor_dcl name =
@@ -372,6 +372,8 @@ let gen_class syms (child_map,bbdfns) props index id vs ts instance_no =
 (* vs here is the (name,index) list of type variables *)
 let gen_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_no =
   let stackable = mem `Stackable props in
+  let heapable = mem `Heap_closure props in
+  assert (stackable or heapable);
   let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms [] (tsubst vs ts t))) in
   let requires_ptf = mem `Requires_ptf props in
   (*
@@ -438,23 +440,23 @@ let gen_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_
     (if length display = 0 
     then (if requires_ptf then "(FLX_FPAR_DECL_ONLY);\n" else "();\n")
     else (
-    "  (\n" ^
+    "  (" ^
     (if requires_ptf then
-    "    FLX_FPAR_DECL\n " 
+    "FLX_FPAR_DECL " 
     else ""
     )
     ^
-    cat ",\n"
+    cat ", "
       (
         map 
         (
           fun (i,vslen) -> 
           let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
-          "    " ^ instname ^ "*"
+          instname ^ "*"
         )
         display
       )^
-      "\n  );\n" 
+      ");\n" 
     ))
   (*
   and dtor_dcl name =
@@ -469,7 +471,7 @@ let gen_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_
     "struct " ^ name ^
     (match funtypename with 
     | Some x -> ": "^x
-    | None -> if stackable then "" else ": con_t"
+    | None -> if not heapable then "" else ": con_t"
     )
     ^
     " {\n" ^
@@ -500,16 +502,16 @@ let gen_function syms (child_map,bbdfns) props index id vs bps ret' ts instance_
     *)
     (if argtype = `BTYP_tuple [] 
     then
-      if stackable then "  void stack_call();\n"
-      else "  con_t *call(con_t*);\n" 
+      (if stackable then "  void stack_call();\n" else "") ^
+      (if heapable then "  con_t *call(con_t*);\n" else "")
     else
-      if stackable then "  void stack_call("^argtypename^" const &);\n"
-      else "  con_t *call(con_t*,"^argtypename^" const &);\n"
+      (if stackable then "  void stack_call("^argtypename^" const &);\n" else "") ^
+      (if heapable then "  con_t *call(con_t*,"^argtypename^" const &);\n" else "")
     ) ^
     (*
     "  //resume\n" ^
     *)
-    (if stackable then "" else "  con_t *resume();\n")
+    (if heapable then "  con_t *resume();\n" else "")
     ^
     "};\n"
 
@@ -657,7 +659,7 @@ type kind_t = Function | Procedure
  
 let gen_exe filename syms 
   (child_map,bbdfns) (label_map,label_usage_map) 
-  counter this vs ts instance_no needs_switch (exe:bexe_t) : string =
+  counter this vs ts instance_no needs_switch stackable (exe:bexe_t) : string =
   if length ts <> length vs then 
   failwith 
   (
@@ -1011,7 +1013,7 @@ let gen_exe filename syms
       let labno = !counter in incr counter;
       let code =
         "      " ^ meth_name ^ strd (the_display) meth_props ^ 
-        "\n      .call_stack(" ^ args ^ ");\n" 
+        "\n      .stack_call(" ^ args ^ ");\n" 
       in 
       code
 
@@ -1234,7 +1236,11 @@ let gen_exe filename syms
       "        return " ^ ge sr p ^ "\n      ->call(" ^ args ^");\n" ^
       "      }\n"
 
-    | `BEXE_proc_return _ -> "      FLX_RETURN\n"
+    | `BEXE_proc_return _ -> 
+      if stackable then
+      "      return;\n"
+      else
+      "      FLX_RETURN\n"
 
     | `BEXE_svc (sr,index) -> 
       let id,parent,sr,entry = 
@@ -1310,10 +1316,10 @@ let gen_exe filename syms
        "      {if(!(" ^ ge sr e ^ "))FLX_ASSERT_FAILURE("^s^");}\n"
   in gexe exe
 
-let gen_exes filename syms bbdfns display label_info counter index exes vs ts instance_no =
+let gen_exes filename syms bbdfns display label_info counter index exes vs ts instance_no stackable =
   let needs_switch = ref false in
   let s = cat ""
-    (map (gen_exe filename syms bbdfns label_info counter index vs ts instance_no needs_switch) exes)
+    (map (gen_exe filename syms bbdfns label_info counter index vs ts instance_no needs_switch stackable) exes)
   in
   s,!needs_switch
 
@@ -1384,7 +1390,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
     let params = map (fun (id,(ix,t)) -> ix) bps in
     let exe_string,_ =
       try 
-        gen_exes filename syms (child_map,bbdfns) [] label_info counter index exes vs ts instance_no
+        gen_exes filename syms (child_map,bbdfns) [] label_info counter index exes vs ts instance_no true
       with x -> 
         print_endline (Printexc.to_string x);
         print_endline (catmap "\n" (string_of_bexe syms.dfns 1) exes);
@@ -1549,7 +1555,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
     let params = map (fun (id,(ix,t)) -> ix) bps in
     let exe_string,_ =
       try 
-        gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no
+        gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no false
       with x -> 
         print_endline (Printexc.to_string x);
         print_endline (catmap "\n" (string_of_bexe syms.dfns 1) exes);
@@ -1811,6 +1817,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
       si (length ts)
     );
     let stackable = mem `Stackable props in
+    let heapable = mem `Heap_closure props in
     let argtype = lower (typeof_bparams bps) in
     let argtype = rt vs argtype in
     let funtype = fold syms.dfns (`BTYP_function (argtype, `BTYP_void)) in
@@ -1832,29 +1839,20 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
     let ps = map (fun (id,(ix,t)) -> id,t) bps in
     let params = map (fun (id,(ix,t)) -> ix) bps in
     let exe_string,needs_switch =
-      gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no
+      gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no stackable
     in
+
     let cont = "con_t *" in
-    let arg_sig = 
+    let heap_call_arg_sig = 
       match argtype with
-      | `BTYP_tuple [] ->
-        (if stackable then "" else "  " ^ cont ^ "_ptr_caller")
-      | _ ->
-        (
-          if stackable then "" 
-          else "  " ^ cont ^ "_ptr_caller,\n"
-        )
-        ^
-        "  " ^ argtypename ^" const &_arg\n"
+      | `BTYP_tuple [] -> cont ^ "_ptr_caller"
+      | _ -> cont ^ "_ptr_caller, " ^ argtypename ^" const &_arg"
+    and stack_call_arg_sig = 
+      match argtype with
+      | `BTYP_tuple [] -> ""
+      | _ -> argtypename ^" const &_arg"
     in
-    let call =
-      (if stackable then "void " else cont) ^name^
-      "::" ^
-      (if stackable then "stack_call(" else "call(")
-      ^ arg_sig ^ "){\n" ^
-      (
-        (if stackable then "" else "  _caller = _ptr_caller;\n")
-        ^
+    let unpack_args =
         (match length bps with
         | 0 -> ""
         | 1 -> 
@@ -1880,14 +1878,21 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
             else s (* elide initialisation of elided variables *)
           )
           "" params
-          ) ^
-          (if stackable then exe_string
-          else
-          "  INIT_PC\n" ^
-          "  return this;\n"
           )
-      )^
-      "}\n"
+    in
+    let stack_call =
+        "void " ^name^ "::stack_call(" ^ stack_call_arg_sig ^ "){\n" ^
+        (
+          if not heapable 
+          then unpack_args ^ exe_string
+          else "  (void)call(0,_arg); (void)resume();\n"
+        ) ^ "\n}\n"
+    and heap_call = 
+        cont ^ " " ^ name ^ "::call(" ^ heap_call_arg_sig ^ "){\n" ^
+        "  _caller = _ptr_caller;\n" ^
+        unpack_args ^
+        "  INIT_PC\n" ^
+        "  return this;\n}\n"
     and resume = 
       if exes = []
       then
@@ -1931,10 +1936,12 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
       )
       ^
       "\n//PROC " ^ q ^ ": Call method\n" ^
-      call^
-      (if stackable then "" else
-        "\n//PROC " ^ q ^ ": Resume method\n" ^
+      (if stackable then stack_call else "") ^
+      (if heapable then heap_call else "") ^
+      (if heapable then 
+        "\n//PROC " ^ q ^ ": Resume method\n" ^ 
         resume
+        else ""
       )
 
   | _ -> failwith "procedure expected"
@@ -2108,7 +2115,7 @@ let gen_biface_body syms bbdfns biface = match biface with
       "con_t *" ^ export_name ^ "(\n" ^ arglist ^ "\n){\n" ^
       (if stackable then
       "  " ^ class_name ^ "(_PTFV))\n" ^
-      "    .call_stack(" ^ cat ", " (map fst ps) ^ ");\n" ^
+      "    .stack_call(" ^ cat ", " (map fst ps) ^ ");\n" ^
       "  return 0;\n"
       else
       "  return (new(*_PTF gc,"^class_name^"_ptr_map)\n" ^
