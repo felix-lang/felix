@@ -61,19 +61,36 @@ public:
 #include <flx_rtl_config.hpp>
 #include "demux_posix_demuxer.hpp"
 
-namespace flx { namespace demux {
-class FLX_RTL_EXTERN evtport_demuxer : public posix_demuxer {
+// oops - have found out that you can't separately associate
+// the same fd with POLLIN and POLLOUT without doing it at
+// the same time (separately just overwrites the last). It's
+// not often that you add the same fd for both reading and
+// writing, but I've done it, so I'm making the old
+// evtport demuxer a "half" demuxer, that handles either
+// in or out and wrap them both in single demuxer for now.
+// kinda yuk, as we'll have 3 pthreads, one which exits
+// immediately.
+class FLX_RTL_EXTERN evtport_half_demuxer : public posix_demuxer {
     int     evtport;
   void  cleanup();
 protected:
-    virtual void    thread_loop_body();
+    virtual void  thread_loop_body();
 
   void remove_reading_fd(int s);
   void remove_writing_fd(int s);
 public:
-  evtport_demuxer();
-  virtual ~evtport_demuxer();
+  evtport_half_demuxer();
+  virtual ~evtport_half_demuxer();
 
+  virtual int add_socket_wakeup(socket_wakeup* sv, bool read);
+};
+
+class FLX_RTL_EXTERN evtport_demuxer : public posix_demuxer {
+    virtual void  thread_loop_body();   // trivial, exits
+
+  evtport_half_demuxer  in;
+  evtport_half_demuxer  out;
+public:
   virtual int add_socket_wakeup(socket_wakeup* sv, bool read);
 };
 
@@ -95,9 +112,10 @@ public:
 
 
 namespace flx { namespace demux {
+
 // not here? returns INVALID_SOCKET on failure (unlike posix version,
-// this doesn't let the os choose the port - make it so).
-SOCKET FLX_RTL_EXTERN create_listener_socket(int port, int backlog);
+// if *io_port == 0, then a port is chosen and returned in *io_port
+SOCKET FLX_RTL_EXTERN create_listener_socket(int* io_port, int backlog);
 
 
 // this thing isn't actually being used by the iocp code. it should be.
@@ -116,16 +134,16 @@ public:
 class FLX_RTL_EXTERN winsock_initer
 {
 public:
-    winsock_initer();
-    ~winsock_initer();
+  winsock_initer();
+  ~winsock_initer();
 };
 
-// iocp_wakeup base class FLX_RTL_EXTERN for users of iocp_demuxer
+// iocp_wakeup base class for users of iocp_demuxer
+// becoming an overlapped call control block
 class FLX_RTL_EXTERN iocp_wakeup {
-public:
+protected:            // folks need to use these in win 32 calls
   OVERLAPPED  ol;
   // I didn't want this to be felixy, useful though.
-protected:            // folks need to use these in win 32 calls
   void clear_overlapped();  // zero the OVERLAPPED structure
 public:
   // 2 possibilities for piggybacking data. who could ask for more?
@@ -133,6 +151,11 @@ public:
   // why don't I need this in the posix version?
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err) = 0;
+
+  // start overlapped async operation. returns true if it finished
+  // immediately. in this case there will be no iocp_finished wakeup.
+  // assumes all args ready for call.
+  virtual bool start_overlapped() = 0;
 
   // retrieves this pointer from OVERLAPPED pointer
   static iocp_wakeup* from_overlapped(LPOVERLAPPED olp);
@@ -345,6 +368,9 @@ public:
 class FLX_RTL_EXTERN socket_wakeup : public posix_wakeup {
 public:
   int   s;                // the non blocking socket
+  // thinking about putting a read flag here - everyone has to
+  // do their own anyway and the current model doesn't allow both
+  // for a single socket_wakeup, even if some event sources support it.
 };
 
 class FLX_RTL_EXTERN posix_demuxer : public demuxer {
@@ -363,8 +389,10 @@ public:
   
   // to be called when we can read & write without blocking
   // return true if connection closed, update pb
-  static bool   handle_socket_read(int s, sel_param* pb);
-  static bool   handle_socket_write(int s, sel_param* pb);
+  // sort of a strange place to have this..., more a socket wakeup
+  // thing, even if static
+  static bool   socket_recv(int s, sel_param* pb);
+  static bool   socket_send(int s, sel_param* pb);
 };
 
 }} // namespace demux, flx
@@ -520,10 +548,21 @@ public:
 #include <flx_rtl_config.hpp>
 namespace flx { namespace demux {
 int create_listener_socket(int* io_port, int q_len);
-int nice_create_listener(int* io_port, int q_len);
+int create_async_listener(int* io_port, int q_len);
 int nice_accept(int listener);
 int nice_connect(const char* addr, int port);
 int async_connect(const char* addr, int port, int* finished);
+
+
+/* handy socket building blocks */
+
+int connect_sock(int s, const char* addr, int port);
+
+/* this could possibly do with NIC addr as well as port */
+int bind_sock(int s, int* io_port);
+
+int make_nonblock(int s);
+
 }} // namespace demux, flx
 #endif
 
@@ -582,6 +621,7 @@ public:
 @h=tangler('demux/demux_epoll_demuxer.cpp')
 @select(h)
 // epoll interface. does epoll support ordinary files in addition to sockets?
+// EPOLLET to make epoll edgetriggered. I guess the default is level triggered.
 
 // cool! EPOLLONESHOT
 // BUGGER! doesn't seem to exist! and doing this doesn't make it so!
@@ -757,13 +797,33 @@ epoll_demuxer::thread_loop_body()
 #include <unistd.h> // close
 #include <assert.h>
 
+namespace flx { namespace demux {
+
+// wrapping two "real" evtport_demuxers into one, so I can
+// have simultaneously reading and writing sockets.
+// see comments in header file
+
+// unfortunate side effect of deriving this from posix demuxer...
+// I get an unwanted pthread
+void
+evtport_demuxer::thread_loop_body()
+{
+  fprintf(stderr, "trival evtport_demuxer thread, exiting...\n");
+  pthread_exit(0);
+}
+
+int
+evtport_demuxer::add_socket_wakeup(socket_wakeup* sv, bool read)
+{
+  if(read) return in.add_socket_wakeup(sv, read);
+  else return out.add_socket_wakeup(sv, read);
+}
+
 // header files for this stuff?
 // can use port_send for user defined events, to wake up reap loop
 // truss to see what's happening
 
-namespace flx { namespace demux {
-
-evtport_demuxer::evtport_demuxer()
+evtport_half_demuxer::evtport_half_demuxer()
 {
   if((evtport = port_create()) < 0)
   {
@@ -782,9 +842,9 @@ evtport_demuxer::evtport_demuxer()
 }
 
 void
-evtport_demuxer::cleanup()
+evtport_half_demuxer::cleanup()
 {
-fprintf(stderr,"do you use close to close an event port?\n");
+  // fprintf(stderr,"do you use close to close an event port?\n");
   deinit_pthread();
 
   if(-1 != evtport)
@@ -794,19 +854,19 @@ fprintf(stderr,"do you use close to close an event port?\n");
   }
 }
 
-evtport_demuxer::~evtport_demuxer()
+evtport_half_demuxer::~evtport_half_demuxer()
 {
   cleanup();
 }
 
 
 int
-evtport_demuxer::add_socket_wakeup(socket_wakeup* sv, bool read)
+evtport_half_demuxer::add_socket_wakeup(socket_wakeup* sv, bool read)
 {
   int events = (read) ? POLLIN : POLLOUT;
   int s = sv->s;
 
-  //fprintf(stderr,"add_socket_wakeup: %i, sv: %p, %s\n", s, sv,
+  // fprintf(stderr,"add_socket_wakeup: %i, sv: %p, %s\n", s, sv,
   //  (read) ? "reading" : "writing");
 
   // register for event we are interested in...
@@ -830,14 +890,14 @@ evtport_demuxer::add_socket_wakeup(socket_wakeup* sv, bool read)
 // the samething twice. I don't know if this means you have to dissociate
 // (disassociate) twice.
 void
-evtport_demuxer::remove_reading_fd(int s)
+evtport_half_demuxer::remove_reading_fd(int s)
 {
   if(port_dissociate(evtport, PORT_SOURCE_FD, s) == -1)
     perror("reading port_dissociate");
 }
 
 void
-evtport_demuxer::remove_writing_fd(int s)
+evtport_half_demuxer::remove_writing_fd(int s)
 {
   if(port_dissociate(evtport, PORT_SOURCE_FD, s) == -1)
     perror("writing port_dissociate");
@@ -873,9 +933,9 @@ print_port_evt(port_event_t* e)
 }
 
 void
-evtport_demuxer::thread_loop_body()
+evtport_half_demuxer::thread_loop_body()
 {
-  //fprintf(stderr,"evtport thread loop body!!!\n");
+  // fprintf(stderr,"evtport thread loop body!!!\n");
 // Block until a single event appears on the port
 // event will not fire again, so must re-add it, that is, it automatically
 // dissociates, which is going to make remove interesting... remove never
@@ -916,6 +976,20 @@ evtport_demuxer::thread_loop_body()
   if(evt.portev_source != PORT_SOURCE_FD)
     fprintf(stderr,"got non PORT_SOURCE_FD (%i, %p)\n", s, sv);
 
+  // we'd better hope that they're not both, or we could get two
+  // wakeups at once...
+  // update: when events like POLLIN and POLLOUT are added, in separate
+  // invocations of port_associate, for the same file descriptor, the
+  // later one overwrites the earlier, so POLLIN followed by POLLOUT
+  // will never get its POLLIN. The simplest solution to this that I
+  // could see was to wrap two evtport_demuxers (now called half demuxers)
+  // into one, with each respectively minding input and output. It's not
+  // the best solution to a rare problem (and needlessly increases the
+  // number of threads), but it works. This assert should definitely never
+  // happen now, so I may as well leave it there.
+ 
+  assert(!((evt.portev_events & POLLIN) && (evt.portev_events & POLLOUT)));
+
   if(evt.portev_events & POLLIN)
   {
     // fprintf(stderr,"GOT READ EVT FOR %p\n", sv);
@@ -925,7 +999,7 @@ evtport_demuxer::thread_loop_body()
 
   if(evt.portev_events & POLLOUT)
   {
-    //fprintf(stderr,"GOT WRITE EVT FOR %p\n", sv);
+    // fprintf(stderr,"GOT WRITE EVT FOR %p\n", sv);
     assert(sv);
     sv->wakeup(*this);
   }
@@ -933,7 +1007,7 @@ evtport_demuxer::thread_loop_body()
   // I never asked for POLLERR, but anyway
   if(evt.portev_events & ~(POLLIN | POLLOUT | POLLERR))
     {
-        fprintf(stderr,"UNSOLICITED events in evtport_demuxer (%x)\n",
+        fprintf(stderr,"UNSOLICITED events in evtport_half_demuxer (%x)\n",
       evt.portev_events);
     }
 }
@@ -988,23 +1062,23 @@ namespace flx { namespace demux {
 
 winsock_initer::winsock_initer()
 {
-    WSADATA wsaData;
+  WSADATA wsaData;
 
-    // apparently 2.2's the way to go
-    if(WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
-    {
-        int err = WSAGetLastError();
-        fprintf(stderr,"couldn't find usable winsock dll: %i\n", err);
-        throw err;
-    }
+  // apparently 2.2's the way to go
+  if(WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+  {
+    int err = WSAGetLastError();
+    fprintf(stderr,"couldn't find usable winsock dll: %i\n", err);
+    throw err;
+  }
 }
 
 winsock_initer::~winsock_initer()
-{   
-    if(WSACleanup() != 0)
-    {   
-        fprintf(stderr,"WSACleanup failed %i\n", WSAGetLastError());
-    }
+{
+  if(WSACleanup() != 0)
+  {
+    fprintf(stderr,"WSACleanup failed %i\n", WSAGetLastError());
+  }
 }
 
 // iocp_wakeup base class for users of iocp_demuxer
@@ -1394,11 +1468,11 @@ win_queue::dequeue()
 
 // simple utility fn, shouldn't be here. creates listener on any interface.
 // this could benifit from a SOCKET class. in failure returns INVALID_SOCKET
-SOCKET FLX_RTL_EXTERN
-create_listener_socket(int port, int backlog)
+SOCKET
+create_listener_socket(int* io_port, int backlog)
 {
   fprintf(stderr,"creating_listener_socket\n");
-  SOCKET        listener = INVALID_SOCKET;
+  SOCKET        listener;
 
   // could use WSASocket, but these seem to be turning out overlapped anyway
   // at least after tangling with overlapped functions.
@@ -1413,9 +1487,11 @@ create_listener_socket(int port, int backlog)
 
   SOCKADDR_IN   addr;
 
+  // msdn code examples don't zero the sockaddr. That makes me nervous.
+  ZeroMemory(&addr, sizeof(addr));
   addr.sin_family = AF_INET;
   addr.sin_addr.s_addr = htonl(INADDR_ANY);
-  addr.sin_port = htons(port);
+  addr.sin_port = htons(*io_port);
 
   // bind our name to the socket
   int         res;
@@ -1425,8 +1501,32 @@ create_listener_socket(int port, int backlog)
   {
     fprintf(stderr,"bind() failed %i\n", WSAGetLastError());
     if(closesocket(listener) == SOCKET_ERROR)
-      fprintf(stderr,"closesocket failed on listener: %i\n", WSAGetLastError());
+    {
+      fprintf(stderr,"closesocket failed on listener: %i\n",
+        WSAGetLastError());
+    }
     return INVALID_SOCKET;
+  }
+
+  // if user wanted port chosen tell them what it turned out to be
+  if(0 == *io_port)
+  {
+    int namelen;
+
+    if (getsockname(listener, (struct sockaddr *)&addr, &namelen) 
+      == SOCKET_ERROR)
+    {
+      fprintf(stderr, "getsockname failed (%i)\n", WSAGetLastError());
+
+      if(closesocket(listener) == SOCKET_ERROR)
+      {
+        fprintf(stderr,"closesocket failed on listener: %i\n",
+          WSAGetLastError());
+      }
+      return INVALID_SOCKET;
+    }
+
+    *io_port = ntohs(addr.sin_port);
   }
 
   // Set the socket to listen
@@ -1436,7 +1536,10 @@ create_listener_socket(int port, int backlog)
     fprintf(stderr,"listen() failed %i\n", WSAGetLastError());
 
     if(closesocket(listener) == SOCKET_ERROR)
-      fprintf(stderr,"closesocket failed on listener: %i\n", WSAGetLastError());
+    {
+      fprintf(stderr,"closesocket failed on listener: %i\n",
+        WSAGetLastError());
+    }
 
     return INVALID_SOCKET;
   }
@@ -1485,6 +1588,490 @@ blah()
 */
 }}
 
+@h=tangler('demux/demux_overlapped.cpp')
+@select(h)
+#include "demux_overlapped.hpp"
+#include <stdio.h>      // fprintf
+
+namespace flx { namespace demux {
+
+// windows includes files here? vs will be fussy.
+
+// AcceptEx
+
+// return async finished flag (error flags - can be transmitted via class)
+// AcceptEx is the way to get accept connections via the IOCP
+bool
+acceptex_control_block::start_overlapped()
+{
+  clear_overlapped();
+
+// I've seen two examples get the pointer to AcceptEx, just in case it
+// isn't implemented...
+  // fprintf(stderr,"AcceptExing: listen backlog => can succeed immediately\n");
+
+  // this is only set when acceptex receives data and returns immediately.
+  // can't hurt to set it.
+  DWORD nbytes = 0;
+  BOOL  success;
+
+  // note that in order to get the wakeup packet, the listener must
+  // already be associated with the iocp. for future async io, the acceptor
+  // must be associated too.
+  success = AcceptEx(listener, acceptor,
+    accept_buf,       // required - near/far address
+    0,            // receive data size - don't yet want this
+    ACCEPTEX_ADDR_SIZE,   // must be nonzero
+    ACCEPTEX_ADDR_SIZE,   // must be nonzero
+    &nbytes,        // only set if fn completes. should be 0
+    &ol);         // oblig. gets us back to the this ptr
+
+  // if there is a backlog of connections, AcceptEx can return immediately
+  if(success)
+  {
+    // must clear the wait
+    fprintf(stderr,"WHOA! AcceptEx RETURNED SUCCESS IMMEDIATELY!\n");
+    // handle the successful wakeup
+    // complete_async_op(demux, drv, nbytes, NO_ERROR); 
+    // I hope they don't want the udat pointer, because I
+    // just made it up (0=NULL). Not using it anyway.
+    iocp_op_finished(nbytes, 0, &ol, NO_ERROR); 
+    return false;
+  }
+  else
+  {
+    int err = WSAGetLastError();
+    // can also return WSACONNRESET, which isn't so bad
+    if(ERROR_IO_PENDING == err)
+    {
+      // fprintf(stderr,"AcceptEx returned ERROR_IO_PENDING - that's normal\n");
+      // This is the normal situation, fall through, leaving thread
+      // to sleep on wakeup call.
+    }
+    else
+    {
+      fprintf(stderr,"AcceptEx failed: %i\n", err);
+      fprintf(stderr,"returning true should wake thread to detect failure.\n");
+      return true;    // have self woken
+    }
+  }
+  return false;       // async not finished
+
+}
+
+// ConnectEx
+#if 0
+// apparently we're supposed to do this now to make the acceptee inherit
+// the listener's state. it is currently in the default state
+//err = setsockopt( sAcceptSocket, 
+//  SOL_SOCKET, 
+//  SO_UPDATE_ACCEPT_CONTEXT, 
+//  (char *)&sListenSocket, 
+//  sizeof(sListenSocket) );
+#endif
+
+// what a pain in the arse (zzz)
+static int
+GetConnectExAddr(SOCKET s, LPFN_CONNECTEX* conn_fn)
+{
+  *conn_fn = NULL;
+  GUID      GuidConnectEx = WSAID_CONNECTEX;   
+  DWORD     dwBytes;
+  int       err;
+
+  err = WSAIoctl(s,   // why do I need this?
+    SIO_GET_EXTENSION_FUNCTION_POINTER,
+    &GuidConnectEx,
+    sizeof(GuidConnectEx),
+    conn_fn,
+    sizeof(*conn_fn),
+    &dwBytes,
+    NULL, NULL);    // no overlapped, no completion fun ptr
+//  fprintf(stderr,"Get addr dwbytes: %li\n", dwBytes);
+  return err;
+}
+
+// this is the weirdest. To use ConnectEx, the socket must be already bound.
+// By trial and error, I found that it had to be bound to INADDR_ANY: 0.
+// So strange. Apparently I don't have to do it again if I want to reuse.
+static int
+bind_socket(SOCKET s)
+{
+  SOCKADDR_IN   addr;
+
+  ZeroMemory(&addr, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  addr.sin_port = htons(0);
+
+  return bind(s, (LPSOCKADDR)&addr, sizeof(addr));
+}
+
+bool
+connectex_control_block::start_overlapped()
+{
+  clear_overlapped();
+
+  DWORD bytes_sent = 0;   // we're not sending data on connect (yet)
+  BOOL  success;
+
+  LPFN_CONNECTEX  pfConnectEx;
+
+  // unfortunate, will fix up later.
+  // fprintf(stderr,"Getting ConnectEx address\n");
+
+  // Turns out that ConnectEx isn't defined anywhere; I have to load its
+  // addr via WSAIoctl
+  // this is a bad way. make the driver cache it. why on earth is this
+  // call per-socket? does it really need to be that way?
+  if(GetConnectExAddr(s, &pfConnectEx) == SOCKET_ERROR)
+  {
+    fprintf(stderr,"GetConnectExAddr failed: %i\n", WSAGetLastError());
+    return true;
+  }
+
+  // fprintf(stderr,"about to connectex to %s:%i, %i\n", addy, p, s);
+
+  // this is so strange - I have to bind the socket to the localhost.
+  // if I don't, ConnectEx returns EINVAL. in any case, I won't need
+  // to do this again if I reuse this socket.
+  if(bind_socket(s) == SOCKET_ERROR)
+    fprintf(stderr,"ConnectEx bind failed: %i\n", WSAGetLastError());
+
+  // I hope ConnectEx doesn't want this to hang around, because it's
+  // going to drop off the stack after this.
+  SOCKADDR_IN   addr;
+
+  // some examples don't zero the addr. That makes me nervous.
+  ZeroMemory(&addr, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = inet_addr(addy);
+  addr.sin_port = htons(p);
+
+  // in order to receive the wakeup packet, s must already be associated
+  // with the iocp. this is best done at socket creation time. for these
+  // sockets it's probably best to also bind them at the same time.
+  // that requires "purposed" sockets (CreateConnectSocket?).
+  // p.s. the default (waio_base) wakeup is doing fine for now.
+
+  success = (*pfConnectEx)(s, // socket
+    (LPSOCKADDR)&addr,    // connect address
+    sizeof(addr),     // size thereof
+    NULL,         // not sending any data yet, but we could
+    0,            // ditto
+    NULL,         // should be zero until this changes
+    &ol);         // oblig. gets us back to the this ptr
+
+// there's a caveat about the type of socket s becomes after ConnectEx.
+// It's in some kind of default state and cannot be used with shutdown
+// change it with setsockopt (?)
+  if(success)
+  {
+    fprintf(stderr,"WHOA! ConnectEx RETURNED SUCCESS IMMEDIATELY!\n");
+    // handle the successful wakeup. (udat=0, olp=&ol)
+    iocp_op_finished(bytes_sent, 0, &ol, NO_ERROR); 
+    return false;   // already woken up
+  }
+  else
+  {
+    int err = WSAGetLastError();
+
+    if(ERROR_IO_PENDING == err)
+    {
+      // fprintf(stderr,"ConnectEx pending...\n");
+      // This is the normal situation, fall through, leaving thread
+      // to sleep on wakeup call.
+    }
+    else
+    {
+      // maybe store the error here. that could work for all
+      // windows wakeups
+      fprintf(stderr,"ConnectEx failed: %i\n", err);
+      return true;    // have self woken
+    }
+  }
+  return false;       // not finished
+}
+
+// TransmitFile
+
+bool
+transmitfile_control_block::start_overlapped()
+{
+  clear_overlapped();
+
+  // 0 bytes => transmit entire file
+  // the second zero means use the default chunk size
+  // the NULL is for mem buffers to bookend the file with. nothing yet.
+  // the final zero is for various flags, including a way of doing
+  // DisconnectEx style socket reuse (more widely compatible?)
+
+  // in order to receive the wakeup, s must already be associated with the
+  // iocp. this is best done at socket creation time.
+  if(TransmitFile(s, file, 0, 0, &ol, NULL, flags))
+  {
+    fprintf(stderr,"Transmit file succeeded immediately! waking...\n");
+    return true;
+  }
+  else
+  {
+    DWORD err = WSAGetLastError();
+
+    // will need to actually signal something
+    // fprintf(stderr,"signal TransmitFile failure!\n");
+    if(ERROR_IO_PENDING != err && WSA_IO_PENDING != err)
+      fprintf(stderr,"genuine error from TransmitFile: %li\n", err);
+  }
+  return false;
+}
+
+
+// SOCKET io using WSASend and WSARecv
+
+// windows style control blocks
+wsasocketio_control_block::wsasocketio_control_block(SOCKET src, void* buf, int len, bool inread)
+  : s(src), reading(inread)
+{
+  // pb is not so useful here. we only want to
+  // know num bytes written/processed.
+  pb.buffer = (char*)buf;
+  pb.buffer_size = len;
+  pb.bytes_written = 0;
+}
+
+bool
+wsasocketio_control_block::start_overlapped()
+{
+  clear_overlapped();
+
+  // num bytes received IF recv completes immediately.
+  DWORD imm_bytes;
+  int   recv_res;
+
+  // set up the single wbuf, bearing in mind we may be part way.
+  wbufs[0].len = pb.buffer_size - pb.bytes_written;
+  wbufs[0].buf = pb.buffer + pb.bytes_written;
+
+  // Ideally, we would like to be able to use MSG_WAITALL, which would
+  // let us only get a completion packet when either all the data was
+  // available or the connection had been closed or shutdown.
+  // Unfortunately this is not possible for non-blocking sockets, so
+  // we have to take whatever we get and then call WSARecv again.
+
+  //#define MSG_WAITALL 0   // not defined in cygwin - apparently this
+  //DWORD flags = MSG_WAITALL;
+
+  // ah, unfortunately MSG_WAITALL is not supported for non blocking sockets
+  // we'll just have to do it ourselves
+  DWORD flags = MSG_PARTIAL;
+
+  // completion routines! (unused)
+  if(reading)
+    recv_res = WSARecv(s, wbufs, NUM_WBUFS, &imm_bytes, &flags, &ol, NULL);
+  else
+    recv_res = WSASend(s, wbufs, NUM_WBUFS, &imm_bytes, flags, &ol, NULL);
+
+  // don't know if I need to check non winsock errs
+
+  switch(recv_res)
+  {
+    case 0:
+    {
+      // flags are updated to indicate what? if there was a callback, it
+      // would be scheduled to be called when this thread is in the
+      // waitable state, whatever that means.
+      // fprintf(stderr,"WSA%s completed immediately!!! numbytes: %li, flags: %lx\n",
+      //  (reading) ? "Recv" : "Send", imm_bytes, flags);
+
+      // looks like we get the completion packet even if we do finish
+      // immediately so let the iocp wake us.
+      // this updates pb & wakes us up
+      // complete_async_op(demux, drv, imm_bytes, NO_ERROR);
+
+      return false;
+    }
+    break;
+    case SOCKET_ERROR:
+    {
+      DWORD err = WSAGetLastError();
+
+      // normal mode - wait for completion
+      // fyi, xp pro seems to mostly give us ERROR_IO_PENDING
+      if(ERROR_IO_PENDING == err || WSA_IO_PENDING == err)
+      {
+        // fprintf(stderr,"WSA%s pending completion (%li)\n",
+        //  (reading) ? "Recv" : "Send", err);
+        return false;     
+      }
+
+      fprintf(stderr,"WSARecv/Send returned SOCKET_ERR: %li\n", err);
+      return true;    // assume it's bad and we won't get a wakeup
+    }
+    break;
+    default:
+    {
+      fprintf(stderr,"WSARecv/Send returned other error: %i, GetLastError: %li\n",
+        recv_res, GetLastError());
+      return true;        // wake up
+    }
+    break;
+  }
+
+  return false;
+}
+
+
+// file io using ReadFile and WriteFile
+
+winfileio_control_block::winfileio_control_block(HANDLE f, void* buf, int len, bool inread)
+  : file(f), reading(inread)
+{
+  // pb is not so useful here. we only want to
+  // know num bytes written/processed.
+  pb.buffer = (char*)buf;
+  pb.buffer_size = len;
+  pb.bytes_written = 0;
+}
+
+// if file is opened with FILE_FLAG_OVERLAPPED, we can do "immutable file ptr"
+// ops & set the desired offset within the overlapped. can also stick an
+// event to signal in there.
+bool
+winfileio_control_block::start_overlapped()
+{
+  fprintf(stderr,"trying out some read/write file\n");
+  clear_overlapped();
+
+  // DWORD  imm_bytes;
+  BOOL  success;
+
+  // don't need bytes read, written when we have an OVERLAPPED
+  if(reading)
+    // success = ReadFile(file, pb.buffer, pb.buffer_size, &imm_bytes, &ol);
+    success = ReadFile(file, pb.buffer, pb.buffer_size, NULL, &ol);
+  else
+    //success = WriteFile(file, pb.buffer, pb.buffer_size, &imm_bytes, &ol);
+    success = WriteFile(file, pb.buffer, pb.buffer_size, NULL, &ol);
+
+  // fprintf(stderr,"immbytes = %li\n", imm_bytes);
+
+  if(!success)
+  {
+// this is probably going to be IOPENDING
+    fprintf(stderr,"%sFile failed! (%li)\n", (reading) ? "Read" : "Write",
+      GetLastError());
+    fprintf(stderr,"do I still get completion packet???\n");
+    // assume not
+    return true;      // ask for wakeup
+  }
+
+  return false;       // sleep on
+}
+
+}}
+
+@h=tangler('demux/demux_overlapped.hpp')
+@select(h)
+#ifndef __DEMUX_OVERLAPPED__
+#define __DEMUX_OVERLAPPED__
+
+#include "demux_iocp_demuxer.hpp"
+// visual studio is quite sensitve about how you do these includes.
+// THIS is the way (WinSock2.h includes Windows.h? iocp_demuxer.h is.).
+#include <WinSock2.h>
+#include <MSWSock.h>  // AcceptEx, TF_REUSE_SOCKET, etc
+
+
+namespace flx { namespace demux {
+
+// rename these to control block something or other
+// get rid of default constructors - faio can worry about that.
+
+// listener socket must be already associated with an IOCP
+// in doing an AcceptEx, it might succeed immediately - do you still
+// get the IOCP wakeup?
+class FLX_RTL_EXTERN acceptex_control_block : public iocp_wakeup {
+  enum { ACCEPTEX_ADDR_SIZE = sizeof(SOCKADDR_IN) + 16 };
+
+  SOCKET  listener, acceptor;
+  // there are two of these!
+  char  accept_buf[2*ACCEPTEX_ADDR_SIZE];
+public:
+
+  virtual bool start_overlapped();
+
+  acceptex_control_block(SOCKET l, SOCKET a) : listener(l), acceptor(a) { }
+};
+
+class FLX_RTL_EXTERN connectex_control_block : public iocp_wakeup
+{
+  SOCKET    s;          // previously unbound socket
+  // can have buffer to be sent on connection
+  const char* addy;       // ipv4 address
+  int     p;          // port number
+public:
+
+  connectex_control_block(SOCKET soc, const char* addr, int port)
+    : s(soc), addy(addr), p(port) {}
+
+  virtual bool start_overlapped();
+};
+
+// TransmitFile here (requires file handle)
+class FLX_RTL_EXTERN transmitfile_control_block : public iocp_wakeup {
+  SOCKET  s;
+  HANDLE  file;
+  DWORD flags;                // for possible socket reuse.
+public:
+
+  transmitfile_control_block(SOCKET dst)      // for reuse of socket
+    : s(dst), file(NULL), flags(TF_DISCONNECT | TF_REUSE_SOCKET) {}
+
+  transmitfile_control_block(SOCKET dst, HANDLE src)  // actual transmitfile
+    : s(dst), file(src), flags(0) {}
+
+  virtual bool start_overlapped();
+};
+
+
+// handles both WSASend & WSARecv
+class FLX_RTL_EXTERN wsasocketio_control_block : public iocp_wakeup {
+protected:
+  enum { NUM_WBUFS = 1 }; // just one for now, but can do scattered send/recvs
+  WSABUF    wbufs[NUM_WBUFS];
+  SOCKET    s;
+  bool    reading;  // else use WSASend
+public:
+  sel_param pb;     // what you wanted & later, what you got
+
+  wsasocketio_control_block(SOCKET src, void* buf, int len, bool read);
+
+  virtual bool start_overlapped();
+
+// have here?
+//  virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
+//    LPOVERLAPPED olp, int err);
+};
+
+// looks a bit like wsasocketio_control_block (bad name, sends too)
+class FLX_RTL_EXTERN winfileio_control_block : public iocp_wakeup {
+  HANDLE    file;
+  bool    reading;
+public:
+  sel_param pb;
+
+  // offset?
+  winfileio_control_block(HANDLE f, void* buf, int len, bool read);
+
+  virtual bool start_overlapped();
+
+  //virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
+  //  LPOVERLAPPED olp, int err);
+};
+
+}}
+
+#endif
 @h=tangler('demux/demux_kqueue_demuxer.cpp')
 @select(h)
 // kqueue demuxer for bsd/os x
@@ -1623,6 +2210,13 @@ kqueue_demuxer::remove_writing_fd(int s)
     perror("write evt remove");
 }
 
+// from "advanced macos programming", on reading shutdown causes
+// the EV_EOF flag to be set in the flags field and returns errno
+// in the fflags field. There may still be pending data to read
+// when EV_EOF is set. The data field says how many bytes available.
+// for writing data says how much you can write. EV_EOF is set
+// when the reader "disconnects". Says nothing about errno/fflags
+// in this case.
 /*
     fprintf(stderr,"readevt on %i, EOF = %s\n",
       s, (ev.flags & EV_EOF) ? "TRUE" : "FALSE");
@@ -1670,6 +2264,13 @@ kqueue_demuxer::thread_loop_body()
     }
     else
 */
+    if(ev.flags & EV_EOF)
+    {
+      // errno in fflags!
+      //fprintf(stderr,
+      //  "got EV_EOF on read, %i bytes remain in buffer, errno=%i\n",
+      //  (int)ev.data, ev.fflags);
+    }
     // fprintf(stderr,"EVFILT_READ: got %i bytes coming\n", (int)ev.data);
     // remove_reading_fd(s);  // now useing EV_ONESHOT
     sv->wakeup(*this);
@@ -1677,12 +2278,23 @@ kqueue_demuxer::thread_loop_body()
   else if(ev.filter == EVFILT_WRITE)
   {
     // fprintf(stderr,"EVFILT_WRITE: can write (?) %i bytes\n", (int)ev.data);
+
+    // using oneshot mode now.
     // remove_writing_fd(s);
+
+    if(ev.flags & EV_EOF)
+    {
+      // errno in fflags? data should be zero bytes, right?
+      // can't write anything
+      //fprintf(stderr,
+      //  "got EV_EOF on write, data bytes =%i (0?), errno/fflags?=%i\n",
+      //  (int)ev.data, ev.fflags);
+    }
     sv->wakeup(*this);
   }
   else
   {
-    fprintf(stderr,"kqueue returned something else (requires remove?)...\n");
+    fprintf(stderr,"unsolicited event from kqueue...\n");
   }
 }
 }}
@@ -1942,9 +2554,9 @@ posix_demuxer::thread_start(void* data)
 }
 
 bool
-posix_demuxer::handle_socket_read(int s, sel_param* pb)
+posix_demuxer::socket_recv(int s, sel_param* pb)
 {
-  assert(pb != NULL);
+  // why do I have the zero buffer size?
   assert(pb->buffer_size > pb->bytes_written || 0 == pb->buffer_size);
 
   ssize_t     nbytes;
@@ -1974,11 +2586,12 @@ posix_demuxer::handle_socket_read(int s, sel_param* pb)
 }
 
 bool
-posix_demuxer::handle_socket_write(int s, sel_param* pb)
+posix_demuxer::socket_send(int s, sel_param* pb)
 {
-  // can know how much to write... imagine that!
+  // kqueue (and some of the other ones) can let you know know how much
+  // to write... imagine that!
 
-  assert(pb != NULL);
+  // why do I have the zero buffer size?
   assert(pb->buffer_size > pb->bytes_written || 0 == pb->buffer_size);
 
   ssize_t     nbytes;
@@ -2634,9 +3247,11 @@ worker_fifo::add_worker_task(worker_task* task)
 
 @h=tangler('demux/demux_sockety.cpp')
 @select(h)
+#include "demux_sockety.hpp" /* for this stuff */
+
 #include <stdio.h>        /* for perror */
 #include <fcntl.h>        /* for making non blocking sockets */
-#include <netinet/in.h>     /* for sockaddr_in (used when accepting) */
+#include <netinet/in.h>     /* for sockaddr_in */
 #include <arpa/inet.h>      /* for inet_addr */
 #include <unistd.h>       /* for close */
 
@@ -2654,61 +3269,44 @@ namespace flx { namespace demux {
 /*
  returns a socket ready for listening (AF_INET, SOCK_STREAM for now).
  0 in for port means let kernel decide, result in *io_port
- portable, can be factored out. listens on all NICs?
+ portable, can be factored out. listens on all NICs.
+ returns -1 on failure, sometimes eats errno.
 */
 int
 create_listener_socket(int* io_port, int q_len)
 {
-  int         fdForListening;
-  struct sockaddr_in  serverAddress;
-  FLX_SOCKLEN_T    namelen = sizeof(serverAddress);
-  int         yes = 1;
+  int         listener;
+  int         yes = 1;  /* for address reuse */
 
-  if((fdForListening = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+  if((listener = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     return -1;
 
-  if(setsockopt(fdForListening, SOL_SOCKET, SO_REUSEADDR,
-    &yes, sizeof(int)) == -1)
-  {
-    perror("setsockopt");
-    close(fdForListening);
-    return -1;
-  }
+  /* get rid of those *pesky* "address already in use" errors. */
+  /* for when you don't cleanly shutdown the server */
+  if(setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1)
+    goto listener_fail;
 
-  memset(&serverAddress, 0, sizeof(serverAddress));
-  serverAddress.sin_family = AF_INET;
-  serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-  serverAddress.sin_port = htons(*io_port);
-
-  /* bind to port */
-  if (bind(fdForListening, (struct sockaddr *)&serverAddress, namelen) < 0) {
-    close (fdForListening);   /* THIS masks the error */
-    return -1;
-  }
-
-  /* we don't need to do this when the port was specified */
-  if(0 == *io_port) {
-    /* Find out what port number was chosen */
-    if (getsockname(fdForListening, (struct sockaddr *)&serverAddress,
-      &namelen) < 0) {
-      close(fdForListening);  /* um, this masks the error. */
-      return -1;
-    }
-
-    *io_port = ntohs(serverAddress.sin_port);
-  }
+  /* bind listener to local interface (ANY) */
+  if(bind_sock(listener, io_port) == -1)
+    goto listener_fail;
 
   /* set listen queue length for socket */
-  if(listen(fdForListening, q_len) != 0) {
-    close(fdForListening);
-    return -1;
-  }
-  return fdForListening;
+  if(listen(listener, q_len) == -1)
+    goto listener_fail;
+
+  return listener;
+
+listener_fail:
+  perror("create_listener_socket"); /* eats errno! */
+  if(close(listener) == -1)
+    perror("create_listener_socket close");
+  return -1;
 }
+
 
 /* create listener, make it non-blocking */
 int
-nice_create_listener(int* io_port, int q_len)
+create_async_listener(int* io_port, int q_len)
 {
   int   listener;
 
@@ -2716,17 +3314,18 @@ nice_create_listener(int* io_port, int q_len)
 
   if(-1 == listener) return -1;
 
-  if(fcntl(listener, F_SETFL, O_NONBLOCK) == -1)
+  if(make_nonblock(listener) == -1)
   {
     if(close(listener) != 0)
-      perror("nice_create_listener close");
+      perror("create_async_listener close");
     return -1;
   }
 
   return listener;
 }
 
-/* ps, sets resulting socket to non-block */
+/* ps, sets resulting socket to non-block. some people would say that */
+/* this WASN'T nice, so change the name some time */
 int
 nice_accept(int listener)
 {
@@ -2744,9 +3343,9 @@ nice_accept(int listener)
   else
   {
     /*I think 0's the result I want*/
-    if(fcntl(newfd, F_SETFL, O_NONBLOCK) == -1)
+    if(make_nonblock(newfd) == -1)
     {
-      perror("fcntl");
+      perror("make_nonblock");
       close(newfd);
       newfd = -1;
     }
@@ -2754,35 +3353,85 @@ nice_accept(int listener)
   return newfd;
 }
 
-// returns -1 with err in errno on failure
-static int
+/* call this connect_ipv4? would its interface work for ipv6? */
+/* this connect can be either asynchronous or synchronous, */
+/* depending on whether or not the socket is non blocking */
+/* returns -1 with err in errno on failure */
+int
 connect_sock(int s, const char* addr, int port)
 {
   struct sockaddr_in  sock_addr;
 
   memset(&sock_addr, 0, sizeof(sock_addr));
-  sock_addr.sin_family = AF_INET;
+  sock_addr.sin_family = AF_INET;     /* host byte order */
   sock_addr.sin_addr.s_addr = inet_addr(addr);
   sock_addr.sin_port = htons(port);
   
   return connect(s, (struct sockaddr *)&sock_addr, sizeof(sock_addr));
 }
 
-/* also make non-blocking AFTER connect */
+/* bind s to local address with given port number, or zero to let OS */
+/* choose. can you bind to non-local addresses? not sure, but you might */
+/* like to choose which local interface... (ADD OTHER INTERFACES HERE) */
+/* returns -1 on failure with error code in errno */
+int
+bind_sock(int s, int* io_port)
+{
+  struct sockaddr_in  addr;
+  /* this type is sometimes socklen_t */
+  unsigned int    namelen = sizeof(addr);
+
+  memset(&addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;      /* host byte order */
+  /* make the NIC an argument */
+  addr.sin_addr.s_addr = htonl(INADDR_ANY); /* allow multihomed */
+  addr.sin_port = htons(*io_port);
+
+  /* bind to port */
+  if (bind(s, (struct sockaddr *)&addr, namelen) < 0)
+  {
+    return -1;
+  }
+
+  /* we don't need to do this when the port was specified */
+  if(0 == *io_port)
+  {
+    /* Find out what port number was chosen */
+    if (getsockname(s, (struct sockaddr *)&addr, &namelen) < 0)
+    {
+      return -1;
+    }
+
+    *io_port = ntohs(addr.sin_port);
+  }
+
+  return 0; /* success! */
+}
+
+/* simple wrapper for fcntl for those too lazy to look it up */
+/* returns -1 on failure with errno set or non -1  otherwise */
+int
+make_nonblock(int s)
+{
+  return fcntl(s, F_SETFL, O_NONBLOCK);
+}
+
+/* also make non-blocking AFTER connect, that is, */
+/* this is a synchronous connect */
 int
 nice_connect(const char* addr, int port)
 {
-  int     s = -1;
+  int     s;
 
   if((s = socket(AF_INET, SOCK_STREAM, 0)) != -1
     && connect_sock(s, addr, port) == 0
-    && fcntl(s, F_SETFL, O_NONBLOCK) != -1)
+    && make_nonblock(s) != -1)
   {
     return s;   /* success! */
   }
 
   /* something happened (not as good as catch 22) */
-  perror("connect_sock");
+  perror("nice_connect");
 
   if(-1 != s && close(s) != 0)
     perror("nice close");
@@ -2798,8 +3447,7 @@ async_connect(const char* addr, int port, int* finished)
 {
   int     s = -1;
 
-  if((s = socket(AF_INET, SOCK_STREAM, 0)) != -1
-    && fcntl(s, F_SETFL, O_NONBLOCK) != -1)
+  if((s = socket(AF_INET, SOCK_STREAM, 0)) != -1 && make_nonblock(s) != -1)
   {
     if(connect_sock(s, addr, port) == 0)
     {

@@ -1,6 +1,18 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.19  2006/01/05 04:00:35  rfistman
+fixed problem in solaris evtports where adding both reading and
+writing sockets caused a race condition (now we have two two
+"half-demuxers", for input and output)
+
+pc listener create function can now let winsock choose the port,
+just like the posix version.
+
+much factoring:
+  overlapped calls factored back to demux as control blocks
+  posix socket code factored in preparation for UDP/dgram and IPv6 sockets.
+
 Revision 1.18  2006/01/03 04:29:21  rfistman
 fixed win32 tests by a) initing winsock in flx_run and using
 the correct return value.
@@ -609,11 +621,11 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
     
     if(read)
     {   
-        connection_closed = posix_demuxer::handle_socket_read(s, &pb);
+        connection_closed = posix_demuxer::socket_recv(s, &pb);
     }
     else
     {   
-        connection_closed = posix_demuxer::handle_socket_write(s, &pb);
+        connection_closed = posix_demuxer::socket_send(s, &pb);
     }
     
     // printf("posthandle wakeup, this: %p, read: %i, len: %i, done %i\n",
@@ -807,129 +819,141 @@ sleep_request::fire()
 // THIS is the way (WinSock2.h must include Windows.h).
 #include <WinSock2.h>
 #include <MSWSock.h>        // AcceptEx, TF_REUSE_SOCKET, etc
-#include "faio_asyncio.hpp" // flx driver requests
 
-#include "demux_iocp_demuxer.hpp"   // all sorts of great stuff
+#include "faio_asyncio.hpp" // flx driver requests
+#include "demux_overlapped.hpp"   // nicely wrapped async windows calls
     
+namespace flx { namespace faio {
+
 // interestingly, because in windows the async objects are associated
 // with an IOCP before their use, we don't actually need a demuxer here
 // at all. That's kind of nice. (actually iocp_associator uses it now)
-        
-namespace flx { namespace faio {
+
 // a flx driver request to the add socket s to the drivers iocp
 // this is currently the only windows driver request that uses the demuxer.
 class FLX_RTL_EXTERN iocp_associator : public flx_driver_request_base {
-    SOCKET  s;
+  SOCKET  s;
 public:
-    // should have result & errcode
-    iocp_associator() {}            
-    iocp_associator(SOCKET associatee) : s(associatee) {}
+  // should have result & errcode
+  iocp_associator() {}
+  iocp_associator(SOCKET associatee) : s(associatee) {}
 
-    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
-};  
-
-    
-// flx <-> c++ stuff for async io (well, it was)
-class FLX_RTL_EXTERN waio_base : public flx_driver_request_base, public demux::iocp_wakeup {
-protected:
-    // these three should provide enough info to wake a thread
-    void*       f;                      // give this a better name
-    flx_drv*    driver;
-    demux::demuxer*    demux;
-public:
-    bool    success;
-    
-    waio_base() : f(0), success(false) {}
-    
-    // from iocp_wakeup (start_op is from flx_driver_request_base)
-    virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
-        LPOVERLAPPED olp, int err);
+  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
 };
-    
+
+// flx <-> c++ stuff for async io (well, it was)
+
+// transition to new windows async control block
+class FLX_RTL_EXTERN waio_base : public flx_driver_request_base {
+protected:
+  // these three should provide enough info to wake a thread
+  void*   f;            // give this a better name
+  flx_drv*  driver;
+  demux::demuxer*  demux;
+public:
+  bool  success;          // eh?
+
+  waio_base() : f(0), success(false) {}
+
+  // actually wakes up thread
+  virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
+    LPOVERLAPPED olp, int err);
+};
+
 
 // listener socket must be already associated with an IOCP
 // in doing an AcceptEx, it might succeed immediately - do you still
 // get the IOCP wakeup?
-class FLX_RTL_EXTERN wasync_accept : public waio_base {
-    enum { ACCEPTEX_ADDR_SIZE = sizeof(SOCKADDR_IN) + 16 };
-    
-    SOCKET  listener, acceptor;
-    // there are two of these!
-    char    accept_buf[2*ACCEPTEX_ADDR_SIZE];
+class FLX_RTL_EXTERN wasync_accept
+  : public waio_base, public demux::acceptex_control_block
+{
 public:
-    
-    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
-    
-    wasync_accept() {}              // felix linkage demands it
-    wasync_accept(SOCKET l, SOCKET a) 
-        : listener(l), acceptor(a) { }
+  wasync_accept()   // felix linkage demands it
+    : acceptex_control_block(INVALID_SOCKET, INVALID_SOCKET) {}       
+
+  wasync_accept(SOCKET l, SOCKET a) 
+    : acceptex_control_block(l, a) {}
+
+  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+
+  virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
+    LPOVERLAPPED olp, int err);
 };
 
-class FLX_RTL_EXTERN connect_ex : public waio_base
-{   
-    SOCKET      s;                  // previously unbound socket
-    // can have buffer to be sent on connection
-    const char* addy;               // ipv4 address
-    int         p;                  // port number
+class FLX_RTL_EXTERN connect_ex
+  : public waio_base, public demux::connectex_control_block
+{
 public:
-    
-    connect_ex() {}                 // flx linkage
-    connect_ex(SOCKET soc, const char* addr, int port)
-        : s(soc), addy(addr), p(port) {}
-    
-    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+
+  connect_ex()    // flx linkage
+    : connectex_control_block(INVALID_SOCKET, NULL, 0) {}
+
+  connect_ex(SOCKET soc, const char* addr, int port)
+    : connectex_control_block(soc, addr, port) {}
+
+  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+
+  virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
+    LPOVERLAPPED olp, int err);
 };
 
 // TransmitFile here (requires file handle)
-class FLX_RTL_EXTERN wasync_transmit_file : public waio_base {
-    SOCKET  s;
-    HANDLE  file;
-    DWORD   flags;                              // for possible socket reuse.
+class FLX_RTL_EXTERN wasync_transmit_file
+  : public waio_base, public demux::transmitfile_control_block
+{
 public:
-    wasync_transmit_file() {}                   // flx linkage
-    
-    wasync_transmit_file(SOCKET dst)            // for reuse of socket
-        : s(dst), file(NULL), flags(TF_DISCONNECT | TF_REUSE_SOCKET) {}
-    
-    wasync_transmit_file(SOCKET dst, HANDLE src)    // actual transmitfile
-        : s(dst), file(src), flags(0) {}
+  wasync_transmit_file() 
+    : transmitfile_control_block(INVALID_SOCKET, NULL) {}   // flx linkage
 
-    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+  wasync_transmit_file(SOCKET dst)      // for reuse of socket
+    : transmitfile_control_block(dst) {}
+
+  wasync_transmit_file(SOCKET dst, HANDLE src)  // actual transmitfile
+    : transmitfile_control_block(dst, src) {}
+
+  // from flx_request_base
+  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+
+  virtual void iocp_op_finished(DWORD nbytes, ULONG_PTR udat,
+    LPOVERLAPPED olp, int err);
 };
 
 // handles both WSASend & WSARecv
-class FLX_RTL_EXTERN wsa_socketio : public waio_base {
-    enum { NUM_WBUFS = 1 }; // just one for now, but can do scattered send/recvs
-    WSABUF      wbufs[NUM_WBUFS];
-    SOCKET      s;
-    bool        reading;    // else use WSASend
+class FLX_RTL_EXTERN wsa_socketio
+  : public waio_base, public demux::wsasocketio_control_block
+{
 public:
-    demux::sel_param   pb;         // what you wanted & later, what you got
+  wsa_socketio()
+    : wsasocketio_control_block(INVALID_SOCKET, NULL, 0, false) {}
 
-    wsa_socketio() {}
-    wsa_socketio(SOCKET src, void* buf, int len, bool read);
+  wsa_socketio(SOCKET src, void* buf, int len, bool read)
+    : wsasocketio_control_block(src, buf, len, read) {}
 
-    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
-    virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
-        LPOVERLAPPED olp, int err);
+  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+
+  virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
+    LPOVERLAPPED olp, int err);
 };
 
 // looks a bit like wsa_socketio (bad name, sends too)
-class FLX_RTL_EXTERN winfile_io : public waio_base {
-    HANDLE      file;
-    bool        reading;
+class FLX_RTL_EXTERN winfile_io
+  : public waio_base, public demux::winfileio_control_block
+{
 public:
-    demux::sel_param   pb;
+  winfile_io()      // flx linkage
+    : winfileio_control_block(NULL, NULL, 0, false){}
+  
+  // offset?
+  winfile_io(HANDLE f, void* buf, int len, bool read)
+    : winfileio_control_block(f, buf, len, read) {}
 
-    winfile_io() {}         // flx linkage
+  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
 
-    // offset?
-    winfile_io(HANDLE f, void* buf, int len, bool read);
-
-    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
-    virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
-        LPOVERLAPPED olp, int err);
+  virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
+    LPOVERLAPPED olp, int err);
 };
+
+
 }}
 #endif  // __DWINIO__
 
@@ -942,440 +966,154 @@ namespace flx { namespace faio {
 
 // way of adding sockets to the IOCP.
 bool
-iocp_associator::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
-{   
-    iocp_demuxer* iod = (iocp_demuxer*)&demux;
-    if(iod->associate_with_iocp((HANDLE)s, 0) != 0)
-       fprintf(stderr,"associate request failed - get result here!\n");
+iocp_associator::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+{
+  iocp_demuxer* iod = (iocp_demuxer*)&demux;
+  if(iod->associate_with_iocp((HANDLE)s, 0) != 0)
+    fprintf(stderr,"associate request failed - get result here!\n");
 
-    return true;            // wake caller
+  return true;      // wake caller
 }
 
 void
 waio_base::iocp_op_finished( DWORD nbytes, ULONG_PTR udat, 
-    LPOVERLAPPED olp, int err)
+  LPOVERLAPPED olp, int err)
 {
-    // printf("general wakeup thing - rescheduling\n");
-    //printf("this: %p, q: %p, f: %p, err: %i\n", this, q, f, err);
+  // fprintf(stderr,"general wakeup thing - rescheduling\n");
+  //fprintf(stderr,"this: %p, q: %p, f: %p, err: %i\n", this, q, f, err);
 
-    // this tells us when things went wrong (store it)
-    if(NO_ERROR != err)
-        fprintf(stderr,"catchall wakeup got error: %i (should store it)\n", err);
+  // this tells us when things went wrong (store it)
+  if(NO_ERROR != err)
+    fprintf(stderr,"catchall wakeup got error: %i (should store it)\n", err);
 
-    success = (NO_ERROR == err);    // this works pretty well
-    driver->sched(f);
+  success = (NO_ERROR == err);  // this works pretty well
+  driver->sched(f);
 }
+
 
 // to be called inside every start_async_op
-#define WAIO_START_INIT this->f=f;\
-                        this->driver=drv;\
-                        this->demux=&demux
+#define RECORD_THREAD_INFO this->f=f;\
+            this->driver=drv;\
+            this->demux=&demux
 
-// return async finished flag (error flags - can be transmitted via class)
-// AcceptEx is the way to get accept connections via the IOCP
 bool
-wasync_accept::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
+wasync_accept::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 {
-    WAIO_START_INIT;            // records enough info for wakeup
-    clear_overlapped();
-
-// I've seen two examples get the pointer to AcceptEx, just in case it
-// isn't implemented...
-    // printf("AcceptExing: listen backlog => can succeed immediately\n");
-    
-    DWORD   nbytes;
-    BOOL    success;
-    
-    // note that in order to get the wakeup packet, the listener must
-    // already be associated with the iocp. for future async io, the acceptor
-    // must be associated too.
-    success = AcceptEx(listener, acceptor,
-        accept_buf,             // required - near/far address
-        0,                      // receive data size - don't yet want this
-        ACCEPTEX_ADDR_SIZE,     // must be nonzero
-        ACCEPTEX_ADDR_SIZE,     // must be nonzero
-        &nbytes,                // only set if fn completes. should be 0
-        &ol);                   // oblig. gets us back to the this ptr
-    
-    // if there is a backlog of connections, AcceptEx can return immediately
-    if(success)
-    {   
-        // must clear the wait 
-        fprintf(stderr,"WHOA! AcceptEx RETURNED SUCCESS IMMEDIATELY!\n");
-        // handle the successful wakeup
-        // complete_async_op(demux, drv, nbytes, NO_ERROR); 
-        // I hope they don't want the udat pointer, because I
-        // just made it up (0=NULL). Not using it anyway.
-        iocp_op_finished(nbytes, 0, &ol, NO_ERROR);
-        return false;
-    }
-    else
-    {
-        int err = WSAGetLastError();
-        // can also return WSACONNRESET, which isn't so bad
-        if(ERROR_IO_PENDING == err)
-        {   
-            // printf("AcceptEx returned ERROR_IO_PENDING - that's normal\n");
-            // This is the normal situation, fall through, leaving thread
-            // to sleep on wakeup call.
-        }
-        else
-        {   
-            fprintf(stderr,"AcceptEx failed: %i\n", err);
-            fprintf(stderr,"returning true should wake thread to detect failure.\n");
-            return true;        // have self woken
-        }
-    }
-    return false;               // async not finished
-}
-
-#if 0
-// apparently we're supposed to do this now to make the acceptee inherit
-// the listener's state. it is currently in the default state
-//err = setsockopt( sAcceptSocket,
-//  SOL_SOCKET, 
-//  SO_UPDATE_ACCEPT_CONTEXT,
-//  (char *)&sListenSocket, 
-//  sizeof(sListenSocket) );
-#endif
-
-// what a pain in the arse (zzz)
-static int
-GetConnectExAddr(SOCKET s, LPFN_CONNECTEX* conn_fn)
-{
-    *conn_fn = NULL;
-    GUID            GuidConnectEx = WSAID_CONNECTEX;
-    DWORD           dwBytes;
-    int             err;
-
-    err = WSAIoctl(s,       // why do I need this?
-        SIO_GET_EXTENSION_FUNCTION_POINTER,
-        &GuidConnectEx,
-        sizeof(GuidConnectEx),
-        conn_fn,
-        sizeof(*conn_fn),
-        &dwBytes,
-        NULL, NULL);        // no overlapped, no completion fun ptr
-//  printf("Get addr dwbytes: %li\n", dwBytes);
-    return err;
-}
-
-// this is the weirdest. To use ConnectEx, the socket must be already bound.
-// By trial and error, I found that it had to be bound to INADDR_ANY: 0.
-// So strange. Apparently I don't have to do it again if I want to reuse.
-static int
-bind_socket(SOCKET s)
-{   
-    SOCKADDR_IN     addr;
-    
-    ZeroMemory(&addr, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_port = htons(0);
-    
-    return bind(s, (LPSOCKADDR)&addr, sizeof(addr));
-}
-
-bool
-connect_ex::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
-{   
-    WAIO_START_INIT;            // records enough info for wakeup
-    clear_overlapped();
-    
-    DWORD   bytes_sent = 0;     // we're not sending data on connect (yet)
-    BOOL    success;
-    
-    LPFN_CONNECTEX  pfConnectEx;
-    
-    // unfortunate, will fix up later.
-    // printf("Getting ConnectEx address\n");
-
-    // Turns out that ConnectEx isn't defined anywhere; I have to load its
-    // addr via WSAIoctl
-    // this is a bad way. make the driver cache it. why on earth is this
-    // call per-socket? does it really need to be that way?
-    if(GetConnectExAddr(s, &pfConnectEx) == SOCKET_ERROR)
-    {
-        fprintf(stderr,"GetConnectExAddr failed: %i\n", WSAGetLastError());
-        return true;
-    }
-
-    // printf("about to connectex to %s:%i, %i\n", addy, p, s);
-
-    // this is so strange - I have to bind the socket to the localhost.
-    // if I don't, ConnectEx returns EINVAL. in any case, I won't need
-    // to do this again if I reuse this socket.
-    if(bind_socket(s) == SOCKET_ERROR)
-        fprintf(stderr,"ConnectEx bind failed: %i\n", WSAGetLastError());
-
-    // I hope ConnectEx doesn't want this to hang around, because it's
-    // going to drop off the stack after this.
-    SOCKADDR_IN     addr;
-
-    // some examples don't zero the addr. That makes me nervous.
-    ZeroMemory(&addr, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr(addy);
-    addr.sin_port = htons(p);
-
-    // in order to receive the wakeup packet, s must already be associated
-    // with the iocp. this is best done at socket creation time. for these
-    // sockets it's probably best to also bind them at the same time.
-    // that requires "purposed" sockets (CreateConnectSocket?).
-    // p.s. the default (waio_base) wakeup is doing fine for now.
-    
-    success = (*pfConnectEx)(s, // socket
-        (LPSOCKADDR)&addr,      // connect address
-        sizeof(addr),           // size thereof
-        NULL,                   // not sending any data yet, but we could
-        0,                      // ditto
-        NULL,                   // should be zero until this changes
-        &ol);                   // oblig. gets us back to the this ptr
-
-// there's a caveat about the type of socket s becomes after ConnectEx.
-// It's in some kind of default state and cannot be used with shutdown
-// change it with setsockopt (?)
-    if(success)
-    {   
-        fprintf(stderr,"WHOA! ConnectEx RETURNED SUCCESS IMMEDIATELY!\n");
-        // handle the successful wakeup. (udat=0, olp=&ol)
-        iocp_op_finished(bytes_sent, 0, &ol, NO_ERROR);
-        return false;       // already woken up
-    }
-    else
-    {   
-        int err = WSAGetLastError();
-        
-        if(ERROR_IO_PENDING == err)
-        {   
-            // printf("ConnectEx pending...\n");
-            // This is the normal situation, fall through, leaving thread
-            // to sleep on wakeup call.
-        }
-        else
-        {   
-            // maybe store the error here. that could work for all
-            // windows wakeups
-            fprintf(stderr,"ConnectEx failed: %i\n", err);
-            return true;        // have self woken
-        }
-    }
-    return false;               // not finished
-}
-
-bool
-wasync_transmit_file::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
-{   
-    WAIO_START_INIT;            // records enough info for wakeup
-    clear_overlapped();
-    
-    // 0 bytes => transmit entire file
-    // the second zero means use the default chunk size
-    // the NULL is for mem buffers to bookend the file with. nothing yet.
-    // the final zero is for various flags, including a way of doing
-    // DisconnectEx style socket reuse (more widely compatible?)
-    
-    // in order to receive the wakeup, s must already be associated with the
-    // iocp. this is best done at socket creation time.
-    if(TransmitFile(s, file, 0, 0, &ol, NULL, flags))
-    {
-        fprintf(stderr,"Transmit file succeeded immediately! waking...\n");
-        return true;
-    }
-    else
-    {
-        DWORD   err = WSAGetLastError();
-
-        // will need to actually signal something
-        // printf("signal TransmitFile failure!\n");
-        if(ERROR_IO_PENDING != err && WSA_IO_PENDING != err)
-            fprintf(stderr,"genuine error from TransmitFile: %li\n", err);
-    }
-    return false;
-}
-
-wsa_socketio::wsa_socketio(SOCKET src, void* buf, int len, bool inread)
-    : s(src), reading(inread)
-{   
-    // pb is not so useful here. we only want to
-    // know num bytes written/processed.
-    pb.buffer = (char*)buf;
-    pb.buffer_size = len;
-    pb.bytes_written = 0;
-}
-
-bool
-wsa_socketio::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
-{
-    WAIO_START_INIT;            // records enough info for wakeup
-    clear_overlapped();
-
-    // num bytes received IF recv completes immediately.
-    DWORD   imm_bytes;
-    int     recv_res;
-
-    // set up the single wbuf, bearing in mind we may be part way.
-    wbufs[0].len = pb.buffer_size - pb.bytes_written;
-    wbufs[0].buf = pb.buffer + pb.bytes_written;
-    
-    // Ideally, we would like to be able to use MSG_WAITALL, which would
-    // let us only get a completion packet when either all the data was
-    // available or the connection had been closed or shutdown.
-    // Unfortunately this is not possible for non-blocking sockets, so
-    // we have to take whatever we get and then call WSARecv again.
-    
-    //#define MSG_WAITALL 0     // not defined in cygwin - apparently this
-    //DWORD flags = MSG_WAITALL;
-    
-    // ah, unfortunately MSG_WAITALL is not supported for non blocking sockets
-    // we'll just have to do it ourselves
-    DWORD   flags = MSG_PARTIAL;
-    
-    // completion routines! (unused)
-    if(reading)
-        recv_res = WSARecv(s, wbufs, NUM_WBUFS, &imm_bytes, &flags, &ol, NULL);
-    else
-        recv_res = WSASend(s, wbufs, NUM_WBUFS, &imm_bytes, flags, &ol, NULL);
-    
-    // don't know if I need to check non winsock errs
-    
-    switch(recv_res)    {
-        case 0:
-       {
-           // flags are updated to indicate what? if there was a callback, it
-           // would be scheduled to be called when this thread is in the
-           // waitable state, whatever that means.
-           // printf("WSA%s completed immediately!!! numbytes: %li, flags: %lx\n",
-            //  (reading) ? "Recv" : "Send", imm_bytes, flags);
-            
-            // looks like we get the completion packet even if we do finish
-            // immediately so let the iocp wake us.
-            // this updates pb & wakes us up
-            // complete_async_op(demux, drv, imm_bytes, NO_ERROR);
-        
-            return false;
-        }
-        break;
-        case SOCKET_ERROR:
-        {
-            DWORD   err = WSAGetLastError();
-            
-            // normal mode - wait for completion
-            // fyi, xp pro seems to mostly give us ERROR_IO_PENDING
-            if(ERROR_IO_PENDING == err || WSA_IO_PENDING == err)
-            {   
-                // printf("WSA%s pending completion (%li)\n",
-                //  (reading) ? "Recv" : "Send", err);
-                return false;
-            }
-            
-            fprintf(stderr,"WSARecv/Send returned SOCKET_ERR: %li\n", err);
-            return true;        // assume it's bad and we won't get a wakeup
-        }
-        break;
-        default:
-        {       
-            fprintf(stderr,"WSARecv/Send returned other error: %i, GetLastError: %li\n",
-                recv_res, GetLastError());
-            return true;                // wake up
-        }
-        break;
-    }
-
-    return false;
+  RECORD_THREAD_INFO;     // records enough info for wakeup
+  return start_overlapped();
 }
 
 void
-wsa_socketio::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
-    LPOVERLAPPED olp, int err)
-{   
-    // printf("wsa_socketio wakeup, nb: %li, err: %i\n", nbytes, err );
-    
-    // keep track of bytes received.
-    pb.bytes_written += nbytes;
-    
-    // if we're not finished, we have to reinstall our request
-    // zero bytes indicates shutdown/closure, right?
-    // might be using this for WSASend. Instead of broken pipes on win32,
-    // instead we get WSAECONNRESET (pretty sure) on write. On read?
-    if(0 == nbytes || pb.bytes_written == pb.buffer_size)
-    {   
-        // this'll wake us up
-        waio_base::iocp_op_finished(nbytes, udat, olp, err);
-    }
-    else
-    {   
-        // go back around again
-        // this returns a finished flag (bad idea). it can also fail.
-        // I think it would be better to know that.
-        start_async_op(*demux, driver, f);
-    }
+wasync_accept::iocp_op_finished( DWORD nbytes, ULONG_PTR udat, 
+  LPOVERLAPPED olp, int err)
+{
+  waio_base::iocp_op_finished(nbytes, udat, olp, err);
 }
+
+
+bool
+connect_ex::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+{
+  RECORD_THREAD_INFO;     // records enough info for wakeup
+  return start_overlapped();
+}
+
+void
+connect_ex::iocp_op_finished( DWORD nbytes, ULONG_PTR udat, 
+  LPOVERLAPPED olp, int err)
+{
+  waio_base::iocp_op_finished(nbytes, udat, olp, err);
+}
+
+
+bool
+wasync_transmit_file::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+{
+  RECORD_THREAD_INFO;     // records enough info for wakeup
+  return start_overlapped();
+}
+
+void
+wasync_transmit_file::iocp_op_finished( DWORD nbytes, ULONG_PTR udat, 
+  LPOVERLAPPED olp, int err)
+{
+  waio_base::iocp_op_finished(nbytes, udat, olp, err);
+}
+
+bool
+wsa_socketio::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+{
+  RECORD_THREAD_INFO; // records enough info for wakeup
+  return start_overlapped();    // start overlapped op
+}
+
+// this could be factored into demux... or it might need
+// to stay here... this is really a finished that isn't finished
+// same goes for winfileio (I think)
+void
+wsa_socketio::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
+  LPOVERLAPPED olp, int err)
+{
+  // fprintf(stderr,"wsa_socketio wakeup, nb: %li, err: %i\n", nbytes, err );
+
+  // keep track of bytes received.
+  pb.bytes_written += nbytes;
+
+  // if we're not finished, we have to reinstall our request
+  // zero bytes indicates shutdown/closure, right?
+  // might be using this for WSASend. Instead of broken pipes on win32, 
+  // instead we get WSAECONNRESET (pretty sure) on write. On read?
+  if(0 == nbytes || pb.bytes_written == pb.buffer_size)
+  {
+    // this'll wake us up
+    waio_base::iocp_op_finished(nbytes, udat, olp, err);
+  }
+  else
+  {
+    // go back around again
+    // this returns a finished flag (bad idea). it can also fail.
+    // I think it would be better to know that.
+    if(start_overlapped())
+      fprintf(stderr, "socketio restart finished! WHAT TO DO!?!\n");
+  }
+}
+
+/*
+void
+wsa_socketio::iocp_op_finished( DWORD nbytes, ULONG_PTR udat, 
+  LPOVERLAPPED olp, int err)
+{
+  waio_base::iocp_op_finished(nbytes, udat, olp, err);
+}
+*/
 
 // file io
 
-winfile_io::winfile_io(HANDLE f, void* buf, int len, bool inread)
-    : file(f), reading(inread)
-{   
-    // pb is not so useful here. we only want to
-    // know num bytes written/processed.
-    pb.buffer = (char*)buf;
-    pb.buffer_size = len;
-    pb.bytes_written = 0;
-}
-
-// if file is opened with FILE_FLAG_OVERLAPPED, we can do "immutable file ptr"
-// ops & set the desired offset within the overlapped. can also stick an
-// event to signal in there.
 bool
-winfile_io::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
-{   
-    fprintf(stderr,"trying out some read/write file\n");
-    
-    // factor this out - everyone does it.
-    clear_overlapped();         
-    this->f = f;                // need this for wakeup. quite general.
-    
-    // DWORD    imm_bytes;
-    BOOL    success;
-    
-    // don't need bytes read, written when we have an OVERLAPPED
-    if(reading)
-        // success = ReadFile(file, pb.buffer, pb.buffer_size, &imm_bytes, &ol);
-        success = ReadFile(file, pb.buffer, pb.buffer_size, NULL, &ol);
-    else
-        //success = WriteFile(file, pb.buffer, pb.buffer_size, &imm_bytes, &ol);
-        success = WriteFile(file, pb.buffer, pb.buffer_size, NULL, &ol);
-    
-    // printf("immbytes = %li\n", imm_bytes);
-    
-    if(!success)
-    {
-// this is probably going to be IOPENDING
-        fprintf(stderr,"%sFile failed! (%li)\n", (reading) ? "Read" : "Write",
-            GetLastError());
-        fprintf(stderr,"do I still get completion packet???\n");
-        // assume not           
-        return true;            // ask for wakeup
-    }
-    
-    return false;               // sleep on
+winfile_io::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+{
+  RECORD_THREAD_INFO;       // records enough info for wakeup
+  return start_overlapped();  // go
 }
 
+// this too could be factored back, I think. that waio_base finished
+// would have to change. it's just asking for for some fn to realise
+// that it's finished.
+// the byte count shouldn't need to be updated here...
 void
 winfile_io::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
-    LPOVERLAPPED olp, int err)
+  LPOVERLAPPED olp, int err)
 {
-    fprintf(stderr,"winfile_io wakeup, nb: %li, err: %i\n", nbytes, err );
-    
-    // printf("THIS WAKEUP SHOULD BE THE SAME AS SEND/RECV make it so\n");
-    // actually, I don't think it should be. the SOCKET stuff goes around
-    // the loop again (and ignores errors, check it doesn't hammer).
-    
-    // keep track of bytes received.
-    pb.bytes_written += nbytes;
-    
-    waio_base::iocp_op_finished(nbytes, udat, olp, err);
+  fprintf(stderr,"winfile_io wakeup, nb: %li, err: %i\n", nbytes, err );
+
+  // fprintf(stderr,"THIS WAKEUP SHOULD BE THE SAME AS SEND/RECV make it so\n");
+  // actually, I don't think it should be. the SOCKET stuff goes around
+  // the loop again (and ignores errors, check it doesn't hammer).
+
+  // keep track of bytes received.
+  pb.bytes_written += nbytes;
+
+  waio_base::iocp_op_finished(nbytes, udat, olp, err);
 }
 
 }}
@@ -1659,7 +1397,7 @@ fun get_socket: accept_request -> int = '$1.sv.acceptee';
 
 // arg1 = returned socket, arg2 is port, pass 0 to have one assigned
 proc mk_listener: lvalue[int]*lvalue[int]*int
-    = '$1 = flx::demux::nice_create_listener(&$2, $3);' requires sockety_h;
+    = '$1 = flx::demux::create_async_listener(&$2, $3);' requires sockety_h;
 
 proc accept(s: &int, listener: int)
 {   
@@ -1744,12 +1482,12 @@ proc Connect(s: &SOCKET, addr: charp, port: int)
 }
 
 // listens on all interfaces, I guess
-proc cmk_listener: lvalue[SOCKET]*int*int
-    = '$1 = flx::demux::create_listener_socket($2, $3);';
+proc cmk_listener: lvalue[SOCKET]*lvalue[int]*int
+    = '$1 = flx::demux::create_listener_socket(&$2, $3);';
 
-proc mk_listener(listener: &SOCKET, port: int, backlog: int)
+proc mk_listener(listener: &SOCKET, port: &int, backlog: int)
 {   
-    *listener <- cmk_listener(port, backlog);
+    *listener <- cmk_listener(*port, backlog);
     associate_with_iocp(*listener);
 }
 

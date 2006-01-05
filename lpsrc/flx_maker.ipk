@@ -5,6 +5,18 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.196  2006/01/05 04:00:35  rfistman
+fixed problem in solaris evtports where adding both reading and
+writing sockets caused a race condition (now we have two two
+"half-demuxers", for input and output)
+
+pc listener create function can now let winsock choose the port,
+just like the posix version.
+
+much factoring:
+  overlapped calls factored back to demux as control blocks
+  posix socket code factored in preparation for UDP/dgram and IPv6 sockets.
+
 Revision 1.195  2006/01/03 16:15:10  skaller
 Changed all print functions to fprint, which requires an
 ostream as first argument. Provide macro print to support
@@ -2690,6 +2702,7 @@ DEMUXRTL_INTERFACES = [
  'demux_pfileio.hpp',       # posix
  'demux_select_demuxer.hpp',# posix
  'demux_iocp_demuxer.hpp',  # win32 (monolithic)
+ 'demux_overlapped.hpp',    # win32
  'demux_kqueue_demuxer.hpp',# osx/bsd
  'demux_evtport_demuxer.hpp',# solaris
  'demux_mutexlite.hpp',     # posix
@@ -2932,6 +2945,7 @@ SOLARIS_DEMUX_CPPS = [
 
 WINDOWS_DEMUX_CPPS = [
   "demux/demux_iocp_demuxer",       # windows
+  "demux/demux_overlapped",         # windows
 ]
 
 BSD_DEMUX_CPPS = [

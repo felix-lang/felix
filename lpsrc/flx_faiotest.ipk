@@ -88,7 +88,7 @@ open Faio_win32;
 
 var port = 1234;  // can't yet get os to choose the port. should fix that.
 var listener: SOCKET;
-mk_listener(&listener, port, 1);
+mk_listener(&listener, &port, 1);
 
 print "spawning connector\n";
 // not printing in thread to make output repeatable in
