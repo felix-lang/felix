@@ -110,9 +110,11 @@ namespace flx { namespace rtl { namespace ioutil {
 #include <sstream>
 #include "flx_rtl_config.hpp"
 
-#ifndef MACOSX
-template class FLX_RTL_EXTERN std::basic_string<char>;
-#endif
+//RF: was only to commented out to fix macosx problem,
+//but lets see what happens to all the other builds.
+//#ifndef MACOSX
+//template class FLX_RTL_EXTERN std::basic_string<char>;
+//#endif
 
 namespace flx { namespace rtl { namespace strutil {
   using namespace std;
