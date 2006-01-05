@@ -3378,8 +3378,7 @@ int
 bind_sock(int s, int* io_port)
 {
   struct sockaddr_in  addr;
-  /* this type is sometimes socklen_t */
-  unsigned int    namelen = sizeof(addr);
+  FLX_SOCKLEN_T namelen = sizeof(addr);
 
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;      /* host byte order */

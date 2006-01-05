@@ -1,6 +1,10 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.20  2006/01/05 23:27:00  rfistman
+added missing FLX_SOCKLEN_T
+dual CYGWIN WIN32 stuff commented out for now (not working needs further work)
+
 Revision 1.19  2006/01/05 04:00:35  rfistman
 fixed problem in solaris evtports where adding both reading and
 writing sockets caused a race condition (now we have two two
@@ -1662,7 +1666,8 @@ proc flx_read(strm: flx_stream, len: &int, buf: address, eof: &bool)
     | USOCK ?fd => { async_read(fd, len, buf, eof); }
     | UFD ?fd => { faio_read(fd, len, buf, eof); }
 #endif
-#if WIN32 or CYGWIN
+//#if WIN32 or CYGWIN
+#if WIN32
     | WSOCK ?s => { WSARecv(s, len, buf, eof); }
     | WFD ?file => { ReadFile(file, len, buf, eof); }
 #endif
@@ -1678,7 +1683,8 @@ proc flx_write(strm: flx_stream, len: &int, buf: address, eof: &bool)
     | USOCK ?fd => { async_write(fd, len, buf, eof); }
     | UFD ?fd => { faio_write(fd, len, buf, eof); }
 #endif
-#if WIN32 or CYGWIN
+//#if WIN32 or CYGWIN
+#if WIN32
     | WSOCK ?s => { WSASend(s, len, buf, eof); }
     | WFD ?file => { WriteFile(file, len, buf, eof); }
 #endif
@@ -1694,7 +1700,8 @@ proc flx_shutdown(strm: flx_stream, how: int)
     | USOCK ?socket => { shutdown(socket, how); }
     | UFD => { /* nuthin */ }
 #endif
-#if WIN32 or CYGWIN
+//#if WIN32 or CYGWIN
+#if WIN32
     | WFD => { /* nothing to do */ }
     | WSOCK ?socket => { shutdown(socket, how); }
 #endif
@@ -1710,7 +1717,8 @@ proc flx_close(strm: flx_stream)
     | USOCK ?socket => { close(socket); }    // error check?
     | UFD ?fd => { close(fd); }          // error check?
 #endif
-#if WIN32 or CYGWIN
+//#if WIN32 or CYGWIN
+#if WIN32
     | WSOCK ?socket => { closesocket(socket); }
     | WFD ?file => { CloseFile(file); }
 #endif    
@@ -1729,7 +1737,8 @@ proc flx_popen(ourend: &flx_stream, p:flx_stream->0)
 }
 
 
-#if WIN32 or CYGWIN
+//#if WIN32 or CYGWIN
+#if WIN32
 proc flx_connect_win32(strm: &flx_stream, addr: charp, port: int)
 {   
     var s: SOCKET;
