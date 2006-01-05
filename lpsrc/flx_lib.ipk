@@ -110,7 +110,9 @@ namespace flx { namespace rtl { namespace ioutil {
 #include <sstream>
 #include "flx_rtl_config.hpp"
 
-// template class FLX_RTL_EXTERN std::basic_string<char>;
+#ifndef MACOSX
+template class FLX_RTL_EXTERN std::basic_string<char>;
+#endif
 
 namespace flx { namespace rtl { namespace strutil {
   using namespace std;
