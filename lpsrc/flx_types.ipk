@@ -506,6 +506,7 @@ and property_t = [
   | `Heap_closure        (* a heaped closure is formed *)
   | `Explicit_closure    (* explicit closure expression *)
   | `Stackable           (* closure can be created on stack *)
+  | `Stack_closure       (* a stacked closure is formed *)
   | `Unstackable         (* closure cannot be created on stack *)
   | `Pure                (* closure not required by self *)
   | `Uses_global_var     (* a global variable is explicitly used *)
@@ -2827,6 +2828,7 @@ and string_of_property = function
 | `Stackable -> "stackable"
 | `Unstackable -> "unstackable"
 | `Heap_closure -> "heap_closure"
+| `Stack_closure -> "stack_closure"
 | `Pure -> "pure"
 | `Uses_global_var-> "uses_global_var"
 | `Requires_ptf -> "requires_thread_frame"

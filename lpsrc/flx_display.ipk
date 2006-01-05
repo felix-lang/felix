@@ -23,7 +23,23 @@ open Flx_types
 open Flx_util
 open List
 
-(* inner most at head of list *)
+(* This routine calculates the display a routine with
+  a given PARENT requires, which includes that parent
+  if it exists.
+
+  The result is list of pairs, each pair consisting
+  of the ancestor and its vs subdisplay length,
+  with the inner most ancestor towards at head of list,
+  in particular the parent is always at the head of
+  the list if it is empty, and the most global scope
+  is at the end of the list. 
+  
+  Note this is the reverse? of the order used to actually pass 
+  the display entries to constructors, which start with 
+  the thread frame (definitely) and work inwards (I think, maybe?? ..)
+  Hmmm .. should check ..
+*)
+
 let cal_display bbdfns parent : (bid_t *int) list =
   let rec aux parent display =
     match parent with 

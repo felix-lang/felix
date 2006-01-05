@@ -37,6 +37,129 @@ open Flx_exceptions
   the code generator works
 *)
 
+(* return true if exes contain BEXPR_parse expression *)
+let check_parser_calls exes : bool =
+  let cp = function
+    | `BEXPR_parse _,_ -> raise Not_found
+    | _ -> ()
+  in
+  let cpe e = iter_tbexpr ignore cp ignore e in
+  try
+    iter (iter_bexe ignore cpe ignore ignore ignore) exes;
+    false
+  with Not_found -> true
+  
+(* The Pure property is a bit weird. We consider a function pure
+  if it doesn't need a stack frame, and can make do with
+  individual variables. This allows the function to be modelled
+  with an actual C function.
+
+  A pure function must be top level and cannot have any
+  child functions. This means it depends only on its parameters
+  and globals -- globals are allowed because we pass the thread
+  frame pointer in, even to C functions.
+
+  We assume a non-toplevel function is a child of some other
+  function for a reason -- to access that functions environment.
+  Still .. we could pass the display in, just as we pass the 
+  thread frame pointer. 
+
+  What we really cannot allow is a child function, since we
+  cannot pass IT our frame pointer, since we don't have one.
+
+  Because of this weird notion, we can also mark procedures
+  pure under the same conditions, and implement them as
+  C functions as well.
+
+  Note neither a function nor procedure can be pure unless
+  it is also stackable, and the C function model can't be used
+  for either if a heap closure is formed.
+*)
+let rec is_pure syms (child_map, bbdfns) i =
+  let children = try Hashtbl.find child_map i with Not_found -> [] in
+  let id,parent,sr,entry = Hashtbl.find bbdfns i in
+  (*
+  print_endline ("Checking purity of " ^ id ^ "<" ^ si i ^ ">");
+  *)
+  match entry with
+  | `BBDCL_var _ 
+  | `BBDCL_val _
+  | `BBDCL_tmp _
+  | `BBDCL_const_ctor _
+  | `BBDCL_nonconst_ctor _
+  | `BBDCL_fun _
+  | `BBDCL_proc _
+  | `BBDCL_insert _
+  | `BBDCL_struct _
+  | `BBDCL_cstruct _
+  | `BBDCL_union _
+  | `BBDCL_abs _
+  | `BBDCL_const _
+    ->
+    (*
+    print_endline (id ^ " is intrinsically pure");
+    *)
+    true
+
+  | `BBDCL_cclass _  (* not sure FIXME .. *)
+  | `BBDCL_class _  (* not sure FIXME .. *)
+  | `BBDCL_glr _
+  | `BBDCL_reglex _
+  | `BBDCL_regmatch _
+    ->
+    (*
+    print_endline (id ^ " is intrinsically Not pure");
+    *)
+    false
+
+  | `BBDCL_procedure (_,_,_,exes)   (* ALLOWED NOW *)
+  | `BBDCL_function (_,_,_,_,exes) ->
+    match parent with 
+    | Some _ -> 
+      (*
+      print_endline (id ^ " is parented so Not pure");
+      *)
+      false 
+
+    | None ->
+    try 
+      iter (fun kid -> 
+        if not (is_pure syms (child_map, bbdfns) kid) 
+        then begin
+          (*
+          print_endline ("Child " ^ si kid ^ " of " ^ id ^ " is not pure");
+          *)
+          raise Not_found
+        end 
+        (*
+        else begin
+          print_endline ("Child " ^ si kid ^ " of " ^ id ^ " is pure");
+        end
+        *)
+      )
+      children
+      ;
+      (*
+      print_endline (id ^ " is checked pure, checking for parser calls ..");
+      *)
+      let pure = not (check_parser_calls exes) in
+      (*
+      if pure then
+        print_endline (id ^ " is Pure")
+      else
+        print_endline (id ^ " calls a parser, NOT Pure")
+      ;
+      *)
+      pure
+
+    with 
+    | Not_found -> 
+      (*
+      print_endline (id ^ " is checked Not pure"); 
+      *)
+      false
+
+
 exception Found
 
 (* A function is stackable provided it doesn't return
@@ -62,6 +185,18 @@ exception Found
   and unconstrained. We would have v1 = &v2 for the pointer
   case, contrary to the current lack of constraints.
   Smly for functions. So we'll just ignore type variables.
+
+  NOTE: a stacked frame is perfectly viable as a display
+  entry -- a heaped child can still refer to a stacked
+  parent frame: of course the child must not both persist
+  after the frame dies and also refer to that frame.
+
+  This means the display, not just the caller, must be nulled
+  out of a routine when it loses control finally. Hmmm .. not
+  sure I'm doing that. That means only *explicit* Felix pointers
+  in the child refering to the parent frame can hold onto
+  the frame. In this case the parent must be heaped if the child
+  is, since the parent stacked frame is lost when control is lost.
 *)
 
 let has_var bbdfns children =
@@ -192,9 +327,16 @@ let can_stack_func cache syms (child_map,bbdfns) i =
 let rec can_stack_proc cache syms (child_map,bbdfns) i recstop =
   let children = try Hashtbl.find child_map i with Not_found -> [] in
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
+  (*
+  print_endline ("Stackability Checking procedure " ^ id);
+  *)
   match entry with
   | `BBDCL_procedure (_,_,_,exes) -> 
-    begin try iter (fun exe -> match exe with
+    begin try iter (fun exe -> 
+    (*
+    print_endline (string_of_bexe syms.dfns 0 exe);
+    *)
+    match exe with
     | `BEXE_svc _ -> raise Not_found
     | `BEXE_call (_,(`BEXPR_closure (j,_),_),_)
     | `BEXE_call_direct (_,j,_,_) 
@@ -202,27 +344,57 @@ let rec can_stack_proc cache syms (child_map,bbdfns) i recstop =
     | `BEXE_apply_ctor (_,_,_,_,j,_)
       ->
       if not (check_stackable_proc cache syms (child_map,bbdfns) j (i::recstop))
-      then raise Not_found
+      then begin 
+        (*
+        print_endline (id ^ " calls unstackable proc " ^ si j);
+        *)
+        raise Not_found
+      end
 
     (* assignments to a local variable are safe *)
-    | `BEXE_assign (sr,(`BEXPR_name (j,ts),t),r) 
+    | `BEXE_init (_,j,_) 
+    | `BEXE_assign (_,(`BEXPR_name (j,_),_),_) 
       when mem j children -> ()
       
+    | `BEXE_init (sr,_,(_,t)) 
     | `BEXE_assign (sr,(_,t),_) 
       when not (has_ptr_fn cache syms bbdfns children t) -> ()
 
-    | `BEXE_assign _ -> raise Not_found
+    (* THIS IS WRONG .. BUT LETS FIND SOME BAD CASES .. *)
+    | `BEXE_call_prim _ -> ()
+
+    | `BEXE_init _
+    | `BEXE_assign _ -> 
+      (*
+      print_endline (id ^ " does foreign init/assignment");
+      *)
+      raise Not_found
 
     | `BEXE_call _
-    | `BEXE_call_prim _
+       -> 
+       (*
+       print_endline (id ^ " does nasty call");
+       *)
+       raise Not_found
     | `BEXE_jump _
     | `BEXE_jump_direct _ 
+       ->
+       (*
+       print_endline (id ^ " does jump");
+       *)
+       raise Not_found
     | `BEXE_loop _
+       -> 
+       (*
+       print_endline (id ^ " has loop?");
+       *)
+       raise Not_found
+       
+    | `BEXE_fun_return _ -> assert false
+
+    (* Assume these are safe .. ? *)
     | `BEXE_code _
     | `BEXE_nonreturn_code _
-       -> raise Not_found
-
-    | `BEXE_fun_return _ -> assert false
 
     | `BEXE_apply_ctor_stack _
     | `BEXE_call_stack _ (* cool *)
@@ -233,7 +405,6 @@ let rec can_stack_proc cache syms (child_map,bbdfns) i recstop =
     | `BEXE_goto _
     | `BEXE_ifgoto _
     | `BEXE_ifnotgoto _
-    | `BEXE_init _
     | `BEXE_assert _
     | `BEXE_begin 
     | `BEXE_end 
@@ -242,8 +413,15 @@ let rec can_stack_proc cache syms (child_map,bbdfns) i recstop =
       -> ()
     )
     exes;
+    (*
+    print_endline (id ^ " is stackable");
+    *)
     true
-    with Not_found -> false
+    with Not_found -> 
+      (*
+      print_endline (id ^ " cannot be stacked ..");
+      *)
+      false
     end
 
   | _ -> assert false
@@ -261,7 +439,11 @@ and check_stackable_proc cache syms (child_map,bbdfns) i recstop =
       (*
       print_endline ("MARKING PROCEDURE " ^ id ^ " stackable!");
       *)
-      let entry : bbdcl_t = `BBDCL_procedure (`Stackable :: props,vs,p,exes) in
+      let props = `Stackable :: props in
+      let props =
+        if is_pure syms (child_map,bbdfns) i then `Pure :: props else props 
+      in
+      let entry : bbdcl_t = `BBDCL_procedure (props,vs,p,exes) in
       Hashtbl.replace bbdfns i (id,parent,sr,entry);
       true
     end
@@ -271,54 +453,6 @@ and check_stackable_proc cache syms (child_map,bbdfns) i recstop =
       false 
     end
   | _ -> assert false
-
-let rec is_pure syms (child_map, bbdfns) i =
-  let children = try Hashtbl.find child_map i with Not_found -> [] in
-  let id,parent,sr,entry = Hashtbl.find bbdfns i in
-  match entry with
-  | `BBDCL_var _ 
-  | `BBDCL_val _
-  | `BBDCL_tmp _
-  | `BBDCL_const_ctor _
-  | `BBDCL_nonconst_ctor _
-  | `BBDCL_fun _
-  | `BBDCL_proc _
-  | `BBDCL_insert _
-  | `BBDCL_struct _
-  | `BBDCL_cstruct _
-  | `BBDCL_union _
-  | `BBDCL_abs _
-  | `BBDCL_const _
-     -> true
-
-  | `BBDCL_cclass _  (* not sure FIXME .. *)
-  | `BBDCL_class _  (* not sure FIXME .. *)
-  | `BBDCL_glr _
-  | `BBDCL_reglex _
-  | `BBDCL_regmatch _
-  | `BBDCL_procedure _ 
-    -> false
-
-  | `BBDCL_function _ ->
-    match parent with Some _ -> false | None ->
-    try 
-      iter (fun kid -> 
-        if not (is_pure syms (child_map, bbdfns) kid) 
-        then begin
-          (*
-          print_endline ("Child " ^ si kid ^ " is not pure");
-          *)
-          raise Not_found
-        end
-      )
-      children
-      ;
-      (*
-      print_endline "pure";
-      *)
-      true
-    with 
-    | Not_found -> (* print_endline "Not pure"; *) false
 
 let ident x = x 
 let tident t = t 
@@ -404,53 +538,85 @@ let mark_stackable cache syms (child_map,bbdfns) =
   )
   bbdfns
 
-let enstack_calls cache syms (child_map,bbdfns) exes =
+let enstack_calls cache syms (child_map,bbdfns) self exes =
+  let self_stacked = ref false in
   let ea e = enstack_applies cache syms (child_map, bbdfns) e in
   let id x = x in
-  map (
-    fun exe -> let exe = match exe with
-    | `BEXE_call (sr,(`BEXPR_closure (i,ts),_),a) 
-    | `BEXE_call_direct (sr,i,ts,a) ->
-      let _,_,_,entry = Hashtbl.find bbdfns i in
-      begin match entry with
-      | `BBDCL_procedure (props,_,_,_) -> 
-        if mem `Stackable props then
-        `BEXE_call_stack (sr,i,ts,a)
-        else 
-        `BEXE_call_direct (sr,i,ts,a)
-        
-      | `BBDCL_proc _ -> `BEXE_call_prim (sr,i,ts,a)
-      | _ -> assert false
-      end 
+  let exes =
+    map (
+      fun exe -> let exe = match exe with
+      | `BEXE_call (sr,(`BEXPR_closure (i,ts),_),a) 
+      | `BEXE_call_direct (sr,i,ts,a) ->
+        let id,parent,sr,entry = Hashtbl.find bbdfns i in
+        begin match entry with
+        | `BBDCL_procedure (props,vs,p,exes) -> 
+          if mem `Stackable props then
+          begin
+            if i = self then self_stacked := true else
+            if not (mem `Stack_closure props) then
+              Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_procedure (`Stack_closure::props,vs,p,exes))
+            ;
+            (*
+            print_endline "CALL STACK";
+            *)
+            `BEXE_call_stack (sr,i,ts,a)
+          end
+          else 
+          `BEXE_call_direct (sr,i,ts,a)
+          
+        | `BBDCL_proc _ -> `BEXE_call_prim (sr,i,ts,a)
+        | _ -> assert false
+        end 
 
-    | `BEXE_call_method_direct (sr,obj,i,ts,a) ->
-      let _,_,_,entry = Hashtbl.find bbdfns i in
-      begin match entry with
-      | `BBDCL_procedure (props,_,_,_) -> 
-        if mem `Stackable props then
-        `BEXE_call_method_stack (sr,obj,i,ts,a)
-        else 
-        `BEXE_call_method_direct (sr,obj,i,ts,a)
-        
-      | _ -> assert false
-      end 
+      | `BEXE_call_method_direct (sr,obj,i,ts,a) ->
+        let id,parent,sr,entry = Hashtbl.find bbdfns i in
+        begin match entry with
+        | `BBDCL_procedure (props,vs,p,exes) -> 
+          if mem `Stackable props then
+          begin
+            if i = self then self_stacked := true else
+            if not (mem `Stack_closure props) then
+              Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_procedure (`Stack_closure::props,vs,p,exes))
+            ;
+            (*
+            print_endline "CALL_METHOD_STACK";
+            *)
+            `BEXE_call_method_stack (sr,obj,i,ts,a)
+          end
+          else 
+          `BEXE_call_method_direct (sr,obj,i,ts,a)
+          
+        | _ -> assert false
+        end 
 
-    | `BEXE_apply_ctor (sr,v,obj,ts,meth,a) ->
-      let _,_,_,entry = Hashtbl.find bbdfns meth in
-      begin match entry with
-      | `BBDCL_procedure (props,_,_,_) -> 
-        if mem `Stackable props then
-        `BEXE_apply_ctor_stack (sr,v,obj,ts,meth,a)
-        else 
-        `BEXE_apply_ctor (sr,v,obj,ts,meth,a)
-        
-      | _ -> assert false
-      end 
+      | `BEXE_apply_ctor (sr,v,obj,ts,meth,a) ->
+        let id,parent,sr,entry = Hashtbl.find bbdfns meth in
+        begin match entry with
+        | `BBDCL_procedure (props,vs,p,exes) -> 
+          if mem `Stackable props then
+          begin
+            if meth = self then self_stacked := true else
+            if not (mem `Stack_closure props) then
+              Hashtbl.replace bbdfns meth (id,parent,sr,`BBDCL_procedure (`Stack_closure::props,vs,p,exes))
+            ;
+            (*
+            print_endline "APPLY_CTOR_STACK";
+            *)
+            `BEXE_apply_ctor_stack (sr,v,obj,ts,meth,a)
+          end
+          else 
+          `BEXE_apply_ctor (sr,v,obj,ts,meth,a)
+          
+        | _ -> assert false
+        end 
 
-    | x -> x
-    in 
-      map_bexe id ea id id id exe
-  ) exes
+      | x -> x
+      in 
+        map_bexe id ea id id id exe
+    ) 
+    exes
+  in
+  !self_stacked, exes
 
 let make_stack_calls syms (child_map, (bbdfns: fully_bound_symbol_table_t)) =
   let cache = Hashtbl.create 97 in
@@ -459,16 +625,23 @@ let make_stack_calls syms (child_map, (bbdfns: fully_bound_symbol_table_t)) =
   Hashtbl.iter
   (fun i (id,parent,sr,entry) -> match entry with
     | `BBDCL_procedure (props,vs,p,exes) ->
-      let exes = enstack_calls cache syms (child_map,bbdfns) exes in
+      let self_stacked,exes = enstack_calls cache syms (child_map,bbdfns) i exes in
       let exes = Flx_cflow.final_tailcall_opt exes in
+      let props = 
+        if self_stacked then 
+          if not (mem `Stack_closure props) 
+          then `Stack_closure :: props 
+          else props
+        else props 
+      in
       Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_procedure (props,vs,p,exes))
 
     | `BBDCL_function (props,vs,p,ret,exes) ->
-      let exes = enstack_calls cache syms (child_map,bbdfns) exes in
+      let _,exes = enstack_calls cache syms (child_map,bbdfns) i exes in
       Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_function (props,vs,p,ret,exes))
 
     | `BBDCL_glr (props,vs,t,(p,exes)) ->
-      let exes = enstack_calls cache syms (child_map,bbdfns) exes in
+      let _,exes = enstack_calls cache syms (child_map,bbdfns) i exes in
       Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_glr (props,vs,t,(p,exes)))
 
     | `BBDCL_regmatch (_,vs,p,t,(a,i,h,m)) ->

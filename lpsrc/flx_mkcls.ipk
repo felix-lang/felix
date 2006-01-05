@@ -126,6 +126,13 @@ let rec adj_cls syms bbdfns all_closures e =
     all_closures := IntSet.add i !all_closures;
     x
 
+  (* HUM .. *)
+  (*
+  | `BEXPR_parse (_,prds),_ as x ->
+    iter (fun i -> all_closures := IntSet.add i !all_closures) prds;
+    x
+  *)
+
   | x -> x
 
 

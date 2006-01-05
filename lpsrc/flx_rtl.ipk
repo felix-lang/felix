@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.83  2006/01/05 09:43:46  skaller
+Compile procedures down to plain C functions if possible.
+Optimisation may be a bit optimistic.
+
 Revision 1.82  2006/01/03 16:15:10  skaller
 Changed all print functions to fprint, which requires an
 ostream as first argument. Provide macro print to support
@@ -654,6 +658,8 @@ static void x##_finaliser(collector_t *, void *p){\
 #define FLX_FMEM_INIT :
 #define FLX_FPAR_PASS_ONLY
 #define FLX_FPAR_PASS
+#define FLX_APAR_PASS_ONLY
+#define FLX_APAR_PASS
 #define _PTF _ptf.
 #define _PTFV
 #define FLX_PASS_PTF 0
@@ -664,6 +670,8 @@ static void x##_finaliser(collector_t *, void *p){\
 #define FLX_FMEM_INIT :
 #define FLX_FPAR_PASS_ONLY
 #define FLX_FPAR_PASS
+#define FLX_APAR_PASS_ONLY
+#define FLX_APAR_PASS
 #define _PTF _ptf->
 #define _PTFV
 #define FLX_PASS_PTF 0
@@ -674,6 +682,8 @@ static void x##_finaliser(collector_t *, void *p){\
 #define FLX_FMEM_INIT : ptf(_ptf),
 #define FLX_FPAR_PASS_ONLY ptf
 #define FLX_FPAR_PASS ptf,
+#define FLX_APAR_PASS_ONLY _ptf
+#define FLX_APAR_PASS _ptf,
 #define _PTF _ptf->
 #define _PTFV _ptf
 #define FLX_PASS_PTF 1
@@ -816,6 +826,62 @@ extern "C" FLX_EXPORT con_t *flx_start(\
   ptf->flx_stdout = stdout_;\
   ptf->flx_stderr = stderr_;\
   mname::x(ptf).stack_call();\
+  return 0;\
+}
+#endif
+
+#if defined(FLX_PTF_STATIC_STRUCT)
+#define FLX_C_START_WRAPPER(mname,x)\
+extern "C" con_t *flx_start(\
+  mname::thread_frame_t *ptf,\
+  int argc,\
+  char **argv,\
+  FILE *stdin_,\
+  FILE *stdout_,\
+  FILE *stderr_\
+) {\
+  ptf->argc = argc;\
+  ptf->argv = argv;\
+  ptf->flx_stdin = stdin_;\
+  ptf->flx_stdout = stdout_;\
+  ptf->flx_stderr = stderr_;\
+  mname::x();\
+  return 0;\
+}
+#elif defined(FLX_PTF_STATIC_POINTER)
+#define FLX_C_START_WRAPPER(mname,x)\
+extern "C" con_t *flx_start(\
+  mname::thread_frame_t *ptf,\
+  int argc,\
+  char **argv,\
+  FILE *stdin_,\
+  FILE *stdout_,\
+  FILE *stderr_\
+) {\
+  ptf->argc = argc;\
+  ptf->argv = argv;\
+  ptf->flx_stdin = stdin_;\
+  ptf->flx_stdout = stdout_;\
+  ptf->flx_stderr = stderr_;\
+  mname::x();\
+  return 0;\
+}
+#else 
+#define FLX_C_START_WRAPPER(mname,x)\
+extern "C" FLX_EXPORT con_t *flx_start(\
+  mname::thread_frame_t *ptf,\
+  int argc,\
+  char **argv,\
+  FILE *stdin_,\
+  FILE *stdout_,\
+  FILE *stderr_\
+) {\
+  ptf->argc = argc;\
+  ptf->argv = argv;\
+  ptf->flx_stdin = stdin_;\
+  ptf->flx_stdout = stdout_;\
+  ptf->flx_stderr = stderr_;\
+  mname::x(ptf);\
   return 0;\
 }
 #endif

@@ -1411,11 +1411,7 @@ module Control
   Note procedure called by functions are run with 
   code equivalent to 'run'.
   """
-  proc collect: unit = """
-    PTF gc->add_root(this); 
-    PTF gc->collect();
-	  PTF gc ->remove_root(this); 
-  """ requires property "needs_gc";
+  proc collect() { svc svc_collect; }
 
 }
 
