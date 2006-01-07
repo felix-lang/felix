@@ -1,6 +1,12 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.21  2006/01/07 17:24:57  skaller
+Added SDL binding. Fixed bug in function return type so
+that lvalue return types now return C++ references.
+Added _deref primitive, define deref to use it for Felix refs,
+and defined a primitive for C pointers.
+
 Revision 1.20  2006/01/05 23:27:00  rfistman
 added missing FLX_SOCKLEN_T
 dual CYGWIN WIN32 stuff commented out for now (not working needs further work)
@@ -1287,6 +1293,7 @@ proc co_write(pipe: copipe, len: &int, buf: address, eof: &bool)
 @select(h)
 #import <flx.flxh>
 // contains posix async socket io & copipes, all wrapped up streams
+header faio_posixio_hpp = '#include "faio_posixio.hpp"';
 
 include "flx_faio";
 module Faio_posix  {
@@ -1371,7 +1378,8 @@ proc faio_write(fd: int, len: &int, buf: address, eof: &bool)
 
 // sleep! finally!
 // pod type sleep_request = "sleep_request";
-type sleep_request = "flx::demux::sleep_request";
+
+type sleep_request = "flx::faio::sleep_request";
 fun mk_sleep_request: double -> sleep_request = 'flx::faio::sleep_request($1)';
 
 proc sleep(delta: double)

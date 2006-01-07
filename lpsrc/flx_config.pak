@@ -2245,6 +2245,25 @@ for m,h,d,u in components:
     print ".. To install see",u
   exec(m + " = " + repr(haveit))
 
+def gs(x):
+  r,o = get_stdout(x)
+  try: o = string.strip(o[0])
+  except: pass
+  return r,o
+
+result,SDL_VERSION = gs("sdl-config --version")
+if result == None:
+  print "SDL SUPPORTED, version ",SDL_VERSION
+  HAVE_SDL = 1
+  result,SDL_CFLAGS = gs("sdl-config --cflags")
+  result,SDL_LIBS = gs("sdl-config --libs")
+else:
+  HAVE_SDL = 0
+  SDL_VERSION = "None"
+  SDL_CFLAGS = ""
+  SDL_LIBS = ""
+  print "SDL NOT SUPPORTED"
+
 print "ESTABLISHED DEFAULT CONFIGURATION"
 
 # attempt to clobber the configuration with old values
@@ -2382,6 +2401,10 @@ try:
   p(f,"FLX_SOCKLEN_T")
   p(f,"HAVE_PTHREADS")
   p(f,"PTHREAD_SWITCH")
+  p(f,"HAVE_SDL")
+  p(f,"SDL_VERSION")
+  p(f,"SDL_CFLAGS")
+  p(f,"SDL_LIBS")
   pr(f,"")
 
   pr(f,"import flxbuild")
@@ -2504,6 +2527,7 @@ flx_expr_terminator_keywords = [
     ("_", "UNDERSCORE"),
     ("_gc_pointer", "GC_POINTER"),
     ("_svc", "SVC"),
+    ("_deref", "DEREF"),
   ]
 
 flx_other_keywords = [
@@ -2606,7 +2630,7 @@ flx_2_char_syms = [
     ("VBARVBAR","||"),
     ("SLOSHAMPER","\\\\&"),
     ("SLOSHVBAR","\\\\|"),
-    ("SLOSHCIRCUMFLEX","\\\\|"),
+    ("SLOSHCIRCUMFLEX","\\\\^"),
     ("HASHBANG","#!"),
   ]
 

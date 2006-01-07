@@ -571,6 +571,9 @@ publish "Array type"
 publish "Lvalue hack"
   typedef lvalue[t] = lval t;
 
+publish "Deref hack"
+  inline fun deref[t](p:&t):lval t => _deref p;
+  
 publish "Array access: works on LHS of assignment too"
 fun subscript[t,n]: array[t, n] * int -> t = "$1.data[$2]";
 fun subscript[t,n]: lvalue[array[t, n]] * int -> lvalue[t] = "$1.data[$2]";
@@ -581,8 +584,8 @@ proc store[t,n]: &array[t,n] * int * t = "((?1*)($1.get_data()))[$2]=$3;";
 @def gen_uint(t):
   for opname,op in [
     ("bxor","^"),
-    ("bor","|"),
-    ("band","&"),
+    ("bor","\\|"),
+    ("band","\\&"),
   ]:
     tangle('  fun '+opname+': '+t+' * '+t+' -> '+t+' = "$1'+op+'$2";')
   tangle('  fun bnot: '+t+' -> '+t+' = "~$1";')
@@ -754,6 +757,9 @@ module C_hack
   fun as_address[t]: ptr[t]->address = "(void*)$1";
   fun address_of[t]: lvalue[t]-> address = "(void*)&$1";
   fun isNULL: address -> bool = "(NULL==$1)";
+  fun isNULL[t]: ptr[t] -> bool = "(NULL==$1)";
+  fun isNULL[t]: cptr[t] -> bool = "(NULL==$1)";
+  fun isNULL[t]: gcptr[t] -> bool = "(NULL==$1)";
   
   publish """
   Polymorphic null pointer constant
@@ -795,6 +801,25 @@ module Carray
   fun array_calloc[t]: int -> ptr[t] = '(?1*)std::calloc(sizeof(?1),$1)'; 
   proc free[t]: ptr[t]="std::free($1);";
   fun subscript[t]: ptr[t] * int -> lvalue[t] = '$1[$2]';
+
+  fun add[t]: ptr[t] * int -> ptr[t]= '$1+$2';
+  fun sub[t]: ptr[t] * int -> ptr[t] = '$1-$2';
+  fun sub[t]: ptr[t] * ptr[t]-> int = '$1-$2';
+
+  proc pre_incr[t]: lvalue[ptr[t]] = '++$1;'; 
+  proc post_incr[t]: lvalue[ptr[t]] = '$1++;'; 
+  proc pre_decr[t]: lvalue[ptr[t]] = '--$1;'; 
+  proc post_decr[t]: lvalue[ptr[t]] = '$1--;'; 
+  proc pluseq[t]: lvalue[ptr[t]] * int = '$1+=$2;'; 
+  proc minuseq[t]: lvalue[ptr[t]] * int = '$1-=$2;'; 
+
+
+  fun eq[t]: ptr[t] * ptr[t] -> bool = '$1==$2';
+  fun ne[t]: ptr[t] * ptr[t] -> bool = '$1!=$2';
+  fun lt[t]: ptr[t] * ptr[t] -> bool = '$1<$2';
+  fun le[t]: ptr[t] * ptr[t] -> bool = '$1<=$2';
+  fun gt[t]: ptr[t] * ptr[t] -> bool = '$1>$2';
+  fun ge[t]: ptr[t] * ptr[t] -> bool = '$1>=$2';
 }
 
 publish "System Interface"
@@ -923,7 +948,14 @@ module Dynlink
 
 }
 
-@#------------- Text I/O -------------------
+@#------------- C I/O -------------------
+module Cstdio
+{
+  header "#include <cstdio>";
+  incomplete type FILE = "std::FILE";
+}
+
+@#------------- Text I/O ------------------
 module Text_file
 {
   requires flx_ioutil;
@@ -977,12 +1009,12 @@ module MixedInt
   fun shl[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1<<$2";
   fun shr[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1>>$2";
 
-  fun lt[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1<$2";
-  fun le[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1<=$2";
-  fun eq[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1==$2";
-  fun ne[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1!=$2";
-  fun gt[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1>$2";
-  fun ge[t1:fast_ints, t2:fast_ints]: t1 * t2 -> arithmax(t1,t1)="$1>=$2";
+  fun lt[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1<$2";
+  fun le[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1<=$2";
+  fun eq[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1==$2";
+  fun ne[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1!=$2";
+  fun gt[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1>$2";
+  fun ge[t1:fast_ints, t2:fast_ints]: t1 * t2 -> bool = "$1>=$2";
 }
 
 type string = "std::string";
@@ -1541,6 +1573,7 @@ open String;
 open Stdout;
 open Arith_casts;
 open Control;
+open Cstdio;
 
 @head(1,'Stl library')
 @h=tangler('lib/stl.flx','data')

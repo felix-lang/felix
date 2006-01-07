@@ -2431,7 +2431,8 @@ refr:
         $2
       ) 
     }
-  | STAR refr
+  | STAR refr { apl $1 "deref" $2 }
+  | DEREF refr
     { 
       `AST_deref 
       (

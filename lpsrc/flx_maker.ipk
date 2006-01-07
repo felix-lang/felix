@@ -5,6 +5,12 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.197  2006/01/07 17:24:58  skaller
+Added SDL binding. Fixed bug in function return type so
+that lvalue return types now return C++ references.
+Added _deref primitive, define deref to use it for Felix refs,
+and defined a primitive for C pointers.
+
 Revision 1.196  2006/01/05 04:00:35  rfistman
 fixed problem in solaris evtports where adding both reading and
 writing sockets caused a race condition (now we have two two
@@ -2498,6 +2504,8 @@ if "clean" in options:
       "*.exp","*.lib"]:
       for f in glob.glob(d + os.sep + e):
         erasefile(f)
+  for f in glob.glob("lib"+os.sep+"*.par"):
+    erasefile(f)
 
 if "tests" in options or "test" in options:
   options = options + ["regression","tutorial"]
@@ -3929,10 +3937,7 @@ We have no idea if it continues copying.
 @tangle('\t${BUILTIN_ISCR} lpsrc/flx_sourceforge.pak')
 @tangle('')
 @tangle('clean: dummy')
-@for dir in ['tut/examples/*','test/*','bagley/felix/*']:
-  for ext in ['.cpp','.hpp','.o','.so','.obj','.dll','.exp','.imp','.output','.par','.exe']:
-    tangle('\trm -rf '+dir+ext)
-@tangle('\trm -rf speed/exes/*')
+@tangle('\tpython script/maker clean')
 @tangle('')
 @tangle('distclean:')
 @tangle('\trm -rf tut rtl test www src misc man bin doc lib impldoc htmlman tmp tmp.tmp')

@@ -443,7 +443,7 @@ jumps, conditional jumps, and returns. Note the conditional
 goto requires the condition resolve to a constant expression.
 Of course, the value can change with time, since it can
 depend on macro variables.
-@o()
+@p()
 This example also illustrates the macro block, which is
 an anonymous procedure, called after definition. The effect
 is similar to the statements in the block, except that
