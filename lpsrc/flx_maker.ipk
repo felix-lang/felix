@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.198  2006/01/08 08:56:44  skaller
+Change rtl name for MACOSX to libflx_dynamic.dylib
+
 Revision 1.197  2006/01/07 17:24:58  skaller
 Added SDL binding. Fixed bug in function return type so
 that lvalue return types now return C++ references.
@@ -4034,9 +4037,9 @@ We have no idea if it continues copying.
     #tangle('\tinstall rtl/libflx_dynamic.dll.a ${SHLIB_DIR}')
     # not used now, dll goes in 'bin'
     pass
+  elif MACOSX:
+    tangle('\tinstall rtl/libflx_dynamic.dylib ${SHLIB_DIR}')
   else:
-    tangle('\tinstall rtl/libflx_dynamic.so.'+flx_version+' ${SHLIB_DIR}')
-    tangle('\tinstall rtl/libflx_dynamic.so.'+flx_version_major+' ${SHLIB_DIR}')
     tangle('\tinstall rtl/libflx_dynamic.so ${SHLIB_DIR}')
 @tangle('\t(install doc/* ${INSTALL_DIR}/doc || exit 0) > /dev/null 2>&1')
 @tangle('\t(install impldoc/* ${INSTALL_DIR}/impldoc || exit 0) > /dev/null 2>&1')
@@ -4789,6 +4792,7 @@ TIME=0
 RUNIT=1
 CCFLAGS=""
 FELIX=1
+LINNKER_SWITCHES=""
 grab=1
 
 INCLUDE_DIRS=""
@@ -4902,6 +4906,11 @@ do
   x--nofelix)
     FELIX=0
     shift
+  ;;
+
+  x-[lL]*)
+   LINKER_SWITCHES="$LINKER_SWITCHES $1"
+   shift 
   ;;
 
   x*)
@@ -5160,7 +5169,7 @@ then
   if [ $? = 0 ]
   then
     CCMD="$CCOBJ_DLLIB $CCFLAGS -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $DYNLINK_STRING $PTHREAD_SWITCH"
+    LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $DYNLINK_STRING $PTHREAD_SWITCH $LINKER_SWITCHES"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then
@@ -5195,7 +5204,7 @@ else
   fi
   if [ $? = 0 ]
   then
-    CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
+    CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ $LINKER_SWITCHES"
     LCMD="$CCLINK_STATIC $FLXRTL/flx_run_static$EXT_OBJ $PKGS $cppos $base$EXT_OBJ $FLXAR/libflx_static$EXT_LIB $SPEC_EXE_FILENAME$base$EXT_EXE $PTHREAD_SWITCH"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`

@@ -1,5 +1,8 @@
 @head(1,'SDL')
 $Log$
+Revision 1.3  2006/01/08 08:56:44  skaller
+Change rtl name for MACOSX to libflx_dynamic.dylib
+
 Revision 1.2  2006/01/08 00:25:14  skaller
 Minor fix to sdl stuff
 
@@ -1473,12 +1476,837 @@ module SDL_video_h
   fun SDL_WM_ToggleFullScreen: ptr[SDL_Surface] -> int;
 }
 
+@h=tangler('lib/SDL/SDL_endian.flx')
+@select(h)
+//Module        : SDL_endian_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_endian.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+include 'std';
+
+//#define SDL_SwapBE64(X)       (X)
+//#define SDL_SwapBE32(X)       (X)
+//#define SDL_SwapBE16(X)       (X)
+//#define SDL_SwapLE64(X)       SDL_Swap64(X)
+//#define SDL_SwapLE32(X)       SDL_Swap32(X)
+//#define SDL_SwapLE16(X)       SDL_Swap16(X)
+//#define SDL_SwapBE64(X)       SDL_Swap64(X)
+//#define SDL_SwapBE32(X)       SDL_Swap32(X)
+//#define SDL_SwapBE16(X)       SDL_Swap16(X)
+//#define SDL_SwapLE64(X)       (X)
+//#define SDL_SwapLE32(X)       (X)
+//#define SDL_SwapLE16(X)       (X)
+//#define SDL_Swap64(X) (X)
+//#define _SDL_endian_h
+header '#include "SDL_endian.h"';
+
+//INCLUDES
+include "SDL/SDL_rwops";
+include "SDL/SDL_types";
+
+module SDL_endian_h
+{
+  open C_hack;
+  open SDL_rwops_h;
+  open SDL_types_h;
+  
+  //FUNCTIONS
+  fun SDL_ReadBE16: ptr[SDL_RWops] -> uint16;
+  fun SDL_ReadBE32: ptr[SDL_RWops] -> uint32;
+  fun SDL_ReadBE64: ptr[SDL_RWops] -> Uint64;
+  fun SDL_ReadLE16: ptr[SDL_RWops] -> uint16;
+  fun SDL_ReadLE32: ptr[SDL_RWops] -> uint32;
+  fun SDL_ReadLE64: ptr[SDL_RWops] -> Uint64;
+  fun SDL_Swap16: uint16 -> uint16;
+  fun SDL_Swap32: uint32 -> uint32;
+  fun SDL_Swap64: Uint64 -> Uint64;
+  fun SDL_WriteBE16: ptr[SDL_RWops] * uint16 -> int;
+  fun SDL_WriteBE32: ptr[SDL_RWops] * uint32 -> int;
+  fun SDL_WriteBE64: ptr[SDL_RWops] * Uint64 -> int;
+  fun SDL_WriteLE16: ptr[SDL_RWops] * uint16 -> int;
+  fun SDL_WriteLE32: ptr[SDL_RWops] * uint32 -> int;
+  fun SDL_WriteLE64: ptr[SDL_RWops] * Uint64 -> int;
+}
+
+@h=tangler('lib/SDL/SDL_framerate.flx')
+@select(h)
+//Module        : SDL_framerate_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_framerate.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+include 'std';
+
+//#define DLLINTERFACE
+//#define DLLINTERFACE __declspec(dllimport)
+//#define DLLINTERFACE __declspec(dllexport)
+//#define FPS_DEFAULT           30
+//#define FPS_LOWER_LIMIT               1
+//#define FPS_UPPER_LIMIT               200
+//#define _SDL_framerate_h
+header '#include "SDL_framerate.h"';
+
+//INCLUDES
+include "SDL/SDL";
+
+module SDL_framerate_h
+{
+  open C_hack;
+  open SDL_h;
+  
+  //ABSTRACT TYPES
+  type FPSmanager = 'FPSmanager';
+  
+  //PROCEDURES
+  proc SDL_framerateDelay: ptr[FPSmanager];
+  proc SDL_initFramerate: ptr[FPSmanager];
+  
+  //FUNCTIONS
+  fun SDL_getFramerate: ptr[FPSmanager] -> int;
+  fun SDL_setFramerate: ptr[FPSmanager] * int -> int;
+}
+@h=tangler('lib/SDL/SDL_gfxPrimitives.flx')
+@select(h)
+//Module        : SDL_gfxPrimitives_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_gfxPrimitives.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+include 'std';
+
+//#define DLLINTERFACE
+//#define DLLINTERFACE __declspec(dllimport)
+//#define DLLINTERFACE __declspec(dllexport)
+//#define SDL_GFXPRIMITIVES_MINOR       0
+//#define SDL_GFXPRIMITIVES_MAJOR       2
+//#define M_PI  3.141592654
+//#define _SDL_gfxPrimitives_h
+header '#include "SDL_gfxPrimitives.h"';
+
+//INCLUDES
+include "SDL/SDL";
+include "SDL/SDL_video";
+
+module SDL_gfxPrimitives_h
+{
+  open C_hack;
+  open SDL_h;
+  open SDL_video_h;
+  open math_h;
+  
+  //FUNCTIONS
+  fun aacircleColor: ptr[SDL_Surface] * int16 * int16 * int16 * uint32 -> int;
+  fun aacircleRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun aaellipseColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun aaellipseRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun aalineColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun aalineRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun aapolygonColor: ptr[SDL_Surface] * ptr[int16] * ptr[int16] * int * uint32 -> int;
+  fun aapolygonRGBA: ptr[SDL_Surface] * ptr[int16] * ptr[int16] * int * uint8 * uint8 * uint8 * uint8 -> int;
+  fun aatrigonColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun aatrigonRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun bezierColor: ptr[SDL_Surface] * ptr[int16] * ptr[int16] * int * int * uint32 -> int;
+  fun bezierRGBA: ptr[SDL_Surface] * ptr[int16] * ptr[int16] * int * int * uint8 * uint8 * uint8 * uint8 -> int;
+  fun boxColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun boxRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun characterColor: ptr[SDL_Surface] * int16 * int16 * char * uint32 -> int;
+  fun characterRGBA: ptr[SDL_Surface] * int16 * int16 * char * uint8 * uint8 * uint8 * uint8 -> int;
+  fun circleColor: ptr[SDL_Surface] * int16 * int16 * int16 * uint32 -> int;
+  fun circleRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun ellipseColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun ellipseRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun filledCircleColor: ptr[SDL_Surface] * int16 * int16 * int16 * uint32 -> int;
+  fun filledCircleRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun filledEllipseColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun filledEllipseRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun filledPolygonColor: ptr[SDL_Surface] * ptr[int16] * ptr[int16] * int * int -> int;
+  fun filledPolygonRGBA: ptr[SDL_Surface] * ptr[int16] * ptr[int16] * int * uint8 * uint8 * uint8 * uint8 -> int;
+  fun filledTrigonColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * int16 * int16 * int -> int;
+  fun filledTrigonRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun filledpieColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun filledpieRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun hlineColor: ptr[SDL_Surface] * int16 * int16 * int16 * uint32 -> int;
+  fun hlineRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun lineColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun lineRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun pixelColor: ptr[SDL_Surface] * int16 * int16 * uint32 -> int;
+  fun pixelRGBA: ptr[SDL_Surface] * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun polygonColor: ptr[SDL_Surface] * ptr[int16] * ptr[int16] * int * uint32 -> int;
+  fun polygonRGBA: ptr[SDL_Surface] * ptr[int16] * ptr[int16] * int * uint8 * uint8 * uint8 * uint8 -> int;
+  fun rectangleColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun rectangleRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun stringColor: ptr[SDL_Surface] * int16 * int16 * ptr[char] * uint32 -> int;
+  fun stringRGBA: ptr[SDL_Surface] * int16 * int16 * ptr[char] * uint8 * uint8 * uint8 * uint8 -> int;
+  fun trigonColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun trigonRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun vlineColor: ptr[SDL_Surface] * int16 * int16 * int16 * uint32 -> int;
+  fun vlineRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+}
+@h=tangler('lib/SDL/SDL_gfxPrimitives_font.flx')
+@select(h)
+//Module        : SDL_gfxPrimitives_font_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_gfxPrimitives_font.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+include 'std';
+
+//#define GFX_FONTDATAMAX (8*256)
+header '#include "SDL_gfxPrimitives_font.h"';
+
+module SDL_gfxPrimitives_font_h
+{
+  open C_hack;
+  
+  //VARIABLES
+  const gfxPrimitivesFontdata: ptr[utiny] = 'gfxPrimitivesFontdata';
+}
+@h=tangler('lib/SDL/SDL_image.flx')
+@select(h)
+//Module        : SDL_image_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_image.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+include 'std';
+
+//#define IMG_GetError  SDL_GetError
+//#define IMG_SetError  SDL_SetError
+//#define SDL_IMAGE_VERSION(X)                                          \
+//#define SDL_IMAGE_PATCHLEVEL  4
+//#define SDL_IMAGE_MINOR_VERSION       2
+//#define SDL_IMAGE_MAJOR_VERSION       1
+//#define _SDL_IMAGE_H
+header '#include "SDL_image.h"';
+
+//INCLUDES
+include "SDL/SDL_rwops";
+include "SDL/SDL_version";
+include "SDL/SDL_video";
+
+module SDL_image_h
+{
+  open C_hack;
+  open SDL_rwops_h;
+  open SDL_version_h;
+  open SDL_video_h;
+  
+  //FUNCTIONS
+  fun IMG_InvertAlpha: int -> int;
+  fun IMG_Linked_Version: 1 -> cptr[SDL_version];
+  fun IMG_Load: cptr[char] -> ptr[SDL_Surface];
+  fun IMG_LoadBMP_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadGIF_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadJPG_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadLBM_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadPCX_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadPNG_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadPNM_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadTGA_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadTIF_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadTyped_RW: ptr[SDL_RWops] * int * ptr[char] -> ptr[SDL_Surface];
+  fun IMG_LoadXCF_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadXPM_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_Load_RW: ptr[SDL_RWops] * int -> ptr[SDL_Surface];
+  fun IMG_ReadXPMFromArray: ptr[ptr[char]] -> ptr[SDL_Surface];
+  fun IMG_isBMP: ptr[SDL_RWops] -> int;
+  fun IMG_isGIF: ptr[SDL_RWops] -> int;
+  fun IMG_isJPG: ptr[SDL_RWops] -> int;
+  fun IMG_isLBM: ptr[SDL_RWops] -> int;
+  fun IMG_isPCX: ptr[SDL_RWops] -> int;
+  fun IMG_isPNG: ptr[SDL_RWops] -> int;
+  fun IMG_isPNM: ptr[SDL_RWops] -> int;
+  fun IMG_isTIF: ptr[SDL_RWops] -> int;
+  fun IMG_isXCF: ptr[SDL_RWops] -> int;
+  fun IMG_isXPM: ptr[SDL_RWops] -> int;
+}
+@h=tangler('lib/SDL/SDL_imageFilter.flx')
+@select(h)
+//Module        : SDL_imageFilter_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_imageFilter.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+include 'std';
+
+//#define DLLINTERFACE
+//#define DLLINTERFACE __declspec(dllimport)
+//#define DLLINTERFACE __declspec(dllexport)
+//#define _SDL_imageFilter_h
+header '#include "SDL_imageFilter.h"';
+
+module SDL_imageFilter_h
+{
+  open C_hack;
+  
+  //PROCEDURES
+  proc SDL_imageFilterAlignStack: 1;
+  proc SDL_imageFilterMMXoff: 1;
+  proc SDL_imageFilterMMXon: 1;
+  proc SDL_imageFilterRestoreStack: 1;
+  
+  //FUNCTIONS
+  fun SDL_imageFilterAbsDiff: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterAdd: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterAddByte: ptr[utiny] * ptr[utiny] * int * utiny -> int;
+  fun SDL_imageFilterAddByteToHalf: ptr[utiny] * ptr[utiny] * int * utiny -> int;
+  fun SDL_imageFilterBinarizeUsingThreshold: ptr[utiny] * ptr[utiny] * int * utiny -> int;
+  fun SDL_imageFilterBitAnd: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterBitNegation: ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterBitOr: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterClipToRange: ptr[utiny] * ptr[utiny] * int * utiny * utiny -> int;
+  fun SDL_imageFilterConvolveKernel3x3Divide: ptr[utiny] * ptr[utiny] * int * int * ptr[short] * utiny -> int;
+  fun SDL_imageFilterConvolveKernel3x3ShiftRight: ptr[utiny] * ptr[utiny] * int * int * ptr[short] * utiny -> int;
+  fun SDL_imageFilterConvolveKernel5x5Divide: ptr[utiny] * ptr[utiny] * int * int * ptr[short] * utiny -> int;
+  fun SDL_imageFilterConvolveKernel5x5ShiftRight: ptr[utiny] * ptr[utiny] * int * int * ptr[short] * utiny -> int;
+  fun SDL_imageFilterConvolveKernel7x7Divide: ptr[utiny] * ptr[utiny] * int * int * ptr[short] * utiny -> int;
+  fun SDL_imageFilterConvolveKernel7x7ShiftRight: ptr[utiny] * ptr[utiny] * int * int * ptr[short] * utiny -> int;
+  fun SDL_imageFilterConvolveKernel9x9Divide: ptr[utiny] * ptr[utiny] * int * int * ptr[short] * utiny -> int;
+  fun SDL_imageFilterConvolveKernel9x9ShiftRight: ptr[utiny] * ptr[utiny] * int * int * ptr[short] * utiny -> int;
+  fun SDL_imageFilterDiv: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterMMXdetect: 1 -> int;
+  fun SDL_imageFilterMean: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterMult: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterMultByByte: ptr[utiny] * ptr[utiny] * int * utiny -> int;
+  fun SDL_imageFilterMultDivby2: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterMultDivby4: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterMultNor: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterNormalizeLinear: ptr[utiny] * ptr[utiny] * int * int * int * int * int -> int;
+  fun SDL_imageFilterShiftLeft: ptr[utiny] * ptr[utiny] * int * utiny -> int;
+  fun SDL_imageFilterShiftLeftByte: ptr[utiny] * ptr[utiny] * int * utiny -> int;
+  fun SDL_imageFilterShiftRight: ptr[utiny] * ptr[utiny] * int * utiny -> int;
+  fun SDL_imageFilterShiftRightAndMultByByte: ptr[utiny] * ptr[utiny] * int * utiny * utiny -> int;
+  fun SDL_imageFilterSobelX: ptr[utiny] * ptr[utiny] * int * int -> int;
+  fun SDL_imageFilterSobelXShiftRight: ptr[utiny] * ptr[utiny] * int * int * utiny -> int;
+  fun SDL_imageFilterSub: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterSubByte: ptr[utiny] * ptr[utiny] * int * utiny -> int;
+}
+@h=tangler('lib/SDL/SDL_mixer.flx')
+@select(h)
+//Module        : SDL_mixer_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_mixer.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+include 'std';
+
+//#define Mix_GetError  SDL_GetError
+//#define Mix_SetError  SDL_SetError
+//#define Mix_FadeInChannel(channel,chunk,loops,ms) Mix_FadeInChannelTimed(channel,chunk,loops,ms,-1)
+//#define Mix_PlayChannel(channel,chunk,loops) Mix_PlayChannelTimed(channel,chunk,loops,-1)
+//#define MIX_EFFECTSMAXSPEED  "MIX_EFFECTSMAXSPEED"
+//#define MIX_CHANNEL_POST  -2
+//#define Mix_LoadWAV(file)     Mix_LoadWAV_RW(SDL_RWFromFile(file, "rb"), 1)
+//#define MIX_MAX_VOLUME                128     /* Volume of a chunk */
+//#define MIX_DEFAULT_CHANNELS  2
+//#define MIX_DEFAULT_FORMAT    AUDIO_S16MSB
+//#define MIX_DEFAULT_FORMAT    AUDIO_S16LSB
+//#define MIX_DEFAULT_FREQUENCY 22050
+//#define MIX_CHANNELS  8
+//#define MIX_VERSION(X)                SDL_MIXER_VERSION(X)
+//#define MIX_PATCHLEVEL                SDL_MIXER_PATCHLEVEL
+//#define MIX_MINOR_VERSION     SDL_MIXER_MINOR_VERSION
+//#define MIX_MAJOR_VERSION     SDL_MIXER_MAJOR_VERSION
+//#define SDL_MIXER_VERSION(X)                                          \
+//#define SDL_MIXER_PATCHLEVEL  6
+//#define SDL_MIXER_MINOR_VERSION       2
+//#define SDL_MIXER_MAJOR_VERSION       1
+//#define _SDL_MIXER_H
+header '#include "SDL_mixer.h"';
+
+//INCLUDES
+include "SDL/SDL_rwops";
+include "SDL/SDL_version";
+
+module SDL_mixer_h
+{
+  open C_hack;
+  open SDL_rwops_h;
+  open SDL_version_h;
+  
+  //ABSTRACT TYPES
+  type Mix_MusicType = 'Mix_MusicType';
+  type Mix_Chunk = 'Mix_Chunk';
+  type Mix_Fading = 'Mix_Fading';
+  
+  //C FUNCTION POINTER TYPES
+  header '''typedef void (*SDL_mixer_h_cft_3)(void *, Uint8 *, int);''';
+  type SDL_mixer_h_cft_3 = 'SDL_mixer_h_cft_3';
+  header '''typedef void (*SDL_mixer_h_cft_1)(int, void *, int,  void *);''';
+  type SDL_mixer_h_cft_1 = 'SDL_mixer_h_cft_1';
+  header '''typedef void (*SDL_mixer_h_cft_2)(int, void *);''';
+  type SDL_mixer_h_cft_2 = 'SDL_mixer_h_cft_2';
+  header '''typedef void (*SDL_mixer_h_cft_5)(int);''';
+  type SDL_mixer_h_cft_5 = 'SDL_mixer_h_cft_5';
+  header '''typedef void (*SDL_mixer_h_cft_4)(void);''';
+  type SDL_mixer_h_cft_4 = 'SDL_mixer_h_cft_4';
+  
+  //PURE INCOMPLETE TYPES
+  type _struct__Mix_Music = 'struct _Mix_Music'; //local
+  
+  //STRUCT or UNION TAG ALIASES
+  typedef Mix_Music = _struct__Mix_Music;
+  
+  //TYPE ALIASES
+  typedef Mix_EffectDone_t = SDL_mixer_h_cft_2;
+  typedef Mix_EffectFunc_t = SDL_mixer_h_cft_1;
+  
+  //ENUMERATION CONSTANTS
+  const MUS_CMD: int = 'MUS_CMD';
+  const MIX_FADING_OUT: int = 'MIX_FADING_OUT';
+  const MIX_NO_FADING: int = 'MIX_NO_FADING';
+  const MIX_FADING_IN: int = 'MIX_FADING_IN';
+  const MUS_WAV: int = 'MUS_WAV';
+  const MUS_MID: int = 'MUS_MID';
+  const MUS_OGG: int = 'MUS_OGG';
+  const MUS_NONE: int = 'MUS_NONE';
+  const MUS_MOD: int = 'MUS_MOD';
+  const MUS_MP3: int = 'MUS_MP3';
+  
+  //PROCEDURES
+  proc Mix_ChannelFinished: SDL_mixer_h_cft_5;
+  proc Mix_CloseAudio: 1;
+  proc Mix_FreeChunk: ptr[Mix_Chunk];
+  proc Mix_FreeMusic: ptr[Mix_Music];
+  proc Mix_HookMusic: SDL_mixer_h_cft_3 * address;
+  proc Mix_HookMusicFinished: SDL_mixer_h_cft_4;
+  proc Mix_Pause: int;
+  proc Mix_PauseMusic: 1;
+  proc Mix_Resume: int;
+  proc Mix_ResumeMusic: 1;
+  proc Mix_RewindMusic: 1;
+  proc Mix_SetPostMix: SDL_mixer_h_cft_3 * address;
+  
+  //FUNCTIONS
+  fun Mix_AllocateChannels: int -> int;
+  fun Mix_ExpireChannel: int * int -> int;
+  fun Mix_FadeInChannelTimed: int * ptr[Mix_Chunk] * int * int * int -> int;
+  fun Mix_FadeInMusic: ptr[Mix_Music] * int * int -> int;
+  fun Mix_FadeInMusicPos: ptr[Mix_Music] * int * int * double -> int;
+  fun Mix_FadeOutChannel: int * int -> int;
+  fun Mix_FadeOutGroup: int * int -> int;
+  fun Mix_FadeOutMusic: int -> int;
+  fun Mix_FadingChannel: int -> Mix_Fading;
+  fun Mix_FadingMusic: 1 -> Mix_Fading;
+  fun Mix_GetChunk: int -> ptr[Mix_Chunk];
+  fun Mix_GetMusicHookData: 1 -> address;
+  fun Mix_GetMusicType: cptr[Mix_Music] -> Mix_MusicType;
+  fun Mix_GetSynchroValue: 1 -> int;
+  fun Mix_GroupAvailable: int -> int;
+  fun Mix_GroupChannel: int * int -> int;
+  fun Mix_GroupChannels: int * int * int -> int;
+  fun Mix_GroupCount: int -> int;
+  fun Mix_GroupNewer: int -> int;
+  fun Mix_GroupOldest: int -> int;
+  fun Mix_HaltChannel: int -> int;
+  fun Mix_HaltGroup: int -> int;
+  fun Mix_HaltMusic: 1 -> int;
+  fun Mix_Linked_Version: 1 -> cptr[SDL_version];
+  fun Mix_LoadMUS: cptr[char] -> ptr[Mix_Music];
+  fun Mix_LoadWAV_RW: ptr[SDL_RWops] * int -> ptr[Mix_Chunk];
+  fun Mix_OpenAudio: int * uint16 * int * int -> int;
+  fun Mix_Paused: int -> int;
+  fun Mix_PausedMusic: 1 -> int;
+  fun Mix_PlayChannelTimed: int * ptr[Mix_Chunk] * int * int -> int;
+  fun Mix_PlayMusic: ptr[Mix_Music] * int -> int;
+  fun Mix_Playing: int -> int;
+  fun Mix_PlayingMusic: 1 -> int;
+  fun Mix_QuerySpec: ptr[int] * ptr[uint16] * ptr[int] -> int;
+  fun Mix_QuickLoad_RAW: ptr[uint8] * uint32 -> ptr[Mix_Chunk];
+  fun Mix_QuickLoad_WAV: ptr[uint8] -> ptr[Mix_Chunk];
+  fun Mix_RegisterEffect: int * SDL_mixer_h_cft_1 * SDL_mixer_h_cft_2 * address -> int;
+  fun Mix_ReserveChannels: int -> int;
+  fun Mix_SetDistance: int * uint8 -> int;
+  fun Mix_SetMusicCMD: cptr[char] -> int;
+  fun Mix_SetMusicPosition: double -> int;
+  fun Mix_SetPanning: int * uint8 * uint8 -> int;
+  fun Mix_SetPosition: int * int16 * uint8 -> int;
+  fun Mix_SetReverseStereo: int * int -> int;
+  fun Mix_SetSynchroValue: int -> int;
+  fun Mix_UnregisterAllEffects: int -> int;
+  fun Mix_UnregisterEffect: int * SDL_mixer_h_cft_1 -> int;
+  fun Mix_Volume: int * int -> int;
+  fun Mix_VolumeChunk: ptr[Mix_Chunk] * int -> int;
+  fun Mix_VolumeMusic: int -> int;
+  
+  //CALLBACK TYPE WRAPPERS
+  //callback type SDL_mixer_h_cft_2, client data at 1
+  typedef _fcbat_SDL_mixer_h_cft_2 = int; 
+  export type (_fcbat_SDL_mixer_h_cft_2) as "_fcbat_SDL_mixer_h_cft_2";
+  typedef _fcbt_SDL_mixer_h_cft_2 = int -> void; 
+  export type (_fcbt_SDL_mixer_h_cft_2) as "_fcbt_SDL_mixer_h_cft_2";
+  header '''void _fcbw_SDL_mixer_h_cft_2(int a1, void *a2);''';
+
+  const _fcbw_SDL_mixer_h_cft_2: SDL_mixer_h_cft_2 = "_fcbw_SDL_mixer_h_cft_2";
+  body '''
+  void _fcbw_SDL_mixer_h_cft_2(int a1, void *a2){
+    con_t *p  = ((_fcbt_SDL_mixer_h_cft_2)a2)->call(0, a1);
+    while(p) p=p->resume();
+  }''';
+
+  //callback type SDL_mixer_h_cft_3, client data at 0
+  typedef _fcbat_SDL_mixer_h_cft_3 = ptr[uint8] * int; 
+  export type (_fcbat_SDL_mixer_h_cft_3) as "_fcbat_SDL_mixer_h_cft_3";
+  typedef _fcbt_SDL_mixer_h_cft_3 = ptr[uint8] * int -> void; 
+  export type (_fcbt_SDL_mixer_h_cft_3) as "_fcbt_SDL_mixer_h_cft_3";
+  header '''void _fcbw_SDL_mixer_h_cft_3(void *a1, Uint8 *a2, int a3);''';
+
+  const _fcbw_SDL_mixer_h_cft_3: SDL_mixer_h_cft_3 = "_fcbw_SDL_mixer_h_cft_3";
+  body '''
+  void _fcbw_SDL_mixer_h_cft_3(void *a1, Uint8 *a2, int a3){
+    con_t *p  = ((_fcbt_SDL_mixer_h_cft_3)a1)->call(0, _fcbat_SDL_mixer_h_cft_3(a2, a3));
+    while(p) p=p->resume();
+  }''';
+
+  
+  //CALLBACK CLIENT WRAPPERS
+  //callback client Mix_HookMusic, client data at 0, callback at 1
+  proc wrapper_Mix_HookMusic(a1: _fcbt_SDL_mixer_h_cft_3) {
+    Mix_HookMusic(_fcbw_SDL_mixer_h_cft_3, C_hack::cast[address]a1);
+  }
+  //callback client Mix_RegisterEffect, client data at 2, callback at 3
+  fun wrapper_Mix_RegisterEffect(a1: int, a2: SDL_mixer_h_cft_1, a3: _fcbt_SDL_mixer_h_cft_2): int= {
+    return Mix_RegisterEffect(a1, a2, _fcbw_SDL_mixer_h_cft_2, C_hack::cast[address]a3);
+  }
+  //callback client Mix_SetPostMix, client data at 0, callback at 1
+  proc wrapper_Mix_SetPostMix(a1: _fcbt_SDL_mixer_h_cft_3) {
+    Mix_SetPostMix(_fcbw_SDL_mixer_h_cft_3, C_hack::cast[address]a1);
+  }
+}
+@h=tangler('lib/SDL/SDL_sound.flx')
+@select(h)
+//Module        : SDL_sound_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_sound.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+include 'std';
+
+//#define SOUND_VERSION(x) \
+//#define SOUND_VER_PATCH 1
+//#define SOUND_VER_MINOR 0
+//#define SOUND_VER_MAJOR 1
+//#define SNDDECLSPEC
+//#define SNDDECLSPEC __declspec(dllexport)
+//#define SDLCALL
+//#define _INCLUDE_SDL_SOUND_H_
+header '#include "SDL_sound.h"';
+
+//INCLUDES
+include "SDL/SDL_rwops";
+
+module SDL_sound_h
+{
+  open C_hack;
+  open SDL_rwops_h;
+  
+  //ABSTRACT TYPES
+  type Sound_Sample = 'Sound_Sample';
+  type Sound_Version = 'Sound_Version';
+  type Sound_AudioInfo = 'Sound_AudioInfo';
+  type Sound_SampleFlags = 'Sound_SampleFlags';
+  type Sound_DecoderInfo = 'Sound_DecoderInfo';
+  
+  //ENUMERATION CONSTANTS
+  const SOUND_SAMPLEFLAG_ERROR: int = 'SOUND_SAMPLEFLAG_ERROR';
+  const SOUND_SAMPLEFLAG_NONE: int = 'SOUND_SAMPLEFLAG_NONE';
+  const SOUND_SAMPLEFLAG_EAGAIN: int = 'SOUND_SAMPLEFLAG_EAGAIN';
+  const SOUND_SAMPLEFLAG_EOF: int = 'SOUND_SAMPLEFLAG_EOF';
+  const SOUND_SAMPLEFLAG_CANSEEK: int = 'SOUND_SAMPLEFLAG_CANSEEK';
+  
+  //PROCEDURES
+  proc Sound_ClearError: 1;
+  proc Sound_FreeSample: ptr[Sound_Sample];
+  proc Sound_GetLinkedVersion: ptr[Sound_Version];
+  
+  //FUNCTIONS
+  fun Sound_AvailableDecoders: 1 -> ptr[cptr[Sound_DecoderInfo]];
+  fun Sound_Decode: ptr[Sound_Sample] -> uint32;
+  fun Sound_DecodeAll: ptr[Sound_Sample] -> uint32;
+  fun Sound_GetError: 1 -> cptr[char];
+  fun Sound_Init: 1 -> int;
+  fun Sound_NewSample: ptr[SDL_RWops] * cptr[char] * ptr[Sound_AudioInfo] * uint32 -> ptr[Sound_Sample];
+  fun Sound_NewSampleFromFile: cptr[char] * ptr[Sound_AudioInfo] * uint32 -> ptr[Sound_Sample];
+  fun Sound_Quit: 1 -> int;
+  fun Sound_Rewind: ptr[Sound_Sample] -> int;
+  fun Sound_Seek: ptr[Sound_Sample] * uint32 -> int;
+  fun Sound_SetBufferSize: ptr[Sound_Sample] * uint32 -> int;
+}
+@h=tangler('lib/SDL/SDL_rotozoom.flx')
+@select(h)
+//Module        : SDL_rotozoom_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_rotozoom.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+include 'std';
+
+//#define DLLINTERFACE
+//#define DLLINTERFACE __declspec(dllimport)
+//#define DLLINTERFACE __declspec(dllexport)
+//#define SMOOTHING_ON          1
+//#define SMOOTHING_OFF         0
+//#define M_PI  3.141592654
+//#define _SDL_rotozoom_h
+header '#include "SDL_rotozoom.h"';
+
+//INCLUDES
+include "SDL/SDL";
+include "SDL/SDL_video";
+
+module SDL_rotozoom_h
+{
+  open C_hack;
+  open SDL_h;
+  open SDL_video_h;
+  open math_h;
+  
+  //CSTRUCTS 
+  cstruct tColorRGBA {
+    r: uint8;
+    g: uint8;
+    b: uint8;
+    a: uint8;
+  }
+  cstruct tColorY {
+    y: uint8;
+  }
+  
+  //STRUCT or UNION TAG ALIASES
+  
+  //TYPE ALIASES
+  typedef _struct_tColorY = tColorY;
+  typedef _struct_tColorRGBA = tColorRGBA;
+  
+  //PROCEDURES
+  proc rotozoomSurfaceSize: int * int * double * double * ptr[int] * ptr[int];
+  proc zoomSurfaceSize: int * int * double * double * ptr[int] * ptr[int];
+  
+  //FUNCTIONS
+  fun rotozoomSurface: ptr[SDL_Surface] * double * double * int -> ptr[SDL_Surface];
+  fun zoomSurface: ptr[SDL_Surface] * double * double * int -> ptr[SDL_Surface];
+}
+@h=tangler('lib/SDL/SDL_ttf.flx')
+@select(h)
+//Module        : SDL_ttf_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_ttf.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+include 'std';
+
+//#define TTF_GetError  SDL_GetError
+//#define TTF_SetError  SDL_SetError
+//#define TTF_RenderUNICODE(font, text, fg, bg) \
+//#define TTF_RenderUTF8(font, text, fg, bg)    \
+//#define TTF_RenderText(font, text, fg, bg)    \
+//#define TTF_STYLE_UNDERLINE   0x04
+//#define TTF_STYLE_ITALIC      0x02
+//#define TTF_STYLE_BOLD                0x01
+//#define TTF_STYLE_NORMAL      0x00
+//#define UNICODE_BOM_SWAPPED   0xFFFE
+//#define UNICODE_BOM_NATIVE    0xFEFF
+//#define TTF_VERSION(X)                                                        \
+//#define TTF_PATCHLEVEL                6
+//#define TTF_MINOR_VERSION     0
+//#define TTF_MAJOR_VERSION     2
+//#define _SDLttf_h
+header '#include "SDL_ttf.h"';
+
+//INCLUDES
+include "SDL/SDL_rwops";
+include "SDL/SDL_version";
+include "SDL/SDL_video";
+
+module SDL_ttf_h
+{
+  open C_hack;
+  open SDL_rwops_h;
+  open SDL_version_h;
+  open SDL_video_h;
+  
+  //PURE INCOMPLETE TYPES
+  type _struct__TTF_Font = 'struct _TTF_Font'; //local
+  
+  //STRUCT or UNION TAG ALIASES
+  typedef TTF_Font = _struct__TTF_Font;
+  
+  //PROCEDURES
+  proc TTF_ByteSwappedUNICODE: int;
+  proc TTF_CloseFont: ptr[TTF_Font];
+  proc TTF_Quit: 1;
+  proc TTF_SetFontStyle: ptr[TTF_Font] * int;
+  
+  //FUNCTIONS
+  fun TTF_FontAscent: ptr[TTF_Font] -> int;
+  fun TTF_FontDescent: ptr[TTF_Font] -> int;
+  fun TTF_FontFaceFamilyName: ptr[TTF_Font] -> ptr[char];
+  fun TTF_FontFaceIsFixedWidth: ptr[TTF_Font] -> int;
+  fun TTF_FontFaceStyleName: ptr[TTF_Font] -> ptr[char];
+  fun TTF_FontFaces: ptr[TTF_Font] -> long;
+  fun TTF_FontHeight: ptr[TTF_Font] -> int;
+  fun TTF_FontLineSkip: ptr[TTF_Font] -> int;
+  fun TTF_GetFontStyle: ptr[TTF_Font] -> int;
+  fun TTF_GlyphMetrics: ptr[TTF_Font] * uint16 * ptr[int] * ptr[int] * ptr[int] * ptr[int] * ptr[int] -> int;
+  fun TTF_Init: 1 -> int;
+  fun TTF_Linked_Version: 1 -> cptr[SDL_version];
+  fun TTF_OpenFont: cptr[char] * int -> ptr[TTF_Font];
+  fun TTF_OpenFontIndex: cptr[char] * int * long -> ptr[TTF_Font];
+  fun TTF_OpenFontIndexRW: ptr[SDL_RWops] * int * int * long -> ptr[TTF_Font];
+  fun TTF_OpenFontRW: ptr[SDL_RWops] * int * int -> ptr[TTF_Font];
+  fun TTF_RenderGlyph_Blended: ptr[TTF_Font] * uint16 * SDL_Color -> ptr[SDL_Surface];
+  fun TTF_RenderGlyph_Shaded: ptr[TTF_Font] * uint16 * SDL_Color * SDL_Color -> ptr[SDL_Surface];
+  fun TTF_RenderGlyph_Solid: ptr[TTF_Font] * uint16 * SDL_Color -> ptr[SDL_Surface];
+  fun TTF_RenderText_Blended: ptr[TTF_Font] * cptr[char] * SDL_Color -> ptr[SDL_Surface];
+  fun TTF_RenderText_Shaded: ptr[TTF_Font] * cptr[char] * SDL_Color * SDL_Color -> ptr[SDL_Surface];
+  fun TTF_RenderText_Solid: ptr[TTF_Font] * cptr[char] * SDL_Color -> ptr[SDL_Surface];
+  fun TTF_RenderUNICODE_Blended: ptr[TTF_Font] * cptr[uint16] * SDL_Color -> ptr[SDL_Surface];
+  fun TTF_RenderUNICODE_Shaded: ptr[TTF_Font] * cptr[uint16] * SDL_Color * SDL_Color -> ptr[SDL_Surface];
+  fun TTF_RenderUNICODE_Solid: ptr[TTF_Font] * cptr[uint16] * SDL_Color -> ptr[SDL_Surface];
+  fun TTF_RenderUTF8_Blended: ptr[TTF_Font] * cptr[char] * SDL_Color -> ptr[SDL_Surface];
+  fun TTF_RenderUTF8_Shaded: ptr[TTF_Font] * cptr[char] * SDL_Color * SDL_Color -> ptr[SDL_Surface];
+  fun TTF_RenderUTF8_Solid: ptr[TTF_Font] * cptr[char] * SDL_Color -> ptr[SDL_Surface];
+  fun TTF_SizeText: ptr[TTF_Font] * cptr[char] * ptr[int] * ptr[int] -> int;
+  fun TTF_SizeUNICODE: ptr[TTF_Font] * cptr[uint16] * ptr[int] * ptr[int] -> int;
+  fun TTF_SizeUTF8: ptr[TTF_Font] * cptr[char] * ptr[int] * ptr[int] -> int;
+  fun TTF_WasInit: 1 -> int;
+}
+@h=tangler('lib/SDL/SDL_net.flx')
+@select(h)
+//Module        : SDL_net_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_net.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+include 'std';
+
+//#define SDLNet_Read32(areap)          \
+//#define SDLNet_Read32(areap)          \
+//#define SDLNet_Read32(areap)          \
+//#define SDLNet_Read16(areap)          \
+//#define SDLNet_Read16(areap)          \
+//#define SDLNet_Read16(areap)          \
+//#define SDLNet_Write32(value, areap)  \
+//#define SDLNet_Write32(value, areap)  \
+//#define SDLNet_Write32(value, areap)  \
+//#define SDLNet_Write16(value, areap)  \
+//#define SDLNet_Write16(value, areap)  \
+//#define SDLNet_Write16(value, areap)  \
+//#define SDL_DATA_ALIGNED      0
+//#define SDL_DATA_ALIGNED      1
+//#define SDLNet_GetError       SDL_GetError
+//#define SDLNet_SetError       SDL_SetError
+//#define SDLNet_SocketReady(sock) \
+//#define SDLNet_UDP_DelSocket(set, sock) \
+//#define SDLNet_TCP_DelSocket(set, sock) \
+//#define SDLNet_UDP_AddSocket(set, sock) \
+//#define SDLNet_TCP_AddSocket(set, sock) \
+//#define SDLNET_MAX_UDPADDRESSES       4
+//#define SDLNET_MAX_UDPCHANNELS        32
+//#define INADDR_BROADCAST      0xFFFFFFFF
+//#define INADDR_NONE           0xFFFFFFFF
+//#define INADDR_ANY            0x00000000
+//#define _SDLnet_h
+header '#include "SDL_net.h"';
+
+module SDL_net_h
+{
+  open C_hack;
+  
+  //ABSTRACT TYPES
+  type SDLNet_GenericSocket = 'SDLNet_GenericSocket';
+  type IPaddress = 'IPaddress';
+  type UDPpacket = 'UDPpacket';
+  
+  //PURE INCOMPLETE TYPES
+  type _struct__UDPsocket = 'struct _UDPsocket'; //local
+  type _struct__SDLNet_SocketSet = 'struct _SDLNet_SocketSet'; //local
+  type _struct__TCPsocket = 'struct _TCPsocket'; //local
+  
+  //TYPE ALIASES
+  typedef UDPsocket = ptr[_struct__UDPsocket];
+  typedef TCPsocket = ptr[_struct__TCPsocket];
+  typedef SDLNet_SocketSet = ptr[_struct__SDLNet_SocketSet];
+  
+  //PROCEDURES
+  proc SDLNet_FreePacket: ptr[UDPpacket];
+  proc SDLNet_FreePacketV: ptr[ptr[UDPpacket]];
+  proc SDLNet_FreeSocketSet: SDLNet_SocketSet;
+  proc SDLNet_Quit: 1;
+  proc SDLNet_TCP_Close: TCPsocket;
+  proc SDLNet_UDP_Close: UDPsocket;
+  proc SDLNet_UDP_Unbind: UDPsocket * int;
+  proc SDLNet_Write16: uint16 * address;
+  proc SDLNet_Write32: uint32 * address;
+  
+  //FUNCTIONS
+  fun SDLNet_AddSocket: SDLNet_SocketSet * SDLNet_GenericSocket -> int;
+  fun SDLNet_AllocPacket: int -> ptr[UDPpacket];
+  fun SDLNet_AllocPacketV: int * int -> ptr[ptr[UDPpacket]];
+  fun SDLNet_AllocSocketSet: int -> SDLNet_SocketSet;
+  fun SDLNet_CheckSockets: SDLNet_SocketSet * uint32 -> int;
+  fun SDLNet_DelSocket: SDLNet_SocketSet * SDLNet_GenericSocket -> int;
+  fun SDLNet_Init: 1 -> int;
+  fun SDLNet_Read16: address -> uint16;
+  fun SDLNet_Read32: address -> uint32;
+  fun SDLNet_ResizePacket: ptr[UDPpacket] * int -> int;
+  fun SDLNet_ResolveHost: ptr[IPaddress] * cptr[char] * uint16 -> int;
+  fun SDLNet_ResolveIP: ptr[IPaddress] -> cptr[char];
+  fun SDLNet_TCP_Accept: TCPsocket -> TCPsocket;
+  fun SDLNet_TCP_GetPeerAddress: TCPsocket -> ptr[IPaddress];
+  fun SDLNet_TCP_Open: ptr[IPaddress] -> TCPsocket;
+  fun SDLNet_TCP_Recv: TCPsocket * address * int -> int;
+  fun SDLNet_TCP_Send: TCPsocket * address * int -> int;
+  fun SDLNet_UDP_Bind: UDPsocket * int * ptr[IPaddress] -> int;
+  fun SDLNet_UDP_GetPeerAddress: UDPsocket * int -> ptr[IPaddress];
+  fun SDLNet_UDP_Open: uint16 -> UDPsocket;
+  fun SDLNet_UDP_Recv: UDPsocket * ptr[UDPpacket] -> int;
+  fun SDLNet_UDP_RecvV: UDPsocket * ptr[ptr[UDPpacket]] -> int;
+  fun SDLNet_UDP_Send: UDPsocket * int * ptr[UDPpacket] -> int;
+  fun SDLNet_UDP_SendV: UDPsocket * ptr[ptr[UDPpacket]] * int -> int;
+}
+
 @h = tangler("tut/examples/sdl100.flx")
 @select(h)
 #import <flx.flxh>
 include "SDL/SDL";
 include "SDL/SDL_video";
 include "SDL/SDL_rwops";
+include "SDL/SDL_image";
 include "flx_faio_posix";
 
 open C_hack;
@@ -1486,6 +2314,7 @@ open Carray;
 open SDL_h;
 open SDL_video_h;
 open SDL_rwops_h;
+open SDL_image_h;
 open MixedInt;
 open Uint32;
 open Uint8;
@@ -1553,17 +2382,15 @@ var i = 10i32; until i == 50i32 do
       ++i;
 done;      
 
-Faio_posix::sleep(5.0);
-SDL_Quit;
-System::exit 0;
-/*
-   SDL_Surface *s[argc]; 
-   for(int i = 1; i<argc; ++i)
-   {
-     SDL_RWops *rwop = SDL_RWFromFile (argv[i],"rb");
-     s[i] = IMG_LoadJPG_RW(rwop);
-   }
+var s: ptr[SDL_Surface] ^ 16;
 
+forall i in 1 upto 16 do
+     filename := "media/images/fc" + str i; 
+     print$ "Loading file " + filename; endl;
+     rwop := SDL_RWFromFile (enconst (cstr filename),enconst (c"rb"));
+     s.[i-1] = IMG_LoadJPG_RW(rwop);
+done;
+/*
     SDL_Rect rcDest;
     SDL_GetClipRect(screen,&rcDest);
     int found = 0;
@@ -1588,3 +2415,9 @@ System::exit 0;
 }
 
 */
+
+
+Faio_posix::sleep(5.0);
+SDL_Quit;
+System::exit 0;
+
