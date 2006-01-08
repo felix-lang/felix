@@ -61,6 +61,8 @@ public:
 #include <flx_rtl_config.hpp>
 #include "demux_posix_demuxer.hpp"
 
+namespace flx { namespace demux {
+
 // oops - have found out that you can't separately associate
 // the same fd with POLLIN and POLLOUT without doing it at
 // the same time (separately just overwrites the last). It's
