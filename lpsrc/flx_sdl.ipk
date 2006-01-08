@@ -1,4 +1,9 @@
 @head(1,'SDL')
+$Log$
+Revision 1.2  2006/01/08 00:25:14  skaller
+Minor fix to sdl stuff
+
+
 @h=tangler('lib/SDL/SDL.flx')
 @select(h)
 //Module        : SDL_h
