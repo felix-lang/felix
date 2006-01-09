@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.199  2006/01/09 16:32:03  skaller
+Integrate SDL tests, provide initial SDL event demux.
+
 Revision 1.198  2006/01/08 08:56:44  skaller
 Change rtl name for MACOSX to libflx_dynamic.dylib
 
@@ -2704,6 +2707,7 @@ ELKRTL_INTERFACES = [
 ]
 
 DEMUXRTL_INTERFACES = [
+ 'demux_sdl.hpp',           # portable but only if SDL is available
  'demux_demuxer.hpp',       # portable
  'demux_sleep_queue.hpp',   # portable
  'demux_posix_queue.hpp',   # posix
@@ -2963,7 +2967,14 @@ BSD_DEMUX_CPPS = [
   "demux/demux_kqueue_demuxer",     # osx/bsd
 ]
 
+SDL_DEMUX_CPPS = [
+  "demux/demux_sdl",                # any platform with SDL
+]
+
 EXTRA_LIBS = []
+CFLAGS = ""
+SFLAGS = ""
+DFLAGS = ""
 
 if HAVE_GXX:
   FLX_DYNAMIC_LIBS = ["flx_dynamic"]
@@ -2995,6 +3006,13 @@ if BSD or MACOSX:
 if SOLARIS:
   DEMUX_CPPS = DEMUX_CPPS + SOLARIS_DEMUX_CPPS
   EXTRA_LIBS = EXTRA_LIBS + ["socket","nsl"]
+
+if HAVE_SDL:
+  DEMUX_CPPS = DEMUX_CPPS + SDL_DEMUX_CPPS
+  CFLAGS = CFLAGS + SDL_CFLAGS
+  DFLAGS = DFLAGS + SDL_LIBS
+  EXTRA_LIBS = EXTRA_LIBS + ["SDL_image"]
+  SFLAGS = SFLAGS + SDL_STATIC_LIBS
 
 DRIVERS = [
   ('rtl/flx_run','bin/flx_run'),
@@ -3221,6 +3239,11 @@ try:
     TESTS = TESTS + glob.glob('tut'+os.sep+'examples'+os.sep+'mac*.flx')
     TESTS = TESTS + glob.glob('tut'+os.sep+'examples'+os.sep+'mig*.flx')
 
+  SDLTESTS = []
+  if "sdl" in options:
+    if HAVE_SDL:
+      SDLTESTS = SDLTESTS + glob.glob('tut'+os.sep+'examples'+os.sep+'sdl*.flx')
+
   BAGLEY = []
   if "bagley" in options:
     BAGLEY = glob.glob('bagley'+os.sep+'felix'+os.sep+'bag*.flx')
@@ -3287,28 +3310,28 @@ try:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_dynamic.o "
         dir,base = string.split(x,'/')
-        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl'],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"])
+        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl'],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"],CFLAGS=CFLAGS)
 
       print " .. FELIX EVENT DEMUX"
       for x in DEMUX_CPPS:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_dynamic.o "
         dir,base = string.split(x,'/')
-        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"])
+        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"],CFLAGS=CFLAGS)
 
       print " .. FELIX ASYNCH IO BINDINGS"
       for x in FAIO_CPPS:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_dynamic.o "
         dir,base = string.split(x,'/')
-        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"])
+        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"],CFLAGS=CFLAGS)
 
       #ELKHOUND SUBLIBRARY
       print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:
         if not "quiet" in options: print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_dynamic.o "
-        TARGET_CXX.compile_shared_rtl(xqt,"elk",x,"rtl",include_path=['rtl','elk'],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"])
+        TARGET_CXX.compile_shared_rtl(xqt,"elk",x,"rtl",include_path=['rtl','elk'],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"],CFLAGS=CFLAGS)
 
       # LINK RTL
       print " ** MAKING RTL (dynamic) "
@@ -3316,7 +3339,7 @@ try:
       objs=[]
       for i in tmp:
         objs.append(i[:-2]) # chop off the .o
-      TARGET_CXX.link_shared_rtl(xqt,objs,SHLIB_DIR+os.sep+"libflx_dynamic",libs=EXTRA_LIBS)
+      TARGET_CXX.link_shared_rtl(xqt,objs,SHLIB_DIR+os.sep+"libflx_dynamic",libs=EXTRA_LIBS,DFLAGS=DFLAGS)
 
     if SUPPORT_STATIC_LINKAGE:
       print " ++ STATIC LINK VERSIONS"
@@ -3326,27 +3349,27 @@ try:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_static.o "
         dir,base = string.split(x,'/')
-        TARGET_CXX.compile_static_rtl(xqt,dir,base,dir,include_path=['rtl'],macros=["FLX_STATIC_LINK"],optimise=1)
+        TARGET_CXX.compile_static_rtl(xqt,dir,base,dir,include_path=['rtl'],macros=["FLX_STATIC_LINK"],optimise=1,CFLAGS=CFLAGS)
 
       print " .. FELIX EVENT DEMUX"
       for x in DEMUX_CPPS:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_dynamic.o "
         dir,base = string.split(x,'/')
-        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_STATIC_LINK"])
+        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_STATIC_LINK"],CFLAGS=CFLAGS)
 
       print " .. FELIX ASYNCH IO"
       for x in FAIO_CPPS:
         if not "quiet" in options: print 'Compiling rtl object',x
         ars = ars + x + "_dynamic.o "
         dir,base = string.split(x,'/')
-        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"])
+        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"],CFLAGS=CFLAGS)
 
       print " .. ELKHOUND"
       for x in SMRTL+ELKRTL:
         if not "quiet" in options: print 'Compiling elkhound rtl object',x
         ars = ars + "rtl/" + x + "_static.o "
-        TARGET_CXX.compile_static_rtl(xqt,"elk",x,"rtl",include_path=['rtl','elk'],optimise=1,macros=["FLX_STATIC_LINK"])
+        TARGET_CXX.compile_static_rtl(xqt,"elk",x,"rtl",include_path=['rtl','elk'],optimise=1,macros=["FLX_STATIC_LINK"],CFLAGS=CFLAGS)
 
       print " ** MAKING RTL (static) "
       tmp = string.split(ars)
@@ -3368,8 +3391,8 @@ try:
     for i in tmp:
       objs.append(i[:-2]) # chop off the .o
     HOST_CXX.link_static_archive(xqt,objs,"elk/libelk_static")
-    HOST_CXX.compile_static_main(xqt,"elk","elk_gramanl","elk",include_path=["rtl","elk"],macros=["FLX_STATIC_LINK"])
-    HOST_CXX.link_static_program(xqt,["elk/elk_gramanl_static"],"bin/flx_elkhound",lib_path=["elk"],libs=ELK_STATIC_LIBS)
+    HOST_CXX.compile_static_main(xqt,"elk","elk_gramanl","elk",include_path=["rtl","elk"],macros=["FLX_STATIC_LINK"],CFLAGS=CFLAGS)
+    HOST_CXX.link_static_program(xqt,["elk/elk_gramanl_static"],"bin/flx_elkhound",lib_path=["elk"],libs=ELK_STATIC_LIBS,SFLAGS=SFLAGS)
  
   # COMPILE DRIVER PROGRAMS
   if "drivers" in options:
@@ -3378,14 +3401,14 @@ try:
       for i,j in DRIVERS:
         if not "quiet" in options: print 'Compiling driver object',i
         d,b = string.split(i,'/')
-        TARGET_CXX.compile_static_main(xqt,d,b,d,include_path=["rtl"],macros=["FLX_STATIC_LINK"],optimise=1)
+        TARGET_CXX.compile_static_main(xqt,d,b,d,include_path=["rtl"],macros=["FLX_STATIC_LINK"],optimise=1,CFLAGS=CFLAGS)
 
     if SUPPORT_DYNAMIC_LOADING:
       print "COMPILING DRIVERS (dynamic)"
       for i,j in DRIVERS:
         if not "quiet" in options: print 'Compiling driver object',i
         d,b = string.split(i,'/')
-        TARGET_CXX.compile_shared_main(xqt,d,b,d,include_path=["rtl"],optimise=1)
+        TARGET_CXX.compile_shared_main(xqt,d,b,d,include_path=["rtl"],optimise=1,CFLAGS=CFLAGS)
 
         #if CYGWIN:
         #  #xqt("g++ -o "+j+" -Wl,--enable-auto-import " + i + "_dynamic.o -Lrtl -lflx_dynamic")
@@ -3395,7 +3418,7 @@ try:
         #  #RF: os x likes the same order as cygwin
         #  xqt(CCLINK_DLMAIN+" -o "+j+" "+i+"_dynamic.o"+" -Lrtl -lflx_dynamic " )
         #else:
-        TARGET_CXX.link_dynamic_program(xqt,[i+"_dynamic"],j,lib_path=[SHLIB_DIR],libs=FLX_DYNAMIC_LIBS+EXTRA_LIBS)
+        TARGET_CXX.link_dynamic_program(xqt,[i+"_dynamic"],j,lib_path=[SHLIB_DIR],libs=FLX_DYNAMIC_LIBS+EXTRA_LIBS,DFLAGS=DFLAGS)
 
   # run tests
   try:
@@ -3407,12 +3430,12 @@ try:
       for driver,testfile,moreargs in SPECIAL_TESTS: 
         EXTRA.append(testfile)
 
-    TX = TESTS+EXTRA+BAGLEY
+    TX = TESTS+EXTRA+BAGLEY+SDLTESTS
     if len(TX)>0 or "regression" in options:
       print "TRANSLATING FELIX TEST CODE TO C++ "+FLXFLAGS
     if len(TX)>0:
       print " .. REGRESSION TESTS and TUTORIAL EXAMPLES"
-    for testfile in TESTS+EXTRA+BAGLEY:
+    for testfile in TESTS+EXTRA+BAGLEY+SDLTESTS:
       #print 'Running Felix code generator on ',testfile
       basename = string.split(testfile,'.')[0]
       cppfilename = basename + ".cpp"
@@ -3464,13 +3487,13 @@ try:
     if "performance" in options:
       for driver,testfile,moreargs in SPECIAL_TESTS: 
         EXTRA.append(testfile)
-    TX = TESTS+EXTRA+BAGLEY
+    TX = TESTS+EXTRA+BAGLEY+SDLTESTS
     if len(TX)>0:
       optimise= "optimise_c" in options
       mode = "std"
       if optimise: mode = "Optimised"
       print "COMPILING GENERATED C++ TEST CODE: " + mode+ " " + LINK_MODEL
-      for testfile in TESTS+EXTRA+BAGLEY:
+      for testfile in TESTS+EXTRA+BAGLEY+SDLTESTS:
         #print 'Compiling generated code of ',testfile
         basename = string.split(testfile,'.')[0]
         path = string.split(basename,'/')
@@ -3480,11 +3503,11 @@ try:
         if buildall or filetime(basename+ '.cpp') > filetime(basename+SHLX):
           try:
             if LINK_MODEL == "dynamic":
-              TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise)
-              TARGET_CXX.link_felix_dll(xqt,[basename+"_dynamic"],basename,lib_path=[SHLIB_DIR],libs=FLX_DYNAMIC_LIBS+EXTRA_LIBS)
+              TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise,CFLAGS=CFLAGS)
+              TARGET_CXX.link_felix_dll(xqt,[basename+"_dynamic"],basename,lib_path=[SHLIB_DIR],libs=FLX_DYNAMIC_LIBS+EXTRA_LIBS,DFLAGS=DFLAGS)
             else: # static
-              TARGET_CXX.compile_felix_static(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise,macros=["FLX_STATIC_LINK"])
-              TARGET_CXX.link_static_program(xqt,["rtl/flx_run_static",basename+"_static"],basename,lib_path=["rtl"],libs=["flx_static"]+EXTRA_LIBS)
+              TARGET_CXX.compile_felix_static(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise,macros=["FLX_STATIC_LINK"],CFLAGS=CFLAGS)
+              TARGET_CXX.link_static_program(xqt,["rtl/flx_run_static",basename+"_static"],basename,lib_path=["rtl"],libs=["flx_static"]+EXTRA_LIBS,SFLAGS=SFLAGS)
             #print 'TESTFILE -- OK!',basename
             results.append(("g++",basename,'OK'))
           except MakeError:
@@ -3495,9 +3518,9 @@ try:
 
 
     # run the tests
-    if len(TESTS)>0:
+    if len(TESTS+SDLTESTS)>0:
       print "RUNNING TESTS"
-      for testfile in TESTS:
+      for testfile in TESTS+SDLTESTS:
         basename = string.split(testfile,'.')[0]
         if LINK_MODEL == "dynamic":
             testscript = "bin"+os.sep+"flx_run ./"+basename+SHLX
@@ -3728,6 +3751,10 @@ We have no idea if it continues copying.
 @tangle('\tmake tests.bagley')
 @tangle('\tmake test.lua_parser')
 @tangle('')
+@tangle('tests.sdl: dummy')
+@tangle('\tpython script/maker sdl')
+@tangle('\tpython script/maker static sdl')
+@tangle('')
 @tangle('tests.verify: dummy')
 @tangle('\tpython script/maker test check_output')
 @tangle('')
@@ -3835,6 +3862,7 @@ We have no idea if it continues copying.
 @tangle('\t\tfelix-'+flx_version+'/ChangeLog \\')
 @tangle('\t\tfelix-'+flx_version+'/lpsrc/*.ipk \\')
 @tangle('\t\tfelix-'+flx_version+'/lpsrc/*.pak \\')
+@tangle('\t\tfelix-'+flx_version+'/media/images/* \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/*.py \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/bin/*.py \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/compilers/*.py \\')
@@ -3873,6 +3901,7 @@ We have no idea if it continues copying.
 @tangle('\t\tfelix-'+flx_version+'/ChangeLog \\')
 @tangle('\t\tfelix-'+flx_version+'/lpsrc/*.ipk \\')
 @tangle('\t\tfelix-'+flx_version+'/lpsrc/*.pak \\')
+@tangle('\t\tfelix-'+flx_version+'/media/images/* \\')
 @tangle('\t\tfelix-'+flx_version+'/script/maker \\')
 @tangle('\t\tfelix-'+flx_version+'/script/*\\')
 @tangle('\t\tfelix-'+flx_version+'/src/*.ml \\')
@@ -5204,8 +5233,8 @@ else
   fi
   if [ $? = 0 ]
   then
-    CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ $LINKER_SWITCHES"
-    LCMD="$CCLINK_STATIC $FLXRTL/flx_run_static$EXT_OBJ $PKGS $cppos $base$EXT_OBJ $FLXAR/libflx_static$EXT_LIB $SPEC_EXE_FILENAME$base$EXT_EXE $PTHREAD_SWITCH"
+    CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
+    LCMD="$CCLINK_STATIC $FLXRTL/flx_run_static$EXT_OBJ $PKGS $cppos $base$EXT_OBJ $FLXAR/libflx_static$EXT_LIB $SPEC_EXE_FILENAME$base$EXT_EXE $PTHREAD_SWITCH $LINKER_SWITCHES"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then

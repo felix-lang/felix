@@ -1183,7 +1183,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
 
   # compile a file to an object suitable for inclusion in a shared 
   # library version of RTL
-  def compile_shared_thing(self,shell,indir,basename,src_ext,outdir,include_path,macros,flags,optimise,debug):
+  def compile_shared_thing(self,shell,indir,basename,src_ext,outdir,include_path,macros,flags,optimise,debug,CFLAGS=""):
     opt = self.options
     # compile for a dll: position independent code etc
     cmd = opt.CCOBJ_DYNAMIC_RTL
@@ -1205,6 +1205,9 @@ class gxx(flxbuild.compiler_class.compiler_base):
 
     # macros
     for i in macros: cmd=cmd + "-D"+i+" "
+
+    cmd = cmd + CFLAGS + " "
+
     #input file
     if  indir: cmd = cmd + indir + os.sep
     cmd = cmd + basename
@@ -1213,19 +1216,19 @@ class gxx(flxbuild.compiler_class.compiler_base):
     # compile it
     shell(cmd)
 
-  def compile_shared_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
-    self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug)
+  def compile_shared_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
 
-  def compile_shared_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
-    self.compile_shared_thing(shell,indir,basename,".cxx",outdir,include_path,macros,flags,optimise,debug)
+  def compile_shared_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_shared_thing(shell,indir,basename,".cxx",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
 
-  def compile_felix_dll(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
-    self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug)
+  def compile_felix_dll(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
 
 
   # compile a file to an object suitable for inclusion in a static link 
   # version of the RTL 
-  def compile_static_thing(self,shell,indir,basename,src_ext,outdir,include_path,macros,flags,optimise,debug):
+  def compile_static_thing(self,shell,indir,basename,src_ext,outdir,include_path,macros,flags,optimise,debug,CFLAGS=""):
     opt = self.options
     # compile for a dll: position independent code etc
     cmd = opt.__dict__.get("CCOBJ_STATIC_RTL",opt.CXX+" -c ")
@@ -1248,6 +1251,8 @@ class gxx(flxbuild.compiler_class.compiler_base):
     #macros
     for i in macros: cmd=cmd + "-D"+i+" "
 
+    cmd = cmd + CFLAGS + " "
+
     #input file
     if  indir: cmd = cmd + indir + os.sep
     cmd = cmd + basename
@@ -1256,14 +1261,14 @@ class gxx(flxbuild.compiler_class.compiler_base):
     # compile it
     shell(cmd)
 
-  def compile_static_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
-    self.compile_static_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug)
+  def compile_static_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_static_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
 
-  def compile_static_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
-    self.compile_static_thing(shell,indir,basename,".cxx",outdir,include_path,macros,flags,optimise,debug)
+  def compile_static_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_static_thing(shell,indir,basename,".cxx",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
 
-  def compile_felix_static(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
-    self.compile_static_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug)
+  def compile_felix_static(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_static_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
 
 
   def link_static_archive(self,shell,objects,archive):
@@ -1274,7 +1279,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
     if opt.RANLIB:
       shell(opt.RANLIB+" "+archive+opt.EXT_LIB)
   
-  def link_static_program(self,shell,objects,outfile,lib_path,libs):
+  def link_static_program(self,shell,objects,outfile,lib_path,libs,SFLAGS=""):
     opt = self.options
     cmd = opt.CCLINK_STATIC
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
@@ -1283,9 +1288,10 @@ class gxx(flxbuild.compiler_class.compiler_base):
     for i in libs: cmd = cmd + "-l"+i+" "
     if opt.HAVE_PTHREADS:
       cmd = cmd + opt.PTHREAD_SWITCH
+    cmd = cmd + SFLAGS
     shell(cmd)
     
-  def link_shared_rtl(self,shell,objects,outfile,lib_path=[],libs=[]):
+  def link_shared_rtl(self,shell,objects,outfile,lib_path=[],libs=[],DFLAGS=""):
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_RTL
     cmd = cmd + "-o " +outfile + opt.EXT_DYLIB + " "
@@ -1298,9 +1304,10 @@ class gxx(flxbuild.compiler_class.compiler_base):
       cmd = cmd + "-l"+opt.DLLIB+" "
     if opt.HAVE_PTHREADS:
       cmd = cmd + opt.PTHREAD_SWITCH
+    cmd = cmd + DFLAGS
     shell(cmd)
 
-  def link_felix_dll(self,shell,objects,outfile,lib_path=[],libs=[]):
+  def link_felix_dll(self,shell,objects,outfile,lib_path=[],libs=[],DFLAGS=""):
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_FLX
     cmd = cmd + "-o " +outfile + opt.EXT_SHLIB + " "
@@ -1311,9 +1318,10 @@ class gxx(flxbuild.compiler_class.compiler_base):
       cmd = cmd + "-l"+opt.DLLIB+" "
     if opt.HAVE_PTHREADS:
       cmd = cmd + opt.PTHREAD_SWITCH
+    cmd = cmd + DFLAGS
     shell(cmd)
     
-  def link_dynamic_program(self,shell,objects,outfile,lib_path,libs):
+  def link_dynamic_program(self,shell,objects,outfile,lib_path,libs,DFLAGS=""):
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_MAIN
     cmd = cmd + "-o " +outfile + " "
@@ -1324,6 +1332,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
       cmd = cmd + "-l"+opt.DLLIB+" "
     if opt.HAVE_PTHREADS:
       cmd = cmd + opt.PTHREAD_SWITCH
+    cmd = cmd + DFLAGS
     shell(cmd)
 
 @h = tangler("flxbuild/msvcxx_class.py")
@@ -1568,7 +1577,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
 
   # compile a file to an object suitable for inclusion in a shared 
   # library version of RTL
-  def compile_shared_thing(self,shell,indir,basename,src_ext,outdir,include_path,macros,flags,optimise,debug):
+  def compile_shared_thing(self,shell,indir,basename,src_ext,outdir,include_path,macros,flags,optimise,debug,CFLAGS=""):
     opt = self.options
     # compile for a dll: position independent code etc
     cmd = opt.CCOBJ_DYNAMIC_RTL
@@ -1590,6 +1599,9 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
 
     # macros
     for i in macros: cmd=cmd + "-D"+i+" "
+
+    cmd = cmd + CFLAGS
+
     #input file
     if  indir: cmd = cmd + indir + os.sep
     cmd = cmd + basename
@@ -1600,18 +1612,18 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
 
   # compile a file to an object suitable for inclusion in a mainline
   # which links to shared libraries
-  def compile_shared_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
-    self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug)
+  def compile_shared_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
 
-  def compile_shared_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
-    self.compile_shared_thing(shell,indir,basename,".cxx",outdir,include_path,macros,flags,optimise,debug)
+  def compile_shared_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_shared_thing(shell,indir,basename,".cxx",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
 
-  def compile_felix_dll(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
-    self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug)
+  def compile_felix_dll(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
 
   # compile a file to an object suitable for inclusion in a static link 
   # version of the RTL 
-  def compile_static_thing(self,shell,indir,basename,src_ext,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
+  def compile_static_thing(self,shell,indir,basename,src_ext,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
     opt = self.options
     # compile for a dll: position independent code etc
     cmd = opt.__dict__.get("CCOBJ_STATIC_RTL",opt.CXX+" /c ")
@@ -1634,6 +1646,8 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     #macros
     for i in macros: cmd=cmd + "-D"+i+" "
 
+    cmd = cmd + CFLAGS
+
     #input file
     if  indir: cmd = cmd + indir + os.sep
     cmd = cmd + basename
@@ -1642,14 +1656,14 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     # compile it
     shell(cmd)
 
-  def compile_static_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
-    self.compile_static_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug)
+  def compile_static_rtl(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_static_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
 
-  def compile_static_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
-    self.compile_static_thing(shell,indir,basename,".cxx",outdir,include_path,macros,flags,optimise,debug)
+  def compile_static_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_static_thing(shell,indir,basename,".cxx",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
 
-  def compile_felix_static(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0):
-    self.compile_static_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug)
+  def compile_felix_static(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
+    self.compile_static_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
 
 
   def link_static_archive(self,shell,objects,archive):
@@ -1658,7 +1672,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     for i in objects: cmd = cmd + i + opt.EXT_OBJ + " "
     shell(cmd)
   
-  def link_static_program(self,shell,objects,outfile,lib_path,libs):
+  def link_static_program(self,shell,objects,outfile,lib_path,libs,SFLAGS=""):
     opt = self.options
     cmd = opt.CCLINK_STATIC
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
@@ -1666,9 +1680,10 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     cmd = cmd + "/link "
     for i in lib_path: cmd = cmd + "/LIBPATH:"+i+" "
     for i in libs: cmd = cmd + "/DEFAULTLIB:"+i+" "
+    cmd = cmd + SFLAGS
     shell(cmd)
     
-  def link_shared_rtl(self,shell,objects,outfile,lib_path=[],libs=[]):
+  def link_shared_rtl(self,shell,objects,outfile,lib_path=[],libs=[],DFLAGS=""):
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_RTL
     cmd = cmd + "/Fe" +outfile + opt.EXT_SHLIB + " "
@@ -1676,11 +1691,12 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     cmd = cmd + "/link "
     for i in lib_path: cmd = cmd + "/LIBPATH:"+i+" "
     for i in libs: cmd = cmd + "/DEFAULTLIB:"+i+" "
+    cmd = cmd + DFLAGS
     shell(cmd)
   
   link_felix_dll = link_shared_rtl
   
-  def link_dynamic_program(self,shell,objects,outfile,lib_path,libs):
+  def link_dynamic_program(self,shell,objects,outfile,lib_path,libs,DFLAGS=""):
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_MAIN
     cmd = cmd + "/Fe" +outfile  + opt.EXT_EXE + " "
@@ -1688,6 +1704,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     cmd = cmd + "/link "
     for i in lib_path: cmd = cmd + "/LIBPATH:"+i+" "
     for i in libs: cmd = cmd + "/DEFAULTLIB:"+i+" "
+    cmd = cmd + DFLAGS
     shell(cmd)
 
 @h=tangler("flxbuild/__init__.py")
@@ -2257,11 +2274,13 @@ if result == None:
   HAVE_SDL = 1
   result,SDL_CFLAGS = gs("sdl-config --cflags")
   result,SDL_LIBS = gs("sdl-config --libs")
+  result,SDL_STATIC_LIBS = gs("sdl-config --static-libs")
 else:
   HAVE_SDL = 0
   SDL_VERSION = "None"
   SDL_CFLAGS = ""
   SDL_LIBS = ""
+  SDL_STATIC_LIBS = ""
   print "SDL NOT SUPPORTED"
 
 print "ESTABLISHED DEFAULT CONFIGURATION"
@@ -2405,6 +2424,7 @@ try:
   p(f,"SDL_VERSION")
   p(f,"SDL_CFLAGS")
   p(f,"SDL_LIBS")
+  p(f,"SDL_STATIC_LIBS")
   pr(f,"")
 
   pr(f,"import flxbuild")

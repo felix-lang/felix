@@ -1,5 +1,8 @@
 @head(1,'SDL')
 $Log$
+Revision 1.4  2006/01/09 16:32:03  skaller
+Integrate SDL tests, provide initial SDL event demux.
+
 Revision 1.3  2006/01/08 08:56:44  skaller
 Change rtl name for MACOSX to libflx_dynamic.dylib
 
@@ -1434,6 +1437,7 @@ module SDL_video_h
   proc SDL_WM_SetIcon: ptr[SDL_Surface] * ptr[uint8];
   
   //FUNCTIONS
+  fun SDL_BlitSurface : ptr[SDL_Surface] * ptr[SDL_Rect] * ptr[SDL_Surface] * ptr[SDL_Rect] -> int;
   fun SDL_ConvertSurface: ptr[SDL_Surface] * ptr[SDL_PixelFormat] * uint32 -> ptr[SDL_Surface];
   fun SDL_CreateRGBSurface: uint32 * int * int * int * uint32 * uint32 * uint32 * uint32 -> ptr[SDL_Surface];
   fun SDL_CreateRGBSurfaceFrom: address * int * int * int * int * uint32 * uint32 * uint32 * uint32 -> ptr[SDL_Surface];
@@ -2300,6 +2304,42 @@ module SDL_net_h
   fun SDLNet_UDP_SendV: UDPsocket * ptr[ptr[UDPpacket]] * int -> int;
 }
 
+@h = tangler("demux/demux_sdl.hpp")
+@select(h)
+#ifndef __SDL_DEMUXER__
+#define __SDL_DEMUXER__
+#include <flx_rtl_config.hpp>
+#include "demux_work_fifo.hpp"
+#include <SDL_events.h>
+
+namespace flx { namespace demux {
+
+// get ONE SDL event
+class FLX_RTL_EXTERN demux_sdl_event : public worker_task {
+   SDL_Event *e;
+public:  
+  demux_sdl_event(SDL_Event *_e);
+  void doit();
+  void finished();
+  ~demux_sdl_event();
+};
+}}
+#endif
+
+@h = tangler("demux/demux_sdl.cpp")
+@select(h)
+#include <demux_work_fifo.hpp>
+#include <SDL_events.h>
+#include "demux_sdl.hpp"
+
+namespace flx { namespace demux {
+
+demux_sdl_event::demux_sdl_event(SDL_Event *_e) : e(_e) {}
+void demux_sdl_event::doit() { SDL_WaitEvent(e); }
+void demux_sdl_event::finished(){}
+demux_sdl_event::~demux_sdl_event(){}
+}}
+
 @h = tangler("tut/examples/sdl100.flx")
 @select(h)
 #import <flx.flxh>
@@ -2367,7 +2407,7 @@ if SDL_Init(SDL_INIT_AUDIO \| SDL_INIT_VIDEO) < 0 do
 done;
 
 var screen: ptr[SDL_Surface];
-screen = SDL_SetVideoMode(1024, 768, 32, SDL_SWSURFACE);
+screen = SDL_SetVideoMode(640, 480, 32, SDL_SWSURFACE);
 if isNULL screen do
   print "Unable to set 1024x768 video"; endl;
   System::exit(1);
@@ -2385,39 +2425,29 @@ done;
 var s: ptr[SDL_Surface] ^ 16;
 
 forall i in 1 upto 16 do
-     filename := "media/images/fc" + str i; 
+     filename := "media/images/fc" + str i+ ".jpg"; 
      print$ "Loading file " + filename; endl;
      rwop := SDL_RWFromFile (enconst (cstr filename),enconst (c"rb"));
      s.[i-1] = IMG_LoadJPG_RW(rwop);
 done;
-/*
-    SDL_Rect rcDest;
-    SDL_GetClipRect(screen,&rcDest);
-    int found = 0;
-    for(int x=0; x<100; ++x)
-    {
-      found = 0;
-      for (int i = 1; i<argc; ++i)
-      {
-        if(s) {
-          ++ found;
-          ++ rcDest.x;
-          ++ rcDest.y;
-          SDL_BlitSurface ( s[i], NULL, screen, &rcDest );
-          //SDL_UpdateRect(screen, 50, 50, 200, 200);
-          SDL_UpdateRect(screen, 0,0,0,0);
-        }
-      }
-    }
-    printf("found %d\n",found);
-    char buf[10];
-    fgets(buf,2,stdin);
-}
 
-*/
+var rcDest : SDL_Rect;
+SDL_GetClipRect(screen,addr rcDest);
 
+black := SDL_MapRGB((*screen).format, 0u8, 0u8, 0u8);
 
-Faio_posix::sleep(5.0);
+forall i in 0 upto 15 do      
+  if not (isNULL s.[i]) do
+    print "Show "; print i; endl;
+    var r = SDL_BlitSurface ( s.[i], null_ptr[SDL_Rect], screen, addr rcDest );
+    SDL_UpdateRect(screen, 0i32,0i32,0u,0u);
+    Faio_posix::sleep(5.0);
+    r = SDL_FillRect(screen, addr rcDest, black);
+  else
+    print "Skip "; print i; endl;
+  done;
+done;
+
 SDL_Quit;
 System::exit 0;
 

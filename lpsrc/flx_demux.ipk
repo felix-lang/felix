@@ -1,4 +1,8 @@
 @head(1,'demux')
+$Log$
+Revision 1.20  2006/01/09 16:32:03  skaller
+Integrate SDL tests, provide initial SDL event demux.
+
 @execfile('config'+os.sep+'config.py')
 @h=tangler('demux/demux_demuxer.hpp')
 @select(h)
