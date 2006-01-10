@@ -463,6 +463,9 @@ and lookup_qn_in_env2'
     end
 
   | `AST_lookup (sr,(me,name,ts)) ->
+    (*
+    print_endline ("Searching for name " ^ name);
+    *)
     match eval_module_expr syms env me with 
     | Simple_module (impl,ts', htab,dirs) ->
       let env' = mk_bare_env syms impl in

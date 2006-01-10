@@ -874,7 +874,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   let map_req n = if n = "_root" then "_rqs_" ^ name else n in
 
   let rex x = rex syms name x in
-  let rsts name vs sts = concat (map (rst syms name access vs) sts) in
+  let rsts name vs access sts = concat (map (rst syms name access vs) sts) in
   let seq () = let n = !(syms.counter) in incr (syms.counter); n in
   (* add _root headers and bodies as requirements for all
     bindings defined in this entity
@@ -886,7 +886,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
      
   | `AST_include (sr,inspec) ->
     let sts = include_file syms inspec true in
-    rsts name parent_vs  sts
+    rsts name parent_vs  access sts
 
   | `AST_regdef (sr,name,regexp) -> 
     [Dcl (sr,name,None,access,[],`DCL_regdef regexp)]
@@ -947,7 +947,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
 
   | `AST_class (sr,name', vs', sts) -> 
     (* let asms = rsts name' (parent_vs @ vs') sts in *)
-    let asms = rsts name' [] sts in
+    let asms = rsts name' [] `Public sts in
     let asms = bridge name' sr :: asms in
     let mdcl =
       [ Dcl (sr,name',None,access,vs', `DCL_class asms) ]
@@ -993,7 +993,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     let rtyp = `AST_name (sr,otname,[]) in
     let retval:expr_t = `AST_apply (sr,(rtyp, mtuple)) in
     let sts = sts @ [`AST_fun_return (sr,retval)] in
-    let asms = rsts name [] sts in
+    let asms = rsts name [] `Public sts in
     let asms = bridge name sr :: asms in
     [
       Dcl (sr,otname,None,access,vs,`DCL_struct methods);
@@ -1007,7 +1007,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     | None,None ->
       let vs',params = fix_params seq params in
       let vs = vs @ vs' in
-      let asms = rsts name' [] sts in
+      let asms = rsts name' [] `Public sts in
       let asms = bridge name' sr :: asms in
       [
         Dcl (sr,name',None,access,vs, 
@@ -1063,7 +1063,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
 
   (* misc *)
   | `AST_untyped_module (sr,name', vs', sts) -> 
-    let asms = rsts name' (parent_vs @ vs') sts in
+    let asms = rsts name' (parent_vs @ vs') `Public sts in
     let asms = bridge name' sr :: asms in
     let mdcl =
       [ Dcl (sr,name',None,access,vs', `DCL_module asms) ]
@@ -1179,7 +1179,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
           `AST_val_decl (sr,vn,[],t,Some r) :: !sts
     in
       let sts = aux l r in
-      rsts name parent_vs sts
+      rsts name parent_vs access sts
 
   | `AST_call (sr,proc, arg) ->
     let d1,x1 = rex proc in
