@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.201  2006/01/11 04:30:45  rfistman
+added portable sleep
+
 Revision 1.200  2006/01/11 01:16:32  rfistman
 added win_timer_queue to demux
 
@@ -2733,6 +2736,7 @@ FAIORTL_INTERFACES = [
  'faio_asyncio.hpp',
  'faio_drv.hpp',
  'faio_pdrv.hpp',
+ 'faio_wdrv.hpp',
  'faio_posixio.hpp',
  'faio_winio.hpp',
 ]

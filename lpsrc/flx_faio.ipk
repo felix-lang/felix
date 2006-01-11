@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.23  2006/01/11 04:30:45  rfistman
+added portable sleep
+
 Revision 1.22  2006/01/08 03:44:13  rfistman
 fixed bogus SIGPIPE ignore warning
 added missing namespace to solaris evtport_demuxer.cpp file
@@ -130,6 +133,25 @@ public:
     ~copipe_endpt() { pipe->disconnect(); } 
     static void pipe_pair(copipe_endpt* pair[2]);
 };
+
+// sleeping
+class sleep_request 
+  : public flx_driver_request_base, public demux::sleep_task
+{
+  thread_wakeup fw;
+  double      delta;
+public:
+  sleep_request() {}        // flx linkage
+
+  sleep_request(double d) : delta(d) {}
+
+  // from driver request
+  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+
+  // from sleep_task
+  virtual void fire();  
+};
+
 }} // namespace faio, flx
 #endif  // __ASYNCIO__
 
@@ -326,6 +348,28 @@ copipe_endpt::shutdown(int how)
         break;
     }
 }
+
+// sleep task prio queue thing
+
+bool
+sleep_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+{
+  // fprintf(stderr,"driver called sleep_task start_async_op code\n");
+  // important: copy down the thread and the driver
+  RECORD_THREAD_INFO(fw);
+
+  drv->get_sleepers()->add_sleep_request(this, delta);
+
+  return false;   // no wakeup
+}
+
+// from async io thread
+void
+sleep_request::fire()
+{
+  fw.wake();    // wake thread
+}
+
 }}
 
 @h=tangler('faio/faio_drv.hpp')
@@ -335,6 +379,7 @@ copipe_endpt::shutdown(int how)
 #include <flx_rtl_config.hpp>
 
 #include "demux_sleep_queue.hpp"
+#include "demux_timer_queue.hpp"
 #include "demux_demuxer.hpp"
 
 namespace flx { namespace faio {
@@ -348,7 +393,24 @@ public:
     virtual ~flx_drv();
 
     void sched(void* f);
+
+    virtual demux::timer_queue* get_sleepers() = 0;
 };
+
+// this becomes socket thread wakeup. um.
+class FLX_RTL_EXTERN thread_wakeup {
+public:
+    void wake() { drv->sched(f); }
+
+    void*           f;              // thread to be woken
+    flx_drv*        drv;            // in which driver
+};
+
+// to be called inside every start_async_op
+// note: the windows version often needs the demuxer, but the posix one
+// doesn't. I forget why.
+#define RECORD_THREAD_INFO(w) (w).f=f;\
+                              (w).drv=drv;
 
 }}
 #endif              //__FLXDRV__
@@ -385,7 +447,7 @@ flx_drv::sched(void* f)
 
 #include <flx_rtl_config.hpp>
 #include "demux_pfileio.hpp"
-#include "demux_sleep_task.hpp"
+#include "demux_posix_timer_queue.hpp"
 #include "faio_drv.hpp"
 namespace flx { namespace faio {
 
@@ -396,12 +458,12 @@ class FLX_RTL_EXTERN pflx_drv : public flx_drv {
     // make it direct so we don't have to protect the code that would
     // create the pointer. This is a bit heavy, I would prefer on demand.
     demux::pasync_fileio       file_aio_worker;
-    demux::sleep_task_queue    sleepers;
+    demux::posix_timer_queue   sleepers;
 public:
     pflx_drv(demux::sleep_queue& q);
 
     demux::pasync_fileio* get_aio_worker() { return &file_aio_worker; }
-    demux::sleep_task_queue* get_sleepers() { return &sleepers; }
+    demux::timer_queue* get_sleepers() { return &sleepers; }
     bool debug;
     void set_debug(bool d) { debug = d; }
 };
@@ -447,6 +509,28 @@ pflx_drv::pflx_drv(sleep_queue& q)
 }
 
 }}
+@h=tangler('faio/faio_wdrv.hpp')
+@select(h)
+
+#ifndef __FAIO_WDRV__
+#define __FAIO_WDRV__
+
+#include "demux_win_timer_queue.hpp"
+#include "faio_drv.hpp"
+
+namespace flx { namespace faio {
+
+class FLX_RTL_EXTERN wflx_drv : public flx_drv {
+  demux::win_timer_queue sleepers;
+public:
+  wflx_drv(demux::sleep_queue& q) : flx_drv(q) {}
+
+  demux::timer_queue* get_sleepers() { return &sleepers; }
+};
+
+}}
+
+#endif
 
 @h=tangler('faio/faio_posixio.hpp')
 @select(h)
@@ -467,21 +551,10 @@ pflx_drv::pflx_drv(sleep_queue& q)
 // haven't given up on using the socket style demuxers yet.
 #include "demux_pfileio.hpp"
 
-// a sleep prioqueue
-#include "demux_sleep_task.hpp"
+#include "demux_timer_queue.hpp"
 
 namespace flx { namespace faio {
-// this becomes socket thread wakeup. um. 
-// class thread_wakeup : public socket_wakeup {
-class FLX_RTL_EXTERN thread_wakeup {
-public:
-    void wake() { drv->sched(f); }
-
-    void*       f;          // thread to be woken
-    flx_drv*    drv;        // in which driver
-};
-
-    
+ 
 class FLX_RTL_EXTERN socketio_wakeup : public demux::socket_wakeup {
 public:
     demux::sel_param       pb;         // in: what you want, out: what you get
@@ -566,24 +639,6 @@ public:
     virtual void finished();
 };
 
-// sleeping
-class FLX_RTL_EXTERN sleep_request
-    : public flx_driver_request_base, public demux::sleep_task
-{
-    thread_wakeup   fw;
-    double          delta;
-public:
-    sleep_request() {}              // flx linkage
-
-    sleep_request(double d) : delta(d) {}
-
-    // from driver request
-    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
-
-    // from sleep_task
-    virtual void fire();
-};
-
 }}
 #endif
 
@@ -622,8 +677,7 @@ socketio_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
     //   sv.pb.buffer_size, sv.pb.bytes_written);
 
     // important: copy down the thread and the driver
-    sv.fw.drv = drv;
-    sv.fw.f = f;
+    RECORD_THREAD_INFO(sv.fw);
 
     posix_demuxer*  pd = (posix_demuxer*)&demux;
 
@@ -696,8 +750,7 @@ connect_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
     // printf("connect_request didn't finish immediatly, sleeping\n");
     
     // important: copy down the thread and the driver
-    sv.fw.drv = drv;
-    sv.fw.f = f;
+    RECORD_THREAD_INFO(sv.fw);
     
     posix_demuxer*  pd = (posix_demuxer*)&demux;
     
@@ -751,8 +804,7 @@ accept_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
    // printf("async accept start\n");
 
     // important: copy down the thread and the driver
-    sv.fw.drv = drv;
-    sv.fw.f = f;
+    RECORD_THREAD_INFO(sv.fw);
     
     posix_demuxer*  pd = (posix_demuxer*)&demux;
     
@@ -786,8 +838,7 @@ flxfileio_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {
     // printf("driver called fileio start_async_op code\n");
     // important: copy down the thread and the driver
-    fw.drv = drv;
-    fw.f = f;
+    RECORD_THREAD_INFO(fw);
     
     // need to create the async io thing here, or ask the driver for it
     // driver needs to go a little less portable
@@ -800,35 +851,11 @@ flxfileio_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 // from async io thread
 void
 flxfileio_request::finished()
-{   
-    // printf("async fileio got finished callback\n");
-    fw.wake();      // wake thread
+{
+    // fprintf(stderr,"async fileio got finished callback\n");
+    fw.wake();    // wake thread
 }
 
-// sleep task prio queue thing
-
-bool
-sleep_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
-{   
-   // printf("driver called sleep_task start_async_op code\n");
-    // important: copy down the thread and the driver
-    fw.drv = drv;
-    fw.f = f;
-    
-    // need to create the async io thing here, or ask the driver for it
-    // driver needs to go a little less portable
-    pflx_drv*   pdrv = (pflx_drv*)drv;
-    pdrv->get_sleepers()->add_sleep_request(this, delta);
-    
-    return false;       // no wakeup
-}
-
-// from async io thread
-void
-sleep_request::fire()
-{   
-    fw.wake();      // wake thread
-}
 
 }}
 
@@ -869,14 +896,11 @@ public:
 // transition to new windows async control block
 class FLX_RTL_EXTERN waio_base : public flx_driver_request_base {
 protected:
-  // these three should provide enough info to wake a thread
-  void*   f;            // give this a better name
-  flx_drv*  driver;
-  demux::demuxer*  demux;
+  thread_wakeup fw;
 public:
   bool  success;          // eh?
 
-  waio_base() : f(0), success(false) {}
+  waio_base() : success(false) {}
 
   // actually wakes up thread
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
@@ -1010,19 +1034,13 @@ waio_base::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     fprintf(stderr,"catchall wakeup got error: %i (should store it)\n", err);
 
   success = (NO_ERROR == err);  // this works pretty well
-  driver->sched(f);
+  fw.wake();
 }
-
-
-// to be called inside every start_async_op
-#define RECORD_THREAD_INFO this->f=f;\
-            this->driver=drv;\
-            this->demux=&demux
 
 bool
 wasync_accept::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 {
-  RECORD_THREAD_INFO;     // records enough info for wakeup
+  RECORD_THREAD_INFO(fw);   // records enough info for wakeup
   return start_overlapped();
 }
 
@@ -1037,7 +1055,7 @@ wasync_accept::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 connect_ex::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 {
-  RECORD_THREAD_INFO;     // records enough info for wakeup
+  RECORD_THREAD_INFO(fw);   // records enough info for wakeup
   return start_overlapped();
 }
 
@@ -1052,7 +1070,7 @@ connect_ex::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 wasync_transmit_file::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 {
-  RECORD_THREAD_INFO;     // records enough info for wakeup
+  RECORD_THREAD_INFO(fw);   // records enough info for wakeup
   return start_overlapped();
 }
 
@@ -1066,7 +1084,7 @@ wasync_transmit_file::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 wsa_socketio::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 {
-  RECORD_THREAD_INFO; // records enough info for wakeup
+  RECORD_THREAD_INFO(fw); // records enough info for wakeup
   return start_overlapped();    // start overlapped op
 }
 
@@ -1115,7 +1133,7 @@ wsa_socketio::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 winfile_io::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 {
-  RECORD_THREAD_INFO;       // records enough info for wakeup
+  RECORD_THREAD_INFO(fw);   // records enough info for wakeup
   return start_overlapped();  // go
 }
 
@@ -1300,6 +1318,19 @@ proc co_write(pipe: copipe, len: &int, buf: address, eof: &bool)
 {   
     co_rw(pipe, len, buf, eof, false);      // read
 }
+
+// sleep! finally!
+
+type sleep_request = 'flx::faio::sleep_request';
+fun mk_sleep_request: double -> sleep_request = 'flx::faio::sleep_request($1)';
+
+proc sleep(delta: double)
+{
+  var sr = mk_sleep_request delta;
+  faio_req$ &sr;
+}
+
+
 } // module faio
 
 @h=tangler('lib/flx_faio_posix.flx')
@@ -1387,18 +1418,6 @@ proc faio_read(fd: int, len: &int, buf: address,
 proc faio_write(fd: int, len: &int, buf: address, eof: &bool)
 {   
     faio_rw(fd, len, buf, eof, false);      // write
-}
-
-// sleep! finally!
-// pod type sleep_request = "sleep_request";
-
-type sleep_request = "flx::faio::sleep_request";
-fun mk_sleep_request: double -> sleep_request = 'flx::faio::sleep_request($1)';
-
-proc sleep(delta: double)
-{   
-    var sr = mk_sleep_request delta; 
-    faio_req$ &sr;
 }
 
 // connect!

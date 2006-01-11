@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.84  2006/01/11 04:30:45  rfistman
+added portable sleep
+
 Revision 1.83  2006/01/05 09:43:46  skaller
 Compile procedures down to plain C functions if possible.
 Optimisation may be a bit optimistic.
@@ -1667,7 +1670,7 @@ shared library name are not passed.
 
 #ifdef _WIN32
 #include "demux_iocp_demuxer.hpp"
-#include "faio_drv.hpp"
+#include "faio_wdrv.hpp"
 #elif defined(MACOSX)
 #include "demux_posix_queue.hpp"
 #include "demux_kqueue_demuxer.hpp"
@@ -1732,7 +1735,7 @@ public:
 #ifdef _WIN32
     win_queue async_active;
     iocp_demuxer demux;
-    flx_drv driver;
+    wflx_drv driver;
 #elif defined(MACOSX)
     posix_queue async_active;
     kqueue_demuxer demux;
