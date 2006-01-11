@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.21  2006/01/11 01:16:32  rfistman
+added win_timer_queue to demux
+
 Revision 1.20  2006/01/09 16:32:03  skaller
 Integrate SDL tests, provide initial SDL event demux.
 
@@ -132,6 +135,9 @@ class FLX_RTL_EXTERN win_thread {
 public:
   win_thread();
   ~win_thread();
+
+  // some msdn code examples imply that it's risky to use the CRT
+  // (C runtime) in a thread. would conio be better?
   int init(LPTHREAD_START_ROUTINE, LPVOID lParam);
   void deinit();
 };
@@ -489,64 +495,6 @@ public:
 }} // namespace demux, flx
 #endif
 
-@h=tangler('demux/demux_sleep_task.hpp')
-@select(h)
-#ifndef __SLEEP_TASK__
-#define __SLEEP_TASK__
-#include <flx_rtl_config.hpp>
-
-// this is a sort of worker_fifo, but with a prio queue that never sleeps
-#include "demux_work_fifo.hpp"
-
-#include "demux_mutexlite.hpp"
-
-namespace flx { namespace demux {
-// class sleep_task : public worker_task
-// may not need time in here - just the wakeup - something I surely have
-// somewhere else.
-class FLX_RTL_EXTERN sleep_task
-{
-public:
-  virtual ~sleep_task() {}
-
-  virtual void fire() = 0;
-};
-
-// not quite the right thing - this isn't a work queue
-// it needs a prio queue
-// class sleep_task_queue : public worker_fifo
-// don't want a worker_fifo
-class FLX_RTL_EXTERN sleep_task_queue
-{
-  // ATTENZIONE: the thread uses this & so it must outlive it
-  // for this it is declared before the thread (I would've expected
-  // an error to be returned from pthread_mutex_lock instead of
-  // deadlock but whatever).
-  // update: I was getting deadlock in a broken stdlib version
-  // gcc4.0.1, ppc64, osx10.4.2 in printf, however the above still
-  // stands: the lock must outlive the thread that uses it.
-  pmut    lock;         // factor to prio queue?
-
-  apthread  sleep_thread;
-  static void* thread_start(void*); // passed "this"
-  void thread_loop_body();
-
-  void*   opaque_prio_queue;    // less fat
-
-  pthread_cond_t  sleep_cond;     // this could be cool.
-  int setup_sleep_cond();
-  void takedown_sleep_cond();     // deallocate the condition
-
-  void wakeup_thread();       // we can do this!
-public:
-  sleep_task_queue();
-  ~sleep_task_queue();
-
-  void add_sleep_request(sleep_task* st, double delta);
-};
-
-}} // namespace demux, flx
-#endif // __SLEEP_TASK__
 @h=tangler('demux/demux_sockety.hpp')
 @select(h)
 #ifndef __SOCKETY__
@@ -618,6 +566,114 @@ public:
 
 }} // namespace demux, flx
 #endif  // __WORKER_FIFO__
+@h=tangler('demux/demux_timer_queue.hpp')
+@select(h)
+#ifndef __TIMER_QUEUE__
+#define __TIMER_QUEUE__
+
+#include <flx_rtl_config.hpp>
+
+namespace flx { namespace demux {
+
+// trying to factor out code to share between pc & posix versions
+
+// class sleep_task : public worker_task
+// may not need time in here - just the wakeup - something I surely have
+// somewhere else.
+class FLX_RTL_EXTERN sleep_task
+{
+public:
+    virtual ~sleep_task() {}
+
+    virtual void fire() = 0;
+};
+
+class FLX_RTL_EXTERN timer_queue
+{
+public:
+    virtual ~timer_queue() {}
+
+    virtual void add_sleep_request(sleep_task* st, double delta) = 0;
+};
+}} // namespace demux, flx
+
+#endif
+
+@h=tangler('demux/demux_posix_timer_queue.hpp')
+@select(h)
+#ifndef __POSIX_TIMER_QUEUE__
+#define __POSIX_TIMER_QUEUE__
+
+#include "demux_mutexlite.hpp"
+#include "demux_timer_queue.hpp"
+
+namespace flx { namespace demux {
+
+// looks like a worker queue, but couldn't quite mash it into one
+class FLX_RTL_EXTERN posix_timer_queue : public timer_queue
+{
+  // ATTENZIONE: the thread uses this & so it must outlive it
+  // for this it is declared before the thread (I would've expected
+  // an error to be returned from pthread_mutex_lock instead of
+  // deadlock but whatever).
+  // update: I was getting deadlock in a broken stdlib version
+  // gcc4.0.1, ppc64, osx10.4.2 in printf, however the above still
+  // stands: the lock must outlive the thread that uses it.
+  pmut    lock;         // factor to prio queue?
+
+  apthread  sleep_thread;
+  static void* thread_start(void*); // passed "this"
+  void thread_loop_body();
+
+  void*   opaque_prio_queue;    // less fat
+
+  pthread_cond_t  sleep_cond;     // this could be cool.
+  int setup_sleep_cond();
+  void takedown_sleep_cond();     // deallocate the condition
+
+  void wakeup_thread();       // we can do this!
+public:
+  posix_timer_queue();
+  ~posix_timer_queue();
+
+  // thread safe.
+  virtual void add_sleep_request(sleep_task* st, double delta);
+};
+
+}}
+
+#endif // __POSIX_TIMER_QUEUE__
+
+@h=tangler('demux/demux_win_timer_queue.hpp')
+@select(h)
+#ifndef __WIN_TIMER_QUEUE__
+#define __WIN_TIMER_QUEUE__
+
+// note: NOT include Windows.h here as the .cpp file needs to up the
+// the _WIN32_WINNT version, something that must be done before the
+// inclusion of Windows.h, but I don't want to force that on users
+// of this file, hence this file must follow windows.h.
+//#include <Windows.h>
+
+#include "demux_timer_queue.hpp"
+
+namespace flx { namespace demux {
+
+class FLX_RTL_EXTERN win_timer_queue : public timer_queue
+{
+  HANDLE    timer_queue;
+
+  static VOID CALLBACK timer_callback(PVOID, BOOLEAN);
+public:
+  win_timer_queue();
+  ~win_timer_queue();
+
+  virtual void add_sleep_request(sleep_task* st, double delta);
+};
+
+}}
+
+#endif // __SLEEP_TASK__
 @h=tangler('demux/demux_demuxer.cpp')
 @select(h)
 #include "demux_demuxer.hpp"
@@ -2891,270 +2947,6 @@ select_demuxer::remove_writing_fd(int s)
 }
 }}
 
-@h=tangler('demux/demux_sleep_task.cpp')
-@select(h)
-#include "demux_sleep_task.hpp"
-
-// a prio queue that executes tasks in a given order
-// factor out prio_queue? could be like queue.
-
-// try to make work like the worker thread thing, fix it do so?.
-// remove time from sleep task...
-
-#include <queue>    // stl seems to have a prio_queue
-#include <sys/time.h> // gettimeofday for calculating "now"
-// #include <errno.h> // ETIMEDOUT - don't actually need to know this
-
-using namespace std;
-namespace flx { namespace demux {
-
-// it could happen!
-class future_evt
-{
-public:
-  timespec  when; 
-  sleep_task* task;
-
-  // ignore the direction, just trying to sort with smallest first
-  bool operator<(const future_evt& rhs) const
-  {
-    if(when.tv_sec != rhs.when.tv_sec)  // precedence to more significant
-      return when.tv_sec > rhs.when.tv_sec;
-    else                // else check the less significant
-      return when.tv_nsec > rhs.when.tv_nsec;
-  }
-};
-
-typedef priority_queue<future_evt> void_prio_queue;
-
-#define PRIOQ ((void_prio_queue*)opaque_prio_queue)
-
-int
-sleep_task_queue::setup_sleep_cond()
-{
-  fprintf(stderr,"setup_sleep_cond\n");
-  int res;
-  res = pthread_cond_init(&sleep_cond, NULL);
-
-  if(0 != res)
-    fprintf(stderr,"pthread_cond_init failed: %i\n", res);
-
-  return res;
-}
-
-void
-sleep_task_queue::takedown_sleep_cond()
-{
-  fprintf(stderr,"sleep cond taking down\n");
-  int res;
-  res = pthread_cond_destroy(&sleep_cond);
-  if(0 != res) fprintf(stderr,"condition destroy failed: %i\n", res);
-}
-
-sleep_task_queue::sleep_task_queue()
-  : lock(false)     // lock shouldn't need to be recursive
-{
-  // fprintf(stderr,"sleep_task_queue ctor\n");
-  int res;
-  res = setup_sleep_cond();
-  if(0 != res) throw res;
-
-  // do the thread last because it uses all this stuff
-  fprintf(stderr,"initing sleep thread\n");
-  opaque_prio_queue = new void_prio_queue;
-  res = sleep_thread.init(thread_start, this);
-fprintf(stderr,"will leak if thread or condition init fails.\n");
-  if(0 != res) throw res;
-  // not good to do much else after this as the thread is running
-
-}
-
-sleep_task_queue::~sleep_task_queue()
-{
-  // the sleep_thread uses the prioq, so we must explicitly shut it
-  // down now, before we delete the prioq. left to its own devices,
-  // c++ destructs it at the end of this destructor.
-
-  // take down the thread first because it uses all the other stuff.
-  // I actually don't need to do anything special to bring the thread
-  // down because all pthread_cond_*wait* are cancel aware. Or so they
-  // should be. As far as I can tell only the 64bit osx10.4.2 is, so
-  // for now the explicit cancel + wakeup followed by explicit 
-  // cancel test stays.
-
-  // fprintf(stderr,"setting thread cancel flag\n");
-  sleep_thread.cancel();      // set cancel flag
-  // fprintf(stderr,"waking up thread!\n");
-  wakeup_thread();        // wakeup, cause to goto a cancel pt
-
-  sleep_thread.deinit();      // will cancel again and join
-  fprintf(stderr,"about to delete PRIOQ\n");
-  delete PRIOQ;
-
-  takedown_sleep_cond();
-}
-
-static void
-get_now(timespec* now)
-{
-  struct timeval tp;
-
-  if(gettimeofday(&tp, NULL) == -1)
-    perror("gettimeofday");
-
-  // (10^6-1)*1000 = 3B9AC618 = max usec -> nsec fits in a 32bit long.
-  now->tv_sec = tp.tv_sec;
-  now->tv_nsec = tp.tv_usec*1000;   // fits!
-
-  // fprintf(stderr,"get_now = %li, %li\n", now->tv_sec, now->tv_nsec);
-}
-
-// offset delta from "now" and store in "when"
-static void
-calc_when(timespec* when, double delta)
-{
-// how to use the posix abstime versions of timed waits? what kind of absolute
-// is abstime? pthread_get_expiration_np looks useful, but it too is np.
-// abstime is apparently in seconds since the Epoch, UTC.
-// To get now there's clock_gettime (not portable) or gettimeofday with
-// null timezone.
-
-  const long MIL = 1000000;   // one million
-  const long BIL = MIL*1000;    // one billion
-
-  timespec  now;
-  get_now(&now);
-
-  // limit!
-  // seconds to microseconds - signed this gives a bit over half an hour
-  long  wait_musec = (long)(delta*MIL);
-  timespec  delay = { wait_musec / MIL, (wait_musec % MIL)*1000 };
-  
-  // (10^6-1)*1000 = 3B9AC618 = max usec -> nsec fits in a 32bit long.
-  when->tv_sec = now.tv_sec + delay.tv_sec;
-  when->tv_nsec = now.tv_nsec + delay.tv_nsec;
-
-  if(when->tv_nsec >= BIL)      // overflow of nanoseconds?
-  {
-    // fprintf(stderr,"OVERFLOW = %li, %li\n", when->tv_sec, when->tv_nsec);
-    // x, y < BIL, x + y < 2BIL
-    when->tv_sec++;
-    when->tv_nsec -= BIL;
-    // when->tv_sec += when->tv_nsec/BIL;
-    // when->tv_nsec %= BIL;
-  }
-
-  // fprintf(stderr,"when = %li, %li\n", when->tv_sec, when->tv_nsec);
-  // tp contains tv_sec (seconds) & tv_usec (microseconds) both longs.
-  // however, if nonposix works everywhere...
-}
-
-// note: may not need time to be in sleep_task. could pass time here.
-void
-sleep_task_queue::add_sleep_request(sleep_task* st, double delta)
-{
-  // fprintf(stderr,"add_sleep_request: %lf\n", delta);
-
-  future_evt  evt;
-  evt.task = st;
-  calc_when(&evt.when, delta);    // calculate when (t a delta)
-
-  pmut_locker locker(lock);
-
-  PRIOQ->push(evt);
-
-  // we may have inserted at sooner than any other evt, so wake up thread
-  // to figure it out (if need be). I seemed to be getting more wakeups
-  // with this. Turned off for now. Not sure how that works.
-  if(1 || PRIOQ->top().task == st)
-  {
-//    fprintf(stderr,"WE PUSHED IN - waking thread\n");
-    wakeup_thread();
-  }
-}
-
-void
-sleep_task_queue::wakeup_thread()
-{
-  // fprintf(stderr,"waking sleeper thread with pthread_cond_signal\n");
-  int res;
-  // we don't need broadcast because we're only ever waking
-  // one thread, the sleeper thread.
-  res = pthread_cond_signal(&sleep_cond);
-  if(0 != res) fprintf(stderr,"condition signal failed: %i\n", res);
-}
-
-void*
-sleep_task_queue::thread_start(void* udat)
-{
-  sleep_task_queue* q = (sleep_task_queue*)udat;
-  fprintf(stderr,"sleeper thread\n");
-
-  while(1)
-  {
-    // fprintf(stderr,"sleep thread testing cancel\n");
-    pthread_testcancel();   // not actually necessary
-    q->thread_loop_body();
-  }
-  return 0;           // could happen
-}
-
-void
-sleep_task_queue::thread_loop_body()
-{
-  pmut_locker locker(lock); // lock on. lock off when waiting on condition
-
-  int   res;
-
-  // pthread_cond_wait & pthread_cond_timedwait (& np rel version?) are
-  // cancellation points. doco notes for timed & untimed waits that the
-  // predicate should be rechecked as there can be spurious wakeups.
-  // no worries, when we wakeup the lock has been acquired.
-
-  while(!PRIOQ->empty())
-  {
-    future_evt  evt = PRIOQ->top();
-
-    future_evt  now;    // "now' has no task, just a dummy.
-    get_now(&now.when);
-
-    // if(evt < now)    // would prefer <=, eh.
-    // < is arse backwards because I don't know how to use the stl
-    if(now < evt)   // would prefer <=, eh.
-    {
-      // fprintf(stderr,"firing of (%li, %li) at (%li, %li)!\n",
-      //  evt.when.tv_sec, evt.when.tv_nsec,
-      //  now.when.tv_sec, now.when.tv_nsec);
-      evt.task->fire();
-      PRIOQ->pop();
-    }
-    else  // we have an event in future, so sleep for that long
-    {
-      // remember that condition waits are exit points...
-      // so I don't need to test - check that.
-      // fprintf(stderr,"sleeping from %li, %li until %li, %li\n",
-      //  now.when.tv_sec, now.when.tv_nsec,
-      //  evt.when.tv_sec, evt.when.tv_nsec);
-      res = pthread_cond_timedwait(&sleep_cond, &lock.m, &evt.when);
-
-      // if using posix abstime timed wait we make get EINVAL here for 
-      // abstimes in the past. must handle this.
- 
-      // fprintf(stderr,"pthread_cond_timedwait woke up! (%i)\n", res);
-    }
-  }
-
-  // if we got here then the queue is empty, so sleep indefinitely
-  // that we don't really need the mainloop testcancel because the condition
-  // wait functions are cancellation points.
-  // fprintf(stderr,"no sleep task, sleeping indefinitely\n");
-  res = pthread_cond_wait(&sleep_cond, &lock.m);
-  // fprintf(stderr,"pthread_cond_wait woke up! (%i)\n", res);
-
-  // lock released here
-}
-}}
-
 @h=tangler('demux/demux_work_fifo.cpp')
 @select(h)
 #include <stdio.h>    // printf
@@ -3475,6 +3267,447 @@ async_connect(const char* addr, int port, int* finished)
 
   *finished = 1;            /* for completeness */
   return -1;
+}
+}}
+
+@h=tangler('demux/demux_posix_timer_queue.cpp')
+@select(h)
+#include "demux_posix_timer_queue.hpp"
+
+// a prio queue that executes tasks in a given order
+// factor out prio_queue? could be like queue.
+
+// try to make work like the worker thread thing, fix it do so?.
+// remove time from sleep task...
+
+#include <queue>    // stl seems to have a prio_queue
+#include <sys/time.h> // gettimeofday for calculating "now"
+// #include <errno.h> // ETIMEDOUT - don't actually need to know this
+
+namespace flx { namespace demux {
+
+using namespace std;
+
+// it could happen!
+// factor
+class future_evt
+{
+public:
+  timespec  when; 
+  sleep_task* task;
+
+  // ignore the direction, just trying to sort with smallest first
+  bool operator<(const future_evt& rhs) const
+  {
+    if(when.tv_sec != rhs.when.tv_sec)  // precedence to more significant
+      return when.tv_sec > rhs.when.tv_sec;
+    else                // else check the less significant
+      return when.tv_nsec > rhs.when.tv_nsec;
+  }
+};
+
+typedef priority_queue<future_evt> void_prio_queue;
+#define PRIOQ ((void_prio_queue*)opaque_prio_queue)
+
+int
+posix_timer_queue::setup_sleep_cond()
+{
+  fprintf(stderr,"setup_sleep_cond\n");
+  int res;
+  res = pthread_cond_init(&sleep_cond, NULL);
+
+  if(0 != res)
+    fprintf(stderr,"pthread_cond_init failed: %i\n", res);
+
+  return res;
+}
+
+void
+posix_timer_queue::takedown_sleep_cond()
+{
+  fprintf(stderr,"sleep cond taking down\n");
+  int res;
+  res = pthread_cond_destroy(&sleep_cond);
+  if(0 != res) fprintf(stderr,"condition destroy failed: %i\n", res);
+}
+
+posix_timer_queue::posix_timer_queue()
+  : lock(false)     // lock shouldn't need to be recursive
+{
+  // fprintf(stderr,"posix_timer_queue ctor\n");
+  int res;
+  res = setup_sleep_cond();
+  if(0 != res) throw res;
+// zzz NOT ACCEPTABLE
+  // do the thread last because it uses all this stuff
+  fprintf(stderr,"initing sleep thread\n");
+  opaque_prio_queue = new void_prio_queue;
+  res = sleep_thread.init(thread_start, this);
+fprintf(stderr,"will leak if thread or condition init fails.\n");
+  if(0 != res) throw res;
+  // not good to do much else after this as the thread is running
+
+}
+
+posix_timer_queue::~posix_timer_queue()
+{
+  // the sleep_thread uses the prioq, so we must explicitly shut it
+  // down now, before we delete the prioq. left to its own devices,
+  // c++ destructs it at the end of this destructor.
+
+  // take down the thread first because it uses all the other stuff.
+  // I actually don't need to do anything special to bring the thread
+  // down because all pthread_cond_*wait* are cancel aware. Or so they
+  // should be. As far as I can tell only the 64bit osx10.4.2 is, so
+  // for now the explicit cancel + wakeup followed by explicit 
+  // cancel test stays.
+
+  // fprintf(stderr,"setting thread cancel flag\n");
+  sleep_thread.cancel();      // set cancel flag
+  // fprintf(stderr,"waking up thread!\n");
+  wakeup_thread();        // wakeup, cause to goto a cancel pt
+
+  sleep_thread.deinit();      // will cancel again and join
+  fprintf(stderr,"about to delete PRIOQ\n");
+  delete PRIOQ;
+
+  takedown_sleep_cond();
+}
+
+static void
+get_now(timespec* now)
+{
+  struct timeval tp;
+
+  if(gettimeofday(&tp, NULL) == -1)
+    perror("gettimeofday");
+
+  // (10^6-1)*1000 = 3B9AC618 = max usec -> nsec fits in a 32bit long.
+  now->tv_sec = tp.tv_sec;
+  now->tv_nsec = tp.tv_usec*1000;   // fits!
+
+  // fprintf(stderr,"get_now = %li, %li\n", now->tv_sec, now->tv_nsec);
+}
+
+// offset delta from "now" and store in "when"
+static void
+calc_when(timespec* when, double delta)
+{
+// how to use the posix abstime versions of timed waits? what kind of absolute
+// is abstime? pthread_get_expiration_np looks useful, but it too is np.
+// abstime is apparently in seconds since the Epoch, UTC.
+// To get now there's clock_gettime (not portable) or gettimeofday with
+// null timezone.
+
+  const long MIL = 1000000;   // one million
+  const long BIL = MIL*1000;    // one billion
+
+  timespec  now;
+  get_now(&now);
+
+  // limit!
+  // seconds to microseconds - signed this gives a bit over half an hour
+  long  wait_musec = (long)(delta*MIL);
+  timespec  delay = { wait_musec / MIL, (wait_musec % MIL)*1000 };
+  
+  // (10^6-1)*1000 = 3B9AC618 = max usec -> nsec fits in a 32bit long.
+  when->tv_sec = now.tv_sec + delay.tv_sec;
+  when->tv_nsec = now.tv_nsec + delay.tv_nsec;
+
+  if(when->tv_nsec >= BIL)      // overflow of nanoseconds?
+  {
+    // fprintf(stderr,"OVERFLOW = %li, %li\n", when->tv_sec, when->tv_nsec);
+    // x, y < BIL, x + y < 2BIL
+    when->tv_sec++;
+    when->tv_nsec -= BIL;
+    // when->tv_sec += when->tv_nsec/BIL;
+    // when->tv_nsec %= BIL;
+  }
+
+  // fprintf(stderr,"when = %li, %li\n", when->tv_sec, when->tv_nsec);
+  // tp contains tv_sec (seconds) & tv_usec (microseconds) both longs.
+  // however, if nonposix works everywhere...
+}
+
+// note: may not need time to be in sleep_task. could pass time here.
+// thread safe
+void
+posix_timer_queue::add_sleep_request(sleep_task* st, double delta)
+{
+  // fprintf(stderr,"add_sleep_request: %lf\n", delta);
+
+  future_evt  evt;
+  evt.task = st;
+  calc_when(&evt.when, delta);    // calculate when (t a delta)
+
+  pmut_locker locker(lock);
+
+  PRIOQ->push(evt);
+
+  // we may have inserted at sooner than any other evt, so wake up thread
+  // to figure it out (if need be). I seemed to be getting more wakeups
+  // with this. Turned off for now. Not sure how that works.
+  if(1 || PRIOQ->top().task == st)
+  {
+//    fprintf(stderr,"WE PUSHED IN - waking thread\n");
+    wakeup_thread();
+  }
+}
+
+// cause the timer wait thread to wake up. useful for asking it to
+// exit or re-evaluate a changed sleep queue.
+void
+posix_timer_queue::wakeup_thread()
+{
+  // fprintf(stderr,"waking sleeper thread with pthread_cond_signal\n");
+  int res;
+  // we don't need broadcast because we're only ever waking
+  // one thread, the sleeper thread.
+  res = pthread_cond_signal(&sleep_cond);
+  if(0 != res) fprintf(stderr,"condition signal failed: %i\n", res);
+}
+
+void*
+posix_timer_queue::thread_start(void* udat)
+{
+  posix_timer_queue*  q = (posix_timer_queue*)udat;
+  fprintf(stderr,"sleeper thread\n");
+
+  while(1)
+  {
+    // fprintf(stderr,"sleep thread testing cancel\n");
+    pthread_testcancel();   // not actually necessary
+    q->thread_loop_body();
+  }
+  return 0;           // could happen
+}
+
+void
+posix_timer_queue::thread_loop_body()
+{
+  pmut_locker locker(lock); // lock on. lock off when waiting on condition
+
+  int   res;
+
+  // pthread_cond_wait & pthread_cond_timedwait (& np rel version?) are
+  // cancellation points. doco notes for timed & untimed waits that the
+  // predicate should be rechecked as there can be spurious wakeups.
+  // no worries, when we wakeup the lock has been acquired.
+
+  while(!PRIOQ->empty())
+  {
+    future_evt  evt = PRIOQ->top();
+
+    future_evt  now;    // "now' has no task, just a dummy.
+    get_now(&now.when);
+
+    // if(evt < now)    // would prefer <=, eh.
+    // < is arse backwards because I don't know how to use the stl
+    if(now < evt)   // would prefer <=, eh.
+    {
+      // fprintf(stderr,"firing of (%li, %li) at (%li, %li)!\n",
+      //  evt.when.tv_sec, evt.when.tv_nsec,
+      //  now.when.tv_sec, now.when.tv_nsec);
+      evt.task->fire();
+      PRIOQ->pop();
+    }
+    else  // we have an event in future, so sleep for that long
+    {
+      // remember that condition waits are exit points...
+      // so I don't need to test - check that.
+      // fprintf(stderr,"sleeping from %li, %li until %li, %li\n",
+      //  now.when.tv_sec, now.when.tv_nsec,
+      //  evt.when.tv_sec, evt.when.tv_nsec);
+      res = pthread_cond_timedwait(&sleep_cond, &lock.m, &evt.when);
+
+      // if using posix abstime timed wait we make get EINVAL here for 
+      // abstimes in the past. must handle this.
+ 
+      // fprintf(stderr,"pthread_cond_timedwait woke up! (%i)\n", res);
+    }
+  }
+
+  // if we got here then the queue is empty, so sleep indefinitely
+  // that we don't really need the mainloop testcancel because the condition
+  // wait functions are cancellation points.
+  // fprintf(stderr,"no sleep task, sleeping indefinitely\n");
+  res = pthread_cond_wait(&sleep_cond, &lock.m);
+  // fprintf(stderr,"pthread_cond_wait woke up! (%i)\n", res);
+
+  // lock released here
+}
+}}
+
+
+@h=tangler('demux/demux_win_timer_queue.hpp')
+@select(h)
+#ifndef __WIN_TIMER_QUEUE__
+#define __WIN_TIMER_QUEUE__
+
+// note: NOT include Windows.h here as the .cpp file needs to up the
+// the _WIN32_WINNT version, something that must be done before the
+// inclusion of Windows.h, but I don't want to force that on users
+// of this file, hence this file must follow windows.h.
+//#include <Windows.h>
+
+#include "demux_timer_queue.hpp"
+
+namespace flx { namespace demux {
+
+class FLX_RTL_EXTERN win_timer_queue : public timer_queue
+{
+  HANDLE    timer_queue;
+
+  static VOID CALLBACK timer_callback(PVOID, BOOLEAN);
+public:
+  win_timer_queue();
+  ~win_timer_queue();
+
+  virtual void add_sleep_request(sleep_task* st, double delta);
+};
+
+}}
+
+
+#endif // __SLEEP_TASK__
+
+@h=tangler('demux/demux_win_timer_queue.cpp')
+@select(h)
+
+// this api needs nt version 4 and above headers. vs is often more strict
+// about this sort of thing than mingw. 
+// Is this how you do it?
+#define _WIN32_WINNT 0x500
+#include <Windows.h>
+
+// simply wrapped windows timer queue. requires windows 5.00, which is 
+// quite high (xp?) because I couldn't get the waitable timers to work.
+// must be careful with this stuff lest it create millions of threads.
+#include "demux_win_timer_queue.hpp"
+
+#include <stdio.h>
+
+using namespace std;
+
+namespace flx { namespace demux {
+
+typedef struct
+{
+  sleep_task* st;       // so we can make it fire
+  HANDLE    timer;      // we need to delete the timer, so we need it
+  HANDLE    timer_queue;  // AND its queue (no back ptrs, I guess)
+} timer_cookie;
+
+win_timer_queue::win_timer_queue()
+{
+  // fprintf(stderr,"win_timer_queue ctor\n");
+
+  timer_queue = CreateTimerQueue();
+  if(!timer_queue)
+  {
+    fprintf(stderr, "CreateTimerQueue failed: %i\n", GetLastError());
+    throw -1;
+  }
+  // fprintf(stderr, "created timer queue: %p\n", timer_queue);
+}
+
+
+win_timer_queue::~win_timer_queue()
+{
+  // INVALID_HANDLE_VALUE indicates that DeleteTimerQueueEx should wait for
+  // all callback functions to complete before returning. One would hope that
+  // calling this causes all the timers to go off before their time (what
+  // else would the "actually fired" callback flag be for?). The alternative
+  // of waiting for some ever distant timer to go off would be too stupid
+  // for words. As usual, the msdn glosses over the important details like
+  // this one. Anyway, it's easy to test out... No, that flag's always true
+  // for timers, and this wait option doesn't work - maybe with other types
+  // flags for CreateTimerQueueTimer?
+  if(!DeleteTimerQueueEx(timer_queue, INVALID_HANDLE_VALUE))
+  {
+    fprintf(stderr, "DeleteTimerQueueEx failed: %i\n", GetLastError());
+    // whatcha gonna do about it?
+  }
+  // fprintf(stderr, "finished - did it wait?\n");
+}
+
+// note: may not need time to be in sleep_task. could pass time here.
+// thread safe
+void
+win_timer_queue::add_sleep_request(sleep_task* st, double delta)
+{
+  // fprintf(stderr,"add_sleep_request: %lf to %p\n", delta, timer_queue);
+
+  timer_cookie* tc = new timer_cookie;
+
+  // copy in the sleep_task and the timer queue
+  tc->st = st;
+  tc->timer_queue = timer_queue;
+
+  // the timer thread may not be the best solution as nothing is stopping
+  // anyone from performing long operations with this structure, however
+  // in all likelihood, it'll just be felix adding threads back to its queue.
+  if(!CreateTimerQueueTimer(
+    &tc->timer,         // resulting timer in timer_cookie
+    timer_queue,
+    //NULL,           // add to default timer queue
+    timer_callback,       // should get called in delta seconds
+    tc,             // timer cookie is user data
+    (DWORD)(delta*1000),    // millisecond timer
+    0,              // zero period => signal once
+    WT_EXECUTEINTIMERTHREAD)) // NB: for short tasks (will this do?)
+  {
+    fprintf(stderr, "CreateTimerQueueTimer failed: %i\n", GetLastError());
+    delete tc;          // at least try not to leak
+    return;
+  }
+}
+
+// this is a c callback - all the c++ code should probably be wrapped
+// in a try/catch. timer_or_wait_fired is always true for timers.
+VOID CALLBACK
+win_timer_queue::timer_callback(PVOID udat, BOOLEAN timer_or_wait_fired)
+{
+  timer_cookie* tc = (timer_cookie*)udat;
+  
+  // fprintf(stderr, "timer queue callback fired: %p, %i\n",
+  //  tc, timer_or_wait_fired);
+
+  if(!tc)
+  {
+    // Nothing that we can do in this situation.
+    fprintf(stderr, "WHOA - NULL queue cookie! (fired: %i)\n",
+      timer_or_wait_fired);
+    return;           // outta here
+  }
+
+  // NULL means delete the thing now, INVALID_HANDLE_VALUE means wait until
+  // callback finishes. We're in the callback, so we can't do that (=deadlock
+  // of the timer thread, which isn't good). We're all adults here, the timer
+  // has expired, we know what we're doing, so lets just delete it.
+  tc->st->fire();
+
+  // on my box this returns ERROR_IO_PENDING, on others it doesn't
+  // msdn says this should be ok, but I'm not so sure.
+  if(!DeleteTimerQueueTimer(tc->timer_queue, tc->timer, NULL))
+  {
+    int err = GetLastError();
+
+    if( ERROR_IO_PENDING != err)
+    {
+      fprintf(stderr, "DeleteTimerQueueTimer of %p failed: %i\n",
+        tc->timer, err);
+    }
+    else
+    {
+      // I'm not so sure, see if it leaks.
+      fprintf(stderr, "DeleteTimerQueueTimer = ERROR_IO_PENDING\n");
+      fprintf(stderr, "Apparently this is ok...\n");
+    }
+  }
+  delete tc;
+
+  // fprintf(stderr, "leaving timer callback\n");
 }
 
 }}

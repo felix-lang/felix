@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.200  2006/01/11 01:16:32  rfistman
+added win_timer_queue to demux
+
 Revision 1.199  2006/01/09 16:32:03  skaller
 Integrate SDL tests, provide initial SDL event demux.
 
@@ -2713,11 +2716,13 @@ DEMUXRTL_INTERFACES = [
  'demux_posix_queue.hpp',   # posix
  'demux_posix_demuxer.hpp', # posix
  'demux_work_fifo.hpp',     # posix
- 'demux_sleep_task.hpp',    # posix
+ 'demux_timer_queue.hpp',   # portable
+ 'demux_posix_timer_queue.hpp',   # posix
  'demux_pfileio.hpp',       # posix
  'demux_select_demuxer.hpp',# posix
  'demux_iocp_demuxer.hpp',  # win32 (monolithic)
  'demux_overlapped.hpp',    # win32
+ 'demux_win_timer_queue.hpp',  # win32
  'demux_kqueue_demuxer.hpp',# osx/bsd
  'demux_evtport_demuxer.hpp',# solaris
  'demux_mutexlite.hpp',     # posix
@@ -2943,7 +2948,7 @@ POSIX_DEMUX_CPPS = [
   "demux/demux_posix_demuxer",      # all posix
   "demux/demux_posix_queue",        # all posix
   "demux/demux_select_demuxer",     # all posix
-  "demux/demux_sleep_task",         # posix
+  "demux/demux_posix_timer_queue",  # posix
   "demux/demux_sockety",            # posix
   "demux/demux_mutexlite",          # posix
   "demux/demux_pfileio",            # posix
@@ -2961,6 +2966,7 @@ SOLARIS_DEMUX_CPPS = [
 WINDOWS_DEMUX_CPPS = [
   "demux/demux_iocp_demuxer",       # windows
   "demux/demux_overlapped",         # windows
+  "demux/demux_win_timer_queue",    # windows
 ]
 
 BSD_DEMUX_CPPS = [
