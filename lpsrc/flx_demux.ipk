@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.22  2006/01/13 05:16:50  rfistman
+made worker_fifo portable
+
 Revision 1.21  2006/01/11 01:16:32  rfistman
 added win_timer_queue to demux
 
@@ -526,8 +529,12 @@ int make_nonblock(int s);
 #define __WORKER_FIFO__
 #include <flx_rtl_config.hpp>
 
+#ifdef _WIN32     // quick hack
+#include "demux_iocp_demuxer.hpp"
+#else           // else posix
 #include "demux_posix_queue.hpp"
 #include "demux_mutexlite.hpp"
+#endif
 
 namespace flx { namespace demux {
 // abstract 
@@ -545,24 +552,28 @@ class FLX_RTL_EXTERN worker_fifo
 {
   // this thread is destructed very carefully to make sure that all
   // the objects in this class outlive its execution.
-  apthread  io_thread;
-  
-  static void* thread_start(void*); // io thread entry point, passed this
-
-  void thread_loop_body();
-
+#ifdef _WIN32
+  win_thread  thread;
+  win_queue fifo;
+#else
+  apthread  thread;
   posix_queue fifo;         // reentrant fifo!
+#endif
+
+  static void* thread_start(void*); // thread entry point, passed this
+  bool thread_loop_body();      // returns keep going flag
+
 public:
   worker_fifo();
   ~worker_fifo();
 
-  void add_worker_task(worker_task* task);  // re-entrant?
+  void add_worker_task(worker_task* task);  // also re-entrant
 
   // those deriving from this class might like to stop the
   // thread in their destructors, so that their objects used
   // by the worker thread can outlive it
   void stop_worker_thread();
-};
+  };
 
 }} // namespace demux, flx
 #endif  // __WORKER_FIFO__
@@ -2960,10 +2971,15 @@ worker_fifo::worker_fifo()
 {
   fprintf(stderr,"async worker fifo io module constructor\n");
   // fifo already inited and ready to go, so get pthread going
-  int res = io_thread.init(thread_start, this);
+#ifdef _WIN32
+  int res = thread.init((LPTHREAD_START_ROUTINE)thread_start, this);
+#else
+  int res = thread.init(thread_start, this);
+#endif
 
   if(0 != res) throw res;
 
+// do it properly or not at all
 #if 0
   fprintf(stderr,"hey, trying multi threads here (leakingly)\n");
   for(int i = 1; i < 1; i++)
@@ -2976,25 +2992,23 @@ worker_fifo::worker_fifo()
 #endif
 }
 
-// local to this file only, don't export!
-// this is a hack to wake the work thread when it has an
-// empty queue. what we really need is a timeout and
-// no pthread style implicit cancel functions
-class dummy_task : public worker_task {
-public:
-  void doit() { /* nothing */ }
-  void finished() { /* nothing */ }
-};
+// To get rid of thread cancel we could have a simple finished flag
+// that's set by the class and set by the thread. Since both are executed
+// synchronously w.r.t the same thread, we wouldn't need to protect anything
+// that won't work if we have multiple worker threads, however.
+
+// better idea - add a null task to front of queue to mean quit. queue
+// is already threadsafe. If there are n worker threads, add n nulls.
 
 // stopping the worker thread turns out to be trickier than it sounds
 // because it's hard to wake up on an empty queue. 
 void
 worker_fifo::stop_worker_thread()
 {
-  io_thread.cancel();   // set cancel flag
-  dummy_task  dt;     // for waking up on possibly empty work queue
-  add_worker_task(&dt); // now that the thread can know it's cancelled
-  io_thread.deinit();   // wait for it.
+  add_worker_task(NULL);    // thread safe takedown.
+                // for n worker threads add n times
+  thread.deinit();      // deinit waits for thread to exit.
+                // which should happen eventually
 }
 
 worker_fifo::~worker_fifo()
@@ -3013,27 +3027,25 @@ worker_fifo::thread_start(void* udat)
   worker_fifo*  fio = (worker_fifo*)udat;
   fprintf(stderr,"posix worker_fifo thread started! this=%p\n", fio);
 
-  while(1)
-  {
-    pthread_testcancel();     // make cancellable
-    fio->thread_loop_body();    // the real thing
-  }
-  return 0;             // return status. could happen.
+  while(fio->thread_loop_body()) ;
+
+  return 0;             // return status.
 }
 
-void
+// dequeues one task and executes it, calling finished hook. interprest
+// null task as a request to exit.
+bool
 worker_fifo::thread_loop_body()
 {
-  // this infinite sleep is no good because we have no way
-  // of bringing down thread - pthread_cancel is not that
-  // reliable as there seems to be race conditions with its
-  // use (depends on impl: seems only to work reliably on
-  // entry to a cancelable function. In any case, it's a
-  // bad way and something to avoid).
   worker_task*  req = (worker_task*)fifo.dequeue();
   // fprintf(stderr,"dequeued worker_task (%p)\n", req);
+
+  if(!req) return false;        // finished, got quit signal
+
   req->doit();
   req->finished();          // finish hook. I find this handy
+
+  return true;            // keep going
 }
 
 void
@@ -3041,6 +3053,7 @@ worker_fifo::add_worker_task(worker_task* task)
 {
   fifo.enqueue(task);         // don't worry, fifo is re-entrant
 }
+
 }}
 
 @h=tangler('demux/demux_sockety.cpp')

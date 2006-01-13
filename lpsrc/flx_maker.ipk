@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.202  2006/01/13 05:16:50  rfistman
+made worker_fifo portable
+
 Revision 1.201  2006/01/11 04:30:45  rfistman
 added portable sleep
 
@@ -2718,7 +2721,7 @@ DEMUXRTL_INTERFACES = [
  'demux_sleep_queue.hpp',   # portable
  'demux_posix_queue.hpp',   # posix
  'demux_posix_demuxer.hpp', # posix
- 'demux_work_fifo.hpp',     # posix
+ 'demux_work_fifo.hpp',     # portable
  'demux_timer_queue.hpp',   # portable
  'demux_posix_timer_queue.hpp',   # posix
  'demux_pfileio.hpp',       # posix
@@ -2946,6 +2949,7 @@ WINDOWS_FAIO_CPPS = [
 
 DEMUX_CPPS = [
   "demux/demux_demuxer",
+  "demux/demux_work_fifo",
 ]
 
 POSIX_DEMUX_CPPS = [
@@ -2956,7 +2960,6 @@ POSIX_DEMUX_CPPS = [
   "demux/demux_sockety",            # posix
   "demux/demux_mutexlite",          # posix
   "demux/demux_pfileio",            # posix
-  "demux/demux_work_fifo",          # posix
 ]
 
 LINUX_DEMUX_CPPS = [
