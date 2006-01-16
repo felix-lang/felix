@@ -1,8 +1,11 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
-Revision 1.23  2006/01/11 04:30:45  rfistman
-added portable sleep
+Revision 1.24  2006/01/16 01:25:43  rfistman
+factored faio posix accept and connect back demux as control blocks
+removed pthread cancel from code - implicit cancel points are no longer used.
+instead the threads are convinced to return from their mains via specially
+formatted inputs.
 
 Revision 1.22  2006/01/08 03:44:13  rfistman
 fixed bogus SIGPIPE ignore warning
@@ -509,28 +512,6 @@ pflx_drv::pflx_drv(sleep_queue& q)
 }
 
 }}
-@h=tangler('faio/faio_wdrv.hpp')
-@select(h)
-
-#ifndef __FAIO_WDRV__
-#define __FAIO_WDRV__
-
-#include "demux_win_timer_queue.hpp"
-#include "faio_drv.hpp"
-
-namespace flx { namespace faio {
-
-class FLX_RTL_EXTERN wflx_drv : public flx_drv {
-  demux::win_timer_queue sleepers;
-public:
-  wflx_drv(demux::sleep_queue& q) : flx_drv(q) {}
-
-  demux::timer_queue* get_sleepers() { return &sleepers; }
-};
-
-}}
-
-#endif
 
 @h=tangler('faio/faio_posixio.hpp')
 @select(h)
@@ -578,45 +559,36 @@ public:
     virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv,  void* f);
 };
 
-// move wakeup to thread_wakeup and get rid of class altogether
-class FLX_RTL_EXTERN connect_wakeup : public socketio_wakeup {
+class FLX_RTL_EXTERN connect_request
+  : public flx_driver_request_base, public demux::connect_control_block {
 public:
-    int     socket_err;     // the error, if s == -1
-    virtual void wakeup(demux::posix_demuxer& demux);
+  thread_wakeup fw;
+
+  connect_request() {}      // flx linkage
+
+  connect_request(const char* addr, int port) { addy = addr; p = port; s=-1; }
+  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv,  void* f);
+  virtual void wakeup(demux::posix_demuxer& demux);
 };
 
-
-class FLX_RTL_EXTERN connect_request : public flx_driver_request_base {
-    const char*     addy;
-    int             p;
+class FLX_RTL_EXTERN accept_request
+  : public flx_driver_request_base, public demux::accept_control_block {
 public:
-    connect_wakeup  sv;
+  // we sometimes know that there'll be several connections to accept.
+  // this'll need a different wakeup - and a different interface between
+  // event source & wakeups
+  thread_wakeup fw;
 
-    connect_request() {}            // flx linkage
+  accept_request() {} // flx linkage
 
-    connect_request(const char* addr, int port) : addy(addr), p(port) { sv.s=-1; }
-    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv,  void* f);
-};
+  // eeh, give that a better name
+  accept_request(int listener) { s = listener; }
 
-class FLX_RTL_EXTERN accept_wakeup : public socketio_wakeup {
-public:
-    int     acceptee;       // listener socket
-    int     socket_err;     // the error, if acceptee == -1
-    virtual void wakeup(demux::posix_demuxer& demux);
-};
+  // from flx_driver_request_base
+  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
 
-class FLX_RTL_EXTERN accept_request : public flx_driver_request_base {
-public:
-    // we sometimes know that there'll be several connections to accept.
-    // this'll need a different wakeup - and a different interface between
-    // event source & wakeups
-    accept_wakeup   sv;     // could use connect wakeup...
-
-    accept_request() {} // flx linkage
-
-    // note that the listener is the s socket
-    accept_request(int listener) {sv.s = listener; sv.acceptee = -1; }
-    virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+  // from accept_control_block
+  virtual void wakeup(demux::posix_demuxer& demux);
 };
 
 
@@ -725,111 +697,64 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
 
 // asynchronous connect
 bool
-connect_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
+connect_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 {
-    // printf("async connect start\n");
-
-    int finished;
-    sv.s = async_connect(addy, p, &finished);
-    sv.socket_err = 0;
-
-// printf("async_connect returned s: %i, finished: %i\n", sv.s, finished);
-    if(-1 == sv.s)      // failed!
-    {   
-        fprintf(stderr,"async_connect failed, waking\n");
-        return true;    // wakeup thread
-    }
-    
-    if(finished)
-    {   
-        // I think on windows I set a success flag here
-        // printf("async_connect finished immediately, waking\n");
-        return true;
-    }
-    
-    // printf("connect_request didn't finish immediatly, sleeping\n");
-    
     // important: copy down the thread and the driver
-    RECORD_THREAD_INFO(sv.fw);
-    
-    posix_demuxer*  pd = (posix_demuxer*)&demux;
-    
-    // add to demuxer as writing socket - see man 2 connect
-    // wake thread if call failed
-    return (pd->add_socket_wakeup(&sv, false) == -1);
-}
+  RECORD_THREAD_INFO(fw);
 
-@tangle("typedef " + FLX_SOCKLEN_T + " FLX_SOCKLEN_T;")
+  posix_demuxer*  pd = (posix_demuxer*)&demux;
+
+  // call failed, wake up thread
+  if(start(*pd) == -1) return true; 
+
+  // I've not seen this yet, don't know why.
+  if(socket_err == 0) fprintf(stderr, "WOW, instant CONNECT\n");
+
+  // call didn't fail, could be pending or finished.
+  // return socket_err != EINPROGRESS, the contrapositive, sort of
+  return socket_err == 0;   // no err => finished immediately
+}
 
 void
-connect_wakeup::wakeup(posix_demuxer& demux)
+connect_request::wakeup(posix_demuxer& demux)
 {
-    // printf("connect woke up\n");
-    // this is how we check the success of async socket calls
-    // god knows what the level should be. socket level seems sensible.
-    // no socklen_t on 10.2.8, this works though, albeit with a warning
-    // was unsigned - I'll probably have to change that back
-    // unsigned int    len = sizeof(socket_err);
-    FLX_SOCKLEN_T    len = sizeof(socket_err);
-    int res = getsockopt(s, SOL_SOCKET, SO_ERROR, &socket_err, &len);
-    
-    if(-1 == res)
-        perror("getsockopt");
-    
-    // failed, throw away socket
-    if(0 != socket_err)
-    {   
-        fprintf(stderr,"async connect error: %s (%i), closing\n",
-            strerror(socket_err), socket_err);
-// this is not a good place to close as after the wakeup the socket
-// is often operated on via the event code (remove from kqueue, etc)
-// moving the closing to the flx code 
-// printf("ouch - closing is actually bad to do here\n"); 
-        // this should be ok now, as the rule is that the socket is removed
-        // before the wakeup, so close away!
-        if(close(s) != 0) 
-            perror("async socket close");
-        
-        s = -1;     // the result
-    }
-    
-    //drv->sched(f);
-    fw.wake();
+  // fprintf(stderr,"connect woke up\n");
+  connect_control_block::wakeup(demux);
+
+  // felix thread can pick out error itself.
+  fw.wake();
 }
+
 
 // async accept
 bool
-accept_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
+accept_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 {
-   // printf("async accept start\n");
-
     // important: copy down the thread and the driver
-    RECORD_THREAD_INFO(sv.fw);
-    
-    posix_demuxer*  pd = (posix_demuxer*)&demux;
-    
-    // add listener to demuxer as reading socket - see man 2 accept
-    // wake thread if call failed
-    return (pd->add_socket_wakeup(&sv, true) == -1);
+  RECORD_THREAD_INFO(fw);
+
+  posix_demuxer*  pd = (posix_demuxer*)&demux;
+    return (start(*pd) == -1);      // accept_control_block function
 }
 
 void
-accept_wakeup::wakeup(posix_demuxer& demux)
-{   
-    // printf("accept woke up\n");
-    
-    acceptee = nice_accept(s);      // remember, s is the listener
-    
-    if(acceptee == -1)
-    {   
-        perror("nice_accept");
-        // didn't get it - go back to sleep
-        demux.add_socket_wakeup(this, true);    // reading = accept
-        return;
-    }
-    
-    // drv->sched(f);
-    fw.wake();
+accept_request::wakeup(posix_demuxer& demux)
+{
+  // does the leg work.
+  accept_control_block::wakeup(demux);
+
+  if(accepted == -1)
+  {
+    // I don't know if this is a good idea...
+    fprintf(stderr, "accept request failed (%i), retrying...\n",
+      socket_err);
+    // didn't get it - go back to sleep
+    if(start(demux) == -1)
+      fprintf(stderr, "failed again... probably was a bad idea\n");
+    return; 
+  }
+
+  fw.wake();
 }
 
 // from driver request
@@ -1424,7 +1349,7 @@ proc faio_write(fd: int, len: &int, buf: address, eof: &bool)
 type async_connect = 'flx::faio::connect_request';
 
 fun mk_async_connect: charp*int -> async_connect = 'flx::faio::connect_request($a)';
-fun get_socket: async_connect -> int = '$1.sv.s';
+fun get_socket: async_connect -> int = '$1.s';
 
 // could do multi connects for capable drivers
 proc connect(s: &int, addr: charp, port: int)
@@ -1437,7 +1362,7 @@ proc connect(s: &int, addr: charp, port: int)
 type accept_request = "flx::faio::accept_request";
 
 fun mk_accept: int -> accept_request = 'flx::faio::accept_request($1)';
-fun get_socket: accept_request -> int = '$1.sv.acceptee';
+fun get_socket: accept_request -> int = '$1.accepted';
 
 // arg1 = returned socket, arg2 is port, pass 0 to have one assigned
 proc mk_listener: lvalue[int]*lvalue[int]*int

@@ -1,5 +1,11 @@
 @head(1,'demux')
 $Log$
+Revision 1.23  2006/01/16 01:25:43  rfistman
+factored faio posix accept and connect back demux as control blocks
+removed pthread cancel from code - implicit cancel points are no longer used.
+instead the threads are convinced to return from their mains via specially
+formatted inputs.
+
 Revision 1.22  2006/01/13 05:16:50  rfistman
 made worker_fifo portable
 
@@ -125,15 +131,13 @@ public:
 
 namespace flx { namespace demux {
 
-// not here? returns INVALID_SOCKET on failure (unlike posix version,
-// if *io_port == 0, then a port is chosen and returned in *io_port
+// not here? returns INVALID_SOCKET on failure
 SOCKET FLX_RTL_EXTERN create_listener_socket(int* io_port, int backlog);
 
 
 // this thing isn't actually being used by the iocp code. it should be.
 class FLX_RTL_EXTERN win_thread {
   HANDLE    thread;
-  HANDLE    cancel_evt;
 
 public:
   win_thread();
@@ -253,7 +257,6 @@ public:
 
 }} // namespace demux, flx
 #endif
-
 @h=tangler('demux/demux_mutexlite.hpp')
 @select(h)
 #ifndef __MUTEXLITE__
@@ -302,7 +305,7 @@ public:
   
   int init(void* (*start)(void*), void* udat);
   void deinit();  
-  int cancel();
+  // int cancel();            // phase this out
 };
 
 }} // namespace demux, flx
@@ -354,7 +357,6 @@ public:
 
 }} // namespace demux, flx
 #endif  // __PFILEIO__
-
 @h=tangler('demux/demux_posix_demuxer.hpp')
 @select(h)
 #ifndef __POSIX_DEMUXER__
@@ -408,6 +410,31 @@ public:
   // thing, even if static
   static bool   socket_recv(int s, sel_param* pb);
   static bool   socket_send(int s, sel_param* pb);
+};
+
+// some handy control blocks for common non-blocking socket operations
+class FLX_RTL_EXTERN accept_control_block : public socket_wakeup {
+public:
+  int   accepted;   // accepted socket (out)
+  int   socket_err;   // the error, if acceptee == -1, else 0 (out)
+  
+  accept_control_block() : accepted(-1), socket_err(0) {}
+
+  virtual int start(posix_demuxer& demux);
+  virtual void wakeup(posix_demuxer& demux);
+};
+
+class FLX_RTL_EXTERN connect_control_block : public socket_wakeup {
+public:
+  int     socket_err;   // outgoing error (on start or wake)
+  // this should probably be a sockaddr type
+  const char* addy;     // addr (dotted quad) (in)
+  int     p;        // port (in)
+  
+  connect_control_block() : socket_err(0) {}
+
+  virtual int start(posix_demuxer& demux);
+  virtual void wakeup(posix_demuxer& demux);
 };
 
 }} // namespace demux, flx
@@ -506,10 +533,9 @@ public:
 namespace flx { namespace demux {
 int create_listener_socket(int* io_port, int q_len);
 int create_async_listener(int* io_port, int q_len);
-int nice_accept(int listener);
+int nice_accept(int listener, int* err);
 int nice_connect(const char* addr, int port);
-int async_connect(const char* addr, int port, int* finished);
-
+int async_connect(const char* addr, int port, int* finished, int* err);
 
 /* handy socket building blocks */
 
@@ -609,7 +635,6 @@ public:
 }} // namespace demux, flx
 
 #endif
-
 @h=tangler('demux/demux_posix_timer_queue.hpp')
 @select(h)
 #ifndef __POSIX_TIMER_QUEUE__
@@ -634,7 +659,7 @@ class FLX_RTL_EXTERN posix_timer_queue : public timer_queue
 
   apthread  sleep_thread;
   static void* thread_start(void*); // passed "this"
-  void thread_loop_body();
+  bool thread_loop_body();
 
   void*   opaque_prio_queue;    // less fat
 
@@ -654,7 +679,6 @@ public:
 }}
 
 #endif // __POSIX_TIMER_QUEUE__
-
 @h=tangler('demux/demux_win_timer_queue.hpp')
 @select(h)
 #ifndef __WIN_TIMER_QUEUE__
@@ -1329,7 +1353,7 @@ iocp_demuxer::worker_thread_body() {
 // thread stuff
 
 win_thread::win_thread()
-  : thread(NULL), cancel_evt(NULL)
+  : thread(NULL)
 {
 }
 
@@ -1338,20 +1362,6 @@ void
 win_thread::deinit()
 {
   fprintf(stderr,"win_thread::deinit: how do I get my return status?\n");
-  fprintf(stderr,"also, how do I implement a cancel request?\n");
-
-  // ask thread to stop
-  if(cancel_evt)
-  {
-    fprintf(stderr,"this cancel_evt isn't actually used - it should be\n");
-    if(!SetEvent(cancel_evt))
-      fprintf(stderr,"cancel event failed: %li\n", GetLastError());
-
-    if(!CloseHandle(cancel_evt))
-      fprintf(stderr,"failed to close cancel evt: %li\n", GetLastError());
-
-    cancel_evt = NULL;
-  }
 
   if(thread)
   {
@@ -1385,20 +1395,11 @@ win_thread::~win_thread()
   deinit();
 }
 
+// returns -1 on failure with error in GetLastError, 0 if all good.
 int
 win_thread::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
 {
   DWORD thread_id = 0;
-
-  // we create a cancel event so that we can nicely ask the thread to stop
-  // start it in nonsignalled state with manual reset
-  cancel_evt = CreateEvent(NULL, TRUE, FALSE, NULL);
-
-  if(NULL == cancel_evt)
-  {
-    fprintf(stderr,"failed to create cancel event\n");
-    return -1;
-  }
 
   // thread id... (?)
   // I have no idea why I have to cast the fn to what it already is
@@ -1620,45 +1621,6 @@ create_listener_socket(int* io_port, int backlog)
   return listener;
 }
 
-/*
-// testing out some timer stuff
-static VOID CALLBACK
-timer_proc(
-  LPVOID udat,
-  DWORD dwTimerLowValue,
-  DWORD dwTimerHighValue
-)
-{
-  fprintf(stderr,"timerproc callback! udat: %p\n", udat);
-}
-
-static void
-blah()
-{
-  // timer with default security, manual reset & no name (I know his name).
-  HANDLE  timer = CreateWaitableTimer(NULL, true, NULL);
-
-  {
-    fprintf(stderr,"couldn't create waitable timer: %li\n", GetLastError());
-    return;
-  }
-
-  // fill this out
-  LARGE_INTEGER due;
-  fprintf(stderr,"ACTUALLY INIT due\n");
-
-  // zero period => signal once only (I'll reinstall)
-  // note callback + void*, passing timer for now.
-  // the final false seems to have something to do with waking the machine
-  // from hibernation mode. I don't want to have anything to do with that.
-  if(!SetWaitableTimer(timer, &due, 0, timer_proc, timer, false))
-  {
-    fprintf(stderr,"couldn't set waitable timer: %li\n", GetLastError());
-    if(!CloseHandle(timer))
-      fprintf(stderr,"couldn't close timer: %li\n", GetLastError());
-  }
-}
-*/
 }}
 
 @h=tangler('demux/demux_overlapped.cpp')
@@ -2475,8 +2437,8 @@ apthread::deinit()
 
   int   res;
 
-  res = cancel();             // send cancel msg
-  fprintf(stderr,"cancel res: %i, joining...\n", res);
+  //res = cancel();             // send cancel msg
+  //fprintf(stderr,"cancel res: %i, joining...\n", res);
 
 
   res = pthread_join(thr, NULL);      // wait for cancel pt, ignor res
@@ -2487,12 +2449,19 @@ apthread::deinit()
   inited = false;
 }
 
+// not using this - cancellation is bad. I now prefer to convince the thread
+// to exit through nonviolent methods. I'd like to use pthread_setcancelstate
+// + PTHREAD_CANCEL_DISABLE but that needs to be done from each thread which
+// would require them an annoying thunk. Not using pthread_cancel should
+// be enough.
+#if 0
 // set thread cancel flag
 int
 apthread::cancel()
 {
   return pthread_cancel(thr);       // send cancel msg
 }
+#endif
 
 apthread::~apthread()
 {
@@ -2576,14 +2545,18 @@ fileio_request::doit()
 #include "demux_sockety.hpp"
 
 #include <stdio.h>        // "printf"
-#include <fcntl.h>        // for making non blocking sockets
-#include <unistd.h>       // close
 #include <assert.h>       // assert
+#include <string.h>       // strerror
+#include <unistd.h>       // close
 
-#include <sys/types.h>      // for send/recv
+#include <sys/types.h>      // send/recv
 #include <sys/socket.h>
 
+#include <sys/errno.h>
+
 namespace flx { namespace demux {
+
+@tangle("typedef " + FLX_SOCKLEN_T + " FLX_SOCKLEN_T;")
 
 int
 posix_demuxer::init_pthread() {
@@ -2604,10 +2577,6 @@ posix_demuxer::deinit_pthread()
 // delete thread
 posix_demuxer::~posix_demuxer()
 {
-  // no, it's required that the subclasses do it, as they have methods
-  // called by the pthread. if we get here & they're still being called,
-  // then we've got Trouble.
-  // fprintf(stderr,"shouldn't I be deleting the thread in ~posix_demuxer?\n");
 }
 
 // static pthread callback bootstrap
@@ -2701,6 +2670,100 @@ posix_demuxer::socket_send(int s, sel_param* pb)
   nbytes = read(s, pb->buffer + pb->bytes_written,
         pb->buffer_size - pb->bytes_written);
 #endif
+
+// handy posix control blocks for accept, connect.
+
+int
+accept_control_block::start(posix_demuxer& demux)
+{
+  // add listener to demuxer as reading socket - see man 2 accept
+  // returns 0 on success, -1 on failure. not sure how to communicate
+  // the error.
+    return demux.add_socket_wakeup(this, true);
+}
+
+void
+accept_control_block::wakeup(posix_demuxer& demux)
+{
+  // fprintf(stderr,"accept_control_block woke up\n");
+
+  // we can now accept without blocking
+  // s is the listener, ambiguously named in parent socket_wakeup class
+  accepted = nice_accept(s, &socket_err);
+
+  if(accepted == -1)
+  {
+    fprintf(stderr, "nice_accept failed, err (%i)\n", socket_err);
+  }
+}
+
+// returns -1 on failure, 0 on success. on success the call is finished
+// (and so no wakeup) if socket_err == 0.
+int
+connect_control_block::start(posix_demuxer& demux)
+{
+  // fprintf(stderr,"async connect start\n");
+
+  int finished;
+
+  // returns either finished and err, or not finished
+  // and (no err || EINPROGRESS)
+  s = async_connect(addy, p, &finished, &socket_err);
+
+  // fprintf(stderr,"async_connect returned s: %i, finished: %i\n",
+  //    sv.s, finished);
+
+  if(-1 == s)   // failed!
+  {
+    fprintf(stderr,"async_connect failed (%i)\n", socket_err);
+    return -1;  // error in socket_err
+  }
+
+  if(finished)
+  {
+    fprintf(stderr,"async_connect finished immediately, waking\n");
+    return 0;     // success
+  }
+
+  // fprintf(stderr,"connect_request didn't finish immediatly, sleeping\n");
+
+  // add to demuxer as writing socket - see man 2 connect
+  // how do they get the error?
+    return demux.add_socket_wakeup(this, false);
+}
+
+void
+connect_control_block::wakeup(posix_demuxer& demux)
+{
+  // fprintf(stderr,"connect woke up\n");
+  // this is how we check the success of async socket calls
+  // god knows what the level should be. socket level seems sensible.
+  FLX_SOCKLEN_T  len = sizeof(socket_err);
+  int res = getsockopt(s, SOL_SOCKET, SO_ERROR, &socket_err, &len);
+
+  // I've heard of impls of getsockopt(SO_ERROR) acting as they they
+  // had the socket error (i.e. returning -1 and the sock err in errno)
+  if(-1 == res)
+  {
+    socket_err = errno;   // don't think its ours
+    fprintf(stderr, "getsockopt failed - is that our error? (%i)\n",
+      socket_err);
+  }
+
+  // failed, throw away socket
+  if(0 != socket_err)
+  {
+    fprintf(stderr,"async connect error: %s (%i), closing\n",
+      strerror(socket_err), socket_err);
+    // we created the connect socket, so we close it too.
+    if(close(s) != 0)
+      perror("async socket close");
+
+    s = -1;   // the result
+  }
+
+  // resulting connected socket in s
+}
 }}
 
 @h=tangler('demux/demux_posix_queue.cpp')
@@ -3082,6 +3145,7 @@ namespace flx { namespace demux {
  0 in for port means let kernel decide, result in *io_port
  portable, can be factored out. listens on all NICs.
  returns -1 on failure, sometimes eats errno.
+ p.s. sets SO_REUSEADDR.
 */
 int
 create_listener_socket(int* io_port, int q_len)
@@ -3114,7 +3178,6 @@ listener_fail:
   return -1;
 }
 
-
 /* create listener, make it non-blocking */
 int
 create_async_listener(int* io_port, int q_len)
@@ -3136,9 +3199,10 @@ create_async_listener(int* io_port, int q_len)
 }
 
 /* ps, sets resulting socket to non-block. some people would say that */
-/* this WASN'T nice, so change the name some time */
+/* this WASN'T nice, so change the name some time. returns socket or -1 */
+/* on failure, with *err containing the error code */
 int
-nice_accept(int listener)
+nice_accept(int listener, int* err)
 {
   struct sockaddr_in  remoteaddr;
   /*socklen_t     addrlen = sizeof(remoteaddr);*/
@@ -3149,15 +3213,19 @@ nice_accept(int listener)
   
   newfd = accept(listener, (struct sockaddr*)&remoteaddr, &addrlen);
   if(-1 == newfd) {
-    perror("accept");
+    *err = errno;
+    return -1;
   }
   else
   {
     /*I think 0's the result I want*/
     if(make_nonblock(newfd) == -1)
     {
-      perror("make_nonblock");
-      close(newfd);
+      *err = errno;
+
+      /* bizarre case, note that close's errno is lost */
+      if(close(newfd) == -1) 
+        perror("nice_accept close");
       newfd = -1;
     }
   }
@@ -3228,6 +3296,7 @@ make_nonblock(int s)
 
 /* also make non-blocking AFTER connect, that is, */
 /* this is a synchronous connect */
+/* is eating errno, fix */
 int
 nice_connect(const char* addr, int port)
 {
@@ -3251,31 +3320,37 @@ nice_connect(const char* addr, int port)
 
 /* makes the socket non-blocking BEFORE connect, returns result */
 /* from which can be determined if it finished immediately */
-/* returns the socket & finished flag or -1 on failure */
+/* returns the socket & finished flag or -1 on failure, with the */
+/* error returned in *err */
 int
-async_connect(const char* addr, int port, int* finished)
+async_connect(const char* addr, int port, int* finished, int* err)
 {
   int     s = -1;
 
   if((s = socket(AF_INET, SOCK_STREAM, 0)) != -1 && make_nonblock(s) != -1)
   {
+    /* no error we now have s, a non-blocking socket */
     if(connect_sock(s, addr, port) == 0)
     {
+      *err = 0;         /* no error */
       *finished = 1;        /* finished */
       return s;
     }
 
-    if(EINPROGRESS == errno)
+    *err = errno;         /* connect failed or in-progress */
+
+    if(EINPROGRESS == *err)
     {
       *finished = 0;        /* not finished, in progress */
       return s;
     }
+    /* some other failure, fall through and clean up */
   }
-  
-  /* otherwise something happened (not as good as catch 22) */
-  perror("async_connect");
 
-  if(-1 != s && close(s) != 0)
+  /* hope you can read same errno twice in threaded apps! */
+  *err = errno;           /* pass back error */
+
+  if(-1 != s && close(s) != 0)    /* we lose the close error */
     perror("async_connect close");
 
   *finished = 1;            /* for completeness */
@@ -3375,12 +3450,11 @@ posix_timer_queue::~posix_timer_queue()
   // for now the explicit cancel + wakeup followed by explicit 
   // cancel test stays.
 
-  // fprintf(stderr,"setting thread cancel flag\n");
-  sleep_thread.cancel();      // set cancel flag
-  // fprintf(stderr,"waking up thread!\n");
+  // fprintf(stderr, "asking timer thread to quit\n");
+  add_sleep_request(NULL, 0.0); // super secret quit thread quit request
   wakeup_thread();        // wakeup, cause to goto a cancel pt
 
-  sleep_thread.deinit();      // will cancel again and join
+  sleep_thread.deinit();      // will join
   fprintf(stderr,"about to delete PRIOQ\n");
   delete PRIOQ;
 
@@ -3486,16 +3560,12 @@ posix_timer_queue::thread_start(void* udat)
   posix_timer_queue*  q = (posix_timer_queue*)udat;
   fprintf(stderr,"sleeper thread\n");
 
-  while(1)
-  {
-    // fprintf(stderr,"sleep thread testing cancel\n");
-    pthread_testcancel();   // not actually necessary
-    q->thread_loop_body();
-  }
-  return 0;           // could happen
+  while(q->thread_loop_body()) ;
+
+  return 0;
 }
 
-void
+bool
 posix_timer_queue::thread_loop_body()
 {
   pmut_locker locker(lock); // lock on. lock off when waiting on condition
@@ -3510,6 +3580,9 @@ posix_timer_queue::thread_loop_body()
   while(!PRIOQ->empty())
   {
     future_evt  evt = PRIOQ->top();
+
+    // quit request
+    if(!evt.task) return false;
 
     future_evt  now;    // "now' has no task, just a dummy.
     get_now(&now.when);
@@ -3548,41 +3621,11 @@ posix_timer_queue::thread_loop_body()
   // fprintf(stderr,"pthread_cond_wait woke up! (%i)\n", res);
 
   // lock released here
+  // lock released here
+  return true;          // keep going
 }
 }}
 
-
-@h=tangler('demux/demux_win_timer_queue.hpp')
-@select(h)
-#ifndef __WIN_TIMER_QUEUE__
-#define __WIN_TIMER_QUEUE__
-
-// note: NOT include Windows.h here as the .cpp file needs to up the
-// the _WIN32_WINNT version, something that must be done before the
-// inclusion of Windows.h, but I don't want to force that on users
-// of this file, hence this file must follow windows.h.
-//#include <Windows.h>
-
-#include "demux_timer_queue.hpp"
-
-namespace flx { namespace demux {
-
-class FLX_RTL_EXTERN win_timer_queue : public timer_queue
-{
-  HANDLE    timer_queue;
-
-  static VOID CALLBACK timer_callback(PVOID, BOOLEAN);
-public:
-  win_timer_queue();
-  ~win_timer_queue();
-
-  virtual void add_sleep_request(sleep_task* st, double delta);
-};
-
-}}
-
-
-#endif // __SLEEP_TASK__
 
 @h=tangler('demux/demux_win_timer_queue.cpp')
 @select(h)
