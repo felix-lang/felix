@@ -1,5 +1,8 @@
 @head(1,'SDL')
 $Log$
+Revision 1.5  2006/01/18 05:50:04  rfistman
+turned sdl_event thing into a driver request
+
 Revision 1.4  2006/01/09 16:32:03  skaller
 Integrate SDL tests, provide initial SDL event demux.
 
@@ -2304,40 +2307,64 @@ module SDL_net_h
   fun SDLNet_UDP_SendV: UDPsocket * ptr[ptr[UDPpacket]] * int -> int;
 }
 
-@h = tangler("demux/demux_sdl.hpp")
+@h = tangler("faio/faio_sdl_event.hpp")
 @select(h)
-#ifndef __SDL_DEMUXER__
-#define __SDL_DEMUXER__
+#ifndef __FAIO_SDL_EVENT__
+#define __FAIO_SDL_EVENT__
 #include <flx_rtl_config.hpp>
 #include "demux_work_fifo.hpp"
+#include "faio_drv.hpp"      // thread_wakeups, 
+#include "faio_asyncio.hpp"  // flx_driver_request_base
 #include <SDL_events.h>
 
-namespace flx { namespace demux {
+namespace flx { namespace faio {
+
+// ONE PROBLEM: this is faio level. It needs to know about fthreads
 
 // get ONE SDL event
-class FLX_RTL_EXTERN demux_sdl_event : public worker_task {
+class FLX_RTL_EXTERN faio_sdl_event : public flx_driver_request_base,
+  public demux::worker_task {
+   thread_wakeup   fw;
    SDL_Event *e;
 public:  
-  demux_sdl_event(SDL_Event *_e);
+  faio_sdl_event() {}     // felix linkage
+  faio_sdl_event(SDL_Event *_e);
+
+  // from flx_driver_request_base
+  bool start_async_op(demux::demuxer& demux, flx_drv* drv,  void* f);
+
+  // from fifo_worker_task
   void doit();
   void finished();
-  ~demux_sdl_event();
 };
+
 }}
 #endif
 
-@h = tangler("demux/demux_sdl.cpp")
+@h = tangler("faio/faio_sdl_event.cpp")
 @select(h)
 #include <demux_work_fifo.hpp>
 #include <SDL_events.h>
-#include "demux_sdl.hpp"
+#include "faio_sdl_event.hpp"
 
-namespace flx { namespace demux {
+namespace flx { namespace faio {
 
-demux_sdl_event::demux_sdl_event(SDL_Event *_e) : e(_e) {}
-void demux_sdl_event::doit() { SDL_WaitEvent(e); }
-void demux_sdl_event::finished(){}
-demux_sdl_event::~demux_sdl_event(){}
+faio_sdl_event::faio_sdl_event(SDL_Event *_e) : e(_e) {}
+
+bool
+faio_sdl_event::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
+{
+  RECORD_THREAD_INFO(fw);    // so we can wake up
+
+  // get worker fifo, add this task
+  drv->get_worker_fifo()->add_worker_task(this);
+  return false;              // suspended
+}
+
+void faio_sdl_event::doit() { SDL_WaitEvent(e); }  // blocks in pthread
+
+void faio_sdl_event::finished(){ fw.wake(); }
+
 }}
 
 @h = tangler("tut/examples/sdl100.flx")

@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.25  2006/01/18 05:50:04  rfistman
+turned sdl_event thing into a driver request
+
 Revision 1.24  2006/01/16 01:25:43  rfistman
 factored faio posix accept and connect back demux as control blocks
 removed pthread cancel from code - implicit cancel points are no longer used.
@@ -383,6 +386,7 @@ sleep_request::fire()
 
 #include "demux_sleep_queue.hpp"
 #include "demux_timer_queue.hpp"
+#include "demux_work_fifo.hpp"
 #include "demux_demuxer.hpp"
 
 namespace flx { namespace faio {
@@ -391,12 +395,14 @@ namespace flx { namespace faio {
 // watch this space.
 class FLX_RTL_EXTERN flx_drv {
     demux::sleep_queue&    ready_queue;
+    demux::worker_fifo     work_fifo;
 public:
     flx_drv(demux::sleep_queue& q);
     virtual ~flx_drv();
 
     void sched(void* f);
 
+    demux::worker_fifo* get_worker_fifo() { return &work_fifo; }
     virtual demux::timer_queue* get_sleepers() = 0;
 };
 

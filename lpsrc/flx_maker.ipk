@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.203  2006/01/18 05:50:04  rfistman
+turned sdl_event thing into a driver request
+
 Revision 1.202  2006/01/13 05:16:50  rfistman
 made worker_fifo portable
 
@@ -2716,7 +2719,7 @@ ELKRTL_INTERFACES = [
 ]
 
 DEMUXRTL_INTERFACES = [
- 'demux_sdl.hpp',           # portable but only if SDL is available
+ #'demux_sdl.hpp',           # portable but only if SDL is available
  'demux_demuxer.hpp',       # portable
  'demux_sleep_queue.hpp',   # portable
  'demux_posix_queue.hpp',   # posix
@@ -2742,6 +2745,10 @@ FAIORTL_INTERFACES = [
  'faio_wdrv.hpp',
  'faio_posixio.hpp',
  'faio_winio.hpp',
+]
+
+FAIOSDL_INTERFACES = [
+ 'faio_sdl_event.hpp',
 ]
 
 # files containing ocamllex sources
@@ -2981,7 +2988,11 @@ BSD_DEMUX_CPPS = [
 ]
 
 SDL_DEMUX_CPPS = [
-  "demux/demux_sdl",                # any platform with SDL
+  #"demux/demux_sdl",                # any platform with SDL
+]
+
+SDL_FAIO_CPPS = [
+  "faio/faio_sdl_event",             # any platform with SDL
 ]
 
 EXTRA_LIBS = []
@@ -3021,7 +3032,9 @@ if SOLARIS:
   EXTRA_LIBS = EXTRA_LIBS + ["socket","nsl"]
 
 if HAVE_SDL:
-  DEMUX_CPPS = DEMUX_CPPS + SDL_DEMUX_CPPS
+  #DEMUX_CPPS = DEMUX_CPPS + SDL_DEMUX_CPPS
+  FAIO_CPPS = FAIO_CPPS + SDL_FAIO_CPPS
+  DEMUX_CPPS = DEMUX_CPPS
   CFLAGS = CFLAGS + SDL_CFLAGS
   DFLAGS = DFLAGS + SDL_LIBS
   EXTRA_LIBS = EXTRA_LIBS + ["SDL_image"]
