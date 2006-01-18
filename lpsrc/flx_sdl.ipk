@@ -1,5 +1,8 @@
 @head(1,'SDL')
 $Log$
+Revision 1.6  2006/01/18 14:52:14  skaller
+Wrapped SDL event source, test case in tut/examples/sdl100
+
 Revision 1.5  2006/01/18 05:50:04  rfistman
 turned sdl_event thing into a driver request
 
@@ -2367,6 +2370,37 @@ void faio_sdl_event::finished(){ fw.wake(); }
 
 }}
 
+@h=tangler('lib/flx_faio_sdl.flx')
+@select(h)
+#import <flx.flxh>
+
+include "SDL/SDL";
+include "SDL/SDL_events";
+include "flx_faio";
+
+module SDL_events 
+{
+  open SDL_events_h;
+  header faio_sdl_event_hpp = '#include "faio_sdl_event.hpp"';
+
+  private type sdl_event_request = 
+    "flx::faio::faio_sdl_event"
+    requires faio_sdl_event_hpp
+  ;
+
+  private fun mk_sdl_event_request: ptr[SDL_Event] -> sdl_event_request = 
+    "flx::faio::faio_sdl_event($1)";
+
+  fun event_type: SDL_Event -> int = "$1.type";
+
+  proc get_sdl_event(pe:&SDL_Event)
+  {
+    var cpe = unref pe;
+    var req = mk_sdl_event_request cpe;
+    Faio::faio_req$ &req;
+  }
+}
+
 @h = tangler("tut/examples/sdl100.flx")
 @select(h)
 #import <flx.flxh>
@@ -2374,7 +2408,9 @@ include "SDL/SDL";
 include "SDL/SDL_video";
 include "SDL/SDL_rwops";
 include "SDL/SDL_image";
-include "flx_faio_posix";
+include "SDL/SDL_events";
+include "flx_faio";
+include "flx_faio_sdl";
 
 open C_hack;
 open Carray;
@@ -2382,9 +2418,11 @@ open SDL_h;
 open SDL_video_h;
 open SDL_rwops_h;
 open SDL_image_h;
+open SDL_events_h;
 open MixedInt;
 open Uint32;
 open Uint8;
+open SDL_events;
 
 proc DrawPixel(screen:ptr[SDL_Surface], x:int32, y:int32, R:uint8, G:uint8, B:uint8)
 {
@@ -2468,12 +2506,21 @@ forall i in 0 upto 15 do
     print "Show "; print i; endl;
     var r = SDL_BlitSurface ( s.[i], null_ptr[SDL_Rect], screen, addr rcDest );
     SDL_UpdateRect(screen, 0i32,0i32,0u,0u);
-    Faio_posix::sleep(5.0);
+    Faio::sleep(5.0);
     r = SDL_FillRect(screen, addr rcDest, black);
   else
     print "Skip "; print i; endl;
   done;
 done;
+
+var e: SDL_Event;
+print "Press any key"; endl;
+
+get_sdl_event$ &e;
+whilst event_type e != SDL_KEYDOWN do
+  get_sdl_event$ &e;
+done;
+
 
 SDL_Quit;
 System::exit 0;

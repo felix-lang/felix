@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.204  2006/01/18 14:52:14  skaller
+Wrapped SDL event source, test case in tut/examples/sdl100
+
 Revision 1.203  2006/01/18 05:50:04  rfistman
 turned sdl_event thing into a driver request
 
@@ -2745,9 +2748,6 @@ FAIORTL_INTERFACES = [
  'faio_wdrv.hpp',
  'faio_posixio.hpp',
  'faio_winio.hpp',
-]
-
-FAIOSDL_INTERFACES = [
  'faio_sdl_event.hpp',
 ]
 
