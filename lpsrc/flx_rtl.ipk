@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.85  2006/01/18 01:50:25  skaller
+Fix bug in root_ptr_t class with overloads of operator->
+
 Revision 1.84  2006/01/11 04:30:45  rfistman
 added portable sleep
 
@@ -449,9 +452,9 @@ struct root_ptr_t : _root_ptr_t {
   root_ptr_t(T const *a) : _root_ptr_t (const_cast<T*>(a)) {}
   
   T *operator->() { return (T*)data; }
-  T const *operator->() { return (T const*)data; }
+  T const *operator->() const { return (T const*)data; }
   T &operator*() { return *(T*)data; }
-  T const &operator*() { return *(T const*)data; }
+  T const &operator*() const { return *(T const*)data; }
 };
 
 template<class T>
