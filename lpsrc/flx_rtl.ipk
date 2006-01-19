@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.86  2006/01/19 17:26:44  skaller
+Add sound to SDL example. Fix serious bug in synchronous
+channel I/O operations.
+
 Revision 1.85  2006/01/18 01:50:25  skaller
 Fix bug in root_ptr_t class with overloads of operator->
 
@@ -1910,44 +1914,17 @@ int main(int argc, char** argv)
 
           case svc_general:
           {
-                // HACK! svc_general => async active queue to be used
-                // i.e. we don't exit!!!
-                // this needs to actually be deleted at some point.
-                if( !async ) async = new proto_async;
+            if( !async ) async = new proto_async;
+            flx_driver_request_base* req = (flx_driver_request_base*)
+              ((_ref_*)(request->data))->get_data()
+            ;
 
-                flx_driver_request_base*        req;
-
-                // OLD INTERFACE USED A pointer to the request object
-                //req = *(flx_driver_request_base**)(request->data);
-
-                // NEW INTERFACE USES A _ref_ instead of an address
-                req = (flx_driver_request_base*)
-                  ((_ref_*)(request->data))->get_data();
-                
-                // start async op, with demuxer to track progress. if async
-                // somehow finished immediately, make thread ready
-                // I don't like this return flag and fear that it may hide
-                // a race condition. get rid of it and be more explicit.
-                if(req->start_async_op(async->demux, &async->driver, ft))
-                {
-                    // printf("wow - async finished immediately (%p)\n", ft);
-                    // ready_queue.enqueue(ftx);     // add to run queue
-                    // this used to be added back to the rf driver thread safe active queue
-                    // not that this is the synchronous active queue. shouldn't be a problem.
-
-                    // dropping thru is equivalent to:
-                    //active.push_back(ft);           // add to run queue
-                    //goto process_active;
-                }
-                else
-                {   
-                    // otherwise, let's hope there's something or someone out
-                    // there to wake this thread up
-                    // printf("request did not want thread woken (%p)\n", ft);
-                    // DO NOT ADD BACK - will be (hopefully) added back to async_active
-                    // at some later date.
-                    goto process_active;
-                }
+            // RF hates the flag this function returns .. might
+            // mask a race condition, get rid of it
+            if(!req->start_async_op(async->demux, &async->driver, ft))
+              // FTHREAD REMAINS A ROOT
+              goto process_active
+            ;
           }
           break;
 
@@ -1967,13 +1944,14 @@ int main(int argc, char** argv)
                 if(debug)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable.get_data(),*(void**)pw->variable.get_data(), pr->variable.get_data());
                 *(void**)pr->variable.get_data() = *(void**)pw->variable.get_data();
                 active.push_front(writer);
+                collector.add_root(writer);
               }
             }
             break; // keep running
 
           svc_read_none:
             chan->push_reader(ft);
-            goto process_active;
+            goto forget_fthread;
           }
 
           case svc_swrite:
@@ -1992,13 +1970,14 @@ int main(int argc, char** argv)
                 if(debug)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable.get_data(),*(void**)pw->variable.get_data(), pr->variable.get_data());
                 *(void**)pr->variable.get_data() = *(void**)pw->variable.get_data();
                 active.push_front(reader);
+                collector.add_root(reader);
               }
             }
             break; // keep running
 
           svc_write_none:
             chan->push_writer(ft);
-            goto process_active;
+            goto forget_fthread;
           }
           
           case svc_sclose:
@@ -2073,7 +2052,8 @@ int main(int argc, char** argv)
         } 
         request = ft->run();
       }
-      if(debug)fprintf(stderr,"removing thread %p\n",ft);
+forget_fthread:
+      if(debug)fprintf(stderr,"unrooting fthread %p\n",ft);
       collector.remove_root(ft);
     }
 
@@ -2084,6 +2064,7 @@ int main(int argc, char** argv)
     }
 
     if(async){
+      // STILL A ROOT
       fthread_t* ftp = (fthread_t*)async->async_active.dequeue();
       active.push_front(ftp);
       goto process_active;

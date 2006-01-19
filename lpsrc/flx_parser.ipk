@@ -1679,6 +1679,19 @@ ifgoto_stmt:
 
   | IF expr RETURN SEMI
     { `AST_ifreturn (rstoken $1 $4,$2) }
+  
+  | IF expr CALL expr SEMI 
+    {
+      let isr = rstoken $1 $5 in
+      match $4 with 
+      | `AST_apply (sr,(proc, arg)) -> 
+        `AST_ifdo (isr, $2,[`AST_call (sr, proc, arg)],[])
+      
+      | proc -> 
+        let u = `AST_tuple (slift $5, []) in
+       `AST_ifdo (isr, $2, [`AST_call (rstoken $3 $5, proc, u)],[])
+    }
+
 
   | IF expr DO statement_aster else_clause DONE SEMI
     { `AST_ifdo (rstoken $1 $6,$2,$4,snd $5) }
@@ -2098,7 +2111,7 @@ lambda:
 dollar_apply:
   | tuple DOLLAR dollar_apply
     { 
-      let sr = rsrange (src_of_expr $1) (src_of_expr $3) in 
+      let sr = rsexpr $1 $3 in 
       `AST_apply (sr, ($1,$3)) 
     }
   | tuple { $1 }

@@ -1,5 +1,9 @@
 @head(1,'SDL')
 $Log$
+Revision 1.7  2006/01/19 17:26:45  skaller
+Add sound to SDL example. Fix serious bug in synchronous
+channel I/O operations.
+
 Revision 1.6  2006/01/18 14:52:14  skaller
 Wrapped SDL event source, test case in tut/examples/sdl100
 
@@ -99,7 +103,6 @@ module SDL_active_h
 include 'std';
 
 //#define SDL_MIX_MAXVOLUME 128
-//#define SDL_LoadWAV(file, spec, audio_buf, audio_len) \
 //#define AUDIO_S16SYS  AUDIO_S16MSB
 //#define AUDIO_U16SYS  AUDIO_U16MSB
 //#define AUDIO_S16SYS  AUDIO_S16LSB
@@ -122,7 +125,18 @@ module SDL_audio_h
 {
   open C_hack;
   open SDL_rwops_h;
-  
+
+  const AUDIO_S16MSB : uint16;
+  const AUDIO_U16MSB : uint16;
+  const AUDIO_S16LSB : uint16;
+  const AUDIO_U16LSB : uint16;
+  const AUDIO_S16SYS : uint16;
+  const AUDIO_U16SYS : uint16;
+  const AUDIO_S16 : uint16;
+  const AUDIO_U16 : uint16;
+  const AUDIO_S8 : uint16;
+  const AUDIO_U8 : uint16;
+ 
   //ABSTRACT TYPES
   type SDL_audiostatus = 'SDL_audiostatus';
   
@@ -186,7 +200,9 @@ module SDL_audio_h
   fun SDL_GetAudioStatus: 1 -> SDL_audiostatus;
   fun SDL_LoadWAV_RW: ptr[SDL_RWops] * int * ptr[SDL_AudioSpec] * ptr[ptr[uint8]] * ptr[uint32] -> ptr[SDL_AudioSpec];
   fun SDL_OpenAudio: ptr[SDL_AudioSpec] * ptr[SDL_AudioSpec] -> int;
+  fun SDL_LoadWAV: cptr[char] * ptr[SDL_AudioSpec] * ptr[ptr[uint8]] * ptr[uint32] -> ptr[SDL_AudioSpec];
 }
+
 @h=tangler('lib/SDL/SDL_cdrom.flx')
 @select(h)
 //Module        : SDL_cdrom_h
@@ -2409,19 +2425,25 @@ include "SDL/SDL_video";
 include "SDL/SDL_rwops";
 include "SDL/SDL_image";
 include "SDL/SDL_events";
+include "SDL/SDL_audio";
 include "flx_faio";
 include "flx_faio_sdl";
 
-open C_hack;
-open Carray;
+// Raw SDL interfaces
 open SDL_h;
 open SDL_video_h;
 open SDL_rwops_h;
 open SDL_image_h;
 open SDL_events_h;
+open SDL_audio_h;
+
+open C_hack;
+open Carray;
 open MixedInt;
 open Uint32;
 open Uint8;
+
+// This is the Felix asynchronous event source 
 open SDL_events;
 
 proc DrawPixel(screen:ptr[SDL_Surface], x:int32, y:int32, R:uint8, G:uint8, B:uint8)
@@ -2487,14 +2509,124 @@ var i = 10i32; until i == 50i32 do
       ++i;
 done;      
 
-var s: ptr[SDL_Surface] ^ 16;
+struct sample_t {
+    data : ptr[uint8];
+    dpos: uint32;
+    dlen: uint32;
+};
 
-forall i in 1 upto 16 do
-     filename := "media/images/fc" + str i+ ".jpg"; 
-     print$ "Loading file " + filename; endl;
-     rwop := SDL_RWFromFile (enconst (cstr filename),enconst (c"rb"));
-     s.[i-1] = IMG_LoadJPG_RW(rwop);
+export type (sample_t) as "sample_t";
+
+body """
+#define NUM_SOUNDS 2
+sample_t sounds[NUM_SOUNDS];
+
+void mixaudio(void *unused, Uint8 *stream, int len)
+{
+  int i;
+  Uint32 amount;
+
+  for ( i=0; i<NUM_SOUNDS; ++i ) {
+    amount = (sounds[i].dlen-sounds[i].dpos);
+    if ( amount > len ) amount = len;
+    SDL_MixAudio(stream, &sounds[i].data[sounds[i].dpos], amount, SDL_MIX_MAXVOLUME);
+    sounds[i].dpos += amount;
+  }
+}
+""";
+
+macro val NUM_SOUNDS = 2;
+const sounds : ptr[sample_t];
+const mixaudio : SDL_audio_h_cft_1 = "mixaudio";
+var fmt : SDL_AudioSpec;
+fmt.freq=22050;
+fmt.format=AUDIO_S16;
+fmt.channels=2u8;
+fmt.silence=0u8;
+fmt.samples=512u16;
+fmt.padding=0u16;
+fmt.size=0u16;
+fmt.callback=mixaudio;
+fmt.userdata=NULL;
+
+if SDL_OpenAudio(addr fmt, null_ptr[SDL_AudioSpec]) < 0 do
+  print "Can't open Audio"; endl;
+  System::exit 0;
 done;
+
+proc PlaySound(filename:string)
+{
+  var idx:int;
+  var wave: SDL_AudioSpec;
+  var data : ptr[uint8];
+  var dlen : uint32;
+  var cvt : SDL_AudioCVT;
+  /* Look for an empty (or finished) sound slot */
+  forall idx in 0 upto 2 do
+    if sounds.[idx].dpos == sounds.[idx].dlen goto found;
+  done;
+  found:>
+  if idx == NUM_SOUNDS do
+    print "No free slot for music"; endl;
+    return;
+  done;
+
+  if 
+    SDL_LoadWAV(
+      enconst (cstr filename), 
+      addr wave, 
+      addr data, 
+      addr dlen
+    ) == null_ptr[SDL_AudioSpec] 
+  do
+    print$ "Couldn't load Wav file " + filename; endl;
+    return;
+  done;
+  print$ "Loaded Wav file " + filename; endl;
+  print "Using slot "; print idx; endl;
+
+  var result = SDL_BuildAudioCVT(
+    addr cvt, 
+    wave.format, 
+    wave.channels, 
+    wave.freq,
+    AUDIO_S16,   
+    2u8,
+    22050
+  );
+  cvt.buf = array_alloc[uint8](dlen*cvt.len_mult);
+  memcpy(as_address cvt.buf, as_address data, cast[size] dlen);
+  cvt.len = dlen;
+  result = SDL_ConvertAudio(addr cvt);
+  SDL_FreeWAV(data);
+
+  /* Put the sound data in the slot (it starts playing immediately) */
+  if not (isNULL sounds.[idx].data) call free sounds.[idx].data;
+  SDL_LockAudio();
+  sounds.[idx].data = cvt.buf;
+  sounds.[idx].dlen = cvt.len_cvt;
+  sounds.[idx].dpos = 0u32;
+  SDL_UnlockAudio();
+}
+
+SDL_PauseAudio 0;
+{
+  forall i in 1 upto 16 do
+    filename := "media/sounds/fs" + str i + ".wav";
+    print$ "Playing file " + filename; endl;
+    PlaySound(filename);
+  done;
+};
+
+var s: ptr[SDL_Surface] ^ 16;
+{
+  forall i in 1 upto 16 do
+       filename := "media/images/fc" + str i+ ".jpg"; 
+       print$ "Loading file " + filename; endl;
+       rwop := SDL_RWFromFile (enconst (cstr filename),enconst (c"rb"));
+       s.[i-1] = IMG_LoadJPG_RW(rwop);
+  done;
+};
 
 var rcDest : SDL_Rect;
 SDL_GetClipRect(screen,addr rcDest);
@@ -2522,6 +2654,7 @@ whilst event_type e != SDL_KEYDOWN do
 done;
 
 
+SDL_CloseAudio;
 SDL_Quit;
 System::exit 0;
 

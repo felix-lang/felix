@@ -358,6 +358,7 @@ header c99_complex_h = '#include <complex.h>';
   tangle('header c99_stdint_h = "";')
 
 header cstdlib = "#include <cstdlib>";
+header cstring = "#include <cstring>";
 
 @chars = ["char", "wchar", "uchar"]
 @fast_sints = [
@@ -767,6 +768,7 @@ module C_hack
   const null_ptr[t]:ptr[t] = "(?1*)NULL";
   const null_gcptr[t]:gcptr[t] = "(?1*)NULL";
   const null_cptr[t]:ptr[t] = "(?1 const*)NULL";
+  const NULL : address = "NULL";
 
   publish """
   Unsafe output of hopefully null terminated C strings
@@ -820,6 +822,11 @@ module Carray
   fun le[t]: ptr[t] * ptr[t] -> bool = '$1<=$2';
   fun gt[t]: ptr[t] * ptr[t] -> bool = '$1>$2';
   fun ge[t]: ptr[t] * ptr[t] -> bool = '$1>=$2';
+
+  proc memcpy: address * address * size = 
+    "{if($1 && $2 && $3)std::memcpy($1,$2,$3);}"
+    requires cstring
+  ;
 }
 
 publish "System Interface"
