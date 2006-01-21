@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.24  2006/01/21 23:45:10  rfistman
+fixed potential leak and warning in posix_timer_queue constructor
+
 Revision 1.23  2006/01/16 01:25:43  rfistman
 factored faio posix accept and connect back demux as control blocks
 removed pthread cancel from code - implicit cancel points are no longer used.
@@ -3423,18 +3426,30 @@ posix_timer_queue::posix_timer_queue()
   : lock(false)     // lock shouldn't need to be recursive
 {
   // fprintf(stderr,"posix_timer_queue ctor\n");
+
+  // if this throws, no harm done
+  opaque_prio_queue = new void_prio_queue;    // a.k.a. PRIOQ
+
   int res;
   res = setup_sleep_cond();
-  if(0 != res) throw res;
-// zzz NOT ACCEPTABLE
-  // do the thread last because it uses all this stuff
-  fprintf(stderr,"initing sleep thread\n");
-  opaque_prio_queue = new void_prio_queue;
-  res = sleep_thread.init(thread_start, this);
-fprintf(stderr,"will leak if thread or condition init fails.\n");
-  if(0 != res) throw res;
-  // not good to do much else after this as the thread is running
+  if(0 != res)
+  {
+      delete PRIOQ;                           // cleanup, carry on
+      throw res;
+  }
 
+  // do the thread last because it uses all of the above
+  fprintf(stderr,"initing sleep thread\n");
+
+  res = sleep_thread.init(thread_start, this);
+
+  if(0 != res)
+  {
+      delete PRIOQ;
+      takedown_sleep_cond();
+      throw res;
+  }
+  // not good to do much else after this as the thread is running
 }
 
 posix_timer_queue::~posix_timer_queue()
