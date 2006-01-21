@@ -1,5 +1,9 @@
 @head(1,'SDL')
 $Log$
+Revision 1.8  2006/01/21 17:02:13  skaller
+SDL sound with Felix callback, and asynchronous multiplexor
+for timeout/keypress example. COOL!
+
 Revision 1.7  2006/01/19 17:26:45  skaller
 Add sound to SDL example. Fix serious bug in synchronous
 channel I/O operations.
@@ -102,20 +106,6 @@ module SDL_active_h
 //Felix Version : 1.1.2_rc1
 include 'std';
 
-//#define SDL_MIX_MAXVOLUME 128
-//#define AUDIO_S16SYS  AUDIO_S16MSB
-//#define AUDIO_U16SYS  AUDIO_U16MSB
-//#define AUDIO_S16SYS  AUDIO_S16LSB
-//#define AUDIO_U16SYS  AUDIO_U16LSB
-//#define AUDIO_S16     AUDIO_S16LSB
-//#define AUDIO_U16     AUDIO_U16LSB
-//#define AUDIO_S16MSB  0x9010  /* As above, but big-endian byte order */
-//#define AUDIO_U16MSB  0x1010  /* As above, but big-endian byte order */
-//#define AUDIO_S16LSB  0x8010  /* Signed 16-bit samples */
-//#define AUDIO_U16LSB  0x0010  /* Unsigned 16-bit samples */
-//#define AUDIO_S8      0x8008  /* Signed 8-bit samples */
-//#define AUDIO_U8      0x0008  /* Unsigned 8-bit samples */
-//#define _SDL_audio_h
 header '#include "SDL_audio.h"';
 
 //INCLUDES
@@ -126,6 +116,7 @@ module SDL_audio_h
   open C_hack;
   open SDL_rwops_h;
 
+  const SDL_MIX_MAXVOLUME : int;
   const AUDIO_S16MSB : uint16;
   const AUDIO_U16MSB : uint16;
   const AUDIO_S16LSB : uint16;
@@ -172,6 +163,28 @@ module SDL_audio_h
   header '''typedef void (*SDL_audio_h_cft_1)(void *,  Uint8 *, int);''';
   type SDL_audio_h_cft_1 = 'SDL_audio_h_cft_1';
   
+  typedef flx_audio_callback_arg_t = ptr[uint8] * int;
+  typedef flx_audio_callback_t = flx_audio_callback_arg_t -> void;
+  export type (flx_audio_callback_t) as "flx_audio_callback_t";
+  export type (flx_audio_callback_arg_t) as "flx_audio_callback_arg_t";
+
+  header """
+    void SDL_audio_callback(void *obj, Uint8 *stream, int len);
+  """;
+
+  body """
+    // audio callback thunk
+    void SDL_audio_callback(void *obj, Uint8 *stream, int len) {
+      flx_audio_callback_t callback = (flx_audio_callback_t)obj;
+      flx::rtl::con_t *p =
+        callback->
+        clone()->
+        call(0,flx_audio_callback_arg_t(stream,len))
+      ;
+      while(p) p = p->resume();
+    }
+  """;
+    
   //STRUCT or UNION TAG ALIASES
   
   //TYPE ALIASES
@@ -452,54 +465,67 @@ module SDL_events_h
   typedef _struct_SDL_QuitEvent = SDL_QuitEvent;
   typedef SDL_Events = int;
   
-  //ENUMERATION CONSTANTS
-  const SDL_JOYBUTTONDOWNMASK: int = 'SDL_JOYBUTTONDOWNMASK';
-  const SDL_MOUSEBUTTONUP: int = 'SDL_MOUSEBUTTONUP';
-  const SDL_JOYBUTTONUPMASK: int = 'SDL_JOYBUTTONUPMASK';
-  const SDL_JOYHATMOTIONMASK: int = 'SDL_JOYHATMOTIONMASK';
-  const SDL_MOUSEBUTTONDOWN: int = 'SDL_MOUSEBUTTONDOWN';
-  const SDL_KEYUP: int = 'SDL_KEYUP';
-  const SDL_JOYAXISMOTIONMASK: int = 'SDL_JOYAXISMOTIONMASK';
-  const SDL_MOUSEMOTIONMASK: int = 'SDL_MOUSEMOTIONMASK';
-  const SDL_MOUSEEVENTMASK: int = 'SDL_MOUSEEVENTMASK';
-  const SDL_EVENT_RESERVED2: int = 'SDL_EVENT_RESERVED2';
-  const SDL_EVENT_RESERVED3: int = 'SDL_EVENT_RESERVED3';
-  const SDL_NUMEVENTS: int = 'SDL_NUMEVENTS';
-  const SDL_EVENT_RESERVED4: int = 'SDL_EVENT_RESERVED4';
-  const SDL_VIDEORESIZEMASK: int = 'SDL_VIDEORESIZEMASK';
-  const SDL_EVENT_RESERVED5: int = 'SDL_EVENT_RESERVED5';
-  const SDL_ACTIVEEVENTMASK: int = 'SDL_ACTIVEEVENTMASK';
-  const SDL_EVENT_RESERVED6: int = 'SDL_EVENT_RESERVED6';
-  const SDL_EVENT_RESERVED7: int = 'SDL_EVENT_RESERVED7';
-  const SDL_GETEVENT: int = 'SDL_GETEVENT';
-  const SDL_JOYBALLMOTION: int = 'SDL_JOYBALLMOTION';
-  const SDL_PEEKEVENT: int = 'SDL_PEEKEVENT';
-  const SDL_EVENT_RESERVEDA: int = 'SDL_EVENT_RESERVEDA';
-  const SDL_EVENT_RESERVEDB: int = 'SDL_EVENT_RESERVEDB';
-  const SDL_NOEVENT: int = 'SDL_NOEVENT';
-  const SDL_SYSWMEVENTMASK: int = 'SDL_SYSWMEVENTMASK';
-  const SDL_JOYAXISMOTION: int = 'SDL_JOYAXISMOTION';
-  const SDL_QUIT: int = 'SDL_QUIT';
-  const SDL_VIDEORESIZE: int = 'SDL_VIDEORESIZE';
-  const SDL_MOUSEBUTTONUPMASK: int = 'SDL_MOUSEBUTTONUPMASK';
-  const SDL_JOYBUTTONDOWN: int = 'SDL_JOYBUTTONDOWN';
-  const SDL_VIDEOEXPOSEMASK: int = 'SDL_VIDEOEXPOSEMASK';
-  const SDL_MOUSEBUTTONDOWNMASK: int = 'SDL_MOUSEBUTTONDOWNMASK';
-  const SDL_KEYDOWN: int = 'SDL_KEYDOWN';
-  const SDL_KEYDOWNMASK: int = 'SDL_KEYDOWNMASK';
-  const SDL_JOYBUTTONUP: int = 'SDL_JOYBUTTONUP';
-  const SDL_JOYEVENTMASK: int = 'SDL_JOYEVENTMASK';
-  const SDL_SYSWMEVENT: int = 'SDL_SYSWMEVENT';
-  const SDL_USEREVENT: int = 'SDL_USEREVENT';
-  const SDL_ADDEVENT: int = 'SDL_ADDEVENT';
-  const SDL_QUITMASK: int = 'SDL_QUITMASK';
-  const SDL_JOYHATMOTION: int = 'SDL_JOYHATMOTION';
-  const SDL_JOYBALLMOTIONMASK: int = 'SDL_JOYBALLMOTIONMASK';
-  const SDL_ACTIVEEVENT: int = 'SDL_ACTIVEEVENT';
-  const SDL_VIDEOEXPOSE: int = 'SDL_VIDEOEXPOSE';
-  const SDL_MOUSEMOTION: int = 'SDL_MOUSEMOTION';
-  const SDL_KEYUPMASK: int = 'SDL_KEYUPMASK';
+  // Weird
+  const SDL_PEEKEVENT: uint8 = 'SDL_PEEKEVENT';
+  const SDL_GETEVENT: uint8 = 'SDL_GETEVENT';
+  const SDL_ADDEVENT: uint8 = 'SDL_ADDEVENT';
+  const SDL_NUMEVENTS: uint8 = 'SDL_NUMEVENTS';
   
+  //EVENTS
+  const SDL_MOUSEBUTTONUP: uint8 = 'SDL_MOUSEBUTTONUP';
+  const SDL_MOUSEBUTTONDOWN: uint8 = 'SDL_MOUSEBUTTONDOWN';
+  const SDL_KEYUP: uint8 = 'SDL_KEYUP';
+  const SDL_JOYBALLMOTION: uint8 = 'SDL_JOYBALLMOTION';
+  const SDL_NOEVENT: uint8 = 'SDL_NOEVENT';
+  const SDL_JOYAXISMOTION: uint8 = 'SDL_JOYAXISMOTION';
+  const SDL_QUIT: uint8 = 'SDL_QUIT';
+  const SDL_VIDEORESIZE: uint8 = 'SDL_VIDEORESIZE';
+  const SDL_JOYBUTTONDOWN: uint8 = 'SDL_JOYBUTTONDOWN';
+  const SDL_KEYDOWN: uint8 = 'SDL_KEYDOWN';
+  const SDL_JOYBUTTONUP: uint8 = 'SDL_JOYBUTTONUP';
+  const SDL_SYSWMEVENT: uint8 = 'SDL_SYSWMEVENT';
+  const SDL_USEREVENT: uint8 = 'SDL_USEREVENT';
+  const SDL_JOYHATMOTION: uint8 = 'SDL_JOYHATMOTION';
+  const SDL_ACTIVEEVENT: uint8 = 'SDL_ACTIVEEVENT';
+  const SDL_VIDEOEXPOSE: uint8 = 'SDL_VIDEOEXPOSE';
+  const SDL_MOUSEMOTION: uint8 = 'SDL_MOUSEMOTION';
+
+  // reserved
+  const SDL_EVENT_RESERVED2: uint8 = 'SDL_EVENT_RESERVED2';
+  const SDL_EVENT_RESERVED3: uint8 = 'SDL_EVENT_RESERVED3';
+  const SDL_EVENT_RESERVED4: uint8 = 'SDL_EVENT_RESERVED4';
+  const SDL_EVENT_RESERVED5: uint8 = 'SDL_EVENT_RESERVED5';
+  const SDL_EVENT_RESERVED6: uint8 = 'SDL_EVENT_RESERVED6';
+  const SDL_EVENT_RESERVED7: uint8 = 'SDL_EVENT_RESERVED7';
+  const SDL_EVENT_RESERVEDA: uint8 = 'SDL_EVENT_RESERVEDA';
+  const SDL_EVENT_RESERVEDB: uint8 = 'SDL_EVENT_RESERVEDB';
+
+  // MASKS
+  // Joystick
+  const SDL_JOYBUTTONDOWNMASK: uint8 = 'SDL_JOYBUTTONDOWNMASK';
+  const SDL_JOYBUTTONUPMASK: uint8 = 'SDL_JOYBUTTONUPMASK';
+  const SDL_JOYHATMOTIONMASK: uint8 = 'SDL_JOYHATMOTIONMASK';
+  const SDL_JOYAXISMOTIONMASK: uint8 = 'SDL_JOYAXISMOTIONMASK';
+  const SDL_JOYBALLMOTIONMASK: uint8 = 'SDL_JOYBALLMOTIONMASK';
+  const SDL_JOYEVENTMASK: uint8 = 'SDL_JOYEVENTMASK';
+
+  // mouse
+  const SDL_MOUSEMOTIONMASK: uint8 = 'SDL_MOUSEMOTIONMASK';
+  const SDL_MOUSEEVENTMASK: uint8 = 'SDL_MOUSEEVENTMASK';
+  const SDL_MOUSEBUTTONUPMASK: uint8 = 'SDL_MOUSEBUTTONUPMASK';
+  const SDL_MOUSEBUTTONDOWNMASK: uint8 = 'SDL_MOUSEBUTTONDOWNMASK';
+
+  // video
+  const SDL_VIDEORESIZEMASK: uint8 = 'SDL_VIDEORESIZEMASK';
+  const SDL_ACTIVEEVENTMASK: uint8 = 'SDL_ACTIVEEVENTMASK';
+  const SDL_SYSWMEVENTMASK: uint8 = 'SDL_SYSWMEVENTMASK';
+  const SDL_VIDEOEXPOSEMASK: uint8 = 'SDL_VIDEOEXPOSEMASK';
+
+  // keyboard
+  const SDL_KEYDOWNMASK: uint8 = 'SDL_KEYDOWNMASK';
+  const SDL_KEYUPMASK: uint8 = 'SDL_KEYUPMASK';
+  const SDL_QUITMASK: uint8 = 'SDL_QUITMASK';
+ 
   //PROCEDURES
   proc SDL_PumpEvents: 1;
   proc SDL_SetEventFilter: SDL_events_h_cft_1;
@@ -2407,7 +2433,7 @@ module SDL_events
   private fun mk_sdl_event_request: ptr[SDL_Event] -> sdl_event_request = 
     "flx::faio::faio_sdl_event($1)";
 
-  fun event_type: SDL_Event -> int = "$1.type";
+  fun event_type: SDL_Event -> uint8 = "$1.type";
 
   proc get_sdl_event(pe:&SDL_Event)
   {
@@ -2515,29 +2541,22 @@ struct sample_t {
     dlen: uint32;
 };
 
-export type (sample_t) as "sample_t";
-
-body """
-#define NUM_SOUNDS 2
-sample_t sounds[NUM_SOUNDS];
-
-void mixaudio(void *unused, Uint8 *stream, int len)
-{
-  int i;
-  Uint32 amount;
-
-  for ( i=0; i<NUM_SOUNDS; ++i ) {
-    amount = (sounds[i].dlen-sounds[i].dpos);
-    if ( amount > len ) amount = len;
-    SDL_MixAudio(stream, &sounds[i].data[sounds[i].dpos], amount, SDL_MIX_MAXVOLUME);
-    sounds[i].dpos += amount;
-  }
-}
-""";
-
 macro val NUM_SOUNDS = 2;
-const sounds : ptr[sample_t];
-const mixaudio : SDL_audio_h_cft_1 = "mixaudio";
+var sounds : sample_t ^ NUM_SOUNDS;
+
+proc flx_mixaudio(stream : ptr[uint8], len : int)
+{
+  var i : int;
+  var amount : uint32;
+  forall i in 0 upto NUM_SOUNDS-1 do
+    amount = sounds.[i].dlen - sounds.[i].dpos;
+    if amount > len do amount = len; done;
+    var loc : ptr[uint8] = sounds.[i].data+ cast[int] sounds.[i].dpos;
+    SDL_MixAudio(stream, cast[cptr[uint8]] loc, amount, SDL_MIX_MAXVOLUME);
+    sounds.[i].dpos += amount;
+  done;
+}
+
 var fmt : SDL_AudioSpec;
 fmt.freq=22050;
 fmt.format=AUDIO_S16;
@@ -2546,8 +2565,12 @@ fmt.silence=0u8;
 fmt.samples=512u16;
 fmt.padding=0u16;
 fmt.size=0u16;
-fmt.callback=mixaudio;
-fmt.userdata=NULL;
+
+const SDL_audio_callback : SDL_audio_h_cft_1;
+fmt.callback=SDL_audio_callback;
+var mixer = the flx_mixaudio;
+fmt.userdata= cast[address] mixer;
+
 
 if SDL_OpenAudio(addr fmt, null_ptr[SDL_AudioSpec]) < 0 do
   print "Can't open Audio"; endl;
@@ -2633,12 +2656,41 @@ SDL_GetClipRect(screen,addr rcDest);
 
 black := SDL_MapRGB((*screen).format, 0u8, 0u8, 0u8);
 
+proc waitt(t:double) (f:schannel[uint8]) {
+  Faio::sleep t;
+  write (f,SDL_USEREVENT); // hack for timer event
+}
+
+proc waitk(f:schannel[uint8]) {
+  var e : SDL_Event;
+  get_sdl_event$ &e;
+  var et = event_type e;
+  whilst 
+    et != SDL_KEYDOWN and 
+    et != SDL_MOUSEBUTTONDOWN and
+    et != SDL_QUIT 
+  do
+    get_sdl_event$ &e;
+    et = event_type e;
+  done;
+  write (f,et);
+}
+
+proc waittk() {
+  var w = mk_schannel[uint8] ();
+  spawn_fthread { waitt 15.0 w; };
+  spawn_fthread { waitk w; };
+  var &i: uint8 <- read w;
+}
+
+
+
 forall i in 0 upto 15 do      
   if not (isNULL s.[i]) do
     print "Show "; print i; endl;
     var r = SDL_BlitSurface ( s.[i], null_ptr[SDL_Rect], screen, addr rcDest );
     SDL_UpdateRect(screen, 0i32,0i32,0u,0u);
-    Faio::sleep(5.0);
+    waittk;
     r = SDL_FillRect(screen, addr rcDest, black);
   else
     print "Skip "; print i; endl;

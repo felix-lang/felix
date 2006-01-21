@@ -5,6 +5,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.205  2006/01/21 17:02:12  skaller
+SDL sound with Felix callback, and asynchronous multiplexor
+for timeout/keypress example. COOL!
+
 Revision 1.204  2006/01/18 14:52:14  skaller
 Wrapped SDL event source, test case in tut/examples/sdl100
 
@@ -3910,6 +3914,10 @@ We have no idea if it continues copying.
 @tangle('\tgzip -9 flx_'+flx_version+'_src.tar')
 @tangle('\tmv -f flx_'+flx_version+'_src.tar.gz flx_'+flx_version+'_src.tgz')
 @tangle('')
+@tangle('media_tarball:')
+@tangle('\trm -f flx_media.tgz')
+@tangle('\ttar -zcvf flx_media.tgz media')
+@tangle('')
 @tangle('bin_tarball:')
 @tangle('\trm -f felix-'+flx_version)
 @tangle('\tln -s . felix-'+flx_version)
@@ -3981,7 +3989,9 @@ We have no idea if it continues copying.
 @tangle('\t\tfelix-'+flx_version+'/interscript/utilities/*.py \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/weavers/*.py \\')
 @tangle('')
-@tangle('tarball: src_tarball bin_tarball')
+@tangle('tarball: src_tarball bin_tarball media_tarball')
+@tangle('')
+@tangle('flx_media.tgz: media_tarball')
 @tangle('')
 @tangle('debian/rules: lpsrc/flx_debian.pak lpsrc/flx_maker.ipk')
 @tangle('\trm -rf debian')
@@ -4124,6 +4134,9 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('upload_speed: dummy')
 @tangle('\tscp -r speed/*.html speed/images skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs/current/speed')
+@tangle('')
+@tangle('upload_media: flx_media.tgz')
+@tangle('\tscp flx_media.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('')
 @tangle('upload: dummy')
 @tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')

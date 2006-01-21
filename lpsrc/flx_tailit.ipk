@@ -39,11 +39,104 @@ open Flx_use
 open Flx_child
 open Flx_call
 
+let isvariable bbdfns i = 
+  let id,_,_,entry = Hashtbl.find bbdfns i in match entry with 
+  | `BBDCL_var _ | `BBDCL_val _ -> 
+  (* print_endline ("Var/Val " ^ id ^ "<" ^ si i ^">"); *) true 
+  | _ -> false
+
+let isfun bbdfns i = 
+  let id,_,_,entry = Hashtbl.find bbdfns i in match entry with 
+  | `BBDCL_function _ | `BBDCL_procedure _ -> 
+  (*print_endline ("Fun/proc " ^ id ^ "<" ^ si i ^">"); *) true 
+  | _ -> false
+
+let add_xclosure syms cls e = 
+  (*
+  print_endline ("chk cls for " ^ sbe syms.dfns e);
+  *)
+  match e with
+  | `BEXPR_closure (i,ts),t -> cls := IntSet.add i !cls
+  | _ -> ()
+
+let ident x = x 
+
+let expr_find_xclosures syms cls e =
+  iter_tbexpr ignore (add_xclosure syms cls) ignore e
+
+let exe_find_xclosure syms cls exe =
+  iter_bexe ignore (expr_find_xclosures syms cls) ignore ignore ignore exe
+
+let exes_find_xclosure syms cls exes =
+  iter (exe_find_xclosure syms cls) exes
+
+let function_find_xclosure syms cls bbdfns i =
+  let _,_,_,entry = Hashtbl.find bbdfns i in
+  let exes =
+    match entry with
+    | `BBDCL_procedure (_,_,_,exes)
+    | `BBDCL_function (_,_,_,_,exes) -> exes
+    | _ -> []
+  in
+  (*
+  print_endline ("ROUTINE " ^ si i);
+  iter (fun exe -> print_endline (string_of_bexe syms.dfns 0 exe)) exes;
+  *)
+  exes_find_xclosure syms cls exes
+
+let functions_find_xclosures syms cls bbdfns ii =
+  IntSet.iter
+  (function_find_xclosure syms cls bbdfns)
+  ii
+
 let tailit syms (uses,child_map,bbdfns) this sr ps vs exes : bexe_t list = 
   let ts' = map (fun (_,i) -> `BTYP_var (i,`BTYP_type)) vs in
   let pset = fold_left (fun s (_,(i,_))-> IntSet.add i s) IntSet.empty ps in
   let parameters = ref [] in
   let descend = descendants child_map this in
+  let children = try Hashtbl.find child_map this with Not_found -> [] in
+  let can_loop () =
+    let varlist = filter (isvariable bbdfns) children in
+    let funset = IntSet.filter (isfun bbdfns) descend in
+
+    (*
+    print_endline ("Procedure has " ^ si (length varlist) ^ " variables");
+    print_endline ("Procedure has " ^ si (IntSet.cardinal funset) ^ " child funcs");
+    *)
+
+    let cls = ref IntSet.empty in
+    functions_find_xclosures syms cls bbdfns funset;
+    (* THIS FUNCTION IS BEING INLINED .. WE CANNOT LOOKUP ITS EXES!! *)
+    exes_find_xclosure syms cls exes; 
+    (*
+    print_endline ("Total xclosures " ^ si (IntSet.cardinal !cls));
+    *)
+    let kidcls = IntSet.inter !cls funset in
+    (*
+    print_endline ("Kid xclosures " ^ si (IntSet.cardinal kidcls));
+    *)
+    try
+      IntSet.iter
+      (fun i ->
+        let usage = Hashtbl.find uses i in
+        iter
+        (fun j -> 
+          let usesj =   mem_assoc j usage in
+          (*
+          if usesj then
+            print_endline (si i ^ " uses var " ^ si j)
+          ;
+          *)
+          if usesj then raise Not_found;
+        )
+        varlist
+      )
+      kidcls 
+      ;
+      true
+    with 
+    | Not_found -> false
+  in
   let jump_done = ref false in
   let lc = !(syms.counter) in incr (syms.counter);
   let start_label = "start_" ^ si lc in
@@ -309,12 +402,21 @@ let tailit syms (uses,child_map,bbdfns) this sr ps vs exes : bexe_t list =
   | `BEXE_call_direct (sr,i,ts,a) :: tail 
     when (i,ts)=(this,ts') && Flx_cflow.tailable exes [] tail
     ->
-     (*
-     print_endline ("--> Tail rec call " ^ si this);
-     *)
-     jump_done := true;
-     let res = cal_tail_call a @ res
-     in aux tail res
+    if can_loop ()
+    then begin
+      (*
+      print_endline ("--> Tail rec call optimised " ^ si this);
+      *)
+      jump_done := true;
+      let res = cal_tail_call a @ res
+      in aux tail res
+    end else begin
+      (*
+      print_endline ("--> Tail rec call NOT optimised " ^ si this);
+      *)
+      let x = `BEXE_jump_direct (sr,i,ts,a) in
+      aux tail (x::res)
+    end
 
   | `BEXE_fun_return (sr,(`BEXPR_apply_direct(i,ts,a),_)) :: tail 
     when (i,ts)=(this,ts') 

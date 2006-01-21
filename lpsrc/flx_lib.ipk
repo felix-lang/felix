@@ -1339,8 +1339,14 @@ module Control
     "new(*PTF gc,flx::rtl::schannel_ptr_map) flx::rtl::schannel_t(PTF gc)"
   ; 
 
-  proc read[t](chan:schannel[t],loc:&gcptr[t]) {
+  proc _read[t](chan:schannel[t],loc:&gcptr[t]) {
     svc$ svc_sread$ cast[_schannel] chan, reinterpret[&gcaddress] loc;
+  }
+
+  proc read[t](v:&t,chan:schannel[t]) {
+    var x: gcptr[t];
+    _read(chan,&x);
+    *v = *x;
   }
 
   proc write[t](chan:schannel[t],v:t) {

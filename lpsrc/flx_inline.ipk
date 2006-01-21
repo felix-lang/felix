@@ -2031,6 +2031,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       (*
       print_endline (id ^ " After inlining calls:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
       *)
+      recal_exes_usage syms uses sr i ps exes;
       let exes = Flx_tailit.tailit syms (uses,child_map,bbdfns) i sr ps vs exes in
       (*
       print_endline (id ^ " After tailing:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
@@ -2077,6 +2078,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       (*
       print_endline ("Tailing " ^ si i);
       *)
+      recal_exes_usage syms uses sr i ps exes;
       let exes = Flx_tailit.tailit syms (uses,child_map,bbdfns) i sr ps vs exes in
       (*
       print_endline (id ^ " After tailing:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
