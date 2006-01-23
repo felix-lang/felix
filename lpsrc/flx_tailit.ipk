@@ -399,7 +399,7 @@ let tailit syms (uses,child_map,bbdfns) this sr ps vs exes : bexe_t list =
       end
   in
   let rec aux tail res = match tail with
-  | `BEXE_call_direct (sr,i,ts,a) :: tail 
+  | (`BEXE_call_direct (sr,i,ts,a)) as x :: tail 
     when (i,ts)=(this,ts') && Flx_cflow.tailable exes [] tail
     ->
     if can_loop ()
@@ -414,7 +414,6 @@ let tailit syms (uses,child_map,bbdfns) this sr ps vs exes : bexe_t list =
       (*
       print_endline ("--> Tail rec call NOT optimised " ^ si this);
       *)
-      let x = `BEXE_jump_direct (sr,i,ts,a) in
       aux tail (x::res)
     end
 

@@ -2663,6 +2663,7 @@ flx_3_char_syms = [
     ("ANDLESSEQUAL","&<="),
     ("ANDGREATEREQUAL","&>="),
     ("DOTDOTDOT","..."),
+    ("DOTRIGHTARROW",".->"),
     ("PARSE_ACTION","=>#"),
     ("HASHBANGSLASH","#!/"),
   ]

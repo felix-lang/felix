@@ -1672,6 +1672,17 @@ else_clause:
       let sr = fold_left (fun l r -> rsrange l (src_of_stmt r)) (slift $1) $2 in
       sr,$2 
     }
+  | elif_clauses 
+    {
+      match $1 with [] -> assert false
+      | (sr,_,_) :: _ ->
+      fold_left (* actually a right fold cause list is reversed *)
+      (fun els (sr,cond,thn) ->
+        let sr = rsrange sr (fst els) in
+        sr,[`AST_ifdo ( sr, cond, thn, snd els )]
+      )
+      (sr,[]) $1
+    }
 
 ifgoto_stmt:
   | IF expr GOTO NAME SEMI
@@ -2501,6 +2512,13 @@ factor:
       let rsr,name,ts = $3 in
       let sr = rsrange (src_of_expr $1) rsr in
       `AST_dot (sr, ($1, name,ts)) 
+    }
+  | factor DOTRIGHTARROW simple_name_parts       
+    { 
+      let rsr,name,ts = $3 in
+      let sr = rsrange (src_of_expr $1) rsr in
+      let x = apl $2 "deref" $1 in
+      `AST_dot (sr, (x, name,ts)) 
     }
   | factor DOT LPAR INTEGER RPAR
     { 
