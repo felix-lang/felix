@@ -1,6 +1,10 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.26  2006/01/24 13:21:10  rfistman
+fixed race condition in posix asynchronous connect
+and made test output for same a little more obvious
+
 Revision 1.25  2006/01/18 05:50:04  rfistman
 turned sdl_event thing into a driver request
 
@@ -713,12 +717,17 @@ connect_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
   // call failed, wake up thread
   if(start(*pd) == -1) return true; 
 
+  // NONONONONO! Referring to this's variables after a successful start
+  // gives rise to a race condition, which is bad.
+  return false;     // do not reschedule after a successful start
+/*
   // I've not seen this yet, don't know why.
   if(socket_err == 0) fprintf(stderr, "WOW, instant CONNECT\n");
 
   // call didn't fail, could be pending or finished.
   // return socket_err != EINPROGRESS, the contrapositive, sort of
   return socket_err == 0;   // no err => finished immediately
+*/
 }
 
 void
