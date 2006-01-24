@@ -335,4 +335,5 @@ create a file here for unit tests.
 @head(2,'Optional Components')
 @include_file ('flx_gmp.ipk')
 @include_file ('flx_sdl.ipk')
+@include_file ('flx_opengl.ipk')
 

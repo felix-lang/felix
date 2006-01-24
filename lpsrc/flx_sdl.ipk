@@ -1,5 +1,11 @@
 @head(1,'SDL')
 $Log$
+Revision 1.10  2006/01/24 03:03:13  skaller
+Fix bug generating offsets for a cstruct. Upgrade tut121b expected
+output to handle new symbol .-> (which is just C's ->, we can't use
+the symbol -> because it means 'function' in the type language and
+has the wrong precedence there) Added opengl binding.
+
 Revision 1.9  2006/01/23 13:35:03  skaller
 Remove wrong tail call optimisation, replacing tail call
 with jump. This is correct but not allowed at inlinling stage.
@@ -192,10 +198,12 @@ module SDL_audio_h
     
   //STRUCT or UNION TAG ALIASES
   
+  /*
   //TYPE ALIASES
   typedef _struct_SDL_AudioSpec = SDL_AudioSpec;
   typedef _struct_SDL_AudioCVT = SDL_AudioCVT;
-  
+  */
+
   //ENUMERATION CONSTANTS
   const SDL_AUDIO_PAUSED: SDL_audiostatus = 'SDL_AUDIO_PAUSED';
   const SDL_AUDIO_STOPPED: SDL_audiostatus = 'SDL_AUDIO_STOPPED';
@@ -269,9 +277,11 @@ module SDL_cdrom_h
   
   //STRUCT or UNION TAG ALIASES
   
+  /*
   //TYPE ALIASES
   typedef _struct_SDL_CD = SDL_CD;
   typedef _struct_SDL_CDtrack = SDL_CDtrack;
+  */
   
   //ENUMERATION CONSTANTS
   const CD_TRAYEMPTY: int = 'CD_TRAYEMPTY';
@@ -364,7 +374,6 @@ module SDL_events_h
   
   //ABSTRACT TYPES
   type SDL_eventaction = 'SDL_eventaction';
-  type SDL_Event = 'SDL_Event';
   
   //CSTRUCTS 
   cstruct SDL_SysWMEvent {
@@ -441,6 +450,25 @@ module SDL_events_h
     gain: uint8;
     state: uint8;
   }
+
+  // This is ACTUALLY a C union .. but the syntax is the same
+  // as for a struct .. so we can model it with a struct
+  cstruct SDL_Event = {
+    type_ : uint8;
+    active : SDL_ActiveEvent;
+    key : SDL_KeyboardEvent;
+    motion: SDL_MouseMotionEvent;
+    button: SDL_MouseButtonEvent;
+    jaxis : SDL_JoyAxisEvent;
+    jball : SDL_JoyBallEvent;
+    jhat : SDL_JoyHatEvent;
+    jbutton : SDL_JoyButtonEvent;
+    resize : SDL_ResizeEvent;
+    expose : SDL_ExposeEvent;
+    quit: SDL_QuitEvent;
+    user : SDL_UserEvent;
+    syswm : SDL_SysWMEvent;
+  }
   
   //C FUNCTION POINTER TYPES
   header '''typedef int (*SDL_events_h_cft_1)(SDL_Event const *);''';
@@ -453,6 +481,7 @@ module SDL_events_h
   typedef SDL_SysWMmsg = _struct_SDL_SysWMmsg;
   
   //TYPE ALIASES
+  /*
   typedef _struct_SDL_JoyBallEvent = SDL_JoyBallEvent;
   typedef _struct_SDL_MouseButtonEvent = SDL_MouseButtonEvent;
   typedef _struct_SDL_ActiveEvent = SDL_ActiveEvent;
@@ -464,10 +493,11 @@ module SDL_events_h
   typedef _struct_SDL_JoyHatEvent = SDL_JoyHatEvent;
   typedef _struct_SDL_MouseMotionEvent = SDL_MouseMotionEvent;
   typedef _struct_SDL_ExposeEvent = SDL_ExposeEvent;
-  typedef SDL_EventMasks = int;
   typedef _struct_SDL_UserEvent = SDL_UserEvent;
-  typedef SDL_EventFilter = SDL_events_h_cft_1;
   typedef _struct_SDL_QuitEvent = SDL_QuitEvent;
+  */
+  typedef SDL_EventMasks = int;
+  typedef SDL_EventFilter = SDL_events_h_cft_1;
   typedef SDL_Events = int;
   
   // Weird
@@ -633,9 +663,11 @@ module SDL_keyboard_h
   
   //STRUCT or UNION TAG ALIASES
   
+  /*
   //TYPE ALIASES
   typedef _struct_SDL_keysym = SDL_keysym;
-  
+  */
+
   //PROCEDURES
   proc SDL_SetModState: SDLMod;
   
@@ -674,254 +706,258 @@ module SDL_keysym_h
   type SDLMod = 'SDLMod';
   
   //ENUMERATION CONSTANTS
-  const SDLK_WORLD_1: int = 'SDLK_WORLD_1';
-  const SDLK_POWER: int = 'SDLK_POWER';
-  const SDLK_SLASH: int = 'SDLK_SLASH';
-  const SDLK_WORLD_2: int = 'SDLK_WORLD_2';
-  const SDLK_WORLD_3: int = 'SDLK_WORLD_3';
-  const SDLK_F1: int = 'SDLK_F1';
-  const SDLK_WORLD_4: int = 'SDLK_WORLD_4';
-  const SDLK_WORLD_20: int = 'SDLK_WORLD_20';
-  const SDLK_F2: int = 'SDLK_F2';
-  const SDLK_WORLD_5: int = 'SDLK_WORLD_5';
-  const SDLK_WORLD_21: int = 'SDLK_WORLD_21';
-  const SDLK_F3: int = 'SDLK_F3';
-  const SDLK_KP_EQUALS: int = 'SDLK_KP_EQUALS';
-  const SDLK_WORLD_6: int = 'SDLK_WORLD_6';
-  const SDLK_LEFT: int = 'SDLK_LEFT';
-  const SDLK_WORLD_22: int = 'SDLK_WORLD_22';
-  const SDLK_F4: int = 'SDLK_F4';
-  const SDLK_WORLD_7: int = 'SDLK_WORLD_7';
-  const SDLK_WORLD_23: int = 'SDLK_WORLD_23';
-  const SDLK_UNDO: int = 'SDLK_UNDO';
-  const SDLK_F5: int = 'SDLK_F5';
-  const SDLK_WORLD_8: int = 'SDLK_WORLD_8';
-  const SDLK_WORLD_24: int = 'SDLK_WORLD_24';
-  const SDLK_F6: int = 'SDLK_F6';
-  const SDLK_WORLD_9: int = 'SDLK_WORLD_9';
-  const SDLK_WORLD_25: int = 'SDLK_WORLD_25';
-  const SDLK_F7: int = 'SDLK_F7';
-  const SDLK_WORLD_26: int = 'SDLK_WORLD_26';
-  const SDLK_F8: int = 'SDLK_F8';
-  const SDLK_WORLD_27: int = 'SDLK_WORLD_27';
-  const SDLK_F9: int = 'SDLK_F9';
-  const SDLK_LEFTPAREN: int = 'SDLK_LEFTPAREN';
-  const SDLK_WORLD_28: int = 'SDLK_WORLD_28';
-  const SDLK_WORLD_29: int = 'SDLK_WORLD_29';
-  const SDLK_KP_ENTER: int = 'SDLK_KP_ENTER';
-  const SDLK_CAPSLOCK: int = 'SDLK_CAPSLOCK';
-  const SDLK_WORLD_30: int = 'SDLK_WORLD_30';
-  const SDLK_WORLD_31: int = 'SDLK_WORLD_31';
-  const SDLK_COMMA: int = 'SDLK_COMMA';
-  const SDLK_WORLD_32: int = 'SDLK_WORLD_32';
-  const SDLK_HASH: int = 'SDLK_HASH';
-  const SDLK_SPACE: int = 'SDLK_SPACE';
-  const SDLK_WORLD_33: int = 'SDLK_WORLD_33';
-  const SDLK_WORLD_34: int = 'SDLK_WORLD_34';
-  const SDLK_WORLD_35: int = 'SDLK_WORLD_35';
-  const SDLK_PLUS: int = 'SDLK_PLUS';
-  const SDLK_WORLD_36: int = 'SDLK_WORLD_36';
-  const SDLK_WORLD_37: int = 'SDLK_WORLD_37';
-  const SDLK_WORLD_38: int = 'SDLK_WORLD_38';
-  const SDLK_KP_PERIOD: int = 'SDLK_KP_PERIOD';
-  const SDLK_PAUSE: int = 'SDLK_PAUSE';
-  const SDLK_WORLD_39: int = 'SDLK_WORLD_39';
-  const SDLK_KP_MINUS: int = 'SDLK_KP_MINUS';
-  const KMOD_LALT: int = 'KMOD_LALT';
-  const SDLK_TAB: int = 'SDLK_TAB';
-  const SDLK_0: int = 'SDLK_0';
-  const SDLK_COMPOSE: int = 'SDLK_COMPOSE';
-  const SDLK_1: int = 'SDLK_1';
-  const SDLK_2: int = 'SDLK_2';
-  const SDLK_LALT: int = 'SDLK_LALT';
-  const SDLK_3: int = 'SDLK_3';
-  const SDLK_WORLD_40: int = 'SDLK_WORLD_40';
-  const SDLK_4: int = 'SDLK_4';
-  const SDLK_WORLD_41: int = 'SDLK_WORLD_41';
-  const SDLK_5: int = 'SDLK_5';
-  const SDLK_RCTRL: int = 'SDLK_RCTRL';
-  const SDLK_WORLD_42: int = 'SDLK_WORLD_42';
-  const SDLK_6: int = 'SDLK_6';
-  const KMOD_RALT: int = 'KMOD_RALT';
-  const SDLK_WORLD_43: int = 'SDLK_WORLD_43';
-  const SDLK_7: int = 'SDLK_7';
-  const SDLK_WORLD_44: int = 'SDLK_WORLD_44';
-  const SDLK_8: int = 'SDLK_8';
-  const SDLK_WORLD_45: int = 'SDLK_WORLD_45';
-  const SDLK_9: int = 'SDLK_9';
-  const SDLK_ESCAPE: int = 'SDLK_ESCAPE';
-  const SDLK_WORLD_46: int = 'SDLK_WORLD_46';
-  const SDLK_WORLD_47: int = 'SDLK_WORLD_47';
-  const SDLK_BACKQUOTE: int = 'SDLK_BACKQUOTE';
-  const SDLK_RALT: int = 'SDLK_RALT';
-  const SDLK_WORLD_48: int = 'SDLK_WORLD_48';
-  const SDLK_CARET: int = 'SDLK_CARET';
-  const SDLK_WORLD_49: int = 'SDLK_WORLD_49';
-  const SDLK_RIGHT: int = 'SDLK_RIGHT';
-  const SDLK_DELETE: int = 'SDLK_DELETE';
-  const SDLK_RSHIFT: int = 'SDLK_RSHIFT';
-  const SDLK_LESS: int = 'SDLK_LESS';
-  const SDLK_AMPERSAND: int = 'SDLK_AMPERSAND';
-  const SDLK_BACKSLASH: int = 'SDLK_BACKSLASH';
-  const SDLK_WORLD_50: int = 'SDLK_WORLD_50';
-  const SDLK_WORLD_51: int = 'SDLK_WORLD_51';
-  const KMOD_LSHIFT: int = 'KMOD_LSHIFT';
-  const SDLK_WORLD_52: int = 'SDLK_WORLD_52';
-  const SDLK_WORLD_53: int = 'SDLK_WORLD_53';
-  const SDLK_WORLD_54: int = 'SDLK_WORLD_54';
-  const SDLK_RMETA: int = 'SDLK_RMETA';
-  const SDLK_WORLD_55: int = 'SDLK_WORLD_55';
-  const SDLK_WORLD_56: int = 'SDLK_WORLD_56';
-  const SDLK_LCTRL: int = 'SDLK_LCTRL';
-  const SDLK_WORLD_57: int = 'SDLK_WORLD_57';
-  const SDLK_WORLD_58: int = 'SDLK_WORLD_58';
-  const SDLK_WORLD_59: int = 'SDLK_WORLD_59';
-  const SDLK_RETURN: int = 'SDLK_RETURN';
-  const SDLK_QUESTION: int = 'SDLK_QUESTION';
-  const SDLK_BREAK: int = 'SDLK_BREAK';
-  const SDLK_RSUPER: int = 'SDLK_RSUPER';
-  const SDLK_WORLD_60: int = 'SDLK_WORLD_60';
-  const SDLK_WORLD_61: int = 'SDLK_WORLD_61';
-  const KMOD_MODE: int = 'KMOD_MODE';
-  const SDLK_WORLD_62: int = 'SDLK_WORLD_62';
-  const SDLK_UNDERSCORE: int = 'SDLK_UNDERSCORE';
-  const SDLK_WORLD_63: int = 'SDLK_WORLD_63';
-  const SDLK_UNKNOWN: int = 'SDLK_UNKNOWN';
-  const SDLK_WORLD_64: int = 'SDLK_WORLD_64';
-  const SDLK_BACKSPACE: int = 'SDLK_BACKSPACE';
-  const SDLK_WORLD_65: int = 'SDLK_WORLD_65';
-  const SDLK_EQUALS: int = 'SDLK_EQUALS';
-  const SDLK_WORLD_66: int = 'SDLK_WORLD_66';
-  const SDLK_PAGEDOWN: int = 'SDLK_PAGEDOWN';
-  const SDLK_MODE: int = 'SDLK_MODE';
-  const SDLK_WORLD_67: int = 'SDLK_WORLD_67';
-  const SDLK_a: int = 'SDLK_a';
-  const SDLK_WORLD_68: int = 'SDLK_WORLD_68';
-  const SDLK_HOME: int = 'SDLK_HOME';
-  const SDLK_b: int = 'SDLK_b';
-  const SDLK_WORLD_69: int = 'SDLK_WORLD_69';
-  const SDLK_c: int = 'SDLK_c';
-  const SDLK_LMETA: int = 'SDLK_LMETA';
-  const SDLK_d: int = 'SDLK_d';
-  const SDLK_e: int = 'SDLK_e';
-  const SDLK_RIGHTBRACKET: int = 'SDLK_RIGHTBRACKET';
-  const SDLK_f: int = 'SDLK_f';
-  const SDLK_g: int = 'SDLK_g';
-  const SDLK_h: int = 'SDLK_h';
-  const SDLK_i: int = 'SDLK_i';
-  const SDLK_j: int = 'SDLK_j';
-  const SDLK_k: int = 'SDLK_k';
-  const SDLK_PRINT: int = 'SDLK_PRINT';
-  const SDLK_l: int = 'SDLK_l';
-  const SDLK_m: int = 'SDLK_m';
-  const SDLK_WORLD_70: int = 'SDLK_WORLD_70';
-  const SDLK_n: int = 'SDLK_n';
-  const SDLK_WORLD_71: int = 'SDLK_WORLD_71';
-  const SDLK_o: int = 'SDLK_o';
-  const SDLK_WORLD_72: int = 'SDLK_WORLD_72';
-  const SDLK_p: int = 'SDLK_p';
-  const SDLK_WORLD_73: int = 'SDLK_WORLD_73';
-  const SDLK_q: int = 'SDLK_q';
-  const SDLK_WORLD_74: int = 'SDLK_WORLD_74';
-  const SDLK_r: int = 'SDLK_r';
-  const SDLK_COLON: int = 'SDLK_COLON';
-  const SDLK_WORLD_75: int = 'SDLK_WORLD_75';
-  const SDLK_s: int = 'SDLK_s';
-  const SDLK_WORLD_76: int = 'SDLK_WORLD_76';
-  const SDLK_t: int = 'SDLK_t';
-  const SDLK_WORLD_77: int = 'SDLK_WORLD_77';
-  const SDLK_u: int = 'SDLK_u';
-  const SDLK_WORLD_78: int = 'SDLK_WORLD_78';
-  const SDLK_v: int = 'SDLK_v';
-  const SDLK_WORLD_79: int = 'SDLK_WORLD_79';
-  const SDLK_w: int = 'SDLK_w';
-  const SDLK_x: int = 'SDLK_x';
-  const SDLK_PERIOD: int = 'SDLK_PERIOD';
-  const SDLK_SEMICOLON: int = 'SDLK_SEMICOLON';
-  const KMOD_NONE: int = 'KMOD_NONE';
-  const SDLK_y: int = 'SDLK_y';
-  const SDLK_EURO: int = 'SDLK_EURO';
-  const SDLK_z: int = 'SDLK_z';
-  const SDLK_SYSREQ: int = 'SDLK_SYSREQ';
-  const SDLK_GREATER: int = 'SDLK_GREATER';
-  const SDLK_DOLLAR: int = 'SDLK_DOLLAR';
-  const SDLK_WORLD_80: int = 'SDLK_WORLD_80';
-  const SDLK_WORLD_81: int = 'SDLK_WORLD_81';
-  const SDLK_WORLD_82: int = 'SDLK_WORLD_82';
-  const SDLK_F10: int = 'SDLK_F10';
-  const SDLK_WORLD_83: int = 'SDLK_WORLD_83';
-  const SDLK_F11: int = 'SDLK_F11';
-  const SDLK_WORLD_84: int = 'SDLK_WORLD_84';
-  const SDLK_LSHIFT: int = 'SDLK_LSHIFT';
-  const SDLK_F12: int = 'SDLK_F12';
-  const SDLK_WORLD_85: int = 'SDLK_WORLD_85';
-  const SDLK_F13: int = 'SDLK_F13';
-  const SDLK_PAGEUP: int = 'SDLK_PAGEUP';
-  const SDLK_WORLD_86: int = 'SDLK_WORLD_86';
-  const SDLK_F14: int = 'SDLK_F14';
-  const SDLK_UP: int = 'SDLK_UP';
-  const SDLK_WORLD_87: int = 'SDLK_WORLD_87';
-  const KMOD_RCTRL: int = 'KMOD_RCTRL';
-  const SDLK_F15: int = 'SDLK_F15';
-  const SDLK_WORLD_88: int = 'SDLK_WORLD_88';
-  const SDLK_WORLD_89: int = 'SDLK_WORLD_89';
-  const SDLK_KP_MULTIPLY: int = 'SDLK_KP_MULTIPLY';
-  const SDLK_END: int = 'SDLK_END';
-  const SDLK_WORLD_90: int = 'SDLK_WORLD_90';
-  const SDLK_CLEAR: int = 'SDLK_CLEAR';
-  const SDLK_WORLD_91: int = 'SDLK_WORLD_91';
-  const SDLK_AT: int = 'SDLK_AT';
-  const SDLK_WORLD_92: int = 'SDLK_WORLD_92';
-  const SDLK_WORLD_93: int = 'SDLK_WORLD_93';
-  const SDLK_KP_DIVIDE: int = 'SDLK_KP_DIVIDE';
-  const SDLK_WORLD_94: int = 'SDLK_WORLD_94';
-  const SDLK_WORLD_95: int = 'SDLK_WORLD_95';
-  const SDLK_ASTERISK: int = 'SDLK_ASTERISK';
-  const SDLK_LSUPER: int = 'SDLK_LSUPER';
-  const KMOD_RESERVED: int = 'KMOD_RESERVED';
-  const KMOD_RMETA: int = 'KMOD_RMETA';
-  const KMOD_LCTRL: int = 'KMOD_LCTRL';
-  const SDLK_DOWN: int = 'SDLK_DOWN';
-  const SDLK_NUMLOCK: int = 'SDLK_NUMLOCK';
-  const SDLK_EXCLAIM: int = 'SDLK_EXCLAIM';
-  const KMOD_LMETA: int = 'KMOD_LMETA';
-  const SDLK_LAST: int = 'SDLK_LAST';
-  const SDLK_HELP: int = 'SDLK_HELP';
-  const SDLK_KP0: int = 'SDLK_KP0';
-  const SDLK_KP1: int = 'SDLK_KP1';
-  const SDLK_KP2: int = 'SDLK_KP2';
-  const SDLK_SCROLLOCK: int = 'SDLK_SCROLLOCK';
-  const SDLK_KP3: int = 'SDLK_KP3';
-  const SDLK_KP_PLUS: int = 'SDLK_KP_PLUS';
-  const SDLK_INSERT: int = 'SDLK_INSERT';
-  const SDLK_KP4: int = 'SDLK_KP4';
-  const SDLK_WORLD_10: int = 'SDLK_WORLD_10';
-  const SDLK_KP5: int = 'SDLK_KP5';
-  const SDLK_WORLD_11: int = 'SDLK_WORLD_11';
-  const SDLK_MINUS: int = 'SDLK_MINUS';
-  const SDLK_KP6: int = 'SDLK_KP6';
-  const SDLK_WORLD_12: int = 'SDLK_WORLD_12';
-  const SDLK_LEFTBRACKET: int = 'SDLK_LEFTBRACKET';
-  const SDLK_KP7: int = 'SDLK_KP7';
-  const SDLK_WORLD_13: int = 'SDLK_WORLD_13';
-  const SDLK_KP8: int = 'SDLK_KP8';
-  const SDLK_WORLD_14: int = 'SDLK_WORLD_14';
-  const SDLK_KP9: int = 'SDLK_KP9';
-  const SDLK_RIGHTPAREN: int = 'SDLK_RIGHTPAREN';
-  const SDLK_WORLD_15: int = 'SDLK_WORLD_15';
-  const SDLK_WORLD_16: int = 'SDLK_WORLD_16';
-  const SDLK_QUOTE: int = 'SDLK_QUOTE';
-  const SDLK_FIRST: int = 'SDLK_FIRST';
-  const SDLK_WORLD_17: int = 'SDLK_WORLD_17';
-  const KMOD_NUM: int = 'KMOD_NUM';
-  const SDLK_WORLD_18: int = 'SDLK_WORLD_18';
-  const SDLK_WORLD_19: int = 'SDLK_WORLD_19';
-  const SDLK_QUOTEDBL: int = 'SDLK_QUOTEDBL';
-  const KMOD_RSHIFT: int = 'KMOD_RSHIFT';
-  const SDLK_MENU: int = 'SDLK_MENU';
-  const KMOD_CAPS: int = 'KMOD_CAPS';
-  const SDLK_WORLD_0: int = 'SDLK_WORLD_0';
+  const SDLK_WORLD_1: SDLKey = 'SDLK_WORLD_1';
+  const SDLK_POWER: SDLKey = 'SDLK_POWER';
+  const SDLK_SLASH: SDLKey = 'SDLK_SLASH';
+  const SDLK_WORLD_2: SDLKey = 'SDLK_WORLD_2';
+  const SDLK_WORLD_3: SDLKey = 'SDLK_WORLD_3';
+  const SDLK_F1: SDLKey = 'SDLK_F1';
+  const SDLK_WORLD_4: SDLKey = 'SDLK_WORLD_4';
+  const SDLK_WORLD_20: SDLKey = 'SDLK_WORLD_20';
+  const SDLK_F2: SDLKey = 'SDLK_F2';
+  const SDLK_WORLD_5: SDLKey = 'SDLK_WORLD_5';
+  const SDLK_WORLD_21: SDLKey = 'SDLK_WORLD_21';
+  const SDLK_F3: SDLKey = 'SDLK_F3';
+  const SDLK_KP_EQUALS: SDLKey = 'SDLK_KP_EQUALS';
+  const SDLK_WORLD_6: SDLKey = 'SDLK_WORLD_6';
+  const SDLK_LEFT: SDLKey = 'SDLK_LEFT';
+  const SDLK_WORLD_22: SDLKey = 'SDLK_WORLD_22';
+  const SDLK_F4: SDLKey = 'SDLK_F4';
+  const SDLK_WORLD_7: SDLKey = 'SDLK_WORLD_7';
+  const SDLK_WORLD_23: SDLKey = 'SDLK_WORLD_23';
+  const SDLK_UNDO: SDLKey = 'SDLK_UNDO';
+  const SDLK_F5: SDLKey = 'SDLK_F5';
+  const SDLK_WORLD_8: SDLKey = 'SDLK_WORLD_8';
+  const SDLK_WORLD_24: SDLKey = 'SDLK_WORLD_24';
+  const SDLK_F6: SDLKey = 'SDLK_F6';
+  const SDLK_WORLD_9: SDLKey = 'SDLK_WORLD_9';
+  const SDLK_WORLD_25: SDLKey = 'SDLK_WORLD_25';
+  const SDLK_F7: SDLKey = 'SDLK_F7';
+  const SDLK_WORLD_26: SDLKey = 'SDLK_WORLD_26';
+  const SDLK_F8: SDLKey = 'SDLK_F8';
+  const SDLK_WORLD_27: SDLKey = 'SDLK_WORLD_27';
+  const SDLK_F9: SDLKey = 'SDLK_F9';
+  const SDLK_LEFTPAREN: SDLKey = 'SDLK_LEFTPAREN';
+  const SDLK_WORLD_28: SDLKey = 'SDLK_WORLD_28';
+  const SDLK_WORLD_29: SDLKey = 'SDLK_WORLD_29';
+  const SDLK_KP_ENTER: SDLKey = 'SDLK_KP_ENTER';
+  const SDLK_CAPSLOCK: SDLKey = 'SDLK_CAPSLOCK';
+  const SDLK_WORLD_30: SDLKey = 'SDLK_WORLD_30';
+  const SDLK_WORLD_31: SDLKey = 'SDLK_WORLD_31';
+  const SDLK_COMMA: SDLKey = 'SDLK_COMMA';
+  const SDLK_WORLD_32: SDLKey = 'SDLK_WORLD_32';
+  const SDLK_HASH: SDLKey = 'SDLK_HASH';
+  const SDLK_SPACE: SDLKey = 'SDLK_SPACE';
+  const SDLK_WORLD_33: SDLKey = 'SDLK_WORLD_33';
+  const SDLK_WORLD_34: SDLKey = 'SDLK_WORLD_34';
+  const SDLK_WORLD_35: SDLKey = 'SDLK_WORLD_35';
+  const SDLK_PLUS: SDLKey = 'SDLK_PLUS';
+  const SDLK_WORLD_36: SDLKey = 'SDLK_WORLD_36';
+  const SDLK_WORLD_37: SDLKey = 'SDLK_WORLD_37';
+  const SDLK_WORLD_38: SDLKey = 'SDLK_WORLD_38';
+  const SDLK_KP_PERIOD: SDLKey = 'SDLK_KP_PERIOD';
+  const SDLK_PAUSE: SDLKey = 'SDLK_PAUSE';
+  const SDLK_WORLD_39: SDLKey = 'SDLK_WORLD_39';
+  const SDLK_KP_MINUS: SDLKey = 'SDLK_KP_MINUS';
+  const KMOD_LALT: SDLKey = 'KMOD_LALT';
+  const SDLK_TAB: SDLKey = 'SDLK_TAB';
+  const SDLK_0: SDLKey = 'SDLK_0';
+  const SDLK_COMPOSE: SDLKey = 'SDLK_COMPOSE';
+  const SDLK_1: SDLKey = 'SDLK_1';
+  const SDLK_2: SDLKey = 'SDLK_2';
+  const SDLK_LALT: SDLKey = 'SDLK_LALT';
+  const SDLK_3: SDLKey = 'SDLK_3';
+  const SDLK_WORLD_40: SDLKey = 'SDLK_WORLD_40';
+  const SDLK_4: SDLKey = 'SDLK_4';
+  const SDLK_WORLD_41: SDLKey = 'SDLK_WORLD_41';
+  const SDLK_5: SDLKey = 'SDLK_5';
+  const SDLK_RCTRL: SDLKey = 'SDLK_RCTRL';
+  const SDLK_WORLD_42: SDLKey = 'SDLK_WORLD_42';
+  const SDLK_6: SDLKey = 'SDLK_6';
+  const KMOD_RALT: SDLKey = 'KMOD_RALT';
+  const SDLK_WORLD_43: SDLKey = 'SDLK_WORLD_43';
+  const SDLK_7: SDLKey = 'SDLK_7';
+  const SDLK_WORLD_44: SDLKey = 'SDLK_WORLD_44';
+  const SDLK_8: SDLKey = 'SDLK_8';
+  const SDLK_WORLD_45: SDLKey = 'SDLK_WORLD_45';
+  const SDLK_9: SDLKey = 'SDLK_9';
+  const SDLK_ESCAPE: SDLKey = 'SDLK_ESCAPE';
+  const SDLK_WORLD_46: SDLKey = 'SDLK_WORLD_46';
+  const SDLK_WORLD_47: SDLKey = 'SDLK_WORLD_47';
+  const SDLK_BACKQUOTE: SDLKey = 'SDLK_BACKQUOTE';
+  const SDLK_RALT: SDLKey = 'SDLK_RALT';
+  const SDLK_WORLD_48: SDLKey = 'SDLK_WORLD_48';
+  const SDLK_CARET: SDLKey = 'SDLK_CARET';
+  const SDLK_WORLD_49: SDLKey = 'SDLK_WORLD_49';
+  const SDLK_RIGHT: SDLKey = 'SDLK_RIGHT';
+  const SDLK_DELETE: SDLKey = 'SDLK_DELETE';
+  const SDLK_RSHIFT: SDLKey = 'SDLK_RSHIFT';
+  const SDLK_LESS: SDLKey = 'SDLK_LESS';
+  const SDLK_AMPERSAND: SDLKey = 'SDLK_AMPERSAND';
+  const SDLK_BACKSLASH: SDLKey = 'SDLK_BACKSLASH';
+  const SDLK_WORLD_50: SDLKey = 'SDLK_WORLD_50';
+  const SDLK_WORLD_51: SDLKey = 'SDLK_WORLD_51';
+  const KMOD_LSHIFT: SDLKey = 'KMOD_LSHIFT';
+  const SDLK_WORLD_52: SDLKey = 'SDLK_WORLD_52';
+  const SDLK_WORLD_53: SDLKey = 'SDLK_WORLD_53';
+  const SDLK_WORLD_54: SDLKey = 'SDLK_WORLD_54';
+  const SDLK_RMETA: SDLKey = 'SDLK_RMETA';
+  const SDLK_WORLD_55: SDLKey = 'SDLK_WORLD_55';
+  const SDLK_WORLD_56: SDLKey = 'SDLK_WORLD_56';
+  const SDLK_LCTRL: SDLKey = 'SDLK_LCTRL';
+  const SDLK_WORLD_57: SDLKey = 'SDLK_WORLD_57';
+  const SDLK_WORLD_58: SDLKey = 'SDLK_WORLD_58';
+  const SDLK_WORLD_59: SDLKey = 'SDLK_WORLD_59';
+  const SDLK_RETURN: SDLKey = 'SDLK_RETURN';
+  const SDLK_QUESTION: SDLKey = 'SDLK_QUESTION';
+  const SDLK_BREAK: SDLKey = 'SDLK_BREAK';
+  const SDLK_RSUPER: SDLKey = 'SDLK_RSUPER';
+  const SDLK_WORLD_60: SDLKey = 'SDLK_WORLD_60';
+  const SDLK_WORLD_61: SDLKey = 'SDLK_WORLD_61';
+  const KMOD_MODE: SDLKey = 'KMOD_MODE';
+  const SDLK_WORLD_62: SDLKey = 'SDLK_WORLD_62';
+  const SDLK_UNDERSCORE: SDLKey = 'SDLK_UNDERSCORE';
+  const SDLK_WORLD_63: SDLKey = 'SDLK_WORLD_63';
+  const SDLK_UNKNOWN: SDLKey = 'SDLK_UNKNOWN';
+  const SDLK_WORLD_64: SDLKey = 'SDLK_WORLD_64';
+  const SDLK_BACKSPACE: SDLKey = 'SDLK_BACKSPACE';
+  const SDLK_WORLD_65: SDLKey = 'SDLK_WORLD_65';
+  const SDLK_EQUALS: SDLKey = 'SDLK_EQUALS';
+  const SDLK_WORLD_66: SDLKey = 'SDLK_WORLD_66';
+  const SDLK_PAGEDOWN: SDLKey = 'SDLK_PAGEDOWN';
+  const SDLK_MODE: SDLKey = 'SDLK_MODE';
+  const SDLK_WORLD_67: SDLKey = 'SDLK_WORLD_67';
+  const SDLK_a: SDLKey = 'SDLK_a';
+  const SDLK_WORLD_68: SDLKey = 'SDLK_WORLD_68';
+  const SDLK_HOME: SDLKey = 'SDLK_HOME';
+  const SDLK_b: SDLKey = 'SDLK_b';
+  const SDLK_WORLD_69: SDLKey = 'SDLK_WORLD_69';
+  const SDLK_c: SDLKey = 'SDLK_c';
+  const SDLK_LMETA: SDLKey = 'SDLK_LMETA';
+  const SDLK_d: SDLKey = 'SDLK_d';
+  const SDLK_e: SDLKey = 'SDLK_e';
+  const SDLK_RIGHTBRACKET: SDLKey = 'SDLK_RIGHTBRACKET';
+  const SDLK_f: SDLKey = 'SDLK_f';
+  const SDLK_g: SDLKey = 'SDLK_g';
+  const SDLK_h: SDLKey = 'SDLK_h';
+  const SDLK_i: SDLKey = 'SDLK_i';
+  const SDLK_j: SDLKey = 'SDLK_j';
+  const SDLK_k: SDLKey = 'SDLK_k';
+  const SDLK_PRINT: SDLKey = 'SDLK_PRINT';
+  const SDLK_l: SDLKey = 'SDLK_l';
+  const SDLK_m: SDLKey = 'SDLK_m';
+  const SDLK_WORLD_70: SDLKey = 'SDLK_WORLD_70';
+  const SDLK_n: SDLKey = 'SDLK_n';
+  const SDLK_WORLD_71: SDLKey = 'SDLK_WORLD_71';
+  const SDLK_o: SDLKey = 'SDLK_o';
+  const SDLK_WORLD_72: SDLKey = 'SDLK_WORLD_72';
+  const SDLK_p: SDLKey = 'SDLK_p';
+  const SDLK_WORLD_73: SDLKey = 'SDLK_WORLD_73';
+  const SDLK_q: SDLKey = 'SDLK_q';
+  const SDLK_WORLD_74: SDLKey = 'SDLK_WORLD_74';
+  const SDLK_r: SDLKey = 'SDLK_r';
+  const SDLK_COLON: SDLKey = 'SDLK_COLON';
+  const SDLK_WORLD_75: SDLKey = 'SDLK_WORLD_75';
+  const SDLK_s: SDLKey = 'SDLK_s';
+  const SDLK_WORLD_76: SDLKey = 'SDLK_WORLD_76';
+  const SDLK_t: SDLKey = 'SDLK_t';
+  const SDLK_WORLD_77: SDLKey = 'SDLK_WORLD_77';
+  const SDLK_u: SDLKey = 'SDLK_u';
+  const SDLK_WORLD_78: SDLKey = 'SDLK_WORLD_78';
+  const SDLK_v: SDLKey = 'SDLK_v';
+  const SDLK_WORLD_79: SDLKey = 'SDLK_WORLD_79';
+  const SDLK_w: SDLKey = 'SDLK_w';
+  const SDLK_x: SDLKey = 'SDLK_x';
+  const SDLK_PERIOD: SDLKey = 'SDLK_PERIOD';
+  const SDLK_SEMICOLON: SDLKey = 'SDLK_SEMICOLON';
+  const KMOD_NONE: SDLKey = 'KMOD_NONE';
+  const SDLK_y: SDLKey = 'SDLK_y';
+  const SDLK_EURO: SDLKey = 'SDLK_EURO';
+  const SDLK_z: SDLKey = 'SDLK_z';
+  const SDLK_SYSREQ: SDLKey = 'SDLK_SYSREQ';
+  const SDLK_GREATER: SDLKey = 'SDLK_GREATER';
+  const SDLK_DOLLAR: SDLKey = 'SDLK_DOLLAR';
+  const SDLK_WORLD_80: SDLKey = 'SDLK_WORLD_80';
+  const SDLK_WORLD_81: SDLKey = 'SDLK_WORLD_81';
+  const SDLK_WORLD_82: SDLKey = 'SDLK_WORLD_82';
+  const SDLK_F10: SDLKey = 'SDLK_F10';
+  const SDLK_WORLD_83: SDLKey = 'SDLK_WORLD_83';
+  const SDLK_F11: SDLKey = 'SDLK_F11';
+  const SDLK_WORLD_84: SDLKey = 'SDLK_WORLD_84';
+  const SDLK_LSHIFT: SDLKey = 'SDLK_LSHIFT';
+  const SDLK_F12: SDLKey = 'SDLK_F12';
+  const SDLK_WORLD_85: SDLKey = 'SDLK_WORLD_85';
+  const SDLK_F13: SDLKey = 'SDLK_F13';
+  const SDLK_PAGEUP: SDLKey = 'SDLK_PAGEUP';
+  const SDLK_WORLD_86: SDLKey = 'SDLK_WORLD_86';
+  const SDLK_F14: SDLKey = 'SDLK_F14';
+  const SDLK_UP: SDLKey = 'SDLK_UP';
+  const SDLK_WORLD_87: SDLKey = 'SDLK_WORLD_87';
+  const KMOD_RCTRL: SDLKey = 'KMOD_RCTRL';
+  const SDLK_F15: SDLKey = 'SDLK_F15';
+  const SDLK_WORLD_88: SDLKey = 'SDLK_WORLD_88';
+  const SDLK_WORLD_89: SDLKey = 'SDLK_WORLD_89';
+  const SDLK_KP_MULTIPLY: SDLKey = 'SDLK_KP_MULTIPLY';
+  const SDLK_END: SDLKey = 'SDLK_END';
+  const SDLK_WORLD_90: SDLKey = 'SDLK_WORLD_90';
+  const SDLK_CLEAR: SDLKey = 'SDLK_CLEAR';
+  const SDLK_WORLD_91: SDLKey = 'SDLK_WORLD_91';
+  const SDLK_AT: SDLKey = 'SDLK_AT';
+  const SDLK_WORLD_92: SDLKey = 'SDLK_WORLD_92';
+  const SDLK_WORLD_93: SDLKey = 'SDLK_WORLD_93';
+  const SDLK_KP_DIVIDE: SDLKey = 'SDLK_KP_DIVIDE';
+  const SDLK_WORLD_94: SDLKey = 'SDLK_WORLD_94';
+  const SDLK_WORLD_95: SDLKey = 'SDLK_WORLD_95';
+  const SDLK_ASTERISK: SDLKey = 'SDLK_ASTERISK';
+  const SDLK_LSUPER: SDLKey = 'SDLK_LSUPER';
+  const KMOD_RESERVED: SDLKey = 'KMOD_RESERVED';
+  const KMOD_RMETA: SDLKey = 'KMOD_RMETA';
+  const KMOD_LCTRL: SDLKey = 'KMOD_LCTRL';
+  const SDLK_DOWN: SDLKey = 'SDLK_DOWN';
+  const SDLK_NUMLOCK: SDLKey = 'SDLK_NUMLOCK';
+  const SDLK_EXCLAIM: SDLKey = 'SDLK_EXCLAIM';
+  const KMOD_LMETA: SDLKey = 'KMOD_LMETA';
+  const SDLK_LAST: SDLKey = 'SDLK_LAST';
+  const SDLK_HELP: SDLKey = 'SDLK_HELP';
+  const SDLK_KP0: SDLKey = 'SDLK_KP0';
+  const SDLK_KP1: SDLKey = 'SDLK_KP1';
+  const SDLK_KP2: SDLKey = 'SDLK_KP2';
+  const SDLK_SCROLLOCK: SDLKey = 'SDLK_SCROLLOCK';
+  const SDLK_KP3: SDLKey = 'SDLK_KP3';
+  const SDLK_KP_PLUS: SDLKey = 'SDLK_KP_PLUS';
+  const SDLK_INSERT: SDLKey = 'SDLK_INSERT';
+  const SDLK_KP4: SDLKey = 'SDLK_KP4';
+  const SDLK_WORLD_10: SDLKey = 'SDLK_WORLD_10';
+  const SDLK_KP5: SDLKey = 'SDLK_KP5';
+  const SDLK_WORLD_11: SDLKey = 'SDLK_WORLD_11';
+  const SDLK_MINUS: SDLKey = 'SDLK_MINUS';
+  const SDLK_KP6: SDLKey = 'SDLK_KP6';
+  const SDLK_WORLD_12: SDLKey = 'SDLK_WORLD_12';
+  const SDLK_LEFTBRACKET: SDLKey = 'SDLK_LEFTBRACKET';
+  const SDLK_KP7: SDLKey = 'SDLK_KP7';
+  const SDLK_WORLD_13: SDLKey = 'SDLK_WORLD_13';
+  const SDLK_KP8: SDLKey = 'SDLK_KP8';
+  const SDLK_WORLD_14: SDLKey = 'SDLK_WORLD_14';
+  const SDLK_KP9: SDLKey = 'SDLK_KP9';
+  const SDLK_RIGHTPAREN: SDLKey = 'SDLK_RIGHTPAREN';
+  const SDLK_WORLD_15: SDLKey = 'SDLK_WORLD_15';
+  const SDLK_WORLD_16: SDLKey = 'SDLK_WORLD_16';
+  const SDLK_QUOTE: SDLKey = 'SDLK_QUOTE';
+  const SDLK_FIRST: SDLKey = 'SDLK_FIRST';
+  const SDLK_WORLD_17: SDLKey = 'SDLK_WORLD_17';
+  const KMOD_NUM: SDLKey = 'KMOD_NUM';
+  const SDLK_WORLD_18: SDLKey = 'SDLK_WORLD_18';
+  const SDLK_WORLD_19: SDLKey = 'SDLK_WORLD_19';
+  const SDLK_QUOTEDBL: SDLKey = 'SDLK_QUOTEDBL';
+  const KMOD_RSHIFT: SDLKey = 'KMOD_RSHIFT';
+  const SDLK_MENU: SDLKey = 'SDLK_MENU';
+  const KMOD_CAPS: SDLKey = 'KMOD_CAPS';
+  const SDLK_WORLD_0: SDLKey = 'SDLK_WORLD_0';
+
+  fun eq: SDLKey * SDLKey -> bool = "$1==$2";
+  fun ne: SDLKey * SDLKey -> bool = "$1!=$2";
 }
+
 @h=tangler('lib/SDL/SDL_mouse.flx')
 @select(h)
 //Module        : SDL_mouse_h
@@ -971,8 +1007,10 @@ module SDL_mouse_h
   //STRUCT or UNION TAG ALIASES
   typedef WMcursor = _struct_WMcursor;
   
+  /*
   //TYPE ALIASES
   typedef _struct_SDL_Cursor = SDL_Cursor;
+  */
   
   //PROCEDURES
   proc SDL_FreeCursor: ptr[SDL_Cursor];
@@ -1004,6 +1042,9 @@ include 'std';
 //#define SDL_MUTEX_TIMEDOUT    1
 //#define _SDL_mutex_h
 header '#include "SDL_mutex.h"';
+
+// DO NOT USE THIS MODULE
+// FELIX HAS ITS OWN THREAD HANDLING
 
 module SDL_mutex_h
 {
@@ -1279,7 +1320,6 @@ include 'std';
 //#define SDL_YUY2_OVERLAY  0x32595559  /* Packed mode: Y0+U0+Y1+V0 (1 plane) */
 //#define SDL_IYUV_OVERLAY  0x56555949  /* Planar mode: Y + U + V  (3 planes) */
 //#define SDL_YV12_OVERLAY  0x32315659  /* Planar mode: Y + V + U  (3 planes) */
-//#define SDL_MUSTLOCK(surface) \
 //#define SDL_PREALLOC  0x01000000      /* Surface uses preallocated memory */
 //#define SDL_SRCALPHA  0x00010000      /* Blit uses source alpha blending */
 //#define SDL_RLEACCEL  0x00004000      /* Surface is RLE encoded */
@@ -2686,7 +2726,6 @@ proc waittk() {
   spawn_fthread { waitk w; };
   var &i: uint8 <- read w;
 }
-
 
 
 forall i in 0 upto 15 do      
