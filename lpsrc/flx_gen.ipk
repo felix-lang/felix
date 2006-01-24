@@ -1007,8 +1007,12 @@ let gen_exe filename syms
             assert (length display = 0);
             match ps with
             | [] -> ""
-            | [_,(_,t)] -> 
-              ge_arg a
+            | [_,(i,t)] -> 
+              if Hashtbl.mem syms.instances (i,ts)
+              && not (t = `BTYP_tuple[])
+              then
+                ge_arg a
+              else ""
 
             | _ ->
               begin match a with
@@ -1017,35 +1021,45 @@ let gen_exe filename syms
                 print_endline ("Arg to C function is tuple " ^ sbe syms.dfns a);
                 *)
                 fold_left 
-                (fun s ((x,t) as xt) ->
-                  let x = ge_arg xt in
+                (fun s (((x,t) as xt),(_,(i,_))) ->
+                  let x = 
+                    if Hashtbl.mem syms.instances (i,ts)
+                    && not (t = `BTYP_tuple[])
+                    then ge_arg xt 
+                    else ""
+                  in
                   if String.length x = 0 then s else
                   s ^ 
                   (if String.length s > 0 then ", " else "") ^ (* append a comma if needed *)
                   x
                 )
                 ""
-                xs
+                (combine xs ps)
 
               | _,tt ->
                 let tt = reduce_type (beta_reduce syms [] (lstrip syms.dfns (tsubst vs ts tt))) in
                 (* NASTY, EVALUATES EXPR MANY TIMES .. *)
                 let n = ref 0 in
                 fold_left
-                (fun s i -> 
+                (fun s (i,(_,(j,t))) -> 
                   (*
                   print_endline ( "ps = " ^ catmap "," (fun (id,(p,t)) -> id) ps);
                   print_endline ("tt=" ^ sbt syms.dfns tt);
                   *)
                   let t = nth_type tt i in
                   let a' = `BEXPR_get_n (i,a),t in
-                  let x = ge_arg a' in
+                  let x = 
+                    if Hashtbl.mem syms.instances (j,ts)
+                    && not (t = `BTYP_tuple[])
+                    then ge_arg a' 
+                    else ""
+                  in
                   incr n;
                   if String.length x = 0 then s else
                   s ^ (if String.length s > 0 then ", " else "") ^ x
                 ) 
                 ""
-                (nlist (length ps))
+                (combine (nlist (length ps)) ps)
               end
           in 
           let s = 
@@ -1057,6 +1071,7 @@ let gen_exe filename syms
             "  " ^ name ^ "(" ^ s ^ ");\n"
         else 
           let subs,x = unravel syms bbdfns a in
+          let subs = map (fun ((e,t),s) -> (e,tsub t),s) subs in
           handle_closure sr false index ts subs x true
       | _ -> failwith "procedure expected"
       end
@@ -1067,6 +1082,7 @@ let gen_exe filename syms
     | `BEXE_call (sr,(`BEXPR_closure (index,ts),_),a) ->
       let a = match a with (a,t) -> a, tsub t in
       let subs,x = unravel syms bbdfns a in
+      let subs = map (fun ((e,t),s) -> (e,tsub t),s) subs in
       let ts = map tsub ts in
       handle_closure sr false index ts subs x false
 
@@ -1232,6 +1248,7 @@ let gen_exe filename syms
     | `BEXE_jump_direct (sr,index,ts,a) ->
       let a = match a with (a,t) -> a, tsub t in
       let subs,x = unravel syms bbdfns a in
+      let subs = map (fun ((e,t),s) -> (e,tsub t),s) subs in
       let ts = map tsub ts in
       handle_closure sr true index ts subs x false
 
@@ -2073,7 +2090,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
 
     let argtypename = cpp_typename syms argtype in
     let name = cpp_instance_name syms bbdfns index ts in
-
+    
     let display = get_display_list bbdfns index in
 
     let ctor = 

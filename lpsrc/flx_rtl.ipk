@@ -1,5 +1,10 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.87  2006/01/24 19:15:49  skaller
+Add openGL test sdl110. Currently crashes in gc.
+Add async request counter to driver.
+Add configuration hack for openGL.
+
 Revision 1.86  2006/01/19 17:26:44  skaller
 Add sound to SDL example. Fix serious bug in synchronous
 channel I/O operations.
@@ -1860,6 +1865,7 @@ int main(int argc, char** argv)
     winsock_initer wsinit;
 #endif
 
+    unsigned long async_count = 0;
     proto_async* async = NULL;     // no async
 
     {
@@ -1921,10 +1927,12 @@ int main(int argc, char** argv)
 
             // RF hates the flag this function returns .. might
             // mask a race condition, get rid of it
+            ++async_count;
             if(!req->start_async_op(async->demux, &async->driver, ft))
               // FTHREAD REMAINS A ROOT
               goto process_active
             ;
+            --async_count;
           }
           break;
 
@@ -2063,10 +2071,11 @@ forget_fthread:
       fprintf(stderr, "out of active synchronous threads, trying async\n");
     }
 
-    if(async){
+    if(async && async_count > 0){
       // STILL A ROOT
       fthread_t* ftp = (fthread_t*)async->async_active.dequeue();
       active.push_front(ftp);
+      --async_count;
       goto process_active;
     }
 

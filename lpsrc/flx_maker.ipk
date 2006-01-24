@@ -5,6 +5,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.206  2006/01/24 19:15:49  skaller
+Add openGL test sdl110. Currently crashes in gc.
+Add async request counter to driver.
+Add configuration hack for openGL.
+
 Revision 1.205  2006/01/21 17:02:12  skaller
 SDL sound with Felix callback, and asynchronous multiplexor
 for timeout/keypress example. COOL!
@@ -3039,10 +3044,14 @@ if HAVE_SDL:
   #DEMUX_CPPS = DEMUX_CPPS + SDL_DEMUX_CPPS
   FAIO_CPPS = FAIO_CPPS + SDL_FAIO_CPPS
   DEMUX_CPPS = DEMUX_CPPS
-  CFLAGS = CFLAGS + SDL_CFLAGS
-  DFLAGS = DFLAGS + SDL_LIBS
+  CFLAGS = CFLAGS + SDL_CFLAGS + ' '
+  DFLAGS = DFLAGS + SDL_LIBS + ' '
   EXTRA_LIBS = EXTRA_LIBS + ["SDL_image"]
-  SFLAGS = SFLAGS + SDL_STATIC_LIBS
+  SFLAGS = SFLAGS + SDL_STATIC_LIBS + ' '
+  if HAVE_OPENGL:
+    CFLAGS = CFLAGS + OPENGL_CFLAGS + ' '
+    DFLAGS = DFLAGS + OPENGL_LIBS + ' '
+    SFLAGS = SFLAGS + OPENGL_STATIC_LIBS + ' '
 
 DRIVERS = [
   ('rtl/flx_run','bin/flx_run'),
@@ -4861,6 +4870,7 @@ RUNIT=1
 CCFLAGS=""
 FELIX=1
 LINNKER_SWITCHES=""
+MACROS=""
 grab=1
 
 INCLUDE_DIRS=""
@@ -4978,6 +4988,11 @@ do
 
   x-[lL]*)
    LINKER_SWITCHES="$LINKER_SWITCHES $1"
+   shift 
+  ;;
+
+  x-D*)
+   MACROS="$MACROS $1"
    shift 
   ;;
 
@@ -5236,7 +5251,7 @@ then
   fi
   if [ $? = 0 ]
   then
-    CCMD="$CCOBJ_DLLIB $CCFLAGS -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
+    CCMD="$CCOBJ_DLLIB $CCFLAGS -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
     LCMD="$CCLINK_DLLIB $CCFLAGS $PKGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $DYNLINK_STRING $PTHREAD_SWITCH $LINKER_SWITCHES"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
@@ -5272,7 +5287,7 @@ else
   fi
   if [ $? = 0 ]
   then
-    CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
+    CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I$INCLUDE_DIR $INCLUDE_DIRS $PKGS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
     LCMD="$CCLINK_STATIC $FLXRTL/flx_run_static$EXT_OBJ $PKGS $cppos $base$EXT_OBJ $FLXAR/libflx_static$EXT_LIB $SPEC_EXE_FILENAME$base$EXT_EXE $PTHREAD_SWITCH $LINKER_SWITCHES"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`

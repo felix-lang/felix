@@ -2250,7 +2250,11 @@ components = [
   ("HAVE_WINDOWS_H",'windows.h',
     "Microsoft Windows core CAPI",
     "http://microsoft.com"
-  )
+  ),
+  ("HAVE_OPENGL","GL"+os.sep+"gl.h",
+    'Open GL Graphics Rendering Toolkit',
+    "http://www.opengl.org"
+  ),
   ]
 
 for m,h,d,u in components:
@@ -2282,6 +2286,16 @@ else:
   SDL_LIBS = ""
   SDL_STATIC_LIBS = ""
   print "SDL NOT SUPPORTED"
+
+# HACK -- only right for Linux .. no way to detect 
+if HAVE_OPENGL:
+  OPENGL_CFLAGS=""
+  OPENGL_LIBS="-lGL -lGLU"
+  OPENGL_STATIC_LIBS="-lGL -lGLU"
+else:
+  OPENGL_CFLAGS=""
+  OPENGL_LIBS=""
+  OPENGL_STATIC_LIBS=""
 
 print "ESTABLISHED DEFAULT CONFIGURATION"
 
@@ -2425,6 +2439,10 @@ try:
   p(f,"SDL_CFLAGS")
   p(f,"SDL_LIBS")
   p(f,"SDL_STATIC_LIBS")
+  p(f,"HAVE_OPENGL")
+  p(f,"OPENGL_CFLAGS")
+  p(f,"OPENGL_LIBS")
+  p(f,"OPENGL_STATIC_LIBS")
   pr(f,"")
 
   pr(f,"import flxbuild")

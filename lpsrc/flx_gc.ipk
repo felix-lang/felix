@@ -921,7 +921,6 @@ void flx_collector_t::mark()
 
 unsigned long flx_collector_t::collect()
 {
-  if(debug)check();
   if(debug)fprintf(stderr,"Running collector\n");
   mark();
   unsigned long r = sweep();
