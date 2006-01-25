@@ -1,5 +1,10 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.88  2006/01/25 18:39:55  skaller
+Add mutex to protect SDL event source. Deploy in sdl110.
+Fix bug in rtl, was allocating an slist_t but telling the
+gc the shape was an slist_node_t, gc now runs and checks in sdl110.
+
 Revision 1.87  2006/01/24 19:15:49  skaller
 Add openGL test sdl110. Currently crashes in gc.
 Add async request counter to driver.
@@ -1111,8 +1116,8 @@ flx::gc::generic::gc_shape_t _fthread_ptr_map(
 schannel_t::schannel_t (gc::generic::collector_t *gc) : 
   waiting_to_read(0), waiting_to_write(0) 
 {
-  waiting_to_read = new (*gc, slist_node_ptr_map) slist_t(gc);
-  waiting_to_write = new (*gc, slist_node_ptr_map) slist_t(gc);
+  waiting_to_read = new (*gc, slist_ptr_map) slist_t(gc);
+  waiting_to_write = new (*gc, slist_ptr_map) slist_t(gc);
 }
 
 // uncopyable object but implementation needed for linker

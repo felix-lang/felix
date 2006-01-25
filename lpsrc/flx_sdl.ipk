@@ -1,5 +1,10 @@
 @head(1,'SDL')
 $Log$
+Revision 1.14  2006/01/25 18:39:55  skaller
+Add mutex to protect SDL event source. Deploy in sdl110.
+Fix bug in rtl, was allocating an slist_t but telling the
+gc the shape was an slist_node_t, gc now runs and checks in sdl110.
+
 Revision 1.13  2006/01/25 06:37:27  skaller
 Move all header statements in SDL stuff inside modules
 so the #includes aren't triggered unless something in
@@ -1054,8 +1059,6 @@ module SDL_mouse_h
 //Felix Version : 1.1.2_rc1
 include 'std';
 
-//#define SDL_UnlockMutex(m)    SDL_mutexV(m)
-//#define SDL_LockMutex(m)      SDL_mutexP(m)
 //#define SDL_MUTEX_MAXWAIT     (~(Uint32)0)
 //#define SDL_MUTEX_TIMEDOUT    1
 //#define _SDL_mutex_h
@@ -1068,15 +1071,7 @@ module SDL_mutex_h
   header '#include "SDL_mutex.h"';
   open C_hack;
   
-  //PURE INCOMPLETE TYPES
-  type _struct_SDL_mutex = 'struct SDL_mutex'; //local
-  type _struct_SDL_cond = 'struct SDL_cond'; //local
-  type _struct_SDL_semaphore = 'struct SDL_semaphore'; //local
-  
-  //STRUCT or UNION TAG ALIASES
-  typedef SDL_sem = _struct_SDL_semaphore;
-  typedef SDL_cond = _struct_SDL_cond;
-  typedef SDL_mutex = _struct_SDL_mutex;
+  incomplete ctypes SDL_mutex, SDL_cond, SDL_sem;
   
   //PROCEDURES
   proc SDL_DestroyCond: ptr[SDL_cond];
@@ -1098,6 +1093,8 @@ module SDL_mutex_h
   fun SDL_SemWaitTimeout: ptr[SDL_sem] * uint32 -> int;
   fun SDL_mutexP: ptr[SDL_mutex] -> int;
   fun SDL_mutexV: ptr[SDL_mutex] -> int;
+  fun SDL_LockMutex: ptr[SDL_mutex] -> int;
+  fun SDL_UnlockMutex: ptr[SDL_mutex] -> int;
 }
 @h=tangler('lib/SDL/SDL_rwops.flx')
 @select(h)
@@ -2423,7 +2420,8 @@ module SDL_net_h
 #include "demux_work_fifo.hpp"
 #include "faio_drv.hpp"      // thread_wakeups, 
 #include "faio_asyncio.hpp"  // flx_driver_request_base
-#include <SDL_events.h>
+#include "SDL_mutex.h"
+#include "SDL_events.h"
 
 namespace flx { namespace faio {
 
@@ -2434,9 +2432,10 @@ class FLX_RTL_EXTERN faio_sdl_event : public flx_driver_request_base,
   public demux::worker_task {
    thread_wakeup   fw;
    SDL_Event *e;
+   SDL_mutex *m;
 public:  
   faio_sdl_event() {}     // felix linkage
-  faio_sdl_event(SDL_Event *_e);
+  faio_sdl_event(SDL_Event *_e, SDL_mutex *_m);
 
   // from flx_driver_request_base
   bool start_async_op(demux::demuxer& demux, flx_drv* drv,  void* f);
@@ -2452,12 +2451,13 @@ public:
 @h = tangler("faio/faio_sdl_event.cpp")
 @select(h)
 #include <demux_work_fifo.hpp>
-#include <SDL_events.h>
+#include "SDL_mutex.h"
+#include "SDL_events.h"
 #include "faio_sdl_event.hpp"
 
 namespace flx { namespace faio {
 
-faio_sdl_event::faio_sdl_event(SDL_Event *_e) : e(_e) {}
+faio_sdl_event::faio_sdl_event(SDL_Event *_e, SDL_mutex *_m) : e(_e), m(_m) {}
 
 bool
 faio_sdl_event::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
@@ -2469,7 +2469,11 @@ faio_sdl_event::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
   return false;              // suspended
 }
 
-void faio_sdl_event::doit() { SDL_WaitEvent(e); }  // blocks in pthread
+void faio_sdl_event::doit() { 
+  if(m)SDL_LockMutex(m);
+  SDL_WaitEvent(e); // blocks in pthread
+  if(m)SDL_UnlockMutex(m);
+} 
 
 void faio_sdl_event::finished(){ fw.wake(); }
 
@@ -2486,6 +2490,8 @@ include "flx_faio";
 module SDL_events 
 {
   open SDL_events_h;
+  open SDL_mutex_h;
+
   header faio_sdl_event_hpp = '#include "faio_sdl_event.hpp"';
 
   private type sdl_event_request = 
@@ -2493,16 +2499,28 @@ module SDL_events
     requires faio_sdl_event_hpp
   ;
 
-  private fun mk_sdl_event_request: ptr[SDL_Event] -> sdl_event_request = 
-    "flx::faio::faio_sdl_event($1)";
+  private fun mk_sdl_event_request: ptr[SDL_Event] * ptr[SDL_mutex] -> sdl_event_request = 
+    "flx::faio::faio_sdl_event($1,$2)";
 
   fun event_type: SDL_Event -> uint8 = "$1.type";
 
-  proc get_sdl_event(pe:&SDL_Event)
+  proc get_sdl_event(pe:&SDL_Event, m:ptr[SDL_mutex])
   {
     var cpe = unref pe;
-    var req = mk_sdl_event_request cpe;
+    var req = mk_sdl_event_request (cpe,m);
     Faio::faio_req$ &req;
+  }
+
+  proc block_sdl_events(m:ptr[SDL_mutex])
+  {
+    var dummy = SDL_UserEvent(SDL_USEREVENT,0,NULL,NULL);
+    ignore(SDL_PushEvent(cast [ptr[SDL_Event]] (addr dummy)));
+    ignore(SDL_LockMutex(m));
+  }
+
+  proc unblock_sdl_events(m:ptr[SDL_mutex])
+  {
+    ignore(SDL_UnlockMutex(m));
   }
 }
 
@@ -2514,6 +2532,7 @@ include "SDL/SDL_video";
 include "SDL/SDL_rwops";
 //include "SDL/SDL_image";
 include "SDL/SDL_events";
+include "SDL/SDL_mutex";
 include "SDL/SDL_audio";
 include "flx_faio";
 include "flx_faio_sdl";
@@ -2525,6 +2544,7 @@ open SDL_rwops_h;
 //open SDL_image_h;
 open SDL_events_h;
 open SDL_audio_h;
+open SDL_mutex_h;
 
 open C_hack;
 open Carray;
@@ -2733,15 +2753,17 @@ proc waitt(t:double) (f:schannel[uint8]) {
   write (f,SDL_USEREVENT); // hack for timer event
 }
 
+var event_lock = SDL_CreateMutex ();
+
 proc waitk(f:schannel[uint8]) {
-  var &e : SDL_Event <- get_sdl_event;
+  var &e : SDL_Event <- get_sdl_event event_lock;
   var et = event_type e;
   whilst 
     et != SDL_KEYDOWN and 
     et != SDL_MOUSEBUTTONDOWN and
     et != SDL_QUIT 
   do
-    &e <- get_sdl_event;
+    &e <- get_sdl_event event_lock;
     et = event_type e;
   done;
   write (f,et);
@@ -2801,6 +2823,7 @@ include "SDL/SDL_keysym";
 include "SDL/SDL_video";
 include "SDL/SDL_events";
 include "SDL/SDL_timer";
+include "SDL/SDL_mutex";
 
 include "flx_faio";
 include "flx_faio_sdl";
@@ -2821,6 +2844,7 @@ open SDL_keyboard_h;
 open SDL_events_h;
 open SDL_keysym_h;
 open SDL_timer_h;
+open SDL_mutex_h;
 
 // This is the Felix asynchronous event source 
 open SDL_events;
@@ -2889,6 +2913,7 @@ var Frames = 0;
 /* Here goes our drawing code */
 proc drawGLScene()
 {
+  block_sdl_events event_lock;
   /* Clear The Screen And The Depth Buffer */
   glClear( GL_COLOR_BUFFER_BIT \| GL_DEPTH_BUFFER_BIT );
 
@@ -2914,6 +2939,7 @@ proc drawGLScene()
 
   /* Draw it to the screen */
   SDL_GL_SwapBuffers( );
+  unblock_sdl_events event_lock;
 
   /* Gather our frames per second */
   Frames++;
@@ -2937,6 +2963,9 @@ if SDL_Init(SDL_INIT_AUDIO \| SDL_INIT_VIDEO) < 0 do
   print "Unable to init SDL"; endl;
   System::exit(1);
 done;
+
+var event_lock = SDL_CreateMutex();
+
 
 proc Quit(n:int)
 {
@@ -2999,6 +3028,7 @@ proc handle_active (e:SDL_ActiveEvent)
 
 proc handle_resize(e:SDL_ResizeEvent)
 {
+  block_sdl_events event_lock;
   surface = SDL_SetVideoMode( 
     e.w,
     e.h,
@@ -3008,6 +3038,7 @@ proc handle_resize(e:SDL_ResizeEvent)
     print "Could not get a surface after resize"; endl;
   done;
   resizeWindow( e.w, e.h );
+  unblock_sdl_events event_lock;
 }
 
 /* function to handle key press events */
@@ -3065,7 +3096,7 @@ proc dispatch_event(
 )
 {
   whilst true do
-    var &e : SDL_Event <- get_sdl_event;
+    var &e : SDL_Event <- get_sdl_event event_lock;
     match e.type_ with
     | ?et when et == SDL_ACTIVEEVENT => 
       { write (active, e.active); }
