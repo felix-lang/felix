@@ -5,6 +5,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.207  2006/01/25 00:34:40  rfistman
+removed a few outstanding references to SDL_image
+fixed a tiny typo in flx_use.ipk
+got rid of superfluous private fn in faio.
+
 Revision 1.206  2006/01/24 19:15:49  skaller
 Add openGL test sdl110. Currently crashes in gc.
 Add async request counter to driver.
@@ -3046,7 +3051,8 @@ if HAVE_SDL:
   DEMUX_CPPS = DEMUX_CPPS
   CFLAGS = CFLAGS + SDL_CFLAGS + ' '
   DFLAGS = DFLAGS + SDL_LIBS + ' '
-  EXTRA_LIBS = EXTRA_LIBS + ["SDL_image"]
+  # EXTRA_LIBS = EXTRA_LIBS + ["SDL_image"]
+  EXTRA_LIBS = EXTRA_LIBS  # not using SDL_image right now...
   SFLAGS = SFLAGS + SDL_STATIC_LIBS + ' '
   if HAVE_OPENGL:
     CFLAGS = CFLAGS + OPENGL_CFLAGS + ' '

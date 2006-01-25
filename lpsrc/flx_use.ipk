@@ -127,7 +127,7 @@ and uses_production syms used bbdfns p =
 
 and faulty_req syms i =
   match Hashtbl.find syms.dfns i with {id=id; sr=sr } ->
-  clierr sr (id ^ " is used but has Unsatisfied requirement")
+  clierr sr (id ^ " is used but has unsatisfied requirement")
 
 and uses syms used bbdfns i =
   let ui i = uses syms used bbdfns i in

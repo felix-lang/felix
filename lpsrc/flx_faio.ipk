@@ -1,6 +1,11 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.27  2006/01/25 00:34:40  rfistman
+removed a few outstanding references to SDL_image
+fixed a tiny typo in flx_use.ipk
+got rid of superfluous private fn in faio.
+
 Revision 1.26  2006/01/24 13:21:10  rfistman
 fixed race condition in posix asynchronous connect
 and made test output for same a little more obvious
@@ -1124,16 +1129,8 @@ proc faio_req[t](x:&t) {
     
 // get thread self from driver
 proc get_thread(thread: ptr[fthread]) {
-    //var x = svc_get_fthread (address_of( *thread ));
-    //svc( x );
     svc (svc_get_fthread thread );
 }
-
-// lame - argv gives a string, I might do my own.
-// fine .. but make it private :)
-private fun cargv:int -> charp = 
-  '(char*)($1<0||$1>=ptf->argc??"":ptf->argv[$1])'
-;
 
 //header stdlib_h = '#include <stdlib.h>';            // malloc, free
     

@@ -1,5 +1,10 @@
 @head(1,'SDL')
 $Log$
+Revision 1.12  2006/01/25 00:34:40  rfistman
+removed a few outstanding references to SDL_image
+fixed a tiny typo in flx_use.ipk
+got rid of superfluous private fn in faio.
+
 Revision 1.11  2006/01/24 19:15:49  skaller
 Add openGL test sdl110. Currently crashes in gc.
 Add async request counter to driver.
@@ -2502,7 +2507,7 @@ module SDL_events
 include "SDL/SDL";
 include "SDL/SDL_video";
 include "SDL/SDL_rwops";
-include "SDL/SDL_image";
+//include "SDL/SDL_image";
 include "SDL/SDL_events";
 include "SDL/SDL_audio";
 include "flx_faio";
@@ -2512,7 +2517,7 @@ include "flx_faio_sdl";
 open SDL_h;
 open SDL_video_h;
 open SDL_rwops_h;
-open SDL_image_h;
+//open SDL_image_h;
 open SDL_events_h;
 open SDL_audio_h;
 
