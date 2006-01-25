@@ -18,6 +18,11 @@ val tailit:
   bexe_t list ->
   bexe_t list
 
+val exes_get_xclosures:
+  sym_state_t ->
+  bexe_t list ->
+  IntSet.t
+
 @h = tangler("src/flx_tailit.ml")
 @select(h)
 open Flx_util
@@ -61,6 +66,11 @@ let add_xclosure syms cls e =
 
 let ident x = x 
 
+(* WARNING!! closure here has TWO meanings: a BEXPR_closure,
+  and ALSO the setwise closure of all such explicit closure
+  terms .. 
+*)
+
 let expr_find_xclosures syms cls e =
   iter_tbexpr ignore (add_xclosure syms cls) ignore e
 
@@ -69,6 +79,11 @@ let exe_find_xclosure syms cls exe =
 
 let exes_find_xclosure syms cls exes =
   iter (exe_find_xclosure syms cls) exes
+
+let exes_get_xclosures syms exes =
+  let cls = ref IntSet.empty in
+  exes_find_xclosure syms cls exes;
+  !cls
 
 let function_find_xclosure syms cls bbdfns i =
   let _,_,_,entry = Hashtbl.find bbdfns i in

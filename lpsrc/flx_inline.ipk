@@ -2018,6 +2018,9 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       let children = find_children child_map i in
       iter (fun i-> heavily_inline_bbdcl syms (uses, child_map, bbdfns) excludes i) children;
 
+      let xcls = Flx_tailit.exes_get_xclosures syms exes in
+      IntSet.iter (fun i-> heavily_inline_bbdcl syms (uses, child_map, bbdfns) excludes i) xcls;
+
       (*
       print_endline ("HIB: Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
       print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe syms.dfns 0) exes);
@@ -2061,6 +2064,9 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       (* inline into all children first *)
       let children = find_children child_map i in
       iter (fun i-> heavily_inline_bbdcl syms (uses, child_map, bbdfns) excludes i) children;
+
+      let xcls = Flx_tailit.exes_get_xclosures syms exes in
+      IntSet.iter (fun i-> heavily_inline_bbdcl syms (uses, child_map, bbdfns) excludes i) xcls;
 
       (*
       print_endline ("HIB:Examining function " ^ id ^"<" ^ si i ^ "> for inlinable calls");
