@@ -1,5 +1,10 @@
 @head(1,'SDL')
 $Log$
+Revision 1.13  2006/01/25 06:37:27  skaller
+Move all header statements in SDL stuff inside modules
+so the #includes aren't triggered unless something in
+the module is actually used.
+
 Revision 1.12  2006/01/25 00:34:40  rfistman
 removed a few outstanding references to SDL_image
 fixed a tiny typo in flx_use.ipk
@@ -65,10 +70,10 @@ include 'std';
 //#define SDL_INIT_AUDIO                0x00000010
 //#define       SDL_INIT_TIMER          0x00000001
 //#define _SDL_H
-header '#include "SDL.h"';
 
 module SDL_h
 {
+  header '#include "SDL.h"';
   open C_hack;
   
   const SDL_INIT_EVERYTHING: uint32;
@@ -105,10 +110,10 @@ include 'std';
 //#define SDL_APPINPUTFOCUS     0x02            /* The app has input focus */
 //#define SDL_APPMOUSEFOCUS     0x01            /* The app has mouse coverage */
 //#define _SDL_active_h
-header '#include "SDL_active.h"';
 
 module SDL_active_h
 {
+  header '#include "SDL_active.h"';
   open C_hack;
   
   //FUNCTIONS
@@ -126,13 +131,13 @@ module SDL_active_h
 //Felix Version : 1.1.2_rc1
 include 'std';
 
-header '#include "SDL_audio.h"';
 
 //INCLUDES
 include"SDL/SDL_rwops";
 
 module SDL_audio_h
 {
+  header '#include "SDL_audio.h"';
   open C_hack;
   open SDL_rwops_h;
 
@@ -259,10 +264,10 @@ include 'std';
 //#define SDL_AUDIO_TRACK       0x00
 //#define SDL_MAX_TRACKS        99
 //#define _SDL_cdrom_h
-header '#include "SDL_cdrom.h"';
 
 module SDL_cdrom_h
 {
+  header '#include "SDL_cdrom.h"';
   open C_hack;
   
   //ABSTRACT TYPES
@@ -329,10 +334,10 @@ include 'std';
 
 //#define SDL_OutOfMemory()     SDL_Error(SDL_ENOMEM)
 //#define _SDL_error_h
-header '#include "SDL_error.h"';
 
 module SDL_error_h
 {
+  header '#include "SDL_error.h"';
   open C_hack;
   
   //ABSTRACT TYPES
@@ -372,13 +377,13 @@ include 'std';
 //#define SDL_ALLEVENTS         0xFFFFFFFF
 //#define SDL_EVENTMASK(X)      (1<<(X))
 //#define _SDL_events_h
-header '#include "SDL_events.h"';
 
 //INCLUDES
 include"SDL/SDL_keyboard";
 
 module SDL_events_h
 {
+  header '#include "SDL_events.h"';
   open C_hack;
   open SDL_keyboard_h;
   
@@ -608,10 +613,10 @@ include 'std';
 //#define SDL_HAT_UP            0x01
 //#define SDL_HAT_CENTERED      0x00
 //#define _SDL_joystick_h
-header '#include "SDL_joystick.h"';
 
 module SDL_joystick_h
 {
+  header '#include "SDL_joystick.h"';
   open C_hack;
   
   //PURE INCOMPLETE TYPES
@@ -656,13 +661,13 @@ include 'std';
 //#define SDL_DEFAULT_REPEAT_DELAY      500
 //#define SDL_ALL_HOTKEYS               0xFFFFFFFF
 //#define _SDL_keyboard_h
-header '#include "SDL_keyboard.h"';
 
 //INCLUDES
 include"SDL/SDL_keysym";
 
 module SDL_keyboard_h
 {
+  header '#include "SDL_keyboard.h"';
   open C_hack;
   open SDL_keysym_h;
   
@@ -708,10 +713,10 @@ include 'std';
 //#define KMOD_SHIFT    (KMOD_LSHIFT|KMOD_RSHIFT)
 //#define KMOD_CTRL     (KMOD_LCTRL|KMOD_RCTRL)
 //#define _SDL_keysym_h
-header '#include "SDL_keysym.h"';
 
 module SDL_keysym_h
 {
+  header '#include "SDL_keysym.h"';
   open C_hack;
   
   //ABSTRACT TYPES
@@ -993,13 +998,13 @@ include 'std';
 //#define SDL_BUTTON_LEFT               1
 //#define SDL_BUTTON(X)         (SDL_PRESSED<<(X-1))
 //#define _SDL_mouse_h
-header '#include "SDL_mouse.h"';
 
 //INCLUDES
 include"SDL/SDL_video";
 
 module SDL_mouse_h
 {
+  header '#include "SDL_mouse.h"';
   open C_hack;
   open SDL_video_h;
   
@@ -1054,13 +1059,13 @@ include 'std';
 //#define SDL_MUTEX_MAXWAIT     (~(Uint32)0)
 //#define SDL_MUTEX_TIMEDOUT    1
 //#define _SDL_mutex_h
-header '#include "SDL_mutex.h"';
 
 // DO NOT USE THIS MODULE
 // FELIX HAS ITS OWN THREAD HANDLING
 
 module SDL_mutex_h
 {
+  header '#include "SDL_mutex.h"';
   open C_hack;
   
   //PURE INCOMPLETE TYPES
@@ -1167,13 +1172,13 @@ include 'std';
 //#define TIMER_RESOLUTION      10      /* Experimentally determined */
 //#define SDL_TIMESLICE         10
 //#define _SDL_timer_h
-header '#include "SDL_timer.h"';
 
 //INCLUDES
 include"SDL/SDL_types";
 
 module SDL_timer_h
 {
+  header '#include "SDL_timer.h"';
   open C_hack;
   open SDL_types_h;
   
@@ -1239,10 +1244,10 @@ include 'std';
 //#define SDL_HAS_64BIT_TYPE    long
 //#define SDL_TABLESIZE(table)  (sizeof(table)/sizeof(table[0]))
 //#define _SDL_types_h
-header '#include "SDL_types.h"';
 
 module SDL_types_h
 {
+  header '#include "SDL_types.h"';
   open C_hack;
   
   //ABSTRACT TYPES
@@ -1289,10 +1294,10 @@ include 'std';
 //#define SDL_MINOR_VERSION     2
 //#define SDL_MAJOR_VERSION     1
 //#define _SDL_version_h
-header '#include "SDL_version.h"';
 
 module SDL_version_h
 {
+  header '#include "SDL_version.h"';
   open C_hack;
   
   //CSTRUCTS 
@@ -1354,7 +1359,6 @@ include 'std';
 //#define SDL_ALPHA_TRANSPARENT 0
 //#define SDL_ALPHA_OPAQUE 255
 //#define _SDL_video_h
-header '#include "SDL_video.h"';
 
 //INCLUDES
 include"SDL/SDL_rwops";
@@ -1362,6 +1366,7 @@ include"SDL/SDL_types";
 
 module SDL_video_h
 {
+  header '#include "SDL_video.h"';
   open C_hack;
   open SDL_rwops_h;
   open SDL_types_h;
@@ -1612,7 +1617,6 @@ include 'std';
 //#define SDL_SwapLE16(X)       (X)
 //#define SDL_Swap64(X) (X)
 //#define _SDL_endian_h
-header '#include "SDL_endian.h"';
 
 //INCLUDES
 include "SDL/SDL_rwops";
@@ -1620,6 +1624,7 @@ include "SDL/SDL_types";
 
 module SDL_endian_h
 {
+  header '#include "SDL_endian.h"';
   open C_hack;
   open SDL_rwops_h;
   open SDL_types_h;
@@ -1661,13 +1666,13 @@ include 'std';
 //#define FPS_LOWER_LIMIT               1
 //#define FPS_UPPER_LIMIT               200
 //#define _SDL_framerate_h
-header '#include "SDL_framerate.h"';
 
 //INCLUDES
 include "SDL/SDL";
 
 module SDL_framerate_h
 {
+  header '#include "SDL_framerate.h"';
   open C_hack;
   open SDL_h;
   
@@ -1701,7 +1706,6 @@ include 'std';
 //#define SDL_GFXPRIMITIVES_MAJOR       2
 //#define M_PI  3.141592654
 //#define _SDL_gfxPrimitives_h
-header '#include "SDL_gfxPrimitives.h"';
 
 //INCLUDES
 include "SDL/SDL";
@@ -1709,6 +1713,7 @@ include "SDL/SDL_video";
 
 module SDL_gfxPrimitives_h
 {
+  header '#include "SDL_gfxPrimitives.h"';
   open C_hack;
   open SDL_h;
   open SDL_video_h;
@@ -1775,10 +1780,10 @@ module SDL_gfxPrimitives_h
 include 'std';
 
 //#define GFX_FONTDATAMAX (8*256)
-header '#include "SDL_gfxPrimitives_font.h"';
 
 module SDL_gfxPrimitives_font_h
 {
+  header '#include "SDL_gfxPrimitives_font.h"';
   open C_hack;
   
   //VARIABLES
@@ -1803,7 +1808,6 @@ include 'std';
 //#define SDL_IMAGE_MINOR_VERSION       2
 //#define SDL_IMAGE_MAJOR_VERSION       1
 //#define _SDL_IMAGE_H
-header '#include "SDL_image.h"';
 
 //INCLUDES
 include "SDL/SDL_rwops";
@@ -1812,6 +1816,7 @@ include "SDL/SDL_video";
 
 module SDL_image_h
 {
+  header '#include "SDL_image.h"';
   open C_hack;
   open SDL_rwops_h;
   open SDL_version_h;
@@ -1862,10 +1867,10 @@ include 'std';
 //#define DLLINTERFACE __declspec(dllimport)
 //#define DLLINTERFACE __declspec(dllexport)
 //#define _SDL_imageFilter_h
-header '#include "SDL_imageFilter.h"';
 
 module SDL_imageFilter_h
 {
+  header '#include "SDL_imageFilter.h"';
   open C_hack;
   
   //PROCEDURES
@@ -1944,7 +1949,6 @@ include 'std';
 //#define SDL_MIXER_MINOR_VERSION       2
 //#define SDL_MIXER_MAJOR_VERSION       1
 //#define _SDL_MIXER_H
-header '#include "SDL_mixer.h"';
 
 //INCLUDES
 include "SDL/SDL_rwops";
@@ -1952,6 +1956,7 @@ include "SDL/SDL_version";
 
 module SDL_mixer_h
 {
+  header '#include "SDL_mixer.h"';
   open C_hack;
   open SDL_rwops_h;
   open SDL_version_h;
@@ -2125,13 +2130,13 @@ include 'std';
 //#define SNDDECLSPEC __declspec(dllexport)
 //#define SDLCALL
 //#define _INCLUDE_SDL_SOUND_H_
-header '#include "SDL_sound.h"';
 
 //INCLUDES
 include "SDL/SDL_rwops";
 
 module SDL_sound_h
 {
+  header '#include "SDL_sound.h"';
   open C_hack;
   open SDL_rwops_h;
   
@@ -2186,7 +2191,6 @@ include 'std';
 //#define SMOOTHING_OFF         0
 //#define M_PI  3.141592654
 //#define _SDL_rotozoom_h
-header '#include "SDL_rotozoom.h"';
 
 //INCLUDES
 include "SDL/SDL";
@@ -2194,6 +2198,7 @@ include "SDL/SDL_video";
 
 module SDL_rotozoom_h
 {
+  header '#include "SDL_rotozoom.h"';
   open C_hack;
   open SDL_h;
   open SDL_video_h;
@@ -2252,7 +2257,6 @@ include 'std';
 //#define TTF_MINOR_VERSION     0
 //#define TTF_MAJOR_VERSION     2
 //#define _SDLttf_h
-header '#include "SDL_ttf.h"';
 
 //INCLUDES
 include "SDL/SDL_rwops";
@@ -2261,6 +2265,7 @@ include "SDL/SDL_video";
 
 module SDL_ttf_h
 {
+  header '#include "SDL_ttf.h"';
   open C_hack;
   open SDL_rwops_h;
   open SDL_version_h;
@@ -2351,10 +2356,10 @@ include 'std';
 //#define INADDR_NONE           0xFFFFFFFF
 //#define INADDR_ANY            0x00000000
 //#define _SDLnet_h
-header '#include "SDL_net.h"';
 
 module SDL_net_h
 {
+  header '#include "SDL_net.h"';
   open C_hack;
   
   //ABSTRACT TYPES
@@ -2601,6 +2606,13 @@ struct sample_t {
 
 macro val NUM_SOUNDS = 2;
 var sounds : sample_t ^ NUM_SOUNDS;
+
+{
+  var j:int;
+  forall j in 0 upto NUM_SOUNDS-1 do
+    sounds.[j] = sample_t(null_ptr[uint8],0u32,0u32);
+  done;
+};
 
 proc flx_mixaudio(stream : ptr[uint8], len : int)
 {
@@ -3107,3 +3119,4 @@ spawn_fthread { keychan keyboard; };
 spawn_fthread { drawchan clicks; };
 spawn_fthread { framerate (clicks, 0.1); };
 // main thread hangs
+
