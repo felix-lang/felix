@@ -1,6 +1,10 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.28  2006/01/26 10:04:28  rfistman
+fixed failure to wake fthread after connects that finish immediately.
+this fast connect only ever shows up on solaris, so full marks to them.
+
 Revision 1.27  2006/01/25 00:34:40  rfistman
 removed a few outstanding references to SDL_image
 fixed a tiny typo in flx_use.ipk
@@ -719,7 +723,7 @@ connect_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 
   posix_demuxer*  pd = (posix_demuxer*)&demux;
 
-  // call failed, wake up thread
+  // call failed or finished (!), wake up thread as no wakeup coming
   if(start(*pd) == -1) return true; 
 
   // NONONONONO! Referring to this's variables after a successful start

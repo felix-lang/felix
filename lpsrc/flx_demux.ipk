@@ -1,5 +1,9 @@
 @head(1,'demux')
 $Log$
+Revision 1.25  2006/01/26 10:04:28  rfistman
+fixed failure to wake fthread after connects that finish immediately.
+this fast connect only ever shows up on solaris, so full marks to them.
+
 Revision 1.24  2006/01/21 23:45:10  rfistman
 fixed potential leak and warning in posix_timer_queue constructor
 
@@ -2555,7 +2559,7 @@ fileio_request::doit()
 #include <sys/types.h>      // send/recv
 #include <sys/socket.h>
 
-#include <sys/errno.h>
+#include <errno.h>
 
 namespace flx { namespace demux {
 
@@ -2724,8 +2728,13 @@ connect_control_block::start(posix_demuxer& demux)
 
   if(finished)
   {
+    // this actually happens on solaris when connecting to localhost!
     fprintf(stderr,"async_connect finished immediately, waking\n");
-    return 0;     // success
+    fprintf(stderr, "No wakeup coming...\n");
+    // this does not indicate an error, but that there is no wakeup
+    // coming. this could be done by a wakeup, all that happens is
+    // getsockopt is called to check the socket's error state.
+    return -1;          
   }
 
   // fprintf(stderr,"connect_request didn't finish immediatly, sleeping\n");
