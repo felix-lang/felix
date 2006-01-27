@@ -2000,18 +2000,6 @@ case 3 33
 1
 2
 3
-@head(2,"tut/examples/tut210.expect")
-@select(tangler("tut/examples/tut210.expect","data"))
-Start .. 
-Hello World
-This is Felix
-Saying Bye for now
-.. OK
-@head(2,"tut/examples/tut211.expect")
-@select(tangler("tut/examples/tut211.expect","data"))
-10 threads
-10 messages
-100
 @head(2,"tut/examples/tut301.expect")
 Output of this test is platform dependent and too hard to check.
 @head(2,"tut/examples/tut302.expect")
@@ -2049,16 +2037,6 @@ Main got message: Hello main from t1!
 @head(2,"tut/examples/tut313.expect")
 @select(tangler("tut/examples/tut313.expect","data"))
 3
-@head(2,"tut/examples/tut314.expect")
-@select(tangler("tut/examples/tut314.expect","data"))
-driver request test
-driver name code is 1
-exit code is 2
-Name service performed, result flx_run
-main launched t1
-t1 starts
-t1 continues
-t1 dies
 @head(2,"tut/examples/tut315.expect")
 @select(tangler("tut/examples/tut315.expect","data"))
 OK
