@@ -1318,11 +1318,10 @@ module Control
   /*6*/ | svc_spawn_detached      of fthread
   /*7*/ | svc_sread               of _schannel * &gcaddress
   /*8*/ | svc_swrite              of _schannel * &gcaddress
-  /*9*/ | svc_sclose              of _schannel 
-  /*10*/ | svc_kill               of fthread 
-  /*11*/ | svc_compact
-  /*12*/ | svc_collect
-  /*13*/ | svc_collect_and_compact
+  /*9*/ | svc_kill                of fthread 
+  /*10*/ | svc_compact
+  /*11*/ | svc_collect
+  /*12*/ | svc_collect_and_compact
   ;
 
   publish "Call Supervisor"
@@ -1334,7 +1333,7 @@ module Control
   }
 
   _gc_pointer type schannel[t] = "flx::rtl::schannel_t*";
-  private type _schannel = "flx::rtl::schannel_t*";
+  private _gc_pointer type _schannel = "flx::rtl::schannel_t*";
   fun mk_schannel[t]: 1->schannel[t] = 
     "new(*PTF gc,flx::rtl::schannel_ptr_map) flx::rtl::schannel_t(PTF gc)"
   ; 

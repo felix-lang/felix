@@ -685,6 +685,7 @@ void * flx_collector_t::allocate(gc_shape_t *shape, unsigned long nobj)
   }
   assert(fp); // Got some memory!
 
+  if(debug)fprintf(stderr,"Allocated %p-0x%x= new %s\n", FRAME_TO_CLIENT(fp),FRAMESIZE,shape->cname);
   // initialise the shape, garbage flag, and refcount
   fp->shape = shape;
   fp->garbage = parity;

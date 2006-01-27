@@ -1,5 +1,10 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.89  2006/01/27 08:40:11  skaller
+Moved main driver loop out of mainline in preparation for
+librar-ising it. Added separate debug switches for allocation,
+collection, and driver diagnostics.
+
 Revision 1.88  2006/01/25 18:39:55  skaller
 Add mutex to protect SDL event source. Deploy in sdl110.
 Fix bug in rtl, was allocating an slist_t but telling the
@@ -365,10 +370,9 @@ struct FLX_RTL_EXTERN fthread_t // fthread abstraction
 
   fthread_t();                  // dead thread, suitable for assignment
   fthread_t(con_t*);            // make thread from a continuation
-  virtual _uctor_ *run();       // run until dead or driver service request
+  _uctor_ *run();               // run until dead or driver service request
   void kill();                  // kill the continuation
   _uctor_ *get_svc()const;      // get current service request of waiting thread
-  virtual ~fthread_t();         // kill the thread -- continuation cc unaffected
 private: // uncopyable
   fthread_t(fthread_t const&); 
   void operator=(fthread_t const&);
@@ -387,8 +391,6 @@ struct FLX_RTL_EXTERN schannel_t
   fthread_t *pop_reader();
   void push_writer(fthread_t *);
   fthread_t *pop_writer();
-  void close();               /// Close channel, killing subscribers
-  ~schannel_t();
 private: // uncopyable
   schannel_t(schannel_t const&); 
   void operator= (schannel_t const&); 
@@ -404,11 +406,10 @@ struct FLX_RTL_EXTERN _ref_
   void *frame;      ///< Heap frame pointer
   std::ptrdiff_t offset;   ///< Client Data offset
 
-  _ref_(){}
+  _ref_() : frame(0),offset(0) {}
   _ref_(void *f, void *d): frame(f), offset((unsigned char*)d-(unsigned char*)f) {}
   _ref_(void *f, std::ptrdiff_t d): frame(f), offset(d) {}
   _ref_(_ref_ const& r) : frame(r.frame), offset(r.offset) { }
-  ~_ref_() { frame=0; offset=0; }
   void operator = (_ref_ const& r);
 
   void *get_data()const { return (unsigned char*)frame + offset; }
@@ -590,11 +591,10 @@ enum svc_t               // what the dispatch should do
   svc_spawn_detached=6,
   svc_sread=7,           // synchronous read
   svc_swrite=8,          // synchronous write
-  svc_sclose=9,          // close channel
-  svc_kill=10,           // kill fthread
-  svc_compact=11,        // run compactor
-  svc_collect=12,        // run collector
-  svc_collect_and_compact=13,        // run collector and compactor
+  svc_kill=9,           // kill fthread
+  svc_compact=10,        // run compactor
+  svc_collect=11,        // run collector
+  svc_collect_and_compact=12,        // run collector and compactor
   svc_end
 };
 
@@ -1047,7 +1047,6 @@ void _root_ptr_t::erase() {
 
 fthread_t::fthread_t() : cc(0) {}
 fthread_t::fthread_t(con_t *a) : cc(a) {}
-fthread_t::~fthread_t(){cc=0;}
 
 // uncopyable object but implementation needed for linker
 fthread_t::fthread_t(fthread_t const&){ assert(false); }
@@ -1095,15 +1094,10 @@ static std::size_t _fthread_offsets[1]={
     offsetof(fthread_t,cc)
 };
 
-static void _fthread_finaliser (flx::gc::generic::collector_t *, void *p)
-{
-  ((fthread_t*)p)->~fthread_t();
-}
-
 flx::gc::generic::gc_shape_t _fthread_ptr_map(
   "fthread_t",
   1,sizeof(fthread_t),
-  _fthread_finaliser,
+  0,
   1,
   _fthread_offsets,
   gc::generic::gc_flags_immobile
@@ -1144,15 +1138,6 @@ fthread_t *schannel_t::pop_writer()
   return (fthread_t*)waiting_to_write->pop();
 }
 
-void schannel_t::close()
-{
-  fthread_t *blocked;
-  while( (blocked = pop_reader()) ) blocked->kill();
-  while( (blocked = pop_writer()) ) blocked->kill();
-}
-
-schannel_t::~schannel_t() { close(); }
-
 //OFFSETS for schannel_t
 static std::size_t schannel_offsets[2]={
     offsetof(schannel_t,waiting_to_read),
@@ -1185,15 +1170,10 @@ static std::size_t _ref_offsets[1]={
     offsetof(_ref_,frame)
 };
 
-static void _ref_finaliser (flx::gc::generic::collector_t *, void *p)
-{
-  ((_ref_*)p)->~_ref_();
-}
-
 flx::gc::generic::gc_shape_t _ref_ptr_map(
   "_ref_",
   1,sizeof(_ref_),
-  _ref_finaliser,
+  0, // no finaliser
   1,
   _ref_offsets
 );
@@ -1773,81 +1753,32 @@ public:
 
 };
 
-int main(int argc, char** argv)
+int run_felix(
+  bool debug_driver, 
+  bool debug_allocations, 
+  bool debug_collections, 
+  unsigned long compact, 
+  bool finalise,
+  int gc_freq,
+  char *filename, 
+  int flx_argc, 
+  char **flx_argv
+)
 {
-#ifndef FLX_STATIC_LINK  
-  bool static_link = false;
-  if (argc<2) 
-  {
-    printf("usage: flx_run [--debug] dll_filename options ..\n");
-    return 1;
-  }
-  char *filename = argv[1];
-  char **flx_argv = argv+1;
-  int flx_argc = argc-1;
-  bool debug = (argc > 1) && (strcmp(argv[1],"--debug")==0);
-  if(debug)
-  {
-    if(argc<3)
-    {
-      printf("usage: flx_run [--debug] dll_filename options ..\n");
-      return 1;
-    }
-    filename = argv[2];
-    --flx_argc;
-    ++flx_argv;
-  }
-#else
-  bool static_link = true;
-  char *filename = argv[0];
-  char **flx_argv = argv;
-  int flx_argc = argc;
-  bool debug = false;
-//  printf("Statically linked Felix program running\n");
-#endif
-  char *debug_env = std::getenv("FLX_DEBUG");
-  debug = debug || debug_env != 0;
-  if(debug)
-  {
-    fprintf(stderr,"Debug enabled for %s link program\n",static_link?"static":"dynamic");
-  }
-  char *finalise_env= std::getenv("FLX_FINALISE");
-  bool finalise = finalise_env != 0;
-
-  if(debug) 
-    fprintf(stderr,"Finalisation %s\n",finalise? "Enabled" : "Disabled");
-
-  char *compact_env= std::getenv("FLX_COMPACT");
-  unsigned long compact = compact_env?atol(compact_env):0;
-  if(debug)
-    if(compact)
-      fprintf(stderr,"Compacting with arena minimum size = %ldK\n",compact);
-  compact = compact * 1024;
-
-#ifdef HAVE_GXX
-    if(debug)fprintf(stderr, "Compiled by g++\n");
-    static void *init_sp = sp;
-    static void *init_fframe FLX_UNUSED = __builtin_frame_address(0);
-    static void *init_ret = __builtin_return_address(0);
-    if(debug)fprintf(stderr, "Stack pointer = %p, frame=%p, return=%p\n",sp,init_fframe,init_ret);
-#endif
-  if(debug)
-    for(int i=0; i<flx_argc; ++i) 
-    fprintf(stderr,"flx_argv[%d]->%s\n",i,flx_argv[i]);
   try 
   {
-    if(debug)
+    if(debug_driver)
       fprintf(stderr,"flx_run driver begins %s\n",flx_argv[0]);
     flx_dynlink_t library;
     flx_libinit_t instance;
 
     library.link(filename);
     flx::gc::collector::malloc_free allocator;
-    allocator.set_debug(debug);
+    allocator.set_debug(debug_allocations);
     flx::gc::collector::flx_collector_t collector(&allocator);
-    collector.set_debug(debug);
+    collector.set_debug(debug_collections);
     instance.create(&library, &collector,flx_argc,flx_argv,stdin,stdout,stderr);
-    if(debug){
+    if(debug_driver){
       fprintf(stderr,"loaded library %s at %p\n",filename,library.library);
       fprintf(stderr,"thread frame at %p\n",instance.thread_frame);
       fprintf(stderr,"initial continuation at %p\n",instance.start_proc);
@@ -1889,20 +1820,20 @@ int main(int argc, char** argv)
       while(request)
       {
         gc_counter++;
-        if(gc_counter == 1000)
+        if(gc_counter == gc_freq)
         {
           gc_counter = 0;
           ++collections;
           unsigned long n = collector.collect();
           if(compact) collector.compact(true);
-          if(debug)fprintf(stderr,"collected %ld objects\n",n);
+          if(debug_collections)fprintf(stderr,"collected %ld objects\n",n);
         }
         
         switch(request->variant)
         {
           case svc_yield: 
           {
-            if(debug)fprintf(stderr,"yield");
+            if(debug_driver)fprintf(stderr,"yield");
             active.push_back(ft);
             goto process_active;
           }
@@ -1917,7 +1848,7 @@ int main(int argc, char** argv)
           case svc_spawn_detached:
           {
             fthread_t *ftx = *(fthread_t**)request->data;
-            if(debug)fprintf(stderr,"Spawn thread %p\n",ftx);
+            if(debug_driver)fprintf(stderr,"Spawn thread %p\n",ftx);
             collector.add_root(ftx);
             active.push_front(ftx);
           }
@@ -1945,7 +1876,7 @@ int main(int argc, char** argv)
           {
             readreq_t * pr = (readreq_t*)request->data;
             schannel_t *chan = pr->chan;
-            if(debug)fprintf(stderr,"Request to read on channel %p\n",chan);
+            if(debug_driver)fprintf(stderr,"Request to read on channel %p\n",chan);
           svc_read_next:
             {
               fthread_t *writer= chan->pop_writer();
@@ -1954,7 +1885,7 @@ int main(int argc, char** argv)
               {
                 readreq_t * pr = (readreq_t*)request->data;
                 readreq_t * pw = (readreq_t*)writer->get_svc()->data;
-                if(debug)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable.get_data(),*(void**)pw->variable.get_data(), pr->variable.get_data());
+                if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable.get_data(),*(void**)pw->variable.get_data(), pr->variable.get_data());
                 *(void**)pr->variable.get_data() = *(void**)pw->variable.get_data();
                 active.push_front(writer);
                 collector.add_root(writer);
@@ -1971,7 +1902,7 @@ int main(int argc, char** argv)
           {
             readreq_t * pr = (readreq_t*)request->data;
             schannel_t *chan = pr->chan;
-            if(debug)fprintf(stderr,"Request to write on channel %p\n",chan);
+            if(debug_driver)fprintf(stderr,"Request to write on channel %p\n",chan);
           svc_write_next:
             {
               fthread_t *reader= chan->pop_reader();
@@ -1980,7 +1911,7 @@ int main(int argc, char** argv)
               {
                 readreq_t * pw = (readreq_t*)request->data;
                 readreq_t * pr = (readreq_t*)reader->get_svc()->data;
-                if(debug)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable.get_data(),*(void**)pw->variable.get_data(), pr->variable.get_data());
+                if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable.get_data(),*(void**)pw->variable.get_data(), pr->variable.get_data());
                 *(void**)pr->variable.get_data() = *(void**)pw->variable.get_data();
                 active.push_front(reader);
                 collector.add_root(reader);
@@ -1993,20 +1924,10 @@ int main(int argc, char** argv)
             goto forget_fthread;
           }
           
-          case svc_sclose:
-          {
-            readreq_t * pr = (readreq_t*)request->data;
-            schannel_t *chan = pr->chan;
-            if(debug)fprintf(stderr,"Request to close channel %p\n",chan);
-            chan->close();
-          }
-          break;
-
-
           case svc_kill:
           {
             fthread_t *ftx = *(fthread_t**)request->data;
-            if(debug)fprintf(stderr,"Request to kill fthread %p\n",ftx);
+            if(debug_driver)fprintf(stderr,"Request to kill fthread %p\n",ftx);
             ftx -> kill();
           }
           break; // keep running (even if we suicided)
@@ -2014,7 +1935,7 @@ int main(int argc, char** argv)
           case svc_driver_request:
           {
             _uctor_ dreq = *(_uctor_*)request->data;
-            if(debug)fprintf(stderr,"Request code %d \n",dreq.variant);
+            if(debug_driver)fprintf(stderr,"Request code %d \n",dreq.variant);
             switch (dreq.variant)
             {
               case dreq_get_driver_name:
@@ -2036,7 +1957,7 @@ int main(int argc, char** argv)
           case svc_compact:
           {
             // requires fthreads to be immobile
-            if(debug)fprintf(stderr,"svc compact\n");
+            if(debug_driver)fprintf(stderr,"svc compact\n");
             collector.compact(false);
           }
           break;
@@ -2044,7 +1965,7 @@ int main(int argc, char** argv)
           case svc_collect:
           {
             // requires fthreads to be immobile
-            if(debug)fprintf(stderr,"svc collect\n");
+            if(debug_driver)fprintf(stderr,"svc collect\n");
             collector.collect();
           }
           break;
@@ -2052,7 +1973,7 @@ int main(int argc, char** argv)
           case svc_collect_and_compact:
           {
             // requires fthreads to be immobile
-            if(debug)fprintf(stderr,"svc collect and compact\n");
+            if(debug_driver)fprintf(stderr,"svc collect and compact\n");
             collector.collect();
             collector.compact(true);
           }
@@ -2066,13 +1987,13 @@ int main(int argc, char** argv)
         request = ft->run();
       }
 forget_fthread:
-      if(debug)fprintf(stderr,"unrooting fthread %p\n",ft);
+      if(debug_driver)fprintf(stderr,"unrooting fthread %p\n",ft);
       collector.remove_root(ft);
     }
 
     
     // ran out of active threads - are there any in the async queue?
-    if(debug){
+    if(debug_driver){
       fprintf(stderr, "out of active synchronous threads, trying async\n");
     }
 
@@ -2084,9 +2005,9 @@ forget_fthread:
       goto process_active;
     }
 
-    if(debug)fprintf(stderr,"Out of active threads\n");
+    if(debug_driver)fprintf(stderr,"Out of active threads\n");
 cleanup:
-    if(debug){
+    if(debug_driver){
       unsigned long uncollected = collector.get_allocation_count();
       unsigned long roots = collector.get_root_count();
       fprintf(stderr,"program finished, %ld collections, %ld uncollected objects, roots %ld\n",collections,uncollected,roots);
@@ -2095,35 +2016,35 @@ cleanup:
     if(finalise)
     {
       {
-        if(debug)
-          fprintf(stderr,"Data collection starts ..\n");
+        if(debug_driver || debug_collections)
+          fprintf(stderr,"Finalisation: pass 1 Data collection starts ..\n");
         unsigned long n = collector.collect();
         unsigned long a = collector.get_allocation_count();
-        if(debug)
+        if(debug_driver || debug_collections)
           fprintf(stderr,"flx_run collected %ld objects, %ld left\n",n,a);
       }
-      if(debug)
+      if(debug_driver)
         fprintf(stderr,"Destroying program instance\n");
       instance.destroy();
 
-      if(debug)
-        fprintf(stderr,"Final collection starts ..\n");
+      if(debug_driver || debug_collections)
+        fprintf(stderr,"Finalisation: pass 2 Final collection starts ..\n");
       unsigned long n = collector.collect();
       unsigned long a = collector.get_allocation_count();
-      if(debug)
+      if(debug_driver || debug_collections)
         fprintf(stderr,"Collected %ld objects, %ld left (should be 0)\n",n,a);
       if(a!=0){
         fprintf(stderr,"flx_run %ld uncollected objects, should be zero!!\n",a);
         return 5;
       }
-      if(debug)
+      if(debug_driver)
         fprintf(stderr,"Libref cnt = %ld\n",library.refcnt);
       if(library.refcnt >0)
       {
-        if(debug)
+        if(debug_driver)
           fprintf(stderr,"flx_run %p library still referenced %ld times (expected 1)\n",library.library,library.refcnt);
       }
-      if(debug)
+      if(debug_driver)
         fprintf(stderr,"Unlinking library ..\n");
       library.unlink();
       if(library.refcnt >0)
@@ -2131,11 +2052,11 @@ cleanup:
         fprintf(stderr,"flx_run %p library still referenced %ld times?!\n",library.library,library.refcnt);
         return 6;
       }
-      if(debug)
+      if(debug_driver)
         fprintf(stderr,"flx_run driver ends with finalisation complete, collected %ld,left=%ld\n",n,a);
     }
     else {
-      if(debug){
+      if(debug_driver || debug_collections){
         unsigned long a = collector.get_allocation_count();
         fprintf(stderr,"flx_run driver ends with finalisation skipped, %ld uncollected objects\n",a);
       }
@@ -2174,6 +2095,118 @@ cleanup:
     fprintf(stderr,"flx_run driver ends with unknown EXCEPTION\n");
     return 4;
   }
+  return 0;
+}
+
+int main(int argc, char** argv)
+{
+#ifndef FLX_STATIC_LINK  
+  bool static_link = false;
+  if (argc<2) 
+  {
+    printf("usage: flx_run [--debug] dll_filename options ..\n");
+    printf("  environment variables:\n");
+    printf("  FLX_DEBUG               # enable debugging traces (default off)\n");
+    printf("  FLX_DEBUG_ALLOCATIONS   # enable debugging allocator (default FLX_DEBUG)\n");
+    printf("  FLX_DEBUG_COLLECTIONS   # enable debugging collector (default FLX_DEBUG)\n");
+    printf("  FLX_DEBUG_DRIVER        # enable debugging driver (default FLX_DEBUG)\n");
+    printf("  FLX_FINALISE            # whether to cleanup on termination (default NO)\n");
+    printf("  FLX_COMPACT=n           # size of compaction arena, 0 to disable (default)\n");
+    printf("  FLX_GC_FREQ=n           # how often to call garbage collector (default 1000)\n");
+    return 1;
+  }
+  char *filename = argv[1];
+  char **flx_argv = argv+1;
+  int flx_argc = argc-1;
+  bool debug = (argc > 1) && (strcmp(argv[1],"--debug")==0);
+  if(debug)
+  {
+    if(argc<3)
+    {
+      printf("usage: flx_run [--debug] dll_filename options ..\n");
+      return 1;
+    }
+    filename = argv[2];
+    --flx_argc;
+    ++flx_argv;
+  }
+#else
+  bool static_link = true;
+  char *filename = argv[0];
+  char **flx_argv = argv;
+  int flx_argc = argc;
+  bool debug = false;
+//  printf("Statically linked Felix program running\n");
+#endif
+  char *debug_env = std::getenv("FLX_DEBUG");
+  debug = debug || debug_env != 0;
+  if(debug)
+  {
+    fprintf(stderr,"[FLX_DEBUG] Debug enabled for %s link program\n",static_link?"static":"dynamic");
+  }
+
+  bool debug_allocations = debug || std::getenv("FLX_DEBUG_ALLOCATIONS") !=0;
+  if(debug_allocations)
+  {
+    fprintf(stderr,"[FLX_DEBUG_ALLOCATIONS] Allocation debug enabled\n");
+  }
+
+  bool debug_collections = debug || std::getenv("FLX_DEBUG_COLLECTIONS") !=0;
+  if(debug_collections)
+  {
+    fprintf(stderr,"[FLX_DEBUG_COLLECTIONS] Collection debug enabled\n");
+  }
+
+
+  bool debug_driver = debug || std::getenv("FLX_DEBUG_DRIVER") !=0;
+  if(debug_driver)
+  {
+    fprintf(stderr,"[FLX_DEBUG_DRIVER] Driver debug enabled\n");
+  }
+
+
+  char *finalise_env= std::getenv("FLX_FINALISE");
+  bool finalise = finalise_env != 0;
+
+  if(debug) 
+    fprintf(stderr,"[FLX_FINALISE] Finalisation %s\n",finalise? "Enabled" : "Disabled");
+
+  char *compact_env= std::getenv("FLX_COMPACT");
+  unsigned long compact = compact_env?atol(compact_env):0;
+  if(debug)
+  {
+    if(compact)
+      fprintf(stderr,"[FLX_COMPACT] Compacting with arena minimum size = %ldK\n",compact);
+    else
+      fprintf(stderr,"[FLX_COMPACT] Compaction initially OFF\n");
+  }
+  compact = compact * 1024;
+
+  char *gc_freq_env= std::getenv("FLX_GC_FREQ");
+  int gc_freq = gc_freq_env?atoi(gc_freq_env):1000;
+  if (gc_freq < 1) gc_freq = 1;
+  if(debug)
+    fprintf(stderr,"[FLX_GC_FREQ] call gc every %d iterations\n",gc_freq);
+
+#ifdef HAVE_GXX
+    if(debug)fprintf(stderr, "Compiled by g++\n");
+    static void *init_sp = sp;
+    static void *init_fframe FLX_UNUSED = __builtin_frame_address(0);
+    static void *init_ret = __builtin_return_address(0);
+    if(debug)fprintf(stderr, "Stack pointer = %p, frame=%p, return=%p\n",sp,init_fframe,init_ret);
+#endif
+  if(debug)
+    for(int i=0; i<flx_argc; ++i) 
+    fprintf(stderr,"flx_argv[%d]->%s\n",i,flx_argv[i]);
+
+    run_felix(
+      debug_driver,
+      debug_allocations,
+      debug_collections,
+      compact,finalise,gc_freq,
+      filename,flx_argc,flx_argv
+    );
+
 #ifdef HAVE_GXX
     // check the frame pointer isn't corrupted
     static void *fin_sp = sp;

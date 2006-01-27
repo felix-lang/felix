@@ -31,6 +31,7 @@ let rec eassoc x l = match l with
   Note primitive applications are regarded as unary operators.
 *)
 let unravel syms bbdfns e =
+  let urn = 4 in
   let sube = ref [] in
   let get e = 
     try eassoc e !sube 
@@ -46,10 +47,17 @@ let unravel syms bbdfns e =
   in
   let idt t = t in
   let e' = 
-    let rec aux e = 
+    let rec aux n e = 
+      let n = n - 1 in
       match e with
       | `BEXPR_apply ((`BEXPR_name _,_) as f, b),t ->
-        refer (`BEXPR_apply (f, aux b),t)
+        refer (`BEXPR_apply (f, aux urn b),t)
+
+      (*
+      (* no unravelling of primitives *)
+      | `BEXPR_apply_prim (i,ts,b),t  when n > 0 ->
+        `BEXPR_apply_prim (i, ts, aux n b),t
+      *)
 
       | `BEXPR_apply_direct (i,ts,b),t 
       | `BEXPR_apply ((`BEXPR_closure (i,ts),_), b),t ->
@@ -59,20 +67,20 @@ let unravel syms bbdfns e =
         | `BBDCL_regmatch _
         | `BBDCL_reglex _
         | `BBDCL_struct _ 
-        | `BBDCL_fun _ -> `BEXPR_apply_direct (i, ts, aux b),t
-        | `BBDCL_function _ -> refer (`BEXPR_apply_direct (i,ts, aux b),t)
+        | `BBDCL_fun _ -> `BEXPR_apply_direct (i, ts, aux n b),t
+        | `BBDCL_function _ -> refer (`BEXPR_apply_direct (i,ts, aux urn b),t)
 
         | _ -> assert false
         end
 
-      | `BEXPR_apply (f,b),t -> refer (`BEXPR_apply(aux f, aux b),t)
-      | `BEXPR_tuple ls,t -> (`BEXPR_tuple (map aux ls),t)
+      | `BEXPR_apply (f,b),t -> refer (`BEXPR_apply(aux urn f, aux urn b),t)
+      | `BEXPR_tuple ls,t -> (`BEXPR_tuple (map (aux n) ls),t)
       | (`BEXPR_name _,t) as x -> x
       | (`BEXPR_literal (`AST_int _ )),t as x -> x
       | (`BEXPR_literal (`AST_float _ )),t as x -> x
       | x -> refer x
     in 
-      aux e
+      aux urn e
   in
   let sube = rev !sube in
   (*
