@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.90  2006/01/27 11:44:13  skaller
+Fix bug in schannel shape object.
+
 Revision 1.89  2006/01/27 08:40:11  skaller
 Moved main driver loop out of mainline in preparation for
 librar-ising it. Added separate debug switches for allocation,
@@ -1148,7 +1151,7 @@ flx::gc::generic::gc_shape_t schannel_ptr_map(
   "schannel_t",
   1,sizeof(schannel_t),
   0, // no finaliser
-  1,
+  2,
   schannel_offsets
 );
 
@@ -1894,6 +1897,7 @@ int run_felix(
             break; // keep running
 
           svc_read_none:
+            if(debug_driver)fprintf(stderr,"No writers on channel %p: BLOCKING\n",chan);
             chan->push_reader(ft);
             goto forget_fthread;
           }
@@ -1920,6 +1924,7 @@ int run_felix(
             break; // keep running
 
           svc_write_none:
+            if(debug_driver)fprintf(stderr,"No readers on channel %p: BLOCKING\n",chan);
             chan->push_writer(ft);
             goto forget_fthread;
           }
