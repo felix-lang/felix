@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.30  2006/01/28 05:12:14  skaller
+Fiddles to config, fix to faio to use C_hack::malloc.
+
 Revision 1.29  2006/01/28 02:36:37  skaller
 Add packages.
 
@@ -1585,6 +1588,7 @@ include "flx_faio_win32";
 #import <flx_platform.flxh>
 
 open Faio;  // copipes
+open C_hack; // malloc
 
 #if POSIX
 open Faio_posix;
