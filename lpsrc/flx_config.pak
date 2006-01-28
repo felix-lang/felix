@@ -2539,6 +2539,7 @@ flx_expr_terminator_keywords = [
     ("not", "NOT"),
     ("obj", "OBJECT"),
     ("open","OPEN"),
+    ("package", "PACKAGE"),
     ("pod", "POD"),
     ("private", "PRIVATE"),
     ("proc", "PROCEDURE"),

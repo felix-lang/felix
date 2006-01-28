@@ -577,6 +577,7 @@ requirement:
   | BODY code_spec { `Body_req $2 }
   | HEADER code_spec { `Header_req $2 }
   | PROPERTY STRING { `Property_req (snd $2) }
+  | PACKAGE code_spec { `Package_req $2 }
 
 requirements:
   | requirement COMMA requirements { $1 :: $3 }

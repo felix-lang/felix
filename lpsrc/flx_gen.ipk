@@ -2524,6 +2524,7 @@ try
   and iface_file_name = filebase ^ ".fix"
   and header_file_name = filebase ^ ".hpp"
   and body_file_name = filebase ^ ".cpp" 
+  and package_file_name = filebase ^ ".resh" 
   and report_file_name = filebase ^ ".xref" 
   and module_name = 
     let n = String.length filebase in 
@@ -2787,10 +2788,58 @@ try
     
   let hf = open_out header_file_name in
   let bf = open_out body_file_name in 
+  let pf = open_out package_file_name in 
   let psh s = output_string hf s in
   let psb s = output_string bf s in
+  let psp s = output_string pf s in
   let plh s = psh s; psh  "\n" in
   let plb s = psb s; psb "\n" in
+  let plp s = psp s; psp "\n" in
+
+  if compiler_options.print_flag 
+  then print_endline "//GENERATING Package Requirements";
+  
+  (* These must be in order: build a list and sort it *)
+  begin
+    let dfnlist = ref [] in
+    Hashtbl.iter
+    (fun (i,ts) _ -> dfnlist := (i,ts) :: !dfnlist)
+    syms.instances
+    ;
+    let insts = Hashtbl.create 97 in
+    List.iter 
+    (fun (i,ts)->
+      match 
+        try Hashtbl.find bbdfns i 
+        with Not_found -> failwith ("[package] can't find index " ^ si i)
+      with (id,parent,sr,entry) ->
+      match entry with
+      | `BBDCL_insert (_,s,`Package,_) -> 
+        begin match s with
+        | `Str "" | `StrTemplate "" -> ()
+        | _ ->
+          let s = 
+            match s with
+            | `Str s -> Flx_cexpr.ce_expr "atom" s
+            | `StrTemplate s ->
+              (* do we need tsubst vs ts t? *)
+              let tn t = cpp_typename syms (Flx_typing.lower t) in
+              let ts = List.map tn ts in
+              Flx_csubst.csubst sr sr s [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"]
+          in
+          let s = Flx_cexpr.sc "expr" s in
+          if not (Hashtbl.mem insts s) then
+          begin
+            Hashtbl.add insts s ();
+            plp s
+          end
+        end
+      | _ -> ()
+    )
+    (List.sort compare !dfnlist)
+  end
+  ;
+
 
   if compiler_options.print_flag 
   then print_endline "//GENERATING C++: user headers";

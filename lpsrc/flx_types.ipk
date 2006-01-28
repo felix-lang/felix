@@ -530,11 +530,13 @@ and requirement_t = [
   | `Header_req of c_t
   | `Named_req of qualified_name_t 
   | `Property_req of string
+  | `Package_req of c_t
 ]
 
 and ikind_t = [
   | `Header
   | `Body
+  | `Package
 ] 
 and requirements_t = requirement_t list
 and named_reqs_t = qualified_name_t list
@@ -2860,6 +2862,7 @@ and string_of_reqs = function
       | `Body_req c -> "body " ^ string_of_code_spec c
       | `Header_req c -> "header " ^ string_of_code_spec c
       | `Property_req s -> "property \"" ^ s ^ "\""
+      | `Package_req c -> "package " ^ string_of_code_spec c
     )
     x
 
@@ -3072,6 +3075,7 @@ and string_of_statement level s =
     (match ikind with 
     | `Header -> "header "
     | `Body -> "body "
+    | `Package -> "package "
     )
     ^n^print_vs vs^ 
     "\n" ^ string_of_code_spec s ^ " " ^
@@ -3448,7 +3452,11 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t)
     ";"
 
   | `SYMDEF_insert (s,ikind, reqs) -> 
-    (match ikind with | `Header -> "header " | `Body -> "body ") ^
+    (match ikind with 
+    | `Header -> "header " 
+    | `Body -> "body "
+    | `Package -> "package "
+    ) ^
     name ^ print_ivs vs ^
     " "^ string_of_code_spec s ^ 
      string_of_named_reqs reqs ^
@@ -3845,7 +3853,11 @@ and string_of_dcl level name seq vs (s:dcl_t) =
 
   | `DCL_insert (s,ikind, reqs) -> 
     spaces level ^ 
-    (match ikind with | `Header -> "header " | `Body -> "body ") ^ 
+    (match ikind with 
+    | `Header -> "header " 
+    | `Body -> "body "
+    | `Package -> "package "
+    ) ^ 
     name^seq ^  print_vs vs ^
     " = "^ string_of_code_spec s ^
     string_of_named_reqs reqs ^ ";"
@@ -4023,7 +4035,11 @@ and string_of_bbdcl dfns bbdcl index =
      ";"
 
   | `BBDCL_insert (vs,s,ikind,reqs) -> 
-     (match ikind with | `Header -> "header " | `Body -> "body ") ^
+     (match ikind with 
+     | `Header -> "header " 
+     | `Body -> "body "
+     | `Package -> "package "
+     ) ^
     name^  print_bvs vs ^
     " "^ string_of_code_spec s ^
     string_of_breqs dfns reqs

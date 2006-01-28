@@ -865,6 +865,12 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
         let dcl = Dcl (sr,n,ix,access,[],`DCL_insert (s,`Header,[])) in
         aux t props ( dcl :: dcls) ( `AST_name (sr,n,parent_ts sr) :: nrqs)
 
+      | `Package_req s ->
+        let n = !(syms.counter) in incr syms.counter;
+        let n = "_req_" ^ si n in
+        let dcl = Dcl (sr,n,ix,access,[],`DCL_insert (s,`Package,[])) in
+        aux t props ( dcl :: dcls) ( `AST_name (sr,n,parent_ts sr) :: nrqs)
+
       | `Named_req n -> aux t props dcls (n::nrqs)
       | `Property_req s -> aux t (mkprop sr s :: props) dcls nrqs
     in aux rqs [] [] []

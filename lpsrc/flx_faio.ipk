@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.29  2006/01/28 02:36:37  skaller
+Add packages.
+
 Revision 1.28  2006/01/26 10:04:28  rfistman
 fixed failure to wake fthread after connects that finish immediately.
 this fast connect only ever shows up on solaris, so full marks to them.
@@ -1136,14 +1139,6 @@ proc get_thread(thread: ptr[fthread]) {
     svc (svc_get_fthread thread );
 }
 
-//header stdlib_h = '#include <stdlib.h>';            // malloc, free
-    
-// be careful of this being optimized away 
-//JS: why? it isn't used .. and its in C_hack anyhow :)
-//RF: I'm not seeing it.
-fun malloc: int -> address = 'malloc($1)' requires stdlib_h;
-proc free: address = 'free($1);' requires stdlib_h; 
-    
 //header asyncio_h = '#include "faio_asyncio.hpp"';
 // could go through and conditionally require this header, but I'm
 // not going to right now.

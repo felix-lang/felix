@@ -792,6 +792,10 @@ module C_hack
   private union _dummy[t] = | _new of t;
   private fun _udata[t]: _dummy[t]->gcptr[t] = "(?1*)$1.data";
   fun xnew[t](x:t) => _udata$ _new x;
+
+  // raw allocation and deallocation
+  fun malloc: int -> address = 'malloc($1)' requires stdlib_h;
+  proc free: address = 'free($1);' requires stdlib_h; 
 }
 
 module Carray
