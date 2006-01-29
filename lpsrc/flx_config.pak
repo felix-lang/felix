@@ -1929,7 +1929,9 @@ except:
 # uname -v: kernel-version " #1 Thu Dec 22 11:12:06 UTC 2005" on JS box
 # uname -m: machine hardware name: "x86_64" on JS box
 # uname -o: operating system: "GNU/Linux" on JS box
-# uname -p: OSX only? reports machine? 
+# uname -p: OSX only? on osx reports broad cpu type (e.g. powerpc)
+# not sure what it reports on intel macs. 
+# machine command reports very specific cpu type, e.g. ppc7450, ppc7400
 
 result,output = get_stdout("uname -m")
 if not result:

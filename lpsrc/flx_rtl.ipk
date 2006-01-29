@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.91  2006/01/29 02:17:29  rfistman
+using latest demux, added epoll to flx_run (for linux). bugs fixed.
+
 Revision 1.90  2006/01/27 11:44:13  skaller
 Fix bug in schannel shape object.
 
@@ -172,6 +175,10 @@ T &reinterpret(U const &x) {
 
 @if MACOSX:
   tangle("#define MACOSX")
+
+@if LINUX:
+  tangle("#define FLX_LINUX")
+
 
 @if SOLARIS:
   tangle("#define SOLARIS")
@@ -1732,29 +1739,57 @@ static struct driver_request_entry_t flx_run_services[]=
 class proto_async
 {
 public:
+
+#if defined(MACOSX)
+    kqueue_demuxer demux;
+#elif defined(SOLARIS)
+    evtport_demuxer demux;
+#elif defined(FLX_LINUX)
+    epoll_demuxer demux;
+#elif !defined(_WIN32)
+    select_demuxer demux;  // probably not thread safe
+#endif
+
 #ifdef _WIN32
     win_queue async_active;
+	// zzz
+    win_thread ethread;
     iocp_demuxer demux;
     wflx_drv driver;
-#elif defined(MACOSX)
-    posix_queue async_active;
-    kqueue_demuxer demux;
-    pflx_drv driver;
-#elif defined(SOLARIS)
-    posix_queue async_active;
-    evtport_demuxer demux;
-    pflx_drv driver;
+    DWORD demux_thread(LPVOID udat);
 #else
     posix_queue async_active;
-    select_demuxer demux;
+    apthread ethread;
     // this isn't what it looks like (i.e. a driver) but rather
     // just a wrapper for the queue.
     pflx_drv driver;
+    static void* demux_thread(void* udat);
 #endif
 
-   proto_async() : driver(async_active) {}
+
+   proto_async() : driver(async_active) {
+     // start waiting thread
+     if(ethread.init(demux_thread, &demux) == -1) -1;
+   }
 
 };
+
+#ifdef _WIN32
+DWORD
+proto_async::demux_thread(LPVOID udat)
+#else
+void*
+proto_async::demux_thread(void* udat)
+#endif
+{
+    demuxer*    d = (demuxer*)udat;
+
+    while(1)                // cancellation? what's that?
+    {
+        d->wait();          // this does it
+    }
+    return 0;
+}
 
 int run_felix(
   bool debug_driver, 

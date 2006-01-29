@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.26  2006/01/29 02:17:29  rfistman
+using latest demux, added epoll to flx_run (for linux). bugs fixed.
+
 Revision 1.25  2006/01/26 10:04:28  rfistman
 fixed failure to wake fthread after connects that finish immediately.
 this fast connect only ever shows up on solaris, so full marks to them.
@@ -31,19 +34,34 @@ Integrate SDL tests, provide initial SDL event demux.
 
 namespace flx { namespace demux {
 
-struct sel_param {
+typedef struct {
   char*   buffer;           // set on input
   long    buffer_size;        // set on input
   long    bytes_written;        // set on input and output
-};
 
-// abstract base class(gee - it doesn't do much)
+  bool    finished() { return bytes_written == buffer_size; }
+}sel_param;
+
+// rename ...
+// read/write flags - they're no longer mutually exclusive
+enum { PDEMUX_READ = 1, PDEMUX_WRITE = 2 };
+
+
+// abstract base class (gee - it doesn't do much)
 class FLX_RTL_EXTERN demuxer {
 protected:
+  // wait for outstanding events. may return before given events, so
+  // check your conditions. I've turned of all the timeouts that cause
+  // this, but don't rely on it!
+  // FACTOR. Give poll a greedy interface
+  virtual void  get_evts(bool poll) = 0;
+
 public:
   virtual ~demuxer() {}
-};
 
+  void wait() { get_evts(false); }
+  void poll() { get_evts(true); }
+};
 }} // namespace demux, flx
 #endif  /* __DEMUXER__ */
 
@@ -56,19 +74,23 @@ public:
 #include "demux_posix_demuxer.hpp"
 
 namespace flx { namespace demux {
+// epoll allows only one event per socket - it does not differentiate
+// on the awaited operation (read/write), however it does let you wait
+// on any combination (I think)
 class FLX_RTL_EXTERN epoll_demuxer : public posix_demuxer {
   int   epoll_fd;
 
-  virtual void  thread_loop_body();
-  void    cleanup();
+  // be careful of this - don't let it create race conditions
+  // should probably only be called by wait = in one thread only (check)
+  // this removes ALL outstanding events for s.
+  void  remove_wakeup(int s);
 
-  void  remove_socket(int s, bool read);
-
+  virtual void  get_evts(bool poll);
 public:
   epoll_demuxer();
   virtual ~epoll_demuxer();
   
-  virtual int add_socket_wakeup(socket_wakeup* sv, bool read);
+  virtual int   add_socket_wakeup(socket_wakeup* sv, int flags);
 };
 
 }} // namespace demux, flx
@@ -81,43 +103,42 @@ public:
 
 // driver for solaris 10 event port notifications
 
-#include <flx_rtl_config.hpp>
 #include "demux_posix_demuxer.hpp"
 
-namespace flx { namespace demux {
+// Event ports are oneshot by default (I don't know if you can change that).
+// Events are tracked only by fd and not fd*event, so you cannot add
+// separate wakeups for read and write with the same fd and hope for it to
+// work as the later one will overwrite the earlier, fodder for race
+// conditions. This impl satisfies 1-1 wakeup to request ratio.
 
-// oops - have found out that you can't separately associate
-// the same fd with POLLIN and POLLOUT without doing it at
-// the same time (separately just overwrites the last). It's
-// not often that you add the same fd for both reading and
-// writing, but I've done it, so I'm making the old
-// evtport demuxer a "half" demuxer, that handles either
-// in or out and wrap them both in single demuxer for now.
-// kinda yuk, as we'll have 3 pthreads, one which exits
-// immediately.
-class FLX_RTL_EXTERN evtport_half_demuxer : public posix_demuxer {
-    int     evtport;
-  void  cleanup();
-protected:
-    virtual void  thread_loop_body();
+// I don't know if evtports can be waited upon by other evtports
 
-  void remove_reading_fd(int s);
-  void remove_writing_fd(int s);
-public:
-  evtport_half_demuxer();
-  virtual ~evtport_half_demuxer();
-
-  virtual int add_socket_wakeup(socket_wakeup* sv, bool read);
-};
+// OBS.
+// after removing the threads from the demuxers/event sources
+// how are the two half demuxers supposed to work? They used to
+// have three threads and now they have one. How can two waits be
+// done in one thread? I could add one half_demuxer's evtport to
+// the other's and wait on that. Would that work? Otherwise I'll
+// have to start a thread, which screws things up a bit. Could do
+// that and communicate back to single thread via a waitable queue.
+// could have three half-demuxers, add them both to third and call
+// their wait functions depending on the outer's wait result.
 
 class FLX_RTL_EXTERN evtport_demuxer : public posix_demuxer {
-    virtual void  thread_loop_body();   // trivial, exits
+    int     evtport;
 
-  evtport_half_demuxer  in;
-  evtport_half_demuxer  out;
+  // I think evtports only track socket the socket and not
+  // socket*operation, so there's only one remove
+  void remove_wakeup(int s);
+
+    virtual void  get_evts(bool poll);
 public:
-  virtual int add_socket_wakeup(socket_wakeup* sv, bool read);
+  evtport_demuxer();
+  virtual ~evtport_demuxer();
+
+  virtual int   add_socket_wakeup(socket_wakeup* sv, int flags);
 };
+
 
 }} // namespace demux, flx
 #endif
@@ -138,9 +159,13 @@ public:
 
 namespace flx { namespace demux {
 
-// not here? returns INVALID_SOCKET on failure
-SOCKET FLX_RTL_EXTERN create_listener_socket(int* io_port, int backlog);
-
+// not here? returns INVALID_SOCKET on failure.
+// if *io_port == 0, then a port is chosen and returned in *io_port
+SOCKET create_listener_socket(int* io_port, int backlog);
+// these two probably not used. move to wsockety.h
+SOCKET nice_accept(SOCKET listener);
+SOCKET nice_connect(const char* addr, int port);
+int set_tcp_nodelay(int s, int disable_nagle);
 
 // this thing isn't actually being used by the iocp code. it should be.
 class FLX_RTL_EXTERN win_thread {
@@ -169,6 +194,7 @@ public:
 class FLX_RTL_EXTERN iocp_wakeup {
 protected:            // folks need to use these in win 32 calls
   OVERLAPPED  ol;
+  // store wakeup error here?
   // I didn't want this to be felixy, useful though.
   void clear_overlapped();  // zero the OVERLAPPED structure
 public:
@@ -189,14 +215,8 @@ public:
 
 class FLX_RTL_EXTERN iocp_demuxer : public demuxer {
   HANDLE    iocp;     // the io completion queue
-  win_thread  iocp_thread;  // our "select" thread
 
-  // necessary windows magic for CreateThread
-  // see CreateThread example code on MSDN
-  static DWORD WINAPI worker_thread_stub(LPVOID lParam);
-  void    worker_thread_body();
-
-  void    cleanup();
+  void get_evts(bool poll);
 public:
   iocp_demuxer();
   virtual ~iocp_demuxer();
@@ -209,6 +229,7 @@ public:
   // the OVERLAPPED retrieved from the iocp is assumed to be part of
   // an iocp_wakeup - beware! returns 0 on success, -1 on failure.
   int associate_with_iocp(HANDLE obj, ULONG_PTR udat);
+
 };
 
 // synchronisation stuff
@@ -246,20 +267,20 @@ namespace flx { namespace demux {
 class FLX_RTL_EXTERN kqueue_demuxer : public posix_demuxer {
   int   kq;
 protected:
-  virtual void  thread_loop_body();
+  // this could just be passed the socket_wakeup, if it stored
+  // the flags. Those flags are also set, though, which would
+  // create a race condition. In and out flags?
 
-  void remove_reading_fd(int s);
-  void remove_writing_fd(int s);
+  int add_kqueue_filter(socket_wakeup* sv, short filter);
+  int remove_kqueue_filter(int s, short filter);
 
-  int add_reading_socket(socket_wakeup* sv);
-  int add_writing_socket(socket_wakeup* sv);
-
-  void cleanup();
+  int remove_socket_wakeup(int s, int flags);
+  void get_evts(bool poll);
 public:
   kqueue_demuxer();
   virtual ~kqueue_demuxer();
 
-  virtual int add_socket_wakeup(socket_wakeup* sv, bool read);
+  virtual int add_socket_wakeup(socket_wakeup* sv, int flags);
 };
 
 }} // namespace demux, flx
@@ -369,13 +390,9 @@ public:
 #ifndef __POSIX_DEMUXER__
 #define __POSIX_DEMUXER__
 
-// this is simply a demuxer with a pthread that calls thread_loop_body
-// with a thread cancel hook and a hopefully correct destructor. hoof!
-// it also owns an optional listener socket. imagine that!s
+// base classes for posix style demuxers
 
-#include <pthread.h>
 #include "demux_demuxer.hpp"
-#include "demux_mutexlite.hpp"
 
 namespace flx { namespace demux {
 class FLX_RTL_EXTERN posix_demuxer;            // fwd decl
@@ -392,25 +409,26 @@ public:
 class FLX_RTL_EXTERN socket_wakeup : public posix_wakeup {
 public:
   int   s;                // the non blocking socket
-  // thinking about putting a read flag here - everyone has to
-  // do their own anyway and the current model doesn't allow both
-  // for a single socket_wakeup, even if some event sources support it.
+  int   wakeup_flags;         // set on wakeup, r/w or both
+
+  socket_wakeup() : s(-1) {}
 };
 
 class FLX_RTL_EXTERN posix_demuxer : public demuxer {
-  apthread    evt_pthr;       // the event loop thread
-  static void*  thread_start(void*);  // bootstrap thread callback
-
 protected:
-  virtual void  thread_loop_body() = 0;
-  int       init_pthread();
-  void      deinit_pthread();
   
 public:
   virtual ~posix_demuxer();
 
-  virtual int   add_socket_wakeup(socket_wakeup* sv, bool read) = 0;
-  
+  // posix style sockets. for reading and writing (but not both at once
+  // for the same socket_wakeup) you are guaranteed to receive only one
+  // wakeup per call to this function when you call wait. For simultaneous
+  // reading and writing you may get two wakeups, that is, it may violate
+  // the "one shot" rule. Ignoring for now, as it's not a common use.
+  // wakeup is owned by the demuxer until its wakeup is called,
+  // so treat it with kid gloves, i.e. don't mess with it.
+  virtual int   add_socket_wakeup(socket_wakeup* sv, int flags) = 0;
+
   // to be called when we can read & write without blocking
   // return true if connection closed, update pb
   // sort of a strange place to have this..., more a socket wakeup
@@ -420,6 +438,10 @@ public:
 };
 
 // some handy control blocks for common non-blocking socket operations
+// note that they "fortuitously" both have start methods. hmm.
+// a socket io one could be handy here.
+
+// this one's restartable (makes sense for listener sockets)
 class FLX_RTL_EXTERN accept_control_block : public socket_wakeup {
 public:
   int   accepted;   // accepted socket (out)
@@ -442,6 +464,13 @@ public:
 
   virtual int start(posix_demuxer& demux);
   virtual void wakeup(posix_demuxer& demux);
+
+  // oops, can't check for s != -1 as it's always there.
+  // was always "finished" and so I started io, losing the first wakeup
+  // on epoll evtsrc. Is this right, or should it be != EINPROGRESS?
+  // keep in sync with iocp version. give socket_err initial definition
+  // that works with this?
+  bool finished() { return ( 0 == socket_err); }
 };
 
 }} // namespace demux, flx
@@ -477,36 +506,49 @@ public:
 #define __SELECT_DEMUXER__
 
 #include "demux_posix_demuxer.hpp"
-#include "demux_mutexlite.hpp"
+#include <sys/types.h>    // for sys/select.h on osx
 #include <sys/select.h>   // for fd_set
+//#include <sys/time.h>   // GUSI WTF?
+
+// Unlike the other demuxers, this one is NOT thread safe, so wait and
+// add socket wakeup must only be called from the same thread. One way
+// would be to simply serialise calls to those functions. Since 
+// wakeup callbacks often request another wakeup, the lock would want
+// to be recursive. However, the wait is blocking so that's not a good
+// time to obtain a lock and also the added wakeup wouldn't be selected
+// until the previous select returned, so need to wake the select (sockpair?).
+// Hmm, might have to factor the wait into get args, set args so that a
+// descendent class could do it. For this to work there must be no ambiguity
+// when merging the wakeup sets, but that's ok because adding more than
+// one request for a single fd is undefined, so for the select demuxer it
+// can be a simple error. Great!
 
 namespace flx { namespace demux {
+
 class FLX_RTL_EXTERN select_demuxer : public posix_demuxer {
-  // still using these, but they're not virtual - make them private &
-  // remove the locks?
-  void  remove_reading_fd(int s);
-  void  remove_writing_fd(int s);
+  void  remove_fd(int s);
 
-
-  pmut      ham_fist;       // big conservative hamfisted lock
+  //pmut      ham_fist;       // big conservative hamfisted lock
   
   // thanks Beej!
-  fd_set      master_read_set;    // all the threads we're watching, reading
-  fd_set      master_write_set;   // writing
-  socket_wakeup*  read_svs[FD_SETSIZE]; // read sveglias
-  socket_wakeup*  write_svs[FD_SETSIZE];  // write wakeups
+  fd_set      master_read_set;    // fd watched for reading
+  fd_set      master_write_set;   // for writing
+  fd_set      master_except_set;    // for exceptions
+
+  // read sveglias - note we only have one set, so currently this demuxer
+  // cannot have separate wakeups for the same file descriptor. this
+  // fits in fine with the "undefined" nature of doing that.
+  socket_wakeup*  svs[FD_SETSIZE];    // read sveglias
+  //socket_wakeup*  write_svs[FD_SETSIZE];  // write wakeups
 
   int       fdmax;          // high watermark for select
-  
-  virtual void  thread_loop_body();
 
+  virtual void  get_evts(bool poll);
 public:
   select_demuxer();
-  ~select_demuxer() { deinit_pthread(); }
 
-  virtual int   add_socket_wakeup(socket_wakeup* sv, bool read);
+  virtual int   add_socket_wakeup(socket_wakeup* sv, int flags);
 };
-
 }} // namespace demux, flx
 #endif
 
@@ -552,6 +594,7 @@ int connect_sock(int s, const char* addr, int port);
 int bind_sock(int s, int* io_port);
 
 int make_nonblock(int s);
+int set_tcp_nodelay(int s, int disable_nagle);
 
 }} // namespace demux, flx
 #endif
@@ -727,6 +770,10 @@ public:
 // epoll interface. does epoll support ordinary files in addition to sockets?
 // EPOLLET to make epoll edgetriggered. I guess the default is level triggered.
 
+// epoll events are not one shot, in fact they're quite sticky so socket
+// filters must be removed manually to guarantee a one to one wakeup
+// to add_wakeup ratio. note that the oneshot flag is not a solution.
+
 // cool! EPOLLONESHOT
 // BUGGER! doesn't seem to exist! and doing this doesn't make it so!
 // #ifndef EPOLLONESHOT
@@ -736,39 +783,33 @@ public:
 #include "demux_epoll_demuxer.hpp"
 
 #include <sys/epoll.h>  // for epoll_*
-#include <stdio.h>  // for perror
-#include <unistd.h> // for close
+#include <stdio.h>    // for perror
+#include <unistd.h>   // for close
+#include <errno.h>    // EEXIST, errno
 
 namespace flx { namespace demux {
 
 epoll_demuxer::epoll_demuxer()
   : epoll_fd(-1)
 {
-#ifdef EPOLLONESHOT
-  fprintf(stderr,"WARNING: EPOLLONESHOT AVAILABLE!!!\n");
-#endif
+  // EPOLLONESHOT is shit, don't use it. Enabling it just means that your
+  // wakeups are suppressed and you have to use EPOLL_CTL_MOD instead
+  // of EPOLL_CTL_ADD. If it isn't defined then so much the better.
+//#ifdef EPOLLONESHOT
+//  fprintf(stderr,"WARNING: EPOLLONESHOT AVAILABLE (%x)!!!\n", EPOLLONESHOT);
+//#endif
 
   // god knows what the maximum size will be, I'll just say 1 for now
   epoll_fd = epoll_create(1);
   if(-1 == epoll_fd)
   {
     perror("epoll_create");
-    cleanup();
     throw -1;
-  }
-
-  int res = init_pthread();
-  if(res != 0)
-  {
-    cleanup();
-    throw res;
   }
 }
 
-void
-epoll_demuxer::cleanup() {
-  deinit_pthread();
-
+epoll_demuxer::~epoll_demuxer()
+{
   if(-1 != epoll_fd)
   {
     if(close(epoll_fd) != 0)
@@ -776,124 +817,177 @@ epoll_demuxer::cleanup() {
   }
 }
 
-epoll_demuxer::~epoll_demuxer()
-{
-  cleanup();
-}
-
 int
-epoll_demuxer::add_socket_wakeup(socket_wakeup* sv, bool read)
+epoll_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 {
   int s = sv->s;
 
   struct epoll_event  evt;
-  // fprintf(stderr,"add_socket_wakeup: %sing on %i (sv=%p)\n",
-  //  (read) ? "read" : "writ", s, sv);
+  // fprintf(stderr,"add_socket_wakeup: %i (sv=%p, flags=%x)\n",
+  //  s, sv, flags);
 
   // EPOLLONESHOT saves us not only a system call to remove epoll evts,
   // which aren't intrinsically one-shot, but having to do it ourselves
   // would have been a pain as epoll doesn't tell you which fd had the event
   // this way we can get away with not knowing & not losing our user cookie
-  evt.events = (read) ? EPOLLIN : EPOLLOUT; // can get errs, hup, whatever
-  // FUCK!
-#ifdef EPOLLONESHOT
-  evt.events |= EPOLLONESHOT;         // yes!
-#endif
-  evt.events |= EPOLLHUP | EPOLLERR;        // I think I want this
+  // evt.events = (read) ? EPOLLIN : EPOLLOUT;// can get errs, hup, whatever
+  evt.events = 0;
+  
+  if(flags & PDEMUX_READ) evt.events |= EPOLLIN;
+  if(flags & PDEMUX_WRITE) evt.events |= EPOLLOUT;
+
+  // fprintf(stderr, "flags %x -> evt.events %x\n", flags, evt.events);
+
+  // We do the remove manually because oneshot in epoll doesn't
+  // remove the socket, but rather, disables it.
+//#ifdef EPOLLONESHOT
+//  evt.events |= EPOLLONESHOT;         // yes!
+//#endif
+  // I think EPOLLHUP comes when the connection closes (on read?)
+  // I get EPOLLHUPs for bad async connects whether I ask for them or not.
+  evt.events |= (EPOLLHUP | EPOLLERR);    // I think I want this
 
   evt.data.ptr = sv;              // our user data
-  // uffa but that's lame!
-  // pb->epoll_hack = s;      // I hate this - there must be a better way
 
   if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, s, &evt) == -1)
   {
+    // EPOLL_CTL_MOD cannot help us do bidirection io on one socket,
+    // the mod will overwrite the old user cookie and direction. 
+    // It seems that only kqueues, select and iocps allow that.
+    // Will need a wakeup that can do both, oneshot that indicates
+    // the available direction.
+// when using oneshot, we're supposed to use EPOLL_CTL_MOD
+#if 0
+    int err = errno;
+
+    if(EEXIST == err)
+    {
+      // ok - let's try EPOLL_CTL_MOD
+      fprintf(stderr, "RETRYING WITH EPOLL_CTL_MOD\n");
+      if(epoll_ctl(epoll_fd, EPOLL_CTL_MOD, s, &evt) != -1)
+        return 0; // good!
+    }
+#endif
     perror("epoll_ctl (add)");
+    
     return -1;
   }
   return 0;
 }
 
+// epoll doesn't differentiate on events. I bet I could
+// just not pass that event...
 void
-epoll_demuxer::remove_socket(int s, bool read)
+epoll_demuxer::remove_wakeup(int s)
 {
-  struct epoll_event  evt;
-  evt.events = (read) ? EPOLLIN : EPOLLOUT;
+  // EPOLL_CTL_DEL uses no information from the event
+  // and so I should be able to pass NULL.
+  // struct epoll_event evt;
+  // evt.events = (read) ? EPOLLIN : EPOLLOUT;
 
-  // fprintf(stderr,"removing %sing socket %i\n", (read) ? "read" : "writ", s);
+  // fprintf(stderr,"removing socket wakeup %i\n", s);
 
-  if(epoll_ctl(epoll_fd, EPOLL_CTL_DEL, s, &evt) == -1)
+  if(epoll_ctl(epoll_fd, EPOLL_CTL_DEL, s, NULL) == -1)
   {
-    const char* str = (read) ? "epoll_ctl (remove read)"
-      : "epoll_ctl (remove write)";
-    perror(str);
+    //const char* str = (read) ? "epoll_ctl (remove read)"
+    //  : "epoll_ctl (remove write)";
+    // perror(str);
+    perror("epoll_ctl (remove)");
   }
 }
 
 void
-epoll_demuxer::thread_loop_body()
+epoll_demuxer::get_evts(bool poll)
 {
   struct epoll_event  evt;
 
-  // no timeout
-  if(epoll_wait(epoll_fd, &evt, 1, -1) == -1)
+  switch(epoll_wait(epoll_fd, &evt, 1, (poll) ? 0 : ~0))
   {
+    case -1:    // error
     perror("epoll_wait");
-    return;
+      // fall through
+    case 0:     // no events (happens with timeout)
+      return;
   }
-
-  // damn! it doesn't tell me the socket! I'd have to store that
-  // myself!
-  // int      s = pb->epoll_hack;     // nooooo
-  // if I don't need to explicitly add the stuff back in,
-  // I might be able to get away with not knowing the socket (?)
 
   socket_wakeup* sv = (socket_wakeup*)evt.data.ptr;
   
-  // fprintf(stderr,"wakeup!\n");
+  // not seeing timeouts as they're filtered by the switching.
+  // assuming that sv is good
+  // fprintf(stderr,"wakeup (sv=%p, sv->s=%i evt.events=%x)!\n",
+  //  sv, sv->s, evt.events);
+
+  // accumulate bit field of what we got
+  sv->wakeup_flags = 0;
+
+  bool  wake = false;
   
   // it might be possible to get both a read & write event...
   // in which case I should take out the else below
   if(evt.events & EPOLLIN)                // I think this is how you do it
   {
-    // epoll events are not one shot, so evt must be removed
-    // looks like I do need to know how - can I make them one shot?
-    // fprintf(stderr,"wakeup of reader %p\n", sv);
-    remove_socket(sv->s, true);
-    sv->wakeup(*this);
+    // fprintf(stderr,"EPOLLIN for %p\n", sv);
+    sv->wakeup_flags |= PDEMUX_READ;
+    wake = true;
   }
-  else if(evt.events & EPOLLOUT)
-  {
-    // fprintf(stderr,"wakeup of writer %p\n", sv);
-    remove_socket(sv->s, false);
-    // ditto.
-    sv->wakeup(*this);
-  }
-#ifndef EPOLLONESHOT
-  else if(evt.events & EPOLLERR)
-  {
-    // I need to remove it, but which one am I removing?
-    // I guess I'll just have to remove both. Note that a working
-    // one-shot would fix this, I think. One of these will cause
-    // an error
-    fprintf(stderr,"epoll error: don't know from who, removing both\n");
-    remove_socket(sv->s, true);
-    remove_socket(sv->s, false);
-  }
-#endif
-    else
-    {
-        fprintf(stderr,"unknown events in epoll_demuxer (err?)\n");
-    }
-}
 
+  if(evt.events & EPOLLOUT)
+  {
+    //fprintf(stderr,"EPOLLOUT for %p\n", sv);
+    sv->wakeup_flags |= PDEMUX_WRITE;
+    wake = true;
+  }
+
+  // Is this for shutdown or closing of the other end?
+  // I get it for failed async connects. I don't know if other events cause
+  // it. In any case, I don't know whether it should be for read or write,
+  // so I just don't say. In any case, it should wake to get error.
+  // I seem to get both EPOLLHUP and EPOLLERROR on bad async connect
+  if(evt.events & EPOLLHUP)
+  {
+    fprintf(stderr, "EPOLLHUP for %p->%i\n", sv, sv->s);
+    wake = true;
+  }
+
+  if(evt.events & EPOLLERR)
+  {
+// How do I retrieve the error?
+    // There's no ambiguity - there's only ever one fd in a given epoll.
+    // If oneshot's present then don't need to do anything
+// not sure what to do here. if we've enabled/got oneshot the socket
+// should already have been removed
+    fprintf(stderr,"epoll error, waking: %i (errno?)\n", sv->s);
+    // similar story to EPOLLHUP
+    wake = true;
+  }
+
+    if((evt.events & ~(EPOLLERR|EPOLLIN|EPOLLOUT|EPOLLHUP)))
+    {
+        fprintf(stderr,"unknown events in epoll_demuxer %x\n", evt.events);
+    }
+
+  // we got something. tell the people.
+  // if(sv->wakeup_flags)
+  if(wake)
+  {
+    // we got something. better call wakeup, must remove to guarantee
+    // 1-1 wakeups with add_sockets
+    // fprintf(stderr, "no one-shot... remove %i\n", sv->s);
+    remove_wakeup(sv->s);
+    // fprintf(stderr, "calling wakeup (flags=%x)\n", sv->wakeup_flags);
+    sv->wakeup(*this);
+  }
+}
 }}
 
 @h=tangler('demux/demux_evtport_demuxer.cpp')
 @select(h)
-
-#include "demux_evtport_demuxer.hpp"
+// Evtports can get timer wakeups with PORT_SOURCE_TIMER.
+// Can also pick up aio notifications with PORT_SOURCE_AIO.
 
 // looks like this stuff is only in solaris10, and not SunOS 5.8. Damn.
+
+#include "demux_evtport_demuxer.hpp"
 
 #include <port.h>
 #include <poll.h> // POLLIN/POLLOUT
@@ -903,54 +997,21 @@ epoll_demuxer::thread_loop_body()
 
 namespace flx { namespace demux {
 
-// wrapping two "real" evtport_demuxers into one, so I can
-// have simultaneously reading and writing sockets.
-// see comments in header file
-
-// unfortunate side effect of deriving this from posix demuxer...
-// I get an unwanted pthread
-void
-evtport_demuxer::thread_loop_body()
-{
-  fprintf(stderr, "trival evtport_demuxer thread, exiting...\n");
-  pthread_exit(0);
-}
-
-int
-evtport_demuxer::add_socket_wakeup(socket_wakeup* sv, bool read)
-{
-  if(read) return in.add_socket_wakeup(sv, read);
-  else return out.add_socket_wakeup(sv, read);
-}
-
 // header files for this stuff?
 // can use port_send for user defined events, to wake up reap loop
 // truss to see what's happening
 
-evtport_half_demuxer::evtport_half_demuxer()
+evtport_demuxer::evtport_demuxer()
 {
   if((evtport = port_create()) < 0)
   {
     perror("port_create");
-    cleanup();
-    throw -1;
-  }
-
-  // silly virtual function stuff - must be done here.
-
-  if(init_pthread() != 0)
-  {
-    cleanup();
     throw -1;
   }
 }
 
-void
-evtport_half_demuxer::cleanup()
+evtport_demuxer::~evtport_demuxer()
 {
-  // fprintf(stderr,"do you use close to close an event port?\n");
-  deinit_pthread();
-
   if(-1 != evtport)
   {
     if(close(evtport) != 0)
@@ -958,28 +1019,29 @@ evtport_half_demuxer::cleanup()
   }
 }
 
-evtport_half_demuxer::~evtport_half_demuxer()
-{
-  cleanup();
-}
-
-
 int
-evtport_half_demuxer::add_socket_wakeup(socket_wakeup* sv, bool read)
+evtport_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 {
-  int events = (read) ? POLLIN : POLLOUT;
+  if(flags & ~(PDEMUX_READ|PDEMUX_WRITE)) // I can't understand you, lady!
+    return -1;
+
+  int events = 0; // events are flags so we can accumulate them
   int s = sv->s;
 
-  // fprintf(stderr,"add_socket_wakeup: %i, sv: %p, %s\n", s, sv,
-  //  (read) ? "reading" : "writing");
+  if(flags & PDEMUX_READ) events |= POLLIN;
+  if(flags & PDEMUX_WRITE) events |= POLLOUT;
+
+  // POLLHUP might make sense only for reads... add conditionally?
+  events |= (POLLHUP | POLLERR);
+
+  // fprintf(stderr,"add_socket_wakeup: %i, sv: %p (%x)\n", s, sv, flags);
 
   // register for event we are interested in...
   // works for files, sockets, timers...
-  // is this the right one for sockets? that's all I care about for now
-// IS POLLIN what I want? or will that actually POLL?
+  // sockets are file descriptors in unix, so src is PORT_SOURCE_FD
   if(port_associate(evtport, PORT_SOURCE_FD, (uintptr_t)s, events, sv) == -1)
   {
-    perror("socket_wakeup/port_associate");
+    perror("add socket_wakeup/port_associate");
     return -1;
   }
 
@@ -994,18 +1056,13 @@ evtport_half_demuxer::add_socket_wakeup(socket_wakeup* sv, bool read)
 // the samething twice. I don't know if this means you have to dissociate
 // (disassociate) twice.
 void
-evtport_half_demuxer::remove_reading_fd(int s)
+evtport_demuxer::remove_wakeup(int s)
 {
   if(port_dissociate(evtport, PORT_SOURCE_FD, s) == -1)
     perror("reading port_dissociate");
 }
 
-void
-evtport_half_demuxer::remove_writing_fd(int s)
-{
-  if(port_dissociate(evtport, PORT_SOURCE_FD, s) == -1)
-    perror("writing port_dissociate");
-}
+#define POLLPR(ev) if(e->portev_events & ev) fprintf(stderr,#ev", ")
 
 static void
 print_port_evt(port_event_t* e)
@@ -1015,9 +1072,15 @@ print_port_evt(port_event_t* e)
   fprintf(stderr,"e: %p\n\t", e);
   //fprintf(stderr,"portev_events: %x\n\t", e->portev_events);
   fprintf(stderr,"portev_events: ");
-  if(e->portev_events & POLLIN) fprintf(stderr,"POLLIN, ");
-  if(e->portev_events & POLLOUT) fprintf(stderr,"POLLOUT, ");
-  if(e->portev_events & POLLERR) fprintf(stderr,"POLLERR");
+
+  // I got these constants from the poll.h file
+  POLLPR(POLLIN); POLLPR(POLLOUT); POLLPR(POLLPRI);
+  POLLPR(POLLRDNORM); POLLPR(POLLRDBAND); POLLPR(POLLWRBAND);
+
+  // in poll these are in a different field. port_event_t doesn't
+  // have that field, so lets try here.
+  POLLPR(POLLERR); POLLPR(POLLHUP); POLLPR(POLLNVAL); POLLPR(POLLREMOVE);
+
   fprintf(stderr," (%x)\n\t", e->portev_events);
   
   int src = e->portev_source;
@@ -1032,32 +1095,29 @@ print_port_evt(port_event_t* e)
   }
 
   fprintf(stderr,"portev_pad: %x\n\t", e->portev_pad);
+  // often our socket
   fprintf(stderr,"portev_object: %x\n\t", e->portev_object);
   fprintf(stderr,"portev_user: %p\n", e->portev_user);
 }
 
 void
-evtport_half_demuxer::thread_loop_body()
+evtport_demuxer::get_evts(bool poll)
 {
-  // fprintf(stderr,"evtport thread loop body!!!\n");
-// Block until a single event appears on the port
-// event will not fire again, so must re-add it, that is, it automatically
-// dissociates, which is going to make remove interesting... remove never
-// (currently) happens except in response to receiving an event, so making
-// it a nop should be ok.
-// this means we have to add it back if we're not finished, i.e. if 
-// we're looking for more data
+  // Block until a single event appears on the port. Event will not fire
+  // again, so we get max 1 wakeup per event added.
 
   port_event_t  evt;
+  timespec    timeout, *tp = NULL;
 
-// I think that although port_get seems to be one-shot, it sometimes isn't.
-// what to do?
-// I'm definitely getting two in a row type events. I'll try explicitly
-// removing... the port_create manpage says this should definitely not
-// happen
-  // is this the right return val? and the right behaviour?
-  // has my evt been dissociated? which one? return val num events?
-  if(port_get(evtport, &evt, NULL) < 0)
+  if(poll)    // effect a poll
+  {
+    timeout.tv_sec = 0;
+    timeout.tv_nsec = 0;
+    tp = &timeout;
+  }
+
+  // wait for single event, no timeout
+  if(port_get(evtport, &evt, tp) == -1)
   {
     perror("port_get");
     return;
@@ -1069,6 +1129,23 @@ evtport_half_demuxer::thread_loop_body()
   socket_wakeup*  sv = (socket_wakeup*)evt.portev_user;
   int       s = evt.portev_object;
 
+  assert(sv != NULL);
+  if(evt.portev_source != PORT_SOURCE_FD)
+  {
+    // when polling I often end up in here - we get an unknown evt
+    // source and a POLLNVAL event plus lots of other unknown flags.
+    // there's interesting looking stuff in the user field and so on,
+    // but it's nothing of mine and also undocumented
+    // fprintf(stderr,"got non PORT_SOURCE_FD (s=%i, sv=%p, src=%i)\n",
+    //  s, sv, evt.portev_source);
+    // fprintf(stderr, "skipping out...\n");
+    return;
+  }
+
+
+  // let's see what we've got for the wakeup
+  sv->wakeup_flags = 0;
+
   if(evt.portev_events & POLLERR)
   {
     fprintf(stderr,"ERRORS on s = %i, sv = %p\n", s, sv); 
@@ -1076,44 +1153,34 @@ evtport_half_demuxer::thread_loop_body()
     //return;
   }
 
+  // for bidirectional wakeups, we should be able to get both
+  // POLLIN and POLLOUT at the same time, but I've not yet
+  // seen it happen, they're coming in one at a time for me.
 
-  if(evt.portev_source != PORT_SOURCE_FD)
-    fprintf(stderr,"got non PORT_SOURCE_FD (%i, %p)\n", s, sv);
-
-  // we'd better hope that they're not both, or we could get two
-  // wakeups at once...
-  // update: when events like POLLIN and POLLOUT are added, in separate
-  // invocations of port_associate, for the same file descriptor, the
-  // later one overwrites the earlier, so POLLIN followed by POLLOUT
-  // will never get its POLLIN. The simplest solution to this that I
-  // could see was to wrap two evtport_demuxers (now called half demuxers)
-  // into one, with each respectively minding input and output. It's not
-  // the best solution to a rare problem (and needlessly increases the
-  // number of threads), but it works. This assert should definitely never
-  // happen now, so I may as well leave it there.
- 
-  assert(!((evt.portev_events & POLLIN) && (evt.portev_events & POLLOUT)));
 
   if(evt.portev_events & POLLIN)
   {
-    // fprintf(stderr,"GOT READ EVT FOR %p\n", sv);
-    assert(sv);
-    sv->wakeup(*this);
+    // fprintf(stderr,"GOT POLLIN FOR %p\n", sv);
+    sv->wakeup_flags |= PDEMUX_READ;
   }
 
   if(evt.portev_events & POLLOUT)
   {
-    // fprintf(stderr,"GOT WRITE EVT FOR %p\n", sv);
-    assert(sv);
-    sv->wakeup(*this);
+    // fprintf(stderr,"GOT POLLOUT FOR %p\n", sv);
+    sv->wakeup_flags |= PDEMUX_WRITE;
   }
 
   // I never asked for POLLERR, but anyway
   if(evt.portev_events & ~(POLLIN | POLLOUT | POLLERR))
     {
-        fprintf(stderr,"UNSOLICITED events in evtport_half_demuxer (%x)\n",
+        fprintf(stderr,"UNSOLICITED events in evtport_demuxer (%x)\n",
       evt.portev_events);
     }
+
+  assert(sv->wakeup_flags != 0);    // we should've gotten SOMETHING.
+
+  if(sv->wakeup_flags)  
+    sv->wakeup(*this);
 }
 }}
 
@@ -1123,6 +1190,7 @@ evtport_half_demuxer::thread_loop_body()
 
 #include <stdio.h>      // for printf debugging
 #include <stddef.h>     // offsetof
+#include <assert.h>
 // shoving the win_queue in here for now
 #include <queue>          // stl to the bloated rescue
 
@@ -1226,37 +1294,16 @@ iocp_demuxer::iocp_demuxer()
   {
     DWORD err = GetLastError();
     fprintf(stderr,"failed to create completion port: %li\n", err);
-    // zzz now...
-    cleanup();
-    throw -1;
-  }
-
-  // do this last
-  if(iocp_thread.init(worker_thread_stub, this) == -1)
-  {
-    DWORD err = GetLastError();
-    fprintf(stderr,"failed to create thread: %li\n", err);
-    cleanup();
     throw -1;
   }
 }
 
 iocp_demuxer::~iocp_demuxer()
 {
-  cleanup();
-}
-
-void
-iocp_demuxer::cleanup()
-{
-  fprintf(stderr,"iocp cleanup\n");
-
-  iocp_thread.deinit();
-
+fprintf(stderr, "~iocp\n");
   if(NULL != iocp && !CloseHandle(iocp))
   {
     DWORD err = GetLastError();
-    // zzz do something with this
     fprintf(stderr,"failed cleanup iocp: %li\n", err);
   }
 }
@@ -1264,7 +1311,8 @@ iocp_demuxer::cleanup()
 int
 iocp_demuxer::associate_with_iocp(HANDLE obj, ULONG_PTR udat)
 {
-  // fprintf(stderr,"associating with iocp: %p, udat: %lx\n", obj, udat);
+  // fprintf(stderr, "associating with iocp=%p: %p, udat: %lx\n",
+  //  iocp, obj, udat);
 
   // Any overlapped operations performed on the object will use the
   // completion port for notification. The 3rd param can be used to pass
@@ -1280,25 +1328,8 @@ iocp_demuxer::associate_with_iocp(HANDLE obj, ULONG_PTR udat)
   return 0;
 }
 
-// windows thread proc
-// some code examples imply that it's risky to use the CRT (C runtime) here.
-// maybe I should get rid of that printf... and use conio
-DWORD
-iocp_demuxer::worker_thread_stub(LPVOID lParam) {
-  // will printf work here or do I have to use windows' conio? (WriteConsole)
-  iocp_demuxer* demuxer = (iocp_demuxer*)lParam;
-
-  fprintf(stderr,"how to allow thread cancel in windows?\n");
-  while(1) {
-    // I would call cancel here we were using pthreads here 
-    demuxer->worker_thread_body();
-  }
-  return 0;   // I think this means good.
-}
-
-
 void
-iocp_demuxer::worker_thread_body() {
+iocp_demuxer::get_evts(bool poll) {
   // with multiple threads, this will actually wake up the last to
   // block (lifo)
 
@@ -1321,7 +1352,8 @@ iocp_demuxer::worker_thread_body() {
 
   // No timeout. What does false mean? Eh. Could need a timeout to bring
   // the thread down.
-  if(!GetQueuedCompletionStatus(iocp, &nbytes, &udat, &olp, INFINITE))
+  if(!GetQueuedCompletionStatus(iocp, &nbytes, &udat, &olp, 
+    (poll) ? 0: INFINITE))
   {
     // That's strange - I sometimes get my ConnectEx errors popping
     // out here (ERROR_SEM_TIMEOUT=121, ERROR_CONNECTION_REFUSED=1225)
@@ -1329,29 +1361,52 @@ iocp_demuxer::worker_thread_body() {
     // I can still awake the sleeper
     err = GetLastError();   // doco says this & not WSALastError.
 
-    // fprintf(stderr,"GetQueuedCompletionStatus returned false: %i\n", err);
-
     // let's see: yep - there's my overlapped
-    // fprintf(stderr,"nbytes=%li, udat=%lx, io=%p\n", nbytes, udat, olp);
-    // return;
+    // fprintf(stderr,"!iocp::wait: nbytes=%li, udat=%lx, io=%p, err=%i\n",
+    //  nbytes, udat, olp, err);
+
+    if(WAIT_TIMEOUT == err)
+    {
+      // we get this a lot now that we can poll the iocp, so no output
+      // interestingly, nbytes = 1. what could that mean?
+      return;         // no wakeup
+    }
+    else if(ERROR_OPERATION_ABORTED == err)
+    {
+      // that's real bad manners. Or I could just ignore it. Anyway,
+      // any overlapped received is stale.
+      fprintf(stderr, "WHOA!!! - disassociate before killing handle\n");
+      return;         // no wakeup
+    }
+    else
+    {
+      fprintf(stderr,"GetQueuedCompletionStatus returned false: %i\n",
+        err);
+      // return here? relying on olp being NULL, to stop us dereffing
+    }
+
+    // I'm going to assume that there's a good wakeup, and fall through
+    // We need to wakeup on some errors (like ERROR_CONNECTION_REFUSED)
+    // FALL THROUGH
   }
+
 // An IOCP is a very general event mechanism. It tells you not only about
 // the completion of reads & writes, but also of pretty much any asynchronous
 // event's completion. It doesn't quite fit in with my select style interfaces.
 // I've got general overlapped things completing here. I don't want them to
 // know about demuxers & so forth so I'll have to know about them.
 
-  // fprintf(stderr,"HOLEY! Woke up!\n");
-  // fprintf(stderr,"nbytes=%li, udat=%lx, olp=%p, err=%i\n", nbytes, udat, olp, err);
+  //fprintf(stderr,"HOLEY! Woke up!\n");
+  //fprintf(stderr,"nbytes=%li, udat=%lx, olp=%p, err=%i\n",
+  //  nbytes, udat, olp, err);
 
-  if(NULL == olp)
-  {
-    fprintf(stderr,"failed to get iocp_wakeup: %p (err: %i)\n", olp, err);
-    return;
-  }
+  // with polling it's normal not to get an overlapped pointer, because
+  // we may simply have timed out
+  assert( olp );
 
   // tell someone that some overlapped op finished
   iocp_wakeup*  wakeup = iocp_wakeup::from_overlapped(olp);
+
   // passing olp may be redundant, seeing as it's contained in iocp_wakeup
   wakeup->iocp_op_finished(nbytes, udat, olp, err);
 }
@@ -1369,6 +1424,7 @@ void
 win_thread::deinit()
 {
   fprintf(stderr,"win_thread::deinit: how do I get my return status?\n");
+  fprintf(stderr,"also, how do I implement a cancel request?\n");
 
   if(thread)
   {
@@ -1549,6 +1605,7 @@ win_queue::dequeue()
 
 // simple utility fn, shouldn't be here. creates listener on any interface.
 // this could benifit from a SOCKET class. in failure returns INVALID_SOCKET
+// CURRENTLY EATS ERROR, SO DON'T BOTHER CHECKING
 SOCKET
 create_listener_socket(int* io_port, int backlog)
 {
@@ -1628,12 +1685,94 @@ create_listener_socket(int* io_port, int backlog)
   return listener;
 }
 
+// currently the following aren't used. Look forward to warnings
+// about them.
+
+// the posix version of this made the socket nonblocking.
+// I don't seem to have to do that when using iocp. if you
+// want to create a nonblocking socket (or overlapped) pass
+// WSA_FLAG_OVERLAPPED to WSASocket. I've never had to
+// actually do this. How do you make accept do this? (supposing
+// you wanted to) WSAAccept doesn't have a flag for it (however
+// it does let you do conditional accepting). 
+// There doesn't seem to be a sockopt
+// returns INVALID_SOCKET on failure. eats the err.
+SOCKET
+nice_accept(SOCKET listener)
+{
+  struct sockaddr_in  remoteaddr;
+  int         addrlen = sizeof(remoteaddr);
+  SOCKET        s;
+  
+  // accept returns INVALID_SOCKET when it fails
+  s = accept(listener, (struct sockaddr*)&remoteaddr, &addrlen);
+
+  if(INVALID_SOCKET == s)
+  {
+    fprintf(stderr,"nice_accept failed (%i)\n", WSAGetLastError());
+  }
+
+  // the posix version makes the socket nonblocking here
+  // we're not bothering
+
+  return s;
+}
+
+// returns SOCKET_ERROR on failure, with err in WSAGetLastError()
+static int
+connect_sock(SOCKET s, const char* addr, int port)
+{
+  struct sockaddr_in  sock_addr;
+
+  memset(&sock_addr, 0, sizeof(sock_addr));
+  sock_addr.sin_family = AF_INET;
+  sock_addr.sin_addr.s_addr = inet_addr(addr);
+  sock_addr.sin_port = htons(port);
+  
+  return connect(s, (struct sockaddr *)&sock_addr, sizeof(sock_addr));
+}
+
+// returns INVALID_SOCKET on failure, eats last error with WSAGetLastError
+// unlike the posix version, this does not make the socket nonblocking.
+SOCKET
+nice_connect(const char* addr, int port)
+{
+  SOCKET      s;
+
+  if((s = socket(AF_INET, SOCK_STREAM, 0)) != INVALID_SOCKET
+    && connect_sock(s, addr, port) != SOCKET_ERROR)
+  {
+    return s;   /* success! */
+  }
+
+  /* something happened (not as good as catch 22) */
+  fprintf(stderr,"nice_connect failed (%i)\n", WSAGetLastError());
+
+  if(INVALID_SOCKET != s && closesocket(s) == SOCKET_ERROR)
+    fprintf(stderr,"nice close failed (%i)\n", WSAGetLastError());
+
+  return INVALID_SOCKET;
+}
+
+// returns -1 on error with errno in WSAGetLastError. 0 otherwise.
+// kind of crap.
+int
+set_tcp_nodelay(int s, int disable)
+{
+  BOOL  disable_nagle = (disable) ? true : false;
+
+  int res = setsockopt(s, IPPROTO_TCP, TCP_NODELAY,
+      (const char*)&disable_nagle, sizeof(disable_nagle));
+
+  return (res == SOCKET_ERROR) ? -1 : 0;
+}
 }}
 
 @h=tangler('demux/demux_overlapped.cpp')
 @select(h)
 #include "demux_overlapped.hpp"
 #include <stdio.h>      // fprintf
+#include <assert.h>
 
 namespace flx { namespace demux {
 
@@ -1673,12 +1812,14 @@ acceptex_control_block::start_overlapped()
   {
     // must clear the wait
     fprintf(stderr,"WHOA! AcceptEx RETURNED SUCCESS IMMEDIATELY!\n");
+    fprintf(stderr, "This could be bad, as wait should call op_finish\n");
+    fprintf(stderr, "We also lose the udat cookie (set to NULL)\n");
     // handle the successful wakeup
     // complete_async_op(demux, drv, nbytes, NO_ERROR); 
     // I hope they don't want the udat pointer, because I
     // just made it up (0=NULL). Not using it anyway.
     iocp_op_finished(nbytes, 0, &ol, NO_ERROR); 
-    return false;
+    return false;   // means no completion packet coming (correct?)
   }
   else
   {
@@ -1754,6 +1895,10 @@ connectex_control_block::start_overlapped()
 {
   clear_overlapped();
 
+  // why not get this directly from the ConnectEx?
+  socket_err = ERROR_IO_PENDING;
+
+
   DWORD bytes_sent = 0;   // we're not sending data on connect (yet)
   BOOL  success;
 
@@ -1810,9 +1955,10 @@ connectex_control_block::start_overlapped()
   if(success)
   {
     fprintf(stderr,"WHOA! ConnectEx RETURNED SUCCESS IMMEDIATELY!\n");
+    fprintf(stderr, "BAD: calls op_finish and loses udat cookie\n");
     // handle the successful wakeup. (udat=0, olp=&ol)
     iocp_op_finished(bytes_sent, 0, &ol, NO_ERROR); 
-    return false;   // already woken up
+    return false;   // means no completion packet coming (correct?)
   }
   else
   {
@@ -1871,14 +2017,10 @@ transmitfile_control_block::start_overlapped()
 // SOCKET io using WSASend and WSARecv
 
 // windows style control blocks
-wsasocketio_control_block::wsasocketio_control_block(SOCKET src, void* buf, int len, bool inread)
-  : s(src), reading(inread)
+wsasocketio_control_block::wsasocketio_control_block(SOCKET src, sel_param* pb,
+  bool inread)
+  : s(src), ppb(pb), reading(inread)
 {
-  // pb is not so useful here. we only want to
-  // know num bytes written/processed.
-  pb.buffer = (char*)buf;
-  pb.buffer_size = len;
-  pb.bytes_written = 0;
 }
 
 bool
@@ -1886,13 +2028,18 @@ wsasocketio_control_block::start_overlapped()
 {
   clear_overlapped();
 
+  error = 0;
+
   // num bytes received IF recv completes immediately.
   DWORD imm_bytes;
   int   recv_res;
 
   // set up the single wbuf, bearing in mind we may be part way.
-  wbufs[0].len = pb.buffer_size - pb.bytes_written;
-  wbufs[0].buf = pb.buffer + pb.bytes_written;
+  wbufs[0].len = ppb->buffer_size - ppb->bytes_written;
+  wbufs[0].buf = ppb->buffer + ppb->bytes_written;
+
+// fprintf(stderr, "sockio: %p->finished = %i, reading = %i\n",
+//  ppb, ppb->finished(), reading);
 
   // Ideally, we would like to be able to use MSG_WAITALL, which would
   // let us only get a completion packet when either all the data was
@@ -1922,14 +2069,20 @@ wsasocketio_control_block::start_overlapped()
       // flags are updated to indicate what? if there was a callback, it
       // would be scheduled to be called when this thread is in the
       // waitable state, whatever that means.
-      // fprintf(stderr,"WSA%s completed immediately!!! numbytes: %li, flags: %lx\n",
-      //  (reading) ? "Recv" : "Send", imm_bytes, flags);
+      //fprintf(stderr,
+      //  "WSA%s completed immediately!!! nbytes: %li, flags: %lx\n",
+      //    (reading) ? "Recv" : "Send", imm_bytes, flags);
 
       // looks like we get the completion packet even if we do finish
-      // immediately so let the iocp wake us.
-      // this updates pb & wakes us up
-      // complete_async_op(demux, drv, imm_bytes, NO_ERROR);
+      // immediately so let the iocp wake us. note that this method
+      // of manually calling iocp_op_finished is not so great as we
+      // don't know the (as yet unused) udat cookie and so set it to 0.
+      // fprintf(stderr, "calling finished manually (ppb=%p)\n", ppb);
+      // iocp_op_finished(imm_bytes, 0, &ol, NO_ERROR); 
 
+      // false because iocp_op_finished will wake us. I guess false from
+      // these guys means that a completion packet is in the mail and
+      // true means that it isn't (in the mail).
       return false;
     }
     break;
@@ -1960,6 +2113,55 @@ wsasocketio_control_block::start_overlapped()
   }
 
   return false;
+}
+
+// NB: called by iocp::wait, so be aware of which thread is doing what, lest
+// you be surprised by this being called asynchronously.
+void
+wsasocketio_control_block::iocp_op_finished(DWORD nbytes, ULONG_PTR udat,
+  LPOVERLAPPED olp, int err)
+{
+  error = err;        // copy back for others to look at.
+                // perhaps move back to iocpwakeup
+// fprintf(stderr, "wsasocketio::finished: ppb=%p, nbytes=%li, err=%i, read=%i\n",
+//  ppb, nbytes, err, reading);
+
+  if(err)
+  {
+    fprintf(stderr, "wsasocketio, got error: %i\n", err);
+  }
+
+  // fprintf(stderr,"wsa_socketio wakeup, nb: %li, err: %i\n", nbytes, err );
+assert( !ppb->finished() );
+  // keep track of bytes received.
+  ppb->bytes_written += nbytes;
+
+  if(0 == nbytes)
+  {
+    fprintf(stderr, "wsaiosocket got zero bytes: err=%i, read=%i\n",
+      err, reading);
+  }
+
+  // if we're not finished, we have to reinstall our request
+  // zero bytes indicates shutdown/closure, right?
+  // might be using this for WSASend. Instead of broken pipes on win32, 
+  // instead we get WSAECONNRESET (pretty sure) on write. On read?
+// not sure about this - I don't think we have to check nbytes == 0
+  if(0 == nbytes || ppb->finished())
+  {
+    return;
+  }
+  else
+  {
+    // go back around again
+    fprintf(stderr,"didn\'t get everything (%li of %li bytes)\n",
+      ppb->bytes_written, ppb->buffer_size);
+    if(start_overlapped())
+    {
+      fprintf(stderr, "UM, socket restart finished immediately\n");
+      fprintf(stderr, "causes new wakeup? or should I loop around?\n");
+    }
+  }
 }
 
 
@@ -2029,32 +2231,45 @@ namespace flx { namespace demux {
 // rename these to control block something or other
 // get rid of default constructors - faio can worry about that.
 
+// WARNING: in some "immediate completion" cases I have to call
+// the finished function myself - in these cases I set the udat to 0, making
+// it not very reliable. Either make sure the user understands immediate
+// finish (and does it themselves) or keep a copy of udat.
+
 // listener socket must be already associated with an IOCP
 // in doing an AcceptEx, it might succeed immediately - do you still
 // get the IOCP wakeup?
 class FLX_RTL_EXTERN acceptex_control_block : public iocp_wakeup {
   enum { ACCEPTEX_ADDR_SIZE = sizeof(SOCKADDR_IN) + 16 };
 
+public:
   SOCKET  listener, acceptor;
   // there are two of these!
   char  accept_buf[2*ACCEPTEX_ADDR_SIZE];
-public:
 
   virtual bool start_overlapped();
 
-  acceptex_control_block(SOCKET l, SOCKET a) : listener(l), acceptor(a) { }
+  acceptex_control_block() 
+    : listener(INVALID_SOCKET), acceptor(INVALID_SOCKET) {}
 };
 
 class FLX_RTL_EXTERN connectex_control_block : public iocp_wakeup
 {
-  SOCKET    s;          // previously unbound socket
+public:
+  // move further back?
+  int socket_err;         // outgoing
+
   // can have buffer to be sent on connection
+  SOCKET    s;          // previously unbound socket
   const char* addy;       // ipv4 address
   int     p;          // port number
-public:
 
-  connectex_control_block(SOCKET soc, const char* addr, int port)
-    : s(soc), addy(addr), p(port) {}
+  // socket_err undefined
+  connectex_control_block() : s(INVALID_SOCKET), addy(0), p(0) {}
+
+  // see posix version of this, try to keep them in sync. give socket_err
+  // initial definition that works with this?
+  bool finished() { return ERROR_IO_PENDING != socket_err; }
 
   virtual bool start_overlapped();
 };
@@ -2081,18 +2296,19 @@ class FLX_RTL_EXTERN wsasocketio_control_block : public iocp_wakeup {
 protected:
   enum { NUM_WBUFS = 1 }; // just one for now, but can do scattered send/recvs
   WSABUF    wbufs[NUM_WBUFS];
-  SOCKET    s;
-  bool    reading;  // else use WSASend
 public:
-  sel_param pb;     // what you wanted & later, what you got
+  SOCKET    s;
+  sel_param*  ppb;      // on input what you want, on output what you got
+  int     error;
+  bool    reading;  // else use WSASend
 
-  wsasocketio_control_block(SOCKET src, void* buf, int len, bool read);
+  // watch the memory interfaces here, going back and forth between threads.
+  wsasocketio_control_block(SOCKET src, sel_param* pb, bool read);
 
   virtual bool start_overlapped();
 
-// have here?
-//  virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
-//    LPOVERLAPPED olp, int err);
+  virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
+    LPOVERLAPPED olp, int err);
 };
 
 // looks a bit like wsasocketio_control_block (bad name, sends too)
@@ -2100,6 +2316,7 @@ class FLX_RTL_EXTERN winfileio_control_block : public iocp_wakeup {
   HANDLE    file;
   bool    reading;
 public:
+// probably should be a pointer (?)
   sel_param pb;
 
   // offset?
@@ -2124,14 +2341,14 @@ public:
 
 #include "demux_kqueue_demuxer.hpp"
 
-#include <stdio.h>      // for perror
-#include <unistd.h>     // for close
+#include <stdio.h>      // perror
+#include <unistd.h>     // close
 
 #include <sys/types.h>    // from the kqueue manpage
 #include <sys/event.h>    // kernel events
-#include <sys/socket.h>   // for send/recv
+#include <sys/time.h>   // timespec (kevent timeout)
 
-#include <sys/syscall.h>  // for non clib close
+// #include <sys/syscall.h> // syscall(SYC_close,kq) close workaround
 
 namespace flx { namespace demux {
 kqueue_demuxer::kqueue_demuxer()
@@ -2143,49 +2360,53 @@ kqueue_demuxer::kqueue_demuxer()
   if(-1 == kq)
   {
     perror("kqueue");
-    cleanup();
     throw -1;
-  }
-
-  int res = init_pthread();
-  if(res != 0)
-  {
-    cleanup();
-    throw res;
   }
 }
 
-void
-kqueue_demuxer::cleanup()
+kqueue_demuxer::~kqueue_demuxer()
 {
-  deinit_pthread();
-
   //if(syscall(SYS_close, kq) == -1)
   // I don't seem to be able to close a kq. can't fstat it either
   if(-1 != kq && close(kq) == -1)
     perror("kqueue close");
 }
 
-kqueue_demuxer::~kqueue_demuxer()
-{
-  cleanup();
-}
-
 
 // Events of interest to us ERead, EWrite.
 // ERead has fflags: NOTE_LOWAT, NOTE_EOF. ident is a descriptor (any?) 
+
+// if you're using the kqueue_demuxer to do a single biderectional wakeup,
+// be aware that it currently breaks the "one shot" rule, that is you
+// make get an unexpected wakeup the next time you call wait.
 int
-kqueue_demuxer::add_socket_wakeup(socket_wakeup* sv, bool read)
+kqueue_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 {
-  if(read) return add_reading_socket(sv);
-  else return add_writing_socket(sv);
+  // we only know these flags
+  if((flags & ~(PDEMUX_READ | PDEMUX_WRITE))) return -1;
+
+// could set wakeup_flags here of what's been installed!
+
+  // FUCK - can only do one at a time with kqueues
+  // For those doing both, if one fails, you're in a bit of trouble.
+  if(flags & PDEMUX_READ)
+  {
+    if(add_kqueue_filter(sv, EVFILT_READ) == -1) return -1;
+  }
+
+  if(flags & PDEMUX_WRITE)
+  {
+    if(add_kqueue_filter(sv, EVFILT_WRITE) == -1) return -1;
+  }
+
+  return 0;
 }
 
 int
-kqueue_demuxer::add_reading_socket(socket_wakeup* sv)
+kqueue_demuxer::add_kqueue_filter(socket_wakeup* sv, short filter)
 {
-  int s = sv->s;
-  struct kevent read_evt;
+  int       s = sv->s;
+  struct kevent evt;
   
   // this works just like select if the s is a listening socket
   // *except* works with all types of fds, including pipes, files & fifos
@@ -2199,57 +2420,55 @@ kqueue_demuxer::add_reading_socket(socket_wakeup* sv)
   // adding EV_ONESHOT to save me removing on wakeup (a syscall).
   // I now require that during the evt be removed before wakeup fn.
   
-  EV_SET(&read_evt, s, EVFILT_READ, EV_ADD | EV_ONESHOT, 0, 0, sv);
+  EV_SET(&evt, s, filter, EV_ADD | EV_ONESHOT, 0, 0, sv);
   // trying to detect when have reached eof with async file io using kq
-  //EV_SET(&read_evt, s, EVFILT_READ, EV_ADD, | EV_ONESHOT NOTE_LOWAT, 16*1024, sv);
+  //EV_SET(&evt, s, EVFILT_READ, EV_ADD, | EV_ONESHOT NOTE_LOWAT, 16*1024, sv);
 
-  // I think this is how you add an event
-  if(kevent(kq, &read_evt, 1, NULL, 0, NULL) < 0)
+  // add event
+  if(kevent(kq, &evt, 1, NULL, 0, NULL) < 0)
   {
-    perror("kevent read add");
+    perror("kevent add_kqueue_filter");
     return -1;
   }
+  return 0;
+}
+
+// useful, but unused atm, thanks to ONESHOT.
+// this function skirts the portability boundaries of the demux interface
+// for kqueues each event monitor is identified (for sockets) by a pair,
+// (s, filter), or for us, (s, {in|out}). This means that we can add
+// individual wakeups for reading and writing but not both at once.
+// I think epoll can do both, and so can select (and N/A to IOCPs).
+// This "both at once" thing can't easily be one shot. There's a good
+// case for this behaviour to be defined "undefined". Not many people
+// using this part - could be caveat emptor...
+int
+kqueue_demuxer::remove_kqueue_filter(int s, short filter)
+{
+  struct kevent evt;
+
+  EV_SET(&evt, s, filter, EV_DELETE, 0, 0, NULL);
+  if(kevent(kq, &evt, 1, NULL, 0, NULL) < 0)
+  {
+    perror("kevent remove_socket_wakeup");
+    return -1;
+  }
+
   return 0;
 }
 
 int
-kqueue_demuxer::add_writing_socket(socket_wakeup* sv)
+kqueue_demuxer::remove_socket_wakeup(int s, int flags)
 {
-  int s = sv->s;
-  struct kevent write_evt;
-  
-  // for sockets the low water mark stuff is identical to EVFILT_READ
-  // see the add_reading_socket notes for EV_ONESHOT reasoning
-  EV_SET(&write_evt, s, EVFILT_WRITE, EV_ADD | EV_ONESHOT, 0, 0, sv);
+  int r1 = 0, r2 = 0;
 
-  // this is how you add an event
-  if(kevent(kq, &write_evt, 1, NULL, 0, NULL) < 0)
-  {
-    perror("kevent write add");
-    return -1;
-  }
+  if(flags & PDEMUX_READ) r1 = remove_kqueue_filter(s, EVFILT_READ);
+  if(flags & PDEMUX_WRITE) r2 = remove_kqueue_filter(s, EVFILT_WRITE);
+
+  // If you want to know which one failed, you're out of luck.
+  if(r1 || r2) return -1;
+
   return 0;
-}
-
-// useful, but unused atm
-void
-kqueue_demuxer::remove_reading_fd(int s)
-{
-  struct kevent ev;
-  
-  EV_SET(&ev, s, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-  if(kevent(kq, &ev, 1, NULL, 0, NULL) < 0)
-    perror("read evt remove");
-}
-
-void
-kqueue_demuxer::remove_writing_fd(int s)
-{
-  struct kevent ev;
-
-  EV_SET(&ev, s, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-  if(kevent(kq, &ev, 1, NULL, 0, NULL) < 0)
-    perror("write evt remove");
 }
 
 // from "advanced macos programming", on reading shutdown causes
@@ -2267,17 +2486,25 @@ kqueue_demuxer::remove_writing_fd(int s)
 // do that thing where you get the events. can I get them one at a time?
 // I bet I can.
 void
-kqueue_demuxer::thread_loop_body()
+kqueue_demuxer::get_evts(bool poll)
 {
   // event seems to remain unless we remove it
   struct kevent ev;
-  struct timespec timeout;
   int       nevts;
 
-  timeout.tv_sec = 1;   // timeout every second
-  timeout.tv_nsec = 0;  // 10^9 nanoseconds per second
+  struct timespec timeout, *tptr = NULL;
+  
+  if(poll)
+  {
+    timeout.tv_sec = 0;   // effectuate a poll
+    timeout.tv_nsec = 0;
+    tptr = &timeout;
+  }
 
-  nevts = kevent(kq, NULL, 0, &ev, 1, &timeout);
+  // timeout.tv_sec = 1;    // timeout every second
+  // timeout.tv_nsec = 0; // 10^9 nanoseconds per second
+
+  nevts = kevent(kq, NULL, 0, &ev, 1, tptr);  // wait or poll
   if(nevts <= 0)
   {
     // error, else timeout & return to allow cancel
@@ -2290,8 +2517,10 @@ kqueue_demuxer::thread_loop_body()
   // fprintf(stderr,"kqueue wakeup!\n");
 
   socket_wakeup*  sv = (socket_wakeup*)ev.udata;
-  // int        s = ev.ident;
 
+  // The filters are not bit fields, hence they must come in serially.
+  // this means you're never going to get both read and write on
+  // a kqueue_demuxer wake up. No worries.
   if(ev.filter == EVFILT_READ)
   {
   // this capability is lost for the moment, as we have no way
@@ -2306,20 +2535,24 @@ kqueue_demuxer::thread_loop_body()
     }
     else
 */
-    if(ev.flags & EV_EOF)
+    // If a socket wakeup were a control block, you'd set the err here.
+    if(0 && ev.flags & EV_EOF)
     {
       // errno in fflags!
-      //fprintf(stderr,
-      //  "got EV_EOF on read, %i bytes remain in buffer, errno=%i\n",
-      //  (int)ev.data, ev.fflags);
+      fprintf(stderr,
+        "got EV_EOF on read, %i bytes remain in buffer, errno=%i\n",
+        (int)ev.data, ev.fflags);
     }
     // fprintf(stderr,"EVFILT_READ: got %i bytes coming\n", (int)ev.data);
-    // remove_reading_fd(s);  // now useing EV_ONESHOT
+    // remove_reading_fd(s);      // now useing EV_ONESHOT
+// remove other outstanding here...?
+    sv->wakeup_flags = PDEMUX_READ;   // Tell 'em what they've won.
     sv->wakeup(*this);
   }
   else if(ev.filter == EVFILT_WRITE)
   {
-    // fprintf(stderr,"EVFILT_WRITE: can write (?) %i bytes\n", (int)ev.data);
+    // fprintf(stderr,"EVFILT_WRITE: can write (?) %i bytes\n",
+    //  (int)ev.data);
 
     // using oneshot mode now.
     // remove_writing_fd(s);
@@ -2328,15 +2561,18 @@ kqueue_demuxer::thread_loop_body()
     {
       // errno in fflags? data should be zero bytes, right?
       // can't write anything
-      //fprintf(stderr,
-      //  "got EV_EOF on write, data bytes =%i (0?), errno/fflags?=%i\n",
-      //  (int)ev.data, ev.fflags);
+      fprintf(stderr,
+        "got EV_EOF on write, data bytes =%i (0?), errno/fflags?=%i\n",
+        (int)ev.data, ev.fflags);
     }
+// remove other outstanding here?
+    sv->wakeup_flags = PDEMUX_WRITE;
     sv->wakeup(*this);
   }
   else
   {
-    fprintf(stderr,"unsolicited event from kqueue...\n");
+    fprintf(stderr,"unsolicited event from kqueue (%i)...\n", ev.filter);
+    // no wakeup
   }
 }
 }}
@@ -2345,6 +2581,7 @@ kqueue_demuxer::thread_loop_body()
 @select(h)
 #include "demux_mutexlite.hpp"
 #include <stdio.h>        // printf debugging
+#include <assert.h>
 
 namespace flx { namespace demux {
 class auto_attr
@@ -2372,6 +2609,7 @@ pmut::pmut(bool recursive)
 
   auto_attr aa(&attr);          // cleans up always
 
+#ifdef PTHREAD_MUTEX_RECURSIVE        // defined in unistd.h
   if(recursive)
   {
     res = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
@@ -2381,6 +2619,9 @@ pmut::pmut(bool recursive)
       throw res;
     }
   }
+#else
+  assert( !recursive );         // gusi non ce l'ha.
+#endif
 
   res = pthread_mutex_init(&m, &attr);
   if(res != 0) throw res;
@@ -2559,47 +2800,15 @@ fileio_request::doit()
 #include <sys/types.h>      // send/recv
 #include <sys/socket.h>
 
-#include <errno.h>
+//#include <sys/errno.h>
+#include <errno.h>        // GUSI & solaris prefer this
 
 namespace flx { namespace demux {
 
 @tangle("typedef " + FLX_SOCKLEN_T + " FLX_SOCKLEN_T;")
 
-int
-posix_demuxer::init_pthread() {
-  return evt_pthr.init(thread_start, this);
-}
-
-// this MUST be called by sub classes in their destructors.
-// what cack-handed object orientedism
-// need to wake up event sleep for exiting. many of the event sources
-// have a way to do this, or at least a time out after which we can
-// test cancel state (pthread_testcancel)
-void
-posix_demuxer::deinit_pthread()
-{
-  evt_pthr.deinit();
-}
-
-// delete thread
 posix_demuxer::~posix_demuxer()
 {
-}
-
-// static pthread callback bootstrap
-void*
-posix_demuxer::thread_start(void* data)
-{
-  // why's this called sel?
-  posix_demuxer*  sel = (posix_demuxer*)data;   // get this ptr
-  while(1)
-  {
-    // to not screw up state/leak mutexes, we need to provide
-    // kill/cancel points. This is one.
-    pthread_testcancel();           // allow cancellability.
-    sel->thread_loop_body();          // one select
-  }
-  return 0;                   // (exit status) never happens
 }
 
 bool
@@ -2686,9 +2895,17 @@ accept_control_block::start(posix_demuxer& demux)
   // add listener to demuxer as reading socket - see man 2 accept
   // returns 0 on success, -1 on failure. not sure how to communicate
   // the error.
-    return demux.add_socket_wakeup(this, true);
+// could try the accept now, to see if it succeeds instantly...
+// observe wakeup rules (formulate them first)
+  accepted = -1;
+  // socket_err = 0;
+  // not quite true, but I want it to be clear if this ever becomes possible
+  // to do immediately
+  socket_err = EINPROGRESS;
+    return demux.add_socket_wakeup(this, PDEMUX_READ);
 }
 
+// one wakeup socket is in accepted and error in socket_err
 void
 accept_control_block::wakeup(posix_demuxer& demux)
 {
@@ -2717,13 +2934,13 @@ connect_control_block::start(posix_demuxer& demux)
   // and (no err || EINPROGRESS)
   s = async_connect(addy, p, &finished, &socket_err);
 
-  // fprintf(stderr,"async_connect returned s: %i, finished: %i\n",
-  //    sv.s, finished);
+  // fprintf(stderr,"async_connect returned s: %i, finished: %i, err=%i\n",
+  //  s, finished, socket_err);
 
   if(-1 == s)   // failed!
   {
     fprintf(stderr,"async_connect failed (%i)\n", socket_err);
-    return -1;  // error in socket_err
+    return -1;  // error in socket_err, no wakeup
   }
 
   if(finished)
@@ -2741,13 +2958,13 @@ connect_control_block::start(posix_demuxer& demux)
 
   // add to demuxer as writing socket - see man 2 connect
   // how do they get the error?
-    return demux.add_socket_wakeup(this, false);
+    return demux.add_socket_wakeup(this, PDEMUX_WRITE);
 }
 
 void
 connect_control_block::wakeup(posix_demuxer& demux)
 {
-  // fprintf(stderr,"connect woke up\n");
+  fprintf(stderr,"connect woke up\n");
   // this is how we check the success of async socket calls
   // god knows what the level should be. socket level seems sensible.
   FLX_SOCKLEN_T  len = sizeof(socket_err);
@@ -2879,157 +3096,178 @@ posix_queue::dequeue()
 
 // see epoll, kqueue & IOCPs
 
-// so this is asynchronously watching sockets and doing stuff. I could
-// pass the stuff off to another thread, which could then do things, like
-// process, run a flx thread or whatever, but I don't want to lose the
-// "not polling" nature of this. If I post this stuff to a queue, how
-// do I get the client to wake up and process that stuff? Is that what
-// condition variables are for? Put the decision off and give it a
-// callback
-// If I only read some of the available data will the next select return
-// immediately? It probably ought to.
-
-#include <assert.h>
-
-#include <sys/types.h>
-#include <sys/socket.h>
+// is select level triggered? I think it is.
+// strangely, I'm never seeing anything from the exception set.
 
 #include "demux_select_demuxer.hpp"
 
-#include <string.h>       // for memset
+#include <assert.h>
+#include <string.h>       // memset
 
-#include <stdio.h>        // for printf debug
+#include <stdio.h>        // printf debug
 #include <stdlib.h>
 namespace flx { namespace demux {
 
 select_demuxer::select_demuxer()
-  : ham_fist(true)
 {
   // clear these guys. after the thread starts, access to them will have
   // to be via the lock
   FD_ZERO(&master_read_set);
   FD_ZERO(&master_write_set);
+  FD_ZERO(&master_except_set);
   fdmax = 0;        // corresponds to stdin, which we're not using
 
   // clear this possibly quite large list
-  memset(read_svs, 0, sizeof(read_svs));
-  memset(write_svs, 0, sizeof(write_svs));
-  
-  int res = init_pthread();
-  
-  if(res != 0) throw res;
+  memset(svs, 0, sizeof(svs));
 }
 
 // one select, must not block indefinitely, so choose a timeslice
 // or find a way to make it wake on command, like a dummy socket
 void
-select_demuxer::thread_loop_body()
+select_demuxer::get_evts(bool poll)
 {
-  // make a copy that select can modify
-// race condition - master_*_set modified under lock
-  fd_set      read_set = master_read_set;
-  fd_set      write_set = master_write_set;
+  // make a copy that select can modify. this needs to be thought
+  // about for a threadsafe version. If we were serious, we'd also
+  // copy the wakeup list.
+  fd_set  read_set = master_read_set;
+  fd_set  write_set = master_write_set;
+  fd_set  except_set = master_except_set; // EH? Why am I keeping a copy?
+                      // shouldn't it just be both i&o?
   
   // this is depending on my fake socket to wakeup. perhaps use the timer
   // for now.
   // timing out every 100th of a second. seems reasonable.
-  struct timeval  tv;
+  struct timeval  tv, *tp = NULL;
+  //tv.tv_sec = 0;
+  //tv.tv_usec = 1000000/100;
+
+  if(poll)
+  {
   tv.tv_sec = 0;
-  tv.tv_usec = 1000000/100;
+    tv.tv_usec = 0;
+    tp = &tv;
+  }
   
   // the return value here actually has significance
   // sometimes I have to try again, or weed out bad fds.
-  if(select(fdmax+1, &read_set, &write_set, NULL, &tv) == -1)
+  //if(select(fdmax+1, &read_set, &write_set, &except_set, &tv) == -1)
+// nah! wait forever. none of these things shutdown properly yet.
+// it'll force the async new wakeup responsiveness
+  switch(select(fdmax+1, &read_set, &write_set, &except_set, tp))
   {
+    case 0:
+      return;     // timed out
+    break;
+    case -1:
     // not the ideal reaction. I think this is where I weed out
     // the bad socket(s). would need error set.
+
+    // closing a socket without removing can get us here. that's pretty
+    // nasty, because our data would be stale. Try not to do that. I
+    // wonder if the except set would tell us when the socket was
+    // closed on us? Damn, you have to clear it, else you keep getting
+    // the same error.
     perror("select");
-    exit(1);      // that's not a nice thing for a library to do.
+      // fall through and examine except set
+    break;
   }
 
-  // about to read and write master_set and pending reads.
-  // lock until end of function. pretty coarse.
-  // the simple choice of allowing the handle_read/write has meant
-  // that I have to use a recursive lock to protect my member vars
-  pmut_locker     l(ham_fist);
+  // we now copy back the select arguments. this needs to be
+  // thought about more a thread safe impl.
+
+  // since we're about to traverse the socket sets anyway, we should
+  // note the highest fd seen, and make that the highwater mark.
+  // that way we wouldn't be guaranteed monotonically degrading performance.
 
   // might be worth keeping a low water mark as well.
   // I guess this is why select sucks. On osx we can only watch
   // about 1024 sockets. That sucks too.
+
+  // like kqueues, this code could theoretically handle separate wakeups
+  // for read and write, should I do it? not right now.
+  int new_fdmax = 0;
+
   for(int i = 0; i <= fdmax; i++)
   {
-    if(!FD_ISSET(i, &read_set)) continue;
+    int   flags = 0;
 
-    // we now always remove before giving wakeup, which can
-    // always add it back if need be.
-    socket_wakeup*  sv = read_svs[i];
-    remove_reading_fd(i);
-    sv->wakeup(*this);
+    if(FD_ISSET(i, &read_set)) flags |= PDEMUX_READ;
+
+    if(FD_ISSET(i, &write_set)) flags |= PDEMUX_WRITE;
+  
+    // sorta suggests that I ought to call the wakeup and pass
+    // an error flag on to it.
+    if(FD_ISSET(i, &except_set))
+    {
+      // remove any bad sockets - they render the event source useless.
+      // don't call wakeup as the exeption may be due the socket being
+      // closed => stale data.
+      fprintf(stderr, "select signalled error on socket %i, removing\n",
+        i);
+      remove_fd(i);
+    }
+    else if(flags)
+    {
+      socket_wakeup*  sv = svs[i];
+      // remove before wakeup so wakeup can add itself back, 
+      // if necessary.
+      remove_fd(i);
+
+      sv->wakeup_flags = flags;
+      sv->wakeup(*this);
+    }
+
+    // to lower high-watermark, keep track of highest seen.
+    if(svs[i]) new_fdmax = i;
   }
 
-  // should combine loops. very heavy indentation
-  for(int i = 0; i <= fdmax; i++)
-  {
-    if(!FD_ISSET(i, &write_set)) continue;
+  // fprintf(stderr, "new_fdmax=%i, fdmax=%i\n", new_fdmax, fdmax);
 
-    socket_wakeup*  sv = write_svs[i];
-    remove_writing_fd(i);
-    sv->wakeup(*this);
-  }
+  fdmax = new_fdmax;      // copy it back
 }
 
 int
-select_demuxer::add_socket_wakeup(socket_wakeup* sv, bool read)
+select_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 {
-// This isn't right: there are race conditions with the select thread
-// and the new socket isn't selected until select times out
-// (currently 1/100 of a second). This could explain the poor performance
-// seen when using this demuxer.
   int s = sv->s;
 
-  if(s < 0 || s >= FD_SETSIZE) return -1;   // weakness of select
+  // fprintf(stderr, "adding select wakeup for %i, flags=%x\n", s, flags);
 
-  pmut_locker     l(ham_fist);      // lock it all off
+  if(s < 0 || s >= FD_SETSIZE) return -1; // weakness of select
 
-  if(read)
-  {
-    FD_SET(s, &master_read_set);
-    assert(read_svs[s] == NULL);      // sanity check
-    read_svs[s] = sv;
-  }
-  else
-  {
-    FD_SET(s, &master_write_set);
-    assert(write_svs[s] == NULL);     // sanity check
-    write_svs[s] = sv;
-  }
+  assert(svs[s] == NULL);         // sanity check: nothing there
 
-// fdmax used without locking in select thread
-  if(s > fdmax) fdmax = s;          // update highwater mark
+  if(flags & PDEMUX_READ) FD_SET(s, &master_read_set);
+
+  if(flags & PDEMUX_WRITE) FD_SET(s, &master_write_set);
+
+  // does this mean we could add a non-reading, non-writing socket
+  // and wait for errors on it?
+  FD_SET(s, &master_except_set);
+
+  svs[s] = sv;              // record wakeup. ours now.
+
+
+  if(s > fdmax) fdmax = s;        // update highwater mark
 
   return 0;
 }
 
+// removes for both reading AND writing.
 void
-select_demuxer::remove_reading_fd(int s)
+select_demuxer::remove_fd(int s)
 {
+  // fprintf(stderr, "removing select fd: %i\n", s);
+
   assert(s >= 0 && s < FD_SETSIZE);
+  assert(svs[s] != NULL);         // there should be something there
 
-  pmut_locker     l(ham_fist);      // lock it all off
+  // clear them all regardless. 
+  FD_CLR(s, &master_read_set);
+  FD_CLR(s, &master_write_set);
+  FD_CLR(s, &master_except_set);
 
-  FD_CLR(s, &master_read_set);        // we're finished with this
-  read_svs[s] = NULL;
-}
-
-void
-select_demuxer::remove_writing_fd(int s)
-{
-  assert(s >= 0 && s < FD_SETSIZE);
-
-  pmut_locker     l(ham_fist);      // lock it all off
-
-  FD_CLR(s, &master_write_set);       // we're finished with this
-  write_svs[s] = NULL;
+  svs[s] = NULL;
 }
 }}
 
@@ -3141,9 +3379,12 @@ worker_fifo::add_worker_task(worker_task* task)
 #include <arpa/inet.h>      /* for inet_addr */
 #include <unistd.h>       /* for close */
 
+#include <netinet/in.h>     /* IPPROTO_TCP and sockaddr_in */
+#include <netinet/tcp.h>    /* TCP_NODELAY */
+
 #include <sys/types.h>      /* for accept */
 #include <sys/socket.h>
-#include <sys/errno.h>      /* EINPROGRESS */
+//#include <sys/errno.h>    /* EINPROGRESS (GUSI doesn't like both this and errno.h)*/
 
 #include <errno.h>        /* errno */
 
@@ -3191,6 +3432,7 @@ listener_fail:
 }
 
 /* create listener, make it non-blocking */
+/* duh, sometimes eats errno...*/
 int
 create_async_listener(int* io_port, int q_len)
 {
@@ -3212,7 +3454,8 @@ create_async_listener(int* io_port, int q_len)
 
 /* ps, sets resulting socket to non-block. some people would say that */
 /* this WASN'T nice, so change the name some time. returns socket or -1 */
-/* on failure, with *err containing the error code */
+/* on failure, with *err containing the error code. on success returns 0 */
+/* with zero (= no error) in *err */
 int
 nice_accept(int listener, int* err)
 {
@@ -3222,6 +3465,8 @@ nice_accept(int listener, int* err)
   /* 10.4 (gcc 4.0) complains about signedeness, so now unsigned */
   FLX_SOCKLEN_T addrlen = sizeof(remoteaddr);
   int         newfd;
+  
+  *err = 0;     /* assume all good */
   
   newfd = accept(listener, (struct sockaddr*)&remoteaddr, &addrlen);
   if(-1 == newfd) {
@@ -3304,6 +3549,14 @@ int
 make_nonblock(int s)
 {
   return fcntl(s, F_SETFL, O_NONBLOCK);
+}
+
+/* returns -1 on failure with errno set or 0 otherwise */
+int
+set_tcp_nodelay(int s, int disable_nagle)
+{
+  return setsockopt(s, IPPROTO_TCP, TCP_NODELAY,
+    (char*)&disable_nagle, sizeof(disable_nagle));
 }
 
 /* also make non-blocking AFTER connect, that is, */
@@ -3431,19 +3684,21 @@ posix_timer_queue::takedown_sleep_cond()
   if(0 != res) fprintf(stderr,"condition destroy failed: %i\n", res);
 }
 
+// it's a real bore properly cleaning up in the face of exceptions in
+// constructors. try using some local objects to look after it.
 posix_timer_queue::posix_timer_queue()
   : lock(false)     // lock shouldn't need to be recursive
 {
   // fprintf(stderr,"posix_timer_queue ctor\n");
 
   // if this throws, no harm done
-  opaque_prio_queue = new void_prio_queue;    // a.k.a. PRIOQ
+  opaque_prio_queue = new void_prio_queue;  // a.k.a. PRIOQ
 
   int res;
   res = setup_sleep_cond();
   if(0 != res)
   {
-      delete PRIOQ;                           // cleanup, carry on
+    delete PRIOQ;             // cleanup, carry on
       throw res;
   }
 
@@ -3644,7 +3899,6 @@ posix_timer_queue::thread_loop_body()
   res = pthread_cond_wait(&sleep_cond, &lock.m);
   // fprintf(stderr,"pthread_cond_wait woke up! (%i)\n", res);
 
-  // lock released here
   // lock released here
   return true;          // keep going
 }

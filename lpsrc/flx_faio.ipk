@@ -1,11 +1,8 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
-Revision 1.30  2006/01/28 05:12:14  skaller
-Fiddles to config, fix to faio to use C_hack::malloc.
-
-Revision 1.29  2006/01/28 02:36:37  skaller
-Add packages.
+Revision 1.31  2006/01/29 02:17:29  rfistman
+using latest demux, added epoll to flx_run (for linux). bugs fixed.
 
 Revision 1.28  2006/01/26 10:04:28  rfistman
 fixed failure to wake fthread after connects that finish immediately.
@@ -374,6 +371,7 @@ copipe_endpt::shutdown(int how)
     }
 }
 
+
 // sleep task prio queue thing
 
 bool
@@ -563,11 +561,12 @@ namespace flx { namespace faio {
  
 class FLX_RTL_EXTERN socketio_wakeup : public demux::socket_wakeup {
 public:
-    demux::sel_param       pb;         // in: what you want, out: what you get
-    thread_wakeup   fw; 
-    bool        read;
+  demux::sel_param   pb;     // in: what you want, out: what you get
+  thread_wakeup fw;
 
-    virtual void wakeup(demux::posix_demuxer& demux);
+  int       sio_flags;  // either one of PDEMUX_{READ|WRITE}
+
+  virtual void wakeup(demux::posix_demuxer& demux);
 };
 
 // this can handle most unix style io, that is, read & write on sockets,
@@ -654,13 +653,15 @@ public:
 
 #include <unistd.h>     // close
 #include <string.h>     // strerror - probably not portable
+#include <assert.h>
 
 using namespace flx::demux;
 namespace flx { namespace faio {
-socketio_request::socketio_request(int s, char* buf, long len, bool r)
+socketio_request::socketio_request(int s, char* buf, long len, bool read)
 {
     sv.s = s;
-    sv.read = r;
+  // demux supports reading AND writing. We don't. Yet.
+  sv.sio_flags = ((read) ? PDEMUX_READ : PDEMUX_WRITE);
 
     sv.pb.buffer = buf;
     sv.pb.buffer_size = len;
@@ -670,7 +671,7 @@ socketio_request::socketio_request(int s, char* buf, long len, bool r)
 bool
 socketio_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {
-    // printf("adding wakeup: len %i, done %i\n",
+    // fprintf(stderr, "adding wakeup: len %i, done %i\n",
     //   sv.pb.buffer_size, sv.pb.bytes_written);
 
     // important: copy down the thread and the driver
@@ -679,7 +680,7 @@ socketio_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
     posix_demuxer*  pd = (posix_demuxer*)&demux;
 
     // wake thread if call failed
-    return (pd->add_socket_wakeup(&sv, sv.read) == -1);
+  return (pd->add_socket_wakeup(&sv, sv.sio_flags) == -1);
 }
 
 
@@ -688,35 +689,43 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
 {
     // handle read/write, return true if not finished.
     // otherwise wakeup return false.
-    bool    connection_closed;
+  bool  connection_closed;
 
-    // printf("prehandle wakeup, this: %p, read: %i, len: %i, done %i\n",
-    //  this, read, pb.buffer_size, pb.bytes_written);
-    
-    if(read)
-    {   
+  //fprintf(stderr,"prehandle wakeup, this: %p, read: %i, len: %i, done %i\n",
+  //  this, read, pb.buffer_size, pb.bytes_written);
+
+  // NOTE: this code does not handle the possibility of both read AND
+  // write being set. That would require thinking about the what
+  // the connect_closed return value meant. In any case, we don't
+  // do that stuff here yet.
+  if(wakeup_flags & PDEMUX_READ)
+  {
+    // just check that our above assumption hasn't been violated.
+    assert(wakeup_flags == PDEMUX_READ);
         connection_closed = posix_demuxer::socket_recv(s, &pb);
     }
     else
     {   
+    // never hurts to be paranoid.
+    assert(wakeup_flags == PDEMUX_WRITE);
         connection_closed = posix_demuxer::socket_send(s, &pb);
     }
     
-    // printf("posthandle wakeup, this: %p, read: %i, len: %i, done %i\n",
-    //  this, read, pb.buffer_size, pb.bytes_written);
-    // printf("wakeup of %p, closed = %i\n", this, connection_closed);
+  // fprintf(stderr,"posthandle wakeup, this: %p, read: %i, len: %i, done %i\n",
+  //  this, read, pb.buffer_size, pb.bytes_written);
+  // fprintf(stderr,"wakeup of %p, closed = %i\n", this, connection_closed);
     
     // wake up: time to process some data
     if(connection_closed || pb.bytes_written == pb.buffer_size)
     {   
-        // printf("schedding %p, drv: %p, f: %p\n", this, drv, f);
+    // fprintf(stderr,"schedding %p, drv: %p, f: %p\n", this, drv, f);
         //drv->sched(f);
         fw.wake();
         return;
     }
     
-    // printf("not schedding %p\n", this); 
-    if(demux.add_socket_wakeup(this, read) == -1)
+  // fprintf(stderr,"not schedding %p\n", this);
+  if(demux.add_socket_wakeup(this, sio_flags) == -1)
         fprintf(stderr,"failed to re-add_socket_wakeup\n");
 }
 
@@ -724,6 +733,7 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
 bool
 connect_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
 {
+// fprintf(stderr, "connect_request::start_async_op\n");
     // important: copy down the thread and the driver
   RECORD_THREAD_INFO(fw);
 
@@ -735,19 +745,22 @@ connect_request::start_async_op(demuxer& demux, flx_drv* drv, void* f)
   // NONONONONO! Referring to this's variables after a successful start
   // gives rise to a race condition, which is bad.
   return false;     // do not reschedule after a successful start
+
 /*
   // I've not seen this yet, don't know why.
-  if(socket_err == 0) fprintf(stderr, "WOW, instant CONNECT\n");
+  if(0 == socket_err) fprintf(stderr, "WOW, instant CONNECT\n");
 
   // call didn't fail, could be pending or finished.
   // return socket_err != EINPROGRESS, the contrapositive, sort of
-  return socket_err == 0;   // no err => finished immediately
+  return 0 == socket_err;   // no err => finished immediately
 */
 }
 
 void
 connect_request::wakeup(posix_demuxer& demux)
 {
+//fprintf(stderr, "connect_request::wakeup\n");
+
   // fprintf(stderr,"connect woke up\n");
   connect_control_block::wakeup(demux);
 
@@ -870,13 +883,11 @@ class FLX_RTL_EXTERN wasync_accept
   : public waio_base, public demux::acceptex_control_block
 {
 public:
-  wasync_accept()   // felix linkage demands it
-    : acceptex_control_block(INVALID_SOCKET, INVALID_SOCKET) {}       
+  wasync_accept() {}  // felix linkage demands it
 
-  wasync_accept(SOCKET l, SOCKET a) 
-    : acceptex_control_block(l, a) {}
+  wasync_accept(SOCKET l, SOCKET a) { listener = l; acceptor = a; }
 
-  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+  virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f);
 
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err);
@@ -887,13 +898,12 @@ class FLX_RTL_EXTERN connect_ex
 {
 public:
 
-  connect_ex()    // flx linkage
-    : connectex_control_block(INVALID_SOCKET, NULL, 0) {}
+  connect_ex() {}     // flx linkage
 
   connect_ex(SOCKET soc, const char* addr, int port)
-    : connectex_control_block(soc, addr, port) {}
+    { s = soc; addy = addr; p = port; }
 
-  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+  virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f);
 
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err);
@@ -926,12 +936,12 @@ class FLX_RTL_EXTERN wsa_socketio
 {
 public:
   wsa_socketio()
-    : wsasocketio_control_block(INVALID_SOCKET, NULL, 0, false) {}
+    : wsasocketio_control_block(INVALID_SOCKET, NULL, false) {}
 
-  wsa_socketio(SOCKET src, void* buf, int len, bool read)
-    : wsasocketio_control_block(src, buf, len, read) {}
+  wsa_socketio(SOCKET src, sel_param* ppb, bool read)
+    : wsasocketio_control_block(src, ppb, read) {}
 
-  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
+  virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f);
 
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err);
@@ -1051,15 +1061,17 @@ wsa_socketio::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
   LPOVERLAPPED olp, int err)
 {
   // fprintf(stderr,"wsa_socketio wakeup, nb: %li, err: %i\n", nbytes, err );
+// Doing the handling myself - this can restart the the op giving us
+// a possible race condition... or not? It should be sync with this call.
+  // wsasocketio_control_block::iocp_op_finished(nbytes, udat, olp, err);
 
-  // keep track of bytes received.
-  pb.bytes_written += nbytes;
+  ppb->bytes_written += nbytes;
 
   // if we're not finished, we have to reinstall our request
   // zero bytes indicates shutdown/closure, right?
   // might be using this for WSASend. Instead of broken pipes on win32, 
   // instead we get WSAECONNRESET (pretty sure) on write. On read?
-  if(0 == nbytes || pb.bytes_written == pb.buffer_size)
+  if(0 == nbytes || ppb->finished())
   {
     // this'll wake us up
     waio_base::iocp_op_finished(nbytes, udat, olp, err);
@@ -1073,15 +1085,6 @@ wsa_socketio::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
       fprintf(stderr, "socketio restart finished! WHAT TO DO!?!\n");
   }
 }
-
-/*
-void
-wsa_socketio::iocp_op_finished( DWORD nbytes, ULONG_PTR udat, 
-  LPOVERLAPPED olp, int err)
-{
-  waio_base::iocp_op_finished(nbytes, udat, olp, err);
-}
-*/
 
 // file io
 
@@ -1142,6 +1145,14 @@ proc get_thread(thread: ptr[fthread]) {
     svc (svc_get_fthread thread );
 }
 
+//header stdlib_h = '#include <stdlib.h>';            // malloc, free
+    
+// be careful of this being optimized away 
+//JS: why? it isn't used .. and its in C_hack anyhow :)
+//RF: I'm not seeing it.
+fun malloc: int -> address = 'malloc($1)' requires stdlib_h;
+proc free: address = 'free($1);' requires stdlib_h; 
+    
 //header asyncio_h = '#include "faio_asyncio.hpp"';
 // could go through and conditionally require this header, but I'm
 // not going to right now.
@@ -1364,6 +1375,7 @@ type async_connect = 'flx::faio::connect_request';
 
 fun mk_async_connect: charp*int -> async_connect = 'flx::faio::connect_request($a)';
 fun get_socket: async_connect -> int = '$1.s';
+fun get_err: async_connect -> int = '$1.socket_err';
 
 // could do multi connects for capable drivers
 proc connect(s: &int, addr: charp, port: int)
@@ -1588,7 +1600,6 @@ include "flx_faio_win32";
 #import <flx_platform.flxh>
 
 open Faio;  // copipes
-open C_hack; // malloc
 
 #if POSIX
 open Faio_posix;
