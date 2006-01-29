@@ -69,7 +69,7 @@ let gen_prim_call
   syms 
   (bbdfns:fully_bound_symbol_table_t) 
   (tsub:btypecode_t -> btypecode_t) 
-  ge 
+  (ge: range_srcref -> tbexpr_t -> cexpr_t)
   (ct:string) 
   (ts:btypecode_t list) 
   ((arg,argt as a) : tbexpr_t)
@@ -87,8 +87,12 @@ let gen_prim_call
   let argt = rt argt in
   let tt = tn argt in
   let sh t = shape_of bbdfns tn t in
+  let carg = 
+    match argt with 
+    | `BTYP_tuple []  -> ce_atom "UNIT_VALUE_ERROR"
+    | x -> ge sr a
+  in
   let ashape = sh argt in
-
   match arg,argt with
 
   (* the argument is explicitly a tuple *)
@@ -120,7 +124,7 @@ let gen_prim_call
         in rev_map (fun _ -> t) (nlist n), rev_map (fun _ -> s) (nlist n)
       | _ -> assert false
     in
-    csubst sr sr2 ct ess ets tt ret ts prec ashape ashapes ["Error"]
+    csubst sr sr2 ct carg ess ets tt ret ts prec ashape ashapes ["Error"]
   
   (* the argument isnt a tuple, but the type is *)
   | (_,`BTYP_tuple typs) as x ->
@@ -133,7 +137,7 @@ let gen_prim_call
     in
     let ess = map (ge sr) es in
     let ets = map tn typs in
-    csubst sr sr2 ct ess ets tt ret ts prec ashape (map sh typs) ["Error"]
+    csubst sr sr2 ct carg ess ets tt ret ts prec ashape (map sh typs) ["Error"]
 
   (* the argument isnt a tuple, but the type is an array *)
   | (_,(`BTYP_array(t,`BTYP_unitsum n) as ta)) as x ->
@@ -146,14 +150,13 @@ let gen_prim_call
     in
     let ess = map (ge sr) es in
     let ets = map tn typs in
-    csubst sr sr2 ct ess ets tt ret ts prec ashape (map sh typs) ["error"]
+    csubst sr sr2 ct carg ess ets tt ret ts prec ashape (map sh typs) ["error"]
 
   (* the argument isn't an explicit tuple, and the type
      is neither an array nor tuple
   *)
   | (_,typ) -> 
-    let a = ge sr a in
-    csubst sr sr2 ct [a] [tt] tt ret ts prec ashape [ashape] ["Error"]
+    csubst sr sr2 ct carg [carg] [tt] tt ret ts prec ashape [ashape] ["Error"]
 
 
 

@@ -1187,7 +1187,11 @@ and bind_type'
       t
 
   | `TYP_array (t1,t2)-> 
-    `BTYP_array (bt t1, bt t2)
+    let index = match bt t2 with
+    | `BTYP_tuple [] -> `BTYP_unitsum 1
+    | x -> x
+    in
+    `BTYP_array (bt t1, index)
 
   | `TYP_tuple ts -> 
     let ts' =map bt ts  in

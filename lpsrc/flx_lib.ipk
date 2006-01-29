@@ -827,6 +827,12 @@ module Carray
   fun gt[t]: ptr[t] * ptr[t] -> bool = '$1>$2';
   fun ge[t]: ptr[t] * ptr[t] -> bool = '$1>=$2';
 
+  publish "Convert Felix array to C array"
+  fun carray_of[t,n]: t ^ n -> ptr[t] = "$t.data";
+
+  publish "Convert C array to Felix array"
+  fun array_of[t,n]: ptr[t] -> ptr[t ^ n] = "*(#0*)(void*)$1";
+  
   proc memcpy: address * address * size = 
     "{if($1 && $2 && $3)std::memcpy($1,$2,$3);}"
     requires cstring

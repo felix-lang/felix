@@ -385,7 +385,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         | `Str c -> ce_expr "expr" c
         | `StrTemplate c ->
           let ts = map tn ts in
-          csubst sr sr2 c [] [] "Error" "Error" ts "expr" "Error" ["Error"] ["Error"]
+          csubst sr sr2 c (ce_atom "Error") [] [] "Error" "Error" ts "expr" "Error" ["Error"] ["Error"]
         end
 
       | `BBDCL_cstruct _ 
