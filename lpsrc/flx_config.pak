@@ -1892,6 +1892,7 @@ archmap = {
   "cygwin":"cygwin",
   "nocygwin":"nocygwin",
   "mingw":"mingw",
+  "windows":"win32",
   "nt":"win32",
   "win32":"win32",
   "darwin":"osx",

@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.29  2006/01/29 07:07:21  skaller
+fixed visual studio build after demux merge
+
 Revision 1.28  2006/01/29 05:58:08  rfistman
 fixed windows build (ming nocygwin) after merge
 
@@ -2225,12 +2228,10 @@ winfileio_control_block::start_overlapped()
 #ifndef __DEMUX_OVERLAPPED__
 #define __DEMUX_OVERLAPPED__
 
-#include "demux_iocp_demuxer.hpp"
 // visual studio is quite sensitve about how you do these includes.
-// THIS is the way (WinSock2.h includes Windows.h? iocp_demuxer.h is.).
-#include <WinSock2.h>
+#include <WinSock2.h>              // Winsock2 (WSABufs, etc) must come before Windows.h
+#include "demux_iocp_demuxer.hpp"  // this header file include Windows.h
 #include <MSWSock.h>  // AcceptEx, TF_REUSE_SOCKET, etc
-
 
 namespace flx { namespace demux {
 
@@ -3926,8 +3927,6 @@ posix_timer_queue::thread_loop_body()
 #include "demux_win_timer_queue.hpp"
 
 #include <stdio.h>
-
-using namespace std;
 
 namespace flx { namespace demux {
 

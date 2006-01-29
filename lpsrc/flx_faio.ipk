@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.33  2006/01/29 07:07:21  skaller
+fixed visual studio build after demux merge
+
 Revision 1.32  2006/01/29 05:58:08  rfistman
 fixed windows build (ming nocygwin) after merge
 
@@ -654,7 +657,9 @@ namespace flx { namespace faio {
 class FLX_RTL_EXTERN wflx_drv : public flx_drv {
   demux::win_timer_queue sleepers;
 public:
-  wflx_drv(demux::sleep_queue& q) : flx_drv(q) {}
+  // visual studio seems to demand that I have the constructor defined in a cpp
+  // file. the file previously had none, which gave me weird link errors.
+  wflx_drv(demux::sleep_queue& q);
 
   demux::timer_queue* get_sleepers() { return &sleepers; }
 };
@@ -662,6 +667,19 @@ public:
 }}
 
 #endif
+
+@h=tangler('faio/faio_wdrv.cpp')
+@select(h)
+
+#include <Windows.h>  // see note in win_timer_queue.hpp
+#include "faio_wdrv.hpp"
+
+namespace flx { namespace faio {
+
+  // vs requirement that I have a cpp file?
+  wflx_drv::wflx_drv(demux::sleep_queue& q) : flx_drv(q) {}
+
+}}
 
 @h=tangler('faio/faio_posixio.cpp')
 @select(h)

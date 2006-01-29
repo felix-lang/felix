@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.209  2006/01/29 07:07:21  skaller
+fixed visual studio build after demux merge
+
 Revision 1.208  2006/01/29 02:53:16  rfistman
 fixed missing epoll header for linux.:w
 
@@ -2968,6 +2971,7 @@ POSIX_FAIO_CPPS = [
 ]
 
 WINDOWS_FAIO_CPPS = [
+  "faio/faio_wdrv",
   "faio/faio_winio",
 ]
 
