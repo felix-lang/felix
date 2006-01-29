@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.28  2006/01/29 05:58:08  rfistman
+fixed windows build (ming nocygwin) after merge
+
 Revision 1.27  2006/01/29 02:53:16  rfistman
 fixed missing epoll header for linux.:w
 
@@ -164,11 +167,11 @@ namespace flx { namespace demux {
 
 // not here? returns INVALID_SOCKET on failure.
 // if *io_port == 0, then a port is chosen and returned in *io_port
-SOCKET create_listener_socket(int* io_port, int backlog);
+SOCKET FLX_RTL_EXTERN create_listener_socket(int* io_port, int backlog);
 // these two probably not used. move to wsockety.h
-SOCKET nice_accept(SOCKET listener);
-SOCKET nice_connect(const char* addr, int port);
-int set_tcp_nodelay(int s, int disable_nagle);
+SOCKET FLX_RTL_EXTERN nice_accept(SOCKET listener);
+SOCKET FLX_RTL_EXTERN nice_connect(const char* addr, int port);
+int FLX_RTL_EXTERN set_tcp_nodelay(int s, int disable_nagle);
 
 // this thing isn't actually being used by the iocp code. it should be.
 class FLX_RTL_EXTERN win_thread {

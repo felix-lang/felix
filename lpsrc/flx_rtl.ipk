@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.93  2006/01/29 05:58:08  rfistman
+fixed windows build (ming nocygwin) after merge
+
 Revision 1.92  2006/01/29 02:53:17  rfistman
 fixed missing epoll header for linux.:w
 
@@ -1759,11 +1762,10 @@ public:
 
 #ifdef _WIN32
     win_queue async_active;
-	// zzz
     win_thread ethread;
     iocp_demuxer demux;
     wflx_drv driver;
-    DWORD demux_thread(LPVOID udat);
+    static DWORD demux_thread(LPVOID udat);
 #else
     posix_queue async_active;
     apthread ethread;
@@ -1776,7 +1778,12 @@ public:
 
    proto_async() : driver(async_active) {
      // start waiting thread
-     if(ethread.init(demux_thread, &demux) == -1) -1;
+#if _WIN32
+     // cast callback to itself. go figure.
+     if(ethread.init((LPTHREAD_START_ROUTINE)demux_thread, &demux) == -1) throw -1;
+#else
+     if(ethread.init(demux_thread, &demux) == -1) throw -1;
+#endif
    }
 
 };

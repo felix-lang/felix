@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.32  2006/01/29 05:58:08  rfistman
+fixed windows build (ming nocygwin) after merge
+
 Revision 1.31  2006/01/29 02:17:29  rfistman
 using latest demux, added epoll to flx_run (for linux). bugs fixed.
 
@@ -637,6 +640,28 @@ public:
 
 }}
 #endif
+@h=tangler('faio/faio_wdrv.hpp')
+@select(h)
+
+#ifndef __FAIO_WDRV__
+#define __FAIO_WDRV__
+
+#include "demux_win_timer_queue.hpp"
+#include "faio_drv.hpp"
+
+namespace flx { namespace faio {
+
+class FLX_RTL_EXTERN wflx_drv : public flx_drv {
+  demux::win_timer_queue sleepers;
+public:
+  wflx_drv(demux::sleep_queue& q) : flx_drv(q) {}
+
+  demux::timer_queue* get_sleepers() { return &sleepers; }
+};
+
+}}
+
+#endif
 
 @h=tangler('faio/faio_posixio.cpp')
 @select(h)
@@ -887,7 +912,7 @@ public:
 
   wasync_accept(SOCKET l, SOCKET a) { listener = l; acceptor = a; }
 
-  virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f);
+  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
 
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err);
@@ -903,7 +928,7 @@ public:
   connect_ex(SOCKET soc, const char* addr, int port)
     { s = soc; addy = addr; p = port; }
 
-  virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f);
+  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
 
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err);
@@ -938,10 +963,10 @@ public:
   wsa_socketio()
     : wsasocketio_control_block(INVALID_SOCKET, NULL, false) {}
 
-  wsa_socketio(SOCKET src, sel_param* ppb, bool read)
+  wsa_socketio(SOCKET src, demux::sel_param* ppb, bool read)
     : wsasocketio_control_block(src, ppb, read) {}
 
-  virtual bool start_async_op(demuxer& demux, flx_drv* drv, void* f);
+  virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv, void* f);
 
   virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
     LPOVERLAPPED olp, int err);
@@ -1018,7 +1043,7 @@ wasync_accept::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 
 
 bool
-connect_ex::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+connect_ex::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {
   RECORD_THREAD_INFO(fw);   // records enough info for wakeup
   return start_overlapped();
@@ -1033,7 +1058,7 @@ connect_ex::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 
 
 bool
-wasync_transmit_file::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+wasync_transmit_file::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {
   RECORD_THREAD_INFO(fw);   // records enough info for wakeup
   return start_overlapped();
@@ -1047,7 +1072,7 @@ wasync_transmit_file::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 }
 
 bool
-wsa_socketio::start_async_op(demuxer& demux, flx_drv* drv, void* f)
+wsa_socketio::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {
   RECORD_THREAD_INFO(fw); // records enough info for wakeup
   return start_overlapped();    // start overlapped op
