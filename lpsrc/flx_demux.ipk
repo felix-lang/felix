@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.27  2006/01/29 02:53:16  rfistman
+fixed missing epoll header for linux.:w
+
 Revision 1.26  2006/01/29 02:17:29  rfistman
 using latest demux, added epoll to flx_run (for linux). bugs fixed.
 
@@ -2964,7 +2967,7 @@ connect_control_block::start(posix_demuxer& demux)
 void
 connect_control_block::wakeup(posix_demuxer& demux)
 {
-  fprintf(stderr,"connect woke up\n");
+  // fprintf(stderr,"connect woke up\n");
   // this is how we check the success of async socket calls
   // god knows what the level should be. socket level seems sensible.
   FLX_SOCKLEN_T  len = sizeof(socket_err);

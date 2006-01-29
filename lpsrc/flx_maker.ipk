@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.208  2006/01/29 02:53:16  rfistman
+fixed missing epoll header for linux.:w
+
 Revision 1.207  2006/01/25 00:34:40  rfistman
 removed a few outstanding references to SDL_image
 fixed a tiny typo in flx_use.ipk
@@ -2751,6 +2754,7 @@ DEMUXRTL_INTERFACES = [
  'demux_win_timer_queue.hpp',  # win32
  'demux_kqueue_demuxer.hpp',# osx/bsd
  'demux_evtport_demuxer.hpp',# solaris
+ 'demux_epoll_demuxer.hpp',# linux (>= 2.6)
  'demux_mutexlite.hpp',     # posix
  'demux_sockety.hpp',       # posix
 ]
