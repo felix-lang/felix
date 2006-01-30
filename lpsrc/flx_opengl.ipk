@@ -1,5 +1,8 @@
 @head(1,'open GL and extensions')
 $Log$
+Revision 1.3  2006/01/30 01:09:06  skaller
+more open GL lessons
+
 Revision 1.2  2006/01/29 04:37:29  skaller
 Fix various stuffs.
 
@@ -389,7 +392,6 @@ module GL_gl_h
   const GL_S : uint;
   const GL_CLAMP : uint;
   const GL_REPEAT : uint;
-  const GL_NEAREST : uint;
   const GL_MODULATE : uint;
   const GL_DECAL : uint;
   const GL_SPHERE_MAP : uint;
@@ -397,10 +399,7 @@ module GL_gl_h
   const GL_EYE_LINEAR : uint;
   const GL_OBJECT_PLANE : uint;
   const GL_OBJECT_LINEAR : uint;
-  const GL_LINEAR_MIPMAP_LINEAR : uint;
-  const GL_LINEAR_MIPMAP_NEAREST : uint;
-  const GL_NEAREST_MIPMAP_LINEAR : uint;
-  const GL_NEAREST_MIPMAP_NEAREST : uint;
+
   const GL_TEXTURE_INTENSITY_SIZE : uint;
   const GL_TEXTURE_LUMINANCE_SIZE : uint;
   const GL_TEXTURE_ALPHA_SIZE : uint;
@@ -623,6 +622,11 @@ module GL_gl_h
   const GL_EXP2 : int;
   const GL_EXP : int;
   const GL_LINEAR : int;
+  const GL_NEAREST : int;
+  const GL_LINEAR_MIPMAP_LINEAR : int;
+  const GL_LINEAR_MIPMAP_NEAREST : int;
+  const GL_NEAREST_MIPMAP_LINEAR : int;
+  const GL_NEAREST_MIPMAP_NEAREST : int;
 
   const GL_FOG_END : uint;
   const GL_FOG_START : uint;

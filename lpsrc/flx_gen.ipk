@@ -2109,10 +2109,10 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
     in
 
     let cont = "con_t *" in
-    let heap_call_arg_sig = 
+    let heap_call_arg_sig, heap_call_arg = 
       match argtype with
-      | `BTYP_tuple [] -> cont ^ "_ptr_caller"
-      | _ -> cont ^ "_ptr_caller, " ^ argtypename ^" const &_arg"
+      | `BTYP_tuple [] -> cont ^ "_ptr_caller","0"
+      | _ -> cont ^ "_ptr_caller, " ^ argtypename ^" const &_arg","0,_arg"
     and stack_call_arg_sig = 
       match argtype with
       | `BTYP_tuple [] -> ""
@@ -2152,7 +2152,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
           if not heapable 
           then unpack_args ^ exe_string
           else 
-            "  con_t *cc = call(0,_arg);\n" ^
+            "  con_t *cc = call("^heap_call_arg^");\n" ^
             "  while(cc) cc = cc->resume();\n"
         ) ^ "\n}\n"
     and heap_call = 
