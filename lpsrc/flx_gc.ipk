@@ -595,7 +595,8 @@ static int mcount FLX_UNUSED = 0;
 #ifdef HAVE_GXX_X86
 register void *sp __asm__("esp");
 #else
-static void *sp = 0;
+// this was getting us unused variable warnings
+// static void *sp = 0;
 #endif
 
 void *low_sp = 0;
