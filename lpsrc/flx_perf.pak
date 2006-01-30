@@ -1,4 +1,3 @@
-
 @set_title('Performance Measurements')
 @head(1,"How Fast is Felix?")
 This module contains codes to compare the Felix translator
@@ -128,7 +127,7 @@ where 'ack' is replaced by the name of the test.
 
 @def flx_setup():
   tangle("// Felix Performance Test Program")
-  tangle('include "std";')
+  tangle('#import <flx.flxh>";')
   tangle("n := atoi(System::argv 1);")
 @def showgraph(machine,test,title):
   get_weaver()._write(
@@ -144,18 +143,13 @@ where 'ack' is replaced by the name of the test.
 This is my main work machine, an AMD64 K8 3200 with 
 1G Ram and an ASUS motherboard running nVidia chipset,
 budget price cache memory, 200G SATA drive,
-Ubuntu Hoary Linux distribution.
-
-@head(3,'Pelican: x86')
-The old faithful, an 80586 Pentium III 700MHz running RedHat 9 Linux
-distribution.
+Ubuntu Breezy Linux distribution.
 
 @head(2,'[ack] Ackermanns Function')
 Ackermann's function is used to check tail-recursion optimisation
 and is heavily dependent on the number of words stacked per function call.
 
 @showgraph('rosella','ack',"Ackermann's function on Rosella (Amd64-k8)")
-@showgraph('pelican','ack',"Ackermann's function on Pelican (x86-PIII)")
 
 @select(tangler('speed/src/felix/ack.flx','data'))
 @flx_setup()
@@ -287,7 +281,6 @@ end Ack_F;
 
 @head(2,'[takfp] Takfp')
 @showgraph('rosella','takfp',"Takfp on Rosella: amd64-k8")
-@showgraph('pelican','takfp',"Takfp on Pelican: x86-PIII)")
 
 @select(tangler('speed/src/felix/takfp.flx','data'))
 @flx_setup()

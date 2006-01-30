@@ -1,5 +1,8 @@
 @head(1,'SDL')
 $Log$
+Revision 1.17  2006/01/30 08:58:19  skaller
+Add package support to flx script
+
 Revision 1.16  2006/01/30 01:09:07  skaller
 more open GL lessons
 
@@ -84,6 +87,7 @@ include 'std';
 
 module SDL_h
 {
+  requires package "SDL";
   header '#include "SDL.h"';
   open C_hack;
   

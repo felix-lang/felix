@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.94  2006/01/30 08:58:19  skaller
+Add package support to flx script
+
 Revision 1.93  2006/01/29 05:58:08  rfistman
 fixed windows build (ming nocygwin) after merge
 
@@ -354,25 +357,26 @@ struct FLX_RTL_EXTERN con_t ///< abstract base for mutable continuations
 
   _uctor_ *p_svc;           ///< pointer to service request
 
-  con_t();
-  virtual con_t *resume()=0;
+  con_t();                  ///< initialise pc, p_svc to 0
+  virtual con_t *resume()=0;///< method to perform a computational step
   virtual ~con_t();
-  con_t * _caller;          ///< callers continuation
+  con_t * _caller;          ///< callers continuation (return address)
 };
 
 // ********************************************************
 /// SLIST. singly linked lists: SHARABLE and COPYABLE
+/// SLIST manages pointers to memory managed by the collector
 // ********************************************************
 
 struct FLX_RTL_EXTERN slist_t {
   gc::generic::collector_t *gc;
   struct slist_node_t *head;
 
-  slist_t (gc::generic::collector_t *);
-  slist_t (slist_t const &);
+  slist_t (gc::generic::collector_t *); ///< create empty list
+  slist_t (slist_t const &);            ///< shallow copy
 
-  void push(void *data);
-  void *pop();
+  void push(void *data);                ///< push a gc pointer
+  void *pop();                          ///< pop a gc pointer
   bool isempty()const;
 };
 
@@ -382,13 +386,13 @@ struct FLX_RTL_EXTERN slist_t {
 
 struct FLX_RTL_EXTERN fthread_t // fthread abstraction
 {
-  con_t *cc;                    // current continuation
+  con_t *cc;                    ///< current continuation
 
-  fthread_t();                  // dead thread, suitable for assignment
-  fthread_t(con_t*);            // make thread from a continuation
-  _uctor_ *run();               // run until dead or driver service request
-  void kill();                  // kill the continuation
-  _uctor_ *get_svc()const;      // get current service request of waiting thread
+  fthread_t();                  ///< dead thread, suitable for assignment
+  fthread_t(con_t*);            ///< make thread from a continuation
+  _uctor_ *run();               ///< run until dead or driver service request
+  void kill();                  ///< kill by detaching the continuation
+  _uctor_ *get_svc()const;      ///< get current service request of waiting thread
 private: // uncopyable
   fthread_t(fthread_t const&); 
   void operator=(fthread_t const&);
@@ -400,13 +404,13 @@ private: // uncopyable
 
 struct FLX_RTL_EXTERN schannel_t 
 {
-  slist_t *waiting_to_read;
-  slist_t *waiting_to_write;
+  slist_t *waiting_to_read;             ///< fthreads waiting for a writer
+  slist_t *waiting_to_write;            ///< fthreads waiting for a reader
   schannel_t(gc::generic::collector_t*);
-  void push_reader(fthread_t *);
-  fthread_t *pop_reader();
-  void push_writer(fthread_t *);
-  fthread_t *pop_writer();
+  void push_reader(fthread_t *);        ///< add a reader
+  fthread_t *pop_reader();              ///< pop a reader, NULL if none
+  void push_writer(fthread_t *);        ///< add a writer
+  fthread_t *pop_writer();              ///< pop a writer, NULL if none
 private: // uncopyable
   schannel_t(schannel_t const&); 
   void operator= (schannel_t const&); 
@@ -415,6 +419,21 @@ private: // uncopyable
 // ********************************************************
 /// REFERENCE. Felix pointer type
 /// note: non-polymorphic, so ctor can be inline
+/// This type is used to represent pointers to variables.
+/// It has two components: a frame pointer and offset.
+/// A whole frame is refered to by setting the offset to 0.
+/// A non-collectable pointer is refered to by setting the frame to 0
+/// References are first class values: they can copied, assigned,
+/// and default constructed. Holding a reference in a location
+/// known to the gc ensures the target variable is not collected:
+/// Such references cannot dangle.
+/// The frame/offset representation was chosen since it fits
+/// well with a copying collector: the price is that finding
+/// the interior pointer requires adding the offset to the frame
+/// pointer. Note that 'frame' points to the CLIENTDATA address
+/// of a frame where user data starts: this is not the lowest
+/// machine address of the frame's allocated memory or FRAME
+/// address, despite the name.
 // ********************************************************
 
 struct FLX_RTL_EXTERN _ref_
@@ -422,15 +441,28 @@ struct FLX_RTL_EXTERN _ref_
   void *frame;      ///< Heap frame pointer
   std::ptrdiff_t offset;   ///< Client Data offset
 
-  _ref_() : frame(0),offset(0) {}
-  _ref_(void *f, void *d): frame(f), offset((unsigned char*)d-(unsigned char*)f) {}
-  _ref_(void *f, std::ptrdiff_t d): frame(f), offset(d) {}
-  _ref_(_ref_ const& r) : frame(r.frame), offset(r.offset) { }
-  void operator = (_ref_ const& r);
+  _ref_() : frame(0),offset(0) {} ///< NULL reference
+  _ref_(void *f, void *d): 
+    frame(f), offset((unsigned char*)d-(unsigned char*)f) {} 
+      ///< init from interior pointer d of a collectable frame f
+  
+  _ref_(void *f, std::ptrdiff_t d): 
+    frame(f), offset(d) {} ///< init from collectable frame f and offset d
 
-  void *get_data()const { return (unsigned char*)frame + offset; }
-  void set_data(void *p) { offset = (unsigned char*)p - (unsigned char*)frame; }
-  void set(void *f, void *p) { frame = f; offset = (unsigned char*)p - (unsigned char*)f; }
+  _ref_(_ref_ const& r) : frame(r.frame), offset(r.offset) {} 
+    ///< copy constructor
+
+  void operator = (_ref_ const& r); ///< assignment operator
+
+  void *get_data()const { return (unsigned char*)frame + offset; } 
+    ///< get interior pointer
+    
+  void set_data(void *p) 
+    { offset = (unsigned char*)p - (unsigned char*)frame; } 
+    ///< set interior pointer into same frame
+
+  void set(void *f, void *p) 
+  { frame = f; offset = (unsigned char*)p - (unsigned char*)f; } ///< set from frame f and interior pointer
 };
 
 

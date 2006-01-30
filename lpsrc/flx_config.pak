@@ -4,7 +4,7 @@
 @flx_version_major = '1'
 @flx_version_minor = '1'
 @flx_version_patch = '2'
-@flx_version_release = '_rc1'
+@flx_version_release = '_rc2'
 @flx_version = flx_version_major+'.'+flx_version_minor+'.'+flx_version_patch+flx_version_release
 @godi_revision = '0'
 @debian_revision = '1'
@@ -2260,6 +2260,13 @@ try:
 except:
   ISCR="python -O interscript"+os.sep+"bin"+os.sep+"iscr.py "
 
+# see if we have pkg-config
+try:
+  xqt("pkg-config --version")
+  HAVE_PKGCONFIG=1
+except:
+  HAVE_PKGCONFIG=0
+
 SUPPORT_DYNAMIC_LOADING = TARGET_CXX.options.SUPPORT_DYNAMIC_LOADING
 
 if SUPPORT_DYNAMIC_LOADING:
@@ -2324,6 +2331,24 @@ else:
   SDL_STATIC_LIBS = ""
   print "SDL NOT SUPPORTED"
 
+if HAVE_PKGCONFIG and HAVE_SDL:
+  # we should condition this to check the config dir
+  # by setting PKG_CONFIG_PATH .. but there is no
+  # OS transparent way to do that ?
+  result,dummy = gs("pkg-config --exists SDL")
+  if result:
+    fname = "config" + os.sep + "SDL.pc"
+    if not file_exists(fname):
+      print "Creating config/SDL.pc"
+      f = open (fname,"w")
+      f.write("Name: SDL\n")
+      f.write("Description: Simple Direct Media Layer\n")
+      f.write("Version: "+SDL_VERSION+"\n")
+      f.write("Cflags: "+SDL_CFLAGS+"\n")
+      f.write("Libs: "+SDL_LIBS+"\n")
+      f.write("Libs.private: "+SDL_STATIC_LIBS+"\n")
+      f.close()
+    
 # HACK -- only right for Linux .. no way to detect 
 if HAVE_OPENGL:
   OPENGL_CFLAGS=""
@@ -2480,6 +2505,7 @@ try:
   p(f,"OPENGL_CFLAGS")
   p(f,"OPENGL_LIBS")
   p(f,"OPENGL_STATIC_LIBS")
+  p(f,"HAVE_PKGCONFIG")
   pr(f,"")
 
   pr(f,"import flxbuild")
