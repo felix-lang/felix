@@ -1,5 +1,8 @@
 @head(1,'SDL')
 $Log$
+Revision 1.18  2006/01/31 07:54:31  skaller
+Fix sdl206, make sleep_request FLX_RTL_EXTERN
+
 Revision 1.17  2006/01/30 08:58:19  skaller
 Add package support to flx script
 
@@ -3925,6 +3928,14 @@ proc drawchan(x:schannel[int], drawing:1->0)
   whilst true do 
     var &k : int <- read x;
     draw drawing;
+  done;
+}
+
+proc execute(x:schannel[int], something:1->0)
+{
+  whilst true do 
+    var &k : int <- read x;
+    something();
   done;
 }
 
