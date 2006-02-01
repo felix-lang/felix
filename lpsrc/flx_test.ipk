@@ -369,7 +369,7 @@ struct check {
   ~check() { printf("dtor %p\n",this); }
 };
 """;
-include "std";
+#import <flx.flxh>
 
 type check = "check";
 

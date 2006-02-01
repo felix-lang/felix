@@ -2414,7 +2414,7 @@ let gen_biface_body syms bbdfns biface = match biface with
         "  return 0;\n"
         else
         "  return (new(*_PTF gc,"^class_name^"_ptr_map)\n" ^
-        "    " ^ class_name ^ "(_PTFV)" ^
+        "    " ^ class_name ^ "(_PTFV))" ^
         "\n      ->call(" ^ cat ", " ("0"::(map fst ps)) ^ ");\n" 
       )
       ^
