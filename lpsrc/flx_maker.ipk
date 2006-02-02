@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.213  2006/02/02 19:24:07  skaller
+Couple of changes to build script for OSX and BSD from Erick
+
 Revision 1.212  2006/02/02 18:52:35  skaller
 Reorganise demux a bit
 
@@ -4069,11 +4072,11 @@ We have no idea if it continues copying.
 @tangle('')
 
 @tangle('backup: dummy')
-@tangle('\t(DATE=`date -I`;\\')
+@tangle('\t(DATE=`date +"%Y-%m-%d-%H%M"`;\\')
 @tangle('\tmkdir -p "lpbackup/$${DATE}";\\')
-@tangle('\tcp lpsrc/*.ipk "lpbackup/$${DATE}";\\')
-@tangle('\tcp lpsrc/*.pak "lpbackup/$${DATE}";\\')
-@tangle('\tcp homepage/*.html "lpbackup/$${DATE}"\\')
+@tangle('\tfind lpsrc -name "*.ipk" -exec cp "{}" "lpbackup/$${DATE}" ";";\\')
+@tangle('\tfind lpsrc -name "*.pak" -exec cp "{}" "lpbackup/$${DATE}" ";";\\')
+@tangle('\tfind homepage -name "*.html" -exec cp "{}" "lpbackup/$${DATE}" ";"\\')
 @tangle('\t)')
 @tangle('')
 
