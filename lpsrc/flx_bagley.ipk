@@ -1,4 +1,5 @@
 @execfile('config/config.py')
+
 @def setup():
   tangle("//")
   tangle("// Contributed by John Skaller")
@@ -68,10 +69,9 @@ to get some times.
   tangle('if [ 0 != $? ]; then exit $?; fi')
 
 @def mkr(i,j):
-  k = (i+' .................  ')[:20]+' '
   tangle('rm -f bagley/felix/'+i+'.output')
   tangle('echo "Running '+i+'"')
-  tangle('/usr/bin/time -f "'+k+' %U" bin/flx --test bagley/felix/'+i+' '+j+' >bagley/felix/'+i+'.output')
+  tangle('python script/utime.py bagley/felix/'+i+' '+j)
   tangle('if [ 0 != $? ]; then exit $?; fi')
 
 @def mkc(i,j):
@@ -80,6 +80,31 @@ to get some times.
   # solaris fun
   tangle('diff -b bagley/felix/'+i+'.output bagley/felix/'+i+'.expect')
   tangle('if [ 0 != $? ]; then exit $?; fi')
+
+@select(tangler('script/utime.py'))
+import os
+import sys
+import string
+
+cmd = (
+  '/usr/bin/time -p 2>tmp.time bin/flx --test %s %s >%s.output' % 
+  (sys.argv[1],string.join(sys.argv[2:]),sys.argv[1])
+  )
+
+result = os.system(cmd)
+if result != 0:
+  sys.exit(result)
+
+f = open("tmp.time");
+h = f.readlines()
+f.close()
+for line in h:
+  if line[:4]=='user':
+    utime = string.strip(line[4:])
+    p = string.split(sys.argv[1],'/')[-1]
+    p = string.split(p,'.')[0]
+    p = (p + " .......................")[:20]
+    print p,utime
 
 @select(tangler('bagley/compile.sh','data'))
 @if SUPPORT_DYNAMIC_LOADING:
