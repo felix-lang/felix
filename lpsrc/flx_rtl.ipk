@@ -1,5 +1,10 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.96  2006/02/02 08:30:17  rfistman
+got rid of annoying debug output/note to self regarding sigpipe on osx/bsd.
+made flx_rtl create async structure on demand, if only to avoid all that
+debug output in the simpler tests.
+
 Revision 1.95  2006/02/02 06:19:23  skaller
 Factor flx_run more.
 
@@ -2089,7 +2094,10 @@ int run_felix(
 #endif
 
     unsigned long async_count = 0;
-    proto_async* async = new proto_async;
+    // RF: I prefer to init this on demand, if only to avoid launching all
+    // those threads for simple apps and also to avoid extra debug output.
+    // proto_async* async = new proto_async;
+	proto_async* async = NULL;
 
     {
       con_t *top = instance.start_proc;
@@ -2124,6 +2132,8 @@ process_active:
     {
       case svc_general:
       {
+        if( !async ) async = new proto_async;
+
         flx_driver_request_base* dreq = (flx_driver_request_base*)
           ((_ref_*)(request->data))->get_data()
         ;
