@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.212  2006/02/02 18:52:35  skaller
+Reorganise demux a bit
+
 Revision 1.211  2006/02/02 15:29:32  skaller
 Factor flx_run.
 
@@ -2764,7 +2767,10 @@ DEMUXRTL_INTERFACES = [
  'demux_kqueue_demuxer.hpp',# osx/bsd
  'demux_evtport_demuxer.hpp',# solaris
  'demux_epoll_demuxer.hpp',# linux (>= 2.6)
- 'demux_mutexlite.hpp',     # posix
+ 'demux_posix_thread.hpp',     # posix
+ 'demux_posix_mutex.hpp',     # posix
+ 'demux_win_thread.hpp',     # win32
+ 'demux_win_mutex.hpp',     # win32
  'demux_sockety.hpp',       # posix
 ]
 
@@ -2989,12 +2995,13 @@ DEMUX_CPPS = [
 ]
 
 POSIX_DEMUX_CPPS = [
+  "demux/demux_posix_thread",       # posix
+  "demux/demux_posix_mutex",       # posix
   "demux/demux_posix_demuxer",      # all posix
   "demux/demux_posix_queue",        # all posix
   "demux/demux_select_demuxer",     # all posix
   "demux/demux_posix_timer_queue",  # posix
   "demux/demux_sockety",            # posix
-  "demux/demux_mutexlite",          # posix
   "demux/demux_pfileio",            # posix
 ]
 
@@ -3007,6 +3014,8 @@ SOLARIS_DEMUX_CPPS = [
 ]
 
 WINDOWS_DEMUX_CPPS = [
+  "demux/demux_win_thread",       # posix
+  "demux/demux_win_mutex",       # posix
   "demux/demux_iocp_demuxer",       # windows
   "demux/demux_overlapped",         # windows
   "demux/demux_win_timer_queue",    # windows

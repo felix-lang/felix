@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.31  2006/02/02 18:52:35  skaller
+Reorganise demux a bit
+
 Revision 1.30  2006/01/31 04:29:17  rfistman
 added demux level "sleep until" code. Not quite right yet (posix format
 of current time in double isn't so good as it's measured from the 70s in
@@ -41,6 +44,645 @@ Revision 1.20  2006/01/09 16:32:03  skaller
 Integrate SDL tests, provide initial SDL event demux.
 
 @execfile('config'+os.sep+'config.py')
+
+@head(1,"Pthread")
+@head(2,'Posix Thread')
+@h=tangler('demux/demux_posix_thread.hpp')
+@select(h)
+#ifndef __POSIX_THREAD__
+#define __POSIX_THREAD__
+#include <flx_rtl_config.hpp>
+#include <pthread.h>
+
+// auto pthread, because I forget how to deallocate them nicely
+// could init in the constructor, but ultimately you don't want the thread
+// barging in before you've finished doing other stuff
+// Addendum (20051128): doing stdio in turns out to be not very safe.
+// I don't know if printf et al are supposed to be thread safe (most impls
+// seem to try to be) but I sometimes get deadlocks in ppc64 os x 10.4.2
+// with 4.0.1 when printfing to stdout. Nasty.
+
+namespace flx { namespace demux {
+
+class FLX_RTL_EXTERN apthread {
+  pthread_t   thr;        // the thread
+  bool      inited;       // do I need this or is pthread_t a pointer?
+public:
+  apthread() : inited(false) {}
+  ~apthread();
+
+  pthread_t get() { return thr; }
+  
+  int init(void* (*start)(void*), void* udat);
+  void deinit();  
+  // int cancel();            // phase this out
+};
+}}
+#endif
+
+// auto pthread
+
+@h=tangler('demux/demux_posix_thread.cpp')
+@select(h)
+#include "demux_posix_thread.hpp"
+#include <stdio.h>
+
+namespace flx { namespace demux {
+int 
+apthread::init(void* (*start)(void*), void* udat)
+{
+  // fprintf(stderr,"apthread::init(this=%p, fn=%p, udat=%p)\n",
+  //  this, start, udat);
+
+  // default attrs. hope they're good
+  int res = pthread_create(&thr, NULL, start, udat);
+  if(0 == res) inited = true;   // success!
+  return res;
+}
+
+void
+apthread::deinit()
+{
+  fprintf(stderr,"apthread::deinit(this=%p, inited=%i)\n", this, inited);
+
+  if(!inited) return;
+// What if I cancel while someone (select thread) holds the mutex.
+// I think I need to push cleanup stuff... wait, cancel won't happen
+// in the mutex. If others start using this pre-emptively then it could
+// happen. We've got another problem then, as the object is being
+// destructed. Should I go for the lock? What to do? HELP!
+// do experiment...
+  // cancel thread, then "join" to wait for it to exit. if we summarily
+  // killed the thread, we could kill it during something important,
+  // like  a mutex or select op, screwing up global state.
+  // we shouldn't have to wait long
+  // ignoring errors, thread not found seems to be the worst
+
+  int   res;
+
+  //res = cancel();             // send cancel msg
+  //fprintf(stderr,"cancel res: %i, joining...\n", res);
+
+
+  res = pthread_join(thr, NULL);      // wait for cancel pt, ignor res
+  fprintf(stderr,"join res: %i\n", res);
+
+  // is that all you have to do to free up a pthread?
+
+  inited = false;
+}
+
+// not using this - cancellation is bad. I now prefer to convince the thread
+// to exit through nonviolent methods. I'd like to use pthread_setcancelstate
+// + PTHREAD_CANCEL_DISABLE but that needs to be done from each thread which
+// would require them an annoying thunk. Not using pthread_cancel should
+// be enough.
+#if 0
+// set thread cancel flag
+int
+apthread::cancel()
+{
+  return pthread_cancel(thr);       // send cancel msg
+}
+#endif
+
+apthread::~apthread()
+{
+  deinit();
+}
+}}
+
+@head(1,"Mutex")
+@head(2,'Posix Mutex')
+@h=tangler('demux/demux_posix_mutex.hpp')
+@select(h)
+#ifndef __POSIX_MUTEX__
+#define __POSIX_MUTEX__
+#include <flx_rtl_config.hpp>
+
+// simple mutex. call lock, unlock
+// not sure that I'm locking properly. may need cancel handlers.
+
+#include <pthread.h>
+namespace flx { namespace demux {
+
+class FLX_RTL_EXTERN pmut {
+public:
+  pthread_mutex_t m;        // be nice, don't touch
+
+  pmut(bool recursive);
+  ~pmut();
+  void lock();
+  void unlock();
+};
+
+// simple locker
+class FLX_RTL_EXTERN pmut_locker {
+  pmut& p;
+public:
+  pmut_locker(pmut& pm) : p(pm) { p.lock(); }
+  ~pmut_locker() { p.unlock(); }
+};
+
+}} // namespace demux, flx
+#endif
+
+@h=tangler('demux/demux_posix_mutex.cpp')
+@select(h)
+#include "demux_posix_mutex.hpp"
+#include <stdio.h>        // printf debugging
+#include <assert.h>
+
+namespace flx { namespace demux {
+class auto_attr
+{
+  pthread_mutexattr_t* a;
+public:
+
+  auto_attr(pthread_mutexattr_t* attr) : a(attr) {}
+  ~auto_attr()
+  {
+    int res = pthread_mutexattr_destroy(a);
+    if(0 != res)
+      fprintf(stderr,"pthread_mutexattr_destroy failed: %i\n", res);
+  }
+};
+
+pmut::pmut(bool recursive)
+{
+  pthread_mutexattr_t attr;
+  int res;
+
+  res = pthread_mutexattr_init(&attr);  // default attrs
+
+  if(0 != res) throw res;
+
+  auto_attr aa(&attr);          // cleans up always
+
+#ifdef PTHREAD_MUTEX_RECURSIVE        // defined in unistd.h
+  if(recursive)
+  {
+    res = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    if(0 != res)
+    {
+      fprintf(stderr,"phtread_mutexattr_settype failed: %i\n", res);
+      throw res;
+    }
+  }
+#else
+  assert( !recursive );         // gusi non ce l'ha.
+#endif
+
+  res = pthread_mutex_init(&m, &attr);
+  if(res != 0) throw res;
+}
+
+pmut::~pmut()
+{
+  int res;
+  // fprintf(stderr,"MUTEX DESTROY!!!\n");
+  // fflush(stdout);
+  res = pthread_mutex_destroy(&m);
+  if(0 != res) fprintf(stderr,"mutex_destroy failed: %i\n", res);
+}
+
+void
+pmut::lock()
+{
+  int res = pthread_mutex_lock(&m);
+if(res != 0) fprintf(stderr,"lockres: %i\n", res);
+  if(res != 0) throw res;
+}
+
+void
+pmut::unlock()
+{
+  int res = pthread_mutex_unlock(&m);
+  if(res != 0) throw res; 
+}
+
+}}
+
+@head(2,'Windows Thread')
+@h=tangler('demux/demux_win_thread.hpp')
+@select(h)
+#ifndef __WIN_THREAD__
+#define __WIN_THREAD__
+
+#include <windows.h>
+
+namespace flx { namespace demux {
+
+class FLX_RTL_EXTERN win_thread {
+  HANDLE    thread;
+
+public:
+  win_thread();
+  ~win_thread();
+
+  // some msdn code examples imply that it's risky to use the CRT
+  // (C runtime) in a thread. would conio be better?
+  int init(LPTHREAD_START_ROUTINE, LPVOID lParam);
+  void deinit();
+};
+
+}}
+
+#endif
+
+@h=tangler('demux/demux_win_thread.cpp')
+@select(h)
+#include "demux_win_thread.hpp"
+
+namespace flx { namespace demux {
+
+win_thread::win_thread()
+  : thread(NULL)
+{
+}
+
+// this should be idempotent
+void
+win_thread::deinit()
+{
+  fprintf(stderr,"win_thread::deinit: how do I get my return status?\n");
+  fprintf(stderr,"also, how do I implement a cancel request?\n");
+
+  if(thread)
+  {
+    // Let's try and wait for the thread to finish, however first I have to
+    // tell it to finish up.
+    DWORD wait_res;
+    // we'll wait as long as we have to for the thread to terminate
+    wait_res = WaitForSingleObject(thread, INFINITE);
+
+    // will this give me my return status? how do I get that?
+    if(WAIT_FAILED == wait_res)
+    {
+      // something went wrong, have a cry
+      fprintf(stderr,"thread wait failed (%li)\n", GetLastError());
+    }
+
+    // I've already tried waiting on the  thread's exit
+    if(!CloseHandle(thread))
+    {
+      // have a cry
+      fprintf(stderr,"failed to delete thread (%li)\n", GetLastError());
+    }
+
+    thread = NULL;
+  } 
+}
+
+win_thread::~win_thread()
+{
+  fprintf(stderr,"win_thread dtor (killing thread!)\n");
+  deinit();
+}
+
+// returns -1 on failure with error in GetLastError, 0 if all good.
+int
+win_thread::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
+{
+  DWORD thread_id = 0;
+
+  // thread id... (?)
+  // I have no idea why I have to cast the fn to what it already is
+  // absolutely none
+  thread = (HANDLE)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)fn, lParam, 0, &thread_id);  
+
+  if(NULL == thread)
+    return -1;
+
+  return 0;     // success!
+}
+
+}}
+
+@head(2,'Windows Mutex')
+@h=tangler('demux/demux_win_mutex.hpp')
+@select(h)
+#ifndef __WIN_MUTEX__
+#define __WIN_MUTEX__
+#include <flx_rtl_config.hpp>
+#include <windows.h>
+
+// simple mutex. call lock, unlock
+// not sure that I'm locking properly. may need cancel handlers.
+
+namespace flx { namespace demux {
+
+// synchronisation stuff
+class FLX_RTL_EXTERN win_locker {
+  HANDLE  m;
+public:
+  win_locker(HANDLE mutex);
+  ~win_locker();
+};
+
+}}
+
+#endif
+
+@h=tangler('demux/demux_win_mutex.cpp')
+@select(h)
+#include "demux_win_mutex.hpp"
+
+win_locker::win_locker(HANDLE mutex)
+  : m(mutex)
+{
+  DWORD res = WaitForSingleObject(m, INFINITE);
+
+  if(WAIT_OBJECT_0 != res)
+  {
+    fprintf(stderr,"Wait for mutex didn't do as expected, got: %li\n", res);
+    throw res;
+  }
+}
+
+win_locker::~win_locker()
+{
+  if(!ReleaseMutex(m))
+    fprintf(stderr,"Error releasing mutex: %li\n", GetLastError());
+}
+
+
+@head(1,"Thread safe Queue")
+@h=tangler('demux/demux_sleep_queue.hpp')
+@select(h)
+#ifndef __SLEEPQUEUE__
+#define __SLEEPQUEUE__
+#include <flx_rtl_config.hpp>
+
+// interface for a consumer/producer queue. threads requesting a resource
+// that isn't there block until one is available. push/pop re-entrant
+
+namespace flx { namespace demux {
+class FLX_RTL_EXTERN sleep_queue {
+public:
+  virtual ~sleep_queue() {}
+
+  virtual void enqueue(void*) = 0;  // re-entrant
+  virtual void* dequeue() = 0;    // re-entrant, sleeps on empty queue
+};
+
+}} // namespace demux, flx
+#endif
+
+@head(2,"Thread safe Posix Queue")
+@h=tangler('demux/demux_posix_queue.hpp')
+@select(h)
+#ifndef __POSIX_QUEUE__
+#define __POSIX_QUEUE__
+#include "demux_posix_mutex.hpp"
+#include "demux_sleep_queue.hpp"
+#include <flx_rtl_config.hpp>
+
+namespace flx { namespace demux {
+class FLX_RTL_EXTERN posix_queue  : public sleep_queue {
+  pmut      member_lock;  // protects member data
+  pthread_cond_t  nz_elts_cond; // wakes up threads waiting on resource
+  void*     lame_opaque;  // when will I ever learn?
+public:
+  posix_queue();
+  ~posix_queue();
+
+  virtual void enqueue(void*);    // re-entrant
+  virtual void* dequeue();      // re-entrant, sleeps on empty queue
+};
+
+}} // namespace demux, flx
+#endif  // __POSIX_QUEUE__
+
+@h=tangler('demux/demux_posix_queue.cpp')
+@select(h)
+#include <pthread.h>
+#include "demux_posix_queue.hpp"
+#include <queue>        // stl to the bloated rescue
+#include <string.h>       // strerror
+
+using namespace std;
+
+namespace flx { namespace demux {
+typedef queue<void*> void_queue;
+
+#define ELTQ ((void_queue*)lame_opaque)
+
+posix_queue::posix_queue()
+  : member_lock(false)      // shouldn't need to be recursive
+{
+  lame_opaque = new void_queue;
+  int res = pthread_cond_init(&nz_elts_cond, NULL);
+
+  if(0 != res)
+  {
+    delete ELTQ;
+    throw res;
+  }
+}
+
+posix_queue::~posix_queue()
+{
+  int res = pthread_cond_destroy(&nz_elts_cond);
+  if(0 != res)
+    fprintf(stderr,"pthread_cond_destroy failed: %i (%s)\n",
+      res, strerror(res));
+  delete ELTQ;
+}
+
+void
+posix_queue::enqueue(void* elt)
+{
+  // lock so our member data doesn't get bent out of shape
+  pmut_locker   l(member_lock);
+  // this is the simple case, add the elt, protected by lock
+  // and signal suckas, who oughta recognize, but don't.
+  ELTQ->push(elt);
+
+  // we've just added one elt, therefore we have > 0 elts
+  // a signal should do just fine here - I don't think I need
+  // broadcast unless I were adding more than one item in a go.
+  // if there were already elts in the queue there wouldn't be
+  // threads waiting on the signal and if there were no elts then
+  // there would be no point waking up more than one thread now.
+  // right? 
+  int       res;
+  res = pthread_cond_signal(&nz_elts_cond);
+  if(0 != res)
+    fprintf(stderr,"pthread_cond_signal failed %i\n", res);
+}
+
+void*
+posix_queue::dequeue()
+{
+  // protect member data
+  pmut_locker   l(member_lock);
+  void*     elt = NULL;
+
+  // sleep until something is there
+  do
+  {
+    if(!ELTQ->empty())
+    {
+      elt = ELTQ->front();
+      ELTQ->pop();
+      break;
+    }
+
+    // otherwise queue empty, wait on condition
+    int res;
+    // wait on elt added condition signal. mutex is unlocked on
+    // on wait and relocked on wake.
+    res = pthread_cond_wait(&nz_elts_cond, &member_lock.m);
+    if(res != 0)
+      fprintf(stderr,"pthread_cond_wait nonzero elts failed: %i\n", res);
+
+  } while(1);
+
+  return elt;           // should never return NULL
+}
+}}
+
+
+@h=tangler('demux/demux_win_queue.hpp')
+@select(h)
+#ifndef __WIN_QUEUE__
+#define __WIN_QUEUE__
+#include <flx_rtl_config.hpp>
+
+namespace flx { namespace demux {
+
+class FLX_RTL_EXTERN win_queue  : public sleep_queue {
+  HANDLE    member_lock;  // protects member data
+  HANDLE    nz_elts_cond; // wakes up threads waiting on resource
+  void*     lame_opaque;  // when will I ever learn?
+  void      cleanup();
+public:
+  win_queue();
+  ~win_queue();
+
+  virtual void enqueue(void*);  // re-entrant
+  virtual void* dequeue();    // re-entrant, sleeps on empty queue
+};
+
+}}
+#endif
+
+@h=tangler('demux/demux_win_queue.cpp')
+@select(h)
+#include "demux_win_queue.hpp"
+#include <queue>          // stl to the bloated rescue
+
+typedef queue<void*> void_queue;
+
+#define ELTQ ((void_queue*)lame_opaque)
+
+win_queue::win_queue() 
+  : member_lock(0), nz_elts_cond(0), lame_opaque(0)
+{
+  DWORD err;
+  
+  // allocate queue
+  lame_opaque = new void_queue;
+
+  // default security attributes, manual reset, non-signalled, nameless
+  // signalled corresponds to num(elts) > 0
+  nz_elts_cond = CreateEvent(NULL, TRUE, FALSE, NULL);
+  
+  if(NULL == nz_elts_cond)
+  {
+    err = GetLastError();
+    fprintf(stderr,"CreateEvent returned: %li\n", err);
+    cleanup();
+    throw err;
+  }
+
+  // default security attr, not initiallly owned/locked, nameless.
+  member_lock = CreateMutex(NULL, FALSE, NULL);
+
+  if(NULL == member_lock)
+  {
+    err = GetLastError();
+    fprintf(stderr,"CreateMutex returned: %li\n", err);
+    cleanup();
+    throw err;
+  }
+}
+
+void
+win_queue::cleanup()
+{
+  if(ELTQ) delete ELTQ;
+  if(nz_elts_cond && !CloseHandle(nz_elts_cond))
+    fprintf(stderr,"Failed to close event: %li\n", GetLastError());
+  if(member_lock && !CloseHandle(member_lock))
+    fprintf(stderr,"Failed to close mutex: %li\n", GetLastError());
+}
+
+win_queue::~win_queue()
+{
+  cleanup();
+}
+
+void
+win_queue::enqueue(void* elt)
+{
+  // lock so our member data doesn't get bent out of shape
+  win_locker    l(member_lock);
+
+  // this is the simple case, add the elt, protected by lock
+  // and signal suckas, who oughta recognize, but don't.
+  ELTQ->push(elt);
+
+  // we've got the mutex and we've just added an elt, therefore
+  // we have > 0 elts. That sounds like a good enough reason to
+  // put the condition into the signalled state. It may already
+  // be in the signalled stated. Hope that's not a problem.
+  // Might be an optimization to skip this if it became nonempty.
+  if(!SetEvent(nz_elts_cond))
+    fprintf(stderr,"Set condition failed: %li\n", GetLastError());
+}
+
+void*
+win_queue::dequeue()
+{
+  void*     elt = NULL;
+
+  do
+  {
+    // exclusively examine queue
+    {
+      win_locker    l(member_lock);
+
+      if(!ELTQ->empty())
+      {
+        elt = ELTQ->front();
+        ELTQ->pop();
+        // if the queue is now empty, make condition reflect it
+        // this failing will probably lock the app up...
+        if(!ResetEvent(nz_elts_cond)) // non-signalled state
+          fprintf(stderr,"Reset condition failed: %li\n", GetLastError());
+        break;
+      }
+    }
+
+    // otherwise there's nothing in the queue or something
+    // may have turned up in the intervening moments
+    DWORD   res;
+    res = WaitForSingleObject(nz_elts_cond, INFINITE);
+
+    if(WAIT_OBJECT_0 != res)
+    {
+      fprintf(stderr,"Wait on condition failed: %li\n", GetLastError());
+      throw res;
+    }
+
+  } while(1);
+
+  return elt;           // should never return NULL
+}
+
+
 @h=tangler('demux/demux_demuxer.hpp')
 @select(h)
 #ifndef __DEMUXER__
@@ -182,20 +824,6 @@ SOCKET FLX_RTL_EXTERN nice_accept(SOCKET listener);
 SOCKET FLX_RTL_EXTERN nice_connect(const char* addr, int port);
 int FLX_RTL_EXTERN set_tcp_nodelay(int s, int disable_nagle);
 
-// this thing isn't actually being used by the iocp code. it should be.
-class FLX_RTL_EXTERN win_thread {
-  HANDLE    thread;
-
-public:
-  win_thread();
-  ~win_thread();
-
-  // some msdn code examples imply that it's risky to use the CRT
-  // (C runtime) in a thread. would conio be better?
-  int init(LPTHREAD_START_ROUTINE, LPVOID lParam);
-  void deinit();
-};
-
 // make sure you instantion ONE (1) of these before using winsock
 class FLX_RTL_EXTERN winsock_initer
 {
@@ -247,27 +875,6 @@ public:
 
 };
 
-// synchronisation stuff
-class FLX_RTL_EXTERN win_locker {
-  HANDLE  m;
-public:
-  win_locker(HANDLE mutex);
-  ~win_locker();
-};
-
-class FLX_RTL_EXTERN win_queue  : public sleep_queue {
-  HANDLE    member_lock;  // protects member data
-  HANDLE    nz_elts_cond; // wakes up threads waiting on resource
-  void*     lame_opaque;  // when will I ever learn?
-  void      cleanup();
-public:
-  win_queue();
-  ~win_queue();
-
-  virtual void enqueue(void*);  // re-entrant
-  virtual void* dequeue();    // re-entrant, sleeps on empty queue
-};
-
 }} // namespace demux, flx
 #endif
 
@@ -300,59 +907,6 @@ public:
 
 }} // namespace demux, flx
 #endif
-@h=tangler('demux/demux_mutexlite.hpp')
-@select(h)
-#ifndef __MUTEXLITE__
-#define __MUTEXLITE__
-#include <flx_rtl_config.hpp>
-
-// simple mutex. call lock, unlock
-// not sure that I'm locking properly. may need cancel handlers.
-
-#include <pthread.h>
-namespace flx { namespace demux {
-
-class FLX_RTL_EXTERN pmut {
-public:
-  pthread_mutex_t m;        // be nice, don't touch
-
-  pmut(bool recursive);
-  ~pmut();
-  void lock();
-  void unlock();
-};
-
-// simple locker
-class FLX_RTL_EXTERN pmut_locker {
-  pmut& p;
-public:
-  pmut_locker(pmut& pm) : p(pm) { p.lock(); }
-  ~pmut_locker() { p.unlock(); }
-};
-
-// auto pthread, because I forget how to deallocate them nicely
-// could init in the constructor, but ultimately you don't want the thread
-// barging in before you've finished doing other stuff
-// Addendum (20051128): doing stdio in turns out to be not very safe.
-// I don't know if printf et al are supposed to be thread safe (most impls
-// seem to try to be) but I sometimes get deadlocks in ppc64 os x 10.4.2
-// with 4.0.1 when printfing to stdout. Nasty.
-class FLX_RTL_EXTERN apthread {
-  pthread_t   thr;        // the thread
-  bool      inited;       // do I need this or is pthread_t a pointer?
-public:
-  apthread() : inited(false) {}
-  ~apthread();
-
-  pthread_t get() { return thr; }
-  
-  int init(void* (*start)(void*), void* udat);
-  void deinit();  
-  // int cancel();            // phase this out
-};
-
-}} // namespace demux, flx
-#endif
 
 @h=tangler('demux/demux_pfileio.hpp')
 @select(h)
@@ -362,7 +916,7 @@ public:
 
 #include "demux_demuxer.hpp"
 #include "demux_posix_queue.hpp"
-#include "demux_mutexlite.hpp"
+#include "demux_posix_mutex.hpp"
 // #include <sys/types.h> // off_t (don't have flx iface to this yet)
               // can just add new constructor
 #include "demux_work_fifo.hpp"
@@ -491,30 +1045,6 @@ public:
 }} // namespace demux, flx
 #endif
 
-@h=tangler('demux/demux_posix_queue.hpp')
-@select(h)
-#ifndef __POSIX_QUEUE__
-#define __POSIX_QUEUE__
-#include "demux_mutexlite.hpp"
-#include "demux_sleep_queue.hpp"
-#include <flx_rtl_config.hpp>
-
-namespace flx { namespace demux {
-class FLX_RTL_EXTERN posix_queue  : public sleep_queue {
-  pmut      member_lock;  // protects member data
-  pthread_cond_t  nz_elts_cond; // wakes up threads waiting on resource
-  void*     lame_opaque;  // when will I ever learn?
-public:
-  posix_queue();
-  ~posix_queue();
-
-  virtual void enqueue(void*);    // re-entrant
-  virtual void* dequeue();      // re-entrant, sleeps on empty queue
-};
-
-}} // namespace demux, flx
-#endif  // __POSIX_QUEUE__
-
 @h=tangler('demux/demux_select_demuxer.hpp')
 @select(h)
 #ifndef __SELECT_DEMUXER__
@@ -567,28 +1097,6 @@ public:
 }} // namespace demux, flx
 #endif
 
-@h=tangler('demux/demux_sleep_queue.hpp')
-@select(h)
-#ifndef __SLEEPQUEUE__
-#define __SLEEPQUEUE__
-#include <flx_rtl_config.hpp>
-
-
-// interface for a consumer/producer queue. threads requesting a resource
-// that isn't there block until one is available. push/pop re-entrant
-
-namespace flx { namespace demux {
-class FLX_RTL_EXTERN sleep_queue {
-public:
-  virtual ~sleep_queue() {}
-
-  virtual void enqueue(void*) = 0;  // re-entrant
-  virtual void* dequeue() = 0;    // re-entrant, sleeps on empty queue
-};
-
-}} // namespace demux, flx
-#endif
-
 @h=tangler('demux/demux_sockety.hpp')
 @select(h)
 #ifndef __SOCKETY__
@@ -621,10 +1129,13 @@ int set_tcp_nodelay(int s, int disable_nagle);
 #include <flx_rtl_config.hpp>
 
 #ifdef _WIN32     // quick hack
+#include "demux_win_thread.hpp"
+#include "demux_win_mutex.hpp"
 #include "demux_iocp_demuxer.hpp"
 #else           // else posix
+#include "demux_posix_thread.hpp"
+#include "demux_posix_mutex.hpp"
 #include "demux_posix_queue.hpp"
-#include "demux_mutexlite.hpp"
 #endif
 
 namespace flx { namespace demux {
@@ -706,12 +1217,14 @@ public:
 }} // namespace demux, flx
 
 #endif
+
 @h=tangler('demux/demux_posix_timer_queue.hpp')
 @select(h)
 #ifndef __POSIX_TIMER_QUEUE__
 #define __POSIX_TIMER_QUEUE__
 
-#include "demux_mutexlite.hpp"  // apthread, lock
+#include "demux_posix_thread.hpp"  // apthread, lock
+#include "demux_posix_mutex.hpp"  // apthread, lock
 #include "demux_timer_queue.hpp" // base class
 #include <sys/time.h>        // timespecs, gettimeofday
 
@@ -1216,13 +1729,12 @@ evtport_demuxer::get_evts(bool poll)
 @h=tangler('demux/demux_iocp_demuxer.cpp')
 @select(h)
 #include "demux_iocp_demuxer.hpp"
+#include "demux_win_mutex.hpp"
 
 #include <stdio.h>      // for printf debugging
 #include <stddef.h>     // offsetof
 #include <assert.h>
 // shoving the win_queue in here for now
-#include <queue>          // stl to the bloated rescue
-
 using namespace std;
 
 namespace flx { namespace demux {
@@ -1441,196 +1953,6 @@ iocp_demuxer::get_evts(bool poll) {
 }
 
 
-// thread stuff
-
-win_thread::win_thread()
-  : thread(NULL)
-{
-}
-
-// this should be idempotent
-void
-win_thread::deinit()
-{
-  fprintf(stderr,"win_thread::deinit: how do I get my return status?\n");
-  fprintf(stderr,"also, how do I implement a cancel request?\n");
-
-  if(thread)
-  {
-    // Let's try and wait for the thread to finish, however first I have to
-    // tell it to finish up.
-    DWORD wait_res;
-    // we'll wait as long as we have to for the thread to terminate
-    wait_res = WaitForSingleObject(thread, INFINITE);
-
-    // will this give me my return status? how do I get that?
-    if(WAIT_FAILED == wait_res)
-    {
-      // something went wrong, have a cry
-      fprintf(stderr,"thread wait failed (%li)\n", GetLastError());
-    }
-
-    // I've already tried waiting on the  thread's exit
-    if(!CloseHandle(thread))
-    {
-      // have a cry
-      fprintf(stderr,"failed to delete thread (%li)\n", GetLastError());
-    }
-
-    thread = NULL;
-  } 
-}
-
-win_thread::~win_thread()
-{
-  fprintf(stderr,"win_thread dtor (killing thread!)\n");
-  deinit();
-}
-
-// returns -1 on failure with error in GetLastError, 0 if all good.
-int
-win_thread::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
-{
-  DWORD thread_id = 0;
-
-  // thread id... (?)
-  // I have no idea why I have to cast the fn to what it already is
-  // absolutely none
-  thread = (HANDLE)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)fn, lParam, 0, &thread_id);  
-
-  if(NULL == thread)
-    return -1;
-
-  return 0;     // success!
-}
-
-win_locker::win_locker(HANDLE mutex)
-  : m(mutex)
-{
-  DWORD res = WaitForSingleObject(m, INFINITE);
-
-  if(WAIT_OBJECT_0 != res)
-  {
-    fprintf(stderr,"Wait for mutex didn't do as expected, got: %li\n", res);
-    throw res;
-  }
-}
-
-win_locker::~win_locker()
-{
-  if(!ReleaseMutex(m))
-    fprintf(stderr,"Error releasing mutex: %li\n", GetLastError());
-}
-
-
-typedef queue<void*> void_queue;
-
-#define ELTQ ((void_queue*)lame_opaque)
-
-win_queue::win_queue() 
-  : member_lock(0), nz_elts_cond(0), lame_opaque(0)
-{
-  DWORD err;
-  
-  // allocate queue
-  lame_opaque = new void_queue;
-
-  // default security attributes, manual reset, non-signalled, nameless
-  // signalled corresponds to num(elts) > 0
-  nz_elts_cond = CreateEvent(NULL, TRUE, FALSE, NULL);
-  
-  if(NULL == nz_elts_cond)
-  {
-    err = GetLastError();
-    fprintf(stderr,"CreateEvent returned: %li\n", err);
-    cleanup();
-    throw err;
-  }
-
-  // default security attr, not initiallly owned/locked, nameless.
-  member_lock = CreateMutex(NULL, FALSE, NULL);
-
-  if(NULL == member_lock)
-  {
-    err = GetLastError();
-    fprintf(stderr,"CreateMutex returned: %li\n", err);
-    cleanup();
-    throw err;
-  }
-}
-
-void
-win_queue::cleanup()
-{
-  if(ELTQ) delete ELTQ;
-  if(nz_elts_cond && !CloseHandle(nz_elts_cond))
-    fprintf(stderr,"Failed to close event: %li\n", GetLastError());
-  if(member_lock && !CloseHandle(member_lock))
-    fprintf(stderr,"Failed to close mutex: %li\n", GetLastError());
-}
-
-win_queue::~win_queue()
-{
-  cleanup();
-}
-
-void
-win_queue::enqueue(void* elt)
-{
-  // lock so our member data doesn't get bent out of shape
-  win_locker    l(member_lock);
-
-  // this is the simple case, add the elt, protected by lock
-  // and signal suckas, who oughta recognize, but don't.
-  ELTQ->push(elt);
-
-  // we've got the mutex and we've just added an elt, therefore
-  // we have > 0 elts. That sounds like a good enough reason to
-  // put the condition into the signalled state. It may already
-  // be in the signalled stated. Hope that's not a problem.
-  // Might be an optimization to skip this if it became nonempty.
-  if(!SetEvent(nz_elts_cond))
-    fprintf(stderr,"Set condition failed: %li\n", GetLastError());
-}
-
-void*
-win_queue::dequeue()
-{
-  void*     elt = NULL;
-
-  do
-  {
-    // exclusively examine queue
-    {
-      win_locker    l(member_lock);
-
-      if(!ELTQ->empty())
-      {
-        elt = ELTQ->front();
-        ELTQ->pop();
-        // if the queue is now empty, make condition reflect it
-        // this failing will probably lock the app up...
-        if(!ResetEvent(nz_elts_cond)) // non-signalled state
-          fprintf(stderr,"Reset condition failed: %li\n", GetLastError());
-        break;
-      }
-    }
-
-    // otherwise there's nothing in the queue or something
-    // may have turned up in the intervening moments
-    DWORD   res;
-    res = WaitForSingleObject(nz_elts_cond, INFINITE);
-
-    if(WAIT_OBJECT_0 != res)
-    {
-      fprintf(stderr,"Wait on condition failed: %li\n", GetLastError());
-      throw res;
-    }
-
-  } while(1);
-
-  return elt;           // should never return NULL
-}
 
 // simple utility fn, shouldn't be here. creates listener on any interface.
 // this could benifit from a SOCKET class. in failure returns INVALID_SOCKET
@@ -2604,146 +2926,6 @@ kqueue_demuxer::get_evts(bool poll)
 }
 }}
 
-@h=tangler('demux/demux_mutexlite.cpp')
-@select(h)
-#include "demux_mutexlite.hpp"
-#include <stdio.h>        // printf debugging
-#include <assert.h>
-
-namespace flx { namespace demux {
-class auto_attr
-{
-  pthread_mutexattr_t* a;
-public:
-
-  auto_attr(pthread_mutexattr_t* attr) : a(attr) {}
-  ~auto_attr()
-  {
-    int res = pthread_mutexattr_destroy(a);
-    if(0 != res)
-      fprintf(stderr,"pthread_mutexattr_destroy failed: %i\n", res);
-  }
-};
-
-pmut::pmut(bool recursive)
-{
-  pthread_mutexattr_t attr;
-  int res;
-
-  res = pthread_mutexattr_init(&attr);  // default attrs
-
-  if(0 != res) throw res;
-
-  auto_attr aa(&attr);          // cleans up always
-
-#ifdef PTHREAD_MUTEX_RECURSIVE        // defined in unistd.h
-  if(recursive)
-  {
-    res = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    if(0 != res)
-    {
-      fprintf(stderr,"phtread_mutexattr_settype failed: %i\n", res);
-      throw res;
-    }
-  }
-#else
-  assert( !recursive );         // gusi non ce l'ha.
-#endif
-
-  res = pthread_mutex_init(&m, &attr);
-  if(res != 0) throw res;
-}
-
-pmut::~pmut()
-{
-  int res;
-  // fprintf(stderr,"MUTEX DESTROY!!!\n");
-  // fflush(stdout);
-  res = pthread_mutex_destroy(&m);
-  if(0 != res) fprintf(stderr,"mutex_destroy failed: %i\n", res);
-}
-
-void
-pmut::lock()
-{
-  int res = pthread_mutex_lock(&m);
-if(res != 0) fprintf(stderr,"lockres: %i\n", res);
-  if(res != 0) throw res;
-}
-
-void
-pmut::unlock()
-{
-  int res = pthread_mutex_unlock(&m);
-  if(res != 0) throw res; 
-}
-
-// auto pthread
-
-int 
-apthread::init(void* (*start)(void*), void* udat)
-{
-  // fprintf(stderr,"apthread::init(this=%p, fn=%p, udat=%p)\n",
-  //  this, start, udat);
-
-  // default attrs. hope they're good
-  int res = pthread_create(&thr, NULL, start, udat);
-  if(0 == res) inited = true;   // success!
-  return res;
-}
-
-void
-apthread::deinit()
-{
-  fprintf(stderr,"apthread::deinit(this=%p, inited=%i)\n", this, inited);
-
-  if(!inited) return;
-// What if I cancel while someone (select thread) holds the mutex.
-// I think I need to push cleanup stuff... wait, cancel won't happen
-// in the mutex. If others start using this pre-emptively then it could
-// happen. We've got another problem then, as the object is being
-// destructed. Should I go for the lock? What to do? HELP!
-// do experiment...
-  // cancel thread, then "join" to wait for it to exit. if we summarily
-  // killed the thread, we could kill it during something important,
-  // like  a mutex or select op, screwing up global state.
-  // we shouldn't have to wait long
-  // ignoring errors, thread not found seems to be the worst
-
-  int   res;
-
-  //res = cancel();             // send cancel msg
-  //fprintf(stderr,"cancel res: %i, joining...\n", res);
-
-
-  res = pthread_join(thr, NULL);      // wait for cancel pt, ignor res
-  fprintf(stderr,"join res: %i\n", res);
-
-  // is that all you have to do to free up a pthread?
-
-  inited = false;
-}
-
-// not using this - cancellation is bad. I now prefer to convince the thread
-// to exit through nonviolent methods. I'd like to use pthread_setcancelstate
-// + PTHREAD_CANCEL_DISABLE but that needs to be done from each thread which
-// would require them an annoying thunk. Not using pthread_cancel should
-// be enough.
-#if 0
-// set thread cancel flag
-int
-apthread::cancel()
-{
-  return pthread_cancel(thr);       // send cancel msg
-}
-#endif
-
-apthread::~apthread()
-{
-  deinit();
-}
-}}
-
 @h=tangler('demux/demux_pfileio.cpp')
 @select(h)
 #include <stdio.h>    // printf
@@ -3019,95 +3201,6 @@ connect_control_block::wakeup(posix_demuxer& demux)
   }
 
   // resulting connected socket in s
-}
-}}
-
-@h=tangler('demux/demux_posix_queue.cpp')
-@select(h)
-#include <pthread.h>
-#include "demux_posix_queue.hpp"
-#include <queue>        // stl to the bloated rescue
-#include <string.h>       // strerror
-
-using namespace std;
-
-namespace flx { namespace demux {
-typedef queue<void*> void_queue;
-
-#define ELTQ ((void_queue*)lame_opaque)
-
-posix_queue::posix_queue()
-  : member_lock(false)      // shouldn't need to be recursive
-{
-  lame_opaque = new void_queue;
-  int res = pthread_cond_init(&nz_elts_cond, NULL);
-
-  if(0 != res)
-  {
-    delete ELTQ;
-    throw res;
-  }
-}
-
-posix_queue::~posix_queue()
-{
-  int res = pthread_cond_destroy(&nz_elts_cond);
-  if(0 != res)
-    fprintf(stderr,"pthread_cond_destroy failed: %i (%s)\n",
-      res, strerror(res));
-  delete ELTQ;
-}
-
-void
-posix_queue::enqueue(void* elt)
-{
-  // lock so our member data doesn't get bent out of shape
-  pmut_locker   l(member_lock);
-  // this is the simple case, add the elt, protected by lock
-  // and signal suckas, who oughta recognize, but don't.
-  ELTQ->push(elt);
-
-  // we've just added one elt, therefore we have > 0 elts
-  // a signal should do just fine here - I don't think I need
-  // broadcast unless I were adding more than one item in a go.
-  // if there were already elts in the queue there wouldn't be
-  // threads waiting on the signal and if there were no elts then
-  // there would be no point waking up more than one thread now.
-  // right? 
-  int       res;
-  res = pthread_cond_signal(&nz_elts_cond);
-  if(0 != res)
-    fprintf(stderr,"pthread_cond_signal failed %i\n", res);
-}
-
-void*
-posix_queue::dequeue()
-{
-  // protect member data
-  pmut_locker   l(member_lock);
-  void*     elt = NULL;
-
-  // sleep until something is there
-  do
-  {
-    if(!ELTQ->empty())
-    {
-      elt = ELTQ->front();
-      ELTQ->pop();
-      break;
-    }
-
-    // otherwise queue empty, wait on condition
-    int res;
-    // wait on elt added condition signal. mutex is unlocked on
-    // on wait and relocked on wake.
-    res = pthread_cond_wait(&nz_elts_cond, &member_lock.m);
-    if(res != 0)
-      fprintf(stderr,"pthread_cond_wait nonzero elts failed: %i\n", res);
-
-  } while(1);
-
-  return elt;           // should never return NULL
 }
 }}
 
