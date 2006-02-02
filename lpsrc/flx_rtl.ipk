@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.97  2006/02/02 15:29:32  skaller
+Factor flx_run.
+
 Revision 1.96  2006/02/02 08:30:17  rfistman
 got rid of annoying debug output/note to self regarding sigpipe on osx/bsd.
 made flx_rtl create async structure on demand, if only to avoid all that
@@ -1692,188 +1695,116 @@ con_t *flx_libinit_t::bind_proc(void *fn, void *data) {
 
 }} // namespaces
 
-
-@head(2,'Universal Program Driver')
-This driver runs stand alone Felix programs.
-It invokes the library routine 'start'.
-No messages are dispatched, the Felix
-program must not read any messages.
-@p()
-For statically linked programs,
-command line arguments are passed directly,
-the debugging switch isn't supported.
-@p()
-For dynamically loaded programs, the name of the
-driver and optional --debug switch given before the
-shared library name are not passed.
-
-@h = tangler('rtl/flx_run.cxx','cpp')
+@h = tangler("rtl/flx_sync.hpp")
 @select(h)
-#include <cstdlib>
-#include <stdio.h>
-#include <vector>
-#include <list>
-#include <map>
-#include <cstring>
-#include <cassert>
-
-#include <string>
-//#include <unistd.h>
-#include "flx_rtl.hpp"
-
-#ifdef _WIN32
-#include "demux_iocp_demuxer.hpp"
-#include "faio_wdrv.hpp"
-#elif defined(MACOSX)
-#include "demux_posix_queue.hpp"
-#include "demux_kqueue_demuxer.hpp"
-#include "faio_pdrv.hpp"
-#elif defined(SOLARIS)
-#include "demux_posix_queue.hpp"
-#include "demux_evtport_demuxer.hpp"
-#include "faio_pdrv.hpp"
-#elif defined(FLX_LINUX)
-#include "demux_posix_queue.hpp"
-#include "demux_epoll_demuxer.hpp"
-#include "faio_pdrv.hpp"
-#else
-#include "demux_posix_queue.hpp"
-#include "demux_select_demuxer.hpp"
-#include "faio_pdrv.hpp"
-#endif
-
-#include "faio_asyncio.hpp"
+#ifndef _FLX_SYNC
+#define _FLX_SYNC
 
 #include "flx_collector.hpp"
 #include "flx_dynlink.hpp"
-using namespace std;
-using namespace flx::rtl;
-using namespace flx::demux;
-using namespace flx::faio;
+#include "flx_rtl.hpp"
+#include <list>
 
-#ifdef HAVE_GXX_X86
-register void *sp __asm__("esp");
-#else
-#ifdef HAVE_GXX_X86_64
-register void *sp __asm__("rsp");
-#else
-static void *sp = 0;
-#endif
-#endif
+namespace flx { namespace run {
 
-void print_loc(FILE *ef,flx_range_srcref_t x,char *cf, int cl)
-{
-  fprintf(ef,"Felix location: %s %d[%d]-%d[%d]\n",
-    x.filename,
-    x.startline,
-    x.startcol,
-    x.endline,
-    x.endcol
+enum fstate_t { terminated, blocked, delegated };
+enum fpc_t { next_fthread_pos, next_request_pos };
+
+struct FLX_RTL_EXTERN gc_profile_t {
+  bool debug_allocations;
+  bool debug_collections; 
+  unsigned long compact; 
+  unsigned long gc_freq;
+  unsigned long gc_counter;
+  unsigned long collections;
+  bool finalise;
+  flx::gc::collector::flx_collector_t *collector;
+
+  gc_profile_t (
+    bool debug_allocations_, 
+    bool debug_collections_, 
+    unsigned long compact_, 
+    unsigned long gc_freq_,
+    bool finalise_,
+    flx::gc::collector::flx_collector_t *collector
   );
-  fprintf(ef,"C++ location  : %s %d\n", cf, cl);
+  ~gc_profile_t();
+};
+
+struct FLX_RTL_EXTERN sync_state_t {
+  bool debug_driver;
+  gc_profile_t *gcp;
+  std::list<flx::rtl::fthread_t*> *active;
+  flx::rtl::fthread_t *ft;
+  flx::rtl::_uctor_ *request;
+  fpc_t pc;
+  fstate_t fs;
+  sync_state_t (
+    bool debug_driver_,
+    gc_profile_t *gcp_,
+    std::list<flx::rtl::fthread_t*> *active_
+  );
+  void frun();
+};
+
+}}
+
+#endif
+
+@h = tangler("rtl/flx_sync.cpp")
+@select(h)
+#include "flx_sync.hpp"
+using namespace flx::rtl;
+
+flx::run::gc_profile_t::gc_profile_t (
+  bool debug_allocations_, 
+  bool debug_collections_, 
+  unsigned long compact_, 
+  unsigned long gc_freq_,
+  bool finalise_,
+  flx::gc::collector::flx_collector_t *collector_
+) :
+  debug_allocations(debug_allocations_),
+  debug_collections(debug_collections_),
+  compact(compact_),
+  gc_freq(gc_freq_),
+  gc_counter(0),
+  collections(0),
+  finalise(finalise_),
+  collector(collector_)
+{
 }
 
-enum {
-  dreq_error = 0,
-  dreq_get_driver_name = 1,
-  dreq_exit= 2
-};
-  
-static struct driver_request_entry_t flx_run_services[]=
-{
-  {"get_driver_name",dreq_get_driver_name},
-  {"exit",dreq_exit},
-  {NULL,0}
-};
+flx::run::gc_profile_t::~gc_profile_t() { }
 
-class proto_async
-{
-public:
+flx::run::sync_state_t::sync_state_t (
+  bool debug_driver_,
+  gc_profile_t *gcp_,
+  std::list<fthread_t*> *active_
+) : 
+  debug_driver(debug_driver_),
+  gcp(gcp_),
+  active(active_),
+  pc(next_fthread_pos)
+{}
 
-#if defined(MACOSX)
-    kqueue_demuxer demux;
-#elif defined(SOLARIS)
-    evtport_demuxer demux;
-#elif defined(FLX_LINUX)
-    epoll_demuxer demux;
-#elif !defined(_WIN32)
-    select_demuxer demux;  // probably not thread safe
-#endif
-
-#ifdef _WIN32
-    win_queue async_active;
-    win_thread ethread;
-    iocp_demuxer demux;
-    wflx_drv driver;
-    static DWORD demux_thread(LPVOID udat);
-#else
-    posix_queue async_active;
-    apthread ethread;
-    // this isn't what it looks like (i.e. a driver) but rather
-    // just a wrapper for the queue.
-    pflx_drv driver;
-    static void* demux_thread(void* udat);
-#endif
-
-
-   proto_async() : driver(async_active) {
-     // start waiting thread
-#if _WIN32
-     // cast callback to itself. go figure.
-     if(ethread.init((LPTHREAD_START_ROUTINE)demux_thread, &demux) == -1) throw -1;
-#else
-     if(ethread.init(demux_thread, &demux) == -1) throw -1;
-#endif
-   }
-
-};
-
-#ifdef _WIN32
-DWORD
-proto_async::demux_thread(LPVOID udat)
-#else
-void*
-proto_async::demux_thread(void* udat)
-#endif
-{
-    demuxer*    d = (demuxer*)udat;
-
-    while(1)                // cancellation? what's that?
-    {
-        d->wait();          // this does it
-    }
-    return 0;
-}
-
-enum fstate { terminated, blocked, delegated };
-enum fpc { next_fthread_pos, next_request_pos };
-
-fstate frun(
-  bool debug_driver, 
-  bool debug_allocations, 
-  bool debug_collections, 
-  unsigned long compact, 
-  unsigned long gc_freq,
-  unsigned long &gc_counter,
-  unsigned long &collections,
-  std::list<fthread_t*> *active,
-  flx::gc::collector::flx_collector_t *collector,
-  fthread_t **ft_out,
-  _uctor_ **req_out,
-  fpc *pc
-)
+void flx::run::sync_state_t::frun()
 {
   // local copies are faster
-  fthread_t *ft = *ft_out;
-  _uctor_ *request = *req_out;
+  flx::gc::collector::flx_collector_t *collector = gcp->collector;
 
-  if (*pc == next_request_pos) goto next_request;
-  if (*pc == next_fthread_pos) goto next_fthread;
+  // dispatch
+  if (pc == next_request_pos) goto next_request;
+  if (pc == next_fthread_pos) goto next_fthread;
   fprintf(stderr,"BUG -- unreachable code in frun\n");
   abort();
 
 next_fthread:
-  if (active->size() == 0) return blocked;
+  if (active->size() == 0) {
+    fs = blocked; 
+    pc = next_fthread_pos;
+    return; 
+  }
   ft = active->front();
   active->pop_front();
 
@@ -1887,20 +1818,19 @@ forget_fthread:
   goto next_fthread;
 
 delegate:
-  *ft_out = ft;
-  *req_out = request;
-  *pc = next_request_pos;
-  return delegated;
+  pc = next_request_pos;
+  fs = delegated;
+  return;
 
 check_collect:  
-  gc_counter++;
-  if(gc_counter == gc_freq)
+  gcp->gc_counter++;
+  if(gcp->gc_counter == gcp->gc_freq)
   {
-    gc_counter = 0;
-    ++collections;
+    gcp->gc_counter = 0;
+    gcp->collections++;
     unsigned long n = collector->collect();
-    if(compact) collector->compact(true);
-    if(debug_collections)fprintf(stderr,"collected %ld objects\n",n);
+    if(gcp->compact) collector->compact(true);
+    if(gcp->debug_collections)fprintf(stderr,"collected %ld objects\n",n);
   }
     
   switch(request->variant)
@@ -1911,15 +1841,6 @@ check_collect:
       active->push_back(ft);
     }
     goto next_fthread;
-
-    case svc_map_driver_requests:
-    {
-      map_driver_requests(
-        flx_run_services, 
-        *(driver_request_entry_t**)request->data
-      );
-    }
-    goto next_request;
 
     case svc_spawn_detached:
     {
@@ -1992,28 +1913,6 @@ check_collect:
     }
     goto next_request;
 
-    case svc_driver_request:
-    {
-      _uctor_ dreq = *(_uctor_*)request->data;
-      if(debug_driver)fprintf(stderr,"Request code %d \n",dreq.variant);
-      switch (dreq.variant)
-      {
-        case dreq_get_driver_name:
-        {
-          *(char **)dreq.data = "flx_run";
-        }
-        break;
-
-        case dreq_exit:
-          return terminated;
-
-        default:
-          fprintf(stderr,"Unknown driver reqest code %d, terminating\n",dreq.variant);
-          return terminated;
-      }
-    }
-    goto next_request;
-
     case svc_compact:
     {
       // requires fthreads to be immobile
@@ -2045,13 +1944,166 @@ check_collect:
   abort();
 }
 
+
+@head(2,'Universal Program Driver')
+This driver runs stand alone Felix programs.
+It invokes the library routine 'start'.
+No messages are dispatched, the Felix
+program must not read any messages.
+@p()
+For statically linked programs,
+command line arguments are passed directly,
+the debugging switch isn't supported.
+@p()
+For dynamically loaded programs, the name of the
+driver and optional --debug switch given before the
+shared library name are not passed.
+
+@h = tangler('rtl/flx_run.cxx','cpp')
+@select(h)
+#include <cstdlib>
+#include <stdio.h>
+#include <vector>
+#include <list>
+#include <map>
+#include <cstring>
+#include <cassert>
+
+#include <string>
+//#include <unistd.h>
+#include "flx_rtl.hpp"
+
+#ifdef _WIN32
+#include "demux_iocp_demuxer.hpp"
+#include "faio_wdrv.hpp"
+#elif defined(MACOSX)
+#include "demux_posix_queue.hpp"
+#include "demux_kqueue_demuxer.hpp"
+#include "faio_pdrv.hpp"
+#elif defined(SOLARIS)
+#include "demux_posix_queue.hpp"
+#include "demux_evtport_demuxer.hpp"
+#include "faio_pdrv.hpp"
+#elif defined(FLX_LINUX)
+#include "demux_posix_queue.hpp"
+#include "demux_epoll_demuxer.hpp"
+#include "faio_pdrv.hpp"
+#else
+#include "demux_posix_queue.hpp"
+#include "demux_select_demuxer.hpp"
+#include "faio_pdrv.hpp"
+#endif
+
+#include "faio_asyncio.hpp"
+
+#include "flx_collector.hpp"
+#include "flx_dynlink.hpp"
+#include "flx_sync.hpp"
+
+using namespace std;
+using namespace flx::rtl;
+using namespace flx::demux;
+using namespace flx::faio;
+using namespace flx::run;
+
+#ifdef HAVE_GXX_X86
+register void *sp __asm__("esp");
+#else
+#ifdef HAVE_GXX_X86_64
+register void *sp __asm__("rsp");
+#else
+static void *sp = 0;
+#endif
+#endif
+
+void print_loc(FILE *ef,flx_range_srcref_t x,char *cf, int cl)
+{
+  fprintf(ef,"Felix location: %s %d[%d]-%d[%d]\n",
+    x.filename,
+    x.startline,
+    x.startcol,
+    x.endline,
+    x.endcol
+  );
+  fprintf(ef,"C++ location  : %s %d\n", cf, cl);
+}
+
+enum {
+  dreq_error = 0,
+  dreq_get_driver_name = 1,
+  dreq_exit= 2
+};
+  
+static struct driver_request_entry_t flx_run_services[]=
+{
+  {"get_driver_name",dreq_get_driver_name},
+  {"exit",dreq_exit},
+  {NULL,0}
+};
+  
+class proto_async
+{
+public:
+
+#if defined(MACOSX)
+    kqueue_demuxer demux;
+#elif defined(SOLARIS)
+    evtport_demuxer demux;
+#elif defined(FLX_LINUX)
+    epoll_demuxer demux;
+#elif !defined(_WIN32)
+    select_demuxer demux;  // probably not thread safe
+#endif
+
+#ifdef _WIN32
+    win_queue async_active;
+    win_thread ethread;
+    iocp_demuxer demux;
+    wflx_drv driver;
+    static DWORD demux_thread(LPVOID udat);
+#else
+    posix_queue async_active;
+    apthread ethread;
+    // this isn't what it looks like (i.e. a driver) but rather
+    // just a wrapper for the queue.
+    pflx_drv driver;
+    static void* demux_thread(void* udat);
+#endif
+
+
+   proto_async() : driver(async_active) {
+     // start waiting thread
+#if _WIN32
+     // cast callback to itself. go figure.
+     if(ethread.init((LPTHREAD_START_ROUTINE)demux_thread, &demux) == -1) throw -1;
+#else
+     if(ethread.init(demux_thread, &demux) == -1) throw -1;
+#endif
+   }
+
+};
+
+#ifdef _WIN32
+DWORD
+proto_async::demux_thread(LPVOID udat)
+#else
+void*
+proto_async::demux_thread(void* udat)
+#endif
+{
+    demuxer*    d = (demuxer*)udat;
+
+    while(1)                // cancellation? what's that?
+    {
+        d->wait();          // this does it
+    }
+    return 0;
+}
+
+
 int run_felix(
   bool debug_driver, 
-  bool debug_allocations, 
-  bool debug_collections, 
-  unsigned long compact, 
-  bool finalise,
-  unsigned long gc_freq,
+  gc_profile_t *gcp,
   char *filename, 
   int flx_argc, 
   char **flx_argv
@@ -2065,24 +2117,15 @@ int run_felix(
     flx_libinit_t instance;
 
     library.link(filename);
-    flx::gc::collector::malloc_free allocator;
-    allocator.set_debug(debug_allocations);
-    flx::gc::collector::flx_collector_t collector(&allocator);
-    collector.set_debug(debug_collections);
-    instance.create(&library, &collector,flx_argc,flx_argv,stdin,stdout,stderr);
+
+    flx::gc::generic::collector_t *collector = gcp->collector;
+
+    instance.create(&library, collector,flx_argc,flx_argv,stdin,stdout,stderr);
     if(debug_driver){
       fprintf(stderr,"loaded library %s at %p\n",filename,library.library);
       fprintf(stderr,"thread frame at %p\n",instance.thread_frame);
       fprintf(stderr,"initial continuation at %p\n",instance.start_proc);
     } 
-    unsigned long gc_counter = 0;
-    unsigned long collections = 0;
-
-    if(compact)
-    {
-      collector.set_min_arena_size(compact);
-      collector.compact(false);
-    }
 
     std::list<fthread_t*> active;
 	
@@ -2094,69 +2137,85 @@ int run_felix(
 #endif
 
     unsigned long async_count = 0;
-    // RF: I prefer to init this on demand, if only to avoid launching all
-    // those threads for simple apps and also to avoid extra debug output.
-    // proto_async* async = new proto_async;
-	proto_async* async = NULL;
+    proto_async* async = NULL;
 
     {
       con_t *top = instance.start_proc;
-      fthread_t *ft = new (collector,_fthread_ptr_map) fthread_t(top);
-      collector.add_root(ft);
+      fthread_t *ft = new (*collector,_fthread_ptr_map) fthread_t(top);
+      collector->add_root(ft);
       active.push_front(ft);
     }
     
-    fthread_t *ft = NULL;
-    _uctor_ *request = NULL;
-    fpc pc = next_fthread_pos;
+    sync_state_t ss(debug_driver, gcp, &active);
 
 process_active:
-    fstate fs = frun(
-      debug_driver, 
-      debug_allocations, 
-      debug_collections, 
-      compact, 
-      gc_freq,
-      gc_counter,
-      collections,
-      &active,
-      &collector,
-      &ft,
-      &request,
-      &pc
-    );
-    if (fs == terminated) goto cleanup;
-    if (fs == blocked) goto do_async;
-    if (fs == delegated) 
-    switch (request->variant)
+    ss.frun();
+    if (ss.fs == terminated) goto cleanup;
+    if (ss.fs == blocked) goto do_async;
+    if (ss.fs == delegated) 
+    switch (ss.request->variant)
     {
       case svc_general:
       {
         if( !async ) async = new proto_async;
 
         flx_driver_request_base* dreq = (flx_driver_request_base*)
-          ((_ref_*)(request->data))->get_data()
+          ((_ref_*)(ss.request->data))->get_data()
         ;
+
+        if(!async) async = new proto_async;
 
         // RF hates the flag this function returns .. might
         // mask a race condition, get rid of it
         ++async_count;
-        if(!dreq->start_async_op(async->demux, &async->driver, ft))
+        if(!dreq->start_async_op(async->demux, &async->driver, ss.ft))
         {
-          pc = next_fthread_pos;
+          ss.pc = next_fthread_pos;
         } 
         else {
           --async_count;
-          pc = next_request_pos;
+          ss.pc = next_request_pos;
+        }
+      }
+      goto process_active;
+
+      case svc_map_driver_requests:
+      {
+        map_driver_requests(
+          flx_run_services, 
+          *(driver_request_entry_t**)ss.request->data
+        );
+        ss.pc = next_request_pos;
+      }
+      goto process_active;
+
+      case svc_driver_request:
+      {
+        _uctor_ dreq = *(_uctor_*)ss.request->data;
+        if(debug_driver)fprintf(stderr,"Request code %d \n",dreq.variant);
+        switch (dreq.variant)
+        {
+          case dreq_get_driver_name:
+          {
+            *(char **)dreq.data = "flx_run";
+            ss.pc = next_request_pos;
+          }
+
+          case dreq_exit:
+            goto cleanup;
+
+          default:
+            fprintf(stderr,"Unknown driver reqest code %d, terminating\n",dreq.variant);
+            goto cleanup;
         }
       }
       goto process_active;
 
       default:
-        fprintf(stderr,"Unknown service request code 0x%4x\n",request->variant);
+        fprintf(stderr,"Unknown service request code 0x%4x\n",ss.request->variant);
         abort();
     }
-    fprintf(stderr,"Unknown frun return status 0x%4x\n",fs);
+    fprintf(stderr,"Unknown frun return status 0x%4x\n",ss.fs);
     abort();
 
 do_async:
@@ -2176,30 +2235,32 @@ do_async:
     if(debug_driver)fprintf(stderr,"Out of active threads\n");
 cleanup:
     if(debug_driver){
-      unsigned long uncollected = collector.get_allocation_count();
-      unsigned long roots = collector.get_root_count();
-      fprintf(stderr,"program finished, %ld collections, %ld uncollected objects, roots %ld\n",collections,uncollected,roots);
+      unsigned long uncollected = collector->get_allocation_count();
+      unsigned long roots = collector->get_root_count();
+      fprintf(stderr,
+        "program finished, %ld collections, %ld uncollected objects, roots %ld\n",
+        gcp->collections,uncollected,roots);
     }
 
-    if(finalise)
+    if(gcp->finalise)
     {
       {
-        if(debug_driver || debug_collections)
+        if(debug_driver || gcp->debug_collections)
           fprintf(stderr,"Finalisation: pass 1 Data collection starts ..\n");
-        unsigned long n = collector.collect();
-        unsigned long a = collector.get_allocation_count();
-        if(debug_driver || debug_collections)
+        unsigned long n = collector->collect();
+        unsigned long a = collector->get_allocation_count();
+        if(debug_driver || gcp->debug_collections)
           fprintf(stderr,"flx_run collected %ld objects, %ld left\n",n,a);
       }
       if(debug_driver)
         fprintf(stderr,"Destroying program instance\n");
       instance.destroy();
 
-      if(debug_driver || debug_collections)
+      if(debug_driver || gcp->debug_collections)
         fprintf(stderr,"Finalisation: pass 2 Final collection starts ..\n");
-      unsigned long n = collector.collect();
-      unsigned long a = collector.get_allocation_count();
-      if(debug_driver || debug_collections)
+      unsigned long n = collector->collect();
+      unsigned long a = collector->get_allocation_count();
+      if(debug_driver || gcp->debug_collections)
         fprintf(stderr,"Collected %ld objects, %ld left (should be 0)\n",n,a);
       if(a!=0){
         fprintf(stderr,"flx_run %ld uncollected objects, should be zero!!\n",a);
@@ -2224,8 +2285,8 @@ cleanup:
         fprintf(stderr,"flx_run driver ends with finalisation complete, collected %ld,left=%ld\n",n,a);
     }
     else {
-      if(debug_driver || debug_collections){
-        unsigned long a = collector.get_allocation_count();
+      if(debug_driver || gcp->debug_collections){
+        unsigned long a = collector->get_allocation_count();
         fprintf(stderr,"flx_run driver ends with finalisation skipped, %ld uncollected objects\n",a);
       }
     }
@@ -2366,14 +2427,40 @@ int main(int argc, char** argv)
   if(debug)
     for(int i=0; i<flx_argc; ++i) 
     fprintf(stderr,"flx_argv[%d]->%s\n",i,flx_argv[i]);
+    
+  flx::gc::generic::allocator_t *allocator = 
+    new flx::gc::collector::malloc_free()
+  ;
+  allocator->set_debug(debug_allocations);
 
-    run_felix(
-      debug_driver,
-      debug_allocations,
-      debug_collections,
-      compact,finalise,gc_freq,
-      filename,flx_argc,flx_argv
-    );
+  flx::gc::collector::flx_collector_t *collector =
+    new flx::gc::collector::flx_collector_t(allocator)
+  ;
+  collector->set_debug(debug_collections);
+  if(compact)
+  {
+    collector->set_min_arena_size(compact);
+    collector->compact(false);
+  }
+
+
+  gc_profile_t *gcp = new gc_profile_t(
+    debug_allocations, 
+    debug_collections, 
+    compact, 
+    gc_freq,
+    finalise,
+    collector
+  );
+  run_felix(
+    debug_driver,
+    gcp,
+    filename,flx_argc,flx_argv
+  );
+
+  delete gcp;
+  delete collector;
+  delete allocator;
 
 #ifdef HAVE_GXX
     // check the frame pointer isn't corrupted

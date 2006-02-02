@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.211  2006/02/02 15:29:32  skaller
+Factor flx_run.
+
 Revision 1.210  2006/01/30 08:58:19  skaller
 Add package support to flx script
 
@@ -2959,6 +2962,7 @@ RTL_CPPS = [
   "rtl/flx_collector",
   "rtl/flx_rtl",
   "rtl/flx_dynlink",
+  "rtl/flx_sync",
   "rtl/flx_i18n",
   "rtl/flx_ioutil",
 ]
