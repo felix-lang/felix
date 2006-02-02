@@ -1,5 +1,8 @@
 @head(1,'open GL and extensions')
 $Log$
+Revision 1.5  2006/02/02 06:19:23  skaller
+Factor flx_run more.
+
 Revision 1.4  2006/02/01 04:53:15  skaller
 upgrade performance measurement to new features.
 
@@ -1607,7 +1610,7 @@ include "GL/gl_lib";
 
 module GL_glu_h
 {
-  require package "GLU";
+  requires package "GLU";
   header '#include "GL/glu.h"';
   open C_hack;
   open GL_gl_h;
@@ -1873,7 +1876,7 @@ include "GL/glu_lib";
 
 module GL_glut_h
 {
-  require package "GLUT";
+  requires package "GLUT";
   header '#include "GL/glut.h"';
   open C_hack;
   open GL_gl_h;

@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.95  2006/02/02 06:19:23  skaller
+Factor flx_run more.
+
 Revision 1.94  2006/01/30 08:58:19  skaller
 Add package support to flx script
 
@@ -1837,13 +1840,213 @@ proto_async::demux_thread(void* udat)
     return 0;
 }
 
+enum fstate { terminated, blocked, delegated };
+enum fpc { next_fthread_pos, next_request_pos };
+
+fstate frun(
+  bool debug_driver, 
+  bool debug_allocations, 
+  bool debug_collections, 
+  unsigned long compact, 
+  unsigned long gc_freq,
+  unsigned long &gc_counter,
+  unsigned long &collections,
+  std::list<fthread_t*> *active,
+  flx::gc::collector::flx_collector_t *collector,
+  fthread_t **ft_out,
+  _uctor_ **req_out,
+  fpc *pc
+)
+{
+  // local copies are faster
+  fthread_t *ft = *ft_out;
+  _uctor_ *request = *req_out;
+
+  if (*pc == next_request_pos) goto next_request;
+  if (*pc == next_fthread_pos) goto next_fthread;
+  fprintf(stderr,"BUG -- unreachable code in frun\n");
+  abort();
+
+next_fthread:
+  if (active->size() == 0) return blocked;
+  ft = active->front();
+  active->pop_front();
+
+next_request:
+  request = ft->run();
+  if(request != 0) goto check_collect;
+
+forget_fthread:
+  if(debug_driver)fprintf(stderr,"unrooting fthread %p\n",ft);
+  collector->remove_root(ft);
+  goto next_fthread;
+
+delegate:
+  *ft_out = ft;
+  *req_out = request;
+  *pc = next_request_pos;
+  return delegated;
+
+check_collect:  
+  gc_counter++;
+  if(gc_counter == gc_freq)
+  {
+    gc_counter = 0;
+    ++collections;
+    unsigned long n = collector->collect();
+    if(compact) collector->compact(true);
+    if(debug_collections)fprintf(stderr,"collected %ld objects\n",n);
+  }
+    
+  switch(request->variant)
+  {
+    case svc_yield: 
+    {
+      if(debug_driver)fprintf(stderr,"yield");
+      active->push_back(ft);
+    }
+    goto next_fthread;
+
+    case svc_map_driver_requests:
+    {
+      map_driver_requests(
+        flx_run_services, 
+        *(driver_request_entry_t**)request->data
+      );
+    }
+    goto next_request;
+
+    case svc_spawn_detached:
+    {
+      fthread_t *ftx = *(fthread_t**)request->data;
+      if(debug_driver)fprintf(stderr,"Spawn thread %p\n",ftx);
+      collector->add_root(ftx);
+      active->push_front(ftx);
+    }
+    goto next_request;
+
+    case svc_sread:
+    {
+      readreq_t * pr = (readreq_t*)request->data;
+      schannel_t *chan = pr->chan;
+      if(debug_driver)fprintf(stderr,"Request to read on channel %p\n",chan);
+    svc_read_next:
+      {
+        fthread_t *writer= chan->pop_writer();
+        if(writer == 0) goto svc_read_none;       // no writers
+        if(writer->cc == 0) goto svc_read_next;   // killed
+        {
+          readreq_t * pr = (readreq_t*)request->data;
+          readreq_t * pw = (readreq_t*)writer->get_svc()->data;
+          if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable.get_data(),*(void**)pw->variable.get_data(), pr->variable.get_data());
+          *(void**)pr->variable.get_data() = *(void**)pw->variable.get_data();
+          active->push_front(writer);
+          collector->add_root(writer);
+        }
+      }
+      goto next_request;
+
+    svc_read_none:
+      if(debug_driver)fprintf(stderr,"No writers on channel %p: BLOCKING\n",chan);
+      chan->push_reader(ft);
+    }
+    goto forget_fthread;
+
+    case svc_swrite:
+    {
+      readreq_t * pr = (readreq_t*)request->data;
+      schannel_t *chan = pr->chan;
+      if(debug_driver)fprintf(stderr,"Request to write on channel %p\n",chan);
+    svc_write_next:
+      {
+        fthread_t *reader= chan->pop_reader();
+        if(reader == 0) goto svc_write_none;     // no readers
+        if(reader->cc == 0) goto svc_write_next; // killed
+        {
+          readreq_t * pw = (readreq_t*)request->data;
+          readreq_t * pr = (readreq_t*)reader->get_svc()->data;
+          if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable.get_data(),*(void**)pw->variable.get_data(), pr->variable.get_data());
+          *(void**)pr->variable.get_data() = *(void**)pw->variable.get_data();
+          active->push_front(reader);
+          collector->add_root(reader);
+        }
+      }
+      goto next_request;
+
+    svc_write_none:
+      if(debug_driver)fprintf(stderr,"No readers on channel %p: BLOCKING\n",chan);
+      chan->push_writer(ft);
+    }
+    goto forget_fthread;
+    
+    case svc_kill:
+    {
+      fthread_t *ftx = *(fthread_t**)request->data;
+      if(debug_driver)fprintf(stderr,"Request to kill fthread %p\n",ftx);
+      ftx -> kill();
+    }
+    goto next_request;
+
+    case svc_driver_request:
+    {
+      _uctor_ dreq = *(_uctor_*)request->data;
+      if(debug_driver)fprintf(stderr,"Request code %d \n",dreq.variant);
+      switch (dreq.variant)
+      {
+        case dreq_get_driver_name:
+        {
+          *(char **)dreq.data = "flx_run";
+        }
+        break;
+
+        case dreq_exit:
+          return terminated;
+
+        default:
+          fprintf(stderr,"Unknown driver reqest code %d, terminating\n",dreq.variant);
+          return terminated;
+      }
+    }
+    goto next_request;
+
+    case svc_compact:
+    {
+      // requires fthreads to be immobile
+      if(debug_driver)fprintf(stderr,"svc compact\n");
+      collector->compact(false);
+    }
+    goto next_request;
+
+    case svc_collect:
+    {
+      // requires fthreads to be immobile
+      if(debug_driver)fprintf(stderr,"svc collect\n");
+      collector->collect();
+    }
+    goto next_request;
+
+    case svc_collect_and_compact:
+    {
+      // requires fthreads to be immobile
+      if(debug_driver)fprintf(stderr,"svc collect and compact\n");
+      collector->collect();
+      collector->compact(true);
+    }
+    goto next_request;
+
+    default:  goto delegate;
+  } 
+  fprintf(stderr,"BUG unreachable code executed\n");
+  abort();
+}
+
 int run_felix(
   bool debug_driver, 
   bool debug_allocations, 
   bool debug_collections, 
   unsigned long compact, 
   bool finalise,
-  int gc_freq,
+  unsigned long gc_freq,
   char *filename, 
   int flx_argc, 
   char **flx_argv
@@ -1867,7 +2070,7 @@ int run_felix(
       fprintf(stderr,"thread frame at %p\n",instance.thread_frame);
       fprintf(stderr,"initial continuation at %p\n",instance.start_proc);
     } 
-    int gc_counter = 0;
+    unsigned long gc_counter = 0;
     unsigned long collections = 0;
 
     if(compact)
@@ -1886,7 +2089,7 @@ int run_felix(
 #endif
 
     unsigned long async_count = 0;
-    proto_async* async = NULL;     // no async
+    proto_async* async = new proto_async;
 
     {
       con_t *top = instance.start_proc;
@@ -1894,190 +2097,59 @@ int run_felix(
       collector.add_root(ft);
       active.push_front(ft);
     }
-
- process_active:
-    while(active.size() > 0)
-    {
-      fthread_t *ft = active.front();
-      active.pop_front();
-      _uctor_ *request = ft->run();
-      while(request)
-      {
-        gc_counter++;
-        if(gc_counter == gc_freq)
-        {
-          gc_counter = 0;
-          ++collections;
-          unsigned long n = collector.collect();
-          if(compact) collector.compact(true);
-          if(debug_collections)fprintf(stderr,"collected %ld objects\n",n);
-        }
-        
-        switch(request->variant)
-        {
-          case svc_yield: 
-          {
-            if(debug_driver)fprintf(stderr,"yield");
-            active.push_back(ft);
-            goto process_active;
-          }
-
-          case svc_map_driver_requests:
-            map_driver_requests(
-              flx_run_services, 
-              *(driver_request_entry_t**)request->data
-            );
-          break;
-
-          case svc_spawn_detached:
-          {
-            fthread_t *ftx = *(fthread_t**)request->data;
-            if(debug_driver)fprintf(stderr,"Spawn thread %p\n",ftx);
-            collector.add_root(ftx);
-            active.push_front(ftx);
-          }
-          break;
-
-          case svc_general:
-          {
-            if( !async ) async = new proto_async;
-            flx_driver_request_base* req = (flx_driver_request_base*)
-              ((_ref_*)(request->data))->get_data()
-            ;
-
-            // RF hates the flag this function returns .. might
-            // mask a race condition, get rid of it
-            ++async_count;
-            if(!req->start_async_op(async->demux, &async->driver, ft))
-              // FTHREAD REMAINS A ROOT
-              goto process_active
-            ;
-            --async_count;
-          }
-          break;
-
-          case svc_sread:
-          {
-            readreq_t * pr = (readreq_t*)request->data;
-            schannel_t *chan = pr->chan;
-            if(debug_driver)fprintf(stderr,"Request to read on channel %p\n",chan);
-          svc_read_next:
-            {
-              fthread_t *writer= chan->pop_writer();
-              if(writer == 0) goto svc_read_none;       // no writers
-              if(writer->cc == 0) goto svc_read_next;   // killed
-              {
-                readreq_t * pr = (readreq_t*)request->data;
-                readreq_t * pw = (readreq_t*)writer->get_svc()->data;
-                if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable.get_data(),*(void**)pw->variable.get_data(), pr->variable.get_data());
-                *(void**)pr->variable.get_data() = *(void**)pw->variable.get_data();
-                active.push_front(writer);
-                collector.add_root(writer);
-              }
-            }
-            break; // keep running
-
-          svc_read_none:
-            if(debug_driver)fprintf(stderr,"No writers on channel %p: BLOCKING\n",chan);
-            chan->push_reader(ft);
-            goto forget_fthread;
-          }
-
-          case svc_swrite:
-          {
-            readreq_t * pr = (readreq_t*)request->data;
-            schannel_t *chan = pr->chan;
-            if(debug_driver)fprintf(stderr,"Request to write on channel %p\n",chan);
-          svc_write_next:
-            {
-              fthread_t *reader= chan->pop_reader();
-              if(reader == 0) goto svc_write_none;     // no readers
-              if(reader->cc == 0) goto svc_write_next; // killed
-              {
-                readreq_t * pw = (readreq_t*)request->data;
-                readreq_t * pr = (readreq_t*)reader->get_svc()->data;
-                if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable.get_data(),*(void**)pw->variable.get_data(), pr->variable.get_data());
-                *(void**)pr->variable.get_data() = *(void**)pw->variable.get_data();
-                active.push_front(reader);
-                collector.add_root(reader);
-              }
-            }
-            break; // keep running
-
-          svc_write_none:
-            if(debug_driver)fprintf(stderr,"No readers on channel %p: BLOCKING\n",chan);
-            chan->push_writer(ft);
-            goto forget_fthread;
-          }
-          
-          case svc_kill:
-          {
-            fthread_t *ftx = *(fthread_t**)request->data;
-            if(debug_driver)fprintf(stderr,"Request to kill fthread %p\n",ftx);
-            ftx -> kill();
-          }
-          break; // keep running (even if we suicided)
-
-          case svc_driver_request:
-          {
-            _uctor_ dreq = *(_uctor_*)request->data;
-            if(debug_driver)fprintf(stderr,"Request code %d \n",dreq.variant);
-            switch (dreq.variant)
-            {
-              case dreq_get_driver_name:
-              {
-                *(char **)dreq.data = "flx_run";
-              }
-              break;
-
-              case dreq_exit:
-                goto cleanup;
-
-              default:
-                fprintf(stderr,"Unknown driver reqest code %d, terminating\n",dreq.variant);
-                goto cleanup;
-            }
-          }
-          break;
-
-          case svc_compact:
-          {
-            // requires fthreads to be immobile
-            if(debug_driver)fprintf(stderr,"svc compact\n");
-            collector.compact(false);
-          }
-          break;
-
-          case svc_collect:
-          {
-            // requires fthreads to be immobile
-            if(debug_driver)fprintf(stderr,"svc collect\n");
-            collector.collect();
-          }
-          break;
-
-          case svc_collect_and_compact:
-          {
-            // requires fthreads to be immobile
-            if(debug_driver)fprintf(stderr,"svc collect and compact\n");
-            collector.collect();
-            collector.compact(true);
-          }
-          break;
-
-
-          default: 
-            fprintf(stderr,"Unknown service request code %d, terminating!\n",request->variant);
-            goto cleanup;
-        } 
-        request = ft->run();
-      }
-forget_fthread:
-      if(debug_driver)fprintf(stderr,"unrooting fthread %p\n",ft);
-      collector.remove_root(ft);
-    }
-
     
+    fthread_t *ft = NULL;
+    _uctor_ *request = NULL;
+    fpc pc = next_fthread_pos;
+
+process_active:
+    fstate fs = frun(
+      debug_driver, 
+      debug_allocations, 
+      debug_collections, 
+      compact, 
+      gc_freq,
+      gc_counter,
+      collections,
+      &active,
+      &collector,
+      &ft,
+      &request,
+      &pc
+    );
+    if (fs == terminated) goto cleanup;
+    if (fs == blocked) goto do_async;
+    if (fs == delegated) 
+    switch (request->variant)
+    {
+      case svc_general:
+      {
+        flx_driver_request_base* dreq = (flx_driver_request_base*)
+          ((_ref_*)(request->data))->get_data()
+        ;
+
+        // RF hates the flag this function returns .. might
+        // mask a race condition, get rid of it
+        ++async_count;
+        if(!dreq->start_async_op(async->demux, &async->driver, ft))
+        {
+          pc = next_fthread_pos;
+        } 
+        else {
+          --async_count;
+          pc = next_request_pos;
+        }
+      }
+      goto process_active;
+
+      default:
+        fprintf(stderr,"Unknown service request code 0x%4x\n",request->variant);
+        abort();
+    }
+    fprintf(stderr,"Unknown frun return status 0x%4x\n",fs);
+    abort();
+
+do_async:
     // ran out of active threads - are there any in the async queue?
     if(debug_driver){
       fprintf(stderr, "out of active synchronous threads, trying async\n");
@@ -2269,10 +2341,10 @@ int main(int argc, char** argv)
   compact = compact * 1024;
 
   char *gc_freq_env= std::getenv("FLX_GC_FREQ");
-  int gc_freq = gc_freq_env?atoi(gc_freq_env):1000;
+  unsigned long gc_freq = gc_freq_env?atol(gc_freq_env):1000;
   if (gc_freq < 1) gc_freq = 1;
   if(debug)
-    fprintf(stderr,"[FLX_GC_FREQ] call gc every %d iterations\n",gc_freq);
+    fprintf(stderr,"[FLX_GC_FREQ] call gc every %lu iterations\n",gc_freq);
 
 #ifdef HAVE_GXX
     if(debug)fprintf(stderr, "Compiled by g++\n");
