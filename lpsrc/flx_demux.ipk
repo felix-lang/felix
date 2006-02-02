@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.32  2006/02/02 20:02:12  skaller
+Get windows version of new demux factoring to work.
+
 Revision 1.31  2006/02/02 18:52:35  skaller
 Reorganise demux a bit
 
@@ -269,6 +272,7 @@ pmut::unlock()
 #ifndef __WIN_THREAD__
 #define __WIN_THREAD__
 
+#include <flx_rtl_config.hpp>
 #include <windows.h>
 
 namespace flx { namespace demux {
@@ -293,6 +297,7 @@ public:
 @h=tangler('demux/demux_win_thread.cpp')
 @select(h)
 #include "demux_win_thread.hpp"
+#include <stdio.h>
 
 namespace flx { namespace demux {
 
@@ -387,6 +392,9 @@ public:
 @h=tangler('demux/demux_win_mutex.cpp')
 @select(h)
 #include "demux_win_mutex.hpp"
+#include <stdio.h>
+
+namespace flx { namespace demux {
 
 win_locker::win_locker(HANDLE mutex)
   : m(mutex)
@@ -406,6 +414,7 @@ win_locker::~win_locker()
     fprintf(stderr,"Error releasing mutex: %li\n", GetLastError());
 }
 
+}}
 
 @head(1,"Thread safe Queue")
 @h=tangler('demux/demux_sleep_queue.hpp')
@@ -549,6 +558,8 @@ posix_queue::dequeue()
 #ifndef __WIN_QUEUE__
 #define __WIN_QUEUE__
 #include <flx_rtl_config.hpp>
+#include <windows.h>
+#include "demux_sleep_queue.hpp"
 
 namespace flx { namespace demux {
 
@@ -571,11 +582,15 @@ public:
 @h=tangler('demux/demux_win_queue.cpp')
 @select(h)
 #include "demux_win_queue.hpp"
+#include "demux_win_mutex.hpp"
+
 #include <queue>          // stl to the bloated rescue
 
-typedef queue<void*> void_queue;
+typedef std::queue<void*> void_queue;
 
 #define ELTQ ((void_queue*)lame_opaque)
+
+namespace flx { namespace demux {
 
 win_queue::win_queue() 
   : member_lock(0), nz_elts_cond(0), lame_opaque(0)
@@ -682,6 +697,7 @@ win_queue::dequeue()
   return elt;           // should never return NULL
 }
 
+}}
 
 @h=tangler('demux/demux_demuxer.hpp')
 @select(h)
@@ -1131,6 +1147,7 @@ int set_tcp_nodelay(int s, int disable_nagle);
 #ifdef _WIN32     // quick hack
 #include "demux_win_thread.hpp"
 #include "demux_win_mutex.hpp"
+#include "demux_win_queue.hpp"
 #include "demux_iocp_demuxer.hpp"
 #else           // else posix
 #include "demux_posix_thread.hpp"
@@ -1734,8 +1751,6 @@ evtport_demuxer::get_evts(bool poll)
 #include <stdio.h>      // for printf debugging
 #include <stddef.h>     // offsetof
 #include <assert.h>
-// shoving the win_queue in here for now
-using namespace std;
 
 namespace flx { namespace demux {
 
