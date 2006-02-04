@@ -1375,39 +1375,50 @@ let gen_exe filename syms
 
     | `BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
 
-    | `BEXE_assign (sr,e1,e2) ->
+    | `BEXE_assign (sr,e1,(( _,t) as e2)) ->
+      let t = lstrip syms.dfns (tsub t) in
+      begin match t with
+      | `BTYP_tuple [] -> ""
+      | _ ->
       (if with_comments then "      //"^src_str^"\n" else "") ^
       "      "^ ge sr e1 ^ " = " ^ ge sr e2 ^
       ";\n"
-      
-    | `BEXE_init (sr,v,e) -> 
-      let id,_,_,entry = 
-        try Hashtbl.find bbdfns v with 
-        Not_found -> failwith ("[gen_expr(init) can't find index " ^ si v)
-      in
-      begin match entry with
-        | `BBDCL_tmp _ ->
-        (if with_comments then "      //"^src_str^"\n" else "") ^
-        "      "^
-        get_variable_typename syms bbdfns v [] ^
-        " " ^
-        get_var_ref syms bbdfns this v ts^ 
-        " = " ^ 
-        ge sr e ^
-        ";\n"
-        | `BBDCL_val _
-        | `BBDCL_var _ ->
-        (*
-        print_endline ("INIT of " ^ si v ^ " inside " ^ si this);
-        *)
-        (if with_comments then "      //"^src_str^"\n" else "") ^
-        "      "^
-        get_var_ref syms bbdfns this v ts^ 
-        " = " ^ 
-        ge sr e ^
-        ";\n"
-        | _ -> assert false
       end
+      
+    | `BEXE_init (sr,v,((_,t) as e)) -> 
+      let t = lstrip syms.dfns (tsub t) in
+      begin match t with
+      | `BTYP_tuple [] -> ""
+      | _ ->
+        let id,_,_,entry = 
+          try Hashtbl.find bbdfns v with 
+          Not_found -> failwith ("[gen_expr(init) can't find index " ^ si v)
+        in
+        begin match entry with
+          | `BBDCL_tmp _ ->
+          (if with_comments then "      //"^src_str^"\n" else "") ^
+          "      "^
+          get_variable_typename syms bbdfns v [] ^
+          " " ^
+          get_var_ref syms bbdfns this v ts^ 
+          " = " ^ 
+          ge sr e ^
+          ";\n"
+          | `BBDCL_val _
+          | `BBDCL_var _ ->
+          (*
+          print_endline ("INIT of " ^ si v ^ " inside " ^ si this);
+          *)
+          (if with_comments then "      //"^src_str^"\n" else "") ^
+          "      "^
+          get_var_ref syms bbdfns this v ts^ 
+          " = " ^ 
+          ge sr e ^
+          ";\n"
+          | _ -> assert false
+        end
+      end
+
     | `BEXE_begin -> "      {\n"
     | `BEXE_end -> "      }\n"
 

@@ -595,8 +595,13 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     let ts = map tsub ts' in
     let t = lower t in
     let ref_type = tn (lower t) in
-    let var_ptr = "&" ^ get_var_ref syms bbdfns this index ts  in
-    let frame_ptr = get_var_frame syms bbdfns this index ts in
+    let frame_ptr, var_ptr =
+      match t with
+      | `BTYP_tuple [] -> "NULL","NULL"
+      | _ ->
+       get_var_frame syms bbdfns this index ts,
+      "&" ^ get_var_ref syms bbdfns this index ts
+    in
     let reference = ref_type ^ 
       "(" ^ frame_ptr ^ ", " ^ var_ptr ^ ")" 
     in
@@ -708,14 +713,26 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         ce_atom (name ^ "(" ^ ge a ^ ")")
 
     | `BBDCL_nonconst_ctor (vs,uidx,udt,cidx,ct) ->
+      (* due to some hackery .. the argument of a non-const
+         ctor can STILL be a unit .. prolly cause the stupid
+         compiler is checking for voids for these pests,
+         but units for sums .. hmm .. inconsistent!
+      *)
       let ts = map tsub ts in
       let ct = reduce_type (beta_reduce syms [] (tsubst vs ts ct)) in
-      let ctt = tn ct in
       let ptrmap = shape_of bbdfns tn ct in 
-      ce_atom (
-        "(_uctor_(" ^ si cidx ^ ", new(*PTF gc,"^ ptrmap^")"^
-        ctt ^"("^ ge a ^")))"
-      )
+      let _,t = a in
+      let t = reduce_type (beta_reduce syms [] (tsubst vs ts t)) in
+      begin match t with
+      | `BTYP_tuple [] ->
+        ce_atom ( "_uctor_(" ^ si cidx ^ ", NULL)")
+      | _ ->
+        let ctt = tn ct in
+        ce_atom (
+          "_uctor_(" ^ si cidx ^ ", new(*PTF gc,"^ ptrmap^")"^
+          ctt ^"("^ ge a ^"))"
+        )
+      end
     | _ -> assert false
     end
 
