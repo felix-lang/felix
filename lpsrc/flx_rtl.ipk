@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.99  2006/02/04 11:34:36  skaller
+Portable demux stuff, Win32 version
+
 Revision 1.98  2006/02/04 10:35:55  skaller
 Portable thread sync stuff
 
@@ -171,6 +174,11 @@ T &reinterpret(U const &x) {
 @select(h)
 #ifndef FLX_RTL_CONFIG
 #define FLX_RTL_CONFIG
+
+#ifdef _WIN32
+#define _WIN32_WINNT 0x500
+#endif
+
 #ifndef FLX_RTL_GNU
 @if HAVE_ISNAN_IN_IEEEFP:
   tangle('#define HAVE_ISNAN_IN_IEEEFP')
