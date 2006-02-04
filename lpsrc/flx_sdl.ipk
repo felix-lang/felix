@@ -1,5 +1,10 @@
 @head(1,'SDL')
 $Log$
+Revision 1.19  2006/02/04 11:55:42  skaller
+sdl100 increase sound buffer from 512 to 2048, hope Windows
+sound quality improves. Add Escape for sdl100 so we can
+exit it without going thru all 16 frames.
+
 Revision 1.18  2006/01/31 07:54:31  skaller
 Fix sdl206, make sleep_request FLX_RTL_EXTERN
 
@@ -2544,6 +2549,8 @@ include "SDL/SDL";
 include "SDL/SDL_video";
 include "SDL/SDL_rwops";
 //include "SDL/SDL_image";
+include "SDL/SDL_keyboard";
+include "SDL/SDL_keysym";
 include "SDL/SDL_events";
 include "SDL/SDL_mutex";
 include "SDL/SDL_audio";
@@ -2558,6 +2565,8 @@ open SDL_rwops_h;
 open SDL_events_h;
 open SDL_audio_h;
 open SDL_mutex_h;
+open SDL_keyboard_h;
+open SDL_keysym_h;
 
 open C_hack;
 open Carray;
@@ -2665,7 +2674,7 @@ fmt.freq=22050;
 fmt.format=AUDIO_S16;
 fmt.channels=2u8;
 fmt.silence=0u8;
-fmt.samples=512u16;
+fmt.samples=2048u16;
 fmt.padding=0u16;
 fmt.size=0u16;
 
@@ -2766,6 +2775,18 @@ proc waitt(t:double) (f:schannel[uint8]) {
   write (f,SDL_USEREVENT); // hack for timer event
 }
 
+/* function to handle key press events */
+proc handle_key( keysym : SDL_keysym)
+{
+  match keysym.sym with
+  | ?k when k == SDLK_ESCAPE => { Quit 0; }
+  | ?k when k ==  SDLK_F1 =>
+	    { ignore$ SDL_WM_ToggleFullScreen(screen); }
+  | _ => {}
+  endmatch;
+}
+
+
 var event_lock = SDL_CreateMutex ();
 
 proc waitk(f:schannel[uint8]) {
@@ -2779,6 +2800,7 @@ proc waitk(f:schannel[uint8]) {
     &e <- get_sdl_event event_lock;
     et = event_type e;
   done;
+  if et == SDL_KEYDOWN call handle_key e.key.keysym;
   write (f,et);
 }
 
@@ -2810,9 +2832,14 @@ print "Press any key"; endl;
   var &i : uint8 <- read x;
 };
 
-SDL_CloseAudio;
-SDL_Quit;
-System::exit 0;
+Quit 0;
+
+proc Quit(x:int)
+{
+  SDL_CloseAudio;
+  SDL_Quit;
+  System::exit x;
+}
 
 @h = tangler("tut/examples/sdl202.flx")
 @select(h)
