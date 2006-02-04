@@ -1,7 +1,7 @@
 @head(1,'demux')
 $Log$
-Revision 1.32  2006/02/02 20:02:12  skaller
-Get windows version of new demux factoring to work.
+Revision 1.33  2006/02/04 10:35:55  skaller
+Portable thread sync stuff
 
 Revision 1.31  2006/02/02 18:52:35  skaller
 Reorganise demux a bit
@@ -48,7 +48,13 @@ Integrate SDL tests, provide initial SDL event demux.
 
 @execfile('config'+os.sep+'config.py')
 
-@head(1,"Pthread")
+@head(1,"Pre-emptive threads (pthread)")
+Note WE say pthread means 'pre-emptive thread' not
+merely Posix thread. Confusing on Solaris especially.
+However it fits with name fthread for felix threads
+which are actually s- (synchronous) or np- (non-preemptive) 
+threads.
+
 @head(2,'Posix Thread')
 @h=tangler('demux/demux_posix_thread.hpp')
 @select(h)
@@ -67,18 +73,18 @@ Integrate SDL tests, provide initial SDL event demux.
 
 namespace flx { namespace demux {
 
-class FLX_RTL_EXTERN apthread {
-  pthread_t   thr;        // the thread
+// ********************************************************
+/// Posix Threads.
+// ********************************************************
+
+class FLX_RTL_EXTERN flx_thread_t {
+  pthread_t   thr;        ///< the thread
   bool      inited;       // do I need this or is pthread_t a pointer?
 public:
-  apthread() : inited(false) {}
-  ~apthread();
-
-  pthread_t get() { return thr; }
-  
+  flx_thread_t() : inited(false) {}
+  ~flx_thread_t();
   int init(void* (*start)(void*), void* udat);
-  void deinit();  
-  // int cancel();            // phase this out
+  void join();  
 };
 }}
 #endif
@@ -92,9 +98,9 @@ public:
 
 namespace flx { namespace demux {
 int 
-apthread::init(void* (*start)(void*), void* udat)
+flx_thread_t::init(void* (*start)(void*), void* udat)
 {
-  // fprintf(stderr,"apthread::init(this=%p, fn=%p, udat=%p)\n",
+  // fprintf(stderr,"flx_thread_t::init(this=%p, fn=%p, udat=%p)\n",
   //  this, start, udat);
 
   // default attrs. hope they're good
@@ -104,166 +110,24 @@ apthread::init(void* (*start)(void*), void* udat)
 }
 
 void
-apthread::deinit()
+flx_thread_t::join()
 {
-  fprintf(stderr,"apthread::deinit(this=%p, inited=%i)\n", this, inited);
+  //fprintf(stderr,"flx_thread_t::join(this=%p, inited=%i)\n", this, inited);
 
   if(!inited) return;
-// What if I cancel while someone (select thread) holds the mutex.
-// I think I need to push cleanup stuff... wait, cancel won't happen
-// in the mutex. If others start using this pre-emptively then it could
-// happen. We've got another problem then, as the object is being
-// destructed. Should I go for the lock? What to do? HELP!
-// do experiment...
-  // cancel thread, then "join" to wait for it to exit. if we summarily
-  // killed the thread, we could kill it during something important,
-  // like  a mutex or select op, screwing up global state.
-  // we shouldn't have to wait long
-  // ignoring errors, thread not found seems to be the worst
-
-  int   res;
-
-  //res = cancel();             // send cancel msg
-  //fprintf(stderr,"cancel res: %i, joining...\n", res);
-
-
-  res = pthread_join(thr, NULL);      // wait for cancel pt, ignor res
-  fprintf(stderr,"join res: %i\n", res);
-
-  // is that all you have to do to free up a pthread?
+  int res = pthread_join(thr, NULL);      // wait for cancel pt, ignor res
+  //fprintf(stderr,"join res: %i\n", res);
 
   inited = false;
 }
 
-// not using this - cancellation is bad. I now prefer to convince the thread
-// to exit through nonviolent methods. I'd like to use pthread_setcancelstate
-// + PTHREAD_CANCEL_DISABLE but that needs to be done from each thread which
-// would require them an annoying thunk. Not using pthread_cancel should
-// be enough.
-#if 0
-// set thread cancel flag
-int
-apthread::cancel()
+//JS: BAD idea I think .. the thread can run on even
+// when the controlling object is dead, and vice versa
+// but leave it in until review
+flx_thread_t::~flx_thread_t()
 {
-  return pthread_cancel(thr);       // send cancel msg
+  join();
 }
-#endif
-
-apthread::~apthread()
-{
-  deinit();
-}
-}}
-
-@head(1,"Mutex")
-@head(2,'Posix Mutex')
-@h=tangler('demux/demux_posix_mutex.hpp')
-@select(h)
-#ifndef __POSIX_MUTEX__
-#define __POSIX_MUTEX__
-#include <flx_rtl_config.hpp>
-
-// simple mutex. call lock, unlock
-// not sure that I'm locking properly. may need cancel handlers.
-
-#include <pthread.h>
-namespace flx { namespace demux {
-
-class FLX_RTL_EXTERN pmut {
-public:
-  pthread_mutex_t m;        // be nice, don't touch
-
-  pmut(bool recursive);
-  ~pmut();
-  void lock();
-  void unlock();
-};
-
-// simple locker
-class FLX_RTL_EXTERN pmut_locker {
-  pmut& p;
-public:
-  pmut_locker(pmut& pm) : p(pm) { p.lock(); }
-  ~pmut_locker() { p.unlock(); }
-};
-
-}} // namespace demux, flx
-#endif
-
-@h=tangler('demux/demux_posix_mutex.cpp')
-@select(h)
-#include "demux_posix_mutex.hpp"
-#include <stdio.h>        // printf debugging
-#include <assert.h>
-
-namespace flx { namespace demux {
-class auto_attr
-{
-  pthread_mutexattr_t* a;
-public:
-
-  auto_attr(pthread_mutexattr_t* attr) : a(attr) {}
-  ~auto_attr()
-  {
-    int res = pthread_mutexattr_destroy(a);
-    if(0 != res)
-      fprintf(stderr,"pthread_mutexattr_destroy failed: %i\n", res);
-  }
-};
-
-pmut::pmut(bool recursive)
-{
-  pthread_mutexattr_t attr;
-  int res;
-
-  res = pthread_mutexattr_init(&attr);  // default attrs
-
-  if(0 != res) throw res;
-
-  auto_attr aa(&attr);          // cleans up always
-
-#ifdef PTHREAD_MUTEX_RECURSIVE        // defined in unistd.h
-  if(recursive)
-  {
-    res = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    if(0 != res)
-    {
-      fprintf(stderr,"phtread_mutexattr_settype failed: %i\n", res);
-      throw res;
-    }
-  }
-#else
-  assert( !recursive );         // gusi non ce l'ha.
-#endif
-
-  res = pthread_mutex_init(&m, &attr);
-  if(res != 0) throw res;
-}
-
-pmut::~pmut()
-{
-  int res;
-  // fprintf(stderr,"MUTEX DESTROY!!!\n");
-  // fflush(stdout);
-  res = pthread_mutex_destroy(&m);
-  if(0 != res) fprintf(stderr,"mutex_destroy failed: %i\n", res);
-}
-
-void
-pmut::lock()
-{
-  int res = pthread_mutex_lock(&m);
-if(res != 0) fprintf(stderr,"lockres: %i\n", res);
-  if(res != 0) throw res;
-}
-
-void
-pmut::unlock()
-{
-  int res = pthread_mutex_unlock(&m);
-  if(res != 0) throw res; 
-}
-
 }}
 
 @head(2,'Windows Thread')
@@ -272,22 +136,25 @@ pmut::unlock()
 #ifndef __WIN_THREAD__
 #define __WIN_THREAD__
 
-#include <flx_rtl_config.hpp>
 #include <windows.h>
 
 namespace flx { namespace demux {
 
-class FLX_RTL_EXTERN win_thread {
+// ********************************************************
+/// Windows Threads.
+// ********************************************************
+
+class FLX_RTL_EXTERN flx_thread_t {
   HANDLE    thread;
 
 public:
-  win_thread();
-  ~win_thread();
+  flx_thread_t();
+  ~flx_thread_t();
 
   // some msdn code examples imply that it's risky to use the CRT
   // (C runtime) in a thread. would conio be better?
   int init(LPTHREAD_START_ROUTINE, LPVOID lParam);
-  void deinit();
+  void join();
 };
 
 }}
@@ -297,20 +164,19 @@ public:
 @h=tangler('demux/demux_win_thread.cpp')
 @select(h)
 #include "demux_win_thread.hpp"
-#include <stdio.h>
 
 namespace flx { namespace demux {
 
-win_thread::win_thread()
+flx_thread_t::flx_thread_t()
   : thread(NULL)
 {
 }
 
 // this should be idempotent
 void
-win_thread::deinit()
+flx_thread_t::join()
 {
-  fprintf(stderr,"win_thread::deinit: how do I get my return status?\n");
+  fprintf(stderr,"win_thread::join: how do I get my return status?\n");
   fprintf(stderr,"also, how do I implement a cancel request?\n");
 
   if(thread)
@@ -339,15 +205,16 @@ win_thread::deinit()
   } 
 }
 
-win_thread::~win_thread()
+// destructors shouldn't do this kind of thing!
+flx_thread_t::~flx_thread_t()
 {
   fprintf(stderr,"win_thread dtor (killing thread!)\n");
-  deinit();
+  join();
 }
 
 // returns -1 on failure with error in GetLastError, 0 if all good.
 int
-win_thread::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
+flx_thread_t::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
 {
   DWORD thread_id = 0;
 
@@ -364,109 +231,355 @@ win_thread::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
 
 }}
 
-@head(2,'Windows Mutex')
-@h=tangler('demux/demux_win_mutex.hpp')
+@head(2,'Portable Thread')
+@h=tangler('demux/demux_thread.hpp')
 @select(h)
-#ifndef __WIN_MUTEX__
-#define __WIN_MUTEX__
-#include <flx_rtl_config.hpp>
-#include <windows.h>
+#ifndef __FLX_THREAD__
+#define __FLX_THREAD__
 
-// simple mutex. call lock, unlock
-// not sure that I'm locking properly. may need cancel handlers.
-
-namespace flx { namespace demux {
-
-// synchronisation stuff
-class FLX_RTL_EXTERN win_locker {
-  HANDLE  m;
-public:
-  win_locker(HANDLE mutex);
-  ~win_locker();
-};
-
-}}
+#ifdef _WIN32
+#include "demux_win_thread.hpp"
+#else
+#include "demux_posix_thread.hpp"
+#endif
 
 #endif
 
-@h=tangler('demux/demux_win_mutex.cpp')
+@head(1,"Mutex")
+@head(2,'Windows Emulation of Posix Mutex and Condition Variable')
+@h=tangler('demux/demux_win_posix_condv_emul.hpp')
 @select(h)
-#include "demux_win_mutex.hpp"
-#include <stdio.h>
+#ifndef __WIN_POSIX_CONDV_EMUL__
+#define __WIN_POSIX_CONDV_EMUL__
+// Note: no namespaces here!
+// See http://www.cs.wustl.edu/~schmidt/win32-cv-1.html
+
+#include <windows.h>
+
+typedef pthread_mutex_t HANDLE;
+typedef pthread_mutexattr_t void; // do NOT use them!
+typedef pthread_cond_attr_t void; // do NOT use them!
+
+struct pthread_cond_t
+{
+  int waiters_count_;
+  // Number of waiting threads.
+
+  CRITICAL_SECTION waiters_count_lock_;
+  // Serialize access to <waiters_count_>.
+
+  HANDLE sema_;
+  // Semaphore used to queue up threads waiting for the condition to
+  // become signaled. 
+
+  HANDLE waiters_done_;
+  // An auto-reset event used by the broadcast/signal thread to wait
+  // for all the waiting thread(s) to wake up and be released from the
+  // semaphore. 
+
+  size_t was_broadcast_;
+  // Keeps track of whether we were broadcasting or signaling.  This
+  // allows us to optimize the code if we're just signaling.
+};
+
+int pthread_mutex_init (pthread_mutex_t*, const pthread_mutexattr_t*);
+int pthread_mutex_lock(pthread_mutex_t*);
+int pthread_mutex_unlock(pthread_mutex_t*);
+int pthread_mutex_destroy(pthread_mutex_t*);
+
+int pthread_cond_init (pthread_cond_t*, const pthread_condattr_t*);
+int pthread_cond_destroy(pthread_cond_t*);
+int pthread_cond_wait (pthread_cond_t*, pthread_mutex_t*)
+int pthread_cond_signal (pthread_cond_t*); 
+int pthread_cond_broadcast (pthread_cond_t*);
+
+#endif
+
+@h=tangler('demux/demux_win_posix_condv_emul.cpp')
+@select(h)
+#include "demux_win_posix_condv_emul.hpp"
+
+int pthread_mutex_init (pthread_mutex_t *m, const pthread_mutexattr_t*)
+{
+  *m = CreateMutex(NULL,FALSE,NULL); 
+}
+
+int pthread_mutex_lock(pthread_mutex_t *m)
+{
+  WaitForSingleObject(*m,INFINITE); 
+}
+
+int pthread_mutex_unlock(pthread_mutex_t *m)
+{
+  ReleaseMutex(*m);
+}
+
+int pthread_mutex_destroy(pthread_mutex_t *m)
+{
+  CloseHandle(*m);
+}
+
+int 
+pthread_cond_init 
+(
+  pthread_cond_t *cv,
+  const pthread_condattr_t *
+)
+{
+  cv->waiters_count_ = 0;
+  cv->was_broadcast_ = 0;
+  cv->sema_ = CreatedSemaphore 
+  (
+    NULL,       // no security
+    0,          // initially 0
+    0x7fffffff, // max count .. (I hate limits .. but thats a lot of pthreads)
+    NULL        // unnamed
+  ); 
+  InitializeCriticalSection (&cv->waiters_count_lock_);
+  cv->waiters_done_ = CreateEvent 
+  (
+    NULL,  // no security
+    FALSE, // auto-reset
+    FALSE, // non-signaled initially
+    NULL   // unnamed
+  );
+}
+
+int 
+pthread_cond_destroy(pthread_cond_t *cv)
+{
+  CloseHandle(sema_);
+  CloseHandle(waiters_done_);
+}
+
+int
+pthread_cond_wait 
+(
+  pthread_cond_t *cv, 
+  pthread_mutex_t *external_mutex
+)
+{
+  // Avoid race conditions.
+  EnterCriticalSection (&cv->waiters_count_lock_);
+  cv->waiters_count_++;
+  LeaveCriticalSection (&cv->waiters_count_lock_);
+
+  // This call atomically releases the mutex and waits on the
+  // semaphore until <pthread_cond_signal> or <pthread_cond_broadcast>
+  // are called by another thread.
+  SignalObjectAndWait (*external_mutex, cv->sema_, INFINITE, FALSE);
+
+  // Reacquire lock to avoid race conditions.
+  EnterCriticalSection (&cv->waiters_count_lock_);
+
+  // We're no longer waiting...
+  cv->waiters_count_--;
+
+  // Check to see if we're the last waiter after <pthread_cond_broadcast>.
+  int last_waiter = cv->was_broadcast_ && cv->waiters_count_ == 0;
+
+  LeaveCriticalSection (&cv->waiters_count_lock_);
+
+  // If we're the last waiter thread during this particular broadcast
+  // then let all the other threads proceed.
+  if (last_waiter)
+    // This call atomically signals the <waiters_done_> event and waits until
+    // it can acquire the <external_mutex>.  This is required to ensure fairness. 
+    SignalObjectAndWait (cv->waiters_done_, *external_mutex, INFINITE, FALSE);
+  else
+    // Always regain the external mutex since that's the guarantee we
+    // give to our callers. 
+    WaitForSingleObject (*external_mutex);
+}
+
+int
+pthread_cond_signal (pthread_cond_t *cv)
+{
+  EnterCriticalSection (&cv->waiters_count_lock_);
+  int have_waiters = cv->waiters_count_ > 0;
+  LeaveCriticalSection (&cv->waiters_count_lock_);
+
+  // If there aren't any waiters, then this is a no-op.  
+  if (have_waiters)
+    ReleaseSemaphore (cv->sema_, 1, 0);
+}
+
+int
+pthread_cond_broadcast (pthread_cond_t *cv)
+{
+  // This is needed to ensure that <waiters_count_> and <was_broadcast_> are
+  // consistent relative to each other.
+  EnterCriticalSection (&cv->waiters_count_lock_);
+  int have_waiters = 0;
+
+  if (cv->waiters_count_ > 0) {
+    // We are broadcasting, even if there is just one waiter...
+    // Record that we are broadcasting, which helps optimize
+    // <pthread_cond_wait> for the non-broadcast case.
+    cv->was_broadcast_ = 1;
+    have_waiters = 1;
+  }
+
+  if (have_waiters) {
+    // Wake up all the waiters atomically.
+    ReleaseSemaphore (cv->sema_, cv->waiters_count_, 0);
+
+    LeaveCriticalSection (&cv->waiters_count_lock_);
+
+    // Wait for all the awakened threads to acquire the counting
+    // semaphore. 
+    WaitForSingleObject (cv->waiters_done_, INFINITE);
+    // This assignment is okay, even without the <waiters_count_lock_> held 
+    // because no other waiter threads can wake up to access it.
+    cv->was_broadcast_ = 0;
+  }
+  else
+    LeaveCriticalSection (&cv->waiters_count_lock_);
+}
+
+@head(2,'Portable Mutex')
+@h=tangler('demux/demux_mutex.hpp')
+@select(h)
+#ifndef __FLX_MUTEX__
+#define __FLX_MUTEX__
+#include <flx_rtl_config.hpp>
+
+#ifdef _WIN32
+#include "demux_win_posix_emul.hpp"
+#else
+#include <pthread.h>
+#endif
 
 namespace flx { namespace demux {
 
-win_locker::win_locker(HANDLE mutex)
-  : m(mutex)
-{
-  DWORD res = WaitForSingleObject(m, INFINITE);
+// ********************************************************
+/// Mutex.
+// ********************************************************
+class FLX_RTL_EXTERN flx_mutex_t {
+public:
+  pthread_mutex_t m;        // be nice, don't touch
+  flx_mutex_t();
+  ~flx_mutex_t();
+  void lock();
+  void unlock();
+};
 
-  if(WAIT_OBJECT_0 != res)
-  {
-    fprintf(stderr,"Wait for mutex didn't do as expected, got: %li\n", res);
-    throw res;
-  }
-}
+class FLX_RTL_EXTERN flx_mutex_locker_t {
+  flx_mutex_t& p;
+public:
+  flx_mutex_locker_t(flx_mutex_t& pm) : p(pm) { p.lock(); }
+  ~flx_mutex_locker_t() { p.unlock(); }
+};
 
-win_locker::~win_locker()
-{
-  if(!ReleaseMutex(m))
-    fprintf(stderr,"Error releasing mutex: %li\n", GetLastError());
-}
+
+}} // namespace demux, flx
+#endif
+
+@h=tangler('demux/demux_mutex.cpp')
+@select(h)
+#include "demux_mutex.hpp"
+#include <stdio.h>        // printf debugging
+#include <assert.h>
+
+namespace flx { namespace demux {
+
+flx_mutex_t::flx_mutex_t() { pthread_mutex_init(&m, NULL); }
+flx_mutex_t::~flx_mutex_t() { pthread_mutex_destroy(&m); }
+void flx_mutex_t::lock() { pthread_mutex_lock(&m); }
+void flx_mutex_t::unlock() { pthread_mutex_unlock(&m);}
+
+}}
+
+@head(1,"Condition Variable")
+@head(2,'Portable Condition Variable')
+@h=tangler('demux/demux_condv.hpp')
+@select(h)
+#ifndef __CONDV__
+#define __CONDV__
+#include <flx_rtl_config.hpp>
+#include "demux_mutex.hpp"
+
+#ifdef _WIN32
+#include "demux_win_posix_condv_emul.hpp"
+#else
+#include <pthread.h>
+#endif
+
+namespace flx { namespace demux {
+
+// ********************************************************
+/// Condition Variable.
+// ********************************************************
+class FLX_RTL_EXTERN flx_condv_t {
+public:
+  pthread_cond_t cv;        // be nice, don't touch
+  flx_condv_t();
+  ~flx_condv_t();
+  void signal();
+  void broadcast();
+  void wait(flx_mutex_t*);
+};
+
+}} // namespace demux, flx
+#endif
+
+@h=tangler('demux/demux_condv.cpp')
+@select(h)
+#include "demux_condv.hpp"
+#include <stdio.h>        // printf debugging
+#include <assert.h>
+
+namespace flx { namespace demux {
+
+flx_condv_t::flx_condv_t() { pthread_cond_init(&cv, NULL); }
+flx_condv_t::~flx_condv_t() { pthread_cond_destroy(&cv); }
+void flx_condv_t::wait(flx_mutex_t *m) { pthread_cond_wait(&cv,&(m->m)); }
+void flx_condv_t::signal() { pthread_cond_signal(&cv);}
+void flx_condv_t::broadcast() { pthread_cond_broadcast(&cv); }
 
 }}
 
 @head(1,"Thread safe Queue")
+Both queue and dequeue operations are critical
+sections protected by a mutex.
+@p()
+When the queue is empty, the dequeue operation waits 
+on a semaphore signaled by the enqueue operation.
+
 @h=tangler('demux/demux_sleep_queue.hpp')
 @select(h)
 #ifndef __SLEEPQUEUE__
 #define __SLEEPQUEUE__
 #include <flx_rtl_config.hpp>
+#include "demux_mutex.hpp"
+#include "demux_condv.hpp"
 
 // interface for a consumer/producer queue. threads requesting a resource
 // that isn't there block until one is available. push/pop re-entrant
 
 namespace flx { namespace demux {
-class FLX_RTL_EXTERN sleep_queue {
-public:
-  virtual ~sleep_queue() {}
 
-  virtual void enqueue(void*) = 0;  // re-entrant
-  virtual void* dequeue() = 0;    // re-entrant, sleeps on empty queue
+// ********************************************************
+/// Thread safe queue
+// ********************************************************
+
+class FLX_RTL_EXTERN sleep_queue {
+  flx_mutex_t member_lock; 
+  flx_condv_t nz_elts_cond; 
+  void *lame_opaque;  
+public:
+  sleep_queue();
+  ~sleep_queue();
+  void enqueue(void*);
+  void* dequeue();
 };
 
 }} // namespace demux, flx
 #endif
 
-@head(2,"Thread safe Posix Queue")
-@h=tangler('demux/demux_posix_queue.hpp')
+@h=tangler('demux/demux_sleep_queue.cpp')
 @select(h)
-#ifndef __POSIX_QUEUE__
-#define __POSIX_QUEUE__
-#include "demux_posix_mutex.hpp"
 #include "demux_sleep_queue.hpp"
-#include <flx_rtl_config.hpp>
-
-namespace flx { namespace demux {
-class FLX_RTL_EXTERN posix_queue  : public sleep_queue {
-  pmut      member_lock;  // protects member data
-  pthread_cond_t  nz_elts_cond; // wakes up threads waiting on resource
-  void*     lame_opaque;  // when will I ever learn?
-public:
-  posix_queue();
-  ~posix_queue();
-
-  virtual void enqueue(void*);    // re-entrant
-  virtual void* dequeue();      // re-entrant, sleeps on empty queue
-};
-
-}} // namespace demux, flx
-#endif  // __POSIX_QUEUE__
-
-@h=tangler('demux/demux_posix_queue.cpp')
-@select(h)
-#include <pthread.h>
-#include "demux_posix_queue.hpp"
 #include <queue>        // stl to the bloated rescue
 #include <string.h>       // strerror
 
@@ -477,227 +590,185 @@ typedef queue<void*> void_queue;
 
 #define ELTQ ((void_queue*)lame_opaque)
 
-posix_queue::posix_queue()
-  : member_lock(false)      // shouldn't need to be recursive
+sleep_queue::sleep_queue()
 {
   lame_opaque = new void_queue;
-  int res = pthread_cond_init(&nz_elts_cond, NULL);
-
-  if(0 != res)
-  {
-    delete ELTQ;
-    throw res;
-  }
 }
 
-posix_queue::~posix_queue()
+// Much care is needed deleting a queue.
+// A safe method is possible .. but not provided here
+sleep_queue::~sleep_queue()
 {
-  int res = pthread_cond_destroy(&nz_elts_cond);
-  if(0 != res)
-    fprintf(stderr,"pthread_cond_destroy failed: %i (%s)\n",
-      res, strerror(res));
   delete ELTQ;
 }
 
 void
-posix_queue::enqueue(void* elt)
+sleep_queue::enqueue(void* elt)
 {
-  // lock so our member data doesn't get bent out of shape
-  pmut_locker   l(member_lock);
-  // this is the simple case, add the elt, protected by lock
-  // and signal suckas, who oughta recognize, but don't.
+  flx_mutex_locker_t   l(member_lock);
   ELTQ->push(elt);
-
-  // we've just added one elt, therefore we have > 0 elts
-  // a signal should do just fine here - I don't think I need
-  // broadcast unless I were adding more than one item in a go.
-  // if there were already elts in the queue there wouldn't be
-  // threads waiting on the signal and if there were no elts then
-  // there would be no point waking up more than one thread now.
-  // right? 
-  int       res;
-  res = pthread_cond_signal(&nz_elts_cond);
-  if(0 != res)
-    fprintf(stderr,"pthread_cond_signal failed %i\n", res);
+  nz_elts_cond.signal(); // cannot return an error
 }
 
 void*
-posix_queue::dequeue()
+sleep_queue::dequeue()
 {
-  // protect member data
-  pmut_locker   l(member_lock);
-  void*     elt = NULL;
-
-  // sleep until something is there
-  do
-  {
-    if(!ELTQ->empty())
-    {
-      elt = ELTQ->front();
-      ELTQ->pop();
-      break;
-    }
-
-    // otherwise queue empty, wait on condition
-    int res;
-    // wait on elt added condition signal. mutex is unlocked on
-    // on wait and relocked on wake.
-    res = pthread_cond_wait(&nz_elts_cond, &member_lock.m);
-    if(res != 0)
-      fprintf(stderr,"pthread_cond_wait nonzero elts failed: %i\n", res);
-
-  } while(1);
-
-  return elt;           // should never return NULL
+  flx_mutex_locker_t   l(member_lock);
+  if(ELTQ->empty())
+    nz_elts_cond.wait(&member_lock);
+  void *elt = ELTQ->front();
+  ELTQ->pop();
+  return elt;
 }
 }}
 
 
-@h=tangler('demux/demux_win_queue.hpp')
+@head(1,'Portable Job Queue')
+The class is actually a thread plus a job queue.
+@h=tangler('demux/demux_work_fifo.hpp')
 @select(h)
-#ifndef __WIN_QUEUE__
-#define __WIN_QUEUE__
+#ifndef __WORKER_FIFO__
+#define __WORKER_FIFO__
 #include <flx_rtl_config.hpp>
-#include <windows.h>
+#include "demux_thread.hpp"
+#include "demux_mutex.hpp"
 #include "demux_sleep_queue.hpp"
 
 namespace flx { namespace demux {
-
-class FLX_RTL_EXTERN win_queue  : public sleep_queue {
-  HANDLE    member_lock;  // protects member data
-  HANDLE    nz_elts_cond; // wakes up threads waiting on resource
-  void*     lame_opaque;  // when will I ever learn?
-  void      cleanup();
+// abstract 
+class FLX_RTL_EXTERN worker_task
+{
 public:
-  win_queue();
-  ~win_queue();
+  virtual ~worker_task() {}   // c++ should do this automatically
 
-  virtual void enqueue(void*);  // re-entrant
-  virtual void* dequeue();    // re-entrant, sleeps on empty queue
+  virtual void doit() = 0;    // doit, synchronously
+  virtual void finished() = 0;  // finished hook (mi serve start gancia?)
 };
 
-}}
-#endif
+// make this into a general work queue
+class FLX_RTL_EXTERN worker_fifo
+{
+  // this thread is destructed very carefully to make sure that all
+  // the objects in this class outlive its execution.
+  flx_thread_t  thread;
+  sleep_queue fifo;
 
-@h=tangler('demux/demux_win_queue.cpp')
+  static void* thread_start(void*); // thread entry point, passed this
+  bool thread_loop_body();      // returns keep going flag
+
+public:
+  worker_fifo();
+  ~worker_fifo();
+
+  void add_worker_task(worker_task* task);  // also re-entrant
+
+  // those deriving from this class might like to stop the
+  // thread in their destructors, so that their objects used
+  // by the worker thread can outlive it
+  void stop_worker_thread();
+  };
+
+}} // namespace demux, flx
+#endif  // __WORKER_FIFO__
+
+@h=tangler('demux/demux_work_fifo.cpp')
 @select(h)
-#include "demux_win_queue.hpp"
-#include "demux_win_mutex.hpp"
-
-#include <queue>          // stl to the bloated rescue
-
-typedef std::queue<void*> void_queue;
-
-#define ELTQ ((void_queue*)lame_opaque)
-
+#include <stdio.h>    // printf
+#include "demux_work_fifo.hpp"
 namespace flx { namespace demux {
 
-win_queue::win_queue() 
-  : member_lock(0), nz_elts_cond(0), lame_opaque(0)
-{
-  DWORD err;
-  
-  // allocate queue
-  lame_opaque = new void_queue;
+// a fifo of tasks & a thread (threads?) to serve them.
+// users overload finished function to implement wakeup
 
-  // default security attributes, manual reset, non-signalled, nameless
-  // signalled corresponds to num(elts) > 0
-  nz_elts_cond = CreateEvent(NULL, TRUE, FALSE, NULL);
-  
-  if(NULL == nz_elts_cond)
+worker_fifo::worker_fifo()
+{
+  fprintf(stderr,"async worker fifo io module constructor\n");
+  // fifo already inited and ready to go, so get pthread going
+#ifdef _WIN32
+  int res = thread.init((LPTHREAD_START_ROUTINE)thread_start, this);
+#else
+  int res = thread.init(thread_start, this);
+#endif
+
+  if(0 != res) throw res;
+
+// do it properly or not at all
+#if 0
+  fprintf(stderr,"hey, trying multi threads here (leakingly)\n");
+  for(int i = 1; i < 1; i++)
   {
-    err = GetLastError();
-    fprintf(stderr,"CreateEvent returned: %li\n", err);
-    cleanup();
-    throw err;
+    fprintf(stderr,"extra io thread\n");
+    flx_thread_t* pt = new flx_thread_t;
+    res = pt->init(thread_start, this);
+    if(0 != res) throw res;
   }
-
-  // default security attr, not initiallly owned/locked, nameless.
-  member_lock = CreateMutex(NULL, FALSE, NULL);
-
-  if(NULL == member_lock)
-  {
-    err = GetLastError();
-    fprintf(stderr,"CreateMutex returned: %li\n", err);
-    cleanup();
-    throw err;
-  }
+#endif
 }
 
+// To get rid of thread cancel we could have a simple finished flag
+// that's set by the class and set by the thread. Since both are executed
+// synchronously w.r.t the same thread, we wouldn't need to protect anything
+// that won't work if we have multiple worker threads, however.
+
+// better idea - add a null task to front of queue to mean quit. queue
+// is already threadsafe. If there are n worker threads, add n nulls.
+
+// stopping the worker thread turns out to be trickier than it sounds
+// because it's hard to wake up on an empty queue. 
 void
-win_queue::cleanup()
+worker_fifo::stop_worker_thread()
 {
-  if(ELTQ) delete ELTQ;
-  if(nz_elts_cond && !CloseHandle(nz_elts_cond))
-    fprintf(stderr,"Failed to close event: %li\n", GetLastError());
-  if(member_lock && !CloseHandle(member_lock))
-    fprintf(stderr,"Failed to close mutex: %li\n", GetLastError());
+  add_worker_task(NULL);    // thread safe takedown.
+                // for n worker threads add n times
+  thread.join();      // join waits for thread to exit.
+                // which should happen eventually
 }
 
-win_queue::~win_queue()
+worker_fifo::~worker_fifo()
 {
-  cleanup();
+  // the thread must be brought down before the objects it
+  // uses are destructed. lets hope anyone deriving from this
+  // class knows that and let them call this function in their
+  // destructor.
+  stop_worker_thread();
 }
 
-void
-win_queue::enqueue(void* elt)
-{
-  // lock so our member data doesn't get bent out of shape
-  win_locker    l(member_lock);
-
-  // this is the simple case, add the elt, protected by lock
-  // and signal suckas, who oughta recognize, but don't.
-  ELTQ->push(elt);
-
-  // we've got the mutex and we've just added an elt, therefore
-  // we have > 0 elts. That sounds like a good enough reason to
-  // put the condition into the signalled state. It may already
-  // be in the signalled stated. Hope that's not a problem.
-  // Might be an optimization to skip this if it became nonempty.
-  if(!SetEvent(nz_elts_cond))
-    fprintf(stderr,"Set condition failed: %li\n", GetLastError());
-}
-
+// io thread entry point, passed this
 void*
-win_queue::dequeue()
+worker_fifo::thread_start(void* udat)
+{ 
+  worker_fifo*  fio = (worker_fifo*)udat;
+  fprintf(stderr,"posix worker_fifo thread started! this=%p\n", fio);
+
+  while(fio->thread_loop_body()) ;
+
+  return 0;             // return status.
+}
+
+// dequeues one task and executes it, calling finished hook. interprest
+// null task as a request to exit.
+bool
+worker_fifo::thread_loop_body()
 {
-  void*     elt = NULL;
+  worker_task*  req = (worker_task*)fifo.dequeue();
+  // fprintf(stderr,"dequeued worker_task (%p)\n", req);
 
-  do
-  {
-    // exclusively examine queue
-    {
-      win_locker    l(member_lock);
+  if(!req) return false;        // finished, got quit signal
 
-      if(!ELTQ->empty())
-      {
-        elt = ELTQ->front();
-        ELTQ->pop();
-        // if the queue is now empty, make condition reflect it
-        // this failing will probably lock the app up...
-        if(!ResetEvent(nz_elts_cond)) // non-signalled state
-          fprintf(stderr,"Reset condition failed: %li\n", GetLastError());
-        break;
-      }
-    }
+  req->doit();
+  req->finished();          // finish hook. I find this handy
 
-    // otherwise there's nothing in the queue or something
-    // may have turned up in the intervening moments
-    DWORD   res;
-    res = WaitForSingleObject(nz_elts_cond, INFINITE);
+  return true;            // keep going
+}
 
-    if(WAIT_OBJECT_0 != res)
-    {
-      fprintf(stderr,"Wait on condition failed: %li\n", GetLastError());
-      throw res;
-    }
-
-  } while(1);
-
-  return elt;           // should never return NULL
+void
+worker_fifo::add_worker_task(worker_task* task)
+{
+  fifo.enqueue(task);         // don't worry, fifo is re-entrant
 }
 
 }}
+
 
 @h=tangler('demux/demux_demuxer.hpp')
 @select(h)
@@ -720,7 +791,9 @@ typedef struct {
 enum { PDEMUX_READ = 1, PDEMUX_WRITE = 2 };
 
 
-// abstract base class (gee - it doesn't do much)
+// ********************************************************
+/// Demux base.
+// ********************************************************
 class FLX_RTL_EXTERN demuxer {
 protected:
   // wait for outstanding events. may return before given events, so
@@ -750,6 +823,11 @@ namespace flx { namespace demux {
 // epoll allows only one event per socket - it does not differentiate
 // on the awaited operation (read/write), however it does let you wait
 // on any combination (I think)
+
+// ********************************************************
+/// epoll based demuxer
+// ********************************************************
+
 class FLX_RTL_EXTERN epoll_demuxer : public posix_demuxer {
   int   epoll_fd;
 
@@ -840,7 +918,9 @@ SOCKET FLX_RTL_EXTERN nice_accept(SOCKET listener);
 SOCKET FLX_RTL_EXTERN nice_connect(const char* addr, int port);
 int FLX_RTL_EXTERN set_tcp_nodelay(int s, int disable_nagle);
 
-// make sure you instantion ONE (1) of these before using winsock
+// ********************************************************
+/// make sure you instantion ONE (1) of these before using winsock
+// ********************************************************
 class FLX_RTL_EXTERN winsock_initer
 {
 public:
@@ -848,8 +928,10 @@ public:
   ~winsock_initer();
 };
 
-// iocp_wakeup base class for users of iocp_demuxer
-// becoming an overlapped call control block
+// ********************************************************
+/// iocp_wakeup base class for users of iocp_demuxer
+/// becoming an overlapped call control block
+// ********************************************************
 class FLX_RTL_EXTERN iocp_wakeup {
 protected:            // folks need to use these in win 32 calls
   OVERLAPPED  ol;
@@ -872,6 +954,8 @@ public:
   static iocp_wakeup* from_overlapped(LPOVERLAPPED olp);
 };
 
+// ********************************************************
+// ********************************************************
 class FLX_RTL_EXTERN iocp_demuxer : public demuxer {
   HANDLE    iocp;     // the io completion queue
 
@@ -902,6 +986,10 @@ public:
 #include "demux_posix_demuxer.hpp"
 
 namespace flx { namespace demux {
+
+// ********************************************************
+/// kqueue demuxer for BSD
+// ********************************************************
 class FLX_RTL_EXTERN kqueue_demuxer : public posix_demuxer {
   int   kq;
 protected:
@@ -931,16 +1019,18 @@ public:
 #include <flx_rtl_config.hpp>
 
 #include "demux_demuxer.hpp"
-#include "demux_posix_queue.hpp"
-#include "demux_posix_mutex.hpp"
+#include "demux_sleep_queue.hpp"
+#include "demux_mutex.hpp"
 // #include <sys/types.h> // off_t (don't have flx iface to this yet)
               // can just add new constructor
 #include "demux_work_fifo.hpp"
 namespace flx { namespace demux {
 
-// like another event source. this is basically a wrapped pread, pwrite
-// should probably be derived from posix_wakeup or something like that.
-// or have the same signature. abstract - users overload "finished
+// ********************************************************
+/// like another event source. this is basically a wrapped pread, pwrite
+/// should probably be derived from posix_wakeup or something like that.
+/// or have the same signature. abstract - users overload "finished
+// ********************************************************
 class FLX_RTL_EXTERN fileio_request : public worker_task
 {
   long    offset;   // make this a proper offset (64bit)
@@ -960,7 +1050,9 @@ public:
   virtual void doit();      // sync
 };
 
+// ********************************************************
 // could do separate threads for in & out. or implement some form of cache.
+// ********************************************************
 class FLX_RTL_EXTERN pasync_fileio : public worker_fifo
 {
 public:
@@ -970,6 +1062,7 @@ public:
 
 }} // namespace demux, flx
 #endif  // __PFILEIO__
+
 @h=tangler('demux/demux_posix_demuxer.hpp')
 @select(h)
 #ifndef __POSIX_DEMUXER__
@@ -1089,7 +1182,7 @@ namespace flx { namespace demux {
 class FLX_RTL_EXTERN select_demuxer : public posix_demuxer {
   void  remove_fd(int s);
 
-  //pmut      ham_fist;       // big conservative hamfisted lock
+  //flx_mutex_t      ham_fist;       // big conservative hamfisted lock
   
   // thanks Beej!
   fd_set      master_read_set;    // fd watched for reading
@@ -1138,64 +1231,6 @@ int set_tcp_nodelay(int s, int disable_nagle);
 }} // namespace demux, flx
 #endif
 
-@h=tangler('demux/demux_work_fifo.hpp')
-@select(h)
-#ifndef __WORKER_FIFO__
-#define __WORKER_FIFO__
-#include <flx_rtl_config.hpp>
-
-#ifdef _WIN32     // quick hack
-#include "demux_win_thread.hpp"
-#include "demux_win_mutex.hpp"
-#include "demux_win_queue.hpp"
-#include "demux_iocp_demuxer.hpp"
-#else           // else posix
-#include "demux_posix_thread.hpp"
-#include "demux_posix_mutex.hpp"
-#include "demux_posix_queue.hpp"
-#endif
-
-namespace flx { namespace demux {
-// abstract 
-class FLX_RTL_EXTERN worker_task
-{
-public:
-  virtual ~worker_task() {}   // c++ should do this automatically
-
-  virtual void doit() = 0;    // doit, synchronously
-  virtual void finished() = 0;  // finished hook (mi serve start gancia?)
-};
-
-// make this into a general work queue
-class FLX_RTL_EXTERN worker_fifo
-{
-  // this thread is destructed very carefully to make sure that all
-  // the objects in this class outlive its execution.
-#ifdef _WIN32
-  win_thread  thread;
-  win_queue fifo;
-#else
-  apthread  thread;
-  posix_queue fifo;         // reentrant fifo!
-#endif
-
-  static void* thread_start(void*); // thread entry point, passed this
-  bool thread_loop_body();      // returns keep going flag
-
-public:
-  worker_fifo();
-  ~worker_fifo();
-
-  void add_worker_task(worker_task* task);  // also re-entrant
-
-  // those deriving from this class might like to stop the
-  // thread in their destructors, so that their objects used
-  // by the worker thread can outlive it
-  void stop_worker_thread();
-  };
-
-}} // namespace demux, flx
-#endif  // __WORKER_FIFO__
 @h=tangler('demux/demux_timer_queue.hpp')
 @select(h)
 #ifndef __TIMER_QUEUE__
@@ -1240,8 +1275,8 @@ public:
 #ifndef __POSIX_TIMER_QUEUE__
 #define __POSIX_TIMER_QUEUE__
 
-#include "demux_posix_thread.hpp"  // apthread, lock
-#include "demux_posix_mutex.hpp"  // apthread, lock
+#include "demux_posix_thread.hpp"  // flx_thread_t, lock
+#include "demux_mutex.hpp"  // flx_thread_t, lock
 #include "demux_timer_queue.hpp" // base class
 #include <sys/time.h>        // timespecs, gettimeofday
 
@@ -1257,9 +1292,9 @@ class FLX_RTL_EXTERN posix_timer_queue : public timer_queue
     // update: I was getting deadlock in a broken stdlib version
     // gcc4.0.1, ppc64, osx10.4.2 in printf, however the above still
     // stands: the lock must outlive the thread that uses it.
-    pmut        lock;                    // factor to prio queue?
+    flx_mutex_t        lock;                    // factor to prio queue?
 
-    apthread    sleep_thread;
+    flx_thread_t    sleep_thread;
     static void* thread_start(void*);    // passed "this"
     bool thread_loop_body();
 
@@ -1746,11 +1781,13 @@ evtport_demuxer::get_evts(bool poll)
 @h=tangler('demux/demux_iocp_demuxer.cpp')
 @select(h)
 #include "demux_iocp_demuxer.hpp"
-#include "demux_win_mutex.hpp"
+#include "demux_mutex.hpp"
 
 #include <stdio.h>      // for printf debugging
 #include <stddef.h>     // offsetof
 #include <assert.h>
+// shoving the win_queue in here for now
+using namespace std;
 
 namespace flx { namespace demux {
 
@@ -3406,104 +3443,6 @@ select_demuxer::remove_fd(int s)
 }
 }}
 
-@h=tangler('demux/demux_work_fifo.cpp')
-@select(h)
-#include <stdio.h>    // printf
-#include "demux_work_fifo.hpp"
-namespace flx { namespace demux {
-
-// a fifo of tasks & a thread (threads?) to serve them.
-// users overload finished function to implement wakeup
-
-worker_fifo::worker_fifo()
-{
-  fprintf(stderr,"async worker fifo io module constructor\n");
-  // fifo already inited and ready to go, so get pthread going
-#ifdef _WIN32
-  int res = thread.init((LPTHREAD_START_ROUTINE)thread_start, this);
-#else
-  int res = thread.init(thread_start, this);
-#endif
-
-  if(0 != res) throw res;
-
-// do it properly or not at all
-#if 0
-  fprintf(stderr,"hey, trying multi threads here (leakingly)\n");
-  for(int i = 1; i < 1; i++)
-  {
-    fprintf(stderr,"extra io thread\n");
-    apthread* pt = new apthread;
-    res = pt->init(thread_start, this);
-    if(0 != res) throw res;
-  }
-#endif
-}
-
-// To get rid of thread cancel we could have a simple finished flag
-// that's set by the class and set by the thread. Since both are executed
-// synchronously w.r.t the same thread, we wouldn't need to protect anything
-// that won't work if we have multiple worker threads, however.
-
-// better idea - add a null task to front of queue to mean quit. queue
-// is already threadsafe. If there are n worker threads, add n nulls.
-
-// stopping the worker thread turns out to be trickier than it sounds
-// because it's hard to wake up on an empty queue. 
-void
-worker_fifo::stop_worker_thread()
-{
-  add_worker_task(NULL);    // thread safe takedown.
-                // for n worker threads add n times
-  thread.deinit();      // deinit waits for thread to exit.
-                // which should happen eventually
-}
-
-worker_fifo::~worker_fifo()
-{
-  // the thread must be brought down before the objects it
-  // uses are destructed. lets hope anyone deriving from this
-  // class knows that and let them call this function in their
-  // destructor.
-  stop_worker_thread();
-}
-
-// io thread entry point, passed this
-void*
-worker_fifo::thread_start(void* udat)
-{ 
-  worker_fifo*  fio = (worker_fifo*)udat;
-  fprintf(stderr,"posix worker_fifo thread started! this=%p\n", fio);
-
-  while(fio->thread_loop_body()) ;
-
-  return 0;             // return status.
-}
-
-// dequeues one task and executes it, calling finished hook. interprest
-// null task as a request to exit.
-bool
-worker_fifo::thread_loop_body()
-{
-  worker_task*  req = (worker_task*)fifo.dequeue();
-  // fprintf(stderr,"dequeued worker_task (%p)\n", req);
-
-  if(!req) return false;        // finished, got quit signal
-
-  req->doit();
-  req->finished();          // finish hook. I find this handy
-
-  return true;            // keep going
-}
-
-void
-worker_fifo::add_worker_task(worker_task* task)
-{
-  fifo.enqueue(task);         // don't worry, fifo is re-entrant
-}
-
-}}
-
 @h=tangler('demux/demux_sockety.cpp')
 @select(h)
 #include "demux_sockety.hpp" /* for this stuff */
@@ -3824,7 +3763,6 @@ posix_timer_queue::takedown_sleep_cond()
 // it's a real bore properly cleaning up in the face of exceptions in
 // constructors. try using some local objects to look after it.
 posix_timer_queue::posix_timer_queue()
-    : lock(false)            // lock shouldn't need to be recursive
 {
     // fprintf(stderr,"posix_timer_queue ctor\n");
 
@@ -3870,7 +3808,7 @@ posix_timer_queue::~posix_timer_queue()
     add_sleep_request(NULL, 0.0);    // super secret quit thread quit request
     wakeup_thread();                // wakeup, cause to goto a cancel pt
 
-    sleep_thread.deinit();            // will join
+    sleep_thread.join();            // will join
     fprintf(stderr,"about to delete PRIOQ\n");
     delete PRIOQ;
 
@@ -3944,7 +3882,7 @@ posix_timer_queue::add_sleep_request(sleep_task* st, timespec* abs)
     evt.task = st;
     evt.when = *abs;
 
-    pmut_locker    locker(lock);
+    flx_mutex_locker_t    locker(lock);
 
     PRIOQ->push(evt);
 
@@ -4005,7 +3943,7 @@ posix_timer_queue::thread_start(void* udat)
 bool
 posix_timer_queue::thread_loop_body()
 {
-    pmut_locker    locker(lock);    // lock on. lock off when waiting on condition
+    flx_mutex_locker_t    locker(lock);    // lock on. lock off when waiting on condition
 
     int        res;
 

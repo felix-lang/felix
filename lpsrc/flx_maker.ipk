@@ -5,8 +5,8 @@
 
 @head(2,'CVS LOG')
 $Log$
-Revision 1.214  2006/02/02 20:02:12  skaller
-Get windows version of new demux factoring to work.
+Revision 1.215  2006/02/04 10:35:55  skaller
+Portable thread sync stuff
 
 Revision 1.213  2006/02/02 19:24:07  skaller
 Couple of changes to build script for OSX and BSD from Erick
@@ -2757,28 +2757,29 @@ ELKRTL_INTERFACES = [
 ]
 
 DEMUXRTL_INTERFACES = [
- #'demux_sdl.hpp',           # portable but only if SDL is available
- 'demux_demuxer.hpp',        # portable
- 'demux_posix_thread.hpp',   # posix
- 'demux_posix_mutex.hpp',    # posix
- 'demux_win_thread.hpp',     # win32
- 'demux_win_mutex.hpp',      # win32
- 'demux_sleep_queue.hpp',    # portable
- 'demux_posix_queue.hpp',    # posix
- 'demux_win_queue.hpp',      # windows
- 'demux_posix_demuxer.hpp',  # posix
- 'demux_work_fifo.hpp',      # portable
- 'demux_timer_queue.hpp',    # portable
+ 'demux_thread.hpp',        # portable
+ 'demux_posix_thread.hpp',  # posix
+ 'demux_win_thread.hpp',    # win32
+ 
+ 'demux_win_posix_condv_emul.hpp',         # win32
+ 'demux_mutex.hpp',         # portable
+ 'demux_condv.hpp',         # portable
+ 'demux_sleep_queue.hpp',   # portable
+ 'demux_work_fifo.hpp',     # portable
+
+ 'demux_demuxer.hpp',       # portable
+ 'demux_posix_demuxer.hpp', # posix
+ 'demux_timer_queue.hpp',   # portable
  'demux_posix_timer_queue.hpp',   # posix
- 'demux_pfileio.hpp',        # posix
- 'demux_select_demuxer.hpp', # posix
- 'demux_iocp_demuxer.hpp',   # win32 (monolithic)
- 'demux_overlapped.hpp',     # win32
+ 'demux_pfileio.hpp',       # posix
+ 'demux_select_demuxer.hpp',# posix
+ 'demux_iocp_demuxer.hpp',  # win32 (monolithic)
+ 'demux_overlapped.hpp',    # win32
  'demux_win_timer_queue.hpp',  # win32
- 'demux_kqueue_demuxer.hpp', # osx/bsd
+ 'demux_kqueue_demuxer.hpp',# osx/bsd
  'demux_evtport_demuxer.hpp',# solaris
- 'demux_epoll_demuxer.hpp',  # linux (>= 2.6)
- 'demux_sockety.hpp',        # posix
+ 'demux_epoll_demuxer.hpp',# linux (>= 2.6)
+ 'demux_sockety.hpp',       # posix
 ]
 
 FAIORTL_INTERFACES = [
@@ -2997,14 +2998,15 @@ WINDOWS_FAIO_CPPS = [
 
 
 DEMUX_CPPS = [
-  "demux/demux_demuxer",
+  "demux/demux_mutex", 
+  "demux/demux_condv",
+  "demux/demux_sleep_queue",
   "demux/demux_work_fifo",
+  "demux/demux_demuxer",
 ]
 
 POSIX_DEMUX_CPPS = [
   "demux/demux_posix_thread",       # posix
-  "demux/demux_posix_mutex",        # posix
-  "demux/demux_posix_queue",        # all posix
   "demux/demux_posix_demuxer",      # all posix
   "demux/demux_select_demuxer",     # all posix
   "demux/demux_posix_timer_queue",  # posix
@@ -3021,9 +3023,8 @@ SOLARIS_DEMUX_CPPS = [
 ]
 
 WINDOWS_DEMUX_CPPS = [
-  "demux/demux_win_thread",         # windows
-  "demux/demux_win_mutex",          # windows
-  "demux/demux_win_queue",          # windows
+  "demux/demux_win_thread",       # posix
+  "demux/demux_win_posix_condv_emul",
   "demux/demux_iocp_demuxer",       # windows
   "demux/demux_overlapped",         # windows
   "demux/demux_win_timer_queue",    # windows

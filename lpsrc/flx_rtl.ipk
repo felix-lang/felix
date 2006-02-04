@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.98  2006/02/04 10:35:55  skaller
+Portable thread sync stuff
+
 Revision 1.97  2006/02/02 15:29:32  skaller
 Factor flx_run.
 
@@ -1973,23 +1976,21 @@ shared library name are not passed.
 //#include <unistd.h>
 #include "flx_rtl.hpp"
 
+#include "demux_sleep_queue.hpp"
+
 #ifdef _WIN32
 #include "demux_iocp_demuxer.hpp"
 #include "faio_wdrv.hpp"
 #elif defined(MACOSX)
-#include "demux_posix_queue.hpp"
 #include "demux_kqueue_demuxer.hpp"
 #include "faio_pdrv.hpp"
 #elif defined(SOLARIS)
-#include "demux_posix_queue.hpp"
 #include "demux_evtport_demuxer.hpp"
 #include "faio_pdrv.hpp"
 #elif defined(FLX_LINUX)
-#include "demux_posix_queue.hpp"
 #include "demux_epoll_demuxer.hpp"
 #include "faio_pdrv.hpp"
 #else
-#include "demux_posix_queue.hpp"
 #include "demux_select_demuxer.hpp"
 #include "faio_pdrv.hpp"
 #endif
@@ -2055,17 +2056,13 @@ public:
     select_demuxer demux;  // probably not thread safe
 #endif
 
+    sleep_queue async_active;
+    flx_thread_t ethread;
 #ifdef _WIN32
-    win_queue async_active;
-    win_thread ethread;
     iocp_demuxer demux;
     wflx_drv driver;
     static DWORD demux_thread(LPVOID udat);
 #else
-    posix_queue async_active;
-    apthread ethread;
-    // this isn't what it looks like (i.e. a driver) but rather
-    // just a wrapper for the queue.
     pflx_drv driver;
     static void* demux_thread(void* udat);
 #endif
