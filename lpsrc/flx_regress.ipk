@@ -565,6 +565,31 @@ whilst i < argc do
   i++;
 done;
 
+@select(tangler('test/rt22.flx'))
+#import <flx.flxh>
+
+var y = ();
+proc f() { print "Hello"; endl; }
+f y;
+
+var x = mk_schannel[unit]();
+
+proc reader() {
+  print "R1"; endl;
+  var &u:unit <- read x;
+  print "R2"; endl;
+}
+
+proc writer() {
+  print "W1"; endl;
+  write (x,());
+  print "W2"; endl;
+}
+
+spawn_fthread the reader;
+spawn_fthread the writer;
+
+print "Done"; endl;
 
 @select(tangler('test/drt1.flx'))
 // plugin loader test

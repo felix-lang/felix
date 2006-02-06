@@ -1,6 +1,16 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.36  2006/02/06 06:50:01  skaller
+Added pthread_cond_timedwait and pthread_cond_uswait functions
+to condition variables. The latter is my own invention, it waits
+for a specific interval in micro-seconds. The later is more
+efficient on Windows when you want to wait for an interval,
+since this is the native method. Otherwise you need to first
+obtain the time of day, do a nasty calculation .. and then
+the timedwait function will undo that, resulting in two
+unnecessary and expensive system calls.
+
 Revision 1.35  2006/02/02 08:30:17  rfistman
 got rid of annoying debug output/note to self regarding sigpipe on osx/bsd.
 made flx_rtl create async structure on demand, if only to avoid all that
@@ -425,10 +435,10 @@ namespace flx { namespace faio {
 // which faio came. all it is now is a pointer to a queue. 
 // watch this space.
 class FLX_RTL_EXTERN flx_drv {
-    demux::sleep_queue&    ready_queue;
+    demux::sleep_queue_t&    ready_queue;
     demux::worker_fifo     work_fifo;
 public:
-    flx_drv(demux::sleep_queue& q);
+    flx_drv(demux::sleep_queue_t& q);
     virtual ~flx_drv();
 
     void sched(void* f);
@@ -463,7 +473,7 @@ public:
 
 using namespace flx::demux;
 namespace flx { namespace faio {
-flx_drv::flx_drv(sleep_queue& q)
+flx_drv::flx_drv(sleep_queue_t& q)
     : ready_queue(q)
 {   
 }
@@ -500,7 +510,7 @@ class FLX_RTL_EXTERN pflx_drv : public flx_drv {
     demux::pasync_fileio       file_aio_worker;
     demux::posix_timer_queue   sleepers;
 public:
-    pflx_drv(demux::sleep_queue& q);
+    pflx_drv(demux::sleep_queue_t& q);
 
     demux::pasync_fileio* get_aio_worker() { return &file_aio_worker; }
     demux::timer_queue* get_sleepers() { return &sleepers; }
@@ -519,7 +529,7 @@ public:
 using namespace flx::demux;
 namespace flx { namespace faio {
 
-pflx_drv::pflx_drv(sleep_queue& q)
+pflx_drv::pflx_drv(sleep_queue_t& q)
     : flx_drv(q)
 {
     // we might actually like to ignore SIGPIPE's conditionally,
@@ -667,7 +677,7 @@ class FLX_RTL_EXTERN wflx_drv : public flx_drv {
 public:
   // visual studio seems to demand that I have the constructor defined in a cpp
   // file. the file previously had none, which gave me weird link errors.
-  wflx_drv(demux::sleep_queue& q);
+  wflx_drv(demux::sleep_queue_t& q);
 
   demux::timer_queue* get_sleepers() { return &sleepers; }
 };
@@ -685,7 +695,7 @@ public:
 namespace flx { namespace faio {
 
   // vs requirement that I have a cpp file?
-  wflx_drv::wflx_drv(demux::sleep_queue& q) : flx_drv(q) {}
+  wflx_drv::wflx_drv(demux::sleep_queue_t& q) : flx_drv(q) {}
 
 }}
 

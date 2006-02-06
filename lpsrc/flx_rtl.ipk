@@ -1,5 +1,15 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.100  2006/02/06 06:50:01  skaller
+Added pthread_cond_timedwait and pthread_cond_uswait functions
+to condition variables. The latter is my own invention, it waits
+for a specific interval in micro-seconds. The later is more
+efficient on Windows when you want to wait for an interval,
+since this is the native method. Otherwise you need to first
+obtain the time of day, do a nasty calculation .. and then
+the timedwait function will undo that, resulting in two
+unnecessary and expensive system calls.
+
 Revision 1.99  2006/02/04 11:34:36  skaller
 Portable demux stuff, Win32 version
 
@@ -2064,7 +2074,7 @@ public:
     select_demuxer demux;  // probably not thread safe
 #endif
 
-    sleep_queue async_active;
+    sleep_queue_t async_active;
     flx_thread_t ethread;
 #ifdef _WIN32
     iocp_demuxer demux;
@@ -2074,7 +2084,6 @@ public:
     pflx_drv driver;
     static void* demux_thread(void* udat);
 #endif
-
 
    proto_async() : driver(async_active) {
      // start waiting thread
