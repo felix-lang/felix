@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.36  2006/02/06 11:05:18  skaller
+Timed wait on condition variable.
+
 Revision 1.35  2006/02/06 06:50:01  skaller
 Added pthread_cond_timedwait and pthread_cond_uswait functions
 to condition variables. The latter is my own invention, it waits
@@ -180,8 +183,8 @@ public:
 /// RAII wrapper for thread class
 class FLX_RTL_EXTERN flx_thread_wrapper_t {
   flx_thread_t thread;
-  flx_thread_t(flx_thread_t const&); // uncopyable
-  void operator=(flx_thread_t const&); // uncopyable
+  flx_thread_wrapper_t(flx_thread_t const&); // uncopyable
+  void operator=(flx_thread_wrapper_t const&); // uncopyable
 public:
   ~flx_thread_wrapper_t();
   flx_thread_wrapper_t(LPTHREAD_START_ROUTINE, LPVOID lParam);
@@ -199,7 +202,7 @@ public:
 namespace flx { namespace demux {
 
 flx_thread_t::flx_thread_t(flx_thread_t const&){} // uncopyable
-void flx_fthread_t::operator=(flx_thread_t const&){} // uncopyable
+void flx_thread_t::operator=(flx_thread_t const&){} // uncopyable
 
 
 flx_thread_t::flx_thread_t() { }
@@ -238,7 +241,7 @@ flx_thread_t::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
 
 flx_thread_wrapper_t::flx_thread_wrapper_t(LPTHREAD_START_ROUTINE f, LPVOID lParam)
 {
-  thread.init(f,lParam)
+  thread.init(f,lParam);
 }
 flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 
@@ -322,7 +325,14 @@ int FLX_RTL_EXTERN pthread_cond_uswait( pthread_cond_t*, pthread_mutex_t*, unsig
 @h=tangler('demux/demux_win_posix_condv_emul.cpp')
 @select(h)
 #include "demux_win_posix_condv_emul.hpp"
+#include <assert.h>
 #ifdef _WIN32
+#include <string.h>
+
+struct timespec {
+  unsigned long tv_sec;
+  unsigned long tv_nsec;
+};
 
 int pthread_mutex_init (pthread_mutex_t *m, const pthread_mutexattr_t*)
 {
@@ -467,13 +477,16 @@ pthread_cond_timedwait
   struct timespec const *abstime
 )
 {
-  unsigned long t1 = abstime.tv_spec * 1000 + abstime.tv_nsec / 1000;
+  unsigned long t1 = abstime->tv_sec * 1000 + abstime->tv_nsec / 1000;
   SYSTEMTIME tod;
   GetSystemTime(&tod);
   FILETIME ft;
   SystemTimeToFileTime(&tod,&ft);
-  unsigned long t0 = ft.QuadPart / 10; // us now 
-  unsigned long timeout = t2>t0 ? t1 - t0 : 0;
+  ULARGE_INTEGER now;  // so we can do some maths
+  assert(sizeof(now) == sizeof(ft));
+  memcpy(&now, &ft, sizeof(now));
+  unsigned long t0 = now.QuadPart / 10; // us now 
+  unsigned long timeout = t1>t0 ? t1 - t0 : 0;
   return private_cond_wait(cv,external_mutex,timeout);
 }
 
