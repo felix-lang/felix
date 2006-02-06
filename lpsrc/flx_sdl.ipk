@@ -1,5 +1,8 @@
 @head(1,'SDL')
 $Log$
+Revision 1.20  2006/02/06 11:59:15  skaller
+Sdl stuff: Add more event blocking whilst doing video
+
 Revision 1.19  2006/02/04 11:55:42  skaller
 sdl100 increase sound buffer from 512 to 2048, hope Windows
 sound quality improves. Add Escape for sdl100 so we can
@@ -2907,6 +2910,7 @@ proc resizeWindow( wwidth : int, hheight :int)
   if height == 0 do height = 1; done;
   var ratio = double_of width / double_of height;
 
+  block_sdl_events event_lock;
   /* Setup our viewport. */
   glViewport( 0, 0, width, height );
 
@@ -2922,6 +2926,7 @@ proc resizeWindow( wwidth : int, hheight :int)
 
   /* Reset The View */
   glLoadIdentity( );
+  unblock_sdl_events event_lock;
 }
 
 /* general OpenGL initialization function */
@@ -3064,7 +3069,11 @@ proc handle_key( keysym : SDL_keysym)
   match keysym.sym with
   | ?k when k == SDLK_ESCAPE => { Quit 0; }
   | ?k when k ==  SDLK_F1 =>
-	    { ignore$ SDL_WM_ToggleFullScreen( surface ); }
+	    { 
+        block_sdl_events event_lock;
+        ignore$ SDL_WM_ToggleFullScreen( surface ); 
+        unblock_sdl_events event_lock;
+      }
   | _ => {}
   endmatch;
 }
@@ -3261,6 +3270,7 @@ proc resizeWindow( wwidth : int, hheight :int)
   var height = hheight;
   var width = wwidth;
 
+  block_sdl_events event_lock;
   /* Protect against a divide by zero */
   if height == 0 do height = 1; done;
   var ratio = double_of width / double_of height;
@@ -3280,6 +3290,7 @@ proc resizeWindow( wwidth : int, hheight :int)
 
   /* Reset The View */
   glLoadIdentity( );
+  unblock_sdl_events event_lock;
 }
 
 /* general OpenGL initialization function */
@@ -3433,7 +3444,11 @@ proc handle_key( keysym : SDL_keysym)
   match keysym.sym with
   | ?k when k == SDLK_ESCAPE => { Quit 0; }
   | ?k when k ==  SDLK_F1 =>
-	    { ignore$ SDL_WM_ToggleFullScreen( surface ); }
+	    { 
+        block_sdl_events event_lock;
+        ignore$ SDL_WM_ToggleFullScreen( surface ); 
+        unblock_sdl_events event_lock;
+      }
   | _ => {}
   endmatch;
 }
@@ -3710,6 +3725,7 @@ proc resizeWindow( wwidth : int, hheight :int)
   if height == 0 do height = 1; done;
   var ratio = double_of width / double_of height;
 
+  block_sdl_events event_lock;
   /* Setup our viewport. */
   glViewport( 0, 0, width, height );
 
@@ -3725,6 +3741,7 @@ proc resizeWindow( wwidth : int, hheight :int)
 
   /* Reset The View */
   glLoadIdentity( );
+  unblock_sdl_events event_lock;
 }
 
 /* function to load in bitmap as a GL texture */
@@ -3916,7 +3933,11 @@ proc handle_key( keysym : SDL_keysym)
   match keysym.sym with
   | ?k when k == SDLK_ESCAPE => { Quit 0; }
   | ?k when k ==  SDLK_F1 =>
-	    { ignore$ SDL_WM_ToggleFullScreen( surface ); }
+	    { 
+        block_sdl_events event_lock;
+        ignore$ SDL_WM_ToggleFullScreen( surface ); 
+        unblock_sdl_events event_lock;
+      }
   | _ => {}
   endmatch;
 }
@@ -4188,6 +4209,7 @@ proc resizeWindow( wwidth : int, hheight :int)
   if height == 0 do height = 1; done;
   var ratio = double_of width / double_of height;
 
+  block_sdl_events event_lock;
   /* Setup our viewport. */
   glViewport( 0, 0, width, height );
 
@@ -4203,6 +4225,7 @@ proc resizeWindow( wwidth : int, hheight :int)
 
   /* Reset The View */
   glLoadIdentity( );
+  unblock_sdl_events event_lock;
 }
 
 /* function to load in bitmap as a GL texture */
@@ -4793,6 +4816,7 @@ proc resizeWindow( wwidth : int, hheight :int)
   if height == 0 do height = 1; done;
   var ratio = double_of width / double_of height;
 
+  block_sdl_events event_lock;
   /* Setup our viewport. */
   glViewport( 0, 0, width, height );
 
@@ -4808,6 +4832,7 @@ proc resizeWindow( wwidth : int, hheight :int)
 
   /* Reset The View */
   glLoadIdentity( );
+  unblock_sdl_events event_lock;
 }
 
 /* function to load in bitmap as a GL texture */
@@ -5050,7 +5075,11 @@ proc handle_key( keysym : SDL_keysym)
   match keysym.sym with
   | ?k when k == SDLK_ESCAPE => { Quit 0; }
   | ?k when k ==  SDLK_F1 =>
-	    { ignore$ SDL_WM_ToggleFullScreen( surface ); }
+	    { 
+        block_sdl_events event_lock;
+        ignore$ SDL_WM_ToggleFullScreen( surface ); 
+        unblock_sdl_events event_lock;
+      }
   | ?k when k == SDLK_t => 
     { 
       twinkle = not twinkle; 
