@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.217  2006/02/07 15:55:06  skaller
+Added portable semaphores and a monitor class to demux.
+
 Revision 1.216  2006/02/06 06:50:01  skaller
 Added pthread_cond_timedwait and pthread_cond_uswait functions
 to condition variables. The latter is my own invention, it waits
@@ -2774,6 +2777,8 @@ DEMUXRTL_INTERFACES = [
  'demux_win_posix_condv_emul.hpp',         # win32 and posiz
  'demux_mutex.hpp',         # portable
  'demux_condv.hpp',         # portable
+ 'demux_semaphore.hpp',     # portable
+ 'demux_monitor.hpp',       # portable
  'demux_sleep_queue.hpp',   # portable
  'demux_work_fifo.hpp',     # portable
 
@@ -3010,6 +3015,8 @@ WINDOWS_FAIO_CPPS = [
 DEMUX_CPPS = [
   "demux/demux_mutex", 
   "demux/demux_condv",
+  "demux/demux_semaphore",
+  "demux/demux_monitor",
   "demux/demux_sleep_queue",
   "demux/demux_work_fifo",
   "demux/demux_demuxer",
