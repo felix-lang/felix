@@ -1,5 +1,10 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.101  2006/02/08 16:19:43  skaller
+Changed flx_run so it executes an exported flx_main procedure
+after thread frame initialisation blocks (and thus before
+async wakes up any fthreads)
+
 Revision 1.100  2006/02/06 06:50:01  skaller
 Added pthread_cond_timedwait and pthread_cond_uswait functions
 to condition variables. The latter is my own invention, it waits
@@ -1475,6 +1480,8 @@ typedef con_t *(*start_t)
   
 );
 
+typedef con_t *(*main_t)(thread_frame_t*);
+
 /// dynamic object loader.
 
 struct FLX_RTL_EXTERN flx_dynlink_t
@@ -1484,6 +1491,7 @@ struct FLX_RTL_EXTERN flx_dynlink_t
   string filename;
   thread_frame_creator_t thread_frame_creator;
   start_t start_sym;
+  main_t main_sym;
   long refcnt;
 
   // routines
@@ -1507,6 +1515,7 @@ struct FLX_RTL_EXTERN flx_libinit_t
 {
   thread_frame_t *thread_frame;
   con_t *start_proc;
+  con_t *main_proc;
   flx_dynlink_t *lib;
   flx::gc::generic::collector_t *collector;
   void create
@@ -1550,6 +1559,7 @@ void* getmachosym(LIBHANDLE, const char*);
 #ifdef FLX_STATIC_LINK
 extern "C" void *create_thread_frame;
 extern "C" void *flx_start;
+extern "C" void *flx_main;
 #endif
 
 namespace flx { namespace rtl {
@@ -1632,6 +1642,8 @@ void flx_dynlink_t::link(char const *fname) throw(flx_link_failure_t)
   if(!start_sym) 
     throw flx_link_failure_t(filename,"dlsym","flx_start");
 
+  main_sym = (main_t)DLSYM(library,flx_main);
+
   //fprintf(stderr,"Start symbol found at %p\n",start_sym);
   
   refcnt = 1L;
@@ -1693,6 +1705,7 @@ void flx_libinit_t::create
   ++lib->refcnt;
   collector->add_root(thread_frame);
   start_proc = lib->start_sym(thread_frame, argc, argv, stdin_,stdout_,stderr_);
+  main_proc = lib->main_sym?lib->main_sym(thread_frame):0;
   usr_create();
 }
 
@@ -2139,6 +2152,7 @@ int run_felix(
       fprintf(stderr,"loaded library %s at %p\n",filename,library.library);
       fprintf(stderr,"thread frame at %p\n",instance.thread_frame);
       fprintf(stderr,"initial continuation at %p\n",instance.start_proc);
+      fprintf(stderr,"main continuation at %p\n",instance.main_proc);
     } 
 
     std::list<fthread_t*> active;
@@ -2159,7 +2173,17 @@ int run_felix(
       collector->add_root(ft);
       active.push_front(ft);
     }
-    
+
+    fthread_t *flx_main = NULL;
+    {
+      con_t *top = instance.main_proc;
+      if(top)
+      {
+        flx_main = new (*collector,_fthread_ptr_map) fthread_t(top);
+        collector->add_root(flx_main);
+      }
+    }
+  
     sync_state_t ss(debug_driver, gcp, &active);
 
 process_active:
@@ -2233,6 +2257,14 @@ process_active:
     abort();
 
 do_async:
+    // ran out of active threads - start mainline now?
+    if(flx_main) // conspire to only do this once
+    {
+      active.push_front(flx_main);
+      flx_main = NULL;
+      goto process_active;
+    }
+
     // ran out of active threads - are there any in the async queue?
     if(debug_driver){
       fprintf(stderr, "out of active synchronous threads, trying async\n");
@@ -2500,6 +2532,14 @@ int main(int argc, char** argv)
   if(debug)fprintf(stderr,"flx_run driver ends OK\n");
   return 0;
 }
+
+@h = tangler('rtl/flx_main.cpp','cpp')
+@select(h)
+#include "flx_rtl_config.hpp"
+#include "flx_rtl.hpp"
+// THIS IS A DO NOTHING MAINLINE FOR USE WHEN STATICALLY LINKING
+extern "C" flx::rtl::con_t *flx_main( void *p){ return 0; }
+
 
 @h = tangler('test/micky_mouse.cxx','cpp')
 @select(h)

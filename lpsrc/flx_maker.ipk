@@ -5,6 +5,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.218  2006/02/08 16:19:43  skaller
+Changed flx_run so it executes an exported flx_main procedure
+after thread frame initialisation blocks (and thus before
+async wakes up any fthreads)
+
 Revision 1.217  2006/02/07 15:55:06  skaller
 Added portable semaphores and a monitor class to demux.
 
@@ -2994,6 +2999,7 @@ RTL_CPPS = [
   "rtl/flx_sync",
   "rtl/flx_i18n",
   "rtl/flx_ioutil",
+  "rtl/flx_main",
 ]
 
 FAIO_CPPS = [
