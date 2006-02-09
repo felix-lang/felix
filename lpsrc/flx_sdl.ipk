@@ -1,5 +1,9 @@
 @head(1,'SDL')
 $Log$
+Revision 1.21  2006/02/09 07:42:10  skaller
+Try event polling for sdl100, SDL doesn't support threads
+reading events on Windows ..
+
 Revision 1.20  2006/02/06 11:59:15  skaller
 Sdl stuff: Add more event blocking whilst doing video
 
@@ -524,22 +528,6 @@ module SDL_events_h
   //STRUCT or UNION TAG ALIASES
   typedef SDL_SysWMmsg = _struct_SDL_SysWMmsg;
   
-  //TYPE ALIASES
-  /*
-  typedef _struct_SDL_JoyBallEvent = SDL_JoyBallEvent;
-  typedef _struct_SDL_MouseButtonEvent = SDL_MouseButtonEvent;
-  typedef _struct_SDL_ActiveEvent = SDL_ActiveEvent;
-  typedef _struct_SDL_SysWMEvent = SDL_SysWMEvent;
-  typedef _struct_SDL_JoyButtonEvent = SDL_JoyButtonEvent;
-  typedef _struct_SDL_ResizeEvent = SDL_ResizeEvent;
-  typedef _struct_SDL_KeyboardEvent = SDL_KeyboardEvent;
-  typedef _struct_SDL_JoyAxisEvent = SDL_JoyAxisEvent;
-  typedef _struct_SDL_JoyHatEvent = SDL_JoyHatEvent;
-  typedef _struct_SDL_MouseMotionEvent = SDL_MouseMotionEvent;
-  typedef _struct_SDL_ExposeEvent = SDL_ExposeEvent;
-  typedef _struct_SDL_UserEvent = SDL_UserEvent;
-  typedef _struct_SDL_QuitEvent = SDL_QuitEvent;
-  */
   typedef SDL_EventMasks = int;
   typedef SDL_EventFilter = SDL_events_h_cft_1;
   typedef SDL_Events = int;
@@ -2792,15 +2780,34 @@ proc handle_key( keysym : SDL_keysym)
 
 var event_lock = SDL_CreateMutex ();
 
+proc poll_event(e: &SDL_Event)
+{
+tryagain:>
+  //print "Polling event"; endl;
+  var result = SDL_PollEvent(unref e);
+  if result > 0 do
+    //print "Got event"; endl;
+    return;
+  done;
+  Faio::sleep 0.1;
+  goto tryagain;
+}
+
 proc waitk(f:schannel[uint8]) {
-  var &e : SDL_Event <- get_sdl_event event_lock;
+  // ASYNC event reading doesn't work with SDL on Windows
+  // So we have busy wait ;(
+  //var &e : SDL_Event <- get_sdl_event event_lock;
+  var e : SDL_Event;
+  poll_event(&e);
+
   var et = event_type e;
   whilst 
     et != SDL_KEYDOWN and 
     et != SDL_MOUSEBUTTONDOWN and
     et != SDL_QUIT 
   do
-    &e <- get_sdl_event event_lock;
+    //&e <- get_sdl_event event_lock;
+    poll_event(&e);
     et = event_type e;
   done;
   if et == SDL_KEYDOWN call handle_key e.key.keysym;
@@ -2839,6 +2846,7 @@ Quit 0;
 
 proc Quit(x:int)
 {
+  //print "QUIT "; print x; endl;
   SDL_CloseAudio;
   SDL_Quit;
   System::exit x;
