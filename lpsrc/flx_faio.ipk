@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.37  2006/02/09 21:05:33  skaller
+Fixed sdl to use polling.
+
 Revision 1.36  2006/02/06 06:50:01  skaller
 Added pthread_cond_timedwait and pthread_cond_uswait functions
 to condition variables. The latter is my own invention, it waits
@@ -105,6 +108,7 @@ Added log to rtl and faio.
 
 @execfile('config'+os.sep+'config.py')
 
+@head(1,'Async IO (deprecated)')
 @h=tangler('faio/faio_asyncio.hpp')
 @select(h)
 #ifndef __ASYNCIO__
@@ -419,6 +423,62 @@ sleep_request::fire()
 
 }}
 
+@head(1,'Jobs')
+@h=tangler('faio/faio_job.hpp')
+Abstract base for jobs. A job does some work asynchronously,
+then wakes up the fthread that scheduled it. The fthread blocks
+until the job is completed.
+@p()
+To use this class, just override doit().
+@select(h)
+#ifndef __FAIO_JOB_REQUEST__
+#define __FAIO_JOB_REQUEST__
+#include <flx_rtl_config.hpp>
+#include "demux_demuxer.hpp"
+#include "demux_work_fifo.hpp"
+#include "faio_drv.hpp"
+#include "faio_asyncio.hpp"
+
+namespace flx { namespace faio {
+class FLX_RTL_EXTERN job_t: 
+  public flx::faio::flx_driver_request_base,
+  public flx::demux::worker_task 
+{
+   flx::faio::thread_wakeup   fw;
+public:  
+
+  // from flx_driver_request_base
+  bool start_async_op(flx::demux::demuxer& demux, flx::faio::flx_drv* drv,  void* f);
+  void finished();
+};
+}}
+
+#endif
+
+@h=tangler('faio/faio_job.cpp')
+@select(h)
+#include "faio_job.hpp"
+
+namespace flx { namespace faio {
+// from flx_driver_request_base
+bool job_t::start_async_op(flx::demux::demuxer& demux, flx::faio::flx_drv* drv,  void* f)
+{
+  RECORD_THREAD_INFO(fw);    // so we can wake up
+
+  //printf("Adding task to worker queue\\n");
+  // get worker fifo, add this task
+  drv->get_worker_fifo()->add_worker_task(this);
+  //printf("Task added\\n");
+  return false;              // suspended
+}
+
+void job_t::finished(){ 
+  //printf("Finished\\n"); 
+  fw.wake();
+}
+}}
+
+@head(1,'Scheduler')
 @h=tangler('faio/faio_drv.hpp')
 @select(h)
 #ifndef __FLXDRV__
@@ -438,7 +498,7 @@ class FLX_RTL_EXTERN flx_drv {
     demux::sleep_queue_t&    ready_queue;
     demux::worker_fifo     work_fifo;
 public:
-    flx_drv(demux::sleep_queue_t& q);
+    flx_drv(demux::sleep_queue_t& q, int n);
     virtual ~flx_drv();
 
     void sched(void* f);
@@ -473,8 +533,8 @@ public:
 
 using namespace flx::demux;
 namespace flx { namespace faio {
-flx_drv::flx_drv(sleep_queue_t& q)
-    : ready_queue(q)
+flx_drv::flx_drv(sleep_queue_t& q, int n)
+    : ready_queue(q), work_fifo(n)
 {   
 }
 
@@ -510,7 +570,7 @@ class FLX_RTL_EXTERN pflx_drv : public flx_drv {
     demux::pasync_fileio       file_aio_worker;
     demux::posix_timer_queue   sleepers;
 public:
-    pflx_drv(demux::sleep_queue_t& q);
+    pflx_drv(demux::sleep_queue_t& q, int n);
 
     demux::pasync_fileio* get_aio_worker() { return &file_aio_worker; }
     demux::timer_queue* get_sleepers() { return &sleepers; }
@@ -529,8 +589,10 @@ public:
 using namespace flx::demux;
 namespace flx { namespace faio {
 
-pflx_drv::pflx_drv(sleep_queue_t& q)
-    : flx_drv(q)
+// what is this stuff?? 3 queues needed?
+
+pflx_drv::pflx_drv(sleep_queue_t& q, int n)
+    : flx_drv(q,n), file_aio_worker(n)
 {
     // we might actually like to ignore SIGPIPE's conditionally,
     // e.g. when a flx prog actually requests socket io, we could even
@@ -560,6 +622,7 @@ pflx_drv::pflx_drv(sleep_queue_t& q)
 
 }}
 
+@head(1,'Sockets')
 @h=tangler('faio/faio_posixio.hpp')
 @select(h)
 #ifndef __FAIO_POSIXIO__

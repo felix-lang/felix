@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.102  2006/02/09 21:05:33  skaller
+Fixed sdl to use polling.
+
 Revision 1.101  2006/02/08 16:19:43  skaller
 Changed flx_run so it executes an exported flx_main procedure
 after thread frame initialisation blocks (and thus before
@@ -1645,6 +1648,7 @@ void flx_dynlink_t::link(char const *fname) throw(flx_link_failure_t)
   main_sym = (main_t)DLSYM(library,flx_main);
 
   //fprintf(stderr,"Start symbol found at %p\n",start_sym);
+  //fprintf(stderr,"main symbol found at %p\n",main_sym);
   
   refcnt = 1L;
 
@@ -1744,6 +1748,9 @@ namespace flx { namespace run {
 enum fstate_t { terminated, blocked, delegated };
 enum fpc_t { next_fthread_pos, next_request_pos };
 
+char const *get_fstate_desc(fstate_t);
+char const *get_fpc_desc(fpc_t);
+
 struct FLX_RTL_EXTERN gc_profile_t {
   bool debug_allocations;
   bool debug_collections; 
@@ -1789,6 +1796,28 @@ struct FLX_RTL_EXTERN sync_state_t {
 @select(h)
 #include "flx_sync.hpp"
 using namespace flx::rtl;
+
+char const *flx::run::get_fstate_desc(fstate_t fs)
+{
+  switch(fs)
+  {
+    case terminated: return "terminated";
+    case blocked: return "blocked";
+    case delegated: return "delegated";
+    default: return "Illegal fstate_t";
+  }
+}
+
+char const *flx::run::get_fpc_desc(fpc_t fpc)
+{
+  switch(fpc)
+  {
+    case next_fthread_pos: return "Next fthread pos";
+    case next_request_pos: return "Next request pos";
+    default: return "Illegal fpc_t";
+  }
+}
+
 
 flx::run::gc_profile_t::gc_profile_t (
   bool debug_allocations_, 
@@ -2098,7 +2127,7 @@ public:
     static void* demux_thread(void* udat);
 #endif
 
-   proto_async() : driver(async_active) {
+   proto_async() : async_active(20000), driver(async_active,20000) {
      // start waiting thread
 #if _WIN32
      // cast callback to itself. go figure.
@@ -2187,7 +2216,14 @@ int run_felix(
     sync_state_t ss(debug_driver, gcp, &active);
 
 process_active:
+    if(debug_driver)
+      fprintf(stderr,"Process active ..");
+    if(debug_driver)
+      fprintf(stderr,"Before running: Sync state is %s/%s\n",get_fstate_desc(ss.fs),get_fpc_desc(ss.pc));
     ss.frun();
+    if(debug_driver)
+      fprintf(stderr,"After running: Sync state is %s/%s\n",get_fstate_desc(ss.fs),get_fpc_desc(ss.pc));
+
     if (ss.fs == terminated) goto cleanup;
     if (ss.fs == blocked) goto do_async;
     if (ss.fs == delegated) 
@@ -2195,14 +2231,15 @@ process_active:
     {
       case svc_general:
       {
+        if(debug_driver)
+          fprintf(stderr,"svc_general from fthread=%p\n",ss.ft);
         if( !async ) async = new proto_async;
 
         flx_driver_request_base* dreq = (flx_driver_request_base*)
-          ((_ref_*)(ss.request->data))->get_data()
+          (((_ref_*)(ss.request->data))->get_data())
         ;
 
-        if(!async) async = new proto_async;
-
+        //fprintf(stderr,"Request object at %p\n",dreq);
         // RF hates the flag this function returns .. might
         // mask a race condition, get rid of it
         ++async_count;
@@ -2261,20 +2298,24 @@ do_async:
     if(flx_main) // conspire to only do this once
     {
       active.push_front(flx_main);
+      ss.pc = next_fthread_pos;
       flx_main = NULL;
       goto process_active;
     }
 
     // ran out of active threads - are there any in the async queue?
     if(debug_driver){
-      fprintf(stderr, "out of active synchronous threads, trying async\n");
+      fprintf(stderr, "out of active synchronous threads, trying async, count=%ld\n",async_count);
     }
 
     if(async && async_count > 0){
       // STILL A ROOT
       fthread_t* ftp = (fthread_t*)async->async_active.dequeue();
+      if(debug_driver)
+        fprintf(stderr,"Async Retrieving fthread %p\n",ftp);
       active.push_front(ftp);
       --async_count;
+      ss.pc = next_fthread_pos;
       goto process_active;
     }
 

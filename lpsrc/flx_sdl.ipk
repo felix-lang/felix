@@ -1,5 +1,8 @@
 @head(1,'SDL')
 $Log$
+Revision 1.22  2006/02/09 21:05:33  skaller
+Fixed sdl to use polling.
+
 Revision 1.21  2006/02/09 07:42:10  skaller
 Try event polling for sdl100, SDL doesn't support threads
 reading events on Windows ..
@@ -3123,6 +3126,19 @@ proc drawchan(x:schannel[int], drawing:1->0)
   done;
 }
 
+proc poll_event(e: &SDL_Event)
+{
+tryagain:>
+  //print "Polling event"; endl;
+  var result = SDL_PollEvent(unref e);
+  if result > 0 do
+    //print "Got event"; endl;
+    return;
+  done;
+  Faio::sleep 0.1;
+  goto tryagain;
+}
+
 proc dispatch_event(
   keyboard:schannel[SDL_keysym],
   active:schannel[SDL_ActiveEvent],
@@ -3130,7 +3146,10 @@ proc dispatch_event(
 )
 {
   whilst true do
-    var &e : SDL_Event <- get_sdl_event event_lock;
+    // var &e : SDL_Event <- get_sdl_event event_lock;
+    var e : SDL_Event;
+    poll_event(&e);
+
     match e.type_ with
     | ?et when et == SDL_ACTIVEEVENT => 
       { write (active, e.active); }
@@ -3506,6 +3525,19 @@ proc execute(x:schannel[int], something:1->0)
   done;
 }
 
+proc poll_event(e: &SDL_Event)
+{
+tryagain:>
+  //print "Polling event"; endl;
+  var result = SDL_PollEvent(unref e);
+  if result > 0 do
+    //print "Got event"; endl;
+    return;
+  done;
+  Faio::sleep 0.1;
+  goto tryagain;
+}
+
 proc dispatch_event(
   keyboard:schannel[SDL_keysym],
   active:schannel[SDL_ActiveEvent],
@@ -3513,7 +3545,9 @@ proc dispatch_event(
 )
 {
   whilst true do
-    var &e : SDL_Event <- get_sdl_event event_lock;
+    //var &e : SDL_Event <- get_sdl_event event_lock;
+    var e : SDL_Event;
+    poll_event(&e);
     match e.type_ with
     | ?et when et == SDL_ACTIVEEVENT => 
       { write (active, e.active); }
@@ -3770,7 +3804,7 @@ proc LoadGLTextures( )
 
 	/* Generate The Texture */
   glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.->w,
-    TextureImage.->h, 0, GL_BGR,
+    TextureImage.->h, 0, GL_RGB,
     GL_UNSIGNED_BYTE, TextureImage.->pixels 
   );
 
@@ -3995,6 +4029,20 @@ proc execute(x:schannel[int], something:1->0)
   done;
 }
 
+proc poll_event(e: &SDL_Event)
+{
+tryagain:>
+  //print "Polling event"; endl;
+  var result = SDL_PollEvent(unref e);
+  if result > 0 do
+    //print "Got event"; endl;
+    return;
+  done;
+  Faio::sleep 0.1;
+  goto tryagain;
+}
+
+
 proc dispatch_event(
   keyboard:schannel[SDL_keysym],
   active:schannel[SDL_ActiveEvent],
@@ -4002,7 +4050,9 @@ proc dispatch_event(
 )
 {
   whilst true do
-    var &e : SDL_Event <- get_sdl_event event_lock;
+    //var &e : SDL_Event <- get_sdl_event event_lock;
+    var e : SDL_Event;
+    poll_event(&e);
     match e.type_ with
     | ?et when et == SDL_ACTIVEEVENT => 
       { write (active, e.active); }
@@ -4254,7 +4304,7 @@ proc LoadGLTextures( )
 
 	/* Generate The Texture */
   glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.->w,
-    TextureImage.->h, 0, GL_BGR,
+    TextureImage.->h, 0, GL_RGB,
     GL_UNSIGNED_BYTE, TextureImage.->pixels 
   );
 
@@ -4270,7 +4320,7 @@ proc LoadGLTextures( )
 
 	/* Generate The Texture */
   glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.->w,
-    TextureImage.->h, 0, GL_BGR,
+    TextureImage.->h, 0, cast[uint] GL_RGB,
     GL_UNSIGNED_BYTE, TextureImage.->pixels 
   );
 
@@ -4284,7 +4334,7 @@ proc LoadGLTextures( )
   ignore(gluBuild2DMipmaps( 
     GL_TEXTURE_2D, 3, 
     TextureImage.->w, TextureImage.->h, 
-    GL_BGR, GL_UNSIGNED_BYTE, 
+    GL_RGB, GL_UNSIGNED_BYTE, 
     cast[caddress] TextureImage.->pixels 
   ));
 
@@ -4592,6 +4642,19 @@ proc execute(x:schannel[int], something:1->0)
   done;
 }
 
+proc poll_event(e: &SDL_Event)
+{
+tryagain:>
+  //print "Polling event"; endl;
+  var result = SDL_PollEvent(unref e);
+  if result > 0 do
+    //print "Got event"; endl;
+    return;
+  done;
+  Faio::sleep 0.1;
+  goto tryagain;
+}
+
 proc dispatch_event(
   keyboard:schannel[SDL_keysym],
   active:schannel[SDL_ActiveEvent],
@@ -4599,7 +4662,9 @@ proc dispatch_event(
 )
 {
   whilst true do
-    var &e : SDL_Event <- get_sdl_event event_lock;
+    //var &e : SDL_Event <- get_sdl_event event_lock;
+    var e : SDL_Event;
+    poll_event(&e);
     match e.type_ with
     | ?et when et == SDL_ACTIVEEVENT => 
       { write (active, e.active); }
@@ -4861,7 +4926,7 @@ proc LoadGLTextures( )
 
 	/* Generate The Texture */
   glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.->w,
-    TextureImage.->h, 0, GL_BGR,
+    TextureImage.->h, 0, GL_RGB,
     GL_UNSIGNED_BYTE, TextureImage.->pixels 
   );
 
@@ -5161,6 +5226,19 @@ proc execute(x:schannel[int], something:1->0)
   done;
 }
 
+proc poll_event(e: &SDL_Event)
+{
+tryagain:>
+  //print "Polling event"; endl;
+  var result = SDL_PollEvent(unref e);
+  if result > 0 do
+    //print "Got event"; endl;
+    return;
+  done;
+  Faio::sleep 0.1;
+  goto tryagain;
+}
+
 proc dispatch_event(
   keyboard:schannel[SDL_keysym],
   active:schannel[SDL_ActiveEvent],
@@ -5168,7 +5246,9 @@ proc dispatch_event(
 )
 {
   whilst true do
-    var &e : SDL_Event <- get_sdl_event event_lock;
+    //var &e : SDL_Event <- get_sdl_event event_lock;
+    var e : SDL_Event;
+    poll_event(&e);
     match e.type_ with
     | ?et when et == SDL_ACTIVEEVENT => 
       { write (active, e.active); }

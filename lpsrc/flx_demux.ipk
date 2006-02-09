@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.39  2006/02/09 21:05:33  skaller
+Fixed sdl to use polling.
+
 Revision 1.38  2006/02/09 07:53:27  skaller
 Fix windows semaphores.
 
@@ -892,11 +895,11 @@ class FLX_RTL_EXTERN sleep_queue_t {
   void *lame_opaque;  
   size_t bound;
 public:
-  sleep_queue_t(size_t=1);
+  sleep_queue_t(size_t);
   ~sleep_queue_t();
   void enqueue(void*);
   void* dequeue();
-  void resize(size_t=1);
+  void resize(size_t);
 };
 
 }} // namespace demux, flx
@@ -930,10 +933,16 @@ sleep_queue_t::~sleep_queue_t()
 void
 sleep_queue_t::enqueue(void* elt)
 {
+  //fprintf(stderr,"Q%p: Enqueue %p\n",this,elt);
   flx_mutex_locker_t   l(member_lock);
   if(ELTQ->size() >= bound)
+  {
+    //fprintf(stderr,"Q%p: Queue is full, waiting\n",this);
     not_full_cond.wait(&member_lock);
+  }
+  //fprintf(stderr,"Q%p: Queue has space\n",this);
   ELTQ->push(elt);
+  //fprintf(stderr,"Q%p: Signal not empty\n",this);
   not_empty_cond.signal(); // cannot return an error
 }
 
@@ -942,11 +951,19 @@ sleep_queue_t::dequeue()
 {
   flx_mutex_locker_t   l(member_lock);
   if(ELTQ->empty())
+  {
+    //fprintf(stderr,"Q%p: Waiting for non empty queue\n",this);
     not_empty_cond.wait(&member_lock);
+  }
   void *elt = ELTQ->front();
+  //fprintf(stderr,"Q%p: Dequeue %p\n",this,elt);
   ELTQ->pop();
   if(ELTQ->size() < bound)
+  {
+    //fprintf(stderr,"Q%p: Signalling not full\n",this);
     not_full_cond.signal();
+  }
+  //fprintf(stderr,"Q%p: Dequeued, returning %p\n",this,elt);
   return elt;
 }
 
@@ -1002,7 +1019,7 @@ class FLX_RTL_EXTERN worker_fifo
   bool thread_loop_body();      // returns keep going flag
 
 public:
-  worker_fifo();
+  worker_fifo(int n);
   ~worker_fifo();
 
   /// method used by client to schedule jobs
@@ -1027,7 +1044,7 @@ namespace flx { namespace demux {
 // a fifo of tasks & a thread (threads?) to serve them.
 // users overload finished function to implement wakeup
 
-worker_fifo::worker_fifo()
+worker_fifo::worker_fifo(int n) : fifo(n)
 {
   //fprintf(stderr,"async worker fifo io module constructor\n");
   // fifo already inited and ready to go, so get pthread going
@@ -1085,7 +1102,7 @@ void*
 worker_fifo::thread_start(void* udat)
 { 
   worker_fifo*  fio = (worker_fifo*)udat;
-  //fprintf(stderr,"worker_fifo thread started! this=%p\n", fio);
+  fprintf(stderr,"worker_fifo thread started! this=%p\n", fio);
 
   while(fio->thread_loop_body()) ;
 
@@ -1098,7 +1115,7 @@ bool
 worker_fifo::thread_loop_body()
 {
   worker_task*  req = (worker_task*)fifo.dequeue();
-  // fprintf(stderr,"dequeued worker_task (%p)\n", req);
+  //fprintf(stderr,"dequeued worker_task (%p)\n", req);
 
   if(!req) return false;        // finished, got quit signal
 
@@ -1111,6 +1128,7 @@ worker_fifo::thread_loop_body()
 void
 worker_fifo::add_worker_task(worker_task* task)
 {
+  //fprintf(stderr,"adding worker task %p\n",task);
   fifo.enqueue(task);         // don't worry, fifo is re-entrant
 }
 
@@ -1401,6 +1419,7 @@ public:
 class FLX_RTL_EXTERN pasync_fileio : public worker_fifo
 {
 public:
+  pasync_fileio(int n) : worker_fifo(n) {}
   // compatibility only. don't need this class anymore.
   void add_fileio_request(fileio_request* req) { add_worker_task(req); } 
 };

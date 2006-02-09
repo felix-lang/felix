@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.219  2006/02/09 21:05:33  skaller
+Fixed sdl to use polling.
+
 Revision 1.218  2006/02/08 16:19:43  skaller
 Changed flx_run so it executes an exported flx_main procedure
 after thread frame initialisation blocks (and thus before
@@ -2803,6 +2806,7 @@ DEMUXRTL_INTERFACES = [
 ]
 
 FAIORTL_INTERFACES = [
+ 'faio_job.hpp',
  'faio_asyncio.hpp',
  'faio_drv.hpp',
  'faio_pdrv.hpp',
@@ -3003,6 +3007,7 @@ RTL_CPPS = [
 ]
 
 FAIO_CPPS = [
+  "faio/faio_job",
   "faio/faio_asyncio",
   "faio/faio_drv",
 ]
