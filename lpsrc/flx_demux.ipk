@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.38  2006/02/09 07:53:27  skaller
+Fix windows semaphores.
+
 Revision 1.37  2006/02/07 15:55:06  skaller
 Added portable semaphores and a monitor class to demux.
 
@@ -555,7 +558,8 @@ pthread_cond_broadcast (pthread_cond_t *cv)
 
 int sem_init(sem_t *sem, int pshared, unsigned int value)
 {
-  sem = CreateSemaphore(NULL,value,0x7FFFFFFF,NULL);
+  *sem = CreateSemaphore(NULL,value,0x7FFFFFFF,NULL);
+  return 0;
 }
 
 int sem_wait(sem_t * sem) 
@@ -578,6 +582,7 @@ int sem_getvalue(sem_t * sem, int * sval)
   LONG x;  
   ReleaseSemaphore(*sem,0,&x); 
   *sval = x;
+  return 0;
 }
 
 int sem_destroy(sem_t * sem) 
