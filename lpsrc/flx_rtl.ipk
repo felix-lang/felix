@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.103  2006/02/10 04:40:26  skaller
+Win32 rtl patches
+
 Revision 1.102  2006/02/09 21:05:33  skaller
 Fixed sdl to use polling.
 
@@ -1748,8 +1751,8 @@ namespace flx { namespace run {
 enum fstate_t { terminated, blocked, delegated };
 enum fpc_t { next_fthread_pos, next_request_pos };
 
-char const *get_fstate_desc(fstate_t);
-char const *get_fpc_desc(fpc_t);
+char const * FLX_RTL_EXTERN get_fstate_desc(fstate_t);
+char const * FLX_RTL_EXTERN get_fpc_desc(fpc_t);
 
 struct FLX_RTL_EXTERN gc_profile_t {
   bool debug_allocations;
@@ -1797,7 +1800,9 @@ struct FLX_RTL_EXTERN sync_state_t {
 #include "flx_sync.hpp"
 using namespace flx::rtl;
 
-char const *flx::run::get_fstate_desc(fstate_t fs)
+namespace flx { namespace run {
+
+char const *FLX_RTL_EXTERN get_fstate_desc(fstate_t fs)
 {
   switch(fs)
   {
@@ -1808,7 +1813,7 @@ char const *flx::run::get_fstate_desc(fstate_t fs)
   }
 }
 
-char const *flx::run::get_fpc_desc(fpc_t fpc)
+char const *FLX_RTL_EXTERN get_fpc_desc(fpc_t fpc)
 {
   switch(fpc)
   {
@@ -1819,7 +1824,7 @@ char const *flx::run::get_fpc_desc(fpc_t fpc)
 }
 
 
-flx::run::gc_profile_t::gc_profile_t (
+gc_profile_t::gc_profile_t (
   bool debug_allocations_, 
   bool debug_collections_, 
   unsigned long compact_, 
@@ -1838,9 +1843,9 @@ flx::run::gc_profile_t::gc_profile_t (
 {
 }
 
-flx::run::gc_profile_t::~gc_profile_t() { }
+gc_profile_t::~gc_profile_t() { }
 
-flx::run::sync_state_t::sync_state_t (
+sync_state_t::sync_state_t (
   bool debug_driver_,
   gc_profile_t *gcp_,
   std::list<fthread_t*> *active_
@@ -1851,7 +1856,7 @@ flx::run::sync_state_t::sync_state_t (
   pc(next_fthread_pos)
 {}
 
-void flx::run::sync_state_t::frun()
+void sync_state_t::frun()
 {
   // local copies are faster
   flx::gc::collector::flx_collector_t *collector = gcp->collector;
@@ -2007,6 +2012,7 @@ check_collect:
   abort();
 }
 
+}}
 
 @head(2,'Universal Program Driver')
 This driver runs stand alone Felix programs.

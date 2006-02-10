@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.38  2006/02/10 04:40:26  skaller
+Win32 rtl patches
+
 Revision 1.37  2006/02/09 21:05:33  skaller
 Fixed sdl to use polling.
 
@@ -740,7 +743,7 @@ class FLX_RTL_EXTERN wflx_drv : public flx_drv {
 public:
   // visual studio seems to demand that I have the constructor defined in a cpp
   // file. the file previously had none, which gave me weird link errors.
-  wflx_drv(demux::sleep_queue_t& q);
+  wflx_drv(demux::sleep_queue_t& q, int n);
 
   demux::timer_queue* get_sleepers() { return &sleepers; }
 };
@@ -758,7 +761,7 @@ public:
 namespace flx { namespace faio {
 
   // vs requirement that I have a cpp file?
-  wflx_drv::wflx_drv(demux::sleep_queue_t& q) : flx_drv(q) {}
+  wflx_drv::wflx_drv(demux::sleep_queue_t& q,int n) : flx_drv(q,n) {}
 
 }}
 
