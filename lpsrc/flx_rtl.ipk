@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.104  2006/02/10 21:55:34  skaller
+Sdl examples now run on Windows
+
 Revision 1.103  2006/02/10 04:40:26  skaller
 Win32 rtl patches
 
@@ -1751,8 +1754,8 @@ namespace flx { namespace run {
 enum fstate_t { terminated, blocked, delegated };
 enum fpc_t { next_fthread_pos, next_request_pos };
 
-char const * FLX_RTL_EXTERN get_fstate_desc(fstate_t);
-char const * FLX_RTL_EXTERN get_fpc_desc(fpc_t);
+FLX_RTL_EXTERN char const * get_fstate_desc(fstate_t);
+FLX_RTL_EXTERN char const * get_fpc_desc(fpc_t);
 
 struct FLX_RTL_EXTERN gc_profile_t {
   bool debug_allocations;
