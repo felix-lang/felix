@@ -1296,8 +1296,8 @@ class gxx(flxbuild.compiler_class.compiler_base):
     opt = self.options
     cmd = opt.CCLINK_DYNAMIC_RTL
     cmd = cmd + "-o " +outfile + opt.EXT_DYLIB + " "
-    if opt.CYGWIN:
-      cmd = cmd + "-Wl,--out-implib="+outfile+".dll.a "
+    #if opt.CYGWIN:
+    #  cmd = cmd + "-Wl,--out-implib="+outfile+".dll.a "
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
     for i in lib_path: cmd = cmd + "-L"+i+" "
     for i in libs: cmd = cmd + "-l"+i+" "
