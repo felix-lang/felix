@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.40  2006/02/11 22:12:30  skaller
+Allow assigning constructor index to enums.
+
 Revision 1.39  2006/02/09 21:05:33  skaller
 Fixed sdl to use polling.
 
@@ -613,7 +616,7 @@ int pthread_cond_uswait(
   timespec ts;
   ts.tv_sec = t1 / 1000000uL;
   ts.tv_nsec = (t1 % 1000000uL) * 1000;
-  pthread_cond_timedwait(cv,m,&ts);
+  return pthread_cond_timedwait(cv,m,&ts);
 }
 
 #endif

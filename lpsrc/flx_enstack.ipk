@@ -272,7 +272,9 @@ let has_ptr_fn cache syms bbdfns children e =
         let id,parent,sr,entry = Hashtbl.find bbdfns i in
         begin match entry with
         | `BBDCL_abs _ -> ()
-        | `BBDCL_union (vs,cs)
+        | `BBDCL_union (vs,cs)->
+          check_components vs ts (map (fun (_,_,t)->t) cs)
+
         | `BBDCL_struct (vs,cs)
         | `BBDCL_cstruct (vs,cs) -> 
           check_components vs ts (map snd cs)

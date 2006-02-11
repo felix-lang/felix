@@ -258,6 +258,10 @@ false
 2
 @head(2,"tut/examples/tut117.expect")
 @select(tangler("tut/examples/tut117.expect","data"))
+a0
+b2
+c3
+d15
 @head(2,"tut/examples/tut118.expect")
 @select(tangler("tut/examples/tut118.expect","data"))
 Some 1

@@ -252,7 +252,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       begin match entry with
       | `BBDCL_union (bvs,cts) ->
         let tsub' t = reduce_type (beta_reduce syms [] (tsubst bvs ts t)) in
-        let cts = map (fun (_,t) -> tsub' t) cts in
+        let cts = map (fun (_,_,t) -> tsub' t) cts in
         if all_voids cts then ge' e
         else ce_dot (ge' e) "variant"
       | _ -> failwith ("Woops expected union, got " ^ id)

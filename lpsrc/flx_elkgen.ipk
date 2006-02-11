@@ -145,7 +145,7 @@ let gen_elk_lexer filebase module_name syms bbdfns this sr ((_,t') as e) n  =
   pe ("#include \""^module_name^"_lexer_"^si n^".hpp\"");
   pe ("//token type = " ^ token_type_name);
   pe ("static char *"^token_id^"_desc["^si (length cts)^"]={");
-  iter (fun (nm,_) -> pe ("   \""^nm^"\",")) cts;
+  iter (fun (nm,_,_) -> pe ("   \""^nm^"\",")) cts;
   pe ("};");
   pe "";
   (* FUDGE PROPERTY LIST *)
@@ -331,13 +331,13 @@ let gen_elk_parser filebase module_name syms bbdfns this sr t' n ii =
           pe ("//Token type " ^ token_id ^ " -> " ^ token_type_name);
           pe "terminals {";
           let i = ref 0 in
-          iter (fun (id,t) -> 
-            pe ("  " ^ si !i^" : "^ cid_of_flxid id ^ ";"); incr i
+          iter (fun (id,j,t) -> 
+            pe ("  " ^ si j^" : "^ cid_of_flxid id ^ ";")
           ) 
           cts;
         
         pe "";
-        iter (fun (id,t) -> 
+        iter (fun (id,_,t) -> 
           if t <> `BTYP_void then begin
             pe ("  token("^tn t^"*) " ^ cid_of_flxid id ^ "{");
             pe ("    fun dup(x) { return x; }");

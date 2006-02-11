@@ -330,7 +330,16 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     *)
     ui i
 
-  | `BBDCL_union (vs,ps)
+  | `BBDCL_union (vs,ps) ->
+    let argtypes = map (fun (_,_,t)->t) ps in
+    assert (length vs = length ts);
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let hvarmap = hashtable_of_list vars in
+    let tss = map (varmap_subst hvarmap) argtypes in
+    iter rtr tss;
+    rtnr (`BTYP_inst (i,ts))
+
+
   | `BBDCL_struct (vs,ps)
   | `BBDCL_cstruct (vs,ps)
     ->

@@ -623,7 +623,7 @@ and statement_t =
   | `AST_seq of range_srcref * statement_t list
 
   (* types *)
-  | `AST_union of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
+  | `AST_union of range_srcref * id_t * vs_list_t * (id_t * int option * typecode_t) list
   | `AST_struct of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
   | `AST_cstruct of range_srcref * id_t * vs_list_t * (id_t * typecode_t) list
   | `AST_cclass of range_srcref * id_t * vs_list_t * class_member_t list
@@ -754,7 +754,7 @@ type dcl_t =
 
   (* data structures *)
   | `DCL_function of     params_t * typecode_t * property_t list * asm_t list
-  | `DCL_union of        (id_t * typecode_t) list
+  | `DCL_union of        (id_t * int option * typecode_t) list
   | `DCL_struct of       (id_t * typecode_t) list
   | `DCL_cstruct of      (id_t * typecode_t) list
   | `DCL_cclass of       class_member_t list
@@ -993,7 +993,7 @@ and bbdcl_t =
   | `BBDCL_proc of       property_t list * bvs_t * btypecode_t list * c_t  * breqs_t
   | `BBDCL_insert of     bvs_t * c_t * ikind_t * breqs_t
   
-  | `BBDCL_union of      bvs_t * (id_t * btypecode_t) list
+  | `BBDCL_union of      bvs_t * (id_t * int * btypecode_t) list
   | `BBDCL_struct of     bvs_t * (id_t * btypecode_t) list
   | `BBDCL_cstruct of     bvs_t * (id_t * btypecode_t) list
   | `BBDCL_cclass of     bvs_t * bclass_member_t list
@@ -1030,7 +1030,7 @@ type symbol_definition_t =
   | `SYMDEF_val of  typecode_t
   | `SYMDEF_fun of property_t list * typecode_t list * typecode_t * c_t  * named_reqs_t * prec_t
   | `SYMDEF_insert of c_t  * ikind_t * named_reqs_t
-  | `SYMDEF_union of  (id_t * typecode_t) list
+  | `SYMDEF_union of  (id_t * int *  typecode_t) list
   | `SYMDEF_struct of  (id_t * typecode_t) list
   | `SYMDEF_cstruct of  (id_t * typecode_t) list
   | `SYMDEF_cclass of  class_member_t list
@@ -3030,8 +3030,10 @@ and string_of_statement level s =
     string_of_compound level sts
 
   | `AST_union (_,name, vs,cs) -> 
-    let string_of_union_component (name,ty) =
-      (spaces (level+1)) ^ "|" ^ name ^ special_string_of_typecode ty
+    let string_of_union_component (name,cval, ty) =
+      (spaces (level+1)) ^ "|" ^ name ^ 
+      (match cval with None -> "" | Some i -> "="^ si i) ^
+      special_string_of_typecode ty
     in
     spaces level ^ "union " ^ name ^ print_vs vs ^ " = " ^
     spaces level ^ "{\n" ^
@@ -3823,8 +3825,11 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     spaces level ^ "}"
 
   | `DCL_union (cs) -> 
-    let string_of_union_component (name,ty) =
-      (spaces (level+1)) ^ "|" ^name^ special_string_of_typecode ty
+    let string_of_union_component (name,v,ty) =
+      (spaces (level+1)) ^ 
+      "|" ^name^ 
+      (match v with | None -> "" | Some i -> "="^si i) ^ 
+      special_string_of_typecode ty
     in
     spaces level ^ "union " ^ name^seq ^ print_vs vs ^
     " = " ^
@@ -4045,8 +4050,10 @@ and string_of_bbdcl dfns bbdcl index =
     string_of_breqs dfns reqs
 
   | `BBDCL_union (vs,cs) ->
-    let string_of_union_component (name,ty) =
-      "  " ^ "|" ^name ^ special_string_of_btypecode dfns ty
+    let string_of_union_component (name,v,ty) =
+      "  " ^ "|" ^name ^ 
+     "="^si v^
+      special_string_of_btypecode dfns ty
     in
     "union " ^ name ^ print_bvs vs ^ " = " ^
     "{\n" ^

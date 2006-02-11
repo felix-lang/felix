@@ -464,25 +464,33 @@ union_decl:
       `AST_union (rstoken $1 $7, snd $2, $3, $6) 
     }
 
+opt_value:
+  | EQUAL INTEGER { 
+      let sr,t,v = $2 in 
+      let n = Big_int.int_of_big_int v in
+      Some n 
+    }
+  | { None }
+
 enum_items:
   | enum_items COMMA enum_item { $1 @ [$3] }
   | enum_item { [$1] }
 enum_item:
-  | NAME 
+  | NAME opt_value
     { 
       let sr = slift (fst $1) in
-      snd $1, typecode_of_expr (`AST_void sr)
+      snd $1, $2, typecode_of_expr (`AST_void sr)
     }
 
 type_sum_items:
   | type_sum_items VBAR type_sum_item { $1 @ [$3] }
   | type_sum_item { [$1] }
 type_sum_item:
-  | NAME OF expr { (snd $1,typecode_of_expr $3) }
+  | NAME OF expr { (snd $1,None,typecode_of_expr $3) }
   | NAME 
     { 
       let sr = slift (fst $1) in
-      snd $1, typecode_of_expr (`AST_void sr)
+      snd $1, None, typecode_of_expr (`AST_void sr)
     }
 
 @head(3,'Struct Binding')

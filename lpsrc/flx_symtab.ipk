@@ -1065,7 +1065,26 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           if is_class then clierr sr "Union not allowed in class";
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in
           let utype = `AST_name(sr,id, tvars) in
-          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;symdef=`SYMDEF_union (its)}
+          let its = 
+            let ccount = ref 0 in (* count component constructors *)
+            map (fun (component_name,v,t) ->
+              (* ctor sequence in union *)
+              let ctor_idx = match v with
+                | None ->  !ccount 
+                | Some i -> ccount := i; i
+              in 
+              incr ccount
+              ; 
+              component_name,ctor_idx,t
+            )
+            its
+          in
+
+          Hashtbl.add dfns n {
+            id=id;sr=sr;parent=parent;vs=vs;
+            pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=`SYMDEF_union (its)
+          }
           ;
           if access = `Public then add_unique pub_name_map id n;
           add_unique priv_name_map id n
@@ -1073,16 +1092,14 @@ let rec build_tables syms name level parent grandparent root is_class asms =
 
           let unit_sum = 
             fold_left 
-            (fun v (_,t) -> v && (match t with `AST_void _ -> true | _ -> false) )
+            (fun v (_,_,t) -> v && (match t with `AST_void _ -> true | _ -> false) )
             true 
             its
           in
-          let ccount = ref 0 in (* count component constructors *)
           iter
-          (fun (component_name,t) ->
+          (fun (component_name,ctor_idx,t) ->
             let dfn_idx = !counter in incr counter; (* constructor *)
             let match_idx = !counter in incr counter; (* matcher *)
-            let ctor_idx = !ccount in incr ccount; (* ctor sequence in union *)
             let ctor_dcl2 =
               if unit_sum
               then begin

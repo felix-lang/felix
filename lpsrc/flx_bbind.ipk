@@ -371,7 +371,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
         match Hashtbl.find syms.dfns uidx with
         | {symdef=`SYMDEF_union its} ->
           fold_left 
-          (fun v (_,t) -> 
+          (fun v (_,_,t) -> 
             v && (match t with `AST_void _ -> true | _ -> false) 
           )
           true 
@@ -458,7 +458,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
     | `SYMDEF_union (cs) ->
       (* print_endline ("//Binding union " ^ si i ^ " --> " ^ name); 
       *)
-      let cs' = List.map (fun (n,t) -> n, bt t) cs in
+      let cs' = List.map (fun (n,v,t) -> n, v,bt t) cs in
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_union (bvs,cs'))
 
     | `SYMDEF_struct (cs) ->

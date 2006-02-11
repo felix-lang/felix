@@ -1105,8 +1105,10 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
 
   | `AST_insert (sr,name',vs,s,kind,reqs) -> 
     let props, dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,map_req name',None,access,vs,`DCL_insert (s, kind, map_reqs sr reqs))
-    :: dcls
+    (* SPECIAL case: insertion requires insertion use filo order *)
+    dcls @ [
+      Dcl (sr,map_req name',None,access,vs,`DCL_insert (s, kind, map_reqs sr reqs))
+    ]
 
   (* executable *)
   | `AST_fun_return (sr,e) ->

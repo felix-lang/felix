@@ -120,7 +120,7 @@ let rec get_offsets' syms bbdfns typ : string list =
     begin match entry with
     | `BBDCL_union (vs,idts) ->
       let varmap = mk_varmap vs ts in
-      let cpts = map (fun (_,t) -> varmap_subst varmap t) idts in
+      let cpts = map (fun (_,_,t) -> varmap_subst varmap t) idts in
       if all_voids cpts then []
       else ["offsetof("^tname^",data)"]
 
@@ -462,7 +462,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
       *)
       | `BBDCL_union (vs,args) ->
         let varmap = mk_varmap vs ts in
-        let args = map snd args in
+        let args = map (fun (_,_,t)->t) args in
         let args = map (varmap_subst varmap) args in
         iter 
         (fun t -> let t = reduce_type t in

@@ -83,7 +83,7 @@ let throw_on_gc syms bbdfns e : unit = match e with
     | `BTYP_inst (i,ts) ->
       let id,parent,sr,entry = try Hashtbl.find bbdfns i with Not_found -> failwith "YIKES3" in
       begin match entry with
-      | `BBDCL_union (vs,idts) when not (all_voids (snd (split idts))) -> raise Not_found
+      | `BBDCL_union (vs,idts) when not (all_voids (map (fun (_,_,t)->t) idts)) -> raise Not_found
       | _ -> ()
       end
     | _ -> () 

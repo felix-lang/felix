@@ -244,7 +244,7 @@ let gen_type_name syms bbdfns (index,typ) =
       in
       let name = cn typ in
       descr ^
-      let lss = map snd ls in
+      let lss = map (fun (_,_,t)->t) ls in
       let lss = map (tsubst vs ts) lss in
       let len = si (length lss) in
       if all_voids lss
