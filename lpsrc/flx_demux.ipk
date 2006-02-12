@@ -1,5 +1,10 @@
 @head(1,'demux')
 $Log$
+Revision 1.41  2006/02/12 06:51:30  rfistman
+added WSAID_CONNECTEX and LPFN_CONNECTEX definitions for ming (nocygwin) target
+now conditionally define EAGAIN in posix compat layer because ming seems to
+have it.
+
 Revision 1.40  2006/02/11 22:12:30  skaller
 Allow assigning constructor index to enums.
 
@@ -314,7 +319,10 @@ struct pthread_cond_t
 
 // THIS IS SICK but there ain't no other way in C
 #define ETIMEDOUT WAIT_TIMEOUT
+// looks like EAGAIN is available in minggw, but not in vs sdk.
+#ifndef EAGAIN
 #define EAGAIN WAIT_TIMEOUT
+#endif
 
 int FLX_RTL_EXTERN pthread_mutex_init (pthread_mutex_t*, const pthread_mutexattr_t*);
 int FLX_RTL_EXTERN pthread_mutex_lock(pthread_mutex_t*);
@@ -3036,6 +3044,24 @@ set_tcp_nodelay(int s, int disable)
 #include "demux_overlapped.hpp"
 #include <stdio.h>      // fprintf
 #include <assert.h>
+
+// cygwin's copy of mswsock.h leaves something to be desired...
+#ifndef WSAID_CONNECTEX
+typedef 
+BOOL
+(PASCAL FAR * LPFN_CONNECTEX) (
+    IN SOCKET s,
+    IN const struct sockaddr FAR *name,
+    IN int namelen,
+    IN PVOID lpSendBuffer OPTIONAL,
+    IN DWORD dwSendDataLength,
+    OUT LPDWORD lpdwBytesSent,
+    IN LPOVERLAPPED lpOverlapped 
+    );
+
+#define WSAID_CONNECTEX \           
+    {0x25a207b9,0xddf3,0x4660,{0x8e,0xe9,0x76,0xe5,0x8c,0x74,0x06,0x3e}}
+#endif
 
 namespace flx { namespace demux {
 
