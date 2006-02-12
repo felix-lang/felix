@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.105  2006/02/12 04:25:40  skaller
+Fix long standing cygwin build problem (workaround for libstdc++ bug).
+
 Revision 1.104  2006/02/10 21:55:34  skaller
 Sdl examples now run on Windows
 
@@ -1507,6 +1510,8 @@ struct FLX_RTL_EXTERN flx_dynlink_t
   void link(char const *filename) throw(flx_link_failure_t);
   void unlink();
   virtual ~flx_dynlink_t();
+  flx_dynlink_t();
+
 private:
   // the user should override this procedure to
   // link any extra symbols.
@@ -1514,6 +1519,8 @@ private:
   // otherwise your exception will be dishonoured
   // and a generic link_failure_t thrown anyhow
 
+  flx_dynlink_t(flx_dynlink_t const&); // uncopyable
+  void operator=(flx_dynlink_t const&); // uncopyable
   virtual void usr_link();
     // called after mandatory symbols are linked
 };
@@ -1593,7 +1600,19 @@ flx_link_failure_t::flx_link_failure_t(string f, string o, string w) :
 
 flx_link_failure_t::~flx_link_failure_t(){}
 
-flx_dynlink_t::~flx_dynlink_t(){}
+flx_dynlink_t::~flx_dynlink_t() {}
+flx_dynlink_t::flx_dynlink_t(flx_dynlink_t const&) {} // no copy hack
+void flx_dynlink_t::operator=(flx_dynlink_t const&) {} // no copy hack
+ 
+flx_dynlink_t::flx_dynlink_t() :
+  library(0),
+  filename(""), 
+  thread_frame_creator(NULL),
+  start_sym(NULL),
+  main_sym(NULL),
+  refcnt(0)
+{}
+
 
 void flx_dynlink_t::link(char const *fname) throw(flx_link_failure_t)
 {
