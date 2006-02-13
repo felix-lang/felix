@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.220  2006/02/13 12:28:38  skaller
+Thread safe collector
+
 Revision 1.219  2006/02/09 21:05:33  skaller
 Fixed sdl to use polling.
 
@@ -2998,6 +3001,7 @@ RAW_INTERFACES = CIL_RAW_INTERFACES + FLX_RAW_INTERFACES
 RTL_CPPS = [
   "rtl/flx_gc",
   "rtl/flx_collector",
+  "rtl/flx_ts_collector",
   "rtl/flx_rtl",
   "rtl/flx_dynlink",
   "rtl/flx_sync",

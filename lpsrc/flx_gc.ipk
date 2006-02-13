@@ -154,26 +154,47 @@ struct FLX_RTL_EXTERN collector_t
 @doc()
 These routines just provide statistics.
 @select(h)
-  virtual unsigned long get_allocation_count()const=0;
-  virtual unsigned long get_root_count()const=0;
-  virtual unsigned long get_allocation_amt()const=0;
+  unsigned long get_allocation_count()const {
+    return v_get_allocation_count(); 
+  }
+
+  unsigned long get_root_count()const { 
+    return v_get_root_count(); 
+  }
+
+  unsigned long get_allocation_amt()const { 
+    return v_get_allocation_amt(); 
+  }
 
 @doc()
 Hooks for the supplied allocator, which operate in
 terms of shape objects rather than raw memory amounts.
 @select(h)
-  virtual void *allocate(gc_shape_t *shape, unsigned long)=0;
-  virtual void deallocate(frame_t *fp)=0;
+  void *allocate(gc_shape_t *shape, unsigned long x) {
+    return v_allocate(shape,x);
+  }
+
+  void deallocate(frame_t *fp) {
+    v_deallocate(fp);
+  }
+
 @doc()
 The mark and sweep collector algorithm.
 @select(h)
-  virtual unsigned long collect()=0;
+  unsigned long collect() { 
+    return v_collect(); 
+  }
 
 @doc()
 Routines to add and remove roots.
 @select(h)
-  virtual void add_root(void *memory)=0;
-  virtual void remove_root(void *memory)=0;
+  void add_root(void *memory) {
+    v_add_root(memory);
+  }
+
+  void remove_root(void *memory) {
+    v_remove_root(memory);
+  }
 
 @doc()
 Routine to optimise store by compaction. Optional,
@@ -189,18 +210,33 @@ that used to point to a live frame (but the frame
 is now gone).
 
 @select(h)
-  virtual void compact(bool closed)=0;
+  void compact(bool closed) {
+    v_compact(closed);
+  }
 
 @doc()
 Integrity check for the data structure being managed.
 @select(h)
-  virtual void check()=0;
+  void check() {
+    v_check();
+  }
+
+private:
+  virtual unsigned long v_get_allocation_count()const=0;
+  virtual unsigned long v_get_root_count()const=0;
+  virtual unsigned long v_get_allocation_amt()const=0;
+  virtual void *v_allocate(gc_shape_t *shape, unsigned long)=0;
+  virtual void v_deallocate(frame_t *fp)=0;
+  virtual unsigned long v_collect()=0;
+  virtual void v_add_root(void *memory)=0;
+  virtual void v_remove_root(void *memory)=0;
+  virtual void v_compact(bool closed)=0;
+  virtual void v_check()=0;
 
 @doc()
 It doesn't make any sense to copy collector objects
 about.
 @select(h)
-private: // no assignment or copy
   void operator=(collector_t const&);
   collector_t(collector_t const&);
 };
@@ -508,28 +544,56 @@ struct FLX_RTL_EXTERN flx_collector_t : public collector_t
   flx_collector_t(allocator_t *);
   ~flx_collector_t();
 
-  /// allocator
-  void *allocate(gc_shape_t *ptr_map, unsigned long);
-
-  /// collector (returns number of objects collected)
-  unsigned long collect();
-
-  // add and remove roots
-  void add_root(void *memory);
-  void remove_root(void *memory);
-
-  //
-  void check();
+  // special to this collector ..?
+  void set_min_arena_size(unsigned long);
   bool check_client_pointer(void *);
   bool check_frame_pointer(frame_t *);
 
-  // statistics
-  unsigned long get_allocation_count()const;
-  unsigned long get_root_count()const;
-  unsigned long get_allocation_amt()const;
 
-  void compact(bool closed);
-  void set_min_arena_size(unsigned long);
+protected:
+
+  /// allocator
+  void *impl_allocate(gc_shape_t *ptr_map, unsigned long);
+  void impl_deallocate(frame_t *frame);
+
+  /// collector (returns number of objects collected)
+  unsigned long impl_collect();
+
+  // add and remove roots
+  void impl_add_root(void *memory);
+  void impl_remove_root(void *memory);
+
+  //
+  void check();
+
+  // statistics
+  unsigned long impl_get_allocation_count()const;
+  unsigned long impl_get_root_count()const;
+  unsigned long impl_get_allocation_amt()const;
+
+  void impl_compact(bool closed);
+  void impl_check();
+
+private:
+  /// allocator
+  void *v_allocate(gc_shape_t *ptr_map, unsigned long);
+  void v_deallocate(frame_t *frame);
+
+  /// collector (returns number of objects collected)
+  unsigned long v_collect();
+
+  // add and remove roots
+  void v_add_root(void *memory);
+  void v_remove_root(void *memory);
+
+  //
+  void v_check();
+  // statistics
+  unsigned long v_get_allocation_count()const;
+  unsigned long v_get_root_count()const;
+  unsigned long v_get_allocation_amt()const;
+
+  void v_compact(bool closed);
 
 private:
   bool collecting;
@@ -538,9 +602,6 @@ private:
   unsigned long allocation_amt;
 
  
-  void deallocate(frame_t *frame);
-    // calls unlink and dispose
-
   void unlink(frame_t *frame);
   void dispose(frame_t *frame);
     // calls post_delete or delete_frame
@@ -621,6 +682,7 @@ void *malloc_free::allocate(std::size_t amt)
   }
 }
 
+
 void malloc_free::deallocate(void *p, std::size_t)
 {
   //printf("free %p\n",p);
@@ -628,17 +690,58 @@ void malloc_free::deallocate(void *p, std::size_t)
   free(p);
 }
 
-unsigned long flx_collector_t::get_allocation_count()const
+void *flx_collector_t::v_allocate(gc_shape_t *ptr_map, unsigned long x) {
+  return impl_allocate(ptr_map, x);
+}
+
+void flx_collector_t::v_deallocate(frame_t *frame) {
+  impl_deallocate(frame);
+}
+
+unsigned long flx_collector_t::v_collect() {
+  return impl_collect();
+}
+
+void flx_collector_t::v_add_root(void *memory) {
+  impl_add_root(memory);
+}
+
+void flx_collector_t::v_remove_root(void *memory) {
+  impl_remove_root(memory);
+}
+
+void flx_collector_t::v_check() {
+  impl_check();
+}
+
+unsigned long flx_collector_t::v_get_allocation_count()const {
+  return impl_get_allocation_count();
+}
+
+unsigned long flx_collector_t::v_get_root_count()const {
+  return impl_get_root_count();
+}
+
+unsigned long flx_collector_t::v_get_allocation_amt()const {
+  return impl_get_allocation_amt();
+}
+
+void flx_collector_t::v_compact(bool closed) {
+  impl_compact(closed);
+}
+
+
+unsigned long flx_collector_t::impl_get_allocation_count()const
 {
   return allocation_count;
 }
 
-unsigned long flx_collector_t::get_root_count()const
+unsigned long flx_collector_t::impl_get_root_count()const
 {
   return root_count;
 }
 
-unsigned long flx_collector_t::get_allocation_amt()const
+unsigned long flx_collector_t::impl_get_allocation_amt()const
 {
   return allocation_amt;
 }
@@ -667,7 +770,7 @@ void flx_collector_t::set_min_arena_size(unsigned long x)
   min_arena_size = x; 
 }
 
-void * flx_collector_t::allocate(gc_shape_t *shape, unsigned long nobj)
+void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
 {
   // calculate how much memory to request
   std::size_t amt = nobj * shape->amt * shape->count + FRAMESIZE;
@@ -708,7 +811,7 @@ void * flx_collector_t::allocate(gc_shape_t *shape, unsigned long nobj)
   return FRAME_TO_CLIENT(fp);
 }
 
-void flx_collector_t::deallocate(frame_t *fp)
+void flx_collector_t::impl_deallocate(frame_t *fp)
 {
   unlink(fp);
   dispose(fp);
@@ -821,7 +924,7 @@ unsigned long flx_collector_t::sweep()
   return reap();
 }
 
-void flx_collector_t::add_root(void *memory)
+void flx_collector_t::impl_add_root(void *memory)
 {
   if(!memory)
   {
@@ -840,7 +943,7 @@ void flx_collector_t::add_root(void *memory)
     ++(*iter).second;
 }
 
-void flx_collector_t::remove_root(void *memory)
+void flx_collector_t::impl_remove_root(void *memory)
 {
   frame_t *p =  CLIENT_TO_FRAME(memory);
   rootmap_t::iterator iter = roots.find(p);
@@ -921,12 +1024,12 @@ void flx_collector_t::mark()
     scan_object((*i).first);
 }
 
-unsigned long flx_collector_t::collect()
+unsigned long flx_collector_t::impl_collect()
 {
   if(debug)fprintf(stderr,"Running collector\n");
   mark();
   unsigned long r = sweep();
-  if(debug)check();
+  if(debug)impl_check();
   return r;
 }
 
@@ -941,7 +1044,7 @@ static int vpcompare(void const *a, void const *b) {
 // scan all known objects, and check every pointer
 // is either NULL or points to one of them
 
-void flx_collector_t::check()
+void flx_collector_t::impl_check()
 {
   if(debug)fprintf(stderr,"RUNNING HEAP INTEGRITY CHECK\n");
   unsigned long nobj = allocation_count;
@@ -1107,7 +1210,7 @@ static int compact_entry_compare
   else return 1;
 }
 
-void flx_collector_t::compact(bool closed) {
+void flx_collector_t::impl_compact(bool closed) {
   //if(arena)
   //fprintf(stderr,"arena size = %ld, free space %d%%\n",
   //  arena_size, int(float(arena_free)/float(arena_size)*100.0f)
@@ -1312,6 +1415,119 @@ void flx_collector_t::compact(bool closed) {
   //if(debug)fprintf(stderr,"FIXED UP ROOTS\n");
   free(ctrl);
 }
+
+}}} // end namespaces
+
+@select(tangler('rtl/flx_ts_collector.hpp'))
+#ifndef FLX_TS_COLLECTOR
+#define FLX_TS_COLLECTOR
+#include "flx_collector.hpp"
+#include "demux_mutex.hpp"
+
+namespace flx {
+namespace gc {
+namespace collector {
+using namespace generic;
+
+/// Naive thread safe Mark and Sweep Collector.
+struct FLX_RTL_EXTERN flx_ts_collector_t : 
+  public flx::gc::collector::flx_collector_t
+{
+  flx_ts_collector_t(allocator_t *);
+  ~flx_ts_collector_t();
+
+private:
+  /// allocator
+  void *v_allocate(gc_shape_t *ptr_map, unsigned long);
+  void v_deallocate(frame_t *frame);
+
+  /// collector (returns number of objects collected)
+  unsigned long v_collect();
+
+  // add and remove roots
+  void v_add_root(void *memory);
+  void v_remove_root(void *memory);
+
+  //
+  void v_check();
+  // statistics
+  unsigned long v_get_allocation_count()const;
+  unsigned long v_get_root_count()const;
+  unsigned long v_get_allocation_amt()const;
+
+  void v_compact(bool closed);
+
+private:
+  mutable flx::demux::flx_mutex_t mut;
+};
+
+}}} // end namespaces
+#endif
+
+@select(tangler('rtl/flx_ts_collector.cpp'))
+#include "flx_rtl_config.hpp"
+#include "flx_ts_collector.hpp"
+
+namespace flx {
+namespace gc {
+namespace collector {
+
+flx_ts_collector_t::flx_ts_collector_t(allocator_t *a) : 
+  flx_collector_t(a) 
+{}
+
+flx_ts_collector_t::~flx_ts_collector_t(){}
+
+void *flx_ts_collector_t::v_allocate(gc_shape_t *ptr_map, unsigned long x) {
+  flx::demux::flx_mutex_locker_t l(mut);
+  return impl_allocate(ptr_map,x);
+}
+
+void flx_ts_collector_t::v_deallocate(frame_t *frame) {
+  flx::demux::flx_mutex_locker_t l(mut);
+  impl_deallocate(frame);
+}
+
+unsigned long flx_ts_collector_t::v_collect() {
+  flx::demux::flx_mutex_locker_t l(mut);
+  return impl_collect();
+}
+
+void flx_ts_collector_t::v_add_root(void *memory) {
+  flx::demux::flx_mutex_locker_t l(mut);
+  impl_add_root(memory);
+}
+
+void flx_ts_collector_t::v_remove_root(void *memory) {
+  flx::demux::flx_mutex_locker_t l(mut);
+  impl_remove_root(memory);
+}
+
+void flx_ts_collector_t::v_check() {
+  flx::demux::flx_mutex_locker_t l(mut);
+  impl_check();
+}
+
+unsigned long flx_ts_collector_t::v_get_allocation_count()const {
+  flx::demux::flx_mutex_locker_t l(mut);
+  return impl_get_allocation_count();
+}
+
+unsigned long flx_ts_collector_t::v_get_root_count()const {
+  flx::demux::flx_mutex_locker_t l(mut);
+  return impl_get_root_count();
+}
+
+unsigned long flx_ts_collector_t::v_get_allocation_amt()const {
+  flx::demux::flx_mutex_locker_t l(mut);
+  return impl_get_allocation_amt();
+}
+
+void flx_ts_collector_t::v_compact(bool closed) {
+  flx::demux::flx_mutex_locker_t l(mut);
+  impl_compact(closed);
+}
+
 
 }}} // end namespaces
 
