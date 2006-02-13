@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.42  2006/02/13 05:47:40  rfistman
+readded recursive flag to (portable) mutexes
+
 Revision 1.41  2006/02/12 06:51:30  rfistman
 added WSAID_CONNECTEX and LPFN_CONNECTEX definitions for ming (nocygwin) target
 now conditionally define EAGAIN in posix compat layer because ming seems to
@@ -648,7 +651,7 @@ class FLX_RTL_EXTERN flx_mutex_t {
   void operator=(flx_mutex_t const&); // uncopyable
 public:
   pthread_mutex_t m;        // be nice, don't touch
-  flx_mutex_t();
+  flx_mutex_t(bool recursive = false);
   ~flx_mutex_t();
   void lock();
   void unlock();
@@ -669,11 +672,56 @@ public:
 @h=tangler('demux/demux_mutex.cpp')
 @select(h)
 #include "demux_mutex.hpp"
+#include <stdio.h>
+#include <assert.h>
 
 namespace flx { namespace demux {
 flx_mutex_t::flx_mutex_t(flx_mutex_t const&){} // uncopyable
 void flx_mutex_t::operator=(flx_mutex_t const&){} // uncopyable
-flx_mutex_t::flx_mutex_t() { pthread_mutex_init(&m, NULL); }
+
+// private, for use within this file
+class auto_attr
+{
+    pthread_mutexattr_t* a;
+public:
+
+    auto_attr(pthread_mutexattr_t* attr) : a(attr) {}
+    ~auto_attr()
+    {
+        int res = pthread_mutexattr_destroy(a);
+        if(0 != res)
+            fprintf(stderr,"pthread_mutexattr_destroy failed: %i\n", res);
+    }
+};
+
+flx_mutex_t::flx_mutex_t(bool recursive) {
+    pthread_mutexattr_t attr;
+    int res;
+
+    res = pthread_mutexattr_init(&attr);    // default attrs
+
+    if(0 != res) throw res;
+
+    auto_attr   aa(&attr);                  // cleans up always
+
+#ifdef PTHREAD_MUTEX_RECURSIVE              // defined in unistd.h
+    if(recursive)
+    {
+        res = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+        if(0 != res)
+        {
+            fprintf(stderr,"phtread_mutexattr_settype failed: %i\n", res);
+            throw res;
+        }
+    }
+#else
+    assert( !recursive );                   // gusi non ce l'ha.
+#endif
+
+    res = pthread_mutex_init(&m, &attr);
+    if(res != 0) throw res;
+}
+
 flx_mutex_t::~flx_mutex_t() { pthread_mutex_destroy(&m); }
 void flx_mutex_t::lock() { pthread_mutex_lock(&m); }
 void flx_mutex_t::unlock() { pthread_mutex_unlock(&m);}
