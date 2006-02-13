@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.106  2006/02/13 03:30:38  skaller
+Change top level calling structure in flx_run in preparation
+for launching detached pthreads which can run Felix.
+
 Revision 1.105  2006/02/12 04:25:40  skaller
 Fix long standing cygwin build problem (workaround for libstdc++ bug).
 
@@ -1538,6 +1542,7 @@ struct FLX_RTL_EXTERN flx_libinit_t
   (
     flx_dynlink_t *lib_a, 
     flx::gc::generic::collector_t *collector_a,
+    main_t main_sym,
     int argc,
     char **argv,
     FILE *stdin_,
@@ -1549,8 +1554,11 @@ struct FLX_RTL_EXTERN flx_libinit_t
 
   con_t *bind_proc(void *fn, void *data);
   virtual ~flx_libinit_t();
+  flx_libinit_t();
   
 private:
+  flx_libinit_t(flx_libinit_t const&);
+  void operator=(flx_libinit_t const&);
   // the user can override these procedures
   // to perform any additional initialisation
   // and termination required.
@@ -1713,11 +1721,22 @@ void flx_dynlink_t::unlink()
 void flx_dynlink_t::usr_link(){}
 
 flx_libinit_t::~flx_libinit_t(){}
+flx_libinit_t::flx_libinit_t() :
+  thread_frame (NULL),
+  start_proc (NULL),
+  main_proc (NULL),
+  lib (NULL),
+  collector(NULL) 
+{}
+
+flx_libinit_t::flx_libinit_t(flx_libinit_t const&){}
+void flx_libinit_t::operator=(flx_libinit_t const&){}
 
 void flx_libinit_t::create
 (
   flx_dynlink_t *lib_a, 
   flx::gc::generic::collector_t *collector_a,
+  main_t main_sym,
   int argc,
   char **argv,
   FILE *stdin_,
@@ -1734,7 +1753,7 @@ void flx_libinit_t::create
   ++lib->refcnt;
   collector->add_root(thread_frame);
   start_proc = lib->start_sym(thread_frame, argc, argv, stdin_,stdout_,stderr_);
-  main_proc = lib->main_sym?lib->main_sym(thread_frame):0;
+  main_proc = main_sym?main_sym(thread_frame):0;
   usr_create();
 }
 
@@ -2185,6 +2204,200 @@ proto_async::demux_thread(void* udat)
 }
 
 
+// RUN A FELIX INSTANCE IN THE CURRENT PTHREAD
+
+int run_felix_pthread(
+  bool debug_driver, 
+  gc_profile_t *gcp,
+  flx_dynlink_t *library,
+  flx_libinit_t *instance
+)
+{    
+   flx::gc::generic::collector_t *collector = gcp->collector;
+   std::list<fthread_t*> active;
+
+#ifdef _WIN32
+  // needed to perform win socket io (calls WSAInit). Must happen
+  // before iocp_demuxer is instantiated and (I assume) happen
+  // only once.
+  winsock_initer wsinit;
+#endif
+
+  unsigned long async_count = 0;
+  proto_async* async = NULL;
+
+  {
+    con_t *top = instance->start_proc;
+    fthread_t *ft = new (*collector,_fthread_ptr_map) fthread_t(top);
+    collector->add_root(ft);
+    active.push_front(ft);
+  }
+
+  fthread_t *flx_main = NULL;
+  {
+    con_t *top = instance->main_proc;
+    if(top)
+    {
+      flx_main = new (*collector,_fthread_ptr_map) fthread_t(top);
+      collector->add_root(flx_main);
+    }
+  }
+
+  sync_state_t ss(debug_driver, gcp, &active);
+
+process_active:
+  if(debug_driver)
+    fprintf(stderr,"Process active ..");
+  if(debug_driver)
+    fprintf(stderr,"Before running: Sync state is %s/%s\n",get_fstate_desc(ss.fs),get_fpc_desc(ss.pc));
+  ss.frun();
+  if(debug_driver)
+    fprintf(stderr,"After running: Sync state is %s/%s\n",get_fstate_desc(ss.fs),get_fpc_desc(ss.pc));
+
+  if (ss.fs == terminated) goto cleanup;
+  if (ss.fs == blocked) goto do_async;
+  if (ss.fs == delegated) 
+  switch (ss.request->variant)
+  {
+    case svc_general:
+    {
+      if(debug_driver)
+        fprintf(stderr,"svc_general from fthread=%p\n",ss.ft);
+      if( !async ) async = new proto_async;
+
+      flx_driver_request_base* dreq = (flx_driver_request_base*)
+        (((_ref_*)(ss.request->data))->get_data())
+      ;
+
+      //fprintf(stderr,"Request object at %p\n",dreq);
+      // RF hates the flag this function returns .. might
+      // mask a race condition, get rid of it
+      ++async_count;
+      if(!dreq->start_async_op(async->demux, &async->driver, ss.ft))
+      {
+        ss.pc = next_fthread_pos;
+      } 
+      else {
+        --async_count;
+        ss.pc = next_request_pos;
+      }
+    }
+    goto process_active;
+
+    case svc_map_driver_requests:
+    {
+      map_driver_requests(
+        flx_run_services, 
+        *(driver_request_entry_t**)ss.request->data
+      );
+      ss.pc = next_request_pos;
+    }
+    goto process_active;
+
+    case svc_driver_request:
+    {
+      _uctor_ dreq = *(_uctor_*)ss.request->data;
+      if(debug_driver)fprintf(stderr,"Request code %d \n",dreq.variant);
+      switch (dreq.variant)
+      {
+        case dreq_get_driver_name:
+        {
+          *(char **)dreq.data = "flx_run";
+          ss.pc = next_request_pos;
+        }
+
+        case dreq_exit:
+          goto cleanup;
+
+        default:
+          fprintf(stderr,"Unknown driver reqest code %d, terminating\n",dreq.variant);
+          goto cleanup;
+      }
+    }
+    goto process_active;
+
+    default:
+      fprintf(stderr,"Unknown service request code 0x%4x\n",ss.request->variant);
+      abort();
+  }
+  fprintf(stderr,"Unknown frun return status 0x%4x\n",ss.fs);
+  abort();
+
+do_async:
+  // ran out of active threads - start mainline now?
+  if(flx_main) // conspire to only do this once
+  {
+    active.push_front(flx_main);
+    ss.pc = next_fthread_pos;
+    flx_main = NULL;
+    goto process_active;
+  }
+
+  // ran out of active threads - are there any in the async queue?
+  if(debug_driver){
+    fprintf(stderr, "out of active synchronous threads, trying async, count=%ld\n",async_count);
+  }
+
+  if(async && async_count > 0){
+    // STILL A ROOT
+    fthread_t* ftp = (fthread_t*)async->async_active.dequeue();
+    if(debug_driver)
+      fprintf(stderr,"Async Retrieving fthread %p\n",ftp);
+    active.push_front(ftp);
+    --async_count;
+    ss.pc = next_fthread_pos;
+    goto process_active;
+  }
+
+  if(debug_driver)fprintf(stderr,"Out of active threads\n");
+cleanup:
+  if(debug_driver){
+    unsigned long uncollected = collector->get_allocation_count();
+    unsigned long roots = collector->get_root_count();
+    fprintf(stderr,
+      "program finished, %ld collections, %ld uncollected objects, roots %ld\n",
+      gcp->collections,uncollected,roots);
+  }
+
+  if(gcp->finalise)
+  {
+    {
+      if(debug_driver || gcp->debug_collections)
+        fprintf(stderr,"Finalisation: pass 1 Data collection starts ..\n");
+      unsigned long n = collector->collect();
+      unsigned long a = collector->get_allocation_count();
+      if(debug_driver || gcp->debug_collections)
+        fprintf(stderr,"flx_run collected %ld objects, %ld left\n",n,a);
+    }
+    if(debug_driver)
+      fprintf(stderr,"Destroying program instance\n");
+    instance->destroy();
+
+    if(debug_driver || gcp->debug_collections)
+      fprintf(stderr,"Finalisation: pass 2 Final collection starts ..\n");
+    unsigned long n = collector->collect();
+    unsigned long a = collector->get_allocation_count();
+    if(debug_driver || gcp->debug_collections)
+      fprintf(stderr,"Collected %ld objects, %ld left (should be 0)\n",n,a);
+    if(a!=0){
+      fprintf(stderr,"flx_run %ld uncollected objects, should be zero!!\n",a);
+      return 5;
+    }
+    if(debug_driver)
+      fprintf(stderr,"Libref cnt = %ld\n",library->refcnt);
+    if(library->refcnt >0)
+    {
+      if(debug_driver)
+        fprintf(stderr,"flx_run %p library still referenced %ld times\n",library->library,library->refcnt);
+    }
+    if(debug_driver)
+      fprintf(stderr,"Unlinking library ..\n");
+    library->unlink();
+  }
+  return 0;
+}
+
+// MAINLINE, ONLY DONE ONCE
 int run_felix(
   bool debug_driver, 
   gc_profile_t *gcp,
@@ -2199,208 +2412,33 @@ int run_felix(
       fprintf(stderr,"flx_run driver begins %s\n",flx_argv[0]);
     flx_dynlink_t library;
     flx_libinit_t instance;
-
     library.link(filename);
 
     flx::gc::generic::collector_t *collector = gcp->collector;
 
-    instance.create(&library, collector,flx_argc,flx_argv,stdin,stdout,stderr);
+    instance.create(&library, collector,library.main_sym,flx_argc,flx_argv,stdin,stdout,stderr);
+
     if(debug_driver){
       fprintf(stderr,"loaded library %s at %p\n",filename,library.library);
       fprintf(stderr,"thread frame at %p\n",instance.thread_frame);
       fprintf(stderr,"initial continuation at %p\n",instance.start_proc);
       fprintf(stderr,"main continuation at %p\n",instance.main_proc);
     } 
-
-    std::list<fthread_t*> active;
-	
-#ifdef _WIN32
-    // needed to perform win socket io (calls WSAInit). Must happen
-    // before iocp_demuxer is instantiated and (I assume) happen
-    // only once.
-    winsock_initer wsinit;
-#endif
-
-    unsigned long async_count = 0;
-    proto_async* async = NULL;
-
-    {
-      con_t *top = instance.start_proc;
-      fthread_t *ft = new (*collector,_fthread_ptr_map) fthread_t(top);
-      collector->add_root(ft);
-      active.push_front(ft);
-    }
-
-    fthread_t *flx_main = NULL;
-    {
-      con_t *top = instance.main_proc;
-      if(top)
-      {
-        flx_main = new (*collector,_fthread_ptr_map) fthread_t(top);
-        collector->add_root(flx_main);
-      }
-    }
-  
-    sync_state_t ss(debug_driver, gcp, &active);
-
-process_active:
-    if(debug_driver)
-      fprintf(stderr,"Process active ..");
-    if(debug_driver)
-      fprintf(stderr,"Before running: Sync state is %s/%s\n",get_fstate_desc(ss.fs),get_fpc_desc(ss.pc));
-    ss.frun();
-    if(debug_driver)
-      fprintf(stderr,"After running: Sync state is %s/%s\n",get_fstate_desc(ss.fs),get_fpc_desc(ss.pc));
-
-    if (ss.fs == terminated) goto cleanup;
-    if (ss.fs == blocked) goto do_async;
-    if (ss.fs == delegated) 
-    switch (ss.request->variant)
-    {
-      case svc_general:
-      {
-        if(debug_driver)
-          fprintf(stderr,"svc_general from fthread=%p\n",ss.ft);
-        if( !async ) async = new proto_async;
-
-        flx_driver_request_base* dreq = (flx_driver_request_base*)
-          (((_ref_*)(ss.request->data))->get_data())
-        ;
-
-        //fprintf(stderr,"Request object at %p\n",dreq);
-        // RF hates the flag this function returns .. might
-        // mask a race condition, get rid of it
-        ++async_count;
-        if(!dreq->start_async_op(async->demux, &async->driver, ss.ft))
-        {
-          ss.pc = next_fthread_pos;
-        } 
-        else {
-          --async_count;
-          ss.pc = next_request_pos;
-        }
-      }
-      goto process_active;
-
-      case svc_map_driver_requests:
-      {
-        map_driver_requests(
-          flx_run_services, 
-          *(driver_request_entry_t**)ss.request->data
-        );
-        ss.pc = next_request_pos;
-      }
-      goto process_active;
-
-      case svc_driver_request:
-      {
-        _uctor_ dreq = *(_uctor_*)ss.request->data;
-        if(debug_driver)fprintf(stderr,"Request code %d \n",dreq.variant);
-        switch (dreq.variant)
-        {
-          case dreq_get_driver_name:
-          {
-            *(char **)dreq.data = "flx_run";
-            ss.pc = next_request_pos;
-          }
-
-          case dreq_exit:
-            goto cleanup;
-
-          default:
-            fprintf(stderr,"Unknown driver reqest code %d, terminating\n",dreq.variant);
-            goto cleanup;
-        }
-      }
-      goto process_active;
-
-      default:
-        fprintf(stderr,"Unknown service request code 0x%4x\n",ss.request->variant);
-        abort();
-    }
-    fprintf(stderr,"Unknown frun return status 0x%4x\n",ss.fs);
-    abort();
-
-do_async:
-    // ran out of active threads - start mainline now?
-    if(flx_main) // conspire to only do this once
-    {
-      active.push_front(flx_main);
-      ss.pc = next_fthread_pos;
-      flx_main = NULL;
-      goto process_active;
-    }
-
-    // ran out of active threads - are there any in the async queue?
-    if(debug_driver){
-      fprintf(stderr, "out of active synchronous threads, trying async, count=%ld\n",async_count);
-    }
-
-    if(async && async_count > 0){
-      // STILL A ROOT
-      fthread_t* ftp = (fthread_t*)async->async_active.dequeue();
-      if(debug_driver)
-        fprintf(stderr,"Async Retrieving fthread %p\n",ftp);
-      active.push_front(ftp);
-      --async_count;
-      ss.pc = next_fthread_pos;
-      goto process_active;
-    }
-
-    if(debug_driver)fprintf(stderr,"Out of active threads\n");
-cleanup:
-    if(debug_driver){
-      unsigned long uncollected = collector->get_allocation_count();
-      unsigned long roots = collector->get_root_count();
-      fprintf(stderr,
-        "program finished, %ld collections, %ld uncollected objects, roots %ld\n",
-        gcp->collections,uncollected,roots);
-    }
-
+    run_felix_pthread(debug_driver,gcp,&library,&instance);
     if(gcp->finalise)
     {
-      {
-        if(debug_driver || gcp->debug_collections)
-          fprintf(stderr,"Finalisation: pass 1 Data collection starts ..\n");
-        unsigned long n = collector->collect();
-        unsigned long a = collector->get_allocation_count();
-        if(debug_driver || gcp->debug_collections)
-          fprintf(stderr,"flx_run collected %ld objects, %ld left\n",n,a);
-      }
-      if(debug_driver)
-        fprintf(stderr,"Destroying program instance\n");
-      instance.destroy();
-
-      if(debug_driver || gcp->debug_collections)
-        fprintf(stderr,"Finalisation: pass 2 Final collection starts ..\n");
-      unsigned long n = collector->collect();
-      unsigned long a = collector->get_allocation_count();
-      if(debug_driver || gcp->debug_collections)
-        fprintf(stderr,"Collected %ld objects, %ld left (should be 0)\n",n,a);
-      if(a!=0){
-        fprintf(stderr,"flx_run %ld uncollected objects, should be zero!!\n",a);
-        return 5;
-      }
-      if(debug_driver)
-        fprintf(stderr,"Libref cnt = %ld\n",library.refcnt);
-      if(library.refcnt >0)
-      {
-        if(debug_driver)
-          fprintf(stderr,"flx_run %p library still referenced %ld times (expected 1)\n",library.library,library.refcnt);
-      }
-      if(debug_driver)
-        fprintf(stderr,"Unlinking library ..\n");
-      library.unlink();
       if(library.refcnt >0)
       {
         fprintf(stderr,"flx_run %p library still referenced %ld times?!\n",library.library,library.refcnt);
         return 6;
       }
       if(debug_driver)
-        fprintf(stderr,"flx_run driver ends with finalisation complete, collected %ld,left=%ld\n",n,a);
+        fprintf(stderr,"flx_run driver ends with finalisation complete\n");
     }
-    else {
-      if(debug_driver || gcp->debug_collections){
+    else 
+    {
+      if(debug_driver || gcp->debug_collections)
+      {
         unsigned long a = collector->get_allocation_count();
         fprintf(stderr,"flx_run driver ends with finalisation skipped, %ld uncollected objects\n",a);
       }
@@ -2627,7 +2665,7 @@ int main(int argc, char** argv)
   library.link(argc>1?argv[1]:"<static>");
   gc::collector::malloc_free allocator;
   gc::collector::flx_collector_t collector(&allocator);
-  instance.create(&library, &collector,argc,argv,stdin,stdout,stderr);
+  instance.create(&library, &collector,library.main_sym,argc,argv,stdin,stdout,stderr);
   rtl::con_t *top = instance.start_proc;
   while( top ) top = top->resume();
   return 0;

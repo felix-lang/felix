@@ -217,7 +217,7 @@ int main(int argc, char** argv)
     library.link(argv[1]);
     malloc_free allocator;
     flx_collector_t collector(&allocator);
-    instance.create(&library, &collector,0,NULL,stdin,stdout,stderr);
+    instance.create(&library, &collector,library.main_sym,0,NULL,stdin,stdout,stderr);
     
     typedef int session_key;
     typedef pair<const session_key, fthread_t*> session_record;

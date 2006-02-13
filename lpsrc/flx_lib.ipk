@@ -869,14 +869,14 @@ module Dynlink
 {
   requires flx_dynlink;
   type flx_library = "flx::rtl::flx_dynlink_t*";
-  type flx_instance = "flx::rtl::flx_libinit_t";
+  type flx_instance = "flx::rtl::flx_libinit_t*";
   proc dlopen:flx_library * string = "$1->link($2.data());";
   proc dlclose:flx_library = "$1->unlink();";
 
   // this is a procedure, so maybe the caller is too
   // which means the thread frame must be available
   proc create: flx_library * flx_instance = 
-    "_create($1,&$2,PTF gc,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr);"
+    "_create($1,$2,PTF gc,$1->main_sym,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr);"
     requires property "needs_gc",
     body """
     void _create
@@ -884,27 +884,34 @@ module Dynlink
       flx::rtl::flx_dynlink_t *library,
       flx::rtl::flx_libinit_t *instance,
       flx::gc::generic::collector_t *gc,
+      flx::rtl::main_t main_sym,
       int argc, char **argv, 
       FILE *stdin_, FILE *stdout_, FILE *stderr_
     )
     { 
-      instance->create(library,gc,argc,argv,stdin_,stdout_,stderr_); 
+      instance->create(library,gc,main_sym,argc,argv,stdin_,stdout_,stderr_); 
     }
     """;
   
-  private fun get_init: flx_instance -> cont = "$1.start_proc";
-  private fun get_library: flx_instance -> flx_library = "$1.lib";
-  proc destroy: flx_instance = "$1.destroy();";
+  private fun get_init: flx_instance -> cont = "$1->start_proc";
+  private fun get_library: flx_instance -> flx_library = "$1->lib";
+  proc destroy: flx_instance = "$1->destroy();";
   
   fun create_library_handle: unit->flx_library=
     "new flx::rtl::flx_dynlink_t()";
 
+  fun create_instance_handle: unit->flx_instance=
+    "new flx::rtl::flx_libinit_t()";
+
   proc delete_library_handle: flx_library =
+    "delete $1;";
+
+  proc delete_instance_handle: flx_instance =
     "delete $1;";
     
   noinline fun init_lib(filename:string):flx_instance = {
     var library = create_library_handle();
-    var instance: flx_instance;
+    var instance =  create_instance_handle();
     dlopen(library,filename);
     create (library,instance);
     var init = get_init instance;
@@ -928,6 +935,7 @@ module Dynlink
     destroy instance;
     Control::collect();
     dl := get_library instance;
+    delete_instance_handle instance;
     dlclose dl;
     delete_library_handle dl;
   }
@@ -946,7 +954,7 @@ module Dynlink
     client data pointer as arguments to the call method.
   """
   fun bind_proc: flx_instance * address * address -> cont = 
-    "$1.bind_proc($2,$3)";
+    "$1->bind_proc($2,$3)";
 
   fun dlib_of : flx_library -> address = "(void*)$1->library";
 
