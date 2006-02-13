@@ -3119,7 +3119,7 @@ try
   plb "\n//-----------------------------------------";
   plb "//DEFINE OFFSET tables for GC";
 
-  plb (Flx_ogen.gen_offset_tables syms (child_map,bbdfns));
+  plb (Flx_ogen.gen_offset_tables syms (child_map,bbdfns) module_name);
 
   plb "\n//-----------------------------------------";
   plb "#ifdef FLX_CGOTO";

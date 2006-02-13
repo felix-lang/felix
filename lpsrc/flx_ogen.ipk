@@ -10,6 +10,7 @@ val gen_offset_tables:
   sym_state_t ->
   (bid_t, bid_t list) Hashtbl.t *
   fully_bound_symbol_table_t ->
+  string ->
   string
 
 val find_thread_vars_with_type:
@@ -217,7 +218,10 @@ let rec get_offsets' syms bbdfns typ : string list =
 let get_offsets syms bbdfns typ =
   map (fun s -> s^",") (get_offsets' syms bbdfns typ)
 
-let gen_offset_data s n name offsets isfun props flags =
+let gen_offset_data s n name offsets isfun props flags last_ptr_map =
+  let this_ptr_map = name ^ "_ptr_map" in
+  let old_ptr_map = !last_ptr_map in
+  last_ptr_map := "&"^this_ptr_map;
   let noffsets = 
     if isfun && mem `Requires_ptf props then si (n-1)^"+FLX_PASS_PTF"
     else si n
@@ -230,7 +234,8 @@ let gen_offset_data s n name offsets isfun props flags =
     bcat s ("\n" ^  "};\n");
   end;
   bcat s ("FLX_FINALISER("^name^")\n");
-  bcat s (  "static gc_shape_t "^ name ^"_ptr_map (\n");
+  bcat s (  "static gc_shape_t "^ this_ptr_map ^" (\n");
+  bcat s ("  " ^ old_ptr_map ^ ",\n");
   bcat s ("  \"" ^ name ^ "\",\n");
   bcat s ("  1,sizeof("^name^"),\n  "^name^"_finaliser,\n");
   bcat s ("  "^noffsets^",\n  "^ (if n<>0 then name^"_offsets" else "0"));
@@ -239,7 +244,7 @@ let gen_offset_data s n name offsets isfun props flags =
 
 let is_instantiated syms i ts = Hashtbl.mem syms.instances (i,ts)
 
-let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props : unit = 
+let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props last_ptr_map : unit = 
   let vars =  (find_references syms (child_map,bbdfns) index ts) in
   let vars = filter (fun (i, _) -> is_instantiated syms i ts) vars in
   let name = cpp_instance_name syms bbdfns index ts in
@@ -284,9 +289,9 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props 
     (match ret with |`BTYP_void -> "procedure " | _ -> "function ") ^ 
     name ^ "\n"
   );
-  gen_offset_data s n name offsets true props None 
+  gen_offset_data s n name offsets true props None last_ptr_map
 
-let gen_class_offsets s syms (child_map,bbdfns) index vs ts instance : unit = 
+let gen_class_offsets s syms (child_map,bbdfns) index vs ts instance last_ptr_map : unit = 
   let vars =  (find_references syms (child_map,bbdfns) index ts) in
   let vars = filter (fun (i, _) -> is_instantiated syms i ts) vars in
   let varmap = mk_varmap vs ts in
@@ -322,9 +327,9 @@ let gen_class_offsets s syms (child_map,bbdfns) index vs ts instance : unit =
      "// WARNING, incomplete, not handling ptf yet .. \n"
   );
   let n = length offsets in
-  gen_offset_data s n name offsets true [] None
+  gen_offset_data s n name offsets true [] None last_ptr_map
 
-let gen_thread_frame_offsets s syms bbdfns =
+let gen_thread_frame_offsets s syms bbdfns last_ptr_map =
   let vars = find_thread_vars_with_type bbdfns in
   let ts = [] in
   let name = "thread_frame_t" in
@@ -349,9 +354,10 @@ let gen_thread_frame_offsets s syms bbdfns =
   (
     "\n//OFFSETS for "^ name ^ "\n"
   );
-  gen_offset_data s n name offsets false [] (Some "gc_flags_immobile")
+  gen_offset_data s n name offsets false [] (Some "gc_flags_immobile") last_ptr_map
 
-let gen_offset_tables syms (child_map,bbdfns) =
+let gen_offset_tables syms (child_map,bbdfns) module_name =
+  let last_ptr_map = ref "NULL" in
   let primitive_shapes = Hashtbl.create 97 in
   let s = Buffer.create 20000 in
 
@@ -368,19 +374,19 @@ let gen_offset_tables syms (child_map,bbdfns) =
     match entry with
     | `BBDCL_function (props,vs,ps, ret,_) -> 
       if mem `Heap_closure props then
-        gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props
+        gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props last_ptr_map
       (*
       else 
         print_endline ("Warning: no closure of " ^ id ^ "<"^si index ^"> is used")
       *)
 
     | `BBDCL_class (props,vs) ->
-      gen_class_offsets s syms (child_map,bbdfns) index vs ts instance
+      gen_class_offsets s syms (child_map,bbdfns) index vs ts instance last_ptr_map
 
     | `BBDCL_regmatch (props,vs,ps,ret,_) 
     | `BBDCL_reglex (props,vs,ps,_,ret,_)  ->
       if mem `Heap_closure props then
-        gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props
+        gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props last_ptr_map
       (*
       else 
         print_endline ("Warning: no closure of " ^ id ^ "<"^si index ^"> is used")
@@ -388,7 +394,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
         
     | `BBDCL_procedure (props,vs,ps,_) -> 
       if mem `Heap_closure props then
-        gen_fun_offsets s syms (child_map,bbdfns) index vs ps `BTYP_void ts instance props
+        gen_fun_offsets s syms (child_map,bbdfns) index vs ps `BTYP_void ts instance props last_ptr_map
       else if mem `Stack_closure props then ()
       else
         print_endline ("Warning: no closure of " ^ id ^"<" ^ si index ^ "> is used, but not stackable?")
@@ -396,7 +402,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
   )
   syms.instances
   ;
-  gen_thread_frame_offsets s syms bbdfns
+  gen_thread_frame_offsets s syms bbdfns last_ptr_map
   ;
 
   (* We're not finished: we need offsets dynamically allocated types too *)
@@ -494,7 +500,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
       let n = length offsets in 
       let classname = cpp_type_classname syms btyp in
       bcat s ("\n//OFFSETS for tuple type " ^ si index ^ "\n");
-      gen_offset_data s n name offsets false [] None
+      gen_offset_data s n name offsets false [] None last_ptr_map
 
     (* This is just a _ref_, the offset data is in the system library *)
     | `BTYP_pointer t -> ()
@@ -517,6 +523,10 @@ let gen_offset_tables syms (child_map,bbdfns) =
       end
       ;
 
+      let this_ptr_map = name ^ "_ptr_map" in
+      let old_ptr_map = !last_ptr_map in
+      last_ptr_map := "&"^this_ptr_map;
+
       bcat s ("//WARNING: ONLY WORKS WITH CORRECT STATIC SIZE\n");
       bcat s ("static void " ^ name ^ "_finaliser(collector_t *, void *p){\n");
       bcat s ("  for(std::size_t count = "^ si k ^"; count; --count)\n");
@@ -526,6 +536,7 @@ let gen_offset_tables syms (child_map,bbdfns) =
       bcat s ("  }\n");
       bcat s ("}\n");
       bcat s ("static gc_shape_t "^ name ^"_ptr_map(\n");
+      bcat s ("  " ^ old_ptr_map ^ ",\n");
       bcat s ("  \"" ^ name ^ "\",\n");
       bcat s ("  " ^ si k ^ ",\n");
       bcat s ("  sizeof("^name^"),\n  "^name^"_finaliser,\n  "^si n^
@@ -569,8 +580,14 @@ let gen_offset_tables syms (child_map,bbdfns) =
             bcat s ("\n//OFFSETS for complete abstract "^(if pod then "pod " else "finalisable ")^
               "type " ^ name ^ " instance\n"
             );
+
+            let this_ptr_map = name ^ "_ptr_map" in
+            let old_ptr_map = !last_ptr_map in
+            last_ptr_map := "&"^this_ptr_map;
+
             if not pod then bcat s ("FLX_FINALISER("^name^")\n");
             bcat s ( "static gc_shape_t " ^ name ^ "_ptr_map(\n") ;
+            bcat s ("  " ^ old_ptr_map ^ ",\n");
             bcat s ("  \"" ^ name ^ "\",\n");
             if pod then
               bcat s ("  1,sizeof("^name^"),0,0,0\n")
@@ -589,12 +606,18 @@ let gen_offset_tables syms (child_map,bbdfns) =
       | `BBDCL_union _ -> () (* handled by universal _uctor_ *)
       | `BBDCL_cstruct (vs,cps) -> 
         (* cstruct shouldn't have allocable stuff in it *)
+  
+        let this_ptr_map = name ^ "_ptr_map" in
+        let old_ptr_map = !last_ptr_map in
+        last_ptr_map := "&"^this_ptr_map;
+
         bcat s ("\n//OFFSETS for cstruct type " ^ name ^ " instance\n");
 
         (* HACK .. in fact, some C structs might have finalisers! *)
         let pod = true in
         if not pod then bcat s ("FLX_FINALISER("^name^")\n");
         bcat s ( "static gc_shape_t " ^ name ^ "_ptr_map(\n") ;
+        bcat s ("  " ^ old_ptr_map ^ ",\n");
         bcat s ("  \"" ^ name ^ "\",\n");
         if pod then
           bcat s ("  1,sizeof("^name^"),0,0,0\n")
@@ -630,6 +653,10 @@ let gen_offset_tables syms (child_map,bbdfns) =
   )
   allocable_types
   ;
+  bcat s ("\n");
+  bcat s ("// Head of shape list\n");
+  bcat s ("FLX_EXPORT extern \"C\" gc_shape_t *"^module_name^"_head_shape;\n");
+  bcat s ("gc_shape_t *"^module_name^"_head_shape="^ !last_ptr_map ^ ";\n");
   Buffer.contents s
 
 

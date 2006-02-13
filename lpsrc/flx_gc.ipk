@@ -68,6 +68,7 @@ enum gc_shape_flags_t {
 /// Describes runtime object shape.
 struct FLX_RTL_EXTERN gc_shape_t
 {
+  gc_shape_t *next_shape;         ///< pointer to next shape in list or NULL
   char const *cname;              ///< C++ typename
   std::size_t count;              ///< array element count
   std::size_t amt;                ///< bytes allocated
@@ -77,6 +78,7 @@ struct FLX_RTL_EXTERN gc_shape_t
   gc_shape_flags_t flags;         ///< flags
   // convenience constructor
   gc_shape_t(
+    gc_shape_t *ns,
     char const *cn,
     std::size_t count_a,
     std::size_t amt_a,
@@ -85,6 +87,7 @@ struct FLX_RTL_EXTERN gc_shape_t
     std::size_t *offsets_a
   );
   gc_shape_t(
+    gc_shape_t *ns,
     char const *cn,
     std::size_t count_a,
     std::size_t amt_a,
@@ -397,6 +400,7 @@ namespace generic {
 // create a shape object given an array of offsets
 gc_shape_t::gc_shape_t
 (
+  gc_shape_t *ns,
   char const *cn,
   std::size_t count_a,
   std::size_t amt_a,
@@ -406,6 +410,7 @@ gc_shape_t::gc_shape_t
   gc_shape_flags_t flags_a
 )
   :
+  next_shape(ns),
   cname(cn),
   count(count_a),
   amt(amt_a),
@@ -418,6 +423,7 @@ gc_shape_t::gc_shape_t
 // with flags defaulted
 gc_shape_t::gc_shape_t
 (
+  gc_shape_t *ns,
   char const *cn,
   std::size_t count_a,
   std::size_t amt_a,
@@ -426,6 +432,7 @@ gc_shape_t::gc_shape_t
   std::size_t *offsets_a
 )
   :
+  next_shape(ns),
   cname(cn),
   count(count_a),
   amt(amt_a),
@@ -1427,7 +1434,6 @@ void flx_collector_t::impl_compact(bool closed) {
 namespace flx {
 namespace gc {
 namespace collector {
-using namespace generic;
 
 /// Naive thread safe Mark and Sweep Collector.
 struct FLX_RTL_EXTERN flx_ts_collector_t : 

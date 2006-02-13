@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.107  2006/02/13 20:12:53  skaller
+Add chain thru shape objects to allow collector to specialise
+allocations on a type basis.
+
 Revision 1.106  2006/02/13 03:30:38  skaller
 Change top level calling structure in flx_run in preparation
 for launching detached pthreads which can run Felix.
@@ -1050,6 +1054,7 @@ static std::size_t slist_node_offsets[2]={
 };
 
 flx::gc::generic::gc_shape_t slist_node_ptr_map(
+  NULL,
   "slist_node_t",
   1,sizeof(slist_node_t),
   0, // no finaliser,
@@ -1085,6 +1090,7 @@ static std::size_t slist_offsets[1]={
 };
 
 flx::gc::generic::gc_shape_t slist_ptr_map(
+  &slist_node_ptr_map,
   "slist_t",
   1,sizeof(slist_t),
   0, // no finaliser
@@ -1128,6 +1134,7 @@ static std::size_t _root_ptr_offsets[3]={
 };
 
 flx::gc::generic::gc_shape_t _root_ptr_ptr_map(
+  &slist_ptr_map,
   "_root_ptr_t",
   1,sizeof(_root_ptr_t),
   0, // no finaliser
@@ -1196,6 +1203,7 @@ static std::size_t _fthread_offsets[1]={
 };
 
 flx::gc::generic::gc_shape_t _fthread_ptr_map(
+  &_root_ptr_ptr_map,
   "fthread_t",
   1,sizeof(fthread_t),
   0,
@@ -1246,6 +1254,7 @@ static std::size_t schannel_offsets[2]={
 };
 
 flx::gc::generic::gc_shape_t schannel_ptr_map(
+  &_fthread_ptr_map,
   "schannel_t",
   1,sizeof(schannel_t),
   0, // no finaliser
@@ -1272,6 +1281,7 @@ static std::size_t _ref_offsets[1]={
 };
 
 flx::gc::generic::gc_shape_t _ref_ptr_map(
+  &schannel_ptr_map,
   "_ref_",
   1,sizeof(_ref_),
   0, // no finaliser
@@ -1289,6 +1299,7 @@ static std::size_t _uctor_offsets[1]= {
 };
 
 flx::gc::generic::gc_shape_t _uctor_ptr_map (
+  &_ref_ptr_map,
   "_uctor_",
   1,
   sizeof(_uctor_),
@@ -1302,6 +1313,7 @@ flx::gc::generic::gc_shape_t _uctor_ptr_map (
 // ********************************************************
 
 flx::gc::generic::gc_shape_t _int_ptr_map (
+  &_uctor_ptr_map,
   "int",
   1,
   sizeof(int),
@@ -1315,6 +1327,7 @@ flx::gc::generic::gc_shape_t _int_ptr_map (
 // ********************************************************
 
 flx::gc::generic::gc_shape_t unit_ptr_map (
+  &_int_ptr_map,
   "unit",
   1,
   sizeof(unit),
@@ -1440,7 +1453,7 @@ typedef HMODULE LIBHANDLE;
 // We provide a standard exception to report
 // link failure (missing symbol).
 //
-// We provide a a class flx_dynlink_t which
+// We provide a class flx_dynlink_t which
 // opens a Felix shared library given a filename,
 // and links the mandatory symbols
 // The user may derive from this class to add
@@ -1782,7 +1795,7 @@ con_t *flx_libinit_t::bind_proc(void *fn, void *data) {
 #ifndef _FLX_SYNC
 #define _FLX_SYNC
 
-#include "flx_collector.hpp"
+#include "flx_ts_collector.hpp"
 #include "flx_dynlink.hpp"
 #include "flx_rtl.hpp"
 #include <list>
@@ -1803,7 +1816,7 @@ struct FLX_RTL_EXTERN gc_profile_t {
   unsigned long gc_counter;
   unsigned long collections;
   bool finalise;
-  flx::gc::collector::flx_collector_t *collector;
+  flx::gc::generic::collector_t *collector;
 
   gc_profile_t (
     bool debug_allocations_, 
@@ -1811,7 +1824,7 @@ struct FLX_RTL_EXTERN gc_profile_t {
     unsigned long compact_, 
     unsigned long gc_freq_,
     bool finalise_,
-    flx::gc::collector::flx_collector_t *collector
+    flx::gc::generic::collector_t *collector
   );
   ~gc_profile_t();
 };
@@ -1871,7 +1884,7 @@ gc_profile_t::gc_profile_t (
   unsigned long compact_, 
   unsigned long gc_freq_,
   bool finalise_,
-  flx::gc::collector::flx_collector_t *collector_
+  flx::gc::generic::collector_t *collector_
 ) :
   debug_allocations(debug_allocations_),
   debug_collections(debug_collections_),
@@ -1900,7 +1913,7 @@ sync_state_t::sync_state_t (
 void sync_state_t::frun()
 {
   // local copies are faster
-  flx::gc::collector::flx_collector_t *collector = gcp->collector;
+  flx::gc::generic::collector_t *collector = gcp->collector;
 
   // dispatch
   if (pc == next_request_pos) goto next_request;
@@ -2104,7 +2117,7 @@ shared library name are not passed.
 
 #include "faio_asyncio.hpp"
 
-#include "flx_collector.hpp"
+#include "flx_ts_collector.hpp"
 #include "flx_dynlink.hpp"
 #include "flx_sync.hpp"
 
@@ -2587,7 +2600,7 @@ int main(int argc, char** argv)
   allocator->set_debug(debug_allocations);
 
   flx::gc::collector::flx_collector_t *collector =
-    new flx::gc::collector::flx_collector_t(allocator)
+    new flx::gc::collector::flx_ts_collector_t(allocator)
   ;
   collector->set_debug(debug_collections);
   if(compact)
@@ -2737,6 +2750,4 @@ namespace flx { namespace rtl { namespace i18n {
     return s;
   }
 }}}
-
-
 
