@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.44  2006/02/15 10:54:08  skaller
+Build time packaging system.
+
 Revision 1.43  2006/02/15 04:10:56  rfistman
 working on thread safe select demuxer (ts_select_demuxer). that should
 fix cygwin probs. and as yet other undiscovered problems.
@@ -87,6 +90,16 @@ Revision 1.20  2006/01/09 16:32:03  skaller
 Integrate SDL tests, provide initial SDL event demux.
 
 @execfile('config'+os.sep+'config.py')
+
+@h = tangler('config/demux.pc')
+@select(h)
+Name: demux
+Description: Pre-emptive threading support
+Version: $Id$
+Cflags: 
+dlibs = -ldemux_dynamic
+slibs = -ldemux_static
+Requires: flx
 
 @head(1,"Pre-emptive threads (pthread)")
 Note WE say pthread means 'pre-emptive thread' not
@@ -1469,8 +1482,8 @@ public:
   // public so it can be got in felix
   sel_param pb;   // in & out: what you want, what you get (64bit len?)
 
-  virtual ~fileio_request() {}  // c++ should do this automatically
-  fileio_request()  {}      // flx linkage
+  virtual ~fileio_request(); // c++ should do this automatically
+  fileio_request();       // flx linkage
   fileio_request(int f, char* buf, long len, long off, bool rd);
 
   virtual void doit();      // sync
@@ -3997,6 +4010,9 @@ namespace flx { namespace demux {
 // read or write in a blocking fashion. I like the idea of using pread
 // which doesn't change the file pointer. this could allow reuse of the same
 // file descriptor & block caching
+
+fileio_request::~fileio_request(){}
+fileio_request::fileio_request(){}
 
 fileio_request::fileio_request(int f, char* buf, long len, long off, bool rd)
   : offset(off), fd(f), read_flag(rd), err(0)

@@ -2967,6 +2967,7 @@ try
   plh  (gen_types syms bbdfns types);
 
   if not (Hashtbl.length syms.parsers + Hashtbl.length syms.lexers = 0) then begin
+  plp "elk";
   plh "\n//-----------------------------------------";
   plh  "//ELKHOUND OBJECTS, forward declaration";
   Hashtbl.iter
@@ -3194,6 +3195,8 @@ try
   plb "//body complete";
   close_out hf;
   close_out bf;
+  plp "flx";
+  close_out pf;
   let code_generation_time = tim() in
   if compiler_options.print_flag then 
   print_endline ("//code generation time " ^ string_of_float code_generation_time);

@@ -5,9 +5,8 @@
 
 @head(2,'CVS LOG')
 $Log$
-Revision 1.222  2006/02/15 04:10:56  rfistman
-working on thread safe select demuxer (ts_select_demuxer). that should
-fix cygwin probs. and as yet other undiscovered problems.
+Revision 1.223  2006/02/15 10:54:09  skaller
+Build time packaging system.
 
 Revision 1.221  2006/02/14 09:02:00  skaller
 Splitup flx_maker.ipk to get rid of some build utilities.
@@ -518,640 +517,378 @@ for k in sys.argv[1:]:
     for l in f: print l,
     f.close()
 
-@h = tangler('script/elk_flx_grgen','python')
+
+@h = tangler('pkg/misc.py')
 @select(h)
-import string
-import sys
+# files containing ocamllex sources
+MISC_LEXS = []
 
-ts ={}
-nt = ""
-d = {}
+# files containing ocamlyacc sources
+MISC_PARSES = [ ]
 
-def isterminal(w):
-  return w[0] in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+# ocaml modules = interfaces + implementation files
+MISC_MODULES = [
+  'src/flx_filesys'      ,
+]
 
-def isnonterminal(w): 
-  return not isterminal(w)
+MISC_INTERFACES = MISC_MODULES
 
-def check_symbol(w):
-  if isterminal(w): ts[w]=1
+MISC_IMPLEMENTATIONS = MISC_INTERFACES
 
-def cvt_symbol(w):
-  if isterminal(w):
-    return "TOK_" + w
-  else:
-    return w
-
-def handle_line(l):
-  global nt
-  if l == '  | /* empty */':
-    d[nt]=d[nt]+[[]]
-  elif l[0]<>' ':
-    nt = l[:-1]
-    d[nt]=[]
-  else:
-    x = string.split(l)[1:]
-    for w in x: check_symbol(w)
-    d[nt]=d[nt]+[x]
+caml_interfaces = MISC_INTERFACES
+caml_implementations = MISC_IMPLEMENTATIONS
 
 
-f = open(sys.argv[1])
-state = 1
-for l in f:
-  if l[:2] == '/*' and l[-3:-1]=='*/': 
-    #print "skipping",l,
-    pass
-  else:
-    if l[:2]=='/*': state = 0
-    if state: 
-      if l <> "\n":
-        handle_line(l[:-1])
-    else: 
-      #print "skippy",l,
-      pass
-    if l[:2]=='*/': state = 1
-f.close()
+@h = tangler('pkg/cil.py')
+@select(h)
+CIL_LEXS = [ 'src/flx_cil_clexer', 'src/flx_cil_formatlex', ]
+CIL_PARSES = [ 'src/flx_cil_cparser', 'src/flx_cil_formatparse', ]
 
-ts['WSTRING']=1
-ts['USTRING']=1
-ts = ts.keys()
-ts.sort()
-print "terminals {"
-print "   0 : TOK_EOF;"
-j = 1
-for k in ts:
-  print ' ',"%4d" % j,': TOK_'+k,';'
-  j = j + 1
-print
-attrtoks = ["CSTRING","STRING","WSTRING","USTRING","NAME","FLOAT","INTEGER"]
-for k in attrtoks:
-  print "  token(void*) TOK_"+k+";"
+CIL_MODULES = [
+  'src/flx_cil_machdep_type',
+  'src/flx_cil_cabs',
+  'src/flx_cil_cilversion',
+  'src/flx_cil_machdep',
+  'src/flx_cil_pretty',
+  'src/flx_cil_errormsg',
+  'src/flx_cil_cabs_helper',
+  'src/flx_cil_lexerhack',
+  'src/flx_cil_escape',
+  'src/flx_cil_cprint',
+  'src/flx_cil_cparser',
+  'src/flx_cil_clexer',
+  'src/flx_cil_stats',
+  'src/flx_cil_trace',
+  'src/flx_cil_clist',
+  'src/flx_cil_cil',
+  'src/flx_cil_frontc',
+  'src/flx_cil_rmtmps',
+  'src/flx_cil_cabsvisit',
+  'src/flx_cil_inthash',
+  'src/flx_cil_formatparse',
+  'src/flx_cil_formatlex',
+  'src/flx_cil_util',
+  'src/flx_cil_mergecil',
+  'src/flx_cil_patch',
+  'src/flx_cil_formatcil',
+  'src/flx_cil_cilutil',
+  'src/flx_cil_cabs2cil',
+  'src/flx_cil_check',
+]
 
-print "}"
-print 
+CIL_RAW_INTERFACES = [
+  'src/flx_cil_machdep_type',
+  'src/flx_cil_cabs',
+]
+
+CIL_INTERFACES = CIL_MODULES
+CIL_IMPLEMENTATIONS = CIL_INTERFACES
+CIL_EXES = [ 'src/flxcc', ]
+
+
+caml_lexes = CIL_LEXS
+caml_parses = CIL_PARSES
+caml_raw_interfaces = CIL_RAW_INTERFACES
+caml_interfaces = CIL_INTERFACES
+caml_implementations = CIL_IMPLEMENTATIONS
+caml_exes = CIL_EXES
+caml_require_libs = ['nums','unix','misclib','cillib','flxlib']
+pkg_requires = ['flx','misc']
+
+@h = tangler('pkg/flx.py')
+@select(h)
+FLX_LEXS = [ 'src/flx_lex' ]
+FLX_PARSES = [ 'src/flx_parse' ]
+
+FLX_MODULES = [
+  'src/inria_table'      ,
+  'src/inria_cset'      ,
+  'src/inria_syntax'      ,
+  'src/inria_lexgen'      ,
+  'src/flx_mtypes1'      ,
+  'src/flx_ast'          ,
+  'src/flx_types'        ,
+  'src/flx_ctypes'       ,
+  'src/flx_version'      ,
+  'src/flx_ctype'        ,
+  'src/flx_util'         ,
+  'src/flx_dlst'         ,
+  'src/flx_getopt'       ,
+  'src/flx_mtypes2'      ,
+  'src/flx_srcref'       ,
+  'src/flx_typing'       ,
+  'src/flx_exceptions'   ,
+  'src/flx_string'       ,
+  'src/flx_id'           ,
+  'src/flx_print'        ,
+  'src/flx_maps'         ,
+  'src/flx_typing2'      ,
+  'src/flx_unify'        ,
+  'src/flx_charset'      ,
+  'src/flx_constfld'     , 
+  'src/flx_cexpr'        ,
+  'src/flx_csubst'       , 
+  'src/flx_parse'        ,
+  'src/flx_keywords'     ,
+  'src/flx_prelex'       ,
+  'src/flx_lex1'         ,
+  'src/flx_tok'          ,
+  'src/flx_lexstate'     ,
+  'src/flx_preproc'      ,
+  'src/flx_lex'          ,
+  'src/flx_pretok'       ,
+  'src/flx_parse_ctrl'   ,
+  'src/flx_dfa'          ,
+  'src/flx_pat'          , 
+  'src/flx_macro'        , 
+  'src/flx_desugar'      , 
+  'src/flx_mbind'        , 
+  'src/flx_symtab'       , 
+  'src/flx_name'         , 
+  'src/flx_treg'         ,
+  'src/flx_beta'         ,
+  'src/flx_tpat'         , 
+  'src/flx_tconstraint'  ,
+  'src/flx_generic'      , 
+  'src/flx_overload'     , 
+  'src/flx_lookup'       , 
+  'src/flx_bexe'         , 
+  'src/flx_bbind'        , 
+  'src/flx_label'        , 
+  'src/flx_cflow'        , 
+  'src/flx_call'         , 
+  'src/flx_use'          , 
+  'src/flx_child'        , 
+  'src/flx_tailit'       , 
+  'src/flx_inline'       , 
+  'src/flx_stack_calls'  , 
+  'src/flx_mkcls'        , 
+  'src/flx_global'       , 
+  'src/flx_inst'         , 
+  'src/flx_tgen'         , 
+  'src/flx_display'      , 
+  'src/flx_ogen'         , 
+  'src/flx_regen'        ,
+  'src/flx_unravel'      , 
+  'src/flx_pgen'         , 
+  'src/flx_egen'         , 
+  'src/flx_ctorgen'      , 
+  'src/flx_elkgen'       , 
+  'src/flx_gen'          , 
+  'src/flx_flxopt'       , 
+  'src/flx_terminate'    , 
+]
+
+FLX_RAW_INTERFACES = [
+  'src/flx_ast'          ,
+  'src/flx_types'        ,
+  'src/flx_ctypes'       ,
+] 
+
+FLX_INTERFACES = FLX_MODULES
+
+FLX_IMPLEMENTATIONS = FLX_INTERFACES
+
+FLX_EXES = [
+  'src/flxl',
+  'src/flxp',
+  'src/flxm',
+  'src/flxd',
+  'src/flxb',
+  'src/flxg',
+  'src/stub',
+]
+
+RTL_CPPS = [
+  "rtl/flx_gc",
+  "rtl/flx_collector",
+  "rtl/flx_ts_collector",
+  "rtl/flx_rtl",
+  "rtl/flx_dynlink",
+  "rtl/flx_sync",
+  "rtl/flx_i18n",
+  "rtl/flx_ioutil",
+  "rtl/flx_main",
+]
+
+DRIVERS = [
+  ('rtl/flx_run','bin/flx_run'),
+  ('test/flx_perf_drv1','test/flx_perf_drv1'),
+  ('test/micky_mouse','bin/micky_mouse'),
+]
+
+
+caml_lexes = FLX_LEXS
+caml_parses = FLX_PARSES
+caml_interfaces = FLX_INTERFACES
+caml_raw_interfaces = FLX_RAW_INTERFACES
+caml_exes = FLX_EXES
+caml_implementations = FLX_IMPLEMENTATIONS
+caml_require_libs = ['nums','unix','misclib','flxlib']
+
+cpp_cpps = RTL_CPPS
+drivers = DRIVERS
+drivers_require_libs = ['faio','demux','flx']
+pkg_requires = ['misc']
+
+
+@h = tangler('pkg/ocs.py')
+@select(h)
+OCS_MODULES = [
+  'ocs_vartable', 
+  'ocs_error', 
+  'ocs_port', 
+  'ocs_types', 
+  'ocs_sym', 
+  'ocs_env',
+  'ocs_char', 
+  'ocs_numaux', 
+  'ocs_complex', 
+  'ocs_num', 
+  'ocs_numstr', 
+  'ocs_lex',
+  'ocs_misc',
+  'ocs_read', 
+  'ocs_eval', 
+  'ocs_list', 
+  'ocs_compile', 
+  'ocs_macro', 
+  'ocs_prim', 
+  'ocs_string',
+  'ocs_vector', 
+  'ocs_print', 
+  'ocs_io', 
+  'ocs_contin', 
+  'ocs_top', 
+]
+
+@h = tangler('pkg/demux.py')
+@select(h)
+
+DEMUXRTL_INTERFACES = [
+ 'demux/demux_thread.hpp',        # portable
+ 'demux/demux_posix_thread.hpp',  # posix
+ 'demux/demux_win_thread.hpp',    # win32
  
-print "context_class Flx_Elk_Parser : public UserActions {};"
-print
-print "nonterm(void*) top {"
-print "  -> _1:compilation_unit { return _1; }"
-print "}"
-print
-ntno = 1
-for k in d.keys():
-  print "nonterm(void*)",k," {"
-  v = d[k]
-  for p in v:
-    print "  -> ",
-    acnt = 0
-    for w in p:
-      s = cvt_symbol(w)
-      if w in attrtoks or not isterminal(s):
-        acnt = acnt + 1
-        print "_"+str(acnt)+":"+s,
-      else:
-        print cvt_symbol(w),
-    print "  {"
-    print "     void **data = (void**)malloc(sizeof(void*)*"+str(acnt+1)+");"
-    print "     data[0] = (void*)"+str(acnt)+";"
-    for i in range(1,acnt+1):
-      print "     data["+str(i)+"] = _"+str(i)+";"
-    print "     return (void*)data;"
-    print "  }"
-  print "}"
-  print
- 
-@h = tangler('script/flx_flx_grgen','python')
+ 'demux/demux_win_posix_condv_emul.hpp',         # win32 and posiz
+ 'demux/demux_mutex.hpp',         # portable
+ 'demux/demux_condv.hpp',         # portable
+ 'demux/demux_semaphore.hpp',     # portable
+ 'demux/demux_monitor.hpp',       # portable
+ 'demux/demux_sleep_queue.hpp',   # portable
+ 'demux/demux_work_fifo.hpp',     # portable
+
+ 'demux/demux_demuxer.hpp',       # portable
+ 'demux/demux_posix_demuxer.hpp', # posix
+ 'demux/demux_timer_queue.hpp',   # portable
+ 'demux/demux_posix_timer_queue.hpp',   # posix
+ 'demux/demux_pfileio.hpp',       # posix
+ 'demux/demux_select_demuxer.hpp',# posix
+ 'demux/demux_iocp_demuxer.hpp',  # win32 (monolithic)
+ 'demux/demux_overlapped.hpp',    # win32
+ 'demux/demux_win_timer_queue.hpp',  # win32
+ 'demux/demux_kqueue_demuxer.hpp',# osx/bsd
+ 'demux/demux_evtport_demuxer.hpp',# solaris
+ 'demux/demux_epoll_demuxer.hpp',# linux (>= 2.6)
+ 'demux/demux_sockety.hpp',       # posix
+]
+
+DEMUX_CPPS = [
+  "demux/demux_mutex", 
+  "demux/demux_condv",
+  "demux/demux_semaphore",
+  "demux/demux_monitor",
+  "demux/demux_sleep_queue",
+  "demux/demux_work_fifo",
+  "demux/demux_demuxer",
+  "demux/demux_win_posix_condv_emul", # portability hackery
+]
+
+POSIX_DEMUX_CPPS = [
+  "demux/demux_posix_thread",       # posix
+  "demux/demux_posix_demuxer",      # all posix
+  "demux/demux_select_demuxer",     # all posix
+  "demux/demux_posix_timer_queue",  # posix
+  "demux/demux_sockety",            # posix
+  "demux/demux_pfileio",            # posix
+]
+
+LINUX_DEMUX_CPPS = [
+  "demux/demux_epoll_demuxer",      # Linux 2.6 +
+]
+
+SOLARIS_DEMUX_CPPS = [
+  "demux/demux_evtport_demuxer",    # solaris
+]
+
+WINDOWS_DEMUX_CPPS = [
+  "demux/demux_win_thread",       # posix
+  "demux/demux_iocp_demuxer",       # windows
+  "demux/demux_overlapped",         # windows
+  "demux/demux_win_timer_queue",    # windows
+]
+
+BSD_DEMUX_CPPS = [
+  "demux/demux_kqueue_demuxer",     # osx/bsd
+]
+
+if WIN32:
+  DEMUX_CPPS = DEMUX_CPPS + WINDOWS_DEMUX_CPPS
+
+if POSIX:
+  DEMUX_CPPS = DEMUX_CPPS + POSIX_DEMUX_CPPS
+
+if LINUX:
+  DEMUX_CPPS = DEMUX_CPPS + LINUX_DEMUX_CPPS
+
+if BSD or MACOSX:
+  DEMUX_CPPS = DEMUX_CPPS + BSD_DEMUX_CPPS
+
+if SOLARIS:
+  DEMUX_CPPS = DEMUX_CPPS + SOLARIS_DEMUX_CPPS
+
+cpp_cpps = DEMUX_CPPS
+rtl_interfaces = DEMUXRTL_INTERFACES
+pkg_requires = ['flx']
+
+@h = tangler('pkg/faio.py')
 @select(h)
-import string
-import sys
+FAIORTL_INTERFACES = [
+ 'faio/faio_job.hpp',
+ 'faio/faio_asyncio.hpp',
+ 'faio/faio_drv.hpp',
+ 'faio/faio_pdrv.hpp',
+ 'faio/faio_wdrv.hpp',
+ 'faio/faio_posixio.hpp',
+ 'faio/faio_winio.hpp',
+ 'faio/faio_sdl_event.hpp',
+]
 
-ts ={}
-nt = ""
-d = {}
+FAIO_CPPS = [
+  "faio/faio_job",
+  "faio/faio_asyncio",
+  "faio/faio_drv",
+]
 
-def isterminal(w):
-  return w[0] in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+POSIX_FAIO_CPPS = [
+  "faio/faio_pdrv",
+  "faio/faio_posixio",
+]
 
-def isnonterminal(w):
-  return not isterminal(w)
+WINDOWS_FAIO_CPPS = [
+  "faio/faio_wdrv",
+  "faio/faio_winio",
+]
 
-def check_symbol(w):
-  if isterminal(w): ts[w]=1
+if WIN32:
+  FAIO_CPPS = FAIO_CPPS + WINDOWS_FAIO_CPPS
 
-def cvt_symbol(w):
-  if isterminal(w):
-    return "TOK_" + w
-  else:
-    return w
+if POSIX:
+  FAIO_CPPS = FAIO_CPPS + POSIX_FAIO_CPPS
 
-def cvt_symbol2(w):
-  if isterminal(w):
-    return "TOK_" + w
-  else:
-    return "nt_"+w
-
-def handle_line(l):
-  global nt
-  if l == '  | /* empty */':
-    d[nt]=d[nt]+[[]]
-  elif l[0]<>' ':
-    nt = l[:-1]
-    d[nt]=[]
-  else:
-    x = string.split(l)[1:]
-    for w in x: check_symbol(w)
-    d[nt]=d[nt]+[x]
-
-
-f = open(sys.argv[1])
-state = 1
-for l in f:
-  if l[:2] == '/*' and l[-3:-1]=='*/':
-    #print "skipping",l,
-    pass
-  else:
-    if l[:2]=='/*': state = 0
-    if state:
-      if l <> "\n":
-        handle_line(l[:-1])
-    else:
-      #print "skippy",l,
-      pass
-    if l[:2]=='*/': state = 1
-f.close()
-
-attrtok_map = {
-  "CSTRING":'string',
-  "STRING":'string',
-  "WSTRING":'string',
-  "USTRING":'string',
-  "NAME":'string',
-  "FLOAT":'string',
-  "INTEGER":'(string * string)',
-}
-attrtoks = attrtok_map.keys()
-
-print 'include "std";'
-print 'include "flx_token";'
-print
-print 'module flx_grammar'
-print '{'
-print '  open flx_token;'
-
-print
-
-print '  '+"nonterm top:compilation_unit_t ="
-print '  '+"  | _1:nt_compilation_unit =>  _1 "
-print '  '+";"
-print
-for k in d.keys():
-  print '  '+"union",k+"_t ="
-  v = d[k]
-  pno = 0
-  nps = len(v)
-  for p in v:
-    pno = pno + 1
-    s = "  |  "
-    acnt = 0
-    l = len (p)
-    j = 0
-    s= "  | " + k+"_"+str(pno)
-    lead = " of "
-    for w in p:
-      ss = cvt_symbol(w)
-      if w in attrtoks:
-        s = s + lead +attrtok_map[w]
-        lead = " * "
-      elif not isterminal(w):
-        acnt = acnt + 1
-        s=s+ lead + ss+ "_t"
-        lead = " * "
-      j = j + 1
-    print '  '+s
-  print '  '+";"
-  print
-
-  print '  '+"nonterm nt_"+k,":",k+"_t ="
-  v = d[k]
-  pno = 0
-  nps = len(v)
-  for p in v:
-    pno = pno + 1
-    s = "  |  "
-    acnt = 0
-    l = len (p)
-    j = 0
-    for w in p:
-      ss = cvt_symbol2(w)
-      if w in attrtoks or not isterminal(w):
-        acnt = acnt + 1
-        s=s+ "_"+str(acnt)+":"+ss
-      else:
-        s=s+ss
-      j = j + 1
-      if j != l:
-        s=s+" "
-    print '  '+s
-
-    s= "    => " + k+"_"+str(pno)
-    if acnt > 0: s=s+"("
-    for i in range(1,acnt+1):
-      s = s + "_"+str(i)
-      if i != acnt:
-        s= s + ", "
-    if acnt > 0: s=s+")"
-    print '  '+s
-    if pno != nps: print
-  print '  '+";"
-  print
-print "}"
-
-@h = tangler('script/flx_tokgen','python')
-@select(h)
-import string
-import sys
-import os
-execfile ("config"+os.sep+"flx_data.py")
-ts ={}
-for k,t in flx_keywords: ts[t]=1
-for t,l in flx_1_char_syms: ts[t]=1
-for t,l in flx_2_char_syms: ts[t]=1
-for t,l in flx_3_char_syms: ts[t]=1
-ts['ERROR']=1
-
-nt = ""
-d = {}
-
-def isterminal(w):
-  return w[0] in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-def isnonterminal(w): 
-  return not isterminal(w)
-
-def check_symbol(w):
-  if isterminal(w): ts[w]=1
-
-def cvt_symbol(w):
-  if isterminal(w):
-    return "TOK_" + w
-  else:
-    return w
-
-def cvt_symbol2(w):
-  if isterminal(w):
-    return "TOK_" + w
-  else:
-    return "nt_"+w
-
-def handle_line(l):
-  global nt
-  if l == '  | /* empty */':
-    d[nt]=d[nt]+[[]]
-  elif l[0]<>' ':
-    nt = l[:-1]
-    d[nt]=[]
-  else:
-    x = string.split(l)[1:]
-    for w in x: check_symbol(w)
-    d[nt]=d[nt]+[x]
-
-
-f = open(sys.argv[1])
-state = 1
-for l in f:
-  if l[:2] == '/*' and l[-3:-1]=='*/': 
-    #print "skipping",l,
-    pass
-  else:
-    if l[:2]=='/*': state = 0
-    if state: 
-      if l <> "\n":
-        handle_line(l[:-1])
-    else: 
-      #print "skippy",l,
-      pass
-    if l[:2]=='*/': state = 1
-f.close()
-
-attrtok_map = {
-  "ERROR":'string',
-  "CSTRING":'string',
-  "STRING":'string',
-  "WSTRING":'string',
-  "USTRING":'string',
-  "NAME":'string',
-  "FLOAT":'string',
-  "INTEGER":'(string * string)',
-}
-attrtoks = attrtok_map.keys()
-
-ts['WSTRING']=1
-ts['USTRING']=1
-ts = ts.keys()
-ts.sort()
-print 'include "std";'
-print 
-print 'module flx_token'
-print '{'
-
-print "  union flx_token_t = "
-print "    | TOK_EOF                                 //0"
-j = 1
-for k in ts:
-  s = '  | TOK_'+k
-  if k in attrtoks:
-    s = s + " of " + attrtok_map[k]
-  print '  '+(s  + " " *45)[:45]+'//'+str(j)
-  j = j + 1
-print '  '+";"
-print 
-print "}" 
-
-@h = tangler('script/elk_flx_lexgen','python')
-@select(h)
-import string
-import sys
-
-ts ={}
-nt = ""
-d = {}
-
-def check_symbol(w):
-  if w[0] in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
-    ts[w]=1
-
-def cvt_symbol(w):
-  if w[0] in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
-    return "TOK_" + w
-  else:
-    return w
-
-def handle_line(l):
-  global nt
-  if l == '  | /* empty */':
-    d[nt]=d[nt]+[[]]
-  elif l[0]<>' ':
-    nt = l[:-1]
-    d[nt]=[]
-  else:
-    x = string.split(l)[1:]
-    for w in x: check_symbol(w)
-    d[nt]=d[nt]+[x]
-
-
-f = open(sys.argv[1])
-state = 1
-for l in f:
-  if l[:2] == '/*' and l[-3:-1]=='*/': 
-    #print "skipping",l,
-    pass
-  else:
-    if l[:2]=='/*': state = 0
-    if state: 
-      if l <> "\n":
-        handle_line(l[:-1])
-    else: 
-      #print "skippy",l,
-      pass
-    if l[:2]=='*/': state = 1
-f.close()
-
-ts['WSTRING']=1
-ts['USTRING']=1
-ts = ts.keys()
-ts.sort()
-print '#include "elk_flx_lexer.h"'
-print '#include "stdio.h"'
-print '#include "string.h"'
-print
-print "enum Elk_Flx_Lexcode {"
-print "  TOK_EOF,                    //0"
-j=1
-for k in ts:
-    print ('  TOK_'+k+',                        ')[:30]+'//'+str(j)
-    j = j + 1
-print "};"
-print 
-
-print "char *Elk_Flx_Lexcode_Desc[] = {"
-print '  "TOK_EOF",                    //0'
-j=1
-for k in ts:
-  print ('  "TOK_'+k+'",                        ')[:30]+'//'+str(j)
-  j = j + 1
-print "};"
-print 
-
-n = len(ts)+1
-print "static int const ntoks = "+str(n)+";"
-
-
-print r"""
-string Elk_Flx_Lexer::tokenDesc() const
-{
-  switch (type) {
-    case TOK_NAME:   
-    case TOK_INTEGER:   
-    case TOK_FLOAT:   
-    case TOK_STRING:   
-    case TOK_CSTRING:   
-    case TOK_WSTRING:   
-    case TOK_USTRING:   
-    {
-      char buffer[200];
-      strcpy(buffer,tokenKindDesc(type));
-      strcat(buffer,"=");
-      strcat(buffer,(char*)sval);
-      return buffer;
-    }
-    default:               return tokenKindDesc(type);
-  }
-}
-
-string Elk_Flx_Lexer::tokenKindDesc(int kind) const {
-  return Elk_Flx_Lexcode_Desc[kind];
-}
-
-void Elk_Flx_Lexer::nextToken(LexerInterface *lex) {
-  char buffer[100];
-  if (fgets(buffer,100,stdin)) {
-    int n = strlen(buffer) - 1; //skip the newline
-    memmove(buffer+4,buffer,n); 
-    memcpy(buffer,"TOK_",4);
-    n+=4;
-    buffer[n]=0;
-    buffer[n+1]=0;
-    char *extra = buffer;
-    // skip non white
-    while(*extra && *extra != ' ')++extra;
-    
-    // terminate token
-    *extra++ = 0;
-
-    // skip white
-    while(*extra && *extra == ' ')++extra;
-    
-    int k;
-    for(k=0; k<ntoks; ++k)
-      if(strcmp(Elk_Flx_Lexcode_Desc[k],buffer)==0)
-        break;
-    if(k==ntoks) {
-      printf("Invalid token '%s'",buffer); 
-      abort();
-    }
-    lex->type = k;
-    lex->sval = (SemanticValue)extra;
-  }
-  else {
-    lex->type = TOK_EOF;
-    lex->sval = NULL;
-  }
-  return;
-}
-
-
-#ifdef TEST_LEXER
-int main()
-{
-  Elk_Flx_Lexer lexer;
-  for (;;) {
-    lexer.getTokenFunc()(&lexer);    // first call yields a function pointer
-                                                                                
-    // print the returned token
-    string desc = lexer.tokenDesc();
-    printf("%s\n", (char const*)desc);
-                                                                                
-    if (lexer.type == TOK_ENDMARKER) {
-      break;
-    }
-  }
-                                                                                
-  return 0;
-}
-#endif // TEST_LEXER
-"""
-
-@h = tangler('misc/elk_flx_lexer.h')
-@select(h)
-#ifndef ELK_FLX_LEXER
-#define ELK_FLX_LEXER
-
-#include "lexerint.h"
-// read characters from stdin, yield tokens for the parser
-class Elk_Flx_Lexer : public LexerInterface {
-public:
-  // function that retrieves the next token from
-  // the input stream
-  static void nextToken(LexerInterface *lex);
-  virtual NextTokenFunc getTokenFunc() const
-    { return &Elk_Flx_Lexer::nextToken; }
- 
-  // debugging assistance functions
-  string tokenDesc() const;
-  string tokenKindDesc(int kind) const;
-};
-
-#endif
-
-@h = tangler('script/get_grammar','python')
-@select(h)
-import string
-import sys
-f = open(sys.argv[1])
-start = 0
-count = 0
-for l in f:
-  if start:
-    if l[:2]=='%%': start=0
-    else:
-      out = ""
-      for ch in l:
-        if ch == '{': count+=1
-        elif ch == '}': count-=1
-        elif count == 0: out += ch
-      out = string.strip(out)
-      if out: 
-        if out[0]=='|': 
-          out = string.strip(out[1:])
-          if out=="": print "  | /* empty */"
-          else: print "  | "+out
-        elif out[-1]==':': 
-          print 
-          print out
-        elif out==';': pass
-        else: 
-          print out
-  elif l[:2]=='%%': start=1
-f.close()
-
-
-@h = tangler('script/load_grammar','python')
-@select(h)
-# get ocamlyacc grammar and store as Python
-# the header part is between %{ and %}
-# the prelude is after that and before %%
-# then comes the grammar up to %% 
-# then the trailer
-
-import string
-import sys
-f = open(sys.argv[1])
-lines = [line for line in f]
-
-i = 0
-def upto(prefix=None):
-  global i
-  s = []
-  while 1:
-    line = f[i]
-    i = i + 1
-    if prefix == None and 
-      i == len(lines) or
-      prefix =- line[:len(prefix)]:
-      return s
-    s = s.append(line)
-  
-head = upto('%}')
-prelude = upto('%%')
-grammr = upto('%%')
-footer = upto()
-
-print "head:"
-print head
-print "prelude"
-print prelude
-print "body"
-print body
-print "footer"
-print footer
-sys.exit(0)
-
-start = 0
-count = 0
-for l in f:
-  if start:
-    if l[:2]=='%%': start=0
-    else:
-      out = ""
-      for ch in l:
-        if ch == '{': count+=1
-        elif ch == '}': count-=1
-        elif count == 0: out += ch
-      out = string.strip(out)
-      if out: 
-        if out[0]=='|': 
-          out = string.strip(out[1:])
-          if out=="": print "  | /* empty */"
-          else: print "  | "+out
-        elif out[-1]==':': 
-          print 
-          print out
-        elif out==';': pass
-        else: 
-          print out
-  elif l[:2]=='%%': start=1
-f.close()
-
+cpp_cpps = FAIO_CPPS
+rtl_interfaces = FAIORTL_INTERFACES
+pkg_requires = ['demux','flx']
 
 @h = tangler('script/maker','python')
 @select(h)
@@ -1443,398 +1180,39 @@ TUTORIAL_EXAMPLES=TUTORIAL_DIRECTORY+'examples/'
 # BEGIN IMPLEMENTOR CONFIGURABLE SECTION
 # ------------------------------------------------
 
-# Elkhound stuffs
+raw_pkgs = glob.glob("pkg"+os.sep+"*.py")
+unsorted_pkgs = []
+for i in raw_pkgs:
+  j = string.split(i,os.sep)[1][:-3]
+  unsorted_pkgs.append(j)
 
-SMBASE = [
-]
+pkgd = {}
+for pkg in unsorted_pkgs:
+  class X:
+    execfile("pkg"+os.sep+pkg+".py")
+  d = {}
+  for k in X.__dict__.keys():
+    if k[0] != '_':
+      v = X.__dict__[k]
+      d[k]=v
+  pkgd[pkg]=d
 
-# These are the files actually needed at run time by Felix
-SMRTL = [
-  'sm_malloc_stub',
-  'sm_nonport',
-  'sm_autofile',
-  'sm_bflatten',
-  'sm_bit2d',
-  'sm_bitarray',
-  'sm_boxprint',
-  'sm_breaker',
-  'sm_crc',
-  'sm_datablok',
-  'sm_flatten',
-  'sm_growbuf',
-  'sm_gprintf',
-  'sm_hashline',
-  'sm_hashtbl',
-  'sm_missing',
-#  'sm_mypopen',
-#  'sm_mysig',
-  'sm_point',
-  'sm_pprint',
-#  'sm_regexp',
-  'sm_strdict',
-  'sm_strhash',
-  'sm_stringset',
-  'sm_strtokp',
-  'sm_strutil',
-  'sm_svdict',
-  'sm_vdtllist',
-  'sm_vptrmap',
-  'sm_warn',
-  'sm_srcloc',
-  'sm_syserr',
-  'sm_str',
-  'sm_trace',
-  'sm_trdelete',
-  'sm_voidlist',
-  'sm_exc',
-]
+pkgs = []
+def addpkg_nr(pkg):
+  if pkg not in pkgs:
+    pkgs.append(pkg)
 
-ASTGEN = [
-  'ast_gramlex',
-  'ast_ccsstr',
-  'ast_reporterr',
-  'ast_embedded',
-  'ast_asthelp',
-  'ast_strtable',
-  'ast_locstr',
-]
+def addpkg_r(pkg):
+  if pkg not in pkgs:
+    reqs = pkgd[pkg].get('pkg_requires',[])
+    for i in reqs:
+      addpkg_r(i)
+    addpkg_nr(pkg)
 
-ELKHOUND = [
-  'elk_asockind',
-  'elk_grammar',
-  'elk_emitcode',
-  'elk_mlsstr',
-  'elk_genml',
-  'elk_gramast.ast.gen',
-  'elk_gramlex.yy',
-  'elk_grampar',
-  'elk_grampar.tab',
-  'elk_gramexpl',
-]
+for pkg in unsorted_pkgs:
+  addpkg_r(pkg)
 
-ELKRTL = [
-  'elk_glr',
-  'elk_parsetables',
-  'elk_useract',
-  'elk_ptreenode',
-  'elk_ptreeact',
-]
-
-ELKRTL_INTERFACES = [
-  'sm_array.h',
-  'sm_objpool.h',
-  'sm_sobjlist.h',
-  'sm_trdelete.h',
-  'sm_voidlist.h',
-  'sm_macros.h',
-  'sm_srcloc.h', 
-  'sm_typ.h',
-  'sm_xassert.h',
-  'sm_objlist.h',
-  'sm_str.h',
-  'elk_lexerint.h',
-  'elk_glrconfig.h',
-  'elk_parsetables.h',
-  'elk_glr.h',
-  'elk_rcptr.h',
-  'elk_useract.h',
-]
-
-DEMUXRTL_INTERFACES = [
- 'demux_thread.hpp',        # portable
- 'demux_posix_thread.hpp',  # posix
- 'demux_win_thread.hpp',    # win32
- 
- 'demux_win_posix_condv_emul.hpp',         # win32 and posiz
- 'demux_mutex.hpp',         # portable
- 'demux_condv.hpp',         # portable
- 'demux_semaphore.hpp',     # portable
- 'demux_monitor.hpp',       # portable
- 'demux_sleep_queue.hpp',   # portable
- 'demux_work_fifo.hpp',     # portable
-
- 'demux_demuxer.hpp',       # portable
- 'demux_posix_demuxer.hpp', # posix
- 'demux_timer_queue.hpp',   # portable
- 'demux_posix_timer_queue.hpp',   # posix
- 'demux_pfileio.hpp',       # posix
- 'demux_select_demuxer.hpp',# posix
- 'demux_ts_select_demuxer.hpp',# posix
- 'demux_iocp_demuxer.hpp',  # win32 (monolithic)
- 'demux_overlapped.hpp',    # win32
- 'demux_win_timer_queue.hpp',  # win32
- 'demux_kqueue_demuxer.hpp',# osx/bsd
- 'demux_evtport_demuxer.hpp',# solaris
- 'demux_epoll_demuxer.hpp',# linux (>= 2.6)
- 'demux_sockety.hpp',       # posix
-]
-
-FAIORTL_INTERFACES = [
- 'faio_job.hpp',
- 'faio_asyncio.hpp',
- 'faio_drv.hpp',
- 'faio_pdrv.hpp',
- 'faio_wdrv.hpp',
- 'faio_posixio.hpp',
- 'faio_winio.hpp',
- 'faio_sdl_event.hpp',
-]
-
-# files containing ocamllex sources
-CIL_LEXS = [ 'flx_cil_clexer', 'flx_cil_formatlex', ]
-FLX_LEXS = [ 'flx_lex' ]
-MISC_LEXS = []
-
-# files containing ocamlyacc sources
-MISC_PARSES = [ ]
-CIL_PARSES = [ 'flx_cil_cparser', 'flx_cil_formatparse', ]
-FLX_PARSES = [ 'flx_parse' ]
-
-# ocaml modules = interfaces + implementation files
-
-CIL_MODULES = [
-  'flx_cil_machdep_type',
-  'flx_cil_cabs',
-  'flx_cil_cilversion',
-  'flx_cil_machdep',
-  'flx_cil_pretty',
-  'flx_cil_errormsg',
-  'flx_cil_cabs_helper',
-  'flx_cil_lexerhack',
-  'flx_cil_escape',
-  'flx_cil_cprint',
-  'flx_cil_cparser',
-  'flx_cil_clexer',
-  'flx_cil_stats',
-  'flx_cil_trace',
-  'flx_cil_clist',
-  'flx_cil_cil',
-  'flx_cil_frontc',
-  'flx_cil_rmtmps',
-  'flx_cil_cabsvisit',
-  'flx_cil_inthash',
-  'flx_cil_formatparse',
-  'flx_cil_formatlex',
-  'flx_cil_util',
-  'flx_cil_mergecil',
-  'flx_cil_patch',
-  'flx_cil_formatcil',
-  'flx_cil_cilutil',
-  'flx_cil_cabs2cil',
-  'flx_cil_check',
-]
-
-MISC_MODULES = [
-  'flx_filesys'      ,
-]
-
-FLX_MODULES = [
-  'inria_table'      ,
-  'inria_cset'      ,
-  'inria_syntax'      ,
-  'inria_lexgen'      ,
-  'flx_mtypes1'      ,
-  'flx_ast'          ,
-  'flx_types'        ,
-  'flx_ctypes'       ,
-  'flx_version'      ,
-  'flx_ctype'        ,
-  'flx_util'         ,
-  'flx_dlst'         ,
-  'flx_getopt'       ,
-  'flx_mtypes2'      ,
-  'flx_srcref'       ,
-  'flx_typing'       ,
-  'flx_exceptions'   ,
-  'flx_string'       ,
-  'flx_id'           ,
-  'flx_print'        ,
-  'flx_maps'         ,
-  'flx_typing2'      ,
-  'flx_unify'        ,
-  'flx_charset'      ,
-  'flx_constfld'     , 
-  'flx_cexpr'        ,
-  'flx_csubst'       , 
-  'flx_parse'        ,
-  'flx_keywords'     ,
-  'flx_prelex'       ,
-  'flx_lex1'         ,
-  'flx_tok'          ,
-  'flx_lexstate'     ,
-  'flx_preproc'      ,
-  'flx_lex'          ,
-  'flx_pretok'       ,
-  'flx_parse_ctrl'   ,
-  'flx_dfa'          ,
-  'flx_pat'          , 
-  'flx_macro'        , 
-  'flx_desugar'      , 
-  'flx_mbind'        , 
-  'flx_symtab'       , 
-  'flx_name'         , 
-  'flx_treg'         ,
-  'flx_beta'         ,
-  'flx_tpat'         , 
-  'flx_tconstraint'  ,
-  'flx_generic'      , 
-  'flx_overload'     , 
-  'flx_lookup'       , 
-  'flx_bexe'         , 
-  'flx_bbind'        , 
-  'flx_label'        , 
-  'flx_cflow'        , 
-  'flx_call'         , 
-  'flx_use'          , 
-  'flx_child'        , 
-  'flx_tailit'       , 
-  'flx_inline'       , 
-  'flx_stack_calls'  , 
-  'flx_mkcls'        , 
-  'flx_global'       , 
-  'flx_inst'         , 
-  'flx_tgen'         , 
-  'flx_display'      , 
-  'flx_ogen'         , 
-  'flx_regen'        ,
-  'flx_unravel'      , 
-  'flx_pgen'         , 
-  'flx_egen'         , 
-  'flx_ctorgen'      , 
-  'flx_elkgen'       , 
-  'flx_gen'          , 
-  'flx_flxopt'       , 
-  'flx_terminate'    , 
-]
-
-OCS_MODULES = [
-  'ocs_vartable', 
-  'ocs_error', 
-  'ocs_port', 
-  'ocs_types', 
-  'ocs_sym', 
-  'ocs_env',
-  'ocs_char', 
-  'ocs_numaux', 
-  'ocs_complex', 
-  'ocs_num', 
-  'ocs_numstr', 
-  'ocs_lex',
-  'ocs_misc',
-  'ocs_read', 
-  'ocs_eval', 
-  'ocs_list', 
-  'ocs_compile', 
-  'ocs_macro', 
-  'ocs_prim', 
-  'ocs_string',
-  'ocs_vector', 
-  'ocs_print', 
-  'ocs_io', 
-  'ocs_contin', 
-  'ocs_top', 
-]
-
-CIL_RAW_INTERFACES = [
-  'flx_cil_machdep_type',
-  'flx_cil_cabs',
-]
-
-FLX_RAW_INTERFACES = [
-  'flx_ast'          ,
-  'flx_types'        ,
-  'flx_ctypes'       ,
-] 
-
-MISC_INTERFACES = MISC_MODULES
-FLX_INTERFACES = FLX_MODULES
-CIL_INTERFACES = CIL_MODULES
-
-MISC_IMPLEMENTATIONS = MISC_INTERFACES
-FLX_IMPLEMENTATIONS = FLX_INTERFACES
-CIL_IMPLEMENTATIONS = CIL_INTERFACES
-  
-IMPLEMENTATIONS =  MISC_IMPLEMENTATIONS + CIL_IMPLEMENTATIONS + FLX_IMPLEMENTATIONS 
-  
-INTERFACES = MISC_INTERFACES + CIL_INTERFACES + FLX_INTERFACES
-RAW_INTERFACES = CIL_RAW_INTERFACES + FLX_RAW_INTERFACES
-
-RTL_CPPS = [
-  "rtl/flx_gc",
-  "rtl/flx_collector",
-  "rtl/flx_ts_collector",
-  "rtl/flx_rtl",
-  "rtl/flx_dynlink",
-  "rtl/flx_sync",
-  "rtl/flx_i18n",
-  "rtl/flx_ioutil",
-  "rtl/flx_main",
-]
-
-FAIO_CPPS = [
-  "faio/faio_job",
-  "faio/faio_asyncio",
-  "faio/faio_drv",
-]
-
-POSIX_FAIO_CPPS = [
-  "faio/faio_pdrv",
-  "faio/faio_posixio",
-]
-
-WINDOWS_FAIO_CPPS = [
-  "faio/faio_wdrv",
-  "faio/faio_winio",
-]
-
-
-DEMUX_CPPS = [
-  "demux/demux_mutex", 
-  "demux/demux_condv",
-  "demux/demux_semaphore",
-  "demux/demux_monitor",
-  "demux/demux_sleep_queue",
-  "demux/demux_work_fifo",
-  "demux/demux_demuxer",
-  "demux/demux_win_posix_condv_emul", # portability hackery
-]
-
-POSIX_DEMUX_CPPS = [
-  "demux/demux_posix_thread",       # posix
-  "demux/demux_posix_demuxer",      # all posix
-  "demux/demux_select_demuxer",     # all posix
-  "demux/demux_ts_select_demuxer",  # all posix
-  "demux/demux_posix_timer_queue",  # posix
-  "demux/demux_sockety",            # posix
-  "demux/demux_pfileio",            # posix
-]
-
-LINUX_DEMUX_CPPS = [
-  "demux/demux_epoll_demuxer",      # Linux 2.6 +
-]
-
-SOLARIS_DEMUX_CPPS = [
-  "demux/demux_evtport_demuxer",    # solaris
-]
-
-WINDOWS_DEMUX_CPPS = [
-  "demux/demux_win_thread",       # posix
-  "demux/demux_iocp_demuxer",       # windows
-  "demux/demux_overlapped",         # windows
-  "demux/demux_win_timer_queue",    # windows
-]
-
-BSD_DEMUX_CPPS = [
-  "demux/demux_kqueue_demuxer",     # osx/bsd
-]
-
-SDL_DEMUX_CPPS = [
-  #"demux/demux_sdl",                # any platform with SDL
-]
-
-SDL_FAIO_CPPS = [
-  "faio/faio_sdl_event",             # any platform with SDL
-]
+print "PACKAGES ARE ",pkgs
 
 EXTRA_LIBS = []
 CFLAGS = ""
@@ -1842,36 +1220,34 @@ SFLAGS = ""
 DFLAGS = ""
 
 if HAVE_GXX:
-  FLX_DYNAMIC_LIBS = ["flx_dynamic"]
+  FLX_DYNAMIC_LIBS = ["flx_dynamic","demux_dynamic","faio_dynamic","elk_dynamic"]
+  FLX_STATIC_LIBS = [ "faio_static", "demux_static", "flx_static", "elk_static"]
   ELK_STATIC_LIBS = ["elk_static"]
 elif HAVE_MSVC:
-  FLX_DYNAMIC_LIBS = ["libflx_dynamic"]
+  FLX_DYNAMIC_LIBS = ["libflx_dynamic","libdemux_dynamic","libfaio_dynamic","libelk_dynamic"]
+  FLX_STATIC_LIBS = ["libflx_static","libdemux_static","libfaio_static","libelk_static"]
   ELK_STATIC_LIBS = ["libelk_static"]
 else:
   print "CANNOT IDENTIFY COMPILER CLASS: only gcc and msvc known"
   raise MakeError
 
 if WIN32:
-  DEMUX_CPPS = DEMUX_CPPS + WINDOWS_DEMUX_CPPS
-  FAIO_CPPS = FAIO_CPPS + WINDOWS_FAIO_CPPS
   EXTRA_LIBS = EXTRA_LIBS + ["ws2_32","mswsock"]
   EXTRA_TEST_GLOBS = ["test" + os.sep + "win_*.flx"]
 
 if POSIX:
-  DEMUX_CPPS = DEMUX_CPPS + POSIX_DEMUX_CPPS
-  FAIO_CPPS = FAIO_CPPS + POSIX_FAIO_CPPS
   EXTRA_TEST_GLOBS = ["test" + os.sep + "posix_*.flx"]
 
 if LINUX:
-  DEMUX_CPPS = DEMUX_CPPS + LINUX_DEMUX_CPPS
+  pass
 
 if BSD or MACOSX:
-  DEMUX_CPPS = DEMUX_CPPS + BSD_DEMUX_CPPS
+  pass
 
 if SOLARIS:
-  DEMUX_CPPS = DEMUX_CPPS + SOLARIS_DEMUX_CPPS
   EXTRA_LIBS = EXTRA_LIBS + ["socket","nsl"]
 
+HAVE_SDL=0 # ************* HACK *********************
 if HAVE_SDL:
   #DEMUX_CPPS = DEMUX_CPPS + SDL_DEMUX_CPPS
   FAIO_CPPS = FAIO_CPPS + SDL_FAIO_CPPS
@@ -1886,11 +1262,7 @@ if HAVE_SDL:
     DFLAGS = DFLAGS + OPENGL_LIBS + ' '
     SFLAGS = SFLAGS + OPENGL_STATIC_LIBS + ' '
 
-DRIVERS = [
-  ('rtl/flx_run','bin/flx_run'),
-  ('test/flx_perf_drv1','test/flx_perf_drv1'),
-  ('test/micky_mouse','bin/micky_mouse'),
-]
+
 
 # C files that we need to compile, with options required to build them
 COBJECTS = {
@@ -1902,36 +1274,23 @@ CLIBRARIES = ['nums']
 # and some hackery so we can if the source doesn't need
 # ocaml-fileutils we can still build if it isn't found
 OCAML_INCLUDES = ""
-OLIBRARIES = [
-  'nums',
-  'unix',
-  'misclib',
-  'cillib',
-  'flxlib']
+#OLIBRARIES = [
+#  'nums',
+#  'unix',
+#  #'misclib',
+#  #'cillib',
+#  #'flxlib'
+#  ]
 
-OCAMLLIBS = [
-  ('misclib',MISC_IMPLEMENTATIONS),
-  ('cillib',CIL_IMPLEMENTATIONS),
-  ('flxlib',FLX_IMPLEMENTATIONS),
-]
+#OCAMLLIBS = [
+#  ('misclib',MISC_IMPLEMENTATIONS),
+#  ('cillib',CIL_IMPLEMENTATIONS),
+#  ('flxlib',FLX_IMPLEMENTATIONS),
+#]
 
 # target executable programs to produce
-MISC_EXES=[]
-FLX_EXES = [
-  'flxl',
-  'flxp',
-  'flxm',
-  'flxd',
-  'flxb',
-  'flxg',
-  'stub',
-]
-
-CIL_EXES = [ 
-  'flxcc',
-]
-
-EXES = MISC_EXES + CIL_EXES + FLX_EXES
+#MISC_EXES=[]
+#EXES = MISC_EXES + CIL_EXES + FLX_EXES
 
 if 0:
   s = ' -cclib "-Lsrc '
@@ -1969,38 +1328,36 @@ buildall = "clean" in options or "force" in options
 stop_on_error = "stop_on_error" in options
 import glob
 
-def copy_mli2ml():
-  for f in RAW_INTERFACES:
-    if filetime("src"+os.sep+f+".mli") > filetime("src"+os.sep+f+".ml"):
-      filecopy("src"+os.sep+f+".mli","src"+os.sep+f+".ml")
+def copy_mli2ml(MLIS):
+  for f in MLIS:
+    f = string.replace(f,"/",os.sep)
+    src = f+'.mli'
+    dst = f+'.ml'
+    if filetime(src) > filetime(dst):
+      #print("filecopy "+src+" -> "+dst)
+      filecopy(src,dst)
 
-def copy_elk2rtl():
-  for f in ELKRTL_INTERFACES:
-    if filetime("elk"+os.sep+f) > filetime("rtl"+os.sep+f):
-      filecopy("elk"+os.sep+f,"rtl"+os.sep+f)
+def copy_hpp2rtl(HPPS):
+  for f in HPPS:
+    dst = 'rtl'+os.sep+string.split(f,'/')[-1]
+    src = string.replace(f,"/",os.sep)
+    if filetime(src) > filetime(dst):
+      #print("filecopy "+src+" -> "+dst)
+      filecopy(src,dst)
 
-def copy_demux2rtl():
-  for f in DEMUXRTL_INTERFACES:
-    if filetime("demux"+os.sep+f) > filetime("rtl"+os.sep+f):
-      filecopy("demux"+os.sep+f,"rtl"+os.sep+f)
-
-def copy_faio2rtl():
-  for f in FAIORTL_INTERFACES:
-    if filetime("faio"+os.sep+f) > filetime("rtl"+os.sep+f):
-      filecopy("faio"+os.sep+f,"rtl"+os.sep+f)
 
 def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES):
   global buildall
   # STEP 2: Generate lexers
   for lex in LEXS:
-    file = 'src'+os.sep+lex
+    file = string.replace(lex,'/',os.sep)
     if buildall or filetime(file + '.mll') > filetime(file +'.ml'):
       buildall = 1
       xqt(OCAMLLEX + file + '.mll')
 
   # STEP 3: Generate parsers
   for parse in PARSES:
-    file = 'src'+os.sep+parse
+    file = string.replace(parse,'/',os.sep)
     if buildall or filetime(file + '.mly') > filetime(file +'.ml'):
       buildall = 1
       xqt(OCAMLYACC+ ' -v '+ file + '.mly')
@@ -2008,14 +1365,14 @@ def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES):
 
   # STEP 4: Compile ocaml interfaces
   for interface in INTERFACES:
-    file = 'src'+os.sep+interface
+    file = string.replace(interface,'/',os.sep)
     if buildall or filetime(file + '.mli') > filetime(file+'.cmi'):
       buildall = 1
       xqt(OCAMLC + ' ' + OCAML_INCLUDES+' -c '+file+ '.mli')
 
   # STEP 5: Compile ocaml implementations
   for implementation in IMPLEMENTATIONS + EXES:
-    file = 'src'+os.sep+implementation
+    file = string.replace(implementation,'/',os.sep)
     if buildall or filetime(file+ '.ml') > filetime(file+OCAML_OBJECT_EXTENSION):
       buildall = 1
       xqt(OCAMLOPT + ' '+ OCAML_INCLUDES+ ' -c ' + file +'.ml')
@@ -2046,11 +1403,13 @@ try:
     for p in packages:
       args = args + " lpsrc/"+p+".pak"
     runISCR(args)
-    copy_mli2ml()
-    copy_elk2rtl()
-    copy_demux2rtl()
-    copy_faio2rtl()
-    filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
+  for pkg in pkgs:
+    d = pkgd[pkg]
+    MLIS = d.get("caml_raw_interfaces",[])
+    copy_mli2ml(MLIS)
+    HPPS = d.get("rtl_interfaces",[])
+    copy_hpp2rtl(HPPS)
+  filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
   erasefile('tmp.tmp')
 
   if "man" in options:
@@ -2132,165 +1491,146 @@ try:
     #  if buildall or filetime(file +".c") > filetime(file +".o"):
     #    xqt(CCOMPILE +" -I "+OCAML_INCLUDE_DIRECTORY+" -Irtl "+flags+" "+file+".c")
 
-    print "COMPILING MISC"
-    ocamlit(MISC_LEXS,MISC_PARSES,MISC_INTERFACES,MISC_IMPLEMENTATIONS,MISC_EXES)
-    if buildall or "felix" in options:
-      print "COMPILING FELIX"
-      ocamlit(FLX_LEXS,FLX_PARSES,FLX_INTERFACES,FLX_IMPLEMENTATIONS,FLX_EXES)
-    if buildall or "flxcc" in options:
-      print "COMPILING FLXCC"
-      ocamlit(CIL_LEXS,CIL_PARSES,CIL_INTERFACES,CIL_IMPLEMENTATIONS,CIL_EXES)
+    for pkg in pkgs:
+      d = pkgd[pkg]
+      print "CAML COMPILING "+pkg
+      LEXS = d.get("caml_lexes",[])
+      PARSES = d.get("caml_parses",[])
+      INTERFACES = d.get("caml_interfaces",[])
+      IMPLEMENTATIONS = d.get("caml_implementations",[])
+      EXES = d.get("caml_exes",[])
+      OLIBRARIES = d.get("caml_require_libs",[])
+      ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES)
 
-    # STEP 6: Build FELIX Library
-    if "olink" in options: buildall = 1
-    for lib,IMPLEMENTATIONS in OCAMLLIBS:
-      print "CREATING LIBRARY ",lib
-      object_library_name = "src" + os.sep + lib + OCAML_LIB_EXTENSION
-      linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
-      library_filetime = filetime(object_library_name)
-      for implementation in IMPLEMENTATIONS:
-        file = 'src' + os.sep +implementation
-        if buildall or filetime(file+OCAML_OBJECT_EXTENSION) > library_filetime:
-          for implementation in IMPLEMENTATIONS:
-            file = 'src'+os.sep+implementation
-            linkstring = linkstring + file +OCAML_OBJECT_EXTENSION +" "
-          xqt(linkstring)
-          buildall = 1
-          break
+      # STEP 6: Build Ocaml Library
+      if IMPLEMENTATIONS != []:
+        if "olink" in options: buildall = 1
+        lib = pkg+"lib"
+        print "CAML CREATING LIBRARY ",lib
+        object_library_name = "src" + os.sep + lib + OCAML_LIB_EXTENSION
+        linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
+        library_filetime = filetime(object_library_name)
+        for implementation in IMPLEMENTATIONS:
+          linkstring = linkstring + implementation +OCAML_OBJECT_EXTENSION +" "
+        xqt(linkstring)
+        buildall = 1
 
-    # STEP 8: Link executables
-    print "LINKING EXECUTABLES"
-    x = ''
-    for library in OLIBRARIES:
-      x = x + ' ' + library + OCAML_LIB_EXTENSION
+      print "CAML LINKING EXECUTABLES"
+      x = ''
+      for library in OLIBRARIES:
+        x = x + ' ' + library + OCAML_LIB_EXTENSION
 
-    # finally, mainline *.cmx or cma files to link to executables
-    for exe in EXES:
-      if buildall or filetime(exe + OCAML_OBJECT_EXTENSION) > filetime(exe):
-        xqt(OCAMLOPT + LDFLAGS + ' ' + OCAML_INCLUDES + ' -o bin'+os.sep+exe + x + OBJECT_FILES + ' src/flx_version_hook.ml ' + exe + OCAML_OBJECT_EXTENSION)
+      # finally, mainline *.cmx or cma files to link to executables
+      for exe in EXES:
+        dst = "bin" + os.sep + string.split(exe,"/")[-1]
+        if buildall or filetime(exe + OCAML_OBJECT_EXTENSION) > filetime(dst):
+          xqt(OCAMLOPT + LDFLAGS + ' ' + OCAML_INCLUDES + ' -o '+dst+ x + OBJECT_FILES + ' src/flx_version_hook.ml ' + exe + OCAML_OBJECT_EXTENSION)
+
+  # elkhound executable: no need for dynamic loading, always built static
+  if "elkhound" in options or "tools" in options:
+    print "BUILDING HOST TOOLS"
+    for pkg in pkgs:
+      ars = ""
+      d = pkgd[pkg]
+      CPPS = d.get("host_cpp_cpps",[])
+      if CPPS:
+        print "HOST C++ COMPILING "+pkg
+        for x in CPPS:
+          if not "quiet" in options: print 'Compiling host '+pkg+' object',x
+          ars = ars + x + "_static.o "
+          dir,base = string.split(x,'/')
+          HOST_CXX.compile_static_rtl(xqt,dir,base,dir,include_path=["rtl","elk"],macros=["FLX_STATIC_LINK"])
+        tmp = string.split(ars)
+        objs=[]
+        for i in tmp:
+          objs.append(i[:-2]) # chop off the .o
+        HOST_CXX.link_static_archive(xqt,objs,dir+"/lib"+pkg+"_host_static")
+
+      EXES = d.get("host_exes",[])
+      LIBS = d.get("host_exes_require_libs",[])
+      for src,bin in EXES:
+        dir,base = string.split(src,'/')
+        HOST_CXX.compile_static_main(xqt,dir,base,dir,include_path=["rtl","elk"],macros=["FLX_STATIC_LINK"],CFLAGS=CFLAGS)
+        HOST_CXX.link_static_program(xqt,[src+"_static"],bin,lib_path=[dir],libs=[pkg+"_host_static"],SFLAGS=SFLAGS)
 
   # COMPILE RTL  
   if "rtl" in options:
     print "COMPILING RUN TIME LIBRARY COMPONENTS"
     if SUPPORT_DYNAMIC_LOADING:
       print " ++ DYNAMIC LINK VERSIONS"
-      ars = ""
 
-      # FELIX SUBLIBRARY
-      print " .. FELIX RTL"
-      for x in RTL_CPPS:
-        if not "quiet" in options: print 'Compiling rtl object',x
-        ars = ars + x + "_dynamic.o "
-        dir,base = string.split(x,'/')
-        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl'],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"],CFLAGS=CFLAGS)
+      for pkg in pkgs:
+        ars = ""
+        d = pkgd[pkg]
+        CPPS = d.get("cpp_cpps",[])
+        if CPPS:
+          print "C++ COMPILING "+pkg
+          for x in CPPS:
+            if not "quiet" in options: print 'Compiling rtl object',x
+            ars = ars + x + "_dynamic.o "
+            dir,base = string.split(x,'/')
+            TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl'],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"],CFLAGS=CFLAGS)
 
-      print " .. FELIX EVENT DEMUX"
-      for x in DEMUX_CPPS:
-        if not "quiet" in options: print 'Compiling rtl object',x
-        ars = ars + x + "_dynamic.o "
-        dir,base = string.split(x,'/')
-        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"],CFLAGS=CFLAGS)
+          # LINK RTL
+          print " ** MAKING RTL "+pkg+" (dynamic) "
+          tmp = string.split(ars)
+          objs=[]
+          for i in tmp:
+            objs.append(i[:-2]) # chop off the .o
+          TARGET_CXX.link_shared_rtl(xqt,objs,SHLIB_DIR+os.sep+"lib"+pkg+"_dynamic",libs=EXTRA_LIBS,DFLAGS=DFLAGS)
 
-      print " .. FELIX ASYNCH IO BINDINGS"
-      for x in FAIO_CPPS:
-        if not "quiet" in options: print 'Compiling rtl object',x
-        ars = ars + x + "_dynamic.o "
-        dir,base = string.split(x,'/')
-        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"],CFLAGS=CFLAGS)
-
-      #ELKHOUND SUBLIBRARY
-      print " .. ELKHOUND"
-      for x in SMRTL+ELKRTL:
-        if not "quiet" in options: print 'Compiling elkhound rtl object',x
-        ars = ars + "rtl/" + x + "_dynamic.o "
-        TARGET_CXX.compile_shared_rtl(xqt,"elk",x,"rtl",include_path=['rtl','elk'],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"],CFLAGS=CFLAGS)
-
-      # LINK RTL
-      print " ** MAKING RTL (dynamic) "
-      tmp = string.split(ars)
-      objs=[]
-      for i in tmp:
-        objs.append(i[:-2]) # chop off the .o
-      TARGET_CXX.link_shared_rtl(xqt,objs,SHLIB_DIR+os.sep+"libflx_dynamic",libs=EXTRA_LIBS,DFLAGS=DFLAGS)
 
     if SUPPORT_STATIC_LINKAGE:
       print " ++ STATIC LINK VERSIONS"
-      ars = ""
       print " .. FELIX RTL"
-      for x in RTL_CPPS:
-        if not "quiet" in options: print 'Compiling rtl object',x
-        ars = ars + x + "_static.o "
-        dir,base = string.split(x,'/')
-        TARGET_CXX.compile_static_rtl(xqt,dir,base,dir,include_path=['rtl'],macros=["FLX_STATIC_LINK"],optimise=1,CFLAGS=CFLAGS)
+      for pkg in pkgs:
+        ars = ""
+        d = pkgd[pkg]
+        CPPS = d.get("cpp_cpps",[])
+        if CPPS:
+          print "C++ COMPILING "+pkg
+          for x in CPPS:
+            if not "quiet" in options: print 'Compiling rtl object',x
+            ars = ars + x + "_static.o "
+            dir,base = string.split(x,'/')
+            TARGET_CXX.compile_static_rtl(xqt,dir,base,dir,include_path=['rtl'],macros=["FLX_STATIC_LINK"],optimise=1,CFLAGS=CFLAGS)
 
-      print " .. FELIX EVENT DEMUX"
-      for x in DEMUX_CPPS:
-        if not "quiet" in options: print 'Compiling rtl object',x
-        ars = ars + x + "_dynamic.o "
-        dir,base = string.split(x,'/')
-        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_STATIC_LINK"],CFLAGS=CFLAGS)
-
-      print " .. FELIX ASYNCH IO"
-      for x in FAIO_CPPS:
-        if not "quiet" in options: print 'Compiling rtl object',x
-        ars = ars + x + "_dynamic.o "
-        dir,base = string.split(x,'/')
-        TARGET_CXX.compile_shared_rtl(xqt,dir,base,dir,include_path=['rtl',"demux"],optimise=1,macros=["FLX_BUILD_DYNAMIC_RTL"],CFLAGS=CFLAGS)
-
-      print " .. ELKHOUND"
-      for x in SMRTL+ELKRTL:
-        if not "quiet" in options: print 'Compiling elkhound rtl object',x
-        ars = ars + "rtl/" + x + "_static.o "
-        TARGET_CXX.compile_static_rtl(xqt,"elk",x,"rtl",include_path=['rtl','elk'],optimise=1,macros=["FLX_STATIC_LINK"],CFLAGS=CFLAGS)
-
-      print " ** MAKING RTL (static) "
-      tmp = string.split(ars)
-      objs=[]
-      for i in tmp:
-        objs.append(i[:-2]) # chop off the .o
-      TARGET_CXX.link_static_archive(xqt,objs,"rtl/libflx_static")
-  
-  # elkhound executable: no need for dynamic loading, always built static
-  if "elkhound" in options:
-    print "COMPILING ELKHOUND"
-    ars = ""
-    for x in SMBASE + SMRTL + ASTGEN + ELKHOUND + ELKRTL:
-      if not "quiet" in options: print 'Compiling elkhound object',x
-      ars = ars + "elk/"+x + "_static.o "
-      HOST_CXX.compile_static_rtl(xqt,"elk",x,"elk",include_path=["rtl","elk"],macros=["FLX_STATIC_LINK"])
-    tmp = string.split(ars)
-    objs=[]
-    for i in tmp:
-      objs.append(i[:-2]) # chop off the .o
-    HOST_CXX.link_static_archive(xqt,objs,"elk/libelk_static")
-    HOST_CXX.compile_static_main(xqt,"elk","elk_gramanl","elk",include_path=["rtl","elk"],macros=["FLX_STATIC_LINK"],CFLAGS=CFLAGS)
-    HOST_CXX.link_static_program(xqt,["elk/elk_gramanl_static"],"bin/flx_elkhound",lib_path=["elk"],libs=ELK_STATIC_LIBS,SFLAGS=SFLAGS)
+          print " ** MAKING RTL "+pkg+" (static) "
+          tmp = string.split(ars)
+          objs=[]
+          for i in tmp:
+            objs.append(i[:-2]) # chop off the .o
+          TARGET_CXX.link_static_archive(xqt,objs,"rtl/lib"+pkg+"_static")
  
+      
   # COMPILE DRIVER PROGRAMS
   if "drivers" in options:
     if SUPPORT_STATIC_LINKAGE:
       print "COMPILING DRIVERS (static)"
-      for i,j in DRIVERS:
-        if not "quiet" in options: print 'Compiling driver object',i
-        d,b = string.split(i,'/')
-        TARGET_CXX.compile_static_main(xqt,d,b,d,include_path=["rtl"],macros=["FLX_STATIC_LINK"],optimise=1,CFLAGS=CFLAGS)
+      for pkg in pkgs:
+        ars = ""
+        d = pkgd[pkg]
+        DRIVERS = d.get("drivers",[])
+        for i,j in DRIVERS:
+          if not "quiet" in options: print 'Compiling driver object',i
+          d,b = string.split(i,'/')
+          TARGET_CXX.compile_static_main(xqt,d,b,d,include_path=["rtl"],macros=["FLX_STATIC_LINK"],optimise=1,CFLAGS=CFLAGS)
 
     if SUPPORT_DYNAMIC_LOADING:
       print "COMPILING DRIVERS (dynamic)"
-      for i,j in DRIVERS:
-        if not "quiet" in options: print 'Compiling driver object',i
-        d,b = string.split(i,'/')
-        TARGET_CXX.compile_shared_main(xqt,d,b,d,include_path=["rtl"],optimise=1,CFLAGS=CFLAGS)
-
-        #if CYGWIN:
-        #  #xqt("g++ -o "+j+" -Wl,--enable-auto-import " + i + "_dynamic.o -Lrtl -lflx_dynamic")
-        #  #JMS: seems to be same now, except for order
-        #  xqt(CCLINK_DLMAIN+" -o "+j+" " + i + "_dynamic.o -Lrtl -lflx_dynamic")
-        #elif MACOSX:
-        #  #RF: os x likes the same order as cygwin
-        #  xqt(CCLINK_DLMAIN+" -o "+j+" "+i+"_dynamic.o"+" -Lrtl -lflx_dynamic " )
-        #else:
-        TARGET_CXX.link_dynamic_program(xqt,[i+"_dynamic"],j,lib_path=[SHLIB_DIR],libs=FLX_DYNAMIC_LIBS+EXTRA_LIBS,DFLAGS=DFLAGS)
+      for pkg in pkgs:
+        ars = ""
+        d = pkgd[pkg]
+        DRIVERS = d.get("drivers",[])
+        LIBS = d.get("drivers_require_libs",[])
+        libs = []
+        for lib in LIBS:
+          libs.append(lib+"_dynamic")
+        for i,j in DRIVERS:
+          if not "quiet" in options: print 'Compiling driver object',i
+          d,b = string.split(i,'/')
+          TARGET_CXX.compile_shared_main(xqt,d,b,d,include_path=["rtl"],optimise=1,CFLAGS=CFLAGS)
+          TARGET_CXX.link_dynamic_program(xqt,[i+"_dynamic"],j,lib_path=[SHLIB_DIR],libs=libs,DFLAGS=DFLAGS)
 
   # run tests
   try:
@@ -2376,10 +1716,21 @@ try:
           try:
             if LINK_MODEL == "dynamic":
               TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise,CFLAGS=CFLAGS)
-              TARGET_CXX.link_felix_dll(xqt,[basename+"_dynamic"],basename,lib_path=[SHLIB_DIR],libs=FLX_DYNAMIC_LIBS+EXTRA_LIBS,DFLAGS=DFLAGS)
+              TARGET_CXX.link_felix_dll(
+                xqt,[basename+"_dynamic"],
+                basename,
+                lib_path=[SHLIB_DIR],
+                libs=FLX_DYNAMIC_LIBS+EXTRA_LIBS,
+                DFLAGS=DFLAGS)
             else: # static
               TARGET_CXX.compile_felix_static(xqt,indir,infile,indir,include_path=["rtl"],optimise=optimise,macros=["FLX_STATIC_LINK"],CFLAGS=CFLAGS)
-              TARGET_CXX.link_static_program(xqt,["rtl/flx_run_static",basename+"_static"],basename,lib_path=["rtl"],libs=["flx_static"]+EXTRA_LIBS,SFLAGS=SFLAGS)
+              TARGET_CXX.link_static_program(
+                xqt,
+                ["rtl/flx_run_static",basename+"_static"],
+                basename,
+                lib_path=["rtl"],
+                libs=FLX_STATIC_LIBS+EXTRA_LIBS,
+                SFLAGS=SFLAGS)
             #print 'TESTFILE -- OK!',basename
             results.append(("g++",basename,'OK'))
           except MakeError:
@@ -2505,7 +1856,7 @@ We have no idea if it continues copying.
 @tangle('BUILTIN_ISCR=python -O interscript/bin/iscr.py --nocache')
 @tangle('')
 @tangle('all: dummy')
-@tangle('\tpython script/maker extract compiler rtl elkhound drivers optimise_c')
+@tangle('\tpython script/maker extract compiler tools rtl drivers optimise_c misc cil elk demux faio flx')
 @tangle('\t#make tools libdoc')
 @tangle('\tpython script/maker clean test log_output stop_on_error check_output')
 @tangle('\tpython script/maker clean test static log_output stop_on_error check_output')
@@ -2852,7 +2203,7 @@ We have no idea if it continues copying.
 @tangle('\tpython script/maker clean')
 @tangle('')
 @tangle('distclean:')
-@tangle('\trm -rf tut rtl test www src misc man bin doc lib impldoc htmlman tmp tmp.tmp')
+@tangle('\trm -rf pkg tut rtl test www src misc man bin doc lib impldoc htmlman tmp tmp.tmp')
 @tangle('\trm -rf elk')
 @tangle('\trm -rf flxcc_out c89 c99 cxx gnu89 gnu99 gnucxx cxx_sys')
 @tangle('\trm -rf bagley')
@@ -3847,22 +3198,22 @@ fi
   tangle('if [ "$TESTMODE" = "1" ]')
   tangle('then')
   tangle('PKGCONFIG_CFLAGS="env PKG_CONFIG_PATH=config pkg-config --cflags "')
-  tangle('PKGCONFIG_DLIBS="env PKG_CONFIG_PATH=config pkg-config --libs"')
-  tangle('PKGCONFIG_SLIBS="env PKG_CONFIG_PATH=config pkg-config --static --libs"')
+  tangle('PKGCONFIG_DLIBS="env PKG_CONFIG_PATH=config pkg-config --libs --variable=dlibs "')
+  tangle('PKGCONFIG_SLIBS="env PKG_CONFIG_PATH=config pkg-config --static --libs --variable=slibs "')
   tangle('elif [ "x$FLX_INSTALL_DIR" != "x" ]')
   tangle('then')
   tangle('PKGCONFIG_CFLAGS="env PKG_CONFIG_PATH=\"$FLX_INSTALL_DIR/config\" pkg-config --cflags "')
-  tangle('PKGCONFIG_DLIBS="env PKG_CONFIG_PATH=\"$FLX_INSTALL_DIR/config\" pkg-config --libs"')
-  tangle('PKGCONFIG_SLIBS="env PKG_CONFIG_PATH=\"$FLX_INSTALL_DIR/config\" pkg-config --static --libs"')
+  tangle('PKGCONFIG_DLIBS="env PKG_CONFIG_PATH=\"$FLX_INSTALL_DIR/config\" pkg-config --libs --variable=dlibs "')
+  tangle('PKGCONFIG_SLIBS="env PKG_CONFIG_PATH=\"$FLX_INSTALL_DIR/config\" pkg-config --static --libs --variable=slibs "')
   tangle('else')
   tangle('PKGCONFIG_CFLAGS="pkg-config --cflags "')
-  tangle('PKGCONFIG_DLIBS="pkg-config --libs"')
-  tangle('PKGCONFIG_SLIBS="pkg-config --static --libs"')
+  tangle('PKGCONFIG_DLIBS="pkg-config --libs --variable=dlibs "')
+  tangle('PKGCONFIG_SLIBS="pkg-config --static --libs --variable=slibs "')
   tangle('fi')
  else:
   tangle('PKGCONFIG_CFLAGS="#pkg-config --cflags"')
-  tangle('PKGCONFIG_DLIBS="#pkg-config --libs"')
-  tangle('PKGCONFIG_SLIBS="#pkg-config --static --libs"')
+  tangle('PKGCONFIG_DLIBS="#pkg-config --libs --variable=dlibs "')
+  tangle('PKGCONFIG_SLIBS="#pkg-config --static --libs --variable=slibs "')
 
 
 # make a list of any *.cpp files (or other g++ options ..)
@@ -3870,7 +3221,7 @@ fi
 cpps=""
 cppos=""
 grab=1
-pkgs=""
+kgs=""
 while (( "$grab" == "1" ));
 do
   case "$1" in

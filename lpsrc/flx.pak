@@ -321,6 +321,7 @@ create a file here for unit tests.
 @head(2,'The Unix Build system')
 @include_file ('flx_man.ipk')
 @include_file ('flx_maker.ipk')
+@include_file ('flx_parser_maker.ipk')
 
 @head(2,'The Windows Build system extras')
 @include_file ('flx_win32.pak')

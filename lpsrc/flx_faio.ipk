@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.39  2006/02/15 10:54:09  skaller
+Build time packaging system.
+
 Revision 1.38  2006/02/10 04:40:26  skaller
 Win32 rtl patches
 
@@ -110,6 +113,16 @@ Added log to rtl and faio.
 
 
 @execfile('config'+os.sep+'config.py')
+
+@h = tangler('config/faio.pc')
+@select(h)
+Name: faio
+Description: Asynchronous I/O support
+Version: $Id$
+Cflags: 
+dlibs = -lfaio_dynamic
+slibs = -lfaio_static
+Requires: demux
 
 @head(1,'Async IO (deprecated)')
 @h=tangler('faio/faio_asyncio.hpp')
@@ -713,7 +726,8 @@ class FLX_RTL_EXTERN flxfileio_request
 {
     thread_wakeup   fw;
 public:
-    flxfileio_request() {}          // flx linkage
+    flxfileio_request();           // flx linkage
+    ~flxfileio_request();          // flx linkage
 
     flxfileio_request(int f, char* buf, long len, long off, bool rd)
         : fileio_request(f, buf, len, off, rd) {}
@@ -928,6 +942,10 @@ accept_request::wakeup(posix_demuxer& demux)
 }
 
 // from driver request
+flxfileio_request::~flxfileio_request(){}  
+flxfileio_request::flxfileio_request(){}
+
+
 bool
 flxfileio_request::start_async_op(demux::demuxer& demux, flx_drv* drv, void* f)
 {
@@ -1250,6 +1268,7 @@ winfile_io::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 #import <flx.flxh>
 
 module Faio {
+requires package "faio";
 open C_hack;
 
 proc faio_req[t](x:&t) {
@@ -1418,6 +1437,7 @@ header faio_posixio_hpp = '#include "faio_posixio.hpp"';
 
 include "flx_faio";
 module Faio_posix  {
+requires package "faio";
 open C_hack;        // cast, address
 open Faio;
 
@@ -1538,6 +1558,7 @@ proc accept(s: &int, listener: int)
 include "flx_faio";     // defines copipes & some driver interaction
 
 module Faio_win32 {
+requires package "faio";
 // contains windows overlapped/iocp io & copipes. no stream wrapper yet.
 open C_hack;
 open Faio;
@@ -1738,6 +1759,7 @@ open Faio_win32;
 
 
 module Flx_stream {
+requires package "faio";
 //JS: the type name should be flx_stream_t by convention ..
 union flx_stream =
     | CO of copipe     // copipe

@@ -1,4 +1,5 @@
 @head(1,'elkhound')
+
 @h=tangler('licences/elk_licence.txt','data')
 @select(h)
 The elkhound software
@@ -33,6 +34,123 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+@h = tangler('pkg/elk.py')
+@select(h)
+
+# Elkhound stuffs
+
+SMBASE = [
+]
+
+# These are the files actually needed at run time by Felix
+SMRTL = [
+  'elk/sm_malloc_stub',
+  'elk/sm_nonport',
+  'elk/sm_autofile',
+  'elk/sm_bflatten',
+  'elk/sm_bit2d',
+  'elk/sm_bitarray',
+  'elk/sm_boxprint',
+  'elk/sm_breaker',
+  'elk/sm_crc',
+  'elk/sm_datablok',
+  'elk/sm_flatten',
+  'elk/sm_growbuf',
+  'elk/sm_gprintf',
+  'elk/sm_hashline',
+  'elk/sm_hashtbl',
+  'elk/sm_missing',
+#  'elk/sm_mypopen',
+#  'elk/sm_mysig',
+  'elk/sm_point',
+  'elk/sm_pprint',
+#  'elk/sm_regexp',
+  'elk/sm_strdict',
+  'elk/sm_strhash',
+  'elk/sm_stringset',
+  'elk/sm_strtokp',
+  'elk/sm_strutil',
+  'elk/sm_svdict',
+  'elk/sm_vdtllist',
+  'elk/sm_vptrmap',
+  'elk/sm_warn',
+  'elk/sm_srcloc',
+  'elk/sm_syserr',
+  'elk/sm_str',
+  'elk/sm_trace',
+  'elk/sm_trdelete',
+  'elk/sm_voidlist',
+  'elk/sm_exc',
+]
+
+ASTGEN = [
+  'elk/ast_gramlex',
+  'elk/ast_ccsstr',
+  'elk/ast_reporterr',
+  'elk/ast_embedded',
+  'elk/ast_asthelp',
+  'elk/ast_strtable',
+  'elk/ast_locstr',
+]
+
+ELKHOUND = [
+  'elk/elk_asockind',
+  'elk/elk_grammar',
+  'elk/elk_emitcode',
+  'elk/elk_mlsstr',
+  'elk/elk_genml',
+  'elk/elk_gramast.ast.gen',
+  'elk/elk_gramlex.yy',
+  'elk/elk_grampar',
+  'elk/elk_grampar.tab',
+  'elk/elk_gramexpl',
+]
+
+ELKRTL = [
+  'elk/elk_glr',
+  'elk/elk_parsetables',
+  'elk/elk_useract',
+  'elk/elk_ptreenode',
+  'elk/elk_ptreeact',
+]
+
+ELKRTL_INTERFACES = [
+  'elk/sm_array.h',
+  'elk/sm_objpool.h',
+  'elk/sm_sobjlist.h',
+  'elk/sm_trdelete.h',
+  'elk/sm_voidlist.h',
+  'elk/sm_macros.h',
+  'elk/sm_srcloc.h', 
+  'elk/sm_typ.h',
+  'elk/sm_xassert.h',
+  'elk/sm_objlist.h',
+  'elk/sm_str.h',
+  'elk/elk_lexerint.h',
+  'elk/elk_glrconfig.h',
+  'elk/elk_parsetables.h',
+  'elk/elk_glr.h',
+  'elk/elk_rcptr.h',
+  'elk/elk_useract.h',
+]
+
+host_cpp_cpps = SMRTL+ASTGEN+ELKHOUND+ELKRTL
+host_exes = [("elk/elk_gramanl","bin/flx_elkhound")]
+host_exes_require_libs = ["elk/libelk_host_static"]
+
+rtl_interfaces = ELKRTL_INTERFACES
+cpp_cpps = ELKRTL + SMRTL
+
+
+@h = tangler('config/elk.pc')
+@select(h)
+Name: elk 
+Description: Elhound
+Version: 1
+Cflags: 
+dlibs = -lelk_dynamic
+slibs = -lelk_static
 
 @h=tangler('elk/elk_gramexpl.cpp')
 @select(h)

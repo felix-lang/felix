@@ -2,7 +2,7 @@
 
 @h=tangler('lib/lua.flx')
 @select(h)
-include 'std';
+#import <flx.flxh>
 header lua_h = '#include "flx_lua.h"';
 header lua_h = '#include "flx_lauxlib.h"';
 header lua_h = '#include "flx_lualib.h"';
@@ -10,6 +10,7 @@ header lua_h = '#include "flx_lualib.h"';
 publish "Interface to Lua 5.0 CAPI"
 module Lua
 {
+  requires package "lua";
   requires lua_h;
 
   open C_hack;
@@ -515,10 +516,11 @@ Even so, it's not that much code.
 
 @h=tangler('lib/lua_parse.flx')
 @select(h)
-include "std";
+#import <flx.flxh>
 
 module Lua_parse
 {
+  requires package "elk";
   comment "Lua tokens";
 
   union lua_token_t =
@@ -924,7 +926,8 @@ module Lua_parse
 
 @h=tangler('tools/lua_parser.flx')
 @select(h)
-include "std";
+#import <flx.flxh>
+
 include "lua_parse";
 open Lua_parse;
 

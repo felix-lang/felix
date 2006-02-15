@@ -8,6 +8,9 @@ scripting harness to find them.
 @p()
 REQUIRES: -lgmpxx -lgmp
 
+@h = tangler('pkg/gmpxx.py')
+@select(h)
+#
 @h = tangler('lib/flx_gmp.flx','data')
 @select(h)
 // THIS WRAPPER IS FFAU .. it is NOT LGPL licenced
@@ -24,6 +27,7 @@ header "#include <gmpxx.h>";
 @iops = [('add','+'),('sub','-',),('mul','*'),('div','/')]
 module Gmp
 {
+  requires package "gmpxx";
   type mpz='mpz_class';
   type mpq='mpq_class';
   type mpf='mpf_class';
