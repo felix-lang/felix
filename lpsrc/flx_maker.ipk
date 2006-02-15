@@ -5,6 +5,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.222  2006/02/15 04:10:56  rfistman
+working on thread safe select demuxer (ts_select_demuxer). that should
+fix cygwin probs. and as yet other undiscovered problems.
+
 Revision 1.221  2006/02/14 09:02:00  skaller
 Splitup flx_maker.ipk to get rid of some build utilities.
 
@@ -1555,6 +1559,7 @@ DEMUXRTL_INTERFACES = [
  'demux_posix_timer_queue.hpp',   # posix
  'demux_pfileio.hpp',       # posix
  'demux_select_demuxer.hpp',# posix
+ 'demux_ts_select_demuxer.hpp',# posix
  'demux_iocp_demuxer.hpp',  # win32 (monolithic)
  'demux_overlapped.hpp',    # win32
  'demux_win_timer_queue.hpp',  # win32
@@ -1798,6 +1803,7 @@ POSIX_DEMUX_CPPS = [
   "demux/demux_posix_thread",       # posix
   "demux/demux_posix_demuxer",      # all posix
   "demux/demux_select_demuxer",     # all posix
+  "demux/demux_ts_select_demuxer",  # all posix
   "demux/demux_posix_timer_queue",  # posix
   "demux/demux_sockety",            # posix
   "demux/demux_pfileio",            # posix

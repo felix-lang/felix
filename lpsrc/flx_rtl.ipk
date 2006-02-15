@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.108  2006/02/15 04:10:56  rfistman
+working on thread safe select demuxer (ts_select_demuxer). that should
+fix cygwin probs. and as yet other undiscovered problems.
+
 Revision 1.107  2006/02/13 20:12:53  skaller
 Add chain thru shape objects to allow collector to specialise
 allocations on a type basis.
@@ -2111,7 +2115,7 @@ shared library name are not passed.
 #include "demux_epoll_demuxer.hpp"
 #include "faio_pdrv.hpp"
 #else
-#include "demux_select_demuxer.hpp"
+#include "demux_ts_select_demuxer.hpp"
 #include "faio_pdrv.hpp"
 #endif
 
@@ -2173,7 +2177,7 @@ public:
 #elif defined(FLX_LINUX)
     epoll_demuxer demux;
 #elif !defined(_WIN32)
-    select_demuxer demux;  // probably not thread safe
+    ts_select_demuxer demux;  // thread safe!
 #endif
 
     sleep_queue_t async_active;

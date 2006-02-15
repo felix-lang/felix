@@ -1,5 +1,9 @@
 @head(1,'demux')
 $Log$
+Revision 1.43  2006/02/15 04:10:56  rfistman
+working on thread safe select demuxer (ts_select_demuxer). that should
+fix cygwin probs. and as yet other undiscovered problems.
+
 Revision 1.42  2006/02/13 05:47:40  rfistman
 readded recursive flag to (portable) mutexes
 
@@ -1523,9 +1527,11 @@ public:
 
   // posix style sockets. for reading and writing (but not both at once
   // for the same socket_wakeup) you are guaranteed to receive only one
-  // wakeup per call to this function when you call wait. For simultaneous
-  // reading and writing you may get two wakeups, that is, it may violate
-  // the "one shot" rule. Ignoring for now, as it's not a common use.
+  // wakeup per call to this function when you call wait.
+  // returns -1 if no wakeup is coming and zero if one is.
+  // For simultaneous reading and writing you may get two wakeups,
+  // that is, it may violate the "one shot" rule. Ignoring for now,
+  // as it's not a common use. This makes it undefined behaviour.
   // wakeup is owned by the demuxer until its wakeup is called,
   // so treat it with kid gloves, i.e. don't mess with it.
   virtual int   add_socket_wakeup(socket_wakeup* sv, int flags) = 0;
@@ -1588,24 +1594,13 @@ public:
 //#include <sys/time.h>   // GUSI WTF?
 
 // Unlike the other demuxers, this one is NOT thread safe, so wait and
-// add socket wakeup must only be called from the same thread. One way
-// would be to simply serialise calls to those functions. Since 
-// wakeup callbacks often request another wakeup, the lock would want
-// to be recursive. However, the wait is blocking so that's not a good
-// time to obtain a lock and also the added wakeup wouldn't be selected
-// until the previous select returned, so need to wake the select (sockpair?).
-// Hmm, might have to factor the wait into get args, set args so that a
-// descendent class could do it. For this to work there must be no ambiguity
-// when merging the wakeup sets, but that's ok because adding more than
-// one request for a single fd is undefined, so for the select demuxer it
-// can be a simple error. Great!
+// add socket wakeup must only be called from the same thread.
+// if you're looking for the thread safe version, try ts_select_demuxer
 
 namespace flx { namespace demux {
 
 class FLX_RTL_EXTERN select_demuxer : public posix_demuxer {
   void  remove_fd(int s);
-
-  //flx_mutex_t      ham_fist;       // big conservative hamfisted lock
   
   // thanks Beej!
   fd_set      master_read_set;    // fd watched for reading
@@ -1621,6 +1616,12 @@ class FLX_RTL_EXTERN select_demuxer : public posix_demuxer {
   int       fdmax;          // high watermark for select
 
   virtual void  get_evts(bool poll);
+
+protected:
+  // virtuals for thread safe descendent
+  virtual void copy_sets(fd_set& rset, fd_set& wset, fd_set& exset);
+  // these could be consts
+  virtual void process_sets(fd_set& rset, fd_set& wset, fd_set& exset);
 public:
   select_demuxer();
 
@@ -1629,6 +1630,62 @@ public:
 }} // namespace demux, flx
 #endif
 
+@h=tangler('demux/demux_ts_select_demuxer.hpp')
+@select(h)
+#ifndef __TS_SELECT_DEMUXER__
+#define __TS_SELECT_DEMUXER__
+
+#include "demux_select_demuxer.hpp"
+#include "demux_mutex.hpp"
+
+namespace flx { namespace demux {
+
+// thread safe version of select demuxer
+
+// this still needs a method for waking the wait function so it can consider
+// newly added sockets (self-pipe trick)
+
+// would be to simply serialise calls to those functions. Since 
+// wakeup callbacks often request another wakeup, the lock would want
+// to be recursive. However, the wait is blocking so that's not a good
+// time to obtain a lock and also the added wakeup wouldn't be selected
+// until the previous select returned, so need to wake the select (sockpair?).
+// Hmm, might have to factor the wait into get args, set args so that a
+// descendent class could do it. For this to work there must be no ambiguity
+// when merging the wakeup sets, but that's ok because adding more than
+// one request for a single fd is undefined, so for the select demuxer it
+// can be a simple error. Great!
+
+// there's no standard posix_socketio_wakeup, could be handy. could also
+// perhaps use it here?
+class FLX_RTL_EXTERN selfpipe_wakeup : public socket_wakeup {
+public:
+  virtual void wakeup(posix_demuxer& demux);
+};
+
+class FLX_RTL_EXTERN ts_select_demuxer : public select_demuxer {
+  // big conservative recursive hamfisted lock. recursive because get_evts
+  // callbacks love re-adding their wakeup (or some other even)
+  flx_mutex_t      ham_fist;   
+
+  // self pipe trick!!! fd[0] = read end, fd[1] = write end.
+  int       self_pipe_fds[2];
+  selfpipe_wakeup spw;
+protected:
+  // virtual for thread safe descendent
+  virtual void copy_sets(fd_set& rset, fd_set& wset, fd_set& exset);
+  // these could be consts
+  virtual void process_sets(fd_set& rset, fd_set& wset, fd_set& exset);
+
+public:
+  ts_select_demuxer();
+  virtual ~ts_select_demuxer();
+
+  virtual int   add_socket_wakeup(socket_wakeup* sv, int flags);
+};
+}} // namespace demux, flx
+
+#endif
 @h=tangler('demux/demux_sockety.hpp')
 @select(h)
 #ifndef __SOCKETY__
@@ -2282,7 +2339,7 @@ win_timer_queue::add_abs_sleep_request(sleep_task* st, double when)
 // EPOLLET to make epoll edgetriggered. I guess the default is level triggered.
 
 // epoll events are not one shot, in fact they're quite sticky so socket
-// filters must be removed manually to guarantee a one to one wakeup
+// filters must be removed manually to guarantee a one-to-one wakeup
 // to add_wakeup ratio. note that the oneshot flag is not a solution.
 
 // cool! EPOLLONESHOT
@@ -2341,7 +2398,6 @@ epoll_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
   // which aren't intrinsically one-shot, but having to do it ourselves
   // would have been a pain as epoll doesn't tell you which fd had the event
   // this way we can get away with not knowing & not losing our user cookie
-  // evt.events = (read) ? EPOLLIN : EPOLLOUT;// can get errs, hup, whatever
   evt.events = 0;
   
   if(flags & PDEMUX_READ) evt.events |= EPOLLIN;
@@ -2355,6 +2411,8 @@ epoll_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 //  evt.events |= EPOLLONESHOT;         // yes!
 //#endif
   // I think EPOLLHUP comes when the connection closes (on read?)
+// poll's (plain old poll) equivalents to this are ignored for input
+// same here?
   // I get EPOLLHUPs for bad async connects whether I ask for them or not.
   evt.events |= (EPOLLHUP | EPOLLERR);    // I think I want this
 
@@ -2478,7 +2536,7 @@ epoll_demuxer::get_evts(bool poll)
     }
 
   // we got something. tell the people.
-  // if(sv->wakeup_flags)
+  // not dependent solely on wakeup_flags - errors need to wake too.
   if(wake)
   {
     // we got something. better call wakeup, must remove to guarantee
@@ -3191,6 +3249,7 @@ acceptex_control_block::start_overlapped()
 #endif
 
 // what a pain in the arse (zzz)
+// This doesn't exist in win2000, so it'll need to be synchronous there.
 static int
 GetConnectExAddr(SOCKET s, LPFN_CONNECTEX* conn_fn)
 {
@@ -4201,6 +4260,9 @@ connect_control_block::wakeup(posix_demuxer& demux)
 // max 1024 sockets. That's kind of lame. See IO completion ports
 // on NT for a better solution.
 
+// See ACE_Handle_Set_Iterator for an optimised seelect bit field examination
+// algorithm (p149 C++ network programming, volume1)
+
 // see epoll, kqueue & IOCPs
 
 // is select level triggered? I think it is.
@@ -4236,14 +4298,14 @@ select_demuxer::get_evts(bool poll)
   // make a copy that select can modify. this needs to be thought
   // about for a threadsafe version. If we were serious, we'd also
   // copy the wakeup list.
-  fd_set  read_set = master_read_set;
-  fd_set  write_set = master_write_set;
-  fd_set  except_set = master_except_set; // EH? Why am I keeping a copy?
-                      // shouldn't it just be both i&o?
+
+  fd_set  read_set, write_set, except_set;
+
+  // virtual fn so that we can derive a threadsafe version
+  copy_sets(read_set, write_set, except_set);
   
   // this is depending on my fake socket to wakeup. perhaps use the timer
   // for now.
-  // timing out every 100th of a second. seems reasonable.
   struct timeval  tv, *tp = NULL;
   //tv.tv_sec = 0;
   //tv.tv_usec = 1000000/100;
@@ -4286,51 +4348,7 @@ select_demuxer::get_evts(bool poll)
   // note the highest fd seen, and make that the highwater mark.
   // that way we wouldn't be guaranteed monotonically degrading performance.
 
-  // might be worth keeping a low water mark as well.
-  // I guess this is why select sucks. On osx we can only watch
-  // about 1024 sockets. That sucks too.
-
-  // like kqueues, this code could theoretically handle separate wakeups
-  // for read and write, should I do it? not right now.
-  int new_fdmax = 0;
-
-  for(int i = 0; i <= fdmax; i++)
-  {
-    int   flags = 0;
-
-    if(FD_ISSET(i, &read_set)) flags |= PDEMUX_READ;
-
-    if(FD_ISSET(i, &write_set)) flags |= PDEMUX_WRITE;
-  
-    // sorta suggests that I ought to call the wakeup and pass
-    // an error flag on to it.
-    if(FD_ISSET(i, &except_set))
-    {
-      // remove any bad sockets - they render the event source useless.
-      // don't call wakeup as the exeption may be due the socket being
-      // closed => stale data.
-      fprintf(stderr, "select signalled error on socket %i, removing\n",
-        i);
-      remove_fd(i);
-    }
-    else if(flags)
-    {
-      socket_wakeup*  sv = svs[i];
-      // remove before wakeup so wakeup can add itself back, 
-      // if necessary.
-      remove_fd(i);
-
-      sv->wakeup_flags = flags;
-      sv->wakeup(*this);
-    }
-
-    // to lower high-watermark, keep track of highest seen.
-    if(svs[i]) new_fdmax = i;
-  }
-
-  // fprintf(stderr, "new_fdmax=%i, fdmax=%i\n", new_fdmax, fdmax);
-
-  fdmax = new_fdmax;      // copy it back
+  process_sets(read_set, write_set, except_set);
 }
 
 int
@@ -4376,6 +4394,189 @@ select_demuxer::remove_fd(int s)
 
   svs[s] = NULL;
 }
+
+// virtual functions to be overridden for thread safe descendent
+void
+select_demuxer::copy_sets(fd_set& rset, fd_set& wset, fd_set& exset)
+{
+  rset = master_read_set;
+  wset = master_write_set;
+  exset = master_except_set;
+}
+
+void
+select_demuxer::process_sets(fd_set& rset, fd_set& wset, fd_set& exset)
+{
+  // might be worth keeping a low water mark as well.
+  // I guess this is why select sucks. On osx we can only watch
+  // about 1024 sockets. That sucks too. could allocate larger sets
+  // with malloc... see c++ network programming book.
+
+  // like kqueues, this code could theoretically handle separate wakeups
+  // for read and write, should I do it? not right now.
+  int new_fdmax = 0;
+
+  for(int i = 0; i <= fdmax; i++)
+  {
+    int   flags = 0;
+
+    if(FD_ISSET(i, &rset)) flags |= PDEMUX_READ;
+
+    if(FD_ISSET(i, &wset)) flags |= PDEMUX_WRITE;
+  
+    // sorta suggests that I ought to call the wakeup and pass
+    // an error flag on to it.
+    if(FD_ISSET(i, &exset))
+    {
+      // remove any bad sockets - they render the event source useless.
+      // don't call wakeup as the exeption may be due the socket being
+      // closed => stale data.
+      fprintf(stderr, "select signalled error on socket %i, removing\n",
+        i);
+      remove_fd(i);
+    }
+    else if(flags)
+    {
+      socket_wakeup*  sv = svs[i];
+      // remove before wakeup so wakeup can add itself back, 
+      // if necessary.
+      remove_fd(i);
+
+      sv->wakeup_flags = flags;
+      sv->wakeup(*this);
+    }
+
+    // to lower high-watermark, keep track of highest seen.
+    if(svs[i]) new_fdmax = i;
+  }
+
+  // fprintf(stderr, "new_fdmax=%i, fdmax=%i\n", new_fdmax, fdmax);
+
+  fdmax = new_fdmax;      // copy it back
+}
+
+}} // flx, demux
+
+@h=tangler('demux/demux_ts_select_demuxer.cpp')
+@select(h)
+#include "demux_ts_select_demuxer.hpp"
+#include <stdio.h>
+#include <unistd.h>       // pipe for self-pipe trick.
+#include <assert.h>
+
+namespace flx { namespace demux {
+
+ts_select_demuxer::ts_select_demuxer()
+  : ham_fist(true)      // recursive lock
+{
+  fprintf(stderr, "creating pipe for self-pipe trick\n");
+fprintf(stderr, "say, throwing in constructors undoes all the previously\n");
+fprintf(stderr, "stuff - right?\n");
+  if(pipe(self_pipe_fds) == -1)
+  {
+    perror("ts_select_demuxer::self_pipe");
+    throw -1;
+  }
+
+  fprintf(stderr, "got two fds: %i, %i\n",
+    self_pipe_fds[0], self_pipe_fds[1]);
+
+  fprintf(stderr, "this is one of my favourite leaking patterns. FIX!\n");
+  // make a close obj or something.
+  spw.s = self_pipe_fds[0]; // setup wakeup for read end of pipe
+  // add as reader (will call parent class fn; that is ok)
+  if(add_socket_wakeup(&spw, PDEMUX_READ) == -1)  // no wakeup!?!
+    throw -1;                 // that makes me angry!!!
+}
+
+ts_select_demuxer::~ts_select_demuxer()
+{
+// is that even our job? how do we wait?
+fprintf(stderr, "could wake here to do clean take down...\n"); 
+
+  fprintf(stderr, "taking down self pipe\n");
+  for(int i = 0; i < 2; i++)
+  {
+    if(close(self_pipe_fds[i]) == -1)
+    {
+      perror("selfpipe close");
+      fprintf(stderr, "was self_pipe[%i]\n", i);
+    }
+  }
+}
+
+
+// thread safe overloaded functions follow. all acquire the lock
+// then call the parent version of the function. nice!
+int
+ts_select_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
+{
+  fprintf(stderr, "ts_select::add: %p->%i, %x\n", sv, sv->s, flags);
+  flx_mutex_locker_t locker(ham_fist);
+
+  int s = sv->s;    // keep a copy so we don't introduce race conditions
+
+  int res = select_demuxer::add_socket_wakeup(sv, flags);
+  // I wouldn't touch the sv after this.
+
+  // lets wake the select demuxer by writing to our end of the pipe
+  // lets also not add redundant select wakes for our own selfpipe, as
+  // we know it's adding whilst not in select. Is that clear?
+  if(s != self_pipe_fds[0])
+  {
+    fprintf(stderr, "s != self_pipe[in], waking select (does it block?)\n");
+    char  b = 1;
+    ssize_t nbytes;
+    // is this blocking? I guess it has to be...
+    nbytes = write(self_pipe_fds[1], &b, 1);    // wake up, jeff!
+
+    if(-1 == nbytes) perror("self-pipe write");
+    assert(1 == nbytes);
+  }
+
+  return res;
+
+// we need to wake a blocking get_evts call here else we'll have bad
+// performance or even a lockup. the question is do we need to do it under
+// the tutelage of the lock?
+}
+
+void
+ts_select_demuxer::copy_sets(fd_set& rset, fd_set& wset, fd_set& exset)
+{
+  flx_mutex_locker_t locker(ham_fist);
+  return select_demuxer::copy_sets(rset, wset, exset);
+}
+
+void
+ts_select_demuxer::process_sets(fd_set& rset, fd_set& wset, fd_set& exset)
+{
+  fprintf(stderr, "select woke up!!!\n");
+
+  flx_mutex_locker_t locker(ham_fist);
+  return select_demuxer::process_sets(rset, wset, exset);
+}
+
+
+void
+selfpipe_wakeup::wakeup(posix_demuxer& demux)
+{
+  fprintf(stderr, "selfpipe wakeup! do something!!!\n");
+
+  ssize_t         nbytes;
+  char      b;
+
+    // if this were read then this fn would work with non-sockets
+    nbytes = read(s, &b, 1);
+
+  if(nbytes == -1) perror("recv");
+
+fprintf(stderr, "GOT: %li, %x\n", nbytes, b);
+  // add self back!
+  int res = demux.add_socket_wakeup(this, PDEMUX_READ);
+  assert(-1 != res);
+}
+
 }}
 
 @h=tangler('demux/demux_sockety.cpp')
