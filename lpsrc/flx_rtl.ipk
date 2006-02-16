@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.112  2006/02/16 15:36:04  skaller
+Fix flx_sync to not use ts_collector (only needs gc).
+
 Revision 1.111  2006/02/16 15:19:28  skaller
 MSVC++ fixes
 
@@ -1818,7 +1821,7 @@ con_t *flx_libinit_t::bind_proc(void *fn, void *data) {
 #ifndef _FLX_SYNC
 #define _FLX_SYNC
 
-#include "flx_ts_collector.hpp"
+#include "flx_gc.hpp"
 #include "flx_dynlink.hpp"
 #include "flx_rtl.hpp"
 #include <list>
