@@ -1206,8 +1206,8 @@ module String
   fun split (x:string, d:char): List::list[string] = {
     fun aux (x:string,y:List::list[string]) =>
       match find (x, d) with
-      | ?n when n == npos => List::rev$ x + y
-      | ?n => aux$ x.[n+1 to], x.[to n]+y
+      | ?n when n == npos => List::rev$ List::Cons (x, y)
+      | ?n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
       endmatch
     ;
     return aux$ x, List::Empty[string];

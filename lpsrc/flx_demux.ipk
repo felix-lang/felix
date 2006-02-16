@@ -1,5 +1,10 @@
 @head(1,'demux')
 $Log$
+Revision 1.45  2006/02/16 07:51:40  skaller
+Replace pkg-config with a Felix program flx_pkgconfig.
+Make sure to build it in a timely manner, since flx script
+now depends on it.
+
 Revision 1.44  2006/02/15 10:54:08  skaller
 Build time packaging system.
 
@@ -96,9 +101,8 @@ Integrate SDL tests, provide initial SDL event demux.
 Name: demux
 Description: Pre-emptive threading support
 Version: $Id$
-Cflags: 
-dlibs = -ldemux_dynamic
-slibs = -ldemux_static
+dlibs: -ldemux_dynamic
+slibs: -ldemux_static
 Requires: flx
 
 @head(1,"Pre-emptive threads (pthread)")

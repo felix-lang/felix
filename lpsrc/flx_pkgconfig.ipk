@@ -1,0 +1,90 @@
+@head(1,'pkg-config replacement')
+This program provides roughly the same functionality as
+the pkg-config program. It isn't the same, however,
+and it uses its own files. As usual other people's software
+is harder to modify so it work right than to do it oneself;(
+@p()
+This program should be compiled static with Felix, as early
+as possible, since it is needed to compile Felix code
+which uses extensions, plugins, or whatever.
+Maybe the tarball should even include the C++ sources,
+so it can be built early enough.
+
+@h = tangler("tools/flx_pkgconfig.flx","data")
+@select(h)
+#import <flx.flxh>
+open String;
+open List;
+open System;
+open Env;
+open Filename;
+open Text_file;
+
+// parse arguments
+var fields = Empty[string];
+var pkgs = Empty[string];
+var i = 1;
+var arg = argv i; 
+whilst arg != "" do
+  if "--field=" == arg.[0 to 8] do
+    fields = fields + arg.[8 to];
+  else
+    pkgs = pkgs + arg;
+  done;
+
+next:>
+  ++i;
+  arg = argv i;
+done;
+
+fun str: list[string] -> string =
+  | Cons (?e,?t) => e + " " + str t
+  | Empty => ""
+;
+
+//print$ "Fields   = " + str fields; endl;
+//print$ "Packages = " + str pkgs; endl;
+
+val path=getenv("PKG_CONFIG_PATH");
+val dirs=split(path, chr ':');
+
+//print$ "Path = " + str dirs; endl;
+
+var result = Empty[string];
+
+iter
+(proc (pkg:string){
+   iter(proc (dir:string){
+     val filename = if dir=="" then "." else dir endif + sep + pkg + ".fpc";
+     //print filename; endl;
+     file := fopen_input filename;
+     if valid file do
+       var line = readln file;
+       whilst line != "" do
+         //print line;
+         var n = find (line,chr ':');
+         if n != npos do
+           var lhs = line.[to n];
+           var rhs = line.[n+1 to];
+           lhs = trim lhs;
+           if mem (eq of (string * string)) fields lhs do
+             rhs = trim rhs;
+             if not (mem (eq of (string * string)) result rhs) do
+               result = result + rhs;
+             done;
+           done;
+         done;
+         line = readln file;
+       done;
+       fclose file;
+     done;
+   })
+   dirs;
+})
+pkgs;
+
+//print$ "Values = " + str result; endl;
+
+print$ str result; endl;
+
+

@@ -1,5 +1,10 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.110  2006/02/16 07:51:40  skaller
+Replace pkg-config with a Felix program flx_pkgconfig.
+Make sure to build it in a timely manner, since flx script
+now depends on it.
+
 Revision 1.109  2006/02/15 10:54:09  skaller
 Build time packaging system.
 
@@ -136,14 +141,13 @@ The code all lives in directory rtl, the run time
 library support directory. The symbols are defined
 in namespace flx::rtl, except as noted.
 
-@h = tangler('config/flx.pc')
+@h = tangler('config/flx.fpc')
 @select(h)
 Name: flx
 Description: Felix core runtime support
 Version: $Id$
-Cflags: 
-dlibs = -lflx_dynamic
-slibs = -lfaio_static -ldemux_static -lflx_static
+dlibs: -lflx_dynamic
+slibs: -lfaio_static -ldemux_static -lflx_static
 
 @h = tangler("rtl/flx_meta.hpp")
 @select(h)

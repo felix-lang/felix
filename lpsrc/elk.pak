@@ -143,14 +143,13 @@ rtl_interfaces = ELKRTL_INTERFACES
 cpp_cpps = ELKRTL + SMRTL
 
 
-@h = tangler('config/elk.pc')
+@h = tangler('config/elk.fpc')
 @select(h)
 Name: elk 
 Description: Elhound
 Version: 1
-Cflags: 
-dlibs = -lelk_dynamic
-slibs = -lelk_static
+dlibs: -lelk_dynamic
+slibs: -lelk_static
 
 @h=tangler('elk/elk_gramexpl.cpp')
 @select(h)

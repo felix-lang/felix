@@ -1,6 +1,11 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.40  2006/02/16 07:51:40  skaller
+Replace pkg-config with a Felix program flx_pkgconfig.
+Make sure to build it in a timely manner, since flx script
+now depends on it.
+
 Revision 1.39  2006/02/15 10:54:09  skaller
 Build time packaging system.
 
@@ -114,14 +119,13 @@ Added log to rtl and faio.
 
 @execfile('config'+os.sep+'config.py')
 
-@h = tangler('config/faio.pc')
+@h = tangler('config/faio.fpc')
 @select(h)
 Name: faio
 Description: Asynchronous I/O support
 Version: $Id$
-Cflags: 
-dlibs = -lfaio_dynamic
-slibs = -lfaio_static
+dlibs: -lfaio_dynamic
+slibs: -lfaio_static
 Requires: demux
 
 @head(1,'Async IO (deprecated)')

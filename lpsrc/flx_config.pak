@@ -2337,16 +2337,16 @@ if HAVE_PKGCONFIG and HAVE_SDL:
   # OS transparent way to do that ?
   result,dummy = gs("pkg-config --exists SDL")
   if result:
-    fname = "config" + os.sep + "SDL.pc"
+    fname = "config" + os.sep + "SDL.fpc"
     if not file_exists(fname):
-      print "Creating config/SDL.pc"
+      print "Creating config/SDL.fpc"
       f = open (fname,"w")
       f.write("Name: SDL\n")
       f.write("Description: Simple Direct Media Layer\n")
       f.write("Version: "+SDL_VERSION+"\n")
-      f.write("Cflags: "+SDL_CFLAGS+"\n")
-      f.write("Libs: "+SDL_LIBS+"\n")
-      f.write("Libs.private: "+SDL_STATIC_LIBS+"\n")
+      f.write("cflags: "+SDL_CFLAGS+"\n")
+      f.write("dlibs: "+SDL_LIBS+"\n")
+      f.write("slibs: "+SDL_STATIC_LIBS+"\n")
       f.close()
     
 # HACK -- only right for Linux .. no way to detect 
