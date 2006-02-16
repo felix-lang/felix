@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.227  2006/02/16 11:36:28  skaller
+Flx ts collector needs to go in demux since it uses mutex.
+
 Revision 1.226  2006/02/16 10:53:43  skaller
 Add dependencies for Cygwin dynamic linkage.
 
@@ -713,7 +716,6 @@ FLX_EXES = [
 RTL_CPPS = [
   "rtl/flx_gc",
   "rtl/flx_collector",
-  "rtl/flx_ts_collector",
   "rtl/flx_rtl",
   "rtl/flx_dynlink",
   "rtl/flx_sync",
@@ -813,6 +815,7 @@ DEMUX_CPPS = [
   "demux/demux_work_fifo",
   "demux/demux_demuxer",
   "demux/demux_win_posix_condv_emul", # portability hackery
+  "rtl/flx_ts_collector",
 ]
 
 POSIX_DEMUX_CPPS = [
