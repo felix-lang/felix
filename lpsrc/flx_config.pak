@@ -1286,7 +1286,9 @@ class gxx(flxbuild.compiler_class.compiler_base):
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
     cmd = cmd + "-o " +outfile + " "
     for i in lib_path: cmd = cmd + "-L"+i+" "
-    for i in libs: cmd = cmd + "-l"+i+" "
+    for i in libs: 
+      if i[0:3]=='lib': i = i[3:]
+      cmd = cmd + "-l"+i+" "
     if opt.HAVE_PTHREADS:
       cmd = cmd + opt.PTHREAD_SWITCH
     cmd = cmd + SFLAGS
@@ -1300,7 +1302,9 @@ class gxx(flxbuild.compiler_class.compiler_base):
     #  cmd = cmd + "-Wl,--out-implib="+outfile+".dll.a "
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
     for i in lib_path: cmd = cmd + "-L"+i+" "
-    for i in libs: cmd = cmd + "-l"+i+" "
+    for i in libs: 
+      if i[0:3]=='lib': i = i[3:]
+      cmd = cmd + "-l"+i+" "
     if opt.DLLIB:
       cmd = cmd + "-l"+opt.DLLIB+" "
     if opt.HAVE_PTHREADS:
@@ -1314,7 +1318,9 @@ class gxx(flxbuild.compiler_class.compiler_base):
     cmd = cmd + "-o " +outfile + opt.EXT_SHLIB + " "
     for i in objects: cmd = cmd +i+opt.EXT_OBJ +" "
     for i in lib_path: cmd = cmd + "-L"+i+" "
-    for i in libs: cmd = cmd + "-l"+i+" "
+    for i in libs: 
+      if i[0:3]=='lib': i = i[3:]
+      cmd = cmd + "-l"+i+" "
     if opt.DLLIB:
       cmd = cmd + "-l"+opt.DLLIB+" "
     if opt.HAVE_PTHREADS:
@@ -1328,7 +1334,9 @@ class gxx(flxbuild.compiler_class.compiler_base):
     cmd = cmd + "-o " +outfile + " "
     for i in objects: cmd = cmd +i+opt.EXT_OBJ+" "
     for i in lib_path: cmd = cmd + "-L"+i+" "
-    for i in libs: cmd = cmd + "-l"+i+" "
+    for i in libs: 
+      if i[0:3]=='lib': i = i[3:]
+      cmd = cmd + "-l"+i+" "
     if opt.DLLIB:
       cmd = cmd + "-l"+opt.DLLIB+" "
     if opt.HAVE_PTHREADS:
@@ -1912,9 +1920,9 @@ archmap = {
 try:
   result,output = get_stdout("uname -s")  # os x uname flag (works in solaris)
   print result,output
-  output = string.lower(string.strip(output[0]))
   if result: # uname -s failed
-    output = string.lower(string(os.name)) # so use Python's idea
+    output = [os.name] # so use Python's idea
+  output = string.lower(string.strip(output[0]))
   build_model = archmap[output]
   print "Build platform: " + build_model
 except:

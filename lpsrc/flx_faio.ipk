@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.41  2006/02/16 15:09:45  skaller
+MSVC++ package manager
+
 Revision 1.40  2006/02/16 07:51:40  skaller
 Replace pkg-config with a Felix program flx_pkgconfig.
 Make sure to build it in a timely manner, since flx script
@@ -127,6 +130,47 @@ Version: $Id$
 dlibs: -lfaio_dynamic
 slibs: -lfaio_static
 Requires: demux
+
+@h = tangler('pkg/faio.py')
+@select(h)
+FAIORTL_INTERFACES = [
+ 'faio/faio_job.hpp',
+ 'faio/faio_asyncio.hpp',
+ 'faio/faio_drv.hpp',
+ 'faio/faio_pdrv.hpp',
+ 'faio/faio_wdrv.hpp',
+ 'faio/faio_posixio.hpp',
+ 'faio/faio_winio.hpp',
+ 'faio/faio_sdl_event.hpp',
+]
+
+FAIO_CPPS = [
+  "faio/faio_job",
+  "faio/faio_asyncio",
+  "faio/faio_drv",
+]
+
+POSIX_FAIO_CPPS = [
+  "faio/faio_pdrv",
+  "faio/faio_posixio",
+]
+
+WINDOWS_FAIO_CPPS = [
+  "faio/faio_wdrv",
+  "faio/faio_winio",
+]
+
+if WIN32:
+  FAIO_CPPS = FAIO_CPPS + WINDOWS_FAIO_CPPS
+
+if POSIX:
+  FAIO_CPPS = FAIO_CPPS + POSIX_FAIO_CPPS
+
+cpp_cpps = FAIO_CPPS
+rtl_interfaces = FAIORTL_INTERFACES
+pkg_requires = ['demux','flx']
+lib_requires = ['demux','flx']
+
 
 @head(1,'Async IO (deprecated)')
 @h=tangler('faio/faio_asyncio.hpp')
