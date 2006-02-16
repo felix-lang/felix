@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.228  2006/02/16 11:50:25  skaller
+Add ts_select_demuxer to package files
+
 Revision 1.227  2006/02/16 11:36:28  skaller
 Flx ts collector needs to go in demux since it uses mutex.
 
@@ -804,6 +807,7 @@ DEMUXRTL_INTERFACES = [
  'demux/demux_evtport_demuxer.hpp',# solaris
  'demux/demux_epoll_demuxer.hpp',# linux (>= 2.6)
  'demux/demux_sockety.hpp',       # posix
+ 'demux/demux_ts_select_demuxer.hpp',
 ]
 
 DEMUX_CPPS = [
@@ -825,6 +829,7 @@ POSIX_DEMUX_CPPS = [
   "demux/demux_posix_timer_queue",  # posix
   "demux/demux_sockety",            # posix
   "demux/demux_pfileio",            # posix
+  'demux/demux_ts_select_demuxer',
 ]
 
 LINUX_DEMUX_CPPS = [
