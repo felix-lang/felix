@@ -144,6 +144,14 @@ namespace flx { namespace rtl { namespace strutil {
   }
 
   template<class T>
+  T subscript(basic_string<T> const &s, int i)
+  {
+    int n = s.size();
+    if(i<0)  i=i+n;
+    return i<0 || i >= n ? T(0) : s[i];
+  }
+
+  template<class T>
   string str(T const &t) {
     std::ostringstream x;
     x << t;
@@ -154,6 +162,23 @@ namespace flx { namespace rtl { namespace strutil {
     if(a) return a;
     else return "";
   }
+
+ string ltrim(string const &x) {
+   int n = x.size();
+   int i;
+   for(i = 0; i < n; ++i)
+     if(x[i]>' ')break;
+   return x.substr(i,n-i);
+ }
+
+ string rtrim(string const &x) {
+   int n = x.size();
+   int i;
+   for(i = n; i > 0; --i)
+     if(x[i-1]>' ')break;
+   return x.substr(0,i);
+ }
+  
 }}}
 
 @h=tangler('lib/flx_categories.flxh')
@@ -973,6 +998,12 @@ module Dynlink
 
 }
 
+@#------------- Filename -------------------
+module Filename
+{
+@tangle("  const sep : charp = '\""+os.sep+"\"';")
+}
+
 @#------------- C I/O -------------------
 module Cstdio
 {
@@ -1136,15 +1167,19 @@ module String
 
   fun len: string -> int = "$1.size()";
   fun add: string * string -> string = "$1+$2";
+  fun add: string * charp -> string = "$1+$2";
+  fun add: charp * string -> string = "$1+$2";
   fun add: string * int -> string = "$1+flx::rtl::i18n::utf8($2)" requires flx_i18n;
   fun mul: string * int -> string = "flx::rtl::strutil::mul($1,$2)" requires flx_strutil;
   fun mul: char * int -> string = "std::string($2,$1)";
   
   fun apply (x:string, y:string):string => x + y;
   fun apply (x:string, y:int):string => x + y;
-  
+ 
+  fun chr (x:string) => x.[0];
+
   fun subscript: string * int -> char = 
-    "$1[$2<0??$1.size()+$2 : $2]";
+    "flx::rtl::strutil::subscript($1,$2)" requires flx_strutil;
   fun copyfrom: string * int -> string = 
     "flx::rtl::strutil::substr($1,$2,$1.size())" requires flx_strutil;
   fun copyto: string * int -> string = 
@@ -1154,6 +1189,29 @@ module String
 
   // comparisons
   gen_cmp string;
+
+  fun find: string * string -> int = "$1.find($2)";
+  fun find: string * string * int -> int = "$1.find($2,$3)";
+  fun find: string * char -> int = "$1.find($2)";
+  fun find: string * char * int -> int = "$1.find($2,$3)";
+  const npos: int = "std::string::npos";
+
+  // trim whitespace
+  fun ltrim : string -> string = 
+    "flx::rtl::strutil::ltrim($1)" requires flx_strutil;
+  fun rtrim : string -> string = 
+    "flx::rtl::strutil::rtrim($1)" requires flx_strutil;
+  fun trim (x:string) : string => ltrim$ rtrim x;
+
+  fun split (x:string, d:char): List::list[string] = {
+    fun aux (x:string,y:List::list[string]) =>
+      match find (x, d) with
+      | ?n when n == npos => List::rev$ x + y
+      | ?n => aux$ x.[n+1 to], x.[to n]+y
+      endmatch
+    ;
+    return aux$ x, List::Empty[string];
+  }
 
   proc fprint: ostream * string = "*$1<<$2;" requires iostream;
   fun atoi: string -> int = "std::atoi($1.data())" requires cstdlib;
@@ -1547,7 +1605,10 @@ module List
 
   fun add[T] (x:list[T], y: list[T]):list[T] => join x y;
 
-  fun add[T] (x:list[T], y: T):list[T] => Cons (y, x);
+  fun add[T] (x:T, y: list[T]):list[T] => Cons (x, y);
+
+  // very slow, adding to end ..
+  fun add[T] (x:list[T], y: T):list[T] => rev$ Cons (y, rev x);
 
   fun cat[T] (x:list[list[T]]):list[T] =
   {
@@ -1558,6 +1619,13 @@ module List
        endmatch
      ;
    }
+
+   fun mem[T] (eq: T * T -> bool) (x:list[T]) (e:T) : bool =>
+     match x with 
+     | Cons (?h,?t) => if eq (h, e) then true else mem eq t e endif
+     | Empty => false
+     endmatch
+   ;
 }
 
 publish "Association Lists (lists of pairs)"
