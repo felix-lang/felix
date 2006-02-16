@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.226  2006/02/16 10:53:43  skaller
+Add dependencies for Cygwin dynamic linkage.
+
 Revision 1.225  2006/02/16 07:51:40  skaller
 Replace pkg-config with a Felix program flx_pkgconfig.
 Make sure to build it in a timely manner, since flx script
@@ -858,6 +861,7 @@ if SOLARIS:
 cpp_cpps = DEMUX_CPPS
 rtl_interfaces = DEMUXRTL_INTERFACES
 pkg_requires = ['flx']
+lib_requires = ['flx']
 
 @h = tangler('pkg/faio.py')
 @select(h)
@@ -897,6 +901,7 @@ if POSIX:
 cpp_cpps = FAIO_CPPS
 rtl_interfaces = FAIORTL_INTERFACES
 pkg_requires = ['demux','flx']
+lib_requires = ['demux','flx']
 
 @h = tangler('script/maker','python')
 @select(h)
@@ -1581,7 +1586,16 @@ try:
           objs=[]
           for i in tmp:
             objs.append(i[:-2]) # chop off the .o
-          TARGET_CXX.link_shared_rtl(xqt,objs,SHLIB_DIR+os.sep+"lib"+pkg+"_dynamic",libs=EXTRA_LIBS,DFLAGS=DFLAGS)
+          a = d.get("lib_requires",[])
+          needs_libs = []
+          for i in a:
+            needs_libs.append(i+"_dynamic")
+          TARGET_CXX.link_shared_rtl(
+            xqt,objs,
+            SHLIB_DIR+os.sep+"lib"+pkg+"_dynamic",
+            lib_path=[SHLIB_DIR],
+            libs=EXTRA_LIBS+needs_libs,
+            DFLAGS=DFLAGS) # hack
 
 
     if SUPPORT_STATIC_LINKAGE:
