@@ -1,5 +1,10 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.113  2006/02/16 23:39:11  rfistman
+fixed cygwin hang in posix tests. cygwin wakes select with an error flag
+when you shutdown a socket. other impls seem to wake select, but with no
+error.
+
 Revision 1.112  2006/02/16 15:36:04  skaller
 Fix flx_sync to not use ts_collector (only needs gc).
 
@@ -2128,8 +2133,12 @@ shared library name are not passed.
 #include "demux_iocp_demuxer.hpp"
 #include "faio_wdrv.hpp"
 #elif defined(MACOSX)
-#include "demux_kqueue_demuxer.hpp"
+
+#include "demux_ts_select_demuxer.hpp"
 #include "faio_pdrv.hpp"
+
+//#include "demux_kqueue_demuxer.hpp"
+//#include "faio_pdrv.hpp"
 #elif defined(SOLARIS)
 #include "demux_evtport_demuxer.hpp"
 #include "faio_pdrv.hpp"
@@ -2193,7 +2202,8 @@ class proto_async
 public:
 
 #if defined(MACOSX)
-    kqueue_demuxer demux;
+    ts_select_demuxer demux;  // thread safe!
+    // kqueue_demuxer demux;
 #elif defined(SOLARIS)
     evtport_demuxer demux;
 #elif defined(FLX_LINUX)

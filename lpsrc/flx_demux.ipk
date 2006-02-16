@@ -1,5 +1,10 @@
 @head(1,'demux')
 $Log$
+Revision 1.47  2006/02/16 23:39:11  rfistman
+fixed cygwin hang in posix tests. cygwin wakes select with an error flag
+when you shutdown a socket. other impls seem to wake select, but with no
+error.
+
 Revision 1.46  2006/02/16 15:09:45  skaller
 MSVC++ package manager
 
@@ -1777,13 +1782,21 @@ public:
   virtual void wakeup(posix_demuxer& demux);
 };
 
+class FLX_RTL_EXTERN auto_fd {
+public:
+  int fd;
+
+  auto_fd();
+  ~auto_fd();
+};
+
 class FLX_RTL_EXTERN ts_select_demuxer : public select_demuxer {
   // big conservative recursive hamfisted lock. recursive because get_evts
   // callbacks love re-adding their wakeup (or some other even)
   flx_mutex_t      ham_fist;   
 
   // self pipe trick!!! fd[0] = read end, fd[1] = write end.
-  int       self_pipe_fds[2];
+  auto_fd     fds[2];
   selfpipe_wakeup spw;
 protected:
   // virtual for thread safe descendent
@@ -1806,6 +1819,8 @@ public:
 #define __SOCKETY__
 #include <flx_rtl_config.hpp>
 namespace flx { namespace demux {
+
+// Shouldn't this all be FLX_RTL_EXTERN?
 int create_listener_socket(int* io_port, int q_len);
 int create_async_listener(int* io_port, int q_len);
 int nice_accept(int listener, int* err);
@@ -1821,6 +1836,7 @@ int bind_sock(int s, int* io_port);
 
 int make_nonblock(int s);
 int set_tcp_nodelay(int s, int disable_nagle);
+int get_socket_error(int s, int* socket_err);
 
 }} // namespace demux, flx
 #endif
@@ -4337,19 +4353,10 @@ void
 connect_control_block::wakeup(posix_demuxer& demux)
 {
   // fprintf(stderr,"connect woke up\n");
-  // this is how we check the success of async socket calls
-  // god knows what the level should be. socket level seems sensible.
-  FLX_SOCKLEN_T  len = sizeof(socket_err);
-  int res = getsockopt(s, SOL_SOCKET, SO_ERROR, &socket_err, &len);
-
-  // I've heard of impls of getsockopt(SO_ERROR) acting as they they
-  // had the socket error (i.e. returning -1 and the sock err in errno)
-  if(-1 == res)
-  {
-    socket_err = errno;   // don't think its ours
-    fprintf(stderr, "getsockopt failed - is that our error? (%i)\n",
-      socket_err);
-  }
+  // this is how we check the success of async connects
+  // if get_socket_err fails, we're treating its errno as the socket's...
+  if(get_socket_error(s, &socket_err) == -1)
+    fprintf(stderr, "eep - get_socket_err failed!\n");
 
   // failed, throw away socket
   if(0 != socket_err)
@@ -4392,6 +4399,8 @@ connect_control_block::wakeup(posix_demuxer& demux)
 
 #include <stdio.h>        // printf debug
 #include <stdlib.h>
+#include "demux_sockety.hpp"  // get_socket_error
+
 namespace flx { namespace demux {
 
 select_demuxer::select_demuxer()
@@ -4545,14 +4554,34 @@ select_demuxer::process_sets(fd_set& rset, fd_set& wset, fd_set& exset)
     // an error flag on to it.
     if(FD_ISSET(i, &exset))
     {
-      // remove any bad sockets - they render the event source useless.
-      // don't call wakeup as the exeption may be due the socket being
-      // closed => stale data.
-      fprintf(stderr, "select signalled error on socket %i, removing\n",
-        i);
-      remove_fd(i);
+      // don't remove bad sockets - it's an error to close the socket
+      // or deallocate the wakeup without telling the source. when
+      // we get socket errors, we'd better hope that there's reading
+      // or writing to be done.
+      // under cygwin, closing down a socket (read, write or both)
+      // causes select to wake up with an exception bit. out of cygwin
+      // we only wake up. In both cases, the read bit is set so
+      // just handling the stuff seems to work. not sure about write.
+      // posix_demuxer::socket_recv thinks the connection's closed, but
+      // it all seems to work out. Yours, Confused.
+
+      fprintf(stderr, "select error on socket %i, flags=%x\n",
+        i, flags);
+
+      int err;
+      // heh heh, this isn't great to call on the pipe that is used
+      // in the self pipe trick. I don't know why it's getting an
+      // err anyway.
+      if(get_socket_error(i, &err) == -1)
+        fprintf(stderr, "get_socket_error failed!?!\n");
+
+      fprintf(stderr, "socket err = %i, %s\n", err, strerror(err));
+      // don't remove! see below
+      // remove_fd(i);
     }
-    else if(flags)
+
+    //
+    if(flags)
     {
       socket_wakeup*  sv = svs[i];
       // remove before wakeup so wakeup can add itself back, 
@@ -4583,22 +4612,37 @@ select_demuxer::process_sets(fd_set& rset, fd_set& wset, fd_set& exset)
 
 namespace flx { namespace demux {
 
+auto_fd::auto_fd()
+{
+  fd = -1;    // invalid
+}
+
+auto_fd::~auto_fd()
+{
+  if(-1 == fd) return;
+
+  if(close(fd) == -1)
+    perror("auto fd close");
+}
+
 ts_select_demuxer::ts_select_demuxer()
   : ham_fist(true)      // recursive lock
 {
-  fprintf(stderr, "creating pipe for self-pipe trick\n");
-fprintf(stderr, "say, throwing in constructors undoes all the previously\n");
-fprintf(stderr, "stuff - right?\n");
+  // fprintf(stderr, "creating pipe for self-pipe trick\n");
+
+  int     self_pipe_fds[2];
   if(pipe(self_pipe_fds) == -1)
   {
     perror("ts_select_demuxer::self_pipe");
     throw -1;
   }
 
-  fprintf(stderr, "got two fds: %i, %i\n",
-    self_pipe_fds[0], self_pipe_fds[1]);
+  // fprintf(stderr, "got two fds: %i, %i\n",
+  //  self_pipe_fds[0], self_pipe_fds[1]);
 
-  fprintf(stderr, "this is one of my favourite leaking patterns. FIX!\n");
+  fds[0].fd = self_pipe_fds[0];
+  fds[1].fd = self_pipe_fds[1];
+
   // make a close obj or something.
   spw.s = self_pipe_fds[0]; // setup wakeup for read end of pipe
   // add as reader (will call parent class fn; that is ok)
@@ -4609,17 +4653,7 @@ fprintf(stderr, "stuff - right?\n");
 ts_select_demuxer::~ts_select_demuxer()
 {
 // is that even our job? how do we wait?
-fprintf(stderr, "could wake here to do clean take down...\n"); 
-
-  fprintf(stderr, "taking down self pipe\n");
-  for(int i = 0; i < 2; i++)
-  {
-    if(close(self_pipe_fds[i]) == -1)
-    {
-      perror("selfpipe close");
-      fprintf(stderr, "was self_pipe[%i]\n", i);
-    }
-  }
+// fprintf(stderr, "could wake here to do clean take down...\n"); 
 }
 
 
@@ -4628,10 +4662,14 @@ fprintf(stderr, "could wake here to do clean take down...\n");
 int
 ts_select_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 {
-  fprintf(stderr, "ts_select::add: %p->%i, %x\n", sv, sv->s, flags);
+  // not a solution - there will still be race conditions... this s
+  // could go stale...
+  int s = sv->s;    // keep a copy so we don't introduce race conditions
+
+  // fprintf(stderr, "ts_select::add: %p->%i (%s), %x\n",
+  //  sv, s, (s == self_pipe_fds[0]) ? "self pipe" : "socket", flags);
   flx_mutex_locker_t locker(ham_fist);
 
-  int s = sv->s;    // keep a copy so we don't introduce race conditions
 
   int res = select_demuxer::add_socket_wakeup(sv, flags);
   // I wouldn't touch the sv after this.
@@ -4639,13 +4677,14 @@ ts_select_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
   // lets wake the select demuxer by writing to our end of the pipe
   // lets also not add redundant select wakes for our own selfpipe, as
   // we know it's adding whilst not in select. Is that clear?
-  if(s != self_pipe_fds[0])
+  if(s != fds[0].fd)
   {
-    fprintf(stderr, "s != self_pipe[in], waking select (does it block?)\n");
+    // fprintf(stderr, "waking select with write (blocking?)\n");
+
     char  b = 1;
     ssize_t nbytes;
     // is this blocking? I guess it has to be...
-    nbytes = write(self_pipe_fds[1], &b, 1);    // wake up, jeff!
+    nbytes = write(fds[1].fd, &b, 1);   // wake up, jeff!
 
     if(-1 == nbytes) perror("self-pipe write");
     assert(1 == nbytes);
@@ -4668,8 +4707,6 @@ ts_select_demuxer::copy_sets(fd_set& rset, fd_set& wset, fd_set& exset)
 void
 ts_select_demuxer::process_sets(fd_set& rset, fd_set& wset, fd_set& exset)
 {
-  fprintf(stderr, "select woke up!!!\n");
-
   flx_mutex_locker_t locker(ham_fist);
   return select_demuxer::process_sets(rset, wset, exset);
 }
@@ -4678,7 +4715,7 @@ ts_select_demuxer::process_sets(fd_set& rset, fd_set& wset, fd_set& exset)
 void
 selfpipe_wakeup::wakeup(posix_demuxer& demux)
 {
-  fprintf(stderr, "selfpipe wakeup! do something!!!\n");
+  // fprintf(stderr, "selfpipe wakeup: read the pending byte and re-arm\n");
 
   ssize_t         nbytes;
   char      b;
@@ -4688,7 +4725,9 @@ selfpipe_wakeup::wakeup(posix_demuxer& demux)
 
   if(nbytes == -1) perror("recv");
 
-fprintf(stderr, "GOT: %li, %x\n", nbytes, b);
+  // fprintf(stderr, "GOT: %li, %x\n", nbytes, b);
+  assert(nbytes == 1 && b == 1);
+
   // add self back!
   int res = demux.add_socket_wakeup(this, PDEMUX_READ);
   assert(-1 != res);
@@ -4886,6 +4925,34 @@ set_tcp_nodelay(int s, int disable_nagle)
     (char*)&disable_nagle, sizeof(disable_nagle));
 }
 
+/*
+    Getting the determining if the async connect succeeded and if not,
+    its error, can actually be quite hairy on some systems, see
+    http://cr.yp.to/docs/connect.html
+    for suggestions (none of which I follow at this point)
+  returns 0 on success and socket error in *socket_err
+  on failure returns -1 and *socket_err errno
+*/
+int
+get_socket_error(int s, int* socket_err)
+{
+  int       res;
+    FLX_SOCKLEN_T len = sizeof(*socket_err);
+    /* god knows what the level should be. socket level seems sensible. */
+    res = getsockopt(s, SOL_SOCKET, SO_ERROR, socket_err, &len);
+
+    /* I've heard of impls of getsockopt(SO_ERROR) acting as they they */
+    /* had the socket error (i.e. returning -1 and the sock err in errno) */
+    if(-1 == res)
+    {
+        *socket_err = errno;     // don't think its ours
+        fprintf(stderr, "getsockopt failed - is that our error? (%i)\n",
+            *socket_err);
+    }
+
+  return res;
+}
+
 /* also make non-blocking AFTER connect, that is, */
 /* this is a synchronous connect */
 /* is eating errno, fix */
@@ -4931,6 +4998,8 @@ async_connect(const char* addr, int port, int* finished, int* err)
 
     *err = errno;         /* connect failed or in-progress */
 
+    /* this can apparently be EWOULDBLOCK or even EAGAIN on some systems */
+    /* any info? on some systems they're the same, on some they're not */
     if(EINPROGRESS == *err)
     {
       *finished = 0;        /* not finished, in progress */
