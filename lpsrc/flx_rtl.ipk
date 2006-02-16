@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.111  2006/02/16 15:19:28  skaller
+MSVC++ fixes
+
 Revision 1.110  2006/02/16 07:51:40  skaller
 Replace pkg-config with a Felix program flx_pkgconfig.
 Make sure to build it in a timely manner, since flx script
@@ -1876,7 +1879,7 @@ using namespace flx::rtl;
 
 namespace flx { namespace run {
 
-char const *FLX_RTL_EXTERN get_fstate_desc(fstate_t fs)
+FLX_RTL_EXTERN char const *get_fstate_desc(fstate_t fs)
 {
   switch(fs)
   {
@@ -1887,7 +1890,7 @@ char const *FLX_RTL_EXTERN get_fstate_desc(fstate_t fs)
   }
 }
 
-char const *FLX_RTL_EXTERN get_fpc_desc(fpc_t fpc)
+FLX_RTL_EXTERN char const *get_fpc_desc(fpc_t fpc)
 {
   switch(fpc)
   {

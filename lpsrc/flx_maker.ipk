@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.230  2006/02/16 15:19:28  skaller
+MSVC++ fixes
+
 Revision 1.229  2006/02/16 15:09:45  skaller
 MSVC++ package manager
 
@@ -2116,7 +2119,7 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('distclean:')
 @tangle('\trm -rf pkg tut rtl test www src misc man bin doc lib impldoc htmlman tmp tmp.tmp')
-@tangle('\trm -rf elk')
+@tangle('\trm -rf elk tmp faio demux tmp.out')
 @tangle('\trm -rf flxcc_out c89 c99 cxx gnu89 gnu99 gnucxx cxx_sys')
 @tangle('\trm -rf bagley')
 @tangle('\trm -rf doc_out libdoc tools')
