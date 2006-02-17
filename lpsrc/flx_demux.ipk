@@ -1,5 +1,9 @@
 @head(1,'demux')
 $Log$
+Revision 1.48  2006/02/17 09:38:31  skaller
+conditionalised recursive mutex (to be removed)
+fixed windows lib_requires (added lib prefix)
+
 Revision 1.47  2006/02/16 23:39:11  rfistman
 fixed cygwin hang in posix tests. cygwin wakes select with an error flag
 when you shutdown a socket. other impls seem to wake select, but with no
@@ -204,7 +208,7 @@ if SOLARIS:
 cpp_cpps = DEMUX_CPPS
 rtl_interfaces = DEMUXRTL_INTERFACES
 pkg_requires = ['flx']
-lib_requires = ['flx']
+lib_requires = ['libflx']
 
 
 @head(1,"Pre-emptive threads (pthread)")
@@ -802,6 +806,7 @@ namespace flx { namespace demux {
 flx_mutex_t::flx_mutex_t(flx_mutex_t const&){} // uncopyable
 void flx_mutex_t::operator=(flx_mutex_t const&){} // uncopyable
 
+#ifdef PTHREAD_MUTEX_RECURSIVE              // defined in unistd.h
 // private, for use within this file
 class auto_attr
 {
@@ -827,7 +832,6 @@ flx_mutex_t::flx_mutex_t(bool recursive) {
 
     auto_attr   aa(&attr);                  // cleans up always
 
-#ifdef PTHREAD_MUTEX_RECURSIVE              // defined in unistd.h
     if(recursive)
     {
         res = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
@@ -837,13 +841,17 @@ flx_mutex_t::flx_mutex_t(bool recursive) {
             throw res;
         }
     }
-#else
-    assert( !recursive );                   // gusi non ce l'ha.
-#endif
 
     res = pthread_mutex_init(&m, &attr);
     if(res != 0) throw res;
 }
+#else
+flx_mutex_t::flx_mutex_t(bool recursive) {
+    assert( !recursive );
+    int res = pthread_mutex_init(&m, NULL);
+    if(res != 0) throw res;
+}
+#endif
 
 flx_mutex_t::~flx_mutex_t() { pthread_mutex_destroy(&m); }
 void flx_mutex_t::lock() { pthread_mutex_lock(&m); }

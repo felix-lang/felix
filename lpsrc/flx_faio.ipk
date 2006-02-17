@@ -1,6 +1,10 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.42  2006/02/17 09:38:32  skaller
+conditionalised recursive mutex (to be removed)
+fixed windows lib_requires (added lib prefix)
+
 Revision 1.41  2006/02/16 15:09:45  skaller
 MSVC++ package manager
 
@@ -169,7 +173,7 @@ if POSIX:
 cpp_cpps = FAIO_CPPS
 rtl_interfaces = FAIORTL_INTERFACES
 pkg_requires = ['demux','flx']
-lib_requires = ['demux','flx']
+lib_requires = ['libdemux','libflx']
 
 
 @head(1,'Async IO (deprecated)')

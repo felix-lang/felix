@@ -5,6 +5,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.231  2006/02/17 09:38:32  skaller
+conditionalised recursive mutex (to be removed)
+fixed windows lib_requires (added lib prefix)
+
 Revision 1.230  2006/02/16 15:19:28  skaller
 MSVC++ fixes
 
@@ -750,7 +754,7 @@ caml_require_libs = ['nums','unix','misclib','flxlib']
 
 cpp_cpps = RTL_CPPS
 drivers = DRIVERS
-drivers_require_libs = ['faio','demux','flx']
+drivers_require_libs = ['libfaio','libdemux','libflx']
 pkg_requires = ['misc']
 
 
