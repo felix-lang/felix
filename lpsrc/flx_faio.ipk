@@ -1,7 +1,11 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.43  2006/02/18 16:30:48  skaller
+More work on new package manager.
+
 Revision 1.42  2006/02/17 09:38:32  skaller
+
 conditionalised recursive mutex (to be removed)
 fixed windows lib_requires (added lib prefix)
 
@@ -166,15 +170,17 @@ WINDOWS_FAIO_CPPS = [
 
 if WIN32:
   FAIO_CPPS = FAIO_CPPS + WINDOWS_FAIO_CPPS
+  EXTRA_TEST_GLOBS = glob.glob("test" + os.sep + "win_*.flx")
 
 if POSIX:
   FAIO_CPPS = FAIO_CPPS + POSIX_FAIO_CPPS
+  EXTRA_TEST_GLOBS = glob.glob("test" + os.sep + "posix_*.flx")
 
 cpp_cpps = FAIO_CPPS
 rtl_interfaces = FAIORTL_INTERFACES
-pkg_requires = ['demux','flx']
+pkg_requires = ['demux','flx_rtl']
 lib_requires = ['libdemux','libflx']
-
+unit_tests = EXTRA_TEST_GLOBS
 
 @head(1,'Async IO (deprecated)')
 @h=tangler('faio/faio_asyncio.hpp')

@@ -10,6 +10,12 @@ which uses extensions, plugins, or whatever.
 Maybe the tarball should even include the C++ sources,
 so it can be built early enough.
 
+@h = tangler("pkg/flx_pkgconfig.py")
+@select(h)
+#
+pkg_requires = ['flx_compiler','flx_drivers']
+felix_tools = [('tools/flx_pkgconfig','bin/flx_pkgconfig')]
+
 @h = tangler("tools/flx_pkgconfig.flx","data")
 @select(h)
 #import <flx.flxh>
@@ -20,6 +26,8 @@ open Env;
 open Filename;
 open Text_file;
 
+var path=getenv("PKG_CONFIG_PATH");
+
 // parse arguments
 var fields = Empty[string];
 var pkgs = Empty[string];
@@ -28,6 +36,15 @@ var arg = argv i;
 whilst arg != "" do
   if "--field=" == arg.[0 to 8] do
     fields = fields + arg.[8 to];
+  elif "--path=" == arg.[0 to 7] do
+    path= arg.[7 to];
+  elif "--path+=" == arg.[0 to 8] do
+    val x = arg.[8 to];
+    if path != "" do
+      path= path + ":" + x;
+    else
+      path= x;
+    done;
   else
     pkgs = pkgs + arg;
   done;
@@ -45,7 +62,6 @@ fun str: list[string] -> string =
 //print$ "Fields   = " + str fields; endl;
 //print$ "Packages = " + str pkgs; endl;
 
-val path=getenv("PKG_CONFIG_PATH");
 val dirs=split(path, chr ':');
 
 //print$ "Path = " + str dirs; endl;

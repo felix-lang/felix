@@ -141,7 +141,7 @@ host_exes_require_libs = ["elk/libelk_host_static"]
 
 rtl_interfaces = ELKRTL_INTERFACES
 cpp_cpps = ELKRTL + SMRTL
-
+iscr_source = ['lpsrc/sm.pak','lpsrc/ast.pak','lpsrc/elk.pak']
 
 @h = tangler('config/elk.fpc')
 @select(h)

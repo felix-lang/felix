@@ -1,5 +1,8 @@
 @head(1,'open GL and extensions')
 $Log$
+Revision 1.6  2006/02/18 16:30:48  skaller
+More work on new package manager.
+
 Revision 1.5  2006/02/02 06:19:23  skaller
 Factor flx_run more.
 
@@ -36,6 +39,7 @@ include "GL/glext_lib";
 
 module GL_gl_h
 {
+  requires package "gl";
   open C_hack;
 //  open GL_glext_h;
 
@@ -1610,7 +1614,7 @@ include "GL/gl_lib";
 
 module GL_glu_h
 {
-  requires package "GLU";
+  requires package "glu";
   header '#include "GL/glu.h"';
   open C_hack;
   open GL_gl_h;
@@ -1876,7 +1880,7 @@ include "GL/glu_lib";
 
 module GL_glut_h
 {
-  requires package "GLUT";
+  requires package "glut";
   header '#include "GL/glut.h"';
   open C_hack;
   open GL_gl_h;
@@ -2240,6 +2244,7 @@ include 'std';
 
 module GL_glext_h
 {
+  requires package "glext";
   header '#include "/usr/include/GL/glext.h"';
   open C_hack;
   const GL_GREMEDY_string_marker : int;

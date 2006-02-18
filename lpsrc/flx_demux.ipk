@@ -1,6 +1,10 @@
 @head(1,'demux')
 $Log$
+Revision 1.49  2006/02/18 16:30:48  skaller
+More work on new package manager.
+
 Revision 1.48  2006/02/17 09:38:31  skaller
+
 conditionalised recursive mutex (to be removed)
 fixed windows lib_requires (added lib prefix)
 
@@ -190,8 +194,10 @@ BSD_DEMUX_CPPS = [
   "demux/demux_kqueue_demuxer",     # osx/bsd
 ]
 
+EXTRA_LIBS = []
 if WIN32:
   DEMUX_CPPS = DEMUX_CPPS + WINDOWS_DEMUX_CPPS
+  EXTRA_LIBS = ["ws2_32","mswsock"]
 
 if POSIX:
   DEMUX_CPPS = DEMUX_CPPS + POSIX_DEMUX_CPPS
@@ -204,11 +210,12 @@ if BSD or MACOSX:
 
 if SOLARIS:
   DEMUX_CPPS = DEMUX_CPPS + SOLARIS_DEMUX_CPPS
+  EXTRA_LIBS = ["socket","nsl"]
 
 cpp_cpps = DEMUX_CPPS
 rtl_interfaces = DEMUXRTL_INTERFACES
-pkg_requires = ['flx']
-lib_requires = ['libflx']
+pkg_requires = ['flx_rtl']
+lib_requires = ['libflx'] + EXTRA_LIBS
 
 
 @head(1,"Pre-emptive threads (pthread)")
@@ -4408,6 +4415,7 @@ connect_control_block::wakeup(posix_demuxer& demux)
 #include <stdio.h>        // printf debug
 #include <stdlib.h>
 #include "demux_sockety.hpp"  // get_socket_error
+#include <memory>
 
 namespace flx { namespace demux {
 
@@ -4421,7 +4429,9 @@ select_demuxer::select_demuxer()
   fdmax = 0;        // corresponds to stdin, which we're not using
 
   // clear this possibly quite large list
-  memset(svs, 0, sizeof(svs));
+  //memset(svs, 0, sizeof(svs));
+  //JS: memset must not be used except for raw data or chars
+  std::uninitialized_fill_n(svs,FD_SETSIZE,(socket_wakeup*)0);
 }
 
 // one select, must not block indefinitely, so choose a timeslice

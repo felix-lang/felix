@@ -1,5 +1,8 @@
 @head(1,'SDL')
 $Log$
+Revision 1.24  2006/02/18 16:30:48  skaller
+More work on new package manager.
+
 Revision 1.23  2006/02/15 10:54:09  skaller
 Build time packaging system.
 
@@ -86,22 +89,36 @@ Minor fix to sdl stuff
 @h = tangler('pkg/sdl.py')
 @select(h)
 
-SDL_FAIO_CPPS = [
-  "faio/faio_sdl_event",             # any platform with SDL
-]
+if HAVE_SDL:
+  SDL_FAIO_CPPS = [
+    "faio/faio_sdl_event",             # any platform with SDL
+  ]
 
-cpp_cpps = SDL_FAIO_CPPS
-pkg_requires = ['faio']
-rtl_interfaces = ['faio_sdl_event']
+  # flags are compiler natives switches
+  # not to be confused with platform independent lists
+  # of libraries, include files, paths, etc
+  cflags = SDL_CFLAGS
+  dflags = SDL_LIBS
+  sflags = SDL_STATIC_LIBS
+  
+  cpp_cpps = SDL_FAIO_CPPS
+  pkg_requires = ['faio']
+  rtl_interfaces = ['faio_sdl_event']
+  demos = glob.glob('tut'+os.sep+'examples'+os.sep+'sdl*.flx')
 
-@h = tangler('pkg/opengl.py')
+@h = tangler('pkg/gl.py')
 @select(h)
 #
+
+@h = tangler('pkg/glu.py')
+@select(h)
+#
+pkg_requires = ['gl']
 
 @h = tangler('pkg/glut.py')
 @select(h)
 #
-pkg_requires = ['opengl']
+pkg_requires = ['glu']
 
 @h=tangler('lib/SDL/SDL.flx')
 @select(h)
@@ -127,7 +144,7 @@ include 'std';
 
 module SDL_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL.h"';
   open C_hack;
   
@@ -168,7 +185,7 @@ include 'std';
 
 module SDL_active_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_active.h"';
   open C_hack;
   
@@ -193,7 +210,7 @@ include"SDL/SDL_rwops";
 
 module SDL_audio_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_audio.h"';
   open C_hack;
   open SDL_rwops_h;
@@ -324,7 +341,7 @@ include 'std';
 
 module SDL_cdrom_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_cdrom.h"';
   open C_hack;
   
@@ -395,7 +412,7 @@ include 'std';
 
 module SDL_error_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_error.h"';
   open C_hack;
   
@@ -442,7 +459,7 @@ include"SDL/SDL_keyboard";
 
 module SDL_events_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_events.h"';
   open C_hack;
   open SDL_keyboard_h;
@@ -660,7 +677,7 @@ include 'std';
 
 module SDL_joystick_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_joystick.h"';
   open C_hack;
   
@@ -712,7 +729,7 @@ include"SDL/SDL_keysym";
 
 module SDL_keyboard_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_keyboard.h"';
   open C_hack;
   open SDL_keysym_h;
@@ -762,7 +779,7 @@ include 'std';
 
 module SDL_keysym_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_keysym.h"';
   open C_hack;
   
@@ -1051,7 +1068,7 @@ include"SDL/SDL_video";
 
 module SDL_mouse_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_mouse.h"';
   open C_hack;
   open SDL_video_h;
@@ -1111,7 +1128,7 @@ include 'std';
 
 module SDL_mutex_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_mutex.h"';
   open C_hack;
   
@@ -1219,7 +1236,7 @@ include"SDL/SDL_types";
 
 module SDL_timer_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_timer.h"';
   open C_hack;
   open SDL_types_h;
@@ -1289,7 +1306,7 @@ include 'std';
 
 module SDL_types_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_types.h"';
   open C_hack;
   
@@ -1340,7 +1357,7 @@ include 'std';
 
 module SDL_version_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_version.h"';
   open C_hack;
   
@@ -1409,7 +1426,7 @@ include"SDL/SDL_types";
 
 module SDL_video_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_video.h"';
   open C_hack;
   open SDL_rwops_h;
@@ -1669,7 +1686,7 @@ include "SDL/SDL_types";
 
 module SDL_endian_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_endian.h"';
   open C_hack;
   open SDL_rwops_h;
@@ -1718,7 +1735,7 @@ include "SDL/SDL";
 
 module SDL_framerate_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_framerate.h"';
   open C_hack;
   open SDL_h;
@@ -1760,7 +1777,7 @@ include "SDL/SDL_video";
 
 module SDL_gfxPrimitives_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_gfxPrimitives.h"';
   open C_hack;
   open SDL_h;
@@ -1831,7 +1848,7 @@ include 'std';
 
 module SDL_gfxPrimitives_font_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_gfxPrimitives_font.h"';
   open C_hack;
   
@@ -1865,7 +1882,7 @@ include "SDL/SDL_video";
 
 module SDL_image_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_image.h"';
   open C_hack;
   open SDL_rwops_h;
@@ -1920,7 +1937,7 @@ include 'std';
 
 module SDL_imageFilter_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_imageFilter.h"';
   open C_hack;
   
@@ -2007,7 +2024,7 @@ include "SDL/SDL_version";
 
 module SDL_mixer_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_mixer.h"';
   open C_hack;
   open SDL_rwops_h;
@@ -2188,7 +2205,7 @@ include "SDL/SDL_rwops";
 
 module SDL_sound_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_sound.h"';
   open C_hack;
   open SDL_rwops_h;
@@ -2251,7 +2268,7 @@ include "SDL/SDL_video";
 
 module SDL_rotozoom_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_rotozoom.h"';
   open C_hack;
   open SDL_h;
@@ -2319,7 +2336,7 @@ include "SDL/SDL_video";
 
 module SDL_ttf_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_ttf.h"';
   open C_hack;
   open SDL_rwops_h;
@@ -2414,7 +2431,7 @@ include 'std';
 
 module SDL_net_h
 {
-  requires package "SDL";
+  requires package "sdl";
   header '#include "SDL_net.h"';
   open C_hack;
   
@@ -2548,7 +2565,7 @@ include "flx_faio";
 
 module SDL_events 
 {
-  requires package "SDL";
+  requires package "sdl";
   requires package "faio";
   open SDL_events_h;
   open SDL_mutex_h;

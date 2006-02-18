@@ -63,7 +63,7 @@ to get some times.
   runbags = runbags + dbags
 
 
-@def mko(i,j):
+@def mko(i):
   tangle('echo "Compiling '+i+'"')
   tangle('bin/flx --test --force --echo -c --optimise bagley/felix/'+i)
   tangle('if [ 0 != $? ]; then exit $?; fi')
@@ -93,6 +93,7 @@ cmd = (
 
 result = os.system(cmd)
 if result != 0:
+  print "FAILED!"
   sys.exit(result)
 
 f = open("tmp.time");
@@ -116,7 +117,7 @@ for line in h:
   tangle('if [ 0 != $? ]; then exit $?; fi')
   tangle('bin/flx --test --force --optimise --echo -c bagley/felix/plugin')
   tangle('if [ 0 != $? ]; then exit $?; fi')
-@for i,j in bags: mko (i,j)
+@for i,j in bags: mko (i)
 
 @select(tangler('bagley/run.sh','data'))
 DICT_DIR=bagley/data/
