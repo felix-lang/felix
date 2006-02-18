@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.234  2006/02/18 18:03:47  skaller
+Package manager fixes
+
 Revision 1.233  2006/02/18 17:04:51  skaller
 Fixes for Cygwin
 
@@ -1396,7 +1399,7 @@ try:
     if "build" in options:
       print
       print "***** MAKING PACKAGE "+pkg+" ************"
-      print
+      if not "quiet" in options: print
       MLIS = pkgdict.get("caml_raw_interfaces",[])
       copy_mli2ml(MLIS)
       HPPS = pkgdict.get("rtl_interfaces",[])
@@ -1487,16 +1490,13 @@ try:
             libs=["lib"+pkg+"_host_static"],
             SFLAGS=SFLAGS)
 
-      print "COMPILING RUN TIME LIBRARY COMPONENTS"
       if SUPPORT_DYNAMIC_LOADING:
-        print " ++ DYNAMIC LINK VERSIONS"
-
         ars = ""
         CPPS = pkgdict.get("cpp_cpps",[])
         EXTRA_CFLAGS = pkgdict.get("cflags","")
         EXTRA_DFLAGS = pkgdict.get("dflags","")
         if CPPS:
-          print "C++ COMPILING "+pkg
+          print " ++ "+pkg+" RTL (dynamic)"
           for x in CPPS:
             if not "quiet" in options: print 'Compiling rtl object',x
             ars = ars + x + "_dynamic.o "
@@ -1512,7 +1512,6 @@ try:
               CFLAGS=CFLAGS+EXTRA_CFLAGS)
 
           # LINK RTL
-          print " ** MAKING RTL "+pkg+" (dynamic) "
           tmp = string.split(ars)
           objs=[]
           for i in tmp:
@@ -1531,119 +1530,115 @@ try:
 
 
       if SUPPORT_STATIC_LINKAGE:
-        print " ++ STATIC LINK VERSIONS"
-        print " .. FELIX RTL"
-        for pkg in pkgs:
-          ars = ""
-          d = pkgd[pkg]
-          CPPS = pkgdict.get("cpp_cpps",[])
-          EXTRA_CFLAGS = pkgdict.get("cflags","")
-          if CPPS:
-            print "C++ COMPILING "+pkg
-            for x in CPPS:
-              if not "quiet" in options: print 'Compiling rtl object',x
-              ars = ars + x + "_static.o "
-              dir,base = string.split(x,'/')
-              TARGET_CXX.compile_static_rtl(
-                xqt,dir,base,
-                dir,
-                include_path=['rtl'],
-                macros=["FLX_STATIC_LINK"],
-                optimise=1,
-                CFLAGS=CFLAGS+EXTRA_CFLAGS)
-
-            print " ** MAKING RTL "+pkg+" (static) "
-            tmp = string.split(ars)
-            objs=[]
-            for i in tmp:
-              objs.append(i[:-2]) # chop off the .o
-            lib = pkgdict.get("provide_lib","lib"+pkg)
-            TARGET_CXX.link_static_archive(
-              xqt,
-              objs,
-              "rtl/"+lib+"_static")
-
-        
-      # COMPILE DRIVER PROGRAMS
-      if SUPPORT_STATIC_LINKAGE:
-        print "COMPILING DRIVERS (static)"
         ars = ""
-        DRIVERS = pkgdict.get("drivers",[])
-        for i,j in DRIVERS:
-          if not "quiet" in options: print 'Compiling driver object',i
-          dir,base = string.split(i,'/')
-          TARGET_CXX.compile_static_main(
-            xqt,dir,base,dir,
-            include_path=["rtl"],
-            macros=["FLX_STATIC_LINK"],
-            optimise=1,CFLAGS=CFLAGS)
+        CPPS = pkgdict.get("cpp_cpps",[])
+        EXTRA_CFLAGS = pkgdict.get("cflags","")
+        if CPPS:
+          print " ++ "+pkg+" RTL (static)"
+          for x in CPPS:
+            if not "quiet" in options: print 'Compiling rtl object',x
+            ars = ars + x + "_static.o "
+            dir,base = string.split(x,'/')
+            TARGET_CXX.compile_static_rtl(
+              xqt,dir,base,
+              dir,
+              include_path=['rtl'],
+              macros=["FLX_STATIC_LINK"],
+              optimise=1,
+              CFLAGS=CFLAGS+EXTRA_CFLAGS)
 
-      if SUPPORT_DYNAMIC_LOADING:
-        print "COMPILING DRIVERS (dynamic)"
-        ars = ""
-        DRIVERS = pkgdict.get("drivers",[])
-        LIBS = pkgdict.get("drivers_require_libs",[])
-        libs = []
-        for lib in LIBS:
-          libs.append(lib+"_dynamic")
-        for i,j in DRIVERS:
-          if not "quiet" in options: print 'Compiling driver object',i
-          dir,base = string.split(i,'/')
-          TARGET_CXX.compile_shared_main(
-            xqt,dir,base,dir,
-            include_path=["rtl"],
-            optimise=1,
-            CFLAGS=CFLAGS)
-          TARGET_CXX.link_dynamic_program(
+          tmp = string.split(ars)
+          objs=[]
+          for i in tmp:
+            objs.append(i[:-2]) # chop off the .o
+          lib = pkgdict.get("provide_lib","lib"+pkg)
+          TARGET_CXX.link_static_archive(
             xqt,
-            [i+"_dynamic"],
-            j,
-            lib_path=[SHLIB_DIR],
-            libs=libs,
-            DFLAGS=DFLAGS)
+            objs,
+            "rtl/"+lib+"_static")
 
-      print "BUILDING TARGET TOOLS"
+      
+      # COMPILE DRIVER PROGRAMS
+      DRIVERS = pkgdict.get("drivers",[])
+      if len(DRIVERS)>0:
+        if SUPPORT_STATIC_LINKAGE:
+          ars = ""
+          print "COMPILING DRIVERS (static)"
+          for i,j in DRIVERS:
+            if not "quiet" in options: print 'Compiling driver object',i
+            dir,base = string.split(i,'/')
+            TARGET_CXX.compile_static_main(
+              xqt,dir,base,dir,
+              include_path=["rtl"],
+              macros=["FLX_STATIC_LINK"],
+              optimise=1,CFLAGS=CFLAGS)
+
+        if SUPPORT_DYNAMIC_LOADING:
+          print "COMPILING DRIVERS (dynamic)"
+          ars = ""
+          LIBS = pkgdict.get("drivers_require_libs",[])
+          libs = []
+          for lib in LIBS:
+            libs.append(lib+"_dynamic")
+          for i,j in DRIVERS:
+            if not "quiet" in options: print 'Compiling driver object',i
+            dir,base = string.split(i,'/')
+            TARGET_CXX.compile_shared_main(
+              xqt,dir,base,dir,
+              include_path=["rtl"],
+              optimise=1,
+              CFLAGS=CFLAGS)
+            TARGET_CXX.link_dynamic_program(
+              xqt,
+              [i+"_dynamic"],
+              j,
+              lib_path=[SHLIB_DIR],
+              libs=libs,
+              DFLAGS=DFLAGS)
+
       ars = ""
       EXES = pkgdict.get("exes",[])
-      LIBS = pkgdict.get("exes_require_libs",[])
-      for src,bin in EXES:
-        dir,base = string.split(src,'/')
-        TARGET_CXX.compile_static_main(
-          xqt,
-          dir,
-          base,
-          dir,
-          include_path=["rtl"],
-          macros=["FLX_STATIC_LINK"],
-          CFLAGS=CFLAGS)
-        TARGET_CXX.link_static_program(
-          xqt,
-          [src+"_static"],
-          bin,
-          lib_path=[dir],
-          libs=LIBS,
-          SFLAGS=SFLAGS)
-
       FLXS = pkgdict.get("felix_tools",[])
-      LIBS = ['libflx_static','libdemux_static','libfaio_static']
-      for src,exe in FLXS:
-        dir,base = string.split(src,'/')
-        flxg("-Ilib "+src,"crap")
-        TARGET_CXX.compile_felix_static(
-          xqt,
-          dir,
-          base,
-          dir,
-          include_path=['rtl'],
-          macros=["FLX_STATIC_LINK"],
-          CFLAGS=CFLAGS)
-        TARGET_CXX.link_static_program(
-          xqt,
-          ['rtl/flx_run_static',src+"_static"],
-          exe,
-          lib_path=['rtl'],
-          libs=LIBS,
-          SFLAGS=SFLAGS)
+      if len(EXES)+len(FLXS)>0:
+        print "BUILDING TARGET TOOLS"
+        LIBS = pkgdict.get("exes_require_libs",[])
+        for src,bin in EXES:
+          dir,base = string.split(src,'/')
+          TARGET_CXX.compile_static_main(
+            xqt,
+            dir,
+            base,
+            dir,
+            include_path=["rtl"],
+            macros=["FLX_STATIC_LINK"],
+            CFLAGS=CFLAGS)
+          TARGET_CXX.link_static_program(
+            xqt,
+            [src+"_static"],
+            bin,
+            lib_path=[dir],
+            libs=LIBS,
+            SFLAGS=SFLAGS)
+
+        LIBS = ['libflx_static','libdemux_static','libfaio_static']
+        for src,exe in FLXS:
+          dir,base = string.split(src,'/')
+          flxg("-Ilib "+src,"crap")
+          TARGET_CXX.compile_felix_static(
+            xqt,
+            dir,
+            base,
+            dir,
+            include_path=['rtl'],
+            macros=["FLX_STATIC_LINK"],
+            CFLAGS=CFLAGS)
+          TARGET_CXX.link_static_program(
+            xqt,
+            ['rtl/flx_run_static',src+"_static"],
+            exe,
+            lib_path=['rtl'],
+            libs=LIBS,
+            SFLAGS=SFLAGS)
 
     # run tests
     if "test" in options:

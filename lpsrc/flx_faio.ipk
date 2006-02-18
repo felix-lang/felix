@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.44  2006/02/18 18:03:47  skaller
+Package manager fixes
+
 Revision 1.43  2006/02/18 16:30:48  skaller
 More work on new package manager.
 
@@ -1326,6 +1329,7 @@ winfile_io::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 #import <flx.flxh>
 
 module Faio {
+requires package "demux";
 requires package "faio";
 open C_hack;
 
