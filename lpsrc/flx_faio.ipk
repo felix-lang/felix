@@ -1,6 +1,11 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.45  2006/02/18 18:18:54  skaller
+Add requirement for demux to faio felix modules.
+For weird reason not needed on Linux, needed on Cygwin though.
+Linux is screwed up.
+
 Revision 1.44  2006/02/18 18:03:47  skaller
 Package manager fixes
 
@@ -1495,10 +1500,11 @@ proc sleep(delta: double)
 @select(h)
 #import <flx.flxh>
 // contains posix async socket io & copipes, all wrapped up streams
-header faio_posixio_hpp = '#include "faio_posixio.hpp"';
 
 include "flx_faio";
 module Faio_posix  {
+header faio_posixio_hpp = '#include "faio_posixio.hpp"';
+requires package "demux";
 requires package "faio";
 open C_hack;        // cast, address
 open Faio;
@@ -1620,6 +1626,7 @@ proc accept(s: &int, listener: int)
 include "flx_faio";     // defines copipes & some driver interaction
 
 module Faio_win32 {
+requires package "demux";
 requires package "faio";
 // contains windows overlapped/iocp io & copipes. no stream wrapper yet.
 open C_hack;
@@ -1821,6 +1828,7 @@ open Faio_win32;
 
 
 module Flx_stream {
+requires package "demux";
 requires package "faio";
 //JS: the type name should be flx_stream_t by convention ..
 union flx_stream =
