@@ -2339,6 +2339,45 @@ if result == None:
   result,SDL_CFLAGS = gs("sdl-config --cflags")
   result,SDL_LIBS = gs("sdl-config --libs")
   result,SDL_STATIC_LIBS = gs("sdl-config --static-libs")
+
+  fname = "config" + os.sep + "sdl.fpc"
+  if not file_exists(fname):
+    print "Creating config/sdl.fpc"
+    f = open (fname,"w")
+    f.write("Name: SDL\n")
+    f.write("Description: Simple Direct Media Layer\n")
+    f.write("Version: "+SDL_VERSION+"\n")
+    f.write("cflags: "+SDL_CFLAGS+"\n")
+    f.write("dlibs: "+SDL_LIBS+"\n")
+    f.write("slibs: "+SDL_STATIC_LIBS+"\n")
+    f.close()
+  fname = "config" + os.sep + "gl.fpc"
+  if not file_exists(fname):
+    print "Creating config/gl.fpc"
+    f = open (fname,"w")
+    f.write("Name: OpenGL\n")
+    f.write("Description: open GL graphics\n")
+    f.write("dlibs: -lGL\n")
+    f.write("slibs: -lGL\n")
+    f.close()
+  fname = "config" + os.sep + "glu.fpc"
+  if not file_exists(fname):
+    print "Creating config/glu.fpc"
+    f = open (fname,"w")
+    f.write("Name: GLU\n")
+    f.write("Description: GLU graphics \n")
+    f.write("dlibs: -lGLU\n")
+    f.write("slibs: -LGLU\n")
+    f.close()
+  fname = "config" + os.sep + "glut.fpc"
+  if not file_exists(fname):
+    print "Creating config/glut.fpc"
+    f = open (fname,"w")
+    f.write("Name: GLUT\n")
+    f.write("Description: GLUT graphics\n")
+    f.write("dlibs: -lglut\n")
+    f.write("slibs: -lglut\n")
+    f.close()
 else:
   HAVE_SDL = 0
   SDL_VERSION = "None"
@@ -2347,34 +2386,7 @@ else:
   SDL_STATIC_LIBS = ""
   print "SDL NOT SUPPORTED"
 
-if HAVE_PKGCONFIG and HAVE_SDL:
-  # we should condition this to check the config dir
-  # by setting PKG_CONFIG_PATH .. but there is no
-  # OS transparent way to do that ?
-  result,dummy = gs("pkg-config --exists SDL")
-  if result:
-    fname = "config" + os.sep + "sdl.fpc"
-    if not file_exists(fname):
-      print "Creating config/sdl.fpc"
-      f = open (fname,"w")
-      f.write("Name: SDL\n")
-      f.write("Description: Simple Direct Media Layer\n")
-      f.write("Version: "+SDL_VERSION+"\n")
-      f.write("cflags: "+SDL_CFLAGS+"\n")
-      f.write("dlibs: "+SDL_LIBS+"\n")
-      f.write("slibs: "+SDL_STATIC_LIBS+"\n")
-      f.close()
-    
-# HACK -- only right for Linux .. no way to detect 
-if HAVE_OPENGL:
-  OPENGL_CFLAGS=""
-  OPENGL_LIBS="-lGL -lGLU"
-  OPENGL_STATIC_LIBS="-lGL -lGLU"
-else:
-  OPENGL_CFLAGS=""
-  OPENGL_LIBS=""
-  OPENGL_STATIC_LIBS=""
-
+   
 print "ESTABLISHED DEFAULT CONFIGURATION"
 
 # attempt to clobber the configuration with old values
@@ -2518,9 +2530,6 @@ try:
   p(f,"SDL_LIBS")
   p(f,"SDL_STATIC_LIBS")
   p(f,"HAVE_OPENGL")
-  p(f,"OPENGL_CFLAGS")
-  p(f,"OPENGL_LIBS")
-  p(f,"OPENGL_STATIC_LIBS")
   p(f,"HAVE_PKGCONFIG")
   pr(f,"")
 

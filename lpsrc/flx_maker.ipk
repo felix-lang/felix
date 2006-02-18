@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.233  2006/02/18 17:04:51  skaller
+Fixes for Cygwin
+
 Revision 1.232  2006/02/18 16:30:48  skaller
 More work on new package manager.
 
@@ -1630,6 +1633,7 @@ try:
           xqt,
           dir,
           base,
+          dir,
           include_path=['rtl'],
           macros=["FLX_STATIC_LINK"],
           CFLAGS=CFLAGS)
