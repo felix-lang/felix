@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.51  2006/02/19 16:04:57  skaller
+Win32 build changes..seems to work now
+
 Revision 1.50  2006/02/19 14:02:51  skaller
 Windows sys libs with right switches
 
@@ -120,8 +123,12 @@ Integrate SDL tests, provide initial SDL event demux.
 Name: demux
 Description: Pre-emptive threading support
 Version: $Id$
-dlibs: -ldemux_dynamic
-slibs: -ldemux_static
+@if HAVE_MSVC:
+   tangle("dlibs: /DEFAULTLIB:libdemux_dynamic /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
+   tangle("slibs: /DEFAULTLIB:libdemux_static /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
+ else:
+   tangle("dlibs: -ldemux_dynamic")
+   tangle("slibs: -ldemux_static")
 Requires: flx
 
 @h = tangler('pkg/demux.py')

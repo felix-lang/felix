@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.46  2006/02/19 16:04:57  skaller
+Win32 build changes..seems to work now
+
 Revision 1.45  2006/02/18 18:18:54  skaller
 Add requirement for demux to faio felix modules.
 For weird reason not needed on Linux, needed on Cygwin though.
@@ -143,8 +146,12 @@ Added log to rtl and faio.
 Name: faio
 Description: Asynchronous I/O support
 Version: $Id$
-dlibs: -lfaio_dynamic
-slibs: -lfaio_static
+@if HAVE_MSVC:
+   tangle("dlibs: /DEFAULTLIB:libfaio_dynamic")
+   tangle("slibs: /DEFAULTLIB:libfaio_static")
+ else:
+   tangle("dlibs: -lfaio_dynamic")
+   tangle("slibs: -lfaio_static")
 Requires: demux
 
 @h = tangler('pkg/faio.py')

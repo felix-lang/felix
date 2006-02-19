@@ -1,3 +1,4 @@
+@execfile("config"+os.sep+"config.py")
 @head(1,'elkhound')
 
 @h=tangler('licences/elk_licence.txt','data')
@@ -148,8 +149,12 @@ iscr_source = ['lpsrc/sm.pak','lpsrc/ast.pak','lpsrc/elk.pak']
 Name: elk 
 Description: Elhound
 Version: 1
-dlibs: -lelk_dynamic
-slibs: -lelk_static
+@if HAVE_MSVC:
+   tangle("dlibs: /DEFAULTLIB:libelk_dynamic")
+   tangle("slibs: /DEFAULTLIB:libelk_static")
+ else:
+   tangle("dlibs: -lelk_dynamic")
+   tangle("slibs: -lelk_static")
 
 @h=tangler('elk/elk_gramexpl.cpp')
 @select(h)

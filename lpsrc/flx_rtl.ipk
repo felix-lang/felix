@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.115  2006/02/19 16:04:57  skaller
+Win32 build changes..seems to work now
+
 Revision 1.114  2006/02/16 23:59:10  rfistman
 switched mac build back to kqueues, was using thread safe select
 
@@ -160,8 +163,12 @@ in namespace flx::rtl, except as noted.
 Name: flx
 Description: Felix core runtime support
 Version: $Id$
-dlibs: -lflx_dynamic
-slibs: -lfaio_static -ldemux_static -lflx_static
+@if HAVE_MSVC:
+   tangle("dlibs: /DEFAULTLIB:libflx_dynamic")
+   tangle("slibs: /DEFAULTLIB:libfaio_static /DEFAULTLIB:libdemux_static /DEFAULTLIB:libflx_static")
+ else:
+   tangle("dlibs: -lflx_dynamic")
+   tangle("slibs: -lfaio_static -ldemux_static -lflx_static")
 
 @h = tangler("rtl/flx_meta.hpp")
 @select(h)
