@@ -1,5 +1,8 @@
 @head(1,'SDL')
 $Log$
+Revision 1.25  2006/02/19 05:29:15  skaller
+Fiddle with SDL/GL support stuff.
+
 Revision 1.24  2006/02/18 16:30:48  skaller
 More work on new package manager.
 
@@ -105,6 +108,9 @@ if HAVE_SDL:
   pkg_requires = ['faio']
   rtl_interfaces = ['faio_sdl_event']
   demos = glob.glob('tut'+os.sep+'examples'+os.sep+'sdl*.flx')
+
+  # should be a .pak file ..
+  isrc_source = ['lpsrc/flx_sdl.ipk']
 
 @h = tangler('pkg/gl.py')
 @select(h)
@@ -3115,6 +3121,15 @@ done;
 
 /* initialize OpenGL */
 initGL();
+var gl_vendor = str$ glGetString(GL_VENDOR);
+var gl_renderer = str$ glGetString(GL_RENDERER);
+var gl_version = str$ glGetString(GL_VERSION);
+var gl_extensions = str$ glGetString(GL_EXTENSIONS);
+
+print$ "GL vendor = " + gl_vendor; endl;
+print$ "GL renderer = " + gl_renderer; endl;
+print$ "GL version = " + gl_version; endl;
+print$ "GL extensions = " + gl_extensions; endl;
 
 /* resize the initial window */
 resizeWindow( SCREEN_WIDTH, SCREEN_HEIGHT );

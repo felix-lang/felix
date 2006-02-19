@@ -576,6 +576,9 @@ proc _swap[t]: lvalue[t] * lvalue[t] =
 typedef charp = C_hack::ptr[char];
 typedef charcp = C_hack::cptr[char];
 
+typedef ucharp = C_hack::ptr[utiny];
+typedef ucharcp = C_hack::cptr[utiny];
+
 publish "Empty sum"
   typedef void = 0;
 
@@ -1164,6 +1167,8 @@ module String
 
   fun str: charp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
   fun str: charcp -> string = 'flx::rtl::strutil::atostr($1)' requires flx_strutil;
+  fun str: ucharp -> string = 'flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
+  fun str: ucharcp -> string = 'flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
 
   fun len: string -> int = "$1.size()";
   fun add: string * string -> string = "$1+$2";
