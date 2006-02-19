@@ -1,4 +1,4 @@
-@exefile("config"+os.sep+"config.py")
+@execfile("config"+os.sep+"config.py")
 @head(1,'Regression tests')
 There are four kinds of test. The compiler
 must be run with standard output redirected
