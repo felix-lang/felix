@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.50  2006/02/19 14:02:51  skaller
+Windows sys libs with right switches
+
 Revision 1.49  2006/02/18 16:30:48  skaller
 More work on new package manager.
 
@@ -194,10 +197,11 @@ BSD_DEMUX_CPPS = [
   "demux/demux_kqueue_demuxer",     # osx/bsd
 ]
 
-EXTRA_LIBS = []
+EXTRA_SYS_LIBS = ""
 if WIN32:
   DEMUX_CPPS = DEMUX_CPPS + WINDOWS_DEMUX_CPPS
-  EXTRA_LIBS = ["ws2_32","mswsock"]
+  if HAVE_MSVC:
+    EXTRA_SYS_LIBS = "/DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock "
 
 if POSIX:
   DEMUX_CPPS = DEMUX_CPPS + POSIX_DEMUX_CPPS
@@ -210,13 +214,13 @@ if BSD or MACOSX:
 
 if SOLARIS:
   DEMUX_CPPS = DEMUX_CPPS + SOLARIS_DEMUX_CPPS
-  EXTRA_LIBS = ["socket","nsl"]
+  EXTRA_SYS_LIBS = "-lsocket -lnsl"
 
 cpp_cpps = DEMUX_CPPS
 rtl_interfaces = DEMUXRTL_INTERFACES
 pkg_requires = ['flx_rtl']
-lib_requires = ['libflx'] + EXTRA_LIBS
-
+lib_requires = ['libflx'] 
+lib_requires_linkflags = EXTRA_SYS_LIBS
 
 @head(1,"Pre-emptive threads (pthread)")
 Note WE say pthread means 'pre-emptive thread' not

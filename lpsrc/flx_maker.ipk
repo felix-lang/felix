@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.235  2006/02/19 14:02:51  skaller
+Windows sys libs with right switches
+
 Revision 1.234  2006/02/18 18:03:47  skaller
 Package manager fixes
 
@@ -1516,9 +1519,10 @@ try:
           objs=[]
           for i in tmp:
             objs.append(i[:-2]) # chop off the .o
-          a = pkgdict.get("lib_requires",[])
+          flibs = pkgdict.get("lib_requires",[])
+          dflags = pkgdict.get("lib_requires_linkflags","")
           needs_libs = []
-          for i in a:
+          for i in flibs:
             needs_libs.append(i+"_dynamic")
           lib = pkgdict.get("provide_lib","lib"+pkg)
           TARGET_CXX.link_shared_rtl(
@@ -1526,7 +1530,7 @@ try:
             SHLIB_DIR+os.sep+lib+"_dynamic",
             lib_path=[SHLIB_DIR],
             libs=EXTRA_LIBS+needs_libs,
-            DFLAGS=DFLAGS) # hack
+            DFLAGS=DFLAGS+dflags) # hack
 
 
       if SUPPORT_STATIC_LINKAGE:
@@ -1757,9 +1761,9 @@ try:
 except MakeError:
   print "Terminating due to MAKE error"
   sys.exit(1)
-except:
-  print "Terminating due to UNKNOWN error"
-  sys.exit(2)
+#except:
+#  print "Terminating due to UNKNOWN error"
+#  sys.exit(2)
 
 @head(1,'Makefile')
 We attempt to fix the brain dead install command.
