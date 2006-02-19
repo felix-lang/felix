@@ -1004,7 +1004,15 @@ module Dynlink
 @#------------- Filename -------------------
 module Filename
 {
-@tangle("  const sep : charp = '\""+os.sep+"\"';")
+@if os.sep == '\\':
+   # FFS!!! we put \\\\\\\\ here:
+   # Python reduces it to \\\\             !!!
+   # Felix then reduces it to \\           !!! 
+   # and finally C reduces it to plain \   !!!
+   # don't remove the !!! because \ at eol is continuation .. argg
+   tangle("  const sep : charp = '\"\\\\\"';")
+ else:
+   tangle("  const sep : charp = '\""+os.sep+"\"';")
 }
 
 @#------------- C I/O -------------------
