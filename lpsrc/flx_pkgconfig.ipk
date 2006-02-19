@@ -12,9 +12,20 @@ so it can be built early enough.
 
 @h = tangler("pkg/flx_pkgconfig.py")
 @select(h)
+
+# 
+# we can't use flx_pkgconfig to supply platform
+# libraries .. because this IS flx_pkgconfig --
+# so it isn't built yet!!
 #
+FLXFLAGS = ""
+if WIN32:
+  if HAVE_MSVC:
+    FLXFLAGS = "/DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock "
+    
 pkg_requires = ['flx_compiler','flx_drivers']
 felix_tools = [('tools/flx_pkgconfig','bin/flx_pkgconfig')]
+felix_requires_linkflags = FLXFLAGS
 
 @h = tangler("tools/flx_pkgconfig.flx","data")
 @select(h)

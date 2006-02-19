@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.236  2006/02/19 14:35:44  skaller
+More switches for WIN32
+
 Revision 1.235  2006/02/19 14:02:51  skaller
 Windows sys libs with right switches
 
@@ -1600,11 +1603,20 @@ try:
               libs=libs,
               DFLAGS=DFLAGS)
 
+      #------------------------------------------
+      # TARGET TOOLS
+      #------------------------------------------
       ars = ""
       EXES = pkgdict.get("exes",[])
       FLXS = pkgdict.get("felix_tools",[])
+      esflags = pkgdict.get("exes_require_linkflags","")
+      fsflags = pkgdict.get("felix_requires_linkflags","")
       if len(EXES)+len(FLXS)>0:
         print "BUILDING TARGET TOOLS"
+
+        #------------------------------------------
+        # TARGET TOOLS : C/C++
+        #------------------------------------------
         LIBS = pkgdict.get("exes_require_libs",[])
         for src,bin in EXES:
           dir,base = string.split(src,'/')
@@ -1622,8 +1634,11 @@ try:
             bin,
             lib_path=[dir],
             libs=LIBS,
-            SFLAGS=SFLAGS)
+            SFLAGS=SFLAGS+esflags)
 
+        #------------------------------------------
+        # TARGET TOOLS : FELIX
+        #------------------------------------------
         LIBS = ['libflx_static','libdemux_static','libfaio_static']
         for src,exe in FLXS:
           dir,base = string.split(src,'/')
@@ -1642,7 +1657,7 @@ try:
             exe,
             lib_path=['rtl'],
             libs=LIBS,
-            SFLAGS=SFLAGS)
+            SFLAGS=SFLAGS+fsflags)
 
     # run tests
     if "test" in options:
