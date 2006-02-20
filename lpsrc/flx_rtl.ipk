@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.116  2006/02/20 10:50:16  skaller
+Mingw static tests
+
 Revision 1.115  2006/02/19 16:04:57  skaller
 Win32 build changes..seems to work now
 
@@ -166,6 +169,9 @@ Version: $Id$
 @if HAVE_MSVC:
    tangle("dlibs: /DEFAULTLIB:libflx_dynamic")
    tangle("slibs: /DEFAULTLIB:libfaio_static /DEFAULTLIB:libdemux_static /DEFAULTLIB:libflx_static")
+ elif WIN32:
+   tangle("dlibs: -lflx_dynamic")
+   tangle("slibs: -lfaio_static -ldemux_static -lflx_static -lws2_32 -lmswsock")
  else:
    tangle("dlibs: -lflx_dynamic")
    tangle("slibs: -lfaio_static -ldemux_static -lflx_static")
