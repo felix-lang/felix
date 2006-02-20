@@ -1,5 +1,5 @@
 @execfile('config'+os.sep+'config.py')
-@select(tangler("misc/doxconf.dox"))
+@select(tangler("misc/doxconf.dox","data"))
 # Doxyfile 1.4.4
 
 # This file describes the settings to be used by the documentation system

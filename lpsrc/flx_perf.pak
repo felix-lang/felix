@@ -605,25 +605,25 @@ while time.time() - start_time < max_test_time:
   if elapsed > maxtime: 
     lst = n - 1 
     if lst < fst: fst = lst
-    print 'CUT lst to',lst
+    print 'OVERTIME: CUT max to',lst
 
   # undertime
   elif elapsed < mintime: 
     fst = n + 1
     if lst < fst: lst = fst
-    print 'BOOSTED fst to',fst
+    print 'UNDERTIME: BOOSTED min to',fst
 
   #minimum n too high
   elif n == fst:
     fst = fst - 1
     if lst < fst: lst = fst
-    print "BUMPED fst down to",fst
+    print "BORDERLINE min: CUT min down to",fst
 
   # maximum n too low
   elif n == lst:
     lst = lst + 1
     if lst < fst: fst = lst
-    print "BUMPED lst up to",lst
+    print "BORDERLINE max: BOOSTED max up to",lst
     
   if lst < 1: lst = 1
   if fst < 1: fst = 1

@@ -119,24 +119,24 @@ if success then {
 #import <flx.flxh>
 print 1; endl;
 
-@h = tangler("test/posix_t1.expect")
+@h = tangler("test/posix_t1.expect","data")
 @select(h)
 felix posix accept/connect test
 creating listener
 spawning connector
 accepted connection
-@h = tangler("test/posix_t2.expect")
+@h = tangler("test/posix_t2.expect","data")
 @select(h)
 acceptor read 8 bytes: faio2you
 connector read thanks!!
-@h = tangler("test/posix_t3.expect")
+@h = tangler("test/posix_t3.expect","data")
 @select(h)
 more output here
-@h = tangler("test/win_t1.expect")
+@h = tangler("test/win_t1.expect","data")
 @select(h)
 spawning connector
 successful accept!
-@h = tangler("test/win_t2.expect")
+@h = tangler("test/win_t2.expect","data")
 @select(h)
 1
 @doc()

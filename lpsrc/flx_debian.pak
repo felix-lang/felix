@@ -1,11 +1,12 @@
-@execfile('config/config.py')
+@execfile('config'+os.sep+'config.py')
+@FLX_SONAME="JUNK"
 @head(1,'Debian package generator')
 Generates debian packaging meta info.
 @p()
 BUGS, PROBLEMS ..
 
 @head(2,'Package control')
-@select(tangler('debian/control','data'))
+@select(tangler('olddebian/control','data'))
 Source: felix
 Section: devel
 Priority: optional
@@ -25,7 +26,7 @@ Description: high performance programming language translator and tools
  support for functional programming, ultra-lightweight
  user space threads, and C/C++ interoperability.
 
-@select(tangler('debian/dirs','data'))
+@select(tangler('olddebian/dirs','data'))
 usr/bin
 usr/lib
 usr/lib/felix
@@ -41,9 +42,9 @@ usr/share/doc/felix/libdoc
 usr/share/doc/felix/htmlman
 usr/share/man/man1
 
-@select(tangler('debian/compat','data'))
+@select(tangler('olddebian/compat','data'))
 4
-@select(tangler('debian/copyright','data'))
+@select(tangler('olddebian/copyright','data'))
 This package was debianized by John Skaller <skaller@users.sourceforge.net>.
 It was downloaded from http://felix.sf.net
 
@@ -62,14 +63,14 @@ for the full text of the licence.
 Run time library Licence: Free for any use.
 
 @head(2,'Documentation')
-@select(tangler('debian/changelog','data'))
+@select(tangler('olddebian/changelog','data'))
 @tangle('felix ('+flx_version+'-'+debian_revision+') unstable; urgency=low')
 
   * Initial Release.
 
  -- John Skaller <skaller@users.sourceforge.net>  Fri, 27 May 2005 11:08:54 +1000
 
-@select(tangler('debian/felix.doc-base.tools','data'))
+@select(tangler('olddebian/felix.doc-base.tools','data'))
 Document: felix-tools
 Title: Felix Tools Summary
 Author: John Skaller
@@ -79,7 +80,7 @@ Format: HTML
 Index: /usr/share/doc/felix/htmlman/felix_1.html
 Files: /usr/share/doc/felix/htmlman/*.html
 
-@select(tangler('debian/felix.doc-base.tut','data'))
+@select(tangler('olddebian/felix.doc-base.tut','data'))
 Document: felix-tutorial
 Title: Felix Tutorial
 Author: John Skaller
@@ -89,7 +90,7 @@ Format: HTML
 Index: /usr/share/doc/felix/tut/en_tutorial_top.html
 Files: /usr/share/doc/felix/tut/*.html
 
-@select(tangler('debian/felix.doc-base.tut_bind','data'))
+@select(tangler('olddebian/felix.doc-base.tut_bind','data'))
 Document: felix-binding-tutorial
 Title: Felix C/C++ Interfacing Tutorial
 Author: John Skaller
@@ -98,7 +99,7 @@ Section: main
 Format: HTML
 Index: /usr/share/doc/felix/tut/en_tut_bind_top.html
 
-@select(tangler('debian/felix.doc-base.lib','data'))
+@select(tangler('olddebian/felix.doc-base.lib','data'))
 Document: felix-library
 Title: Debian Felix Library Manual
 Author: John Skaller
@@ -108,7 +109,7 @@ Format: HTML
 Index: /usr/share/doc/felix/libdoc/index.html
 Files: /usr/share/doc/felix/libdoc/*.html
 
-@select(tangler('debian/felix.install','data'))
+@select(tangler('olddebian/felix.install','data'))
 config/*.py usr/lib/felix/config
 bin/flx usr/bin
 bin/flxg usr/bin
@@ -137,7 +138,7 @@ test/*.flx usr/share/doc/felix/test
 test/flx_perf_drv1.cpp usr/share/doc/felix/test
 libdoc/*.html usr/share/doc/felix/libdoc
 
-@select(tangler('debian/felix.links','data'))
+@select(tangler('olddebian/felix.links','data'))
 usr/share/man/man1/flx.1.gz usr/share/man/man1/flxg.1.gz
 usr/share/man/man1/flx.1.gz usr/share/man/man1/flxl.1.gz
 usr/share/man/man1/flx.1.gz usr/share/man/man1/flxp.1.gz
@@ -157,7 +158,7 @@ usr/share/man/man1/flx.1.gz usr/share/man/man1/flx_elkhound.1.gz
 @tangle('usr/lib/libflx_dynamic.so.'+flx_version+' usr/lib/'+FLX_SONAME)
 
 @head(2,'Build rules')
-@select(tangler('debian/rules'))
+@select(tangler('olddebian/rules'))
 @tangle('#!/usr/bin/make -f')
 @tangle('# -*- makefile -*-')
 @tangle('# Sample debian/rules that uses debhelper.')
@@ -251,7 +252,7 @@ usr/share/man/man1/flx.1.gz usr/share/man/man1/flx_elkhound.1.gz
 @tangle('.PHONY: build clean binary-indep binary-arch binary install ')
 @tangle('')
 
-@select(tangler('debian/preinst','data'))
+@select(tangler('olddebian/preinst','data'))
 #! /bin/sh
 # preinst script for flx
 #
@@ -290,7 +291,7 @@ esac
 exit 0
 
 
-@select(tangler('debian/postinst','data'))
+@select(tangler('olddebian/postinst','data'))
 #! /bin/sh
 # postinst script for flx
 #
@@ -333,7 +334,7 @@ esac
 exit 0
 
 
-@select(tangler('debian/prerm','data'))
+@select(tangler('olddebian/prerm','data'))
 #! /bin/sh
 # prerm script for flx
 #
@@ -373,7 +374,7 @@ esac
 exit 0
 
 
-@select(tangler('debian/postrm','data'))
+@select(tangler('olddebian/postrm','data'))
 #! /bin/sh
 # postrm script for flx
 #

@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.237  2006/02/20 02:48:37  skaller
+Release preparation.
+
 Revision 1.236  2006/02/19 14:35:44  skaller
 More switches for WIN32
 
@@ -843,6 +846,13 @@ OCS_MODULES = [
   'ocs_top', 
 ]
 
+@h = tangler('mk','data')
+@select(h)
+python script/maker $1 $2 $3 $4 $5 $6 $7 $8 $9
+@os.system("chmod u+x mk")
+@h = tangler('mk.bat','data')
+@select(h)
+python script\maker %1 %2 %3 %4 %5 %6 %7 %8 %9
 @h = tangler('script/maker','python')
 @select(h)
 #!/usr/bin/env python
@@ -1333,7 +1343,6 @@ try:
     print "GENERATING DOCUMENTATION"
     runISCR('lpsrc/flx_config.pak')
     runISCR('lpsrc/flx.pak')
-    copy_mli2ml()
     runISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
   if "tutdoc" in options:
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
@@ -1344,15 +1353,10 @@ try:
     filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
 
   if "extract" in options:
-    packages = [
-      'flx','sm','ast','elk','flx_perf','flx_tutorial','flx_tut_macro',
-      'flx_tut_bind','flx_tut_migrate','flx_config'
-      ]
+    packages = glob.glob("lpsrc"+os.sep+"*.pak")
     print "EXTRACTING SOURCES"
-    args = ""
     for p in packages:
-      args = args + " lpsrc/"+p+".pak"
-    runISCR(args)
+      runISCR(p)
     filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
 
   if "man" in options:
@@ -2028,9 +2032,6 @@ We have no idea if it continues copying.
 @tangle('\t\tfelix-'+flx_version+'/ChangeLog \\')
 @tangle('\t\tfelix-'+flx_version+'/lpsrc/*.ipk \\')
 @tangle('\t\tfelix-'+flx_version+'/lpsrc/*.pak \\')
-@tangle('\t\tfelix-'+flx_version+'/media/images/* \\')
-@tangle('\t\tfelix-'+flx_version+'/media/sounds/* \\')
-@tangle('\t\tfelix-'+flx_version+'/media/textures/* \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/*.py \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/bin/*.py \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/compilers/*.py \\')
