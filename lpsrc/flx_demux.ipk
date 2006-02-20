@@ -1,5 +1,9 @@
 @head(1,'demux')
 $Log$
+Revision 1.52  2006/02/20 02:16:44  rfistman
+removed recursive locks from the threadsafe select demuxer and from
+the code in general.
+
 Revision 1.51  2006/02/19 16:04:57  skaller
 Win32 build changes..seems to work now
 
@@ -796,7 +800,7 @@ class FLX_RTL_EXTERN flx_mutex_t {
   void operator=(flx_mutex_t const&); // uncopyable
 public:
   pthread_mutex_t m;        // be nice, don't touch
-  flx_mutex_t(bool recursive = false);
+  flx_mutex_t();
   ~flx_mutex_t();
   void lock();
   void unlock();
@@ -824,52 +828,11 @@ namespace flx { namespace demux {
 flx_mutex_t::flx_mutex_t(flx_mutex_t const&){} // uncopyable
 void flx_mutex_t::operator=(flx_mutex_t const&){} // uncopyable
 
-#ifdef PTHREAD_MUTEX_RECURSIVE              // defined in unistd.h
-// private, for use within this file
-class auto_attr
-{
-    pthread_mutexattr_t* a;
-public:
-
-    auto_attr(pthread_mutexattr_t* attr) : a(attr) {}
-    ~auto_attr()
-    {
-        int res = pthread_mutexattr_destroy(a);
-        if(0 != res)
-            fprintf(stderr,"pthread_mutexattr_destroy failed: %i\n", res);
-    }
-};
-
-flx_mutex_t::flx_mutex_t(bool recursive) {
-    pthread_mutexattr_t attr;
-    int res;
-
-    res = pthread_mutexattr_init(&attr);    // default attrs
-
-    if(0 != res) throw res;
-
-    auto_attr   aa(&attr);                  // cleans up always
-
-    if(recursive)
-    {
-        res = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-        if(0 != res)
-        {
-            fprintf(stderr,"phtread_mutexattr_settype failed: %i\n", res);
-            throw res;
-        }
-    }
-
-    res = pthread_mutex_init(&m, &attr);
-    if(res != 0) throw res;
-}
-#else
-flx_mutex_t::flx_mutex_t(bool recursive) {
+flx_mutex_t::flx_mutex_t() {
     assert( !recursive );
     int res = pthread_mutex_init(&m, NULL);
     if(res != 0) throw res;
 }
-#endif
 
 flx_mutex_t::~flx_mutex_t() { pthread_mutex_destroy(&m); }
 void flx_mutex_t::lock() { pthread_mutex_lock(&m); }
@@ -1760,14 +1723,17 @@ class FLX_RTL_EXTERN select_demuxer : public posix_demuxer {
 
   int       fdmax;          // high watermark for select
 
+protected:
   virtual void  get_evts(bool poll);
 
-protected:
-  // virtuals for thread safe descendent
-  virtual void copy_sets(fd_set& rset, fd_set& wset, fd_set& exset);
-  // these could be consts
-  virtual void process_sets(fd_set& rset, fd_set& wset, fd_set& exset);
 public:
+  // get_evts broken into pieces for thread safe implementations
+  void copy_sets(fd_set& rset, fd_set& wset, fd_set& exset);
+  // returns true if process_sets should be called.
+  bool select(fd_set& rset, fd_set& wset, fd_set& exset, bool poll);
+  // these could be consts
+  void process_sets(fd_set& rset, fd_set& wset, fd_set& exset);
+
   select_demuxer();
 
   virtual int   add_socket_wakeup(socket_wakeup* sv, int flags);
@@ -1787,20 +1753,6 @@ namespace flx { namespace demux {
 
 // thread safe version of select demuxer
 
-// this still needs a method for waking the wait function so it can consider
-// newly added sockets (self-pipe trick)
-
-// would be to simply serialise calls to those functions. Since 
-// wakeup callbacks often request another wakeup, the lock would want
-// to be recursive. However, the wait is blocking so that's not a good
-// time to obtain a lock and also the added wakeup wouldn't be selected
-// until the previous select returned, so need to wake the select (sockpair?).
-// Hmm, might have to factor the wait into get args, set args so that a
-// descendent class could do it. For this to work there must be no ambiguity
-// when merging the wakeup sets, but that's ok because adding more than
-// one request for a single fd is undefined, so for the select demuxer it
-// can be a simple error. Great!
-
 // there's no standard posix_socketio_wakeup, could be handy. could also
 // perhaps use it here?
 class FLX_RTL_EXTERN selfpipe_wakeup : public socket_wakeup {
@@ -1816,20 +1768,18 @@ public:
   ~auto_fd();
 };
 
-class FLX_RTL_EXTERN ts_select_demuxer : public select_demuxer {
-  // big conservative recursive hamfisted lock. recursive because get_evts
-  // callbacks love re-adding their wakeup (or some other even)
+class FLX_RTL_EXTERN ts_select_demuxer : public posix_demuxer {
+  // big conservative recursive hamfisted lock.
   flx_mutex_t      ham_fist;   
+  // protects this little fella here.
+  select_demuxer  demux;
+
 
   // self pipe trick!!! fd[0] = read end, fd[1] = write end.
   auto_fd     fds[2];
   selfpipe_wakeup spw;
 protected:
-  // virtual for thread safe descendent
-  virtual void copy_sets(fd_set& rset, fd_set& wset, fd_set& exset);
-  // these could be consts
-  virtual void process_sets(fd_set& rset, fd_set& wset, fd_set& exset);
-
+    virtual void    get_evts(bool poll);
 public:
   ts_select_demuxer();
   virtual ~ts_select_demuxer();
@@ -4450,60 +4400,15 @@ select_demuxer::select_demuxer()
 void
 select_demuxer::get_evts(bool poll)
 {
-  // make a copy that select can modify. this needs to be thought
-  // about for a threadsafe version. If we were serious, we'd also
-  // copy the wakeup list.
+  // to use select we must copy our arguments, as it changes them!
+  // this code has been broken up in to pieces so that I can implement
 
   fd_set  read_set, write_set, except_set;
 
-  // virtual fn so that we can derive a threadsafe version
   copy_sets(read_set, write_set, except_set);
   
-  // this is depending on my fake socket to wakeup. perhaps use the timer
-  // for now.
-  struct timeval  tv, *tp = NULL;
-  //tv.tv_sec = 0;
-  //tv.tv_usec = 1000000/100;
-
-  if(poll)
-  {
-  tv.tv_sec = 0;
-    tv.tv_usec = 0;
-    tp = &tv;
-  }
-  
-  // the return value here actually has significance
-  // sometimes I have to try again, or weed out bad fds.
-  //if(select(fdmax+1, &read_set, &write_set, &except_set, &tv) == -1)
-// nah! wait forever. none of these things shutdown properly yet.
-// it'll force the async new wakeup responsiveness
-  switch(select(fdmax+1, &read_set, &write_set, &except_set, tp))
-  {
-    case 0:
-      return;     // timed out
-    break;
-    case -1:
-    // not the ideal reaction. I think this is where I weed out
-    // the bad socket(s). would need error set.
-
-    // closing a socket without removing can get us here. that's pretty
-    // nasty, because our data would be stale. Try not to do that. I
-    // wonder if the except set would tell us when the socket was
-    // closed on us? Damn, you have to clear it, else you keep getting
-    // the same error.
-    perror("select");
-      // fall through and examine except set
-    break;
-  }
-
-  // we now copy back the select arguments. this needs to be
-  // thought about more a thread safe impl.
-
-  // since we're about to traverse the socket sets anyway, we should
-  // note the highest fd seen, and make that the highwater mark.
-  // that way we wouldn't be guaranteed monotonically degrading performance.
-
-  process_sets(read_set, write_set, except_set);
+  if(select(read_set, write_set, except_set, poll))
+    process_sets(read_set, write_set, except_set);
 }
 
 int
@@ -4559,9 +4464,55 @@ select_demuxer::copy_sets(fd_set& rset, fd_set& wset, fd_set& exset)
   exset = master_except_set;
 }
 
+bool
+select_demuxer::select(fd_set& rset, fd_set& wset, fd_set& exset, bool poll)
+{
+  // this is depending on my fake socket to wakeup. perhaps use the timer
+  // for now.
+  struct timeval  tv, *tp = NULL;
+  //tv.tv_sec = 0;
+  //tv.tv_usec = 1000000/100;
+
+  if(poll)
+  {
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+    tp = &tv;
+  }
+  
+  // the return value here actually has significance
+  // sometimes I have to try again, or weed out bad fds.
+  //if(select(fdmax+1, &read_set, &write_set, &except_set, &tv) == -1)
+// nah! wait forever. none of these things shutdown properly yet.
+// it'll force the async new wakeup responsiveness
+  switch(::select(fdmax+1, &rset, &wset, &exset, tp))
+  {
+    case 0:
+      return false;   // timed out, don't process sets
+    break;
+    case -1:
+    // not the ideal reaction. I think this is where I weed out
+    // the bad socket(s). would need error set.
+
+    // closing a socket without removing can get us here. that's pretty
+    // nasty, because our data would be stale. Try not to do that. I
+    // wonder if the except set would tell us when the socket was
+    // closed on us? Damn, you have to clear it, else you keep getting
+    // the same error.
+      perror("select");
+      // fall through and examine except set
+    break;
+  }
+  return true;    // call process_sets
+}
+
 void
 select_demuxer::process_sets(fd_set& rset, fd_set& wset, fd_set& exset)
 {
+  // since we're about to traverse the socket sets anyway, we should
+  // note the highest fd seen, and make that the highwater mark.
+  // that way we wouldn't be guaranteed monotonically degrading performance.
+
   // might be worth keeping a low water mark as well.
   // I guess this is why select sucks. On osx we can only watch
   // about 1024 sockets. That sucks too. could allocate larger sets
@@ -4655,7 +4606,6 @@ auto_fd::~auto_fd()
 }
 
 ts_select_demuxer::ts_select_demuxer()
-  : ham_fist(true)      // recursive lock
 {
   // fprintf(stderr, "creating pipe for self-pipe trick\n");
 
@@ -4674,8 +4624,8 @@ ts_select_demuxer::ts_select_demuxer()
 
   // make a close obj or something.
   spw.s = self_pipe_fds[0]; // setup wakeup for read end of pipe
-  // add as reader (will call parent class fn; that is ok)
-  if(add_socket_wakeup(&spw, PDEMUX_READ) == -1)  // no wakeup!?!
+
+  if(demux.add_socket_wakeup(&spw, PDEMUX_READ) == -1)  // no wakeup!?!
     throw -1;                 // that makes me angry!!!
 }
 
@@ -4685,9 +4635,32 @@ ts_select_demuxer::~ts_select_demuxer()
 // fprintf(stderr, "could wake here to do clean take down...\n"); 
 }
 
+void
+ts_select_demuxer::get_evts(bool poll)
+{
+  fd_set  rset, wset, exset;
+
+  // copy args under lock
+  {
+    flx_mutex_locker_t locker(ham_fist);
+    demux.copy_sets(rset, wset, exset);
+  }
+  
+  // process arg set under lock. note that the select demuxer is passed
+  // to wakeups, so no recursive lock is needed. also, because any 
+  // readditions caused by the callback are done to the naive demuxer,
+  // no selfpipe writes are required either. the only thing to remember
+  // is that the wakeup recipient should not be surprised to see a demuxer
+  // in its callback different to the one it originally added to.
+  if(demux.select(rset, wset, exset, poll))
+  {
+    flx_mutex_locker_t locker(ham_fist);
+    demux.process_sets(rset, wset, exset);
+  }
+}
 
 // thread safe overloaded functions follow. all acquire the lock
-// then call the parent version of the function. nice!
+// then call the unthreadsafe version of the function. nice!
 int
 ts_select_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 {
@@ -4699,8 +4672,7 @@ ts_select_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
   //  sv, s, (s == self_pipe_fds[0]) ? "self pipe" : "socket", flags);
   flx_mutex_locker_t locker(ham_fist);
 
-
-  int res = select_demuxer::add_socket_wakeup(sv, flags);
+  int res = demux.add_socket_wakeup(sv, flags);
   // I wouldn't touch the sv after this.
 
   // lets wake the select demuxer by writing to our end of the pipe
@@ -4725,21 +4697,6 @@ ts_select_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 // performance or even a lockup. the question is do we need to do it under
 // the tutelage of the lock?
 }
-
-void
-ts_select_demuxer::copy_sets(fd_set& rset, fd_set& wset, fd_set& exset)
-{
-  flx_mutex_locker_t locker(ham_fist);
-  return select_demuxer::copy_sets(rset, wset, exset);
-}
-
-void
-ts_select_demuxer::process_sets(fd_set& rset, fd_set& wset, fd_set& exset)
-{
-  flx_mutex_locker_t locker(ham_fist);
-  return select_demuxer::process_sets(rset, wset, exset);
-}
-
 
 void
 selfpipe_wakeup::wakeup(posix_demuxer& demux)
