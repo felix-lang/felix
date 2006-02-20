@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.238  2006/02/20 09:21:25  skaller
+Mingw/nocygwin support
+
 Revision 1.237  2006/02/20 02:48:37  skaller
 Release preparation.
 
@@ -1355,8 +1358,10 @@ try:
   if "extract" in options:
     packages = glob.glob("lpsrc"+os.sep+"*.pak")
     print "EXTRACTING SOURCES"
+    args = ""
     for p in packages:
-      runISCR(p)
+      args = args + p + " "
+    runISCR(args)
     filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
 
   if "man" in options:

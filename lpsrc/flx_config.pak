@@ -2472,7 +2472,6 @@ try:
   f = copen("python")
   pr(f,"#Python config")
   p(f,"PYTHON_VERSION")
-  p(f,"ISCR")
   f.close()
 
   print "Storing Python Filename separators"

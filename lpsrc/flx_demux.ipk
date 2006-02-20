@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.53  2006/02/20 09:21:24  skaller
+Mingw/nocygwin support
+
 Revision 1.52  2006/02/20 02:16:44  rfistman
 removed recursive locks from the threadsafe select demuxer and from
 the code in general.
@@ -127,9 +130,13 @@ Integrate SDL tests, provide initial SDL event demux.
 Name: demux
 Description: Pre-emptive threading support
 Version: $Id$
+
 @if HAVE_MSVC:
    tangle("dlibs: /DEFAULTLIB:libdemux_dynamic /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
    tangle("slibs: /DEFAULTLIB:libdemux_static /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
+ elif WIN32:
+   tangle("dlibs: -ldemux_dynamic -lws2_32 -lmswsock")
+   tangle("slibs: -ldemux_static -lws2_32 -lmswsock")
  else:
    tangle("dlibs: -ldemux_dynamic")
    tangle("slibs: -ldemux_static")
@@ -213,6 +220,10 @@ if WIN32:
   DEMUX_CPPS = DEMUX_CPPS + WINDOWS_DEMUX_CPPS
   if HAVE_MSVC:
     EXTRA_SYS_LIBS = "/DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock "
+  else:
+    # mingw
+    EXTRA_SYS_LIBS = "-lws2_32 -lmswsock "
+
 
 if POSIX:
   DEMUX_CPPS = DEMUX_CPPS + POSIX_DEMUX_CPPS
