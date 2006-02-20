@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.239  2006/02/20 09:53:01  skaller
+Nocywgin build
+
 Revision 1.238  2006/02/20 09:21:25  skaller
 Mingw/nocygwin support
 
@@ -1648,7 +1651,7 @@ try:
         #------------------------------------------
         # TARGET TOOLS : FELIX
         #------------------------------------------
-        LIBS = ['libflx_static','libdemux_static','libfaio_static']
+        LIBS = ['libfaio_static','libdemux_static','libflx_static']
         for src,exe in FLXS:
           dir,base = string.split(src,'/')
           flxg("-Ilib "+src,"crap")

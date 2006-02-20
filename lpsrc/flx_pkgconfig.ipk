@@ -22,6 +22,8 @@ FLXFLAGS = ""
 if WIN32:
   if HAVE_MSVC:
     FLXFLAGS = "/DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock "
+  else:
+    FLXFLAGS = "-lws2_32 -lmswsock "
     
 pkg_requires = ['flx_compiler','flx_drivers']
 felix_tools = [('tools/flx_pkgconfig','bin/flx_pkgconfig')]
