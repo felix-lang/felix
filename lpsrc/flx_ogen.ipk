@@ -655,7 +655,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
   ;
   bcat s ("\n");
   bcat s ("// Head of shape list\n");
-  bcat s ("FLX_EXPORT extern \"C\" gc_shape_t *"^module_name^"_head_shape;\n");
+  bcat s ("extern \"C\" FLX_EXPORT gc_shape_t *"^module_name^"_head_shape;\n");
   bcat s ("gc_shape_t *"^module_name^"_head_shape="^ !last_ptr_map ^ ";\n");
   Buffer.contents s
 
