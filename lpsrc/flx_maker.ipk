@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.241  2006/02/21 05:46:46  skaller
+Fix wrong link flag tag.
+
 Revision 1.240  2006/02/21 02:41:07  skaller
 Add --pkg option to maker script. First work on callback
 binding feature.
@@ -1547,7 +1550,6 @@ try:
           for i in tmp:
             objs.append(i[:-2]) # chop off the .o
           flibs = pkgdict.get("lib_requires",[])
-          dflags = pkgdict.get("lib_requires_linkflags","")
           needs_libs = []
           for i in flibs:
             needs_libs.append(i+"_dynamic")
@@ -1557,7 +1559,7 @@ try:
             SHLIB_DIR+os.sep+lib+"_dynamic",
             lib_path=[SHLIB_DIR],
             libs=EXTRA_LIBS+needs_libs,
-            DFLAGS=DFLAGS+dflags) # hack
+            DFLAGS=DFLAGS+EXTRA_DFLAGS) # hack
 
 
       if SUPPORT_STATIC_LINKAGE:

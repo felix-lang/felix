@@ -455,41 +455,107 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
       sbt syms.dfns (`BTYP_function (atyp,bret)))
 
     | `SYMDEF_callback (props,ts_orig,ret,reqs) ->
+
+      let bret = bt ret in
+
+      (* The type of the raw C function's arguments, 
+        using address = void* for the callback.
+        This is the one passed to C, and the one we generate
+        to cast the address to a Felix type and then execute it.
+
+        Note the hack .. binding to C_hack::address .. it isn't
+        necessary because we know it's a void*, but there is no
+        builtin symbol for that.
+
+        This is the function the user must call to actually
+        invoke the Felix callback passed to it.
+
+        A callback is much like an exported function,
+        in that it binds a function to some arguments
+        from a C call, however it is passed a closure,
+        whereas exported functions create their own.
+
+        This function isn't type safe to call at the C 
+        level, but it has the correct type to PASS to
+        the usual establishing functions (or pointer to
+        function in a struct)
+
+        this is an extern "C" function with the original 
+        name. The name isn't mangled, and so shouldn't
+        conflict with the typesafe ts_cf below.
+      *)
       let ts_c = 
         map
         (function 
           | `AST_name (_,id,[]) when id = name -> 
-            failwith "SYMDEF_callback FOUND CALLBACK ARG" 
+            let address = `AST_name(sr,"address",[]) in
+            bt address
           | t -> bt t
         ) 
         ts_orig 
       in
+
+      (* The type of the arguments of the Felix callback function,
+        which are the same as the C function, but with the client
+        data pointer dropped
+      *)
+      let ts_f = 
+        map bt 
+        (
+          filter 
+          (function 
+            | `AST_name (_,id,[]) when id = name -> false
+            | t -> true
+          ) 
+          ts_orig 
+        )
+      in
+      let tf_args = match ts_f with
+        | [x] -> x
+        | lst -> `BTYP_tuple lst
+      in
+      let tf = `BTYP_function (tf_args, bret) in
+
+      (* The type of the arguments Felix thinks the raw
+         C function has on a call. A closure of this
+         function is a Felix function .. NOT the raw
+         C function.
+      *)
+      let ts_cf =
+        map
+        (function 
+          | `AST_name (_,id,[]) when id = name -> tf
+          | t -> bt t
+        ) 
+        ts_orig 
+      in
+
       let prec = "postfix" in
-      let ts = map bt ts_orig in
-      let bret = bt ret in
       let reqs = bind_reqs reqs in
 
-      let ct = `Str "rubbish ..." in
-
+      (*
       let bbdcl = match bret with
         | `BTYP_void ->
-          `BBDCL_proc (props,bvs,ts,ct,reqs)
+          let ct = `StrTemplate (name ^ "($a);") in
+          `BBDCL_proc (props,bvs,ts_cf,ct,reqs)
         | _ ->
-          `BBDCL_fun (props,bvs,ts,bret,ct,reqs,prec)
+          let ct = `StrTemplate (name ^ "($a)") in
+          `BBDCL_fun (props,bvs,ts_cf,bret,ct,reqs,prec)
       in
+      *)
+      let bbdcl = `BBDCL_callback (props,bvs,ts_cf,ts_c,bret,reqs,prec) in
       Hashtbl.add bbdfns i (name,None,sr,bbdcl);
       begin
         if not (Hashtbl.mem syms.ticache i) then
-        let t = fold syms.dfns (`BTYP_function (typeoflist ts,bret)) in
+        let t = fold syms.dfns (`BTYP_function (typeoflist ts_cf,bret)) in
         Hashtbl.add syms.ticache i t
       end
       ;
-      let atyp = typeoflist ts in
+      let atyp = typeoflist ts_cf in
       if syms.compiler_options.print_flag then
       print_endline ("//bound callback fun " ^ name ^ "<"^si i^">"^
       print_bvs bvs ^ ":" ^
       sbt syms.dfns (`BTYP_function (atyp,bret)))
-
 
     | `SYMDEF_union (cs) ->
       (* print_endline ("//Binding union " ^ si i ^ " --> " ^ name); 

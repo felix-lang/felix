@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.54  2006/02/21 05:46:45  skaller
+Fix wrong link flag tag.
+
 Revision 1.53  2006/02/20 09:21:24  skaller
 Mingw/nocygwin support
 
@@ -242,7 +245,9 @@ cpp_cpps = DEMUX_CPPS
 rtl_interfaces = DEMUXRTL_INTERFACES
 pkg_requires = ['flx_rtl']
 lib_requires = ['libflx'] 
-lib_requires_linkflags = EXTRA_SYS_LIBS
+#lib_requires_linkflags = EXTRA_SYS_LIBS
+dflags = EXTRA_SYS_LIBS
+sflags = EXTRA_SYS_LIBS
 
 @head(1,"Pre-emptive threads (pthread)")
 Note WE say pthread means 'pre-emptive thread' not

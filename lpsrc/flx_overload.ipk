@@ -63,6 +63,37 @@ let sig_of_symdef symdef sr name i = match symdef with
   | `SYMDEF_fun (_,ps,r,_,_,_)
     -> typeof_list ps,r
 
+  | `SYMDEF_callback (_,ts_orig,r,_)
+    -> 
+      let ts_f = 
+        filter 
+        (function 
+          | `AST_name (_,id,[]) when id = name -> false
+          | t -> true
+        ) 
+        ts_orig 
+      in
+      let tf_args = match ts_f with
+        | [x] -> x
+        | lst -> `TYP_tuple lst
+      in
+      let tf = `TYP_function (tf_args, r) in
+
+      (* The type of the arguments Felix thinks the raw
+         C function has on a call. A closure of this
+         function is a Felix function .. NOT the raw
+         C function.
+      *)
+      let ts_cf =
+        map
+        (function 
+          | `AST_name (_,id,[]) when id = name -> tf
+          | t -> t
+        ) 
+        ts_orig 
+      in
+      typeof_list ts_cf,r
+
   | `SYMDEF_function (ps,r,_,_)
     -> paramtype (fst ps),r
 

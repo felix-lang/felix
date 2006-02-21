@@ -2436,6 +2436,7 @@ and handle_function
   | `SYMDEF_nonconst_ctor _
   | `SYMDEF_regmatch _
   | `SYMDEF_reglex _
+  | `SYMDEF_callback _
     ->
     let t = inner_typeofindex_with_ts syms sr rs index ts 
     in

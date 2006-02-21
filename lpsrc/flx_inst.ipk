@@ -104,6 +104,7 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     begin match entry with
     (* function type not needed for direct call *)
     | `BBDCL_fun _ 
+    | `BBDCL_callback _ 
     | `BBDCL_function _ 
     | `BBDCL_nonconst_ctor _
       -> 
@@ -431,6 +432,17 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs;
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret [] ts
+
+  | `BBDCL_callback (props,vs,argtypes_cf,argtypes_c,ret,reqs,_) ->
+    (*
+    print_endline ("Handling requirements of callback " ^ id);
+    *)
+    assert (length vs = length ts);
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let hvarmap = hashtable_of_list vars in
+    let vs t = varmap_subst hvarmap t in
+    do_reqs vs reqs;
+    process_function syms bbdfns hvarmap ref_insts1 i sr argtypes_cf ret [] ts
 
   | `BBDCL_proc (props,vs,argtypes,_,reqs) ->
     (*

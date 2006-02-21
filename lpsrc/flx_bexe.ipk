@@ -49,7 +49,9 @@ let cal_call syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) =
         match p with 
         | `BEXPR_closure (i,ts) -> 
           begin match Hashtbl.find syms.dfns i with
-          | {symdef=`SYMDEF_fun _ } -> 
+          | {symdef=`SYMDEF_fun _ } 
+          | {symdef=`SYMDEF_callback _ } 
+            -> 
             `BEXE_call_prim (sr,i,ts,tbe2)
 
           | {symdef=`SYMDEF_function _} ->

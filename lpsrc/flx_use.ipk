@@ -195,6 +195,12 @@ and uses syms used bbdfns i =
 
       | `BBDCL_const (_,t,_,reqs) -> ut t; rq reqs
       | `BBDCL_fun (_,_,ps, ret, _,reqs,_) -> iter ut ps; ut ret; rq reqs
+
+      | `BBDCL_callback (_,_,ps_cf, ps_c, ret, reqs,_) -> 
+        iter ut ps_cf; 
+        iter ut ps_c; 
+        ut ret; rq reqs
+
       | `BBDCL_proc (_,_,ps, _, reqs)  -> iter ut ps; rq reqs
 
       | `BBDCL_abs (_,_,_,reqs) -> rq reqs

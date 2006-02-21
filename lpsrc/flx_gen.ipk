@@ -598,6 +598,65 @@ let gen_functions syms (child_map,bbdfns) =
         (gen_function syms (child_map,bbdfns) props index id vs ps ret ts i)
       end
 
+    | `BBDCL_callback (props,vs,ps_cf,ps_c,ret',_,_) -> 
+      let instance_no = i in
+      bcat s ("\n//------------------------------\n");
+      if ret' = `BTYP_void then begin
+        bcat s ("//CALLBACK C PROC " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+      end else begin
+        bcat s ("//CALLBACK C FUNCTION " ^ qualified_name_of_index syms.dfns index ^ tss ^ "\n");
+      end
+      ;
+      let rt vs t = reduce_type (lstrip syms.dfns (beta_reduce syms [] (tsubst vs ts t))) in
+      if syms.compiler_options.print_flag then
+      print_endline 
+      (
+        "//Generating C callback function inst " ^ 
+        si instance_no ^ "=" ^ 
+        id ^ "<" ^si index^">" ^
+        (
+          if length ts = 0 then "" 
+          else "[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]"
+        )
+      );
+      let argtype = lower(typeoflist ps_c) in
+      if length ts <> length vs then 
+      failwith 
+      (
+        "[gen_function} wrong number of args, expected vs = " ^ 
+        si (length vs) ^ 
+        ", got ts=" ^ 
+        si (length ts)
+      );
+      let argtype = rt vs argtype in
+      let rt' vs t = reduce_type (beta_reduce syms [] (tsubst vs ts t)) in
+      let ret = rt' vs ret' in
+      let is_ref = match ret with `BTYP_lvalue _ -> true | _ -> false in
+      let ret = lstrip syms.dfns ret in
+      let funtype = fold syms.dfns (`BTYP_function (argtype, ret)) in
+      let name = cpp_instance_name syms bbdfns index ts in
+      let rettypename = cpp_typename syms ret in
+      let sss =
+        rettypename ^ " " ^
+        (if is_ref then "& " else "") ^
+        name ^ "(" ^
+        (
+          match length ps_c with
+          | 0 -> ""
+          | 1 -> cpp_typename syms (hd ps_c)
+          | _ -> 
+            fold_left
+            (fun s t -> 
+              let t = rt vs (lower t) in
+              (if String.length s > 0 then ", " else "") ^ 
+              cpp_typename syms t
+            )
+            ""
+            ps_c
+        ) ^
+        ");\n"
+      in bcat s sss
+
     | `BBDCL_procedure (props,vs,(ps,traint),_) -> 
       bcat s ("\n//------------------------------\n");
       if mem `Pure props && not (mem `Heap_closure props) then begin
@@ -736,6 +795,23 @@ let gen_exe filename syms
         | `Str s -> ce_expr "expr" s
         | `StrTemplate s ->
           gen_prim_call syms bbdfns tsub ge' s ts a "Error" sr sr2 "atom" 
+      in
+      let s = sc "expr" s in
+      (if with_comments then "      // " ^ src_str ^ "\n" else "") ^
+      sub_start ^
+      "      " ^ s ^ "\n" ^
+      sub_end
+
+    | `BBDCL_callback (props,vs,ps_cf,ps_c,ret,_,_) -> 
+      assert (not is_jump);
+      assert (ret = `BTYP_void);
+
+      if length vs <> length ts then
+      clierr sr "[gen_prim_call] Wrong number of type arguments"
+      ;
+      let s = id ^ "($a);" in
+      let s = 
+        gen_prim_call syms bbdfns tsub ge' s ts a "Error" sr sr2 "atom" 
       in
       let s = sc "expr" s in
       (if with_comments then "      // " ^ src_str ^ "\n" else "") ^

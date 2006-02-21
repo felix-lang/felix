@@ -88,6 +88,7 @@ let rec is_pure syms (child_map, bbdfns) i =
   | `BBDCL_const_ctor _
   | `BBDCL_nonconst_ctor _
   | `BBDCL_fun _
+  | `BBDCL_callback _
   | `BBDCL_proc _
   | `BBDCL_insert _
   | `BBDCL_struct _
@@ -319,6 +320,7 @@ let can_stack_func cache syms (child_map,bbdfns) i =
 
   | `BBDCL_nonconst_ctor _
   | `BBDCL_fun _
+  | `BBDCL_callback _
   | `BBDCL_struct _
   | `BBDCL_cstruct _ 
   | `BBDCL_regmatch _
