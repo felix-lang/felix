@@ -1061,6 +1061,21 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           ;
           add_tvars privtab
 
+        (* A callback is just like a C function binding .. only it
+          actually generates the function. It has a special argument
+          the C function has as type void*, but which Felix must
+          consider as the type of a closure with the same type
+          as the C function, with this void* dropped.
+        *)
+        | `DCL_callback (props, ts,t,reqs) ->
+          Hashtbl.add dfns n {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=`SYMDEF_callback (props, ts,t,reqs)}
+          ;
+          if access = `Public then add_function pub_name_map id n;
+          add_function priv_name_map id n
+          ;
+          add_tvars privtab
+
         | `DCL_union (its) ->
           if is_class then clierr sr "Union not allowed in class";
           let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) vs in

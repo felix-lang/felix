@@ -5,6 +5,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.240  2006/02/21 02:41:07  skaller
+Add --pkg option to maker script. First work on callback
+binding feature.
+
 Revision 1.239  2006/02/20 09:53:01  skaller
 Nocywgin build
 
@@ -987,6 +991,11 @@ options = sys.argv[1:]
 if not options: 
   options = ["extract","build","optimise_c"]
 
+packages = []
+for k in options:
+  if '--pkg=' == k[:6]: 
+    packages.append(k[6:])
+
 CCMACS=""
 for i in options:
   if i[0:2]=="-D": CCMACS=CCMACS+i+" "
@@ -1167,6 +1176,9 @@ def addpkg_r(pkg):
 for pkg in unsorted_pkgs:
   addpkg_r(pkg)
 
+if packages:
+  pkgs = filter(lambda x: x in packages,pkgs)
+  
 print "PACKAGES ARE ",pkgs
 
 EXTRA_LIBS = []

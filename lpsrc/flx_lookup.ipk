@@ -440,6 +440,7 @@ and lookup_qn_in_env2'
   print_endline ("[lookup_qn_in_env2] qn=" ^ string_of_qualified_name qn);
   *)
   match qn with
+  | `AST_callback (sr,qn) -> clierr sr "[lookup_qn_in_env2] qualified name is callback [not implemented yet]"
   | `AST_void sr -> clierr sr "[lookup_qn_in_env2] qualified name is void"
   | `AST_case_tag (sr,_) -> clierr sr "[lookup_qn_in_env2] Can't lookup a case tag"
   | `AST_typed_case (sr,_,_) -> clierr sr "[lookup_qn_in_env2] Can't lookup a typed case tag"
@@ -2239,6 +2240,9 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     end
   in
   match qn with
+  | `AST_callback (sr,qn) ->  
+    failwith "[lookup_qn_with_sig] Callbacks not implemented yet"
+
   | `AST_the (sr,qn) -> 
     lookup_qn_with_sig' syms sra srn
     env rs
@@ -2842,6 +2846,9 @@ and bind_expression' syms env (rs:recstop) e args
     -> 
       clierr sr 
      ("[bind_expression] Expected expression, got " ^ string_of_expr e) 
+
+  | `AST_callback (sr,qn) ->
+    failwith "[bind_expression] Callbacks not implemented yet [and they're types not expressions!]"
 
   | `AST_sparse (sr,e,nt,nts) ->
     let e = be e in

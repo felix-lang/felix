@@ -454,6 +454,42 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
       print_bvs bvs ^ ":" ^
       sbt syms.dfns (`BTYP_function (atyp,bret)))
 
+    | `SYMDEF_callback (props,ts_orig,ret,reqs) ->
+      let ts_c = 
+        map
+        (function 
+          | `AST_name (_,id,[]) when id = name -> 
+            failwith "SYMDEF_callback FOUND CALLBACK ARG" 
+          | t -> bt t
+        ) 
+        ts_orig 
+      in
+      let prec = "postfix" in
+      let ts = map bt ts_orig in
+      let bret = bt ret in
+      let reqs = bind_reqs reqs in
+
+      let ct = `Str "rubbish ..." in
+
+      let bbdcl = match bret with
+        | `BTYP_void ->
+          `BBDCL_proc (props,bvs,ts,ct,reqs)
+        | _ ->
+          `BBDCL_fun (props,bvs,ts,bret,ct,reqs,prec)
+      in
+      Hashtbl.add bbdfns i (name,None,sr,bbdcl);
+      begin
+        if not (Hashtbl.mem syms.ticache i) then
+        let t = fold syms.dfns (`BTYP_function (typeoflist ts,bret)) in
+        Hashtbl.add syms.ticache i t
+      end
+      ;
+      let atyp = typeoflist ts in
+      if syms.compiler_options.print_flag then
+      print_endline ("//bound callback fun " ^ name ^ "<"^si i^">"^
+      print_bvs bvs ^ ":" ^
+      sbt syms.dfns (`BTYP_function (atyp,bret)))
+
 
     | `SYMDEF_union (cs) ->
       (* print_endline ("//Binding union " ^ si i ^ " --> " ^ name); 

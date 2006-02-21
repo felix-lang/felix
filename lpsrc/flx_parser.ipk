@@ -1,3 +1,4 @@
+@execfile('config'+os.sep+'flx_data.py')
 @head(1,'Parser')
 @h = tangler('src/flx_parse.mly','data')
 @# define meta operators:
@@ -446,6 +447,44 @@ abstract_type:
       let qs = List.map snd $1 in
       `AST_abs_decl (rstoken $2 $8, snd $3, $4, qs, $6, $7) 
     }
+
+  | CALLBACK PROCEDURE NAME COLON expr requires_clause SEMI 
+    {
+      let sr = rstoken $1 $7 in
+      let name = snd $3 in
+      let t = typecode_of_expr $5 in
+      let rqs = $6 in
+      let args = 
+        match t with
+        | `TYP_tuple lst -> lst
+        | x -> [x]
+      in
+      `AST_callback_decl (sr,name,args,`AST_void sr,rqs)
+    }
+
+  | CALLBACK FUNCTION NAME COLON expr requires_clause SEMI 
+    {
+      let sr = rstoken $1 $7 in
+      let name = snd $3 in
+      let t = typecode_of_expr $5 in
+      let rqs = $6 in
+      match t with
+      | `TYP_function (arg, ret) ->
+        let args = 
+          match arg with
+          | `TYP_tuple lst -> lst
+          | x -> [x]
+        in
+        `AST_callback_decl (sr,name,args,ret,rqs)
+      | _ -> 
+        failwith 
+        (
+          "Function '"^name^"' requires function type, got " ^
+          string_of_typecode t ^ " in " ^
+          short_string_of_src sr
+        )
+    }
+
 
 @head(3,'Union Binding')
 @select(h)
@@ -2620,7 +2659,16 @@ expr_code_prefix:
      typecode_of_expr $3
     }
 
+
+
 atom:
+  | CALLBACK LSQB qualified_name RSQB
+    { 
+      let sr = rstoken $1 $4 in
+      let qn = qualified_name_of_expr $3 in
+      `AST_callback (sr,qn)
+    }
+  
   | DOTDOTDOT { `AST_ellipsis (slift $1) }
 
   | type_match_expr { $1 }

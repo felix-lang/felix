@@ -2659,6 +2659,7 @@ flx_expr_terminator_keywords = [
 flx_other_keywords = [
     ("and", "AND"),
     ("as", "AS"),
+    ("callback", "CALLBACK"),
     ("code", "CODE"),
     ("if", "IF"),
     ("isin", "ISIN"),

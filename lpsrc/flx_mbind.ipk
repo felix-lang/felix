@@ -109,6 +109,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_setintersection _
   | `AST_macro_ctor _
   | `AST_macro_statements  _
+  | `AST_callback _ 
     -> 
       let sr = src_of_expr e in
       clierr sr "[mbind:subst] Not expected in when part of pattern"
