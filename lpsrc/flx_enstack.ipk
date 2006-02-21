@@ -482,7 +482,8 @@ let rec enstack_applies cache syms (child_map, bbdfns) x =
           if mem `Stackable props
           then `BEXPR_apply_stack (i,ts,b),t
           else `BEXPR_apply_direct (i,ts,b),t
-        | `BBDCL_fun _ -> 
+        | `BBDCL_fun _
+        | `BBDCL_callback _ -> 
           `BEXPR_apply_prim(i,ts,b),t
 
         | `BBDCL_struct _ 

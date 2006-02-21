@@ -682,6 +682,17 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         gen_prim_call syms bbdfns tsub ge'' s ts (arg,argt) retyp sr sr2 prec
       end
 
+    | `BBDCL_callback (props,vs,ps_cf,ps_c,_,retyp,_,_) -> 
+      assert (retyp <> `BTYP_void);
+      if length vs <> length ts then
+      clierr sr "[gen_prim_call] Wrong number of type arguments"
+      ;
+      let ts = map tsub ts in
+      let s = id ^ "($a)" in
+      let retyp = reduce_type (beta_reduce syms [] (lstrip syms.dfns (tsubst vs ts retyp))) in
+      let retyp = tn retyp in
+      gen_prim_call syms bbdfns tsub ge'' s ts (arg,argt) retyp sr sr2 "atom" 
+
     (* but can't be a Felix function *)
     | _ -> 
       failwith 

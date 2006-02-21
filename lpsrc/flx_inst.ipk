@@ -433,7 +433,7 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     do_reqs vs reqs;
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret [] ts
 
-  | `BBDCL_callback (props,vs,argtypes_cf,argtypes_c,ret,reqs,_) ->
+  | `BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,_) ->
     (*
     print_endline ("Handling requirements of callback " ^ id);
     *)
@@ -442,7 +442,17 @@ and process_inst syms bbdfns ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs;
-    process_function syms bbdfns hvarmap ref_insts1 i sr argtypes_cf ret [] ts
+
+    let ret = varmap_subst hvarmap ret in
+    rtr ret;
+
+    (* prolly not necessary .. *)
+    let tss = map (varmap_subst hvarmap) argtypes_cf in
+    iter rtr tss;
+
+    (* just to register 'address' .. lol *)
+    let tss = map (varmap_subst hvarmap) argtypes_c in
+    iter rtr tss
 
   | `BBDCL_proc (props,vs,argtypes,_,reqs) ->
     (*

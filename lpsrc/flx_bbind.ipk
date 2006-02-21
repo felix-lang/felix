@@ -484,13 +484,18 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
         name. The name isn't mangled, and so shouldn't
         conflict with the typesafe ts_cf below.
       *)
+      let client_data_pos = ref (-1) in
       let ts_c = 
+        let counter = ref 0 in
         map
         (function 
           | `AST_name (_,id,[]) when id = name -> 
+            if !client_data_pos = -1 then
+              client_data_pos := !counter
+            ;
             let address = `AST_name(sr,"address",[]) in
             bt address
-          | t -> bt t
+          | t -> incr counter; bt t
         ) 
         ts_orig 
       in
@@ -533,17 +538,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
       let prec = "postfix" in
       let reqs = bind_reqs reqs in
 
-      (*
-      let bbdcl = match bret with
-        | `BTYP_void ->
-          let ct = `StrTemplate (name ^ "($a);") in
-          `BBDCL_proc (props,bvs,ts_cf,ct,reqs)
-        | _ ->
-          let ct = `StrTemplate (name ^ "($a)") in
-          `BBDCL_fun (props,bvs,ts_cf,bret,ct,reqs,prec)
-      in
-      *)
-      let bbdcl = `BBDCL_callback (props,bvs,ts_cf,ts_c,bret,reqs,prec) in
+      let bbdcl = `BBDCL_callback (props,bvs,ts_cf,ts_c,!client_data_pos,bret,reqs,prec) in
       Hashtbl.add bbdfns i (name,None,sr,bbdcl);
       begin
         if not (Hashtbl.mem syms.ticache i) then

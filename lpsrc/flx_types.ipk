@@ -995,7 +995,7 @@ and bbdcl_t =
   | `BBDCL_abs of        bvs_t * type_qual_t list * c_t * breqs_t
   | `BBDCL_const of      bvs_t * btypecode_t * c_t * breqs_t
   | `BBDCL_fun of        property_t list * bvs_t * btypecode_t list * btypecode_t * c_t  * breqs_t * prec_t
-  | `BBDCL_callback of   property_t list * bvs_t * btypecode_t list * btypecode_t list * btypecode_t * breqs_t * prec_t
+  | `BBDCL_callback of   property_t list * bvs_t * btypecode_t list * btypecode_t list * int * btypecode_t * breqs_t * prec_t
   | `BBDCL_proc of       property_t list * bvs_t * btypecode_t list * c_t  * breqs_t
   | `BBDCL_insert of     bvs_t * c_t * ikind_t * breqs_t
   
@@ -4077,7 +4077,7 @@ and string_of_bbdcl dfns bbdcl index =
      string_of_breqs dfns reqs ^
     ";"
 
-  | `BBDCL_callback (props,vs,ps_cf,ps_c,rt,reqs,prec) ->
+  | `BBDCL_callback (props,vs,ps_cf,ps_c,k,rt,reqs,prec) ->
     string_of_properties props ^
     "callback fun " ^ name ^ print_bvs vs ^
     ": " ^ 
