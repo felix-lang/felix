@@ -1,5 +1,9 @@
 @head(1,'demux')
 $Log$
+Revision 1.2  2006/02/22 19:00:04  rfistman
+oops, was passing ULONG as ULONG_PTR. Thanks to 64bit compiler for
+poinnting this out.
+
 Revision 1.1  2006/02/22 17:36:48  skaller
 Rename some files.. more coming. Make RTL modules full .paks
 
@@ -3033,7 +3037,7 @@ iocp_demuxer::get_evts(bool poll) {
   // I guess to avoid swapping of thread context. By calling this on a given
   // completion port this thread is associated with it until exit or respec
   DWORD     nbytes;   // number of bytes in io transaction
-  ULONG     udat;   // user data - not using this atm
+  ULONG_PTR     udat;   // user data - not using this atm
   LPOVERLAPPED  olp;    // we get iocp_wakeup from this.
 
 // If a socket handle associated with a completion port is closed,
