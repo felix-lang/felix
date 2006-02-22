@@ -1098,6 +1098,7 @@ function_definition:
         | None -> `StrTemplate (name ^ "($a)")
       in
       match t with
+      | `TYP_cfunction (arg, ret) 
       | `TYP_function (arg, ret) ->
         let args = 
           match arg with

@@ -1,5 +1,8 @@
 @head(1,'SDL')
 $Log$
+Revision 1.28  2006/02/22 06:02:26  skaller
+Merge.
+
 Revision 1.27  2006/02/22 05:52:23  rfistman
 added sdl package's dependence on libfaio, libflx and libdemux
 
@@ -112,7 +115,6 @@ if HAVE_SDL:
   sflags = SDL_STATIC_LIBS
   
   cpp_cpps = SDL_FAIO_CPPS
-  lib_requires = ['libfaio', 'libdemux','libflx']
   pkg_requires = ['faio']
   rtl_interfaces = ['faio_sdl_event']
   lib_requires = ['libfaio', 'libdemux','libflx']
