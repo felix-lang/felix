@@ -1,5 +1,8 @@
 @head(1,'SDL')
 $Log$
+Revision 1.27  2006/02/22 05:52:23  rfistman
+added sdl package's dependence on libfaio, libflx and libdemux
+
 Revision 1.26  2006/02/22 04:53:18  skaller
 sdl package requirement on libfaio added. Add new type
 to the compiler, d --> c, which is C function type.
@@ -109,6 +112,7 @@ if HAVE_SDL:
   sflags = SDL_STATIC_LIBS
   
   cpp_cpps = SDL_FAIO_CPPS
+  lib_requires = ['libfaio', 'libdemux','libflx']
   pkg_requires = ['faio']
   rtl_interfaces = ['faio_sdl_event']
   lib_requires = ['libfaio', 'libdemux','libflx']
