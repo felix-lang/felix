@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.1  2006/02/22 17:36:48  skaller
+Rename some files.. more coming. Make RTL modules full .paks
+
 Revision 1.54  2006/02/21 05:46:45  skaller
 Fix wrong link flag tag.
 

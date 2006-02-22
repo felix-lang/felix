@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.1  2006/02/22 17:36:49  skaller
+Rename some files.. more coming. Make RTL modules full .paks
+
 Revision 1.116  2006/02/20 10:50:16  skaller
 Mingw static tests
 
@@ -160,6 +163,8 @@ The code we give is platform independent, except as noted.
 The code all lives in directory rtl, the run time
 library support directory. The symbols are defined
 in namespace flx::rtl, except as noted.
+
+@execfile('config'+os.sep+'config.py')
 
 @h = tangler('config/flx.fpc')
 @select(h)

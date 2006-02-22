@@ -1,10 +1,13 @@
 @head(2,'Maker')
 @FLX_MAKER_CVS_ID='$Id$'
 @print FLX_MAKER_CVS_ID
-@execfile('config/flx_data.py')
+@execfile('config'+os.sep+'flx_data.py')
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.242  2006/02/22 17:36:48  skaller
+Rename some files.. more coming. Make RTL modules full .paks
+
 Revision 1.241  2006/02/21 05:46:46  skaller
 Fix wrong link flag tag.
 
@@ -992,12 +995,49 @@ class MakeError: pass
 
 options = sys.argv[1:]
 if not options: 
-  options = ["extract","build","optimise_c"]
+  options = ["extract","build","optimise_c","host","target","run"]
 
+phases = []
 packages = []
+models = []
 for k in options:
-  if '--pkg=' == k[:6]: 
+  if '--phase' == k[:7]:  # Windows doesn't like = so allow any sep 
+    phase = k[8:]
+    if phase not in phases:
+      phases.append(phase)
+  if '--pkg' == k[:5]:  # Windows doesn't like = so allow any sep 
     packages.append(k[6:])
+  if '--model' == k[:7]:  # Windows doesn't like = so allow any sep 
+    model = k[8:]
+    if model not in models:
+      models.append(model)
+
+if models:
+  if model == build_model:
+    if "build" not in phases: phases.append("build")
+
+  if model == host_model:
+    if "host" not in phases: phases.append("host")
+
+  if model == target_model:
+    if "target" not in phases: phases.append("target")
+
+  if model == run_model:
+    if "run" not in phases: phases.append("run")
+
+if "extract" in options: 
+    if "build" not in phases: phases.append("build")
+
+if "build" in options: 
+    if "build" not in phases: phases.append("build")
+    if "host" not in phases: phases.append("host")
+    if "target" not in phases: phases.append("target")
+
+if "test" in options: 
+    if "run" not in phases: phases.append("run")
+
+if not phases: 
+  phases = ["build","host","target","run"]
 
 CCMACS=""
 for i in options:
@@ -1183,6 +1223,11 @@ if packages:
   pkgs = filter(lambda x: x in packages,pkgs)
   
 print "PACKAGES ARE ",pkgs
+print "PHASES ARE   ",phases
+print "Build model  ",build_model
+print "Host model   ",host_model
+print "Target model ",target_model
+print "Run model    ",run_model
 
 EXTRA_LIBS = []
 CFLAGS = ""
@@ -1429,7 +1474,7 @@ try:
 #---------- PACKAGE BUILDS ---------------------------------     
   for pkg in pkgs:
     pkgdict = pkgd[pkg]
-    if "build" in options:
+    if "host" in phases:
       print
       print "***** MAKING PACKAGE "+pkg+" ************"
       if not "quiet" in options: print
@@ -1523,6 +1568,7 @@ try:
             libs=["lib"+pkg+"_host_static"],
             SFLAGS=SFLAGS)
 
+    if "target" in phases:
       if SUPPORT_DYNAMIC_LOADING:
         ars = ""
         CPPS = pkgdict.get("cpp_cpps",[])
@@ -1685,77 +1731,88 @@ try:
             libs=LIBS,
             SFLAGS=SFLAGS+fsflags)
 
-    # run tests
-    if "test" in options:
-      optimise= "optimise_c" in options
-      mode = "std"
-      if optimise: mode = "Optimised"
-      unit_tests = pkgdict.get("unit_tests",[])
-      bad_tests = pkgdict.get("failure_tests",[])
-      if len(bad_tests)+len(unit_tests)>0:
-        print
-        print "***** TESTING PACKAGE "+pkg+" ************"
-        print
-        for testfile in bad_tests:
-          #print 'Running Felix code generator on ',testfile
-          basename = string.split(testfile,'.')[0]
-          cppfilename = basename + ".cpp"
-          try:
-            xqtq('bin'+os.sep+'flxg -e -Ilib ' + basename)
-            #print 'TESTFILE -- failed as expected',basename
-            erasefile(basename+'.cpp')
-            erasefile(basename+'.hpp')
-            erasefile(basename+SHLX)
-          except MakeError:
-            print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
-            erasefile(basename+'.cpp')
-            erasefile(basename+'.hpp')
-            erasefile(basename+SHLX)
-            raise MakeError
+      # run tests
+      if "test" in options:
+        optimise= "optimise_c" in options
+        mode = "std"
+        if optimise: mode = "Optimised"
+        bad_tests = pkgdict.get("failure_tests",[])
+        if len(bad_tests)>0:
+          print
+          print "***** TESTING PACKAGE "+pkg+" ************"
+          print
+          for testfile in bad_tests:
+            #print 'Running Felix code generator on ',testfile
+            basename = string.split(testfile,'.')[0]
+            cppfilename = basename + ".cpp"
+            try:
+              xqtq('bin'+os.sep+'flxg -e -Ilib ' + basename)
+              #print 'TESTFILE -- failed as expected',basename
+              erasefile(basename+'.cpp')
+              erasefile(basename+'.hpp')
+              erasefile(basename+SHLX)
+            except MakeError:
+              print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
+              erasefile(basename+'.cpp')
+              erasefile(basename+'.hpp')
+              erasefile(basename+SHLX)
+              raise MakeError
 
-        for testfile in unit_tests:
-          # run the tests
-          basename = build_test(testfile)
-          if LINK_MODEL == "dynamic":
-              testscript = "bin"+os.sep+"flx_run ./"+basename+SHLX
-          else:
-            testscript = basename+SHLX
+    if "run" in phases:
+      # run tests
+      if "test" in options:
+        optimise= "optimise_c" in options
+        mode = "std"
+        if optimise: mode = "Optimised"
+        unit_tests = pkgdict.get("unit_tests",[])
+        if len(unit_tests)>0:
+          print
+          print "***** TESTING PACKAGE "+pkg+" ************"
+          print
 
-          testscript = testscript + " >" + basename + ".output"
-          testscript = testscript + " && "+DIFF+ basename + ".expect "+ basename + ".output"
+          for testfile in unit_tests:
+            # run the tests
+            basename = build_test(testfile)
+            if LINK_MODEL == "dynamic":
+                testscript = "bin"+os.sep+"flx_run ./"+basename+SHLX
+            else:
+              testscript = basename+SHLX
 
-          #print 'Executing ',testscript
-          try:
-            run(testscript)
-            #print 'TESTFILE -- OK!',testscript
-          except MakeError:
-            print 'TESTFILE -- ERROR!',testscript
-            raise MakeError
+            testscript = testscript + " >" + basename + ".output"
+            testscript = testscript + " && "+DIFF+ basename + ".expect "+ basename + ".output"
 
-    if "demo" in options:
-      optimise= "optimise_c" in options
-      mode = "std"
-      if optimise: mode = "Optimised"
-      demos = pkgdict.get("demos",[])
+            #print 'Executing ',testscript
+            try:
+              run(testscript)
+              #print 'TESTFILE -- OK!',testscript
+            except MakeError:
+              print 'TESTFILE -- ERROR!',testscript
+              raise MakeError
 
-      if len(demos)>0:
-        print "RUNNING DEMOS"
-        for testfile in demos:
-          # run the tests
-          basename = build_test(testfile)
-          if LINK_MODEL == "dynamic":
-              testscript = "bin"+os.sep+"flx_run ./"+basename+SHLX
-          else:
-            testscript = basename+SHLX
+      if "demo" in options:
+        optimise= "optimise_c" in options
+        mode = "std"
+        if optimise: mode = "Optimised"
+        demos = pkgdict.get("demos",[])
 
-          #print 'Executing ',testscript
-          try:
-            run(testscript)
-            #print 'TESTFILE -- OK!',testscript
-          except MakeError:
-            print 'TESTFILE -- ERROR!',testscript
-            raise MakeError
-  
+        if len(demos)>0:
+          print "RUNNING DEMOS"
+          for testfile in demos:
+            # run the tests
+            basename = build_test(testfile)
+            if LINK_MODEL == "dynamic":
+                testscript = "bin"+os.sep+"flx_run ./"+basename+SHLX
+            else:
+              testscript = basename+SHLX
+
+            #print 'Executing ',testscript
+            try:
+              run(testscript)
+              #print 'TESTFILE -- OK!',testscript
+            except MakeError:
+              print 'TESTFILE -- ERROR!',testscript
+              raise MakeError
+    
   if os.name != 'nt': # requires posix
     if "test" in options or "tutorial" in options or "fcount" in options:
       tkind = "std"
@@ -1834,31 +1891,31 @@ We have no idea if it continues copying.
 @tangle('')
 
 @tangle('all.quiet: dummy')
-@tangle('\tpython script/maker quiet extract build test optimise_c')
+@tangle('\tpython script/maker quiet extract build host run test optimise_c')
 @tangle('\tmake tools libdoc')
 @tangle('')
 
 @tangle('profile: dummy')
-@tangle('\tpython script/maker compiler profile')
+@tangle('\tpython script/maker flx_compiler profile')
 @tangle('')
 @tangle('bytecode: dummy')
-@tangle('\tpython script/maker compiler bytecode')
+@tangle('\tpython script/maker flx_compiler bytecode')
 @tangle('')
 @tangle('bytecode.profile: dummy')
-@tangle('\tpython script/maker compiler bytecode profile')
+@tangle('\tpython script/maker flx_compiler bytecode profile')
 @tangle('')
 @tangle('bytecode.debug: dummy')
-@tangle('\tpython script/maker compiler bytecode debug')
+@tangle('\tpython script/maker flx_compiler bytecode debug')
 @tangle('')
 @tangle('extract_compiler: dummy')
 @tangle('\t${BUILTIN_ISCR} lpsrc/flx.pak')
-@tangle('\tpython script/maker compiler')
+@tangle('\tpython script/maker flx_compiler')
 @tangle('')
 @tangle('extract: dummy')
-@tangle('\tpython script/maker extract')
+@tangle('\tpython script/maker build extract')
 @tangle('')
 @tangle('extract.force: dummy')
-@tangle('\tpython script/maker extract force')
+@tangle('\tpython script/maker build extract force')
 @tangle('')
 @tangle('tut: dummy')
 @tangle('\tpython script/maker tutorial')

@@ -290,12 +290,12 @@ Flx_version.version_data := version_data
 @pop_head()
 
 @head(2,'The Felix Run time')
-@include_file ('flx_rtl.ipk')
+@include_file ('flx_rtl.pak')
 @include_file ('flx_gc.ipk')
 @include_file ('flx_lib.ipk')
 @include_file ('flx_lex_lib.ipk')
-@include_file ('flx_demux.ipk')
-@include_file ('flx_faio.ipk')
+@include_file ('flx_demux.pak')
+@include_file ('flx_faio.pak')
 
 @head(2,'The Tests')
 @include_file ('flx_test.ipk')

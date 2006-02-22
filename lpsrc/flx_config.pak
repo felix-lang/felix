@@ -412,6 +412,7 @@ class object:pass
 @select (h)
 import flxbuild
 import flxbuild.object_class
+from flxbuild.flxutil import *  # get_stdout
 import os
 import sys
 import string
@@ -632,6 +633,73 @@ class compiler_base:
         alias=self.find_type(shell,get_stdout,"("+t1+")0+("+t2+")0",None)
         opt.arith_conv[(t1,t2)]=alias
 
+  def detect_win32(self,shell):
+    return self.check_macro_defined(shell,"_WIN32")
+
+  def detect_win64(self,shell):
+    return self.check_macro_defined(shell,"_WIN64")
+
+  def detect_posix(self,shell):
+    if self.check_macro_defined(shell,"_WIN32"):
+      return 0
+    else:
+      return 1
+
+  def detect_cygwin(self,shell):
+    return self.check_macro_defined(shell,"__CYGWIN__")
+
+  def detect_osx(self,shell):
+    return self.check_macro_defined(shell,"__APPLE__")
+
+  def detect_bsd(self,shell):
+    return self.check_macro_defined(shell,"BSD")
+
+  def detect_solaris(self,shell):
+    # can't find a symbol for solaris...
+    # return self.check_macro_defined(shell,"__SOLARIS__")
+    result,output = get_stdout("uname")  # print SunOS on solaris
+    if not result and output[0] == "SunOS\n":
+      return 1
+    else:
+      return 0
+
+  def detect_linux(self,shell):
+    return self.check_macro_defined(shell,"__linux__")
+
+  # only allows 4 models: cygwin, osx, win32 and posix
+  # nocygwin = mingw = win32
+  def detect_model(self,shell):
+    opt = self.options
+    opt.MACOSX = self.detect_osx(shell)
+    opt.BSD = self.detect_bsd(shell)
+    opt.SOLARIS = self.detect_solaris(shell)
+    opt.LINUX= self.detect_linux(shell)
+    opt.WIN32 = self.detect_win32(shell)
+    opt.WIN64 = self.detect_win64(shell)
+    opt.CYGWIN = self.detect_cygwin(shell)
+    opt.POSIX = self.detect_posix(shell)
+
+    sum = opt.MACOSX + opt.WIN32 + opt.CYGWIN
+    if sum > 1:
+      print "INCOMPATIBLE MODELS DETECTED"
+      print "MACOSX",opt.MACOSX
+      print "CYGWIN",opt.CYGWIN
+      print "WIN32",opt.WIN32
+    else:
+     if opt.model == "detect":
+       if opt.CYGWIN: opt.model = "cygwin"
+       if opt.MACOSX: opt.model = "osx"
+       if opt.WIN32: opt.model = "win32"
+       if opt.WIN64: opt.model = "win64"
+       if opt.SOLARIS: opt.model = "solaris"
+       if opt.LINUX: opt.model = "linux"
+       if opt.BSD: opt.model = "bsd"
+       if opt.model == "detect": opt.model = "posix"
+    if opt.model in ["mingw","nocygwin"]: opt.model = "win32"
+    if opt.model in ["posix"] and opt.CYGWIN: opt.model = "cygwin"
+    assert opt.model in ["cygwin","osx","win32","win64","posix","bsd","solaris"]
+
+
 @h = tangler("flxbuild/gxx_class.py")
 @select (h)
 import string
@@ -772,67 +840,6 @@ class gxx(flxbuild.compiler_class.compiler_base):
       opt.PIC = ""
       print "All code is position independent"
 
-  def detect_win32(self,shell):
-    return self.check_macro_defined(shell,"_WIN32")
-
-  def detect_posix(self,shell):
-    if self.check_macro_defined(shell,"_WIN32"):
-      return 0
-    else:
-      return 1
-
-  def detect_cygwin(self,shell):
-    return self.check_macro_defined(shell,"__CYGWIN__")
-
-  def detect_osx(self,shell):
-    return self.check_macro_defined(shell,"__APPLE__")
-
-  def detect_bsd(self,shell):
-    return self.check_macro_defined(shell,"BSD")
-
-  def detect_solaris(self,shell):
-    # can't find a symbol for solaris...
-    # return self.check_macro_defined(shell,"__SOLARIS__")
-    result,output = get_stdout("uname")  # print SunOS on solaris
-    if not result and output[0] == "SunOS\n":
-      return 1
-    else:
-      return 0
-
-  def detect_linux(self,shell):
-    return self.check_macro_defined(shell,"__linux__")
-
-  # only allows 4 models: cygwin, osx, win32 and posix
-  # nocygwin = mingw = win32
-  def detect_model(self,shell):
-    opt = self.options
-    opt.MACOSX = self.detect_osx(shell)
-    opt.BSD = self.detect_bsd(shell)
-    opt.SOLARIS = self.detect_solaris(shell)
-    opt.LINUX= self.detect_linux(shell)
-    opt.WIN32 = self.detect_win32(shell)
-    opt.CYGWIN = self.detect_cygwin(shell)
-    opt.POSIX = self.detect_posix(shell)
-
-    sum = opt.MACOSX + opt.WIN32 + opt.CYGWIN
-    if sum > 1:
-      print "INCOMPATIBLE MODELS DETECTED"
-      print "MACOSX",opt.MACOSX
-      print "CYGWIN",opt.CYGWIN
-      print "WIN32",opt.WIN32
-    else:
-     if opt.model == "detect":
-       if opt.CYGWIN: opt.model = "cygwin"
-       if opt.MACOSX: opt.model = "osx"
-       if opt.WIN32: opt.model = "win32"
-       if opt.SOLARIS: opt.model = "solaris"
-       if opt.LINUX: opt.model = "linux"
-       if opt.BSD: opt.model = "bsd"
-       if opt.model == "detect": opt.model = "posix"
-    if opt.model in ["mingw","nocygwin"]: opt.model = "win32"
-    if opt.model in ["posix"] and opt.CYGWIN: opt.model = "cygwin"
-    assert opt.model in ["cygwin","osx","win32","posix","bsd","solaris"]
-
   def check_options(self,shell,get_stdout):
     opt = self.options
     CXX = opt.CXX
@@ -891,7 +898,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
       #LINK_DYNAMIC_FLX = opt.PIC+"-shared -Wl,--disable-auto-import "
       LINK_DYNAMIC_FLX = opt.PIC+"-shared "
 
-    elif opt.model=="win32":
+    elif opt.model in ["win32","win64"]:
       opt.EXT_LIB = ".a"
       opt.EXT_EXE= ".exe"
       opt.EXT_SHLIB = ".dll"
@@ -975,7 +982,7 @@ class gxx(flxbuild.compiler_class.compiler_base):
     opt.HAVE_DLOPEN = 0
     opt.HAVE_LOADLIBRARY = 0
     opt.DLLIB=""
-    if opt.model in ["win32"]:
+    if opt.model in ["win32","win64"]:
     # check if can get LoadLibrary to work
       try:
         shell(opt.CCOBJ_DYNAMIC_FLX+"tmp"+os.sep+"win32_dummy_lib.cxx -o tmp"+os.sep+"win32_dummy_lib.o")
@@ -1425,6 +1432,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     self.detect_msvcxx_language_extensions(shell)
 
     self.detect_msvcxx_flags(shell)
+    self.detect_model()
     if opt.model == "detect": opt.model = "win32" 
 
     print "MODEL =",opt.model
@@ -1984,6 +1992,7 @@ print "Detected Build model:",build_model
 
 host_model = None
 target_model = None
+run_model = None
 
 def check_model(m):
   try:
@@ -2036,6 +2045,9 @@ while(i < len (sys.argv)):
   elif has_prefix("--target=",arg):
     target_model=check_model(arg[9:])
     print "Specified target model",target_model
+  elif has_prefix("--run=",arg):
+    run_model=check_model(arg[9:])
+    print "Specified run model",run_model
   elif has_prefix("--buildcc=",arg):
     BUILDCC = arg[10:]
   elif has_prefix("--hostcc=",arg):
@@ -2230,19 +2242,12 @@ print "Checking TARGET MODEL",target_model
 print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 print
 
-if target_model in ["win32"]:
+if target_model in ["win32","win64"]:
   TARGET_CXX=flxbuild.msvcxx_class.msvcxx()
   TARGET_CXX.set_options(CXX=TARGETCC,use="target",model=target_model,build=build_model)
   TARGET_CXX.check_options(xqt,get_stdout)
   TARGET_CXX.report_config()
   TARGET_CXX.save_options("config/target_cxx.py")
-  CYGWIN=0
-  MACOSX=0
-  SOLARIS=0
-  LINUX=0
-  BSD=0
-  WIN32=1
-  POSIX=0
   FLX_SOCKLEN_T = "int"
   HAVE_PTHREADS=0
   PTHREAD_SWITCH=""
@@ -2254,20 +2259,25 @@ else:
   TARGET_CXX.check_options(xqt,get_stdout)
   TARGET_CXX.report_config()
   TARGET_CXX.save_options("config/target_cxx.py")
-  CYGWIN = TARGET_CXX.options.CYGWIN
-  MACOSX = TARGET_CXX.options.MACOSX
-  WIN32 =  TARGET_CXX.options.WIN32
-  LINUX =  TARGET_CXX.options.LINUX
-  SOLARIS =  TARGET_CXX.options.SOLARIS
-  POSIX =  TARGET_CXX.options.POSIX
-  BSD =  TARGET_CXX.options.BSD
   FLX_SOCKLEN_T = TARGET_CXX.options.FLX_SOCKLEN_T
   HAVE_PTHREADS =  TARGET_CXX.options.HAVE_PTHREADS
   PTHREAD_SWITCH =  TARGET_CXX.options.PTHREAD_SWITCH
   HAVE_MSVC=0
   HAVE_GXX=1
 
+# target model switches
+CYGWIN = TARGET_CXX.options.CYGWIN
+MACOSX = TARGET_CXX.options.MACOSX
+WIN32 =  TARGET_CXX.options.WIN32
+LINUX =  TARGET_CXX.options.LINUX
+SOLARIS =  TARGET_CXX.options.SOLARIS
+POSIX =  TARGET_CXX.options.POSIX
+BSD =  TARGET_CXX.options.BSD
+
 target_model = TARGET_CXX.options.model
+if not run_model: 
+  run_model = target_model
+  print "Defaulting run model to target model:",run_model
 
 # see if we have interscript
 try:
@@ -2512,9 +2522,14 @@ try:
   p(f,"SUPPORT_DYNAMIC_LOADING")
   pr(f,"SUPPORT_STATIC_LINKAGE = 1")
   p(f,"DEFAULT_LINK_MODEL")
+  p(f,"build_model")
+  p(f,"host_model")
+  p(f,"target_model")
+  p(f,"run_model")
   p(f,"CYGWIN")
   p(f,"MACOSX")
   p(f,"WIN32")
+  p(f,"WIN64")
   p(f,"POSIX")
   p(f,"SOLARIS")
   p(f,"BSD")
