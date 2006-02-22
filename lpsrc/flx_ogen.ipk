@@ -189,6 +189,7 @@ let rec get_offsets' syms bbdfns typ : string list =
     !lst
 
   | `BTYP_function _ -> ["0"]
+  | `BTYP_cfunction _ -> []
 
   | `BTYP_unitsum _ -> []
 

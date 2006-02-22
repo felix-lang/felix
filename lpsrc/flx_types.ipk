@@ -300,6 +300,7 @@ and typecode_t =
   | `TYP_intersect of typecode_t list           (** intersection type *)
 
   | `TYP_function of typecode_t * typecode_t    (** function type *)
+  | `TYP_cfunction of typecode_t * typecode_t   (** C function type *)
   | `TYP_pointer of typecode_t                  (** pointer type *)
   | `TYP_array of typecode_t * typecode_t       (** array type base ^ index *)
   | `TYP_as of typecode_t * string              (** fixpoint *)
@@ -395,6 +396,7 @@ and expr_t =
   | `AST_orlist of range_srcref * expr_t list
   | `AST_andlist of range_srcref * expr_t list
   | `AST_arrow of range_srcref * (expr_t * expr_t)
+  | `AST_longarrow of range_srcref * (expr_t * expr_t)
   | `AST_superscript of range_srcref * (expr_t * expr_t)
 
   | `AST_literal of range_srcref * literal_t
@@ -823,6 +825,7 @@ type 't b0typecode_t' =
   | `BTYP_unitsum of int
   | `BTYP_sum of 't list 
   | `BTYP_function of 't * 't
+  | `BTYP_cfunction of 't * 't
   | `BTYP_pointer  of 't 
   | `BTYP_lvalue  of 't 
   | `BTYP_array of 't * 't 
@@ -1168,6 +1171,7 @@ let map_type f = function
   | `TYP_sum ts -> `TYP_sum (map f ts)
   | `TYP_intersect ts -> `TYP_intersect (map f ts)
   | `TYP_function (a,b) -> `TYP_function (f a, f b)
+  | `TYP_cfunction (a,b) -> `TYP_cfunction (f a, f b)
   | `TYP_pointer t -> `TYP_pointer (f t)
   | `TYP_lvalue t -> `TYP_lvalue (f t)
   | `TYP_array (t1, t2) -> `TYP_array (f t1, f t2)
@@ -1219,6 +1223,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_orlist (sr,es) -> `AST_orlist (sr, map f es)
   | `AST_andlist (sr,es) -> `AST_andlist (sr, map f es)
   | `AST_arrow (sr,(a,b)) -> `AST_arrow (sr,(f a, f b))
+  | `AST_longarrow (sr,(a,b)) -> `AST_longarrow (sr,(f a, f b))
   | `AST_superscript (sr,(a,b)) -> `AST_superscript (sr,(f a, f b))
 
   | `AST_literal _ -> e
@@ -1302,6 +1307,7 @@ let map_b0type f = function
       `BTYP_sum ts
 
   | `BTYP_function (a,b) -> `BTYP_function (f a, f b)
+  | `BTYP_cfunction (a,b) -> `BTYP_cfunction (f a, f b)
   | `BTYP_pointer t->  `BTYP_pointer (f t)
   | `BTYP_lvalue t->  `BTYP_lvalue (f t)
   | `BTYP_array (t1,t2)->  `BTYP_array (f t1, f t2)
@@ -1342,6 +1348,7 @@ let iter_b0type f = function
 
   | `BTYP_sum ts -> iter f ts
   | `BTYP_function (a,b) -> f a; f b
+  | `BTYP_cfunction (a,b) -> f a; f b
   | `BTYP_pointer t->  f t
   | `BTYP_lvalue t->  f t
   | `BTYP_array (t1,t2)->  f t1; f t2
@@ -1715,6 +1722,7 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_orlist (s,_)
   | `AST_andlist (s,_)
   | `AST_arrow (s,_)
+  | `AST_longarrow (s,_)
   | `AST_superscript (s,_)
 
   | `AST_map (s,_,_) 
@@ -2176,6 +2184,9 @@ and string_of_expr (e:expr_t) =
   | `AST_arrow (_,(a,b)) ->
     "(" ^ se a ^ " -> " ^ se b ^ ")"
 
+  | `AST_longarrow (_,(a,b)) ->
+    "(" ^ se a ^ " --> " ^ se b ^ ")"
+
   | `AST_superscript (_,(a,b)) ->
     "(" ^ se a ^ " ^ " ^ se b ^ ")"
     
@@ -2396,6 +2407,9 @@ and st prec tc : string =
     | `TYP_function (args, result) ->  
       9,st 9 args ^ " -> " ^ st 9 result
 
+    | `TYP_cfunction (args, result) ->  
+      9,st 9 args ^ " --> " ^ st 9 result
+
     | `TYP_array (vt,it) -> 3, st 1 vt ^ "^" ^ st 3 it
     
     | `TYP_pointer t -> 1,"&" ^ st 1 t
@@ -2574,6 +2588,9 @@ and sb dfns depth fixlist counter prec tc =
 
     | `BTYP_function (args, result) ->  
       6,(sbt 6 args) ^ " -> " ^ (sbt 6 result)
+
+    | `BTYP_cfunction (args, result) ->  
+      6,(sbt 6 args) ^ " --> " ^ (sbt 6 result)
 
     | `BTYP_array (t1,t2) -> 
       begin match t2 with 
@@ -3476,7 +3493,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t)
     "callback fun " ^ name ^ print_ivs vs ^
     ": " ^ string_of_typecode 
     (
-      `TYP_function 
+      `TYP_cfunction 
       (
         (
           match pts with
@@ -3895,7 +3912,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
 
   | `DCL_callback (props, args, result, reqs) ->
     let argtype:typecode_t = type_of_argtypes args in
-    let t:typecode_t = `TYP_function (argtype,result) in
+    let t:typecode_t = `TYP_cfunction (argtype,result) in
     spaces level ^ 
     string_of_properties props ^
     "callback fun " ^ name^seq ^ print_vs vs ^
@@ -4750,6 +4767,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | `AST_setintersection (_,ts) -> `TYP_setintersection (map te ts)
   | `AST_setunion (_,ts) -> `TYP_setunion (map te ts)
   | `AST_arrow (_,(a,b)) -> `TYP_function (te a, te b)
+  | `AST_longarrow (_,(a,b)) -> `TYP_cfunction (te a, te b)
   | `AST_superscript (_,(a,b)) -> `TYP_array (te a, te b)
   | `AST_lvalue (sr,e) -> `TYP_lvalue (te e)
   | `AST_ref (sr,e) -> `TYP_pointer (te e)

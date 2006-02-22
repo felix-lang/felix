@@ -97,6 +97,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_typed_case _ 
   | `AST_case_arg _ 
   | `AST_arrow _  
+  | `AST_longarrow _  
   | `AST_superscript _  
   | `AST_match _  
   | `AST_regmatch _  

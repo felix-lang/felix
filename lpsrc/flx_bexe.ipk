@@ -41,6 +41,8 @@ let rec check_if_parent syms child parent =
 
 let cal_call syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) =
   match unfold syms.dfns pt with
+  | `BTYP_lvalue (`BTYP_cfunction (t, `BTYP_void))
+  | `BTYP_cfunction (t, `BTYP_void) 
   | `BTYP_lvalue (`BTYP_function (t, `BTYP_void))
   | `BTYP_function (t, `BTYP_void) -> 
     if type_match syms.dfns t argt 

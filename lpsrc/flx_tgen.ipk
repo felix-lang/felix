@@ -30,6 +30,8 @@ open Flx_csubst
 open Flx_exceptions
 open Flx_treg
 open List
+open Flx_ctypes
+open Flx_ctype
 
 @doc()
 Now some code to generate the bases, given the
@@ -113,7 +115,8 @@ let gen_type_name syms bbdfns (index,typ) =
   let descr = 
     "\n//TYPE "^si index^": " ^ sbt syms.dfns typ ^ "\n" 
   in
-  match unfold syms.dfns typ with
+  let t = unfold syms.dfns typ in
+  match t with
   | `BTYP_fix i -> ""
   | `BTYP_var i -> failwith "[gen_type_name] Can't gen name of type variable"
 
@@ -127,7 +130,18 @@ let gen_type_name syms bbdfns (index,typ) =
     let name = cn typ in
     "struct " ^ name ^ ";\n"
 
-
+  | `BTYP_cfunction (d,c) ->
+    descr ^
+    let name = cn typ in
+    let ds = match d with
+      | `BTYP_tuple ls -> ls
+      | x -> [x]
+    in
+    let ctn t = `Ct_base (cpp_typename syms t) in
+    let t = `Ct_fun (ctn c,map ctn ds) in
+    let cdt = `Cdt_value t in
+    "typedef " ^ string_of_cdecl_type name cdt ^ ";\n"
+    
   | `BTYP_unitsum k ->
       "typedef int " ^ tn typ ^ ";\n"
 
@@ -265,7 +279,7 @@ let gen_type_name syms bbdfns (index,typ) =
       )
     end
 
-  | _ -> failwith "Unexpected metatype in gen_type_name"
+  | _ -> failwith ("Unexpected metatype "^ sbt syms.dfns t ^ " in gen_type_name")
 
 let mk_listwise_ctor syms i name typ cts ctss = 
   if length cts = 1 then
@@ -274,55 +288,6 @@ let mk_listwise_ctor syms i name typ cts ctss =
     ctn^"(_a){}\n"
   else ""
 
-
-(*
-  let argt = map snd cts in
-  let argt = typeoflist argt in
-  let ctor_type = `BTYP_fun
-  let ctor_type =
-
-  let tn t = cpp_typename syms t in
-  "  " ^ name ^ "(" 
-  ^
-  catmap ", "
-  (fun (name,typ) -> typ ^ " _a_" ^ name )
-  ctss
-  ^
-  ")\n" ^
-  "    : " 
-  ^
-  catmap ", "
-  (fun (name,_) -> name ^"(_a_" ^ name ^ ")")
-  ctss
-  ^
-  "  {}\n" ^
-  begin
-    match cts with
-    | [] | [_] -> ""
-    | h :: t -> let th = snd h in
-    try iter (fun (_,t) -> if t <> th then raise Not_found) cts;
-      let equiv_array = `BTYP_array (th, `BTYP_unitsum (length cts)) in
-      "  " ^ name ^ "("^ tn equiv_array ^ " const &_a)\n" ^
-      "    : " 
-      ^
-      catmap ", "
-      (fun ((name,_),i) -> name ^"(_a.data[" ^si i^ "])")
-      (combine ctss (nlist (length ctss)))
-      ^
-      "  {}\n" 
-
-    with Not_found ->
-      let equiv_tuple = `BTYP_tuple (map snd cts) in
-      "  " ^ name ^ "("^ tn equiv_tuple ^ " const &_a)\n" ^
-      "    : " 
-      ^
-      catmap ", "
-      (fun ((name,_),i) -> name ^"(_a.mem_" ^si i^ ")")
-      (combine ctss (nlist (length ctss)))
-      ^
-      "  {}\n" 
-  end
-*)
 
 (* This routine generates complete types when needed *)
 let gen_type syms bbdfns (index,typ) =
@@ -340,11 +305,14 @@ let gen_type syms bbdfns (index,typ) =
     sbt syms.dfns typ ^ 
     "\n" 
   in
-  match unfold syms.dfns typ with
+  let t = unfold syms.dfns typ in
+  match t with
   | `BTYP_var _ -> failwith "[gen_type] can't gen type variable"
   | `BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
 
   (* PROCEDURE *)
+  | `BTYP_cfunction _ -> ""
+
   | `BTYP_function (a,`BTYP_void) ->
     descr ^
     let name = cn typ  
@@ -488,7 +456,7 @@ let gen_type syms bbdfns (index,typ) =
       )
     end
 
-  | _ -> failwith "Unexpected metatype in gen_type"
+  | _ -> failwith ("[gen_type] Unexpected metatype " ^ sbt syms.dfns t)
 
 let gen_type_names syms bbdfns ts = 
   (* print_endline "GENERATING TYPE NAMES"; *)

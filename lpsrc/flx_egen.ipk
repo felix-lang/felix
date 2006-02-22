@@ -440,6 +440,10 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       "(FLX_NEWP("^name^")" ^ strd the_display props ^")"
       )
 
+    | `BBDCL_callback _ -> 
+      print_endline "Mapping closure of callback to C function pointer";
+      ce_atom id
+
     | `BBDCL_cstruct _ 
     | `BBDCL_struct _ 
     | `BBDCL_fun _

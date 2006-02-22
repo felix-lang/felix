@@ -201,6 +201,7 @@ let rec dual t =
     end
 
   | `BTYP_function (a,b) -> `BTYP_function (b,a)
+  | `BTYP_cfunction (a,b) -> `BTYP_cfunction (b,a)
   | `BTYP_array (a,b) -> `BTYP_array (b,a)
 
   | `BTYP_pointer t -> `BTYP_pointer (dual t)
@@ -219,6 +220,7 @@ let rec check_recursion t = match t with
    | `BTYP_pointer _ 
    | `BTYP_sum _ 
    | `BTYP_function _
+   | `BTYP_cfunction _
      -> ()
 
    | `BTYP_fix i 
@@ -386,6 +388,7 @@ let fix i t =
     | `BTYP_intersect ts -> `BTYP_intersect (map aux ts)
     | `BTYP_typeset ts -> `BTYP_typeset (map aux ts)
     | `BTYP_function (a,b) -> `BTYP_function (aux a, aux b)
+    | `BTYP_cfunction (a,b) -> `BTYP_cfunction (aux a, aux b)
     | `BTYP_pointer a -> `BTYP_pointer (aux a)
     | `BTYP_lvalue a -> `BTYP_lvalue (aux a)
     | `BTYP_array (a,b) -> `BTYP_array (aux a, aux b)
@@ -418,6 +421,7 @@ let lstrip dfns t =
 
   (* I think this is WRONG .. *)
   | `BTYP_function (a,b) -> `BTYP_function (uf a, uf b)
+  | `BTYP_cfunction (a,b) -> `BTYP_cfunction (uf a, uf b)
 
   | `BTYP_pointer a -> `BTYP_pointer (uf a)
   | `BTYP_lvalue a -> aux (1::trail) a
@@ -549,7 +553,8 @@ let rec unification allow_lval dfns
         ls
      
       | `BTYP_array (t11, t12), `BTYP_array (t21, t22)
-      | `BTYP_function (t11, t12), `BTYP_function (t21, t22) ->
+      | `BTYP_function (t11, t12), `BTYP_function (t21, t22) 
+      | `BTYP_cfunction (t11, t12), `BTYP_cfunction (t21, t22) ->
         eqns := (t11,t21) :: (t12,t22) :: !eqns
 
       | `BTYP_type,`BTYP_type-> ()
@@ -824,6 +829,7 @@ let rec type_eq' dfns allow_lval ltrail ldepth rtrail rdepth trail t1 t2 =
 
   | `BTYP_array (s1,d1),`BTYP_array (s2,d2) 
   | `BTYP_function (s1,d1),`BTYP_function (s2,d2) 
+  | `BTYP_cfunction (s1,d1),`BTYP_cfunction (s2,d2) 
   | `BTYP_apply(s1,d1),`BTYP_apply(s2,d2)
     -> te s1 s2 && te d1 d2
 
@@ -895,6 +901,7 @@ let unfold dfns t =
   | `BTYP_tuple ls -> `BTYP_tuple (map uf ls)
   | `BTYP_array (a,b) -> `BTYP_array (uf a, uf b)
   | `BTYP_function (a,b) -> `BTYP_function (uf a, uf b)
+  | `BTYP_cfunction (a,b) -> `BTYP_cfunction (uf a, uf b)
   | `BTYP_pointer a -> `BTYP_pointer (uf a)
   | `BTYP_lvalue a -> `BTYP_lvalue (uf a)
   | `BTYP_fix i when (-i) = depth -> t
@@ -920,6 +927,7 @@ let fold dfns t =
 
     | `BTYP_array (a,b)
     | `BTYP_function (a,b) -> ax a; ax b
+    | `BTYP_cfunction (a,b) -> ax a; ax b
 
     | `BTYP_pointer a  -> ax a
     | `BTYP_lvalue a  -> ax a
@@ -969,6 +977,7 @@ let var_occurs t =
 
     | `BTYP_array (a,b)
     | `BTYP_function (a,b) -> aux a; aux b
+    | `BTYP_cfunction (a,b) -> aux a; aux b
 
     | `BTYP_pointer a  -> aux a
     | `BTYP_lvalue a  -> aux a

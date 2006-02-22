@@ -1,5 +1,9 @@
 @head(1,'SDL')
 $Log$
+Revision 1.26  2006/02/22 04:53:18  skaller
+sdl package requirement on libfaio added. Add new type
+to the compiler, d --> c, which is C function type.
+
 Revision 1.25  2006/02/19 05:29:15  skaller
 Fiddle with SDL/GL support stuff.
 
@@ -107,10 +111,11 @@ if HAVE_SDL:
   cpp_cpps = SDL_FAIO_CPPS
   pkg_requires = ['faio']
   rtl_interfaces = ['faio_sdl_event']
+  lib_requires = ['libfaio', 'libdemux','libflx']
   demos = glob.glob('tut'+os.sep+'examples'+os.sep+'sdl*.flx')
 
   # should be a .pak file ..
-  isrc_source = ['lpsrc/flx_sdl.ipk']
+  iscr_source = ['lpsrc/flx_sdl.ipk']
 
 @h = tangler('pkg/gl.py')
 @select(h)
@@ -259,13 +264,17 @@ module SDL_audio_h
     samples: uint16;
     padding: uint16;
     size: uint32;
-    callback: SDL_audio_h_cft_1;
+    callback_: SDL_audio_h_cft_1;
     userdata: address;
   }
+ 
+  fun get_callback: SDL_AudioSpec -> SDL_audio_h_cft_1 = "$1.callback";
+  fun get_callback: lvalue[SDL_AudioSpec] -> lvalue[SDL_audio_h_cft_1] = "$1.callback";
   
   //C FUNCTION POINTER TYPES
   header '''typedef void (*SDL_audio_h_cft_2)(struct SDL_AudioCVT *,  Uint16);''';
   type SDL_audio_h_cft_2 = 'SDL_audio_h_cft_2';
+
   header '''typedef void (*SDL_audio_h_cft_1)(void *,  Uint8 *, int);''';
   type SDL_audio_h_cft_1 = 'SDL_audio_h_cft_1';
   
@@ -290,6 +299,9 @@ module SDL_audio_h
       while(p) p = p->resume();
     }
   """;
+
+// not working yet
+//  callback proc SDL_audio_callback: SDL_audio_callback * ptr[uint8] * int;
     
   //STRUCT or UNION TAG ALIASES
   
@@ -2744,8 +2756,8 @@ fmt.samples=2048u16;
 fmt.padding=0u16;
 fmt.size=0u16;
 
-const SDL_audio_callback : SDL_audio_h_cft_1;
-fmt.callback=SDL_audio_callback;
+//const SDL_audio_callback : SDL_audio_h_cft_1;
+get_callback fmt = code [SDL_audio_h_cft_1] 'SDL_audio_callback';
 var mixer = the flx_mixaudio;
 fmt.userdata= cast[address] mixer;
 

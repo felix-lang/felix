@@ -349,6 +349,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_case_arg _ 
   | `AST_void _ 
   | `AST_arrow _ 
+  | `AST_longarrow _ 
   | `AST_superscript _ 
   | `AST_as _
   | `AST_product _ 

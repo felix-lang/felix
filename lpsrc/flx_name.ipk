@@ -125,6 +125,7 @@ let cpp_name bbdfns index =
   in
   (match entry with
   | `BBDCL_function _ -> "_f"   
+  | `BBDCL_callback _ -> "_cf"   
   | `BBDCL_procedure _  -> "_p"
   | `BBDCL_regmatch _  -> "_rm"
   | `BBDCL_reglex _  -> "_rl"
@@ -221,6 +222,9 @@ let rec cpp_type_classname syms t =
   | `BTYP_function _ -> 
     "_ft" ^ si (tix t)
 
+  | `BTYP_cfunction _ -> 
+    "_cft" ^ si (tix t)
+
   | `BTYP_array _ -> 
     "_at" ^ si (tix t)
 
@@ -253,11 +257,13 @@ let rec cpp_type_classname syms t =
       | Some (id,`SYMDEF_cclass _) -> id^"*"
       | Some (_,`SYMDEF_abs (_,`Str "char",_)) -> "char" (* hack .. *)
       | Some (_,`SYMDEF_abs (_,`Str "int",_)) -> "int" (* hack .. *)
+      | Some (_,`SYMDEF_abs (_,`Str "short",_)) -> "short" (* hack .. *)
       | Some (_,`SYMDEF_abs (_,`Str "long",_)) -> "long" (* hack .. *)
       | Some (_,`SYMDEF_abs (_,`Str "float",_)) -> "float" (* hack .. *)
       | Some (_,`SYMDEF_abs (_,`Str "double",_)) -> "double" (* hack .. *)
       | Some (_,`SYMDEF_abs (_,`StrTemplate "char",_)) -> "char" (* hack .. *)
       | Some (_,`SYMDEF_abs (_,`StrTemplate "int",_)) -> "int" (* hack .. *)
+      | Some (_,`SYMDEF_abs (_,`StrTemplate "short",_)) -> "short" (* hack .. *)
       | Some (_,`SYMDEF_abs (_,`StrTemplate "long",_)) -> "long" (* hack .. *)
       | Some (_,`SYMDEF_abs (_,`StrTemplate "float",_)) -> "float" (* hack .. *)
       | Some (_,`SYMDEF_abs (_,`StrTemplate "double",_)) -> "double" (* hack .. *)
@@ -287,6 +293,7 @@ let rec cpp_type_classname syms t =
 let cpp_typename syms t = 
   match unfold syms.dfns (lstrip syms.dfns t) with
   | `BTYP_function _ -> cpp_type_classname syms t ^ "*"
+  | `BTYP_cfunction _ -> cpp_type_classname syms t ^ "*"
   (*
   | `BTYP_inst (i,ts) -> 
     begin match

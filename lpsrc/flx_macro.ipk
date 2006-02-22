@@ -622,6 +622,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     `AST_callback (sr, qn)
 
   | `AST_arrow (sr, (e1, e2)) ->  `AST_arrow (sr,(me e1, me e2))
+  | `AST_longarrow (sr, (e1, e2)) ->  `AST_longarrow (sr,(me e1, me e2))
   | `AST_superscript (sr, (e1, e2)) ->  `AST_superscript (sr,(me e1, me e2))
 
   | `AST_literal (sr, literal) ->  e

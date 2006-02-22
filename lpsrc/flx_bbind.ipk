@@ -542,7 +542,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
       Hashtbl.add bbdfns i (name,None,sr,bbdcl);
       begin
         if not (Hashtbl.mem syms.ticache i) then
-        let t = fold syms.dfns (`BTYP_function (typeoflist ts_cf,bret)) in
+        let t = fold syms.dfns (`BTYP_cfunction (typeoflist ts_cf,bret)) in
         Hashtbl.add syms.ticache i t
       end
       ;

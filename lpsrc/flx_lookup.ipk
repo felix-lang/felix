@@ -1032,6 +1032,7 @@ and bind_type'
     let t = bt t in 
     begin match unfold syms.dfns t with
     | `BTYP_function (a,b) -> a
+    | `BTYP_cfunction (a,b) -> a
     | _ ->
       clierr sr
       (
@@ -1043,6 +1044,7 @@ and bind_type'
     let t = bt t in 
     begin match unfold syms.dfns t with
     | `BTYP_function (a,b) -> b
+    | `BTYP_cfunction (a,b) -> b
     | _ ->
       clierr sr
       (
@@ -1218,6 +1220,13 @@ and bind_type'
       c' = bt c 
     in 
       `BTYP_function (bt d, bt c)
+
+  | `TYP_cfunction (d,c) -> 
+    let 
+      d' = bt d  and 
+      c' = bt c 
+    in 
+      `BTYP_cfunction (bt d, bt c)
 
   | `TYP_pointer t -> 
      let t' = bt t in 
@@ -1853,6 +1862,7 @@ and inner_typeofindex
     t'
   in
   match entry with
+  | `SYMDEF_callback _ -> print_endline "Inner type of index finds callback"; assert false
   | `SYMDEF_inherit qn -> failwith ("Woops inner_typeofindex found inherit " ^ si index)
   | `SYMDEF_inherit_fun qn -> failwith ("Woops inner_typeofindex found inherit fun!! " ^ si index)
   | `SYMDEF_type_alias t ->
@@ -1958,7 +1968,9 @@ and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let rest =
     match unfold syms.dfns t1 with
     | `BTYP_lvalue (`BTYP_function (argt,rest))
-    | `BTYP_function (argt,rest) ->
+    | `BTYP_function (argt,rest)
+    | `BTYP_lvalue (`BTYP_cfunction (argt,rest))
+    | `BTYP_cfunction (argt,rest) ->
       if type_match syms.dfns argt t2
       then rest 
       else
@@ -2054,7 +2066,8 @@ and cal_apply syms sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   match be1 with
   | `BEXPR_closure (i,ts) ->
     begin match Hashtbl.find syms.dfns i with
-    | {symdef=`SYMDEF_fun _} ->
+    | {symdef=`SYMDEF_fun _} 
+    | {symdef=`SYMDEF_callback _} ->
       `BEXPR_apply_prim (i,ts, (be2,lower t2)),rest
     | {symdef=`SYMDEF_function _} ->
       `BEXPR_apply_direct (i,ts, (be2,lower t2)),rest
@@ -2443,6 +2456,7 @@ and handle_function
     `BEXPR_closure (index,ts),
     (
       match t with
+      | `BTYP_cfunction (s,d) as t -> t
       | `BTYP_function (s,d) as t -> t
       | t -> 
         ignore begin
@@ -2837,6 +2851,7 @@ and bind_expression' syms env (rs:recstop) e args
   | `AST_as _
   | `AST_void _
   | `AST_arrow _ 
+  | `AST_longarrow _ 
   | `AST_superscript _ 
   | `AST_ellipsis _ 
   | `AST_parse _ 
@@ -2849,7 +2864,17 @@ and bind_expression' syms env (rs:recstop) e args
      ("[bind_expression] Expected expression, got " ^ string_of_expr e) 
 
   | `AST_callback (sr,qn) ->
-    failwith "[bind_expression] Callbacks not implemented yet [and they're types not expressions!]"
+    let es,ts = lookup_qn_in_env2' syms env rs qn in
+    begin match es with
+    | FunctionEntry [index] ->
+       print_endline "Callback closure ..";
+       let ts = map (bt sr) ts in
+       `BEXPR_closure (index, ts),
+       ti sr index ts
+    | NonFunctionEntry  _
+    | _ -> clierr sr
+      "'callback' expression denotes non-singleton function set"
+    end
 
   | `AST_sparse (sr,e,nt,nts) ->
     let e = be e in
@@ -3418,6 +3443,9 @@ and bind_expression' syms env (rs:recstop) e args
     handle_map sr (be f) (be a)
   
   | `AST_apply (sr,(f',a')) ->
+    (*
+    print_endline ("Apply " ^ string_of_expr f' ^ " to " ^  string_of_expr a');
+    *)
     let (ea,ta) as a = be a' in
     (*
     print_endline ("Recursive descent into application " ^ string_of_expr e);
@@ -3433,6 +3461,7 @@ and bind_expression' syms env (rs:recstop) e args
       | _ -> bind_expression' syms env rs f' (a :: args) 
     in
     begin match tf with 
+    | `BTYP_cfunction _ -> cal_apply syms sr f a
     | `BTYP_function _ -> cal_apply syms sr f a
     | _ ->
       let apl name =
@@ -3451,55 +3480,7 @@ and bind_expression' syms env (rs:recstop) e args
       apl "apply"
     end
 
-  (*
-  | `AST_apply (sr,(f',a')) ->
-    (*
-    print_endline ("Bind expression, handling application " ^ string_of_expr e);
-    *)
-    let (ba, ta) as a = be a' in
-    let _ = 
-      try unfold syms.dfns ta
-      with _ -> (* print_endline " .. free fixpoint"; *) raise (Free_fixpoint ta) 
-    in
-    (*
-    print_endline "Got type of argument -- doing 'lookup' -- reckon this is the bug";
-    *)
-    let (bf,tf) as f = 
-      lookup sr f' ta 
-    in
-    begin 
-      match tf with
-      (* CRUDE -- prevents auto apply if first arg is a function .. *)
-      | `BTYP_function _ -> cal_apply syms sr f a
-      | _ -> 
-      
-      (*
-      print_endline ("Type of f is not function, got " ^ sbt syms.dfns tf);
-      *)
-      (* this function is very crude, since it binds f dash, a dash again,
-          but they are already bound -- FIXIT!
-
-          Also there is a BUG! if 'apply' is found but is not
-          a function, then we end up trying again .. perhaps
-          indefinitely ..??
-      *)
-      let apl name =
-        be 
-        (
-          `AST_apply 
-          (
-            sr,
-            (
-              `AST_name (sr,name,[]),
-              `AST_tuple (sr,[f';a'])
-            )
-          )
-        )
-      in
-      apl "apply"
-    end
-    *)
-
+  
   | `AST_arrayof (sr,es) ->
     let bets = map be es in
     let _, bts = split bets in
@@ -3884,6 +3865,7 @@ and rebind_btype syms env sr ts t: btypecode_t =
       `BTYP_sum ts
     
   | `BTYP_function (a,r) -> `BTYP_function (rbt a, rbt r) 
+  | `BTYP_cfunction (a,r) -> `BTYP_cfunction (rbt a, rbt r) 
   | `BTYP_pointer t -> `BTYP_pointer (rbt t)
   | `BTYP_lvalue t -> lvalify (rbt t)
   | `BTYP_array (t1,t2) -> `BTYP_array (rbt t1, rbt t2)
