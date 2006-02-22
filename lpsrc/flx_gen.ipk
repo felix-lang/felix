@@ -2380,14 +2380,20 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf =
         if length flx_fun_atypes = 1 then fst (hd flx_fun_atypes) 
         else `BTYP_tuple (map fst flx_fun_atypes)
       in
+      let flx_fun_reduced_atype = rt vs flx_fun_atype in
       let flx_fun_atype_name = cpp_typename syms flx_fun_atype in
+      let flx_fun_reduced_atype_name = cpp_typename syms flx_fun_reduced_atype in
       let flx_fun_args = map (fun (_,i) -> "_a"^si i) flx_fun_atypes in
       let flx_fun_arg = match length flx_fun_args with
         | 0 -> ""
         | 1 -> hd flx_fun_args
         | _ -> 
           (* argument tuple *)
-          flx_fun_atype_name ^ "(" ^ String.concat "," flx_fun_args ^")"
+          let a = flx_fun_atype_name ^ "(" ^ String.concat "," flx_fun_args ^")" in
+          if flx_fun_reduced_atype_name <> flx_fun_atype_name
+          then "reinterpret<" ^ flx_fun_reduced_atype_name ^ ">("^a^")"
+          else a
+          
       in
       let sss =
         (* return type *)
