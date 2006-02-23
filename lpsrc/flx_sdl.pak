@@ -1,5 +1,8 @@
 @head(1,'SDL')
 $Log$
+Revision 1.1  2006/02/23 17:06:08  skaller
+Refactor build system.
+
 Revision 1.29  2006/02/23 06:19:46  skaller
 Split off some test from flx.pak, need to keep open files
 under ulimit.

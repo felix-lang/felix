@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.246  2006/02/23 17:06:08  skaller
+Refactor build system.
+
 Revision 1.245  2006/02/23 09:59:27  skaller
 mingw builds
 
@@ -878,427 +881,53 @@ python script/maker $1 $2 $3 $4 $5 $6 $7 $8 $9
 @h = tangler('mk.bat','data')
 @select(h)
 python script\maker %1 %2 %3 %4 %5 %6 %7 %8 %9
-@h = tangler('script/maker','python')
-@select(h)
-#!/usr/bin/env python
-###############################################################
-# FELIX MAKE SCRIPT
-###############################################################
-@tangle("FLX_MAKER_CVS_ID='"+FLX_MAKER_CVS_ID+"'")
-import os
-import glob
-import stat
-import string
-import sys
-import re
-import traceback
-if '' not in sys.path: sys.path=['']+sys.path
-import flxbuild
-from flxbuild.flxutil import *
-
-try:
-  execfile("config"+os.sep+"config.py")
-except:
-  xt,xv,tb = sys.exc_info()
-  print "ERROR IN config/config.py"
-  traceback.print_exception(xt,xv,tb)
-  print "You must either"
-  print "(a) edit config/config.py and fix the error, or,"
-  print "(b) i) delete it, and,"
-  print "    ii) run 'python script/make_config.py'"
-  print "       again to reset it:"
-  print "       this is done automatically by 'make boot'"
-  sys.exit(1)
-
-FLXFLAGS = ""
-
-if os.name == 'nt': # build system is Windows Python
-  DIFF = "FC /L /W "
-  GREP = "#grep "
-else:
-  #DIFF = "diff -a -b " # build system is Unix Python
-  # RF - trying out args that work on solaris (-a = not cool)
-  # could use that sys type stuff here?
-  DIFF = "diff -b " # build system is Unix Python
-  GREP = "grep "
-
-# --------------------------------------------------
-# IMPORT UTILITY RESOURCES
-# ---------------------------------------------------
-
-get_stdouterr = get_stdout
-
-def flush():
-  try: sys.stdin.flush()
-  except: pass
-
-def run(x):
-  print x
-  flush()
-  result = os.system(ENV+x)
-  if result: print "  .. ERROR CODE",hex(result)
-  flush()
-
-  if result:
-    raise MakeError
-
-
-def xqt(x):
-  if "quiet" not in options: print x
-  flush()
-  result,output = get_stdouterr(x)
-  if result: 
-    if "quiet" in options: print x
-    print "  .. ERROR CODE",hex(result)
-  if output: 
-    if result or "quiet" not in options:
-      print string.join(output,"")
-  flush()
-
-  if result:
-    raise MakeError
-
-# quiet execution
-def xqtq(x):
-  if "quiet" not in options: print x
-  flush()
-  result,output = get_stdouterr(x)
-  if result: 
-    if "quiet" in options: print x
-    print "  .. ERROR CODE",hex(result)
-    raise MakeError
-
-
-if os.name=="nt":
-  ENV="set PATH=bin;%PATH%&&"
-else:
-  if CYGWIN or WIN32:
-    ENV = 'env PATH=bin:"$PATH" PYTHONPATH=.:"$PYTHONPATH" '
-  elif MACOSX:
-    ENV = 'PATH=bin:"$PATH" DYLD_LIBRARY_PATH=rtl:"$DYLD_LIBRARY_PATH" '
-  else:
-    ENV = 'PATH=bin:"$PATH" LD_LIBRARY_PATH=rtl:"$LD_LIBRARY_PATH" '
-
-def exqt(x): xqt(ENV+x)
-
-# used when a negative result is expected (return code is supposed to be nonzero)
-# used for a grep which is supposed to fail
-def nxqt(x):
-  x = ENV+x
-  if "quiet" not in options: print x
-  flush()
-  result,output = get_stdouterr(x)
-  if not result:
-    if output: print string.join(output,"")
-  flush()
-
-  if not result:
-    raise MakeError
-
-# ----------- Utilities ---------------------
-class MakeError: pass
-
-# ------------------------------------------------
-# PROCESS COMMAND LINE OPTIONS
-# ------------------------------------------------
-
-options = sys.argv[1:]
-if not options: 
-  options = ["extract","build","optimise_c","host","target","run"]
-
-phases = []
-packages = []
-models = []
-for k in options:
-  if '--phase' == k[:7]:  # Windows doesn't like = so allow any sep 
-    phase = k[8:]
-    if phase not in phases:
-      phases.append(phase)
-  if '--pkg' == k[:5]:  # Windows doesn't like = so allow any sep 
-    packages.append(k[6:])
-  if '--model' == k[:7]:  # Windows doesn't like = so allow any sep 
-    model = k[8:]
-    if model not in models:
-      models.append(model)
-
-if models:
-  if model == build_model:
-    if "build" not in phases: phases.append("build")
-
-  if model == host_model:
-    if "host" not in phases: phases.append("host")
-
-  if model == target_model:
-    if "target" not in phases: phases.append("target")
-
-  if model == run_model:
-    if "run" not in phases: phases.append("run")
-
-if "extract" in options: 
-    if "build" not in phases: phases.append("build")
-
-if "build" in options: 
-    if "build" not in phases: phases.append("build")
-    if "host" not in phases: phases.append("host")
-    if "target" not in phases: phases.append("target")
-
-if "test" in options: 
-    if "run" not in phases: phases.append("run")
-
-if not phases: 
-  phases = ["build","host","target","run"]
-
-CCMACS=""
-for i in options:
-  if i[0:2]=="-D": CCMACS=CCMACS+i+" "
-
-if "silent" in options: 
-  options.append("quiet")
-
-if options:
-  print "OPTIONS: ", options
-
-keyopt = {}
-for o in options:
-  try:
-    key,value = string.split(o,"+=")
-    old = keyopt.get(key,[])
-    if type(old) == type(""): old = [old]
-    keyopt[key] = old + [value]
-  except:
-    try:
-      key,value = string.split(o,"=")
-      keyopt[key]=value
+@select(tangler('mkplugins/man.py'))
+def plugin():    
+    print "GENERATING MAN PAGES"
+    mp = glob.glob('man/man1/*.1')
+    MAN_PAGES = []
+    for i in mp:
+      MAN_PAGES.append (i[9:])
+    try: os.mkdir("htmlman")
     except: pass
-
-if "help" in options:
-  print "extract - extract sources"
-  print "compiler - build compiler"
-  print "bytecode - build bytecode version of compiler"
-  print "profile - build profiling version of compiler"
-  print "drivers - build drivers"
-  print "regression - run regression tests"
-  print "performance - run performance tests"
-  print "bagley - run bagley shootout performance tests"
-  print "tutorial - run tutorial examples"
-  print "tests- regression and tutorial combined"
-  print "clean - remove generated C++ and binaries from test locations"
-  print "debug - build debugging versions of targets"
-  print "optimise_c - build high performance versions of c++ targets"
-  print "optimise_felix - build high performance versions of ocaml targets NOT RECOMMENDED!"
-  print "doc - build all user documentation"
-
-if "virgin" in options:
-  for d in ["tmp","rtl","lib","bin","elk","src",
-     "lib","doc","man","impldoc","htmlman","meta",
-    "speed","tut","bagley","test"]:
-      for f in glob.glob(d + os.sep + "*.*")+glob.glob(d+os.sep+"*"+os.sep+"*.*"):
-        erasefile(f)
-
-if "clean" in options:
-
-  for d in [ 
-    "test","tut"+os.sep+"examples",
-    "bagley"+os.sep+"felix",
-    "src","elk","demux","faio","lib","lpsrc","rtl","bin"
-    ]:
-    for e in ["*.hpp","*.so","*.dll","*.cpp","*.hpp",
-      "*.par","*.output","*.o","*.obj",
-      "*.exp","*.lib",'*.resh','*.par',
-      "*.cache","*.a","*.exp","*.exe"
-      ]:
-      for f in glob.glob(d + os.sep + e):
-        erasefile(f)
-  for f in glob.glob("lib"+os.sep+"*.par"):
-    erasefile(f)
-
-def flxg(x,basename):
-  x = 'bin'+os.sep+'flxg ' + x
-  exqt(x)
-
-# ------------------------------------------------
-# BEGIN USER CONFIGURABLE SECTION
-#-------------------------------------------------
-
-#interscript command (now built in part of Felix package)
-def runISCR(a):
-  if buildall:
-    exqt(ISCR + "--nocache " + a)
-  else:
-    exqt(ISCR + ' ' + a)
-
-OCAML_OBJDIR = "src"
-BYTECODE = not NATIVE_CODE_COMPILER or "bytecode" in options 
-if BYTECODE:
-  if "profile" in options: 
-    OCAMLOPT = OCAMLCP
-    OCAMLC = OCAMLCP
-  else: OCAMLOPT = OCAMLB
-else:
-  OCAMLOPT = OCAMLC
-  if "profile" in options:
-    OCAMLOPT = OCAMLOPT+' -p '
-
-OCAMLOPT = OCAMLOPT + " -I " + OCAML_OBJDIR
-OCAMLC = OCAMLC + " -I " + OCAML_OBJDIR
-
-if "debug" in options:
-  OCAMLOPT = OCAMLOPT + '-g '
-
-if "optimise_felix" in options:
-  OCAMLOPT = OCAMLOPT + " -unsafe -noassert -inline 5 "
-
-if BYTECODE == 0:
-  OCAML_OBJECT_EXTENSION = '.cmx'
-  OCAML_LIB_EXTENSION = '.cmxa'
-else:
-  OCAML_OBJECT_EXTENSION = '.cmo'
-  OCAML_LIB_EXTENSION = '.cma'
+    dtd = ('<!DOCTYPE HTML PUBLIC \\"-//W3C//DTD HTML 4.0 Transitional//EN\\"\\n'+
+      '  \\"http://www.w3.org/TR/REC-html40/loose.dtd\\">')
+    try:
+      for file in MAN_PAGES:
+        basename = string.split(file,".")[0]
+        xqt(
+          "man2html man/man1/" + file + 
+          '| sed -e "s%<A HREF=\\"[^<]*cgi-bin/man/man2html?1+\(.*\)\\">%<A HREF=\\"\\1_1.html\\">%"' +
+          '| sed -e "7d"' +
+          '| sed -e "1,3d"' +
+          '| sed -e "s%<html>%'+dtd+'\\n<html>%"' +
+          ' >' + "htmlman/" + basename+'_1.html'
+        )
+    except:pass
   
-#determine linkage model
+@select(tangler('mkplugins/impldoc.py'))
+def plugin():    
+    print "GENERATING OCAMLDOCS"
+    erasedir('impldoc')
+    os.mkdir('impldoc')
+    try:
+      xqt('ocamldoc -I src -d impldoc src/*.mli -html')
+      xqt('ocamldoc -I src -o impldoc/flx_impl.tex src/*.mli -latex')
+      xqt('(cd impldoc; latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex)')
+    except: 
+     pass # well ocamldoc is full of bugs ..
 
-LINK_MODEL = DEFAULT_LINK_MODEL
-if "static" in options:
-  LINK_MODEL = "static"
-if "dynamic" in options:
-  LINK_MODEL == "dynamic"
+@select(tangler('mkplugins/rtldoc.py'))
+def plugin():    
+    print "GENERATING RTLDOCS"
+    erasedir('rtldoc')
+    os.mkdir('rtldoc')
+    try:
+      xqt("doxygen misc/doxconf.dox")
+    except:
+      pass
 
-if LINK_MODEL == "dynamic" and not SUPPORT_DYNAMIC_LOADING:
-  print "dynamic linkage not supported"
-  sys.exit(1)
-
-if LINK_MODEL == "static" and not SUPPORT_STATIC_LINKAGE:
-  print "dynamic linkage not supported"
-  sys.exit(1)
-
-CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + "-DFLX_STATIC_LINK "
-CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-DFLX_STATIC_LINK "
-
-if LINK_MODEL == "dynamic":
-  SHLX = EXT_SHLIB
-else:
-  SHLX = ""
-
-
-if CCMACS:
-  CCOBJ_STATIC_RTL = CCOBJ_STATIC_RTL + CCMACS
-  CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + CCMACS
-  CCOBJ_STATIC_FLX = CCOBJ_STATIC_FLX + CCMACS
-
-  CCOBJ_DYNAMIC_RTL = CCOBJ_DYNAMIC_MAIN + CCMACS
-  CCOBJ_DYNAMIC_MAIN = CCOBJ_DYNAMIC_MAIN + CCMACS
-  CCOBJ_DYNAMIC_FLX = CCOBJ_DYNAMIC_FLX + CCMACS
-
-
-# ------------------------------------------------
-# END USER CONFIGURABLE SECTION
-#-------------------------------------------------
-
-# where documentation gets put
-WEAVER_DIRECTORY='doc/'
-TUTORIAL_DIRECTORY='tut/'
-TUTORIAL_DOC=TUTORIAL_DIRECTORY+'doc/'
-TUTORIAL_EXAMPLES=TUTORIAL_DIRECTORY+'examples/'
-
-# -------------------------------------------------
-# BEGIN IMPLEMENTOR CONFIGURABLE SECTION
-# ------------------------------------------------
-
-raw_pkgs = glob.glob("pkg"+os.sep+"*.py")
-unsorted_pkgs = []
-for i in raw_pkgs:
-  j = string.split(i,os.sep)[1][:-3]
-  unsorted_pkgs.append(j)
-
-pkgd = {}
-for pkg in unsorted_pkgs:
-  class X:
-    execfile("pkg"+os.sep+pkg+".py")
-  d = {}
-  for k in X.__dict__.keys():
-    if k[0] != '_':
-      v = X.__dict__[k]
-      d[k]=v
-  pkgd[pkg]=d
-
-pkgs = []
-def addpkg_nr(pkg):
-  if pkg not in pkgs:
-    pkgs.append(pkg)
-
-def addpkg_r(pkg):
-  if pkg not in pkgs:
-    if pkg not in pkgd.keys():
-      print "Unknown package",pkg
-    else:
-      reqs = pkgd[pkg].get('pkg_requires',[])
-      for i in reqs:
-        addpkg_r(i)
-      addpkg_nr(pkg)
-
-for pkg in unsorted_pkgs:
-  addpkg_r(pkg)
-
-if packages:
-  pkgs = filter(lambda x: x in packages,pkgs)
-  
-print "PACKAGES ARE ",pkgs
-print "PHASES ARE   ",phases
-print "Build model  ",build_model
-print "Host model   ",host_model
-print "Target model ",target_model
-print "Run model    ",run_model
-
-EXTRA_LIBS = []
-CFLAGS = ""
-SFLAGS = ""
-DFLAGS = ""
-
-# C files that we need to compile, with options required to build them
-COBJECTS = {
-}
-# *.so/.a libraries
-CLIBRARIES = ['nums']
-
-# *.cmxa or .cma libraries
-# and some hackery so we can if the source doesn't need
-# ocaml-fileutils we can still build if it isn't found
-OCAML_INCLUDES = ""
-
-# target executable programs to produce
-
-if 0:
-  s = ' -cclib "-Lsrc '
-  for library in CLIBRARIES:
-    s = s + ' -l'+library
-  s = s + '"'
-  LDFLAGS = s
-  del s
-else:
-  LDFLAGS = ""
-
-if 1:
-  o = ''
-  for object in COBJECTS.keys():
-    o = o + ' src/' + object + '.o'
-  OBJECT_FILES = o
-  del o
-
-SPECIAL_TESTS = [
-  ('bin'+os.sep+'flx_run','test'+os.sep+'flx_run_lib1.flx',''),
-  ('test'+os.sep+'flx_perf_drv1','test'+os.sep+'flx_perf_lib1.flx','1000'),
-]
-
-# -------------------------------------------------
-# END IMPLEMENTOR CONFIGURABLE SECTION
-# -------------------------------------------------
-
-
-# ----------- Here begins the actual build procedure ---------------------
-
-buildall = "clean" in options or "force" in options
-import glob
-
+@select(tangler('mkplugins/copy_mli2ml.py'))
 def copy_mli2ml(MLIS):
   for f in MLIS:
     f = string.replace(f,"/",os.sep)
@@ -1308,6 +937,7 @@ def copy_mli2ml(MLIS):
       #print("filecopy "+src+" -> "+dst)
       filecopy(src,dst)
 
+@select(tangler('mkplugins/copy_hpp2rtl.py'))
 def copy_hpp2rtl(HPPS):
   for f in HPPS:
     dst = 'rtl'+os.sep+string.split(f,'/')[-1]
@@ -1316,6 +946,8 @@ def copy_hpp2rtl(HPPS):
       #print("filecopy "+src+" -> "+dst)
       filecopy(src,dst)
 
+@select(tangler('mkplugins/ocamlit.py'))
+#ocaml compilation
 def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES):
   # STEP 2: Generate lexers
   for lex in LEXS:
@@ -1338,6 +970,92 @@ def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES):
     file = string.replace(implementation,'/',os.sep)
     xqt(OCAMLOPT + ' '+ OCAML_INCLUDES+ ' -c ' + file +'.ml')
 
+
+@select(tangler('mkplugins/build_ocamls.py'))
+def build_ocamls():        
+  LEXS = pkgdict.get("caml_lexes",[])
+  PARSES = pkgdict.get("caml_parses",[])
+  INTERFACES = pkgdict.get("caml_interfaces",[])
+  IMPLEMENTATIONS = pkgdict.get("caml_implementations",[])
+  EXES = pkgdict.get("caml_exes",[])
+  OLIBRARIES = pkgdict.get("caml_require_libs",[])
+  if (len(LEXS)+
+    len(PARSES)+
+    len(INTERFACES)+
+    len(IMPLEMENTATIONS)+
+    len(EXES)+
+    len(OLIBRARIES)> 0):
+    print "CAML COMPILING "+pkg
+    ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES)
+
+    # STEP 6: Build Ocaml Library
+    if IMPLEMENTATIONS != []:
+      lib = pkgdict.get('caml_provide_lib',pkg+"lib")
+      print "CAML CREATING LIBRARY ",lib
+      object_library_name = "src" + os.sep + lib + OCAML_LIB_EXTENSION
+      linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
+      library_filetime = filetime(object_library_name)
+      for implementation in IMPLEMENTATIONS:
+        linkstring = linkstring + implementation +OCAML_OBJECT_EXTENSION +" "
+      xqt(linkstring)
+
+      print "CAML LINKING EXECUTABLES"
+      x = ''
+      for library in OLIBRARIES:
+        x = x + ' ' + library + OCAML_LIB_EXTENSION
+
+      # finally, mainline *.cmx or cma files to link to executables
+      for exe in EXES:
+        dst = "bin" + os.sep + string.split(exe,"/")[-1]
+        xqt(OCAMLOPT + LDFLAGS + ' ' + OCAML_INCLUDES + ' -o '+dst+ x + OBJECT_FILES + ' src/flx_version_hook.ml ' + exe + OCAML_OBJECT_EXTENSION)
+
+@select(tangler('mkplugins/build_host_tools.py'))
+def build_host_tools():        
+  CPPS = pkgdict.get("host_cpp_cpps",[])
+  EXES = pkgdict.get("host_exes",[])
+  LIBS = pkgdict.get("host_exes_require_libs",[])
+  if len(CPPS)+len(EXES)+len(LIBS)>0:
+    print "BUILDING HOST TOOLS"
+    ars = ""
+    if CPPS:
+      print "HOST C++ COMPILING "+pkg
+      for x in CPPS:
+        if not "quiet" in options: print 'Compiling host '+pkg+' object',x
+        ars = ars + x + "_static.o "
+        dir,base = string.split(x,'/')
+        HOST_CXX.compile_static_rtl(
+          xqt,
+          dir,
+          base,
+          dir,
+          include_path=["rtl","elk"],
+          macros=["FLX_STATIC_LINK"])
+      tmp = string.split(ars)
+      objs=[]
+      for i in tmp:
+        objs.append(i[:-2]) # chop off the .o
+      HOST_CXX.link_static_archive(xqt,objs,dir+"/lib"+pkg+"_host_static")
+
+    for src,bin in EXES:
+      dir,base = string.split(src,'/')
+      HOST_CXX.compile_static_main(
+        xqt,
+        dir,
+        base,
+        dir,
+        include_path=["rtl","elk"],
+        macros=["FLX_STATIC_LINK"],
+        CFLAGS=CFLAGS)
+      HOST_CXX.link_static_program(
+        xqt,
+        [src+"_static"],
+        bin,
+        lib_path=[dir],
+        libs=["lib"+pkg+"_host_static"],
+        SFLAGS=SFLAGS)
+
+
+@select(tangler('mkplugins/build_testfile.py'))
 def build_test(testfile):        
   print 'Running Felix code generator on ',testfile
   basename = string.split(testfile,'.')[0]
@@ -1423,14 +1141,64 @@ def build_test(testfile):
 
   return basename
 
-try:
-  # STEP 0: run interscript
-  if "doc" in options:
+
+@select(tangler('mkplugins/diff_env.py'))
+if os.name == 'nt': # build system is Windows Python
+  DIFF = "FC /L /W "
+  GREP = "#grep "
+else:
+  #DIFF = "diff -a -b " # build system is Unix Python
+  # RF - trying out args that work on solaris (-a = not cool)
+  # could use that sys type stuff here?
+  DIFF = "diff -b " # build system is Unix Python
+  GREP = "grep "
+
+
+@select(tangler('mkplugins/virgin.py'))
+#cleans everything
+def plugin():
+  for d in ["tmp","rtl","lib","bin","elk","src",
+     "lib","doc","man","impldoc","htmlman","meta",
+    "speed","tut","bagley","test"]:
+      for f in glob.glob(d + os.sep + "*.*")+glob.glob(d+os.sep+"*"+os.sep+"*.*"):
+        erasefile(f)
+  runISCR('lpsrc/flx_config.pak',1)
+  sys.exit(0)
+  
+@select(tangler('mkplugins/clean.py'))
+# cleans products, but not extracted sources
+def plugin():
+  for d in [ 
+    "test","tut"+os.sep+"examples",
+    "bagley"+os.sep+"felix",
+    "src","elk","demux","faio","lib","lpsrc","rtl","bin"
+    ]:
+    for e in ["*.hpp","*.so","*.dll","*.cpp","*.hpp",
+      "*.par","*.output","*.o","*.obj",
+      "*.exp","*.lib",'*.resh','*.par',
+      "*.cache","*.a","*.exp","*.exe"
+      ]:
+      for f in glob.glob(d + os.sep + e):
+        erasefile(f)
+  for f in glob.glob("lib"+os.sep+"*.par"):
+    erasefile(f)
+
+@select(tangler('mkplugins/doc_env.py'))
+# where documentation gets put
+WEAVER_DIRECTORY='doc/'
+TUTORIAL_DIRECTORY='tut/'
+TUTORIAL_DOC=TUTORIAL_DIRECTORY+'doc/'
+TUTORIAL_EXAMPLES=TUTORIAL_DIRECTORY+'examples/'
+
+@select(tangler('mkplugins/doc.py'))
+def plugin():    
     print "GENERATING DOCUMENTATION"
     runISCR('lpsrc/flx_config.pak')
     runISCR('lpsrc/flx.pak')
     runISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
-  if "tutdoc" in options:
+
+@select(tangler('mkplugins/tutdoc.py'))
+def plugin():    
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_macro.pak')
     runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_bind.pak')
@@ -1438,6 +1206,665 @@ try:
     runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ lpsrc/flx_perf.pak')
     filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
 
+@select(tangler('mkplugins/build_target_rtl_dynamic.py'))
+def build_target_rtl_dynamic():
+  ars = ""
+  CPPS = pkgdict.get("cpp_cpps",[])
+  EXTRA_CFLAGS = pkgdict.get("cflags","")
+  EXTRA_DFLAGS = pkgdict.get("dflags","")
+  if CPPS:
+    print " ++ "+pkg+" RTL (dynamic)"
+    for x in CPPS:
+      if not "quiet" in options: print 'Compiling rtl object',x
+      ars = ars + x + "_dynamic.o "
+      dir,base = string.split(x,'/')
+      TARGET_CXX.compile_shared_rtl(
+        xqt,
+        dir,
+        base,
+        dir,
+        include_path=['rtl'],
+        optimise=1,
+        macros=["FLX_BUILD_DYNAMIC_RTL"],
+        CFLAGS=CFLAGS+EXTRA_CFLAGS)
+
+    # LINK RTL
+    tmp = string.split(ars)
+    objs=[]
+    for i in tmp:
+      objs.append(i[:-2]) # chop off the .o
+    flibs = pkgdict.get("lib_requires",[])
+    needs_libs = []
+    for i in flibs:
+      needs_libs.append(i+"_dynamic")
+    lib = pkgdict.get("provide_lib","lib"+pkg)
+    TARGET_CXX.link_shared_rtl(
+      xqt,objs,
+      SHLIB_DIR+os.sep+lib+"_dynamic",
+      lib_path=[SHLIB_DIR],
+      libs=EXTRA_LIBS+needs_libs,
+      DFLAGS=DFLAGS+EXTRA_DFLAGS) # hack
+
+@select(tangler('mkplugins/build_target_rtl_static.py'))
+def build_target_rtl_static():
+  ars = ""
+  CPPS = pkgdict.get("cpp_cpps",[])
+  EXTRA_CFLAGS = pkgdict.get("cflags","")
+  if CPPS:
+    print " ++ "+pkg+" RTL (static)"
+    for x in CPPS:
+      if not "quiet" in options: print 'Compiling rtl object',x
+      ars = ars + x + "_static.o "
+      dir,base = string.split(x,'/')
+      TARGET_CXX.compile_static_rtl(
+        xqt,dir,base,
+        dir,
+        include_path=['rtl'],
+        macros=["FLX_STATIC_LINK"],
+        optimise=1,
+        CFLAGS=CFLAGS+EXTRA_CFLAGS)
+
+    tmp = string.split(ars)
+    objs=[]
+    for i in tmp:
+      objs.append(i[:-2]) # chop off the .o
+    lib = pkgdict.get("provide_lib","lib"+pkg)
+    TARGET_CXX.link_static_archive(
+      xqt,
+      objs,
+      "rtl/"+lib+"_static")
+
+@select(tangler('mkplugins/build_felix_static_drivers.py'))
+def build_felix_static_drivers():
+  DRIVERS = pkgdict.get("drivers",[])
+  cflags = pkgdict.get("cflags","")
+  if len(DRIVERS)>0:
+    print "COMPILING DRIVERS (static)"
+    ars = ""
+    for i,j in DRIVERS:
+      if not "quiet" in options: print 'static Compiling driver object',i
+      dir,base = string.split(i,'/')
+      TARGET_CXX.compile_static_main(
+        xqt,dir,base,dir,
+        include_path=["rtl"],
+        macros=["FLX_STATIC_LINK"],
+        optimise=1,CFLAGS=CFLAGS+cflags)
+
+@select(tangler('mkplugins/build_felix_dynamic_drivers.py'))
+def build_felix_dynamic_drivers():
+  DRIVERS = pkgdict.get("drivers",[])
+  cflags = pkgdict.get("cflags","")
+  if len(DRIVERS)>0:
+    print "COMPILING DRIVERS (dynamic)"
+    ars = ""
+    dflags = pkgdict.get("dflags","")
+    LIBS = pkgdict.get("drivers_require_libs",[])
+    libs = []
+    for lib in LIBS:
+      libs.append(lib+"_dynamic")
+    for i,j in DRIVERS:
+      if not "quiet" in options: print 'dynamic Compiling driver object',i
+      dir,base = string.split(i,'/')
+      TARGET_CXX.compile_shared_main(
+        xqt,dir,base,dir,
+        include_path=["rtl"],
+        optimise=1,
+        CFLAGS=CFLAGS+cflags)
+      TARGET_CXX.link_dynamic_program(
+        xqt,
+        [i+"_dynamic"],
+        j,
+        lib_path=[SHLIB_DIR],
+        libs=libs,
+        DFLAGS=DFLAGS+dflags)
+
+@select(tangler('mkplugins/build_target_cpp_tools.py'))
+def build_target_cpp_tools():
+  ars = ""
+  EXES = pkgdict.get("exes",[])
+  esflags = pkgdict.get("exes_require_linkflags","")
+  if len(EXES)>0:
+    print "BUILDING C++ TARGET TOOLS"
+    LIBS = pkgdict.get("exes_require_libs",[])
+    for src,bin in EXES:
+      dir,base = string.split(src,'/')
+      TARGET_CXX.compile_static_main(
+        xqt,
+        dir,
+        base,
+        dir,
+        include_path=["rtl"],
+        macros=["FLX_STATIC_LINK"],
+        CFLAGS=CFLAGS)
+      TARGET_CXX.link_static_program(
+        xqt,
+        [src+"_static"],
+        bin,
+        lib_path=[dir],
+        libs=LIBS,
+        SFLAGS=SFLAGS+esflags)
+
+@select(tangler('mkplugins/build_target_felix_tools.py'))
+# TARGET TOOLS : FELIX
+def build_target_felix_tools():
+  FLXS = pkgdict.get("felix_tools",[])
+  if len(FLXS)>0:
+    print "BUILDING FELIX TARGET TOOLS"
+    LIBS = ['libfaio_static','libdemux_static','libflx_static']
+    fsflags = pkgdict.get("felix_requires_linkflags","")
+    for src,exe in FLXS:
+      dir,base = string.split(src,'/')
+      flxg("-Ilib "+src,"crap")
+      TARGET_CXX.compile_felix_static(
+        xqt,
+        dir,
+        base,
+        dir,
+        include_path=['rtl'],
+        macros=["FLX_STATIC_LINK"],
+        CFLAGS=CFLAGS)
+      TARGET_CXX.link_static_program(
+        xqt,
+        ['rtl/flx_run_static',src+"_static"],
+        exe,
+        lib_path=['rtl'],
+        libs=LIBS,
+        SFLAGS=SFLAGS+fsflags)
+
+@select(tangler('mkplugins/performance.py'))
+def plugin():
+  for driver,testfile,moreargs in SPECIAL_TESTS:
+    test_basename = string.split(testfile,'.')[0]
+    drv_basename = string.split(driver,'.')[0]
+    if LINK_MODEL == "dynamic":
+      testscript = "time ./"+drv_basename+ " ./"+test_basename+SHLX+" " + moreargs
+    else:
+      testscript = "time ./"+test_basename+SHLX+" " + moreargs
+    #print 'Executing ',testscript
+    try:
+      run(testscript)
+      #print 'TESTFILE -- OK!',testscript
+    except MakeError:
+      print 'TESTFILE -- ERROR!',testscript
+      raise MakeError
+
+@select(tangler('mkplugins/speed.py'))
+def plugin():    
+  runISCR('lpsrc/flx_perf.pak')
+  run("python speed/measure.py")
+  run("python speed/panal.py")
+  run("gnuplot speed/mkjpgs.gpl")
+  runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ lpsrc/flx_perf.pak')
+
+@select(tangler('mkplugins/ocaml_env.py'))
+if not globals().get("ocaml_env",None):
+  ocaml_env = 1
+
+  OCAML_OBJDIR = "src"
+  BYTECODE = not NATIVE_CODE_COMPILER or "bytecode" in options 
+  if BYTECODE:
+    if "profile" in options: 
+      OCAMLOPT = OCAMLCP
+      OCAMLC = OCAMLCP
+    else: OCAMLOPT = OCAMLB
+  else:
+    OCAMLOPT = OCAMLC
+    if "profile" in options:
+      OCAMLOPT = OCAMLOPT+' -p '
+
+  OCAMLOPT = OCAMLOPT + " -I " + OCAML_OBJDIR
+  OCAMLC = OCAMLC + " -I " + OCAML_OBJDIR
+
+  if "debug" in options:
+    OCAMLOPT = OCAMLOPT + '-g '
+
+  if "optimise_felix" in options:
+    OCAMLOPT = OCAMLOPT + " -unsafe -noassert -inline 5 "
+
+  if BYTECODE == 0:
+    OCAML_OBJECT_EXTENSION = '.cmx'
+    OCAML_LIB_EXTENSION = '.cmxa'
+  else:
+    OCAML_OBJECT_EXTENSION = '.cmo'
+    OCAML_LIB_EXTENSION = '.cma'
+
+@select(tangler('mkplugins/link_model_env.py'))
+if not globals().get("link_model_env",None):
+  link_model_env = 1
+
+  LINK_MODEL = DEFAULT_LINK_MODEL
+  if "static" in options:
+    LINK_MODEL = "static"
+  if "dynamic" in options:
+    LINK_MODEL == "dynamic"
+
+  if LINK_MODEL == "dynamic" and not SUPPORT_DYNAMIC_LOADING:
+    print "dynamic linkage not supported"
+    sys.exit(1)
+
+  if LINK_MODEL == "static" and not SUPPORT_STATIC_LINKAGE:
+    print "dynamic linkage not supported"
+    sys.exit(1)
+
+  CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + "-DFLX_STATIC_LINK "
+  CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-DFLX_STATIC_LINK "
+
+  if LINK_MODEL == "dynamic":
+    SHLX = EXT_SHLIB
+  else:
+    SHLX = ""
+
+  CCMACS=""
+  for i in options:
+    if i[0:2]=="-D": CCMACS=CCMACS+i+" "
+
+  if CCMACS:
+    CCOBJ_STATIC_RTL = CCOBJ_STATIC_RTL + CCMACS
+    CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + CCMACS
+    CCOBJ_STATIC_FLX = CCOBJ_STATIC_FLX + CCMACS
+
+    CCOBJ_DYNAMIC_RTL = CCOBJ_DYNAMIC_MAIN + CCMACS
+    CCOBJ_DYNAMIC_MAIN = CCOBJ_DYNAMIC_MAIN + CCMACS
+    CCOBJ_DYNAMIC_FLX = CCOBJ_DYNAMIC_FLX + CCMACS
+
+
+@select(tangler('mkplugins/run_host_tests.py'))
+def run_host_tests():    
+  optimise= "optimise_c" in options
+  mode = "std"
+  if optimise: mode = "Optimised"
+  bad_tests = pkgdict.get("failure_tests",[])
+  if len(bad_tests)>0:
+    print
+    print "***** TESTING PACKAGE "+pkg+" ************"
+    print
+    for testfile in bad_tests:
+      #print 'Running Felix code generator on ',testfile
+      basename = string.split(testfile,'.')[0]
+      cppfilename = basename + ".cpp"
+      try:
+        xqtq('bin'+os.sep+'flxg -e -Ilib ' + basename)
+        #print 'TESTFILE -- failed as expected',basename
+        erasefile(basename+'.cpp')
+        erasefile(basename+'.hpp')
+        erasefile(basename+SHLX)
+      except MakeError:
+        print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
+        erasefile(basename+'.cpp')
+        erasefile(basename+'.hpp')
+        erasefile(basename+SHLX)
+        raise MakeError
+
+@select(tangler('mkplugins/run_unit_tests.py'))
+def run_unit_tests():    
+  optimise= "optimise_c" in options
+  mode = "std"
+  if optimise: mode = "Optimised"
+  unit_tests = pkgdict.get("unit_tests",[])
+  if len(unit_tests)>0:
+    print
+    print "***** TESTING PACKAGE "+pkg+" ************"
+    print
+
+    for testfile in unit_tests:
+      # run the tests
+      basename = build_test(testfile)
+      if LINK_MODEL == "dynamic":
+          testscript = "bin"+os.sep+"flx_run ./"+basename+SHLX
+      else:
+        testscript = basename+SHLX
+
+      testscript = testscript + " >" + basename + ".output"
+      testscript = testscript + " && "+DIFF+ basename + ".expect "+ basename + ".output"
+
+      #print 'Executing ',testscript
+      try:
+        run(testscript)
+        #print 'TESTFILE -- OK!',testscript
+      except MakeError:
+        print 'TESTFILE -- ERROR!',testscript
+        raise MakeError
+
+@select(tangler('mkplugins/run_demos.py'))
+def run_demos():    
+  optimise= "optimise_c" in options
+  mode = "std"
+  if optimise: mode = "Optimised"
+  demos = pkgdict.get("demos",[])
+
+  if len(demos)>0:
+    print "RUNNING DEMOS"
+    for testfile in demos:
+      # run the tests
+      basename = build_test(testfile)
+      if LINK_MODEL == "dynamic":
+          testscript = "bin"+os.sep+"flx_run ./"+basename+SHLX
+      else:
+        testscript = basename+SHLX
+
+      #print 'Executing ',testscript
+      try:
+        run(testscript)
+        #print 'TESTFILE -- OK!',testscript
+      except MakeError:
+        print 'TESTFILE -- ERROR!',testscript
+        raise MakeError
+
+@select(tangler('mkplugins/xqt.py'))
+get_stdouterr = get_stdout
+
+def flush():
+  try: sys.stdin.flush()
+  except: pass
+
+def run(x):
+  print x
+  flush()
+  result = os.system(ENV+x)
+  if result: print "  .. ERROR CODE",hex(result)
+  flush()
+
+  if result:
+    raise MakeError
+
+def xqt(x):
+  if "quiet" not in options: print x
+  flush()
+  result,output = get_stdouterr(x)
+  if result: 
+    if "quiet" in options: print x
+    print "  .. ERROR CODE",hex(result)
+  if output: 
+    if result or "quiet" not in options:
+      print string.join(output,"")
+  flush()
+
+  if result:
+    raise MakeError
+
+# quiet execution
+def xqtq(x):
+  if "quiet" not in options: print x
+  flush()
+  result,output = get_stdouterr(x)
+  if result: 
+    if "quiet" in options: print x
+    print "  .. ERROR CODE",hex(result)
+    raise MakeError
+
+if os.name=="nt":
+  ENV="set PATH=bin;%PATH%&&"
+else:
+  if CYGWIN or WIN32:
+    ENV = 'env PATH=bin:"$PATH" PYTHONPATH=.:"$PYTHONPATH" '
+  elif MACOSX:
+    ENV = 'PATH=bin:"$PATH" DYLD_LIBRARY_PATH=rtl:"$DYLD_LIBRARY_PATH" '
+  else:
+    ENV = 'PATH=bin:"$PATH" LD_LIBRARY_PATH=rtl:"$LD_LIBRARY_PATH" '
+
+def exqt(x): xqt(ENV+x)
+
+# used when a negative result is expected (return code is supposed to be nonzero)
+# used for a grep which is supposed to fail
+def nxqt(x):
+  x = ENV+x
+  if "quiet" not in options: print x
+  flush()
+  result,output = get_stdouterr(x)
+  if not result:
+    if output: print string.join(output,"")
+  flush()
+
+  if not result:
+    raise MakeError
+
+def flxg(x,basename):
+  x = 'bin'+os.sep+'flxg ' + x
+  exqt(x)
+
+#interscript command (now built in part of Felix package)
+def runISCR(a,force=0):
+  if force:
+    exqt(ISCR + "--nocache " + a)
+  else:
+    exqt(ISCR + ' ' + a)
+
+
+@select(tangler('mkplugins/help.py'))
+# lame .. fix!
+def plugin():
+  print "extract - extract sources"
+  print "compiler - build compiler"
+  print "bytecode - build bytecode version of compiler"
+  print "profile - build profiling version of compiler"
+  print "drivers - build drivers"
+  print "regression - run regression tests"
+  print "performance - run performance tests"
+  print "bagley - run bagley shootout performance tests"
+  print "tutorial - run tutorial examples"
+  print "tests- regression and tutorial combined"
+  print "clean - remove generated C++ and binaries from test locations"
+  print "debug - build debugging versions of targets"
+  print "optimise_c - build high performance versions of c++ targets"
+  print "optimise_felix - build high performance versions of ocaml targets NOT RECOMMENDED!"
+  print "doc - build all user documentation"
+
+@h = tangler('script/maker','python')
+@select(h)
+#!/usr/bin/env python
+###############################################################
+# FELIX MAKE SCRIPT
+###############################################################
+@tangle("FLX_MAKER_CVS_ID='"+FLX_MAKER_CVS_ID+"'")
+import os
+import glob
+import stat
+import string
+import sys
+import re
+import traceback
+if '' not in sys.path: sys.path=['']+sys.path
+import flxbuild
+from flxbuild.flxutil import *
+
+try:
+  execfile("config"+os.sep+"config.py")
+except:
+  xt,xv,tb = sys.exc_info()
+  print "ERROR IN config/config.py"
+  traceback.print_exception(xt,xv,tb)
+  print "You must either"
+  print "(a) edit config/config.py and fix the error, or,"
+  print "(b) i) delete it, and,"
+  print "    ii) run 'python script/make_config.py'"
+  print "       again to reset it:"
+  print "       this is done automatically by 'make boot'"
+  sys.exit(1)
+
+FLXFLAGS = ""
+
+class MakeError: pass
+
+# ------------------------------------------------
+# PROCESS COMMAND LINE OPTIONS
+# ------------------------------------------------
+
+phases = []
+options = sys.argv[1:]
+if not options: 
+  options = ["extract","optimise_c"]
+  phases = ["build","host","target","run"]
+
+packages = []
+models = []
+for k in options:
+  if '--phase' == k[:7]:  # Windows doesn't like = so allow any sep 
+    phase = k[8:]
+    if phase not in phases:
+      phases.append(phase)
+  if '--pkg' == k[:5]:  # Windows doesn't like = so allow any sep 
+    packages.append(k[6:])
+  if '--model' == k[:7]:  # Windows doesn't like = so allow any sep 
+    model = k[8:]
+    if model not in models:
+      models.append(model)
+
+if models:
+  if model == build_model:
+    if "build" not in phases: phases.append("build")
+
+  if model == host_model:
+    if "host" not in phases: phases.append("host")
+
+  if model == target_model:
+    if "target" not in phases: phases.append("target")
+
+  if model == run_model:
+    if "run" not in phases: phases.append("run")
+
+if "extract" in options: 
+    if "build" not in phases: phases.append("build")
+
+if "build" in options: 
+    if "build" not in phases: phases.append("build")
+    if "host" not in phases: phases.append("host")
+    if "target" not in phases: phases.append("target")
+
+if packages and not phases:
+  phases = ["build","host","target"]
+
+if "test" in options: 
+    if "run" not in phases: phases.append("run")
+
+if "silent" in options: 
+  options.append("quiet")
+
+if options:
+  print "OPTIONS: ", options
+
+keyopt = {}
+for o in options:
+  try:
+    key,value = string.split(o,"+=")
+    old = keyopt.get(key,[])
+    if type(old) == type(""): old = [old]
+    keyopt[key] = old + [value]
+  except:
+    try:
+      key,value = string.split(o,"=")
+      keyopt[key]=value
+    except: pass
+
+plugins = {}
+for f in glob.glob("mkplugins"+os.sep+"*.py"):
+  dir,base=string.split(f,os.sep)
+  base=string.split(base,'.')[0]
+  try: del plugin
+  except: pass
+  try:
+    execfile(f)
+    if "plugin" in globals():
+      plugins[base]=plugin
+  except:
+    print "Failed to install plugin",f
+print "PLUGIN FEATURES",plugins.keys()
+
+raw_pkgs = glob.glob("pkg"+os.sep+"*.py")
+unsorted_pkgs = []
+for i in raw_pkgs:
+  j = string.split(i,os.sep)[1][:-3]
+  unsorted_pkgs.append(j)
+
+pkgd = {}
+for pkg in unsorted_pkgs:
+  class X:
+    execfile("pkg"+os.sep+pkg+".py")
+  d = {}
+  for k in X.__dict__.keys():
+    if k[0] != '_':
+      v = X.__dict__[k]
+      d[k]=v
+  pkgd[pkg]=d
+
+pkgs = []
+def addpkg_nr(pkg):
+  if pkg not in pkgs:
+    pkgs.append(pkg)
+
+def addpkg_r(pkg):
+  if pkg not in pkgs:
+    if pkg not in pkgd.keys():
+      print "Unknown package",pkg
+    else:
+      reqs = pkgd[pkg].get('pkg_requires',[])
+      for i in reqs:
+        addpkg_r(i)
+      addpkg_nr(pkg)
+
+for pkg in unsorted_pkgs:
+  addpkg_r(pkg)
+
+if packages:
+  pkgs = filter(lambda x: x in packages,pkgs)
+
+print "SELECTED PACKAGES ARE ",pkgs
+print "SELECTED PHASES ARE   ",phases
+print "Build model  ",build_model
+print "Host model   ",host_model
+print "Target model ",target_model
+print "Run model    ",run_model
+
+EXTRA_LIBS = []
+CFLAGS = ""
+SFLAGS = ""
+DFLAGS = ""
+
+# C files that we need to compile, with options required to build them
+COBJECTS = {
+}
+# *.so/.a libraries
+CLIBRARIES = ['nums']
+
+# *.cmxa or .cma libraries
+# and some hackery so we can if the source doesn't need
+# ocaml-fileutils we can still build if it isn't found
+OCAML_INCLUDES = ""
+
+# target executable programs to produce
+
+if 0:
+  s = ' -cclib "-Lsrc '
+  for library in CLIBRARIES:
+    s = s + ' -l'+library
+  s = s + '"'
+  LDFLAGS = s
+  del s
+else:
+  LDFLAGS = ""
+
+if 1:
+  o = ''
+  for object in COBJECTS.keys():
+    o = o + ' src/' + object + '.o'
+  OBJECT_FILES = o
+  del o
+
+SPECIAL_TESTS = [
+  ('bin'+os.sep+'flx_run','test'+os.sep+'flx_run_lib1.flx',''),
+  ('test'+os.sep+'flx_perf_drv1','test'+os.sep+'flx_perf_lib1.flx','1000'),
+]
+
+# -------------------------------------------------
+# END IMPLEMENTOR CONFIGURABLE SECTION
+# -------------------------------------------------
+
+
+# ----------- Here begins the actual build procedure ---------------------
+
+buildall = "clean" in options or "force" in options
+import glob
+try:
+  # STEP 0: run interscript
   if "extract" in options:
     packages = glob.glob("lpsrc"+os.sep+"*.pak")
     print "EXTRACTING SOURCES"
@@ -1446,49 +1873,10 @@ try:
       runISCR(p)
     filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
 
-  if "man" in options:
-    print "GENERATING MAN PAGES"
-    mp = glob.glob('man/man1/*.1')
-    MAN_PAGES = []
-    for i in mp:
-      MAN_PAGES.append (i[9:])
-    try: os.mkdir("htmlman")
-    except: pass
-    dtd = ('<!DOCTYPE HTML PUBLIC \\"-//W3C//DTD HTML 4.0 Transitional//EN\\"\\n'+
-      '  \\"http://www.w3.org/TR/REC-html40/loose.dtd\\">')
-    try:
-      for file in MAN_PAGES:
-        basename = string.split(file,".")[0]
-        xqt(
-          "man2html man/man1/" + file + 
-          '| sed -e "s%<A HREF=\\"[^<]*cgi-bin/man/man2html?1+\(.*\)\\">%<A HREF=\\"\\1_1.html\\">%"' +
-          '| sed -e "7d"' +
-          '| sed -e "1,3d"' +
-          '| sed -e "s%<html>%'+dtd+'\\n<html>%"' +
-          ' >' + "htmlman/" + basename+'_1.html'
-        )
-    except:pass
-  
-  if "impldoc" in options:
-    print "GENERATING OCAMLDOCS"
-    erasedir('impldoc')
-    os.mkdir('impldoc')
-    try:
-      xqt('ocamldoc -I src -d impldoc src/*.mli -html')
-      xqt('ocamldoc -I src -o impldoc/flx_impl.tex src/*.mli -latex')
-      xqt('(cd impldoc; latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex && latex --interaction=batchmode flx_impl.tex)')
-    except: 
-     pass # well ocamldoc is full of bugs ..
-
-  if "rtldoc" in options:
-    print "GENERATING RTLDOCS"
-    erasedir('rtldoc')
-    os.mkdir('rtldoc')
-    try:
-      xqt("doxygen misc/doxconf.dox")
-    except:
-      pass
-
+  # in order specified by user
+  for k in options:
+    if k in plugins:
+      plugins[k]()
 
 #---------- PACKAGE BUILDS ---------------------------------     
   for pkg in pkgs:
@@ -1497,6 +1885,7 @@ try:
       print
       print "***** MAKING PACKAGE "+pkg+" ************"
       if not "quiet" in options: print
+
       MLIS = pkgdict.get("caml_raw_interfaces",[])
       copy_mli2ml(MLIS)
       HPPS = pkgdict.get("rtl_interfaces",[])
@@ -1508,332 +1897,36 @@ try:
         print "REExtracting",pkg,"from",src
         runISCR(src)
 
-      LEXS = pkgdict.get("caml_lexes",[])
-      PARSES = pkgdict.get("caml_parses",[])
-      INTERFACES = pkgdict.get("caml_interfaces",[])
-      IMPLEMENTATIONS = pkgdict.get("caml_implementations",[])
-      EXES = pkgdict.get("caml_exes",[])
-      OLIBRARIES = pkgdict.get("caml_require_libs",[])
-      if (len(LEXS)+
-        len(PARSES)+
-        len(INTERFACES)+
-        len(IMPLEMENTATIONS)+
-        len(EXES)+
-        len(OLIBRARIES)> 0):
-        print "CAML COMPILING "+pkg
-        ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES)
+      build_ocamls()
 
-        # STEP 6: Build Ocaml Library
-        if IMPLEMENTATIONS != []:
-          lib = pkgdict.get('caml_provide_lib',pkg+"lib")
-          print "CAML CREATING LIBRARY ",lib
-          object_library_name = "src" + os.sep + lib + OCAML_LIB_EXTENSION
-          linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
-          library_filetime = filetime(object_library_name)
-          for implementation in IMPLEMENTATIONS:
-            linkstring = linkstring + implementation +OCAML_OBJECT_EXTENSION +" "
-          xqt(linkstring)
-
-          print "CAML LINKING EXECUTABLES"
-          x = ''
-          for library in OLIBRARIES:
-            x = x + ' ' + library + OCAML_LIB_EXTENSION
-
-          # finally, mainline *.cmx or cma files to link to executables
-          for exe in EXES:
-            dst = "bin" + os.sep + string.split(exe,"/")[-1]
-            xqt(OCAMLOPT + LDFLAGS + ' ' + OCAML_INCLUDES + ' -o '+dst+ x + OBJECT_FILES + ' src/flx_version_hook.ml ' + exe + OCAML_OBJECT_EXTENSION)
-
-      CPPS = pkgdict.get("host_cpp_cpps",[])
-      EXES = pkgdict.get("host_exes",[])
-      LIBS = pkgdict.get("host_exes_require_libs",[])
-      if len(CPPS)+len(EXES)+len(LIBS)>0:
-        print "BUILDING HOST TOOLS"
-        ars = ""
-        if CPPS:
-          print "HOST C++ COMPILING "+pkg
-          for x in CPPS:
-            if not "quiet" in options: print 'Compiling host '+pkg+' object',x
-            ars = ars + x + "_static.o "
-            dir,base = string.split(x,'/')
-            HOST_CXX.compile_static_rtl(
-              xqt,
-              dir,
-              base,
-              dir,
-              include_path=["rtl","elk"],
-              macros=["FLX_STATIC_LINK"])
-          tmp = string.split(ars)
-          objs=[]
-          for i in tmp:
-            objs.append(i[:-2]) # chop off the .o
-          HOST_CXX.link_static_archive(xqt,objs,dir+"/lib"+pkg+"_host_static")
-
-        for src,bin in EXES:
-          dir,base = string.split(src,'/')
-          HOST_CXX.compile_static_main(
-            xqt,
-            dir,
-            base,
-            dir,
-            include_path=["rtl","elk"],
-            macros=["FLX_STATIC_LINK"],
-            CFLAGS=CFLAGS)
-          HOST_CXX.link_static_program(
-            xqt,
-            [src+"_static"],
-            bin,
-            lib_path=[dir],
-            libs=["lib"+pkg+"_host_static"],
-            SFLAGS=SFLAGS)
+      build_host_tools()
 
     if "target" in phases:
       if SUPPORT_DYNAMIC_LOADING:
-        ars = ""
-        CPPS = pkgdict.get("cpp_cpps",[])
-        EXTRA_CFLAGS = pkgdict.get("cflags","")
-        EXTRA_DFLAGS = pkgdict.get("dflags","")
-        if CPPS:
-          print " ++ "+pkg+" RTL (dynamic)"
-          for x in CPPS:
-            if not "quiet" in options: print 'Compiling rtl object',x
-            ars = ars + x + "_dynamic.o "
-            dir,base = string.split(x,'/')
-            TARGET_CXX.compile_shared_rtl(
-              xqt,
-              dir,
-              base,
-              dir,
-              include_path=['rtl'],
-              optimise=1,
-              macros=["FLX_BUILD_DYNAMIC_RTL"],
-              CFLAGS=CFLAGS+EXTRA_CFLAGS)
-
-          # LINK RTL
-          tmp = string.split(ars)
-          objs=[]
-          for i in tmp:
-            objs.append(i[:-2]) # chop off the .o
-          flibs = pkgdict.get("lib_requires",[])
-          needs_libs = []
-          for i in flibs:
-            needs_libs.append(i+"_dynamic")
-          lib = pkgdict.get("provide_lib","lib"+pkg)
-          TARGET_CXX.link_shared_rtl(
-            xqt,objs,
-            SHLIB_DIR+os.sep+lib+"_dynamic",
-            lib_path=[SHLIB_DIR],
-            libs=EXTRA_LIBS+needs_libs,
-            DFLAGS=DFLAGS+EXTRA_DFLAGS) # hack
-
+        build_target_rtl_dynamic()
 
       if SUPPORT_STATIC_LINKAGE:
-        ars = ""
-        CPPS = pkgdict.get("cpp_cpps",[])
-        EXTRA_CFLAGS = pkgdict.get("cflags","")
-        if CPPS:
-          print " ++ "+pkg+" RTL (static)"
-          for x in CPPS:
-            if not "quiet" in options: print 'Compiling rtl object',x
-            ars = ars + x + "_static.o "
-            dir,base = string.split(x,'/')
-            TARGET_CXX.compile_static_rtl(
-              xqt,dir,base,
-              dir,
-              include_path=['rtl'],
-              macros=["FLX_STATIC_LINK"],
-              optimise=1,
-              CFLAGS=CFLAGS+EXTRA_CFLAGS)
-
-          tmp = string.split(ars)
-          objs=[]
-          for i in tmp:
-            objs.append(i[:-2]) # chop off the .o
-          lib = pkgdict.get("provide_lib","lib"+pkg)
-          TARGET_CXX.link_static_archive(
-            xqt,
-            objs,
-            "rtl/"+lib+"_static")
-
+        build_target_rtl_static()
       
-      # COMPILE DRIVER PROGRAMS
-      DRIVERS = pkgdict.get("drivers",[])
-      cflags = pkgdict.get("cflags","")
-      if len(DRIVERS)>0:
-        if SUPPORT_STATIC_LINKAGE:
-          ars = ""
-          print "COMPILING DRIVERS (static)"
-          for i,j in DRIVERS:
-            if not "quiet" in options: print 'Compiling driver object',i
-            dir,base = string.split(i,'/')
-            TARGET_CXX.compile_static_main(
-              xqt,dir,base,dir,
-              include_path=["rtl"],
-              macros=["FLX_STATIC_LINK"],
-              optimise=1,CFLAGS=CFLAGS+cflags)
+      if SUPPORT_DYNAMIC_LOADING:
+        build_felix_dynamic_drivers()
 
-        if SUPPORT_DYNAMIC_LOADING:
-          print "COMPILING DRIVERS (dynamic)"
-          ars = ""
-          dflags = pkgdict.get("dflags","")
-          LIBS = pkgdict.get("drivers_require_libs",[])
-          libs = []
-          for lib in LIBS:
-            libs.append(lib+"_dynamic")
-          for i,j in DRIVERS:
-            if not "quiet" in options: print 'Compiling driver object',i
-            dir,base = string.split(i,'/')
-            TARGET_CXX.compile_shared_main(
-              xqt,dir,base,dir,
-              include_path=["rtl"],
-              optimise=1,
-              CFLAGS=CFLAGS+cflags)
-            TARGET_CXX.link_dynamic_program(
-              xqt,
-              [i+"_dynamic"],
-              j,
-              lib_path=[SHLIB_DIR],
-              libs=libs,
-              DFLAGS=DFLAGS+dflags)
+      if SUPPORT_STATIC_LINKAGE:
+        build_felix_static_drivers()
 
-      #------------------------------------------
-      # TARGET TOOLS
-      #------------------------------------------
-      ars = ""
-      EXES = pkgdict.get("exes",[])
-      FLXS = pkgdict.get("felix_tools",[])
-      esflags = pkgdict.get("exes_require_linkflags","")
-      fsflags = pkgdict.get("felix_requires_linkflags","")
-      if len(EXES)+len(FLXS)>0:
-        print "BUILDING TARGET TOOLS"
+      build_target_cpp_tools()
+      build_target_felix_tools()
 
-        #------------------------------------------
-        # TARGET TOOLS : C/C++
-        #------------------------------------------
-        LIBS = pkgdict.get("exes_require_libs",[])
-        for src,bin in EXES:
-          dir,base = string.split(src,'/')
-          TARGET_CXX.compile_static_main(
-            xqt,
-            dir,
-            base,
-            dir,
-            include_path=["rtl"],
-            macros=["FLX_STATIC_LINK"],
-            CFLAGS=CFLAGS)
-          TARGET_CXX.link_static_program(
-            xqt,
-            [src+"_static"],
-            bin,
-            lib_path=[dir],
-            libs=LIBS,
-            SFLAGS=SFLAGS+esflags)
-
-        #------------------------------------------
-        # TARGET TOOLS : FELIX
-        #------------------------------------------
-        LIBS = ['libfaio_static','libdemux_static','libflx_static']
-        for src,exe in FLXS:
-          dir,base = string.split(src,'/')
-          flxg("-Ilib "+src,"crap")
-          TARGET_CXX.compile_felix_static(
-            xqt,
-            dir,
-            base,
-            dir,
-            include_path=['rtl'],
-            macros=["FLX_STATIC_LINK"],
-            CFLAGS=CFLAGS)
-          TARGET_CXX.link_static_program(
-            xqt,
-            ['rtl/flx_run_static',src+"_static"],
-            exe,
-            lib_path=['rtl'],
-            libs=LIBS,
-            SFLAGS=SFLAGS+fsflags)
-
-      # run tests
       if "test" in options:
-        optimise= "optimise_c" in options
-        mode = "std"
-        if optimise: mode = "Optimised"
-        bad_tests = pkgdict.get("failure_tests",[])
-        if len(bad_tests)>0:
-          print
-          print "***** TESTING PACKAGE "+pkg+" ************"
-          print
-          for testfile in bad_tests:
-            #print 'Running Felix code generator on ',testfile
-            basename = string.split(testfile,'.')[0]
-            cppfilename = basename + ".cpp"
-            try:
-              xqtq('bin'+os.sep+'flxg -e -Ilib ' + basename)
-              #print 'TESTFILE -- failed as expected',basename
-              erasefile(basename+'.cpp')
-              erasefile(basename+'.hpp')
-              erasefile(basename+SHLX)
-            except MakeError:
-              print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
-              erasefile(basename+'.cpp')
-              erasefile(basename+'.hpp')
-              erasefile(basename+SHLX)
-              raise MakeError
+        run_host_tests()
 
     if "run" in phases:
-      # run tests
       if "test" in options:
-        optimise= "optimise_c" in options
-        mode = "std"
-        if optimise: mode = "Optimised"
-        unit_tests = pkgdict.get("unit_tests",[])
-        if len(unit_tests)>0:
-          print
-          print "***** TESTING PACKAGE "+pkg+" ************"
-          print
-
-          for testfile in unit_tests:
-            # run the tests
-            basename = build_test(testfile)
-            if LINK_MODEL == "dynamic":
-                testscript = "bin"+os.sep+"flx_run ./"+basename+SHLX
-            else:
-              testscript = basename+SHLX
-
-            testscript = testscript + " >" + basename + ".output"
-            testscript = testscript + " && "+DIFF+ basename + ".expect "+ basename + ".output"
-
-            #print 'Executing ',testscript
-            try:
-              run(testscript)
-              #print 'TESTFILE -- OK!',testscript
-            except MakeError:
-              print 'TESTFILE -- ERROR!',testscript
-              raise MakeError
+        run_unit_tests()
 
       if "demo" in options:
-        optimise= "optimise_c" in options
-        mode = "std"
-        if optimise: mode = "Optimised"
-        demos = pkgdict.get("demos",[])
-
-        if len(demos)>0:
-          print "RUNNING DEMOS"
-          for testfile in demos:
-            # run the tests
-            basename = build_test(testfile)
-            if LINK_MODEL == "dynamic":
-                testscript = "bin"+os.sep+"flx_run ./"+basename+SHLX
-            else:
-              testscript = basename+SHLX
-
-            #print 'Executing ',testscript
-            try:
-              run(testscript)
-              #print 'TESTFILE -- OK!',testscript
-            except MakeError:
-              print 'TESTFILE -- ERROR!',testscript
-              raise MakeError
-    
+        run_demos()
+   
   if os.name != 'nt': # requires posix
     if "test" in options or "tutorial" in options or "fcount" in options:
       tkind = "std"
@@ -1851,29 +1944,6 @@ try:
     if "pfcount_all" in options:
       stats = 'python script/pfcount.py misc/fcounts.stats all'
       run(stats)
-
-  if "performance" in options:
-    for driver,testfile,moreargs in SPECIAL_TESTS:
-      test_basename = string.split(testfile,'.')[0]
-      drv_basename = string.split(driver,'.')[0]
-      if LINK_MODEL == "dynamic":
-        testscript = "time ./"+drv_basename+ " ./"+test_basename+SHLX+" " + moreargs
-      else:
-        testscript = "time ./"+test_basename+SHLX+" " + moreargs
-      #print 'Executing ',testscript
-      try:
-        run(testscript)
-        #print 'TESTFILE -- OK!',testscript
-      except MakeError:
-        print 'TESTFILE -- ERROR!',testscript
-        raise MakeError
-
-  if "speed" in options:
-    runISCR('lpsrc/flx_perf.pak')
-    run("python speed/measure.py")
-    run("python speed/panal.py")
-    run("gnuplot speed/mkjpgs.gpl")
-    runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ lpsrc/flx_perf.pak')
 
   print "RUN COMPLETE"
 

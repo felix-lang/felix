@@ -290,7 +290,6 @@ Flx_version.version_data := version_data
 @pop_head()
 
 @head(2,'The Felix Run time')
-@include_file ('flx_rtl.pak')
 @include_file ('flx_gc.ipk')
 @include_file ('flx_lib.ipk')
 @include_file ('flx_lex_lib.ipk')
@@ -303,7 +302,6 @@ create a file here for unit tests.
 @include_file ('flx_stub.ipk')
 
 @head(2,'Tools')
-@include_file ('flx_flxcc.ipk')
 @include_file ('flx_docgen.ipk')
 @include_file ('flx_pkgconfig.ipk')
 
@@ -312,18 +310,10 @@ create a file here for unit tests.
 @include_file ('flx_maker.ipk')
 @include_file ('flx_parser_maker.ipk')
 
-@head(2,'The Windows Build system extras')
-@include_file ('flx_win32.pak')
-
 @head(2,'Misc')
 @include_file ('flx_vim.ipk')
 @include_file ('flx_jedit.ipk')
 @include_file ('flx_highlight.ipk')
 @include_file ('inria_re.ipk')
 @include_file ('flx_doxygen.ipk')
-
-@head(2,'Optional Components')
-@include_file ('flx_gmp.ipk')
-@include_file ('flx_sdl.ipk')
-@include_file ('flx_opengl.ipk')
 

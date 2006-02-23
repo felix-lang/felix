@@ -1,5 +1,8 @@
 @head(1,'open GL and extensions')
 $Log$
+Revision 1.1  2006/02/23 17:06:08  skaller
+Refactor build system.
+
 Revision 1.6  2006/02/18 16:30:48  skaller
 More work on new package manager.
 
