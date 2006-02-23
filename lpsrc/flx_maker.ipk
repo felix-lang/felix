@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.243  2006/02/23 00:33:39  skaller
+Split build into phases
+
 Revision 1.242  2006/02/22 17:36:48  skaller
 Rename some files.. more coming. Make RTL modules full .paks
 
@@ -1896,26 +1899,26 @@ We have no idea if it continues copying.
 @tangle('')
 
 @tangle('profile: dummy')
-@tangle('\tpython script/maker flx_compiler profile')
+@tangle('\tpython script/maker --pkg=flx_compiler profile')
 @tangle('')
 @tangle('bytecode: dummy')
-@tangle('\tpython script/maker flx_compiler bytecode')
+@tangle('\tpython script/maker --pkg=flx_compiler bytecode')
 @tangle('')
 @tangle('bytecode.profile: dummy')
-@tangle('\tpython script/maker flx_compiler bytecode profile')
+@tangle('\tpython script/maker --pkg=flx_compiler bytecode profile')
 @tangle('')
 @tangle('bytecode.debug: dummy')
-@tangle('\tpython script/maker flx_compiler bytecode debug')
+@tangle('\tpython script/maker --pkg=flx_compiler bytecode debug')
 @tangle('')
 @tangle('extract_compiler: dummy')
 @tangle('\t${BUILTIN_ISCR} lpsrc/flx.pak')
 @tangle('\tpython script/maker flx_compiler')
 @tangle('')
 @tangle('extract: dummy')
-@tangle('\tpython script/maker build extract')
+@tangle('\tpython script/maker extract')
 @tangle('')
 @tangle('extract.force: dummy')
-@tangle('\tpython script/maker build extract force')
+@tangle('\tpython script/maker extract force')
 @tangle('')
 @tangle('tut: dummy')
 @tangle('\tpython script/maker tutorial')
@@ -1929,7 +1932,7 @@ We have no idea if it continues copying.
 @tangle('\tenv PYTHONPATH=. python script/flx_tokgen misc/flx_parse.grammar >lib/flx_token.flx')
 @tangle('')
 @tangle('compiler: dummy')
-@tangle('\tpython script/maker compiler')
+@tangle('\tpython script/maker --pkg=flx_compiler')
 @tangle('')
 @tangle('flx_tools:')
 @tangle('\tpython script/maker tools')
