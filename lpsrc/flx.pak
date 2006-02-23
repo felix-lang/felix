@@ -294,18 +294,6 @@ Flx_version.version_data := version_data
 @include_file ('flx_gc.ipk')
 @include_file ('flx_lib.ipk')
 @include_file ('flx_lex_lib.ipk')
-@include_file ('flx_demux.pak')
-@include_file ('flx_faio.pak')
-
-@head(2,'The Tests')
-@include_file ('flx_test.ipk')
-@include_file ('flx_regress.ipk')
-@include_file ('flx_bagley.ipk')
-@include_file ('flx_tut_expect.ipk')
-@include_file ('flx_test_expect.ipk')
-@include_file ('flx_bagley_expect.ipk')
-@include_file ('flx_luademo.ipk')
-@include_file ('flx_faiotest.ipk')
 
 @head(2,'Stub mainline')
 This is a just a file for writing

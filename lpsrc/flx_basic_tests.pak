@@ -1,0 +1,15 @@
+@execfile('config'+os.sep+'config.py')
+
+@head(1,'The Tests')
+Main tutorial elsewhere.
+
+@include_file ('flx_test.ipk')
+@include_file ('flx_regress.ipk')
+@include_file ('flx_bagley.ipk')
+@include_file ('flx_tut_expect.ipk')
+@include_file ('flx_test_expect.ipk')
+@include_file ('flx_bagley_expect.ipk')
+@include_file ('flx_luademo.ipk')
+@include_file ('flx_faiotest.ipk')
+
+

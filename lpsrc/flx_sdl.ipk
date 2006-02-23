@@ -1,5 +1,9 @@
 @head(1,'SDL')
 $Log$
+Revision 1.29  2006/02/23 06:19:46  skaller
+Split off some test from flx.pak, need to keep open files
+under ulimit.
+
 Revision 1.28  2006/02/22 06:02:26  skaller
 Merge.
 
@@ -136,6 +140,21 @@ pkg_requires = ['gl']
 @select(h)
 #
 pkg_requires = ['glu']
+
+@h = tangler('pkg/sdl_drivers.py')
+@select(h)
+
+if HAVE_SDL:
+  DRIVERS = [
+    ('rtl/flx_run','bin/flx_sdl_run'),
+  ]
+  drivers = DRIVERS
+  drivers_require_libs = ['libsdl','libfaio','libdemux','libflx']
+  pkg_requires = ['flx_rtl','faio','demux']
+  cflags = SDL_CFLAGS
+  dflags = SDL_LIBS
+  sflags = SDL_STATIC_LIBS
+   
 
 @h=tangler('lib/SDL/SDL.flx')
 @select(h)
