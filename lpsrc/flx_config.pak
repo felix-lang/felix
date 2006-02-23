@@ -1432,7 +1432,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     self.detect_msvcxx_language_extensions(shell)
 
     self.detect_msvcxx_flags(shell)
-    self.detect_model()
+    self.detect_model(shell)
     if opt.model == "detect": opt.model = "win32" 
 
     print "MODEL =",opt.model
@@ -1667,13 +1667,13 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     # output file
     cmd = cmd + "/Fo"
     if outdir: cmd = cmd + outdir + os.sep
-    cmd = cmd + basename + "_static"+opt.EXT_OBJ+" "
+    cmd = cmd + basename + "_static"+opt.__dict__.get("EXT_OBJ",".obj")+" "
 
     #macros
     for i in macros: cmd=cmd + "-D"+i+" "
 
     cmd = cmd + CFLAGS
-
+    
     #input file
     if  indir: cmd = cmd + indir + os.sep
     cmd = cmd + basename
@@ -1919,6 +1919,7 @@ archmap = {
   "windows":"win32",
   "nt":"win32",
   "win32":"win32",
+  "win64":"win64",
   "darwin":"osx",
   "osx":"osx",
   "detect":"detect"
@@ -2269,6 +2270,7 @@ else:
 CYGWIN = TARGET_CXX.options.CYGWIN
 MACOSX = TARGET_CXX.options.MACOSX
 WIN32 =  TARGET_CXX.options.WIN32
+WIN64 =  TARGET_CXX.options.WIN32
 LINUX =  TARGET_CXX.options.LINUX
 SOLARIS =  TARGET_CXX.options.SOLARIS
 POSIX =  TARGET_CXX.options.POSIX

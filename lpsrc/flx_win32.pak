@@ -1,4 +1,4 @@
-@select(tangler("win32env.bat","data"))
+@select(tangler("win32_VS2003_env.bat","data"))
 set OCAMLLIB=c:\program files\Objective Caml\lib
 set PATH="c:\Program files\Objective Caml\bin";%PATH%
 set PATH="c:\Program files\Microsoft Visual Studio .NET 2003\vc7\bin";%PATH%
@@ -8,12 +8,21 @@ set LIB="c:\Program files\Microsoft Visual Studio .NET 2003\vc7\LIB";%LIB%
 set LIB="c:\Program files\Microsoft Visual Studio .NET 2003\vc7\PlatformSDK\LIB";%LIB%
 set PATH=c:\Python24;%PATH%
 set PYTHONPATH=.
+
 @select(tangler("win32config.bat","data"))
 python interscript\bin\iscr.py --nocache lpsrc\flx_config.pak
 python script/make_config.py --host=win32 --target=win32
 python interscript\bin\iscr.py --nocache lpsrc\flx.pak
-@select(tangler("win32make.bat","data"))
+@select(tangler("win3264config.bat","data"))
+python interscript\bin\iscr.py --nocache lpsrc\flx_config.pak
+python script/make_config.py --host=win32 --target=win64
+python interscript\bin\iscr.py --nocache lpsrc\flx.pak
+@select(tangler("win64config.bat","data"))
+python interscript\bin\iscr.py --nocache lpsrc\flx_config.pak
+python script/make_config.py --host=win64 --target=win64
+python interscript\bin\iscr.py --nocache lpsrc\flx.pak
+@select(tangler("make.bat","data"))
 python script/maker %1 %2 %3 %4 %5 %6 %7 %8 %9
-@select(tangler("win32iscr.bat","data"))
+@select(tangler("iscr.bat","data"))
 python interscript\bin\iscr.py %1 %2 %3 %4 %5 %6 %7 %8 %9
 
