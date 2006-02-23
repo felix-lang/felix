@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.245  2006/02/23 09:59:27  skaller
+mingw builds
+
 Revision 1.244  2006/02/23 06:50:04  skaller
 Build SDL version of driver
 
@@ -1085,16 +1088,24 @@ if "help" in options:
   print "optimise_felix - build high performance versions of ocaml targets NOT RECOMMENDED!"
   print "doc - build all user documentation"
 
+if "virgin" in options:
+  for d in ["tmp","rtl","lib","bin","elk","src",
+     "lib","doc","man","impldoc","htmlman","meta",
+    "speed","tut","bagley","test"]:
+      for f in glob.glob(d + os.sep + "*.*")+glob.glob(d+os.sep+"*"+os.sep+"*.*"):
+        erasefile(f)
+
 if "clean" in options:
+
   for d in [ 
     "test","tut"+os.sep+"examples",
     "bagley"+os.sep+"felix",
-    "src","elk","demux","faio","lib","lpsrc",
+    "src","elk","demux","faio","lib","lpsrc","rtl","bin"
     ]:
     for e in ["*.hpp","*.so","*.dll","*.cpp","*.hpp",
       "*.par","*.output","*.o","*.obj",
       "*.exp","*.lib",'*.resh','*.par',
-      "*.cache",
+      "*.cache","*.a","*.exp","*.exe"
       ]:
       for f in glob.glob(d + os.sep + e):
         erasefile(f)
@@ -2345,6 +2356,8 @@ We have no idea if it continues copying.
 @tangle('dummy:')
 @no_dollars = string.replace(FLX_MAKER_CVS_ID,"$","")
 @tangle('\t#'+no_dollars)
+@tangle('')
+@tangle('.PHONY: dummy')
 @tangle('')
 @tangle("# These targets are for SKALLER only")
 @tangle("# they're used to upload stuff to sourceforge")
