@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.1  2006/02/23 19:33:01  skaller
+More fiddling with build system
+
 Revision 1.246  2006/02/23 17:06:08  skaller
 Refactor build system.
 
@@ -1057,6 +1060,9 @@ def build_host_tools():
 
 @select(tangler('mkplugins/build_testfile.py'))
 def build_test(testfile):        
+  optimise= "optimise_c" in options
+  mode = "std"
+  if optimise: mode = "Optimised"
   print 'Running Felix code generator on ',testfile
   basename = string.split(testfile,'.')[0]
   cppfilename = basename + ".cpp"
@@ -1157,11 +1163,42 @@ else:
 @select(tangler('mkplugins/virgin.py'))
 #cleans everything
 def plugin():
-  for d in ["tmp","rtl","lib","bin","elk","src",
-     "lib","doc","man","impldoc","htmlman","meta",
-    "speed","tut","bagley","test"]:
-      for f in glob.glob(d + os.sep + "*.*")+glob.glob(d+os.sep+"*"+os.sep+"*.*"):
-        erasefile(f)
+  for d in ["tmp",
+     "rtl",
+     "lib"+os.sep+"GL", "lib"+os.sep+"SDL", "lib", "bin",
+     "elk",
+     "src",
+     "lib","doc",
+     "man"+os.sep+"man1","man",
+     "impldoc","htmlman","meta",
+     "tools"+os.sep+"lua", "tools",
+     "faio","demux",
+     "tut"+os.sep+"examples","tut",
+     "bagley"+os.sep+"data",
+     "bagley"+os.sep+"felix",
+     "bagley",
+     "test",
+     "pkg",
+     "mkplugin",
+     "flxbuild",
+     "meta"+os.sep+"godi", "meta"+os.sep+"godiva", "meta",
+     "misc"+os.sep+"vim",
+     "misc"+os.sep+"lua",
+     "misc"+os.sep+"jedit",
+     "misc",
+     "www"
+     ]:
+    for f in glob.glob(d + os.sep + "*"):
+      print "Del",f
+      erasefile(f)
+    try: 
+      if os.path.exists(d):
+        os.rmdir(d)
+        print "Rmdir",d
+    except: 
+      print "FAILED Rmdir",d
+  for f in glob.glob("lpsrc"+os.sep+"*.cache"):
+    erasefile(f)
   runISCR('lpsrc/flx_config.pak',1)
   sys.exit(0)
   
@@ -1176,11 +1213,14 @@ def plugin():
     for e in ["*.hpp","*.so","*.dll","*.cpp","*.hpp",
       "*.par","*.output","*.o","*.obj",
       "*.exp","*.lib",'*.resh','*.par',
-      "*.cache","*.a","*.exp","*.exe"
+      "*.cache","*.a","*.exp","*.exe",
+      "*.cmi","*.cmx","*.cmxa",
       ]:
       for f in glob.glob(d + os.sep + e):
         erasefile(f)
   for f in glob.glob("lib"+os.sep+"*.par"):
+    erasefile(f)
+  for f in glob.glob("lpsrc"+os.sep+"*.cache"):
     erasefile(f)
 
 @select(tangler('mkplugins/doc_env.py'))
@@ -1649,6 +1689,13 @@ def plugin():
   print "optimise_felix - build high performance versions of ocaml targets NOT RECOMMENDED!"
   print "doc - build all user documentation"
 
+@select(tangler('mkplugins/grammar.py'))
+def plugin():
+  os.system("env PYTHONPATH=. python script/get_grammar src/flx_parse.mly >misc/flx_parse.grammar")
+  os.system('env PYTHONPATH=. python script/flx_flx_grgen misc/flx_parse.grammar >lib/flx_grammar.flx')
+  os.system('env PYTHONPATH=. python script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
+  os.system('tenv PYTHONPATH=. python script/flx_tokgen misc/flx_parse.grammar >lib/flx_token.flx')
+
 @h = tangler('script/maker','python')
 @select(h)
 #!/usr/bin/env python
@@ -1657,6 +1704,7 @@ def plugin():
 ###############################################################
 @tangle("FLX_MAKER_CVS_ID='"+FLX_MAKER_CVS_ID+"'")
 import os
+import os.path
 import glob
 import stat
 import string
@@ -1742,18 +1790,18 @@ if "silent" in options:
 if options:
   print "OPTIONS: ", options
 
-keyopt = {}
-for o in options:
-  try:
-    key,value = string.split(o,"+=")
-    old = keyopt.get(key,[])
-    if type(old) == type(""): old = [old]
-    keyopt[key] = old + [value]
-  except:
-    try:
-      key,value = string.split(o,"=")
-      keyopt[key]=value
-    except: pass
+paks = glob.glob("lpsrc"+os.sep+"*.pak")
+execfile("mkplugins"+os.sep+"xqt.py")
+if "extract" in options:
+  print "EXTRACTING SOURCES"
+  for p in paks:
+    print "EXTRACTING",p
+    runISCR(p)
+  filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
+
+if "virgin" in options:
+  execfile("mkplugins"+os.sep+"virgin.py")
+  plugin()
 
 plugins = {}
 for f in glob.glob("mkplugins"+os.sep+"*.py"):
@@ -1795,6 +1843,8 @@ def addpkg_r(pkg):
   if pkg not in pkgs:
     if pkg not in pkgd.keys():
       print "Unknown package",pkg
+      print "Please extract!"
+      sys.exit(1)
     else:
       reqs = pkgd[pkg].get('pkg_requires',[])
       for i in reqs:
@@ -1807,6 +1857,8 @@ for pkg in unsorted_pkgs:
 if packages:
   pkgs = filter(lambda x: x in packages,pkgs)
 
+
+print "AVAILABLE SOURCES",paks
 print "SELECTED PACKAGES ARE ",pkgs
 print "SELECTED PHASES ARE   ",phases
 print "Build model  ",build_model
@@ -1862,17 +1914,8 @@ SPECIAL_TESTS = [
 # ----------- Here begins the actual build procedure ---------------------
 
 buildall = "clean" in options or "force" in options
-import glob
 try:
   # STEP 0: run interscript
-  if "extract" in options:
-    packages = glob.glob("lpsrc"+os.sep+"*.pak")
-    print "EXTRACTING SOURCES"
-    for p in packages:
-      print "EXTRACTING",p
-      runISCR(p)
-    filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
-
   # in order specified by user
   for k in options:
     if k in plugins:
@@ -2352,15 +2395,7 @@ We have no idea if it continues copying.
 @tangle('config/config.py: config')
 @tangle('')
 @tangle('boot: config/config.py')
-@tangle('\t${BUILTIN_ISCR} lpsrc/flx.pak')
-@for i in [
-  'flx_cil_machdep_type',
-  'flx_cil_cabs',
-  'flx_ast'          ,
-  'flx_types'        ,
-  'flx_ctypes'       ,
-  ]:
-  tangle('\tcp src/'+i+'.mli src/'+i+'.ml')
+@tangle('\t${BUILTIN_ISCR} lpsrc/flx_maker.pak')
 @tangle('')
 @tangle('default_wrappers:')
 @tangle('\tfor i in tmp/*.default; do cp $$i config/`basename $$i .default`; done')
@@ -2459,12 +2494,10 @@ A shell script to run the config step.
 @select(tangler('configure'))
 export PYTHONPATH=.:$PYTHONPATH
 echo "Configuring Felix"
-grab=1
-
 PREFIX=$PREFIX
 ARGS=""
 
-#while (( "$grab" == "1" ));	# not working under cygwin bash
+grab=0
 while  [ "$grab" -eq 1 ]
 do
   case x$1 in
@@ -2492,11 +2525,9 @@ do
   esac
 done
 
-echo "Installing at PREFIX=$PREFIX"
-make PREFIX=$PREFIX CONFIG_ARGS="$ARGS" config &&\
-make PREFIX=$PREFIX boot &&\
-make grammar &&\
-make extract
+python interscript/bin/iscr.py lpsrc/flx_config.pak
+python -O script/make_config.py --quiet --prefix=${PREFIX} ${ARGS}
+python interscript/bin/iscr.py lpsrc/flx_maker.pak
 
 @head(1,'README')
 @select(tangler('README'))
@@ -3784,7 +3815,4 @@ Just cleaning up script now.
    os.system('chmod u+x bin/flx')
    os.system('chmod u+x bin/fishcc')
  except:pass
-
-for f in glob.glob('doc'+os.sep+'*.css'):
-  filecopy2dir(f, 'tut'+os.sep+'doc')
 

@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.2  2006/02/23 19:33:01  skaller
+More fiddling with build system
+
 Revision 1.1  2006/02/22 17:36:48  skaller
 Rename some files.. more coming. Make RTL modules full .paks
 
@@ -199,6 +202,7 @@ rtl_interfaces = FAIORTL_INTERFACES
 pkg_requires = ['demux','flx_rtl']
 lib_requires = ['libdemux','libflx']
 unit_tests = EXTRA_TEST_GLOBS
+iscr_source = ["lpsrc/flx_faio.pak"]
 
 @head(1,'Async IO (deprecated)')
 @h=tangler('faio/faio_asyncio.hpp')

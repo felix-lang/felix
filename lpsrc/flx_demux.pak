@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.3  2006/02/23 19:33:01  skaller
+More fiddling with build system
+
 Revision 1.2  2006/02/22 19:00:04  rfistman
 oops, was passing ULONG as ULONG_PTR. Thanks to 64bit compiler for
 poinnting this out.
@@ -255,6 +258,7 @@ lib_requires = ['libflx']
 #lib_requires_linkflags = EXTRA_SYS_LIBS
 dflags = EXTRA_SYS_LIBS
 sflags = EXTRA_SYS_LIBS
+iscr_source = ["lpsrc/flx_demux.pak"]
 
 @head(1,"Pre-emptive threads (pthread)")
 Note WE say pthread means 'pre-emptive thread' not

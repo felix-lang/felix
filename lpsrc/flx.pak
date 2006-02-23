@@ -235,8 +235,6 @@ Flx_version.version_data := version_data
 @include_file ('flx_util.ipk')
 @include_file ('flx_types.ipk')
 @include_file ('flx_ctypes.ipk')
-@include_file ('flx_frontc.ipk')
-@include_file ('flx_cil.ipk')
 @include_file ('flx_unify.ipk')
 @include_file ('flx_parser.ipk')
 @include_file ('flx_string.ipk')
@@ -289,11 +287,6 @@ Flx_version.version_data := version_data
 @include_file ('flx_getopt.ipk')
 @pop_head()
 
-@head(2,'The Felix Run time')
-@include_file ('flx_gc.ipk')
-@include_file ('flx_lib.ipk')
-@include_file ('flx_lex_lib.ipk')
-
 @head(2,'Stub mainline')
 This is a just a file for writing
 mini tests of various ocaml functions
@@ -305,12 +298,10 @@ create a file here for unit tests.
 @include_file ('flx_docgen.ipk')
 @include_file ('flx_pkgconfig.ipk')
 
-@head(2,'The Unix Build system')
-@include_file ('flx_man.ipk')
-@include_file ('flx_maker.ipk')
-@include_file ('flx_parser_maker.ipk')
 
 @head(2,'Misc')
+@include_file ('flx_man.ipk')
+@include_file ('flx_parser_maker.ipk')
 @include_file ('flx_vim.ipk')
 @include_file ('flx_jedit.ipk')
 @include_file ('flx_highlight.ipk')

@@ -3,7 +3,6 @@
 @head(1,'The Tests')
 Main tutorial elsewhere.
 
-@include_file ('flx_test.ipk')
 @include_file ('flx_regress.ipk')
 @include_file ('flx_bagley.ipk')
 @include_file ('flx_tut_expect.ipk')

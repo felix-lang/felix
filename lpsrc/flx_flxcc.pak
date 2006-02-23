@@ -1,4 +1,7 @@
 @head(1,'Flxcc wrapper generator')
+@execfile('config'+os.sep+'flx_data.py')
+@include_file("flx_frontc.ipk")
+@include_file("flx_cil.ipk")
 @h= tangler("src/flxcc.ml")
 @select(h)
 open List
