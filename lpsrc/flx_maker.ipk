@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.244  2006/02/23 06:50:04  skaller
+Build SDL version of driver
+
 Revision 1.243  2006/02/23 00:33:39  skaller
 Split build into phases
 
@@ -1214,10 +1217,13 @@ def addpkg_nr(pkg):
 
 def addpkg_r(pkg):
   if pkg not in pkgs:
-    reqs = pkgd[pkg].get('pkg_requires',[])
-    for i in reqs:
-      addpkg_r(i)
-    addpkg_nr(pkg)
+    if pkg not in pkgd.keys():
+      print "Unknown package",pkg
+    else:
+      reqs = pkgd[pkg].get('pkg_requires',[])
+      for i in reqs:
+        addpkg_r(i)
+      addpkg_nr(pkg)
 
 for pkg in unsorted_pkgs:
   addpkg_r(pkg)
@@ -1424,10 +1430,9 @@ try:
   if "extract" in options:
     packages = glob.glob("lpsrc"+os.sep+"*.pak")
     print "EXTRACTING SOURCES"
-    args = ""
     for p in packages:
-      args = args + p + " "
-    runISCR(args)
+      print "EXTRACTING",p
+      runISCR(p)
     filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
 
   if "man" in options:
@@ -1642,6 +1647,7 @@ try:
       
       # COMPILE DRIVER PROGRAMS
       DRIVERS = pkgdict.get("drivers",[])
+      cflags = pkgdict.get("cflags","")
       if len(DRIVERS)>0:
         if SUPPORT_STATIC_LINKAGE:
           ars = ""
@@ -1653,11 +1659,12 @@ try:
               xqt,dir,base,dir,
               include_path=["rtl"],
               macros=["FLX_STATIC_LINK"],
-              optimise=1,CFLAGS=CFLAGS)
+              optimise=1,CFLAGS=CFLAGS+cflags)
 
         if SUPPORT_DYNAMIC_LOADING:
           print "COMPILING DRIVERS (dynamic)"
           ars = ""
+          dflags = pkgdict.get("dflags","")
           LIBS = pkgdict.get("drivers_require_libs",[])
           libs = []
           for lib in LIBS:
@@ -1669,14 +1676,14 @@ try:
               xqt,dir,base,dir,
               include_path=["rtl"],
               optimise=1,
-              CFLAGS=CFLAGS)
+              CFLAGS=CFLAGS+cflags)
             TARGET_CXX.link_dynamic_program(
               xqt,
               [i+"_dynamic"],
               j,
               lib_path=[SHLIB_DIR],
               libs=libs,
-              DFLAGS=DFLAGS)
+              DFLAGS=DFLAGS+dflags)
 
       #------------------------------------------
       # TARGET TOOLS
