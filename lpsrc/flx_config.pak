@@ -2362,6 +2362,7 @@ if result == None:
     f.write("cflags: "+SDL_CFLAGS+"\n")
     f.write("dlibs: "+SDL_LIBS+"\n")
     f.write("slibs: "+SDL_STATIC_LIBS+"\n")
+    f.write("requires_driver: flx_sdl_run\n")
     f.close()
   fname = "config" + os.sep + "gl.fpc"
   if not file_exists(fname):

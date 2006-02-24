@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.3  2006/02/24 03:15:01  rfistman
+added flx_sdl_run
+
 Revision 1.2  2006/02/24 01:52:57  rfistman
 fixed bug in configure in which configure wasn't passing its args on
 
@@ -1575,13 +1578,35 @@ def run_demos():
   if optimise: mode = "Optimised"
   demos = pkgdict.get("demos",[])
 
+
   if len(demos)>0:
     print "RUNNING DEMOS"
     for testfile in demos:
-      # run the tests
       basename = build_test(testfile)
+    # subroutine candidate
+      resfilename = basename + ".resh"
+      f = open(resfilename)
+      data = f.readlines()
+      f.close()
+      pkgreqs = ""
+      for line in data:
+        pkgreqs = pkgreqs + " " + string.strip(line)
+
+      cmd = "bin"+os.sep+"flx_pkgconfig --path=config --field=requires_driver"
+      result,requires_driver= get_stdout(cmd+pkgreqs)
+      if result: 
+        print "flx_pkgconfig failed! Args=",cmd
+        raise MakeError
+
+      requires_driver = string.strip(requires_driver[0])
+  
+      if not requires_driver:
+        requires_driver="flx_run"
+     # subroutine candidate
+     # run the tests
+
       if LINK_MODEL == "dynamic":
-          testscript = "bin"+os.sep+"flx_run ./"+basename+SHLX
+          testscript = "bin"+os.sep+requires_driver+" ./"+basename+SHLX
       else:
         testscript = basename+SHLX
 

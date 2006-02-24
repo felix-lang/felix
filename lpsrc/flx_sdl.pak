@@ -1,5 +1,8 @@
 @head(1,'SDL')
 $Log$
+Revision 1.2  2006/02/24 03:15:01  rfistman
+added flx_sdl_run
+
 Revision 1.1  2006/02/23 17:06:08  skaller
 Refactor build system.
 
@@ -106,6 +109,11 @@ Change rtl name for MACOSX to libflx_dynamic.dylib
 Revision 1.2  2006/01/08 00:25:14  skaller
 Minor fix to sdl stuff
 
+@h=tangler('rtl/flx_sdl_run.cxx')
+@select(h)
+#include "SDL.h"
+#include "flx_run.cxx"
+
 @h = tangler('pkg/sdl.py')
 @select(h)
 
@@ -149,7 +157,7 @@ pkg_requires = ['glu']
 
 if HAVE_SDL:
   DRIVERS = [
-    ('rtl/flx_run','bin/flx_sdl_run'),
+    ('rtl/flx_sdl_run','bin/flx_sdl_run'),
   ]
   drivers = DRIVERS
   drivers_require_libs = ['libsdl','libfaio','libdemux','libflx']
