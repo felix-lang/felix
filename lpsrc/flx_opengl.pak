@@ -1,5 +1,8 @@
 @head(1,'open GL and extensions')
 $Log$
+Revision 1.2  2006/02/24 15:40:15  skaller
+Enhance flx_pkgconfig
+
 Revision 1.1  2006/02/23 17:06:08  skaller
 Refactor build system.
 
@@ -876,7 +879,6 @@ module GL_gl_h
 //#define __WIN32__
 //#define OPENSTEP
 //#define __gl_h_
-header '#include "GL/gl.h"';
 
  
   //C FUNCTION POINTER TYPES
@@ -1618,7 +1620,6 @@ include "GL/gl_lib";
 module GL_glu_h
 {
   requires package "glu";
-  header '#include "GL/glu.h"';
   open C_hack;
   open GL_gl_h;
 

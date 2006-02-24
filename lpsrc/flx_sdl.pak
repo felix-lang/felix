@@ -1,5 +1,8 @@
 @head(1,'SDL')
 $Log$
+Revision 1.3  2006/02/24 15:40:15  skaller
+Enhance flx_pkgconfig
+
 Revision 1.2  2006/02/24 03:15:01  rfistman
 added flx_sdl_run
 
@@ -166,6 +169,20 @@ if HAVE_SDL:
   dflags = SDL_LIBS
   sflags = SDL_STATIC_LIBS
    
+
+@h=tangler('lib/SDL/SDL_opengl.flx')
+@select(h)
+
+header '#include "SDL_opengl.h"';
+
+include "GL/gl_lib";
+include "GL/glu_lib";
+
+module SDL_opengl_h
+{
+  inherit GL_gl_h;  
+  inherit GL_glu_h;  
+}
 
 @h=tangler('lib/SDL/SDL.flx')
 @select(h)
@@ -2998,12 +3015,11 @@ include "SDL/SDL_video";
 include "SDL/SDL_events";
 include "SDL/SDL_timer";
 include "SDL/SDL_mutex";
+include "SDL/SDL_opengl";
 
 include "flx_faio";
 include "flx_faio_sdl";
 
-include "GL/gl_lib";
-include "GL/glu_lib";
 
 open C_hack;
 open Carray;
@@ -3023,8 +3039,7 @@ open SDL_mutex_h;
 // This is the Felix asynchronous event source 
 open SDL_events;
 
-open GL_gl_h;
-open GL_glu_h;
+open SDL_opengl_h;
 
 /* screen width, height, and bit depth */
 val SCREEN_WIDTH  = 640;
@@ -3387,12 +3402,10 @@ include "SDL/SDL_video";
 include "SDL/SDL_events";
 include "SDL/SDL_timer";
 include "SDL/SDL_mutex";
+include "SDL/SDL_opengl";
 
 include "flx_faio";
 include "flx_faio_sdl";
-
-include "GL/gl_lib";
-include "GL/glu_lib";
 
 open C_hack;
 open Carray;
@@ -3412,8 +3425,7 @@ open SDL_mutex_h;
 // This is the Felix asynchronous event source 
 open SDL_events;
 
-open GL_gl_h;
-open GL_glu_h;
+open SDL_opengl_h;
 
 /* screen width, height, and bit depth */
 val SCREEN_WIDTH  = 640;
@@ -3853,12 +3865,11 @@ include "SDL/SDL_video";
 include "SDL/SDL_events";
 include "SDL/SDL_timer";
 include "SDL/SDL_mutex";
+include "SDL/SDL_opengl";
 
 include "flx_faio";
 include "flx_faio_sdl";
 
-include "GL/gl_lib";
-include "GL/glu_lib";
 
 open C_hack;
 open Carray;
@@ -3878,8 +3889,7 @@ open SDL_mutex_h;
 // This is the Felix asynchronous event source 
 open SDL_events;
 
-open GL_gl_h;
-open GL_glu_h;
+open SDL_opengl_h;
 
 /* screen width, height, and bit depth */
 val SCREEN_WIDTH  = 640;
@@ -4353,12 +4363,10 @@ include "SDL/SDL_video";
 include "SDL/SDL_events";
 include "SDL/SDL_timer";
 include "SDL/SDL_mutex";
+include "SDL/SDL_opengl";
 
 include "flx_faio";
 include "flx_faio_sdl";
-
-include "GL/gl_lib";
-include "GL/glu_lib";
 
 open C_hack;
 open Carray;
@@ -4378,8 +4386,7 @@ open SDL_mutex_h;
 // This is the Felix asynchronous event source 
 open SDL_events;
 
-open GL_gl_h;
-open GL_glu_h;
+open SDL_opengl_h;
 
 /* screen width, height, and bit depth */
 val SCREEN_WIDTH  = 640;
@@ -4974,12 +4981,10 @@ include "SDL/SDL_video";
 include "SDL/SDL_events";
 include "SDL/SDL_timer";
 include "SDL/SDL_mutex";
+include "SDL/SDL_opengl";
 
 include "flx_faio";
 include "flx_faio_sdl";
-
-include "GL/gl_lib";
-include "GL/glu_lib";
 
 open C_hack;
 open Carray;
@@ -4999,8 +5004,7 @@ open SDL_mutex_h;
 // This is the Felix asynchronous event source 
 open SDL_events;
 
-open GL_gl_h;
-open GL_glu_h;
+open SDL_opengl_h;
 
 /* screen width, height, and bit depth */
 val SCREEN_WIDTH  = 640;

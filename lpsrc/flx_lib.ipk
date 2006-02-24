@@ -1556,6 +1556,16 @@ module List
 {
   union list[T] = | Empty | Cons of T * list[T];
 
+  fun len[T] : list[T] -> int =
+    | Empty => 0
+    | Cons (_,?t) => 1 + len t
+  ;
+
+  fun is_empty[T] : list[T] -> 2 =
+    | Empty => true
+    | _ => false
+  ;
+
   fun map[T,U] (f:T->U) (x:list[T]): list[U] = {
     return
       match x with
