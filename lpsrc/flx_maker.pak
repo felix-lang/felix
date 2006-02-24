@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.2  2006/02/24 01:52:57  rfistman
+fixed bug in configure in which configure wasn't passing its args on
+
 Revision 1.1  2006/02/23 19:33:01  skaller
 More fiddling with build system
 
@@ -2497,7 +2500,7 @@ echo "Configuring Felix"
 PREFIX=$PREFIX
 ARGS=""
 
-grab=0
+grab=1
 while  [ "$grab" -eq 1 ]
 do
   case x$1 in
