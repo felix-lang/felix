@@ -8,7 +8,7 @@ scripting harness to find them.
 @p()
 REQUIRES: -lgmpxx -lgmp
 
-@h = tangler('pkg/gmpxx.py')
+@h = tangler('spkgs/gmpxx.py')
 @select(h)
 #
 @h = tangler('lib/flx_gmp.flx','data')

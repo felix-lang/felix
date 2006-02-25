@@ -749,6 +749,9 @@ let gen_body syms (uses,child_map,bbdfns) id
   | `BEXE_code (sr,s)  as x -> [x]
   | `BEXE_nonreturn_code (sr,s)  as x -> [x]
   | `BEXE_goto (sr,lab) -> [`BEXE_goto (sr, relab lab)]
+
+
+  (* INLINING THING *)
   | `BEXE_proc_return sr as x -> 
     incr end_label_uses;
     [`BEXE_goto (sr,end_label)]

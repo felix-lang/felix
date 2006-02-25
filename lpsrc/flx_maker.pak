@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.5  2006/02/25 20:38:12  skaller
+Upgrade flx_pkgconfig
+
 Revision 1.4  2006/02/24 15:40:15  skaller
 Enhance flx_pkgconfig
 
@@ -604,7 +607,7 @@ for k in sys.argv[1:]:
     f.close()
 
 
-@h = tangler('pkg/misc.py')
+@h = tangler('spkgs/misc.py')
 @select(h)
 # files containing ocamllex sources
 MISC_LEXS = []
@@ -625,7 +628,7 @@ caml_interfaces = MISC_INTERFACES
 caml_implementations = MISC_IMPLEMENTATIONS
 
 
-@h = tangler('pkg/cil.py')
+@h = tangler('spkgs/cil.py')
 @select(h)
 CIL_LEXS = [ 'src/flx_cil_clexer', 'src/flx_cil_formatlex', ]
 CIL_PARSES = [ 'src/flx_cil_cparser', 'src/flx_cil_formatparse', ]
@@ -681,7 +684,7 @@ caml_exes = CIL_EXES
 caml_require_libs = ['nums','unix','misclib','cillib','flxlib']
 pkg_requires = ['flx','misc']
 
-@h = tangler('pkg/flx_compiler.py')
+@h = tangler('spkgs/flx_compiler.py')
 @select(h)
 FLX_LEXS = [ 'src/flx_lex' ]
 FLX_PARSES = [ 'src/flx_parse' ]
@@ -796,7 +799,7 @@ pkg_requires = ['misc']
 caml_provide_lib = 'flxlib'
 iscr_source = ["lpsrc/flx.pak"]
 
-@h = tangler('pkg/flx_rtl.py')
+@h = tangler('spkgs/flx_rtl.py')
 @select(h)
 RTL_CPPS = [
   "rtl/flx_gc",
@@ -812,7 +815,7 @@ RTL_CPPS = [
 cpp_cpps = RTL_CPPS
 provide_lib = "libflx"
 
-@h = tangler('pkg/flx_drivers.py')
+@h = tangler('spkgs/flx_drivers.py')
 @select(h)
 
 DRIVERS = [
@@ -824,7 +827,7 @@ drivers = DRIVERS
 drivers_require_libs = ['libfaio','libdemux','libflx']
 pkg_requires = ['flx_rtl','faio','demux']
 
-@h = tangler('pkg/flx_regression_tests.py')
+@h = tangler('spkgs/flx_regression_tests.py')
 @select(h)
 TESTS = glob.glob('test'+os.sep+'rt*.flx')
 # these are supposed to fail!
@@ -835,7 +838,7 @@ failure_tests = BAD_TESTS
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.ipk']
 
-@h = tangler('pkg/flx_tutorial_tests.py')
+@h = tangler('spkgs/flx_tutorial_tests.py')
 @select(h)
 TESTS = glob.glob('tut'+os.sep+'examples'+os.sep+'tut*.flx')
 TESTS = TESTS + glob.glob('tut'+os.sep+'examples'+os.sep+'mac*.flx')
@@ -851,12 +854,12 @@ iscr_source = [
   'lpsrc/flx_tut_expect.ipk',
   ]
 
-@h = tangler('pkg/flx.py')
+@h = tangler('spkgs/flx.py')
 @select(h)
 
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','demux','faio']
 
-@h = tangler('pkg/ocs.py')
+@h = tangler('spkgs/ocs.py')
 @select(h)
 OCS_MODULES = [
   'ocs_vartable', 
@@ -1848,7 +1851,7 @@ for f in glob.glob("mkplugins"+os.sep+"*.py"):
     print "Failed to install plugin",f
 print "PLUGIN FEATURES",plugins.keys()
 
-raw_pkgs = glob.glob("pkg"+os.sep+"*.py")
+raw_pkgs = glob.glob("spkgs"+os.sep+"*.py")
 unsorted_pkgs = []
 for i in raw_pkgs:
   j = string.split(i,os.sep)[1][:-3]
@@ -1857,7 +1860,7 @@ for i in raw_pkgs:
 pkgd = {}
 for pkg in unsorted_pkgs:
   class X:
-    execfile("pkg"+os.sep+pkg+".py")
+    execfile("spkgs"+os.sep+pkg+".py")
   d = {}
   for k in X.__dict__.keys():
     if k[0] != '_':

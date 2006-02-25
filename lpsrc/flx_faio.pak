@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.3  2006/02/25 20:38:12  skaller
+Upgrade flx_pkgconfig
+
 Revision 1.2  2006/02/23 19:33:01  skaller
 More fiddling with build system
 
@@ -160,7 +163,7 @@ Version: $Id$
    tangle("slibs: -lfaio_static")
 Requires: demux
 
-@h = tangler('pkg/faio.py')
+@h = tangler('spkgs/faio.py')
 @select(h)
 FAIORTL_INTERFACES = [
  'faio/faio_job.hpp',

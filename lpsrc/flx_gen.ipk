@@ -2190,7 +2190,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
     let ps = map (fun (id,(ix,t)) -> id,t) bps in
     let params = map (fun (id,(ix,t)) -> ix) bps in
     let exe_string,needs_switch =
-      gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no stackable
+      gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no (stackable && not heapable)
     in
 
     let cont = "con_t *" in
@@ -2724,6 +2724,7 @@ try
   and header_file_name = filebase ^ ".hpp"
   and body_file_name = filebase ^ ".cpp" 
   and package_file_name = filebase ^ ".resh" 
+  and rtti_file_name = filebase ^ ".rtti" 
   and report_file_name = filebase ^ ".xref" 
   and module_name = 
     let n = String.length filebase in 
@@ -2988,11 +2989,14 @@ try
   let hf = open_out header_file_name in
   let bf = open_out body_file_name in 
   let pf = open_out package_file_name in 
+  let rf = open_out rtti_file_name in 
   let psh s = output_string hf s in
   let psb s = output_string bf s in
   let psp s = output_string pf s in
+  let psr s = output_string rf s in
   let plh s = psh s; psh  "\n" in
   let plb s = psb s; psb "\n" in
+  let plr s = psr s; psr "\n" in
   let plp s = psp s; psp "\n" in
 
   if compiler_options.print_flag 
@@ -3307,8 +3311,10 @@ try
 
   plb "\n//-----------------------------------------";
   plb "//DEFINE OFFSET tables for GC";
+  plb ("#include \""^module_name^".rtti\"");
+  plr "//DEFINE OFFSET tables for GC";
 
-  plb (Flx_ogen.gen_offset_tables syms (child_map,bbdfns) module_name);
+  plr (Flx_ogen.gen_offset_tables syms (child_map,bbdfns) module_name);
 
   plb "\n//-----------------------------------------";
   plb "#ifdef FLX_CGOTO";
@@ -3385,6 +3391,7 @@ try
   close_out bf;
   plp "flx";
   close_out pf;
+  close_out rf;
   let code_generation_time = tim() in
   if compiler_options.print_flag then 
   print_endline ("//code generation time " ^ string_of_float code_generation_time);

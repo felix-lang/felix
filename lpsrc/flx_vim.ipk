@@ -1,8 +1,7 @@
 @head(1,"Vim Syntax File")
-@select(tangler("misc/vim/felix_plugin.vim",'data'))
-an 50.40.90 &Syntax.FG.Felix :cal SetSyn("felix")<CR>
-" Felix 
-au BufNewFile,BufRead *.flx setf felix
+@select(tangler("misc/vim/ftdetect/felix.vim",'data'))
+" Felix filetypes
+au BufNewFile,BufRead *.flx,*.flxh setf felix
 
 
 @select(tangler("misc/vim/felix.vim",'data'))
