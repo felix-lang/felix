@@ -225,6 +225,7 @@ whilst not is_empty pkgs do
   endmatch;
 done;
 
-print$ str result; endl;
+// trim any trailing space off to ease bash scripting
+print$ trim$ str result; endl;
 System::exit return_code;
 

@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.7  2006/02/26 10:05:37  rfistman
+made flx harness respect the driver_requires .resh field
+
 Revision 1.6  2006/02/26 06:39:36  skaller
 Fix flx_pkgconfig to conform to new spec.
 
@@ -3371,6 +3374,7 @@ fi
 
 if [ "$TESTMODE" = "1" ]
 then
+echo "SETTING PKGCONFIG_CFLAGS"
 PKGCONFIG_CFLAGS="bin/flx_pkgconfig --path+=config --field=cflags "
 PKGCONFIG_DLIBS="bin/flx_pkgconfig --path+=config --field=provides_dlib --field=requires_dlibs "
 PKGCONFIG_SLIBS="bin/flx_pkgconfig -r --path+=config --field=provides_slib --field=requires_slibs "
@@ -3493,15 +3497,26 @@ shift
 function calpackages () {
   if [ -a "$base.resh" ]
   then
-    INCLUDE_DIRS="$INCLUDE_DIRS $($(echo $PKGCONFIG_CFLAGS @base.resh))"
-    # now idea how to check for an error!!
+    INCLUDE_DIRS="$INCLUDE_DIRS `$PKGCONFIG_CFLAGS @$base.resh`"
+
+    # no idea how to check for an error!!
     if [ $STATIC = 0 ]
     then 
-      LINKER_SWITCHES="$LINKER_SWITCHES $($(echo $PKGCONFIG_DLIBS @base.resh))"
+      LINKER_SWITCHES="$LINKER_SWITCHES $($(echo $PKGCONFIG_DLIBS @$base.resh))"
     else
-      LINKER_SWITCHES="$LINKER_SWITCHES $($(echo $PKGCONFIG_SLIBS @base.resh))"
+      LINKER_SWITCHES="$LINKER_SWITCHES $($(echo $PKGCONFIG_SLIBS @$base.resh))"
     fi
   fi
+
+  DRIVER=$($(echo $PKGCONFIG_DRIVER @$base.resh))
+  if [ "x" = "x$DRIVER" ]
+    then
+      DRIVER=flx_run
+  fi
+
+  # NOTE: TRICK TO STRIP WHITESPACE that flx_pkgconfig might
+  # IS THAT A BUG? Yes, now fixed in flx_pkgconfig
+  # DRIVER=`echo $DRIVER`
 }
 
 # grab arguments
@@ -3531,15 +3546,15 @@ then
     # required in case the PATH has a filename with spaces
     # However this actually fails on Linux!
     FLXG="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" $FLX_INSTALL_DIR/bin/flxg"
-    FLXRUN="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" $FLX_INSTALL_DIR/bin/flx_run"
+    FLXRUN="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" $FLX_INSTALL_DIR/bin/"
   else
     FLXG="env PATH=$FLX_INSTALL_DIR/bin:\$PATH $FLX_INSTALL_DIR/bin/flxg"
     # the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
     if [ "$MACOSX" = "1" ]
     then
-      FLXRUN="env DYLD_LIBRARY_PATH=$FLX_INSTALL_DIR/rtl:\$DYLD_LIBRARY_PATH $FLX_INSTALL_DIR/bin/flx_run"
+      FLXRUN="env DYLD_LIBRARY_PATH=$FLX_INSTALL_DIR/rtl:\$DYLD_LIBRARY_PATH $FLX_INSTALL_DIR/bin/"
     else
-      FLXRUN="env LD_LIBRARY_PATH=$FLX_INSTALL_DIR/rtl:\$LD_LIBRARY_PATH $FLX_INSTALL_DIR/bin/flx_run"
+      FLXRUN="env LD_LIBRARY_PATH=$FLX_INSTALL_DIR/rtl:\$LD_LIBRARY_PATH $FLX_INSTALL_DIR/bin/"
     fi
   fi
   FLXRTL="$FLX_INSTALL_DIR/rtl"
@@ -3572,7 +3587,7 @@ else
   else
     INCLUDE_DIR="$prefix/lib/felix/rtl"
     FLXG="$prefix/bin/flxg"
-    FLXRUN="$prefix/bin/flx_run"
+    FLXRUN="$prefix/bin/"
     FLXLIB="$prefix/lib/felix/lib"
     FLXRTL="$prefix/rtl/felix/lib"
     FLXBIN="$prefix/bin"
@@ -3586,7 +3601,8 @@ else
     ELKHOUND="--elkhound=$prefix/bin/flx_elkhound"
   fi
 fi
-if [ "$DEBUG" = "1" ]; then FLXRUN="$FLXRUN --debug"; fi
+DEBUGSWITCH=""
+if [ "$DEBUG" = "1" ]; then DEBUGSWITCH=" --debug"; fi
 STATIC_ENV=""
 if [ "$DEBUG" = "1" ]; then STATIC_ENV="env FLX_DEBUG=1 "; fi
 
@@ -3597,7 +3613,7 @@ then
   then
     if [ $RUNIT = 1 ]
     then
-      cmd="$FLXRUN $base$EXT_SHLIB $args"
+      cmd="$FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
       if [ $ECHO = 1 ]; then echo $cmd; fi
       eval $cmd
     fi
@@ -3651,9 +3667,9 @@ then
         then
           if [ $TIME = 1 ]
           then
-            cmd="time $FLXRUN $base$EXT_SHLIB $args"
+            cmd="time $FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
           else
-            cmd="$FLXRUN $base$EXT_SHLIB $args"
+            cmd="$FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
           fi
           if [ $ECHO = 1 ]; then echo $cmd; fi
           eval $cmd
@@ -3677,7 +3693,7 @@ else
   then
     calpackages
     CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DFLX_STATIC_LINK -I$INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-    LCMD="$CCLINK_STATIC $base$EXT_OBJ $FLXRTL/flx_run_static$EXT_OBJ $cppos $SLINK_STRING $SPEC_EXE_FILENAME$base$EXT_EXE $PTHREAD_SWITCH $LINKER_SWITCHES"
+    LCMD="$CCLINK_STATIC $base$EXT_OBJ $FLXRTL/${DRIVER}_static$EXT_OBJ $cppos $SLINK_STRING $SPEC_EXE_FILENAME$base$EXT_EXE $PTHREAD_SWITCH $LINKER_SWITCHES"
     if [ $ECHO = 1 ]; then echo "$CCMD"; fi
     if `echo $CCMD`
     then
