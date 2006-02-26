@@ -2387,8 +2387,8 @@ if result == None:
     f.write("Description: Simple Direct Media Layer\n")
     f.write("Version: "+SDL_VERSION+"\n")
     f.write("cflags: "+SDL_CFLAGS+"\n")
-    f.write("dlibs: "+SDL_LIBS+"\n")
-    f.write("slibs: "+SDL_STATIC_LIBS+"\n")
+    f.write("requires_dlibs: "+SDL_LIBS+"\n")
+    f.write("requires_slibs: "+SDL_STATIC_LIBS+"\n")
     f.write("requires_driver: flx_sdl_run\n")
     f.close()
   fname = "config" + os.sep + "gl.fpc"
@@ -2397,8 +2397,8 @@ if result == None:
     f = open (fname,"w")
     f.write("Name: OpenGL\n")
     f.write("Description: open GL graphics\n")
-    f.write("dlibs: -lGL\n")
-    f.write("slibs: -lGL\n")
+    f.write("provides_dlib: -lGL\n")
+    f.write("provides_slib: -lGL\n")
     f.close()
   fname = "config" + os.sep + "glu.fpc"
   if not file_exists(fname):
@@ -2406,8 +2406,9 @@ if result == None:
     f = open (fname,"w")
     f.write("Name: GLU\n")
     f.write("Description: GLU graphics \n")
-    f.write("dlibs: -lGLU\n")
-    f.write("slibs: -LGLU\n")
+    f.write("provides_dlib: -lGLU\n")
+    f.write("provides_slib: -LGLU\n")
+    f.write("Requires: gl\n")
     f.close()
   fname = "config" + os.sep + "glut.fpc"
   if not file_exists(fname):
@@ -2415,8 +2416,9 @@ if result == None:
     f = open (fname,"w")
     f.write("Name: GLUT\n")
     f.write("Description: GLUT graphics\n")
-    f.write("dlibs: -lglut\n")
-    f.write("slibs: -lglut\n")
+    f.write("provides_dlib: -lglut\n")
+    f.write("provides_slib: -lglut\n")
+    f.write("Requires: gl glu\n")
     f.close()
 else:
   HAVE_SDL = 0

@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.6  2006/02/26 06:39:36  skaller
+Fix flx_pkgconfig to conform to new spec.
+
 Revision 1.5  2006/02/25 20:38:12  skaller
 Upgrade flx_pkgconfig
 
@@ -1091,15 +1094,8 @@ def build_test(testfile):
     erasefile(basename+SHLX)
     raise MakeError
 
-  f = open(resfilename)
-  data = f.readlines()
-  f.close()
-  pkgreqs = ""
-  for line in data:
-    pkgreqs = pkgreqs + " " + string.strip(line)
-
-  cmd = "bin"+os.sep+"flx_pkgconfig --path=config --field=cflags"
-  result,cflags= get_stdout(cmd+pkgreqs)
+  cmd = "bin"+os.sep+"flx_pkgconfig --path=config --field=cflags @"+resfilename
+  result,cflags= get_stdout(cmd)
   if result: 
     print "flx_pkgconfig failed! Args=",cmd
     raise MakeError
@@ -1114,8 +1110,8 @@ def build_test(testfile):
         optimise=optimise,
         CFLAGS=CFLAGS+" "+cflags)
 
-      cmd = "bin"+os.sep+"flx_pkgconfig --path=config --field=dlibs"
-      result,dlibs= get_stdout(cmd+pkgreqs)
+      cmd = "bin"+os.sep+"flx_pkgconfig --path=config --field=provides_dlib --field=requires_dlibs @"+resfilename
+      result,dlibs= get_stdout(cmd)
       if result: 
         print "flx_pkgconfig failed! Args=",cmd
         raise MakeError
@@ -1137,8 +1133,9 @@ def build_test(testfile):
         macros=["FLX_STATIC_LINK"],
         CFLAGS=CFLAGS+" "+cflags)
 
-      cmd = "bin"+os.sep+"flx_pkgconfig --path=config --field=slibs"
-      result,slibs= get_stdout(cmd+pkgreqs)
+      cmd = "bin"+os.sep+"flx_pkgconfig -r --path=config "
+      cmd = cmd + "--field=provides_slib --field=requires_slibs @"+resfilename
+      result,slibs= get_stdout(cmd)
       if result: 
         print "flx_pkgconfig failed! Args=",cmd
         raise MakeError
@@ -1591,15 +1588,9 @@ def run_demos():
       basename = build_test(testfile)
     # subroutine candidate
       resfilename = basename + ".resh"
-      f = open(resfilename)
-      data = f.readlines()
-      f.close()
-      pkgreqs = ""
-      for line in data:
-        pkgreqs = pkgreqs + " " + string.strip(line)
-
-      cmd = "bin"+os.sep+"flx_pkgconfig --path=config --field=requires_driver"
-      result,requires_driver= get_stdout(cmd+pkgreqs)
+      cmd = "bin"+os.sep+"flx_pkgconfig --path=config "
+      cmd = cmd +"--field=flx_requires_driver @"+resfilename
+      result,requires_driver= get_stdout(cmd)
       if result: 
         print "flx_pkgconfig failed! Args=",cmd
         raise MakeError
@@ -1820,6 +1811,9 @@ if "test" in options:
 
 if "silent" in options: 
   options.append("quiet")
+
+if "demo" in options:
+  if "run" not in phases: phases.append("run")
 
 if options:
   print "OPTIONS: ", options
@@ -3377,18 +3371,21 @@ fi
 
 if [ "$TESTMODE" = "1" ]
 then
-PKGCONFIG_CFLAGS="env PKG_CONFIG_PATH=config bin/flx_pkgconfig --field=cflags "
-PKGCONFIG_DLIBS="env PKG_CONFIG_PATH=config bin/flx_pkgconfig --field=dlibs "
-PKGCONFIG_SLIBS="env PKG_CONFIG_PATH=config bin/flx_pkgconfig --field=slibs "
+PKGCONFIG_CFLAGS="bin/flx_pkgconfig --path+=config --field=cflags "
+PKGCONFIG_DLIBS="bin/flx_pkgconfig --path+=config --field=provides_dlib --field=requires_dlibs "
+PKGCONFIG_SLIBS="bin/flx_pkgconfig -r --path+=config --field=provides_slib --field=requires_slibs "
+PKGCONFIG_DRIVER="bin/flx_pkgconfig --path+=config --field=flx_requires_driver "
 elif [ "x$FLX_INSTALL_DIR" != "x" ]
 then
-PKGCONFIG_CFLAGS="env PKG_CONFIG_PATH=\"$FLX_INSTALL_DIR/config\" $FLX_INSTALL_DIR/bin/flx_pkgconfig --field=cflags "
-PKGCONFIG_DLIBS="env PKG_CONFIG_PATH=\"$FLX_INSTALL_DIR/config\" $FLX_INSTALL_DIR/bin/flx_pkgconfig --field=dlibs "
-PKGCONFIG_SLIBS="env PKG_CONFIG_PATH=\"$FLX_INSTALL_DIR/config\" $FLX_INSTALL_DIR/bin/flx_pkgconfig --field=slibs "
+PKGCONFIG_CFLAGS="$FLX_INSTALL_DIR/bin/flx_pkgconfig --path+=$FLX_INSTALL_DIR --field=cflags "
+PKGCONFIG_DLIBS="$FLX_INSTALL_DIR/bin/flx_pkgconfig -path+=$FLX_INSTALL_DIR --field=provides_dlib --field=requires_dlibs "
+PKGCONFIG_SLIBS="$FLX_INSTALL_DIR/bin/flx_pkgconfig --path+=FLX_INSTALL_DIR --field=field-provides_slib --requires_slibs "
+PKGCONFIG_DRIVER="$FLX_INSTALL_DIR/bin/flx_pkgconfig --path+=FLX_INSTALL_DIR --field=flx_requires_driver "
 else
 PKGCONFIG_CFLAGS="flx_pkgconfig --field=cflags "
-PKGCONFIG_DLIBS="flx_pkgconfig --field=dlibs "
-PKGCONFIG_SLIBS="flx_pkgconfig --field=slibs "
+PKGCONFIG_DLIBS="flx_pkgconfig --field=provides_dlib --field=requires_dlibs "
+PKGCONFIG_SLIBS="flx_pkgconfig -r --field=provides_slib --requires_slibs "
+PKGCONFIG_DRIVER="flx_pkgconfig --field=flx_requires_driver "
 fi
 
 # make a list of any *.cpp files (or other g++ options ..)
@@ -3496,17 +3493,13 @@ shift
 function calpackages () {
   if [ -a "$base.resh" ]
   then
-    pkgs="$pkgs $(cat $base.resh)"
-  fi
-
-  if [[ "x$pkgs" != "x" && "x$pkgs" != "x " ]]
-  then
-    INCLUDE_DIRS="$INCLUDE_DIRS $($(echo $PKGCONFIG_CFLAGS $pkgs))"
+    INCLUDE_DIRS="$INCLUDE_DIRS $($(echo $PKGCONFIG_CFLAGS @base.resh))"
+    # now idea how to check for an error!!
     if [ $STATIC = 0 ]
     then 
-      LINKER_SWITCHES="$LINKER_SWITCHES $($(echo $PKGCONFIG_DLIBS $pkgs))"
+      LINKER_SWITCHES="$LINKER_SWITCHES $($(echo $PKGCONFIG_DLIBS @base.resh))"
     else
-      LINKER_SWITCHES="$LINKER_SWITCHES $($(echo $PKGCONFIG_SLIBS $pkgs))"
+      LINKER_SWITCHES="$LINKER_SWITCHES $($(echo $PKGCONFIG_SLIBS @base.resh))"
     fi
   fi
 }

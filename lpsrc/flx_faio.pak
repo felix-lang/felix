@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.4  2006/02/26 06:39:36  skaller
+Fix flx_pkgconfig to conform to new spec.
+
 Revision 1.3  2006/02/25 20:38:12  skaller
 Upgrade flx_pkgconfig
 
@@ -156,11 +159,11 @@ Name: faio
 Description: Asynchronous I/O support
 Version: $Id$
 @if HAVE_MSVC:
-   tangle("dlibs: /DEFAULTLIB:libfaio_dynamic")
-   tangle("slibs: /DEFAULTLIB:libfaio_static")
+   tangle("provides_dlib: /DEFAULTLIB:libfaio_dynamic")
+   tangle("provides_slib: /DEFAULTLIB:libfaio_static")
  else:
-   tangle("dlibs: -lfaio_dynamic")
-   tangle("slibs: -lfaio_static")
+   tangle("provides_dlib: -lfaio_dynamic")
+   tangle("provides_slib: -lfaio_static")
 Requires: demux
 
 @h = tangler('spkgs/faio.py')

@@ -49,7 +49,7 @@ var fields = Empty[string];
 var pkgs = Empty[string];
 
 var hide = false; // only find first file in path
-var require_pkg_exists = false; // fail if file not found
+var require_pkg_exists = true; // fail if file not found
 var missing = false; // report missing packages
 var require_field_exists = false; // fail if file doesn't contain field
 var recfields = Empty[string];
@@ -75,8 +75,8 @@ proc parse_args(args:list[string])
       elif "--hide" == arg.[0 to 6] do
         hide = true;
 
-      elif "--pkg-exists" == arg.[0 to 12] do
-        require_pkg_exists = true;
+      elif "--noerror" == arg.[0 to 12] do
+        require_pkg_exists = false;
 
       elif "-" == arg.[0 to 1] and "-" != arg.[1 to 2] do
         flags := arg.[1 to];
@@ -119,6 +119,9 @@ proc parse_args(args:list[string])
 
       // ignore unknown options
       elif "-" == arg.[0 to 1] do ;
+
+      // ignore empty arguments
+      elif "" == arg do ;
 
       // package name
       else

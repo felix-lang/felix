@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.5  2006/02/26 06:39:36  skaller
+Fix flx_pkgconfig to conform to new spec.
+
 Revision 1.4  2006/02/25 20:38:12  skaller
 Upgrade flx_pkgconfig
 
@@ -148,14 +151,18 @@ Description: Pre-emptive threading support
 Version: $Id$
 
 @if HAVE_MSVC:
-   tangle("dlibs: /DEFAULTLIB:libdemux_dynamic /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
-   tangle("slibs: /DEFAULTLIB:libdemux_static /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
+   tangle("provides_dlib: /DEFAULTLIB:libdemux_dynamic")
+   tangle("requires_dlibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
+   tangle("provides_slib: /DEFAULTLIB:libdemux_static")
+   tangle("requires_slibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
  elif WIN32:
-   tangle("dlibs: -ldemux_dynamic -lws2_32 -lmswsock")
-   tangle("slibs: -ldemux_static -lws2_32 -lmswsock")
+   tangle("provides_dlib: -ldemux_dynamic")
+   tangle("requires_dlibs: -lws2_32 -lmswsock")
+   tangle("provides_slib: -ldemux_static")
+   tangle("requires_slibs: -lws2_32 -lmswsock")
  else:
-   tangle("dlibs: -ldemux_dynamic")
-   tangle("slibs: -ldemux_static")
+   tangle("provides_dlib: -ldemux_dynamic")
+   tangle("provides_slib: -ldemux_static")
 Requires: flx
 
 @h = tangler('spkgs/demux.py')

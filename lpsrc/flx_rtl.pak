@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.3  2006/02/26 06:39:36  skaller
+Fix flx_pkgconfig to conform to new spec.
+
 Revision 1.2  2006/02/23 19:33:01  skaller
 More fiddling with build system
 
@@ -179,14 +182,17 @@ Name: flx
 Description: Felix core runtime support
 Version: $Id$
 @if HAVE_MSVC:
-   tangle("dlibs: /DEFAULTLIB:libflx_dynamic")
-   tangle("slibs: /DEFAULTLIB:libfaio_static /DEFAULTLIB:libdemux_static /DEFAULTLIB:libflx_static")
+   tangle("provides_dlib: /DEFAULTLIB:libflx_dynamic")
+   tangle("requires_dlibs: /DEFAULTLIB:libdemux_dynamic")
+   tangle("requires_slibs: /DEFAULTLIB:libfaio_static /DEFAULTLIB:libdemux_static /DEFAULTLIB:libflx_static")
  elif WIN32:
-   tangle("dlibs: -lflx_dynamic")
-   tangle("slibs: -lfaio_static -ldemux_static -lflx_static -lws2_32 -lmswsock")
+   tangle("provides_dlib: -lflx_dynamic")
+   tangle("requires_dlibs: -ldemux_dynamic")
+   tangle("requires_slibs: -lfaio_static -ldemux_static -lflx_static -lws2_32 -lmswsock")
  else:
-   tangle("dlibs: -lflx_dynamic")
-   tangle("slibs: -lfaio_static -ldemux_static -lflx_static")
+   tangle("provides_dlib: -lflx_dynamic")
+   tangle("requires_dlibs: -ldemux_dynamic")
+   tangle("requires_slibs: -lfaio_static -ldemux_static -lflx_static")
 
 @h = tangler("rtl/flx_meta.hpp")
 @select(h)
