@@ -151,6 +151,15 @@ and is heavily dependent on the number of words stacked per function call.
 
 @showgraph('rosella','ack',"Ackermann's function on Rosella (Amd64-k8)")
 
+@select(tangler('speed/specs/ack.py','data'))
+descr="Ackerman's function"
+min=5
+max=10
+@select(tangler('speed/specs/takfp.py','data'))
+descr="Taka's function, using floats"
+min=5
+max=10
+
 @select(tangler('speed/src/felix/ack.flx','data'))
 @flx_setup()
 
@@ -418,6 +427,8 @@ import sys
 import random
 import signal
 import socket
+import glob
+import string
 
 # utility to make a CLEAN directory
 def mkdir(p):
@@ -426,17 +437,21 @@ def mkdir(p):
 
 env = {}
 
-execfile("config/xlators.py")
+xlators = []
+for f in glob.glob("speed"+os.sep+"xlators"+os.sep+"*.py"):
+  execfile(f)
+  name = string.split(f,os.sep)[2][0:-3]
+  xlators.append((name,mk,lang))
 
 # set up any environment needed, this is a temporary hack
 for k in env:
   os.putenv(k,env[k])
 
-#define the tests
-tests = {
-  'ack':(1,5),
-  'takfp':(1,5),
-}
+tests = {}
+for f in glob.glob("speed"+os.sep+"specs"+os.sep+"*.py"):
+  execfile(f)
+  base = string.split(f,os.sep)[2][:-3]
+  tests[base]=(descr,min,max)
 
 
 #------ command line arguments -----------------
@@ -475,8 +490,8 @@ for key,mk,src in xlators:
   print "Using translator",key
   mkdir('speed/exes/'+key)
 
-for t in tests:
-  min,max=tests[t]
+for t in tests.keys():
+  descr,min,max=tests[t]
   print "Running test",t,"initial nrange="+str(min)+":"+str(max)
 
 hostname = socket.gethostname()
@@ -496,18 +511,21 @@ print "COMPILING PROGRAMS"
 wxlats = []
 for xl,mk,src in xlators:
   for test in tests.keys():
-    fst,last = tests[test]
+    descr,fst,last = tests[test]
     cmd = mk(xl,test) 
     print cmd
     # won't work on Win98, result always 0 for command.com
     result = os.system(cmd)
     if result <> 0: 
-      print "COMPILE FAILURE",xl,mk,src,test
+      print "COMPILE FAILURE",xl,src,test
     else:
-      print "Compile OK",xl,mk,src,test
-     wxlats.append((xl,mk,src))
+      print "Compile OK",xl,src,test
+      wxlats.append((xl,mk,src,test))
 
-nlators = len(wxlats)
+nwxlats = len(wxlats)
+
+for xlat,f,src,tst in wxlats:
+  print xlat,src,tst
 
 # fork extra copies of ourself now
 
@@ -535,11 +553,9 @@ xlt = {}
 f = open("speed/results.dat","at")
 while time.time() - start_time < max_test_time:
   # pick a random test and a random translator
-  test_ix = random.randint(0,ntests-1)
-  xlator_ix = random.randint(0,nlators-1)
-  test = tests.keys()[test_ix]
-  fst,lst = tests[test]
-  xl,mk,src = wxlats[xlator_ix]
+  ix = random.randint(0,nwxlats-1)
+  xl,mk,src,test = wxlats[ix]
+  descr,fst,lst = tests[test]
   fst,lst = xlt.setdefault((test,xl),(fst,lst))
 
   # pick an integer between fst and lst inclusive
@@ -773,124 +789,148 @@ fi.close()
 
 @head(2,'Standard Build commands')
 @select(tangler('speed/xlators/gcc.py','python'))
-def mk_gcc(k,p):
+def mk(k,p):
   return "gcc -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+lang="c"
 
 @select(tangler('speed/xlators/gccopt.py','python'))
-def mk_gccopt(k,p):
+def mk(k,p):
   x = "gcc -O3 -fomit-frame-pointer -funroll-loops "
   x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
   return x
+lang="c"
 
 @select(tangler('speed/xlators/ocamlopt.py','python'))
-def mk_ocamlopt(k,p):
+def mk(k,p):
   return "ocamlopt.opt -o speed/exes/%s/%s speed/src/ocaml/%s.ml" % (k,p,p)
+lang="ocaml"
 
 @select(tangler('speed/xlators/ocamlb.py','python'))
-def mk_ocamlb(k,p):
+def mk(k,p):
   return "ocamlc.opt -o speed/exes/%s/%s speed/src/ocaml/%s.ml" % (k,p,p)
+lang="ocaml"
 
 @select(tangler('speed/xlators/felix.py','python'))
-def mk_felix(k,p):
+def mk(k,p):
   x = "bin/flx --test --force --static --optimise -c -DFLX_PTF_STATIC_POINTER "
   x = x + "speed/src/felix/%s && " % p
   x = x + "mv speed/src/felix/%s speed/exes/%s/%s" % (p,k,p)
   return x
+lang="felix"
 
 @select(tangler('speed/xlators/ghc.py','python'))
 # ----------- environment hack ------------------
 env['GHCRTS']='-K8m -k1m' # set stack size for GHC
 
-def mk_ghc(k,p):
+def mk(k,p):
   return "ghc -O3 -fvia-C -optc -O1 -o speed/exes/%s/%s speed/src/haskell/%s.hs" % (k,p,p)
+lang="haskell"
 
 @select(tangler('speed/xlators/gnat.py','python'))
-def mk_gnat(k,p):
+def mk(k,p):
   return "python script/gnatmaker.py speed/src/ada/%s speed/exes/%s " % (p,k)
+lang="ada"
 
 @select(tangler('speed/xlators/gjc.py','python'))
-def mk_gcj(k,p):
+def mk(k,p):
   x = "gcj -O3 -fomit-frame-pointer -funroll-loops "
   x = x + "-o speed/exes/%s/%s --main=%s speed/src/java/%s.java" % (k,p,p,p)
   return x
+lang="java"
 
 @select(tangler('speed/xlators/gcc_3_3.py','python'))
-def mk_gcc_3_3(k,p):
+def mk(k,p):
   return "gcc-3.3 -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+lang="c"
 
 @select(tangler('speed/xlators/gcc_3_3_opt.py','python'))
-def mk_gcc_3_3_opt(k,p):
+def mk(k,p):
   x = "gcc-3.3 -O3 -fomit-frame-pointer -funroll-loops "
   x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
   return x
+lang="c"
 
 @select(tangler('speed/xlators/gcc_3_4.py','python'))
-def mk_gcc_3_4(k,p):
+def mk(k,p):
   return "gcc-3.4 -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+lang="c"
 
 @select(tangler('speed/xlators/gcc_3_4_opt.py','python'))
-def mk_gcc_3_4_opt(k,p):
+def mk(k,p):
   x = "gcc-3.4 -O3 -fomit-frame-pointer -funroll-loops "
   x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
   return x
+lang="c"
 
 @select(tangler('speed/xlators/gcc_4_0.py','python'))
-def mk_gcc_4_0(k,p):
+def mk(k,p):
   return "gcc-4.0 -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+lang="c"
 
 @select(tangler('speed/xlators/gcc_4_0_opt.py','python'))
-def mk_gcc_4_0_opt(k,p):
+def mk(k,p):
   x = "gcc-4.0 -O3 -fomit-frame-pointer -funroll-loops "
   x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
   return x
+lang="c"
 
 @select(tangler('speed/xlators/gpp_3_3.py','python'))
-def mk_gpp_3_3(k,p):
+def mk(k,p):
   return "g++-3.3 -x c++ -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+lang="cpp"
 
 @select(tangler('speed/xlators/gpp_3_3.py','python'))
-def mk_gpp_3_3_opt(k,p):
+def mk(k,p):
   x = "g++-3.3 -x c++ -O3 -fomit-frame-pointer -funroll-loops "
   x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
   return x
+lang="cpp"
 
 @select(tangler('speed/xlators/gpp_4_0.py','python'))
-def mk_gpp_4_0(k,p):
+def mk(k,p):
   return "g++-4.0 -x c++ -o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
+lang="cpp"
 
 @select(tangler('speed/xlators/gpp_4_0_opt.py','python'))
-def mk_gpp_4_0_opt(k,p):
+def mk(k,p):
   x = "g++-4.0 -x c++ -O3 -fomit-frame-pointer -funroll-loops "
   x = x + "-o speed/exes/%s/%s speed/src/c/%s.c" % (k,p,p)
   return x
+lang="cpp"
 
 @select(tangler('speed/xlators/ghc_6_2_2.py','python'))
-def mk_ghc_6_2_2(k,p):
+def mk(k,p):
   return "ghc-6.2.2 -O3 -fvia-C -optc -O3 -o speed/exes/%s/%s speed/src/haskell/%s.hs" % (k,p,p)
+lang="haskell"
 
 @select(tangler('speed/xlators/ghc_6_4_1.py','python'))
-def mk_ghc_6_4_1(k,p):
+def mk(k,p):
   return "ghc-6.4.1.20050704 -O3 -fvia-C -optc -O3 -o speed/exes/%s/%s speed/src/haskell/%s.hs" % (k,p,p)
+lang="haskell"
 
 @select(tangler('speed/xlators/fpc_2_0_0.py','python'))
-def mk_fpc_2_0_0(k,p):
+def mk(k,p):
   x = "fpc -O3 speed/src/pascal/%s.pp && " % p
   x = x + "mv speed/src/pascal/%s speed/exes/%s" % (p,k)
   return x
+lang="pascal"
 
 @select(tangler('speed/xlators/gpc_2_1_3_3.py','python'))
-def mk_gpc_2_1_3_3(k,p):
+def mk(k,p):
   return "gpc-2.1-3.3 -O3 -o speed/exes/%s/%s speed/src/pascal/%s.pp" % (k,p,p)
+lang="pascal"
 
 @select(tangler('speed/xlators/gnat_4_0.py','python'))
 def mk_gnat_4_0(k,p):
   return "python script/gnatmaker_4_0.py speed/src/ada/%s speed/exes/%s " % (p,k)
+lang="ada"
 
 @select(tangler('speed/xlators/gcj_4_0.py','python'))
-def mk_gcj_4_0(k,p):
+def mk(k,p):
   x = "gcj-4.0  -O3 -fomit-frame-pointer -funroll-loops "
   x = x + "-o speed/exes/%s/%s --main=%s speed/src/java/%s.java" % (k,p,p,p)
   return x
+lang="java"
 
 @select(tangler('script/gnatmaker.py'))
 import os
