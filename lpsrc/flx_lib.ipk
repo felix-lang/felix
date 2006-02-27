@@ -1203,22 +1203,33 @@ module String
   // comparisons
   gen_cmp string;
 
-  const npos: int = "std::string::npos";
+  // Note we use int instead of size here: size is correct,
+  // but that would requires heaps of casts in Felix
+  const npos: int = "(int)std::string::npos";
   fun find: string * string -> int = "$1.find($2)";
   fun find: string * string * int -> int = "$1.find($2,$3)";
+  fun find: string * charp -> int = "$1.find($2)";
+  fun find: string * charp * int -> int = "$1.find($2,$3)";
   fun find: string * char -> int = "$1.find($2)";
   fun find: string * char * int -> int = "$1.find($2,$3)";
-  fun find_first_of: string * string -> int = "$1.find_first_of($2)";
-  fun find_first_not_of: string * string -> int = "$1.find_first_not_of($2)";
-  fun find_first_of: string * charp -> int = "$1.find_first_of($2)";
-  fun find_first_not_of: string * charp -> int = "$1.find_first_not_of($2)";
 
   fun rfind: string * string -> int = "$1.ffind($2)";
   fun rfind: string * string * int -> int = "$1.ffind($2,$3)";
+  fun rfind: string * charp -> int = "$1.ffind($2)";
+  fun rfind: string * charp * int -> int = "$1.ffind($2,$3)";
   fun rfind: string * char -> int = "$1.ffind($2)";
   fun rfind: string * char * int -> int = "$1.ffind($2,$3)";
+
+  fun find_first_of: string * string -> int = "$1.find_first_of($2)";
+  fun find_first_of: string * charp -> int = "$1.find_first_of($2)";
+
+  fun find_first_not_of: string * string -> int = "$1.find_first_not_of($2)";
+  fun find_first_not_of: string * charp -> int = "$1.find_first_not_of($2)";
+
   fun find_last_of: string * string -> int = "$1.find_last_of($2)";
+  fun find_last_of: string * charp -> int = "$1.find_last_of($2)";
   fun find_last_not_of: string * string -> int = "$1.find_last_not_of($2)";
+  fun find_last_not_of: string * charp -> int = "$1.find_last_not_of($2)";
 
   // trim whitespace
   fun ltrim : string -> string = 

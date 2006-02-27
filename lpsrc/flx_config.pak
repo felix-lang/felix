@@ -4,11 +4,58 @@
 @flx_version_major = '1'
 @flx_version_minor = '1'
 @flx_version_patch = '2'
-@flx_version_release = '_rc2'
+@flx_version_release = '_rc3'
 @flx_version = flx_version_major+'.'+flx_version_minor+'.'+flx_version_patch+flx_version_release
 @godi_revision = '0'
 @debian_revision = '1'
 @rpm_revision = '1'
+
+@head(1,'boot')
+A shell script to extract the configure script.
+@select(tangler('boot.sh'))
+python interscript/bin/iscr.py lpsrc/flx_config.pak
+@select(tangler('boot.bat'))
+python interscript\bin\iscr.py lpsrc\flx_config.pak
+
+@head(1,'configure')
+A shell script to run the config step.
+@select(tangler('configure'))
+export PYTHONPATH=.:$PYTHONPATH
+echo "Configuring Felix"
+PREFIX=$PREFIX
+ARGS=""
+
+grab=1
+while  [ "$grab" -eq 1 ]
+do
+  case x$1 in
+  x--prefix=*)
+     PREFIX="`echo \"$1\" | sed 's/--prefix=\(.*\)/\\1/'`"
+     shift
+  ;;
+
+  x--prefix)
+    shift
+    PREFIX="$1"
+    shift
+  ;;
+
+  x)
+    grab=0
+  ;;
+
+  x*)
+    ARGS="${ARGS} $1"
+    shift
+  ;;
+
+
+  esac
+done
+
+python interscript/bin/iscr.py lpsrc/flx_config.pak
+python -O script/make_config.py --quiet --prefix=${PREFIX} ${ARGS}
+python interscript/bin/iscr.py lpsrc/flx_maker.pak
 
 @select(tangler('tmp/xlators_local.py','python'))
 # reconfigure translator definitions for your

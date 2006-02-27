@@ -56,6 +56,7 @@ var recfields = Empty[string];
 var dolist = false;
 var listkeys = false;
 var return_code = 0;
+var backwards = false;
 
 var i = 1;
 var arg = argv i; 
@@ -63,41 +64,39 @@ var args = Empty[string];
 whilst arg != "" do args = arg + args; ++i; arg=argv i; done;
 args = rev args;
 
+fun is_prefix_of(p:string,w:string)=> p == w.[to len p];
+
 proc parse_args(args:list[string]) 
 {
   match args with
   | Empty => {}
   | Cons (?arg,?tail) =>
     {
-      if "--field" == arg.[0 to 7] do
+      fun prefix(x:string)=>is_prefix_of(x,arg);
+
+      if prefix("--hide") do hide = true;
+      elif prefix("--backwards") do backwards = true;
+      elif prefix("--list") do dolist = true;
+      elif prefix("--missing") do missing = true;
+      elif prefix("--noerror") do require_pkg_exists = false;
+
+      elif "--field" == arg.[0 to 7] do
         fields = fields + arg.[8 to];
-
-      elif "--hide" == arg.[0 to 6] do
-        hide = true;
-
-      elif "--noerror" == arg.[0 to 12] do
-        require_pkg_exists = false;
 
       elif "-" == arg.[0 to 1] and "-" != arg.[1 to 2] do
         flags := arg.[1 to];
         if find(flags,chr "r") != npos do
           recfields = append_unique streq recfields "Requires";
-
-        elif find(flags,"h") != npos do hide = true;
-
-        elif find(flags,"l") != npos do dolist = true;
         done;
+
+        if find(flags,"h") != npos do hide = true; done;
+        if find(flags,"b") != npos do backwards = true; done;
+        if find(flags,"l") != npos do dolist = true; done;
 
       elif "--rec" == arg.[0 to 5] do
         var fld = arg.[6 to];
         fld = if fld == "" then "Requires" else fld endif;
         recfields = append_unique streq recfields fld;
-
-      elif "--list" == arg.[0 to 6] do
-        dolist = true;
-
-      elif "--missing" == arg.[0 to 9] do
-        missing = true;
 
       // add to path
       elif "--path+" == arg.[0 to 7] do
@@ -166,7 +165,7 @@ var handled_pkgs = Empty[string];
 proc add_val(v:string){ 
     result = append_unique streq result v;
 }
- 
+
 proc handle_pkg (pkg:string){
    var found = false;
    iter(proc (dir:string){
@@ -226,6 +225,7 @@ whilst not is_empty pkgs do
 done;
 
 // trim any trailing space off to ease bash scripting
+if backwards do result = rev result; done;
 print$ trim$ str result; endl;
 System::exit return_code;
 

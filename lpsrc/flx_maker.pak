@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.8  2006/02/27 06:56:09  skaller
+Refactoring speed test into modules.
+
 Revision 1.7  2006/02/26 10:05:37  rfistman
 made flx harness respect the driver_requires .resh field
 
@@ -1081,7 +1084,8 @@ def build_test(testfile):
   optimise= "optimise_c" in options
   mode = "std"
   if optimise: mode = "Optimised"
-  print 'Running Felix code generator on ',testfile
+  print "------------------------------------------------"
+  print 'TRANSLATING',testfile
   basename = string.split(testfile,'.')[0]
   cppfilename = basename + ".cpp"
   resfilename = basename + ".resh"
@@ -1094,7 +1098,6 @@ def build_test(testfile):
     print 'TESTFILE -- ERROR!',basename
     erasefile(basename+'.cpp')
     erasefile(basename+'.hpp')
-    erasefile(basename+SHLX)
     raise MakeError
 
   cmd = "bin"+os.sep+"flx_pkgconfig --path=config --field=cflags @"+resfilename
@@ -1104,10 +1107,10 @@ def build_test(testfile):
     raise MakeError
 
   cflags = string.strip(cflags[0])
-  print "COMPILING GENERATED C++ TEST CODE: " + mode+ " " + LINK_MODEL
   #print 'Compiling generated code of ',testfile
   try:
-    if LINK_MODEL == "dynamic":
+    if SUPPORT_DYNAMIC_LOADING:
+      print "COMPILING GENERATED C++ TEST CODE: " + mode+ " (dynamic)"
       TARGET_CXX.compile_felix_dll(xqt,indir,infile,indir,
         include_path=["rtl"],
         optimise=optimise,
@@ -1125,7 +1128,9 @@ def build_test(testfile):
         basename,
         lib_path=[SHLIB_DIR],
         DFLAGS=DFLAGS+dlibs)
-    else: # static
+
+    if SUPPORT_STATIC_LINKAGE:
+      print "COMPILING GENERATED C++ TEST CODE: " + mode+ " (static)"
       TARGET_CXX.compile_felix_static(
         xqt,
         indir,
@@ -1136,7 +1141,7 @@ def build_test(testfile):
         macros=["FLX_STATIC_LINK"],
         CFLAGS=CFLAGS+" "+cflags)
 
-      cmd = "bin"+os.sep+"flx_pkgconfig -r --path=config "
+      cmd = "bin"+os.sep+"flx_pkgconfig -rb --path=config "
       cmd = cmd + "--field=provides_slib --field=requires_slibs @"+resfilename
       result,slibs= get_stdout(cmd)
       if result: 
@@ -1154,7 +1159,8 @@ def build_test(testfile):
     #print 'TESTFILE -- OK!',basename
   except MakeError:
     print 'TESTFILE -- ERROR!',basename
-    erasefile(basename+SHLX)
+    erasefile(basename+EXT_SHLIB)
+    erasefile(basename+EXT_EXE)
     raise MakeError
 
   return basename
@@ -1504,7 +1510,7 @@ if not globals().get("link_model_env",None):
   if LINK_MODEL == "dynamic":
     SHLX = EXT_SHLIB
   else:
-    SHLX = ""
+    SHLX = EXT_EXE
 
   CCMACS=""
   for i in options:
@@ -1539,12 +1545,10 @@ def run_host_tests():
         #print 'TESTFILE -- failed as expected',basename
         erasefile(basename+'.cpp')
         erasefile(basename+'.hpp')
-        erasefile(basename+SHLX)
       except MakeError:
         print 'TESTFILE -- SUCCEEDED, SHOULD HAVE FAILED!',basename
         erasefile(basename+'.cpp')
         erasefile(basename+'.hpp')
-        erasefile(basename+SHLX)
         raise MakeError
 
 @select(tangler('mkplugins/run_unit_tests.py'))
@@ -1561,21 +1565,31 @@ def run_unit_tests():
     for testfile in unit_tests:
       # run the tests
       basename = build_test(testfile)
-      if LINK_MODEL == "dynamic":
-          testscript = "bin"+os.sep+"flx_run ./"+basename+SHLX
-      else:
-        testscript = basename+SHLX
+      if SUPPORT_DYNAMIC_LOADING:
+        testscript = "bin"+os.sep+"flx_run ./"+basename+EXT_SHLIB
+        testscript = testscript + " >" + basename + ".output"
+        testscript = testscript + " && "+DIFF+ basename + ".expect "+ basename + ".output"
+        #print 'Executing ',testscript
+        try:
+          run(testscript)
+          #print 'TESTFILE -- OK!',testscript
+        except MakeError:
+          print 'TESTFILE -- ERROR!',testscript
+          raise MakeError
 
-      testscript = testscript + " >" + basename + ".output"
-      testscript = testscript + " && "+DIFF+ basename + ".expect "+ basename + ".output"
+      if SUPPORT_STATIC_LINKAGE:
+        testscript = basename
+        testscript = "./"+basename+EXT_EXE
+        testscript = testscript + " >" + basename + ".output"
+        testscript = testscript + " && "+DIFF+ basename + ".expect "+ basename + ".output"
+        #print 'Executing ',testscript
+        try:
+          run(testscript)
+          #print 'TESTFILE -- OK!',testscript
+        except MakeError:
+          print 'TESTFILE -- ERROR!',testscript
+          raise MakeError
 
-      #print 'Executing ',testscript
-      try:
-        run(testscript)
-        #print 'TESTFILE -- OK!',testscript
-      except MakeError:
-        print 'TESTFILE -- ERROR!',testscript
-        raise MakeError
 
 @select(tangler('mkplugins/run_demos.py'))
 def run_demos():    
@@ -1602,21 +1616,26 @@ def run_demos():
   
       if not requires_driver:
         requires_driver="flx_run"
-     # subroutine candidate
-     # run the tests
 
-      if LINK_MODEL == "dynamic":
-          testscript = "bin"+os.sep+requires_driver+" ./"+basename+SHLX
-      else:
-        testscript = basename+SHLX
+      if SUPPORT_DYNAMIC_LOADING
+        testscript = "bin"+os.sep+requires_driver+" ./"+basename+EXT_SHLIB
+        #print 'Executing ',testscript
+        try:
+          run(testscript)
+          #print 'TESTFILE -- OK!',testscript
+        except MakeError:
+          print 'TESTFILE -- ERROR!',testscript
+          raise MakeError
 
-      #print 'Executing ',testscript
-      try:
-        run(testscript)
-        #print 'TESTFILE -- OK!',testscript
-      except MakeError:
-        print 'TESTFILE -- ERROR!',testscript
-        raise MakeError
+      if SUPPORT_STATIC_LINKAGE:
+        testscript = "./"+basename+EXT_EXE
+        #print 'Executing ',testscript
+        try:
+          run(testscript)
+          #print 'TESTFILE -- OK!',testscript
+        except MakeError:
+          print 'TESTFILE -- ERROR!',testscript
+          raise MakeError
 
 @select(tangler('mkplugins/xqt.py'))
 get_stdouterr = get_stdout
@@ -1722,7 +1741,7 @@ def plugin():
   os.system("env PYTHONPATH=. python script/get_grammar src/flx_parse.mly >misc/flx_parse.grammar")
   os.system('env PYTHONPATH=. python script/flx_flx_grgen misc/flx_parse.grammar >lib/flx_grammar.flx')
   os.system('env PYTHONPATH=. python script/elk_flx_lexgen misc/flx_parse.grammar >misc/elk_flx_lex.cc')
-  os.system('tenv PYTHONPATH=. python script/flx_tokgen misc/flx_parse.grammar >lib/flx_token.flx')
+  os.system('env PYTHONPATH=. python script/flx_tokgen misc/flx_parse.grammar >lib/flx_token.flx')
 
 @h = tangler('script/maker','python')
 @select(h)
@@ -2516,46 +2535,6 @@ We have no idea if it continues copying.
 @tangle('\tscp flx_'+flx_version+'_src.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('\tscp flx_'+flx_version+'_share.tgz skaller@felix.sf.net:/home/groups/f/fe/felix/htdocs')
 @tangle('')
-
-@head(1,'configure')
-A shell script to run the config step.
-@select(tangler('configure'))
-export PYTHONPATH=.:$PYTHONPATH
-echo "Configuring Felix"
-PREFIX=$PREFIX
-ARGS=""
-
-grab=1
-while  [ "$grab" -eq 1 ]
-do
-  case x$1 in
-  x--prefix=*)
-     PREFIX="`echo \"$1\" | sed 's/--prefix=\(.*\)/\\1/'`"
-     shift
-  ;;
-
-  x--prefix)
-    shift
-    PREFIX="$1"
-    shift
-  ;;
-
-  x)
-    grab=0
-  ;;
-
-  x*)
-    ARGS="${ARGS} $1"
-    shift
-  ;;
-
-
-  esac
-done
-
-python interscript/bin/iscr.py lpsrc/flx_config.pak
-python -O script/make_config.py --quiet --prefix=${PREFIX} ${ARGS}
-python interscript/bin/iscr.py lpsrc/flx_maker.pak
 
 @head(1,'README')
 @select(tangler('README'))
@@ -3376,19 +3355,19 @@ if [ "$TESTMODE" = "1" ]
 then
 echo "SETTING PKGCONFIG_CFLAGS"
 PKGCONFIG_CFLAGS="bin/flx_pkgconfig --path+=config --field=cflags "
-PKGCONFIG_DLIBS="bin/flx_pkgconfig --path+=config --field=provides_dlib --field=requires_dlibs "
-PKGCONFIG_SLIBS="bin/flx_pkgconfig -r --path+=config --field=provides_slib --field=requires_slibs "
+PKGCONFIG_DLIBS="bin/flx_pkgconfig  --path+=config --field=provides_dlib --field=requires_dlibs "
+PKGCONFIG_SLIBS="bin/flx_pkgconfig -rb --path+=config --field=provides_slib --field=requires_slibs "
 PKGCONFIG_DRIVER="bin/flx_pkgconfig --path+=config --field=flx_requires_driver "
 elif [ "x$FLX_INSTALL_DIR" != "x" ]
 then
 PKGCONFIG_CFLAGS="$FLX_INSTALL_DIR/bin/flx_pkgconfig --path+=$FLX_INSTALL_DIR --field=cflags "
 PKGCONFIG_DLIBS="$FLX_INSTALL_DIR/bin/flx_pkgconfig -path+=$FLX_INSTALL_DIR --field=provides_dlib --field=requires_dlibs "
-PKGCONFIG_SLIBS="$FLX_INSTALL_DIR/bin/flx_pkgconfig --path+=FLX_INSTALL_DIR --field=field-provides_slib --requires_slibs "
+PKGCONFIG_SLIBS="$FLX_INSTALL_DIR/bin/flx_pkgconfig -rb --path+=FLX_INSTALL_DIR --field=field-provides_slib --requires_slibs "
 PKGCONFIG_DRIVER="$FLX_INSTALL_DIR/bin/flx_pkgconfig --path+=FLX_INSTALL_DIR --field=flx_requires_driver "
 else
 PKGCONFIG_CFLAGS="flx_pkgconfig --field=cflags "
 PKGCONFIG_DLIBS="flx_pkgconfig --field=provides_dlib --field=requires_dlibs "
-PKGCONFIG_SLIBS="flx_pkgconfig -r --field=provides_slib --requires_slibs "
+PKGCONFIG_SLIBS="flx_pkgconfig -rb --field=provides_slib --requires_slibs "
 PKGCONFIG_DRIVER="flx_pkgconfig --field=flx_requires_driver "
 fi
 
