@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.5  2006/02/28 02:07:13  skaller
+Refactor demux into demux + pthread.
+
 Revision 1.4  2006/02/26 06:39:36  skaller
 Fix flx_pkgconfig to conform to new spec.
 
@@ -205,8 +208,8 @@ if POSIX:
 
 cpp_cpps = FAIO_CPPS
 rtl_interfaces = FAIORTL_INTERFACES
-pkg_requires = ['demux','flx_rtl']
-lib_requires = ['libdemux','libflx']
+pkg_requires = ['demux','flx_pthread','flx_rtl']
+lib_requires = ['libdemux','libflx_pthread','libflx']
 unit_tests = EXTRA_TEST_GLOBS
 iscr_source = ["lpsrc/flx_faio.pak"]
 
@@ -537,14 +540,14 @@ To use this class, just override doit().
 #define __FAIO_JOB_REQUEST__
 #include <flx_rtl_config.hpp>
 #include "demux_demuxer.hpp"
-#include "demux_work_fifo.hpp"
+#include "pthread_work_fifo.hpp"
 #include "faio_drv.hpp"
 #include "faio_asyncio.hpp"
 
 namespace flx { namespace faio {
 class FLX_RTL_EXTERN job_t: 
   public flx::faio::flx_driver_request_base,
-  public flx::demux::worker_task 
+  public flx::pthread::worker_task 
 {
    flx::faio::thread_wakeup   fw;
 public:  
@@ -587,9 +590,9 @@ void job_t::finished(){
 #define __FLXDRV__
 #include <flx_rtl_config.hpp>
 
-#include "demux_sleep_queue.hpp"
+#include "pthread_sleep_queue.hpp"
+#include "pthread_work_fifo.hpp"
 #include "demux_timer_queue.hpp"
-#include "demux_work_fifo.hpp"
 #include "demux_demuxer.hpp"
 
 namespace flx { namespace faio {
@@ -597,15 +600,15 @@ namespace flx { namespace faio {
 // which faio came. all it is now is a pointer to a queue. 
 // watch this space.
 class FLX_RTL_EXTERN flx_drv {
-    demux::sleep_queue_t&    ready_queue;
-    demux::worker_fifo     work_fifo;
+    flx::pthread::sleep_queue_t&    ready_queue;
+    flx::pthread::worker_fifo     work_fifo;
 public:
-    flx_drv(demux::sleep_queue_t& q, int n);
+    flx_drv(flx::pthread::sleep_queue_t& q, int n);
     virtual ~flx_drv();
 
     void sched(void* f);
 
-    demux::worker_fifo* get_worker_fifo() { return &work_fifo; }
+    flx::pthread::worker_fifo* get_worker_fifo() { return &work_fifo; }
     virtual demux::timer_queue* get_sleepers() = 0;
 };
 
@@ -635,7 +638,7 @@ public:
 
 using namespace flx::demux;
 namespace flx { namespace faio {
-flx_drv::flx_drv(sleep_queue_t& q, int n)
+flx_drv::flx_drv(flx::pthread::sleep_queue_t& q, int n)
     : ready_queue(q), work_fifo(n)
 {   
 }
@@ -672,7 +675,7 @@ class FLX_RTL_EXTERN pflx_drv : public flx_drv {
     demux::pasync_fileio       file_aio_worker;
     demux::posix_timer_queue   sleepers;
 public:
-    pflx_drv(demux::sleep_queue_t& q, int n);
+    pflx_drv(flx::pthread::sleep_queue_t& q, int n);
 
     demux::pasync_fileio* get_aio_worker() { return &file_aio_worker; }
     demux::timer_queue* get_sleepers() { return &sleepers; }
@@ -693,7 +696,7 @@ namespace flx { namespace faio {
 
 // what is this stuff?? 3 queues needed?
 
-pflx_drv::pflx_drv(sleep_queue_t& q, int n)
+pflx_drv::pflx_drv(flx::pthread::sleep_queue_t& q, int n)
     : flx_drv(q,n), file_aio_worker(n)
 {
     // we might actually like to ignore SIGPIPE's conditionally,
@@ -843,7 +846,7 @@ class FLX_RTL_EXTERN wflx_drv : public flx_drv {
 public:
   // visual studio seems to demand that I have the constructor defined in a cpp
   // file. the file previously had none, which gave me weird link errors.
-  wflx_drv(demux::sleep_queue_t& q, int n);
+  wflx_drv(flx::pthread::sleep_queue_t& q, int n);
 
   demux::timer_queue* get_sleepers() { return &sleepers; }
 };
@@ -861,7 +864,7 @@ public:
 namespace flx { namespace faio {
 
   // vs requirement that I have a cpp file?
-  wflx_drv::wflx_drv(demux::sleep_queue_t& q,int n) : flx_drv(q,n) {}
+  wflx_drv::wflx_drv(flx::pthread::sleep_queue_t& q,int n) : flx_drv(q,n) {}
 
 }}
 

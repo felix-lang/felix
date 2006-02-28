@@ -1,0 +1,1131 @@
+@head(1,'pthread')
+$Log$
+Revision 1.1  2006/02/28 02:07:13  skaller
+Refactor demux into demux + pthread.
+
+@execfile('config'+os.sep+'config.py')
+@h = tangler('config/flx_pthread.fpc')
+@select(h)
+Name: pthread
+Description: Pre-emptive threading support
+Version: $Id$
+
+@if HAVE_MSVC:
+   tangle("provides_dlib: /DEFAULTLIB:libflx_pthread_dynamic")
+   tangle("provides_slib: /DEFAULTLIB:libflx_pthread_static")
+ elif WIN32:
+   tangle("provides_dlib: -lflx_pthread_dynamic")
+   tangle("provides_slib: -lflx_pthread_static")
+ else:
+   tangle("provides_dlib: -lflx_pthread_dynamic")
+   tangle("provides_slib: -lflx_pthread_static")
+Requires: flx
+
+@h = tangler('spkgs/flx_pthread.py')
+@select(h)
+
+PTHREADRTL_INTERFACES = [
+ 'pthread/pthread_thread.hpp',        # portable
+ 'pthread/pthread_win_posix_condv_emul.hpp',         # win32 and posiz
+ 'pthread/pthread_mutex.hpp',         # portable
+ 'pthread/pthread_condv.hpp',         # portable
+ 'pthread/pthread_semaphore.hpp',     # portable
+ 'pthread/pthread_monitor.hpp',       # portable
+ 'pthread/pthread_sleep_queue.hpp',   # portable
+ 'pthread/pthread_work_fifo.hpp',     # portable
+]
+
+PTHREAD_CPPS = [
+  "pthread/pthread_win_posix_condv_emul", # portability hackery
+  "pthread/pthread_mutex", 
+  "pthread/pthread_condv",
+  "pthread/pthread_semaphore",
+  "pthread/pthread_monitor",
+  "pthread/pthread_sleep_queue",
+  "pthread/pthread_work_fifo",
+  "rtl/flx_ts_collector",
+]
+
+POSIX_PTHREAD_CPPS = [
+  'pthread/pthread_posix_thread', 
+]
+
+LINUX_PTHREAD_CPPS = [
+]
+
+SOLARIS_PTHREAD_CPPS = [
+]
+
+WINDOWS_PTHREAD_CPPS = [
+  'pthread/pthread_win_thread', 
+]
+
+BSD_PTHREAD_CPPS = [
+]
+
+EXTRA_SYS_LIBS = ""
+if WIN32:
+  PTHREAD_CPPS = PTHREAD_CPPS + WINDOWS_PTHREAD_CPPS
+
+if POSIX:
+  PTHREAD_CPPS = PTHREAD_CPPS + POSIX_PTHREAD_CPPS
+
+if LINUX:
+  PTHREAD_CPPS = PTHREAD_CPPS + LINUX_PTHREAD_CPPS
+
+if BSD or MACOSX:
+  PTHREAD_CPPS = PTHREAD_CPPS + BSD_PTHREAD_CPPS
+
+if SOLARIS:
+  PTHREAD_CPPS = PTHREAD_CPPS + SOLARIS_PTHREAD_CPPS
+
+cpp_cpps = PTHREAD_CPPS
+rtl_interfaces = PTHREADRTL_INTERFACES
+#lib_requires_linkflags = EXTRA_SYS_LIBS
+dflags = EXTRA_SYS_LIBS
+sflags = EXTRA_SYS_LIBS
+iscr_source = ["lpsrc/flx_pthread.pak"]
+
+@head(1,"Pre-emptive threads (pthread)")
+Note WE say pthread means 'pre-emptive thread' not
+merely Posix thread. Confusing on Solaris especially.
+However it fits with name fthread for felix threads
+which are actually s- (synchronous) or np- (non-preemptive) 
+threads.
+
+@head(2,'Thread')
+@h=tangler('pthread/pthread_thread.hpp')
+@select(h)
+#ifndef __FLX_THREAD__
+#define __FLX_THREAD__
+#include <flx_rtl_config.hpp>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <pthread.h>
+#endif
+
+// auto pthread, because I forget how to deallocate them nicely
+// could init in the constructor, but ultimately you don't want the thread
+// barging in before you've finished doing other stuff
+// Addendum (20051128): doing stdio in turns out to be not very safe.
+// I don't know if printf et al are supposed to be thread safe (most impls
+// seem to try to be) but I sometimes get deadlocks in ppc64 os x 10.4.2
+// with 4.0.1 when printfing to stdout. Nasty.
+
+namespace flx { namespace pthread {
+
+// ********************************************************
+/// Posix Threads. This class simply wraps the creation
+/// and joining of threads. It is not safe.
+// ********************************************************
+
+class FLX_RTL_EXTERN flx_thread_t {
+#ifdef _WIN32
+  HANDLE    thread;
+#else
+  pthread_t   thr;        ///< the thread
+#endif
+  flx_thread_t(flx_thread_t const&); // uncopyable
+  void operator=(flx_thread_t const&); // uncopyable
+public:
+  flx_thread_t();
+  ~flx_thread_t();
+#ifdef _WIN32
+  int init(LPTHREAD_START_ROUTINE, LPVOID lParam);
+#else
+  int init(void* (*start)(void*), void* udat);
+#endif
+  void join();  
+};
+
+/// RAII wrapper for thread class
+class FLX_RTL_EXTERN flx_thread_wrapper_t {
+  flx_thread_t thread;
+  flx_thread_wrapper_t(flx_thread_wrapper_t const&); // uncopyable
+  void operator=(flx_thread_wrapper_t const&); // uncopyable
+public:
+  ~flx_thread_wrapper_t();
+  flx_thread_wrapper_t(void* (*start)(void*), void* udat);
+};
+
+}}
+#endif
+
+@h=tangler('pthread/pthread_posix_thread.cpp')
+@select(h)
+#include "pthread_thread.hpp"
+#include <stdio.h>
+
+namespace flx { namespace pthread {
+flx_thread_t::flx_thread_t(flx_thread_t const&){} // uncopyable
+void flx_thread_t::operator=(flx_thread_t const&){} // uncopyable
+
+int 
+flx_thread_t::init(void* (*start)(void*), void* udat)
+{
+  // fprintf(stderr,"flx_thread_t::init(this=%p, fn=%p, udat=%p)\n",
+  //  this, start, udat);
+
+  // default attrs. hope they're good
+  pthread_create(&thr, NULL, start, udat);
+  return 0;
+}
+
+void flx_thread_t::join() { pthread_join(thr, NULL); }
+
+flx_thread_t::~flx_thread_t() { }
+flx_thread_t::flx_thread_t() { }
+
+flx_thread_wrapper_t::flx_thread_wrapper_t(flx_thread_wrapper_t const&){} // uncopyable
+void flx_thread_wrapper_t::operator=(flx_thread_wrapper_t const&){} // uncopyable
+
+flx_thread_wrapper_t::flx_thread_wrapper_t(void* (*start)(void*), void* udat)
+{
+  thread.init(start,udat);
+}
+
+flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
+
+}}
+
+@h=tangler('pthread/pthread_win_thread.cpp')
+@select(h)
+#include "pthread_thread.hpp"
+#include <stdio.h>
+
+namespace flx { namespace pthread {
+
+flx_thread_t::flx_thread_t(flx_thread_t const&){} // uncopyable
+void flx_thread_t::operator=(flx_thread_t const&){} // uncopyable
+
+
+flx_thread_t::flx_thread_t() { }
+flx_thread_t::~flx_thread_t() { }
+
+// this should be idempotent
+void
+flx_thread_t::join()
+{
+  // Let's try and wait for the thread to finish, however first I have to
+  // tell it to finish up.
+
+  DWORD  wait_res = WaitForSingleObject(thread, INFINITE);
+
+  // will this give me my return status? how do I get that?
+  if(WAIT_FAILED == wait_res)
+  {
+    fprintf(stderr,"thread wait failed (%li)\n", GetLastError());
+  }
+
+  // I've already tried waiting on the  thread's exit
+  if(!CloseHandle(thread))
+  {
+    fprintf(stderr,"failed to delete thread (%li)\n", GetLastError());
+  }
+}
+
+// returns -1 on failure with error in GetLastError, 0 if all good.
+int
+flx_thread_t::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
+{
+  DWORD thread_id = 0;
+  thread = (HANDLE)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)fn, lParam, 0, &thread_id);  
+  return 0;
+}
+
+flx_thread_wrapper_t::flx_thread_wrapper_t(LPTHREAD_START_ROUTINE f, LPVOID lParam)
+{
+  thread.init(f,lParam);
+}
+flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
+
+}}
+
+@head(1,"Mutex")
+@head(2,'Windows Emulation of Posix Synchronisation primitives')
+@h=tangler('pthread/pthread_win_posix_condv_emul.hpp')
+@select(h)
+#ifndef __WIN_POSIX_CONDV_EMUL__
+#define __WIN_POSIX_CONDV_EMUL__
+// Note: no namespaces here!
+// See http://www.cs.wustl.edu/~schmidt/win32-cv-1.html
+
+#include "flx_rtl_config.hpp"
+#ifdef _WIN32
+#include <windows.h>
+
+typedef HANDLE pthread_mutex_t;
+typedef void pthread_mutexattr_t; // do NOT use them!
+typedef void pthread_condattr_t; // do NOT use them!
+
+struct pthread_cond_t
+{
+  int waiters_count_;
+  // Number of waiting threads.
+
+  CRITICAL_SECTION waiters_count_lock_;
+  // Serialize access to <waiters_count_>.
+
+  HANDLE sema_;
+  // Semaphore used to queue up threads waiting for the condition to
+  // become signaled. 
+
+  HANDLE waiters_done_;
+  // An auto-reset event used by the broadcast/signal thread to wait
+  // for all the waiting thread(s) to wake up and be released from the
+  // semaphore. 
+
+  size_t was_broadcast_;
+  // Keeps track of whether we were broadcasting or signaling.  This
+  // allows us to optimize the code if we're just signaling.
+};
+
+// THIS IS SICK but there ain't no other way in C
+#define ETIMEDOUT WAIT_TIMEOUT
+// looks like EAGAIN is available in minggw, but not in vs sdk.
+#ifndef EAGAIN
+#define EAGAIN WAIT_TIMEOUT
+#endif
+
+int FLX_RTL_EXTERN pthread_mutex_init (pthread_mutex_t*, const pthread_mutexattr_t*);
+int FLX_RTL_EXTERN pthread_mutex_lock(pthread_mutex_t*);
+int FLX_RTL_EXTERN pthread_mutex_unlock(pthread_mutex_t*);
+int FLX_RTL_EXTERN pthread_mutex_destroy(pthread_mutex_t*);
+
+int FLX_RTL_EXTERN pthread_cond_init (pthread_cond_t*, const pthread_condattr_t*);
+int FLX_RTL_EXTERN pthread_cond_destroy(pthread_cond_t*);
+int FLX_RTL_EXTERN pthread_cond_wait (pthread_cond_t*, pthread_mutex_t*);
+int FLX_RTL_EXTERN pthread_cond_timedwait(pthread_cond_t*, pthread_mutex_t*, struct timespec const*);
+int FLX_RTL_EXTERN pthread_cond_uswait(pthread_cond_t*, pthread_mutex_t*, unsigned long us);
+int FLX_RTL_EXTERN pthread_cond_signal (pthread_cond_t*); 
+int FLX_RTL_EXTERN pthread_cond_broadcast (pthread_cond_t*);
+
+
+typedef HANDLE sem_t;
+
+int FLX_RTL_EXTERN sem_init(sem_t *sem, int pshared, unsigned int value);
+int FLX_RTL_EXTERN sem_wait(sem_t * sem);
+int FLX_RTL_EXTERN sem_trywait(sem_t * sem);
+int FLX_RTL_EXTERN sem_post(sem_t * sem);
+int FLX_RTL_EXTERN sem_getvalue(sem_t * sem, int * sval);
+int FLX_RTL_EXTERN sem_destroy(sem_t * sem);
+
+#else
+#include <errno.h>
+#include <pthread.h>
+#include <semaphore.h>
+// emulate the native Window functionality
+int FLX_RTL_EXTERN pthread_cond_uswait( pthread_cond_t*, pthread_mutex_t*, unsigned long us);
+#endif
+#endif
+
+@h=tangler('pthread/pthread_win_posix_condv_emul.cpp')
+@select(h)
+#include "pthread_win_posix_condv_emul.hpp"
+#include <assert.h>
+#ifdef _WIN32
+#include <string.h>
+
+struct timespec {
+  unsigned long tv_sec;
+  unsigned long tv_nsec;
+};
+
+int pthread_mutex_init (pthread_mutex_t *m, const pthread_mutexattr_t*)
+{
+  *m = CreateMutex(NULL,FALSE,NULL); 
+  return 0;
+}
+
+int pthread_mutex_lock(pthread_mutex_t *m)
+{
+  WaitForSingleObject(*m,INFINITE); 
+  return 0;
+}
+
+int pthread_mutex_unlock(pthread_mutex_t *m)
+{
+  ReleaseMutex(*m);
+  return 0;
+}
+
+int pthread_mutex_destroy(pthread_mutex_t *m)
+{
+  CloseHandle(*m);
+  return 0;
+}
+
+int 
+pthread_cond_init 
+(
+  pthread_cond_t *cv,
+  const pthread_condattr_t *
+)
+{
+  cv->waiters_count_ = 0;
+  cv->was_broadcast_ = 0;
+  cv->sema_ = CreateSemaphore 
+  (
+    NULL,       // no security
+    0,          // initially 0
+    0x7fffffff, // max count .. (I hate limits .. but thats a lot of pthreads)
+    NULL        // unnamed
+  ); 
+  InitializeCriticalSection (&cv->waiters_count_lock_);
+  cv->waiters_done_ = CreateEvent 
+  (
+    NULL,  // no security
+    FALSE, // auto-reset
+    FALSE, // non-signaled initially
+    NULL   // unnamed
+  );
+  return 0;
+}
+
+int 
+pthread_cond_destroy(pthread_cond_t *cv)
+{
+  CloseHandle(cv->sema_);
+  CloseHandle(cv->waiters_done_);
+  return 0;
+}
+
+// returns ETIMEDOUT = WAIT_TIMEOUT
+static int
+private_cond_wait 
+(
+  pthread_cond_t *cv, 
+  pthread_mutex_t *external_mutex,
+  unsigned long ms
+)
+{
+  // Avoid race conditions.
+  EnterCriticalSection (&cv->waiters_count_lock_);
+  cv->waiters_count_++;
+  LeaveCriticalSection (&cv->waiters_count_lock_);
+
+  // This call atomically releases the mutex and waits on the
+  // semaphore until <pthread_cond_signal> or <pthread_cond_broadcast>
+  // are called by another thread.
+  int res = SignalObjectAndWait (*external_mutex, cv->sema_, ms, FALSE);
+
+  // Reacquire lock to avoid race conditions.
+  EnterCriticalSection (&cv->waiters_count_lock_);
+
+  // We're no longer waiting...
+  cv->waiters_count_--;
+
+  // Check to see if we're the last waiter after <pthread_cond_broadcast>.
+  int last_waiter = cv->was_broadcast_ && cv->waiters_count_ == 0;
+
+  LeaveCriticalSection (&cv->waiters_count_lock_);
+
+  // If we're the last waiter thread during this particular broadcast
+  // then let all the other threads proceed.
+  if (last_waiter)
+    // This call atomically signals the <waiters_done_> event and waits until
+    // it can acquire the <external_mutex>.  This is required to ensure fairness. 
+    SignalObjectAndWait (cv->waiters_done_, *external_mutex, INFINITE, FALSE);
+  else
+    // Always regain the external mutex since that's the guarantee we
+    // give to our callers. 
+    WaitForSingleObject (*external_mutex, INFINITE);
+  return res;
+}
+
+int
+pthread_cond_wait 
+(
+  pthread_cond_t *cv, 
+  pthread_mutex_t *external_mutex
+)
+{
+  return private_cond_wait(cv,external_mutex,INFINITE);
+}
+
+// Posix is a pain in the butt here
+// we have to get the current time and subtract it
+// from the target time to get a duration
+// the pain is that we probably wanted a duration
+// and had to construct a target time by adding it
+// to the current time
+//
+// to fix this we add the native Windows mode (a duration)
+// to posix
+
+int
+pthread_cond_uswait 
+(
+  pthread_cond_t *cv, 
+  pthread_mutex_t *external_mutex,
+  unsigned long us
+)
+{
+
+  // Windows waits in ms, ours in us
+  return private_cond_wait(cv,external_mutex,us * 1000);
+}
+
+int
+pthread_cond_timedwait 
+(
+  pthread_cond_t *cv, 
+  pthread_mutex_t *external_mutex,
+  struct timespec const *abstime
+)
+{
+  unsigned long t1 = abstime->tv_sec * 1000 + abstime->tv_nsec / 1000;
+  SYSTEMTIME tod;
+  GetSystemTime(&tod);
+  FILETIME ft;
+  SystemTimeToFileTime(&tod,&ft);
+  ULARGE_INTEGER now;  // so we can do some maths
+  assert(sizeof(now) == sizeof(ft));
+  memcpy(&now, &ft, sizeof(now));
+  unsigned long t0 = now.QuadPart / 10; // us now 
+  unsigned long timeout = t1>t0 ? t1 - t0 : 0;
+  return private_cond_wait(cv,external_mutex,timeout);
+}
+
+int
+pthread_cond_signal (pthread_cond_t *cv)
+{
+  EnterCriticalSection (&cv->waiters_count_lock_);
+  int have_waiters = cv->waiters_count_ > 0;
+  LeaveCriticalSection (&cv->waiters_count_lock_);
+
+  // If there aren't any waiters, then this is a no-op.  
+  if (have_waiters)
+    ReleaseSemaphore (cv->sema_, 1, 0);
+  return 0;
+}
+
+int
+pthread_cond_broadcast (pthread_cond_t *cv)
+{
+  // This is needed to ensure that <waiters_count_> and <was_broadcast_> are
+  // consistent relative to each other.
+  EnterCriticalSection (&cv->waiters_count_lock_);
+  int have_waiters = 0;
+
+  if (cv->waiters_count_ > 0) {
+    // We are broadcasting, even if there is just one waiter...
+    // Record that we are broadcasting, which helps optimize
+    // <pthread_cond_wait> for the non-broadcast case.
+    cv->was_broadcast_ = 1;
+    have_waiters = 1;
+  }
+
+  if (have_waiters) {
+    // Wake up all the waiters atomically.
+    ReleaseSemaphore (cv->sema_, cv->waiters_count_, 0);
+
+    LeaveCriticalSection (&cv->waiters_count_lock_);
+
+    // Wait for all the awakened threads to acquire the counting
+    // semaphore. 
+    WaitForSingleObject (cv->waiters_done_, INFINITE);
+    // This assignment is okay, even without the <waiters_count_lock_> held 
+    // because no other waiter threads can wake up to access it.
+    cv->was_broadcast_ = 0;
+  }
+  else
+    LeaveCriticalSection (&cv->waiters_count_lock_);
+  return 0;
+}
+
+int sem_init(sem_t *sem, int pshared, unsigned int value)
+{
+  *sem = CreateSemaphore(NULL,value,0x7FFFFFFF,NULL);
+  return 0;
+}
+
+int sem_wait(sem_t * sem) 
+{ 
+  return WaitForSingleObject(*sem,INFINITE); 
+}
+
+int sem_trywait(sem_t * sem) 
+{ 
+  return WaitForSingleObject(*sem,0); 
+}
+
+int sem_post(sem_t * sem) 
+{ 
+  return ReleaseSemaphore(*sem,1,NULL); 
+}
+
+int sem_getvalue(sem_t * sem, int * sval)
+{
+  LONG x;  
+  ReleaseSemaphore(*sem,0,&x); 
+  *sval = x;
+  return 0;
+}
+
+int sem_destroy(sem_t * sem) 
+{
+  return CloseHandle(*sem);
+}
+
+
+#else
+
+//POSIX
+#include <time.h>
+#include <sys/time.h>
+
+int pthread_cond_uswait(
+  pthread_cond_t *cv, 
+  pthread_mutex_t *m, 
+  unsigned long us
+)
+{
+  timeval tv;
+  gettimeofday(&tv,NULL);
+  unsigned long t0 = tv.tv_sec * 1000000uL + tv.tv_usec;
+  unsigned long t1 = t0 + us;
+  timespec ts;
+  ts.tv_sec = t1 / 1000000uL;
+  ts.tv_nsec = (t1 % 1000000uL) * 1000;
+  return pthread_cond_timedwait(cv,m,&ts);
+}
+
+#endif
+
+@head(2,'Portable Mutex')
+@h=tangler('pthread/pthread_mutex.hpp')
+@select(h)
+#ifndef __FLX_MUTEX__
+#define __FLX_MUTEX__
+#include "flx_rtl_config.hpp"
+
+#include "pthread_win_posix_condv_emul.hpp"
+
+namespace flx { namespace pthread {
+
+// ********************************************************
+/// Mutex.
+// ********************************************************
+class FLX_RTL_EXTERN flx_mutex_t {
+  flx_mutex_t(flx_mutex_t const&); // uncopyable
+  void operator=(flx_mutex_t const&); // uncopyable
+public:
+  pthread_mutex_t m;        // be nice, don't touch
+  flx_mutex_t();
+  ~flx_mutex_t();
+  void lock();
+  void unlock();
+};
+
+class FLX_RTL_EXTERN flx_mutex_locker_t {
+  flx_mutex_t* p;
+  flx_mutex_locker_t(flx_mutex_locker_t const&); // uncopyable
+  void operator=(flx_mutex_locker_t const&); // uncopyable
+public:
+  flx_mutex_locker_t(flx_mutex_t& pm);
+  ~flx_mutex_locker_t();
+};
+
+}} // namespace pthread, flx
+#endif
+
+@h=tangler('pthread/pthread_mutex.cpp')
+@select(h)
+#include "pthread_mutex.hpp"
+#include <stdio.h>
+#include <assert.h>
+
+namespace flx { namespace pthread {
+flx_mutex_t::flx_mutex_t(flx_mutex_t const&){} // uncopyable
+void flx_mutex_t::operator=(flx_mutex_t const&){} // uncopyable
+
+flx_mutex_t::flx_mutex_t() {
+    assert( !recursive );
+    int res = pthread_mutex_init(&m, NULL);
+    if(res != 0) throw res;
+}
+
+flx_mutex_t::~flx_mutex_t() { pthread_mutex_destroy(&m); }
+void flx_mutex_t::lock() { pthread_mutex_lock(&m); }
+void flx_mutex_t::unlock() { pthread_mutex_unlock(&m);}
+
+flx_mutex_locker_t::flx_mutex_locker_t(flx_mutex_locker_t const&){} // uncopyable
+void flx_mutex_locker_t::operator=(flx_mutex_locker_t const&){} // uncopyable
+flx_mutex_locker_t::flx_mutex_locker_t(flx_mutex_t& pm) : p(&pm) { p->lock(); }
+flx_mutex_locker_t::~flx_mutex_locker_t() { p->unlock(); }
+
+}}
+
+@head(1,"Condition Variable")
+@head(2,'Portable Condition Variable')
+@h=tangler('pthread/pthread_condv.hpp')
+@select(h)
+#ifndef __CONDV__
+#define __CONDV__
+#include <flx_rtl_config.hpp>
+#include "pthread_mutex.hpp"
+
+#include "pthread_win_posix_condv_emul.hpp"
+
+namespace flx { namespace pthread {
+
+// ********************************************************
+/// Condition Variable.
+// ********************************************************
+class FLX_RTL_EXTERN flx_condv_t {
+public:
+  pthread_cond_t cv;        // be nice, don't touch
+  flx_condv_t();
+  ~flx_condv_t();
+  void signal();
+  void broadcast();
+  void wait(flx_mutex_t*);
+  int timedwait(flx_mutex_t*, timespec*);
+};
+
+}} // namespace pthread, flx
+#endif
+
+@h=tangler('pthread/pthread_condv.cpp')
+@select(h)
+#include "pthread_condv.hpp"
+#include <stdio.h>        // printf debugging
+#include <assert.h>
+
+namespace flx { namespace pthread {
+
+flx_condv_t::flx_condv_t() { pthread_cond_init(&cv, NULL); }
+flx_condv_t::~flx_condv_t() { pthread_cond_destroy(&cv); }
+void flx_condv_t::wait(flx_mutex_t *m) { pthread_cond_wait(&cv,&(m->m)); }
+void flx_condv_t::signal() { pthread_cond_signal(&cv);}
+void flx_condv_t::broadcast() { pthread_cond_broadcast(&cv); }
+int flx_condv_t::timedwait(flx_mutex_t *m, timespec *t) {
+  int res = pthread_cond_timedwait(&cv,&(m->m),t);
+  #ifndef _WIN32
+  if(res==EINVAL) return 0; // this is NOT an error!
+  #endif
+  return res;
+}
+}}
+
+@head(1,"Semaphore")
+@head(2,'Portable Semaphore')
+@h=tangler('pthread/pthread_semaphore.hpp')
+@select(h)
+#ifndef __SEMAPHORE__
+#define __SEMAPHORE__
+#include <flx_rtl_config.hpp>
+#include "pthread_mutex.hpp"
+
+#include "pthread_win_posix_condv_emul.hpp"
+
+namespace flx { namespace pthread {
+
+// ********************************************************
+/// Semaphore
+// ********************************************************
+class FLX_RTL_EXTERN flx_semaphore_t {
+  sem_t sem;
+public:
+  flx_semaphore_t(int n=0);
+  ~flx_semaphore_t();
+  void post();
+  void operator++() { post(); }
+  void wait();
+  void operator--() { wait(); }
+  int get();
+  int operator*() { return get(); }
+
+  /// atomic test and decrement if non-zero function.
+  /// returns EAGAIN on failure to decrement.
+  int trywait(); 
+};
+
+}} // namespace pthread, flx
+#endif
+
+@h=tangler('pthread/pthread_semaphore.cpp')
+@select(h)
+#include "pthread_semaphore.hpp"
+#include <stdio.h>        // printf debugging
+#include <assert.h>
+
+namespace flx { namespace pthread {
+flx_semaphore_t::flx_semaphore_t(int n) { sem_init(&sem, 0, n); }
+flx_semaphore_t::~flx_semaphore_t() { sem_destroy(&sem); }
+void flx_semaphore_t::wait() { sem_wait(&sem); }
+int flx_semaphore_t::trywait() { return sem_trywait(&sem); }
+void flx_semaphore_t::post() { sem_post(&sem); }
+int flx_semaphore_t::get(){ int x; sem_getvalue(&sem,&x); return x; }
+
+}}
+
+@h=tangler('pthread/pthread_monitor.hpp')
+@select(h)
+#ifndef __MONITOR__
+#define __MONITOR__
+#include <flx_rtl_config.hpp>
+#include "pthread_mutex.hpp"
+#include "pthread_condv.hpp"
+#include "pthread_semaphore.hpp"
+
+// interface for a consumer/producer queue. threads requesting a resource
+// that isn't there block until one is available. push/pop re-entrant
+
+namespace flx { namespace pthread {
+
+// ********************************************************
+/// A monitor is an concurrent version of a channel.
+/// It matches up readers and writers in pairs,
+/// synchronising transfer of one datum.
+///
+/// Unlike the bounded queue below, a monitor is a fully
+/// synchronised unbuffered transfer, mediated by a full
+/// handshake.
+/// 
+/// In particular, unlike the queue of size 1, the writer
+/// cannot proceed until the reader sends an acknowlege
+/// signal.
+///
+/// This logic matches that provides by schannels, but 
+/// across an asynchronous boundary.
+// ********************************************************
+
+class FLX_RTL_EXTERN monitor_t {
+  flx_mutex_t member_lock; 
+  flx_semaphore_t readers;
+  flx_semaphore_t writers;
+  flx_condv_t ack;
+  void *data;
+public:
+  monitor_t();
+  ~monitor_t();
+  void enqueue(void*);
+  void* dequeue();
+};
+
+}} // namespace pthread, flx
+#endif
+
+@h=tangler('pthread/pthread_monitor.cpp')
+@select(h)
+#include "pthread_monitor.hpp"
+#include <queue>        // stl to the bloated rescue
+#include <string.h>       // strerror
+
+using namespace std;
+
+namespace flx { namespace pthread {
+
+monitor_t::monitor_t(){}
+monitor_t::~monitor_t() { }
+
+void
+monitor_t::enqueue(void* elt)
+{
+  ++writers;
+  --readers;
+  flx_mutex_locker_t   l(member_lock);
+  data = elt;
+  ack.wait(&member_lock); // wait for reader to acknowledge
+}
+
+void*
+monitor_t::dequeue()
+{
+  ++readers;
+  --writers;
+  flx_mutex_locker_t   l(member_lock);
+  void *d = data;
+  ack.signal(); // send acknowlege to release writer
+  return d;
+}
+
+}}
+
+@head(1,"Portable Thread safe Queue")
+Both queue and dequeue operations are critical
+sections protected by a mutex.
+@p()
+When the queue is empty, the dequeue operation waits 
+on a semaphore signaled by the enqueue operation.
+
+@h=tangler('pthread/pthread_sleep_queue.hpp')
+@select(h)
+#ifndef __SLEEPQUEUE__
+#define __SLEEPQUEUE__
+#include <flx_rtl_config.hpp>
+#include "pthread_mutex.hpp"
+#include "pthread_condv.hpp"
+
+// interface for a consumer/producer queue. threads requesting a resource
+// that isn't there block until one is available. push/pop re-entrant
+
+namespace flx { namespace pthread {
+
+// ********************************************************
+/// Thread safe bounded queue.
+///
+/// The queue can be locked by setting bound=0.
+/// In this state it can only be unlocked by setting a non-zero bound.
+///
+/// If the bound is set to 1 (the default),
+/// then the queue is always either empty or full.
+/// An empty queue blocks readers until a writer sends some data.
+/// A full queue blocks writers, until a reader reads the data.
+/// Note that when the queue is empty a writer can write data
+/// and continues without waiting for the data to be read.
+// ********************************************************
+
+class FLX_RTL_EXTERN sleep_queue_t {
+  flx_mutex_t member_lock; 
+  flx_condv_t not_empty_cond; 
+  flx_condv_t not_full_cond; 
+  void *lame_opaque;  
+  size_t bound;
+public:
+  sleep_queue_t(size_t);
+  ~sleep_queue_t();
+  void enqueue(void*);
+  void* dequeue();
+  void resize(size_t);
+};
+
+}} // namespace pthread, flx
+#endif
+
+@h=tangler('pthread/pthread_sleep_queue.cpp')
+@select(h)
+#include "pthread_sleep_queue.hpp"
+#include <queue>        // stl to the bloated rescue
+#include <string.h>       // strerror
+
+using namespace std;
+
+namespace flx { namespace pthread {
+typedef queue<void*> void_queue;
+
+#define ELTQ ((void_queue*)lame_opaque)
+
+sleep_queue_t::sleep_queue_t(size_t n) : bound(n)
+{
+  lame_opaque = new void_queue;
+}
+
+// Much care is needed deleting a queue.
+// A safe method is possible .. but not provided here
+sleep_queue_t::~sleep_queue_t()
+{
+  delete ELTQ;
+}
+
+void
+sleep_queue_t::enqueue(void* elt)
+{
+  //fprintf(stderr,"Q%p: Enqueue %p\n",this,elt);
+  flx_mutex_locker_t   l(member_lock);
+  if(ELTQ->size() >= bound)
+  {
+    //fprintf(stderr,"Q%p: Queue is full, waiting\n",this);
+    not_full_cond.wait(&member_lock);
+  }
+  //fprintf(stderr,"Q%p: Queue has space\n",this);
+  ELTQ->push(elt);
+  //fprintf(stderr,"Q%p: Signal not empty\n",this);
+  not_empty_cond.signal(); // cannot return an error
+}
+
+void*
+sleep_queue_t::dequeue()
+{
+  flx_mutex_locker_t   l(member_lock);
+  if(ELTQ->empty())
+  {
+    //fprintf(stderr,"Q%p: Waiting for non empty queue\n",this);
+    not_empty_cond.wait(&member_lock);
+  }
+  void *elt = ELTQ->front();
+  //fprintf(stderr,"Q%p: Dequeue %p\n",this,elt);
+  ELTQ->pop();
+  if(ELTQ->size() < bound)
+  {
+    //fprintf(stderr,"Q%p: Signalling not full\n",this);
+    not_full_cond.signal();
+  }
+  //fprintf(stderr,"Q%p: Dequeued, returning %p\n",this,elt);
+  return elt;
+}
+
+void 
+sleep_queue_t::resize(size_t n)
+{
+  flx_mutex_locker_t   l(member_lock);
+  bound = n;
+  // get things rolling again
+  if(!ELTQ->empty()) not_empty_cond.signal();
+  if(ELTQ->size()<bound) not_full_cond.signal();
+}
+
+}}
+
+
+@head(1,'Portable Job Queue')
+The class is actually a thread plus a job queue.
+@h=tangler('pthread/pthread_work_fifo.hpp')
+@select(h)
+#ifndef __WORKER_FIFO__
+#define __WORKER_FIFO__
+#include <flx_rtl_config.hpp>
+#include "pthread_thread.hpp"
+#include "pthread_mutex.hpp"
+#include "pthread_sleep_queue.hpp"
+
+namespace flx { namespace pthread {
+
+/// Class of jobs to be queued in fifo for execution.
+class FLX_RTL_EXTERN worker_task
+{
+public:
+  virtual ~worker_task() {}   // c++ should do this automatically
+
+  /// function called by worker thread to carry out user job
+  virtual void doit() = 0;     
+
+  /// function called by worker thread after doit() is completed
+  /// used to notify job completion
+  virtual void finished() = 0; // finished hook (mi serve start gancia?)
+};
+
+/// Linear job scheduler, executes jobs in turn from queue
+class FLX_RTL_EXTERN worker_fifo
+{
+  // this thread is destructed very carefully to make sure that all
+  // the objects in this class outlive its execution.
+  flx_thread_t  thread;
+  sleep_queue_t fifo;
+
+  static void* thread_start(void*); // thread entry point, passed this
+  bool thread_loop_body();      // returns keep going flag
+
+public:
+  worker_fifo(int n);
+  ~worker_fifo();
+
+  /// method used by client to schedule jobs
+  /// for this worker thread
+  void add_worker_task(worker_task* task);  // also re-entrant
+
+  // those deriving from this class might like to stop the
+  // thread in their destructors, so that their objects used
+  // by the worker thread can outlive it
+  void stop_worker_thread();
+  };
+
+}} // namespace pthread, flx
+#endif  // __WORKER_FIFO__
+
+@h=tangler('pthread/pthread_work_fifo.cpp')
+@select(h)
+#include <stdio.h>    // printf
+#include "pthread_work_fifo.hpp"
+namespace flx { namespace pthread {
+
+// a fifo of tasks & a thread (threads?) to serve them.
+// users overload finished function to implement wakeup
+
+worker_fifo::worker_fifo(int n) : fifo(n)
+{
+  //fprintf(stderr,"async worker fifo io module constructor\n");
+  // fifo already inited and ready to go, so get pthread going
+#ifdef _WIN32
+  int res = thread.init((LPTHREAD_START_ROUTINE)thread_start, this);
+#else
+  int res = thread.init(thread_start, this);
+#endif
+
+  if(0 != res) throw res;
+
+// do it properly or not at all
+#if 0
+  fprintf(stderr,"hey, trying multi threads here (leakingly)\n");
+  for(int i = 1; i < 1; i++)
+  {
+    fprintf(stderr,"extra io thread\n");
+    flx_thread_t* pt = new flx_thread_t;
+    res = pt->init(thread_start, this);
+    if(0 != res) throw res;
+  }
+#endif
+}
+
+// To get rid of thread cancel we could have a simple finished flag
+// that's set by the class and set by the thread. Since both are executed
+// synchronously w.r.t the same thread, we wouldn't need to protect anything
+// that won't work if we have multiple worker threads, however.
+
+// better idea - add a null task to front of queue to mean quit. queue
+// is already threadsafe. If there are n worker threads, add n nulls.
+
+// stopping the worker thread turns out to be trickier than it sounds
+// because it's hard to wake up on an empty queue. 
+void
+worker_fifo::stop_worker_thread()
+{
+  add_worker_task(NULL);    // thread safe takedown.
+                // for n worker threads add n times
+  thread.join();      // join waits for thread to exit.
+                // which should happen eventually
+}
+
+worker_fifo::~worker_fifo()
+{
+  // the thread must be brought down before the objects it
+  // uses are destructed. lets hope anyone deriving from this
+  // class knows that and let them call this function in their
+  // destructor.
+  stop_worker_thread();
+}
+
+// io thread entry point, passed this
+void*
+worker_fifo::thread_start(void* udat)
+{ 
+  worker_fifo*  fio = (worker_fifo*)udat;
+  fprintf(stderr,"worker_fifo thread started! this=%p\n", fio);
+
+  while(fio->thread_loop_body()) ;
+
+  return 0;             // return status.
+}
+
+// dequeues one task and executes it, calling finished hook. interprest
+// null task as a request to exit.
+bool
+worker_fifo::thread_loop_body()
+{
+  worker_task*  req = (worker_task*)fifo.dequeue();
+  //fprintf(stderr,"dequeued worker_task (%p)\n", req);
+
+  if(!req) return false;        // finished, got quit signal
+
+  req->doit();
+  req->finished();          // finish hook. I find this handy
+
+  return true;            // keep going
+}
+
+void
+worker_fifo::add_worker_task(worker_task* task)
+{
+  //fprintf(stderr,"adding worker task %p\n",task);
+  fifo.enqueue(task);         // don't worry, fifo is re-entrant
+}
+
+}}
+
+
+
+

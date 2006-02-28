@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.4  2006/02/28 02:07:13  skaller
+Refactor demux into demux + pthread.
+
 Revision 1.3  2006/02/26 06:39:36  skaller
 Fix flx_pkgconfig to conform to new spec.
 
@@ -176,6 +179,39 @@ in namespace flx::rtl, except as noted.
 @include_file ('flx_lex_lib.ipk')
 
 
+@h = tangler('spkgs/flx.py')
+@select(h)
+
+pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_pthread','demux','faio']
+
+@h = tangler('spkgs/flx_rtl.py')
+@select(h)
+RTL_CPPS = [
+  "rtl/flx_gc",
+  "rtl/flx_collector",
+  "rtl/flx_rtl",
+  "rtl/flx_dynlink",
+  "rtl/flx_sync",
+  "rtl/flx_i18n",
+  "rtl/flx_ioutil",
+  "rtl/flx_main",
+]
+
+cpp_cpps = RTL_CPPS
+provide_lib = "libflx"
+
+@h = tangler('spkgs/flx_drivers.py')
+@select(h)
+
+DRIVERS = [
+  ('rtl/flx_run','bin/flx_run'),
+  ('test/flx_perf_drv1','test/flx_perf_drv1'),
+  ('test/micky_mouse','bin/micky_mouse'),
+]
+drivers = DRIVERS
+drivers_require_libs = ['libfaio','libdemux','libflx_pthread','libflx']
+pkg_requires = ['flx_rtl','faio','demux','flx_pthread']
+
 @h = tangler('config/flx.fpc')
 @select(h)
 Name: flx
@@ -183,16 +219,17 @@ Description: Felix core runtime support
 Version: $Id$
 @if HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:libflx_dynamic")
-   tangle("requires_dlibs: /DEFAULTLIB:libdemux_dynamic")
-   tangle("requires_slibs: /DEFAULTLIB:libfaio_static /DEFAULTLIB:libdemux_static /DEFAULTLIB:libflx_static")
+   tangle("requires_dlibs: /DEFAULTLIB:libdemux_dynamic /DEFAULTLIB:libflx_pthread_dynamic")
+   tangle("requires_slibs: /DEFAULTLIB:libfaio_static /DEFAULTLIB:libdemux_static /DEFAULTLIB:libflx_pthread_static /DEFAULTLIB:libflx_static")
  elif WIN32:
    tangle("provides_dlib: -lflx_dynamic")
-   tangle("requires_dlibs: -ldemux_dynamic")
-   tangle("requires_slibs: -lfaio_static -ldemux_static -lflx_static -lws2_32 -lmswsock")
+   tangle("requires_dlibs: -ldemux_dynamic -lflx_pthread_dynamic")
+   tangle("requires_slibs: -lfaio_static -ldemux_static -lflx_pthread_static -lflx_static -lws2_32 -lmswsock")
  else:
    tangle("provides_dlib: -lflx_dynamic")
-   tangle("requires_dlibs: -ldemux_dynamic")
-   tangle("requires_slibs: -lfaio_static -ldemux_static -lflx_static")
+   tangle("requires_dlibs: -ldemux_dynamic -lflx_pthread_dynamic")
+   tangle("requires_slibs: -lfaio_static -ldemux_static -lflx_pthread_static -lflx_static")
+Requires: demux flx_pthread
 
 @h = tangler("rtl/flx_meta.hpp")
 @select(h)
@@ -2161,7 +2198,7 @@ shared library name are not passed.
 //#include <unistd.h>
 #include "flx_rtl.hpp"
 
-#include "demux_sleep_queue.hpp"
+#include "pthread_sleep_queue.hpp"
 
 #ifdef _WIN32
 #include "demux_iocp_demuxer.hpp"
@@ -2188,6 +2225,7 @@ shared library name are not passed.
 
 using namespace std;
 using namespace flx::rtl;
+using namespace flx::pthread;
 using namespace flx::demux;
 using namespace flx::faio;
 using namespace flx::run;
@@ -2246,19 +2284,19 @@ public:
 #ifdef _WIN32
     iocp_demuxer demux;
     wflx_drv driver;
-    static DWORD demux_thread(LPVOID udat);
+    static DWORD pthread_thread(LPVOID udat);
 #else
     pflx_drv driver;
-    static void* demux_thread(void* udat);
+    static void* pthread_thread(void* udat);
 #endif
 
    proto_async() : async_active(20000), driver(async_active,20000) {
      // start waiting thread
 #if _WIN32
      // cast callback to itself. go figure.
-     if(ethread.init((LPTHREAD_START_ROUTINE)demux_thread, &demux) == -1) throw -1;
+     if(ethread.init((LPTHREAD_START_ROUTINE)pthread_thread, &demux) == -1) throw -1;
 #else
-     if(ethread.init(demux_thread, &demux) == -1) throw -1;
+     if(ethread.init(pthread_thread, &demux) == -1) throw -1;
 #endif
    }
 
@@ -2266,10 +2304,10 @@ public:
 
 #ifdef _WIN32
 DWORD
-proto_async::demux_thread(LPVOID udat)
+proto_async::pthread_thread(LPVOID udat)
 #else
 void*
-proto_async::demux_thread(void* udat)
+proto_async::pthread_thread(void* udat)
 #endif
 {
     demuxer*    d = (demuxer*)udat;

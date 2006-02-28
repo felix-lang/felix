@@ -28,6 +28,7 @@ if WIN32:
 pkg_requires = ['flx_compiler','flx_drivers']
 felix_tools = [('tools/flx_pkgconfig','bin/flx_pkgconfig')]
 felix_requires_linkflags = FLXFLAGS
+exes_require_libs = ['libfaio','libdemux','libflx_pthread','libflx']
 iscr_source = ['lpsrc/flx_pkgconfig.ipk']
 
 @h = tangler("tools/flx_pkgconfig.flx","data")

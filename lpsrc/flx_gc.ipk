@@ -1429,7 +1429,7 @@ void flx_collector_t::impl_compact(bool closed) {
 #ifndef FLX_TS_COLLECTOR
 #define FLX_TS_COLLECTOR
 #include "flx_collector.hpp"
-#include "demux_mutex.hpp"
+#include "pthread_mutex.hpp"
 
 namespace flx {
 namespace gc {
@@ -1464,7 +1464,7 @@ private:
   void v_compact(bool closed);
 
 private:
-  mutable flx::demux::flx_mutex_t mut;
+  mutable flx::pthread::flx_mutex_t mut;
 };
 
 }}} // end namespaces
@@ -1485,52 +1485,52 @@ flx_ts_collector_t::flx_ts_collector_t(allocator_t *a) :
 flx_ts_collector_t::~flx_ts_collector_t(){}
 
 void *flx_ts_collector_t::v_allocate(gc_shape_t *ptr_map, unsigned long x) {
-  flx::demux::flx_mutex_locker_t l(mut);
+  flx::pthread::flx_mutex_locker_t l(mut);
   return impl_allocate(ptr_map,x);
 }
 
 void flx_ts_collector_t::v_deallocate(frame_t *frame) {
-  flx::demux::flx_mutex_locker_t l(mut);
+  flx::pthread::flx_mutex_locker_t l(mut);
   impl_deallocate(frame);
 }
 
 unsigned long flx_ts_collector_t::v_collect() {
-  flx::demux::flx_mutex_locker_t l(mut);
+  flx::pthread::flx_mutex_locker_t l(mut);
   return impl_collect();
 }
 
 void flx_ts_collector_t::v_add_root(void *memory) {
-  flx::demux::flx_mutex_locker_t l(mut);
+  flx::pthread::flx_mutex_locker_t l(mut);
   impl_add_root(memory);
 }
 
 void flx_ts_collector_t::v_remove_root(void *memory) {
-  flx::demux::flx_mutex_locker_t l(mut);
+  flx::pthread::flx_mutex_locker_t l(mut);
   impl_remove_root(memory);
 }
 
 void flx_ts_collector_t::v_check() {
-  flx::demux::flx_mutex_locker_t l(mut);
+  flx::pthread::flx_mutex_locker_t l(mut);
   impl_check();
 }
 
 unsigned long flx_ts_collector_t::v_get_allocation_count()const {
-  flx::demux::flx_mutex_locker_t l(mut);
+  flx::pthread::flx_mutex_locker_t l(mut);
   return impl_get_allocation_count();
 }
 
 unsigned long flx_ts_collector_t::v_get_root_count()const {
-  flx::demux::flx_mutex_locker_t l(mut);
+  flx::pthread::flx_mutex_locker_t l(mut);
   return impl_get_root_count();
 }
 
 unsigned long flx_ts_collector_t::v_get_allocation_amt()const {
-  flx::demux::flx_mutex_locker_t l(mut);
+  flx::pthread::flx_mutex_locker_t l(mut);
   return impl_get_allocation_amt();
 }
 
 void flx_ts_collector_t::v_compact(bool closed) {
-  flx::demux::flx_mutex_locker_t l(mut);
+  flx::pthread::flx_mutex_locker_t l(mut);
   impl_compact(closed);
 }
 

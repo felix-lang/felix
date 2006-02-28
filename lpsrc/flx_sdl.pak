@@ -1,5 +1,8 @@
 @head(1,'SDL')
 $Log$
+Revision 1.5  2006/02/28 02:07:13  skaller
+Refactor demux into demux + pthread.
+
 Revision 1.4  2006/02/25 20:38:12  skaller
 Upgrade flx_pkgconfig
 
@@ -138,7 +141,7 @@ if HAVE_SDL:
   cpp_cpps = SDL_FAIO_CPPS
   pkg_requires = ['faio']
   rtl_interfaces = ['faio_sdl_event']
-  lib_requires = ['libfaio', 'libdemux','libflx']
+  lib_requires = ['libfaio', 'libdemux','libflx_pthread','libflx']
   demos = glob.glob('tut'+os.sep+'examples'+os.sep+'sdl*.flx')
 
   # should be a .pak file ..
@@ -166,8 +169,8 @@ if HAVE_SDL:
     ('rtl/flx_sdl_run','bin/flx_sdl_run'),
   ]
   drivers = DRIVERS
-  drivers_require_libs = ['libsdl','libfaio','libdemux','libflx']
-  pkg_requires = ['flx_rtl','faio','demux']
+  drivers_require_libs = ['libsdl','libfaio','libdemux','libflx_pthread','libflx']
+  pkg_requires = ['flx_rtl','faio','demux','flx_pthread']
   cflags = SDL_CFLAGS
   dflags = SDL_LIBS
   sflags = SDL_STATIC_LIBS
@@ -2567,7 +2570,7 @@ module SDL_net_h
 #ifndef __FAIO_SDL_EVENT__
 #define __FAIO_SDL_EVENT__
 #include <flx_rtl_config.hpp>
-#include "demux_work_fifo.hpp"
+#include "pthread_work_fifo.hpp"
 #include "faio_drv.hpp"      // thread_wakeups, 
 #include "faio_asyncio.hpp"  // flx_driver_request_base
 #include "SDL_mutex.h"
@@ -2579,7 +2582,7 @@ namespace flx { namespace faio {
 
 // get ONE SDL event
 class FLX_RTL_EXTERN faio_sdl_event : public flx_driver_request_base,
-  public demux::worker_task {
+  public flx::pthread::worker_task {
    thread_wakeup   fw;
    SDL_Event *e;
    SDL_mutex *m;
@@ -2600,7 +2603,7 @@ public:
 
 @h = tangler("faio/faio_sdl_event.cpp")
 @select(h)
-#include <demux_work_fifo.hpp>
+#include "pthread_work_fifo.hpp"
 #include "SDL_mutex.h"
 #include "SDL_events.h"
 #include "faio_sdl_event.hpp"

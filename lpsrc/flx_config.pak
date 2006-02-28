@@ -2454,7 +2454,7 @@ if result == None:
     f.write("Name: GLU\n")
     f.write("Description: GLU graphics \n")
     f.write("provides_dlib: -lGLU\n")
-    f.write("provides_slib: -LGLU\n")
+    f.write("provides_slib: -lGLU\n")
     f.write("Requires: gl\n")
     f.close()
   fname = "config" + os.sep + "glut.fpc"

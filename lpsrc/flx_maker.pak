@@ -5,6 +5,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.9  2006/02/28 02:07:13  skaller
+Refactor demux into demux + pthread.
+
 Revision 1.8  2006/02/27 06:56:09  skaller
 Refactoring speed test into modules.
 
@@ -808,34 +811,6 @@ pkg_requires = ['misc']
 caml_provide_lib = 'flxlib'
 iscr_source = ["lpsrc/flx.pak"]
 
-@h = tangler('spkgs/flx_rtl.py')
-@select(h)
-RTL_CPPS = [
-  "rtl/flx_gc",
-  "rtl/flx_collector",
-  "rtl/flx_rtl",
-  "rtl/flx_dynlink",
-  "rtl/flx_sync",
-  "rtl/flx_i18n",
-  "rtl/flx_ioutil",
-  "rtl/flx_main",
-]
-
-cpp_cpps = RTL_CPPS
-provide_lib = "libflx"
-
-@h = tangler('spkgs/flx_drivers.py')
-@select(h)
-
-DRIVERS = [
-  ('rtl/flx_run','bin/flx_run'),
-  ('test/flx_perf_drv1','test/flx_perf_drv1'),
-  ('test/micky_mouse','bin/micky_mouse'),
-]
-drivers = DRIVERS
-drivers_require_libs = ['libfaio','libdemux','libflx']
-pkg_requires = ['flx_rtl','faio','demux']
-
 @h = tangler('spkgs/flx_regression_tests.py')
 @select(h)
 TESTS = glob.glob('test'+os.sep+'rt*.flx')
@@ -862,11 +837,6 @@ iscr_source = [
   'lpsrc/flx_tut_migrate.pak',
   'lpsrc/flx_tut_expect.ipk',
   ]
-
-@h = tangler('spkgs/flx.py')
-@select(h)
-
-pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','demux','faio']
 
 @h = tangler('spkgs/ocs.py')
 @select(h)
@@ -1384,6 +1354,8 @@ def build_target_cpp_tools():
   if len(EXES)>0:
     print "BUILDING C++ TARGET TOOLS"
     LIBS = pkgdict.get("exes_require_libs",[])
+    libs = []
+    for lib in LIBS: libs.append(lib+"_static")
     for src,bin in EXES:
       dir,base = string.split(src,'/')
       TARGET_CXX.compile_static_main(
@@ -1399,7 +1371,7 @@ def build_target_cpp_tools():
         [src+"_static"],
         bin,
         lib_path=[dir],
-        libs=LIBS,
+        libs=libs,
         SFLAGS=SFLAGS+esflags)
 
 @select(tangler('mkplugins/build_target_felix_tools.py'))
@@ -1408,7 +1380,9 @@ def build_target_felix_tools():
   FLXS = pkgdict.get("felix_tools",[])
   if len(FLXS)>0:
     print "BUILDING FELIX TARGET TOOLS"
-    LIBS = ['libfaio_static','libdemux_static','libflx_static']
+    LIBS = pkgdict.get("exes_require_libs",[])
+    libs = []
+    for lib in LIBS: libs.append(lib+"_static")
     fsflags = pkgdict.get("felix_requires_linkflags","")
     for src,exe in FLXS:
       dir,base = string.split(src,'/')
@@ -1426,7 +1400,7 @@ def build_target_felix_tools():
         ['rtl/flx_run_static',src+"_static"],
         exe,
         lib_path=['rtl'],
-        libs=LIBS,
+        libs=libs,
         SFLAGS=SFLAGS+fsflags)
 
 @select(tangler('mkplugins/performance.py'))
@@ -1617,7 +1591,7 @@ def run_demos():
       if not requires_driver:
         requires_driver="flx_run"
 
-      if SUPPORT_DYNAMIC_LOADING
+      if SUPPORT_DYNAMIC_LOADING:
         testscript = "bin"+os.sep+requires_driver+" ./"+basename+EXT_SHLIB
         #print 'Executing ',testscript
         try:
@@ -1817,7 +1791,7 @@ if models:
   if model == run_model:
     if "run" not in phases: phases.append("run")
 
-if "extract" in options: 
+if "extract" in options or "force_extract" in options: 
     if "build" not in phases: phases.append("build")
 
 if "build" in options: 
@@ -1843,9 +1817,18 @@ if options:
 paks = glob.glob("lpsrc"+os.sep+"*.pak")
 execfile("mkplugins"+os.sep+"xqt.py")
 if "extract" in options:
-  print "EXTRACTING SOURCES"
+  print "OPTIMISED SOURCE EXTRACT (use force_extract to disable optimisation)"
   for p in paks:
     print "EXTRACTING",p
+    runISCR(p)
+  filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
+
+if "force_extract" in options:
+  print "FORCE EXTRACTING SOURCES"
+  for p in paks:
+    print "EXTRACTING",p
+    try: os.remove(p+".cache")
+    except: pass
     runISCR(p)
   filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
 

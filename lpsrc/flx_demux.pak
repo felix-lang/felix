@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.6  2006/02/28 02:07:13  skaller
+Refactor demux into demux + pthread.
+
 Revision 1.5  2006/02/26 06:39:36  skaller
 Fix flx_pkgconfig to conform to new spec.
 
@@ -147,7 +150,7 @@ Integrate SDL tests, provide initial SDL event demux.
 @h = tangler('config/demux.fpc')
 @select(h)
 Name: demux
-Description: Pre-emptive threading support
+Description: Event handling
 Version: $Id$
 
 @if HAVE_MSVC:
@@ -169,18 +172,6 @@ Requires: flx
 @select(h)
 
 DEMUXRTL_INTERFACES = [
- 'demux/demux_thread.hpp',        # portable
- 'demux/demux_posix_thread.hpp',  # posix
- 'demux/demux_win_thread.hpp',    # win32
- 
- 'demux/demux_win_posix_condv_emul.hpp',         # win32 and posiz
- 'demux/demux_mutex.hpp',         # portable
- 'demux/demux_condv.hpp',         # portable
- 'demux/demux_semaphore.hpp',     # portable
- 'demux/demux_monitor.hpp',       # portable
- 'demux/demux_sleep_queue.hpp',   # portable
- 'demux/demux_work_fifo.hpp',     # portable
-
  'demux/demux_demuxer.hpp',       # portable
  'demux/demux_posix_demuxer.hpp', # posix
  'demux/demux_timer_queue.hpp',   # portable
@@ -198,19 +189,11 @@ DEMUXRTL_INTERFACES = [
 ]
 
 DEMUX_CPPS = [
-  "demux/demux_mutex", 
-  "demux/demux_condv",
-  "demux/demux_semaphore",
-  "demux/demux_monitor",
-  "demux/demux_sleep_queue",
-  "demux/demux_work_fifo",
   "demux/demux_demuxer",
-  "demux/demux_win_posix_condv_emul", # portability hackery
   "rtl/flx_ts_collector",
 ]
 
 POSIX_DEMUX_CPPS = [
-  "demux/demux_posix_thread",       # posix
   "demux/demux_posix_demuxer",      # all posix
   "demux/demux_select_demuxer",     # all posix
   "demux/demux_posix_timer_queue",  # posix
@@ -228,7 +211,6 @@ SOLARIS_DEMUX_CPPS = [
 ]
 
 WINDOWS_DEMUX_CPPS = [
-  "demux/demux_win_thread",       # posix
   "demux/demux_iocp_demuxer",       # windows
   "demux/demux_overlapped",         # windows
   "demux/demux_win_timer_queue",    # windows
@@ -263,1084 +245,12 @@ if SOLARIS:
 
 cpp_cpps = DEMUX_CPPS
 rtl_interfaces = DEMUXRTL_INTERFACES
-pkg_requires = ['flx_rtl']
-lib_requires = ['libflx'] 
+pkg_requires = ['flx_pthread']
+lib_requires = ['libflx_pthread'] 
 #lib_requires_linkflags = EXTRA_SYS_LIBS
 dflags = EXTRA_SYS_LIBS
 sflags = EXTRA_SYS_LIBS
 iscr_source = ["lpsrc/flx_demux.pak"]
-
-@head(1,"Pre-emptive threads (pthread)")
-Note WE say pthread means 'pre-emptive thread' not
-merely Posix thread. Confusing on Solaris especially.
-However it fits with name fthread for felix threads
-which are actually s- (synchronous) or np- (non-preemptive) 
-threads.
-
-@head(2,'Posix Thread')
-@h=tangler('demux/demux_posix_thread.hpp')
-@select(h)
-#ifndef __POSIX_THREAD__
-#define __POSIX_THREAD__
-#include <flx_rtl_config.hpp>
-#include <pthread.h>
-
-// auto pthread, because I forget how to deallocate them nicely
-// could init in the constructor, but ultimately you don't want the thread
-// barging in before you've finished doing other stuff
-// Addendum (20051128): doing stdio in turns out to be not very safe.
-// I don't know if printf et al are supposed to be thread safe (most impls
-// seem to try to be) but I sometimes get deadlocks in ppc64 os x 10.4.2
-// with 4.0.1 when printfing to stdout. Nasty.
-
-namespace flx { namespace demux {
-
-// ********************************************************
-/// Posix Threads. This class simply wraps the creation
-/// and joining of threads. It is not safe.
-// ********************************************************
-
-class FLX_RTL_EXTERN flx_thread_t {
-  pthread_t   thr;        ///< the thread
-  flx_thread_t(flx_thread_t const&); // uncopyable
-  void operator=(flx_thread_t const&); // uncopyable
-public:
-  flx_thread_t();
-  ~flx_thread_t();
-  int init(void* (*start)(void*), void* udat);
-  void join();  
-};
-
-/// RAII wrapper for thread class
-class FLX_RTL_EXTERN flx_thread_wrapper_t {
-  flx_thread_t thread;
-  flx_thread_wrapper_t(flx_thread_wrapper_t const&); // uncopyable
-  void operator=(flx_thread_wrapper_t const&); // uncopyable
-public:
-  ~flx_thread_wrapper_t();
-  flx_thread_wrapper_t(void* (*start)(void*), void* udat);
-};
-
-}}
-#endif
-
-@h=tangler('demux/demux_posix_thread.cpp')
-@select(h)
-#include "demux_posix_thread.hpp"
-#include <stdio.h>
-
-namespace flx { namespace demux {
-flx_thread_t::flx_thread_t(flx_thread_t const&){} // uncopyable
-void flx_thread_t::operator=(flx_thread_t const&){} // uncopyable
-
-int 
-flx_thread_t::init(void* (*start)(void*), void* udat)
-{
-  // fprintf(stderr,"flx_thread_t::init(this=%p, fn=%p, udat=%p)\n",
-  //  this, start, udat);
-
-  // default attrs. hope they're good
-  pthread_create(&thr, NULL, start, udat);
-  return 0;
-}
-
-void flx_thread_t::join() { pthread_join(thr, NULL); }
-
-flx_thread_t::~flx_thread_t() { }
-flx_thread_t::flx_thread_t() { }
-
-flx_thread_wrapper_t::flx_thread_wrapper_t(flx_thread_wrapper_t const&){} // uncopyable
-void flx_thread_wrapper_t::operator=(flx_thread_wrapper_t const&){} // uncopyable
-
-flx_thread_wrapper_t::flx_thread_wrapper_t(void* (*start)(void*), void* udat)
-{
-  thread.init(start,udat);
-}
-
-flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
-
-}}
-
-@head(2,'Windows Thread')
-@h=tangler('demux/demux_win_thread.hpp')
-@select(h)
-#ifndef __WIN_THREAD__
-#define __WIN_THREAD__
-#include "flx_rtl_config.hpp"
-#include <windows.h>
-
-namespace flx { namespace demux {
-
-// ********************************************************
-/// Windows Threads.
-// ********************************************************
-
-class FLX_RTL_EXTERN flx_thread_t {
-  HANDLE    thread;
-  flx_thread_t(flx_thread_t const&); // uncopyable
-  void operator=(flx_thread_t const&); // uncopyable
-public:
-  flx_thread_t();
-  ~flx_thread_t();
-  int init(LPTHREAD_START_ROUTINE, LPVOID lParam);
-  void join();
-};
-
-/// RAII wrapper for thread class
-class FLX_RTL_EXTERN flx_thread_wrapper_t {
-  flx_thread_t thread;
-  flx_thread_wrapper_t(flx_thread_t const&); // uncopyable
-  void operator=(flx_thread_wrapper_t const&); // uncopyable
-public:
-  ~flx_thread_wrapper_t();
-  flx_thread_wrapper_t(LPTHREAD_START_ROUTINE, LPVOID lParam);
-};
-
-}}
-
-#endif
-
-@h=tangler('demux/demux_win_thread.cpp')
-@select(h)
-#include "demux_win_thread.hpp"
-#include <stdio.h>
-
-namespace flx { namespace demux {
-
-flx_thread_t::flx_thread_t(flx_thread_t const&){} // uncopyable
-void flx_thread_t::operator=(flx_thread_t const&){} // uncopyable
-
-
-flx_thread_t::flx_thread_t() { }
-flx_thread_t::~flx_thread_t() { }
-
-// this should be idempotent
-void
-flx_thread_t::join()
-{
-  // Let's try and wait for the thread to finish, however first I have to
-  // tell it to finish up.
-
-  DWORD  wait_res = WaitForSingleObject(thread, INFINITE);
-
-  // will this give me my return status? how do I get that?
-  if(WAIT_FAILED == wait_res)
-  {
-    fprintf(stderr,"thread wait failed (%li)\n", GetLastError());
-  }
-
-  // I've already tried waiting on the  thread's exit
-  if(!CloseHandle(thread))
-  {
-    fprintf(stderr,"failed to delete thread (%li)\n", GetLastError());
-  }
-}
-
-// returns -1 on failure with error in GetLastError, 0 if all good.
-int
-flx_thread_t::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
-{
-  DWORD thread_id = 0;
-  thread = (HANDLE)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)fn, lParam, 0, &thread_id);  
-  return 0;
-}
-
-flx_thread_wrapper_t::flx_thread_wrapper_t(LPTHREAD_START_ROUTINE f, LPVOID lParam)
-{
-  thread.init(f,lParam);
-}
-flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
-
-}}
-
-@head(2,'Portable Thread')
-@h=tangler('demux/demux_thread.hpp')
-@select(h)
-#ifndef __FLX_THREAD__
-#define __FLX_THREAD__
-
-#ifdef _WIN32
-#include "demux_win_thread.hpp"
-#else
-#include "demux_posix_thread.hpp"
-#endif
-
-#endif
-
-@head(1,"Mutex")
-@head(2,'Windows Emulation of Posix Synchronisation primitives')
-@h=tangler('demux/demux_win_posix_condv_emul.hpp')
-@select(h)
-#ifndef __WIN_POSIX_CONDV_EMUL__
-#define __WIN_POSIX_CONDV_EMUL__
-// Note: no namespaces here!
-// See http://www.cs.wustl.edu/~schmidt/win32-cv-1.html
-
-#include "flx_rtl_config.hpp"
-#ifdef _WIN32
-#include <windows.h>
-
-typedef HANDLE pthread_mutex_t;
-typedef void pthread_mutexattr_t; // do NOT use them!
-typedef void pthread_condattr_t; // do NOT use them!
-
-struct pthread_cond_t
-{
-  int waiters_count_;
-  // Number of waiting threads.
-
-  CRITICAL_SECTION waiters_count_lock_;
-  // Serialize access to <waiters_count_>.
-
-  HANDLE sema_;
-  // Semaphore used to queue up threads waiting for the condition to
-  // become signaled. 
-
-  HANDLE waiters_done_;
-  // An auto-reset event used by the broadcast/signal thread to wait
-  // for all the waiting thread(s) to wake up and be released from the
-  // semaphore. 
-
-  size_t was_broadcast_;
-  // Keeps track of whether we were broadcasting or signaling.  This
-  // allows us to optimize the code if we're just signaling.
-};
-
-// THIS IS SICK but there ain't no other way in C
-#define ETIMEDOUT WAIT_TIMEOUT
-// looks like EAGAIN is available in minggw, but not in vs sdk.
-#ifndef EAGAIN
-#define EAGAIN WAIT_TIMEOUT
-#endif
-
-int FLX_RTL_EXTERN pthread_mutex_init (pthread_mutex_t*, const pthread_mutexattr_t*);
-int FLX_RTL_EXTERN pthread_mutex_lock(pthread_mutex_t*);
-int FLX_RTL_EXTERN pthread_mutex_unlock(pthread_mutex_t*);
-int FLX_RTL_EXTERN pthread_mutex_destroy(pthread_mutex_t*);
-
-int FLX_RTL_EXTERN pthread_cond_init (pthread_cond_t*, const pthread_condattr_t*);
-int FLX_RTL_EXTERN pthread_cond_destroy(pthread_cond_t*);
-int FLX_RTL_EXTERN pthread_cond_wait (pthread_cond_t*, pthread_mutex_t*);
-int FLX_RTL_EXTERN pthread_cond_timedwait(pthread_cond_t*, pthread_mutex_t*, struct timespec const*);
-int FLX_RTL_EXTERN pthread_cond_uswait(pthread_cond_t*, pthread_mutex_t*, unsigned long us);
-int FLX_RTL_EXTERN pthread_cond_signal (pthread_cond_t*); 
-int FLX_RTL_EXTERN pthread_cond_broadcast (pthread_cond_t*);
-
-
-typedef HANDLE sem_t;
-
-int FLX_RTL_EXTERN sem_init(sem_t *sem, int pshared, unsigned int value);
-int FLX_RTL_EXTERN sem_wait(sem_t * sem);
-int FLX_RTL_EXTERN sem_trywait(sem_t * sem);
-int FLX_RTL_EXTERN sem_post(sem_t * sem);
-int FLX_RTL_EXTERN sem_getvalue(sem_t * sem, int * sval);
-int FLX_RTL_EXTERN sem_destroy(sem_t * sem);
-
-#else
-#include <pthread.h>
-#include <semaphore.h>
-// emulate the native Window functionality
-int FLX_RTL_EXTERN pthread_cond_uswait( pthread_cond_t*, pthread_mutex_t*, unsigned long us);
-#endif
-#endif
-
-@h=tangler('demux/demux_win_posix_condv_emul.cpp')
-@select(h)
-#include "demux_win_posix_condv_emul.hpp"
-#include <assert.h>
-#ifdef _WIN32
-#include <string.h>
-
-struct timespec {
-  unsigned long tv_sec;
-  unsigned long tv_nsec;
-};
-
-int pthread_mutex_init (pthread_mutex_t *m, const pthread_mutexattr_t*)
-{
-  *m = CreateMutex(NULL,FALSE,NULL); 
-  return 0;
-}
-
-int pthread_mutex_lock(pthread_mutex_t *m)
-{
-  WaitForSingleObject(*m,INFINITE); 
-  return 0;
-}
-
-int pthread_mutex_unlock(pthread_mutex_t *m)
-{
-  ReleaseMutex(*m);
-  return 0;
-}
-
-int pthread_mutex_destroy(pthread_mutex_t *m)
-{
-  CloseHandle(*m);
-  return 0;
-}
-
-int 
-pthread_cond_init 
-(
-  pthread_cond_t *cv,
-  const pthread_condattr_t *
-)
-{
-  cv->waiters_count_ = 0;
-  cv->was_broadcast_ = 0;
-  cv->sema_ = CreateSemaphore 
-  (
-    NULL,       // no security
-    0,          // initially 0
-    0x7fffffff, // max count .. (I hate limits .. but thats a lot of pthreads)
-    NULL        // unnamed
-  ); 
-  InitializeCriticalSection (&cv->waiters_count_lock_);
-  cv->waiters_done_ = CreateEvent 
-  (
-    NULL,  // no security
-    FALSE, // auto-reset
-    FALSE, // non-signaled initially
-    NULL   // unnamed
-  );
-  return 0;
-}
-
-int 
-pthread_cond_destroy(pthread_cond_t *cv)
-{
-  CloseHandle(cv->sema_);
-  CloseHandle(cv->waiters_done_);
-  return 0;
-}
-
-// returns ETIMEDOUT = WAIT_TIMEOUT
-static int
-private_cond_wait 
-(
-  pthread_cond_t *cv, 
-  pthread_mutex_t *external_mutex,
-  unsigned long ms
-)
-{
-  // Avoid race conditions.
-  EnterCriticalSection (&cv->waiters_count_lock_);
-  cv->waiters_count_++;
-  LeaveCriticalSection (&cv->waiters_count_lock_);
-
-  // This call atomically releases the mutex and waits on the
-  // semaphore until <pthread_cond_signal> or <pthread_cond_broadcast>
-  // are called by another thread.
-  int res = SignalObjectAndWait (*external_mutex, cv->sema_, ms, FALSE);
-
-  // Reacquire lock to avoid race conditions.
-  EnterCriticalSection (&cv->waiters_count_lock_);
-
-  // We're no longer waiting...
-  cv->waiters_count_--;
-
-  // Check to see if we're the last waiter after <pthread_cond_broadcast>.
-  int last_waiter = cv->was_broadcast_ && cv->waiters_count_ == 0;
-
-  LeaveCriticalSection (&cv->waiters_count_lock_);
-
-  // If we're the last waiter thread during this particular broadcast
-  // then let all the other threads proceed.
-  if (last_waiter)
-    // This call atomically signals the <waiters_done_> event and waits until
-    // it can acquire the <external_mutex>.  This is required to ensure fairness. 
-    SignalObjectAndWait (cv->waiters_done_, *external_mutex, INFINITE, FALSE);
-  else
-    // Always regain the external mutex since that's the guarantee we
-    // give to our callers. 
-    WaitForSingleObject (*external_mutex, INFINITE);
-  return res;
-}
-
-int
-pthread_cond_wait 
-(
-  pthread_cond_t *cv, 
-  pthread_mutex_t *external_mutex
-)
-{
-  return private_cond_wait(cv,external_mutex,INFINITE);
-}
-
-// Posix is a pain in the butt here
-// we have to get the current time and subtract it
-// from the target time to get a duration
-// the pain is that we probably wanted a duration
-// and had to construct a target time by adding it
-// to the current time
-//
-// to fix this we add the native Windows mode (a duration)
-// to posix
-
-int
-pthread_cond_uswait 
-(
-  pthread_cond_t *cv, 
-  pthread_mutex_t *external_mutex,
-  unsigned long us
-)
-{
-
-  // Windows waits in ms, ours in us
-  return private_cond_wait(cv,external_mutex,us * 1000);
-}
-
-int
-pthread_cond_timedwait 
-(
-  pthread_cond_t *cv, 
-  pthread_mutex_t *external_mutex,
-  struct timespec const *abstime
-)
-{
-  unsigned long t1 = abstime->tv_sec * 1000 + abstime->tv_nsec / 1000;
-  SYSTEMTIME tod;
-  GetSystemTime(&tod);
-  FILETIME ft;
-  SystemTimeToFileTime(&tod,&ft);
-  ULARGE_INTEGER now;  // so we can do some maths
-  assert(sizeof(now) == sizeof(ft));
-  memcpy(&now, &ft, sizeof(now));
-  unsigned long t0 = now.QuadPart / 10; // us now 
-  unsigned long timeout = t1>t0 ? t1 - t0 : 0;
-  return private_cond_wait(cv,external_mutex,timeout);
-}
-
-int
-pthread_cond_signal (pthread_cond_t *cv)
-{
-  EnterCriticalSection (&cv->waiters_count_lock_);
-  int have_waiters = cv->waiters_count_ > 0;
-  LeaveCriticalSection (&cv->waiters_count_lock_);
-
-  // If there aren't any waiters, then this is a no-op.  
-  if (have_waiters)
-    ReleaseSemaphore (cv->sema_, 1, 0);
-  return 0;
-}
-
-int
-pthread_cond_broadcast (pthread_cond_t *cv)
-{
-  // This is needed to ensure that <waiters_count_> and <was_broadcast_> are
-  // consistent relative to each other.
-  EnterCriticalSection (&cv->waiters_count_lock_);
-  int have_waiters = 0;
-
-  if (cv->waiters_count_ > 0) {
-    // We are broadcasting, even if there is just one waiter...
-    // Record that we are broadcasting, which helps optimize
-    // <pthread_cond_wait> for the non-broadcast case.
-    cv->was_broadcast_ = 1;
-    have_waiters = 1;
-  }
-
-  if (have_waiters) {
-    // Wake up all the waiters atomically.
-    ReleaseSemaphore (cv->sema_, cv->waiters_count_, 0);
-
-    LeaveCriticalSection (&cv->waiters_count_lock_);
-
-    // Wait for all the awakened threads to acquire the counting
-    // semaphore. 
-    WaitForSingleObject (cv->waiters_done_, INFINITE);
-    // This assignment is okay, even without the <waiters_count_lock_> held 
-    // because no other waiter threads can wake up to access it.
-    cv->was_broadcast_ = 0;
-  }
-  else
-    LeaveCriticalSection (&cv->waiters_count_lock_);
-  return 0;
-}
-
-int sem_init(sem_t *sem, int pshared, unsigned int value)
-{
-  *sem = CreateSemaphore(NULL,value,0x7FFFFFFF,NULL);
-  return 0;
-}
-
-int sem_wait(sem_t * sem) 
-{ 
-  return WaitForSingleObject(*sem,INFINITE); 
-}
-
-int sem_trywait(sem_t * sem) 
-{ 
-  return WaitForSingleObject(*sem,0); 
-}
-
-int sem_post(sem_t * sem) 
-{ 
-  return ReleaseSemaphore(*sem,1,NULL); 
-}
-
-int sem_getvalue(sem_t * sem, int * sval)
-{
-  LONG x;  
-  ReleaseSemaphore(*sem,0,&x); 
-  *sval = x;
-  return 0;
-}
-
-int sem_destroy(sem_t * sem) 
-{
-  return CloseHandle(*sem);
-}
-
-
-#else
-
-//POSIX
-#include <time.h>
-#include <sys/time.h>
-
-int pthread_cond_uswait(
-  pthread_cond_t *cv, 
-  pthread_mutex_t *m, 
-  unsigned long us
-)
-{
-  timeval tv;
-  gettimeofday(&tv,NULL);
-  unsigned long t0 = tv.tv_sec * 1000000uL + tv.tv_usec;
-  unsigned long t1 = t0 + us;
-  timespec ts;
-  ts.tv_sec = t1 / 1000000uL;
-  ts.tv_nsec = (t1 % 1000000uL) * 1000;
-  return pthread_cond_timedwait(cv,m,&ts);
-}
-
-#endif
-
-@head(2,'Portable Mutex')
-@h=tangler('demux/demux_mutex.hpp')
-@select(h)
-#ifndef __FLX_MUTEX__
-#define __FLX_MUTEX__
-#include "flx_rtl_config.hpp"
-
-#include "demux_win_posix_condv_emul.hpp"
-
-namespace flx { namespace demux {
-
-// ********************************************************
-/// Mutex.
-// ********************************************************
-class FLX_RTL_EXTERN flx_mutex_t {
-  flx_mutex_t(flx_mutex_t const&); // uncopyable
-  void operator=(flx_mutex_t const&); // uncopyable
-public:
-  pthread_mutex_t m;        // be nice, don't touch
-  flx_mutex_t();
-  ~flx_mutex_t();
-  void lock();
-  void unlock();
-};
-
-class FLX_RTL_EXTERN flx_mutex_locker_t {
-  flx_mutex_t* p;
-  flx_mutex_locker_t(flx_mutex_locker_t const&); // uncopyable
-  void operator=(flx_mutex_locker_t const&); // uncopyable
-public:
-  flx_mutex_locker_t(flx_mutex_t& pm);
-  ~flx_mutex_locker_t();
-};
-
-}} // namespace demux, flx
-#endif
-
-@h=tangler('demux/demux_mutex.cpp')
-@select(h)
-#include "demux_mutex.hpp"
-#include <stdio.h>
-#include <assert.h>
-
-namespace flx { namespace demux {
-flx_mutex_t::flx_mutex_t(flx_mutex_t const&){} // uncopyable
-void flx_mutex_t::operator=(flx_mutex_t const&){} // uncopyable
-
-flx_mutex_t::flx_mutex_t() {
-    assert( !recursive );
-    int res = pthread_mutex_init(&m, NULL);
-    if(res != 0) throw res;
-}
-
-flx_mutex_t::~flx_mutex_t() { pthread_mutex_destroy(&m); }
-void flx_mutex_t::lock() { pthread_mutex_lock(&m); }
-void flx_mutex_t::unlock() { pthread_mutex_unlock(&m);}
-
-flx_mutex_locker_t::flx_mutex_locker_t(flx_mutex_locker_t const&){} // uncopyable
-void flx_mutex_locker_t::operator=(flx_mutex_locker_t const&){} // uncopyable
-flx_mutex_locker_t::flx_mutex_locker_t(flx_mutex_t& pm) : p(&pm) { p->lock(); }
-flx_mutex_locker_t::~flx_mutex_locker_t() { p->unlock(); }
-
-}}
-
-@head(1,"Condition Variable")
-@head(2,'Portable Condition Variable')
-@h=tangler('demux/demux_condv.hpp')
-@select(h)
-#ifndef __CONDV__
-#define __CONDV__
-#include <flx_rtl_config.hpp>
-#include "demux_mutex.hpp"
-
-#include "demux_win_posix_condv_emul.hpp"
-
-namespace flx { namespace demux {
-
-// ********************************************************
-/// Condition Variable.
-// ********************************************************
-class FLX_RTL_EXTERN flx_condv_t {
-public:
-  pthread_cond_t cv;        // be nice, don't touch
-  flx_condv_t();
-  ~flx_condv_t();
-  void signal();
-  void broadcast();
-  void wait(flx_mutex_t*);
-};
-
-}} // namespace demux, flx
-#endif
-
-@h=tangler('demux/demux_condv.cpp')
-@select(h)
-#include "demux_condv.hpp"
-#include <stdio.h>        // printf debugging
-#include <assert.h>
-
-namespace flx { namespace demux {
-
-flx_condv_t::flx_condv_t() { pthread_cond_init(&cv, NULL); }
-flx_condv_t::~flx_condv_t() { pthread_cond_destroy(&cv); }
-void flx_condv_t::wait(flx_mutex_t *m) { pthread_cond_wait(&cv,&(m->m)); }
-void flx_condv_t::signal() { pthread_cond_signal(&cv);}
-void flx_condv_t::broadcast() { pthread_cond_broadcast(&cv); }
-
-}}
-
-@head(1,"Semaphore")
-@head(2,'Portable Semaphore')
-@h=tangler('demux/demux_semaphore.hpp')
-@select(h)
-#ifndef __SEMAPHORE__
-#define __SEMAPHORE__
-#include <flx_rtl_config.hpp>
-#include "demux_mutex.hpp"
-
-#include "demux_win_posix_condv_emul.hpp"
-
-namespace flx { namespace demux {
-
-// ********************************************************
-/// Semaphore
-// ********************************************************
-class FLX_RTL_EXTERN flx_semaphore_t {
-  sem_t sem;
-public:
-  flx_semaphore_t(int n=0);
-  ~flx_semaphore_t();
-  void post();
-  void operator++() { post(); }
-  void wait();
-  void operator--() { wait(); }
-  int get();
-  int operator*() { return get(); }
-
-  /// atomic test and decrement if non-zero function.
-  /// returns EAGAIN on failure to decrement.
-  int trywait(); 
-};
-
-}} // namespace demux, flx
-#endif
-
-@h=tangler('demux/demux_semaphore.cpp')
-@select(h)
-#include "demux_semaphore.hpp"
-#include <stdio.h>        // printf debugging
-#include <assert.h>
-
-namespace flx { namespace demux {
-flx_semaphore_t::flx_semaphore_t(int n) { sem_init(&sem, 0, n); }
-flx_semaphore_t::~flx_semaphore_t() { sem_destroy(&sem); }
-void flx_semaphore_t::wait() { sem_wait(&sem); }
-int flx_semaphore_t::trywait() { return sem_trywait(&sem); }
-void flx_semaphore_t::post() { sem_post(&sem); }
-int flx_semaphore_t::get(){ int x; sem_getvalue(&sem,&x); return x; }
-
-}}
-
-@h=tangler('demux/demux_monitor.hpp')
-@select(h)
-#ifndef __MONITOR__
-#define __MONITOR__
-#include <flx_rtl_config.hpp>
-#include "demux_mutex.hpp"
-#include "demux_condv.hpp"
-#include "demux_semaphore.hpp"
-
-// interface for a consumer/producer queue. threads requesting a resource
-// that isn't there block until one is available. push/pop re-entrant
-
-namespace flx { namespace demux {
-
-// ********************************************************
-/// A monitor is an concurrent version of a channel.
-/// It matches up readers and writers in pairs,
-/// synchronising transfer of one datum.
-///
-/// Unlike the bounded queue below, a monitor is a fully
-/// synchronised unbuffered transfer, mediated by a full
-/// handshake.
-/// 
-/// In particular, unlike the queue of size 1, the writer
-/// cannot proceed until the reader sends an acknowlege
-/// signal.
-///
-/// This logic matches that provides by schannels, but 
-/// across an asynchronous boundary.
-// ********************************************************
-
-class FLX_RTL_EXTERN monitor_t {
-  flx_mutex_t member_lock; 
-  flx_semaphore_t readers;
-  flx_semaphore_t writers;
-  flx_condv_t ack;
-  void *data;
-public:
-  monitor_t();
-  ~monitor_t();
-  void enqueue(void*);
-  void* dequeue();
-};
-
-}} // namespace demux, flx
-#endif
-
-@h=tangler('demux/demux_monitor.cpp')
-@select(h)
-#include "demux_monitor.hpp"
-#include <queue>        // stl to the bloated rescue
-#include <string.h>       // strerror
-
-using namespace std;
-
-namespace flx { namespace demux {
-
-monitor_t::monitor_t(){}
-monitor_t::~monitor_t() { }
-
-void
-monitor_t::enqueue(void* elt)
-{
-  ++writers;
-  --readers;
-  flx_mutex_locker_t   l(member_lock);
-  data = elt;
-  ack.wait(&member_lock); // wait for reader to acknowledge
-}
-
-void*
-monitor_t::dequeue()
-{
-  ++readers;
-  --writers;
-  flx_mutex_locker_t   l(member_lock);
-  void *d = data;
-  ack.signal(); // send acknowlege to release writer
-  return d;
-}
-
-}}
-
-@head(1,"Portable Thread safe Queue")
-Both queue and dequeue operations are critical
-sections protected by a mutex.
-@p()
-When the queue is empty, the dequeue operation waits 
-on a semaphore signaled by the enqueue operation.
-
-@h=tangler('demux/demux_sleep_queue.hpp')
-@select(h)
-#ifndef __SLEEPQUEUE__
-#define __SLEEPQUEUE__
-#include <flx_rtl_config.hpp>
-#include "demux_mutex.hpp"
-#include "demux_condv.hpp"
-
-// interface for a consumer/producer queue. threads requesting a resource
-// that isn't there block until one is available. push/pop re-entrant
-
-namespace flx { namespace demux {
-
-// ********************************************************
-/// Thread safe bounded queue.
-///
-/// The queue can be locked by setting bound=0.
-/// In this state it can only be unlocked by setting a non-zero bound.
-///
-/// If the bound is set to 1 (the default),
-/// then the queue is always either empty or full.
-/// An empty queue blocks readers until a writer sends some data.
-/// A full queue blocks writers, until a reader reads the data.
-/// Note that when the queue is empty a writer can write data
-/// and continues without waiting for the data to be read.
-// ********************************************************
-
-class FLX_RTL_EXTERN sleep_queue_t {
-  flx_mutex_t member_lock; 
-  flx_condv_t not_empty_cond; 
-  flx_condv_t not_full_cond; 
-  void *lame_opaque;  
-  size_t bound;
-public:
-  sleep_queue_t(size_t);
-  ~sleep_queue_t();
-  void enqueue(void*);
-  void* dequeue();
-  void resize(size_t);
-};
-
-}} // namespace demux, flx
-#endif
-
-@h=tangler('demux/demux_sleep_queue.cpp')
-@select(h)
-#include "demux_sleep_queue.hpp"
-#include <queue>        // stl to the bloated rescue
-#include <string.h>       // strerror
-
-using namespace std;
-
-namespace flx { namespace demux {
-typedef queue<void*> void_queue;
-
-#define ELTQ ((void_queue*)lame_opaque)
-
-sleep_queue_t::sleep_queue_t(size_t n) : bound(n)
-{
-  lame_opaque = new void_queue;
-}
-
-// Much care is needed deleting a queue.
-// A safe method is possible .. but not provided here
-sleep_queue_t::~sleep_queue_t()
-{
-  delete ELTQ;
-}
-
-void
-sleep_queue_t::enqueue(void* elt)
-{
-  //fprintf(stderr,"Q%p: Enqueue %p\n",this,elt);
-  flx_mutex_locker_t   l(member_lock);
-  if(ELTQ->size() >= bound)
-  {
-    //fprintf(stderr,"Q%p: Queue is full, waiting\n",this);
-    not_full_cond.wait(&member_lock);
-  }
-  //fprintf(stderr,"Q%p: Queue has space\n",this);
-  ELTQ->push(elt);
-  //fprintf(stderr,"Q%p: Signal not empty\n",this);
-  not_empty_cond.signal(); // cannot return an error
-}
-
-void*
-sleep_queue_t::dequeue()
-{
-  flx_mutex_locker_t   l(member_lock);
-  if(ELTQ->empty())
-  {
-    //fprintf(stderr,"Q%p: Waiting for non empty queue\n",this);
-    not_empty_cond.wait(&member_lock);
-  }
-  void *elt = ELTQ->front();
-  //fprintf(stderr,"Q%p: Dequeue %p\n",this,elt);
-  ELTQ->pop();
-  if(ELTQ->size() < bound)
-  {
-    //fprintf(stderr,"Q%p: Signalling not full\n",this);
-    not_full_cond.signal();
-  }
-  //fprintf(stderr,"Q%p: Dequeued, returning %p\n",this,elt);
-  return elt;
-}
-
-void 
-sleep_queue_t::resize(size_t n)
-{
-  flx_mutex_locker_t   l(member_lock);
-  bound = n;
-  // get things rolling again
-  if(!ELTQ->empty()) not_empty_cond.signal();
-  if(ELTQ->size()<bound) not_full_cond.signal();
-}
-
-}}
-
-
-@head(1,'Portable Job Queue')
-The class is actually a thread plus a job queue.
-@h=tangler('demux/demux_work_fifo.hpp')
-@select(h)
-#ifndef __WORKER_FIFO__
-#define __WORKER_FIFO__
-#include <flx_rtl_config.hpp>
-#include "demux_thread.hpp"
-#include "demux_mutex.hpp"
-#include "demux_sleep_queue.hpp"
-
-namespace flx { namespace demux {
-
-/// Class of jobs to be queued in fifo for execution.
-class FLX_RTL_EXTERN worker_task
-{
-public:
-  virtual ~worker_task() {}   // c++ should do this automatically
-
-  /// function called by worker thread to carry out user job
-  virtual void doit() = 0;     
-
-  /// function called by worker thread after doit() is completed
-  /// used to notify job completion
-  virtual void finished() = 0; // finished hook (mi serve start gancia?)
-};
-
-/// Linear job scheduler, executes jobs in turn from queue
-class FLX_RTL_EXTERN worker_fifo
-{
-  // this thread is destructed very carefully to make sure that all
-  // the objects in this class outlive its execution.
-  flx_thread_t  thread;
-  sleep_queue_t fifo;
-
-  static void* thread_start(void*); // thread entry point, passed this
-  bool thread_loop_body();      // returns keep going flag
-
-public:
-  worker_fifo(int n);
-  ~worker_fifo();
-
-  /// method used by client to schedule jobs
-  /// for this worker thread
-  void add_worker_task(worker_task* task);  // also re-entrant
-
-  // those deriving from this class might like to stop the
-  // thread in their destructors, so that their objects used
-  // by the worker thread can outlive it
-  void stop_worker_thread();
-  };
-
-}} // namespace demux, flx
-#endif  // __WORKER_FIFO__
-
-@h=tangler('demux/demux_work_fifo.cpp')
-@select(h)
-#include <stdio.h>    // printf
-#include "demux_work_fifo.hpp"
-namespace flx { namespace demux {
-
-// a fifo of tasks & a thread (threads?) to serve them.
-// users overload finished function to implement wakeup
-
-worker_fifo::worker_fifo(int n) : fifo(n)
-{
-  //fprintf(stderr,"async worker fifo io module constructor\n");
-  // fifo already inited and ready to go, so get pthread going
-#ifdef _WIN32
-  int res = thread.init((LPTHREAD_START_ROUTINE)thread_start, this);
-#else
-  int res = thread.init(thread_start, this);
-#endif
-
-  if(0 != res) throw res;
-
-// do it properly or not at all
-#if 0
-  fprintf(stderr,"hey, trying multi threads here (leakingly)\n");
-  for(int i = 1; i < 1; i++)
-  {
-    fprintf(stderr,"extra io thread\n");
-    flx_thread_t* pt = new flx_thread_t;
-    res = pt->init(thread_start, this);
-    if(0 != res) throw res;
-  }
-#endif
-}
-
-// To get rid of thread cancel we could have a simple finished flag
-// that's set by the class and set by the thread. Since both are executed
-// synchronously w.r.t the same thread, we wouldn't need to protect anything
-// that won't work if we have multiple worker threads, however.
-
-// better idea - add a null task to front of queue to mean quit. queue
-// is already threadsafe. If there are n worker threads, add n nulls.
-
-// stopping the worker thread turns out to be trickier than it sounds
-// because it's hard to wake up on an empty queue. 
-void
-worker_fifo::stop_worker_thread()
-{
-  add_worker_task(NULL);    // thread safe takedown.
-                // for n worker threads add n times
-  thread.join();      // join waits for thread to exit.
-                // which should happen eventually
-}
-
-worker_fifo::~worker_fifo()
-{
-  // the thread must be brought down before the objects it
-  // uses are destructed. lets hope anyone deriving from this
-  // class knows that and let them call this function in their
-  // destructor.
-  stop_worker_thread();
-}
-
-// io thread entry point, passed this
-void*
-worker_fifo::thread_start(void* udat)
-{ 
-  worker_fifo*  fio = (worker_fifo*)udat;
-  fprintf(stderr,"worker_fifo thread started! this=%p\n", fio);
-
-  while(fio->thread_loop_body()) ;
-
-  return 0;             // return status.
-}
-
-// dequeues one task and executes it, calling finished hook. interprest
-// null task as a request to exit.
-bool
-worker_fifo::thread_loop_body()
-{
-  worker_task*  req = (worker_task*)fifo.dequeue();
-  //fprintf(stderr,"dequeued worker_task (%p)\n", req);
-
-  if(!req) return false;        // finished, got quit signal
-
-  req->doit();
-  req->finished();          // finish hook. I find this handy
-
-  return true;            // keep going
-}
-
-void
-worker_fifo::add_worker_task(worker_task* task)
-{
-  //fprintf(stderr,"adding worker task %p\n",task);
-  fifo.enqueue(task);         // don't worry, fifo is re-entrant
-}
-
-}}
 
 
 @h=tangler('demux/demux_demuxer.hpp')
@@ -1590,11 +500,11 @@ public:
 #include <flx_rtl_config.hpp>
 
 #include "demux_demuxer.hpp"
-#include "demux_sleep_queue.hpp"
-#include "demux_mutex.hpp"
+#include "pthread_sleep_queue.hpp"
+#include "pthread_mutex.hpp"
 // #include <sys/types.h> // off_t (don't have flx iface to this yet)
               // can just add new constructor
-#include "demux_work_fifo.hpp"
+#include "pthread_work_fifo.hpp"
 namespace flx { namespace demux {
 
 // ********************************************************
@@ -1602,7 +512,7 @@ namespace flx { namespace demux {
 /// should probably be derived from posix_wakeup or something like that.
 /// or have the same signature. abstract - users overload "finished
 // ********************************************************
-class FLX_RTL_EXTERN fileio_request : public worker_task
+class FLX_RTL_EXTERN fileio_request : public flx::pthread::worker_task
 {
   long    offset;   // make this a proper offset (64bit)
   // off_t    offset; // in: offset, for use with pread, pwrite
@@ -1624,7 +534,7 @@ public:
 // ********************************************************
 // could do separate threads for in & out. or implement some form of cache.
 // ********************************************************
-class FLX_RTL_EXTERN pasync_fileio : public worker_fifo
+class FLX_RTL_EXTERN pasync_fileio : public flx::pthread::worker_fifo
 {
 public:
   pasync_fileio(int n) : worker_fifo(n) {}
@@ -1784,7 +694,7 @@ public:
 #define __TS_SELECT_DEMUXER__
 
 #include "demux_select_demuxer.hpp"
-#include "demux_mutex.hpp"
+#include "pthread_mutex.hpp"
 
 namespace flx { namespace demux {
 
@@ -1807,7 +717,7 @@ public:
 
 class FLX_RTL_EXTERN ts_select_demuxer : public posix_demuxer {
   // big conservative recursive hamfisted lock.
-  flx_mutex_t      ham_fist;   
+  flx::pthread::flx_mutex_t      ham_fist;   
   // protects this little fella here.
   select_demuxer  demux;
 
@@ -1898,8 +808,9 @@ public:
 #ifndef __POSIX_TIMER_QUEUE__
 #define __POSIX_TIMER_QUEUE__
 
-#include "demux_posix_thread.hpp"  // flx_thread_t, lock
-#include "demux_mutex.hpp"  // flx_thread_t, lock
+#include "pthread_thread.hpp"  // flx_thread_t
+#include "pthread_mutex.hpp"  // flx_mutex_t
+#include "pthread_condv.hpp"  // flx_cond_t
 #include "demux_timer_queue.hpp" // base class
 #include <sys/time.h>        // timespecs, gettimeofday
 
@@ -1908,24 +819,14 @@ namespace flx { namespace demux {
 // looks like a worker queue, but couldn't quite mash it into one
 class FLX_RTL_EXTERN posix_timer_queue : public timer_queue
 {
-    // ATTENZIONE: the thread uses this & so it must outlive it
-    // for this it is declared before the thread (I would've expected
-    // an error to be returned from pthread_mutex_lock instead of
-    // deadlock but whatever).
-    // update: I was getting deadlock in a broken stdlib version
-    // gcc4.0.1, ppc64, osx10.4.2 in printf, however the above still
-    // stands: the lock must outlive the thread that uses it.
-    flx_mutex_t        lock;                    // factor to prio queue?
+    flx::pthread::flx_mutex_t lock; // factor to prio queue?
+    flx::pthread::flx_condv_t sleep_cond;
+    flx::pthread::flx_thread_t sleep_thread;
+    void*        opaque_prio_queue;        // less fat
 
-    flx_thread_t    sleep_thread;
     static void* thread_start(void*);    // passed "this"
     bool thread_loop_body();
 
-    void*        opaque_prio_queue;        // less fat
-
-    pthread_cond_t    sleep_cond;            // this could be cool.
-    int setup_sleep_cond();
-    void takedown_sleep_cond();            // deallocate the condition
 
     void wakeup_thread();                // we can do this!
 
@@ -1958,6 +859,7 @@ public:
 #include <queue>    // stl seems to have a prio_queue
 #include <sys/time.h> // gettimeofday for calculating "now"
 
+using namespace flx::pthread;
 namespace flx { namespace demux {
 
 #define MIL 1000000        // one million
@@ -1986,57 +888,11 @@ public:
 typedef priority_queue<future_evt> void_prio_queue;
 #define PRIOQ ((void_prio_queue*)opaque_prio_queue)
 
-int
-posix_timer_queue::setup_sleep_cond()
-{
-    fprintf(stderr,"setup_sleep_cond\n");
-    int    res;
-    res = pthread_cond_init(&sleep_cond, NULL);
-
-    if(0 != res)
-        fprintf(stderr,"pthread_cond_init failed: %i\n", res);
-
-    return res;
-}
-
-void
-posix_timer_queue::takedown_sleep_cond()
-{
-    fprintf(stderr,"sleep cond taking down\n");
-    int    res;
-    res = pthread_cond_destroy(&sleep_cond);
-    if(0 != res) fprintf(stderr,"condition destroy failed: %i\n", res);
-}
-
-// it's a real bore properly cleaning up in the face of exceptions in
-// constructors. try using some local objects to look after it.
 posix_timer_queue::posix_timer_queue()
 {
-    // fprintf(stderr,"posix_timer_queue ctor\n");
-
-    // if this throws, no harm done
     opaque_prio_queue = new void_prio_queue;    // a.k.a. PRIOQ
-
-    int    res;
-    res = setup_sleep_cond();
-    if(0 != res)
-    {
-        delete PRIOQ;                            // cleanup, carry on
-        throw res;
-    }
-
-    // do the thread last because it uses all of the above
-    fprintf(stderr,"initing sleep thread\n");
-
-    res = sleep_thread.init(thread_start, this);
-
-    if(0 != res)
-    {
-        delete PRIOQ;
-        takedown_sleep_cond();
-        throw res;
-    }
-    // not good to do much else after this as the thread is running
+    fprintf(stderr,"initing timer sleep thread\n");
+    sleep_thread.init(thread_start, this);
 }
 
 posix_timer_queue::~posix_timer_queue()
@@ -2059,8 +915,6 @@ posix_timer_queue::~posix_timer_queue()
     sleep_thread.join();            // will join
     fprintf(stderr,"about to delete PRIOQ\n");
     delete PRIOQ;
-
-    takedown_sleep_cond();
 }
 
 static void
@@ -2130,7 +984,7 @@ posix_timer_queue::add_sleep_request(sleep_task* st, timespec* abs)
     evt.task = st;
     evt.when = *abs;
 
-    flx_mutex_locker_t    locker(lock);
+    flx::pthread::flx_mutex_locker_t    locker(lock);
 
     PRIOQ->push(evt);
 
@@ -2169,12 +1023,7 @@ posix_timer_queue::add_abs_sleep_request(sleep_task* st, double when)
 void
 posix_timer_queue::wakeup_thread()
 {
-    // fprintf(stderr,"waking sleeper thread with pthread_cond_signal\n");
-    int    res;
-    // we don't need broadcast because we're only ever waking
-    // one thread, the sleeper thread.
-    res = pthread_cond_signal(&sleep_cond);
-    if(0 != res) fprintf(stderr,"condition signal failed: %i\n", res);
+    sleep_cond.signal();
 }
 
 void*
@@ -2191,7 +1040,7 @@ posix_timer_queue::thread_start(void* udat)
 bool
 posix_timer_queue::thread_loop_body()
 {
-    flx_mutex_locker_t    locker(lock);    // lock on. lock off when waiting on condition
+    flx::pthread::flx_mutex_locker_t    locker(lock);    // lock on. lock off when waiting on condition
 
     int        res;
 
@@ -2227,10 +1076,11 @@ posix_timer_queue::thread_loop_body()
             // fprintf(stderr,"sleeping from %li, %li until %li, %li\n",
             //    now.when.tv_sec, now.when.tv_nsec,
             //    evt.when.tv_sec, evt.when.tv_nsec);
-            res = pthread_cond_timedwait(&sleep_cond, &lock.m, &evt.when);
+            (void)sleep_cond.timedwait(&lock, &evt.when);
 
             // if using posix abstime timed wait we make get EINVAL here for 
             // abstimes in the past. must handle this.
+            //JS: It's handled now, waiting for a time in the past is OK
  
             // fprintf(stderr,"pthread_cond_timedwait woke up! (%i)\n", res);
         }
@@ -2240,7 +1090,7 @@ posix_timer_queue::thread_loop_body()
     // that we don't really need the mainloop testcancel because the condition
     // wait functions are cancellation points.
     // fprintf(stderr,"no sleep task, sleeping indefinitely\n");
-    res = pthread_cond_wait(&sleep_cond, &lock.m);
+    sleep_cond.wait(&lock);
     // fprintf(stderr,"pthread_cond_wait woke up! (%i)\n", res);
 
     // lock released here
@@ -2305,6 +1155,7 @@ public:
 
 #include <stdio.h>
 
+using namespace flx::pthread;
 namespace flx { namespace demux {
 
 #define MIL 1000000    // 1 metric million
@@ -2707,6 +1558,7 @@ epoll_demuxer::get_evts(bool poll)
 #include <unistd.h> // close
 #include <assert.h>
 
+using namespace flx::pthread;
 namespace flx { namespace demux {
 
 // header files for this stuff?
@@ -2899,13 +1751,14 @@ evtport_demuxer::get_evts(bool poll)
 @h=tangler('demux/demux_iocp_demuxer.cpp')
 @select(h)
 #include "demux_iocp_demuxer.hpp"
-#include "demux_mutex.hpp"
+#include "pthread_mutex.hpp"
 
 #include <stdio.h>      // for printf debugging
 #include <stddef.h>     // offsetof
 #include <assert.h>
 // shoving the win_queue in here for now
 
+using namespace flx::pthread;
 namespace flx { namespace demux {
 
 // this could really do with auto objs. steal the strat stuff?
@@ -3312,6 +2165,7 @@ BOOL
     {0x25a207b9,0xddf3,0x4660,{0x8e,0xe9,0x76,0xe5,0x8c,0x74,0x06,0x3e}}
 #endif
 
+using namespace flx::pthread;
 namespace flx { namespace demux {
 
 // windows includes files here? vs will be fussy.
@@ -3888,6 +2742,7 @@ public:
 
 // #include <sys/syscall.h> // syscall(SYC_close,kq) close workaround
 
+using namespace flx::pthread;
 namespace flx { namespace demux {
 kqueue_demuxer::kqueue_demuxer()
   : kq(-1)
@@ -4134,6 +2989,7 @@ kqueue_demuxer::get_evts(bool poll)
 #include <sys/uio.h>
 #include <unistd.h>
 
+using namespace flx::pthread;
 namespace flx { namespace demux {
 // fileio_request stuff follows
 
@@ -4627,6 +3483,7 @@ select_demuxer::process_sets(fd_set& rset, fd_set& wset, fd_set& exset)
 #include <unistd.h>       // pipe for self-pipe trick.
 #include <assert.h>
 
+using namespace flx::pthread;
 namespace flx { namespace demux {
 
 auto_fd::auto_fd()
@@ -4679,7 +3536,7 @@ ts_select_demuxer::get_evts(bool poll)
 
   // copy args under lock
   {
-    flx_mutex_locker_t locker(ham_fist);
+    flx::pthread::flx_mutex_locker_t locker(ham_fist);
     demux.copy_sets(rset, wset, exset);
   }
   
@@ -4691,7 +3548,7 @@ ts_select_demuxer::get_evts(bool poll)
   // in its callback different to the one it originally added to.
   if(demux.select(rset, wset, exset, poll))
   {
-    flx_mutex_locker_t locker(ham_fist);
+    flx::pthread::flx_mutex_locker_t locker(ham_fist);
     demux.process_sets(rset, wset, exset);
   }
 }
@@ -4707,7 +3564,7 @@ ts_select_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 
   // fprintf(stderr, "ts_select::add: %p->%i (%s), %x\n",
   //  sv, s, (s == self_pipe_fds[0]) ? "self pipe" : "socket", flags);
-  flx_mutex_locker_t locker(ham_fist);
+  flx::pthread::flx_mutex_locker_t locker(ham_fist);
 
   int res = demux.add_socket_wakeup(sv, flags);
   // I wouldn't touch the sv after this.
@@ -4778,6 +3635,7 @@ selfpipe_wakeup::wakeup(posix_demuxer& demux)
 #include <errno.h>        /* errno */
 
 #include <string.h>       /* for memset */
+
 namespace flx { namespace demux {
 
 @tangle("typedef " + FLX_SOCKLEN_T + " FLX_SOCKLEN_T;")
