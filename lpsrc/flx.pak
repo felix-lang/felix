@@ -296,7 +296,6 @@ create a file here for unit tests.
 
 @head(2,'Tools')
 @include_file ('flx_docgen.ipk')
-@include_file ('flx_pkgconfig.ipk')
 
 
 @head(2,'Misc')
