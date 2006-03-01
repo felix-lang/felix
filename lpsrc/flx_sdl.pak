@@ -1,5 +1,10 @@
+@execfile('config'+os.sep+'config.py')
 @head(1,'SDL')
 $Log$
+Revision 1.6  2006/03/01 13:43:17  skaller
+COnfig packages now seem to work on Linux. Added dependency
+on libflx to flx_pthread.
+
 Revision 1.5  2006/02/28 02:07:13  skaller
 Refactor demux into demux + pthread.
 
@@ -118,6 +123,79 @@ Change rtl name for MACOSX to libflx_dynamic.dylib
 Revision 1.2  2006/01/08 00:25:14  skaller
 Minor fix to sdl stuff
 
+@select(tangler("cpkgs/sdl.py"))
+execfile("config"+os.sep+"config.py")
+try:
+  cload(globals(),"sdl")
+except:
+  result,SDL_VERSION = gs("sdl-config --version")
+  if result == None:
+    print "SDL SUPPORTED, version ",SDL_VERSION
+    HAVE_SDL = 1
+    result,SDL_CFLAGS = gs("sdl-config --cflags")
+    result,SDL_LIBS = gs("sdl-config --libs")
+    result,SDL_STATIC_LIBS = gs("sdl-config --static-libs")
+
+    fname = "config" + os.sep + "sdl.fpc"
+    if not file_exists(fname):
+      print "Creating config/sdl.fpc"
+      f = open (fname,"w")
+      f.write("Name: SDL\n")
+      f.write("Description: Simple Direct Media Layer\n")
+      f.write("Version: "+SDL_VERSION+"\n")
+      f.write("cflags: "+SDL_CFLAGS+"\n")
+      f.write("requires_dlibs: "+SDL_LIBS+"\n")
+      f.write("requires_slibs: "+SDL_STATIC_LIBS+"\n")
+      f.write("flx_requires_driver: flx_sdl_run\n")
+      f.close()
+    fname = "config" + os.sep + "gl.fpc"
+    if not file_exists(fname):
+      print "Creating config/gl.fpc"
+      f = open (fname,"w")
+      f.write("Name: OpenGL\n")
+      f.write("Description: open GL graphics\n")
+      f.write("provides_dlib: -lGL\n")
+      f.write("provides_slib: -lGL\n")
+      f.close()
+    fname = "config" + os.sep + "glu.fpc"
+    if not file_exists(fname):
+      print "Creating config/glu.fpc"
+      f = open (fname,"w")
+      f.write("Name: GLU\n")
+      f.write("Description: GLU graphics \n")
+      f.write("provides_dlib: -lGLU\n")
+      f.write("provides_slib: -lGLU\n")
+      f.write("Requires: gl\n")
+      f.close()
+    fname = "config" + os.sep + "glut.fpc"
+    if not file_exists(fname):
+      print "Creating config/glut.fpc"
+      f = open (fname,"w")
+      f.write("Name: GLUT\n")
+      f.write("Description: GLUT graphics\n")
+      f.write("provides_dlib: -lglut\n")
+      f.write("provides_slib: -lglut\n")
+      f.write("Requires: gl glu\n")
+      f.close()
+  else:
+    HAVE_SDL = 0
+    SDL_VERSION = "None"
+    SDL_CFLAGS = ""
+    SDL_LIBS = ""
+    SDL_STATIC_LIBS = ""
+    print "SDL NOT SUPPORTED"
+  print "SDL cpkgs/sdl.py"
+  f = cwrite("sdl")
+  pa(f,locals(),"HAVE_SDL")
+  pa(f,locals(),"SDL_VERSION")
+  pa(f,locals(),"SDL_CFLAGS")
+  pa(f,locals(),"SDL_LIBS")
+  pa(f,locals(),"SDL_STATIC_LIBS")
+  pa(f,locals(),"HAVE_OPENGL")
+  f.close()
+  cload(globals(),"sdl")
+
+
 @h=tangler('rtl/flx_sdl_run.cxx')
 @select(h)
 #include "SDL.h"
@@ -125,7 +203,7 @@ Minor fix to sdl stuff
 
 @h = tangler('spkgs/sdl.py')
 @select(h)
-
+execfile("cpkgs"+os.sep+"sdl.py")
 if HAVE_SDL:
   SDL_FAIO_CPPS = [
     "faio/faio_sdl_event",             # any platform with SDL

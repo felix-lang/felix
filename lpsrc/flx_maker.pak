@@ -2,9 +2,14 @@
 @FLX_MAKER_CVS_ID='$Id$'
 @print FLX_MAKER_CVS_ID
 @execfile('config'+os.sep+'flx_data.py')
+@execfile('cpkgs'+os.sep+'interscript.py')
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.10  2006/03/01 13:43:17  skaller
+COnfig packages now seem to work on Linux. Added dependency
+on libflx to flx_pthread.
+
 Revision 1.9  2006/02/28 02:07:13  skaller
 Refactor demux into demux + pthread.
 
@@ -1688,7 +1693,7 @@ def runISCR(a,force=0):
   if force:
     exqt(ISCR + "--nocache " + a)
   else:
-    exqt(ISCR + ' ' + a)
+    exqt(ISCR + '--break-on-error ' + a)
 
 
 @select(tangler('mkplugins/help.py'))
@@ -1732,6 +1737,8 @@ import string
 import sys
 import re
 import traceback
+this = globals()
+
 if '' not in sys.path: sys.path=['']+sys.path
 import flxbuild
 from flxbuild.flxutil import *
@@ -1750,6 +1757,7 @@ except:
   print "       this is done automatically by 'make boot'"
   sys.exit(1)
 
+execfile("cpkgs"+os.sep+"interscript.py")
 FLXFLAGS = ""
 
 class MakeError: pass

@@ -53,9 +53,20 @@ do
   esac
 done
 
-python interscript/bin/iscr.py lpsrc/flx_config.pak
+rm lpsrc/*.cache
+python interscript/bin/iscr.py --break-on-error lpsrc/flx_config.pak
+if [ $? != 0 ]
+then
+  echo "ERROR EXTRACTING CONFIGURATION PROGRAM"
+  exit 1
+fi
 python -O script/make_config.py --quiet --prefix=${PREFIX} ${ARGS}
-python interscript/bin/iscr.py lpsrc/flx_maker.pak
+python interscript/bin/iscr.py --break-on-error lpsrc/flx_maker.pak
+if [ $? != 0 ]
+then
+  echo "ERROR EXTRACTING MAKER PROGRAM"
+  exit 1
+fi
 
 @select(tangler('tmp/xlators_local.py','python'))
 # reconfigure translator definitions for your
@@ -1858,7 +1869,159 @@ def get_stdout(x):
     output = fout.readlines()
     result = fout.close()
   return result,output
+
+def file_exists(f):
+  try:
+    os.stat(f)
+    return 1
+  except: return 0
+
+def has_prefix(prefix,v):
+  n = len (prefix)
+  return prefix == v[:n]
+
   
+@select(tangler("cpkgs/gmpxx.py"))
+#    'C++ bindings for GNU Multiple Precision arithmetic library',
+#    'http://www.hpl.hp.com/personal/Hans_Boehm/gc/'
+HAVE_GMPXX = TARGET_CXX.check_header_exists(xqt,"gmpxx.h")
+
+@select(tangler("cpkgs/libgc.py"))
+#    'Boehm-Demers-Weiser Conservative Garbage Collector',
+#    'http://www.hpl.hp.com/personal/Hans_Boehm/gc/'
+HAVE_LIBGC = TARGET_CXX.check_header_exists(xqt,"gc.h")
+
+@select(tangler("cpkgs/windowsh.py"))
+#    "Microsoft Windows core CAPI",
+#    "http://microsoft.com"
+HAVE_GMPXX = TARGET_CXX.check_header_exists(xqt,"gmpxx.h")
+
+@select(tangler("cpkgs/opengl.py"))
+#    'Open GL Graphics Rendering Toolkit',
+#    "http://www.opengl.org"
+HAVE_OPENGL = TARGET_CXX.check_header_exists(xqt,"GL"+os.sep+"gl.h")
+
+
+@select(tangler("cpkgs/pthread.py"))
+# try to use Linux getconf to find the pthread version
+# Ubuntu/Breezy returns "NPTL 2.3.5"
+result,output = get_stdout("getconf GNU_LIBPTHREAD_VERSION")
+if result: # getconf failed
+  PTHREAD_MODEL = "Unknown"
+else:
+  PTHREAD_MODEL = string.strip(output[0])
+
+print "Pthread model=",PTHREAD_MODEL
+
+@select(tangler("cpkgs/interscript.py"))
+execfile("config"+os.sep+"config.py")
+# see if we have interscript
+try:
+  cload(globals(),"iscr")
+except:
+  try:
+    xqt("iscr")
+    ISCR="iscr "
+  except:
+    ISCR="python -O interscript"+os.sep+"bin"+os.sep+"iscr.py "
+  print "Storing Interscript configuration"
+  f = cwrite("iscr")
+  pr(f,"#Interscript support")
+  pa(f,locals(),"ISCR")
+  f.close()
+  cload(globals(),"iscr")
+
+
+@select(tangler("cpkgs/pkgconfig.py"))
+# see if we have pkg-config
+try:
+  cload(globals(),"pkgconfig")
+except:
+  try:
+    xqt("pkg-config --version")
+    HAVE_PKGCONFIG=1
+  except:
+    HAVE_PKGCONFIG=0
+  print "Storing pkgconfig configuration"
+  f = cwrite("pkgconfig")
+  pr(f,"#pkgconfig support")
+  pa(f,locals(),"HAVE_PKGCONFIG")
+  f.close()
+  cload(globals(),"pkgconfig")
+
+ 
+@select(tangler("cpkgs/python_misc.py"))
+try:
+  cload(globals(),"filename")
+  cload(globals(),"python")
+except:
+  PYTHON_VERSION=sys.version
+  PYTHON_OS_NAME=os.name
+  PYTHON_OS_CURDIR=os.curdir
+  PYTHON_OS_PARDIR=os.pardir
+  PYTHON_OS_SEP=os.sep
+  PYTHON_OS_PATHSEP=os.pathsep
+
+  print "Storing Python Filename separators"
+  f = cwrite("filename")
+  pa(f,locals(),"PYTHON_OS_NAME")
+  pa(f,locals(),"PYTHON_OS_CURDIR")
+  pa(f,locals(),"PYTHON_OS_PARDIR")
+  pa(f,locals(),"PYTHON_OS_SEP")
+  pa(f,locals(),"PYTHON_OS_PATHSEP")
+  f.close()
+
+  print "Storing Python configuration"
+  f = cwrite("python")
+  pr(f,"#Python config")
+  pa(f,locals(),"PYTHON_VERSION")
+  f.close()
+  cload(globals(),"filename")
+  cload(globals(),"python")
+
+@select(tangler("script/config_support.py"))
+# must be executed in global namespace
+
+def pr(f,x):
+  print x
+  f.write(x+"\n")
+
+def pa(f,this,s):
+  try:
+    x = s + "=" + repr(this[s])
+    pr(f,x)
+  except:
+    print "UNABLE TO FIND VALUE FOR ATTRIBUTE '"+s+"'"
+    f.write(s+"= None # EDIT ME!!\n")
+
+def pne(f,s):
+  try:
+    x = s + "=" + repr(this[s])
+    f.write(x+"\n")
+  except:
+    print "UNABLE TO FIND VALUE FOR ATTRIBUTE '"+s+"'"
+    f.write(s+"= None # EDIT ME!!\n")
+
+def gs(x):
+  r,o = get_stdout(x)
+  try: o = string.strip(o[0])
+  except: pass
+  return r,o
+
+
+def cwrite(c):
+  f = "config"+os.sep+""+c+"_config.py"
+  print "--------------------------"
+  print "Creating "+f
+  f= open(f,"w")
+  return f
+
+def cload(d,c):
+  f = "config"+os.sep+""+c+"_config.py"
+  print "--------------------------"
+  print "Loading "+f
+  execfile(f,globals(),d)
+
 @h = tangler("script/make_config.py")
 @select(h)
 # THIS PROGRAM CREATES THE DEFAULT CONFIGURATION FILE
@@ -1919,9 +2082,12 @@ config_time=time.gmtime(time.time())
 CONFIG_TIME = time.strftime(time_stamp_format, config_time)
 
 class Error: pass
-this = sys.modules[__name__]
+this = globals()
 
 # make doc directories to stop 'cp' complaining
+try: os.mkdir("config")
+except: pass
+
 try: os.mkdir("doc")
 except: pass
 
@@ -1940,16 +2106,7 @@ except: pass
 try: os.mkdir("tut"+os.sep+"doc")
 except: pass
 
-def file_exists(f):
-  try:
-    os.stat(f)
-    return 1
-  except: return 0
-
-def has_prefix(prefix,v):
-  n = len (prefix)
-  return prefix == v[:n]
-  
+ 
 quiet = 0
 force = 0
 upgrade = 0
@@ -2051,17 +2208,6 @@ else:
 
 print "OS=",OS
 
-
-# try to use Linux getconf to find the pthread version
-# Ubuntu/Breezy returns "NPTL 2.3.5"
-
-result,output = get_stdout("getconf GNU_LIBPTHREAD_VERSION")
-if result: # getconf failed
-  PTHREAD_MODEL = "Unknown"
-else:
-  PTHREAD_MODEL = string.strip(output[0])
-
-print "Pthread model=",PTHREAD_MODEL
 
 print "Detected Build model:",build_model
 
@@ -2355,20 +2501,6 @@ if not run_model:
   run_model = target_model
   print "Defaulting run model to target model:",run_model
 
-# see if we have interscript
-try:
-  xqt("iscr")
-  ISCR="iscr "
-except:
-  ISCR="python -O interscript"+os.sep+"bin"+os.sep+"iscr.py "
-
-# see if we have pkg-config
-try:
-  xqt("pkg-config --version")
-  HAVE_PKGCONFIG=1
-except:
-  HAVE_PKGCONFIG=0
-
 SUPPORT_DYNAMIC_LOADING = TARGET_CXX.options.SUPPORT_DYNAMIC_LOADING
 
 if SUPPORT_DYNAMIC_LOADING:
@@ -2376,106 +2508,9 @@ if SUPPORT_DYNAMIC_LOADING:
 else:
   DEFAULT_LINK_MODEL="static"
 
-PYTHON_VERSION=sys.version
-PYTHON_OS_NAME=os.name
-PYTHON_OS_CURDIR=os.curdir
-PYTHON_OS_PARDIR=os.pardir
-PYTHON_OS_SEP=os.sep
-PYTHON_OS_PATHSEP=os.pathsep
 
-# establish which OPTIONAL components are available
-components = [
-  ('HAVE_CMPXX','gmpxx.h',
-    'C++ bindings for GNU Multiple Precision arithmetic library',
-    'http://www.hpl.hp.com/personal/Hans_Boehm/gc/'
-  ),
-  ('HAVE_LIBGC','gc.h',
-    'Boehm-Demers-Weiser Conservative Garbage Collector',
-    'http://www.hpl.hp.com/personal/Hans_Boehm/gc/'
-  ),
-  ("HAVE_WINDOWS_H",'windows.h',
-    "Microsoft Windows core CAPI",
-    "http://microsoft.com"
-  ),
-  ("HAVE_OPENGL","GL"+os.sep+"gl.h",
-    'Open GL Graphics Rendering Toolkit',
-    "http://www.opengl.org"
-  ),
-  ]
+execfile("script/config_support.py")
 
-for m,h,d,u in components:
-  haveit = TARGET_CXX.check_header_exists(xqt,h)
-  if haveit:
-    print "SUPPORTING",d
-  else:
-    print "NOT SUPPORTING",d
-    print ".. To install see",u
-  exec(m + " = " + repr(haveit))
-
-def gs(x):
-  r,o = get_stdout(x)
-  try: o = string.strip(o[0])
-  except: pass
-  return r,o
-
-result,SDL_VERSION = gs("sdl-config --version")
-if result == None:
-  print "SDL SUPPORTED, version ",SDL_VERSION
-  HAVE_SDL = 1
-  result,SDL_CFLAGS = gs("sdl-config --cflags")
-  result,SDL_LIBS = gs("sdl-config --libs")
-  result,SDL_STATIC_LIBS = gs("sdl-config --static-libs")
-
-  fname = "config" + os.sep + "sdl.fpc"
-  if not file_exists(fname):
-    print "Creating config/sdl.fpc"
-    f = open (fname,"w")
-    f.write("Name: SDL\n")
-    f.write("Description: Simple Direct Media Layer\n")
-    f.write("Version: "+SDL_VERSION+"\n")
-    f.write("cflags: "+SDL_CFLAGS+"\n")
-    f.write("requires_dlibs: "+SDL_LIBS+"\n")
-    f.write("requires_slibs: "+SDL_STATIC_LIBS+"\n")
-    f.write("flx_requires_driver: flx_sdl_run\n")
-    f.close()
-  fname = "config" + os.sep + "gl.fpc"
-  if not file_exists(fname):
-    print "Creating config/gl.fpc"
-    f = open (fname,"w")
-    f.write("Name: OpenGL\n")
-    f.write("Description: open GL graphics\n")
-    f.write("provides_dlib: -lGL\n")
-    f.write("provides_slib: -lGL\n")
-    f.close()
-  fname = "config" + os.sep + "glu.fpc"
-  if not file_exists(fname):
-    print "Creating config/glu.fpc"
-    f = open (fname,"w")
-    f.write("Name: GLU\n")
-    f.write("Description: GLU graphics \n")
-    f.write("provides_dlib: -lGLU\n")
-    f.write("provides_slib: -lGLU\n")
-    f.write("Requires: gl\n")
-    f.close()
-  fname = "config" + os.sep + "glut.fpc"
-  if not file_exists(fname):
-    print "Creating config/glut.fpc"
-    f = open (fname,"w")
-    f.write("Name: GLUT\n")
-    f.write("Description: GLUT graphics\n")
-    f.write("provides_dlib: -lglut\n")
-    f.write("provides_slib: -lglut\n")
-    f.write("Requires: gl glu\n")
-    f.close()
-else:
-  HAVE_SDL = 0
-  SDL_VERSION = "None"
-  SDL_CFLAGS = ""
-  SDL_LIBS = ""
-  SDL_STATIC_LIBS = ""
-  print "SDL NOT SUPPORTED"
-
-   
 print "ESTABLISHED DEFAULT CONFIGURATION"
 
 # attempt to clobber the configuration with old values
@@ -2503,80 +2538,9 @@ print 'flx_version_major',flx_version_major
 print 'godi_revision',godi_revision
 print 'debian_revision',debian_revision
 
-def pr(f,x):
-  print x
-  f.write(x+"\n")
-
-def p(f,s):
-  try:
-    x = s + "=" + repr(getattr(this,s))
-    pr(f,x)
-  except:
-    print "UNABLE TO FIND VALUE FOR ATTRIBUTE '"+s+"'"
-    f.write(s+"= None # EDIT ME!!\n")
-
-def pc(f,m,h,d,u):
-  try:
-    pr(f,'')
-    pr(f,"# "+d)
-    pr(f,"# "+u)
-    x = m + "=" + repr(getattr(this,m))
-    pr(f,x)
-  except:
-    print "UNABLE TO FIND VALUE FOR ATTRIBUTE '"+s+"'"
-    f.write(s+"= None # EDIT ME!!\n")
-
-def pne(f,s):
-  try:
-    x = s + "=" + repr(getattr(this,s))
-    f.write(x+"\n")
-  except:
-    print "UNABLE TO FIND VALUE FOR ATTRIBUTE '"+s+"'"
-    f.write(s+"= None # EDIT ME!!\n")
-
-
-cf_reg = []
-
-def copen(c):
-  f = "config"+os.sep+""+c+"_config.py"
-  print "--------------------------"
-  print "Creating "+f
-  cf_reg.append(f)
-  f= open(f,"w")
-  pr(f,'#'+CONFIG_GENERATOR_CVS_ID)
-  pr(f,'#'+CONFIG_TIME)
-  return f
-
 try:
   try: os.mkdir("config")
   except: pass
-
-  print "Storing Interscript configuration"
-  f = copen("iscr")
-  pr(f,"#Interscript support")
-  p(f,"ISCR")
-  f.close()
-
-  print "Storing Python configuration"
-  f = copen("python")
-  pr(f,"#Python config")
-  p(f,"PYTHON_VERSION")
-  f.close()
-
-  print "Storing Python Filename separators"
-  f = copen("filename")
-  p(f,"PYTHON_OS_NAME")
-  p(f,"PYTHON_OS_CURDIR")
-  p(f,"PYTHON_OS_PARDIR")
-  p(f,"PYTHON_OS_SEP")
-  p(f,"PYTHON_OS_PATHSEP")
-  f.close()
-
-  print "Storing data about optional components"
-  f = copen("components")
-  for m,c,d,u in components:
-    pc (f,m,c,d,u)
-  f.close()
 
   print "Writing main config file"
   f = open("config"+os.sep+"config.py","w")
@@ -2584,52 +2548,45 @@ try:
   pr(f,"if '' not in sys.path: sys.path = [''] + sys.path")
   pr(f,'#'+CONFIG_TIME)
   pr(f,'#'+CONFIG_GENERATOR_CVS_ID)
-  p(f,"CONFIG_GENERATOR_CVS_ID")
-  p(f,"CONFIG_TIME")
-  p(f,"flx_version")
-  p(f,"flx_version_major")
-  p(f,"godi_revision")
-  p(f,"debian_revision")
+  pa(f,this,"CONFIG_GENERATOR_CVS_ID")
+  pa(f,this,"CONFIG_TIME")
+  pa(f,this,"flx_version")
+  pa(f,this,"flx_version_major")
+  pa(f,this,"godi_revision")
+  pa(f,this,"debian_revision")
   pr(f,"try:")
   pr(f,"  execfile('config/config_bootstrap.py')")
   pr(f,"except: pass")
-  for fn in cf_reg:
-    pr(f,"execfile("+repr(fn)+")")
-
-  pr(f,"")
-  pr(f,"#User configurable section")
-  p(f,"SUPPORT_DYNAMIC_LOADING")
-  pr(f,"SUPPORT_STATIC_LINKAGE = 1")
-  p(f,"DEFAULT_LINK_MODEL")
-  p(f,"build_model")
-  p(f,"host_model")
-  p(f,"target_model")
-  p(f,"run_model")
-  p(f,"CYGWIN")
-  p(f,"MACOSX")
-  p(f,"WIN32")
-  p(f,"WIN64")
-  p(f,"POSIX")
-  p(f,"SOLARIS")
-  p(f,"BSD")
-  p(f,"LINUX")
-  p(f,"PREFIX")
-  p(f,"FLX_SOCKLEN_T")
-  p(f,"HAVE_PTHREADS")
-  p(f,"PTHREAD_SWITCH")
-  p(f,"HAVE_SDL")
-  p(f,"SDL_VERSION")
-  p(f,"SDL_CFLAGS")
-  p(f,"SDL_LIBS")
-  p(f,"SDL_STATIC_LIBS")
-  p(f,"HAVE_OPENGL")
-  p(f,"HAVE_PKGCONFIG")
-  pr(f,"")
-
   pr(f,"import flxbuild")
   pr(f,"import flxbuild.gxx_class")
   pr(f,"import flxbuild.msvcxx_class")
   pr(f,"import flxbuild.ocaml_class")
+  pr(f,'execfile("script/config_support.py")')
+
+  pr(f,"")
+  pr(f,"#User configurable section")
+  pa(f,this,"SUPPORT_DYNAMIC_LOADING")
+  pr(f,"SUPPORT_STATIC_LINKAGE = 1")
+  pa(f,this,"DEFAULT_LINK_MODEL")
+  pa(f,this,"build_model")
+  pa(f,this,"host_model")
+  pa(f,this,"target_model")
+  pa(f,this,"run_model")
+  pa(f,this,"CYGWIN")
+  pa(f,this,"MACOSX")
+  pa(f,this,"WIN32")
+  pa(f,this,"WIN64")
+  pa(f,this,"POSIX")
+  pa(f,this,"SOLARIS")
+  pa(f,this,"BSD")
+  pa(f,this,"LINUX")
+  pa(f,this,"PREFIX")
+  pa(f,this,"FLX_SOCKLEN_T")
+  pa(f,this,"HAVE_PTHREADS")
+  pa(f,this,"PTHREAD_SWITCH")
+  pa(f,this,"HAVE_PKGCONFIG")
+  pr(f,"")
+
   pr(f,"HOST_OCAML=flxbuild.ocaml_class.ocaml()")
   pr(f,"HOST_OCAML.load_config("+repr('config'+os.sep+'ocaml_config.py')+")")
   cxx = HOST_CXX.__class__.__name__
@@ -2639,13 +2596,12 @@ try:
   pr(f,"TARGET_CXX=flxbuild."+cxx+"_class."+cxx+"()")
   pr(f,"TARGET_CXX.load_options("+repr('config'+os.sep+'target_cxx.py')+")")
   pr(f,"")
-  p(f,"HAVE_GXX")
+  pa(f,this,"HAVE_GXX")
   pr(f,"FLXCC_CPP='cpp '")
-  p(f,"HAVE_MSVC")
+  pa(f,this,"HAVE_MSVC")
   pr(f,"# HACK to get all the target variables into global namespace")
   pr(f,"execfile("+repr('config'+os.sep+'target_cxx.py')+")")
   pr(f,"execfile("+repr('config'+os.sep+'ocaml_config.py')+")")
-  pr(f,"execfile("+repr('config'+os.sep+'components_config.py')+")")
   f.close()
   if BOOTFILE:
     print "Copying bootfile :  "+ BOOTFILE
@@ -2660,6 +2616,11 @@ print "This file will not be clobbered by the Felix build process"
 
 save_config()
 
+cpkgs =  glob.glob("cpkgs"+os.sep+"*.py")
+for cpkgf in cpkgs:
+  cpkg = string.split(cpkgf,os.sep)[1][:-3]
+  print "CONFIGURING",cpkg
+  execfile(cpkgf)
 
 @h = tangler('config/flx_data.py')
 @select(h)
