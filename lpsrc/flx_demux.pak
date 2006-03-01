@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.7  2006/03/01 14:52:28  skaller
+Cygwin needed one extra lib dependency.
+
 Revision 1.6  2006/02/28 02:07:13  skaller
 Refactor demux into demux + pthread.
 
@@ -166,6 +169,7 @@ Version: $Id$
  else:
    tangle("provides_dlib: -ldemux_dynamic")
    tangle("provides_slib: -ldemux_static")
+
 Requires: flx
 
 @h = tangler('spkgs/demux.py')
@@ -246,7 +250,7 @@ if SOLARIS:
 cpp_cpps = DEMUX_CPPS
 rtl_interfaces = DEMUXRTL_INTERFACES
 pkg_requires = ['flx_pthread']
-lib_requires = ['libflx_pthread'] 
+lib_requires = ['libflx_pthread','libflx'] 
 #lib_requires_linkflags = EXTRA_SYS_LIBS
 dflags = EXTRA_SYS_LIBS
 sflags = EXTRA_SYS_LIBS
