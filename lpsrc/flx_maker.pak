@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.12  2006/03/02 05:44:00  skaller
+Clean harder!
+
 Revision 1.11  2006/03/02 02:41:39  skaller
 Fixes for Win32/MSVC++ build.
 
@@ -2398,6 +2401,7 @@ We have no idea if it continues copying.
 @tangle('\t${BUILTIN_ISCR} lpsrc/flx_sourceforge.pak')
 @tangle('')
 @tangle('clean: dummy')
+@tangle('\trm -rf lpsrc/*.cache')
 @tangle('\tpython script/maker clean')
 @tangle('')
 @tangle('distclean:')
@@ -2411,11 +2415,17 @@ We have no idea if it continues copying.
 @tangle('\trm -rf interscript/*.pyo')
 @tangle('\trm -rf interscript/*/*.pyo')
 @tangle('\trm -rf interscript/*/*/*.pyo')
-@tangle('\trm -rf speed/')
+@tangle('\trm -rf speed')
+@tangle('\trm -rf cpkgs')
+@tangle('\trm -rf spkgs')
+@tangle('\trm -rf pthread')
+@tangle('\trm -rf flxbuild')
+@tangle('\trm -rf mkplugins')
+@tangle('\trm -rf olddebian')
+@tangle('\trm -rf script')
 @tangle('')
 @tangle('virgin: distclean')
 @tangle('\tcp Makefile Makefile.old')
-@tangle('\trm -rf script/')
 @tangle('\trm -rf debian/')
 @tangle('\trm -f README LICENCE VERSION CONTENTS INSTALL AUTHORS NEWS COPYING ChangeLog')
 @tangle('')
