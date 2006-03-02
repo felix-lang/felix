@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.11  2006/03/02 02:41:39  skaller
+Fixes for Win32/MSVC++ build.
+
 Revision 1.10  2006/03/01 13:43:17  skaller
 COnfig packages now seem to work on Linux. Added dependency
 on libflx to flx_pthread.
@@ -1545,7 +1548,7 @@ def run_unit_tests():
       # run the tests
       basename = build_test(testfile)
       if SUPPORT_DYNAMIC_LOADING:
-        testscript = "bin"+os.sep+"flx_run ./"+basename+EXT_SHLIB
+        testscript = "bin"+os.sep+"flx_run "+os.curdir+os.sep+basename+EXT_SHLIB
         testscript = testscript + " >" + basename + ".output"
         testscript = testscript + " && "+DIFF+ basename + ".expect "+ basename + ".output"
         #print 'Executing ',testscript
@@ -1558,7 +1561,7 @@ def run_unit_tests():
 
       if SUPPORT_STATIC_LINKAGE:
         testscript = basename
-        testscript = "./"+basename+EXT_EXE
+        testscript = os.curdir+os.sep+basename+EXT_EXE
         testscript = testscript + " >" + basename + ".output"
         testscript = testscript + " && "+DIFF+ basename + ".expect "+ basename + ".output"
         #print 'Executing ',testscript
@@ -1597,7 +1600,7 @@ def run_demos():
         requires_driver="flx_run"
 
       if SUPPORT_DYNAMIC_LOADING:
-        testscript = "bin"+os.sep+requires_driver+" ./"+basename+EXT_SHLIB
+        testscript = "bin"+os.sep+requires_driver+" "+os.curdir+os.sep+basename+EXT_SHLIB
         #print 'Executing ',testscript
         try:
           run(testscript)
@@ -1607,7 +1610,7 @@ def run_demos():
           raise MakeError
 
       if SUPPORT_STATIC_LINKAGE:
-        testscript = "./"+basename+EXT_EXE
+        testscript = os.curdir+os.sep+basename+EXT_EXE
         #print 'Executing ',testscript
         try:
           run(testscript)

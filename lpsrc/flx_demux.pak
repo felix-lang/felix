@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.8  2006/03/02 02:41:39  skaller
+Fixes for Win32/MSVC++ build.
+
 Revision 1.7  2006/03/01 14:52:28  skaller
 Cygwin needed one extra lib dependency.
 
@@ -390,7 +393,7 @@ public:
 #include <Windows.h>
 
 #include "demux_demuxer.hpp"
-#include "demux_sleep_queue.hpp"
+#include "pthread_sleep_queue.hpp"
 
 
 namespace flx { namespace demux {
@@ -1159,7 +1162,6 @@ public:
 
 #include <stdio.h>
 
-using namespace flx::pthread;
 namespace flx { namespace demux {
 
 #define MIL 1000000    // 1 metric million
