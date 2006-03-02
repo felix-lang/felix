@@ -29,7 +29,7 @@ pkg_requires = ['flx_compiler','flx_drivers']
 felix_tools = [('tools/flx_pkgconfig','bin/flx_pkgconfig')]
 felix_requires_linkflags = FLXFLAGS
 exes_require_libs = ['libfaio','libdemux','libflx_pthread','libflx']
-iscr_source = ['lpsrc/flx_pkgconfig.ipk']
+iscr_source = ['lpsrc/flx_pkgconfig.pak']
 
 @h = tangler("tools/flx_pkgconfig.flx","data")
 @select(h)
@@ -58,6 +58,7 @@ var dolist = false;
 var listkeys = false;
 var return_code = 0;
 var backwards = false;
+var keepleftmost = true;
 
 var i = 1;
 var arg = argv i; 
@@ -80,6 +81,8 @@ proc parse_args(args:list[string])
       elif prefix("--list") do dolist = true;
       elif prefix("--missing") do missing = true;
       elif prefix("--noerror") do require_pkg_exists = false;
+      elif prefix("--keeprightmost") do keepleftmost = false;
+      elif prefix("--keepleftmost") do keepleftmost = true;
 
       elif "--field" == arg.[0 to 7] do
         fields = fields + arg.[8 to];
@@ -161,13 +164,16 @@ fun get_field(line:string):string * string =
   ;
 }
 
-var handled_pkgs = Empty[string];
-
 proc add_val(v:string){ 
-    result = append_unique streq result v;
+  result = insert_unique streq result v;
 }
 
-proc handle_pkg (pkg:string){
+proc tail_val(v:string){ 
+  result = append_unique streq result v;
+}
+
+proc handle_pkg (pkg:string, trace:list[string]){
+   if mem streq trace pkg return;
    var found = false;
    iter(proc (dir:string){
      val filename = 
@@ -179,28 +185,39 @@ proc handle_pkg (pkg:string){
      file := fopen_input filename;
      if valid file do
        if dolist call add_val pkg; 
+       var lines = Empty[string];
        var line = readln file;
-       whilst line != "" do
+       whilst line != "" do 
+         lines = Cons(line,lines); 
+         line = readln file; 
+       done;
+       if not backwards do lines = rev lines; done;
+
+       iter (proc (line:string) 
+       {
          //print line;
          def var key, var value = get_field(line);
          if listkeys call add_val key;
          var values = split(value,chr " \n");
 
          if mem streq fields key do
-           iter the add_val values;
+           if keepleftmost do
+             iter the add_val values;
+           else
+             iter the tail_val values;
+           done;
          done;
 
          // chase dependent packages
          if mem streq recfields key do
-           iter (proc(v:string) {
-             if not mem streq handled_pkgs v do
-               pkgs = prepend_unique streq pkgs v;
-             done;
+           iter (proc (s:string){ 
+             handle_pkg$ s,Cons(pkg,trace); 
            })
            values;
          done;
-         line = readln file;
-       done;
+       })
+       lines
+       ;
        fclose file;
        found = true;
        if hide return; // only find first file in path
@@ -219,14 +236,12 @@ whilst not is_empty pkgs do
   | Cons (?pkg,?tail) => 
     { 
       pkgs = tail;
-      handled_pkgs = Cons(pkg,handled_pkgs);
-      handle_pkg(pkg); 
+      handle_pkg(pkg,Empty[string]); 
     }
   endmatch;
 done;
 
 // trim any trailing space off to ease bash scripting
-if backwards do result = rev result; done;
 print$ trim$ str result; endl;
 System::exit return_code;
 

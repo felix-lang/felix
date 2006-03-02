@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.5  2006/03/02 17:52:52  skaller
+Fix flx_pkgconfig to handle linker switches
+
 Revision 1.4  2006/02/28 02:07:13  skaller
 Refactor demux into demux + pthread.
 
@@ -219,17 +222,10 @@ Description: Felix core runtime support
 Version: $Id$
 @if HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:libflx_dynamic")
-   tangle("requires_dlibs: /DEFAULTLIB:libdemux_dynamic /DEFAULTLIB:libflx_pthread_dynamic")
-   tangle("requires_slibs: /DEFAULTLIB:libfaio_static /DEFAULTLIB:libdemux_static /DEFAULTLIB:libflx_pthread_static /DEFAULTLIB:libflx_static")
- elif WIN32:
-   tangle("provides_dlib: -lflx_dynamic")
-   tangle("requires_dlibs: -ldemux_dynamic -lflx_pthread_dynamic")
-   tangle("requires_slibs: -lfaio_static -ldemux_static -lflx_pthread_static -lflx_static -lws2_32 -lmswsock")
+   tangle("provides_slib: /DEFAULTLIB:libflx_static")
  else:
    tangle("provides_dlib: -lflx_dynamic")
-   tangle("requires_dlibs: -ldemux_dynamic -lflx_pthread_dynamic")
-   tangle("requires_slibs: -lfaio_static -ldemux_static -lflx_pthread_static -lflx_static")
-Requires: demux flx_pthread
+   tangle("provides_slib: -lflx_static")
 
 @h = tangler("rtl/flx_meta.hpp")
 @select(h)

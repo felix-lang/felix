@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.9  2006/03/02 17:52:51  skaller
+Fix flx_pkgconfig to handle linker switches
+
 Revision 1.8  2006/03/02 02:41:39  skaller
 Fixes for Win32/MSVC++ build.
 
@@ -173,7 +176,7 @@ Version: $Id$
    tangle("provides_dlib: -ldemux_dynamic")
    tangle("provides_slib: -ldemux_static")
 
-Requires: flx
+Requires: flx_pthread flx
 
 @h = tangler('spkgs/demux.py')
 @select(h)

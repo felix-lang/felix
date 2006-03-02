@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.13  2006/03/02 17:52:52  skaller
+Fix flx_pkgconfig to handle linker switches
+
 Revision 1.12  2006/03/02 05:44:00  skaller
 Clean harder!
 
@@ -1122,7 +1125,7 @@ def build_test(testfile):
         macros=["FLX_STATIC_LINK"],
         CFLAGS=CFLAGS+" "+cflags)
 
-      cmd = "bin"+os.sep+"flx_pkgconfig -rb --path=config "
+      cmd = "bin"+os.sep+"flx_pkgconfig -r --keeprightmost --path=config "
       cmd = cmd + "--field=provides_slib --field=requires_slibs @"+resfilename
       result,slibs= get_stdout(cmd)
       if result: 
@@ -3360,18 +3363,18 @@ then
 echo "SETTING PKGCONFIG_CFLAGS"
 PKGCONFIG_CFLAGS="bin/flx_pkgconfig --path+=config --field=cflags "
 PKGCONFIG_DLIBS="bin/flx_pkgconfig  --path+=config --field=provides_dlib --field=requires_dlibs "
-PKGCONFIG_SLIBS="bin/flx_pkgconfig -rb --path+=config --field=provides_slib --field=requires_slibs "
+PKGCONFIG_SLIBS="bin/flx_pkgconfig -r --keeprightmost --path+=config --field=provides_slib --field=requires_slibs "
 PKGCONFIG_DRIVER="bin/flx_pkgconfig --path+=config --field=flx_requires_driver "
 elif [ "x$FLX_INSTALL_DIR" != "x" ]
 then
 PKGCONFIG_CFLAGS="$FLX_INSTALL_DIR/bin/flx_pkgconfig --path+=$FLX_INSTALL_DIR --field=cflags "
 PKGCONFIG_DLIBS="$FLX_INSTALL_DIR/bin/flx_pkgconfig -path+=$FLX_INSTALL_DIR --field=provides_dlib --field=requires_dlibs "
-PKGCONFIG_SLIBS="$FLX_INSTALL_DIR/bin/flx_pkgconfig -rb --path+=FLX_INSTALL_DIR --field=field-provides_slib --requires_slibs "
+PKGCONFIG_SLIBS="$FLX_INSTALL_DIR/bin/flx_pkgconfig -r --keeprightmost --path+=FLX_INSTALL_DIR --field=field-provides_slib --requires_slibs "
 PKGCONFIG_DRIVER="$FLX_INSTALL_DIR/bin/flx_pkgconfig --path+=FLX_INSTALL_DIR --field=flx_requires_driver "
 else
 PKGCONFIG_CFLAGS="flx_pkgconfig --field=cflags "
 PKGCONFIG_DLIBS="flx_pkgconfig --field=provides_dlib --field=requires_dlibs "
-PKGCONFIG_SLIBS="flx_pkgconfig -rb --field=provides_slib --requires_slibs "
+PKGCONFIG_SLIBS="flx_pkgconfig -r --keeprightmost --field=provides_slib --requires_slibs "
 PKGCONFIG_DRIVER="flx_pkgconfig --field=flx_requires_driver "
 fi
 

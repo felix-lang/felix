@@ -1690,20 +1690,51 @@ module List
      ;
    }
 
-   fun mem[T] (eq: T * T -> bool) (x:list[T]) (e:T) : bool =>
-     match x with 
-     | Cons (?h,?t) => if eq (h, e) then true else mem eq t e endif
-     | Empty => false
-     endmatch
-   ;
+  fun mem[T] (eq: T * T -> bool) (x:list[T]) (e:T) : bool =>
+    match x with 
+    | Cons (?h,?t) => if eq (h, e) then true else mem eq t e endif
+    | Empty => false
+    endmatch
+  ;
 
+  fun filter[T] (P:T -> bool) (x:list[T]) : list[T] = 
+  {
+    fun aux (inp:list[T], out: list[T]) =>
+      match inp with
+      | Empty => rev out
+      | Cons(?h,?t) => 
+        if P(h) then aux(t,Cons(h,out))
+        else aux (t,out)
+        endif
+      endmatch
+    ;
+    return aux (x,Empty[T]);
+  }
+  
   fun prepend_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
     if mem eq x e then x else Cons (e,x) endif 
   ;
 
-  fun append_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
+  fun insert_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
     if mem eq x e then x else rev$ Cons (e,rev x) endif
   ;
+
+  fun remove[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
+    filter (fun (y:T) => not eq (e,y)) x
+  ;
+
+  fun append_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] = { 
+    fun aux (inp:list[T], out: list[T]) =>
+      match inp with
+      | Empty => rev$ Cons(e,out)
+      | Cons(?h,?t) => 
+        if not eq (h, e) then aux(t,Cons(h,out))
+        else aux (t,out)
+        endif
+      endmatch
+    ;
+    return aux (x,Empty[T]);
+  } 
 }
 
 publish "Association Lists (lists of pairs)"
