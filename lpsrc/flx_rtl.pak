@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.6  2006/03/02 20:42:06  skaller
+Nocygwin build, flx_pkgconfig.
+
 Revision 1.5  2006/03/02 17:52:52  skaller
 Fix flx_pkgconfig to handle linker switches
 
@@ -226,6 +229,13 @@ Version: $Id$
  else:
    tangle("provides_dlib: -lflx_dynamic")
    tangle("provides_slib: -lflx_static")
+
+@h = tangler('config/flx_run.fpc')
+@select(h)
+Name: flx_run
+Description: Felix standard driver
+Version: $Id$
+Requires: faio demux flx_pthread flx
 
 @h = tangler("rtl/flx_meta.hpp")
 @select(h)

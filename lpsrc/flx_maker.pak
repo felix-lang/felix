@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.14  2006/03/02 20:42:06  skaller
+Nocygwin build, flx_pkgconfig.
+
 Revision 1.13  2006/03/02 17:52:52  skaller
 Fix flx_pkgconfig to handle linker switches
 
@@ -1126,7 +1129,7 @@ def build_test(testfile):
         CFLAGS=CFLAGS+" "+cflags)
 
       cmd = "bin"+os.sep+"flx_pkgconfig -r --keeprightmost --path=config "
-      cmd = cmd + "--field=provides_slib --field=requires_slibs @"+resfilename
+      cmd = cmd + "--field=provides_slib --field=requires_slibs flx_run @"+resfilename
       result,slibs= get_stdout(cmd)
       if result: 
         print "flx_pkgconfig failed! Args=",cmd
