@@ -1,6 +1,13 @@
 @execfile('config'+os.sep+'config.py')
 @head(1,'SDL')
 $Log$
+Revision 1.7  2006/03/03 11:14:00  skaller
+Add quotation handling for flx_pkgconfig, changed config
+script to quote sdl-config --libs and sdl-config --static-libs.
+A bit of a hack, but should fix OSX build problem which requires
+a -framework argument to be stuck on the front of framework
+objects.
+
 Revision 1.6  2006/03/01 13:43:17  skaller
 COnfig packages now seem to work on Linux. Added dependency
 on libflx to flx_pthread.
@@ -144,8 +151,8 @@ except:
       f.write("Description: Simple Direct Media Layer\n")
       f.write("Version: "+SDL_VERSION+"\n")
       f.write("cflags: "+SDL_CFLAGS+"\n")
-      f.write("requires_dlibs: "+SDL_LIBS+"\n")
-      f.write("requires_slibs: "+SDL_STATIC_LIBS+"\n")
+      f.write("requires_dlibs: '"+SDL_LIBS+"'\n")
+      f.write("requires_slibs: '"+SDL_STATIC_LIBS+"'\n")
       f.write("flx_requires_driver: flx_sdl_run\n")
       f.close()
     fname = "config" + os.sep + "gl.fpc"

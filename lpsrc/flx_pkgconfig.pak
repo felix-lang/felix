@@ -40,6 +40,42 @@ open System;
 open Env;
 open Filename;
 open Text_file;
+open Lexer;
+
+regexp white = " " +;
+regexp black = [^" "]+;
+regexp dquoted = '"' [^'"']* '"';
+regexp squoted = "'" [^"'"]* "'";
+regexp quoted = dquoted | squoted;
+
+fun lexit(start:iterator, finish:iterator): iterator * string =
+{
+  return reglex start to finish with
+  | black => string_between(lexeme_start, lexeme_end)
+  | quoted => string_between(lexeme_start+1, lexeme_end-1)
+  | white => ""
+  endmatch;
+}
+
+fun lexstr(s':string): list[string] =
+{
+  var s = s';
+  val first = start_iterator s;
+  val finish = end_iterator s;
+  var current = first;
+  var words = Empty[string];
+  while { current != finish }
+  {
+    match lexit(current,finish) with
+    | ?next,?lexeme =>
+      {
+        current = next;
+        if lexeme != "" do words = Cons(lexeme,words); done;
+      }
+    endmatch;
+  };
+  return rev words;
+}
 
 macro val streq = eq of (string * string);
 
@@ -58,7 +94,8 @@ var dolist = false;
 var listkeys = false;
 var return_code = 0;
 var backwards = false;
-var keepleftmost = true;
+enum keep_t {keepall, keepleftmost, keeprightmost};
+var keep= keepleftmost;
 
 var i = 1;
 var arg = argv i; 
@@ -81,8 +118,9 @@ proc parse_args(args:list[string])
       elif prefix("--list") do dolist = true;
       elif prefix("--missing") do missing = true;
       elif prefix("--noerror") do require_pkg_exists = false;
-      elif prefix("--keeprightmost") do keepleftmost = false;
-      elif prefix("--keepleftmost") do keepleftmost = true;
+      elif prefix("--keeprightmost") do keep = keeprightmost;
+      elif prefix("--keepleftmost") do keep = keepleftmost;
+      elif prefix("--keepall") do keep = keepall;
 
       elif "--field" == arg.[0 to 7] do
         fields = fields + arg.[8 to];
@@ -165,11 +203,17 @@ fun get_field(line:string):string * string =
 }
 
 proc add_val(v:string){ 
-  result = rev$ Cons(v, rev result);
+ result = insert_unique streq result v;
+//  result = rev$ Cons(v, rev result);
 }
 
 proc tail_val(v:string){ 
-  result = Cons(v, result);
+   result = append_unique streq result v;
+//  result = Cons(v, result);
+}
+
+proc keep_val (v:string){
+  result = result + v;
 }
 
 proc handle_pkg (pkg:string, trace:list[string]){
@@ -198,14 +242,14 @@ proc handle_pkg (pkg:string, trace:list[string]){
          //print line;
          def var key, var value = get_field(line);
          if listkeys call add_val key;
-         var values = split(value,chr " \n");
+         var values = lexstr(value);
 
          if mem streq fields key do
-           if keepleftmost do
-             iter the add_val values;
-           else
-             iter the tail_val values;
-           done;
+           match keep with
+           | keepleftmost => { iter the add_val values; }
+           | keeprightmost => { iter the tail_val values; }
+           | keepall => { iter the keep_val values; }
+           endmatch;
          done;
 
          // chase dependent packages
