@@ -840,6 +840,10 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_proc_return (sr)  ->  ctack st; reachable := false
   | `AST_nop (sr, s) ->  ()
 
+  | `AST_reduce (sr, id, vs, ps, e1, e2) ->
+    let ps = map (fun (id,t) -> id,mt sr t) ps in
+    tack(`AST_reduce (sr, mi sr id, vs, ps, me e1, me e2))
+
   | `AST_function (sr, id, vs, (ps,traits), (t,post), props, sts ) ->
     let pr = map fst ps in
     let post = match post with | None -> None | Some x -> Some (me x) in

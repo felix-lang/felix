@@ -6,6 +6,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.15  2006/03/03 21:11:11  skaller
+Misc fiddling with build system.
+Start on expression term unification for user defined reductions.
+
 Revision 1.14  2006/03/02 20:42:06  skaller
 Nocygwin build, flx_pkgconfig.
 
@@ -944,18 +948,16 @@ def copy_mli2ml(MLIS):
     f = string.replace(f,"/",os.sep)
     src = f+'.mli'
     dst = f+'.ml'
-    if filetime(src) > filetime(dst):
-      #print("filecopy "+src+" -> "+dst)
-      filecopy(src,dst)
+    print("filecopy "+src+" -> "+dst)
+    filecopy(src,dst)
 
 @select(tangler('mkplugins/copy_hpp2rtl.py'))
 def copy_hpp2rtl(HPPS):
   for f in HPPS:
     dst = 'rtl'+os.sep+string.split(f,'/')[-1]
     src = string.replace(f,"/",os.sep)
-    if filetime(src) > filetime(dst):
-      #print("filecopy "+src+" -> "+dst)
-      filecopy(src,dst)
+    print("filecopy "+src+" -> "+dst)
+    filecopy(src,dst)
 
 @select(tangler('mkplugins/ocamlit.py'))
 #ocaml compilation

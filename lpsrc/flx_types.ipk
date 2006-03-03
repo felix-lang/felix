@@ -599,6 +599,7 @@ and statement_t =
   | `AST_private of range_srcref * statement_t
 
   (* definitions *)
+  | `AST_reduce of range_srcref * id_t * vs_list_t * parameter_t list * expr_t * expr_t 
   | `AST_function of range_srcref * id_t * vs_list_t * params_t * (typecode_t * expr_t option) * property_t list * statement_t list
   | `AST_curry of range_srcref * id_t * vs_list_t * params_t list * (typecode_t * expr_t option) * funkind_t * statement_t list
   | `AST_object of range_srcref * id_t * vs_list_t * params_t * statement_t list
@@ -759,6 +760,7 @@ type dcl_t =
   [
 
   (* data structures *)
+  | `DCL_reduce of       parameter_t list * expr_t * expr_t
   | `DCL_function of     params_t * typecode_t * property_t list * asm_t list
   | `DCL_union of        (id_t * int option * typecode_t) list
   | `DCL_struct of       (id_t * typecode_t) list
@@ -1010,6 +1012,8 @@ and bbdcl_t =
   | `BBDCL_nonconst_ctor of bvs_t * int * btypecode_t * int * btypecode_t
   ]
 
+and reduction_t = id_t * bvs_t * bparameter_t list * tbexpr_t * tbexpr_t
+
 and typevarmap_t = (int,btypecode_t) Hashtbl.t
 
 type env_t = (bid_t * id_t * name_map_t * name_map_t list) list 
@@ -1025,6 +1029,7 @@ type symbol_definition_t =
   | `SYMDEF_parameter of  typecode_t
   | `SYMDEF_typevar of typecode_t (* usually type TYPE *)
 
+  | `SYMDEF_reduce of parameter_t list * expr_t * expr_t
   | `SYMDEF_function of params_t * typecode_t * property_t list * sexe_t list
 
   | `SYMDEF_match_check of  pattern_t * (string *int)
@@ -1773,6 +1778,7 @@ let src_of_stmt e = match e with
   | `AST_apply_ctor (s,_,_,_)
   | `AST_init (s,_,_)
   | `AST_function (s,_, _, _ , _, _, _)
+  | `AST_reduce (s,_, _, _ , _, _)
   | `AST_curry (s,_, _, _ , _, _,_)
   | `AST_object (s,_, _, _ , _)
   | `AST_macro_name (s, _,_)
@@ -2642,6 +2648,11 @@ and string_of_btypecode (dfns:symbol_table_t) tc =
 
 and sbt a b = string_of_btypecode a b
 
+and string_of_basic_parameters (ps: parameter_t list) =
+  cat 
+    ", " 
+    (map (fun (x,y)-> x ^ ": "^(string_of_typecode y)) ps)
+
 and string_of_parameters (ps:params_t) = 
   let ps, traint = ps in
   cat 
@@ -2666,11 +2677,16 @@ and string_of_iparameters dfns ps =
   )
 *)
 
-and string_of_bparameters dfns ps = 
+and string_of_basic_bparameters dfns ps : string = 
+  catmap ","
+  (fun (x,(i,y))-> 
+    x ^ "["^si i^"]: "^(string_of_btypecode dfns y)
+  ) 
+  ps
+
+and string_of_bparameters dfns ps : string = 
   let ps, traint = ps in
-  cat 
-    ", " 
-    (map (fun (x,(i,y))-> x ^ "["^si i^"]: "^(string_of_btypecode dfns y)) ps)
+  string_of_basic_bparameters dfns ps
   ^
   (match traint with
   | Some x -> " where " ^ sbe dfns x
@@ -3125,6 +3141,13 @@ and string_of_statement level s =
   | `AST_noreturn_code (_,s) -> 
     "noreturn_code \n" ^ string_of_long_code_spec s ^ ";\n"
 
+  | `AST_reduce (_,name, vs, ps, rsrc, rdst) -> 
+    spaces level ^ 
+    "reduce " ^ name ^ print_vs vs ^ 
+    "("^string_of_basic_parameters ps^"): "^
+    string_of_expr rsrc ^ " => " ^ string_of_expr rdst ^
+    ";\n"
+
   | `AST_function (_,name, vs, ps, (res,post), props, ss) -> 
     spaces level ^ 
     string_of_properties props ^
@@ -3518,6 +3541,9 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t)
      string_of_named_reqs reqs ^
     ";\n"
     
+  | `SYMDEF_reduce (ps,e1,e2) ->
+    "reduce " ^ name ^ print_ivs vs ^ ";"
+
   | `SYMDEF_function (ps,res,props, es) -> 
     let ps,traint = ps in
     string_of_properties props ^
@@ -3939,6 +3965,12 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     string_of_named_reqs reqs ^
      ";" 
 
+  | `DCL_reduce (ps, e1,e2) -> 
+    spaces level ^ 
+    "reduce " ^ name^seq ^ print_vs vs ^
+    "("^ string_of_basic_parameters ps ^"): " ^
+    string_of_expr e1 ^ " => " ^ string_of_expr e2 ^ ";"
+
   | `DCL_function (ps, res, props, ss) -> 
     spaces level ^ 
     string_of_properties props ^
@@ -4038,7 +4070,7 @@ and string_of_bglr_entry dfns (name,symbol) =
   | `Nonterm [] -> "<Undefined nonterminal>"
   )
 
-and string_of_bbdcl dfns bbdcl index = 
+and string_of_bbdcl dfns (bbdcl:bbdcl_t) index : string = 
   let name = qualified_name_of_index dfns index in
   let sobt t = string_of_btypecode dfns t in
   let se e = string_of_bound_expression dfns e in
@@ -4376,6 +4408,7 @@ type sym_state_t =
   parsers : (int * btypecode_t * int list, int) Hashtbl.t;
   quick_names : (string, (int * btypecode_t list)) Hashtbl.t;
   mutable bifaces : biface_t list;
+  mutable reductions : reduction_t list;
 }
 
 module VarMap = StringMap
@@ -4461,6 +4494,7 @@ type sym_state_t =
   parsers : (int * btypecode_t * int list, int) Hashtbl.t;
   quick_names : (string, (int * btypecode_t list)) Hashtbl.t;
   mutable bifaces : biface_t list;
+  mutable reductions : reduction_t list;
 }
 
 

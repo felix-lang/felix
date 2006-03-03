@@ -1,6 +1,10 @@
 @execfile('config'+os.sep+'config.py')
 @head(1,'SDL')
 $Log$
+Revision 1.8  2006/03/03 21:11:11  skaller
+Misc fiddling with build system.
+Start on expression term unification for user defined reductions.
+
 Revision 1.7  2006/03/03 11:14:00  skaller
 Add quotation handling for flx_pkgconfig, changed config
 script to quote sdl-config --libs and sdl-config --static-libs.
@@ -225,7 +229,7 @@ if HAVE_SDL:
   
   cpp_cpps = SDL_FAIO_CPPS
   pkg_requires = ['faio']
-  rtl_interfaces = ['faio_sdl_event']
+  rtl_interfaces = ['faio/faio_sdl_event.hpp']
   lib_requires = ['libfaio', 'libdemux','libflx_pthread','libflx']
   demos = glob.glob('tut'+os.sep+'examples'+os.sep+'sdl*.flx')
 

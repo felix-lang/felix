@@ -2688,6 +2688,7 @@ flx_expr_terminator_keywords = [
     ("property", "PROPERTY"),
 #    ("public", "PUBLIC"),
 #    ("publish", "PUBLISH"),
+    ("reduce", "REDUCE"),
     ("rename", "RENAME"),
     ("requires", "REQUIRES"),
     ("return", "RETURN"),

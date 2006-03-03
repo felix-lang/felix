@@ -151,6 +151,8 @@ and uses syms used bbdfns i =
     | Some (id,_,_,bbdcl) ->
       used := IntSet.add i !used;
       begin match bbdcl with
+      | `BBDCL_reduce _ -> ()
+
       | `BBDCL_function (props,_,(ps,traint),ret,exes) ->
         iter (fun (_,(i,t)) -> ui i; ut t) ps;
         ut ret;

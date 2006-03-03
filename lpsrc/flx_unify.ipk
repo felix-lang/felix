@@ -1011,3 +1011,120 @@ let normalise_type t =
      let x = aux t in
      !varmap, x
 
+let ident x = x 
+
+(* not really right! Need to map the types as well,
+  since we're instantiating a polymorphic term with
+  a more specialised one
+*)
+let expr_term_subst e1 i e2 =
+  let rec s e = match map_tbexpr ident s ident e with
+  | `BEXPR_name (j,[]),_ when i = j -> e2
+  | e -> e
+  in s e1
+
+let rec expr_unification allow_lval dfns 
+  (eqns: (tbexpr_t * tbexpr_t) list) 
+  (tdvars: IntSet.t) 
+  (edvars: IntSet.t) 
+: 
+  (int * btypecode_t) list *
+  (int * tbexpr_t) list
+= 
+  (*
+  print_endline ( "Dvars = { " ^ catmap ", " si (IntSet.elements dvars) ^ "}");
+  *)
+  let eqns = ref eqns in
+  let mgu = ref [] in
+  let rec loop () : unit =
+    match !eqns with
+    | [] -> ()
+    | h :: t ->
+      eqns := t;
+      let s = ref None in
+      let (lhse,lhst),(rhse,rhst) = h in
+
+      (* WE COULD UNIFY TYPES HERE -- but there is no need!
+         if the terms unify, the types MUST
+         We DO need to unify the types -- but only after
+         we've found matching terms.
+
+         Note: the types in the ts lists DO have to be
+         unified! It's only the types OF terms that
+         don't require processing .. since they're just
+         convenience caches of the term type, which can
+         be computed directly from the term.
+      *)
+      begin match (lhse,rhse) with
+      | (`BEXPR_name (i,[]) as ei), (`BEXPR_name (j,[]) as ej)->
+        (*
+        print_endline ("Equated variables " ^ si i ^ " <-> " ^ si j);
+        *)
+
+        if i <> j then 
+          if IntSet.mem i edvars then
+            s := Some (i,(ej,rhst))
+          else if IntSet.mem j edvars then
+            s := Some (j,(ei,lhst))
+          else raise Not_found
+
+      | `BEXPR_name (i,_),x ->
+        if not (IntSet.mem i edvars) then raise Not_found;
+        s := Some (i,(x,rhst))
+
+      | x,`BEXPR_name (i,_) ->
+        if not (IntSet.mem i edvars) then raise Not_found;
+        s := Some (i,(x,lhst))
+
+      | `BEXPR_apply (f1,e1),`BEXPR_apply(f2,e2) ->
+        eqns := (f1,f2) :: (e1,e2) :: !eqns
+
+      | (`BEXPR_tuple ls1, `BEXPR_tuple ls2) 
+        when length ls1 = length ls2 ->
+        begin
+          let rec merge e a b = match a,b with
+          | [],[] -> e
+          | ah :: at, bh :: bt -> merge ((ah,bh) :: e) at bt
+          | _ -> assert false
+          in 
+            eqns := merge !eqns ls1 ls2;
+            s := None
+        end
+
+      | x,y -> 
+        (*
+        print_endline ("Terms do not match: " ^ sbt dfns x ^ " <-> " ^ sbt dfns y); 
+        *)
+        raise Not_found
+      end 
+      ;
+      begin match !s with
+      | None -> ()
+      | Some (i,t) ->
+        (*
+        print_endline ("Substituting " ^ si i ^ " -> " ^ sbt dfns t);
+        *)
+        eqns := 
+          map 
+          (fun (a,b) -> 
+            expr_term_subst a i t, 
+            expr_term_subst b i t
+          ) 
+          !eqns
+        ;
+        assert(not (mem_assoc i !mgu));
+        mgu := 
+          (i,t) :: 
+          (map 
+            (fun (j,t') -> j,expr_term_subst t' i t) 
+            !mgu
+          )
+      end
+      ;
+      loop ()
+    in 
+      loop (); 
+      [],
+      !mgu
+
+

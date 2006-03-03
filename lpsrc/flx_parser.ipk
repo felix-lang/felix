@@ -1051,8 +1051,23 @@ opt_prec:
 opt_traint_eq:
   | EXPECT expr EQUAL { Some $2 }
   | { None }
+
+reduce_args:
+  | LPAR parameter_comma_list RPAR { $2 }
   
 function_definition:
+  | REDUCE NAME tvarlist reduce_args COLON expr EQRIGHTARROW expr SEMI
+    {
+      let sr = rstoken $1 $9 
+      and name = snd $2
+      and vs = $3 
+      and args = $4
+      and rsrc = $6 
+      and rdst = $8
+      in
+      `AST_reduce (sr,name,vs,args,rsrc,rdst)
+    }
+
   | adjectives FUNCTION NAME tvarlist fun_args opt_type_expr EQRIGHTARROW expr SEMI
     { 
       let kind = match $1 with
