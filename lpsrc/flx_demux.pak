@@ -1,5 +1,10 @@
 @head(1,'demux')
 $Log$
+Revision 1.10  2006/03/03 04:51:24  rfistman
+removed the following line from the kqueues code (was breaking the mac build)
+don't know what it means, but there are no threads in the kqueue code.:
+using namespace flx::pthread;
+
 Revision 1.9  2006/03/02 17:52:51  skaller
 Fix flx_pkgconfig to handle linker switches
 
@@ -2751,7 +2756,6 @@ public:
 
 // #include <sys/syscall.h> // syscall(SYC_close,kq) close workaround
 
-using namespace flx::pthread;
 namespace flx { namespace demux {
 kqueue_demuxer::kqueue_demuxer()
   : kq(-1)
