@@ -165,11 +165,11 @@ fun get_field(line:string):string * string =
 }
 
 proc add_val(v:string){ 
-  result = insert_unique streq result v;
+  result = rev$ Cons(v, rev result);
 }
 
 proc tail_val(v:string){ 
-  result = append_unique streq result v;
+  result = Cons(v, result);
 }
 
 proc handle_pkg (pkg:string, trace:list[string]){
