@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.8  2006/03/04 07:28:20  skaller
+Decouple flx_run from faio and demux, except for hook creator.
+
 Revision 1.7  2006/03/04 04:26:41  rfistman
 making demux configure more "suck it and see". temporarily disabled kqueues
 whilst fixing osx 10.2 build.
@@ -194,6 +197,13 @@ in namespace flx::rtl, except as noted.
 
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_pthread','demux','faio']
 
+@h = tangler('spkgs/flx_async.py')
+@select(h)
+cpp_cpps = ['rtl/flx_async']
+provide_lib = "libflx_async"
+pkg_requires = ['faio','demux','flx_pthread','flx_rtl']
+iscr_source = ['lpsrc/flx_rtl.pak']
+
 @h = tangler('spkgs/flx_rtl.py')
 @select(h)
 RTL_CPPS = [
@@ -209,6 +219,7 @@ RTL_CPPS = [
 
 cpp_cpps = RTL_CPPS
 provide_lib = "libflx"
+iscr_source = ['lpsrc/flx_rtl.pak']
 
 @h = tangler('spkgs/flx_drivers.py')
 @select(h)
@@ -218,9 +229,19 @@ DRIVERS = [
   ('test/flx_perf_drv1','test/flx_perf_drv1'),
   ('test/micky_mouse','bin/micky_mouse'),
 ]
+
+DRLIBS = [
+  'libflx_async',
+  'libfaio',
+  'libdemux',
+  'libflx_pthread',
+  'libflx'
+  ]
+
 drivers = DRIVERS
-drivers_require_libs = ['libfaio','libdemux','libflx_pthread','libflx']
-pkg_requires = ['flx_rtl','faio','demux','flx_pthread']
+drivers_require_libs = DRLIBS
+pkg_requires = ['flx_async','flx_rtl','flx_pthread']
+iscr_source = ['lpsrc/flx_rtl.pak']
 
 @h = tangler('config/flx.fpc')
 @select(h)
@@ -239,6 +260,20 @@ Version: $Id$
 Name: flx_run
 Description: Felix standard driver
 Version: $Id$
+Requires: flx_async faio demux flx_pthread flx
+
+@h = tangler('config/flx_async.fpc')
+@select(h)
+Name: flx_async
+Description: Async hook
+Version: $Id$
+@if HAVE_MSVC:
+   tangle("provides_dlib: /DEFAULTLIB:libflx_async_dynamic")
+   tangle("provides_slib: /DEFAULTLIB:libflx_async_static")
+ else:
+   tangle("provides_dlib: -lflx_async_dynamic")
+   tangle("provides_slib: -lflx_async_static")
+
 Requires: faio demux flx_pthread flx
 
 @h = tangler("rtl/flx_meta.hpp")
@@ -2194,21 +2229,46 @@ For dynamically loaded programs, the name of the
 driver and optional --debug switch given before the
 shared library name are not passed.
 
-@h = tangler('rtl/flx_run.cxx','cpp')
+@h = tangler('rtl/flx_async.hpp','hpp')
 @select(h)
-#include <cstdlib>
-#include <stdio.h>
-#include <vector>
-#include <list>
-#include <map>
-#include <cstring>
-#include <cassert>
-
-#include <string>
-//#include <unistd.h>
+#ifndef __FLX_ASYNC__
+#define __FLX_ASYNC__
+#include "flx_rtl_config.hpp"
 #include "flx_rtl.hpp"
 
+class FLX_RTL_EXTERN async_hooker {
+public:
+  virtual flx::rtl::fthread_t *dequeue()=0;
+  virtual bool handle_request(void *data, flx::rtl::fthread_t *ss)=0;
+  virtual ~async_hooker();
+};
+
+async_hooker *create_async_hooker();
+
+#endif
+
+@h = tangler('rtl/flx_async.cpp','cpp')
+@select(h)
+#include "flx_async.hpp"
 #include "pthread_sleep_queue.hpp"
+#include "flx_rtl.hpp"
+#include "demux_demuxer.hpp"
+#include "faio_drv.hpp"
+
+using namespace flx::rtl;
+using namespace flx::demux;
+using namespace flx::faio;
+using namespace flx::pthread;
+
+
+class async_hooker_impl : public async_hooker {
+  virtual flx::faio::flx_drv *get_driver()=0;
+  virtual flx::demux::demuxer *get_demuxer()=0;
+public:
+  bool handle_request(void *data,fthread_t *ss);
+  ~async_hooker_impl();
+};
+
 
 #ifdef _WIN32
  #include "demux_iocp_demuxer.hpp"
@@ -2234,6 +2294,105 @@ shared library name are not passed.
 
 #include "faio_asyncio.hpp"
 
+async_hooker::~async_hooker(){}
+async_hooker_impl::~async_hooker_impl(){}
+
+bool async_hooker_impl::handle_request(void *data,fthread_t *ft)
+{
+  flx::faio::flx_driver_request_base* dreq = 
+        (flx::faio::flx_driver_request_base*)data
+  ;
+
+  //fprintf(stderr,"Request object at %p\n",dreq);
+  // RF hates the flag this function returns .. might
+  // mask a race condition, get rid of it
+
+  bool result =dreq->start_async_op(
+   *get_demuxer(), 
+   get_driver(), 
+  ft)
+  ;
+  return result;
+}
+
+class proto_async : public async_hooker_impl
+{
+
+#if defined(MACOSX)
+    kqueue_demuxer demux;
+#elif defined(SOLARIS)
+    evtport_demuxer demux;
+#elif defined(FLX_LINUX)
+    epoll_demuxer demux;
+#elif !defined(_WIN32)
+    ts_select_demuxer demux;  // thread safe!
+#endif
+
+    sleep_queue_t async_active;
+    flx_thread_t ethread;
+#ifdef _WIN32
+    wflx_drv driver;
+    static DWORD pthread_thread(LPVOID udat);
+#else
+    pflx_drv driver;
+    static void* pthread_thread(void* udat);
+#endif
+public:
+   proto_async() : async_active(20000), driver(async_active,20000) {
+     // start waiting thread
+#if _WIN32
+     // cast callback to itself. go figure.
+     if(ethread.init((LPTHREAD_START_ROUTINE)pthread_thread, &demux) == -1) throw -1;
+#else
+     if(ethread.init(pthread_thread, &demux) == -1) throw -1;
+#endif
+   }
+
+  flx_drv *get_driver() { return &driver; }
+  demuxer *get_demuxer(){ return &demux; }
+  fthread_t* dequeue() 
+  { 
+    return (fthread_t*)async_active.dequeue(); 
+  }
+};
+
+#ifdef _WIN32
+DWORD
+proto_async::pthread_thread(LPVOID udat)
+#else
+void*
+proto_async::pthread_thread(void* udat)
+#endif
+{
+    demuxer*    d = (demuxer*)udat;
+
+    while(1)                // cancellation? what's that?
+    {
+        d->wait();          // this does it
+    }
+    return 0;
+}
+
+async_hooker *create_async_hooker() {
+  return new proto_async;
+}
+
+@h = tangler('rtl/flx_run.cxx','cpp')
+@select(h)
+#include <cstdlib>
+#include <stdio.h>
+#include <vector>
+#include <list>
+#include <map>
+#include <cstring>
+#include <cassert>
+
+#include <string>
+//#include <unistd.h>
+#include "flx_rtl.hpp"
+
+#include "flx_async.hpp"
+
 #include "flx_ts_collector.hpp"
 #include "flx_dynlink.hpp"
 #include "flx_sync.hpp"
@@ -2241,8 +2400,6 @@ shared library name are not passed.
 using namespace std;
 using namespace flx::rtl;
 using namespace flx::pthread;
-using namespace flx::demux;
-using namespace flx::faio;
 using namespace flx::run;
 
 #ifdef HAVE_GXX_X86
@@ -2280,50 +2437,6 @@ static struct driver_request_entry_t flx_run_services[]=
   {NULL,0}
 };
   
-class proto_async
-{
-public:
-    flx_demuxer demux;
-
-    sleep_queue_t async_active;
-    flx_thread_t ethread;
-#ifdef _WIN32
-    wflx_drv driver;
-    static DWORD pthread_thread(LPVOID udat);
-#else
-    pflx_drv driver;
-    static void* pthread_thread(void* udat);
-#endif
-
-   proto_async() : async_active(20000), driver(async_active,20000) {
-     // start waiting thread
-#if _WIN32
-     // cast callback to itself. go figure.
-     if(ethread.init((LPTHREAD_START_ROUTINE)pthread_thread, &demux) == -1) throw -1;
-#else
-     if(ethread.init(pthread_thread, &demux) == -1) throw -1;
-#endif
-   }
-
-};
-
-#ifdef _WIN32
-DWORD
-proto_async::pthread_thread(LPVOID udat)
-#else
-void*
-proto_async::pthread_thread(void* udat)
-#endif
-{
-    demuxer*    d = (demuxer*)udat;
-
-    while(1)                // cancellation? what's that?
-    {
-        d->wait();          // this does it
-    }
-    return 0;
-}
-
 
 // RUN A FELIX INSTANCE IN THE CURRENT PTHREAD
 
@@ -2345,7 +2458,7 @@ int run_felix_pthread(
 #endif
 
   unsigned long async_count = 0;
-  proto_async* async = NULL;
+  async_hooker* async = NULL;
 
   {
     con_t *top = instance->start_proc;
@@ -2384,17 +2497,15 @@ process_active:
     {
       if(debug_driver)
         fprintf(stderr,"svc_general from fthread=%p\n",ss.ft);
-      if( !async ) async = new proto_async;
+      if( !async ) async = create_async_hooker();
 
-      flx_driver_request_base* dreq = (flx_driver_request_base*)
-        (((_ref_*)(ss.request->data))->get_data())
-      ;
+      ++async_count;
+      void *dreq =  (((_ref_*)(ss.request->data))->get_data());
 
       //fprintf(stderr,"Request object at %p\n",dreq);
       // RF hates the flag this function returns .. might
       // mask a race condition, get rid of it
-      ++async_count;
-      if(!dreq->start_async_op(async->demux, &async->driver, ss.ft))
+      if(!async->handle_request(dreq, ss.ft))
       {
         ss.pc = next_fthread_pos;
       } 
@@ -2461,7 +2572,7 @@ do_async:
 
   if(async && async_count > 0){
     // STILL A ROOT
-    fthread_t* ftp = (fthread_t*)async->async_active.dequeue();
+    fthread_t* ftp = (fthread_t*)async->dequeue();
     if(debug_driver)
       fprintf(stderr,"Async Retrieving fthread %p\n",ftp);
     active.push_front(ftp);

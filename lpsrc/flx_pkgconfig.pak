@@ -25,10 +25,12 @@ if WIN32:
   else:
     FLXFLAGS = "-lws2_32 -lmswsock "
     
+DRLIBS = ['libflx_async','libfaio','libdemux','libflx_pthread','libflx']
+
 pkg_requires = ['flx_compiler','flx_drivers']
 felix_tools = [('tools/flx_pkgconfig','bin/flx_pkgconfig')]
 felix_requires_linkflags = FLXFLAGS
-exes_require_libs = ['libfaio','libdemux','libflx_pthread','libflx']
+exes_require_libs = DRLIBS
 iscr_source = ['lpsrc/flx_pkgconfig.pak']
 
 @h = tangler("tools/flx_pkgconfig.flx","data")

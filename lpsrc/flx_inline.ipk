@@ -2012,7 +2012,7 @@ and check_reductions syms exes =
   while !count > 0 && !changed do
     changed := false;
     iter (fun (id,bvs,bps,e1,e2) ->
-      print_endline ("Check reduction rule " ^ id);
+      (* print_endline ("Check reduction rule " ^ id); *)
       let tvars = map (fun (tvid, tvidx) -> tvidx) bvs in
       let evars = map (fun (eid, (eidx, etyp)) -> eidx) bps in
       let ematch e = 

@@ -1,6 +1,9 @@
 @execfile('config'+os.sep+'config.py')
 @head(1,'SDL')
 $Log$
+Revision 1.9  2006/03/04 07:28:20  skaller
+Decouple flx_run from faio and demux, except for hook creator.
+
 Revision 1.8  2006/03/03 21:11:11  skaller
 Misc fiddling with build system.
 Start on expression term unification for user defined reductions.
@@ -257,9 +260,18 @@ if HAVE_SDL:
   DRIVERS = [
     ('rtl/flx_sdl_run','bin/flx_sdl_run'),
   ]
+  DRLIBS = [
+   'libsdl',
+   'libflx_async',
+   'libfaio',
+   'libdemux',
+   'libflx_pthread',
+   'libflx'
+   ]
+
   drivers = DRIVERS
-  drivers_require_libs = ['libsdl','libfaio','libdemux','libflx_pthread','libflx']
-  pkg_requires = ['flx_rtl','faio','demux','flx_pthread']
+  drivers_require_libs = DRLIBS
+  pkg_requires = ['flx_rtl','flx_async','faio','demux','flx_pthread']
   cflags = SDL_CFLAGS
   dflags = SDL_LIBS
   sflags = SDL_STATIC_LIBS
