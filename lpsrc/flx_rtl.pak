@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.9  2006/03/04 09:50:42  rfistman
+added "suck it and see" for kqueues.
+
 Revision 1.8  2006/03/04 07:28:20  skaller
 Decouple flx_run from faio and demux, except for hook creator.
 
@@ -398,6 +401,9 @@ T &reinterpret(U const &x) {
 
 @if HAVE_MSVC:
   tangle("#define HAVE_MSVC")
+
+@if HAVE_KQUEUE_DEMUXER:
+  tangle("#define HAVE_KQUEUE_DEMUXER")
 
 //
 #if defined(FLX_HAVE_CGOTO) && defined(FLX_HAVE_ASM_LABELS)
@@ -2274,7 +2280,7 @@ public:
  #include "demux_iocp_demuxer.hpp"
  #include "faio_wdrv.hpp"
  typedef flx::demux::iocp_demuxer flx_demuxer;
-#elif 0 && defined(MACOSX)    // default to select while I fix 10.2.8
+#elif defined(HAVE_KQUEUE_DEMUXER)
  #include "demux_kqueue_demuxer.hpp"
  #include "faio_pdrv.hpp"
  typedef flx::demux::kqueue_demuxer flx_demuxer;

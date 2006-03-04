@@ -60,6 +60,17 @@ then
   echo "ERROR EXTRACTING CONFIGURATION PROGRAM"
   exit 1
 fi
+
+# need demux to be unpacked before running config
+# DAMN - demux is accessing the config stuff which isn't ready at this point
+python interscript/bin/iscr.py --break-on-error lpsrc/flx_demux.pak
+if [ $? != 0 ]
+then
+  echo "ERROR EXTRACTING DEMUX LIBRARY"
+  exit 1
+fi
+
+
 python -O script/make_config.py --quiet --prefix=${PREFIX} ${ARGS}
 python interscript/bin/iscr.py --break-on-error lpsrc/flx_maker.pak
 if [ $? != 0 ]
@@ -1173,20 +1184,19 @@ class gxx(flxbuild.compiler_class.compiler_base):
 
     # see what sort of demuxers we support. right now just testing for 
     # kqueues, to unbreak the osx 10.2.8 build. I need demux to be extracted
-    # by this point... will that work? damn, demux isn't extracted at this
-    # point. how can I force that?
-    print "TESTING DEMUXERS!"
+    # by this point, so I've added a line to configure to do that. That
+    # required me to remove the flx_demux.pak's dependence on the config
+    # directory (not created at configure time). also had to create a fake
+    # flx_rtl_config.h in tmp/
     try: 
       # basically a un*x test, but doing portable path separators, just in case
-      print "WARNING: TESTING SELECT INSTEAD FOR NOW!"
-      cmd = opt.CXX+" -c demux"+os.sep+"demux_select_demuxer.cpp -o tmp"
+      # Duh, of course I'm using gcc switches. too bad.
+      cmd = opt.CXX+" -Itmp -c demux"+os.sep+"demux_kqueue_demuxer.cpp -o tmp"
       cmd += os.sep+"kq.o"
       print "CMD IS " + cmd
       shell(cmd)
-      print "WORKED!!!"
       opt.HAVE_KQUEUE_DEMUXER=1
     except:
-      print "CAUGHT EXCEPTION"
       opt.HAVE_KQUEUE_DEMUXER=0
 
     print "HAVE_KQUEUE_DEMUXER=",opt.HAVE_KQUEUE_DEMUXER
