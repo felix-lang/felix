@@ -172,6 +172,25 @@ val check_recursion:
 val dual:
   btypecode_t -> btypecode_t
 
+val expr_maybe_matches:
+  symbol_table_t -> (* just for diagnostics *)
+  int list -> (* type variables *)
+  int list -> (* variables *)
+  tbexpr_t -> (* match term *) 
+  tbexpr_t   (* candidate *)
+  ->
+  (
+    (int * btypecode_t) list * (* type mgu *)
+    (int * tbexpr_t) list      (* expr mgu *)
+  ) 
+  option
+
+val expr_term_subst:
+  tbexpr_t -> (* candidate *)
+  int ->      (* variable index *)
+  tbexpr_t -> (* variable value *)
+  tbexpr_t    (* candidate with index -> value *)
+
 @h=tangler('src/flx_unify.ml')
 @select(h)
 open Flx_types
@@ -1016,6 +1035,8 @@ let ident x = x
 (* not really right! Need to map the types as well,
   since we're instantiating a polymorphic term with
   a more specialised one
+
+  Also won't substitute into LHS of things like direct_apply.
 *)
 let expr_term_subst e1 i e2 =
   let rec s e = match map_tbexpr ident s ident e with
@@ -1023,7 +1044,7 @@ let expr_term_subst e1 i e2 =
   | e -> e
   in s e1
 
-let rec expr_unification allow_lval dfns 
+let rec expr_unification dfns 
   (eqns: (tbexpr_t * tbexpr_t) list) 
   (tdvars: IntSet.t) 
   (edvars: IntSet.t) 
@@ -1079,6 +1100,19 @@ let rec expr_unification allow_lval dfns
       | `BEXPR_apply (f1,e1),`BEXPR_apply(f2,e2) ->
         eqns := (f1,f2) :: (e1,e2) :: !eqns
 
+      | `BEXPR_closure (i,[]),`BEXPR_closure(j,[]) when i = j -> ()
+
+      | `BEXPR_apply_prim (i,[],e1),`BEXPR_apply_prim(j,[],e2) 
+      | `BEXPR_apply ( (`BEXPR_closure (i,[]),_), e1),`BEXPR_apply_prim(j,[],e2) 
+      | `BEXPR_apply_prim (i,[],e1),`BEXPR_apply( (`BEXPR_closure(j,[]),_),e2) 
+
+      | `BEXPR_apply_direct (i,[],e1),`BEXPR_apply_direct(j,[],e2) 
+      | `BEXPR_apply ( (`BEXPR_closure (i,[]),_), e1),`BEXPR_apply_direct(j,[],e2) 
+      | `BEXPR_apply_direct (i,[],e1),`BEXPR_apply( (`BEXPR_closure(j,[]),_),e2) 
+        when i = j
+        ->
+        eqns := (e1,e2) :: !eqns
+
       | (`BEXPR_tuple ls1, `BEXPR_tuple ls2) 
         when length ls1 = length ls2 ->
         begin
@@ -1126,5 +1160,21 @@ let rec expr_unification allow_lval dfns
       loop (); 
       [],
       !mgu
+
+let setoflist ls = fold_left (fun s i -> IntSet.add i s) IntSet.empty ls
+
+let expr_maybe_matches (dfns:symbol_table_t) 
+  (tvars:int list) (evars:int list)
+  (le: tbexpr_t)
+  (re:tbexpr_t)
+: 
+  ((int * btypecode_t) list *
+  (int * tbexpr_t) list) option
+= 
+  let tvars = setoflist tvars in
+  let evars = setoflist evars in
+  let eqns = [le,re] in
+  try Some (expr_unification dfns eqns tvars evars)
+  with Not_found -> None
 
 

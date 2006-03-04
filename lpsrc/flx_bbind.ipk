@@ -250,6 +250,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
       | None -> failwith "[bbind_sym] expected parameter to have a parent" 
       | Some ip ->
         match Hashtbl.find syms.dfns ip with
+        | {symdef=`SYMDEF_reduce _} 
         | {symdef=`SYMDEF_function _} 
         | {symdef=`SYMDEF_regmatch _} 
         | {symdef=`SYMDEF_reglex _} 

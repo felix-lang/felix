@@ -2004,6 +2004,44 @@ and remove_unused_children syms (uses,child_map,bbdfns) i = () (*
   unused_descendants
 *)
 
+and check_reductions syms exes =
+  let changed = ref true in
+  let count = ref 10 in
+  let exes = ref exes in
+
+  while !count > 0 && !changed do
+    changed := false;
+    iter (fun (id,bvs,bps,e1,e2) ->
+      print_endline ("Check reduction rule " ^ id);
+      let tvars = map (fun (tvid, tvidx) -> tvidx) bvs in
+      let evars = map (fun (eid, (eidx, etyp)) -> eidx) bps in
+      let ematch e = 
+        print_endline ("Matching " ^ sbe syms.dfns e ^ " with " ^ sbe syms.dfns e1);
+        match expr_maybe_matches syms.dfns tvars evars e1 e with
+        | Some (tmgu,emgu) -> 
+          changed := true;
+          print_endline ("FOUND A MATCH: " ^ sbe syms.dfns e); 
+          print_endline ("EMGU=" ^catmap ", " (fun (i,e')-> si i ^ " --> " ^ sbe syms.dfns e') emgu);
+          let e = fold_left (fun e (i,e') -> expr_term_subst e i e') e2 emgu in
+          print_endline ("RESULT OF SUBSTITUTION: " ^ sbe syms.dfns e); 
+          e
+        | None -> e
+      in
+      exes := 
+        map 
+        (fun bexe ->
+          map_bexe ident ematch ident ident ident bexe
+        )
+        !exes
+      ;
+    )
+    syms.reductions
+    ;
+    decr count
+  done
+  ;
+  !exes
+
 and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
   let specs = 
     try Some (Hashtbl.find bbdfns i) 
@@ -2048,6 +2086,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       let exes = fold_vars syms (uses,child_map,bbdfns) i ps exes in 
       recal_exes_usage syms uses sr i ps exes;
       remove_unused_children syms (uses,child_map,bbdfns) i;
+      let exes = check_reductions syms exes in
       let exes = Flx_cflow.chain_gotos syms exes in
       let props = `Inlining_complete :: props in
       let data = id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes) in
@@ -2101,6 +2140,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
       let exes = fold_vars syms (uses,child_map,bbdfns) i ps exes in
       recal_exes_usage syms uses sr i ps exes;
       remove_unused_children syms (uses,child_map,bbdfns) i;
+      let exes = check_reductions syms exes in
       let exes = Flx_cflow.chain_gotos syms exes in
       let props = `Inlining_complete :: props in
       let data = id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes) in
