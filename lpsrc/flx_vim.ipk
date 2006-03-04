@@ -32,6 +32,7 @@ syn keyword cError break
 
 " all the felix keywords ..
 " directives
+syn keyword cDefine reduce 
 syn keyword cDefine comment
 syn keyword cDefine publish
 syn keyword cDefine private 

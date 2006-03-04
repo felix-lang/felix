@@ -1040,7 +1040,7 @@ let ident x = x
 *)
 let expr_term_subst e1 i e2 =
   let rec s e = match map_tbexpr ident s ident e with
-  | `BEXPR_name (j,[]),_ when i = j -> e2
+  | `BEXPR_name (j,_),_ when i = j -> e2
   | e -> e
   in s e1
 
@@ -1055,6 +1055,7 @@ let rec expr_unification dfns
   (*
   print_endline ( "Dvars = { " ^ catmap ", " si (IntSet.elements dvars) ^ "}");
   *)
+  let teqns = ref [] in
   let eqns = ref eqns in
   let mgu = ref [] in
   let rec loop () : unit =
@@ -1064,6 +1065,7 @@ let rec expr_unification dfns
       eqns := t;
       let s = ref None in
       let (lhse,lhst),(rhse,rhst) = h in
+      teqns := (lhst,rhst) :: !teqns;
 
       (* WE COULD UNIFY TYPES HERE -- but there is no need!
          if the terms unify, the types MUST
@@ -1100,17 +1102,19 @@ let rec expr_unification dfns
       | `BEXPR_apply (f1,e1),`BEXPR_apply(f2,e2) ->
         eqns := (f1,f2) :: (e1,e2) :: !eqns
 
-      | `BEXPR_closure (i,[]),`BEXPR_closure(j,[]) when i = j -> ()
+      | `BEXPR_closure (i,ts1),`BEXPR_closure(j,ts2) when i = j -> ()
 
-      | `BEXPR_apply_prim (i,[],e1),`BEXPR_apply_prim(j,[],e2) 
-      | `BEXPR_apply ( (`BEXPR_closure (i,[]),_), e1),`BEXPR_apply_prim(j,[],e2) 
-      | `BEXPR_apply_prim (i,[],e1),`BEXPR_apply( (`BEXPR_closure(j,[]),_),e2) 
+      | `BEXPR_apply_prim (i,ts1,e1),`BEXPR_apply_prim(j,ts2,e2) 
+      | `BEXPR_apply ( (`BEXPR_closure (i,ts1),_), e1),`BEXPR_apply_prim(j,ts2,e2) 
+      | `BEXPR_apply_prim (i,ts1,e1),`BEXPR_apply( (`BEXPR_closure(j,ts2),_),e2) 
 
-      | `BEXPR_apply_direct (i,[],e1),`BEXPR_apply_direct(j,[],e2) 
-      | `BEXPR_apply ( (`BEXPR_closure (i,[]),_), e1),`BEXPR_apply_direct(j,[],e2) 
-      | `BEXPR_apply_direct (i,[],e1),`BEXPR_apply( (`BEXPR_closure(j,[]),_),e2) 
+      | `BEXPR_apply_direct (i,ts1,e1),`BEXPR_apply_direct(j,ts2,e2) 
+      | `BEXPR_apply ( (`BEXPR_closure (i,ts1),_), e1),`BEXPR_apply_direct(j,ts2,e2) 
+      | `BEXPR_apply_direct (i,ts1,e1),`BEXPR_apply( (`BEXPR_closure(j,ts2),_),e2) 
         when i = j
         ->
+        assert (length ts1 = length ts2);
+        teqns := combine ts1 ts2 @ !teqns;
         eqns := (e1,e2) :: !eqns
 
       | (`BEXPR_tuple ls1, `BEXPR_tuple ls2) 
@@ -1158,7 +1162,8 @@ let rec expr_unification dfns
       loop ()
     in 
       loop (); 
-      [],
+      let tmgu = unification true dfns !teqns tdvars in
+      tmgu,
       !mgu
 
 let setoflist ls = fold_left (fun s i -> IntSet.add i s) IntSet.empty ls

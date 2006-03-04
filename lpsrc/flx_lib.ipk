@@ -1622,7 +1622,7 @@ module List
     ;
   }
 
-  fun rev[T] (x:list[T]):list[T]= {
+  noinline fun rev[T] (x:list[T]):list[T]= {
     fun aux (x:list[T]) (y:list[T]) : list[T] =
     {
       return 
@@ -1663,7 +1663,7 @@ module List
     ;
   }
   
-  fun join[T] (x:list[T]) (y:list[T]):list[T] = 
+  noinline fun join[T] (x:list[T]) (y:list[T]):list[T] = 
   {
     return
       match x with
@@ -1678,9 +1678,9 @@ module List
   fun add[T] (x:T, y: list[T]):list[T] => Cons (x, y);
 
   // very slow, adding to end ..
-  fun add[T] (x:list[T], y: T):list[T] => rev$ Cons (y, rev x);
+  noinline fun add[T] (x:list[T], y: T):list[T] => rev$ Cons (y, rev x);
 
-  fun cat[T] (x:list[list[T]]):list[T] =
+  noinline fun cat[T] (x:list[list[T]]):list[T] =
   {
      return 
        match x with
@@ -1697,7 +1697,7 @@ module List
     endmatch
   ;
 
-  fun filter[T] (P:T -> bool) (x:list[T]) : list[T] = 
+  noinline fun filter[T] (P:T -> bool) (x:list[T]) : list[T] = 
   {
     fun aux (inp:list[T], out: list[T]) =>
       match inp with
@@ -1723,7 +1723,7 @@ module List
     filter (fun (y:T) => not eq (e,y)) x
   ;
 
-  fun append_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] = { 
+  noinline fun append_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] = { 
     fun aux (inp:list[T], out: list[T]) =>
       match inp with
       | Empty => rev$ Cons(e,out)
