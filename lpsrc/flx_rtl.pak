@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.10  2006/03/04 21:07:36  rfistman
+MACOSX != Kqueues.
+
 Revision 1.9  2006/03/04 09:50:42  rfistman
 added "suck it and see" for kqueues.
 
@@ -2324,7 +2327,7 @@ bool async_hooker_impl::handle_request(void *data,fthread_t *ft)
 class proto_async : public async_hooker_impl
 {
 
-#if defined(MACOSX)
+#if defined(HAVE_KQUEUE_DEMUXER)
     kqueue_demuxer demux;
 #elif defined(SOLARIS)
     evtport_demuxer demux;
