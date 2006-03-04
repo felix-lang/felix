@@ -1,5 +1,9 @@
 @head(1,'demux')
 $Log$
+Revision 1.11  2006/03/04 04:26:41  rfistman
+making demux configure more "suck it and see". temporarily disabled kqueues
+whilst fixing osx 10.2 build.
+
 Revision 1.10  2006/03/03 04:51:24  rfistman
 removed the following line from the kqueues code (was breaking the mac build)
 don't know what it means, but there are no threads in the kqueue code.:
@@ -196,8 +200,8 @@ DEMUXRTL_INTERFACES = [
  'demux/demux_iocp_demuxer.hpp',  # win32 (monolithic)
  'demux/demux_overlapped.hpp',    # win32
  'demux/demux_win_timer_queue.hpp',  # win32
- 'demux/demux_kqueue_demuxer.hpp',# osx/bsd
- 'demux/demux_evtport_demuxer.hpp',# solaris
+ 'demux/demux_kqueue_demuxer.hpp',# osx(10.3 onwards)/bsd
+ 'demux/demux_evtport_demuxer.hpp',# solaris (9 onwards?)
  'demux/demux_epoll_demuxer.hpp',# linux (>= 2.6)
  'demux/demux_sockety.hpp',       # posix
  'demux/demux_ts_select_demuxer.hpp',
@@ -232,7 +236,7 @@ WINDOWS_DEMUX_CPPS = [
 ]
 
 BSD_DEMUX_CPPS = [
-  "demux/demux_kqueue_demuxer",     # osx/bsd
+  # "demux/demux_kqueue_demuxer",     # osx/bsd (disabled whilst fixing 10.2)
 ]
 
 EXTRA_SYS_LIBS = ""

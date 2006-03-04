@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.7  2006/03/04 04:26:41  rfistman
+making demux configure more "suck it and see". temporarily disabled kqueues
+whilst fixing osx 10.2 build.
+
 Revision 1.6  2006/03/02 20:42:06  skaller
 Nocygwin build, flx_pkgconfig.
 
@@ -2207,20 +2211,25 @@ shared library name are not passed.
 #include "pthread_sleep_queue.hpp"
 
 #ifdef _WIN32
-#include "demux_iocp_demuxer.hpp"
-#include "faio_wdrv.hpp"
-#elif defined(MACOSX)
-#include "demux_kqueue_demuxer.hpp"
-#include "faio_pdrv.hpp"
+ #include "demux_iocp_demuxer.hpp"
+ #include "faio_wdrv.hpp"
+ typedef flx::demux::iocp_demuxer flx_demuxer;
+#elif 0 && defined(MACOSX)    // default to select while I fix 10.2.8
+ #include "demux_kqueue_demuxer.hpp"
+ #include "faio_pdrv.hpp"
+ typedef flx::demux::kqueue_demuxer flx_demuxer;
 #elif defined(SOLARIS)
-#include "demux_evtport_demuxer.hpp"
-#include "faio_pdrv.hpp"
+ #include "demux_evtport_demuxer.hpp"
+ #include "faio_pdrv.hpp"
+ typedef flx::demux::evtport_demuxer flx_demuxer;
 #elif defined(FLX_LINUX)
-#include "demux_epoll_demuxer.hpp"
-#include "faio_pdrv.hpp"
+ #include "demux_epoll_demuxer.hpp"
+ #include "faio_pdrv.hpp"
+ typedef flx::demux::epoll_demuxer flx_demuxer;
 #else
-#include "demux_ts_select_demuxer.hpp"
-#include "faio_pdrv.hpp"
+ #include "demux_ts_select_demuxer.hpp"
+ #include "faio_pdrv.hpp"
+ typedef flx::demux::ts_select_demuxer flx_demuxer;  // thread safe!
 #endif
 
 #include "faio_asyncio.hpp"
@@ -2274,21 +2283,11 @@ static struct driver_request_entry_t flx_run_services[]=
 class proto_async
 {
 public:
-
-#if defined(MACOSX)
-    kqueue_demuxer demux;
-#elif defined(SOLARIS)
-    evtport_demuxer demux;
-#elif defined(FLX_LINUX)
-    epoll_demuxer demux;
-#elif !defined(_WIN32)
-    ts_select_demuxer demux;  // thread safe!
-#endif
+    flx_demuxer demux;
 
     sleep_queue_t async_active;
     flx_thread_t ethread;
 #ifdef _WIN32
-    iocp_demuxer demux;
     wflx_drv driver;
     static DWORD pthread_thread(LPVOID udat);
 #else

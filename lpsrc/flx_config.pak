@@ -1171,6 +1171,26 @@ class gxx(flxbuild.compiler_class.compiler_base):
     # g++ `sdl-config --cflags` sdl_opengl.cxx `sdl-config --libs`
     # but how is that done portably? Does win32 even have sdl-config?
 
+    # see what sort of demuxers we support. right now just testing for 
+    # kqueues, to unbreak the osx 10.2.8 build. I need demux to be extracted
+    # by this point... will that work? damn, demux isn't extracted at this
+    # point. how can I force that?
+    print "TESTING DEMUXERS!"
+    try: 
+      # basically a un*x test, but doing portable path separators, just in case
+      print "WARNING: TESTING SELECT INSTEAD FOR NOW!"
+      cmd = opt.CXX+" -c demux"+os.sep+"demux_select_demuxer.cpp -o tmp"
+      cmd += os.sep+"kq.o"
+      print "CMD IS " + cmd
+      shell(cmd)
+      print "WORKED!!!"
+      opt.HAVE_KQUEUE_DEMUXER=1
+    except:
+      print "CAUGHT EXCEPTION"
+      opt.HAVE_KQUEUE_DEMUXER=0
+
+    print "HAVE_KQUEUE_DEMUXER=",opt.HAVE_KQUEUE_DEMUXER
+
     # find misc info about basic types
     try:
       shell(opt.CXX+" -w tmp"+os.sep+"intsizes.cxx -o tmp"+os.sep+"intsizes")
