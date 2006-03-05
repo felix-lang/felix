@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.12  2006/03/05 00:50:52  skaller
+Fix flx_async to depend on libfaio, libdemux, etc.
+
 Revision 1.11  2006/03/05 00:14:15  rfistman
 using new demux selecter logic (suckit'n'see)
 
@@ -211,6 +214,7 @@ pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_pthread','demux','fa
 cpp_cpps = ['rtl/flx_async']
 provide_lib = "libflx_async"
 pkg_requires = ['faio','demux','flx_pthread','flx_rtl']
+lib_requires = ['libfaio','libdemux','libflx_pthread','libflx']
 iscr_source = ['lpsrc/flx_rtl.pak']
 
 @h = tangler('spkgs/flx_rtl.py')
