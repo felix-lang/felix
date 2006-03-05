@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.11  2006/03/05 00:14:15  rfistman
+using new demux selecter logic (suckit'n'see)
+
 Revision 1.10  2006/03/04 21:07:36  rfistman
 MACOSX != Kqueues.
 
@@ -2326,16 +2329,7 @@ bool async_hooker_impl::handle_request(void *data,fthread_t *ft)
 
 class proto_async : public async_hooker_impl
 {
-
-#if defined(HAVE_KQUEUE_DEMUXER)
-    kqueue_demuxer demux;
-#elif defined(SOLARIS)
-    evtport_demuxer demux;
-#elif defined(FLX_LINUX)
-    epoll_demuxer demux;
-#elif !defined(_WIN32)
-    ts_select_demuxer demux;  // thread safe!
-#endif
+    flx_demuxer demux;
 
     sleep_queue_t async_active;
     flx_thread_t ethread;
