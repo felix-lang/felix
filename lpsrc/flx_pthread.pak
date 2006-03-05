@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.5  2006/03/05 07:52:41  skaller
+Add detached threads, to be used for job queues.
+
 Revision 1.4  2006/03/04 17:29:11  skaller
 Polymorphic reductions working!
 
@@ -133,6 +136,24 @@ namespace flx { namespace pthread {
 /// and joining of threads. It is not safe.
 // ********************************************************
 
+class FLX_RTL_EXTERN flx_detached_thread_t {
+#ifdef _WIN32
+  HANDLE    thread;
+#else
+  pthread_t   thr;        ///< the thread
+#endif
+  flx_detached_thread_t(flx_detached_thread_t const&); // uncopyable
+  void operator=(flx_detached_thread_t const&); // uncopyable
+public:
+  flx_detached_thread_t();
+  ~flx_detached_thread_t();
+#ifdef _WIN32
+  int init(LPTHREAD_START_ROUTINE, LPVOID lParam);
+#else
+  int init(void* (*start)(void*), void* udat);
+#endif
+};
+
 class FLX_RTL_EXTERN flx_thread_t {
 #ifdef _WIN32
   HANDLE    thread;
@@ -175,24 +196,42 @@ public:
 #include <stdio.h>
 
 namespace flx { namespace pthread {
+
+// ---- detached threads ----------
+
+flx_detached_thread_t::flx_detached_thread_t(flx_detached_thread_t const&){} // uncopyable
+void flx_detached_thread_t::operator=(flx_detached_thread_t const&){} // uncopyable
+
+int 
+flx_detached_thread_t::init(void* (*start)(void*), void* udat)
+{
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+  int res = pthread_create(&thr, &attr, start, udat);
+  pthread_attr_destroy(&attr);
+  return res;
+}
+
+flx_detached_thread_t::~flx_detached_thread_t() { }
+flx_detached_thread_t::flx_detached_thread_t() { }
+
+// ---- joinable threads ----------
 flx_thread_t::flx_thread_t(flx_thread_t const&){} // uncopyable
 void flx_thread_t::operator=(flx_thread_t const&){} // uncopyable
 
 int 
 flx_thread_t::init(void* (*start)(void*), void* udat)
 {
-  // fprintf(stderr,"flx_thread_t::init(this=%p, fn=%p, udat=%p)\n",
-  //  this, start, udat);
-
-  // default attrs. hope they're good
-  pthread_create(&thr, NULL, start, udat);
-  return 0;
+  return pthread_create(&thr, NULL, start, udat);
 }
 
 void flx_thread_t::join() { pthread_join(thr, NULL); }
 
 flx_thread_t::~flx_thread_t() { }
 flx_thread_t::flx_thread_t() { }
+
+// ---- joinable thread wrapper ----------
 
 flx_thread_wrapper_t::flx_thread_wrapper_t(flx_thread_wrapper_t const&){} // uncopyable
 void flx_thread_wrapper_t::operator=(flx_thread_wrapper_t const&){} // uncopyable

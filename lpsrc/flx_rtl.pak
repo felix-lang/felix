@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.13  2006/03/05 07:52:41  skaller
+Add detached threads, to be used for job queues.
+
 Revision 1.12  2006/03/05 00:50:52  skaller
 Fix flx_async to depend on libfaio, libdemux, etc.
 
@@ -2579,7 +2582,7 @@ do_async:
 
   if(async && async_count > 0){
     // STILL A ROOT
-    fthread_t* ftp = (fthread_t*)async->dequeue();
+    fthread_t* ftp = async->dequeue();
     if(debug_driver)
       fprintf(stderr,"Async Retrieving fthread %p\n",ftp);
     active.push_front(ftp);
