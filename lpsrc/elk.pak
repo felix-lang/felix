@@ -143,6 +143,7 @@ host_exes_require_libs = ["elk/libelk_host_static"]
 rtl_interfaces = ELKRTL_INTERFACES
 cpp_cpps = ELKRTL + SMRTL
 iscr_source = ['lpsrc/sm.pak','lpsrc/ast.pak','lpsrc/elk.pak']
+build_macro = "ELK"
 
 @h = tangler('config/elk.fpc')
 @select(h)
@@ -155,6 +156,18 @@ Version: 1
  else:
    tangle("provides_dlib: -lelk_dynamic")
    tangle("provides_slib: -lelk_static")
+
+@h=tangler('rtl/flx_elk_config.hpp')
+@select(h)
+#ifndef __FLX_ELK_CONFIG_GUARD__
+#define __FLX_ELK_CONFIG_GUARD__
+#include "flx_rtl_config.hpp"
+#ifdef BUILD_ELK
+#define ELK_EXTERN FLX_EXPORT
+#else
+#define ELK_EXTERN FLX_IMPORT
+#endif
+#endif
 
 @h=tangler('elk/elk_gramexpl.cpp')
 @select(h)
@@ -878,7 +891,7 @@ void emitMLActionCode(GrammarAnalysis const &g, char const *mliFname,
 
 #include <stdio.h>         // FILE
 #include <iostream>      // std::ostream
-#include "flx_rtl_config.hpp"
+#include "flx_elk_config.hpp"
 
 // fwds from other files
 class LexerInterface;      // lexerint.h
@@ -887,7 +900,7 @@ class LexerInterface;      // lexerint.h
 class StackNode;           // unit of parse state
 class SiblingLink;         // connections between stack nodes
 class PendingShift;        // for postponing shifts.. may remove
-class FLX_RTL_EXTERN GLR;                 // main class for GLR parsing
+class ELK_EXTERN GLR;                 // main class for GLR parsing
 
 
 // a pointer from a stacknode to one 'below' it (in the LR
@@ -1144,7 +1157,7 @@ public:       // funcs
 
 // each GLR object is a parser for a specific grammar, but can be
 // used to parse multiple token streams
-class FLX_RTL_EXTERN GLR {
+class ELK_EXTERN GLR {
 public:
   // ---- grammar-wide data ----
   // user-specified actions
@@ -4561,7 +4574,7 @@ class EmitCode;           // emitcode.h
 class Symbol;             // grammar.h
 class Bit2d;              // bit2d.h
 
-class FLX_RTL_EXTERN ParseTables;
+class ELK_EXTERN ParseTables;
 
 // integer id for an item-set DFA state; I'm using an 'enum' to
 // prevent any other integers from silently flowing into it
@@ -4656,7 +4669,7 @@ inline void checkAssign(DEST &d, SRC s)
 // the parse tables are the traditional action/goto, plus the list
 // of ambiguous actions, plus any more auxilliary tables useful during
 // run-time parsing
-class FLX_RTL_EXTERN ParseTables {
+class ELK_EXTERN ParseTables {
 private:    // types
   // data about an intermediate state of parse table construction;
   // once the table is finished, this data gets consolidated into the
@@ -5330,7 +5343,7 @@ public:     // funcs
 #include "sm_srcloc.h"
 
 class ParseTables;         // parsetables.h
-class FLX_RTL_EXTERN UserActions;
+class ELK_EXTERN UserActions;
 
 // user-supplied semantic values:
 //  - Semantic values are an arbitrary word, that the user can then
@@ -5350,7 +5363,7 @@ typedef unsigned long SemanticValue;
 // package of functions; the user will create an instance of a class
 // derived from this, and the parser will carry it along to invoke
 // the various action functions
-class FLX_RTL_EXTERN UserActions {
+class ELK_EXTERN UserActions {
 public:
   // allow abstract user to delete
   virtual ~UserActions();

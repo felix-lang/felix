@@ -1,6 +1,10 @@
 @execfile('config'+os.sep+'config.py')
 @head(1,'SDL')
 $Log$
+Revision 1.11  2006/03/06 13:16:17  skaller
+Fix library builds so exports and imports are properly
+distinguished on a library by library basis.
+
 Revision 1.10  2006/03/06 08:17:06  idadesub
 modified to support opengl on the mac. this allows sdl202 and sdl205 to
 compile, and run. However, 206, 208, and 209 still error out
@@ -77,7 +81,7 @@ sound quality improves. Add Escape for sdl100 so we can
 exit it without going thru all 16 frames.
 
 Revision 1.18  2006/01/31 07:54:31  skaller
-Fix sdl206, make sleep_request FLX_RTL_EXTERN
+Fix sdl206, make sleep_request SDL_EXTERN
 
 Revision 1.17  2006/01/30 08:58:19  skaller
 Add package support to flx script
@@ -254,6 +258,7 @@ if HAVE_SDL:
 
   # should be a .pak file ..
   iscr_source = ['lpsrc/flx_sdl.ipk']
+  build_macro = "SDL"
 
 @h = tangler('spkgs/gl.py')
 @select(h)
@@ -2682,11 +2687,24 @@ module SDL_net_h
   fun SDLNet_UDP_SendV: UDPsocket * ptr[ptr[UDPpacket]] * int -> int;
 }
 
+@h = tangler("rtl/flx_sdl_config.hpp")
+@select(h)
+#ifndef __FLX_SDL_CONFIG_GUARD__
+#define __FLX_SDL_CONFIG_GUARD__
+#include "flx_rtl_config.hpp"
+#ifdef BUILD_SDL
+#define SDL_EXTERN FLX_EXPORT
+#else
+#define SDL_EXTERN FLX_IMPORT
+#endif
+#endif
+
+
 @h = tangler("faio/faio_sdl_event.hpp")
 @select(h)
 #ifndef __FAIO_SDL_EVENT__
 #define __FAIO_SDL_EVENT__
-#include <flx_rtl_config.hpp>
+#include <flx_sdl_config.hpp>
 #include "pthread_work_fifo.hpp"
 #include "faio_drv.hpp"      // thread_wakeups, 
 #include "faio_asyncio.hpp"  // flx_driver_request_base
@@ -2698,7 +2716,7 @@ namespace flx { namespace faio {
 // ONE PROBLEM: this is faio level. It needs to know about fthreads
 
 // get ONE SDL event
-class FLX_RTL_EXTERN faio_sdl_event : public flx_driver_request_base,
+class SDL_EXTERN faio_sdl_event : public flx_driver_request_base,
   public flx::pthread::worker_task {
    thread_wakeup   fw;
    SDL_Event *e;

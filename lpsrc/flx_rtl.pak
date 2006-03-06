@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.17  2006/03/06 13:16:17  skaller
+Fix library builds so exports and imports are properly
+distinguished on a library by library basis.
+
 Revision 1.16  2006/03/06 06:30:18  idadesub
 added a forward declaration of do_final_cleanup, and fixed arguments being
 passed in the wrong order
@@ -229,6 +233,7 @@ provide_lib = "libflx_async"
 pkg_requires = ['faio','demux','flx_pthread','flx_rtl']
 lib_requires = ['libfaio','libdemux','libflx_pthread','libflx']
 iscr_source = ['lpsrc/flx_rtl.pak']
+build_macro = "ASYNC"
 
 @h = tangler('spkgs/flx_rtl.py')
 @select(h)
@@ -246,6 +251,7 @@ RTL_CPPS = [
 cpp_cpps = RTL_CPPS
 provide_lib = "libflx"
 iscr_source = ['lpsrc/flx_rtl.pak']
+build_macro = "RTL"
 
 @h = tangler('spkgs/flx_drivers.py')
 @select(h)
@@ -433,22 +439,19 @@ T &reinterpret(U const &x) {
 #define FLX_CGOTO
 #endif
 
-//#if  !defined(FLX_STATIC_LINK) && (defined(__CYGWIN__) || defined(_WIN32))
 #if  !defined(FLX_STATIC_LINK) && (defined(_WIN32))
 #define FLX_EXPORT __declspec(dllexport)
+#define FLX_IMPORT __declspec(dllexport)
 #else
 #define FLX_EXPORT
+#define FLX_IMPORT
 #endif
 
-//#if  !defined(FLX_STATIC_LINK) && (defined(__CYGWIN__) || defined(_WIN32))
-#if  !defined(FLX_STATIC_LINK) && (defined(_WIN32))
-#if defined(FLX_BUILD_DYNAMIC_RTL)
-#define FLX_RTL_EXTERN __declspec(dllexport)
+
+#ifdef BUILD_RTL
+#define RTL_EXTERN FLX_EXPORT
 #else
-#define FLX_RTL_EXTERN __declspec(dllimport)
-#endif
-#else
-#define FLX_RTL_EXTERN
+#define RTL_EXTERN FLX_IMPORT
 #endif
 
 #if defined(MACOSX) && !defined(HAVE_DLOPEN)
@@ -540,15 +543,15 @@ namespace flx { namespace rtl {
 // Felix system classes
 // ********************************************************
 
-struct FLX_RTL_EXTERN con_t;     // continuation
-struct FLX_RTL_EXTERN thread_t; // f-thread
-struct FLX_RTL_EXTERN _ref_;     // pointer/reference
-struct FLX_RTL_EXTERN _uctor_;   // union constructor
-struct FLX_RTL_EXTERN schannel_t;   // synchronous channel type
-struct FLX_RTL_EXTERN slist_t;   // singly linked list of void*
-struct FLX_RTL_EXTERN _root_ptr_t;   // singly linked list of void*
+struct RTL_EXTERN con_t;     // continuation
+struct RTL_EXTERN thread_t; // f-thread
+struct RTL_EXTERN _ref_;     // pointer/reference
+struct RTL_EXTERN _uctor_;   // union constructor
+struct RTL_EXTERN schannel_t;   // synchronous channel type
+struct RTL_EXTERN slist_t;   // singly linked list of void*
+struct RTL_EXTERN _root_ptr_t;   // singly linked list of void*
 
-struct FLX_RTL_EXTERN unit {};   // unit 
+struct RTL_EXTERN unit {};   // unit 
   // INLINE DEFINITION, PROBLEMATIC!!
 
 // ********************************************************
@@ -558,29 +561,29 @@ struct FLX_RTL_EXTERN unit {};   // unit
 // we provide a shape for C 'int' type as well
 // ********************************************************
 
-extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t schannel_ptr_map;
-extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _fthread_ptr_map;
-extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _ref_ptr_map;
-extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _uctor_ptr_map;
-extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _int_ptr_map;
-extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t unit_ptr_map;
-extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t slist_ptr_map;
-extern FLX_RTL_EXTERN flx::gc::generic::gc_shape_t _root_ptr_ptr_map;
+extern RTL_EXTERN flx::gc::generic::gc_shape_t schannel_ptr_map;
+extern RTL_EXTERN flx::gc::generic::gc_shape_t _fthread_ptr_map;
+extern RTL_EXTERN flx::gc::generic::gc_shape_t _ref_ptr_map;
+extern RTL_EXTERN flx::gc::generic::gc_shape_t _uctor_ptr_map;
+extern RTL_EXTERN flx::gc::generic::gc_shape_t _int_ptr_map;
+extern RTL_EXTERN flx::gc::generic::gc_shape_t unit_ptr_map;
+extern RTL_EXTERN flx::gc::generic::gc_shape_t slist_ptr_map;
+extern RTL_EXTERN flx::gc::generic::gc_shape_t _root_ptr_ptr_map;
 
 // ********************************************************
 // Standard C++ Exceptions
 // ********************************************************
 
-struct FLX_RTL_EXTERN flx_exec_failure_t;
-struct FLX_RTL_EXTERN flx_range_srcref_t;
-struct FLX_RTL_EXTERN flx_match_failure_t;
-struct FLX_RTL_EXTERN flx_assert_failure_t;
-struct FLX_RTL_EXTERN flx_switch_failure_t;
+struct RTL_EXTERN flx_exec_failure_t;
+struct RTL_EXTERN flx_range_srcref_t;
+struct RTL_EXTERN flx_match_failure_t;
+struct RTL_EXTERN flx_assert_failure_t;
+struct RTL_EXTERN flx_switch_failure_t;
 // ********************************************************
 /// CONTINUATION.
 // ********************************************************
 
-struct FLX_RTL_EXTERN con_t ///< abstract base for mutable continuations
+struct RTL_EXTERN con_t ///< abstract base for mutable continuations
 {
 #ifdef FLX_CGOTO
   void *pc;                 ///< interior program counter
@@ -601,7 +604,7 @@ struct FLX_RTL_EXTERN con_t ///< abstract base for mutable continuations
 /// SLIST manages pointers to memory managed by the collector
 // ********************************************************
 
-struct FLX_RTL_EXTERN slist_t {
+struct RTL_EXTERN slist_t {
   gc::generic::collector_t *gc;
   struct slist_node_t *head;
 
@@ -617,7 +620,7 @@ struct FLX_RTL_EXTERN slist_t {
 /// FTHREAD. Felix threads
 // ********************************************************
 
-struct FLX_RTL_EXTERN fthread_t // fthread abstraction
+struct RTL_EXTERN fthread_t // fthread abstraction
 {
   con_t *cc;                    ///< current continuation
 
@@ -635,7 +638,7 @@ private: // uncopyable
 /// SCHANNEL. Synchronous channels
 // ********************************************************
 
-struct FLX_RTL_EXTERN schannel_t 
+struct RTL_EXTERN schannel_t 
 {
   slist_t *waiting_to_read;             ///< fthreads waiting for a writer
   slist_t *waiting_to_write;            ///< fthreads waiting for a reader
@@ -669,7 +672,7 @@ private: // uncopyable
 /// address, despite the name.
 // ********************************************************
 
-struct FLX_RTL_EXTERN _ref_
+struct RTL_EXTERN _ref_
 {
   void *frame;      ///< Heap frame pointer
   std::ptrdiff_t offset;   ///< Client Data offset
@@ -704,7 +707,7 @@ struct FLX_RTL_EXTERN _ref_
 /// note: non-polymorphic, so ctor can be inline
 // ********************************************************
 
-struct FLX_RTL_EXTERN _uctor_
+struct RTL_EXTERN _uctor_
 {
   int variant;  ///< Variant code
   void *data;   ///< Heap variant constructor data
@@ -718,7 +721,7 @@ struct FLX_RTL_EXTERN _uctor_
 /// but not collectable. 
 // ********************************************************
 
-struct FLX_RTL_EXTERN _root_ptr_t
+struct RTL_EXTERN _root_ptr_t
 {
   _root_ptr_t();
   _root_ptr_t(void *x);
@@ -799,7 +802,7 @@ bool operator >= (root_ptr_t<T> const &a, root_ptr_t<T> const &b)
 /// Thrown when trying to run a dead procedure
 // ********************************************************
 
-struct FLX_RTL_EXTERN flx_exec_failure_t {
+struct RTL_EXTERN flx_exec_failure_t {
   std::string filename;  ///< dll filename
   std::string operation; ///< faulty operation
   std::string what;      ///< error description
@@ -811,7 +814,7 @@ struct FLX_RTL_EXTERN flx_exec_failure_t {
 /// SOURCE REFERENCE: to track places in user source code.
 // ********************************************************
 
-struct FLX_RTL_EXTERN flx_range_srcref_t {
+struct RTL_EXTERN flx_range_srcref_t {
   char *filename;  ///< source file name
   int startline;   ///< first line (1 origin)
   int startcol;    ///< first column (1 origin)
@@ -826,7 +829,7 @@ struct FLX_RTL_EXTERN flx_range_srcref_t {
 /// regmatch, or reglex
 // ********************************************************
 
-struct FLX_RTL_EXTERN flx_match_failure_t {
+struct RTL_EXTERN flx_match_failure_t {
   flx_range_srcref_t flx_loc; ///< location in Felix file
   char *cxx_srcfile;          ///< C++ file name
   int cxx_srcline;            ///< C++ line number
@@ -839,7 +842,7 @@ struct FLX_RTL_EXTERN flx_match_failure_t {
 /// Thrown when user assertion fails
 // ********************************************************
 
-struct FLX_RTL_EXTERN flx_assert_failure_t {
+struct RTL_EXTERN flx_assert_failure_t {
   flx_range_srcref_t flx_loc; ///< location in Felix file
   char *cxx_srcfile;          ///< C++ file
   int cxx_srcline;            ///< __LINE__ macro
@@ -851,7 +854,7 @@ struct FLX_RTL_EXTERN flx_assert_failure_t {
 /// EXCEPTION: SWITCH failure. this is a system failure!
 // ********************************************************
 
-struct FLX_RTL_EXTERN flx_switch_failure_t {
+struct RTL_EXTERN flx_switch_failure_t {
   virtual ~flx_switch_failure_t();
 };
 
@@ -1615,13 +1618,13 @@ struct thread_frame_t;
 
 namespace flx { namespace rtl {
 
-struct FLX_RTL_EXTERN flx_link_failure_t;
-struct FLX_RTL_EXTERN flx_dynlink_t;
-struct FLX_RTL_EXTERN flx_libinit_t;
+struct RTL_EXTERN flx_link_failure_t;
+struct RTL_EXTERN flx_dynlink_t;
+struct RTL_EXTERN flx_libinit_t;
 
 /// Dynamic linkage failure.
 
-struct FLX_RTL_EXTERN flx_link_failure_t {
+struct RTL_EXTERN flx_link_failure_t {
   string filename;
   string operation;
   string what;
@@ -1653,7 +1656,7 @@ typedef con_t *(*main_t)(thread_frame_t*);
 
 /// dynamic object loader.
 
-struct FLX_RTL_EXTERN flx_dynlink_t
+struct RTL_EXTERN flx_dynlink_t
 {
   // data
   LIBHANDLE library;
@@ -1684,7 +1687,7 @@ private:
 
 /// Thread Frame Initialisation.
 
-struct FLX_RTL_EXTERN flx_libinit_t 
+struct RTL_EXTERN flx_libinit_t 
 {
   thread_frame_t *thread_frame;
   con_t *start_proc;
@@ -1945,10 +1948,10 @@ namespace flx { namespace run {
 enum fstate_t { terminated, blocked, delegated };
 enum fpc_t { next_fthread_pos, next_request_pos };
 
-FLX_RTL_EXTERN char const * get_fstate_desc(fstate_t);
-FLX_RTL_EXTERN char const * get_fpc_desc(fpc_t);
+RTL_EXTERN char const * get_fstate_desc(fstate_t);
+RTL_EXTERN char const * get_fpc_desc(fpc_t);
 
-struct FLX_RTL_EXTERN gc_profile_t {
+struct RTL_EXTERN gc_profile_t {
   bool debug_allocations;
   bool debug_collections; 
   unsigned long compact; 
@@ -1969,7 +1972,7 @@ struct FLX_RTL_EXTERN gc_profile_t {
   ~gc_profile_t();
 };
 
-struct FLX_RTL_EXTERN sync_state_t {
+struct RTL_EXTERN sync_state_t {
   bool debug_driver;
   gc_profile_t *gcp;
   std::list<flx::rtl::fthread_t*> *active;
@@ -1996,7 +1999,7 @@ using namespace flx::rtl;
 
 namespace flx { namespace run {
 
-FLX_RTL_EXTERN char const *get_fstate_desc(fstate_t fs)
+RTL_EXTERN char const *get_fstate_desc(fstate_t fs)
 {
   switch(fs)
   {
@@ -2007,7 +2010,7 @@ FLX_RTL_EXTERN char const *get_fstate_desc(fstate_t fs)
   }
 }
 
-FLX_RTL_EXTERN char const *get_fpc_desc(fpc_t fpc)
+RTL_EXTERN char const *get_fpc_desc(fpc_t fpc)
 {
   switch(fpc)
   {
@@ -2229,7 +2232,7 @@ shared library name are not passed.
 #include "flx_rtl_config.hpp"
 #include "flx_rtl.hpp"
 
-class FLX_RTL_EXTERN async_hooker {
+class RTL_EXTERN async_hooker {
 public:
   virtual flx::rtl::fthread_t *dequeue()=0;
   virtual bool handle_request(void *data, flx::rtl::fthread_t *ss)=0;
@@ -2943,7 +2946,7 @@ int main(int argc, char** argv)
 #include "flx_rtl_config.hpp"
 
 namespace flx { namespace rtl { namespace i18n {
-   FLX_RTL_EXTERN std::string utf8(unsigned long);
+   RTL_EXTERN std::string utf8(unsigned long);
 }}}
 #endif
 

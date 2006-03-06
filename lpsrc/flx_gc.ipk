@@ -54,10 +54,10 @@ namespace gc {
 namespace generic {
 // Here are the types we refer to:
 
-struct FLX_RTL_EXTERN frame_t;      // the type of all collectable objects
-struct FLX_RTL_EXTERN gc_shape_t;   // the shape of collectable objects
-struct FLX_RTL_EXTERN collector_t;  // the collector itself
-struct FLX_RTL_EXTERN allocator_t;  // the collector itself
+struct RTL_EXTERN frame_t;      // the type of all collectable objects
+struct RTL_EXTERN gc_shape_t;   // the shape of collectable objects
+struct RTL_EXTERN collector_t;  // the collector itself
+struct RTL_EXTERN allocator_t;  // the collector itself
 
 enum gc_shape_flags_t {
   gc_flags_default    = 0,            //< collectable and mobile
@@ -66,7 +66,7 @@ enum gc_shape_flags_t {
 };
 
 /// Describes runtime object shape.
-struct FLX_RTL_EXTERN gc_shape_t
+struct RTL_EXTERN gc_shape_t
 {
   gc_shape_t *next_shape;         ///< pointer to next shape in list or NULL
   char const *cname;              ///< C++ typename
@@ -147,7 +147,7 @@ And here is the collector abstraction.
 @select(h)
 
 /// Collector abstraction.
-struct FLX_RTL_EXTERN collector_t
+struct RTL_EXTERN collector_t
 {
   bool debug;
   void set_debug(bool d){debug=d;}
@@ -252,7 +252,7 @@ to the object. Other pointers might exist, and that is normally
 OK provided they're not dereferenced.
 
 @select(h)
-void FLX_RTL_EXTERN destroy(void *b);
+void RTL_EXTERN destroy(void *b);
 
 @doc()
 The following routines are provided to help
@@ -266,10 +266,10 @@ Each untyped routine has a corresponding
 template to provide a type safe interface.
 
 @select(h)
-void FLX_RTL_EXTERN _init_ptr(void **a, void *b);
-void FLX_RTL_EXTERN _set_ptr(void **a, void *b);
-void FLX_RTL_EXTERN _release_ptr(void **a);
-void FLX_RTL_EXTERN _destroy_ptr(void **a);
+void RTL_EXTERN _init_ptr(void **a, void *b);
+void RTL_EXTERN _set_ptr(void **a, void *b);
+void RTL_EXTERN _release_ptr(void **a);
+void RTL_EXTERN _destroy_ptr(void **a);
 
 template<class T>
 void init_ptr(T **a, T *b)
@@ -315,8 +315,8 @@ of object an memory block hold, and reset the
 length of an array, respectively.
 
 @select(h)
-FLX_RTL_EXTERN void flx_reset_shape(void *memory, gc_shape_t &);
-FLX_RTL_EXTERN void flx_reset_count(void *memory, unsigned long); 
+RTL_EXTERN void flx_reset_shape(void *memory, gc_shape_t &);
+RTL_EXTERN void flx_reset_count(void *memory, unsigned long); 
 
 }}} // end namespaces
 
@@ -331,7 +331,7 @@ compiler on Mac OS.
 
 @select(h)
 /// Allocate collectable object
-FLX_RTL_EXTERN void *operator new
+RTL_EXTERN void *operator new
 (
   std::size_t, 
   flx::gc::generic::collector_t &, 
@@ -339,7 +339,7 @@ FLX_RTL_EXTERN void *operator new
 );
 
 /// Allocate collectable array
-FLX_RTL_EXTERN void *operator new
+RTL_EXTERN void *operator new
 (
   std::size_t, 
   flx::gc::generic::collector_t &, 
@@ -534,11 +534,11 @@ namespace gc {
 namespace collector {
 using namespace generic;
 
-struct FLX_RTL_EXTERN malloc_free;
-struct FLX_RTL_EXTERN flx_collector_t;
+struct RTL_EXTERN malloc_free;
+struct RTL_EXTERN flx_collector_t;
 
 /// Allocator using malloc and free.
-struct FLX_RTL_EXTERN malloc_free : public virtual allocator_t 
+struct RTL_EXTERN malloc_free : public virtual allocator_t 
 {
   void *allocate(std::size_t);
   void deallocate(void *, std::size_t);
@@ -546,7 +546,7 @@ struct FLX_RTL_EXTERN malloc_free : public virtual allocator_t
 
 
 /// Naive Mark and Sweep Collector.
-struct FLX_RTL_EXTERN flx_collector_t : public collector_t
+struct RTL_EXTERN flx_collector_t : public collector_t
 {
   flx_collector_t(allocator_t *);
   ~flx_collector_t();
@@ -1436,7 +1436,7 @@ namespace gc {
 namespace collector {
 
 /// Naive thread safe Mark and Sweep Collector.
-struct FLX_RTL_EXTERN flx_ts_collector_t : 
+struct RTL_EXTERN flx_ts_collector_t : 
   public flx::gc::collector::flx_collector_t
 {
   flx_ts_collector_t(allocator_t *);

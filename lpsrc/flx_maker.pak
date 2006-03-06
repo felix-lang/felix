@@ -6,6 +6,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.17  2006/03/06 13:16:16  skaller
+Fix library builds so exports and imports are properly
+distinguished on a library by library basis.
+
 Revision 1.16  2006/03/04 02:21:40  skaller
 Crude first order user defined reduction rules (non-polymorphic)
 is now working!
@@ -1261,6 +1265,7 @@ def plugin():
 def build_target_rtl_dynamic():
   ars = ""
   CPPS = pkgdict.get("cpp_cpps",[])
+  BUILD_MACRO = pkgdict.get("build_macro","ERROR!")
   EXTRA_CFLAGS = pkgdict.get("cflags","")
   EXTRA_DFLAGS = pkgdict.get("dflags","")
   if CPPS:
@@ -1276,7 +1281,7 @@ def build_target_rtl_dynamic():
         dir,
         include_path=['rtl'],
         optimise=1,
-        macros=["FLX_BUILD_DYNAMIC_RTL"],
+        macros=["BUILD_"+BUILD_MACRO],
         CFLAGS=CFLAGS+EXTRA_CFLAGS)
 
     # LINK RTL

@@ -1,5 +1,9 @@
 @head(1,'demux')
 $Log$
+Revision 1.14  2006/03/06 13:16:16  skaller
+Fix library builds so exports and imports are properly
+distinguished on a library by library basis.
+
 Revision 1.13  2006/03/06 01:29:29  skaller
 spawn_pthread: init works
 
@@ -170,18 +174,30 @@ Revision 1.20  2006/01/09 16:32:03  skaller
 Integrate SDL tests, provide initial SDL event demux.
 
 
-@h=tangler('tmp/flx_rtl_config.hpp')
+@h=tangler('tmp/flx_demux_config.hpp')
 @select(h)
-// This is a fake flx_rtl_config.h to be used at config time, before
+// This is a fake flx_demux_config.h to be used at config time, before
 // the rtl proper exists. It contains just enough info to compile
 // a few of the demuxers.
-#define FLX_RTL_EXTERN
+#define DEMUX_EXTERN
+
+@h=tangler('rtl/flx_demux_config.hpp')
+@select(h)
+#ifndef __FLX_DEMUX_CONFIG_GUARD__
+#define __FLX_DEMUX_CONFIG_GUARD__
+#include "flx_rtl_config.hpp"
+#ifdef BUILD_DEMUX
+#define DEMUX_EXTERN FLX_EXPORT
+#else
+#define DEMUX_EXTERN FLX_IMPORT
+#endif
+#endif
 
 @h=tangler('demux/demux_demuxer.hpp')
 @select(h)
 #ifndef __DEMUXER__
 #define __DEMUXER__
-#include <flx_rtl_config.hpp>
+#include <flx_demux_config.hpp>
 
 namespace flx { namespace demux {
 
@@ -201,7 +217,7 @@ enum { PDEMUX_READ = 1, PDEMUX_WRITE = 2 };
 // ********************************************************
 /// Demux base.
 // ********************************************************
-class FLX_RTL_EXTERN demuxer {
+class DEMUX_EXTERN demuxer {
 protected:
   // wait for outstanding events. may return before given events, so
   // check your conditions. I've turned of all the timeouts that cause
@@ -223,7 +239,7 @@ public:
 #ifndef __EPOLL_DEMUXER__
 #define __EPOLL_DEMUXER__
 
-#include <flx_rtl_config.hpp>
+#include <flx_demux_config.hpp>
 #include "demux_posix_demuxer.hpp"
 
 namespace flx { namespace demux {
@@ -235,7 +251,7 @@ namespace flx { namespace demux {
 /// epoll based demuxer
 // ********************************************************
 
-class FLX_RTL_EXTERN epoll_demuxer : public posix_demuxer {
+class DEMUX_EXTERN epoll_demuxer : public posix_demuxer {
   int   epoll_fd;
 
   // be careful of this - don't let it create race conditions
@@ -282,7 +298,7 @@ public:
 // could have three half-demuxers, add them both to third and call
 // their wait functions depending on the outer's wait result.
 
-class FLX_RTL_EXTERN evtport_demuxer : public posix_demuxer {
+class DEMUX_EXTERN evtport_demuxer : public posix_demuxer {
     int     evtport;
 
   // I think evtports only track socket the socket and not
@@ -306,7 +322,7 @@ public:
 #ifndef __IOCP_DEMUXER__
 #define __IOCP_DEMUXER__
 
-#include <flx_rtl_config.hpp>
+#include <flx_demux_config.hpp>
 #include <Windows.h>
 
 #include "demux_demuxer.hpp"
@@ -317,16 +333,16 @@ namespace flx { namespace demux {
 
 // not here? returns INVALID_SOCKET on failure.
 // if *io_port == 0, then a port is chosen and returned in *io_port
-SOCKET FLX_RTL_EXTERN create_listener_socket(int* io_port, int backlog);
+SOCKET DEMUX_EXTERN create_listener_socket(int* io_port, int backlog);
 // these two probably not used. move to wsockety.h
-SOCKET FLX_RTL_EXTERN nice_accept(SOCKET listener);
-SOCKET FLX_RTL_EXTERN nice_connect(const char* addr, int port);
-int FLX_RTL_EXTERN set_tcp_nodelay(int s, int disable_nagle);
+SOCKET DEMUX_EXTERN nice_accept(SOCKET listener);
+SOCKET DEMUX_EXTERN nice_connect(const char* addr, int port);
+int DEMUX_EXTERN set_tcp_nodelay(int s, int disable_nagle);
 
 // ********************************************************
 /// make sure you instantion ONE (1) of these before using winsock
 // ********************************************************
-class FLX_RTL_EXTERN winsock_initer
+class DEMUX_EXTERN winsock_initer
 {
 public:
   winsock_initer();
@@ -337,7 +353,7 @@ public:
 /// iocp_wakeup base class for users of iocp_demuxer
 /// becoming an overlapped call control block
 // ********************************************************
-class FLX_RTL_EXTERN iocp_wakeup {
+class DEMUX_EXTERN iocp_wakeup {
 protected:            // folks need to use these in win 32 calls
   OVERLAPPED  ol;
   // store wakeup error here?
@@ -361,7 +377,7 @@ public:
 
 // ********************************************************
 // ********************************************************
-class FLX_RTL_EXTERN iocp_demuxer : public demuxer {
+class DEMUX_EXTERN iocp_demuxer : public demuxer {
   HANDLE    iocp;     // the io completion queue
 
   void get_evts(bool poll);
@@ -395,7 +411,7 @@ namespace flx { namespace demux {
 // ********************************************************
 /// kqueue demuxer for BSD
 // ********************************************************
-class FLX_RTL_EXTERN kqueue_demuxer : public posix_demuxer {
+class DEMUX_EXTERN kqueue_demuxer : public posix_demuxer {
   int   kq;
 protected:
   // this could just be passed the socket_wakeup, if it stored
@@ -421,7 +437,7 @@ public:
 @select(h)
 #ifndef __PFILEIO__
 #define __PFILEIO__
-#include <flx_rtl_config.hpp>
+#include <flx_demux_config.hpp>
 
 #include "demux_demuxer.hpp"
 #include "pthread_sleep_queue.hpp"
@@ -436,7 +452,7 @@ namespace flx { namespace demux {
 /// should probably be derived from posix_wakeup or something like that.
 /// or have the same signature. abstract - users overload "finished
 // ********************************************************
-class FLX_RTL_EXTERN fileio_request : public flx::pthread::worker_task
+class DEMUX_EXTERN fileio_request : public flx::pthread::worker_task
 {
   long    offset;   // make this a proper offset (64bit)
   // off_t    offset; // in: offset, for use with pread, pwrite
@@ -458,7 +474,7 @@ public:
 // ********************************************************
 // could do separate threads for in & out. or implement some form of cache.
 // ********************************************************
-class FLX_RTL_EXTERN pasync_fileio : public flx::pthread::worker_fifo
+class DEMUX_EXTERN pasync_fileio : public flx::pthread::worker_fifo
 {
 public:
   pasync_fileio(int n,int m) : worker_fifo(n,m) {}
@@ -479,10 +495,10 @@ public:
 #include "demux_demuxer.hpp"
 
 namespace flx { namespace demux {
-class FLX_RTL_EXTERN posix_demuxer;            // fwd decl
+class DEMUX_EXTERN posix_demuxer;            // fwd decl
 
 // abc
-class FLX_RTL_EXTERN posix_wakeup {
+class DEMUX_EXTERN posix_wakeup {
 public:
   virtual ~posix_wakeup() {}
 
@@ -490,7 +506,7 @@ public:
   virtual void wakeup(posix_demuxer& demux) = 0;
 };
 
-class FLX_RTL_EXTERN socket_wakeup : public posix_wakeup {
+class DEMUX_EXTERN socket_wakeup : public posix_wakeup {
 public:
   int   s;                // the non blocking socket
   int   wakeup_flags;         // set on wakeup, r/w or both
@@ -498,7 +514,7 @@ public:
   socket_wakeup() : s(-1) {}
 };
 
-class FLX_RTL_EXTERN posix_demuxer : public demuxer {
+class DEMUX_EXTERN posix_demuxer : public demuxer {
 protected:
   
 public:
@@ -528,7 +544,7 @@ public:
 // a socket io one could be handy here.
 
 // this one's restartable (makes sense for listener sockets)
-class FLX_RTL_EXTERN accept_control_block : public socket_wakeup {
+class DEMUX_EXTERN accept_control_block : public socket_wakeup {
 public:
   int   accepted;   // accepted socket (out)
   int   socket_err;   // the error, if acceptee == -1, else 0 (out)
@@ -539,7 +555,7 @@ public:
   virtual void wakeup(posix_demuxer& demux);
 };
 
-class FLX_RTL_EXTERN connect_control_block : public socket_wakeup {
+class DEMUX_EXTERN connect_control_block : public socket_wakeup {
 public:
   int     socket_err;   // outgoing error (on start or wake)
   // this should probably be a sockaddr type
@@ -578,7 +594,7 @@ public:
 
 namespace flx { namespace demux {
 
-class FLX_RTL_EXTERN select_demuxer : public posix_demuxer {
+class DEMUX_EXTERN select_demuxer : public posix_demuxer {
   void  remove_fd(int s);
   
   // thanks Beej!
@@ -626,12 +642,12 @@ namespace flx { namespace demux {
 
 // there's no standard posix_socketio_wakeup, could be handy. could also
 // perhaps use it here?
-class FLX_RTL_EXTERN selfpipe_wakeup : public socket_wakeup {
+class DEMUX_EXTERN selfpipe_wakeup : public socket_wakeup {
 public:
   virtual void wakeup(posix_demuxer& demux);
 };
 
-class FLX_RTL_EXTERN auto_fd {
+class DEMUX_EXTERN auto_fd {
 public:
   int fd;
 
@@ -639,7 +655,7 @@ public:
   ~auto_fd();
 };
 
-class FLX_RTL_EXTERN ts_select_demuxer : public posix_demuxer {
+class DEMUX_EXTERN ts_select_demuxer : public posix_demuxer {
   // big conservative recursive hamfisted lock.
   flx::pthread::flx_mutex_t      ham_fist;   
   // protects this little fella here.
@@ -665,7 +681,7 @@ public:
 #ifndef __TIMER_QUEUE__
 #define __TIMER_QUEUE__
 
-#include <flx_rtl_config.hpp>
+#include <flx_demux_config.hpp>
 
 namespace flx { namespace demux {
 
@@ -674,7 +690,7 @@ namespace flx { namespace demux {
 // class sleep_task : public worker_task
 // may not need time in here - just the wakeup - something I surely have
 // somewhere else.
-class FLX_RTL_EXTERN sleep_task
+class DEMUX_EXTERN sleep_task
 {
 public:
     virtual ~sleep_task() {}
@@ -682,7 +698,7 @@ public:
     virtual void fire() = 0;
 };
 
-class FLX_RTL_EXTERN timer_queue
+class DEMUX_EXTERN timer_queue
 {
 public:
     virtual ~timer_queue() {}    
@@ -713,7 +729,7 @@ public:
 namespace flx { namespace demux {
 
 // looks like a worker queue, but couldn't quite mash it into one
-class FLX_RTL_EXTERN posix_timer_queue : public timer_queue
+class DEMUX_EXTERN posix_timer_queue : public timer_queue
 {
     flx::pthread::flx_mutex_t lock; // factor to prio queue?
     flx::pthread::flx_condv_t sleep_cond;
@@ -1013,14 +1029,14 @@ timer_queue::get_time(double& t)
 #ifndef __WIN_TIMER_QUEUE__
 #define __WIN_TIMER_QUEUE__
 
-#include "flx_rtl_config.hpp"
+#include "flx_demux_config.hpp"
 #include <Windows.h>
 
 #include "demux_timer_queue.hpp"
 
 namespace flx { namespace demux {
 
-class FLX_RTL_EXTERN win_timer_queue : public timer_queue
+class DEMUX_EXTERN win_timer_queue : public timer_queue
 {
   HANDLE    timer_queue;
 
@@ -1040,7 +1056,7 @@ public:
 
 @h=tangler('demux/demux_win_timer_queue.cpp')
 @select(h)
-#include "flx_rtl_config.hpp"
+#include "flx_demux_config.hpp"
 #include <Windows.h>
 #include <assert.h>
 
@@ -2506,7 +2522,7 @@ winfileio_control_block::start_overlapped()
 @select(h)
 #ifndef __DEMUX_OVERLAPPED__
 #define __DEMUX_OVERLAPPED__
-#include "flx_rtl_config.hpp"
+#include "flx_demux_config.hpp"
 
 // visual studio is quite sensitve about how you do these includes.
 #include <WinSock2.h>              // Winsock2 (WSABufs, etc) must come before Windows.h
@@ -2526,7 +2542,7 @@ namespace flx { namespace demux {
 // listener socket must be already associated with an IOCP
 // in doing an AcceptEx, it might succeed immediately - do you still
 // get the IOCP wakeup?
-class FLX_RTL_EXTERN acceptex_control_block : public iocp_wakeup {
+class DEMUX_EXTERN acceptex_control_block : public iocp_wakeup {
   enum { ACCEPTEX_ADDR_SIZE = sizeof(SOCKADDR_IN) + 16 };
 
 public:
@@ -2540,7 +2556,7 @@ public:
     : listener(INVALID_SOCKET), acceptor(INVALID_SOCKET) {}
 };
 
-class FLX_RTL_EXTERN connectex_control_block : public iocp_wakeup
+class DEMUX_EXTERN connectex_control_block : public iocp_wakeup
 {
 public:
   // move further back?
@@ -2562,7 +2578,7 @@ public:
 };
 
 // TransmitFile here (requires file handle)
-class FLX_RTL_EXTERN transmitfile_control_block : public iocp_wakeup {
+class DEMUX_EXTERN transmitfile_control_block : public iocp_wakeup {
   SOCKET  s;
   HANDLE  file;
   DWORD flags;                // for possible socket reuse.
@@ -2579,7 +2595,7 @@ public:
 
 
 // handles both WSASend & WSARecv
-class FLX_RTL_EXTERN wsasocketio_control_block : public iocp_wakeup {
+class DEMUX_EXTERN wsasocketio_control_block : public iocp_wakeup {
 protected:
   enum { NUM_WBUFS = 1 }; // just one for now, but can do scattered send/recvs
   WSABUF    wbufs[NUM_WBUFS];
@@ -2599,7 +2615,7 @@ public:
 };
 
 // looks a bit like wsasocketio_control_block (bad name, sends too)
-class FLX_RTL_EXTERN winfileio_control_block : public iocp_wakeup {
+class DEMUX_EXTERN winfileio_control_block : public iocp_wakeup {
   HANDLE    file;
   bool    reading;
 public:
@@ -3511,10 +3527,10 @@ selfpipe_wakeup::wakeup(posix_demuxer& demux)
 @select(h)
 #ifndef __DEMUX_SOCKETY__
 #define __DEMUX_SOCKETY__
-#include <flx_rtl_config.hpp>
+#include <flx_demux_config.hpp>
 namespace flx { namespace demux {
 
-// Shouldn't this all be FLX_RTL_EXTERN?
+// Shouldn't this all be DEMUX_EXTERN?
 int create_listener_socket(int* io_port, int q_len);
 int create_async_listener(int* io_port, int q_len);
 int nice_accept(int listener, int* err);

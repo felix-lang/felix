@@ -108,6 +108,7 @@ lib_requires = ['libflx_pthread','libflx']
 dflags = EXTRA_SYS_LIBS
 sflags = EXTRA_SYS_LIBS
 iscr_source = ["lpsrc/flx_demuxconfig.pak","lpsrc/flx_demux.pak"]
+build_macro = "DEMUX"
 
 @h=tangler('demux/demux_sockety.cpp')
 @select(h)

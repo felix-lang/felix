@@ -17,11 +17,11 @@ Support table.
 #include "flx_rtl_config.hpp"
 
 namespace flx { namespace rtl { namespace ioutil {
-  FLX_RTL_EXTERN std::string load_file (std::FILE *);
-  FLX_RTL_EXTERN std::string load_file (std::string);
-  FLX_RTL_EXTERN std::string readln(std::FILE*);
-  FLX_RTL_EXTERN void write (std::FILE *, std::string);
-  FLX_RTL_EXTERN void writeln (std::FILE *, std::string);
+  RTL_EXTERN std::string load_file (std::FILE *);
+  RTL_EXTERN std::string load_file (std::string);
+  RTL_EXTERN std::string readln(std::FILE*);
+  RTL_EXTERN void write (std::FILE *, std::string);
+  RTL_EXTERN void writeln (std::FILE *, std::string);
 }}}
 #endif
 
@@ -113,7 +113,7 @@ namespace flx { namespace rtl { namespace ioutil {
 //RF: was only to commented out to fix macosx problem,
 //but lets see what happens to all the other builds.
 //#ifndef MACOSX
-//template class FLX_RTL_EXTERN std::basic_string<char>;
+//template class RTL_EXTERN std::basic_string<char>;
 //#endif
 
 namespace flx { namespace rtl { namespace strutil {

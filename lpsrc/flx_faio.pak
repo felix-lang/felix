@@ -1,6 +1,10 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.7  2006/03/06 13:16:16  skaller
+Fix library builds so exports and imports are properly
+distinguished on a library by library basis.
+
 Revision 1.6  2006/03/06 01:29:29  skaller
 spawn_pthread: init works
 
@@ -71,7 +75,7 @@ made flx_rtl create async structure on demand, if only to avoid all that
 debug output in the simpler tests.
 
 Revision 1.34  2006/01/31 07:54:31  skaller
-Fix sdl206, make sleep_request FLX_RTL_EXTERN
+Fix sdl206, make sleep_request FAIO_EXTERN
 
 Revision 1.33  2006/01/29 07:07:21  skaller
 fixed visual studio build after demux merge
@@ -215,13 +219,26 @@ pkg_requires = ['demux','flx_pthread','flx_rtl']
 lib_requires = ['libdemux','libflx_pthread','libflx']
 unit_tests = EXTRA_TEST_GLOBS
 iscr_source = ["lpsrc/flx_faio.pak"]
+build_macro = "FAIO"
+
+@h=tangler('rtl/flx_faio_config.hpp')
+@select(h)
+#ifndef __FLX_FAIO_CONFIG_GUARD__
+#define __FLX_FAIO_CONFIG_GUARD__
+#include "flx_rtl_config.hpp"
+#ifdef BUILD_FAIO
+#define FAIO_EXTERN FLX_EXPORT
+#else
+#define FAIO_EXTERN FLX_IMPORT
+#endif
+#endif
 
 @head(1,'Async IO (deprecated)')
 @h=tangler('faio/faio_asyncio.hpp')
 @select(h)
 #ifndef __ASYNCIO__
 #define __ASYNCIO__
-#include <flx_rtl_config.hpp>
+#include <flx_faio_config.hpp>
 
 // this file acts as go-between for my asynchronous interface for felix
 // programmes. 
@@ -233,7 +250,7 @@ iscr_source = ["lpsrc/flx_faio.pak"]
 
 namespace flx { namespace faio {
 
-class FLX_RTL_EXTERN flx_driver_request_base {
+class FAIO_EXTERN flx_driver_request_base {
 public:
     virtual ~flx_driver_request_base() {}       // so destructors work
     // returns finished flag (async may fail or immediately finish)
@@ -243,7 +260,7 @@ public:
 // not actually asynchronous as such since the threads are woken synchronously
 // definitely portable. look out for this shared structure when flx threads
 // are run pre-emptively. start_async_op will need to be serialised.
-class FLX_RTL_EXTERN async_copipe : public flx_driver_request_base {
+class FAIO_EXTERN async_copipe : public flx_driver_request_base {
 public:
     enum { WINDWARD, LEEWARD, NUM_CHANNELS };
     
@@ -272,7 +289,7 @@ private:
     async_copipe();                     // to control alloc/dealloc
 };
 
-class FLX_RTL_EXTERN copipe_endpt {
+class FAIO_EXTERN copipe_endpt {
     int             read_channel;       // the channel this endpt reads on
     
     copipe_endpt(async_copipe* p, int rchan) : 
@@ -293,7 +310,7 @@ public:
 };
 
 // sleeping
-class FLX_RTL_EXTERN sleep_request 
+class FAIO_EXTERN sleep_request 
   : public flx_driver_request_base, public demux::sleep_task
 {
   thread_wakeup fw;
@@ -541,14 +558,14 @@ To use this class, just override doit().
 @select(h)
 #ifndef __FAIO_JOB_REQUEST__
 #define __FAIO_JOB_REQUEST__
-#include <flx_rtl_config.hpp>
+#include <flx_faio_config.hpp>
 #include "demux_demuxer.hpp"
 #include "pthread_work_fifo.hpp"
 #include "faio_drv.hpp"
 #include "faio_asyncio.hpp"
 
 namespace flx { namespace faio {
-class FLX_RTL_EXTERN job_t: 
+class FAIO_EXTERN job_t: 
   public flx::faio::flx_driver_request_base,
   public flx::pthread::worker_task 
 {
@@ -591,7 +608,7 @@ void job_t::finished(){
 @select(h)
 #ifndef __FLXDRV__
 #define __FLXDRV__
-#include <flx_rtl_config.hpp>
+#include <flx_faio_config.hpp>
 
 #include "pthread_sleep_queue.hpp"
 #include "pthread_work_fifo.hpp"
@@ -602,7 +619,7 @@ namespace flx { namespace faio {
 // vestigal driver class is all that remains of the embedded driver from
 // which faio came. all it is now is a pointer to a queue. 
 // watch this space.
-class FLX_RTL_EXTERN flx_drv {
+class FAIO_EXTERN flx_drv {
     flx::pthread::sleep_queue_t&    ready_queue;
     flx::pthread::worker_fifo     work_fifo;
 public:
@@ -619,7 +636,7 @@ public:
 };
 
 // this becomes socket thread wakeup. um.
-class FLX_RTL_EXTERN thread_wakeup {
+class FAIO_EXTERN thread_wakeup {
 public:
     void wake() { drv->sched(f); }
 
@@ -666,14 +683,14 @@ flx_drv::sched(void* f)
 #ifndef __FAIO_PDRV__
 #define __FAIO_PDRV__
 
-#include <flx_rtl_config.hpp>
+#include <flx_faio_config.hpp>
 #include "demux_pfileio.hpp"
 #include "demux_posix_timer_queue.hpp"
 #include "faio_drv.hpp"
 namespace flx { namespace faio {
 
 // same as flx_drv, but with an async file io worker fifo.
-class FLX_RTL_EXTERN pflx_drv : public flx_drv {
+class FAIO_EXTERN pflx_drv : public flx_drv {
     demux::pasync_fileio       file_aio_worker;
     demux::posix_timer_queue   sleepers;
 public:
@@ -738,7 +755,7 @@ pflx_drv::pflx_drv(flx::pthread::sleep_queue_t& q, int n1, int m1, int n2, int m
 @select(h)
 #ifndef __FAIO_POSIXIO__
 #define __FAIO_POSIXIO__
-#include <flx_rtl_config.hpp>
+#include <flx_faio_config.hpp>
 
 #include "faio_asyncio.hpp"
 #include "faio_drv.hpp" 
@@ -757,7 +774,7 @@ pflx_drv::pflx_drv(flx::pthread::sleep_queue_t& q, int n1, int m1, int n2, int m
 
 namespace flx { namespace faio {
  
-class FLX_RTL_EXTERN socketio_wakeup : public demux::socket_wakeup {
+class FAIO_EXTERN socketio_wakeup : public demux::socket_wakeup {
 public:
   demux::sel_param   pb;     // in: what you want, out: what you get
   thread_wakeup fw;
@@ -771,7 +788,7 @@ public:
 // files & pipes. NICE. the fact that the socket is now in here may mean
 // I can get rid of the epoll hack
 // Not sure if this can be used for file fds.
-class FLX_RTL_EXTERN socketio_request : public flx_driver_request_base {
+class FAIO_EXTERN socketio_request : public flx_driver_request_base {
 public:
     socketio_wakeup sv;
     
@@ -781,7 +798,7 @@ public:
     virtual bool start_async_op(demux::demuxer& demux, flx_drv* drv,  void* f);
 };
 
-class FLX_RTL_EXTERN connect_request
+class FAIO_EXTERN connect_request
   : public flx_driver_request_base, public demux::connect_control_block {
 public:
   thread_wakeup fw;
@@ -793,7 +810,7 @@ public:
   virtual void wakeup(demux::posix_demuxer& demux);
 };
 
-class FLX_RTL_EXTERN accept_request
+class FAIO_EXTERN accept_request
   : public flx_driver_request_base, public demux::accept_control_block {
 public:
   // we sometimes know that there'll be several connections to accept.
@@ -816,7 +833,7 @@ public:
 
 // separate pthread file io
 // hum. multiple inheritance
-class FLX_RTL_EXTERN flxfileio_request
+class FAIO_EXTERN flxfileio_request
     : public flx_driver_request_base, public demux::fileio_request
 {
     thread_wakeup   fw;
@@ -847,7 +864,7 @@ public:
 
 namespace flx { namespace faio {
 
-class FLX_RTL_EXTERN wflx_drv : public flx_drv {
+class FAIO_EXTERN wflx_drv : public flx_drv {
   demux::win_timer_queue sleepers;
 public:
   wflx_drv(flx::pthread::sleep_queue_t& q, int n1, int m1, int n2, int m2);
@@ -1069,7 +1086,7 @@ flxfileio_request::finished()
 @select(h)
 #ifndef __DWINIO__
 #define __DWINIO__
-#include <flx_rtl_config.hpp>
+#include <flx_faio_config.hpp>
 
 // visual studio is quite sensitve about how you do these includes.
 // THIS is the way (WinSock2.h must include Windows.h).
@@ -1087,7 +1104,7 @@ namespace flx { namespace faio {
 
 // a flx driver request to the add socket s to the drivers iocp
 // this is currently the only windows driver request that uses the demuxer.
-class FLX_RTL_EXTERN iocp_associator : public flx_driver_request_base {
+class FAIO_EXTERN iocp_associator : public flx_driver_request_base {
   SOCKET  s;
 public:
   // should have result & errcode
@@ -1100,7 +1117,7 @@ public:
 // flx <-> c++ stuff for async io (well, it was)
 
 // transition to new windows async control block
-class FLX_RTL_EXTERN waio_base : public flx_driver_request_base {
+class FAIO_EXTERN waio_base : public flx_driver_request_base {
 protected:
   thread_wakeup fw;
 public:
@@ -1117,7 +1134,7 @@ public:
 // listener socket must be already associated with an IOCP
 // in doing an AcceptEx, it might succeed immediately - do you still
 // get the IOCP wakeup?
-class FLX_RTL_EXTERN wasync_accept
+class FAIO_EXTERN wasync_accept
   : public waio_base, public demux::acceptex_control_block
 {
 public:
@@ -1131,7 +1148,7 @@ public:
     LPOVERLAPPED olp, int err);
 };
 
-class FLX_RTL_EXTERN connect_ex
+class FAIO_EXTERN connect_ex
   : public waio_base, public demux::connectex_control_block
 {
 public:
@@ -1148,7 +1165,7 @@ public:
 };
 
 // TransmitFile here (requires file handle)
-class FLX_RTL_EXTERN wasync_transmit_file
+class FAIO_EXTERN wasync_transmit_file
   : public waio_base, public demux::transmitfile_control_block
 {
 public:
@@ -1169,7 +1186,7 @@ public:
 };
 
 // handles both WSASend & WSARecv
-class FLX_RTL_EXTERN wsa_socketio
+class FAIO_EXTERN wsa_socketio
   : public waio_base, public demux::wsasocketio_control_block
 {
 public:
@@ -1186,7 +1203,7 @@ public:
 };
 
 // looks a bit like wsa_socketio (bad name, sends too)
-class FLX_RTL_EXTERN winfile_io
+class FAIO_EXTERN winfile_io
   : public waio_base, public demux::winfileio_control_block
 {
 public:

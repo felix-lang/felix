@@ -1,5 +1,9 @@
 @head(1,'pthread')
 $Log$
+Revision 1.9  2006/03/06 13:16:17  skaller
+Fix library builds so exports and imports are properly
+distinguished on a library by library basis.
+
 Revision 1.8  2006/03/06 03:28:52  skaller
 Win32 detached threads (same as joinable ones really)
 
@@ -110,6 +114,19 @@ dflags = EXTRA_SYS_LIBS
 sflags = EXTRA_SYS_LIBS
 pkg_requires = ['flx_rtl']
 iscr_source = ["lpsrc/flx_pthread.pak"]
+build_macro = "PTHREAD"
+
+@h=tangler('rtl/flx_pthread_config.hpp')
+@select(h)
+#ifndef __FLX_PTHREAD_CONFIG_GUARD__
+#define __FLX_PTHREAD_CONFIG_GUARD__
+#include "flx_rtl_config.hpp"
+#ifdef BUILD_PTHREAD
+#define PTHREAD_EXTERN FLX_EXPORT
+#else
+#define PTHREAD_EXTERN FLX_IMPORT
+#endif
+#endif
 
 @head(1,"Pre-emptive threads (pthread)")
 Note WE say pthread means 'pre-emptive thread' not
@@ -123,7 +140,7 @@ threads.
 @select(h)
 #ifndef __FLX_THREAD__
 #define __FLX_THREAD__
-#include <flx_rtl_config.hpp>
+#include <flx_pthread_config.hpp>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -146,7 +163,7 @@ namespace flx { namespace pthread {
 /// and joining of threads. It is not safe.
 // ********************************************************
 
-class FLX_RTL_EXTERN flx_detached_thread_t {
+class PTHREAD_EXTERN flx_detached_thread_t {
 #ifdef _WIN32
   HANDLE    thread;
 #else
@@ -164,7 +181,7 @@ public:
 #endif
 };
 
-class FLX_RTL_EXTERN flx_thread_t {
+class PTHREAD_EXTERN flx_thread_t {
 #ifdef _WIN32
   HANDLE    thread;
 #else
@@ -184,7 +201,7 @@ public:
 };
 
 /// RAII wrapper for thread class
-class FLX_RTL_EXTERN flx_thread_wrapper_t {
+class PTHREAD_EXTERN flx_thread_wrapper_t {
   flx_thread_t thread;
   flx_thread_wrapper_t(flx_thread_wrapper_t const&); // uncopyable
   void operator=(flx_thread_wrapper_t const&); // uncopyable
@@ -336,7 +353,7 @@ flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 // Note: no namespaces here!
 // See http://www.cs.wustl.edu/~schmidt/win32-cv-1.html
 
-#include "flx_rtl_config.hpp"
+#include "flx_pthread_config.hpp"
 #ifdef _WIN32
 #include <windows.h>
 
@@ -373,35 +390,35 @@ struct pthread_cond_t
 #define EAGAIN WAIT_TIMEOUT
 #endif
 
-int FLX_RTL_EXTERN pthread_mutex_init (pthread_mutex_t*, const pthread_mutexattr_t*);
-int FLX_RTL_EXTERN pthread_mutex_lock(pthread_mutex_t*);
-int FLX_RTL_EXTERN pthread_mutex_unlock(pthread_mutex_t*);
-int FLX_RTL_EXTERN pthread_mutex_destroy(pthread_mutex_t*);
+int PTHREAD_EXTERN pthread_mutex_init (pthread_mutex_t*, const pthread_mutexattr_t*);
+int PTHREAD_EXTERN pthread_mutex_lock(pthread_mutex_t*);
+int PTHREAD_EXTERN pthread_mutex_unlock(pthread_mutex_t*);
+int PTHREAD_EXTERN pthread_mutex_destroy(pthread_mutex_t*);
 
-int FLX_RTL_EXTERN pthread_cond_init (pthread_cond_t*, const pthread_condattr_t*);
-int FLX_RTL_EXTERN pthread_cond_destroy(pthread_cond_t*);
-int FLX_RTL_EXTERN pthread_cond_wait (pthread_cond_t*, pthread_mutex_t*);
-int FLX_RTL_EXTERN pthread_cond_timedwait(pthread_cond_t*, pthread_mutex_t*, struct timespec const*);
-int FLX_RTL_EXTERN pthread_cond_uswait(pthread_cond_t*, pthread_mutex_t*, unsigned long us);
-int FLX_RTL_EXTERN pthread_cond_signal (pthread_cond_t*); 
-int FLX_RTL_EXTERN pthread_cond_broadcast (pthread_cond_t*);
+int PTHREAD_EXTERN pthread_cond_init (pthread_cond_t*, const pthread_condattr_t*);
+int PTHREAD_EXTERN pthread_cond_destroy(pthread_cond_t*);
+int PTHREAD_EXTERN pthread_cond_wait (pthread_cond_t*, pthread_mutex_t*);
+int PTHREAD_EXTERN pthread_cond_timedwait(pthread_cond_t*, pthread_mutex_t*, struct timespec const*);
+int PTHREAD_EXTERN pthread_cond_uswait(pthread_cond_t*, pthread_mutex_t*, unsigned long us);
+int PTHREAD_EXTERN pthread_cond_signal (pthread_cond_t*); 
+int PTHREAD_EXTERN pthread_cond_broadcast (pthread_cond_t*);
 
 
 typedef HANDLE sem_t;
 
-int FLX_RTL_EXTERN sem_init(sem_t *sem, int pshared, unsigned int value);
-int FLX_RTL_EXTERN sem_wait(sem_t * sem);
-int FLX_RTL_EXTERN sem_trywait(sem_t * sem);
-int FLX_RTL_EXTERN sem_post(sem_t * sem);
-int FLX_RTL_EXTERN sem_getvalue(sem_t * sem, int * sval);
-int FLX_RTL_EXTERN sem_destroy(sem_t * sem);
+int PTHREAD_EXTERN sem_init(sem_t *sem, int pshared, unsigned int value);
+int PTHREAD_EXTERN sem_wait(sem_t * sem);
+int PTHREAD_EXTERN sem_trywait(sem_t * sem);
+int PTHREAD_EXTERN sem_post(sem_t * sem);
+int PTHREAD_EXTERN sem_getvalue(sem_t * sem, int * sval);
+int PTHREAD_EXTERN sem_destroy(sem_t * sem);
 
 #else
 #include <errno.h>
 #include <pthread.h>
 #include <semaphore.h>
 // emulate the native Window functionality
-int FLX_RTL_EXTERN pthread_cond_uswait( pthread_cond_t*, pthread_mutex_t*, unsigned long us);
+int PTHREAD_EXTERN pthread_cond_uswait( pthread_cond_t*, pthread_mutex_t*, unsigned long us);
 #endif
 #endif
 
@@ -684,7 +701,7 @@ int pthread_cond_uswait(
 @select(h)
 #ifndef __FLX_MUTEX__
 #define __FLX_MUTEX__
-#include "flx_rtl_config.hpp"
+#include "flx_pthread_config.hpp"
 
 #include "pthread_win_posix_condv_emul.hpp"
 
@@ -693,7 +710,7 @@ namespace flx { namespace pthread {
 // ********************************************************
 /// Mutex.
 // ********************************************************
-class FLX_RTL_EXTERN flx_mutex_t {
+class PTHREAD_EXTERN flx_mutex_t {
   flx_mutex_t(flx_mutex_t const&); // uncopyable
   void operator=(flx_mutex_t const&); // uncopyable
 public:
@@ -704,7 +721,7 @@ public:
   void unlock();
 };
 
-class FLX_RTL_EXTERN flx_mutex_locker_t {
+class PTHREAD_EXTERN flx_mutex_locker_t {
   flx_mutex_t* p;
   flx_mutex_locker_t(flx_mutex_locker_t const&); // uncopyable
   void operator=(flx_mutex_locker_t const&); // uncopyable
@@ -748,14 +765,14 @@ flx_mutex_locker_t::~flx_mutex_locker_t() { p->unlock(); }
 @select(h)
 #ifndef __COUNTER__
 #define __COUNTER__
-#include <flx_rtl_config.hpp>
+#include <flx_pthread_config.hpp>
 #include "pthread_mutex.hpp"
 namespace flx { namespace pthread {
 
 // ********************************************************
 /// Counter
 // ********************************************************
-class FLX_RTL_EXTERN flx_ts_counter_t {
+class PTHREAD_EXTERN flx_ts_counter_t {
   flx_mutex_t m;
   long x;
 public:
@@ -843,7 +860,7 @@ void flx_ts_counter_t::unlock() { m.unlock(); }
 @select(h)
 #ifndef __CONDV__
 #define __CONDV__
-#include <flx_rtl_config.hpp>
+#include <flx_pthread_config.hpp>
 #include "pthread_mutex.hpp"
 
 #include "pthread_win_posix_condv_emul.hpp"
@@ -853,7 +870,7 @@ namespace flx { namespace pthread {
 // ********************************************************
 /// Condition Variable.
 // ********************************************************
-class FLX_RTL_EXTERN flx_condv_t {
+class PTHREAD_EXTERN flx_condv_t {
 public:
   pthread_cond_t cv;        // be nice, don't touch
   flx_condv_t();
@@ -895,7 +912,7 @@ int flx_condv_t::timedwait(flx_mutex_t *m, timespec *t) {
 @select(h)
 #ifndef __SEMAPHORE__
 #define __SEMAPHORE__
-#include <flx_rtl_config.hpp>
+#include <flx_pthread_config.hpp>
 #include "pthread_mutex.hpp"
 
 #include "pthread_win_posix_condv_emul.hpp"
@@ -905,7 +922,7 @@ namespace flx { namespace pthread {
 // ********************************************************
 /// Semaphore
 // ********************************************************
-class FLX_RTL_EXTERN flx_semaphore_t {
+class PTHREAD_EXTERN flx_semaphore_t {
   sem_t sem;
 public:
   flx_semaphore_t(int n=0);
@@ -945,7 +962,7 @@ int flx_semaphore_t::get(){ int x; sem_getvalue(&sem,&x); return x; }
 @select(h)
 #ifndef __MONITOR__
 #define __MONITOR__
-#include <flx_rtl_config.hpp>
+#include <flx_pthread_config.hpp>
 #include "pthread_mutex.hpp"
 #include "pthread_condv.hpp"
 #include "pthread_semaphore.hpp"
@@ -972,7 +989,7 @@ namespace flx { namespace pthread {
 /// across an asynchronous boundary.
 // ********************************************************
 
-class FLX_RTL_EXTERN monitor_t {
+class PTHREAD_EXTERN monitor_t {
   flx_mutex_t member_lock; 
   flx_semaphore_t readers;
   flx_semaphore_t writers;
@@ -1035,7 +1052,7 @@ on a semaphore signaled by the enqueue operation.
 @select(h)
 #ifndef __SLEEPQUEUE__
 #define __SLEEPQUEUE__
-#include <flx_rtl_config.hpp>
+#include <flx_pthread_config.hpp>
 #include "pthread_mutex.hpp"
 #include "pthread_condv.hpp"
 
@@ -1058,7 +1075,7 @@ namespace flx { namespace pthread {
 /// and continues without waiting for the data to be read.
 // ********************************************************
 
-class FLX_RTL_EXTERN sleep_queue_t {
+class PTHREAD_EXTERN sleep_queue_t {
   flx_mutex_t member_lock; 
   flx_condv_t not_empty_cond; 
   flx_condv_t not_full_cond; 
@@ -1156,7 +1173,7 @@ The class is actually a thread plus a job queue.
 @select(h)
 #ifndef __WORKER_FIFO__
 #define __WORKER_FIFO__
-#include <flx_rtl_config.hpp>
+#include <flx_pthread_config.hpp>
 #include "pthread_thread.hpp"
 #include "pthread_mutex.hpp"
 #include "pthread_sleep_queue.hpp"
@@ -1164,7 +1181,7 @@ The class is actually a thread plus a job queue.
 namespace flx { namespace pthread {
 
 /// Class of jobs to be queued in fifo for execution.
-class FLX_RTL_EXTERN worker_task
+class PTHREAD_EXTERN worker_task
 {
 public:
   virtual ~worker_task() {}   // c++ should do this automatically
@@ -1178,7 +1195,7 @@ public:
 };
 
 /// Linear job scheduler, executes jobs in turn from queue
-class FLX_RTL_EXTERN worker_fifo
+class PTHREAD_EXTERN worker_fifo
 {
   sleep_queue_t fifo;
   int nthreads;                 /// scheduled number of threads
