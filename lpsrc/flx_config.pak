@@ -2099,12 +2099,8 @@ def xqt(x,print_on_error=0,print_cmd=0,print_output=0):
  xxqt(x,print_cmd,print_on_error)
 
 def mkdirs(x):
-  cps = string.split(x,os.sep)
-  path = ""
-  for d in cps:
-    path = path + d + os.sep
-    try: os.mkdir(path)
-    except: pass
+  if not os.path.exists(x):
+    os.makedirs(x)
 
 #----------------------------------------
 time_stamp_format = "%Y/%m/%d %H:%M:%S UTC"
@@ -2115,27 +2111,13 @@ class Error: pass
 this = globals()
 
 # make doc directories to stop 'cp' complaining
-try: os.mkdir("config")
-except: pass
-
-try: os.mkdir("doc")
-except: pass
-
-try: os.mkdir("impldoc")
-except: pass
-
-try: os.mkdir("tut")
-except: pass
-
-try: os.mkdir("man")
-except: pass
-
-try: os.mkdir("htmlman")
-except: pass
-
-try: os.mkdir("tut"+os.sep+"doc")
-except: pass
-
+mkdirs("config")
+mkdirs("doc")
+mkdirs("impldoc")
+mkdirs("tut")
+mkdirs("man")
+mkdirs("htmlman")
+mkdirs("tut"+os.sep+"doc")
  
 quiet = 0
 force = 0
@@ -2569,8 +2551,7 @@ print 'godi_revision',godi_revision
 print 'debian_revision',debian_revision
 
 try:
-  try: os.mkdir("config")
-  except: pass
+  mkdirs("config")
 
   print "Writing main config file"
   f = open("config"+os.sep+"config.py","w")
