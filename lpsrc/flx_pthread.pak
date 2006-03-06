@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.6  2006/03/06 01:29:29  skaller
+spawn_pthread: init works
+
 Revision 1.5  2006/03/05 07:52:41  skaller
 Add detached threads, to be used for job queues.
 
@@ -41,6 +44,7 @@ PTHREADRTL_INTERFACES = [
  'pthread/pthread_thread.hpp',        # portable
  'pthread/pthread_win_posix_condv_emul.hpp',         # win32 and posiz
  'pthread/pthread_mutex.hpp',         # portable
+ 'pthread/pthread_counter.hpp',       # portable
  'pthread/pthread_condv.hpp',         # portable
  'pthread/pthread_semaphore.hpp',     # portable
  'pthread/pthread_monitor.hpp',       # portable
@@ -714,6 +718,48 @@ flx_mutex_locker_t::~flx_mutex_locker_t() { p->unlock(); }
 
 }}
 
+@head(1,"Counter")
+@h=tangler('pthread/pthread_counter.hpp')
+@select(h)
+#ifndef __COUNTER__
+#define __COUNTER__
+#include <flx_rtl_config.hpp>
+#include "pthread_mutex.hpp"
+namespace flx { namespace pthread {
+
+// ********************************************************
+/// Counter
+// ********************************************************
+class FLX_RTL_EXTERN flx_ts_counter_t {
+  flx_mutex_t m;
+  long int x;
+public:
+  void incr();
+  void decr();
+  long get();
+};
+
+#endif
+
+@h=tangler('pthread/pthread_counter.cpp')
+@select(h)
+flx_ts_counter_t::flx_ts_counter_t() : x(0) {}
+
+void flx_ts_counter_t::incr() {
+  flx_mutex_locker_t l(&m);
+  ++x;
+}
+
+void flx_ts_counter_t::decr() {
+  flx_mutex_locker_t l(&m);
+  --x;
+}
+
+void flx_ts_counter_t::get() {
+  flx_mutex_locker_t l(&m);
+  return x;
+}
+
 @head(1,"Condition Variable")
 @head(2,'Portable Condition Variable')
 @h=tangler('pthread/pthread_condv.hpp')
@@ -1057,26 +1103,20 @@ public:
 /// Linear job scheduler, executes jobs in turn from queue
 class FLX_RTL_EXTERN worker_fifo
 {
-  // this thread is destructed very carefully to make sure that all
-  // the objects in this class outlive its execution.
-  flx_thread_t  thread;
   sleep_queue_t fifo;
+  int nthreads;                 /// scheduled number of threads
 
   static void* thread_start(void*); // thread entry point, passed this
   bool thread_loop_body();      // returns keep going flag
+  void stop_worker_thread();
+  void start_worker_thread();
 
 public:
-  worker_fifo(int n);
+  worker_fifo(int n, int m);   /// n: Q bound, m: # of threads
   ~worker_fifo();
-
-  /// method used by client to schedule jobs
-  /// for this worker thread
-  void add_worker_task(worker_task* task);  // also re-entrant
-
-  // those deriving from this class might like to stop the
-  // thread in their destructors, so that their objects used
-  // by the worker thread can outlive it
-  void stop_worker_thread();
+  void add_worker_task(worker_task* task);
+  int get_nthreads()const;
+  void set_nthreads(int);
 };
 
 }} // namespace pthread, flx
@@ -1088,60 +1128,43 @@ public:
 #include "pthread_work_fifo.hpp"
 namespace flx { namespace pthread {
 
-// a fifo of tasks & a thread (threads?) to serve them.
-// users overload finished function to implement wakeup
+int worker_fifo::get_nthreads()const { return nthreads; }
 
-worker_fifo::worker_fifo(int n) : fifo(n)
+void worker_fifo::set_nthreads(int n)
 {
-  //fprintf(stderr,"async worker fifo io module constructor\n");
-  // fifo already inited and ready to go, so get pthread going
+  while(nthreads<n) start_worker_thread();
+  while(nthreads>n) stop_worker_thread();
+}
+
+void worker_fifo::start_worker_thread()
+{
+  ++nthreads;
+  fprintf(stderr,"Spawn detached worker thread, count=%d\n",nthreads);
 #ifdef _WIN32
-  int res = thread.init((LPTHREAD_START_ROUTINE)thread_start, this);
+  flx_detached_thread().init((LPTHREAD_START_ROUTINE)thread_start, this);
 #else
-  int res = thread.init(thread_start, this);
-#endif
-
-  if(0 != res) throw res;
-
-// do it properly or not at all
-#if 0
-  fprintf(stderr,"hey, trying multi threads here (leakingly)\n");
-  for(int i = 1; i < 1; i++)
-  {
-    fprintf(stderr,"extra io thread\n");
-    flx_thread_t* pt = new flx_thread_t;
-    res = pt->init(thread_start, this);
-    if(0 != res) throw res;
-  }
+  flx_detached_thread_t().init(thread_start, this);
 #endif
 }
 
-// To get rid of thread cancel we could have a simple finished flag
-// that's set by the class and set by the thread. Since both are executed
-// synchronously w.r.t the same thread, we wouldn't need to protect anything
-// that won't work if we have multiple worker threads, however.
+worker_fifo::worker_fifo(int n, int m) : fifo(n), nthreads(0)
+{
+  set_nthreads(m);
+}
 
-// better idea - add a null task to front of queue to mean quit. queue
-// is already threadsafe. If there are n worker threads, add n nulls.
-
-// stopping the worker thread turns out to be trickier than it sounds
-// because it's hard to wake up on an empty queue. 
 void
 worker_fifo::stop_worker_thread()
 {
+  fprintf(stderr,"Kill detached worker thread, count=%d\n",nthreads);
+  --nthreads;
   add_worker_task(NULL);    // thread safe takedown.
-                // for n worker threads add n times
-  thread.join();      // join waits for thread to exit.
-                // which should happen eventually
 }
 
 worker_fifo::~worker_fifo()
 {
-  // the thread must be brought down before the objects it
-  // uses are destructed. lets hope anyone deriving from this
-  // class knows that and let them call this function in their
-  // destructor.
-  stop_worker_thread();
+  while(nthreads>1)stop_worker_thread();
+  fifo.resize(1);       // force wait for last thread to exit
+  stop_worker_thread(); // cannot exit until the queue is empty
 }
 
 // io thread entry point, passed this
@@ -1149,14 +1172,11 @@ void*
 worker_fifo::thread_start(void* udat)
 { 
   worker_fifo*  fio = (worker_fifo*)udat;
-  fprintf(stderr,"worker_fifo thread started! this=%p\n", fio);
-
   while(fio->thread_loop_body()) ;
-
   return 0;             // return status.
 }
 
-// dequeues one task and executes it, calling finished hook. interprest
+// dequeues one task and executes it, calling finished hook. interprets
 // null task as a request to exit.
 bool
 worker_fifo::thread_loop_body()

@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.6  2006/03/06 01:29:29  skaller
+spawn_pthread: init works
+
 Revision 1.5  2006/02/28 02:07:13  skaller
 Refactor demux into demux + pthread.
 
@@ -603,7 +606,10 @@ class FLX_RTL_EXTERN flx_drv {
     flx::pthread::sleep_queue_t&    ready_queue;
     flx::pthread::worker_fifo     work_fifo;
 public:
-    flx_drv(flx::pthread::sleep_queue_t& q, int n);
+    flx_drv(
+      flx::pthread::sleep_queue_t& q, 
+      int qbound, int nthreads
+    );
     virtual ~flx_drv();
 
     void sched(void* f);
@@ -638,8 +644,8 @@ public:
 
 using namespace flx::demux;
 namespace flx { namespace faio {
-flx_drv::flx_drv(flx::pthread::sleep_queue_t& q, int n)
-    : ready_queue(q), work_fifo(n)
+flx_drv::flx_drv(flx::pthread::sleep_queue_t& q, int jobqbound, int nthreads)
+    : ready_queue(q), work_fifo(jobqbound,nthreads)
 {   
 }
 
@@ -668,14 +674,10 @@ namespace flx { namespace faio {
 
 // same as flx_drv, but with an async file io worker fifo.
 class FLX_RTL_EXTERN pflx_drv : public flx_drv {
-    // this will be called asynchronously, so better be careful
-//  pasync_fileio*  file_aio_worker;
-    // make it direct so we don't have to protect the code that would
-    // create the pointer. This is a bit heavy, I would prefer on demand.
     demux::pasync_fileio       file_aio_worker;
     demux::posix_timer_queue   sleepers;
 public:
-    pflx_drv(flx::pthread::sleep_queue_t& q, int n);
+    pflx_drv(flx::pthread::sleep_queue_t& q, int n1, int m2, int n2, int m2);
 
     demux::pasync_fileio* get_aio_worker() { return &file_aio_worker; }
     demux::timer_queue* get_sleepers() { return &sleepers; }
@@ -695,9 +697,13 @@ using namespace flx::demux;
 namespace flx { namespace faio {
 
 // what is this stuff?? 3 queues needed?
+// YUP! The job queue schedules jobs, the demux queue
+// gets the return events, and the sleep queue is to
+// put woken up felix threads on so they end up later
+// in the active queue (that's a fourth queue .. :))
 
-pflx_drv::pflx_drv(flx::pthread::sleep_queue_t& q, int n)
-    : flx_drv(q,n), file_aio_worker(n)
+pflx_drv::pflx_drv(flx::pthread::sleep_queue_t& q, int n1, int m1, int n2, int m2)
+    : flx_drv(q,n1,m1), file_aio_worker(n2,m2)
 {
     // we might actually like to ignore SIGPIPE's conditionally,
     // e.g. when a flx prog actually requests socket io, we could even
@@ -844,9 +850,7 @@ namespace flx { namespace faio {
 class FLX_RTL_EXTERN wflx_drv : public flx_drv {
   demux::win_timer_queue sleepers;
 public:
-  // visual studio seems to demand that I have the constructor defined in a cpp
-  // file. the file previously had none, which gave me weird link errors.
-  wflx_drv(flx::pthread::sleep_queue_t& q, int n);
+  wflx_drv(flx::pthread::sleep_queue_t& q, int n1, int m1, int n2, int m2);
 
   demux::timer_queue* get_sleepers() { return &sleepers; }
 };
@@ -864,7 +868,7 @@ public:
 namespace flx { namespace faio {
 
   // vs requirement that I have a cpp file?
-  wflx_drv::wflx_drv(flx::pthread::sleep_queue_t& q,int n) : flx_drv(q,n) {}
+  wflx_drv::wflx_drv(flx::pthread::sleep_queue_t& q,int n1,int m1,int n2, int m2) : flx_drv(q,n1,m1,n2,m2) {}
 
 }}
 

@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.14  2006/03/06 01:29:29  skaller
+spawn_pthread: init works
+
 Revision 1.13  2006/03/05 07:52:41  skaller
 Add detached threads, to be used for job queues.
 
@@ -857,8 +860,8 @@ enum svc_t               // what the dispatch should do
   svc_get_fthread=1,
   svc_read=2,
   svc_general=3,         // temporary hack by RF
-  svc_map_driver_requests=4,
-  svc_driver_request=5,
+  svc_reserved=4,
+  svc_spawn_pthread=5,
   svc_spawn_detached=6,
   svc_sread=7,           // synchronous read
   svc_swrite=8,          // synchronous write
@@ -873,23 +876,6 @@ struct readreq_t {
   schannel_t *chan;
   _ref_ variable;
 };
-
-// ********************************************************
-/// driver request entry.
-// ********************************************************
-
-struct driver_request_entry_t
-{
-  char const* name; ///< string name
-  int handle;       ///< integer handle
-};
-
-extern void FLX_RTL_EXTERN map_driver_requests
-(
-  driver_request_entry_t *provided, 
-  driver_request_entry_t *requested
-);
-
 
 }} // namespaces
 
@@ -1522,25 +1508,6 @@ flx_assert_failure_t::flx_assert_failure_t(flx_range_srcref_t ff, char *cf, int 
    flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
 flx_assert_failure_t::~flx_assert_failure_t(){}
 flx_switch_failure_t::~flx_switch_failure_t(){}
-
-// ********************************************************
-// Utility for mapping driver requests
-// ********************************************************
-
-void map_driver_requests
-(
-  driver_request_entry_t *provided, 
-  driver_request_entry_t *requested
-){
-  driver_request_entry_t *r = requested;
-  char const *rname;
-  while((rname = r->name)) 
-  {
-    driver_request_entry_t *p = provided;
-    while(p->name && strcmp(rname,p->name)) ++p;
-    r++->handle = p->handle;
-  }
-}
 
 }}
 
@@ -2262,7 +2229,14 @@ public:
   virtual ~async_hooker();
 };
 
-async_hooker *create_async_hooker();
+async_hooker *
+create_async_hooker(
+  int n0,   // bound on resumable thread queue
+  int n1,   // bound on general input job queue
+  int m1,   // number of threads in job pool
+  int n2,   // bound on async fileio job queue
+  int m2    // number of threads doing async fileio
+);
 
 #endif
 
@@ -2313,8 +2287,8 @@ public:
 
 #include "faio_asyncio.hpp"
 
-async_hooker::~async_hooker(){}
-async_hooker_impl::~async_hooker_impl(){}
+async_hooker::~async_hooker(){ fprintf(stderr,"Deleted sync_hooker\n"); }
+async_hooker_impl::~async_hooker_impl(){ fprintf(stderr,"Deleted sync_hooker_impl\n"); }
 
 bool async_hooker_impl::handle_request(void *data,fthread_t *ft)
 {
@@ -2340,6 +2314,7 @@ class proto_async : public async_hooker_impl
 
     sleep_queue_t async_active;
     flx_thread_t ethread;
+
 #ifdef _WIN32
     wflx_drv driver;
     static DWORD pthread_thread(LPVOID udat);
@@ -2347,8 +2322,11 @@ class proto_async : public async_hooker_impl
     pflx_drv driver;
     static void* pthread_thread(void* udat);
 #endif
+
 public:
-   proto_async() : async_active(20000), driver(async_active,20000) {
+   proto_async(int n0, int n1, int m1, int n2, int m2) : 
+     async_active(n0), driver(async_active,n1,m1,n2,m2) 
+   {
      // start waiting thread
 #if _WIN32
      // cast callback to itself. go figure.
@@ -2358,6 +2336,7 @@ public:
 #endif
    }
 
+  ~proto_async(){ fprintf(stderr,"Deleted proto async\n"); }
   flx_drv *get_driver() { return &driver; }
   demuxer *get_demuxer(){ return &demux; }
   fthread_t* dequeue() 
@@ -2383,8 +2362,8 @@ proto_async::pthread_thread(void* udat)
     return 0;
 }
 
-async_hooker *create_async_hooker() {
-  return new proto_async;
+async_hooker *create_async_hooker(int n0,int n1,int m1,int n2,int m2) {
+  return new proto_async(n0,n1,m1,n2,m2);
 }
 
 @h = tangler('rtl/flx_run.cxx','cpp')
@@ -2406,6 +2385,7 @@ async_hooker *create_async_hooker() {
 #include "flx_ts_collector.hpp"
 #include "flx_dynlink.hpp"
 #include "flx_sync.hpp"
+#include "pthread_thread.hpp"
 
 using namespace std;
 using namespace flx::rtl;
@@ -2434,80 +2414,72 @@ void print_loc(FILE *ef,flx_range_srcref_t x,char *cf, int cl)
   fprintf(ef,"C++ location  : %s %d\n", cf, cl);
 }
 
-enum {
-  dreq_error = 0,
-  dreq_get_driver_name = 1,
-  dreq_exit= 2
-};
-  
-static struct driver_request_entry_t flx_run_services[]=
+struct doflx_data 
 {
-  {"get_driver_name",dreq_get_driver_name},
-  {"exit",dreq_exit},
-  {NULL,0}
+  bool debug_driver;
+  gc_profile_t *gcp;
+  std::list<fthread_t*> *active;
+  doflx_data(bool d, gc_profile_t *g, std::list<fthread_t*> *a)
+   : debug_driver(d), gcp(g), active(a) {}
 };
-  
 
-// RUN A FELIX INSTANCE IN THE CURRENT PTHREAD
+void *doflx (void *data) {
+  doflx_data *d = (doflx_data*)data;
+  bool debug_driver = d->debug_driver;
+  gc_profile_t *gcp = d-> gcp;
+  std::list<fthread_t*> *active = d->active;
+  delete d;
 
-int run_felix_pthread(
-  bool debug_driver, 
-  gc_profile_t *gcp,
-  flx_dynlink_t *library,
-  flx_libinit_t *instance
-)
-{    
-   flx::gc::generic::collector_t *collector = gcp->collector;
-   std::list<fthread_t*> active;
-
-#ifdef _WIN32
-  // needed to perform win socket io (calls WSAInit). Must happen
-  // before iocp_demuxer is instantiated and (I assume) happen
-  // only once.
-  winsock_initer wsinit;
-#endif
+  sync_state_t ss(debug_driver, gcp, active);
 
   unsigned long async_count = 0;
   async_hooker* async = NULL;
 
-  {
-    con_t *top = instance->start_proc;
-    fthread_t *ft = new (*collector,_fthread_ptr_map) fthread_t(top);
-    collector->add_root(ft);
-    active.push_front(ft);
-  }
-
-  fthread_t *flx_main = NULL;
-  {
-    con_t *top = instance->main_proc;
-    if(top)
-    {
-      flx_main = new (*collector,_fthread_ptr_map) fthread_t(top);
-      collector->add_root(flx_main);
-    }
-  }
-
-  sync_state_t ss(debug_driver, gcp, &active);
-
 process_active:
   if(debug_driver)
     fprintf(stderr,"Process active ..");
+
   if(debug_driver)
-    fprintf(stderr,"Before running: Sync state is %s/%s\n",get_fstate_desc(ss.fs),get_fpc_desc(ss.pc));
+    fprintf(stderr,"Before running: Sync state is %s/%s\n",
+      get_fstate_desc(ss.fs),get_fpc_desc(ss.pc));
+
   ss.frun();
+
   if(debug_driver)
-    fprintf(stderr,"After running: Sync state is %s/%s\n",get_fstate_desc(ss.fs),get_fpc_desc(ss.pc));
+    fprintf(stderr,"After running: Sync state is %s/%s\n",
+      get_fstate_desc(ss.fs),get_fpc_desc(ss.pc));
 
   if (ss.fs == terminated) goto cleanup;
   if (ss.fs == blocked) goto do_async;
+
   if (ss.fs == delegated) 
   switch (ss.request->variant)
   {
+    case svc_spawn_pthread:
+    {
+      fthread_t *ftx = *(fthread_t**)ss.request->data;
+      if(debug_driver)fprintf(stderr,"Spawn pthread %p\n",ftx);
+      gcp->collector->add_root(ftx);
+      std::list<fthread_t*> *pactive =new std::list<fthread_t*>;
+      pactive->push_front(ftx);
+      void *data = new doflx_data(debug_driver, gcp, pactive);
+      flx_detached_thread_t dummy;
+      fprintf(stderr,"Starting new pthread\n");
+      dummy.init(doflx,data);
+    }
+    goto process_active;
+
     case svc_general:
     {
       if(debug_driver)
         fprintf(stderr,"svc_general from fthread=%p\n",ss.ft);
-      if( !async ) async = create_async_hooker();
+      if( !async ) async = create_async_hooker(
+          20000, // bound on resumable thread queue
+          50,    // bound on general input job queue
+          2,     // number of threads in job pool
+          50,    // bound on async fileio job queue
+          1      // number of threads doing async fileio
+       );
 
       ++async_count;
       void *dreq =  (((_ref_*)(ss.request->data))->get_data());
@@ -2526,38 +2498,6 @@ process_active:
     }
     goto process_active;
 
-    case svc_map_driver_requests:
-    {
-      map_driver_requests(
-        flx_run_services, 
-        *(driver_request_entry_t**)ss.request->data
-      );
-      ss.pc = next_request_pos;
-    }
-    goto process_active;
-
-    case svc_driver_request:
-    {
-      _uctor_ dreq = *(_uctor_*)ss.request->data;
-      if(debug_driver)fprintf(stderr,"Request code %d \n",dreq.variant);
-      switch (dreq.variant)
-      {
-        case dreq_get_driver_name:
-        {
-          *(char **)dreq.data = "flx_run";
-          ss.pc = next_request_pos;
-        }
-
-        case dreq_exit:
-          goto cleanup;
-
-        default:
-          fprintf(stderr,"Unknown driver reqest code %d, terminating\n",dreq.variant);
-          goto cleanup;
-      }
-    }
-    goto process_active;
-
     default:
       fprintf(stderr,"Unknown service request code 0x%4x\n",ss.request->variant);
       abort();
@@ -2566,15 +2506,6 @@ process_active:
   abort();
 
 do_async:
-  // ran out of active threads - start mainline now?
-  if(flx_main) // conspire to only do this once
-  {
-    active.push_front(flx_main);
-    ss.pc = next_fthread_pos;
-    flx_main = NULL;
-    goto process_active;
-  }
-
   // ran out of active threads - are there any in the async queue?
   if(debug_driver){
     fprintf(stderr, "out of active synchronous threads, trying async, count=%ld\n",async_count);
@@ -2585,14 +2516,59 @@ do_async:
     fthread_t* ftp = async->dequeue();
     if(debug_driver)
       fprintf(stderr,"Async Retrieving fthread %p\n",ftp);
-    active.push_front(ftp);
+    active->push_front(ftp);
     --async_count;
     ss.pc = next_fthread_pos;
     goto process_active;
   }
 
-  if(debug_driver)fprintf(stderr,"Out of active threads\n");
+  if(debug_driver)fprintf(stderr,"Out of jobs\n");
 cleanup:
+  if(debug_driver)fprintf(stderr,"Terminating Felix subsystem\n");
+  delete async;
+  delete active;
+  return NULL;
+}
+
+// RUN A FELIX INSTANCE IN THE CURRENT PTHREAD
+
+int run_felix_pthread(
+  bool debug_driver, 
+  gc_profile_t *gcp,
+  flx_dynlink_t *library,
+  flx_libinit_t *instance
+)
+{    
+   flx::gc::generic::collector_t *collector = gcp->collector;
+   std::list<fthread_t*> *active =new std::list<fthread_t*>;
+
+#ifdef _WIN32
+  // needed to perform win socket io (calls WSAInit). Must happen
+  // before iocp_demuxer is instantiated and (I assume) happen
+  // only once.
+  winsock_initer wsinit;
+#endif
+
+  fthread_t *flx_main = NULL;
+  {
+    con_t *top = instance->main_proc;
+    if(top)
+    {
+      flx_main = new (*collector,_fthread_ptr_map) fthread_t(top);
+      collector->add_root(flx_main);
+      active->push_front(flx_main);
+    }
+  }
+
+  {
+    con_t *top = instance->start_proc;
+    fthread_t *ft = new (*collector,_fthread_ptr_map) fthread_t(top);
+    collector->add_root(ft);
+    active->push_front(ft);
+  }
+
+  doflx(new doflx_data(debug_driver, gcp, active)); // deletes active for us!
+
   if(debug_driver){
     unsigned long uncollected = collector->get_allocation_count();
     unsigned long roots = collector->get_root_count();

@@ -1434,23 +1434,14 @@ module Control
   proc throw(x: unit->void) { _throw (C_hack::cast[cont] x); }
   private proc _throw: cont = "throw $1;";
 
-  cstruct driver_request_entry_t
-  {
-    name: charp; // string name
-    handle: int; // integer handle
-  };
-
-  typedef driver_request_table_t = ptr[driver_request_entry_t];
-  
-  publish "Supervisor calls"
   // THESE VALUES MUST SYNC WITH THE RTL
   union svc_req_t =
   /*0*/ | svc_yield                          
   /*1*/ | svc_get_fthread         of ptr[fthread] 
   /*2*/ | svc_read                of address              
   /*3*/ | svc_general             of &address          
-  /*4*/ | svc_map_driver_requests of ptr[driver_request_table_t]
-  /*5*/ | svc_driver_request      of int * address
+  /*4*/ | svc_reserved1
+  /*5*/ | svc_spawn_pthread       of fthread
   /*6*/ | svc_spawn_detached      of fthread
   /*7*/ | svc_sread               of _schannel * &gcaddress
   /*8*/ | svc_swrite              of _schannel * &gcaddress
@@ -1511,6 +1502,13 @@ module Control
       var con = start p;              // get continuation of p
       var fthr = mk_thread con;
       svc$ svc_spawn_detached fthr;
+  }
+
+  proc spawn_pthread(p:1->0)
+  {
+      var con = start p;              // get continuation of p
+      var fthr = mk_thread con;
+      svc$ svc_spawn_pthread fthr;
   }
 
   publish "Resume a continuation until it yields"

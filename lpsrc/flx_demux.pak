@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.13  2006/03/06 01:29:29  skaller
+spawn_pthread: init works
+
 Revision 1.12  2006/03/04 09:50:42  rfistman
 added "suck it and see" for kqueues.
 
@@ -458,7 +461,7 @@ public:
 class FLX_RTL_EXTERN pasync_fileio : public flx::pthread::worker_fifo
 {
 public:
-  pasync_fileio(int n) : worker_fifo(n) {}
+  pasync_fileio(int n,int m) : worker_fifo(n,m) {}
   // compatibility only. don't need this class anymore.
   void add_fileio_request(fileio_request* req) { add_worker_task(req); } 
 };
