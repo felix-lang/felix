@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.16  2006/03/06 06:30:18  idadesub
+added a forward declaration of do_final_cleanup, and fixed arguments being
+passed in the wrong order
+
 Revision 1.15  2006/03/06 03:28:52  skaller
 Win32 detached threads (same as joinable ones really)
 
@@ -2405,6 +2409,13 @@ static void *sp = 0;
 #endif
 #endif
 
+int do_final_cleanup(
+  bool debug_driver, 
+  gc_profile_t *gcp,
+  flx_dynlink_t *library,
+  flx_libinit_t *instance
+);
+
 void print_loc(FILE *ef,flx_range_srcref_t x,char *cf, int cl)
 {
   fprintf(ef,"Felix location: %s %d[%d]-%d[%d]\n",
@@ -2581,7 +2592,7 @@ int run_felix_pthread(
   }
 
   if(gcp->finalise)
-    do_final_cleanup(debug_driver, gcp, instance, library);
+    do_final_cleanup(debug_driver, gcp, library, instance);
   return 0;
 }
 
