@@ -364,14 +364,14 @@ class ocaml:
       self.OCAMLLEX = 'ocamllex.opt '
       self.OCAMLYACC = 'ocamlyacc '
       self.NATIVE_CODE_COMPILER = 1
-    except:
+    except MakeError:
       try: # check if the client has unbootstrapped native code compiler
         shell('ocamlopt')
         self.OCAMLCC = 'ocamlopt '
         self.OCAMLLEX = 'ocamllex '
         self.OCAMLYACC = 'ocamlyacc '
         self.NATIVE_CODE_COMPILER = 1
-      except:
+      except MakeError:
         self.NATIVE_CODE_COMPILER = 0
         try: # check if the client has ocaml at all ..
           shell('ocamlc')
@@ -379,7 +379,7 @@ class ocaml:
           self.OCAMLLEX = 'ocamllex '
           self.OCAMLYACC = 'ocamlyacc '
           self.OCAMLDOC = 'ocamldoc '
-        except:
+        except MakeError:
           print "WARNING: CANT FIND OCAML TOOLS (ocamlc, ocamllex, ocamlyacc)"
           self.OCAMLCC = '#ocamlc '
           self.OCAMLLEX = '#ocamllex '
@@ -388,22 +388,22 @@ class ocaml:
     try: # check if there is a native code version of the bytecode compiler
       shell('ocamlc.opt')
       self.OCAMLB = 'ocamlc.opt '
-    except:
+    except MakeError:
       try: # check if the client has ocaml at all
         shell('ocamlc')
         self.OCAMLB = 'ocamlc '
-      except:
+      except MakeError:
         print "WARNING: CANT FIND OCAML TOOL 'ocamlc'"
         self.OCAMLB = '#ocamlc '
 
     try:
       shell('ocamldoc.opt')
       self.OCAMLDOC = 'ocamldoc.opt '
-    except:
+    except MakeError:
       try:
         shell('ocamldoc')
         self.OCAMLDOC = 'ocamldoc '
-      except:
+      except MakeError:
         print "WARNING: CANT FIND OCAML TOOL 'ocamldoc'"
         self.OCAMLDOC = '#ocamldoc '
 
@@ -445,14 +445,17 @@ class ocaml:
     warn=' -w yzex -warn-error FDPSU '
     try:
       f = open('tmp'+os.sep+'camldummy.ml','w')
-      f.write('print_endline "OK";;\n')
-      f.close()
+      try:
+        f.write('print_endline "OK";;\n')
+      finally:
+        f.close()
+    except (IOError, OSError):
+      pass
+    else:
       result,x = get_stdout(self.OCAMLC + warn+'tmp'+os.sep+'camldummy.ml')
       if not result:
         self.OCAMLB = self.OCAMLB + warn
         self.OCAMLC = self.OCAMLC + warn
-    except:
-      pass
     
   def report_config(self):
     print

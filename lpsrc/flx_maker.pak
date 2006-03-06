@@ -6,6 +6,13 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.18  2006/03/06 18:33:11  idadesub
+I'm not positive I'm making the right assumptions here, but it looks
+like this block of code with naked excepts can be turned into catching
+MakeError as long as xqt reraises IOError and OSError as a MakeError.
+However, if we can't assume that xqt will always be used as the shell in
+autodetect, we may need to find an alternative to just catching MakeError
+
 Revision 1.17  2006/03/06 13:16:16  skaller
 Fix library builds so exports and imports are properly
 distinguished on a library by library basis.
@@ -1659,7 +1666,12 @@ def run(x):
 def xqt(x):
   if "quiet" not in options: print x
   flush()
-  result,output = get_stdouterr(x)
+
+  try:
+    result,output = get_stdouterr(x)
+  except (IOError, OSError):
+    raise MakeError
+
   if result: 
     if "quiet" in options: print x
     print "  .. ERROR CODE",hex(result)
