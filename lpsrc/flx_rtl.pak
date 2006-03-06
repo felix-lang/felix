@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.15  2006/03/06 03:28:52  skaller
+Win32 detached threads (same as joinable ones really)
+
 Revision 1.14  2006/03/06 01:29:29  skaller
 spawn_pthread: init works
 
@@ -2578,19 +2581,45 @@ int run_felix_pthread(
   }
 
   if(gcp->finalise)
-  {
-    {
-      if(debug_driver || gcp->debug_collections)
-        fprintf(stderr,"Finalisation: pass 1 Data collection starts ..\n");
-      unsigned long n = collector->collect();
-      unsigned long a = collector->get_allocation_count();
-      if(debug_driver || gcp->debug_collections)
-        fprintf(stderr,"flx_run collected %ld objects, %ld left\n",n,a);
-    }
-    if(debug_driver)
-      fprintf(stderr,"Destroying program instance\n");
-    instance->destroy();
+    do_final_cleanup(debug_driver, gcp, instance, library);
+  return 0;
+}
 
+// terminates process! 
+// Not called by default (let the OS clean up)
+// 
+// NEEDS TO BE SPLIT UP so that destroying
+// a program instance is separated from unloading
+// the library
+
+int do_final_cleanup(
+  bool debug_driver, 
+  gc_profile_t *gcp,
+  flx_dynlink_t *library,
+  flx_libinit_t *instance
+)
+{
+  flx::gc::generic::collector_t *collector = gcp->collector;
+
+  // garbage collect application objects
+  {
+    if(debug_driver || gcp->debug_collections)
+      fprintf(stderr,"Finalisation: pass 1 Data collection starts ..\n");
+    unsigned long n = collector->collect();
+    unsigned long a = collector->get_allocation_count();
+    if(debug_driver || gcp->debug_collections)
+      fprintf(stderr,"flx_run collected %ld objects, %ld left\n",n,a);
+  }
+
+  // Destroy program instance/ thread frame object
+
+  if(debug_driver)
+    fprintf(stderr,"Destroying program instance\n");
+  instance->destroy();
+
+  // garbage collect system objects
+
+  {
     if(debug_driver || gcp->debug_collections)
       fprintf(stderr,"Finalisation: pass 2 Final collection starts ..\n");
     unsigned long n = collector->collect();
@@ -2601,17 +2630,22 @@ int run_felix_pthread(
       fprintf(stderr,"flx_run %ld uncollected objects, should be zero!!\n",a);
       return 5;
     }
-    if(debug_driver)
-      fprintf(stderr,"Libref cnt = %ld\n",library->refcnt);
-    if(library->refcnt >0)
-    {
-      if(debug_driver)
-        fprintf(stderr,"flx_run %p library still referenced %ld times\n",library->library,library->refcnt);
-    }
-    if(debug_driver)
-      fprintf(stderr,"Unlinking library ..\n");
-    library->unlink();
   }
+
+  // dump the DLL
+
+  if(debug_driver)
+    fprintf(stderr,"Libref cnt = %ld\n",library->refcnt);
+  if(library->refcnt >0)
+  {
+    if(debug_driver)
+      fprintf(stderr,"flx_run %p library still referenced %ld times\n",
+        library->library,library->refcnt
+      );
+  }
+  if(debug_driver)
+    fprintf(stderr,"Unlinking library ..\n");
+  library->unlink();
   return 0;
 }
 
@@ -2643,6 +2677,7 @@ int run_felix(
       fprintf(stderr,"main continuation at %p\n",instance.main_proc);
     } 
     run_felix_pthread(debug_driver,gcp,&library,&instance);
+
     if(gcp->finalise)
     {
       if(library.refcnt >0)

@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.8  2006/03/06 03:28:52  skaller
+Win32 detached threads (same as joinable ones really)
+
 Revision 1.7  2006/03/06 03:20:11  rfistman
 fixed typo in win32 stuff
 
@@ -259,6 +262,24 @@ flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 
 namespace flx { namespace pthread {
 
+// ---- detached threads ----------
+
+flx_detached_thread_t::flx_detached_thread_t(flx_detached_thread_t const&){} // uncopyable
+void flx_detached_thread_t::operator=(flx_detached_thread_t const&){} // uncopyable
+
+// returns -1 on failure with error in GetLastError, 0 if all good.
+int 
+flx_detached_thread_t::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
+{
+  DWORD thread_id = 0;
+  thread = (HANDLE)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)fn, lParam, 0, &thread_id);  
+  return 0;
+}
+
+flx_detached_thread_t::~flx_detached_thread_t() { CloseHandle(thread); }
+flx_detached_thread_t::flx_detached_thread_t() { }
+
+// ---- joinable threads ----------
 flx_thread_t::flx_thread_t(flx_thread_t const&){} // uncopyable
 void flx_thread_t::operator=(flx_thread_t const&){} // uncopyable
 
@@ -297,6 +318,7 @@ flx_thread_t::init(LPTHREAD_START_ROUTINE fn, LPVOID lParam)
   return 0;
 }
 
+// ---- joinable thread wrapper ----------
 flx_thread_wrapper_t::flx_thread_wrapper_t(LPTHREAD_START_ROUTINE f, LPVOID lParam)
 {
   thread.init(f,lParam);
@@ -735,11 +757,27 @@ namespace flx { namespace pthread {
 // ********************************************************
 class FLX_RTL_EXTERN flx_ts_counter_t {
   flx_mutex_t m;
-  long int x;
+  long x;
 public:
-  void incr();
-  void decr();
+  long pre_incr(); // value AFTER increment
+  long pre_decr(); // value AFTER decrement
+  long post_incr(); // value BEFORE increment
+  long post_decr(); // value BEFORE decrement
+
   long get();
+  long set(long);   // returns argument
+  long swap(long);  // returns old value
+  long decr_pos(); // decrement if >0
+
+  long operator++() { return pre_incr(); }
+  long operator--() { return pre_decr(); }
+  long operator++(int) { return post_incr(); }
+  long operator--(int) { return post_decr(); }
+  long operator*() { return get(); }
+  long operator=(long a) { return set(a); }
+
+  void lock();
+  void unlock();
 };
 
 #endif
@@ -748,20 +786,56 @@ public:
 @select(h)
 flx_ts_counter_t::flx_ts_counter_t() : x(0) {}
 
-void flx_ts_counter_t::incr() {
+void flx_ts_counter_t::pre_incr() {
   flx_mutex_locker_t l(&m);
   ++x;
+  return x;
 }
 
-void flx_ts_counter_t::decr() {
+void flx_ts_counter_t::pre_decr() {
   flx_mutex_locker_t l(&m);
   --x;
+  return x;
+}
+
+void flx_ts_counter_t::post_incr() {
+  flx_mutex_locker_t l(&m);
+  ++x;
+  return x+1;
+}
+
+void flx_ts_counter_t::post_decr() {
+  flx_mutex_locker_t l(&m);
+  --x;
+  return x+1;
+}
+
+void flx_ts_counter_t::decr_pos() {
+  flx_mutex_locker_t l(&m);
+  if(x>0)--x;
+  return x;
 }
 
 void flx_ts_counter_t::get() {
   flx_mutex_locker_t l(&m);
   return x;
 }
+
+void flx_ts_counter_t::set(long a) {
+  flx_mutex_locker_t l(&m);
+  x = a;
+  return x;
+}
+
+void flx_ts_counter_t::swap(long a) {
+  flx_mutex_locker_t l(&m);
+  long tmp = x;
+  x = a;
+  return tmp;
+}
+
+void flx_ts_counter_t::lock() { m.lock(); }
+void flx_ts_counter_t::unlock() { m.unlock(); }
 
 @head(1,"Condition Variable")
 @head(2,'Portable Condition Variable')
