@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.18  2006/03/06 15:08:08  skaller
+Cygwin and MinGW builds.
+
 Revision 1.17  2006/03/06 13:16:17  skaller
 Fix library builds so exports and imports are properly
 distinguished on a library by library basis.
@@ -2239,7 +2242,7 @@ public:
   virtual ~async_hooker();
 };
 
-async_hooker *
+RTL_EXTERN async_hooker *
 create_async_hooker(
   int n0,   // bound on resumable thread queue
   int n1,   // bound on general input job queue
@@ -2320,7 +2323,17 @@ bool async_hooker_impl::handle_request(void *data,fthread_t *ft)
 
 class proto_async : public async_hooker_impl
 {
-    flx_demuxer demux;
+#ifdef _WIN32
+  // needed to perform win socket io (calls WSAInit). Must happen
+  // before iocp_demuxer is instantiated and (I assume) happen
+  // only once.
+  // JS: No, it can be called any number of times, provided
+  // the destructor WSACleanup is called same number of times
+  // Use of this RAII object ensures WSAinit/Cleanup calls balance.
+  winsock_initer wsinit;
+#endif
+
+   flx_demuxer demux;
 
     sleep_queue_t async_active;
     flx_thread_t ethread;
@@ -2440,7 +2453,12 @@ struct doflx_data
    : debug_driver(d), gcp(g), active(a) {}
 };
 
-void *doflx (void *data) {
+#ifdef _WIN32
+DWORD
+#else
+void*
+#endif
+doflx (void *data) {
   doflx_data *d = (doflx_data*)data;
   bool debug_driver = d->debug_driver;
   gc_profile_t *gcp = d-> gcp;
@@ -2482,7 +2500,11 @@ process_active:
       void *data = new doflx_data(debug_driver, gcp, pactive);
       flx_detached_thread_t dummy;
       fprintf(stderr,"Starting new pthread\n");
-      dummy.init(doflx,data);
+      dummy.init(
+#ifdef _WIN32
+  (LPTHREAD_START_ROUTINE)
+#endif
+        doflx,data);
     }
     goto process_active;
 
@@ -2544,7 +2566,7 @@ cleanup:
   if(debug_driver)fprintf(stderr,"Terminating Felix subsystem\n");
   delete async;
   delete active;
-  return NULL;
+  return 0;
 }
 
 // RUN A FELIX INSTANCE IN THE CURRENT PTHREAD
@@ -2558,13 +2580,6 @@ int run_felix_pthread(
 {    
    flx::gc::generic::collector_t *collector = gcp->collector;
    std::list<fthread_t*> *active =new std::list<fthread_t*>;
-
-#ifdef _WIN32
-  // needed to perform win socket io (calls WSAInit). Must happen
-  // before iocp_demuxer is instantiated and (I assume) happen
-  // only once.
-  winsock_initer wsinit;
-#endif
 
   fthread_t *flx_main = NULL;
   {

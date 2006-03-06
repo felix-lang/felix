@@ -977,16 +977,13 @@ class gxx(flxbuild.compiler_class.compiler_base):
       opt.SHLIB_DIR="bin"
       
       COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
-      #LINK_DYNAMIC_RTL = "-shared -Wl,--disable-auto-import "
       LINK_DYNAMIC_RTL = "-shared  "
 
       
       COMPILE_DYNAMIC_MAIN = "-c "
-      #LINK_DYNAMIC_MAIN = "-Wl,--disable-auto-import "
       LINK_DYNAMIC_MAIN = ""
       
       COMPILE_DYNAMIC_FLX = opt.PIC+ "-c "
-      #LINK_DYNAMIC_FLX = opt.PIC+"-shared -Wl,--disable-auto-import "
       LINK_DYNAMIC_FLX = opt.PIC+"-shared "
 
     elif opt.model in ["win32","win64"]:
@@ -998,13 +995,13 @@ class gxx(flxbuild.compiler_class.compiler_base):
       opt.SHLIB_DIR="bin"
       
       COMPILE_DYNAMIC_RTL = opt.PIC+ "-c "
-      LINK_DYNAMIC_RTL = "-shared -Wl,--disable-auto-import "
+      LINK_DYNAMIC_RTL = "-shared "
       
       COMPILE_DYNAMIC_MAIN = "-c "
-      LINK_DYNAMIC_MAIN = "-Wl,--disable-auto-import "
+      LINK_DYNAMIC_MAIN = " "
       
       COMPILE_DYNAMIC_FLX = opt.PIC+ "-c "
-      LINK_DYNAMIC_FLX = opt.PIC+"-shared -Wl,--disable-auto-import "
+      LINK_DYNAMIC_FLX = opt.PIC+"-shared "
 
     elif opt.model=="osx":
       # flags for rtl & flx executable compilation & linking taken from

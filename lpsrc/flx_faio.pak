@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.8  2006/03/06 15:08:08  skaller
+Cygwin and MinGW builds.
+
 Revision 1.7  2006/03/06 13:16:16  skaller
 Fix library builds so exports and imports are properly
 distinguished on a library by library basis.
@@ -885,7 +888,7 @@ public:
 namespace flx { namespace faio {
 
   // vs requirement that I have a cpp file?
-  wflx_drv::wflx_drv(flx::pthread::sleep_queue_t& q,int n1,int m1,int n2, int m2) : flx_drv(q,n1,m1,n2,m2) {}
+  wflx_drv::wflx_drv(flx::pthread::sleep_queue_t& q,int n1,int m1,int n2, int m2) : flx_drv(q,n1,m1) {}
 
 }}
 

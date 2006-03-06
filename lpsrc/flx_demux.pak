@@ -1,5 +1,8 @@
 @head(1,'demux')
 $Log$
+Revision 1.15  2006/03/06 15:08:08  skaller
+Cygwin and MinGW builds.
+
 Revision 1.14  2006/03/06 13:16:16  skaller
 Fix library builds so exports and imports are properly
 distinguished on a library by library basis.
@@ -1711,11 +1714,12 @@ winsock_initer::winsock_initer()
   WSADATA wsaData;
 
   // apparently 2.2's the way to go
-  if(WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+  int res= WSAStartup(MAKEWORD(2, 2), &wsaData);
+  if(res!= 0)
   {
-    int err = WSAGetLastError();
-    fprintf(stderr,"couldn't find usable winsock dll: %i\n", err);
-    throw err;
+    //JS: WSAGetLastError CANNOT be called, since WSAStartup failed
+    fprintf(stderr,"couldn't find usable winsock dll: %i\n", res);
+    throw res;
   }
 }
 
