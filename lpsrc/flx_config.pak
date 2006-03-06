@@ -1929,7 +1929,10 @@ HAVE_GMPXX = TARGET_CXX.check_header_exists(xqt,"gmpxx.h")
 @select(tangler("cpkgs/opengl.py"))
 #    'Open GL Graphics Rendering Toolkit',
 #    "http://www.opengl.org"
-HAVE_OPENGL = TARGET_CXX.check_header_exists(xqt,"GL"+os.sep+"gl.h")
+if MACOSX:
+  HAVE_OPENGL = TARGET_CXX.check_header_exists(xqt,"OpenGL"+os.sep+"gl.h")
+else:
+  HAVE_OPENGL = TARGET_CXX.check_header_exists(xqt,"GL"+os.sep+"gl.h")
 
 
 @select(tangler("cpkgs/pthread.py"))

@@ -1,6 +1,10 @@
 @execfile('config'+os.sep+'config.py')
 @head(1,'SDL')
 $Log$
+Revision 1.10  2006/03/06 08:17:06  idadesub
+modified to support opengl on the mac. this allows sdl202 and sdl205 to
+compile, and run. However, 206, 208, and 209 still error out
+
 Revision 1.9  2006/03/04 07:28:20  skaller
 Decouple flx_run from faio and demux, except for hook creator.
 
@@ -168,8 +172,12 @@ except:
       f = open (fname,"w")
       f.write("Name: OpenGL\n")
       f.write("Description: open GL graphics\n")
-      f.write("provides_dlib: -lGL\n")
-      f.write("provides_slib: -lGL\n")
+      if MACOSX:
+        f.write("provides_dlib: -framework OpenGL\n")
+        f.write("provides_slib: -framework OpenGL\n")
+      else:
+        f.write("provides_dlib: -lGL\n")
+        f.write("provides_slib: -lGL\n")
       f.close()
     fname = "config" + os.sep + "glu.fpc"
     if not file_exists(fname):
@@ -177,8 +185,12 @@ except:
       f = open (fname,"w")
       f.write("Name: GLU\n")
       f.write("Description: GLU graphics \n")
-      f.write("provides_dlib: -lGLU\n")
-      f.write("provides_slib: -lGLU\n")
+      if MACOSX:
+        f.write("provides_dlib: -framework OpenGL\n")
+        f.write("provides_slib: -framework OpenGL\n")
+      else:
+        f.write("provides_dlib: -lGLU\n")
+        f.write("provides_slib: -lGLU\n")
       f.write("Requires: gl\n")
       f.close()
     fname = "config" + os.sep + "glut.fpc"
@@ -187,8 +199,12 @@ except:
       f = open (fname,"w")
       f.write("Name: GLUT\n")
       f.write("Description: GLUT graphics\n")
-      f.write("provides_dlib: -lglut\n")
-      f.write("provides_slib: -lglut\n")
+      if MACOSX:
+        f.write("provides_dlib: -framework GLUT\n")
+        f.write("provides_slib: -framework GLUT\n")
+      else:
+        f.write("provides_dlib: -lglut\n")
+        f.write("provides_slib: -lglut\n")
       f.write("Requires: gl glu\n")
       f.close()
   else:
