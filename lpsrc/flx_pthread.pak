@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.7  2006/03/06 03:20:11  rfistman
+fixed typo in win32 stuff
+
 Revision 1.6  2006/03/06 01:29:29  skaller
 spawn_pthread: init works
 
@@ -1141,7 +1144,7 @@ void worker_fifo::start_worker_thread()
   ++nthreads;
   fprintf(stderr,"Spawn detached worker thread, count=%d\n",nthreads);
 #ifdef _WIN32
-  flx_detached_thread().init((LPTHREAD_START_ROUTINE)thread_start, this);
+  flx_detached_thread_t().init((LPTHREAD_START_ROUTINE)thread_start, this);
 #else
   flx_detached_thread_t().init(thread_start, this);
 #endif
