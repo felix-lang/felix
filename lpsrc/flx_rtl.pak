@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.19  2006/03/06 23:24:39  rfistman
+added conditional winsock initialisation back to flx_run. it's too late
+once a win32 flx app executes an async call.
+
 Revision 1.18  2006/03/06 15:08:08  skaller
 Cygwin and MinGW builds.
 
@@ -2323,16 +2327,6 @@ bool async_hooker_impl::handle_request(void *data,fthread_t *ft)
 
 class proto_async : public async_hooker_impl
 {
-#ifdef _WIN32
-  // needed to perform win socket io (calls WSAInit). Must happen
-  // before iocp_demuxer is instantiated and (I assume) happen
-  // only once.
-  // JS: No, it can be called any number of times, provided
-  // the destructor WSACleanup is called same number of times
-  // Use of this RAII object ensures WSAinit/Cleanup calls balance.
-  winsock_initer wsinit;
-#endif
-
    flx_demuxer demux;
 
     sleep_queue_t async_active;
@@ -2424,6 +2418,22 @@ register void *sp __asm__("rsp");
 static void *sp = 0;
 #endif
 #endif
+
+#ifdef _WIN32
+  #include "demux_iocp_demuxer.hpp"
+  // needed to perform win socket io (calls WSAInit). Must happen
+  // before iocp_demuxer is instantiated and (I assume) happen
+  // only once.
+  // JS: No, it can be called any number of times, provided
+  // the destructor WSACleanup is called same number of times
+  // Use of this RAII object ensures WSAinit/Cleanup calls balance.
+  // RF: Still has to happen before any socket calls. Putting it in
+  // the async object which is created on command is already too late.
+  // If that's a problem then any socket creation calls would have to
+  // gratuitously make async calls.
+  flx::demux::winsock_initer wsinit;
+#endif
+
 
 int do_final_cleanup(
   bool debug_driver, 
