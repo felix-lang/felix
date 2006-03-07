@@ -1930,7 +1930,7 @@ class MakeError: pass
   
 @select(tangler("cpkgs/gmpxx.py"))
 #    'C++ bindings for GNU Multiple Precision arithmetic library',
-#    'http://www.hpl.hp.com/personal/Hans_Boehm/gc/'
+#    'http://www.swox.com/gmp/'
 HAVE_GMPXX = TARGET_CXX.check_header_exists(xqt,"gmpxx.h")
 
 @select(tangler("cpkgs/libgc.py"))
