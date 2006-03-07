@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.22  2006/03/07 09:25:48  skaller
+Fix bug in --lparchive feature
+
 Revision 1.21  2006/03/07 09:07:17  skaller
 Add --lparchive option to specify where LP source .paks
 live
@@ -1232,7 +1235,7 @@ def plugin():
         print "Rmdir",d
     except: 
       print "FAILED Rmdir",d
-  for f in glob.glob("lpsrc"+os.sep+"*.cache"):
+  for f in glob.glob(FLX_LPARCHIVE+os.sep+"lpsrc"+os.sep+"*.cache"):
     erasefile(f)
   runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx_config.pak',1)
   sys.exit(0)
@@ -1255,7 +1258,7 @@ def plugin():
         erasefile(f)
   for f in glob.glob("lib"+os.sep+"*.par"):
     erasefile(f)
-  for f in glob.glob("lpsrc"+os.sep+"*.cache"):
+  for f in glob.glob(FLX_LPARCHIVE+os.sep+"lpsrc"+os.sep+"*.cache"):
     erasefile(f)
 
 @select(tangler('mkplugins/doc_env.py'))
@@ -1868,7 +1871,6 @@ if "demo" in options:
 if options:
   print "OPTIONS: ", options
 
-FLX_LPARCHIVE=os.curdir
 for k in options:
   if "--lparchive=" == k[:12]:
     FLX_LPARCHIVE=k[12:]
@@ -1879,22 +1881,22 @@ if FLX_LPARCHIVE == os.curdir:
 else:
   print FLX_LPARCHIVE
 
-paks = glob.glob("lpsrc"+os.sep+"*.pak")
+paks = glob.glob(FLX_LPARCHIVE+os.sep+"lpsrc"+os.sep+"*.pak")
 execfile("mkplugins"+os.sep+"xqt.py")
 if "extract" in options:
   print "OPTIMISED SOURCE EXTRACT (use force_extract to disable optimisation)"
   for p in paks:
     print "EXTRACTING",p,"from",FLX_LPARCHIVE
-    runISCR(FLX_LPARCHIVE+os.sep+p)
+    runISCR(p)
   filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
 
 if "force_extract" in options:
   print "FORCE EXTRACTING SOURCES"
   for p in paks:
     print "EXTRACTING",p
-    try: os.remove(FLX_LPARCHIVE+os.sep+p+".cache")
+    try: os.remove(p+".cache")
     except: pass
-    runISCR(FLX_LPARCHIVE+os.sep+p)
+    runISCR(p)
   filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
 
 if "virgin" in options:
