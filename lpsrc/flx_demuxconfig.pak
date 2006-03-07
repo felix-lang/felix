@@ -44,7 +44,6 @@ DEMUXRTL_INTERFACES = [
 
 DEMUX_CPPS = [
   "demux/demux_demuxer",
-  "rtl/flx_ts_collector",
 ]
 
 POSIX_DEMUX_CPPS = [
