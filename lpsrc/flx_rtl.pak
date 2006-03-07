@@ -1,5 +1,10 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.20  2006/03/07 04:22:36  skaller
+Termination in presence of spawned pthreads should now
+be working, using new ts_locker class. Exception handling
+on per thread basis not implemented yet.
+
 Revision 1.19  2006/03/06 23:24:39  rfistman
 added conditional winsock initialisation back to flx_run. it's too late
 once a win32 flx app executes an async call.
@@ -2403,6 +2408,7 @@ async_hooker *create_async_hooker(int n0,int n1,int m1,int n2,int m2) {
 #include "flx_dynlink.hpp"
 #include "flx_sync.hpp"
 #include "pthread_thread.hpp"
+#include "pthread_counter.hpp"
 
 using namespace std;
 using namespace flx::rtl;
@@ -2459,8 +2465,9 @@ struct doflx_data
   bool debug_driver;
   gc_profile_t *gcp;
   std::list<fthread_t*> *active;
-  doflx_data(bool d, gc_profile_t *g, std::list<fthread_t*> *a)
-   : debug_driver(d), gcp(g), active(a) {}
+  flx_ts_counter_t *thread_counter;
+  doflx_data(bool d, gc_profile_t *g, std::list<fthread_t*> *a, flx_ts_counter_t *tc)
+   : debug_driver(d), gcp(g), active(a), thread_counter(tc) {}
 };
 
 #ifdef _WIN32
@@ -2473,6 +2480,7 @@ doflx (void *data) {
   bool debug_driver = d->debug_driver;
   gc_profile_t *gcp = d-> gcp;
   std::list<fthread_t*> *active = d->active;
+  flx_ts_counter_t *thread_counter=d->thread_counter;
   delete d;
 
   sync_state_t ss(debug_driver, gcp, active);
@@ -2507,9 +2515,12 @@ process_active:
       gcp->collector->add_root(ftx);
       std::list<fthread_t*> *pactive =new std::list<fthread_t*>;
       pactive->push_front(ftx);
-      void *data = new doflx_data(debug_driver, gcp, pactive);
+      void *data = new doflx_data(debug_driver, gcp, pactive, thread_counter);
       flx_detached_thread_t dummy;
-      fprintf(stderr,"Starting new pthread\n");
+      fprintf(stderr,"Starting new pthread, thread counter= %p\n",thread_counter);
+      thread_counter->pre_incr();
+      //++*thread_counter;
+      fprintf(stderr,"pthread counter %p incremented\n",thread_counter);
       dummy.init(
 #ifdef _WIN32
   (LPTHREAD_START_ROUTINE)
@@ -2576,6 +2587,7 @@ cleanup:
   if(debug_driver)fprintf(stderr,"Terminating Felix subsystem\n");
   delete async;
   delete active;
+  --*thread_counter;
   return 0;
 }
 
@@ -2609,14 +2621,18 @@ int run_felix_pthread(
     active->push_front(ft);
   }
 
-  doflx(new doflx_data(debug_driver, gcp, active)); // deletes active for us!
+  {
+    flx_ts_counter_t thread_counter;
+    ++thread_counter;
+    doflx(new doflx_data(debug_driver, gcp, active, &thread_counter)); // deletes active for us!
 
-  if(debug_driver){
-    unsigned long uncollected = collector->get_allocation_count();
-    unsigned long roots = collector->get_root_count();
-    fprintf(stderr,
-      "program finished, %ld collections, %ld uncollected objects, roots %ld\n",
-      gcp->collections,uncollected,roots);
+    if(debug_driver){
+      unsigned long uncollected = collector->get_allocation_count();
+      unsigned long roots = collector->get_root_count();
+      fprintf(stderr,
+        "program finished, %ld collections, %ld uncollected objects, roots %ld\n",
+        gcp->collections,uncollected,roots);
+    }
   }
 
   if(gcp->finalise)
@@ -2897,6 +2913,7 @@ int main(int argc, char** argv)
     finalise,
     collector
   );
+  fprintf(stderr,"RUN_FELIX now..\n");
   run_felix(
     debug_driver,
     gcp,

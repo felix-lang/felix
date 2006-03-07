@@ -6,6 +6,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.19  2006/03/07 04:22:36  skaller
+Termination in presence of spawned pthreads should now
+be working, using new ts_locker class. Exception handling
+on per thread basis not implemented yet.
+
 Revision 1.18  2006/03/06 18:33:11  idadesub
 I'm not positive I'm making the right assumptions here, but it looks
 like this block of code with naked excepts can be turned into catching
@@ -2091,20 +2096,10 @@ We have no idea if it continues copying.
 @tangle('BUILTIN_ISCR=python -O interscript/bin/iscr.py --nocache')
 @tangle('')
 @tangle('all: dummy')
-@tangle('\tpython script/maker extract compiler tools rtl drivers optimise_c misc cil elk demux faio flx')
-@tangle('\t#make tools libdoc')
-@tangle('\tpython script/maker clean build test ')
-@tangle('\tpython script/maker clean build test static ')
-@tangle('\tsh bagley/compile.sh')
-@tangle('\tsh bagley/run.sh')
-@tangle('\tsh bagley/check.sh')
+@tangle('\tpython script/maker extract ')
+@tangle('\tpython script/maker')
+@tangle('\tpython script/maker test ')
 @tangle('')
-
-@tangle('all.quiet: dummy')
-@tangle('\tpython script/maker quiet extract build host run test optimise_c')
-@tangle('\tmake tools libdoc')
-@tangle('')
-
 @tangle('profile: dummy')
 @tangle('\tpython script/maker --pkg=flx_compiler profile')
 @tangle('')
@@ -2116,10 +2111,6 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('bytecode.debug: dummy')
 @tangle('\tpython script/maker --pkg=flx_compiler bytecode debug')
-@tangle('')
-@tangle('extract_compiler: dummy')
-@tangle('\t${BUILTIN_ISCR} lpsrc/flx.pak')
-@tangle('\tpython script/maker flx_compiler')
 @tangle('')
 @tangle('extract: dummy')
 @tangle('\tpython script/maker extract')
@@ -2186,9 +2177,6 @@ We have no idea if it continues copying.
 @tangle('\tsh bagley/compile.sh')
 @tangle('\tsh bagley/run.sh')
 @tangle('\tsh bagley/check.sh')
-@tangle('')
-@tangle('test.static: dummy')
-@tangle('\tpython script/maker test static ')
 @tangle('')
 @tangle('test.flx_ptf_static_pointer: dummy')
 @tangle('\tpython script/maker test -DFLX_PTF_STATIC_POINTER ')

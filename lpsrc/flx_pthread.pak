@@ -1,5 +1,10 @@
 @head(1,'pthread')
 $Log$
+Revision 1.10  2006/03/07 04:22:36  skaller
+Termination in presence of spawned pthreads should now
+be working, using new ts_locker class. Exception handling
+on per thread basis not implemented yet.
+
 Revision 1.9  2006/03/06 13:16:17  skaller
 Fix library builds so exports and imports are properly
 distinguished on a library by library basis.
@@ -66,6 +71,7 @@ PTHREAD_CPPS = [
   "pthread/pthread_win_posix_condv_emul", # portability hackery
   "pthread/pthread_mutex", 
   "pthread/pthread_condv",
+  "pthread/pthread_counter",
   "pthread/pthread_semaphore",
   "pthread/pthread_monitor",
   "pthread/pthread_sleep_queue",
@@ -743,11 +749,7 @@ namespace flx { namespace pthread {
 flx_mutex_t::flx_mutex_t(flx_mutex_t const&){} // uncopyable
 void flx_mutex_t::operator=(flx_mutex_t const&){} // uncopyable
 
-flx_mutex_t::flx_mutex_t() {
-    assert( !recursive );
-    int res = pthread_mutex_init(&m, NULL);
-    if(res != 0) throw res;
-}
+flx_mutex_t::flx_mutex_t() { pthread_mutex_init(&m, NULL); }
 
 flx_mutex_t::~flx_mutex_t() { pthread_mutex_destroy(&m); }
 void flx_mutex_t::lock() { pthread_mutex_lock(&m); }
@@ -767,15 +769,22 @@ flx_mutex_locker_t::~flx_mutex_locker_t() { p->unlock(); }
 #define __COUNTER__
 #include <flx_pthread_config.hpp>
 #include "pthread_mutex.hpp"
+#include "pthread_condv.hpp"
+
 namespace flx { namespace pthread {
 
 // ********************************************************
-/// Counter
+/// Counter with zero signal
 // ********************************************************
 class PTHREAD_EXTERN flx_ts_counter_t {
   flx_mutex_t m;
+  flx_condv_t c;
   long x;
+  void operator=(flx_ts_counter_t const &);
+  flx_ts_counter_t(flx_ts_counter_t const &);
 public:
+  flx_ts_counter_t();
+  ~flx_ts_counter_t();
   long pre_incr(); // value AFTER increment
   long pre_decr(); // value AFTER decrement
   long post_incr(); // value BEFORE increment
@@ -785,74 +794,89 @@ public:
   long set(long);   // returns argument
   long swap(long);  // returns old value
   long decr_pos(); // decrement if >0
-
+  void wait_zero(); // wait for zero
   long operator++() { return pre_incr(); }
   long operator--() { return pre_decr(); }
   long operator++(int) { return post_incr(); }
   long operator--(int) { return post_decr(); }
   long operator*() { return get(); }
   long operator=(long a) { return set(a); }
-
-  void lock();
-  void unlock();
 };
+}}
 
 #endif
 
 @h=tangler('pthread/pthread_counter.cpp')
 @select(h)
+#include "pthread_counter.hpp"
+#include <stdio.h>
+
+using namespace flx::pthread;
+
 flx_ts_counter_t::flx_ts_counter_t() : x(0) {}
+flx_ts_counter_t::~flx_ts_counter_t() { 
+  wait_zero(); 
+}
 
-void flx_ts_counter_t::pre_incr() {
-  flx_mutex_locker_t l(&m);
+long flx_ts_counter_t::pre_incr() {
+  flx_mutex_locker_t l(m);
   ++x;
   return x;
 }
 
-void flx_ts_counter_t::pre_decr() {
-  flx_mutex_locker_t l(&m);
+long flx_ts_counter_t::pre_decr() {
+  flx_mutex_locker_t l(m);
   --x;
+  if(x==0) c.signal();
   return x;
 }
 
-void flx_ts_counter_t::post_incr() {
-  flx_mutex_locker_t l(&m);
+long flx_ts_counter_t::post_incr() {
+  flx_mutex_locker_t l(m);
   ++x;
   return x+1;
 }
 
-void flx_ts_counter_t::post_decr() {
-  flx_mutex_locker_t l(&m);
+long flx_ts_counter_t::post_decr() {
+  flx_mutex_locker_t l(m);
   --x;
+  if(x=0) c.signal();
   return x+1;
 }
 
-void flx_ts_counter_t::decr_pos() {
-  flx_mutex_locker_t l(&m);
+long flx_ts_counter_t::decr_pos() {
+  flx_mutex_locker_t l(m);
   if(x>0)--x;
+  if(x==0) c.signal();
   return x;
 }
 
-void flx_ts_counter_t::get() {
-  flx_mutex_locker_t l(&m);
+long flx_ts_counter_t::get() {
+  flx_mutex_locker_t l(m);
   return x;
 }
 
-void flx_ts_counter_t::set(long a) {
-  flx_mutex_locker_t l(&m);
+long flx_ts_counter_t::set(long a) {
+  flx_mutex_locker_t l(m);
   x = a;
   return x;
 }
 
-void flx_ts_counter_t::swap(long a) {
-  flx_mutex_locker_t l(&m);
+long flx_ts_counter_t::swap(long a) {
+  flx_mutex_locker_t l(m);
   long tmp = x;
   x = a;
+  if(x==0) c.signal();
   return tmp;
 }
 
-void flx_ts_counter_t::lock() { m.lock(); }
-void flx_ts_counter_t::unlock() { m.unlock(); }
+void flx_ts_counter_t::wait_zero() {
+  flx_mutex_locker_t l(m);
+  while(1){
+    if(x==0)return;
+    c.wait(&m);
+  }
+}
 
 @head(1,"Condition Variable")
 @head(2,'Portable Condition Variable')

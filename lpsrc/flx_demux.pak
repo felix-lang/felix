@@ -1,5 +1,10 @@
 @head(1,'demux')
 $Log$
+Revision 1.16  2006/03/07 04:22:36  skaller
+Termination in presence of spawned pthreads should now
+be working, using new ts_locker class. Exception handling
+on per thread basis not implemented yet.
+
 Revision 1.15  2006/03/06 15:08:08  skaller
 Cygwin and MinGW builds.
 
@@ -659,11 +664,8 @@ public:
 };
 
 class DEMUX_EXTERN ts_select_demuxer : public posix_demuxer {
-  // big conservative recursive hamfisted lock.
   flx::pthread::flx_mutex_t      ham_fist;   
-  // protects this little fella here.
   select_demuxer  demux;
-
 
   // self pipe trick!!! fd[0] = read end, fd[1] = write end.
   auto_fd     fds[2];
