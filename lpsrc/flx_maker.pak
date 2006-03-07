@@ -6,6 +6,14 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.23  2006/03/07 10:02:26  idadesub
+temporary patch/hack to get make install to kinda work. It was erroring out
+due to files not being properly found. This patch essentially ignores any
+missing files, but it may miss some files that ought to be installed, such
+as the GL libraries. This will eventually be replaced with a mkplugin
+install target, but this should hopefully tide people over until that script
+is made
+
 Revision 1.22  2006/03/07 09:25:48  skaller
 Fix bug in --lparchive feature
 
@@ -2518,11 +2526,11 @@ We have no idea if it continues copying.
 @tangle('\tinstall -d ${INSTALL_DIR}/config')
 @tangle('\tinstall -d ${INSTALL_DIR}/doc')
 @tangle('\tinstall -d ${INSTALL_DIR}/htmlman')
-@tangle('\tinstall config/*.py ${INSTALL_DIR}/config')
-@tangle('\tinstall config/*.flxcc ${INSTALL_DIR}/config')
-@tangle('\tinstall lib/* ${INSTALL_DIR}/lib')
-@tangle('\tinstall rtl/*.hpp ${SHINC_DIR}')
-@tangle('\tinstall rtl/* ${INSTALL_DIR}/rtl')
+@tangle('\tfind config -maxdepth 1 -type f -name "*.py" -exec install "{}" ${INSTALL_DIR}/config ";"')
+@tangle('\tfind config -maxdepth 1 -type f -name "*.flxcc" -exec install "{}" ${INSTALL_DIR}/config ";"')
+@tangle('\tfind lib -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/lib ";"')
+@tangle('\tfind rtl -maxdepth 1 -type f -name "*.hpp" -exec install "{}" ${SHINC_DIR} ";"')
+@tangle('\tfind rtl -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/rtl ";"')
 @if SUPPORT_STATIC_LINKAGE:
   tangle('\t'+RANLIB+' ${INSTALL_DIR}/rtl/libflx_static.a')
   tangle('\tinstall rtl/libflx_static.a ${LIB_DIR}')
@@ -2537,11 +2545,11 @@ We have no idea if it continues copying.
     tangle('\tinstall rtl/libflx_dynamic.dylib ${SHLIB_DIR}')
   else:
     tangle('\tinstall rtl/libflx_dynamic.so ${SHLIB_DIR}')
-@tangle('\t(install doc/* ${INSTALL_DIR}/doc || exit 0) > /dev/null 2>&1')
-@tangle('\t(install impldoc/* ${INSTALL_DIR}/impldoc || exit 0) > /dev/null 2>&1')
-@tangle('\t(install htmlman/* ${INSTALL_DIR}/htmlman || exit 0) > /dev/null 2>&1')
-@tangle('\tinstall bin/* ${EXEC_DIR}')
-@tangle('\t(install man/man1/* ${MAN_DIR}/man1 || exit 0) > /dev/null 2>&1')
+@tangle('\tfind doc -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/doc ";"')
+@tangle('\tfind impldoc -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/impldoc ";"')
+@tangle('\tfind htmlman -maxdepth 1 -type f -name "*" -exec install "{}" ${INSTALL_DIR}/htmlman ";"')
+@tangle('\tfind bin -maxdepth 1 -type f -name "*" -exec install "{}" ${EXEC_DIR} ";"')
+@tangle('\tfind man/man1 -maxdepth 1 -type f -name "*" -exec install "{}" ${MAN_DIR}/man1 ";"')
 @tangle('\techo "Stuff in misc has to be installed by hand"')
 @tangle('')
 
