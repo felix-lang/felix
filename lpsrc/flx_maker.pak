@@ -6,6 +6,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.20  2006/03/07 06:19:52  idadesub
+quicky hack to get things to configure on an intel mac. moved MakeError
+into flxbuild/flxutil and imported it from there in flxbuild/make_config.py
+
 Revision 1.19  2006/03/07 04:22:36  skaller
 Termination in presence of spawned pthreads should now
 be working, using new ts_locker class. Exception handling
@@ -1799,8 +1803,6 @@ except:
 
 execfile("cpkgs"+os.sep+"interscript.py")
 FLXFLAGS = ""
-
-class MakeError: pass
 
 # ------------------------------------------------
 # PROCESS COMMAND LINE OPTIONS

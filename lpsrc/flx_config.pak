@@ -353,6 +353,8 @@ main(int argc, char** argv)
 import string
 import os
 
+from flxbuild.flxutil import MakeError
+
 class ocaml:
   def __init__(self):
     pass
@@ -1910,6 +1912,7 @@ def has_prefix(prefix,v):
   n = len (prefix)
   return prefix == v[:n]
 
+class MakeError: pass
   
 @select(tangler("cpkgs/gmpxx.py"))
 #    'C++ bindings for GNU Multiple Precision arithmetic library',
