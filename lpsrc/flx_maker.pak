@@ -6,6 +6,10 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.21  2006/03/07 09:07:17  skaller
+Add --lparchive option to specify where LP source .paks
+live
+
 Revision 1.20  2006/03/07 06:19:52  idadesub
 quicky hack to get things to configure on an intel mac. moved MakeError
 into flxbuild/flxutil and imported it from there in flxbuild/make_config.py
@@ -1230,7 +1234,7 @@ def plugin():
       print "FAILED Rmdir",d
   for f in glob.glob("lpsrc"+os.sep+"*.cache"):
     erasefile(f)
-  runISCR('lpsrc/flx_config.pak',1)
+  runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx_config.pak',1)
   sys.exit(0)
   
 @select(tangler('mkplugins/clean.py'))
@@ -1264,17 +1268,17 @@ TUTORIAL_EXAMPLES=TUTORIAL_DIRECTORY+'examples/'
 @select(tangler('mkplugins/doc.py'))
 def plugin():    
     print "GENERATING DOCUMENTATION"
-    runISCR('lpsrc/flx_config.pak')
-    runISCR('lpsrc/flx.pak')
-    runISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' lpsrc/flx.pak')
+    runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx_config.pak')
+    runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx.pak')
+    runISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' '+FLX_LPARCHIVE+os.sep'lpsrc/flx.pak')
 
 @select(tangler('mkplugins/tutdoc.py'))
 def plugin():    
-    runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tutorial.pak')
-    runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_macro.pak')
-    runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_bind.pak')
-    runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' lpsrc/flx_tut_migrate.pak')
-    runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ lpsrc/flx_perf.pak')
+    runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_tutorial.pak')
+    runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_tut_macro.pak')
+    runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_tut_bind.pak')
+    runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_tut_migrate.pak')
+    runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
     filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
 
 @select(tangler('mkplugins/build_target_rtl_dynamic.py'))
@@ -1466,11 +1470,11 @@ def plugin():
 
 @select(tangler('mkplugins/speed.py'))
 def plugin():    
-  runISCR('lpsrc/flx_perf.pak')
+  runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
   run("python speed/measure.py")
   run("python speed/panal.py")
   run("gnuplot speed/mkjpgs.gpl")
-  runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ lpsrc/flx_perf.pak')
+  runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
 
 @select(tangler('mkplugins/ocaml_env.py'))
 if not globals().get("ocaml_env",None):
@@ -1864,22 +1868,33 @@ if "demo" in options:
 if options:
   print "OPTIONS: ", options
 
+FLX_LPARCHIVE=os.curdir
+for k in options:
+  if "--lparchive=" == k[:12]:
+    FLX_LPARCHIVE=k[12:]
+
+print "Using LP Archive from ",
+if FLX_LPARCHIVE == os.curdir:
+  print "Current Directory"
+else:
+  print FLX_LPARCHIVE
+
 paks = glob.glob("lpsrc"+os.sep+"*.pak")
 execfile("mkplugins"+os.sep+"xqt.py")
 if "extract" in options:
   print "OPTIMISED SOURCE EXTRACT (use force_extract to disable optimisation)"
   for p in paks:
-    print "EXTRACTING",p
-    runISCR(p)
+    print "EXTRACTING",p,"from",FLX_LPARCHIVE
+    runISCR(FLX_LPARCHIVE+os.sep+p)
   filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
 
 if "force_extract" in options:
   print "FORCE EXTRACTING SOURCES"
   for p in paks:
     print "EXTRACTING",p
-    try: os.remove(p+".cache")
+    try: os.remove(FLX_LPARCHIVE+os.sep+p+".cache")
     except: pass
-    runISCR(p)
+    runISCR(FLX_LPARCHIVE+os.sep+p)
   filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
 
 if "virgin" in options:
@@ -2021,7 +2036,7 @@ try:
       src = string.join(srcs,' ')
       if src:
         print "REExtracting",pkg,"from",src
-        runISCR(src)
+        runISCR(FLX_LPARCHIVE+os.sep+src)
 
       build_ocamls()
 

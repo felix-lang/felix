@@ -22,6 +22,7 @@ A shell script to run the config step.
 @select(tangler('configure'))
 export PYTHONPATH=.:$PYTHONPATH
 echo "Configuring Felix"
+FLX_LPARCHIVE=${FLX_LPARCHIVE:-.}
 PREFIX=$PREFIX
 ARGS=""
 
@@ -30,7 +31,8 @@ while  [ "$grab" -eq 1 ]
 do
   case x$1 in
   x--prefix=*)
-     PREFIX="`echo \"$1\" | sed 's/--prefix=\(.*\)/\\1/'`"
+     #PREFIX="`echo \"$1\" | sed 's/--prefix=\(.*\)/\\1/'`"
+     PREFIX=${1:9}
      shift
   ;;
 
@@ -38,6 +40,17 @@ do
     shift
     PREFIX="$1"
     shift
+  ;;
+
+  x--lparchive=*)
+   FLX_LPARCHIVE=${1:12}
+   shift
+  ;;
+
+  x--lparchive)
+   shift
+   FLX_LPARCHIVE="$1"
+   shift
   ;;
 
   x)
@@ -49,12 +62,13 @@ do
     shift
   ;;
 
-
   esac
 done
 
-rm lpsrc/*.cache
-python interscript/bin/iscr.py --break-on-error lpsrc/flx_config.pak
+echo FLX_LPARCHIVE at $FLX_LPARCHIVE
+
+rm $FLX_LPARCHIVE/lpsrc/*.cache
+python interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_config.pak
 if [ $? != 0 ]
 then
   echo "ERROR EXTRACTING CONFIGURATION PROGRAM"
@@ -63,7 +77,7 @@ fi
 
 # need demux to be unpacked before running config
 # DAMN - demux is accessing the config stuff which isn't ready at this point
-python interscript/bin/iscr.py --break-on-error lpsrc/flx_demux.pak
+python interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_demux.pak
 if [ $? != 0 ]
 then
   echo "ERROR EXTRACTING DEMUX LIBRARY"
@@ -71,8 +85,8 @@ then
 fi
 
 
-python -O script/make_config.py --quiet --prefix=${PREFIX} ${ARGS}
-python interscript/bin/iscr.py --break-on-error lpsrc/flx_maker.pak
+python -O script/make_config.py --quiet --prefix=${PREFIX} --lparchive=$FLX_LPARCHIVE ${ARGS}
+python interscript/bin/iscr.py --break-on-error $FLX_LPARCHIVE/lpsrc/flx_maker.pak
 if [ $? != 0 ]
 then
   echo "ERROR EXTRACTING MAKER PROGRAM"
@@ -2248,6 +2262,7 @@ BOOTFILE=""
 HOSTCC=""
 TARGETCC=""
 BUILDCC=""
+FLX_LPARCHIVE=os.getenv("FLX_LPARCHIVE",default=os.curdir)
 
 i = 1
 while(i < len (sys.argv)):
@@ -2299,6 +2314,8 @@ while(i < len (sys.argv)):
     SAVE_CONFIG=arg[14:]
   elif has_prefix("--load-config=",arg):
     LOAD_CONFIG=arg[14:]
+  elif has_prefix("--lparchive=",arg):
+    FLX_LPARCHIVE=arg[12:]
   else:
     print "UNKNOWN CONFIGURE OPTION",arg
     sys.exit(1)
@@ -2313,8 +2330,9 @@ if BOOTFILE:
     sys.exit(1) 
 
 if PREFIX=='': PREFIX=default_prefix
-
 print "INSTALL PREFIX="+PREFIX
+if FLX_LPARCHIVE=='': FLX_LPARCHIVE = os.curdir
+print "FLX_LPARCHIVE="+FLX_LPARCHIVE
 
 if LOAD_CONFIG:
   g = LOAD_CONFIG+os.sep+"*"
@@ -2602,6 +2620,7 @@ try:
   pa(f,this,"HAVE_PTHREADS")
   pa(f,this,"PTHREAD_SWITCH")
   pa(f,this,"HAVE_PKGCONFIG")
+  pa(f,this,"FLX_LPARCHIVE")
   pr(f,"")
 
   pr(f,"HOST_OCAML=flxbuild.ocaml_class.ocaml()")

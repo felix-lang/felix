@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.21  2006/03/07 09:07:17  skaller
+Add --lparchive option to specify where LP source .paks
+live
+
 Revision 1.20  2006/03/07 04:22:36  skaller
 Termination in presence of spawned pthreads should now
 be working, using new ts_locker class. Exception handling
@@ -586,6 +590,7 @@ extern RTL_EXTERN flx::gc::generic::gc_shape_t _root_ptr_ptr_map;
 // Standard C++ Exceptions
 // ********************************************************
 
+struct RTL_EXTERN flx_exception_t;
 struct RTL_EXTERN flx_exec_failure_t;
 struct RTL_EXTERN flx_range_srcref_t;
 struct RTL_EXTERN flx_match_failure_t;
@@ -810,11 +815,21 @@ bool operator >= (root_ptr_t<T> const &a, root_ptr_t<T> const &b)
 
 
 // ********************************************************
+/// EXCEPTION: Felix exception base abstraction.
+/// Mainly used to convert catches into subroutine
+/// calls which then dispatch on RTTI manually.
+// ********************************************************
+
+struct RTL_EXTERN flx_exception_t {
+  virtual ~flx_exception_t()=0;
+};
+
+// ********************************************************
 /// EXCEPTION: EXEC protocol failure.
 /// Thrown when trying to run a dead procedure
 // ********************************************************
 
-struct RTL_EXTERN flx_exec_failure_t {
+struct RTL_EXTERN flx_exec_failure_t : flx_exception_t {
   std::string filename;  ///< dll filename
   std::string operation; ///< faulty operation
   std::string what;      ///< error description
@@ -841,7 +856,7 @@ struct RTL_EXTERN flx_range_srcref_t {
 /// regmatch, or reglex
 // ********************************************************
 
-struct RTL_EXTERN flx_match_failure_t {
+struct RTL_EXTERN flx_match_failure_t : flx_exception_t {
   flx_range_srcref_t flx_loc; ///< location in Felix file
   char *cxx_srcfile;          ///< C++ file name
   int cxx_srcline;            ///< C++ line number
@@ -854,7 +869,7 @@ struct RTL_EXTERN flx_match_failure_t {
 /// Thrown when user assertion fails
 // ********************************************************
 
-struct RTL_EXTERN flx_assert_failure_t {
+struct RTL_EXTERN flx_assert_failure_t : flx_exception_t {
   flx_range_srcref_t flx_loc; ///< location in Felix file
   char *cxx_srcfile;          ///< C++ file
   int cxx_srcline;            ///< __LINE__ macro
@@ -866,7 +881,7 @@ struct RTL_EXTERN flx_assert_failure_t {
 /// EXCEPTION: SWITCH failure. this is a system failure!
 // ********************************************************
 
-struct RTL_EXTERN flx_switch_failure_t {
+struct RTL_EXTERN flx_switch_failure_t : flx_exception_t {
   virtual ~flx_switch_failure_t();
 };
 
@@ -1513,6 +1528,8 @@ flx::gc::generic::gc_shape_t unit_ptr_map (
 // ********************************************************
 // standard exceptions -- implementation
 // ********************************************************
+flx_exception_t::~flx_exception_t(){}
+
 flx_exec_failure_t::flx_exec_failure_t(std::string f, std::string o, std::string w) : 
   filename(f), 
   operation(o), 
@@ -2470,6 +2487,47 @@ struct doflx_data
    : debug_driver(d), gcp(g), active(a), thread_counter(tc) {}
 };
 
+int flx_exception_handler (flx_exception_t *e)
+{
+  if (flx_link_failure_t *x = dynamic_cast<flx_link_failure_t*>(e))
+  {
+    fprintf(stderr,"Dynamic linkage error\n");
+    fprintf(stderr,"filename: %s\n",x->filename.data());
+    fprintf(stderr,"operation: %s\n",x->operation.data());
+    fprintf(stderr,"what: %s\n",x->what.data());
+    return 2;
+  }
+  else
+  if (flx_exec_failure_t *x = dynamic_cast<flx_exec_failure_t*>(e))
+  {
+    fprintf(stderr,"Execution error\n");
+    fprintf(stderr,"filename: %s\n",x->filename.data());
+    fprintf(stderr,"operation: %s\n",x->operation.data());
+    fprintf(stderr,"what: %s\n",x->what.data());
+    return 3;
+  }
+  else
+  if (flx_assert_failure_t *x = dynamic_cast<flx_assert_failure_t*>(e))
+  {
+    fprintf(stderr,"Assertion Failure\n");
+    print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
+    return 3;
+  }
+  else
+  if (flx_match_failure_t *x = dynamic_cast<flx_match_failure_t*>(e))
+  {
+    fprintf(stderr,"Match Failure\n");
+    print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
+    return 3;
+  }
+  else
+  {
+    fprintf(stderr,"Unknown EXCEPTION!\n");
+    return 4;
+  }
+}
+
+
 #ifdef _WIN32
 DWORD
 #else
@@ -2483,110 +2541,122 @@ doflx (void *data) {
   flx_ts_counter_t *thread_counter=d->thread_counter;
   delete d;
 
-  sync_state_t ss(debug_driver, gcp, active);
-
   unsigned long async_count = 0;
   async_hooker* async = NULL;
 
-process_active:
-  if(debug_driver)
-    fprintf(stderr,"Process active ..");
-
-  if(debug_driver)
-    fprintf(stderr,"Before running: Sync state is %s/%s\n",
-      get_fstate_desc(ss.fs),get_fpc_desc(ss.pc));
-
-  ss.frun();
-
-  if(debug_driver)
-    fprintf(stderr,"After running: Sync state is %s/%s\n",
-      get_fstate_desc(ss.fs),get_fpc_desc(ss.pc));
-
-  if (ss.fs == terminated) goto cleanup;
-  if (ss.fs == blocked) goto do_async;
-
-  if (ss.fs == delegated) 
-  switch (ss.request->variant)
+  try 
   {
-    case svc_spawn_pthread:
-    {
-      fthread_t *ftx = *(fthread_t**)ss.request->data;
-      if(debug_driver)fprintf(stderr,"Spawn pthread %p\n",ftx);
-      gcp->collector->add_root(ftx);
-      std::list<fthread_t*> *pactive =new std::list<fthread_t*>;
-      pactive->push_front(ftx);
-      void *data = new doflx_data(debug_driver, gcp, pactive, thread_counter);
-      flx_detached_thread_t dummy;
-      fprintf(stderr,"Starting new pthread, thread counter= %p\n",thread_counter);
-      thread_counter->pre_incr();
-      //++*thread_counter;
-      fprintf(stderr,"pthread counter %p incremented\n",thread_counter);
-      dummy.init(
-#ifdef _WIN32
-  (LPTHREAD_START_ROUTINE)
-#endif
-        doflx,data);
-    }
-    goto process_active;
+    sync_state_t ss(debug_driver, gcp, active);
 
-    case svc_general:
-    {
-      if(debug_driver)
-        fprintf(stderr,"svc_general from fthread=%p\n",ss.ft);
-      if( !async ) async = create_async_hooker(
-          20000, // bound on resumable thread queue
-          50,    // bound on general input job queue
-          2,     // number of threads in job pool
-          50,    // bound on async fileio job queue
-          1      // number of threads doing async fileio
-       );
-
-      ++async_count;
-      void *dreq =  (((_ref_*)(ss.request->data))->get_data());
-
-      //fprintf(stderr,"Request object at %p\n",dreq);
-      // RF hates the flag this function returns .. might
-      // mask a race condition, get rid of it
-      if(!async->handle_request(dreq, ss.ft))
-      {
-        ss.pc = next_fthread_pos;
-      } 
-      else {
-        --async_count;
-        ss.pc = next_request_pos;
-      }
-    }
-    goto process_active;
-
-    default:
-      fprintf(stderr,"Unknown service request code 0x%4x\n",ss.request->variant);
-      abort();
-  }
-  fprintf(stderr,"Unknown frun return status 0x%4x\n",ss.fs);
-  abort();
-
-do_async:
-  // ran out of active threads - are there any in the async queue?
-  if(debug_driver){
-    fprintf(stderr, "out of active synchronous threads, trying async, count=%ld\n",async_count);
-  }
-
-  if(async && async_count > 0){
-    // STILL A ROOT
-    fthread_t* ftp = async->dequeue();
+  process_active:
     if(debug_driver)
-      fprintf(stderr,"Async Retrieving fthread %p\n",ftp);
-    active->push_front(ftp);
-    --async_count;
-    ss.pc = next_fthread_pos;
-    goto process_active;
-  }
+      fprintf(stderr,"Process active ..");
 
-  if(debug_driver)fprintf(stderr,"Out of jobs\n");
-cleanup:
-  if(debug_driver)fprintf(stderr,"Terminating Felix subsystem\n");
-  delete async;
-  delete active;
+    if(debug_driver)
+      fprintf(stderr,"Before running: Sync state is %s/%s\n",
+        get_fstate_desc(ss.fs),get_fpc_desc(ss.pc));
+
+    ss.frun();
+
+    if(debug_driver)
+      fprintf(stderr,"After running: Sync state is %s/%s\n",
+        get_fstate_desc(ss.fs),get_fpc_desc(ss.pc));
+
+    if (ss.fs == terminated) goto cleanup;
+    if (ss.fs == blocked) goto do_async;
+
+    if (ss.fs == delegated) 
+    switch (ss.request->variant)
+    {
+      case svc_spawn_pthread:
+      {
+        fthread_t *ftx = *(fthread_t**)ss.request->data;
+        if(debug_driver)fprintf(stderr,"Spawn pthread %p\n",ftx);
+        gcp->collector->add_root(ftx);
+        std::list<fthread_t*> *pactive =new std::list<fthread_t*>;
+        pactive->push_front(ftx);
+        void *data = new doflx_data(debug_driver, gcp, pactive, thread_counter);
+        flx_detached_thread_t dummy;
+        fprintf(stderr,"Starting new pthread, thread counter= %p\n",thread_counter);
+        thread_counter->pre_incr();
+        //++*thread_counter;
+        fprintf(stderr,"pthread counter %p incremented\n",thread_counter);
+        dummy.init(
+  #ifdef _WIN32
+    (LPTHREAD_START_ROUTINE)
+  #endif
+          doflx,data);
+      }
+      goto process_active;
+
+      case svc_general:
+      {
+        if(debug_driver)
+          fprintf(stderr,"svc_general from fthread=%p\n",ss.ft);
+        if( !async ) async = create_async_hooker(
+            20000, // bound on resumable thread queue
+            50,    // bound on general input job queue
+            2,     // number of threads in job pool
+            50,    // bound on async fileio job queue
+            1      // number of threads doing async fileio
+         );
+
+        ++async_count;
+        void *dreq =  (((_ref_*)(ss.request->data))->get_data());
+
+        //fprintf(stderr,"Request object at %p\n",dreq);
+        // RF hates the flag this function returns .. might
+        // mask a race condition, get rid of it
+        if(!async->handle_request(dreq, ss.ft))
+        {
+          ss.pc = next_fthread_pos;
+        } 
+        else {
+          --async_count;
+          ss.pc = next_request_pos;
+        }
+      }
+      goto process_active;
+
+      default:
+        fprintf(stderr,"Unknown service request code 0x%4x\n",ss.request->variant);
+        abort();
+    }
+    fprintf(stderr,"Unknown frun return status 0x%4x\n",ss.fs);
+    abort();
+
+  do_async:
+    // ran out of active threads - are there any in the async queue?
+    if(debug_driver){
+      fprintf(stderr, "out of active synchronous threads, trying async, count=%ld\n",async_count);
+    }
+
+    if(async && async_count > 0){
+      // STILL A ROOT
+      fthread_t* ftp = async->dequeue();
+      if(debug_driver)
+        fprintf(stderr,"Async Retrieving fthread %p\n",ftp);
+      active->push_front(ftp);
+      --async_count;
+      ss.pc = next_fthread_pos;
+      goto process_active;
+    }
+
+    if(debug_driver)fprintf(stderr,"Out of jobs\n");
+  cleanup:;
+  }
+  catch (flx_exception_t &x) { flx_exception_handler (&x); }
+  catch (...) { fprintf(stderr,"Unknown exception in thread!\n"); }
+
+  try
+  {
+    if(debug_driver)fprintf(stderr,"Terminating Felix subsystem\n");
+    delete async;
+    delete active;
+  }
+  catch (...) { fprintf(stderr,"Unknown exception deleting async!\n"); }
+
+  // if this fails the whole system is corrupted
   --*thread_counter;
   return 0;
 }
@@ -2752,33 +2822,9 @@ int run_felix(
       }
     }
   }
-  catch (flx_link_failure_t x)
+  catch (flx_exception_t &x)
   {
-    fprintf(stderr,"Dynamic linkage error\n");
-    fprintf(stderr,"filename: %s\n",x.filename.data());
-    fprintf(stderr,"operation: %s\n",x.operation.data());
-    fprintf(stderr,"what: %s\n",x.what.data());
-    return 2;
-  }
-  catch (flx_exec_failure_t x)
-  {
-    fprintf(stderr,"Execution error\n");
-    fprintf(stderr,"filename: %s\n",x.filename.data());
-    fprintf(stderr,"operation: %s\n",x.operation.data());
-    fprintf(stderr,"what: %s\n",x.what.data());
-    return 3;
-  }
-  catch (flx_assert_failure_t x)
-  {
-    fprintf(stderr,"Assertion Failure\n");
-    print_loc(stderr,x.flx_loc,x.cxx_srcfile, x.cxx_srcline);
-    return 3;
-  }
-  catch (flx_match_failure_t x)
-  {
-    fprintf(stderr,"Match Failure\n");
-    print_loc(stderr,x.flx_loc,x.cxx_srcfile, x.cxx_srcline);
-    return 3;
+    return flx_exception_handler(&x);
   }
   catch (...)
   {
