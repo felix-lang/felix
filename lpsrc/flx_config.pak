@@ -527,8 +527,6 @@ import os
 import sys
 import string
 
-class Error: pass
-
 class compiler_base:
   def __init__(self):
     self.options = flxbuild.object_class.object()
@@ -622,8 +620,8 @@ class compiler_base:
         print typedef,"size",size,"align",align
         return size,align
       else:
-        raise Error
-    except:
+        raise MakeError
+    except MakeError:
       print "NO TYPE",typedef,
       if header: print "in <"+header+">"
       else: print
@@ -662,8 +660,8 @@ class compiler_base:
         print e, "has type",alias
         return alias
       else:
-        raise Error
-    except:
+        raise MakeError
+    except MakeError:
       print "EXPRESSION NOT SUPPORTED:",e
       return None
 
@@ -2105,7 +2103,7 @@ def xxqt(x,print_cmd=0,print_on_error=1):
   if result != 0: 
     if print_on_error:
       print "FAIL:",x
-    raise Error
+    raise MakeError
   else: 
     if print_cmd:
       print x
@@ -2127,7 +2125,6 @@ time_stamp_format = "%Y/%m/%d %H:%M:%S UTC"
 config_time=time.gmtime(time.time())
 CONFIG_TIME = time.strftime(time_stamp_format, config_time)
 
-class Error: pass
 this = globals()
 
 # make doc directories to stop 'cp' complaining
