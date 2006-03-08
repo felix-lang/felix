@@ -10,6 +10,11 @@
 @debian_revision = '1'
 @rpm_revision = '1'
 
+@head(2,'CVS log')
+$Log$
+Revision 1.161  2006/03/08 22:30:49  skaller
+Add requires package "flx_pthread" to module Pthread
+
 @head(1,'boot')
 A shell script to extract the configure script.
 @select(tangler('boot.sh'))

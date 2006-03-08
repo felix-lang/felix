@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.13  2006/03/08 22:30:49  skaller
+Add requires package "flx_pthread" to module Pthread
+
 Revision 1.12  2006/03/08 14:51:16  skaller
 Tests for pthreads, callbacks.
 
@@ -1344,6 +1347,7 @@ header monitor_hxx = '#include "pthread_monitor.hpp"';
 
 module Pthread
 {
+  requires package "flx_pthread";
   open C_hack;
   proc spawn_pthread(p:1->0)
   {
