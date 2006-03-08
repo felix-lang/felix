@@ -2175,3 +2175,8 @@ Y=2,3
 1
 1
 25
+@head(2,"tut/examples/tut_bind180.expect")
+@select(tangler("tut/examples/tut_bind180.expect","data"))
+5
+31
+@#

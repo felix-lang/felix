@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.24  2006/03/08 14:51:16  skaller
+Tests for pthreads, callbacks.
+
 Revision 1.23  2006/03/07 10:02:26  idadesub
 temporary patch/hack to get make install to kinda work. It was erroring out
 due to files not being properly found. This patch essentially ignores any
@@ -873,11 +876,13 @@ iscr_source = ["lpsrc/flx.pak"]
 
 @h = tangler('spkgs/flx_regression_tests.py')
 @select(h)
-TESTS = glob.glob('test'+os.sep+'rt*.flx')
+UNIT_TESTS = glob.glob('test'+os.sep+'rt*.flx')
+COMPLETION_TESTS = glob.glob('test'+os.sep+'nd*.flx')
 # these are supposed to fail!
 BAD_TESTS = glob.glob('test'+os.sep+'bt*.flx')
 
-unit_tests = TESTS
+unit_tests = UNIT_TESTS
+completion_tests = COMPLETION_TESTS
 failure_tests = BAD_TESTS
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.ipk']
@@ -885,10 +890,12 @@ iscr_source = ['lpsrc/flx_regress.ipk']
 @h = tangler('spkgs/flx_tutorial_tests.py')
 @select(h)
 TESTS = glob.glob('tut'+os.sep+'examples'+os.sep+'tut*.flx')
+COMPLETION_TESTS = glob.glob('test'+os.sep+'nd*.flx')
 TESTS = TESTS + glob.glob('tut'+os.sep+'examples'+os.sep+'mac*.flx')
 TESTS = TESTS + glob.glob('tut'+os.sep+'examples'+os.sep+'mig*.flx')
 
 unit_tests = TESTS
+completion_tests = COMPLETION_TESTS
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
 iscr_source = [
   'lpsrc/flx_tutorial.pak',
@@ -1624,6 +1631,45 @@ def run_unit_tests():
           raise MakeError
 
 
+@select(tangler('mkplugins/run_completion_tests.py'))
+# these tests are units tests with non-deterministic results
+def run_completion_tests():    
+  optimise= "optimise_c" in options
+  mode = "std"
+  if optimise: mode = "Optimised"
+  completion_tests = pkgdict.get("completion_tests",[])
+  if len(completion_tests)>0:
+    print
+    print "***** TESTING PACKAGE "+pkg+" ************"
+    print
+
+    for testfile in completion_tests:
+      # run the tests
+      basename = build_test(testfile)
+      if SUPPORT_DYNAMIC_LOADING:
+        testscript = "bin"+os.sep+"flx_run "+os.curdir+os.sep+basename+EXT_SHLIB
+        #testscript = testscript + " >" + basename + ".output"
+        #print 'Executing ',testscript
+        try:
+          run(testscript)
+          #print 'TESTFILE -- OK!',testscript
+        except MakeError:
+          print 'TESTFILE -- ERROR!',testscript
+          raise MakeError
+
+      if SUPPORT_STATIC_LINKAGE:
+        testscript = basename
+        testscript = os.curdir+os.sep+basename+EXT_EXE
+        #testscript = testscript + " >" + basename + ".output"
+        #print 'Executing ',testscript
+        try:
+          run(testscript)
+          #print 'TESTFILE -- OK!',testscript
+        except MakeError:
+          print 'TESTFILE -- ERROR!',testscript
+          raise MakeError
+
+
 @select(tangler('mkplugins/run_demos.py'))
 def run_demos():    
   optimise= "optimise_c" in options
@@ -2074,6 +2120,7 @@ try:
     if "run" in phases:
       if "test" in options:
         run_unit_tests()
+        run_completion_tests()
 
       if "demo" in options:
         run_demos()

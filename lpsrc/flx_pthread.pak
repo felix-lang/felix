@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.12  2006/03/08 14:51:16  skaller
+Tests for pthreads, callbacks.
+
 Revision 1.11  2006/03/08 07:15:54  skaller
 Async channels now working
 
@@ -1329,4 +1332,95 @@ worker_fifo::add_worker_task(worker_task* task)
 }}
 
 
+@h=tangler('lib/pthread.flx')
+@select(h)
+#import <flx.flxh>
+
+header mutex_hxx = '#include "pthread_mutex.hpp"';
+header condv_hxx = '#include "pthread_condv.hpp"';
+header counter_hxx = '#include "pthread_counter.hpp"';
+header semaphore_hxx = '#include "pthread_semaphore.hpp"';
+header monitor_hxx = '#include "pthread_monitor.hpp"';
+
+module Pthread
+{
+  open C_hack;
+  proc spawn_pthread(p:1->0)
+  {
+      var con = start p;              // get continuation of p
+      var fthr = mk_thread con;
+      svc$ svc_spawn_pthread fthr;
+  }
+
+  type mutex = "flx_mutex_t" requires mutex_hxx;
+  proc lock: lvalue[mutex] = "$1.lock();";
+  proc unlock: lvalue[mutex] = "$1.unlock();";
+  proc lock (m:&mutex) { lock$ *m; }
+  proc unlock (m:&mutex) { unlock$ *m; }
+
+  // pre-emptive thread channels (monitor)
+  type pchannel[t] = "flx::pthread::monitor_t*" requires monitor_hxx;
+
+  fun mk_pchannel[t]: 1->pchannel[t] = 
+    "new flx::pthread::monitor_t()"
+  ; 
+
+  proc _read[t]: pchannel[t] * ptr[ptr[t]] = "*$2 = (?1*)($1->dequeue());";
+
+  proc read[t](v:&t,chan:pchannel[t]) {
+    var p : ptr[t];
+    _read (chan, addr p);
+    *v = *p;
+  }
+
+  proc _write[t]: pchannel[t] * ptr[t] = "$1->enqueue((void*)$2);";
+  proc write[t](chan:pchannel[t], v:t) {
+    var ps = cast[ptr[t]]$ xnew v;
+    _write (chan,ps);
+  }
+}
+
+@h=tangler('test/nd101.flx')
+@select(h)
+#import <flx.flxh>
+include "flx_faio";
+include "pthread";
+open Pthread;
+
+print "Pthread spawning test"; endl;
+
+proc thr (x:int) { print "Thread "; print x; endl; }
+
+proc flx_main
+{
+  print "Running main\n";
+  var chan = mk_pchannel[int]();
+  var dummy: int;
+
+  spawn_pthread { thr 1; write (chan,1); };
+  spawn_pthread { thr 2; write (chan,2); };
+  spawn_pthread { thr 3; write (chan,3); };
+  spawn_pthread { thr 4; write (chan,4); };
+  spawn_pthread { thr 5; write (chan,5); };
+  spawn_pthread { thr 6; write (chan,6); };
+  spawn_pthread { thr 7; write (chan,7); };
+  print "Spawned\n";
+  &dummy <- read chan; // 1
+  print "joined "; print dummy; endl;
+  &dummy <- read chan; // 2
+  print "joined "; print dummy; endl;
+  &dummy <- read chan; // 3
+  print "joined "; print dummy; endl;
+  &dummy <- read chan; // 4
+  print "joined "; print dummy; endl;
+  &dummy <- read chan; // 5
+  print "joined "; print dummy; endl;
+  &dummy <- read chan; // 6
+  print "joined "; print dummy; endl;
+  &dummy <- read chan; // 7
+  print "joined "; print dummy; endl;
+  print "Joined all\n";
+}
+
+export proc flx_main of (1) as "flx_main";
 

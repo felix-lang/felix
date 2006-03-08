@@ -725,3 +725,20 @@ cclass Z {
 var z  = Z();
 print$ z.sum[int] (12,13); endl; // 25
 
+@head(2,'Callbacks')
+@select(tangler(tdir+'tut_bind180.flx'))
+#import <flx.flxh>
+
+callback fun f: int * f -> int;
+
+fun g(x:int)=> x + x + 1;
+
+print$ f(2, the g); endl;
+
+callback proc p: int * p;
+
+proc q(x:int){ print x; endl; }
+
+p(31,the q);
+
+
