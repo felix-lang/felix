@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.22  2006/03/08 07:15:54  skaller
+Async channels now working
+
 Revision 1.21  2006/03/07 09:07:17  skaller
 Add --lparchive option to specify where LP source .paks
 live
@@ -2959,7 +2962,6 @@ int main(int argc, char** argv)
     finalise,
     collector
   );
-  fprintf(stderr,"RUN_FELIX now..\n");
   run_felix(
     debug_driver,
     gcp,

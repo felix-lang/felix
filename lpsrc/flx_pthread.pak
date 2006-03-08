@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.11  2006/03/08 07:15:54  skaller
+Async channels now working
+
 Revision 1.10  2006/03/07 04:22:36  skaller
 Termination in presence of spawned pthreads should now
 be working, using new ts_locker class. Exception handling
@@ -840,7 +843,7 @@ long flx_ts_counter_t::post_incr() {
 long flx_ts_counter_t::post_decr() {
   flx_mutex_locker_t l(m);
   --x;
-  if(x=0) c.signal();
+  if(x==0) c.signal();
   return x+1;
 }
 
@@ -1014,10 +1017,12 @@ namespace flx { namespace pthread {
 // ********************************************************
 
 class PTHREAD_EXTERN monitor_t {
-  flx_mutex_t member_lock; 
-  flx_semaphore_t readers;
-  flx_semaphore_t writers;
+  flx_mutex_t m; 
+  flx_mutex_t rm; 
+  flx_mutex_t wm; 
+  int ready;
   flx_condv_t ack;
+  flx_condv_t data_put;
   void *data;
 public:
   monitor_t();
@@ -1039,27 +1044,31 @@ using namespace std;
 
 namespace flx { namespace pthread {
 
-monitor_t::monitor_t(){}
+monitor_t::monitor_t() : ready(0)  {}
 monitor_t::~monitor_t() { }
 
 void
 monitor_t::enqueue(void* elt)
 {
-  ++writers;
-  --readers;
-  flx_mutex_locker_t   l(member_lock);
+  flx_mutex_locker_t   wl(wm); // exclude other writers
+  flx_mutex_locker_t   l(m);
+  if(++ready)                  // we got in first
+    ack.wait(&m);              // wait for a reader
   data = elt;
-  ack.wait(&member_lock); // wait for reader to acknowledge
+  data_put.signal();
+  ack.wait(&m);
 }
 
 void*
 monitor_t::dequeue()
 {
-  ++readers;
-  --writers;
-  flx_mutex_locker_t   l(member_lock);
-  void *d = data;
-  ack.signal(); // send acknowlege to release writer
+  flx_mutex_locker_t   rl(rm); // exclude other readers
+  flx_mutex_locker_t   l(m);
+  if(!--ready)                 // writer got in first and is ready
+    ack.signal();              // signal we're read to read
+  data_put.wait(&m);           // wait for the writer to store the data
+  void *d = data;              // get the data
+  ack.signal();                // tell the writer we have it
   return d;
 }
 

@@ -253,7 +253,10 @@ namespace flx { namespace rtl { namespace strutil {
 @h=tangler('lib/flx.flxh','data')
 @select(h)
 #import <flx_syntax.flxh>
+#import <flx_macros.flxh>
 include "std";
+
+@h=tangler('lib/flx_macros.flxh','data')
 macro val true = case 2 of 2;
 macro val false = case 1 of 2;
 macro fun print_line (x) = { fprint (cout,x); Stdout::endl cout; };
@@ -338,6 +341,7 @@ macro val false = case 1 of 2;
 #import <flx_syntax.flxh>
 #import <flx_categories.flxh>
 #import <flx_platform.flxh>
+#import <flx_macros.flxh>
 
 header '#include "flx_rtl_config.hpp"';
 
@@ -359,6 +363,11 @@ header """
 using namespace std;
 """;
 
+header mutex_hxx = '#include "pthread_mutex.hpp"';
+header condv_hxx = '#include "pthread_condv.hpp"';
+header counter_hxx = '#include "pthread_counter.hpp"';
+header semaphore_hxx = '#include "pthread_semaphore.hpp"';
+header monitor_hxx = '#include "pthread_monitor.hpp"';
 
 header flx_ioutil = '#include "flx_ioutil.hpp"';
 header flx_dynlink = '#include "flx_dynlink.hpp"';
@@ -1480,6 +1489,30 @@ module Control
     svc$ svc_swrite$ cast[_schannel] chan, &ps;
   }
 
+  // pre-emptive thread channels (monitor)
+  type pchannel[t] = "flx::pthread::monitor_t*" requires monitor_hxx;
+
+  fun mk_pchannel[t]: 1->pchannel[t] = 
+    "new flx::pthread::monitor_t()"
+  ; 
+
+  proc _read[t]: pchannel[t] * ptr[ptr[t]] = "*$2 = (?1*)($1->dequeue());";
+
+  proc read[t](v:&t,chan:pchannel[t]) {
+    var p : ptr[t];
+    _read (chan, addr p);
+macro fun print(x) = { fprint (cout,x); };
+    print "Read "; print$ cast[address] p; endl;
+    *v = *p;
+  }
+
+  proc _write[t]: pchannel[t] * ptr[t] = "$1->enqueue((void*)$2);";
+  proc write[t](chan:pchannel[t], v:t) {
+    var ps = cast[ptr[t]]$ xnew v;
+macro fun print(x) = { fprint (cout,x); };
+    print "Write "; print$ cast[address] ps; endl;
+    _write (chan,ps);
+  }
 
   publish "Read primitive"
   // finds the machine address of the read buffer
@@ -1510,6 +1543,12 @@ module Control
       var fthr = mk_thread con;
       svc$ svc_spawn_pthread fthr;
   }
+
+  type mutex = "flx_mutex_t" requires mutex_hxx;
+  proc lock: lvalue[mutex] = "$1.lock();";
+  proc unlock: lvalue[mutex] = "$1.unlock();";
+  proc lock (m:&mutex) { lock$ *m; }
+  proc unlock (m:&mutex) { unlock$ *m; }
 
   publish "Resume a continuation until it yields"
   fun step: cont -> cont = "$1->resume()";
