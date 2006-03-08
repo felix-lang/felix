@@ -2376,16 +2376,21 @@ ignore wchar
 @h = tangler("tmp/gnu_c_search_path.flxcc.default","data")
 @select(h)
 path /usr/local/include
-path /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
+@if not MACOSX:
+  tangle('path /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include')
 path /usr/include
 
 @h = tangler("tmp/gnu_cxx_search_path.flxcc.default","data")
 @select(h)
+path /usr/include/c++/4.0.0
+path /usr/include/c++/4.0.0/backward
 path /usr/include/c++/3.2.2
-path /usr/include/c++/3.2.2/i386-redhat-linux
 path /usr/include/c++/3.2.2/backward
 path /usr/local/include
-path /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
+@if not MACOSX:
+  tangle('path /usr/include/c++/4.0.0/i386-redhat-linux')
+  tangle('path /usr/include/c++/3.2.2/i386-redhat-linux')
+  tangle('path /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include')
 path /usr/include
 
 @h = tangler("tmp/gnu_headers.flxcc.default","data")
@@ -2418,6 +2423,16 @@ rename_nontype vtimes vtimes_
 rename_nontype statfs statfs_ 
 rename_nontype timezone timezone_
 
+@if MACOSX:
+  tangle('#include config/gnu_macosx_headers.flxcc')
+ else:
+  tangle('#include config/gnu_linux_macosx_headers.flxcc')
+
+@h = tangler("tmp/gnu_macosx_headers.flxcc.default","data")
+@select(h)
+
+@h = tangler("tmp/gnu_linux_headers.flxcc.default","data")
+@select(h)
 // Some files are designed as implementation details
 // and not intended to be used directly
 // We therefore prevent C level #includes like
@@ -2685,7 +2700,8 @@ incfile stdint.h
 incfile stdio.h
 incfile stdlib.h
 incfile string.h
-incfile tgmath.h
+@if not MACOSX:
+  tangle('incfile tgmath.h')
 incfile time.h
 incfile wchar.h
 incfile wctype.h
@@ -2726,7 +2742,8 @@ incfile stdint.h
 incfile stdio.h
 incfile stdlib.h
 incfile string.h
-incfile tgmath.h
+@if not MACOSX:
+  tangle('incfile tgmath.h')
 incfile time.h
 incfile wchar.h
 incfile wctype.h
@@ -2853,7 +2870,7 @@ prefix /usr/include
 prefix /usr/local/include
 prefix /usr/lib/gcc-lib/i386-redhat-linux/3.2.2/include
 prefix /usr/lib/glib/include/ glib
-preprocessor gcc -E 
+preprocessor g++ -E 
 language C
 
 //-pthread -D_REENTRANT -DNEED_GNOMESUPPORT_H -DGTKHTML_HAVE_GCONF -DORBIT2=1 
