@@ -1,5 +1,19 @@
 @set_title('Felix For C++ Programmers')
 @tdir = "tut/examples/"
+@h = tangler('spkgs/flx_tut_migrate.py')
+@select(h)
+COMPLETION_TESTS = glob.glob('test'+os.sep+'nd*.flx')
+TESTS = glob.glob('tut'+os.sep+'examples'+os.sep+'mig*.flx')
+
+unit_tests = TESTS
+completion_tests = COMPLETION_TESTS
+pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
+iscr_source = [
+  'lpsrc/flx_tut_migrate.pak',
+  'lpsrc/flx_tut_expect.ipk',
+  ]
+weaver_directory = 'tutorial/migration/'
+
 @head(1,"Introduction")
 Felix is a new programming language with special support for
 for C/C++ integration. This document highlights some of 

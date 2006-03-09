@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.164  2006/03/09 17:27:12  skaller
+Modularise documentation a bit: build with package system now.
+
 Revision 1.163  2006/03/09 13:51:04  skaller
 Add 2 new options to make: reqs and deps.
 Reqs builds all the packages which the selected packages depend on.
@@ -1990,6 +1993,7 @@ def filecopy(a,b):
   f.close()
 
 def filecopy2dir(a,d):
+  mkdirs(d)
   base = string.split(a,os.sep)[-1]
   filecopy(a,d+os.sep+base)
 

@@ -1,5 +1,19 @@
 @set_title('Felix Tutorial: Macros')
 @tdir = 'tut/examples/'
+@h = tangler('spkgs/flx_tut_macro.py')
+@select(h)
+COMPLETION_TESTS = glob.glob('test'+os.sep+'nd*.flx')
+TESTS = glob.glob('tut'+os.sep+'examples'+os.sep+'mac*.flx')
+
+unit_tests = TESTS
+completion_tests = COMPLETION_TESTS
+pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
+iscr_source = [
+  'lpsrc/flx_tut_macro.pak',
+  'lpsrc/flx_tut_expect.ipk',
+  ]
+weaver_directory = 'tutorial/macros/'
+
 @head(1,'The PreProcessor')
 Felix provides a C like pre-processor. Note that 
 whilst it is C like in appearance, it isn't the same.

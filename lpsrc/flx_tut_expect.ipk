@@ -149,14 +149,14 @@ Hello
 @head(2,"tut/examples/mig04.expect")
 @select(tangler("tut/examples/mig04.expect","data"))
 2 1 
-@head(2,"tut/examples/tut101.expect")
-@select(tangler("tut/examples/tut101.expect","data"))
+@head(2,"tut/examples/tut_beg101.expect")
+@select(tangler("tut/examples/tut_beg101.expect","data"))
 Hello World
-@head(2,"tut/examples/tut102.expect")
-@select(tangler("tut/examples/tut102.expect","data"))
+@head(2,"tut/examples/tut_beg102.expect")
+@select(tangler("tut/examples/tut_beg102.expect","data"))
 Hello World 42
-@head(2,"tut/examples/tut102a.expect")
-@select(tangler("tut/examples/tut102a.expect","data"))
+@head(2,"tut/examples/tut_beg102a.expect")
+@select(tangler("tut/examples/tut_beg102a.expect","data"))
 2
 3
 0
@@ -185,17 +185,17 @@ true
 true
 false
 false
-@head(2,"tut/examples/tut103.expect")
-@select(tangler("tut/examples/tut103.expect","data"))
+@head(2,"tut/examples/tut_beg103.expect")
+@select(tangler("tut/examples/tut_beg103.expect","data"))
 42
-@head(2,"tut/examples/tut104.expect")
-@select(tangler("tut/examples/tut104.expect","data"))
+@head(2,"tut/examples/tut_beg104.expect")
+@select(tangler("tut/examples/tut_beg104.expect","data"))
 42
-@head(2,"tut/examples/tut104a.expect")
-@select(tangler("tut/examples/tut104a.expect","data"))
+@head(2,"tut/examples/tut_beg104a.expect")
+@select(tangler("tut/examples/tut_beg104a.expect","data"))
 1 2 3 4 5 
-@head(2,"tut/examples/tut105.expect")
-@select(tangler("tut/examples/tut105.expect","data"))
+@head(2,"tut/examples/tut_beg105.expect")
+@select(tangler("tut/examples/tut_beg105.expect","data"))
 2
 4
 6
@@ -205,68 +205,68 @@ false
 14
 16
 18
-@head(2,"tut/examples/tut105a.expect")
-@select(tangler("tut/examples/tut105a.expect","data"))
+@head(2,"tut/examples/tut_beg105a.expect")
+@select(tangler("tut/examples/tut_beg105a.expect","data"))
 1 2 3 
 9 8 7 
-@head(2,"tut/examples/tut105b.expect")
-@select(tangler("tut/examples/tut105b.expect","data"))
-@head(2,"tut/examples/tut106.expect")
-@select(tangler("tut/examples/tut106.expect","data"))
+@head(2,"tut/examples/tut_beg105b.expect")
+@select(tangler("tut/examples/tut_beg105b.expect","data"))
+@head(2,"tut/examples/tut_beg106.expect")
+@select(tangler("tut/examples/tut_beg106.expect","data"))
 3
-@head(2,"tut/examples/tut107.expect")
-@select(tangler("tut/examples/tut107.expect","data"))
+@head(2,"tut/examples/tut_beg107.expect")
+@select(tangler("tut/examples/tut_beg107.expect","data"))
 3
-@head(2,"tut/examples/tut107a.expect")
-@select(tangler("tut/examples/tut107a.expect","data"))
+@head(2,"tut/examples/tut_beg107a.expect")
+@select(tangler("tut/examples/tut_beg107a.expect","data"))
 0
-@head(2,"tut/examples/tut107b.expect")
-@select(tangler("tut/examples/tut107b.expect","data"))
+@head(2,"tut/examples/tut_beg107b.expect")
+@select(tangler("tut/examples/tut_beg107b.expect","data"))
 0
-@head(2,"tut/examples/tut108.expect")
-@select(tangler("tut/examples/tut108.expect","data"))
+@head(2,"tut/examples/tut_beg108.expect")
+@select(tangler("tut/examples/tut_beg108.expect","data"))
 3355
-@head(2,"tut/examples/tut109.expect")
-@select(tangler("tut/examples/tut109.expect","data"))
+@head(2,"tut/examples/tut_beg109.expect")
+@select(tangler("tut/examples/tut_beg109.expect","data"))
 2
-@head(2,"tut/examples/tut110.expect")
-@select(tangler("tut/examples/tut110.expect","data"))
+@head(2,"tut/examples/tut_beg110.expect")
+@select(tangler("tut/examples/tut_beg110.expect","data"))
 3
-@head(2,"tut/examples/tut111.expect")
-@select(tangler("tut/examples/tut111.expect","data"))
+@head(2,"tut/examples/tut_beg111.expect")
+@select(tangler("tut/examples/tut_beg111.expect","data"))
 0 1 3 4
-@head(2,"tut/examples/tut112.expect")
-@select(tangler("tut/examples/tut112.expect","data"))
+@head(2,"tut/examples/tut_beg112.expect")
+@select(tangler("tut/examples/tut_beg112.expect","data"))
 1
-@head(2,"tut/examples/tut112a.expect")
-@select(tangler("tut/examples/tut112a.expect","data"))
+@head(2,"tut/examples/tut_beg112a.expect")
+@select(tangler("tut/examples/tut_beg112a.expect","data"))
 5
-@head(2,"tut/examples/tut113.expect")
-@select(tangler("tut/examples/tut113.expect","data"))
+@head(2,"tut/examples/tut_beg113.expect")
+@select(tangler("tut/examples/tut_beg113.expect","data"))
 1
 2
-@head(2,"tut/examples/tut114.expect")
-@select(tangler("tut/examples/tut114.expect","data"))
+@head(2,"tut/examples/tut_beg114.expect")
+@select(tangler("tut/examples/tut_beg114.expect","data"))
 1111111
-@head(2,"tut/examples/tut115.expect")
-@select(tangler("tut/examples/tut115.expect","data"))
+@head(2,"tut/examples/tut_beg115.expect")
+@select(tangler("tut/examples/tut_beg115.expect","data"))
 1
 2
-@head(2,"tut/examples/tut116.expect")
-@select(tangler("tut/examples/tut116.expect","data"))
+@head(2,"tut/examples/tut_beg116.expect")
+@select(tangler("tut/examples/tut_beg116.expect","data"))
 1
 2
-@head(2,"tut/examples/tut117.expect")
-@select(tangler("tut/examples/tut117.expect","data"))
+@head(2,"tut/examples/tut_beg117.expect")
+@select(tangler("tut/examples/tut_beg117.expect","data"))
 a0
 b2
 c3
 d15
-@head(2,"tut/examples/tut118.expect")
-@select(tangler("tut/examples/tut118.expect","data"))
+@head(2,"tut/examples/tut_beg118.expect")
+@select(tangler("tut/examples/tut_beg118.expect","data"))
 Some 1
-@head(2,"tut/examples/tut119.expect")
-@select(tangler("tut/examples/tut119.expect","data"))
+@head(2,"tut/examples/tut_beg119.expect")
+@select(tangler("tut/examples/tut_beg119.expect","data"))
 -1
 0
 1
@@ -276,20 +276,20 @@ Some 1
 -1
 0
 1
-@head(2,"tut/examples/tut120.expect")
-@select(tangler("tut/examples/tut120.expect","data"))
+@head(2,"tut/examples/tut_beg120.expect")
+@select(tangler("tut/examples/tut_beg120.expect","data"))
 1, (3, 4)
-@head(2,"tut/examples/tut120a.expect")
-@select(tangler("tut/examples/tut120a.expect","data"))
+@head(2,"tut/examples/tut_beg120a.expect")
+@select(tangler("tut/examples/tut_beg120a.expect","data"))
 1
 2
-@head(2,"tut/examples/tut121.expect")
-@select(tangler("tut/examples/tut121.expect","data"))
+@head(2,"tut/examples/tut_beg121.expect")
+@select(tangler("tut/examples/tut_beg121.expect","data"))
 Identifier
 Number
 Neither
-@head(2,"tut/examples/tut121a.expect")
-@select(tangler("tut/examples/tut121a.expect","data"))
+@head(2,"tut/examples/tut_beg121a.expect")
+@select(tangler("tut/examples/tut_beg121a.expect","data"))
 Identifier: A
 White:  
 Identifier: string
@@ -298,8 +298,8 @@ Number: 2
 White:  
 Identifier: lex
 Done.
-@head(2,"tut/examples/tut121b.expect")
-@select(tangler("tut/examples/tut121b.expect","data"))
+@head(2,"tut/examples/tut_beg121b.expect")
+@select(tangler("tut/examples/tut_beg121b.expect","data"))
 Lexer here
 #!/:     "#!/"
 Id:      "bin"
@@ -376,7 +376,7 @@ Id:      "Text_file"
 :::      "::"
 Id:      "load"
 LPAR:    "("
-Other:   ""tut/examples/tut121b.flx""
+Other:   ""tut/examples/tut_beg121b.flx""
 RPAR:    ")"
 SEMI:    ";"
 Eol:     "
@@ -1754,51 +1754,51 @@ Eol:     "
 "
 Eol:     "
 "
-@head(2,"tut/examples/tut135a.expect")
-@select(tangler("tut/examples/tut135a.expect","data"))
+@head(2,"tut/examples/tut_beg135a.expect")
+@select(tangler("tut/examples/tut_beg135a.expect","data"))
 1
 2
 2
-@head(2,"tut/examples/tut135b.expect")
-@select(tangler("tut/examples/tut135b.expect","data"))
+@head(2,"tut/examples/tut_beg135b.expect")
+@select(tangler("tut/examples/tut_beg135b.expect","data"))
 1
 2
 2
-@head(2,"tut/examples/tut135c.expect")
-@select(tangler("tut/examples/tut135c.expect","data"))
+@head(2,"tut/examples/tut_beg135c.expect")
+@select(tangler("tut/examples/tut_beg135c.expect","data"))
 3,4
 3,4
 2,2
-@head(2,"tut/examples/tut135e.expect")
-@select(tangler("tut/examples/tut135e.expect","data"))
+@head(2,"tut/examples/tut_beg135e.expect")
+@select(tangler("tut/examples/tut_beg135e.expect","data"))
 1,2
-@head(2,"tut/examples/tut135f.expect")
-@select(tangler("tut/examples/tut135f.expect","data"))
+@head(2,"tut/examples/tut_beg135f.expect")
+@select(tangler("tut/examples/tut_beg135f.expect","data"))
 1,2
 1
 321
 11
 12
 321Empty
-@head(2,"tut/examples/tut135g.expect")
-@select(tangler("tut/examples/tut135g.expect","data"))
+@head(2,"tut/examples/tut_beg135g.expect")
+@select(tangler("tut/examples/tut_beg135g.expect","data"))
 1111111112YES
-@head(2,"tut/examples/tut136.expect")
-@select(tangler("tut/examples/tut136.expect","data"))
+@head(2,"tut/examples/tut_beg136.expect")
+@select(tangler("tut/examples/tut_beg136.expect","data"))
 200.2 100.1 []
-@head(2,"tut/examples/tut137.expect")
-@select(tangler("tut/examples/tut137.expect","data"))
+@head(2,"tut/examples/tut_beg137.expect")
+@select(tangler("tut/examples/tut_beg137.expect","data"))
 List= 1 2 3 4 5 6 7 8 9 10 []
 Reversed= 10 9 8 7 6 5 4 3 2 1 []
-@head(2,"tut/examples/tut138.expect")
-@select(tangler("tut/examples/tut138.expect","data"))
+@head(2,"tut/examples/tut_beg138.expect")
+@select(tangler("tut/examples/tut_beg138.expect","data"))
 42
 43
-@head(2,"tut/examples/tut138a.expect")
-@select(tangler("tut/examples/tut138a.expect","data"))
+@head(2,"tut/examples/tut_beg138a.expect")
+@select(tangler("tut/examples/tut_beg138a.expect","data"))
 16
-@head(2,"tut/examples/tut139.expect")
-@select(tangler("tut/examples/tut139.expect","data"))
+@head(2,"tut/examples/tut_beg139.expect")
+@select(tangler("tut/examples/tut_beg139.expect","data"))
 10
 10
 10
@@ -1806,8 +1806,8 @@ Reversed= 10 9 8 7 6 5 4 3 2 1 []
 10
 10
 10
-@head(2,"tut/examples/tut140.expect")
-@select(tangler("tut/examples/tut140.expect","data"))
+@head(2,"tut/examples/tut_beg140.expect")
+@select(tangler("tut/examples/tut_beg140.expect","data"))
 10
 10
 10
@@ -1815,29 +1815,29 @@ Reversed= 10 9 8 7 6 5 4 3 2 1 []
 10
 10
 10
-@head(2,"tut/examples/tut140a.expect")
-@select(tangler("tut/examples/tut140a.expect","data"))
+@head(2,"tut/examples/tut_beg140a.expect")
+@select(tangler("tut/examples/tut_beg140a.expect","data"))
 1, 2, 3, 
 3, 2, 1, 
 6
 6
 6
 6
-@head(2,"tut/examples/tut141.expect")
-@select(tangler("tut/examples/tut141.expect","data"))
+@head(2,"tut/examples/tut_beg141.expect")
+@select(tangler("tut/examples/tut_beg141.expect","data"))
 1
 1
 2
 3
-@head(2,"tut/examples/tut142.expect")
-@select(tangler("tut/examples/tut142.expect","data"))
+@head(2,"tut/examples/tut_beg142.expect")
+@select(tangler("tut/examples/tut_beg142.expect","data"))
 5
-@head(2,"tut/examples/tut143.expect")
-@select(tangler("tut/examples/tut143.expect","data"))
+@head(2,"tut/examples/tut_beg143.expect")
+@select(tangler("tut/examples/tut_beg143.expect","data"))
 1
 2
-@head(2,"tut/examples/tut144.expect")
-@select(tangler("tut/examples/tut144.expect","data"))
+@head(2,"tut/examples/tut_beg144.expect")
+@select(tangler("tut/examples/tut_beg144.expect","data"))
 start
 1
 2
@@ -1849,45 +1849,45 @@ start
 8
 9
 finished
-@head(2,"tut/examples/tut145.expect")
-@select(tangler("tut/examples/tut145.expect","data"))
+@head(2,"tut/examples/tut_beg145.expect")
+@select(tangler("tut/examples/tut_beg145.expect","data"))
 good x
 bad_x
 finished
-@head(2,"tut/examples/tut146.expect")
-@select(tangler("tut/examples/tut146.expect","data"))
+@head(2,"tut/examples/tut_beg146.expect")
+@select(tangler("tut/examples/tut_beg146.expect","data"))
 1
 Zero
-@head(2,"tut/examples/tut147.expect")
-@select(tangler("tut/examples/tut147.expect","data"))
+@head(2,"tut/examples/tut_beg147.expect")
+@select(tangler("tut/examples/tut_beg147.expect","data"))
 1
 Zero
-@head(2,"tut/examples/tut148.expect")
-@select(tangler("tut/examples/tut148.expect","data"))
+@head(2,"tut/examples/tut_beg148.expect")
+@select(tangler("tut/examples/tut_beg148.expect","data"))
 1
 Zero
 Zero
-@head(2,"tut/examples/tut149.expect")
-@select(tangler("tut/examples/tut149.expect","data"))
+@head(2,"tut/examples/tut_beg149.expect")
+@select(tangler("tut/examples/tut_beg149.expect","data"))
 10
-@head(2,"tut/examples/tut149a.expect")
-@select(tangler("tut/examples/tut149a.expect","data"))
+@head(2,"tut/examples/tut_beg149a.expect")
+@select(tangler("tut/examples/tut_beg149a.expect","data"))
 ONE
-@head(2,"tut/examples/tut149b.expect")
-@select(tangler("tut/examples/tut149b.expect","data"))
+@head(2,"tut/examples/tut_beg149b.expect")
+@select(tangler("tut/examples/tut_beg149b.expect","data"))
 ONE
 Not a one ..
-@head(2,"tut/examples/tut149c.expect")
-@select(tangler("tut/examples/tut149c.expect","data"))
+@head(2,"tut/examples/tut_beg149c.expect")
+@select(tangler("tut/examples/tut_beg149c.expect","data"))
 ONE
 TWO
 Not a one ..
-@head(2,"tut/examples/tut149d.expect")
-@select(tangler("tut/examples/tut149d.expect","data"))
+@head(2,"tut/examples/tut_beg149d.expect")
+@select(tangler("tut/examples/tut_beg149d.expect","data"))
 ONE 
 FoundWeird Found
-@head(2,"tut/examples/tut149e.expect")
-@select(tangler("tut/examples/tut149e.expect","data"))
+@head(2,"tut/examples/tut_beg149e.expect")
+@select(tangler("tut/examples/tut_beg149e.expect","data"))
 NOT ONE
 1 TEN
 NOT ONE
@@ -1898,23 +1898,23 @@ NOT ONE
 2 TWENTY
 NOT ONE
 Dunno .. 
-@head(2,"tut/examples/tut149f.expect")
-@select(tangler("tut/examples/tut149f.expect","data"))
+@head(2,"tut/examples/tut_beg149f.expect")
+@select(tangler("tut/examples/tut_beg149f.expect","data"))
 1
 1
-@head(2,"tut/examples/tut149g.expect")
-@select(tangler("tut/examples/tut149g.expect","data"))
+@head(2,"tut/examples/tut_beg149g.expect")
+@select(tangler("tut/examples/tut_beg149g.expect","data"))
 1
-@head(2,"tut/examples/tut150.expect")
-@select(tangler("tut/examples/tut150.expect","data"))
-@head(2,"tut/examples/tut151.expect")
-@select(tangler("tut/examples/tut151.expect","data"))
+@head(2,"tut/examples/tut_beg150.expect")
+@select(tangler("tut/examples/tut_beg150.expect","data"))
+@head(2,"tut/examples/tut_beg151.expect")
+@select(tangler("tut/examples/tut_beg151.expect","data"))
 error 1 -- aborting
 error handled, continuing
-@head(2,"tut/examples/tut152.expect")
-@select(tangler("tut/examples/tut152.expect","data"))
-@head(2,"tut/examples/tut154.expect")
-@select(tangler("tut/examples/tut154.expect","data"))
+@head(2,"tut/examples/tut_beg152.expect")
+@select(tangler("tut/examples/tut_beg152.expect","data"))
+@head(2,"tut/examples/tut_beg154.expect")
+@select(tangler("tut/examples/tut_beg154.expect","data"))
 1
 1
 3
@@ -1927,8 +1927,8 @@ error handled, continuing
 3
 3
 finished
-@head(2,"tut/examples/tut155.expect")
-@select(tangler("tut/examples/tut155.expect","data"))
+@head(2,"tut/examples/tut_beg155.expect")
+@select(tangler("tut/examples/tut_beg155.expect","data"))
 10
 9
 8
@@ -1939,8 +1939,8 @@ finished
 3
 2
 1
-@head(2,"tut/examples/tut156.expect")
-@select(tangler("tut/examples/tut156.expect","data"))
+@head(2,"tut/examples/tut_beg156.expect")
+@select(tangler("tut/examples/tut_beg156.expect","data"))
 10
 9
 8
@@ -1951,48 +1951,48 @@ finished
 3
 2
 1
-@head(2,"tut/examples/tut157.expect")
-@select(tangler("tut/examples/tut157.expect","data"))
+@head(2,"tut/examples/tut_beg157.expect")
+@select(tangler("tut/examples/tut_beg157.expect","data"))
 2
-@head(2,"tut/examples/tut158.expect")
-@select(tangler("tut/examples/tut158.expect","data"))
-@head(2,"tut/examples/tut159.expect")
-@select(tangler("tut/examples/tut159.expect","data"))
+@head(2,"tut/examples/tut_beg158.expect")
+@select(tangler("tut/examples/tut_beg158.expect","data"))
+@head(2,"tut/examples/tut_beg159.expect")
+@select(tangler("tut/examples/tut_beg159.expect","data"))
 Hello Hello 
-@head(2,"tut/examples/tut160.expect")
-@select(tangler("tut/examples/tut160.expect","data"))
+@head(2,"tut/examples/tut_beg160.expect")
+@select(tangler("tut/examples/tut_beg160.expect","data"))
 Unit circle
 one
 One third
-@head(2,"tut/examples/tut161.expect")
-@select(tangler("tut/examples/tut161.expect","data"))
-@head(2,"tut/examples/tut205.expect")
-@select(tangler("tut/examples/tut205.expect","data"))
+@head(2,"tut/examples/tut_beg161.expect")
+@select(tangler("tut/examples/tut_beg161.expect","data"))
+@head(2,"tut/examples/tut_beg205.expect")
+@select(tangler("tut/examples/tut_beg205.expect","data"))
 4
-@head(2,"tut/examples/tut206.expect")
-@select(tangler("tut/examples/tut206.expect","data"))
+@head(2,"tut/examples/tut_beg206.expect")
+@select(tangler("tut/examples/tut_beg206.expect","data"))
 X1
 X2
 top level
-@head(2,"tut/examples/tut206a.expect")
-@select(tangler("tut/examples/tut206a.expect","data"))
+@head(2,"tut/examples/tut_beg206a.expect")
+@select(tangler("tut/examples/tut_beg206a.expect","data"))
 1
-@head(2,"tut/examples/tut207a.expect")
-@select(tangler("tut/examples/tut207a.expect","data"))
+@head(2,"tut/examples/tut_beg207a.expect")
+@select(tangler("tut/examples/tut_beg207a.expect","data"))
 Case 1 of three
 Case 2 of three
 Case 3 of three
 case 1 33
 case 2 3.3
 case 3 33
-@head(2,"tut/examples/tut207b.expect")
-@select(tangler("tut/examples/tut207b.expect","data"))
+@head(2,"tut/examples/tut_beg207b.expect")
+@select(tangler("tut/examples/tut_beg207b.expect","data"))
 42
 42
 42
 42
-@head(2,"tut/examples/tut207c.expect")
-@select(tangler("tut/examples/tut207c.expect","data"))
+@head(2,"tut/examples/tut_beg207c.expect")
+@select(tangler("tut/examples/tut_beg207c.expect","data"))
 11 22
 11 22
 11 22
@@ -2002,22 +2002,22 @@ case 3 33
 33 44
 1
 1
-@head(2,"tut/examples/tut208.expect")
-@select(tangler("tut/examples/tut208.expect","data"))
+@head(2,"tut/examples/tut_beg208.expect")
+@select(tangler("tut/examples/tut_beg208.expect","data"))
 2
 2
 8
-@head(2,"tut/examples/tut209.expect")
-@select(tangler("tut/examples/tut209.expect","data"))
+@head(2,"tut/examples/tut_beg209.expect")
+@select(tangler("tut/examples/tut_beg209.expect","data"))
 1
 1
 1
 2
 3
-@head(2,"tut/examples/tut301.expect")
+@head(2,"tut/examples/tut_beg301.expect")
 Output of this test is platform dependent and too hard to check.
-@head(2,"tut/examples/tut302.expect")
-@select(tangler("tut/examples/tut302.expect","data"))
+@head(2,"tut/examples/tut_beg302.expect")
+@select(tangler("tut/examples/tut_beg302.expect","data"))
 1
 2
 3
@@ -2027,8 +2027,8 @@ Output of this test is platform dependent and too hard to check.
 0 -> 2
 1 -> 23
 2 -> 423
-@head(2,"tut/examples/tut212.expect")
-@select(tangler("tut/examples/tut212.expect","data"))
+@head(2,"tut/examples/tut_beg212.expect")
+@select(tangler("tut/examples/tut_beg212.expect","data"))
 driver request test
 driver name code is 1
 exit code is 2
@@ -2039,20 +2039,20 @@ t1 continues
 t1 sends message: Hello main from t1!
 t1 dies
 Main got message: Hello main from t1!
-@head(2,"tut/examples/tut310.expect")
-@select(tangler("tut/examples/tut310.expect","data"))
+@head(2,"tut/examples/tut_beg310.expect")
+@select(tangler("tut/examples/tut_beg310.expect","data"))
 6
-@head(2,"tut/examples/tut311.expect")
-@select(tangler("tut/examples/tut311.expect","data"))
+@head(2,"tut/examples/tut_beg311.expect")
+@select(tangler("tut/examples/tut_beg311.expect","data"))
 6
-@head(2,"tut/examples/tut312.expect")
-@select(tangler("tut/examples/tut312.expect","data"))
+@head(2,"tut/examples/tut_beg312.expect")
+@select(tangler("tut/examples/tut_beg312.expect","data"))
 6
-@head(2,"tut/examples/tut313.expect")
-@select(tangler("tut/examples/tut313.expect","data"))
+@head(2,"tut/examples/tut_beg313.expect")
+@select(tangler("tut/examples/tut_beg313.expect","data"))
 3
-@head(2,"tut/examples/tut315.expect")
-@select(tangler("tut/examples/tut315.expect","data"))
+@head(2,"tut/examples/tut_beg315.expect")
+@select(tangler("tut/examples/tut_beg315.expect","data"))
 OK
 10
 10
@@ -2062,8 +2062,8 @@ OK
 11
 1
 1
-@head(2,"tut/examples/tut316.expect")
-@select(tangler("tut/examples/tut316.expect","data"))
+@head(2,"tut/examples/tut_beg316.expect")
+@select(tangler("tut/examples/tut_beg316.expect","data"))
 20000
 2
 3
@@ -2078,8 +2078,8 @@ This is a Y object, with x = 12, y = 33, and c = 20000
 (2, 4)
 (-12, 16)
 400
-@head(2,"tut/examples/tut317.expect")
-@select(tangler("tut/examples/tut317.expect","data"))
+@head(2,"tut/examples/tut_beg317.expect")
+@select(tangler("tut/examples/tut_beg317.expect","data"))
 20000
 2
 3
@@ -2088,8 +2088,8 @@ This is a Y object, with x = 22, y = 3, and c = 20000
 This is a Y object, with x = 12, y = 33, and c = 20000
 13
 1142
-@head(2,"tut/examples/tut318.expect")
-@select(tangler("tut/examples/tut318.expect","data"))
+@head(2,"tut/examples/tut_beg318.expect")
+@select(tangler("tut/examples/tut_beg318.expect","data"))
 20000
 2
 3

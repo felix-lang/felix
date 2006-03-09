@@ -1,5 +1,20 @@
 @set_title('Felix Tutorial: Embedding')
 @tdir = 'tut/examples/'
+
+@h = tangler('spkgs/flx_tut_bind.py')
+@select(h)
+TESTS = glob.glob('tut'+os.sep+'examples'+os.sep+'tut_bind*.flx')
+COMPLETION_TESTS = glob.glob('test'+os.sep+'nd*.flx')
+
+unit_tests = TESTS
+completion_tests = COMPLETION_TESTS
+pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
+iscr_source = [
+  'lpsrc/flx_tut_bind.pak',
+  'lpsrc/flx_tut_expect.ipk',
+  ]
+weaver_directory = 'tutorial/embedding/'
+
 @head(1,'Embedding')
 Felix is designed to integrate smoothly with C and C++.
 

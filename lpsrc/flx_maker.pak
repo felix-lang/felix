@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.28  2006/03/09 17:27:12  skaller
+Modularise documentation a bit: build with package system now.
+
 Revision 1.27  2006/03/09 13:51:04  skaller
 Add 2 new options to make: reqs and deps.
 Reqs builds all the packages which the selected packages depend on.
@@ -775,6 +778,15 @@ caml_require_libs = ['nums','unix','misclib','cillib']
 pkg_requires = ['misc']
 iscr_source = ["lpsrc/flx_flxcc.pak"]
 
+@h = tangler('spkgs/tutorial.py')
+@select(h)
+pkg_requires = [
+  'flx_tutorial',
+  'flx_tut_macro',
+  'flx_tut_bind',
+  'flx_tut_migrate'
+  ]
+
 @h = tangler('spkgs/flxcc.py')
 @select(h)
 FLXCC_EXES = [ 'src/flxcc', ]
@@ -897,37 +909,6 @@ caml_require_libs = ['nums','unix','misclib','flxlib']
 pkg_requires = ['misc']
 caml_provide_lib = 'flxlib'
 iscr_source = ["lpsrc/flx.pak"]
-
-@h = tangler('spkgs/flx_regression_tests.py')
-@select(h)
-UNIT_TESTS = glob.glob('test'+os.sep+'rt*.flx')
-COMPLETION_TESTS = glob.glob('test'+os.sep+'nd*.flx')
-# these are supposed to fail!
-BAD_TESTS = glob.glob('test'+os.sep+'bt*.flx')
-
-unit_tests = UNIT_TESTS
-completion_tests = COMPLETION_TESTS
-failure_tests = BAD_TESTS
-pkg_requires = ['flx_compiler','flx_drivers']
-iscr_source = ['lpsrc/flx_regress.ipk']
-
-@h = tangler('spkgs/flx_tutorial_tests.py')
-@select(h)
-TESTS = glob.glob('tut'+os.sep+'examples'+os.sep+'tut*.flx')
-COMPLETION_TESTS = glob.glob('test'+os.sep+'nd*.flx')
-TESTS = TESTS + glob.glob('tut'+os.sep+'examples'+os.sep+'mac*.flx')
-TESTS = TESTS + glob.glob('tut'+os.sep+'examples'+os.sep+'mig*.flx')
-
-unit_tests = TESTS
-completion_tests = COMPLETION_TESTS
-pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
-iscr_source = [
-  'lpsrc/flx_tutorial.pak',
-  'lpsrc/flx_tut_bind.pak',
-  'lpsrc/flx_tut_macro.pak',
-  'lpsrc/flx_tut_migrate.pak',
-  'lpsrc/flx_tut_expect.ipk',
-  ]
 
 @h = tangler('spkgs/ocs.py')
 @select(h)
@@ -1311,12 +1292,16 @@ TUTORIAL_DIRECTORY='tut/'
 TUTORIAL_DOC=TUTORIAL_DIRECTORY+'doc/'
 TUTORIAL_EXAMPLES=TUTORIAL_DIRECTORY+'examples/'
 
-@select(tangler('mkplugins/doc.py'))
-def plugin():    
-    print "GENERATING DOCUMENTATION"
-    runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx_config.pak')
-    runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx.pak')
-    runISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' '+FLX_LPARCHIVE+os.sep+'lpsrc/flx.pak')
+@select(tangler('mkplugins/mkdoc.py'))
+def mkdoc():
+    weaver_directory = pkgdict.get("weaver_directory","")
+    iscr_source = pkgdict.get("iscr_source",[])
+    if iscr_source and weaver_directory:
+      filecopy2dir('doc/interscript.css',weaver_directory)
+      filecopy2dir('doc/user.css',weaver_directory)
+      print "GENERATING DOCUMENTATION",weaver_directory
+      for src in iscr_source:
+        runISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+weaver_directory+' '+FLX_LPARCHIVE+os.sep+src)
 
 @select(tangler('mkplugins/tutdoc.py'))
 def plugin():    
@@ -1371,14 +1356,12 @@ def build_target_rtl_dynamic():
 
 @select(tangler('mkplugins/build_target_rtl_static.py'))
 def build_target_rtl_static():
-  ars = ""
   CPPS = pkgdict.get("cpp_cpps",[])
   EXTRA_CFLAGS = pkgdict.get("cflags","")
   if CPPS:
     print " ++ "+pkg+" RTL (static)"
     for x in CPPS:
       if not "quiet" in options: print 'Compiling rtl object',x
-      ars = ars + x + "_static.o "
       dir,base = string.split(x,'/')
       TARGET_CXX.compile_static_rtl(
         xqt,dir,base,
@@ -1408,7 +1391,6 @@ def build_felix_static_drivers():
   cflags = pkgdict.get("cflags","")
   if len(DRIVERS)>0:
     print "COMPILING DRIVERS (static)"
-    ars = ""
     for i,j in DRIVERS:
       if not "quiet" in options: print 'static Compiling driver object',i
       dir,base = string.split(i,'/')
@@ -1424,7 +1406,6 @@ def build_felix_dynamic_drivers():
   cflags = pkgdict.get("cflags","")
   if len(DRIVERS)>0:
     print "COMPILING DRIVERS (dynamic)"
-    ars = ""
     dflags = pkgdict.get("dflags","")
     LIBS = pkgdict.get("drivers_require_libs",[])
     libs = []
@@ -1449,7 +1430,6 @@ def build_felix_dynamic_drivers():
 
 @select(tangler('mkplugins/build_target_cpp_tools.py'))
 def build_target_cpp_tools():
-  ars = ""
   EXES = pkgdict.get("exes",[])
   esflags = pkgdict.get("exes_require_linkflags","")
   if len(EXES)>0:
@@ -2073,11 +2053,15 @@ for pkg in unsorted_pkgs:
 
 pkgdeps = invert(pkgreqs)
 print "REQS: "
-for k in pkgreqs.keys():
+ks=pkgreqs.keys()
+ks.sort()
+for k in ks:
   print "  ",k,pkgreqs[k]
  
 print "DEPS: "
-for k in pkgdeps.keys():
+ks = pkgdeps.keys()
+ks.sort()
+for k in ks:
   print "  ",k,pkgdeps[k]
 
 # doesn't work so well if both deps and reqs specified!
@@ -2166,13 +2150,16 @@ try:
   mkdirs("pkg-stamps")
   for pkg in pkgs:
     pkgdict = pkgd[pkg]
+    print
+    print "***** MAKING PACKAGE "+pkg+" ************"
+    if not "quiet" in options: print
+
+    if "doc" in options:
+      mkdoc()
+
     if "host" in phases:
       stamp="pkg-stamps"+os.sep+pkg+".host"
       erasefile(stamp)
-      print
-      print "***** MAKING PACKAGE "+pkg+" ************"
-      if not "quiet" in options: print
-
       MLIS = pkgdict.get("caml_raw_interfaces",[])
       copy_mli2ml(MLIS)
       HPPS = pkgdict.get("rtl_interfaces",[])
@@ -2618,6 +2605,8 @@ We have no idea if it continues copying.
 @tangle('\trm -rf mkplugins')
 @tangle('\trm -rf olddebian')
 @tangle('\trm -rf script')
+@tangle('\trm -rf manifests')
+@tangle('\trm -rf pkg-stamps')
 @tangle('')
 @tangle('virgin: distclean')
 @tangle('\tcp Makefile Makefile.old')

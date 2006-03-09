@@ -22,7 +22,23 @@ version of the compiler or run time.
 Performance tests measure speed. The result
 is an overall time in seconds, which should
 get smaller with each compiler improvement.
+@item('dn')
+Tests with non-deterministic results. Output
+is printed, not comnpared with expected output.
 @end_list()
+
+@h = tangler('spkgs/flx_regression_tests.py')
+@select(h)
+UNIT_TESTS = glob.glob('test'+os.sep+'rt*.flx')
+COMPLETION_TESTS = glob.glob('test'+os.sep+'nd*.flx')
+# these are supposed to fail!
+BAD_TESTS = glob.glob('test'+os.sep+'bt*.flx')
+
+unit_tests = UNIT_TESTS
+completion_tests = COMPLETION_TESTS
+failure_tests = BAD_TESTS
+pkg_requires = ['flx_compiler','flx_drivers']
+iscr_source = ['lpsrc/flx_regress.ipk']
 
 
 @head(2,'Good tests')
