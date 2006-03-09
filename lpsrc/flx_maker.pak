@@ -6,6 +6,14 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.27  2006/03/09 13:51:04  skaller
+Add 2 new options to make: reqs and deps.
+Reqs builds all the packages which the selected packages depend on.
+Deps builds all the packages which depend on the selected packages.
+Dependency is based on 'pkg_requires' field in the spkgs file.
+This is fairly crude: for example the Felix compiler requires
+Elkhound to run. But there is no build dependency.
+
 Revision 1.26  2006/03/09 11:33:40  skaller
 Add 'manifest' target to extract pak/ipk and product dependency
 information. Write time stamps after successful build of a package,
@@ -763,8 +771,9 @@ caml_parses = CIL_PARSES
 caml_raw_interfaces = CIL_RAW_INTERFACES
 caml_interfaces = CIL_INTERFACES
 caml_implementations = CIL_IMPLEMENTATIONS
-caml_require_libs = ['nums','unix','misclib','cillib','flxlib']
-pkg_requires = ['flx','misc']
+caml_require_libs = ['nums','unix','misclib','cillib']
+pkg_requires = ['misc']
+iscr_source = ["lpsrc/flx_flxcc.pak"]
 
 @h = tangler('spkgs/flxcc.py')
 @select(h)
@@ -772,6 +781,7 @@ FLXCC_EXES = [ 'src/flxcc', ]
 caml_exes = FLXCC_EXES
 caml_require_libs = ['nums','unix','misclib','cillib','flxlib']
 pkg_requires = ['cil']
+iscr_source = ["lpsrc/flx_flxcc.pak"]
 
 @h = tangler('spkgs/flx_compiler.py')
 @select(h)
@@ -1830,11 +1840,25 @@ def runISCR(a,force=0):
 @select(tangler('mkplugins/manifest.py'))
 def plugin():
   mkdirs("manifests")
+  src_re = re.compile(r"CREATING .* NAMED FILE SOURCE (.*) \[")
   paks = glob.glob(FLX_LPARCHIVE+os.sep+"lpsrc"+os.sep+"*.pak")
   for pkg in paks:
     base = string.split(pkg,os.sep)[-1][:-4]
     print "Manifest of",pkg
-    runISCR("--nocache --trace=sources --trace=changes --new-logfile=manifests/"+base+".log "+pkg)
+    fname = "manifests"+os.sep+base+".log" 
+    runISCR("--nocache --trace=sources --trace=changes --new-logfile="+fname+" "+pkg)
+    deps = []
+    f = open(fname)
+    for line in f.readlines():
+      m = re.match(src_re,line)
+      if m:
+        g = m.group(1)
+        print "Source File: "+g
+        deps = append_unique(deps,FLX_LPARCHIVE+os.sep+"lpsrc"+os.sep+g)
+    f.close()
+    f = open("manifests"+os.sep+base+".deps","w")
+    for x in deps: f.write(x+"\n")
+    f.close()
 
 @select(tangler('mkplugins/help.py'))
 # lame .. fix!
@@ -2025,6 +2049,8 @@ for pkg in unsorted_pkgs:
   pkgd[pkg]=d
 
 pkgs = []
+pkgreqs = {}
+
 def addpkg_nr(pkg):
   if pkg not in pkgs:
     pkgs.append(pkg)
@@ -2037,12 +2063,32 @@ def addpkg_r(pkg):
       sys.exit(1)
     else:
       reqs = pkgd[pkg].get('pkg_requires',[])
+      pkgreqs[pkg]=reqs
       for i in reqs:
         addpkg_r(i)
       addpkg_nr(pkg)
 
 for pkg in unsorted_pkgs:
   addpkg_r(pkg)
+
+pkgdeps = invert(pkgreqs)
+print "REQS: "
+for k in pkgreqs.keys():
+  print "  ",k,pkgreqs[k]
+ 
+print "DEPS: "
+for k in pkgdeps.keys():
+  print "  ",k,pkgdeps[k]
+
+# doesn't work so well if both deps and reqs specified!
+# would work better, if reqs was already reduced to
+# what actually needed to be rebuilt
+
+if "deps" in options:
+  packages = closure(pkgdeps,packages)
+
+if "reqs" in options:
+  packages = closure(pkgreqs,packages)
 
 if packages:
   pkgs = filter(lambda x: x in packages,pkgs)
