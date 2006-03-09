@@ -12,6 +12,11 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.162  2006/03/09 11:33:39  skaller
+Add 'manifest' target to extract pak/ipk and product dependency
+information. Write time stamps after successful build of a package,
+to allow subsequent optimisation of rebuilding.
+
 Revision 1.161  2006/03/08 22:30:49  skaller
 Add requires package "flx_pthread" to module Pthread
 
@@ -1890,6 +1895,16 @@ def erasefile(f):
   try: os.unlink(f)
   except: pass
 
+def unix2native(f):
+  return string.join(string.split(f,"/"),os.sep)
+
+def deletefile(f): 
+  erasefile(unix2native(f))
+
+def mkdirs(x):
+  if not os.path.exists(x):
+    os.makedirs(x)
+
 def erasedir(d):
   fs = glob.glob(d+os.sep+"*")
   for f in fs: erasefile(f)
@@ -2120,10 +2135,6 @@ def xqt(x,print_on_error=0,print_cmd=0,print_output=0):
    elif os.name == "nt":
      x = x + " >NUL"
  xxqt(x,print_cmd,print_on_error)
-
-def mkdirs(x):
-  if not os.path.exists(x):
-    os.makedirs(x)
 
 #----------------------------------------
 time_stamp_format = "%Y/%m/%d %H:%M:%S UTC"

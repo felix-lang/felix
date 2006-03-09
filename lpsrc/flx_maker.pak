@@ -6,6 +6,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.26  2006/03/09 11:33:40  skaller
+Add 'manifest' target to extract pak/ipk and product dependency
+information. Write time stamps after successful build of a package,
+to allow subsequent optimisation of rebuilding.
+
 Revision 1.25  2006/03/09 10:49:02  idadesub
 modified build_ocamls to allow building a spkgs that only has an executable
 and no implementations. Also pulled out flxcc from the flx_cil package into
@@ -1087,12 +1092,10 @@ def build_host_tools():
   LIBS = pkgdict.get("host_exes_require_libs",[])
   if len(CPPS)+len(EXES)+len(LIBS)>0:
     print "BUILDING HOST TOOLS"
-    ars = ""
     if CPPS:
       print "HOST C++ COMPILING "+pkg
       for x in CPPS:
         if not "quiet" in options: print 'Compiling host '+pkg+' object',x
-        ars = ars + x + "_static.o "
         dir,base = string.split(x,'/')
         HOST_CXX.compile_static_rtl(
           xqt,
@@ -1101,11 +1104,14 @@ def build_host_tools():
           dir,
           include_path=["rtl","elk"],
           macros=["FLX_STATIC_LINK"])
-      tmp = string.split(ars)
       objs=[]
-      for i in tmp:
-        objs.append(i[:-2]) # chop off the .o
+      for x in CPPS:
+        objs.append(x+'_static')
       HOST_CXX.link_static_archive(xqt,objs,dir+"/lib"+pkg+"_host_static")
+      for x in CPPS: 
+        f = x+"_static"+EXT_OBJ
+        print "Removing",f
+        deletefile(f) # delete the .o files
 
     for src,bin in EXES:
       dir,base = string.split(src,'/')
@@ -1300,7 +1306,7 @@ def plugin():
     print "GENERATING DOCUMENTATION"
     runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx_config.pak')
     runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx.pak')
-    runISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' '+FLX_LPARCHIVE+os.sep'lpsrc/flx.pak')
+    runISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+WEAVER_DIRECTORY+' '+FLX_LPARCHIVE+os.sep+'lpsrc/flx.pak')
 
 @select(tangler('mkplugins/tutdoc.py'))
 def plugin():    
@@ -1313,7 +1319,6 @@ def plugin():
 
 @select(tangler('mkplugins/build_target_rtl_dynamic.py'))
 def build_target_rtl_dynamic():
-  ars = ""
   CPPS = pkgdict.get("cpp_cpps",[])
   BUILD_MACRO = pkgdict.get("build_macro","ERROR!")
   EXTRA_CFLAGS = pkgdict.get("cflags","")
@@ -1322,7 +1327,6 @@ def build_target_rtl_dynamic():
     print " ++ "+pkg+" RTL (dynamic)"
     for x in CPPS:
       if not "quiet" in options: print 'Compiling rtl object',x
-      ars = ars + x + "_dynamic.o "
       dir,base = string.split(x,'/')
       TARGET_CXX.compile_shared_rtl(
         xqt,
@@ -1335,10 +1339,9 @@ def build_target_rtl_dynamic():
         CFLAGS=CFLAGS+EXTRA_CFLAGS)
 
     # LINK RTL
-    tmp = string.split(ars)
     objs=[]
-    for i in tmp:
-      objs.append(i[:-2]) # chop off the .o
+    for x in CPPS:
+      objs.append(x+'_dynamic')
     flibs = pkgdict.get("lib_requires",[])
     needs_libs = []
     for i in flibs:
@@ -1350,6 +1353,11 @@ def build_target_rtl_dynamic():
       lib_path=[SHLIB_DIR],
       libs=EXTRA_LIBS+needs_libs,
       DFLAGS=DFLAGS+EXTRA_DFLAGS) # hack
+    for x in CPPS: 
+      f = x+"_dynamic"+EXT_OBJ
+      print "Removing",f
+      deletefile(f) # delete the .o files
+
 
 @select(tangler('mkplugins/build_target_rtl_static.py'))
 def build_target_rtl_static():
@@ -1370,15 +1378,19 @@ def build_target_rtl_static():
         optimise=1,
         CFLAGS=CFLAGS+EXTRA_CFLAGS)
 
-    tmp = string.split(ars)
     objs=[]
-    for i in tmp:
-      objs.append(i[:-2]) # chop off the .o
+    for x in CPPS:
+      objs.append(x+'_static')
     lib = pkgdict.get("provide_lib","lib"+pkg)
     TARGET_CXX.link_static_archive(
       xqt,
       objs,
       "rtl/"+lib+"_static")
+    for x in CPPS: 
+      f = x+"_static"+EXT_OBJ
+      print "Removing",f
+      deletefile(f) # delete the .o files
+
 
 @select(tangler('mkplugins/build_felix_static_drivers.py'))
 def build_felix_static_drivers():
@@ -1423,6 +1435,7 @@ def build_felix_dynamic_drivers():
         lib_path=[SHLIB_DIR],
         libs=libs,
         DFLAGS=DFLAGS+dflags)
+      deletefile(i+"_dynamic"+EXT_OBJ)
 
 @select(tangler('mkplugins/build_target_cpp_tools.py'))
 def build_target_cpp_tools():
@@ -1451,6 +1464,7 @@ def build_target_cpp_tools():
         lib_path=[dir],
         libs=libs,
         SFLAGS=SFLAGS+esflags)
+      deletefile(src+"_static"+EXT_OBJ)
 
 @select(tangler('mkplugins/build_target_felix_tools.py'))
 # TARGET TOOLS : FELIX
@@ -1813,6 +1827,15 @@ def runISCR(a,force=0):
     exqt(ISCR + '--break-on-error ' + a)
 
 
+@select(tangler('mkplugins/manifest.py'))
+def plugin():
+  mkdirs("manifests")
+  paks = glob.glob(FLX_LPARCHIVE+os.sep+"lpsrc"+os.sep+"*.pak")
+  for pkg in paks:
+    base = string.split(pkg,os.sep)[-1][:-4]
+    print "Manifest of",pkg
+    runISCR("--nocache --trace=sources --trace=changes --new-logfile=manifests/"+base+".log "+pkg)
+
 @select(tangler('mkplugins/help.py'))
 # lame .. fix!
 def plugin():
@@ -1854,6 +1877,7 @@ import string
 import sys
 import re
 import traceback
+import time
 this = globals()
 
 if '' not in sys.path: sys.path=['']+sys.path
@@ -2078,6 +2102,11 @@ SPECIAL_TESTS = [
 
 
 # ----------- Here begins the actual build procedure ---------------------
+def enstamp(stamp):
+  f = open(stamp,"w")
+  t = "%04d %02d %02d %02d %02d %02d" % time.localtime(time.time())[:6]
+  f.write(t+"\n")
+  f.close()
 
 buildall = "clean" in options or "force" in options
 try:
@@ -2088,9 +2117,12 @@ try:
       plugins[k]()
 
 #---------- PACKAGE BUILDS ---------------------------------     
+  mkdirs("pkg-stamps")
   for pkg in pkgs:
     pkgdict = pkgd[pkg]
     if "host" in phases:
+      stamp="pkg-stamps"+os.sep+pkg+".host"
+      erasefile(stamp)
       print
       print "***** MAKING PACKAGE "+pkg+" ************"
       if not "quiet" in options: print
@@ -2110,7 +2142,11 @@ try:
 
       build_host_tools()
 
+      enstamp(stamp)
+
     if "target" in phases:
+      stamp="pkg-stamps"+os.sep+pkg+".target"
+      erasefile(stamp)
       if SUPPORT_DYNAMIC_LOADING:
         build_target_rtl_dynamic()
 
@@ -2129,13 +2165,20 @@ try:
       if "test" in options:
         run_host_tests()
 
+      enstamp(stamp)
+
     if "run" in phases:
+      stamp="pkg-stamps"+os.sep+pkg+".run"
+      erasefile(stamp)
       if "test" in options:
         run_unit_tests()
         run_completion_tests()
 
       if "demo" in options:
         run_demos()
+
+      enstamp(stamp)
+
    
   if os.name != 'nt': # requires posix
     if "test" in options or "tutorial" in options or "fcount" in options:
@@ -2518,6 +2561,9 @@ We have no idea if it continues copying.
 @tangle('\trm -rf interscript/*.pyo')
 @tangle('\trm -rf interscript/*/*.pyo')
 @tangle('\trm -rf interscript/*/*/*.pyo')
+@tangle('\trm -rf interscript/*.pyc')
+@tangle('\trm -rf interscript/*/*.pyc')
+@tangle('\trm -rf interscript/*/*/*.pyc')
 @tangle('\trm -rf speed')
 @tangle('\trm -rf cpkgs')
 @tangle('\trm -rf spkgs')
