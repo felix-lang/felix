@@ -6,6 +6,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.25  2006/03/09 10:49:02  idadesub
+modified build_ocamls to allow building a spkgs that only has an executable
+and no implementations. Also pulled out flxcc from the flx_cil package into
+it's own spkg, so cil doesn't have to be rebuilt if flxcc is modified
+
 Revision 1.24  2006/03/08 14:51:16  skaller
 Tests for pthreads, callbacks.
 
@@ -747,17 +752,21 @@ CIL_RAW_INTERFACES = [
 
 CIL_INTERFACES = CIL_MODULES
 CIL_IMPLEMENTATIONS = CIL_INTERFACES
-CIL_EXES = [ 'src/flxcc', ]
-
 
 caml_lexes = CIL_LEXS
 caml_parses = CIL_PARSES
 caml_raw_interfaces = CIL_RAW_INTERFACES
 caml_interfaces = CIL_INTERFACES
 caml_implementations = CIL_IMPLEMENTATIONS
-caml_exes = CIL_EXES
 caml_require_libs = ['nums','unix','misclib','cillib','flxlib']
 pkg_requires = ['flx','misc']
+
+@h = tangler('spkgs/flxcc.py')
+@select(h)
+FLXCC_EXES = [ 'src/flxcc', ]
+caml_exes = FLXCC_EXES
+caml_require_libs = ['nums','unix','misclib','cillib','flxlib']
+pkg_requires = ['cil']
 
 @h = tangler('spkgs/flx_compiler.py')
 @select(h)
@@ -1055,9 +1064,10 @@ def build_ocamls():
       linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
       library_filetime = filetime(object_library_name)
       for implementation in IMPLEMENTATIONS:
-        linkstring = linkstring + implementation +OCAML_OBJECT_EXTENSION +" "
+        linkstring = linkstring + implementation + OCAML_OBJECT_EXTENSION + " "
       xqt(linkstring)
 
+    if EXES:
       print "CAML LINKING EXECUTABLES"
       x = ''
       for library in OLIBRARIES:
@@ -1066,7 +1076,9 @@ def build_ocamls():
       # finally, mainline *.cmx or cma files to link to executables
       for exe in EXES:
         dst = "bin" + os.sep + string.split(exe,"/")[-1]
-        xqt(OCAMLOPT + LDFLAGS + ' ' + OCAML_INCLUDES + ' -o '+dst+ x + OBJECT_FILES + ' src/flx_version_hook.ml ' + exe + OCAML_OBJECT_EXTENSION)
+        xqt(OCAMLOPT + LDFLAGS + ' ' + OCAML_INCLUDES + ' -o ' + dst + \
+            x + OBJECT_FILES + ' src/flx_version_hook.ml ' + exe + \
+            OCAML_OBJECT_EXTENSION)
 
 @select(tangler('mkplugins/build_host_tools.py'))
 def build_host_tools():        
