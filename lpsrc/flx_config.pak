@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.165  2006/03/10 11:50:09  skaller
+Interscript felix tangler: colour symbols, comments.
+
 Revision 1.164  2006/03/09 17:27:12  skaller
 Modularise documentation a bit: build with package system now.
 
@@ -2956,6 +2959,7 @@ flx_3_char_syms = [
     ("HASHBANGSLASH","#!/"),
   ]
 
+flx_syms = flx_1_char_syms + flx_2_char_syms + flx_3_char_syms
 
 rmap = {}
 

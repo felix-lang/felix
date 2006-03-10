@@ -30,54 +30,18 @@ STRING = 3
 NEWLINE = 4
 INDENT = 5
 DEDENT = 6
-LPAR = 7
-RPAR = 8
-LSQB = 9
-RSQB = 10
-COLON = 11
-COMMA = 12
-SEMI = 13
-PLUS = 14
-MINUS = 15
-STAR = 16
-SLASH = 17
-VBAR = 18
-AMPER = 19
-LESS = 20
-GREATER = 21
-EQUAL = 22
-DOT = 23
-PERCENT = 24
-BACKQUOTE = 25
-LBRACE = 26
-RBRACE = 27
-EQEQUAL = 28
-NOTEQUAL = 29
-LESSEQUAL = 30
-GREATEREQUAL = 31
-TILDE = 32
-CIRCUMFLEX = 33
-LEFTSHIFT = 34
-RIGHTSHIFT = 35
-DOUBLESTAR = 36
-PLUSEQUAL = 37
-MINEQUAL = 38
-STAREQUAL = 39
-SLASHEQUAL = 40
-PERCENTEQUAL = 41
-AMPEREQUAL = 42
-VBAREQUAL = 43
-CIRCUMFLEXEQUAL = 44
-LEFTSHIFTEQUAL = 45
-RIGHTSHIFTEQUAL = 46
-DOUBLESTAREQUAL = 47
-DOUBLESLASH = 48
-DOUBLESLASHEQUAL = 49
-AT = 50
-OP = 51
-ERRORTOKEN = 52
-N_TOKENS = 53
-NT_OFFSET = 256
+ERRORTOKEN = 7
+OP = 8
+@tno=9
+@for kw,name in flx_keywords:
+  tangle(name+" = "+str(tno))
+  tno=tno+1
+
+@for name,sym in flx_syms:
+  tangle(name+" = "+str(tno))
+  tno=tno+1
+
+@tangle("N_TOKENS = " + str(tno))
 #--end constants--
 
 tok_name = {}
@@ -120,7 +84,7 @@ def any(*choices): return apply(group, choices) + '*'
 def maybe(*choices): return apply(group, choices) + '?'
 
 Whitespace = r'[ \f\t]*'
-Comment = r'#[^\r\n]*'
+Comment = r'//[^\r\n]*'
 Ignore = Whitespace + any(r'\\\r?\n' + Whitespace) + maybe(Comment)
 Name = r'[a-zA-Z_]\w*'
 
@@ -165,41 +129,13 @@ endprogs = {"'": re.compile(Single), '"': re.compile(Double),
             "R'''": single3prog, 'R"""': double3prog, 'r': None, 'R': None}
 
 opdict = {
-  '(':LPAR,
-  ')':RPAR,
-  '[':LSQB,
-  ']':RSQB,
-  ':':COLON,
-  ',':COMMA,
-  ';':SEMI,
-  '+':PLUS,
-  '-':MINUS,
-  '*':STAR,
-  '/':SLASH,
-  '|':VBAR,
-  '&':AMPER,
-  '<':LESS,
-  '>':GREATER,
-  '=':EQUAL,
-  '.':DOT,
-  '%':PERCENT,
-  '`':BACKQUOTE,
-  '{':LBRACE,
-  '}':RBRACE,
-  '==':EQEQUAL,
-  '!=':NOTEQUAL,
-  '<>':NOTEQUAL,
-  '<=':LESSEQUAL,
-  '>=':GREATEREQUAL,
-  '~':TILDE,
-  '^':CIRCUMFLEX,
-  '<<':LEFTSHIFT,
-  '>>':RIGHTSHIFT,
-  '**':DOUBLESTAR
+
+@for name,sym in flx_syms:
+  tangle(repr(sym)+":"+name+',')
+@#
   }
 
 tabsize = 8
-TokenError = 'TokenError'
 def printtoken(type, token, (srow, scol), (erow, ecol), line): # for testing
     print "%d,%d-%d,%d:\t%s\t%s" % \
         (srow, scol, erow, ecol, tok_name[type], repr(token))
@@ -272,7 +208,8 @@ class felix_tokeniser:
 
     if self.contstr:                                   # continued string
         if not line:
-            raise TokenError, ("EOF in multi-line string", self.strstart)
+            #raise TokenError, ("EOF in multi-line string", self.strstart)
+            pass
         endmatch = self.endprog.match(line)
         if endmatch:
             pos = end = endmatch.end(0)
@@ -325,7 +262,8 @@ class felix_tokeniser:
 
     else:                                              # continued statement
         if not line:
-            raise TokenError, ("EOF in multi-line statement", (lnum, 0))
+            #raise TokenError, ("EOF in multi-line statement", (lnum, 0))
+            pass
         self.continued = 0
 
     while pos < max:
@@ -344,7 +282,7 @@ class felix_tokeniser:
                 elif self.report_comments:
                   tokeneater(NL, token, spos, epos, line)
 
-            elif initial == '#':
+            elif line[start:start+2] == '//':
                 if self.report_comments:
                   tokeneater(COMMENT, token, spos, epos, line)
             elif token in ("'''", '"""',               # triple-quoted
@@ -427,249 +365,16 @@ py_punct_tokens = [
   felix_token.COLON, felix_token.COMMA, felix_token.SEMI]
 
 py_op_tokens = [
-  felix_token.OP,
-  felix_token.PLUS, felix_token.MINUS, felix_token.STAR, felix_token.SLASH,
-  felix_token.VBAR, felix_token.AMPER,
-  felix_token.LESS, felix_token.GREATER, felix_token.EQUAL,
-  felix_token.DOT, felix_token.PERCENT,
-  felix_token.BACKQUOTE, felix_token.EQEQUAL,
-  felix_token.NOTEQUAL, felix_token.LESSEQUAL, felix_token.GREATEREQUAL,
-  felix_token.TILDE, felix_token.CIRCUMFLEX,
-  felix_token.LEFTSHIFT,  felix_token.RIGHTSHIFT, felix_token.DOUBLESTAR]
+@for name,sym in flx_syms:
+  tangle("  felix_token."+name+",")
+@#
+  ]
 
-class argument:
-  def __init__(self,
-    name,
-    protocol=None,
-    description=None,
-    default=None):
-    self.name = name
-    self.protocol = protocol
-    self.description = description
-    self.default = default
-
-def tangle_precondition(indent, precondition):
-  return ' ' * indent + 'assert ' + precondition + '\n'
-
-def tangle_postcondition(indent, postcondition):
-  return ' ' * indent + 'assert ' + postcondition + '\n'
-
-def tangle_argument_check(indent, argument):
-  code = ''
-  if argument.protocol:
-    code = code + ' '* indent + 'assert has_protocol('+\
-      argument.name + ', '+ argument.protocol + ')\n'
-  return code
-
-def tangle_argument_checks(indent, arguments):
-  code = ''
-  for argument in arguments:
-    code = code + tangle_argument_check(indent, argument)
-  return code
-
-def tangle_argument(argument):
-  code = argument.name
-  if argument.default: code = code + '='+argument.default
-  return code
-
-def tangle_arguments(indent, arguments):
-  code = ''
-  for argument in arguments[:-1]:
-    code = code + ' '*indent + tangle_argument(argument)
-    code = code + ',\n'
-  code = code + ' '*indent + tangle_argument(arguments[-1])
-  return code
-
-def tangle_result(indent, results):
-  code = ''
-  for result in results:
-    if result.protocol:
-      code = code + ' '*indent + 'assert has_protocol(' +\
-        result.name+', '+ result.protocol+')\n'
-  code = code + ' '*indent + 'return '
-  for result in results[:-1]:
-    code = code + result.name + ', '
-  code = code + results[-1].name+'\n'
-  return code
-
-def tangle_function(
-  sink,
-  source_file,
-  source_line,
-  indent,
-  name,
-  description=None,
-  arguments=None,
-  precondition=None,
-  result=None,
-  postcondition=None,
-  initial=None,
-  final=None,
-  body=None):
-
-  # argument list
-  code = ' '* indent + 'def '+name
-  if arguments:
-    code = code + '(\n'
-    code = code + tangle_arguments(indent+2, arguments)
-    code = code + '):\n'
-  else: code = code + '():\n'
-
-  # argument checks
-  if arguments:
-    code = code + ' ' * (indent + 2) + '#check arguments\n'
-    code = code + tangle_argument_checks(indent+2, arguments)
-
-  # precondition
-  if precondition:
-    code = code + ' ' * (indent + 2) + '#precondition\n'
-    code = code + tangle_precondition(indent+2, precondition)
-
-  # begin try/finally block
-  code = code + ' '* (indent+2) + 'try:\n'
-
-  # initial
-  if initial:
-    code = code + ' ' * (indent + 4) + '#initially\n'
-    for line in initial:
-      code = code + ' ' * (indent+4) + line + '\n'
-
-  # begin try/except block
-  code = code + ' '* (indent+4) + 'try:\n'
-
-  # body
-  if body:
-    code = code + ' ' * (indent + 6) + '#body\n'
-    for line in body:
-      code = code + ' ' * (indent+6) + line + '\n'
-
-
-  # exception
-  code = code + ' ' * (indent + 4) + '#transmit user exceptions\n'
-  code = code + ' ' * (indent +4) + 'except: raise\n'
-  code = code + ' ' * (indent +4) + 'else:\n'
-
-
-  # postcondition
-  if postcondition:
-    code = code + ' ' * (indent + 6) + '#postcondition\n'
-    code = code + tangle_postcondition(indent + 6, postcondition)
-
-
-  # result
-  if result:
-    code = code + ' ' * (indent + 6) + '#return result\n'
-    code = code + tangle_result(indent + 6, result)
-  else: code = code + ' ' * (indent+6) + 'pass\n'
-
-  # finally
-  code = code + ' ' * (indent + 2) + '#cleanup\n'
-  code = code + ' '* (indent+2) + 'finally:\n'
-  if final:
-    for line in final:
-      code = code + ' ' * (indent+4) + line + '\n'
-  else:
-    code = code + ' ' * (indent+4) + 'pass\n'
-
-  for line in string.split(code,'\n')[:-1]:
-    sink.writeline(line)
-  return code
-
-#-------------------------------------------------
-def weave_argument(weaver, indent, argument):
-  weaver.write_code_fragment(' '* indent)
-  weaver.write_code_fragment(argument.name, 'NAME')
-  if argument.protocol:
-    weaver.write_code_fragment(':', 'PUNCT')
-    weaver.write_code_fragment(' ')
-    weaver.write_code_fragment(argument.protocol, 'NAME')
-  if argument.default:
-    weaver.write_code_fragment('=', 'PUNCT')
-    weaver.write_code_fragment(argument.default)
-  if argument.description:
-    weaver.write_code_fragment(' ')
-    weaver.write_code_fragment(repr(argument.description), 'COMMENT')
-
-def weave_arguments(weaver, indent, arguments):
-  for argument in arguments[:-1]:
-    weaver.start_code_line()
-    weave_argument(weaver, indent, argument)
-    weaver.write_code_fragment(',','PUNCT')
-    weaver.end_code_line()
-  weaver.start_code_line()
-  weave_argument(weaver, indent, arguments[-1])
-
-def weave_function(
-  weaver,
-  indent,
-  name,
-  description=None,
-  arguments=None,
-  precondition=None,
-  result=None,
-  postcondition=None,
-  initial=None,
-  final=None,
-  body=None):
-
-  weaver.start_code_line()
-  weaver.write_code_fragment(' '*indent)
-  weaver.write_code_fragment('function','KEYWORD')
-  weaver.write_code_fragment(' ')
-  weaver.write_code_fragment(name,'NAME')
-  weaver.write_code_fragment(':','PUNCT')
-  weaver.write_code_fragment(' ')
-  weaver.write_code_fragment('# '+description,'COMMENT')
-  weaver.end_code_line()
-
-  if arguments:
-    weaver.start_code_line()
-    weaver.write_code_fragment(' '*(indent+2))
-    weaver.write_code_fragment('accepts','KEYWORD')
-    weaver.write_code_fragment(':','PUNCT')
-    weaver.end_code_line()
-    weave_arguments(weaver,indent+4,arguments)
-    weaver.end_code_line()
-
-  if precondition:
-    weaver.start_code_line()
-    weaver.write_code_fragment(' '*(indent+2),)
-    weaver.write_code_fragment('precondition','KEYWORD')
-    weaver.write_code_fragment(':','PUNCT')
-    weaver.write_code_fragment(' ')
-    weaver.write_code_fragment(precondition)
-    weaver.end_code_line()
-
-  if result:
-    weaver.start_code_line()
-    weaver.write_code_fragment(' '*(indent+2))
-    weaver.write_code_fragment('returns','KEYWORD')
-    weaver.end_code_line()
-    weave_arguments(weaver,indent+4,result)
-    weaver.end_code_line()
-
-  if postcondition:
-    weaver.start_code_line()
-    weaver.write_code_fragment(' '*(indent+2))
-    weaver.write_code_fragment('postcondition','KEYWORD')
-    weaver.write_code_fragment(':','PUNCT')
-    weaver.write_code_fragment(' ')
-    weaver.write_code_fragment(postcondition)
-    weaver.end_code_line()
-
-  if body:
-    for line in body:
-      weaver.start_code_line()
-      weaver.write_code_fragment(' '*(indent+2))
-      weaver.write_code_fragment(line)
-      weaver.end_code_line()
-
-#-------------------------------------------------
 class flx_tangler(tangler_base):
   def __init__(self,sink,weaver,nosref=0):
     tangler_base.__init__(self,sink,weaver,nosref)
-    self.matchPOD = re.compile('^ *#@(.*)$')
-    self.matchcomment = re.compile('^([^#]*)#.*$')
+    self.matchPOD = re.compile('^ *//@(.*)$')
+    self.matchcomment = re.compile('^([^/]*)//.*$')
     self.excludeid = []
     self.userdict = {}
     self.tokeniser = felix_tokeniser(report_comments = 1, split_multiline_strings=1)
@@ -699,13 +404,7 @@ class flx_tangler(tangler_base):
       self._handle_sref(file,count, inhibit_sref)
       self._writeline(data)
 
-      try:
-        tokens = self.tokeniser.tokenize(data+'\n')
-      except TokenError, e:
-        print 'Tokeniser error',e
-        print 'in file',file,'line',line
-        print 'data['+data+']'
-
+      tokens = self.tokeniser.tokenize(data+'\n')
 
       # pretty printing
       chars_written = 0
@@ -738,10 +437,6 @@ class flx_tangler(tangler_base):
       function_name = 0
       level = 0
       for kind,id,lstart,lend,dummy in tokens:
-        if kind == felix_token.INDENT:
-          level = level + 1
-        elif kind == felix_token.DEDENT:
-          level = level - 1
         if kind is felix_token.NAME:
           if not (felix_keyword.iskeyword(id) or id in self.excludeid):
             if not self.pass_frame.ids.has_key(id): self.pass_frame.ids[id]=[]
@@ -757,7 +452,7 @@ class flx_tangler(tangler_base):
               function_name = 0
           elif id == 'class':
             class_name = 1
-          elif id == 'def':
+          elif id in ['fun','proc']:
             function_name = 1
 
   def write_comment(self,line,file,count):
@@ -774,48 +469,6 @@ class flx_tangler(tangler_base):
 
   def get_string_tangler(self,eol,width):
     return c_string_tangler(self.sink,self.get_weaver(),eol,width)
-
-  def function(self,
-    name,
-    indent,
-    source_file,
-    source_line,
-    description=None,
-    arguments=None,
-    precondition=None,
-    result=None,
-    postcondition=None,
-    initial=None,
-    final=None,
-    body=None):
-
-    tangle_function(
-      self.sink,
-      source_file,
-      source_line,
-      indent,
-      name,
-      description=description,
-      arguments=arguments,
-      precondition=precondition,
-      result=result,
-      postcondition=postcondition,
-      initial=initial,
-      final=final,
-      body=body)
-
-    weave_function(
-      self.weaver,
-      indent,
-      name,
-      description=description,
-      arguments=arguments,
-      precondition=precondition,
-      result=result,
-      postcondition=postcondition,
-      initial=initial,
-      final=final,
-      body=body)
 
 class script_comment_tangler(tangler_base):
   def writeline(self,data,file,count,inhibit_sref=0):
