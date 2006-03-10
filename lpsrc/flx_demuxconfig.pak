@@ -106,8 +106,12 @@ lib_requires = ['libflx_pthread','libflx']
 #lib_requires_linkflags = EXTRA_SYS_LIBS
 dflags = EXTRA_SYS_LIBS
 sflags = EXTRA_SYS_LIBS
-iscr_source = ["lpsrc/flx_demuxconfig.pak","lpsrc/flx_demux.pak"]
+iscr_source = [
+  "lpsrc/flx_demux.pak",
+  "lpsrc/flx_demuxconfig.pak",
+  ]
 build_macro = "DEMUX"
+weaver_directory = 'doc/rtl/demux/'
 
 @h=tangler('demux/demux_sockety.cpp')
 @select(h)

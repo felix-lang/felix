@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.9  2006/03/10 15:48:24  skaller
+Add pretty printer for C++.
+
 Revision 1.8  2006/03/06 15:08:08  skaller
 Cygwin and MinGW builds.
 
@@ -223,6 +226,7 @@ lib_requires = ['libdemux','libflx_pthread','libflx']
 unit_tests = EXTRA_TEST_GLOBS
 iscr_source = ["lpsrc/flx_faio.pak"]
 build_macro = "FAIO"
+weaver_directory = 'doc/rtl/faio/'
 
 @h=tangler('rtl/flx_faio_config.hpp')
 @select(h)

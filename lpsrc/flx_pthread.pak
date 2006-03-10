@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.14  2006/03/10 15:48:24  skaller
+Add pretty printer for C++.
+
 Revision 1.13  2006/03/08 22:30:49  skaller
 Add requires package "flx_pthread" to module Pthread
 
@@ -130,6 +133,7 @@ sflags = EXTRA_SYS_LIBS
 pkg_requires = ['flx_rtl']
 iscr_source = ["lpsrc/flx_pthread.pak"]
 build_macro = "PTHREAD"
+weaver_directory = 'doc/rtl/pthread/'
 
 @h=tangler('rtl/flx_pthread_config.hpp')
 @select(h)
