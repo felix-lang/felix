@@ -1,6 +1,10 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.10  2006/03/11 02:39:28  skaller
+Refactoring packaging structure. merge expected results of
+tests into the files containing the tests.
+
 Revision 1.9  2006/03/10 15:48:24  skaller
 Add pretty printer for C++.
 
@@ -2108,3 +2112,146 @@ proc tee(infd: flx_stream, outfd: flx_stream, outfd2: flx_stream)
 
 } // module Flx_Stream
 
+
+@head(1,"Felix Async IO tests")
+@h = tangler("test/posix_t1.flx")
+@select(h)
+#import <flx.flxh>
+include "flx_faio_posix";
+open Faio_posix;
+
+// create a listening socket, spawn a thread to connect to it.
+// in case something goes wrong could make test time out with
+// spawn_fthread { { sleep 5.0; System::exit 1; }; };
+print "felix posix accept/connect test\n";
+
+var port = 0;   // let mk_listener choose the port
+print "creating listener\n";
+var listener: int <- mk_listener(port, 1);
+
+print "spawning connector\n";
+// not printing in thread to make output repeatable in
+// the face of scheduler changes.
+spawn_fthread{ { var c: int; connect(&c, c"127.0.0.1", port); }; };
+
+var s: int;
+accept (&s, listener);  // async!
+if s == -1 then {
+  System::exit 1;
+} else {
+  print "accepted connection\n";
+  System::exit 0;
+} endif;
+
+@h = tangler("test/posix_t2.flx")
+@select(h)
+#import <flx.flxh>
+include "flx_faio_posix";
+open Faio_posix;
+
+header "typedef struct { char dat[8]; } tstbuf;";
+ctypes tstbuf;
+proc dprint: tstbuf = 'printf("%.8s", $1.dat);';
+fun get_data: tstbuf -> address = "$1.dat";
+fun get_data: charp -> address = "$1";
+
+// try to send some data down a socket
+var port = 0;   // let mk_listener choose the port
+var listener: int <- mk_listener(port, 1);
+
+// not printing in thread to make output repeatable in
+// the face of scheduler changes.
+spawn_fthread{
+  {
+    var c: int;
+    connect(&c, c"127.0.0.1", port);
+
+    var len = 8;
+    var eof: bool;
+    async_write(c, &len, get_data((c"faio2you")), &eof);
+    shutdown(c, 1);  // no further writes (wakes reader)
+
+    var b: tstbuf;
+    async_read(c, &len, b.data, &eof);
+    print "connector read "; dprint b; endl;
+    System::exit 0;
+  };
+};
+
+var s: int;
+accept (&s, listener);  // async!
+var b: tstbuf;
+var len = 16;           // ask for more than there is and rely on shutdown
+var eof: bool;
+async_read(s, &len, b.data, &eof);
+print "acceptor read "; print len; print " bytes: "; dprint b; endl;
+async_write(s, &len, get_data((c"thanks!!")), &eof);
+
+@h = tangler("test/posix_t3.flx")
+@select(h)
+#include <flx.flxh>
+// actually portable, but I don't know the scheme for
+// adding those tests.
+include "flx_stream";
+print "more output here\n";
+
+@h = tangler("test/win_t1.flx")
+@select(h)
+#import <flx.flxh>
+include "flx_faio_win32";
+open Faio_win32;
+
+var port = 1234;  // can't yet get os to choose the port. should fix that.
+var listener: SOCKET;
+mk_listener(&listener, &port, 1);
+
+print "spawning connector\n";
+// not printing in thread to make output repeatable in
+// the face of scheduler changes.
+spawn_fthread{
+  {
+    var c: SOCKET;
+    Connect(&c, c"127.0.0.1", port);
+  };
+};
+
+var s: SOCKET;
+var success: bool;
+mk_socket(&s);    // for async accept on win32 you create the accept socket yourself
+Accept(&success, listener, s);
+
+if success then {
+  print "successful accept!\n";
+  System::exit 0;
+} else {
+  print "accept failed!\n";
+  System::exit 1;
+} endif;
+
+
+@h = tangler("test/win_t2.flx")
+@select(h)
+#import <flx.flxh>
+print 1; endl;
+
+@h = tangler("test/posix_t1.expect","data")
+@select(h)
+felix posix accept/connect test
+creating listener
+spawning connector
+accepted connection
+@h = tangler("test/posix_t2.expect","data")
+@select(h)
+acceptor read 8 bytes: faio2you
+connector read thanks!!
+@h = tangler("test/posix_t3.expect","data")
+@select(h)
+more output here
+@h = tangler("test/win_t1.expect","data")
+@select(h)
+spawning connector
+successful accept!
+@h = tangler("test/win_t2.expect","data")
+@select(h)
+1
+@doc()

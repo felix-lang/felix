@@ -1850,3 +1850,335 @@ motives that make for change are lost, for one change always leaves
 the toothing for another.
 
 
+@head(1,"Expected outputs for bagley/felix")
+@head(2,"bagley/felix/array.expect")
+@select(tangler("bagley/felix/array.expect","data"))
+1000 1000000
+@head(2,"bagley/felix/ackermann.expect")
+@select(tangler("bagley/felix/ackermann.expect","data"))
+Ack(3,8): 2045
+@head(2,"bagley/felix/except.expect")
+@select(tangler("bagley/felix/except.expect","data"))
+Exceptions: HI=4 / LO=4
+@head(2,"bagley/felix/fibo.expect")
+@select(tangler("bagley/felix/fibo.expect","data"))
+Fib(8): 34
+@head(2,"bagley/felix/heapsort.expect")
+@select(tangler("bagley/felix/heapsort.expect","data"))
+0.9990640718
+@head(2,"bagley/felix/hello.expect")
+@select(tangler("bagley/felix/hello.expect","data"))
+hello world
+@head(2,"bagley/felix/lists.expect")
+@select(tangler("bagley/felix/lists.expect","data"))
+10000
+@head(2,"bagley/felix/matrix.expect")
+@select(tangler("bagley/felix/matrix.expect","data"))
+270165 1061760 1453695 1856025
+@head(2,"bagley/felix/methcall.expect")
+@select(tangler("bagley/felix/methcall.expect","data"))
+true
+true
+@head(2,"bagley/felix/nestedloop.expect")
+@select(tangler("bagley/felix/nestedloop.expect","data"))
+262144
+@head(2,"bagley/felix/objinst.expect")
+@select(tangler("bagley/felix/objinst.expect","data"))
+false
+true
+false
+true
+false
+
+true
+true
+false
+false
+false
+true
+true
+true
+@head(2,"bagley/felix/random.expect")
+@select(tangler("bagley/felix/random.expect","data"))
+8.16329
+@head(2,"bagley/felix/regexmatch.expect")
+@select(tangler("bagley/felix/regexmatch.expect","data"))
+1: (111) 111-1111
+2: (111) 222-2222
+3: (111) 333-3333
+4: (111) 444-4444
+5: (111) 555-5555
+6: (111) 666-6666
+7: (111) 777-7777
+8: (111) 888-8888
+9: (111) 999-9999
+10: (111) 000-0000
+11: (111) 232-1111
+12: (111) 242-1111
+13: (213) 222-2222
+@head(2,"bagley/felix/reversefile.expect")
+@select(tangler("bagley/felix/reversefile.expect","data"))
+foo 214) 222 2222 bar
+foo (213 222-2222 bar
+foo 211@22222222 bar
+foo (202).222 2222 bar
+
+foo 292 222 22222
+foo (282) 222-22227
+foo 272 2222222
+foo (262) 2222222
+
+2252 222 2222
+(242) 222-22222
+2232 222-2222
+2(212) 222 2222
+
+The following should fail to match:
+
+foo 111 242 1111 bar
+foo (111) 232-1111 bar
+foo 111 000-0000 bar
+foo (111) 999 9999 bar
+
+foo 111 888 8888
+foo (111) 777-7777
+foo 111 666-6666
+foo (111) 555 5555
+
+111 444 4444
+(111) 333-3333
+111 222-2222
+(111) 111 1111
+
+the following numbers should match:
+
+datafile for regex matching of phone numbers test
+@head(2,"bagley/felix/sieve.expect")
+@select(tangler("bagley/felix/sieve.expect","data"))
+Count: 1028
+@head(2,"bagley/felix/strcat.expect")
+@select(tangler("bagley/felix/strcat.expect","data"))
+48
+@head(2,"bagley/felix/sumcol.expect")
+@select(tangler("bagley/felix/sumcol.expect","data"))
+500500
+@head(2,"bagley/felix/wc.expect")
+@select(tangler("bagley/felix/wc.expect","data"))
+35 100 566
+@head(2,"bagley/felix/plugin.expect")
+@select(tangler("bagley/felix/plugin.expect","data"))
+120
+@head(2,"bagley/felix/hash.expect")
+@select(tangler("bagley/felix/hash.expect","data"))
+4999
+@head(2,"bagley/felix/hash2.expect")
+@select(tangler("bagley/felix/hash2.expect","data"))
+1 9999 10 99990
+@head(2,"bagley/felix/moments.expect")
+@select(tangler("bagley/felix/moments.expect","data"))
+n:                  500
+median:             250.500000
+mean:               250.500000
+average_deviation:  125.000000
+standard_deviation: 144.481833
+variance:           20875.000000
+skew:               0.000000
+kurtosis:           -1.207202
+@head(2,"bagley/felix/spellcheck.expect")
+@select(tangler("bagley/felix/spellcheck.expect","data"))
+zuul
+@head(2,"bagley/felix/wordfreq.expect")
+@select(tangler("bagley/felix/wordfreq.expect","data"))
+     20 the
+     17 of
+     16 and
+     16 to
+     12 are
+     11 in
+      7 by
+      7 for
+      7 it
+      7 or
+      7 prince
+      6 be
+      6 principalities
+      6 will
+      5 as
+      5 either
+      5 have
+      5 he
+      5 hereditary
+      5 his
+      5 i
+      5 that
+      4 acquired
+      4 new
+      4 they
+      3 all
+      3 been
+      3 has
+      3 long
+      3 unless
+      2 a
+      2 accustomed
+      2 another
+      2 at
+      2 cause
+      2 change
+      2 chapter
+      2 deprived
+      2 dominions
+      2 established
+      2 extraordinary
+      2 family
+      2 happens
+      2 him
+      2 himself
+      2 how
+      2 is
+      2 less
+      2 live
+      2 not
+      2 only
+      2 powers
+      2 republics
+      2 rule
+      2 so
+      2 state
+      2 states
+      2 such
+      2 them
+      2 there
+      2 those
+      2 was
+      2 who
+      1 ability
+      1 above
+      1 address
+      1 always
+      1 ancestors
+      1 annexed
+      1 antiquity
+      1 anything
+      1 arise
+      1 arms
+      1 attacks
+      1 average
+      1 circumstances
+      1 concerning
+      1 could
+      1 customs
+      1 deal
+      1 difficulties
+      1 discuss
+      1 discussion
+      1 disposed
+      1 doing
+      1 duke
+      1 duration
+      1 else
+      1 entirely
+      1 example
+      1 excessive
+      1 expect
+      1 ferrara
+      1 fewer
+      1 force
+      1 fortune
+      1 francesco
+      1 freedom
+      1 had
+      1 hated
+      1 held
+      1 hence
+      1 hold
+      1 holding
+      1 if
+      1 ii
+      1 inasmuch
+      1 indicated
+      1 italy
+      1 julius
+      1 k
+      1 keep
+      1 kinds
+      1 king
+      1 kingdom
+      1 leave
+      1 leaves
+      1 length
+      1 lost
+      1 loved
+      1 machiavelli
+      1 maintain
+      1 make
+      1 many
+      1 marriott
+      1 means
+      1 members
+      1 memories
+      1 men
+      1 milan
+      1 more
+      1 motives
+      1 myself
+      1 naples
+      1 naturally
+      1 necessity
+      1 nicolo
+      1 nor
+      1 offend
+      1 on
+      1 once
+      1 one
+      1 ones
+      1 order
+      1 others
+      1 out
+      1 over
+      1 place
+      1 pope
+      1 preserved
+      1 prudently
+      1 reasonable
+      1 regain
+      1 ruled
+      1 say
+      1 sforza
+      1 should
+      1 sinister
+      1 some
+      1 spain
+      1 subjects
+      1 sufficient
+      1 than
+      1 their
+      1 thus
+      1 toothing
+      1 towards
+      1 transgress
+      1 translated
+      1 under
+      1 usurper
+      1 venetians
+      1 vices
+      1 w
+      1 we
+      1 well
+      1 were
+      1 what
+      1 whenever
+      1 which
+      1 with
+      1 withstood
+      1 written
+@head(2,"bagley/felix/prodcons.expect")
+@select(tangler("bagley/felix/prodcons.expect","data"))
+1000 1000
+@head(2,"bagley/felix/takfp.expect")
+@select(tangler("bagley/felix/takfp.expect","data"))
+11.0
+@head(2,"bagley/felix/procinst.expect")
+@select(tangler("bagley/felix/procinst.expect","data"))
+100
+@doc()

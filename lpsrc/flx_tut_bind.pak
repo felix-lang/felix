@@ -9,11 +9,8 @@ COMPLETION_TESTS = glob.glob('test'+os.sep+'nd*.flx')
 unit_tests = TESTS
 completion_tests = COMPLETION_TESTS
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
-iscr_source = [
-  'lpsrc/flx_tut_bind.pak',
-  'lpsrc/flx_tut_expect.ipk',
-  ]
-weaver_directory = 'tutorial/embedding/'
+iscr_source = [ 'lpsrc/flx_tut_bind.pak' ]
+weaver_directory = 'doc/tutorial/embedding/'
 
 @head(1,'Embedding')
 Felix is designed to integrate smoothly with C and C++.
@@ -757,3 +754,91 @@ proc q(x:int){ print x; endl; }
 p(31,the q);
 
 
+@head(2,"tut/examples/tut_bind130.expect")
+@select(tangler("tut/examples/tut_bind130.expect","data"))
+(1, 2)
+(2, 4)
+(-12, 16)
+400
+@head(2,"tut/examples/tut_bind131.expect")
+@select(tangler("tut/examples/tut_bind131.expect","data"))
+(1, 2)
+(2, 4)
+(4, 16)
+272
+@head(2,"tut/examples/tut_bind131a.expect")
+@select(tangler("tut/examples/tut_bind131a.expect","data"))
+1
+2
+@head(2,"tut/examples/tut_bind132.expect")
+@select(tangler("tut/examples/tut_bind132.expect","data"))
+1
+2
+3
+@head(2,"tut/examples/tut_bind133.expect")
+@select(tangler("tut/examples/tut_bind133.expect","data"))
+1, 2
+1
+@head(2,"tut/examples/tut_bind134.expect")
+@select(tangler("tut/examples/tut_bind134.expect","data"))
+1
+1 2 3 
+@head(2,"tut/examples/tut_bind135.expect")
+@select(tangler("tut/examples/tut_bind135.expect","data"))
+Hello
+@head(2,"tut/examples/tut_bind136.expect")
+@select(tangler("tut/examples/tut_bind136.expect","data"))
+Hello
+@head(2,"tut/examples/tut_bind137.expect")
+@select(tangler("tut/examples/tut_bind137.expect","data"))
+Hello
+@head(2,"tut/examples/tut_bind138.expect")
+@select(tangler("tut/examples/tut_bind138.expect","data"))
+Hello
+@head(2,"tut/examples/tut_bind138a.expect")
+@select(tangler("tut/examples/tut_bind138a.expect","data"))
+TOP
+A will be used
+A is used
+Done
+@head(2,"tut/examples/tut_bind138b.expect")
+@select(tangler("tut/examples/tut_bind138b.expect","data"))
+A is used
+@head(2,"tut/examples/tut_bind138c.expect")
+@select(tangler("tut/examples/tut_bind138c.expect","data"))
+1
+1.1
+@head(2,"tut/examples/tut_bind150.expect")
+@select(tangler("tut/examples/tut_bind150.expect","data"))
+1 2
+2 1
+@head(2,"tut/examples/tut_bind151.expect")
+@select(tangler("tut/examples/tut_bind151.expect","data"))
+3
+4
+4
+16
+@head(2,"tut/examples/tut_bind160.expect")
+@select(tangler("tut/examples/tut_bind160.expect","data"))
+-50
+2
+3
+105
+1105
+Y=2,3
+20
+3
+20
+42
+10062
+162
+1162
+162
+1
+1
+25
+@head(2,"tut/examples/tut_bind180.expect")
+@select(tangler("tut/examples/tut_bind180.expect","data"))
+5
+31
+@#

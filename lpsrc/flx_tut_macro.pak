@@ -8,11 +8,8 @@ TESTS = glob.glob('tut'+os.sep+'examples'+os.sep+'mac*.flx')
 unit_tests = TESTS
 completion_tests = COMPLETION_TESTS
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
-iscr_source = [
-  'lpsrc/flx_tut_macro.pak',
-  'lpsrc/flx_tut_expect.ipk',
-  ]
-weaver_directory = 'tutorial/macros/'
+iscr_source = [ 'lpsrc/flx_tut_macro.pak' ]
+weaver_directory = 'doc/tutorial/macros/'
 
 @head(1,'The PreProcessor')
 Felix provides a C like pre-processor. Note that 
@@ -915,3 +912,141 @@ IF 1 == 1 do
   print "Hello"; endl;
 done;
 
+@head(1,"Expected outputs for tut/examples")
+@head(2,"tut/examples/mac101.expect")
+@select(tangler("tut/examples/mac101.expect","data"))
+This is mac101
+@head(2,"tut/examples/mac102.expect")
+@select(tangler("tut/examples/mac102.expect","data"))
+This is mac101
+This is mac102
+it should have printed the 101 message too
+@head(2,"tut/examples/mac103.expect")
+@select(tangler("tut/examples/mac103.expect","data"))
+Defining FIRST
+detected FIRST
+@head(2,"tut/examples/mac104.expect")
+@select(tangler("tut/examples/mac104.expect","data"))
+OK
+@head(2,"tut/examples/mac105.expect")
+@select(tangler("tut/examples/mac105.expect","data"))
+OK
+@head(2,"tut/examples/mac105a.expect")
+@select(tangler("tut/examples/mac105a.expect","data"))
+@head(2,"tut/examples/mac105b.expect")
+@select(tangler("tut/examples/mac105b.expect","data"))
+OK
+@head(2,"tut/examples/mac106.expect")
+@select(tangler("tut/examples/mac106.expect","data"))
+Yes
+@head(2,"tut/examples/mac122.expect")
+@select(tangler("tut/examples/mac122.expect","data"))
+101
+102
+103
+101
+102
+1
+@head(2,"tut/examples/mac123.expect")
+@select(tangler("tut/examples/mac123.expect","data"))
+101
+103
+103
+@head(2,"tut/examples/mac124.expect")
+@select(tangler("tut/examples/mac124.expect","data"))
+1
+2
+1
+2
+1
+15
+1
+@head(2,"tut/examples/mac125.expect")
+@select(tangler("tut/examples/mac125.expect","data"))
+LoadTheLibrary(MyLibrary.lib_ext)
+@head(2,"tut/examples/mac126.expect")
+@select(tangler("tut/examples/mac126.expect","data"))
+1 -> 1
+2 -> 4
+30
+Start dump_s
+1
+2
+End dump_s
+Start dump_e
+1
+2
+End dump_e
+Start dump_s
+Dumped
+End dump_s
+Start dump_e
+Dumped
+End dump_e
+Start dump_s
+66
+End dump_s
+Start dump_e
+66
+End dump_e
+@head(2,"tut/examples/mac126a.expect")
+@select(tangler("tut/examples/mac126a.expect","data"))
+10 9 8 7 6 5 4 3 2 1
+10 9 8 7 6 5 4 3 2 1
+10 9 8 7 6 5 4 3 2 1
+@head(2,"tut/examples/mac127.expect")
+@select(tangler("tut/examples/mac127.expect","data"))
+2+2 -> 4
+@head(2,"tut/examples/mac128.expect")
+@select(tangler("tut/examples/mac128.expect","data"))
+1
+4
+@head(2,"tut/examples/mac129.expect")
+@select(tangler("tut/examples/mac129.expect","data"))
+Hi there locality!
+Hello locality!
+Hello world!
+Hello world!
+@head(2,"tut/examples/mac130.expect")
+@select(tangler("tut/examples/mac130.expect","data"))
+Hello World 42 
+PTF a:int=1
+PTF b:int=1
+PTF c:int=1
+@head(2,"tut/examples/mac131.expect")
+@select(tangler("tut/examples/mac131.expect","data"))
+1 2 2 3 
+(1,2) (3,4) 
+@head(2,"tut/examples/mac132.expect")
+@select(tangler("tut/examples/mac132.expect","data"))
+x = 1
+y = 42
+(add (x, y)) = 43
+@head(2,"tut/examples/mac133.expect")
+@select(tangler("tut/examples/mac133.expect","data"))
+3 2 1 
+@head(2,"tut/examples/mac300.expect")
+@select(tangler("tut/examples/mac300.expect","data"))
+OK
+10
+10
+10
+10
+11
+11
+1
+1
+@head(2,"tut/examples/mac301.expect")
+@select(tangler("tut/examples/mac301.expect","data"))
+10 9 8 7 6 5 4 3 2 1 
+10 9 8 7 6 5 4 3 2 1 
+1 plus 2 is 3
+1 2 3 4 5 6 7 8 9 10
+10 9 8 7 6 5 4 3 2 1
+@head(2,"tut/examples/mac302.expect")
+@select(tangler("tut/examples/mac302.expect","data"))
+None
+@head(2,"tut/examples/mac303.expect")
+@select(tangler("tut/examples/mac303.expect","data"))
+Hello
+@#

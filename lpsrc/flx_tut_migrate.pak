@@ -8,11 +8,8 @@ TESTS = glob.glob('tut'+os.sep+'examples'+os.sep+'mig*.flx')
 unit_tests = TESTS
 completion_tests = COMPLETION_TESTS
 pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
-iscr_source = [
-  'lpsrc/flx_tut_migrate.pak',
-  'lpsrc/flx_tut_expect.ipk',
-  ]
-weaver_directory = 'tutorial/migration/'
+iscr_source = [ 'lpsrc/flx_tut_migrate.pak' ]
+weaver_directory = 'doc/tutorial/migration/'
 
 @head(1,"Introduction")
 Felix is a new programming language with special support for
@@ -237,3 +234,18 @@ Abstract types may also be polymorphic.
 [A lot more is needed here]
 
 
+@head(1,"Expected outputs for tut/examples")
+@head(2,"tut/examples/mig01.expect")
+@select(tangler("tut/examples/mig01.expect","data"))
+1
+2
+@head(2,"tut/examples/mig02.expect")
+@select(tangler("tut/examples/mig02.expect","data"))
+1
+2
+@head(2,"tut/examples/mig03.expect")
+@select(tangler("tut/examples/mig03.expect","data"))
+0
+@head(2,"tut/examples/mig04.expect")
+@select(tangler("tut/examples/mig04.expect","data"))
+2 1 

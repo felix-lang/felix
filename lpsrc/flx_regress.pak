@@ -720,3 +720,206 @@ fun f(x:int):int =
 }
 print (f 1); endl;
 
+@head(1,"Expected outputs for test")
+@head(2,"test/rt01.expect")
+@select(tangler("test/rt01.expect","data"))
+rt01 complete
+@head(2,"test/rt02.expect")
+@select(tangler("test/rt02.expect","data"))
+10
+10x=1, y=2
+Not hidden: int=1 print:int hides outer
+module A print int=1
+@head(2,"test/rt03.expect")
+@select(tangler("test/rt03.expect","data"))
+lazy expr eval test
+3
+5
+@head(2,"test/rt04.expect")
+@select(tangler("test/rt04.expect","data"))
+Hello+World
+ello+
+Hello+
+World
+Worl
+Hello+World
+dlroW+olleH
+@head(2,"test/rt05.expect")
+@select(tangler("test/rt05.expect","data"))
+@head(2,"test/rt07.expect")
+@select(tangler("test/rt07.expect","data"))
+1
+1
+25
+OK
+1
+1
+true
+false
+@head(2,"test/rt08.expect")
+@select(tangler("test/rt08.expect","data"))
+closure of add primitive 4
+struct X
+struct X
+struct X: x get projection 42
+struct CX
+struct CX
+union Y
+union U
+@head(2,"test/rt09.expect")
+@select(tangler("test/rt09.expect","data"))
+2
+@head(2,"test/rt10.expect")
+@select(tangler("test/rt10.expect","data"))
+1 2 3 
+9 8 7 
+@head(2,"test/rt11.expect")
+@select(tangler("test/rt11.expect","data"))
+1 2
+1 2 3 4
+1
+1
+@head(2,"test/rt12.expect")
+@select(tangler("test/rt12.expect","data"))
+1
+@head(2,"test/rt13.expect")
+@select(tangler("test/rt13.expect","data"))
+ONE
+TWO
+THREE
+FOUR
+FIVE
+SIX
+SEVEN
+EIGHT
+NINE
+TEN
+ELEVEN
+TWELVE
+THIRTEEN
+FOURTEEN
+FIFTEEN
+SIXTEEN
+SEVENTEEN
+EIGHTTEEN
+@head(2,"test/rt14.expect")
+@select(tangler("test/rt14.expect","data"))
+ONE
+@head(2,"test/rt15.expect")
+@select(tangler("test/rt15.expect","data"))
+0 -> 66
+1 -> 55
+2 -> 44
+3 -> 33
+4 -> 22
+5 -> 11
+@head(2,"test/rt16.expect")
+@select(tangler("test/rt16.expect","data"))
+4
+3
+2
+1
+@head(2,"test/rt17.expect")
+@select(tangler("test/rt17.expect","data"))
+4
+3
+2
+1
+@head(2,"test/rt18.expect")
+@select(tangler("test/rt18.expect","data"))
+1
+@head(2,"test/rt19.expect")
+@select(tangler("test/rt19.expect","data"))
+1
+@head(2,"test/rt20.expect")
+@select(tangler("test/rt20.expect","data"))
+@head(2,"test/rt21.expect")
+@select(tangler("test/rt21.expect","data"))
+checking arg 0=--test
+test
+checking arg 1=words
+terminating
+@head(2,"test/rt22.expect")
+Warning: result is dependent on implementation
+detail (order of execution after read/write matchup)
+@select(tangler("test/rt22.expect","data"))
+Hello
+Done
+W1
+R1
+R2
+W2
+@head(2,"test/drt1.expect")
+@select(tangler("test/drt1.expect","data"))
+Starting .. 
+10
+10x=1, y=2
+Not hidden: int=1 print:int hides outer
+module A print int=1
+Hello+World
+ello+
+Hello+
+World
+Worl
+Hello+World
+dlroW+olleH
+1
+1
+25
+OK
+1
+1
+true
+false
+closure of add primitive 4
+struct X
+struct X
+struct X: x get projection 42
+struct CX
+struct CX
+union Y
+union U
+2
+1 2 3 
+9 8 7 
+1 2
+1 2 3 4
+1
+1
+1
+ONE
+TWO
+THREE
+FOUR
+FIVE
+SIX
+SEVEN
+EIGHT
+NINE
+TEN
+ELEVEN
+TWELVE
+THIRTEEN
+FOURTEEN
+FIFTEEN
+SIXTEEN
+SEVENTEEN
+EIGHTTEEN
+ONE
+0 -> 66
+1 -> 55
+2 -> 44
+3 -> 33
+4 -> 22
+5 -> 11
+4
+3
+2
+1
+4
+3
+2
+1
+1
+1
+Its run
