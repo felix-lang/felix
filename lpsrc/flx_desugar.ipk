@@ -1068,8 +1068,26 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       
   | `AST_fun_decl (sr,name',vs,args,result,code, reqs,prec) ->
     let props, dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,name',None,access,vs,
-      `DCL_fun (props,args,result,code,map_reqs sr reqs,prec))
+    (* hackery *)
+    let vs,args = fold_left (fun (vs,args) arg -> match arg with
+        | `TYP_apply
+          (
+            `AST_name (_,"excl",[]),
+            `AST_name (sr,name,[])
+          ) ->
+            let n = seq() in
+            let var = "T"^si n in
+            print_endline ("Implicit var " ^ var);
+            let v = var,`TPAT_name (name,[]) in
+            let arg = `AST_name (sr,var,[]) in 
+            v::vs, arg:: args
+        | x -> vs,x::args
+      )
+      (rev vs,[])
+      args
+    in
+    Dcl (sr,name',None,access,rev vs,
+      `DCL_fun (props,rev args,result,code,map_reqs sr reqs,prec))
     :: dcls
 
   | `AST_callback_decl (sr,name',args,result,reqs) ->
