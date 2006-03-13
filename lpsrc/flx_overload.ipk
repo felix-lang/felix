@@ -271,6 +271,7 @@ let consider syms bt i ts signs call_sr =
            maybe_tp tp ^ "\n"
         ) "" !unresolved
       in
+      (*
       if length !unresolved > 0 then
         print_endline (
         "WARNING: experimental feature coming up\n" ^
@@ -283,13 +284,16 @@ let consider syms bt i ts signs call_sr =
          "\nMost General Unifier(mgu)=\n" ^ string_of_varlist syms.dfns !mgu 
         )
       ;
+      *)
 
       (* HACKERY to try to get more values from type patterns*)
       if length !unresolved > 0 then 
       begin
         let extra_eqns = ref [] in
         let dvars = ref IntSet.empty in
+        (*
         print_endline ("BASE=" ^ si base);
+        *)
         let counter = ref 0 in
         iter (fun (s,j',tp) ->
            let et,explicit_vars1,any_vars1, as_vars1, eqns1 = 
@@ -298,27 +302,36 @@ let consider syms bt i ts signs call_sr =
            let et = bt sr et in
            let j = !counter + base in 
            incr counter;
+           (*
            print_endline ("Analysing "^s^"<"^si j^">: " ^ string_of_tpattern tp);
            print_endline (si j ^ (if mem_assoc j !mgu then " IS IN MGU" else " IS NOT IN MGU"));
+           *)
            if mem_assoc j !mgu then begin
              let t1 = assoc j !mgu in
              let t2 = et in
+             (*
              print_endline ("Adding equation " ^ sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2);
+             *)
              extra_eqns := (t1,t2) :: !extra_eqns
            end
            ; 
+           (*
            print_endline ("Equivalen type is:\n  " ^ sbt syms.dfns et);
+           *)
 
            let et = list_subst !mgu et in
            let et = beta_reduce syms [] et in
+           (*
            print_endline ("After substitution of mgu, Reduced type is:\n  " ^ 
              sbt syms.dfns et)
            ;
-
+           *)
+           (*
            if length explicit_vars1 > 0 then
            print_endline ("Explicit ?variables: " ^ 
              catmap "," (fun (i,s) -> s ^ "<" ^ si i ^ ">") explicit_vars1)
            ;
+           *)
            let pos_ix vs k = 
               let rec aux vs i = match vs with
               | (_,k',_) :: tl -> if k = k' then i else aux tl (i+1)
@@ -332,16 +345,24 @@ let consider syms bt i ts signs call_sr =
              match coupled with
              | [] -> ()
              | [s',k,pat] -> 
+                (*
                 print_endline (
                     "Coupled " ^ s ^ ": " ^ si k ^ "(vs var) <--> " ^ si i ^" (pat var)" ^ 
                   " pat=" ^ string_of_tpattern pat);
+                 *)
              let q = pos_ix vs k in
+             (*
              print_endline ("Position in vs list is " ^ si q);
+             *)
              let q = q+base in
+             (*
              print_endline ("Alpha converted index is " ^ si q);
+             *)
              let t1 = `BTYP_var (i,`BTYP_type) in 
              let t2 = `BTYP_var (q,`BTYP_type) in 
+             (*
              print_endline ("Adding equation " ^ sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2);
+             *)
              extra_eqns := (t1,t2) :: !extra_eqns;
              dvars := IntSet.add i !dvars;
              dvars := IntSet.add q !dvars;
@@ -350,6 +371,7 @@ let consider syms bt i ts signs call_sr =
            )
            explicit_vars1
            ;
+           (*
            if length as_vars1 > 0 then
            print_endline ("As variables: " ^ 
              catmap "," (fun (i,s) -> s ^ "<" ^ si i ^ ">") as_vars1)
@@ -362,6 +384,7 @@ let consider syms bt i ts signs call_sr =
            print_endline ("Equations for as terms (unbound): " ^ 
              catmap "\n" (fun (i,t) -> si i ^ " -> " ^ string_of_typecode t) eqns1)
            ;
+           *)
         )
         vs
         ;
@@ -372,9 +395,11 @@ let consider syms bt i ts signs call_sr =
         match maybe_extra_mgu with
         | None -> print_endline "COULDN'T RESOLVE EQUATIONS"
         | Some extra_mgu -> 
+           (*
            print_endline ("Resolved equations with mgu:\n  " ^
               string_of_varlist syms.dfns extra_mgu)
            ;
+           *)
            let ur = !unresolved in 
            unresolved := [];
            iter (fun ((s,i,_,k) as u) -> 
@@ -382,76 +407,86 @@ let consider syms bt i ts signs call_sr =
              if mem_assoc j extra_mgu 
              then begin
                 let t = assoc j extra_mgu in 
+                (*
                 print_endline ("CAN NOW RESOLVE " ^ 
                   th k ^ " vs term " ^ s ^ "<"^ si i^"> ---> " ^ sbt syms.dfns t)
                 ;
+                *)
                 mgu := (j,t) :: !mgu
              end 
              else begin
+               (*
                print_endline ("STILL CANNOT RESOLVE " ^ th k ^ " vs term " ^ s ^ "<"^si i^">");
+               *)
                unresolved := u :: !unresolved
              end
            )
            ur
       end
       ;
-      if length !unresolved > 0 then failwith "STOP";
-      iter 
-      (fun sign ->
-        if sign <> list_subst !mgu sign then
-        clierr call_sr 
-        (
-          "[resolve_overload] Unification of function " ^ 
-          id ^ "<" ^ si i ^ "> signature " ^
-          sbt syms.dfns t ^ 
-          "\nwith argument type " ^ sbt syms.dfns sign ^
-          "\nhas mgu " ^ string_of_varlist syms.dfns !mgu ^
-          "\nwhich specialises a variable of the argument type"
+
+
+      if length !unresolved > 0 then None else begin
+
+
+
+        iter 
+        (fun sign ->
+          if sign <> list_subst !mgu sign then
+          clierr call_sr 
+          (
+            "[resolve_overload] Unification of function " ^ 
+            id ^ "<" ^ si i ^ "> signature " ^
+            sbt syms.dfns t ^ 
+            "\nwith argument type " ^ sbt syms.dfns sign ^
+            "\nhas mgu " ^ string_of_varlist syms.dfns !mgu ^
+            "\nwhich specialises a variable of the argument type"
+          )
         )
-      )
-      signs
-      ;
-      (*
-      print_endline ("Matched with mgu = " ^ string_of_varlist syms.dfns !mgu);
-      *)
-      (* RIGHT! *)
-      let ts = map (fun i -> assoc (base+i) !mgu) (nlist (m+k)) in
-      
-      (*
-      print_endline ("Matched candidate " ^ si i ^ 
-        " mgu=" ^ string_of_varlist syms.dfns !mgu ^ 
-        ", ts=" ^ catmap ", " (sbt syms.dfns) ts
-      );
-      *)
-
-      (* we need to check the type constraint, it uses the
-        raw vs type variable indicies. We need to substitute
-        in the corresponding ts values. First we need to build
-        a map of the correspondence
-      *)
-
-      assert (length bvs = length ts);
-      let type_constraint = build_type_constraints syms (bt sr) sr vs in
-      let type_constraint = tsubst bvs ts type_constraint in
-      (*
-      print_endline ("Substituted type constraint " ^ sbt syms.dfns type_constraint);
-      *)
-      let reduced_constraint = beta_reduce syms [] type_constraint in
-      (*
-      print_endline ("Reduced type constraint " ^ sbt syms.dfns reduced_constraint);
-      *)
-      begin match reduced_constraint with
-      | `BTYP_void -> 
+        signs
+        ;
         (*
-        print_endline "Constraint failure, rejecting candidate";
+        print_endline ("Matched with mgu = " ^ string_of_varlist syms.dfns !mgu);
         *)
-        None
-      | `BTYP_tuple [] -> Some (i,t,!mgu,ts)
-      | _ -> 
-        clierr sr 
-        ("[overload] Cannot resolve type constraint! " ^
-          sbt syms.dfns type_constraint
-        )
+        (* RIGHT! *)
+        let ts = map (fun i -> assoc (base+i) !mgu) (nlist (m+k)) in
+        
+        (*
+        print_endline ("Matched candidate " ^ si i ^ 
+          " mgu=" ^ string_of_varlist syms.dfns !mgu ^ 
+          ", ts=" ^ catmap ", " (sbt syms.dfns) ts
+        );
+        *)
+
+        (* we need to check the type constraint, it uses the
+          raw vs type variable indicies. We need to substitute
+          in the corresponding ts values. First we need to build
+          a map of the correspondence
+        *)
+
+        assert (length bvs = length ts);
+        let type_constraint = build_type_constraints syms (bt sr) sr vs in
+        let type_constraint = tsubst bvs ts type_constraint in
+        (*
+        print_endline ("Substituted type constraint " ^ sbt syms.dfns type_constraint);
+        *)
+        let reduced_constraint = beta_reduce syms [] type_constraint in
+        (*
+        print_endline ("Reduced type constraint " ^ sbt syms.dfns reduced_constraint);
+        *)
+        begin match reduced_constraint with
+        | `BTYP_void -> 
+          (*
+          print_endline "Constraint failure, rejecting candidate";
+          *)
+          None
+        | `BTYP_tuple [] -> Some (i,t,!mgu,ts)
+        | _ -> 
+          clierr sr 
+          ("[overload] Cannot resolve type constraint! " ^
+            sbt syms.dfns type_constraint
+          )
+        end
       end
 
     | None -> 

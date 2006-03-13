@@ -92,7 +92,9 @@ let build_constraint_element syms bt sr i p1 =
     let p2 = `BTYP_var (newvar,`BTYP_type) in
     let t2 = `BTYP_void in
     let varset2 = IntSet.singleton newvar in
+    (*
     print_endline ("Bound matching is " ^ sbt syms.dfns p1 ^ " => " ^ sbt syms.dfns t1);
+    *)
     let pt1 = ({pattern=p1; pattern_vars=varset1; assignments=[]},t1) in
     let pt2 = ({pattern=p2; pattern_vars=varset2; assignments=[]},t2) in
     let pts = [pt1; pt2] in 

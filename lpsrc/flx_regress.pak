@@ -38,7 +38,7 @@ unit_tests = UNIT_TESTS
 completion_tests = COMPLETION_TESTS
 failure_tests = BAD_TESTS
 pkg_requires = ['flx_compiler','flx_drivers']
-iscr_source = ['lpsrc/flx_regress.ipk']
+iscr_source = ['lpsrc/flx_regress.pak']
 
 
 @head(2,'Good tests')
@@ -608,6 +608,27 @@ spawn_fthread the writer;
 
 print "Done"; endl;
 
+@select(tangler('test/rt23.flx'))
+#import <flx.flxh>
+open C_hack;
+header '#include <iostream>';
+
+fun f: !fast_ints * !fast_ints -> int = "$1+$2";
+
+print$ f$ 1,2L; endl;
+
+var x = 1;
+var px:ptr[int] = addr x;
+
+proc h[t,u:ptr[t]]: u  * t = "*$1=$2;";
+h(px,1);
+
+proc h2[t,u:ptr[?t]]: u  * t = "*$1=$2;";
+h2(px,1);
+
+proc k[t,u:ptr[?t]]: u = "std::cout << *$1 <<std::endl;";
+k px;
+
 @select(tangler('test/drt1.flx'))
 // plugin loader test
 #import <flx.flxh>
@@ -849,6 +870,10 @@ W1
 R1
 R2
 W2
+@head(2,"test/rt23.expect")
+@select(tangler("test/rt23.expect","data"))
+3
+1
 @head(2,"test/drt1.expect")
 @select(tangler("test/drt1.expect","data"))
 Starting .. 
