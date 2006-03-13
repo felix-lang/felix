@@ -1334,7 +1334,7 @@ let map_btype f = function
       let elt = f elt in 
       if mem elt acc then acc else elt::acc
     in
-    let ts = fold_left g [] ts in
+    let ts = rev(fold_left g [] ts) in
     if length ts = 1 then hd ts else
     `BTYP_typeset ts
 

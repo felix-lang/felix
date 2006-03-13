@@ -38,6 +38,7 @@ open Flx_beta
 open Flx_generic
 open Flx_name
 open Flx_tconstraint
+open Flx_tpat
 
 type overload_result = 
  int *  (* index of function *)
@@ -128,7 +129,7 @@ let resolve syms i =
   {id=id; sr=sr;parent=parent;privmap=table;dirs=dirs;symdef=symdef} ->
   let pvs,vs = find_split_vs syms i in
   let t,r = sig_of_symdef symdef sr id i in
-  id,sr,parent,i,vs,pvs,t,r
+  id,sr,parent,vs,pvs,t,r
 
 let rec unravel_ret tin dts = 
   match tin with
@@ -136,17 +137,18 @@ let rec unravel_ret tin dts =
   | _ -> rev dts
 
 let consider syms bt i ts signs call_sr =
-    let id,sr,p,i,vs,pvs,t,r = resolve syms i in
+    let bt sr t = bt sr i t in
+    let id,sr,p,vs,pvs,t,r = resolve syms i in
     (*
     print_endline ("Candidate "^si i^" sig is " ^ string_of_typecode t);
     *)
-    let t = bt sr i t in
+    let t = bt sr t in
     let dms = 
-      try unravel_ret (bt sr i r) []
+      try unravel_ret (bt sr r) []
       with _ -> print_endline "Failed to bind candidate return type!"; []
     in
     let tdms = t :: dms in
-    let type_constraint = build_type_constraints syms (bt sr i) sr vs in
+
     (*
     print_endline ("Argument  sigs= " ^  catmap "->" (sbt syms.dfns) signs);
     print_endline ("Candidate sigs= " ^  catmap "->" (sbt syms.dfns) tdms);
@@ -224,6 +226,7 @@ let consider syms bt i ts signs call_sr =
     let mgu = maybe_specialisation syms.dfns eqns in
     (match mgu with
     | Some mgu -> 
+      let mgu = ref mgu in
       (*
       print_endline "Specialisation detected";
       print_endline (" .. mgu = " ^ string_of_varlist syms.dfns mgu);
@@ -232,56 +235,191 @@ let consider syms bt i ts signs call_sr =
         by the mgu .. if it doesn't its an error .. hmmm
 
         THIS CANNOT HAPPEN NOW!
+        JS: 13/3/2006 .. oh yes it can!
+        
       *)
+      (* Below algorithm is changed! We now make list
+         of unresolved dependent variables, and see
+         if the constraint resolution can help.
+         Actually, at this point, we can even try
+         to see if the return type can help
+       *)
+
+      let unresolved = ref (
+        fold_left2 
+        (fun acc (s,i,tp) k ->
+          if not (mem_assoc (k+base) !mgu) then (s,i,tp,k)::acc else acc
+        )
+        [] vs (nlist m)
+      )
+      in
+
       let th i = match i with 
         | 0 -> "first"
         | 1 -> "second"
         | 2 -> "third"
         | _ -> si (i+1) ^ "'th"
       in
-      iter2
-      (fun (s,i,tp) k ->
+
+      let report_unresolved = 
         let maybe_tp tp = match tp with
           | `TPAT_any -> ""
           | tp -> ": " ^ string_of_tpattern tp
         in
-        if not (mem_assoc (k+base) mgu)
-        then clierr call_sr
-        (
-          "[resolve_overload] The " ^th k ^" subscript  " ^ s ^ "["^si i^"]" ^
-          " of function " ^ id ^
-          maybe_tp tp ^ 
-          " cannot be determined in this application:\n" ^
-          "Try using an explicit subscript." ^
-          "\nmgu=" ^ string_of_varlist syms.dfns mgu 
+        fold_left (fun acc (s,i,tp,k) -> acc ^
+          "  The " ^th k ^" subscript  " ^ s ^ "["^si i^"]" ^
+           maybe_tp tp ^ "\n"
+        ) "" !unresolved
+      in
+      if length !unresolved > 0 then
+        print_endline (
+        "WARNING: experimental feature coming up\n" ^
+        "Below would be an error, but we try now to do more work\n" ^
+        (* clierr call_sr ( *)
+          "[resolve_overload] In application of " ^ id ^ 
+          " cannot resolve:\n" ^
+          report_unresolved ^ 
+         "Try using explicit subscript" ^
+         "\nMost General Unifier(mgu)=\n" ^ string_of_varlist syms.dfns !mgu 
         )
-      )
-      vs (nlist m)
       ;
+
+      (* HACKERY to try to get more values from type patterns*)
+      if length !unresolved > 0 then 
+      begin
+        let extra_eqns = ref [] in
+        let dvars = ref IntSet.empty in
+        print_endline ("BASE=" ^ si base);
+        let counter = ref 0 in
+        iter (fun (s,j',tp) ->
+           let et,explicit_vars1,any_vars1, as_vars1, eqns1 = 
+            type_of_tpattern syms tp
+           in
+           let et = bt sr et in
+           let j = !counter + base in 
+           incr counter;
+           print_endline ("Analysing "^s^"<"^si j^">: " ^ string_of_tpattern tp);
+           print_endline (si j ^ (if mem_assoc j !mgu then " IS IN MGU" else " IS NOT IN MGU"));
+           if mem_assoc j !mgu then begin
+             let t1 = assoc j !mgu in
+             let t2 = et in
+             print_endline ("Adding equation " ^ sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2);
+             extra_eqns := (t1,t2) :: !extra_eqns
+           end
+           ; 
+           print_endline ("Equivalen type is:\n  " ^ sbt syms.dfns et);
+
+           let et = list_subst !mgu et in
+           let et = beta_reduce syms [] et in
+           print_endline ("After substitution of mgu, Reduced type is:\n  " ^ 
+             sbt syms.dfns et)
+           ;
+
+           if length explicit_vars1 > 0 then
+           print_endline ("Explicit ?variables: " ^ 
+             catmap "," (fun (i,s) -> s ^ "<" ^ si i ^ ">") explicit_vars1)
+           ;
+           let pos_ix vs k = 
+              let rec aux vs i = match vs with
+              | (_,k',_) :: tl -> if k = k' then i else aux tl (i+1)
+              | _ -> failwith "WOOPS not in vs list??"
+              in
+              aux vs 0
+           in
+           iter
+           (fun (i,s) -> 
+             let coupled = filter (fun (s',_,_) -> s = s') vs in
+             match coupled with
+             | [] -> ()
+             | [s',k,pat] -> 
+                print_endline (
+                    "Coupled " ^ s ^ ": " ^ si k ^ "(vs var) <--> " ^ si i ^" (pat var)" ^ 
+                  " pat=" ^ string_of_tpattern pat);
+             let q = pos_ix vs k in
+             print_endline ("Position in vs list is " ^ si q);
+             let q = q+base in
+             print_endline ("Alpha converted index is " ^ si q);
+             let t1 = `BTYP_var (i,`BTYP_type) in 
+             let t2 = `BTYP_var (q,`BTYP_type) in 
+             print_endline ("Adding equation " ^ sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2);
+             extra_eqns := (t1,t2) :: !extra_eqns;
+             dvars := IntSet.add i !dvars;
+             dvars := IntSet.add q !dvars;
+
+             | _ -> assert false (* vs should have distinct names *)
+           )
+           explicit_vars1
+           ;
+           if length as_vars1 > 0 then
+           print_endline ("As variables: " ^ 
+             catmap "," (fun (i,s) -> s ^ "<" ^ si i ^ ">") as_vars1)
+           ;
+           if length any_vars1 > 0 then
+           print_endline ("Wildcard variables: " ^ 
+             catmap "," (fun i -> "<" ^ si i ^ ">") any_vars1)
+           ;
+           if length eqns1 > 0 then
+           print_endline ("Equations for as terms (unbound): " ^ 
+             catmap "\n" (fun (i,t) -> si i ^ " -> " ^ string_of_typecode t) eqns1)
+           ;
+        )
+        vs
+        ;
+        let maybe_extra_mgu = 
+          try Some (unification false syms.dfns !extra_eqns !dvars)
+          with Not_found -> None
+        in
+        match maybe_extra_mgu with
+        | None -> print_endline "COULDN'T RESOLVE EQUATIONS"
+        | Some extra_mgu -> 
+           print_endline ("Resolved equations with mgu:\n  " ^
+              string_of_varlist syms.dfns extra_mgu)
+           ;
+           let ur = !unresolved in 
+           unresolved := [];
+           iter (fun ((s,i,_,k) as u) -> 
+             let j = base + k in
+             if mem_assoc j extra_mgu 
+             then begin
+                let t = assoc j extra_mgu in 
+                print_endline ("CAN NOW RESOLVE " ^ 
+                  th k ^ " vs term " ^ s ^ "<"^ si i^"> ---> " ^ sbt syms.dfns t)
+                ;
+                mgu := (j,t) :: !mgu
+             end 
+             else begin
+               print_endline ("STILL CANNOT RESOLVE " ^ th k ^ " vs term " ^ s ^ "<"^si i^">");
+               unresolved := u :: !unresolved
+             end
+           )
+           ur
+      end
+      ;
+      if length !unresolved > 0 then failwith "STOP";
       iter 
       (fun sign ->
-        if sign <> list_subst mgu sign then
+        if sign <> list_subst !mgu sign then
         clierr call_sr 
         (
           "[resolve_overload] Unification of function " ^ 
           id ^ "<" ^ si i ^ "> signature " ^
           sbt syms.dfns t ^ 
           "\nwith argument type " ^ sbt syms.dfns sign ^
-          "\nhas mgu " ^ string_of_varlist syms.dfns mgu ^
+          "\nhas mgu " ^ string_of_varlist syms.dfns !mgu ^
           "\nwhich specialises a variable of the argument type"
         )
       )
       signs
       ;
       (*
-      print_endline ("Matched with mgu = " ^ string_of_varlist syms.dfns mgu);
+      print_endline ("Matched with mgu = " ^ string_of_varlist syms.dfns !mgu);
       *)
       (* RIGHT! *)
-      let ts = map (fun i -> assoc (base+i) mgu) (nlist (m+k)) in
+      let ts = map (fun i -> assoc (base+i) !mgu) (nlist (m+k)) in
       
       (*
       print_endline ("Matched candidate " ^ si i ^ 
-        " mgu=" ^ string_of_varlist syms.dfns mgu ^ 
+        " mgu=" ^ string_of_varlist syms.dfns !mgu ^ 
         ", ts=" ^ catmap ", " (sbt syms.dfns) ts
       );
       *)
@@ -293,6 +431,7 @@ let consider syms bt i ts signs call_sr =
       *)
 
       assert (length bvs = length ts);
+      let type_constraint = build_type_constraints syms (bt sr) sr vs in
       let type_constraint = tsubst bvs ts type_constraint in
       (*
       print_endline ("Substituted type constraint " ^ sbt syms.dfns type_constraint);
@@ -307,8 +446,12 @@ let consider syms bt i ts signs call_sr =
         print_endline "Constraint failure, rejecting candidate";
         *)
         None
-      | `BTYP_tuple [] -> Some (i,t,mgu,ts)
-      | _ -> clierr sr "[overload] Cannot resolve type constraint!"
+      | `BTYP_tuple [] -> Some (i,t,!mgu,ts)
+      | _ -> 
+        clierr sr 
+        ("[overload] Cannot resolve type constraint! " ^
+          sbt syms.dfns type_constraint
+        )
       end
 
     | None -> 

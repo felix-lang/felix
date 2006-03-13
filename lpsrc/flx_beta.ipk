@@ -239,7 +239,7 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
   | `BTYP_typeset ls -> `BTYP_typeset (map br ls)
 
   | `BTYP_typesetunion ls -> 
-    let ls = map br ls in
+    let ls = rev_map br ls in
     (* split into explicit typesets and other terms 
       at the moment, there shouldn't be any 'other'
       terms (since there are no typeset variables ..

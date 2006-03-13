@@ -32,10 +32,6 @@ open Flx_util
 
    typematch v with | p -> 1 | _ -> 0 endmatch
 
-   Only 'any' variables are currently allowed, no
-   'as' or explicit pattern variables are permitted,
-   because we don't know what to do with them yet.
-
 *)
    
 let build_constraint_element syms bt sr i p1 =
@@ -49,18 +45,25 @@ let build_constraint_element syms bt sr i p1 =
   (* later we may allow them as additional 'vs' variables .. but
     it is tricky because they'd have to be introduced 'in scope':
   *)
+  (*
   if eqns1 <> [] then clierr sr 
     "Type variable constraint may not have 'as' terms"
   ;
   if explicit_vars1 <> [] then clierr sr
     "Type variable constraint may not have named pattern variables"
   ;
-  (* the only introduced variables allowed are 'any' wildcards that thus
-    cannot be refered to
   *)
   let varset1 = 
     fold_left (fun s i -> IntSet.add i s) 
     IntSet.empty any_vars1
+  in
+    let varset1 = 
+    fold_left (fun s (i,_) -> IntSet.add i s) 
+    varset1 as_vars1
+  in
+  let varset1 = 
+    fold_left (fun s (i,_) -> IntSet.add i s) 
+    varset1 explicit_vars1
   in
   let un = `BTYP_tuple [] in (* the 'true' value of the type system *)
   let elt = `BTYP_var (i,`BTYP_type) in

@@ -23,7 +23,7 @@ let type_of_tpattern syms p :
   (int * string) list *     (* variables for '?' terms *)
   int list *                (* variables for 'any' terms *)
   (int * string) list *     (* variables for 'as' terms *)
-  (int * typecode_t) list   (* variables for as terms *)
+  (int * typecode_t) list   (* assignments for as terms *)
 = 
   let sr = "unk",0,0,0,0 in
   let explicit_vars = ref [] in
