@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.30  2006/03/14 04:03:12  skaller
+Fix Cygwin 'flx' to use correct directory for static archives (was bin, should have been rtl)
+
 Revision 1.29  2006/03/14 01:05:18  skaller
 Now we have interscript breaking on error some things break
 the build when they shouldn't. Fixed the speed thing
@@ -2334,9 +2337,6 @@ We have no idea if it continues copying.
 @tangle('')
 @tangle('test: dummy')
 @tangle('\tpython script/maker test ')
-@tangle('\tsh bagley/compile.sh')
-@tangle('\tsh bagley/run.sh')
-@tangle('\tsh bagley/check.sh')
 @tangle('')
 @tangle('test.flx_ptf_static_pointer: dummy')
 @tangle('\tpython script/maker test -DFLX_PTF_STATIC_POINTER ')
@@ -3372,7 +3372,7 @@ ENDLOCAL
   tangle("SLINK_STRING='/link /LIBPATH:bin /DEFAULTLIB:libfaio_static /DEFAULTLIB:libdemux_static /DEFAULTLIB:libflx_static '")
  elif CYGWIN or WIN32:
   tangle("DLINK_STRING='-Lbin -lfaio_dynamic -ldemux_dynamic -lflx_dynamic'")
-  tangle("SLINK_STRING='-Lbin -lfaio_static -ldemux_static -lflx_static'")
+  tangle("SLINK_STRING='-Lrtl -lfaio_static -ldemux_static -lflx_static'")
  else:
   tangle("DLINK_STRING='-Lrtl -lfaio_dynamic -ldemux_dynamic -lflx_dynamic'")
   tangle("SLINK_STRING='-Lrtl -lfaio_static -ldemux_static -lflx_static'")
@@ -3761,7 +3761,7 @@ else
     FLXG="$prefix/bin/flxg"
     FLXRUN="$prefix/bin/"
     FLXLIB="$prefix/lib/felix/lib"
-    FLXRTL="$prefix/rtl/felix/lib"
+    FLXRTL="$prefix/rtl/felix/rtl"
     FLXBIN="$prefix/bin"
     FLXAR="$prefix/lib"
     if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]
