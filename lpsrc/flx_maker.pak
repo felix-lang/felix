@@ -6,6 +6,11 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.32  2006/03/14 19:58:11  skaller
+Tests need to be run automatically with the new system,
+so the 'test' option is gone. If a package has tests,
+they get run, end of story.
+
 Revision 1.31  2006/03/14 18:23:43  skaller
 Automatic rebuilding
 
@@ -2248,22 +2253,20 @@ try:
       build_target_cpp_tools()
       build_target_felix_tools()
 
-      if "test" in options:
-        run_host_tests()
+      run_host_tests()
 
       enstamp(stamp)
 
     if "run" in phases:
       stamp="pkg-stamps"+os.sep+pkg+".run"
       erasefile(stamp)
-      if "test" in options:
-        run_unit_tests()
-        run_completion_tests()
-
-      if "demo" in options:
-        run_demos()
-
+      run_unit_tests()
+      run_completion_tests()
       enstamp(stamp)
+
+    if "demo" in options:
+      run_demos()
+
 
    
   if os.name != 'nt': # requires posix
