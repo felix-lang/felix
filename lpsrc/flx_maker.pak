@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.31  2006/03/14 18:23:43  skaller
+Automatic rebuilding
+
 Revision 1.30  2006/03/14 04:03:12  skaller
 Fix Cygwin 'flx' to use correct directory for static archives (was bin, should have been rtl)
 
@@ -796,6 +799,10 @@ pkg_requires = [
   'flx_tut_migrate'
   ]
 
+@h = tangler('spkgs/flx_maker.py')
+@select(h)
+iscr_source = ['lpsrc/flx_maker.pak']
+
 @h = tangler('spkgs/flxcc.py')
 @select(h)
 FLXCC_EXES = [ 'src/flxcc', ]
@@ -1110,7 +1117,7 @@ def build_host_tools():
       HOST_CXX.link_static_archive(xqt,objs,dir+"/lib"+pkg+"_host_static")
       for x in CPPS: 
         f = x+"_static"+EXT_OBJ
-        print "Removing",f
+        if not "quiet" in options: print "Removing",f
         deletefile(f) # delete the .o files
 
     for src,bin in EXES:
@@ -1294,13 +1301,6 @@ def plugin():
   for f in glob.glob(FLX_LPARCHIVE+os.sep+"lpsrc"+os.sep+"*.cache"):
     erasefile(f)
 
-@select(tangler('mkplugins/doc_env.py'))
-# where documentation gets put
-WEAVER_DIRECTORY='doc/'
-TUTORIAL_DIRECTORY='tut/'
-TUTORIAL_DOC=TUTORIAL_DIRECTORY+'doc/'
-TUTORIAL_EXAMPLES=TUTORIAL_DIRECTORY+'examples/'
-
 @select(tangler('mkplugins/mkdoc.py'))
 def mkdoc():
     weaver_directory = pkgdict.get("weaver_directory","")
@@ -1311,15 +1311,6 @@ def mkdoc():
       print "GENERATING DOCUMENTATION",weaver_directory
       for src in iscr_source:
         runISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+weaver_directory+' '+FLX_LPARCHIVE+os.sep+src)
-
-@select(tangler('mkplugins/tutdoc.py'))
-def plugin():    
-    runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_tutorial.pak')
-    runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_tut_macro.pak')
-    runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_tut_bind.pak')
-    runISCR('--inhibit-sref=1 --language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+TUTORIAL_DOC+' '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_tut_migrate.pak')
-    runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
-    filecopy('doc'+os.sep+'interscript.css','speed'+os.sep+'interscript.css')
 
 @select(tangler('mkplugins/build_target_rtl_dynamic.py'))
 def build_target_rtl_dynamic():
@@ -1359,7 +1350,7 @@ def build_target_rtl_dynamic():
       DFLAGS=DFLAGS+EXTRA_DFLAGS) # hack
     for x in CPPS: 
       f = x+"_dynamic"+EXT_OBJ
-      print "Removing",f
+      if not "quiet" in options: print "Removing",f
       deletefile(f) # delete the .o files
 
 
@@ -1390,7 +1381,7 @@ def build_target_rtl_static():
       "rtl/"+lib+"_static")
     for x in CPPS: 
       f = x+"_static"+EXT_OBJ
-      print "Removing",f
+      if not "quiet" in options: print "Removing",f
       deletefile(f) # delete the .o files
 
 
@@ -1499,17 +1490,25 @@ def plugin():
   for driver,testfile,moreargs in SPECIAL_TESTS:
     test_basename = string.split(testfile,'.')[0]
     drv_basename = string.split(driver,'.')[0]
-    if LINK_MODEL == "dynamic":
-      testscript = "time ./"+drv_basename+ " ./"+test_basename+SHLX+" " + moreargs
-    else:
-      testscript = "time ./"+test_basename+SHLX+" " + moreargs
-    #print 'Executing ',testscript
-    try:
-      run(testscript)
-      #print 'TESTFILE -- OK!',testscript
-    except MakeError:
-      print 'TESTFILE -- ERROR!',testscript
-      raise MakeError
+    if SUPPORT_DYNAMIC_LOADING:
+      testscript = "time ./"+drv_basename+ " ./"+test_basename+EXT_SHLIB+" " + moreargs
+      print '(dynamic link) Executing ',testscript
+      try:
+        run(testscript)
+        #print 'TESTFILE -- OK!',testscript
+      except MakeError:
+        print 'TESTFILE -- ERROR!',testscript
+        raise MakeError
+
+    if SUPPORT_STATIC_LINKAGE:
+      testscript = "time ./"+test_basename+EXT_EXE+" " + moreargs
+      print '(static link) Executing ',testscript
+      try:
+        run(testscript)
+        #print 'TESTFILE -- OK!',testscript
+      except MakeError:
+        print 'TESTFILE -- ERROR!',testscript
+        raise MakeError
 
 @select(tangler('mkplugins/ocaml_env.py'))
 if not globals().get("ocaml_env",None):
@@ -1547,27 +1546,8 @@ if not globals().get("ocaml_env",None):
 if not globals().get("link_model_env",None):
   link_model_env = 1
 
-  LINK_MODEL = DEFAULT_LINK_MODEL
-  if "static" in options:
-    LINK_MODEL = "static"
-  if "dynamic" in options:
-    LINK_MODEL == "dynamic"
-
-  if LINK_MODEL == "dynamic" and not SUPPORT_DYNAMIC_LOADING:
-    print "dynamic linkage not supported"
-    sys.exit(1)
-
-  if LINK_MODEL == "static" and not SUPPORT_STATIC_LINKAGE:
-    print "dynamic linkage not supported"
-    sys.exit(1)
-
   CCOBJ_STATIC_LIB = CCOBJ_STATIC_MAIN + "-DFLX_STATIC_LINK "
   CCOBJ_STATIC_MAIN = CCOBJ_STATIC_MAIN + "-DFLX_STATIC_LINK "
-
-  if LINK_MODEL == "dynamic":
-    SHLX = EXT_SHLIB
-  else:
-    SHLX = EXT_EXE
 
   CCMACS=""
   for i in options:
@@ -1819,27 +1799,49 @@ def runISCR(a,force=0):
 
 
 @select(tangler('mkplugins/manifest.py'))
+manifest_src_re = re.compile(r"CREATING .* NAMED FILE SOURCE (.*) \[")
+
+def make_manifest(pkg):
+  base = string.split(pkg,os.sep)[-1][:-4]
+  print "Make Manifest of",base
+  fname = "manifests"+os.sep+base+".log" 
+  runISCR("--nocache --trace=sources --trace=changes --new-logfile="+fname+" "+pkg)
+  deps = []
+  f = open(fname)
+  for line in f.readlines():
+    m = re.match(manifest_src_re,line)
+    if m:
+      g = m.group(1)
+      print "Source File: "+g
+      deps = append_unique(deps,FLX_LPARCHIVE+os.sep+"lpsrc"+os.sep+g)
+  f.close()
+  f = open("manifests"+os.sep+base+".deps","w")
+  for x in deps: f.write(x+"\n")
+  f.close()
+
+def get_deps(base):
+  f = open("manifests"+os.sep+base+".deps")
+  data = f.read()
+  f.close()
+  files = string.split(string.strip(data),"\n")
+  return files
+
 def plugin():
   mkdirs("manifests")
-  src_re = re.compile(r"CREATING .* NAMED FILE SOURCE (.*) \[")
   paks = glob.glob(FLX_LPARCHIVE+os.sep+"lpsrc"+os.sep+"*.pak")
   for pkg in paks:
     base = string.split(pkg,os.sep)[-1][:-4]
-    print "Manifest of",pkg
     fname = "manifests"+os.sep+base+".log" 
-    runISCR("--nocache --trace=sources --trace=changes --new-logfile="+fname+" "+pkg)
-    deps = []
-    f = open(fname)
-    for line in f.readlines():
-      m = re.match(src_re,line)
-      if m:
-        g = m.group(1)
-        print "Source File: "+g
-        deps = append_unique(deps,FLX_LPARCHIVE+os.sep+"lpsrc"+os.sep+g)
-    f.close()
-    f = open("manifests"+os.sep+base+".deps","w")
-    for x in deps: f.write(x+"\n")
-    f.close()
+    manifest_time = filetime(fname)
+    if manifest_time == 0:
+      print "New pak",pkg,"BUILDING MANIFEST"
+      make_manifest(pkg)
+    else:
+     files = get_deps(base)
+     src_time = newest_filetime(files)
+     if src_time > manifest_time:
+       print "Changed pak",pkg,"REBUILDING MANIFEST"
+       make_manifest(pkg)
 
 @select(tangler('mkplugins/help.py'))
 # lame .. fix!
@@ -1910,18 +1912,21 @@ FLXFLAGS = ""
 # PROCESS COMMAND LINE OPTIONS
 # ------------------------------------------------
 
+all_phases = ["build","host","target","run"]
 phases = []
 options = sys.argv[1:]
-if not options: 
-  options = ["extract","optimise_c"]
-  phases = ["build","host","target","run"]
 
 packages = []
 models = []
 for k in options:
   if '--phase' == k[:7]:  # Windows doesn't like = so allow any sep 
     phase = k[8:]
-    if phase not in phases:
+    if phase=='*': 
+      phases = all_phases
+    elif not phase in all_phases:
+      print "Unknown phase"
+      raise MakeError
+    elif phase not in phases:
       phases.append(phase)
   if '--pkg' == k[:5]:  # Windows doesn't like = so allow any sep 
     packages.append(k[6:])
@@ -1969,6 +1974,9 @@ if options:
 for k in options:
   if "--lparchive=" == k[:12]:
     FLX_LPARCHIVE=k[12:]
+
+if not phases:
+  phases = all_phases
 
 print "Using LP Archive from ",
 if FLX_LPARCHIVE == os.curdir:
@@ -2053,39 +2061,19 @@ for pkg in unsorted_pkgs:
   addpkg_r(pkg)
 
 pkgdeps = invert(pkgreqs)
-print "REQS: "
-ks=pkgreqs.keys()
-ks.sort()
-for k in ks:
-  print "  ",k,pkgreqs[k]
- 
-print "DEPS: "
-ks = pkgdeps.keys()
-ks.sort()
-for k in ks:
-  print "  ",k,pkgdeps[k]
 
-# doesn't work so well if both deps and reqs specified!
-# would work better, if reqs was already reduced to
-# what actually needed to be rebuilt
-
-if "deps" in options:
-  packages = closure(pkgdeps,packages)
-
-if "reqs" in options:
-  packages = closure(pkgreqs,packages)
-
-if packages:
-  pkgs = filter(lambda x: x in packages,pkgs)
-
-
-print "AVAILABLE SOURCES",paks
-print "SELECTED PACKAGES ARE ",pkgs
-print "SELECTED PHASES ARE   ",phases
-print "Build model  ",build_model
-print "Host model   ",host_model
-print "Target model ",target_model
-print "Run model    ",run_model
+if "help" in options:
+  print "REQS: "
+  ks=pkgreqs.keys()
+  ks.sort()
+  for k in ks:
+    print "  ",k,pkgreqs[k]
+   
+  print "DEPS: "
+  ks = pkgdeps.keys()
+  ks.sort()
+  for k in ks:
+    print "  ",k,pkgdeps[k]
 
 EXTRA_LIBS = []
 CFLAGS = ""
@@ -2131,11 +2119,14 @@ SPECIAL_TESTS = [
 # END IMPLEMENTOR CONFIGURABLE SECTION
 # -------------------------------------------------
 
+def fmtime(t):
+    s = "%04d %02d %02d %02d %02d %02d" % (time.localtime(t)[:6])
+    return s
 
 # ----------- Here begins the actual build procedure ---------------------
 def enstamp(stamp):
   f = open(stamp,"w")
-  t = "%04d %02d %02d %02d %02d %02d" % time.localtime(time.time())[:6]
+  t = fmtime(time.time())
   f.write(t+"\n")
   f.close()
 
@@ -2147,13 +2138,74 @@ try:
     if k in plugins:
       plugins[k]()
 
+  plugins["manifest"]()
+  for pkg in pkgd.keys():
+    pkgdict = pkgd[pkg]
+    iscrs = pkgdict.get("iscr_source",[])
+    latest_src_time = newest_filetime(iscrs)
+    src_time_s = fmtime(latest_src_time)
+    print "Pak %-20s changed: %s" % (pkg,src_time_s)
+
+    host_stamp="pkg-stamps"+os.sep+pkg+".host"
+    latest_host_build_time = filetime(host_stamp)
+    if latest_host_build_time == 0:
+      print "  ** Host UNBUILT"
+      if pkg not in packages: packages.append(pkg)
+    else:
+      if latest_host_build_time < latest_src_time:
+        print "  ** Host build:",fmtime(latest_host_build_time)
+        print "  ** REQUIRES REBUILD due to changed sources"
+        if pkg not in packages: packages.append(pkg)
+
+    target_stamp="pkg-stamps"+os.sep+pkg+".target"
+    latest_target_build_time = filetime(target_stamp)
+    if latest_target_build_time == 0:
+      print "  ** Target UNBUILT"
+      if pkg not in packages: packages.append(pkg)
+    else:
+      if latest_target_build_time < latest_src_time:
+        print "  ** Target build:",fmtime(latest_target_build_time)
+        print "  ** REQUIRES REBUILD due to changed sources"
+        if pkg not in packages: packages.append(pkg)
+
+    run_stamp="pkg-stamps"+os.sep+pkg+".run"
+    latest_run_build_time = filetime(run_stamp)
+    if latest_run_build_time == 0:
+      print "  ** Run UNBUILT"
+      if pkg not in packages: packages.append(pkg)
+    else:
+      if latest_run_build_time < latest_src_time:
+        print "  ** Run build:",fmtime(latest_run_build_time)
+        print "  ** REQUIRES REBUILD due to changed sources"
+        if pkg not in packages: packages.append(pkg)
+
+  # doesn't work so well if both deps and reqs specified!
+  # would work better, if reqs was already reduced to
+  # what actually needed to be rebuilt
+
+  if "deps" in options:
+    packages = closure(pkgdeps,packages)
+
+  if "reqs" in options:
+    packages = closure(pkgreqs,packages)
+
+  pkgs = filter(lambda x: x in packages,pkgs)
+
+
+  #print "AVAILABLE SOURCES",paks
+  print "SELECTED PACKAGES ARE ",pkgs
+  print "SELECTED PHASES ARE   ",phases
+  print "Build model  ",build_model
+  print "Host model   ",host_model
+  print "Target model ",target_model
+  print "Run model    ",run_model
+
+
 #---------- PACKAGE BUILDS ---------------------------------     
   mkdirs("pkg-stamps")
   for pkg in pkgs:
     pkgdict = pkgd[pkg]
-    print
     print "***** MAKING PACKAGE "+pkg+" ************"
-    if not "quiet" in options: print
 
     if "doc" in options:
       mkdoc()

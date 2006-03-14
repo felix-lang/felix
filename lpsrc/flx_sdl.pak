@@ -1,6 +1,9 @@
 @execfile('config'+os.sep+'config.py')
 @head(1,'SDL')
 $Log$
+Revision 1.12  2006/03/14 18:23:43  skaller
+Automatic rebuilding
+
 Revision 1.11  2006/03/06 13:16:17  skaller
 Fix library builds so exports and imports are properly
 distinguished on a library by library basis.
@@ -257,7 +260,7 @@ if HAVE_SDL:
   demos = glob.glob('tut'+os.sep+'examples'+os.sep+'sdl*.flx')
 
   # should be a .pak file ..
-  iscr_source = ['lpsrc/flx_sdl.ipk']
+  iscr_source = ['lpsrc/flx_sdl.pak']
   build_macro = "SDL"
 
 @h = tangler('spkgs/gl.py')
