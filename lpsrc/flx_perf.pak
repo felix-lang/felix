@@ -1,4 +1,12 @@
 @set_title('Performance Measurements')
+@select(tangler('mkplugins/speed.py'))
+def plugin():    
+  runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
+  run("python speed/measure.py")
+  run("python speed/panal.py")
+  run("gnuplot speed/mkjpgs.gpl")
+  runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
+
 @head(1,"How Fast is Felix?")
 This module contains codes to compare the Felix translator
 with other language translators. Each translator should be run
@@ -145,18 +153,28 @@ This is my main work machine, an AMD64 K8 3200 with
 budget price cache memory, 200G SATA drive,
 Ubuntu Breezy Linux distribution.
 
+@head(3,'Budgie: x86-64x2 (dual core)')
+This is my main work machine, an AMD64x2 K8 3800 with 
+2G Ram and an ASUS motherboard running nVidia chipset,
+budget price cache memory, 200G SATA drive,
+Ubuntu Breezy Linux distribution.
+
 @head(2,'[ack] Ackermanns Function')
 Ackermann's function is used to check tail-recursion optimisation
 and is heavily dependent on the number of words stacked per function call.
 
-@showgraph('rosella','ack',"Ackermann's function on Rosella (Amd64-k8)")
+@#showgraph('rosella','ack',"Ackermann's function on Rosella (Amd64 3400 k8)")
+@showgraph('budgie','ack',"Ackermann's function on Budgie (Amd64x2 3800 k8)")
+
+@try:
+   begin_displayed_code()
+   include_file("../speed/rankings/budgie/ack.txt")
+   end_displayed_code()
+ except:
+   pass
 
 @select(tangler('speed/specs/ack.py','data'))
 descr="Ackerman's function"
-min=5
-max=10
-@select(tangler('speed/specs/takfp.py','data'))
-descr="Taka's function, using floats"
 min=5
 max=10
 
@@ -289,7 +307,20 @@ begin
 end Ack_F;
 
 @head(2,'[takfp] Takfp')
-@showgraph('rosella','takfp',"Takfp on Rosella: amd64-k8")
+@#showgraph('rosella','takfp',"Takfp on Rosella: amd64 3400 k8")
+@showgraph('budgie','takfp',"Takfp on Budgie: amd64x2 3800 k8")
+
+@try:
+   begin_displayed_code()
+   include_file("../speed/rankings/budgie/takfp.txt")
+   end_displayed_code()
+ except:
+   pass
+
+@select(tangler('speed/specs/takfp.py','data'))
+descr="Taka's function, using floats"
+min=5
+max=10
 
 @select(tangler('speed/src/felix/takfp.flx','data'))
 @flx_setup()
@@ -773,6 +804,7 @@ for h,d in hostsd.iteritems():
 
     keys = summary.keys()
     keys.sort()
+
     prlimit = 10
     i = 0 
     print "Rankings for",t
@@ -781,6 +813,20 @@ for h,d in hostsd.iteritems():
       print "    %-16s %2d %6.2f" % (xl,-m,a)
       i = i + 1
       if i >= prlimit: break
+    try: os.mkdir('speed/rankings')
+    except: pass
+    try: os.mkdir('speed/rankings/'+h)
+    except: pass
+    rf = open('speed/rankings/'+h+'/'+t+'.txt','w')
+    prlimit = 10
+    i = 0 
+    rf.write("Rankings for "+t+'\n')
+    for m,a in keys:
+      xl = summary[m,a]
+      rf.write("    %-16s %2d %6.2f\n" % (xl,-m,a))
+      i = i + 1
+      if i >= prlimit: break
+    rf.close()
 fi.close()
 
 # the client can view individual plots in an x11 console

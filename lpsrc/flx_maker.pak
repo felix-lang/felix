@@ -6,6 +6,12 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.29  2006/03/14 01:05:18  skaller
+Now we have interscript breaking on error some things break
+the build when they shouldn't. Fixed the speed thing
+to not error the build out just because the speed tests
+haven't been run yet.
+
 Revision 1.28  2006/03/09 17:27:12  skaller
 Modularise documentation a bit: build with package system now.
 
@@ -1502,14 +1508,6 @@ def plugin():
       print 'TESTFILE -- ERROR!',testscript
       raise MakeError
 
-@select(tangler('mkplugins/speed.py'))
-def plugin():    
-  runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
-  run("python speed/measure.py")
-  run("python speed/panal.py")
-  run("gnuplot speed/mkjpgs.gpl")
-  runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
-
 @select(tangler('mkplugins/ocaml_env.py'))
 if not globals().get("ocaml_env",None):
   ocaml_env = 1
@@ -2545,7 +2543,7 @@ We have no idea if it continues copying.
 @tangle('\t\tfelix-'+flx_version+'/speed/*.html \\')
 @tangle('\t\tfelix-'+flx_version+'/speed/*.css \\')
 @tangle('\t\tfelix-'+flx_version+'/speed/*.gpl \\')
-@tangle('\t\tfelix-'+flx_version+'/speed/images/rosella/*.jpg \\')
+@tangle('\t\tfelix-'+flx_version+'/speed/images/*/*.jpg \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/*.py \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/bin/*.py \\')
 @tangle('\t\tfelix-'+flx_version+'/interscript/compilers/*.py \\')

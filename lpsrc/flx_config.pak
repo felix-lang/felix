@@ -4,7 +4,7 @@
 @flx_version_major = '1'
 @flx_version_minor = '1'
 @flx_version_patch = '2'
-@flx_version_release = '_rc4'
+@flx_version_release = '_rc5'
 @flx_version = flx_version_major+'.'+flx_version_minor+'.'+flx_version_patch+flx_version_release
 @godi_revision = '0'
 @debian_revision = '1'
@@ -12,6 +12,12 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.167  2006/03/14 01:05:18  skaller
+Now we have interscript breaking on error some things break
+the build when they shouldn't. Fixed the speed thing
+to not error the build out just because the speed tests
+haven't been run yet.
+
 Revision 1.166  2006/03/10 15:48:24  skaller
 Add pretty printer for C++.
 
