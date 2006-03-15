@@ -15,7 +15,7 @@ python script/make_config.py --host=win32 --target=win32
 python interscript\bin\iscr.py --nocache lpsrc\flx.pak
 @select(tangler("win3264config.bat","data"))
 python interscript\bin\iscr.py --nocache lpsrc\flx_config.pak
-python script/make_config.py --host=win32 --target=win64
+python script/make_config.py --build=win32 --host=win32 --target=win64
 python interscript\bin\iscr.py --nocache lpsrc\flx.pak
 @select(tangler("win64config.bat","data"))
 python interscript\bin\iscr.py --nocache lpsrc\flx_config.pak

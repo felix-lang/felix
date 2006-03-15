@@ -1,5 +1,8 @@
 @head(1,'pthread')
 $Log$
+Revision 1.15  2006/03/15 10:22:59  rfistman
+fixing 64bit cl build
+
 Revision 1.14  2006/03/10 15:48:24  skaller
 Add pretty printer for C++.
 
@@ -778,8 +781,8 @@ flx_mutex_locker_t::~flx_mutex_locker_t() { p->unlock(); }
 @head(1,"Counter")
 @h=tangler('pthread/pthread_counter.hpp')
 @select(h)
-#ifndef __COUNTER__
-#define __COUNTER__
+#ifndef __PTHREAD_COUNTER__
+#define __PTHREAD_COUNTER__
 #include <flx_pthread_config.hpp>
 #include "pthread_mutex.hpp"
 #include "pthread_condv.hpp"
@@ -824,9 +827,11 @@ public:
 #include "pthread_counter.hpp"
 #include <stdio.h>
 
-using namespace flx::pthread;
+namespace flx { namespace pthread {
+
 
 flx_ts_counter_t::flx_ts_counter_t() : x(0) {}
+
 flx_ts_counter_t::~flx_ts_counter_t() { 
   wait_zero(); 
 }
@@ -890,6 +895,8 @@ void flx_ts_counter_t::wait_zero() {
     c.wait(&m);
   }
 }
+
+}}
 
 @head(1,"Condition Variable")
 @head(2,'Portable Condition Variable')

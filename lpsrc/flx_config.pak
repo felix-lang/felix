@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.169  2006/03/15 10:22:57  rfistman
+fixing 64bit cl build
+
 Revision 1.168  2006/03/15 06:28:28  skaller
 Revamp build system so conditional building works better.
 
@@ -2613,6 +2616,7 @@ if target_model in ["win32","win64"]:
   PTHREAD_SWITCH=""
   HAVE_MSVC=1
   HAVE_GXX=0
+  HAVE_KQUEUE_DEMUXER=0 #windows doesn't have kqueues.
 else:
   TARGET_CXX=flxbuild.gxx_class.gxx()
   TARGET_CXX.set_options(CXX=TARGETCC,use="target",model=target_model,build=build_model)
@@ -2622,6 +2626,7 @@ else:
   FLX_SOCKLEN_T = TARGET_CXX.options.FLX_SOCKLEN_T
   HAVE_PTHREADS =  TARGET_CXX.options.HAVE_PTHREADS
   PTHREAD_SWITCH =  TARGET_CXX.options.PTHREAD_SWITCH
+  HAVE_KQUEUE_DEMUXER = TARGET_CXX.options.HAVE_KQUEUE_DEMUXER
   HAVE_MSVC=0
   HAVE_GXX=1
 
@@ -2712,6 +2717,7 @@ try:
   pa(f,this,"run_model")
   pa(f,this,"CYGWIN")
   pa(f,this,"MACOSX")
+  pa(f,this,"HAVE_KQUEUE_DEMUXER")
   pa(f,this,"WIN32")
   pa(f,this,"WIN64")
   pa(f,this,"POSIX")
