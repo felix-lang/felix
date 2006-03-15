@@ -5412,8 +5412,16 @@ public:
   sm_stringBuilder& operator << (unsigned i) { return operator<<((unsigned long)i); }
   sm_stringBuilder& operator << (short i) { return operator<<((long)i); }
   sm_stringBuilder& operator << (unsigned short i) { return operator<<((long)i); }
+  sm_stringBuilder& operator << (float d);
   sm_stringBuilder& operator << (double d);
   sm_stringBuilder& operator << (void *ptr);     // inserts address in hex
+  #ifdef HAVE_LONGLONG
+  sm_stringBuilder& operator << (long long i);
+  sm_stringBuilder& operator << (unsigned long long i);
+  #endif
+  #ifdef HAVE_LONGDOUBLE
+  sm_stringBuilder& operator << (long double d);
+  #endif
   #ifndef LACKS_BOOL
     sm_stringBuilder& operator << (bool b) { return operator<<((long)b); }
   #endif // LACKS_BOOL
@@ -17610,9 +17618,16 @@ sm_stringBuilder& sm_stringBuilder::operator<< (char c)
 
 MAKE_LSHIFT(long, "%ld")
 MAKE_LSHIFT(unsigned long, "%lu")
+MAKE_LSHIFT(float, "%g")
 MAKE_LSHIFT(double, "%g")
 MAKE_LSHIFT(void*, "%p")
-
+#ifdef HAVE_LONGLONG
+MAKE_LSHIFT(unsigned long long, "%llu")
+MAKE_LSHIFT(long long, "%ll")
+#endif
+#ifdef HAVE_LONGDOUBLE
+MAKE_LSHIFT(long double, "%Lg")
+#endif
 #undef MAKE_LSHIFT
 
 
