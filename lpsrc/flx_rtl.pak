@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.24  2006/03/15 12:59:57  skaller
+Add HAVE_LONG and HAVE_LONGDOUBLE to flx_rtl_config.hpp for elkhound
+
 Revision 1.23  2006/03/10 15:48:24  skaller
 Add pretty printer for C++.
 
@@ -415,6 +418,12 @@ T &reinterpret(U const &x) {
 #ifdef _WIN32
 #define _WIN32_WINNT 0x500
 #endif
+
+@if HAVE_LONGLONG:
+  tangle('#define HAVE_LONGLONG')
+
+@if HAVE_LONGDOUBLE:
+  tangle('#define HAVE_LONGDOUBLE')
 
 #ifndef FLX_RTL_GNU
 @if HAVE_ISNAN_IN_IEEEFP:
