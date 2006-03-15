@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.33  2006/03/15 06:28:28  skaller
+Revamp build system so conditional building works better.
+
 Revision 1.32  2006/03/14 19:58:11  skaller
 Tests need to be run automatically with the new system,
 so the 'test' option is gone. If a package has tests,
@@ -1020,44 +1023,58 @@ def copy_mli2ml(MLIS):
     f = string.replace(f,"/",os.sep)
     src = f+'.mli'
     dst = f+'.ml'
-    print("filecopy "+src+" -> "+dst)
-    filecopy(src,dst)
+    if filetime(src) >= filetime (dst):
+      print("filecopy "+src+" -> "+dst)
+      filecopy(src,dst)
 
 @select(tangler('mkplugins/copy_hpp2rtl.py'))
 def copy_hpp2rtl(HPPS):
   for f in HPPS:
     dst = 'rtl'+os.sep+string.split(f,'/')[-1]
     src = string.replace(f,"/",os.sep)
-    print("filecopy "+src+" -> "+dst)
-    filecopy(src,dst)
+    if filetime(src) >= filetime (dst):
+      print("filecopy "+src+" -> "+dst)
+      filecopy(src,dst)
 
 @select(tangler('mkplugins/ocamlit.py'))
 #ocaml compilation
-def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES):
+def ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES,force):
   # STEP 2: Generate lexers
   for lex in LEXS:
     file = string.replace(lex,'/',os.sep)
-    xqt(OCAMLLEX + file + '.mll')
+    if not force:
+      if filetime(file+'.mll') >= filetime(file+'.ml'): force = 1
+    if force: xqt(OCAMLLEX + file + '.mll')
 
   # STEP 3: Generate parsers
   for parse in PARSES:
     file = string.replace(parse,'/',os.sep)
-    xqt(OCAMLYACC+ ' -v '+ file + '.mly')
-    nxqt(GREP+"conflict " + file + ".output")
+    if not force:
+      if filetime(file+'.mly') >= filetime(file+'.ml'): force = 1
+    if force:
+      xqt(OCAMLYACC+ ' -v '+ file + '.mly')
+      nxqt(GREP+"conflict " + file + ".output")
 
   # STEP 4: Compile ocaml interfaces
   for interface in INTERFACES:
     file = string.replace(interface,'/',os.sep)
-    xqt(OCAMLC + ' ' + OCAML_INCLUDES+' -c '+file+ '.mli')
+    if not force:
+      if filetime(file+'.mli') >= filetime(file+'.cmi'): force = 1
+    if force:
+      xqt(OCAMLC + ' ' + OCAML_INCLUDES+' -c '+file+ '.mli')
 
   # STEP 5: Compile ocaml implementations
   for implementation in IMPLEMENTATIONS + EXES:
     file = string.replace(implementation,'/',os.sep)
-    xqt(OCAMLOPT + ' '+ OCAML_INCLUDES+ ' -c ' + file +'.ml')
-
+    if not force:
+      if filetime(file+'.ml') >= filetime(file+OCAML_OBJECT_EXTENSION): 
+        force = 1
+    if force:
+      xqt(OCAMLOPT + ' '+ OCAML_INCLUDES+ ' -c ' + file +'.ml')
+  return force
 
 @select(tangler('mkplugins/build_ocamls.py'))
-def build_ocamls():        
+def build_ocamls(force):        
   LEXS = pkgdict.get("caml_lexes",[])
   PARSES = pkgdict.get("caml_parses",[])
   INTERFACES = pkgdict.get("caml_interfaces",[])
@@ -1071,31 +1088,33 @@ def build_ocamls():
     len(EXES)+
     len(OLIBRARIES)> 0):
     print "CAML COMPILING "+pkg
-    ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES)
+    force = ocamlit(LEXS,PARSES,INTERFACES,IMPLEMENTATIONS,EXES,force)
 
-    # STEP 6: Build Ocaml Library
-    if IMPLEMENTATIONS != []:
-      lib = pkgdict.get('caml_provide_lib',pkg+"lib")
-      print "CAML CREATING LIBRARY ",lib
-      object_library_name = "src" + os.sep + lib + OCAML_LIB_EXTENSION
-      linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
-      library_filetime = filetime(object_library_name)
-      for implementation in IMPLEMENTATIONS:
-        linkstring = linkstring + implementation + OCAML_OBJECT_EXTENSION + " "
-      xqt(linkstring)
+    if force:
+      # STEP 6: Build Ocaml Library
+      if IMPLEMENTATIONS != []:
+        lib = pkgdict.get('caml_provide_lib',pkg+"lib")
+        print "CAML CREATING LIBRARY ",lib
+        object_library_name = "src" + os.sep + lib + OCAML_LIB_EXTENSION
+        linkstring = OCAMLOPT + " -a -o " + object_library_name + " "
+        library_filetime = filetime(object_library_name)
+        for implementation in IMPLEMENTATIONS:
+          linkstring = linkstring + implementation + OCAML_OBJECT_EXTENSION + " "
+        xqt(linkstring)
 
-    if EXES:
-      print "CAML LINKING EXECUTABLES"
-      x = ''
-      for library in OLIBRARIES:
-        x = x + ' ' + library + OCAML_LIB_EXTENSION
+      if EXES:
+        print "CAML LINKING EXECUTABLES"
+        x = ''
+        for library in OLIBRARIES:
+          x = x + ' ' + library + OCAML_LIB_EXTENSION
 
-      # finally, mainline *.cmx or cma files to link to executables
-      for exe in EXES:
-        dst = "bin" + os.sep + string.split(exe,"/")[-1]
-        xqt(OCAMLOPT + LDFLAGS + ' ' + OCAML_INCLUDES + ' -o ' + dst + \
-            x + OBJECT_FILES + ' src/flx_version_hook.ml ' + exe + \
-            OCAML_OBJECT_EXTENSION)
+        # finally, mainline *.cmx or cma files to link to executables
+        for exe in EXES:
+          dst = "bin" + os.sep + string.split(exe,"/")[-1]
+          xqt(OCAMLOPT + OCAML_INCLUDES + ' -o ' + dst + \
+              x + ' src/flx_version_hook.ml ' + exe + \
+              OCAML_OBJECT_EXTENSION)
+  return force
 
 @select(tangler('mkplugins/build_host_tools.py'))
 def build_host_tools():        
@@ -1317,6 +1336,18 @@ def mkdoc():
       for src in iscr_source:
         runISCR('--language=en --weaver=web --weaver=latex --passes=2 --weaver-directory='+weaver_directory+' '+FLX_LPARCHIVE+os.sep+src)
 
+@select(tangler('mkplugins/cflags.py'))
+# GLOBAL COMPILATION FLAGS
+
+# C++ STUFFS
+CFLAGS = ""
+SFLAGS = ""
+DFLAGS = ""
+EXTRA_LIBS = []
+
+# OCAML STUFFS
+OCAML_INCLUDES = ""
+
 @select(tangler('mkplugins/build_target_rtl_dynamic.py'))
 def build_target_rtl_dynamic():
   CPPS = pkgdict.get("cpp_cpps",[])
@@ -1491,6 +1522,11 @@ def build_target_felix_tools():
         SFLAGS=SFLAGS+fsflags)
 
 @select(tangler('mkplugins/performance.py'))
+SPECIAL_TESTS = [
+  ('bin'+os.sep+'flx_run','test'+os.sep+'flx_run_lib1.flx',''),
+  ('test'+os.sep+'flx_perf_drv1','test'+os.sep+'flx_perf_lib1.flx','1000'),
+]
+
 def plugin():
   for driver,testfile,moreargs in SPECIAL_TESTS:
     test_basename = string.split(testfile,'.')[0]
@@ -1831,7 +1867,7 @@ def get_deps(base):
   files = string.split(string.strip(data),"\n")
   return files
 
-def plugin():
+def mk_manifests():
   mkdirs("manifests")
   paks = glob.glob(FLX_LPARCHIVE+os.sep+"lpsrc"+os.sep+"*.pak")
   for pkg in paks:
@@ -1847,6 +1883,209 @@ def plugin():
      if src_time > manifest_time:
        print "Changed pak",pkg,"REBUILDING MANIFEST"
        make_manifest(pkg)
+
+def cal_pkgs():
+  global packages,pkgd,selected_pkgs
+  for pkg in pkgd.keys():
+    pkgdict = pkgd[pkg]
+    input_iscrs = pkgdict.get("iscr_source",[])
+    output_iscrs = []
+    for iscr in input_iscrs:
+      base = string.split(iscr,os.sep)[-1][:-4]
+      iscrs = get_deps(base)
+      for i in iscrs:
+        if not i in output_iscrs: output_iscrs.append(i)
+
+    latest_src_time = newest_filetime(output_iscrs)
+    src_time_s = fmtime(latest_src_time)
+    print "Pak %-20s changed: %s" % (pkg,src_time_s)
+
+    host_stamp="pkg-stamps"+os.sep+pkg+".host"
+    latest_host_build_time = filetime(host_stamp)
+    if latest_host_build_time == 0:
+      print "  ** Host UNBUILT"
+      if pkg not in packages: packages.append(pkg)
+    else:
+      if latest_host_build_time < latest_src_time:
+        print "  ** Host build:",fmtime(latest_host_build_time)
+        print "  ** REQUIRES REBUILD due to changed sources"
+        if pkg not in packages: packages.append(pkg)
+
+    target_stamp="pkg-stamps"+os.sep+pkg+".target"
+    latest_target_build_time = filetime(target_stamp)
+    if latest_target_build_time == 0:
+      print "  ** Target UNBUILT"
+      if pkg not in packages: packages.append(pkg)
+    else:
+      if latest_target_build_time < latest_src_time:
+        print "  ** Target build:",fmtime(latest_target_build_time)
+        print "  ** REQUIRES REBUILD due to changed sources"
+        if pkg not in packages: packages.append(pkg)
+
+    run_stamp="pkg-stamps"+os.sep+pkg+".run"
+    latest_run_build_time = filetime(run_stamp)
+    if latest_run_build_time == 0:
+      print "  ** Run UNBUILT"
+      if pkg not in packages: packages.append(pkg)
+    else:
+      if latest_run_build_time < latest_src_time:
+        print "  ** Run build:",fmtime(latest_run_build_time)
+        print "  ** REQUIRES REBUILD due to changed sources"
+        if pkg not in packages: packages.append(pkg)
+
+  # doesn't work so well if both deps and reqs specified!
+  # would work better, if reqs was already reduced to
+  # what actually needed to be rebuilt
+
+  if "deps" in options:
+    packages = closure(pkgdeps,packages)
+
+  if "reqs" in options:
+    packages = closure(pkgreqs,packages)
+
+  selected_pkgs = filter(lambda x: x in packages,pkgs)
+
+  if "all" in options: 
+     selected_pkgs = pkgs
+
+  #print "AVAILABLE SOURCES",paks
+  print "SELECTED PACKAGES ARE ",selected_pkgs
+  print "SELECTED PHASES ARE   ",phases
+  print "Build model  ",build_model
+  print "Host model   ",host_model
+  print "Target model ",target_model
+  print "Run model    ",run_model
+
+mk_manifests()
+schedule(10,cal_pkgs)
+
+@select(tangler('mkplugins/make.py'))
+def compile_check():
+  global selected_pkgs,pkgd,phases,pkgdict,pkg
+  mkdirs("pkg-stamps")
+
+  if "host" in phases:
+    ocaml_sequencer = "force" in options
+    for pkg in selected_pkgs:
+      pkgdict = pkgd[pkg]
+      print "***** Host MAKING PACKAGE "+pkg+" ************"
+
+      stamp="pkg-stamps"+os.sep+pkg+".host"
+      erasefile(stamp)
+      MLIS = pkgdict.get("caml_raw_interfaces",[])
+      copy_mli2ml(MLIS)
+      HPPS = pkgdict.get("rtl_interfaces",[])
+      copy_hpp2rtl(HPPS)
+
+      srcs = pkgdict.get("iscr_source",[])
+      src = string.join(srcs,' ')
+      if src:
+        print "REExtracting",pkg,"from",src
+        runISCR(FLX_LPARCHIVE+os.sep+src)
+
+      ocaml_sequencer = build_ocamls(ocaml_sequencer)
+
+      build_host_tools()
+
+      enstamp(stamp)
+
+  if "target" in phases:
+    for pkg in selected_pkgs:
+      pkgdict = pkgd[pkg]
+      print "***** Target MAKING PACKAGE "+pkg+" ************"
+
+      stamp="pkg-stamps"+os.sep+pkg+".target"
+      erasefile(stamp)
+      if SUPPORT_DYNAMIC_LOADING:
+        build_target_rtl_dynamic()
+
+      if SUPPORT_STATIC_LINKAGE:
+        build_target_rtl_static()
+      
+      if SUPPORT_DYNAMIC_LOADING:
+        build_felix_dynamic_drivers()
+
+      if SUPPORT_STATIC_LINKAGE:
+        build_felix_static_drivers()
+
+      build_target_cpp_tools()
+      build_target_felix_tools()
+
+      run_host_tests()
+
+      enstamp(stamp)
+
+  if "run" in phases:
+    for pkg in selected_pkgs:
+      pkgdict = pkgd[pkg]
+      print "***** Run MAKING PACKAGE "+pkg+" ************"
+
+      stamp="pkg-stamps"+os.sep+pkg+".run"
+      erasefile(stamp)
+      run_unit_tests()
+      run_completion_tests()
+      enstamp(stamp)
+
+schedule(50,compile_check)
+ 
+@select(tangler('mkplugins/pkg_loader.py'))
+# LOAD PACKAGES
+raw_pkgs = glob.glob("spkgs"+os.sep+"*.py")
+unsorted_pkgs = []
+for i in raw_pkgs:
+  j = string.split(i,os.sep)[1][:-3]
+  unsorted_pkgs.append(j)
+
+pkgd = {}
+for pkg in unsorted_pkgs:
+  class X:
+    execfile("spkgs"+os.sep+pkg+".py")
+  d = {}
+  for k in X.__dict__.keys():
+    if k[0] != '_':
+      v = X.__dict__[k]
+      d[k]=v
+  pkgd[pkg]=d
+
+pkgs = []
+pkgreqs = {}
+
+def addpkg_nr(pkg):
+  if pkg not in pkgs:
+    pkgs.append(pkg)
+
+def addpkg_r(pkg):
+  if pkg not in pkgs:
+    if pkg not in pkgd.keys():
+      print "Unknown package",pkg
+      print "Please extract!"
+      sys.exit(1)
+    else:
+      reqs = pkgd[pkg].get('pkg_requires',[])
+      pkgreqs[pkg]=reqs
+      for i in reqs:
+        addpkg_r(i)
+      addpkg_nr(pkg)
+
+for pkg in unsorted_pkgs:
+  addpkg_r(pkg)
+
+pkgdeps = invert(pkgreqs)
+
+# PRINT PACKAGE DEPENDENCY INFORMATION
+if "help" in options:
+  print "REQS: "
+  ks=pkgreqs.keys()
+  ks.sort()
+  for k in ks:
+    print "  ",k,pkgreqs[k]
+   
+  print "DEPS: "
+  ks = pkgdeps.keys()
+  ks.sort()
+  for k in ks:
+    print "  ",k,pkgdeps[k]
+
 
 @select(tangler('mkplugins/help.py'))
 # lame .. fix!
@@ -1866,6 +2105,35 @@ def plugin():
   print "optimise_c - build high performance versions of c++ targets"
   print "optimise_felix - build high performance versions of ocaml targets NOT RECOMMENDED!"
   print "doc - build all user documentation"
+
+@select(tangler('mkplugins/test.py'))
+def plugin():
+  global pkg,pkgdict
+  print "##### TEST ALL PACKAGES ##################"
+  for pkg in pkgs:
+    pkgdict = pkgd[pkg]
+    print "***** TEST PACKAGE "+pkg+" ************"
+    run_unit_tests()
+    run_completion_tests()
+
+@select(tangler('mkplugins/doc.py'))
+def plugin():
+  global pkg,pkgdict
+  print "##### DOCUMENT ALL PACKAGES ##################"
+  for pkg in pkgs:
+    pkgdict = pkgd[pkg]
+    print "***** DOCUMENT PACKAGE "+pkg+" ************"
+    mkdoc()
+
+
+@select(tangler('mkplugins/demo.py'))
+def plugin():
+  global pkg,pkgdict
+  print "##### DEMONSTRATE ALL PACKAGES ##################"
+  for pkg in pkgs:
+    pkgdict = pkgd[pkg]
+    print "***** DEMO PACKAGE "+pkg+" ************"
+    run_demos()
 
 @select(tangler('mkplugins/grammar.py'))
 def plugin():
@@ -1940,6 +2208,18 @@ for k in options:
     if model not in models:
       models.append(model)
 
+# if the user didn't say which phases to run
+# then run all the phases that use the host model
+# On building on Linux for MinGW, the build model
+# is linux, and the host model is mingw, the target
+# is win32. We'd be running all MinGW phases.
+# note a phase is named for the targetted product
+# NOT the machine that generates it. Thus host
+# phase mingw means 'compile on Linux for MingW'
+
+if not phases and not models:
+  models = [host_model]
+
 if models:
   if model == build_model:
     if "build" not in phases: phases.append("build")
@@ -1961,17 +2241,11 @@ if "build" in options:
     if "host" not in phases: phases.append("host")
     if "target" not in phases: phases.append("target")
 
-if packages and not phases:
-  phases = ["build","host","target"]
-
 if "test" in options: 
     if "run" not in phases: phases.append("run")
 
 if "silent" in options: 
   options.append("quiet")
-
-if "demo" in options:
-  if "run" not in phases: phases.append("run")
 
 if options:
   print "OPTIONS: ", options
@@ -2011,6 +2285,13 @@ if "virgin" in options:
   execfile("mkplugins"+os.sep+"virgin.py")
   plugin()
 
+# LOAD PLUGINS
+
+schedule_table = []
+def schedule(pri,f):
+  print "Scheduling",f.__name__," priority",pri
+  schedule_table.append((pri,f))
+
 plugins = {}
 for f in glob.glob("mkplugins"+os.sep+"*.py"):
   dir,base=string.split(f,os.sep)
@@ -2023,104 +2304,10 @@ for f in glob.glob("mkplugins"+os.sep+"*.py"):
       plugins[base]=plugin
   except:
     print "Failed to install plugin",f
+    sys.exit(1)
+
 print "PLUGIN FEATURES",plugins.keys()
 
-raw_pkgs = glob.glob("spkgs"+os.sep+"*.py")
-unsorted_pkgs = []
-for i in raw_pkgs:
-  j = string.split(i,os.sep)[1][:-3]
-  unsorted_pkgs.append(j)
-
-pkgd = {}
-for pkg in unsorted_pkgs:
-  class X:
-    execfile("spkgs"+os.sep+pkg+".py")
-  d = {}
-  for k in X.__dict__.keys():
-    if k[0] != '_':
-      v = X.__dict__[k]
-      d[k]=v
-  pkgd[pkg]=d
-
-pkgs = []
-pkgreqs = {}
-
-def addpkg_nr(pkg):
-  if pkg not in pkgs:
-    pkgs.append(pkg)
-
-def addpkg_r(pkg):
-  if pkg not in pkgs:
-    if pkg not in pkgd.keys():
-      print "Unknown package",pkg
-      print "Please extract!"
-      sys.exit(1)
-    else:
-      reqs = pkgd[pkg].get('pkg_requires',[])
-      pkgreqs[pkg]=reqs
-      for i in reqs:
-        addpkg_r(i)
-      addpkg_nr(pkg)
-
-for pkg in unsorted_pkgs:
-  addpkg_r(pkg)
-
-pkgdeps = invert(pkgreqs)
-
-if "help" in options:
-  print "REQS: "
-  ks=pkgreqs.keys()
-  ks.sort()
-  for k in ks:
-    print "  ",k,pkgreqs[k]
-   
-  print "DEPS: "
-  ks = pkgdeps.keys()
-  ks.sort()
-  for k in ks:
-    print "  ",k,pkgdeps[k]
-
-EXTRA_LIBS = []
-CFLAGS = ""
-SFLAGS = ""
-DFLAGS = ""
-
-# C files that we need to compile, with options required to build them
-COBJECTS = {
-}
-# *.so/.a libraries
-CLIBRARIES = ['nums']
-
-# *.cmxa or .cma libraries
-# and some hackery so we can if the source doesn't need
-# ocaml-fileutils we can still build if it isn't found
-OCAML_INCLUDES = ""
-
-# target executable programs to produce
-
-if 0:
-  s = ' -cclib "-Lsrc '
-  for library in CLIBRARIES:
-    s = s + ' -l'+library
-  s = s + '"'
-  LDFLAGS = s
-  del s
-else:
-  LDFLAGS = ""
-
-if 1:
-  o = ''
-  for object in COBJECTS.keys():
-    o = o + ' src/' + object + '.o'
-  OBJECT_FILES = o
-  del o
-
-SPECIAL_TESTS = [
-  ('bin'+os.sep+'flx_run','test'+os.sep+'flx_run_lib1.flx',''),
-  ('test'+os.sep+'flx_perf_drv1','test'+os.sep+'flx_perf_lib1.flx','1000'),
-]
-
-# -------------------------------------------------
 # END IMPLEMENTOR CONFIGURABLE SECTION
 # -------------------------------------------------
 
@@ -2135,140 +2322,19 @@ def enstamp(stamp):
   f.write(t+"\n")
   f.close()
 
-buildall = "clean" in options or "force" in options
 try:
-  # STEP 0: run interscript
-  # in order specified by user
+
+  # EXECUTE USER SELECTED PLUGINS IN COMMAND LINE ORDER
   for k in options:
     if k in plugins:
       plugins[k]()
 
-  plugins["manifest"]()
-  for pkg in pkgd.keys():
-    pkgdict = pkgd[pkg]
-    iscrs = pkgdict.get("iscr_source",[])
-    latest_src_time = newest_filetime(iscrs)
-    src_time_s = fmtime(latest_src_time)
-    print "Pak %-20s changed: %s" % (pkg,src_time_s)
-
-    host_stamp="pkg-stamps"+os.sep+pkg+".host"
-    latest_host_build_time = filetime(host_stamp)
-    if latest_host_build_time == 0:
-      print "  ** Host UNBUILT"
-      if pkg not in packages: packages.append(pkg)
-    else:
-      if latest_host_build_time < latest_src_time:
-        print "  ** Host build:",fmtime(latest_host_build_time)
-        print "  ** REQUIRES REBUILD due to changed sources"
-        if pkg not in packages: packages.append(pkg)
-
-    target_stamp="pkg-stamps"+os.sep+pkg+".target"
-    latest_target_build_time = filetime(target_stamp)
-    if latest_target_build_time == 0:
-      print "  ** Target UNBUILT"
-      if pkg not in packages: packages.append(pkg)
-    else:
-      if latest_target_build_time < latest_src_time:
-        print "  ** Target build:",fmtime(latest_target_build_time)
-        print "  ** REQUIRES REBUILD due to changed sources"
-        if pkg not in packages: packages.append(pkg)
-
-    run_stamp="pkg-stamps"+os.sep+pkg+".run"
-    latest_run_build_time = filetime(run_stamp)
-    if latest_run_build_time == 0:
-      print "  ** Run UNBUILT"
-      if pkg not in packages: packages.append(pkg)
-    else:
-      if latest_run_build_time < latest_src_time:
-        print "  ** Run build:",fmtime(latest_run_build_time)
-        print "  ** REQUIRES REBUILD due to changed sources"
-        if pkg not in packages: packages.append(pkg)
-
-  # doesn't work so well if both deps and reqs specified!
-  # would work better, if reqs was already reduced to
-  # what actually needed to be rebuilt
-
-  if "deps" in options:
-    packages = closure(pkgdeps,packages)
-
-  if "reqs" in options:
-    packages = closure(pkgreqs,packages)
-
-  pkgs = filter(lambda x: x in packages,pkgs)
+  # execute scheduled operations in priority order
+  schedule_table.sort()
+  for pri,f in schedule_table:
+    f()
 
 
-  #print "AVAILABLE SOURCES",paks
-  print "SELECTED PACKAGES ARE ",pkgs
-  print "SELECTED PHASES ARE   ",phases
-  print "Build model  ",build_model
-  print "Host model   ",host_model
-  print "Target model ",target_model
-  print "Run model    ",run_model
-
-
-#---------- PACKAGE BUILDS ---------------------------------     
-  mkdirs("pkg-stamps")
-  for pkg in pkgs:
-    pkgdict = pkgd[pkg]
-    print "***** MAKING PACKAGE "+pkg+" ************"
-
-    if "doc" in options:
-      mkdoc()
-
-    if "host" in phases:
-      stamp="pkg-stamps"+os.sep+pkg+".host"
-      erasefile(stamp)
-      MLIS = pkgdict.get("caml_raw_interfaces",[])
-      copy_mli2ml(MLIS)
-      HPPS = pkgdict.get("rtl_interfaces",[])
-      copy_hpp2rtl(HPPS)
-
-      srcs = pkgdict.get("iscr_source",[])
-      src = string.join(srcs,' ')
-      if src:
-        print "REExtracting",pkg,"from",src
-        runISCR(FLX_LPARCHIVE+os.sep+src)
-
-      build_ocamls()
-
-      build_host_tools()
-
-      enstamp(stamp)
-
-    if "target" in phases:
-      stamp="pkg-stamps"+os.sep+pkg+".target"
-      erasefile(stamp)
-      if SUPPORT_DYNAMIC_LOADING:
-        build_target_rtl_dynamic()
-
-      if SUPPORT_STATIC_LINKAGE:
-        build_target_rtl_static()
-      
-      if SUPPORT_DYNAMIC_LOADING:
-        build_felix_dynamic_drivers()
-
-      if SUPPORT_STATIC_LINKAGE:
-        build_felix_static_drivers()
-
-      build_target_cpp_tools()
-      build_target_felix_tools()
-
-      run_host_tests()
-
-      enstamp(stamp)
-
-    if "run" in phases:
-      stamp="pkg-stamps"+os.sep+pkg+".run"
-      erasefile(stamp)
-      run_unit_tests()
-      run_completion_tests()
-      enstamp(stamp)
-
-    if "demo" in options:
-      run_demos()
-
-
-   
   if os.name != 'nt': # requires posix
     if "test" in options or "tutorial" in options or "fcount" in options:
       tkind = "std"

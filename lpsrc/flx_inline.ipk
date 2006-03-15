@@ -1,6 +1,7 @@
 @head(1,"Inlining")
 To make this work, we need a theorem.
 First, the call rule is:
+
 @begin_displayed_code()
 A procedure may only call a child of an ancestor.
 @end_displayed_code()
@@ -34,7 +35,6 @@ val heavy_inlining:
   (bid_t, bid_t list) Hashtbl.t *
   fully_bound_symbol_table_t ->
   unit
-
  
 @h = tangler("src/flx_inline.ml")
 @select(h)
