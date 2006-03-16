@@ -132,5 +132,5 @@ kwlist = [
 #--end keywords--
         ]
 
-iskeyword = frozenset(kwlist).__contains__
+def iskeyword(x): return x in kwlist
 
