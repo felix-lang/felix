@@ -25,6 +25,10 @@ get smaller with each compiler improvement.
 @item('dn')
 Tests with non-deterministic results. Output
 is printed, not comnpared with expected output.
+@item('kf')
+Tests that should compile, but are known to error out
+or hang during compilation. These should be fixed in
+some future version of the compiler.
 @end_list()
 
 @h = tangler('spkgs/flx_regression_tests.py')
@@ -742,6 +746,24 @@ fun f(x:int):int =
   if  x == 1 do return 1; done;
 }
 print (f 1); endl;
+
+@head(2,'Bad tests')
+All these should successfully compile, but currently fail
+or enter into an infinite loop.
+
+@select(tangler('test/kf01.flx'))
+#import <flx.flxh>
+
+proc foo(x, y:int)
+{
+}
+
+proc foo(x)
+{
+  foo (0, x);
+}
+
+foo 0;
 
 @head(1,"Expected outputs for test")
 @head(2,"test/rt01.expect")
