@@ -616,7 +616,8 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       map (fun (s,e)-> s, me e) es
     )
 
-  | `AST_record_type _ -> assert false
+  | `AST_record_type (sr,ts) -> 
+     clierr sr "Anonymous struct type cannot be used as an expression"
 
   | `AST_arrayof (sr, es) -> `AST_arrayof (sr, map me es)
   | `AST_coercion (sr, (e1, t)) -> `AST_coercion (sr, (me e1,mt sr t)) 
