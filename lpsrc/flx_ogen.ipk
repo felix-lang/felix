@@ -188,6 +188,21 @@ let rec get_offsets' syms bbdfns typ : string list =
     ;
     !lst
 
+  | `BTYP_record args -> 
+    let lst = ref [] in
+    iter 
+    (fun (s,t) ->
+      let prefix = 
+        "offsetof("^tname^","^s^")+" 
+      in
+      iter
+      (fun s -> lst := !lst @ [prefix ^ s])
+      (get_offsets' syms bbdfns t)
+    )
+    args
+    ;
+    !lst
+
   | `BTYP_function _ -> ["0"]
   | `BTYP_cfunction _ -> []
 

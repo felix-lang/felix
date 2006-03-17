@@ -38,6 +38,7 @@ open Flx_lookup
 open Flx_srcref
 open Flx_typing
 open Flx_exceptions
+open List
 
 type extract_t = 
   | Proj_n of range_srcref * int             (* tuple projections 1 .. n *)
@@ -111,6 +112,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_macro_ctor _
   | `AST_macro_statements  _
   | `AST_callback _ 
+  | `AST_record_type _
     -> 
       let sr = src_of_expr e in
       clierr sr "[mbind:subst] Not expected in when part of pattern"
@@ -140,8 +142,9 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | `AST_lvalue (sr,e') -> `AST_lvalue (sr,subst e')
   | `AST_apply (sr,(f,e)) -> `AST_apply (sr,(subst f,subst e))
   | `AST_map (sr,f,e) -> `AST_map (sr,subst f,subst e)
-  | `AST_tuple (sr,es) -> `AST_tuple (sr,List.map subst es)
-  | `AST_arrayof (sr,es) -> `AST_arrayof (sr,List.map subst es)
+  | `AST_tuple (sr,es) -> `AST_tuple (sr,map subst es)
+  | `AST_record (sr,es) -> `AST_record (sr,map (fun (s,e)->s,subst e) es)
+  | `AST_arrayof (sr,es) -> `AST_arrayof (sr,map subst es)
 
 
   (* Only one of these should occur, but I can't

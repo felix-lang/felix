@@ -264,6 +264,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     begin match rt t with
     | `BTYP_array (_,`BTYP_unitsum _) -> 
       ce_dot (ge' e) ("data["^si n^"]")
+    | `BTYP_record es ->
+       let field_name,_ = nth es n in
+       ce_dot (ge' e) field_name
     | _ -> ce_dot (ge' e) ("mem_" ^ si n)
     end
 
@@ -898,6 +901,27 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   | `BEXPR_apply (f,a) ->
     ce_atom (
     (ge f) ^ "->clone()\n      ->apply(" ^ ge_arg a ^ ")"
+    )
+
+  | `BEXPR_record es ->
+    let rcmp (s1,_) (s2,_) = compare s1 s2 in
+    let es = sort rcmp es in
+    let es = map snd es in
+    let ctyp = tn (lower t) in
+    ce_atom (
+    ctyp ^ "(" ^
+      fold_left
+      (fun s e ->
+        let x = ge_arg e in
+        if String.length x = 0 then s else
+        s ^ 
+        (if String.length s > 0 then ", " else "") ^
+        x
+      )
+      ""
+      es
+    ^
+    ")"
     )
 
   | `BEXPR_tuple es ->

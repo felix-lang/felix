@@ -1,4 +1,5 @@
 @set_title('Performance Measurements')
+
 @select(tangler('mkplugins/speed.py'))
 def plugin():    
   runISCR(FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
@@ -6,6 +7,12 @@ def plugin():
   run("python speed/panal.py")
   run("gnuplot speed/mkjpgs.gpl")
   runISCR('--inhibit-sref=1 --language=en --weaver=web --passes=2 --weaver-directory=speed/ '+FLX_LPARCHIVE+os.sep+'lpsrc/flx_perf.pak')
+
+@select(tangler('spkgs/speed.py'))
+pkg_requires = ["flx"]
+iscr_source = ["lpsrc/flx_perf.pak"]
+weaver_directory = 'speed/'
+
 
 @head(1,"How Fast is Felix?")
 This module contains codes to compare the Felix translator
@@ -146,6 +153,17 @@ where 'ack' is replaced by the name of the test.
    </TD></TR></TABLE><P></P>
    ''')
 
+@def showdata(fn):
+  try:
+    f = open(fn)
+    data = f.read()
+    f.close()
+    lines = string.split(data,'\n')
+    for line in lines: tangle(line)
+  except:
+    tangle(fn+" not available")
+
+
 @head(2,'The Test Machines')
 @head(3,'Rosella: x86-64')
 This is my main work machine, an AMD64 K8 3200 with 
@@ -166,12 +184,9 @@ and is heavily dependent on the number of words stacked per function call.
 @#showgraph('rosella','ack',"Ackermann's function on Rosella (Amd64 3400 k8)")
 @showgraph('budgie','ack',"Ackermann's function on Budgie (Amd64x2 3800 k8)")
 
-@try:
-   begin_displayed_code()
-   include_file("../speed/rankings/budgie/ack.txt")
-   end_displayed_code()
- except:
-   pass
+@begin_displayed_code()
+@showdata("../speed/rankings/budgie/ack.txt")
+@end_displayed_code()
 
 @select(tangler('speed/specs/ack.py','data'))
 descr="Ackerman's function"
@@ -310,12 +325,9 @@ end Ack_F;
 @#showgraph('rosella','takfp',"Takfp on Rosella: amd64 3400 k8")
 @showgraph('budgie','takfp',"Takfp on Budgie: amd64x2 3800 k8")
 
-@try:
-   begin_displayed_code()
-   include_file("../speed/rankings/budgie/takfp.txt")
-   end_displayed_code()
- except:
-   pass
+@begin_displayed_code()
+@showdata("../speed/rankings/budgie/takfp.txt")
+@end_displayed_code()
 
 @select(tangler('speed/specs/takfp.py','data'))
 descr="Taka's function, using floats"

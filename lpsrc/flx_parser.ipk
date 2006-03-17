@@ -2518,6 +2518,51 @@ superscript:
 
   | refr { $1 }
 refr:
+  | STRUCT compound { 
+     let sr = rsrange (slift $1) (fst $2) in
+     let es = snd $2 in
+     let flag = ref `Unk in
+     (* this crud distinguishes "a=e;" from "a:t;"  *)
+     let f (stmt:statement_t) = match stmt with
+       | `AST_assign (_,sname,(`Name (_,lhs),None), rhs)
+       | `AST_assign (_,sname,(`Expr (_,`AST_name (_,lhs,[])),None), rhs) 
+         when sname = "_set" -> 
+         if !flag = `Unk then flag := `Ex
+         else if !flag = `Ty then
+          Flx_exceptions.clierr sr 
+          "anonymous struct type components require coercions!"
+         ;
+         lhs,rhs
+       | `AST_call (_,`AST_coercion(_,(`AST_name(_,lhs,[]),rhs)),`AST_tuple (_,[])) ->
+         if !flag = `Unk then flag := `Ty
+         else if !flag = `Ex then
+          Flx_exceptions.clierr sr 
+          "anonymous struct components require assignments!"
+         ;
+         lhs,`AST_expr (sr,"dummy",rhs)
+
+       | _ -> Flx_exceptions.clierr sr 
+         "anonymous struct components require assignments!"
+     in
+
+     let es: (string * expr_t) list = map f es in
+     if !flag = `Unk then 
+       if length es = 0 then `AST_tuple (sr,[])
+       else
+         Flx_exceptions.clierr sr 
+         "anonymous struct: unrecognizable components!"
+     else if !flag = `Ex then 
+       (`AST_record (sr,es):> expr_t)
+     else if !flag = `Ty then 
+       let es : (string * typecode_t) list  = map (fun (lhs,x) ->
+         match x with 
+         | `AST_expr (_,_,rhs) -> lhs, rhs
+         | _ -> assert false
+         ) es
+       in 
+       (`AST_record_type (sr,es) :> expr_t)
+     else assert false
+   }
   | AMPER refr
     { 
       `AST_ref 

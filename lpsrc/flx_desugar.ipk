@@ -452,6 +452,13 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let lss,xs = split (map rex t) in
     concat lss,`AST_tuple (sr,xs)
 
+  | `AST_record (sr,es) -> 
+    let ss,es = split es in
+    let lss,xs = split (map rex es) in
+    concat lss,`AST_record (sr,combine ss xs)
+
+  | `AST_record_type _ -> assert false
+
   | `AST_arrayof (sr,t) -> 
     let lss,xs = split (map rex t) in
     concat lss,`AST_arrayof(sr,xs)

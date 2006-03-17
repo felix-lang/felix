@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.170  2006/03/17 16:10:06  skaller
+Added anonymous structs aka. records. a'la Ocaml.
+
 Revision 1.169  2006/03/15 10:22:57  rfistman
 fixing 64bit cl build
 
@@ -1619,7 +1622,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     LINK_DYNAMIC_MAIN = "/nologo /MT "
 
     COMPILE_DYNAMIC_FLX = "/nologo /MD /c /EHs "
-    LINK_DYNAMIC_FLX = "/nologo /MT /LD "
+    LINK_DYNAMIC_FLX = "/nologo /MD /LD "
 
     opt.CCOBJ_DYNAMIC_FLX = CXX + COMPILE_DYNAMIC_FLX
     opt.CCLINK_DYNAMIC_FLX = CXX + LINK_DYNAMIC_FLX
@@ -1810,7 +1813,38 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
 
   def compile_shared_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
-    self.compile_shared_thing(shell,indir,basename,".cxx",outdir,include_path,macros,flags,optimise,debug,CFLAGS)
+    opt = self.options
+    # compile for a dll: position independent code etc
+    cmd = opt.CCOBJ_DYNAMIC_MAIN
+    if flags: cmd = cmd + flags + " "
+
+    # debug symbols
+    if debug: cmd = cmd + "/Yd /Zi /RTC "
+
+    # optimisation
+    if optimise: cmd = cmd + opt.OPTIMISE
+
+    # include path
+    for i in include_path: cmd = cmd +"-I"+i+" "
+
+    # output file
+    cmd = cmd + "/Fo"
+    if outdir: cmd = cmd + outdir + os.sep
+    cmd = cmd + basename + "_dynamic"+opt.EXT_OBJ+" "
+
+    # macros
+    for i in macros: cmd=cmd + "-D"+i+" "
+
+    cmd = cmd + CFLAGS
+
+    #input file
+    if  indir: cmd = cmd + indir + os.sep
+    cmd = cmd + basename
+    cmd = cmd + src_ext
+
+    # compile it
+    shell(cmd)
+
 
   def compile_felix_dll(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
     self.compile_shared_thing(shell,indir,basename,".cpp",outdir,include_path,macros,flags,optimise,debug,CFLAGS)

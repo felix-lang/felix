@@ -909,6 +909,7 @@ and bind_type'
   let t = 
   match t with
   | `TYP_intersect ts -> `BTYP_intersect (map bt ts)
+  | `TYP_record ts -> `BTYP_record (map (fun (s,t) -> s,bt t) ts)
 
   (* We first attempt to perform the match
     at binding time as an optimisation, if that
@@ -2886,7 +2887,7 @@ and bind_expression' syms env (rs:recstop) e args
     print_endline (".. DONE: Calculating AST_parse, type=" ^ sbt syms.dfns t);
     *)
     `BEXPR_parse (e,nts),`BTYP_sum [unit_t;t]
-    
+   
   | `AST_expr (sr,s,t) -> 
     let t = bt sr t in 
     `BEXPR_expr (s,t),t
@@ -3414,7 +3415,23 @@ and bind_expression' syms env (rs:recstop) e args
     *)
     (* .. PRAPS .. *)
     let meth_ts = map (bt sra) meth_ts in
-    let be2,t2 = be e2 in
+    let (be2,t2) as x2 = be e2 in
+    begin match t2 with
+    | `BTYP_lvalue(`BTYP_record es)
+    | `BTYP_record es ->
+      let rcmp (s1,_) (s2,_) = compare s1 s2 in
+      let es = sort rcmp es in
+      let field_name = String.sub fn 4 (String.length fn -4) in
+      begin match list_index (map fst es) field_name with
+      | Some n -> `BEXPR_get_n (n,x2),assoc field_name es
+      | None -> clierr sr 
+         (
+           "Field " ^ field_name ^ 
+           " is not a member of anonymous structure " ^ 
+           sbt syms.dfns t2
+          )
+      end
+    | _ ->
     let tbe1 = 
       match t2 with
       | `BTYP_lvalue(`BTYP_inst (index,ts)) 
@@ -3435,9 +3452,11 @@ and bind_expression' syms env (rs:recstop) e args
 
           | _ -> clierr sra ("Koenig lookup: parent for method apply not module")
         end
-      | _ -> clierr sra "apply method to nongenerative type"
+ 
+      | _ -> clierr sra ("apply method "^fn^" to nongenerative type")
     in
       cal_apply syms sra tbe1 (be2, t2)
+    end
 
   | `AST_map (sr,f,a) ->
     handle_map sr (be f) (be a)
@@ -3502,6 +3521,18 @@ and bind_expression' syms env (rs:recstop) e args
     end else if n = 1 then hd bets
     else syserr sr "Empty array?"
 
+  | `AST_record_type _ -> assert false
+
+  | `AST_record (sr,ls) ->
+    begin match ls with
+    | [] -> `BEXPR_tuple [],`BTYP_tuple []
+    | _ ->
+    let ss,es = split ls in
+    let es = map be es in
+    let ts = map snd es in
+    let t = `BTYP_record (combine ss ts) in
+    `BEXPR_record (combine ss es),t
+    end
 
   | `AST_tuple (_,es) -> 
     let bets = map be es in
@@ -3854,6 +3885,10 @@ and rebind_btype syms env sr ts t: btypecode_t =
   | `BTYP_typesetintersection ts -> `BTYP_typesetintersection (map rbt ts)
 
   | `BTYP_tuple ts -> `BTYP_tuple (map rbt ts)
+  | `BTYP_record ts -> 
+      let ss,ts = split ts in 
+      `BTYP_record (combine ss (map rbt ts))
+
   | `BTYP_typeset ts ->  `BTYP_typeset (map rbt ts)
   | `BTYP_intersect ts ->  `BTYP_intersect (map rbt ts)
 

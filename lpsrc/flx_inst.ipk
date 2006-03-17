@@ -130,6 +130,11 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   | `BEXPR_tuple es -> 
     iter ue es;
     register_tuple syms (vs t)
+
+  | `BEXPR_record es -> 
+    let ss,es = split es in
+    iter ue es;
+    register_tuple syms (vs t)
      
   | `BEXPR_case (_,t) -> ut (vs t)
 

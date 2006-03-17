@@ -84,6 +84,53 @@ let gen_tuple name tn typs =
   ^
   "};\n"
 
+let gen_record name tn typs =
+  let n = length typs in
+  "struct " ^ name ^ " {\n" ^
+  catmap "" 
+  (fun (n,t) -> 
+    if t = `BTYP_tuple [] 
+    then "  // elided " ^ n ^ "(type unit)\n"
+    else "  "^tn t^ " " ^ n ^ ";\n"
+  )
+  typs
+  ^
+  "  " ^ name ^ "(){}\n" (* default constructor *)
+  ^
+  (
+    if fold_left (fun r (n,t) -> r && t = `BTYP_tuple []) true typs 
+    then "" 
+    else
+    "  " ^ name ^ "(" ^
+    fold_left 
+    (fun s (n,t) -> 
+      if t = `BTYP_tuple [] then s 
+      else 
+        s ^ 
+        (if String.length s > 0 then ", " else "") ^
+        tn t^" _" ^ n ^ "_a"
+    ) 
+    ""
+    typs 
+    ^
+    "):\n    " 
+    ^ 
+    fold_left
+    (fun s (n,t) -> 
+      if t = `BTYP_tuple [] then s 
+      else
+        s ^
+        (if String.length s > 0 then ", " else "") ^
+        n ^ "(_" ^ n ^"_a)"
+    ) 
+    ""
+    typs
+    ^
+    "{}\n"
+  )
+  ^
+  "};\n"
+
 (* copy ctor, assignment, and destructor are generated; 
   we have to supply the pointer constructor and default
   constructor though. Note that it matters not if this
@@ -124,6 +171,7 @@ let gen_type_name syms bbdfns (index,typ) =
 
   | `BTYP_pointer _
   | `BTYP_tuple _
+  | `BTYP_record _
   | `BTYP_array _
   | `BTYP_function _ ->
     descr ^
@@ -358,6 +406,10 @@ let gen_type syms bbdfns (index,typ) =
   | `BTYP_tuple ts -> 
      descr ^
      gen_tuple (cn typ) tn ts
+
+  | `BTYP_record ts -> 
+     descr ^
+     gen_record (cn typ) tn ts
      
   | `BTYP_void -> ""
   | `BTYP_pointer t -> 

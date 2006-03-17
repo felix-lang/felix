@@ -230,6 +230,9 @@ let rec cpp_type_classname syms t =
 
   | `BTYP_tuple _ -> 
     "_tt" ^ si (tix t)
+
+  | `BTYP_record _ -> 
+    "_art" ^ si (tix t)
   
   | `BTYP_sum _ -> 
     "_st" ^ si (tix t)

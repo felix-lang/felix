@@ -611,6 +611,13 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
      `AST_macro_statements (sr,sts)
 
   | `AST_tuple (sr, es) -> `AST_tuple (sr, map me es)
+  | `AST_record (sr, es) -> 
+    `AST_record (sr, 
+      map (fun (s,e)-> s, me e) es
+    )
+
+  | `AST_record_type _ -> assert false
+
   | `AST_arrayof (sr, es) -> `AST_arrayof (sr, map me es)
   | `AST_coercion (sr, (e1, t)) -> `AST_coercion (sr, (me e1,mt sr t)) 
   | `AST_suffix (sr, (qn, t)) -> 

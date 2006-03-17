@@ -218,6 +218,9 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
   | `BTYP_tuple ls -> `BTYP_tuple (map br ls)
   | `BTYP_array (i,t) -> `BTYP_array (i, br t)
   | `BTYP_sum ls -> `BTYP_sum (map br ls)
+  | `BTYP_record ts -> 
+     let ss,ls = split ts in
+     `BTYP_record (combine ss (map br ls))
 
   (* Intersection type reduction rule: if any term is 0,
      the result is 0, otherwise the result is the intersection
