@@ -116,7 +116,7 @@ class cpp_tangler(tangler_base):
     self.writeline('# '+line,file,count)
 
   def start_section(self, file, count):
-    data = '#line '+str(count)+' '+'"'+file+'"'
+    data = '#line '+str(count)+' '+repr(file)
     self._writeline(data)
     if self.weaver:
       self.weaver.echotangle(self.sink.lines_written,data)
