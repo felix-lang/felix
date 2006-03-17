@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.171  2006/03/17 17:53:42  skaller
+Window mainline config.
+
 Revision 1.170  2006/03/17 16:10:06  skaller
 Added anonymous structs aka. records. a'la Ocaml.
 
@@ -1814,7 +1817,6 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
 
   def compile_shared_main(self,shell,indir,basename,outdir=None,include_path=[],macros=[],flags="",optimise=1,debug=0,CFLAGS=""):
     opt = self.options
-    # compile for a dll: position independent code etc
     cmd = opt.CCOBJ_DYNAMIC_MAIN
     if flags: cmd = cmd + flags + " "
 
@@ -1840,7 +1842,7 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     #input file
     if  indir: cmd = cmd + indir + os.sep
     cmd = cmd + basename
-    cmd = cmd + src_ext
+    cmd = cmd + ".cxx"
 
     # compile it
     shell(cmd)
