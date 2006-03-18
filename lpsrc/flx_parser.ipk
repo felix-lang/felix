@@ -2866,12 +2866,12 @@ simple_name_parts:
     }
 
 suffixed_name:
-  | qualified_name OF LPAR expr RPAR 
+  | qualified_name OF factor
     { 
       `AST_suffix
       (
-        rsrange (src_of_expr $1) (slift $5),
-        (qualified_name_of_expr $1, typecode_of_expr $4)
+        rsrange (src_of_expr $1) (src_of_expr $3),
+        (qualified_name_of_expr $1, typecode_of_expr $3)
       )
     }
 
