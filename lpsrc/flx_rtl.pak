@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.25  2006/03/18 01:26:35  rfistman
+fixed FLXIMPORT doing a dllexport on windows
+made pthread and flx_async libs use their own BLAH_EXTERN directives
+
 Revision 1.24  2006/03/15 12:59:57  skaller
 Add HAVE_LONG and HAVE_LONGDOUBLE to flx_rtl_config.hpp for elkhound
 
@@ -473,7 +477,7 @@ T &reinterpret(U const &x) {
 
 #if  !defined(FLX_STATIC_LINK) && (defined(_WIN32))
 #define FLX_EXPORT __declspec(dllexport)
-#define FLX_IMPORT __declspec(dllexport)
+#define FLX_IMPORT __declspec(dllimport)
 #else
 #define FLX_EXPORT
 #define FLX_IMPORT
@@ -2277,14 +2281,21 @@ shared library name are not passed.
 #include "flx_rtl_config.hpp"
 #include "flx_rtl.hpp"
 
-class RTL_EXTERN async_hooker {
+#ifdef BUILD_ASYNC
+#define ASYNC_EXTERN FLX_EXPORT
+#else
+#define ASYNC_EXTERN FLX_IMPORT
+#endif
+
+
+class ASYNC_EXTERN async_hooker {
 public:
   virtual flx::rtl::fthread_t *dequeue()=0;
   virtual bool handle_request(void *data, flx::rtl::fthread_t *ss)=0;
   virtual ~async_hooker();
 };
 
-RTL_EXTERN async_hooker *
+ASYNC_EXTERN async_hooker *
 create_async_hooker(
   int n0,   // bound on resumable thread queue
   int n1,   // bound on general input job queue
