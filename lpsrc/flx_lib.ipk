@@ -875,6 +875,7 @@ module System
 {
   const argc:int = "ptf->argc";
   fun argv:int -> string = 'std::string($1<0||$1>=ptf->argc??"":ptf->argv[$1])';
+  val args = List::map (the argv) (List::range argc);
 @tangle('  const felix_version : string = \'std::string("'+flx_version+'")\';')
   fun system: string -> int = "std::system($1.data())"
     requires cstdlib;
