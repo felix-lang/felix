@@ -1727,8 +1727,6 @@ module List
     ;
   }
 
-  fun cat (x:list[string]) => cat ', ' x;
-
   fun mem[T] (eq: T * T -> bool) (x:list[T]) (e:T) : bool =>
     match x with 
     | Cons (?h,?t) => if eq (h, e) then true else mem eq t e endif
