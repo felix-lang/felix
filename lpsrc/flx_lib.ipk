@@ -1655,6 +1655,39 @@ module List
       endmatch
     ;
   }
+
+  fun range (low:int, high:int, step:int) =
+  {
+    fun inner(low:int, high:int, step:int, values:list[int]) =
+    {
+      return
+        if high < low
+          then values
+          else inner(low, high - step, step, Cons(high, values))
+          endif
+      ;
+    }
+  
+    // reverse low and high so we can do negative steps
+    lo, hi, s := if low < high
+      then low, high, step
+      else high, low, -step
+      endif;
+  
+    // adjust the high to be the actual last value so we don't
+    // have to reverse the list
+    n := hi - lo - 1;
+  
+    return if s <= 0
+      then Empty[int]
+      else inner(lo, lo + n - (n % s), s, Empty[int])
+      endif
+    ;
+  }
+
+  fun range (low:int, high:int) => range(low, high, 1);
+
+  fun range (num:int) => range(0, num, 1);
   
   noinline fun join[T] (x:list[T]) (y:list[T]):list[T] = 
   {
@@ -1682,6 +1715,19 @@ module List
        endmatch
      ;
    }
+
+  fun cat (sep:string) (x:list[string]):string = 
+  {
+    return
+      match x with
+      | Empty[string] => ''
+      | Cons[string] (?h, ?t) => 
+          fold_left (fun (a:string) (b:string) => a + sep + b) h t
+      endmatch
+    ;
+  }
+
+  fun cat (x:list[string]) => cat ', ' x;
 
   fun mem[T] (eq: T * T -> bool) (x:list[T]) (e:T) : bool =>
     match x with 
