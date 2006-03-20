@@ -610,18 +610,18 @@ same name.
 
 body """
 int n = 3;
-void f() { n++; }
+void ff() { n++; }
 int g(int a) { return a * a; }
 #define N 4
 """;
 
-proc f: unit;
+proc ff: unit;
 fun g: int-> int;
 const n:int;
 const N:int;
 
 print n; endl;
-f();  print n; endl;
+ff();  print n; endl;
 print N; endl;
 print (g N); endl;
 

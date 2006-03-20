@@ -1607,11 +1607,11 @@ module List
     | _ => false
   ;
 
-  fun map[T,U] (f:T->U) (x:list[T]): list[U] = {
+  fun map[T,U] (_f:T->U) (x:list[T]): list[U] = {
     return
       match x with
       | Empty[T] => Empty[U]
-      | Cons[T] (?h, ?t) => Cons (f(h), map[T,U] f t)
+      | Cons[T] (?h, ?t) => Cons (_f(h), map[T,U] _f t)
       endmatch
     ;
   }
@@ -1629,30 +1629,30 @@ module List
     return aux x Empty[T];
   }
 
-  proc iter[T] (f:T->void) (x:list[T]) {
+  proc iter[T] (_f:T->void) (x:list[T]) {
     match x with
     | Empty[T] => {} 
-    | Cons[T] (?h,?t) => { f h; iter f t; }
+    | Cons[T] (?h,?t) => { _f h; iter _f t; }
     endmatch
     ;
   }
 
-  fun fold_left[T,U] (f:U->T->U) (init:U) (x:list[T]):U =
+  fun fold_left[T,U] (_f:U->T->U) (init:U) (x:list[T]):U =
   {
     return
       match x with
       | Empty[T] => init
-      | Cons[T] (?h,?t) => fold_left f (f init h) t
+      | Cons[T] (?h,?t) => fold_left _f (_f init h) t
       endmatch
     ;
   }
 
-  fun fold_right[T,U] (f:T->U->U) (x:list[T]) (init:U):U =
+  fun fold_right[T,U] (_f:T->U->U) (x:list[T]) (init:U):U =
   {
     return
       match x with
       | Empty[T] => init
-      | Cons[T] (?h,?t) => fold_right f t (f h init)
+      | Cons[T] (?h,?t) => fold_right _f t (_f h init)
       endmatch
     ;
   }
