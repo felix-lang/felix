@@ -587,6 +587,29 @@ print xy.x; endl;
 print xy.y; endl;
 
 @doc()
+@head(2,'Records: anonymous structs')
+A record is an anonymous struct: its a tuple with
+named fields. Two records are the same type if their
+field names are the same, and have the same types.
+The order of fields is irrelevant.
+@p()
+A record can be coerced to a record with less fields.
+@select(tangler(tdir+'tut_beg115a.flx'))
+#import <flx.flxh>
+open Float;
+
+typedef big = struct { a:int; b: long; c: float; };
+typedef small = struct { a: int; c:float; };
+
+proc f(x:small) {
+  print$ x.a; endl;
+  print$ x.c; endl;
+}
+
+val b = struct { b=2L; c=3.1f; a=6; };
+
+f (b:small);
+
 @head(2,'Arrays')
 Felix provides arrays of constant length.
 The type notation
@@ -3734,6 +3757,10 @@ false
 @select(tangler("tut/examples/tut_beg115.expect","data"))
 1
 2
+@head(2,"tut/examples/tut_beg115a.expect")
+@select(tangler("tut/examples/tut_beg115a.expect","data"))
+6
+3.1
 @head(2,"tut/examples/tut_beg116.expect")
 @select(tangler("tut/examples/tut_beg116.expect","data"))
 1
