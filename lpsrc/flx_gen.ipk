@@ -2848,6 +2848,55 @@ try
   let bbdfns = Flx_use.copy_used syms bbdfns in
   let child_map = cal_children syms bbdfns in
 
+  let elim_init maybe_unused exes =
+    List.filter (function 
+      | `BEXE_init (_,i,_) -> not (IntSet.mem i maybe_unused) 
+      | _ -> true
+    )
+    exes
+  in
+  let elim_pass () =
+    (* check for unused things .. possible, just a diagnostic for now *)
+    let full_use = Flx_use.full_use_closure syms bbdfns in
+    let partial_use = Flx_use.cal_use_closure syms bbdfns false in
+    let maybe_unused = IntSet.diff full_use partial_use in
+   
+    Hashtbl.iter
+    (fun i (id,parent,sr,entry) -> match entry with
+    | `BBDCL_procedure (props ,bvs,(ps,tr),exes) ->
+      let exes = elim_init maybe_unused exes in
+      let entry = `BBDCL_procedure (props,bvs,(ps,tr),exes) in
+      Hashtbl.replace bbdfns i (id,parent,sr,entry)
+
+    | `BBDCL_function (props,bvs,(ps,rt),ret,exes) ->
+      let exes = elim_init maybe_unused exes in
+      let entry = `BBDCL_function (props,bvs,(ps,rt),ret,exes) in
+      Hashtbl.replace bbdfns i (id,parent,sr,entry)
+
+    | `BBDCL_glr (props,bvs,ret,(p,exes)) ->
+      let exes = elim_init maybe_unused exes in
+      let entry =  `BBDCL_glr (props,bvs,ret,(p,exes)) in
+      Hashtbl.replace bbdfns i (id,parent,sr,entry)
+    | _ -> ()
+    )
+    bbdfns
+    ;
+
+    IntSet.iter
+    (fun i-> 
+      let id,_,_,_ = Hashtbl.find bbdfns i in
+      if compiler_options.print_flag then
+      print_endline ("Removing unused " ^ id ^ "<" ^ si i ^ ">");
+      Hashtbl.remove bbdfns i
+    )
+    maybe_unused
+    ;
+    IntSet.is_empty maybe_unused
+  in
+
+  while not (elim_pass ()) do () done;
+
+
   (*
   print_functions syms.dfns bbdfns;
   *)

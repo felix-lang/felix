@@ -374,7 +374,7 @@ macro val ext =
   else ".lib_ext" endif
 ;
 // conditional compilation
-val lib = openlib ("MyLibrary" ext);
+C_hack::ignore(openlib ("MyLibrary" ext));
 
 @head(2,'Procedure Macros')
 A procedure macro represents a list of statements.

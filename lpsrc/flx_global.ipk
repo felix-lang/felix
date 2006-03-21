@@ -28,6 +28,10 @@ val set_globals:
   fully_bound_symbol_table_t -> 
   unit
 
+val check_global_vars_all_used:
+  sym_state_t ->
+  fully_bound_symbol_table_t -> 
+  (bid_t, 'a) Hashtbl.t -> unit
 
 @h = tangler("src/flx_global.ml")
 @select(h)
@@ -377,4 +381,34 @@ let set_globals syms bbdfns =
   Hashtbl.iter
   (fun i _ -> ignore (set_ptf_usage syms bbdfns usage [] i))
   bbdfns
+
+let find_global_vars syms bbdfns =
+  let gvars = ref IntSet.empty in
+  Hashtbl.iter
+  (fun i _ -> if is_global_var bbdfns i then gvars := IntSet.add i !gvars)
+  bbdfns
+  ;
+  !gvars
+
+let check_used syms bbdfns used i =
+  Hashtbl.mem used i
+
+let check_all_used syms bbdfns used ii =
+  let all_used = ref true in
+  IntSet.iter (fun i-> if not (check_used syms bbdfns used i)
+    then begin 
+      print_endline ("FOUND UNUSED VARIABLE " ^ si i);
+      all_used := false
+    end
+  )
+  ii
+  ;
+  if !all_used then
+    print_endline "ALL GLOBAL VARS ARE USED"
+  else
+    print_endline "Som UNUSED vars!"
+ 
+let check_global_vars_all_used syms bbdfns used =
+  let ii = find_global_vars syms bbdfns in
+  check_all_used syms bbdfns used ii
 

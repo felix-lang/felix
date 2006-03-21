@@ -18,6 +18,7 @@ val uses_type:
   sym_state_t ->
   IntSet.t ref ->
   fully_bound_symbol_table_t ->
+  bool -> (* count inits *)
   btypecode_t -> 
   unit
 
@@ -25,12 +26,21 @@ val uses:
   sym_state_t ->
   IntSet.t ref ->
   fully_bound_symbol_table_t ->
+  bool -> (* true to count initialisations as uses *)
   int ->
   unit
 
+(* counts initialisation as use *)
 val full_use_closure:
   sym_state_t ->
   fully_bound_symbol_table_t ->
+  IntSet.t
+
+(* conditionally count initialisation as use *)
+val cal_use_closure:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  bool ->
   IntSet.t
 
 val copy_used:
@@ -79,12 +89,12 @@ changing the data structures.
 
 let nop x = ()
 
-let rec uses_type syms used bbdfns (t:btypecode_t) = 
-  let ut t = uses_type syms used bbdfns t in
+let rec uses_type syms used bbdfns count_inits (t:btypecode_t) = 
+  let ut t = uses_type syms used bbdfns count_inits t in
   match t with
   | `BTYP_inst (i,ts)
     -> 
-      uses syms used bbdfns i;
+      uses syms used bbdfns count_inits i; (* don't care on uses inits? *)
       iter ut ts
 
   | `BTYP_type 
@@ -93,23 +103,26 @@ let rec uses_type syms used bbdfns (t:btypecode_t) =
 
   | _ -> iter_btype ut t
 
-and uses_exes syms used bbdfns exes =
-  iter (uses_exe syms used bbdfns) exes
+and uses_exes syms used bbdfns count_inits exes =
+  iter (uses_exe syms used bbdfns count_inits) exes
 
-and uses_exe syms used bbdfns (exe:bexe_t) =
+and uses_exe syms used bbdfns count_inits (exe:bexe_t) =
   (*
   print_endline ("EXE=" ^ string_of_bexe syms.dfns 0 exe);
   *)
-  let ue e = uses_tbexpr syms used bbdfns e in
-  let ui i = uses syms used bbdfns i in
-  let ut t = uses_type syms used bbdfns t in
-  iter_bexe ui ue ut nop nop exe
+  let ue e = uses_tbexpr syms used bbdfns count_inits e in
+  let ui i = uses syms used bbdfns count_inits i in
+  let ut t = uses_type syms used bbdfns count_inits t in
+  match exe,count_inits with
+  | `BEXE_init (_,i,e),false -> ue e
+  | _ -> 
+    iter_bexe ui ue ut nop nop exe
 
 
-and uses_tbexpr syms used bbdfns ((e,t) as x) =
-  let ue e = uses_tbexpr syms used bbdfns e in
-  let ut t = uses_type syms used bbdfns t in
-  let ui i = uses syms used bbdfns i in
+and uses_tbexpr syms used bbdfns count_inits ((e,t) as x) =
+  let ue e = uses_tbexpr syms used bbdfns count_inits e in
+  let ut t = uses_type syms used bbdfns count_inits t in
+  let ui i = uses syms used bbdfns count_inits i in
 
   (* already done in the iter .. *)
   (*
@@ -118,9 +131,9 @@ and uses_tbexpr syms used bbdfns ((e,t) as x) =
   (* use a MAP now *)
   iter_tbexpr ui ignore ut x;
 
-and uses_production syms used bbdfns p =
+and uses_production syms used bbdfns count_inits p =
   let uses_symbol (_,nt) = match nt with
-  | `Nonterm ii -> iter (uses syms used bbdfns) ii
+  | `Nonterm ii -> iter (uses syms used bbdfns count_inits) ii
   | `Term i -> () (* HACK! This is a union constructor name  we need to 'use' the union type!! *)
   in
   iter uses_symbol p
@@ -129,9 +142,9 @@ and faulty_req syms i =
   match Hashtbl.find syms.dfns i with {id=id; sr=sr } ->
   clierr sr (id ^ " is used but has unsatisfied requirement")
 
-and uses syms used bbdfns i =
-  let ui i = uses syms used bbdfns i in
-  let ut t = uses_type syms used bbdfns t in
+and uses syms used bbdfns count_inits i =
+  let ui i = uses syms used bbdfns count_inits i in
+  let ut t = uses_type syms used bbdfns count_inits t in
   let rq reqs = 
     let ur (j,ts) = 
       if j = 0 then 
@@ -140,8 +153,8 @@ and uses syms used bbdfns i =
     in
     iter ur reqs 
   in
-  let ux x = uses_exes syms used bbdfns x in
-  let ue e = uses_tbexpr syms used bbdfns e in
+  let ux x = uses_exes syms used bbdfns count_inits x in
+  let ue e = uses_tbexpr syms used bbdfns count_inits e in
   if not (IntSet.mem i !used) then
   begin
     match
@@ -162,7 +175,7 @@ and uses syms used bbdfns i =
 
       | `BBDCL_glr (_,_,t,(p,e)) ->
         ut t; ux e;
-        uses_production syms used bbdfns p
+        uses_production syms used bbdfns count_inits p
 
       | `BBDCL_regmatch (_,_,(ps,traint),t,(_,_,h,_)) ->
         ut t; Hashtbl.iter (fun _ e -> ue e) h;
@@ -234,13 +247,13 @@ let find_roots syms bbdfns
   (function
      | `BIFACE_export_fun (_,x,_) -> roots := IntSet.add x !roots
      | `BIFACE_export_type (_,t,_) -> 
-        uses_type syms roots bbdfns t
+        uses_type syms roots bbdfns true t
   )
   bifaces
   ;
   syms.roots := !roots
 
-let full_use_closure syms bbdfns =
+let cal_use_closure syms bbdfns (count_inits:bool) =
   let u = ref IntSet.empty in
   let v : IntSet.t  = !(syms.roots) in
   let v = ref v in
@@ -252,7 +265,7 @@ let full_use_closure syms bbdfns =
        print_endline ("Scanning " ^ si j);
        *)
        u:= IntSet.add j !u;
-       uses syms v bbdfns j
+       uses syms v bbdfns count_inits j
     end
   in
   while not (IntSet.is_empty !v) do 
@@ -262,6 +275,8 @@ let full_use_closure syms bbdfns =
   done;
   !u
        
+let full_use_closure syms bbdfns = cal_use_closure syms bbdfns true
+
 let copy_used syms bbdfns =
   let h = Hashtbl.create 97 in
   let u = full_use_closure syms bbdfns in

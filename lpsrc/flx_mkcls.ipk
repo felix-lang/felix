@@ -255,7 +255,7 @@ let set_closure bbdfns p i =
 let make_closures syms bbdfns =
   let used = ref IntSet.empty in
   let all_closures = ref IntSet.empty in
-  let uses i = Flx_use.uses syms used bbdfns i in
+  let uses i = Flx_use.uses syms used bbdfns true i in
   IntSet.iter uses !(syms.roots);
   IntSet.iter (process_entry syms bbdfns all_closures ) !used;
   (*
