@@ -2924,13 +2924,50 @@ and bind_expression' syms env (rs:recstop) e args
     let (e',t') as x' = be x in
     let t'' = bt sr t in
     if type_eq syms.dfns t' t'' then x'
-    else clierr sr 
-    (
-      "Wrong type in coercion:\n" ^
-      sbe syms.dfns x' ^ " has type " ^ sbt syms.dfns t' ^
-      "\nwhereas annotation requires " ^ sbt syms.dfns t''
-    )
-    
+    else 
+    let t' = Flx_maps.reduce_type t' in (* src *)
+    let t'' = Flx_maps.reduce_type t'' in (* dst *)
+    begin match t',t'' with 
+    | `BTYP_record ls',`BTYP_record ls'' ->
+      begin 
+      try
+      `BEXPR_record 
+      (
+        map 
+        (fun (s,t)-> 
+          match list_assoc_index ls' s with
+          | Some j -> 
+            let tt = assoc s ls' in 
+            if type_eq syms.dfns t tt then
+              s,(`BEXPR_get_n (j,x'),t)
+            else clierr sr (
+              "Source Record field '" ^ s ^ "' has type:\n" ^ 
+              sbt syms.dfns tt ^ "\n" ^
+              "but coercion target has the different type:\n" ^
+              sbt syms.dfns t ^"\n" ^
+              "The types must be the same!"
+            )
+          | None -> raise Not_found
+        ) 
+        ls''
+      ),
+      t''
+      with Not_found ->
+        clierr sr
+         (
+         "Record coercion dst requires subset of fields of src:\n" ^
+         sbe syms.dfns x' ^ " has type " ^ sbt syms.dfns t' ^
+        "\nwhereas annotation requires " ^ sbt syms.dfns t''
+        )
+      end
+    | _ ->
+      clierr sr 
+      (
+        "Wrong type in coercion:\n" ^
+        sbe syms.dfns x' ^ " has type " ^ sbt syms.dfns t' ^
+        "\nwhereas annotation requires " ^ sbt syms.dfns t''
+      )
+    end 
   | `AST_get_n (sr,(n,e')) -> 
     let expr,typ = be e' in
     let ctyp = match unfold syms.dfns typ with 

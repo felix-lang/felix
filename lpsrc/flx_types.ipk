@@ -24,6 +24,7 @@ val list_last: 'a list -> 'a
 
 (** position in list of value *)
 val list_index: 'a list -> 'a -> int option
+val list_assoc_index: ('a * 'b) list -> 'a -> int option
 
 (** forward order map *)
 val list_omap: ('a -> 'b) -> 'a list -> 'b list
@@ -91,6 +92,15 @@ let rec list_index l x =
    match l with
    | [] -> None
    | h::t -> 
+    if x = h then Some i
+    else aux t (i+1)
+  in aux l 0
+
+let rec list_assoc_index l x = 
+ let rec aux l i =
+   match l with
+   | [] -> None
+   | (h,_)::t -> 
     if x = h then Some i
     else aux t (i+1)
   in aux l 0
