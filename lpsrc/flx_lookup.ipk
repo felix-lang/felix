@@ -3019,8 +3019,23 @@ and bind_expression' syms env (rs:recstop) e args
       `BEXPR_get_n (n, (expr,typ)), ctyp
 
   | `AST_get_named_variable (sr,(name,e')) ->
-    let e'',t'' = be e' in
+    let e'',t'' as x2 = be e' in
     begin match t'' with
+    | `BTYP_record es 
+    | `BTYP_lvalue (`BTYP_record es) ->
+      let rcmp (s1,_) (s2,_) = compare s1 s2 in
+      let es = sort rcmp es in
+      let field_name = name in
+      begin match list_index (map fst es) field_name with
+      | Some n -> `BEXPR_get_n (n,x2),assoc field_name es
+      | None -> clierr sr 
+         (
+           "Field " ^ field_name ^ 
+           " is not a member of anonymous structure " ^ 
+           sbt syms.dfns t''
+          )
+      end
+
     | `BTYP_inst (i,ts) 
     | `BTYP_lvalue (`BTYP_inst (i,ts)) ->
       begin match Hashtbl.find syms.dfns i with

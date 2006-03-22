@@ -9,6 +9,7 @@ open Flx_types
 type extract_t = 
   | Proj_n of range_srcref * int             (* tuple projections 1 .. n *)
   | Udtor of range_srcref * qualified_name_t (* argument of union component s *)
+  | Proj_s of range_srcref * string          (* record projection name *)
 
 val gen_match_check:
   pattern_t ->
@@ -43,6 +44,7 @@ open List
 type extract_t = 
   | Proj_n of range_srcref * int             (* tuple projections 1 .. n *)
   | Udtor of range_srcref * qualified_name_t (* argument of union component s *)
+  | Proj_s of range_srcref * string          (* record projection name *)
 
 (* the extractor is a function to be applied to
    the argument to extract the value of the identifier;
@@ -65,6 +67,7 @@ let gen_extractor
   (fun x marg -> match x with
     | Proj_n (sr,n) -> `AST_get_n (sr,(n,marg))
     | Udtor (sr,qn) -> `AST_ctor_arg (sr,(qn,marg))
+    | Proj_s (sr,s) -> `AST_get_named_variable (sr,(s,marg))
   )
   extractor
   mv
@@ -223,6 +226,15 @@ let rec get_pattern_vars
   | `PAT_when (sr,pat,_) ->
     get_pattern_vars vars pat extractor
 
+  | `PAT_record (sr,rpats) ->
+    List.iter
+    (fun (s,pat) -> 
+      let sr = src_of_pat pat in
+      let extractor' = (Proj_s (sr,s)) :: extractor in
+      get_pattern_vars vars pat extractor'
+    )
+    rpats
+
   | _ -> ()
 
 let rec gen_match_check pat (arg:expr_t) =
@@ -341,6 +353,22 @@ let rec gen_match_check pat (arg:expr_t) =
       gen_match_check pat (`AST_get_n (sr,(0, arg)))
     )
     (List.tl pats)
+
+  | `PAT_record (sr,rpats) ->
+    List.fold_left 
+    (fun init (s,pat) ->
+      let sr = src_of_pat pat in
+      apl2 sr "land" init 
+        (
+          gen_match_check pat (`AST_get_named_variable (sr,(s, arg)))
+        )
+    )
+    (
+      let s,pat = List.hd rpats in 
+      let sr = src_of_pat pat in
+      gen_match_check pat (`AST_get_named_variable (sr,(s, arg)))
+    )
+    (List.tl rpats)
 
   | `PAT_any sr -> truth sr
   | `PAT_regexp _ -> 

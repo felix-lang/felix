@@ -429,7 +429,7 @@ and expr_t =
   | `AST_letin of range_srcref * (pattern_t * expr_t * expr_t)
 
   | `AST_get_n of range_srcref * (int * expr_t) (* get n'th component of a tuple *)
-  | `AST_get_named_variable of range_srcref * (string * expr_t) (* get named component of a class *)
+  | `AST_get_named_variable of range_srcref * (string * expr_t) (* get named component of a class or record *)
   | `AST_get_named_method of range_srcref * (string * int * typecode_t list * expr_t ) (* get named component of a class *)
   | `AST_as of range_srcref * (expr_t * string)
   | `AST_match of range_srcref * (expr_t * (pattern_t * expr_t) list)
@@ -485,6 +485,7 @@ and pattern_t =
   | `PAT_nonconst_ctor of range_srcref * qualified_name_t * pattern_t
   | `PAT_as of range_srcref * pattern_t * id_t
   | `PAT_when of range_srcref * pattern_t * expr_t
+  | `PAT_record of range_srcref * (id_t * pattern_t) list
   ]
 
 @head(3,'Statements')
@@ -1900,6 +1901,7 @@ let src_of_pat e = match e with
   | `PAT_nonconst_ctor (s, _, _)
   | `PAT_as (s, _, _)
   | `PAT_when (s, _, _)
+  | `PAT_record (s, _)
     -> s
 
 (* get range from first and last expressions *)
@@ -2811,7 +2813,9 @@ and string_of_pattern p =
       "(" ^ string_of_pattern p ^ " as " ^ n ^ ")"
     end
   | `PAT_when (_,p,e) -> "(" ^ string_of_pattern p ^ " when " ^ se e ^ ")"
-
+  | `PAT_record (_,ps) -> 
+     "struct { " ^ catmap "; " (fun (s,p) -> s ^ "="^string_of_pattern p) ps ^"; }"
+ 
 and string_of_letpat p = 
   match p with
   | `PAT_name (_,s) -> s
@@ -2820,6 +2824,9 @@ and string_of_letpat p =
   | `PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s 
   | `PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_letpat p
   | `PAT_as (_,p,n) -> "(" ^ string_of_pattern p ^ " as " ^ n ^ ")"
+  | `PAT_record (_,ps) -> 
+     "struct { " ^ catmap "; " (fun (s,p) -> s ^ "="^string_of_pattern p) ps ^"; }"
+     
   | _ -> failwith "unexpected pattern kind in let/in pattern" 
  
 and string_of_compound level ss = 

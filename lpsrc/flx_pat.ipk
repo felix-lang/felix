@@ -17,6 +17,7 @@ open Flx_print
 open Flx_typing
 open List
 open Flx_srcref
+open Flx_exceptions
 
 (* These routine just check that the shape of a list
   of patterns match the pattern class indicated by their names.
@@ -37,10 +38,9 @@ let rec check_match_int pats =
   | `PAT_as (_,pat,_) 
   | `PAT_when (_,pat,_) -> check pat
   | _ -> 
-    failwith 
+    let sr = src_of_pat pat in clierr sr
     (
-      short_string_of_src (src_of_pat pat) ^ 
-      ": Integer pattern expected"
+      "Integer pattern expected"
     )
   in
   List.iter check pats
@@ -57,10 +57,9 @@ and check_match_string pats =
   | `PAT_as (_,pat,_)
   | `PAT_when (_,pat,_) -> check pat
   | _ -> 
-    failwith 
+    let sr = src_of_pat pat in clierr sr
     (
-      short_string_of_src (src_of_pat pat) ^ 
-      ": String pattern expected"
+      "String pattern expected"
     )
   in
   List.iter check pats
@@ -76,11 +75,25 @@ and check_match_float pats =
   | `PAT_as (_,pat,_) 
   | `PAT_when (_,pat,_) -> check pat
   | _ -> 
-    failwith 
+    let sr = src_of_pat pat in clierr sr
     (
-      short_string_of_src (src_of_pat pat) ^ 
-     ": Float pattern expected"
+     "Float pattern expected"
     )
+  in
+  List.iter check pats
+
+and check_match_record pats =
+  let rec check pat = match pat with
+  | `PAT_record _ 
+  | `PAT_any _ 
+  | `PAT_name _ -> ()
+
+  | `PAT_as (_,pat,_)
+  | `PAT_coercion (_,pat,_) 
+  | `PAT_when (_,pat,_) -> check pat
+  | _ ->
+    let sr = src_of_pat pat in clierr sr
+    "Record pattern expected"
   in
   List.iter check pats
 
@@ -90,19 +103,17 @@ and check_match_tuple n pats =
   | `PAT_name _ -> ()
   | `PAT_tuple (sr,pats) ->
     if List.length pats <> n
-    then failwith 
+    then let sr = src_of_pat pat in clierr sr
       (
-        short_string_of_src sr ^ 
-        ": Tuple pattern wrong length"
+        "Tuple pattern wrong length"
       )
   | `PAT_coercion (_,pat,_) 
   | `PAT_as (_,pat,_) 
   | `PAT_when (_,pat,_) -> check n pat
   | _ -> 
-    failwith 
+    let sr = src_of_pat pat in clierr sr
     (
-      short_string_of_src (src_of_pat pat) ^ 
-      ": Tuple pattern expected"
+      "Tuple pattern expected"
     )
   in
   List.iter (check n) pats
@@ -117,10 +128,9 @@ and check_match_tuple n pats =
 
   | `PAT_tuple (_,ps) -> ps
   | _ -> 
-    failwith 
+    let sr = src_of_pat pat in clierr sr
     (
-      short_string_of_src (src_of_pat pat) ^ 
-      ": Tuple pattern expected"
+      "Tuple pattern expected"
     )
   in let tpats = 
     try 
@@ -151,7 +161,7 @@ and check_match_union pats =
   | `PAT_as (_,pat,_)
   | `PAT_when (_,pat,_) -> check pat
   | _ -> 
-    failwith 
+    let sr = src_of_pat pat in clierr sr
     (
       short_string_of_src (src_of_pat pat) ^ 
       ": union pattern expected"
@@ -187,6 +197,7 @@ and find_match_type pat = match pat with
   | `PAT_regexp _ -> check_match_string
   | `PAT_const_ctor _ -> check_match_union
   | `PAT_nonconst_ctor _ -> check_match_union
+  | `PAT_record (_,_) -> check_match_record
 
   | `PAT_as (_,pat,_) 
   | `PAT_when (_,pat,_) 

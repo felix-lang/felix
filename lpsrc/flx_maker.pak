@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.35  2006/03/22 09:10:17  skaller
+Record pattern matches
+
 Revision 1.34  2006/03/15 10:22:59  rfistman
 fixing 64bit cl build
 
@@ -1022,6 +1025,7 @@ def plugin():
 
 @select(tangler('mkplugins/copy_mli2ml.py'))
 def copy_mli2ml(MLIS):
+  print "Copying MLIS="+repr(MLIS)
   for f in MLIS:
     f = string.replace(f,"/",os.sep)
     src = f+'.mli'
@@ -1981,16 +1985,16 @@ def compile_check():
 
       stamp="pkg-stamps"+os.sep+pkg+".host"
       erasefile(stamp)
-      MLIS = pkgdict.get("caml_raw_interfaces",[])
-      copy_mli2ml(MLIS)
-      HPPS = pkgdict.get("rtl_interfaces",[])
-      copy_hpp2rtl(HPPS)
-
       srcs = pkgdict.get("iscr_source",[])      
       for src in srcs:
         src = unix2native(src)
         print "REExtracting",pkg,"from",src
         runISCR(FLX_LPARCHIVE+os.sep+src)
+
+      MLIS = pkgdict.get("caml_raw_interfaces",[])
+      copy_mli2ml(MLIS)
+      HPPS = pkgdict.get("rtl_interfaces",[])
+      copy_hpp2rtl(HPPS)
 
       ocaml_sequencer = build_ocamls(ocaml_sequencer)
 

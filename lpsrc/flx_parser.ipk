@@ -1994,8 +1994,17 @@ atomic_pattern:
       let names = List.map snd $4 in
       `PAT_regexp (rstoken $1 $5, snd $2, names) 
     }
+  | STRUCT LBRACE pat_assigns RBRACE
+    {
+      `PAT_record (rstoken $1 $4, $3)
+    }
 
-
+pat_assign:
+  | NAME EQUAL pattern SEMI { snd $1, $3 }
+pat_assigns:
+  | pat_assign pat_assigns  { $1 :: $2 }
+  | pat_assign { [$1] }
+  
 ctor_pattern:
   | ctor_name atomic_pattern 
     { 
