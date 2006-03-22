@@ -2928,6 +2928,33 @@ and bind_expression' syms env (rs:recstop) e args
     let t' = Flx_maps.reduce_type t' in (* src *)
     let t'' = Flx_maps.reduce_type t'' in (* dst *)
     begin match t',t'' with 
+    | `BTYP_lvalue(`BTYP_inst (i,[])),`BTYP_unitsum n
+    | `BTYP_inst (i,[]),`BTYP_unitsum n ->
+      begin match Hashtbl.find syms.dfns i with
+      | { id="int"; symdef=`SYMDEF_abs (_,`StrTemplate "int",_) }  ->
+        begin match e' with 
+        | `BEXPR_literal (`AST_int (kind,big)) ->
+          let m = 
+            try Big_int.int_of_big_int big 
+            with _ -> clierr sr "Integer is too large for unitsum"
+          in
+          if m >=0 && m < n then
+            `BEXPR_case (m,t''),t''
+          else
+            clierr sr "Integer is out of range for unitsum"
+        | _ -> 
+          let inttype = t' in
+          let zero = `BEXPR_literal (`AST_int ("int",Big_int.zero_big_int)),t' in
+          let xn = `BEXPR_literal (`AST_int ("int",Big_int.big_int_of_int n)),t' in
+          `BEXPR_range_check (zero,x',xn),`BTYP_unitsum n
+        
+        end
+      | _ -> 
+        clierr sr ("Attempt to to coerce type:\n"^
+        sbt syms.dfns t'
+        ^"to unitsum " ^ si n)
+      end
+    
     | `BTYP_record ls',`BTYP_record ls'' ->
       begin 
       try

@@ -980,6 +980,7 @@ and bexpr_t =
   | `BEXPR_case_arg of int * tbexpr_t
   | `BEXPR_case_index of tbexpr_t
   | `BEXPR_expr of string * btypecode_t
+  | `BEXPR_range_check of tbexpr_t * tbexpr_t * tbexpr_t
   ]
 
 and tbexpr_t = bexpr_t * btypecode_t
@@ -1429,7 +1430,7 @@ let rec iter_tbexpr fi fe ft ((x,t) as e) =
 
   | `BEXPR_literal x -> ft t
   | `BEXPR_expr (s,t1) -> ft t1
-
+  | `BEXPR_range_check (e1,e2,e3) -> fe e1; fe e2; fe e3
 
 let map_tbexpr fi fe ft e = match e with 
   | `BEXPR_parse (e,iis),t -> `BEXPR_parse (fe e,map fi iis), ft t
@@ -1461,7 +1462,7 @@ let map_tbexpr fi fe ft e = match e with
 
   | `BEXPR_literal x,t -> `BEXPR_literal x, ft t
   | `BEXPR_expr (s,t1),t2 -> `BEXPR_expr (s, ft t1), ft t2
-
+  | `BEXPR_range_check (e1,e2,e3),t -> `BEXPR_range_check (fe e1,fe e2, fe e3), ft t
 
 let iter_bexe fi fe ft fl fldef exe =
   match exe with 
@@ -3775,6 +3776,9 @@ and string_of_bound_expression dfns e =
   | `BEXPR_expr (s,t) ->
     "code ["^string_of_btypecode dfns t^"]" ^ "'" ^ s ^ "'"
 
+  | `BEXPR_range_check (e1,e2,e3) ->
+    "range_check(" ^ se e1 ^"," ^ se e2 ^"," ^se e3 ^ ")"
+
 and string_of_biface dfns level s = 
   let spc = spaces level in
   let se e = string_of_bound_expression dfns e in
@@ -4812,6 +4816,9 @@ let rec cmp_tbexpr (a,_) (b,_) =
 
   | `BEXPR_case (i,t),`BEXPR_case (i',t') -> i = i' && t = t'
   | `BEXPR_expr (s,t),`BEXPR_expr (s',t') -> s = s' && t = t'
+  | `BEXPR_range_check (e1,e2,e3), `BEXPR_range_check (e1',e2',e3') ->
+    ecmp e1 e1' && ecmp e2 e2' && ecmp e3 e3'
+    
   | _ -> false
 
  

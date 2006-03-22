@@ -260,6 +260,21 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     | _ -> failwith ("Woops expected union or sum, got " ^ sbt syms.dfns t)
     end
 
+  | `BEXPR_range_check (e1,e2,e3) ->
+     let f,sl,sc,el,ec = sr in
+     let f = ce_atom ("\""^ f ^"\"") in
+     let sl = ce_atom (si sl) in
+     let sc = ce_atom (si sc) in
+     let el = ce_atom (si el) in
+     let ec = ce_atom (si ec) in
+     let sref = ce_call (ce_atom "flx::rtl::flx_range_srcref_t") [f;sl;sc;el;ec] in
+     let cf = ce_atom "__FILE__" in
+     let cl = ce_atom "__LINE__" in
+     let args : cexpr_t list =
+       [ ge' e1 ; ge' e2; ge' e3; sref; cf; cl]
+     in 
+     ce_call (ce_atom "flx::rtl::range_check") args
+
   | `BEXPR_get_n (n,(e',t as e)) -> 
     begin match rt t with
     | `BTYP_array (_,`BTYP_unitsum _) -> 
