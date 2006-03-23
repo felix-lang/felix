@@ -1059,27 +1059,27 @@ and bind_type'
     ignore (try unfold syms.dfns t with _ -> failwith "TYP_case_arg unfold screwd");
     begin match unfold syms.dfns t with
     | `BTYP_unitsum k ->
-      if i < 1 or i>k
+      if i < 0 or i >= k
       then 
         clierr sr
         (
           "sum type extraction index " ^ 
           string_of_int i ^ 
-          " out of range 1 to " ^ si k
+          " out of range 0 to " ^ si (k-1)
         )
       else unit_t
 
     | `BTYP_sum ls ->
-      if i < 1 or i>length ls
+      if i < 0 or i>= length ls
       then 
         clierr sr
         (
           "sum type extraction index " ^ 
           string_of_int i ^ 
-          " out of range 1 to " ^
-          string_of_int (length ls)
+          " out of range 0 to " ^
+          string_of_int (length ls - 1)
         )
-      else nth ls (i-1)
+      else nth ls i
 
     | _ -> 
       clierr sr
@@ -2278,16 +2278,16 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     let t = bt sr t in
     begin match unfold syms.dfns t with
     | `BTYP_unitsum k ->
-      if v<1 or v> k
+      if v<0 or v>= k
       then clierr sra "Case index out of range of sum"
       else 
         let ct = `BTYP_function (unit_t,t) in
         `BEXPR_case (v,t),ct 
 
     | `BTYP_sum ls ->
-      if v<1 or v> length ls
+      if v<0 or v >= length ls
       then clierr sra "Case index out of range of sum"
-      else let vt = nth ls (v-1) in
+      else let vt = nth ls v in
       let ct = `BTYP_function (vt,t) in
       `BEXPR_case (v,t), ct
 
@@ -3195,7 +3195,7 @@ and bind_expression' syms env (rs:recstop) e args
     let int_t = bt sr (`AST_name (sr,"int",[])) in
     begin match e' with 
     | `BEXPR_case (i,_) -> 
-      `BEXPR_literal (`AST_int ("",Big_int.big_int_of_int i))
+      `BEXPR_literal (`AST_int ("int",Big_int.big_int_of_int i))
     | _ -> `BEXPR_case_index e
     end
     ,
@@ -3209,15 +3209,15 @@ and bind_expression' syms env (rs:recstop) e args
     ignore (try unfold syms.dfns t with _ -> failwith "AST_typed_case unfold screwd");
     begin match unfold syms.dfns t with
     | `BTYP_unitsum k ->
-      if v<1 or v> k
+      if v<0 or v>= k
       then clierr sr "Case index out of range of sum"
       else 
         `BEXPR_case (v,t),t  (* const ctor *)
 
     | `BTYP_sum ls ->
-      if v<1 or v> length ls
+      if v<0 or v>= length ls
       then clierr sr "Case index out of range of sum"
-      else let vt = nth ls (v-1) in
+      else let vt = nth ls v in
       let ct = 
         match vt with
         | `BTYP_tuple [] -> t        (* const ctor *)
@@ -3663,16 +3663,16 @@ and bind_expression' syms env (rs:recstop) e args
     ignore (try unfold syms.dfns t with _ -> failwith "AST_case_arg unfold screwd");
      begin match lstrip syms.dfns (unfold syms.dfns t) with
      | `BTYP_unitsum n ->
-       if v<1 or v>n 
+       if v < 0 or v >= n 
        then clierr sr "Invalid sum index"
        else
          `BEXPR_case_arg (v, e'),unit_t
 
      | `BTYP_sum ls ->
        let n = length ls in
-       if v<1 or v>n 
+       if v<0 or v>=n 
        then clierr sr "Invalid sum index"
-       else let t = nth ls (v-1) in
+       else let t = nth ls v in
        `BEXPR_case_arg (v, e'),t
 
      | _ -> clierr sr ("Expected sum type, got " ^ sbt syms.dfns t)

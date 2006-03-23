@@ -257,8 +257,8 @@ namespace flx { namespace rtl { namespace strutil {
 include "std";
 
 @h=tangler('lib/flx_macros.flxh','data')
-macro val true = case 2 of 2;
-macro val false = case 1 of 2;
+macro val true = case 1 of 2;
+macro val false = case 0 of 2;
 macro fun print_line (x) = { fprint (cout,x); Stdout::endl cout; };
 macro fun print(x) = { fprint (cout,x); };
 
@@ -315,8 +315,8 @@ macro fun print(x) = { fprint (cout,x); };
   
 @h=tangler('lib/flx_platform.flxh','data')
 @select(h)
-#define true case 2 of 2
-#define false case 1 of 2
+#define true case 1 of 2
+#define false case 0 of 2
 
 @plats = ["WIN32","POSIX","LINUX","MACOSX","CYGWIN","SOLARIS","BSD"]
 @for i in plats:
@@ -326,8 +326,8 @@ macro fun print(x) = { fprint (cout,x); };
     tangle("#define " + i + " false")
 @#
 
-macro val true = case 2 of 2;
-macro val false = case 1 of 2;
+macro val true = case 1 of 2;
+macro val false = case 0 of 2;
 
 @for i in plats:
   x = eval(i)

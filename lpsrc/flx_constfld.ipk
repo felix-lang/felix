@@ -83,7 +83,7 @@ open Flx_mtypes1
 open Flx_maps
 
 let truth sr r = 
-  let r = if r then 2 else 1 in
+  let r = if r then 1 else 0 in
   `AST_typed_case (sr,r,flx_bool)
 
 let const_fold' e sr name arg = 
@@ -258,21 +258,21 @@ let const_fold' e sr name arg =
   (* not x *)
   | "lnot", `AST_typed_case (_,x,`TYP_unitsum 2)
     -> 
-    truth sr (x=1)
+    truth sr (x=0)
 
   (* x or y *)
   | "lor", `AST_tuple ( _, [
            `AST_typed_case (_,x,`TYP_unitsum 2);
            `AST_typed_case (_,y,`TYP_unitsum 2)
           ])
-    -> truth sr (x=2 or y=2)
+    -> truth sr (x=1 or y=1)
 
   (* x and y *)
   | "land", `AST_tuple ( _, [
            `AST_typed_case (_,x,`TYP_unitsum 2);
            `AST_typed_case (_,y,`TYP_unitsum 2)
           ])
-    -> truth sr (x=2 && y=2)
+    -> truth sr (x=1 && y=1)
 
   (* x eq y *)
   | "eq", `AST_tuple ( _, [

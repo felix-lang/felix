@@ -312,11 +312,11 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   | `BEXPR_match_case (n,((e',t') as e)) -> 
     let t' = reduce_type (beta_reduce syms [] (lstrip syms.dfns t')) in
     if is_unitsum t' then
-      ce_infix "==" (ge' e) (ce_atom (si (n-1)))
+      ce_infix "==" (ge' e) (ce_atom (si n))
     else
       ce_infix "==" 
       (ce_dot (ge' e) "variant")
-      (ce_atom (si (n-1)))
+      (ce_atom (si n))
 
   | `BEXPR_case_arg (n,e) ->
     let cast = tn t ^ "*" in
@@ -339,32 +339,32 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   | `BEXPR_case (v,t') ->
     begin match unfold syms.dfns t' with
     | `BTYP_unitsum n ->
-      if v<1 or v>n
+      if v < 0 or v >= n
       then 
         failwith 
         (
           "Invalid case index " ^ si v ^
           " of " ^ si n ^ " cases  in unitsum"
         )
-     else ce_atom (si (v-1))
+     else ce_atom (si v)
 
     | `BTYP_sum ls ->
        let s = 
          let n = length ls in
-         if v<1 or v>n
+         if v < 0 or v >= n
          then 
            failwith 
            (
              "Invalid case index " ^ si v ^
              " of " ^ si n ^ " cases"
            )
-         else let t' = nth ls (v-1) in
+         else let t' = nth ls v in
          if t' = `BTYP_tuple []
          then (* closure of const ctor is just the const value ???? *)
            if is_unitsum t then
-             si (v-1)
+             si v
            else
-             "_uctor_(" ^ si (v-1) ^ ",0)"
+             "_uctor_(" ^ si v ^ ",0)"
          else 
            failwith 
            ( 
@@ -652,9 +652,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
        in
        let uval = 
          if is_unitsum t then
-           si (v-1) 
+           si v 
          else
-         "_uctor_(" ^ si (v-1) ^ ", " ^ aval ^")" 
+         "_uctor_(" ^ si v ^ ", " ^ aval ^")" 
        in
        let s = "(" ^ union_typename ^ ")" ^ uval in
        ce_atom s

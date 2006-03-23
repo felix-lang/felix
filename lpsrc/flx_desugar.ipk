@@ -403,7 +403,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
          (
            e,
            [
-             `PAT_const_ctor (sr,`AST_case_tag (sr,2)),b1; (* true *)
+             `PAT_const_ctor (sr,`AST_case_tag (sr,1)),b1; (* true *)
              `PAT_any sr,b2 (* false *)
            ]
          )
@@ -1332,7 +1332,7 @@ and handle_glr seq rex sr' p e glr_idx t nt_id =
       `AST_apply 
       (sr',
         (
-         `AST_typed_case (sr',2,typ),
+         `AST_typed_case (sr',1,typ),
          `AST_tuple 
            (
              sr',
@@ -1346,7 +1346,7 @@ and handle_glr seq rex sr' p e glr_idx t nt_id =
     in
     new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
 
-    let e = `AST_typed_case (sr',1,typ) in
+    let e = `AST_typed_case (sr',0,typ) in
     let p = [] in
     let glr_idx = seq() in
     new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
@@ -1374,7 +1374,7 @@ and handle_glr seq rex sr' p e glr_idx t nt_id =
       `AST_apply 
       (sr',
         (
-         `AST_typed_case (sr',2,typ),
+         `AST_typed_case (sr',1,typ),
          `AST_tuple 
            (
              sr',
@@ -1392,13 +1392,13 @@ and handle_glr seq rex sr' p e glr_idx t nt_id =
       `AST_apply 
       (sr',
         (
-         `AST_typed_case (sr',2,typ),
+         `AST_typed_case (sr',1,typ),
          `AST_tuple 
            (
              sr',
              [
                `AST_name (sr',"_1",[]); 
-               `AST_typed_case (sr',1,typ)
+               `AST_typed_case (sr',0,typ)
              ]
           )
         )
@@ -1422,14 +1422,14 @@ and handle_glr seq rex sr' p e glr_idx t nt_id =
       `AST_apply 
       (sr',
         (
-         `AST_typed_case (sr',2,typ),
+         `AST_typed_case (sr',1,typ),
          `AST_name (sr',"_1",[])
         )
       )
     in
     new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;
 
-    let e = `AST_typed_case (sr',1,typ) in
+    let e = `AST_typed_case (sr',0,typ) in
     let p = [] in
     let glr_idx = seq() in
     new_glrs := (p,e,glr_idx,typ,nt_id) :: !new_glrs;

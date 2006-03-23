@@ -502,7 +502,7 @@ in a pattern introduces a variable.
 Numbered unions are algebraic types used to 
 represent alternative cases. The infix
 operator + is the type combinator used
-to denote them.
+to denote them. The number is zero origin.
 
 @select(tangler(tdir+'tut_beg207a.flx'))
 #import <flx.flxh>
@@ -513,35 +513,35 @@ typedef four = 4;
 typedef nu = int + double + long;
 
 
-val x1 = case 1 of (1+1+1);
-val x2 = case 2 of 3;
+val x1 = case 0 of (1+1+1);
+val x2 = case 1 of 3;
 
 proc g(x:three) {
   print "Case ";
   match x with
+  | case 0 => { print 0; }
   | case 1 => { print 1; }
   | case 2 => { print 2; }
-  | case 3 => { print 3; }
   endmatch;
   print " of three\n";
 }
 
 g x1;
 g x2;
-g (case 3 of three);
+g (case 2 of three);
 
 proc f(x:nu) {
   match x with
+  | case 0 ?z => { print "case 0 "; print z; }
   | case 1 ?z => { print "case 1 "; print z; }
   | case 2 ?z => { print "case 2 "; print z; }
-  | case 3 ?z => { print "case 3 "; print z; }
   endmatch;
   print "\n";
 }
  
-val i1 = (case 1 of nu) 33;
-val i2 = (case 2 of nu) 3.3;
-val i3 = (case 3 of nu) 33L;
+val i1 = (case 0 of nu) 33;
+val i2 = (case 1 of nu) 3.3;
+val i3 = (case 2 of nu) 33L;
 f i1;
 f i2;
 f i3;
@@ -785,11 +785,11 @@ fun sign3(x:int):int =
 {
   return
     match x < 0 with
-    | case 2 => -1 // true
-    | case 1 =>    // false
+    | case 1 => -1 // true
+    | case 0 =>    // false
       match x == 0 with
-      | case 2 =>  0 // true
-      | case 1 =>  1 // false
+      | case 1 =>  0 // true
+      | case 0 =>  1 // false
       endmatch
     endmatch
   ;
@@ -3087,7 +3087,7 @@ typedef g = (
 
 
 // FIXPOINTS WORKING NOW
-val x : list int = case 1 of list int;
+val x : list int = case 0 of list int;
 
 typedef fun pair (a:TYPE,b:TYPE):TYPE => a * b;
 //typedef pair = (fun (a:TYPE,b:TYPE):TYPE => {a * b});
@@ -3285,8 +3285,8 @@ var z : 1 + int =
  
 // print the result
 match z with
-| case 1 => { print "Error"; }
-| case 2 (?i) => { print i; }
+| case 0 => { print "Error"; }
+| case 1 (?i) => { print i; }
 endmatch;
 endl;
 
@@ -3342,8 +3342,8 @@ proc try_parse() {
   ;
 
   match z with
-  | case 1 => { print "Error"; }
-  | case 2 (?i) => { print i; }
+  | case 0 => { print "Error"; }
+  | case 1 (?i) => { print i; }
   endmatch;
   endl;
 }
@@ -3418,7 +3418,7 @@ union expr_t =
 nonterm eexpr : expr_t =
 | xx:eexpr TOK_PLUS y:TOK_INT+ =>
   match xx with
-  | Integer ?i => let case 2 (?j,_) = y in Integer (i+j)
+  | Integer ?i => let case 1 (?j,_) = y in Integer (i+j)
   endmatch
  
 | y:TOK_INT => Integer y
@@ -3433,8 +3433,8 @@ var z : 1 + int =
  
 // print the result
 match z with
-| case 1 => { print "Error"; }
-| case 2 (?i) => { print i; }
+| case 0 => { print "Error"; }
+| case 1 (?i) => { print i; }
 endmatch;
 endl;
 
@@ -5488,12 +5488,12 @@ top level
 1
 @head(2,"tut/examples/tut_beg207a.expect")
 @select(tangler("tut/examples/tut_beg207a.expect","data"))
+Case 0 of three
 Case 1 of three
 Case 2 of three
-Case 3 of three
-case 1 33
-case 2 3.3
-case 3 33
+case 0 33
+case 1 3.3
+case 2 33
 @head(2,"tut/examples/tut_beg207b.expect")
 @select(tangler("tut/examples/tut_beg207b.expect","data"))
 42
