@@ -879,10 +879,7 @@ let eval_bool state sr toks =
   let e = eval state toks in
   match e with
   | `AST_typed_case (sr,v,`TYP_unitsum 2) ->
-    (* NOTE: the type case term is 1 origin, even though the
-      generated code is 0 origin
-    *)
-    v = 2
+    v = 1
 
   | x -> 
     clierr sr 

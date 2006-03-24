@@ -355,8 +355,8 @@ header '''
 #include <stdio.h>
 #endif
 ''';
-macro val Unix = case 1 of 2;
-macro val Windows = case 1 of 2;
+macro val Unix = case 0 of 2;
+macro val Windows = case 0 of 2;
 
 fun dlopen:string -> address = 'dlopen($1.data())';
 fun LoadLibrary:string -> int = 'LoadLibrary($.data())';

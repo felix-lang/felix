@@ -12,6 +12,10 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.172  2006/03/24 02:46:26  skaller
+Change case n of m to zero origin. Looks horrible but more
+consistent.
+
 Revision 1.171  2006/03/17 17:53:42  skaller
 Window mainline config.
 
@@ -1396,6 +1400,9 @@ class gxx(flxbuild.compiler_class.compiler_base):
     # macros
     for i in macros: cmd=cmd + "-D"+i+" "
 
+    if opt.use == "host": cmd=cmd+"-DHOST_BUILD "
+    elif opt.use == "target": cmd=cmd+"-DTARGET_BUILD "
+    
     cmd = cmd + CFLAGS + " "
 
     #input file
@@ -1440,6 +1447,10 @@ class gxx(flxbuild.compiler_class.compiler_base):
 
     #macros
     for i in macros: cmd=cmd + "-D"+i+" "
+
+    if opt.use == "host": cmd=cmd+"-DHOST_BUILD "
+    elif opt.use == "target": cmd=cmd+"-DTARGET_BUILD "
+    
 
     cmd = cmd + CFLAGS + " "
 
@@ -1800,6 +1811,10 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
     # macros
     for i in macros: cmd=cmd + "-D"+i+" "
 
+    if opt.use == "host": cmd=cmd+"-DHOST_BUILD "
+    elif opt.use == "target": cmd=cmd+"-DTARGET_BUILD "
+    
+
     cmd = cmd + CFLAGS
 
     #input file
@@ -1836,6 +1851,10 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
 
     # macros
     for i in macros: cmd=cmd + "-D"+i+" "
+
+    if opt.use == "host": cmd=cmd+"-DHOST_BUILD "
+    elif opt.use == "target": cmd=cmd+"-DTARGET_BUILD "
+    
 
     cmd = cmd + CFLAGS
 
@@ -1875,6 +1894,10 @@ class msvcxx(flxbuild.compiler_class.compiler_base):
 
     #macros
     for i in macros: cmd=cmd + "-D"+i+" "
+
+    if opt.use == "host": cmd=cmd+"-DHOST_BUILD "
+    elif opt.use == "target": cmd=cmd+"-DTARGET_BUILD "
+    
 
     cmd = cmd + CFLAGS
     

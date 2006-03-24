@@ -62,11 +62,8 @@ SMRTL = [
   'elk/sm_hashline',
   'elk/sm_hashtbl',
   'elk/sm_missing',
-#  'elk/sm_mypopen',
-#  'elk/sm_mysig',
   'elk/sm_point',
   'elk/sm_pprint',
-#  'elk/sm_regexp',
   'elk/sm_strdict',
   'elk/sm_strhash',
   'elk/sm_stringset',
@@ -157,16 +154,38 @@ Version: 1
    tangle("provides_dlib: -lelk_dynamic")
    tangle("provides_slib: -lelk_static")
 
-@h=tangler('rtl/flx_elk_config.hpp')
+@h=tangler('rtl/flx_target_elk_config.hpp')
 @select(h)
-#ifndef __FLX_ELK_CONFIG_GUARD__
-#define __FLX_ELK_CONFIG_GUARD__
+#ifndef __FLX_TARGET_ELK_CONFIG_GUARD__
+#define __FLX_TARGET_ELK_CONFIG_GUARD__
 #include "flx_rtl_config.hpp"
 #ifdef BUILD_ELK
 #define ELK_EXTERN FLX_EXPORT
 #else
 #define ELK_EXTERN FLX_IMPORT
 #endif
+#endif
+
+@h=tangler('rtl/flx_host_elk_config.hpp')
+@select(h)
+#ifndef __FLX_HOST_ELK_CONFIG_GUARD__
+#define __FLX_HOST_ELK_CONFIG_GUARD__
+#include "flx_host_config.hpp"
+#ifdef BUILD_ELK
+#define ELK_EXTERN FLX_EXPORT
+#else
+#define ELK_EXTERN FLX_IMPORT
+#endif
+#endif
+
+@h=tangler('rtl/flx_elk_config.hpp')
+@select(h)
+#if defined(HOST_BUILD)
+#include "flx_host_elk_config.hpp"
+#elif defined(TARGET_BUILD)
+#include "flx_target_elk_config.hpp"
+#else
+#error "ELKHOUND: must specify -DHOST_BUILD or -DTARGET_BUILD"
 #endif
 
 @h=tangler('elk/elk_gramexpl.cpp')

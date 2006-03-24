@@ -306,7 +306,7 @@ xprint (execCX (CX)); endl;
 typedef Y = 1 + int;
 fun exec2(y2:int->Y,a:int):Y= { return  y2 a; }
 proc yprint(y:Y) { print "union Y"; }
-yprint (exec2(case 2 of Y, 1)); endl;
+yprint (exec2(case 1 of Y, 1)); endl;
 
 // named variant type constructor as function
 union U = | A | B of int;

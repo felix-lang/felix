@@ -1,5 +1,9 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.27  2006/03/24 02:46:26  skaller
+Change case n of m to zero origin. Looks horrible but more
+consistent.
+
 Revision 1.26  2006/03/22 15:50:24  skaller
 Add range check function to RTL, coercions to unitsums to
 language.
@@ -418,6 +422,42 @@ T &reinterpret(U const &x) {
 }
 #endif
 
+@h = tangler("rtl/flx_host_config.hpp")
+@select(h)
+#ifndef FLX_HOST_CONFIG
+#define FLX_RTL_CONFIG
+
+#ifdef _WIN32
+#define _WIN32_WINNT 0x500
+#endif
+
+@if HOST_CXX.options.HAVE_LONGLONG:
+  tangle('#define HAVE_LONGLONG')
+
+@if HOST_CXX.options.HAVE_LONGDOUBLE:
+  tangle('#define HAVE_LONGDOUBLE')
+
+#if  !defined(FLX_STATIC_LINK) && (defined(_WIN32))
+#define FLX_EXPORT __declspec(dllexport)
+#define FLX_IMPORT __declspec(dllimport)
+#else
+#define FLX_EXPORT
+#define FLX_IMPORT
+#endif
+
+
+@def cal_raw_address():
+  if HOST_CXX.options.SIZEOF_INT == HOST_CXX.options.SIZEOF_VOIDP: return "unsigned"
+  if HOST_CXX.options.SIZEOF_LONG == HOST_CXX.options.SIZEOF_VOIDP: return "unsigned long"
+  if HOST_CXX.options.SIZEOF_LONGLONG == HOST_CXX.options.SIZEOF_VOIDP: return "unsigned long long"
+  raise "Cannot find an int the size of a void pointer"
+
+@tangle("#define FLX_RAWADDRESS "+cal_raw_address())
+@tangle('#define FLX_MAX_ALIGN '+str(HOST_CXX.options.MAX_ALIGN))
+
+
+#endif
+
 @h = tangler("rtl/flx_rtl_config.hpp")
 @select(h)
 #ifndef FLX_RTL_CONFIG
@@ -464,6 +504,8 @@ T &reinterpret(U const &x) {
 @if LINUX:
   tangle("#define FLX_LINUX")
 
+@if POSIX:
+  tangle("#define POSIX")
 
 @if SOLARIS:
   tangle("#define SOLARIS")
