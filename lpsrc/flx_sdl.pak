@@ -1,6 +1,9 @@
 @execfile('config'+os.sep+'config.py')
 @head(1,'SDL')
 $Log$
+Revision 1.13  2006/03/25 01:27:31  skaller
+Add more stuff to gmp library binding. Start phasing config.
+
 Revision 1.12  2006/03/14 18:23:43  skaller
 Automatic rebuilding
 
@@ -148,7 +151,7 @@ Change rtl name for MACOSX to libflx_dynamic.dylib
 Revision 1.2  2006/01/08 00:25:14  skaller
 Minor fix to sdl stuff
 
-@select(tangler("cpkgs/sdl.py"))
+@select(tangler("cpkgs/target/sdl.py"))
 execfile("config"+os.sep+"config.py")
 try:
   cload(globals(),"sdl")
@@ -221,7 +224,7 @@ except:
     SDL_LIBS = ""
     SDL_STATIC_LIBS = ""
     print "SDL NOT SUPPORTED"
-  print "SDL cpkgs/sdl.py"
+  print "SDL cpkgs/target/sdl.py"
   f = cwrite("sdl")
   pa(f,locals(),"HAVE_SDL")
   pa(f,locals(),"SDL_VERSION")
@@ -240,7 +243,7 @@ except:
 
 @h = tangler('spkgs/sdl.py')
 @select(h)
-execfile("cpkgs"+os.sep+"sdl.py")
+execfile("cpkgs"+os.sep+"target"+os.sep+"sdl.py")
 if HAVE_SDL:
   SDL_FAIO_CPPS = [
     "faio/faio_sdl_event",             # any platform with SDL

@@ -2,10 +2,13 @@
 @FLX_MAKER_CVS_ID='$Id$'
 @print FLX_MAKER_CVS_ID
 @execfile('config'+os.sep+'flx_data.py')
-@execfile('cpkgs'+os.sep+'interscript.py')
+@execfile('cpkgs'+os.sep+'build'+os.sep+'interscript.py')
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.36  2006/03/25 01:27:31  skaller
+Add more stuff to gmp library binding. Start phasing config.
+
 Revision 1.35  2006/03/22 09:10:17  skaller
 Record pattern matches
 
@@ -1314,6 +1317,9 @@ def plugin():
 @select(tangler('mkplugins/clean.py'))
 # cleans products, but not extracted sources
 def plugin():
+  for d in glob.glob("pkg-stamps"+os.sep+"*"):
+    erasefile(d)
+
   for d in [ 
     "test","tut"+os.sep+"examples",
     "bagley"+os.sep+"felix",
@@ -1898,7 +1904,9 @@ def mk_manifests():
        make_manifest(pkg)
 
 def cal_pkgs():
-  global packages,pkgd,selected_pkgs
+  global pkgd
+  global host_packages,target_packages,run_packages
+  global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs
   for pkg in pkgd.keys():
     pkgdict = pkgd[pkg]
     input_iscrs = pkgdict.get("iscr_source",[])
@@ -1910,59 +1918,72 @@ def cal_pkgs():
         if not i in output_iscrs: output_iscrs.append(i)
 
     latest_src_time = newest_filetime(output_iscrs)
-    src_time_s = fmtime(latest_src_time)
-    print "Pak %-20s changed: %s" % (pkg,src_time_s)
+    if latest_src_time == 0:
+      print "Pak %-20s (virtual)" % pkg
+    else:
+      src_time_s = fmtime(latest_src_time)
+      print "Pak %-20s changed: %s" % (pkg,src_time_s)
 
     host_stamp="pkg-stamps"+os.sep+pkg+".host"
     latest_host_build_time = filetime(host_stamp)
     if latest_host_build_time == 0:
       print "  ** Host UNBUILT"
-      if pkg not in packages: packages.append(pkg)
+      if pkg not in host_packages: host_packages.append(pkg)
     else:
       if latest_host_build_time < latest_src_time:
         print "  ** Host build:",fmtime(latest_host_build_time)
         print "  ** REQUIRES REBUILD due to changed sources"
-        if pkg not in packages: packages.append(pkg)
+        if pkg not in host_packages: host_packages.append(pkg)
 
     target_stamp="pkg-stamps"+os.sep+pkg+".target"
     latest_target_build_time = filetime(target_stamp)
     if latest_target_build_time == 0:
       print "  ** Target UNBUILT"
-      if pkg not in packages: packages.append(pkg)
+      if pkg not in target_packages: target_packages.append(pkg)
     else:
       if latest_target_build_time < latest_src_time:
         print "  ** Target build:",fmtime(latest_target_build_time)
         print "  ** REQUIRES REBUILD due to changed sources"
-        if pkg not in packages: packages.append(pkg)
+        if pkg not in target_packages: target_packages.append(pkg)
 
     run_stamp="pkg-stamps"+os.sep+pkg+".run"
     latest_run_build_time = filetime(run_stamp)
     if latest_run_build_time == 0:
       print "  ** Run UNBUILT"
-      if pkg not in packages: packages.append(pkg)
+      if pkg not in run_packages: run_packages.append(pkg)
     else:
       if latest_run_build_time < latest_src_time:
         print "  ** Run build:",fmtime(latest_run_build_time)
         print "  ** REQUIRES REBUILD due to changed sources"
-        if pkg not in packages: packages.append(pkg)
+        if pkg not in run_packages: run_packages.append(pkg)
 
   # doesn't work so well if both deps and reqs specified!
   # would work better, if reqs was already reduced to
   # what actually needed to be rebuilt
 
   if "deps" in options:
-    packages = closure(pkgdeps,packages)
+    host_packages = closure(pkgdeps,host_packages)
+    target_packages = closure(pkgdeps,target_packages)
+    run_packages = closure(pkgdeps,run_packages)
 
   if "reqs" in options:
-    packages = closure(pkgreqs,packages)
+    host_packages = closure(pkgreqs,host_packages)
+    target_packages = closure(pkgreqs,target_packages)
+    run_packages = closure(pkgreqs,run_packages)
 
-  selected_pkgs = filter(lambda x: x in packages,pkgs)
+  host_selected_pkgs = filter(lambda x: x in host_packages,pkgs)
+  target_selected_pkgs = filter(lambda x: x in target_packages,pkgs)
+  run_selected_pkgs = filter(lambda x: x in run_packages,pkgs)
 
   if "all" in options: 
-     selected_pkgs = pkgs
+     host_selected_pkgs = pkgs
+     target_selected_pkgs = pkgs
+     run_selected_pkgs = pkgs
 
   #print "AVAILABLE SOURCES",paks
-  print "SELECTED PACKAGES ARE ",selected_pkgs
+  print "Host SELECTED PACKAGES ARE ",host_selected_pkgs
+  print "Target SELECTED PACKAGES ARE ",target_selected_pkgs
+  print "Run SELECTED PACKAGES ARE ",target_selected_pkgs
   print "SELECTED PHASES ARE   ",phases
   print "Build model  ",build_model
   print "Host model   ",host_model
@@ -1974,12 +1995,13 @@ schedule(10,cal_pkgs)
 
 @select(tangler('mkplugins/make.py'))
 def compile_check():
-  global selected_pkgs,pkgd,phases,pkgdict,pkg
+  global host_selected_pkgs,target_selected_pkgs,run_selected_pkgs
+  global pkgd,phases,pkgdict,pkg
   mkdirs("pkg-stamps")
 
   if "host" in phases:
     ocaml_sequencer = "force" in options
-    for pkg in selected_pkgs:
+    for pkg in host_selected_pkgs:
       pkgdict = pkgd[pkg]
       print "***** Host MAKING PACKAGE "+pkg+" ************"
 
@@ -2003,7 +2025,7 @@ def compile_check():
       enstamp(stamp)
 
   if "target" in phases:
-    for pkg in selected_pkgs:
+    for pkg in target_selected_pkgs:
       pkgdict = pkgd[pkg]
       print "***** Target MAKING PACKAGE "+pkg+" ************"
 
@@ -2029,7 +2051,7 @@ def compile_check():
       enstamp(stamp)
 
   if "run" in phases:
-    for pkg in selected_pkgs:
+    for pkg in run_selected_pkgs:
       pkgdict = pkgd[pkg]
       print "***** Run MAKING PACKAGE "+pkg+" ************"
 
@@ -2191,7 +2213,7 @@ except:
   print "       this is done automatically by 'make boot'"
   sys.exit(1)
 
-execfile("cpkgs"+os.sep+"interscript.py")
+execfile("cpkgs"+os.sep+"build"+os.sep+"interscript.py")
 FLXFLAGS = ""
 
 # ------------------------------------------------
@@ -2220,6 +2242,9 @@ for k in options:
     model = k[8:]
     if model not in models:
       models.append(model)
+host_packages = packages
+target_packages = packages
+run_packages = packages
 
 # if the user didn't say which phases to run
 # then run all the phases that use the host model

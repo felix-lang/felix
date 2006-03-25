@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.173  2006/03/25 01:27:31  skaller
+Add more stuff to gmp library binding. Start phasing config.
+
 Revision 1.172  2006/03/24 02:46:26  skaller
 Change case n of m to zero origin. Looks horrible but more
 consistent.
@@ -2098,22 +2101,17 @@ def has_prefix(prefix,v):
 
 class MakeError: pass
   
-@select(tangler("cpkgs/gmpxx.py"))
-#    'C++ bindings for GNU Multiple Precision arithmetic library',
-#    'http://www.swox.com/gmp/'
-HAVE_GMPXX = TARGET_CXX.check_header_exists(xqt,"gmpxx.h")
-
-@select(tangler("cpkgs/libgc.py"))
+@select(tangler("cpkgs/target/libgc.py"))
 #    'Boehm-Demers-Weiser Conservative Garbage Collector',
 #    'http://www.hpl.hp.com/personal/Hans_Boehm/gc/'
 HAVE_LIBGC = TARGET_CXX.check_header_exists(xqt,"gc.h")
 
-@select(tangler("cpkgs/windowsh.py"))
+@select(tangler("cpkgs/target/windowsh.py"))
 #    "Microsoft Windows core CAPI",
 #    "http://microsoft.com"
-HAVE_GMPXX = TARGET_CXX.check_header_exists(xqt,"gmpxx.h")
+HAVE_WINDOWS_H = TARGET_CXX.check_header_exists(xqt,"windows.h")
 
-@select(tangler("cpkgs/opengl.py"))
+@select(tangler("cpkgs/target/opengl.py"))
 #    'Open GL Graphics Rendering Toolkit',
 #    "http://www.opengl.org"
 if MACOSX:
@@ -2122,7 +2120,7 @@ else:
   HAVE_OPENGL = TARGET_CXX.check_header_exists(xqt,"GL"+os.sep+"gl.h")
 
 
-@select(tangler("cpkgs/pthread.py"))
+@select(tangler("cpkgs/target/pthread.py"))
 # try to use Linux getconf to find the pthread version
 # Ubuntu/Breezy returns "NPTL 2.3.5"
 result,output = get_stdout("getconf GNU_LIBPTHREAD_VERSION")
@@ -2133,8 +2131,8 @@ else:
 
 print "Pthread model=",PTHREAD_MODEL
 
-@select(tangler("cpkgs/interscript.py"))
-execfile("config"+os.sep+"config.py")
+@select(tangler("cpkgs/build/interscript.py"))
+execfile("config"+os.sep+"build_config.py")
 # see if we have interscript
 try:
   cload(globals(),"iscr")
@@ -2152,7 +2150,7 @@ except:
   cload(globals(),"iscr")
 
 
-@select(tangler("cpkgs/pkgconfig.py"))
+@select(tangler("cpkgs/host/pkgconfig.py"))
 # see if we have pkg-config
 try:
   cload(globals(),"pkgconfig")
@@ -2170,7 +2168,7 @@ except:
   cload(globals(),"pkgconfig")
 
  
-@select(tangler("cpkgs/python_misc.py"))
+@select(tangler("cpkgs/build/python_misc.py"))
 try:
   cload(globals(),"filename")
   cload(globals(),"python")
@@ -2256,16 +2254,31 @@ import string
 import time
 import glob
 import signal # try to force ctrl-C to this process 
+this = globals()
 
 if '' not in sys.path: sys.path = [''] + sys.path
 import flxbuild
 from flxbuild.flxutil import *
+execfile("script/config_support.py")
 
-# user defined bootstrap to set up environment
-try:
-  execfile("bootstrap/init.py")
-except:
-  pass
+
+@tangle("CONFIG_GENERATOR_CVS_ID='"+FLX_CONFIG_CVS_ID+"'")
+@tangle("flx_version = '"+flx_version+"'")
+@tangle("flx_version_major = '"+flx_version_major+"'")
+@tangle("godi_revision = '"+godi_revision+"'")
+@tangle("debian_revision = '"+debian_revision+"'")
+
+print CONFIG_GENERATOR_CVS_ID
+print 'flx_version',flx_version
+print 'flx_version_major',flx_version_major
+print 'godi_revision',godi_revision
+print 'debian_revision',debian_revision
+
+time_stamp_format = "%Y/%m/%d %H:%M:%S UTC"
+config_time=time.gmtime(time.time())
+CONFIG_TIME = time.strftime(time_stamp_format, config_time)
+
+
 
 #---------- utilities -------------------
 # We're screwed if popen doesn't work ..
@@ -2289,11 +2302,6 @@ def xqt(x,print_on_error=0,print_cmd=0,print_output=0):
  xxqt(x,print_cmd,print_on_error)
 
 #----------------------------------------
-time_stamp_format = "%Y/%m/%d %H:%M:%S UTC"
-config_time=time.gmtime(time.time())
-CONFIG_TIME = time.strftime(time_stamp_format, config_time)
-
-this = globals()
 
 # make doc directories to stop 'cp' complaining
 mkdirs("config")
@@ -2302,7 +2310,6 @@ mkdirs("impldoc")
 mkdirs("tut")
 mkdirs("man")
 mkdirs("htmlman")
-mkdirs("tut"+os.sep+"doc")
  
 quiet = 0
 force = 0
@@ -2429,6 +2436,10 @@ TARGETCC=""
 BUILDCC=""
 FLX_LPARCHIVE=os.getenv("FLX_LPARCHIVE",default=os.curdir)
 
+ALL_PHASES=["build","host","target","run"]
+
+PHASES = []
+
 i = 1
 while(i < len (sys.argv)):
   arg = sys.argv[i]
@@ -2481,10 +2492,18 @@ while(i < len (sys.argv)):
     LOAD_CONFIG=arg[14:]
   elif has_prefix("--lparchive=",arg):
     FLX_LPARCHIVE=arg[12:]
+  elif has_prefix("--phase=",arg):
+    phase=arg[8:]
+    if phase not in ALL_PHASES:
+      print "UNKNOWN PHASE",phase,"not in",ALL_PHASES
+      sys.exit(1)
+    if phase not in PHASES: PHASES.append(phase)
   else:
     print "UNKNOWN CONFIGURE OPTION",arg
     sys.exit(1)
   i = i + 1
+
+if PHASES == []: PHASES = ALL_PHASES
 
 if BOOTFILE:
   try:
@@ -2499,91 +2518,12 @@ print "INSTALL PREFIX="+PREFIX
 if FLX_LPARCHIVE=='': FLX_LPARCHIVE = os.curdir
 print "FLX_LPARCHIVE="+FLX_LPARCHIVE
 
-if LOAD_CONFIG:
-  g = LOAD_CONFIG+os.sep+"*"
-  files = glob.glob(g)
-  for f in files:
-    base = string.split(f,os.sep)[-1]
-    out = 'config' + os.sep + base
-    print "Copying ",f,"-->",out
-    filecopy(f,out)
-
-def save_config():
-  if SAVE_CONFIG:
-    print "*** SAVING configuration to ",SAVE_CONFIG
-    mkdirs(SAVE_CONFIG)
-    g = "config"+os.sep+"*"
-    files = glob.glob(g)
-    for f in files:
-      base = string.split(f,os.sep)[-1]
-      out = SAVE_CONFIG+ os.sep + base
-      print "Copying ",f,"-->",out
-      filecopy(f,out)
-
-if not file_exists("config"+os.sep+"xlators_local.py"):
-  filecopy2dir('tmp'+os.sep+'xlators_local.py','config')
-  print "*** Created dummy local translator definitions for speed tests ***"
-  print "   Edit config/xlators_local.py to suit your platform"
-  print "   This file will never be clobbered, even on a reconfigure"
-  print "   delete it to force reinstallation of the default"
-
-if not file_exists("config"+os.sep+"xlators.py"):
-  filecopy2dir("tmp"+os.sep+"xlators.py","config")
-  print "*** Created new translator list for speed tests ***"
-  print "   Edit config/xlators.py to suit your platform and testing needs"
-  print "   This file will never be clobbered, even on a reconfigure"
-  print "   delete it to force reinstallation of the default"
-
-if file_exists("config"+os.sep+"config.py"):
-  if force or upgrade:
-    print "**** upgrading configuration"
-  elif refresh:
-    print "**** CLOBBERING old configuration"
-  else:
-    print "**** using old configuration!"
-    if not quiet:
-      print "*** config/config.py already exists"
-      print "*** It is assumed to container client configuration data"
-      print "*** and so will not be clobbered."
-      print
-      print "*** To upgrade the configuration use the --upgrade option"
-      print
-      print "*** To recreate the default configuration"
-      print "*** delete config/config.py first"
-    save_config()
-    sys.exit(0)
-else:
-  if upgrade:
-    print "**** Can't upgrade non-existent configuration"
-    sys.exit(1)
-  else:
-    print "**** creating new configuration"
-
-if force or refresh:
-  a = file_exists("config"+os.sep+"speed_xlators.py")
-  b = file_exists("config"+os.sep+"speed_xlators.py.old")
-  if a and not b:
-    filecopy("config"+os.sep+"speed_xlators.py","config"+os.sep+"speed_xlators.py.old")
-    print "*** Created config/speed_xlators.py.old"
-
-  filecopy('tmp'+os.sep+'speed_xlators.py.default','config'+os.sep+'speed_xlators.py')
-  print "***Clobbered configuration for speed tests***"
-  print "   Edit config/speed_xlators.py to suit your platform"
-
-
-
 #---------------------------------------------------
 # Discover C/C++ compilers, linker, and other 'binutils'
 
 import flxbuild.ocaml_class
 import flxbuild.gxx_class
 import flxbuild.msvcxx_class
-
-
-HOST_OCAML = flxbuild.ocaml_class.ocaml()
-HOST_OCAML.autodetect(xqt,get_stdout)
-HOST_OCAML.report_config()
-HOST_OCAML.save_config("config/ocaml_config.py")
 
 #
 # Detect the native build model
@@ -2594,237 +2534,311 @@ HOST_OCAML.save_config("config/ocaml_config.py")
 # for the chosen host and target
 #
 
-print 
-print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-print "Checking BUILD MODEL",build_model
-print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-print
+if "build" in PHASES:
+  print 
+  print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  print "Checking BUILD MODEL",build_model
+  print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  print
 
-if build_model == "win32":
-  BUILD_CXX=flxbuild.msvcxx_class.msvcxx()
-else:
-  BUILD_CXX=flxbuild.gxx_class.gxx()
-BUILD_CXX.set_options(use="build",model=build_model,build=build_model)
-BUILD_CXX.check_options(xqt,get_stdout)
-BUILD_CXX.report_config()
-BUILD_CXX.save_options("config/build_cxx.py")
-build_model=BUILD_CXX.options.model
+  if build_model == "win32":
+    BUILD_CXX=flxbuild.msvcxx_class.msvcxx()
+  else:
+    BUILD_CXX=flxbuild.gxx_class.gxx()
+  BUILD_CXX.set_options(use="build",model=build_model,build=build_model)
+  BUILD_CXX.check_options(xqt,get_stdout)
+  BUILD_CXX.report_config()
+  BUILD_CXX.save_options("config/build_cxx.py")
+  build_model=BUILD_CXX.options.model
 
-#
-# Now create the host model: the compiler has to run
-# on the build machine, but can cross compile for
-# the host (if so, we can build but not test Felix)
-#
-# Cross compilation of the host tools may prevent any
-# testing of the tools
-#
-
-if not host_model: 
-  host_model=build_model
-  print "Defaulting host model to build model",host_model
-if not target_model: 
-  target_model = host_model
-  print "Defaulting target model to host model:",target_model
-
-
-print 
-print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-print "Checking HOST MODEL",host_model
-print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-print
-
-if host_model in ["win32"]:
-  HOST_CXX=flxbuild.msvcxx_class.msvcxx()
-  HOST_CXX.set_options(CXX=HOSTCC,use="host",model=host_model,build=build_model)
-  HOST_CXX.check_options(xqt,get_stdout)
-  HOST_CXX.report_config()
-  HOST_CXX.save_options("config/host_cxx.py")
-else:
-  HOST_CXX=flxbuild.gxx_class.gxx()
-  HOST_CXX.set_options(CXX=HOSTCC,use="host",model=host_model,build=build_model)
-  HOST_CXX.check_options(xqt,get_stdout)
-  HOST_CXX.report_config()
-  HOST_CXX.save_options("config/host_cxx.py")
-
-host_model = HOST_CXX.options.model
-
-#
-# Now create the target model: the compiler has to run
-# on the build machine, but can cross compile for
-# the target 
-#
-# cross compilation of C++ generated by Felix allows us to
-# check the generated code compiles, but not that it runs
-# [but the output is largely portable so we can still try]
-#
-
-print 
-print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-print "Checking TARGET MODEL",target_model
-print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-print
-
-if target_model in ["win32","win64"]:
-  TARGET_CXX=flxbuild.msvcxx_class.msvcxx()
-  TARGET_CXX.set_options(CXX=TARGETCC,use="target",model=target_model,build=build_model)
-  TARGET_CXX.check_options(xqt,get_stdout)
-  TARGET_CXX.report_config()
-  TARGET_CXX.save_options("config/target_cxx.py")
-  FLX_SOCKLEN_T = "int"
-  HAVE_PTHREADS=0
-  PTHREAD_SWITCH=""
-  HAVE_MSVC=1
-  HAVE_GXX=0
-  HAVE_KQUEUE_DEMUXER=0 #windows doesn't have kqueues.
-else:
-  TARGET_CXX=flxbuild.gxx_class.gxx()
-  TARGET_CXX.set_options(CXX=TARGETCC,use="target",model=target_model,build=build_model)
-  TARGET_CXX.check_options(xqt,get_stdout)
-  TARGET_CXX.report_config()
-  TARGET_CXX.save_options("config/target_cxx.py")
-  FLX_SOCKLEN_T = TARGET_CXX.options.FLX_SOCKLEN_T
-  HAVE_PTHREADS =  TARGET_CXX.options.HAVE_PTHREADS
-  PTHREAD_SWITCH =  TARGET_CXX.options.PTHREAD_SWITCH
-  HAVE_KQUEUE_DEMUXER = TARGET_CXX.options.HAVE_KQUEUE_DEMUXER
-  HAVE_MSVC=0
-  HAVE_GXX=1
-
-# target model switches
-CYGWIN = TARGET_CXX.options.CYGWIN
-MACOSX = TARGET_CXX.options.MACOSX
-WIN32 =  TARGET_CXX.options.WIN32
-WIN64 =  TARGET_CXX.options.WIN32
-LINUX =  TARGET_CXX.options.LINUX
-SOLARIS =  TARGET_CXX.options.SOLARIS
-POSIX =  TARGET_CXX.options.POSIX
-BSD =  TARGET_CXX.options.BSD
-
-target_model = TARGET_CXX.options.model
-if not run_model: 
-  run_model = target_model
-  print "Defaulting run model to target model:",run_model
-
-SUPPORT_DYNAMIC_LOADING = TARGET_CXX.options.SUPPORT_DYNAMIC_LOADING
-
-if SUPPORT_DYNAMIC_LOADING:
-  DEFAULT_LINK_MODEL="dynamic"
-else:
-  DEFAULT_LINK_MODEL="static"
-
-
-execfile("script/config_support.py")
-
-print "ESTABLISHED DEFAULT CONFIGURATION"
-
-# attempt to clobber the configuration with old values
-if not refresh:
   try:
-    execfile("config"+os.sep+"config.py")
-    print "Clobbered with old configuration"
-  except: pass
+    mkdirs("config")
 
-# reclobber version details to this version
-@tangle("CONFIG_GENERATOR_CVS_ID='"+FLX_CONFIG_CVS_ID+"'")
-@tangle("flx_version = '"+flx_version+"'")
-@tangle("flx_version_major = '"+flx_version_major+"'")
-@tangle("godi_revision = '"+godi_revision+"'")
-@tangle("debian_revision = '"+debian_revision+"'")
+    print "Writing build config file"
+    f = open("config"+os.sep+"build_config.py","w")
+    pr(f,'import sys')
+    pr(f,"if '' not in sys.path: sys.path = [''] + sys.path")
+    print "WRITE STEP 0"
+    pr(f,'#'+CONFIG_TIME)
+    pr(f,'#'+CONFIG_GENERATOR_CVS_ID)
+    print "WRITE STEP 1"
+    pa(f,this,"CONFIG_GENERATOR_CVS_ID")
+    pa(f,this,"CONFIG_TIME")
+    pa(f,this,"flx_version")
+    pa(f,this,"flx_version_major")
+    pa(f,this,"godi_revision")
+    pa(f,this,"debian_revision")
+    pr(f,"import flxbuild")
+    pr(f,"import flxbuild.gxx_class")
+    pr(f,"import flxbuild.msvcxx_class")
+    pr(f,'execfile("script/config_support.py")')
 
-# clobber with command line overrides now
-g = globals()
-for k in overrides.keys():
-  g[k]=overrides[k]
+    pa(f,this,"build_model")
+    pa(f,this,"FLX_LPARCHIVE")
+    pr(f,"")
+ 
+    print "WRITE STEP 2"
+   
+    cxx = BUILD_CXX.__class__.__name__
+    pr(f,"BUILD_CXX=flxbuild."+cxx+"_class."+cxx+"()")
+    pr(f,"BUILD_CXX.load_options("+repr('config'+os.sep+'build_cxx.py')+")")
+    f.close()
+  except:
+    print "Unable to create config"+os.sep+"build_config.py"
+    sys.exit(1)
 
-print CONFIG_GENERATOR_CVS_ID
-print 'flx_version',flx_version
-print 'flx_version_major',flx_version_major
-print 'godi_revision',godi_revision
-print 'debian_revision',debian_revision
+  print "Created config"+os.sep+"build_config.py"
+  print "Edit this file to set your preferences"
+  print "This file will not be clobbered by the Felix build process"
 
-try:
-  mkdirs("config")
+  cpkgs =  glob.glob("cpkgs"+os.sep+"build"+os.sep+"*.py")
+  for cpkgf in cpkgs:
+    cpkg = string.split(cpkgf,os.sep)[2][:-3]
+    print "build CONFIGURING",cpkg
+    execfile(cpkgf)
 
-  print "Writing main config file"
-  f = open("config"+os.sep+"config.py","w")
-  pr(f,'import sys')
-  pr(f,"if '' not in sys.path: sys.path = [''] + sys.path")
-  pr(f,'#'+CONFIG_TIME)
-  pr(f,'#'+CONFIG_GENERATOR_CVS_ID)
-  pa(f,this,"CONFIG_GENERATOR_CVS_ID")
-  pa(f,this,"CONFIG_TIME")
-  pa(f,this,"flx_version")
-  pa(f,this,"flx_version_major")
-  pa(f,this,"godi_revision")
-  pa(f,this,"debian_revision")
-  pr(f,"try:")
-  pr(f,"  execfile('config/config_bootstrap.py')")
-  pr(f,"except: pass")
-  pr(f,"import flxbuild")
-  pr(f,"import flxbuild.gxx_class")
-  pr(f,"import flxbuild.msvcxx_class")
-  pr(f,"import flxbuild.ocaml_class")
-  pr(f,'execfile("script/config_support.py")')
 
-  pr(f,"")
-  pr(f,"#User configurable section")
-  pa(f,this,"SUPPORT_DYNAMIC_LOADING")
-  pr(f,"SUPPORT_STATIC_LINKAGE = 1")
-  pa(f,this,"DEFAULT_LINK_MODEL")
-  pa(f,this,"build_model")
-  pa(f,this,"host_model")
-  pa(f,this,"target_model")
-  pa(f,this,"run_model")
-  pa(f,this,"CYGWIN")
-  pa(f,this,"MACOSX")
-  pa(f,this,"HAVE_KQUEUE_DEMUXER")
-  pa(f,this,"WIN32")
-  pa(f,this,"WIN64")
-  pa(f,this,"POSIX")
-  pa(f,this,"SOLARIS")
-  pa(f,this,"BSD")
-  pa(f,this,"LINUX")
-  pa(f,this,"PREFIX")
-  pa(f,this,"FLX_SOCKLEN_T")
-  pa(f,this,"HAVE_PTHREADS")
-  pa(f,this,"PTHREAD_SWITCH")
-  pa(f,this,"HAVE_PKGCONFIG")
-  pa(f,this,"FLX_LPARCHIVE")
-  pr(f,"")
 
-  pr(f,"HOST_OCAML=flxbuild.ocaml_class.ocaml()")
-  pr(f,"HOST_OCAML.load_config("+repr('config'+os.sep+'ocaml_config.py')+")")
-  cxx = HOST_CXX.__class__.__name__
-  pr(f,"HOST_CXX=flxbuild."+cxx+"_class."+cxx+"()")
-  pr(f,"HOST_CXX.load_options("+repr('config'+os.sep+'host_cxx.py')+")")
-  cxx = TARGET_CXX.__class__.__name__
-  pr(f,"TARGET_CXX=flxbuild."+cxx+"_class."+cxx+"()")
-  pr(f,"TARGET_CXX.load_options("+repr('config'+os.sep+'target_cxx.py')+")")
-  pr(f,"")
-  pa(f,this,"HAVE_GXX")
-  pr(f,"FLXCC_CPP='cpp '")
-  pa(f,this,"HAVE_MSVC")
-  pr(f,"# HACK to get all the target variables into global namespace")
-  pr(f,"execfile("+repr('config'+os.sep+'target_cxx.py')+")")
-  pr(f,"execfile("+repr('config'+os.sep+'ocaml_config.py')+")")
-  f.close()
-  if BOOTFILE:
-    print "Copying bootfile :  "+ BOOTFILE
-    filecopy(BOOTFILE,"config"+os.sep+"config_bootstrap.py")
-except:
-  print "Unable to create config"+os.sep+"config.py"
-  sys.exit(1)
+if "host" in PHASES:
+  HOST_OCAML = flxbuild.ocaml_class.ocaml()
+  HOST_OCAML.autodetect(xqt,get_stdout)
+  HOST_OCAML.report_config()
+  HOST_OCAML.save_config("config/ocaml_config.py")
 
-print "Created config"+os.sep+"config.py"
-print "Edit this file to set your preferences"
-print "This file will not be clobbered by the Felix build process"
 
-save_config()
+  #
+  # Now create the host model: the compiler has to run
+  # on the build machine, but can cross compile for
+  # the host (if so, we can build but not test Felix)
+  #
+  # Cross compilation of the host tools may prevent any
+  # testing of the tools
+  #
 
-cpkgs =  glob.glob("cpkgs"+os.sep+"*.py")
-for cpkgf in cpkgs:
-  cpkg = string.split(cpkgf,os.sep)[1][:-3]
-  print "CONFIGURING",cpkg
-  execfile(cpkgf)
+  if not host_model: 
+    host_model=build_model
+    print "Defaulting host model to build model",host_model
+  if not target_model: 
+    target_model = host_model
+    print "Defaulting target model to host model:",target_model
+
+
+  print 
+  print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  print "Checking HOST MODEL",host_model
+  print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  print
+
+  if host_model in ["win32"]:
+    HOST_CXX=flxbuild.msvcxx_class.msvcxx()
+    HOST_CXX.set_options(CXX=HOSTCC,use="host",model=host_model,build=build_model)
+    HOST_CXX.check_options(xqt,get_stdout)
+    HOST_CXX.report_config()
+    HOST_CXX.save_options("config/host_cxx.py")
+  else:
+    HOST_CXX=flxbuild.gxx_class.gxx()
+    HOST_CXX.set_options(CXX=HOSTCC,use="host",model=host_model,build=build_model)
+    HOST_CXX.check_options(xqt,get_stdout)
+    HOST_CXX.report_config()
+    HOST_CXX.save_options("config/host_cxx.py")
+
+  host_model = HOST_CXX.options.model
+  try:
+    mkdirs("config")
+
+    print "Writing host config file"
+    f = open("config"+os.sep+"host_config.py","w")
+    pr(f,'import sys')
+    pr(f,"if '' not in sys.path: sys.path = [''] + sys.path")
+    pr(f,'#'+CONFIG_TIME)
+    pr(f,'#'+CONFIG_GENERATOR_CVS_ID)
+    pa(f,this,"CONFIG_GENERATOR_CVS_ID")
+    pa(f,this,"CONFIG_TIME")
+    pa(f,this,"flx_version")
+    pa(f,this,"flx_version_major")
+    pa(f,this,"godi_revision")
+    pa(f,this,"debian_revision")
+    pr(f,"import flxbuild")
+    pr(f,"import flxbuild.gxx_class")
+    pr(f,"import flxbuild.msvcxx_class")
+    pr(f,"import flxbuild.ocaml_class")
+    pr(f,'execfile("script/config_support.py")')
+
+    pa(f,this,"build_model")
+    pa(f,this,"host_model")
+    pa(f,this,"FLX_LPARCHIVE")
+    pr(f,"")
+
+    pr(f,"HOST_OCAML=flxbuild.ocaml_class.ocaml()")
+    pr(f,"HOST_OCAML.load_config("+repr('config'+os.sep+'ocaml_config.py')+")")
+    cxx = HOST_CXX.__class__.__name__
+    pr(f,"HOST_CXX=flxbuild."+cxx+"_class."+cxx+"()")
+    pr(f,"HOST_CXX.load_options("+repr('config'+os.sep+'host_cxx.py')+")")
+    pr(f,"execfile("+repr('config'+os.sep+'ocaml_config.py')+")")
+    f.close()
+  except:
+    print "Unable to create config"+os.sep+"host_config.py"
+    sys.exit(1)
+
+  print "Created config"+os.sep+"host_config.py"
+  print "Edit this file to set your preferences"
+  print "This file will not be clobbered by the Felix build process"
+
+  cpkgs =  glob.glob("cpkgs"+os.sep+"host"+os.sep+"*.py")
+  for cpkgf in cpkgs:
+    cpkg = string.split(cpkgf,os.sep)[2][:-3]
+    print "host CONFIGURING",cpkg
+    execfile(cpkgf)
+
+
+
+if "target" in PHASES:
+  #
+  # Now create the target model: the compiler has to run
+  # on the build machine, but can cross compile for
+  # the target 
+  #
+  # cross compilation of C++ generated by Felix allows us to
+  # check the generated code compiles, but not that it runs
+  # [but the output is largely portable so we can still try]
+  #
+
+  print 
+  print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  print "Checking TARGET MODEL",target_model
+  print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  print
+
+  if target_model in ["win32","win64"]:
+    TARGET_CXX=flxbuild.msvcxx_class.msvcxx()
+    TARGET_CXX.set_options(CXX=TARGETCC,use="target",model=target_model,build=build_model)
+    TARGET_CXX.check_options(xqt,get_stdout)
+    TARGET_CXX.report_config()
+    TARGET_CXX.save_options("config/target_cxx.py")
+    FLX_SOCKLEN_T = "int"
+    HAVE_PTHREADS=0
+    PTHREAD_SWITCH=""
+    HAVE_MSVC=1
+    HAVE_GXX=0
+    HAVE_KQUEUE_DEMUXER=0 #windows doesn't have kqueues.
+  else:
+    TARGET_CXX=flxbuild.gxx_class.gxx()
+    TARGET_CXX.set_options(CXX=TARGETCC,use="target",model=target_model,build=build_model)
+    TARGET_CXX.check_options(xqt,get_stdout)
+    TARGET_CXX.report_config()
+    TARGET_CXX.save_options("config/target_cxx.py")
+    FLX_SOCKLEN_T = TARGET_CXX.options.FLX_SOCKLEN_T
+    HAVE_PTHREADS =  TARGET_CXX.options.HAVE_PTHREADS
+    PTHREAD_SWITCH =  TARGET_CXX.options.PTHREAD_SWITCH
+    HAVE_KQUEUE_DEMUXER = TARGET_CXX.options.HAVE_KQUEUE_DEMUXER
+    HAVE_MSVC=0
+    HAVE_GXX=1
+
+  # target model switches
+  CYGWIN = TARGET_CXX.options.CYGWIN
+  MACOSX = TARGET_CXX.options.MACOSX
+  WIN32 =  TARGET_CXX.options.WIN32
+  WIN64 =  TARGET_CXX.options.WIN32
+  LINUX =  TARGET_CXX.options.LINUX
+  SOLARIS =  TARGET_CXX.options.SOLARIS
+  POSIX =  TARGET_CXX.options.POSIX
+  BSD =  TARGET_CXX.options.BSD
+
+  target_model = TARGET_CXX.options.model
+  if not run_model: 
+    run_model = target_model
+    print "Defaulting run model to target model:",run_model
+
+  SUPPORT_DYNAMIC_LOADING = TARGET_CXX.options.SUPPORT_DYNAMIC_LOADING
+
+  if SUPPORT_DYNAMIC_LOADING:
+    DEFAULT_LINK_MODEL="dynamic"
+  else:
+    DEFAULT_LINK_MODEL="static"
+
+
+  try:
+    mkdirs("config")
+
+    print "Writing main config file"
+    f = open("config"+os.sep+"config.py","w")
+    pr(f,'import sys')
+    pr(f,"if '' not in sys.path: sys.path = [''] + sys.path")
+    pr(f,'#'+CONFIG_TIME)
+    pr(f,'#'+CONFIG_GENERATOR_CVS_ID)
+    pa(f,this,"CONFIG_GENERATOR_CVS_ID")
+    pa(f,this,"CONFIG_TIME")
+    pa(f,this,"flx_version")
+    pa(f,this,"flx_version_major")
+    pa(f,this,"godi_revision")
+    pa(f,this,"debian_revision")
+    pr(f,"try:")
+    pr(f,"  execfile('config/config_bootstrap.py')")
+    pr(f,"except: pass")
+    pr(f,"import flxbuild")
+    pr(f,"import flxbuild.gxx_class")
+    pr(f,"import flxbuild.msvcxx_class")
+    pr(f,"import flxbuild.ocaml_class")
+    pr(f,'execfile("script/config_support.py")')
+
+    pr(f,"")
+    pr(f,"#User configurable section")
+    pa(f,this,"SUPPORT_DYNAMIC_LOADING")
+    pr(f,"SUPPORT_STATIC_LINKAGE = 1")
+    pa(f,this,"DEFAULT_LINK_MODEL")
+    pa(f,this,"build_model")
+    pa(f,this,"host_model")
+    pa(f,this,"target_model")
+    pa(f,this,"run_model")
+    pa(f,this,"CYGWIN")
+    pa(f,this,"MACOSX")
+    pa(f,this,"HAVE_KQUEUE_DEMUXER")
+    pa(f,this,"WIN32")
+    pa(f,this,"WIN64")
+    pa(f,this,"POSIX")
+    pa(f,this,"SOLARIS")
+    pa(f,this,"BSD")
+    pa(f,this,"LINUX")
+    pa(f,this,"PREFIX")
+    pa(f,this,"FLX_SOCKLEN_T")
+    pa(f,this,"HAVE_PTHREADS")
+    pa(f,this,"PTHREAD_SWITCH")
+    pa(f,this,"HAVE_PKGCONFIG")
+    pa(f,this,"FLX_LPARCHIVE")
+    pr(f,"")
+
+    pr(f,"HOST_OCAML=flxbuild.ocaml_class.ocaml()")
+    pr(f,"HOST_OCAML.load_config("+repr('config'+os.sep+'ocaml_config.py')+")")
+    cxx = HOST_CXX.__class__.__name__
+    pr(f,"HOST_CXX=flxbuild."+cxx+"_class."+cxx+"()")
+    pr(f,"HOST_CXX.load_options("+repr('config'+os.sep+'host_cxx.py')+")")
+    cxx = TARGET_CXX.__class__.__name__
+    pr(f,"TARGET_CXX=flxbuild."+cxx+"_class."+cxx+"()")
+    pr(f,"TARGET_CXX.load_options("+repr('config'+os.sep+'target_cxx.py')+")")
+    pr(f,"")
+    pa(f,this,"HAVE_GXX")
+    pr(f,"FLXCC_CPP='cpp '")
+    pa(f,this,"HAVE_MSVC")
+    pr(f,"# HACK to get all the target variables into global namespace")
+    pr(f,"execfile("+repr('config'+os.sep+'target_cxx.py')+")")
+    pr(f,"execfile("+repr('config'+os.sep+'ocaml_config.py')+")")
+    f.close()
+    if BOOTFILE:
+      print "Copying bootfile :  "+ BOOTFILE
+      filecopy(BOOTFILE,"config"+os.sep+"config_bootstrap.py")
+  except:
+    print "Unable to create config"+os.sep+"config.py"
+    sys.exit(1)
+
+  print "Created config"+os.sep+"config.py"
+  print "Edit this file to set your preferences"
+  print "This file will not be clobbered by the Felix build process"
+
+  cpkgs =  glob.glob("cpkgs"+os.sep+"target"+os.sep+"*.py")
+  for cpkgf in cpkgs:
+    cpkg = string.split(cpkgf,os.sep)[2][:-3]
+    print "target CONFIGURING",cpkg
+    execfile(cpkgf)
 
 @h = tangler('config/flx_data.py')
 @select(h)

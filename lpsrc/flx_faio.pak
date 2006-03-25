@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.11  2006/03/25 01:27:31  skaller
+Add more stuff to gmp library binding. Start phasing config.
+
 Revision 1.10  2006/03/11 02:39:28  skaller
 Refactoring packaging structure. merge expected results of
 tests into the files containing the tests.
@@ -196,7 +199,6 @@ FAIORTL_INTERFACES = [
  'faio/faio_wdrv.hpp',
  'faio/faio_posixio.hpp',
  'faio/faio_winio.hpp',
- 'faio/faio_sdl_event.hpp',
 ]
 
 FAIO_CPPS = [

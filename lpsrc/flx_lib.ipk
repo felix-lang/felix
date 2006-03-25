@@ -264,6 +264,9 @@ macro fun print(x) = { fprint (cout,x); };
 
 @h=tangler('lib/flx_syntax.flxh','data')
 @select(h)
+#infix 10 "/\\" wedge
+#infix 10 "\\/" vee
+
 #statement#
   whilst expr do statements done ; =># 
   macro {

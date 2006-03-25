@@ -8,9 +8,31 @@ scripting harness to find them.
 @p()
 REQUIRES: -lgmpxx -lgmp
 
+@select(tangler("cpkgs/target/gmpxx.py"))
+execfile("config"+os.sep+"config.py")
+try:
+  cload(globals(),"target_gmpxx")
+except:
+  HAVE_GMPXX=TARGET_CXX.check_header_exists(xqt,'gmpxx.h')
+  f=cwrite('target_gmpxx')
+  pa(f,locals(),"HAVE_GMPXX")
+  f.close()
+  cload(globals(),"target_gmpxx")
+
 @h = tangler('spkgs/gmpxx.py')
 @select(h)
-#
+execfile('cpkgs'+os.sep+'target'+os.sep+'gmpxx.py')
+if HAVE_GMPXX:
+  unit_tests = ['test'+os.sep+'flx_gmp_test.flx']
+  iscr_source = ['lpsrc/flx_gmp.pak']
+  weaver_directory = 'doc/rtl/gmpxx/'
+
+@h = tangler('config/gmpxx.fpc')
+@select(h)
+requires_slibs: -lgmp
+provides_dlib: -lgmpxx
+provides_slib: -lgmpxx
+
 @h = tangler('lib/flx_gmp.flx','data')
 @select(h)
 // THIS WRAPPER IS FFAU .. it is NOT LGPL licenced
@@ -21,12 +43,41 @@ REQUIRES: -lgmpxx -lgmp
 // derived from gmp.h
 
 header "#include <cstdio>";
-header "#include <gmpxx.h>";
+header gmpxx_h = """
+#include <gmpxx.h>
+namespace flx { namespace gmp {
+extern mpz_class lcm(mpz_class const&,mpz_class const&);
+extern mpz_class gcd(mpz_class const&,mpz_class const&);
+}}
+""";
+
+body gmpxx_lcm = """
+namespace flx { namespace gmp {
+mpz_class lcm(mpz_class const &a, mpz_class const &b)
+{
+  mpz_t r; mpz_init(r); 
+  mpz_lcm(r,a.get_mpz_t(),b.get_mpz_t());
+  return mpz_class(r);
+}
+}}
+""";
+
+body gmpxx_gcd = """
+namespace flx { namespace gmp {
+mpz_class gcd(mpz_class const &a, mpz_class const &b)
+{
+  mpz_t r; mpz_init(r); 
+  mpz_gcd(r,a.get_mpz_t(),b.get_mpz_t());
+  return mpz_class(r);
+}
+}}
+""";
 
 @typs = ['mpz', 'mpq', 'mpf']
 @iops = [('add','+'),('sub','-',),('mul','*'),('div','/')]
 module Gmp
 {
+  requires gmpxx_h;
   requires package "gmpxx";
   type mpz='mpz_class';
   type mpq='mpq_class';
@@ -34,18 +85,133 @@ module Gmp
 @for t in typs:
   for op,infix in iops:
     tangle('  fun '+op+':'+t+'*'+t+'->'+t+'="$1'+infix+'$2";')
-  tangle('  proc print:'+t+'="cout << $1;";')
+  tangle('  fun neg:'+t+'->'+t+'="-$1";')
+  tangle('  fun abs:'+t+'->'+t+'="abs($1)";')
+  tangle('  fun sgn:'+t+'->int="sgn($1)";')
+  tangle('  fun sqrt:'+t+'->'+t+'="sqrt($1)";')
+  tangle('  fun cmp:'+t+'*'+t+'->int="cmp($1,$2)";')
+  tangle('  proc fprint: ostream * '+t+'="*$1<<$2;";')
+  tangle('  fun eq:'+t+'*'+t+'->bool="$1==2";')
+  tangle('  fun ne:'+t+'*'+t+'->bool="$1!=$2";')
+  tangle('  fun lt:'+t+'*'+t+'->bool="$1<$2";')
+  tangle('  fun le:'+t+'*'+t+'->bool="$1<=$2";')
+  tangle('  fun gt:'+t+'*'+t+'->bool="$1>$2";')
+  tangle('  fun ge:'+t+'*'+t+'->bool="$1>=$2";')
+
+fun lcm: mpz * mpz -> mpz = "flx::gmp::lcm($1,$2)" requires gmpxx_lcm;
+fun gcd: mpz * mpz -> mpz = "flx::gmp::gcd($1,$2)" requires gmpxx_gcd;
+fun wedge: mpz * mpz -> mpz = "flx::gmp::lcm($1,$2)" requires gmpxx_lcm;
+fun vee: mpz * mpz -> mpz = "flx::gmp::gcd($1,$2)" requires gmpxx_gcd;
+
+fun mod: mpz * mpz -> mpz = "$1%$2";
+fun mpz_of_int: int -> mpz = "mpz_class($1)";
+fun mpq_of_int: int -> mpq = "mpq_class($1)";
+fun mpf_of_double: double -> mpf = "mpf_class($1)";
 }
 
 @h = tangler('test/flx_gmp_test.flx')
 @select(h)
-include "std";
+#import <flx.flxh>
 include "flx_gmp";
 open Gmp;
 
-fun mpz_of_int: int -> mpz = "mpz_class($1)";
+{
+  val x:mpz = mpz_of_int 99;
+  val y:mpz = mpz_of_int 7;
+  print x; endl;
+  print y; endl;
+  print$ x + y; endl;
+  print$ x - y; endl;
+  print$ x * y; endl;
+  print$ x / y; endl;
+  print$ x % y; endl;
 
-val x:mpz = mpz_of_int 99;
-print x;
-endl;
+  print$ x == y; endl;
+  print$ x != y; endl;
+  print$ x < y; endl;
+  print$ x <= y; endl;
+  print$ x > y; endl;
+  print$ x >= y; endl;
 
+  print$ lcm (x,y); endl;
+  print$ gcd (x,y); endl;
+  print$ x /\ y; endl;
+  print$ x \/ y; endl;
+};
+{
+  val x:mpq = mpq_of_int 99;
+  val y:mpq = mpq_of_int 7;
+  print x; endl;
+  print y; endl;
+  print$ x + y; endl;
+  print$ x - y; endl;
+  print$ x * y; endl;
+  print$ x / y; endl;
+  print$ x == y; endl;
+  print$ x != y; endl;
+  print$ x < y; endl;
+  print$ x <= y; endl;
+  print$ x > y; endl;
+  print$ x >= y; endl;
+};
+{
+  val x:mpf = mpf_of_double 99.0;
+  val y:mpf = mpf_of_double 7.0;
+  print x; endl;
+  print y; endl;
+  print$ x + y; endl;
+  print$ x - y; endl;
+  print$ x * y; endl;
+  print$ x / y; endl;
+  print$ x == y; endl;
+  print$ x != y; endl;
+  print$ x < y; endl;
+  print$ x <= y; endl;
+  print$ x > y; endl;
+  print$ x >= y; endl;
+};
+
+@h = tangler('test/flx_gmp_test.expect')
+@select(h)
+99
+7
+106
+92
+693
+14
+1
+false
+true
+false
+false
+true
+true
+693
+1
+693
+1
+99
+7
+106
+92
+693
+99/7
+false
+true
+false
+false
+true
+true
+99
+7
+106
+92
+693
+14.1429
+false
+true
+false
+false
+true
+true
+@#
