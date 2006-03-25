@@ -400,6 +400,12 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
       | `BBDCL_const (_,_,ct,_) -> 
         begin match ct with
+        | `Str c
+        | `StrTemplate c when c = "unitsum_as_int" ->
+          begin match ts with 
+          | [`BTYP_unitsum n] -> ce_atom (si n)
+          | _ -> clierr sr "unitsum_as_int expected unitsum arg" 
+          end
         | `Str c -> ce_expr "expr" c
         | `StrTemplate c ->
           let ts = map tn ts in

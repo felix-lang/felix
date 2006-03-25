@@ -635,6 +635,19 @@ h2(px,1);
 proc k[t,u:ptr[?t]]: u = "std::cout << *$1 <<std::endl;";
 k px;
 
+@select(tangler('test/rt24.flx'))
+#import <flx.flxh>
+
+// the noinline is needed because reductions are
+// currently applies AFTER inlining. Hmm.
+
+noinline fun f(x:int):int = { print "Cheat"; endl; return x; }
+
+reduce idem(x:int): f ( f x ) => f x;
+
+var x = f(f(f(f(1))));
+print x; endl;
+
 @select(tangler('test/drt1.flx'))
 // plugin loader test
 #import <flx.flxh>
@@ -897,6 +910,10 @@ W2
 @head(2,"test/rt23.expect")
 @select(tangler("test/rt23.expect","data"))
 3
+1
+@head(2,"test/rt24.expect")
+@select(tangler("test/rt24.expect","data"))
+Cheat
 1
 @head(2,"test/drt1.expect")
 @select(tangler("test/drt1.expect","data"))
