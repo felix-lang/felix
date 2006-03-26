@@ -706,6 +706,8 @@ module Typing
     | _,_ => 1
     endmatch
   ;
+
+  const memcount[t] : int = "#memcount";
 }
   
 @#------------- CASTS and C HACKERY ---------------

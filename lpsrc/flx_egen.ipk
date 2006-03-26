@@ -401,10 +401,22 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       | `BBDCL_const (_,_,ct,_) -> 
         begin match ct with
         | `Str c
-        | `StrTemplate c when c = "unitsum_as_int" ->
+        | `StrTemplate c when c = "#memcount" ->
           begin match ts with 
-          | [`BTYP_unitsum n] -> ce_atom (si n)
-          | _ -> clierr sr "unitsum_as_int expected unitsum arg" 
+          | [`BTYP_unitsum n]
+          | [`BTYP_array (_,`BTYP_unitsum n)] -> ce_atom (si n)
+          | [`BTYP_sum ls]
+          | [`BTYP_tuple ls] -> let n = length ls in ce_atom (si n)
+          | [`BTYP_inst (i,_)] ->
+            let _,_,_,entry = Hashtbl.find bbdfns i in
+            begin match entry with
+              | `BBDCL_struct (_,ls) -> let n = length ls in ce_atom (si n)
+              | `BBDCL_cstruct (_,ls) -> let n = length ls in ce_atom (si n)
+              | `BBDCL_union (_,ls) -> let n = length ls in ce_atom (si n)
+              | `BBDCL_class (_,ls) -> let n = length ls in ce_atom (si n)
+              | _ -> clierr sr "#memcount function requires type with members to count"
+            end
+          | _ -> clierr sr "#memcount function requires type with members to count"
           end
         | `Str c -> ce_expr "expr" c
         | `StrTemplate c ->
