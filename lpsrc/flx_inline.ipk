@@ -287,6 +287,7 @@ let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len ex
   in
   let exe = 
   match exe with 
+  | `BEXE_axiom_check _ -> assert false
   | `BEXE_call_prim (sr,i,ts,e2)  -> 
     let fixup i ts = 
       let ts = map auxt ts in
@@ -656,6 +657,7 @@ let gen_body syms (uses,child_map,bbdfns) id
  
   let remap: bexe_t -> bexe_t list =  fun exe ->
   match exe with
+  | `BEXE_axiom_check _ -> assert false
   | `BEXE_call_prim (sr,i,ts,e2)  -> 
     let fixup i ts = 
       let auxt t = varmap_subst varmap t in
@@ -738,6 +740,7 @@ let gen_body syms (uses,child_map,bbdfns) id
   | `BEXE_loop (sr,i,e) -> assert false
 
   | `BEXE_assert (sr,e) -> [`BEXE_assert (sr, ge e)]
+  | `BEXE_assert2 (sr,sr2,e) -> [`BEXE_assert2 (sr, sr2, ge e)]
 
   | `BEXE_ifgoto (sr,e,lab) -> [`BEXE_ifgoto (sr,ge e, relab lab)]
   | `BEXE_ifnotgoto (sr,e,lab) -> [`BEXE_ifnotgoto (sr,ge e, relab lab)]
@@ -1164,6 +1167,7 @@ let bunravel syms bbdfns ts e =
 let expand_exe syms bbdfns u exe = 
   let xs = 
     match exe with
+    | `BEXE_axiom_check _ -> assert false
     | `BEXE_call_prim (sr,i,ts,e2) ->
       let e,xs = u sr e2 in
       `BEXE_call_prim (sr,i,ts,e) :: xs
@@ -1204,6 +1208,10 @@ let expand_exe syms bbdfns u exe =
     | `BEXE_assert (sr,e) ->
       let e,xs = u sr e in
       `BEXE_assert (sr,e) :: xs
+
+    | `BEXE_assert2 (sr,sr2,e) ->
+      let e,xs = u sr e in
+      `BEXE_assert2 (sr,sr2,e) :: xs
 
     (* preserve call lift pattern ??*)
     | `BEXE_call (sr,(`BEXPR_apply_direct(i,ts,e1),t),e2) ->
@@ -1864,6 +1872,7 @@ and fold_vars syms (uses,child_map,bbdfns) i ps exes =
           *)
           if !subs then 
           match exe with
+          | `BEXE_axiom_check _ -> assert false
 
           (* terminate substitution, return unmodified instr *)
           | `BEXE_goto _ 
@@ -1893,6 +1902,7 @@ and fold_vars syms (uses,child_map,bbdfns) i ps exes =
           | `BEXE_ifgoto _
           | `BEXE_ifnotgoto _
           | `BEXE_assert _
+          | `BEXE_assert2 _
              -> elimi exe
 
           (* terminate substitution, return modified instr *)

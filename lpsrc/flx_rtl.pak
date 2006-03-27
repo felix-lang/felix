@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.28  2006/03/27 16:43:04  skaller
+Add axiom_check pseudo function for checking axioms.
+
 Revision 1.27  2006/03/24 02:46:26  skaller
 Change case n of m to zero origin. Looks horrible but more
 consistent.
@@ -661,6 +664,7 @@ struct RTL_EXTERN flx_exec_failure_t;
 struct RTL_EXTERN flx_range_srcref_t;
 struct RTL_EXTERN flx_match_failure_t;
 struct RTL_EXTERN flx_assert_failure_t;
+struct RTL_EXTERN flx_assert2_failure_t;
 struct RTL_EXTERN flx_switch_failure_t;
 // ********************************************************
 /// CONTINUATION.
@@ -943,6 +947,15 @@ struct RTL_EXTERN flx_assert_failure_t : flx_exception_t {
   virtual ~flx_assert_failure_t();
 };
 
+struct RTL_EXTERN flx_assert2_failure_t : flx_exception_t {
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  flx_range_srcref_t flx_loc2; ///< second location in Felix file
+  char *cxx_srcfile;          ///< C++ file
+  int cxx_srcline;            ///< __LINE__ macro
+  flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char *cf, int cl);
+  virtual ~flx_assert2_failure_t();
+};
+
 // ********************************************************
 /// EXCEPTION: RANGE failure.
 /// Thrown when a range check fails
@@ -1003,6 +1016,12 @@ struct readreq_t {
 
 #define FLX_ASSERT_FAILURE(f,sl,sc,el,ec) \
   throw flx::rtl::flx_assert_failure_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
+
+#define FLX_ASSERT2_FAILURE(f,sl,sc,el,ec,f2,sl2,sc2,el2,ec2) \
+  throw flx::rtl::flx_assert2_failure_t (\
+    flx_range_srcref_t(f,sl,sc,el,ec),\
+    flx_range_srcref_t(f2,sl2,sc2,el2,sc2),\
+    __FILE__,__LINE__)
 
 #define FLX_RANGE_FAILURE(f,sl,sc,el,ec) \
   throw flx::rtl::flx_range_failure_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
@@ -1633,6 +1652,10 @@ flx_match_failure_t::~flx_match_failure_t(){}
 flx_assert_failure_t::flx_assert_failure_t(flx_range_srcref_t ff, char *cf, int cl) :
    flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
 flx_assert_failure_t::~flx_assert_failure_t(){}
+
+flx_assert2_failure_t::flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char *cf, int cl) :
+   flx_loc(ff), flx_loc2(ff2), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_assert2_failure_t::~flx_assert2_failure_t(){}
 
 flx_range_failure_t::flx_range_failure_t(flx_range_srcref_t ff, char *cf, int cl) :
    flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
@@ -2617,6 +2640,14 @@ int flx_exception_handler (flx_exception_t *e)
   {
     fprintf(stderr,"Assertion Failure\n");
     print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
+    return 3;
+  }
+  else
+  if (flx_assert2_failure_t *x = dynamic_cast<flx_assert2_failure_t*>(e))
+  {
+    fprintf(stderr,"Assertion2 Failure\n");
+    print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
+    print_loc(stderr,x->flx_loc2,x->cxx_srcfile, x->cxx_srcline);
     return 3;
   }
   else

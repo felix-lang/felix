@@ -964,6 +964,7 @@ let gen_exe filename syms
     print_endline (string_of_bexe syms.dfns 0 exe);
     *)
     match exe with
+    | `BEXE_axiom_check _ -> assert false
     | `BEXE_code (_,s) -> forget_template s
     | `BEXE_nonreturn_code (_,s) -> forget_template s
     | `BEXE_comment (_,s) -> "/*" ^ s ^ "*/\n"
@@ -1503,6 +1504,19 @@ let gen_exe filename syms
          si el ^ "," ^ si ec
        in
        "      {if(!(" ^ ge sr e ^ "))FLX_ASSERT_FAILURE("^s^");}\n"
+
+    | `BEXE_assert2 (sr,sr2,e) ->
+       let f,sl,sc,el,ec = sr in
+       let s = "\""^ f ^"\"," ^ 
+         si sl ^ "," ^ si sc ^ "," ^
+         si el ^ "," ^ si ec
+       in
+       let f2,sl2,sc2,el2,ec2 = sr2 in
+       let s2 = "\""^ f2 ^"\"," ^ 
+         si sl2 ^ "," ^ si sc2 ^ "," ^
+         si el2 ^ "," ^ si ec2
+       in
+       "      {if(!(" ^ ge sr e ^ "))FLX_ASSERT2_FAILURE("^s^"," ^ s2 ^");}\n"
   in gexe exe
 
 let gen_exes filename syms bbdfns display label_info counter index exes vs ts instance_no stackable =
@@ -2782,6 +2796,11 @@ try
   then print_endline "//BINDING EXECUTABLE CODE"
   ;
   let bbdfns = bbind syms in
+
+  (* generate axiom checks *)
+  if compiler_options.generate_axiom_checks then
+  Flx_axiom.axiom_check syms bbdfns;
+
   let child_map = cal_children syms bbdfns in
   syms.bifaces <- bind_ifaces syms ifaces;
   Hashtbl.clear syms.ticache;

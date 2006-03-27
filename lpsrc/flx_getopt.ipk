@@ -144,6 +144,7 @@ let get_felix_options options =
     mangle_names = check_key options "mangle-names";
     include_dirs= get_keys_values options ["I"; "include"];
     print_flag  = check_keys options ["v"; "verbose"];
+    generate_axiom_checks  = not (check_keys options ["no-check-axioms"]);
     trace       = check_keys options ["trace" ];
     files       = get_key_values options "";
     raw_options = options;

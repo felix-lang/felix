@@ -224,6 +224,9 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       bind_exe (sr,`EXE_call (a,b));
       bind_exe  (sr,`EXE_proc_return)
 
+    | `EXE_call (`AST_name (_,"axiom_check",[]), e2) ->
+       tack (`BEXE_axiom_check(sr,be e2))
+
     | `EXE_call (#suffixed_name_t as sn, e2) -> (* OVERLOADING *)
       let sr = src_of_expr sn in
       let be2,t2 = be e2 in

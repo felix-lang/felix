@@ -166,6 +166,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   *)
   (* TODO: replace with a map *)
   match exe with
+  | `BEXE_axiom_check _ -> assert false
   | `BEXE_call_prim (sr,i,ts,e2) 
   | `BEXE_call_direct (sr,i,ts,e2) 
   | `BEXE_jump_direct (sr,i,ts,e2) 
@@ -211,6 +212,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
     -> ue sr e1; ue sr e2
     
   | `BEXE_assert (sr,e)
+  | `BEXE_assert2 (sr,_,e)
   | `BEXE_loop (sr,_,e)
   | `BEXE_ifgoto (sr,e,_)
   | `BEXE_ifnotgoto (sr,e,_)
