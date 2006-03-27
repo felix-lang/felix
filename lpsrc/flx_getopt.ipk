@@ -206,6 +206,7 @@ let make_syms options =
     quick_names = Hashtbl.create 97;
     bifaces = [];
     reductions = [];
+    axioms = [];
   }
 
 

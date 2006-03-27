@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.174  2006/03/27 01:38:40  skaller
+Add 'axioms': parse and bind (not used yet)
+
 Revision 1.173  2006/03/25 01:27:31  skaller
 Add more stuff to gmp library binding. Start phasing config.
 
@@ -2913,6 +2916,7 @@ cpp_keywords = [
 flx_expr_terminator_keywords = [
     ("all", "ALL"),
     ("assert", "ASSERT"),
+    ("axiom", "AXIOM"),
     ("body", "BODY"),
     ("call", "CALL"),
     ("case", "CASE"),

@@ -648,6 +648,18 @@ reduce idem(x:int): f ( f x ) => f x;
 var x = f(f(f(f(1))));
 print x; endl;
 
+@select(tangler('test/rt25.flx'))
+#import <flx.flxh>
+// HACK!
+const who_cares[t] : int = "#memcount";
+print who_cares[22]; endl;
+
+proc f[t,n] (a:t ^ n) { print who_cares[n]; endl; }
+proc f2[t] (a:t) { print who_cares[t]; endl; }
+var x: double ^ 42;
+f x;
+f2 x;
+
 @select(tangler('test/drt1.flx'))
 // plugin loader test
 #import <flx.flxh>
@@ -915,6 +927,11 @@ W2
 @select(tangler("test/rt24.expect","data"))
 Cheat
 1
+@head(2,"test/rt25.expect")
+@select(tangler("test/rt25.expect","data"))
+22
+42
+42
 @head(2,"test/drt1.expect")
 @select(tangler("test/drt1.expect","data"))
 Starting .. 

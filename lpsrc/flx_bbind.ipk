@@ -216,6 +216,15 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
       if syms.compiler_options.print_flag then
       print_endline ("//bound reduction  " ^ name ^ "<"^si i^">" ^
       print_bvs bvs) 
+
+    | `SYMDEF_axiom (ps,e1) -> 
+      let bps = bind_basic_ps ps in
+      let be1 = be e1 in
+      syms.axioms <- (name,bvs,bps,be1) :: syms.axioms
+      ;
+      if syms.compiler_options.print_flag then
+      print_endline ("//bound axiom " ^ name ^ "<"^si i^">" ^
+      print_bvs bvs) 
  
     | `SYMDEF_function (ps,rt,props,exes) -> 
       let bps = bindps ps in
@@ -251,6 +260,7 @@ let bbind_sym syms bbdfns i {id=name;sr=sr;parent=parent;vs=local_vs;privmap=nam
       | Some ip ->
         match Hashtbl.find syms.dfns ip with
         | {symdef=`SYMDEF_reduce _} 
+        | {symdef=`SYMDEF_axiom _} 
         | {symdef=`SYMDEF_function _} 
         | {symdef=`SYMDEF_regmatch _} 
         | {symdef=`SYMDEF_reglex _} 

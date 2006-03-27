@@ -655,6 +655,31 @@ let rec build_tables syms name level parent grandparent root is_class asms =
           ;
           add_tvars privtab
 
+        | `DCL_axiom (ps,e1) ->
+          let fun_index = n in
+          let ips = ref [] in
+          iter (fun (name,typ) -> 
+            let n = !counter in incr counter;
+            if print_flag then
+            print_endline ("//  "^spc ^ si n ^ " -> " ^ name^ " (parameter)");
+            Hashtbl.add dfns n {
+              id=name;sr=sr;parent=Some fun_index;
+              vs=[];pubmap=null_tab;privmap=null_tab;
+              dirs=[];symdef=`SYMDEF_parameter (typ)
+            };
+            if access = `Public then add_unique pubtab name n;
+            add_unique privtab name n;
+            ips := (name,typ) :: !ips 
+          ) ps
+          ; 
+          Hashtbl.add dfns fun_index {
+            id=id;sr=sr;parent=parent;vs=vs;
+            pubmap=pubtab;privmap=privtab;dirs=dirs;
+            symdef=`SYMDEF_axiom (rev !ips, e1)
+          };
+          ;
+          add_tvars privtab
+
 
         | `DCL_function (ps,t,props,asms) ->   
           let is_ctor =  mem `Ctor props in

@@ -613,6 +613,7 @@ and statement_t =
 
   (* definitions *)
   | `AST_reduce of range_srcref * id_t * vs_list_t * parameter_t list * expr_t * expr_t 
+  | `AST_axiom of range_srcref * id_t * vs_list_t * parameter_t list * expr_t 
   | `AST_function of range_srcref * id_t * vs_list_t * params_t * (typecode_t * expr_t option) * property_t list * statement_t list
   | `AST_curry of range_srcref * id_t * vs_list_t * params_t list * (typecode_t * expr_t option) * funkind_t * statement_t list
   | `AST_object of range_srcref * id_t * vs_list_t * params_t * statement_t list
@@ -773,6 +774,7 @@ type dcl_t =
   [
 
   (* data structures *)
+  | `DCL_axiom of       parameter_t list * expr_t
   | `DCL_reduce of       parameter_t list * expr_t * expr_t
   | `DCL_function of     params_t * typecode_t * property_t list * asm_t list
   | `DCL_union of        (id_t * int option * typecode_t) list
@@ -1029,6 +1031,7 @@ and bbdcl_t =
   ]
 
 and reduction_t = id_t * bvs_t * bparameter_t list * tbexpr_t * tbexpr_t
+and axiom_t = id_t * bvs_t * bparameter_t list * tbexpr_t
 
 and typevarmap_t = (int,btypecode_t) Hashtbl.t
 
@@ -1045,6 +1048,7 @@ type symbol_definition_t =
   | `SYMDEF_parameter of  typecode_t
   | `SYMDEF_typevar of typecode_t (* usually type TYPE *)
 
+  | `SYMDEF_axiom of parameter_t list * expr_t
   | `SYMDEF_reduce of parameter_t list * expr_t * expr_t
   | `SYMDEF_function of params_t * typecode_t * property_t list * sexe_t list
 
@@ -1814,6 +1818,7 @@ let src_of_stmt e = match e with
   | `AST_init (s,_,_)
   | `AST_function (s,_, _, _ , _, _, _)
   | `AST_reduce (s,_, _, _ , _, _)
+  | `AST_axiom (s,_, _, _ , _)
   | `AST_curry (s,_, _, _ , _, _,_)
   | `AST_object (s,_, _, _ , _)
   | `AST_macro_name (s, _,_)
@@ -3207,6 +3212,13 @@ and string_of_statement level s =
     string_of_expr rsrc ^ " => " ^ string_of_expr rdst ^
     ";\n"
 
+  | `AST_axiom (_,name, vs, ps, rsrc) -> 
+    spaces level ^ 
+    "axiom " ^ name ^ print_vs vs ^ 
+    "("^string_of_basic_parameters ps^"): "^
+    string_of_expr rsrc ^ 
+    ";\n"
+
   | `AST_function (_,name, vs, ps, (res,post), props, ss) -> 
     spaces level ^ 
     string_of_properties props ^
@@ -3602,6 +3614,9 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t)
     
   | `SYMDEF_reduce (ps,e1,e2) ->
     "reduce " ^ name ^ print_ivs vs ^ ";"
+
+  | `SYMDEF_axiom (ps,e1) ->
+    "axiom " ^ name ^ print_ivs vs ^ ";"
 
   | `SYMDEF_function (ps,res,props, es) -> 
     let ps,traint = ps in
@@ -4034,6 +4049,12 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     "reduce " ^ name^seq ^ print_vs vs ^
     "("^ string_of_basic_parameters ps ^"): " ^
     string_of_expr e1 ^ " => " ^ string_of_expr e2 ^ ";"
+
+  | `DCL_axiom (ps, e1) -> 
+    spaces level ^ 
+    "axiom " ^ name^seq ^ print_vs vs ^
+    "("^ string_of_basic_parameters ps ^"): " ^
+    string_of_expr e1 ^ ";"
 
   | `DCL_function (ps, res, props, ss) -> 
     spaces level ^ 
@@ -4473,6 +4494,7 @@ type sym_state_t =
   quick_names : (string, (int * btypecode_t list)) Hashtbl.t;
   mutable bifaces : biface_t list;
   mutable reductions : reduction_t list;
+  mutable axioms: axiom_t list;
 }
 
 module VarMap = StringMap
@@ -4559,6 +4581,7 @@ type sym_state_t =
   quick_names : (string, (int * btypecode_t list)) Hashtbl.t;
   mutable bifaces : biface_t list;
   mutable reductions : reduction_t list;
+  mutable axioms : axiom_t list;
 }
 
 
