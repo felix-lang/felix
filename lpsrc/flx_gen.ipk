@@ -2828,6 +2828,7 @@ try
   if compiler_options.print_flag 
   then print_endline "//OPTIMISING";
   let () = Flx_use.find_roots syms bbdfns root_proc syms.bifaces in
+  let bbdfns = Flx_use.copy_used syms bbdfns in
   let child_map = cal_children syms bbdfns in
 
   if compiler_options.max_inline_length > 0 then
@@ -2838,6 +2839,27 @@ try
     if compiler_options.print_flag then
     print_endline "//INLINING";
 
+    syms.reductions <- List.filter 
+    (fun (id,bvs,bps,e1,_) ->
+      let psi = List.map (fun (_,(i,_)) -> i) bps in
+      let ui i = 
+        let used = List.mem i psi or Hashtbl.mem bbdfns i in
+        if not used then begin
+          if compiler_options.print_flag then
+          print_endline ("ELIDING USELESS REDUCTION " ^ id ^ " because " ^ si i ^ " isn't found");
+          raise Not_found
+        end
+      in
+      begin 
+        try
+          Flx_maps.iter_tbexpr ui ignore ignore e1;
+          true
+        with 
+        | Not_found -> false
+      end
+    )
+    syms.reductions
+    ;
     Flx_inline.heavy_inlining syms (child_map,bbdfns);
     (*
     print_endline "INLINING DONE";

@@ -22,6 +22,14 @@ val uses_type:
   btypecode_t -> 
   unit
 
+val uses_tbexpr:
+  sym_state_t ->
+  IntSet.t ref ->
+  fully_bound_symbol_table_t ->
+  bool -> (* count inits *)
+  tbexpr_t ->
+  unit
+
 val uses:
   sym_state_t ->
   IntSet.t ref ->

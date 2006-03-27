@@ -2162,19 +2162,9 @@ and heavily_inline_bbdcl syms (uses,child_map,bbdfns) excludes i =
 let heavy_inlining syms  
   (child_map,bbdfns)
 =
-  (* make set of used things, initially empty *)
-  (*
-  let used = ref (Flx_use.full_use_closure syms bbdfns) in
-  *)
   let used = ref (!(syms.roots)) in
   let (uses,usedby) = Flx_call.call_data syms bbdfns in
 
-  (*
-  Hashtbl.iter
-  (fun i u -> print_endline (si i ^ "= " ^ catmap ", " (fun (j,_)->si j) u))
-  uses
-  ;
-  *)
   while not (IntSet.is_empty !used) do
     let i = IntSet.choose !used in
     used := IntSet.remove i !used;
