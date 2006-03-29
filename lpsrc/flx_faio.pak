@@ -1,6 +1,9 @@
 @head(1,"Faio")
 Asynch I/O interface pack.
 $Log$
+Revision 1.12  2006/03/29 23:18:13  rfistman
+WIP: flx_stream (i.e. portable) version of accept/create listener
+
 Revision 1.11  2006/03/25 01:27:31  skaller
 Add more stuff to gmp library binding. Start phasing config.
 
@@ -1907,7 +1910,57 @@ union flx_stream =
 
 ;
 
+#if POSIX
 
+// make a union... ? I'd prefer a type rename - int on posix, SOCKET on win.
+
+// type flx_listener = "int";	// unix socket
+// typedef flx_listener = flx_stream;
+// #define flx_listener flx_stream
+
+proc mk_flx_listener(l: &flx_stream, port: &int, qlen: int)
+{
+  // error checking?
+  var listener: int <- mk_listener(*port, qlen);
+  *l = USOCK listener;
+}
+
+proc flx_accept(l: flx_stream, ss: &flx_stream)
+{
+  var s: int;
+  // accept (&s, l);  // async!
+  // *ss = USOCK s;
+
+  match l with
+  | USOCK ?lfd => { accept(&s, lfd); *ss = USOCK s; }
+  endmatch; 
+}
+
+#elif WIN32
+
+// type flx_listener = "SOCKET";
+
+proc mk_flx_listener(l: &flx_listener, port: &int, qlen: int)
+{
+  // error checking?
+  var listener: SOCKET;
+  mk_listener(&listener, port, qlen);
+  *l = listener;
+}
+
+proc flx_accept(l: flx_listener, ss: &flx_stream)
+{
+  var s: SOCKET;
+  var success: bool;
+  // for async accept on win32 you create the accept socket yourself
+  mk_socket(&s);  // error check?
+
+  // could do something with success flag
+  Accept(&success, listener, s);
+  *ss = WSOCK s;
+}
+
+#endif
 
 // will be ambiguous for file fd, will need name. do I even need these
 // when the conversion is unambiguous?
@@ -2116,6 +2169,30 @@ proc tee(infd: flx_stream, outfd: flx_stream, outfd2: flx_stream)
 
 
 @head(1,"Felix Async IO tests")
+
+@h = tangler("test/posix_t0.flx")
+@select(h)
+// not sure what to call this to get it called.
+// it's not posix, it's portable (or should be)
+#import <flx.flxh>
+include "flx_stream";
+open Flx_stream;
+
+print "flx tcp stream test\n";
+
+var listener: flx_stream;
+// var port = 0;  // you choose
+var port = 1024;
+
+mk_flx_listener(&listener, &port, 1);
+// print "Got port: "; print port; endl;
+// print "accepting\n";
+
+// var s: flx_stream;
+// flx_accept(listener, &s);
+
+// print "got connection\n";
+
 @h = tangler("test/posix_t1.flx")
 @select(h)
 #import <flx.flxh>
@@ -2236,6 +2313,9 @@ if success then {
 #import <flx.flxh>
 print 1; endl;
 
+@h = tangler("test/posix_t0.expect","data")
+@select(h)
+flx tcp stream test
 @h = tangler("test/posix_t1.expect","data")
 @select(h)
 felix posix accept/connect test
