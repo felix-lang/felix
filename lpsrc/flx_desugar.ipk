@@ -401,7 +401,8 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let ts = Flx_cformat.types_of_cformat_string sr s in
     let ss = Flx_print.string_of_string s in
     let fs = "flx::rtl::strutil::flx_asprintf("^ss^",$a)" in
-    let f = `DCL_fun([],ts,str,`StrTemplate fs,[],"primary") in
+    let req = `AST_name (sr,"flx_strutil",[]) in
+    let f = `DCL_fun([],ts,str,`StrTemplate fs,[req],"primary") in
     let x=`AST_index (sr,id,ix) in
     [
       Dcl (sr,id,Some ix,`Private,[],f);
