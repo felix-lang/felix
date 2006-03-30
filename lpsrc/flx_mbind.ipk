@@ -87,6 +87,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
      name the types of the arguments now)
   *)
   match e with
+  | `AST_vsprintf _
   | `AST_type_match _ 
   | `AST_noexpand _ 
   | `AST_letin _ 

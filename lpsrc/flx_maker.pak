@@ -6,6 +6,9 @@
 
 @head(2,'CVS LOG')
 $Log$
+Revision 1.38  2006/03/30 01:59:29  skaller
+Add C prinf formatting stuff
+
 Revision 1.37  2006/03/27 16:43:04  skaller
 Add axiom_check pseudo function for checking axioms.
 
@@ -877,6 +880,7 @@ FLX_MODULES = [
   'src/flx_dfa'          ,
   'src/flx_pat'          , 
   'src/flx_macro'        , 
+  'src/flx_cformat'      , 
   'src/flx_desugar'      , 
   'src/flx_mbind'        , 
   'src/flx_symtab'       , 
@@ -991,7 +995,7 @@ def plugin():
     MAN_PAGES = []
     for i in mp:
       MAN_PAGES.append (i[9:])
-    try: os.mkdir("htmlman")
+    try: os.mkdir("doc/htmlman")
     except: pass
     dtd = ('<!DOCTYPE HTML PUBLIC \\"-//W3C//DTD HTML 4.0 Transitional//EN\\"\\n'+
       '  \\"http://www.w3.org/TR/REC-html40/loose.dtd\\">')
@@ -1004,7 +1008,7 @@ def plugin():
           '| sed -e "7d"' +
           '| sed -e "1,3d"' +
           '| sed -e "s%<html>%'+dtd+'\\n<html>%"' +
-          ' >' + "htmlman/" + basename+'_1.html'
+          ' >' + "doc/htmlman/" + basename+'_1.html'
         )
     except:pass
   
@@ -2750,7 +2754,7 @@ We have no idea if it continues copying.
 @tangle('\trm -rf elk tmp faio demux tmp.out')
 @tangle('\trm -rf flxcc_out c89 c99 cxx gnu89 gnu99 gnucxx cxx_sys')
 @tangle('\trm -rf bagley')
-@tangle('\trm -rf doc_out libdoc tools')
+@tangle('\trm -rf doc_out libdoc tools doxydoc')
 @tangle('\trm -rf meta licences')
 @tangle('\trm -rf lpsrc/*.cache')
 @tangle('\trm -rf interscript/*.pyo')

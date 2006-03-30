@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.29  2006/03/30 01:59:30  skaller
+Add C prinf formatting stuff
+
 Revision 1.28  2006/03/27 16:43:04  skaller
 Add axiom_check pseudo function for checking axioms.
 
@@ -285,6 +288,7 @@ RTL_CPPS = [
   "rtl/flx_sync",
   "rtl/flx_i18n",
   "rtl/flx_ioutil",
+  "rtl/flx_strutil",
   "rtl/flx_main",
 ]
 

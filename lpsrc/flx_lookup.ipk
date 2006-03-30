@@ -2844,6 +2844,7 @@ and bind_expression' syms env (rs:recstop) e args
   *)
   let sr = src_of_expr e in
   match e with
+  | `AST_vsprintf _
   | `AST_type_match _ 
   | `AST_noexpand _
   | `AST_letin _ 

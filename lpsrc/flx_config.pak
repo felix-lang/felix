@@ -4,7 +4,7 @@
 @flx_version_major = '1'
 @flx_version_minor = '1'
 @flx_version_patch = '2'
-@flx_version_release = '_rc6'
+@flx_version_release = '_rc7'
 @flx_version = flx_version_major+'.'+flx_version_minor+'.'+flx_version_patch+flx_version_release
 @godi_revision = '0'
 @debian_revision = '1'
@@ -12,6 +12,9 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.175  2006/03/30 01:59:29  skaller
+Add C prinf formatting stuff
+
 Revision 1.174  2006/03/27 01:38:40  skaller
 Add 'axioms': parse and bind (not used yet)
 

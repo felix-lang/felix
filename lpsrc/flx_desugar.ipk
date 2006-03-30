@@ -394,6 +394,19 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
 
   | `AST_expr _ -> [],e
 
+  | `AST_vsprintf (sr,s) ->
+    let ix = seq () in
+    let id = si ix in
+    let str = `AST_name (sr,"string",[]) in
+    let ts = Flx_cformat.types_of_cformat_string sr s in
+    let ss = Flx_print.string_of_string s in
+    let fs = "flx::rtl::strutil::flx_asprintf("^ss^",$a)" in
+    let f = `DCL_fun([],ts,str,`StrTemplate fs,[],"primary") in
+    let x=`AST_index (sr,id,ix) in
+    [
+      Dcl (sr,id,Some ix,`Private,[],f);
+    ],x
+    
   | `AST_cond (sr,(e,b1,b2)) ->
      rex 
      (
@@ -538,6 +551,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     `AST_apply(sr,(`AST_index(sr,fname,n),pp))
 
   | `AST_string_regmatch (sr,(s,cls)) ->
+    let l1,s = rex s in
     let ssr = src_of_expr s in
     let vix = seq() in
     let vid = "_me_" ^ si vix in
@@ -555,14 +569,14 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
         `AST_regmatch (sr,(a,b,cls)))
       )
     in 
-      let l,x = rex r in
+      let l2,x = rex r in
       let d1 =  
         Dcl (ssr,vid,Some vix,`Private,[], `DCL_var (`TYP_typeof(s)))
       in 
       let d2 =
         Exe (ssr,`EXE_iinit ((vid, vix),s))
       in
-      d1 :: d2 :: l, x
+      d1 :: d2 :: l1 @ l2, x
 
 
   | `AST_reglex (sr,(p1,p2,cls')) ->

@@ -44,7 +44,7 @@ failure_tests = BAD_TESTS
 pkg_requires = ['flx_compiler','flx_drivers']
 iscr_source = ['lpsrc/flx_regress.pak']
 
-weaver_directory = 'doc/test'
+weaver_directory = 'doc/test/'
 
 
 @head(2,'Good tests')

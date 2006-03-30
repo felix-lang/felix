@@ -104,10 +104,12 @@ namespace flx { namespace rtl { namespace ioutil {
 
 }}}
 
-@h=tangler('rtl/flx_strutil.cpp')
+@h=tangler('rtl/flx_strutil.hpp')
 @select(h)
 #include <string>
 #include <sstream>
+#include <stdarg.h>
+
 #include "flx_rtl_config.hpp"
 
 //RF: was only to commented out to fix macosx problem,
@@ -158,6 +160,19 @@ namespace flx { namespace rtl { namespace strutil {
     return x.str();
   }
 
+  string atostr(char const *a);
+  string ltrim(string const &x);
+  string rtrim(string const &x);
+  string flx_asprintf(char *fmt,...);
+
+}}}
+
+@h=tangler('rtl/flx_strutil.cpp')
+@select(h)
+#include "flx_strutil.hpp"
+
+namespace flx { namespace rtl { namespace strutil {
+
   string atostr(char const *a) {
     if(a) return a;
     else return "";
@@ -178,7 +193,21 @@ namespace flx { namespace rtl { namespace strutil {
      if(x[i-1]>' ')break;
    return x.substr(0,i);
  }
-  
+
+  string flx_asprintf(char *fmt,...){
+    va_list ap;
+    va_start(ap,fmt);
+    int n = vsnprintf(NULL,0,fmt,ap);
+    va_end(ap);
+    char *res = (char*)malloc(n+1);
+    va_start(ap,fmt);
+    vsnprintf(res,n+1,fmt,ap);
+    va_end(ap);
+    string s = string(res);
+    free(res);
+    return s;
+  }
+
 }}}
 
 @h=tangler('lib/flx_categories.flxh')
@@ -376,7 +405,7 @@ header flx_i18n = '#include "flx_i18n.hpp"';
 // separate compilation of templates but most
 // compilers as at 2004 don't implement it)
 
-header flx_strutil = '#include "flx_strutil.cpp"';
+header flx_strutil = '#include "flx_strutil.hpp"';
 
 header cctype_hxx = '#include <cctype>';
 header string_hxx = '#include <string>';
@@ -1294,6 +1323,9 @@ module String
 
   fun repr_expr[t]: t -> string = '\\"$a:?1\\"';
   const repr_type[t]:string = '\\"?1\\"';
+  fun vsprintf[t]: C_hack::ptr[char] * t -> string = 
+    "flx::rtl::strutil::flx_asprintf($1,$T2)" requires flx_strutil
+  ;
 }
 
 module Cstdlib

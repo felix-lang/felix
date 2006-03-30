@@ -244,6 +244,7 @@ Flx_version.version_data := version_data
 @include_file ('flx_pat.ipk')
 @include_file ('flx_constfld.ipk')
 @include_file ('flx_macro.ipk')
+@include_file ('flx_cformat.ipk')
 @include_file ('flx_desugar.ipk')
 @include_file ('flx_symtab.ipk')
 @include_file ('flx_beta.ipk')

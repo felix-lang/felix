@@ -2513,6 +2513,69 @@ print
 ); endl;
 
 
+@head(2,'Axioms and Reductions')
+Felix allows you to specify rewriting rules called reductions.
+For example:
+@begin_displayed_code()
+  reduce idem(x:int): f ( f x ) => f x;
+@end_displayed_code()
+Specifies f is idempotent, and f(f(x)) should be reduced to just f(x).
+Reductions are performed after inlining, and applied repeatly to all
+expressions until code is fully reduced. The name of a reduction
+is not significiant, it is for documentation only. Of course,
+reductions can be polymorphic.
+@p()
+Axioms are statements of laws, for example
+@begin_displayed_code()
+  axiom symmetry (x:int,y:int): x + y == y + x;
+@end_displayed_code()
+states that integer addition is symmetric. Axioms
+can be checked by providing test cases via calls
+to the pseudo function 'axiom_check'.
+@begin_displayed_code()
+  var i:int; forall i in 1 upto 5 do axiom_check (i,2); done;
+@end_displayed_code()
+Axiom checks can be disable by the flxg compiler switch
+@begin_displayed_code()
+  --no-axiom-checks
+@end_displayed_code()
+otherwise every axiom is matched against every test case,
+and each on the matches generates an assertion. An error
+is printed and the program aborted if any check fails.
+
+@select(tangler(tdir+'tut_beg157a.flx'))
+#import <flx.flxh>
+
+noinline fun f(x:int):int = { print "Cheat"; endl; return x; }
+
+reduce idem(x:int): f ( f x ) => f x;
+
+var x = f(f(f(f(1))));
+print x; endl;
+
+axiom symmetry (x:int,y:int): x + y == y + x;
+axiom associativity (x:int, y:int, z:int): (x + y) + z == x + (y + z);
+reduce additive_unit(x:int): x + 0 => x;
+reduce multiplicative_unit(x:int): x * 0 => 0;
+reduce additive_unit(x:int): 0 + x => x;
+reduce multiplicative_unit(x:int): 0 * x=> 0;
+
+//axiom wrong(x:int,y:int): x == y;
+fun hh(x:int)=>x;
+
+reduce silly (x:int): hh x => x;
+
+axiom_check (1,2,3);
+
+var i:int; forall i in 1 upto 5 do axiom_check (i,2); done;
+
+axiom poly[t] ( sym:t * t -> t, eq:t * t-> bool, x:t, y:t): 
+  sym(x,y) == sym(y,x)
+;
+
+// this axiom is only right if 'add' is symmetric
+axiom_check (add of (int * int), eq of (int * int), 1,2);
+
 @doc()
 @head(2,'Standard types and Lexemes')
 Here is a more comprehensive set of examples
@@ -5463,6 +5526,10 @@ finished
 @head(2,"tut/examples/tut_beg157.expect")
 @select(tangler("tut/examples/tut_beg157.expect","data"))
 2
+@head(2,"tut/examples/tut_beg157a.expect")
+@select(tangler("tut/examples/tut_beg157a.expect","data"))
+Cheat
+1
 @head(2,"tut/examples/tut_beg158.expect")
 @select(tangler("tut/examples/tut_beg158.expect","data"))
 @head(2,"tut/examples/tut_beg159.expect")

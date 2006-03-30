@@ -383,6 +383,7 @@ Raw expression terms.
 @select(h)
 and expr_t =
   [
+  | `AST_vsprintf of range_srcref * string
   | `AST_map of range_srcref * expr_t * expr_t
   | `AST_noexpand of range_srcref * expr_t
   | `AST_name of range_srcref * string * typecode_t list 
@@ -1227,6 +1228,7 @@ let map_type f = function
   | x -> x
 
 let map_expr f (e:expr_t):expr_t = match e with
+  | `AST_vsprintf _ -> e
   | `AST_map (sr,a,b) -> `AST_map (sr,f a, f b)
   | `AST_noexpand (sr,x) -> e (* DO NOT EXPAND .. HMM .. *)
   | `AST_name _ -> e
@@ -1767,6 +1769,7 @@ let src_of_suffixed_name (e : suffixed_name_t) = match e with
 
 let src_of_expr (e : expr_t) = match e with
   | #suffixed_name_t as x -> src_of_suffixed_name x
+  | `AST_vsprintf (s,_)
   | `AST_ellipsis (s)
   | `AST_noexpand (s,_)
   | `AST_product (s,_)
@@ -2076,6 +2079,7 @@ val print_ivs: ivs_list_t -> string
 val print_ivs_with_index: ivs_list_t -> string
 
 val string_of_ast_term: int -> ast_term_t -> string
+val string_of_string: string -> string
 
 @h = tangler('src/flx_print.ml')
 @select(h)
@@ -2186,8 +2190,9 @@ and string_of_expr (e:expr_t) =
   in
   match e with
   | #suffixed_name_t as n -> string_of_suffixed_name n
+  | `AST_vsprintf (sr,s) -> "f"^string_of_string s
   | `AST_ellipsis _ -> "..."
-  | `AST_noexpand (sr,e) -> "$(" ^ string_of_expr e ^ ")"
+  | `AST_noexpand (sr,e) -> "noexpand(" ^ string_of_expr e ^ ")"
 
   | `AST_letin (sr,(pat,e1, e2)) ->
     "let " ^ string_of_letpat pat ^ " = " ^ se e1 ^ " in " ^ se e2

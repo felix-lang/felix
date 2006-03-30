@@ -158,6 +158,7 @@ let mktypefun sr name vs args return_type body =
 %token<Flx_ast.srcref * string * string > FLOAT
 %token<Flx_ast.srcref * string> STRING
 %token<Flx_ast.srcref * string> CSTRING
+%token<Flx_ast.srcref * string> FSTRING
 %token<Flx_ast.srcref * string> WSTRING
 %token<Flx_ast.srcref * string> USTRING
 %token<Flx_ast.srcref * string> USER_KEYWORD
@@ -2869,6 +2870,13 @@ atom:
   | LPAR RPAR           { `AST_tuple (rstoken $1 $2,[]) }
   | literal             { $1 }
   | cond                { $1 }
+  | FSTRING             
+    { 
+      let sr,s = $1 in 
+      let sr = slift sr in 
+      `AST_vsprintf (sr,s) 
+    }
+    
   | USERLB expr USERRB  
     {
       let sr1,fnmap,lsym =$1 and sr2,rsym = $3 in

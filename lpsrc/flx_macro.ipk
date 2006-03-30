@@ -258,6 +258,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   (* Expansion block: don't even fold constants *)
   | `AST_noexpand _ -> e 
+  | `AST_vsprintf _ -> e
 
   (* and desugaring: x and y and z and ... *)
   | `AST_andlist (sr, es) ->  

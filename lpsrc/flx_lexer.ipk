@@ -18,6 +18,7 @@ let string_of_token (tok :Flx_parse.token): string =
   | FLOAT (sr,t,v) -> v
   | STRING (sr,s) -> Flx_string.c_quote_of_string s 
   | CSTRING (sr,s) -> Flx_string.c_quote_of_string s 
+  | FSTRING (sr,s) -> Flx_string.c_quote_of_string s 
   | WSTRING (sr,s) -> Flx_string.c_quote_of_string s 
   | USTRING (sr,s) -> Flx_string.c_quote_of_string s 
   | USER10 (sr,op,fn) -> "op10 " ^ op
@@ -58,6 +59,7 @@ let name_of_token (tok :Flx_parse.token): string =
   | FLOAT (sr,t,v) -> "FLOAT"
   | STRING (sr,s) -> "STRING"
   | CSTRING (sr,s) -> "CSTRING"
+  | FSTRING (sr,s) -> "FSTRING"
   | WSTRING (sr,s) -> "WSTRING"
   | USTRING (sr,s) -> "USTRING"
   | USER10 (sr,op,f) -> "USER10"
@@ -106,6 +108,7 @@ let src_of_token t = match t with
   | FLOAT   (s,_,_)
   | STRING  (s,_)
   | CSTRING  (s,_)
+  | FSTRING  (s,_)
   | WSTRING  (s,_)
   | USTRING  (s,_)
   | USER10 (s,_,_)
@@ -1602,6 +1605,69 @@ and parse_dddstring state = parse
     )] 
   }
 
+and parse_fqstring state = parse
+| qstring { 
+      state#inbody;
+      [FSTRING (
+        state#get_srcref lexbuf, 
+        state#decode decode_qstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+    [ERRORTOKEN (
+      state#get_srcref lexbuf, 
+      "' string"
+    )] 
+  }
+
+and parse_fdstring state = parse
+| dstring {
+      state#inbody;
+      [FSTRING (
+        state#get_srcref lexbuf, 
+        state#decode decode_dstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+    state#inbody; 
+    [ERRORTOKEN (
+      state#get_srcref lexbuf, 
+      "\" string"
+    )]
+  }
+
+and parse_fqqqstring state = parse
+| qqqstring { 
+      state#inbody;
+      [FSTRING (
+        state#get_srcref lexbuf, 
+        state#decode decode_qqqstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+    state#inbody;
+    [ERRORTOKEN (
+      state#get_srcref lexbuf, 
+      "''' string"
+    )] 
+  }
+
+and parse_fdddstring state = parse
+| dddstring { 
+      state#inbody;
+      [FSTRING (
+        state#get_srcref lexbuf,
+        state#decode decode_dddstring (lexeme lexbuf)
+      )] 
+  }
+| _ { 
+    state#inbody;
+    [ERRORTOKEN (
+      state#get_srcref lexbuf,
+      "\"\"\" string"
+    )] 
+  }
+
 and parse_cqstring state = parse
 | qstring { 
       state#inbody;
@@ -2068,6 +2134,12 @@ and pre_flx_lex state = parse
 | ('c'|'C') qqq    { state#inbody; parse_cqqqstring state lexbuf }
 | ('c'|'C') dquote { state#inbody; parse_cdstring state lexbuf }
 | ('c'|'C') ddd    { state#inbody; parse_cdddstring state lexbuf }
+
+(* Format strings *)
+| ('f'|'F') quote  { state#inbody; parse_fqstring state lexbuf }
+| ('f'|'F') qqq    { state#inbody; parse_fqqqstring state lexbuf }
+| ('f'|'F') dquote { state#inbody; parse_fdstring state lexbuf }
+| ('f'|'F') ddd    { state#inbody; parse_fdddstring state lexbuf }
 
 (* wide strings *)
 | ('w' | 'W') quote  { state#inbody; parse_wqstring state lexbuf }

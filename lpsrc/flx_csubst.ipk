@@ -343,8 +343,12 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
                 *)
                 bcat s';
                 mode := Normal;
-               trans i ch
-            with Not_found -> serr i "Varargs requires  literal tuple"
+                trans i ch
+            with Not_found -> 
+              (* serr i "Varargs requires  literal tuple" *)
+              bcat s';
+              mode := Normal;
+              trans i ch
           end
        end
 
