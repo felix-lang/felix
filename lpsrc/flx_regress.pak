@@ -641,6 +641,7 @@ k px;
 // the noinline is needed because reductions are
 // currently applies AFTER inlining. Hmm.
 
+
 noinline fun f(x:int):int = { print "Cheat"; endl; return x; }
 
 reduce idem(x:int): f ( f x ) => f x;
@@ -648,9 +649,34 @@ reduce idem(x:int): f ( f x ) => f x;
 var x = f(f(f(f(1))));
 print x; endl;
 
+axiom symmetry (x:int,y:int): x + y == y + x;
+axiom associativity (x:int, y:int, z:int): (x + y) + z == x + (y + z);
+reduce additive_unit(x:int): x + 0 => x;
+reduce multiplicative_unit(x:int): x * 0 => 0;
+reduce additive_unit(x:int): 0 + x => x;
+reduce multiplicative_unit(x:int): 0 * x=> 0;
+
+//axiom wrong(x:int,y:int): x == y;
+fun hh(x:int)=>x;
+
+reduce silly (x:int): hh x => x;
+
+axiom_check (1,2,3);
+
+var i:int; forall i in 1 upto 5 do axiom_check (i,2); done;
+
+axiom poly[t] ( sym:t * t -> t, eq:t * t-> bool, x:t, y:t): 
+  sym(x,y) == sym(y,x)
+;
+
+axiom_check (add of (int * int), eq of (int * int), 1,2);
+
 @select(tangler('test/rt25.flx'))
 #import <flx.flxh>
 // HACK!
+// NOTE: who_cares is now in the library! 
+// See Typing::memcount.
+//
 const who_cares[t] : int = "#memcount";
 print who_cares[22]; endl;
 

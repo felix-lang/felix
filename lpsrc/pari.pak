@@ -1,0 +1,1977 @@
+@head(1,"pari")
+@select(tangler("cpkgs/target/pari.py"))
+execfile("config"+os.sep+"config.py")
+try:
+  cload(globals(),"target_pari")
+except:
+  HAVE_PARI=TARGET_CXX.check_header_exists(xqt,'pari.h')
+  f=cwrite('target_pari')
+  pa(f,locals(),"HAVE_PARI")
+  f.close()
+  cload(globals(),"target_pari")
+
+
+@h = tangler('spkgs/pari.py')
+@select(h)
+execfile("cpkgs"+os.sep+"target"+os.sep+"pari.py")
+if HAVE_PARI:
+  iscr_source = ['lpsrc/pari.pak']
+  weaver_directory = 'doc/rtl/pari/'
+
+@h = tangler('config/pari.fpc')
+@select(h)
+provides_dlib: -lpari
+provides_slib: -lpari
+
+@h = tangler("lib/pari/paricom_lib.flx")
+@select(h)
+
+//Module        : paricom_h
+//Timestamp     : 2006/4/5 6:8:55 UTC
+//Timestamp     : 2006/4/5 16:8:55 (local)
+//Raw Header    : paricom.h
+//Preprocessor  : gcc -E
+//Input file: pari.flxcc.i
+//Flxcc Control : pari.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define cmp_C   8
+//#define cmp_REV 4
+//#define cmp_LEX 2
+//#define cmp_IND 1
+//#define typ_GAL  9 /* galoisinit     */
+//#define typ_QUA  8 /* quadclassunit  */
+//#define typ_ELL  7 /* elliptic curve */
+//#define typ_CLA  6 /* bnfclassunit   */
+//#define typ_BNR  5
+//#define typ_BNF  4
+//#define typ_NF   3
+//#define typ_Q    2
+//#define typ_POL  1
+//#define typ_NULL 0
+//#define buchinitfu(P,gcbach,gcbach2,prec) (\
+//#define buchinit(P,gcbach,gcbach2,prec) (\
+//#define buchgenfu(P,gcbach,gcbach2,prec) (\
+//#define buchgen(P,gcbach,gcbach2,prec) (\
+//#define element_sqrmodpr(nf,x,prhall) (\
+//#define element_sqrmodidele(nf,x,idele,structarch) (\
+//#define element_sqrmodideal(nf,x,ideal) (\
+//#define element_mulmodpr(nf,x,y,prhall) (\
+//#define element_mulmodidele(nf,x,y,idele,structarch) (\
+//#define element_mulmodideal(nf,x,y,ideal) (\
+//#define element_divmodideal(nf,x,y,ideal) (\
+//#define invmat(a) (gauss((a),NULL))
+//#define idealdivlll(nf,x,y) (idealoplll(idealdiv,(nf),(x),(y)))
+//#define idealmullll(nf,x,y) (idealoplll(idealmul,(nf),(x),(y)))
+//#define lift_intern(x) (lift_intern0((x),-1))
+//#define leadingcoeff(x) (pollead((x),-1))
+//#define subres(x,y) (subresall((x),(y),NULL))
+//#define carreparfait(x) (carrecomplet((x),NULL))
+//#define sturm(x) (sturmpart((x),NULL,NULL))
+//#define matpascal(n) matqpascal((n),NULL)
+//#define Fp_res(x,y,p) (Fp_poldivres((x),(y),(p), ONLY_REM))
+//#define Fp_deuc(x,y,p) (Fp_poldivres((x),(y),(p), NULL))
+//#define gres(x,y) (poldivres((x),(y),ONLY_REM))
+//#define gdeuc(x,y) (poldivres((x),(y),NULL))
+//#define ONLY_DIVIDES_EXACT ((GEN*)0x3L)
+//#define ONLY_DIVIDES ((GEN*)0x2L)
+//#define ONLY_REM ((GEN*)0x1L)
+//#define mpodd(x) (signe(x) && mod2(x))
+//#define odd(x) ((x) & 1)
+//#define leading_term(x) ((GEN)(((GEN)(x))[lgef(x)-1]))
+//#define is_bigint(n) ((lgefint(n)>3) || \
+//#define is_pm1(n)    ((lgefint(n)==3) && (((GEN)(n))[2]==1))
+//#define mod2(x)   (((x)[lgefint(x)-1]) & 1)
+//#define mod4(x)   (((x)[lgefint(x)-1]) & 3)
+//#define mod8(x)   (((x)[lgefint(x)-1]) & 7)
+//#define mod16(x)  (((x)[lgefint(x)-1]) & 15)
+//#define mod32(x)  (((x)[lgefint(x)-1]) & 31)
+//#define mod64(x)  (((x)[lgefint(x)-1]) & 63)
+//#define bern(i)       (bernzone + 3 + (i)*bernzone[2])
+//#define gshiftz(x,s,z)  (gops2gsz(gshift,(x),(s),(z)))
+//#define gmulsgz(s,y,z)  (gops2sgz(gmulsg,(s),(y),(z)))
+//#define gmulgsz(y,s,z)  (gops2sgz(gmulsg,(s),(y),(z)))
+//#define gmul2nz(x,s,z)  (gops2gsz(gmul2n,(x),(s),(z)))
+//#define gdivgsz(y,s,z)  (gops2gsz(gdivgs,(y),(s),(z)))
+//#define gsubgsz(y,s,z)    (gopgs2z(gsub,(y),(s),(z)))
+//#define gmodgsz(y,s,z)    (gopgs2z(gmod,(y),(s),(z)))
+//#define gmingsz(y,s,z)    (gopgs2z(gmin,(y),(s),(z)))
+//#define gmaxgsz(y,s,z)    (gopgs2z(gmax,(y),(s),(z)))
+//#define gdiventgsz(y,s,z) (gopgs2z(gdivent,(y),(s),(z)))
+//#define gsubsgz(s,y,z)    (gopsg2z(gsub,(s),(y),(z)))
+//#define gmodsgz(s,y,z)    (gopsg2z(gmod,(s),(y),(z)))
+//#define gminsgz(s,y,z)    (gopsg2z(gmin,(s),(y),(z)))
+//#define gmaxsgz(s,y,z)    (gopsg2z(gmax,(s),(y),(z)))
+//#define gdivsgz(s,y,z)    (gopsg2z(gdiv,(s),(y),(z)))
+//#define gdiventsgz(s,y,z) (gopsg2z(gdivent,(s),y),(z)))
+//#define gaddsgz(s,y,z)    (gopsg2z(gadd,(s),(y),(z)))
+//#define gaddgsz(y,s,z)    (gopsg2z(gadd,(s),(y),(z)))
+//#define gegalgs(y,s)    (opgs2(gegal,(y),(s)))
+//#define gegalsg(s,y)    (opgs2(gegal,(y),(s)))
+//#define gcmpgs(y,s)     (opgs2(gcmp,(y),(s)))
+//#define gcmpsg(s,y)     (-opgs2(gcmp,(y),(s)))
+//#define gsubgs(y,s)     (gopgs2(gsub,(y),(s)))
+//#define gmodgs(y,s)     (gopgs2(gmod,(y),(s)))
+//#define gmings(y,s)     (gopgs2(gmin,(y),(s)))
+//#define gmaxgs(y,s)     (gopgs2(gmax,(y),(s)))
+//#define gdiventgs(y,s)  (gopgs2(gdivent,(y),(s)))
+//#define gsubsg(s,y)     (gopsg2(gsub,(s),(y)))
+//#define gmodsg(s,y)     (gopsg2(gmod,(s),(y)))
+//#define gminsg(s,y)     (gopsg2(gmin,(s),(y)))
+//#define gmaxsg(s,y)     (gopsg2(gmax,(s),(y)))
+//#define gdivsg(s,y)     (gopsg2(gdiv,(s),(y)))
+//#define gdiventsg(s,y)  (gopsg2(gdivent,(s),(y)))
+//#define gaddsmat(s,y)   (gopsg2(gaddmat,(s),(y)))
+//#define gaddsg(s,y)     (gopsg2(gadd,(s),(y)))
+//#define gaddgs(y,s)     (gopsg2(gadd,(s),(y)))
+//#define gmodz(x,y,z)    (gop2z(gmod,(x),(y),(z)))
+//#define gdiventz(x,y,z) (gop2z(gdivent,(x),(y),(z)))
+//#define gdivz(x,y,z)    (gop2z(gdiv,(x),(y),(z)))
+//#define gmulz(x,y,z)    (gop2z(gmul,(x),(y),(z)))
+//#define gsubz(x,y,z)    (gop2z(gsub,(x),(y),(z)))
+//#define gaddz(x,y,z)    (gop2z(gadd,(x),(y),(z)))
+//#define gminz(x,y,z)    (gop2z(gmin,(x),(y),(z)))
+//#define gmaxz(x,y,z)    (gop2z(gmax,(x),(y),(z)))
+//#define gabsz(x,prec,y) (gop2z(gabs,(x),(prec),(y)))
+//#define mpargz(x,y,z)   (gop2z(mparg,(x),(y),(z)))
+//#define gnegz(x,y)     (gop1z(gneg,(x),(y)))
+//#define gredz(x,y)     (gop1z(gred,(x),(y)))
+//#define mpgammaz(x,y)  (gop1z(mpgamma,(x),(y)))
+//#define mpachz(x,y)    (gop1z(mpach,(x),(y)))
+//#define mpashz(x,y)    (gop1z(mpash,(x),(y)))
+//#define mpathz(x,y)    (gop1z(mpath,(x),(y)))
+//#define mpthz(x,y)     (gop1z(mpth,(x),(y)))
+//#define mpshz(x,y)     (gop1z(mpsh,(x),(y)))
+//#define mpchz(x,y)     (gop1z(mpch,(x),(y)))
+//#define mpacosz(x,y)   (gop1z(mpacos,(x),(y)))
+//#define mpasinz(x,y)   (gop1z(mpasin,(x),(y)))
+//#define mpatanz(x,y)   (gop1z(mpatan,(x),(y)))
+//#define mptanz(x,y)    (gop1z(mptan,(x),(y)))
+//#define mpsinz(x,y)    (gop1z(mpsin,(x),(y)))
+//#define mpcosz(x,y)    (gop1z(mpcos,(x),(y)))
+//#define mplogz(x,y)    (gop1z(mplog,(x),(y)))
+//#define mpexp1z(x,y)   (gop1z(mpexp1,(x),(y)))
+//#define mpexpz(x,y)    (gop1z(mpexp,(x),(y)))
+//#define mpsqrtz(x,y)   (gop1z(mpsqrt,(x),(y)))
+//#define autz(x,y)      (gop1z(mpaut,(x),(y)))
+//#define mpeulerz(x)    (gop0z(mpeuler,(x)))
+//#define mppiz(x)       (gop0z(mppi,(x)))
+//#define lsubsg(s,y)    (lopsg2(gsub,(s),(y)))
+//#define lsubgs(y,s)    (lopgs2(gsub,(y),(s)))
+//#define lmodsg(s,y)    (lopsg2(gmod,(s),(y)))
+//#define lmodgs(y,s)    (lopgs2(gmod,(y),(s)))
+//#define lminsg(s,y)    (lopsg2(gmin,(s),(y)))
+//#define lmings(y,s)    (lopgs2(gmin,(y),(s)))
+//#define lmaxsg(s,y)    (lopsg2(gmax,(s),(y)))
+//#define lmaxgs(y,s)    (lopgs2(gmax,(y),(s)))
+//#define ldivsg(s,y)    (lopsg2(gdiv,(s),(y)))
+//#define ldiventsg(s,y) (lopsg2(gdivent,(s),(y)))
+//#define ldiventgs(y,s) (lopgs2(gdivent,(y),(s)))
+//#define laddsg(s,y)    (lopsg2(gadd,(s),(y)))
+//#define laddgs(y,s)    (lopsg2(gadd,(s),(y)))
+//#define mpres(x,y)    (resii((x),(y)))
+//#define mpmod(x,y)    (modii((x),(y)))
+//#define mpresz(x,y,z) (resiiz((x),(y),(z)))
+//#define mpmodz(x,y,z) (modiiz((x),(y),(z)))
+//#define lmulgs(y,s) ((long)gmulsg((s),(y)))
+//#define gmulgs(y,s) (gmulsg((s),(y)))
+//#define mulrs(x,s)  (mulsr((s),(x)))
+//#define mulri(x,s)  (mulir((s),(x)))
+//#define muliu(x,s)  (mului((s),(x)))
+//#define mulis(x,s)  (mulsi((s),(x)))
+//#define addrs(x,s)  (addsr((s),(x)))
+//#define addis(x,s)  (addsi((s),(x)))
+//#define ggrandocp(x,n) (grando0((x),(n),0))
+//#define ggrando(x,n) (grando0((x),(n),1))
+//#define gvar9(x) ((typ(x)==t_POLMOD)? gvar2(x): gvar(x))
+//#define gval(x,v) (ggval((x),polx[v]))
+//#define max(a,b) ((a)>(b)?(a):(b))
+//#define min(a,b) ((a)>(b)?(b):(a))
+//#define labs(x) abs(x)
+//#define log2(x) (log((double)(x))/LOG2)
+//#define exp2(x) (exp((double)(x)*LOG2))
+//#define BIGINT (32767)          /* 2^15-1 */
+//#define EXP220 (1048576L)       /* 2^20   */
+//#define VERYBIGINT (2147483647L) /* 2^31-1 */
+//#define BIGINT (2147483647)              /* 2^31-1 */
+//#define EXP220 (1099511627776L)          /* 2^40   */
+//#define VERYBIGINT (9223372036854775807L) /* 2^63-1 */
+//#define PI (3.141592653589)
+//#define pariC3 (0.0216950598/(BYTES_IN_LONG/4)) /* log((1+sqrt(5))/2)/C2 */
+//#define pariC2 (22.18070978*(BYTES_IN_LONG/4))  /* SL*log(2)             */
+//#define pariC1 (0.9189385332)                   /* log(2*pi)/2           */
+//#define L2SL10 (0.301029995663981)              /* log(2)/log(10)        */
+//#define LOG2   (0.69314718055994531)            /* log(2)                */
+//#define pariK4 (17.079468445347/BITS_IN_LONG)   /* 2*e*pi/SL             */
+//#define pariK2 (1.1239968)                      /* 1/(1-(log(2)/(2*pi))) */
+//#define pariK1 (0.103810253/(BYTES_IN_LONG/4))  /* log(10)/(SL*log(2))   */
+//#define pariK  (9.632959862*(BYTES_IN_LONG/4))  /* SL*log(2)/log(10)     */
+//#define MAXITERPOL  10 /* max #of prec increase in polredabs-type operations */
+//#define NUMPRTBELT 100 /* primetable size */
+//#define negrz(x,z)       mpnegz((x),(z))
+//#define absrz(x,z)       mpabsz((x),(z))
+//#define mpabsz(x,y)      {long av=avma;mpaff(mpabs(x),y);avma=av;}
+//#define mpnegz(x,y)      {long av=avma;mpaff(mpneg(x),y);avma=av;}
+//#define negr  mpneg
+//#define negi  mpneg
+//#define absi  mpabs
+//#define absr  mpabs
+//#define rcopy mpcopy
+//#define strtoGEN flisexpr
+//#define classno3 hclassno
+//#define gpuigs gpowgs
+//#define gpui gpow
+//#define gen2str GENtostr
+//#define init pari_init
+//#define err pari_err /* move to e.g paritr.h ? */
+//#define GSTR(x) ((char*) (((GEN) (x)) + 1 ))
+//#define bit_accuracy(x) (((x)-2) << TWOPOTBITS_IN_LONG)
+
+//INCLUDES
+include "parigen_lib";
+
+module paricom_h
+{
+  requires package "pari";
+  header '#include "paricom.h"';
+  open C_hack;
+  open parigen_h;
+  
+  //VARIABLES
+  const DEBUGLEVEL: long = 'DEBUGLEVEL';
+  const polx: ptr[GEN] = 'polx';
+  const gzero: GEN = 'gzero';
+  const global_err_data: address = 'global_err_data';
+  const gi: GEN = 'gi';
+  const gdeux: GEN = 'gdeux';
+  const ghalf: GEN = 'ghalf';
+  const polvar: GEN = 'polvar';
+  const bernzone: GEN = 'bernzone';
+  const ordvar: ptr[long] = 'ordvar';
+  const gpi: GEN = 'gpi';
+  const gun: GEN = 'gun';
+  const DEBUGFILES: long = 'DEBUGFILES';
+  const precdl: long = 'precdl';
+  const primetab: GEN = 'primetab';
+  const polun: ptr[GEN] = 'polun';
+  const lontyp: cptr[long] = 'lontyp';
+  const DEBUGMEM: long = 'DEBUGMEM';
+  const geuler: GEN = 'geuler';
+}
+@h = tangler("lib/pari/paridecl_lib.flx")
+@select(h)
+
+//Module        : paridecl_h
+//Timestamp     : 2006/4/5 6:8:55 UTC
+//Timestamp     : 2006/4/5 16:8:55 (local)
+//Raw Header    : paridecl.h
+//Preprocessor  : gcc -E
+//Input file: pari.flxcc.i
+//Flxcc Control : pari.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+
+//INCLUDES
+include "parigen_lib";
+include "paristio_lib";
+
+module paridecl_h
+{
+  requires package "pari";
+  header '#include "paridecl.h"';
+  open C_hack;
+  open parigen_h;
+  open paristio_h;
+  
+  //C FUNCTION POINTER TYPES
+  header '''typedef GEN (*paridecl_h_cft_8)(long,  long);''';
+  type paridecl_h_cft_8 = 'paridecl_h_cft_8';
+  header '''typedef GEN (*paridecl_h_cft_6)(GEN,  long);''';
+  type paridecl_h_cft_6 = 'paridecl_h_cft_6';
+  header '''typedef GEN (*paridecl_h_cft_1)(GEN,  GEN,  GEN);''';
+  type paridecl_h_cft_1 = 'paridecl_h_cft_1';
+  header '''typedef GEN (*paridecl_h_cft_7)(long,  GEN);''';
+  type paridecl_h_cft_7 = 'paridecl_h_cft_7';
+  header '''typedef GEN (*paridecl_h_cft_5)(GEN,  GEN);''';
+  type paridecl_h_cft_5 = 'paridecl_h_cft_5';
+  header '''typedef int (*paridecl_h_cft_2)(GEN,  GEN);''';
+  type paridecl_h_cft_2 = 'paridecl_h_cft_2';
+  header '''typedef void (*paridecl_h_cft_3)(int);''';
+  type paridecl_h_cft_3 = 'paridecl_h_cft_3';
+  header '''typedef GEN (*paridecl_h_cft_4)(GEN);''';
+  type paridecl_h_cft_4 = 'paridecl_h_cft_4';
+  
+  //PROCEDURES
+  proc Fp_intersect: long * GEN * GEN * GEN * ptr[GEN] * ptr[GEN] * GEN * GEN;
+  proc affir: GEN * GEN;
+  proc affrr: GEN * GEN;
+  proc brute: GEN * char * long;
+  proc bruteall: GEN * char * long * long;
+  proc bruterr: GEN * char * long;
+  proc cgiv: GEN;
+  proc check_pol_int: GEN;
+  proc checkbid: GEN;
+  proc checkbnr: GEN;
+  proc checkbnrgen: GEN;
+  proc checkid: GEN * long;
+  proc checkmemory: GEN;
+  proc checkprhall: GEN;
+  proc checkprimeid: GEN;
+  proc checkrnf: GEN;
+  proc consteuler: long;
+  proc constpi: long;
+  proc delete_named_var: ptr[entree];
+  proc disable_dbg: long;
+  proc diviiz: GEN * GEN * GEN;
+  proc ecrire: GEN * char * long * long;
+  proc err_leave: ptr[address];
+  proc etatpile: uint;
+  proc flusherr: 1;
+  proc fordiv: GEN * ptr[entree] * ptr[char];
+  proc forpari: ptr[entree] * GEN * GEN * ptr[char];
+  proc forprime: ptr[entree] * GEN * GEN * ptr[char];
+  proc forstep: ptr[entree] * GEN * GEN * GEN * ptr[char];
+  proc forsubgroup: ptr[entree] * GEN * long * ptr[char];
+  proc forvec: ptr[entree] * GEN * ptr[char] * long;
+  proc fprintferr[t]: t;
+  proc freeall: 1;
+  proc freeep: ptr[entree];
+  proc gachz: GEN * GEN;
+  proc gacosz: GEN * GEN;
+  proc gaffect: GEN * GEN;
+  proc gaffsg: long * GEN;
+  proc gashz: GEN * GEN;
+  proc gasinz: GEN * GEN;
+  proc gatanz: GEN * GEN;
+  proc gathz: GEN * GEN;
+  proc gchz: GEN * GEN;
+  proc gcosz: GEN * GEN;
+  proc genmsgtimer[t]: t;
+  proc gerepilemany: long * ptr[ptr[GEN]] * long;
+  proc gerepilemanycoeffs: long * GEN * long;
+  proc gerepilemanysp: long * long * ptr[ptr[GEN]] * long;
+  proc gerepilemanyvec: long * long * ptr[long] * long;
+  proc gexpz: GEN * GEN;
+  proc ggamdz: GEN * GEN;
+  proc ggammaz: GEN * GEN;
+  proc glngammaz: GEN * GEN;
+  proc glogz: GEN * GEN;
+  proc gop1z: paridecl_h_cft_4 * GEN * GEN;
+  proc gop2z: paridecl_h_cft_5 * GEN * GEN * GEN;
+  proc gops2gsz: paridecl_h_cft_6 * GEN * long * GEN;
+  proc gops2sgz: paridecl_h_cft_7 * long * GEN * GEN;
+  proc gops2ssz: paridecl_h_cft_8 * long * long * GEN;
+  proc gopsg2z: paridecl_h_cft_5 * long * GEN * GEN;
+  proc gpolylogz: long * GEN * GEN;
+  proc gpsiz: GEN * GEN;
+  proc gshz: GEN * GEN;
+  proc gsincos: GEN * ptr[GEN] * ptr[GEN] * long;
+  proc gsinz: GEN * GEN;
+  proc gsqrtz: GEN * GEN;
+  proc gtanz: GEN * GEN;
+  proc gthz: GEN * GEN;
+  proc gunclone: GEN;
+  proc gzetaz: GEN * GEN;
+  proc killallfiles: int;
+  proc killbloc: GEN;
+  proc listkill: GEN;
+  proc lucas: long * ptr[GEN] * ptr[GEN];
+  proc matbrute: GEN * char * long;
+  proc modiiz: GEN * GEN * GEN;
+  proc mpbern: long * long;
+  proc mpdivz: GEN * GEN * GEN;
+  proc mpgamdz: long * GEN;
+  proc msgtimer[t]: t;
+  proc name_var: long * ptr[char];
+  proc os_close: long;
+  proc os_read: long * ptr[char] * long;
+  proc outbeaut: GEN;
+  proc outbeauterr: GEN;
+  proc outbrute: GEN;
+  proc outerr: GEN;
+  proc outmat: GEN;
+  proc output: GEN;
+  proc outsor: GEN;
+  proc outtex: GEN;
+  proc pari_err[t]: t;
+  proc pari_fclose: ptr[pariFILE];
+  proc pari_init: long * long;
+  proc pari_unlink: ptr[char];
+  proc pariflush: 1;
+  proc pariputc: char;
+  proc pariputs: ptr[char];
+  proc pariputsf[t]: t;
+  proc sor: GEN * char * long * long;
+  proc stackdummy: GEN * long;
+  proc switchin: ptr[char];
+  proc switchout: ptr[char];
+  proc texe: GEN * char * long;
+  proc voir: GEN * long;
+  proc vpariputs: ptr[char] * va_list;
+  
+  //FUNCTIONS
+  fun FpM_mul: GEN * GEN * GEN -> GEN;
+  fun FpX_nbroots: GEN * GEN -> long;
+  fun Fp_add: GEN * GEN * GEN -> GEN;
+  fun Fp_add_pol_scal: GEN * GEN * GEN -> GEN;
+  fun Fp_centermod: GEN * GEN -> GEN;
+  fun Fp_chinese_coprime: GEN * GEN * GEN * GEN * GEN * GEN -> GEN;
+  fun Fp_compo_mod_pol: GEN * GEN * GEN * GEN -> GEN;
+  fun Fp_factor_rel: GEN * GEN * GEN -> GEN;
+  fun Fp_factor_rel0: GEN * GEN * GEN -> GEN;
+  fun Fp_inv_isom: GEN * GEN * GEN -> GEN;
+  fun Fp_inv_mod_pol: GEN * GEN * GEN -> GEN;
+  fun Fp_is_squarefree: GEN * GEN -> long;
+  fun Fp_is_totally_split: GEN * GEN -> long;
+  fun Fp_isom: GEN * GEN * GEN -> GEN;
+  fun Fp_mat: GEN * GEN -> GEN;
+  fun Fp_mat_red: GEN * GEN -> GEN;
+  fun Fp_mul: GEN * GEN * GEN -> GEN;
+  fun Fp_mul_mod_pol: GEN * GEN * GEN * GEN -> GEN;
+  fun Fp_mul_pol_scal: GEN * GEN * GEN -> GEN;
+  fun Fp_neg: GEN * GEN -> GEN;
+  fun Fp_pol: GEN * GEN -> GEN;
+  fun Fp_pol_extgcd: GEN * GEN * GEN * ptr[GEN] * ptr[GEN] -> GEN;
+  fun Fp_pol_gcd: GEN * GEN * GEN -> GEN;
+  fun Fp_pol_nbfact: GEN * GEN -> long;
+  fun Fp_pol_red: GEN * GEN -> GEN;
+  fun Fp_pol_small: GEN * GEN * long -> GEN;
+  fun Fp_poldivres: GEN * GEN * GEN * ptr[GEN] -> GEN;
+  fun Fp_poleval: GEN * GEN * GEN -> GEN;
+  fun Fp_pow_mod_pol: GEN * GEN * GEN * GEN -> GEN;
+  fun Fp_sqr: GEN * GEN -> GEN;
+  fun Fp_sqr_mod_pol: GEN * GEN * GEN -> GEN;
+  fun Fp_sub: GEN * GEN * GEN -> GEN;
+  fun Fp_vec: GEN * GEN -> GEN;
+  fun Fp_vec_red: GEN * GEN -> GEN;
+  fun Fq_ker: GEN * GEN * GEN -> GEN;
+  fun GENtostr: GEN -> ptr[char];
+  fun Mod0: GEN * GEN * long -> GEN;
+  fun Qfb0: GEN * GEN * GEN * GEN * long -> GEN;
+  fun _col: GEN -> GEN;
+  fun _vec: GEN -> GEN;
+  fun absi_cmp: GEN * GEN -> int;
+  fun absi_equal: GEN * GEN -> int;
+  fun absr_cmp: GEN * GEN -> int;
+  fun addell: GEN * GEN * GEN -> GEN;
+  fun addii: GEN * GEN -> GEN;
+  fun addir: GEN * GEN -> GEN;
+  fun addprimes: GEN -> GEN;
+  fun addrr: GEN * GEN -> GEN;
+  fun addsi: long * GEN -> GEN;
+  fun addsr: long * GEN -> GEN;
+  fun addss: long * long -> GEN;
+  fun adj: GEN -> GEN;
+  fun agm: GEN * GEN * long -> GEN;
+  fun akell: GEN * GEN -> GEN;
+  fun algdep: GEN * long * long -> GEN;
+  fun algdep0: GEN * long * long * long -> GEN;
+  fun algdep2: GEN * long * long -> GEN;
+  fun algtobasis: GEN * GEN -> GEN;
+  fun algtobasis_intern: GEN * GEN -> GEN;
+  fun allbase4: GEN * long * ptr[GEN] * ptr[GEN] -> GEN;
+  fun allocatemoremem: ulong -> long;
+  fun anell: GEN * long -> GEN;
+  fun apell: GEN * GEN -> GEN;
+  fun apell2: GEN * GEN -> GEN;
+  fun apprgen: GEN * GEN -> GEN;
+  fun apprgen9: GEN * GEN -> GEN;
+  fun assmat: GEN -> GEN;
+  fun auxdecomp: GEN * long -> GEN;
+  fun base: GEN * ptr[GEN] -> GEN;
+  fun base2: GEN * ptr[GEN] -> GEN;
+  fun basistoalg: GEN * GEN -> GEN;
+  fun bernfrac: long -> GEN;
+  fun bernreal: long * long -> GEN;
+  fun bernvec: long -> GEN;
+  fun bestappr: GEN * GEN -> GEN;
+  fun bezout: GEN * GEN * ptr[GEN] * ptr[GEN] -> GEN;
+  fun bezoutpol: GEN * GEN * ptr[GEN] * ptr[GEN] -> GEN;
+  fun bigomega: GEN -> long;
+  fun bilhell: GEN * GEN * GEN * long -> GEN;
+  fun binaire: GEN -> GEN;
+  fun binome: GEN * long -> GEN;
+  fun bittest: GEN * long -> long;
+  fun bnfclassunit0: GEN * long * GEN * long -> GEN;
+  fun bnfinit0: GEN * long * GEN * long -> GEN;
+  fun bnfisintnorm: GEN * GEN -> GEN;
+  fun bnfisnorm: GEN * GEN * long * long -> GEN;
+  fun bnfissunit: GEN * GEN * GEN -> GEN;
+  fun bnfmake: GEN * long -> GEN;
+  fun bnfnewprec: GEN * long -> GEN;
+  fun bnfsunit: GEN * GEN * long -> GEN;
+  fun bnrL1: GEN * GEN * long * long -> GEN;
+  fun bnrclass0: GEN * GEN * long * long -> GEN;
+  fun bnrconductor: GEN * GEN * GEN * long * long -> GEN;
+  fun bnrconductorofchar: GEN * GEN * long -> GEN;
+  fun bnrdisc0: GEN * GEN * GEN * long * long -> GEN;
+  fun bnrdisclist0: GEN * GEN * GEN * long -> GEN;
+  fun bnrinit0: GEN * GEN * long * long -> GEN;
+  fun bnrisconductor: GEN * GEN * GEN * long -> long;
+  fun bnrnewprec: GEN * long -> GEN;
+  fun bnrrootnumber: GEN * GEN * long * long -> GEN;
+  fun bnrstark: GEN * GEN * long * long -> GEN;
+  fun boundfact: GEN * long -> GEN;
+  fun brutcopy: GEN * GEN -> GEN;
+  fun buchall: GEN * GEN * GEN * GEN * GEN * long * long * long * long -> GEN;
+  fun buchfu: GEN -> GEN;
+  fun buchimag: GEN * GEN * GEN * GEN -> GEN;
+  fun buchnarrow: GEN -> GEN;
+  fun buchray: GEN * GEN * long -> GEN;
+  fun buchrayinit: GEN * GEN * long -> GEN;
+  fun buchrayinitgen: GEN * GEN * long -> GEN;
+  fun buchreal: GEN * GEN * GEN * GEN * GEN * long -> GEN;
+  fun caract: GEN * int -> GEN;
+  fun caract2: GEN * GEN * int -> GEN;
+  fun caradj: GEN * long * ptr[GEN] -> GEN;
+  fun caradj0: GEN * long -> GEN;
+  fun carhess: GEN * long -> GEN;
+  fun carrecomplet: GEN * ptr[GEN] -> long;
+  fun cbezout: long * long * ptr[long] * ptr[long] -> long;
+  fun centerlift: GEN -> GEN;
+  fun centerlift0: GEN * long -> GEN;
+  fun centermod: GEN * GEN -> GEN;
+  fun certifybuchall: GEN -> long;
+  fun cgcd: long * long -> long;
+  fun cgetp: GEN -> GEN;
+  fun changevar: GEN * GEN -> GEN;
+  fun charpoly0: GEN * int * long -> GEN;
+  fun check_units: GEN * ptr[char] -> GEN;
+  fun checkbnf: GEN -> GEN;
+  fun checkbnf_discard: GEN -> GEN;
+  fun checknf: GEN -> GEN;
+  fun chinois: GEN * GEN -> GEN;
+  fun classgrouponly: GEN * GEN * long -> GEN;
+  fun classno: GEN -> GEN;
+  fun classno2: GEN -> GEN;
+  fun clcm: long * long -> long;
+  fun cmp_pol: GEN * GEN -> int;
+  fun cmp_prime_ideal: GEN * GEN -> int;
+  fun cmp_prime_over_p: GEN * GEN -> int;
+  fun cmp_vecint: GEN * GEN -> int;
+  fun cmpii: GEN * GEN -> int;
+  fun cmprr: GEN * GEN -> int;
+  fun cmpsi: long * GEN -> int;
+  fun co8: GEN * long -> GEN;
+  fun coefs_to_pol[t]: t -> GEN = 'coefs_to_pol($a)';
+  fun compimag: GEN * GEN -> GEN;
+  fun compimagraw: GEN * GEN -> GEN;
+  fun compo: GEN * long -> GEN;
+  fun compositum: GEN * GEN -> GEN;
+  fun compositum2: GEN * GEN -> GEN;
+  fun compraw: GEN * GEN -> GEN;
+  fun compreal: GEN * GEN -> GEN;
+  fun comprealraw: GEN * GEN -> GEN;
+  fun concat: GEN * GEN -> GEN;
+  fun concatsp: GEN * GEN -> GEN;
+  fun conductor: GEN * GEN * long * long -> GEN;
+  fun conjugates: GEN -> GEN;
+  fun conjvec: GEN * long -> GEN;
+  fun content: GEN -> GEN;
+  fun contfrac0: GEN * GEN * long -> GEN;
+  fun convol: GEN * GEN -> GEN;
+  fun coordch: GEN * GEN -> GEN;
+  fun core: GEN -> GEN;
+  fun core0: GEN * long -> GEN;
+  fun core2: GEN -> GEN;
+  fun coredisc: GEN -> GEN;
+  fun coredisc0: GEN * long -> GEN;
+  fun coredisc2: GEN -> GEN;
+  fun corediscpartial: GEN -> GEN;
+  fun cvtop: GEN * GEN * long -> GEN;
+  fun cyclo: long * long -> GEN;
+  fun dbltor: double -> GEN;
+  fun decodemodule: GEN * GEN -> GEN;
+  fun decomp: GEN -> GEN;
+  fun deg1pol: GEN * GEN * long -> GEN;
+  fun degree: GEN -> long;
+  fun delete_var: 1 -> long;
+  fun denom: GEN -> GEN;
+  fun deplin: GEN -> GEN;
+  fun deriv: GEN * long -> GEN;
+  fun derivpol: GEN -> GEN;
+  fun derivser: GEN -> GEN;
+  fun det: GEN -> GEN;
+  fun det0: GEN * long -> GEN;
+  fun det2: GEN -> GEN;
+  fun dethnf: GEN -> GEN;
+  fun dethnf_i: GEN -> GEN;
+  fun detint: GEN -> GEN;
+  fun diagonal: GEN -> GEN;
+  fun dilog: GEN * long -> GEN;
+  fun dirdiv: GEN * GEN -> GEN;
+  fun direuler: ptr[entree] * GEN * GEN * ptr[char] -> GEN;
+  fun direulerall: ptr[entree] * GEN * GEN * ptr[char] * GEN -> GEN;
+  fun dirmul: GEN * GEN -> GEN;
+  fun dirzetak: GEN * GEN -> GEN;
+  fun discf: GEN -> GEN;
+  fun discf2: GEN -> GEN;
+  fun discrayabs: GEN * GEN * long -> GEN;
+  fun discrayabscond: GEN * GEN * long -> GEN;
+  fun discrayabslist: GEN * GEN -> GEN;
+  fun discrayabslistarch: GEN * GEN * long -> GEN;
+  fun discrayabslistlong: GEN * long -> GEN;
+  fun discrayrel: GEN * GEN * long -> GEN;
+  fun discrayrelcond: GEN * GEN * long -> GEN;
+  fun discsr: GEN -> GEN;
+  fun divide_conquer_prod: GEN * paridecl_h_cft_5 -> GEN;
+  fun divir: GEN * GEN -> GEN;
+  fun divis: GEN * long -> GEN;
+  fun divisors: GEN -> GEN;
+  fun divri: GEN * GEN -> GEN;
+  fun divrr: GEN * GEN -> GEN;
+  fun divrs: GEN * long -> GEN;
+  fun divsi: long * GEN -> GEN;
+  fun divsr: long * GEN -> GEN;
+  fun divsum: GEN * ptr[entree] * ptr[char] -> GEN;
+  fun dummyclone: GEN -> GEN;
+  fun dummycopy: GEN -> GEN;
+  fun dvmdii: GEN * GEN * ptr[GEN] -> GEN;
+  fun egalii: GEN * GEN -> int;
+  fun eigen: GEN * long -> GEN;
+  fun eint1: GEN * long -> GEN;
+  fun element_div: GEN * GEN * GEN -> GEN;
+  fun element_divmodpr: GEN * GEN * GEN * GEN -> GEN;
+  fun element_inv: GEN * GEN -> GEN;
+  fun element_invmodideal: GEN * GEN * GEN -> GEN;
+  fun element_invmodpr: GEN * GEN * GEN -> GEN;
+  fun element_mul: GEN * GEN * GEN -> GEN;
+  fun element_mulid: GEN * GEN * long -> GEN;
+  fun element_mulmodpr2: GEN * GEN * GEN * GEN -> GEN;
+  fun element_mulvec: GEN * GEN * GEN -> GEN;
+  fun element_pow: GEN * GEN * GEN -> GEN;
+  fun element_pow_mod_p: GEN * GEN * GEN * GEN -> GEN;
+  fun element_powmodideal: GEN * GEN * GEN * GEN -> GEN;
+  fun element_powmodidele: GEN * GEN * GEN * GEN * GEN -> GEN;
+  fun element_powmodpr: GEN * GEN * GEN * GEN -> GEN;
+  fun element_reduce: GEN * GEN * GEN -> GEN;
+  fun element_sqr: GEN * GEN -> GEN;
+  fun element_val: GEN * GEN * GEN -> long;
+  fun element_val2: GEN * GEN * GEN * GEN -> long;
+  fun ellap0: GEN * GEN * long -> GEN;
+  fun elleisnum: GEN * long * long * long -> GEN;
+  fun elleta: GEN * long -> GEN;
+  fun ellheight0: GEN * GEN * long * long -> GEN;
+  fun ellinit0: GEN * long * long -> GEN;
+  fun ellrootno: GEN * GEN -> long;
+  fun ellsigma: GEN * GEN * long * long -> GEN;
+  fun elltors0: GEN * long -> GEN;
+  fun ellwp0: GEN * GEN * long * long * long -> GEN;
+  fun ellzeta: GEN * GEN * long -> GEN;
+  fun eng_ord: long -> cptr[char];
+  fun err_catch: long * ptr[_struct___jmp_buf_tag] * address -> address;
+  fun eta: GEN * long -> GEN;
+  fun eta0: GEN * long * long -> GEN;
+  fun expand_tilde: ptr[char] -> ptr[char];
+  fun extract: GEN * GEN -> GEN;
+  fun extract0: GEN * GEN * GEN -> GEN;
+  fun factcantor: GEN * GEN -> GEN;
+  fun factmod: GEN * GEN -> GEN;
+  fun factmod0: GEN * GEN -> GEN;
+  fun factmod9: GEN * GEN * GEN -> GEN;
+  fun factor: GEN -> GEN;
+  fun factor0: GEN * long -> GEN;
+  fun factorback: GEN * GEN -> GEN;
+  fun factoredbase: GEN * GEN * ptr[GEN] -> GEN;
+  fun factoreddiscf: GEN * GEN -> GEN;
+  fun factoredpolred: GEN * GEN * long -> GEN;
+  fun factoredpolred2: GEN * GEN * long -> GEN;
+  fun factorint: GEN * long -> GEN;
+  fun factormod0: GEN * GEN * long -> GEN;
+  fun factorpadic0: GEN * GEN * long * long -> GEN;
+  fun factorpadic2: GEN * GEN * long -> GEN;
+  fun factorpadic4: GEN * GEN * long -> GEN;
+  fun factpol: GEN * long * long -> GEN;
+  fun factpol2: GEN * long -> GEN;
+  fun fastnorml2: GEN * long -> GEN;
+  fun fetch_named_var: ptr[char] * int -> ptr[entree];
+  fun fetch_user_var: ptr[char] -> long;
+  fun fetch_var: 1 -> long;
+  fun ffinit: GEN * long * long -> GEN;
+  fun ffsqrtnmod: GEN * GEN * GEN * GEN * ptr[GEN] -> GEN;
+  fun fibo: long -> GEN;
+  fun filtre: ptr[char] * int -> ptr[char];
+  fun fix_relative_pol: GEN * GEN -> GEN;
+  fun flisexpr: ptr[char] -> GEN;
+  fun forcecopy: GEN -> GEN;
+  fun from_Kronecker: GEN * GEN -> GEN;
+  fun fundunit: GEN -> GEN;
+  fun gabs: GEN * long -> GEN;
+  fun gach: GEN * long -> GEN;
+  fun gacos: GEN * long -> GEN;
+  fun gadd: GEN * GEN -> GEN;
+  fun gaddmat: GEN * GEN -> GEN;
+  fun galois: GEN * long -> GEN;
+  fun galoisapply: GEN * GEN * GEN -> GEN;
+  fun galoisconj: GEN -> GEN;
+  fun galoisconj0: GEN * long * GEN * long -> GEN;
+  fun galoisconj2: GEN * long * long -> GEN;
+  fun galoisconj4: GEN * GEN * long -> GEN;
+  fun galoisfixedfield: GEN * GEN * long * long -> GEN;
+  fun galoisinit: GEN * GEN -> GEN;
+  fun galoispermtopol: GEN * GEN -> GEN;
+  fun galoissubcyclo: long * GEN * GEN * long -> GEN;
+  fun gand: GEN * GEN -> GEN;
+  fun garg: GEN * long -> GEN;
+  fun gash: GEN * long -> GEN;
+  fun gasin: GEN * long -> GEN;
+  fun gatan: GEN * long -> GEN;
+  fun gath: GEN * long -> GEN;
+  fun gauss: GEN * GEN -> GEN;
+  fun gaussmodulo: GEN * GEN * GEN -> GEN;
+  fun gaussmodulo2: GEN * GEN * GEN -> GEN;
+  fun gbezout: GEN * GEN * ptr[GEN] * ptr[GEN] -> GEN;
+  fun gbigomega: GEN -> GEN;
+  fun gbitand: GEN * GEN -> GEN;
+  fun gbitneg: GEN * long -> GEN;
+  fun gbitnegimply: GEN * GEN -> GEN;
+  fun gbitor: GEN * GEN -> GEN;
+  fun gbittest: GEN * GEN -> GEN;
+  fun gbitxor: GEN * GEN -> GEN;
+  fun gboundcf: GEN * long -> GEN;
+  fun gboundfact: GEN * long -> GEN;
+  fun gcarrecomplet: GEN * ptr[GEN] -> GEN;
+  fun gcarreparfait: GEN -> GEN;
+  fun gcd0: GEN * GEN * long -> GEN;
+  fun gcdpm: GEN * GEN * GEN -> GEN;
+  fun gceil: GEN -> GEN;
+  fun gcf: GEN -> GEN;
+  fun gcf2: GEN * GEN -> GEN;
+  fun gch: GEN * long -> GEN;
+  fun gclone: GEN -> GEN;
+  fun gcmp: GEN * GEN -> int;
+  fun gcmp0: GEN -> int;
+  fun gcmp1: GEN -> int;
+  fun gcmp_1: GEN -> int;
+  fun gconj: GEN -> GEN;
+  fun gcopy: GEN -> GEN;
+  fun gcopy_i: GEN * long -> GEN;
+  fun gcos: GEN * long -> GEN;
+  fun gcotan: GEN * long -> GEN;
+  fun gcvtoi: GEN * ptr[long] -> GEN;
+  fun gcvtop: GEN * GEN * long -> GEN;
+  fun gdiv: GEN * GEN -> GEN;
+  fun gdivent: GEN * GEN -> GEN;
+  fun gdiventres: GEN * GEN -> GEN;
+  fun gdivexact: GEN * GEN -> GEN;
+  fun gdivgs: GEN * long -> GEN;
+  fun gdivise: GEN * GEN -> int;
+  fun gdivmod: GEN * GEN * ptr[GEN] -> GEN;
+  fun gdivround: GEN * GEN -> GEN;
+  fun gegal: GEN * GEN -> int;
+  fun gen_sort: GEN * int * paridecl_h_cft_2 -> GEN;
+  fun gener: GEN -> GEN;
+  fun genrand: GEN -> GEN;
+  fun gentimer: long -> long;
+  fun geq: GEN * GEN -> GEN;
+  fun gerepile: long * long * GEN -> GEN;
+  fun gerepileupto: long * GEN -> GEN;
+  fun gerepileuptoint: long * GEN -> GEN;
+  fun gerepileuptoleaf: long * GEN -> GEN;
+  fun gerfc: GEN * long -> GEN;
+  fun get_bnf: GEN * ptr[int] -> GEN;
+  fun get_nf: GEN * ptr[int] -> GEN;
+  fun get_primeid: GEN -> GEN;
+  fun get_timer: long -> long;
+  fun getheap: 1 -> GEN;
+  fun getrand: 1 -> long;
+  fun getstack: 1 -> long;
+  fun gettime: 1 -> long;
+  fun geval: GEN -> GEN;
+  fun gexp: GEN * long -> GEN;
+  fun gexpo: GEN -> long;
+  fun gfloor: GEN -> GEN;
+  fun gfrac: GEN -> GEN;
+  fun gfundunit: GEN -> GEN;
+  fun ggamd: GEN * long -> GEN;
+  fun ggamma: GEN * long -> GEN;
+  fun ggcd: GEN * GEN -> GEN;
+  fun gge: GEN * GEN -> GEN;
+  fun ggener: GEN -> GEN;
+  fun ggprecision: GEN -> GEN;
+  fun ggt: GEN * GEN -> GEN;
+  fun ggval: GEN * GEN -> long;
+  fun ghell: GEN * GEN * long -> GEN;
+  fun ghell2: GEN * GEN * long -> GEN;
+  fun gimag: GEN -> GEN;
+  fun ginv: GEN -> GEN;
+  fun ginvmod: GEN * GEN -> GEN;
+  fun gisfundamental: GEN -> GEN;
+  fun gisirreducible: GEN -> GEN;
+  fun gisprime: GEN * long -> GEN;
+  fun gispsp: GEN -> GEN;
+  fun gissquarefree: GEN -> GEN;
+  fun gkrogs: GEN * long -> GEN;
+  fun gkronecker: GEN * GEN -> GEN;
+  fun glambdak: GEN * GEN * long -> GEN;
+  fun glcm: GEN * GEN -> GEN;
+  fun gle: GEN * GEN -> GEN;
+  fun glength: GEN -> long;
+  fun glngamma: GEN * long -> GEN;
+  fun globalreduction: GEN -> GEN;
+  fun glog: GEN * long -> GEN;
+  fun glogagm: GEN * long -> GEN;
+  fun glt: GEN * GEN -> GEN;
+  fun gmax: GEN * GEN -> GEN;
+  fun gmillerrabin: GEN * long -> GEN;
+  fun gmin: GEN * GEN -> GEN;
+  fun gmod: GEN * GEN -> GEN;
+  fun gmodulcp: GEN * GEN -> GEN;
+  fun gmodulo: GEN * GEN -> GEN;
+  fun gmodulsg: long * GEN -> GEN;
+  fun gmodulss: long * long -> GEN;
+  fun gmu: GEN -> GEN;
+  fun gmul: GEN * GEN -> GEN;
+  fun gmul2n: GEN * long -> GEN;
+  fun gmulsg: long * GEN -> GEN;
+  fun gne: GEN * GEN -> GEN;
+  fun gneg: GEN -> GEN;
+  fun gneg_i: GEN -> GEN;
+  fun gnextprime: GEN -> GEN;
+  fun gnorm: GEN -> GEN;
+  fun gnorml2: GEN -> GEN;
+  fun gnot: GEN -> GEN;
+  fun gnumbdiv: GEN -> GEN;
+  fun gomega: GEN -> GEN;
+  fun gopgs2: paridecl_h_cft_5 * GEN * long -> GEN;
+  fun gopsg2: paridecl_h_cft_5 * long * GEN -> GEN;
+  fun gor: GEN * GEN -> GEN;
+  fun gp_variable: ptr[char] -> ptr[entree];
+  fun gphi: GEN -> GEN;
+  fun gpmalloc: size -> ptr[char];
+  fun gpolcomp: GEN * GEN -> int;
+  fun gpolvar: GEN -> GEN;
+  fun gpolylog: long * GEN * long -> GEN;
+  fun gpow: GEN * GEN * long -> GEN;
+  fun gpowgs: GEN * long -> GEN;
+  fun gprealloc: address * size * size -> ptr[char];
+  fun gprec: GEN * long -> GEN;
+  fun gprec_w: GEN * long -> GEN;
+  fun gprecision: GEN -> long;
+  fun gprecprime: GEN -> GEN;
+  fun gpsi: GEN * long -> GEN;
+  fun gracine: GEN -> GEN;
+  fun gram_matrix: GEN -> GEN;
+  fun grando0: GEN * long * long -> GEN;
+  fun greal: GEN -> GEN;
+  fun gred: GEN -> GEN;
+  fun gred_rfrac: GEN -> GEN;
+  fun greffe: GEN * long * long -> GEN;
+  fun gregula: GEN * long -> GEN;
+  fun grndtoi: GEN * ptr[long] -> GEN;
+  fun ground: GEN -> GEN;
+  fun gscalcol: GEN * long -> GEN;
+  fun gscalcol_i: GEN * long -> GEN;
+  fun gscalcol_proto: GEN * GEN * long -> GEN;
+  fun gscalmat: GEN * long -> GEN;
+  fun gscalsmat: long * long -> GEN;
+  fun gsh: GEN * long -> GEN;
+  fun gshift: GEN * long -> GEN;
+  fun gsigne: GEN -> int;
+  fun gsin: GEN * long -> GEN;
+  fun gsmith: GEN -> GEN;
+  fun gsmith2: GEN -> GEN;
+  fun gsqr: GEN -> GEN;
+  fun gsqrt: GEN * long -> GEN;
+  fun gsqrtn: GEN * GEN * ptr[GEN] * long -> GEN;
+  fun gsub: GEN * GEN -> GEN;
+  fun gsubst: GEN * long * GEN -> GEN;
+  fun gsumdiv: GEN -> GEN;
+  fun gsumdivk: GEN * long -> GEN;
+  fun gtan: GEN * long -> GEN;
+  fun gth: GEN * long -> GEN;
+  fun gtolist: GEN -> GEN;
+  fun gtolong: GEN -> long;
+  fun gtomat: GEN -> GEN;
+  fun gtopoly: GEN * long -> GEN;
+  fun gtopolyrev: GEN * long -> GEN;
+  fun gtoser: GEN * long -> GEN;
+  fun gtoset: GEN -> GEN;
+  fun gtovec: GEN -> GEN;
+  fun gtrace: GEN -> GEN;
+  fun gtrans: GEN -> GEN;
+  fun gtrunc: GEN -> GEN;
+  fun gvar: GEN -> int;
+  fun gvar2: GEN -> int;
+  fun gzeta: GEN * long -> GEN;
+  fun gzetak: GEN * GEN * long -> GEN;
+  fun gzetakall: GEN * GEN * long * long -> GEN;
+  fun hashvalue: ptr[char] -> long;
+  fun hclassno: GEN -> GEN;
+  fun hensel_lift_accel: long * ptr[long] -> long;
+  fun hess: GEN -> GEN;
+  fun hil: GEN * GEN * GEN -> long;
+  fun hil0: GEN * GEN * GEN -> long;
+  fun hnf: GEN -> GEN;
+  fun hnfadd: GEN * GEN * ptr[GEN] * ptr[GEN] * ptr[GEN] * GEN * GEN -> GEN;
+  fun hnfall: GEN -> GEN;
+  fun hnfhavas: GEN -> GEN;
+  fun hnflll: GEN -> GEN;
+  fun hnfmod: GEN * GEN -> GEN;
+  fun hnfmodid: GEN * GEN -> GEN;
+  fun hnfperm: GEN -> GEN;
+  fun hnfspec: ptr[ptr[long]] * GEN * ptr[GEN] * ptr[GEN] * ptr[GEN] * long -> GEN;
+  fun hqfeval: GEN * GEN -> GEN;
+  fun hyperu: GEN * GEN * GEN * long -> GEN;
+  fun ideal_two_elt: GEN * GEN -> GEN;
+  fun ideal_two_elt0: GEN * GEN * GEN -> GEN;
+  fun ideal_two_elt2: GEN * GEN * GEN -> GEN;
+  fun idealadd: GEN * GEN * GEN -> GEN;
+  fun idealaddmultoone: GEN * GEN -> GEN;
+  fun idealaddtoone: GEN * GEN * GEN -> GEN;
+  fun idealaddtoone0: GEN * GEN * GEN -> GEN;
+  fun idealappr: GEN * GEN -> GEN;
+  fun idealappr0: GEN * GEN * long -> GEN;
+  fun idealapprfact: GEN * GEN -> GEN;
+  fun idealchinese: GEN * GEN * GEN -> GEN;
+  fun idealcoprime: GEN * GEN * GEN -> GEN;
+  fun idealdiv: GEN * GEN * GEN -> GEN;
+  fun idealdiv0: GEN * GEN * GEN * long -> GEN;
+  fun idealdivexact: GEN * GEN * GEN -> GEN;
+  fun idealfactor: GEN * GEN -> GEN;
+  fun idealhermite: GEN * GEN -> GEN;
+  fun idealhermite2: GEN * GEN * GEN -> GEN;
+  fun idealhnf0: GEN * GEN * GEN -> GEN;
+  fun idealintersect: GEN * GEN * GEN -> GEN;
+  fun idealinv: GEN * GEN -> GEN;
+  fun idealinv0: GEN * GEN * long -> GEN;
+  fun ideallist: GEN * long -> GEN;
+  fun ideallist0: GEN * long * long -> GEN;
+  fun ideallistarch: GEN * GEN * GEN -> GEN;
+  fun ideallistarch0: GEN * GEN * GEN * long -> GEN;
+  fun ideallistarchgen: GEN * GEN * GEN -> GEN;
+  fun ideallistunit: GEN * long -> GEN;
+  fun ideallistunitarch: GEN * GEN * GEN -> GEN;
+  fun ideallistunitarchgen: GEN * GEN * GEN -> GEN;
+  fun ideallistunitgen: GEN * long -> GEN;
+  fun ideallistzstar: GEN * long -> GEN;
+  fun ideallistzstargen: GEN * long -> GEN;
+  fun ideallllred: GEN * GEN * GEN * long -> GEN;
+  fun ideallllredall: GEN * GEN * GEN * long * long -> GEN;
+  fun idealmul: GEN * GEN * GEN -> GEN;
+  fun idealmul0: GEN * GEN * GEN * long * long -> GEN;
+  fun idealmulelt: GEN * GEN * GEN -> GEN;
+  fun idealmulh: GEN * GEN * GEN -> GEN;
+  fun idealmulprime: GEN * GEN * GEN -> GEN;
+  fun idealmulred: GEN * GEN * GEN * long -> GEN;
+  fun idealnorm: GEN * GEN -> GEN;
+  fun idealoplll: paridecl_h_cft_1 * GEN * GEN * GEN -> GEN;
+  fun idealpow: GEN * GEN * GEN -> GEN;
+  fun idealpow0: GEN * GEN * GEN * long * long -> GEN;
+  fun idealpowred: GEN * GEN * GEN * long -> GEN;
+  fun idealpows: GEN * GEN * long -> GEN;
+  fun idealstar0: GEN * GEN * long -> GEN;
+  fun idealval: GEN * GEN * GEN -> long;
+  fun ideleaddone: GEN * GEN * GEN -> GEN;
+  fun idmat: long -> GEN;
+  fun idmat_intern: long * GEN * GEN -> GEN;
+  fun image: GEN -> GEN;
+  fun image2: GEN -> GEN;
+  fun image_mod_p: GEN * GEN -> GEN;
+  fun imagecompl: GEN -> GEN;
+  fun imagereel: GEN * long -> GEN;
+  fun incgam: GEN * GEN * long -> GEN;
+  fun incgam0: GEN * GEN * GEN * long -> GEN;
+  fun incgam1: GEN * GEN * long -> GEN;
+  fun incgam2: GEN * GEN * long -> GEN;
+  fun incgam3: GEN * GEN * long -> GEN;
+  fun incgam4: GEN * GEN * GEN * long -> GEN;
+  fun incloop: GEN -> GEN;
+  fun indexlexsort: GEN -> GEN;
+  fun indexrank: GEN -> GEN;
+  fun indexsort: GEN -> GEN;
+  fun initalg: GEN * long -> GEN;
+  fun initalgred: GEN * long -> GEN;
+  fun initalgred2: GEN * long -> GEN;
+  fun initell: GEN * long -> GEN;
+  fun initprimes: long -> byteptr;
+  fun initzeta: GEN * long -> GEN;
+  fun install: address * ptr[char] * ptr[char] -> ptr[entree];
+  fun integ: GEN * long -> GEN;
+  fun intersect: GEN * GEN -> GEN;
+  fun intnum0: ptr[entree] * GEN * GEN * ptr[char] * long * long -> GEN;
+  fun inverseimage: GEN * GEN -> GEN;
+  fun inverseimage_mod_p: GEN * GEN * GEN -> GEN;
+  fun invmod: GEN * GEN * ptr[GEN] -> int;
+  fun is_entry: ptr[char] -> ptr[entree];
+  fun is_irred_mod_p: GEN * GEN -> GEN;
+  fun iscomplex: GEN -> int;
+  fun isdiagonal: GEN -> long;
+  fun isexactzero: GEN -> int;
+  fun isfundamental: GEN -> long;
+  fun ishnfall: GEN -> int;
+  fun isideal: GEN * GEN -> long;
+  fun isinexactreal: GEN -> int;
+  fun isinvector: GEN * GEN * long -> long;
+  fun ismonome: GEN -> int;
+  fun isnfscalar: GEN -> int;
+  fun isprime: GEN -> long;
+  fun isprincipal: GEN * GEN -> GEN;
+  fun isprincipalall: GEN * GEN * long -> GEN;
+  fun isprincipalforce: GEN * GEN -> GEN;
+  fun isprincipalgen: GEN * GEN -> GEN;
+  fun isprincipalgenforce: GEN * GEN -> GEN;
+  fun isprincipalray: GEN * GEN -> GEN;
+  fun isprincipalrayall: GEN * GEN * long -> GEN;
+  fun isprincipalraygen: GEN * GEN -> GEN;
+  fun ispsp: GEN -> long;
+  fun isrealappr: GEN * long -> int;
+  fun issquarefree: GEN -> long;
+  fun isunit: GEN * GEN -> GEN;
+  fun jacobi: GEN * long -> GEN;
+  fun jbesselh: GEN * GEN * long -> GEN;
+  fun jell: GEN * long -> GEN;
+  fun kbessel: GEN * GEN * long -> GEN;
+  fun kbessel0: GEN * GEN * long * long -> GEN;
+  fun kbessel2: GEN * GEN * long -> GEN;
+  fun ker: GEN -> GEN;
+  fun ker_mod_p: GEN * GEN -> GEN;
+  fun keri: GEN -> GEN;
+  fun kerint: GEN -> GEN;
+  fun kerint1: GEN -> GEN;
+  fun kerint2: GEN -> GEN;
+  fun killfile: ptr[pariFILE] -> int;
+  fun krogs: GEN * long -> long;
+  fun kronecker: GEN * GEN -> long;
+  fun krosg: long * GEN -> long;
+  fun kross: long * long -> long;
+  fun laplace: GEN -> GEN;
+  fun legendre: long * long -> GEN;
+  fun lexcmp: GEN * GEN -> int;
+  fun lexsort: GEN -> GEN;
+  fun lift: GEN -> GEN;
+  fun lift0: GEN * long -> GEN;
+  fun lift_intern0: GEN * long -> GEN;
+  fun lift_to_pol: GEN -> GEN;
+  fun lindep: GEN * long -> GEN;
+  fun lindep0: GEN * long * long -> GEN;
+  fun lindep2: GEN * long -> GEN;
+  fun lisGEN: ptr[FILE] -> GEN;
+  fun lisexpr: ptr[char] -> GEN;
+  fun lisseq: ptr[char] -> GEN;
+  fun listconcat: GEN * GEN -> GEN;
+  fun listcreate: long -> GEN;
+  fun listinsert: GEN * GEN * long -> GEN;
+  fun listput: GEN * GEN * long -> GEN;
+  fun listsort: GEN * long -> GEN;
+  fun lll: GEN * long -> GEN;
+  fun lll1: GEN * long -> GEN;
+  fun lllgen: GEN -> GEN;
+  fun lllgram: GEN * long -> GEN;
+  fun lllgram1: GEN * long -> GEN;
+  fun lllgramall: GEN * long * long -> GEN;
+  fun lllgramgen: GEN -> GEN;
+  fun lllgramint: GEN -> GEN;
+  fun lllgramintern: GEN * long * long * long -> GEN;
+  fun lllgramkerim: GEN -> GEN;
+  fun lllgramkerimgen: GEN -> GEN;
+  fun lllint: GEN -> GEN;
+  fun lllintern: GEN * long * long -> GEN;
+  fun lllintpartial: GEN -> GEN;
+  fun lllkerim: GEN -> GEN;
+  fun lllkerimgen: GEN -> GEN;
+  fun lllrat: GEN -> GEN;
+  fun lllreducemodmatrix: GEN * GEN -> GEN;
+  fun localreduction: GEN * GEN -> GEN;
+  fun log0: GEN * long * long -> GEN;
+  fun logagm: GEN -> GEN;
+  fun lseriesell: GEN * GEN * GEN * long -> GEN;
+  fun manage_var: long * ptr[entree] -> long;
+  fun matalgtobasis: GEN * GEN -> GEN;
+  fun matbasistoalg: GEN * GEN -> GEN;
+  fun matextract: GEN * GEN * GEN -> GEN;
+  fun mathell: GEN * GEN * long -> GEN;
+  fun mathilbert: long -> GEN;
+  fun mathnf0: GEN * long -> GEN;
+  fun matimage0: GEN * long -> GEN;
+  fun matker0: GEN * long -> GEN;
+  fun matkerint0: GEN * long -> GEN;
+  fun matmuldiagonal: GEN * GEN -> GEN;
+  fun matmultodiagonal: GEN * GEN -> GEN;
+  fun matqpascal: long * GEN -> GEN;
+  fun matrice: GEN * GEN * ptr[entree] * ptr[entree] * ptr[char] -> GEN;
+  fun matrixqz: GEN * GEN -> GEN;
+  fun matrixqz0: GEN * GEN -> GEN;
+  fun matrixqz2: GEN -> GEN;
+  fun matrixqz3: GEN -> GEN;
+  fun matsize: GEN -> GEN;
+  fun matsnf0: GEN * long -> GEN;
+  fun matsolvemod0: GEN * GEN * GEN * long -> GEN;
+  fun mattodiagonal: GEN -> GEN;
+  fun maxprime: 1 -> ulong;
+  fun millerrabin: GEN * long -> long;
+  fun minideal: GEN * GEN * GEN * long -> GEN;
+  fun minim: GEN * GEN * GEN -> GEN;
+  fun minim2: GEN * GEN * GEN -> GEN;
+  fun modii: GEN * GEN -> GEN;
+  fun modiu: GEN * ulong -> GEN;
+  fun modsi: long * GEN -> GEN;
+  fun modss: long * long -> GEN;
+  fun modui: ulong * GEN -> GEN;
+  fun modulargcd: GEN * GEN -> GEN;
+  fun mpent: GEN -> GEN;
+  fun mpeuler: long -> GEN;
+  fun mpexp: GEN -> GEN;
+  fun mpexp1: GEN -> GEN;
+  fun mpfact: long -> GEN;
+  fun mpfactr: long * long -> GEN;
+  fun mpinvmod: GEN * GEN -> GEN;
+  fun mplog: GEN -> GEN;
+  fun mppgcd: GEN * GEN -> GEN;
+  fun mppi: long -> GEN;
+  fun mpppcm: GEN * GEN -> GEN;
+  fun mpsqrt: GEN -> GEN;
+  fun mpsqrtmod: GEN * GEN -> GEN;
+  fun mpsqrtnmod: GEN * GEN * GEN * ptr[GEN] -> GEN;
+  fun mptrunc: GEN -> GEN;
+  fun mu: GEN -> long;
+  fun mulii: GEN * GEN -> GEN;
+  fun mulir: GEN * GEN -> GEN;
+  fun mulmat_real: GEN * GEN -> GEN;
+  fun mulrr: GEN * GEN -> GEN;
+  fun mulsi: long * GEN -> GEN;
+  fun mulsr: long * GEN -> GEN;
+  fun mulss: long * long -> GEN;
+  fun mymyrand: 1 -> long;
+  fun newbloc: long -> GEN;
+  fun newfile: ptr[FILE] * ptr[char] * int -> ptr[pariFILE];
+  fun newtonpoly: GEN * GEN -> GEN;
+  fun nextprime: GEN -> GEN;
+  fun nfbasis: GEN * ptr[GEN] * long * GEN -> GEN;
+  fun nfbasis0: GEN * long * GEN -> GEN;
+  fun nfdetint: GEN * GEN -> GEN;
+  fun nfdiscf0: GEN * long * GEN -> GEN;
+  fun nfdiveuc: GEN * GEN * GEN -> GEN;
+  fun nfdivres: GEN * GEN * GEN -> GEN;
+  fun nffactor: GEN * GEN -> GEN;
+  fun nffactormod: GEN * GEN * GEN -> GEN;
+  fun nfgetprec: GEN -> long;
+  fun nfhermite: GEN * GEN -> GEN;
+  fun nfhermitemod: GEN * GEN * GEN -> GEN;
+  fun nfhilbert: GEN * GEN * GEN -> long;
+  fun nfhilbert0: GEN * GEN * GEN * GEN -> long;
+  fun nfhilbertp: GEN * GEN * GEN * GEN -> long;
+  fun nfinit0: GEN * long * long -> GEN;
+  fun nfisincl: GEN * GEN -> GEN;
+  fun nfisisom: GEN * GEN -> GEN;
+  fun nfkermodpr: GEN * GEN * GEN -> GEN;
+  fun nfmod: GEN * GEN * GEN -> GEN;
+  fun nfmodprinit: GEN * GEN -> GEN;
+  fun nfnewprec: GEN * long -> GEN;
+  fun nfreducemodideal: GEN * GEN * GEN -> GEN;
+  fun nfreducemodidele: GEN * GEN * GEN * GEN -> GEN;
+  fun nfreducemodpr: GEN * GEN * GEN -> GEN;
+  fun nfreducemodpr2: GEN * GEN * GEN -> GEN;
+  fun nfroots: GEN * GEN -> GEN;
+  fun nfshanks: GEN * GEN * GEN * GEN * GEN -> GEN;
+  fun nfsmith: GEN * GEN -> GEN;
+  fun nfsolvemodpr: GEN * GEN * GEN * GEN -> GEN;
+  fun normalize: GEN -> GEN;
+  fun normalize_mod_p: GEN * GEN -> GEN;
+  fun normalizepol: GEN -> GEN;
+  fun normalizepol_i: GEN * long -> GEN;
+  fun nucomp: GEN * GEN * GEN -> GEN;
+  fun nudupl: GEN * GEN -> GEN;
+  fun numbdiv: GEN -> GEN;
+  fun numberofconjugates: GEN * long -> long;
+  fun numer: GEN -> GEN;
+  fun nupow: GEN * GEN -> GEN;
+  fun oldidealinv: GEN * GEN -> GEN;
+  fun omega: GEN -> long;
+  fun oncurve: GEN * GEN -> int;
+  fun opgs2: paridecl_h_cft_2 * GEN * long -> long;
+  fun ordell: GEN * GEN * long -> GEN;
+  fun order: GEN -> GEN;
+  fun orderell: GEN * GEN -> GEN;
+  fun ordred: GEN * long -> GEN;
+  fun os_getenv: ptr[char] -> ptr[char];
+  fun os_open: ptr[char] * int -> long;
+  fun os_signal: int * paridecl_h_cft_3 -> paridecl_h_cft_3;
+  fun padicprec: GEN * GEN -> long;
+  fun padicsqrtnlift: GEN * GEN * GEN * GEN * long -> GEN;
+  fun palog: GEN -> GEN;
+  fun pari_compare_int: ptr[int] * ptr[int] -> int;
+  fun pari_compare_long: ptr[long] * ptr[long] -> int;
+  fun pari_fopen: ptr[char] * ptr[char] -> ptr[pariFILE];
+  fun pari_strdup: ptr[char] -> ptr[char];
+  fun pari_unique_filename: ptr[char] -> ptr[char];
+  fun perf: GEN -> GEN;
+  fun permute: long * GEN -> GEN;
+  fun permuteInv: GEN -> GEN;
+  fun phi: GEN -> GEN;
+  fun plisprime: GEN * long -> GEN;
+  fun pnqn: GEN -> GEN;
+  fun pointch: GEN * GEN -> GEN;
+  fun pointell: GEN * GEN * long -> GEN;
+  fun polcoeff0: GEN * long * long -> GEN;
+  fun polcompositum0: GEN * GEN * long -> GEN;
+  fun poldegree: GEN * long -> long;
+  fun poldisc0: GEN * long -> GEN;
+  fun poldivis: GEN * GEN * ptr[GEN] -> int;
+  fun poldivres: GEN * GEN * ptr[GEN] -> GEN;
+  fun poleval: GEN * GEN -> GEN;
+  fun polfnf: GEN * GEN -> GEN;
+  fun polhensellift: GEN * GEN * GEN * long -> GEN;
+  fun polint: GEN * GEN * GEN * ptr[GEN] -> GEN;
+  fun pollead: GEN * long -> GEN;
+  fun polrecip: GEN -> GEN;
+  fun polred: GEN * long -> GEN;
+  fun polred0: GEN * long * GEN * long -> GEN;
+  fun polred2: GEN * long -> GEN;
+  fun polredabs: GEN * long -> GEN;
+  fun polredabs0: GEN * long * long -> GEN;
+  fun polredabs2: GEN * long -> GEN;
+  fun polredabsall: GEN * long * long -> GEN;
+  fun polredabsnored: GEN * long -> GEN;
+  fun polredfirstpol: GEN * long * paridecl_h_cft_2 * GEN -> GEN;
+  fun polresultant0: GEN * GEN * long * long -> GEN;
+  fun polsym: GEN * long -> GEN;
+  fun polylog: long * GEN * long -> GEN;
+  fun polylog0: long * GEN * long * long -> GEN;
+  fun polylogd: long * GEN * long -> GEN;
+  fun polylogdold: long * GEN * long -> GEN;
+  fun polylogp: long * GEN * long -> GEN;
+  fun polymodrecip: GEN -> GEN;
+  fun polzag: long * long -> GEN;
+  fun polzagreel: long * long * long -> GEN;
+  fun popinfile: 1 -> int;
+  fun powell: GEN * GEN * GEN -> GEN;
+  fun powgi: GEN * GEN -> GEN;
+  fun powmodulo: GEN * GEN * GEN -> GEN;
+  fun powraw: GEN * long -> GEN;
+  fun powrealraw: GEN * long -> GEN;
+  fun precision: GEN -> long;
+  fun precision0: GEN * long -> GEN;
+  fun precprime: GEN -> GEN;
+  fun prime: long -> GEN;
+  fun prime_to_ideal: GEN * GEN -> GEN;
+  fun primedec: GEN * GEN -> GEN;
+  fun primeform: GEN * GEN * long -> GEN;
+  fun primes: long -> GEN;
+  fun principalideal: GEN * GEN -> GEN;
+  fun principalidele: GEN * GEN * long -> GEN;
+  fun prodeuler: ptr[entree] * GEN * GEN * ptr[char] * long -> GEN;
+  fun prodinf: ptr[entree] * GEN * ptr[char] * long -> GEN;
+  fun prodinf0: ptr[entree] * GEN * ptr[char] * long * long -> GEN;
+  fun prodinf1: ptr[entree] * GEN * ptr[char] * long -> GEN;
+  fun produit: ptr[entree] * GEN * GEN * ptr[char] * GEN -> GEN;
+  fun pureimag: GEN -> GEN;
+  fun pvaluation: GEN * GEN * ptr[GEN] -> long;
+  fun qf_base_change: GEN * GEN * int -> GEN;
+  fun qfbclassno0: GEN * long -> GEN;
+  fun qfbred0: GEN * long * GEN * GEN * GEN -> GEN;
+  fun qfeval: GEN * GEN -> GEN;
+  fun qfi: GEN * GEN * GEN -> GEN;
+  fun qflll0: GEN * long * long -> GEN;
+  fun qflllgram0: GEN * long * long -> GEN;
+  fun qfminim0: GEN * GEN * GEN * long * long -> GEN;
+  fun qfr: GEN * GEN * GEN * GEN -> GEN;
+  fun qpsoluble: GEN * GEN -> long;
+  fun qpsolublenf: GEN * GEN * GEN -> long;
+  fun qromb: ptr[entree] * GEN * GEN * ptr[char] * long -> GEN;
+  fun qromi: ptr[entree] * GEN * GEN * ptr[char] * long -> GEN;
+  fun qromo: ptr[entree] * GEN * GEN * ptr[char] * long -> GEN;
+  fun quadclassunit0: GEN * long * GEN * long -> GEN;
+  fun quaddisc: GEN -> GEN;
+  fun quadgen: GEN -> GEN;
+  fun quadhilbert: GEN * GEN * long -> GEN;
+  fun quadpoly: GEN -> GEN;
+  fun quadpoly0: GEN * long -> GEN;
+  fun quadray: GEN * GEN * GEN * long -> GEN;
+  fun quickmul: GEN * GEN * long * long -> GEN;
+  fun quicksqr: GEN * long -> GEN;
+  fun racine: GEN -> GEN;
+  fun rank: GEN -> long;
+  fun rank_mod_p: GEN * GEN -> long;
+  fun rayclassno: GEN * GEN -> GEN;
+  fun rayclassnolist: GEN * GEN -> GEN;
+  fun readseq: ptr[char] * int -> GEN;
+  fun realun: long -> GEN;
+  fun realzero: long -> GEN;
+  fun recip: GEN -> GEN;
+  fun redimag: GEN -> GEN;
+  fun redreal: GEN -> GEN;
+  fun redrealnod: GEN * GEN -> GEN;
+  fun reduceddiscsmith: GEN -> GEN;
+  fun reducemodHNF: GEN * GEN * ptr[GEN] -> GEN;
+  fun reducemodmatrix: GEN * GEN -> GEN;
+  fun regula: GEN * long -> GEN;
+  fun regulator: GEN * GEN * long -> GEN;
+  fun removeprimes: GEN -> GEN;
+  fun reorder: GEN -> GEN;
+  fun resss: long * long -> GEN;
+  fun resultant2: GEN * GEN -> GEN;
+  fun resultantducos: GEN * GEN -> GEN;
+  fun rhoreal: GEN -> GEN;
+  fun rhorealnod: GEN * GEN -> GEN;
+  fun rnfalgtobasis: GEN * GEN -> GEN;
+  fun rnfbasis: GEN * GEN -> GEN;
+  fun rnfbasistoalg: GEN * GEN -> GEN;
+  fun rnfcharpoly: GEN * GEN * GEN * int -> GEN;
+  fun rnfconductor: GEN * GEN * long -> GEN;
+  fun rnfdedekind: GEN * GEN * GEN -> GEN;
+  fun rnfdet: GEN * GEN -> GEN;
+  fun rnfdet0: GEN * GEN * GEN -> GEN;
+  fun rnfdet2: GEN * GEN * GEN -> GEN;
+  fun rnfdiscf: GEN * GEN -> GEN;
+  fun rnfelementabstorel: GEN * GEN -> GEN;
+  fun rnfelementdown: GEN * GEN -> GEN;
+  fun rnfelementreltoabs: GEN * GEN -> GEN;
+  fun rnfelementup: GEN * GEN -> GEN;
+  fun rnfequation: GEN * GEN -> GEN;
+  fun rnfequation0: GEN * GEN * long -> GEN;
+  fun rnfequation2: GEN * GEN -> GEN;
+  fun rnfhermitebasis: GEN * GEN -> GEN;
+  fun rnfidealabstorel: GEN * GEN -> GEN;
+  fun rnfidealdown: GEN * GEN -> GEN;
+  fun rnfidealhermite: GEN * GEN -> GEN;
+  fun rnfidealmul: GEN * GEN * GEN -> GEN;
+  fun rnfidealnormabs: GEN * GEN -> GEN;
+  fun rnfidealnormrel: GEN * GEN -> GEN;
+  fun rnfidealreltoabs: GEN * GEN -> GEN;
+  fun rnfidealtwoelement: GEN * GEN -> GEN;
+  fun rnfidealup: GEN * GEN -> GEN;
+  fun rnfinitalg: GEN * GEN * long -> GEN;
+  fun rnfisfree: GEN * GEN -> long;
+  fun rnfisnorm: GEN * GEN * GEN * long * long -> GEN;
+  fun rnfkummer: GEN * GEN * long * long -> GEN;
+  fun rnflllgram: GEN * GEN * GEN * long -> GEN;
+  fun rnfnormgroup: GEN * GEN -> GEN;
+  fun rnfpolred: GEN * GEN * long -> GEN;
+  fun rnfpolredabs: GEN * GEN * long * long -> GEN;
+  fun rnfpseudobasis: GEN * GEN -> GEN;
+  fun rnfsimplifybasis: GEN * GEN -> GEN;
+  fun rnfsteinitz: GEN * GEN -> GEN;
+  fun rombint: ptr[entree] * GEN * GEN * ptr[char] * long -> GEN;
+  fun rootmod: GEN * GEN -> GEN;
+  fun rootmod0: GEN * GEN * long -> GEN;
+  fun rootmod2: GEN * GEN -> GEN;
+  fun rootpadic: GEN * GEN * long -> GEN;
+  fun rootpadicfast: GEN * GEN * long -> GEN;
+  fun rootpadiclift: GEN * GEN * GEN * long -> GEN;
+  fun rootpadicliftroots: GEN * GEN * GEN * long -> GEN;
+  fun roots: GEN * long -> GEN;
+  fun roots0: GEN * long * long -> GEN;
+  fun roots2: GEN * long -> GEN;
+  fun rootsof1: GEN -> GEN;
+  fun rootsofunity: GEN * long -> GEN;
+  fun rootsold: GEN * long -> GEN;
+  fun round0: GEN * ptr[GEN] -> GEN;
+  fun rowextract_i: GEN * long * long -> GEN;
+  fun rowextract_p: GEN * GEN -> GEN;
+  fun rtodbl: GEN -> double;
+  fun scalarpol: GEN * long -> GEN;
+  fun scalarser: GEN * long * long -> GEN;
+  fun setintersect: GEN * GEN -> GEN;
+  fun setisset: GEN -> long;
+  fun setloop: GEN -> GEN;
+  fun setminus: GEN * GEN -> GEN;
+  fun setrand: long -> long;
+  fun setsearch: GEN * GEN * long -> long;
+  fun setunion: GEN * GEN -> GEN;
+  fun sfcont: GEN * GEN * long -> GEN;
+  fun shifti: GEN * long -> GEN;
+  fun signat: GEN -> GEN;
+  fun signunits: GEN -> GEN;
+  fun simplefactmod: GEN * GEN -> GEN;
+  fun simplify: GEN -> GEN;
+  fun simplify_i: GEN -> GEN;
+  fun sindexlexsort: GEN -> GEN;
+  fun sindexsort: GEN -> GEN;
+  fun sizedigit: GEN -> long;
+  fun small_to_pol: GEN * long * long -> GEN;
+  fun smallbase: GEN * ptr[GEN] -> GEN;
+  fun smallbuchinit: GEN * GEN * GEN * GEN * GEN * long * long * long -> GEN;
+  fun smalldiscf: GEN -> GEN;
+  fun smallfact: GEN -> GEN;
+  fun smallinitell: GEN -> GEN;
+  fun smallpolred: GEN * long -> GEN;
+  fun smallpolred2: GEN * long -> GEN;
+  fun smith: GEN -> GEN;
+  fun smith2: GEN -> GEN;
+  fun smithclean: GEN -> GEN;
+  fun smodsi: long * GEN -> long;
+  fun somme: ptr[entree] * GEN * GEN * ptr[char] * GEN -> GEN;
+  fun sort: GEN -> GEN;
+  fun sort_factor: GEN * paridecl_h_cft_2 -> GEN;
+  fun sort_factor_gen: GEN * paridecl_h_cft_2 -> GEN;
+  fun sqcompimag: GEN -> GEN;
+  fun sqcompreal: GEN -> GEN;
+  fun sqred: GEN -> GEN;
+  fun sqred1: GEN -> GEN;
+  fun sqred1intern: GEN * long -> GEN;
+  fun sqred3: GEN -> GEN;
+  fun sqri: GEN -> GEN;
+  fun srgcd: GEN * GEN -> GEN;
+  fun stopoly: long * long * long -> GEN;
+  fun stopoly_gen: GEN * GEN * long -> GEN;
+  fun strtoGENstr: ptr[char] * long -> GEN;
+  fun sturmpart: GEN * GEN * GEN -> long;
+  fun subcyclo: GEN * GEN * int -> GEN;
+  fun subell: GEN * GEN * GEN -> GEN;
+  fun subfields: GEN * GEN -> GEN;
+  fun subfields0: GEN * GEN -> GEN;
+  fun subgrouplist: GEN * long -> GEN;
+  fun subgrouplist0: GEN * long * long * long -> GEN;
+  fun subresall: GEN * GEN * ptr[GEN] -> GEN;
+  fun subresext: GEN * GEN * ptr[GEN] * ptr[GEN] -> GEN;
+  fun sumalt: ptr[entree] * GEN * ptr[char] * long -> GEN;
+  fun sumalt0: ptr[entree] * GEN * ptr[char] * long * long -> GEN;
+  fun sumalt2: ptr[entree] * GEN * ptr[char] * long -> GEN;
+  fun sumdiv: GEN -> GEN;
+  fun sumdivk: GEN * long -> GEN;
+  fun suminf: ptr[entree] * GEN * ptr[char] * long -> GEN;
+  fun sumpos: ptr[entree] * GEN * ptr[char] * long -> GEN;
+  fun sumpos0: ptr[entree] * GEN * ptr[char] * long * long -> GEN;
+  fun sumpos2: ptr[entree] * GEN * ptr[char] * long -> GEN;
+  fun suppl: GEN -> GEN;
+  fun suppl_intern: GEN * GEN -> GEN;
+  fun svaluation: ulong * ulong * ptr[long] -> long;
+  fun switch_stack: ptr[stackzone] * long -> ptr[stackzone];
+  fun sylvestermatrix: GEN * GEN -> GEN;
+  fun tablesearch: GEN * GEN * paridecl_h_cft_2 -> long;
+  fun taille: GEN -> long;
+  fun taille2: GEN -> long;
+  fun taniyama: GEN -> GEN;
+  fun tayl: GEN * long * long -> GEN;
+  fun tchebi: long * long -> GEN;
+  fun teich: GEN -> GEN;
+  fun theta: GEN * GEN * long -> GEN;
+  fun thetanullk: GEN * long * long -> GEN;
+  fun threetotwo: GEN * GEN * GEN * GEN -> GEN;
+  fun threetotwo2: GEN * GEN * GEN * GEN -> GEN;
+  fun thue: GEN * GEN * GEN -> GEN;
+  fun thueinit: GEN * long * long -> GEN;
+  fun timer: 1 -> long;
+  fun timer2: 1 -> long;
+  fun torsell: GEN -> GEN;
+  fun transc: paridecl_h_cft_6 * GEN * long -> GEN;
+  fun truecoeff: GEN * long -> GEN;
+  fun truedvmdii: GEN * GEN * ptr[GEN] -> GEN;
+  fun trueeta: GEN * long -> GEN;
+  fun trunc0: GEN * ptr[GEN] -> GEN;
+  fun try_pipe: ptr[char] * int -> ptr[pariFILE];
+  fun tschirnhaus: GEN -> GEN;
+  fun twototwo: GEN * GEN * GEN -> GEN;
+  fun type_name: long -> ptr[char];
+  fun unifpol: GEN * GEN * long -> GEN;
+  fun vals: ulong -> long;
+  fun vandermondeinverse: GEN * GEN * GEN -> GEN;
+  fun vecbezout: GEN * GEN -> GEN;
+  fun vecbezoutres: GEN * GEN -> GEN;
+  fun veceint1: GEN * GEN * long -> GEN;
+  fun vecextract_i: GEN * long * long -> GEN;
+  fun vecextract_p: GEN * GEN -> GEN;
+  fun vecmax: GEN -> GEN;
+  fun vecmin: GEN -> GEN;
+  fun vecsort: GEN * GEN -> GEN;
+  fun vecsort0: GEN * GEN * long -> GEN;
+  fun vecteur: GEN * ptr[entree] * ptr[char] -> GEN;
+  fun vvecteur: GEN * ptr[entree] * ptr[char] -> GEN;
+  fun weber0: GEN * long * long -> GEN;
+  fun weipell: GEN * long -> GEN;
+  fun wf: GEN * long -> GEN;
+  fun wf2: GEN * long -> GEN;
+  fun zarchstar: GEN * GEN * GEN * long -> GEN;
+  fun zbrent: ptr[entree] * GEN * GEN * ptr[char] * long -> GEN;
+  fun zell: GEN * GEN * long -> GEN;
+  fun zerocol: long -> GEN;
+  fun zeropol: long -> GEN;
+  fun zeroser: long * long -> GEN;
+  fun zerovec: long -> GEN;
+  fun zideallog: GEN * GEN * GEN -> GEN;
+  fun zidealstar: GEN * GEN -> GEN;
+  fun zidealstarinit: GEN * GEN -> GEN;
+  fun zidealstarinitall: GEN * GEN * long -> GEN;
+  fun zidealstarinitgen: GEN * GEN -> GEN;
+  fun zidealstarinitjoin: GEN * GEN * GEN -> GEN;
+  fun zidealstarinitjoinarch: GEN * GEN * GEN * long -> GEN;
+  fun zidealstarinitjoinarchgen: GEN * GEN * GEN * long -> GEN;
+  fun zidealstarinitjoingen: GEN * GEN * GEN -> GEN;
+  fun znlog: GEN * GEN -> GEN;
+  fun znstar: GEN -> GEN;
+  fun zpsoluble: GEN * GEN -> long;
+  fun zpsolublenf: GEN * GEN * GEN -> long;
+  fun zsigne: GEN * GEN * GEN -> GEN;
+}
+@h = tangler("lib/pari/parierr_lib.flx")
+@select(h)
+
+//Module        : parierr_h
+//Timestamp     : 2006/4/5 6:8:55 UTC
+//Timestamp     : 2006/4/5 16:8:55 (local)
+//Raw Header    : parierr.h
+//Preprocessor  : gcc -E
+//Input file: pari.flxcc.i
+//Flxcc Control : pari.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+
+module parierr_h
+{
+  requires package "pari";
+  header '#include "parierr.h"';
+  open C_hack;
+  
+  //ENUMERATION CONSTANTS
+  const arither2: int = 'arither2';
+  const negexper: int = 'negexper';
+  const gamer2: int = 'gamer2';
+  const facter: int = 'facter';
+  const rootper1: int = 'rootper1';
+  const rootper2: int = 'rootper2';
+  const generer: int = 'generer';
+  const valencer1: int = 'valencer1';
+  const reser1: int = 'reser1';
+  const talker: int = 'talker';
+  const rootper4: int = 'rootper4';
+  const overwriter: int = 'overwriter';
+  const infprecer: int = 'infprecer';
+  const elliper1: int = 'elliper1';
+  const operf: int = 'operf';
+  const warnfile: int = 'warnfile';
+  const diver1: int = 'diver1';
+  const arier1: int = 'arier1';
+  const diver2: int = 'diver2';
+  const operi: int = 'operi';
+  const arier2: int = 'arier2';
+  const diver3: int = 'diver3';
+  const diver4: int = 'diver4';
+  const archer: int = 'archer';
+  const idealer1: int = 'idealer1';
+  const diver5: int = 'diver5';
+  const idealer2: int = 'idealer2';
+  const errlgef: int = 'errlgef';
+  const diver6: int = 'diver6';
+  const hiler1: int = 'hiler1';
+  const diver7: int = 'diver7';
+  const diver8: int = 'diver8';
+  const caseer: int = 'caseer';
+  const idealer5: int = 'idealer5';
+  const diver9: int = 'diver9';
+  const redpoler: int = 'redpoler';
+  const paramer1: int = 'paramer1';
+  const diver10: int = 'diver10';
+  const diver11: int = 'diver11';
+  const diver12: int = 'diver12';
+  const inter2: int = 'inter2';
+  const noer: int = 'noer';
+  const gdiver2: int = 'gdiver2';
+  const shier1: int = 'shier1';
+  const shier2: int = 'shier2';
+  const bugparier: int = 'bugparier';
+  const nparamer1: int = 'nparamer1';
+  const warnprec: int = 'warnprec';
+  const muler1: int = 'muler1';
+  const talker2: int = 'talker2';
+  const obsoler: int = 'obsoler';
+  const muler2: int = 'muler2';
+  const muler3: int = 'muler3';
+  const adder1: int = 'adder1';
+  const impl: int = 'impl';
+  const intger2: int = 'intger2';
+  const primer1: int = 'primer1';
+  const muler4: int = 'muler4';
+  const adder2: int = 'adder2';
+  const muler5: int = 'muler5';
+  const adder3: int = 'adder3';
+  const muler6: int = 'muler6';
+  const adder4: int = 'adder4';
+  const adder5: int = 'adder5';
+  const flagerr: int = 'flagerr';
+  const breaker: int = 'breaker';
+  const dvmer1: int = 'dvmer1';
+  const errvalp: int = 'errvalp';
+  const varer1: int = 'varer1';
+  const funder2: int = 'funder2';
+  const caracer1: int = 'caracer1';
+  const sqrter5: int = 'sqrter5';
+  const sqrter6: int = 'sqrter6';
+  const notpoler: int = 'notpoler';
+  const mattype1: int = 'mattype1';
+  const divzer1: int = 'divzer1';
+  const moder1: int = 'moder1';
+  const heller1: int = 'heller1';
+  const errlg: int = 'errlg';
+  const memer: int = 'memer';
+  const siginter: int = 'siginter';
+  const caseer2: int = 'caseer2';
+  const thetaer1: int = 'thetaer1';
+  const consister: int = 'consister';
+  const suppler2: int = 'suppler2';
+  const warnmem: int = 'warnmem';
+  const gerper: int = 'gerper';
+  const concater: int = 'concater';
+  const accurer: int = 'accurer';
+  const openfiler: int = 'openfiler';
+  const poler9: int = 'poler9';
+  const ploter4: int = 'ploter4';
+  const errexpo: int = 'errexpo';
+  const ploter5: int = 'ploter5';
+  const matinv1: int = 'matinv1';
+  const truer1: int = 'truer1';
+  const changer1: int = 'changer1';
+  const truer2: int = 'truer2';
+  const member: int = 'member';
+  const rtodber: int = 'rtodber';
+  const zeropoler: int = 'zeropoler';
+  const polrationer: int = 'polrationer';
+  const constpoler: int = 'constpoler';
+  const affer1: int = 'affer1';
+  const errpile: int = 'errpile';
+  const affer2: int = 'affer2';
+  const affer3: int = 'affer3';
+  const affer4: int = 'affer4';
+  const affer5: int = 'affer5';
+  const warner: int = 'warner';
+  const lllger3: int = 'lllger3';
+  const lllger4: int = 'lllger4';
+  const typeer: int = 'typeer';
+  const arither1: int = 'arither1';
+}
+@h = tangler("lib/pari/parigen_lib.flx")
+@select(h)
+
+//Module        : parigen_h
+//Timestamp     : 2006/4/5 6:8:55 UTC
+//Timestamp     : 2006/4/5 16:8:55 (local)
+//Raw Header    : parigen.h
+//Preprocessor  : gcc -E
+//Input file: pari.flxcc.i
+//Flxcc Control : pari.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define setvarn(x,s)  (((GEN)(x))[1]=\
+//#define varn(x)       ((long) ((((GEN) (x))[1]&VARNBITS) >> VARNSHIFT))
+//#define setprecp(x,s) (((GEN)(x))[1]=\
+//#define precp(x)      ((long) (((ulong) ((GEN) (x))[1]) >> PRECPSHIFT))
+//#define setvalp(x,s)  (((GEN)(x))[1]=\
+//#define valp(x)       ((long) ((((GEN)(x))[1] & VALPBITS) - HIGHVALPBIT))
+//#define setexpo(x,s)  (((GEN)(x))[1]=\
+//#define expo(x)       ((long) ((((GEN) (x))[1] & EXPOBITS) - HIGHEXPOBIT))
+//#define setlgefint(x,s) (((GEN)(x))[1]=\
+//#define lgefint(x)      ((long) (((GEN) (x))[1] & LGEFINTBITS))
+//#define setlgef(x,s)  (((GEN)(x))[1]=\
+//#define lgef(x)       ((long) (((GEN) (x))[1] & LGEFBITS))
+//#define setsigne(x,s) (((GEN)(x))[1]=\
+//#define signe(x)      (((long) ((GEN) (x))[1]) >> SIGNSHIFT)
+//#define setlg(x,s)    (((GEN)(x))[0]=\
+//#define lg(x)         ((((long)(x))&1)?1: ((long) (((GEN) (x))[0] & LGBITS)))
+//#define unsetisclone(x) (((GEN) (x))[0] &= (~CLONEBIT))
+//#define setisclone(x) (((GEN) (x))[0] |= CLONEBIT)
+//#define isclone(x)    (((GEN) (x))[0] & CLONEBIT)
+//#define smalltos(x)   (((long)(x))>>1)
+//#define settyp(x,s)   (((GEN)(x))[0]=\
+//#define typ(x)        ((((long)(x))&1)? t_SMALL: (((ulong) ((GEN) (x))[0]) >> TYPSHIFT))
+//#define m_evallgef(x)  (x)
+//#define m_evallg(x)    (x)
+//#define evallgefint(x) (x)
+//#define m_evalvalp(x)  (HIGHVALPBIT + (x))
+//#define m_evalexpo(x)  (HIGHEXPOBIT + (x))
+//#define evalprecp(x)   (((long)(x)) << PRECPSHIFT)
+//#define evalsigne(x)   (((long)(x)) << SIGNSHIFT)
+//#define evalvarn(x)    (((ulong)(x)) << VARNSHIFT)
+//#define evaltyp(x)     (((ulong)(x)) << TYPSHIFT)
+//#define VARNSHIFT    32
+//#define PRECPSHIFT   32
+//#define PRECPBITS    (0xffffffff00000000UL)
+//#define HIGHVALPBIT  (0x0000000080000000L)
+//#define VALPBITS     (0x00000000ffffffffUL)
+//#define LGEFINTBITS  (0x00000000ffffffffUL)
+//#define HIGHEXPOBIT  (0x0000800000000000L)
+//#define EXPOBITS     (0x0000ffffffffffffUL)
+//#define MAXVARN      65535
+//#define SIGNSHIFT    48
+//#define LGEFBITS     (0x00000000ffffffffUL)
+//#define VARNBITS     (0x0000ffff00000000UL)
+//#define SIGNBITS     (0xffff000000000000UL)
+//#define TYPSHIFT     48
+//#define LGBITS       (0x00000000ffffffffUL)
+//#define CLONEBIT     (0x0000000100000000UL)
+//#define TYPBITS      (0xffff000000000000UL)
+//#define TYPSHIFT     24
+//#define LGBITS       (0x0000ffffUL)
+//#define CLONEBIT     (0x00010000UL)
+//#define TYPBITS      (0xff000000UL)
+//#define TYPSHIFT     25
+//#define LGBITS       (0x00ffffffUL)
+//#define CLONEBIT     (0x01000000UL)
+//#define TYPBITS      (0xfe000000UL)
+//#define MAXVARN     255
+//#define SIGNSHIFT   24
+//#define LGEFINTBITS (0x0000ffffUL)
+//#define VARNBITS    (0x00ff0000UL)
+//#define SIGNBITS    (0xff000000UL)
+//#define MAXVARN     16383
+//#define SIGNSHIFT   30
+//#define LGEFINTBITS (0x00ffffffUL)
+//#define VARNBITS    (0x3fff0000UL)
+//#define SIGNBITS    (0xc0000000UL)
+//#define VARNSHIFT   16
+//#define PRECPSHIFT  16
+//#define PRECPBITS   (0xffff0000UL) /* used only for type PADIC */
+//#define HIGHVALPBIT (0x00008000L)  /* used only for type PADIC, SER */
+//#define VALPBITS    (0x0000ffffUL) /* used only for type PADIC */
+//#define LGEFBITS    (0x0000ffffUL)
+//#define HIGHEXPOBIT (0x00800000L)
+//#define EXPOBITS    (0x00ffffffUL)
+//#define BITS_IN_RANDOM      32
+//#define BITS_IN_HALFULONG   16
+//#define BITS_IN_LONG        32
+//#define BYTES_IN_LONG        4
+//#define TWOPOTBITS_IN_LONG   5
+//#define TWOPOTBYTES_IN_LONG  2
+//#define BIGDEFAULTPREC  8
+//#define MEDDEFAULTPREC  6
+//#define DEFAULTPREC     4
+//#define SMALL_MASK   (0x40000000UL)
+//#define LOWMASK      (0x0000ffffUL)
+//#define HIGHMASK     (0xffff0000UL)
+//#define HIGHBIT      (0x80000000UL)
+//#define MAXHALFULONG (0x0000ffffUL)
+//#define MAXULONG     (0xffffffffUL)
+//#define BITS_IN_RANDOM      32
+//#define BITS_IN_HALFULONG   32
+//#define BITS_IN_LONG        64
+//#define BYTES_IN_LONG        8
+//#define TWOPOTBITS_IN_LONG   6
+//#define TWOPOTBYTES_IN_LONG  3
+//#define BIGDEFAULTPREC  5
+//#define MEDDEFAULTPREC  4
+//#define DEFAULTPREC     3
+//#define SMALL_MASK   (0x4000000000000000UL)
+//#define LOWMASK      (0x00000000ffffffffUL)
+//#define HIGHMASK     (0xffffffff00000000UL)
+//#define HIGHBIT      (0x8000000000000000UL)
+//#define MAXHALFULONG (0x00000000ffffffffUL)
+//#define MAXULONG     (0xffffffffffffffffUL)
+//#define OLD_CODES
+
+module parigen_h
+{
+  requires package "pari";
+  header '#include "parigen.h"';
+  open C_hack;
+  
+  //C FUNCTION POINTER TYPES
+  header '''typedef int (*parigen_h_cft_1)(void const *,  void const *);''';
+  type parigen_h_cft_1 = 'parigen_h_cft_1';
+  
+  //TYPE ALIASES
+  typedef GEN = ptr[long];
+  typedef QSCOMP = parigen_h_cft_1;
+}
+@h = tangler("lib/pari/pariinl_lib.flx")
+@select(h)
+
+//Module        : pariinl_h
+//Timestamp     : 2006/4/5 6:8:55 UTC
+//Timestamp     : 2006/4/5 16:8:55 (local)
+//Raw Header    : pariinl.h
+//Preprocessor  : gcc -E
+//Input file: pari.flxcc.i
+//Flxcc Control : pari.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define INLINE
+//#define SPLIT(a, b, c) b = HIGHWORD(a); c = LOWWORD(a)
+//#define GLUE(hi, lo) (((hi) << BITS_IN_HALFULONG) + (lo))
+//#define LOWWORD(a) ((a) & LOWMASK)
+//#define HIGHWORD(a) ((a) >> BITS_IN_HALFULONG)
+//#define SAVE_HIREMAINDER
+//#define LOCAL_HIREMAINDER
+//#define SAVE_OVERFLOW
+//#define LOCAL_OVERFLOW
+//#define INLINE
+//INCLUDES
+include "parigen_lib";
+
+module pariinl_h
+{
+  requires package "pari";
+  header '#include "pariinl.h"';
+  open C_hack;
+  open parigen_h;
+  
+  //VARIABLES
+  const overflow: ulong = 'overflow';
+  const hiremainder: ulong = 'hiremainder';
+  
+  //PROCEDURES
+  proc addsii: long * GEN * GEN;
+  proc addssz: long * long * GEN;
+  proc affii: GEN * GEN;
+  proc affsi: long * GEN;
+  proc affsr: long * GEN;
+  proc divisz: GEN * long * GEN;
+  proc divrrz: GEN * GEN * GEN;
+  proc divsiz: long * GEN * GEN;
+  proc divssz: long * long * GEN;
+  proc dvmdiiz: GEN * GEN * GEN * GEN;
+  proc dvmdisz: GEN * long * GEN * GEN;
+  proc dvmdsiz: long * GEN * GEN * GEN;
+  proc dvmdssz: long * long * GEN * GEN;
+  proc mpaff: GEN * GEN;
+  proc mulsii: long * GEN * GEN;
+  proc mulssz: long * long * GEN;
+  proc resiiz: GEN * GEN * GEN;
+  
+  //FUNCTIONS
+  fun addll: ulong * ulong -> long;
+  fun addllx: ulong * ulong -> long;
+  fun addmul: ulong * ulong -> long;
+  fun addssmod: long * long * long -> long;
+  fun bfffo: ulong -> int;
+  fun cgetg: long * long -> GEN;
+  fun cgeti: long -> GEN;
+  fun cgetr: long -> GEN;
+  fun cmpir: GEN * GEN -> int;
+  fun cmpsr: long * GEN -> int;
+  fun divise: GEN * GEN -> int;
+  fun divisii: GEN * long * GEN -> long;
+  fun divll: ulong * ulong -> long;
+  fun divss: long * long -> GEN;
+  fun divssmod: long * long * long -> long;
+  fun dvmdis: GEN * long * ptr[GEN] -> GEN;
+  fun dvmdsi: long * GEN * ptr[GEN] -> GEN;
+  fun dvmdss: long * long * ptr[GEN] -> GEN;
+  fun evalexpo: ulong -> ulong;
+  fun evallg: ulong -> ulong;
+  fun evallgef: ulong -> ulong;
+  fun evalvalp: ulong -> ulong;
+  fun expi: GEN -> long;
+  fun gtodouble: GEN -> double;
+  fun icopy: GEN -> GEN;
+  fun icopy_av: GEN * GEN -> GEN;
+  fun itos: GEN -> long;
+  fun modis: GEN * long -> GEN;
+  fun mpabs: GEN -> GEN;
+  fun mpadd: GEN * GEN -> GEN;
+  fun mpcmp: GEN * GEN -> int;
+  fun mpcopy: GEN -> GEN;
+  fun mpdiv: GEN * GEN -> GEN;
+  fun mpdivis: GEN * GEN * GEN -> int;
+  fun mpmul: GEN * GEN -> GEN;
+  fun mpneg: GEN -> GEN;
+  fun mpsub: GEN * GEN -> GEN;
+  fun mulll: ulong * ulong -> long;
+  fun mulssmod: ulong * ulong * ulong -> long;
+  fun new_chunk: long -> GEN;
+  fun resis: GEN * long -> GEN;
+  fun ressi: long * GEN -> GEN;
+  fun shiftl: ulong * ulong -> long;
+  fun shiftlr: ulong * ulong -> long;
+  fun shiftr: GEN * long -> GEN;
+  fun smodis: GEN * long -> long;
+  fun stoi: long -> GEN;
+  fun subii: GEN * GEN -> GEN;
+  fun subir: GEN * GEN -> GEN;
+  fun subll: ulong * ulong -> long;
+  fun subllx: ulong * ulong -> long;
+  fun subri: GEN * GEN -> GEN;
+  fun subrr: GEN * GEN -> GEN;
+  fun subsi: long * GEN -> GEN;
+  fun subsr: long * GEN -> GEN;
+  fun subssmod: long * long * long -> long;
+  fun utoi: ulong -> GEN;
+  fun vali: GEN -> long;
+}
+
+@h = tangler("lib/pari/paristdio_lib.flx")
+@select(h)
+//Module        : paristio_h
+//Timestamp     : 2006/4/5 6:8:55 UTC
+//Timestamp     : 2006/4/5 16:8:55 (local)
+//Raw Header    : paristio.h
+//Preprocessor  : gcc -E
+//Input file: pari.flxcc.i
+//Flxcc Control : pari.flxcc
+//Felix Version : 1.1.2_rc7
+include 'std';
+
+//#define SIGINT 2
+//#define SIG_IGN (void(*)())1
+//#define stack_lim(av,n) (bot + (((av)-bot)>>(n)))
+//#define low_stack(x,l) (avma < (x))
+//#define low_stack(x,l) (avma < (l))
+//#define isonstack(x) ((ulong)(x)>=bot && (ulong)(x)<top)
+//#define icopyifstack(x,y) {ulong t=(ulong)(x); \
+//#define copyifstack(x,y) {ulong t=(ulong)(x); \
+//#define is_universal_constant(x) ((GEN)(x) >= gzero && (GEN)(x) <= gi)
+
+module paristio_h
+{
+  requires package "pari";
+  header '#include "paristio.h"';
+  open C_hack;
+  
+  //CSTRUCTS 
+  cstruct pariFILE {
+    file: ptr[FILE];
+    type_: int;
+    name: ptr[char];
+    prev: ptr[_struct_pariFILE];
+    next: ptr[_struct_pariFILE];
+  }
+  cstruct entree {
+    name: ptr[char];
+    valence: ulong;
+    value: address;
+    menu: long;
+    code_: ptr[char];
+    next: ptr[_struct_entree];
+    help: ptr[char];
+    args: address;
+  }
+  cstruct PariOUT {
+    putch: paristio_h_cft_1;
+    puts: paristio_h_cft_2;
+    flush: paristio_h_cft_3;
+    die: paristio_h_cft_3;
+  }
+  cstruct stackzone {
+    zonetop: long;
+    bot: long;
+    top: long;
+    avma: long;
+    memused: long;
+  }
+  
+  //C FUNCTION POINTER TYPES
+  header '''typedef void (*paristio_h_cft_1)(char);''';
+  type paristio_h_cft_1 = 'paristio_h_cft_1';
+  header '''typedef void (*paristio_h_cft_3)(void);''';
+  type paristio_h_cft_3 = 'paristio_h_cft_3';
+  header '''typedef void (*paristio_h_cft_2)(char *);''';
+  type paristio_h_cft_2 = 'paristio_h_cft_2';
+  
+  //STRUCT or UNION TAG ALIASES
+  
+  //TYPE ALIASES
+  typedef byteptr = ptr[utiny];
+  typedef _struct_pariFILE = pariFILE;
+  typedef _struct_entree = entree;
+  typedef _struct_stackzone = stackzone;
+  typedef _struct_PariOUT = PariOUT;
+  
+  //VARIABLES
+  const diffptr: byteptr = 'diffptr';
+  const pariOut: ptr[PariOUT] = 'pariOut';
+  const current_psfile: ptr[char] = 'current_psfile';
+  const pariErr: ptr[PariOUT] = 'pariErr';
+  const errmessage: ptr[ptr[char]] = 'errmessage';
+  const varentries: ptr[ptr[entree]] = 'varentries';
+  const avma: ulong = 'avma';
+  const infile: ptr[FILE] = 'infile';
+  const top: ulong = 'top';
+  const bot: ulong = 'bot';
+  const memused: ulong = 'memused';
+  const pari_outfile: ptr[FILE] = 'pari_outfile';
+  const errfile: ptr[FILE] = 'errfile';
+  const logfile: ptr[FILE] = 'logfile';
+}
