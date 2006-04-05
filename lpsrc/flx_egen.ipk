@@ -240,7 +240,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     let t = lstrip syms.dfns t in
     begin match t with
     | `BTYP_sum _
-    | `BTYP_unitsum _ ->
+    | `BTYP_unitsum _ 
+    | `BTYP_variant _ ->
       if is_unitsum t then ge' e
       else ce_dot (ge' e) "variant"
     | `BTYP_inst (i,ts) ->
@@ -402,6 +403,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         begin match ct with
         | `Str c
         | `StrTemplate c when c = "#memcount" ->
+          let ts = map (lstrip syms.dfns) ts in
           begin match ts with 
           | [`BTYP_unitsum n]
           | [`BTYP_array (_,`BTYP_unitsum n)] -> ce_atom (si n)
@@ -414,9 +416,17 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
               | `BBDCL_cstruct (_,ls) -> let n = length ls in ce_atom (si n)
               | `BBDCL_union (_,ls) -> let n = length ls in ce_atom (si n)
               | `BBDCL_class (_,ls) -> let n = length ls in ce_atom (si n)
-              | _ -> clierr sr "#memcount function requires type with members to count"
+              | _ -> 
+                clierr sr (
+                  "#memcount function requires type with members to count, got: " ^ 
+                  sbt syms.dfns (hd ts)
+                )
             end
-          | _ -> clierr sr "#memcount function requires type with members to count"
+          | _ -> 
+            clierr sr (
+              "#memcount function requires type with members to count, got : " ^
+              sbt syms.dfns (hd ts)
+            )
           end
         | `Str c -> ce_expr "expr" c
         | `StrTemplate c ->
@@ -650,6 +660,54 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   (* Hackery -- we allow a constructor with no
      arguments to be applied to a unit anyhow
   *)
+
+  | `BEXPR_variant (s,((_,t') as e)) ->
+    print_endline ("Variant " ^ s);
+    print_endline ("Type " ^ sbt syms.dfns t);
+    let 
+      arg_typename = tn t' and
+      union_typename = tn t 
+    in
+    let aval = 
+      "new (*PTF gc, "^arg_typename^"_ptr_map) " ^
+      arg_typename ^ "(" ^ ge_arg e ^ ")"
+    in 
+    let ls = match t with
+      | `BTYP_variant ls -> ls
+      | _ -> failwith "[egen] Woops variant doesn't have variant type"
+    in 
+    let vidx = match list_assoc_index ls s with
+      | Some i -> i
+      | None -> failwith "[egen] Woops, variant field not in type"
+    in
+    print_endline ("Index " ^ si vidx);
+    let uval = "_uctor_("^si vidx^"," ^ aval ^")"  in
+    ce_atom uval
+
+  | `BEXPR_coerce ((srcx,srct) as srce,dstt) ->
+    let srct = lstrip syms.dfns srct in
+    let vts = 
+      match dstt with 
+      | `BTYP_variant ls -> ls
+      | _ -> syserr sr "Coerce non-variant"
+    in
+    begin match srcx with
+    | `BEXPR_variant (s,argt) ->
+      print_endline "Coerce known variant!";
+      ge' (`BEXPR_variant (s,argt),t)
+    | _ ->
+      let i = 
+        begin try 
+          Hashtbl.find syms.variant_map (srct,dstt)
+        with Not_found -> 
+          let i = !(syms.counter) in incr (syms.counter);
+          Hashtbl.add syms.variant_map (srct,dstt) i;
+          i
+      end
+      in
+      ce_atom ("_uctor_(vmap_"^si i^","^ge srce^")")
+    end
+  
   | `BEXPR_apply 
      (
        (`BEXPR_case (v,t),t'),

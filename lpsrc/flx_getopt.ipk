@@ -208,6 +208,7 @@ let make_syms options =
     bifaces = [];
     reductions = [];
     axioms = [];
+    variant_map = Hashtbl.create 97;
   }
 
 

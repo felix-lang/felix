@@ -505,6 +505,11 @@ union_decl:
       `AST_union (rstoken $1 $7, snd $2, $3, $6) 
     }
 
+  | UNION NAME tvarlist LBRACE type_sum_items2 RBRACE 
+    { 
+      `AST_union (rstoken $1 $6, snd $2, $3, $5) 
+    }
+
 opt_value:
   | EQUAL INTEGER { 
       let sr,t,v = $2 in 
@@ -533,6 +538,9 @@ type_sum_item:
       let sr = slift (fst $1) in
       snd $1, None, typecode_of_expr (`AST_void sr)
     }
+type_sum_items2:
+  | type_sum_items2 type_sum_item SEMI { $1 @ [$2] }
+  | type_sum_item SEMI { [$1] }
 
 @head(3,'Struct Binding')
 @select(h)
@@ -2496,6 +2504,14 @@ case_literal:
         typecode_of_expr $4
       )
     } 
+  | CASE NAME OF sum
+    {
+      let sr =  rsrange (slift $1) (src_of_expr $4) in
+      let s = snd $2 in
+      let e = $4 in
+      `AST_variant (sr,(s,e))
+    } 
+
   | bor { $1 }
 
 bor:
@@ -2594,6 +2610,13 @@ superscript:
 
   | refr { $1 }
 refr:
+  | UNION LBRACE type_sum_items2 RBRACE 
+    { 
+      let sr = rstoken $1 $4 in
+      let ls = map (fun (s,_,t)->s,t) $3 in
+      `AST_variant_type (sr,ls)
+    }
+
   | STRUCT compound { 
      let sr = rsrange (slift $1) (fst $2) in
      let es = snd $2 in
@@ -2639,6 +2662,7 @@ refr:
        (`AST_record_type (sr,es) :> expr_t)
      else assert false
    }
+  
   | AMPER refr
     { 
       `AST_ref 

@@ -232,7 +232,7 @@ let rec dual t =
 
   | `BTYP_typeset ts -> `BTYP_intersect (map dual ts)
   | `BTYP_intersect ts -> `BTYP_typeset (map dual ts)
-  | `BTYP_record _ -> failwith "Records have no duals at present"
+  | `BTYP_record ts -> `BTYP_variant ts
   | t -> t
 
 (* top down check for fix point not under sum or pointer *)
@@ -415,6 +415,9 @@ let fix i t =
 
     | `BTYP_record ts ->
        `BTYP_record (map (fun (s,t) -> s, aux t) ts)
+
+    | `BTYP_variant ts ->
+       `BTYP_variant (map (fun (s,t) -> s, aux t) ts)
  
     | `BTYP_unitsum _
     | `BTYP_void
@@ -442,6 +445,7 @@ let lstrip dfns t =
   | `BTYP_tuple ls -> `BTYP_tuple (map uf ls)
   | `BTYP_array (a,b) -> `BTYP_array (uf a, uf b)
   | `BTYP_record ts -> `BTYP_record (map (fun (s,t) -> s,uf t) ts)
+  | `BTYP_variant ts -> `BTYP_variant (map (fun (s,t) -> s,uf t) ts)
 
   (* I think this is WRONG .. *)
   | `BTYP_function (a,b) -> `BTYP_function (uf a, uf b)
@@ -601,7 +605,26 @@ let rec unification allow_lval dfns
         end
         else raise Not_found
          
+      | `BTYP_variant [],`BTYP_void
+      | `BTYP_void,`BTYP_variant [] -> ()
 
+      | `BTYP_variant t1,`BTYP_variant t2 ->
+        if length t1 = length t2 
+        then begin
+          let rcmp (s1,_) (s2,_) = compare s1 s2 in
+          let t1 = sort rcmp t1 in
+          let t2 = sort rcmp t2 in
+          if (map fst t1) <> (map fst t2) then raise Not_found;
+          let rec merge e a b = match a,b with
+          | [],[] -> e
+          | ah :: at, bh :: bt -> merge ((ah,bh) :: e) at bt
+          | _ -> assert false
+          in 
+            eqns := merge !eqns (map snd t1) (map snd t2);
+            s := None
+        end
+        else raise Not_found
+ 
       | `BTYP_type,`BTYP_type-> ()
       | `BTYP_void,`BTYP_void -> ()
 
@@ -887,6 +910,21 @@ let rec type_eq' dfns allow_lval ltrail ldepth rtrail rdepth trail t1 t2 =
       true (map snd t1) (map snd t2)
     end else false
 
+  | `BTYP_variant [],`BTYP_tuple []
+  | `BTYP_tuple [],`BTYP_variant [] -> true
+
+  | `BTYP_variant t1,`BTYP_variant t2 ->
+    if length t1 = length t2
+    then begin
+      let rcmp (s1,_) (s2,_) = compare s1 s2 in
+      let t1 = sort rcmp t1 in
+      let t2 = sort rcmp t2 in
+      map fst t1 = map fst t2 &&
+      fold_left2 
+      (fun tr a b -> tr && te a b) 
+      true (map snd t1) (map snd t2)
+    end else false
+
 
   | `BTYP_array (s1,d1),`BTYP_array (s2,d2) 
   | `BTYP_function (s1,d1),`BTYP_function (s2,d2) 
@@ -961,6 +999,7 @@ let unfold dfns t =
   | `BTYP_sum ls -> `BTYP_sum (map uf ls)
   | `BTYP_tuple ls -> `BTYP_tuple (map uf ls)
   | `BTYP_record ls -> `BTYP_record (map (fun (s,t) -> s,uf t) ls)
+  | `BTYP_variant ls -> `BTYP_variant (map (fun (s,t) -> s,uf t) ls)
   | `BTYP_array (a,b) -> `BTYP_array (uf a, uf b)
   | `BTYP_function (a,b) -> `BTYP_function (uf a, uf b)
   | `BTYP_cfunction (a,b) -> `BTYP_cfunction (uf a, uf b)
@@ -987,6 +1026,7 @@ let fold dfns t =
     | `BTYP_inst (_,ls)
     | `BTYP_tuple ls -> iter ax ls
     | `BTYP_record ls -> iter (fun (s,t) -> ax t) ls
+    | `BTYP_variant ls -> iter (fun (s,t) -> ax t) ls
 
     | `BTYP_array (a,b)
     | `BTYP_function (a,b) -> ax a; ax b
@@ -1038,6 +1078,7 @@ let var_occurs t =
     | `BTYP_inst (_,ls)
     | `BTYP_tuple ls -> iter aux ls
     | `BTYP_record ls -> iter (fun (s,t) -> aux t) ls
+    | `BTYP_variant ls -> iter (fun (s,t) -> aux t) ls
 
     | `BTYP_array (a,b)
     | `BTYP_function (a,b) -> aux a; aux b
@@ -1060,6 +1101,7 @@ let normalise_type t =
   let varmap = ref [] in
   let rec aux t = match map_btype aux t with
   | `BTYP_record [] -> `BTYP_tuple []
+  | `BTYP_variant [] -> `BTYP_void
   | `BTYP_var (i,mt) ->
     `BTYP_var 
     ((
@@ -1162,6 +1204,10 @@ let rec expr_unification dfns
         assert (length ts1 = length ts2);
         teqns := combine ts1 ts2 @ !teqns;
         eqns := (e1,e2) :: !eqns
+
+      | `BEXPR_coerce (e,t),`BEXPR_coerce (e',t') ->
+        teqns := (t,t') :: !teqns;
+        eqns := (e,e') :: !eqns
 
       | (`BEXPR_tuple ls1, `BEXPR_tuple ls2) 
         when length ls1 = length ls2 ->

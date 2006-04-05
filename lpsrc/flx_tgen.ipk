@@ -201,6 +201,9 @@ let gen_type_name syms bbdfns (index,typ) =
     else
       "typedef _uctor_ " ^ tn typ ^ ";\n"
 
+  | `BTYP_variant ts ->
+    "typedef _uctor_ " ^ tn typ ^ ";\n"
+
   | `BTYP_void -> ""
 
   | `BTYP_inst (i,ts) -> 
@@ -401,6 +404,7 @@ let gen_type syms bbdfns (index,typ) =
 
   | `BTYP_unitsum _ -> "" (* union typedef *)
   | `BTYP_sum _ -> "" (* union typedef *)
+  | `BTYP_variant _ -> ""
 
   | `BTYP_tuple [] -> "" 
   | `BTYP_tuple ts -> 

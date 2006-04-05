@@ -113,6 +113,10 @@ let rec get_offsets' syms bbdfns typ : string list =
   | `BTYP_sum args when not (all_units args) -> 
     ["offsetof("^tname^",data)"]
 
+  (* need to fix the rule for optimisation here .. *)
+  | `BTYP_variant _ -> 
+    ["offsetof("^tname^",data)"]
+
   | `BTYP_inst (i,ts) ->
     let id,parent,sr,entry = 
       try Hashtbl.find bbdfns i 
@@ -445,6 +449,20 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
       )
       args
 
+    | `BTYP_variant args -> 
+      iter 
+      (fun (_,t) -> let t = reduce_type t in
+        match t with
+        | `BTYP_tuple [] 
+        | `BTYP_void -> ()
+        | _ -> 
+          try
+            let index = Hashtbl.find syms.registry t in
+            Hashtbl.replace allocable_types t index
+          with Not_found -> ()
+      )
+      args
+
     | `BTYP_inst (i,ts) ->
       (*
       print_endline ("Thinking about instance type --> " ^ string_of_btypecode syms.dfns btyp);
@@ -530,6 +548,16 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
       let name = cpp_typename syms btyp in
       let tname = cpp_typename syms t in
       let offsets = get_offsets syms bbdfns t in
+      let is_pod =
+        match t with 
+        | `BTYP_inst (k,ts) ->
+          let id,sr,parent,entry = Hashtbl.find bbdfns k in
+          begin match entry with
+          | `BBDCL_abs (_,quals,_,_) -> mem `Pod quals
+          | _ -> false
+          end
+        | _ -> false
+      in
       let n = length offsets in 
       bcat s ("\n//OFFSETS for array type " ^ si index ^ "\n");
       if n <> 0 then begin
@@ -543,23 +571,34 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
       let old_ptr_map = !last_ptr_map in
       last_ptr_map := "&"^this_ptr_map;
 
-      bcat s ("//WARNING: ONLY WORKS WITH CORRECT STATIC SIZE\n");
-      bcat s ("static void " ^ name ^ "_finaliser(collector_t *, void *p){\n");
-      bcat s ("  for(std::size_t count = "^ si k ^"; count; --count)\n");
-      bcat s ("  {\n");
-      bcat s ("    (("^ tname ^ "*)p)->~" ^ tname ^ "();\n");
-      bcat s ("    p = (void*)((char*)p + sizeof("^tname^"));\n");
-      bcat s ("  }\n");
-      bcat s ("}\n");
+      if not is_pod then begin
+        bcat s ("//WARNING: ONLY WORKS WITH CORRECT STATIC SIZE\n");
+        bcat s ("static void " ^ name ^ "_finaliser(collector_t *, void *p){\n");
+        bcat s ("  for(std::size_t count = "^ si k ^"; count; --count)\n");
+        bcat s ("  {\n");
+        bcat s ("    (("^ tname ^ "*)p)->~" ^ tname ^ "();\n");
+        bcat s ("    p = (void*)((char*)p + sizeof("^tname^"));\n");
+        bcat s ("  }\n");
+        bcat s ("}\n")
+      end
+      ;
       bcat s ("static gc_shape_t "^ name ^"_ptr_map(\n");
       bcat s ("  " ^ old_ptr_map ^ ",\n");
       bcat s ("  \"" ^ name ^ "\",\n");
       bcat s ("  " ^ si k ^ ",\n");
-      bcat s ("  sizeof("^name^"),\n  "^name^"_finaliser,\n  "^si n^
+      bcat s ("  sizeof("^name^"),\n");
+      bcat s 
       (
-        if n = 0 then ",0\n" 
-        else ",\n  " ^name^"_offsets\n"
-      )
+        if not is_pod then ("  "^name^"_finaliser,\n")
+        else ("  0,\n")
+      );
+      bcat s 
+      (
+        "  "^si n^
+        (
+          if n = 0 then ",0\n" 
+          else ",\n  " ^name^"_offsets\n"
+        )
       );
       bcat s ");\n"
 

@@ -3715,6 +3715,11 @@ ob.yprint(iprint of (int));
 print$ ob.f (1,add of (int*int)); endl;
 print$ ob.p[int] (1,add of (int*int)); endl;
 
+@head(2,"C formating")
+@select(tangler(tdir+'tut_beg319.flx'))
+#import <flx.flxh>
+print$ f"% 1.2d 0x%x %% %g %ld\n" (22,99u,9.7,88l);
+
 @head(1,'Expected outputs')
 Move these up next to the tests!
 @head(2,"tut/examples/tut_beg101.expect")
@@ -5668,3 +5673,7 @@ This is a Y object, with x = 22, y = 3, and c = 20000
 This is a Y object, with x = 12, y = 33, and c = 20000
 13
 13
+@head(2,"tut/examples/tut_beg319.expect")
+@select(tangler("tut/examples/tut_beg319.expect","data"))
+ 22 0x63 % 9.7 88
+@#

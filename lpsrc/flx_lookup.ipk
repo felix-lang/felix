@@ -910,6 +910,7 @@ and bind_type'
   match t with
   | `TYP_intersect ts -> `BTYP_intersect (map bt ts)
   | `TYP_record ts -> `BTYP_record (map (fun (s,t) -> s,bt t) ts)
+  | `TYP_variant ts -> `BTYP_variant (map (fun (s,t) -> s,bt t) ts)
 
   (* We first attempt to perform the match
     at binding time as an optimisation, if that
@@ -2628,10 +2629,12 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
               env rs
               sra srn name ts index
             in 
+              (*
               print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind syms.dfns index);
               print_endline ("Value of ts is " ^ catmap "," (sbt syms.dfns) ts);
               print_endline ("Instantiated closure value is " ^ sbe syms.dfns tb);
               print_endline ("type is " ^ sbt syms.dfns tt);
+              *)
               Some tb 
           | None ->
             clierr sr "Unable to find matching constructor"
@@ -2641,7 +2644,8 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
       syms env rs sra srn ("_ctor_" ^ name) ts t2 
       *)
  
-    | `SYMDEF_cclass _ -> 
+    | `SYMDEF_cclass _ 
+    | `SYMDEF_abs _ -> 
       (* recursively lookup using "_ctor_" ^ name :
          WARNING: we might find a constructor with the
          right name for a different cclass than this one,
@@ -2956,6 +2960,7 @@ and bind_expression' syms env (rs:recstop) e args
         ^"to unitsum " ^ si n)
       end
     
+    | `BTYP_lvalue(`BTYP_record ls'),`BTYP_record ls'' 
     | `BTYP_record ls',`BTYP_record ls'' ->
       begin 
       try
@@ -2988,6 +2993,38 @@ and bind_expression' syms env (rs:recstop) e args
         "\nwhereas annotation requires " ^ sbt syms.dfns t''
         )
       end
+
+    | `BTYP_lvalue(`BTYP_variant lhs),`BTYP_variant rhs
+    | `BTYP_variant lhs,`BTYP_variant rhs ->
+      begin 
+      try
+        iter
+        (fun (s,t)-> 
+          match list_assoc_index rhs s with
+          | Some j -> 
+            let tt = assoc s rhs in 
+            if not (type_eq syms.dfns t tt) then
+            clierr sr (
+              "Source Variant field '" ^ s ^ "' has type:\n" ^ 
+              sbt syms.dfns t ^ "\n" ^
+              "but coercion target has the different type:\n" ^
+              sbt syms.dfns tt ^"\n" ^
+              "The types must be the same!"
+            )
+          | None -> raise Not_found
+        ) 
+        lhs
+        ;
+        print_endline ("Coercion of variant to type " ^ sbt syms.dfns t'');
+        `BEXPR_coerce (x',t''),t''
+      with Not_found ->
+        clierr sr
+         (
+         "Variant coercion src requires subset of fields of dst:\n" ^
+         sbe syms.dfns x' ^ " has type " ^ sbt syms.dfns t' ^
+        "\nwhereas annotation requires " ^ sbt syms.dfns t''
+        )
+      end
     | _ ->
       clierr sr 
       (
@@ -2996,6 +3033,7 @@ and bind_expression' syms env (rs:recstop) e args
         "\nwhereas annotation requires " ^ sbt syms.dfns t''
       )
     end 
+
   | `AST_get_n (sr,(n,e')) -> 
     let expr,typ = be e' in
     let ctyp = match unfold syms.dfns typ with 
@@ -3185,6 +3223,7 @@ and bind_expression' syms env (rs:recstop) e args
     begin match lstrip syms.dfns t with
     | `BTYP_unitsum _ -> ()
     | `BTYP_sum _ -> ()
+    | `BTYP_variant _ -> ()
     | `BTYP_inst (i,_) ->
       begin match Hashtbl.find syms.dfns i with
       | {symdef=`SYMDEF_union _} -> ()
@@ -3205,6 +3244,10 @@ and bind_expression' syms env (rs:recstop) e args
   | `AST_case_tag (sr,v) ->
      clierr sr "plain case tag not allowed in expression (only in pattern)"
 
+  | `AST_variant (sr,(s,e)) ->
+    let (_,t) as e = be e in
+    `BEXPR_variant (s,e),`BTYP_variant [s,t]
+    
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
     ignore (try unfold syms.dfns t with _ -> failwith "AST_typed_case unfold screwd");
@@ -3602,6 +3645,7 @@ and bind_expression' syms env (rs:recstop) e args
     else syserr sr "Empty array?"
 
   | `AST_record_type _ -> assert false
+  | `AST_variant_type _ -> assert false
 
   | `AST_record (sr,ls) ->
     begin match ls with
@@ -3968,6 +4012,10 @@ and rebind_btype syms env sr ts t: btypecode_t =
   | `BTYP_record ts -> 
       let ss,ts = split ts in 
       `BTYP_record (combine ss (map rbt ts))
+
+  | `BTYP_variant ts -> 
+      let ss,ts = split ts in 
+      `BTYP_variant (combine ss (map rbt ts))
 
   | `BTYP_typeset ts ->  `BTYP_typeset (map rbt ts)
   | `BTYP_intersect ts ->  `BTYP_intersect (map rbt ts)

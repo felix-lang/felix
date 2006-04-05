@@ -309,6 +309,7 @@ and typecode_t =
   | `TYP_sum of typecode_t list                 (** numbered sum type *)
   | `TYP_intersect of typecode_t list           (** intersection type *)
   | `TYP_record of (string * typecode_t) list   (** anon product *)
+  | `TYP_variant of (string * typecode_t) list  (** anon sum *)
   | `TYP_function of typecode_t * typecode_t    (** function type *)
   | `TYP_cfunction of typecode_t * typecode_t   (** C function type *)
   | `TYP_pointer of typecode_t                  (** pointer type *)
@@ -396,6 +397,8 @@ and expr_t =
   | `AST_tuple of range_srcref * expr_t list
   | `AST_record of range_srcref * (string * expr_t) list
   | `AST_record_type of range_srcref * (string * typecode_t) list
+  | `AST_variant of range_srcref * (string * expr_t) 
+  | `AST_variant_type of range_srcref * (string * typecode_t) list
   | `AST_arrayof of range_srcref * expr_t list
   | `AST_coercion of range_srcref * (expr_t * typecode_t)
   | `AST_suffix of range_srcref * (qualified_name_t * typecode_t) 
@@ -841,6 +844,7 @@ type 't b0typecode_t' =
   | `BTYP_inst of bid_t * 't list 
   | `BTYP_tuple of 't list         
   | `BTYP_record of (string * 't) list         
+  | `BTYP_variant of (string * 't) list         
   | `BTYP_unitsum of int
   | `BTYP_sum of 't list 
   | `BTYP_function of 't * 't
@@ -976,6 +980,7 @@ and bexpr_t =
    
   | `BEXPR_tuple of tbexpr_t list
   | `BEXPR_record of (string * tbexpr_t) list
+  | `BEXPR_variant of string * tbexpr_t
   | `BEXPR_get_n of int * tbexpr_t (* tuple projection *)
   | `BEXPR_get_named of int * tbexpr_t (* struct/class projection *)
   | `BEXPR_closure of bid_t * btypecode_t list
@@ -986,6 +991,7 @@ and bexpr_t =
   | `BEXPR_case_index of tbexpr_t
   | `BEXPR_expr of string * btypecode_t
   | `BEXPR_range_check of tbexpr_t * tbexpr_t * tbexpr_t
+  | `BEXPR_coerce of tbexpr_t * btypecode_t
   ]
 
 and tbexpr_t = bexpr_t * btypecode_t
@@ -1179,6 +1185,7 @@ let map_type f = function
   | `AST_typed_case (sr,i,t) -> `AST_typed_case (sr,i, f t)
   | `TYP_tuple ts -> `TYP_tuple (map f ts)
   | `TYP_record ts -> `TYP_record (map (fun (s,t) -> s,f t) ts)
+  | `TYP_variant ts -> `TYP_variant (map (fun (s,t) -> s,f t) ts)
   | `TYP_isin (a,b) -> `TYP_isin (f a, f b)
 
   (* we have to do this, so that a large unitsume
@@ -1241,11 +1248,13 @@ let map_expr f (e:expr_t):expr_t = match e with
   | `AST_apply (sr,(a,b)) -> `AST_apply (sr,(f a, f b))
   | `AST_tuple (sr,es) -> `AST_tuple (sr, map f es)
   | `AST_record (sr,es) -> `AST_record (sr, map (fun (s,e) -> s,f e) es)
+  | `AST_variant (sr,(s,e)) -> `AST_variant (sr, (s,f e))
   | `AST_arrayof (sr, es) -> `AST_arrayof (sr, map f es)
   | `AST_coercion (sr, (x,t)) -> `AST_coercion (sr,(f x, t))
   | `AST_suffix _ -> e
 
   | `AST_record_type (sr,ts) -> e 
+  | `AST_variant_type (sr,ts) -> e 
   | `AST_void sr -> e
   | `AST_ellipsis sr -> e
   | `AST_product (sr,es) -> `AST_product (sr, map f es)
@@ -1320,6 +1329,7 @@ let map_b0type f = function
   | `BTYP_inst (i,ts) -> `BTYP_inst (i, map f ts)
   | `BTYP_tuple ts -> `BTYP_tuple (map f ts)
   | `BTYP_record ts -> `BTYP_record (map (fun (s,t) -> s,f t) ts)
+  | `BTYP_variant ts -> `BTYP_variant (map (fun (s,t) -> s,f t) ts)
 
   | `BTYP_unitsum k -> 
     if k>0 then
@@ -1376,6 +1386,7 @@ let iter_b0type f = function
   | `BTYP_inst (i,ts) -> iter f ts
   | `BTYP_tuple ts -> iter f ts
   | `BTYP_record ts -> iter (fun (s,t) -> f t) ts
+  | `BTYP_variant ts -> iter (fun (s,t) -> f t) ts
   | `BTYP_unitsum k -> 
     let unitrep = `BTYP_tuple [] in
     for i = 1 to k do f unitrep done
@@ -1424,6 +1435,7 @@ let rec iter_tbexpr fi fe ft ((x,t) as e) =
   | `BEXPR_apply_method_stack (e1,i,ts,e2) -> fe e1; fi i; iter ft ts; fe e2
   | `BEXPR_tuple  es -> iter fe es
   | `BEXPR_record es -> iter (fun (s,e) -> fe e) es
+  | `BEXPR_variant (s,e) -> fe e
 
   | `BEXPR_get_n (i,e) -> fe e
   | `BEXPR_get_named (i,e) -> fi i; fe e
@@ -1439,6 +1451,7 @@ let rec iter_tbexpr fi fe ft ((x,t) as e) =
   | `BEXPR_literal x -> ft t
   | `BEXPR_expr (s,t1) -> ft t1
   | `BEXPR_range_check (e1,e2,e3) -> fe e1; fe e2; fe e3
+  | `BEXPR_coerce (e,t) -> fe e; ft t
 
 let map_tbexpr fi fe ft e = match e with 
   | `BEXPR_parse (e,iis),t -> `BEXPR_parse (fe e,map fi iis), ft t
@@ -1456,6 +1469,7 @@ let map_tbexpr fi fe ft e = match e with
 
   | `BEXPR_tuple  es,t -> `BEXPR_tuple (map fe es),ft t
   | `BEXPR_record es,t -> `BEXPR_record (map (fun (s,e) -> s, fe e) es),ft t
+  | `BEXPR_variant (s,e),t -> `BEXPR_variant (s, fe e),ft t
 
   | `BEXPR_get_n (i,e),t -> `BEXPR_get_n (i, fe e),ft t
   | `BEXPR_get_named (i,e),t -> `BEXPR_get_named (fi i, fe e),ft t
@@ -1471,6 +1485,7 @@ let map_tbexpr fi fe ft e = match e with
   | `BEXPR_literal x,t -> `BEXPR_literal x, ft t
   | `BEXPR_expr (s,t1),t2 -> `BEXPR_expr (s, ft t1), ft t2
   | `BEXPR_range_check (e1,e2,e3),t -> `BEXPR_range_check (fe e1,fe e2, fe e3), ft t
+  | `BEXPR_coerce (e,t'),t -> `BEXPR_coerce (fe e, ft t'), ft t
 
 let iter_bexe fi fe ft fl fldef exe =
   match exe with 
@@ -1654,6 +1669,16 @@ let rec reduce_type t =
      let ts = combine ss (map reduce_type ts) in
      `BTYP_record ts
     end
+  | `BTYP_variant ts -> 
+    begin match ts with
+    | [] -> `BTYP_void
+    | _ -> 
+     let rcmp (s1,_) (s2,_) = compare s1 s2 in
+     let ts = sort compare ts in
+     let ss,ts = split ts in
+     let ts = combine ss (map reduce_type ts) in
+     `BTYP_variant ts
+    end
   | `BTYP_tuple ts -> typeoflist ts
   | t -> t
 
@@ -1791,7 +1816,9 @@ let src_of_expr (e : expr_t) = match e with
   | `AST_method_apply  (s,_) 
   | `AST_tuple  (s,_) 
   | `AST_record (s,_) 
+  | `AST_variant (s,_) 
   | `AST_record_type (s,_) 
+  | `AST_variant_type (s,_) 
   | `AST_arrayof (s,_) 
   | `AST_dot  (s,_) 
   | `AST_lambda  (s,_) 
@@ -2264,12 +2291,21 @@ and string_of_expr (e:expr_t) =
     ")"
 
   | `AST_tuple (_,t) -> "(" ^ catmap ", " sme t ^ ")"
+
   | `AST_record (_,ts) -> "struct {" ^ 
       catmap "; " (fun (s,e) -> s ^ "="^ sme e ^";") ts ^ 
     "}"
+
   | `AST_record_type (_,ts) -> "struct {" ^ 
       catmap "; " (fun (s,t) -> s ^ ":"^ string_of_typecode t ^";") ts ^ 
     "}"
+
+  | `AST_variant (_,(s,e)) -> "case " ^ s ^ " of (" ^ se e ^ ")"
+
+  | `AST_variant_type (_,ts) -> "union {" ^ 
+      catmap "; " (fun (s,t) -> s ^ " of "^ string_of_typecode t ^";") ts ^ 
+    "}"
+
   | `AST_arrayof (_,t) -> "[|" ^ catmap ", " sme t ^ "|]"
   | `AST_dot (_,(e,n,ts)) ->  
     "get_" ^ n ^ 
@@ -2449,6 +2485,12 @@ and st prec tc : string =
       | _ -> 0, "struct {" ^ catmap "" (fun (s,t)->s^":"^st 0 t ^"; ") ls ^ "}"
       end
 
+    | `TYP_variant ls ->
+      begin match ls with 
+      | [] -> 0,"void" 
+      | _ -> 0, "union {" ^ catmap "" (fun (s,t)->s^" of "^st 0 t ^"; ") ls ^ "}"
+      end
+
     | `TYP_sum ls ->
       begin match ls with 
       | [] -> 0,"void" 
@@ -2618,6 +2660,12 @@ and sb dfns depth fixlist counter prec tc =
       begin match ls with 
       | [] -> 0,"unit" 
       | _ -> 0,"struct {"^catmap "" (fun (s,t)->s^":"^sbt 0 t^";") ls ^"}"
+      end
+
+    | `BTYP_variant ls -> 
+      begin match ls with 
+      | [] -> 0,"void" 
+      | _ -> 0,"union {"^catmap "" (fun (s,t)->s^" of "^sbt 0 t^";") ls ^"}"
       end
 
     | `BTYP_unitsum k -> 
@@ -3792,8 +3840,11 @@ and string_of_bound_expression' dfns se e =
     ")"
 
   | `BEXPR_tuple t -> "(" ^ catmap ", " se t ^ ")"
+
   | `BEXPR_record ts -> "struct { " ^ 
       catmap "" (fun (s,e)-> s^":"^ se e ^"; ") ts ^ "}"
+
+  | `BEXPR_variant (s,e) -> "case " ^ s ^ " of (" ^ se e ^ ")"
 
   | `BEXPR_case (v,t) -> 
     "case " ^ si v ^ " of " ^ string_of_btypecode dfns t
@@ -3812,6 +3863,8 @@ and string_of_bound_expression' dfns se e =
 
   | `BEXPR_range_check (e1,e2,e3) ->
     "range_check(" ^ se e1 ^"," ^ se e2 ^"," ^se e3 ^ ")"
+
+  | `BEXPR_coerce (e,t) -> se e ^ " : " ^ string_of_btypecode dfns t
 
 and string_of_biface dfns level s = 
   let spc = spaces level in
@@ -4518,6 +4571,7 @@ type sym_state_t =
   mutable bifaces : biface_t list;
   mutable reductions : reduction_t list;
   mutable axioms: axiom_t list;
+  variant_map: (btypecode_t * btypecode_t,int) Hashtbl.t
 }
 
 module VarMap = StringMap
@@ -4606,6 +4660,7 @@ type sym_state_t =
   mutable bifaces : biface_t list;
   mutable reductions : reduction_t list;
   mutable axioms : axiom_t list;
+  variant_map: (btypecode_t * btypecode_t,int) Hashtbl.t
 }
 
 
@@ -4797,6 +4852,10 @@ let rec cmp_tbexpr (a,_) (b,_) =
   | `BEXPR_parse (e,ii), `BEXPR_parse (e',ii') ->
     ecmp e e' && ii = ii'
 
+  | `BEXPR_coerce (e,t),`BEXPR_coerce (e',t') ->
+    (* not really right .. *)
+    ecmp e e'
+
   | `BEXPR_record ts,`BEXPR_record ts' ->
     length ts = length ts' &&
     let rcmp (s,t) (s',t') = compare s s' in
@@ -4805,6 +4864,9 @@ let rec cmp_tbexpr (a,_) (b,_) =
     map fst ts = map fst ts' &&
     fold_left2 (fun r a b -> r && a = b) true (map snd ts) (map snd ts')
  
+  | `BEXPR_variant (s,e),`BEXPR_variant (s',e') ->
+    s = s' && ecmp e e'
+
   | `BEXPR_deref e,`BEXPR_deref e' -> ecmp e e'
 
   | `BEXPR_name (i,ts),`BEXPR_name (i',ts')
@@ -4919,6 +4981,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | `AST_tuple (sr,ls) ->
     `TYP_type_tuple (map te ls)
   | `AST_record_type (sr,es) -> `TYP_record es
+  | `AST_variant_type (sr,es) -> `TYP_variant es
 
   | `AST_product (_,ts) -> `TYP_tuple (map te ts)
   | `AST_setintersection (_,ts) -> `TYP_setintersection (map te ts)

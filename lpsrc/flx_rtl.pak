@@ -1,5 +1,8 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.30  2006/04/05 01:01:11  skaller
+New variant type and other stuff accumulated during CVS outage.
+
 Revision 1.29  2006/03/30 01:59:30  skaller
 Add C prinf formatting stuff
 
@@ -804,6 +807,7 @@ struct RTL_EXTERN _uctor_
   void *data;   ///< Heap variant constructor data
   _uctor_() : variant(-1), data(0) {}
   _uctor_(int i, void *d) : variant(i), data(d) {}
+  _uctor_(int *a, _uctor_ x) : variant(a[x.variant]), data(x.data) {}
 };
 
 // ********************************************************

@@ -222,6 +222,10 @@ and beta_reduce' syms (btvars:(int * btypecode_t) list) termlist t =
      let ss,ls = split ts in
      `BTYP_record (combine ss (map br ls))
 
+  | `BTYP_variant ts -> 
+     let ss,ls = split ts in
+     `BTYP_variant (combine ss (map br ls))
+
   (* Intersection type reduction rule: if any term is 0,
      the result is 0, otherwise the result is the intersection
      of the reduced terms with 1 terms removed: if there
