@@ -1256,12 +1256,12 @@ module String
   fun find: string * char -> int = "$1.find($2)";
   fun find: string * char * int -> int = "$1.find($2,$3)";
 
-  fun rfind: string * string -> int = "$1.ffind($2)";
-  fun rfind: string * string * int -> int = "$1.ffind($2,$3)";
-  fun rfind: string * charp -> int = "$1.ffind($2)";
-  fun rfind: string * charp * int -> int = "$1.ffind($2,$3)";
-  fun rfind: string * char -> int = "$1.ffind($2)";
-  fun rfind: string * char * int -> int = "$1.ffind($2,$3)";
+  fun rfind: string * string -> int = "$1.rfind($2)";
+  fun rfind: string * string * int -> int = "$1.rfind($2,$3)";
+  fun rfind: string * charp -> int = "$1.rfind($2)";
+  fun rfind: string * charp * int -> int = "$1.rfind($2,$3)";
+  fun rfind: string * char -> int = "$1.rfind($2)";
+  fun rfind: string * char * int -> int = "$1.rfind($2,$3)";
 
   fun find_first_of: string * string -> int = "$1.find_first_of($2)";
   fun find_first_of: string * charp -> int = "$1.find_first_of($2)";
