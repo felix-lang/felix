@@ -1,0 +1,158 @@
+@head(1,"C format string")
+@h = tangler("src/flx_cformat.mli")
+@select(h)
+open Flx_srcref
+open Flx_ast
+
+val types_of_cformat_string:
+  range_srcref ->
+  string ->
+  typecode_t list
+
+@h = tangler("src/flx_cformat.ml")
+@select(h)
+open String
+open List
+open Flx_ast
+open Flx_exceptions
+
+let fmts = [
+  ("hhd","tiny");
+  ("hhi","tiny");
+  ("hho","utiny");
+  ("hhx","utiny");
+  ("hhX", "utiny");
+
+  ("hd","short");
+  ("hi","short");
+  ("ho","ushort");
+  ("hx","ushort");
+  ("hX", "ushort");
+
+  ("d","int");
+  ("i","int");
+  ("o","uint");
+  ("x","uint");
+  ("X", "uint");
+
+  ("ld","long");
+  ("li","long");
+  ("lo","ulong");
+  ("lx","ulong");
+  ("lX","ulong");
+
+  ("lld","vlong");
+  ("lli","vlong");
+  ("llo","uvlong");
+  ("llx","uvlong");
+  ("llX","uvlong");
+
+  ("zd","size");
+  ("zi","size");
+  ("zo","size");
+  ("zx","size");
+  ("zX","size");
+
+  ("td","ptrdiff");
+  ("ti","ptrdiff");
+  ("to","ptrdiff");
+  ("tx","ptrdiff");
+  ("tX","ptrdiff");
+
+  ("e","double");
+  ("E","double");
+  ("f","double");
+  ("F","double");
+  ("g","double");
+  ("G","double");
+  ("a","double");
+  ("A","double");
+
+  ("Le","ldouble");
+  ("LE","ldouble");
+  ("Lf","ldouble");
+  ("LF","ldouble");
+  ("Lg","ldouble");
+  ("LG","ldouble");
+  ("La","ldouble");
+  ("LA","ldouble");
+
+  ("c","int");
+
+  ("s","C_hack::charp");
+  ("p","C_hack::address");
+  ("P","C_hack::address");
+]
+
+
+let is_final ch =
+  try ignore(index "dioxXeEfFgGaAcspPn" ch); true
+  with Not_found -> false
+
+let is_alpha ch =
+  try ignore(index "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" ch); true
+  with Not_found -> false
+
+let is_ok ch =
+  try ignore(index "+-0123456789." ch); true
+  with Not_found -> false
+
+
+
+type mode_t = [ 
+  | `Skip 
+  | `Scan 
+]
+
+let strchr ch = String.make 1 ch
+
+let types_of_cformat_string sr s =
+  let types = ref [] in
+  let mode = ref `Skip in
+  let fmt = ref "" in
+  let space_used = ref false in
+
+  for i = 0 to String.length s - 1 do
+    match !mode with 
+    (* look for leading % sign *)
+    | `Skip -> if s.[i]='%' then mode := `Scan
+
+    | `Scan -> 
+      let ch = s.[i] in
+
+      (* just emit % sign *)
+      if ch = '%' then 
+      begin
+        mode := `Skip;
+        space_used := false;
+        fmt := ""
+      end
+
+      (* last char of format spec *)
+      else if is_final ch then 
+      begin
+        let xfmt = !fmt ^ strchr ch in
+        try 
+          types := assoc xfmt fmts :: !types;
+          mode := `Skip;
+        with Not_found ->
+          clierr sr ("Unsupported format '" ^ xfmt ^ "'")
+      end
+
+      (* some other alpha char *)
+      else if is_alpha ch then fmt := !fmt ^ strchr ch
+
+      (* an * spec, add a new format immediately *)
+      else if ch = '*' then types := "int" :: !types
+
+      (* something else, scan over it *)
+      else if is_ok ch then () 
+
+      (* one space is allowed after the % *)
+      else if ch = ' ' && !fmt = "" && not !space_used then
+        space_used := true
+      else
+        clierr sr ("unsupported format '" ^ !fmt ^ strchr ch ^ "'")
+  done;
+  rev_map (fun s -> `AST_name (sr,s,[])) !types
+
