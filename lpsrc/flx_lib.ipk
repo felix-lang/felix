@@ -1248,31 +1248,18 @@ module String
 
   // Note we use int instead of size here: size is correct,
   // but that would requires heaps of casts in Felix
-  const npos: int = "(int)std::string::npos";
-  fun find: string * string -> int = "$1.find($2)";
-  fun find: string * string * int -> int = "$1.find($2,$3)";
-  fun find: string * charp -> int = "$1.find($2)";
-  fun find: string * charp * int -> int = "$1.find($2,$3)";
-  fun find: string * char -> int = "$1.find($2)";
-  fun find: string * char * int -> int = "$1.find($2,$3)";
+@stringfuncs = ["find", "rfind", "find_first_of", "find_first_not_of", \
+      "find_last_of", "find_last_not_of"]
+@stringtypes = ["string", "charp", "char"]
 
-  fun rfind: string * string -> int = "$1.rfind($2)";
-  fun rfind: string * string * int -> int = "$1.rfind($2,$3)";
-  fun rfind: string * charp -> int = "$1.rfind($2)";
-  fun rfind: string * charp * int -> int = "$1.rfind($2,$3)";
-  fun rfind: string * char -> int = "$1.rfind($2)";
-  fun rfind: string * char * int -> int = "$1.rfind($2,$3)";
+@for i, f in zip(range(len(stringfuncs)), stringfuncs):
+    if i != 0:
+      tangle('')
 
-  fun find_first_of: string * string -> int = "$1.find_first_of($2)";
-  fun find_first_of: string * charp -> int = "$1.find_first_of($2)";
-
-  fun find_first_not_of: string * string -> int = "$1.find_first_not_of($2)";
-  fun find_first_not_of: string * charp -> int = "$1.find_first_not_of($2)";
-
-  fun find_last_of: string * string -> int = "$1.find_last_of($2)";
-  fun find_last_of: string * charp -> int = "$1.find_last_of($2)";
-  fun find_last_not_of: string * string -> int = "$1.find_last_not_of($2)";
-  fun find_last_not_of: string * charp -> int = "$1.find_last_not_of($2)";
+    for t in stringtypes:
+      tangle('  fun %s: string * %s -> int = "$1.%s($2)"' % (f, t, f))
+      tangle('  fun %s: string * %s * int -> int = "$1.%s($2,$3)"' % (f, t, f))
+@#
 
   fun startswith (x:string) (e:string) : bool =
   {
