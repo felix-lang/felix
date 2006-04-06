@@ -1223,6 +1223,8 @@ module String
   fun add: string * string -> string = "$1+$2";
   fun add: string * charp -> string = "$1+$2";
   fun add: charp * string -> string = "$1+$2";
+  fun add: string * char -> string = "$1+$2";
+  fun add: char * string -> string = "$1+$2";
   fun add: string * int -> string = "$1+flx::rtl::i18n::utf8($2)" requires flx_i18n;
   fun mul: string * int -> string = "flx::rtl::strutil::mul($1,$2)" requires flx_strutil;
   fun mul: char * int -> string = "std::string($2,$1)";
@@ -1271,6 +1273,43 @@ module String
   fun find_last_of: string * charp -> int = "$1.find_last_of($2)";
   fun find_last_not_of: string * string -> int = "$1.find_last_not_of($2)";
   fun find_last_not_of: string * charp -> int = "$1.find_last_not_of($2)";
+
+  fun startswith (x:string) (e:string) : bool =
+  {
+    if len x < len e do
+      return false;
+    done;
+
+    var i: int; forall i in 0 upto (len e) - 1 do
+      if e.[i] != x.[i] do
+        return false;
+      done;
+    done;
+
+    return true;
+  }
+
+  fun endswith (x:string) (e:string) : bool =
+  {
+    val len_x = len x;
+    val len_e = len e;
+
+    if len_x < len_e do
+      return false;
+    done;
+
+    var i: int; forall i in 0 upto (len_e) - 1 do
+      if e.[len_e - i - 1] != x.[len_x - i - 1] do
+        return false;
+      done;
+    done;
+
+    return true;
+  }
+
+  fun startswith (x:string) (e:char) : bool => x.[0] == e;
+  fun endsswith (x:string) (e:char) : bool => x.[len x - 1] == e;
+
 
   // trim whitespace
   fun ltrim : string -> string = 
