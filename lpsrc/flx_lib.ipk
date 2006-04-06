@@ -624,7 +624,10 @@ publish "Boolean"
   typedef bool = 2;
 
 publish "option type"
-  typedef optional[t] = 1 + t;
+  union optional[T] =
+    | None
+    | Some of T
+  ;
 
 publish "Universal type 'x as x'"
   typedef any = any;
