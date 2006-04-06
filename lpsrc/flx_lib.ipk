@@ -624,7 +624,7 @@ publish "Boolean"
   typedef bool = 2;
 
 publish "option type"
-  union optional[T] =
+  union opt[T] =
     | None
     | Some of T
   ;
@@ -1821,14 +1821,14 @@ module List
     endmatch
   ;
 
-  fun find[T] (eq:T * T -> bool) (x:list[T]) (e:T) : option[T] =>
+  fun find[T] (eq:T * T -> bool) (x:list[T]) (e:T) : opt[T] =>
     match x with
       | Empty => None[T]
       | Cons (?h,?t) => if eq(h, e) then Some h else find eq t e endif
     endmatch
   ;
 
-  fun find[T] (eq:T -> bool) (x:list[T]) : option[T] =>
+  fun find[T] (eq:T -> bool) (x:list[T]) : opt[T] =>
     match x with
       | Empty => None[T]
       | Cons (?h,?t) => if eq(h) then Some h else find eq t endif

@@ -646,14 +646,14 @@ union parity =
 ;
 
 union int_option =
-  | Some of int
-  | None
+  | iSome of int
+  | iNone
 ;
 
 enum E {zero, one, two};
 
 val x = Odd;
-val y = Some 1;
+val y = iSome 1;
 val z = one;
 
 enum X {a,b=2,c,d=0xf};
@@ -701,19 +701,19 @@ of a union is by pattern matching. Here is an example:
 @select(tangler(tdir+'tut_beg118.flx'))
 #import <flx.flxh>
 union int_option =
-  | Some of int
-  | None
+  | iSome of int
+  | iNone
 ;
 
-val y = Some 1;
+val y = iSome 1;
 
 match y with 
-  | Some ?i =>
+  | iSome ?i =>
     {
       print "Some "; 
       print i; 
     }
-  | None =>
+  | iNone =>
     {
       print "None"; 
     }
