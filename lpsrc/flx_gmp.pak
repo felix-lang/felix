@@ -30,6 +30,7 @@ if HAVE_GMPXX:
 @h = tangler('config/gmpxx.fpc')
 @select(h)
 requires_slibs: -lgmp
+requires_dlibs: -lgmp
 provides_dlib: -lgmpxx
 provides_slib: -lgmpxx
 
@@ -79,6 +80,7 @@ module Gmp
 {
   requires gmpxx_h;
   requires package "gmpxx";
+  requires package "gmp";
   type mpz='mpz_class';
   type mpq='mpq_class';
   type mpf='mpf_class';
