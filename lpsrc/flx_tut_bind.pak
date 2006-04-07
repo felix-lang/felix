@@ -753,6 +753,20 @@ proc q(x:int){ print x; endl; }
 
 p(31,the q);
 
+typedef cf = int --> int;
+
+proc h(y:cf, x:int) {
+  print$ y x; endl;
+}
+
+body """
+  int yyy(int x) { return x + 3; }
+""";
+
+const yyy: int --> int;
+
+h(yyy,2);
+
 
 @head(2,"tut/examples/tut_bind130.expect")
 @select(tangler("tut/examples/tut_bind130.expect","data"))
@@ -841,4 +855,5 @@ Y=2,3
 @select(tangler("tut/examples/tut_bind180.expect","data"))
 5
 31
+5
 @#
