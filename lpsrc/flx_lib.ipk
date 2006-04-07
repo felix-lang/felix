@@ -1315,6 +1315,8 @@ module String
     return aux$ x, List::Empty[string];
   }
 
+  const npos: int = "std::string::npos";
+  
   fun split (x:string, d:string): List::list[string] = {
     fun aux (x:string,y:List::list[string]) =>
       match find_first_of (x, d) with
