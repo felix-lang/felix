@@ -1257,8 +1257,8 @@ module String
       tangle('')
 
     for t in stringtypes:
-      tangle('  fun %s: string * %s -> int = "$1.%s($2)"' % (f, t, f))
-      tangle('  fun %s: string * %s * int -> int = "$1.%s($2,$3)"' % (f, t, f))
+      tangle('  fun %s: string * %s -> int = "$1.%s($2)";' % (f, t, f))
+      tangle('  fun %s: string * %s * int -> int = "$1.%s($2,$3)";' % (f, t, f))
 @#
 
   fun startswith (x:string) (e:string) : bool =
