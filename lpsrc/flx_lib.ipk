@@ -160,10 +160,10 @@ namespace flx { namespace rtl { namespace strutil {
     return x.str();
   }
 
-  string atostr(char const *a);
-  string ltrim(string const &x);
-  string rtrim(string const &x);
-  string flx_asprintf(char *fmt,...);
+  RTL_EXTERN string atostr(char const *a);
+  RTL_EXTERN string ltrim(string const &x);
+  RTL_EXTERN string rtrim(string const &x);
+  RTL_EXTERN string flx_asprintf(char *fmt,...);
 
 }}}
 
