@@ -1264,17 +1264,25 @@ module String
 
   // Note we use int instead of size here: size is correct,
   // but that would requires heaps of casts in Felix
+
+  const stl_npos: int = "std::string::npos";
+
 @stringfuncs = ["find", "rfind", "find_first_of", "find_first_not_of", \
       "find_last_of", "find_last_not_of"]
 @stringtypes = ["string", "charp", "char"]
-
 @for i, f in zip(range(len(stringfuncs)), stringfuncs):
     if i != 0:
       tangle('')
 
     for t in stringtypes:
-      tangle('  fun %s: string * %s -> int = "$1.%s($2)";' % (f, t, f))
-      tangle('  fun %s: string * %s * int -> int = "$1.%s($2,$3)";' % (f, t, f))
+      tangle('  fun stl_%s: string * %s -> int = "$1.%s($2)";' % (f, t, f))
+      tangle('  fun stl_%s: string * %s * int -> int = "$1.%s($2,$3)";' % (f, t, f))
+
+    tangle('')
+
+    for t in stringtypes:
+      tangle('  fun %s (s:string, e:%s) : opt[int] => match stl_%s (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;' % (f, t, f))
+      tangle('  fun %s (s:string, e:%s, i:int) : opt[int] => match stl_%s (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;' % (f, t, f))
 @#
 
   fun startswith (x:string) (e:string) : bool =
@@ -1324,20 +1332,18 @@ module String
   fun split (x:string, d:char): List::list[string] = {
     fun aux (x:string,y:List::list[string]) =>
       match find (x, d) with
-      | ?n when n == npos => List::rev$ List::Cons (x, y)
-      | ?n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
+      | None => List::rev$ List::Cons (x, y)
+      | Some ?n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
       endmatch
     ;
     return aux$ x, List::Empty[string];
   }
-
-  const npos: int = "std::string::npos";
   
   fun split (x:string, d:string): List::list[string] = {
     fun aux (x:string,y:List::list[string]) =>
       match find_first_of (x, d) with
-      | ?n when n == npos => List::rev$ List::Cons (x, y)
-      | ?n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
+      | None => List::rev$ List::Cons (x, y)
+      | Some ?n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
       endmatch
     ;
     return aux$ x, List::Empty[string];
@@ -1346,8 +1352,8 @@ module String
   fun split (x:string, d:charp): List::list[string] = {
     fun aux (x:string,y:List::list[string]) =>
       match find_first_of (x, d) with
-      | ?n when n == npos => List::rev$ List::Cons (x, y)
-      | ?n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
+      | None => List::rev$ List::Cons (x, y)
+      | Some ?n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
       endmatch
     ;
     return aux$ x, List::Empty[string];
