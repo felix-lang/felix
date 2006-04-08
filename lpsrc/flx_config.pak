@@ -12,6 +12,11 @@
 
 @head(2,'CVS log')
 $Log$
+Revision 1.176  2006/04/08 03:53:44  skaller
+Detect vsnprintf.. some Windows don't provide it even though
+MSDN says it is available. The MS variation when available
+doesn't work correctly anyhow.
+
 Revision 1.175  2006/03/30 01:59:29  skaller
 Add C prinf formatting stuff
 
@@ -418,6 +423,25 @@ main(int argc, char** argv)
     return 0;           // pass
 }
 
+@h = tangler("tmp/vsnprintf.cxx",'c++')
+@select(h)
+#include <stdio.h>
+#include <stdarg.h>
+
+int check(char const*fmt,...)
+{
+  va_list ap;
+  va_start(ap,fmt);
+  int n = vsnprintf(NULL,0,fmt,ap);
+  va_end(ap);
+  return n!=3;
+}
+
+int main(int,char*argv[]) { 
+  return check("%s","XXX"); // 0 means pass
+}
+
+
 @h = tangler("flxbuild/ocaml_class.py")
 @select(h)
 #---------------------------------------------------
@@ -798,6 +822,19 @@ class compiler_base:
       for t2 in native_types:
         alias=self.find_type(shell,get_stdout,"("+t1+")0+("+t2+")0",None)
         opt.arith_conv[(t1,t2)]=alias
+
+    try:
+      res,lines = self.eval_tmp_program(shell,get_stdout,"vsnprintf")
+      if res: 
+        opt.HAVE_VSNPRINTF=0
+      else:
+        opt.HAVE_VSNPRINTF=1
+    except:
+      opt.HAVE_VSNPRINTF=0
+    if opt.HAVE_VSNPRINTF:
+      print "vsnprintf() supported"
+    else:
+      print "vsnprintf() NOT supported"
 
   def detect_win32(self,shell):
     return self.check_macro_defined(shell,"_WIN32")

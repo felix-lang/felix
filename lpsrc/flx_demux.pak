@@ -1,5 +1,10 @@
 @head(1,'demux')
 $Log$
+Revision 1.17  2006/04/08 03:53:44  skaller
+Detect vsnprintf.. some Windows don't provide it even though
+MSDN says it is available. The MS variation when available
+doesn't work correctly anyhow.
+
 Revision 1.16  2006/03/07 04:22:36  skaller
 Termination in presence of spawned pthreads should now
 be working, using new ts_locker class. Exception handling
@@ -3434,7 +3439,10 @@ ts_select_demuxer::ts_select_demuxer()
   spw.s = self_pipe_fds[0]; // setup wakeup for read end of pipe
 
   if(demux.add_socket_wakeup(&spw, PDEMUX_READ) == -1)  // no wakeup!?!
+  {
+    fprintf(stderr,"No socket wakeup?\n");
     throw -1;                 // that makes me angry!!!
+  }
 }
 
 ts_select_demuxer::~ts_select_demuxer()

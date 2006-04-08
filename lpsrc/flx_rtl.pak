@@ -1,5 +1,10 @@
 @head(1,"Run time driver support library")
 $Log$
+Revision 1.31  2006/04/08 03:53:44  skaller
+Detect vsnprintf.. some Windows don't provide it even though
+MSDN says it is available. The MS variation when available
+doesn't work correctly anyhow.
+
 Revision 1.30  2006/04/05 01:01:11  skaller
 New variant type and other stuff accumulated during CVS outage.
 
@@ -476,6 +481,9 @@ T &reinterpret(U const &x) {
 #ifdef _WIN32
 #define _WIN32_WINNT 0x500
 #endif
+
+@if HAVE_VSNPRINTF:
+  tangle('#define HAVE_VSNPRINTF')
 
 @if HAVE_LONGLONG:
   tangle('#define HAVE_LONGLONG')

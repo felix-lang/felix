@@ -194,6 +194,7 @@ namespace flx { namespace rtl { namespace strutil {
    return x.substr(0,i);
  }
 
+#ifdef HAVE_VSNPRINTF  
   string flx_asprintf(char *fmt,...){
     va_list ap;
     va_start(ap,fmt);
@@ -207,6 +208,21 @@ namespace flx { namespace rtl { namespace strutil {
     free(res);
     return s;
   }
+#else
+  // THIS IS UNSAFE .. but Windows sucks.
+  // It documents vsnprintf .. but doesn't provide it
+  string flx_asprintf(char *fmt,...){
+    va_list ap;
+    int n = 1000;
+    char *res = (char*)malloc(n+1);
+    va_start(ap,fmt);
+    vsprintf(res,fmt,ap);
+    va_end(ap);
+    string s = string(res);
+    free(res);
+    return s;
+  }
+#endif
 
 }}}
 
